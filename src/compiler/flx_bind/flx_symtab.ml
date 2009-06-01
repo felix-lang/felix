@@ -126,6 +126,22 @@ let full_add_function syms sr (vs:Flx_ast.ivs_list_t) table key value =
   with Not_found ->
     Hashtbl.add table key (`FunctionEntry [mkentry syms vs value])
 
+
+(* make_vs inserts unique indexes into vs_lists, thus creating an ivs_list. *)
+let make_vs ?(print=false) level counter (vs', con) : Flx_ast.ivs_list_t =
+  let vs =
+    List.map begin fun (tid, tpat) ->
+      let n = !counter in
+      incr counter;
+      if print then
+        print_endline ("//  " ^ Flx_util.spaces level ^ string_of_int n ^
+        " -> " ^ tid ^ " (type variable)");
+      tid, n, tpat
+    end vs'
+  in
+  vs, con
+
+
 (* this routine takes a partially filled unbound definition table,
   'dfns' and a counter 'counter', and adds entries to the table
   at locations equal to and above the counter
@@ -149,18 +165,31 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
   *)
   let print_flag = syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
   let dfns = syms.Flx_mtypes2.dfns in
+
+  (* counter is a monotomically increasing unique index. *)
   let counter = syms.Flx_mtypes2.counter in
+
+  (* simplify the interface for using make_vs *)
+  let make_vs = make_vs ~print:print_flag level counter in
+
+  let spc = Flx_util.spaces level in
+
+  (* Split up the assemblies into their repsective types. split_asms returns
+   * reversed lists, so we must undo that. *)
   let dcls,exes,ifaces,export_dirs = split_asms asms in
   let dcls,exes,ifaces,export_dirs =
     List.rev dcls, List.rev exes, List.rev ifaces, List.rev export_dirs
   in
+
+  (* Add the parent to each unterface *)
   let ifaces = List.map (fun (i,j)-> i,j,parent) ifaces in
   let interfaces = ref ifaces in
-  let spc = Flx_util.spaces level in
+
+  (* Create the public and private symbol tables *)
   let pub_name_map = Hashtbl.create 97 in
   let priv_name_map = Hashtbl.create 97 in
 
-  (* check root index *)
+  (* check root index. Error out if it's an invalid root. *)
   if level = 0
   then begin
     if root <> !counter
@@ -181,48 +210,32 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
       Hashtbl.add priv_name_map "root"
         (`NonFunctionEntry (mkentry syms Flx_ast.dfltvs root))
   ;
+
+  (* Step through each dcl and add the found assemblies to the symbol tables. *)
   begin
     List.iter
     (
       fun (sr,id,seq,access,vs',dcl) ->
-        let pubtab = Hashtbl.create 3 in (* dummy-ish table could contain type vars *)
-        let privtab = Hashtbl.create 3 in (* dummy-ish table could contain type vars *)
+        if print_flag then
+          print_endline (Flx_print.string_of_dcl level id seq vs' dcl);
+
+        (* dummy-ish temporary symbol tables could contain type vars for looking
+         * at this declaration. *)
+        let pubtab = Hashtbl.create 3 in
+        let privtab = Hashtbl.create 3 in
+
+        (* Determine the next index to use. If we already have a symbol index,
+         * use that, otherwise use the next number in the counter. *)
         let n = match seq with
-          | Some n -> (* print_endline ("SPECIAL " ^ id ^ string_of_int n); *) n
-          | None -> let n = !counter in incr counter; n
+          | Some n ->
+              (* print_endline ("SPECIAL " ^ id ^ string_of_int n); *)
+              n
+          | None ->
+              let n = !counter in incr counter;
+              n
         in
-        if print_flag then begin
-          let kind = match dcl with
-          | `DCL_function _ -> "(function) "
-          | `DCL_module _ -> "(module) "
-          | `DCL_insert _ -> "(insert) "
-          | `DCL_typeclass _ -> "(typeclass) "
-          | `DCL_instance _ -> "(instance) "
-          | `DCL_fun _ -> "(fun) "
-          | `DCL_var _ -> "(var) "
-          | `DCL_val _ -> "(val) "
-          | _ -> ""
-          in
-          let vss = Flx_util.catmap "," fst (fst vs') in
-          let vss = if vss <> "" then "["^vss^"]" else "" in
-          print_endline
-          (
-            "//" ^ spc ^ string_of_int n ^ " -> " ^ id ^ vss ^
-            " " ^ kind ^ Flx_srcref.short_string_of_src sr
-          )
-        end;
-        let make_vs (vs',con) : Flx_ast.ivs_list_t =
-          List.map
-          (
-            fun (tid,tpat)-> let n = !counter in incr counter;
-            if print_flag then
-            print_endline ("//  "^spc ^ string_of_int n ^ " -> " ^ tid^ " (type variable)");
-            tid,n,tpat
-          )
-          vs'
-          ,
-          con
-        in
+
+        (* Update the type variable list to include the index. *)
         let vs = make_vs vs' in
 
         (*
@@ -246,6 +259,7 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
 
         let add_unique table id idx = full_add_unique syms sr (merge_ivs vs inherit_vs) table id idx in
         let add_function table id idx = full_add_function syms sr (merge_ivs vs inherit_vs) table id idx in
+
         let add_tvars' parent table vs =
           List.iter
           (fun (tvid,i,tpat) ->
