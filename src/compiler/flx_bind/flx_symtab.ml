@@ -180,26 +180,22 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
   let interfaces = ref ifaces in
 
   (* check root index. Error out if it's an invalid root. *)
-  if level = 0
-  then begin
-    if root <> !(syms.Flx_mtypes2.counter)
-    then failwith "Wrong value for root index";
+  if level = 0 then begin
+    if root <> !(syms.Flx_mtypes2.counter) then
+      failwith "Wrong value for root index";
+
     begin match dcls with
     | [x] -> ()
     | _ -> failwith "Expected top level to contain exactly one module declaration"
-    end
-    ;
-    if name <> "root"
-    then failwith
-      ("Expected top level to be called root, got " ^ name)
-  end
-  else
-    if name = "root"
-    then failwith ("Can't name non-toplevel module 'root'")
+    end;
+    if name <> "root" then
+      failwith ("Expected top level to be called root, got " ^ name)
+  end else
+    if name = "root" then
+      failwith ("Can't name non-toplevel module 'root'")
     else
       Hashtbl.add priv_name_map "root"
-        (`NonFunctionEntry (mkentry syms Flx_ast.dfltvs root))
-  ;
+        (`NonFunctionEntry (mkentry syms Flx_ast.dfltvs root));
 
   (* Step through each dcl and add the found assemblies to the symbol tables. *)
   List.iter (
