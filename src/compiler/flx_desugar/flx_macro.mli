@@ -38,6 +38,8 @@ val expand_macros:
 
 (** Expand all the macros in the statement. *)
 val expand_macros_in_statement:
-  macro_state_t ->        (** Macro state. *)
-  Flx_ast.statement_t ->  (** Statement to expand. *)
-  Flx_ast.statement_t list
+  macro_state_t ->                      (** Macro state. *)
+  (Flx_ast.statement_t -> 'a -> 'a) ->  (** Fold this over each statement *)
+  Flx_ast.statement_t ->                (** Statement to expand. *)
+  'a ->                                 (** The initial value. *)
+  'a

@@ -1302,12 +1302,18 @@ let desugar_compilation_unit desugar_state sts =
     (`AST_untyped_module (sr, desugar_state.name, dfltvs, sts))
 
 (** Desguar a statement. *)
-let desugar_statement desugar_state stmt =
-  let stmts = Flx_macro.expand_macros_in_statement
+let desugar_statement desugar_state handle_asm stmt init =
+  (* First we must expand all the macros in the statement *)
+  Flx_macro.expand_macros_in_statement
     desugar_state.macro_state
+    begin fun stmt init ->
+      (* For each macro-expanded statement, desugar it into a series of
+       * assemblies *)
+      let asms =
+        rst desugar_state.syms desugar_state.name `Public dfltvs stmt
+      in
+      (* Finally, call the fold function over the assemblies *)
+      List.fold_right handle_asm asms init
+    end
     stmt
-  in
-  List.fold_left begin fun asms stmt ->
-    asms @ (rst desugar_state.syms desugar_state.name `Public dfltvs stmt)
-  end [] stmts
-
+    init

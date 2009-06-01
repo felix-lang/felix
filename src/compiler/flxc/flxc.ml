@@ -10,33 +10,6 @@ type state_t = {
 }
 
 
-let print_stmt state stmt old_asms =
-  print_endline ("... PARSED:    " ^ (Flx_print.string_of_statement 0 stmt));
-
-  let expanded = Flx_macro.expand_macros_in_statement state.macro_state stmt in
-  print_endline ("... EXPANDED:  " ^ (Flx_print.string_of_compilation_unit expanded));
-
-  let asms = Flx_desugar.desugar_statement state.desugar_state stmt in
-  print_endline ("... DESUGARED: " ^ (Flx_print.string_of_desugared asms));
-
-  (* Bind the variables *)
-  let _ = Flx_symtab.build_tables state.syms
-    "root"
-    Flx_ast.dfltvs
-    0
-    None
-    None
-    !(state.syms.Flx_mtypes2.counter)
-    asms
-  in
-
-  (* Now, bind all the symbols *)
-  let bbdfns = Flx_bbind.bbind state.bbind_state in
-
-  print_string " >>> "; flush stdout;
-  old_asms @ asms
-
-
 (* Parse all the imports *)
 let parse_imports state =
   let _, stmts, local_data =
@@ -91,6 +64,22 @@ let rec parse_stdin parser_state =
   parser_state
 
 
+(* Process the stdin input statements *)
+let handle_stmt state stmt () =
+  print_endline ("... PARSED:    " ^ (Flx_print.string_of_statement 0 stmt));
+
+  Flx_macro.expand_macros_in_statement state.macro_state begin fun stmt () ->
+    print_endline ("... EXPANDED:  " ^ (Flx_print.string_of_statement 0 stmt));
+  end stmt ();
+
+  Flx_desugar.desugar_statement state.desugar_state begin fun asm () ->
+    print_endline ("... DESUGARED: " ^ (Flx_print.string_of_asm 0 asm));
+  end stmt ();
+
+  print_string " >>> "; flush stdout;
+  ()
+
+
 let main () =
   let options = Options.make_felix_compiler_options () in
 
@@ -109,8 +98,9 @@ let main () =
   let import_asms, local_data = parse_imports state in
 
   (* Parse stdin and get the desugared statements *)
-  let _, stdin_asms, _ = parse_stdin ((print_stmt state), [], local_data) in
+  let _, stdin_asms, _ = parse_stdin ((handle_stmt state), (), local_data) in
 
+  (*
   (* Now, bind all the symbols *)
   let bbdfns = Flx_bbind.bbind state.bbind_state in
 
@@ -127,6 +117,7 @@ let main () =
   end bbdfns;
 
   print_endline "after!";
+  *)
 
   0
 ;;

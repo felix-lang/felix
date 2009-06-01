@@ -14,6 +14,8 @@ val desugar_compilation_unit:
 
 (** Desguar a statement. *)
 val desugar_statement:
-  desugar_state_t ->      (** The state needed for desugaring. *)
-  Flx_ast.statement_t ->  (** A statement. *)
-  Flx_types.asm_t list
+  desugar_state_t ->                (** The state needed for desugaring. *)
+  (Flx_types.asm_t -> 'a -> 'a) ->  (** Fold this over each assembly. *)
+  Flx_ast.statement_t ->            (** A statement. *)
+  'a ->                             (** The initial value. *)
+  'a
