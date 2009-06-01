@@ -281,8 +281,31 @@ and build_tables_from_dcl
   let add_unique table id idx = full_add_unique syms sr (merge_ivs vs inherit_vs) table id idx in
   let add_function table id idx = full_add_function syms sr (merge_ivs vs inherit_vs) table id idx in
 
+  (* Add the symbol to the symbol table. *)
+  let add_symbol
+    ?(parent=parent)
+    ?(vs=vs)
+    ?(pubtab=pubtab)
+    ?(privtab=privtab)
+    ?(dirs=[])
+    index
+    id
+    symdef
+  =
+    Hashtbl.add dfns index {
+      Flx_types.id = id;
+      sr = sr;
+      parent = parent;
+      vs = vs;
+      pubmap = pubtab;
+      privmap = privtab;
+      dirs = dirs;
+      symdef = symdef;
+    }
+  in
+
   let add_tvars' parent table vs =
-    List.iter begin fun (tvid,i,tpat) ->
+    List.iter begin fun (tvid, i, tpat) ->
       let mt = match tpat with
       | `AST_patany _ -> `TYP_type (* default/unspecified *)
       (*
@@ -297,77 +320,62 @@ and build_tables_from_dcl
       | _ -> tpat
       in
 
-      (* Add the symbol to the symbol table. *)
-      Hashtbl.add dfns i {
-        Flx_types.id=tvid;
-        sr=sr;
-        parent=parent;
-        vs=Flx_ast.dfltvs;
-        pubmap=null_tab;
-        privmap=null_tab;
-        dirs=[];
-        symdef=`SYMDEF_typevar mt;
-      };
-
-      full_add_typevar syms sr table tvid i
-    end
-    (fst vs)
+      (* Add the type variable to the symbol table. *)
+      add_symbol
+        ~vs:Flx_ast.dfltvs
+        ~pubtab:null_tab
+        ~privtab:null_tab
+        i tvid (`SYMDEF_typevar mt);
+      full_add_typevar syms sr table tvid i;
+    end (fst vs)
   in
   let add_tvars table = add_tvars' (Some n) table vs in
 
   (* Add parameters to the symbol table. *)
-  let add_parameters parent fun_index ps =
+  let add_parameters ?(pubtab=pubtab) ?(privtab=privtab) parent ps =
     let ips = ref [] in
 
-    List.iter begin fun (k,name,typ,dflt) ->
+    List.iter begin fun (k, name, typ, dflt) ->
       let n = !counter in incr counter;
 
       if print_flag then
         print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name ^ " (parameter)");
 
-      (* Add the symbol to the symbol table. *)
-      Hashtbl.add dfns n {
-        Flx_types.id=name;
-        sr=sr;
-        parent=Some fun_index;
-        vs=Flx_ast.dfltvs;
-        pubmap=null_tab;
-        privmap=null_tab;
-        dirs=[];
-        symdef=`SYMDEF_parameter (k,typ);
-      };
+      (* Add the paramater to the symbol table. *)
+      add_symbol
+        ~parent
+        ~vs:Flx_ast.dfltvs
+        ~pubtab:null_tab
+        ~privtab:null_tab
+        n name (`SYMDEF_parameter (k, typ));
 
-      (* Register the symbol if it's public. *)
+      (* Possibly add the parameter to the public symbol table. *)
       if access = `Public then full_add_unique syms sr Flx_ast.dfltvs pubtab name n;
 
-      (* Always register it in the private symbol table. *)
+      (* Add the parameter to the private symbol table. *)
       full_add_unique syms sr Flx_ast.dfltvs privtab name n;
 
-      ips := (k,name,typ,dflt) :: !ips
+      ips := (k, name, typ, dflt) :: !ips
     end ps;
     List.rev !ips
   in
 
   (* Add simple parameters to the symbol table. *)
-  let add_simple_parameters parent fun_index ps =
+  let add_simple_parameters parent ps =
     let ips = ref [] in
-    List.iter begin fun (name,typ) ->
+    List.iter begin fun (name, typ) ->
       let n = !counter in incr counter;
 
       if print_flag then
         print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name ^ " (parameter)");
 
       (* Add the symbol to the symbol table. *)
-      Hashtbl.add dfns n {
-        Flx_types.id=name;
-        sr=sr;
-        parent=Some fun_index;
-        vs=Flx_ast.dfltvs;
-        pubmap=null_tab;
-        privmap=null_tab;
-        dirs=[];
-        symdef=`SYMDEF_parameter (`PVal,typ);
-      };
+      add_symbol
+        ~parent
+        ~vs:Flx_ast.dfltvs
+        ~pubtab:null_tab
+        ~privtab:null_tab
+        n name (`SYMDEF_parameter (`PVal, typ));
 
       (* Register the symbol if it's public. *)
       if access = `Public then full_add_unique syms sr Flx_ast.dfltvs pubtab name n;
@@ -375,66 +383,34 @@ and build_tables_from_dcl
       (* Always register it in the private symbol table. *)
       full_add_unique syms sr Flx_ast.dfltvs privtab name n;
 
-      ips := (`PVal,name,typ,None) :: !ips
+      ips := (`PVal, name, typ, None) :: !ips
     end ps;
     List.rev !ips
   in
 
   (* Add the declarations to the symbol table. *)
   match (dcl:Flx_types.dcl_t) with
-  | `DCL_reduce (ps,e1,e2) ->
-      let ips = add_simple_parameters parent n ps in
+  | `DCL_reduce (ps, e1, e2) ->
+      let ips = add_simple_parameters (Some n) ps in
 
       (* Add the symbol to the symbol table. *)
-      Hashtbl.add dfns n {
-        Flx_types.id=id;
-        sr=sr;
-        parent=parent;
-        vs=vs;
-        pubmap=pubtab;
-        privmap=privtab;
-        dirs=[];
-        symdef=`SYMDEF_reduce (ips, e1, e2);
-      };
-
+      add_symbol n id (`SYMDEF_reduce (ips, e1, e2));
       add_tvars privtab
 
-  | `DCL_axiom ((ps,pre),e1) ->
-      let ips = add_parameters parent n ps in
+  | `DCL_axiom ((ps, pre), e1) ->
+      let ips = add_parameters (Some n) ps in
 
       (* Add the symbol to the symbol table. *)
-      Hashtbl.add dfns n {
-        Flx_types.id=id;
-        sr=sr;
-        parent=parent;
-        vs=vs;
-        pubmap=pubtab;
-        privmap=privtab;
-        dirs=[];
-        symdef=`SYMDEF_axiom ((ips, pre),e1);
-      };
-
+      add_symbol n id (`SYMDEF_axiom ((ips, pre),e1));
       add_tvars privtab
 
-  | `DCL_lemma ((ps,pre),e1) ->
-      let ips = add_parameters parent n ps in
+  | `DCL_lemma ((ps, pre), e1) ->
+      let ips = add_parameters (Some n) ps in
 
       (* Add the symbol to the symbol table. *)
-      Hashtbl.add dfns n {
-        Flx_types.id=id;
-        sr=sr;
-        parent=parent;
-        vs=vs;
-        pubmap=pubtab;
-        privmap=privtab;
-        dirs=[];
-        symdef=`SYMDEF_lemma ((ips, pre),e1);
-      };
-
+      add_symbol n id (`SYMDEF_lemma ((ips, pre), e1));
       add_tvars privtab
 
-
-  (** XXX FIXME *)
   | `DCL_function ((ps,pre),t,props,asms) ->
       let is_ctor = List.mem `Ctor props in
 
@@ -456,15 +432,16 @@ and build_tables_from_dcl
       if is_class && not is_ctor then
         print_endline ("TABLING METHOD " ^ id ^ " OF CLASS " ^ name);
       *)
-
       let fun_index = n in
-      let t = if t = `TYP_none then `TYP_var fun_index else t in
-      let pubtab,privtab, exes, ifaces,dirs =
+      let t = if t = `TYP_none then `TYP_var n else t in
+      let pubtab, privtab, exes, ifaces, dirs =
         build_tables syms id Flx_ast.dfltvs (level+1)
-        (Some fun_index) parent root asms
+        (Some n) parent root asms
       in
+
+      (*
       let ips = ref [] in
-      List.iter begin fun (k,name,typ,dflt) ->
+      List.iter begin fun (k, name, typ, dflt) ->
         let n = !counter in incr counter;
 
         if print_flag then print_endline
@@ -484,39 +461,44 @@ and build_tables_from_dcl
         full_add_unique syms sr Flx_ast.dfltvs privtab name n;
         ips := (k,name,typ,dflt) :: !ips
         end ps;
+      let ips = List.rev !ips in
+      *)
+      let ips = add_parameters ~pubtab ~privtab (Some n) ps in
 
-        Hashtbl.add dfns fun_index {
-          Flx_types.id=id;
-          sr=sr;
-          parent=parent;
-          vs=vs;
-          pubmap=pubtab;
-          privmap=privtab;
-          dirs=dirs;
-          symdef=`SYMDEF_function ((List.rev !ips,pre), t, props, exes);
-        };
+      (* Add the symbols to the dfns. *)
+      add_symbol ~pubtab ~privtab
+        n id (`SYMDEF_function ((ips, pre), t, props, exes));
 
-        if access = `Public then add_function pub_name_map id fun_index;
-        add_function priv_name_map id fun_index;
-        interfaces := !interfaces @ ifaces;
-        add_tvars privtab
+      (* Possibly add the function to the public symbol table. *)
+      if access = `Public then add_function pub_name_map id n;
+
+      (* Add the function to the private symbol table. *)
+      add_function priv_name_map id n;
+
+      (* Add the interface. *)
+      interfaces := !interfaces @ ifaces;
+
+      (* Add the type variables to the private symbol table. *)
+      add_tvars privtab
 
   | `DCL_match_check (pat,(mvname,match_var_index)) ->
       assert (List.length (fst vs) = 0);
       let fun_index = n in
-      Hashtbl.add dfns fun_index {
-        Flx_types.id=id;
-        sr=sr;
-        parent=parent;
-        vs=vs;
-        pubmap=pubtab;
-        privmap=privtab;
-        dirs=[];
-        symdef=`SYMDEF_match_check (pat, (mvname,match_var_index));
-      };
+
+      (* Add the symbol to dfns. *)
+      add_symbol fun_index id
+        (`SYMDEF_match_check (pat, (mvname, match_var_index)));
+
+      (* Possibly add the function to the public symbol table. *)
       if access = `Public then add_function pub_name_map id fun_index;
+
+      (* Add the function to the private symbol table. *)
       add_function priv_name_map id fun_index;
+
+      (* Add the interface *)
       interfaces := !interfaces @ ifaces;
+
+      (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | `DCL_match_handler (pat,(mvname,match_var_index),asms) ->
@@ -555,26 +537,26 @@ and build_tables_from_dcl
       print_endline ("asms are" ^ string_of_desugared !new_asms);
       *)
       let fun_index = n in
-      let pubtab,privtab, exes,ifaces,dirs =
+      let pubtab, privtab, exes, ifaces, dirs =
         build_tables syms id Flx_ast.dfltvs (level+1)
         (Some fun_index) parent root !new_asms
       in
-      Hashtbl.add dfns fun_index {
-        Flx_types.id=id;
-        sr=sr;
-        parent=parent;
-        vs=vs;
-        pubmap=pubtab;
-        privmap=privtab;
-        dirs=dirs;
-        symdef=`SYMDEF_function (([],None),`TYP_var fun_index, [`Generated
-        "symtab:match handler" ; `Inline],exes);
-      };
-      if access = `Public then
-        add_function pub_name_map id fun_index;
 
+      (* Add symbols to dfns. *)
+      add_symbol ~pubtab ~privtab ~dirs fun_index id
+        (`SYMDEF_function (([],None), `TYP_var fun_index,
+        [`Generated "symtab:match handler" ; `Inline], exes));
+
+      (* Possibly add function to public symbol table. *)
+      if access = `Public then add_function pub_name_map id fun_index;
+
+      (* Add function to private symbol table. *)
       add_function priv_name_map id fun_index;
+
+      (* Add interface *)
       interfaces := !interfaces @ ifaces;
+
+      (* Add type variables to private symbol table. *)
       add_tvars privtab
 
   | `DCL_insert (s,ikind,reqs) ->
@@ -713,7 +695,7 @@ and build_tables_from_dcl
       add_tvars fudged_privtab
 
   | `DCL_instance (qn,asms) ->
-      let pubtab,privtab, exes,ifaces,dirs =
+      let pubtab, privtab, exes, ifaces, dirs =
         build_tables syms id Flx_ast.dfltvs
         (level+1) (Some n) parent root
         asms
@@ -1001,17 +983,13 @@ and build_tables_from_dcl
           component_name, ctor_idx, vs, t
         end its
       in
-      Hashtbl.add dfns n {
-        Flx_types.id=id;
-        sr=sr;
-        parent=parent;
-        vs=vs;
-        pubmap=pubtab;
-        privmap=privtab;
-        dirs=[];
-        symdef=`SYMDEF_union (its);
-      };
+      (* Add union to dfns. *)
+      add_symbol n id (`SYMDEF_union (its));
+
+      (* Possibly add union to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id n;
+
+      (* Add the union to the private symbol table. *)
       add_unique priv_name_map id n;
 
       let unit_sum =
@@ -1019,7 +997,7 @@ and build_tables_from_dcl
           v && (match t with `AST_void _ -> true | _ -> false)
         end true its
       in
-      List.iter begin fun (component_name,ctor_idx,vs',t) ->
+      List.iter begin fun (component_name, ctor_idx, vs', t) ->
         let dfn_idx = !counter in incr counter; (* constructor *)
         let match_idx = !counter in incr counter; (* matcher *)
 
@@ -1052,17 +1030,19 @@ and build_tables_from_dcl
         if print_flag then
           print_endline ("//  " ^ spc ^ string_of_int dfn_idx ^ " -> " ^ component_name);
 
-          Hashtbl.add dfns dfn_idx {
-            Flx_types.id=component_name;
-            sr=sr;
-            parent=parent;
-            vs=vs;
-            pubmap=pubtab;
-            privmap=privtab;
-            dirs=[];
-            symdef=ctor_dcl2;
-            };
+        Hashtbl.add dfns dfn_idx {
+          Flx_types.id=component_name;
+          sr=sr;
+          parent=parent;
+          vs=vs;
+          pubmap=pubtab;
+          privmap=privtab;
+          dirs=[];
+          symdef=ctor_dcl2;
+        };
       end its;
+
+      (* Add type variables to the private symbol table. *)
       add_tvars privtab
 
   | `DCL_cstruct (sts)
@@ -1072,24 +1052,23 @@ and build_tables_from_dcl
       print_endline ("Members=" ^ Flx_util.catmap "; " (fun (id,t)->id ^ ":" ^ string_of_typecode t) sts);
       *)
       let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
-      let stype = `AST_name(sr,id,tvars) in
-      Hashtbl.add dfns n {
-        Flx_types.id=id;
-        sr=sr;
-        parent=parent;
-        vs=vs;
-        pubmap=pubtab;
-        privmap=privtab;
-        dirs=[];
-        symdef=(
-          match dcl with
-          | `DCL_struct _ -> `SYMDEF_struct (sts)
-          | `DCL_cstruct _ -> `SYMDEF_cstruct (sts)
-          | _ -> assert false
-        )
-      };
+      let stype = `AST_name(sr, id, tvars) in
+
+      (* Add symbols to dfns *)
+      add_symbol n id (
+        match dcl with
+        | `DCL_struct _ -> `SYMDEF_struct (sts)
+        | `DCL_cstruct _ -> `SYMDEF_cstruct (sts)
+        | _ -> assert false
+      );
+
+      (* Possibly add the struct to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id n;
+
+      (* Add struct to the private symbol table. *)
       add_unique priv_name_map id n;
+
+      (* Add type variables to the private symbol table. *)
       add_tvars privtab
 
       (* NOTE: we don't add a type constructor for struct, because it would have
