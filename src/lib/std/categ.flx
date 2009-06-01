@@ -1,13 +1,35 @@
 open module Categ 
 {
-  fun curry2[u,v,r] (f:u*v->r) => fun (x:u) (y:v) => f (x,y);
-  fun curry3[u,v,w,r] (f:u*v*w->r) => fun (x:u) (y:v) (z:w) => f (x,y,z);
+  // note: in Felix, products are uniquely decomposable, but arrows
+  // are not. So we cannot overload based on arrow factorisation.
+  // for example, the curry functions can be overloaded but
+  // the uncurry functions cannot be
 
+  // Note: Felix is not powerful enough to generalise these
+  // operation in user code, i.e. polyadic programming
+
+  // change star into arrow
+  fun curry[u,v,r] (f:u*v->r) => fun (x:u) (y:v) => f (x,y);
+  fun curry[u,v,w,r] (f:u*v*w->r) => fun (x:u) (y:v) (z:w) => f (x,y,z);
+
+  // change arrow into star
   fun uncurry2[u,v,r] (f:u->v->r) => fun (x:u,y:v) => f x y;
   fun uncurry3[u,v,w,r] (f:u->v->w->r) => fun (x:u,y:v,z:w) => f x y z;
 
-  fun twist2[u,v,r] (f:u*v->r) => fun (x:u,y:v) => f (y,x);
+  // argument order permutation
+  fun twist[u,v,r] (f:u*v->r) => fun (x:v,y:u) => f (y,x);
 
-  fun ravel2[u1,u2,r1,r2] (f1:u1->r1,f2:u2->r2) => fun (x1:u1,x2:u2) => f1 x1, f2 x2;
+  // projection
+  fun proj1[u1,u2,r1,r2] (f:u1*u2->r1*r2) => 
+    fun (x:u1*u2) => match f x with | ?a,_ => a endmatch;
+  fun proj2[u1,u2,r1,r2] (f:u1*u2->r1*r2) => 
+    fun (x:u1*u2) => match f x with | _,?b => b endmatch;
+ 
 
+  // parallel composition
+  fun ravel[u1,u2,r1,r2] (f1:u1->r1,f2:u2->r2) => fun (x1:u1,x2:u2) => f1 x1, f2 x2;
+
+  // series composition
+  fun compose[u,v,w] (f:v->w, g:u->v) => fun (x:u) => f (g x);
+  fun rev_compose[u,v,w] (f:u->v, g:v->w) => fun (x:u) => g (f x);
 }
