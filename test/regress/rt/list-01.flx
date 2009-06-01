@@ -4,7 +4,6 @@ x := list(1,2,3,4,5,6,7,8,9,10);
 s := fold_left (fun (x:int) (y:int)=>x+y) 0 x;
 println s;
 
-fun curry[u,v,w] (f:u*v->w) => fun (x:u) (y:v) => f (x,y);
-s2 := fold_left (curry add of (int * int)) 0 x;
+s2 := fold_left (curry2 add of (int * int)) 0 x;
 println s2;
 
