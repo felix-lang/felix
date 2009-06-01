@@ -1,0 +1,44 @@
+// base scalar types 
+include "std/address";
+include "std/bool";
+include "std/int";
+include "std/real";
+include "std/number";
+include "std/char";
+
+include "std/mixedint";
+include "std/float_format";
+include "std/float_math";
+include "std/arith_casts";
+
+
+// utility
+include "std/debug";
+include "std/c_hack";
+include "std/typing";
+include "std/system";
+include "std/dynlink";
+include "std/env";
+include "plat/filename";
+include "std/cstdlib";
+include "std/control";
+include "std/categ";
+
+// I/O
+include "std/cstdio";
+include "std/textio";
+include "std/stdout";
+
+// base data types
+include "std/pointer";
+include "std/option";
+include "std/slice";
+include "std/carray";
+include "std/string";
+include "std/list";
+include "std/array";
+include "std/varray";
+include "std/avl";
+include "std/lexer";
+
+
