@@ -6,7 +6,8 @@
 // try to make work like the worker thread thing, fix it do so?.
 // remove time from sleep task...
 
-#include <queue>    // stl seems to have a prio_queue
+#include <iostream>   // for cerr
+#include <queue>      // stl seems to have a prio_queue
 #include <sys/time.h> // gettimeofday for calculating "now"
 
 //using namespace flx::pthread;
@@ -44,11 +45,11 @@ typedef priority_queue<future_evt> void_prio_queue;
 posix_timer_queue::posix_timer_queue()
 {
     opaque_prio_queue = new void_prio_queue;    // a.k.a. PRIOQ
-    //fprintf(stderr,"initing timer sleep thread\n");
+    // cerr << "initing timer sleep thread" << endl;
 
     // NEED'S TO CHECK RETURN VAL AND HANDLE ERROR
     if(sleep_thread.init(thread_start, this, NULL))
-      fprintf(stderr, "failed to create posix timer queue thread!\n");
+        cerr << "failed to create posix timer queue thread!" << endl;
 }
 
 posix_timer_queue::~posix_timer_queue()
@@ -64,12 +65,12 @@ posix_timer_queue::~posix_timer_queue()
     // for now the explicit cancel + wakeup followed by explicit
     // cancel test stays.
 
-    // fprintf(stderr, "asking timer thread to quit\n");
+    // cerr << "asking timer thread to quit" << endl;
     add_sleep_request(NULL, 0.0);    // super secret quit thread quit request
     wakeup_thread();                // wakeup, cause to goto a cancel pt
 
     sleep_thread.join();            // will join
-    //fprintf(stderr,"about to delete PRIOQ\n");
+    // cerr << "about to delete PRIOQ" << endl;
     delete PRIOQ;
 }
 
@@ -85,7 +86,7 @@ get_now(timespec* now)
     now->tv_sec = tp.tv_sec;
     now->tv_nsec = tp.tv_usec*1000;        // fits!
 
-    // fprintf(stderr,"get_now = %li, %li\n", now->tv_sec, now->tv_nsec);
+    // cerr << "get_now = " << now->tv_sec << ", " << now->tv_nsec << endl;
 }
 
 // LIMIT!
@@ -119,7 +120,7 @@ calc_when(timespec* when, double delta)
 
     if(when->tv_nsec >= BIL)            // overflow of nanoseconds?
     {
-        // fprintf(stderr,"OVERFLOW = %li, %li\n", when->tv_sec, when->tv_nsec);
+        // cerr << "OVERFLOW = " << when->tv_sec << ", " << when->tv_nsec << endl;
         // x, y < BIL, x + y < 2BIL
         when->tv_sec++;
         when->tv_nsec -= BIL;
@@ -127,7 +128,7 @@ calc_when(timespec* when, double delta)
         // when->tv_nsec %= BIL;
     }
 
-    // fprintf(stderr,"when = %li, %li\n", when->tv_sec, when->tv_nsec);
+    // cerr << "when = " << when->tv_sec << ", " << when->tv_nsec << endl;
     // tp contains tv_sec (seconds) & tv_usec (microseconds) both longs.
     // however, if nonposix works everywhere...
 }
@@ -149,7 +150,7 @@ posix_timer_queue::add_sleep_request(sleep_task* st, timespec* abs)
     // with this. Turned off for now. Not sure how that works.
     if(1 || PRIOQ->top().task == st)
     {
-      // fprintf(stderr,"WE PUSHED IN - waking thread\n");
+      // cerr << "WE PUSHED IN - waking thread" << endl;
       wakeup_thread();
     }
 }
@@ -159,7 +160,7 @@ posix_timer_queue::add_sleep_request(sleep_task* st, timespec* abs)
 void
 posix_timer_queue::add_sleep_request(sleep_task* st, double delta)
 {
-    // fprintf(stderr,"add_sleep_request: %lf\n", delta);
+    // cerr << "add_sleep_request: " << delta << endl;
     timespec    when;
     calc_when(&when, delta);        // calculate when (t a delta)
 
@@ -186,7 +187,7 @@ void
 posix_timer_queue::thread_start(void* udat)
 {
     posix_timer_queue*    q = (posix_timer_queue*)udat;
-    //fprintf(stderr,"sleeper thread\n");
+    //cerr << "sleeper thread" << endl;
 
     while(q->thread_loop_body()) ;
 }
@@ -218,9 +219,9 @@ posix_timer_queue::thread_loop_body()
         // < is arse backwards because I don't know how to use the stl
         if(now < evt)        // would prefer <=, eh.
         {
-            // fprintf(stderr,"firing of (%li, %li) at (%li, %li)!\n",
-            //    evt.when.tv_sec, evt.when.tv_nsec,
-            //    now.when.tv_sec, now.when.tv_nsec);
+            // cerr << "firing of (" <<
+            //    evt.when.tv_sec << ", " << evt.when.tv_nsec << ") at (" <<
+            //    now.when.tv_sec << ", " << now.when.tv_nsec << ") " << endl;
             evt.task->fire();
             PRIOQ->pop();
         }
@@ -228,25 +229,25 @@ posix_timer_queue::thread_loop_body()
         {
             // remember that condition waits are exit points...
             // so I don't need to test - check that.
-            // fprintf(stderr,"sleeping from %li, %li until %li, %li\n",
-            //    now.when.tv_sec, now.when.tv_nsec,
-            //    evt.when.tv_sec, evt.when.tv_nsec);
+            // cerr << "sleeping from (" <<
+            //    evt.when.tv_sec << ", " << evt.when.tv_nsec << ") until (" <<
+            //    now.when.tv_sec << ", " << now.when.tv_nsec << ") " << endl;
             (void)sleep_cond.timedwait(&lock, &evt.when);
 
             // if using posix abstime timed wait we make get EINVAL here for
             // abstimes in the past. must handle this.
             //JS: It's handled now, waiting for a time in the past is OK
 
-            // fprintf(stderr,"pthread_cond_timedwait woke up! (%i)\n", res);
+            // cerr << "pthread_cond_timedwait woke up! (" << res << ")" << endl;
         }
     }
 
     // if we got here then the queue is empty, so sleep indefinitely
     // that we don't really need the mainloop testcancel because the condition
     // wait functions are cancellation points.
-    // fprintf(stderr,"no sleep task, sleeping indefinitely\n");
+    // cerr << "no sleep task, sleeping indefinitely" << endl;
     sleep_cond.wait(&lock);
-    // fprintf(stderr,"pthread_cond_wait woke up! (%i)\n", res);
+    // cerr << "pthread_cond_wait woke up! (", res << ")" << endl;
 
     // lock released here
     return true;                    // keep going

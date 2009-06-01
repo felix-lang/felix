@@ -15,12 +15,12 @@ namespace flx { namespace rtl { namespace strutil {
     int n = vsnprintf(NULL,0,fmt,ap);
     //printf("vsnprintf size=%d\n",n);
     va_end(ap);
-    char *res = (char*)malloc(n+1);
+    char *res = new char[n + 1];
     va_start(ap,fmt);
     vsnprintf(res,n+1,fmt,ap);
     va_end(ap);
     string s = string(res);
-    free(res);
+    delete [] res;
     return s;
   }
 #else
@@ -30,12 +30,12 @@ namespace flx { namespace rtl { namespace strutil {
     //printf("vsnprintf EMULATION!\n");
     va_list ap;
     int n = 10000; // hack, WILL crash if not enough
-    char *res = (char*)malloc(n+1);
+    char *res = new char[n+1];
     va_start(ap,fmt);
     vsprintf(res,fmt,ap);
     va_end(ap);
     string s = string(res);
-    free(res);
+    delete [] res;
     return s;
   }
 #endif

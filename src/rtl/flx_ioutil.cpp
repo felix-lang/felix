@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstring>
 #include <string>
 #include "flx_ioutil.hpp"
 namespace flx { namespace rtl { namespace ioutil {
