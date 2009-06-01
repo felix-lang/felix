@@ -31,14 +31,7 @@ let parse_imports state =
 
   (* Create a symbol table from those desugared statements *)
   let _ = Flx_symtab.build_tables
-    state.syms
-    "root"
-    Flx_ast.dfltvs
-    0
-    None
-    None
-    !(state.syms.Flx_mtypes2.counter)
-    asms
+    state.syms !(state.syms.Flx_mtypes2.counter) asms
   in
 
   (* Now, bind all the symbols *)

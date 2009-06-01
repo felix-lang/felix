@@ -10,12 +10,7 @@
 
 val build_tables:
   Flx_mtypes2.sym_state_t ->
-  string ->
-  Flx_ast.ivs_list_t ->
-  int ->
-  int option -> (* parent index *)
-  int option -> (* grandparent index *)
-  int -> (* root index *)
+  int ->                      (* root index *)
   Flx_types.asm_t list ->
   (
     Flx_types.name_map_t *

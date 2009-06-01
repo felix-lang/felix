@@ -1078,3 +1078,8 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
   end
   ;
   pub_name_map,priv_name_map,exes,!interfaces, export_dirs
+
+
+(* Public interface *)
+let build_tables syms root asms =
+  build_tables syms "root" Flx_ast.dfltvs 0 None None root asms

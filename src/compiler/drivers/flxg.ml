@@ -198,9 +198,7 @@ try
 
   print_debug "//BUILDING TABLES";
 
-  let _, _, exes, ifaces, _ =
-    build_tables syms "root" Flx_ast.dfltvs 0 None None root asms
-  in
+  let _, _, exes, ifaces, _ = build_tables syms root asms in
   let build_table_time = tim() in
   print_debug ("//BUILDING TABLES time " ^ string_of_float build_table_time);
 
