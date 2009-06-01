@@ -1,4 +1,4 @@
-module Categ 
+open module Categ 
 {
   fun curry2[u,v,r] (f:u*v->r) => fun (x:u) (y:v) => f (x,y);
   fun curry3[u,v,w,r] (f:u*v*w->r) => fun (x:u) (y:v) (z:r) => f (x,y,z);
