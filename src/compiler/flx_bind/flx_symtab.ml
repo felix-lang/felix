@@ -1,5 +1,6 @@
 let null_tab = Hashtbl.create 3
 
+
 (* use fresh variables, but preserve names *)
 let mkentry syms (vs:Flx_ast.ivs_list_t) i =
   let n = List.length (fst vs) in
@@ -13,7 +14,8 @@ let mkentry syms (vs:Flx_ast.ivs_list_t) i =
     ", ts=" ^ Flx_util.catmap "," (Flx_print.sbt syms.Flx_mtypes2.dfns) ts
   );
   *)
-  {Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts}
+  { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts }
+
 
 let merge_ivs
   (vs1,{ Flx_ast.raw_type_constraint=con1; raw_typeclass_reqs=rtcr1 })
@@ -36,7 +38,6 @@ let merge_ivs
   { Flx_ast.raw_type_constraint=t; raw_typeclass_reqs=rtcr }
 
 
-
 let split_asms asms :
   (Flx_srcref.t * Flx_ast.id_t * int option * Flx_types.access_t * Flx_ast.vs_list_t * Flx_types.dcl_t) list *
   Flx_ast.sexe_t list *
@@ -55,6 +56,7 @@ let split_asms asms :
   in
     aux asms [] [] [] []
 
+
 let dump_name_to_int_map level name name_map =
   let spc = Flx_util.spaces level in
   print_endline (spc ^ "//Name to int map for " ^ name);
@@ -68,7 +70,9 @@ let dump_name_to_int_map level name name_map =
   ;
   print_endline ""
 
+
 let strp = function | Some x -> string_of_int x | None -> "none"
+
 
 let full_add_unique syms sr (vs:Flx_ast.ivs_list_t) table key value =
   try
@@ -85,6 +89,7 @@ let full_add_unique syms sr (vs:Flx_ast.ivs_list_t) table key value =
      | `FunctionEntry [] -> assert false
   with Not_found ->
     Hashtbl.add table key (`NonFunctionEntry (mkentry syms vs value))
+
 
 let full_add_typevar syms sr table key value =
   try
@@ -159,7 +164,16 @@ let make_vs ?(print=false) level counter (vs', con) : Flx_ast.ivs_list_t =
 *)
 
 
-let rec build_tables syms name inherit_vs level parent grandparent root asms =
+let rec build_tables
+  syms
+  name
+  inherit_vs
+  level
+  parent
+  grandparent
+  root
+  asms
+=
   (*
   print_endline ("//Building tables for " ^ name);
   *)
@@ -170,8 +184,8 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
 
   (* Split up the assemblies into their repsective types. split_asms returns
    * reversed lists, so we must undo that. *)
-  let dcls,exes,ifaces,export_dirs = split_asms asms in
-  let dcls,exes,ifaces,export_dirs =
+  let dcls, exes, ifaces, export_dirs = split_asms asms in
+  let dcls, exes, ifaces, export_dirs =
     List.rev dcls, List.rev exes, List.rev ifaces, List.rev export_dirs
   in
 
@@ -212,7 +226,7 @@ let rec build_tables syms name inherit_vs level parent grandparent root asms =
       interfaces
   ) dcls;
 
-  pub_name_map,priv_name_map,exes,!interfaces, export_dirs
+  pub_name_map, priv_name_map, exes, !interfaces, export_dirs
 
 
 (** Add the symbols from one declaration. *)
@@ -395,6 +409,8 @@ and build_tables_from_dcl
 
       (* Add the symbol to the symbol table. *)
       add_symbol n id (`SYMDEF_reduce (ips, e1, e2));
+
+      (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | `DCL_axiom ((ps, pre), e1) ->
@@ -402,6 +418,8 @@ and build_tables_from_dcl
 
       (* Add the symbol to the symbol table. *)
       add_symbol n id (`SYMDEF_axiom ((ips, pre),e1));
+
+      (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | `DCL_lemma ((ps, pre), e1) ->
@@ -409,6 +427,8 @@ and build_tables_from_dcl
 
       (* Add the symbol to the symbol table. *)
       add_symbol n id (`SYMDEF_lemma ((ips, pre), e1));
+
+      (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | `DCL_function ((ps,pre),t,props,asms) ->
@@ -435,8 +455,15 @@ and build_tables_from_dcl
       let fun_index = n in
       let t = if t = `TYP_none then `TYP_var n else t in
       let pubtab, privtab, exes, ifaces, dirs =
-        build_tables syms id Flx_ast.dfltvs (level+1)
-        (Some n) parent root asms
+        build_tables
+          syms
+          id
+          Flx_ast.dfltvs
+          (level + 1)
+          (Some n)
+          parent
+          root
+          asms
       in
 
       let ips = add_parameters ~pubtab ~privtab (Some n) ps in
@@ -514,8 +541,15 @@ and build_tables_from_dcl
       *)
       let fun_index = n in
       let pubtab, privtab, exes, ifaces, dirs =
-        build_tables syms id Flx_ast.dfltvs (level+1)
-        (Some fun_index) parent root !new_asms
+        build_tables
+          syms
+          id
+          Flx_ast.dfltvs
+          (level + 1)
+          (Some fun_index)
+          parent
+          root
+          !new_asms
       in
 
       (* Add symbols to dfns. *)
@@ -538,7 +572,10 @@ and build_tables_from_dcl
   | `DCL_insert (s,ikind,reqs) ->
       add_symbol n id (`SYMDEF_insert (s,ikind,reqs));
 
+      (* Possibly add the inserted function to the public symbol table. *)
       if access = `Public then add_function pub_name_map id n;
+
+      (* Add the inserted function to the private symbol table. *)
       add_function priv_name_map id n
 
   | `DCL_module asms ->
@@ -547,7 +584,8 @@ and build_tables_from_dcl
           syms
           id
           (merge_ivs inherit_vs vs)
-          (level+1) (Some n)
+          (level + 1)
+          (Some n)
           parent
           root
           asms
@@ -599,9 +637,15 @@ and build_tables_from_dcl
       *)
 
       let pubtab, privtab, exes, ifaces, dirs =
-        build_tables syms id (merge_ivs inherit_vs vs)
-        (level+1) (Some n) parent root
-        asms
+        build_tables
+          syms
+          id
+          (merge_ivs inherit_vs vs)
+          (level + 1)
+          (Some n)
+          parent
+          root
+          asms
       in
       let fudged_privtab = Hashtbl.create 97 in
       let vsl = List.length (fst inherit_vs) + List.length (fst vs) in
@@ -665,9 +709,15 @@ and build_tables_from_dcl
 
   | `DCL_instance (qn,asms) ->
       let pubtab, privtab, exes, ifaces, dirs =
-        build_tables syms id Flx_ast.dfltvs
-        (level+1) (Some n) parent root
-        asms
+        build_tables
+          syms
+          id
+          Flx_ast.dfltvs
+          (level + 1)
+          (Some n)
+          parent
+          root
+          asms
       in
 
       (* Add typeclass instance to the dfns. *)
