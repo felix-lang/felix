@@ -170,7 +170,6 @@ let rec build_tables
   inherit_vs
   level
   parent
-  grandparent
   root
   asms
 =
@@ -461,7 +460,6 @@ and build_tables_from_dcl
           Flx_ast.dfltvs
           (level + 1)
           (Some n)
-          parent
           root
           asms
       in
@@ -547,7 +545,6 @@ and build_tables_from_dcl
           Flx_ast.dfltvs
           (level + 1)
           (Some fun_index)
-          parent
           root
           !new_asms
       in
@@ -586,7 +583,6 @@ and build_tables_from_dcl
           (merge_ivs inherit_vs vs)
           (level + 1)
           (Some n)
-          parent
           root
           asms
       in
@@ -643,7 +639,6 @@ and build_tables_from_dcl
           (merge_ivs inherit_vs vs)
           (level + 1)
           (Some n)
-          parent
           root
           asms
       in
@@ -715,7 +710,6 @@ and build_tables_from_dcl
           Flx_ast.dfltvs
           (level + 1)
           (Some n)
-          parent
           root
           asms
       in
@@ -1070,4 +1064,4 @@ and build_tables_from_dcl
 
 (* Public interface *)
 let build_tables syms root asms =
-  build_tables syms "root" Flx_ast.dfltvs 0 None None root asms
+  build_tables syms "root" Flx_ast.dfltvs 0 None root asms
