@@ -307,9 +307,11 @@ syntax expressions {
   x[srefr_pri] := anon_value =># "_1";
 
   anon_value := "struct" lbrace sstruct_mem_decl* rbrace =># "`(ast_record_type ,_3)";
+  anon_value := lpar sstruct_mem_decl+ rpar =># "`(ast_record_type ,_2)";
   sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(,_1 ,_3)";
 
   anon_value := "struct" lbrace sstruct_assign* rbrace =># "`(ast_record ,_3)";
+  anon_value := lpar sstruct_assign+ rpar =># "`(ast_record ,_2)";
   sstruct_assign := sname = sexpr ";" =># "`(,_1 ,_3)";
 
   anon_value := "union" lbrace stype_sum_item0* rbrace =># "`(ast_variant_type ,_3)";
@@ -384,9 +386,7 @@ syntax expressions {
 
   satom := "callback" lsqb sexpr rsqb =># "`(ast_callback ,_3)";
   satom := "[|" sexpr "|]" =># "`(ast_arrayof ,(mkl _2))";
-  satom := lbrace sexpr rbrace =># """
-    (lazy `((ast_fun_return ,_sr ,_2)))
-  """;
+  satom := lbrace sexpr rbrace =># "(lazy `((ast_fun_return ,_sr ,_2)))";
 
   satom := scompound =># "(lazy _1)";
 
