@@ -2,12 +2,21 @@ import difflib
 import time
 
 import fbuild
+import fbuild.builders.scala
 import fbuild.db
 from fbuild.path import Path
 
 # ------------------------------------------------------------------------------
 
 def run_tests(target, felix):
+    # See if scala's on the system.
+    try:
+        scala = fbuild.builders.scala.Scala()
+    except fbuild.ConfigFailed:
+        # Oh well, it was a good try...
+        scala = None
+
+    # Now, run all the tests we can find.
     for test in Path('speed/*').glob():
         if not test.isdir():
             continue
@@ -18,19 +27,20 @@ def run_tests(target, felix):
         widths = [len(h) for h in headers]
 
         results = []
-        for lang in (test/ '*').glob():
-            if not lang.isdir():
+        for path in (test/ '*').glob():
+            if not path.isdir():
                 continue
 
-            dst = fbuild.buildroot / lang / 'test'
-            srcs = (lang / '*').glob()
+            dst = fbuild.buildroot / path / 'test'
+            srcs = (path / '*').glob()
 
-            internal_time, wall_time = run_test(lang, dst, srcs,
+            internal_time, wall_time = run_test(path, dst, srcs,
                 expect=expect if expect.exists() else None,
                 c=target.c.static,
                 cxx=target.cxx.static,
                 felix=felix,
-                ocaml=target.ocaml)
+                ocaml=target.ocaml,
+                scala=scala)
 
             # If we didn't get values back, just print N/A
             if internal_time is None:
@@ -43,7 +53,7 @@ def run_tests(target, felix):
             else:
                 wall_time = '%.4f' % float(wall_time)
 
-            result = (lang.name, internal_time, wall_time)
+            result = (path.name, internal_time, wall_time)
 
             # adjust the widths to the maximum column size
 
@@ -71,7 +81,7 @@ def run_tests(target, felix):
 # ------------------------------------------------------------------------------
 
 @fbuild.db.caches
-def run_test(lang,
+def run_test(path,
         dst:fbuild.db.DST,
         srcs:fbuild.db.SRCS,
         expect:fbuild.db.OPTIONAL_SRC,
@@ -79,20 +89,27 @@ def run_test(lang,
         c,
         cxx,
         felix,
-        ocaml):
+        ocaml,
+        scala):
+    lang = path.name.rsplit(':')[0]
+
     # Compile the executable
     try:
-        if lang.name.rsplit(':')[0] == 'c':
+        if lang == 'c':
             exe = c.build_exe(dst, srcs)
-        elif lang.name.rsplit(':')[0] == 'c++':
+        elif lang == 'c++':
             exe = cxx.build_exe(dst, srcs)
-        elif lang.name.rsplit(':')[0] == 'felix':
+        elif lang == 'felix':
             # All the felix tests are named test.flx
-            exe = felix.compile(lang / 'test.flx', includes=[lang], static=True)
-        elif lang.name.rsplit(':')[0] == 'ocaml':
+            exe = felix.compile(path / 'test.flx', static=True)
+        elif lang == 'ocaml':
             exe = ocaml.build_exe(dst, srcs, external_libs=['unix'])
+        elif lang == 'scala':
+            if scala is None:
+                return None, None
+            exe = scala.compile(path / 'test.scala')
         else:
-            fbuild.logger.check('do not know how to build', lang.name,
+            fbuild.logger.check('do not know how to build', path,
                 color='yellow')
             return None, None
     except fbuild.ExecutionError:
@@ -103,7 +120,13 @@ def run_test(lang,
     fbuild.logger.check('running ' + exe)
     t0 = time.time()
     try:
-        stdout, stderr = fbuild.execute(exe, timeout=60, quieter=1)
+        if lang == 'scala':
+            stdout, stderr = scala.run('.', 'Test',
+                cwd=exe,
+                timeout=60,
+                quieter=1)
+        else:
+            stdout, stderr = fbuild.execute(exe, timeout=60, quieter=1)
     except fbuild.ExecutionError as e:
         t1 = time.time()
 

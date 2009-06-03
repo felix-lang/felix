@@ -1,6 +1,6 @@
 // based off http://metamatix.org/~ocaml/price-of-abstraction.html
 
-object Mandel {
+object Test {
   val RESOLUTION = 5000
 
   def iters(max_iter:Int,xc:Double,yc:Double):Int = {
@@ -15,6 +15,7 @@ object Mandel {
   }
 
   def main(args:Array[String]) {
+    val t0 = java.lang.System.currentTimeMillis()
     val max_val = RESOLUTION/2
     val min_val = -RESOLUTION/2
     val mul = 2.0 / max_val
@@ -23,6 +24,8 @@ object Mandel {
     for( i <- min_val to max_val; j <- min_val to max_val) {
       count += iters(100,mul*i,mul*j)
     }
-    println("result: "+count)
+    val t1 = java.lang.System.currentTimeMillis()
+    println(count)
+    println((t1 - t0) / 1000.0)
   }
 }

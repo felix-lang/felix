@@ -1,6 +1,6 @@
 import java.lang.System
 
-object Mandelbrot {
+object Test {
   val max_iterations = 99888
 
   def iterate(ci:Double, cr:Double) = {
@@ -22,7 +22,7 @@ object Mandelbrot {
   }
 
   def main(args:Array[String]) {
-    val time = java.lang.System.currentTimeMillis()
+    val t0 = java.lang.System.currentTimeMillis()
     for (y <- -39 until 39) {
       println()
       for (x <- -39 until 39) {
@@ -30,6 +30,8 @@ object Mandelbrot {
         print (if (i == 0) "*" else " ")
       }
     }
-    println(java.lang.System.currentTimeMillis() - time)
+    val t1 = java.lang.System.currentTimeMillis()
+    println()
+    println((t1 - t0) / 1000.0)
   }
 }
