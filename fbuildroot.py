@@ -319,10 +319,15 @@ def build():
         flags=['--test=' + fbuild.buildroot])
 
     # --------------------------------------------------------------------------
-    # run the felix tests
+    # run the felix tests and other commands
 
-    if not fbuild.options.skip_tests:
-        run_tests(target, felix)
+    if 'speed' in fbuild.args:
+        call('buildsystem.speed.run_tests', target, felix)
+    else:
+        if not fbuild.options.skip_tests:
+            run_tests(target, felix)
+
+# ------------------------------------------------------------------------------
 
 def run_tests(target, felix):
     from buildsystem.flx import test_flx

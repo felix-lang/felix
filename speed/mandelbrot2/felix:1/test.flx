@@ -1,0 +1,30 @@
+val resolution = 5000;
+
+fun iters1 (max_iter:int, xc:double, yc:double) = {
+  fun aux (count:int, x:double, y:double) = {
+      if count == max_iter then
+        max_iter
+      else
+        aux (count + 1, x * x - y * y + xc, 2.0 * x * y + yc)
+      endif
+    ;
+  }
+  return aux (0, xc, yc);
+}
+
+val max_val = resolution / 2;
+val min_val = -max_val;
+val mul = 2.0 / (double max_val);
+var count = 0;
+
+var i:int; forall i in min_val upto max_val do
+  var j:int; forall j in min_val upto max_val do
+    val x = i * mul;
+    val y = j * mul;
+    count += iters1 (100, x, y);
+  done;
+done;
+println count;
+
+println 0;
+System::exit$ 0;

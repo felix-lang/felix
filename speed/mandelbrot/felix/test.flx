@@ -1,0 +1,39 @@
+include "time";
+
+val runs = 1;
+val max_iterations = 99888;
+fun iterate (ci:double, cr:double) = {
+  val bailout = 4.0;
+  fun loop_ (zi:double, zr:double, i:int) =>
+    if i <= max_iterations then
+      let ?zr2 = zr * zr in
+      let ?zi2 = zi * zi in
+      if zi2 + zr2 <= bailout then
+        loop_ (zr * zi * 2.0 + ci, zr2 - zi2 + cr, i + 1)
+      else
+        i
+      endif
+    else
+      0
+    endif
+  ;
+  return loop_ (0.0, 0.0, 1);
+}
+proc mandelbrot (n:int) {
+  var y:int; forall y in -39 upto 38 do
+    if n == 1 do endl; done;
+    var x:int; forall x in -39 upto 38 do
+      val i = iterate (double x / 40.0, double y / 40.0 - 0.5);
+      if n == 1 do
+        print (if 0 == i then "*" else " " endif);
+      done;
+    done;
+  done;
+}
+
+var start_time = sys::time_h::get_time ();
+var iter:int; forall iter in 1 upto runs do
+  mandelbrot iter;
+done;
+endl;
+println$ (sys::time_h::get_time ()) - start_time;
