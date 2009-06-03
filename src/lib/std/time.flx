@@ -1,0 +1,24 @@
+module Time
+{
+  open C_hack;
+  header "#include <sys/time.h>";
+
+  private type time_t = "time_t";
+  private type suseconds_t = "suseconds_t";
+
+  private fun _ctor_double: time_t -> double = "static_cast<double>($1)";
+  private fun _ctor_double: suseconds_t -> double = "static_cast<double>($1)";
+
+  private cstruct timeval {
+    tv_sec: time_t;
+    tv_usec: suseconds_t;
+  }
+
+  private proc gettimeofday: ptr[timeval] = "gettimeofday($1, NULL);";
+
+  gen time () = {
+    var tv:timeval;
+    gettimeofday(addr tv);
+    return (_ctor_double tv.tv_sec) + ((_ctor_double tv.tv_usec) / 1.0e6);
+  }
+}
