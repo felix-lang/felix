@@ -1,4 +1,4 @@
-include "time";
+include "std/time";
 
 val runs = 1;
 val max_iterations = 99888;
@@ -31,9 +31,9 @@ proc mandelbrot (n:int) {
   done;
 }
 
-var start_time = sys::time_h::get_time ();
+val start_time = Time::time ();
 var iter:int; forall iter in 1 upto runs do
   mandelbrot iter;
 done;
 endl;
-println$ (sys::time_h::get_time ()) - start_time;
+println$ (Time::time ()) - start_time;

@@ -119,7 +119,7 @@ def run_test(lang,
             fbuild.logger.log(e.stderr.decode().strip(), verbose=1)
 
         internal_time = None
-        wall_time = None
+        wall_time = time.time() - t0
     else:
         wall_time = time.time() - t0
 

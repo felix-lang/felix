@@ -5,9 +5,8 @@ let resolution = 5000
 let iters max_iter xc yc =
   let rec aux count x y =
     if count = max_iter then max_iter else begin
-      if x *. x  +. y *. y >= 4.0 then count else
-      aux (count+1) (x *. x -. y *. y +. xc) (2.0 *. x *. y
-      +. yc)
+      if x *. x +. y *. y >= 4.0 then count else
+      aux (count+1) (x *. x -. y *. y +. xc) (2.0 *. x *. y +. yc)
     end in
   aux 0 xc yc
 
