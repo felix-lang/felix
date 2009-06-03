@@ -307,22 +307,23 @@ syntax expressions {
   x[srefr_pri] := anon_value =># "_1";
 
   anon_value := "struct" lbrace sstruct_mem_decl* rbrace =># "`(ast_record_type ,_3)";
-    sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(,_1 ,_3)";
+  sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(,_1 ,_3)";
+
   anon_value := "struct" lbrace sstruct_assign* rbrace =># "`(ast_record ,_3)";
-    sstruct_assign := sname = sexpr ";" =># "`(,_1 ,_3)";
+  sstruct_assign := sname = sexpr ";" =># "`(,_1 ,_3)";
 
   anon_value := "union" lbrace stype_sum_item0* rbrace =># "`(ast_variant_type ,_3)";
-    stype_sum_item := sname sopt_value stvarlist "of" sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
-    stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 ast_void)";
+  stype_sum_item := sname sopt_value stvarlist "of" sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
+  stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 ast_void)";
 
-    stype_sum_item0 := sname "of" sexpr =># "`(,_1 none ,_3)";
-    stype_sum_item0 := sname =># "`(,_1 none ast_void)";
+  stype_sum_item0 := sname "of" sexpr =># "`(,_1 none ,_3)";
+  stype_sum_item0 := sname =># "`(,_1 none ast_void)";
 
-    stype_sum_item1 := stype_sum_item ";" =># "_1";
+  stype_sum_item1 := stype_sum_item ";" =># "_1";
 
-    stype_sum_item2 := vbar stype_sum_item =># "_2";
-    stype_sum_items2 := stype_sum_item stype_sum_item2* =># "(cons _1 _2)";
-    stype_sum_items2 := stype_sum_item2* =># "_1";
+  stype_sum_item2 := vbar stype_sum_item =># "_2";
+  stype_sum_items2 := stype_sum_item stype_sum_item2* =># "(cons _1 _2)";
+  stype_sum_items2 := stype_sum_item2* =># "_1";
 
   x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
   x[sapplication_pri] := "caseno" x[scoercion_pri] =># "`(ast_case_index ,_2)";
@@ -370,12 +371,10 @@ syntax expressions {
   ssimple_name_parts := sname           =># "`(,_1 ())";
   ssimple_name_parts := sname lsqb sexpr rsqb =># "`(,_1 ,(mkl _3))";
 
-
   satom := lpar rassign (, rassign )* rpar =>#
     "`(ast_record ,(cons _2 (map second _3)))"
   ;
-    rassign := sname = x[sor_condition_pri] =># "`(,_1 ,_3)";
-
+  rassign := sname = x[sor_condition_pri] =># "`(,_1 ,_3)";
 
   satom := sliteral =># "_1";
   satom := _ =># "'ast_patany";
@@ -1621,11 +1620,11 @@ syntax csyntax {
 syntax felix {
   requires
     statements,
-      type_decls,
-      variables,
-      executable,
-      assertions,
-      namespaces,
+    type_decls,
+    variables,
+    executable,
+    assertions,
+    namespaces,
     requirements,
     expressions,
     functions,
