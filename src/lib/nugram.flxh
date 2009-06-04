@@ -251,7 +251,6 @@ syntax expressions {
 
   x[let_pri] := "let" spattern = x[let_pri] "in" x[let_pri] =># "`(ast_letin (,_2 ,_4 ,_6))";
 
-
   x[sdollar_apply_pri] := x[stuple_pri] "unless" x[let_pri] "then" x[sdollar_apply_pri] =>#
     "`(ast_cond ((ast_apply ,_sr (lnot ,_3)) ,_1 ,_5))";
   x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
@@ -345,12 +344,10 @@ syntax expressions {
   // interpretation of a.(0) as an AST_dot
   x[sfactor_pri] := x[sfactor_pri] "." lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
 
-
   // these are weirdos
   sbasic_name_comma_list:= sname (, sname)* =># "(cons _1 (map second _2))";
 
   squalified_name_comma_list:= squalified_name (, squalified_name)* =># "(cons _1 (map second _2))";
-
 
   shash_name := "#" shash_name =># "`(ast_lift ,_2)";
   shash_name := sthe_name =># "_1";
@@ -370,7 +367,7 @@ syntax expressions {
   ssuffixed_name := squalified_name "of" x[sfactor_pri] =>#
     "`(ast_suffix (,_1 ,_3))";
 
-  ssimple_name_parts := sname           =># "`(,_1 ())";
+  ssimple_name_parts := sname =># "`(,_1 ())";
   ssimple_name_parts := sname lsqb sexpr rsqb =># "`(,_1 ,(mkl _3))";
 
   satom := lpar rassign (, rassign )* rpar =>#
@@ -410,7 +407,6 @@ syntax expressions {
               `(ast_cond (,cond ,thn ,result))))))
           (fold_left f _3 _1))
         """;
-
 }
 
 //------------------------------------------
@@ -420,54 +416,54 @@ syntax patterns {
   sexecutable := "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
     "`(ast_stmt_match (,_2 ,_4))";
 
-    stmt_matching  := vbar spattern "=>" statement+ =># "`(,_2 ,_4)";
+  stmt_matching  := vbar spattern "=>" statement+ =># "`(,_2 ,_4)";
 
   pattern_match := "match" sexpr "with" smatching+ "endmatch" =>#
     "`(ast_match (,_2 ,_4))";
 
-    smatching  := vbar spattern "=>" sexpr =># "`(,_2 ,_4)";
-    smatching  := vbar "=>" sexpr =># "`(pat_none ,_4)";
+  smatching  := vbar spattern "=>" sexpr =># "`(,_2 ,_4)";
+  smatching  := vbar "=>" sexpr =># "`(pat_none ,_4)";
 
-    spattern := sas_pattern "when" sexpr =># "`(pat_when ,_1 ,_3)";
-    spattern := sas_pattern =># "_1";
+  spattern := sas_pattern "when" sexpr =># "`(pat_when ,_1 ,_3)";
+  spattern := sas_pattern =># "_1";
 
-    sas_pattern := stuple_pattern "as" sname =># "`(pat_as ,_1 ,_3)";
-    sas_pattern := stuple_pattern =># "_1";
+  sas_pattern := stuple_pattern "as" sname =># "`(pat_as ,_1 ,_3)";
+  sas_pattern := stuple_pattern =># "_1";
 
-    stuple_pattern := scoercive_pattern (, scoercive_pattern )* =># "(chain 'pat_tuple _1 _2)";
+  stuple_pattern := scoercive_pattern (, scoercive_pattern )* =># "(chain 'pat_tuple _1 _2)";
 
-    scoercive_pattern := satomic_pattern ":" x[sarrow_pri] =># "`(pat_coercion ,_1 ,_3)";
-    scoercive_pattern := satomic_pattern =># "_1";
+  scoercive_pattern := satomic_pattern "|>" x[sarrow_pri] =># "`(pat_coercion ,_1 ,_3)";
+  scoercive_pattern := satomic_pattern =># "_1";
 
-    satomic_pattern := "true" =># "'(pat_const_ctor (ast_case_tag 1))";
-    satomic_pattern := "false" =># "'(pat_const_ctor (ast_case_tag 0))";
-    satomic_pattern := sstring =># "`(pat_string ,_1)";
-    satomic_pattern := quest sname =># "`(pat_as pat_any ,_2)";
-    satomic_pattern := _ =># "'pat_any";
-    satomic_pattern := lpar spattern rpar =># "_2";
-    satomic_pattern := "struct" lbrace spat_assign+ rbrace =># "`(pat_record ,_3)";
-      spat_assign := sname = spattern ";" =># "`(,_1 ,_3)";
+  satomic_pattern := "true" =># "'(pat_const_ctor (ast_case_tag 1))";
+  satomic_pattern := "false" =># "'(pat_const_ctor (ast_case_tag 0))";
+  satomic_pattern := sstring =># "`(pat_string ,_1)";
+  satomic_pattern := quest sname =># "`(pat_as pat_any ,_2)";
+  satomic_pattern := _ =># "'pat_any";
+  satomic_pattern := lpar spattern rpar =># "_2";
+  satomic_pattern := "struct" lbrace spat_assign+ rbrace =># "`(pat_record ,_3)";
 
-    satomic_pattern := sctor_name satomic_pattern =># "`(pat_nonconst_ctor ,_1 ,_2)";
-    satomic_pattern := sctor_name =># "`(pat_const_ctor ,_1)";
-      sctor_name := squalified_name =># "_1";
-      sctor_name := "case" sinteger =># "`(ast_case_tag ,_2)";
+  spat_assign := sname = spattern ";" =># "`(,_1 ,_3)";
 
-    satomic_pattern := sstring ".." sstring =># "`(pat_string_range ,_1 ,_3)";
-    satomic_pattern := sintegral =># "`(pat_int ,(first _1) ,(second _1))";
-    satomic_pattern := sintegral ".." sintegral=>#
-      "`(pat_int_range ,(first _1) ,(second _1) ,(first _3) ,(second _3))";
+  satomic_pattern := sctor_name satomic_pattern =># "`(pat_nonconst_ctor ,_1 ,_2)";
+  satomic_pattern := sctor_name =># "`(pat_const_ctor ,_1)";
 
-    satomic_pattern := "NaN" =># "'pat_nan";
-    satomic_pattern := sfloating ".." sfloating =>#
-      "`(pat_float_range ,_1 ,_3)";
+  sctor_name := squalified_name =># "_1";
+  sctor_name := "case" sinteger =># "`(ast_case_tag ,_2)";
 
-      sfloating:= sfloat =># "`(Float_plus ,(first _1) ,(second _1))";
-      sfloating:= "-" sfloat =># "`(Float_minus ,(first _2) ,(second _2))";
-      sfloating:= "inf" =># "'Float_inf";
-      sfloating:= "-" "inf" =># "'Float_minus_inf";
+  satomic_pattern := sstring ".." sstring =># "`(pat_string_range ,_1 ,_3)";
+  satomic_pattern := sintegral =># "`(pat_int ,(first _1) ,(second _1))";
+  satomic_pattern := sintegral ".." sintegral=>#
+    "`(pat_int_range ,(first _1) ,(second _1) ,(first _3) ,(second _3))";
 
+  satomic_pattern := "NaN" =># "'pat_nan";
+  satomic_pattern := sfloating ".." sfloating =>#
+    "`(pat_float_range ,_1 ,_3)";
 
+  sfloating:= sfloat =># "`(Float_plus ,(first _1) ,(second _1))";
+  sfloating:= "-" sfloat =># "`(Float_minus ,(first _2) ,(second _2))";
+  sfloating:= "inf" =># "'Float_inf";
+  sfloating:= "-" "inf" =># "'Float_minus_inf";
 }
 
 //------------------------------------------
@@ -497,35 +493,34 @@ syntax functions {
     `(ast_lambda (,_3 ((() none)) ast_void ,_4))
     """;
 
-    sadjective := k"inline" =># "'InlineFunction";
-    sadjective := k"noinline" =># "'NoInlineFunction";
-    sadjective := k"static" =># "'InlineFunction";
-    sadjective := k"extern" =># "'NoInlineFunction";
-    sadjective := k"virtual" =># "'Virtual";
-    sadjectives := sadjective* =># "_1";
+  sadjective := k"inline" =># "'InlineFunction";
+  sadjective := k"noinline" =># "'NoInlineFunction";
+  sadjective := k"static" =># "'InlineFunction";
+  sadjective := k"extern" =># "'NoInlineFunction";
+  sadjective := k"virtual" =># "'Virtual";
+  sadjectives := sadjective* =># "_1";
 
-    slambda_fun_arg := lpar sparameter_comma_list "when" sexpr rpar =># "`(,_2 (some ,_4))";
-    slambda_fun_arg := lpar sparameter_comma_list rpar =># "`(,_2 none)";
-    slambda_fun_args := slambda_fun_arg+ =># "_1";
+  slambda_fun_arg := lpar sparameter_comma_list "when" sexpr rpar =># "`(,_2 (some ,_4))";
+  slambda_fun_arg := lpar sparameter_comma_list rpar =># "`(,_2 none)";
+  slambda_fun_args := slambda_fun_arg+ =># "_1";
 
-    fun_return_type := ":" stypeexpr "expect" sexpr =># "`(,_2 (some ,_4))";
-    fun_return_type := ":" stypeexpr =># "`(,_2 none)";
-    fun_return_type := "expect" sexpr =># "`(typ_none (some ,_2))";
-    fun_return_type := sepsilon =># "'(typ_none none)";
+  fun_return_type := ":" stypeexpr "expect" sexpr =># "`(,_2 (some ,_4))";
+  fun_return_type := ":" stypeexpr =># "`(,_2 none)";
+  fun_return_type := "expect" sexpr =># "`(typ_none (some ,_2))";
+  fun_return_type := sepsilon =># "'(typ_none none)";
 
-    sparameter := sparam_qual sname ":" x[sarrow_pri] = x[sor_condition_pri] =># "`(,_1 ,_2 ,_4 (some ,_6))";
-    sparameter := sparam_qual sname ":" x[sarrow_pri] =># "`(,_1 ,_2 ,_4 none)";
-    sparameter := sparam_qual sname =># "`(,_1 ,_2 typ_none none)";
+  sparameter := sparam_qual sname ":" x[sarrow_pri] = x[sor_condition_pri] =># "`(,_1 ,_2 ,_4 (some ,_6))";
+  sparameter := sparam_qual sname ":" x[sarrow_pri] =># "`(,_1 ,_2 ,_4 none)";
+  sparameter := sparam_qual sname =># "`(,_1 ,_2 typ_none none)";
 
-    sparameter_comma_list := sepsilon =># "()";
-    sparameter_comma_list := sparameter (, sparameter)* =># "(cons _1 (map second _2))";
+  sparameter_comma_list := sepsilon =># "()";
+  sparameter_comma_list := sparameter (, sparameter)* =># "(cons _1 (map second _2))";
 
-
-    sparam_qual := "val" =># "'PVal";
-    sparam_qual := "var" =># "'PVar";
-    sparam_qual := "ref" =># "'PRef";
-    sparam_qual := "fun" =># "'PFun";
-    sparam_qual := sepsilon =># "'PVal";
+  sparam_qual := "val" =># "'PVal";
+  sparam_qual := "var" =># "'PVar";
+  sparam_qual := "ref" =># "'PRef";
+  sparam_qual := "fun" =># "'PFun";
+  sparam_qual := sepsilon =># "'PVal";
 
   sfun_arg :=  lpar sparameter_comma_list "when" sexpr rpar =># "`(,_2 (some ,_4))";
   sfun_arg :=  lpar sparameter_comma_list rpar =># "`(,_2 none)";
@@ -662,13 +657,13 @@ syntax functions {
 //------------------------------------------
 syntax statements {
   requires expressions;
-  statement:= sexecutable=># "_1";
-  statement:= sdeclarative =># "_1";
-  statement:= sinclusion =># "_1";
-  statement:= sdirective =># "_1";
-  statement:= spublish =># "_1";
-  statement:= scomment =># "_1";
-  statement:= snull_statement =># "_1";
+  statement := sexecutable=># "_1";
+  statement := sdeclarative =># "_1";
+  statement := sinclusion =># "_1";
+  statement := sdirective =># "_1";
+  statement := spublish =># "_1";
+  statement := scomment =># "_1";
+  statement := snull_statement =># "_1";
 
   scomment := "comment" sstring ";" =># "`(ast_comment ,_sr ,_2)";
 
@@ -1009,7 +1004,6 @@ syntax cbind {
     `(ast_callback_decl ,_sr ,_3 ,(mkl2 _5) ast_void ,_6)
     """;
 
-
   sabstract_type := "callback" "fun" sname ":" stypeexpr srequires_clause ";" =>#
     """
     (if (eq? 'ast_arrow (first _5))
@@ -1025,7 +1019,6 @@ syntax cbind {
       'ERROR
     )
     """;
-
 
   stype_qual := "incomplete" =># "'Incomplete";
   stype_qual := "pod" =># "'Pod";
@@ -1396,7 +1389,7 @@ syntax type_decls {
     )
     """;
 
-  stype_matching  := vbar sexpr "=>" sexpr =># "`(,_2 ,_4)";
+  stype_matching := vbar sexpr "=>" sexpr =># "`(,_2 ,_4)";
 
   stypematch := "typematch" sexpr "with" stype_matching+ "endmatch" =>#
     "`(ast_type_match (,_2 ,_4))";
