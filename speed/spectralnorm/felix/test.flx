@@ -1,0 +1,56 @@
+// Felix Performance Test Program
+n := atoi(System::argv 1);
+open Carray;
+
+typedef V = carray[double];
+
+fun eval_A(int i, int j)=>1.0/double(((i+j)*(i+j+1))/2+i+1);
+
+proc eval_A_times_u(int N, u:V, Au:V)
+{
+  int i; int j;
+  for(i=0;i<N;i++)
+    {
+      Au.[i]=0.0;
+      for(j=0;j<N;j++) Au.[i]+=eval_A(i,j)*u.[j];
+    };
+};
+
+proc eval_At_times_u(int N, u:V, Au:V)
+{
+  int i; int j;
+  for(i=0;i<N;i++)
+    {
+      Au.[i]=0.0;
+      for(j=0;j<N;j++) Au.[i]+=eval_A(j,i)*u.[j];
+    };
+};
+
+
+proc eval_AtA_times_u(int N, u:V, AtAu:V)
+{ eval_A_times_u(N,u,tmp); eval_At_times_u(N,tmp,AtAu); };
+
+int i;
+int N = n * 1000;
+
+u:V := array_alloc[double] N;
+v:V := array_alloc[double] N;
+tmp:V := array_alloc[double] N;
+
+double vBv;
+double vv;
+
+for(i=0;i<N;i++) u.[i]=1;
+for(i=0;i<10;i++)
+  {
+    eval_AtA_times_u(N,u,v);
+    eval_AtA_times_u(N,v,u);
+  }
+;
+
+vBv=0.0;
+vv=0.0;
+for(i=0;i<N;i++) { vBv+=u.[i]*v.[i]; vv+=v.[i]*v.[i]; };
+print$ f"%0.9f\n"$ sqrt(vBv/vv);
+
+
