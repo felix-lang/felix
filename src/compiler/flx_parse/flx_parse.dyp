@@ -719,8 +719,8 @@ let dyp_merge_Obj_statement_star ol =
 %constructor Obj_sexpr %for sterm
 
 /* predefined major non-terminals */
-%constructor Obj_sexpr %for statement sexpr
-%constructor Obj_sexpr %for sstatements
+%constructor Obj_sexpr %for sexpr
+%constructor Obj_sexpr %for sstatements tstatement utstatement
 
 /* low level non terminals */
 %constructor Obj_sexpr %for sname sliteral
@@ -1133,7 +1133,7 @@ main lexer =
 %parser
 
 compilation_unit:
-  | graminit statements ENDMARKER { 
+  | graminit top_statements ENDMARKER { 
     (*
     print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.last_local_data.loaded_dssls);
     print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm)); 
@@ -1213,12 +1213,17 @@ print_endline "Scheme Done .. ";
     (),!bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
   }
 
+tstatement:
+  | utstatement ";" @{ $1, [Keep_grammar; Local_data (dyp.last_local_data)] }
 
 /* top level statements only */
-statements:
- | statements statement
+top_statements:
+ | top_statements tstatement
    @{
       let seq,sr,s = $2 in
+(*
+      print_endline ("BB sr=" ^ Flx_srcref.short_string_of_src sr);
+*)
       let () =
         match s with
         | Snull -> ()
@@ -1231,18 +1236,25 @@ statements:
 
 /* inner statements only */
 sstatements: 
-  | sstatement_star
+  | sstatement_star utstatement?
     {
-      let ss = (snd $1) in
-      let ss = Ocs_misc.make_slist Snull ss in
+      let _, stmts = $1 in
+      let stmts = match $2 with
+        | None -> stmts
+        | Some (seq,sr,s) ->
+          match s with
+          | Snull -> stmts
+          | _ -> s::stmts
+      in
+      let stmts = Ocs_misc.make_slist Snull stmts in
       (*
       print_endline "Returning inner statement list";
       *)
-      0, Flx_srcref.dummy_sr, ss
+      0, Flx_srcref.dummy_sr, stmts
     }
 
 sstatement_star:
- | sstatement_star statement
+ | sstatement_star tstatement
    @{
      let seq,sr,s = $2 in
      (match s with Snull -> $1 | _ ->
@@ -1388,8 +1400,8 @@ rhs_atom:
   | GREATEREQUAL { GREATEREQUAL }
   | UNDERSCORE { UNDERSCORE }
 
-statement:
-  | "SCHEME" STRING ";" 
+utstatement:
+  | "SCHEME" STRING 
     @{
       let sr = getsr dyp in
       let s = $2 in
@@ -1408,7 +1420,7 @@ statement:
       (0, sr, Snull), [Local_data local_data]
     }
 
-  | "open" "syntax" basic_name_comma_list ";" 
+  | "open" "syntax" basic_name_comma_list
     @{
       (*
       print_endline "Opening syntax extensions";
@@ -1473,6 +1485,7 @@ statement:
       !bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
     }
 
+tstatement:
   | "syntax" NAME LBRACE dyprods RBRACE
     @{
       (* NOTE ORDER!! dyprods is reversed, but the fold reverses it again *)
