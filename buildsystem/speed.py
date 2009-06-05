@@ -34,13 +34,18 @@ def run_tests(target, felix):
             dst = fbuild.buildroot / path / 'test'
             srcs = (path / '*').glob()
 
-            internal_time, wall_time = run_test(path, dst, srcs,
-                expect=expect if expect.exists() else None,
-                c=target.c.static,
-                cxx=target.cxx.static,
-                felix=felix,
-                ocaml=target.ocaml,
-                scala=scala)
+            try:
+                internal_time, wall_time = run_test(path, dst, srcs,
+                    expect=expect if expect.exists() else None,
+                    c=target.c.static,
+                    cxx=target.cxx.static,
+                    felix=felix,
+                    ocaml=target.ocaml,
+                    scala=scala)
+            except (ValueError, fbuild.Error) as e:
+                fbuild.logger.log(e)
+                internal_time = None
+                wall_time = None
 
             # If we didn't get values back, just print N/A
             if internal_time is None:
@@ -127,13 +132,9 @@ def run_test(path,
                 quieter=1)
         else:
             stdout, stderr = fbuild.execute(exe, timeout=60, quieter=1)
-    except fbuild.ExecutionError as e:
+    except fbuild.ExecutionTimedOut as e:
         t1 = time.time()
-
-        if isinstance(e, fbuild.ExecutionTimedOut):
-            fbuild.logger.failed('failed: timed out')
-        else:
-            fbuild.logger.failed()
+        fbuild.logger.failed('failed: timed out')
 
         fbuild.logger.log(e, verbose=1)
         if e.stdout:
