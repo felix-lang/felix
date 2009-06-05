@@ -416,11 +416,7 @@ syntax patterns {
   sexecutable := "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
     "`(ast_stmt_match (,_2 ,_4))";
 
-<<<<<<< HEAD:src/lib/nugram.flxh
-    stmt_matching  := vbar spattern "=>" tstatement+ =># "`(,_2 ,_4)";
-=======
-  stmt_matching  := vbar spattern "=>" statement+ =># "`(,_2 ,_4)";
->>>>>>> 363ea5295dc663d7a0f88fc68b9752dcf4c1f6a5:src/lib/nugram.flxh
+  stmt_matching  := vbar spattern "=>" tstatement+ =># "`(,_2 ,_4)";
 
   pattern_match := "match" sexpr "with" smatching+ "endmatch" =>#
     "`(ast_match (,_2 ,_4))";
@@ -661,7 +657,6 @@ syntax functions {
 //------------------------------------------
 syntax statements {
   requires expressions;
-<<<<<<< HEAD:src/lib/nugram.flxh
   tstatement:= sexecutable=># "_1";
   tstatement:= sdeclarative =># "_1";
   tstatement:= sinclusion =># "_1";
@@ -669,16 +664,6 @@ syntax statements {
   tstatement:= spublish =># "_1";
   tstatement:= scomment =># "_1";
   tstatement:= snull_statement =># "_1";
-=======
-  statement := sexecutable=># "_1";
-  statement := sdeclarative =># "_1";
-  statement := sinclusion =># "_1";
-  statement := sdirective =># "_1";
-  statement := spublish =># "_1";
-  statement := scomment =># "_1";
-  statement := snull_statement =># "_1";
->>>>>>> 363ea5295dc663d7a0f88fc68b9752dcf4c1f6a5:src/lib/nugram.flxh
-
   scomment := "comment" sstring ";" =># "`(ast_comment ,_sr ,_2)";
 
 
