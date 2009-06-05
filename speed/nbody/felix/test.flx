@@ -1,0 +1,125 @@
+// Felix Performance Test Program
+n := atoi(System::argv 1);
+PI := 3.141592653589793;
+SOLAR_MASS := 4.0 * PI * PI;
+DAYS_PER_YEAR := 365.24;
+
+typedef vec = array[double,3];
+
+fun add(x:vec,y:vec)=>x.(0)+y.(0), x.(1)+y.(1), x.(2)+y.(2);
+fun sub(x:vec,y:vec)=>x.(0)-y.(0), x.(1)-y.(1), x.(2)-y.(2);
+fun neg(x:vec)=>-x.(0), -x.(1),-x.(2);
+fun mul(x:vec,var y:double)=>x.(0)*y, x.(1)*y, x.(2)*y;
+fun div(x:vec,var y:double)=>x.(0)/y, x.(1)/y, x.(2)/y;
+fun mul(var y:double,x:vec)=>x.(0)*y, x.(1)*y, x.(2)*y;
+fun sqr(x:vec)=>x.(0)*x.(0)+x.(1)*x.(1)+x.(2)*x.(2);
+fun norm(x:vec)=>sqrt(sqr x);
+fun addr: Body -> &Body = "&$1";
+
+struct Body { pos:vec; vel:vec; mass: double; };
+
+proc Advance(dt: double){
+   var i: int; var j:int;
+   forall i in 0 upto nbodies-1 do
+      bimass := bodies.[i].mass;
+      var delta = 0.0,0.0,0.0;
+      forall j in i+1 upto nbodies-1 do
+         var bjmass = bodies.[j].mass;
+         var d = bodies.[i].pos - bodies.[j].pos;
+         var d2 = sqr d;
+         var distance = sqrt d2;
+
+         delta = delta + d * bjmass * dt / (distance * d2);
+         bodies.[j].vel = bodies.[j].vel + d * bimass * dt / (distance * d2);
+      done;
+      bodies.[i].vel = bodies.[i].vel - delta;
+   done;
+
+   forall i in 0 upto nbodies-1 do
+      bodies.[i].pos = bodies.[i].pos + dt * bodies.[i].vel;
+   done;
+}
+
+fun Energy(): double =
+{
+   var i: int; var j: int;
+   var e = 0.0;
+   forall i in 0 upto nbodies-1 do
+      e = e + 0.5 * bodies.[i].mass * sqr bodies.[i].vel;
+
+      forall j in i+1 upto nbodies-1 do
+         d := bodies.[i].pos - bodies.[j].pos;
+         distance := norm d;
+         e = e - bodies.[i].mass * bodies.[j].mass / distance;
+      done;
+   done;
+   return e;
+}
+
+
+proc OffsetMomentum()
+{
+  var i: int;
+  var p = (0.0,0.0,0.0);
+  forall i in 1 upto nbodies-1 do
+      p = p + bodies.[i].vel * bodies.[i].mass;
+  done;
+  bodies.[0].vel = -p / SOLAR_MASS;
+}
+
+nticks := 1_000_000 * n;
+
+/* define planetary masses, initial positions, velocities */
+
+jupiter := Body (
+ (4.84143144246472090e+00,
+ -1.16032004402742839e+00,
+ -1.03622044471123109e-01),
+ (1.66007664274403694e-03 * DAYS_PER_YEAR,
+ 7.69901118419740425e-03 * DAYS_PER_YEAR,
+ -6.90460016972063023e-05 * DAYS_PER_YEAR),
+ 9.54791938424326609e-04 * SOLAR_MASS
+);
+
+saturn := Body (
+ (8.34336671824457987e+00,
+ 4.12479856412430479e+00,
+ -4.03523417114321381e-01),
+ (-2.76742510726862411e-03 * DAYS_PER_YEAR,
+ 4.99852801234917238e-03 * DAYS_PER_YEAR,
+ 2.30417297573763929e-05 * DAYS_PER_YEAR),
+ 2.85885980666130812e-04 * SOLAR_MASS
+);
+
+uranus := Body (
+ (1.28943695621391310e+01,
+ -1.51111514016986312e+01,
+ -2.23307578892655734e-01),
+ (2.96460137564761618e-03 * DAYS_PER_YEAR,
+ 2.37847173959480950e-03 * DAYS_PER_YEAR,
+ -2.96589568540237556e-05 * DAYS_PER_YEAR),
+ 4.36624404335156298e-05 * SOLAR_MASS
+);
+
+neptune :=  Body (
+ (1.53796971148509165e+01,
+ -2.59193146099879641e+01,
+ 1.79258772950371181e-01),
+ (2.68067772490389322e-03 * DAYS_PER_YEAR,
+ 1.62824170038242295e-03 * DAYS_PER_YEAR,
+ -9.51592254519715870e-05 * DAYS_PER_YEAR),
+ 5.15138902046611451e-05 * SOLAR_MASS
+);
+
+sun := Body ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), SOLAR_MASS);
+
+var bodies = (sun,jupiter,saturn,uranus,neptune);
+nbodies := 5;
+
+OffsetMomentum();
+
+println$ f"%.9f"$ Energy();
+var i : int;
+forall i in 1 upto nticks do Advance(0.01e+00); done;
+println$ f"%.9f"$ Energy();
+
