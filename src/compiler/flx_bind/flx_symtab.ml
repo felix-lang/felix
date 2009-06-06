@@ -226,7 +226,6 @@ let rec build_tables
       root
       pub_name_map
       priv_name_map
-      ifaces
       interfaces
   ) dcls;
 
@@ -243,7 +242,6 @@ and build_table_for_dcl
   root
   pub_name_map
   priv_name_map
-  ifaces
   interfaces
   (sr, id, seq, access, vs', dcl)
 =
@@ -500,9 +498,6 @@ and build_table_for_dcl
 
       (* Add the function to the private symbol table. *)
       add_function priv_name_map id fun_index;
-
-      (* Add the interface *)
-      interfaces := !interfaces @ ifaces;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
