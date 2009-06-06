@@ -188,8 +188,8 @@ let rec build_tables
     List.rev dcls, List.rev exes, List.rev ifaces, List.rev export_dirs
   in
 
-  (* Add the parent to each unterface *)
-  let ifaces = List.map (fun (i,j)-> i,j,parent) ifaces in
+  (* Add the parent to each interface *)
+  let ifaces = List.map (fun (i,j)-> i, j, parent) ifaces in
   let interfaces = ref ifaces in
 
   (* check root index. Error out if it's an invalid root. *)
