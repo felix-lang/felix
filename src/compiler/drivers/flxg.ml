@@ -6,7 +6,6 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 open Flx_print
-open Flx_bbind
 open Flx_name
 open Flx_tgen
 open Flx_gen
@@ -205,7 +204,7 @@ try
 
   print_debug "//BINDING EXECUTABLE CODE";
   let bbind_state = Flx_bbind.make_bbind_state syms in
-  let bbdfns = bbind bbind_state in
+  let bbdfns = Flx_bbind.bbind bbind_state in
 
   print_debug "//DOWNGRADING ABSTRACT TYPES";
   let bbdfns = Flx_strabs.strabs syms bbdfns in
@@ -222,7 +221,7 @@ try
   ;
 
 
-  syms.bifaces <- bind_ifaces bbind_state ifaces;
+  syms.bifaces <- List.map (Flx_bbind.bind_interface bbind_state) ifaces;
   Hashtbl.clear syms.ticache;
 
   let binding_time = tim() in

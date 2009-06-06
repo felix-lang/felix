@@ -10,7 +10,8 @@ val bbind:
   bbind_state_t ->
   Flx_types.fully_bound_symbol_table_t
 
-val bind_ifaces:
+(* Bind a single interface *)
+val bind_interface:
   bbind_state_t ->
-  (Flx_srcref.t * Flx_types.iface_t * int option) list ->
-  Flx_types.biface_t list
+  Flx_srcref.t * Flx_types.iface_t * int option ->
+  Flx_types.biface_t

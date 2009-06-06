@@ -82,7 +82,7 @@ try
     let bbind_state = Flx_bbind.make_bbind_state syms in
     let bbdfns = Flx_bbind.bbind bbind_state in
     let child_map = Flx_child.cal_children syms bbdfns in
-    let bifaces = Flx_bbind.bind_ifaces bbind_state ifaces in
+    let bifaces = List.map (Flx_bbind.bind_interface bbind_state) ifaces in
     print_endline "//Binding complete";
 
     let root_proc =

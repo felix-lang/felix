@@ -650,48 +650,37 @@ let bbind bbind_state =
   ;
   bbind_state.bbdfns
 
-let bind_ifaces bbind_state
-  (ifaces:
-    (Flx_srcref.t * iface_t * int option) list
-  )
-=
-  let luqn env n = lookup_qn_in_env bbind_state.syms env n in
-  let bound_ifaces =
-    List.map
-    (function
-      | sr,`IFACE_export_fun (sn, cpp_name), parent ->
-        let env = build_env bbind_state.syms parent in
-        let index,ts = lookup_sn_in_env bbind_state.syms env sn in
-        if length ts = 0 then
-          `BIFACE_export_fun (sr,index, cpp_name)
-        else clierr sr
-        (
-          "Can't export generic entity " ^
-          string_of_suffixed_name sn
-        )
+let bind_interface bbind_state = function
+  | sr, `IFACE_export_fun (sn, cpp_name), parent ->
+      let env = build_env bbind_state.syms parent in
+      let index,ts = lookup_sn_in_env bbind_state.syms env sn in
+      if length ts = 0 then
+        `BIFACE_export_fun (sr,index, cpp_name)
+      else clierr sr
+      (
+        "Can't export generic entity " ^
+        string_of_suffixed_name sn
+      )
 
-      | sr,`IFACE_export_python_fun (sn, cpp_name), parent ->
-        let env = build_env bbind_state.syms parent in
-        let index,ts = lookup_sn_in_env bbind_state.syms env sn in
-        if length ts = 0 then
-          `BIFACE_export_python_fun (sr,index, cpp_name)
-        else clierr sr
-        (
-          "Can't export generic entity " ^
-          string_of_suffixed_name sn
-        )
+  | sr, `IFACE_export_python_fun (sn, cpp_name), parent ->
+      let env = build_env bbind_state.syms parent in
+      let index,ts = lookup_sn_in_env bbind_state.syms env sn in
+      if length ts = 0 then
+        `BIFACE_export_python_fun (sr,index, cpp_name)
+      else clierr sr
+      (
+        "Can't export generic entity " ^
+        string_of_suffixed_name sn
+      )
 
-      | sr,`IFACE_export_type (typ, cpp_name), parent ->
-        let env = build_env bbind_state.syms parent in
-        let t = bind_type bbind_state.syms env Flx_srcref.dummy_sr typ in
-        if try var_occurs t with _ -> true then
-        clierr sr
-        (
-          "Can't export generic- or meta- type " ^
-          string_of_btypecode bbind_state.syms.dfns t
-        )
-        else
-          `BIFACE_export_type (sr, t, cpp_name)
-     )
-     ifaces
-   in bound_ifaces
+  | sr, `IFACE_export_type (typ, cpp_name), parent ->
+      let env = build_env bbind_state.syms parent in
+      let t = bind_type bbind_state.syms env Flx_srcref.dummy_sr typ in
+      if try var_occurs t with _ -> true then
+      clierr sr
+      (
+        "Can't export generic- or meta- type " ^
+        string_of_btypecode bbind_state.syms.dfns t
+      )
+      else
+        `BIFACE_export_type (sr, t, cpp_name)
