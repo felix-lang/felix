@@ -39,50 +39,43 @@ type dir_t =
 
 type dcl_t =
   [
-
   (* data structures *)
-  | `DCL_axiom of       params_t * axiom_method_t
-  | `DCL_lemma of       params_t * axiom_method_t
-  | `DCL_reduce of       simple_parameter_t list * expr_t * expr_t
-  | `DCL_function of     params_t * typecode_t * property_t list * asm_t list
-  | `DCL_union of        (id_t * int option * vs_list_t * typecode_t) list
-  | `DCL_struct of       (id_t * typecode_t) list
+  | `DCL_axiom of         params_t * axiom_method_t
+  | `DCL_lemma of         params_t * axiom_method_t
+  | `DCL_reduce of        simple_parameter_t list * expr_t * expr_t
+  | `DCL_function of      params_t * typecode_t * property_t list * asm_t list
+  | `DCL_union of         (id_t * int option * vs_list_t * typecode_t) list
+  | `DCL_struct of        (id_t * typecode_t) list
   | `DCL_cstruct of       (id_t * typecode_t) list
-  | `DCL_typeclass of    asm_t list
-  | `DCL_match_check of pattern_t * (string * int)
+  | `DCL_typeclass of     asm_t list
+  | `DCL_match_check of   pattern_t * (string * int)
   | `DCL_match_handler of pattern_t * (string * int) * asm_t list
 
   (* variables *)
-  | `DCL_val of          typecode_t
-  | `DCL_var of          typecode_t
+  | `DCL_val of           typecode_t
+  | `DCL_var of           typecode_t
   | `DCL_lazy of          typecode_t * expr_t
-  | `DCL_ref of          typecode_t
-  | `DCL_type_alias of   typecode_t
-  | `DCL_inherit of   qualified_name_t
+  | `DCL_ref of           typecode_t
+  | `DCL_type_alias of    typecode_t
+  | `DCL_inherit of       qualified_name_t
   | `DCL_inherit_fun of   qualified_name_t
 
   (* module system *)
-  | `DCL_module of       asm_t list
-  | `DCL_instance of     qualified_name_t * asm_t list
+  | `DCL_module of        asm_t list
+  | `DCL_instance of      qualified_name_t * asm_t list
 
   (* binding structures [prolog] *)
-  | `DCL_newtype of     typecode_t
-  | `DCL_abs of         type_qual_t list * c_t * named_req_expr_t
-  | `DCL_const of       property_t list * typecode_t * c_t * named_req_expr_t
-  | `DCL_fun of         property_t list * typecode_t list * typecode_t * c_t * named_req_expr_t * prec_t
-  | `DCL_callback of    property_t list * typecode_t list * typecode_t * named_req_expr_t
-  | `DCL_insert of      c_t * ikind_t * named_req_expr_t
+  | `DCL_newtype of       typecode_t
+  | `DCL_abs of           type_qual_t list * c_t * named_req_expr_t
+  | `DCL_const of         property_t list * typecode_t * c_t * named_req_expr_t
+  | `DCL_fun of           property_t list * typecode_t list * typecode_t * c_t * named_req_expr_t * prec_t
+  | `DCL_callback of      property_t list * typecode_t list * typecode_t * named_req_expr_t
+  | `DCL_insert of        c_t * ikind_t * named_req_expr_t
   ]
 
 and access_t = [`Private | `Public ]
 
-and asm_t =
-  [
-  | `Exe of Flx_srcref.t * exe_t
-  | `Dcl of Flx_srcref.t * id_t * int option * access_t * vs_list_t * dcl_t
-  | `Iface of Flx_srcref.t * iface_t
-  | `Dir of dir_t
-  ]
+and sdcl_t = Flx_srcref.t * id_t * int option * access_t * vs_list_t * dcl_t
 
 and iface_t =
   [
@@ -90,6 +83,17 @@ and iface_t =
   | `IFACE_export_python_fun of suffixed_name_t * string
   | `IFACE_export_type of typecode_t * string
   ]
+and siface_t = Flx_srcref.t * iface_t 
+
+and asm_t =
+  [
+  | `Exe of sexe_t
+  | `Dcl of sdcl_t
+  | `Iface of siface_t
+  | `Dir of dir_t
+  ]
+
+type bound_iface_t = Flx_srcref.t * iface_t * int option
 
 (** value typing *)
 type 't b0typecode_t' =

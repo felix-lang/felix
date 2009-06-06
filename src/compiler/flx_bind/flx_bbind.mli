@@ -13,5 +13,5 @@ val bbind:
 (* Bind a single interface *)
 val bind_interface:
   bbind_state_t ->
-  Flx_srcref.t * Flx_types.iface_t * int option ->
+  Flx_types.bound_iface_t ->
   Flx_types.biface_t
