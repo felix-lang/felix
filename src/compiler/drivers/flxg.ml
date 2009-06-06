@@ -193,11 +193,10 @@ try
   let root = !(syms.counter) in
   print_debug ("//Top level module '" ^ module_name ^ "' has index " ^ si root);
 
-
   print_debug "//BUILDING TABLES";
 
   let symtab = Flx_symtab.make syms in
-  let exes, ifaces = Flx_symtab.add_asms symtab root asms in
+  let exes, ifaces = Flx_symtab.add_asms symtab asms in
   let build_table_time = tim() in
   print_debug ("//BUILDING TABLES time " ^ string_of_float build_table_time);
 

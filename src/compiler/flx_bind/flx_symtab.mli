@@ -17,10 +17,9 @@ val make: Flx_mtypes2.sym_state_t -> t
 
 (** Add assemblies to the symbol table. *)
 val add_asms:
-  t ->                        (** the symbol table *)
-  int ->                      (** root index *)
-  Flx_types.asm_t list ->     (** the assemblies *)
+  t ->                            (** symbol table *)
+  Flx_types.asm_t list ->         (** assemblies *)
   (
-    Flx_ast.sexe_t list *     (** executables *)
-    (Flx_srcref.t * Flx_types.iface_t * int option) list  (** interfaces *)
+    Flx_ast.sexe_t list *         (** executables *)
+    Flx_types.bound_iface_t list  (** interfaces *)
   )

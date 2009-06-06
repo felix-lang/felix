@@ -198,17 +198,11 @@ let rec build_tables
   let interfaces = ref ifaces in
 
   (* check root index. Error out if it's an invalid root. *)
-  if level = 0 then begin
-    if root <> !(syms.Flx_mtypes2.counter) then
-      failwith "Wrong value for root index";
-
-    begin match dcls with
+  if level = 0 then
+    match dcls with
     | [x] -> ()
     | _ -> failwith "Expected top level to contain exactly one module declaration"
-    end;
-    if name <> "root" then
-      failwith ("Expected top level to be called root, got " ^ name)
-  end else
+  else
     if name = "root" then
       failwith ("Can't name non-toplevel module 'root'")
     else
@@ -1070,8 +1064,8 @@ let make syms =
   }
 
 
-(* Public interface *)
-let add_asms symtab root asms =
+(* Add the assemblies to the symbol table. *)
+let add_asms symtab asms =
   let _, _, exes, interfaces, _ =
     build_tables
       ~pub_name_map:symtab.pub_name_map
@@ -1081,7 +1075,7 @@ let add_asms symtab root asms =
       Flx_ast.dfltvs
       0
       None
-      root
+      !(symtab.syms.Flx_mtypes2.counter)
       asms
   in
   exes, interfaces

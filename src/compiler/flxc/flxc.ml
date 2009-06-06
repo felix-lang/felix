@@ -31,11 +31,7 @@ let parse_imports state =
   let asms = Flx_desugar.desugar_compilation_unit state.desugar_state stmts in
 
   (* Create a symbol table from those desugared statements *)
-  let _ = Flx_symtab.add_asms
-    state.symtab
-    !(state.syms.Flx_mtypes2.counter)
-    asms
-  in
+  let _ = Flx_symtab.add_asms state.symtab asms in
 
   (* Now, bind all the symbols *)
   let bbdfns = Flx_bbind.bbind state.bbind_state in

@@ -77,7 +77,7 @@ try
     ("//Top level module '" ^ module_name ^ "' has index " ^ string_of_int root);
 
   let symtab = Flx_symtab.make syms in
-  let _, ifaces = Flx_symtab.add_asms symtab root asms in
+  let _, ifaces = Flx_symtab.add_asms symtab asms in
     print_endline "//BINDING EXECUTABLE CODE";
     print_endline "//-----------------------";
     let bbind_state = Flx_bbind.make_bbind_state syms in
