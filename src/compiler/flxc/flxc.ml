@@ -6,6 +6,7 @@ type state_t = {
   syms: Flx_mtypes2.sym_state_t;
   macro_state: Flx_macro.macro_state_t;
   desugar_state: Flx_desugar.desugar_state_t;
+  symtab: Flx_symtab.t;
   bbind_state: Flx_bbind.bbind_state_t;
 }
 
@@ -30,8 +31,10 @@ let parse_imports state =
   let asms = Flx_desugar.desugar_compilation_unit state.desugar_state stmts in
 
   (* Create a symbol table from those desugared statements *)
-  let _ = Flx_symtab.build_tables
-    state.syms !(state.syms.Flx_mtypes2.counter) asms
+  let _ = Flx_symtab.add_asms
+    state.symtab
+    !(state.syms.Flx_mtypes2.counter)
+    asms
   in
 
   (* Now, bind all the symbols *)
@@ -83,6 +86,7 @@ let main () =
       syms = syms;
       macro_state = Flx_macro.make_macro_state "<input>";
       desugar_state = Flx_desugar.make_desugar_state "<input>" syms;
+      symtab = Flx_symtab.make syms;
       bbind_state = Flx_bbind.make_bbind_state syms;
     }
   in

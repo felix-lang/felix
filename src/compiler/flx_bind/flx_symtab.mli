@@ -8,10 +8,18 @@
  *
  * Types, expressions, and bodies of functions remain unbound. *)
 
-val build_tables:
-  Flx_mtypes2.sym_state_t ->
-  int ->                      (* root index *)
-  Flx_types.asm_t list ->
+type t
+
+
+(** Create the state needed for the symbol table. *)
+val make: Flx_mtypes2.sym_state_t -> t
+
+
+(** Add assemblies to the symbol table. *)
+val add_asms:
+  t ->                        (** the symbol table *)
+  int ->                      (** root index *)
+  Flx_types.asm_t list ->     (** the assemblies *)
   (
     Flx_ast.sexe_t list *     (** executables *)
     (Flx_srcref.t * Flx_types.iface_t * int option) list  (** interfaces *)

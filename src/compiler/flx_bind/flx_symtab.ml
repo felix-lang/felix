@@ -1,3 +1,10 @@
+type t = {
+  syms: Flx_mtypes2.sym_state_t;
+  pub_name_map: (string, Flx_types.entry_set_t) Hashtbl.t;
+  priv_name_map: (string, Flx_types.entry_set_t) Hashtbl.t;
+}
+
+
 let null_tab = Hashtbl.create 3
 
 
@@ -165,6 +172,8 @@ let make_vs ?(print=false) level counter (vs', con) : Flx_ast.ivs_list_t =
 
 
 let rec build_tables
+  ?(pub_name_map=Hashtbl.create 97)
+  ?(priv_name_map=Hashtbl.create 97)
   syms
   name
   inherit_vs
@@ -176,10 +185,6 @@ let rec build_tables
   (*
   print_endline ("//Building tables for " ^ name);
   *)
-
-  (* Create the public and private symbol tables *)
-  let pub_name_map = Hashtbl.create 97 in
-  let priv_name_map = Hashtbl.create 97 in
 
   (* Split up the assemblies into their repsective types. split_asms returns
    * reversed lists, so we must undo that. *)
@@ -1062,11 +1067,21 @@ and build_tables_from_dcl
        * required *)
 
 
+let make syms =
+  {
+    syms = syms;
+    pub_name_map = Hashtbl.create 97;
+    priv_name_map = Hashtbl.create 97;
+  }
+
+
 (* Public interface *)
-let build_tables syms root asms =
-  let _, _, exe, interfaces, _ =
+let add_asms symtab root asms =
+  let _, _, exes, interfaces, _ =
     build_tables
-      syms
+      ~pub_name_map:symtab.pub_name_map
+      ~priv_name_map:symtab.priv_name_map
+      symtab.syms
       "root"
       Flx_ast.dfltvs
       0

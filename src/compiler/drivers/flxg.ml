@@ -196,7 +196,8 @@ try
 
   print_debug "//BUILDING TABLES";
 
-  let exes, ifaces = Flx_symtab.build_tables syms root asms in
+  let symtab = Flx_symtab.make syms in
+  let exes, ifaces = Flx_symtab.add_asms symtab root asms in
   let build_table_time = tim() in
   print_debug ("//BUILDING TABLES time " ^ string_of_float build_table_time);
 
