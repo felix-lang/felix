@@ -9,7 +9,6 @@ open Flx_print
 open Flx_name
 open Flx_tgen
 open Flx_gen
-open Flx_symtab
 open Flx_getopt
 open Flx_version
 open Flx_exceptions
@@ -197,7 +196,7 @@ try
 
   print_debug "//BUILDING TABLES";
 
-  let _, _, exes, ifaces, _ = build_tables syms root asms in
+  let exes, ifaces = Flx_symtab.build_tables syms root asms in
   let build_table_time = tim() in
   print_debug ("//BUILDING TABLES time " ^ string_of_float build_table_time);
 

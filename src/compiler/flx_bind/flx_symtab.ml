@@ -1064,4 +1064,14 @@ and build_tables_from_dcl
 
 (* Public interface *)
 let build_tables syms root asms =
-  build_tables syms "root" Flx_ast.dfltvs 0 None root asms
+  let _, _, exe, interfaces, _ =
+    build_tables
+      syms
+      "root"
+      Flx_ast.dfltvs
+      0
+      None
+      root
+      asms
+  in
+  exes, interfaces

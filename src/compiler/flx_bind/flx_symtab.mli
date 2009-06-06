@@ -13,9 +13,6 @@ val build_tables:
   int ->                      (* root index *)
   Flx_types.asm_t list ->
   (
-    Flx_types.name_map_t *
-    Flx_types.name_map_t *
-    Flx_ast.sexe_t list *
-    (Flx_srcref.t * Flx_types.iface_t * int option) list *
-    Flx_types.dir_t list
+    Flx_ast.sexe_t list *     (** executables *)
+    (Flx_srcref.t * Flx_types.iface_t * int option) list  (** interfaces *)
   )
