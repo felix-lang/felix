@@ -217,7 +217,7 @@ let rec build_tables
 
   (* Step through each dcl and add the found assemblies to the symbol tables. *)
   List.iter (
-    build_tables_from_dcl
+    build_table_for_dcl
       syms
       name
       inherit_vs
@@ -234,7 +234,7 @@ let rec build_tables
 
 
 (** Add the symbols from one declaration. *)
-and build_tables_from_dcl
+and build_table_for_dcl
   syms
   name
   inherit_vs
