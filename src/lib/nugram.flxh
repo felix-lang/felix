@@ -1531,83 +1531,6 @@ syntax namespaces {
 
 }
 
-syntax csyntax {
-  requires statements;
-
-
-  sifgoto := "for" lpar tstatement sexpr ";" sassignexpr rpar tstatement =>#
-  """
-    (let*
-      (
-        (init _3)
-        (cond _4)
-        (iter _6)
-        (body _8)
-      )
-    (block ( append `(
-      ,init
-      (ast_label ,_sr "redo_label" )
-      (ast_unlikely_ifnotgoto ,_sr ,cond "break_label")
-      ,body
-      (ast_label ,_sr "continue_label" )
-      ,iter
-      (ast_goto ,_sr "redo_label")
-      ( ast_label ,_sr "break_label" ))
-    )))
-  """;
-
-  // note: we use sdollar_apply "not" sexpr here,
-  // otherwise while (fun ()=>x) { } is interpreted
-  // as a C while loop, instead of the while HOF in the library
-
-  sifgoto := k"while" lpar x[sdollar_apply_pri] rpar scompound =>#
-  """
-    ( block ( append `(
-      ( ast_label ,_sr "continue_label" )
-      ( ast_unlikely_ifnotgoto ,_sr ,_3 "break_label" )
-      ,_5
-      ( ast_goto ,_sr "continue_label" )
-      ( ast_label ,_sr "break_label" )
-    )))
-  """;
-
-  sifgoto := "do" scompound "until" x[sdollar_apply_pri] ";" =>#
-  """
-    ( block ( append `(
-      ( ast_label ,_sr "continue_label" )
-      ,( block _2)
-      ( ast_likely_ifnotgoto ,_sr ,_4 "continue_label" )
-      ( ast_label ,_sr "break_label" )
-    )))
-  """;
-
-  sifgoto := "if" lpar x[sdollar_apply_pri] rpar tstatement "else" tstatement =>#
-  """
-    `( ast_macro_block ,( append `(
-      ( ast_macro_name "lab1" "" )
-      ( ast_macro_name "lab2" "" )
-      ( ast_ifnotgoto ,_sr ,_3 "lab1" )
-      ,_5
-      (ast_goto ,_sr "lab2")
-      ( ast_label ,_sr "lab1" )
-      ,_7
-      ( ast_label ,_sr "lab2" )
-    )))
-  """;
-
-  // this must be given first ..
-  sifgoto := "if" lpar x[sdollar_apply_pri] rpar tstatement =>#
-  """
-    `( ast_macro_block ,( append `(
-      ( ast_macro_name "lab1" "" )
-      ( ast_ifnotgoto ,_sr ,_3 "lab1" )
-      ,_5
-      ( ast_label ,_sr "lab1" )
-    )))
-  """;
-
-}
-
 //------------------------------------------
 syntax felix {
   requires
@@ -1622,8 +1545,7 @@ syntax felix {
     functions,
     patterns,
     cbind,
-    macros,
-    csyntax
+    macros
   ;
 }
 

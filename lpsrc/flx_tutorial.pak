@@ -931,34 +931,6 @@ and the condition is given in curly brackets.
 We'll find out exactly why later, but here is a hint:
 there is no while statement in Felix!
 
-@select(env.test('.flx'))
-var i:int = 1;
-var j:int = 0;
-
-while (i < 10)
-{
-  j = i + i;
-  print j; print "\n";
-  ++i;
-};
-@doc()
-
-Note a C style while loop can also be used, however
-the trailing semi-colon is required.
-
-@select(env.expect())
-2
-4
-6
-8
-10
-12
-14
-16
-18
-@doc()
-
-
 @env.head(3,'Assignments')
 It is sometimes useful to simultaneously assign variables
 from the components of a tuple, which can done as shown below.
