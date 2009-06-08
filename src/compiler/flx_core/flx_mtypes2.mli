@@ -48,7 +48,6 @@ type sym_state_t =
   counter : int ref;
   varmap : typevarmap_t;
   ticache : (int, btypecode_t) Hashtbl.t;
-  glr_cache : (int, btypecode_t) Hashtbl.t;
   env_cache : (int, env_t) Hashtbl.t;
   registry : type_registry_t;
   compiler_options : felix_compiler_options_t;
@@ -56,8 +55,6 @@ type sym_state_t =
   include_files : string list ref;
   roots : IntSet.t ref;
   wrappers : (int, int) Hashtbl.t;
-  lexers : (int * tbexpr_t, int) Hashtbl.t;
-  parsers : (int * btypecode_t * int list, int) Hashtbl.t;
   quick_names : (string, (int * btypecode_t list)) Hashtbl.t;
   mutable bifaces : biface_t list;
   mutable reductions : reduction_t list;

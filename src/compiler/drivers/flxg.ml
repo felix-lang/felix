@@ -670,20 +670,6 @@ try
   end
   ;
 
-  (* HACKERY FOR ELKHOUND -- we force include library files
-    into the global namespace, macro guards should prevent
-    subsequent inclusion in the module namespace
-  *)
-  if Hashtbl.length syms.lexers <> 0 then begin
-    plh "#include \"elk_lexerint.h\""
-  end
-  ;
-
-  if Hashtbl.length syms.parsers <> 0 then begin
-    plh "#include \"elk_useract.h\""
-  end
-  ;
-
   plh "\n//-----------------------------------------";
   List.iter plh [
   "//FELIX SYSTEM";
@@ -721,19 +707,6 @@ try
   plh  "//DEFINE THE TYPES";
   plh  (gen_types syms bbdfns types);
 
-  if not (Hashtbl.length syms.parsers + Hashtbl.length syms.lexers = 0) then begin
-  plp "elk";
-  plh "\n//-----------------------------------------";
-  plh  "//ELKHOUND OBJECTS, forward declaration";
-  Hashtbl.iter
-  (fun _ n -> plh ("struct ElkLex_"^si n^";"))
-  syms.lexers
-  ;
-  Hashtbl.iter
-  (fun _ n -> plh ("struct Elk_"^si n^";"))
-  syms.parsers
-  end
-  ;
   print_debug "//GENERATING C++: function and procedure classes";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASS NAMES";
@@ -742,19 +715,6 @@ try
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASSES";
   plh  (gen_functions syms (child_map,bbdfns));
-
-  if not (Hashtbl.length syms.parsers + Hashtbl.length syms.lexers = 0) then begin
-  plh "\n//-----------------------------------------";
-  plh  "//INCLUDE ELKHOUND PARSERS";
-  Hashtbl.iter
-  (fun _ n -> plh ("#include \""^module_name^"_lexer_"^si n^".hpp\""))
-  syms.lexers
-  ;
-  Hashtbl.iter
-  (fun _ n -> plh ("#include \""^module_name^"_parser_"^si n^".h\""))
-  syms.parsers
-  end
-  ;
 
   let topvars_with_type = find_thread_vars_with_type bbdfns in
   let topvars = List.map fst topvars_with_type in
@@ -788,11 +748,6 @@ try
 
   plb ("#include \"" ^ module_name ^ ".hpp\"");
   plb "#include <stdio.h>"; (* for diagnostics *)
-
-  if Hashtbl.length syms.parsers <> 0 then begin
-    plb "#include \"elk_glr.h\""
-  end
-  ;
 
   plb "#define comma ,";
   plb "\n//-----------------------------------------";
@@ -906,20 +861,6 @@ try
     syms.instances
     ;
     if !header_emitted then plb "#endif";
-  end
-  ;
-  if not (Hashtbl.length syms.parsers + Hashtbl.length syms.lexers = 0) then begin
-  plb "\n//-----------------------------------------";
-  plb  "//INCLUDE ELKHOUND PARSERS";
-  Hashtbl.iter
-  (fun _ n -> plb ("#include \""^module_name^"_lexer_"^si n^".cpp\""))
-  syms.lexers
-  ;
-
-  plb "#include \"elk_glr.h\"";
-  Hashtbl.iter
-  (fun _ n -> plb ("#include \""^module_name^"_parser_"^si n^".cc\""))
-  syms.parsers
   end
   ;
 
