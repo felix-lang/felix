@@ -627,17 +627,16 @@ let bbind bbind_state =
         begin try
           (*
           begin
-            try match hfind "bbind" syms.dfns !i with {id=id} ->
-              print_endline (" Trying to bind "^id^" index " ^ si !i)
+            try match hfind "bbind" bbind_state.syms.dfns !i with {id=id} ->
+              print_endline (" Trying to bind " ^ id ^ " index " ^ si !i)
             with Not_found ->
               failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
-          end
-          ;
+          end;
           *)
           bbind_sym bbind_state.syms bbind_state.bbdfns !i entry
         with Not_found ->
           try match hfind "bbind" bbind_state.syms.dfns !i with {id=id} ->
-            failwith ("Binding error, cannot find in table: "^id^" index " ^ si !i)
+            failwith ("Binding error, cannot find in table: " ^ id ^ " index " ^ si !i)
           with Not_found ->
             failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
         end

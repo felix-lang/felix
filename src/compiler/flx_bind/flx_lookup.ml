@@ -90,52 +90,43 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
   *)
   match lookup_name_in_htab table name with
   | Some x as y ->
-    (*
-    print_endline ("Lookup_name_in_htab found " ^ name);
-    *)
-    y
+      (*
+      print_endline ("Lookup_name_in_htab found " ^ name);
+      *)
+      y
   | None ->
-  let opens =
-    concat
-    (
-      map
-      (fun table ->
-        match lookup_name_in_htab table name with
-        | Some x -> [x]
-        | None -> []
-      )
-      dirs
-    )
-  in
-  match opens with
-  | [x] -> Some x
-  | `FunctionEntry ls :: rest ->
-    (*
-    print_endline "HERE 3";
-    *)
-    Some (`FunctionEntry (merge_functions opens name))
-
-  | (`NonFunctionEntry (i)) as some ::_ ->
-    if
-      fold_left
-        (function t -> function
-          | `NonFunctionEntry (j) when i = j -> t
-          | _ -> false
-        )
-        true
-        opens
-    then
-      Some some
-    else begin
-      iter
-      (fun es ->  print_endline ("Symbol " ^(string_of_entry_set es)))
-      opens
-      ;
-      clierr sr ("[lookup_name_in_table_dirs] Conflicting nonfunction definitions for "^
-        name ^" found in open modules"
-      )
-    end
-  | [] -> None
+      let opens = concat (
+        List.map begin fun table ->
+          match lookup_name_in_htab table name with
+          | Some x -> [x]
+          | None -> []
+        end dirs)
+      in
+      match opens with
+      | [x] -> Some x
+      | `FunctionEntry ls :: rest ->
+          (*
+          print_endline "HERE 3";
+          *)
+          Some (`FunctionEntry (merge_functions opens name))
+    
+      | (`NonFunctionEntry (i)) as some ::_ ->
+          if
+            List.fold_left begin fun t -> function
+              | `NonFunctionEntry (j) when i = j -> t
+              | _ -> false
+            end true opens
+          then
+            Some some
+          else begin
+            List.iter begin fun es ->
+              print_endline ("Symbol " ^ (string_of_entry_set es))
+            end opens;
+            clierr sr ("[lookup_name_in_table_dirs] Conflicting nonfunction definitions for "^
+              name ^" found in open modules"
+            )
+          end
+      | [] -> None
 
 
 let rsground= {
@@ -224,9 +215,9 @@ and inner_lookup_name_in_env syms (env:env_t) rs sr name : entry_set_t =
     match env with
     | [] -> None
     | (_,_,table,dirs,_) :: tail ->
-      match lookup_name_in_table_dirs table dirs sr name with
-      | Some x as y -> y
-      | None -> aux tail
+        match lookup_name_in_table_dirs table dirs sr name with
+        | Some _ as x -> x
+        | None -> aux tail
   in
     match aux env with
     | Some x ->
