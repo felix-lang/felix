@@ -316,7 +316,6 @@ try
     ;
 
     let polyvars = Flx_intpoly.cal_polyvars syms bbdfns in
-    print_endline "Calculated polyvars";
 
     Flx_inst.instantiate syms bbdfns polyvars true root_proc syms.bifaces;
     (* EXPERIMENTAL!

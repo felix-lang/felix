@@ -23,12 +23,7 @@ let polyfix syms polyvars i ts =
     try Hashtbl.find polyvars i with Not_found -> [] 
   in
   let ts = Array.of_list ts in
-  iter  (fun (i,j) ->
-    match ts.(j) with
-    | `BTYP_var (k,_) when k = i -> ts.(j) <- `BTYP_void
-    | t -> failwith ("Unexpected ts value " ^ sbt syms.dfns t)
-  )
-  poly
+  iter  (fun (i,j) -> ts.(j) <- `BTYP_void) poly
   ;
   let ts = Array.to_list ts in
   ts
