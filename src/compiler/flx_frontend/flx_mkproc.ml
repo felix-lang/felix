@@ -75,7 +75,8 @@ let mkproc_expr syms bbdfns sr this mkproc_map vs e =
       Hashtbl.add bbdfns k (vid,Some this,sr,vardecl);
 
       (* append a pointer to this variable to the argument *)
-      let ptr = `BEXPR_ref (k,ts),`BTYP_pointer ret in
+      let ts' = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
+      let ptr = `BEXPR_ref (k,ts'),`BTYP_pointer ret in
       let (_,at') as a' = append_args syms bbdfns f a [ptr] in
 
       (* create a call instruction to the mapped procedure *)
@@ -90,7 +91,7 @@ let mkproc_expr syms bbdfns sr this mkproc_map vs e =
       exes := call :: !exes;
 
       (* replace the original expression with the variable *)
-      `BEXPR_name (k,ts),ret
+      `BEXPR_name (k,ts'),ret
     in e
   | x -> x
   in

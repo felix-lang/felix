@@ -316,7 +316,6 @@ try
     ;
 
     let polyvars = Flx_intpoly.cal_polyvars syms bbdfns in
-
     Flx_inst.instantiate syms bbdfns polyvars true root_proc syms.bifaces;
     (* EXPERIMENTAL!
       Adds monomorphic versions of all symbols.
