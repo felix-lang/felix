@@ -18,7 +18,22 @@ let dummy_sr = Flx_srcref.make_dummy "[flx_inst] generated"
 
 let null_table = Hashtbl.create 3
 
-let add_inst syms bbdfns ref_insts1 (i,ts) =
+let polyfix syms polyvars i ts =
+  let poly = 
+    try Hashtbl.find polyvars i with Not_found -> [] 
+  in
+  let ts = Array.of_list ts in
+  iter  (fun (i,j) ->
+    match ts.(j) with
+    | `BTYP_var (k,_) when k = i -> ts.(j) <- `BTYP_void
+    | t -> failwith ("Unexpected ts value " ^ sbt syms.dfns t)
+  )
+  poly
+  ;
+  let ts = Array.to_list ts in
+  ts
+
+let add_inst syms bbdfns polyvars ref_insts1 (i,ts) =
     (*
     print_endline ("Attempt to register instance " ^ si i ^ "[" ^
     catmap ", " (sbt syms.dfns) ts ^ "]");
@@ -30,7 +45,9 @@ let add_inst syms bbdfns ref_insts1 (i,ts) =
     print_endline ("remapped to instance " ^ si i ^ "[" ^
     catmap ", " (sbt syms.dfns) ts ^ "]");
     *)
-  let x = i, map (fun t -> reduce_type t) ts in
+  let ts = map (fun t -> reduce_type t) ts in
+  let ts = polyfix syms polyvars i ts in
+  let x = i, ts in
   let has_variables =
     fold_left
     (fun truth t -> truth ||
@@ -54,13 +71,13 @@ let add_inst syms bbdfns ref_insts1 (i,ts) =
     ref_insts1 := FunInstSet.add x !ref_insts1
   end
 
-let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
+let rec process_expr syms bbdfns polyvars ref_insts1 hvarmap sr ((e,t) as be) =
   (*
   print_endline ("Process expr " ^ sbe syms.dfns be ^ " .. raw type " ^ sbt syms.dfns t);
   print_endline (" .. instantiated type " ^ string_of_btypecode syms.dfns (varmap_subst hvarmap t));
   *)
-  let ue e = process_expr syms bbdfns ref_insts1 hvarmap sr e in
-  let ui i ts = add_inst syms bbdfns ref_insts1 (i,ts) in
+  let ue e = process_expr syms bbdfns polyvars ref_insts1 hvarmap sr e in
+  let ui i ts = add_inst syms bbdfns polyvars ref_insts1 (i,ts) in
   let ut t = register_type_r ui syms bbdfns [] sr t in
   let vs t = varmap_subst hvarmap t in
   let t' = vs t in
@@ -187,9 +204,9 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | `BEXPR_coerce (e,t) -> ue e; ut t
   end
 
-and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
-  let ue sr e = process_expr syms bbdfns ref_insts1 hvarmap sr e in
-  let uis i ts = add_inst syms bbdfns ref_insts1 (i,ts) in
+and process_exe syms bbdfns polyvars ref_insts1 ts hvarmap (exe:bexe_t) =
+  let ue sr e = process_expr syms bbdfns polyvars ref_insts1 hvarmap sr e in
+  let uis i ts = add_inst syms bbdfns polyvars ref_insts1 (i,ts) in
   let ui i = uis i ts in
   (*
   print_endline ("processing exe " ^ string_of_bexe syms.dfns bbdfns 0 exe);
@@ -266,27 +283,20 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   | `BEXE_end
     -> ()
 
-and process_exes syms bbdfns ref_insts1 ts hvarmap exes =
-  iter (process_exe syms bbdfns ref_insts1 ts hvarmap) exes
+and process_exes syms bbdfns polyvars ref_insts1 ts hvarmap exes =
+  iter (process_exe syms bbdfns polyvars ref_insts1 ts hvarmap) exes
 
-and process_function syms bbdfns hvarmap ref_insts1 index sr argtypes ret exes ts =
+and process_function syms bbdfns polyvars hvarmap ref_insts1 index sr argtypes ret exes ts =
   (*
   print_endline ("Process function " ^ si index);
   *)
-  process_exes syms bbdfns ref_insts1 ts hvarmap exes ;
+  process_exes syms bbdfns polyvars ref_insts1 ts hvarmap exes ;
   (*
   print_endline ("Done Process function " ^ si index);
   *)
 
-and process_production syms bbdfns ref_insts1 p ts =
-  let uses_symbol (_,nt) = match nt with
-  | `Nonterm ii -> iter (fun i -> add_inst syms bbdfns ref_insts1 (i,ts)) ii
-  | `Term i -> () (* HACK! This is a union constructor name  we need to 'use' the union type!! *)
-  in
-  iter uses_symbol p
-
-and process_inst syms bbdfns instps ref_insts1 i ts inst =
-  let uis i ts = add_inst syms bbdfns ref_insts1 (i,ts) in
+and process_inst syms bbdfns polyvars instps ref_insts1 i ts inst =
+  let uis i ts = add_inst syms bbdfns polyvars ref_insts1 (i,ts) in
   let ui i = uis i ts in
   let id,parent,sr,entry =
     try Hashtbl.find bbdfns i
@@ -301,7 +311,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     )
     reqs
   in
-  let ue hvarmap e = process_expr syms bbdfns ref_insts1 hvarmap sr e in
+  let ue hvarmap e = process_expr syms bbdfns polyvars ref_insts1 hvarmap sr e in
   let rtr t = register_type_r uis syms bbdfns [] sr t in
   let rtnr t = register_type_nr syms (reduce_type t) in
   if syms.compiler_options.print_flag then
@@ -328,7 +338,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
       hvarmap ""
     );
     *)
-    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret exes ts
+    process_function syms bbdfns polyvars hvarmap ref_insts1 i sr argtypes ret exes ts
 
   | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let argtypes = map (fun {ptyp=t}->t) ps in
@@ -342,7 +352,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
       )
       ps
     ;
-    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void exes ts
+    process_function syms bbdfns polyvars hvarmap ref_insts1 i sr argtypes `BTYP_void exes ts
 
   | `BBDCL_union (vs,ps) ->
     let argtypes = map (fun (_,_,t)->t) ps in
@@ -441,7 +451,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs;
-    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret [] ts
+    process_function syms bbdfns polyvars hvarmap ref_insts1 i sr argtypes ret [] ts
 
   | `BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,_) ->
     (*
@@ -475,7 +485,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs;
-    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void [] ts
+    process_function syms bbdfns polyvars hvarmap ref_insts1 i sr argtypes `BTYP_void [] ts
 
   | `BBDCL_abs (vs,_,_,reqs)
     ->
@@ -532,7 +542,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
   type and function.
 *)
 
-let instantiate syms bbdfns instps (root:bid_t) (bifaces:biface_t list) =
+let instantiate syms bbdfns polyvars instps (root:bid_t) (bifaces:biface_t list) =
   Hashtbl.clear syms.instances;
   Hashtbl.clear syms.registry;
 
@@ -547,7 +557,7 @@ let instantiate syms bbdfns instps (root:bid_t) (bifaces:biface_t list) =
     add_cand root [];
 
     (* add exported functions, and register exported types *)
-    let ui i ts = add_inst syms bbdfns insts1 (i,ts) in
+    let ui i ts = add_inst syms bbdfns polyvars insts1 (i,ts) in
     iter
     (function
       | `BIFACE_export_python_fun (_,x,_)
@@ -601,7 +611,7 @@ let instantiate syms bbdfns instps (root:bid_t) (bifaces:biface_t list) =
     let (index,vars) as x = FunInstSet.choose !insts1 in
     insts1 := FunInstSet.remove x !insts1;
     let inst = add_instance index vars in
-    process_inst syms bbdfns instps insts1 index vars inst
+    process_inst syms bbdfns polyvars instps insts1 index vars inst
   done
 
 

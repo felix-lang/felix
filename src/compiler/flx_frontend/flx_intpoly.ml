@@ -5,7 +5,7 @@ open Flx_util
 open Flx_print
 open Flx_mtypes2
 
-let remove i ls = filter (fun j -> i <> j) ls
+let remove i ls = filter (fun (k,j) -> i <> k) ls
 
 let rec check_abstract_type syms bbdfns rls (t:btypecode_t) = match t with
     | `BTYP_pointer (`BTYP_var _) -> ()
@@ -75,7 +75,8 @@ let cal_polyvars syms bbdfns =
   Hashtbl.iter (fun i (name,parent,sr,bbdfn) -> 
   match bbdfn with
   | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-    let tvars = ref (map (fun (_,i) -> i) vs) in
+    let j = ref 0 in
+    let tvars = ref (map (fun (_,i) -> incr j; i,!j-1) vs) in
     if !tvars <> [] then
     begin try 
   (*
@@ -83,14 +84,16 @@ let cal_polyvars syms bbdfns =
   *)
       iter (check_abstract_exe syms bbdfns tvars) exes;
       if !tvars <> [] then begin
-        print_endline ("Fun  " ^ name ^ "<"^si i ^ "> polyvars = " ^ catmap "," si !tvars);
+        print_endline ("Fun  " ^ name ^ "<"^si i ^ "> polyvars = " ^ catmap ","
+        (fun (i,j)-> si i) !tvars);
         Hashtbl.add absvars i (!tvars)
       end
     with Not_found -> ()
     end
 
   | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
-    let tvars = ref (map (fun (_,i) -> i) vs) in
+    let j = ref 0 in
+    let tvars = ref (map (fun (_,i) -> incr j; i,!j-1) vs) in
     if !tvars <> [] then
     begin try 
   (*
@@ -98,7 +101,8 @@ let cal_polyvars syms bbdfns =
   *)
       iter (check_abstract_exe syms bbdfns tvars) exes;
       if !tvars <> [] then begin
-        print_endline ("Proc " ^ name ^ "<"^si i ^ "> polyvars = " ^ catmap "," si !tvars);
+        print_endline ("Proc " ^ name ^ "<"^si i ^ "> polyvars = " ^ catmap ","
+        (fun (i,j) -> si i) !tvars);
         Hashtbl.add absvars i (!tvars)
       end
     with Not_found -> ()

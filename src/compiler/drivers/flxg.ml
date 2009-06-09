@@ -318,7 +318,7 @@ try
     let polyvars = Flx_intpoly.cal_polyvars syms bbdfns in
     print_endline "Calculated polyvars";
 
-    Flx_inst.instantiate syms bbdfns true root_proc syms.bifaces;
+    Flx_inst.instantiate syms bbdfns polyvars true root_proc syms.bifaces;
     (* EXPERIMENTAL!
       Adds monomorphic versions of all symbols.
       This will do nothing, because they're not
@@ -470,7 +470,8 @@ try
 
   print_debug "//instantiating";
 
-  Flx_inst.instantiate syms bbdfns false root_proc syms.bifaces;
+  let polyvars = Hashtbl.create 97 in (* temporary hack *)
+  Flx_inst.instantiate syms bbdfns polyvars false root_proc syms.bifaces;
 
   let label_map = Flx_label.create_label_map bbdfns syms.counter in
   let label_usage = Flx_label.create_label_usage syms bbdfns label_map in
