@@ -18,13 +18,6 @@ val iter_b0type:
 val iter_btype:
   (btypecode_t -> unit) -> btypecode_t -> unit
 
-(* throw Not_found if type variable not under a pointer
- * is found
- *)
-val check_abstract_type: btypecode_t -> unit
-val check_abstract_expr: tbexpr_t -> unit
-val check_abstract_exe : bexe_t -> unit
-
 val flat_iter_tbexpr:
   (bid_t -> unit) ->
   (tbexpr_t -> unit) ->

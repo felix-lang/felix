@@ -342,11 +342,6 @@ let iter_btype f = function
 
   | x -> iter_b0type f x
 
-let rec check_abstract_type (t:btypecode_t) = match t with
-    | `BTYP_pointer (`BTYP_var _) -> ()
-    | `BTYP_var _ -> raise Not_found
-    | t' -> iter_btype check_abstract_type t'
-
 (* type invariant mapping *)
 
 (* this routine applies arguments HOFs to SUB components only, not
@@ -394,9 +389,6 @@ let rec iter_tbexpr fi fe ft ((x,t) as e) =
   fe e; ft t;
   let fe e = iter_tbexpr fi fe ft e in
   flat_iter_tbexpr fi fe ft e
-
-let check_abstract_expr (e:tbexpr_t) =
-  iter_tbexpr ignore ignore check_abstract_type e
 
 
 let map_tbexpr fi fe ft e = match e with
@@ -489,10 +481,6 @@ let iter_bexe fi fe ft fl fldef exe =
   | `BEXE_begin
   | `BEXE_end
     -> ()
-
-let check_abstract_exe (exe:bexe_t) =
- iter_bexe ignore check_abstract_expr check_abstract_type ignore ignore exe 
-
 
 let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
   match exe with
