@@ -2,7 +2,7 @@ open Flx_ast
 val typecode_of_expr:
   expr_t -> typecode_t
 
-val typeof_list:
+val type_of_list:
   typecode_t list -> typecode_t
 
 val paramtype:

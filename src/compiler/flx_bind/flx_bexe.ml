@@ -422,7 +422,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
     | `EXE_iinit ((s,index),e) ->
         let e',rhst = be e in
-        let lhst = typeofindex_with_ts syms sr index parent_ts in
+        let lhst = type_of_index_with_ts syms sr index parent_ts in
         let rhst = minimise syms.counter syms.dfns rhst in
         let lhst = reduce_type lhst in
         if type_match syms.counter syms.dfns lhst rhst
@@ -445,7 +445,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       | `NonFunctionEntry (index) ->
         let index = sye index in
         let e',rhst = be e in
-        let lhst = typeofindex_with_ts syms sr index parent_ts in
+        let lhst = type_of_index_with_ts syms sr index parent_ts in
         let rhst = minimise syms.counter syms.dfns rhst in
         let lhst = reduce_type lhst in
         (*

@@ -16,7 +16,7 @@ let qualified_name_of_expr e =
     )
 
 
-let typeof_list = function
+let type_of_list = function
   | [x] -> x
   | x -> `TYP_tuple x
 
@@ -31,7 +31,7 @@ let paramtype params =
     )
     params
   in
-  typeof_list (typlist params)
+  type_of_list (typlist params)
 
 let all_tunits ts =
   try
