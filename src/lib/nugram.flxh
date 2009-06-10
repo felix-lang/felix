@@ -530,52 +530,48 @@ syntax functions {
   sfun_kind := "gen" =># "'Generator";
   sfun_kind := "fun" =># "'Function";
 
-  sfunction_definition := sadjectives sfun_kind sdeclname
-    sfun_arg* fun_return_type "=>" sexpr ";" =>#
-  """
-    (let ((body `((ast_fun_return ,_sr ,_7))))
-    `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,body)
-    )
-  """;
+  sfunction_definition := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";" =>#
+    """
+      (let ((body `((ast_fun_return ,_sr ,_7))))
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,body)
+      )
+    """;
 
-
-  sfunction_definition := sadjectives sfun_kind sdeclname
-    sfun_arg* fun_return_type = scompound =>#
-  """
-    `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
-  """;
+  sfunction_definition := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type = scompound =>#
+    """
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
+    """;
 
   sopt_cstring := = scode_spec =># "`(some ,_2)";
   sopt_cstring := sepsilon =># "'none";
 
-  sfunction_definition := sadjectives sfun_kind sdeclname
-    fun_return_type = smatching+ ";" =>#
-  """
-   (let
-     (
-      (t (first _4))
-      (traint (second _4))
-     )
-    (begin ;;(display "ftype=")(display t)(display "\\n")
-    (if (eq? 'ast_arrow (first t))
-      (let
-        (
-          (argt (caadr t))
-          (ret (cadadr t))
-          (body `((ast_fun_return ,_sr (ast_match (_a ,_6)))))
-        )
-        `(ast_curry ,_sr ,(first _3) ,(second _3)
+  sfunction_definition := sadjectives sfun_kind sdeclname fun_return_type = smatching+ ";" =>#
+    """
+     (let
+       (
+        (t (first _4))
+        (traint (second _4))
+       )
+      (begin ;;(display "ftype=")(display t)(display "\\n")
+      (if (eq? 'ast_arrow (first t))
+        (let
           (
-            (((PVal _a ,argt none)) none)
+            (argt (caadr t))
+            (ret (cadadr t))
+            (body `((ast_fun_return ,_sr (ast_match (_a ,_6)))))
           )
-          (,ret ,traint)
-          ,(cal_funkind _1 _2) ,body)
-      )
-      'ERROR
+          `(ast_curry ,_sr ,(first _3) ,(second _3)
+            (
+              (((PVal _a ,argt none)) none)
+            )
+            (,ret ,traint)
+            ,(cal_funkind _1 _2) ,body)
+        )
+        'ERROR
+       )
+       )
      )
-     )
-   )
-  """;
+    """;
 
   sproc_kind := "proc" =># "'Function";
   sproc_kind := "cproc" =># "'CFunction";
@@ -587,71 +583,65 @@ syntax functions {
   sopt_traint:= "expect" sexpr =># "`(some ,_2)";
   sopt_traint:= sepsilon =># "'none";
 
-
   sctor_init := sname lpar sexpr rpar =># "`(,_1 ,_3)";
   sctor_inits := ":" sctor_init (, sctor_init)* =># "(cons _2 _3)";
   sctor_inits := sepsilon =># "()";
 
   // only used by classes
-  sctor_definition := "ctor" stvarlist sfun_arg* sopt_traint_eq
-    sctor_inits scompound =>#
-  """
-  (let*
-    (
-      (name "__constructor__")
-      (vs _2)
-      (ret 'ast_void)
-      (traint _4)
-      (body _6)
-      (inits _5)
-      (args _3)
-      (f (lambda (ne)`(ast_init ,_sr ,(first ne) ,(second ne))))
-      (body (append (map f inits) body))
-    )
-    `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Ctor ,body))
-  """;
+  sctor_definition := "ctor" stvarlist sfun_arg* sopt_traint_eq sctor_inits scompound =>#
+    """
+    (let*
+      (
+        (name "__constructor__")
+        (vs _2)
+        (ret 'ast_void)
+        (traint _4)
+        (body _6)
+        (inits _5)
+        (args _3)
+        (f (lambda (ne)`(ast_init ,_sr ,(first ne) ,(second ne))))
+        (body (append (map f inits) body))
+      )
+      `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Ctor ,body))
+    """;
 
-  sctor_definition := "ctor" stvarlist sname sfun_arg+ sopt_traint_eq
-    scompound =>#
-  """
-  (let*
-    (
-      (name (string-append "_ctor_" _3))
-      (vs _2)
-      (ret `(ast_name ,_sr ,_3 ()))
-      (traint _5)
-      (body _6)
-      (args _4)
-    )
-    `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
-  """;
+  sctor_definition := "ctor" stvarlist sname sfun_arg+ sopt_traint_eq scompound =>#
+    """
+    (let*
+      (
+        (name (string-append "_ctor_" _3))
+        (vs _2)
+        (ret `(ast_name ,_sr ,_3 ()))
+        (traint _5)
+        (body _6)
+        (args _4)
+      )
+      `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
+    """;
 
-  sctor_definition := "ctor" stvarlist sname sfun_arg+
-    sopt_traint "=>" sexpr ";" =>#
-  """
-  (let*
-    (
-      (name (string-append "_ctor_" _3))
-      (vs _2)
-      (ret `(ast_name ,_sr ,_3 ,(typesoftvarlist _2)))
-      (traint _5)
-      (body `((ast_fun_return ,_sr ,_7)))
-      (args _4)
-    )
-    `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
-  """;
+  sctor_definition := "ctor" stvarlist sname sfun_arg+ sopt_traint "=>" sexpr ";" =>#
+    """
+    (let*
+      (
+        (name (string-append "_ctor_" _3))
+        (vs _2)
+        (ret `(ast_name ,_sr ,_3 ,(typesoftvarlist _2)))
+        (traint _5)
+        (body `((ast_fun_return ,_sr ,_7)))
+        (args _4)
+      )
+      `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
+    """;
 
-  sprocedure_definition := sadjectives sproc_kind sdeclname
-    sfun_arg* sopt_traint_eq scompound =>#
-  """
-    `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 (ast_void ,_5) ,(cal_funkind _1 _2) ,_6)
-  """;
+  sprocedure_definition := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound =>#
+    """
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 (ast_void ,_5) ,(cal_funkind _1 _2) ,_6)
+    """;
 
-  sprocedure_definition := sadjectives sproc_kind sdeclname
-    sfun_arg* "=>" tstatement =>#
-  """
-    `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 (ast_void none) ,(cal_funkind _1 _2) (,_6))
-  """;
+  sprocedure_definition := sadjectives sproc_kind sdeclname sfun_arg* "=>" tstatement =>#
+    """
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 (ast_void none) ,(cal_funkind _1 _2) (,_6))
+    """;
 }
 
 //------------------------------------------
@@ -665,7 +655,6 @@ syntax statements {
   tstatement:= scomment =># "_1";
   tstatement:= snull_statement =># "_1";
   scomment := "comment" sstring ";" =># "`(ast_comment ,_sr ,_2)";
-
 
   spublish := "private" sdeclarative =># "`(ast_private ,_2)";
   spublish := "private" sbinding_definition =># "`(ast_private ,_2)";
@@ -734,7 +723,6 @@ syntax statements {
 
   sname_suffix:= comma sname sname_suffix =># "(cons _2 _3)";
   sname_suffix:= comma sname =># "`(,_2)";
-
 }
 
 //------------------------------------------
@@ -749,32 +737,32 @@ syntax variables {
   sexecutable := svar_def =># "_1";
   sexecutable := sval_def =># "_1";
   sval_def := "val" sname sname_suffix = sexpr ";" =>#
-  """
-  (let
-    (
-      (names (cons _2 _3))
-      (vals (mkl _5))
-    )
-    (begin
-    ;;(display "names=")(display names)
-    ;;(display "init=")(display vals)
-    ;;(display "\\n")
-    (if (eq? (length names)(length vals))
-      (let
-        (
-          (f (lambda (n v)`(ast_val_decl ,_sr ,n ,dfltvs none (some ,v))))
-        )
-        `(ast_seq ,_sr ,(map f names vals))
+    """
+    (let
+      (
+        (names (cons _2 _3))
+        (vals (mkl _5))
       )
-      (let*
-        (
-          (f (lambda (n)`((Val ,_sr ,n) none)))
-          (lexpr (map f names))
+      (begin
+      ;;(display "names=")(display names)
+      ;;(display "init=")(display vals)
+      ;;(display "\\n")
+      (if (eq? (length names)(length vals))
+        (let
+          (
+            (f (lambda (n v)`(ast_val_decl ,_sr ,n ,dfltvs none (some ,v))))
+          )
+          `(ast_seq ,_sr ,(map f names vals))
         )
-        `(ast_assign ,_sr _set ((List ,lexpr) none) ,_5)
-      )
-  )))
-  """;
+        (let*
+          (
+            (f (lambda (n)`((Val ,_sr ,n) none)))
+            (lexpr (map f names))
+          )
+          `(ast_assign ,_sr _set ((List ,lexpr) none) ,_5)
+        )
+    )))
+    """;
 
   sval_def := "val" sdeclname = sexpr ";" =>#
     """
@@ -812,32 +800,32 @@ syntax variables {
      """;
 
   svar_def := "var" sname sname_suffix = sexpr ";" =>#
-  """
-  (let
-    (
-      (names (cons _2 _3))
-      (vals (mkl _5))
-    )
-    (begin
-    ;;(display "names=")(display names)
-    ;;(display "init=")(display vals)
-    ;;(display "\\n")
-    (if (eq? (length names)(length vals))
-      (let
-        (
-          (f (lambda (n v)`(ast_var_decl ,_sr ,n ,dfltvs none (some ,v))))
-        )
-        `(ast_seq ,_sr ,(map f names vals))
+    """
+    (let
+      (
+        (names (cons _2 _3))
+        (vals (mkl _5))
       )
-      (let*
-        (
-          (f (lambda (n)`((Var ,_sr ,n) none)))
-          (lexpr (map f names))
+      (begin
+      ;;(display "names=")(display names)
+      ;;(display "init=")(display vals)
+      ;;(display "\\n")
+      (if (eq? (length names)(length vals))
+        (let
+          (
+            (f (lambda (n v)`(ast_var_decl ,_sr ,n ,dfltvs none (some ,v))))
+          )
+          `(ast_seq ,_sr ,(map f names vals))
         )
-        `(ast_assign ,_sr _set ((List ,lexpr) none) ,_5)
-      )
-  )))
-  """;
+        (let*
+          (
+            (f (lambda (n)`((Var ,_sr ,n) none)))
+            (lexpr (map f names))
+          )
+          `(ast_assign ,_sr _set ((List ,lexpr) none) ,_5)
+        )
+    )))
+    """;
 
   svar_def := "var" sdeclname = sexpr ";" =>#
     """
@@ -853,7 +841,6 @@ syntax variables {
     """
     `(ast_var_decl ,_sr ,(first _2) ,(second _2) (some ,_4) none)
      """;
-
 }
 
 //------------------------------------------
@@ -898,14 +885,14 @@ syntax macros {
   smacro_definition := "macro" "for" "val" sbasic_name_comma_list "in" sexpr "do" sstatements "done" ";" =>#
     "`(ast_macro_vfor ,_4 ,_6 ,_8)";
 
-    smac_arg:= sname ":" "fun" =># "`(,_1 Expr)";
-    smac_arg:= sname ":" "proc" =># "`(,_1 Stmt)";
-    smac_arg:= sname ":" "ident" =># "`(,_1 Stmt)";
-    smac_arg:= sname =># "`(,_1 Expr)";
-    smac_args := smac_arg , smac_args =># "(cons _1 _3)";
-    smac_args := smac_arg =># "`(,_1)";
-    smac_arg_list := lpar smac_args rpar =># "_2";
-    smac_arg_list := lpar rpar =># "()";
+  smac_arg:= sname ":" "fun" =># "`(,_1 Expr)";
+  smac_arg:= sname ":" "proc" =># "`(,_1 Stmt)";
+  smac_arg:= sname ":" "ident" =># "`(,_1 Stmt)";
+  smac_arg:= sname =># "`(,_1 Expr)";
+  smac_args := smac_arg , smac_args =># "(cons _1 _3)";
+  smac_args := smac_arg =># "`(,_1)";
+  smac_arg_list := lpar smac_args rpar =># "_2";
+  smac_arg_list := lpar rpar =># "()";
 
   x[sapplication_pri] := "macro" "ctor" sname x[scoercion_pri] =># "`ast_macro_ctor (,_3 ,_4))";
 }
@@ -932,66 +919,63 @@ syntax cbind {
   sopt_prec := sepsilon =># '(quote "")';
 
   // note: also needed by typeclasses atm for virtual funs
-  sfunction_definition := sadjectives sfun_kind sdeclname
-    fun_return_type sopt_cstring sopt_prec srequires_clause ";" =>#
-  """
-    (let (
-      (name (first _3))
-      (vs (second _3))
-      (kind (cal_funkind _1 _2))
-      (t (first _4))
-      (traint (second _4))
-      (prec _6)
-      (reqs (if (memv 'Virtual _1)
-        `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
-        _7)
-      )
-      (ct
-        (if (eq? 'none _5)
-          (if (memv 'Virtual _1)
-            'Virtual
-             `(StrTemplate ,(string-append (first _3) "($a)"))
-           )
-           (second _5))
-      )
-    )
-    (let (
-      (reqs
-        (if (eq? 'Generator kind)
-          `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
-          reqs))
-    )
-    (if (eq? 'ast_arrow (first t))
+  sfunction_definition := sadjectives sfun_kind sdeclname fun_return_type sopt_cstring sopt_prec srequires_clause ";" =>#
+    """
       (let (
-        (argt (caadr t))
-        (ret (cadadr t)))
-      `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
-      )
-      ('ERROR))))
-  """;
-
-  sfunction_definition :=
-    "ctor" sname stvarlist ":" stypeexpr
-    sopt_cstring sopt_prec srequires_clause ";" =>#
-  """
-  (let*
-    (
-      (name (string-append "_ctor_" _2))
-      (vs _3)
-      (ret `(ast_name ,_sr ,_2 ()))
-      (argt _5)
-      (ct
-        (if (eq? 'none _6)
-          `(StrTemplate ,(string-append _2 "($a)"))
-          (second _6)
+        (name (first _3))
+        (vs (second _3))
+        (kind (cal_funkind _1 _2))
+        (t (first _4))
+        (traint (second _4))
+        (prec _6)
+        (reqs (if (memv 'Virtual _1)
+          `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
+          _7)
+        )
+        (ct
+          (if (eq? 'none _5)
+            (if (memv 'Virtual _1)
+              'Virtual
+               `(StrTemplate ,(string-append (first _3) "($a)"))
+             )
+             (second _5))
         )
       )
-      (prec _7)
-      (reqs _8)
+      (let (
+        (reqs
+          (if (eq? 'Generator kind)
+            `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
+            reqs))
+      )
+      (if (eq? 'ast_arrow (first t))
+        (let (
+          (argt (caadr t))
+          (ret (cadadr t)))
+        `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
+        )
+        ('ERROR))))
+    """;
+
+  sfunction_definition := "ctor" sname stvarlist ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";" =>#
+    """
+    (let*
+      (
+        (name (string-append "_ctor_" _2))
+        (vs _3)
+        (ret `(ast_name ,_sr ,_2 ()))
+        (argt _5)
+        (ct
+          (if (eq? 'none _6)
+            `(StrTemplate ,(string-append _2 "($a)"))
+            (second _6)
+          )
+        )
+        (prec _7)
+        (reqs _8)
+      )
+      `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
     )
-    `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
-  )
-  """;
+    """;
 
   sabstract_type:= stype_qual* "type" sdeclname = scode_spec srequires_clause ";" =>#
     """
@@ -1037,60 +1021,57 @@ syntax cbind {
 
   // note: also needed by typeclasses atm for virtual consts
   sconst_def := sadjectives "const" sdeclname ":" stypeexpr = scode_spec srequires_clause ";" =>#
-  """
-    (let ((reqs (if (memv 'Virtual _1)
-      `(rreq_and (rreq_atom (Property_req "virtual")) ,_8)
-      _8)))
-    `(ast_const_decl ,_sr ,(first _3) ,(second _3) ,_5 ,_7 ,reqs)
-    )
-  """;
+    """
+      (let ((reqs (if (memv 'Virtual _1)
+        `(rreq_and (rreq_atom (Property_req "virtual")) ,_8)
+        _8)))
+      `(ast_const_decl ,_sr ,(first _3) ,(second _3) ,_5 ,_7 ,reqs)
+      )
+    """;
 
   // note: also needed by typeclasses atm for virtual consts
   sconst_def := sadjectives "const" sdeclname ":" stypeexpr srequires_clause ";" =>#
-  """
-    (let ((reqs (if (memv 'Virtual _1)
-      `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
-      _6)))
-    `(ast_const_decl ,_sr ,(first _3) ,(second _3) ,_5 (Str ,(first _3)) ,reqs)
-    )
-  """;
+    """
+      (let ((reqs (if (memv 'Virtual _1)
+        `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
+        _6)))
+      `(ast_const_decl ,_sr ,(first _3) ,(second _3) ,_5 (Str ,(first _3)) ,reqs)
+      )
+    """;
 
   // note: also needed by typeclasses atm for virtual procs
-  sprocedure_definition := sadjectives sproc_kind sdeclname ":" stypeexpr
-    sopt_cstring srequires_clause ";" =>#
-  """
-    (let (
-      (name (first _3))
-      (vs (second _3))
-      (kind (cal_funkind _1 _2))
-      (t _5)
-      (reqs (if (memv 'Virtual _1)
-        `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
-        _7)
+  sprocedure_definition := sadjectives sproc_kind sdeclname ":" stypeexpr sopt_cstring srequires_clause ";" =>#
+    """
+      (let (
+        (name (first _3))
+        (vs (second _3))
+        (kind (cal_funkind _1 _2))
+        (t _5)
+        (reqs (if (memv 'Virtual _1)
+          `(rreq_and (rreq_atom (Property_req "virtual")) ,_7)
+          _7)
+        )
+        (ct
+          (if (eq? 'none _6)
+            (if (memv 'Virtual _1)
+              'Virtual
+               `(StrTemplate ,(string-append (first _3) "($a);"))
+             )
+             (second _6))
+        )
       )
-      (ct
-        (if (eq? 'none _6)
-          (if (memv 'Virtual _1)
-            'Virtual
-             `(StrTemplate ,(string-append (first _3) "($a);"))
-           )
-           (second _6))
+      (let (
+        (reqs
+          (if (eq? 'Generator kind)
+            `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
+            reqs))
       )
-    )
-    (let (
-      (reqs
-        (if (eq? 'Generator kind)
-          `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
-          reqs))
-    )
-    (let (
-      (argt t)
-      (ret 'ast_void))
-      `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs "")
-      )))
-  """;
-
-
+      (let (
+        (argt t)
+        (ret 'ast_void))
+        `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs "")
+        )))
+    """;
 }
 
 //------------------------------------------
@@ -1111,19 +1092,19 @@ syntax executable {
 
   // a0 <- f (a1, a2, ..)  means f (a0, a1, a2 ..)
   sassignexpr := sexpr "<-" sexpr =>#
-   """
-   (let* (
-     (fl (splitapply _3))
-     (f (first fl))
-     (a (second fl)))
-     (begin
-     ;; (display "f=")(display f)
-     ;; (display "\\n_1=")(display _1)
-     ;; (display "\\na=")(display a)
-     ;; (display "\\nnew a=")(display (cons _1 (mkl a)))
-     ;; (display "\\n")
-     `(ast_call ,_sr ,f ,(cons _1 (mkl a)))))
-   """;
+    """
+    (let* (
+      (fl (splitapply _3))
+      (f (first fl))
+      (a (second fl)))
+      (begin
+      ;; (display "f=")(display f)
+      ;; (display "\\n_1=")(display _1)
+      ;; (display "\\na=")(display a)
+      ;; (display "\\nnew a=")(display (cons _1 (mkl a)))
+      ;; (display "\\n")
+      `(ast_call ,_sr ,f ,(cons _1 (mkl a)))))
+    """;
 
   sassignop:= = =># "'_set";
   sassignop:= "<-" =># "'_pset";
@@ -1190,7 +1171,6 @@ syntax executable {
   tstatement := sname ":>" =># "`(ast_label ,_sr ,_1)";
   tstatement := "goto" sname =># "`(ast_goto ,_sr ,_2)";
 
-
   tstatement := "if" sexpr "goto" sname =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
   utstatement := "if" sexpr "return" =># "`(ast_ifreturn ,_sr ,_2)";
   utstatement := "if" sexpr "call" sexpr =>#
@@ -1227,32 +1207,32 @@ syntax executable {
   tstatement := "redo" =># '`(ast_goto ,_sr "redo_label")';
 
   tstatement := "whilst" sexpr "do" sstatements "done" =>#
-  """
-    `( ast_macro_block ,( append `(
-      ( ast_macro_name "break_label" "" )
-      ( ast_macro_name "continue_label" "" )
-      ( ast_label ,_sr "continue_label" )
-      ( ast_unlikely_ifnotgoto ,_sr ,_2 "break_label" ))
-      _4
-      `(( ast_goto ,_sr "continue_label" )
-      ( ast_label ,_sr "break_label" ))
+    """
+      `( ast_macro_block ,( append `(
+        ( ast_macro_name "break_label" "" )
+        ( ast_macro_name "continue_label" "" )
+        ( ast_label ,_sr "continue_label" )
+        ( ast_unlikely_ifnotgoto ,_sr ,_2 "break_label" ))
+        _4
+        `(( ast_goto ,_sr "continue_label" )
+        ( ast_label ,_sr "break_label" ))
+        )
       )
-    )
-  """;
+    """;
 
   tstatement := "until" sexpr "do" sstatements "done" =>#
-  """
-    `( ast_macro_block ,( append `(
-      ( ast_macro_name "break_label" "" )
-      ( ast_macro_name "continue_label" "" )
-      ( ast_label ,_sr "continue_label" )
-      ( ast_unlikely_ifgoto ,_sr ,_2 "break_label" ))
-      _4
-      `(( ast_goto ,_sr "continue_label" )
-      ( ast_label ,_sr "break_label" ))
+    """
+      `( ast_macro_block ,( append `(
+        ( ast_macro_name "break_label" "" )
+        ( ast_macro_name "continue_label" "" )
+        ( ast_label ,_sr "continue_label" )
+        ( ast_unlikely_ifgoto ,_sr ,_2 "break_label" ))
+        _4
+        `(( ast_goto ,_sr "continue_label" )
+        ( ast_label ,_sr "break_label" ))
+        )
       )
-    )
-  """;
+    """;
 
 
   tstatement := "forall" sname "in" sexpr "do" sstatements "done" =>#
@@ -1260,44 +1240,44 @@ syntax executable {
   ;
 
   tstatement := "forall" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
-  """
-    `(ast_macro_block ,( append `(
-      (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
-      ( ast_macro_name "break_label" "" )
-      ( ast_macro_name "continue_label" "" )
-      ( ast_macro_name "redo_label" "" )
-      ( ast_label ,_sr "redo_label" )
-      ( ast_unlikely_ifnotgoto ,_sr
-        (ast_apply ,_sr (le ((ast_name ,_sr ,_2 ()),_6)))
-        "break_label"
-      ))
-      _8
-      `(( ast_label ,_sr "continue_label" )
-      (ast_call ,_sr pre_incr (ast_ref (ast_name ,_sr ,_2())))
-      ( ast_goto ,_sr "redo_label" )
-      ( ast_label ,_sr "break_label" ))
-     ))
-  """;
+    """
+      `(ast_macro_block ,( append `(
+        (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
+        ( ast_macro_name "break_label" "" )
+        ( ast_macro_name "continue_label" "" )
+        ( ast_macro_name "redo_label" "" )
+        ( ast_label ,_sr "redo_label" )
+        ( ast_unlikely_ifnotgoto ,_sr
+          (ast_apply ,_sr (le ((ast_name ,_sr ,_2 ()),_6)))
+          "break_label"
+        ))
+        _8
+        `(( ast_label ,_sr "continue_label" )
+        (ast_call ,_sr pre_incr (ast_ref (ast_name ,_sr ,_2())))
+        ( ast_goto ,_sr "redo_label" )
+        ( ast_label ,_sr "break_label" ))
+       ))
+    """;
 
   tstatement := "forall" sname "in" sexpr "downto" sexpr "do" sstatements "done" =>#
-  """
-    `(ast_macro_block ,( append `(
-      (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
-      ( ast_macro_name "break_label" "" )
-      ( ast_macro_name "continue_label" "" )
-      ( ast_macro_name "redo_label" "" )
-      ( ast_label ,_sr "redo_label" )
-      ( ast_unlikely_ifnotgoto ,_sr
-        (ast_apply ,_sr (ge ((ast_name ,_sr ,_2 ()) ,_6)))
-        "break_label"
-      ))
-      _8
-      `(( ast_label ,_sr "continue_label" )
-      ( ast_call ,_sr pre_decr (ast_ref (ast_name ,_sr ,_2 ())))
-      ( ast_goto ,_sr "redo_label" )
-      ( ast_label ,_sr "break_label" ))
-     ))
-  """;
+    """
+      `(ast_macro_block ,( append `(
+        (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
+        ( ast_macro_name "break_label" "" )
+        ( ast_macro_name "continue_label" "" )
+        ( ast_macro_name "redo_label" "" )
+        ( ast_label ,_sr "redo_label" )
+        ( ast_unlikely_ifnotgoto ,_sr
+          (ast_apply ,_sr (ge ((ast_name ,_sr ,_2 ()) ,_6)))
+          "break_label"
+        ))
+        _8
+        `(( ast_label ,_sr "continue_label" )
+        ( ast_call ,_sr pre_decr (ast_ref (ast_name ,_sr ,_2 ())))
+        ( ast_goto ,_sr "redo_label" )
+        ( ast_label ,_sr "break_label" ))
+       ))
+    """;
 }
 
 //------------------------------------------
@@ -1324,7 +1304,6 @@ syntax requirements {
   srequirements:= srequirements , srequirement_or =>#
     "`(rreq_and ,_1 ,_3)";
   srequirements:= srequirement_or =># "_1";
-
 
   srequirement := "body" scode_spec =># "`(Body_req ,_2)";
   srequirement := "header" scode_spec =># "`(Header_req ,_2)";
@@ -1356,9 +1335,9 @@ syntax requirements {
     """
     `(ast_insert ,_sr ,(first _2) ,(second _2) ,_4 body ,_5)
      """;
-
 }
 
+//------------------------------------------
 syntax type_decls {
   requires statements;
 
@@ -1449,7 +1428,6 @@ syntax type_decls {
   senum_items := senum_item , senum_items =># "(cons _1 _3)";
   senum_items := senum_item =># "`(,_1)";
   senum_items := sepsilon =># "()";
-
 }
 
 //------------------------------------------
@@ -1462,34 +1440,34 @@ syntax assertions {
   sdeclarative := sassertion =># "_1";
 
   sassertion := "axiom" sdeclname sfun_arg ":" sexpr ";" =>#
-  """
-    `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
-  """;
+    """
+      `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
+    """;
 
   sassertion := "axiom" sdeclname sfun_arg ":" sexpr = sexpr ";" =>#
-  """
-    `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
-  """;
+    """
+      `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
+    """;
 
   sassertion := "lemma" sdeclname sfun_arg ":" sexpr ";" =>#
-  """
-    `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
-  """;
+    """
+      `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
+    """;
 
   sassertion := "lemma" sdeclname sfun_arg ":" sexpr = sexpr ";" =>#
-  """
-    `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
-  """;
+    """
+      `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
+    """;
 
   sreduce_args := lpar stypeparameter_comma_list rpar =># "_2";
 
   sassertion := "reduce" sdeclname sreduce_args ":" sexpr "=>" sexpr ";" =>#
-  """
-    `(ast_reduce ,_sr ,(first _2) ,(second _2) ,_3 ,_5 ,_7)
-  """;
-
+    """
+      `(ast_reduce ,_sr ,(first _2) ,(second _2) ,_3 ,_5 ,_7)
+    """;
 }
 
+//------------------------------------------
 syntax namespaces {
   requires statements;
   sopen_decl := "rename" sdeclname = squalified_name ";" =>#
@@ -1528,7 +1506,6 @@ syntax namespaces {
       (ast_untyped_module ,_sr ,(first _3) ,(second _3) ,_5)
       (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(first _3)()))))
      """;
-
 }
 
 //------------------------------------------
@@ -1548,4 +1525,3 @@ syntax felix {
     macros
   ;
 }
-
