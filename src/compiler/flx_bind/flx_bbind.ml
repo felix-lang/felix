@@ -5,7 +5,6 @@ open Flx_set
 open Flx_mtypes2
 open Flx_print
 open Flx_typing
-open Flx_lookup
 open Flx_mbind
 open Flx_unify
 open Flx_exceptions
@@ -42,7 +41,7 @@ let rec find_true_parent dfns child parent =
 
 let bind_req syms env sr tag =
   (* HACKY *)
-  try Some (lookup_code_in_env syms env sr tag)
+  try Some (Flx_lookup.lookup_code_in_env syms env sr tag)
   with _ -> None
 
 
@@ -116,17 +115,17 @@ let bbind_sym syms bbdfns i {
   print_endline ("True Parent is " ^ (match true_parent with | None -> "none" | Some i -> si i));
   *)
   begin
-    (* let env = build_env syms parent in  *)
-    let env = build_env syms (Some i) in
+    (* let env = Flx_lookup.build_env syms parent in  *)
+    let env = Flx_lookup.build_env syms (Some i) in
     (*
     print_endline "ENVIRONMENT:";
     print_env_short env;
     *)
 
-    let be e = bind_expression syms env e in
-    let luqn n = lookup_qn_in_env syms env n in
-    let luqn2 n = lookup_qn_in_env2 syms env n in
-    let bt t = bind_type syms env sr t in
+    let be e = Flx_lookup.bind_expression syms env e in
+    let luqn n = Flx_lookup.lookup_qn_in_env syms env n in
+    let luqn2 n = Flx_lookup.lookup_qn_in_env2 syms env n in
+    let bt t = Flx_lookup.bind_type syms env sr t in
     let ivs = find_vs syms i in (* this is the full vs list *)
     let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
     let bind_type_constraint ivs =
@@ -250,7 +249,7 @@ let bbind_sym syms bbdfns i {
         | {symdef=`SYMDEF_lemma _}
         | {symdef=`SYMDEF_function _}
           ->
-          let t = typeofindex syms i in
+          let t = Flx_lookup.type_of_index syms i in
           let dcl = match k with
           | `PVar -> `BBDCL_var (bvs,t)
           | `PVal -> `BBDCL_val (bvs,t)
@@ -269,7 +268,7 @@ let bbind_sym syms bbdfns i {
       end
 
     | `SYMDEF_match_check (pat,(mvname,mvindex)) ->
-      let t = typeofindex syms mvindex in
+      let t = Flx_lookup.type_of_index syms mvindex in
       let name_map = Hashtbl.create 97 in
       let exes =
         [
@@ -316,7 +315,7 @@ let bbind_sym syms bbdfns i {
           its
         | _ -> assert false
       in
-      let t = typeofindex syms i in
+      let t = Flx_lookup.type_of_index syms i in
       let ut = bt ut in
       let ct =
         if unit_sum then si ctor_idx
@@ -332,7 +331,7 @@ let bbind_sym syms bbdfns i {
       (*
       print_endline ("Binding non const ctor " ^ name);
       *)
-      let t = typeofindex syms i in
+      let t = Flx_lookup.type_of_index syms i in
       let argt = bt argt in
       let ut = bt ut in
       let btraint = bind_type_constraint vs' in
@@ -345,7 +344,7 @@ let bbind_sym syms bbdfns i {
       sbt syms.dfns t)
 
     | `SYMDEF_val (t) ->
-      let t = typeofindex syms i in
+      let t = Flx_lookup.type_of_index syms i in
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_val (bvs,t));
 
       if syms.compiler_options.print_flag then
@@ -354,7 +353,7 @@ let bbind_sym syms bbdfns i {
       sbt syms.dfns t)
 
     | `SYMDEF_ref (t) ->
-      let t = typeofindex syms i in
+      let t = Flx_lookup.type_of_index syms i in
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_ref (bvs,t));
 
       if syms.compiler_options.print_flag then
@@ -387,7 +386,7 @@ let bbind_sym syms bbdfns i {
       (*
       print_endline ("Binding variable " ^ name ^"<"^ si i ^">");
       *)
-      let t = typeofindex syms i in
+      let t = Flx_lookup.type_of_index syms i in
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_var (bvs, t))
       ;
       if syms.compiler_options.print_flag then
@@ -396,7 +395,7 @@ let bbind_sym syms bbdfns i {
       sbt syms.dfns t)
 
     | `SYMDEF_const (props,t,ct,reqs) ->
-      let t = typeofindex syms i in
+      let t = Flx_lookup.type_of_index syms i in
       let reqs = bind_reqs reqs in
       Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_const (props,bvs,t,ct,reqs));
       if syms.compiler_options.print_flag then
@@ -652,8 +651,8 @@ let bbind bbind_state =
 
 let bind_interface bbind_state = function
   | sr, `IFACE_export_fun (sn, cpp_name), parent ->
-      let env = build_env bbind_state.syms parent in
-      let index,ts = lookup_sn_in_env bbind_state.syms env sn in
+      let env = Flx_lookup.build_env bbind_state.syms parent in
+      let index,ts = Flx_lookup.lookup_sn_in_env bbind_state.syms env sn in
       if length ts = 0 then
         `BIFACE_export_fun (sr,index, cpp_name)
       else clierr sr
@@ -663,8 +662,8 @@ let bind_interface bbind_state = function
       )
 
   | sr, `IFACE_export_python_fun (sn, cpp_name), parent ->
-      let env = build_env bbind_state.syms parent in
-      let index,ts = lookup_sn_in_env bbind_state.syms env sn in
+      let env = Flx_lookup.build_env bbind_state.syms parent in
+      let index,ts = Flx_lookup.lookup_sn_in_env bbind_state.syms env sn in
       if length ts = 0 then
         `BIFACE_export_python_fun (sr,index, cpp_name)
       else clierr sr
@@ -674,8 +673,8 @@ let bind_interface bbind_state = function
       )
 
   | sr, `IFACE_export_type (typ, cpp_name), parent ->
-      let env = build_env bbind_state.syms parent in
-      let t = bind_type bbind_state.syms env Flx_srcref.dummy_sr typ in
+      let env = Flx_lookup.build_env bbind_state.syms parent in
+      let t = Flx_lookup.bind_type bbind_state.syms env Flx_srcref.dummy_sr typ in
       if try var_occurs t with _ -> true then
       clierr sr
       (

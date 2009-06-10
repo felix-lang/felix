@@ -171,19 +171,19 @@ val bind_expression_with_args :
   tbexpr_t list ->
   tbexpr_t
 
-val typeofindex :
+val type_of_index :
   sym_state_t ->
   int ->
   btypecode_t
 
-val typeofindex_with_ts:
+val type_of_index_with_ts:
   sym_state_t ->
   Flx_srcref.t ->
   int ->
   btypecode_t list ->
   btypecode_t
 
-val typeof_literal:
+val type_of_literal:
   sym_state_t ->
   env_t ->
   Flx_srcref.t ->

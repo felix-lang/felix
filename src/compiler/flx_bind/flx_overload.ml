@@ -150,7 +150,7 @@ let sig_of_symdef symdef sr name i = match symdef with
 
   (* primitives *)
   | `SYMDEF_fun (_,ps,r,_,_,_)
-    -> typeof_list ps,r,None
+    -> type_of_list ps,r,None
 
   | `SYMDEF_callback (_,ts_orig,r,_)
     ->
@@ -181,7 +181,7 @@ let sig_of_symdef symdef sr name i = match symdef with
         )
         ts_orig
       in
-      typeof_list ts_cf,r,None
+      type_of_list ts_cf,r,None
 
   | `SYMDEF_function (ps,r,_,_)
     ->
@@ -200,7 +200,7 @@ let sig_of_symdef symdef sr name i = match symdef with
 
   | `SYMDEF_cstruct ls
   | `SYMDEF_struct ls ->
-    typeof_list (map snd ls),`AST_index (sr,name,i),
+    type_of_list (map snd ls),`AST_index (sr,name,i),
      Some (map (fun (p,_) -> p,None) ls)
 
   | `SYMDEF_const_ctor (_,r,_,_) -> `AST_void sr,r,None
@@ -214,7 +214,7 @@ let sig_of_symdef symdef sr name i = match symdef with
       (*
       print_endline "TYP_typefun";
       *)
-      typeof_list (map snd ps),r,None
+      type_of_list (map snd ps),r,None
     | symdef ->
       (*
       print_endline "OverloadKindError";

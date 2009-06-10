@@ -497,7 +497,7 @@ TEST CASE:
   val x = (x,x) // type is ('a * 'a) as 'a
 
 RECURSION CYCLE:
-  typeofindex' -> bind_type'
+  type_of_index' -> bind_type'
 
 type_alias_fixlist is a list of indexes, used by
 bind_type_index to detect a recursive type alias,
@@ -519,7 +519,7 @@ TEST CASE:
   typedef a = b * b as b // type is ('a * 'a) as 'a
 
 RECURSION CYCLE:
-  typeofindex' -> bind_type'
+  type_of_index' -> bind_type'
 
 expr_fixlist is a list of (expression,depth)
 used by bind_type' to detect recursion from
@@ -538,7 +538,7 @@ TRAP NOTES:
   The expr_fixlist handles an explicit typeof(expr)
   term, for an arbitrary expr term.
 
-  idx_fixlist is initiated by typeofindex, and only
+  idx_fixlist is initiated by type_of_index, and only
   occurs typing a variable or function from its
   declaration when the declaration is omitted
   OR when cal_ret_type is verifying it
@@ -1540,14 +1540,14 @@ and base_typename_of_literal v = match v with
   | `AST_wstring _ -> "wstring"
   | `AST_ustring _ -> "string"
 
-and  typeof_literal syms env sr v : btypecode_t =
+and  type_of_literal syms env sr v : btypecode_t =
   let _,_,root,_,_ = hd (rev env) in
   let name = base_typename_of_literal v in
   let t = `AST_name (sr,name,[]) in
   let bt = inner_bind_type syms env sr rsground t in
   bt
 
-and typeofindex' rs syms (index:int) : btypecode_t =
+and type_of_index' rs syms (index:int) : btypecode_t =
     (*
     let () = print_endline ("Top level type of index " ^ si index) in
     *)
@@ -1560,13 +1560,13 @@ and typeofindex' rs syms (index:int) : btypecode_t =
       t
     end
     else
-      let t = inner_typeofindex syms rs index in
+      let t = inner_type_of_index syms rs index in
       (*
       print_endline ("Type of index after inner "^ si index ^ " is " ^ sbt syms.dfns t);
       *)
       let _ = try unfold syms.dfns t with _ ->
-        print_endline "typeofindex produced free fixpoint";
-        failwith ("[typeofindex] free fixpoint constructed for " ^ sbt syms.dfns t)
+        print_endline "type_of_index produced free fixpoint";
+        failwith ("[type_of_index] free fixpoint constructed for " ^ sbt syms.dfns t)
       in
       let sr = try
         match hfind "lookup" syms.dfns index with {sr=sr}-> sr
@@ -1580,11 +1580,11 @@ and typeofindex' rs syms (index:int) : btypecode_t =
       t
 
 
-and typeofindex_with_ts' rs syms sr (index:int) ts =
+and type_of_index_with_ts' rs syms sr (index:int) ts =
   (*
   print_endline "OUTER TYPE OF INDEX with TS";
   *)
-  let t = typeofindex' rs syms index in
+  let t = type_of_index' rs syms index in
   let varmap = make_varmap syms sr index ts in
   let t = varmap_subst varmap t in
   beta_reduce syms sr t
@@ -1719,7 +1719,7 @@ and cal_ret_type syms (rs:recstop) index args =
   | _ -> assert false
 
 
-and inner_typeofindex_with_ts
+and inner_type_of_index_with_ts
   syms sr (rs:recstop)
   (index:int)
   (ts: btypecode_t list)
@@ -1727,7 +1727,7 @@ and inner_typeofindex_with_ts
  (*
  print_endline ("Inner type of index with ts .. " ^ si index ^ ", ts=" ^ catmap "," (sbt syms.dfns) ts);
  *)
- let t = inner_typeofindex syms rs index in
+ let t = inner_type_of_index syms rs index in
  let pvs,vs,_ = find_split_vs syms index in
  (*
  print_endline ("#pvs=" ^ si (length pvs) ^ ", #vs="^si (length vs) ^", #ts="^
@@ -1752,7 +1752,7 @@ and inner_typeofindex_with_ts
  let t = varmap_subst varmap t in
  let t = beta_reduce syms sr t in
  (*
- print_endline ("typeofindex=" ^ sbt syms.dfns t);
+ print_endline ("type_of_index=" ^ sbt syms.dfns t);
  *)
  t
 
@@ -1760,7 +1760,7 @@ and inner_typeofindex_with_ts
 (* this routine is called to find the type of a function
 or variable .. so there's no type_alias_fixlist ..
 *)
-and inner_typeofindex
+and inner_type_of_index
   syms (rs:recstop)
   (index:int)
 : btypecode_t =
@@ -1797,8 +1797,8 @@ and inner_typeofindex
   in
   match entry with
   | `SYMDEF_callback _ -> print_endline "Inner type of index finds callback"; assert false
-  | `SYMDEF_inherit qn -> failwith ("Woops inner_typeofindex found inherit " ^ si index)
-  | `SYMDEF_inherit_fun qn -> failwith ("Woops inner_typeofindex found inherit fun!! " ^ si index)
+  | `SYMDEF_inherit qn -> failwith ("Woops inner_type_of_index found inherit " ^ si index)
+  | `SYMDEF_inherit_fun qn -> failwith ("Woops inner_type_of_index found inherit fun!! " ^ si index)
   | `SYMDEF_type_alias t ->
     begin
       let t = bt t in
@@ -1822,7 +1822,7 @@ and inner_typeofindex
       if var_i_occurs index rt' then begin
         (*
         print_endline (
-          "[typeofindex'] " ^
+          "[type_of_index'] " ^
           "function "^id^"<"^string_of_int index^
           ">: Can't resolve return type, got : " ^
           sbt syms.dfns rt' ^
@@ -1832,7 +1832,7 @@ and inner_typeofindex
         *)
         raise (Unresolved_return (sr,
         (
-          "[typeofindex'] " ^
+          "[type_of_index'] " ^
           "function "^id^"<"^string_of_int index^
           ">: Can't resolve return type, got : " ^
           sbt syms.dfns rt' ^
@@ -1840,7 +1840,7 @@ and inner_typeofindex
           "\nTry adding an explicit return type annotation"
         )))
       end else
-        let d =bt (typeof_list pts) in
+        let d =bt (type_of_list pts) in
         let t =
           if mem `Cfun props
           then `BTYP_cfunction (d,rt')
@@ -1873,7 +1873,7 @@ and inner_typeofindex
     `BTYP_function (`BTYP_tuple [], flx_bbool)
 
   | `SYMDEF_fun (_,pts,rt,_,_,_) ->
-    let t = `TYP_function (typeof_list pts,rt) in
+    let t = `TYP_function (type_of_list pts,rt) in
     bt t
 
   | `SYMDEF_union _ ->
@@ -1886,10 +1886,10 @@ and inner_typeofindex
     let ts = map (fun (s,i,_) -> `AST_name (sr,s,[])) (fst vs) in
     let ts = map bt ts in
   (*
-  print_endline "inner_typeofindex: struct";
+  print_endline "inner_type_of_index: struct";
   *)
     let ts = adjust_ts syms sr index ts in
-    let t = typeof_list (map snd ls) in
+    let t = type_of_list (map snd ls) in
     let t = `BTYP_function(bt t,`BTYP_inst (index,ts)) in
     (*
     print_endline ("Struct as function type is " ^ sbt syms.dfns t);
@@ -1899,7 +1899,7 @@ and inner_typeofindex
   | `SYMDEF_abs _ ->
     clierr sr
     (
-      "[typeofindex] Expected declaration of typed entity for index " ^
+      "[type_of_index] Expected declaration of typed entity for index " ^
       string_of_int index ^ "\ngot abstract type " ^ id  ^ " instead.\n" ^
       "Perhaps a constructor named " ^ "_ctor_" ^ id ^ " is missing " ^
       " or out of scope."
@@ -1908,7 +1908,7 @@ and inner_typeofindex
   | _ ->
     clierr sr
     (
-      "[typeofindex] Expected declaration of typed entity for index "^
+      "[type_of_index] Expected declaration of typed entity for index "^
       string_of_int index^", got " ^ id
     )
   end
@@ -2103,7 +2103,7 @@ and koenig_lookup syms env rs sra id' name_map fn t2 ts =
       print_endline "Overload resolution OK";
       *)
       `BEXPR_closure (index'',ts),
-       typeofindex_with_ts' rs syms sra index'' ts
+       type_of_index_with_ts' rs syms sra index'' ts
 
 
     | None ->
@@ -2156,7 +2156,7 @@ and lookup_qn_with_sig'
       | `SYMDEF_cstruct _ 
       | `SYMDEF_struct _ ->
         let sign = try hd signs with _ -> assert false in
-        let t = typeofindex_with_ts' rs syms sr index ts in
+        let t = type_of_index_with_ts' rs syms sr index ts in
         (*
         print_endline ("Struct constructor found, type= " ^ sbt syms.dfns t);
         *)
@@ -2343,7 +2343,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
       let vs = find_vs syms index in
       let ts = map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
       `BEXPR_closure (index,ts),
-      inner_typeofindex syms rs index
+      inner_type_of_index syms rs index
 
     | _ ->
       (*
@@ -2388,7 +2388,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
         let ts = adjust_ts syms sr index ts in
         *)
         `BEXPR_closure (index,ts),
-         typeofindex_with_ts' rs syms sr index ts
+         type_of_index_with_ts' rs syms sr index ts
 
       | None ->
         clierr sra
@@ -2437,7 +2437,7 @@ and lookup_type_qn_with_sig'
       | `SYMDEF_cstruct _
       | `SYMDEF_struct _ ->
         let sign = try hd signs with _ -> assert false in
-        let t = typeofindex_with_ts' rs syms sr index ts in
+        let t = type_of_index_with_ts' rs syms sr index ts in
         (*
         print_endline ("[lookup_type_qn_with_sig] Struct constructor found, type= " ^ sbt syms.dfns t);
         *)
@@ -2545,7 +2545,7 @@ and lookup_type_qn_with_sig'
       ->
       let vs = find_vs syms index in
       let ts = map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
-      inner_typeofindex syms rs index
+      inner_type_of_index syms rs index
 
     | _ ->
       (*
@@ -2587,7 +2587,7 @@ and lookup_type_qn_with_sig'
         (*
         let ts = adjust_ts syms sr index ts in
         *)
-        let t =  typeofindex_with_ts' rs syms sr index ts in
+        let t =  type_of_index_with_ts' rs syms sr index ts in
         print_endline "WRONG!";
         t
 
@@ -2709,7 +2709,7 @@ and handle_type
     print_endline ("Handle function " ^id^"<"^si index^">, ts=" ^ catmap "," (sbt syms.dfns) ts);
     `BTYP_inst (index,ts)
     (*
-    let t = inner_typeofindex_with_ts syms sr rs index ts
+    let t = inner_type_of_index_with_ts syms sr rs index ts
     in
     (
       match t with
@@ -2774,7 +2774,7 @@ and handle_function
     (*
     print_endline ("Handle function " ^id^"<"^si index^">, ts=" ^ catmap "," (sbt syms.dfns) ts);
     *)
-    let t = inner_typeofindex_with_ts syms sr rs index ts
+    let t = inner_type_of_index_with_ts syms sr rs index ts
     in
     `BEXPR_closure (index,ts),
     (
@@ -2797,7 +2797,7 @@ and handle_function
     )
   | `SYMDEF_type_alias (`TYP_typefun _) ->
     (* THIS IS A HACK .. WE KNOW THE TYPE IS NOT NEEDED BY THE CALLER .. *)
-    (* let t = inner_typeofindex_with_ts syms sr rs index ts in *)
+    (* let t = inner_type_of_index_with_ts syms sr rs index ts in *)
     let t = `BTYP_function (`BTYP_type 0,`BTYP_type 0) in
     `BEXPR_closure (index,ts),
     (
@@ -2861,7 +2861,7 @@ and handle_variable syms
         (
           `BEXPR_name (index, ts),t
           (* should equal t ..
-          typeofindex_with_ts syms sr index ts
+          type_of_index_with_ts syms sr index ts
           *)
         )
 
@@ -3346,7 +3346,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     t
   in
   let ti sr i ts =
-    inner_typeofindex_with_ts syms sr
+    inner_type_of_index_with_ts syms sr
     { rs with depth = rs.depth + 1}
                                (* CHANGED THIS ------------------*******)
     i ts
@@ -4105,7 +4105,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       | `SYMDEF_parameter (`PVar,_)
         ->
         let vtype =
-          inner_typeofindex_with_ts syms sr
+          inner_type_of_index_with_ts syms sr
           { rs with depth = rs.depth+1 }
          index ts
         in
@@ -4159,7 +4159,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
      `BEXPR_new x, `BTYP_pointer t
 
   | `AST_literal (sr,v) ->
-    let t = typeof_literal syms env sr v in
+    let t = type_of_literal syms env sr v in
     `BEXPR_literal v, t
 
   | `AST_map (sr,f,a) ->
@@ -5839,8 +5839,8 @@ let bind_type syms env sr t : btypecode_t =
 let bind_expression syms env e  =
   inner_bind_expression syms env rsground e 
 
-let typeofindex syms (index:int) : btypecode_t =
- typeofindex' rsground syms index
+let type_of_index syms (index:int) : btypecode_t =
+ type_of_index' rsground syms index
 
-let typeofindex_with_ts syms sr (index:int) ts =
- typeofindex_with_ts' rsground syms sr index ts
+let type_of_index_with_ts syms sr (index:int) ts =
+ type_of_index_with_ts' rsground syms sr index ts
