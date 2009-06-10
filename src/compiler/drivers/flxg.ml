@@ -316,6 +316,7 @@ try
     ;
 
     let polyvars = Flx_intpoly.cal_polyvars syms bbdfns in
+    let polyvars = Hashtbl.create 97 in
     Flx_inst.instantiate syms bbdfns polyvars true root_proc syms.bifaces;
     (* EXPERIMENTAL!
       Adds monomorphic versions of all symbols.
@@ -468,7 +469,8 @@ try
 
   print_debug "//instantiating";
 
-  let polyvars = Hashtbl.create 97 in (* temporary hack *)
+  let polyvars = Flx_intpoly.cal_polyvars syms bbdfns in
+  let polyvars = Hashtbl.create 97 in
   Flx_inst.instantiate syms bbdfns polyvars false root_proc syms.bifaces;
 
   let label_map = Flx_label.create_label_map bbdfns syms.counter in
