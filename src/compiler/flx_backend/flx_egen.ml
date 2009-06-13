@@ -641,26 +641,32 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     ce_atom uval
 
   | `BEXPR_coerce ((srcx,srct) as srce,dstt) ->
-    let vts =
-      match dstt with
-      | `BTYP_variant ls -> ls
-      | _ -> syserr sr "Coerce non-variant"
-    in
-    begin match srcx with
-    | `BEXPR_variant (s,argt) ->
-      print_endline "Coerce known variant!";
-      ge' (`BEXPR_variant (s,argt),t)
-    | _ ->
-      let i =
-        begin try
-          Hashtbl.find syms.variant_map (srct,dstt)
-        with Not_found ->
-          let i = !(syms.counter) in incr (syms.counter);
-          Hashtbl.add syms.variant_map (srct,dstt) i;
-          i
-      end
+    let coerce_variant () =
+      let vts =
+        match dstt with
+        | `BTYP_variant ls -> ls
+        | _ -> syserr sr "Coerce non-variant"
       in
-      ce_atom ("_uctor_(vmap_"^si i^","^ge srce^")")
+      begin match srcx with
+      | `BEXPR_variant (s,argt) ->
+        print_endline "Coerce known variant!";
+        ge' (`BEXPR_variant (s,argt),t)
+      | _ ->
+        let i =
+          begin try
+            Hashtbl.find syms.variant_map (srct,dstt)
+          with Not_found ->
+            let i = !(syms.counter) in incr (syms.counter);
+            Hashtbl.add syms.variant_map (srct,dstt) i;
+            i
+        end
+        in
+        ce_atom ("_uctor_(vmap_"^si i^","^ge srce^")")
+      end
+    in
+    begin match dstt with
+    | `BTYP_variant _ -> coerce_variant ()
+    | _ -> ce_atom ("reinterpret<"^tn dstt^","^tn srct^">("^ge srce^")")
     end
 
   | `BEXPR_apply
