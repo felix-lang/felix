@@ -144,9 +144,8 @@ let mkproc_gen syms (child_map,bbdfns) =
   let rl = Hashtbl.create 97 in (* dummy relabel *)
   let mkproc_map = Hashtbl.create 97 in
 
-  let cache = Hashtbl.create 97 in
   let unstackable i =
-    let csf = Flx_stack_calls.can_stack_func cache syms (child_map,bbdfns) i in
+    let csf = Flx_stack_calls.can_stack_func (Hashtbl.create 97) (Hashtbl.create 97 ) syms (child_map,bbdfns) i in
     (*
     print_endline ("Function " ^ si i ^ " is " ^ (if csf then "stackable" else "unstackable"));
     *)

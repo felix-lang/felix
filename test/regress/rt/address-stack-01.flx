@@ -1,6 +1,6 @@
 // check it is safe to return the address of a local variable
 
-fun f() { var x = 1; return &x; }
+noinline fun f() = { var x = 1; return &x; }
 px := f();
 println$ *px;
 px <- 2;

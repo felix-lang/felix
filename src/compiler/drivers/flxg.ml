@@ -437,7 +437,7 @@ try
   let label_map = Flx_label.create_label_map bbdfns syms.counter in
   let label_usage = Flx_label.create_label_usage syms bbdfns label_map in
   let label_info = label_map, label_usage in
-
+  let child_map = Flx_child.cal_children syms bbdfns in
   Flx_stack_calls.make_stack_calls syms (child_map,bbdfns) label_map label_usage;
 
   let opt_time = tim() in

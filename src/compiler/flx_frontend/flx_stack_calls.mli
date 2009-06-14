@@ -16,6 +16,7 @@ val make_stack_calls:
 
 val can_stack_func:
   (btypecode_t, [`Recurse | `Safe | `Unsafe] ) Hashtbl.t ->
+  (btypecode_t, [`Recurse | `Safe | `Unsafe] ) Hashtbl.t ->
   sym_state_t ->
   child_map_t * fully_bound_symbol_table_t ->
   int ->
