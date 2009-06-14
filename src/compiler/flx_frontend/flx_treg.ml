@@ -81,7 +81,10 @@ let rec register_type_r ui syms bbdfns exclude sr t =
   match t' with
   | `BTYP_void -> ()
   | `BTYP_fix i -> clierr sr ("[register_type_r] Fixpoint "^si i^" encountered")
+  (*
   | `BTYP_var (i,mt) -> clierr sr ("Attempt to register type variable " ^ si i ^":"^sbt syms.dfns mt)
+  *)
+  | `BTYP_var (i,mt) -> print_endline ("Attempt to register type variable " ^ si i ^":"^sbt syms.dfns mt)
   | `BTYP_function (ps,ret) ->
     let ps = match ps with
     | `BTYP_void -> `BTYP_tuple []

@@ -87,6 +87,7 @@ let cal_polyvars syms bbdfns child_map =
   Hashtbl.iter (fun i (name,parent,sr,bbdfn) -> 
   match bbdfn with
   | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+    if mem `Virtual props then () else
     let j = ref 0 in
     let tvars = ref (map (fun (_,i) -> incr j; i,!j-1) vs) in
     if !tvars <> [] then
@@ -104,6 +105,7 @@ let cal_polyvars syms bbdfns child_map =
     end
 
   | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
+    if mem `Virtual props then () else
     let j = ref 0 in
     let tvars = ref (map (fun (_,i) -> incr j; i,!j-1) vs) in
     if !tvars <> [] then
