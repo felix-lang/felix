@@ -7,6 +7,8 @@ open Flx_mtypes2
 
 let ident x = x
 
+exception Skip
+
 let polyfix syms polyvars i ts =
   let poly = 
     try Hashtbl.find polyvars i with Not_found -> [] 
@@ -241,5 +243,125 @@ let cal_polyvars syms bbdfns child_map =
 
   )
   bbdfns
+  ;
+
+  let polyfix2 i ts =
+    match Hashtbl.find bbdfns i with
+    | name, parent, sr, bbdfn -> match bbdfn with
+    | `BBDCL_function _ 
+    | `BBDCL_procedure _ ->
+      map (fun t -> match t with | `BTYP_pointer _ -> `BTYP_pointer `BTYP_void | _ -> t) ts 
+    | _ -> ts
+  in
+  let cast_a2 i ts e =
+    try
+    let counter = ref 0 in 
+    let t,vsi = 
+        let ps,vs = match Hashtbl.find bbdfns i with
+        | name, parent, sr, bbdfn -> match bbdfn with
+        | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,vs
+        | `BBDCL_procedure (props,vs,(ps,traint), exes) -> ps,vs
+        | _ -> raise Skip
+        in
+        let pts = map (fun {ptyp=t}->t) ps in
+        let pt = match pts with | [t]->t | ts -> `BTYP_tuple ts in
+        let vsi = map (fun (s,i) -> i) vs in
+        pt,vsi
+    in
+    let varmap = map2 (fun i t -> i, match t with | `BTYP_pointer _ -> incr counter; `BTYP_pointer `BTYP_void | _ -> t ) vsi ts in
+    if !counter = 0 then e else
+    let t = Flx_unify.list_subst syms.counter varmap t in
+    print_endline ("COERCION2 arg(output) " ^ sbt syms.dfns t);
+    `BEXPR_coerce (e,t),t
+    with Skip -> e
+  in
+
+  let cast_r2 i ts ((x,t) as e) =
+    try
+    let counter = ref 0 in
+    let ta,vsi = 
+      match Hashtbl.find bbdfns i with
+      | name, parent, sr, bbdfn -> match bbdfn with
+      | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> ret,map (fun (s,i) -> i) vs
+      | _ -> raise Skip
+    in
+    let varmap = map2 (fun i t -> i, match t with | `BTYP_pointer _ -> incr counter; `BTYP_pointer `BTYP_void | _ -> t ) vsi ts in
+    if !counter = 0 then e else
+    let t' = Flx_unify.list_subst syms.counter varmap ta in
+    print_endline ("COERCION2 result(input) " ^ sbt syms.dfns t');
+    `BEXPR_coerce ((x,t'),t),t
+    with Skip -> e
+  in
+
+  let cal_ft2 i ts t =
+    try
+    let counter = ref 0 in
+    let tf,vsi = 
+      let ps,ret,vs = match Hashtbl.find bbdfns i with
+      | name, parent, sr, bbdfn -> match bbdfn with
+      | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret,vs
+      | `BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, `BTYP_void,vs
+      | _ -> raise Skip 
+      in
+      let pts = map (fun {ptyp=t}->t) ps in
+      let pt = match pts with | [t]->t | ts -> `BTYP_tuple ts in
+      let tf = `BTYP_function (pt,ret) in
+      let vsi = map (fun (s,i) -> i) vs in
+      tf,vsi
+    in
+    let varmap = map2 (fun i t -> i, match t with | `BTYP_pointer _ -> incr counter; `BTYP_pointer `BTYP_void | _ -> t ) vsi ts in
+    if !counter = 0 then t else
+    let t' = Flx_unify.list_subst syms.counter varmap tf in
+    print_endline ("fun2 type " ^ sbt syms.dfns t');
+    t'
+    with Skip -> t
+  in
+
+  let rec fixexpr2 e = match e with
+  | `BEXPR_apply ((`BEXPR_closure (i,ts),t'),e2),t ->
+    cast_r2 i ts (`BEXPR_apply ((`BEXPR_closure (i, polyfix2 i ts),cal_ft2 i ts t'), cast_a2 i ts (fixexpr2 e2)),t)
+  | `BEXPR_apply_prim (i,ts,e2),t -> 
+    cast_r2 i ts (`BEXPR_apply_prim (i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e2)),t)
+  | `BEXPR_apply_direct (i,ts,e2),t -> 
+    cast_r2 i ts (`BEXPR_apply_direct (i, polyfix2 i ts, cast_a2 i ts (fixexpr2  e2)),t)
+  | `BEXPR_apply_struct (i,ts,e2),t -> 
+    cast_r2 i ts (`BEXPR_apply_struct (i, polyfix2 i ts, cast_a2 i ts (fixexpr2  e2)),t)
+  | `BEXPR_apply_stack (i,ts,e2),t -> 
+    cast_r2 i ts (`BEXPR_apply_stack (i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e2)),t)
+  | e -> map_tbexpr ident fixexpr2 ident e
+  in
+
+  let fixexe2 x = match x with
+  | `BEXE_call (sr,(`BEXPR_closure (i,ts),t'),e) ->
+    `BEXE_call (sr,(`BEXPR_closure (i, polyfix2 i ts), cal_ft i t'), cast_a2 i ts (fixexpr2 e))
+  | `BEXE_call_prim (sr,i,ts,e) -> 
+    `BEXE_call_prim (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+  | `BEXE_call_direct (sr,i,ts,e) -> 
+    `BEXE_call_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+  | `BEXE_call_stack (sr,i,ts,e) -> 
+    `BEXE_call_stack (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+  | `BEXE_jump_direct (sr,i,ts,e) -> 
+    `BEXE_jump_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+  | x -> map_bexe ident fixexpr2 ident ident ident x
+  in
+  let fixexes2 exes = map fixexe2 exes in
+
+
+  Hashtbl.iter (fun i (name,parent,sr,bbdfn) -> 
+  match bbdfn with
+  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+    let exes = fixexes2 exes in
+    let bbdfn = `BBDCL_function (props,vs,(ps,traint),ret,exes) in
+    Hashtbl.replace bbdfns i (name,parent,sr,bbdfn)
+
+  | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
+    let exes = fixexes2 exes in
+    let bbdfn = `BBDCL_procedure (props,vs,(ps,traint), exes) in
+    Hashtbl.replace bbdfns i (name,parent,sr,bbdfn)
+  | _ -> ()      
+
+  )
+  bbdfns
+
 
 
