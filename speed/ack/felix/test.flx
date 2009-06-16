@@ -1,5 +1,7 @@
 // Felix Performance Test Program
-n := atoi(System::argv 1);
+include "std/time";
+//n := atoi(System::argv 1);
+n := 13;
 
 fun ack(x:int,y:int):int =>
   if x == 0 then y + 1
@@ -7,6 +9,9 @@ fun ack(x:int,y:int):int =>
   else ack(x-1, ack(x, y-1))
   endif
 ;
+
+val start_time = Time::time ();
 v := ack(3,n);
-print "Ack(3,"; print n; print "): "; print v; endl;
+println$ (Time::time ()) - start_time;
+//print "Ack(3,"; print n; print "): "; print v; endl;
 
