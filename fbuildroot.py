@@ -130,7 +130,7 @@ def pre_options(parser):
             dest='target_libpaths',
             default=[],
             action='append',
-            help='Add this path to the c library search path for the build ' \
+            help='Add this path to the c library search path for the target ' \
                     'phase'),
         make_option('--target-c-debug',
             default=False,
