@@ -25,6 +25,11 @@ def pre_options(parser):
             default=[],
             action='append',
             help='Add this path to the c library search path for all phases'),
+        make_option('--c-flag',
+            dest='c_flags',
+            default=[],
+            action='append',
+            help='Add this flag to the c compiler'),
         make_option('-g', '--debug',
             default=False,
             action='store_true',
@@ -55,6 +60,11 @@ def pre_options(parser):
             action='append',
             help='Add this path to the c library search path for the build ' \
                     'phase'),
+        make_option('--build-c-flag',
+            dest='build_c_flags',
+            default=[],
+            action='append',
+            help='Add this flag to the c compiler for the build phase'),
         make_option('--build-c-debug',
             default=False,
             action='store_true',
@@ -81,6 +91,11 @@ def pre_options(parser):
             action='append',
             help='Add this path to the c library search path for the host ' \
                     'phase'),
+        make_option('--host-c-flag',
+            dest='host_c_flags',
+            default=[],
+            action='append',
+            help='Add this flag to the c compiler for the host phase'),
         make_option('--host-c-debug',
             default=False,
             action='store_true',
@@ -121,6 +136,11 @@ def pre_options(parser):
             default=False,
             action='store_true',
             help='turn on c/c++ target phase debugging'),
+        make_option('--target-c-flag',
+            dest='target_c_flags',
+            default=[],
+            action='append',
+            help='Add this flag to the c compiler for the target phase'),
     ))
 
 def post_options(options, args):
@@ -135,13 +155,15 @@ def post_options(options, args):
 
 # ------------------------------------------------------------------------------
 
-def make_c_builder(*args, includes=[], libpaths=[], **kwargs):
+def make_c_builder(*args, includes=[], libpaths=[], flags=[], **kwargs):
+    flags = list(chain(fbuild.options.c_flags, flags))
+
     kwargs['platform_options'] = [
         ({'posix'},
             {'warnings': ['all', 'fatal-errors'],
-            'flags': ['-fno-common']}),
+            'flags': ['-fno-common'] + flags}),
         ({'windows'}, {
-            'flags': ['/GR', '/MD', '/EHs', '/wd4291']}),
+            'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags}),
     ]
     kwargs['includes'] = list(chain(fbuild.options.includes, includes))
     kwargs['libpaths'] = list(chain(fbuild.options.libpaths, libpaths))
@@ -150,13 +172,15 @@ def make_c_builder(*args, includes=[], libpaths=[], **kwargs):
         static=call('fbuild.builders.c.guess_static', *args, **kwargs),
         shared=call('fbuild.builders.c.guess_shared', *args, **kwargs))
 
-def make_cxx_builder(*args, includes=[], libpaths=[], **kwargs):
+def make_cxx_builder(*args, includes=[], libpaths=[], flags=[], **kwargs):
+    flags = list(chain(fbuild.options.c_flags, flags))
+
     kwargs['platform_options'] = [
         ({'posix'}, {
             'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof'],
-            'flags': ['-fno-common']}),
+            'flags': ['-fno-common'] + flags}),
         ({'windows'}, {
-            'flags': ['/GR', '/MD', '/EHs', '/wd4291']}),
+            'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags}),
     ]
     kwargs['includes'] = list(chain(fbuild.options.includes, includes))
     kwargs['libpaths'] = list(chain(fbuild.options.libpaths, libpaths))
@@ -177,12 +201,14 @@ def config_build():
             platform=platform,
             debug=fbuild.options.debug or fbuild.options.build_c_debug,
             includes=fbuild.options.build_includes,
-            libpaths=fbuild.options.build_libpaths),
+            libpaths=fbuild.options.build_libpaths,
+            flags=fbuild.options.build_c_flags),
         cxx=make_cxx_builder(fbuild.options.build_cxx,
             platform=platform,
             debug=fbuild.options.debug or fbuild.options.build_c_debug,
             includes=fbuild.options.build_includes,
-            libpaths=fbuild.options.build_libpaths))
+            libpaths=fbuild.options.build_libpaths,
+            flags=fbuild.options.build_c_flags))
 
 def config_host(build):
     fbuild.logger.log('configuring host phase', color='cyan')
@@ -200,12 +226,14 @@ def config_host(build):
                 platform=platform,
                 debug=fbuild.options.debug or fbuild.options.host_c_debug,
                 includes=fbuild.options.host_includes,
-                libpaths=fbuild.options.host_libpaths),
+                libpaths=fbuild.options.host_libpaths,
+                flags=fbuild.options.host_c_flags),
             cxx=make_cxx_builder(fbuild.buildesr.host_cxx,
                 platform=platform,
                 debug=fbuild.options.debug or fbuild.options.host_c_debug,
                 includes=fbuild.options.host_includes,
-                libpaths=fbuild.options.host_libpaths))
+                libpaths=fbuild.options.host_libpaths,
+                flags=fbuild.options.host_c_flags))
 
     phase.ocaml = call('fbuild.builders.ocaml.Ocaml',
         debug=fbuild.options.debug or fbuild.options.host_ocaml_debug,
@@ -241,12 +269,14 @@ def config_target(host):
                 platform=platform,
                 debug=fbuild.options.debug or fbuild.options.target_c_debug,
                 includes=fbuild.options.target_includes,
-                libpaths=fbuild.options.target_libpaths),
+                libpaths=fbuild.options.target_libpaths,
+                flags=fbuild.options.target_c_flags),
             cxx=make_cxx_builder(fbuild.options.target_cxx,
                 platform=platform,
                 debug=fbuild.options.debug or fbuild.options.target_c_debug,
                 includes=fbuild.options.target_includes,
-                libpaths=fbuild.options.target_libpaths))
+                libpaths=fbuild.options.target_libpaths,
+                flags=fbuild.options.target_c_flags))
 
     return phase
 
