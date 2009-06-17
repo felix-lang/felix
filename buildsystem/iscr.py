@@ -207,6 +207,7 @@ def _print_compiler(lang, platform, p):
             ' -Wall -Wno-invalid-offsetof -Wfatal-errors')
 
         p('CCLINK_STATIC', str(static.exe_linker.gcc.exe) + ' ' +
+            ' '.join(shared.exe_linker.flags) + ' ' +
             ' '.join('-L' + i for i in static.exe_linker.gcc.libpaths))
 
         p('CCOBJ_DYNAMIC_FLX', str(shared.compiler.gcc.exe) + ' ' +
