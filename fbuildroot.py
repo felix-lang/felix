@@ -34,6 +34,10 @@ def pre_options(parser):
             default=False,
             action='store_true',
             help='enable debugging for all phases'),
+        make_option('-O', '--optimize',
+            default=False,
+            action='store_true',
+            help='enable optimization for all phases'),
         make_option('--skip-tests',
             default=False,
             action='store_true',
@@ -69,6 +73,10 @@ def pre_options(parser):
             default=False,
             action='store_true',
             help='turn on c/c++ build phase debugging'),
+        make_option('--build-c-optimize',
+            default=False,
+            action='store_true',
+            help='turn on optimizations for c/c++ build phase'),
     ))
 
     group = parser.add_option_group('host phase options')
@@ -100,6 +108,10 @@ def pre_options(parser):
             default=False,
             action='store_true',
             help='turn on c/c++ host phase debugging'),
+        make_option('--host-c-optimize',
+            default=False,
+            action='store_true',
+            help='turn on optimization for c/c++ host phase'),
         make_option('--host-ocaml-debug',
             default=False,
             action='store_true',
@@ -136,6 +148,10 @@ def pre_options(parser):
             default=False,
             action='store_true',
             help='turn on c/c++ target phase debugging'),
+        make_option('--target-c-optimize',
+            default=False,
+            action='store_true',
+            help='turn on optimization for c/c++ target phase'),
         make_option('--target-c-flag',
             dest='target_c_flags',
             default=[],
@@ -151,6 +167,9 @@ def post_options(options, args):
     else:
         options.buildroot = Path(options.buildroot, 'release')
 
+    if options.optimize:
+        options.buildroot += '-optimized'
+
     return options, args
 
 # ------------------------------------------------------------------------------
@@ -161,9 +180,11 @@ def make_c_builder(*args, includes=[], libpaths=[], flags=[], **kwargs):
     kwargs['platform_options'] = [
         ({'posix'},
             {'warnings': ['all', 'fatal-errors'],
-            'flags': ['-fno-common'] + flags}),
+            'flags': ['-fno-common'] + flags,
+            'optimize_flags': ['-O3', '-fomit-frame-pointer', '--inline']}),
         ({'windows'}, {
-            'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags}),
+            'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
+            'optimize_flags': ['/Ox']}),
     ]
     kwargs['includes'] = list(chain(fbuild.options.includes, includes))
     kwargs['libpaths'] = list(chain(fbuild.options.libpaths, libpaths))
@@ -178,9 +199,11 @@ def make_cxx_builder(*args, includes=[], libpaths=[], flags=[], **kwargs):
     kwargs['platform_options'] = [
         ({'posix'}, {
             'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof'],
-            'flags': ['-fno-common'] + flags}),
+            'flags': ['-fno-common'] + flags,
+            'optimize_flags': ['-O3', '-fomit-frame-pointer', '--inline']}),
         ({'windows'}, {
-            'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags}),
+            'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
+            'optimize_flags': ['/Ox']}),
     ]
     kwargs['includes'] = list(chain(fbuild.options.includes, includes))
     kwargs['libpaths'] = list(chain(fbuild.options.libpaths, libpaths))
@@ -200,12 +223,14 @@ def config_build():
         c=make_c_builder(fbuild.options.build_cc,
             platform=platform,
             debug=fbuild.options.debug or fbuild.options.build_c_debug,
+            optimize=fbuild.options.optimize or fbuild.options.build_c_optimize,
             includes=fbuild.options.build_includes,
             libpaths=fbuild.options.build_libpaths,
             flags=fbuild.options.build_c_flags),
         cxx=make_cxx_builder(fbuild.options.build_cxx,
             platform=platform,
             debug=fbuild.options.debug or fbuild.options.build_c_debug,
+            optimize=fbuild.options.optimize or fbuild.options.build_c_optimize,
             includes=fbuild.options.build_includes,
             libpaths=fbuild.options.build_libpaths,
             flags=fbuild.options.build_c_flags))
@@ -225,12 +250,16 @@ def config_host(build):
             c=make_c_builder(fbuild.builders.host_cc,
                 platform=platform,
                 debug=fbuild.options.debug or fbuild.options.host_c_debug,
+                optimize=fbuild.options.optimize or
+                    fbuild.options.host_c_optimize,
                 includes=fbuild.options.host_includes,
                 libpaths=fbuild.options.host_libpaths,
                 flags=fbuild.options.host_c_flags),
             cxx=make_cxx_builder(fbuild.buildesr.host_cxx,
                 platform=platform,
                 debug=fbuild.options.debug or fbuild.options.host_c_debug,
+                optimize=fbuild.options.optimize or
+                    fbuild.options.host_c_optimize,
                 includes=fbuild.options.host_includes,
                 libpaths=fbuild.options.host_libpaths,
                 flags=fbuild.options.host_c_flags))
@@ -268,12 +297,16 @@ def config_target(host):
             c=make_c_builder(fbuild.options.target_cc,
                 platform=platform,
                 debug=fbuild.options.debug or fbuild.options.target_c_debug,
+                optimize=fbuild.options.optimize or
+                    fbuild.options.target_c_optimize,
                 includes=fbuild.options.target_includes,
                 libpaths=fbuild.options.target_libpaths,
                 flags=fbuild.options.target_c_flags),
             cxx=make_cxx_builder(fbuild.options.target_cxx,
                 platform=platform,
                 debug=fbuild.options.debug or fbuild.options.target_c_debug,
+                optimize=fbuild.options.optimize or
+                    fbuild.options.target_c_optimize,
                 includes=fbuild.options.target_includes,
                 libpaths=fbuild.options.target_libpaths,
                 flags=fbuild.options.target_c_flags))
