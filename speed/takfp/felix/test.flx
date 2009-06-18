@@ -13,7 +13,7 @@ fun Tak (x:float, y:float, z:float): float =>
 w := float_of n;
 val start_time = Time::time ();
 
-ignore(Tak(w*3.0f, w*2.0f, w*1.0f));
+C_hack::ignore(Tak(w*3.0f, w*2.0f, w*1.0f));
 
 println$ (Time::time ()) - start_time;
 
