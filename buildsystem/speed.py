@@ -129,7 +129,7 @@ def run_test(path,
         if lang == 'scala':
             # We have to be careful with scala since it doesn't
             # like ':'s in it's classpaths.
-            stdout, stderr = scala.run('Test',
+            stdout, stderr = scala.run_jar('Test',
                 classpaths=[exe.name],
                 cwd=exe.parent,
                 timeout=60,
