@@ -4,18 +4,10 @@ let rec ack m n = match m,n with
   | m,n -> ack (m - 1) (ack m (n - 1))
 ;;
 
-(*
-let n = if Array.length Sys.argv > 1 then int_of_string Sys.argv.(1) else 1 in
-Printf.printf "Ack(3,%d): %d\n" n (ack 3 n)
-;;
-*)
 let () =
-  let t0 = Unix.gettimeofday () in
   let n = 13 in
-  ignore (ack 3 n);
+  let t0 = Unix.gettimeofday () in
+  let v = ack 3 n in
   let t1 = Unix.gettimeofday () in
-  print_newline ();
-  print_float (t1 -. t0);
-  print_newline ()
-
-
+  Printf.printf "Ack(3,%d): %d\n" n v;
+  Printf.printf "%f\n" (t1 -. t0)
