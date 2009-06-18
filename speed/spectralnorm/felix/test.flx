@@ -1,19 +1,18 @@
+// Felix Performance Test Program
 include "std/time";
 
-// Felix Performance Test Program
-n := atoi(System::argv 1);
 open Carray;
 
 typedef V = carray[double];
 
-fun eval_A(i:int, j:int)=>1.0/double(((i+j)*(i+j+1))/2+i+1);
+fun eval_A(i:int, j:int) => 1.0 / double (((i+j)*(i+j+1))/2+i+1);
 
 proc eval_A_times_u(N:int, u:V, Au:V)
 {
   var i:int; var j:int;
   forall i in 0 upto N-1 do
-      Au.[i]=0.0;
-      forall j in 0 upto N-1 do Au.[i]=Au.[i] + eval_A(i,j)*u.[j]; done
+    Au.[i]=0.0;
+    forall j in 0 upto N-1 do Au.[i]=Au.[i] + eval_A(i,j)*u.[j]; done
   done
 }
 
@@ -21,36 +20,45 @@ proc eval_At_times_u(N:int, u:V, Au:V)
 {
   var i:int; var j:int;
   forall i in 0 upto N-1 do
-      Au.[i]=0.0;
-      forall j in 0 upto N-1 do Au.[i]=Au.[i]+eval_A(j,i)*u.[j]; done
-   done
+    Au.[i]=0.0;
+    forall j in 0 upto N-1 do Au.[i]=Au.[i]+eval_A(j,i)*u.[j]; done
+  done
 }
 
+proc eval_AtA_times_u(N:int, u:V, AtAu:V) {
+  tmp:V := array_alloc[double] N;
 
-proc eval_AtA_times_u(N:int, u:V, AtAu:V)
-{ eval_A_times_u(N,u,tmp); eval_At_times_u(N,tmp,AtAu); }
+  eval_A_times_u(N,u,tmp);
+  eval_At_times_u(N,tmp,AtAu);
+}
 
-var i:int;
-var N = n * 1000;
+proc main () {
+  var i:int;
+  var N = 2000;
+  val t0 = Time::time ();
 
-u:V := array_alloc[double] N;
-v:V := array_alloc[double] N;
-tmp:V := array_alloc[double] N;
+  u:V := array_alloc[double] N;
+  v:V := array_alloc[double] N;
 
-var vBv:double;
-var vv:double;
+  var vBv:double;
+  var vv:double;
 
-forall i in 0 upto N-1 do u.[i]=1.0; done
-forall i in 0 upto 9 do
+  forall i in 0 upto N-1 do u.[i]=1.0; done
+  forall i in 0 upto 9 do
     eval_AtA_times_u(N,u,v);
     eval_AtA_times_u(N,v,u);
-done
+  done
 
-val start_time = Time::time ();
-vBv=0.0;
-vv=0.0;
-forall i in 0 upto N-1 do vBv+=u.[i]*v.[i]; vv+=v.[i]*v.[i]; done
-println$ (Time::time ()) - start_time;
-//print$ f"%0.9f\n"$ sqrt(vBv/vv);
+  vBv=0.0;
+  vv=0.0;
+  forall i in 0 upto N-1 do
+    vBv+=u.[i]*v.[i]; vv+=v.[i]*v.[i];
+  done;
+  val result = sqrt (vBv/vv);
+  val t1 = Time::time ();
 
+  println$ f"%0.9f" result;
+  println$ (t1 - t0);
+}
 
+main ();

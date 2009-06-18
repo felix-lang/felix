@@ -23,7 +23,8 @@ let eval_AtA_times_u u v =
   eval_A_times_u u w; eval_At_times_u w v
 
 let () =
-  let n = 1000 * (try int_of_string(Array.get Sys.argv 1) with _ ->  2) in
+  let n = 2000 in
+  let t0 = Unix.gettimeofday () in
   let u = Array.make n 1.0  and  v = Array.make n 0.0 in
   for i = 0 to 9 do
     eval_AtA_times_u u v; eval_AtA_times_u v u
@@ -34,5 +35,7 @@ let () =
     vv := !vv +. v.(i) *. v.(i);
     vBv := !vBv +. u.(i) *. v.(i)
   done;
-  Printf.printf "%0.9f\n" (sqrt(!vBv /. !vv))
-
+  let v = sqrt(!vBv /. !vv) in
+  let t1 = Unix.gettimeofday () in
+  Printf.printf "%0.9f\n" v;
+  Printf.printf "%f\n" (t1 -. t0)
