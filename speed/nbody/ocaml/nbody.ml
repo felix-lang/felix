@@ -98,9 +98,13 @@ let sun = { x = 0.;  y = 0.;  z = 0.;  vx = 0.;  vy = 0.; vz = 0.;
 let bodies = [| sun; jupiter; saturn; uranus; neptune |]
 
 let () =
-  let n = 1000000 * int_of_string(Sys.argv.(1)) in
+  let n = 50000000 in
+  let t0 = Unix.gettimeofday () in
   offset_momentum bodies;
-  Printf.printf "%.9f\n" (energy bodies);
+  let r0 = energy bodies in
   for i = 1 to n do advance bodies 0.01 done;
-  Printf.printf "%.9f\n" (energy bodies)
-
+  let r1 = energy bodies in
+  let t1 = Unix.gettimeofday () in
+  Printf.printf "%.9f\n" r0;
+  Printf.printf "%.9f\n" r1;
+  Printf.printf "%f\n" (t1 -. t0)

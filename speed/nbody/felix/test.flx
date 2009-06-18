@@ -1,5 +1,6 @@
 // Felix Performance Test Program
-n := atoi(System::argv 1);
+include "std/time";
+
 PI := 3.141592653589793;
 SOLAR_MASS := 4.0 * PI * PI;
 DAYS_PER_YEAR := 365.24;
@@ -21,13 +22,13 @@ struct Body { pos:vec; vel:vec; mass: double; };
 proc Advance(dt: double){
    var i: int; var j:int;
    forall i in 0 upto nbodies-1 do
-      bimass := bodies.[i].mass;
+      val bimass = bodies.[i].mass;
       var delta = 0.0,0.0,0.0;
       forall j in i+1 upto nbodies-1 do
-         var bjmass = bodies.[j].mass;
-         var d = bodies.[i].pos - bodies.[j].pos;
-         var d2 = sqr d;
-         var distance = sqrt d2;
+         val bjmass = bodies.[j].mass;
+         val d = bodies.[i].pos - bodies.[j].pos;
+         val d2 = sqr d;
+         val distance = sqrt d2;
 
          delta = delta + d * bjmass * dt / (distance * d2);
          bodies.[j].vel = bodies.[j].vel + d * bimass * dt / (distance * d2);
@@ -40,7 +41,7 @@ proc Advance(dt: double){
    done;
 }
 
-fun Energy(): double =
+fun Energy (): double =
 {
    var i: int; var j: int;
    var e = 0.0;
@@ -66,8 +67,6 @@ proc OffsetMomentum()
   done;
   bodies.[0].vel = -p / SOLAR_MASS;
 }
-
-nticks := 1_000_000 * n;
 
 /* define planetary masses, initial positions, velocities */
 
@@ -101,7 +100,7 @@ uranus := Body (
  4.36624404335156298e-05 * SOLAR_MASS
 );
 
-neptune :=  Body (
+neptune := Body (
  (1.53796971148509165e+01,
  -2.59193146099879641e+01,
  1.79258772950371181e-01),
@@ -114,12 +113,18 @@ neptune :=  Body (
 sun := Body ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), SOLAR_MASS);
 
 var bodies = (sun,jupiter,saturn,uranus,neptune);
-nbodies := 5;
+val nbodies = 5;
+val n = 50000000;
 
+val t0 = Time::time ();
 OffsetMomentum();
+val r0 = Energy ();
 
-println$ f"%.9f"$ Energy();
 var i : int;
-forall i in 1 upto nticks do Advance(0.01e+00); done;
-println$ f"%.9f"$ Energy();
+forall i in 1 upto n do Advance 0.01; done;
+val r1 = Energy ();
+val t1 = Time::time ();
 
+println$ f"%.9f"$ r0;
+println$ f"%.9f"$ r1;
+println$ (t1 - t0);
