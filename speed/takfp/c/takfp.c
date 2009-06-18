@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 float Tak (float x, float y, float z)
 {
@@ -9,8 +10,16 @@ float Tak (float x, float y, float z)
 
 int main(int argc, char* argv[])
 {
-    int n = ((argc == 2) ? atoi(argv[1]) : 1);
-    printf("%.1f\n", Tak(n*3.0, n*2.0, n*1.0));
+    /* int n = ((argc == 2) ? atoi(argv[1]) : 1); */
+    clock_t start, end;
+    double cpu_time_used;
+    int n = 10;
+    start = clock();
+    double r = Tak(n*3.0, n*2.0, n*1.0);
+    //printf("%.1f\n", Tak(n*3.0, n*2.0, n*1.0));
+    end = clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    printf("%f\n",cpu_time_used);
     return 0;
 }
 
