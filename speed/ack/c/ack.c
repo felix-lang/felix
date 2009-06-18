@@ -15,6 +15,6 @@ int main(int argc, char *argv[]) {
     clock_t t1 = clock();
     printf("Ack(3,%d): %d\n", n, v);
     printf("%f\n", ((double) (t1 - t0)) / CLOCKS_PER_SEC);
-    return(0);
+    return 0;
 }
 

@@ -1,6 +1,5 @@
 // Felix Performance Test Program
 include "std/time";
-n := 13;
 
 fun ack(x:int,y:int):int =>
   if x == 0 then y + 1
@@ -9,6 +8,7 @@ fun ack(x:int,y:int):int =>
   endif
 ;
 
+val n = 13;
 val t0 = Time::time ();
 v := ack(3,n);
 val t1 = Time::time ();
