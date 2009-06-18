@@ -11,7 +11,7 @@ from fbuild.path import Path
 def run_tests(target, felix):
     # See if scala's on the system.
     try:
-        scala = fbuild.builders.scala.Scala(optimize=True)
+        scala = fbuild.builders.scala.Builder(optimize=True)
     except fbuild.ConfigFailed:
         # Oh well, it was a good try...
         scala = None
@@ -110,9 +110,10 @@ def run_test(path,
         elif lang == 'ocaml':
             exe = ocaml.build_exe(dst, srcs, external_libs=['unix'])
         elif lang == 'scala':
+            # Exit early if scala isn't supported
             if scala is None:
                 return None, None
-            exe = scala.compile(path / 'test.scala')
+            exe = scala.build_lib(dst, srcs, cwd=dst.parent)
         else:
             fbuild.logger.check('do not know how to build', path,
                 color='yellow')
@@ -126,8 +127,11 @@ def run_test(path,
     t0 = time.time()
     try:
         if lang == 'scala':
-            stdout, stderr = scala.run('.', 'Test',
-                cwd=exe,
+            # We have to be careful with scala since it doesn't
+            # like ':'s in it's classpaths.
+            stdout, stderr = scala.run('Test',
+                classpaths=[exe.name],
+                cwd=exe.parent,
                 timeout=60,
                 quieter=1)
         else:
