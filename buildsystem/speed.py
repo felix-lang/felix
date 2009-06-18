@@ -11,7 +11,7 @@ from fbuild.path import Path
 def run_tests(target, felix):
     # See if scala's on the system.
     try:
-        scala = fbuild.builders.scala.Scala()
+        scala = fbuild.builders.scala.Scala(optimize=True)
     except fbuild.ConfigFailed:
         # Oh well, it was a good try...
         scala = None
