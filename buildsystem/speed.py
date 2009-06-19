@@ -3,12 +3,20 @@ import time
 
 import fbuild
 import fbuild.builders.scala
+import fbuild.builders.java
 import fbuild.db
 from fbuild.path import Path
 
 # ------------------------------------------------------------------------------
 
 def run_tests(target, felix):
+    # See if java's on the system.
+    try:
+        java = fbuild.builders.java.Builder()
+    except fbuild.ConfigFailed:
+        # Oh well, it was a good try...
+        java = None
+
     # See if scala's on the system.
     try:
         scala = fbuild.builders.scala.Builder(optimize=True)
@@ -40,6 +48,7 @@ def run_tests(target, felix):
                     c=target.c.static,
                     cxx=target.cxx.static,
                     felix=felix,
+                    java=java,
                     ocaml=target.ocaml,
                     scala=scala)
             except (ValueError, fbuild.Error) as e:
@@ -86,14 +95,12 @@ def run_tests(target, felix):
 # ------------------------------------------------------------------------------
 
 @fbuild.db.caches
-def run_test(path,
-        dst:fbuild.db.DST,
-        srcs:fbuild.db.SRCS,
-        expect:fbuild.db.OPTIONAL_SRC,
+def run_test(path, dst, srcs:fbuild.db.SRCS, expect:fbuild.db.OPTIONAL_SRC,
         *,
         c,
         cxx,
         felix,
+        java,
         ocaml,
         scala):
     lang = path.name.rsplit(':')[0]
@@ -107,13 +114,18 @@ def run_test(path,
         elif lang == 'felix':
             # All the felix tests are named test.flx
             exe = felix.compile(path / 'test.flx', static=True)
+        elif lang == 'java':
+            # Exit early if java isn't supported
+            if java is None:
+                return None, None
+            exe = java.build_lib(dst + '.jar', srcs, cwd=dst.parent)
         elif lang == 'ocaml':
             exe = ocaml.build_exe(dst, srcs, external_libs=['unix'])
         elif lang == 'scala':
             # Exit early if scala isn't supported
             if scala is None:
                 return None, None
-            exe = scala.build_lib(dst, srcs, cwd=dst.parent)
+            exe = scala.build_lib(dst + '.jar', srcs, cwd=dst.parent)
         else:
             fbuild.logger.check('do not know how to build', path,
                 color='yellow')
@@ -122,14 +134,22 @@ def run_test(path,
         # If we failed to compile, just move on
         return None, None
 
+    fbuild.db.add_external_dependencies_to_call(dsts=[exe])
+
     # Run the executable and measure the wall clock time
     fbuild.logger.check('running ' + exe)
     t0 = time.time()
     try:
-        if lang == 'scala':
+        if lang == 'java':
+            stdout, stderr = java.run_class('Test',
+                classpaths=[exe.name],
+                cwd=exe.parent,
+                timeout=60,
+                quieter=1)
+        elif lang == 'scala':
             # We have to be careful with scala since it doesn't
             # like ':'s in it's classpaths.
-            stdout, stderr = scala.run_jar('Test',
+            stdout, stderr = scala.run_class('Test',
                 classpaths=[exe.name],
                 cwd=exe.parent,
                 timeout=60,
