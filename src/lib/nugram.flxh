@@ -498,6 +498,7 @@ syntax functions {
   sadjective := k"static" =># "'InlineFunction";
   sadjective := k"extern" =># "'NoInlineFunction";
   sadjective := k"virtual" =># "'Virtual";
+  sadjective := k"lvalue" =># "'Lvalue";
   sadjectives := sadjective* =># "_1";
 
   slambda_fun_arg := lpar sparameter_comma_list "when" sexpr rpar =># "`(,_2 (some ,_4))";
@@ -947,13 +948,19 @@ syntax cbind {
             `(rreq_and (rreq_atom (Property_req "generator")) ,reqs)
             reqs))
       )
+      (let (
+        (reqs
+          (if (memv 'Lvalue _1)
+            `(rreq_and (rreq_atom (Property_req "lvalue")) ,reqs)
+            reqs))
+      )
       (if (eq? 'ast_arrow (first t))
         (let (
           (argt (caadr t))
           (ret (cadadr t)))
         `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs ,prec)
         )
-        ('ERROR))))
+        ('ERROR)))))
     """;
 
   sfunction_definition := "ctor" sname stvarlist ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";" =>#

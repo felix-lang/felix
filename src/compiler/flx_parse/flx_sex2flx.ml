@@ -427,6 +427,7 @@ and xproperty_t sr x : property_t =
   | Id "Generator" -> `Generator           (* Generator: fun with internal state *)
   | Id "Yields" -> `Yields              (* Yielding generator *)
   | Id "Cfun" -> `Cfun                (* C function *)
+  | Id "Lvalue" -> `Lvalue                (* primitive returning lvalue *)
 
   (* one of the below must be set before code generation *)
   | Id "Requires_ptf" -> `Requires_ptf        (* a pointer to thread frame is needed *)

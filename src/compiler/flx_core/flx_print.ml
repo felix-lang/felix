@@ -953,6 +953,7 @@ and string_of_property = function
 | `Yields -> "yields"
 | `Virtual -> "virtual"
 | `Cfun -> "cfun"
+| `Lvalue -> "lvalue"
 
 and string_of_properties ps =
   match ps with

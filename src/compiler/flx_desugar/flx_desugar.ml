@@ -721,6 +721,10 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
         props := `Virtual:: !props;
         `NREQ_true
 
+      | `Property_req "lvalue" ->
+        props := `Lvalue:: !props;
+        `NREQ_true
+
       | `Property_req s ->
         props := mkprop sr s :: !props;
         `NREQ_true

@@ -336,6 +336,7 @@ and property_t = [
   | `Generator           (* Generator: fun with internal state *)
   | `Yields              (* Yielding generator *)
   | `Cfun                (* C function *)
+  | `Lvalue              (* primitive returns lvalue *)
 
   (* one of the below must be set before code generation *)
   | `Requires_ptf        (* a pointer to thread frame is needed *)
