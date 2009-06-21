@@ -4082,6 +4082,12 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
   | `AST_ref (_,(`AST_deref (_,e))) -> be e
   | `AST_ref (srr,e) ->
+    let has_property i p =
+      match get_data syms.dfns i with {symdef=entry} ->
+      match entry with
+      | `SYMDEF_fun (props,_,_,_,_,_) -> mem p props
+      | _ -> false
+    in
     let e',t' = be e in
     begin match e' with
     | `BEXPR_deref e -> e
@@ -4124,6 +4130,10 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         )
       end
       end
+    | `BEXPR_apply ((`BEXPR_closure (i,ts),_),a) when has_property i `Lvalue ->
+      `BEXPR_address (e',t'),`BTYP_pointer t'
+
+
     | _ ->
        clierr srr
         (
