@@ -180,6 +180,7 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
 
   | `BEXPR_not e -> ue e
   | `BEXPR_new e -> ue e
+  | `BEXPR_address e -> ue e
   | `BEXPR_likely e -> ue e
   | `BEXPR_unlikely e -> ue e
   | `BEXPR_literal _ -> ()

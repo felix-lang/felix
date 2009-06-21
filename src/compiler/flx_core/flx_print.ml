@@ -1817,6 +1817,7 @@ and string_of_bound_expression' dfns bbdfns se e =
   | `BEXPR_closure (i,ts) -> sid i ^ print_inst dfns ts
   | `BEXPR_ref (i,ts) -> "&" ^ sid i ^ print_inst dfns ts
   | `BEXPR_new e -> "new " ^ se e
+  | `BEXPR_address e -> "&" ^ se e
   | `BEXPR_not e -> "not " ^ se e
   | `BEXPR_likely e -> "likely(" ^ se e ^")"
   | `BEXPR_unlikely e -> "unlikely(" ^ se e ^")"

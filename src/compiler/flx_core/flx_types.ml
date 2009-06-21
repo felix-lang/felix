@@ -220,6 +220,7 @@ and bexpr_t =
   | `BEXPR_ref of bid_t * btypecode_t list
   | `BEXPR_likely of tbexpr_t
   | `BEXPR_unlikely of tbexpr_t
+  | `BEXPR_address of tbexpr_t
   | `BEXPR_new of tbexpr_t
   | `BEXPR_not of tbexpr_t
   | `BEXPR_literal of literal_t

@@ -319,6 +319,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   | `BEXPR_deref ((`BEXPR_ref (index,ts)),`BTYP_pointer t) ->
     ge' (`BEXPR_name (index,ts),t)
 
+  | `BEXPR_address e -> ce_prefix "&" (ge' e)
+
   | `BEXPR_deref e ->
     (*
     let cast = tn t ^ "*" in

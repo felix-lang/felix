@@ -354,6 +354,7 @@ let flat_iter_tbexpr fi fe ft ((x,t) as e) =
   | `BEXPR_ref (i,ts) -> fi i; iter ft ts
   | `BEXPR_likely e -> fe e
   | `BEXPR_unlikely e -> fe e
+  | `BEXPR_address e -> fe e
   | `BEXPR_new e -> fe e
   | `BEXPR_not e -> fe e
 
@@ -395,6 +396,7 @@ let map_tbexpr fi fe ft e = match e with
   | `BEXPR_deref e,t -> `BEXPR_deref (fe e),ft t
   | `BEXPR_ref (i,ts),t -> `BEXPR_ref (fi i, map ft ts), ft t
   | `BEXPR_new e,t -> `BEXPR_new (fe e), ft t
+  | `BEXPR_address e,t -> `BEXPR_address (fe e), ft t
   | `BEXPR_not e,t -> `BEXPR_not (fe e), ft t
   | `BEXPR_likely e,t -> `BEXPR_likely (fe e), ft t
   | `BEXPR_unlikely e,t -> `BEXPR_unlikely (fe e), ft t
@@ -561,6 +563,9 @@ let reduce_tbexpr bbdfns e =
 
     | `BEXPR_deref (`BEXPR_ref (i,ts),_),t ->
       `BEXPR_name (i,ts),t
+
+    | `BEXPR_deref (`BEXPR_address (e,t),_),_ -> (e,t)
+    | `BEXPR_address (`BEXPR_deref (e,t),_),_ -> (e,t)
 
     | x -> x
   in aux e
