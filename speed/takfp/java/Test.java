@@ -1,7 +1,13 @@
-public class takfp {
+import java.lang.System;
+
+public class Test {
   public static void main(String args[]) {
-    int n = Integer.parseInt(args[0]);
-    System.out.println( Tak(n*3.0f, n*2.0f, n*1.0f) );
+    int n = 10;
+    long t0 = java.lang.System.currentTimeMillis();
+    float v = Tak(n*3.0f, n*2.0f, n*1.0f);
+    long t1 = java.lang.System.currentTimeMillis();
+    System.out.format("%.2f\n", v);
+    System.out.println((t1 - t0) / 1000.0);
   }
 
   public static float Tak (float x, float y, float z) {
