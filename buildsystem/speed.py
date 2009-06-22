@@ -39,42 +39,12 @@ def run_tests(target, felix):
             if not path.isdir():
                 continue
 
-            dst = fbuild.buildroot / path / 'test'
-            srcs = (path / '*').glob()
+            for result in run_language_tests(path, expect, target, felix, java, scala):
+                # adjust the widths to the maximum column size
+                for i in range(len(widths)):
+                    widths[i] = max(len(result[i]), widths[i])
 
-            try:
-                internal_time, wall_time = run_test(path, dst, srcs,
-                    expect=expect if expect.exists() else None,
-                    c=target.c.static,
-                    cxx=target.cxx.static,
-                    felix=felix,
-                    java=java,
-                    ocaml=target.ocaml,
-                    scala=scala)
-            except (ValueError, fbuild.Error) as e:
-                fbuild.logger.log(e)
-                internal_time = None
-                wall_time = None
-
-            # If we didn't get values back, just print N/A
-            if internal_time is None:
-                internal_time = 'N/A'
-            else:
-                internal_time = '%.4f' % float(internal_time)
-
-            if wall_time is None:
-                wall_time = 'N/A'
-            else:
-                wall_time = '%.4f' % float(wall_time)
-
-            result = (path.name, internal_time, wall_time)
-
-            # adjust the widths to the maximum column size
-
-            for i in range(len(widths)):
-                widths[i] = max(len(result[i]), widths[i])
-
-            results.append(result)
+                results.append(result)
 
         # now summarize the results
         fbuild.logger.log('')
@@ -91,6 +61,51 @@ def run_tests(target, felix):
             p(result)
 
         fbuild.logger.log('')
+
+# ------------------------------------------------------------------------------
+
+def run_language_tests(path, expect, target, felix, java, scala):
+    dst = fbuild.buildroot / path / 'test'
+
+    subtests = []
+    srcs = []
+    for src in (path / '*').glob():
+        if src.isdir():
+            subtests.append(src)
+        else:
+            srcs.append(src)
+
+    if srcs:
+        try:
+            internal_time, wall_time = run_test(path, dst, srcs,
+                expect=expect if expect.exists() else None,
+                c=target.c.static,
+                cxx=target.cxx.static,
+                felix=felix,
+                java=java,
+                ocaml=target.ocaml,
+                scala=scala)
+        except (ValueError, fbuild.Error) as e:
+            fbuild.logger.log(e)
+            internal_time = None
+            wall_time = None
+
+        # If we didn't get values back, just print N/A
+        if internal_time is None:
+            internal_time = 'N/A'
+        else:
+            internal_time = '%.4f' % float(internal_time)
+
+        if wall_time is None:
+            wall_time = 'N/A'
+        else:
+            wall_time = '%.4f' % float(wall_time)
+
+        yield path, internal_time, wall_time
+
+    for subtest in subtests:
+        for result in run_language_tests(subtest, expect, target, felix, java, scala):
+            yield result
 
 # ------------------------------------------------------------------------------
 
