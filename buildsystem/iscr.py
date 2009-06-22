@@ -182,19 +182,19 @@ def _print_compiler(lang, platform, p):
         p('SPEC_OBJ_FILENAME', '/Fo')
         p('SPEC_EXE_FILENAME', '/Fe')
 
-        p('CCOBJ_STATIC_FLX', str(static.compiler.cl.exe) + ' /nologo /c ' +
+        p('CCOBJ_STATIC_FLX', '\\"' + str(static.compiler.cl.exe) + '\\" /nologo /c ' +
             ' '.join(static.compiler.flags) + ' ' +
             ' '.join('-I' + i for i in static.compiler.cl.includes))
 
-        p('CCOBJ_DYNAMIC_FLX', str(shared.compiler.cl.exe) + ' /nologo /c ' +
+        p('CCOBJ_DYNAMIC_FLX', '\\"' + str(shared.compiler.cl.exe) + '\\" /nologo /c ' +
             ' '.join(shared.compiler.flags) + ' ' +
             ' '.join('-I' + i for i in static.compiler.cl.includes))
 
-        p('CCLINK_STATIC', str(static.compiler.cl.exe) + ' /nologo ' +
+        p('CCLINK_STATIC', '\\"' + str(static.compiler.cl.exe) + '\\" /nologo ' +
             ' '.join(shared.exe_linker.flags) + ' ' +
             ' '.join('-L' + i for i in static.exe_linker.libpaths))
 
-        p('CCLINK_DYNAMIC_FLX', str(shared.compiler.cl.exe) + ' /nologo ' +
+        p('CCLINK_DYNAMIC_FLX', '\\"' + str(shared.compiler.cl.exe) + '\\" /nologo ' +
             ' '.join(shared.lib_linker.flags) + ' ' +
             ' '.join('-L' + i for i in shared.lib_linker.libpaths))
     else:
