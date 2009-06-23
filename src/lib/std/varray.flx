@@ -5,7 +5,7 @@ open module Varray
   _gc_pointer _gc_type t type varray[t] = "?1*";
 
   gen _ctor_varray[t]: ulong -> varray[t] =
-    "(?1*)(PTF gcp->gc->create_empty_array(&@?1,$1))"
+    "(?1*)(PTF gcp->collector->create_empty_array(&@?1,$1))"
     requires property "needs_gc"
   ;
 
@@ -17,7 +17,7 @@ open module Varray
     forall i in 0ul upto size - 1ul do
       o.[i] = default;
     done;
-
+    set_used (o,size);
     return o;
   }
 
@@ -29,32 +29,32 @@ open module Varray
     forall i in 0ul upto size - 1ul do
       o.[i] = f i;
     done;
-
+    set_used (o,size);
     return o;
   }
 
   private proc set_used[t]: varray[t] * ulong =
-    "PTF gcp->gc->set_used($1,$2);"
+    "PTF gcp->collector->set_used($1,$2);"
     requires property "needs_gc"
   ;
 
-  fun subscript[t]: varray[t] * !ints -> lvalue[t] = "$1[$2]";
+  lvalue fun subscript[t]: varray[t] * !ints -> lvalue[t] = "$1[$2]";
 
   fun len[t]: varray[t] -> ulong =
-    "PTF gcp->gc->get_used($1)"
+    "PTF gcp->collector->get_used($1)"
     requires property "needs_gc"
   ;
 
   fun maxlen[t]: varray[t] -> ulong =
-    "PTF gcp->gc->get_count($1)"
+    "PTF gcp->collector->get_count($1)"
     requires property "needs_gc"
   ;
 
   proc pluseq[t] : &varray[t] * t = """
     {
       ?1 * _p = *$1;
-      unsigned long n = PTF gcp->gc->get_used(_p);
-      PTF gcp->gc->incr_used(_p,1L);
+      unsigned long n = PTF gcp->collector->get_used(_p);
+      PTF gcp->collector->incr_used(_p,1L);
       new(_p+n) ?1($2);
     }
   """
@@ -64,8 +64,8 @@ open module Varray
   proc pop[t] : varray[t] = """
     {
       ?1 * _p = $1;
-      unsigned long n = PTF gcp->gc->get_used(_p);
-      PTF gcp->gc->incr_used(_p,-1L);
+      unsigned long n = PTF gcp->collector->get_used(_p);
+      PTF gcp->collector->incr_used(_p,-1L);
       destroy(_p+n-1);
     }
   """
@@ -88,6 +88,7 @@ open module Varray
       o.[i] = _f x.[i];
     done;
 
+    set_used (o,len(x));
     return o;
   }
 
