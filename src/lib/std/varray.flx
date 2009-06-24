@@ -9,14 +9,18 @@ open module Varray
     requires property "needs_gc"
   ;
 
+  // Note: the test on size > 0ul is required because
+  // 0ul - 1ul is MAX_ULONG which causes a rather
+  // too many loop iterations ..
+
   publish "Construct a varray with a default value"
   gen _ctor_varray[t] (size:ulong, default:t) = {
     var o = varray[t] size;
     var i : ulong;
 
-    forall i in 0ul upto size - 1ul do
+    if size > 0ul do forall i in 0ul upto size - 1ul do
       o.[i] = default;
-    done;
+    done done
     set_used (o,size);
     return o;
   }
@@ -26,9 +30,9 @@ open module Varray
     var o = varray[t] size;
     var i : ulong;
 
-    forall i in 0ul upto size - 1ul do
+    if size > 0ul do forall i in 0ul upto size - 1ul do
       o.[i] = f i;
-    done;
+    done done
     set_used (o,size);
     return o;
   }
@@ -75,18 +79,18 @@ open module Varray
   proc iter[T] (_f:T->void) (x:varray[T]) {
     var i : ulong;
 
-    forall i in 0ul upto len(x) - 1ul do
-      _f x.[i];
-    done;
+    if len(x) > 0ul do forall i in 0ul upto len(x) - 1ul do
+      _f x.[i]
+    done done
   }
 
   fun map[T, U] (_f:T->U) (x:varray[T]): varray[U] = {
     var o = varray[U]$ len(x);
     var i : ulong;
 
-    forall i in 0ul upto len(x) - 1ul do
+    if len x > 0ul do forall i in 0ul upto len(x) - 1ul do
       o.[i] = _f x.[i];
-    done;
+    done done
 
     set_used (o,len(x));
     return o;
@@ -96,9 +100,9 @@ open module Varray
     var o = init;
     var i : ulong;
 
-    forall i in 0ul upto len(x) - 1ul do
+    if len x > 0ul do forall i in 0ul upto len(x) - 1ul do
       o = _f o x.[i];
-    done;
+    done done
 
     return o;
   }
@@ -107,9 +111,9 @@ open module Varray
     var o = init;
     var i : ulong;
 
-    forall i in len(x) - 1ul downto 0ul do
+    if len x > 0ul do forall i in len(x) - 1ul downto 0ul do
       o = _f x.[i] o;
-    done;
+    done done
 
     return o;
   }
@@ -120,13 +124,13 @@ instance[T with Show[T]] Str[Varray::varray[T]] {
     var o = 'varray(';
     var i : ulong;
 
-    if Varray::len(xs) > 0ul do
+    if len xs > 0ul do
       o += repr xs.[0];
 
-      forall i in 1ul upto Varray::len(xs) - 1ul do
+      forall i in 1ul upto len(xs) - 1ul do
         o += ', ' + repr xs.[i];
-      done;
-    done;
+      done
+    done
 
     return o + ')';
   }
