@@ -321,6 +321,13 @@ def _print_posix_support(lang, platform, p):
     if dlfcn_h.dlopen:
         p('HAVE_DLOPEN', True)
         p('SUPPORT_DYNAMIC_LOADING', True)
+        switch = list(dlfcn_h.flags)
+        switch.extend('-L' + p for p in dlfcn_h.libpaths)
+        switch.extend('-l' + l for l in dlfcn_h.libs)
+        switch.extend('-l' + l for l in dlfcn_h.external_libs)
+        if switch:
+            p('CCLINK_STATIC=%r' % ' '.join(switch))
+            p('CCLINK_DYNAMIC_FLX=%r' % ' '.join(switch))
     else:
         p('HAVE_DLOPEN', False)
 
