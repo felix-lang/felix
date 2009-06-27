@@ -1,3 +1,5 @@
+include "stl/stl";
+
 module Vector[t]
 {
     requires std_stl_vector;
