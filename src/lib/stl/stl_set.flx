@@ -47,7 +47,7 @@ header std_stl_set = "#include <set>";
   }
   instance Forward_iterator[stl_set_iterator[t],t] {}
   instance Bidirectional[stl_set_iterator[t]] {
-    fun pred: stl_set_iterator[t] -> stl_set_iterator[t] = "$1-11;";
+    fun pred: stl_set_iterator[t] -> stl_set_iterator[t] = "$1-1;";
     proc pre_decr : &stl_set_iterator[t] = "--*$1;";
     proc post_decr : &stl_set_iterator[t] = "--*$1;";
   }
@@ -70,7 +70,7 @@ header std_stl_set = "#include <set>";
   }
   instance Forward_iterator[stl_set_reverse_iterator[t],t] {}
   instance Bidirectional[stl_set_reverse_iterator[t]] {
-    fun pred: stl_set_reverse_iterator[t] -> stl_set_reverse_iterator[t] = "$1-11;";
+    fun pred: stl_set_reverse_iterator[t] -> stl_set_reverse_iterator[t] = "$1-1;";
     proc pre_decr : &stl_set_reverse_iterator[t] = "--*$1;";
     proc post_decr : &stl_set_reverse_iterator[t] = "--*$1;";
   }

@@ -1,5 +1,4 @@
 include "stl/stl";
-header std_stl_list = "#include <list>";
 
 module Stl_List[t]
 {
@@ -27,9 +26,9 @@ module Stl_List[t]
   instance Sequence[stl_list[t],stl_list_iterator[t],t] {
     fun begin : stl_list[t]-> stl_list_iterator[t]= "$1.begin()";
     fun end : stl_list[t]-> stl_list_iterator[t]= "$1.end()";
-    proc erase : lvalue[stl_list[t]] * stl_list_iterator[t] = "$1.erase($1);";
-    proc erase_between : lvalue[stl_list[t]] * stl_list_iterator[t] * stl_list_iterator[t] = "$1.erase($1,$2);";
-    proc clear : lvalue[stl_list[t]] = "$1.clear();";
+    proc erase : stl_list[t] * stl_list_iterator[t] = "$1.erase($1);";
+    proc erase_between : stl_list[t] * stl_list_iterator[t] * stl_list_iterator[t] = "$1.erase($1,$2);";
+    proc clear : stl_list[t] = "$1.clear();";
   }
   instance Reversible_Sequence[stl_list[t],stl_list_iterator[t],stl_list_reverse_iterator[t],t] {
     fun rbegin : stl_list[t]-> stl_list_reverse_iterator[t]= "$1.rbegin()";
@@ -53,7 +52,7 @@ module Stl_List[t]
   }
   instance Forward_iterator[stl_list_iterator[t],t] {}
   instance Bidirectional[stl_list_iterator[t]] {
-    fun pred: stl_list_iterator[t] -> stl_list_iterator[t] = "$1-11;";
+    fun pred: stl_list_iterator[t] -> stl_list_iterator[t] = "$1-1;";
     proc pre_decr : &stl_list_iterator[t] = "--*$1;";
     proc post_decr : &stl_list_iterator[t] = "--*$1;";
   }
@@ -76,7 +75,7 @@ module Stl_List[t]
   }
   instance Forward_iterator[stl_list_reverse_iterator[t],t] {}
   instance Bidirectional[stl_list_reverse_iterator[t]] {
-    fun pred: stl_list_reverse_iterator[t] -> stl_list_reverse_iterator[t] = "$1-11;";
+    fun pred: stl_list_reverse_iterator[t] -> stl_list_reverse_iterator[t] = "$1-1;";
     proc pre_decr : &stl_list_reverse_iterator[t] = "--*$1;";
     proc post_decr : &stl_list_reverse_iterator[t] = "--*$1;";
   }

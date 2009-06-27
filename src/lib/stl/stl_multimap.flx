@@ -21,9 +21,9 @@ include "stl/stl";
   instance Sequence[stl_multimap[k,v],stl_multimap_iterator[k,v],k*v] {
     fun begin : stl_multimap[k,v]-> stl_multimap_iterator[k,v]= "$1.begin()";
     fun end : stl_multimap[k,v]-> stl_multimap_iterator[k,v]= "$1.end()";
-    proc erase : lvalue[stl_multimap[k,v]] * stl_multimap_iterator[k,v] = "$1.erase($1);";
-    proc erase_between : lvalue[stl_multimap[k,v]] * stl_multimap_iterator[k,v] * stl_multimap_iterator[k,v] = "$1.erase($1,$2);";
-    proc clear : lvalue[stl_multimap[k,v]] = "$1.clear();";
+    proc erase : stl_multimap[k,v] * stl_multimap_iterator[k,v] = "$1.erase($1);";
+    proc erase_between : stl_multimap[k,v] * stl_multimap_iterator[k,v] * stl_multimap_iterator[k,v] = "$1.erase($1,$2);";
+    proc clear : stl_multimap[k,v] = "$1.clear();";
   }
   instance Reversible_Sequence[stl_multimap[k,v],stl_multimap_iterator[k,v],stl_multimap_reverse_iterator[k,v],k*v] {
     fun rbegin : stl_multimap[k,v]-> stl_multimap_reverse_iterator[k,v]= "$1.rbegin()";
@@ -47,7 +47,7 @@ include "stl/stl";
   }
   instance Forward_iterator[stl_multimap_iterator[k,v],k*v] {}
   instance Bidirectional[stl_multimap_iterator[k,v]] {
-    fun pred: stl_multimap_iterator[k,v] -> stl_multimap_iterator[k,v] = "$1-11;";
+    fun pred: stl_multimap_iterator[k,v] -> stl_multimap_iterator[k,v] = "$1-1;";
     proc pre_decr : &stl_multimap_iterator[k,v] = "--*$1;";
     proc post_decr : &stl_multimap_iterator[k,v] = "--*$1;";
   }
@@ -70,7 +70,7 @@ include "stl/stl";
   }
   instance Forward_iterator[stl_multimap_reverse_iterator[k,v],k*v] {}
   instance Bidirectional[stl_multimap_reverse_iterator[k,v]] {
-    fun pred: stl_multimap_reverse_iterator[k,v] -> stl_multimap_reverse_iterator[k,v] = "$1-11;";
+    fun pred: stl_multimap_reverse_iterator[k,v] -> stl_multimap_reverse_iterator[k,v] = "$1-1;";
     proc pre_decr : &stl_multimap_reverse_iterator[k,v] = "--*$1;";
     proc post_decr : &stl_multimap_reverse_iterator[k,v] = "--*$1;";
   }

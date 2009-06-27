@@ -1,6 +1,5 @@
-header std_stl_deque = "#include <deque>";
-  module Deque[t]
-  {
+module Deque[t]
+{
     requires std_stl_deque;
     type stl_deque = "std::deque<?1>";
     fun create : unit -> stl_deque[t] = "(FLX_GXX_PARSER_HACK std::deque<?1>())";
@@ -26,9 +25,9 @@ header std_stl_deque = "#include <deque>";
   instance Sequence[stl_deque[t],stl_deque_iterator[t],t] {
     fun begin : stl_deque[t]-> stl_deque_iterator[t]= "$1.begin()";
     fun end : stl_deque[t]-> stl_deque_iterator[t]= "$1.end()";
-    proc erase : lvalue[stl_deque[t]] * stl_deque_iterator[t] = "$1.erase($1);";
-    proc erase_between : lvalue[stl_deque[t]] * stl_deque_iterator[t] * stl_deque_iterator[t] = "$1.erase($1,$2);";
-    proc clear : lvalue[stl_deque[t]] = "$1.clear();";
+    proc erase : stl_deque[t] * stl_deque_iterator[t] = "$1.erase($1);";
+    proc erase_between : stl_deque[t] * stl_deque_iterator[t] * stl_deque_iterator[t] = "$1.erase($1,$2);";
+    proc clear : stl_deque[t] = "$1.clear();";
   }
   instance Reversible_Sequence[stl_deque[t],stl_deque_iterator[t],stl_deque_reverse_iterator[t],t] {
     fun rbegin : stl_deque[t]-> stl_deque_reverse_iterator[t]= "$1.rbegin()";
@@ -52,7 +51,7 @@ header std_stl_deque = "#include <deque>";
   }
   instance Forward_iterator[stl_deque_iterator[t],t] {}
   instance Bidirectional[stl_deque_iterator[t]] {
-    fun pred: stl_deque_iterator[t] -> stl_deque_iterator[t] = "$1-11;";
+    fun pred: stl_deque_iterator[t] -> stl_deque_iterator[t] = "$1-1;";
     proc pre_decr : &stl_deque_iterator[t] = "--*$1;";
     proc post_decr : &stl_deque_iterator[t] = "--*$1;";
   }
@@ -75,7 +74,7 @@ header std_stl_deque = "#include <deque>";
   }
   instance Forward_iterator[stl_deque_reverse_iterator[t],t] {}
   instance Bidirectional[stl_deque_reverse_iterator[t]] {
-    fun pred: stl_deque_reverse_iterator[t] -> stl_deque_reverse_iterator[t] = "$1-11;";
+    fun pred: stl_deque_reverse_iterator[t] -> stl_deque_reverse_iterator[t] = "$1-1;";
     proc pre_decr : &stl_deque_reverse_iterator[t] = "--*$1;";
     proc post_decr : &stl_deque_reverse_iterator[t] = "--*$1;";
   }

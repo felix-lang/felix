@@ -46,7 +46,7 @@ module MultiSet[t]
   }
   instance Forward_iterator[stl_multiset_iterator[t],t] {}
   instance Bidirectional[stl_multiset_iterator[t]] {
-    fun pred: stl_multiset_iterator[t] -> stl_multiset_iterator[t] = "$1-11;";
+    fun pred: stl_multiset_iterator[t] -> stl_multiset_iterator[t] = "$1-1;";
     proc pre_decr : &stl_multiset_iterator[t] = "--*$1;";
     proc post_decr : &stl_multiset_iterator[t] = "--*$1;";
   }
@@ -69,7 +69,7 @@ module MultiSet[t]
   }
   instance Forward_iterator[stl_multiset_reverse_iterator[t],t] {}
   instance Bidirectional[stl_multiset_reverse_iterator[t]] {
-    fun pred: stl_multiset_reverse_iterator[t] -> stl_multiset_reverse_iterator[t] = "$1-11;";
+    fun pred: stl_multiset_reverse_iterator[t] -> stl_multiset_reverse_iterator[t] = "$1-1;";
     proc pre_decr : &stl_multiset_reverse_iterator[t] = "--*$1;";
     proc post_decr : &stl_multiset_reverse_iterator[t] = "--*$1;";
   }

@@ -1,8 +1,6 @@
 include "stl/stl";
-
-header std_stl_map = "#include <map>";
-  module Map[k,v]
-  {
+module Map[k,v]
+{
     requires std_stl_map;
     type stl_map = "std::map<?1,?2>";
     type stl_map_iterator = "std::map<?1,?2>::iterator";
@@ -23,9 +21,9 @@ header std_stl_map = "#include <map>";
   instance Sequence[stl_map[k,v],stl_map_iterator[k,v],k*v] {
     fun begin : stl_map[k,v]-> stl_map_iterator[k,v]= "$1.begin()";
     fun end : stl_map[k,v]-> stl_map_iterator[k,v]= "$1.end()";
-    proc erase : lvalue[stl_map[k,v]] * stl_map_iterator[k,v] = "$1.erase($1);";
-    proc erase_between : lvalue[stl_map[k,v]] * stl_map_iterator[k,v] * stl_map_iterator[k,v] = "$1.erase($1,$2);";
-    proc clear : lvalue[stl_map[k,v]] = "$1.clear();";
+    proc erase : stl_map[k,v] * stl_map_iterator[k,v] = "$1.erase($1);";
+    proc erase_between : stl_map[k,v] * stl_map_iterator[k,v] * stl_map_iterator[k,v] = "$1.erase($1,$2);";
+    proc clear : stl_map[k,v] = "$1.clear();";
   }
   instance Reversible_Sequence[stl_map[k,v],stl_map_iterator[k,v],stl_map_reverse_iterator[k,v],k*v] {
     fun rbegin : stl_map[k,v]-> stl_map_reverse_iterator[k,v]= "$1.rbegin()";
@@ -49,7 +47,7 @@ header std_stl_map = "#include <map>";
   }
   instance Forward_iterator[stl_map_iterator[k,v],k*v] {}
   instance Bidirectional[stl_map_iterator[k,v]] {
-    fun pred: stl_map_iterator[k,v] -> stl_map_iterator[k,v] = "$1-11;";
+    fun pred: stl_map_iterator[k,v] -> stl_map_iterator[k,v] = "$1-1;";
     proc pre_decr : &stl_map_iterator[k,v] = "--*$1;";
     proc post_decr : &stl_map_iterator[k,v] = "--*$1;";
   }
@@ -72,13 +70,13 @@ header std_stl_map = "#include <map>";
   }
   instance Forward_iterator[stl_map_reverse_iterator[k,v],k*v] {}
   instance Bidirectional[stl_map_reverse_iterator[k,v]] {
-    fun pred: stl_map_reverse_iterator[k,v] -> stl_map_reverse_iterator[k,v] = "$1-11;";
+    fun pred: stl_map_reverse_iterator[k,v] -> stl_map_reverse_iterator[k,v] = "$1-1;";
     proc pre_decr : &stl_map_reverse_iterator[k,v] = "--*$1;";
     proc post_decr : &stl_map_reverse_iterator[k,v] = "--*$1;";
   }
   instance Bidirectional_iterator[stl_map_reverse_iterator[k,v],k*v] {}
 
-  }
+}
 
 open Map;
 open[k,v] Reversible_Sequence[
