@@ -165,22 +165,6 @@ typeclass IBuffer [f] {
 typeclass OBuffer [f] {
   virtual gen write : f -> address * int -> int * bool;
 }
-
-typeclass Iterator[it,t] {
-  virtual fun deref: it -> lvalue[t];
-}
-
-typeclass Forward_iterator[it,t] {
-  inherit Tord[it];
-  inherit Forward[it];
-  inherit Iterator[it,t];
-}
-
-typeclass Bidirectional_iterator[it,t] {
-  inherit Forward_iterator[it,t];
-  inherit Bidirectional[it];
-}
-
 typeclass Integer[t] {
   inherit Tord[t];
   inherit Dring[t];
@@ -256,35 +240,6 @@ typeclass Container [c,v]
 {
   virtual fun len: c -> size;
   virtual fun empty(x: c): bool => len x == size(0);
-}
-
-typeclass Sequence[c,it,v] {
-  inherit Eq[c];
-  inherit Forward_iterator[it,v];
-  inherit Container[c,v];
-  virtual gen begin: c -> it;
-  virtual gen end: c -> it;
-  virtual proc erase: lvalue[c] * it;
-  virtual proc erase_between: lvalue[c] * it * it;
-  virtual proc clear: lvalue[c];
-  virtual fun fold[i] (f:i->v->i) (var acc:i) (x:c): i = {
-    var s = begin x; var e = end x;
-    whilst s != e do acc = f acc (*s); ++s; done;
-    return acc;
-  }
-}
-
-typeclass Reversible_Sequence[c,it,rit,v] {
-  inherit Sequence[c,it,v];
-  inherit Bidirectional_iterator[it,v];
-  inherit Bidirectional_iterator[rit,v];
-  virtual gen rbegin: c -> rit;
-  virtual gen rend: c -> rit;
-  virtual fun rfold[i] (f:i->v->i) (var acc:i) (x:c): i = {
-    var s = rbegin x; var e = rend x;
-    whilst s != e do acc = f acc (*s); ++s; done;
-    return acc;
-  }
 }
 
 typeclass Monad [M: TYPE->TYPE] {

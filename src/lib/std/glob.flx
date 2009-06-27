@@ -1,6 +1,6 @@
-include "stl";
+include "stl/stl_vector";
 
-open Stl::Vector;
+open Vector;
 open C_hack;
 
 module glob {

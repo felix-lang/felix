@@ -1,5 +1,5 @@
 //Check STL::vector
-include "stl";
+include "stl/stl_vector";
 
 var x: stl_vector[int];
 

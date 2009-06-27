@@ -15,6 +15,7 @@ module Lexer
   fun add: iterator * int -> iterator = "$1 + $2";
   fun sub: iterator * int -> iterator = "$1 - $2";
   fun sub: iterator * iterator -> int = "$1 - $2";
+  fun deref: iterator -> char = "*$1";
 }
 
 instance Eq[Lexer::iterator] {
@@ -25,10 +26,5 @@ instance Tord[Lexer::iterator] {
   fun lt:Lexer::iterator * Lexer::iterator -> bool = "$1<$2";
 }
 
-instance Iterator[Lexer::iterator, char] {
-  fun deref: Lexer::iterator -> char = "*$1";
-}
-
 open Eq[Lexer::iterator];
-open Iterator[Lexer::iterator, char];
 

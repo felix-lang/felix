@@ -4,6 +4,52 @@ header std_stl_deque = "#include <deque>";
 header std_stl_set = "#include <set>";
 header std_stl_map = "#include <map>";
 
+
+typeclass Iterator[it,t] {
+  virtual fun deref: it -> t;
+}
+
+typeclass Forward_iterator[it,t] {
+  inherit Tord[it];
+  inherit Forward[it];
+  inherit Iterator[it,t];
+}
+
+typeclass Bidirectional_iterator[it,t] {
+  inherit Forward_iterator[it,t];
+  inherit Bidirectional[it];
+}
+
+typeclass Sequence[c,it,v] {
+  inherit Eq[c];
+  inherit Forward_iterator[it,v];
+  inherit Container[c,v];
+  virtual gen begin: c -> it;
+  virtual gen end: c -> it;
+  virtual proc erase: c * it;
+  virtual proc erase_between: c * it * it;
+  virtual proc clear: c;
+  virtual fun fold[i] (f:i->v->i) (var acc:i) (x:c): i = {
+    var s = begin x; var e = end x;
+    whilst s != e do acc = f acc (*s); ++s; done;
+    return acc;
+  }
+}
+
+typeclass Reversible_Sequence[c,it,rit,v] {
+  inherit Sequence[c,it,v];
+  inherit Bidirectional_iterator[it,v];
+  inherit Bidirectional_iterator[rit,v];
+  virtual gen rbegin: c -> rit;
+  virtual gen rend: c -> rit;
+  virtual fun rfold[i] (f:i->v->i) (var acc:i) (x:c): i = {
+    var s = rbegin x; var e = rend x;
+    whilst s != e do acc = f acc (*s); ++s; done;
+    return acc;
+  }
+}
+
+
 module Stl
 {
   type pair[k,v] = "std::pair<?1 const,?2>";

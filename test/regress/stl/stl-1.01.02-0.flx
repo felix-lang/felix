@@ -1,6 +1,7 @@
 //Check stl:Vector
 //Check stl:Map
-include "stl";
+include "stl/stl_vector";
+include "stl/stl_map";
 
 typedef ii = Vector::iterator[int];
 

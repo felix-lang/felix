@@ -31,6 +31,9 @@ def copy_flxs_to_lib(flxs):
 def copy_flxs_to_libstd(flxs):
     return copy_to(fbuild.buildroot / 'lib/std', tuple(flxs))
 
+def copy_flxs_to_libstl(flxs):
+    return copy_to(fbuild.buildroot / 'lib/stl', tuple(flxs))
+
 def copy_fpc_to_config(fpcs):
     return copy_to(fbuild.buildroot / 'config', tuple(fpcs))
 
