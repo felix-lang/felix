@@ -1,0 +1,96 @@
+header std_stl_vector = "#include <vector>";
+  module Vector[t]
+  {
+    requires std_stl_vector;
+    type stl_vector = "std::vector<?1>";
+    fun create : unit -> stl_vector[t] = "(FLX_GXX_PARSER_HACK std::vector<?1>())";
+    fun create : int * t -> stl_vector[t]= "(FLX_GXX_PARSER_HACK std::vector<?1>($1,$2))";
+    fun create[i] : i * i -> stl_vector[t] = "(FLX_GXX_PARSER_HACK std::vector<?1>($1,$2))";
+    type stl_vector_iterator = "std::vector<?1>::iterator";
+    type stl_vector_reverse_iterator = "std::vector<?1>::reverse_iterator";
+    proc insert: stl_vector[t] * stl_vector_iterator[t] *  t  = "$1.insert($2,$3);";
+    proc push_back : stl_vector[t] *  t  = "$1.push_back($2);";
+    fun front : stl_vector[t] -> t = "$1.front()";
+    fun front : stl_vector[t] -> t = "$1.front()";
+    fun subscript : stl_vector[t] * int -> t = "$1.at($2)";
+    fun add: stl_vector_iterator[t] * int -> stl_vector_iterator[t] = "$1+$2";
+    fun sub: stl_vector_iterator[t] * int -> stl_vector_iterator[t] = "$1-$2";
+    proc pluseq: &stl_vector_iterator[t] * int = "*$1+=$2;";
+    proc minuseq: &stl_vector_iterator[t] * int = "*$1-=$2;";
+    fun subscript: stl_vector_iterator[t] * int -> lvalue[t] = "$1[$2]";
+// Vector
+  instance Eq[stl_vector[t]] {
+    fun eq: stl_vector[t] * stl_vector[t] -> bool = "$1==$2";
+  }
+  instance Container[stl_vector[t],t] {
+    fun len: stl_vector[t] -> size = "$1.size()";
+    fun empty: stl_vector[t] -> bool = "$1.empty()";
+  }
+  instance Sequence[stl_vector[t],stl_vector_iterator[t],t] {
+    fun begin : stl_vector[t]-> stl_vector_iterator[t]= "$1.begin()";
+    fun end : stl_vector[t]-> stl_vector_iterator[t]= "$1.end()";
+    proc erase : lvalue[stl_vector[t]] * stl_vector_iterator[t] = "$1.erase($1);";
+    proc erase_between : lvalue[stl_vector[t]] * stl_vector_iterator[t] * stl_vector_iterator[t] = "$1.erase($1,$2);";
+    proc clear : lvalue[stl_vector[t]] = "$1.clear();";
+  }
+  instance Reversible_Sequence[stl_vector[t],stl_vector_iterator[t],stl_vector_reverse_iterator[t],t] {
+    fun rbegin : stl_vector[t]-> stl_vector_reverse_iterator[t]= "$1.rbegin()";
+    fun rend : stl_vector[t]-> stl_vector_reverse_iterator[t]= "$1.rend()";
+  }
+
+// Vector iterator
+  instance Eq[stl_vector_iterator[t]] {
+    fun eq: stl_vector_iterator[t] * stl_vector_iterator[t] -> bool = "$1==$2";
+  }
+  instance Tord[stl_vector_iterator[t]] {
+    fun lt: stl_vector_iterator[t] * stl_vector_iterator[t] -> bool = "$1<$2";
+  }
+  instance Iterator[stl_vector_iterator[t],t] {
+    fun deref : stl_vector_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_vector_iterator[t]] {
+    fun succ: stl_vector_iterator[t] -> stl_vector_iterator[t] = "$1+1";
+    proc pre_incr : &stl_vector_iterator[t] = "++*$1;";
+    proc post_incr : &stl_vector_iterator[t] = "++*$1;";
+  }
+  instance Forward_iterator[stl_vector_iterator[t],t] {}
+  instance Bidirectional[stl_vector_iterator[t]] {
+    fun pred: stl_vector_iterator[t] -> stl_vector_iterator[t] = "$1-11;";
+    proc pre_decr : &stl_vector_iterator[t] = "--*$1;";
+    proc post_decr : &stl_vector_iterator[t] = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_vector_iterator[t],t] {}
+
+// Vector reverse iterator
+  instance Eq[stl_vector_reverse_iterator[t]] {
+    fun eq: stl_vector_reverse_iterator[t] * stl_vector_reverse_iterator[t] -> bool = "$1==$2";
+  }
+  instance Tord[stl_vector_reverse_iterator[t]] {
+    fun lt: stl_vector_reverse_iterator[t] * stl_vector_reverse_iterator[t] -> bool = "$1<$2";
+  }
+  instance Iterator[stl_vector_reverse_iterator[t],t] {
+    fun deref : stl_vector_reverse_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_vector_reverse_iterator[t]] {
+    fun succ: stl_vector_reverse_iterator[t] -> stl_vector_reverse_iterator[t] = "$1+1";
+    proc pre_incr : &stl_vector_reverse_iterator[t] = "++*$1;";
+    proc post_incr : &stl_vector_reverse_iterator[t] = "++*$1;";
+  }
+  instance Forward_iterator[stl_vector_reverse_iterator[t],t] {}
+  instance Bidirectional[stl_vector_reverse_iterator[t]] {
+    fun pred: stl_vector_reverse_iterator[t] -> stl_vector_reverse_iterator[t] = "$1-11;";
+    proc pre_decr : &stl_vector_reverse_iterator[t] = "--*$1;";
+    proc post_decr : &stl_vector_reverse_iterator[t] = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_vector_reverse_iterator[t],t] {}
+}
+
+open Vector;
+open[t] Reversible_Sequence[
+  Vector::stl_vector[t],
+  Vector::stl_vector_iterator[t],
+  Vector::stl_vector_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Vector::stl_vector_iterator[t],t];
+open[t] Bidirectional_iterator[Vector::stl_vector_reverse_iterator[t],t];
+
+

@@ -1,0 +1,92 @@
+include "stl/stl";
+
+header std_stl_map = "#include <map>";
+  module Map[k,v]
+  {
+    requires std_stl_map;
+    type stl_map = "std::map<?1,?2>";
+    type stl_map_iterator = "std::map<?1,?2>::iterator";
+    type stl_map_reverse_iterator = "std::map<?1,?2>::reverse_iterator";
+    fun create : unit -> stl_map[k,v] = "(FLX_GXX_PARSER_HACK std::map<?1,?2>())";
+    fun subscript: stl_map[k,v] * k -> lvalue[v] = "$1[$2]";
+    fun find : stl_map[k,v] * k ->  stl_map_iterator[k,v] = "$1.find($2)";
+    fun mem : stl_map[k,v] * k -> bool = "$1.find($2) != $1.end()";
+    proc insert : stl_map[k,v] * k * v = "$1.insert(std::make_pair($2,$3));";
+// Map
+  instance Eq[stl_map[k,v]] {
+    fun eq: stl_map[k,v] * stl_map[k,v] -> bool = "$1==$2";
+  }
+  instance Container[stl_map[k,v],k*v] {
+    fun len: stl_map[k,v] -> size = "$1.size()";
+    fun empty: stl_map[k,v] -> bool = "$1.empty()";
+  }
+  instance Sequence[stl_map[k,v],stl_map_iterator[k,v],k*v] {
+    fun begin : stl_map[k,v]-> stl_map_iterator[k,v]= "$1.begin()";
+    fun end : stl_map[k,v]-> stl_map_iterator[k,v]= "$1.end()";
+    proc erase : lvalue[stl_map[k,v]] * stl_map_iterator[k,v] = "$1.erase($1);";
+    proc erase_between : lvalue[stl_map[k,v]] * stl_map_iterator[k,v] * stl_map_iterator[k,v] = "$1.erase($1,$2);";
+    proc clear : lvalue[stl_map[k,v]] = "$1.clear();";
+  }
+  instance Reversible_Sequence[stl_map[k,v],stl_map_iterator[k,v],stl_map_reverse_iterator[k,v],k*v] {
+    fun rbegin : stl_map[k,v]-> stl_map_reverse_iterator[k,v]= "$1.rbegin()";
+    fun rend : stl_map[k,v]-> stl_map_reverse_iterator[k,v]= "$1.rend()";
+  }
+
+// Map iterator
+  instance Eq[stl_map_iterator[k,v]] {
+    fun eq: stl_map_iterator[k,v] * stl_map_iterator[k,v] -> bool = "$1==$2";
+  }
+  instance Tord[stl_map_iterator[k,v]] {
+    fun lt: stl_map_iterator[k,v] * stl_map_iterator[k,v] -> bool = "$1<$2";
+  }
+  instance Iterator[stl_map_iterator[k,v],k*v] {
+    fun deref : stl_map_iterator[k,v] ->  lvalue[k*v]  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_map_iterator[k,v]] {
+    fun succ: stl_map_iterator[k,v] -> stl_map_iterator[k,v] = "$1+1";
+    proc pre_incr : &stl_map_iterator[k,v] = "++*$1;";
+    proc post_incr : &stl_map_iterator[k,v] = "++*$1;";
+  }
+  instance Forward_iterator[stl_map_iterator[k,v],k*v] {}
+  instance Bidirectional[stl_map_iterator[k,v]] {
+    fun pred: stl_map_iterator[k,v] -> stl_map_iterator[k,v] = "$1-11;";
+    proc pre_decr : &stl_map_iterator[k,v] = "--*$1;";
+    proc post_decr : &stl_map_iterator[k,v] = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_map_iterator[k,v],k*v] {}
+
+// Map reverse iterator
+  instance Eq[stl_map_reverse_iterator[k,v]] {
+    fun eq: stl_map_reverse_iterator[k,v] * stl_map_reverse_iterator[k,v] -> bool = "$1==$2";
+  }
+  instance Tord[stl_map_reverse_iterator[k,v]] {
+    fun lt: stl_map_reverse_iterator[k,v] * stl_map_reverse_iterator[k,v] -> bool = "$1<$2";
+  }
+  instance Iterator[stl_map_reverse_iterator[k,v],k*v] {
+    fun deref : stl_map_reverse_iterator[k,v] ->  lvalue[k*v]  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_map_reverse_iterator[k,v]] {
+    fun succ: stl_map_reverse_iterator[k,v] -> stl_map_reverse_iterator[k,v] = "$1+1";
+    proc pre_incr : &stl_map_reverse_iterator[k,v] = "++*$1;";
+    proc post_incr : &stl_map_reverse_iterator[k,v] = "++*$1;";
+  }
+  instance Forward_iterator[stl_map_reverse_iterator[k,v],k*v] {}
+  instance Bidirectional[stl_map_reverse_iterator[k,v]] {
+    fun pred: stl_map_reverse_iterator[k,v] -> stl_map_reverse_iterator[k,v] = "$1-11;";
+    proc pre_decr : &stl_map_reverse_iterator[k,v] = "--*$1;";
+    proc post_decr : &stl_map_reverse_iterator[k,v] = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_map_reverse_iterator[k,v],k*v] {}
+
+  }
+
+open Map;
+open[k,v] Reversible_Sequence[
+  Map::stl_map[k,v],
+  Map::stl_map_iterator[k,v],
+  Map::stl_map_reverse_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Map::stl_map_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Map::stl_map_reverse_iterator[k,v],k*v];
+
+
+

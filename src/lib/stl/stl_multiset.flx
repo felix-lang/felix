@@ -1,0 +1,88 @@
+include "stl/stl";
+module MultiSet[t]
+  {
+    requires std_stl_set;
+    type stl_multiset = "std::multiset<?1>";
+    type stl_multiset_iterator = "std::multiset<?1>::iterator";
+    type stl_multiset_reverse_iterator = "std::multiset<?1>::reverse_iterator";
+    fun create : unit -> stl_multiset[t] = "(FLX_GXX_PARSER_HACK std::multiset<?1>())";
+    proc insert : stl_multiset[t] * t = "$1.insert($2);";
+    fun find : stl_multiset[t] * t ->  stl_multiset_iterator[t] = "$1.find($2)";
+    fun mem : stl_multiset[t] * t -> bool = "$1.find($2) != $1.end()";
+// MultiSet
+  instance Eq[stl_multiset[t]] {
+    fun eq: stl_multiset[t] * stl_multiset[t] -> bool = "$1==$2";
+  }
+  instance Container[stl_multiset[t],t] {
+    fun len: stl_multiset[t] -> size = "$1.size()";
+    fun empty: stl_multiset[t] -> bool = "$1.empty()";
+  }
+  instance Sequence[stl_multiset[t],stl_multiset_iterator[t],t] {
+    fun begin : stl_multiset[t]-> stl_multiset_iterator[t]= "$1.begin()";
+    fun end : stl_multiset[t]-> stl_multiset_iterator[t]= "$1.end()";
+    proc erase : lvalue[stl_multiset[t]] * stl_multiset_iterator[t] = "$1.erase($1);";
+    proc erase_between : lvalue[stl_multiset[t]] * stl_multiset_iterator[t] * stl_multiset_iterator[t] = "$1.erase($1,$2);";
+    proc clear : lvalue[stl_multiset[t]] = "$1.clear();";
+  }
+  instance Reversible_Sequence[stl_multiset[t],stl_multiset_iterator[t],stl_multiset_reverse_iterator[t],t] {
+    fun rbegin : stl_multiset[t]-> stl_multiset_reverse_iterator[t]= "$1.rbegin()";
+    fun rend : stl_multiset[t]-> stl_multiset_reverse_iterator[t]= "$1.rend()";
+  }
+
+// MultiSet iterator
+  instance Eq[stl_multiset_iterator[t]] {
+    fun eq: stl_multiset_iterator[t] * stl_multiset_iterator[t] -> bool = "$1==$2";
+  }
+  instance Tord[stl_multiset_iterator[t]] {
+    fun lt: stl_multiset_iterator[t] * stl_multiset_iterator[t] -> bool = "$1<$2";
+  }
+  instance Iterator[stl_multiset_iterator[t],t] {
+    fun deref : stl_multiset_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_multiset_iterator[t]] {
+    fun succ: stl_multiset_iterator[t] -> stl_multiset_iterator[t] = "$1+1";
+    proc pre_incr : &stl_multiset_iterator[t] = "++*$1;";
+    proc post_incr : &stl_multiset_iterator[t] = "++*$1;";
+  }
+  instance Forward_iterator[stl_multiset_iterator[t],t] {}
+  instance Bidirectional[stl_multiset_iterator[t]] {
+    fun pred: stl_multiset_iterator[t] -> stl_multiset_iterator[t] = "$1-11;";
+    proc pre_decr : &stl_multiset_iterator[t] = "--*$1;";
+    proc post_decr : &stl_multiset_iterator[t] = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_multiset_iterator[t],t] {}
+
+// MultiSet reverse iterator
+  instance Eq[stl_multiset_reverse_iterator[t]] {
+    fun eq: stl_multiset_reverse_iterator[t] * stl_multiset_reverse_iterator[t] -> bool = "$1==$2";
+  }
+  instance Tord[stl_multiset_reverse_iterator[t]] {
+    fun lt: stl_multiset_reverse_iterator[t] * stl_multiset_reverse_iterator[t] -> bool = "$1<$2";
+  }
+  instance Iterator[stl_multiset_reverse_iterator[t],t] {
+    fun deref : stl_multiset_reverse_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_multiset_reverse_iterator[t]] {
+    fun succ: stl_multiset_reverse_iterator[t] -> stl_multiset_reverse_iterator[t] = "$1+1";
+    proc pre_incr : &stl_multiset_reverse_iterator[t] = "++*$1;";
+    proc post_incr : &stl_multiset_reverse_iterator[t] = "++*$1;";
+  }
+  instance Forward_iterator[stl_multiset_reverse_iterator[t],t] {}
+  instance Bidirectional[stl_multiset_reverse_iterator[t]] {
+    fun pred: stl_multiset_reverse_iterator[t] -> stl_multiset_reverse_iterator[t] = "$1-11;";
+    proc pre_decr : &stl_multiset_reverse_iterator[t] = "--*$1;";
+    proc post_decr : &stl_multiset_reverse_iterator[t] = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_multiset_reverse_iterator[t],t] {}
+
+}
+
+open MultiSet;
+open[t] Reversible_Sequence[
+  MultiSet::stl_multiset[t],
+  MultiSet::stl_multiset_iterator[t],
+  MultiSet::stl_multiset_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[MultiSet::stl_multiset_iterator[t],t];
+open[t] Bidirectional_iterator[MultiSet::stl_multiset_reverse_iterator[t],t];
+
+

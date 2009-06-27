@@ -1,0 +1,90 @@
+include "stl/stl";
+header std_stl_set = "#include <set>";
+  module Set[t]
+  {
+    requires std_stl_set;
+    type stl_set = "std::set<?1>";
+    type stl_set_iterator = "std::set<?1>::iterator";
+    type stl_set_reverse_iterator = "std::set<?1>::reverse_iterator";
+    fun create : unit -> stl_set[t] = "(FLX_GXX_PARSER_HACK std::set<?1>())";
+    proc insert : stl_set[t] * t = "$1.insert($2);";
+    fun find : stl_set[t] * t ->  stl_set_iterator[t] = "$1.find($2)";
+    fun mem : stl_set[t] * t -> bool = "$1.find($2) != $1.end()";
+// Set
+  instance Eq[Set::stl_set[t]] {
+    fun eq: Set::stl_set[t] * Set::stl_set[t] -> bool = "$1==$2";
+  }
+  instance Container[Set::stl_set[t],t] {
+    fun len: Set::stl_set[t] -> size = "$1.size()";
+    fun empty: Set::stl_set[t] -> bool = "$1.empty()";
+  }
+  instance Sequence[Set::stl_set[t],Set::stl_set_iterator[t],t] {
+    fun begin : Set::stl_set[t]-> Set::stl_set_iterator[t]= "$1.begin()";
+    fun end : Set::stl_set[t]-> Set::stl_set_iterator[t]= "$1.end()";
+    proc erase : lvalue[Set::stl_set[t]] * Set::stl_set_iterator[t] = "$1.erase($1);";
+    proc erase_between : lvalue[Set::stl_set[t]] * Set::stl_set_iterator[t] * Set::stl_set_iterator[t] = "$1.erase($1,$2);";
+    proc clear : lvalue[Set::stl_set[t]] = "$1.clear();";
+  }
+  instance Reversible_Sequence[Set::stl_set[t],Set::stl_set_iterator[t],Set::stl_set_reverse_iterator[t],t] {
+    fun rbegin : Set::stl_set[t]-> Set::stl_set_reverse_iterator[t]= "$1.rbegin()";
+    fun rend : Set::stl_set[t]-> Set::stl_set_reverse_iterator[t]= "$1.rend()";
+  }
+
+// Set iterator
+  instance Eq[stl_set_iterator[t]] {
+    fun eq: stl_set_iterator[t] * stl_set_iterator[t] -> bool = "$1==$2";
+  }
+  instance Tord[stl_set_iterator[t]] {
+    fun lt: stl_set_iterator[t] * stl_set_iterator[t] -> bool = "$1<$2";
+  }
+  instance Iterator[stl_set_iterator[t],t] {
+    fun deref : stl_set_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_set_iterator[t]] {
+    fun succ: stl_set_iterator[t] -> stl_set_iterator[t] = "$1+1";
+    proc pre_incr : &stl_set_iterator[t] = "++*$1;";
+    proc post_incr : &stl_set_iterator[t] = "++*$1;";
+  }
+  instance Forward_iterator[stl_set_iterator[t],t] {}
+  instance Bidirectional[stl_set_iterator[t]] {
+    fun pred: stl_set_iterator[t] -> stl_set_iterator[t] = "$1-11;";
+    proc pre_decr : &stl_set_iterator[t] = "--*$1;";
+    proc post_decr : &stl_set_iterator[t] = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_set_iterator[t],t] {}
+
+// Set reverse iterator
+  instance Eq[stl_set_reverse_iterator[t]] {
+    fun eq: stl_set_reverse_iterator[t] * stl_set_reverse_iterator[t] -> bool = "$1==$2";
+  }
+  instance Tord[stl_set_reverse_iterator[t]] {
+    fun lt: stl_set_reverse_iterator[t] * stl_set_reverse_iterator[t] -> bool = "$1<$2";
+  }
+  instance Iterator[stl_set_reverse_iterator[t],t] {
+    fun deref : stl_set_reverse_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_set_reverse_iterator[t]] {
+    fun succ: stl_set_reverse_iterator[t] -> stl_set_reverse_iterator[t] = "$1+1";
+    proc pre_incr : &stl_set_reverse_iterator[t] = "++*$1;";
+    proc post_incr : &stl_set_reverse_iterator[t] = "++*$1;";
+  }
+  instance Forward_iterator[stl_set_reverse_iterator[t],t] {}
+  instance Bidirectional[stl_set_reverse_iterator[t]] {
+    fun pred: stl_set_reverse_iterator[t] -> stl_set_reverse_iterator[t] = "$1-11;";
+    proc pre_decr : &stl_set_reverse_iterator[t] = "--*$1;";
+    proc post_decr : &stl_set_reverse_iterator[t] = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_set_reverse_iterator[t],t] {}
+
+}
+
+open Set;
+open[t] Reversible_Sequence[
+  Set::stl_set[t],
+  Set::stl_set_iterator[t],
+  Set::stl_set_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Set::stl_set_iterator[t],t];
+open[t] Bidirectional_iterator[Set::stl_set_reverse_iterator[t],t];
+
+
+

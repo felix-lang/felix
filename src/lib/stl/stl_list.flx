@@ -1,0 +1,96 @@
+include "stl/stl";
+header std_stl_list = "#include <list>";
+
+module Stl_List[t]
+{
+    requires std_stl_list;
+    type stl_list = "std::list<?1>";
+    fun create : unit -> stl_list[t] = "(FLX_GXX_PARSER_HACK std::list<?1>())";
+    fun create : int * t -> stl_list[t]= "(FLX_GXX_PARSER_HACK std::list<?1>($1,$2))";
+    fun create[i] : i * i -> stl_list[t] = "(FLX_GXX_PARSER_HACK std::list<?1>($1,$2))";
+    type stl_list_iterator = "std::list<?1>::iterator";
+    type stl_list_reverse_iterator = "std::list<?1>::reverse_iterator";
+    proc insert: stl_list[t] * stl_list_iterator[t] *  t  = "$1.insert($2,$3);";
+    proc push_front : stl_list[t] *  t  = "$1.push_front($2);";
+    proc push_back : stl_list[t] *  t  = "$1.push_back($2);";
+    fun front : stl_list[t] -> t = "$1.front()";
+    fun front : stl_list[t] -> t = "$1.front()";
+    proc pop_front : stl_list[t] = "$1.pop_back();";
+// List
+  instance Eq[stl_list[t]] {
+    fun eq: stl_list[t] * stl_list[t] -> bool = "$1==$2";
+  }
+  instance Container[stl_list[t],t] {
+    fun len: stl_list[t] -> size = "$1.size()";
+    fun empty: stl_list[t] -> bool = "$1.empty()";
+  }
+  instance Sequence[stl_list[t],stl_list_iterator[t],t] {
+    fun begin : stl_list[t]-> stl_list_iterator[t]= "$1.begin()";
+    fun end : stl_list[t]-> stl_list_iterator[t]= "$1.end()";
+    proc erase : lvalue[stl_list[t]] * stl_list_iterator[t] = "$1.erase($1);";
+    proc erase_between : lvalue[stl_list[t]] * stl_list_iterator[t] * stl_list_iterator[t] = "$1.erase($1,$2);";
+    proc clear : lvalue[stl_list[t]] = "$1.clear();";
+  }
+  instance Reversible_Sequence[stl_list[t],stl_list_iterator[t],stl_list_reverse_iterator[t],t] {
+    fun rbegin : stl_list[t]-> stl_list_reverse_iterator[t]= "$1.rbegin()";
+    fun rend : stl_list[t]-> stl_list_reverse_iterator[t]= "$1.rend()";
+  }
+
+// List iterator
+  instance Eq[stl_list_iterator[t]] {
+    fun eq: stl_list_iterator[t] * stl_list_iterator[t] -> bool = "$1==$2";
+  }
+  instance Tord[stl_list_iterator[t]] {
+    fun lt: stl_list_iterator[t] * stl_list_iterator[t] -> bool = "$1<$2";
+  }
+  instance Iterator[stl_list_iterator[t],t] {
+    fun deref : stl_list_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_list_iterator[t]] {
+    fun succ: stl_list_iterator[t] -> stl_list_iterator[t] = "$1+1";
+    proc pre_incr : &stl_list_iterator[t] = "++*$1;";
+    proc post_incr : &stl_list_iterator[t] = "++*$1;";
+  }
+  instance Forward_iterator[stl_list_iterator[t],t] {}
+  instance Bidirectional[stl_list_iterator[t]] {
+    fun pred: stl_list_iterator[t] -> stl_list_iterator[t] = "$1-11;";
+    proc pre_decr : &stl_list_iterator[t] = "--*$1;";
+    proc post_decr : &stl_list_iterator[t] = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_list_iterator[t],t] {}
+
+// List reverse iterator
+  instance Eq[stl_list_reverse_iterator[t]] {
+    fun eq: stl_list_reverse_iterator[t] * stl_list_reverse_iterator[t] -> bool = "$1==$2";
+  }
+  instance Tord[stl_list_reverse_iterator[t]] {
+    fun lt: stl_list_reverse_iterator[t] * stl_list_reverse_iterator[t] -> bool = "$1<$2";
+  }
+  instance Iterator[stl_list_reverse_iterator[t],t] {
+    fun deref : stl_list_reverse_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+  }
+  instance Forward[stl_list_reverse_iterator[t]] {
+    fun succ: stl_list_reverse_iterator[t] -> stl_list_reverse_iterator[t] = "$1+1";
+    proc pre_incr : &stl_list_reverse_iterator[t] = "++*$1;";
+    proc post_incr : &stl_list_reverse_iterator[t] = "++*$1;";
+  }
+  instance Forward_iterator[stl_list_reverse_iterator[t],t] {}
+  instance Bidirectional[stl_list_reverse_iterator[t]] {
+    fun pred: stl_list_reverse_iterator[t] -> stl_list_reverse_iterator[t] = "$1-11;";
+    proc pre_decr : &stl_list_reverse_iterator[t] = "--*$1;";
+    proc post_decr : &stl_list_reverse_iterator[t] = "--*$1;";
+  }
+  instance Bidirectional_iterator[stl_list_reverse_iterator[t],t] {}
+
+}
+
+open Stl_List;
+open[t] Reversible_Sequence[
+  Stl_List::stl_list[t],
+  Stl_List::stl_list_iterator[t],
+  Stl_List::stl_list_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_List::stl_list_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_List::stl_list_reverse_iterator[t],t];
+
+
+
