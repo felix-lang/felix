@@ -358,48 +358,54 @@ int do_final_cleanup(
 
   // garbage collect application objects
   {
-    if(debug_driver || gcp->debug_collections)
-      fprintf(stderr,"Finalisation: pass 1 Data collection starts ..\n");
+    if (debug_driver || gcp->debug_collections)
+      fprintf(stderr, "Finalisation: pass 1 Data collection starts ..\n");
+
     unsigned long n = collector->collect();
     unsigned long a = collector->get_allocation_count();
-    if(debug_driver || gcp->debug_collections)
-      fprintf(stderr,"flx_run collected %ld objects, %ld left\n",n,a);
+
+    if (debug_driver || gcp->debug_collections)
+      fprintf(stderr, "flx_run collected %ld objects, %ld left\n", n, a);
   }
 
   // Destroy program instance/ thread frame object
 
-  if(debug_driver)
-    fprintf(stderr,"Destroying program instance\n");
+  if (debug_driver) fprintf(stderr, "Destroying program instance\n");
   instance->destroy();
 
   // garbage collect system objects
-
   {
-    if(debug_driver || gcp->debug_collections)
-      fprintf(stderr,"Finalisation: pass 2 Final collection starts ..\n");
+    if (debug_driver || gcp->debug_collections)
+      fprintf(stderr, "Finalisation: pass 2 Final collection starts ..\n");
+
     collector->free_all_mem();
     unsigned long a = collector->get_allocation_count();
-    if(debug_driver || gcp->debug_collections)
-      fprintf(stderr,"Remaining %ld objects (should be 0)\n",a);
-    if(a!=0){
-      fprintf(stderr,"flx_run %ld uncollected objects, should be zero!!\n",a);
+
+    if (debug_driver || gcp->debug_collections)
+      fprintf(stderr, "Remaining %ld objects (should be 0)\n", a);
+
+    if (a != 0){
+      fprintf(stderr, "flx_run %ld uncollected objects, should be zero!!\n", a);
       return 5;
     }
   }
 
   // dump the DLL
 
-  if(debug_driver)
-    fprintf(stderr,"Libref cnt = %ld\n",library->refcnt);
-  if(library->refcnt >0)
+  if (debug_driver)
+    fprintf(stderr, "Libref cnt = %ld\n", library->refcnt);
+
+  if (library->refcnt > 0)
   {
-    if(debug_driver)
-      fprintf(stderr,"flx_run %p library still referenced %ld times\n",
-        library->library,library->refcnt
-      );
+    if (debug_driver)
+      fprintf(stderr,
+        "flx_run %p library still referenced %ld times\n",
+        library->library, library->refcnt);
   }
-  if(debug_driver)
-    fprintf(stderr,"Unlinking library ..\n");
+
+  if (debug_driver)
+    fprintf(stderr, "Unlinking library ..\n");
+
   library->unlink();
   return 0;
 }
