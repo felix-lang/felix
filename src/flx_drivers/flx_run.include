@@ -102,15 +102,11 @@ void doflx(void *data) {
       fprintf(stderr, "After running: Sync state is %s/%s\n",
         get_fstate_desc(ss.fs), get_fpc_desc(ss.pc));
 
-    if (ss.fs == terminated) goto cleanup;
-
     //fprintf(stderr, "Thread yielding ..");
     //thread_control->yield();
     //fprintf(stderr, "..Thread resuming!\n");
 
-    if (ss.fs == blocked) goto do_async;
-
-    if (ss.fs == delegated) {
+    if (FLX_LIKELY(ss.fs == delegated)) {
       switch (ss.request->variant) {
         case svc_collect:
           {
@@ -237,6 +233,9 @@ void doflx(void *data) {
           abort();
       }
     }
+
+    if (ss.fs == blocked) goto do_async;
+    if (ss.fs == terminated) goto cleanup;
 
     fprintf(stderr, "Unknown frun return status 0x%4x\n", ss.fs);
     abort();
