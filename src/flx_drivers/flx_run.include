@@ -416,15 +416,16 @@ int run_felix(
 {
   try
   {
-    if(debug_driver)
-      fprintf(stderr,"flx_run driver begins %s\n",flx_argv[0]);
+    if (debug_driver)
+      fprintf(stderr, "flx_run driver begins %s\n", flx_argv[0]);
+
     flx_libinit_t instance;
 
 #ifdef FLX_STATIC_LINK
     flx_dynlink_t library(
-        (thread_frame_creator_t)&create_thread_frame,
-        (start_t)&flx_start,
-        (main_t)&flx_main);
+      (thread_frame_creator_t)&create_thread_frame,
+      (start_t)&flx_start,
+      (main_t)&flx_main);
 #else
     flx_dynlink_t library;
     library.link(filename);
@@ -434,35 +435,51 @@ int run_felix(
 
     void *stack_base = get_stack_pointer();
     thread_control->add_thread(stack_base);
-    instance.create(&library, gcp,library.main_sym,flx_argc,flx_argv,stdin,stdout,stderr);
 
-    if(debug_driver)
-    {
-      fprintf(stderr,"loaded library %s at %p\n",filename,library.library);
-      fprintf(stderr,"thread frame at %p\n",instance.thread_frame);
-      fprintf(stderr,"initial continuation at %p\n",instance.start_proc);
-      fprintf(stderr,"main continuation at %p\n",instance.main_proc);
+    // Create the usercode driver instance
+    instance.create(
+      &library,
+      gcp,
+      library.main_sym,
+      flx_argc,
+      flx_argv,
+      stdin,
+      stdout,
+      stderr);
+
+    if (debug_driver) {
+      fprintf(stderr, "loaded library %s at %p\n", filename, library.library);
+      fprintf(stderr, "thread frame at %p\n", instance.thread_frame);
+      fprintf(stderr, "initial continuation at %p\n", instance.start_proc);
+      fprintf(stderr, "main continuation at %p\n", instance.main_proc);
     }
-    //fprintf(stderr,"Calling run_felix_pthread\n");
-    run_felix_pthread(debug_driver,gcp,thread_control,&library,&instance);
+
+    // Run the felix usercode.
+    run_felix_pthread(debug_driver, gcp, thread_control, &library, &instance);
+
+    // And we're done, so remove the current thread.
     thread_control->remove_thread();
 
-    if(gcp->finalise)
+    if (gcp->finalise)
     {
-      if(library.refcnt >0)
+      if (library.refcnt > 0)
       {
-        fprintf(stderr,"flx_run %p library still referenced %ld times?!\n",library.library,library.refcnt);
+        fprintf(stderr,
+          "flx_run %p library still referenced %ld times?!\n",
+          library.library, library.refcnt);
         return 6;
       }
-      if(debug_driver)
-        fprintf(stderr,"flx_run driver ends with finalisation complete\n");
+      if (debug_driver)
+        fprintf(stderr, "flx_run driver ends with finalisation complete\n");
     }
     else
     {
-      if(debug_driver || gcp->debug_collections)
+      if (debug_driver || gcp->debug_collections)
       {
         unsigned long a = collector->get_allocation_count();
-        fprintf(stderr,"flx_run driver ends with finalisation skipped, %ld uncollected objects\n",a);
+        fprintf(stderr,
+          "flx_run driver ends with finalisation skipped, %ld uncollected "
+          "objects\n", a);
       }
     }
   }
@@ -472,7 +489,7 @@ int run_felix(
   }
   catch (...)
   {
-    fprintf(stderr,"flx_run driver ends with unknown EXCEPTION\n");
+    fprintf(stderr, "flx_run driver ends with unknown EXCEPTION\n");
     return 4;
   }
   return 0;
