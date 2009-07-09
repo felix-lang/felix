@@ -530,10 +530,10 @@ int main(int argc, char** argv)
   char *filename = argv[1];
   char **flx_argv = argv+1;
   int flx_argc = argc-1;
-  bool debug = (argc > 1) && (strcmp(argv[1],"--debug")==0);
-  if(debug)
+  bool debug = (argc > 1) && (strcmp(argv[1], "--debug")==0);
+  if (debug)
   {
-    if(argc<3)
+    if (argc < 3)
     {
       printf("usage: flx_run [--debug] dll_filename options ..\n");
       return 1;
@@ -551,96 +551,102 @@ int main(int argc, char** argv)
 
 //  printf("Statically linked Felix program running\n");
 #endif
-  debug = egetv("FLX_DEBUG",debug);
-  if(debug)
-  {
-    fprintf(stderr,"[FLX_DEBUG] Debug enabled for %s link program\n",static_link?"static":"dynamic");
+  debug = egetv("FLX_DEBUG", debug);
+  if (debug) {
+    fprintf(stderr,
+      "[FLX_DEBUG] Debug enabled for %s link program\n",
+      static_link ? "static" : "dynamic");
   }
 
-  bool debug_threads = egetv("FLX_DEBUG_THREADS",debug);
-  if(debug_threads)
-  {
-    fprintf(stderr,"[FLX_DEBUG_THREADS] Threads debug enabled\n");
+  bool debug_threads = egetv("FLX_DEBUG_THREADS", debug);
+  if (debug_threads) {
+    fprintf(stderr, "[FLX_DEBUG_THREADS] Threads debug enabled\n");
   }
 
-  bool debug_allocations = egetv("FLX_DEBUG_ALLOCATIONS",debug);
-  if(debug_allocations)
-  {
-    fprintf(stderr,"[FLX_DEBUG_ALLOCATIONS] Allocation debug enabled\n");
+  bool debug_allocations = egetv("FLX_DEBUG_ALLOCATIONS", debug);
+  if (debug_allocations) {
+    fprintf(stderr, "[FLX_DEBUG_ALLOCATIONS] Allocation debug enabled\n");
   }
 
-  bool debug_collections = egetv("FLX_DEBUG_COLLECTIONS",debug);
-  if(debug_collections)
+  bool debug_collections = egetv("FLX_DEBUG_COLLECTIONS", debug);
+  if (debug_collections)
   {
-    fprintf(stderr,"[FLX_DEBUG_COLLECTIONS] Collection debug enabled\n");
+    fprintf(stderr, "[FLX_DEBUG_COLLECTIONS] Collection debug enabled\n");
   }
 
 
-  bool debug_driver = egetv("FLX_DEBUG_DRIVER",debug);
-  if(debug_driver)
+  bool debug_driver = egetv("FLX_DEBUG_DRIVER", debug);
+  if (debug_driver)
   {
-    fprintf(stderr,"[FLX_DEBUG_DRIVER] Driver debug enabled\n");
+    fprintf(stderr, "[FLX_DEBUG_DRIVER] Driver debug enabled\n");
   }
 
   bool finalise = egetv("FLX_FINALISE", 0);
-  if(debug)
-    fprintf(stderr,"[FLX_FINALISE] Finalisation %s\n",finalise? "Enabled" : "Disabled");
+  if (debug)
+    fprintf(stderr,
+      "[FLX_FINALISE] Finalisation %s\n", finalise ? "Enabled" : "Disabled");
 
-  unsigned long gc_freq = egetv("FLX_GC_FREQ",1000);
+  // default collection frequency is 1000 interations
+  unsigned long gc_freq = egetv("FLX_GC_FREQ", 1000);
   if (gc_freq < 1) gc_freq = 1;
-  if(debug)
-    fprintf(stderr,"[FLX_GC_FREQ] call gc every %lu iterations\n",gc_freq);
+  if (debug)
+    fprintf(stderr, "[FLX_GC_FREQ] call gc every %lu iterations\n", gc_freq);
 
   // default min mem is 10 Meg
-  unsigned long min_mem = egetv("FLX_MIN_MEM",10) * 1000000.0;
+  unsigned long min_mem = egetv("FLX_MIN_MEM", 10) * 1000000.0;
   if (min_mem < 0) min_mem = 0;
-  if(debug)
-    fprintf(stderr,"[FLX_MIN_MEM] call gc only if more than %lu Meg heap used\n",min_mem/1000000);
+  if (debug)
+    fprintf(stderr, "[FLX_MIN_MEM] call gc only if more than %lu Meg heap used\n", min_mem/1000000);
 
   // default max mem is unlimited
-  unsigned long max_mem = egetv("FLX_MAX_MEM",-1) * 1000000.0;
+  unsigned long max_mem = egetv("FLX_MAX_MEM", -1) * 1000000.0;
   if (max_mem <= 0) max_mem = (unsigned long)-1;
-  if(debug)
-    fprintf(stderr,"[FLX_MAX_MEM] terminate if more than %lu Meg heap used\n",max_mem/1000000);
+  if (debug)
+    fprintf(stderr, "[FLX_MAX_MEM] terminate if more than %lu Meg heap used\n", max_mem/1000000);
 
   // default free factor is 10%, this is also the minimum allowed
-  double free_factor = egetv("FLX_FREE_FACTOR",1.1);
+  double free_factor = egetv("FLX_FREE_FACTOR", 1.1);
   if (free_factor < 1.1) free_factor = 1.1;
-  if(debug)
-    fprintf(stderr,"[FLX_FREE_FACTOR] reset gc trigger %4.2f times heap used after collection\n",free_factor);
+  if (debug)
+    fprintf(stderr, "[FLX_FREE_FACTOR] reset gc trigger %4.2f times heap used after collection\n", free_factor);
 
   // experimental flag to allow collection anywhere
   // later, we default this one to true if we can
   // find all the thread stacks, which should be possible
   // with gcc and probably msvc++
 
-  bool allow_collection_anywhere = egetv("FLX_ALLOW_COLLECTION_ANYWHERE",1);
-  if(debug)
-    fprintf(stderr,"[FLX_ALLOW_COLLECTION_ANYWHERE] %s\n",allow_collection_anywhere?"True":"False");
+  bool allow_collection_anywhere = egetv("FLX_ALLOW_COLLECTION_ANYWHERE", 1);
+  if (debug)
+    fprintf(stderr, "[FLX_ALLOW_COLLECTION_ANYWHERE] %s\n", allow_collection_anywhere ? "True" : "False");
 
 
 #if FLX_HAVE_GNU
-    if(debug)fprintf(stderr, "Compiled by g++\n");
+    if (debug) fprintf(stderr, "Compiled by g++\n");
+
     static void *init_sp = sp;
     static void *init_fframe FLX_UNUSED = __builtin_frame_address(0);
     static void *init_ret = __builtin_return_address(0);
-    if(debug)fprintf(stderr, "Stack pointer = %p, frame=%p, return=%p\n",sp,init_fframe,init_ret);
+
+    if (debug)
+      fprintf(stderr, "Stack pointer = %p, frame=%p, return=%p\n",
+        sp, init_fframe, init_ret);
 #endif
-  if(debug)
-    for(int i=0; i<flx_argc; ++i)
-    fprintf(stderr,"flx_argv[%d]->%s\n",i,flx_argv[i]);
+
+  if (debug) {
+    for (int i=0; i<flx_argc; ++i)
+      fprintf(stderr, "flx_argv[%d]->%s\n", i, flx_argv[i]);
+  }
 
   flx::gc::generic::allocator_t *allocator =
-    new flx::gc::collector::malloc_free()
-  ;
+    new flx::gc::collector::malloc_free();
   allocator->set_debug(debug_allocations);
 
   flx::pthread::thread_control_t thread_control(debug_threads);
 
   flx::gc::collector::flx_collector_t *collector =
-    new flx::gc::collector::flx_ts_collector_t(allocator, &thread_control)
-  ;
+    new flx::gc::collector::flx_ts_collector_t(allocator, &thread_control);
   collector->set_debug(debug_collections);
+
   flx::gc::generic::gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
     debug_allocations,
     debug_collections,
@@ -652,13 +658,16 @@ int main(int argc, char** argv)
     finalise,
     collector
   );
+
+  // We're all set up, so run felix
   error_exit_code = run_felix(
     debug_driver,
     gcp,
     &thread_control,
-    filename,flx_argc,flx_argv
+    filename, flx_argc, flx_argv
   );
 
+  // And we're done, so start cleaning up.
   delete gcp;
   delete collector;
   delete allocator;
@@ -669,7 +678,7 @@ int main(int argc, char** argv)
     static void *fin_fframe FLX_UNUSED = __builtin_frame_address(0);
     static void *fin_ret = __builtin_return_address(0);
     if (init_sp != fin_sp ) {
-      fprintf(stderr,"g++: STACK POINTER ERROR %p != %p\n",init_sp,fin_sp);
+      fprintf(stderr, "g++: STACK POINTER ERROR %p != %p\n", init_sp, fin_sp);
     }
 // I have to comment this out, because it only applies if the
 // gcc compiler is using the frame pointer.. it doesn't if you
@@ -677,13 +686,14 @@ int main(int argc, char** argv)
 // is a way to tell inside the code ..
 #if 0
     if (init_fframe != fin_fframe) {
-      fprintf(stderr,"g++: FRAME POINTER ERROR %p != %p\n",init_fframe,fin_fframe);
+      fprintf(stderr, "g++: FRAME POINTER ERROR %p != %p\n", init_fframe, fin_fframe);
     }
 #endif
     else if (init_ret != fin_ret) {
-      fprintf(stderr,"g++: RETURN ADDRESS ERROR %p != %p\n",init_ret,fin_ret);
+      fprintf(stderr, "g++: RETURN ADDRESS ERROR %p != %p\n", init_ret, fin_ret);
     }
 #endif
-  if(debug)fprintf(stderr,"flx_run driver ends code=%d\n",error_exit_code);
+  if (debug) fprintf(stderr, "flx_run driver ends code=%d\n", error_exit_code);
+
   return error_exit_code;
 }
