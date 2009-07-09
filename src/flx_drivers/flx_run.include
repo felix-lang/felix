@@ -292,16 +292,15 @@ void run_felix_pthread(
   flx_libinit_t *instance
 )
 {
-   //fprintf(stderr,"run_felix_pthread -- the MAIN THREAD\n");
-   flx::gc::generic::collector_t *collector = gcp->collector;
-   std::list<fthread_t*> *active =new std::list<fthread_t*>;
+  //fprintf(stderr, "run_felix_pthread -- the MAIN THREAD\n");
+  flx::gc::generic::collector_t *collector = gcp->collector;
+  std::list<fthread_t*> *active = new std::list<fthread_t*>;
 
-  fthread_t *flx_main = NULL;
   {
     con_t *top = instance->main_proc;
-    if(top)
+    if (top)
     {
-      flx_main = new (*gcp,_fthread_ptr_map,false) fthread_t(top);
+      fthread_t *flx_main = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
       collector->add_root(flx_main);
       active->push_front(flx_main);
     }
@@ -309,29 +308,35 @@ void run_felix_pthread(
 
   {
     con_t *top = instance->start_proc;
-    fthread_t *ft = new (*gcp,_fthread_ptr_map,false) fthread_t(top);
+    fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
     collector->add_root(ft);
     active->push_front(ft);
   }
 
   {
+    doflx(new doflx_data(
+      debug_driver,
+      gcp,
+      active,
+      thread_control)); // deletes active for us!
 
-    doflx(new doflx_data(debug_driver, gcp, active, thread_control)); // deletes active for us!
+    if (debug_driver)
+      fprintf(stderr, "MAIN THREAD FINISHED: waiting for other threads\n");
 
-    if(debug_driver)fprintf(stderr,"MAIN THREAD FINISHED: waiting for other threads\n");
     thread_control->join_all();
-    if(debug_driver)fprintf(stderr,"ALL THREADS DEAD: mainline cleanup!\n");
 
-    if(debug_driver){
+    if (debug_driver) fprintf(stderr, "ALL THREADS DEAD: mainline cleanup!\n");
+
+    if (debug_driver) {
       unsigned long uncollected = collector->get_allocation_count();
       unsigned long roots = collector->get_root_count();
       fprintf(stderr,
         "program finished, %ld collections, %ld uncollected objects, roots %ld\n",
-        gcp->collections,uncollected,roots);
+        gcp->collections, uncollected, roots);
     }
   }
 
-  if(gcp->finalise)
+  if (gcp->finalise)
     do_final_cleanup(debug_driver, gcp, library, instance);
 }
 
