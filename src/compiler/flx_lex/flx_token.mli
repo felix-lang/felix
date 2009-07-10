@@ -16,7 +16,7 @@ type token =
   | SLOSH
   | NAME of string
   | NONTERMINAL of (string * ntprio_t)
-  | INTEGER of (string * Flx_ast.bigint)
+  | INTEGER of (string * Big_int.big_int)
   | FLOAT of (string * string)
   | STRING of string
   | CSTRING of string

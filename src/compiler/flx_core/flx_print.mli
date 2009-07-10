@@ -87,8 +87,6 @@ val string_of_varlist:
   (int * btypecode_t) list ->
   string
 
-val string_of_bigint: bigint -> string
-
 val print_env: env_t -> unit
 val print_env_short: env_t -> unit
 

@@ -659,7 +659,7 @@ let dyp_merge_Obj_statement_star ol =
 /* literals */
 %token <string> NAME
 %token <(string * prio_t)> NONTERMINAL
-%token <(string * Flx_ast.bigint)> INTEGER
+%token <(string * Big_int.big_int)> INTEGER
 %token <(string * string )> FLOAT
 %token <string> STRING
 %token <string> CSTRING
