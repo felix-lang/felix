@@ -5,7 +5,6 @@ open Flx_print
 open Flx_maps
 open Flx_util
 open Flx_list
-open List
 open Flx_exceptions
 
 let unit_t = `BTYP_tuple []
@@ -35,8 +34,8 @@ let rec dual t =
     let rec aux ds k = if k = 0 then ds else aux (unit_t::ds) (k-1) in
     `BTYP_tuple (aux [] k)
 
-  | `BTYP_typeset ts -> `BTYP_intersect (map dual ts)
-  | `BTYP_intersect ts -> `BTYP_typeset (map dual ts)
+  | `BTYP_typeset ts -> `BTYP_intersect (List.map dual ts)
+  | `BTYP_intersect ts -> `BTYP_typeset (List.map dual ts)
   | `BTYP_record ts -> `BTYP_variant ts
   | t -> t
 
@@ -59,18 +58,18 @@ let var_subst t (i, j) =
   | t -> map_btype s t
   in s t
 
-let vars_subst ls t = fold_left var_subst t ls
+let vars_subst ls t = List.fold_left var_subst t ls
 
 let rec alpha counter t =
   match t with
   | `BTYP_typefun (ps,r,b) ->
     let fresh = !counter in
-    let n = length ps in
+    let n = List.length ps in
     counter := !counter + n;
-    let remap_list = map2 (fun (i,t) j -> i,fresh+j) ps (nlist n) in
+    let remap_list = List.map2 (fun (i,t) j -> i,fresh+j) ps (nlist n) in
     let remap i = List.assoc i remap_list in
     let cvt t = alpha counter (vars_subst remap_list t) in
-    let ps = map (fun (i,t) -> remap i,t) ps in
+    let ps = List.map (fun (i,t) -> remap i,t) ps in
     `BTYP_typefun (ps, cvt r, cvt b)
   | t -> map_btype (alpha counter) t
 
@@ -82,9 +81,9 @@ let term_subst counter t1 i t2 =
   | `BTYP_type_match (tt, pts) ->
     let tt = s tt in
     let pts =
-      map (fun ({pattern=p; pattern_vars=vs; assignments=asgs},x as case) ->
+      List.map (fun ({pattern=p; pattern_vars=vs; assignments=asgs},x as case) ->
        if IntSet.mem i vs then case else
-       let asgs = map (fun (i,t) -> i, s t) asgs in
+       let asgs = List.map (fun (i,t) -> i, s t) asgs in
        {pattern= s p; pattern_vars=vs; assignments=asgs}, s x
       )
     pts
@@ -96,7 +95,7 @@ let term_subst counter t1 i t2 =
 
 let list_subst counter x t =
   let t = alpha counter t in
-  fold_left (fun t1 (i,t2) ->
+  List.fold_left (fun t1 (i,t2) ->
     term_subst counter t1 i (alpha counter t2))
   t
   x
@@ -118,7 +117,7 @@ let varmap_subst varmap t =
     else x
   | `BTYP_typefun (p,r,b) ->
     let
-      p = map (fun (name,kind) -> (name, s kind)) p and
+      p = List.map (fun (name,kind) -> (name, s kind)) p and
       r = s r and
       b = s b
     in
@@ -135,19 +134,19 @@ let mk_varmap
   (vs:(string * int) list)
   (ts:btypecode_t list)
 =
-  if length ts <> length vs
+  if List.length ts <> List.length vs
   then
     failwith
     (
       "[mk_varmap] wrong number of type args, expected vs=" ^
-      si (length vs) ^
+      si (List.length vs) ^
       ", got ts=" ^
-      si (length ts) ^
+      si (List.length ts) ^
       "\nvs= " ^ catmap "," (fun (s,i) -> s ^ "<"^si i^">") vs
     )
   ;
   let varmap = Hashtbl.create 97 in
-  iter2
+  List.iter2
   (fun (_, varidx) typ -> Hashtbl.add varmap varidx typ)
   vs ts
   ;
@@ -245,21 +244,21 @@ let fix i t =
     let aux t = aux (n - 1) t in
     match t with
     | `BTYP_var (k,_) -> if k = i then `BTYP_fix n else t
-    | `BTYP_inst (k,ts) -> `BTYP_inst (k, map aux ts)
-    | `BTYP_tuple ts -> `BTYP_tuple (map aux ts)
-    | `BTYP_sum ts -> `BTYP_sum (map aux ts)
-    | `BTYP_intersect ts -> `BTYP_intersect (map aux ts)
-    | `BTYP_typeset ts -> `BTYP_typeset (map aux ts)
+    | `BTYP_inst (k,ts) -> `BTYP_inst (k, List.map aux ts)
+    | `BTYP_tuple ts -> `BTYP_tuple (List.map aux ts)
+    | `BTYP_sum ts -> `BTYP_sum (List.map aux ts)
+    | `BTYP_intersect ts -> `BTYP_intersect (List.map aux ts)
+    | `BTYP_typeset ts -> `BTYP_typeset (List.map aux ts)
     | `BTYP_function (a,b) -> `BTYP_function (aux a, aux b)
     | `BTYP_cfunction (a,b) -> `BTYP_cfunction (aux a, aux b)
     | `BTYP_pointer a -> `BTYP_pointer (aux a)
     | `BTYP_array (a,b) -> `BTYP_array (aux a, aux b)
 
     | `BTYP_record ts ->
-       `BTYP_record (map (fun (s,t) -> s, aux t) ts)
+       `BTYP_record (List.map (fun (s,t) -> s, aux t) ts)
 
     | `BTYP_variant ts ->
-       `BTYP_variant (map (fun (s,t) -> s, aux t) ts)
+       `BTYP_variant (List.map (fun (s,t) -> s, aux t) ts)
 
     | `BTYP_unitsum _
     | `BTYP_void
@@ -276,7 +275,7 @@ let fix i t =
 
 let var_list_occurs ls t =
   let yes = ref false in
-  iter (fun i -> yes := !yes || var_i_occurs i t) ls;
+  List.iter (fun i -> yes := !yes || var_i_occurs i t) ls;
   !yes
 
 (* NOTE: this algorithm unifies EQUATIONS
@@ -353,7 +352,7 @@ let rec unification counter dfns
 
       | `BTYP_intersect ts,t
       | t,`BTYP_intersect ts ->
-        iter (function t' -> eqns := (t,t') :: !eqns) ts
+        List.iter (function t' -> eqns := (t,t') :: !eqns) ts
 
       | `BTYP_pointer t1, `BTYP_pointer t2 ->
         eqns := (t1,t2) :: !eqns
@@ -361,8 +360,8 @@ let rec unification counter dfns
       | `BTYP_unitsum i, `BTYP_unitsum j when i = j -> ()
 
       | `BTYP_unitsum k, `BTYP_sum ls
-      | `BTYP_sum ls, `BTYP_unitsum k when length ls = k ->
-        iter
+      | `BTYP_sum ls, `BTYP_unitsum k when List.length ls = k ->
+        List.iter
         (function
           | `BTYP_var _ as v ->
              eqns := (v,unit_t) :: !eqns
@@ -379,18 +378,18 @@ let rec unification counter dfns
       | `BTYP_tuple [],`BTYP_record [] -> ()
 
       | `BTYP_record t1,`BTYP_record t2 ->
-        if length t1 = length t2
+        if List.length t1 = List.length t2
         then begin
           let rcmp (s1,_) (s2,_) = compare s1 s2 in
-          let t1 = sort rcmp t1 in
-          let t2 = sort rcmp t2 in
-          if (map fst t1) <> (map fst t2) then raise Not_found;
+          let t1 = List.sort rcmp t1 in
+          let t2 = List.sort rcmp t2 in
+          if (List.map fst t1) <> (List.map fst t2) then raise Not_found;
           let rec merge e a b = match a,b with
           | [],[] -> e
           | ah :: at, bh :: bt -> merge ((ah,bh) :: e) at bt
           | _ -> assert false
           in
-            eqns := merge !eqns (map snd t1) (map snd t2);
+            eqns := merge !eqns (List.map snd t1) (List.map snd t2);
             s := None
         end
         else raise Not_found
@@ -399,18 +398,18 @@ let rec unification counter dfns
       | `BTYP_void,`BTYP_variant [] -> ()
 
       | `BTYP_variant t1,`BTYP_variant t2 ->
-        if length t1 = length t2
+        if List.length t1 = List.length t2
         then begin
           let rcmp (s1,_) (s2,_) = compare s1 s2 in
-          let t1 = sort rcmp t1 in
-          let t2 = sort rcmp t2 in
-          if (map fst t1) <> (map fst t2) then raise Not_found;
+          let t1 = List.sort rcmp t1 in
+          let t2 = List.sort rcmp t2 in
+          if (List.map fst t1) <> (List.map fst t2) then raise Not_found;
           let rec merge e a b = match a,b with
           | [],[] -> e
           | ah :: at, bh :: bt -> merge ((ah,bh) :: e) at bt
           | _ -> assert false
           in
-            eqns := merge !eqns (map snd t1) (map snd t2);
+            eqns := merge !eqns (List.map snd t1) (List.map snd t2);
             s := None
         end
         else raise Not_found
@@ -420,7 +419,7 @@ let rec unification counter dfns
 
       | `BTYP_inst (i1,ts1),`BTYP_inst (i2,ts2) ->
         if i1 <> i2 then raise Not_found
-        else if length ts1 <> length ts2 then raise Not_found
+        else if List.length ts1 <> List.length ts2 then raise Not_found
         else
         begin
           let rec merge e a b = match a,b with
@@ -441,12 +440,12 @@ let rec unification counter dfns
          parameter t, but not the other way around]
       *)
       | `BTYP_tuple ls, `BTYP_array (ta,`BTYP_unitsum n)
-        when n = length ls ->
-        iter (fun t -> eqns := (t,ta) :: !eqns) ls
+        when n = List.length ls ->
+        List.iter (fun t -> eqns := (t,ta) :: !eqns) ls
 
       | `BTYP_array (ta,`BTYP_unitsum n), `BTYP_tuple ls
-        when n = length ls ->
-        iter (fun t -> eqns := (ta,t) :: !eqns) ls
+        when n = List.length ls ->
+        List.iter (fun t -> eqns := (ta,t) :: !eqns) ls
 
       (* type tuple is handled same as a tuple type .. not
         really sure this is right. Certainly, the corresponding
@@ -458,7 +457,7 @@ let rec unification counter dfns
       | (`BTYP_type_tuple ls1, `BTYP_type_tuple ls2)
       | (`BTYP_tuple ls1, `BTYP_tuple ls2)
       | (`BTYP_sum ls1, `BTYP_sum ls2)
-        when length ls1 = length ls2 ->
+        when List.length ls1 = List.length ls2 ->
         begin
           let rec merge e a b = match a,b with
           | [],[] -> e
@@ -471,8 +470,8 @@ let rec unification counter dfns
 
       (* structural, not functional, equality of lambdas by alpha equivalence *)
       | `BTYP_typefun (p1,r1,b1), `BTYP_typefun (p2,r2,b2)
-        when length p1 = length p2 ->
-        let vs = map2 (fun (i1,_) (i2,t) -> i1,`BTYP_var (i2,t))  p1 p2 in
+        when List.length p1 = List.length p2 ->
+        let vs = List.map2 (fun (i1,_) (i2,t) -> i1,`BTYP_var (i2,t))  p1 p2 in
         let b1 = list_subst counter vs b1 in
         eqns := (b1, b2):: !eqns;
         s := None
@@ -491,17 +490,17 @@ let rec unification counter dfns
         print_endline ("Substituting " ^ si i ^ " -> " ^ sbt dfns t);
         *)
         eqns :=
-          map
+          List.map
           (fun (a,b) ->
             term_subst counter a i t,
             term_subst counter b i t
           )
           !eqns
         ;
-        assert(not (mem_assoc i !mgu));
+        assert(not (List.mem_assoc i !mgu));
         mgu :=
           (i,t) ::
-          (map
+          (List.map
             (fun (j,t') -> j,term_subst counter t' i t)
             !mgu
           )
@@ -515,7 +514,7 @@ let rec unification counter dfns
 let find_vars_eqns eqns =
   let lhs_vars = ref IntSet.empty in
   let rhs_vars = ref IntSet.empty in
-  iter (fun (l,r) ->
+  List.iter (fun (l,r) ->
     lhs_vars := IntSet.union !lhs_vars (vars_in l);
     rhs_vars := IntSet.union !rhs_vars (vars_in r)
   )
@@ -555,7 +554,7 @@ let ge counter dfns a b =
   | Some mgu ->
     (*
     print_endline ("MGU from specialisation = ");
-    iter (fun (i, t) -> print_endline (si i ^ " --> " ^ sbt dfns t)) mgu;
+    List.iter (fun (i, t) -> print_endline (si i ^ " --> " ^ sbt dfns t)) mgu;
     print_endline "";
     *)
     true
@@ -609,7 +608,7 @@ let do_unify syms a b =
     let mgu = unification syms.counter syms.dfns eqns dvars in
     (*
     print_endline "mgu=";
-    iter
+    List.iter
     (fun (i, t) ->
       print_endline (string_of_int i ^ " -> " ^ string_of_btypecode syms.dfns t)
     )
@@ -626,7 +625,7 @@ let do_unify syms a b =
     The variables are marked as SPECIAL by using the same
     index as the function whose return type is unknown.
     *)
-    iter
+    List.iter
     (fun (i, t) ->
       if Hashtbl.mem syms.varmap i
       then
@@ -686,8 +685,9 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
     ((t1,t2)::trail)
     a b
   in
+  (*
   let assoc i ls =
-    try assoc i ls
+    try List.assoc i ls
     with Not_found -> raise Not_found
       (*
       print_endline (
@@ -697,11 +697,12 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
       failwith "Trail failure"
       *)
   in
+  *)
   match t1,t2 with
   | `BTYP_inst (i1,ts1),`BTYP_inst (i2,ts2) ->
     i1 = i2 &&
-    length ts1 = length ts2 &&
-    fold_left2
+    List.length ts1 = List.length ts2 &&
+    List.fold_left2
     (fun tr a b -> tr && te a b)
     true ts1 ts2
 
@@ -711,16 +712,16 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
   | `BTYP_type_tuple ts1,`BTYP_type_tuple ts2
   | `BTYP_tuple ts1,`BTYP_tuple ts2 ->
     let result =
-    if length ts1 = length ts2
+    if List.length ts1 = List.length ts2
     then
-      fold_left2
+      List.fold_left2
       (fun tr a b -> tr && te a b)
       true ts1 ts2
     else false
     in
     (*
     print_endline ("Tuple/sum compared " ^ (if result then "TRUE" else "FALSE"));
-    if length ts1 = length ts2 then
+    if List.length ts1 = List.length ts2 then
     print_endline ("Args = " ^ catmap "\n  " (fun (t1,t2) ->
       "lhs=" ^sbt dfns t1 ^" vs rhs=" ^ sbt dfns t2)
      (combine ts1 ts2))
@@ -732,30 +733,30 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
   | `BTYP_tuple [],`BTYP_record [] -> true
 
   | `BTYP_record t1,`BTYP_record t2 ->
-    if length t1 = length t2
+    if List.length t1 = List.length t2
     then begin
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
-      let t1 = sort rcmp t1 in
-      let t2 = sort rcmp t2 in
-      map fst t1 = map fst t2 &&
-      fold_left2
+      let t1 = List.sort rcmp t1 in
+      let t2 = List.sort rcmp t2 in
+      List.map fst t1 = List.map fst t2 &&
+      List.fold_left2
       (fun tr a b -> tr && te a b)
-      true (map snd t1) (map snd t2)
+      true (List.map snd t1) (List.map snd t2)
     end else false
 
   | `BTYP_variant [],`BTYP_tuple []
   | `BTYP_tuple [],`BTYP_variant [] -> true
 
   | `BTYP_variant t1,`BTYP_variant t2 ->
-    if length t1 = length t2
+    if List.length t1 = List.length t2
     then begin
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
-      let t1 = sort rcmp t1 in
-      let t2 = sort rcmp t2 in
-      map fst t1 = map fst t2 &&
-      fold_left2
+      let t1 = List.sort rcmp t1 in
+      let t2 = List.sort rcmp t2 in
+      List.map fst t1 = List.map fst t2 &&
+      List.fold_left2
       (fun tr a b -> tr && te a b)
-      true (map snd t1) (map snd t2)
+      true (List.map snd t1) (List.map snd t2)
     end else false
 
 
@@ -767,13 +768,13 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
 
   (* order is important for lvalues .. *)
   | `BTYP_array (ta,`BTYP_unitsum n),`BTYP_tuple ts
-    when length ts = n ->
-    fold_left (fun tr t -> tr && te ta t) true ts
+    when List.length ts = n ->
+    List.fold_left (fun tr t -> tr && te ta t) true ts
 
 
   | `BTYP_tuple ts,`BTYP_array (ta,`BTYP_unitsum n)
-    when length ts = n ->
-    fold_left (fun tr t -> tr && te t ta) true ts
+    when List.length ts = n ->
+    List.fold_left (fun tr t -> tr && te t ta) true ts
 
   | `BTYP_pointer p1,`BTYP_pointer p2
     -> te p1 p2
@@ -799,8 +800,8 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
       print_endline "Matching fixpoints";
       *)
       try
-      let a = assoc (ldepth+i) ltrail in
-      let b = assoc (rdepth+j) rtrail in
+      let a = List.assoc (ldepth+i) ltrail in
+      let b = List.assoc (rdepth+j) rtrail in
       type_eq' counter dfns ltrail ldepth rtrail rdepth trail a b
       with Not_found -> false
     end
@@ -810,7 +811,7 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
     print_endline "LHS fixpoint";
     *)
     begin try
-    let a = assoc (ldepth+i) ltrail in
+    let a = List.assoc (ldepth+i) ltrail in
     type_eq' counter dfns ltrail ldepth rtrail rdepth trail a t
     with Not_found -> false
     end
@@ -820,14 +821,14 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
     print_endline "RHS fixpoint";
     *)
     begin try
-    let b = assoc (rdepth+j) rtrail in
+    let b = List.assoc (rdepth+j) rtrail in
     type_eq' counter dfns ltrail ldepth rtrail rdepth trail t b
     with Not_found -> false
     end
 
   | `BTYP_typefun (p1,r1,b1), `BTYP_typefun (p2,r2,b2) ->
-    length p1 = length p2 &&
-    let vs = map2 (fun (i1,_) (i2,t) -> i1,`BTYP_var (i2,t))  p1 p2 in
+    List.length p1 = List.length p2 &&
+    let vs = List.map2 (fun (i1,_) (i2,t) -> i1,`BTYP_var (i2,t))  p1 p2 in
     (*
     print_endline "Comparing type functions";
     print_endline ("b1 =          " ^ sbt dfns b1);
@@ -865,10 +866,10 @@ let unfold dfns t =
   let rec aux depth t' =
   let uf t = aux (depth+1) t in
   match t' with
-  | `BTYP_sum ls -> `BTYP_sum (map uf ls)
-  | `BTYP_tuple ls -> `BTYP_tuple (map uf ls)
-  | `BTYP_record ls -> `BTYP_record (map (fun (s,t) -> s,uf t) ls)
-  | `BTYP_variant ls -> `BTYP_variant (map (fun (s,t) -> s,uf t) ls)
+  | `BTYP_sum ls -> `BTYP_sum (List.map uf ls)
+  | `BTYP_tuple ls -> `BTYP_tuple (List.map uf ls)
+  | `BTYP_record ls -> `BTYP_record (List.map (fun (s,t) -> s,uf t) ls)
+  | `BTYP_variant ls -> `BTYP_variant (List.map (fun (s,t) -> s,uf t) ls)
   | `BTYP_array (a,b) -> `BTYP_array (uf a, uf b)
   | `BTYP_function (a,b) -> `BTYP_function (uf a, uf b)
   | `BTYP_cfunction (a,b) -> `BTYP_cfunction (uf a, uf b)
@@ -878,7 +879,7 @@ let unfold dfns t =
     failwith ("[unfold] Fix point outside term, depth="^string_of_int i)
 
   | `BTYP_apply (a,b) -> `BTYP_apply(uf a, uf b)
-  | `BTYP_inst (i,ts) -> `BTYP_inst (i,map uf ts)
+  | `BTYP_inst (i,ts) -> `BTYP_inst (i,List.map uf ts)
   | `BTYP_typefun (p,r,b) ->
      `BTYP_typefun (p,r,uf b)
 
@@ -887,7 +888,7 @@ let unfold dfns t =
      (* don't unfold recursions in patterns yet because we don't
         know what they mean
      *)
-     let tts = map (fun (p,x) -> p, uf x) tts in
+     let tts = List.map (fun (p,x) -> p, uf x) tts in
     `BTYP_type_match (a,tts)
 
   | _ -> t'
@@ -903,9 +904,9 @@ let fold counter dfns t =
     | `BTYP_intersect ls
     | `BTYP_sum ls
     | `BTYP_inst (_,ls)
-    | `BTYP_tuple ls -> iter ax ls
-    | `BTYP_record ls -> iter (fun (s,t) -> ax t) ls
-    | `BTYP_variant ls -> iter (fun (s,t) -> ax t) ls
+    | `BTYP_tuple ls -> List.iter ax ls
+    | `BTYP_record ls -> List.iter (fun (s,t) -> ax t) ls
+    | `BTYP_variant ls -> List.iter (fun (s,t) -> ax t) ls
 
     | `BTYP_array (a,b)
     | `BTYP_function (a,b) -> ax a; ax b
@@ -921,7 +922,7 @@ let fold counter dfns t =
     | `BTYP_fix i ->
       let k = depth + i in
       begin try
-        let t'' = assoc k trail in
+        let t'' = List.assoc k trail in
         if type_eq counter dfns t'' t then raise (Found t'')
       with Not_found -> ()
       end
@@ -954,9 +955,9 @@ let var_occurs t =
     | `BTYP_typesetunion ls
     | `BTYP_sum ls
     | `BTYP_inst (_,ls)
-    | `BTYP_tuple ls -> iter aux ls
-    | `BTYP_record ls -> iter (fun (s,t) -> aux t) ls
-    | `BTYP_variant ls -> iter (fun (s,t) -> aux t) ls
+    | `BTYP_tuple ls -> List.iter aux ls
+    | `BTYP_record ls -> List.iter (fun (s,t) -> aux t) ls
+    | `BTYP_variant ls -> List.iter (fun (s,t) -> aux t) ls
 
     | `BTYP_array (a,b)
     | `BTYP_function (a,b) -> aux a; aux b
@@ -968,9 +969,9 @@ let var_occurs t =
     | `BTYP_void
     | `BTYP_fix _ -> ()
 
-    | `BTYP_var (k,_) -> if not (mem k excl) then raise Not_found
+    | `BTYP_var (k,_) -> if not (List.mem k excl) then raise Not_found
     | `BTYP_typefun (p,r,b) ->
-      aux' (map fst p @ excl) b
+      aux' (List.map fst p @ excl) b
 
     | _ -> failwith "[var_occurs] unexpected metatype"
 
@@ -1094,7 +1095,7 @@ let rec expr_unification counter dfns
       | `BEXPR_apply_direct (i,ts1,e1),`BEXPR_apply( (`BEXPR_closure(j,ts2),_),e2)
         when i = j
         ->
-        assert (length ts1 = length ts2);
+        assert (List.length ts1 = List.length ts2);
         teqns := combine ts1 ts2 @ !teqns;
         eqns := (e1,e2) :: !eqns
 
@@ -1115,7 +1116,7 @@ let rec expr_unification counter dfns
       | `BEXPR_ref (i1,ts1),`BEXPR_ref (i2,ts2) when i1 = i2 -> ()
 
       | (`BEXPR_tuple ls1, `BEXPR_tuple ls2)
-        when length ls1 = length ls2 ->
+        when List.length ls1 = List.length ls2 ->
         begin
           let rec merge e a b = match a,b with
           | [],[] -> e
@@ -1141,17 +1142,17 @@ let rec expr_unification counter dfns
         print_endline ("Substituting " ^ si i ^ " -> " ^ sbt dfns t);
         *)
         eqns :=
-          map
+          List.map
           (fun (a,b) ->
             expr_term_subst a i t,
             expr_term_subst b i t
           )
           !eqns
         ;
-        assert(not (mem_assoc i !mgu));
+        assert(not (List.mem_assoc i !mgu));
         mgu :=
           (i,t) ::
-          (map
+          (List.map
             (fun (j,t') -> j,expr_term_subst t' i t)
             !mgu
           )
@@ -1164,7 +1165,7 @@ let rec expr_unification counter dfns
       tmgu,
       !mgu
 
-let setoflist ls = fold_left (fun s i -> IntSet.add i s) IntSet.empty ls
+let setoflist ls = List.fold_left (fun s i -> IntSet.add i s) IntSet.empty ls
 
 let expr_maybe_matches counter (dfns:symbol_table_t)
   (tvars:int list) (evars:int list)
