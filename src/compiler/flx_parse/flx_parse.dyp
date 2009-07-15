@@ -19,7 +19,6 @@ open Ocs_types
 open Sex_types
 open Dyp
 open Lexing
-open Big_int
 open Flx_string
 
 (*
