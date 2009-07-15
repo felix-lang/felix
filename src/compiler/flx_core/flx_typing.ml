@@ -1,6 +1,5 @@
 open Flx_ast
 open Flx_types
-open List
 
 (* MOVED FROM PARSER so flx_sex2flx can do the nasty work
    -- too lazy to implement this in Scheme at the moment --
@@ -37,12 +36,12 @@ let mktypefun sr (name:string) (vs:vs_list_t) (args: (string * typecode_t) list 
 let sye {base_sym=i} = i
 
 let all_voids ls =
-    fold_left
+    List.fold_left
     (fun acc t -> acc && (t = `BTYP_void))
     true ls
 
 let all_units0 ls =
-    fold_left
+    List.fold_left
     (fun acc t -> acc && (t = `BTYP_tuple []))
     true ls
 
@@ -60,7 +59,7 @@ let int_of_unitsum t = match t with
   | `BTYP_unitsum k -> k
   | `BTYP_sum [] ->  0
   | `BTYP_sum ls ->
-    if all_units ls then length ls
+    if all_units ls then List.length ls
     else raise Not_found
 
   | _ -> raise Not_found
@@ -87,7 +86,7 @@ module FunInstSet = Set.Make(
 
 
 let typeofbps bps =
-  map
+  List.map
   (fun {ptyp=t; pkind=k} ->
     match k with
 (*    | `PRef -> `BTYP_pointer t *)
@@ -104,10 +103,10 @@ let typeoflist typlist = match typlist with
   | [t] -> t
   | h :: t ->
     try
-      iter
+      List.iter
       (fun t -> if t <> h then raise Not_found)
       t;
-      `BTYP_array (h,`BTYP_unitsum (length typlist))
+      `BTYP_array (h,`BTYP_unitsum (List.length typlist))
     with Not_found ->
       `BTYP_tuple typlist
 
@@ -142,12 +141,13 @@ let rec cmp_tbexpr ((a,_) as xa) ((b,_) as xb) =
     ecmp e e'
 
   | `BEXPR_record ts,`BEXPR_record ts' ->
-    length ts = length ts' &&
+    List.length ts = List.length ts' &&
     let rcmp (s,t) (s',t') = compare s s' in
-    let ts = sort rcmp ts in
-    let ts' = sort rcmp ts' in
-    map fst ts = map fst ts' &&
-    fold_left2 (fun r a b -> r && a = b) true (map snd ts) (map snd ts')
+    let ts = List.sort rcmp ts in
+    let ts' = List.sort rcmp ts' in
+    List.map fst ts = List.map fst ts' &&
+    List.fold_left2 (fun r a b -> r && a = b)
+      true (List.map snd ts) (List.map snd ts')
 
   | `BEXPR_variant (s,e),`BEXPR_variant (s',e') ->
     s = s' && ecmp e e'
@@ -158,7 +158,7 @@ let rec cmp_tbexpr ((a,_) as xa) ((b,_) as xb) =
   | `BEXPR_ref (i,ts),`BEXPR_ref (i',ts')
   | `BEXPR_closure (i,ts),`BEXPR_closure (i',ts') ->
      i = i' &&
-     fold_left2 (fun r a b -> r && a = b) true ts ts'
+     List.fold_left2 (fun r a b -> r && a = b) true ts ts'
 
   (* Note any two distinct new expressions are distinct ...
     not sure what is really needed here
@@ -181,11 +181,11 @@ let rec cmp_tbexpr ((a,_) as xa) ((b,_) as xb) =
   | `BEXPR_apply_struct (i,ts,b),`BEXPR_apply_struct (i',ts',b')
   | `BEXPR_apply_stack (i,ts,b),`BEXPR_apply_stack (i',ts',b') ->
      i = i' &&
-     fold_left2 (fun r a b -> r && a = b) true ts ts' &&
+     List.fold_left2 (fun r a b -> r && a = b) true ts ts' &&
      ecmp b b'
 
   | `BEXPR_tuple ls,`BEXPR_tuple ls' ->
-     fold_left2 (fun r a b -> r && ecmp a b) true ls ls'
+     List.fold_left2 (fun r a b -> r && ecmp a b) true ls ls'
 
   | `BEXPR_case_arg (i,e),`BEXPR_case_arg (i',e')
 
