@@ -8,7 +8,6 @@ open Flx_print
 open Flx_exceptions
 open Flx_typing
 open Flx_typing2
-open List
 open Flx_unify
 open Flx_beta
 open Flx_generic
@@ -19,7 +18,7 @@ open Flx_maps
 exception OverloadKindError of Flx_srcref.t * string
 
 let is_typeset tss1 =
-  match rev tss1 with
+  match List.rev tss1 with
   | [] -> false
   | (p1,v1) ::t ->
     p1.assignments = [] &&
@@ -28,7 +27,7 @@ let is_typeset tss1 =
     | `BTYP_var (i,`BTYP_type 0), `BTYP_void 
       when i = IntSet.choose p1.pattern_vars -> 
       begin try 
-        iter (fun (p,v) -> match p,v with
+        List.iter (fun (p,v) -> match p,v with
         | { assignments=[]; 
             pattern_vars=pvs; 
             pattern=`BTYP_inst (_,[])
@@ -43,8 +42,8 @@ let is_typeset tss1 =
     | _ -> false
 
 let make_typeset tss : int list =
-  match rev tss with
-  | h::t -> map (fun x -> 
+  match List.rev tss with
+  | h::t -> List.map (fun x ->
     match x with 
     | {pattern=`BTYP_inst (i,[])},_ -> i 
     | _ -> assert false
@@ -54,7 +53,7 @@ let make_typeset tss : int list =
 
 let is_subset tss1 tss2 : bool =
   let tss1: int list = make_typeset tss1 and tss2 : int list = make_typeset tss2 in
-  try iter (fun x -> if not (mem x tss2) then raise Not_found) tss1; true
+  try List.iter (fun x -> if not (List.mem x tss2) then raise Not_found) tss1; true
   with Not_found -> false
 
 (* this routine checks that the second list of cases includes the first,
@@ -96,7 +95,7 @@ let typematch_implies syms a b = match a, b with
 
 let factor_implies syms ls b =
   try 
-    iter (fun a ->
+    List.iter (fun a ->
       if type_eq syms.counter syms.dfns a b then raise Not_found
       else if typematch_implies syms a b then raise Not_found
     ) 
@@ -106,7 +105,7 @@ let factor_implies syms ls b =
 
 let terms_imply syms ls1 ls2 =
   try
-    iter (fun b -> 
+    List.iter (fun b ->
       if not (factor_implies syms ls1 b) then raise Not_found
     )  
     ls2;
@@ -116,11 +115,11 @@ let terms_imply syms ls1 ls2 =
 let rec split_conjuncts' t : btypecode_t list =
   match t with
   | `BTYP_intersect ls -> 
-    concat (map split_conjuncts' ls)
+    List.concat (List.map split_conjuncts' ls)
   | _ -> [t]
 
 let filter_out_units ls = 
-   filter (fun x -> x <> `BTYP_tuple []) ls
+   List.filter (fun x -> x <> `BTYP_tuple []) ls
 
 let split_conjuncts ls = filter_out_units (split_conjuncts' ls)
 
@@ -155,7 +154,7 @@ let sig_of_symdef symdef sr name i = match symdef with
   | `SYMDEF_callback (_,ts_orig,r,_)
     ->
       let ts_f =
-        filter
+        List.filter
         (function
           | `AST_name (_,id,[]) when id = name -> false
           | t -> true
@@ -174,7 +173,7 @@ let sig_of_symdef symdef sr name i = match symdef with
          C function.
       *)
       let ts_cf =
-        map
+        List.map
         (function
           | `AST_name (_,id,[]) when id = name -> tf
           | t -> t
@@ -195,13 +194,13 @@ let sig_of_symdef symdef sr name i = match symdef with
     *)
 
     | _ ->
-      paramtype p,r,Some (map (fun (_,name,_,d)->name,d) p)
+      paramtype p,r,Some (List.map (fun (_,name,_,d)->name,d) p)
     end
 
   | `SYMDEF_cstruct ls
   | `SYMDEF_struct ls ->
-    type_of_list (map snd ls),`AST_index (sr,name,i),
-     Some (map (fun (p,_) -> p,None) ls)
+    type_of_list (List.map snd ls),`AST_index (sr,name,i),
+     Some (List.map (fun (p,_) -> p,None) ls)
 
   | `SYMDEF_const_ctor (_,r,_,_) -> `AST_void sr,r,None
   | `SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r,None
@@ -214,7 +213,7 @@ let sig_of_symdef symdef sr name i = match symdef with
       (*
       print_endline "TYP_typefun";
       *)
-      type_of_list (map snd ps),r,None
+      type_of_list (List.map snd ps),r,None
     | symdef ->
       (*
       print_endline "OverloadKindError";
@@ -247,7 +246,7 @@ let resolve syms i =
 let rec unravel_ret tin dts =
   match tin with
   | `BTYP_function (a,b) -> unravel_ret b (a::dts)
-  | _ -> rev dts
+  | _ -> List.rev dts
 
 let hack_name qn = match qn with
 | `AST_name (sr,name,ts) -> `AST_name (sr,"_inst_"^name,ts)
@@ -269,7 +268,7 @@ let consider syms env bt be luqn2 name
         | Some ps ->
         match
           begin try
-            iter (fun (name,_)->ignore (assoc name ps)) rs;
+            List.iter (fun (name,_)->ignore (List.assoc name ps)) rs;
             true
           with Not_found -> false
           end
@@ -280,7 +279,7 @@ let consider syms env bt be luqn2 name
         | `TYP_tuple [] -> argt (* lazy *)
         | _ ->
         let ps =
-          map (fun (name,e) ->
+          List.map (fun (name,e) ->
             name,
             match e with
             | None -> None
@@ -290,8 +289,8 @@ let consider syms env bt be luqn2 name
         in
         begin
           try
-            let ats = map (fun (name,d)->
-              try assoc name rs
+            let ats = List.map (fun (name,d)->
+              try List.assoc name rs
               with Not_found ->
               match d with (* ok to skip if there is a default *)
               | Some (e,t) -> t
@@ -315,12 +314,12 @@ let consider syms env bt be luqn2 name
       | _ -> arg_types
     in
     (*
-    if length rtcr > 0 then begin
+    if List.length rtcr > 0 then begin
       (*
       print_endline (name ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^
       catmap "," string_of_qualified_name rtcr);
       *)
-      iter
+      List.iter
       (fun qn -> let es,ts' = luqn2 i (hack_name qn) in
         print_endline ("With ts = " ^ catmap "," string_of_typecode ts');
         match es with
@@ -346,7 +345,7 @@ let consider syms env bt be luqn2 name
     (* these are wrong .. ? or is it just shitty table?
        or is the mismatch due to unresolved variables?
     *)
-    if (length base_vs != length sub_ts) then
+    if (List.length base_vs != List.length sub_ts) then
     begin
       print_endline "WARN: VS != SUB_TS";
       print_endline (id ^ "|-> " ^string_of_myentry syms.dfns eeek);
@@ -358,7 +357,7 @@ let consider syms env bt be luqn2 name
     end
     ;
     (*
-    if (length spec_vs != length input_ts) then print_endline "WARN: SPEC_VS != INPUT_TS";
+    if (List.length spec_vs != List.length input_ts) then print_endline "WARN: SPEC_VS != INPUT_TS";
     *)
 
     (* bind type in base context, then translate it to view context:
@@ -369,9 +368,9 @@ let consider syms env bt be luqn2 name
       (*
       print_endline ("specialise Base type " ^ sbt syms.dfns t);
       *)
-      let n = length base_vs in
+      let n = List.length base_vs in
       let ts = list_prefix sub_ts n in
-      let vs = map (fun (i,n,_) -> i,n) base_vs in
+      let vs = List.map (fun (i,n,_) -> i,n) base_vs in
       let t = tsubst vs ts t in
       (*
       print_endline ("to View type " ^ sbt syms.dfns t);
@@ -455,24 +454,24 @@ let consider syms env bt be luqn2 name
     *)
     (* Step1: make equations for the ts *)
 
-    let n_parent_vs = length parent_vs in
-    let n_base_vs = length base_vs in
-    let n_spec_vs = length spec_vs in
-    let n_sub_ts = length sub_ts in
-    let n_input_ts = length input_ts in
+    let n_parent_vs = List.length parent_vs in
+    let n_base_vs = List.length base_vs in
+    let n_spec_vs = List.length spec_vs in
+    let n_sub_ts = List.length sub_ts in
+    let n_input_ts = List.length input_ts in
 
     (* equations for user specified assignments *)
-    let lhsi = map (fun (n,i) -> i) spec_vs in
-    let lhs = map (fun (n,i) -> `BTYP_var ((i),`BTYP_type 0)) spec_vs in
+    let lhsi = List.map (fun (n,i) -> i) spec_vs in
+    let lhs = List.map (fun (n,i) -> `BTYP_var ((i),`BTYP_type 0)) spec_vs in
     let n = min n_spec_vs n_input_ts in
-    let eqns = combine (list_prefix lhs n) (list_prefix input_ts n) in
+    let eqns = List.combine (list_prefix lhs n) (list_prefix input_ts n) in
 
     (* these are used for early substitution *)
-    let eqnsi = combine (list_prefix lhsi n) (list_prefix input_ts n) in
+    let eqnsi = List.combine (list_prefix lhsi n) (list_prefix input_ts n) in
 
     (*
     print_endline "TS EQUATIONS ARE:";
-    iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
+    List.iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
     eqns
     ;
     *)
@@ -480,27 +479,27 @@ let consider syms env bt be luqn2 name
     (*
     print_endline ("Curry domains (presub)   = " ^ catmap ", " (sbt syms.dfns) curry_domains);
     *)
-    let curry_domains = map (fun t -> list_subst syms.counter eqnsi t) curry_domains in
+    let curry_domains = List.map (fun t -> list_subst syms.counter eqnsi t) curry_domains in
 
     (*
     print_endline ("Curry domains (postsub)  = " ^ catmap ", " (sbt syms.dfns) curry_domains);
     *)
 
-    let curry_domains = map (fun t -> reduce_type (beta_reduce syms sr t)) curry_domains in
+    let curry_domains = List.map (fun t -> reduce_type (beta_reduce syms sr t)) curry_domains in
 
     (*
     print_endline ("Curry domains (postbeta) = " ^ catmap ", " (sbt syms.dfns) curry_domains);
     *)
 
-    let n = min (length curry_domains) (length arg_types) in
-    let eqns = eqns @ combine (list_prefix curry_domains n) (list_prefix arg_types n) in
+    let n = min (List.length curry_domains) (List.length arg_types) in
+    let eqns = eqns @ List.combine (list_prefix curry_domains n) (list_prefix arg_types n) in
 
     let dvars = ref IntSet.empty in
-    iter (fun (_,i)-> dvars := IntSet.add i !dvars) spec_vs;
+    List.iter (fun (_,i)-> dvars := IntSet.add i !dvars) spec_vs;
 
     (*
     print_endline "EQUATIONS ARE:";
-    iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
+    List.iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
     eqns
     ;
     (* WRONG!! dunno why, but it is! *)
@@ -551,9 +550,9 @@ let consider syms env bt be luqn2 name
       print_endline "Check for unresolved";
       *)
       let unresolved = ref (
-        fold_left2
+        List.fold_left2
         (fun acc (s,i) k ->
-          if not (mem_assoc i !mgu) then (s,i,`TYP_type,k)::acc else acc
+          if not (List.mem_assoc i !mgu) then (s,i,`TYP_type,k)::acc else acc
         )
         [] spec_vs (nlist n_spec_vs)
       )
@@ -577,13 +576,13 @@ let consider syms env bt be luqn2 name
           | `AST_patany _ -> ""
           | tp -> ": " ^ string_of_typecode tp
         in
-        fold_left (fun acc (s,i,tp,k) -> acc ^
+        List.fold_left (fun acc (s,i,tp,k) -> acc ^
           "  The " ^th k ^" subscript  " ^ s ^ "["^si i^"]" ^
            maybe_tp tp ^ "\n"
         ) "" !unresolved
       in
       (*
-      if length !unresolved > 0 then
+      if List.length !unresolved > 0 then
         print_endline (
         "WARNING: experimental feature coming up\n" ^
         "Below would be an error, but we try now to do more work\n" ^
@@ -597,16 +596,16 @@ let consider syms env bt be luqn2 name
       ;
       *)
 (*
-      if length !unresolved > 0 then None else
+      if List.length !unresolved > 0 then None else
 *)
 
       (* HACKERY to try to get more values from type patterns*)
 (*
-      if length !unresolved > 0 then
+      if List.length !unresolved > 0 then
 *)
       begin
         (* convert mgu from spec vars to base vars *)
-        let basemap = map2 (fun (_,i,_) t -> i,list_subst syms.counter !mgu t) base_vs sub_ts in
+        let basemap = List.map2 (fun (_,i,_) t -> i,list_subst syms.counter !mgu t) base_vs sub_ts in
         (*
         print_endline ("New basemap: " ^ catmap ","
           (fun (i,t) -> si i ^ "->" ^ sbt syms.dfns t)
@@ -616,13 +615,13 @@ let consider syms env bt be luqn2 name
 
         let extra_eqns = ref [] in
         let dvars = ref IntSet.empty in
-        iter (fun (_,i)->
-          if not (mem_assoc i !mgu) then (* mgu vars get eliminated *)
+        List.iter (fun (_,i)->
+          if not (List.mem_assoc i !mgu) then (* mgu vars get eliminated *)
           dvars := IntSet.add i !dvars
         )
         spec_vs;
 
-        iter (fun (s,j',tp) ->
+        List.iter (fun (s,j',tp) ->
            let et,explicit_vars1,any_vars1, as_vars1, eqns1 =
             type_of_tpattern syms tp
            in
@@ -653,15 +652,15 @@ let consider syms env bt be luqn2 name
 
            (*
            print_endline ("Analysing "^s^"<"^si j'^">: " ^ string_of_typecode tp);
-           print_endline (si j' ^ (if mem_assoc j' basemap then " IS IN BASEMAP" else " IS NOT IN BASEMAP"));
+           print_endline (si j' ^ (if List.mem_assoc j' basemap then " IS IN BASEMAP" else " IS NOT IN BASEMAP"));
            *)
            (* this check is redundant .. we're SCANNING the base vs! *)
            match et with
            | `BTYP_type _
            | `BTYP_function _ -> () (* print_endline "ignoring whole metatype" *)
            | _ ->
-           if mem_assoc j' basemap then begin
-             let t1 = assoc j' basemap in
+           if List.mem_assoc j' basemap then begin
+             let t1 = List.assoc j' basemap in
              let t2 = et in
              (*
              print_endline ("CONSTRAINT: Adding equation " ^ sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2);
@@ -671,13 +670,13 @@ let consider syms env bt be luqn2 name
            ;
 
            (* THIS CODE DOES NOT WORK RIGHT YET *)
-           if length explicit_vars1 > 0 then
+           if List.length explicit_vars1 > 0 then
            print_endline ("Explicit ?variables: " ^
              catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") explicit_vars1)
            ;
-           iter
+           List.iter
            (fun (i,s) ->
-             let coupled = filter (fun (s',_,_) -> s = s') base_vs in
+             let coupled = List.filter (fun (s',_,_) -> s = s') base_vs in
              match coupled with
              | [] -> ()
              | [s',k,pat] ->
@@ -698,7 +697,7 @@ let consider syms env bt be luqn2 name
            explicit_vars1
            ;
 
-           if length as_vars1 > 0 then begin
+           if List.length as_vars1 > 0 then begin
              print_endline ("As variables: " ^
                catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") as_vars1)
              ;
@@ -706,25 +705,25 @@ let consider syms env bt be luqn2 name
            end;
 
            (*
-           if length any_vars1 > 0 then
+           if List.length any_vars1 > 0 then
            print_endline ("Wildcard variables: " ^
              catmap "," (fun i -> "<" ^ si i ^ ">") any_vars1)
            ;
            *)
 
            (* add wildcards to dependent variable set ?? *)
-           iter (fun i-> dvars := IntSet.add i !dvars) any_vars1;
+           List.iter (fun i-> dvars := IntSet.add i !dvars) any_vars1;
 
            (* add 'as' equations from patterns like
               t as v
            *)
-           iter (fun (i,t) -> let t2 = bt sr t in
+           List.iter (fun (i,t) -> let t2 = bt sr t in
              let t1 = `BTYP_var (i,`BTYP_type 0) in
              extra_eqns := (t1,t2) :: !extra_eqns
            ) eqns1;
 
            (*
-           if length eqns1 > 0 then
+           if List.length eqns1 > 0 then
            print_endline ("Equations for as terms (unbound): " ^
              catmap "\n" (fun (i,t) -> si i ^ " -> " ^ string_of_typecode t) eqns1)
            ;
@@ -735,7 +734,7 @@ let consider syms env bt be luqn2 name
 
         (* NOW A SUPER HACK! *)
         let rec xcons con = match con with
-        | `BTYP_intersect cons -> iter xcons cons
+        | `BTYP_intersect cons -> List.iter xcons cons
         | `BTYP_type_match (arg,[{pattern=pat},`BTYP_tuple[]]) ->
           let arg = spec arg in
           let arg = list_subst syms.counter !mgu arg in
@@ -751,7 +750,7 @@ let consider syms env bt be luqn2 name
         (*
         print_endline "UNIFICATION STAGE 2";
         print_endline "EQUATIONS ARE:";
-        iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
+        List.iter (fun (t1,t2) -> print_endline (sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2))
         !extra_eqns
         ;
         print_endline "...";
@@ -773,14 +772,14 @@ let consider syms env bt be luqn2 name
            *)
            let ur = !unresolved in
            unresolved := [];
-           iter (fun ((s,i,_,k) as u) ->
+           List.iter (fun ((s,i,_,k) as u) ->
              (*
              let j = base + k in
              *)
              let j = i in
-             if mem_assoc j extra_mgu
+             if List.mem_assoc j extra_mgu
              then begin
-                let t = assoc j extra_mgu in
+                let t = List.assoc j extra_mgu in
                 (*
                 print_endline ("CAN NOW RESOLVE " ^
                   th k ^ " vs term " ^ s ^ "<"^ si i^"> ---> " ^ sbt syms.dfns t)
@@ -800,9 +799,9 @@ let consider syms env bt be luqn2 name
       ;
 
 
-      if length !unresolved > 0 then None else begin
+      if List.length !unresolved > 0 then None else begin
         let ok = ref true in
-        iter
+        List.iter
         (fun sign ->
           if sign <> list_subst syms.counter !mgu sign then
           begin
@@ -832,7 +831,7 @@ let consider syms env bt be luqn2 name
         *)
         (* RIGHT! *)
 (*
-        let ts = map (fun i -> assoc (base+i) !mgu) (nlist (m+k)) in
+        let ts = List.map (fun i -> List.assoc (base+i) !mgu) (nlist (m+k)) in
 *)
         (* The above ts is for plugging into the view, but we
           have to return the elements to plug into the base
@@ -840,7 +839,7 @@ let consider syms env bt be luqn2 name
           substituting away the view vs
         *)
 
-        let base_ts = map (list_subst syms.counter !mgu) sub_ts in
+        let base_ts = List.map (list_subst syms.counter !mgu) sub_ts in
 
         (*
         print_endline ("Matched candidate " ^ si i ^ "\n" ^
@@ -857,13 +856,13 @@ let consider syms env bt be luqn2 name
           in the corresponding ts values. First we need to build
           a map of the correspondence
         *)
-        let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
+        let parent_ts = List.map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
         let type_constraint = build_type_constraints syms (bt sr) sr base_vs in
         let type_constraint = `BTYP_intersect [type_constraint; con] in
         (*
         print_endline ("Raw type constraint " ^ sbt syms.dfns type_constraint);
         *)
-        let vs = map (fun (s,i,_)-> s,i) base_vs in
+        let vs = List.map (fun (s,i,_)-> s,i) base_vs in
         let type_constraint = tsubst vs base_ts type_constraint in
         (*
         print_endline ("Substituted type constraint " ^ sbt syms.dfns type_constraint);
@@ -879,7 +878,7 @@ let consider syms env bt be luqn2 name
           *)
           None
         | `BTYP_tuple [] ->
-          let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
+          let parent_ts = List.map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
           Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
 
         | x ->
@@ -888,7 +887,7 @@ let consider syms env bt be luqn2 name
           *)
           let implied = constraint_implies syms env_traint reduced_constraint in
           if implied then 
-            let parent_ts = map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
+            let parent_ts = List.map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
             Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
           else begin
             print_endline "Can't resolve type constraint!";
@@ -931,9 +930,9 @@ let overload
   *)
   let env_traint = `BTYP_intersect (
     filter_out_units  
-    (map 
+    (List.map
       (fun (ix,id,_,_,con) -> 
-        if mem ix rs.constraint_overload_trail then `BTYP_tuple [] else
+        if List.mem ix rs.constraint_overload_trail then `BTYP_tuple [] else
         let rs = { rs with constraint_overload_trail = ix::rs.constraint_overload_trail } in
         let r = bt rs call_sr ix con in
         r
@@ -985,7 +984,7 @@ let overload
 
   *)
 
-  let candidates = fold_left
+  let candidates = List.fold_left
   (fun oc r ->
      match r with Unique (j,c,_,_,_) ->
      (*
