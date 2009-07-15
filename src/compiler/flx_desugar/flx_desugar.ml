@@ -8,7 +8,6 @@ open Flx_mtypes2
 open Flx_print
 open Flx_typing
 open Flx_typing2
-open List
 open Flx_pat
 open Flx_exceptions
 open Flx_colns
@@ -63,8 +62,8 @@ let cal_props = function
 let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:funkind_t) body props =
   let vs, tcon = vs in
   let return_type, postcondition = return_type in
-  let vss',(args:params_t list)= split (map (fix_params sr seq) args) in
-  let vs = concat (vs :: vss') in
+  let vss',(args:params_t list)= List.split (List.map (fix_params sr seq) args) in
+  let vs = List.concat (vs :: vss') in
   let vs : vs_list_t = vs,tcon in
   let mkfuntyp d c = `TYP_function (d,c)
   and typeoflist lst = match lst with
@@ -109,9 +108,9 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
         `AST_function (sr, name n, vs, h, (return_type,postcondition), props, body)
     | h :: t ->
       let argt =
-        let hdt = hd t in
+        let hdt = List.hd t in
         let xargs,traint = hdt in
-        typeoflist (map (fun(x,y,z,d)->z) xargs)
+        typeoflist (List.map (fun(x,y,z,d)->z) xargs)
       in
       let m = List.length args in
       let body =
@@ -176,7 +175,7 @@ let assign sr op l r =
 
 let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   let rex e = rex syms name e in
-  let rsts sts = concat (map (rst syms name `Private dfltvs)
+  let rsts sts = List.concat (List.map (rst syms name `Private dfltvs)
     (collate_namespaces syms sts))
   in
   let sr = src_of_expr e in
@@ -266,9 +265,9 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let fs = "flx::rtl::strutil::flx_asprintf("^ss^","^args^")" in
     let req = `NREQ_atom (`AST_name (sr,"flx_strutil",[])) in
     let ts =
-      let n = fold_left (fun n (i,_) -> max n i) 0 its in
+      let n = List.fold_left (fun n (i,_) -> max n i) 0 its in
       let a = Array.make n `TYP_none in
-      iter
+      List.iter
       (fun (i,s) ->
         if a.(i-1) = `TYP_none then a.(i-1) <-s
         else if a.(i-1) = s then ()
@@ -336,13 +335,13 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     l1 @ l2, `AST_map (sr,x1,x2)
 
   | `AST_tuple (sr,t) ->
-    let lss,xs = split (map rex t) in
-    concat lss,`AST_tuple (sr,xs)
+    let lss,xs = List.split (List.map rex t) in
+    List.concat lss,`AST_tuple (sr,xs)
 
   | `AST_record (sr,es) ->
-    let ss,es = split es in
-    let lss,xs = split (map rex es) in
-    concat lss,`AST_record (sr,combine ss xs)
+    let ss,es = List.split es in
+    let lss,xs = List.split (List.map rex es) in
+    List.concat lss,`AST_record (sr, List.combine ss xs)
 
   | `AST_record_type _ -> assert false
 
@@ -353,8 +352,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_variant_type _ -> assert false
 
   | `AST_arrayof (sr,t) ->
-    let lss,xs = split (map rex t) in
-    concat lss,`AST_arrayof(sr,xs)
+    let lss,xs = List.split (List.map rex t) in
+    List.concat lss,`AST_arrayof(sr,xs)
 
   | `AST_lambda (sr,(vs,pps,ret,sts)) ->
     let kind = `InlineFunction in
@@ -364,8 +363,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let sts =
       rst syms name access dfltvs (mkcurry seq sr name' vs pps (ret,None) kind sts [`Generated "lambda"])
     in
-    if length pps = 0 then syserr sr "[rex] Lambda with no arguments?" else
-    let t = type_of_argtypes (map (fun(x,y,z,d)->z) (fst (hd pps))) in
+    if List.length pps = 0 then syserr sr "[rex] Lambda with no arguments?" else
+    let t = type_of_argtypes (List.map (fun(x,y,z,d)->z) (fst (List.hd pps))) in
     let e =
       `AST_suffix
       (
@@ -404,7 +403,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 
 
   | `AST_match (sr,(e,pss)) ->
-    if length pss = 0 then clierr sr "Empty Pattern";
+    if List.length pss = 0 then clierr sr "Empty Pattern";
 
     (* step 1: evaluate e *)
     let d,x = rex e in
@@ -431,7 +430,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
         `Exe (expr_src,`EXE_iinit ((match_var_name,match_var_index),x))
       ]
     in
-    let pats,_ = split pss in
+    let pats,_ = List.split pss in
     Flx_pat.validate_patterns pats
     ;
     let ematch_seq = seq() in
@@ -441,7 +440,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let matches = ref [`Exe (generated,`EXE_comment "begin match")] in
     let match_caseno = ref 1 in
     let iswild = ref false in
-    iter
+    List.iter
     (fun (pat,e) ->
       let n1 = !match_seq in
       let n2 = seq() in
@@ -620,7 +619,7 @@ and maybe_tpat = function
   | tp -> ": " ^ string_of_typecode tp
 
 and string_of_vs (vs,tcon:vs_list_t) =
-  cat "," (map (fun (v,tp) -> v ^ maybe_tpat tp) vs)
+  cat "," (List.map (fun (v,tp) -> v ^ maybe_tpat tp) vs)
 
 and merge_vs
   (vs1,{raw_type_constraint=con1; raw_typeclass_reqs=rtcr1})
@@ -655,7 +654,7 @@ and gen_call_init sr name' =
 and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list =
-    map (fun (s,tp)-> `AST_name (sr,s,[])) (fst parent_vs)
+    List.map (fun (s,tp)-> `AST_name (sr,s,[])) (fst parent_vs)
   in
   let rqname' sr = `AST_name (sr,"_rqs_" ^ name,parent_ts sr) in
 
@@ -670,7 +669,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     (*
     print_endline ("Making bridge for " ^ n ^ " -> " ^ name ^"["^string_of_vs _vs ^"]");
     *)
-    let ts = map (fun (s,_)-> `AST_name (sr,s,[])) (fst parent_vs) in
+    let ts = List.map (fun (s,_)-> `AST_name (sr,s,[])) (fst parent_vs) in
     let us = `NREQ_atom (`AST_name (sr,"_rqs_" ^ name,ts)) in
     let body = `DCL_insert (`Str "",`Body,us) in
     `Dcl (sr,"_rqs_"^n,None,`Public,dfltvs,body)
@@ -737,7 +736,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   let map_req n = if n = "_root" then "_rqs_" ^ name else n in
 
   let rex x = rex syms name x in
-  let rsts name vs access sts = concat (map (rst syms name access vs)
+  let rsts name vs access sts = List.concat (List.map (rst syms name access vs)
     (collate_namespaces syms sts))
   in
   let seq () = let n = !(syms.counter) in incr (syms.counter); n in
@@ -762,7 +761,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_trace (sr,v,s) -> [`Exe (sr,`EXE_trace (v,s))]
   | `AST_goto (sr,s) -> [`Exe (sr,`EXE_goto s)]
   | `AST_open (sr,(vs,aux),name) ->
-    let vs = map (fun (n,t)->let i = seq() in n,i,t) vs in
+    let vs = List.map (fun (n,t)->let i = seq() in n,i,t) vs in
     [`Dir (DIR_open ((vs,aux),name))]
   | `AST_inject_module (sr,name) -> [`Dir (DIR_inject_module name)]
   | `AST_use (sr,n,qn) -> [`Dir (DIR_use (n,qn))]
@@ -948,7 +947,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let vs,con = vs in
     let props, dcls, reqs = mkreqs sr reqs in
     (* hackery *)
-    let vs,args = fold_left (fun (vs,args) arg -> match arg with
+    let vs,args = List.fold_left (fun (vs,args) arg -> match arg with
         | `TYP_apply
           (
             `AST_name (_,"excl",[]),
@@ -967,11 +966,11 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
             v::vs, arg:: args
         | x -> vs,x::args
       )
-      (rev vs,[])
+      (List.rev vs, [])
       args
     in
-    `Dcl (sr,name',None,access,(rev vs,con),
-      `DCL_fun (props,rev args,result,code,map_reqs sr reqs,prec))
+    `Dcl (sr, name', None, access, (List.rev vs, con),
+      `DCL_fun (props, List.rev args, result, code, map_reqs sr reqs, prec))
     :: dcls
 
   | `AST_callback_decl (sr,name',args,result,reqs) ->
@@ -1030,7 +1029,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
           let vn = "_" ^ si n in
           let sts = ref [] in
           let count = ref 0 in
-          iter
+          List.iter
           (fun l ->
             let r' = `AST_get_n (sr,(!count,`AST_name (sr,vn,[]))) in
             let l' = `Expr (sr,l),None in
@@ -1071,7 +1070,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
           let vn = "_" ^ si n in
           let sts = ref [] in
           let count = ref 0 in
-          iter
+          List.iter
           (fun l ->
             let r' = `AST_get_n (sr,(!count,`AST_name (sr,vn,[]))) in
             let asg = aux l r' in
@@ -1113,7 +1112,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   | `AST_noreturn_code (sr,s) -> [`Exe (sr,`EXE_noreturn_code s)]
 
   | `AST_stmt_match (sr,(e,pss)) ->
-    if length pss = 0 then clierr sr "Empty Pattern";
+    if List.length pss = 0 then clierr sr "Empty Pattern";
 
     (* step 1: evaluate e *)
     let d,x = rex e in
@@ -1134,14 +1133,14 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
         `Exe (expr_src,`EXE_iinit ((match_var_name,match_index),x))
       ]
     in
-    let pats,_ = split pss in
+    let pats,_ = List.split pss in
     Flx_pat.validate_patterns pats
     ;
     let matches = ref [`Exe (generated,`EXE_comment "begin match")] in
     let match_caseno = ref 1 in
     let iswild = ref false in
     let n2 = ref (seq()) in (* the next case *)
-    iter
+    List.iter
     (fun (pat,sts) ->
       let n1 = !n2 in (* this case *)
       n2 := seq(); (* the next case *)
@@ -1291,7 +1290,7 @@ let desugar_compilation_unit desugar_state sts =
   in
   let sr =
     Flx_srcref.rsrange
-      (src_of_stmt (hd sts))
+      (src_of_stmt (List.hd sts))
       (src_of_stmt (list_last sts))
   in
   let sts = Flx_macro.expand_macros desugar_state.macro_state sts in
