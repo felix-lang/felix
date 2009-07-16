@@ -292,7 +292,7 @@ and baxiom_method_t = [`BPredicate of tbexpr_t | `BEquation of tbexpr_t * tbexpr
 and reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
 and axiom_t = id_t * Flx_srcref.t * int option * axiom_kind_t * bvs_t * bparams_t * baxiom_method_t
 
-and typevarmap_t = (int,btypecode_t) Hashtbl.t
+and typevarmap_t = (int, btypecode_t) Hashtbl.t
 
 type env_t = (bid_t * id_t * name_map_t * name_map_t list * typecode_t) list
     (* env: container index, name, primary symbol map, directives, type
@@ -311,27 +311,27 @@ type symbol_definition_t =
   | `SYMDEF_reduce of parameter_t list * expr_t * expr_t
   | `SYMDEF_function of params_t * typecode_t * property_t list * sexe_t list
 
-  | `SYMDEF_match_check of  pattern_t * (string *int)
+  | `SYMDEF_match_check of pattern_t * (string *int)
   | `SYMDEF_module
 
   | `SYMDEF_const_ctor of int * typecode_t * int * ivs_list_t
   | `SYMDEF_nonconst_ctor of int * typecode_t * int * ivs_list_t * typecode_t
 
   | `SYMDEF_const of property_t list * typecode_t * c_t * named_req_expr_t
-  | `SYMDEF_var of  typecode_t
-  | `SYMDEF_val of  typecode_t
-  | `SYMDEF_ref of  typecode_t
-  | `SYMDEF_lazy of  typecode_t * expr_t
+  | `SYMDEF_var of typecode_t
+  | `SYMDEF_val of typecode_t
+  | `SYMDEF_ref of typecode_t
+  | `SYMDEF_lazy of typecode_t * expr_t
   | `SYMDEF_fun of property_t list * typecode_t list * typecode_t * c_t  * named_req_expr_t * prec_t
   | `SYMDEF_callback of property_t list * typecode_t list * typecode_t * named_req_expr_t
   | `SYMDEF_insert of c_t  * ikind_t * named_req_expr_t
-  | `SYMDEF_union of  (id_t * int *  vs_list_t * typecode_t) list
-  | `SYMDEF_struct of  (id_t * typecode_t) list
-  | `SYMDEF_cstruct of  (id_t * typecode_t) list
+  | `SYMDEF_union of (id_t * int *  vs_list_t * typecode_t) list
+  | `SYMDEF_struct of (id_t * typecode_t) list
+  | `SYMDEF_cstruct of (id_t * typecode_t) list
   | `SYMDEF_typeclass
-  | `SYMDEF_type_alias of   typecode_t
-  | `SYMDEF_inherit of   qualified_name_t
-  | `SYMDEF_inherit_fun of   qualified_name_t
+  | `SYMDEF_type_alias of typecode_t
+  | `SYMDEF_inherit of qualified_name_t
+  | `SYMDEF_inherit_fun of qualified_name_t
   | `SYMDEF_instance of qualified_name_t
   ]
 
