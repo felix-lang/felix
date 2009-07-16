@@ -93,11 +93,6 @@ let typecodeset_map f x = typecodeset_of_list (map f (TypecodeSet.elements x))
 
 (* for regular expressions *)
 
-(* PosSet -- set of positions in regular expression, used for followpos *)
-module PosSet = IntSet
-module PosSetSet = IntSetSet
-module CharSet = IntSet
-
 module Drules = Map.Make(struct
   type t = string
   let compare = compare

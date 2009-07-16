@@ -9,10 +9,6 @@ val typecodeset_of_list : TypecodeSet.elt list -> TypecodeSet.t
 val typecodeset_map :
   (TypecodeSet.elt -> TypecodeSet.elt) -> TypecodeSet.t -> TypecodeSet.t
 
-module PosSet : Set.S with type elt = int
-module PosSetSet : Set.S with type elt = PosSet.t
-module CharSet : Set.S with type elt = int
-
 (* generic entity instances: functions, variables *)
 type instance_registry_t = (int * Flx_types.btypecode_t list, int) Hashtbl.t
 
