@@ -5,8 +5,6 @@
 
 (** {6 Generic partial ordering comparison result} *)
 
-open Flx_set
-
 type partial_order_result_t =
 [
   | `Less
@@ -116,8 +114,12 @@ type 't b0typecode_t' =
 
 type 't btpattern_t' = {
   pattern: 't;
-  pattern_vars: IntSet.t; (* pattern type variables, including 'any' vars *)
-  assignments : (int * 't) list (* assignments for 'as' vars *)
+
+  (* pattern type variables, including 'any' vars *)
+  pattern_vars: Flx_set.IntSet.t;
+
+  (* assignments for 'as' vars *)
+  assignments : (int * 't) list
 }
 
 
