@@ -428,7 +428,7 @@ and string_of_typecode tc = st 99 tc
 
 and qualified_name_of_index_with_vs dfns index =
   match Hashtbl.find dfns index with
-  | { id=id; vs=vs; parent=parent} ->
+  | { id=id; vs=vs; parent=parent } ->
     match parent with
     | Some index' ->
       qualified_name_of_index_with_vs dfns index' ^
@@ -2274,7 +2274,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     string_of_properties props ^
      "const " ^ name ^ print_bvs vs ^
      ": " ^ sobt ty ^
-     " = "^string_of_code_spec code^
+     " = " ^ string_of_code_spec code ^
      string_of_breqs dfns reqs ^
      ";"
 

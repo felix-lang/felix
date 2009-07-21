@@ -148,15 +148,14 @@ type entry_kind_t = {
   base_sym:int;
 
   (* the type variables of the specialisation *)
-  spec_vs:(string * int) list;
+  spec_vs: (string * int) list;
 
   (* types to replace the old type variables expressed in terms of the new
    * ones *)
-  sub_ts:btypecode_t list
+  sub_ts: btypecode_t list
 }
 
-and entry_set_t =
-  [
+and entry_set_t = [
   | `FunctionEntry of entry_kind_t list
   | `NonFunctionEntry of entry_kind_t
   ]

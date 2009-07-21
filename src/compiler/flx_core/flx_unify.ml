@@ -625,50 +625,43 @@ let do_unify syms a b =
     The variables are marked as SPECIAL by using the same
     index as the function whose return type is unknown.
     *)
-    List.iter
-    (fun (i, t) ->
+    List.iter begin fun (i, t) ->
       if Hashtbl.mem syms.varmap i
-      then
-        begin
+      then begin
+        (*
+        print_endline "Var already in varmap ..";
+        *)
+        let t' = Hashtbl.find syms.varmap i in
+        if t' <> t then
+          failwith (
+            "[do_unify] binding for type variable " ^ string_of_int i ^
+            " is inconsistent\n"
+          )
+        else ()
+      end else begin
+        match
+          begin
+            try Hashtbl.find syms.dfns i with Not_found -> failwith
+              ("BUG, flx_unify can't find symbol " ^ string_of_int i)
+          end
+        with
+        | { symdef=`SYMDEF_function _ } ->
           (*
-          print_endline "Var already in varmap ..";
+          print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.dfns t);
           *)
-          let t' = Hashtbl.find syms.varmap i in
-          if t' <> t then
-            failwith
-            (
-               "[do_unify] binding for type variable " ^ string_of_int i ^
-               " is inconsistent\n"
-            )
-          else ()
-        end
-      else
-        begin
-          match
-            begin
-              try Hashtbl.find syms.dfns i
-              with Not_found -> failwith ("BUG, flx_unify can't find symbol " ^ si i)
-            end
-          with
-          | { symdef=`SYMDEF_function _ } ->
-            (*
-            print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.dfns t);
-            *)
-            Hashtbl.add syms.varmap i t
+          Hashtbl.add syms.varmap i t
 
-          (* if it's a declared type variable, leave it alone *)
-          | {symdef=`SYMDEF_typevar _ } -> ()
+        (* if it's a declared type variable, leave it alone *)
+        | {symdef=`SYMDEF_typevar _ } -> ()
 
-          | _ ->
-            failwith
-            (
-              "[do_unify] attempt to add non-function return unknown type variable "^
-              si i^", type "^sbt syms.dfns t^" to hashtble"
-            )
-        end
-    )
-    mgu
-    ;
+        | _ ->
+          failwith
+          (
+            "[do_unify] attempt to add non-function return unknown type variable "^
+            si i^", type "^sbt syms.dfns t^" to hashtble"
+          )
+      end
+    end mgu;
     true
   with Not_found -> false
 
