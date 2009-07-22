@@ -255,32 +255,30 @@ and float_pat =
   | Float_minus_inf (** negative infinity *)
 
 and pattern_t =
-  [
-  | `PAT_nan of Flx_srcref.t
-  | `PAT_none of Flx_srcref.t
+  | PAT_nan of Flx_srcref.t
+  | PAT_none of Flx_srcref.t
 
   (* constants *)
-  | `PAT_int of Flx_srcref.t * string * Big_int.big_int
-  | `PAT_string of Flx_srcref.t * string
+  | PAT_int of Flx_srcref.t * string * Big_int.big_int
+  | PAT_string of Flx_srcref.t * string
 
   (* ranges *)
-  | `PAT_int_range of Flx_srcref.t * string * Big_int.big_int * string * Big_int.big_int
-  | `PAT_string_range of Flx_srcref.t * string * string
-  | `PAT_float_range of Flx_srcref.t * float_pat * float_pat
+  | PAT_int_range of Flx_srcref.t * string * Big_int.big_int * string * Big_int.big_int
+  | PAT_string_range of Flx_srcref.t * string * string
+  | PAT_float_range of Flx_srcref.t * float_pat * float_pat
 
   (* other *)
-  | `PAT_coercion of Flx_srcref.t * pattern_t * typecode_t
+  | PAT_coercion of Flx_srcref.t * pattern_t * typecode_t
 
-  | `PAT_name of Flx_srcref.t * id_t
-  | `PAT_tuple of Flx_srcref.t * pattern_t list
-  | `PAT_any of Flx_srcref.t
+  | PAT_name of Flx_srcref.t * id_t
+  | PAT_tuple of Flx_srcref.t * pattern_t list
+  | PAT_any of Flx_srcref.t
     (* second list is group bindings 1 .. n-1: EXCLUDES 0 cause we can use 'as' for that ?? *)
-  | `PAT_const_ctor of Flx_srcref.t * qualified_name_t
-  | `PAT_nonconst_ctor of Flx_srcref.t * qualified_name_t * pattern_t
-  | `PAT_as of Flx_srcref.t * pattern_t * id_t
-  | `PAT_when of Flx_srcref.t * pattern_t * expr_t
-  | `PAT_record of Flx_srcref.t * (id_t * pattern_t) list
-  ]
+  | PAT_const_ctor of Flx_srcref.t * qualified_name_t
+  | PAT_nonconst_ctor of Flx_srcref.t * qualified_name_t * pattern_t
+  | PAT_as of Flx_srcref.t * pattern_t * id_t
+  | PAT_when of Flx_srcref.t * pattern_t * expr_t
+  | PAT_record of Flx_srcref.t * (id_t * pattern_t) list
 
 (** {7 Statements}
  *
@@ -688,22 +686,22 @@ let src_of_stmt (e : statement_t) = match e with
   -> s
 
 let src_of_pat (e : pattern_t) = match e with
-  | `PAT_coercion (s,_,_)
-  | `PAT_nan s
-  | `PAT_none s
-  | `PAT_int (s,_,_)
-  | `PAT_string (s,_)
-  | `PAT_int_range (s,_,_,_,_)
-  | `PAT_string_range (s,_,_)
-  | `PAT_float_range (s,_,_)
-  | `PAT_name (s,_)
-  | `PAT_tuple (s,_)
-  | `PAT_any s
-  | `PAT_const_ctor (s,_)
-  | `PAT_nonconst_ctor (s,_,_)
-  | `PAT_as (s,_,_)
-  | `PAT_when (s,_,_)
-  | `PAT_record (s,_)
+  | PAT_coercion (s,_,_)
+  | PAT_nan s
+  | PAT_none s
+  | PAT_int (s,_,_)
+  | PAT_string (s,_)
+  | PAT_int_range (s,_,_,_,_)
+  | PAT_string_range (s,_,_)
+  | PAT_float_range (s,_,_)
+  | PAT_name (s,_)
+  | PAT_tuple (s,_)
+  | PAT_any s
+  | PAT_const_ctor (s,_)
+  | PAT_nonconst_ctor (s,_,_)
+  | PAT_as (s,_,_)
+  | PAT_when (s,_,_)
+  | PAT_record (s,_)
   -> s
 
 (** get range from first and last expressions *)

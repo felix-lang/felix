@@ -270,37 +270,37 @@ and xpattern_t sr x =
   let ss s = s in
   let xq m qn = qne ex m qn in
   match x with
-  | Id "pat_nan" -> `PAT_nan sr
-  | Id "pat_none" -> `PAT_none sr
+  | Id "pat_nan" -> PAT_nan sr
+  | Id "pat_none" -> PAT_none sr
 
   (* constants *)
-  | Lst [Id "pat_int"; Str s; Int i] -> `PAT_int (sr,ss s, bi i)
-  | Lst [Id "pat_string"; Str s] -> `PAT_string (sr,ss s)
+  | Lst [Id "pat_int"; Str s; Int i] -> PAT_int (sr,ss s, bi i)
+  | Lst [Id "pat_string"; Str s] -> PAT_string (sr,ss s)
 
   (* ranges *)
   | Lst [Id "pat_int_range"; Str s1; Int i1; Str s2; Int i2] ->
-    `PAT_int_range (sr,ss s1, bi i1, ss s2, bi i2)
+    PAT_int_range (sr,ss s1, bi i1, ss s2, bi i2)
 
   | Lst [Id "pat_string_range"; Str s1; Str s2] ->
-    `PAT_string_range (sr,ss s1, ss s2)
+    PAT_string_range (sr,ss s1, ss s2)
   | Lst [Id "pat_float_range"; p1; p2] ->
-    `PAT_float_range (sr, xfloat_pat p1, xfloat_pat p2)
+    PAT_float_range (sr, xfloat_pat p1, xfloat_pat p2)
 
   (* other *)
   | Lst [Id "pat_coercion"; p; t] ->
-   `PAT_coercion (sr, xp p, ti t)
+   PAT_coercion (sr, xp p, ti t)
 
-  | Lst [Id "pat_name"; Id x] -> `PAT_name (sr, x)
-  | Lst [Id "pat_name"; Str x] -> `PAT_name (sr, ss x)
-  | Lst [Id "pat_tuple"; sr; Lst ps] -> `PAT_tuple (xsr sr, map xp ps)
+  | Lst [Id "pat_name"; Id x] -> PAT_name (sr, x)
+  | Lst [Id "pat_name"; Str x] -> PAT_name (sr, ss x)
+  | Lst [Id "pat_tuple"; sr; Lst ps] -> PAT_tuple (xsr sr, map xp ps)
 
-  | Id "pat_any" -> `PAT_any sr
-  | Lst [Id "pat_const_ctor"; qn] -> `PAT_const_ctor (sr, xq "pat_const_ctor" qn)
-  | Lst [Id "pat_nonconst_ctor"; qn; p] -> `PAT_nonconst_ctor (sr, xq "pat_nonconst_ctor" qn, xp p)
+  | Id "pat_any" -> PAT_any sr
+  | Lst [Id "pat_const_ctor"; qn] -> PAT_const_ctor (sr, xq "pat_const_ctor" qn)
+  | Lst [Id "pat_nonconst_ctor"; qn; p] -> PAT_nonconst_ctor (sr, xq "pat_nonconst_ctor" qn, xp p)
 
-  | Lst [Id "pat_as"; p; Id s] -> `PAT_as (sr, xp p, s)
-  | Lst [Id "pat_as"; p; Str s] -> `PAT_as (sr, xp p, ss s)
-  | Lst [Id "pat_when"; p; e] -> `PAT_when (sr, xp p, ex e)
+  | Lst [Id "pat_as"; p; Id s] -> PAT_as (sr, xp p, s)
+  | Lst [Id "pat_as"; p; Str s] -> PAT_as (sr, xp p, ss s)
+  | Lst [Id "pat_when"; p; e] -> PAT_when (sr, xp p, ex e)
 
   | Lst [Id "pat_record"; Lst ips] ->
     let ips = map (function
@@ -310,7 +310,7 @@ and xpattern_t sr x =
       )
       ips
     in
-    `PAT_record (sr, ips)
+    PAT_record (sr, ips)
   | x ->
     err x "pattern"
 

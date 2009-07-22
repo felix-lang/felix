@@ -160,9 +160,9 @@ let rec get_pattern_vars
   extractor (* extractor for this pattern *)
 =
   match pat with
-  | `PAT_name (sr,id) -> Hashtbl.add vars id (sr,extractor)
+  | PAT_name (sr,id) -> Hashtbl.add vars id (sr,extractor)
 
-  | `PAT_tuple (sr,pats) ->
+  | PAT_tuple (sr,pats) ->
     let n = ref 0 in
     List.iter
     (fun pat ->
@@ -173,19 +173,19 @@ let rec get_pattern_vars
     )
     pats
 
-  | `PAT_nonconst_ctor (sr,name,pat) ->
+  | PAT_nonconst_ctor (sr,name,pat) ->
     let extractor' = (Udtor (sr, name)) :: extractor in
     get_pattern_vars vars pat extractor'
 
-  | `PAT_as (sr,pat,id) ->
+  | PAT_as (sr,pat,id) ->
     Hashtbl.add vars id (sr,extractor);
     get_pattern_vars vars pat extractor
 
-  | `PAT_coercion (sr,pat,_)
-  | `PAT_when (sr,pat,_) ->
+  | PAT_coercion (sr,pat,_)
+  | PAT_when (sr,pat,_) ->
     get_pattern_vars vars pat extractor
 
-  | `PAT_record (sr,rpats) ->
+  | PAT_record (sr,rpats) ->
     List.iter
     (fun (s,pat) ->
       let sr = src_of_pat pat in
@@ -226,23 +226,23 @@ let rec gen_match_check pat (arg:expr_t) =
   and ssrc x = Flx_srcref.short_string_of_src x
   in
   match pat with
-  | `PAT_int (sr,t,i) -> apl2 sr "eq" (lint sr t i) arg
-  | `PAT_string (sr,s) -> apl2 sr "eq" (lstr sr s) arg
-  | `PAT_nan sr -> apl sr "isnan" arg
-  | `PAT_none sr -> clierr sr "Empty pattern not allowed"
+  | PAT_int (sr,t,i) -> apl2 sr "eq" (lint sr t i) arg
+  | PAT_string (sr,s) -> apl2 sr "eq" (lstr sr s) arg
+  | PAT_nan sr -> apl sr "isnan" arg
+  | PAT_none sr -> clierr sr "Empty pattern not allowed"
 
   (* ranges *)
-  | `PAT_int_range (sr,t1,i1,t2,i2) ->
+  | PAT_int_range (sr,t1,i1,t2,i2) ->
     let b1 = apl2 sr "le" (lint sr t1 i1) arg
     and b2 = apl2 sr "le" arg (lint sr t2 i2)
     in apl2 sr "land" b1 b2
 
-  | `PAT_string_range (sr,s1,s2) ->
+  | PAT_string_range (sr,s1,s2) ->
     let b1 = apl2 sr "le" (lstr sr s1) arg
     and b2 = apl2 sr "le" arg (lstr sr s2)
     in apl2 sr "land" b1 b2
 
-  | `PAT_float_range (sr,x1,x2) ->
+  | PAT_float_range (sr,x1,x2) ->
     begin match x1,x2 with
     | (Float_plus (t1,v1), Float_plus (t2,v2)) ->
       if t1 <> t2 then
@@ -293,8 +293,8 @@ let rec gen_match_check pat (arg:expr_t) =
     end
 
   (* other *)
-  | `PAT_name (sr,_) -> truth sr
-  | `PAT_tuple (sr,pats) ->
+  | PAT_name (sr,_) -> truth sr
+  | PAT_tuple (sr,pats) ->
     let counter = ref 1 in
     List.fold_left
     (fun init pat ->
@@ -313,7 +313,7 @@ let rec gen_match_check pat (arg:expr_t) =
     )
     (List.tl pats)
 
-  | `PAT_record (sr,rpats) ->
+  | PAT_record (sr,rpats) ->
     List.fold_left
     (fun init (s,pat) ->
       let sr = src_of_pat pat in
@@ -329,21 +329,21 @@ let rec gen_match_check pat (arg:expr_t) =
     )
     (List.tl rpats)
 
-  | `PAT_any sr -> truth sr
-  | `PAT_const_ctor (sr,name) ->
+  | PAT_any sr -> truth sr
+  | PAT_const_ctor (sr,name) ->
     `AST_match_ctor (sr,(name,arg))
 
-  | `PAT_nonconst_ctor (sr,name,pat) ->
+  | PAT_nonconst_ctor (sr,name,pat) ->
     let check_component = `AST_match_ctor (sr,(name,arg)) in
     let tuple = `AST_ctor_arg (sr,(name,arg)) in
     let check_tuple = gen_match_check pat tuple in
     apl2 sr "land" check_component check_tuple
 
-  | `PAT_coercion (sr,pat,_)
-  | `PAT_as (sr,pat,_) ->
+  | PAT_coercion (sr,pat,_)
+  | PAT_as (sr,pat,_) ->
     gen_match_check pat arg
 
-  | `PAT_when (sr,pat,expr) ->
+  | PAT_when (sr,pat,expr) ->
     let vars =  Hashtbl.create 97 in
     get_pattern_vars vars pat [];
     apl2 sr "land" (gen_match_check pat arg) (subst vars expr arg)

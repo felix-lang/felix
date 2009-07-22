@@ -103,11 +103,11 @@ let rec expand_ident sr macros noexpand id =
 (* Find variable names in patterns so as to protect them *)
 let rec get_pattern_vars pat =
   match pat with
-  | `PAT_name (_,v) -> [v]
-  | `PAT_as (_,p,v) -> v :: get_pattern_vars p
-  | `PAT_when (_,p,_) -> get_pattern_vars p
-  | `PAT_nonconst_ctor (_,_,p) -> get_pattern_vars p
-  | `PAT_tuple (_,ps) -> List.concat (List.map get_pattern_vars ps)
+  | PAT_name (_,v) -> [v]
+  | PAT_as (_,p,v) -> v :: get_pattern_vars p
+  | PAT_when (_,p,_) -> get_pattern_vars p
+  | PAT_nonconst_ctor (_,_,p) -> get_pattern_vars p
+  | PAT_tuple (_,ps) -> List.concat (List.map get_pattern_vars ps)
   | _ -> []
 
 (* protect parameter names, to prevent gratuitous substitions *)

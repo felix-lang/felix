@@ -751,44 +751,44 @@ and string_of_tpattern p =
 and string_of_pattern p =
   let se e = string_of_expr e in
   match p with
-  | `PAT_coercion (_,p,t) -> "(" ^ string_of_pattern p ^ ":" ^ string_of_typecode t ^ ")"
-  | `PAT_none _ -> "<none>"
-  | `PAT_nan _ -> "NaN"
-  | `PAT_int (_,t,i) -> Big_int.string_of_big_int i ^ suffix_of_type t
-  | `PAT_int_range (_,t1,i1,t2,i2) ->
+  | PAT_coercion (_,p,t) -> "(" ^ string_of_pattern p ^ ":" ^ string_of_typecode t ^ ")"
+  | PAT_none _ -> "<none>"
+  | PAT_nan _ -> "NaN"
+  | PAT_int (_,t,i) -> Big_int.string_of_big_int i ^ suffix_of_type t
+  | PAT_int_range (_,t1,i1,t2,i2) ->
     Big_int.string_of_big_int i1 ^ suffix_of_type t1 ^
     " .. " ^
     Big_int.string_of_big_int i2 ^ suffix_of_type t2
 
-  | `PAT_string (_,s) -> string_of_string s
-  | `PAT_string_range (_,s1, s2) ->
+  | PAT_string (_,s) -> string_of_string s
+  | PAT_string_range (_,s1, s2) ->
     string_of_string s1 ^ " .. " ^ string_of_string s2
-  | `PAT_float_range (_,x1, x2) ->
+  | PAT_float_range (_,x1, x2) ->
     string_of_float_pat x1 ^ " .. " ^ string_of_float_pat x2
-  | `PAT_name (_,s) -> s
-  | `PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_pattern ps ^ ")"
-  | `PAT_any _ -> "any"
-  | `PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
-  | `PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_pattern p
-  | `PAT_as (_,p,n) ->
+  | PAT_name (_,s) -> s
+  | PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_pattern ps ^ ")"
+  | PAT_any _ -> "any"
+  | PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
+  | PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_pattern p
+  | PAT_as (_,p,n) ->
     begin match p with
-    | `PAT_any _ -> n
+    | PAT_any _ -> n
     | _ ->
       "(" ^ string_of_pattern p ^ " as " ^ n ^ ")"
     end
-  | `PAT_when (_,p,e) -> "(" ^ string_of_pattern p ^ " when " ^ se e ^ ")"
-  | `PAT_record (_,ps) ->
+  | PAT_when (_,p,e) -> "(" ^ string_of_pattern p ^ " when " ^ se e ^ ")"
+  | PAT_record (_,ps) ->
      "struct { " ^ catmap "; " (fun (s,p) -> s ^ "="^string_of_pattern p) ps ^"; }"
 
 and string_of_letpat p =
   match p with
-  | `PAT_name (_,s) -> s
-  | `PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_letpat ps ^ ")"
-  | `PAT_any _ -> "_"
-  | `PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
-  | `PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_letpat p
-  | `PAT_as (_,p,n) -> "(" ^ string_of_pattern p ^ " as " ^ n ^ ")"
-  | `PAT_record (_,ps) ->
+  | PAT_name (_,s) -> s
+  | PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_letpat ps ^ ")"
+  | PAT_any _ -> "_"
+  | PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
+  | PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_letpat p
+  | PAT_as (_,p,n) -> "(" ^ string_of_pattern p ^ " as " ^ n ^ ")"
+  | PAT_record (_,ps) ->
      "struct { " ^ catmap "; " (fun (s,p) -> s ^ "="^string_of_pattern p) ps ^"; }"
 
   | _ -> failwith "unexpected pattern kind in let/in pattern"

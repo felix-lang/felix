@@ -297,8 +297,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
          (
            e,
            [
-             `PAT_const_ctor (sr,`AST_case_tag (sr,1)),b1; (* true *)
-             `PAT_any sr,b2 (* false *)
+             PAT_const_ctor (sr,`AST_case_tag (sr,1)),b1; (* true *)
+             PAT_any sr,b2 (* false *)
            ]
          )
        )
