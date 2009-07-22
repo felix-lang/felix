@@ -6,6 +6,7 @@ open Flx_ast
 open Flx_types
 
 val string_of_typecode : typecode_t -> string
+val string_of_maybe_typecode : typecode_t -> string
 val string_of_btypecode : symbol_table_t -> btypecode_t -> string
 val sbt: symbol_table_t -> btypecode_t -> string
 val special_string_of_typecode : typecode_t -> string

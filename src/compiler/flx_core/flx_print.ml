@@ -838,8 +838,8 @@ and string_of_maybe_tpattern = function
   | t -> ": " ^ string_of_tpattern t
 *)
 
-and string_of_maybe_tpattern = function
-  | `AST_patany _ -> ""
+and string_of_maybe_typecode = function
+  | TYP_patany _ -> ""
   | t -> ": " ^ string_of_typecode t
 
 and print_tconstraint = function
