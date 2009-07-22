@@ -769,13 +769,13 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
 
   (* objects *)
   | `AST_export_python_fun (sr,name,cpp_name) ->
-    [`Iface (sr,`IFACE_export_python_fun (name,cpp_name))]
+    [`Iface (sr, IFACE_export_python_fun (name, cpp_name))]
 
   | `AST_export_fun (sr,name,cpp_name) ->
-    [`Iface (sr,`IFACE_export_fun (name,cpp_name))]
+    [`Iface (sr, IFACE_export_fun (name, cpp_name))]
 
   | `AST_export_type (sr,typ,cpp_name) ->
-    [`Iface (sr,`IFACE_export_type (typ,cpp_name))]
+    [`Iface (sr, IFACE_export_type (typ, cpp_name))]
 
   | `AST_var_decl (sr,name,vs,typ,expr) ->
     begin match typ,expr with

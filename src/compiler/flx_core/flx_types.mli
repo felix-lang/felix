@@ -66,11 +66,10 @@ and access_t = [`Private | `Public ]
 and sdcl_t = Flx_srcref.t * id_t * int option * access_t * vs_list_t * dcl_t
 
 and iface_t =
-  [
-  | `IFACE_export_fun of suffixed_name_t * string
-  | `IFACE_export_python_fun of suffixed_name_t * string
-  | `IFACE_export_type of typecode_t * string
-  ]
+  | IFACE_export_fun of suffixed_name_t * string
+  | IFACE_export_python_fun of suffixed_name_t * string
+  | IFACE_export_type of typecode_t * string
+
 and siface_t = Flx_srcref.t * iface_t
 
 and asm_t =

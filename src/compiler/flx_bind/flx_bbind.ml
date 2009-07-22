@@ -649,7 +649,7 @@ let bbind bbind_state =
   bbind_state.bbdfns
 
 let bind_interface bbind_state = function
-  | sr, `IFACE_export_fun (sn, cpp_name), parent ->
+  | sr, IFACE_export_fun (sn, cpp_name), parent ->
       let env = Flx_lookup.build_env bbind_state.syms parent in
       let index,ts = Flx_lookup.lookup_sn_in_env bbind_state.syms env sn in
       if length ts = 0 then
@@ -660,7 +660,7 @@ let bind_interface bbind_state = function
         string_of_suffixed_name sn
       )
 
-  | sr, `IFACE_export_python_fun (sn, cpp_name), parent ->
+  | sr, IFACE_export_python_fun (sn, cpp_name), parent ->
       let env = Flx_lookup.build_env bbind_state.syms parent in
       let index,ts = Flx_lookup.lookup_sn_in_env bbind_state.syms env sn in
       if length ts = 0 then
@@ -671,7 +671,7 @@ let bind_interface bbind_state = function
         string_of_suffixed_name sn
       )
 
-  | sr, `IFACE_export_type (typ, cpp_name), parent ->
+  | sr, IFACE_export_type (typ, cpp_name), parent ->
       let env = Flx_lookup.build_env bbind_state.syms parent in
       let t = Flx_lookup.bind_type bbind_state.syms env Flx_srcref.dummy_sr typ in
       if try var_occurs t with _ -> true then

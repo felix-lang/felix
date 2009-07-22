@@ -1543,15 +1543,15 @@ and string_of_desugared stats =
 and string_of_iface level s =
   let spc = spaces level in
   match s with
-  | `IFACE_export_fun (flx_name,cpp_name) ->
+  | IFACE_export_fun (flx_name,cpp_name) ->
     spc ^ "export fun " ^ string_of_suffixed_name flx_name ^
     " as \"" ^ cpp_name ^ "\";"
 
-  | `IFACE_export_python_fun (flx_name,cpp_name) ->
+  | IFACE_export_python_fun (flx_name,cpp_name) ->
     spc ^ "export python fun " ^ string_of_suffixed_name flx_name ^
     " as \"" ^ cpp_name ^ "\";"
 
-  | `IFACE_export_type (flx_type,cpp_name) ->
+  | IFACE_export_type (flx_type,cpp_name) ->
     spc ^ "export type (" ^ string_of_typecode flx_type ^
     ") as \"" ^ cpp_name ^ "\";"
 
