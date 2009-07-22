@@ -188,20 +188,20 @@ and alpha_stmts sr local_prefix seq ps sts =
 and eval_arg ses recursion_limit local_prefix seq reachable sr (id:string) (h:ast_term_t) : macro_dfn_t option =
   let wrap_stmts ss = `AST_macro_statements (sr,ss) in
   match h with
-  | `Expression_term  e -> Some (id,MVal e)
-  | `Identifier_term s -> Some (id,MName s)
+  | Expression_term  e -> Some (id,MVal e)
+  | Identifier_term s -> Some (id,MName s)
   (*
-  | `Statement_term s -> Some (id,MStmt ([],[s]))
-  | `Statements_term ss -> Some (id,MStmt ([],ss))
+  | Statement_term s -> Some (id,MStmt ([],[s]))
+  | Statements_term ss -> Some (id,MStmt ([],ss))
   *)
-  | `Statement_term s -> Some (id,MVal (wrap_stmts [s]))
-  | `Statements_term ss -> Some (id,MVal (wrap_stmts ss))
-  | `Keyword_term _ ->
+  | Statement_term s -> Some (id,MVal (wrap_stmts [s]))
+  | Statements_term ss -> Some (id,MVal (wrap_stmts ss))
+  | Keyword_term _ ->
     (*
     print_endline ("[substitute statement terms] Keyword arg dropped " ^ id);
     *)
     None
-  | `Apply_term (body,args) ->
+  | Apply_term (body,args) ->
     let body = eval_apply ses recursion_limit local_prefix seq reachable sr body args in
     eval_arg ses recursion_limit local_prefix seq reachable sr id body
 
@@ -238,37 +238,37 @@ and eval_apply ses recursion_limit local_prefix seq reachable sr (body:ast_term_
 
 and eval_term_apply ses recursion_limit local_prefix seq reachable sr (body:ast_term_t) (args:macro_dfn_t list) : ast_term_t =
   match body with
-  | `Expression_term e ->
+  | Expression_term e ->
     (*
     print_endline ("EXPANDING EXPRESSION " ^ string_of_expr e);
     *)
     let e = expand_expr (recursion_limit-1) local_prefix seq args e in
-    `Expression_term e
+    Expression_term e
 
-  | `Identifier_term id ->
+  | Identifier_term id ->
     let id = expand_ident sr args [] id in
-    `Identifier_term id
+    Identifier_term id
 
-  | `Statement_term s ->
+  | Statement_term s ->
     let ss = subst_statements recursion_limit local_prefix seq reachable args [s] in
     (*
     print_endline ("[apply:statement] Body after substitution is" ^ string_of_statements ss);
     print_endline "[apply:statement] EXECUTING STATEMENTS NOW";
     *)
     let ss = ses ss in
-    `Statements_term ss
+    Statements_term ss
 
-  | `Statements_term ss ->
+  | Statements_term ss ->
     let ss = subst_statements recursion_limit local_prefix seq reachable args ss in
     (*
     print_endline ("[apply:statements] Body after substitution is " ^ string_of_statements ss);
     print_endline "[apply:statements] EXECUTING STATEMENTS NOW";
     *)
     let ss = ses ss in
-    `Statements_term ss
+    Statements_term ss
 
-  | `Keyword_term _ -> body
-  | `Apply_term (body',args') ->
+  | Keyword_term _ -> body
+  | Apply_term (body',args') ->
     (*
     print_endline "[apply] Inner application";
     *)
@@ -767,16 +767,16 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     print_endline ("Replacing into user expression " ^ name);
     *)
     let rec aux term = match term with
-      | `Statement_term s -> clierr sr ( "User expr: expected expression ")
-      | `Statements_term ss -> clierr sr ( "User expr: expected expression ")
-      | `Expression_term e -> `Expression_term (me e)
-      | `Identifier_term s -> clierr sr ( "User expr : expected expression got identifier " ^ s)
+      | Statement_term s -> clierr sr ( "User expr: expected expression ")
+      | Statements_term ss -> clierr sr ( "User expr: expected expression ")
+      | Expression_term e -> Expression_term (me e)
+      | Identifier_term s -> clierr sr ( "User expr : expected expression got identifier " ^ s)
 
       (* ONLY SUBSTITUTE INTO PARAMETERS? *)
-      | `Apply_term (t,ts) -> `Apply_term (t, List.map aux ts)
+      | Apply_term (t,ts) -> Apply_term (t, List.map aux ts)
 
       (* invariant -- for the moment *)
-      | `Keyword_term _ -> term
+      | Keyword_term _ -> term
     in
     let e = aux term in
     (*
@@ -791,15 +791,15 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     print_endline ("Expand Statement: Processing user defined statement " ^ name);
     *)
     let aux term = match term with
-      | `Statement_term s -> clierr sr ( "User expr: expected expression ")
-      | `Statements_term ss -> clierr sr ( "User expr: expected expression ")
-      | `Identifier_term s -> clierr sr ( "User expr : expected expression got identifier " ^ s)
-      | `Keyword_term s -> clierr sr ( "User expr : expected statement got keyword " ^ s)
+      | Statement_term s -> clierr sr ( "User expr: expected expression ")
+      | Statements_term ss -> clierr sr ( "User expr: expected expression ")
+      | Identifier_term s -> clierr sr ( "User expr : expected expression got identifier " ^ s)
+      | Keyword_term s -> clierr sr ( "User expr : expected statement got keyword " ^ s)
 
-      | `Expression_term e -> e
-      | `Apply_term (t,ts) ->
+      | Expression_term e -> e
+      | Apply_term (t,ts) ->
         begin match t with
-        | `Expression_term e ->
+        | Expression_term e ->
           substitute_expr_terms sr e ts
 
         | _ ->
@@ -1311,16 +1311,16 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
     print_endline ("Replacing into user statement call " ^ name);
     *)
     let rec aux term = match term with
-      | `Statement_term s -> `Statements_term (ms s)
-      | `Statements_term ss -> `Statements_term (mss ss)
-      | `Expression_term e -> `Expression_term (me e)
-      | `Identifier_term s -> `Identifier_term (mi sr s)
+      | Statement_term s -> Statements_term (ms s)
+      | Statements_term ss -> Statements_term (mss ss)
+      | Expression_term e -> Expression_term (me e)
+      | Identifier_term s -> Identifier_term (mi sr s)
 
       (* ONLY SUBSTITUTE INTO PARAMETERS? *)
-      | `Apply_term (t,ts) -> `Apply_term (t, List.map aux ts)
+      | Apply_term (t,ts) -> Apply_term (t, List.map aux ts)
 
       (* invariant -- for the moment *)
-      | `Keyword_term _ -> term
+      | Keyword_term _ -> term
     in
     tack (`AST_user_statement (sr,name,aux term))
 
@@ -1811,17 +1811,17 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     print_endline ("Expand Statement: Processing user defined statement " ^ name);
     *)
     let aux term = match term with
-      | `Statement_term s -> ctack s
-      | `Statements_term ss -> List.iter ctack ss (* reverse order is correct *)
-      | `Expression_term e -> clierr sr ( "User statement: expected statement got expression " ^ string_of_expr e)
-      | `Identifier_term s -> clierr sr ( "User statement: expected statement got identifier " ^ s)
-      | `Keyword_term s -> clierr sr ( "User statement: expected statement got keyword " ^ s)
-      | `Apply_term (t,ts) ->
+      | Statement_term s -> ctack s
+      | Statements_term ss -> List.iter ctack ss (* reverse order is correct *)
+      | Expression_term e -> clierr sr ( "User statement: expected statement got expression " ^ string_of_expr e)
+      | Identifier_term s -> clierr sr ( "User statement: expected statement got identifier " ^ s)
+      | Keyword_term s -> clierr sr ( "User statement: expected statement got keyword " ^ s)
+      | Apply_term (t,ts) ->
         begin match t with
-        | `Statement_term s ->
+        | Statement_term s ->
           substitute_statement_terms sr [s] ts
 
-        | `Statements_term ss ->
+        | Statements_term ss ->
           substitute_statement_terms sr ss ts
 
         | _ ->

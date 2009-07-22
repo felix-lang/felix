@@ -60,13 +60,13 @@ and xast_term_t sr x =
   let xsts x =  lst "statement" xs x in
   let xterm x = xast_term_t sr x in
   match x with
-  | Lst [Id "Expression_term"; e] -> `Expression_term (ex e)
-  | Lst [Id "Statement_term"; st] -> `Statement_term (xs st)
-  | Lst [Id "Statements_term"; sts] -> `Statements_term (xsts sts)
-  | Lst [Id "Identifier_term"; Str s] -> `Identifier_term s
-  | Lst [Id "Keyword_term"; Str s] -> `Keyword_term s
+  | Lst [Id "Expression_term"; e] -> Expression_term (ex e)
+  | Lst [Id "Statement_term"; st] -> Statement_term (xs st)
+  | Lst [Id "Statements_term"; sts] -> Statements_term (xsts sts)
+  | Lst [Id "Identifier_term"; Str s] -> Identifier_term s
+  | Lst [Id "Keyword_term"; Str s] -> Keyword_term s
   | Lst [Id "Apply_term"; fn; args] ->
-    `Apply_term (xterm fn, lst "ast_term" xterm args)
+    Apply_term (xterm fn, lst "ast_term" xterm args)
   | x -> err x "invalid ast_term_t"
 
 and type_of_sex sr w =

@@ -369,14 +369,12 @@ and prec_t = string
 and params_t = parameter_t list * expr_t option (* second arg is a constraint *)
 
 and ast_term_t =
-  [
-  | `Expression_term of expr_t
-  | `Statement_term of statement_t
-  | `Statements_term of statement_t list
-  | `Identifier_term of string
-  | `Keyword_term of string
-  | `Apply_term of ast_term_t * ast_term_t list
-  ]
+  | Expression_term of expr_t
+  | Statement_term of statement_t
+  | Statements_term of statement_t list
+  | Identifier_term of string
+  | Keyword_term of string
+  | Apply_term of ast_term_t * ast_term_t list
 
 and statement_t =
   [

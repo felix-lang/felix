@@ -1044,12 +1044,12 @@ and string_of_bquals dfns qs = catmap " " (string_of_bqual dfns) qs
 and string_of_ast_term level (term:ast_term_t) =
   let sast level x = string_of_ast_term level x in
   match term with
-  | `Statement_term s -> string_of_statement (level+1) s
-  | `Statements_term ss -> catmap "\n" (string_of_statement (level+1)) ss
-  | `Expression_term e -> string_of_expr e
-  | `Identifier_term s -> s
-  | `Keyword_term s -> s
-  | `Apply_term (t,ts) -> "apply("^ sast 0 t ^ ",(" ^ catmap ", " (sast 0) ts ^ "))"
+  | Statement_term s -> string_of_statement (level+1) s
+  | Statements_term ss -> catmap "\n" (string_of_statement (level+1)) ss
+  | Expression_term e -> string_of_expr e
+  | Identifier_term s -> s
+  | Keyword_term s -> s
+  | Apply_term (t,ts) -> "apply("^ sast 0 t ^ ",(" ^ catmap ", " (sast 0) ts ^ "))"
 
 and string_of_class_component level mem =
   let kind, name, mix,vs,ty,cc = match mem with
