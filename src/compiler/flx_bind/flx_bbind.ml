@@ -272,7 +272,7 @@ let bbind_sym syms bbdfns i {
       let name_map = Hashtbl.create 97 in
       let exes =
         [
-        sr,`EXE_fun_return (gen_match_check pat (`AST_index (sr,mvname,mvindex)))
+        sr,EXE_fun_return (gen_match_check pat (`AST_index (sr,mvname,mvindex)))
         ]
       in
       let brt',bbexes = bexes env exes flx_bbool i [] in
@@ -363,7 +363,7 @@ let bbind_sym syms bbdfns i {
 
     | SYMDEF_lazy (rt,e) ->
       let ps = [("dummy",`AST_void sr)],None in
-      let exes = [sr,`EXE_fun_return e] in
+      let exes = [sr,EXE_fun_return e] in
       let brt = bt rt in
       let brt',bbexes = bexes env exes brt i bvs in
       let props = [] in

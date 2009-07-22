@@ -212,9 +212,9 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     if not !reachable then
     begin
       match x with
-      | `EXE_label _ -> ()
-      | `EXE_comment _ -> ()
-      | `EXE_nop _ -> ()
+      | EXE_label _ -> ()
+      | EXE_comment _ -> ()
+      | EXE_nop _ -> ()
       | _ -> print_endline
         (
           "WARNING: Unreachable code in "^id^": " ^
@@ -224,11 +224,11 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     end
     ;
     match x with
-    | `EXE_comment s ->       tack (BEXE_comment (sr,s))
-    | `EXE_label s ->         reachable := true; tack (BEXE_label (sr,s))
-    | `EXE_goto s ->          reachable := false; tack (BEXE_goto (sr,s))
+    | EXE_comment s ->       tack (BEXE_comment (sr,s))
+    | EXE_label s ->         reachable := true; tack (BEXE_label (sr,s))
+    | EXE_goto s ->          reachable := false; tack (BEXE_goto (sr,s))
 
-    | `EXE_ifgoto (e,s) ->
+    | EXE_ifgoto (e,s) ->
       let e',t = be e in
       if t = flx_bbool
       then tack (BEXE_ifgoto (sr,(e',t), s))
@@ -239,7 +239,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
           string_of_btypecode syms.dfns t
         )
 
-    | `EXE_loop (n,e2) ->
+    | EXE_loop (n,e2) ->
       let be2,t2 = be e2 in
       let tbe1 =
          lookup_qn_with_sig
@@ -254,14 +254,14 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         (* note cal_loop actually generates a call .. *)
         tack (cal_loop syms sr tbe1 (be2,t2) index)
 
-    | `EXE_jump (a,b) ->
-      bind_exe (sr,`EXE_call (a,b));
-      bind_exe  (sr,`EXE_proc_return)
+    | EXE_jump (a,b) ->
+      bind_exe (sr,EXE_call (a,b));
+      bind_exe  (sr,EXE_proc_return)
 
-    | `EXE_call (`AST_name (_,"axiom_check",[]), e2) ->
+    | EXE_call (`AST_name (_,"axiom_check",[]), e2) ->
        tack (BEXE_axiom_check(sr,be e2))
 
-    | `EXE_call (f',a') ->
+    | EXE_call (f',a') ->
       (*
       print_endline ("Apply " ^ string_of_expr f' ^ " to " ^  string_of_expr a');
       *)
@@ -295,7 +295,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
           bind_exe
           (
             sr,
-            `EXE_call
+            EXE_call
             (
               `AST_name (sr,name,[]),
               `AST_tuple (sr,[f';a'])
@@ -307,7 +307,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
 (*
 
-    | `EXE_call (f', a') -> (* OVERLOADING *)
+    | EXE_call (f', a') -> (* OVERLOADING *)
       let sr = src_of_expr sn in
       let be2,t2 = be e2 in
       let (be1,t1) as tbe1 =
@@ -322,12 +322,12 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       in
         tack (cal_call syms sr tbe1 (be2,t2))
 
-    | `EXE_call (p,e) ->
+    | EXE_call (p,e) ->
       let p',pt' = be p and e',et' = be e in
       tack (cal_call syms sr (p', pt') (e', et'))
 *)
 
-    | `EXE_svc s ->
+    | EXE_svc s ->
       begin match lun sr s with
       | NonFunctionEntry (index) ->
         let index = sye index in
@@ -344,7 +344,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       | FunctionEntry _ -> failwith "Can't svc function!"
       end
 
-    | `EXE_proc_return ->
+    | EXE_proc_return ->
       incr proc_return_count;
       reachable := false;
       if do_unify syms !ret_type `BTYP_void
@@ -359,17 +359,17 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
           "function " ^id^" has void return type"
         )
 
-    | `EXE_halt s ->
+    | EXE_halt s ->
       incr proc_return_count;
       reachable := false;
       tack (BEXE_halt (sr,s))
 
-    | `EXE_trace (v,s) ->
+    | EXE_trace (v,s) ->
       incr proc_return_count;
       tack (BEXE_trace (sr,v,s))
 
 
-    | `EXE_fun_return e ->
+    | EXE_fun_return e ->
       reachable := false;
       incr return_count;
       let e',t' as e = be e in
@@ -386,7 +386,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
           string_of_btypecode syms.dfns t'
         )
 
-    | `EXE_yield e ->
+    | EXE_yield e ->
       incr return_count;
       let e',t' = be e in
       let t' = minimise syms.counter syms.dfns t' in
@@ -404,13 +404,13 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
           string_of_btypecode syms.dfns t'
         )
 
-    | `EXE_nop s ->           tack (BEXE_nop (sr,s))
-    | `EXE_code s ->          tack (BEXE_code (sr,s))
-    | `EXE_noreturn_code s ->
+    | EXE_nop s ->           tack (BEXE_nop (sr,s))
+    | EXE_code s ->          tack (BEXE_code (sr,s))
+    | EXE_noreturn_code s ->
       reachable := false;
       tack (BEXE_nonreturn_code (sr,s))
 
-    | `EXE_assert e ->
+    | EXE_assert e ->
       let (x,t) as e' = be e in
       if t = flx_bbool
       then tack (BEXE_assert (sr,e'))
@@ -420,7 +420,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         string_of_btypecode syms.dfns t
       )
 
-    | `EXE_iinit ((s,index),e) ->
+    | EXE_iinit ((s,index),e) ->
         let e',rhst = be e in
         let lhst = type_of_index_with_ts syms sr index parent_ts in
         let rhst = minimise syms.counter syms.dfns rhst in
@@ -439,7 +439,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
         )
 
-    | `EXE_init (s,e) ->
+    | EXE_init (s,e) ->
       begin match lun sr s with
       | FunctionEntry _ -> clierr sr "Can't init function constant"
       | NonFunctionEntry (index) ->
@@ -475,7 +475,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         )
       end
 
-    | `EXE_assign (l,r) ->
+    | EXE_assign (l,r) ->
       let _,lhst as lx = be l in
       let _,rhst as rx = be r in
       let lhst = reduce_type lhst in

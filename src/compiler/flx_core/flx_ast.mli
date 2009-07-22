@@ -497,28 +497,26 @@ and statement_t =
 
 
 and exe_t =
-  [
-  | `EXE_code of c_t (* for inline C++ code *)
-  | `EXE_noreturn_code of c_t (* for inline C++ code *)
-  | `EXE_comment of string (* for documenting generated code *)
-  | `EXE_label of string (* for internal use only *)
-  | `EXE_goto of string  (* for internal use only *)
-  | `EXE_ifgoto of expr_t * string  (* for internal use only *)
-  | `EXE_call of expr_t * expr_t
-  | `EXE_jump of expr_t * expr_t
-  | `EXE_loop of id_t * expr_t
-  | `EXE_svc of id_t
-  | `EXE_fun_return of expr_t
-  | `EXE_yield of expr_t
-  | `EXE_proc_return
-  | `EXE_halt of string
-  | `EXE_trace of id_t * string
-  | `EXE_nop of string
-  | `EXE_init of id_t * expr_t
-  | `EXE_iinit of (id_t * int) * expr_t
-  | `EXE_assign of expr_t * expr_t
-  | `EXE_assert of expr_t
-  ]
+  | EXE_code of c_t (* for inline C++ code *)
+  | EXE_noreturn_code of c_t (* for inline C++ code *)
+  | EXE_comment of string (* for documenting generated code *)
+  | EXE_label of string (* for internal use only *)
+  | EXE_goto of string  (* for internal use only *)
+  | EXE_ifgoto of expr_t * string  (* for internal use only *)
+  | EXE_call of expr_t * expr_t
+  | EXE_jump of expr_t * expr_t
+  | EXE_loop of id_t * expr_t
+  | EXE_svc of id_t
+  | EXE_fun_return of expr_t
+  | EXE_yield of expr_t
+  | EXE_proc_return
+  | EXE_halt of string
+  | EXE_trace of id_t * string
+  | EXE_nop of string
+  | EXE_init of id_t * expr_t
+  | EXE_iinit of (id_t * int) * expr_t
+  | EXE_assign of expr_t * expr_t
+  | EXE_assert of expr_t
 
 type sexe_t = Flx_srcref.t * exe_t
 

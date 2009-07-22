@@ -1629,7 +1629,7 @@ and cal_ret_type syms (rs:recstop) index args =
     let return_counter = ref 0 in
     List.iter
     (fun exe -> match exe with
-    | (sr,`EXE_fun_return e) ->
+    | (sr,EXE_fun_return e) ->
       incr return_counter;
       (*
       print_endline ("  .. Handling return of " ^ string_of_expr e);

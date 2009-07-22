@@ -526,7 +526,7 @@ and build_table_for_dcl
         in
         let dcl =
           `Dcl (sr, vname, None,`Private, Flx_ast.dfltvs, DCL_val (`TYP_typeof (component)))
-        and instr = `Exe (sr, `EXE_init (vname, component)) in
+        and instr = `Exe (sr, Flx_ast.EXE_init (vname, component)) in
         new_asms := dcl :: instr :: !new_asms;
       end vars;
 

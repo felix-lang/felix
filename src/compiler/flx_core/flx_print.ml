@@ -1726,67 +1726,67 @@ and string_of_exe level s =
   in
   match s with
 
-  | `EXE_goto s -> spc ^ "goto " ^ s ^ ";"
-  | `EXE_assert e -> spc ^ "assert " ^ se e ^ ";"
+  | EXE_goto s -> spc ^ "goto " ^ s ^ ";"
+  | EXE_assert e -> spc ^ "assert " ^ se e ^ ";"
 
-  | `EXE_ifgoto (e,s) -> spc ^
+  | EXE_ifgoto (e,s) -> spc ^
      "if(" ^ se e ^ ")goto " ^ s ^ ";"
 
-  | `EXE_label s -> s ^ ":"
+  | EXE_label s -> s ^ ":"
 
-  | `EXE_comment s -> spc ^
+  | EXE_comment s -> spc ^
     "// " ^ s
 
-  | `EXE_call (p,a) -> spc ^
+  | EXE_call (p,a) -> spc ^
     "call " ^
     se p ^ " " ^
     se a ^ ";"
 
-  | `EXE_jump (p,a) -> spc ^
+  | EXE_jump (p,a) -> spc ^
     "jump " ^
     se p ^ " " ^
     se a ^ ";"
 
-  | `EXE_loop (p,a) -> spc ^
+  | EXE_loop (p,a) -> spc ^
     "loop " ^
     p ^ " " ^
     se a ^ ";"
 
-  | `EXE_svc v -> spc ^
+  | EXE_svc v -> spc ^
     "_svc " ^ v
 
-  | `EXE_fun_return x -> spc ^
+  | EXE_fun_return x -> spc ^
     "return " ^ se x ^ ";"
 
-  | `EXE_yield x -> spc ^
+  | EXE_yield x -> spc ^
     "yield " ^ se x ^ ";"
 
-  | `EXE_proc_return -> spc ^
+  | EXE_proc_return -> spc ^
     "return;"
 
-  | `EXE_halt s -> spc ^
+  | EXE_halt s -> spc ^
     "halt "^string_of_string s^";"
 
-  | `EXE_trace (v,s) -> spc ^
+  | EXE_trace (v,s) -> spc ^
     "trace "^v^"="^string_of_string s^";"
 
 
-  | `EXE_nop s -> spc ^
+  | EXE_nop s -> spc ^
     "/*" ^ s ^ "*/"
 
-  | `EXE_code s -> spc ^
+  | EXE_code s -> spc ^
     "code " ^ string_of_code_spec s
 
-  | `EXE_noreturn_code s -> spc ^
+  | EXE_noreturn_code s -> spc ^
     "noreturn_code " ^ string_of_code_spec s
 
-  | `EXE_init (l,r) -> spc ^
+  | EXE_init (l,r) -> spc ^
     l ^ " := " ^ se r ^ ";"
 
-  | `EXE_iinit ((l,i),r) -> spc ^
+  | EXE_iinit ((l,i),r) -> spc ^
     l ^ "<"^si i^"> := " ^ se r ^ ";"
 
-  | `EXE_assign (l,r) -> spc ^
+  | EXE_assign (l,r) -> spc ^
     se l ^ " = " ^ se r ^ ";"
 
 and sbe dfns bbdfns e = string_of_bound_expression dfns bbdfns e
