@@ -64,14 +64,14 @@ let bind_reqs bt syms env sr reqs : (bid_t * btypecode_t list) list =
   in
   let merge a b = fold_left add a b in
   let rec aux reqs = match reqs with
-  | `NREQ_true -> []
-  | `NREQ_false -> [-2,[]]
-  | `NREQ_and (a,b) -> merge (aux a) (aux b)
-  | `NREQ_or (a,b) ->
+  | NREQ_true -> []
+  | NREQ_false -> [-2,[]]
+  | NREQ_and (a,b) -> merge (aux a) (aux b)
+  | NREQ_or (a,b) ->
      let a = aux a and b = aux b in
      if a = [-2,[]] then b else a
 
-  | `NREQ_atom tag ->
+  | NREQ_atom tag ->
     match bind_req syms env sr tag with
     | None -> [-2,[]]
     | Some (entries, ts) ->

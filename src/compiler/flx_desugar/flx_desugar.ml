@@ -263,7 +263,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     in
     let ss = Flx_print.string_of_string fmt in
     let fs = "flx::rtl::strutil::flx_asprintf("^ss^","^args^")" in
-    let req = `NREQ_atom (`AST_name (sr,"flx_strutil",[])) in
+    let req = NREQ_atom (`AST_name (sr,"flx_strutil",[])) in
     let ts =
       let n = List.fold_left (fun n (i,_) -> max n i) 0 its in
       let a = Array.make n TYP_none in
@@ -657,14 +657,14 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     print_endline ("Making bridge for " ^ n ^ " -> " ^ name ^ print_vs _vs);
     *)
     let ts = List.map (fun (s,_)-> TYP_name (sr,s,[])) (fst parent_vs) in
-    let us = `NREQ_atom (`AST_name (sr,"_rqs_" ^ name,ts)) in
+    let us = NREQ_atom (`AST_name (sr,"_rqs_" ^ name,ts)) in
     let body = DCL_insert (`Str "",`Body,us) in
     Dcl (sr,"_rqs_"^n,None,`Public,dfltvs,body)
   in
 
   (* rename _root requirements *)
   let map_reqs sr (reqs : named_req_expr_t) : named_req_expr_t =
-    `NREQ_and (`NREQ_atom (rqname' sr), reqs)
+    NREQ_and (NREQ_atom (rqname' sr), reqs)
   in
 
   (* name literal requirements *)
@@ -683,37 +683,37 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let mkreq s kind =
       let n = !(syms.counter) in incr syms.counter;
       let n = "_req_" ^ si n in
-      let dcl = Dcl (sr,n,ix,access,dfltvs,DCL_insert (s,kind,`NREQ_true)) in
+      let dcl = Dcl (sr,n,ix,access,dfltvs,DCL_insert (s,kind,NREQ_true)) in
       decls := dcl :: !decls;
-      `NREQ_atom (`AST_name (sr,n,parent_ts sr))
+      NREQ_atom (`AST_name (sr,n,parent_ts sr))
     in
     let rec aux rqs = match rqs with
-    | RREQ_or (a,b) -> `NREQ_or (aux a, aux b)
-    | RREQ_and (a,b) -> `NREQ_and (aux a, aux b)
-    | RREQ_true -> `NREQ_true
-    | RREQ_false -> `NREQ_false
+    | RREQ_or (a,b) -> NREQ_or (aux a, aux b)
+    | RREQ_and (a,b) -> NREQ_and (aux a, aux b)
+    | RREQ_true -> NREQ_true
+    | RREQ_false -> NREQ_false
     | RREQ_atom x -> match x with
       | `Body_req s -> mkreq s `Body
       | `Header_req s -> mkreq s `Header
       | `Package_req s -> mkreq s `Package
 
-      | `Named_req n -> `NREQ_atom n
+      | `Named_req n -> NREQ_atom n
 
       | `Property_req "generator" ->
         props := `Generator :: !props;
-        `NREQ_true
+        NREQ_true
 
       | `Property_req "virtual" ->
         props := `Virtual:: !props;
-        `NREQ_true
+        NREQ_true
 
       | `Property_req "lvalue" ->
         props := `Lvalue:: !props;
-        `NREQ_true
+        NREQ_true
 
       | `Property_req s ->
         props := mkprop sr s :: !props;
-        `NREQ_true
+        NREQ_true
     in
     let r = aux rqs in
     !props, !decls, r

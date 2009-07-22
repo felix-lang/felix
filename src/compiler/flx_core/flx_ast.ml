@@ -359,13 +359,11 @@ and raw_req_expr_t =
   | RREQ_false
 
 and named_req_expr_t =
-[
-  | `NREQ_atom of qualified_name_t
-  | `NREQ_or of named_req_expr_t * named_req_expr_t
-  | `NREQ_and of named_req_expr_t * named_req_expr_t
-  | `NREQ_true
-  | `NREQ_false
-]
+  | NREQ_atom of qualified_name_t
+  | NREQ_or of named_req_expr_t * named_req_expr_t
+  | NREQ_and of named_req_expr_t * named_req_expr_t
+  | NREQ_true
+  | NREQ_false
 
 and prec_t = string
 and params_t = parameter_t list * expr_t option (* second arg is a constraint *)
