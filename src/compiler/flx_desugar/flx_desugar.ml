@@ -688,11 +688,11 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       `NREQ_atom (`AST_name (sr,n,parent_ts sr))
     in
     let rec aux rqs = match rqs with
-    | `RREQ_or (a,b) -> `NREQ_or (aux a, aux b)
-    | `RREQ_and (a,b) -> `NREQ_and (aux a, aux b)
-    | `RREQ_true -> `NREQ_true
-    | `RREQ_false -> `NREQ_false
-    | `RREQ_atom x -> match x with
+    | RREQ_or (a,b) -> `NREQ_or (aux a, aux b)
+    | RREQ_and (a,b) -> `NREQ_and (aux a, aux b)
+    | RREQ_true -> `NREQ_true
+    | RREQ_false -> `NREQ_false
+    | RREQ_atom x -> match x with
       | `Body_req s -> mkreq s `Body
       | `Header_req s -> mkreq s `Header
       | `Package_req s -> mkreq s `Package

@@ -1003,11 +1003,11 @@ and string_of_raw_req = function
 
 (* fairly lame excess brackets here *)
 and string_of_raw_req_expr = function
-  | `RREQ_atom r -> string_of_raw_req r
-  | `RREQ_and (a,b) -> "(" ^ string_of_raw_req_expr a ^ ") and (" ^ string_of_raw_req_expr b ^")"
-  | `RREQ_or (a,b) -> "(" ^ string_of_raw_req_expr a ^ ") or (" ^ string_of_raw_req_expr b ^")"
-  | `RREQ_true -> "(true)"
-  | `RREQ_false -> "(false)"
+  | RREQ_atom r -> string_of_raw_req r
+  | RREQ_and (a,b) -> "(" ^ string_of_raw_req_expr a ^ ") and (" ^ string_of_raw_req_expr b ^")"
+  | RREQ_or (a,b) -> "(" ^ string_of_raw_req_expr a ^ ") or (" ^ string_of_raw_req_expr b ^")"
+  | RREQ_true -> "(true)"
+  | RREQ_false -> "(false)"
 
 (* fairly lame excess brackets here *)
 and string_of_named_req_expr = function
@@ -1018,7 +1018,7 @@ and string_of_named_req_expr = function
   | `NREQ_false -> "(false)"
 
 and string_of_raw_reqs x = match x with
-  | `RREQ_true -> "" (* required nothing *)
+  | RREQ_true -> "" (* required nothing *)
   | x -> " requires " ^ string_of_raw_req_expr x
 
 and string_of_named_reqs x = match x with

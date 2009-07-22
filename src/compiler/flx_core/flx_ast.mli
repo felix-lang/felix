@@ -352,13 +352,11 @@ and ikind_t = [
 ]
 
 and raw_req_expr_t =
-[
-  | `RREQ_atom of requirement_t
-  | `RREQ_or of raw_req_expr_t * raw_req_expr_t
-  | `RREQ_and of raw_req_expr_t * raw_req_expr_t
-  | `RREQ_true
-  | `RREQ_false
-]
+  | RREQ_atom of requirement_t
+  | RREQ_or of raw_req_expr_t * raw_req_expr_t
+  | RREQ_and of raw_req_expr_t * raw_req_expr_t
+  | RREQ_true
+  | RREQ_false
 
 and named_req_expr_t =
 [

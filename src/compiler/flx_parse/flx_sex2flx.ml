@@ -518,12 +518,12 @@ and xraw_req_expr_t sr x : raw_req_expr_t =
   let xr x = xrequirement_t sr x in
   let xrr x = xraw_req_expr_t sr x in
   match x with
-  | Lst [Id "rreq_atom"; r] -> `RREQ_atom (xr r)
-  | Lst [Id "rreq_or"; r1; r2] -> `RREQ_or (xrr r1, xrr r2)
-  | Lst [Id "rreq_and"; r1; r2] -> `RREQ_and (xrr r1, xrr r2)
-  | Id "rreq_true"-> `RREQ_true
-  | Id "rreq_false"-> `RREQ_false
-  | Lst [] -> `RREQ_true
+  | Lst [Id "rreq_atom"; r] -> RREQ_atom (xr r)
+  | Lst [Id "rreq_or"; r1; r2] -> RREQ_or (xrr r1, xrr r2)
+  | Lst [Id "rreq_and"; r1; r2] -> RREQ_and (xrr r1, xrr r2)
+  | Id "rreq_true"-> RREQ_true
+  | Id "rreq_false"-> RREQ_false
+  | Lst [] -> RREQ_true
   | x -> err x "raw_req_expr_t"
 
 

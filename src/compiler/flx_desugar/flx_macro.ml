@@ -827,15 +827,15 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 and rqmap me reqs =
   let r req = rqmap me req in
   match reqs with
-  | `RREQ_or (a,b) -> `RREQ_or (r a, r b)
-  | `RREQ_and (a,b) -> `RREQ_and (r a, r b)
-  | `RREQ_true -> `RREQ_true
-  | `RREQ_false -> `RREQ_false
-  | `RREQ_atom x -> match x with
+  | RREQ_or (a,b) -> RREQ_or (r a, r b)
+  | RREQ_and (a,b) -> RREQ_and (r a, r b)
+  | RREQ_true -> RREQ_true
+  | RREQ_false -> RREQ_false
+  | RREQ_atom x -> match x with
   |  `Named_req qn ->
     let qn = qualified_name_of_expr (me (qn:>expr_t)) in
-    `RREQ_atom (`Named_req qn)
-  | x -> `RREQ_atom x
+    RREQ_atom (`Named_req qn)
+  | x -> RREQ_atom x
 
 and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (st:statement_t):statement_t list =
   (*
