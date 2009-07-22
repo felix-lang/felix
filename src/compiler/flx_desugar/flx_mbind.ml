@@ -211,8 +211,8 @@ let rec gen_match_check pat (arg:expr_t) =
     )
   and apl2 sr f x1 x2 =
     match f,x1,x2 with
-    | "land",`AST_typed_case(_,1,`TYP_unitsum 2),x -> x
-    | "land",x,`AST_typed_case(_,1,`TYP_unitsum 2) -> x
+    | "land",`AST_typed_case(_,1,TYP_unitsum 2),x -> x
+    | "land",x,`AST_typed_case(_,1,TYP_unitsum 2) -> x
     | _ ->
     `AST_apply
     (

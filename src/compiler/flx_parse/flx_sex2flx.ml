@@ -79,9 +79,9 @@ and type_of_sex sr w =
   *)
   let y =
     match x with
-    | `AST_tuple (_,[]) -> `TYP_tuple []
-    | `AST_name (_,"none",[]) -> `TYP_none
-    | `AST_name (_,"typ_none",[]) -> `TYP_none
+    | `AST_tuple (_,[]) -> TYP_tuple []
+    | `AST_name (_,"none",[]) -> TYP_none
+    | `AST_name (_,"typ_none",[]) -> TYP_none
     | x ->
       try typecode_of_expr x
       with xn ->

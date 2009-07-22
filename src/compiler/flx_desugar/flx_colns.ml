@@ -136,7 +136,7 @@ let include_file syms inspec =
 (* very inefficient .. fixme! *)
 let rev_concat lss = rev (concat lss)
 
-let map_vs sr (vs,_) = map (fun (s,_)->`AST_name (sr,s,[])) vs
+let map_vs sr (vs,_) = map (fun (s,_)->TYP_name (sr,s,[])) vs
 
 let rec collate_namespaces syms sts =
  let counter = syms.counter in

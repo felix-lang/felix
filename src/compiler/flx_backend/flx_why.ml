@@ -32,8 +32,8 @@ let find_function syms env name =
       with
       | Some {symdef=SYMDEF_fun (_,args,res,ct,_,_) } ->
         begin match name,args,res with
-        | "lnot",[`AST_name (_,"bool",[])],`AST_name (_,"bool",[]) -> true
-        | _,[`AST_name (_,"bool",[]); `AST_name (_,"bool",[])],`AST_name (_,"bool",[]) -> true
+        | "lnot",[TYP_name (_,"bool",[])],TYP_name (_,"bool",[]) -> true
+        | _,[TYP_name (_,"bool",[]); TYP_name (_,"bool",[])],TYP_name (_,"bool",[]) -> true
         | _ -> false
         end
       | _ -> false

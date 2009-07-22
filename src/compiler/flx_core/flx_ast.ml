@@ -62,59 +62,56 @@ and suffixed_name_t =
 
 (** type of a type *)
 and typecode_t =
-  [
-  | `AST_void of Flx_srcref.t                   (** void type *)
-  | `AST_name of Flx_srcref.t * string * typecode_t list
-  | `AST_case_tag of Flx_srcref.t * int
-  | `AST_typed_case of Flx_srcref.t * int * typecode_t
-  | `AST_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
-  | `AST_the of Flx_srcref.t * qualified_name_t
-  | `AST_index of Flx_srcref.t * string * int
-  | `AST_callback of Flx_srcref.t * qualified_name_t
-  | `AST_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
-  | `AST_patvar of Flx_srcref.t * string
-  | `AST_patany of Flx_srcref.t
-  | `TYP_tuple of typecode_t list               (** product type *)
-  | `TYP_unitsum of int                         (** sum of units  *)
-  | `TYP_sum of typecode_t list                 (** numbered sum type *)
-  | `TYP_intersect of typecode_t list           (** intersection type *)
-  | `TYP_record of (string * typecode_t) list   (** anon product *)
-  | `TYP_variant of (string * typecode_t) list  (** anon sum *)
-  | `TYP_function of typecode_t * typecode_t    (** function type *)
-  | `TYP_cfunction of typecode_t * typecode_t   (** C function type *)
-  | `TYP_pointer of typecode_t                  (** pointer type *)
-  | `TYP_array of typecode_t * typecode_t       (** array type base ^ index *)
-  | `TYP_as of typecode_t * string              (** fixpoint *)
-  | `TYP_typeof of expr_t                       (** typeof *)
-  | `TYP_var of int                             (** unknown type *)
-  | `TYP_none                                   (** unspecified *)
-  | `TYP_ellipsis                               (** ... for varargs *)
-(*  | `TYP_lvalue of typecode_t *)                  (** ... lvalue annotation *)
-  | `TYP_isin of typecode_t * typecode_t        (** typeset membership *)
+  | TYP_void of Flx_srcref.t                   (** void type *)
+  | TYP_name of Flx_srcref.t * string * typecode_t list
+  | TYP_case_tag of Flx_srcref.t * int
+  | TYP_typed_case of Flx_srcref.t * int * typecode_t
+  | TYP_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
+  | TYP_the of Flx_srcref.t * qualified_name_t
+  | TYP_index of Flx_srcref.t * string * int
+  | TYP_callback of Flx_srcref.t * qualified_name_t
+  | TYP_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
+  | TYP_patvar of Flx_srcref.t * string
+  | TYP_patany of Flx_srcref.t
+  | TYP_tuple of typecode_t list               (** product type *)
+  | TYP_unitsum of int                         (** sum of units  *)
+  | TYP_sum of typecode_t list                 (** numbered sum type *)
+  | TYP_intersect of typecode_t list           (** intersection type *)
+  | TYP_record of (string * typecode_t) list   (** anon product *)
+  | TYP_variant of (string * typecode_t) list  (** anon sum *)
+  | TYP_function of typecode_t * typecode_t    (** function type *)
+  | TYP_cfunction of typecode_t * typecode_t   (** C function type *)
+  | TYP_pointer of typecode_t                  (** pointer type *)
+  | TYP_array of typecode_t * typecode_t       (** array type base ^ index *)
+  | TYP_as of typecode_t * string              (** fixpoint *)
+  | TYP_typeof of expr_t                       (** typeof *)
+  | TYP_var of int                             (** unknown type *)
+  | TYP_none                                   (** unspecified *)
+  | TYP_ellipsis                               (** ... for varargs *)
+(*  | TYP_lvalue of typecode_t *)                  (** ... lvalue annotation *)
+  | TYP_isin of typecode_t * typecode_t        (** typeset membership *)
 
   (* sets of types *)
-  | `TYP_typeset of typecode_t list             (** discrete set of types *)
-  | `TYP_setunion of typecode_t list            (** union of typesets *)
-  | `TYP_setintersection of typecode_t list     (** intersection of typesets *)
+  | TYP_typeset of typecode_t list             (** discrete set of types *)
+  | TYP_setunion of typecode_t list            (** union of typesets *)
+  | TYP_setintersection of typecode_t list     (** intersection of typesets *)
 
   (* dualizer *)
-  | `TYP_dual of typecode_t                     (** dual *)
+  | TYP_dual of typecode_t                     (** dual *)
 
   (* destructors *)
-  | `TYP_dom of typecode_t                      (** function domain extractor *)
-  | `TYP_cod of typecode_t                      (** function codomain extractor *)
-  | `TYP_proj of int * typecode_t               (** tuple projection *)
-  | `TYP_case_arg of int * typecode_t           (** argument of n'th variant *)
+  | TYP_dom of typecode_t                      (** function domain extractor *)
+  | TYP_cod of typecode_t                      (** function codomain extractor *)
+  | TYP_proj of int * typecode_t               (** tuple projection *)
+  | TYP_case_arg of int * typecode_t           (** argument of n'th variant *)
 
-  | `TYP_apply of typecode_t * typecode_t       (** type function application *)
-  | `TYP_typefun of simple_parameter_t list * typecode_t * typecode_t
+  | TYP_apply of typecode_t * typecode_t       (** type function application *)
+  | TYP_typefun of simple_parameter_t list * typecode_t * typecode_t
                                                 (** type lambda *)
-  | `TYP_type                                   (** meta type of a type *)
-  | `TYP_type_tuple of typecode_t list          (** meta type product *)
+  | TYP_type                                   (** meta type of a type *)
+  | TYP_type_tuple of typecode_t list          (** meta type product *)
 
-  | `TYP_type_match of typecode_t * (typecode_t * typecode_t) list
-
-  ]
+  | TYP_type_match of typecode_t * (typecode_t * typecode_t) list
 
 and tpattern_t =
   | TPAT_function of tpattern_t * tpattern_t
@@ -540,6 +537,51 @@ let src_of_suffixed_name (e : suffixed_name_t) = match e with
   | `AST_suffix (s,_)
   -> s
 
+let src_of_typecode = function
+  | TYP_void s
+  | TYP_name  (s,_,_)
+  | TYP_case_tag (s,_)
+  | TYP_typed_case (s,_,_)
+  | TYP_lookup (s,_)
+  | TYP_the (s,_)
+  | TYP_index (s,_,_)
+  | TYP_callback (s,_)
+  | TYP_suffix (s,_)
+  | TYP_patvar (s,_)
+  | TYP_patany s
+  -> s
+
+  | TYP_tuple _
+  | TYP_unitsum _
+  | TYP_sum _
+  | TYP_intersect _
+  | TYP_record _
+  | TYP_variant _
+  | TYP_function _
+  | TYP_cfunction _
+  | TYP_pointer _
+  | TYP_array _
+  | TYP_as _
+  | TYP_typeof _
+  | TYP_var _
+  | TYP_none
+  | TYP_ellipsis
+  | TYP_isin _
+  | TYP_typeset _
+  | TYP_setunion _
+  | TYP_setintersection _
+  | TYP_dual _
+  | TYP_dom _
+  | TYP_cod _
+  | TYP_proj _
+  | TYP_case_arg _
+  | TYP_apply _
+  | TYP_typefun _
+  | TYP_type
+  | TYP_type_tuple _
+  | TYP_type_match _
+  -> Flx_srcref.dummy_sr
+
 let src_of_expr (e : expr_t) = match e with
   | #suffixed_name_t as x -> src_of_suffixed_name x
   | `AST_vsprintf (s,_)
@@ -698,6 +740,28 @@ let src_of_pat (e : pattern_t) = match e with
   | PAT_record (s,_)
   -> s
 
+let typecode_of_qualified_name = function
+  | `AST_void sr -> TYP_void sr
+  | `AST_name (sr,name,ts) -> TYP_name (sr,name,ts)
+  | `AST_case_tag (sr,v) -> TYP_case_tag (sr,v)
+  | `AST_typed_case (sr,v,t) -> TYP_typed_case (sr,v,t)
+  | `AST_lookup (sr,(e,name,ts)) -> TYP_lookup (sr,(e,name,ts))
+  | `AST_the (sr,name) -> TYP_the (sr,name)
+  | `AST_index (sr,name,index) -> TYP_index (sr,name,index)
+  | `AST_callback (sr,name) -> TYP_callback (sr,name)
+
+let qualified_name_of_typecode = function
+  | TYP_void sr -> Some (`AST_void sr)
+  | TYP_name (sr,name,ts) -> Some (`AST_name (sr,name,ts))
+  | TYP_case_tag (sr,v) -> Some (`AST_case_tag (sr,v))
+  | TYP_typed_case (sr,v,t) -> Some (`AST_typed_case (sr,v,t))
+  | TYP_lookup (sr,(e,name,ts)) -> Some (`AST_lookup (sr,(e,name,ts)))
+  | TYP_the (sr,name) -> Some (`AST_the (sr,name))
+  | TYP_index (sr,name,index) -> Some (`AST_index (sr,name,index))
+  | TYP_callback (sr,name) -> Some (`AST_callback (sr,name))
+  | _ -> None
+
+
 (** get range from first and last expressions *)
 let rsexpr a b = Flx_srcref.rsrange (src_of_expr a) (src_of_expr b)
 
@@ -707,7 +771,7 @@ let rslist lst =
 
 (** Define a default vs_aux_t. *)
 let dfltvs_aux =
-  { raw_type_constraint = `TYP_tuple []; raw_typeclass_reqs = []; }
+  { raw_type_constraint = TYP_tuple []; raw_typeclass_reqs = []; }
 
 (** Define a default vs_list_t. *)
 let dfltvs = [], dfltvs_aux

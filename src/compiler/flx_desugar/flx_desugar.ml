@@ -21,20 +21,20 @@ type desugar_state_t = {
 let generated = Flx_srcref.make_dummy "[flx_desugar] generated"
 
 let block sr body :statement_t =
-  let e = `AST_lambda (sr,(dfltvs,[[],None],`AST_void sr,body)) in
+  let e = `AST_lambda (sr,(dfltvs,[[],None],TYP_void sr,body)) in
   `AST_call (sr,e,`AST_tuple(sr,[]))
 
 let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
   let rec aux (ps:parameter_t list) :plain_vs_list_t * parameter_t list =
     match ps with
-    | (k,x,`TYP_none,d) :: t ->
+    | (k,x,TYP_none,d) :: t ->
       let v = "_v"^si (seq()) in
-      let vt: typecode_t = `AST_name(generated,v,[]) in
+      let vt: typecode_t = TYP_name (generated,v,[]) in
       let vs,ps = aux t in
       (*
       ((v,TPAT_any)::vs),((k,x,vt,d)::ps) (* a bit HACKY *)
       *)
-      ((v,`AST_patany sr)::vs),((k,x,vt,d)::ps) (* a bit HACKY *)
+      ((v,TYP_patany sr)::vs),((k,x,vt,d)::ps) (* a bit HACKY *)
 
     | h :: t ->
       let vs,ps = aux t in
@@ -65,16 +65,16 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
   let vss',(args:params_t list)= List.split (List.map (fix_params sr seq) args) in
   let vs = List.concat (vs :: vss') in
   let vs : vs_list_t = vs,tcon in
-  let mkfuntyp d c = `TYP_function (d,c)
+  let mkfuntyp d c = TYP_function (d,c)
   and typeoflist lst = match lst with
     | [x] -> x
-    | _ -> `TYP_tuple lst
+    | _ -> TYP_tuple lst
   in
   let mkret arg ret = mkfuntyp (typeoflist (List.map (fun(x,y,z,d)->z) (fst arg))) ret in
   let arity = List.length args in
   let rettype args =
     match return_type with
-    | `TYP_none -> `TYP_none
+    | TYP_none -> TYP_none
     | _ -> List.fold_right mkret args return_type
   in
 
@@ -88,14 +88,14 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
     match args with
     | [] ->
         begin match return_type with
-        | `AST_void _ ->
+        | TYP_void _ ->
           `AST_function (sr, name n, vs, ([],None), (return_type,postcondition), props, body)
         | _ ->
           (* allow functions with no arguments now .. *)
           begin match body with
           | [`AST_fun_return (_,e)] ->
             let rt = match return_type with
-            | `TYP_none -> None
+            | TYP_none -> None
             | x -> Some x
             in
             `AST_lazy_decl (sr, name n, vs, rt, Some e)
@@ -252,11 +252,11 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | `AST_vsprintf (sr,s) ->
     let ix = seq () in
     let id = "_fmt_" ^ si ix in
-    let str = `AST_name (sr,"string",[]) in
+    let str = TYP_name (sr,"string",[]) in
     let fmt,its = Flx_cformat.types_of_cformat_string sr s in
     let args = catmap ","
       (fun (i,s) -> match s with
-      | `AST_name (_,"string",[]) -> "$" ^ si i ^ ".data()"
+      | TYP_name (_,"string",[]) -> "$" ^ si i ^ ".data()"
       | _ ->  "$" ^ si i
       )
       its
@@ -266,17 +266,17 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let req = `NREQ_atom (`AST_name (sr,"flx_strutil",[])) in
     let ts =
       let n = List.fold_left (fun n (i,_) -> max n i) 0 its in
-      let a = Array.make n `TYP_none in
+      let a = Array.make n TYP_none in
       List.iter
       (fun (i,s) ->
-        if a.(i-1) = `TYP_none then a.(i-1) <-s
+        if a.(i-1) = TYP_none then a.(i-1) <-s
         else if a.(i-1) = s then ()
         else clierr sr ("Conflicting types for argument " ^ si i)
       )
       its
       ;
       for i = 1 to n do
-        if a.(i-1) = `TYP_none then
+        if a.(i-1) = TYP_none then
           clierr sr ("Missing format for argument " ^ si i)
       done
       ;
@@ -426,7 +426,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     *)
     let evl =
       [
-        `Dcl (expr_src,match_var_name,Some match_var_index,`Private,dfltvs,DCL_val (`TYP_typeof x));
+        `Dcl (expr_src,match_var_name,Some match_var_index,`Private,dfltvs,DCL_val (TYP_typeof x));
         `Exe (expr_src,EXE_iinit ((match_var_name,match_var_index),x))
       ]
     in
@@ -589,7 +589,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
         DCL_function
         (
           ([],None),
-          `TYP_none,
+          TYP_none,
           [`Inline;`Generated "desugar:match fun"],
           match_function_body
         )
@@ -608,32 +608,19 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 (* remove blocks *)
 (* parent vs is containing module vs .. only for modules *)
 
-(*
-and maybe_tpat = function
-  | TPAT_any -> ""
-  | tp -> ": " ^ string_of_tpattern tp
-*)
-
-and maybe_tpat = function
-  | `AST_patany _ -> ""
-  | tp -> ": " ^ string_of_typecode tp
-
-and string_of_vs (vs,tcon:vs_list_t) =
-  cat "," (List.map (fun (v,tp) -> v ^ maybe_tpat tp) vs)
-
 and merge_vs
   (vs1,{raw_type_constraint=con1; raw_typeclass_reqs=rtcr1})
   (vs2,{raw_type_constraint=con2; raw_typeclass_reqs=rtcr2})
 :vs_list_t =
   let t =
     match con1,con2 with
-    | `TYP_tuple[],`TYP_tuple[] -> `TYP_tuple[]
-    | `TYP_tuple[],b -> b
-    | a,`TYP_tuple[] -> a
-    | `TYP_intersect a, `TYP_intersect b -> `TYP_intersect (a@b)
-    | `TYP_intersect a, b -> `TYP_intersect (a @[b])
-    | a,`TYP_intersect b -> `TYP_intersect (a::b)
-    | a,b -> `TYP_intersect [a;b]
+    | TYP_tuple[],TYP_tuple[] -> TYP_tuple[]
+    | TYP_tuple[],b -> b
+    | a,TYP_tuple[] -> a
+    | TYP_intersect a, TYP_intersect b -> TYP_intersect (a@b)
+    | TYP_intersect a, b -> TYP_intersect (a @[b])
+    | a,TYP_intersect b -> TYP_intersect (a::b)
+    | a,b -> TYP_intersect [a;b]
   and
     rtcr = uniq_list (rtcr1 @ rtcr2)
   in
@@ -643,7 +630,7 @@ and merge_vs
 and gen_call_init sr name' =
   let mname = `AST_name (sr,name',[]) in
   let pname = `AST_lookup ( sr, ( mname, "_init_", [])) in
-  let sname = `AST_suffix ( sr, ( pname, `TYP_tuple [])) in
+  let sname = `AST_suffix ( sr, ( pname, TYP_tuple [])) in
   let unitt = `AST_tuple (generated,[]) in
   `Exe
   (
@@ -654,7 +641,7 @@ and gen_call_init sr name' =
 and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list =
-    List.map (fun (s,tp)-> `AST_name (sr,s,[])) (fst parent_vs)
+    List.map (fun (s,tp)-> TYP_name (sr,s,[])) (fst parent_vs)
   in
   let rqname' sr = `AST_name (sr,"_rqs_" ^ name,parent_ts sr) in
 
@@ -667,9 +654,9 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
   *)
   let bridge n sr : asm_t =
     (*
-    print_endline ("Making bridge for " ^ n ^ " -> " ^ name ^"["^string_of_vs _vs ^"]");
+    print_endline ("Making bridge for " ^ n ^ " -> " ^ name ^ print_vs _vs);
     *)
-    let ts = List.map (fun (s,_)-> `AST_name (sr,s,[])) (fst parent_vs) in
+    let ts = List.map (fun (s,_)-> TYP_name (sr,s,[])) (fst parent_vs) in
     let us = `NREQ_atom (`AST_name (sr,"_rqs_" ^ name,ts)) in
     let body = DCL_insert (`Str "",`Body,us) in
     `Dcl (sr,"_rqs_"^n,None,`Public,dfltvs,body)
@@ -784,7 +771,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       d @ [`Dcl (sr,name,None,access,vs,DCL_var t); `Exe (sr,EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [`Dcl (sr,name,None,access,vs,DCL_var (`TYP_typeof x)); `Exe (sr,EXE_init (name,x))]
+      d @ [`Dcl (sr,name,None,access,vs,DCL_var (TYP_typeof x)); `Exe (sr,EXE_init (name,x))]
     | Some t,None -> [`Dcl (sr,name,None,access,vs,DCL_var t)]
     | None,None -> failwith "Expected variable to have type or initialiser"
     end
@@ -796,7 +783,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       d @ [`Dcl (sr,name,None,access,vs,DCL_val t); `Exe (sr,EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [`Dcl (sr,name,None,access,vs,DCL_val (`TYP_typeof x)); `Exe (sr,EXE_init (name,x))]
+      d @ [`Dcl (sr,name,None,access,vs,DCL_val (TYP_typeof x)); `Exe (sr,EXE_init (name,x))]
     | Some t, None -> [`Dcl (sr,name,None,access,vs,DCL_val t)] (* allowed in interfaces *)
     | None,None -> failwith "Expected value to have type or initialiser"
     end
@@ -808,7 +795,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       d @ [`Dcl (sr,name,None,access,vs,DCL_ref  t); `Exe (sr,EXE_init (name,`AST_ref (sr,x)))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [`Dcl (sr,name,None,access,vs,DCL_ref (`TYP_typeof x)); `Exe (sr,EXE_init (name,`AST_ref(sr,x)))]
+      d @ [`Dcl (sr,name,None,access,vs,DCL_ref (TYP_typeof x)); `Exe (sr,EXE_init (name,`AST_ref(sr,x)))]
     | _,None -> failwith "Expected ref to have initialiser"
     end
 
@@ -820,7 +807,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       d @ [`Dcl (sr,name,None,access,vs,DCL_lazy (t,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [`Dcl (sr,name,None,access,vs,DCL_lazy (`TYP_typeof x,x))]
+      d @ [`Dcl (sr,name,None,access,vs,DCL_lazy (TYP_typeof x,x))]
     | _,None -> failwith "Expected lazy value to have initialiser"
     end
 
@@ -914,7 +901,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
         ]
         @
         begin match res with
-        | `AST_void _ ->
+        | TYP_void _ ->
            [`AST_call (sr,inner,un) ] @
            begin match post with
            | None -> []
@@ -947,27 +934,22 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     let vs,con = vs in
     let props, dcls, reqs = mkreqs sr reqs in
     (* hackery *)
-    let vs,args = List.fold_left (fun (vs,args) arg -> match arg with
-        | `TYP_apply
-          (
-            `AST_name (_,"excl",[]),
-            `AST_name (sr,name,[])
-          ) ->
-            let n = seq() in
-            let var = "T"^si n in
-            (*
-            print_endline ("Implicit var " ^ var);
-            *)
-            (*
-            let v = var,TPAT_name (name,[]) in
-            *)
-            let v = var,`AST_name (sr,name,[]) in
-            let arg = `AST_name (sr,var,[]) in
-            v::vs, arg:: args
-        | x -> vs,x::args
-      )
-      (List.rev vs, [])
-      args
+    let vs,args = List.fold_left begin fun (vs,args) arg ->
+      match arg with
+      | TYP_apply (TYP_name (_,"excl",[]), TYP_name (sr,name,[])) ->
+          let n = seq() in
+          let var = "T"^si n in
+          (*
+          print_endline ("Implicit var " ^ var);
+          *)
+          (*
+          let v = var,TPAT_name (name,[]) in
+          *)
+          let v = var, TYP_name (sr,name,[]) in
+          let arg = TYP_name (sr,var,[]) in
+          v::vs, arg::args
+      | x -> vs, x::args
+    end (List.rev vs, []) args
     in
     `Dcl (sr, name', None, access, (List.rev vs, con),
       DCL_fun (props, List.rev args, result, code, map_reqs sr reqs, prec))
@@ -1129,7 +1111,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     *)
     let evl =
       [
-        `Dcl (expr_src,match_var_name,Some match_index,`Private,dfltvs,DCL_val (`TYP_typeof x));
+        `Dcl (expr_src,match_var_name,Some match_index,`Private,dfltvs,DCL_val (TYP_typeof x));
         `Exe (expr_src,EXE_iinit ((match_var_name,match_index),x))
       ]
     in

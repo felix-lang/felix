@@ -235,4 +235,4 @@ let types_of_cformat_string sr s =
   done;
   commit();
   !outfmt,
-  rev_map (fun (i,s) -> i,`AST_name (sr,s,[])) !types
+  rev_map (fun (i,s) -> i,TYP_name (sr,s,[])) !types

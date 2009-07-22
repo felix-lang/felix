@@ -14,8 +14,8 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 exception Macro_return
 
 let truthof x = match x with
-  | `AST_typed_case (_,0,`TYP_unitsum 2) -> Some false
-  | `AST_typed_case (_,1,`TYP_unitsum 2) -> Some true
+  | `AST_typed_case (_,0,TYP_unitsum 2) -> Some false
+  | `AST_typed_case (_,1,TYP_unitsum 2) -> Some true
   | _ -> None
 
 (*
@@ -139,7 +139,7 @@ let build_args sr ps args =
     | Expr -> (p,MVal a)
     | Stmt ->
       begin match a with
-      | `AST_lambda (_,(dfltvs,[[],_],`TYP_none,sts)) -> (p,MStmt ([],sts))
+      | `AST_lambda (_,(dfltvs,[[],_],TYP_none,sts)) -> (p,MStmt ([],sts))
       | `AST_name(_,name,[]) ->(p,MVal a)
       | _ ->
         clierr sr
@@ -301,13 +301,13 @@ and expand_type_expr sr recursion_limit local_prefix seq (macros:macro_dfn_t lis
   match Flx_maps.map_type mt t with
 
   (* Name expansion *)
-  | `AST_name (sr, name,[]) as t ->
+  | TYP_name (sr, name,[]) as t ->
     begin try
       match List.assoc name macros with
       | MVar b -> typecode_of_expr (me !b)
       | MVal b -> typecode_of_expr (me b)
       | MExpr(ps,b) -> t
-      | MName _ -> `AST_name (sr,mi sr name,[])
+      | MName _ -> TYP_name (sr,mi sr name,[])
       | MStmt (ps,b) -> t
       | MVals xs -> t
       | MNames idts -> t
@@ -315,17 +315,17 @@ and expand_type_expr sr recursion_limit local_prefix seq (macros:macro_dfn_t lis
     | Not_found -> t
     end
 
-  | `AST_name (sr, name,ts) as t ->
+  | TYP_name (sr, name, ts) as t ->
     let ts = List.map mt ts in
     begin try
       match List.assoc name macros with
-      | MName _ -> `AST_name (sr,mi sr name,ts)
-      | _ -> `AST_name (sr,name,ts)
+      | MName _ -> TYP_name (sr,mi sr name,ts)
+      | _ -> TYP_name (sr,name,ts)
     with
     | Not_found -> t
     end
 
-  | `TYP_typeof e -> `TYP_typeof (me e)
+  | TYP_typeof e -> TYP_typeof (me e)
 
   | x -> x
 
@@ -622,7 +622,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
             *)
             let sts = [`AST_call (sr,e1, e2)] in
             let sts = expand_statements recursion_limit local_prefix seq (ref true) macros sts in
-            `AST_lambda(sr,(dfltvs,[[],None],`TYP_none,sts))
+            `AST_lambda(sr,(dfltvs,[[],None],TYP_none,sts))
             (*
             clierr sr
             (
@@ -644,7 +644,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_cond (sr, (e1, e2, e3)) ->
     let cond = me e1 in
     begin match cond with
-    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
+    | `AST_typed_case (_,c,TYP_unitsum 2) ->
       if c=1 then me e2 else me e3
     | _ ->
       `AST_cond (sr,(cond,me e2,me e3))
@@ -1103,7 +1103,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let e = me e in
     let e = cf e in
     begin match e with
-    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
+    | `AST_typed_case (_,c,TYP_unitsum 2) ->
       if c = 1 then
       (
         ctack (`AST_goto (sr,mi sr id));
@@ -1119,7 +1119,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_assert (sr,e) ->
     let e = me e in
     begin match e with
-    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
+    | `AST_typed_case (_,c,TYP_unitsum 2) ->
       if c = 1 (* assertion proven true *)
       then ()
       else (* assertion proven false *)
@@ -1135,7 +1135,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | `AST_ifreturn (sr, e) ->
     let e = me e in
     begin match e with
-    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
+    | `AST_typed_case (_,c,TYP_unitsum 2) ->
       if c = 1 then
       (
         ctack (`AST_proc_return sr);
@@ -1153,7 +1153,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let e = me e in
     let e = cf e in
     begin match e with
-    | `AST_typed_case (_,c,`TYP_unitsum 2) ->
+    | `AST_typed_case (_,c,TYP_unitsum 2) ->
       if c = 1 then
         List.iter ctack (ms sts1)
       else

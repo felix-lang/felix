@@ -685,12 +685,12 @@ and bind_type'
   *)
   let t =
   match t with
-  | `AST_patvar _ -> failwith "Not implemented patvar in typecode"
-  | `AST_patany _ -> failwith "Not implemented patany in typecode"
+  | TYP_patvar _ -> failwith "Not implemented patvar in typecode"
+  | TYP_patany _ -> failwith "Not implemented patany in typecode"
 
-  | `TYP_intersect ts -> `BTYP_intersect (List.map bt ts)
-  | `TYP_record ts -> `BTYP_record (List.map (fun (s,t) -> s,bt t) ts)
-  | `TYP_variant ts -> `BTYP_variant (List.map (fun (s,t) -> s,bt t) ts)
+  | TYP_intersect ts -> `BTYP_intersect (List.map bt ts)
+  | TYP_record ts -> `BTYP_record (List.map (fun (s,t) -> s,bt t) ts)
+  | TYP_variant ts -> `BTYP_variant (List.map (fun (s,t) -> s,bt t) ts)
 
   (* We first attempt to perform the match
     at binding time as an optimisation, if that
@@ -698,7 +698,7 @@ and bind_type'
     The latter will be needed when the argument is a type
     variable.
   *)
-  | `TYP_type_match (t,ps) ->
+  | TYP_type_match (t,ps) ->
     let t = bt t in
     (*
     print_endline ("Typematch " ^ sbt syms.dfns t);
@@ -787,11 +787,11 @@ and bind_type'
     tm
 
 
-  | `TYP_dual t ->
+  | TYP_dual t ->
     let t = bt t in
     dual t
 
-  | `TYP_proj (i,t) ->
+  | TYP_proj (i,t) ->
     let t = bt t in
     ignore (try unfold syms.dfns t with _ -> failwith "TYP_proj unfold screwd");
     begin match unfold syms.dfns t with
@@ -814,7 +814,7 @@ and bind_type'
       )
     end
 
-  | `TYP_dom t ->
+  | TYP_dom t ->
     let t = bt t in
     begin match unfold syms.dfns t with
     | `BTYP_function (a,b) -> a
@@ -826,7 +826,7 @@ and bind_type'
         "\ntype domain requires function"
       )
     end
-  | `TYP_cod t ->
+  | TYP_cod t ->
     let t = bt t in
     begin match unfold syms.dfns t with
     | `BTYP_function (a,b) -> b
@@ -839,7 +839,7 @@ and bind_type'
       )
     end
 
-  | `TYP_case_arg (i,t) ->
+  | TYP_case_arg (i,t) ->
     let t = bt t in
     ignore (try unfold syms.dfns t with _ -> failwith "TYP_case_arg unfold screwd");
     begin match unfold syms.dfns t with
@@ -874,36 +874,36 @@ and bind_type'
     end
 
 
-  | `TYP_ellipsis ->
-    failwith "Unexpected `TYP_ellipsis (...) in bind type"
-  | `TYP_none ->
-    failwith "Unexpected `TYP_none in bind type"
+  | TYP_ellipsis ->
+    failwith "Unexpected TYP_ellipsis (...) in bind type"
+  | TYP_none ->
+    failwith "Unexpected TYP_none in bind type"
 
-  | `TYP_typeset ts
-  | `TYP_setunion ts ->
+  | TYP_typeset ts
+  | TYP_setunion ts ->
     `BTYP_typeset (expand_typeset (`BTYP_typeset (List.map bt ts)))
 
-  | `TYP_setintersection ts -> `BTYP_typesetintersection (List.map bt ts)
+  | TYP_setintersection ts -> `BTYP_typesetintersection (List.map bt ts)
 
 
-  | `TYP_isin (elt,tset) ->
+  | TYP_isin (elt,tset) ->
     let elt = bt elt in
     let tset = bt tset in
     handle_typeset syms sr elt tset
 
   (* HACK .. assume variable is type TYPE *)
-  | `TYP_var i ->
+  | TYP_var i ->
     (*
     print_endline ("Fudging metatype of type variable " ^ si i);
     *)
     `BTYP_var (i,`BTYP_type 0)
 
-  | `TYP_as (t,s) ->
+  | TYP_as (t,s) ->
     bind_type' syms env
     { rs with as_fixlist = (s,rs.depth)::rs.as_fixlist }
     sr t params mkenv
 
-  | `TYP_typeof e ->
+  | TYP_typeof e ->
     (*
     print_endline ("Evaluating typeof(" ^ string_of_expr e ^ ")");
     *)
@@ -931,53 +931,53 @@ and bind_type'
       *)
       t
 
-  | `TYP_array (t1,t2)->
+  | TYP_array (t1,t2)->
     let index = match bt t2 with
     | `BTYP_tuple [] -> `BTYP_unitsum 1
     | x -> x
     in
     `BTYP_array (bt t1, index)
 
-  | `TYP_tuple ts ->
+  | TYP_tuple ts ->
     let ts' = List.map bt ts in
     `BTYP_tuple ts'
 
-  | `TYP_unitsum k ->
+  | TYP_unitsum k ->
     (match k with
     | 0 -> `BTYP_void
     | 1 -> `BTYP_tuple[]
     | _ -> `BTYP_unitsum k
     )
 
-  | `TYP_sum ts ->
+  | TYP_sum ts ->
     let ts' = List.map bt ts  in
     if all_units ts' then
       `BTYP_unitsum (List.length ts)
     else
       `BTYP_sum ts'
 
-  | `TYP_function (d,c) ->
+  | TYP_function (d,c) ->
     let
       d' = bt d  and
       c' = bt c
     in
       `BTYP_function (bt d, bt c)
 
-  | `TYP_cfunction (d,c) ->
+  | TYP_cfunction (d,c) ->
     let
       d' = bt d  and
       c' = bt c
     in
       `BTYP_cfunction (bt d, bt c)
 
-  | `TYP_pointer t ->
+  | TYP_pointer t ->
      let t' = bt t in
      `BTYP_pointer t'
 
-  | `AST_void _ ->
+  | TYP_void _ ->
     `BTYP_void
 
-  | `TYP_typefun (ps,r,body) ->
+  | TYP_typefun (ps,r,body) ->
     (*
     print_endline ("BINDING TYPE FUNCTION " ^ string_of_typecode t);
     *)
@@ -1016,7 +1016,7 @@ and bind_type'
       *)
       `BTYP_typefun (bparams, bt r, bbody)
 
-  | `TYP_apply (`AST_name (_,"_flatten",[]),t2) ->
+  | TYP_apply (TYP_name (_,"_flatten",[]),t2) ->
     let t2 = bt t2 in
     begin match t2 with
     | `BTYP_unitsum a -> t2
@@ -1046,7 +1046,19 @@ and bind_type'
     | _ -> clierr sr ("Cannot flatten type " ^ sbt syms.dfns t2)
     end
 
-  | `TYP_apply(#qualified_name_t as qn, t2) ->
+  | TYP_apply (TYP_void _ as qn, t2)
+  | TYP_apply (TYP_name _ as qn, t2)
+  | TYP_apply (TYP_case_tag _ as qn, t2)
+  | TYP_apply (TYP_typed_case _ as qn, t2)
+  | TYP_apply (TYP_lookup _ as qn, t2)
+  | TYP_apply (TYP_the _ as qn, t2)
+  | TYP_apply (TYP_index _ as qn, t2)
+  | TYP_apply (TYP_callback _ as qn, t2) ->
+     let qn =
+       match qualified_name_of_typecode qn with
+       | Some qn -> qn
+       | None -> assert false
+     in
      (*
      print_endline ("Bind application as type " ^ string_of_typecode t);
      *)
@@ -1103,7 +1115,7 @@ and bind_type'
      t
 
 
-  | `TYP_apply (t1,t2) ->
+  | TYP_apply (t1,t2) ->
     let t1 = bt t1 in
     let t2 = bt t2 in
     let t = `BTYP_apply (t1,t2) in
@@ -1112,21 +1124,21 @@ and bind_type'
     *)
     t
 
-  | `TYP_type_tuple ts ->
+  | TYP_type_tuple ts ->
     `BTYP_type_tuple (List.map bt ts)
 
-  | `TYP_type -> `BTYP_type 0
+  | TYP_type -> `BTYP_type 0
 
-  | `AST_name (sr,s,[]) when List.mem_assoc s rs.as_fixlist ->
+  | TYP_name (sr,s,[]) when List.mem_assoc s rs.as_fixlist ->
     `BTYP_fix ((List.assoc s rs.as_fixlist)-rs.depth)
 
-  | `AST_name (sr,s,[]) when List.mem_assoc s params ->
+  | TYP_name (sr,s,[]) when List.mem_assoc s params ->
     (*
     print_endline "Found in assoc list .. ";
     *)
     List.assoc s params
 
-  | `AST_index (sr,name,index) as x ->
+  | TYP_index (sr,name,index) as x ->
     (*
     print_endline ("[bind type] AST_index " ^ string_of_qualified_name x);
     *)
@@ -1172,7 +1184,7 @@ and bind_type'
     end
 
   (* QUALIFIED OR UNQUALIFIED NAME *)
-  | `AST_the (sr,qn) ->
+  | TYP_the (sr,qn) ->
     (*
     print_endline ("[bind_type] Matched THE qualified name " ^ string_of_qualified_name qn);
     *)
@@ -1216,7 +1228,7 @@ and bind_type'
         let ivs,traint = vs in
         let bmt mt =
           match mt with
-          | `AST_patany _ -> `BTYP_type 0 (* default *)
+          | TYP_patany _ -> `BTYP_type 0 (* default *)
           | _ -> (try bt mt with _ -> clierr sr "metatyp binding FAILED")
         in
         let body =
@@ -1237,11 +1249,20 @@ and bind_type'
       "'the' expression denotes non-singleton function set"
     end
 
-  | #qualified_name_t as x ->
+  | TYP_name _
+  | TYP_case_tag _
+  | TYP_typed_case _
+  | TYP_lookup _
+  | TYP_callback _ as x ->
     (*
     print_endline ("[bind_type] Matched qualified name " ^ string_of_qualified_name x);
     *)
     if env = [] then print_endline "WOOPS EMPTY ENVIRONMENT!";
+    let x =
+      match qualified_name_of_typecode x with
+      | Some q -> q
+      | None -> assert false
+    in
     let sr = src_of_qualified_name x in
     begin match lookup_qn_in_env' syms env rs x with
     | {base_sym=i; spec_vs=spec_vs; sub_ts=sub_ts},ts ->
@@ -1284,7 +1305,7 @@ and bind_type'
 
     end
 
-  | `AST_suffix (sr,(qn,t)) ->
+  | TYP_suffix (sr,(qn,t)) ->
     let sign = bt t in
     let result =
       lookup_qn_with_sig' syms  sr sr env rs qn [sign]
@@ -1533,7 +1554,7 @@ and base_typename_of_literal v = match v with
 and  type_of_literal syms env sr v : btypecode_t =
   let _,_,root,_,_ = List.hd (List.rev env) in
   let name = base_typename_of_literal v in
-  let t = `AST_name (sr,name,[]) in
+  let t = TYP_name (sr,name,[]) in
   let bt = inner_bind_type syms env sr rsground t in
   bt
 
@@ -1857,13 +1878,13 @@ and inner_type_of_index
     bt t
 
   | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
-    bt (`TYP_function (argt,ut))
+    bt (TYP_function (argt,ut))
 
   | SYMDEF_match_check _ ->
     `BTYP_function (`BTYP_tuple [], flx_bbool)
 
   | SYMDEF_fun (_,pts,rt,_,_,_) ->
-    let t = `TYP_function (type_of_list pts,rt) in
+    let t = TYP_function (type_of_list pts,rt) in
     bt t
 
   | SYMDEF_union _ ->
@@ -1873,7 +1894,7 @@ and inner_type_of_index
   | SYMDEF_cstruct (ls)
   | SYMDEF_struct (ls) ->
     (* ARGGG WHAT A MESS *)
-    let ts = List.map (fun (s,i,_) -> `AST_name (sr,s,[])) (fst vs) in
+    let ts = List.map (fun (s,i,_) -> TYP_name (sr,s,[])) (fst vs) in
     let ts = List.map bt ts in
   (*
   print_endline "inner_type_of_index: struct";
@@ -2785,7 +2806,7 @@ and handle_function
           sbt syms.dfns t ^ "'"
         )
     )
-  | SYMDEF_type_alias (`TYP_typefun _) ->
+  | SYMDEF_type_alias (TYP_typefun _) ->
     (* THIS IS A HACK .. WE KNOW THE TYPE IS NOT NEEDED BY THE CALLER .. *)
     (* let t = inner_type_of_index_with_ts syms sr rs index ts in *)
     let t = `BTYP_function (`BTYP_type 0,`BTYP_type 0) in
@@ -3786,7 +3807,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     | _ -> clierr sr ("Argument of caseno must be sum or union type, got " ^ sbt syms.dfns t)
     end
     ;
-    let int_t = bt sr (`AST_name (sr,"int",[])) in
+    let int_t = bt sr (TYP_name (sr,"int",[])) in
     begin match e' with
     | BEXPR_case (i,_) ->
       BEXPR_literal (AST_int ("int",Big_int.big_int_of_int i))
@@ -5186,13 +5207,13 @@ and bind_dir
     if not (Hashtbl.mem syms.dfns i) then
       Hashtbl.add syms.dfns i {id=n;sr=dummy_sr;parent=None;vs=dfltvs;
       pubmap=nullmap; privmap=nullmap;dirs=[];
-      symdef=SYMDEF_typevar `TYP_type
+      symdef=SYMDEF_typevar TYP_type
       }
     ;
   )
   (fst vs)
   ;
-  let cheat_env = (0,"cheat",cheat_table,[],`TYP_tuple []) in
+  let cheat_env = (0,"cheat",cheat_table,[],TYP_tuple []) in
   let result =
     try
       lookup_qn_in_env' syms env
@@ -5369,7 +5390,7 @@ and get_pub_tables syms env rs dirs =
 
 and mk_bare_env syms index =
   match hfind "lookup" syms.dfns index with
-  {id=id;parent=parent;privmap=table} -> (index,id,table,[],`TYP_tuple []) ::
+  {id=id;parent=parent;privmap=table} -> (index,id,table,[],TYP_tuple []) ::
   match parent with
   | None -> []
   | Some index -> mk_bare_env syms index

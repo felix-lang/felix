@@ -145,7 +145,7 @@ let get_data table index : symbol_data_t =
 
 let sig_of_symdef symdef sr name i = match symdef with
   | SYMDEF_match_check (_)
-    -> `TYP_tuple[],`TYP_sum [`TYP_tuple[];`TYP_tuple[]],None (* bool *)
+    -> TYP_tuple[],TYP_sum [TYP_tuple[];TYP_tuple[]],None (* bool *)
 
   (* primitives *)
   | SYMDEF_fun (_,ps,r,_,_,_)
@@ -156,16 +156,16 @@ let sig_of_symdef symdef sr name i = match symdef with
       let ts_f =
         List.filter
         (function
-          | `AST_name (_,id,[]) when id = name -> false
+          | TYP_name (_,id,[]) when id = name -> false
           | t -> true
         )
         ts_orig
       in
       let tf_args = match ts_f with
         | [x] -> x
-        | lst -> `TYP_tuple lst
+        | lst -> TYP_tuple lst
       in
-      let tf = `TYP_function (tf_args, r) in
+      let tf = TYP_function (tf_args, r) in
 
       (* The type of the arguments Felix thinks the raw
          C function has on a call. A closure of this
@@ -175,7 +175,7 @@ let sig_of_symdef symdef sr name i = match symdef with
       let ts_cf =
         List.map
         (function
-          | `AST_name (_,id,[]) when id = name -> tf
+          | TYP_name (_,id,[]) when id = name -> tf
           | t -> t
         )
         ts_orig
@@ -188,7 +188,7 @@ let sig_of_symdef symdef sr name i = match symdef with
     begin match p,r with
     (*
     | (`PRef,_, r)::tail,`AST_void _
-    (* | (`PVal,_,`TYP_pointer r)::tail,`AST_void _ *) ->
+    (* | (`PVal,_,TYP_pointer r)::tail,`AST_void _ *) ->
       print_endline "Mangled Procedure Overload";
       paramtype tail,r
     *)
@@ -199,17 +199,17 @@ let sig_of_symdef symdef sr name i = match symdef with
 
   | SYMDEF_cstruct ls
   | SYMDEF_struct ls ->
-    type_of_list (List.map snd ls),`AST_index (sr,name,i),
+    type_of_list (List.map snd ls), TYP_index (sr,name,i),
      Some (List.map (fun (p,_) -> p,None) ls)
 
-  | SYMDEF_const_ctor (_,r,_,_) -> `AST_void sr,r,None
+  | SYMDEF_const_ctor (_,r,_,_) -> TYP_void sr,r,None
   | SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r,None
   | SYMDEF_type_alias t ->
     (*
     print_endline ("[sig_of_symdef] Found a typedef " ^ name);
     *)
     begin match t with
-    | `TYP_typefun (ps,r,b) -> 
+    | TYP_typefun (ps,r,b) ->
       (*
       print_endline "TYP_typefun";
       *)
@@ -275,8 +275,8 @@ let consider syms env bt be luqn2 name
         with false -> argt
         | _ ->
         match base_domain with
-        | `TYP_record _ -> argt
-        | `TYP_tuple [] -> argt (* lazy *)
+        | TYP_record _ -> argt
+        | TYP_tuple [] -> argt (* lazy *)
         | _ ->
         let ps =
           List.map (fun (name,e) ->
@@ -552,7 +552,7 @@ let consider syms env bt be luqn2 name
       let unresolved = ref (
         List.fold_left2
         (fun acc (s,i) k ->
-          if not (List.mem_assoc i !mgu) then (s,i,`TYP_type,k)::acc else acc
+          if not (List.mem_assoc i !mgu) then (s,i,TYP_type,k)::acc else acc
         )
         [] spec_vs (nlist n_spec_vs)
       )
@@ -566,19 +566,9 @@ let consider syms env bt be luqn2 name
       in
 
       let report_unresolved =
-        (*
-        let maybe_tp tp = match tp with
-          | TPAT_any -> ""
-          | tp -> ": " ^ string_of_tpattern tp
-        in
-        *)
-        let maybe_tp tp = match tp with
-          | `AST_patany _ -> ""
-          | tp -> ": " ^ string_of_typecode tp
-        in
         List.fold_left (fun acc (s,i,tp,k) -> acc ^
           "  The " ^th k ^" subscript  " ^ s ^ "["^si i^"]" ^
-           maybe_tp tp ^ "\n"
+           Flx_print.string_of_maybe_typecode tp ^ "\n"
         ) "" !unresolved
       in
       (*

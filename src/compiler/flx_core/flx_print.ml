@@ -209,7 +209,7 @@ and string_of_expr (e:expr_t) =
     (fun ps -> "(" ^ string_of_parameters ps ^ ")") paramss
     ^
     (match ret with
-    | `TYP_none -> ""
+    | TYP_none -> ""
     | _ -> ": " ^string_of_typecode ret) ^
     " = " ^
     string_of_compound 0 sts ^ ")"
@@ -305,13 +305,36 @@ and string_of_expr (e:expr_t) =
 and st prec tc : string =
   let iprec,txt =
     match tc with
-    | #suffixed_name_t as t -> 0,string_of_suffixed_name t
-    | `AST_patvar (sr,s) -> 0,"?"^s
-    | `AST_patany sr -> 0,"ANY"
-    | `TYP_none -> 0,"<none>"
-    | `TYP_ellipsis-> 0,"..."
+    | TYP_the (sr,q) -> 0, "the " ^ string_of_qualified_name q
+    | TYP_index (sr,name,idx) -> 0, name ^ "<" ^ si idx ^ ">"
+    | TYP_void _ -> 0, "void"
+    | TYP_name (_,name,ts) -> 0, name ^
+      (
+        if List.length ts = 0 then ""
+        else "[" ^ catmap ", " string_of_typecode ts ^ "]"
+      )
+    | TYP_case_tag (_,v) -> 0, "case " ^ si v
+    | TYP_typed_case (_,v,t) ->
+      0, "(case " ^ si v ^ " of " ^ string_of_typecode t ^ ")"
 
-    | `TYP_type_match (e,ps) -> 0,
+    | TYP_lookup (_,(e,name, ts)) ->
+      0,
+      "(" ^ string_of_expr e ^ ")::" ^ name ^
+      (if length ts = 0 then "" else
+      "[" ^ catmap ", " string_of_typecode ts ^ "]"
+      )
+    | TYP_callback (_,name) -> 0, "callback " ^ string_of_qualified_name name
+
+    | TYP_suffix (_,(name,suf)) ->
+      0,
+      string_of_qualified_name name ^ " of (" ^ string_of_typecode suf ^ ")"
+
+    | TYP_patvar (sr,s) -> 0,"?"^s
+    | TYP_patany sr -> 0,"ANY"
+    | TYP_none -> 0,"<none>"
+    | TYP_ellipsis-> 0,"..."
+
+    | TYP_type_match (e,ps) -> 0,
       "typematch " ^ string_of_typecode e ^ " with " ^
       catmap ""
       (fun (p,t) ->
@@ -321,8 +344,8 @@ and st prec tc : string =
       ^
       "\nendmatch"
 
-    | `TYP_var i -> 0,"<var " ^ si i ^ ">"
-    | `TYP_unitsum k ->
+    | TYP_var i -> 0,"<var " ^ si i ^ ">"
+    | TYP_unitsum k ->
       0,
       begin match k with
       | 0 -> "void"
@@ -331,84 +354,84 @@ and st prec tc : string =
       | _ -> si k
       end
 
-    | `TYP_tuple ls ->
+    | TYP_tuple ls ->
       begin match ls with
       | [] -> 0,"unit"
       | _ -> 4, cat " * " (map (st 4) ls)
       end
 
-    | `TYP_record ls ->
+    | TYP_record ls ->
       begin match ls with
       | [] -> 0,"unit"
       | _ -> 0, "struct {" ^ catmap "" (fun (s,t)->s^":"^st 0 t ^"; ") ls ^ "}"
       end
 
-    | `TYP_variant ls ->
+    | TYP_variant ls ->
       begin match ls with
       | [] -> 0,"void"
       | _ -> 0, "union {" ^ catmap "" (fun (s,t)->s^" of "^st 0 t ^"; ") ls ^ "}"
       end
 
-    | `TYP_sum ls ->
+    | TYP_sum ls ->
       begin match ls with
       | [] -> 0,"void"
-      | [`TYP_tuple[];`TYP_tuple[]] -> 0,"bool"
+      | [TYP_tuple[];TYP_tuple[]] -> 0,"bool"
       | _ -> 5,cat " + " (map (st 5) ls)
       end
 
-    | `TYP_typeset ls ->
+    | TYP_typeset ls ->
       begin match ls with
       | [] -> 0,"void"
       | _ -> 0,"{" ^ cat ", " (map (st 0) ls) ^  "}"
       end
 
-    | `TYP_intersect ls ->
-      let ls = filter (fun t -> t <> `TYP_tuple []) ls in
+    | TYP_intersect ls ->
+      let ls = filter (fun t -> t <> TYP_tuple []) ls in
       begin match ls with
       | [] -> 0,"unit"
       | _ -> 9,cat " & " (map (st 9) ls)
       end
 
-    | `TYP_setintersection ls ->
+    | TYP_setintersection ls ->
       begin match ls with
       | [] -> 0,"void"
       | _ -> 9,cat " && " (map (st 9) ls)
       end
 
-    | `TYP_setunion ls ->
+    | TYP_setunion ls ->
       begin match ls with
       | [] -> 0,"unit"
       | _ -> 9,cat " || " (map (st 9) ls)
       end
 
-    | `TYP_function (args, result) ->
+    | TYP_function (args, result) ->
       9,st 9 args ^ " -> " ^ st 9 result
 
-    | `TYP_cfunction (args, result) ->
+    | TYP_cfunction (args, result) ->
       9,st 9 args ^ " --> " ^ st 9 result
 
-    | `TYP_array (vt,it) -> 3, st 1 vt ^ "^" ^ st 3 it
+    | TYP_array (vt,it) -> 3, st 1 vt ^ "^" ^ st 3 it
 
-    | `TYP_pointer t -> 1,"&" ^ st 1 t
-(*    | `TYP_lvalue t -> 0,"lvalue[" ^ st 1 t ^"]" *)
+    | TYP_pointer t -> 1,"&" ^ st 1 t
+(*    | TYP_lvalue t -> 0,"lvalue[" ^ st 1 t ^"]" *)
 
-    | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
-    | `TYP_as (t,s) -> 11,st 11 t ^ " as " ^ s
+    | TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
+    | TYP_as (t,s) -> 11,st 11 t ^ " as " ^ s
 
-    | `TYP_proj (i,t) -> 2,"proj_"^si i^" "^ st 2 t
-    | `TYP_dual t -> 2,"~"^ st 2 t
-    | `TYP_dom t -> 2,"dom "^ st 2 t
-    | `TYP_cod t -> 2,"cod "^st 2 t
-    | `TYP_case_arg (i,t) -> 2,"case_arg_"^si i^" "^st 2 t
+    | TYP_proj (i,t) -> 2,"proj_"^si i^" "^ st 2 t
+    | TYP_dual t -> 2,"~"^ st 2 t
+    | TYP_dom t -> 2,"dom "^ st 2 t
+    | TYP_cod t -> 2,"cod "^st 2 t
+    | TYP_case_arg (i,t) -> 2,"case_arg_"^si i^" "^st 2 t
 
-    | `TYP_isin (t1,t2) -> 6,st 2 t1 ^ " isin " ^ st 6 t2
+    | TYP_isin (t1,t2) -> 6,st 2 t1 ^ " isin " ^ st 6 t2
 
-    | `TYP_apply (t1,t2) -> 2,st 2 t1 ^ " " ^ st 2 t2
-    | `TYP_type -> 0,"TYPE"
-    | `TYP_type_tuple ls ->
+    | TYP_apply (t1,t2) -> 2,st 2 t1 ^ " " ^ st 2 t2
+    | TYP_type -> 0,"TYPE"
+    | TYP_type_tuple ls ->
       4, cat ", " (map (st 4) ls)
 
-    | `TYP_typefun (args,ret,body) ->
+    | TYP_typefun (args,ret,body) ->
        10,
        (
          "fun(" ^ cat ", "
@@ -815,7 +838,7 @@ and short_string_of_asm_compound level ss =
 
 and special_string_of_typecode ty =  (* used for constructors *)
   match ty with
-  | `TYP_tuple [] -> ""
+  | TYP_tuple [] -> ""
   | _ -> " of " ^ string_of_typecode ty
 
 and special_string_of_btypecode dfns ty =  (* used for constructors *)
@@ -843,8 +866,8 @@ and string_of_maybe_typecode = function
   | t -> ": " ^ string_of_typecode t
 
 and print_tconstraint = function
-  | `TYP_tuple [] -> ""
-  | `TYP_intersect [`TYP_tuple []] -> ""
+  | TYP_tuple [] -> ""
+  | TYP_intersect [TYP_tuple []] -> ""
   | t -> let x = string_of_typecode t in
     if x <> "unit" then " where " ^ x else ""
 
@@ -859,27 +882,27 @@ and print_tcon {raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} =
 
 and print_ivs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
   match vs,tcon,rtcr with
-  | [],`TYP_tuple [],[] -> ""
+  | [],TYP_tuple [],[] -> ""
   | _ ->
-    "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ string_of_maybe_tpattern tpat) vs) ^
+    "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ string_of_maybe_typecode tpat) vs) ^
     print_tcon con ^
     "]"
 
 and print_ivs_with_index (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
   match vs,tcon,rtcr with
-  | [],`TYP_tuple [],[] -> ""
+  | [],TYP_tuple [],[] -> ""
   | _ ->
-    "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ "<"^si ix^">"^string_of_maybe_tpattern tpat) vs) ^
+    "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ "<"^si ix^">"^string_of_maybe_typecode tpat) vs) ^
     print_tcon con ^
     "]"
 
 and print_vs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
   match vs,tcon,rtcr with
-  | [],`TYP_tuple [],[] -> ""
+  | [],TYP_tuple [],[] -> ""
   | _ ->
     "[" ^
     cat ", "
-    (map (fun (name,tpat) -> name ^ string_of_maybe_tpattern tpat) vs) ^
+    (map (fun (name,tpat) -> name ^ string_of_maybe_typecode tpat) vs) ^
     print_tcon con ^
     "]"
 
@@ -1189,7 +1212,7 @@ and string_of_statement level s =
 
   | `AST_callback_decl (_,name,args,result, reqs) -> spaces level ^
     "callback " ^ name ^ ": " ^
-    (string_of_typecode (`TYP_tuple args)) ^ " -> " ^
+    (string_of_typecode (TYP_tuple args)) ^ " -> " ^
     (string_of_typecode result) ^
     string_of_raw_reqs reqs ^
     ";"
@@ -1198,7 +1221,7 @@ and string_of_statement level s =
     spaces level ^
     "fun " ^ name ^ print_vs vs ^
     ": " ^
-    (string_of_typecode (`TYP_tuple args)) ^ " -> " ^
+    (string_of_typecode (TYP_tuple args)) ^ " -> " ^
     (string_of_typecode result) ^
     " = " ^ string_of_code_spec code ^
     (if prec = "" then "" else ":"^prec^" ")^
@@ -1641,12 +1664,12 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
     "fun " ^ name ^ print_ivs vs ^
     ": " ^ st
     (
-      `TYP_function
+      TYP_function
       (
         (
           match pts with
           | [x] -> x
-          | x -> `TYP_tuple x
+          | x -> TYP_tuple x
         )
         ,
         res
@@ -1661,12 +1684,12 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
     "callback fun " ^ name ^ print_ivs vs ^
     ": " ^ st
     (
-      `TYP_cfunction
+      TYP_cfunction
       (
         (
           match pts with
           | [x] -> x
-          | x -> `TYP_tuple x
+          | x -> TYP_tuple x
         )
         ,
         res
@@ -1701,12 +1724,12 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
     "fun " ^ name ^ print_ivs vs ^
     ": " ^ st
     (
-      `TYP_function
+      TYP_function
       (
         (
           match map (fun (x,y,z,d) -> z) ps with
           | [x] -> x
-          | x -> `TYP_tuple x
+          | x -> TYP_tuple x
         )
         ,
         res
@@ -2061,7 +2084,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
 
   | DCL_fun (props, args, result, code, reqs,prec) ->
     let argtype:typecode_t = type_of_argtypes args in
-    let t:typecode_t = `TYP_function (argtype,result) in
+    let t:typecode_t = TYP_function (argtype,result) in
     sl ^
     string_of_properties props ^
     "fun " ^ name^seq ^ print_vs vs ^
@@ -2073,7 +2096,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
 
   | DCL_callback (props, args, result, reqs) ->
     let argtype:typecode_t = type_of_argtypes args in
-    let t:typecode_t = `TYP_cfunction (argtype,result) in
+    let t:typecode_t = TYP_cfunction (argtype,result) in
     sl ^
     string_of_properties props ^
     "callback fun " ^ name^seq ^ print_vs vs ^

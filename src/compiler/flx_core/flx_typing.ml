@@ -10,7 +10,7 @@ let mktypefun sr (name:string) (vs:vs_list_t) (args: (string * typecode_t) list 
   let argtyp t = match t with
     | [] -> failwith "Lambda abstraction requires nonunit parameter"
     | [x] -> x
-    | x -> `TYP_type_tuple x
+    | x -> TYP_type_tuple x
   in
   let body =
     let p = ref (List.rev args) in
@@ -19,8 +19,8 @@ let mktypefun sr (name:string) (vs:vs_list_t) (args: (string * typecode_t) list 
     while !p <> [] do
       let arg = List.hd !p in
       p := List.tl !p;
-      b := `TYP_typefun (arg, !r, !b);
-      r := `TYP_function(argtyp (List.map snd (arg)),!r)
+      b := TYP_typefun (arg, !r, !b);
+      r := TYP_function(argtyp (List.map snd (arg)),!r)
     done;
     !b
   in
@@ -69,7 +69,7 @@ exception UnificationError of btypecode_t * btypecode_t
 (* unbound type *)
 let type_of_argtypes ls = match ls with
  | [x] -> x
- | _ -> `TYP_tuple ls
+ | _ -> TYP_tuple ls
 
 let funparamtype (_,_,t,_) = t
 
@@ -110,7 +110,7 @@ let typeoflist typlist = match typlist with
     with Not_found ->
       `BTYP_tuple typlist
 
-let flx_bool = `TYP_unitsum 2
+let flx_bool = TYP_unitsum 2
 let flx_bbool = `BTYP_unitsum 2
 
 (* Note floats are equal iff they're textually identical,

@@ -18,15 +18,15 @@ let qualified_name_of_expr e =
 
 let type_of_list = function
   | [x] -> x
-  | x -> `TYP_tuple x
+  | x -> TYP_tuple x
 
 let paramtype params =
   let typlist params =
     map
     (fun (k,_,t,_) ->
       match k with
-      | `PRef -> `TYP_pointer t
-      | `PFun -> `TYP_function (`TYP_tuple [],t)
+      | `PRef -> TYP_pointer t
+      | `PFun -> TYP_function (TYP_tuple [],t)
       | _ -> t
     )
     params
@@ -37,7 +37,7 @@ let all_tunits ts =
   try
     iter
     (fun t ->
-      if t <> `TYP_tuple []
+      if t <> TYP_tuple []
       then raise Not_found
     )
     ts;
@@ -47,43 +47,51 @@ let all_tunits ts =
 let rec typecode_of_expr (e:expr_t) :typecode_t =
   let te e = typecode_of_expr e in
   match e with
-  | `AST_name (_,"TYPE",[]) -> `TYP_type
-  | `AST_name (sr,"_",[]) -> `AST_patany sr
-  | `AST_ellipsis _ -> `TYP_ellipsis
-  | #suffixed_name_t as x -> (x:>typecode_t)
+  | `AST_name (_,"TYPE",[]) -> TYP_type
+  | `AST_name (sr,"_",[]) -> TYP_patany sr
+  | `AST_ellipsis _ -> TYP_ellipsis
+  | `AST_void sr -> TYP_void sr
+  | `AST_name (sr,name,ts) -> TYP_name (sr,name,ts)
+  | `AST_case_tag (sr,v) -> TYP_case_tag (sr,v)
+  | `AST_typed_case (sr,v,t) -> TYP_typed_case (sr,v,t)
+  | `AST_lookup (sr,(e,name,ts)) -> TYP_lookup (sr,(e,name,ts))
+  | `AST_the (sr,q) -> TYP_the (sr,q)
+  | `AST_index (sr,name,index) -> TYP_index (sr,name,index)
+  | `AST_callback (sr,name) -> TYP_callback (sr,name)
+  | `AST_suffix (sr,(name,suffix)) -> TYP_suffix (sr,(name,suffix))
   | `AST_tuple (sr,ls) ->
     begin match ls with
-    | [] -> `TYP_tuple [] (* HACK!! *)
+    | [] -> TYP_tuple [] (* HACK!! *)
     | [x] -> failwith "Unexpected one element tuple converting to type tuple"
-    | _ -> `TYP_type_tuple (map te ls)
+    | _ -> TYP_type_tuple (map te ls)
     end
-  | `AST_record_type (sr,es) -> `TYP_record es
-  | `AST_variant_type (sr,es) -> `TYP_variant es
+  | `AST_record_type (sr,es) -> TYP_record es
+  | `AST_variant_type (sr,es) -> TYP_variant es
 
-  | `AST_product (_,ts) -> `TYP_tuple (map te ts)
-  | `AST_intersect (_,ts) -> `TYP_intersect (map te ts)
-  | `AST_isin (_,(a,b)) -> `TYP_isin (te a, te b)
-  | `AST_setintersection (_,ts) -> `TYP_setintersection (map te ts)
-  | `AST_setunion (_,ts) -> `TYP_setunion (map te ts)
-  | `AST_arrow (_,(a,b)) -> `TYP_function (te a, te b)
-  | `AST_longarrow (_,(a,b)) -> `TYP_cfunction (te a, te b)
-  | `AST_superscript (_,(a,b)) -> `TYP_array (te a, te b)
-(*  | `AST_lvalue (sr,e) -> `TYP_lvalue (te e) *)
-  | `AST_ref (sr,e) -> `TYP_pointer (te e)
+  | `AST_product (_,ts) -> TYP_tuple (map te ts)
+  | `AST_intersect (_,ts) -> TYP_intersect (map te ts)
+  | `AST_isin (_,(a,b)) -> TYP_isin (te a, te b)
+  | `AST_setintersection (_,ts) -> TYP_setintersection (map te ts)
+  | `AST_setunion (_,ts) -> TYP_setunion (map te ts)
+  | `AST_arrow (_,(a,b)) -> TYP_function (te a, te b)
+  | `AST_longarrow (_,(a,b)) -> TYP_cfunction (te a, te b)
+  | `AST_superscript (_,(a,b)) -> TYP_array (te a, te b)
+(*  | `AST_lvalue (sr,e) -> TYP_lvalue (te e) *)
+  | `AST_ref (sr,e) -> TYP_pointer (te e)
   | `AST_sum (_,ts) ->
     let ts = map te ts in
     if all_tunits ts then
-      `TYP_unitsum (length ts)
+      TYP_unitsum (length ts)
     else
-      `TYP_sum ts
+      TYP_sum ts
 
   | `AST_orlist (sr,ts) ->
     begin match ts with
     | [] -> assert false
     | [x] -> assert false
     | h :: t ->
-      let llor = `AST_name (sr,"lor",[]) in
-      fold_left (fun sum t -> `TYP_apply (llor,`TYP_type_tuple[sum; te t])) (te h) t
+      let llor = TYP_name (sr,"lor",[]) in
+      fold_left (fun sum t -> TYP_apply (llor,TYP_type_tuple[sum; te t])) (te h) t
     end
 
   | `AST_andlist (sr,ts) ->
@@ -91,12 +99,12 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
     | [] -> assert false
     | [x] -> assert false
     | h :: t ->
-      let lland = `AST_name (sr,"land",[]) in
-      fold_left (fun sum t -> `TYP_apply (lland,`TYP_type_tuple [sum; te t])) (te h) t
+      let lland = TYP_name (sr,"land",[]) in
+      fold_left (fun sum t -> TYP_apply (lland,TYP_type_tuple [sum; te t])) (te h) t
     end
 
-  | `AST_typeof (_,e) -> `TYP_typeof e
-  | `AST_as (sr,(t,x)) -> `TYP_as (te t,x)
+  | `AST_typeof (_,e) -> TYP_typeof e
+  | `AST_as (sr,(t,x)) -> TYP_as (te t,x)
 
   | `AST_literal (sr,AST_int (enc,v)) ->
     if enc <> "int"
@@ -114,22 +122,22 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       end
     in
       if !v <0 then clierr sr "Negative int not allowed as type"
-      else if !v = 0 then ((`AST_void sr) :> typecode_t)
-      else if !v = 1 then `TYP_tuple[]
-      else `TYP_unitsum !v
+      else if !v = 0 then TYP_void sr
+      else if !v = 1 then TYP_tuple []
+      else TYP_unitsum !v
 
   (* NOTE SPECIAL NAME HANDLING HACKS!! *)
   | `AST_apply(sr,(e1,e2)) ->
     begin match e1 with
     | `AST_name (_,name,[]) ->
       let name' = name ^ "          " (* 10 chars *) in
-      if name = "typeof" then `TYP_typeof e2
+      if name = "typeof" then TYP_typeof e2
       else let arg = typecode_of_expr e2 in
       if name = "_isin" then
       begin
         match arg with
-        | `TYP_type_tuple [memt; sett] ->
-           `TYP_isin (memt, sett)
+        | TYP_type_tuple [memt; sett] ->
+           TYP_isin (memt, sett)
         | _ ->
           (* this can be fixed by taking projections but I can't be bothered atm *)
           failwith
@@ -138,10 +146,10 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       else if name = "typesetof" then
       begin
         match arg with
-        | `TYP_type_tuple ls -> `TYP_typeset ls
-        | x -> `TYP_typeset [x]
+        | TYP_type_tuple ls -> TYP_typeset ls
+        | x -> TYP_typeset [x]
       end
-      else if name = "bnot" then `TYP_dual arg
+      else if name = "bnot" then TYP_dual arg
       else if String.sub name' 0 5 = "proj_"
       then
         begin
@@ -156,7 +164,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
               Flx_srcref.short_string_of_src sr
             )
           done;
-          `TYP_proj (!acc, arg)
+          TYP_proj (!acc, arg)
          end
 
       else if String.sub name' 0 9 = "case_arg_"
@@ -173,13 +181,13 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
               Flx_srcref.short_string_of_src sr
             )
           done;
-          `TYP_case_arg (!acc, arg)
+          TYP_case_arg (!acc, arg)
          end
       else
-        `TYP_apply (typecode_of_expr e1,arg)
+        TYP_apply (typecode_of_expr e1,arg)
 
     | _ ->
-      `TYP_apply (typecode_of_expr e1,typecode_of_expr e2)
+      TYP_apply (typecode_of_expr e1,typecode_of_expr e2)
     end
 
   | `AST_lambda (sr,(vs,paramss,ret,body)) ->
@@ -193,11 +201,11 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
              let t = typecode_of_expr e in
              match paramss,ret with
              (* special case, allows {t} to mean 1 -> t *)
-             | [[],None],`TYP_none ->
-              `TYP_function (`TYP_tuple [],t)
+             | [[],None],TYP_none ->
+              TYP_function (TYP_tuple [],t)
              | _ ->
              let params = map (fun (x,y,z,d)-> y,z) params in
-             `TYP_typefun
+             TYP_typefun
              (
                params,
                ret,
@@ -218,12 +226,12 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
      end
 
   | `AST_type_match (sr,(e,ps)) ->
-    `TYP_type_match (e,ps)
+    TYP_type_match (e,ps)
 
   | `AST_noexpand (sr,e) -> te e
 
-  | `AST_patvar _ as e -> e
-  | `AST_patany _ as e -> e
+  | `AST_patvar (sr,s) -> TYP_patvar (sr,s)
+  | `AST_patany sr -> TYP_patany sr
   | #expr_t ->
     let sr = src_of_expr e in
     clierr sr ("Type expression expected, got " ^ string_of_expr e)

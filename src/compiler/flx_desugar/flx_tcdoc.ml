@@ -66,7 +66,7 @@ let gen_tcdoc () =
       | `AST_fun_decl (sr,name,vs,args,result,code,reqs,prec)
         when code = `Virtual ->
         begin match result with
-        | `AST_void _ ->
+        | TYP_void _ ->
           w (begin_div "element" ^
             span "category" "   virtual proc " ^ span "ident" name ^ Flx_print.print_vs vs ^ ": " ^
             catmap "*" st args ^
@@ -199,7 +199,7 @@ let gen_mdoc () =
         let seq = !counter in incr counter;
         let id = "ref_"^string_of_int seq in
         begin match result with
-        | `AST_void _ ->
+        | TYP_void _ ->
           w (begin_div "element" ^
             span "category" "proc " ^ span "ident" name ^
             Flx_print.print_vs vs ^ ": " ^
@@ -225,11 +225,11 @@ let gen_mdoc () =
         let s =
           span "category"
           (match kind with
-          | `Function -> (match res with `AST_void _ -> "proc " | _ -> "fun ")
-          | `CFunction -> (match res with `AST_void _ -> "cproc " | _ -> "cfun ")
-          | `InlineFunction -> (match res with `AST_void _ -> "inline proc " | _ -> "inline fun ")
-          | `NoInlineFunction -> (match res with `AST_void _ -> "noinline proc " | _ -> "noinline fun ")
-          | `Virtual -> (match res with `AST_void _ -> "virtual proc " | _ -> "virtual fun ")
+          | `Function -> (match res with TYP_void _ -> "proc " | _ -> "fun ")
+          | `CFunction -> (match res with TYP_void _ -> "cproc " | _ -> "cfun ")
+          | `InlineFunction -> (match res with TYP_void _ -> "inline proc " | _ -> "inline fun ")
+          | `NoInlineFunction -> (match res with TYP_void _ -> "noinline proc " | _ -> "noinline fun ")
+          | `Virtual -> (match res with TYP_void _ -> "virtual proc " | _ -> "virtual fun ")
           | `Ctor -> "ctor "
           | `Generator -> "generator "
           )

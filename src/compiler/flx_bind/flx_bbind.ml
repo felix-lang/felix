@@ -309,7 +309,7 @@ let bbind_sym syms bbdfns i {
         | {symdef=SYMDEF_union its} ->
           fold_left
           (fun v (_,_,_,t) ->
-            v && (match t with `AST_void _ -> true | _ -> false)
+            v && (match t with TYP_void _ -> true | _ -> false)
           )
           true
           its
@@ -462,11 +462,11 @@ let bbind_sym syms bbdfns i {
         let counter = ref 0 in
         map
         (function
-          | `AST_name (_,id,[]) when id = name ->
+          | TYP_name (_,id,[]) when id = name ->
             if !client_data_pos = -1 then
               client_data_pos := !counter
             ;
-            let address = `AST_name(sr,"address",[]) in
+            let address = TYP_name(sr,"address",[]) in
             bt address
           | t -> incr counter; bt t
         )
@@ -482,7 +482,7 @@ let bbind_sym syms bbdfns i {
         (
           filter
           (function
-            | `AST_name (_,id,[]) when id = name -> false
+            | TYP_name (_,id,[]) when id = name -> false
             | t -> true
           )
           ts_orig
@@ -502,7 +502,7 @@ let bbind_sym syms bbdfns i {
       let ts_cf =
         map
         (function
-          | `AST_name (_,id,[]) when id = name -> tf
+          | TYP_name (_,id,[]) when id = name -> tf
           | t -> bt t
         )
         ts_orig

@@ -9,84 +9,82 @@ let rec list_of_n_things thing lst n =
   else list_of_n_things thing (thing::lst) (n-1)
 
 let map_type f (t:typecode_t):typecode_t = match t with
-  | `AST_name (sr,name,ts) -> `AST_name (sr, name, List.map f ts)
-  | `AST_lookup (sr,(e,name,ts)) -> `AST_lookup (sr, (e, name, List.map f ts))
-  | `AST_suffix (sr,(qn,t)) -> `AST_suffix (sr, (qn, f t))
-
-  | `AST_typed_case (sr,i,t) -> `AST_typed_case (sr,i, f t)
-  | `TYP_tuple ts -> `TYP_tuple (List.map f ts)
-  | `TYP_record ts -> `TYP_record (List.map (fun (s,t) -> s,f t) ts)
-  | `TYP_variant ts -> `TYP_variant (List.map (fun (s,t) -> s,f t) ts)
-  | `TYP_isin (a,b) -> `TYP_isin (f a, f b)
+  | TYP_name (sr,name,ts) -> TYP_name (sr, name, List.map f ts)
+  | TYP_lookup (sr,(e,name,ts)) -> TYP_lookup (sr, (e, name, List.map f ts))
+  | TYP_suffix (sr,(qn,t)) -> TYP_suffix (sr, (qn, f t))
+  | TYP_typed_case (sr,i,t) -> TYP_typed_case (sr,i, f t)
+  | TYP_tuple ts -> TYP_tuple (List.map f ts)
+  | TYP_record ts -> TYP_record (List.map (fun (s,t) -> s,f t) ts)
+  | TYP_variant ts -> TYP_variant (List.map (fun (s,t) -> s,f t) ts)
+  | TYP_isin (a,b) -> TYP_isin (f a, f b)
 
   (* we have to do this, so that a large unitsume
      can be specified without overflowing the compiler
      storage
   *)
-  | `TYP_unitsum k ->
+  | TYP_unitsum k ->
     if k>0 then
-      let mapped_unit = f (`TYP_tuple []) in
+      let mapped_unit = f (TYP_tuple []) in
       match mapped_unit with
-      | `TYP_tuple [] ->
-        `TYP_unitsum k
-      | _ -> `TYP_tuple ( list_of_n_things mapped_unit [] k)
-    else `TYP_unitsum k
+      | TYP_tuple [] ->
+        TYP_unitsum k
+      | _ -> TYP_tuple ( list_of_n_things mapped_unit [] k)
+    else TYP_unitsum k
 
   (* here we don't need to go to a unitsum, since
      we have already used up storage
   *)
-  | `TYP_sum ts -> `TYP_sum (List.map f ts)
-  | `TYP_intersect ts -> `TYP_intersect (List.map f ts)
-  | `TYP_function (a,b) -> `TYP_function (f a, f b)
-  | `TYP_cfunction (a,b) -> `TYP_cfunction (f a, f b)
-  | `TYP_pointer t -> `TYP_pointer (f t)
-  | `TYP_array (t1, t2) -> `TYP_array (f t1, f t2)
-  | `TYP_as (t,s) -> `TYP_as (f t,s)
+  | TYP_sum ts -> TYP_sum (List.map f ts)
+  | TYP_intersect ts -> TYP_intersect (List.map f ts)
+  | TYP_function (a,b) -> TYP_function (f a, f b)
+  | TYP_cfunction (a,b) -> TYP_cfunction (f a, f b)
+  | TYP_pointer t -> TYP_pointer (f t)
+  | TYP_array (t1, t2) -> TYP_array (f t1, f t2)
+  | TYP_as (t,s) -> TYP_as (f t,s)
 
   (* type sets *)
-  | `TYP_typeset ts -> `TYP_typeset (List.map f ts)
-  | `TYP_setintersection ts -> `TYP_setintersection (List.map f ts)
-  | `TYP_setunion ts -> `TYP_setunion (List.map f ts)
+  | TYP_typeset ts -> TYP_typeset (List.map f ts)
+  | TYP_setintersection ts -> TYP_setintersection (List.map f ts)
+  | TYP_setunion ts -> TYP_setunion (List.map f ts)
 
   (* destructors *)
-  | `TYP_dom t -> `TYP_dom (f t)
-  | `TYP_dual t -> `TYP_dual (f t)
-  | `TYP_cod t -> `TYP_cod (f t)
-  | `TYP_proj (i,t) -> `TYP_proj (i, f t)
-  | `TYP_case_arg (i,t) -> `TYP_case_arg (i, f t)
+  | TYP_dom t -> TYP_dom (f t)
+  | TYP_dual t -> TYP_dual (f t)
+  | TYP_cod t -> TYP_cod (f t)
+  | TYP_proj (i,t) -> TYP_proj (i, f t)
+  | TYP_case_arg (i,t) -> TYP_case_arg (i, f t)
 
   (*
-  | `TYP_type_match (t,ps) ->
+  | TYP_type_match (t,ps) ->
     let ps = List.map (fun (p,t) -> p, f t) ps in
-    `TYP_type_match (f t, ps)
+    TYP_type_match (f t, ps)
   *)
-  | `TYP_type_match (t,ps) ->
+  | TYP_type_match (t,ps) ->
     let ps = List.map (fun (p,t) -> f p, f t) ps in
-    `TYP_type_match (f t, ps)
+    TYP_type_match (f t, ps)
 
   (* meta constructors *)
-  | `TYP_apply (a,b) -> `TYP_apply (f a, f b)
-  | `TYP_typefun (ps, a, b) -> `TYP_typefun (ps, f a, f b)
-  | `TYP_type_tuple ts -> `TYP_type_tuple (List.map f ts)
+  | TYP_apply (a,b) -> TYP_apply (f a, f b)
+  | TYP_typefun (ps, a, b) -> TYP_typefun (ps, f a, f b)
+  | TYP_type_tuple ts -> TYP_type_tuple (List.map f ts)
 
 
   (* invariant ..?? *)
-  | `TYP_typeof _
-  | `AST_callback _
-  | `AST_case_tag _
-  | `AST_index _
-  | `AST_the _
-  | `TYP_var _
-  | `AST_patvar _
-  | `AST_patany _
+  | TYP_typeof _
+  | TYP_callback _
+  | TYP_case_tag _
+  | TYP_index _
+  | TYP_the _
+  | TYP_var _
+  | TYP_patvar _
+  | TYP_patany _
 
   (* absolute constants *)
-  | `AST_void _
-  | `TYP_ellipsis
-  | `TYP_type
-  | `TYP_none
-
-    -> t
+  | TYP_void _
+  | TYP_ellipsis
+  | TYP_type
+  | TYP_none
+  -> t
 
 
 let map_expr f (e:expr_t):expr_t = match e with

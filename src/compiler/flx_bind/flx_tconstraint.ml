@@ -25,9 +25,9 @@ open Flx_list
 let build_constraint_element syms bt sr i p1 =
   (* special case, no constraint, represent by just 'true' (unit type) *)
   match p1 with
-  | `AST_patany _
-  | `TYP_type
-  | `TYP_function _
+  | TYP_patany _
+  | TYP_type
+  | TYP_function _
     -> `BTYP_tuple []
   | _ ->
 

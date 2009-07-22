@@ -1,3 +1,4 @@
+open Flx_ast
 open Flx_types
 
 type t = {
@@ -11,7 +12,7 @@ let null_tab = Hashtbl.create 3
 
 
 (* use fresh variables, but preserve names *)
-let mkentry syms (vs:Flx_ast.ivs_list_t) i =
+let mkentry syms (vs:ivs_list_t) i =
   let n = List.length (fst vs) in
   let base = !(syms.Flx_mtypes2.counter) in
   syms.Flx_mtypes2.counter := !(syms.Flx_mtypes2.counter) + n;
@@ -27,29 +28,30 @@ let mkentry syms (vs:Flx_ast.ivs_list_t) i =
 
 
 let merge_ivs
-  (vs1,{ Flx_ast.raw_type_constraint=con1; raw_typeclass_reqs=rtcr1 })
-  (vs2,{ Flx_ast.raw_type_constraint=con2; raw_typeclass_reqs=rtcr2 }) :
-  Flx_ast.ivs_list_t
+  (vs1,{ raw_type_constraint=con1; raw_typeclass_reqs=rtcr1 })
+  (vs2,{ raw_type_constraint=con2; raw_typeclass_reqs=rtcr2 }) :
+  ivs_list_t
   =
   let t =
     match con1,con2 with
-    | `TYP_tuple[],`TYP_tuple[] -> `TYP_tuple[]
-    | `TYP_tuple[],b -> b
-    | a,`TYP_tuple[] -> a
-    | `TYP_intersect a, `TYP_intersect b -> `TYP_intersect (a@b)
-    | `TYP_intersect a, b -> `TYP_intersect (a @[b])
-    | a,`TYP_intersect b -> `TYP_intersect (a::b)
-    | a,b -> `TYP_intersect [a;b]
+    | TYP_tuple[], TYP_tuple[] -> TYP_tuple[]
+    | TYP_tuple[],b -> b
+    | a, TYP_tuple[] -> a
+    | TYP_intersect a, TYP_intersect b ->
+        TYP_intersect (a@b)
+    | TYP_intersect a, b -> TYP_intersect (a @[b])
+    | a, TYP_intersect b -> TYP_intersect (a::b)
+    | a,b -> TYP_intersect [a;b]
   and
     rtcr = Flx_list.uniq_list (rtcr1 @ rtcr2)
   in
   vs1 @ vs2,
-  { Flx_ast.raw_type_constraint=t; raw_typeclass_reqs=rtcr }
+  { raw_type_constraint=t; raw_typeclass_reqs=rtcr }
 
 
 let split_asms asms :
-  (Flx_srcref.t * Flx_ast.id_t * int option * Flx_types.access_t * Flx_ast.vs_list_t * Flx_types.dcl_t) list *
-  Flx_ast.sexe_t list *
+  (Flx_srcref.t * id_t * int option * Flx_types.access_t * vs_list_t * Flx_types.dcl_t) list *
+  sexe_t list *
   (Flx_srcref.t * Flx_types.iface_t) list *
   Flx_types.dir_t list
 =
@@ -83,7 +85,7 @@ let dump_name_to_int_map level name name_map =
 let strp = function | Some x -> string_of_int x | None -> "none"
 
 
-let full_add_unique syms sr (vs:Flx_ast.ivs_list_t) table key value =
+let full_add_unique syms sr (vs:ivs_list_t) table key value =
   try
     let entry = Hashtbl.find table key in
     match entry with
@@ -115,10 +117,10 @@ let full_add_typevar syms sr table key value =
      | FunctionEntry [] -> assert false
   with Not_found ->
     Hashtbl.add table key
-      (NonFunctionEntry (mkentry syms Flx_ast.dfltvs value))
+      (NonFunctionEntry (mkentry syms dfltvs value))
 
 
-let full_add_function syms sr (vs:Flx_ast.ivs_list_t) table key value =
+let full_add_function syms sr (vs:ivs_list_t) table key value =
   try
     match Hashtbl.find table key with
     | NonFunctionEntry entry ->
@@ -142,7 +144,7 @@ let full_add_function syms sr (vs:Flx_ast.ivs_list_t) table key value =
 
 
 (* make_vs inserts unique indexes into vs_lists, thus creating an ivs_list. *)
-let make_vs ?(print=false) level counter (vs', con) : Flx_ast.ivs_list_t =
+let make_vs ?(print=false) level counter (vs', con) : ivs_list_t =
   let vs =
     List.map begin fun (tid, tpat) ->
       let n = !counter in
@@ -209,7 +211,7 @@ let rec build_tables
       failwith ("Can't name non-toplevel module 'root'")
     else
       Hashtbl.add priv_name_map "root"
-        (NonFunctionEntry (mkentry syms Flx_ast.dfltvs root));
+        (NonFunctionEntry (mkentry syms dfltvs root));
 
   (* Step through each dcl and add the found assemblies to the symbol tables. *)
   List.iter (
@@ -273,7 +275,7 @@ and build_table_for_dcl
 
   (*
   begin
-    match vs with (_,{Flx_ast.raw_typeclass_reqs=rtcr})->
+    match vs with (_,{raw_typeclass_reqs=rtcr})->
       match rtcr  with
       | _::_ ->
           print_endline (id^": TYPECLASS REQUIREMENTS " ^
@@ -286,7 +288,7 @@ and build_table_for_dcl
       addtc t (DIR_typeclass_req h :: dirsout);
         in
         let typeclass_dirs =
-          match vs with (_,{Flx_ast.raw_typeclass_reqs=rtcr})-> addtc rtcr []
+          match vs with (_,{raw_typeclass_reqs=rtcr})-> addtc rtcr []
   in
   *)
 
@@ -319,22 +321,22 @@ and build_table_for_dcl
   let add_tvars' parent table vs =
     List.iter begin fun (tvid, i, tpat) ->
       let mt = match tpat with
-      | `AST_patany _ -> `TYP_type (* default/unspecified *)
+      | TYP_patany _ -> TYP_type (* default/unspecified *)
       (*
       | #suffixed_name_t as name ->
           print_endline ("Decoding type variable " ^ string_of_int i ^ " kind");
           print_endline ("Hacking suffixed kind name " ^ string_of_suffixed_name name ^ " to TYPE");
-          `TYP_type (* HACK *)
+          TYP_type (* HACK *)
           *)
 
-      | `TYP_none -> `TYP_type
-      | `TYP_ellipsis -> Flx_exceptions.clierr sr "Ellipsis ... as metatype"
+      | TYP_none -> TYP_type
+      | TYP_ellipsis -> Flx_exceptions.clierr sr "Ellipsis ... as metatype"
       | _ -> tpat
       in
 
       (* Add the type variable to the symbol table. *)
       add_symbol
-        ~vs:Flx_ast.dfltvs
+        ~vs:dfltvs
         ~pubtab:null_tab
         ~privtab:null_tab
         i tvid (SYMDEF_typevar mt);
@@ -356,16 +358,16 @@ and build_table_for_dcl
       (* Add the paramater to the symbol table. *)
       add_symbol
         ~parent
-        ~vs:Flx_ast.dfltvs
+        ~vs:dfltvs
         ~pubtab:null_tab
         ~privtab:null_tab
         n name (SYMDEF_parameter (k, typ));
 
       (* Possibly add the parameter to the public symbol table. *)
-      if access = `Public then full_add_unique syms sr Flx_ast.dfltvs pubtab name n;
+      if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
 
       (* Add the parameter to the private symbol table. *)
-      full_add_unique syms sr Flx_ast.dfltvs privtab name n;
+      full_add_unique syms sr dfltvs privtab name n;
 
       ips := (k, name, typ, dflt) :: !ips
     end ps;
@@ -384,16 +386,16 @@ and build_table_for_dcl
       (* Add the symbol to the symbol table. *)
       add_symbol
         ~parent
-        ~vs:Flx_ast.dfltvs
+        ~vs:dfltvs
         ~pubtab:null_tab
         ~privtab:null_tab
         n name (SYMDEF_parameter (`PVal, typ));
 
       (* Register the symbol if it's public. *)
-      if access = `Public then full_add_unique syms sr Flx_ast.dfltvs pubtab name n;
+      if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
 
       (* Always register it in the private symbol table. *)
-      full_add_unique syms sr Flx_ast.dfltvs privtab name n;
+      full_add_unique syms sr dfltvs privtab name n;
 
       ips := (`PVal, name, typ, None) :: !ips
     end ps;
@@ -438,7 +440,7 @@ and build_table_for_dcl
 
       if is_ctor then
         begin match t with
-        | `AST_void _ -> ()
+        | TYP_void _ -> ()
         | _ -> Flx_exceptions.syserr sr "Constructor should return type void"
         end;
 
@@ -451,12 +453,12 @@ and build_table_for_dcl
         print_endline ("TABLING METHOD " ^ id ^ " OF CLASS " ^ name);
       *)
       let fun_index = n in
-      let t = if t = `TYP_none then `TYP_var n else t in
+      let t = if t = TYP_none then TYP_var n else t in
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           syms
           id
-          Flx_ast.dfltvs
+          dfltvs
           (level + 1)
           (Some n)
           root
@@ -525,8 +527,9 @@ and build_table_for_dcl
             (`AST_index (sr,mvname,match_var_index))
         in
         let dcl =
-          `Dcl (sr, vname, None,`Private, Flx_ast.dfltvs, DCL_val (`TYP_typeof (component)))
-        and instr = `Exe (sr, Flx_ast.EXE_init (vname, component)) in
+          `Dcl (sr, vname, None,`Private, dfltvs,
+            DCL_val (TYP_typeof (component)))
+        and instr = `Exe (sr, EXE_init (vname, component)) in
         new_asms := dcl :: instr :: !new_asms;
       end vars;
 
@@ -538,7 +541,7 @@ and build_table_for_dcl
         build_tables
           syms
           id
-          Flx_ast.dfltvs
+          dfltvs
           (level + 1)
           (Some fun_index)
           root
@@ -547,7 +550,7 @@ and build_table_for_dcl
 
       (* Add symbols to dfns. *)
       add_symbol ~pubtab ~privtab ~dirs fun_index id
-        (SYMDEF_function (([],None), `TYP_var fun_index,
+        (SYMDEF_function (([],None), TYP_var fun_index,
         [`Generated "symtab:match handler" ; `Inline], exes));
 
       (* Possibly add function to public symbol table. *)
@@ -587,7 +590,7 @@ and build_table_for_dcl
 
       (* Take all the exes and add them to a function called _init_ that's
        * called when the module is loaded. *)
-      let init_def = SYMDEF_function ( ([],None),`AST_void sr, [],exes) in
+      let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
 
       (* Get a unique index for the _init_ function. *)
       let n' = !counter in incr counter;
@@ -703,7 +706,7 @@ and build_table_for_dcl
         build_tables
           syms
           id
-          Flx_ast.dfltvs
+          dfltvs
           (level + 1)
           (Some n)
           root
@@ -730,7 +733,7 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_val t ->
-      let t = match t with | `TYP_none -> `TYP_var n | _ -> t in
+      let t = match t with | TYP_none -> TYP_var n | _ -> t in
 
       (* Add the value to the dnfs. *)
       add_symbol n id (SYMDEF_val t);
@@ -745,12 +748,12 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_var t ->
-      let t = if t = `TYP_none then `TYP_var n else t in
+      let t = if t = TYP_none then TYP_var n else t in
 
       (* Add the variable to the dfns. *)
       add_symbol n id (SYMDEF_var t);
       (*
-      add_symbol n id (SYMDEF_var (`TYP_lvalue t)
+      add_symbol n id (SYMDEF_var (TYP_lvalue t)
       *)
 
       (* Possibly add the variable to the public symbol table. *)
@@ -763,7 +766,7 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_lazy (t,e) ->
-      let t = if t = `TYP_none then `TYP_var n else t in
+      let t = if t = TYP_none then TYP_var n else t in
 
       (* Add the lazy value to the dfns. *)
       add_symbol n id (SYMDEF_lazy (t,e));
@@ -778,7 +781,7 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_ref t ->
-      let t = match t with | `TYP_none -> `TYP_var n | _ -> t in
+      let t = match t with | TYP_none -> TYP_var n | _ -> t in
 
       (* Add the reference value to the dnfs. *)
       add_symbol n id (SYMDEF_ref t);
@@ -826,7 +829,7 @@ and build_table_for_dcl
        * because it checks both function set results and non-function results.
        *)
       begin match t with
-      | `TYP_typefun _ ->
+      | TYP_typefun _ ->
           if access = `Public then add_function pub_name_map id n;
           add_function priv_name_map id n
       | _ ->
@@ -868,7 +871,7 @@ and build_table_for_dcl
       add_symbol n id (SYMDEF_newtype t);
 
       (* Create an identity function that doesn't do anything. *)
-      let piname = `AST_name (sr,id,[]) in
+      let piname = TYP_name (sr,id,[]) in
 
       (* XXX: What's the _repr_ function for? *)
       let n_repr = !(syms.Flx_mtypes2.counter) in incr (syms.Flx_mtypes2.counter);
@@ -913,7 +916,7 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_const (props, t, c, reqs) ->
-      let t = if t = `TYP_none then `TYP_var n else t in
+      let t = if t = TYP_none then TYP_var n else t in
 
       (* Add the const to the dfns. *)
       add_symbol n id (SYMDEF_const (props,t,c,reqs));
@@ -958,8 +961,8 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_union (its) ->
-      let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
-      let utype = `AST_name(sr,id, tvars) in
+      let tvars = List.map (fun (s,_,_)-> TYP_name (sr,s,[])) (fst vs) in
+      let utype = TYP_name (sr, id, tvars) in
       let its =
         let ccount = ref 0 in (* count component constructors *)
         List.map begin fun (component_name,v,vs,t) ->
@@ -984,7 +987,7 @@ and build_table_for_dcl
 
       let unit_sum =
         List.fold_left begin fun v (_,_,_,t) ->
-          v && (match t with `AST_void _ -> true | _ -> false)
+          v && (match t with TYP_void _ -> true | _ -> false)
         end true its
       in
       List.iter begin fun (component_name, ctor_idx, vs', t) ->
@@ -1001,12 +1004,12 @@ and build_table_for_dcl
             SYMDEF_const_ctor (n,utype,ctor_idx,evs)
           end else
             match t with
-            | `AST_void _ -> (* constant constructor *)
+            | TYP_void _ -> (* constant constructor *)
                 if access = `Public then add_unique pub_name_map component_name dfn_idx;
                 add_unique priv_name_map component_name dfn_idx;
                 SYMDEF_const_ctor (n,utype,ctor_idx,evs)
 
-            | `TYP_tuple ts -> (* non-constant constructor or 2 or more arguments *)
+            | TYP_tuple ts -> (* non-constant constructor or 2 or more arguments *)
                 if access = `Public then add_function pub_name_map component_name dfn_idx;
                 add_function priv_name_map component_name dfn_idx;
                 SYMDEF_nonconst_ctor (n,utype,ctor_idx,evs,t)
@@ -1074,7 +1077,7 @@ let add_asms symtab asms =
       ~priv_name_map:symtab.priv_name_map
       symtab.syms
       "root"
-      Flx_ast.dfltvs
+      dfltvs
       0
       None
       !(symtab.syms.Flx_mtypes2.counter)
