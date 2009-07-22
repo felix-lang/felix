@@ -568,7 +568,7 @@ let consider syms env bt be luqn2 name
       let report_unresolved =
         (*
         let maybe_tp tp = match tp with
-          | `TPAT_any -> ""
+          | TPAT_any -> ""
           | tp -> ": " ^ string_of_tpattern tp
         in
         *)

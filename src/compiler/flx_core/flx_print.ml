@@ -729,13 +729,13 @@ and string_of_float_pat = function
 and string_of_tpattern p =
   let sp p = string_of_tpattern p in
   match p with
-  | `TPAT_function (p1,p2) -> sp p1 ^ " -> " ^ sp p2
-  | `TPAT_sum ps -> catmap " + " sp ps
-  | `TPAT_tuple ps -> catmap " * " sp ps
-  | `TPAT_pointer p -> "&" ^ sp p
-  | `TPAT_void -> "0"
-  | `TPAT_var s -> "?" ^ s
-  | `TPAT_name (s,ps) ->
+  | TPAT_function (p1,p2) -> sp p1 ^ " -> " ^ sp p2
+  | TPAT_sum ps -> catmap " + " sp ps
+  | TPAT_tuple ps -> catmap " * " sp ps
+  | TPAT_pointer p -> "&" ^ sp p
+  | TPAT_void -> "0"
+  | TPAT_var s -> "?" ^ s
+  | TPAT_name (s,ps) ->
     s ^
     (
       match ps with
@@ -743,10 +743,10 @@ and string_of_tpattern p =
       | ps -> "[" ^ catmap "," sp ps ^ "]"
     )
 
-  | `TPAT_as (p,s) -> sp p ^ " as " ^ s
-  | `TPAT_any -> "_"
-  | `TPAT_unitsum j -> si j
-  | `TPAT_type_tuple ps -> catmap ", " sp ps
+  | TPAT_as (p,s) -> sp p ^ " as " ^ s
+  | TPAT_any -> "_"
+  | TPAT_unitsum j -> si j
+  | TPAT_type_tuple ps -> catmap ", " sp ps
 
 and string_of_pattern p =
   let se e = string_of_expr e in
@@ -834,7 +834,7 @@ and print_ixs = function
 
 (*
 and string_of_maybe_tpattern = function
-  | `TPAT_any -> ""
+  | TPAT_any -> ""
   | t -> ": " ^ string_of_tpattern t
 *)
 

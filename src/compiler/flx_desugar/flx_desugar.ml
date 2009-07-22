@@ -32,7 +32,7 @@ let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
       let vt: typecode_t = `AST_name(generated,v,[]) in
       let vs,ps = aux t in
       (*
-      ((v,`TPAT_any)::vs),((k,x,vt,d)::ps) (* a bit HACKY *)
+      ((v,TPAT_any)::vs),((k,x,vt,d)::ps) (* a bit HACKY *)
       *)
       ((v,`AST_patany sr)::vs),((k,x,vt,d)::ps) (* a bit HACKY *)
 
@@ -610,7 +610,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 
 (*
 and maybe_tpat = function
-  | `TPAT_any -> ""
+  | TPAT_any -> ""
   | tp -> ": " ^ string_of_tpattern tp
 *)
 
@@ -959,7 +959,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
             print_endline ("Implicit var " ^ var);
             *)
             (*
-            let v = var,`TPAT_name (name,[]) in
+            let v = var,TPAT_name (name,[]) in
             *)
             let v = var,`AST_name (sr,name,[]) in
             let arg = `AST_name (sr,var,[]) in

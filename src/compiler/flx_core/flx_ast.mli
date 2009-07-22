@@ -117,19 +117,17 @@ and typecode_t =
   ]
 
 and tpattern_t =
-  [
-  |  `TPAT_function of tpattern_t * tpattern_t
-  |  `TPAT_sum of tpattern_t list
-  |  `TPAT_tuple of tpattern_t list
-  |  `TPAT_pointer of tpattern_t
-  |  `TPAT_void
-  |  `TPAT_var of string
-  |  `TPAT_name of string * tpattern_t list
-  |  `TPAT_as of tpattern_t * string
-  |  `TPAT_any
-  |  `TPAT_unitsum of int
-  |  `TPAT_type_tuple of tpattern_t list
-  ]
+  | TPAT_function of tpattern_t * tpattern_t
+  | TPAT_sum of tpattern_t list
+  | TPAT_tuple of tpattern_t list
+  | TPAT_pointer of tpattern_t
+  | TPAT_void
+  | TPAT_var of string
+  | TPAT_name of string * tpattern_t list
+  | TPAT_as of tpattern_t * string
+  | TPAT_any
+  | TPAT_unitsum of int
+  | TPAT_type_tuple of tpattern_t list
 
 and raw_typeclass_insts_t = qualified_name_t list
 and vs_aux_t = {
