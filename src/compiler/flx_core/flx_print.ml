@@ -1559,84 +1559,84 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
   let se e = string_of_expr e in
   let st t = string_of_typecode t in
   match entry with
-  | `SYMDEF_instance qn ->
+  | SYMDEF_instance qn ->
     "instance " ^ print_ivs vs ^ " " ^
     string_of_qualified_name qn ^ ";\n"
 
-  | `SYMDEF_const_ctor (uidx,ut,idx,vs') ->
+  | SYMDEF_const_ctor (uidx,ut,idx,vs') ->
      st ut ^ "  const_ctor: " ^
      name ^ print_ivs vs ^
      ";"
 
-  | `SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) ->
+  | SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) ->
      st ut ^ "  nonconst_ctor: " ^
      name ^ print_ivs vs ^
      " of " ^ st argt ^
      ";"
 
-  | `SYMDEF_type_alias t ->
+  | SYMDEF_type_alias t ->
     "typedef " ^ name ^ print_ivs vs ^" = " ^ st t ^ ";"
 
-  | `SYMDEF_inherit qn ->
+  | SYMDEF_inherit qn ->
     "inherit " ^ name ^ print_ivs vs ^" = " ^ string_of_qualified_name qn ^ ";"
 
-  | `SYMDEF_inherit_fun qn ->
+  | SYMDEF_inherit_fun qn ->
     "inherit fun " ^ name ^ print_ivs vs ^" = " ^ string_of_qualified_name qn ^ ";"
 
-  | `SYMDEF_abs (quals,code, reqs) ->
+  | SYMDEF_abs (quals,code, reqs) ->
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ name ^ print_ivs vs ^
     " = " ^ string_of_code_spec code ^
     string_of_named_reqs reqs ^
     ";"
 
-  | `SYMDEF_newtype (nt) ->
+  | SYMDEF_newtype (nt) ->
     "type " ^ name ^ print_ivs vs ^
     " = new " ^ st nt ^
     ";"
 
-  | `SYMDEF_var (t) ->
+  | SYMDEF_var (t) ->
     "var " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
 
-  | `SYMDEF_val (t) ->
+  | SYMDEF_val (t) ->
     "val " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
 
-  | `SYMDEF_ref (t) ->
+  | SYMDEF_ref (t) ->
     "ref " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
 
-  | `SYMDEF_lazy (t,e) ->
+  | SYMDEF_lazy (t,e) ->
     "fun " ^ name ^ print_ivs vs ^
     ": "^ st t ^
     "= " ^ se e ^
     ";"
 
-  | `SYMDEF_parameter (k,t) ->
+  | SYMDEF_parameter (k,t) ->
     "parameter " ^ string_of_param_kind k ^ " " ^
     name ^ print_ivs vs ^":"^ st t ^ ";"
 
-  | `SYMDEF_typevar (t) ->
+  | SYMDEF_typevar (t) ->
     "typevar " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
 
-  | `SYMDEF_const (props,t,ct, reqs) ->
+  | SYMDEF_const (props,t,ct, reqs) ->
     string_of_properties props ^
     "const " ^ name ^ print_ivs vs ^":"^
     st t ^ " = " ^string_of_code_spec ct^
     string_of_named_reqs reqs ^
     ";"
 
-  | `SYMDEF_union (cts) ->
+  | SYMDEF_union (cts) ->
     "union " ^ name ^ print_ivs vs ^ ";"
 
-  | `SYMDEF_struct (cts) ->
+  | SYMDEF_struct (cts) ->
     "struct " ^ name ^ print_ivs vs ^ ";"
 
-  | `SYMDEF_cstruct (cts) ->
+  | SYMDEF_cstruct (cts) ->
     "cstruct " ^ name ^ print_ivs vs ^ ";"
 
-  | `SYMDEF_typeclass ->
+  | SYMDEF_typeclass ->
     "typeclass " ^ name ^ print_ivs vs ^ ";"
 
-  | `SYMDEF_fun (props, pts,res,cts, reqs,prec) ->
+  | SYMDEF_fun (props, pts,res,cts, reqs,prec) ->
     string_of_properties props ^
     "fun " ^ name ^ print_ivs vs ^
     ": " ^ st
@@ -1656,7 +1656,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
     string_of_named_reqs reqs ^
     ";"
 
-  | `SYMDEF_callback (props, pts,res,reqs) ->
+  | SYMDEF_callback (props, pts,res,reqs) ->
     string_of_properties props ^
     "callback fun " ^ name ^ print_ivs vs ^
     ": " ^ st
@@ -1675,7 +1675,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
     string_of_named_reqs reqs ^
     ";"
 
-  | `SYMDEF_insert (s,ikind, reqs) ->
+  | SYMDEF_insert (s,ikind, reqs) ->
     (match ikind with
     | `Header -> "header "
     | `Body -> "body "
@@ -1686,16 +1686,16 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
      string_of_named_reqs reqs ^
     ";\n"
 
-  | `SYMDEF_reduce (ps,e1,e2) ->
+  | SYMDEF_reduce (ps,e1,e2) ->
     "reduce " ^ name ^ print_ivs vs ^ ";"
 
-  | `SYMDEF_axiom (ps,e1) ->
+  | SYMDEF_axiom (ps,e1) ->
     "axiom " ^ name ^ print_ivs vs ^ ";"
 
-  | `SYMDEF_lemma (ps,e1) ->
+  | SYMDEF_lemma (ps,e1) ->
     "lemma " ^ name ^ print_ivs vs ^ ";"
 
-  | `SYMDEF_function (ps,res,props, es) ->
+  | SYMDEF_function (ps,res,props, es) ->
     let ps,traint = ps in
     string_of_properties props ^
     "fun " ^ name ^ print_ivs vs ^
@@ -1714,10 +1714,10 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
     ) ^
     ";"
 
-  | `SYMDEF_match_check (pat,(mvname,i))->
+  | SYMDEF_match_check (pat,(mvname,i))->
     "match_check " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
 
-  | `SYMDEF_module ->
+  | SYMDEF_module ->
     "module " ^ name ^ ";"
 
 and string_of_exe level s =

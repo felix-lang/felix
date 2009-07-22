@@ -669,7 +669,7 @@ let virtual_check syms (bbdfns:fully_bound_symbol_table_t) sr i ts =
       try
         let {id=pid; vs=vs; symdef=entry} = Hashtbl.find syms.dfns parent in
         match entry with
-        | `SYMDEF_typeclass ->
+        | SYMDEF_typeclass ->
           (*
           print_endline ("Found parent " ^ pid ^ "<" ^ si i ^ ">");
           *)

@@ -30,7 +30,7 @@ let find_function syms env name =
         try Some (Hashtbl.find syms.dfns i)
         with Not_found -> None
       with
-      | Some {symdef=`SYMDEF_fun (_,args,res,ct,_,_) } ->
+      | Some {symdef=SYMDEF_fun (_,args,res,ct,_,_) } ->
         begin match name,args,res with
         | "lnot",[`AST_name (_,"bool",[])],`AST_name (_,"bool",[]) -> true
         | _,[`AST_name (_,"bool",[]); `AST_name (_,"bool",[])],`AST_name (_,"bool",[]) -> true

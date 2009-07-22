@@ -240,7 +240,7 @@ try
         )
     with {id=id; sr=sr; parent=parent;vs=vs;pubmap=name_map;symdef=entry} ->
     begin match entry with
-      | `SYMDEF_module -> ()
+      | SYMDEF_module -> ()
       | _ -> failwith "Expected to find top level module ''"
     end
     ;

@@ -190,10 +190,10 @@ let rec cpp_type_classname syms t =
 
   | `BTYP_inst (i,ts) ->
     let cal_prefix = function
-      | `SYMDEF_struct _  -> "_s"
-      | `SYMDEF_union _   -> "_u"
-      | `SYMDEF_abs _  -> "_a"
-      | `SYMDEF_newtype _ -> "_abstr_"
+      | SYMDEF_struct _  -> "_s"
+      | SYMDEF_union _   -> "_u"
+      | SYMDEF_abs _  -> "_a"
+      | SYMDEF_newtype _ -> "_abstr_"
       | _ -> "_unk_"
     in
     if ts = [] then
@@ -203,19 +203,19 @@ let rec cpp_type_classname syms t =
           { id=id; symdef=symdef } -> Some (id,symdef )
         with Not_found -> None
       with
-      | Some (id,`SYMDEF_cstruct _) -> id
-      | Some (_,`SYMDEF_abs (_,`Str "char",_)) -> "char" (* hack .. *)
-      | Some (_,`SYMDEF_abs (_,`Str "int",_)) -> "int" (* hack .. *)
-      | Some (_,`SYMDEF_abs (_,`Str "short",_)) -> "short" (* hack .. *)
-      | Some (_,`SYMDEF_abs (_,`Str "long",_)) -> "long" (* hack .. *)
-      | Some (_,`SYMDEF_abs (_,`Str "float",_)) -> "float" (* hack .. *)
-      | Some (_,`SYMDEF_abs (_,`Str "double",_)) -> "double" (* hack .. *)
-      | Some (_,`SYMDEF_abs (_,`StrTemplate "char",_)) -> "char" (* hack .. *)
-      | Some (_,`SYMDEF_abs (_,`StrTemplate "int",_)) -> "int" (* hack .. *)
-      | Some (_,`SYMDEF_abs (_,`StrTemplate "short",_)) -> "short" (* hack .. *)
-      | Some (_,`SYMDEF_abs (_,`StrTemplate "long",_)) -> "long" (* hack .. *)
-      | Some (_,`SYMDEF_abs (_,`StrTemplate "float",_)) -> "float" (* hack .. *)
-      | Some (_,`SYMDEF_abs (_,`StrTemplate "double",_)) -> "double" (* hack .. *)
+      | Some (id,SYMDEF_cstruct _) -> id
+      | Some (_,SYMDEF_abs (_,`Str "char",_)) -> "char" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,`Str "int",_)) -> "int" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,`Str "short",_)) -> "short" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,`Str "long",_)) -> "long" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,`Str "float",_)) -> "float" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,`Str "double",_)) -> "double" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,`StrTemplate "char",_)) -> "char" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,`StrTemplate "int",_)) -> "int" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,`StrTemplate "short",_)) -> "short" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,`StrTemplate "long",_)) -> "long" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,`StrTemplate "float",_)) -> "float" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,`StrTemplate "double",_)) -> "double" (* hack .. *)
       | Some (_,data)  ->
         let prefix = cal_prefix data in
         prefix ^ si i ^ "t_" ^ si (tix t)

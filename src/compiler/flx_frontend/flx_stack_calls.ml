@@ -3,6 +3,7 @@ open Flx_ast
 open Flx_types
 open Flx_print
 open Flx_set
+open Flx_types
 open Flx_mtypes2
 open Flx_typing
 open Flx_mbind
@@ -63,7 +64,6 @@ let rec is_pure syms (child_map, bbdfns) i =
   | BBDCL_ref _
   | BBDCL_val _
   | BBDCL_tmp _
-  | BBDCL_const_ctor _
   | BBDCL_nonconst_ctor _
   | BBDCL_callback _
   | BBDCL_insert _

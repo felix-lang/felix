@@ -35,7 +35,7 @@ let rec find_true_parent dfns child parent =
     match hfind "find_true_parent" dfns parent with
     | {id=id; parent=grandparent; symdef=bdcl} ->
       match bdcl with
-      | `SYMDEF_module
+      | SYMDEF_module
         -> find_true_parent dfns id grandparent
       | _ -> Some parent
 
@@ -162,11 +162,11 @@ let bbind_sym syms bbdfns i {
     (* Pure declarations of functions, modules, and type
        don't generate anything. Variable dcls do, however.
     *)
-    | `SYMDEF_module
-    | `SYMDEF_typevar _
+    | SYMDEF_module
+    | SYMDEF_typevar _
       -> ()
 
-    | `SYMDEF_reduce (ps,e1,e2) ->
+    | SYMDEF_reduce (ps,e1,e2) ->
       let bps = bind_basic_ps ps in
       let be1 = be e1 in
       let be2 = be e2 in
@@ -176,7 +176,7 @@ let bbind_sym syms bbdfns i {
       print_endline ("//bound reduction  " ^ name ^ "<"^si i^">" ^
       print_bvs bvs)
 
-    | `SYMDEF_axiom (ps,e1) ->
+    | SYMDEF_axiom (ps,e1) ->
       let bps = bindps ps in
       let be1 = match e1 with
         | `Predicate e -> `BPredicate (be e)
@@ -188,7 +188,7 @@ let bbind_sym syms bbdfns i {
       print_endline ("//bound axiom " ^ name ^ "<"^si i^">" ^
       print_bvs bvs)
 
-    | `SYMDEF_lemma (ps,e1) ->
+    | SYMDEF_lemma (ps,e1) ->
       let bps = bindps ps in
       let be1 = match e1 with
         | `Predicate e -> `BPredicate (be e)
@@ -200,7 +200,7 @@ let bbind_sym syms bbdfns i {
       print_endline ("//bound lemma " ^ name ^ "<"^si i^">" ^
       print_bvs bvs)
 
-    | `SYMDEF_function (ps,rt,props,exes) ->
+    | SYMDEF_function (ps,rt,props,exes) ->
       let bps = bindps ps in
       let ts = typeofbps_traint bps in
       let brt = bt rt in
@@ -239,15 +239,15 @@ let bbind_sym syms bbdfns i {
            sbt syms.dfns t
         )
 
-    | `SYMDEF_parameter (k,_) ->
+    | SYMDEF_parameter (k,_) ->
       begin match parent with
       | None -> failwith "[bbind_sym] expected parameter to have a parent"
       | Some ip ->
         match hfind "bbind" syms.dfns ip with
-        | {symdef=`SYMDEF_reduce _}
-        | {symdef=`SYMDEF_axiom _}
-        | {symdef=`SYMDEF_lemma _}
-        | {symdef=`SYMDEF_function _}
+        | {symdef=SYMDEF_reduce _}
+        | {symdef=SYMDEF_axiom _}
+        | {symdef=SYMDEF_lemma _}
+        | {symdef=SYMDEF_function _}
           ->
           let t = Flx_lookup.type_of_index syms i in
           let dcl = match k with
@@ -267,7 +267,7 @@ let bbind_sym syms bbdfns i {
         | _ -> failwith "[bbind_sym] expected parameter to have function or functor parent"
       end
 
-    | `SYMDEF_match_check (pat,(mvname,mvindex)) ->
+    | SYMDEF_match_check (pat,(mvname,mvindex)) ->
       let t = Flx_lookup.type_of_index syms mvindex in
       let name_map = Hashtbl.create 97 in
       let exes =
@@ -300,13 +300,13 @@ let bbind_sym syms bbdfns i {
         sbt syms.dfns (`BTYP_function (`BTYP_tuple[],flx_bbool))
       )
 
-    | `SYMDEF_const_ctor (uidx,ut,ctor_idx,vs') ->
+    | SYMDEF_const_ctor (uidx,ut,ctor_idx,vs') ->
       (*
       print_endline ("Binding const ctor " ^ name);
       *)
       let unit_sum =
         match hfind "bbind" syms.dfns uidx with
-        | {symdef=`SYMDEF_union its} ->
+        | {symdef=SYMDEF_union its} ->
           fold_left
           (fun v (_,_,_,t) ->
             v && (match t with `AST_void _ -> true | _ -> false)
@@ -327,7 +327,7 @@ let bbind_sym syms bbdfns i {
       print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
       sbt syms.dfns t)
 
-    | `SYMDEF_nonconst_ctor (uidx,ut,ctor_idx,vs',argt) ->
+    | SYMDEF_nonconst_ctor (uidx,ut,ctor_idx,vs',argt) ->
       (*
       print_endline ("Binding non const ctor " ^ name);
       *)
@@ -343,7 +343,7 @@ let bbind_sym syms bbdfns i {
       print_endline ("//bound fun " ^ name ^ "<"^si i^">:" ^
       sbt syms.dfns t)
 
-    | `SYMDEF_val (t) ->
+    | SYMDEF_val (t) ->
       let t = Flx_lookup.type_of_index syms i in
       Hashtbl.add bbdfns i (name,true_parent,sr,BBDCL_val (bvs,t));
 
@@ -352,7 +352,7 @@ let bbind_sym syms bbdfns i {
       print_bvs bvs ^ ":" ^
       sbt syms.dfns t)
 
-    | `SYMDEF_ref (t) ->
+    | SYMDEF_ref (t) ->
       let t = Flx_lookup.type_of_index syms i in
       Hashtbl.add bbdfns i (name,true_parent,sr,BBDCL_ref (bvs,t));
 
@@ -361,7 +361,7 @@ let bbind_sym syms bbdfns i {
       print_bvs bvs ^ ":" ^
       sbt syms.dfns t)
 
-    | `SYMDEF_lazy (rt,e) ->
+    | SYMDEF_lazy (rt,e) ->
       let ps = [("dummy",`AST_void sr)],None in
       let exes = [sr,`EXE_fun_return e] in
       let brt = bt rt in
@@ -382,7 +382,7 @@ let bbind_sym syms bbdfns i {
       print_bvs bvs ^ ":" ^
       sbt syms.dfns brt')
 
-    | `SYMDEF_var (t) ->
+    | SYMDEF_var (t) ->
       (*
       print_endline ("Binding variable " ^ name ^"<"^ si i ^">");
       *)
@@ -394,7 +394,7 @@ let bbind_sym syms bbdfns i {
       print_bvs bvs ^ ":" ^
       sbt syms.dfns t)
 
-    | `SYMDEF_const (props,t,ct,reqs) ->
+    | SYMDEF_const (props,t,ct,reqs) ->
       let t = Flx_lookup.type_of_index syms i in
       let reqs = bind_reqs reqs in
       Hashtbl.add bbdfns i (name,true_parent,sr,BBDCL_const (props,bvs,t,ct,reqs));
@@ -404,7 +404,7 @@ let bbind_sym syms bbdfns i {
       sbt syms.dfns t)
 
 
-    | `SYMDEF_fun (props,ts,ret,ct,reqs,prec) ->
+    | SYMDEF_fun (props,ts,ret,ct,reqs,prec) ->
       let ts = map bt ts in
       let bret = bt ret in
       let reqs = bind_reqs reqs in
@@ -427,7 +427,7 @@ let bbind_sym syms bbdfns i {
       print_bvs bvs ^ ":" ^
       sbt syms.dfns (`BTYP_function (atyp,bret)))
 
-    | `SYMDEF_callback (props,ts_orig,ret,reqs) ->
+    | SYMDEF_callback (props,ts_orig,ret,reqs) ->
 
       let bret = bt ret in
 
@@ -525,30 +525,30 @@ let bbind_sym syms bbdfns i {
       print_bvs bvs ^ ":" ^
       sbt syms.dfns (`BTYP_function (atyp,bret)))
 
-    | `SYMDEF_union (cs) ->
+    | SYMDEF_union (cs) ->
       (*
       print_endline ("//Binding union " ^ si i ^ " --> " ^ name);
       *)
       let cs' = List.map (fun (n,v,vs',t) -> n, v,bt t) cs in
       Hashtbl.add bbdfns i (name,None,sr,BBDCL_union (bvs,cs'))
 
-    | `SYMDEF_struct (cs) ->
+    | SYMDEF_struct (cs) ->
       (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
       *)
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
       Hashtbl.add bbdfns i (name,None,sr,BBDCL_struct (bvs,cs'))
 
-    | `SYMDEF_cstruct (cs) ->
+    | SYMDEF_cstruct (cs) ->
       (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
       *)
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
       Hashtbl.add bbdfns i (name,None,sr,BBDCL_cstruct (bvs,cs'))
 
-    | `SYMDEF_typeclass ->
+    | SYMDEF_typeclass ->
       let sym : bbdcl_t = BBDCL_typeclass ([],bvs) in
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)
 
-    | `SYMDEF_instance qn ->
+    | SYMDEF_instance qn ->
       (*
       print_endline "INSTANCE";
       *)
@@ -564,11 +564,11 @@ let bbind_sym syms bbdfns i {
       let sym : bbdcl_t = BBDCL_instance ([],bvs,bcons, k,ts) in
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)
 
-    | `SYMDEF_type_alias _ -> ()
-    | `SYMDEF_inherit _ -> ()
-    | `SYMDEF_inherit_fun _ -> ()
+    | SYMDEF_type_alias _ -> ()
+    | SYMDEF_inherit _ -> ()
+    | SYMDEF_inherit_fun _ -> ()
 
-    | `SYMDEF_abs (quals,ct,reqs)->
+    | SYMDEF_abs (quals,ct,reqs)->
       (*
       print_endline ("//Binding abstract type " ^ si i ^ " --> " ^ name);
       *)
@@ -576,11 +576,11 @@ let bbind_sym syms bbdfns i {
       let bquals = bind_quals quals in
       Hashtbl.add bbdfns i (name,None,sr,BBDCL_abs (bvs,bquals,ct,reqs))
 
-    | `SYMDEF_newtype t ->
+    | SYMDEF_newtype t ->
       let t = bt t in
       Hashtbl.add bbdfns i (name,None,sr,BBDCL_newtype (bvs,t))
 
-    | `SYMDEF_insert (ct,ikind,reqs) ->
+    | SYMDEF_insert (ct,ikind,reqs) ->
       (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name);
       *)
       let reqs = bind_reqs reqs in

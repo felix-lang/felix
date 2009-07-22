@@ -144,14 +144,14 @@ let get_data table index : symbol_data_t =
     failwith ("[Flx_lookup.get_data] No definition of <" ^ string_of_int index ^ ">")
 
 let sig_of_symdef symdef sr name i = match symdef with
-  | `SYMDEF_match_check (_)
+  | SYMDEF_match_check (_)
     -> `TYP_tuple[],`TYP_sum [`TYP_tuple[];`TYP_tuple[]],None (* bool *)
 
   (* primitives *)
-  | `SYMDEF_fun (_,ps,r,_,_,_)
+  | SYMDEF_fun (_,ps,r,_,_,_)
     -> type_of_list ps,r,None
 
-  | `SYMDEF_callback (_,ts_orig,r,_)
+  | SYMDEF_callback (_,ts_orig,r,_)
     ->
       let ts_f =
         List.filter
@@ -182,7 +182,7 @@ let sig_of_symdef symdef sr name i = match symdef with
       in
       type_of_list ts_cf,r,None
 
-  | `SYMDEF_function (ps,r,_,_)
+  | SYMDEF_function (ps,r,_,_)
     ->
     let p = fst ps in
     begin match p,r with
@@ -197,14 +197,14 @@ let sig_of_symdef symdef sr name i = match symdef with
       paramtype p,r,Some (List.map (fun (_,name,_,d)->name,d) p)
     end
 
-  | `SYMDEF_cstruct ls
-  | `SYMDEF_struct ls ->
+  | SYMDEF_cstruct ls
+  | SYMDEF_struct ls ->
     type_of_list (List.map snd ls),`AST_index (sr,name,i),
      Some (List.map (fun (p,_) -> p,None) ls)
 
-  | `SYMDEF_const_ctor (_,r,_,_) -> `AST_void sr,r,None
-  | `SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r,None
-  | `SYMDEF_type_alias t ->
+  | SYMDEF_const_ctor (_,r,_,_) -> `AST_void sr,r,None
+  | SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r,None
+  | SYMDEF_type_alias t ->
     (*
     print_endline ("[sig_of_symdef] Found a typedef " ^ name);
     *)

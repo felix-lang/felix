@@ -170,7 +170,7 @@ let rec trclose syms rs sr fs =
         exclude := EntrySet.add x !exclude;
 
         match hfind "lookup" syms.dfns (sye x) with
-        | {parent=parent; sr=sr2; symdef=`SYMDEF_inherit_fun qn} ->
+        | {parent=parent; sr=sr2; symdef=SYMDEF_inherit_fun qn} ->
           let env = build_env syms parent in
           begin match fst (lookup_qn_in_env2' syms env rs qn) with
           | `NonFunctionEntry _ -> clierr2 sr sr2 "Inherit fun doesn't denote function set"
@@ -190,7 +190,7 @@ and resolve_inherits syms rs sr x =
   match x with
   | `NonFunctionEntry z ->
     begin match hfind "lookup" syms.dfns (sye z) with
-    | {parent=parent; symdef=`SYMDEF_inherit qn} ->
+    | {parent=parent; symdef=SYMDEF_inherit qn} ->
       (*
       print_endline ("Found an inherit symbol qn=" ^ string_of_qualified_name qn);
       *)
@@ -199,7 +199,7 @@ and resolve_inherits syms rs sr x =
       print_endline "Environment built for lookup ..";
       *)
       fst (lookup_qn_in_env2' syms env rs qn)
-    | {sr=sr2; symdef=`SYMDEF_inherit_fun qn} ->
+    | {sr=sr2; symdef=SYMDEF_inherit_fun qn} ->
       clierr2 sr sr2
       "NonFunction inherit denotes function"
     | _ -> x
@@ -1136,10 +1136,10 @@ and bind_type'
         syserr sr ("Synthetic name "^name ^ " not in symbol table!")
     in
     begin match entry with
-    | `SYMDEF_struct _
-    | `SYMDEF_cstruct _
-    | `SYMDEF_union _
-    | `SYMDEF_abs _
+    | SYMDEF_struct _
+    | SYMDEF_cstruct _
+    | SYMDEF_union _
+    | SYMDEF_abs _
       ->
       (*
       if List.length (fst vs) <> 0 then begin
@@ -1161,7 +1161,7 @@ and bind_type'
       *)
       `BTYP_inst (index,ts)
 
-    | `SYMDEF_typevar _ ->
+    | SYMDEF_typevar _ ->
       print_endline ("Synthetic name "^name ^ " is a typevar!");
       syserr sr ("Synthetic name "^name ^ " is a typevar!")
 
@@ -1205,7 +1205,7 @@ and bind_type'
       print_endline ("NON FUNCTION ENTRY " ^ id);
       *)
       begin match entry with
-      | `SYMDEF_type_alias t ->
+      | SYMDEF_type_alias t ->
         (* This is HACKY but probably right most of the time: we're defining
            "the t" where t is parameterised type as a type function accepting
            all the parameters and returning a type .. if the result were
@@ -1252,7 +1252,7 @@ and bind_type'
       print_endline ("spec_ts=" ^ catmap "," (sbt syms.dfns) sub_ts);
       print_endline ("input_ts=" ^ catmap "," (sbt syms.dfns) ts);
       begin match hfind "lookup" syms.dfns i with
-        | {id=id;vs=vs;symdef=`SYMDEF_typevar _} ->
+        | {id=id;vs=vs;symdef=SYMDEF_typevar _} ->
           print_endline (id ^ " is a typevariable, vs=" ^
             catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
           )
@@ -1267,7 +1267,7 @@ and bind_type'
         print_endline ("spec_ts=" ^ catmap "," (sbt syms.dfns) sub_ts);
         print_endline ("input_ts=" ^ catmap "," (sbt syms.dfns) ts);
         begin match hfind "lookup" syms.dfns i with
-          | {id=id;vs=vs;symdef=`SYMDEF_typevar _} ->
+          | {id=id;vs=vs;symdef=SYMDEF_typevar _} ->
             print_endline (id ^ " is a typevariable, vs=" ^
               catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
             )
@@ -1435,7 +1435,7 @@ and bind_type_index syms (rs:recstop)
       );
     *)
     match entry with
-    | `SYMDEF_typevar mt ->
+    | SYMDEF_typevar mt ->
       (* HACK! We will assume metatype are entirely algebraic,
         that is, they cannot be named and referenced, we also
         assume they cannot be subscripted .. the bt routine
@@ -1487,29 +1487,29 @@ and bind_type_index syms (rs:recstop)
       `BTYP_var (index,mt)
 
     (* type alias RECURSE *)
-    | `SYMDEF_type_alias t ->
+    | SYMDEF_type_alias t ->
       (*
       print_endline ("Unravelling type alias " ^ id);
       *)
       bt t
 
-    | `SYMDEF_abs _ ->
+    | SYMDEF_abs _ ->
       `BTYP_inst (index,ts)
 
-    | `SYMDEF_newtype _
-    | `SYMDEF_union _
-    | `SYMDEF_struct _
-    | `SYMDEF_cstruct _
-    | `SYMDEF_typeclass
+    | SYMDEF_newtype _
+    | SYMDEF_union _
+    | SYMDEF_struct _
+    | SYMDEF_cstruct _
+    | SYMDEF_typeclass
       ->
       `BTYP_inst (index,ts)
 
 
     (* allow binding to type constructors now too .. *)
-    | `SYMDEF_const_ctor (uidx,ut,idx,vs') ->
+    | SYMDEF_const_ctor (uidx,ut,idx,vs') ->
       `BTYP_inst (index,ts)
 
-    | `SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) ->
+    | SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) ->
       `BTYP_inst (index,ts)
 
     | _ ->
@@ -1609,7 +1609,7 @@ and cal_ret_type syms (rs:recstop) index args =
   *)
   match (get_data syms.dfns index) with
   | {id=id;sr=sr;parent=parent;vs=vs;privmap=name_map;dirs=dirs;
-     symdef=`SYMDEF_function ((ps,_),rt,props,exes)
+     symdef=SYMDEF_function ((ps,_),rt,props,exes)
     } ->
     (*
     print_endline ("Calculate return type of " ^ id);
@@ -1786,10 +1786,10 @@ and inner_type_of_index
     t'
   in
   match entry with
-  | `SYMDEF_callback _ -> print_endline "Inner type of index finds callback"; assert false
-  | `SYMDEF_inherit qn -> failwith ("Woops inner_type_of_index found inherit " ^ si index)
-  | `SYMDEF_inherit_fun qn -> failwith ("Woops inner_type_of_index found inherit fun!! " ^ si index)
-  | `SYMDEF_type_alias t ->
+  | SYMDEF_callback _ -> print_endline "Inner type of index finds callback"; assert false
+  | SYMDEF_inherit qn -> failwith ("Woops inner_type_of_index found inherit " ^ si index)
+  | SYMDEF_inherit_fun qn -> failwith ("Woops inner_type_of_index found inherit fun!! " ^ si index)
+  | SYMDEF_type_alias t ->
     begin
       let t = bt t in
       let mt = metatype syms sr t in
@@ -1799,7 +1799,7 @@ and inner_type_of_index
       mt
     end
 
-  | `SYMDEF_function ((ps,_), rt,props,_) ->
+  | SYMDEF_function ((ps,_), rt,props,_) ->
     let pts = List.map (fun(_,_,t,_)->t) ps in
     let rt' =
       try Hashtbl.find syms.varmap index with Not_found ->
@@ -1838,40 +1838,40 @@ and inner_type_of_index
         in
         t
 
-  | `SYMDEF_const (_,t,_,_)
-  
-  | `SYMDEF_val (t)
-  | `SYMDEF_var (t) -> bt t
-  | `SYMDEF_ref (t) -> `BTYP_pointer (bt t)
+  | SYMDEF_const (_,t,_,_)
 
-  | `SYMDEF_parameter (`PVal,t)
-  | `SYMDEF_parameter (`PFun,t)
-  | `SYMDEF_parameter (`PVar,t) -> bt t
-  | `SYMDEF_parameter (`PRef,t) -> `BTYP_pointer (bt t)
+  | SYMDEF_val (t)
+  | SYMDEF_var (t) -> bt t
+  | SYMDEF_ref (t) -> `BTYP_pointer (bt t)
 
-  | `SYMDEF_const_ctor (_,t,_,_)
+  | SYMDEF_parameter (`PVal,t)
+  | SYMDEF_parameter (`PFun,t)
+  | SYMDEF_parameter (`PVar,t) -> bt t
+  | SYMDEF_parameter (`PRef,t) -> `BTYP_pointer (bt t)
+
+  | SYMDEF_const_ctor (_,t,_,_)
     ->
     (*
     print_endline ("Calculating type of variable " ^ id);
     *)
     bt t
 
-  | `SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
+  | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
     bt (`TYP_function (argt,ut))
 
-  | `SYMDEF_match_check _ ->
+  | SYMDEF_match_check _ ->
     `BTYP_function (`BTYP_tuple [], flx_bbool)
 
-  | `SYMDEF_fun (_,pts,rt,_,_,_) ->
+  | SYMDEF_fun (_,pts,rt,_,_,_) ->
     let t = `TYP_function (type_of_list pts,rt) in
     bt t
 
-  | `SYMDEF_union _ ->
+  | SYMDEF_union _ ->
     clierr sr ("Union "^id^" doesn't have a type")
 
   (* struct as function *)
-  | `SYMDEF_cstruct (ls)
-  | `SYMDEF_struct (ls) ->
+  | SYMDEF_cstruct (ls)
+  | SYMDEF_struct (ls) ->
     (* ARGGG WHAT A MESS *)
     let ts = List.map (fun (s,i,_) -> `AST_name (sr,s,[])) (fst vs) in
     let ts = List.map bt ts in
@@ -1886,7 +1886,7 @@ and inner_type_of_index
     *)
     t
 
-  | `SYMDEF_abs _ ->
+  | SYMDEF_abs _ ->
     clierr sr
     (
       "[type_of_index] Expected declaration of typed entity for index " ^
@@ -1935,7 +1935,7 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
               | _ -> assert false
             in
             begin let pnames = match hfind "lookup" syms.dfns i with
-            | {symdef=`SYMDEF_function (ps,_,_,_)} ->
+            | {symdef=SYMDEF_function (ps,_,_,_)} ->
               List.map (fun (_,name,_,d)->
                 name,
                 match d with None -> None | Some e -> Some (be i e)
@@ -1986,8 +1986,8 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
       begin match get_data syms.dfns index with
       { id=id;vs=vs;symdef=entry} ->
         begin match entry with
-        | `SYMDEF_cstruct (cs) -> t1, None
-        | `SYMDEF_struct (cs) -> t1, None
+        | SYMDEF_cstruct (cs) -> t1, None
+        | SYMDEF_struct (cs) -> t1, None
         | _ ->
           clierr sr
           (
@@ -2137,14 +2137,14 @@ and lookup_qn_with_sig'
     {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=entry}
     ->
       begin match entry with
-      | `SYMDEF_inherit_fun qn ->
+      | SYMDEF_inherit_fun qn ->
           clierr sr "Chasing functional inherit in lookup_qn_with_sig'";
 
-      | `SYMDEF_inherit qn ->
+      | SYMDEF_inherit qn ->
           clierr sr "Chasing inherit in lookup_qn_with_sig'";
 
-      | `SYMDEF_cstruct _ 
-      | `SYMDEF_struct _ ->
+      | SYMDEF_cstruct _
+      | SYMDEF_struct _ ->
         let sign = try List.hd signs with _ -> assert false in
         let t = type_of_index_with_ts' rs syms sr index ts in
         (*
@@ -2172,8 +2172,8 @@ print_endline (id ^ ": lookup_qn_with_sig: struct");
         BEXPR_closure (index,ts),
         t
 
-      | `SYMDEF_union _
-      | `SYMDEF_type_alias _ ->
+      | SYMDEF_union _
+      | SYMDEF_type_alias _ ->
         (*
         print_endline "mapping type name to _ctor_type [2]";
         *)
@@ -2184,11 +2184,11 @@ print_endline (id ^ ": lookup_qn_with_sig: struct");
         in
         lookup_qn_with_sig' syms sra srn env rs qn signs
 
-      | `SYMDEF_const (_,t,_,_)
-      | `SYMDEF_val t
-      | `SYMDEF_var t
-      | `SYMDEF_ref t
-      | `SYMDEF_parameter (_,t)
+      | SYMDEF_const (_,t,_,_)
+      | SYMDEF_val t
+      | SYMDEF_var t
+      | SYMDEF_ref t
+      | SYMDEF_parameter (_,t)
         ->
 print_endline (id ^ ": lookup_qn_with_sig: val/var");
         (*
@@ -2326,9 +2326,9 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     begin match get_data syms.dfns index with
     | {vs=vs; id=id; sr=sra; symdef=entry} ->
     match entry with
-    | `SYMDEF_fun _
-    | `SYMDEF_function _
-    | `SYMDEF_match_check _
+    | SYMDEF_fun _
+    | SYMDEF_function _
+    | SYMDEF_match_check _
       ->
       let vs = find_vs syms index in
       let ts = List.map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
@@ -2418,14 +2418,14 @@ and lookup_type_qn_with_sig'
     {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=entry}
     ->
       begin match entry with
-      | `SYMDEF_inherit_fun qn ->
+      | SYMDEF_inherit_fun qn ->
           clierr sr "Chasing functional inherit in lookup_qn_with_sig'";
 
-      | `SYMDEF_inherit qn ->
+      | SYMDEF_inherit qn ->
           clierr sr "Chasing inherit in lookup_qn_with_sig'";
 
-      | `SYMDEF_cstruct _
-      | `SYMDEF_struct _ ->
+      | SYMDEF_cstruct _
+      | SYMDEF_struct _ ->
         let sign = try List.hd signs with _ -> assert false in
         let t = type_of_index_with_ts' rs syms sr index ts in
         (*
@@ -2446,8 +2446,8 @@ and lookup_type_qn_with_sig'
         ;
         t
 
-      | `SYMDEF_union _
-      | `SYMDEF_type_alias _ ->
+      | SYMDEF_union _
+      | SYMDEF_type_alias _ ->
         print_endline "mapping type name to _ctor_type [2]";
         let qn =  match qn with
           | `AST_name (sr,name,ts) -> `AST_name (sr,"_ctor_"^name,ts)
@@ -2456,11 +2456,11 @@ and lookup_type_qn_with_sig'
         in
         lookup_type_qn_with_sig' syms sra srn env rs qn signs
 
-      | `SYMDEF_const (_,t,_,_)
-      | `SYMDEF_val t
-      | `SYMDEF_var t
-      | `SYMDEF_ref t
-      | `SYMDEF_parameter (_,t)
+      | SYMDEF_const (_,t,_,_)
+      | SYMDEF_val t
+      | SYMDEF_var t
+      | SYMDEF_ref t
+      | SYMDEF_parameter (_,t)
         ->
         clierr sr (id ^ ": lookup_type_qn_with_sig: val/var/const/ref/param: not type");
 
@@ -2529,9 +2529,9 @@ and lookup_type_qn_with_sig'
     begin match get_data syms.dfns index with
     | {vs=vs; id=id; sr=sra; symdef=entry} ->
     match entry with
-    | `SYMDEF_fun _
-    | `SYMDEF_function _
-    | `SYMDEF_match_check _
+    | SYMDEF_fun _
+    | SYMDEF_function _
+    | SYMDEF_match_check _
       ->
       let vs = find_vs syms index in
       let ts = List.map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
@@ -2688,13 +2688,13 @@ and handle_type
   }
   ->
   match entry with
-  | `SYMDEF_match_check _
-  | `SYMDEF_function _
-  | `SYMDEF_fun _
-  | `SYMDEF_struct _
-  | `SYMDEF_cstruct _
-  | `SYMDEF_nonconst_ctor _
-  | `SYMDEF_callback _
+  | SYMDEF_match_check _
+  | SYMDEF_function _
+  | SYMDEF_fun _
+  | SYMDEF_struct _
+  | SYMDEF_cstruct _
+  | SYMDEF_nonconst_ctor _
+  | SYMDEF_callback _
     ->
     print_endline ("Handle function " ^id^"<"^si index^">, ts=" ^ catmap "," (sbt syms.dfns) ts);
     `BTYP_inst (index,ts)
@@ -2721,7 +2721,7 @@ and handle_type
     )
     *)
 
-  | `SYMDEF_type_alias _ ->
+  | SYMDEF_type_alias _ ->
     (*
     print_endline ("Binding type alias " ^ name ^ "<" ^ si index ^ ">" ^
       "[" ^catmap "," (sbt syms.dfns) ts^ "]"
@@ -2753,13 +2753,13 @@ and handle_function
   }
   ->
   match entry with
-  | `SYMDEF_match_check _
-  | `SYMDEF_function _
-  | `SYMDEF_fun _
-  | `SYMDEF_struct _
-  | `SYMDEF_cstruct _
-  | `SYMDEF_nonconst_ctor _
-  | `SYMDEF_callback _
+  | SYMDEF_match_check _
+  | SYMDEF_function _
+  | SYMDEF_fun _
+  | SYMDEF_struct _
+  | SYMDEF_cstruct _
+  | SYMDEF_nonconst_ctor _
+  | SYMDEF_callback _
     ->
     (*
     print_endline ("Handle function " ^id^"<"^si index^">, ts=" ^ catmap "," (sbt syms.dfns) ts);
@@ -2785,7 +2785,7 @@ and handle_function
           sbt syms.dfns t ^ "'"
         )
     )
-  | `SYMDEF_type_alias (`TYP_typefun _) ->
+  | SYMDEF_type_alias (`TYP_typefun _) ->
     (* THIS IS A HACK .. WE KNOW THE TYPE IS NOT NEEDED BY THE CALLER .. *)
     (* let t = inner_type_of_index_with_ts syms sr rs index ts in *)
     let t = `BTYP_function (`BTYP_type 0,`BTYP_type 0) in
@@ -2888,12 +2888,12 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     print_endline ("FOUND " ^ id);
     *)
     begin match entry with
-    | `SYMDEF_inherit _ ->
+    | SYMDEF_inherit _ ->
       clierr sra "Woops found inherit in lookup_name_in_table_dirs_with_sig"
-    | `SYMDEF_inherit_fun _ ->
+    | SYMDEF_inherit_fun _ ->
       clierr sra "Woops found inherit function in lookup_name_in_table_dirs_with_sig"
 
-    | (`SYMDEF_cstruct _ | `SYMDEF_struct _ )
+    | (SYMDEF_cstruct _ | SYMDEF_struct _ )
       when
         (match t2 with
         | [`BTYP_record _] -> true
@@ -2909,9 +2909,9 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         failwith "NOT IMPLEMENTED YET"
         *)
 
-    | `SYMDEF_struct _
-    | `SYMDEF_cstruct _
-    | `SYMDEF_nonconst_ctor _
+    | SYMDEF_struct _
+    | SYMDEF_cstruct _
+    | SYMDEF_nonconst_ctor _
       ->
         (*
         print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
@@ -2935,9 +2935,9 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
               Some tb
           | None -> None
           end
-    | `SYMDEF_abs _
-    | `SYMDEF_union _
-    | `SYMDEF_type_alias _ ->
+    | SYMDEF_abs _
+    | SYMDEF_union _
+    | SYMDEF_type_alias _ ->
 
       (* recursively lookup using "_ctor_" ^ name :
          WARNING: we might find a constructor with the
@@ -2950,12 +2950,12 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
       lookup_name_in_table_dirs_with_sig (table, dirs)
       syms caller_env env rs sra srn ("_ctor_" ^ name) ts t2
 
-    | `SYMDEF_const_ctor (_,t,_,_)
-    | `SYMDEF_const (_,t,_,_)
-    | `SYMDEF_var t
-    | `SYMDEF_ref t
-    | `SYMDEF_val t
-    | `SYMDEF_parameter (_,t)
+    | SYMDEF_const_ctor (_,t,_,_)
+    | SYMDEF_const (_,t,_,_)
+    | SYMDEF_var t
+    | SYMDEF_ref t
+    | SYMDEF_val t
+    | SYMDEF_parameter (_,t)
       ->
       let sign = try List.hd t2 with _ -> assert false in
       handle_variable syms env rs (sye index) id srn ts t sign
@@ -3030,8 +3030,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
               print_endline ("FOUND " ^ id);
               *)
               match entry with
-              | `SYMDEF_abs _
-              | `SYMDEF_union _ -> true
+              | SYMDEF_abs _
+              | SYMDEF_union _ -> true
               | _ -> false
            ) ->
              (*
@@ -3104,14 +3104,14 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
     print_endline ("FOUND " ^ id);
     *)
     begin match entry with
-    | `SYMDEF_inherit _ ->
+    | SYMDEF_inherit _ ->
       clierr sra "Woops found inherit in lookup_type_name_in_table_dirs_with_sig"
-    | `SYMDEF_inherit_fun _ ->
+    | SYMDEF_inherit_fun _ ->
       clierr sra "Woops found inherit function in lookup_type_name_in_table_dirs_with_sig"
 
-    | `SYMDEF_struct _
-    | `SYMDEF_cstruct _
-    | `SYMDEF_nonconst_ctor _
+    | SYMDEF_struct _
+    | SYMDEF_cstruct _
+    | SYMDEF_nonconst_ctor _
       ->
         (*
         print_endline "lookup_name_in_table_dirs_with_sig finds struct constructor";
@@ -3135,7 +3135,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
           | None -> None
           end
 
-    | `SYMDEF_typevar mt ->
+    | SYMDEF_typevar mt ->
       let mt = bt sra mt in
       (* match function a -> b -> c -> d with sigs a b c *)
       let rec m f s = match f,s with
@@ -3154,32 +3154,32 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
         "\ngot " ^ sbt syms.dfns mt
       ); None)
 
-    | `SYMDEF_abs _
-    | `SYMDEF_union _
-    | `SYMDEF_type_alias _ ->
+    | SYMDEF_abs _
+    | SYMDEF_union _
+    | SYMDEF_type_alias _ ->
       print_endline "Found abs,union or alias";
       Some (`BTYP_inst (sye index, ts))
 
 
-    | `SYMDEF_const_ctor _
-    | `SYMDEF_const _
-    | `SYMDEF_var _
-    | `SYMDEF_ref _
-    | `SYMDEF_val _
-    | `SYMDEF_parameter _
-    | `SYMDEF_axiom _
-    | `SYMDEF_lemma _
-    | `SYMDEF_callback _
-    | `SYMDEF_fun _
-    | `SYMDEF_function _
-    | `SYMDEF_insert _
-    | `SYMDEF_instance _
-    | `SYMDEF_lazy _
-    | `SYMDEF_match_check _
-    | `SYMDEF_module
-    | `SYMDEF_newtype _
-    | `SYMDEF_reduce _
-    | `SYMDEF_typeclass
+    | SYMDEF_const_ctor _
+    | SYMDEF_const _
+    | SYMDEF_var _
+    | SYMDEF_ref _
+    | SYMDEF_val _
+    | SYMDEF_parameter _
+    | SYMDEF_axiom _
+    | SYMDEF_lemma _
+    | SYMDEF_callback _
+    | SYMDEF_fun _
+    | SYMDEF_function _
+    | SYMDEF_insert _
+    | SYMDEF_instance _
+    | SYMDEF_lazy _
+    | SYMDEF_match_check _
+    | SYMDEF_module
+    | SYMDEF_newtype _
+    | SYMDEF_reduce _
+    | SYMDEF_typeclass
       ->
         clierr sra
         (
@@ -3249,8 +3249,8 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
               print_endline ("FOUND " ^ id);
               *)
               match entry with
-              | `SYMDEF_abs _
-              | `SYMDEF_union _ -> true
+              | SYMDEF_abs _
+              | SYMDEF_union _ -> true
               | _ -> false
            ) ->
            Some (`BTYP_inst (sye i, ts))
@@ -3396,8 +3396,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           {id=id';sr=sr';parent=parent';vs=vs';pubmap=name_map;dirs=dirs;symdef=entry'}
           ->
           match entry' with
-          | `SYMDEF_module
-          | `SYMDEF_function _
+          | SYMDEF_module
+          | SYMDEF_function _
             ->
             koenig_lookup syms env rs sra id' name_map fn t2 (ts @ meth_ts)
 
@@ -3619,7 +3619,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     begin match t',t'' with
     | `BTYP_inst (i,[]),`BTYP_unitsum n ->
       begin match hfind "lookup" syms.dfns i with
-      | { id="int"; symdef=`SYMDEF_abs (_,`StrTemplate "int",_) }  ->
+      | { id="int"; symdef=SYMDEF_abs (_,`StrTemplate "int",_) }  ->
         begin match e' with
         | BEXPR_literal (`AST_int (kind,big)) ->
           let m =
@@ -3780,7 +3780,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     | `BTYP_variant _ -> ()
     | `BTYP_inst (i,_) ->
       begin match hfind "lookup" syms.dfns i with
-      | {symdef=`SYMDEF_union _} -> ()
+      | {symdef=SYMDEF_union _} -> ()
       | {id=id} -> clierr sr ("Argument of caseno must be sum or union type, got type " ^ id)
       end
     | _ -> clierr sr ("Argument of caseno must be sum or union type, got " ^ sbt syms.dfns t)
@@ -3853,7 +3853,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       print_endline ("spec_ts=" ^ catmap "," (sbt syms.dfns) sub_ts);
       print_endline ("input_ts=" ^ catmap "," (sbt syms.dfns) ts);
       begin match hfind "lookup" syms.dfns index with
-        | {id=id;vs=vs;symdef=`SYMDEF_typevar _} ->
+        | {id=id;vs=vs;symdef=SYMDEF_typevar _} ->
           print_endline (id ^ " is a typevariable, vs=" ^
             catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
           )
@@ -3864,7 +3864,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       if List.length spec_vs <> List.length ts then begin
         print_endline ("BINDING NAME " ^ name);
         begin match hfind "lookup" syms.dfns index with
-          | {id=id;vs=vs;symdef=`SYMDEF_typevar _} ->
+          | {id=id;vs=vs;symdef=SYMDEF_typevar _} ->
             print_endline (id ^ " is a typevariable, vs=" ^
               catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
             )
@@ -3881,8 +3881,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       let ts = adjust_ts syms sr index ts in
       let t = ti sr index ts in
       begin match hfind "lookup:ref-check" syms.dfns index with
-      |  {symdef=`SYMDEF_parameter (`PRef,_)} 
-      |  {symdef=`SYMDEF_ref _ } -> 
+      |  {symdef=SYMDEF_parameter (`PRef,_)}
+      |  {symdef=SYMDEF_ref _ } ->
           let t' = match t with `BTYP_pointer t' -> t' | _ -> 
             failwith ("[lookup, AST_name] expected ref "^name^" to have pointer type")
           in
@@ -3896,7 +3896,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       if List.length spec_vs <> List.length ts then begin
         print_endline ("BINDING NAME " ^ name);
         begin match hfind "lookup" syms.dfns index with
-          | {id=id;vs=vs;symdef=`SYMDEF_typevar _} ->
+          | {id=id;vs=vs;symdef=SYMDEF_typevar _} ->
             print_endline (id ^ " is a typevariable, vs=" ^
               catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
             )
@@ -3957,8 +3957,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     print_endline ("Type is " ^ sbt syms.dfns t);
     *)
     begin match hfind "lookup" syms.dfns index with
-    | {symdef=`SYMDEF_fun _ }
-    | {symdef=`SYMDEF_function _ }
+    | {symdef=SYMDEF_fun _ }
+    | {symdef=SYMDEF_function _ }
     ->
     (*
     print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to closure");
@@ -4026,7 +4026,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         | `NonFunctionEntry (i) ->
           let i = sye i in
           begin match hfind "lookup" syms.dfns i with
-          | {sr=srn; symdef=`SYMDEF_inherit qn} -> be (qn :> expr_t)
+          | {sr=srn; symdef=SYMDEF_inherit qn} -> be (qn :> expr_t)
           | _ ->
             let ts = adjust_ts syms sr i ts in
             BEXPR_name (i,ts),
@@ -4084,7 +4084,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     let has_property i p =
       match get_data syms.dfns i with {symdef=entry} ->
       match entry with
-      | `SYMDEF_fun (props,_,_,_,_,_) -> List.mem p props
+      | SYMDEF_fun (props,_,_,_,_,_) -> List.mem p props
       | _ -> false
     in
     let e',t' = be e in
@@ -4094,11 +4094,11 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       begin match get_data syms.dfns index with
       {id=id; sr=sr; symdef=entry} ->
       begin match entry with
-      | `SYMDEF_inherit _ -> clierr srr "Woops, bindexpr yielded inherit"
-      | `SYMDEF_inherit_fun _ -> clierr srr "Woops, bindexpr yielded inherit fun"
-      | `SYMDEF_ref _
-      | `SYMDEF_var _
-      | `SYMDEF_parameter (`PVar,_)
+      | SYMDEF_inherit _ -> clierr srr "Woops, bindexpr yielded inherit"
+      | SYMDEF_inherit_fun _ -> clierr srr "Woops, bindexpr yielded inherit fun"
+      | SYMDEF_ref _
+      | SYMDEF_var _
+      | SYMDEF_parameter (`PVar,_)
         ->
         let vtype =
           inner_type_of_index_with_ts syms sr
@@ -4108,14 +4108,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           BEXPR_ref (index,ts), `BTYP_pointer vtype
 
 
-      | `SYMDEF_parameter _ ->
+      | SYMDEF_parameter _ ->
          clierr2 srr sr
         (
           "[bind_expression] " ^
           "Address value parameter " ^ id
         )
-      | `SYMDEF_const _
-      | `SYMDEF_val _ ->
+      | SYMDEF_const _
+      | SYMDEF_val _ ->
         clierr2 srr sr
         (
           "[bind_expression] " ^
@@ -4199,7 +4199,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     | `BTYP_inst (i,ts') when
       (
         match hfind "lookup" syms.dfns i with
-        | {symdef=`SYMDEF_struct _} ->
+        | {symdef=SYMDEF_struct _} ->
           (match ta with | `BTYP_record _ -> true | _ -> false)
         | _ -> false
       )
@@ -4208,7 +4208,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       print_endline "struct applied to record .. ";
       *)
       let id,vs,fls = match hfind "lookup" syms.dfns i with
-        | {id=id; vs=vs; symdef=`SYMDEF_struct ls } -> id,vs,ls
+        | {id=id; vs=vs; symdef=SYMDEF_struct ls } -> id,vs,ls
         | _ -> assert false
       in
       let alst = match ta with
@@ -4365,7 +4365,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         begin match hfind "lookup" syms.dfns i with
 
         (* STRUCT *)
-        | {id=id; vs=vs; symdef=`SYMDEF_struct ls } ->
+        | {id=id; vs=vs; symdef=SYMDEF_struct ls } ->
           begin try
           let cidx,ct =
             let rec scan i = function
@@ -4395,7 +4395,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             end
           end
         (* LHS CSTRUCT *)
-        | {id=id; vs=vs; symdef=`SYMDEF_cstruct ls } ->
+        | {id=id; vs=vs; symdef=SYMDEF_cstruct ls } ->
           (* NOTE: we try $1.name binding using get_n first,
           but if we can't find a component we treat the
           entity as abstract.
@@ -4438,7 +4438,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
            end
 
         (* LHS PRIMITIVE TYPE *)
-        | {id=id; symdef=`SYMDEF_abs _ } ->
+        | {id=id; symdef=SYMDEF_abs _ } ->
             (*
             print_endline ("Synth get method .. (4) " ^ name);
             *)
@@ -4545,7 +4545,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         print_endline ("OK got type " ^ si i);
         *)
         begin match hfind "lookup" syms.dfns i with
-        | {id=id; symdef=`SYMDEF_union ls } ->
+        | {id=id; symdef=SYMDEF_union ls } ->
           (*
           print_endline ("UNION TYPE! " ^ id);
           *)
@@ -4565,7 +4565,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         as a union by provding _match_ctor_name style function
         as C primitives ..
         *)
-        | {id=id; symdef=`SYMDEF_abs _ } ->
+        | {id=id; symdef=SYMDEF_abs _ } ->
           let fname = `AST_name (sr,"_match_ctor_" ^ name,ts) in
           be (`AST_apply ( sr, (fname,e)))
 
@@ -4589,7 +4589,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         print_endline ("OK got type " ^ si i);
         *)
         begin match hfind "lookup" syms.dfns i with
-        | {id=id; symdef=`SYMDEF_union ls } ->
+        | {id=id; symdef=SYMDEF_union ls } ->
           (*
           print_endline ("UNION TYPE! " ^ id);
           *)
@@ -4609,7 +4609,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         as a union by provding _match_ctor_name style function
         as C primitives ..
         *)
-        | {id=id; symdef=`SYMDEF_abs _ } ->
+        | {id=id; symdef=SYMDEF_abs _ } ->
           let fname = `AST_lookup (sr,(context,"_match_ctor_" ^ name,ts)) in
           be (`AST_apply ( sr, (fname,e)))
         | _ -> failwith "Woooops expected union or abstract type"
@@ -4661,7 +4661,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         print_endline ("OK got type " ^ si i);
         *)
         begin match hfind "lookup" syms.dfns i with
-        | {id=id; vs=vs; symdef=`SYMDEF_union ls } ->
+        | {id=id; vs=vs; symdef=SYMDEF_union ls } ->
           (*
           print_endline ("UNION TYPE! " ^ id);
           *)
@@ -4697,7 +4697,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         as a union by provding _ctor_arg style function
         as C primitives ..
         *)
-        | {id=id; symdef=`SYMDEF_abs _ } ->
+        | {id=id; symdef=SYMDEF_abs _ } ->
           let fname = `AST_name (sr,"_ctor_arg_" ^ name,ts) in
           be (`AST_apply ( sr, (fname,e)))
 
@@ -4722,7 +4722,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         print_endline ("OK got type " ^ si i);
         *)
         begin match hfind "lookup" syms.dfns i with
-        | {id=id; vs=vs; symdef=`SYMDEF_union ls } ->
+        | {id=id; vs=vs; symdef=SYMDEF_union ls } ->
           (*
           print_endline ("UNION TYPE! " ^ id);
           *)
@@ -4758,7 +4758,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         as a union by provding _match_ctor_name style function
         as C primitives ..
         *)
-        | {id=id; symdef=`SYMDEF_abs _ } ->
+        | {id=id; symdef=SYMDEF_abs _ } ->
           let fname = `AST_lookup (sr,(e,"_ctor_arg_" ^ name,ts)) in
           be (`AST_apply ( sr, (fname,e)))
 
@@ -4831,7 +4831,7 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
     match hfind "lookup" syms.dfns i  with
     {id=id;sr=sr;parent=parent;vs=vs;symdef=entry} ->
     match entry with
-    | `SYMDEF_instance qn' ->
+    | SYMDEF_instance qn' ->
       (*
       print_endline ("Verified " ^ si i ^ " is an instance of " ^ id);
       print_endline ("  base vs = " ^ print_ivs_with_index vs);
@@ -4903,7 +4903,7 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
       ;
 
 
-    | `SYMDEF_typeclass ->
+    | SYMDEF_typeclass ->
       (*
       print_endline ("Verified " ^ si i ^ " is an typeclass specialisation of " ^ classname);
       print_endline ("  base vs = " ^ print_ivs_with_index vs);
@@ -5186,7 +5186,7 @@ and bind_dir
     if not (Hashtbl.mem syms.dfns i) then
       Hashtbl.add syms.dfns i {id=n;sr=dummy_sr;parent=None;vs=dfltvs;
       pubmap=nullmap; privmap=nullmap;dirs=[];
-      symdef=`SYMDEF_typevar `TYP_type
+      symdef=SYMDEF_typevar `TYP_type
       }
     ;
   )
@@ -5313,7 +5313,7 @@ and pub_table_dir
 : name_map_t =
   let invs = List.map (fun (i,n,_)->i,n) (fst invs) in
   match get_data syms.dfns i with
-  | {id=id; vs=vs; sr=sr; pubmap=table;symdef=`SYMDEF_module} ->
+  | {id=id; vs=vs; sr=sr; pubmap=table;symdef=SYMDEF_module} ->
     if List.length ts = 0 then table else
     begin
       (*
@@ -5326,7 +5326,7 @@ and pub_table_dir
       table
     end
 
-  | {id=id; vs=vs; sr=sr; pubmap=table;symdef=`SYMDEF_typeclass} ->
+  | {id=id; vs=vs; sr=sr; pubmap=table;symdef=SYMDEF_typeclass} ->
     let table = make_view_table syms table invs ts in
     (* a bit hacky .. add the type class specialisation view
        to its contents as an instance
@@ -5581,7 +5581,7 @@ and rebind_btype syms env sr ts t: btypecode_t =
   match t with
   | `BTYP_inst (i,_) ->
     begin match get_data syms.dfns i with
-    | {symdef=`SYMDEF_type_alias t'} ->
+    | {symdef=SYMDEF_type_alias t'} ->
       inner_bind_type syms env sr rsground t'
     | _ -> t
     end
@@ -5630,9 +5630,9 @@ and check_module syms name sr entries ts =
     begin match entries with
     | `NonFunctionEntry (index) ->
       begin match get_data syms.dfns (sye index) with
-      | {dirs=dirs;pubmap=table;symdef=`SYMDEF_module} ->
+      | {dirs=dirs;pubmap=table;symdef=SYMDEF_module} ->
         Simple_module (sye index,ts,table,dirs)
-      | {dirs=dirs;pubmap=table;symdef=`SYMDEF_typeclass} ->
+      | {dirs=dirs;pubmap=table;symdef=SYMDEF_typeclass} ->
         Simple_module (sye index,ts,table,dirs)
       | {id=id;sr=sr'} ->
         clierr sr
@@ -5743,7 +5743,7 @@ let lookup_code_in_env syms env sr qn =
     List.iter
     (fun i ->
       match hfind "lookup" syms.dfns (sye i) with
-      | {symdef=`SYMDEF_insert _} -> ()
+      | {symdef=SYMDEF_insert _} -> ()
       | {id=id; vs=vs; symdef=y} -> clierr sr
         (
           "Expected requirement '"^

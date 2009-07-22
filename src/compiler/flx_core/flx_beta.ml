@@ -84,7 +84,7 @@ and metatype' syms sr term =
     (
       try
         let symdef = Hashtbl.find syms.dfns i in begin match symdef with
-        | {symdef=`SYMDEF_typevar mt} -> print_endline ("Table shows metatype is " ^ string_of_typecode mt);
+        | {symdef=SYMDEF_typevar mt} -> print_endline ("Table shows metatype is " ^ string_of_typecode mt);
         | _ -> print_endline "Type variable isn't a type variable?"
         end
       with Not_found -> print_endline "Cannot find type variable in symbol table"
@@ -108,13 +108,13 @@ and metatype' syms sr term =
       in the bind-type routine as an argument .. yuck ..
     *)
     begin match entry with
-    | `SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
+    | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
       `BTYP_function (`BTYP_type 0,`BTYP_type 0)
 
-    | `SYMDEF_const_ctor (_,t,_,_) ->
+    | SYMDEF_const_ctor (_,t,_,_) ->
       `BTYP_type 0
 
-    | `SYMDEF_abs _ -> `BTYP_type 0
+    | SYMDEF_abs _ -> `BTYP_type 0
 
     | _ ->  clierr sr ("Unexpected argument to metatype: " ^ sbt syms.dfns term)
     end
@@ -329,7 +329,7 @@ and beta_reduce' syms sr termlist t =
   | `BTYP_inst (i,ts) ->
     let ts = map br ts in
     begin try match Hashtbl.find syms.dfns i with
-    | {id=id; symdef=`SYMDEF_type_alias _ } ->
+    | {id=id; symdef=SYMDEF_type_alias _ } ->
       failwith ("Beta reduce found a type instance of "^id^" to be an alias, which it can't handle")
     | _ -> `BTYP_inst (i,ts)
     with Not_found -> `BTYP_inst (i,ts) (* could be reparented class *)

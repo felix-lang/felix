@@ -77,8 +77,8 @@ let rec find_vs syms i : ivs_list_t =
 
 let rec find_func_vs syms vs j =
   match hfind "find_func_vs" syms.dfns j with
-  | {parent=parent; vs=vs'; symdef=`SYMDEF_module }
-  | {parent=parent; vs=vs'; symdef=`SYMDEF_typeclass }
+  | {parent=parent; vs=vs'; symdef=SYMDEF_module }
+  | {parent=parent; vs=vs'; symdef=SYMDEF_typeclass }
     ->
     begin match parent with
     | None ->
@@ -108,7 +108,7 @@ let rec find_func_vs syms vs j =
 *)
 let find_split_vs syms i =
   match hfind "find_split_vs" syms.dfns i with
-  { symdef=`SYMDEF_typevar _ } -> [], [], Flx_ast.dfltvs_aux
+  { symdef=SYMDEF_typevar _ } -> [], [], Flx_ast.dfltvs_aux
 
   | { parent=parent; vs=vs } ->
   match parent with

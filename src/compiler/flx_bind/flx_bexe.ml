@@ -44,12 +44,12 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
         match p with
         | BEXPR_closure (i,ts) ->
           begin match hfind "bexe" syms.dfns i with
-          | {symdef=`SYMDEF_fun _ }
-          | {symdef=`SYMDEF_callback _ }
+          | {symdef=SYMDEF_fun _ }
+          | {symdef=SYMDEF_callback _ }
             ->
             BEXE_call_prim (sr,i,ts,tbe2)
 
-          | {symdef=`SYMDEF_function _} ->
+          | {symdef=SYMDEF_function _} ->
             BEXE_call_direct (sr,i,ts,tbe2)
 
           | _ -> assert false
@@ -72,7 +72,7 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
               | _ -> assert false
             in
             begin let pnames = match hfind "bexe" syms.dfns i with
-            | {symdef=`SYMDEF_function (ps,_,_,_)} ->
+            | {symdef=SYMDEF_function (ps,_,_,_)} ->
               map (fun (_,name,_,d)->
                 name,
                 match d with None -> None | Some e -> Some (be i e)
@@ -333,9 +333,9 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         let index = sye index in
         let {symdef=entry; id=id} = hfind "bexe" syms.dfns index in
         begin match entry with
-        | `SYMDEF_var _ -> ()
-        | `SYMDEF_val _ -> clierr sr ("Can't svc into value " ^ id)
-        | `SYMDEF_parameter _ -> clierr sr ("Can't svc into parameter value " ^ id)
+        | SYMDEF_var _ -> ()
+        | SYMDEF_val _ -> clierr sr ("Can't svc into value " ^ id)
+        | SYMDEF_parameter _ -> clierr sr ("Can't svc into parameter value " ^ id)
         | _ -> clierr sr ("[bexe] svc requires variable, got " ^ id)
         end
         ;
@@ -455,7 +455,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         let lhst =
           let {symdef=entry; id=id} = hfind "bexe" syms.dfns index in
           match entry with
-          | `SYMDEF_ref _ -> `BTYP_pointer lhst
+          | SYMDEF_ref _ -> `BTYP_pointer lhst
           | _ -> lhst
         in
         *)

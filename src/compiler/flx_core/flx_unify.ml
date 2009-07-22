@@ -645,14 +645,14 @@ let do_unify syms a b =
               ("BUG, flx_unify can't find symbol " ^ string_of_int i)
           end
         with
-        | { symdef=`SYMDEF_function _ } ->
+        | { symdef=SYMDEF_function _ } ->
           (*
           print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.dfns t);
           *)
           Hashtbl.add syms.varmap i t
 
         (* if it's a declared type variable, leave it alone *)
-        | {symdef=`SYMDEF_typevar _ } -> ()
+        | {symdef=SYMDEF_typevar _ } -> ()
 
         | _ ->
           failwith

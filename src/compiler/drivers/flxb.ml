@@ -103,7 +103,7 @@ try
         Flx_types.pubmap = name_map;
         Flx_types.symdef = entry } ->
       begin match entry with
-        | `SYMDEF_module -> ()
+        | SYMDEF_module -> ()
         | _ -> failwith "Expected to find top level module ''"
       end
       ;
