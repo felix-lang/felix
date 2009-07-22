@@ -653,7 +653,7 @@ let bind_interface bbind_state = function
       let env = Flx_lookup.build_env bbind_state.syms parent in
       let index,ts = Flx_lookup.lookup_sn_in_env bbind_state.syms env sn in
       if length ts = 0 then
-        `BIFACE_export_fun (sr,index, cpp_name)
+        BIFACE_export_fun (sr,index, cpp_name)
       else clierr sr
       (
         "Can't export generic entity " ^
@@ -664,7 +664,7 @@ let bind_interface bbind_state = function
       let env = Flx_lookup.build_env bbind_state.syms parent in
       let index,ts = Flx_lookup.lookup_sn_in_env bbind_state.syms env sn in
       if length ts = 0 then
-        `BIFACE_export_python_fun (sr,index, cpp_name)
+        BIFACE_export_python_fun (sr,index, cpp_name)
       else clierr sr
       (
         "Can't export generic entity " ^
@@ -681,4 +681,4 @@ let bind_interface bbind_state = function
         string_of_btypecode bbind_state.syms.dfns t
       )
       else
-        `BIFACE_export_type (sr, t, cpp_name)
+        BIFACE_export_type (sr, t, cpp_name)

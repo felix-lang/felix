@@ -1878,15 +1878,15 @@ and string_of_biface dfns bbdfns level s =
   let se e = string_of_bound_expression dfns bbdfns e in
   let sid n = qualified_name_of_index dfns n in
   match s with
-  | `BIFACE_export_fun (_,index,cpp_name) ->
+  | BIFACE_export_fun (_,index,cpp_name) ->
     spc ^ "export fun " ^ qualified_name_of_index dfns index ^
     " as \"" ^ cpp_name ^ "\";"
 
-  | `BIFACE_export_python_fun (_,index,cpp_name) ->
+  | BIFACE_export_python_fun (_,index,cpp_name) ->
     spc ^ "export python fun " ^ qualified_name_of_index dfns index ^
     " as \"" ^ cpp_name ^ "\";"
 
-  | `BIFACE_export_type (_,btyp,cpp_name) ->
+  | BIFACE_export_type (_,btyp,cpp_name) ->
     spc ^ "export type (" ^ string_of_btypecode dfns btyp ^
     ") as \"" ^ cpp_name ^ "\";"
 

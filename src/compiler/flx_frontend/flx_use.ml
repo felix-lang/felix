@@ -193,9 +193,9 @@ let find_roots syms bbdfns
   let roots = ref (IntSet.singleton root) in
   iter
   (function
-     | `BIFACE_export_python_fun (_,x,_)
-     | `BIFACE_export_fun (_,x,_) -> roots := IntSet.add x !roots
-     | `BIFACE_export_type (_,t,_) ->
+     | BIFACE_export_python_fun (_,x,_)
+     | BIFACE_export_fun (_,x,_) -> roots := IntSet.add x !roots
+     | BIFACE_export_type (_,t,_) ->
         uses_type syms roots bbdfns true t
   )
   bifaces

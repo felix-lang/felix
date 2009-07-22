@@ -169,11 +169,9 @@ and name_map_t = (string, entry_set_t) Hashtbl.t
 
 
 type biface_t =
-  [
-  | `BIFACE_export_fun of Flx_srcref.t * bid_t * string
-  | `BIFACE_export_python_fun of Flx_srcref.t * bid_t * string
-  | `BIFACE_export_type of Flx_srcref.t * btypecode_t * string
-  ]
+  | BIFACE_export_fun of Flx_srcref.t * bid_t * string
+  | BIFACE_export_python_fun of Flx_srcref.t * bid_t * string
+  | BIFACE_export_type of Flx_srcref.t * btypecode_t * string
 
 type regular_args_t =
     int list * (* alphabet *)

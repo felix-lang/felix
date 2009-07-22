@@ -126,9 +126,9 @@ let is_export syms id =
   try
     iter
     (function
-      | `BIFACE_export_fun (_,_,s)
-      | `BIFACE_export_python_fun (_,_,s)
-      | `BIFACE_export_type (_,_,s) ->
+      | BIFACE_export_fun (_,_,s)
+      | BIFACE_export_python_fun (_,_,s)
+      | BIFACE_export_type (_,_,s) ->
         if id = s then raise Not_found
      )
      bifaces;

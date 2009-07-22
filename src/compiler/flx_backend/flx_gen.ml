@@ -2178,10 +2178,10 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf b
   syms.instances
 
 let gen_biface_header syms bbdfns biface = match biface with
-  | `BIFACE_export_python_fun (sr,index, export_name) -> 
+  | BIFACE_export_python_fun (sr,index, export_name) ->
      "// PYTHON FUNCTION " ^ export_name ^ " header to go here??\n"
 
-  | `BIFACE_export_fun (sr,index, export_name) ->
+  | BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry =
       try Hashtbl.find bbdfns index
       with Not_found -> failwith ("[gen_biface_header] Can't find index " ^ si index)
@@ -2233,16 +2233,16 @@ let gen_biface_header syms bbdfns biface = match biface with
     | _ -> failwith "Not implemented: export non-function/procedure"
     end
 
-  | `BIFACE_export_type (sr, typ, export_name) ->
+  | BIFACE_export_type (sr, typ, export_name) ->
     "//EXPORT type " ^ sbt  syms.dfns typ ^ " as " ^ export_name  ^ "\n" ^
     "typedef " ^ cpp_type_classname syms typ ^ " " ^ export_name ^ "_class;\n" ^
     "typedef " ^ cpp_typename syms typ ^ " " ^ export_name ^ ";\n"
 
 let gen_biface_body syms bbdfns biface = match biface with
-  | `BIFACE_export_python_fun (sr,index, export_name) -> 
+  | BIFACE_export_python_fun (sr,index, export_name) ->
      "// PYTHON FUNCTION " ^ export_name ^ " body to go here??\n"
 
-  | `BIFACE_export_fun (sr,index, export_name) ->
+  | BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry =
       try Hashtbl.find bbdfns index
       with Not_found -> failwith ("[gen_biface_body] Can't find index " ^ si index)
@@ -2390,7 +2390,7 @@ let gen_biface_body syms bbdfns biface = match biface with
     | _ -> failwith "Not implemented: export non-function/procedure"
     end
 
-  | `BIFACE_export_type _ -> ""
+  | BIFACE_export_type _ -> ""
 
 let gen_biface_headers syms bbdfns bifaces =
   cat "" (map (gen_biface_header syms bbdfns) bifaces)
@@ -2404,7 +2404,7 @@ if a Python module function is detected as an export
 
 let gen_python_module modname syms bbdfns bifaces =
   let pychk acc elt = match elt with
-  | `BIFACE_export_python_fun (sr,index,name) ->
+  | BIFACE_export_python_fun (sr,index,name) ->
     let class_name = cpp_instance_name syms bbdfns index [] in
     let loc = Flx_srcref.short_string_of_src sr in
     let entry = name, class_name, loc in
