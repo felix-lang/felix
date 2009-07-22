@@ -73,12 +73,10 @@ and iface_t =
 and siface_t = Flx_srcref.t * iface_t
 
 and asm_t =
-  [
-  | `Exe of sexe_t
-  | `Dcl of sdcl_t
-  | `Iface of siface_t
-  | `Dir of dir_t
-  ]
+  | Exe of sexe_t
+  | Dcl of sdcl_t
+  | Iface of siface_t
+  | Dir of dir_t
 
 type bound_iface_t = Flx_srcref.t * iface_t * int option
 

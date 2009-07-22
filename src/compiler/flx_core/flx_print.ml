@@ -2187,15 +2187,15 @@ and string_of_access = function
 
 and string_of_asm level s =
   match s with
-  | `Dcl (sr,name,seq,access,vs, d) ->
+  | Dcl (sr,name,seq,access,vs, d) ->
     (match access with
     | `Private -> "private "
     | `Public -> ""
     ) ^
     string_of_dcl level name seq vs d
-  | `Exe (sr,s) -> string_of_exe level s
-  | `Iface (sr,s) -> string_of_iface level s
-  | `Dir s -> string_of_dir level s
+  | Exe (sr,s) -> string_of_exe level s
+  | Iface (sr,s) -> string_of_iface level s
+  | Dir s -> string_of_dir level s
 
 and string_of_dir level s =
   let sqn n = string_of_qualified_name n in

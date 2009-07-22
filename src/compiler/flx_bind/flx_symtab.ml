@@ -60,10 +60,10 @@ let split_asms asms :
     | [] -> (dcls, exes, ifaces, dirs)
     | h :: t ->
       match h with
-      | `Exe (sr,exe) -> aux t dcls ((sr,exe) :: exes) ifaces dirs
-      | `Dcl (sr,id,seq,access,vs,dcl) -> aux t ((sr,id,seq,access,vs,dcl) :: dcls) exes ifaces dirs
-      | `Iface (sr,iface) -> aux t dcls exes ((sr,iface) :: ifaces) dirs
-      | `Dir dir -> aux t dcls exes ifaces (dir::dirs)
+      | Exe (sr,exe) -> aux t dcls ((sr,exe) :: exes) ifaces dirs
+      | Dcl (sr,id,seq,access,vs,dcl) -> aux t ((sr,id,seq,access,vs,dcl) :: dcls) exes ifaces dirs
+      | Iface (sr,iface) -> aux t dcls exes ((sr,iface) :: ifaces) dirs
+      | Dir dir -> aux t dcls exes ifaces (dir::dirs)
   in
     aux asms [] [] [] []
 
@@ -527,9 +527,9 @@ and build_table_for_dcl
             (`AST_index (sr,mvname,match_var_index))
         in
         let dcl =
-          `Dcl (sr, vname, None,`Private, dfltvs,
+          Dcl (sr, vname, None,`Private, dfltvs,
             DCL_val (TYP_typeof (component)))
-        and instr = `Exe (sr, EXE_init (vname, component)) in
+        and instr = Exe (sr, EXE_init (vname, component)) in
         new_asms := dcl :: instr :: !new_asms;
       end vars;
 
