@@ -103,7 +103,7 @@ try
         Flx_types.pubmap = name_map;
         Flx_types.symdef = entry } ->
       begin match entry with
-        | SYMDEF_module -> ()
+        | Flx_types.SYMDEF_module -> ()
         | _ -> failwith "Expected to find top level module ''"
       end
       ;
@@ -113,10 +113,10 @@ try
           failwith "Can't find name _init_ in top level module's name map"
       in
       let index = match entry with
-        | `FunctionEntry [x] -> Flx_typing.sye x
-        | `FunctionEntry [] -> failwith "Couldn't find '_init_'"
-        | `FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
-        | `NonFunctionEntry _ -> failwith "_init_ found but not procedure"
+        | Flx_types.FunctionEntry [x] -> Flx_typing.sye x
+        | Flx_types.FunctionEntry [] -> failwith "Couldn't find '_init_'"
+        | Flx_types.FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
+        | Flx_types.NonFunctionEntry _ -> failwith "_init_ found but not procedure"
       in
       if compiler_options.Flx_mtypes2.print_flag
       then print_endline

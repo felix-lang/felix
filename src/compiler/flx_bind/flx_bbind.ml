@@ -21,7 +21,7 @@ let hfind msg h k =
 
 let find_param name_map s =
   match Hashtbl.find name_map s with
-  | `NonFunctionEntry (i) -> sye i
+  | NonFunctionEntry (i) -> sye i
   | _ -> failwith ("[find_param] Can't find parameter " ^ s )
 
 let print_bvs vs =

@@ -250,10 +250,10 @@ try
         failwith "Can't find name _init_ in top level module's name map"
     in
     let index = match entry with
-      | `FunctionEntry [x] -> sye x
-      | `FunctionEntry [] -> failwith "Couldn't find '_init_'"
-      | `FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
-      | `NonFunctionEntry _ -> failwith "_init_ found but not procedure"
+      | FunctionEntry [x] -> sye x
+      | FunctionEntry [] -> failwith "Couldn't find '_init_'"
+      | FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
+      | NonFunctionEntry _ -> failwith "_init_ found but not procedure"
     in
     print_debug ("//root module's init procedure has index " ^ si index);
     index

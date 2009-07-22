@@ -152,10 +152,9 @@ type entry_kind_t = {
   sub_ts: btypecode_t list
 }
 
-and entry_set_t = [
-  | `FunctionEntry of entry_kind_t list
-  | `NonFunctionEntry of entry_kind_t
-  ]
+and entry_set_t =
+  | FunctionEntry of entry_kind_t list
+  | NonFunctionEntry of entry_kind_t
 
 and module_rep_t =
   | Simple_module of bid_t * typecode_t list * name_map_t * dir_t list

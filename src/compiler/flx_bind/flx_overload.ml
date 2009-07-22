@@ -323,8 +323,8 @@ let consider syms env bt be luqn2 name
       (fun qn -> let es,ts' = luqn2 i (hack_name qn) in
         print_endline ("With ts = " ^ catmap "," string_of_typecode ts');
         match es with
-        | `NonFunctionEntry _ -> print_endline "EXPECTED INSTANCES TO BE FUNCTION SET"
-        | `FunctionEntry es ->
+        | NonFunctionEntry _ -> print_endline "EXPECTED INSTANCES TO BE FUNCTION SET"
+        | FunctionEntry es ->
           print_endline ("Candidates " ^ catmap "," string_of_entry_kind es)
       )
       rtcr

@@ -15,8 +15,8 @@ let find_function syms env name =
     with _ -> None
   in
   let entries = match entries with
-    | Some (`FunctionEntry ls) -> ls
-    | Some (`NonFunctionEntry _ ) ->
+    | Some (FunctionEntry ls) -> ls
+    | Some (NonFunctionEntry _ ) ->
       print_endline ("[flx_why] Expected '" ^ name ^ "' to be function");
       []
     | None ->

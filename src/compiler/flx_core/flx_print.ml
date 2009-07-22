@@ -2380,15 +2380,15 @@ let full_string_of_entry_kind dfns {base_sym=i; spec_vs=vs; sub_ts=ts} =
 let string_of_entry_kind {base_sym=i} = si i
 
 let string_of_entry_set = function
-  | `NonFunctionEntry x -> string_of_entry_kind x
-  | `FunctionEntry ls ->
+  | NonFunctionEntry x -> string_of_entry_kind x
+  | FunctionEntry ls ->
     "{" ^
       catmap "," string_of_entry_kind ls ^
     "}"
 
 let full_string_of_entry_set dfns = function
-  | `NonFunctionEntry x -> full_string_of_entry_kind dfns x
-  | `FunctionEntry ls -> if length ls = 0 then "{}" else
+  | NonFunctionEntry x -> full_string_of_entry_kind dfns x
+  | FunctionEntry ls -> if length ls = 0 then "{}" else
     "{\n" ^
       catmap "\n" (full_string_of_entry_kind dfns) ls ^
     "\n}"
@@ -2403,8 +2403,8 @@ let print_name_table dfns table =
   (fun s v ->
     print_endline (s ^ " --> " ^
       match v with
-      | `NonFunctionEntry i -> string_of_myentry dfns i
-      | `FunctionEntry ii -> "{"^ catmap "," (string_of_myentry dfns) ii ^ "}"
+      | NonFunctionEntry i -> string_of_myentry dfns i
+      | FunctionEntry ii -> "{"^ catmap "," (string_of_myentry dfns) ii ^ "}"
     );
   )
   table
@@ -2420,7 +2420,7 @@ let print_env e =
       "  " ^ k ^ " " ^
       (
         match v with
-        | (`NonFunctionEntry (i)) -> string_of_entry_kind i
+        | (NonFunctionEntry (i)) -> string_of_entry_kind i
         | _ -> ""
       )
     )

@@ -329,7 +329,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
     | `EXE_svc s ->
       begin match lun sr s with
-      | `NonFunctionEntry (index) ->
+      | NonFunctionEntry (index) ->
         let index = sye index in
         let {symdef=entry; id=id} = hfind "bexe" syms.dfns index in
         begin match entry with
@@ -341,7 +341,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         ;
         tack (BEXE_svc (sr,index))
 
-      | `FunctionEntry _ -> failwith "Can't svc function!"
+      | FunctionEntry _ -> failwith "Can't svc function!"
       end
 
     | `EXE_proc_return ->
@@ -441,8 +441,8 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
 
     | `EXE_init (s,e) ->
       begin match lun sr s with
-      | `FunctionEntry _ -> clierr sr "Can't init function constant"
-      | `NonFunctionEntry (index) ->
+      | FunctionEntry _ -> clierr sr "Can't init function constant"
+      | NonFunctionEntry (index) ->
         let index = sye index in
         let e',rhst = be e in
         let lhst = type_of_index_with_ts syms sr index parent_ts in

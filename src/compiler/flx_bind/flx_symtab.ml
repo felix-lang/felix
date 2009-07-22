@@ -87,41 +87,41 @@ let full_add_unique syms sr (vs:Flx_ast.ivs_list_t) table key value =
   try
     let entry = Hashtbl.find table key in
     match entry with
-    | `NonFunctionEntry (idx)
-    | `FunctionEntry (idx :: _ ) ->
+    | NonFunctionEntry (idx)
+    | FunctionEntry (idx :: _ ) ->
        (match Hashtbl.find syms.Flx_mtypes2.dfns (Flx_typing.sye idx)  with
        | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
          string_of_int (Flx_typing.sye idx) ^ ">")
        )
-     | `FunctionEntry [] -> assert false
+     | FunctionEntry [] -> assert false
   with Not_found ->
-    Hashtbl.add table key (`NonFunctionEntry (mkentry syms vs value))
+    Hashtbl.add table key (NonFunctionEntry (mkentry syms vs value))
 
 
 let full_add_typevar syms sr table key value =
   try
     let entry = Hashtbl.find table key in
     match entry with
-    | `NonFunctionEntry (idx)
-    | `FunctionEntry (idx :: _ ) ->
+    | NonFunctionEntry (idx)
+    | FunctionEntry (idx :: _ ) ->
        (match Hashtbl.find syms.Flx_mtypes2.dfns (Flx_typing.sye idx)  with
        | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
          string_of_int (Flx_typing.sye idx) ^ ">")
        )
-     | `FunctionEntry [] -> assert false
+     | FunctionEntry [] -> assert false
   with Not_found ->
     Hashtbl.add table key
-      (`NonFunctionEntry (mkentry syms Flx_ast.dfltvs value))
+      (NonFunctionEntry (mkentry syms Flx_ast.dfltvs value))
 
 
 let full_add_function syms sr (vs:Flx_ast.ivs_list_t) table key value =
   try
     match Hashtbl.find table key with
-    | `NonFunctionEntry entry ->
+    | NonFunctionEntry entry ->
       begin
         match Hashtbl.find syms.Flx_mtypes2.dfns (Flx_typing.sye entry) with
         { Flx_types.id=id; sr=sr2 } ->
@@ -134,11 +134,11 @@ let full_add_function syms sr (vs:Flx_ast.ivs_list_t) table key value =
         )
       end
 
-    | `FunctionEntry fs ->
+    | FunctionEntry fs ->
       Hashtbl.remove table key;
-      Hashtbl.add table key (`FunctionEntry (mkentry syms vs value :: fs))
+      Hashtbl.add table key (FunctionEntry (mkentry syms vs value :: fs))
   with Not_found ->
-    Hashtbl.add table key (`FunctionEntry [mkentry syms vs value])
+    Hashtbl.add table key (FunctionEntry [mkentry syms vs value])
 
 
 (* make_vs inserts unique indexes into vs_lists, thus creating an ivs_list. *)
@@ -209,7 +209,7 @@ let rec build_tables
       failwith ("Can't name non-toplevel module 'root'")
     else
       Hashtbl.add priv_name_map "root"
-        (`NonFunctionEntry (mkentry syms Flx_ast.dfltvs root));
+        (NonFunctionEntry (mkentry syms Flx_ast.dfltvs root));
 
   (* Step through each dcl and add the found assemblies to the symbol tables. *)
   List.iter (
@@ -677,8 +677,8 @@ and build_table_for_dcl
         let nues =
         if s = "root" then es else
           match es with
-          | `NonFunctionEntry e -> `NonFunctionEntry (fixup e)
-          | `FunctionEntry es -> `FunctionEntry (List.map fixup es)
+          | NonFunctionEntry e -> NonFunctionEntry (fixup e)
+          | FunctionEntry es -> FunctionEntry (List.map fixup es)
         in
         Hashtbl.add fudged_privtab s nues
       end privtab;

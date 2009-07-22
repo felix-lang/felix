@@ -66,13 +66,13 @@ let merge_functions
 : entry_kind_t list =
   List.fold_left
     (fun init x -> match x with
-    | `FunctionEntry ls ->
+    | FunctionEntry ls ->
       List.fold_left
       (fun init x ->
         if List.mem x init then init else x :: init
       )
       init ls
-    | `NonFunctionEntry x ->
+    | NonFunctionEntry x ->
       failwith
       ("[merge_functions] Expected " ^
         name ^ " to be function overload set in all open modules, got non-function:\n" ^
@@ -103,16 +103,16 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
       in
       match opens with
       | [x] -> Some x
-      | `FunctionEntry ls :: rest ->
+      | FunctionEntry ls :: rest ->
           (*
           print_endline "HERE 3";
           *)
-          Some (`FunctionEntry (merge_functions opens name))
+          Some (FunctionEntry (merge_functions opens name))
     
-      | (`NonFunctionEntry (i)) as some ::_ ->
+      | (NonFunctionEntry (i)) as some ::_ ->
           if
             List.fold_left begin fun t -> function
-              | `NonFunctionEntry (j) when i = j -> t
+              | NonFunctionEntry (j) when i = j -> t
               | _ -> false
             end true opens
           then
@@ -173,8 +173,8 @@ let rec trclose syms rs sr fs =
         | {parent=parent; sr=sr2; symdef=SYMDEF_inherit_fun qn} ->
           let env = build_env syms parent in
           begin match fst (lookup_qn_in_env2' syms env rs qn) with
-          | `NonFunctionEntry _ -> clierr2 sr sr2 "Inherit fun doesn't denote function set"
-          | `FunctionEntry fs' -> append fs'; trclosem ()
+          | NonFunctionEntry _ -> clierr2 sr sr2 "Inherit fun doesn't denote function set"
+          | FunctionEntry fs' -> append fs'; trclosem ()
           end
 
         | _ -> outset := EntrySet.add x !outset; trclosem ()
@@ -188,7 +188,7 @@ let rec trclose syms rs sr fs =
 
 and resolve_inherits syms rs sr x =
   match x with
-  | `NonFunctionEntry z ->
+  | NonFunctionEntry z ->
     begin match hfind "lookup" syms.dfns (sye z) with
     | {parent=parent; symdef=SYMDEF_inherit qn} ->
       (*
@@ -204,7 +204,7 @@ and resolve_inherits syms rs sr x =
       "NonFunction inherit denotes function"
     | _ -> x
     end
-  | `FunctionEntry fs -> `FunctionEntry (trclose syms rs sr fs)
+  | FunctionEntry fs -> FunctionEntry (trclose syms rs sr fs)
 
 and inner_lookup_name_in_env syms (env:env_t) rs sr name : entry_set_t =
   (*
@@ -266,8 +266,8 @@ and lookup_qn_in_env2'
     print_endline ("[lookup_qn_in_env2'] AST_the " ^ string_of_qualified_name qn);
     let es,ts = lookup_qn_in_env2' syms env rs qn in
     begin match es with
-    | `NonFunctionEntry  _
-    | `FunctionEntry [_] -> es,ts
+    | NonFunctionEntry  _
+    | FunctionEntry [_] -> es,ts
     | _ -> clierr sr
       "'the' expression denotes non-singleton function set"
     end
@@ -311,11 +311,11 @@ and lookup_qn_in_env'
   : entry_kind_t  * typecode_t list
 =
   match lookup_qn_in_env2' syms env rs qn with
-    | `NonFunctionEntry x,ts -> x,ts
+    | NonFunctionEntry x,ts -> x,ts
     (* experimental, allow singleton function *)
-    | `FunctionEntry [x],ts -> x,ts
+    | FunctionEntry [x],ts -> x,ts
 
-    | `FunctionEntry _,_ ->
+    | FunctionEntry _,_ ->
       let sr = src_of_expr (qn:>expr_t) in
       clierr sr
       (
@@ -1178,7 +1178,7 @@ and bind_type'
     *)
     let es,ts = lookup_qn_in_env2' syms env rs qn in
     begin match es with
-    | `FunctionEntry [index] ->
+    | FunctionEntry [index] ->
        let ts = List.map bt ts in
        let f =  bi (sye index) ts in
        (*
@@ -1199,7 +1199,7 @@ and bind_type'
        `BTYP_typefun_closure (sye index, ts)
        *)
 
-    | `NonFunctionEntry index  ->
+    | NonFunctionEntry index  ->
       let {id=id; vs=vs; sr=sr;symdef=entry} = hfind "lookup" syms.dfns (sye index) in
       (*
       print_endline ("NON FUNCTION ENTRY " ^ id);
@@ -2083,7 +2083,7 @@ and koenig_lookup syms env rs sra id' name_map fn t2 ts =
       )
   in
   match (entries:entry_set_t) with
-  | `FunctionEntry fs ->
+  | FunctionEntry fs ->
     (*
     print_endline ("Got candidates: " ^ string_of_entry_set entries);
     *)
@@ -2108,7 +2108,7 @@ and koenig_lookup syms env rs sra id' name_map fn t2 ts =
           "\ncandidates are: " ^ full_string_of_entry_set syms.dfns entries
         )
     end
-  | `NonFunctionEntry _ -> clierr sra "Koenig lookup expected function"
+  | NonFunctionEntry _ -> clierr sra "Koenig lookup expected function"
 
 and lookup_qn_with_sig'
   syms
@@ -2361,10 +2361,10 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
         "[lookup_qn_with_sig] AST_lookup: Simple_module: Can't find name " ^ name
       )
     | Some entries -> match entries with
-    | `NonFunctionEntry (index) ->
+    | NonFunctionEntry (index) ->
       handle_nonfunction_index (sye index) ts
 
-    | `FunctionEntry fs ->
+    | FunctionEntry fs ->
       match
         resolve_overload'
         syms env rs sra fs name signs ts
@@ -2563,10 +2563,10 @@ and lookup_type_qn_with_sig'
         "[lookup_qn_with_sig] AST_lookup: Simple_module: Can't find name " ^ name
       )
     | Some entries -> match entries with
-    | `NonFunctionEntry (index) ->
+    | NonFunctionEntry (index) ->
       handle_nonfunction_index (sye index) ts
 
-    | `FunctionEntry fs ->
+    | FunctionEntry fs ->
       match
         resolve_overload'
         syms env rs sra fs name signs ts
@@ -2878,10 +2878,10 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
   let result:entry_set_t =
     match lookup_name_in_htab table name  with
     | Some x -> x
-    | None -> `FunctionEntry []
+    | None -> FunctionEntry []
   in
   match result with
-  | `NonFunctionEntry (index) ->
+  | NonFunctionEntry (index) ->
     begin match get_data syms.dfns (sye index) with
     {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
     (*
@@ -2970,7 +2970,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     end
     end
 
-  | `FunctionEntry fs ->
+  | FunctionEntry fs ->
     (*
     print_endline ("Found function set size " ^ si (List.length fs));
     *)
@@ -3022,7 +3022,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         print_endline (si (List.length opens) ^ " OPENS BUILT for " ^ name);
         *)
         match opens with
-        | [`NonFunctionEntry i] when
+        | [NonFunctionEntry i] when
           (
               match get_data syms.dfns (sye i) with
               {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
@@ -3042,8 +3042,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         | _ ->
         let fs =
           match opens with
-          | [`NonFunctionEntry i] -> [i]
-          | [`FunctionEntry ii] -> ii
+          | [NonFunctionEntry i] -> [i]
+          | [FunctionEntry ii] -> ii
           | _ ->
             merge_functions opens name
         in
@@ -3094,10 +3094,10 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
   let result:entry_set_t =
     match lookup_name_in_htab table name  with
     | Some x -> x
-    | None -> `FunctionEntry []
+    | None -> FunctionEntry []
   in
   match result with
-  | `NonFunctionEntry (index) ->
+  | NonFunctionEntry (index) ->
     begin match get_data syms.dfns (sye index) with
     {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
     (*
@@ -3190,7 +3190,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
     end
     end
 
-  | `FunctionEntry fs ->
+  | FunctionEntry fs ->
     (*
     print_endline ("Found function set size " ^ si (List.length fs));
     *)
@@ -3241,7 +3241,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
         print_endline (si (List.length opens) ^ " OPENS BUILT for " ^ name);
         *)
         match opens with
-        | [`NonFunctionEntry i] when
+        | [NonFunctionEntry i] when
           (
               match get_data syms.dfns (sye i) with
               {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
@@ -3258,8 +3258,8 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
         | _ ->
         let fs =
           match opens with
-          | [`NonFunctionEntry i] -> [i]
-          | [`FunctionEntry ii] -> ii
+          | [NonFunctionEntry i] -> [i]
+          | [FunctionEntry ii] -> ii
           | _ ->
             merge_functions opens name
         in
@@ -3567,12 +3567,12 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | `AST_callback (sr,qn) ->
     let es,ts = lookup_qn_in_env2' syms env rs qn in
     begin match es with
-    | `FunctionEntry [index] ->
+    | FunctionEntry [index] ->
        print_endline "Callback closure ..";
        let ts = List.map (bt sr) ts in
        BEXPR_closure (sye index, ts),
        ti sr (sye index) ts
-    | `NonFunctionEntry  _
+    | NonFunctionEntry  _
     | _ -> clierr sr
       "'callback' expression denotes non-singleton function set"
     end
@@ -3841,7 +3841,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     else
     let ts = List.map (bt sr) ts in
     begin match inner_lookup_name_in_env syms env rs sr name with
-    | `NonFunctionEntry {base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts} 
+    | NonFunctionEntry {base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts}
     ->
       (*
       let index = sye index in
@@ -3890,7 +3890,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       | _ -> BEXPR_name (index,ts), t
       end
 
-    | `FunctionEntry [{base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts}] 
+    | FunctionEntry [{base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts}]
     ->
       (* should be a client error not an assertion *)
       if List.length spec_vs <> List.length ts then begin
@@ -3915,7 +3915,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       BEXPR_closure (index,ts), t
 
 
-    | `FunctionEntry fs ->
+    | FunctionEntry fs ->
       assert (List.length fs > 0);
       begin match args with
       | [] ->
@@ -3978,21 +3978,21 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     *)
     let ts = List.map (bt sr) ts in
     begin match inner_lookup_name_in_env syms env rs sr name with
-    | `NonFunctionEntry (index) ->
+    | NonFunctionEntry (index) ->
       let index = sye index in
       let ts = adjust_ts syms sr index ts in
       BEXPR_name (index,ts),
       let t = ti sr index ts in
       t
 
-    | `FunctionEntry [index] ->
+    | FunctionEntry [index] ->
       let index = sye index in
       let ts = adjust_ts syms sr index ts in
       BEXPR_closure (index,ts),
       let t = ti sr index ts in
       t
 
-    | `FunctionEntry _ ->
+    | FunctionEntry _ ->
       clierr sr
       (
         "[bind_expression] Simple 'the' name " ^ name ^
@@ -4023,7 +4023,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       begin match entry with
       | Some entry ->
         begin match entry with
-        | `NonFunctionEntry (i) ->
+        | NonFunctionEntry (i) ->
           let i = sye i in
           begin match hfind "lookup" syms.dfns i with
           | {sr=srn; symdef=SYMDEF_inherit qn} -> be (qn :> expr_t)
@@ -4033,7 +4033,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             ti sr i ts
           end
 
-        | `FunctionEntry fs ->
+        | FunctionEntry fs ->
           begin match args with
           | [] ->
             clierr sr
@@ -4821,8 +4821,8 @@ and grab_name qn = match qn with
 and check_instances syms call_sr calledname classname es ts' mkenv =
   let insts = ref [] in
   match es with
-  | `NonFunctionEntry _ -> print_endline "EXPECTED INSTANCES TO BE FUNCTION SET"
-  | `FunctionEntry es ->
+  | NonFunctionEntry _ -> print_endline "EXPECTED INSTANCES TO BE FUNCTION SET"
+  | FunctionEntry es ->
     (*
     print_endline ("instance Candidates " ^ catmap "," string_of_entry_kind es);
     *)
@@ -5053,7 +5053,7 @@ and resolve_overload'
    able to find this name, so if when we run out
    of parents, which is when we hit the top module,
    we create a parent name map with a single entry
-   'top'->`NonFunctionEntry 0.
+   'top'->NonFunctionEntry 0.
 *)
 
 and split_dirs open_excludes dirs :
@@ -5181,7 +5181,7 @@ and bind_dir
   let cheat_table = Hashtbl.create 7 in
   List.iter
   (fun (n,i,_) ->
-   let entry = `NonFunctionEntry {base_sym=i; spec_vs=[]; sub_ts=[]} in
+   let entry = NonFunctionEntry {base_sym=i; spec_vs=[]; sub_ts=[]} in
     Hashtbl.add cheat_table n entry;
     if not (Hashtbl.mem syms.dfns i) then
       Hashtbl.add syms.dfns i {id=n;sr=dummy_sr;parent=None;vs=dfltvs;
@@ -5286,8 +5286,8 @@ and review_entry syms vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_t
    {base_sym=i; spec_vs=vs; sub_ts=ts'}
 
 and review_entry_set syms v vs ts : entry_set_t = match v with
-  | `NonFunctionEntry i -> `NonFunctionEntry (review_entry syms vs ts i)
-  | `FunctionEntry fs -> `FunctionEntry (List.map (review_entry syms vs ts) fs)
+  | NonFunctionEntry i -> NonFunctionEntry (review_entry syms vs ts i)
+  | FunctionEntry fs -> FunctionEntry (List.map (review_entry syms vs ts) fs)
 
 and make_view_table syms table (vs: (string * int) list) ts : name_map_t =
   (*
@@ -5334,7 +5334,7 @@ and pub_table_dir
     let inst = mkentry syms vs i in
     let inst = review_entry syms invs ts inst in
     let inst_name = "_inst_" ^ id in
-    Hashtbl.add table inst_name (`FunctionEntry [inst]);
+    Hashtbl.add table inst_name (FunctionEntry [inst]);
     if inst_check then
     begin
       if syms.compiler_options.print_flag then
@@ -5414,21 +5414,21 @@ and merge_directives syms rs env dirs typeclasses =
     begin let entry,_ = lookup_qn_in_env2' syms !env rs qn in
     match entry with
 
-    | `NonFunctionEntry _ ->
+    | NonFunctionEntry _ ->
       if Hashtbl.mem use_map n
       then failwith "Duplicate non function used"
       else Hashtbl.add use_map n entry
 
-    | `FunctionEntry ls ->
+    | FunctionEntry ls ->
       let entry2 =
         try Hashtbl.find use_map  n
-        with Not_found -> `FunctionEntry []
+        with Not_found -> FunctionEntry []
       in
       match entry2 with
-      | `NonFunctionEntry _ ->
+      | NonFunctionEntry _ ->
         failwith "Use function and non-function kinds"
-      | `FunctionEntry ls2 ->
-        Hashtbl.replace use_map n (`FunctionEntry (ls @ ls2))
+      | FunctionEntry ls2 ->
+        Hashtbl.replace use_map n (FunctionEntry (ls @ ls2))
     end
 
   | DIR_open (vs,qn) -> add_qn (vs,qn)
@@ -5454,21 +5454,21 @@ and merge_opens syms env rs (typeclasses,opens,includes,uses) =
     let entry,_ = lookup_qn_in_env2' syms env rs qn in
     match entry with
 
-    | `NonFunctionEntry _ ->
+    | NonFunctionEntry _ ->
       if Hashtbl.mem use_map n
       then failwith "Duplicate non function used"
       else Hashtbl.add use_map n entry
 
-    | `FunctionEntry ls ->
+    | FunctionEntry ls ->
       let entry2 =
         try Hashtbl.find use_map  n
-        with Not_found -> `FunctionEntry []
+        with Not_found -> FunctionEntry []
       in
       match entry2 with
-      | `NonFunctionEntry _ ->
+      | NonFunctionEntry _ ->
         failwith "Use function and non-function kinds"
-      | `FunctionEntry ls2 ->
-        Hashtbl.replace use_map n (`FunctionEntry (ls @ ls2))
+      | FunctionEntry ls2 ->
+        Hashtbl.replace use_map n (FunctionEntry (ls @ ls2))
   )
   uses
   ;
@@ -5628,7 +5628,7 @@ and rebind_btype syms env sr ts t: btypecode_t =
 
 and check_module syms name sr entries ts =
     begin match entries with
-    | `NonFunctionEntry (index) ->
+    | NonFunctionEntry (index) ->
       begin match get_data syms.dfns (sye index) with
       | {dirs=dirs;pubmap=table;symdef=SYMDEF_module} ->
         Simple_module (sye index,ts,table,dirs)
@@ -5731,7 +5731,7 @@ let lookup_code_in_env syms env sr qn =
     try Some (lookup_qn_in_env2' syms env rsground qn)
     with _ -> None
   in match result with
-  | Some (`NonFunctionEntry x,ts) ->
+  | Some (NonFunctionEntry x,ts) ->
     clierr sr
     (
       "[lookup_qn_in_env] Not expecting " ^
@@ -5739,7 +5739,7 @@ let lookup_code_in_env syms env sr qn =
       " to be non-function (code insertions use function entries) "
     )
 
-  | Some (`FunctionEntry x,ts) ->
+  | Some (FunctionEntry x,ts) ->
     List.iter
     (fun i ->
       match hfind "lookup" syms.dfns (sye i) with
@@ -5774,8 +5774,8 @@ let lookup_uniq_in_env
   : entry_kind_t  * typecode_t list
 =
   match lookup_qn_in_env2' syms env rsground qn with
-    | `NonFunctionEntry x,ts -> x,ts
-    | `FunctionEntry [x],ts -> x,ts
+    | NonFunctionEntry x,ts -> x,ts
+    | FunctionEntry [x],ts -> x,ts
     | _ ->
       let sr = src_of_expr (qn:>expr_t) in
       clierr sr
@@ -5793,7 +5793,7 @@ let lookup_function_in_env
   : entry_kind_t  * typecode_t list
 =
   match lookup_qn_in_env2' syms env rsground qn with
-    | `FunctionEntry [x],ts -> x,ts
+    | FunctionEntry [x],ts -> x,ts
     | _ ->
       let sr = src_of_expr (qn:>expr_t) in
       clierr sr
