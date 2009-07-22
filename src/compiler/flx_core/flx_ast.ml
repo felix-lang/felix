@@ -337,13 +337,12 @@ and type_qual_t = [
   | `Raw_needs_shape of typecode_t
 ]
 
-and requirement_t = [
-  | `Body_req of c_t
-  | `Header_req of c_t
-  | `Named_req of qualified_name_t
-  | `Property_req of string
-  | `Package_req of c_t
-]
+and requirement_t =
+  | Body_req of c_t
+  | Header_req of c_t
+  | Named_req of qualified_name_t
+  | Property_req of string
+  | Package_req of c_t
 
 and ikind_t = [
   | `Header

@@ -507,11 +507,11 @@ and xrequirement_t sr x : requirement_t =
   let xct x = xc_t sr x in
   let ss s = s in
   match x with
-  | Lst [Id "Body_req"; ct] -> `Body_req (xct ct)
-  | Lst [Id "Header_req"; ct] -> `Header_req (xct ct)
-  | Lst [Id "Named_req"; qn] -> `Named_req (xq "Named_req" qn)
-  | Lst [Id "Property_req"; Str s] -> `Property_req (ss s)
-  | Lst [Id "Package_req"; ct] -> `Package_req (xct ct)
+  | Lst [Id "Body_req"; ct] -> Body_req (xct ct)
+  | Lst [Id "Header_req"; ct] -> Header_req (xct ct)
+  | Lst [Id "Named_req"; qn] -> Named_req (xq "Named_req" qn)
+  | Lst [Id "Property_req"; Str s] -> Property_req (ss s)
+  | Lst [Id "Package_req"; ct] -> Package_req (xct ct)
   | x -> err x "requirement_t"
 
 and xraw_req_expr_t sr x : raw_req_expr_t =

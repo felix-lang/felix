@@ -995,11 +995,11 @@ and string_of_long_code_spec c =
   | `Identity -> "identity"
 
 and string_of_raw_req = function
-  | `Named_req s -> string_of_qualified_name s
-  | `Body_req c -> "body " ^ string_of_code_spec c
-  | `Header_req c -> "header " ^ string_of_code_spec c
-  | `Property_req s -> "property \"" ^ s ^ "\""
-  | `Package_req c -> "package " ^ string_of_code_spec c
+  | Named_req s -> string_of_qualified_name s
+  | Body_req c -> "body " ^ string_of_code_spec c
+  | Header_req c -> "header " ^ string_of_code_spec c
+  | Property_req s -> "property \"" ^ s ^ "\""
+  | Package_req c -> "package " ^ string_of_code_spec c
 
 (* fairly lame excess brackets here *)
 and string_of_raw_req_expr = function

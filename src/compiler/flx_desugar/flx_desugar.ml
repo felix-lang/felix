@@ -693,25 +693,25 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     | RREQ_true -> NREQ_true
     | RREQ_false -> NREQ_false
     | RREQ_atom x -> match x with
-      | `Body_req s -> mkreq s `Body
-      | `Header_req s -> mkreq s `Header
-      | `Package_req s -> mkreq s `Package
+      | Body_req s -> mkreq s `Body
+      | Header_req s -> mkreq s `Header
+      | Package_req s -> mkreq s `Package
 
-      | `Named_req n -> NREQ_atom n
+      | Named_req n -> NREQ_atom n
 
-      | `Property_req "generator" ->
+      | Property_req "generator" ->
         props := `Generator :: !props;
         NREQ_true
 
-      | `Property_req "virtual" ->
+      | Property_req "virtual" ->
         props := `Virtual:: !props;
         NREQ_true
 
-      | `Property_req "lvalue" ->
+      | Property_req "lvalue" ->
         props := `Lvalue:: !props;
         NREQ_true
 
-      | `Property_req s ->
+      | Property_req s ->
         props := mkprop sr s :: !props;
         NREQ_true
     in
