@@ -80,8 +80,18 @@ and asm_t =
 
 type bound_iface_t = Flx_srcref.t * iface_t * int option
 
-(** value typing *)
-type 't b0typecode_t' =
+type 't btpattern_t' = {
+  pattern: 't;
+
+  (* pattern type variables, including 'any' vars *)
+  pattern_vars: Flx_set.IntSet.t;
+
+  (* assignments for 'as' vars *)
+  assignments : (int * 't) list
+}
+
+(** general typing *)
+type 't btypecode_t' =
   [
   | `BTYP_inst of bid_t * 't list
   | `BTYP_tuple of 't list
@@ -97,22 +107,7 @@ type 't b0typecode_t' =
   | `BTYP_void
   | `BTYP_fix of int
   | `BTYP_intersect of 't list (** intersection type *)
-  ]
 
-type 't btpattern_t' = {
-  pattern: 't;
-
-  (* pattern type variables, including 'any' vars *)
-  pattern_vars: Flx_set.IntSet.t;
-
-  (* assignments for 'as' vars *)
-  assignments : (int * 't) list
-}
-
-
-(** meta typing *)
-type 't b1typecode_t' =
-  [
   | `BTYP_var of int * 't
   | `BTYP_apply of 't * 't
   | `BTYP_typefun of (int * 't) list * 't * 't
@@ -124,17 +119,8 @@ type 't b1typecode_t' =
   | `BTYP_typeset of 't list (** open union *)
   | `BTYP_typesetunion of 't list (** open union *)
   | `BTYP_typesetintersection of 't list (** open union *)
-
   ]
 
-(** general typing *)
-type 't btypecode_t' =
-  [
-  | 't b0typecode_t'
-  | 't b1typecode_t'
-  ]
-
-type b0typecode_t = 't b0typecode_t' as 't
 type btypecode_t = 't btypecode_t' as 't
 type btpattern_t = btypecode_t btpattern_t'
 

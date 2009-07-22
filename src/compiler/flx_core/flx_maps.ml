@@ -251,7 +251,31 @@ let all_units' ts =
     true
   with Not_found -> false
 
-let map_b0type f = function
+let map_btype f = function
+  | `BTYP_apply (a,b) -> `BTYP_apply (f a, f b)
+  | `BTYP_typefun (its, a, b) ->
+     `BTYP_typefun (List.map (fun (i,t) -> i, f t) its, f a , f b)
+  | `BTYP_type_tuple ts -> `BTYP_type_tuple (List.map f ts)
+  | `BTYP_type_match (t,ps) ->
+    (* this may be wrong .. hard to know .. *)
+    let g (tp,t) = {tp with pattern=f tp.pattern},f t in
+    `BTYP_type_match (f t, List.map g ps)
+
+  | `BTYP_typeset ts ->
+    let g acc elt =
+      (* SHOULD USE UNIFICATIION! *)
+      let elt = f elt in
+      if List.mem elt acc then acc else elt::acc
+    in
+    let ts = List.rev (List.fold_left g [] ts) in
+    if List.length ts = 1 then List.hd ts else
+    `BTYP_typeset ts
+
+  | `BTYP_typesetunion ls -> `BTYP_typesetunion (List.map f ls)
+  | `BTYP_typesetintersection ls -> `BTYP_typesetintersection (List.map f ls)
+
+  | `BTYP_type i -> `BTYP_type i
+
   | `BTYP_inst (i,ts) -> `BTYP_inst (i, List.map f ts)
   | `BTYP_tuple ts -> `BTYP_tuple (List.map f ts)
   | `BTYP_record ts -> `BTYP_record (List.map (fun (s,t) -> s,f t) ts)
@@ -281,48 +305,6 @@ let map_b0type f = function
   | `BTYP_array (t1,t2)->  `BTYP_array (f t1, f t2)
   | x -> x
 
-let map_btype f = function
-  | `BTYP_apply (a,b) -> `BTYP_apply (f a, f b)
-  | `BTYP_typefun (its, a, b) ->
-     `BTYP_typefun (List.map (fun (i,t) -> i, f t) its, f a , f b)
-  | `BTYP_type_tuple ts -> `BTYP_type_tuple (List.map f ts)
-  | `BTYP_type_match (t,ps) ->
-    (* this may be wrong .. hard to know .. *)
-    let g (tp,t) = {tp with pattern=f tp.pattern},f t in
-    `BTYP_type_match (f t, List.map g ps)
-
-  | `BTYP_typeset ts ->
-    let g acc elt =
-      (* SHOULD USE UNIFICATIION! *)
-      let elt = f elt in
-      if List.mem elt acc then acc else elt::acc
-    in
-    let ts = List.rev (List.fold_left g [] ts) in
-    if List.length ts = 1 then List.hd ts else
-    `BTYP_typeset ts
-
-  | `BTYP_typesetunion ls -> `BTYP_typesetunion (List.map f ls)
-  | `BTYP_typesetintersection ls -> `BTYP_typesetintersection (List.map f ls)
-
-  | `BTYP_type i -> `BTYP_type i
-  | x -> map_b0type f x
-
-let iter_b0type f = function
-  | `BTYP_inst (i,ts) -> List.iter f ts
-  | `BTYP_tuple ts -> List.iter f ts
-  | `BTYP_record ts -> List.iter (fun (s,t) -> f t) ts
-  | `BTYP_variant ts -> List.iter (fun (s,t) -> f t) ts
-  | `BTYP_unitsum k ->
-    let unitrep = `BTYP_tuple [] in
-    for i = 1 to k do f unitrep done
-
-  | `BTYP_sum ts -> List.iter f ts
-  | `BTYP_function (a,b) -> f a; f b
-  | `BTYP_cfunction (a,b) -> f a; f b
-  | `BTYP_pointer t->  f t
-  | `BTYP_array (t1,t2)->  f t1; f t2
-  | x -> ()
-
 let iter_btype f = function
   | `BTYP_apply (a,b) -> f a; f b
   | `BTYP_typefun (its, a, b) ->
@@ -337,7 +319,20 @@ let iter_btype f = function
   | `BTYP_typesetunion ts -> List.iter f ts
   | `BTYP_typesetintersection ts -> List.iter f ts
 
-  | x -> iter_b0type f x
+  | `BTYP_inst (i,ts) -> List.iter f ts
+  | `BTYP_tuple ts -> List.iter f ts
+  | `BTYP_record ts -> List.iter (fun (s,t) -> f t) ts
+  | `BTYP_variant ts -> List.iter (fun (s,t) -> f t) ts
+  | `BTYP_unitsum k ->
+    let unitrep = `BTYP_tuple [] in
+    for i = 1 to k do f unitrep done
+
+  | `BTYP_sum ts -> List.iter f ts
+  | `BTYP_function (a,b) -> f a; f b
+  | `BTYP_cfunction (a,b) -> f a; f b
+  | `BTYP_pointer t->  f t
+  | `BTYP_array (t1,t2)->  f t1; f t2
+  | x -> ()
 
 (* type invariant mapping *)
 

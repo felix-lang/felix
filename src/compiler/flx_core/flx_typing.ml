@@ -40,12 +40,10 @@ let all_voids ls =
     (fun acc t -> acc && (t = `BTYP_void))
     true ls
 
-let all_units0 ls =
+let all_units ls =
     List.fold_left
     (fun acc t -> acc && (t = `BTYP_tuple []))
     true ls
-
-let all_units ls = all_units0 ls
 
 let is_unitsum (t:btypecode_t) = match t with
   | `BTYP_unitsum _ -> true

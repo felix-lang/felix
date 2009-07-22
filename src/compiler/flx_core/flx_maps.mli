@@ -6,14 +6,8 @@ open Flx_types
 val map_type:
   (typecode_t -> typecode_t) -> typecode_t -> typecode_t
 
-val map_b0type:
-  (b0typecode_t -> b0typecode_t) -> b0typecode_t -> b0typecode_t
-
 val map_btype:
   (btypecode_t -> btypecode_t) -> btypecode_t -> btypecode_t
-
-val iter_b0type:
-  (b0typecode_t -> unit) -> b0typecode_t -> unit
 
 val iter_btype:
   (btypecode_t -> unit) -> btypecode_t -> unit

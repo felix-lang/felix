@@ -6,7 +6,6 @@ val flx_bbool : btypecode_t
 
 val is_unitsum: btypecode_t -> bool
 val int_of_unitsum : btypecode_t -> int
-val all_units0 : b0typecode_t list -> bool
 val all_units : btypecode_t list -> bool
 val all_voids : btypecode_t list -> bool
 
