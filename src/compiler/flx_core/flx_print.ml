@@ -1990,30 +1990,30 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   let sl = spaces level in
   let seq = match seq with Some i -> "<" ^ si i ^ ">" | None -> "" in
   match s with
-  | `DCL_type_alias (t2) ->
+  | DCL_type_alias (t2) ->
     sl ^ "typedef " ^ name^seq ^ print_vs vs ^
     " = " ^ st t2 ^ ";"
 
-  | `DCL_inherit qn ->
+  | DCL_inherit qn ->
     sl ^ "inherit " ^ name^seq ^ print_vs vs ^
     " = " ^ string_of_qualified_name qn ^ ";"
 
-  | `DCL_inherit_fun qn ->
+  | DCL_inherit_fun qn ->
     sl ^ "inherit fun " ^ name^seq ^ print_vs vs ^
     " = " ^ string_of_qualified_name qn ^ ";"
 
-  | `DCL_module (asms) ->
+  | DCL_module (asms) ->
     sl ^ "module " ^ name^seq ^ print_vs vs ^ " = " ^
     "\n" ^
     string_of_asm_compound level asms
 
-  | `DCL_instance (name,asms) ->
+  | DCL_instance (name,asms) ->
     sl ^ "instance " ^ print_vs vs ^ " " ^
     string_of_qualified_name name ^seq ^ " = " ^
     "\n" ^
     string_of_asm_compound level asms
 
-  | `DCL_struct (cs) ->
+  | DCL_struct (cs) ->
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name^ ": " ^ st ty ^ ";"
     in
@@ -2022,7 +2022,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     sl ^ "}"
 
-  | `DCL_cstruct (cs) ->
+  | DCL_cstruct (cs) ->
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name^ ": " ^ st ty ^ ";"
     in
@@ -2031,11 +2031,11 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     sl ^ "}"
 
-  | `DCL_typeclass (asms) ->
+  | DCL_typeclass (asms) ->
     sl ^ "type class " ^ name^seq ^ print_vs vs ^ " =\n" ^
     string_of_asm_compound level asms
 
-  | `DCL_union (cs) ->
+  | DCL_union (cs) ->
     let string_of_union_component (name,v,vs,ty) =
       (spaces (level+1)) ^
       "|" ^name^
@@ -2048,18 +2048,18 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     sl ^ "}"
 
-  | `DCL_newtype (nt)-> sl ^
+  | DCL_newtype (nt)-> sl ^
     "type " ^ name^seq ^ print_vs vs ^
     " = new " ^ st nt ^ ";"
 
-  | `DCL_abs (quals, code, reqs) -> sl ^
+  | DCL_abs (quals, code, reqs) -> sl ^
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ name^seq ^ print_vs vs ^
     " = " ^ string_of_code_spec code ^
     string_of_named_reqs reqs ^
     ";"
 
-  | `DCL_fun (props, args, result, code, reqs,prec) ->
+  | DCL_fun (props, args, result, code, reqs,prec) ->
     let argtype:typecode_t = type_of_argtypes args in
     let t:typecode_t = `TYP_function (argtype,result) in
     sl ^
@@ -2071,7 +2071,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     string_of_named_reqs reqs ^
     ";"
 
-  | `DCL_callback (props, args, result, reqs) ->
+  | DCL_callback (props, args, result, reqs) ->
     let argtype:typecode_t = type_of_argtypes args in
     let t:typecode_t = `TYP_cfunction (argtype,result) in
     sl ^
@@ -2081,7 +2081,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     string_of_named_reqs reqs ^
     ";"
 
-  | `DCL_insert (s,ikind, reqs) ->
+  | DCL_insert (s,ikind, reqs) ->
     sl ^
     (match ikind with
     | `Header -> "header "
@@ -2092,7 +2092,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     " = "^ string_of_code_spec s ^
     string_of_named_reqs reqs ^ ";"
 
-  | `DCL_const (props,typ, code, reqs) ->
+  | DCL_const (props,typ, code, reqs) ->
     sl ^
     string_of_properties props ^
     "const " ^ name^seq ^print_vs vs ^
@@ -2101,25 +2101,25 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     string_of_named_reqs reqs ^
     ";"
 
-  | `DCL_reduce (ps, e1,e2) ->
+  | DCL_reduce (ps, e1,e2) ->
     sl ^
     "reduce " ^ name^seq ^ print_vs vs ^
     "("^ string_of_basic_parameters ps ^"): " ^
     string_of_expr e1 ^ " => " ^ string_of_expr e2 ^ ";"
 
-  | `DCL_axiom (ps, e1) ->
+  | DCL_axiom (ps, e1) ->
     sl ^
     "axiom " ^ name^seq ^ print_vs vs ^
     "("^ string_of_parameters ps ^"): " ^
     string_of_axiom_method e1 ^ ";"
 
-  | `DCL_lemma (ps, e1) ->
+  | DCL_lemma (ps, e1) ->
     sl ^
     "lemma " ^ name^seq ^ print_vs vs ^
     "("^ string_of_parameters ps ^"): " ^
     string_of_axiom_method e1 ^ ";"
 
-  | `DCL_function (ps, res, props, ss) ->
+  | DCL_function (ps, res, props, ss) ->
     sl ^
     string_of_properties props ^
     "fun " ^ name^seq ^ print_vs vs ^
@@ -2127,31 +2127,31 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     string_of_asm_compound level ss
 
 
-  | `DCL_match_check (pat,(s,i)) ->
+  | DCL_match_check (pat,(s,i)) ->
     sl ^
     "function " ^ name^seq ^ "() { " ^
     s ^ "<"^si i^"> matches " ^ string_of_pattern pat ^
     " }"
 
-  | `DCL_match_handler (pat,(varname, i), sts) ->
+  | DCL_match_handler (pat,(varname, i), sts) ->
     sl ^
     "match_handler " ^ name^seq ^
     "(" ^ string_of_pattern pat ^ ")" ^
     string_of_asm_compound level sts
 
-  | `DCL_val (ty) ->
+  | DCL_val (ty) ->
     sl ^
     "val " ^ name^seq ^ print_vs vs ^ ": " ^ st ty ^ ";"
 
-  | `DCL_ref (ty) ->
+  | DCL_ref (ty) ->
     sl ^
     "ref " ^ name^seq ^ print_vs vs ^ ": " ^ st ty ^ ";"
 
-  | `DCL_var (ty) ->
+  | DCL_var (ty) ->
     sl ^
     "var " ^ name^seq ^ print_vs vs ^ ": " ^ st ty ^ ";"
 
-  | `DCL_lazy (ty,e) ->
+  | DCL_lazy (ty,e) ->
     sl ^
     "fun " ^ name^seq ^ print_vs vs ^
     ": " ^ st ty ^

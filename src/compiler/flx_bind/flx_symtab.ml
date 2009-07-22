@@ -1,3 +1,5 @@
+open Flx_types
+
 type t = {
   syms: Flx_mtypes2.sym_state_t;
   pub_name_map: (string, Flx_types.entry_set_t) Hashtbl.t;
@@ -400,7 +402,7 @@ and build_table_for_dcl
 
   (* Add the declarations to the symbol table. *)
   match (dcl:Flx_types.dcl_t) with
-  | `DCL_reduce (ps, e1, e2) ->
+  | DCL_reduce (ps, e1, e2) ->
       let ips = add_simple_parameters (Some n) ps in
 
       (* Add the symbol to the symbol table. *)
@@ -409,7 +411,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_axiom ((ps, pre), e1) ->
+  | DCL_axiom ((ps, pre), e1) ->
       let ips = add_parameters (Some n) ps in
 
       (* Add the symbol to the symbol table. *)
@@ -418,7 +420,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_lemma ((ps, pre), e1) ->
+  | DCL_lemma ((ps, pre), e1) ->
       let ips = add_parameters (Some n) ps in
 
       (* Add the symbol to the symbol table. *)
@@ -427,7 +429,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_function ((ps,pre),t,props,asms) ->
+  | DCL_function ((ps,pre),t,props,asms) ->
       let is_ctor = List.mem `Ctor props in
 
       if is_ctor && id <> "__constructor__" then
@@ -479,7 +481,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_match_check (pat,(mvname,match_var_index)) ->
+  | DCL_match_check (pat,(mvname,match_var_index)) ->
       assert (List.length (fst vs) = 0);
       let fun_index = n in
 
@@ -496,7 +498,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_match_handler (pat,(mvname,match_var_index),asms) ->
+  | DCL_match_handler (pat,(mvname,match_var_index),asms) ->
       (*
       print_endline ("Parent is " ^ match parent with Some i -> string_of_int i);
       print_endline ("Match handler, " ^ string_of_int n ^ ", mvname = " ^ mvname);
@@ -523,7 +525,7 @@ and build_table_for_dcl
             (`AST_index (sr,mvname,match_var_index))
         in
         let dcl =
-          `Dcl (sr, vname, None,`Private, Flx_ast.dfltvs, `DCL_val (`TYP_typeof (component)))
+          `Dcl (sr, vname, None,`Private, Flx_ast.dfltvs, DCL_val (`TYP_typeof (component)))
         and instr = `Exe (sr, `EXE_init (vname, component)) in
         new_asms := dcl :: instr :: !new_asms;
       end vars;
@@ -560,7 +562,7 @@ and build_table_for_dcl
       (* Add type variables to private symbol table. *)
       add_tvars privtab
 
-  | `DCL_insert (s,ikind,reqs) ->
+  | DCL_insert (s,ikind,reqs) ->
       add_symbol n id (`SYMDEF_insert (s,ikind,reqs));
 
       (* Possibly add the inserted function to the public symbol table. *)
@@ -569,7 +571,7 @@ and build_table_for_dcl
       (* Add the inserted function to the private symbol table. *)
       add_function priv_name_map id n
 
-  | `DCL_module asms ->
+  | DCL_module asms ->
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           syms
@@ -619,7 +621,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_typeclass asms ->
+  | DCL_typeclass asms ->
       (*
       let symdef = `SYMDEF_typeclass in
       let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
@@ -696,7 +698,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars fudged_privtab
 
-  | `DCL_instance (qn,asms) ->
+  | DCL_instance (qn,asms) ->
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           syms
@@ -727,7 +729,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_val t ->
+  | DCL_val t ->
       let t = match t with | `TYP_none -> `TYP_var n | _ -> t in
 
       (* Add the value to the dnfs. *)
@@ -742,7 +744,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_var t ->
+  | DCL_var t ->
       let t = if t = `TYP_none then `TYP_var n else t in
 
       (* Add the variable to the dfns. *)
@@ -760,7 +762,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_lazy (t,e) ->
+  | DCL_lazy (t,e) ->
       let t = if t = `TYP_none then `TYP_var n else t in
 
       (* Add the lazy value to the dfns. *)
@@ -775,7 +777,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_ref t ->
+  | DCL_ref t ->
       let t = match t with | `TYP_none -> `TYP_var n | _ -> t in
 
       (* Add the reference value to the dnfs. *)
@@ -790,7 +792,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_type_alias (t) ->
+  | DCL_type_alias (t) ->
       (* Add the type alias to the dfns. *)
       add_symbol n id (`SYMDEF_type_alias t);
 
@@ -835,7 +837,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_inherit qn ->
+  | DCL_inherit qn ->
       (* Add the inherited typeclass to the dnfs. *)
       add_symbol n id (`SYMDEF_inherit qn);
 
@@ -848,7 +850,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_inherit_fun qn ->
+  | DCL_inherit_fun qn ->
       (* Add the inherited function to the dnfs. *)
       add_symbol n id (`SYMDEF_inherit_fun qn);
 
@@ -861,7 +863,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_newtype t ->
+  | DCL_newtype t ->
       (* Add the newtype to the dfns. *)
       add_symbol n id (`SYMDEF_newtype t);
 
@@ -897,7 +899,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_abs (quals, c, reqs) ->
+  | DCL_abs (quals, c, reqs) ->
       (* Add the abs to the dfns. *)
       add_symbol n id (`SYMDEF_abs (quals,c,reqs));
 
@@ -910,7 +912,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_const (props, t, c, reqs) ->
+  | DCL_const (props, t, c, reqs) ->
       let t = if t = `TYP_none then `TYP_var n else t in
 
       (* Add the const to the dfns. *)
@@ -925,7 +927,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_fun (props, ts,t,c,reqs,prec) ->
+  | DCL_fun (props, ts,t,c,reqs,prec) ->
       (* Add the function to the dfns. *)
       add_symbol n id (`SYMDEF_fun (props, ts,t,c,reqs,prec));
 
@@ -942,7 +944,7 @@ and build_table_for_dcl
    * the function. It has a special argument the C function has as type void*,
    * but which Felix must consider as the type of a closure with the same type
    * as the C function, with this void* dropped. *)
-  | `DCL_callback (props, ts,t,reqs) ->
+  | DCL_callback (props, ts,t,reqs) ->
       (* Add the callback to the dfns. *)
       add_symbol n id (`SYMDEF_callback (props, ts,t,reqs));
 
@@ -955,7 +957,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_union (its) ->
+  | DCL_union (its) ->
       let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
       let utype = `AST_name(sr,id, tvars) in
       let its =
@@ -1025,8 +1027,8 @@ and build_table_for_dcl
       (* Add type variables to the private symbol table. *)
       add_tvars privtab
 
-  | `DCL_cstruct (sts)
-  | `DCL_struct (sts) ->
+  | DCL_cstruct (sts)
+  | DCL_struct (sts) ->
       (*
       print_endline ("Got a struct " ^ id);
       print_endline ("Members=" ^ Flx_util.catmap "; " (fun (id,t)->id ^ ":" ^ string_of_typecode t) sts);
@@ -1037,8 +1039,8 @@ and build_table_for_dcl
       (* Add symbols to dfns *)
       add_symbol n id (
         match dcl with
-        | `DCL_struct _ -> `SYMDEF_struct (sts)
-        | `DCL_cstruct _ -> `SYMDEF_cstruct (sts)
+        | DCL_struct _ -> `SYMDEF_struct (sts)
+        | DCL_cstruct _ -> `SYMDEF_cstruct (sts)
         | _ -> assert false
       );
 

@@ -28,40 +28,38 @@ type dir_t =
   | DIR_use of id_t * qualified_name_t
 
 type dcl_t =
-  [
   (* data structures *)
-  | `DCL_axiom of         params_t * axiom_method_t
-  | `DCL_lemma of         params_t * axiom_method_t
-  | `DCL_reduce of        simple_parameter_t list * expr_t * expr_t
-  | `DCL_function of      params_t * typecode_t * property_t list * asm_t list
-  | `DCL_union of         (id_t * int option * vs_list_t * typecode_t) list
-  | `DCL_struct of        (id_t * typecode_t) list
-  | `DCL_cstruct of       (id_t * typecode_t) list
-  | `DCL_typeclass of     asm_t list
-  | `DCL_match_check of   pattern_t * (string * int)
-  | `DCL_match_handler of pattern_t * (string * int) * asm_t list
+  | DCL_axiom of         params_t * axiom_method_t
+  | DCL_lemma of         params_t * axiom_method_t
+  | DCL_reduce of        simple_parameter_t list * expr_t * expr_t
+  | DCL_function of      params_t * typecode_t * property_t list * asm_t list
+  | DCL_union of         (id_t * int option * vs_list_t * typecode_t) list
+  | DCL_struct of        (id_t * typecode_t) list
+  | DCL_cstruct of       (id_t * typecode_t) list
+  | DCL_typeclass of     asm_t list
+  | DCL_match_check of   pattern_t * (string * int)
+  | DCL_match_handler of pattern_t * (string * int) * asm_t list
 
   (* variables *)
-  | `DCL_val of           typecode_t
-  | `DCL_var of           typecode_t
-  | `DCL_lazy of          typecode_t * expr_t
-  | `DCL_ref of           typecode_t
-  | `DCL_type_alias of    typecode_t
-  | `DCL_inherit of       qualified_name_t
-  | `DCL_inherit_fun of   qualified_name_t
+  | DCL_val of           typecode_t
+  | DCL_var of           typecode_t
+  | DCL_lazy of          typecode_t * expr_t
+  | DCL_ref of           typecode_t
+  | DCL_type_alias of    typecode_t
+  | DCL_inherit of       qualified_name_t
+  | DCL_inherit_fun of   qualified_name_t
 
   (* module system *)
-  | `DCL_module of        asm_t list
-  | `DCL_instance of      qualified_name_t * asm_t list
+  | DCL_module of        asm_t list
+  | DCL_instance of      qualified_name_t * asm_t list
 
   (* binding structures [prolog] *)
-  | `DCL_newtype of       typecode_t
-  | `DCL_abs of           type_qual_t list * c_t * named_req_expr_t
-  | `DCL_const of         property_t list * typecode_t * c_t * named_req_expr_t
-  | `DCL_fun of           property_t list * typecode_t list * typecode_t * c_t * named_req_expr_t * prec_t
-  | `DCL_callback of      property_t list * typecode_t list * typecode_t * named_req_expr_t
-  | `DCL_insert of        c_t * ikind_t * named_req_expr_t
-  ]
+  | DCL_newtype of       typecode_t
+  | DCL_abs of           type_qual_t list * c_t * named_req_expr_t
+  | DCL_const of         property_t list * typecode_t * c_t * named_req_expr_t
+  | DCL_fun of           property_t list * typecode_t list * typecode_t * c_t * named_req_expr_t * prec_t
+  | DCL_callback of      property_t list * typecode_t list * typecode_t * named_req_expr_t
+  | DCL_insert of        c_t * ikind_t * named_req_expr_t
 
 and access_t = [`Private | `Public ]
 
