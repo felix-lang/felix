@@ -285,12 +285,12 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
   ;
   let id2 = id ^ "_clone_" ^ si index in
   match entry with
-  | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
+  | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = rexes exes in
     let ps = remap_ps ps in
     let props = allow_rescan rescan_flag props in
     let props = filter (fun p -> p <> `Virtual) props in
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_procedure (props,splice vs,(ps,traint),exes));
+    Hashtbl.add bbdfns k (id,parent,sr,BBDCL_procedure (props,splice vs,(ps,traint),exes));
     (*
     print_endline "NEW PROCEDURE (clone):";
     print_function syms.dfns bbdfns k;
@@ -303,13 +303,13 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     *)
     Hashtbl.add uses k calls
 
-  | `BBDCL_function (props, vs, (ps,traint), ret, exes) ->
+  | BBDCL_function (props, vs, (ps,traint), ret, exes) ->
     let props = allow_rescan rescan_flag props in
     let props = filter (fun p -> p <> `Virtual) props in
     let ps = remap_ps ps in
     let exes = rexes exes in
     let ret = auxt ret in
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_function (props,splice vs,(ps,traint),ret,exes));
+    Hashtbl.add bbdfns k (id,parent,sr,BBDCL_function (props,splice vs,(ps,traint),ret,exes));
     (*
     print_endline "NEW FUNCTION (clone):";
     print_function syms.dfns bbdfns k;
@@ -322,7 +322,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     *)
     Hashtbl.add uses k calls
 
-  | `BBDCL_var (vs,t) ->
+  | BBDCL_var (vs,t) ->
     (*
     print_endline ("Reparent variable old: id<"^si index^"> vs=" ^
       catmap "," (fun (s,i) -> s^"<"^si i^">") vs);
@@ -331,41 +331,41 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
      print_endline ("Type old " ^ sbt syms.dfns t ^ " -> type new " ^ sbt
      syms.dfns (auxt t));
     *)
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_var (splice vs,auxt t))
+    Hashtbl.add bbdfns k (id,parent,sr,BBDCL_var (splice vs,auxt t))
 
-  | `BBDCL_val (vs,t) ->
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_val (splice vs,auxt t))
+  | BBDCL_val (vs,t) ->
+    Hashtbl.add bbdfns k (id,parent,sr,BBDCL_val (splice vs,auxt t))
 
-  | `BBDCL_ref (vs,t) ->
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_ref (splice vs,auxt t))
+  | BBDCL_ref (vs,t) ->
+    Hashtbl.add bbdfns k (id,parent,sr,BBDCL_ref (splice vs,auxt t))
 
-  | `BBDCL_tmp (vs,t) ->
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_tmp (splice vs,auxt t))
+  | BBDCL_tmp (vs,t) ->
+    Hashtbl.add bbdfns k (id,parent,sr,BBDCL_tmp (splice vs,auxt t))
 
-  | `BBDCL_abs (vs,quals,ct,breqs) ->
+  | BBDCL_abs (vs,quals,ct,breqs) ->
     let vs = splice vs in
     let breqs = rreqs breqs in
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_abs (vs,quals,ct,breqs));
+    Hashtbl.add bbdfns k (id,parent,sr,BBDCL_abs (vs,quals,ct,breqs));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
 
-  | `BBDCL_const (props,vs,t,ct,breqs) ->
+  | BBDCL_const (props,vs,t,ct,breqs) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vs = splice vs in
     let breqs = rreqs breqs in
     let t = auxt t in
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_const (props,vs,t,ct,breqs));
+    Hashtbl.add bbdfns k (id,parent,sr,BBDCL_const (props,vs,t,ct,breqs));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
 
-  | `BBDCL_proc (props,vs,params,ct,breqs) ->
+  | BBDCL_proc (props,vs,params,ct,breqs) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let params = map auxt params in
     let vs = splice vs in
     let breqs = rreqs breqs in
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_proc (props,vs,params,ct,breqs));
+    Hashtbl.add bbdfns k (id,parent,sr,BBDCL_proc (props,vs,params,ct,breqs));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     (*
@@ -374,13 +374,13 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     *)
     Hashtbl.add uses k calls
 
-  | `BBDCL_fun (props,vs,params,ret,ct,breqs,prec) ->
+  | BBDCL_fun (props,vs,params,ret,ct,breqs,prec) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let params = map auxt params in
     let vs = splice vs in
     let ret = auxt ret in
     let breqs = rreqs breqs in
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_fun (props,vs,params,ret,ct,breqs,prec));
+    Hashtbl.add bbdfns k (id,parent,sr,BBDCL_fun (props,vs,params,ret,ct,breqs,prec));
     (*
     print_endline "NEW FUNCTION (clone):";
     print_function syms.dfns bbdfns k;
@@ -393,10 +393,10 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     *)
     Hashtbl.add uses k calls
 
-  | `BBDCL_insert (vs,ct,ik,breqs) ->
+  | BBDCL_insert (vs,ct,ik,breqs) ->
     let breqs = rreqs breqs in
     let vs = splice vs in
-    Hashtbl.add bbdfns k (id,parent,sr,`BBDCL_insert (vs,ct,ik,breqs));
+    Hashtbl.add bbdfns k (id,parent,sr,BBDCL_insert (vs,ct,ik,breqs));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls

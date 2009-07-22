@@ -17,7 +17,7 @@ let gen_closure syms bbdfns i =
   let j = !(syms.counter) in incr syms.counter;
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
-  | `BBDCL_proc (props,vs,ps,c,reqs) ->
+  | BBDCL_proc (props,vs,ps,c,reqs) ->
     let arg_t =
       match ps with | [t] -> t | ps -> `BTYP_tuple ps
     in
@@ -25,7 +25,7 @@ let gen_closure syms bbdfns i =
     let ps,a =
       let n = !(syms.counter) in incr syms.counter;
       let name = "_a" ^ si n in
-      let ventry = `BBDCL_val (vs,arg_t) in
+      let ventry = BBDCL_val (vs,arg_t) in
       Hashtbl.add bbdfns n (name,Some j,sr,ventry);
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
     in
@@ -36,11 +36,11 @@ let gen_closure syms bbdfns i =
         BEXE_proc_return sr
       ]
     in
-    let entry = `BBDCL_procedure ([],vs,(ps,None),exes) in
+    let entry = BBDCL_procedure ([],vs,(ps,None),exes) in
     Hashtbl.add bbdfns j (id,parent,sr,entry);
     j
 
-  | `BBDCL_fun (props,vs,ps,ret,c,reqs,_) ->
+  | BBDCL_fun (props,vs,ps,ret,c,reqs,_) ->
     let ts = map (fun (_,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
     let arg_t =
       match ps with | [t] -> t | ps -> `BTYP_tuple ps
@@ -48,13 +48,13 @@ let gen_closure syms bbdfns i =
     let ps,a =
       let n = !(syms.counter) in incr syms.counter;
       let name = "_a" ^ si n in
-      let ventry = `BBDCL_val (vs,arg_t) in
+      let ventry = BBDCL_val (vs,arg_t) in
       Hashtbl.add bbdfns n (name,Some j,sr,ventry);
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
     in
     let e = BEXPR_apply_prim (i,ts,a),ret in
     let exes : bexe_t list = [BEXE_fun_return (sr,e)] in
-    let entry = `BBDCL_function ([],vs,(ps,None),ret,exes) in
+    let entry = BBDCL_function ([],vs,(ps,None),ret,exes) in
     Hashtbl.add bbdfns j (id,parent,sr,entry);
     j
 
@@ -75,8 +75,8 @@ let mkcls syms bbdfns all_closures i ts =
 let check_prim syms bbdfns all_closures i ts =
   let _,_,_,entry = Hashtbl.find bbdfns i in
   match entry with
-  | `BBDCL_proc _
-  | `BBDCL_fun _ ->
+  | BBDCL_proc _
+  | BBDCL_fun _ ->
     mkcls syms bbdfns all_closures i ts
   | _ ->
     all_closures := IntSet.add i !all_closures;
@@ -157,14 +157,14 @@ let process_entry syms bbdfns all_closures i =
   let ue e = adj_cls syms bbdfns all_closures e in
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
-  | `BBDCL_function (props,vs,ps,ret,exes) ->
+  | BBDCL_function (props,vs,ps,ret,exes) ->
     let exes = process_exes syms bbdfns all_closures exes in
-    let entry = `BBDCL_function (props,vs,ps,ret,exes) in
+    let entry = BBDCL_function (props,vs,ps,ret,exes) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
-  | `BBDCL_procedure (props,vs,ps,exes) ->
+  | BBDCL_procedure (props,vs,ps,exes) ->
     let exes = process_exes syms bbdfns all_closures exes in
-    let entry = `BBDCL_procedure (props,vs,ps,exes) in
+    let entry = BBDCL_procedure (props,vs,ps,exes) in
     Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
   | _ -> ()

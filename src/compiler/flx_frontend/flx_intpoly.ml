@@ -89,7 +89,7 @@ let cal_polyvars syms bbdfns child_map =
   let absvars = Hashtbl.create 97 in
   Hashtbl.iter (fun i (name,parent,sr,bbdfn) -> 
   match bbdfn with
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     if mem `Virtual props then () else
     let j = ref 0 in
     let tvars = ref (map (fun (_,i) -> incr j; i,!j-1) vs) in
@@ -107,7 +107,7 @@ let cal_polyvars syms bbdfns child_map =
     with Not_found -> ()
     end
 
-  | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
+  | BBDCL_procedure (props,vs,(ps,traint), exes) ->
     if mem `Virtual props then () else
     let j = ref 0 in
     let tvars = ref (map (fun (_,i) -> incr j; i,!j-1) vs) in
@@ -151,8 +151,8 @@ let cal_polyvars syms bbdfns child_map =
       let t = 
           let ps = match Hashtbl.find bbdfns i with
           | name, parent, sr, bbdfn -> match bbdfn with
-          | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps
-          | `BBDCL_procedure (props,vs,(ps,traint), exes) -> ps
+          | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps
+          | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps
           | _ -> assert false
           in
           let pts = map (fun {ptyp=t}->t) ps in
@@ -172,7 +172,7 @@ let cal_polyvars syms bbdfns child_map =
       let ta = 
         match Hashtbl.find bbdfns i with
         | name, parent, sr, bbdfn -> match bbdfn with
-        | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> ret
+        | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ret
         | _ -> assert false
       in
       let t' = Flx_unify.list_subst syms.counter varmap ta in
@@ -187,8 +187,8 @@ let cal_polyvars syms bbdfns child_map =
       let tf = 
           let ps,ret = match Hashtbl.find bbdfns i with
           | name, parent, sr, bbdfn -> match bbdfn with
-          | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret
-          | `BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, `BTYP_void
+          | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret
+          | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, `BTYP_void
           | _ -> assert false
           in
           let pts = map (fun {ptyp=t}->t) ps in
@@ -231,14 +231,14 @@ let cal_polyvars syms bbdfns child_map =
   let fixexes exes = map fixexe exes in
   Hashtbl.iter (fun i (name,parent,sr,bbdfn) -> 
   match bbdfn with
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let exes = fixexes exes in
-    let bbdfn = `BBDCL_function (props,vs,(ps,traint),ret,exes) in
+    let bbdfn = BBDCL_function (props,vs,(ps,traint),ret,exes) in
     Hashtbl.replace bbdfns i (name,parent,sr,bbdfn)
 
-  | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
+  | BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let exes = fixexes exes in
-    let bbdfn = `BBDCL_procedure (props,vs,(ps,traint), exes) in
+    let bbdfn = BBDCL_procedure (props,vs,(ps,traint), exes) in
     Hashtbl.replace bbdfns i (name,parent,sr,bbdfn)
   | _ -> ()      
 
@@ -249,8 +249,8 @@ let cal_polyvars syms bbdfns child_map =
   let polyfix2 i ts =
     match Hashtbl.find bbdfns i with
     | name, parent, sr, bbdfn -> match bbdfn with
-    | `BBDCL_function _ 
-    | `BBDCL_procedure _ ->
+    | BBDCL_function _
+    | BBDCL_procedure _ ->
       map (fun t -> match t with | `BTYP_pointer _ -> `BTYP_pointer `BTYP_void | _ -> t) ts 
     | _ -> ts
   in
@@ -260,8 +260,8 @@ let cal_polyvars syms bbdfns child_map =
     let t,vsi = 
         let ps,vs = match Hashtbl.find bbdfns i with
         | name, parent, sr, bbdfn -> match bbdfn with
-        | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,vs
-        | `BBDCL_procedure (props,vs,(ps,traint), exes) -> ps,vs
+        | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,vs
+        | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps,vs
         | _ -> raise Skip
         in
         let pts = map (fun {ptyp=t}->t) ps in
@@ -283,7 +283,7 @@ let cal_polyvars syms bbdfns child_map =
     let ta,vsi = 
       match Hashtbl.find bbdfns i with
       | name, parent, sr, bbdfn -> match bbdfn with
-      | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> ret,map (fun (s,i) -> i) vs
+      | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ret,map (fun (s,i) -> i) vs
       | _ -> raise Skip
     in
     let varmap = map2 (fun i t -> i, match t with | `BTYP_pointer _ -> incr counter; `BTYP_pointer `BTYP_void | _ -> t ) vsi ts in
@@ -300,8 +300,8 @@ let cal_polyvars syms bbdfns child_map =
     let tf,vsi = 
       let ps,ret,vs = match Hashtbl.find bbdfns i with
       | name, parent, sr, bbdfn -> match bbdfn with
-      | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret,vs
-      | `BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, `BTYP_void,vs
+      | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret,vs
+      | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, `BTYP_void,vs
       | _ -> raise Skip 
       in
       let pts = map (fun {ptyp=t}->t) ps in
@@ -350,14 +350,14 @@ let cal_polyvars syms bbdfns child_map =
 
   Hashtbl.iter (fun i (name,parent,sr,bbdfn) -> 
   match bbdfn with
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let exes = fixexes2 exes in
-    let bbdfn = `BBDCL_function (props,vs,(ps,traint),ret,exes) in
+    let bbdfn = BBDCL_function (props,vs,(ps,traint),ret,exes) in
     Hashtbl.replace bbdfns i (name,parent,sr,bbdfn)
 
-  | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
+  | BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let exes = fixexes2 exes in
-    let bbdfn = `BBDCL_procedure (props,vs,(ps,traint), exes) in
+    let bbdfn = BBDCL_procedure (props,vs,(ps,traint), exes) in
     Hashtbl.replace bbdfns i (name,parent,sr,bbdfn)
   | _ -> ()      
 

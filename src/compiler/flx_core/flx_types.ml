@@ -250,35 +250,33 @@ and btype_qual_t = [
 ]
 
 and bbdcl_t =
-  [
-  | `BBDCL_function of   property_t list * bvs_t * bparams_t * btypecode_t * bexe_t list
-  | `BBDCL_procedure of  property_t list * bvs_t * bparams_t * bexe_t list
-  | `BBDCL_val of        bvs_t * btypecode_t
-  | `BBDCL_var of        bvs_t * btypecode_t
-  | `BBDCL_ref of        bvs_t * btypecode_t
-  | `BBDCL_tmp of        bvs_t * btypecode_t
+  | BBDCL_function of   property_t list * bvs_t * bparams_t * btypecode_t * bexe_t list
+  | BBDCL_procedure of  property_t list * bvs_t * bparams_t * bexe_t list
+  | BBDCL_val of        bvs_t * btypecode_t
+  | BBDCL_var of        bvs_t * btypecode_t
+  | BBDCL_ref of        bvs_t * btypecode_t
+  | BBDCL_tmp of        bvs_t * btypecode_t
 
   (* binding structures [prolog] *)
-  | `BBDCL_newtype of    bvs_t * btypecode_t
-  | `BBDCL_abs of        bvs_t * btype_qual_t list * c_t * breqs_t
-  | `BBDCL_const of      property_t list * bvs_t * btypecode_t * c_t * breqs_t
-  | `BBDCL_fun of        property_t list * bvs_t * btypecode_t list * btypecode_t * c_t  * breqs_t * prec_t
-  | `BBDCL_callback of   property_t list * bvs_t * btypecode_t list * btypecode_t list * int * btypecode_t * breqs_t * prec_t
-  | `BBDCL_proc of       property_t list * bvs_t * btypecode_t list * c_t  * breqs_t
-  | `BBDCL_insert of     bvs_t * c_t * ikind_t * breqs_t
+  | BBDCL_newtype of    bvs_t * btypecode_t
+  | BBDCL_abs of        bvs_t * btype_qual_t list * c_t * breqs_t
+  | BBDCL_const of      property_t list * bvs_t * btypecode_t * c_t * breqs_t
+  | BBDCL_fun of        property_t list * bvs_t * btypecode_t list * btypecode_t * c_t  * breqs_t * prec_t
+  | BBDCL_callback of   property_t list * bvs_t * btypecode_t list * btypecode_t list * int * btypecode_t * breqs_t * prec_t
+  | BBDCL_proc of       property_t list * bvs_t * btypecode_t list * c_t  * breqs_t
+  | BBDCL_insert of     bvs_t * c_t * ikind_t * breqs_t
 
-  | `BBDCL_union of      bvs_t * (id_t * int * btypecode_t) list
-  | `BBDCL_struct of     bvs_t * (id_t * btypecode_t) list
-  | `BBDCL_cstruct of     bvs_t * (id_t * btypecode_t) list
-  | `BBDCL_typeclass of  property_t list * bvs_t
-  | `BBDCL_instance of   property_t list *
-                         bvs_t *
-                         btypecode_t (* constraint *) *
-                         bid_t *
-                         btypecode_t list
-  | `BBDCL_nonconst_ctor of bvs_t * int * btypecode_t * int * btypecode_t *
-                         bvs_t * btypecode_t (* existentials and constraint for GADTs *)
-  ]
+  | BBDCL_union of      bvs_t * (id_t * int * btypecode_t) list
+  | BBDCL_struct of     bvs_t * (id_t * btypecode_t) list
+  | BBDCL_cstruct of    bvs_t * (id_t * btypecode_t) list
+  | BBDCL_typeclass of  property_t list * bvs_t
+  | BBDCL_instance of   property_t list *
+                        bvs_t *
+                        btypecode_t (* constraint *) *
+                        bid_t *
+                        btypecode_t list
+  | BBDCL_nonconst_ctor of bvs_t * int * btypecode_t * int * btypecode_t *
+                        bvs_t * btypecode_t (* existentials and constraint for GADTs *)
 
 and baxiom_method_t = [`BPredicate of tbexpr_t | `BEquation of tbexpr_t * tbexpr_t]
 and reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t

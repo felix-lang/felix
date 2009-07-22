@@ -201,7 +201,7 @@ let gen_type_name syms bbdfns (index,typ) =
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
     in
     begin match entry with
-    | `BBDCL_abs (vs,quals,ct,_) ->
+    | BBDCL_abs (vs,quals,ct,_) ->
       let complete = not (mem `Incomplete quals) in
       let descr =
         "\n//"^(if complete then "" else "INCOMPLETE ")^
@@ -233,9 +233,9 @@ let gen_type_name syms bbdfns (index,typ) =
       ^
       "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
 
-    | `BBDCL_newtype (_,t') -> ""
+    | BBDCL_newtype (_,t') -> ""
 
-    | `BBDCL_cstruct _ -> if ts = [] then "" else
+    | BBDCL_cstruct _ -> if ts = [] then "" else
       let descr =
         "\n//CSTRUCT "^si i ^" INSTANCE " ^
         si index^": " ^
@@ -247,7 +247,7 @@ let gen_type_name syms bbdfns (index,typ) =
       descr ^
       "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
 
-    | `BBDCL_struct _ ->
+    | BBDCL_struct _ ->
       let descr =
         "\n//STRUCT "^si i ^" INSTANCE " ^
         si index^": " ^
@@ -257,7 +257,7 @@ let gen_type_name syms bbdfns (index,typ) =
       let name = cn typ in
       descr ^ "struct " ^ name ^ ";\n"
 
-    | `BBDCL_union (vs,ls) ->
+    | BBDCL_union (vs,ls) ->
       let descr =
         "\n//UNION "^si i ^" INSTANCE " ^
         si index^": " ^
@@ -400,7 +400,7 @@ let gen_type syms bbdfns (index,typ) =
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
     in
     begin match entry with
-    | `BBDCL_newtype (vs,t') ->
+    | BBDCL_newtype (vs,t') ->
       let t' = reduce_type t' in
       let descr =
         "\n//NEWTYPE "^si i ^" INSTANCE " ^
@@ -413,11 +413,11 @@ let gen_type syms bbdfns (index,typ) =
       descr ^
       "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
 
-    | `BBDCL_abs (vs,quals,ct,_) -> ""
+    | BBDCL_abs (vs,quals,ct,_) -> ""
 
-    | `BBDCL_cstruct (vs,cts) -> ""
+    | BBDCL_cstruct (vs,cts) -> ""
 
-    | `BBDCL_struct (vs,cts) ->
+    | BBDCL_struct (vs,cts) ->
       let cts = map (fun (name,typ) -> name, tsubst vs ts typ) cts in
       let ctss = map (fun (name,typ) -> name, tn typ) cts in
       let name = cn typ in
@@ -440,7 +440,7 @@ let gen_type syms bbdfns (index,typ) =
       "};\n"
 
 
-    | `BBDCL_union _ -> ""
+    | BBDCL_union _ -> ""
 
     | _ ->
       failwith

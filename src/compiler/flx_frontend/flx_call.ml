@@ -87,39 +87,39 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   let ut t = uses_type uses k sr t in
 
   match entry with
-  | `BBDCL_typeclass _ -> ()
+  | BBDCL_typeclass _ -> ()
 
-  | `BBDCL_procedure (_,_,(ps,_),exes)
-  | `BBDCL_function (_,_,(ps,_),_,exes) ->
+  | BBDCL_procedure (_,_,(ps,_),exes)
+  | BBDCL_function (_,_,(ps,_),_,exes) ->
     iter (cal_param_usage syms uses sr k) ps;
     iter (cal_exe_usage syms uses k) exes
 
-  | `BBDCL_newtype (_,t) -> ut t
-  | `BBDCL_abs (_,_,_,reqs) -> cal_req_usage sr k reqs
-  | `BBDCL_const (_,_,t,_,reqs) -> cal_req_usage sr k reqs
-  | `BBDCL_proc (_,_,ps,_, reqs)  -> cal_req_usage sr k reqs; iter ut ps
-  | `BBDCL_fun (_,_,ps,ret,_, reqs,_)  -> cal_req_usage sr k reqs; iter ut ps; ut ret
-  | `BBDCL_insert (_,_,_,reqs)  -> cal_req_usage sr k reqs
-  | `BBDCL_instance (_,_,cons,i,ts) ->
+  | BBDCL_newtype (_,t) -> ut t
+  | BBDCL_abs (_,_,_,reqs) -> cal_req_usage sr k reqs
+  | BBDCL_const (_,_,t,_,reqs) -> cal_req_usage sr k reqs
+  | BBDCL_proc (_,_,ps,_, reqs)  -> cal_req_usage sr k reqs; iter ut ps
+  | BBDCL_fun (_,_,ps,ret,_, reqs,_)  -> cal_req_usage sr k reqs; iter ut ps; ut ret
+  | BBDCL_insert (_,_,_,reqs)  -> cal_req_usage sr k reqs
+  | BBDCL_instance (_,_,cons,i,ts) ->
     (* we dont add the type constraint, since it
     is only used for instance selection
     *)
     add uses k i sr; iter ut ts
 
-  | `BBDCL_nonconst_ctor (_,_,unt,_,ct, evs, etraint) ->
+  | BBDCL_nonconst_ctor (_,_,unt,_,ct, evs, etraint) ->
     ut unt; ut ct
 
-  | `BBDCL_union _  -> ()
+  | BBDCL_union _  -> ()
 
-  | `BBDCL_cstruct (_,ps)
-  | `BBDCL_struct (_,ps) ->
+  | BBDCL_cstruct (_,ps)
+  | BBDCL_struct (_,ps) ->
     iter ut (map snd ps)
 
-  | `BBDCL_val (_,t)
-  | `BBDCL_var (_,t)
-  | `BBDCL_tmp (_,t) -> ut t
-  | `BBDCL_ref (_,t) -> ut (`BTYP_pointer t)
-  | `BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
+  | BBDCL_val (_,t)
+  | BBDCL_var (_,t)
+  | BBDCL_tmp (_,t) -> ut t
+  | BBDCL_ref (_,t) -> ut (`BTYP_pointer t)
+  | BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
     iter ut ps_cf;
     iter ut ps_c;
     ut ret; cal_req_usage sr k reqs
@@ -231,10 +231,10 @@ let call_report syms bbdfns (uses,usedby) f k =
   w (if isr then "recursive " else "");
   w
     begin match entry with
-    | `BBDCL_function _ -> "fun "
-    | `BBDCL_procedure _ -> "proc "
-    | `BBDCL_var _ -> "var "
-    | `BBDCL_val _ -> "val "
+    | BBDCL_function _ -> "fun "
+    | BBDCL_procedure _ -> "proc "
+    | BBDCL_var _ -> "var "
+    | BBDCL_val _ -> "val "
     | _ -> assert false
     end
   ;
@@ -245,10 +245,10 @@ let call_report syms bbdfns (uses,usedby) f k =
   (fun (i,_) ->
     if not (mem i !x) then
     try match Hashtbl.find bbdfns i with
-      | _,_,_,`BBDCL_procedure _
-      | _,_,_,`BBDCL_function _
-      | _,_,_,`BBDCL_var _
-      | _,_,_,`BBDCL_val _ -> x := i::!x
+      | _,_,_,BBDCL_procedure _
+      | _,_,_,BBDCL_function _
+      | _,_,_,BBDCL_var _
+      | _,_,_,BBDCL_val _ -> x := i::!x
       | _ -> ()
     with Not_found -> ()
   )
@@ -268,10 +268,10 @@ let print_call_report' syms bbdfns usage f =
   Hashtbl.iter
   (fun k (id,_,sr,entry) ->
     match entry with
-    | `BBDCL_procedure _
-    | `BBDCL_function _
-    | `BBDCL_var _
-    | `BBDCL_val _
+    | BBDCL_procedure _
+    | BBDCL_function _
+    | BBDCL_var _
+    | BBDCL_val _
       -> x := k :: !x
     | _ -> ()
   )

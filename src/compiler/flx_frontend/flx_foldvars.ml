@@ -188,8 +188,8 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
         in
         let isvar =
           match Hashtbl.find bbdfns j with
-          | _,_,_,(`BBDCL_var _ | `BBDCL_tmp _ | `BBDCL_ref _ ) -> true
-          | _,_,_,`BBDCL_val _ -> false
+          | _,_,_,(BBDCL_var _ | BBDCL_tmp _ | BBDCL_ref _ ) -> true
+          | _,_,_,BBDCL_val _ -> false
           | _ -> assert false
         in
 

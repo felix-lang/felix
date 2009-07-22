@@ -27,8 +27,8 @@ let hfind msg h k =
 
 let get_ps bbdfns f =
   match hfind "get_ps" bbdfns f with
-  | _,_,_,`BBDCL_function (_,_,(ps,_),_,_)
-  | _,_,_,`BBDCL_procedure (_,_,(ps,_),_) -> ps
+  | _,_,_,BBDCL_function (_,_,(ps,_),_,_)
+  | _,_,_,BBDCL_procedure (_,_,(ps,_),_) -> ps
   | _ -> assert false
 
 let unpack syms bbdfns f ps a : tbexpr_t list =

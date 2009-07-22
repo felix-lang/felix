@@ -232,7 +232,7 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
 
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
@@ -245,11 +245,11 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     in
     let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bbdfns fi mt x) in
     let exes = fixup_exes syms bbdfns fi mt exes in
-    let entry = `BBDCL_function (props,[],(ps,traint),ret,exes) in
+    let entry = BBDCL_function (props,[],(ps,traint),ret,exes) in
     let parent = cal_parent syms bbdfns i ts in
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
 
-  | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
+  | BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
@@ -268,39 +268,39 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     let fi i ts = fi i (map mt ts) in
     *)
     let exes = fixup_exes syms bbdfns fi mt exes in
-    let entry = `BBDCL_procedure (props,[],(ps,traint), exes) in
+    let entry = BBDCL_procedure (props,[],(ps,traint), exes) in
     let parent = cal_parent syms bbdfns i ts in
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
 
-  | `BBDCL_val (vs,t) ->
+  | BBDCL_val (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let t = mt t in
-    let entry = `BBDCL_val ([],t) in
+    let entry = BBDCL_val ([],t) in
     let parent = cal_parent syms bbdfns i ts in
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
 
-  | `BBDCL_var (vs,t) ->
+  | BBDCL_var (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let t = mt t in
-    let entry = `BBDCL_var ([],t) in
+    let entry = BBDCL_var ([],t) in
     let parent = cal_parent syms bbdfns i ts in
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
 
-  | `BBDCL_ref (vs,t) ->
+  | BBDCL_ref (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let t = mt t in
-    let entry = `BBDCL_ref ([],t) in
+    let entry = BBDCL_ref ([],t) in
     let parent = cal_parent syms bbdfns i ts in
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
 
-  | `BBDCL_tmp (vs,t) ->
+  | BBDCL_tmp (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let t = mt t in
-    let entry = `BBDCL_tmp ([],t) in
+    let entry = BBDCL_tmp ([],t) in
     let parent = cal_parent syms bbdfns i ts in
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
 
@@ -311,27 +311,27 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     This is weak .. it's redone for each instance, relies
     on mt being idempotent..
   *)
-  | `BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) ->
+  | BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let argtypes = map mt argtypes in
     let ret = mt ret in
-    let entry = `BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) in
+    let entry = BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) in
     Hashtbl.replace bbdfns i (id,parent, sr, entry)
 
 
-  | `BBDCL_proc (props,vs,argtypes,ct,reqs) ->
+  | BBDCL_proc (props,vs,argtypes,ct,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let argtypes = map mt argtypes in
-    let entry = `BBDCL_proc (props,vs,argtypes,ct,reqs) in
+    let entry = BBDCL_proc (props,vs,argtypes,ct,reqs) in
     Hashtbl.replace bbdfns i (id,parent, sr, entry)
 
-  | `BBDCL_const (props,vs,t,`Str "#this",reqs) ->
+  | BBDCL_const (props,vs,t,`Str "#this",reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let t = mt t in
-    let entry = `BBDCL_const(props,[],t,`Str "#this",reqs) in
+    let entry = BBDCL_const(props,[],t,`Str "#this",reqs) in
     let parent = cal_parent syms bbdfns i ts in
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
 
@@ -340,26 +340,26 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
 let chk_mono syms (bbdfns: fully_bound_symbol_table_t) i =
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->  true
-  | `BBDCL_procedure (props,vs,(ps,traint), exes) -> true
-  | `BBDCL_val (vs,t) -> true
-  | `BBDCL_var (vs,t) -> true
-  | `BBDCL_ref (vs,t) -> true
-  | `BBDCL_tmp (vs,t) -> true
-  | `BBDCL_const (_,_,_,`Str "#this",_) -> true
-  | `BBDCL_union (vs,ps) -> false
-  | `BBDCL_cstruct (vs,ps) -> false
-  | `BBDCL_struct (vs,ps) -> false
-  | `BBDCL_newtype (vs,t) -> false
-  | `BBDCL_const (props,vs,t,ct,reqs) -> false
-  | `BBDCL_insert (vs,s,ikind,reqs) ->  false
-  | `BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) -> false
-  | `BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,prec) -> false
-  | `BBDCL_proc (props,vs,argtypes,ct,reqs) -> false
-  | `BBDCL_abs (vs,tqual,ct,reqs) ->  false
-  | `BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) -> false
-  | `BBDCL_typeclass (props,vs) ->  false
-  | `BBDCL_instance (props,vs,con,tc,ts) ->  false
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->  true
+  | BBDCL_procedure (props,vs,(ps,traint), exes) -> true
+  | BBDCL_val (vs,t) -> true
+  | BBDCL_var (vs,t) -> true
+  | BBDCL_ref (vs,t) -> true
+  | BBDCL_tmp (vs,t) -> true
+  | BBDCL_const (_,_,_,`Str "#this",_) -> true
+  | BBDCL_union (vs,ps) -> false
+  | BBDCL_cstruct (vs,ps) -> false
+  | BBDCL_struct (vs,ps) -> false
+  | BBDCL_newtype (vs,t) -> false
+  | BBDCL_const (props,vs,t,ct,reqs) -> false
+  | BBDCL_insert (vs,s,ikind,reqs) ->  false
+  | BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) -> false
+  | BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,prec) -> false
+  | BBDCL_proc (props,vs,argtypes,ct,reqs) -> false
+  | BBDCL_abs (vs,tqual,ct,reqs) ->  false
+  | BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) -> false
+  | BBDCL_typeclass (props,vs) ->  false
+  | BBDCL_instance (props,vs,con,tc,ts) ->  false
 
 (* monomorphic instances are already equal to their indices ..
   replace some polymorphic instances with monomorphic ones

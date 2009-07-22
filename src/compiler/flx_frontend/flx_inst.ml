@@ -115,14 +115,14 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     in
     begin match entry with
     (* function type not needed for direct call *)
-    | `BBDCL_fun _
-    | `BBDCL_callback _
-    | `BBDCL_function _
-    | `BBDCL_nonconst_ctor _
+    | BBDCL_fun _
+    | BBDCL_callback _
+    | BBDCL_function _
+    | BBDCL_nonconst_ctor _
       ->
       let ts = map vs ts in
       ui index ts; ue a
-    | `BBDCL_procedure _ ->
+    | BBDCL_procedure _ ->
       failwith "Use of mangled procedure in expression! (should have been lifted out)"
 
     (* the remaining cases are struct/variant type constructors,
@@ -302,7 +302,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
   if syms.compiler_options.print_flag then
   print_endline ("//Instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]");
   match entry with
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let argtypes = map (fun {ptyp=t}->t) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -325,7 +325,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     *)
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret exes ts
 
-  | `BBDCL_procedure (props,vs,(ps,traint), exes) ->
+  | BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let argtypes = map (fun {ptyp=t}->t) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -339,7 +339,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     ;
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void exes ts
 
-  | `BBDCL_union (vs,ps) ->
+  | BBDCL_union (vs,ps) ->
     let argtypes = map (fun (_,_,t)->t) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -349,8 +349,8 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     rtnr (`BTYP_inst (i,ts))
 
 
-  | `BBDCL_cstruct (vs,ps)
-  | `BBDCL_struct (vs,ps) ->
+  | BBDCL_cstruct (vs,ps)
+  | BBDCL_struct (vs,ps) ->
     let argtypes = map snd ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -359,14 +359,14 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     iter rtr tss;
     rtnr (`BTYP_inst (i,ts))
 
-  | `BBDCL_newtype (vs,t) ->
+  | BBDCL_newtype (vs,t) ->
     rtnr t;
     rtnr (`BTYP_inst (i,ts))
 
-  | `BBDCL_val (vs,t)
-  | `BBDCL_var (vs,t)
-  | `BBDCL_ref (vs,t)
-  | `BBDCL_tmp (vs,t)
+  | BBDCL_val (vs,t)
+  | BBDCL_var (vs,t)
+  | BBDCL_ref (vs,t)
+  | BBDCL_tmp (vs,t)
     ->
 
     (*
@@ -387,7 +387,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     let t = varmap_subst hvarmap t in
     rtr t
 
-  | `BBDCL_const (props,vs,t,_,reqs) ->
+  | BBDCL_const (props,vs,t,_,reqs) ->
     (*
     print_endline "Register const";
     *)
@@ -411,7 +411,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     do_reqs vs reqs
 
   (* shortcut -- header and body can only require other header and body *)
-  | `BBDCL_insert (vs,s,ikind,reqs)
+  | BBDCL_insert (vs,s,ikind,reqs)
     ->
     (*
     print_endline ("Handling requirements of header/body " ^ s);
@@ -423,7 +423,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     do_reqs vs reqs
 
 
-  | `BBDCL_fun (props,vs,argtypes,ret,_,reqs,_) ->
+  | BBDCL_fun (props,vs,argtypes,ret,_,reqs,_) ->
     (*
     print_endline ("Handling requirements of fun " ^ id);
     *)
@@ -438,7 +438,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     do_reqs vs reqs;
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes ret [] ts
 
-  | `BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,_) ->
+  | BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,_) ->
     (*
     print_endline ("Handling requirements of callback " ^ id);
     *)
@@ -459,7 +459,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     let tss = map (varmap_subst hvarmap) argtypes_c in
     iter rtr tss
 
-  | `BBDCL_proc (props,vs,argtypes,_,reqs) ->
+  | BBDCL_proc (props,vs,argtypes,_,reqs) ->
     (*
     print_endline ("[flx_inst] Handling requirements of proc " ^ id);
     print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs);
@@ -472,7 +472,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     do_reqs vs reqs;
     process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void [] ts
 
-  | `BBDCL_abs (vs,_,_,reqs)
+  | BBDCL_abs (vs,_,_,reqs)
     ->
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -480,7 +480,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs
 
-  | `BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) ->
+  | BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) ->
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
@@ -489,8 +489,8 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     let ctor_argt = varmap_subst hvarmap ctor_argt in
     rtr ctor_argt
 
-   | `BBDCL_typeclass _ -> ()
-   | `BBDCL_instance (props,vs,con,tc,ts) -> ()
+   | BBDCL_typeclass _ -> ()
+   | BBDCL_instance (props,vs,con,tc,ts) -> ()
 
 (*
   This routine creates the instance tables.
@@ -549,8 +549,8 @@ let instantiate syms bbdfns instps (root:bid_t) (bifaces:biface_t list) =
       | BIFACE_export_fun (_,x,_) ->
         let _,_,sr,entry = Hashtbl.find bbdfns x in
         begin match entry with
-        | `BBDCL_procedure (props,_,(ps,_),_)
-        | `BBDCL_function (props,_,(ps,_),_,_) ->
+        | BBDCL_procedure (props,_,(ps,_),_)
+        | BBDCL_function (props,_,(ps,_),_,_) ->
         begin match ps with
         | [] -> ()
         | [{ptyp=t}] -> register_type_r ui syms bbdfns [] sr t

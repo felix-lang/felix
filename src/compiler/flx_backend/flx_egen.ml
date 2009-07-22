@@ -70,9 +70,9 @@ let get_var_frame syms bbdfns this index ts : string =
     with Not_found -> failwith ("[get_var_frame(1)] Can't find index " ^ si index)
   with (id,parent,sr,entry) ->
   match entry with
-  | `BBDCL_val (vs,t)
-  | `BBDCL_var (vs,t)
-  | `BBDCL_ref (vs,t) ->
+  | BBDCL_val (vs,t)
+  | BBDCL_var (vs,t)
+  | BBDCL_ref (vs,t) ->
     begin match parent with
     | None -> "ptf"
     | Some i ->
@@ -80,7 +80,7 @@ let get_var_frame syms bbdfns this index ts : string =
       then "ptr" ^ cpp_instance_name syms bbdfns i ts
       else "this"
     end
-  | `BBDCL_tmp (vs,t) ->
+  | BBDCL_tmp (vs,t) ->
      failwith ("[get_var_frame] temporaries aren't framed: " ^ id)
 
   | _ -> failwith ("[get_var_frame] Expected name "^id^" to be variable or value")
@@ -94,9 +94,9 @@ let get_var_ref syms bbdfns this index ts : string =
   print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode syms.dfns) ts^"]");
   *)
   match entry with
-  | `BBDCL_val (vs,t)
-  | `BBDCL_var (vs,t)
-  | `BBDCL_ref (vs,t) ->
+  | BBDCL_val (vs,t)
+  | BBDCL_var (vs,t)
+  | BBDCL_ref (vs,t) ->
     begin match parent with
     | None -> (* print_endline "No parent ...?"; *)
       "PTF " ^ cpp_instance_name syms bbdfns index ts
@@ -112,7 +112,7 @@ let get_var_ref syms bbdfns this index ts : string =
       cpp_instance_name syms bbdfns index ts
     end
 
-  | `BBDCL_tmp (vs,t) ->
+  | BBDCL_tmp (vs,t) ->
       cpp_instance_name syms bbdfns index ts
 
   | _ -> failwith ("[get_var_ref(3)] Expected name "^id^" to be variable, value or temporary")
@@ -126,9 +126,9 @@ let get_ref_ref syms bbdfns this index ts : string =
   print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode syms.dfns) ts^"]");
   *)
   match entry with
-  | `BBDCL_val (vs,t)
-  | `BBDCL_var (vs,t)
-  | `BBDCL_ref (vs,t) ->
+  | BBDCL_val (vs,t)
+  | BBDCL_var (vs,t)
+  | BBDCL_ref (vs,t) ->
     begin match parent with
     | None -> (* print_endline "No parent ...?"; *)
       "PTF " ^ cpp_instance_name syms bbdfns index ts
@@ -144,7 +144,7 @@ let get_ref_ref syms bbdfns this index ts : string =
       cpp_instance_name syms bbdfns index ts
     end
 
-  | `BBDCL_tmp (vs,t) ->
+  | BBDCL_tmp (vs,t) ->
       cpp_instance_name syms bbdfns index ts
 
   | _ -> failwith ("[get_var_ref(3)] Expected name "^id^" to be variable, value or temporary")
@@ -193,7 +193,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         with Not_found -> failwith ("[gen_expr: case_index] Can't find index " ^ si i)
       in
       begin match entry with
-      | `BBDCL_union (bvs,cts) ->
+      | BBDCL_union (bvs,cts) ->
         let tsub' t = reduce_type (beta_reduce syms sr  (tsubst bvs ts t)) in
         let cts = map (fun (_,_,t) -> tsub' t) cts in
         if all_voids cts then ge' e
@@ -263,8 +263,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
     | `BTYP_inst (i,_) ->
       begin match Hashtbl.find bbdfns i with
-      | _,_,_,`BBDCL_cstruct (_,ls)
-      | _,_,_,`BBDCL_struct (_,ls) ->
+      | _,_,_,BBDCL_cstruct (_,ls)
+      | _,_,_,BBDCL_struct (_,ls) ->
         let name,_ =
           try nth ls n
           with _ ->
@@ -439,18 +439,18 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     in
     let ts = map tsub ts' in
     begin match entry with
-      | `BBDCL_val (_,`BTYP_function (`BTYP_void,_))  ->
+      | BBDCL_val (_,`BTYP_function (`BTYP_void,_))  ->
           let ptr = (get_var_ref syms bbdfns this index ts) in
           ce_call (ce_arrow (ce_atom ptr) "apply") []
 
-      | `BBDCL_var (_,t)
-      | `BBDCL_val (_,t)
-      | `BBDCL_ref (_,t)
-      | `BBDCL_tmp (_,t)
+      | BBDCL_var (_,t)
+      | BBDCL_val (_,t)
+      | BBDCL_ref (_,t)
+      | BBDCL_tmp (_,t)
         ->
           ce_atom (get_var_ref syms bbdfns this index ts)
 
-      | `BBDCL_const (props,_,_,ct,_) ->
+      | BBDCL_const (props,_,_,ct,_) ->
         if mem `Virtual props then
           print_endline ("Instantiate virtual const " ^ id)
         ;
@@ -490,8 +490,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           | [`BTYP_inst (i,_)] ->
             let _,_,_,entry = Hashtbl.find bbdfns i in
             begin match entry with
-              | `BBDCL_struct (_,ls) -> let n = length ls in ce_atom (si n)
-              | `BBDCL_union (_,ls) -> let n = length ls in ce_atom (si n)
+              | BBDCL_struct (_,ls) -> let n = length ls in ce_atom (si n)
+              | BBDCL_union (_,ls) -> let n = length ls in ce_atom (si n)
               | _ ->
                 clierr sr (
                   "#memcount function requires type with members to count, got: " ^
@@ -510,15 +510,15 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           csubst sr sr2 c (ce_atom "Error") [] [] "Error" "Error" ts "expr" "Error" ["Error"] ["Error"] ["Error"]
         end
 
-      (* | `BBDCL_function (_,_,([s,(_,`BTYP_void)],_),_,[BEXE_fun_return e]) -> *)
-      | `BBDCL_function (_,_,([],_),_,[BEXE_fun_return (_,e)]) ->
+      (* | BBDCL_function (_,_,([s,(_,`BTYP_void)],_),_,[BEXE_fun_return e]) -> *)
+      | BBDCL_function (_,_,([],_),_,[BEXE_fun_return (_,e)]) ->
         ge' e
 
-      | `BBDCL_struct _
-      | `BBDCL_function _
-      | `BBDCL_procedure _
-      | `BBDCL_fun _
-      | `BBDCL_proc _ ->
+      | BBDCL_struct _
+      | BBDCL_function _
+      | BBDCL_procedure _
+      | BBDCL_fun _
+      | BBDCL_proc _ ->
          syserr sr
          (
            "[gen_expr: name] Open function '" ^
@@ -547,8 +547,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     *)
     let ts = map tsub ts' in
     begin match entry with
-    | `BBDCL_function (props,_,_,_,_)
-    | `BBDCL_procedure (props,_,_,_) ->
+    | BBDCL_function (props,_,_,_,_)
+    | BBDCL_procedure (props,_,_,_) ->
       let the_display =
         let d' =
           map (fun (i,vslen) -> "ptr"^ cpp_instance_name syms bbdfns i (list_prefix ts vslen))
@@ -565,13 +565,13 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         "(FLX_NEWP("^name^")" ^ strd the_display props ^")"
         )
 
-    | `BBDCL_callback _ ->
+    | BBDCL_callback _ ->
       print_endline "Mapping closure of callback to C function pointer";
       ce_atom id
 
-    | `BBDCL_struct _
-    | `BBDCL_fun _
-    | `BBDCL_proc _ ->
+    | BBDCL_struct _
+    | BBDCL_fun _
+    | BBDCL_proc _ ->
       failwith ("[gen_expr: closure] Can't wrap primitive proc, fun, or struct '"^id^"' yet")
     | _ -> failwith ("[gen_expr: closure] Cannot use this kind of name '"^id^"' in expression")
     end
@@ -589,8 +589,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         if Some this = parent &&
         (
           let props = match entry with
-            | `BBDCL_procedure (props,_,_,_)
-            | `BBDCL_function (props,_,_,_,_) -> props
+            | BBDCL_procedure (props,_,_,_)
+            | BBDCL_function (props,_,_,_,_) -> props
             | _ -> assert false
           in
           mem `Pure props && not (mem `Heap_closure props)
@@ -723,7 +723,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     in
     begin
     match entry with
-    | `BBDCL_fun (props,vs,ps,retyp,ct,_,prec) ->
+    | BBDCL_fun (props,vs,ps,retyp,ct,_,prec) ->
       if length vs <> length ts then
       failwith
       (
@@ -763,8 +763,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
         in
         match entry with
-        | `BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
-        | `BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
+        | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
+        | BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
         | _ ->
           clierr2 sr sr3 ("expected instance to be function " ^ id)
         end
@@ -777,7 +777,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         gen_prim_call syms bbdfns tsub ge'' s ts (arg,argt) retyp sr sr2 prec
       end
 
-    | `BBDCL_callback (props,vs,ps_cf,ps_c,_,retyp,_,_) ->
+    | BBDCL_callback (props,vs,ps_cf,ps_c,_,retyp,_,_) ->
       assert (retyp <> `BTYP_void);
       if length vs <> length ts then
       clierr sr "[gen_prim_call] Wrong number of type arguments"
@@ -804,11 +804,11 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     in
     let ts = map tsub ts in
     begin match entry with
-    | `BBDCL_cstruct (vs,_) ->
+    | BBDCL_cstruct (vs,_) ->
       let name = tn (`BTYP_inst (index,ts)) in
       ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
 
-    | `BBDCL_struct (vs,cts) ->
+    | BBDCL_struct (vs,cts) ->
       let name = tn (`BTYP_inst (index,ts)) in
       if length cts > 1 then
         (* argument must be an lvalue *)
@@ -818,7 +818,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       else
         ce_atom (name ^ "(" ^ ge a ^ ")")
 
-    | `BBDCL_nonconst_ctor (vs,uidx,udt,cidx,ct,evs, etraint) ->
+    | BBDCL_nonconst_ctor (vs,uidx,udt,cidx,ct,evs, etraint) ->
       (* due to some hackery .. the argument of a non-const
          ctor can STILL be a unit .. prolly cause the stupid
          compiler is checking for voids for these pests,
@@ -865,8 +865,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
       in
       match entry with
-      | `BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
-      | `BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
+      | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
+      | BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
       | _ ->
           clierr2 sr sr3 ("expected instance to be function " ^ id)
     end else
@@ -881,7 +881,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
     *)
     match entry with
-    | `BBDCL_function (props,_,_,_,_) ->
+    | BBDCL_function (props,_,_,_,_) ->
       (*
       print_endline ("Generating closure[apply direct] of " ^ si index);
       *)
@@ -904,7 +904,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         "\n      ->apply(" ^ ge_arg a ^ ")"
         )
 
-    | `BBDCL_fun _ -> assert false
+    | BBDCL_fun _ -> assert false
     (*
       ge' (BEXPR_apply_prim (index,ts,a),t)
     *)
@@ -930,8 +930,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
       in
       match entry with
-      | `BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
-      | `BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
+      | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
+      | BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
       | _ ->
           clierr2 sr sr3 ("expected instance to be function " ^ id)
     end else
@@ -946,7 +946,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     print_endline ("  .. argument is " ^ string_of_bound_expression syms.dfns a);
     *)
     match entry with
-    | `BBDCL_function (props,vs,(ps,traint),retyp,_) ->
+    | BBDCL_function (props,vs,(ps,traint),retyp,_) ->
       let display = get_display_list syms bbdfns index in
       let name = cpp_instance_name syms bbdfns index ts in
 

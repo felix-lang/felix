@@ -52,7 +52,7 @@ let verify syms bbdfns csr e =
         try
           let tcid,_,sr,entry = Hashtbl.find bbdfns i in
           match entry with
-          | `BBDCL_typeclass (_,tcbvs) ->
+          | BBDCL_typeclass (_,tcbvs) ->
             begin
               (*
               print_endline ("Axiom "^id^" is owned by typeclass " ^ tcid);
@@ -144,14 +144,14 @@ let axiom_check syms bbdfns =
   Hashtbl.iter
   (fun i (id,sr,parent,entry) ->
     match entry with
-    | `BBDCL_function (ps,bvs,bpar,bty,bexes) ->
+    | BBDCL_function (ps,bvs,bpar,bty,bexes) ->
       let bexes = fixup_exes syms bbdfns bexes in
-      let entry = `BBDCL_function (ps,bvs,bpar,bty,bexes) in
+      let entry = BBDCL_function (ps,bvs,bpar,bty,bexes) in
       Hashtbl.replace bbdfns i (id,sr,parent,entry)
 
-    | `BBDCL_procedure (ps,bvs,bpar,bexes) ->
+    | BBDCL_procedure (ps,bvs,bpar,bexes) ->
       let bexes = fixup_exes syms bbdfns bexes in
-      let entry = `BBDCL_procedure (ps,bvs,bpar,bexes) in
+      let entry = BBDCL_procedure (ps,bvs,bpar,bexes) in
       Hashtbl.replace bbdfns i (id,sr,parent,entry)
 
     | _ -> ()

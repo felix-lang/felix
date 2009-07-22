@@ -26,13 +26,13 @@ let hfind msg h k =
 
 let isvariable bbdfns i =
   let id,_,_,entry = Hashtbl.find bbdfns i in match entry with
-  | `BBDCL_var _ | `BBDCL_val _ ->
+  | BBDCL_var _ | BBDCL_val _ ->
   (* print_endline ("Var/Val " ^ id ^ "<" ^ si i ^">"); *) true
   | _ -> false
 
 let isfun bbdfns i =
   let id,_,_,entry = Hashtbl.find bbdfns i in match entry with
-  | `BBDCL_function _ | `BBDCL_procedure _ ->
+  | BBDCL_function _ | BBDCL_procedure _ ->
   (*print_endline ("Fun/proc " ^ id ^ "<" ^ si i ^">"); *) true
   | _ -> false
 
@@ -69,8 +69,8 @@ let function_find_xclosure syms cls bbdfns i =
   let _,_,_,entry = Hashtbl.find bbdfns i in
   let exes =
     match entry with
-    | `BBDCL_procedure (_,_,_,exes)
-    | `BBDCL_function (_,_,_,_,exes) -> exes
+    | BBDCL_procedure (_,_,_,exes)
+    | BBDCL_function (_,_,_,_,exes) -> exes
     | _ -> []
   in
   (*
@@ -127,8 +127,8 @@ let check_proj_wrap_exes syms bbdfns n i xs =
 let check_proj_wrap_entry syms bbdfns n i k =
   let id,_,_,entry = hfind "check_proj_wrap_entry" bbdfns k in
   match entry with
-  | `BBDCL_function (_,_,_,_,exes)
-  | `BBDCL_procedure (_,_,_,exes) ->
+  | BBDCL_function (_,_,_,_,exes)
+  | BBDCL_procedure (_,_,_,exes) ->
     (*
     print_endline ("Check use  of " ^ si i ^ ".(" ^ si n ^") in " ^ id);
     *)
@@ -592,7 +592,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       (* instantiate any parameter temporaries *)
       iter
         (fun (paramtype, parameter) ->
-          let entry = `BBDCL_tmp (vs,paramtype) in
+          let entry = BBDCL_tmp (vs,paramtype) in
           let kids =
             try Hashtbl.find child_map this
             with Not_found -> []

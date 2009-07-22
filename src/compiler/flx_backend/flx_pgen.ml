@@ -16,7 +16,7 @@ let shape_of syms bbdfns tn t =
   | `BTYP_inst (i,ts) ->
     let id,parent,sr,entry = Hashtbl.find bbdfns i in
     begin match entry with
-    | `BBDCL_union (vs,idts) ->
+    | BBDCL_union (vs,idts) ->
       let varmap = mk_varmap vs ts in
       let cpts = map (fun (_,_,t) -> varmap_subst varmap t) idts in
       if all_voids cpts then "_int_ptr_map"

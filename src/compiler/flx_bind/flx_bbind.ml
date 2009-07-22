@@ -208,9 +208,9 @@ let bbind_sym syms bbdfns i {
       let bbdcl =
         match brt' with
         | `BTYP_void ->
-          `BBDCL_procedure (props,bvs,bps,bbexes)
+          BBDCL_procedure (props,bvs,bps,bbexes)
         | _ ->
-          `BBDCL_function (props,bvs,bps,brt',bbexes)
+          BBDCL_function (props,bvs,bps,brt',bbexes)
       in
         Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
         begin
@@ -251,10 +251,10 @@ let bbind_sym syms bbdfns i {
           ->
           let t = Flx_lookup.type_of_index syms i in
           let dcl = match k with
-          | `PVar -> `BBDCL_var (bvs,t)
-          | `PVal -> `BBDCL_val (bvs,t)
-          | `PRef -> `BBDCL_val (bvs,t)
-          | `PFun -> `BBDCL_val (bvs,`BTYP_function (`BTYP_void,t))
+          | `PVar -> BBDCL_var (bvs,t)
+          | `PVal -> BBDCL_val (bvs,t)
+          | `PRef -> BBDCL_val (bvs,t)
+          | `PFun -> BBDCL_val (bvs,`BTYP_function (`BTYP_void,t))
           in
           Hashtbl.add bbdfns i (name,true_parent,sr,dcl);
           Hashtbl.add syms.varmap i t;
@@ -285,7 +285,7 @@ let bbind_sym syms bbdfns i {
         )
       ;
       Hashtbl.add bbdfns i (name,true_parent,sr,
-        `BBDCL_function ([`Inline; `Generated "bbind: match check"],bvs,([],None),flx_bbool,bbexes)
+        BBDCL_function ([`Inline; `Generated "bbind: match check"],bvs,([],None),flx_bbool,bbexes)
       );
       begin
         if not (Hashtbl.mem syms.ticache i) then
@@ -321,7 +321,7 @@ let bbind_sym syms bbdfns i {
         if unit_sum then si ctor_idx
         else "_uctor_(" ^ si ctor_idx ^ ",0)"
       in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_const ([],bvs,t,`Str ct,[]));
+      Hashtbl.add bbdfns i (name,None,sr,BBDCL_const ([],bvs,t,`Str ct,[]));
 
       if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^
@@ -336,7 +336,7 @@ let bbind_sym syms bbdfns i {
       let ut = bt ut in
       let btraint = bind_type_constraint vs' in
       let evs = map (fun (s,i,__) -> s,i) (fst vs') in
-      let bbdcl = `BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt,evs,btraint) in
+      let bbdcl = BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt,evs,btraint) in
       Hashtbl.add bbdfns i (name,None,sr,bbdcl);
 
       if syms.compiler_options.print_flag then
@@ -345,7 +345,7 @@ let bbind_sym syms bbdfns i {
 
     | `SYMDEF_val (t) ->
       let t = Flx_lookup.type_of_index syms i in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_val (bvs,t));
+      Hashtbl.add bbdfns i (name,true_parent,sr,BBDCL_val (bvs,t));
 
       if syms.compiler_options.print_flag then
       print_endline ("//bound val " ^ name ^ "<"^si i^">" ^
@@ -354,7 +354,7 @@ let bbind_sym syms bbdfns i {
 
     | `SYMDEF_ref (t) ->
       let t = Flx_lookup.type_of_index syms i in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_ref (bvs,t));
+      Hashtbl.add bbdfns i (name,true_parent,sr,BBDCL_ref (bvs,t));
 
       if syms.compiler_options.print_flag then
       print_endline ("//bound ref " ^ name ^ "<"^si i^">" ^
@@ -368,7 +368,7 @@ let bbind_sym syms bbdfns i {
       let brt',bbexes = bexes env exes brt i bvs in
       let props = [] in
       let bbdcl =
-        `BBDCL_function (props,bvs,([],None),brt',bbexes)
+        BBDCL_function (props,bvs,([],None),brt',bbexes)
       in
       Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
       begin
@@ -387,7 +387,7 @@ let bbind_sym syms bbdfns i {
       print_endline ("Binding variable " ^ name ^"<"^ si i ^">");
       *)
       let t = Flx_lookup.type_of_index syms i in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_var (bvs, t))
+      Hashtbl.add bbdfns i (name,true_parent,sr,BBDCL_var (bvs, t))
       ;
       if syms.compiler_options.print_flag then
       print_endline ("//bound var " ^ name ^ "<"^si i^">" ^
@@ -397,7 +397,7 @@ let bbind_sym syms bbdfns i {
     | `SYMDEF_const (props,t,ct,reqs) ->
       let t = Flx_lookup.type_of_index syms i in
       let reqs = bind_reqs reqs in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_const (props,bvs,t,ct,reqs));
+      Hashtbl.add bbdfns i (name,true_parent,sr,BBDCL_const (props,bvs,t,ct,reqs));
       if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<"^si i^">" ^
       print_bvs bvs ^ ":" ^
@@ -410,9 +410,9 @@ let bbind_sym syms bbdfns i {
       let reqs = bind_reqs reqs in
       let bbdcl = match bret with
         | `BTYP_void ->
-          `BBDCL_proc (props,bvs,ts,ct,reqs)
+          BBDCL_proc (props,bvs,ts,ct,reqs)
         | _ ->
-          `BBDCL_fun (props,bvs,ts,bret,ct,reqs,prec)
+          BBDCL_fun (props,bvs,ts,bret,ct,reqs,prec)
       in
       Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
       begin
@@ -511,7 +511,7 @@ let bbind_sym syms bbdfns i {
       let prec = "postfix" in
       let reqs = bind_reqs reqs in
 
-      let bbdcl = `BBDCL_callback (props,bvs,ts_cf,ts_c,!client_data_pos,bret,reqs,prec) in
+      let bbdcl = BBDCL_callback (props,bvs,ts_cf,ts_c,!client_data_pos,bret,reqs,prec) in
       Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
       begin
         if not (Hashtbl.mem syms.ticache i) then
@@ -530,22 +530,22 @@ let bbind_sym syms bbdfns i {
       print_endline ("//Binding union " ^ si i ^ " --> " ^ name);
       *)
       let cs' = List.map (fun (n,v,vs',t) -> n, v,bt t) cs in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_union (bvs,cs'))
+      Hashtbl.add bbdfns i (name,None,sr,BBDCL_union (bvs,cs'))
 
     | `SYMDEF_struct (cs) ->
       (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
       *)
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_struct (bvs,cs'))
+      Hashtbl.add bbdfns i (name,None,sr,BBDCL_struct (bvs,cs'))
 
     | `SYMDEF_cstruct (cs) ->
       (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
       *)
       let cs' = List.map (fun (n,t) -> n, bt t) cs in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_cstruct (bvs,cs'))
+      Hashtbl.add bbdfns i (name,None,sr,BBDCL_cstruct (bvs,cs'))
 
     | `SYMDEF_typeclass ->
-      let sym : bbdcl_t = `BBDCL_typeclass ([],bvs) in
+      let sym : bbdcl_t = BBDCL_typeclass ([],bvs) in
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)
 
     | `SYMDEF_instance qn ->
@@ -561,7 +561,7 @@ let bbind_sym syms bbdfns i {
       (*
       print_endline "DOne ..";
       *)
-      let sym : bbdcl_t = `BBDCL_instance ([],bvs,bcons, k,ts) in
+      let sym : bbdcl_t = BBDCL_instance ([],bvs,bcons, k,ts) in
       Hashtbl.add bbdfns i (name,true_parent,sr,sym)
 
     | `SYMDEF_type_alias _ -> ()
@@ -574,17 +574,17 @@ let bbind_sym syms bbdfns i {
       *)
       let reqs = bind_reqs reqs in
       let bquals = bind_quals quals in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_abs (bvs,bquals,ct,reqs))
+      Hashtbl.add bbdfns i (name,None,sr,BBDCL_abs (bvs,bquals,ct,reqs))
 
     | `SYMDEF_newtype t ->
       let t = bt t in
-      Hashtbl.add bbdfns i (name,None,sr,`BBDCL_newtype (bvs,t))
+      Hashtbl.add bbdfns i (name,None,sr,BBDCL_newtype (bvs,t))
 
     | `SYMDEF_insert (ct,ikind,reqs) ->
       (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name);
       *)
       let reqs = bind_reqs reqs in
-      Hashtbl.add bbdfns i (name,true_parent,sr,`BBDCL_insert (bvs,ct,ikind,reqs))
+      Hashtbl.add bbdfns i (name,true_parent,sr,BBDCL_insert (bvs,ct,ikind,reqs))
 
     end
     (*

@@ -143,11 +143,11 @@ let rec register_type_r ui syms bbdfns exclude sr t =
     in
     begin match entry with
 
-    | `BBDCL_newtype (_,r) ->
+    | BBDCL_newtype (_,r) ->
       rr r;
       rnr t
 
-    | `BBDCL_union (vs,cs) ->
+    | BBDCL_union (vs,cs) ->
       (*
       let cts = map snd cs in
       let cts = map (tsubst vs ts) cts in
@@ -155,8 +155,8 @@ let rec register_type_r ui syms bbdfns exclude sr t =
       *)
       rnr t
 
-    | `BBDCL_cstruct (vs,cs)
-    | `BBDCL_struct (vs,cs) ->
+    | BBDCL_cstruct (vs,cs)
+    | BBDCL_struct (vs,cs) ->
       let cts = map snd cs in
       let cts = map (tsubst vs ts) cts in
       iter rr cts;
@@ -177,7 +177,7 @@ let rec register_type_r ui syms bbdfns exclude sr t =
       rnr (`BTYP_function (argt,t))         (* constructor as function *)
       *)
 
-    | `BBDCL_abs _ -> ui i ts; rnr t  (* instantiate the type too *)
+    | BBDCL_abs _ -> ui i ts; rnr t  (* instantiate the type too *)
 
     | _ ->
       clierr sr

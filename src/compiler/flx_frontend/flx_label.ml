@@ -46,9 +46,9 @@ let create_label_map bbdfns counter =
     print_endline ("Routine " ^ id ^ "<"^ si index ^">");
     *)
     match entry with
-    | `BBDCL_function (_,_,_,_,exes) ->
+    | BBDCL_function (_,_,_,_,exes) ->
       Hashtbl.add label_map index (get_labels bbdfns counter exes)
-    | `BBDCL_procedure (_,_,_,exes) ->
+    | BBDCL_procedure (_,_,_,exes) ->
       Hashtbl.add label_map index (get_labels bbdfns counter exes)
     | _ -> ()
   )
@@ -63,8 +63,8 @@ let rec find_label bbdfns label_map caller label =
   with Not_found ->
   let id,parent,sr,entry = Hashtbl.find bbdfns caller in
   match entry with
-  | `BBDCL_function _ -> `Unreachable
-  | `BBDCL_procedure _ ->
+  | BBDCL_function _ -> `Unreachable
+  | BBDCL_procedure _ ->
     begin match parent with None -> `Unreachable
     | Some parent ->
       begin match find_label bbdfns label_map parent label with
@@ -112,8 +112,8 @@ let create_label_usage syms bbdfns label_map =
   Hashtbl.iter
   (fun index (id,parent,sr,entry) ->
     match entry with
-    | `BBDCL_function (_,_,_,_,exes)
-    | `BBDCL_procedure (_,_,_,exes) ->
+    | BBDCL_function (_,_,_,_,exes)
+    | BBDCL_procedure (_,_,_,exes) ->
       cal_usage syms bbdfns label_map index exes usage
     | _ -> ()
   )

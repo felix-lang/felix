@@ -139,7 +139,7 @@ let uncurry_gen syms (child_map,(bbdfns: fully_bound_symbol_table_t)) : int =
   (* make the uncurry map *)
   Hashtbl.iter
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     begin match exes with
     | [BEXE_fun_return (sr2,(BEXPR_closure (f,ts),_))]
       when is_child child_map i f && vs_is_ts vs ts
@@ -160,10 +160,10 @@ let uncurry_gen syms (child_map,(bbdfns: fully_bound_symbol_table_t)) : int =
   (* count curried calls to these functions *)
   Hashtbl.iter
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
-  | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
+  | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     find_uncurry_exes syms bbdfns uncurry_map vs exes
 
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     find_uncurry_exes syms bbdfns uncurry_map vs exes
   | _ -> ()
   )
@@ -240,7 +240,7 @@ let uncurry_gen syms (child_map,(bbdfns: fully_bound_symbol_table_t)) : int =
       assert (parentc = Some i);
       let props, vs, ps, traint, ret, exes =
         match bbdcl with
-        | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> props, vs, ps, traint, ret, exes
+        | BBDCL_function (props,vs,(ps,traint),ret,exes) -> props, vs, ps, traint, ret, exes
         | _ -> assert false
       in
       let fixup vsc psc exesc =
@@ -258,8 +258,8 @@ let uncurry_gen syms (child_map,(bbdfns: fully_bound_symbol_table_t)) : int =
           (fun {pkind=pk; ptyp=t; pid=s; pindex=pi} ->
             let n = revar pi in
             let bbdcl = match pk with
-            | `PVal -> `BBDCL_val (vs,t)
-            | `PVar -> `BBDCL_var (vs,t)
+            | `PVal -> BBDCL_val (vs,t)
+            | `PVar -> BBDCL_var (vs,t)
             | _ -> failwith "Unimplemented curried fun param not var or val"
             in
             if syms.compiler_options.print_flag then
@@ -288,14 +288,14 @@ let uncurry_gen syms (child_map,(bbdfns: fully_bound_symbol_table_t)) : int =
         ps,exes
       in
       match bbdclc with
-      | `BBDCL_function (propsc,vsc,(psc,traintc),retc,exesc) ->
+      | BBDCL_function (propsc,vsc,(psc,traintc),retc,exesc) ->
         let ps,exes = fixup vsc psc exesc in
-        let bbdcl = `BBDCL_function (propsc,vs,(ps,traintc), retc, exes) in
+        let bbdcl = BBDCL_function (propsc,vs,(ps,traintc), retc, exes) in
         Hashtbl.add bbdfns k (idm^"_uncurry",parent,sr,bbdcl)
 
-      | `BBDCL_procedure (propsc,vsc,(psc,traintc),exesc) ->
+      | BBDCL_procedure (propsc,vsc,(psc,traintc),exesc) ->
         let ps,exes = fixup vsc psc exesc in
-        let bbdcl = `BBDCL_procedure (propsc,vs,(ps,traintc), exes) in
+        let bbdcl = BBDCL_procedure (propsc,vs,(ps,traintc), exes) in
         Hashtbl.add bbdfns k (idm^"_uncurry",parent,sr,bbdcl)
 
       | _ -> assert false
@@ -306,15 +306,15 @@ let uncurry_gen syms (child_map,(bbdfns: fully_bound_symbol_table_t)) : int =
   (* replace calls *)
   Hashtbl.iter
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
-  | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
+  | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = uncurry_exes syms bbdfns uncurry_map vs exes in
     Hashtbl.replace bbdfns i
-      (id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes))
+      (id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes))
 
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let exes = uncurry_exes syms bbdfns uncurry_map vs exes in
     Hashtbl.replace bbdfns i
-      (id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes))
+      (id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes))
   | _ -> ()
   )
   bbdfns

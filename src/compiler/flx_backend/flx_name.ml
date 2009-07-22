@@ -82,13 +82,13 @@ let cpp_name bbdfns index =
     with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
   in
   (match entry with
-  | `BBDCL_function _ -> "_f"
-  | `BBDCL_callback _ -> "_cf"
-  | `BBDCL_procedure _  -> "_p"
-  | `BBDCL_var _ -> "_v"
-  | `BBDCL_val _ -> "_v"
-  | `BBDCL_ref _ -> "_v"
-  | `BBDCL_tmp _ -> "_tmp"
+  | BBDCL_function _ -> "_f"
+  | BBDCL_callback _ -> "_cf"
+  | BBDCL_procedure _  -> "_p"
+  | BBDCL_var _ -> "_v"
+  | BBDCL_val _ -> "_v"
+  | BBDCL_ref _ -> "_v"
+  | BBDCL_tmp _ -> "_tmp"
   | _ -> syserr sr "cpp_name expected func,proc,var,val,class,reglex or regmatch"
   ) ^ si index ^ "_" ^ cid_of_flxid id
 

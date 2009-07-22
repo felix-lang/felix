@@ -268,7 +268,7 @@ let emit_whycode filename syms bbdfns root =
   output_string f "(****** ABSTRACT TYPES *******)\n";
   Hashtbl.iter
   (fun index (id,parent,sr,entry) -> match entry with
-  | `BBDCL_abs (bvs,qual,ct,breqs) ->
+  | BBDCL_abs (bvs,qual,ct,breqs) ->
     emit_type syms bbdfns f index id sr bvs
   | _ -> ()
   )
@@ -278,7 +278,7 @@ let emit_whycode filename syms bbdfns root =
   output_string f "(****** UNIONS *******)\n";
   Hashtbl.iter
   (fun index (id,parent,sr,entry) -> match entry with
-  | `BBDCL_union (bvs,variants) ->
+  | BBDCL_union (bvs,variants) ->
     emit_type syms bbdfns f index id sr bvs
   | _ -> ()
   )
@@ -288,7 +288,7 @@ let emit_whycode filename syms bbdfns root =
   output_string f "(****** STRUCTS *******)\n";
   Hashtbl.iter
   (fun index (id,parent,sr,entry) -> match entry with
-  | `BBDCL_struct (bvs,variants) ->
+  | BBDCL_struct (bvs,variants) ->
     emit_type syms bbdfns f index id sr bvs
   | _ -> ()
   )
@@ -298,18 +298,18 @@ let emit_whycode filename syms bbdfns root =
   output_string f "(******* FUNCTIONS ******)\n";
   Hashtbl.iter
   (fun index (id,parent,sr,entry) -> match entry with
-  | `BBDCL_procedure (_,bvs,ps,_) ->
+  | BBDCL_procedure (_,bvs,ps,_) ->
     let ps = calps ps in
     emit_function syms bbdfns f index id sr bvs ps unitt
 
-  | `BBDCL_function (_,bvs,ps,ret,_) ->
+  | BBDCL_function (_,bvs,ps,ret,_) ->
     let ps = calps ps in
     emit_function syms bbdfns f index id sr bvs ps ret
 
-  | `BBDCL_fun (_,bvs,ps,ret,_,_,_) ->
+  | BBDCL_fun (_,bvs,ps,ret,_,_,_) ->
     emit_function syms bbdfns f index id sr bvs ps ret
 
-  | `BBDCL_proc (_,bvs,ps,_,_) ->
+  | BBDCL_proc (_,bvs,ps,_,_) ->
     emit_function syms bbdfns f index id sr bvs ps unitt
 
   | _ -> ()

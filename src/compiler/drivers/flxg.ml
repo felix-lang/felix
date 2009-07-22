@@ -399,14 +399,14 @@ try
 
     Hashtbl.iter
     (fun i (id,parent,sr,entry) -> match entry with
-    | `BBDCL_procedure (props ,bvs,(ps,tr),exes) ->
+    | BBDCL_procedure (props ,bvs,(ps,tr),exes) ->
       let exes = elim_init maybe_unused exes in
-      let entry = `BBDCL_procedure (props,bvs,(ps,tr),exes) in
+      let entry = BBDCL_procedure (props,bvs,(ps,tr),exes) in
       Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
-    | `BBDCL_function (props,bvs,(ps,rt),ret,exes) ->
+    | BBDCL_function (props,bvs,(ps,rt),ret,exes) ->
       let exes = elim_init maybe_unused exes in
-      let entry = `BBDCL_function (props,bvs,(ps,rt),ret,exes) in
+      let entry = BBDCL_function (props,bvs,(ps,rt),ret,exes) in
       Hashtbl.replace bbdfns i (id,parent,sr,entry)
 
     | _ -> ()
@@ -489,7 +489,7 @@ try
   IntSet.iter (fun i ->
     let id,parent,sr,entry = Hashtbl.find bbdfns i in
     match entry with
-    | `BBDCL_procedure (props,vs,p,exes) ->
+    | BBDCL_procedure (props,vs,p,exes) ->
       let props = ref props in
       if List.mem `Stackable !props then begin
         if not (List.mem `Stack_closure !props)
@@ -502,7 +502,7 @@ try
       if not (List.mem `Requires_ptf !props)
       then props := `Requires_ptf :: !props
       ;
-      let entry = `BBDCL_procedure (!props, vs,p,exes) in
+      let entry = BBDCL_procedure (!props, vs,p,exes) in
       Hashtbl.replace bbdfns i (id,parent,sr,entry)
     | _ -> ()
 
@@ -513,7 +513,7 @@ try
   let topclass_props =
     let id,parent,sr,entry = Hashtbl.find bbdfns root_proc in
     match entry with
-    | `BBDCL_procedure (props,vs,p,exes) -> props
+    | BBDCL_procedure (props,vs,p,exes) -> props
     | _ -> syserr sr "Expected root to be procedure"
   in
   print_debug ("//root module's init procedure has name " ^ top_class);
@@ -534,8 +534,8 @@ try
   let nul x = () in
   Hashtbl.iter
   (fun i (_,_,_,entry) -> match entry with
-  | `BBDCL_function (_,_,_,_,exes)
-  | `BBDCL_procedure (_,_,_,exes) ->
+  | BBDCL_function (_,_,_,_,exes)
+  | BBDCL_procedure (_,_,_,exes) ->
     List.iter
       (fun exe ->
          let sr = src_of_bexe exe in
@@ -577,7 +577,7 @@ try
         with Not_found -> failwith ("[package] can't find index " ^ si i)
       with (id,parent,sr,entry) ->
       match entry with
-      | `BBDCL_insert (_,s,`Package,_) ->
+      | BBDCL_insert (_,s,`Package,_) ->
         begin match s with
         | `Identity | `Str "" | `StrTemplate "" -> ()
         | _ ->
@@ -642,7 +642,7 @@ try
         with Not_found -> failwith ("[user header] can't find index " ^ si i)
       with (id,parent,sr,entry) ->
       match entry with
-      | `BBDCL_insert (_,s,`Header,_) ->
+      | BBDCL_insert (_,s,`Header,_) ->
         begin match s with
         | `Identity | `Str "" | `StrTemplate "" -> ()
         | _ ->
@@ -767,7 +767,7 @@ try
         with Not_found -> failwith ("[user body] can't find index " ^ si i)
       with (id,parent,sr,entry) ->
       match entry with
-      | `BBDCL_insert (_,s,`Body,_) ->
+      | BBDCL_insert (_,s,`Body,_) ->
         begin match s with
         | `Identity | `Str "" | `StrTemplate "" -> ()
         | _ ->

@@ -2231,7 +2231,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
   let se e = string_of_bound_expression dfns bbdfns e in
   let un = `BTYP_tuple [] in
   match bbdcl with
-  | `BBDCL_function (props,vs,ps,res,es) ->
+  | BBDCL_function (props,vs,ps,res,es) ->
     string_of_properties props ^
     "fun " ^ name ^ print_bvs vs ^
     "("^ (string_of_bparameters dfns bbdfns ps)^"): "^(sobt res) ^
@@ -2240,7 +2240,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     "}"
 
 
-  | `BBDCL_procedure (props,vs,ps,es) ->
+  | BBDCL_procedure (props,vs,ps,es) ->
     string_of_properties props ^
     "proc " ^ name ^ print_bvs vs ^
     "("^ (string_of_bparameters dfns bbdfns ps)^")" ^
@@ -2248,29 +2248,29 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     cat "\n" (map (string_of_bexe dfns bbdfns 1) es) ^
     "}"
 
-  | `BBDCL_val (vs,ty) ->
+  | BBDCL_val (vs,ty) ->
     "val " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
 
-  | `BBDCL_var (vs,ty) ->
+  | BBDCL_var (vs,ty) ->
     "var " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
 
-  | `BBDCL_ref (vs,ty) ->
+  | BBDCL_ref (vs,ty) ->
     "ref " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
 
-  | `BBDCL_tmp (vs,ty) ->
+  | BBDCL_tmp (vs,ty) ->
     "tmp " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
 
   (* binding structures [prolog] *)
-  | `BBDCL_newtype (vs,t) ->
+  | BBDCL_newtype (vs,t) ->
     "type " ^ name ^  print_bvs vs ^
     " = new " ^ sobt t ^ ";"
 
-  | `BBDCL_abs (vs,quals,code,reqs) ->
+  | BBDCL_abs (vs,quals,code,reqs) ->
     (match quals with [] ->"" | _ -> string_of_bquals dfns quals ^ " ") ^
     "type " ^ name ^  print_bvs vs ^
     " = " ^ string_of_code_spec code ^ ";"
 
-  | `BBDCL_const (props, vs,ty,code,reqs) ->
+  | BBDCL_const (props, vs,ty,code,reqs) ->
     string_of_properties props ^
      "const " ^ name ^ print_bvs vs ^
      ": " ^ sobt ty ^
@@ -2278,7 +2278,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
      string_of_breqs dfns reqs ^
      ";"
 
-  | `BBDCL_fun (props,vs,ps,rt,code,reqs,prec) ->
+  | BBDCL_fun (props,vs,ps,rt,code,reqs,prec) ->
     string_of_properties props ^
     "fun " ^ name ^ print_bvs vs ^
     ": " ^
@@ -2289,7 +2289,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
      string_of_breqs dfns reqs ^
     ";"
 
-  | `BBDCL_callback (props,vs,ps_cf,ps_c,k,rt,reqs,prec) ->
+  | BBDCL_callback (props,vs,ps_cf,ps_c,k,rt,reqs,prec) ->
     string_of_properties props ^
     "callback fun " ^ name ^ print_bvs vs ^
     ": " ^
@@ -2300,7 +2300,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
      string_of_breqs dfns reqs ^
     ";"
 
-  | `BBDCL_proc (props,vs, ps,code,reqs) ->
+  | BBDCL_proc (props,vs, ps,code,reqs) ->
     string_of_properties props ^
     "proc " ^ name ^ print_bvs vs ^
     ": " ^
@@ -2309,7 +2309,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
      string_of_breqs dfns reqs ^
      ";"
 
-  | `BBDCL_insert (vs,s,ikind,reqs) ->
+  | BBDCL_insert (vs,s,ikind,reqs) ->
      (match ikind with
      | `Header -> "header "
      | `Body -> "body "
@@ -2319,7 +2319,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     " "^ string_of_code_spec s ^
     string_of_breqs dfns reqs
 
-  | `BBDCL_union (vs,cs) ->
+  | BBDCL_union (vs,cs) ->
     let string_of_union_component (name,v,ty) =
       "  " ^ "|" ^name ^
      "="^si v^
@@ -2330,7 +2330,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     "}"
 
-  | `BBDCL_struct (vs,cs) ->
+  | BBDCL_struct (vs,cs) ->
     let string_of_struct_component (name,ty) =
       "  " ^ name ^ ": " ^ sobt ty ^ ";"
     in
@@ -2339,7 +2339,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"
 
-  | `BBDCL_cstruct (vs,cs) ->
+  | BBDCL_cstruct (vs,cs) ->
     let string_of_struct_component (name,ty) =
       "  " ^ name ^ ": " ^ sobt ty ^ ";"
     in
@@ -2348,16 +2348,16 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"
 
-  | `BBDCL_typeclass (props,vs) ->
+  | BBDCL_typeclass (props,vs) ->
     string_of_properties props ^
     "typeclass " ^ name ^ print_bvs vs ^ ";"
 
-  | `BBDCL_instance (props,vs,cons,bid,ts) ->
+  | BBDCL_instance (props,vs,cons,bid,ts) ->
     string_of_properties props ^
     "instance "^print_bvs_cons dfns vs cons^
     " of <" ^ si bid ^">["^ catmap "," (sbt dfns) ts ^ "];"
 
-  | `BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx, ctor_argt, evs, etraint) ->
+  | BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx, ctor_argt, evs, etraint) ->
     "  uctor<" ^ name ^ ">"^ print_bvs vs ^
     " : " ^ sobt ut ^
     " of " ^ sobt ctor_argt ^
@@ -2462,16 +2462,16 @@ let print_function_body dfns bbdfns id i (bvs:bvs_t) ps exes parent =
 let print_function dfns bbdfns i =
   match Hashtbl.find bbdfns i with (id,parent,_,entry) ->
   match entry with
-  | `BBDCL_function (_,bvs,ps,_,exes)
-  | `BBDCL_procedure (_,bvs,ps,exes) ->
+  | BBDCL_function (_,bvs,ps,_,exes)
+  | BBDCL_procedure (_,bvs,ps,exes) ->
     print_function_body dfns bbdfns id i bvs ps exes parent
   | _ -> ()
 
 let print_functions dfns (bbdfns:fully_bound_symbol_table_t) =
   Hashtbl.iter
   (fun i (id,parent,_,entry) -> match entry with
-  | `BBDCL_function (_,bvs,ps,_,exes)
-  | `BBDCL_procedure (_,bvs,ps,exes) ->
+  | BBDCL_function (_,bvs,ps,_,exes)
+  | BBDCL_procedure (_,bvs,ps,exes) ->
     print_function_body dfns bbdfns id i bvs ps exes parent
 
   | _ -> ()
@@ -2481,17 +2481,17 @@ let print_functions dfns (bbdfns:fully_bound_symbol_table_t) =
 let print_symbols dfns (bbdfns:fully_bound_symbol_table_t) =
   Hashtbl.iter
   (fun i (id,parent,_,entry) -> match entry with
-  | `BBDCL_function (_,bvs,ps,_,exes)
-  | `BBDCL_procedure (_,bvs,ps,exes) ->
+  | BBDCL_function (_,bvs,ps,_,exes)
+  | BBDCL_procedure (_,bvs,ps,exes) ->
     print_function_body dfns bbdfns id i bvs ps exes parent
-  | `BBDCL_var (bvs,t) ->
+  | BBDCL_var (bvs,t) ->
     print_endline ("VARIABLE " ^ id ^ "<" ^ si i ^ "> [" ^
       catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") bvs ^
       "] parent " ^
       (match parent with None -> "NONE" | Some k -> si k) ^
       " type " ^ sbt dfns t
     )
-  | `BBDCL_val (bvs,t) ->
+  | BBDCL_val (bvs,t) ->
     print_endline ("VALUE " ^ id ^ "<" ^ si i ^ "> [" ^
       catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") bvs ^
       "] parent " ^

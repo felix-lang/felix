@@ -122,52 +122,52 @@ and uses syms used bbdfns count_inits i =
     | Some (id,_,_,bbdcl) ->
       used := IntSet.add i !used;
       begin match bbdcl with
-      | `BBDCL_typeclass _ -> ()
+      | BBDCL_typeclass _ -> ()
 
-      | `BBDCL_instance (_,_,con,i,ts) ->
+      | BBDCL_instance (_,_,con,i,ts) ->
         ut con;
         iter ut ts
 
-      | `BBDCL_function (props,_,(ps,traint),ret,exes) ->
+      | BBDCL_function (props,_,(ps,traint),ret,exes) ->
         iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
         ut ret;
         ux exes
 
-      | `BBDCL_procedure (props,_,(ps,traint), exes) ->
+      | BBDCL_procedure (props,_,(ps,traint), exes) ->
         iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
         ux exes
 
-      | `BBDCL_union (_,ps)
+      | BBDCL_union (_,ps)
         -> ()
 
         (* types of variant arguments are only used if constructed
           .. OR ..  matched against ??
         *)
 
-      | `BBDCL_cstruct (_,ps)
-      | `BBDCL_struct (_,ps) ->
+      | BBDCL_cstruct (_,ps)
+      | BBDCL_struct (_,ps) ->
         iter ut (map snd ps)
 
-      | `BBDCL_val (_,t)
-      | `BBDCL_var (_,t)
-      | `BBDCL_tmp (_,t) -> ut t
+      | BBDCL_val (_,t)
+      | BBDCL_var (_,t)
+      | BBDCL_tmp (_,t) -> ut t
 
-      | `BBDCL_ref (_,t) -> ut (`BTYP_pointer t)
+      | BBDCL_ref (_,t) -> ut (`BTYP_pointer t)
 
-      | `BBDCL_const (_,_,t,_,reqs) -> ut t; rq reqs
-      | `BBDCL_fun (_,_,ps, ret, _,reqs,_) -> iter ut ps; ut ret; rq reqs
+      | BBDCL_const (_,_,t,_,reqs) -> ut t; rq reqs
+      | BBDCL_fun (_,_,ps, ret, _,reqs,_) -> iter ut ps; ut ret; rq reqs
 
-      | `BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
+      | BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
         iter ut ps_cf;
         iter ut ps_c;
         ut ret; rq reqs
 
-      | `BBDCL_proc (_,_,ps, _, reqs)  -> iter ut ps; rq reqs
+      | BBDCL_proc (_,_,ps, _, reqs)  -> iter ut ps; rq reqs
 
-      | `BBDCL_newtype (_,t) -> ut t
-      | `BBDCL_abs (_,_,_,reqs) -> rq reqs
-      | `BBDCL_insert (_,s,ikind,reqs)  -> rq reqs
-      | `BBDCL_nonconst_ctor (_,_,unt,_,ct,evs, etraint) ->
+      | BBDCL_newtype (_,t) -> ut t
+      | BBDCL_abs (_,_,_,reqs) -> rq reqs
+      | BBDCL_insert (_,s,ikind,reqs)  -> rq reqs
+      | BBDCL_nonconst_ctor (_,_,unt,_,ct,evs, etraint) ->
         ut unt; ut ct
 
       end

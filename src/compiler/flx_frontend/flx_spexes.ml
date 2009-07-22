@@ -344,7 +344,7 @@ let gen_body syms (uses,child_map,bbdfns) id
         let x =
           if length ps > 1
           then begin
-            let entry = `BBDCL_var (vs,paramtype) in
+            let entry = BBDCL_var (vs,paramtype) in
             let kids =
               try Hashtbl.find child_map caller
               with Not_found -> []
@@ -487,20 +487,20 @@ let gen_body syms (uses,child_map,bbdfns) id
       IntSet.iter (fun i ->
         let id,parent,sr,entry = Hashtbl.find bbdfns i in
         match entry with
-        | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+        | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
           let exes = map (subarg syms bbdfns argmap) exes in
           recal_exes_usage syms uses sr i ps exes;
           Hashtbl.replace bbdfns i
-          (id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes))
+          (id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes))
 
-        | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
+        | BBDCL_procedure (props,vs,(ps,traint),exes) ->
           (*
           print_endline ("MODIFY " ^ si i);
           *)
           let exes = map (subarg syms bbdfns argmap) exes in
           recal_exes_usage syms uses sr i ps exes;
           Hashtbl.replace bbdfns i
-          (id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes))
+          (id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes))
 
         | _ -> ()
       )

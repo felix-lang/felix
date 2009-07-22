@@ -32,7 +32,7 @@ let throw_on_gc syms bbdfns e : unit = match e with
   | BEXPR_apply_struct (i,_,_),_ ->
     let id,sr,parent,entry=Hashtbl.find bbdfns i in
     begin match entry with
-    | `BBDCL_nonconst_ctor _ -> raise Not_found
+    | BBDCL_nonconst_ctor _ -> raise Not_found
     | _ -> ()
     end
 
@@ -42,7 +42,7 @@ let throw_on_gc syms bbdfns e : unit = match e with
     | `BTYP_inst (i,ts) ->
       let id,parent,sr,entry = try Hashtbl.find bbdfns i with Not_found -> failwith "YIKES3" in
       begin match entry with
-      | `BBDCL_union (vs,idts) when not (all_voids (map (fun (_,_,t)->t) idts)) -> raise Not_found
+      | BBDCL_union (vs,idts) when not (all_voids (map (fun (_,_,t)->t) idts)) -> raise Not_found
       | _ -> ()
       end
     | _ -> ()
@@ -68,8 +68,8 @@ let exe_uses_gc syms bbdfns exe =
   | BEXE_call_prim (sr,i,ts,a) ->
     let id,parent,sr,entry = Hashtbl.find bbdfns i in
     begin match entry with
-    | `BBDCL_callback (props,vs,ps,_,_,`BTYP_void,rqs,_)
-    | `BBDCL_proc (props,vs,ps,_,rqs) ->
+    | BBDCL_callback (props,vs,ps,_,_,`BTYP_void,rqs,_)
+    | BBDCL_proc (props,vs,ps,_,rqs) ->
       (*
       print_endline "Checking primitive for gc use[2]";
       *)
@@ -116,7 +116,7 @@ let exes_use_yield exes =
 let set_gc_use syms bbdfns =
   Hashtbl.iter
   (fun i (id,parent,sr,entry) -> match entry with
-  | `BBDCL_function (props,vs,ps,rt,exes) ->
+  | BBDCL_function (props,vs,ps,rt,exes) ->
     let uses_gc = exes_use_gc syms bbdfns exes in
     let uses_yield = exes_use_yield exes in
     let props = if uses_gc then `Uses_gc :: props else props in
@@ -124,12 +124,12 @@ let set_gc_use syms bbdfns =
     if uses_gc or uses_yield
     then
     Hashtbl.replace bbdfns i (id,parent,sr,
-      `BBDCL_function (`Uses_gc :: props,vs,ps,rt,exes))
+      BBDCL_function (`Uses_gc :: props,vs,ps,rt,exes))
 
-  | `BBDCL_procedure (props,vs,ps,exes) ->
+  | BBDCL_procedure (props,vs,ps,exes) ->
     if exes_use_gc syms bbdfns exes then
     Hashtbl.replace bbdfns i (id,parent,sr,
-      `BBDCL_procedure (`Uses_gc :: props,vs,ps,exes))
+      BBDCL_procedure (`Uses_gc :: props,vs,ps,exes))
 
   | _ -> ()
   )
@@ -139,8 +139,8 @@ let set_gc_use syms bbdfns =
 let is_global_var bbdfns i =
   let id,parent,sr,entry = try Hashtbl.find bbdfns i with Not_found -> failwith "YIKES1" in
   match entry with
-  | `BBDCL_var _
-  | `BBDCL_val _ when (match parent with None -> true | _ -> false ) -> true
+  | BBDCL_var _
+  | BBDCL_val _ when (match parent with None -> true | _ -> false ) -> true
   | _ -> false
 
 let throw_on_global bbdfns i =
@@ -161,15 +161,15 @@ let exes_use_global bbdfns exes =
 let set_local_globals bbdfns =
   Hashtbl.iter
   (fun i (id,parent,sr,entry) -> match entry with
-  | `BBDCL_function (props,vs,ps,rt,exes) ->
+  | BBDCL_function (props,vs,ps,rt,exes) ->
     if exes_use_global bbdfns exes then
     Hashtbl.replace bbdfns i (id,parent,sr,
-      `BBDCL_function (`Uses_global_var :: props,vs,ps,rt,exes))
+      BBDCL_function (`Uses_global_var :: props,vs,ps,rt,exes))
 
-  | `BBDCL_procedure (props,vs,ps,exes) ->
+  | BBDCL_procedure (props,vs,ps,exes) ->
     if exes_use_global bbdfns exes then
     Hashtbl.replace bbdfns i (id,parent,sr,
-      `BBDCL_procedure (`Uses_global_var :: props,vs,ps,exes))
+      BBDCL_procedure (`Uses_global_var :: props,vs,ps,exes))
 
   | _ -> ()
   )
@@ -219,7 +219,7 @@ let rec set_ptf_usage syms bbdfns usage excludes i =
 
   let id,parent,sr,entry =  try Hashtbl.find bbdfns i with Not_found -> failwith ("YIKES2 -- " ^ si i) in
   match entry with
-  | `BBDCL_function (props,vs,ps,rt,exes) ->
+  | BBDCL_function (props,vs,ps,rt,exes) ->
     (*
     print_endline ("Function " ^ id ^ "<"^si i^"> properties " ^ string_of_properties props);
     *)
@@ -227,7 +227,7 @@ let rec set_ptf_usage syms bbdfns usage excludes i =
     else if mem `Not_requires_ptf props then Not_required
     else if mem `Uses_global_var props or mem `Uses_gc props or mem `Heap_closure props then begin
       Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_function (`Requires_ptf :: props,vs,ps,rt,exes));
+        BBDCL_function (`Requires_ptf :: props,vs,ps,rt,exes));
         Required
     end else begin
       let result1, result2 = cal_reqs calls i in
@@ -235,34 +235,34 @@ let rec set_ptf_usage syms bbdfns usage excludes i =
       print_endline ("Function " ^ id ^ " ADDING properties " ^ string_of_properties [result2]);
       *)
       Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_function (result2 :: props,vs,ps,rt,exes));
+        BBDCL_function (result2 :: props,vs,ps,rt,exes));
       result1
    end
 
-  | `BBDCL_procedure (props,vs,ps,exes) ->
+  | BBDCL_procedure (props,vs,ps,exes) ->
     if mem `Requires_ptf props then Required
     else if mem `Not_requires_ptf props then Not_required
     else if mem `Uses_global_var props or mem `Uses_gc props or mem `Heap_closure props then begin
       Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_procedure (`Requires_ptf :: props,vs,ps,exes));
+        BBDCL_procedure (`Requires_ptf :: props,vs,ps,exes));
         Required
     end else begin
       let result1, result2 = cal_reqs calls i in
       Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_procedure (result2 :: props,vs,ps,exes));
+        BBDCL_procedure (result2 :: props,vs,ps,exes));
       result1
    end
 
-  | `BBDCL_proc (props,vs,ps,ct,reqs) ->
+  | BBDCL_proc (props,vs,ps,ct,reqs) ->
     if mem `Requires_ptf props then Required
     else if mem `Not_requires_ptf props then Not_required
     else if mem `Uses_global_var props or mem `Uses_gc props or mem `Heap_closure props then begin
       Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_proc (`Requires_ptf :: props,vs,ps,ct,reqs));
+        BBDCL_proc (`Requires_ptf :: props,vs,ps,ct,reqs));
         Required
     end else Not_required
 
-  | `BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
+  | BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
     (*
     print_endline ("Fun " ^ id ^ "<"^si i^"> properties " ^ string_of_properties props);
     *)
@@ -270,7 +270,7 @@ let rec set_ptf_usage syms bbdfns usage excludes i =
     else if mem `Not_requires_ptf props then Not_required
     else if mem `Uses_global_var props or mem `Uses_gc props or mem `Heap_closure props then begin
       Hashtbl.replace bbdfns i (id,parent,sr,
-        `BBDCL_fun (`Requires_ptf :: props,vs,ps,ret,ct,reqs,prec));
+        BBDCL_fun (`Requires_ptf :: props,vs,ps,ret,ct,reqs,prec));
         Required
     end else Not_required
 

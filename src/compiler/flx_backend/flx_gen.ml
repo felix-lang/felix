@@ -27,9 +27,9 @@ let find_variable_indices syms (child_map,bbdfns) index =
   (fun i ->
     try match Hashtbl.find bbdfns i with _,_,_,entry ->
       match entry with
-      | `BBDCL_var _
-      | `BBDCL_ref _
-      | `BBDCL_val _ ->
+      | BBDCL_var _
+      | BBDCL_ref _
+      | BBDCL_val _ ->
         true
       | _ -> false
     with Not_found -> false
@@ -43,10 +43,10 @@ let get_variable_typename syms bbdfns i ts =
   in
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   match entry with
-  | `BBDCL_var (vs,t)
-  | `BBDCL_val (vs,t)
-  | `BBDCL_tmp (vs,t)
-  | `BBDCL_ref (vs,t)
+  | BBDCL_var (vs,t)
+  | BBDCL_val (vs,t)
+  | BBDCL_tmp (vs,t)
+  | BBDCL_ref (vs,t)
   ->
     if length ts <> length vs then
     failwith
@@ -97,9 +97,9 @@ let get_type bbdfns index =
     with _ -> failwith ("[get_type] Can't find index " ^ si index)
   in
   match entry with
-  | `BBDCL_function (props,vs,(ps,_),ret,_) ->
+  | BBDCL_function (props,vs,(ps,_),ret,_) ->
       `BTYP_function (typeof_bparams ps,ret)
-  | `BBDCL_procedure (props,vs,(ps,_),_) ->
+  | BBDCL_procedure (props,vs,(ps,_),_) ->
       `BTYP_function (typeof_bparams ps,`BTYP_void)
   | _ -> failwith "Only function and procedure types handles by get_type"
 
@@ -118,7 +118,7 @@ let is_gc_pointer syms bbdfns sr t =
         clierr sr ("[is_gc_pointer] Can't find nominal type " ^ si i);
    in
    begin match entry with
-   | `BBDCL_abs (_,tqs,_,_) -> mem `GC_pointer tqs
+   | BBDCL_abs (_,tqs,_,_) -> mem `GC_pointer tqs
    | _ -> false
    end
   | _ -> false
@@ -532,16 +532,16 @@ let gen_function_names syms (child_map,bbdfns) =
       with Not_found -> failwith ("[gen_functions] can't find index " ^ si index)
     with (id,parent,sr,entry) ->
     match entry with
-    | `BBDCL_function (props,vs,(ps,traint), ret, _) ->
+    | BBDCL_function (props,vs,(ps,traint), ret, _) ->
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
       end else begin
         let name = cpp_instance_name syms bbdfns index ts in
         bcat s ("struct " ^ name ^ ";\n");
       end
 
-    | `BBDCL_callback (props,vs,ps_cf,ps_c,_,ret',_,_) ->  ()
+    | BBDCL_callback (props,vs,ps_cf,ps_c,_,ret',_,_) ->  ()
 
-    | `BBDCL_procedure (props,vs,(ps,traint),_) ->
+    | BBDCL_procedure (props,vs,(ps,traint),_) ->
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
       end else begin
         let name = cpp_instance_name syms bbdfns index ts in
@@ -577,7 +577,7 @@ let gen_functions syms (child_map,bbdfns) =
       with Not_found -> failwith ("[gen_functions] can't find index " ^ si index)
     with (id,parent,sr,entry) ->
     match entry with
-    | `BBDCL_function (props,vs,(ps,traint), ret, _) ->
+    | BBDCL_function (props,vs,(ps,traint), ret, _) ->
       bcat s ("\n//------------------------------\n");
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
         bcat s ("//PURE C FUNCTION <" ^si index^ ">: " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
@@ -589,7 +589,7 @@ let gen_functions syms (child_map,bbdfns) =
         (gen_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
       end
 
-    | `BBDCL_callback (props,vs,ps_cf,ps_c,_,ret',_,_) ->
+    | BBDCL_callback (props,vs,ps_cf,ps_c,_,ret',_,_) ->
       let instance_no = i in
       bcat s ("\n//------------------------------\n");
       if ret' = `BTYP_void then begin
@@ -646,7 +646,7 @@ let gen_functions syms (child_map,bbdfns) =
         ");\n"
       in bcat s sss
 
-    | `BBDCL_procedure (props,vs,(ps,traint),_) ->
+    | BBDCL_procedure (props,vs,(ps,traint),_) ->
       bcat s ("\n//------------------------------\n");
       (*
       print_endline ("Procedure " ^ qualified_name_of_bindex syms.dfns bbdfns index);
@@ -678,9 +678,9 @@ let is_closure_var bbdfns index =
       try Hashtbl.find bbdfns index
       with Not_found -> failwith ("[var_type] ]Can't get index " ^ si index)
     in match entry with
-    | `BBDCL_var (_,t)
-    | `BBDCL_ref (_,t)  (* ?? *)
-    | `BBDCL_val (_,t) -> t
+    | BBDCL_var (_,t)
+    | BBDCL_ref (_,t)  (* ?? *)
+    | BBDCL_val (_,t) -> t
     | _ -> failwith ("[var_type] expected "^id^" to be variable")
   in
   match var_type bbdfns index with
@@ -726,8 +726,8 @@ let gen_exe filename syms
   in
   let our_display = get_display_list syms bbdfns this in
   let kind = match entry with
-    | `BBDCL_function (_,_,_,_,_) -> Function
-    | `BBDCL_procedure (_,_,_,_) -> Procedure
+    | BBDCL_function (_,_,_,_,_) -> Function
+    | BBDCL_procedure (_,_,_,_) -> Procedure
     | _ -> failwith "Expected executable code to be in function or procedure"
   in let our_level = length our_display in
 
@@ -759,7 +759,7 @@ let gen_exe filename syms
     in
     begin
     match entry with
-    | `BBDCL_proc (props,vs,_,ct,_) ->
+    | BBDCL_proc (props,vs,_,ct,_) ->
       assert (not is_jump);
 
       if length vs <> length ts then
@@ -783,7 +783,7 @@ let gen_exe filename syms
         ws ss
       end
 
-    | `BBDCL_callback (props,vs,ps_cf,ps_c,_,ret,_,_) ->
+    | BBDCL_callback (props,vs,ps_cf,ps_c,_,ret,_,_) ->
       assert (not is_jump);
       assert (ret = `BTYP_void);
 
@@ -801,7 +801,7 @@ let gen_exe filename syms
       sub_end
 
 
-    | `BBDCL_procedure (props,vs,ps,bexes) ->
+    | BBDCL_procedure (props,vs,ps,bexes) ->
       if bexes = []
       then
       "      //call to empty procedure " ^ id ^ " elided\n"
@@ -1062,7 +1062,7 @@ let gen_exe filename syms
         | _ -> assert false
       in
       begin match entry with
-      | `BBDCL_procedure (props,vs,(ps,traint),_) ->
+      | BBDCL_procedure (props,vs,(ps,traint),_) ->
         assert (mem `Stack_closure props);
         let a = match a with (a,t) -> a, tsub t in
         let ts = map tsub ts in
@@ -1276,8 +1276,8 @@ let gen_exe filename syms
       in
       let t =
         match entry with
-        | `BBDCL_var (_,t) -> t
-        | `BBDCL_val (_,t) -> t
+        | BBDCL_var (_,t) -> t
+        | BBDCL_val (_,t) -> t
         | _ -> syserr sr "Expected read argument to be variable"
       in
       let n = !counter in incr counter;
@@ -1335,7 +1335,7 @@ let gen_exe filename syms
           Not_found -> failwith ("[gen_expr(init) can't find index " ^ si v)
         in
         begin match entry with
-          | `BBDCL_tmp _ ->
+          | BBDCL_tmp _ ->
           (if with_comments then "      //"^src_str^"\n" else "") ^
           "      "^
           get_variable_typename syms bbdfns v [] ^
@@ -1344,9 +1344,9 @@ let gen_exe filename syms
           " = " ^
           ge sr e ^
           ";\n"
-          | `BBDCL_val _
-          | `BBDCL_ref _
-          | `BBDCL_var _ ->
+          | BBDCL_val _
+          | BBDCL_ref _
+          | BBDCL_var _ ->
           (*
           print_endline ("INIT of " ^ si v ^ " inside " ^ si this);
           *)
@@ -1439,7 +1439,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
     )
   );
   match entry with
-  | `BBDCL_function (props,vs,(bps,traint),ret',exes) ->
+  | BBDCL_function (props,vs,(bps,traint),ret',exes) ->
     (*
     print_endline ("Properties=" ^ catmap "," (fun x->st syms.dfns (x:>felix_term_t)) props);
     *)
@@ -1487,11 +1487,11 @@ let gen_C_function_body filename syms (child_map,bbdfns)
             with Not_found -> failwith ("[C func body, vars] Can't find index " ^ si i);
           in
           match entry with
-          | `BBDCL_val (vs,t)
-          | `BBDCL_var (vs,t)
+          | BBDCL_val (vs,t)
+          | BBDCL_var (vs,t)
             when not (mem i params) ->
             (i, rt vs t) :: lst
-          | `BBDCL_ref (vs,t)
+          | BBDCL_ref (vs,t)
             when not (mem i params) ->
             (i, `BTYP_pointer (rt vs t)) :: lst
           | _ -> lst
@@ -1585,7 +1585,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
     )
   );
   match entry with
-  | `BBDCL_procedure (props,vs,(bps,traint),exes) ->
+  | BBDCL_procedure (props,vs,(bps,traint),exes) ->
     let requires_ptf = mem `Requires_ptf props in
     if length ts <> length vs then
     failwith
@@ -1627,11 +1627,11 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
             with Not_found -> failwith ("[C func body, vars] Can't find index " ^ si i);
           in
           match entry with
-          | `BBDCL_var (vs,t)
-          | `BBDCL_val (vs,t)
+          | BBDCL_var (vs,t)
+          | BBDCL_val (vs,t)
             when not (mem i params) ->
             (i, rt vs t) :: lst
-          | `BBDCL_ref (vs,t)
+          | BBDCL_ref (vs,t)
             when not (mem i params) ->
             (i, `BTYP_pointer (rt vs t)) :: lst
           | _ -> lst
@@ -1723,7 +1723,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
     )
   );
   match entry with
-  | `BBDCL_function (props,vs,(bps,traint),ret',exes) ->
+  | BBDCL_function (props,vs,(bps,traint),ret',exes) ->
     if length ts <> length vs then
     failwith
     (
@@ -1863,7 +1863,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     )
   );
   match entry with
-  | `BBDCL_procedure (props,vs,(bps,traint),exes) ->
+  | BBDCL_procedure (props,vs,(bps,traint),exes) ->
     if length ts <> length vs then
     failwith
     (
@@ -2022,7 +2022,7 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf b
     with Not_found -> failwith ("[gen_execute_methods] Can't find index " ^ si index)
   in
   begin match entry with
-  | `BBDCL_function (props,vs,(ps,traint), ret, _) ->
+  | BBDCL_function (props,vs,(ps,traint), ret, _) ->
     bcat s ("//------------------------------\n");
     if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
       bcat s (
@@ -2037,7 +2037,7 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf b
       bcat s2 ctor;
       bcat s apply
 
-  | `BBDCL_callback (props,vs,ps_cf,ps_c,client_data_pos,ret',_,_) ->
+  | BBDCL_callback (props,vs,ps_cf,ps_c,client_data_pos,ret',_,_) ->
       let tss =
         if length ts = 0 then "" else
         "[" ^ catmap "," (string_of_btypecode syms.dfns) ts^ "]"
@@ -2152,7 +2152,7 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf b
         "  }\n"
       in bcat s sss
 
-  | `BBDCL_procedure (props,vs,(ps,traint),_) ->
+  | BBDCL_procedure (props,vs,(ps,traint),_) ->
     bcat s ("//------------------------------\n");
     if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
       bcat s (
@@ -2187,7 +2187,7 @@ let gen_biface_header syms bbdfns biface = match biface with
       with Not_found -> failwith ("[gen_biface_header] Can't find index " ^ si index)
     in
     begin match entry with
-    | `BBDCL_function (props,vs,(ps,traint), ret, _) ->
+    | BBDCL_function (props,vs,(ps,traint), ret, _) ->
       let display = get_display_list syms bbdfns index in
       if length display <> 0
       then clierr sr "Can't export nested function";
@@ -2209,7 +2209,7 @@ let gen_biface_header syms bbdfns biface = match biface with
       "extern \"C\" FLX_EXPORT " ^ rettypename ^" " ^
       export_name ^ "(\n" ^ arglist ^ "\n);\n"
 
-    | `BBDCL_procedure (props,vs,(ps,traint), _) ->
+    | BBDCL_procedure (props,vs,(ps,traint), _) ->
       let display = get_display_list syms bbdfns index in
       if length display <> 0
       then clierr sr "Can't export nested proc";
@@ -2248,7 +2248,7 @@ let gen_biface_body syms bbdfns biface = match biface with
       with Not_found -> failwith ("[gen_biface_body] Can't find index " ^ si index)
     in
     begin match entry with
-    | `BBDCL_function (props,vs,(ps,traint), ret, _) ->
+    | BBDCL_function (props,vs,(ps,traint), ret, _) ->
       if length vs <> 0
       then clierr sr ("Can't export generic function " ^ id)
       ;
@@ -2293,7 +2293,7 @@ let gen_biface_body syms bbdfns biface = match biface with
       )^
       "}\n"
 
-    | `BBDCL_procedure (props,vs,(ps,traint),_) ->
+    | BBDCL_procedure (props,vs,(ps,traint),_) ->
       let stackable = mem `Stack_closure props in
       if length vs <> 0
       then clierr sr ("Can't export generic procedure " ^ id)

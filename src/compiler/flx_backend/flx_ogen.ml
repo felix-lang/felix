@@ -15,10 +15,10 @@ let find_thread_vars_with_type bbdfns =
   Hashtbl.iter
   (fun k (id,parent,sr,entry) ->
     match parent,entry with
-    | None,`BBDCL_var (_,t)
-    | None,`BBDCL_val (_,t)
+    | None,BBDCL_var (_,t)
+    | None,BBDCL_val (_,t)
       -> vars := (k,t) :: !vars
-    | None,`BBDCL_ref (_,t)
+    | None,BBDCL_ref (_,t)
       -> vars := (k,`BTYP_pointer t) :: !vars
 
     | _ -> ()
@@ -42,9 +42,9 @@ let find_references syms (child_map,bbdfns) index ts =
         Hashtbl.find bbdfns idx
       in
       match bbdfn with
-      | `BBDCL_var (vs,t)
-      | `BBDCL_ref (vs,t)
-      | `BBDCL_val (vs,t)
+      | BBDCL_var (vs,t)
+      | BBDCL_ref (vs,t)
+      | BBDCL_val (vs,t)
         ->
         if length ts <> length vs then
         failwith
@@ -100,13 +100,13 @@ let rec get_offsets' syms bbdfns typ : string list =
       with Not_found -> failwith ("get_offsets'] can't find index " ^ si i)
     in
     begin match entry with
-    | `BBDCL_union (vs,idts) ->
+    | BBDCL_union (vs,idts) ->
       let varmap = mk_varmap vs ts in
       let cpts = map (fun (_,_,t) -> varmap_subst varmap t) idts in
       if all_voids cpts then []
       else ["offsetof("^tname^",data)"]
 
-    | `BBDCL_struct (vs,idts) ->
+    | BBDCL_struct (vs,idts) ->
       let varmap = mk_varmap vs ts in
       let n = ref 0 in
       let cpts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
@@ -124,7 +124,7 @@ let rec get_offsets' syms bbdfns typ : string list =
       ;
       !lst
 
-    | `BBDCL_abs (vs,type_quals,_,_)
+    | BBDCL_abs (vs,type_quals,_,_)
        when mem `GC_pointer type_quals -> ["0"]
 
     | _ -> []
@@ -356,7 +356,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
     print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt syms.dfns) ts ^"]");
     *)
     match entry with
-    | `BBDCL_function (props,vs,ps, ret,exes) ->
+    | BBDCL_function (props,vs,ps, ret,exes) ->
       scan exes;
       if mem `Cfun props then () else
       if mem `Heap_closure props then
@@ -366,7 +366,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
         print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
       *)
 
-    | `BBDCL_procedure (props,vs,ps,exes) ->
+    | BBDCL_procedure (props,vs,ps,exes) ->
       scan exes;
       if mem `Cfun props then () else
       if mem `Heap_closure props then
@@ -427,7 +427,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
         with Not_found -> failwith ("[gen_offset_tables:BTYP_inst] can't find index " ^ si i)
       in
       begin match entry with
-      | `BBDCL_abs (vs,bquals,_,_) ->
+      | BBDCL_abs (vs,bquals,_,_) ->
         (*
         print_endline ("abstract type "^id^".. quals:");
         print_endline (string_of_bquals syms.dfns bquals);
@@ -465,7 +465,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
          we didn't construct it, perhaps a foreigner did,
          in which case THEY needed to create the shape object
       *)
-      | `BBDCL_union (vs,args) ->
+      | BBDCL_union (vs,args) ->
         let varmap = mk_varmap vs ts in
         let args = map (fun (_,_,t)->t) args in
         let args = map (varmap_subst varmap) args in
@@ -520,7 +520,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
         | `BTYP_inst (k,ts) ->
           let id,sr,parent,entry = Hashtbl.find bbdfns k in
           begin match entry with
-          | `BBDCL_abs (_,quals,_,_) -> mem `Pod quals
+          | BBDCL_abs (_,quals,_,_) -> mem `Pod quals
           | _ -> false
           end
         | _ -> false
@@ -573,7 +573,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
         with Not_found -> failwith ("[gen_offset_tables:BTYP_inst:allocable_types] can't find index " ^ si i)
       in
       begin match entry with
-      | `BBDCL_abs (_,quals,_,_) ->
+      | BBDCL_abs (_,quals,_,_) ->
         let complete = not (mem `Incomplete quals) in
         let pod = mem `Pod quals in
         if complete then
@@ -606,9 +606,9 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
           clierr sr
           ("[ogen] attempt to allocate an incomplete type: '" ^ id ^"'")
 
-      | `BBDCL_union _ -> () (* handled by universal _uctor_ *)
+      | BBDCL_union _ -> () (* handled by universal _uctor_ *)
 
-      | `BBDCL_struct (vs,cps) ->
+      | BBDCL_struct (vs,cps) ->
         failwith
         (
           "[ogen]: can't handle struct offsets yet: type " ^

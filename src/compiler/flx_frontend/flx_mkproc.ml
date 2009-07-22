@@ -71,7 +71,7 @@ let mkproc_expr syms bbdfns sr this mkproc_map vs e =
       (* create a new variable *)
       let k = !(syms.counter) in incr (syms.counter);
       let vid = "_mkp_" ^ si k in
-      let vardecl = `BBDCL_var (vs,ret) in
+      let vardecl = BBDCL_var (vs,ret) in
       Hashtbl.add bbdfns k (vid,Some this,sr,vardecl);
 
       (* append a pointer to this variable to the argument *)
@@ -155,7 +155,7 @@ let mkproc_gen syms (child_map,bbdfns) =
   (* make the funproc map *)
   Hashtbl.iter
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let k = !(syms.counter) in incr (syms.counter);
     Hashtbl.add mkproc_map i (k,0);
     if syms.compiler_options.print_flag then
@@ -169,10 +169,10 @@ let mkproc_gen syms (child_map,bbdfns) =
   (* count direct applications of these functions *)
   Hashtbl.iter
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
-  | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
+  | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     find_mkproc_exes mkproc_map exes
 
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     find_mkproc_exes mkproc_map exes
   | _ -> ()
   )
@@ -247,7 +247,7 @@ let mkproc_gen syms (child_map,bbdfns) =
       let idm,parent,sr,bbdcl = Hashtbl.find bbdfns i in
       let props, vs, ps, traint, ret, exes =
         match bbdcl with
-        | `BBDCL_function (props,vs,(ps,traint),ret,exes) -> props, vs, ps, traint, ret, exes
+        | BBDCL_function (props,vs,(ps,traint),ret,exes) -> props, vs, ps, traint, ret, exes
         | _ -> assert false
       in
 
@@ -274,7 +274,7 @@ let mkproc_gen syms (child_map,bbdfns) =
 
         (* make new parameter: note the name is remapped to _k_mkproc below *)
         let vix = !(syms.counter) in incr (syms.counter);
-        let vdcl = `BBDCL_var (vs,`BTYP_pointer ret) in
+        let vdcl = BBDCL_var (vs,`BTYP_pointer ret) in
         let vid = "_" ^ si vix in
         let ps = ps @ [{pindex=vix; pkind=`PVal; ptyp=`BTYP_pointer ret; pid=vid}] in
 
@@ -283,8 +283,8 @@ let mkproc_gen syms (child_map,bbdfns) =
           (fun {pkind=pk; ptyp=t; pid=s; pindex=pi} ->
             let n = revar pi in
             let bbdcl = match pk with
-            | `PVal -> `BBDCL_val (vs,t)
-            | `PVar -> `BBDCL_var (vs,t)
+            | `PVal -> BBDCL_val (vs,t)
+            | `PVar -> BBDCL_var (vs,t)
             | _ -> failwith "Unimplemented mkproc fun param not var or val (fixme!)"
             in
             if syms.compiler_options.print_flag then
@@ -321,7 +321,7 @@ let mkproc_gen syms (child_map,bbdfns) =
       let exes = proc_exes syms bbdfns dv exes in
 
       (* save the new procedure *)
-      let bbdcl = `BBDCL_procedure (props,vs,(ps,traint), exes) in
+      let bbdcl = BBDCL_procedure (props,vs,(ps,traint), exes) in
       Hashtbl.add bbdfns k (idm^"_mkproc",parent,sr,bbdcl);
 
       if syms.compiler_options.print_flag then
@@ -339,21 +339,21 @@ let mkproc_gen syms (child_map,bbdfns) =
   (* DISABLE MODIFICATIONS DURING INITIAL DEPLOYMENT *)
   Hashtbl.iter
   (fun i (id, parent, sr, bbdcl) -> match bbdcl with
-  | `BBDCL_procedure (props,vs,(ps,traint),exes) ->
+  | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = mkproc_exes syms bbdfns sr i mkproc_map vs exes in
     (*
     ()
     *)
     Hashtbl.replace bbdfns i
-      (id,parent,sr,`BBDCL_procedure (props,vs,(ps,traint),exes))
+      (id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes))
 
-  | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let exes = mkproc_exes syms bbdfns sr i mkproc_map vs exes in
     (*
     ()
     *)
     Hashtbl.replace bbdfns i
-      (id,parent,sr,`BBDCL_function (props,vs,(ps,traint),ret,exes))
+      (id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes))
 
   | _ -> ()
   )
