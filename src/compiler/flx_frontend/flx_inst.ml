@@ -199,11 +199,11 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
   *)
   (* TODO: replace with a map *)
   match exe with
-  | `BEXE_axiom_check _ -> assert false
-  | `BEXE_call_prim (sr,i,ts,e2)
-  | `BEXE_call_direct (sr,i,ts,e2)
-  | `BEXE_jump_direct (sr,i,ts,e2)
-  | `BEXE_call_stack (sr,i,ts,e2)
+  | BEXE_axiom_check _ -> assert false
+  | BEXE_call_prim (sr,i,ts,e2)
+  | BEXE_call_direct (sr,i,ts,e2)
+  | BEXE_jump_direct (sr,i,ts,e2)
+  | BEXE_call_stack (sr,i,ts,e2)
     ->
     let ut t = register_type_r uis syms bbdfns [] sr t in
     let vs t = varmap_subst hvarmap t in
@@ -212,24 +212,24 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     uis i ts;
     ue sr e2
 
-  | `BEXE_call (sr,e1,e2)
-  | `BEXE_jump (sr,e1,e2)
+  | BEXE_call (sr,e1,e2)
+  | BEXE_jump (sr,e1,e2)
     -> ue sr e1; ue sr e2
 
-  | `BEXE_assert (sr,e)
-  | `BEXE_loop (sr,_,e)
-  | `BEXE_ifgoto (sr,e,_)
-  | `BEXE_fun_return (sr,e)
-  | `BEXE_yield (sr,e)
+  | BEXE_assert (sr,e)
+  | BEXE_loop (sr,_,e)
+  | BEXE_ifgoto (sr,e,_)
+  | BEXE_fun_return (sr,e)
+  | BEXE_yield (sr,e)
     ->
       ue sr e
 
-  | `BEXE_assert2 (sr,_,e1,e2)
+  | BEXE_assert2 (sr,_,e1,e2)
     ->
      begin match e1 with Some e -> ue sr e | None -> () end;
      ue sr e2
 
-  | `BEXE_init (sr,i,e) ->
+  | BEXE_init (sr,i,e) ->
     (*
     print_endline ("[flx_inst] Initialisation " ^ si i ^ " := " ^ sbe syms.dfns bbdfns e);
     *)
@@ -247,25 +247,25 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     uis i ts; (* this is wrong?: initialisation is not use .. *)
     ue sr e
 
-  | `BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
+  | BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
 
-  | `BEXE_svc (sr,i) ->
+  | BEXE_svc (sr,i) ->
     let vs' = get_vs bbdfns i in
     let ts = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
     uis i ts
 
-  | `BEXE_label _
-  | `BEXE_halt _
-  | `BEXE_trace _
-  | `BEXE_goto _
-  | `BEXE_code _
-  | `BEXE_nonreturn_code _
-  | `BEXE_comment _
-  | `BEXE_nop _
-  | `BEXE_proc_return _
-  | `BEXE_begin
-  | `BEXE_end
+  | BEXE_label _
+  | BEXE_halt _
+  | BEXE_trace _
+  | BEXE_goto _
+  | BEXE_code _
+  | BEXE_nonreturn_code _
+  | BEXE_comment _
+  | BEXE_nop _
+  | BEXE_proc_return _
+  | BEXE_begin
+  | BEXE_end
     -> ()
 
 and process_exes syms bbdfns ref_insts1 ts hvarmap exes =

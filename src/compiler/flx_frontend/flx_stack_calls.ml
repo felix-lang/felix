@@ -386,19 +386,19 @@ let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map labe
     *)
     match exe with
 
-    | `BEXE_axiom_check _ -> assert false
-    | `BEXE_svc _ ->
+    | BEXE_axiom_check _ -> assert false
+    | BEXE_svc _ ->
       begin
         (*
         print_endline (id ^ "Does service call");
         *)
         raise Unstackable
       end
-    | `BEXE_call (_,(BEXPR_closure (j,_),_),_)
-    | `BEXE_call_direct (_,j,_,_)
+    | BEXE_call (_,(BEXPR_closure (j,_),_),_)
+    | BEXE_call_direct (_,j,_,_)
 
     (* this case needed for virtuals/typeclasses .. *)
-    | `BEXE_call_prim (_,j,_,_)
+    | BEXE_call_prim (_,j,_,_)
       ->
       if not (check_stackable_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map label_usage j (i::recstop))
       then begin
@@ -409,13 +409,13 @@ let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map labe
       end
 
     (* assignments to a local variable are safe *)
-    | `BEXE_init (_,j,_)
-    | `BEXE_assign (_,(BEXPR_name (j,_),_),_)
+    | BEXE_init (_,j,_)
+    | BEXE_assign (_,(BEXPR_name (j,_),_),_)
       when mem j children -> ()
 
     (* assignments not involving pointers or functions are safe *)
-    | `BEXE_init (sr,_,(_,t))
-    | `BEXE_assign (sr,(_,t),_)
+    | BEXE_init (sr,_,(_,t))
+    | BEXE_assign (sr,(_,t),_)
       when 
         let has_vars = has_var_children bbdfns children in
         let has_funs = has_fun_children bbdfns children in
@@ -441,35 +441,35 @@ let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map labe
 
       -> ()
 
-    | `BEXE_init _
-    | `BEXE_assign _ ->
+    | BEXE_init _
+    | BEXE_assign _ ->
       (*
       print_endline (id ^ " does foreign init/assignment");
       *)
       raise Unstackable
 
-    | `BEXE_call _
+    | BEXE_call _
        ->
        (*
        print_endline (id ^ " does nasty call");
        *)
        raise Unstackable
 
-    | `BEXE_jump _
-    | `BEXE_jump_direct _
+    | BEXE_jump _
+    | BEXE_jump_direct _
        ->
        (*
        print_endline (id ^ " does jump");
        *)
        raise Unstackable
-    | `BEXE_loop _
+    | BEXE_loop _
        ->
        (*
        print_endline (id ^ " has loop?");
        *)
        raise Unstackable
 
-    | `BEXE_label (_,s) ->
+    | BEXE_label (_,s) ->
        let  lno = hfind "labels" labels s in
        let lkind =
          Flx_label.get_label_kind_from_index label_usage lno
@@ -480,7 +480,7 @@ let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map labe
          raise Unstackable
        end
 
-    | `BEXE_goto (_,s) ->
+    | BEXE_goto (_,s) ->
       begin
         match Flx_label.find_label bbdfns label_map i s with
         | `Nonlocal _ ->
@@ -492,24 +492,24 @@ let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map labe
         | `Local _ -> ()
       end
 
-    | `BEXE_yield _
-    | `BEXE_fun_return _ -> assert false
+    | BEXE_yield _
+    | BEXE_fun_return _ -> assert false
 
     (* Assume these are safe .. ? *)
-    | `BEXE_code _
-    | `BEXE_nonreturn_code _
+    | BEXE_code _
+    | BEXE_nonreturn_code _
 
-    | `BEXE_call_stack _ (* cool *)
-    | `BEXE_halt _
-    | `BEXE_trace _
-    | `BEXE_comment _
-    | `BEXE_ifgoto _
-    | `BEXE_assert _
-    | `BEXE_assert2 _
-    | `BEXE_begin
-    | `BEXE_end
-    | `BEXE_nop _
-    | `BEXE_proc_return _
+    | BEXE_call_stack _ (* cool *)
+    | BEXE_halt _
+    | BEXE_trace _
+    | BEXE_comment _
+    | BEXE_ifgoto _
+    | BEXE_assert _
+    | BEXE_assert2 _
+    | BEXE_begin
+    | BEXE_end
+    | BEXE_nop _
+    | BEXE_proc_return _
       -> ()
     )
     exes;
@@ -638,8 +638,8 @@ let enstack_calls fn_cache ptr_cache syms (child_map,bbdfns) self exes =
   let exes =
     map (
       fun exe -> let exe = match exe with
-      | `BEXE_call (sr,(BEXPR_closure (i,ts),_),a)
-      | `BEXE_call_direct (sr,i,ts,a) ->
+      | BEXE_call (sr,(BEXPR_closure (i,ts),_),a)
+      | BEXE_call_direct (sr,i,ts,a) ->
         let id,parent,sr,entry = Hashtbl.find bbdfns i in
         begin match entry with
         | `BBDCL_procedure (props,vs,p,exes) ->
@@ -648,15 +648,15 @@ let enstack_calls fn_cache ptr_cache syms (child_map,bbdfns) self exes =
             if not (mem `Stack_closure props) then
               Hashtbl.replace bbdfns i (id,parent,sr,`BBDCL_procedure (`Stack_closure::props,vs,p,exes))
             ;
-            `BEXE_call_stack (sr,i,ts,a)
+            BEXE_call_stack (sr,i,ts,a)
           end
           else
-          `BEXE_call_direct (sr,i,ts,a)
+          BEXE_call_direct (sr,i,ts,a)
 
-        | `BBDCL_proc _ -> `BEXE_call_prim (sr,i,ts,a)
+        | `BBDCL_proc _ -> BEXE_call_prim (sr,i,ts,a)
 
         (* seems to work at the moment *)
-        | `BBDCL_callback _ -> `BEXE_call_direct (sr,i,ts,a)
+        | `BBDCL_callback _ -> BEXE_call_direct (sr,i,ts,a)
 
         | _ -> syserr sr ("Call to non-procedure " ^ id ^ "<" ^ si i ^ ">")
         end

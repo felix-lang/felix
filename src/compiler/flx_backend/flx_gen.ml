@@ -958,11 +958,11 @@ let gen_exe filename syms
     print_endline (string_of_bexe syms.dfns bbdfns 0 exe);
     *)
     match exe with
-    | `BEXE_axiom_check _ -> assert false
-    | `BEXE_code (sr,s) -> forget_template sr s
-    | `BEXE_nonreturn_code (sr,s) -> forget_template sr s
-    | `BEXE_comment (_,s) -> "/*" ^ s ^ "*/\n"
-    | `BEXE_label (_,s) ->
+    | BEXE_axiom_check _ -> assert false
+    | BEXE_code (sr,s) -> forget_template sr s
+    | BEXE_nonreturn_code (sr,s) -> forget_template sr s
+    | BEXE_comment (_,s) -> "/*" ^ s ^ "*/\n"
+    | BEXE_label (_,s) ->
       let local_labels =
         try Hashtbl.find label_map this
         with _ -> failwith ("[gen_exe] Can't find label map of " ^ si this)
@@ -993,7 +993,7 @@ let gen_exe filename syms
       )
 
     (* FIX THIS TO PUT SOURCE REFERENCE IN *)
-    | `BEXE_halt (sr,msg) ->
+    | BEXE_halt (sr,msg) ->
       let msg = Flx_print.string_of_string ("HALT: " ^ msg) in
       let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
       let s = Flx_print.string_of_string f ^"," ^
@@ -1002,7 +1002,7 @@ let gen_exe filename syms
       in
        "      FLX_HALT(" ^ s ^ "," ^ msg ^ ");\n"
 
-    | `BEXE_trace (sr,v,msg) ->
+    | BEXE_trace (sr,v,msg) ->
       let msg = Flx_print.string_of_string ("TRACE: " ^ msg) in
       let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
       let s = Flx_print.string_of_string f ^"," ^
@@ -1012,7 +1012,7 @@ let gen_exe filename syms
        "      FLX_TRACE(" ^ v ^"," ^ s ^ "," ^ msg ^ ");\n"
 
 
-    | `BEXE_goto (sr,s) ->
+    | BEXE_goto (sr,s) ->
       begin match find_label bbdfns label_map this s with
       | `Local _ -> "      goto " ^ cid_of_flxid s ^ ";\n"
       | `Nonlocal (pc,frame) -> gen_nonlocal_goto pc frame s
@@ -1027,7 +1027,7 @@ let gen_exe filename syms
         clierr sr ("Unconditional Jump to unreachable label " ^ cid_of_flxid s)
       end
 
-    | `BEXE_ifgoto (sr,e,s) ->
+    | BEXE_ifgoto (sr,e,s) ->
       begin match find_label bbdfns label_map this s with
       | `Local _ ->
         "      if(" ^ ge sr e ^ ") goto " ^ cid_of_flxid s ^ ";\n"
@@ -1045,7 +1045,7 @@ let gen_exe filename syms
       end
 
     (* Hmmm .. stack calls ?? *)
-    | `BEXE_call_stack (sr,index,ts,a)  ->
+    | BEXE_call_stack (sr,index,ts,a)  ->
       let id,parent,sr2,entry =
         try Hashtbl.find bbdfns index
         with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
@@ -1144,9 +1144,9 @@ let gen_exe filename syms
       end
 
 
-    | `BEXE_call_prim (sr,index,ts,a)
-    | `BEXE_call_direct (sr,index,ts,a)
-    | `BEXE_call (sr,(BEXPR_closure (index,ts),_),a) ->
+    | BEXE_call_prim (sr,index,ts,a)
+    | BEXE_call_direct (sr,index,ts,a)
+    | BEXE_call (sr,(BEXPR_closure (index,ts),_),a) ->
       let a = match a with (a,t) -> a, tsub t in
       let subs,x = unravel syms bbdfns a in
       let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
@@ -1158,15 +1158,15 @@ let gen_exe filename syms
        i3: constructor
        a: ctor argument
     *)
-    | `BEXE_jump (sr,((BEXPR_closure (index,ts),_)),a)
-    | `BEXE_jump_direct (sr,index,ts,a) ->
+    | BEXE_jump (sr,((BEXPR_closure (index,ts),_)),a)
+    | BEXE_jump_direct (sr,index,ts,a) ->
       let a = match a with (a,t) -> a, tsub t in
       let subs,x = unravel syms bbdfns a in
       let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
       let ts = map tsub ts in
       handle_closure sr true index ts subs x false
 
-    | `BEXE_loop (sr,i,a) ->
+    | BEXE_loop (sr,i,a) ->
       let ptr =
         if i= this then "this"
         else "ptr"^cpp_instance_name syms bbdfns i ts
@@ -1206,7 +1206,7 @@ let gen_exe filename syms
        used (a waste if it isn't re-entered .. oh well)
      *)
 
-    | `BEXE_call (sr,p,a) ->
+    | BEXE_call (sr,p,a) ->
       let args =
         let this = match kind with
           | Procedure -> "this"
@@ -1244,7 +1244,7 @@ let gen_exe filename syms
         "    FLX_CASE_LABEL(" ^ si n ^ ")\n"
       end
 
-    | `BEXE_jump (sr,p,a) ->
+    | BEXE_jump (sr,p,a) ->
       let args = match a with
         | _,`BTYP_tuple [] -> "tmp"
         | _ -> "tmp, " ^ ge sr a
@@ -1263,13 +1263,13 @@ let gen_exe filename syms
       "      }\n"
       end
 
-    | `BEXE_proc_return _ ->
+    | BEXE_proc_return _ ->
       if stackable then
       "      return;\n"
       else
       "      FLX_RETURN\n"
 
-    | `BEXE_svc (sr,index) ->
+    | BEXE_svc (sr,index) ->
       let id,parent,sr,entry =
         try Hashtbl.find bbdfns index
         with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
@@ -1289,7 +1289,7 @@ let gen_exe filename syms
       "    FLX_CASE_LABEL(" ^ si n ^ ")\n"
 
 
-    | `BEXE_yield (sr,e) ->
+    | BEXE_yield (sr,e) ->
       let labno = !counter in incr counter;
       let code =
         "      FLX_SET_PC(" ^ si labno ^ ")\n" ^
@@ -1306,16 +1306,16 @@ let gen_exe filename syms
       needs_switch := true;
       code
 
-    | `BEXE_fun_return (sr,e) ->
+    | BEXE_fun_return (sr,e) ->
       let _,t = e in
       (if with_comments then
       "      //" ^ src_str ^ ": type "^tn t^"\n"
       else "") ^
       "      return "^ge sr e^";\n"
 
-    | `BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
+    | BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
 
-    | `BEXE_assign (sr,e1,(( _,t) as e2)) ->
+    | BEXE_assign (sr,e1,(( _,t) as e2)) ->
       let t = tsub t in
       begin match t with
       | `BTYP_tuple [] -> ""
@@ -1325,7 +1325,7 @@ let gen_exe filename syms
       ";\n"
       end
 
-    | `BEXE_init (sr,v,((_,t) as e)) ->
+    | BEXE_init (sr,v,((_,t) as e)) ->
       let t = tsub t in
       begin match t with
       | `BTYP_tuple [] -> ""
@@ -1360,10 +1360,10 @@ let gen_exe filename syms
         end
       end
 
-    | `BEXE_begin -> "      {\n"
-    | `BEXE_end -> "      }\n"
+    | BEXE_begin -> "      {\n"
+    | BEXE_end -> "      }\n"
 
-    | `BEXE_assert (sr,e) ->
+    | BEXE_assert (sr,e) ->
        let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
        let s = string_of_string f ^ "," ^
          si sl ^ "," ^ si sc ^ "," ^
@@ -1372,7 +1372,7 @@ let gen_exe filename syms
        "      {if(FLX_UNLIKELY(!(" ^ ge sr e ^ ")))\n" ^
        "        FLX_ASSERT_FAILURE("^s^");}\n"
 
-    | `BEXE_assert2 (sr,sr2,e1,e2) ->
+    | BEXE_assert2 (sr,sr2,e1,e2) ->
        let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
        let s = string_of_string f ^ "," ^
          si sl ^ "," ^ si sc ^ "," ^

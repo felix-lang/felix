@@ -24,7 +24,7 @@ let get_labels bbdfns counter exes =
   let labels = Hashtbl.create 97 in
   List.iter
     (fun exe -> match exe with
-      | `BEXE_label (_,s) ->
+      | BEXE_label (_,s) ->
         (*
         print_endline ("Label " ^ s);
         *)
@@ -86,8 +86,8 @@ let get_label_kind label_map usage_map proc label =
 let cal_usage syms bbdfns label_map caller exes usage =
   iter
   (function
-    | `BEXE_goto (sr,label)
-    | `BEXE_ifgoto (sr,_,label) ->
+    | BEXE_goto (sr,label)
+    | BEXE_ifgoto (sr,_,label) ->
       begin match find_label bbdfns label_map caller label with
       | `Unreachable ->
         syserr sr ("[flx_label] Caller "^si caller^" Jump to unreachable label " ^ label ^ "\n" ^

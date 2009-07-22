@@ -69,8 +69,8 @@ and uses_exe syms used bbdfns count_inits (exe:bexe_t) =
   let ui i = uses syms used bbdfns count_inits i in
   let ut t = uses_type syms used bbdfns count_inits t in
   match exe,count_inits with
-  | `BEXE_init (_,i,e),false -> ue e
-  | `BEXE_assign (_,lhs,rhs),_ ->
+  | BEXE_init (_,i,e),false -> ue e
+  | BEXE_assign (_,lhs,rhs),_ ->
      if count_inits or not (is_proj lhs)
      then ue lhs;
      ue rhs

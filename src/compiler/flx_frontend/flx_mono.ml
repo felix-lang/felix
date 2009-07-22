@@ -165,35 +165,35 @@ let fixup_exe syms bbdfns fi mt exe =
   let fe e = fixup_expr syms bbdfns fi mt e in
   let result =
   match map_bexe id fe mt id id exe with
-  | `BEXE_call_direct (sr, i,ts,a) -> assert false
+  | BEXE_call_direct (sr, i,ts,a) -> assert false
     (*
     let i,ts = fi i ts in
-    `BEXE_call_direct (sr,i,ts,a)
+    BEXE_call_direct (sr,i,ts,a)
     *)
 
-  | `BEXE_jump_direct (sr, i,ts,a) -> assert false
+  | BEXE_jump_direct (sr, i,ts,a) -> assert false
     (*
     let i,ts = fi i ts in
-    `BEXE_jump_direct (sr,i,ts,a)
+    BEXE_jump_direct (sr,i,ts,a)
     *)
 
-  | `BEXE_call_prim (sr, i',ts,a) -> assert false
+  | BEXE_call_prim (sr, i',ts,a) -> assert false
     (*
     let i,ts = fi i' ts in
     if i = i' then
-      `BEXE_call_prim (sr,i,ts,a)
+      BEXE_call_prim (sr,i,ts,a)
     else
-      `BEXE_call_direct (sr,i,ts,a)
+      BEXE_call_direct (sr,i,ts,a)
     *)
 
-  | `BEXE_call_stack (sr, i,ts,a) -> assert false
+  | BEXE_call_stack (sr, i,ts,a) -> assert false
     (*
     let i,ts = fi i ts in
-    `BEXE_call_stack (sr,i,ts,a)
+    BEXE_call_stack (sr,i,ts,a)
     *)
 
   (* this is deviant case: implied ts is vs of parent! *)
-  | `BEXE_init (sr,i,e) ->
+  | BEXE_init (sr,i,e) ->
     (*
     print_endline ("[init] Deviant case variable " ^ si i);
     *)
@@ -203,9 +203,9 @@ let fixup_exe syms bbdfns fi mt exe =
     (*
     print_endline ("[init] Remapped deviant variable to " ^ si i);
     *)
-    `BEXE_init (sr,i,e)
+    BEXE_init (sr,i,e)
 
-  | `BEXE_svc (sr,i) ->
+  | BEXE_svc (sr,i) ->
     (*
     print_endline ("[svc] Deviant case variable " ^ si i);
     *)
@@ -215,7 +215,7 @@ let fixup_exe syms bbdfns fi mt exe =
     (*
     print_endline ("[svc] Remapped deviant variable to " ^ si i);
     *)
-    `BEXE_svc (sr,i)
+    BEXE_svc (sr,i)
 
   | x -> x
   in

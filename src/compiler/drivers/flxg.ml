@@ -384,8 +384,8 @@ try
   in
   let elim_init maybe_unused exes =
     List.filter (function
-      | `BEXE_init (_,i,_) -> not (IntSet.mem i maybe_unused)
-      | `BEXE_assign (_,x,_) -> not (IntSet.mem (lvof x) maybe_unused)
+      | BEXE_init (_,i,_) -> not (IntSet.mem i maybe_unused)
+      | BEXE_assign (_,x,_) -> not (IntSet.mem (lvof x) maybe_unused)
       | _ -> true
     )
     exes

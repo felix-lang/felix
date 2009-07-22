@@ -179,35 +179,33 @@ type regular_args_t =
     (int * int, int) Hashtbl.t  (* transition matrix *)
 
 and bexe_t =
-  [
-  | `BEXE_label of Flx_srcref.t * string
-  | `BEXE_comment of Flx_srcref.t * string (* for documenting generated code *)
-  | `BEXE_halt of Flx_srcref.t * string  (* for internal use only *)
-  | `BEXE_trace of Flx_srcref.t * string * string  (* for internal use only *)
-  | `BEXE_goto of Flx_srcref.t * string  (* for internal use only *)
-  | `BEXE_ifgoto of Flx_srcref.t * tbexpr_t * string  (* for internal use only *)
-  | `BEXE_call of Flx_srcref.t * tbexpr_t * tbexpr_t
-  | `BEXE_call_direct of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
-  | `BEXE_call_stack of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
-  | `BEXE_call_prim of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
-  | `BEXE_jump of Flx_srcref.t * tbexpr_t * tbexpr_t
-  | `BEXE_jump_direct of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
-  | `BEXE_loop of Flx_srcref.t * int * tbexpr_t
-  | `BEXE_svc of Flx_srcref.t * bid_t
-  | `BEXE_fun_return of Flx_srcref.t * tbexpr_t
-  | `BEXE_yield of Flx_srcref.t * tbexpr_t
-  | `BEXE_proc_return of Flx_srcref.t
-  | `BEXE_nop of Flx_srcref.t * string
-  | `BEXE_code of Flx_srcref.t * c_t
-  | `BEXE_nonreturn_code of Flx_srcref.t * c_t
-  | `BEXE_assign of Flx_srcref.t * tbexpr_t * tbexpr_t
-  | `BEXE_init of Flx_srcref.t * bid_t * tbexpr_t
-  | `BEXE_begin
-  | `BEXE_end
-  | `BEXE_assert of Flx_srcref.t * tbexpr_t
-  | `BEXE_assert2 of Flx_srcref.t * Flx_srcref.t * tbexpr_t option * tbexpr_t
-  | `BEXE_axiom_check of Flx_srcref.t * tbexpr_t
-  ]
+  | BEXE_label of Flx_srcref.t * string
+  | BEXE_comment of Flx_srcref.t * string (* for documenting generated code *)
+  | BEXE_halt of Flx_srcref.t * string  (* for internal use only *)
+  | BEXE_trace of Flx_srcref.t * string * string  (* for internal use only *)
+  | BEXE_goto of Flx_srcref.t * string  (* for internal use only *)
+  | BEXE_ifgoto of Flx_srcref.t * tbexpr_t * string  (* for internal use only *)
+  | BEXE_call of Flx_srcref.t * tbexpr_t * tbexpr_t
+  | BEXE_call_direct of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
+  | BEXE_call_stack of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
+  | BEXE_call_prim of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
+  | BEXE_jump of Flx_srcref.t * tbexpr_t * tbexpr_t
+  | BEXE_jump_direct of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
+  | BEXE_loop of Flx_srcref.t * int * tbexpr_t
+  | BEXE_svc of Flx_srcref.t * bid_t
+  | BEXE_fun_return of Flx_srcref.t * tbexpr_t
+  | BEXE_yield of Flx_srcref.t * tbexpr_t
+  | BEXE_proc_return of Flx_srcref.t
+  | BEXE_nop of Flx_srcref.t * string
+  | BEXE_code of Flx_srcref.t * c_t
+  | BEXE_nonreturn_code of Flx_srcref.t * c_t
+  | BEXE_assign of Flx_srcref.t * tbexpr_t * tbexpr_t
+  | BEXE_init of Flx_srcref.t * bid_t * tbexpr_t
+  | BEXE_begin
+  | BEXE_end
+  | BEXE_assert of Flx_srcref.t * tbexpr_t
+  | BEXE_assert2 of Flx_srcref.t * Flx_srcref.t * tbexpr_t option * tbexpr_t
+  | BEXE_axiom_check of Flx_srcref.t * tbexpr_t
 
 and bexpr_t =
   | BEXPR_deref of tbexpr_t

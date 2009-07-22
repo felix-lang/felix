@@ -32,8 +32,8 @@ let gen_closure syms bbdfns i =
 
     let exes : bexe_t list =
       [
-        `BEXE_call_prim (sr,i,ts,a);
-        `BEXE_proc_return sr
+        BEXE_call_prim (sr,i,ts,a);
+        BEXE_proc_return sr
       ]
     in
     let entry = `BBDCL_procedure ([],vs,(ps,None),exes) in
@@ -53,7 +53,7 @@ let gen_closure syms bbdfns i =
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
     in
     let e = BEXPR_apply_prim (i,ts,a),ret in
-    let exes : bexe_t list = [`BEXE_fun_return (sr,e)] in
+    let exes : bexe_t list = [BEXE_fun_return (sr,e)] in
     let entry = `BBDCL_function ([],vs,(ps,None),ret,exes) in
     Hashtbl.add bbdfns j (id,parent,sr,entry);
     j
@@ -105,49 +105,49 @@ let rec adj_cls syms bbdfns all_closures e =
 let process_exe syms bbdfns all_closures (exe : bexe_t) : bexe_t =
   let ue e = adj_cls syms bbdfns all_closures e in
   match exe with
-  | `BEXE_axiom_check _ -> assert false
-  | `BEXE_call_prim (sr,i,ts,e2)  -> `BEXE_call_prim (sr,i,ts, ue e2)
+  | BEXE_axiom_check _ -> assert false
+  | BEXE_call_prim (sr,i,ts,e2)  -> BEXE_call_prim (sr,i,ts, ue e2)
 
-  | `BEXE_call_direct (sr,i,ts,e2)  ->
+  | BEXE_call_direct (sr,i,ts,e2)  ->
     all_closures := IntSet.add i !all_closures;
-    `BEXE_call_direct (sr,i,ts, ue e2)
+    BEXE_call_direct (sr,i,ts, ue e2)
 
-  | `BEXE_jump_direct (sr,i,ts,e2)  ->
+  | BEXE_jump_direct (sr,i,ts,e2)  ->
     all_closures := IntSet.add i !all_closures;
-    `BEXE_jump_direct (sr,i,ts, ue e2)
+    BEXE_jump_direct (sr,i,ts, ue e2)
 
-  | `BEXE_call_stack (sr,i,ts,e2)  ->
+  | BEXE_call_stack (sr,i,ts,e2)  ->
     (* stack calls do use closures -- but not heap allocated ones *)
-    `BEXE_call_stack (sr,i,ts, ue e2)
+    BEXE_call_stack (sr,i,ts, ue e2)
 
-  | `BEXE_call (sr,e1,e2)  -> `BEXE_call (sr,ue e1, ue e2)
-  | `BEXE_jump (sr,e1,e2)  -> `BEXE_jump (sr,ue e1, ue e2)
+  | BEXE_call (sr,e1,e2)  -> BEXE_call (sr,ue e1, ue e2)
+  | BEXE_jump (sr,e1,e2)  -> BEXE_jump (sr,ue e1, ue e2)
 
-  | `BEXE_loop (sr,i,e) -> `BEXE_loop (sr,i, ue e)
-  | `BEXE_ifgoto (sr,e,l) -> `BEXE_ifgoto (sr, ue e,l)
-  | `BEXE_fun_return (sr,e) -> `BEXE_fun_return (sr,ue e)
-  | `BEXE_yield (sr,e) -> `BEXE_yield (sr,ue e)
+  | BEXE_loop (sr,i,e) -> BEXE_loop (sr,i, ue e)
+  | BEXE_ifgoto (sr,e,l) -> BEXE_ifgoto (sr, ue e,l)
+  | BEXE_fun_return (sr,e) -> BEXE_fun_return (sr,ue e)
+  | BEXE_yield (sr,e) -> BEXE_yield (sr,ue e)
 
-  | `BEXE_init (sr,i,e) -> `BEXE_init (sr,i,ue e)
-  | `BEXE_assign (sr,e1,e2) -> `BEXE_assign (sr, ue e1, ue e2)
-  | `BEXE_assert (sr,e) -> `BEXE_assert (sr, ue e)
-  | `BEXE_assert2 (sr,sr2,e1,e2) ->
+  | BEXE_init (sr,i,e) -> BEXE_init (sr,i,ue e)
+  | BEXE_assign (sr,e1,e2) -> BEXE_assign (sr, ue e1, ue e2)
+  | BEXE_assert (sr,e) -> BEXE_assert (sr, ue e)
+  | BEXE_assert2 (sr,sr2,e1,e2) ->
     let e1 = match e1 with Some e -> Some (ue e) | None -> None in
-    `BEXE_assert2 (sr, sr2,e1,ue e2)
+    BEXE_assert2 (sr, sr2,e1,ue e2)
 
-  | `BEXE_svc (sr,i) -> exe
+  | BEXE_svc (sr,i) -> exe
 
-  | `BEXE_label _
-  | `BEXE_halt _
-  | `BEXE_trace _
-  | `BEXE_goto _
-  | `BEXE_code _
-  | `BEXE_nonreturn_code _
-  | `BEXE_comment _
-  | `BEXE_nop _
-  | `BEXE_proc_return _
-  | `BEXE_begin
-  | `BEXE_end
+  | BEXE_label _
+  | BEXE_halt _
+  | BEXE_trace _
+  | BEXE_goto _
+  | BEXE_code _
+  | BEXE_nonreturn_code _
+  | BEXE_comment _
+  | BEXE_nop _
+  | BEXE_proc_return _
+  | BEXE_begin
+  | BEXE_end
     -> exe
 
 let process_exes syms bbdfns all_closures exes =

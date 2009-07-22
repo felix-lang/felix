@@ -81,7 +81,7 @@ let mkproc_expr syms bbdfns sr this mkproc_map vs e =
 
       (* create a call instruction to the mapped procedure *)
       let call : bexe_t =
-        `BEXE_call (sr,
+        BEXE_call (sr,
           (BEXPR_closure (p,ts),`BTYP_function (at',`BTYP_void)),
           a'
         )
@@ -122,17 +122,17 @@ let mkproc_exes syms bbdfns sr this mkproc_map vs exes =
 
 
 let proc_exe k exe = match exe with
-  | `BEXE_fun_return (sr,e)
-     -> [`BEXE_assign (sr,k,e); `BEXE_proc_return sr]
+  | BEXE_fun_return (sr,e)
+     -> [BEXE_assign (sr,k,e); BEXE_proc_return sr]
 
-  | `BEXE_yield (sr,e)
+  | BEXE_yield (sr,e)
      ->
      (* yea, this is indeed quite funny .. since yield is just a return which
         doesn't wipe out the continuation address .. i.e. the pc variable..
      *)
      (* failwith "Can't handle yield in procedure made from generator yet! :))"; *)
      (* Argg, who know, it might work lol *)
-     [`BEXE_assign (sr,k,e); `BEXE_proc_return sr]
+     [BEXE_assign (sr,k,e); BEXE_proc_return sr]
 
   | x -> [x]
 

@@ -41,7 +41,7 @@ let recal_exes_usage syms uses sr i ps exes =
 let is_tailed ps exes =
   try iter
   (function
-    | `BEXE_init(_,i,_) when mem i ps -> raise Not_found
+    | BEXE_init(_,i,_) when mem i ps -> raise Not_found
     | _ -> ()
   )
   exes;
@@ -191,8 +191,8 @@ let gen_body syms (uses,child_map,bbdfns) id
 
   let remap: bexe_t -> bexe_t list =  fun exe ->
   match exe with
-  | `BEXE_axiom_check _ -> assert false
-  | `BEXE_call_prim (sr,i,ts,e2)  ->  assert false
+  | BEXE_axiom_check _ -> assert false
+  | BEXE_call_prim (sr,i,ts,e2)  ->  assert false
     (*
     let fixup i ts =
       let auxt t = varmap_subst varmap t in
@@ -203,10 +203,10 @@ let gen_body syms (uses,child_map,bbdfns) id
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
-    [`BEXE_call_prim (sr,i,ts, ge e2)]
+    [BEXE_call_prim (sr,i,ts, ge e2)]
     *)
 
-  | `BEXE_call_direct (sr,i,ts,e2)  ->  assert false
+  | BEXE_call_direct (sr,i,ts,e2)  ->  assert false
     (*
     let fixup i ts =
       let auxt t = varmap_subst varmap t in
@@ -217,10 +217,10 @@ let gen_body syms (uses,child_map,bbdfns) id
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
-    [`BEXE_call_direct (sr,i,ts, ge e2)]
+    [BEXE_call_direct (sr,i,ts, ge e2)]
     *)
 
-  | `BEXE_jump_direct (sr,i,ts,e2)  ->
+  | BEXE_jump_direct (sr,i,ts,e2)  ->
     let fixup i ts =
       let auxt t = varmap_subst varmap t in
       let ts = map auxt ts in
@@ -230,41 +230,41 @@ let gen_body syms (uses,child_map,bbdfns) id
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
-    [`BEXE_jump_direct (sr,i,ts, ge e2)]
+    [BEXE_jump_direct (sr,i,ts, ge e2)]
 
-  | `BEXE_call_stack (sr,i,ts,e2)  -> assert false
-  | `BEXE_call (sr,e1,e2)  -> [`BEXE_call (sr,ge e1, ge e2)]
-  | `BEXE_jump (sr,e1,e2)  -> assert false
-  | `BEXE_loop (sr,i,e) -> assert false
-  | `BEXE_assert (sr,e) -> [`BEXE_assert (sr, ge e)]
-  | `BEXE_assert2 (sr,sr2,e1,e2) ->
+  | BEXE_call_stack (sr,i,ts,e2)  -> assert false
+  | BEXE_call (sr,e1,e2)  -> [BEXE_call (sr,ge e1, ge e2)]
+  | BEXE_jump (sr,e1,e2)  -> assert false
+  | BEXE_loop (sr,i,e) -> assert false
+  | BEXE_assert (sr,e) -> [BEXE_assert (sr, ge e)]
+  | BEXE_assert2 (sr,sr2,e1,e2) ->
     let e1 = match e1 with Some e1 -> Some (ge e1) | None -> None in
-    [`BEXE_assert2 (sr, sr2, e1,ge e2)]
+    [BEXE_assert2 (sr, sr2, e1,ge e2)]
 
-  | `BEXE_ifgoto (sr,e,lab) -> [`BEXE_ifgoto (sr,ge e, relab lab)]
-  | `BEXE_fun_return (sr,e) -> [`BEXE_fun_return (sr, ge e)]
-  | `BEXE_yield (sr,e) -> [`BEXE_yield (sr, ge e)]
-  | `BEXE_assign (sr,e1,e2) -> [`BEXE_assign (sr, ge e1, ge e2)]
-  | `BEXE_init (sr,i,e) -> [`BEXE_init (sr,revar i, ge e)]
-  | `BEXE_svc (sr,i)  -> [`BEXE_svc (sr, revar i)]
+  | BEXE_ifgoto (sr,e,lab) -> [BEXE_ifgoto (sr,ge e, relab lab)]
+  | BEXE_fun_return (sr,e) -> [BEXE_fun_return (sr, ge e)]
+  | BEXE_yield (sr,e) -> [BEXE_yield (sr, ge e)]
+  | BEXE_assign (sr,e1,e2) -> [BEXE_assign (sr, ge e1, ge e2)]
+  | BEXE_init (sr,i,e) -> [BEXE_init (sr,revar i, ge e)]
+  | BEXE_svc (sr,i)  -> [BEXE_svc (sr, revar i)]
 
-  | `BEXE_code (sr,s)  as x -> [x]
-  | `BEXE_nonreturn_code (sr,s)  as x -> [x]
-  | `BEXE_goto (sr,lab) -> [`BEXE_goto (sr, relab lab)]
+  | BEXE_code (sr,s)  as x -> [x]
+  | BEXE_nonreturn_code (sr,s)  as x -> [x]
+  | BEXE_goto (sr,lab) -> [BEXE_goto (sr, relab lab)]
 
 
   (* INLINING THING *)
-  | `BEXE_proc_return sr as x ->
+  | BEXE_proc_return sr as x ->
     incr end_label_uses;
-    [`BEXE_goto (sr,end_label)]
+    [BEXE_goto (sr,end_label)]
 
-  | `BEXE_comment (sr,s) as x -> [x]
-  | `BEXE_nop (sr,s) as x -> [x]
-  | `BEXE_halt (sr,s) as x -> [x]
-  | `BEXE_trace (sr,v,s) as x -> [x]
-  | `BEXE_label (sr,lab) -> [`BEXE_label (sr, relab lab)]
-  | `BEXE_begin as x -> [x]
-  | `BEXE_end as x -> [x]
+  | BEXE_comment (sr,s) as x -> [x]
+  | BEXE_nop (sr,s) as x -> [x]
+  | BEXE_halt (sr,s) as x -> [x]
+  | BEXE_trace (sr,v,s) as x -> [x]
+  | BEXE_label (sr,lab) -> [BEXE_label (sr, relab lab)]
+  | BEXE_begin as x -> [x]
+  | BEXE_end as x -> [x]
   in
     let kind = match inline_method with
       | `Lazy -> "Lazy "
@@ -285,13 +285,13 @@ let gen_body syms (uses,child_map,bbdfns) id
       ref
       (
         if source = "" && id <> "_init_" then
-          [`BEXE_comment (sr,(kind ^ "inline call to " ^ id ^"<"^si callee^">"^source))]
+          [BEXE_comment (sr,(kind ^ "inline call to " ^ id ^"<"^si callee^">"^source))]
         else []
       )
     in
     let handle_arg prolog argmap index argument kind =      
       let eagerly () =
-         let x = `BEXE_init (sr,index,argument) in
+         let x = BEXE_init (sr,index,argument) in
          prolog := x :: !prolog
       in
       match kind with
@@ -351,12 +351,12 @@ let gen_body syms (uses,child_map,bbdfns) id
             in
             Hashtbl.replace child_map caller (parameter::kids);
             Hashtbl.add bbdfns parameter (param_id,Some caller,sr,entry);
-            `BEXE_init (sr,parameter,argument)
+            BEXE_init (sr,parameter,argument)
           end
           else
             let {pid=vid; pindex=k} = hd ps in
             let index = revar k in
-            `BEXE_init (sr,index,argument)
+            BEXE_init (sr,index,argument)
         in
         b := x :: !b;
 
@@ -385,7 +385,7 @@ let gen_body syms (uses,child_map,bbdfns) id
           *)
           let prj = pj in
           let index = revar ix in
-          let x = `BEXE_init (sr,index,prj) in
+          let x = BEXE_init (sr,index,prj) in
           b := x :: !b;
           incr n
         )
@@ -508,14 +508,14 @@ let gen_body syms (uses,child_map,bbdfns) id
     end
     ;
     let trail_jump = match !b with
-      | `BEXE_goto (_,lab)::_ when lab = end_label -> true
+      | BEXE_goto (_,lab)::_ when lab = end_label -> true
       | _ -> false
     in
     if trail_jump then
       (b := tl !b; decr end_label_uses)
     ;
     if !end_label_uses > 0 then
-      b := (`BEXE_label (sr,end_label)) :: !b
+      b := (BEXE_label (sr,end_label)) :: !b
     ;
     (*
     print_endline ("INLINING " ^ id ^ " into " ^ si caller ^ " .. OUTPUT:");

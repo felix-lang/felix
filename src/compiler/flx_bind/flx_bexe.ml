@@ -47,16 +47,16 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
           | {symdef=`SYMDEF_fun _ }
           | {symdef=`SYMDEF_callback _ }
             ->
-            `BEXE_call_prim (sr,i,ts,tbe2)
+            BEXE_call_prim (sr,i,ts,tbe2)
 
           | {symdef=`SYMDEF_function _} ->
-            `BEXE_call_direct (sr,i,ts,tbe2)
+            BEXE_call_direct (sr,i,ts,tbe2)
 
           | _ -> assert false
           end
         | _ ->
         *)
-          `BEXE_call (sr,tbe1, tbe2)
+          BEXE_call (sr,tbe1, tbe2)
       )
     else
     begin
@@ -120,7 +120,7 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
             "\nwhich doesn't agree with parameter type\n" ^
             sbt syms.dfns t
           )
-      in `BEXE_call (sr,tbe1,x2)
+      in BEXE_call (sr,tbe1,x2)
     end
 
   | _ ->
@@ -137,9 +137,9 @@ let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
       | BEXPR_closure (i,ts) ->
         if check_if_parent syms i this
         then
-          `BEXE_call (sr,(p,pt), tbe2)
+          BEXE_call (sr,(p,pt), tbe2)
           (*
-          `BEXE_call_direct (sr,i, ts, tbe2)
+          BEXE_call_direct (sr,i, ts, tbe2)
           *)
         else
           clierr sr
@@ -224,14 +224,14 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     end
     ;
     match x with
-    | `EXE_comment s ->       tack (`BEXE_comment (sr,s))
-    | `EXE_label s ->         reachable := true; tack (`BEXE_label (sr,s))
-    | `EXE_goto s ->          reachable := false; tack (`BEXE_goto (sr,s))
+    | `EXE_comment s ->       tack (BEXE_comment (sr,s))
+    | `EXE_label s ->         reachable := true; tack (BEXE_label (sr,s))
+    | `EXE_goto s ->          reachable := false; tack (BEXE_goto (sr,s))
 
     | `EXE_ifgoto (e,s) ->
       let e',t = be e in
       if t = flx_bbool
-      then tack (`BEXE_ifgoto (sr,(e',t), s))
+      then tack (BEXE_ifgoto (sr,(e',t), s))
       else
         clierr (src_of_expr e)
         (
@@ -250,7 +250,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
          [t2]
       in
         (* reverse order .. *)
-        tack (`BEXE_proc_return sr);
+        tack (BEXE_proc_return sr);
         (* note cal_loop actually generates a call .. *)
         tack (cal_loop syms sr tbe1 (be2,t2) index)
 
@@ -259,7 +259,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       bind_exe  (sr,`EXE_proc_return)
 
     | `EXE_call (`AST_name (_,"axiom_check",[]), e2) ->
-       tack (`BEXE_axiom_check(sr,be e2))
+       tack (BEXE_axiom_check(sr,be e2))
 
     | `EXE_call (f',a') ->
       (*
@@ -339,7 +339,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         | _ -> clierr sr ("[bexe] svc requires variable, got " ^ id)
         end
         ;
-        tack (`BEXE_svc (sr,index))
+        tack (BEXE_svc (sr,index))
 
       | `FunctionEntry _ -> failwith "Can't svc function!"
       end
@@ -351,7 +351,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       then
         begin
           ret_type := varmap_subst syms.varmap !ret_type;
-          tack (`BEXE_proc_return sr)
+          tack (BEXE_proc_return sr)
         end
       else
         clierr sr
@@ -362,11 +362,11 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     | `EXE_halt s ->
       incr proc_return_count;
       reachable := false;
-      tack (`BEXE_halt (sr,s))
+      tack (BEXE_halt (sr,s))
 
     | `EXE_trace (v,s) ->
       incr proc_return_count;
-      tack (`BEXE_trace (sr,v,s))
+      tack (BEXE_trace (sr,v,s))
 
 
     | `EXE_fun_return e ->
@@ -377,7 +377,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       ignore(do_unify syms !ret_type t');
       ret_type := varmap_subst syms.varmap !ret_type;
       if type_match syms.counter syms.dfns !ret_type t' then
-        tack (`BEXE_fun_return (sr,(e',t')))
+        tack (BEXE_fun_return (sr,(e',t')))
       else clierr sr
         (
           "[bind_exe: fun_return ] return of  "^sbe syms.dfns bbdfns e ^":\n"^
@@ -393,7 +393,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       ignore(do_unify syms !ret_type t');
       ret_type := varmap_subst syms.varmap !ret_type;
       if type_match syms.counter syms.dfns !ret_type t' then
-        tack (`BEXE_yield (sr,(e',t')))
+        tack (BEXE_yield (sr,(e',t')))
       else
         clierr sr
         (
@@ -404,16 +404,16 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
           string_of_btypecode syms.dfns t'
         )
 
-    | `EXE_nop s ->           tack (`BEXE_nop (sr,s))
-    | `EXE_code s ->          tack (`BEXE_code (sr,s))
+    | `EXE_nop s ->           tack (BEXE_nop (sr,s))
+    | `EXE_code s ->          tack (BEXE_code (sr,s))
     | `EXE_noreturn_code s ->
       reachable := false;
-      tack (`BEXE_nonreturn_code (sr,s))
+      tack (BEXE_nonreturn_code (sr,s))
 
     | `EXE_assert e ->
       let (x,t) as e' = be e in
       if t = flx_bbool
-      then tack (`BEXE_assert (sr,e'))
+      then tack (BEXE_assert (sr,e'))
       else clierr sr
       (
         "assert requires bool argument, got " ^
@@ -426,7 +426,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         let rhst = minimise syms.counter syms.dfns rhst in
         let lhst = reduce_type lhst in
         if type_match syms.counter syms.dfns lhst rhst
-        then tack (`BEXE_init (sr,index, (e',rhst)))
+        then tack (BEXE_init (sr,index, (e',rhst)))
         else clierr sr
         (
           "[bind_exe: iinit] LHS["^s^"<"^si index^">]:\n"^
@@ -460,7 +460,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         in
         *)
         if type_match syms.counter syms.dfns lhst rhst
-        then tack (`BEXE_init (sr,index, (e',rhst)))
+        then tack (BEXE_init (sr,index, (e',rhst)))
         else clierr sr
         (
           "[bind_exe: init] LHS["^s^"<"^si index^">]:\n"^
@@ -483,7 +483,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       let lhst = minimise syms.counter syms.dfns lhst in
       let rhst = minimise syms.counter syms.dfns rhst in
       if type_match syms.counter syms.dfns lhst rhst
-      then tack (`BEXE_assign (sr,lx, rx))
+      then tack (BEXE_assign (sr,lx, rx))
       else clierr sr
       (
         "[bind_exe: assign ] Assignment "^

@@ -116,8 +116,8 @@ let verify syms bbdfns csr e =
       | Some x -> Some (aux (xsub x))
       | None -> None
       in
-      let comment = `BEXE_comment (csr,"Check " ^ id) in
-      let ax = `BEXE_assert2 (csr,axsr,precond,cond) in
+      let comment = BEXE_comment (csr,"Check " ^ id) in
+      let ax = BEXE_assert2 (csr,axsr,precond,cond) in
       (*
       print_endline ("Assertion: " ^ tsbe syms.dfns cond);
       *)
@@ -130,7 +130,7 @@ let verify syms bbdfns csr e =
 let fixup_exes syms bbdfns bexes =
   let rec aux inx outx = match inx with
   | [] -> rev outx
-  | `BEXE_axiom_check (sr,e) :: t ->
+  | BEXE_axiom_check (sr,e) :: t ->
     (*
     print_endline ("Axiom check case "  ^ sbe syms.dfns e);
     *)

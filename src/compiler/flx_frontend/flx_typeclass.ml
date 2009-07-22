@@ -542,13 +542,13 @@ let fixup_expr syms bbdfns e =
   in aux e
 
 let fixup_exe syms bbdfns exe = match exe with
-  | `BEXE_call_direct (sr,i,ts,a) ->
+  | BEXE_call_direct (sr,i,ts,a) ->
     let j,ts = fixup_typeclass_instance' syms bbdfns true i ts in
     (*
     if j <> i then print_endline "instantiate virtual ..";
     *)
     let a  = fixup_expr syms bbdfns a in
-    `BEXE_call_direct (sr,j,ts,a)
+    BEXE_call_direct (sr,j,ts,a)
   | x ->
     map_bexe id (fixup_expr syms bbdfns) id id id x
 

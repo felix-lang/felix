@@ -122,8 +122,8 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
       match inexes with
       | [] -> rev outexes
       | ((
-        `BEXE_init (_,j,y)
-        | `BEXE_assign (_, (BEXPR_name (j,_),_),y)
+        BEXE_init (_,j,y)
+        | BEXE_assign (_, (BEXPR_name (j,_),_),y)
       ) as x) :: t  when IntSet.mem j locls ->
 
         let id,_,_,_ = Hashtbl.find bbdfns j in
@@ -160,7 +160,7 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
         let setcnt = ref (if IntSet.mem j pset then 2 else 1) in
         let sets exe =
           match exe with
-           | `BEXE_init (_,k,_) when j = k -> incr setcnt
+           | BEXE_init (_,k,_) when j = k -> incr setcnt
            | _ -> ()
         in
         iter sets t; iter sets outexes;
@@ -252,30 +252,30 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
           *)
           if !subs then
           match exe with
-          | `BEXE_axiom_check _ -> assert false
+          | BEXE_axiom_check _ -> assert false
 
           (* terminate substitution, return unmodified instr *)
-          | `BEXE_goto _
-          | `BEXE_proc_return _
-          | `BEXE_label _
+          | BEXE_goto _
+          | BEXE_proc_return _
+          | BEXE_label _
              -> subs:= false; exe
 
           (* return unmodified instr *)
-          | `BEXE_begin
-          | `BEXE_end
-          | `BEXE_nop _
-          | `BEXE_code _
-          | `BEXE_nonreturn_code _
-          | `BEXE_comment _
-          | `BEXE_halt _
-          | `BEXE_trace _
+          | BEXE_begin
+          | BEXE_end
+          | BEXE_nop _
+          | BEXE_code _
+          | BEXE_nonreturn_code _
+          | BEXE_comment _
+          | BEXE_halt _
+          | BEXE_trace _
              -> exe
 
           (* conditional, check if y depends on init (tail rec) *)
 
-          | `BEXE_assign (_,(BEXPR_name (k,_),_),_)
-          | `BEXE_svc (_,k)
-          | `BEXE_init (_,k,_) ->
+          | BEXE_assign (_,(BEXPR_name (k,_),_),_)
+          | BEXE_svc (_,k)
+          | BEXE_init (_,k,_) ->
              (* an assignment a,b=b,a is turned into
                 tmp = b,a;
                 a = tmp.(0);
@@ -297,22 +297,22 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
              if !subs then elimi exe else exe
 
           (* return modified instr *)
-          | `BEXE_ifgoto _
-          | `BEXE_assert _
-          | `BEXE_assert2 _
+          | BEXE_ifgoto _
+          | BEXE_assert _
+          | BEXE_assert2 _
              -> elimi exe
 
           (* terminate substitution, return modified instr *)
-          | `BEXE_assign _
-          | `BEXE_fun_return _
-          | `BEXE_yield _
-          | `BEXE_jump _
-          | `BEXE_jump_direct _
-          | `BEXE_loop _
-          | `BEXE_call_prim _
-          | `BEXE_call _
-          | `BEXE_call_direct _
-          | `BEXE_call_stack _
+          | BEXE_assign _
+          | BEXE_fun_return _
+          | BEXE_yield _
+          | BEXE_jump _
+          | BEXE_jump_direct _
+          | BEXE_loop _
+          | BEXE_call_prim _
+          | BEXE_call _
+          | BEXE_call_direct _
+          | BEXE_call_stack _
              -> subs := false; elimi exe
           else exe
           )

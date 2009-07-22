@@ -1897,91 +1897,91 @@ and string_of_bexe dfns bbdfns level s =
   let se e = string_of_bound_expression dfns bbdfns e in
   let sid n = bound_name_of_bindex dfns bbdfns n in
   match s with
-  | `BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
+  | BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
 
-  | `BEXE_assert (_,e) -> spc ^ "assert " ^ se e ^ ";"
-  | `BEXE_assert2 (_,_,e1,e2) -> spc ^ "assert2 " ^
+  | BEXE_assert (_,e) -> spc ^ "assert " ^ se e ^ ";"
+  | BEXE_assert2 (_,_,e1,e2) -> spc ^ "assert2 " ^
     (match e1 with Some e1 -> se e1 ^ " implies " | None -> "") ^
     se e2^";"
 
-  | `BEXE_axiom_check (_,e) -> spc ^ "axiom_check " ^ se e ^ ";"
+  | BEXE_axiom_check (_,e) -> spc ^ "axiom_check " ^ se e ^ ";"
 
-  | `BEXE_halt (_,s) -> spc ^ "halt " ^ s ^ ";"
-  | `BEXE_trace(_,v,s) -> spc ^ "trace " ^ s ^ ";"
+  | BEXE_halt (_,s) -> spc ^ "halt " ^ s ^ ";"
+  | BEXE_trace(_,v,s) -> spc ^ "trace " ^ s ^ ";"
 
-  | `BEXE_ifgoto (_,e,s) -> spc ^
+  | BEXE_ifgoto (_,e,s) -> spc ^
      "if(" ^ se e ^ ")goto " ^ s ^ ";"
 
-  | `BEXE_label (_,s) -> s ^ ":"
+  | BEXE_label (_,s) -> s ^ ":"
 
-  | `BEXE_comment (_,s) -> spc ^
+  | BEXE_comment (_,s) -> spc ^
     "// " ^ s
 
-  | `BEXE_call (_,p,a) -> spc ^
+  | BEXE_call (_,p,a) -> spc ^
     "call " ^
     se p ^ " " ^
     se a ^ ";"
 
-  | `BEXE_call_direct (_,i,ts,a) -> spc ^
+  | BEXE_call_direct (_,i,ts,a) -> spc ^
     "directcall " ^
     sid i ^ print_inst dfns ts ^ " " ^
     se a ^ ";"
 
-  | `BEXE_jump_direct (_,i,ts,a) -> spc ^
+  | BEXE_jump_direct (_,i,ts,a) -> spc ^
     "direct tail call " ^
     sid i ^ print_inst dfns ts ^ " " ^
     se a ^ ";"
 
-  | `BEXE_call_stack (_,i,ts,a) -> spc ^
+  | BEXE_call_stack (_,i,ts,a) -> spc ^
     "stackcall " ^
     sid i ^ print_inst dfns ts ^ " " ^
     se a ^ ";"
 
-  | `BEXE_call_prim (_,i,ts,a) -> spc ^
+  | BEXE_call_prim (_,i,ts,a) -> spc ^
     "primcall " ^
     sid i ^ print_inst dfns ts ^ " " ^
     se a ^ ";"
 
-  | `BEXE_jump (_,p,a) -> spc ^
+  | BEXE_jump (_,p,a) -> spc ^
     "tail call " ^
     se p ^ " " ^
     se a ^ ";"
 
-  | `BEXE_loop (_,p,a) -> spc ^
+  | BEXE_loop (_,p,a) -> spc ^
     "loop<" ^
     si p ^ "> " ^
     se a ^ ";"
 
-  | `BEXE_svc (_,v) -> spc ^
+  | BEXE_svc (_,v) -> spc ^
     "_svc " ^ sid v
 
-  | `BEXE_fun_return (_,x) -> spc ^
+  | BEXE_fun_return (_,x) -> spc ^
     "return " ^ se x ^ ";"
 
-  | `BEXE_yield (_,x) -> spc ^
+  | BEXE_yield (_,x) -> spc ^
     "yield " ^ se x ^ ";"
 
-  | `BEXE_proc_return _ -> spc ^
+  | BEXE_proc_return _ -> spc ^
     "return;"
 
-  | `BEXE_nop (_,s) -> spc ^
+  | BEXE_nop (_,s) -> spc ^
     "/*" ^ s ^ "*/"
 
-  | `BEXE_code (_,s) -> spc ^
+  | BEXE_code (_,s) -> spc ^
     "code " ^ string_of_code_spec s
 
-  | `BEXE_nonreturn_code (_,s) -> spc ^
+  | BEXE_nonreturn_code (_,s) -> spc ^
     "non_return_code " ^ string_of_code_spec s
 
-  | `BEXE_assign (_,l,r) -> spc ^
+  | BEXE_assign (_,l,r) -> spc ^
     se l ^ " = " ^ se r ^ ";"
 
-  | `BEXE_init (_,l,r) -> spc ^
+  | BEXE_init (_,l,r) -> spc ^
     sid l ^ " := " ^ se r ^ ";"
 
-  | `BEXE_begin -> "{//begin"
+  | BEXE_begin -> "{//begin"
 
-  | `BEXE_end -> "}//end"
+  | BEXE_end -> "}//end"
 
 
 and string_of_dcl level name seq vs (s:dcl_t) =

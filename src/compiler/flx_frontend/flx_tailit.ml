@@ -88,9 +88,9 @@ let rec check_ahead i n ls res : (int * int * btypecode_t) list =
   if n = 0 then rev res else match ls with
   | [] -> []
   | h :: t ->  match h with
-  | `BEXE_init (_,k, ( BEXPR_get_n (p,(BEXPR_name (j,[]),_)),typ))
+  | BEXE_init (_,k, ( BEXPR_get_n (p,(BEXPR_name (j,[]),_)),typ))
 
-  | `BEXE_assign (_,(BEXPR_name (k,[]),_), ( BEXPR_get_n (p,(BEXPR_name (j,[]),_)),typ))
+  | BEXE_assign (_,(BEXPR_name (k,[]),_), ( BEXPR_get_n (p,(BEXPR_name (j,[]),_)),typ))
     when i = j -> check_ahead i (n-1) t ((k,p,typ)::res)
 
   | _ -> []
@@ -213,15 +213,15 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
     match length ps with
     | 0 ->
       [
-        `BEXE_goto (sr,start_label);
-        `BEXE_comment (sr,"tail rec call (0)")
+        BEXE_goto (sr,start_label);
+        BEXE_comment (sr,"tail rec call (0)")
       ]
     | 1 ->
       let {pindex=k} = hd ps in
       [
-        `BEXE_goto (sr,start_label);
-        `BEXE_init (sr,k,e);
-        `BEXE_comment (sr,"tail rec call (1)")
+        BEXE_goto (sr,start_label);
+        BEXE_init (sr,k,e);
+        BEXE_comment (sr,"tail rec call (1)")
       ]
     | _ ->
       begin match e with
@@ -240,7 +240,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
         let tmps,exes = Flx_passign.passign syms bbdfns pinits ts' sr in
         parameters := tmps @ !parameters;
         let result = ref exes in
-        result :=  `BEXE_goto (sr,start_label) :: !result;
+        result :=  BEXE_goto (sr,start_label) :: !result;
         (*
           print_endline "Tail opt code is:";
           iter (fun x -> print_endline (string_of_bexe syms.dfns 0 x) ) (rev !result);
@@ -264,19 +264,19 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
           (fun {pindex=ix; ptyp=prjt} ->
             let prj = reduce_tbexpr bbdfns (BEXPR_get_n (!n,p),prjt) in
             incr n;
-            `BEXE_init (sr,ix,prj)
+            BEXE_init (sr,ix,prj)
           )
           ps
         in
         [
-          `BEXE_goto (sr,start_label);
+          BEXE_goto (sr,start_label);
         ]
         @
         param_decode
         @
         [
-          `BEXE_init (sr,pix,e);
-          `BEXE_comment (sr,"tail rec call (2)")
+          BEXE_init (sr,pix,e);
+          BEXE_comment (sr,"tail rec call (2)")
         ]
       end
   in
@@ -314,7 +314,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
   let asgn2 i t ls =
     map2
     (fun (e,t' as x) j ->
-      `BEXE_assign
+      BEXE_assign
       (
         sr,
         (BEXPR_get_n (j,(BEXPR_name (i,ts'),t)),t'),
@@ -424,9 +424,9 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       end
     in
     match inp with
-    | (`BEXE_call_direct (sr,i,ts,a)) as x :: tail  -> assert false
+    | (BEXE_call_direct (sr,i,ts,a)) as x :: tail  -> assert false
 
-    | (`BEXE_call (sr,(BEXPR_closure(i,ts),_),a)) as x :: tail
+    | (BEXE_call (sr,(BEXPR_closure(i,ts),_),a)) as x :: tail
       when (i,ts)=(this,ts') && Flx_cflow.tailable exes [] tail
       ->
       if can_loop ()
@@ -444,9 +444,9 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
         aux tail (x::res)
       end
 
-    | `BEXE_fun_return (sr,(BEXPR_apply_direct(i,ts,a),_)) :: tail -> assert false
+    | BEXE_fun_return (sr,(BEXPR_apply_direct(i,ts,a),_)) :: tail -> assert false
 
-    | `BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) :: tail
+    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) :: tail
       when (i,ts)=(this,ts')
       ->
        (*
@@ -456,7 +456,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
        let res = cal_tail_call a @ res
        in aux tail res
 
-    | `BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) as x :: tail
+    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) as x :: tail
       ->
       (*
       print_endline ("--> NONSELF? Tail rec apply " ^ si i);
@@ -465,7 +465,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       aux tail (x::res)
 
 
-    | (`BEXE_call(sr,(BEXPR_closure (i,ts),_),a)) as x :: tail  ->
+    | (BEXE_call(sr,(BEXPR_closure (i,ts),_),a)) as x :: tail  ->
       (*
       print_endline ("Untailed call " ^ si i ^ "["^catmap "," (sbt syms.dfns) ts^"]");
       print_endline ("This = " ^ si this);
@@ -477,15 +477,15 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       aux tail (x::res)
 
     | [] -> rev res (* forward order *)
-    | `BEXE_init (sr,i,(BEXPR_tuple ls,t)) as h :: tail
+    | BEXE_init (sr,i,(BEXPR_tuple ls,t)) as h :: tail
       ->
         cal_par i t ls h tail
 
-    | (`BEXE_assign (sr,(BEXPR_name (i,[]),_),(BEXPR_tuple ls,t)) as h) :: tail
+    | (BEXE_assign (sr,(BEXPR_name (i,[]),_),(BEXPR_tuple ls,t)) as h) :: tail
       ->
        cal_par i t ls h tail
 
-    | (`BEXE_assign (sr,x,(BEXPR_tuple ls,t)) as h) :: tail
+    | (BEXE_assign (sr,x,(BEXPR_tuple ls,t)) as h) :: tail
       ->
       let rec unproj e = match map_tbexpr ident unproj ident e with
       | BEXPR_get_n (k,(BEXPR_tuple ls,_)),_ -> nth ls k
@@ -562,10 +562,10 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
         | x -> x
         in
         let undo_st st = match st with
-        | `BEXE_init (sr,j,e) when j >= pbase && j < pbase + n ->
+        | BEXE_init (sr,j,e) when j >= pbase && j < pbase + n ->
           let k = j - pbase in
           let _,t' = nth ls k in
-          `BEXE_assign (sr,(BEXPR_get_n (k,x),t'),undo_expr e)
+          BEXE_assign (sr,(BEXPR_get_n (k,x),t'),undo_expr e)
 
         | x -> map_bexe ident undo_expr ident ident ident x
         in
@@ -606,7 +606,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       (* return with posssible label at start *)
       let exes =
         if !jump_done
-        then `BEXE_label (sr,start_label) :: exes
+        then BEXE_label (sr,start_label) :: exes
         else exes
       in
         (*

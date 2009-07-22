@@ -78,7 +78,7 @@ prevent gross bloat.
 let mk_label_map syms exes =
   let h = Hashtbl.create 97 in
   let aux = function
-  | `BEXE_label (sr,s) ->
+  | BEXE_label (sr,s) ->
     let n = !(syms.counter) in
     incr syms.counter;
     let s' =  "_" ^ si n in
@@ -160,25 +160,25 @@ let call_lifting syms (uses,child_map,bbdfns) caller caller_vs callee ts a argum
     let body2 = ref [] in
     let n = !(syms.counter) in incr (syms.counter);
     let end_label = "_end_call_lift_" ^ si n in
-    body2 := `BEXE_label (sr,end_label) :: !body2;
+    body2 := BEXE_label (sr,end_label) :: !body2;
     iter
       (function
-      | `BEXE_fun_return (sr,e) ->
+      | BEXE_fun_return (sr,e) ->
         (* NOTE REVERSED ORDER *)
         let call_instr =
           (
           (*
           match e with
           | BEXPR_closure (i,ts),_ ->
-            `BEXE_call_direct (sr,i,ts,argument)
+            BEXE_call_direct (sr,i,ts,argument)
           | _ ->
           *)
-            `BEXE_call (sr,e,argument)
+            BEXE_call (sr,e,argument)
           )
         in
-        body2 := `BEXE_goto (sr,end_label) :: !body2;
+        body2 := BEXE_goto (sr,end_label) :: !body2;
         body2 := call_instr :: !body2;
-      | `BEXE_yield _ ->
+      | BEXE_yield _ ->
         syserr sr "Attempt to inline generator containing a yield"
       | x -> body2 := x::!body2
       )
@@ -280,20 +280,20 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
     let end_label_used = ref false in
     iter
       (function
-      | `BEXE_fun_return (sr,((_,t') as e)) ->
+      | BEXE_fun_return (sr,((_,t') as e)) ->
         t := Some t';
         if not (!body2 == []) then begin
-          body2 := `BEXE_goto (sr,end_label) :: !body2;
+          body2 := BEXE_goto (sr,end_label) :: !body2;
           end_label_used := true
         end
         ;
-        let call_instr = `BEXE_init (sr,varindex,e) in
+        let call_instr = BEXE_init (sr,varindex,e) in
         (*
         print_endline ("Replacing return with init: " ^ string_of_bexe syms.dfns bbdfns 0 call_instr);
         *)
         body2 := call_instr :: !body2;
 
-      | `BEXE_yield _ ->
+      | BEXE_yield _ ->
         syserr sr "Attempt to inline generator with a yield"
 
       | x -> body2 := x::!body2
@@ -302,7 +302,7 @@ let inline_function syms (uses,child_map,bbdfns) caller caller_vs callee ts a va
     ;
     (* Ugghhh *)
     if !end_label_used then
-      body2 := !body2 @ [`BEXE_label (sr,end_label)]
+      body2 := !body2 @ [BEXE_label (sr,end_label)]
     ;
     (*
     print_endline (
@@ -332,82 +332,82 @@ let expand_exe syms bbdfns u exe =
     print_endline ("EXPAND EXE " ^ string_of_bexe syms.dfns bbdfns 0 exe);
     *)
     match exe with
-    | `BEXE_axiom_check _ -> assert false
-    | `BEXE_call_prim (sr,i,ts,e2) -> assert false
+    | BEXE_axiom_check _ -> assert false
+    | BEXE_call_prim (sr,i,ts,e2) -> assert false
       (*
       let e,xs = u sr e2 in
-      `BEXE_call_prim (sr,i,ts,e) :: xs
+      BEXE_call_prim (sr,i,ts,e) :: xs
       *)
 
-    | `BEXE_call_stack (sr,i,ts,e2) -> assert false
+    | BEXE_call_stack (sr,i,ts,e2) -> assert false
 
-    | `BEXE_call_direct (sr,i,ts,e2) -> assert false
+    | BEXE_call_direct (sr,i,ts,e2) -> assert false
       (*
       let e,xs = u sr e2 in
-      `BEXE_call_direct (sr,i,ts,e) :: xs
+      BEXE_call_direct (sr,i,ts,e) :: xs
       *)
 
-    | `BEXE_jump_direct (sr,i,ts,e2) -> assert false
+    | BEXE_jump_direct (sr,i,ts,e2) -> assert false
       (*
       let e,xs = u sr e2 in
-      `BEXE_jump_direct (sr,i,ts,e) :: xs
+      BEXE_jump_direct (sr,i,ts,e) :: xs
       *)
 
-    | `BEXE_assign (sr,e1,e2) ->
+    | BEXE_assign (sr,e1,e2) ->
       let e1,xs1 = u sr e1 in
       let e2,xs2 = u sr e2 in
-      `BEXE_assign (sr,e1,e2) :: xs2 @ xs1
+      BEXE_assign (sr,e1,e2) :: xs2 @ xs1
 
-    | `BEXE_assert (sr,e) ->
+    | BEXE_assert (sr,e) ->
       let e,xs = u sr e in
-      `BEXE_assert (sr,e) :: xs
+      BEXE_assert (sr,e) :: xs
 
-    | `BEXE_assert2 (sr,sr2,e1,e2) ->
+    | BEXE_assert2 (sr,sr2,e1,e2) ->
       let e1,xs1 =
         match e1 with Some e -> let a,b = u sr e in Some a,b
         | None -> None,[]
       in
       let e2,xs2 = u sr e2 in
-      `BEXE_assert2 (sr,sr2,e1,e2) :: xs2 @ xs1
+      BEXE_assert2 (sr,sr2,e1,e2) :: xs2 @ xs1
 
     (* preserve call lift pattern ??*)
-    | `BEXE_call (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e1),t),e2) ->
+    | BEXE_call (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e1),t),e2) ->
       let e1,xs1 = u sr e1 in
       let e2,xs2 = u sr e2 in
-      `BEXE_call (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e1),t),e2) :: xs2 @ xs1
+      BEXE_call (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e1),t),e2) :: xs2 @ xs1
 
-    | `BEXE_call (sr,e1,e2) ->
+    | BEXE_call (sr,e1,e2) ->
       let e1,xs1 = u sr e1 in
       let e2,xs2 = u sr e2 in
-      `BEXE_call (sr,e1,e2) :: xs2 @ xs1
+      BEXE_call (sr,e1,e2) :: xs2 @ xs1
 
-    | `BEXE_jump (sr,e1,e2) -> assert false
+    | BEXE_jump (sr,e1,e2) -> assert false
 
-    | `BEXE_loop (sr,i,e) -> assert false
+    | BEXE_loop (sr,i,e) -> assert false
       (*
       let e,xs = u sr e in
-      `BEXE_loop (sr,i,e) :: xs
+      BEXE_loop (sr,i,e) :: xs
       *)
 
-    | `BEXE_ifgoto (sr,e,lab) ->
+    | BEXE_ifgoto (sr,e,lab) ->
       let e,xs = u sr e in
-      `BEXE_ifgoto (sr,e,lab) :: xs
+      BEXE_ifgoto (sr,e,lab) :: xs
 
     (* preserve tail call pattern -- used by both
        tail-rec eliminator
        and by call lifter (which converts returns to calls)
     *)
-    | `BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e),t)) ->
+    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e),t)) ->
       let e,xs = u sr e in
-      `BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e),t)) :: xs
+      BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e),t)) :: xs
 
-    | `BEXE_fun_return (sr,e) ->
+    | BEXE_fun_return (sr,e) ->
       let e,xs = u sr e in
-      `BEXE_fun_return (sr,e) :: xs
+      BEXE_fun_return (sr,e) :: xs
 
-    | `BEXE_yield (sr,e) ->
+    | BEXE_yield (sr,e) ->
       let e,xs = u sr e in
-      `BEXE_yield (sr,e) :: xs
+      BEXE_yield (sr,e) :: xs
 
     (* This case has to be handled specially, in case we already
        have a simplified form, and the unravelling introduces
@@ -424,30 +424,30 @@ let expand_exe syms bbdfns u exe =
        a duplicate of this check elsewhere ..
     *)
 
-    | `BEXE_init (sr,i,(BEXPR_apply((BEXPR_closure (j,ts),t'),e),t))
+    | BEXE_init (sr,i,(BEXPR_apply((BEXPR_closure (j,ts),t'),e),t))
       (*
       when is_generator bbdfns j
       *)
       ->
       let e,xs = u sr e in
-      `BEXE_init (sr,i,(BEXPR_apply((BEXPR_closure (j,ts),t'),e),t)) :: xs
+      BEXE_init (sr,i,(BEXPR_apply((BEXPR_closure (j,ts),t'),e),t)) :: xs
 
-    | `BEXE_init (sr,i,e) ->
+    | BEXE_init (sr,i,e) ->
       let e,xs = u sr e in
-      `BEXE_init (sr,i,e) :: xs
+      BEXE_init (sr,i,e) :: xs
 
-    | `BEXE_svc _
-    | `BEXE_label _
-    | `BEXE_goto _
-    | `BEXE_code _
-    | `BEXE_nonreturn_code _
-    | `BEXE_proc_return _
-    | `BEXE_comment _
-    | `BEXE_nop _
-    | `BEXE_halt _
-    | `BEXE_trace _
-    | `BEXE_begin
-    | `BEXE_end
+    | BEXE_svc _
+    | BEXE_label _
+    | BEXE_goto _
+    | BEXE_code _
+    | BEXE_nonreturn_code _
+    | BEXE_proc_return _
+    | BEXE_comment _
+    | BEXE_nop _
+    | BEXE_halt _
+    | BEXE_trace _
+    | BEXE_begin
+    | BEXE_end
       -> [exe]
   in
     let xs = rev xs in
@@ -804,7 +804,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller hic exclude
           Hashtbl.add bbdfns urv (urvid,Some caller,sr,entry);
 
           (* set variable to function appliction *)
-          let cll = `BEXE_init (sr,urv,e) in
+          let cll = BEXE_init (sr,urv,e) in
           exes' := cll :: !exes';
 
 
@@ -825,7 +825,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller hic exclude
           Hashtbl.add bbdfns urv (urvid,Some caller,sr,entry);
 
           (* set variable to function appliction *)
-          let cll = `BEXE_init (sr,urv,e) in
+          let cll = BEXE_init (sr,urv,e) in
           exes' := cll :: !exes';
 
 
@@ -923,7 +923,7 @@ let rec special_inline syms (uses,child_map,bbdfns) caller_vs caller hic exclude
                     To do this right we need to see a double application.
                   *)
                   | [] -> assert false
-                  | `BEXE_init (sr,j,e') :: tail ->
+                  | BEXE_init (sr,j,e') :: tail ->
                     assert (j==urv);
                     (*
                     print_endline "DETECTED SPECIAL CASE";
@@ -1053,9 +1053,9 @@ and heavy_inline_calls
     *)
     iter (fun exe ->
     match exe with
-    | `BEXE_call (sr,(BEXPR_closure(callee,ts),clt),argument)
+    | BEXE_call (sr,(BEXPR_closure(callee,ts),clt),argument)
     (*
-    | `BEXE_call_direct (sr,callee,ts,argument)
+    | BEXE_call_direct (sr,callee,ts,argument)
     *)
       when not (mem callee excludes)
       ->
@@ -1084,12 +1084,12 @@ and heavy_inline_calls
       | _ ->  exes' := exe :: !exes'
       end
 
-    | `BEXE_call (sr,(BEXPR_apply_stack (callee,ts,a),_),argument)
-    | `BEXE_call (sr,(BEXPR_apply_prim (callee,ts,a),_),argument)
-    | `BEXE_call (sr,(BEXPR_apply_direct (callee,ts,a),_),argument)
+    | BEXE_call (sr,(BEXPR_apply_stack (callee,ts,a),_),argument)
+    | BEXE_call (sr,(BEXPR_apply_prim (callee,ts,a),_),argument)
+    | BEXE_call (sr,(BEXPR_apply_direct (callee,ts,a),_),argument)
       -> assert false
 
-    | `BEXE_call (sr,(BEXPR_apply((BEXPR_closure (callee,ts),_),a),_),argument)
+    | BEXE_call (sr,(BEXPR_apply((BEXPR_closure (callee,ts),_),a),_),argument)
       when not (mem callee excludes)
       ->
       (*
@@ -1119,12 +1119,12 @@ and heavy_inline_calls
       | _ -> exes' := exe :: !exes'
       end
 
-    | `BEXE_init (sr,i,(BEXPR_apply_stack (callee,ts,a),_))
-    | `BEXE_init (sr,i,(BEXPR_apply_prim (callee,ts,a),_))
-    | `BEXE_init (sr,i,(BEXPR_apply_direct (callee,ts,a),_))
+    | BEXE_init (sr,i,(BEXPR_apply_stack (callee,ts,a),_))
+    | BEXE_init (sr,i,(BEXPR_apply_prim (callee,ts,a),_))
+    | BEXE_init (sr,i,(BEXPR_apply_direct (callee,ts,a),_))
       -> assert false
 
-    | `BEXE_init (sr,i,(BEXPR_apply ((BEXPR_closure(callee,ts),_),a),_))
+    | BEXE_init (sr,i,(BEXPR_apply ((BEXPR_closure(callee,ts),_),a),_))
       when not (mem callee excludes)  ->
       let can_inline,callee,ts = virtual_check syms bbdfns sr callee ts in
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;
@@ -1156,12 +1156,12 @@ and heavy_inline_calls
       | _ -> exes' := exe :: !exes'
       end
 
-    | `BEXE_fun_return (sr,(BEXPR_apply_direct (callee,ts,a),_))
-    | `BEXE_fun_return (sr,(BEXPR_apply_stack (callee,ts,a),_))
-    | `BEXE_fun_return (sr,(BEXPR_apply_prim (callee,ts,a),_))
+    | BEXE_fun_return (sr,(BEXPR_apply_direct (callee,ts,a),_))
+    | BEXE_fun_return (sr,(BEXPR_apply_stack (callee,ts,a),_))
+    | BEXE_fun_return (sr,(BEXPR_apply_prim (callee,ts,a),_))
      -> assert false
 
-    | `BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(callee,ts),_),a),_))
+    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(callee,ts),_),a),_))
       when not (mem callee excludes)  ->
       let can_inline,callee,ts = virtual_check syms bbdfns sr callee ts in
       heavily_inline_bbdcl syms (uses,child_map,bbdfns) (callee::excludes) callee;

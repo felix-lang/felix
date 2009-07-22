@@ -60,12 +60,12 @@ let exe_uses_gc syms bbdfns exe =
   print_endline ("[exe_uses_gc] Exe = " ^ string_of_bexe syms.dfns 0 exe);
   *)
   match exe with
-  | `BEXE_jump_direct _
-  | `BEXE_call_direct _
+  | BEXE_jump_direct _
+  | BEXE_call_direct _
     -> raise Not_found
 
   (* this test is used to trap use of gc by primitives *)
-  | `BEXE_call_prim (sr,i,ts,a) ->
+  | BEXE_call_prim (sr,i,ts,a) ->
     let id,parent,sr,entry = Hashtbl.find bbdfns i in
     begin match entry with
     | `BBDCL_callback (props,vs,ps,_,_,`BTYP_void,rqs,_)
@@ -98,7 +98,7 @@ let exes_use_gc syms bbdfns exes =
 
 let exe_uses_yield exe =
   match exe with
-  | `BEXE_yield _ -> raise Not_found
+  | BEXE_yield _ -> raise Not_found
   | _ -> ()
 
 let exes_use_yield exes =
