@@ -123,7 +123,7 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
       | [] -> rev outexes
       | ((
         `BEXE_init (_,j,y)
-        | `BEXE_assign (_, (`BEXPR_name (j,_),_),y)
+        | `BEXE_assign (_, (BEXPR_name (j,_),_),y)
       ) as x) :: t  when IntSet.mem j locls ->
 
         let id,_,_,_ = Hashtbl.find bbdfns j in
@@ -217,7 +217,7 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
         let rplcnt = ref 1 in
         let subi,rplimit =
           match y with
-          | `BEXPR_tuple ys,_ ->
+          | BEXPR_tuple ys,_ ->
             (*
             print_endline "Tuple init found";
             print_endline ("initialiser y =" ^ sbe syms.dfns bbdfns y);
@@ -225,7 +225,7 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
             *)
             let rec subi j ys e =
               match map_tbexpr ident (subi j ys) ident e with
-              | `BEXPR_get_n (k, (`BEXPR_name(i,_),_) ),_
+              | BEXPR_get_n (k, (BEXPR_name(i,_),_) ),_
                 when j = i ->
                 if syms.compiler_options.print_flag then
                 print_endline ("[flx_fold_vars: tuple init] Replacing " ^ sbe syms.dfns bbdfns e ^
@@ -237,7 +237,7 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
           | _ ->
             let rec subi j y e =
               match map_tbexpr ident (subi j y) ident e with
-              | `BEXPR_name (i,_),_ when j = i -> incr rplcnt; y
+              | BEXPR_name (i,_),_ when j = i -> incr rplcnt; y
               | x -> x
             in subi j y, 2 (* take init into account *)
         in
@@ -273,7 +273,7 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
 
           (* conditional, check if y depends on init (tail rec) *)
 
-          | `BEXE_assign (_,(`BEXPR_name (k,_),_),_)
+          | `BEXE_assign (_,(BEXPR_name (k,_),_),_)
           | `BEXE_svc (_,k)
           | `BEXE_init (_,k,_) ->
              (* an assignment a,b=b,a is turned into

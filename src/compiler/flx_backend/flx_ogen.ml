@@ -3,6 +3,7 @@ open Flx_list
 open Flx_mtypes2
 open Flx_name
 open Flx_unify
+open Flx_types
 open Flx_typing
 open List
 open Flx_print
@@ -316,7 +317,7 @@ let id x = ()
 
 let scan_bexpr syms allocable_types e : unit =
   let rec aux e = match e with
-  | `BEXPR_new ((_,t) as x),_ ->
+  | BEXPR_new ((_,t) as x),_ ->
     let t = reduce_type t in
     (*
     print_endline ("FOUND A NEW " ^ sbt syms.dfns t);

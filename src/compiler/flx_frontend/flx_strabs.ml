@@ -37,9 +37,9 @@ let isident bbdfns i = match Hashtbl.find bbdfns i with
 let fixexpr bbdfns e : tbexpr_t =
   let rec aux e =
     match map_tbexpr id aux (fixtype bbdfns) e with
-    | `BEXPR_apply ( (`BEXPR_closure(i,_),_),a),_
-    | `BEXPR_apply_direct (i,_,a),_
-    | `BEXPR_apply_prim (i,_,a),_
+    | BEXPR_apply ( (BEXPR_closure(i,_),_),a),_
+    | BEXPR_apply_direct (i,_,a),_
+    | BEXPR_apply_prim (i,_,a),_
       when isident bbdfns i -> a
     | x -> x
   in aux e

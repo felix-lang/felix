@@ -511,16 +511,16 @@ let fixup_expr syms bbdfns e =
   print_endline ("Check expr " ^ sbe syms.dfns e);
   *)
   let rec aux e =  match map_tbexpr id aux id e with
-  | `BEXPR_apply_direct (i,ts,a),t ->
+  | BEXPR_apply_direct (i,ts,a),t ->
     let a = aux a in
     let j,ts = (* print_endline ("Check apply direct " ^ si i);  *)
       fixup_typeclass_instance' syms bbdfns true i ts in
     (*
     if j <> i then print_endline ("[direct] instantiate virtual as " ^ si j);
     *)
-    `BEXPR_apply_direct (j,ts,a),t
+    BEXPR_apply_direct (j,ts,a),t
 
-  | `BEXPR_apply_prim (i,ts,a),t ->
+  | BEXPR_apply_prim (i,ts,a),t ->
     let a = aux a in
     let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]"); *)
       fixup_typeclass_instance' syms bbdfns true i ts in
@@ -531,12 +531,12 @@ let fixup_expr syms bbdfns e =
       )
     ;
     *)
-    `BEXPR_apply_direct (j,ts,a),t
+    BEXPR_apply_direct (j,ts,a),t
 
-  | `BEXPR_name (i,ts),t ->
+  | BEXPR_name (i,ts),t ->
     let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]"); *)
       fixup_typeclass_instance' syms bbdfns true i ts in
-    `BEXPR_name (j,ts),t
+    BEXPR_name (j,ts),t
 
   | x -> x
   in aux e

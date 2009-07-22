@@ -378,8 +378,8 @@ try
 
 
   let rec lvof x = match x with
-    | `BEXPR_name (i,_),_ -> i
-    | `BEXPR_get_n (_,e),_ -> lvof e
+    | BEXPR_name (i,_),_ -> i
+    | BEXPR_get_n (_,e),_ -> lvof e
     | _ -> 0 (* assume 0 isn't the index of any variable *)
   in
   let elim_init maybe_unused exes =

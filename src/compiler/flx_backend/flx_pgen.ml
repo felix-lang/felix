@@ -64,7 +64,7 @@ let gen_prim_call
   match arg,argt with
 
   (* the argument is explicitly a tuple *)
-  | (`BEXPR_tuple es,_) ->
+  | (BEXPR_tuple es,_) ->
     let ess =
       map
       (fun e->
@@ -73,7 +73,7 @@ let gen_prim_call
           they CAN be passed as subcomponents though .. but they can't
           be generated .. we need to fix this!
         *)
-        | `BEXPR_tuple [],_ ->
+        | BEXPR_tuple [],_ ->
           (*
           print_endline "Stripping unit";
           *)
@@ -100,7 +100,7 @@ let gen_prim_call
     let typs = map rt typs in
     let es =
       map2
-      (fun i t -> `BEXPR_get_n (i,x),t)
+      (fun i t -> BEXPR_get_n (i,x),t)
       (nlist n) typs
     in
     let ess = map (ge sr) es in
@@ -113,7 +113,7 @@ let gen_prim_call
     let typs = map (fun _ -> rt t) (nlist n) in
     let es =
       map
-      (fun i -> `BEXPR_get_n (i,x),t)
+      (fun i -> BEXPR_get_n (i,x),t)
       (nlist n)
     in
     let ess = map (ge sr) es in

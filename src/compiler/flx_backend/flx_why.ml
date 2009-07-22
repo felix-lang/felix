@@ -75,35 +75,35 @@ let isbool2 t =
 let rec why_expr syms bbdfns (e: tbexpr_t) =
   let ee e = why_expr syms bbdfns e in
   match e with
-  | `BEXPR_apply ((`BEXPR_closure (i,ts),_),b),_ ->
+  | BEXPR_apply ((BEXPR_closure (i,ts),_),b),_ ->
     let id = getname syms bbdfns i in
     id ^ "_" ^ si i ^ "(" ^
     (
       match b with
-      | `BEXPR_tuple [],_ -> "void"
-      | `BEXPR_tuple ls,_ -> catmap ", " ee ls
+      | BEXPR_tuple [],_ -> "void"
+      | BEXPR_tuple ls,_ -> catmap ", " ee ls
       | x -> ee x
     ) ^
     ")"
 
 
-  | `BEXPR_apply (a,b),_ ->
+  | BEXPR_apply (a,b),_ ->
      "apply(" ^ ee a ^ "," ^ ee b ^")"
 
   (* this probably isn't right, ignoring ts *)
-  | `BEXPR_closure (i,ts),_ ->
+  | BEXPR_closure (i,ts),_ ->
     let id = getname syms bbdfns i in
     id ^ "_" ^ si i
 
   (* this probably isn't right, ignoring ts *)
-  | `BEXPR_name (i,ts),_ ->
+  | BEXPR_name (i,ts),_ ->
     let id = getname syms bbdfns i in
     id ^ "_" ^ si i
 
-  | `BEXPR_tuple ls,_ ->
+  | BEXPR_tuple ls,_ ->
     "(" ^ catmap ", " ee ls ^ ")"
 
-  | `BEXPR_literal x,_ -> begin match x with
+  | BEXPR_literal x,_ -> begin match x with
     | `AST_int (s,j) -> let j = Big_int.int_of_big_int j in si j
     | _ -> "UNKLIT"
     end
@@ -114,14 +114,14 @@ let rec why_prop syms bbdfns logics (e: tbexpr_t) =
   let ee e = why_expr syms bbdfns e in
   let ep e = why_prop syms bbdfns logics e in
   match e with
-  | `BEXPR_apply ((`BEXPR_closure (i,ts),_),b),_ ->
+  | BEXPR_apply ((BEXPR_closure (i,ts),_),b),_ ->
     let op = try assoc i logics with Not_found -> "" in
     begin match op with
     | "and"
     | "or"
     | "->" ->
       begin match b with
-      | `BEXPR_tuple [x;y],t when isbool2 t ->
+      | BEXPR_tuple [x;y],t when isbool2 t ->
         ep x ^ " " ^ op ^ " " ^ ep y
 
       | _ -> failwith ("[flx_why] Wrong number or type of args to '" ^ op ^ "'")
@@ -129,7 +129,7 @@ let rec why_prop syms bbdfns logics (e: tbexpr_t) =
 
     | "<->" ->
       begin match b with
-      | `BEXPR_tuple [x;y],t when isbool2 t ->
+      | BEXPR_tuple [x;y],t when isbool2 t ->
         ep x ^ " " ^ op ^ " " ^ ep y
 
       | _ -> "true=" ^ ee e

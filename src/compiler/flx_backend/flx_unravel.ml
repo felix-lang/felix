@@ -1,3 +1,4 @@
+open Flx_types
 open Flx_mtypes2
 open List
 open Flx_util
@@ -24,39 +25,39 @@ let unravel syms bbdfns e =
 
   in
   let refer ((_,t) as e) =
-    `BEXPR_expr (get e,t),t
+    BEXPR_expr (get e,t),t
   in
   let idt t = t in
   let e' =
     let rec aux n e =
       let n = n - 1 in
       match e with
-      | `BEXPR_apply ((`BEXPR_name _,_) as f, b),t ->
-        refer (`BEXPR_apply (f, aux urn b),t)
+      | BEXPR_apply ((BEXPR_name _,_) as f, b),t ->
+        refer (BEXPR_apply (f, aux urn b),t)
 
       (*
       (* no unravelling of primitives *)
-      | `BEXPR_apply_prim (i,ts,b),t  when n > 0 ->
-        `BEXPR_apply_prim (i, ts, aux n b),t
+      | BEXPR_apply_prim (i,ts,b),t  when n > 0 ->
+        BEXPR_apply_prim (i, ts, aux n b),t
       *)
 
-      | `BEXPR_apply_direct (i,ts,b),t
-      | `BEXPR_apply ((`BEXPR_closure (i,ts),_), b),t ->
+      | BEXPR_apply_direct (i,ts,b),t
+      | BEXPR_apply ((BEXPR_closure (i,ts),_), b),t ->
 
         let id,parent,sr,entry = Hashtbl.find bbdfns i in
         begin match entry with
         | `BBDCL_struct _
-        | `BBDCL_fun _ -> `BEXPR_apply_direct (i, ts, aux n b),t
-        | `BBDCL_function _ -> refer (`BEXPR_apply_direct (i,ts, aux urn b),t)
+        | `BBDCL_fun _ -> BEXPR_apply_direct (i, ts, aux n b),t
+        | `BBDCL_function _ -> refer (BEXPR_apply_direct (i,ts, aux urn b),t)
 
         | _ -> assert false
         end
 
-      | `BEXPR_apply (f,b),t -> refer (`BEXPR_apply(aux urn f, aux urn b),t)
-      | `BEXPR_tuple ls,t -> (`BEXPR_tuple (map (aux n) ls),t)
-      | (`BEXPR_name _,t) as x -> x
-      | (`BEXPR_literal (`AST_int _ )),t as x -> x
-      | (`BEXPR_literal (`AST_float _ )),t as x -> x
+      | BEXPR_apply (f,b),t -> refer (BEXPR_apply(aux urn f, aux urn b),t)
+      | BEXPR_tuple ls,t -> (BEXPR_tuple (map (aux n) ls),t)
+      | (BEXPR_name _,t) as x -> x
+      | (BEXPR_literal (`AST_int _ )),t as x -> x
+      | (BEXPR_literal (`AST_float _ )),t as x -> x
       | x -> refer x
     in
       aux urn e

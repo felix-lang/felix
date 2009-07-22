@@ -42,7 +42,7 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
       (
         (*
         match p with
-        | `BEXPR_closure (i,ts) ->
+        | BEXPR_closure (i,ts) ->
           begin match hfind "bexe" syms.dfns i with
           | {symdef=`SYMDEF_fun _ }
           | {symdef=`SYMDEF_callback _ }
@@ -62,7 +62,7 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
     begin
       let reorder: tbexpr_t list option =
         match be1 with
-        | `BEXPR_closure (i,ts) ->
+        | BEXPR_closure (i,ts) ->
           begin match t2 with
           (* a bit of a hack .. *)
           | `BTYP_record _ | `BTYP_tuple [] ->
@@ -85,7 +85,7 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
             try Some (map
               (fun (name,d) ->
                 try (match assoc name rs with
-                | j,t-> `BEXPR_get_n (j,tbe2),t)
+                | j,t-> BEXPR_get_n (j,tbe2),t)
                 with Not_found ->
                 match d with
                 | Some d ->d
@@ -104,7 +104,7 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
         | Some xs ->
           begin match xs with
           | [x]-> x
-          | _ -> `BEXPR_tuple xs,`BTYP_tuple (map snd xs)
+          | _ -> BEXPR_tuple xs,`BTYP_tuple (map snd xs)
           end
         | None ->
           clierr sr
@@ -134,7 +134,7 @@ let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
     if t = argt
     then
       match p with
-      | `BEXPR_closure (i,ts) ->
+      | BEXPR_closure (i,ts) ->
         if check_if_parent syms i this
         then
           `BEXE_call (sr,(p,pt), tbe2)

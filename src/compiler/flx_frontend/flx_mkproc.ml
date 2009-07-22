@@ -31,9 +31,9 @@ let intset_of_list ls =
 (* THIS CODE JUST COUNTS APPLICATIONS *)
 let find_mkproc_expr mkproc_map e =
   let aux e = match e with
-  | `BEXPR_apply
+  | BEXPR_apply
     (
-      (`BEXPR_closure (f,ts),_),
+      (BEXPR_closure (f,ts),_),
       a
     )
     ,ret
@@ -55,9 +55,9 @@ let find_mkproc_exes mkproc_map exes =
 let mkproc_expr syms bbdfns sr this mkproc_map vs e =
   let exes = ref [] in
   let rec aux e = match map_tbexpr ident aux ident e with
-  | `BEXPR_apply
+  | BEXPR_apply
     (
-      (`BEXPR_closure (f,ts),_),
+      (BEXPR_closure (f,ts),_),
       a
     )
     ,ret
@@ -76,13 +76,13 @@ let mkproc_expr syms bbdfns sr this mkproc_map vs e =
 
       (* append a pointer to this variable to the argument *)
       let ts' = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
-      let ptr = `BEXPR_ref (k,ts'),`BTYP_pointer ret in
+      let ptr = BEXPR_ref (k,ts'),`BTYP_pointer ret in
       let (_,at') as a' = append_args syms bbdfns f a [ptr] in
 
       (* create a call instruction to the mapped procedure *)
       let call : bexe_t =
         `BEXE_call (sr,
-          (`BEXPR_closure (p,ts),`BTYP_function (at',`BTYP_void)),
+          (BEXPR_closure (p,ts),`BTYP_function (at',`BTYP_void)),
           a'
         )
       in
@@ -91,7 +91,7 @@ let mkproc_expr syms bbdfns sr this mkproc_map vs e =
       exes := call :: !exes;
 
       (* replace the original expression with the variable *)
-      `BEXPR_name (k,ts'),ret
+      BEXPR_name (k,ts'),ret
     in e
   | x -> x
   in
@@ -316,8 +316,8 @@ let mkproc_gen syms (child_map,bbdfns) =
 
       (* and actually convert it *)
       let ts = map (fun (_,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
-      (* let dv = `BEXPR_deref (`BEXPR_name (vix,ts),`BTYP_pointer * ret),`BTYP_lvalue ret in *)
-      let dv = `BEXPR_deref (`BEXPR_name (vix,ts),`BTYP_pointer ret),ret in
+      (* let dv = BEXPR_deref (BEXPR_name (vix,ts),`BTYP_pointer * ret),`BTYP_lvalue ret in *)
+      let dv = BEXPR_deref (BEXPR_name (vix,ts),`BTYP_pointer ret),ret in
       let exes = proc_exes syms bbdfns dv exes in
 
       (* save the new procedure *)

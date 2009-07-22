@@ -75,30 +75,30 @@ let fixup_expr' syms bbdfns fi mt (e:bexpr_t) =
   print_endline ("FIXUP EXPR(up) " ^ sbe syms.dfns (e,`BTYP_void));
   *)
   let x = match e with
-  | `BEXPR_apply_prim (i',ts,a) ->
+  | BEXPR_apply_prim (i',ts,a) ->
     let i,ts = fi i' ts in
     if i = i' then
-      `BEXPR_apply_prim (i,ts,a)
+      BEXPR_apply_prim (i,ts,a)
     else
-      `BEXPR_apply_direct (i,ts,a)
+      BEXPR_apply_direct (i,ts,a)
 
-  | `BEXPR_apply_direct (i,ts,a) ->
+  | BEXPR_apply_direct (i,ts,a) ->
     let i,ts = fi i ts in
-    `BEXPR_apply_direct (i,ts,a)
+    BEXPR_apply_direct (i,ts,a)
 
-  | `BEXPR_apply_struct (i,ts,a) ->
+  | BEXPR_apply_struct (i,ts,a) ->
     let i,ts = fi i ts in
-    `BEXPR_apply_struct (i,ts,a)
+    BEXPR_apply_struct (i,ts,a)
 
-  | `BEXPR_apply_stack (i,ts,a) ->
+  | BEXPR_apply_stack (i,ts,a) ->
     let i,ts = fi i ts in
-    `BEXPR_apply_stack (i,ts,a)
+    BEXPR_apply_stack (i,ts,a)
 
-  | `BEXPR_ref (i,ts)  ->
+  | BEXPR_ref (i,ts)  ->
     let i,ts = fi i ts in
-    `BEXPR_ref (i,ts)
+    BEXPR_ref (i,ts)
 
-  | `BEXPR_name (i',ts') ->
+  | BEXPR_name (i',ts') ->
     let i,ts = fi i' ts' in
     (*
     print_endline (
@@ -106,11 +106,11 @@ let fixup_expr' syms bbdfns fi mt (e:bexpr_t) =
       " mapped to " ^ si i ^ "[" ^ catmap "," (sbt syms.dfns) ts ^"]"
     );
     *)
-    `BEXPR_name (i,ts)
+    BEXPR_name (i,ts)
 
-  | `BEXPR_closure (i,ts) ->
+  | BEXPR_closure (i,ts) ->
     let i,ts = fi i ts in
-    `BEXPR_closure (i,ts)
+    BEXPR_closure (i,ts)
 
   | x -> x
   in
@@ -131,7 +131,7 @@ let rec fixup_expr syms bbdfns fi mt e =
      it has to be done FIRST before the type is remapped
   *)
   let e = match e with
-  | `BEXPR_get_named (i,(e,t)),t' ->
+  | BEXPR_get_named (i,(e,t)),t' ->
     (*
     print_endline ("REMAPPING component variable " ^ si i);
     *)
@@ -150,7 +150,7 @@ let rec fixup_expr syms bbdfns fi mt e =
       (*
       print_endline ("Remapped to " ^ si i);
       *)
-      `BEXPR_get_named (i,(e,t)),t'
+      BEXPR_get_named (i,(e,t)),t'
     | _ -> assert false
     end
   | x -> x

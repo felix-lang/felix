@@ -216,36 +216,33 @@ and bexe_t =
   ]
 
 and bexpr_t =
-  [
-  | `BEXPR_deref of tbexpr_t
-  | `BEXPR_name of bid_t * btypecode_t list
-  | `BEXPR_ref of bid_t * btypecode_t list
-  | `BEXPR_likely of tbexpr_t
-  | `BEXPR_unlikely of tbexpr_t
-  | `BEXPR_address of tbexpr_t
-  | `BEXPR_new of tbexpr_t
-  | `BEXPR_not of tbexpr_t
-  | `BEXPR_literal of literal_t
-  | `BEXPR_apply of tbexpr_t * tbexpr_t
-  | `BEXPR_apply_prim of bid_t * btypecode_t list * tbexpr_t
-  | `BEXPR_apply_direct of bid_t * btypecode_t list * tbexpr_t
-  | `BEXPR_apply_stack of bid_t * btypecode_t list * tbexpr_t
-  | `BEXPR_apply_struct of bid_t * btypecode_t list * tbexpr_t
-
-  | `BEXPR_tuple of tbexpr_t list
-  | `BEXPR_record of (string * tbexpr_t) list
-  | `BEXPR_variant of string * tbexpr_t
-  | `BEXPR_get_n of int * tbexpr_t (* tuple projection *)
-  | `BEXPR_get_named of int * tbexpr_t (* struct/class projection *)
-  | `BEXPR_closure of bid_t * btypecode_t list
-  | `BEXPR_case of int * btypecode_t
-  | `BEXPR_match_case of int * tbexpr_t
-  | `BEXPR_case_arg of int * tbexpr_t
-  | `BEXPR_case_index of tbexpr_t
-  | `BEXPR_expr of string * btypecode_t
-  | `BEXPR_range_check of tbexpr_t * tbexpr_t * tbexpr_t
-  | `BEXPR_coerce of tbexpr_t * btypecode_t
-  ]
+  | BEXPR_deref of tbexpr_t
+  | BEXPR_name of bid_t * btypecode_t list
+  | BEXPR_ref of bid_t * btypecode_t list
+  | BEXPR_likely of tbexpr_t
+  | BEXPR_unlikely of tbexpr_t
+  | BEXPR_address of tbexpr_t
+  | BEXPR_new of tbexpr_t
+  | BEXPR_not of tbexpr_t
+  | BEXPR_literal of literal_t
+  | BEXPR_apply of tbexpr_t * tbexpr_t
+  | BEXPR_apply_prim of bid_t * btypecode_t list * tbexpr_t
+  | BEXPR_apply_direct of bid_t * btypecode_t list * tbexpr_t
+  | BEXPR_apply_stack of bid_t * btypecode_t list * tbexpr_t
+  | BEXPR_apply_struct of bid_t * btypecode_t list * tbexpr_t
+  | BEXPR_tuple of tbexpr_t list
+  | BEXPR_record of (string * tbexpr_t) list
+  | BEXPR_variant of string * tbexpr_t
+  | BEXPR_get_n of int * tbexpr_t (* tuple projection *)
+  | BEXPR_get_named of int * tbexpr_t (* struct/class projection *)
+  | BEXPR_closure of bid_t * btypecode_t list
+  | BEXPR_case of int * btypecode_t
+  | BEXPR_match_case of int * tbexpr_t
+  | BEXPR_case_arg of int * tbexpr_t
+  | BEXPR_case_index of tbexpr_t
+  | BEXPR_expr of string * btypecode_t
+  | BEXPR_range_check of tbexpr_t * tbexpr_t * tbexpr_t
+  | BEXPR_coerce of tbexpr_t * btypecode_t
 
 and tbexpr_t = bexpr_t * btypecode_t
 

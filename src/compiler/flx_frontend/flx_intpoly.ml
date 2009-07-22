@@ -41,38 +41,38 @@ let rec check_abstract_expr syms bbdfns rls ((x,t) as e) =
   let ft t = check_abstract_type syms bbdfns rls t in
   check_abstract_type syms bbdfns rls t;
   match x with
-  | `BEXPR_deref e -> fe e
-  | `BEXPR_ref (i,ts) -> fi i
-  | `BEXPR_likely e -> fe e
-  | `BEXPR_unlikely e -> fe e
-  | `BEXPR_new e -> fe e
-  | `BEXPR_address e -> fe e
-  | `BEXPR_not e -> fe e
+  | BEXPR_deref e -> fe e
+  | BEXPR_ref (i,ts) -> fi i
+  | BEXPR_likely e -> fe e
+  | BEXPR_unlikely e -> fe e
+  | BEXPR_new e -> fe e
+  | BEXPR_address e -> fe e
+  | BEXPR_not e -> fe e
 
-  | `BEXPR_apply (e1,e2) -> fe e1; fe e2
+  | BEXPR_apply (e1,e2) -> fe e1; fe e2
 
-  | `BEXPR_apply_prim (i,ts,e2) -> fi i; fe e2
-  | `BEXPR_apply_direct (i,ts,e2) -> fi i; fe e2
-  | `BEXPR_apply_struct (i,ts,e2) -> fi i; fe e2
-  | `BEXPR_apply_stack (i,ts,e2) -> fi i; fe e2
-  | `BEXPR_tuple  es -> iter fe es
-  | `BEXPR_record es -> iter (fun (s,e) -> fe e) es
-  | `BEXPR_variant (s,e) -> fe e
+  | BEXPR_apply_prim (i,ts,e2) -> fi i; fe e2
+  | BEXPR_apply_direct (i,ts,e2) -> fi i; fe e2
+  | BEXPR_apply_struct (i,ts,e2) -> fi i; fe e2
+  | BEXPR_apply_stack (i,ts,e2) -> fi i; fe e2
+  | BEXPR_tuple  es -> iter fe es
+  | BEXPR_record es -> iter (fun (s,e) -> fe e) es
+  | BEXPR_variant (s,e) -> fe e
 
-  | `BEXPR_get_n (i,e) -> fe e
-  | `BEXPR_get_named (i,e) -> fi i; fe e
+  | BEXPR_get_n (i,e) -> fe e
+  | BEXPR_get_named (i,e) -> fi i; fe e
 
-  | `BEXPR_closure (i,ts) -> fi i
-  | `BEXPR_name (i,ts) -> fi i
-  | `BEXPR_case (i,t') -> ft t'
-  | `BEXPR_match_case (i,e) -> fe e
-  | `BEXPR_case_arg (i,e) -> fe e
-  | `BEXPR_case_index e -> fe e
+  | BEXPR_closure (i,ts) -> fi i
+  | BEXPR_name (i,ts) -> fi i
+  | BEXPR_case (i,t') -> ft t'
+  | BEXPR_match_case (i,e) -> fe e
+  | BEXPR_case_arg (i,e) -> fe e
+  | BEXPR_case_index e -> fe e
 
-  | `BEXPR_literal x -> ft t
-  | `BEXPR_expr (s,t1) -> ft t1
-  | `BEXPR_range_check (e1,e2,e3) -> fe e1; fe e2; fe e3
-  | `BEXPR_coerce (e,t) -> fe e; ft t
+  | BEXPR_literal x -> ft t
+  | BEXPR_expr (s,t1) -> ft t1
+  | BEXPR_range_check (e1,e2,e3) -> fe e1; fe e2; fe e3
+  | BEXPR_coerce (e,t) -> fe e; ft t
 
 
 let check_abstract_exe syms bbdfns rls (exe:bexe_t) =
@@ -161,7 +161,7 @@ let cal_polyvars syms bbdfns child_map =
       in
       let t = Flx_unify.list_subst syms.counter varmap t in
       print_endline ("COERCION arg(output) " ^ sbt syms.dfns t);
-      `BEXPR_coerce (e,t),t
+      BEXPR_coerce (e,t),t
     end
   in
   let cast_r i ((x,t) as e) =
@@ -177,7 +177,7 @@ let cal_polyvars syms bbdfns child_map =
       in
       let t' = Flx_unify.list_subst syms.counter varmap ta in
       print_endline ("COERCION result(input) " ^ sbt syms.dfns t');
-      `BEXPR_coerce ((x,t'),t),t
+      BEXPR_coerce ((x,t'),t),t
     end
   in
   let cal_ft i t =
@@ -201,22 +201,22 @@ let cal_polyvars syms bbdfns child_map =
     end
   in
   let rec fixexpr e = match e with
-  | `BEXPR_apply ((`BEXPR_closure (i,ts),t'),e2),t ->
-    cast_r i (`BEXPR_apply ((`BEXPR_closure (i, polyfix syms polyvars i ts),cal_ft i t'), cast_a i (fixexpr e2)),t)
-  | `BEXPR_apply_prim (i,ts,e2),t -> 
-    cast_r i (`BEXPR_apply_prim (i, polyfix syms polyvars i ts, cast_a i (fixexpr e2)),t)
-  | `BEXPR_apply_direct (i,ts,e2),t -> 
-    cast_r i (`BEXPR_apply_direct (i, polyfix syms polyvars i ts, cast_a i (fixexpr  e2)),t)
-  | `BEXPR_apply_struct (i,ts,e2),t -> 
-    cast_r i (`BEXPR_apply_struct (i, polyfix syms polyvars i ts, cast_a i (fixexpr  e2)),t)
-  | `BEXPR_apply_stack (i,ts,e2),t -> 
-    cast_r i (`BEXPR_apply_stack (i, polyfix syms polyvars i ts, cast_a i (fixexpr e2)),t)
+  | BEXPR_apply ((BEXPR_closure (i,ts),t'),e2),t ->
+    cast_r i (BEXPR_apply ((BEXPR_closure (i, polyfix syms polyvars i ts),cal_ft i t'), cast_a i (fixexpr e2)),t)
+  | BEXPR_apply_prim (i,ts,e2),t ->
+    cast_r i (BEXPR_apply_prim (i, polyfix syms polyvars i ts, cast_a i (fixexpr e2)),t)
+  | BEXPR_apply_direct (i,ts,e2),t ->
+    cast_r i (BEXPR_apply_direct (i, polyfix syms polyvars i ts, cast_a i (fixexpr  e2)),t)
+  | BEXPR_apply_struct (i,ts,e2),t ->
+    cast_r i (BEXPR_apply_struct (i, polyfix syms polyvars i ts, cast_a i (fixexpr  e2)),t)
+  | BEXPR_apply_stack (i,ts,e2),t ->
+    cast_r i (BEXPR_apply_stack (i, polyfix syms polyvars i ts, cast_a i (fixexpr e2)),t)
   | e -> map_tbexpr ident fixexpr ident e
   in
 
   let fixexe x = match x with
-  | `BEXE_call (sr,(`BEXPR_closure (i,ts),t'),e) ->
-    `BEXE_call (sr,(`BEXPR_closure (i, polyfix syms polyvars i ts), cal_ft i t'), cast_a i (fixexpr e))
+  | `BEXE_call (sr,(BEXPR_closure (i,ts),t'),e) ->
+    `BEXE_call (sr,(BEXPR_closure (i, polyfix syms polyvars i ts), cal_ft i t'), cast_a i (fixexpr e))
   | `BEXE_call_prim (sr,i,ts,e) -> 
     `BEXE_call_prim (sr,i, polyfix syms polyvars i ts, cast_a i (fixexpr e))
   | `BEXE_call_direct (sr,i,ts,e) -> 
@@ -273,7 +273,7 @@ let cal_polyvars syms bbdfns child_map =
     if !counter = 0 then e else
     let t = Flx_unify.list_subst syms.counter varmap t in
     print_endline ("COERCION2 arg(output) " ^ sbt syms.dfns t);
-    `BEXPR_coerce (e,t),t
+    BEXPR_coerce (e,t),t
     with Skip -> e
   in
 
@@ -290,7 +290,7 @@ let cal_polyvars syms bbdfns child_map =
     if !counter = 0 then e else
     let t' = Flx_unify.list_subst syms.counter varmap ta in
     print_endline ("COERCION2 result(input) " ^ sbt syms.dfns t');
-    `BEXPR_coerce ((x,t'),t),t
+    BEXPR_coerce ((x,t'),t),t
     with Skip -> e
   in
 
@@ -319,22 +319,22 @@ let cal_polyvars syms bbdfns child_map =
   in
 
   let rec fixexpr2 e = match e with
-  | `BEXPR_apply ((`BEXPR_closure (i,ts),t'),e2),t ->
-    cast_r2 i ts (`BEXPR_apply ((`BEXPR_closure (i, polyfix2 i ts),cal_ft2 i ts t'), cast_a2 i ts (fixexpr2 e2)),t)
-  | `BEXPR_apply_prim (i,ts,e2),t -> 
-    cast_r2 i ts (`BEXPR_apply_prim (i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e2)),t)
-  | `BEXPR_apply_direct (i,ts,e2),t -> 
-    cast_r2 i ts (`BEXPR_apply_direct (i, polyfix2 i ts, cast_a2 i ts (fixexpr2  e2)),t)
-  | `BEXPR_apply_struct (i,ts,e2),t -> 
-    cast_r2 i ts (`BEXPR_apply_struct (i, polyfix2 i ts, cast_a2 i ts (fixexpr2  e2)),t)
-  | `BEXPR_apply_stack (i,ts,e2),t -> 
-    cast_r2 i ts (`BEXPR_apply_stack (i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e2)),t)
+  | BEXPR_apply ((BEXPR_closure (i,ts),t'),e2),t ->
+    cast_r2 i ts (BEXPR_apply ((BEXPR_closure (i, polyfix2 i ts),cal_ft2 i ts t'), cast_a2 i ts (fixexpr2 e2)),t)
+  | BEXPR_apply_prim (i,ts,e2),t ->
+    cast_r2 i ts (BEXPR_apply_prim (i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e2)),t)
+  | BEXPR_apply_direct (i,ts,e2),t ->
+    cast_r2 i ts (BEXPR_apply_direct (i, polyfix2 i ts, cast_a2 i ts (fixexpr2  e2)),t)
+  | BEXPR_apply_struct (i,ts,e2),t ->
+    cast_r2 i ts (BEXPR_apply_struct (i, polyfix2 i ts, cast_a2 i ts (fixexpr2  e2)),t)
+  | BEXPR_apply_stack (i,ts,e2),t ->
+    cast_r2 i ts (BEXPR_apply_stack (i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e2)),t)
   | e -> map_tbexpr ident fixexpr2 ident e
   in
 
   let fixexe2 x = match x with
-  | `BEXE_call (sr,(`BEXPR_closure (i,ts),t'),e) ->
-    `BEXE_call (sr,(`BEXPR_closure (i, polyfix2 i ts), cal_ft i t'), cast_a2 i ts (fixexpr2 e))
+  | `BEXE_call (sr,(BEXPR_closure (i,ts),t'),e) ->
+    `BEXE_call (sr,(BEXPR_closure (i, polyfix2 i ts), cal_ft i t'), cast_a2 i ts (fixexpr2 e))
   | `BEXE_call_prim (sr,i,ts,e) -> 
     `BEXE_call_prim (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
   | `BEXE_call_direct (sr,i,ts,e) -> 

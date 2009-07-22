@@ -1002,7 +1002,7 @@ let ident x = x
 *)
 let expr_term_subst e1 i e2 =
   let rec s e = match map_tbexpr ident s ident e with
-  | `BEXPR_name (j,_),_ when i = j -> e2
+  | BEXPR_name (j,_),_ when i = j -> e2
   | e -> e
   in s e1
 
@@ -1042,7 +1042,7 @@ let rec expr_unification counter dfns
          be computed directly from the term.
       *)
       begin match (lhse,rhse) with
-      | (`BEXPR_name (i,[]) as ei), (`BEXPR_name (j,[]) as ej)->
+      | (BEXPR_name (i,[]) as ei), (BEXPR_name (j,[]) as ej)->
         (*
         print_endline ("Equated variables " ^ si i ^ " <-> " ^ si j);
         *)
@@ -1054,38 +1054,38 @@ let rec expr_unification counter dfns
             s := Some (j,(ei,lhst))
           else raise Not_found
 
-      | `BEXPR_name (i,_),x ->
+      | BEXPR_name (i,_),x ->
         if not (IntSet.mem i edvars) then raise Not_found;
         s := Some (i,(x,rhst))
 
-      | x,`BEXPR_name (i,_) ->
+      | x,BEXPR_name (i,_) ->
         if not (IntSet.mem i edvars) then raise Not_found;
         s := Some (i,(x,lhst))
 
-      | `BEXPR_apply (f1,e1),`BEXPR_apply(f2,e2) ->
+      | BEXPR_apply (f1,e1),BEXPR_apply(f2,e2) ->
         (*
         print_endline "matched applications";
         *)
         eqns := (f1,f2) :: (e1,e2) :: !eqns
 
-      | `BEXPR_closure (i,ts1),`BEXPR_closure(j,ts2) when i = j -> ()
+      | BEXPR_closure (i,ts1),BEXPR_closure(j,ts2) when i = j -> ()
 
-      | `BEXPR_apply_prim _, _
-      | `BEXPR_apply_direct _, _
-      | `BEXPR_apply_stack _, _
-      | _, `BEXPR_apply_prim _
-      | _, `BEXPR_apply_direct _
-      | _, `BEXPR_apply_stack _
+      | BEXPR_apply_prim _, _
+      | BEXPR_apply_direct _, _
+      | BEXPR_apply_stack _, _
+      | _, BEXPR_apply_prim _
+      | _, BEXPR_apply_direct _
+      | _, BEXPR_apply_stack _
          -> assert false
 
       (*
-      | `BEXPR_apply_prim (i,ts1,e1),`BEXPR_apply_prim(j,ts2,e2)
-      | `BEXPR_apply ( (`BEXPR_closure (i,ts1),_), e1),`BEXPR_apply_prim(j,ts2,e2)
-      | `BEXPR_apply_prim (i,ts1,e1),`BEXPR_apply( (`BEXPR_closure(j,ts2),_),e2)
+      | BEXPR_apply_prim (i,ts1,e1),BEXPR_apply_prim(j,ts2,e2)
+      | BEXPR_apply ( (BEXPR_closure (i,ts1),_), e1),BEXPR_apply_prim(j,ts2,e2)
+      | BEXPR_apply_prim (i,ts1,e1),BEXPR_apply( (BEXPR_closure(j,ts2),_),e2)
 
-      | `BEXPR_apply_direct (i,ts1,e1),`BEXPR_apply_direct(j,ts2,e2)
-      | `BEXPR_apply ( (`BEXPR_closure (i,ts1),_), e1),`BEXPR_apply_direct(j,ts2,e2)
-      | `BEXPR_apply_direct (i,ts1,e1),`BEXPR_apply( (`BEXPR_closure(j,ts2),_),e2)
+      | BEXPR_apply_direct (i,ts1,e1),BEXPR_apply_direct(j,ts2,e2)
+      | BEXPR_apply ( (BEXPR_closure (i,ts1),_), e1),BEXPR_apply_direct(j,ts2,e2)
+      | BEXPR_apply_direct (i,ts1,e1),BEXPR_apply( (BEXPR_closure(j,ts2),_),e2)
         when i = j
         ->
         assert (List.length ts1 = List.length ts2);
@@ -1094,21 +1094,21 @@ let rec expr_unification counter dfns
 
       *)
 
-      | `BEXPR_coerce (e,t),`BEXPR_coerce (e',t') ->
+      | BEXPR_coerce (e,t),BEXPR_coerce (e',t') ->
         teqns := (t,t') :: !teqns;
         eqns := (e,e') :: !eqns
 
-      | `BEXPR_get_named (n1,e1),`BEXPR_get_named (n2,e2)
-      | `BEXPR_get_n (n1,e1),`BEXPR_get_n (n2,e2) when n1 = n2 ->
+      | BEXPR_get_named (n1,e1),BEXPR_get_named (n2,e2)
+      | BEXPR_get_n (n1,e1),BEXPR_get_n (n2,e2) when n1 = n2 ->
         eqns := (e1,e2) :: !eqns
 
-      | `BEXPR_deref e1,`BEXPR_deref e2  ->
+      | BEXPR_deref e1,BEXPR_deref e2  ->
         eqns := (e1,e2) :: !eqns
 
       (* CHEAT HERE .. ignore ts .. fix later *)
-      | `BEXPR_ref (i1,ts1),`BEXPR_ref (i2,ts2) when i1 = i2 -> ()
+      | BEXPR_ref (i1,ts1),BEXPR_ref (i2,ts2) when i1 = i2 -> ()
 
-      | (`BEXPR_tuple ls1, `BEXPR_tuple ls2)
+      | (BEXPR_tuple ls1, BEXPR_tuple ls2)
         when List.length ls1 = List.length ls2 ->
         begin
           let rec merge e a b = match a,b with

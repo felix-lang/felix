@@ -1807,71 +1807,71 @@ and string_of_bound_expression' dfns bbdfns se e =
   let sid n = bound_name_of_bindex dfns bbdfns n in
   match fst e with
 
-  | `BEXPR_get_n (n,e') -> "(" ^ se e' ^ ").mem_" ^ si n
-  | `BEXPR_get_named (i,e') -> "(" ^ se e' ^ ")." ^ sid i
+  | BEXPR_get_n (n,e') -> "(" ^ se e' ^ ").mem_" ^ si n
+  | BEXPR_get_named (i,e') -> "(" ^ se e' ^ ")." ^ sid i
 
-  | `BEXPR_deref e -> "*("^ se e ^ ")"
-  | `BEXPR_name (i,ts) -> sid i ^ print_inst dfns ts
-  | `BEXPR_closure (i,ts) -> sid i ^ print_inst dfns ts
-  | `BEXPR_ref (i,ts) -> "&" ^ sid i ^ print_inst dfns ts
-  | `BEXPR_new e -> "new " ^ se e
-  | `BEXPR_address e -> "&" ^ se e
-  | `BEXPR_not e -> "not " ^ se e
-  | `BEXPR_likely e -> "likely(" ^ se e ^")"
-  | `BEXPR_unlikely e -> "unlikely(" ^ se e ^")"
+  | BEXPR_deref e -> "*("^ se e ^ ")"
+  | BEXPR_name (i,ts) -> sid i ^ print_inst dfns ts
+  | BEXPR_closure (i,ts) -> sid i ^ print_inst dfns ts
+  | BEXPR_ref (i,ts) -> "&" ^ sid i ^ print_inst dfns ts
+  | BEXPR_new e -> "new " ^ se e
+  | BEXPR_address e -> "&" ^ se e
+  | BEXPR_not e -> "not " ^ se e
+  | BEXPR_likely e -> "likely(" ^ se e ^")"
+  | BEXPR_unlikely e -> "unlikely(" ^ se e ^")"
 
-  | `BEXPR_literal e -> string_of_literal e
-  | `BEXPR_apply  (fn, arg) -> "(" ^
+  | BEXPR_literal e -> string_of_literal e
+  | BEXPR_apply  (fn, arg) -> "(" ^
     se fn ^ " " ^
     se arg ^
     ")"
 
-  | `BEXPR_apply_prim (i,ts, arg) -> "(" ^
+  | BEXPR_apply_prim (i,ts, arg) -> "(" ^
     sid i ^ print_inst dfns ts ^ " " ^
     se arg ^
     ")"
 
-  | `BEXPR_apply_direct  (i,ts, arg) -> "(" ^
+  | BEXPR_apply_direct  (i,ts, arg) -> "(" ^
     sid i ^ print_inst dfns ts ^ " " ^
     se arg ^
     ")"
 
-  | `BEXPR_apply_struct (i,ts, arg) -> "(" ^
+  | BEXPR_apply_struct (i,ts, arg) -> "(" ^
     sid i ^ print_inst dfns ts ^ " " ^
     se arg ^
     ")"
 
-  | `BEXPR_apply_stack (i,ts, arg) -> "(" ^
+  | BEXPR_apply_stack (i,ts, arg) -> "(" ^
     sid i ^ print_inst dfns ts ^ " " ^
     se arg ^
     ")"
 
-  | `BEXPR_tuple t -> "(" ^ catmap ", " se t ^ ")"
+  | BEXPR_tuple t -> "(" ^ catmap ", " se t ^ ")"
 
-  | `BEXPR_record ts -> "struct { " ^
+  | BEXPR_record ts -> "struct { " ^
       catmap "" (fun (s,e)-> s^":"^ se e ^"; ") ts ^ "}"
 
-  | `BEXPR_variant (s,e) -> "case " ^ s ^ " of (" ^ se e ^ ")"
+  | BEXPR_variant (s,e) -> "case " ^ s ^ " of (" ^ se e ^ ")"
 
-  | `BEXPR_case (v,t) ->
+  | BEXPR_case (v,t) ->
     "case " ^ si v ^ " of " ^ string_of_btypecode dfns t
 
-  | `BEXPR_match_case (v,e) ->
+  | BEXPR_match_case (v,e) ->
     "(match case " ^ si v ^ ")(" ^ se e ^ ")"
 
-  | `BEXPR_case_arg (v,e) ->
+  | BEXPR_case_arg (v,e) ->
     "(arg of case " ^ si v ^ " of " ^ se e ^ ")"
 
-  | `BEXPR_case_index e ->
+  | BEXPR_case_index e ->
     "caseno (" ^ se e ^ ")"
 
-  | `BEXPR_expr (s,t) ->
+  | BEXPR_expr (s,t) ->
     "code ["^string_of_btypecode dfns t^"]" ^ "'" ^ s ^ "'"
 
-  | `BEXPR_range_check (e1,e2,e3) ->
+  | BEXPR_range_check (e1,e2,e3) ->
     "range_check(" ^ se e1 ^"," ^ se e2 ^"," ^se e3 ^ ")"
 
-  | `BEXPR_coerce (e,t) -> se e ^ " : " ^ string_of_btypecode dfns t
+  | BEXPR_coerce (e,t) -> se e ^ " : " ^ string_of_btypecode dfns t
 
 and string_of_biface dfns bbdfns level s =
   let spc = spaces level in

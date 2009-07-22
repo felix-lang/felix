@@ -35,12 +35,12 @@ let id x = x
 
 let find_uncurry_expr syms bbdfns uncurry_map vs e =
   let aux e = match e with
-  | `BEXPR_apply
+  | BEXPR_apply
     (
       (
-        `BEXPR_apply
+        BEXPR_apply
         (
-          (`BEXPR_closure (f,ts),_),
+          (BEXPR_closure (f,ts),_),
           ((a_e,a_t) as a)
         ),
         t
@@ -60,9 +60,9 @@ let find_uncurry_exe syms bbdfns uncurry_map vs exe =
     (
       sr,
       (
-        `BEXPR_apply
+        BEXPR_apply
         (
-          (`BEXPR_closure (f,ts),_),
+          (BEXPR_closure (f,ts),_),
           ((a_e,a_t) as a)
         ),
         t
@@ -82,12 +82,12 @@ let find_uncurry_exes syms bbdfns uncurry_map vs exes =
 
 let uncurry_expr syms bbdfns uncurry_map vs e =
   let rec aux e = match map_tbexpr id aux id e with
-  | `BEXPR_apply
+  | BEXPR_apply
     (
       (
-        `BEXPR_apply
+        BEXPR_apply
         (
-          (`BEXPR_closure (f,ts),_),
+          (BEXPR_closure (f,ts),_),
           ((a_e,a_t) as a)
         ),
         t
@@ -99,7 +99,7 @@ let uncurry_expr syms bbdfns uncurry_map vs e =
       let c,k,n = Hashtbl.find uncurry_map f in
       Hashtbl.replace uncurry_map f (c,k,n+1);
       let ab = merge_args syms bbdfns f c a b in
-      `BEXPR_apply ((`BEXPR_closure (k,ts),t),ab),ret
+      BEXPR_apply ((BEXPR_closure (k,ts),t),ab),ret
     in aux e
   | x -> x
   in aux e
@@ -110,9 +110,9 @@ let uncurry_exe syms bbdfns uncurry_map vs exe =
     (
       sr,
       (
-        `BEXPR_apply
+        BEXPR_apply
         (
-          (`BEXPR_closure (f,ts),_),
+          (BEXPR_closure (f,ts),_),
           ((a_e,a_t) as a)
         ),
         t
@@ -123,7 +123,7 @@ let uncurry_exe syms bbdfns uncurry_map vs exe =
     let c,k,n = Hashtbl.find uncurry_map f in
     Hashtbl.replace uncurry_map f (c,k,n+1);
     let ab = merge_args syms bbdfns f c a b in
-    `BEXE_call (sr,(`BEXPR_closure (k,ts),t),ab)
+    `BEXE_call (sr,(BEXPR_closure (k,ts),t),ab)
   | x -> x
   in
   map_bexe id (uncurry_expr syms bbdfns uncurry_map vs) id id id exe
@@ -141,7 +141,7 @@ let uncurry_gen syms (child_map,(bbdfns: fully_bound_symbol_table_t)) : int =
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
   | `BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     begin match exes with
-    | [`BEXE_fun_return (sr2,(`BEXPR_closure (f,ts),_))]
+    | [`BEXE_fun_return (sr2,(BEXPR_closure (f,ts),_))]
       when is_child child_map i f && vs_is_ts vs ts
       ->
       let k = !(syms.counter) in incr (syms.counter);

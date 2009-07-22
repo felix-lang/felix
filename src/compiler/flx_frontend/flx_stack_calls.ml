@@ -394,7 +394,7 @@ let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map labe
         *)
         raise Unstackable
       end
-    | `BEXE_call (_,(`BEXPR_closure (j,_),_),_)
+    | `BEXE_call (_,(BEXPR_closure (j,_),_),_)
     | `BEXE_call_direct (_,j,_,_)
 
     (* this case needed for virtuals/typeclasses .. *)
@@ -410,7 +410,7 @@ let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map labe
 
     (* assignments to a local variable are safe *)
     | `BEXE_init (_,j,_)
-    | `BEXE_assign (_,(`BEXPR_name (j,_),_),_)
+    | `BEXE_assign (_,(BEXPR_name (j,_),_),_)
       when mem j children -> ()
 
     (* assignments not involving pointers or functions are safe *)
@@ -574,24 +574,24 @@ let rec enstack_applies fn_cache ptr_cache syms (child_map, bbdfns) x =
   let ea e = enstack_applies fn_cache ptr_cache syms (child_map, bbdfns) e in
   match map_tbexpr ident ea tident x with
   | (
-       `BEXPR_apply ((`BEXPR_closure(i,ts),_),b),t
-     | `BEXPR_apply_direct (i,ts,b),t
+       BEXPR_apply ((BEXPR_closure(i,ts),_),b),t
+     | BEXPR_apply_direct (i,ts,b),t
     ) as x ->
       begin
         let _,_,_,entry = Hashtbl.find bbdfns i in
         match entry with
         | `BBDCL_function (props,_,_,_,_) ->
           if mem `Stackable props
-          then `BEXPR_apply_stack (i,ts,b),t
-          else `BEXPR_apply_direct (i,ts,b),t
+          then BEXPR_apply_stack (i,ts,b),t
+          else BEXPR_apply_direct (i,ts,b),t
         | `BBDCL_fun _
         | `BBDCL_callback _ ->
-          `BEXPR_apply_prim(i,ts,b),t
+          BEXPR_apply_prim(i,ts,b),t
 
         | `BBDCL_cstruct _
         | `BBDCL_struct _
         | `BBDCL_nonconst_ctor  _ ->
-          `BEXPR_apply_struct(i,ts,b),t
+          BEXPR_apply_struct(i,ts,b),t
         | _ -> x
       end
   | x -> x
@@ -638,7 +638,7 @@ let enstack_calls fn_cache ptr_cache syms (child_map,bbdfns) self exes =
   let exes =
     map (
       fun exe -> let exe = match exe with
-      | `BEXE_call (sr,(`BEXPR_closure (i,ts),_),a)
+      | `BEXE_call (sr,(BEXPR_closure (i,ts),_),a)
       | `BEXE_call_direct (sr,i,ts,a) ->
         let id,parent,sr,entry = Hashtbl.find bbdfns i in
         begin match entry with

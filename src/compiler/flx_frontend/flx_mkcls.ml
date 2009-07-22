@@ -27,7 +27,7 @@ let gen_closure syms bbdfns i =
       let name = "_a" ^ si n in
       let ventry = `BBDCL_val (vs,arg_t) in
       Hashtbl.add bbdfns n (name,Some j,sr,ventry);
-      [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(`BEXPR_name (n,ts),arg_t)
+      [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
     in
 
     let exes : bexe_t list =
@@ -50,9 +50,9 @@ let gen_closure syms bbdfns i =
       let name = "_a" ^ si n in
       let ventry = `BBDCL_val (vs,arg_t) in
       Hashtbl.add bbdfns n (name,Some j,sr,ventry);
-      [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(`BEXPR_name (n,ts),arg_t)
+      [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
     in
-    let e = `BEXPR_apply_prim (i,ts,a),ret in
+    let e = BEXPR_apply_prim (i,ts,a),ret in
     let exes : bexe_t list = [`BEXE_fun_return (sr,e)] in
     let entry = `BBDCL_function ([],vs,(ps,None),ret,exes) in
     Hashtbl.add bbdfns j (id,parent,sr,entry);
@@ -70,7 +70,7 @@ let mkcls syms bbdfns all_closures i ts =
       j
   in
     all_closures := IntSet.add j !all_closures;
-    `BEXPR_closure (j,ts)
+    BEXPR_closure (j,ts)
 
 let check_prim syms bbdfns all_closures i ts =
   let _,_,_,entry = Hashtbl.find bbdfns i in
@@ -80,7 +80,7 @@ let check_prim syms bbdfns all_closures i ts =
     mkcls syms bbdfns all_closures i ts
   | _ ->
     all_closures := IntSet.add i !all_closures;
-    `BEXPR_closure (i,ts)
+    BEXPR_closure (i,ts)
 
 let idt t = t
 
@@ -89,13 +89,13 @@ let ident x = x
 let rec adj_cls syms bbdfns all_closures e =
   let adj e = adj_cls syms bbdfns all_closures e in
   match Flx_maps.map_tbexpr ident adj idt e with
-  | `BEXPR_closure (i,ts),t ->
+  | BEXPR_closure (i,ts),t ->
     check_prim syms bbdfns all_closures i ts,t
 
   (* Direct calls to non-stacked functions require heap
      but not a clone ..
   *)
-  | `BEXPR_apply_direct (i,ts,a),t as x ->
+  | BEXPR_apply_direct (i,ts,a),t as x ->
     all_closures := IntSet.add i !all_closures;
     x
 

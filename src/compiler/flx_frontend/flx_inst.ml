@@ -69,14 +69,14 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   ;
   (* CONSIDER DOING THIS WITH A MAP! *)
   begin match e with
-  | `BEXPR_deref e
-  | `BEXPR_get_n (_,e)
-  | `BEXPR_match_case (_,e)
-  | `BEXPR_case_arg (_,e)
-  | `BEXPR_case_index e
+  | BEXPR_deref e
+  | BEXPR_get_n (_,e)
+  | BEXPR_match_case (_,e)
+  | BEXPR_case_arg (_,e)
+  | BEXPR_case_index e
     -> ue e
 
-  | `BEXPR_get_named (i,((oe,ot) as obj)) ->
+  | BEXPR_get_named (i,((oe,ot) as obj)) ->
     (*
     print_endline "Get named: class member";
     *)
@@ -101,11 +101,11 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
       )
     end
 
-  | `BEXPR_apply_prim (index,ts,a)
-  | `BEXPR_apply_direct (index,ts,a)
-  | `BEXPR_apply_struct (index,ts,a)
-  | `BEXPR_apply_stack (index,ts,a)
-  | `BEXPR_apply ((`BEXPR_closure (index,ts),_),a) ->
+  | BEXPR_apply_prim (index,ts,a)
+  | BEXPR_apply_direct (index,ts,a)
+  | BEXPR_apply_struct (index,ts,a)
+  | BEXPR_apply_stack (index,ts,a)
+  | BEXPR_apply ((BEXPR_closure (index,ts),_),a) ->
     (*
     print_endline "apply direct";
     *)
@@ -136,29 +136,29 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
       ui index ts; ue a
     end
 
-  | `BEXPR_apply (e1,e2) ->
+  | BEXPR_apply (e1,e2) ->
     (*
     print_endline "Simple apply";
     *)
     ue e1; ue e2
 
-  | `BEXPR_tuple es ->
+  | BEXPR_tuple es ->
     iter ue es;
     register_tuple syms (vs t)
 
-  | `BEXPR_record es ->
+  | BEXPR_record es ->
     let ss,es = split es in
     iter ue es;
     register_tuple syms (vs t)
 
-  | `BEXPR_variant (s,e) ->
+  | BEXPR_variant (s,e) ->
     ue e
 
-  | `BEXPR_case (_,t) -> ut (vs t)
+  | BEXPR_case (_,t) -> ut (vs t)
 
-  | `BEXPR_ref (i,ts)
-  | `BEXPR_name (i,ts)
-  | `BEXPR_closure (i,ts)
+  | BEXPR_ref (i,ts)
+  | BEXPR_name (i,ts)
+  | BEXPR_closure (i,ts)
     ->
     (* substitute out display variables *)
     (*
@@ -178,15 +178,15 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     print_endline "ts done";
     *)
 
-  | `BEXPR_not e -> ue e
-  | `BEXPR_new e -> ue e
-  | `BEXPR_address e -> ue e
-  | `BEXPR_likely e -> ue e
-  | `BEXPR_unlikely e -> ue e
-  | `BEXPR_literal _ -> ()
-  | `BEXPR_expr (_,t) -> ut t
-  | `BEXPR_range_check (e1,e2,e3) -> ue e1; ue e2; ue e3
-  | `BEXPR_coerce (e,t) -> ue e; ut t
+  | BEXPR_not e -> ue e
+  | BEXPR_new e -> ue e
+  | BEXPR_address e -> ue e
+  | BEXPR_likely e -> ue e
+  | BEXPR_unlikely e -> ue e
+  | BEXPR_literal _ -> ()
+  | BEXPR_expr (_,t) -> ut t
+  | BEXPR_range_check (e1,e2,e3) -> ue e1; ue e2; ue e3
+  | BEXPR_coerce (e,t) -> ue e; ut t
   end
 
 and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =

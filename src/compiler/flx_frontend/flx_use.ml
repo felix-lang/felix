@@ -61,8 +61,8 @@ and uses_exe syms used bbdfns count_inits (exe:bexe_t) =
   *)
   (* check is a term is a tuple projection of a variable *)
   let rec is_proj e = match e with
-    | `BEXPR_name _,_ -> true
-    | `BEXPR_get_n (_,e),_ -> is_proj e
+    | BEXPR_name _,_ -> true
+    | BEXPR_get_n (_,e),_ -> is_proj e
     | _ -> false
   in
   let ue e = uses_tbexpr syms used bbdfns count_inits e in

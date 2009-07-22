@@ -21,22 +21,22 @@ open Flx_child
 *)
 
 let throw_on_gc syms bbdfns e : unit = match e with
-  | `BEXPR_closure (i,_),_ ->
+  | BEXPR_closure (i,_),_ ->
     (*
     print_endline ("Found closure of " ^ si i);
     *)
     raise Not_found
 
-  | `BEXPR_apply_direct _,_ -> raise Not_found
-  | `BEXPR_apply( (`BEXPR_closure (_,_),_),_),_ -> raise Not_found
-  | `BEXPR_apply_struct (i,_,_),_ ->
+  | BEXPR_apply_direct _,_ -> raise Not_found
+  | BEXPR_apply( (BEXPR_closure (_,_),_),_),_ -> raise Not_found
+  | BEXPR_apply_struct (i,_,_),_ ->
     let id,sr,parent,entry=Hashtbl.find bbdfns i in
     begin match entry with
     | `BBDCL_nonconst_ctor _ -> raise Not_found
     | _ -> ()
     end
 
-  | `BEXPR_case (_,t),_ ->
+  | BEXPR_case (_,t),_ ->
     begin match t with
     | `BTYP_sum args when not (all_units args) -> raise Not_found
     | `BTYP_inst (i,ts) ->

@@ -79,32 +79,32 @@ let remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e =
     with Not_found -> i,ts
   in
   let rec aux e = match map_tbexpr ident aux auxt e with
-  | `BEXPR_name (i,ts),t ->
+  | BEXPR_name (i,ts),t ->
     let i,ts = fixup i ts in
-    `BEXPR_name (i,ts), auxt t
+    BEXPR_name (i,ts), auxt t
 
-  | `BEXPR_ref (i,ts) as x,t ->
+  | BEXPR_ref (i,ts) as x,t ->
     let i,ts = fixup i ts in
-    `BEXPR_ref (i,ts), auxt t
+    BEXPR_ref (i,ts), auxt t
 
-  | `BEXPR_closure (i,ts),t ->
+  | BEXPR_closure (i,ts),t ->
     let i,ts = fixup i ts in
-    `BEXPR_closure (i,ts), auxt t
+    BEXPR_closure (i,ts), auxt t
 
-  | `BEXPR_apply_direct (i,ts,e),t ->
+  | BEXPR_apply_direct (i,ts,e),t ->
     let i,ts = fixup i ts in
 
     (* attempt to fixup typeclass virtual *)
     let i,ts = ftc i ts in
-    `BEXPR_apply_direct (i,ts,aux e), auxt t
+    BEXPR_apply_direct (i,ts,aux e), auxt t
 
-  | `BEXPR_apply_stack (i,ts,e),t ->
+  | BEXPR_apply_stack (i,ts,e),t ->
     let i,ts = fixup i ts in
-    `BEXPR_apply_stack (i,ts,aux e), auxt t
+    BEXPR_apply_stack (i,ts,aux e), auxt t
 
-  | `BEXPR_apply_prim (i,ts,e),t ->
+  | BEXPR_apply_prim (i,ts,e),t ->
     let i,ts = fixup i ts in
-    `BEXPR_apply_prim (i,ts,aux e), auxt t
+    BEXPR_apply_prim (i,ts,aux e), auxt t
 
   | x,t -> x, auxt t
   in

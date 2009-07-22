@@ -111,7 +111,7 @@ let passign syms bbdfns (pinits:aentry_t list) ts' sr =
     filter
     (fun (i,(name,t,e,u)) ->
       match e with
-      | `BEXPR_name (j,_),_ when i = j -> false
+      | BEXPR_name (j,_),_ when i = j -> false
       | _ -> true
     )
     pinits
@@ -208,7 +208,7 @@ let passign syms bbdfns (pinits:aentry_t list) ts' sr =
       parameters := (ty,k) :: !parameters;
       tmplist := k :: !tmplist;
       let h' = k,(name2,ty,e,IntSet.empty) in
-      let e' = `BEXPR_name (k,ts'),ty in
+      let e' = BEXPR_name (k,ts'),ty in
       let t' = i,(name,ty,e',IntSet.empty) in
       aux3 (h' :: h, ta, t' :: t)
   in

@@ -41,7 +41,7 @@ let add_xclosure syms cls e =
   print_endline ("chk cls for " ^ sbe syms.dfns bbdfns e);
   *)
   match e with
-  | `BEXPR_closure (i,ts),t -> cls := IntSet.add i !cls
+  | BEXPR_closure (i,ts),t -> cls := IntSet.add i !cls
   | _ -> ()
 
 let ident x = x
@@ -88,9 +88,9 @@ let rec check_ahead i n ls res : (int * int * btypecode_t) list =
   if n = 0 then rev res else match ls with
   | [] -> []
   | h :: t ->  match h with
-  | `BEXE_init (_,k, ( `BEXPR_get_n (p,(`BEXPR_name (j,[]),_)),typ))
+  | `BEXE_init (_,k, ( BEXPR_get_n (p,(BEXPR_name (j,[]),_)),typ))
 
-  | `BEXE_assign (_,(`BEXPR_name (k,[]),_), ( `BEXPR_get_n (p,(`BEXPR_name (j,[]),_)),typ))
+  | `BEXE_assign (_,(BEXPR_name (k,[]),_), ( BEXPR_get_n (p,(BEXPR_name (j,[]),_)),typ))
     when i = j -> check_ahead i (n-1) t ((k,p,typ)::res)
 
   | _ -> []
@@ -104,8 +104,8 @@ let rec drop n ls =
 (* This routine checks the only use of i is to get its n'th projection *)
 exception BadUse
 let rec check_proj_wrap_expr n i e = match e with
-  | `BEXPR_name (i',_),_ when i = i' -> raise BadUse
-  | `BEXPR_get_n (n', (`BEXPR_name (i',_),_)),_
+  | BEXPR_name (i',_),_ when i = i' -> raise BadUse
+  | BEXPR_get_n (n', (BEXPR_name (i',_),_)),_
      when i = i' && n = n' ->  ()
 
   | x -> flat_iter_tbexpr ignore (check_proj_wrap_expr n i) ignore x
@@ -225,7 +225,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       ]
     | _ ->
       begin match e with
-      | `BEXPR_tuple ls,_ ->
+      | BEXPR_tuple ls,_ ->
         (*
         print_endline ("TUPLE ASSGN " ^ sbe syms.dfns bbdfns e);
         *)
@@ -257,12 +257,12 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
             parameters := (t,pix) :: !parameters;
             pix
         in
-        let p = `BEXPR_name (pix,ts'),t in
+        let p = BEXPR_name (pix,ts'),t in
         let n = ref 0 in
         let param_decode =
           map
           (fun {pindex=ix; ptyp=prjt} ->
-            let prj = reduce_tbexpr bbdfns (`BEXPR_get_n (!n,p),prjt) in
+            let prj = reduce_tbexpr bbdfns (BEXPR_get_n (!n,p),prjt) in
             incr n;
             `BEXE_init (sr,ix,prj)
           )
@@ -317,7 +317,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       `BEXE_assign
       (
         sr,
-        (`BEXPR_get_n (j,(`BEXPR_name (i,ts'),t)),t'),
+        (BEXPR_get_n (j,(BEXPR_name (i,ts'),t)),t'),
         x
       )
     )
@@ -426,7 +426,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
     match inp with
     | (`BEXE_call_direct (sr,i,ts,a)) as x :: tail  -> assert false
 
-    | (`BEXE_call (sr,(`BEXPR_closure(i,ts),_),a)) as x :: tail
+    | (`BEXE_call (sr,(BEXPR_closure(i,ts),_),a)) as x :: tail
       when (i,ts)=(this,ts') && Flx_cflow.tailable exes [] tail
       ->
       if can_loop ()
@@ -444,9 +444,9 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
         aux tail (x::res)
       end
 
-    | `BEXE_fun_return (sr,(`BEXPR_apply_direct(i,ts,a),_)) :: tail -> assert false
+    | `BEXE_fun_return (sr,(BEXPR_apply_direct(i,ts,a),_)) :: tail -> assert false
 
-    | `BEXE_fun_return (sr,(`BEXPR_apply((`BEXPR_closure (i,ts),_),a),_)) :: tail
+    | `BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) :: tail
       when (i,ts)=(this,ts')
       ->
        (*
@@ -456,7 +456,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
        let res = cal_tail_call a @ res
        in aux tail res
 
-    | `BEXE_fun_return (sr,(`BEXPR_apply((`BEXPR_closure (i,ts),_),a),_)) as x :: tail
+    | `BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) as x :: tail
       ->
       (*
       print_endline ("--> NONSELF? Tail rec apply " ^ si i);
@@ -465,7 +465,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       aux tail (x::res)
 
 
-    | (`BEXE_call(sr,(`BEXPR_closure (i,ts),_),a)) as x :: tail  ->
+    | (`BEXE_call(sr,(BEXPR_closure (i,ts),_),a)) as x :: tail  ->
       (*
       print_endline ("Untailed call " ^ si i ^ "["^catmap "," (sbt syms.dfns) ts^"]");
       print_endline ("This = " ^ si this);
@@ -477,18 +477,18 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
       aux tail (x::res)
 
     | [] -> rev res (* forward order *)
-    | `BEXE_init (sr,i,(`BEXPR_tuple ls,t)) as h :: tail
+    | `BEXE_init (sr,i,(BEXPR_tuple ls,t)) as h :: tail
       ->
         cal_par i t ls h tail
 
-    | (`BEXE_assign (sr,(`BEXPR_name (i,[]),_),(`BEXPR_tuple ls,t)) as h) :: tail
+    | (`BEXE_assign (sr,(BEXPR_name (i,[]),_),(BEXPR_tuple ls,t)) as h) :: tail
       ->
        cal_par i t ls h tail
 
-    | (`BEXE_assign (sr,x,(`BEXPR_tuple ls,t)) as h) :: tail
+    | (`BEXE_assign (sr,x,(BEXPR_tuple ls,t)) as h) :: tail
       ->
       let rec unproj e = match map_tbexpr ident unproj ident e with
-      | `BEXPR_get_n (k,(`BEXPR_tuple ls,_)),_ -> nth ls k
+      | BEXPR_get_n (k,(BEXPR_tuple ls,_)),_ -> nth ls k
       | x -> x
       in
       let ls = map unproj ls in
@@ -505,9 +505,9 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
         | _ -> assert false
       in
       let rec repl e = match map_tbexpr ident repl ident e with
-        | x when me x -> `BEXPR_name (i,[]),t
-        | `BEXPR_get_n (k,(`BEXPR_name (j,[]),t)),t' when i = j->
-          `BEXPR_name (pbase+k,[]),t'
+        | x when me x -> BEXPR_name (i,[]),t
+        | BEXPR_get_n (k,(BEXPR_name (j,[]),t)),t' when i = j->
+          BEXPR_name (pbase+k,[]),t'
         | x -> x
       in
       let check = me x in
@@ -557,15 +557,15 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
           ;
         end;
         let rec undo_expr e = match map_tbexpr ident undo_expr ident e with
-        | `BEXPR_name (j,[]),t when i = j  -> x
-        | `BEXPR_name (j,[]),t when j >= pbase && j < pbase + n-> `BEXPR_get_n (j-pbase,x),t
+        | BEXPR_name (j,[]),t when i = j  -> x
+        | BEXPR_name (j,[]),t when j >= pbase && j < pbase + n-> BEXPR_get_n (j-pbase,x),t
         | x -> x
         in
         let undo_st st = match st with
         | `BEXE_init (sr,j,e) when j >= pbase && j < pbase + n ->
           let k = j - pbase in
           let _,t' = nth ls k in
-          `BEXE_assign (sr,(`BEXPR_get_n (k,x),t'),undo_expr e)
+          `BEXE_assign (sr,(BEXPR_get_n (k,x),t'),undo_expr e)
 
         | x -> map_bexe ident undo_expr ident ident ident x
         in

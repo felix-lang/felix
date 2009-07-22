@@ -226,11 +226,11 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
   match e with
-  | `BEXPR_expr (s,_) -> ce_top s
+  | BEXPR_expr (s,_) -> ce_top s
 
-  | `BEXPR_case_index e -> gen_case_index e
+  | BEXPR_case_index e -> gen_case_index e
 
-  | `BEXPR_range_check (e1,e2,e3) ->
+  | BEXPR_range_check (e1,e2,e3) ->
      let f,sl,sc,el,ec = Flx_srcref.to_tuple sr in
      let f = ce_atom ("\""^ f ^"\"") in
      let sl = ce_atom (si sl) in
@@ -245,11 +245,11 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
      in
      ce_call (ce_atom "flx::rtl::range_check") args
 
-  | `BEXPR_get_n (n,(e',t as e)) ->
+  | BEXPR_get_n (n,(e',t as e)) ->
     begin match rt t with
     | `BTYP_array (_,`BTYP_unitsum _) ->
       begin match e with
-      | `BEXPR_tuple _,_ -> print_endline "Failed to slice a tuple!"
+      | BEXPR_tuple _,_ -> print_endline "Failed to slice a tuple!"
       | _ -> ()
       end;
       ce_dot (ge' e) ("data["^si n^"]")
@@ -278,7 +278,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | _ -> ce_dot (ge' e) ("mem_" ^ si n)
     end
 
-  | `BEXPR_get_named (n,(e',t as e)) ->
+  | BEXPR_get_named (n,(e',t as e)) ->
     (*
     print_endline "Handling get_named expression";
     *)
@@ -289,7 +289,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | _ -> assert false
     end
 
-  | `BEXPR_match_case (n,((e',t') as e)) ->
+  | BEXPR_match_case (n,((e',t') as e)) ->
     let t' = reduce_type (beta_reduce syms sr  t') in
     let x = gen_case_index e in
     ce_infix "==" x (ce_atom (si n))
@@ -303,7 +303,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       (ce_atom (si n))
     *)
 
-  | `BEXPR_case_arg (n,e) ->
+  | BEXPR_case_arg (n,e) ->
     (*
     print_endline ("Decoding nonconst ctor type " ^ sbt syms.dfns t);
     *)
@@ -316,12 +316,12 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "data"))
     end
 
-  | `BEXPR_deref ((`BEXPR_ref (index,ts)),`BTYP_pointer t) ->
-    ge' (`BEXPR_name (index,ts),t)
+  | BEXPR_deref ((BEXPR_ref (index,ts)),`BTYP_pointer t) ->
+    ge' (BEXPR_name (index,ts),t)
 
-  | `BEXPR_address e -> ce_prefix "&" (ge' e)
+  | BEXPR_address e -> ce_prefix "&" (ge' e)
 
-  | `BEXPR_deref e ->
+  | BEXPR_deref e ->
     (*
     let cast = tn t ^ "*" in
     *)
@@ -338,33 +338,33 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   *)
 
   (* double negation is elimnated *)
-  | `BEXPR_not (`BEXPR_not e,_) -> ge' e
+  | BEXPR_not (BEXPR_not e,_) -> ge' e
 
   (* likelyhoods are reversed *)
-  | `BEXPR_not (`BEXPR_likely e,_) ->
-    ge' (`BEXPR_unlikely ((`BEXPR_not e),t),t)
+  | BEXPR_not (BEXPR_likely e,_) ->
+    ge' (BEXPR_unlikely ((BEXPR_not e),t),t)
 
-  | `BEXPR_not (`BEXPR_unlikely e,_) ->
-    ge' (`BEXPR_likely ((`BEXPR_not e),t),t)
+  | BEXPR_not (BEXPR_unlikely e,_) ->
+    ge' (BEXPR_likely ((BEXPR_not e),t),t)
 
-  | `BEXPR_likely e ->
+  | BEXPR_likely e ->
     begin match t with
     | `BTYP_unitsum 2 ->
       ce_atom ("FLX_LIKELY("^ge e^")")
     | _ -> ge' e
     end
 
-  | `BEXPR_unlikely e ->
+  | BEXPR_unlikely e ->
     begin match t with
     | `BTYP_unitsum 2 ->
       ce_atom ("FLX_UNLIKELY("^ge e^")")
     | _ -> ge' e
     end
 
-  | `BEXPR_not e ->
+  | BEXPR_not e ->
     ce_prefix "!" (ge' e)
 
-  | `BEXPR_new e ->
+  | BEXPR_new e ->
     let ref_type = tn t in
     let _,t' = e in
     let pname = shape_of syms bbdfns tn t' in
@@ -377,14 +377,14 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     ce_atom reference
 
 
-  | `BEXPR_literal v ->
+  | BEXPR_literal v ->
     if is_native_literal v
     then ce_atom (cstring_of_literal v)
     else
     let t = tn t in
     ce_atom ("("^t ^ ")(" ^ cstring_of_literal v ^ ")")
 
-  | `BEXPR_case (v,t') ->
+  | BEXPR_case (v,t') ->
     begin match unfold syms.dfns t' with
     | `BTYP_unitsum n ->
       if v < 0 or v >= n
@@ -426,7 +426,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | _ -> failwith "Case tag must have sum type"
     end
 
-  | `BEXPR_name (index,ts') ->
+  | BEXPR_name (index,ts') ->
     let id,parent,sr2,entry =
       try Hashtbl.find bbdfns index
       with _ ->
@@ -533,7 +533,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         )
     end
 
-  | `BEXPR_closure (index,ts') ->
+  | BEXPR_closure (index,ts') ->
     (*
     print_endline ("Generating closure of " ^ si index);
     *)
@@ -576,7 +576,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | _ -> failwith ("[gen_expr: closure] Cannot use this kind of name '"^id^"' in expression")
     end
 
-  | `BEXPR_ref (index,ts') ->
+  | BEXPR_ref (index,ts') ->
     let ts = map tsub ts' in
     let ref_type = tn t in
     (*
@@ -619,7 +619,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
      arguments to be applied to a unit anyhow
   *)
 
-  | `BEXPR_variant (s,((_,t') as e)) ->
+  | BEXPR_variant (s,((_,t') as e)) ->
     print_endline ("Variant " ^ s);
     print_endline ("Type " ^ sbt syms.dfns t);
     let
@@ -642,7 +642,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let uval = "_uctor_("^si vidx^"," ^ aval ^")"  in
     ce_atom uval
 
-  | `BEXPR_coerce ((srcx,srct) as srce,dstt) ->
+  | BEXPR_coerce ((srcx,srct) as srce,dstt) ->
     let coerce_variant () =
       let vts =
         match dstt with
@@ -650,9 +650,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         | _ -> syserr sr "Coerce non-variant"
       in
       begin match srcx with
-      | `BEXPR_variant (s,argt) ->
+      | BEXPR_variant (s,argt) ->
         print_endline "Coerce known variant!";
-        ge' (`BEXPR_variant (s,argt),t)
+        ge' (BEXPR_variant (s,argt),t)
       | _ ->
         let i =
           begin try
@@ -671,9 +671,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | _ -> ce_atom ("reinterpret<"^tn dstt^","^tn srct^">("^ge srce^")")
     end
 
-  | `BEXPR_apply
+  | BEXPR_apply
      (
-       (`BEXPR_case (v,t),t'),
+       (BEXPR_case (v,t),t'),
        (a,t'')
      ) ->
        (* t is the type of the sum,
@@ -712,7 +712,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       *)
 
 
-  | `BEXPR_apply_prim (index,ts,(arg,argt as a)) ->
+  | BEXPR_apply_prim (index,ts,(arg,argt as a)) ->
     (*
     print_endline ("Prim apply, arg=" ^ sbe syms.dfns bbdfns a);
     *)
@@ -763,8 +763,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
         in
         match entry with
-        | `BBDCL_fun _ -> ge' (`BEXPR_apply_prim (index',ts',a),t)
-        | `BBDCL_function _ -> ge' (`BEXPR_apply_direct (index',ts',a),t)
+        | `BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
+        | `BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
         | _ ->
           clierr2 sr sr3 ("expected instance to be function " ^ id)
         end
@@ -797,7 +797,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       )
     end
 
-  | `BEXPR_apply_struct (index,ts,a) ->
+  | BEXPR_apply_struct (index,ts,a) ->
     let id,parent,sr2,entry =
       try Hashtbl.find bbdfns index
       with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
@@ -852,7 +852,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | _ -> assert false
     end
 
-  | `BEXPR_apply_direct (index,ts,a) ->
+  | BEXPR_apply_direct (index,ts,a) ->
     let ts = map tsub ts in
     let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bbdfns index ts in
     if index <> index' then
@@ -865,8 +865,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
       in
       match entry with
-      | `BBDCL_fun _ -> ge' (`BEXPR_apply_prim (index',ts',a),t)
-      | `BBDCL_function _ -> ge' (`BEXPR_apply_direct (index',ts',a),t)
+      | `BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
+      | `BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
       | _ ->
           clierr2 sr sr3 ("expected instance to be function " ^ id)
     end else
@@ -906,7 +906,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
     | `BBDCL_fun _ -> assert false
     (*
-      ge' (`BEXPR_apply_prim (index,ts,a),t)
+      ge' (BEXPR_apply_prim (index,ts,a),t)
     *)
 
     | _ ->
@@ -917,7 +917,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       )
     end
 
-  | `BEXPR_apply_stack (index,ts,a) ->
+  | BEXPR_apply_stack (index,ts,a) ->
     let ts = map tsub ts in
     let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bbdfns index ts in
     if index <> index' then
@@ -930,8 +930,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
       in
       match entry with
-      | `BBDCL_fun _ -> ge' (`BEXPR_apply_prim (index',ts',a),t)
-      | `BBDCL_function _ -> ge' (`BEXPR_apply_direct (index',ts',a),t)
+      | `BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
+      | `BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
       | _ ->
           clierr2 sr sr3 ("expected instance to be function " ^ id)
     end else
@@ -963,7 +963,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
           | _ ->
             begin match a with
-            | `BEXPR_tuple xs,_ ->
+            | BEXPR_tuple xs,_ ->
               (*
               print_endline ("Arg to C function is tuple " ^ sbe syms.dfns bbdfns a);
               *)
@@ -993,7 +993,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
                 print_endline ("tt=" ^ sbt syms.dfns tt);
                 *)
                 let t = nth_type tt i in
-                let a' = `BEXPR_get_n (i,a),t in
+                let a' = BEXPR_get_n (i,a),t in
                 let x = ge_arg a' in
                 incr n;
                 if String.length x = 0 then s else
@@ -1034,25 +1034,25 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       )
     end
 
-  | `BEXPR_apply ((`BEXPR_closure (index,ts),_),a) ->
+  | BEXPR_apply ((BEXPR_closure (index,ts),_),a) ->
     assert false (* should have been factored out *)
 
   (* application of C function pointer, type
      f: a --> b
   *)
-(*  | `BEXPR_apply ( (_,`BTYP_lvalue(`BTYP_cfunction _)) as f,a) *)
-  | `BEXPR_apply ( (_,`BTYP_cfunction _) as f,a) ->
+(*  | BEXPR_apply ( (_,`BTYP_lvalue(`BTYP_cfunction _)) as f,a) *)
+  | BEXPR_apply ( (_,`BTYP_cfunction _) as f,a) ->
     ce_atom (
     (ge f) ^"(" ^ ge_arg a ^ ")"
     )
 
   (* General application*)
-  | `BEXPR_apply (f,a) ->
+  | BEXPR_apply (f,a) ->
     ce_atom (
     "("^(ge f) ^ ")->clone()\n      ->apply(" ^ ge_arg a ^ ")"
     )
 
-  | `BEXPR_record es ->
+  | BEXPR_record es ->
     let rcmp (s1,_) (s2,_) = compare s1 s2 in
     let es = sort rcmp es in
     let es = map snd es in
@@ -1073,7 +1073,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     ")"
     )
 
-  | `BEXPR_tuple es ->
+  | BEXPR_tuple es ->
     (*
     print_endline ("Eval tuple " ^ sbe syms.dfns bbdfns (e,t));
     *)

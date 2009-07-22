@@ -89,7 +89,7 @@ let idt t = t
 
 let rec rpl syms argmap x = match map_tbexpr ident (rpl syms argmap) idt x with
   (* No need to check ts or type here *)
-  | (`BEXPR_name (i,_),_) as x ->
+  | (BEXPR_name (i,_),_) as x ->
     (try
       let x' = Hashtbl.find argmap i in
       (*
@@ -301,8 +301,8 @@ let gen_body syms (uses,child_map,bbdfns) id
         | _,`BTYP_function (`BTYP_tuple [],t) -> t
         | _,t -> failwith ("Expected argument to be function void->t, got " ^ sbt syms.dfns t)
         in
-        let un = `BEXPR_tuple [], `BTYP_tuple [] in
-        let apl = `BEXPR_apply (argument, un), argt in
+        let un = BEXPR_tuple [], `BTYP_tuple [] in
+        let apl = BEXPR_apply (argument, un), argt in
         Hashtbl.add argmap index apl
 
       | `PVal ->
@@ -312,7 +312,7 @@ let gen_body syms (uses,child_map,bbdfns) id
 
       | `PRef ->
         begin match argument with
-        | `BEXPR_ref (i,ts),`BTYP_pointer t ->
+        | BEXPR_ref (i,ts),`BTYP_pointer t ->
           Hashtbl.add argmap index argument
         | _ -> eagerly ()
         end
@@ -363,7 +363,7 @@ let gen_body syms (uses,child_map,bbdfns) id
         (* unpack argument *)
         if length ps > 1 then
         let ts = map (fun (_,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
-        let p = `BEXPR_name (parameter,ts),paramtype in
+        let p = BEXPR_name (parameter,ts),paramtype in
         let n = ref 0 in
         iter
         (fun {pid=vid;pindex=ix; ptyp=prjt} ->
@@ -371,14 +371,14 @@ let gen_body syms (uses,child_map,bbdfns) id
           let pj =
             match argument with
             (* THIS CASE MAY NOT WORK WITH TAIL REC OPT! *)
-            | `BEXPR_tuple ls,_ ->
+            | BEXPR_tuple ls,_ ->
               begin try nth ls (!n)
               with _ ->
                 failwith (
                   "[gen_body1] Woops, prj "^si (!n) ^" tuple wrong length? " ^ si (length ts)
                 )
               end
-            | _ -> `BEXPR_get_n (!n,p),prjt
+            | _ -> BEXPR_get_n (!n,p),prjt
           in
           (*
           let prj = reduce_tbexpr bbdfns pj in
@@ -425,14 +425,14 @@ let gen_body syms (uses,child_map,bbdfns) id
         let pj =
           match argument with
           (* THIS CASE MAY NOT WORK WITH TAIL REC OPT! *)
-          | `BEXPR_tuple ls,_ ->
+          | BEXPR_tuple ls,_ ->
             begin try nth ls (!n)
             with _ ->
                 failwith (
                   "[gen_body2] Woops, prj "^si (!n) ^" tuple wrong length? " ^ si (length ts)
                 )
             end
-          | p -> `BEXPR_get_n (!n,p),prjt
+          | p -> BEXPR_get_n (!n,p),prjt
         in
         (*
         let prj = reduce_tbexpr bbdfns pj in

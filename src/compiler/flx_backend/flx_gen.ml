@@ -1083,7 +1083,7 @@ let gen_exe filename syms
 
             | _ ->
               begin match a with
-              | `BEXPR_tuple xs,_ ->
+              | BEXPR_tuple xs,_ ->
                 (*
                 print_endline ("Arg to C function is tuple " ^ sbe syms.dfns a);
                 *)
@@ -1114,7 +1114,7 @@ let gen_exe filename syms
                   print_endline ("tt=" ^ sbt syms.dfns tt);
                   *)
                   let t = nth_type tt i in
-                  let a' = `BEXPR_get_n (i,a),t in
+                  let a' = BEXPR_get_n (i,a),t in
                   let x =
                     if Hashtbl.mem syms.instances (j,ts)
                     && not (t = `BTYP_tuple[])
@@ -1146,7 +1146,7 @@ let gen_exe filename syms
 
     | `BEXE_call_prim (sr,index,ts,a)
     | `BEXE_call_direct (sr,index,ts,a)
-    | `BEXE_call (sr,(`BEXPR_closure (index,ts),_),a) ->
+    | `BEXE_call (sr,(BEXPR_closure (index,ts),_),a) ->
       let a = match a with (a,t) -> a, tsub t in
       let subs,x = unravel syms bbdfns a in
       let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
@@ -1158,7 +1158,7 @@ let gen_exe filename syms
        i3: constructor
        a: ctor argument
     *)
-    | `BEXE_jump (sr,((`BEXPR_closure (index,ts),_)),a)
+    | `BEXE_jump (sr,((BEXPR_closure (index,ts),_)),a)
     | `BEXE_jump_direct (sr,index,ts,a) ->
       let a = match a with (a,t) -> a, tsub t in
       let subs,x = unravel syms bbdfns a in
@@ -2331,11 +2331,11 @@ let gen_biface_body syms bbdfns biface = match biface with
         | _ ->
           let a =
             let counter = ref 0 in
-            `BEXPR_tuple
+            BEXPR_tuple
             (
               map
               (fun {ptyp=t; pid=name; pindex=idx} ->
-                `BEXPR_expr (name,t),t
+                BEXPR_expr (name,t),t
               )
               ps
             ),
