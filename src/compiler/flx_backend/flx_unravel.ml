@@ -56,8 +56,8 @@ let unravel syms bbdfns e =
       | BEXPR_apply (f,b),t -> refer (BEXPR_apply(aux urn f, aux urn b),t)
       | BEXPR_tuple ls,t -> (BEXPR_tuple (map (aux n) ls),t)
       | (BEXPR_name _,t) as x -> x
-      | (BEXPR_literal (`AST_int _ )),t as x -> x
-      | (BEXPR_literal (`AST_float _ )),t as x -> x
+      | (BEXPR_literal (Flx_ast.AST_int _ )),t as x -> x
+      | (BEXPR_literal (Flx_ast.AST_float _ )),t as x -> x
       | x -> refer x
     in
       aux urn e

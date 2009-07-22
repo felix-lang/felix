@@ -197,9 +197,9 @@ let rec get_pattern_vars
   | _ -> ()
 
 let rec gen_match_check pat (arg:expr_t) =
-  let lint sr t i = `AST_literal (sr,`AST_int (t,i))
-  and lstr sr s = `AST_literal (sr,`AST_string s)
-  and lfloat sr t x = `AST_literal (sr,`AST_float (t,x))
+  let lint sr t i = `AST_literal (sr, AST_int (t,i))
+  and lstr sr s = `AST_literal (sr, AST_string s)
+  and lfloat sr t x = `AST_literal (sr, AST_float (t,x))
   and apl sr f x =
     `AST_apply
     (

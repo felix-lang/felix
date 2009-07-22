@@ -38,12 +38,12 @@ let suffix_of_type s = match s with
   | _ -> failwith ("[suffix_of_type] Unexpected Type " ^ s)
 
 let string_of_literal e = match e with
-  | `AST_int (s,i) -> (Big_int.string_of_big_int i)^suffix_of_type s
-  | `AST_float (t,v) -> v ^ suffix_of_type t
-  | `AST_string s -> string_of_string s
-  | `AST_cstring s -> "c"^string_of_string s
-  | `AST_wstring s -> "w"^string_of_string s
-  | `AST_ustring s -> "u"^string_of_string s
+  | AST_int (s,i) -> (Big_int.string_of_big_int i)^suffix_of_type s
+  | AST_float (t,v) -> v ^ suffix_of_type t
+  | AST_string s -> string_of_string s
+  | AST_cstring s -> "c"^string_of_string s
+  | AST_wstring s -> "w"^string_of_string s
+  | AST_ustring s -> "u"^string_of_string s
 
 let rec string_of_qualified_name (n:qualified_name_t) =
   let se e = string_of_expr e in

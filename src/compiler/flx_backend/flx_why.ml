@@ -104,7 +104,7 @@ let rec why_expr syms bbdfns (e: tbexpr_t) =
     "(" ^ catmap ", " ee ls ^ ")"
 
   | BEXPR_literal x,_ -> begin match x with
-    | `AST_int (s,j) -> let j = Big_int.int_of_big_int j in si j
+    | AST_int (s,j) -> let j = Big_int.int_of_big_int j in si j
     | _ -> "UNKLIT"
     end
   | _ -> "UNKEXPR"

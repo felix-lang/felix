@@ -98,7 +98,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | `AST_typeof (_,e) -> `TYP_typeof e
   | `AST_as (sr,(t,x)) -> `TYP_as (te t,x)
 
-  | `AST_literal (sr,`AST_int (enc,v)) ->
+  | `AST_literal (sr,AST_int (enc,v)) ->
     if enc <> "int"
     then
       clierr sr

@@ -142,14 +142,12 @@ and ivs_list_t = plain_ivs_list_t * vs_aux_t
 
 (** Literals recognized by the lexer. *)
 and literal_t =
-  [
-  | `AST_int of string * Big_int.big_int
-  | `AST_string of string
-  | `AST_cstring of string
-  | `AST_wstring of string
-  | `AST_ustring of string
-  | `AST_float of string * string
-  ]
+  | AST_int of string * Big_int.big_int
+  | AST_string of string
+  | AST_cstring of string
+  | AST_wstring of string
+  | AST_ustring of string
+  | AST_float of string * string
 
 (** {7 Expressions}
  *

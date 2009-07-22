@@ -538,7 +538,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `AST_apply (sr,(`AST_name(_,"_str",[]),x)) ->
      let x = me x in
      let x = string_of_expr x in
-     `AST_literal (sr,`AST_string x)
+     `AST_literal (sr, AST_string x)
 
    (* _tuple_cons (a,t) ->
      a,t if t is not a tuple
@@ -1622,7 +1622,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
 
   | `AST_call (sr,
       `AST_name(srn,"_scheme", []),
-      `AST_literal (srl,`AST_string s)
+      `AST_literal (srl, AST_string s)
     ) ->
     print_endline "DETECTED STATEMENT ENCODED AS SCHEME";
     let get_port = function

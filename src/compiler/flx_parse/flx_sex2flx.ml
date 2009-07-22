@@ -44,13 +44,13 @@ let rec xliteral_t sr x =
     Big_int.big_int_of_string i in
   let ss s = s in
   match x with
-  | Lst [Id "ast_int"; Str s; Str i] -> `AST_int (ss s, bi (ss i))
-  | Lst [Id "ast_int"; Str s; Int i] -> `AST_int (ss s, bi i)
-  | Lst [Id "ast_string"; Str s] -> `AST_string (ss s)
-  | Lst [Id "ast_cstring"; Str s] -> `AST_cstring (ss s)
-  | Lst [Id "ast_wstring"; Str s] -> `AST_wstring (ss s)
-  | Lst [Id "ast_ustring"; Str s] -> `AST_ustring (ss s)
-  | Lst [Id "ast_float"; Str s1; Str s2] -> `AST_float (ss s1, ss s2)
+  | Lst [Id "ast_int"; Str s; Str i] -> AST_int (ss s, bi (ss i))
+  | Lst [Id "ast_int"; Str s; Int i] -> AST_int (ss s, bi i)
+  | Lst [Id "ast_string"; Str s] -> AST_string (ss s)
+  | Lst [Id "ast_cstring"; Str s] -> AST_cstring (ss s)
+  | Lst [Id "ast_wstring"; Str s] -> AST_wstring (ss s)
+  | Lst [Id "ast_ustring"; Str s] -> AST_ustring (ss s)
+  | Lst [Id "ast_float"; Str s1; Str s2] -> AST_float (ss s1, ss s2)
   | x -> err x "invalid literal"
 
 
@@ -108,7 +108,7 @@ and xexpr_t sr x =
   let xsts x =  lst "statement" xs x in
   let xterm x = xast_term_t sr x in
   match x with
- | Str s -> `AST_literal (sr, (`AST_string s))
+ | Str s -> `AST_literal (sr, (AST_string s))
  | Lst [] -> `AST_tuple (sr,[])
  | Lst [x] -> ex x
  | Lst [Id "ast_vsprintf";  Str s] -> `AST_vsprintf (sr,ss s)
@@ -248,7 +248,7 @@ and xexpr_t sr x =
   | Id y -> `AST_name (sr,y,[])
   | Int i ->
     let j = Big_int.big_int_of_string i in
-    `AST_literal (sr, `AST_int ("int",j))
+    `AST_literal (sr, AST_int ("int",j))
 
   | x ->
     err x "expression"

@@ -1523,12 +1523,12 @@ and bind_type_index syms (rs:recstop)
 
 
 and base_typename_of_literal v = match v with
-  | `AST_int (t,_) -> t
-  | `AST_float (t,_) -> t
-  | `AST_string _ -> "string"
-  | `AST_cstring _ -> "charp"
-  | `AST_wstring _ -> "wstring"
-  | `AST_ustring _ -> "string"
+  | AST_int (t,_) -> t
+  | AST_float (t,_) -> t
+  | AST_string _ -> "string"
+  | AST_cstring _ -> "charp"
+  | AST_wstring _ -> "wstring"
+  | AST_ustring _ -> "string"
 
 and  type_of_literal syms env sr v : btypecode_t =
   let _,_,root,_,_ = List.hd (List.rev env) in
@@ -3621,7 +3621,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       begin match hfind "lookup" syms.dfns i with
       | { id="int"; symdef=SYMDEF_abs (_,`StrTemplate "int",_) }  ->
         begin match e' with
-        | BEXPR_literal (`AST_int (kind,big)) ->
+        | BEXPR_literal (AST_int (kind,big)) ->
           let m =
             try Big_int.int_of_big_int big
             with _ -> clierr sr "Integer is too large for unitsum"
@@ -3632,8 +3632,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             clierr sr "Integer is out of range for unitsum"
         | _ ->
           let inttype = t' in
-          let zero = BEXPR_literal (`AST_int ("int",Big_int.zero_big_int)),t' in
-          let xn = BEXPR_literal (`AST_int ("int",Big_int.big_int_of_int n)),t' in
+          let zero = BEXPR_literal (AST_int ("int",Big_int.zero_big_int)),t' in
+          let xn = BEXPR_literal (AST_int ("int",Big_int.big_int_of_int n)),t' in
           BEXPR_range_check (zero,x',xn),`BTYP_unitsum n
 
         end
@@ -3789,7 +3789,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     let int_t = bt sr (`AST_name (sr,"int",[])) in
     begin match e' with
     | BEXPR_case (i,_) ->
-      BEXPR_literal (`AST_int ("int",Big_int.big_int_of_int i))
+      BEXPR_literal (AST_int ("int",Big_int.big_int_of_int i))
     | _ -> BEXPR_case_index e
     end
     ,
@@ -3836,7 +3836,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     *)
     if name = "_felix_type_name" then
        let sname = catmap "," string_of_typecode ts in
-       let x = `AST_literal (sr,`AST_string sname) in
+       let x = `AST_literal (sr, AST_string sname) in
        be x
     else
     let ts = List.map (bt sr) ts in

@@ -46,22 +46,22 @@ let csuffix_of_type s = match s with
   | _ -> failwith ("[csuffix_of_type]: Unexpected Type " ^ s)
 
 let cstring_of_literal e = match e with
-  | `AST_int (s,i) -> (Big_int.string_of_big_int i)^csuffix_of_type s
-  | `AST_float (s,x) -> x ^ csuffix_of_type s
-  | `AST_string s -> string_of_string s
-  | `AST_cstring s -> string_of_string s
-  | `AST_wstring s -> "L" ^ string_of_string s
-  | `AST_ustring s -> "L" ^ string_of_string s
+  | Flx_ast.AST_int (s,i) -> (Big_int.string_of_big_int i)^csuffix_of_type s
+  | Flx_ast.AST_float (s,x) -> x ^ csuffix_of_type s
+  | Flx_ast.AST_string s -> string_of_string s
+  | Flx_ast.AST_cstring s -> string_of_string s
+  | Flx_ast.AST_wstring s -> "L" ^ string_of_string s
+  | Flx_ast.AST_ustring s -> "L" ^ string_of_string s
 
 (* a native literal is one not needing a cast to get the type right *)
 let is_native_literal e = match e with
-  | `AST_int ("int",_)
-  | `AST_int ("long",_)
-  | `AST_int ("uint",_)
-  | `AST_int ("ulong",_)
-  | `AST_int ("vlong",_)
-  | `AST_int ("uvlong",_)
-  | `AST_float ("double",_) -> true
+  | Flx_ast.AST_int ("int",_)
+  | Flx_ast.AST_int ("long",_)
+  | Flx_ast.AST_int ("uint",_)
+  | Flx_ast.AST_int ("ulong",_)
+  | Flx_ast.AST_int ("vlong",_)
+  | Flx_ast.AST_int ("uvlong",_)
+  | Flx_ast.AST_float ("double",_) -> true
   | _ -> false
 
 let get_var_frame syms bbdfns this index ts : string =
