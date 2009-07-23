@@ -84,7 +84,7 @@ let rec is_pure syms (child_map, bbdfns) i =
   (* not sure if this is the right place for this check .. *)
   | BBDCL_fun (_,_,_,_,ct,_,_)
   | BBDCL_proc (_,_,_,ct,_) ->
-    ct <> `Virtual
+    ct <> CS_virtual
 
   | BBDCL_procedure (_,_,_,exes)   (* ALLOWED NOW *)
   | BBDCL_function (_,_,_,_,exes) ->
@@ -533,7 +533,7 @@ and check_stackable_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map la
   let id,parent,sr,entry = Hashtbl.find bbdfns i in
   match entry with
   | BBDCL_callback _ -> false (* not sure if this is right .. *)
-  | BBDCL_proc (_,_,_,ct,_) -> ct <> `Virtual
+  | BBDCL_proc (_,_,_,ct,_) -> ct <> CS_virtual
   | BBDCL_procedure (props,vs,p,exes) ->
     if mem `Stackable props then true
     else if mem `Unstackable props then false

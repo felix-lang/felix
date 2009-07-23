@@ -321,7 +321,8 @@ let bbind_sym syms bbdfns i {
         if unit_sum then si ctor_idx
         else "_uctor_(" ^ si ctor_idx ^ ",0)"
       in
-      Hashtbl.add bbdfns i (name,None,sr,BBDCL_const ([],bvs,t,`Str ct,[]));
+      Hashtbl.add bbdfns i (name, None, sr,
+        BBDCL_const ([], bvs, t, CS_str ct, []));
 
       if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<"^si i^">:" ^

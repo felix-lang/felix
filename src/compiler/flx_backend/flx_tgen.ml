@@ -1,5 +1,6 @@
 open Flx_util
 open Flx_list
+open Flx_ast
 open Flx_types
 open Flx_mtypes2
 open Flx_print
@@ -215,10 +216,10 @@ let gen_type_name syms bbdfns (index,typ) =
       let tss = map tn ts in
       let instance =
         match ct with
-        | `Virtual -> clierr sr "Instantiate virtual type!"
-        | `Identity -> syserr sr "Idendity type is nonsense!"
-        | `Str c -> c
-        | `StrTemplate c ->
+        | CS_virtual -> clierr sr "Instantiate virtual type!"
+        | CS_identity -> syserr sr "Idendity type is nonsense!"
+        | CS_str c -> c
+        | CS_str_template c ->
         try sc "expr" (csubst sr sr c (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" tss "atom" "Error" ["Error"] ["Error"] ["Error"])
         with Not_found -> failwith "[gen_type_name] Unexpected error in csubst"
       in

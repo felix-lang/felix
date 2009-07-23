@@ -282,10 +282,10 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
       ;
       Array.to_list a
     in
-    let f = DCL_fun([],ts,str,`StrTemplate fs,req,"primary") in
-    let x=EXPR_index (sr,id,ix) in
+    let f = DCL_fun([], ts, str, CS_str_template fs, req, "primary") in
+    let x = EXPR_index (sr,id,ix) in
     [
-      Dcl (sr,id,Some ix,`Private,dfltvs,f);
+      Dcl (sr, id, Some ix, `Private, dfltvs, f);
     ],x
 
   | EXPR_cond (sr,(e,b1,b2)) ->
@@ -573,9 +573,10 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
         si el ^ "," ^ si ec
       in
       [
-        Exe (sr,EXE_comment "match failure");
-        Exe (sr,EXE_label failure_label);
-        Exe (sr,EXE_noreturn_code (`Str ("      FLX_MATCH_FAILURE("^s^");\n")));
+        Exe (sr, EXE_comment "match failure");
+        Exe (sr, EXE_label failure_label);
+        Exe (sr, EXE_noreturn_code (
+          CS_str ("      FLX_MATCH_FAILURE(" ^ s ^ ");\n")));
       ]
     )
     in
@@ -658,7 +659,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     *)
     let ts = List.map (fun (s,_)-> TYP_name (sr,s,[])) (fst parent_vs) in
     let us = NREQ_atom (`AST_name (sr,"_rqs_" ^ name,ts)) in
-    let body = DCL_insert (`Str "",`Body,us) in
+    let body = DCL_insert (CS_str "",`Body,us) in
     Dcl (sr,"_rqs_"^n,None,`Public,dfltvs,body)
   in
 
@@ -1223,7 +1224,8 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
       in
       [
         Exe (sr,EXE_comment "match failure");
-        Exe (sr,EXE_noreturn_code (`Str ("      FLX_MATCH_FAILURE("^s^");\n")));
+        Exe (sr,EXE_noreturn_code (CS_str
+          ("      FLX_MATCH_FAILURE(" ^ s ^ ");\n")));
       ]
     )
     @

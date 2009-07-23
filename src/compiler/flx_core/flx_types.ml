@@ -63,11 +63,11 @@ type dcl_t =
 
   (* binding structures [prolog] *)
   | DCL_newtype of       typecode_t
-  | DCL_abs of           type_qual_t list * c_t * named_req_expr_t
-  | DCL_const of         property_t list * typecode_t * c_t * named_req_expr_t
-  | DCL_fun of           property_t list * typecode_t list * typecode_t * c_t * named_req_expr_t * prec_t
+  | DCL_abs of           type_qual_t list * code_spec_t * named_req_expr_t
+  | DCL_const of         property_t list * typecode_t * code_spec_t * named_req_expr_t
+  | DCL_fun of           property_t list * typecode_t list * typecode_t * code_spec_t * named_req_expr_t * prec_t
   | DCL_callback of      property_t list * typecode_t list * typecode_t * named_req_expr_t
-  | DCL_insert of        c_t * ikind_t * named_req_expr_t
+  | DCL_insert of        code_spec_t * ikind_t * named_req_expr_t
 
 and access_t = [`Private | `Public ]
 
@@ -194,8 +194,8 @@ and bexe_t =
   | BEXE_yield of Flx_srcref.t * tbexpr_t
   | BEXE_proc_return of Flx_srcref.t
   | BEXE_nop of Flx_srcref.t * string
-  | BEXE_code of Flx_srcref.t * c_t
-  | BEXE_nonreturn_code of Flx_srcref.t * c_t
+  | BEXE_code of Flx_srcref.t * code_spec_t
+  | BEXE_nonreturn_code of Flx_srcref.t * code_spec_t
   | BEXE_assign of Flx_srcref.t * tbexpr_t * tbexpr_t
   | BEXE_init of Flx_srcref.t * bid_t * tbexpr_t
   | BEXE_begin
@@ -255,12 +255,12 @@ and bbdcl_t =
 
   (* binding structures [prolog] *)
   | BBDCL_newtype of    bvs_t * btypecode_t
-  | BBDCL_abs of        bvs_t * btype_qual_t list * c_t * breqs_t
-  | BBDCL_const of      property_t list * bvs_t * btypecode_t * c_t * breqs_t
-  | BBDCL_fun of        property_t list * bvs_t * btypecode_t list * btypecode_t * c_t  * breqs_t * prec_t
+  | BBDCL_abs of        bvs_t * btype_qual_t list * code_spec_t * breqs_t
+  | BBDCL_const of      property_t list * bvs_t * btypecode_t * code_spec_t * breqs_t
+  | BBDCL_fun of        property_t list * bvs_t * btypecode_t list * btypecode_t * code_spec_t  * breqs_t * prec_t
   | BBDCL_callback of   property_t list * bvs_t * btypecode_t list * btypecode_t list * int * btypecode_t * breqs_t * prec_t
-  | BBDCL_proc of       property_t list * bvs_t * btypecode_t list * c_t  * breqs_t
-  | BBDCL_insert of     bvs_t * c_t * ikind_t * breqs_t
+  | BBDCL_proc of       property_t list * bvs_t * btypecode_t list * code_spec_t  * breqs_t
+  | BBDCL_insert of     bvs_t * code_spec_t * ikind_t * breqs_t
 
   | BBDCL_union of      bvs_t * (id_t * int * btypecode_t) list
   | BBDCL_struct of     bvs_t * (id_t * btypecode_t) list
@@ -286,7 +286,7 @@ type env_t = (bid_t * id_t * name_map_t * name_map_t list * typecode_t) list
      *)
 type symbol_definition_t =
   | SYMDEF_newtype of typecode_t
-  | SYMDEF_abs of type_qual_t list * c_t * named_req_expr_t
+  | SYMDEF_abs of type_qual_t list * code_spec_t * named_req_expr_t
   | SYMDEF_parameter of  param_kind_t * typecode_t
   | SYMDEF_typevar of typecode_t (* usually type TYPE *)
   | SYMDEF_axiom of params_t * axiom_method_t
@@ -297,14 +297,14 @@ type symbol_definition_t =
   | SYMDEF_module
   | SYMDEF_const_ctor of int * typecode_t * int * ivs_list_t
   | SYMDEF_nonconst_ctor of int * typecode_t * int * ivs_list_t * typecode_t
-  | SYMDEF_const of property_t list * typecode_t * c_t * named_req_expr_t
+  | SYMDEF_const of property_t list * typecode_t * code_spec_t * named_req_expr_t
   | SYMDEF_var of typecode_t
   | SYMDEF_val of typecode_t
   | SYMDEF_ref of typecode_t
   | SYMDEF_lazy of typecode_t * expr_t
-  | SYMDEF_fun of property_t list * typecode_t list * typecode_t * c_t  * named_req_expr_t * prec_t
+  | SYMDEF_fun of property_t list * typecode_t list * typecode_t * code_spec_t  * named_req_expr_t * prec_t
   | SYMDEF_callback of property_t list * typecode_t list * typecode_t * named_req_expr_t
-  | SYMDEF_insert of c_t  * ikind_t * named_req_expr_t
+  | SYMDEF_insert of code_spec_t  * ikind_t * named_req_expr_t
   | SYMDEF_union of (id_t * int *  vs_list_t * typecode_t) list
   | SYMDEF_struct of (id_t * typecode_t) list
   | SYMDEF_cstruct of (id_t * typecode_t) list

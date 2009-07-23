@@ -3640,7 +3640,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     begin match t',t'' with
     | `BTYP_inst (i,[]),`BTYP_unitsum n ->
       begin match hfind "lookup" syms.dfns i with
-      | { id="int"; symdef=SYMDEF_abs (_,`StrTemplate "int",_) }  ->
+      | { id="int"; symdef=SYMDEF_abs (_, CS_str_template "int", _) }  ->
         begin match e' with
         | BEXPR_literal (AST_int (kind,big)) ->
           let m =

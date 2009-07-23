@@ -579,14 +579,14 @@ try
       match entry with
       | BBDCL_insert (_,s,`Package,_) ->
         begin match s with
-        | `Identity | `Str "" | `StrTemplate "" -> ()
+        | CS_identity | CS_str "" | CS_str_template "" -> ()
         | _ ->
           let s =
             match s with
-            | `Identity -> assert false (* covered above *)
-            | `Virtual -> clierr sr "Instantiate virtual insertion!"
-            | `Str s -> Flx_cexpr.ce_expr "atom" s
-            | `StrTemplate s ->
+            | CS_identity -> assert false (* covered above *)
+            | CS_virtual -> clierr sr "Instantiate virtual insertion!"
+            | CS_str s -> Flx_cexpr.ce_expr "atom" s
+            | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
               let tn t = cpp_typename syms t in
               let ts = List.map tn ts in
@@ -644,14 +644,14 @@ try
       match entry with
       | BBDCL_insert (_,s,`Header,_) ->
         begin match s with
-        | `Identity | `Str "" | `StrTemplate "" -> ()
+        | CS_identity | CS_str "" | CS_str_template "" -> ()
         | _ ->
           let s =
             match s with
-            | `Identity -> assert false
-            | `Virtual -> clierr sr "Instantiate virtual insertion!"
-            | `Str s -> Flx_cexpr.ce_expr "atom" s
-            | `StrTemplate s ->
+            | CS_identity -> assert false
+            | CS_virtual -> clierr sr "Instantiate virtual insertion!"
+            | CS_str s -> Flx_cexpr.ce_expr "atom" s
+            | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
               let tn t = cpp_typename syms t in
               let ts = List.map tn ts in
@@ -769,14 +769,14 @@ try
       match entry with
       | BBDCL_insert (_,s,`Body,_) ->
         begin match s with
-        | `Identity | `Str "" | `StrTemplate "" -> ()
+        | CS_identity | CS_str "" | CS_str_template "" -> ()
         | _ ->
           let s =
             match s with
-            | `Identity -> assert false
-            | `Virtual -> clierr sr "Instantiate virtual insertion!"
-            | `Str s -> Flx_cexpr.ce_expr "atom" s
-            | `StrTemplate s ->
+            | CS_identity -> assert false
+            | CS_virtual -> clierr sr "Instantiate virtual insertion!"
+            | CS_str s -> Flx_cexpr.ce_expr "atom" s
+            | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
               let tn t = cpp_typename syms t in
               let ts = List.map tn ts in

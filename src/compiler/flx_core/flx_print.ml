@@ -1001,18 +1001,18 @@ and string_of_properties ps =
   | ps -> catmap " " string_of_property ps ^ " "
 
 and string_of_code_spec = function
-  | `StrTemplate s -> "\"" ^ s ^  "\""
-  | `Str s -> "c\"" ^ s ^  "\""
-  | `Virtual -> "virtual"
-  | `Identity -> "identity"
+  | CS_str_template s -> "\"" ^ s ^  "\""
+  | CS_str s -> "c\"" ^ s ^  "\""
+  | CS_virtual -> "virtual"
+  | CS_identity -> "identity"
 
 and string_of_long_code_spec c =
   let triple_quote = "\"\"\"" in
   match c with
-  | `StrTemplate s -> triple_quote ^ s ^ triple_quote
-  | `Str s -> "c" ^ triple_quote ^ s ^ triple_quote
-  | `Virtual -> "virtual"
-  | `Identity -> "identity"
+  | CS_str_template s -> triple_quote ^ s ^ triple_quote
+  | CS_str s -> "c" ^ triple_quote ^ s ^ triple_quote
+  | CS_virtual -> "virtual"
+  | CS_identity -> "identity"
 
 and string_of_raw_req = function
   | Named_req s -> string_of_qualified_name s

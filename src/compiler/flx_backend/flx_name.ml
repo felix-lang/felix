@@ -1,3 +1,4 @@
+open Flx_ast
 open Flx_types
 open Flx_mtypes2
 open Flx_unify
@@ -204,18 +205,18 @@ let rec cpp_type_classname syms t =
         with Not_found -> None
       with
       | Some (id,SYMDEF_cstruct _) -> id
-      | Some (_,SYMDEF_abs (_,`Str "char",_)) -> "char" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,`Str "int",_)) -> "int" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,`Str "short",_)) -> "short" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,`Str "long",_)) -> "long" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,`Str "float",_)) -> "float" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,`Str "double",_)) -> "double" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,`StrTemplate "char",_)) -> "char" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,`StrTemplate "int",_)) -> "int" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,`StrTemplate "short",_)) -> "short" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,`StrTemplate "long",_)) -> "long" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,`StrTemplate "float",_)) -> "float" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,`StrTemplate "double",_)) -> "double" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,CS_str "char",_)) -> "char" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,CS_str "int",_)) -> "int" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,CS_str "short",_)) -> "short" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,CS_str "long",_)) -> "long" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,CS_str "float",_)) -> "float" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,CS_str "double",_)) -> "double" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,CS_str_template "char",_)) -> "char" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,CS_str_template "int",_)) -> "int" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,CS_str_template "short",_)) -> "short" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,CS_str_template "long",_)) -> "long" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,CS_str_template "float",_)) -> "float" (* hack .. *)
+      | Some (_,SYMDEF_abs (_,CS_str_template "double",_)) -> "double" (* hack .. *)
       | Some (_,data)  ->
         let prefix = cal_prefix data in
         prefix ^ si i ^ "t_" ^ si (tix t)

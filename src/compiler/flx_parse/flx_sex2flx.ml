@@ -461,14 +461,14 @@ and xmacro_parameter_t sr x : macro_parameter_t =
   | Lst [Str s; m] -> s,xmacro_parameter_type_t sr m
   | x -> err x "macro_parameter_t"
 
-and xc_t sr x : c_t =
+and xcode_spec_t sr x : code_spec_t =
   let ss s = s in
   match x with
-  | Lst [Id "StrTemplate"; Str s] -> `StrTemplate (ss s)
-  | Lst [Id "Str"; Str s] -> `Str (ss s)
-  | Id "Virtual" -> `Virtual
-  | Id "Identity" -> `Identity
-  | x ->  err x "c_t"
+  | Lst [Id "StrTemplate"; Str s] -> CS_str_template (ss s)
+  | Lst [Id "Str"; Str s] -> CS_str (ss s)
+  | Id "Virtual" -> CS_virtual
+  | Id "Identity" -> CS_identity
+  | x -> err x "c_t"
 
 and xlvalue_t sr x : lvalue_t =
   let ex x = xexpr_t sr x in
@@ -504,7 +504,7 @@ and xtype_qual_t sr x : type_qual_t =
 and xrequirement_t sr x : requirement_t =
   let ex x = xexpr_t sr x in
   let xq m qn = qne ex m qn in
-  let xct x = xc_t sr x in
+  let xct x = xcode_spec_t sr x in
   let ss s = s in
   match x with
   | Lst [Id "Body_req"; ct] -> Body_req (xct ct)
@@ -558,7 +558,7 @@ and xstatement_t sr x : statement_t =
   let xtlv x = xtlvalue_t sr x in
   let xtq x = xtype_qual_t sr x in
   let xtqs x = lst "typ_equal_t" xtq x in
-  let xc x = xc_t sr x in
+  let xc x = xcode_spec_t sr x in
   let xrr x = xraw_req_expr_t sr x in
   let xucmp x = xunion_component sr x in
   let xp x = xpattern_t sr x in

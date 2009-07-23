@@ -1,5 +1,6 @@
 open Flx_util
 open Flx_list
+open Flx_ast
 open Flx_types
 open Flx_mtypes2
 open Flx_print
@@ -455,10 +456,10 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           print_endline ("Instantiate virtual const " ^ id)
         ;
         begin match ct with
-        | `Identity -> syserr sr ("Nonsense Idendity const" ^ id)
-        | `Virtual -> clierr2 sr sr2 ("Instantiate virtual const " ^ id)
-        | `Str c
-        | `StrTemplate c when c = "#srcloc" ->
+        | CS_identity -> syserr sr ("Nonsense Idendity const" ^ id)
+        | CS_virtual -> clierr2 sr sr2 ("Instantiate virtual const " ^ id)
+        | CS_str c
+        | CS_str_template c when c = "#srcloc" ->
            let f, l1, c1, l2, c2 = Flx_srcref.to_tuple sr in
            ce_atom ("flx::rtl::flx_range_srcref_t(" ^
              string_of_string f ^ "," ^
@@ -468,7 +469,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
              si c2 ^ ")"
            )
 
-        | `Str c when c = "#this" ->
+        | CS_str c when c = "#this" ->
           begin match parent with
           | None -> clierr sr "Use 'this' outside class"
           | Some p ->
@@ -479,8 +480,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
             ce_atom("ptr"^name)
           end
 
-        | `Str c
-        | `StrTemplate c when c = "#memcount" ->
+        | CS_str c
+        | CS_str_template c when c = "#memcount" ->
           begin match ts with
           | [`BTYP_void] -> ce_atom "0"
           | [`BTYP_unitsum n]
@@ -504,8 +505,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
               sbt syms.dfns (hd ts)
             )
           end
-        | `Str c -> ce_expr "expr" c
-        | `StrTemplate c ->
+        | CS_str c -> ce_expr "expr" c
+        | CS_str_template c ->
           let ts = map tn ts in
           csubst sr sr2 c (ce_atom "Error") [] [] "Error" "Error" ts "expr" "Error" ["Error"] ["Error"] ["Error"]
         end
@@ -735,9 +736,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         si (length ts)
       );
       begin match ct with
-      | `Identity -> ge' a
+      | CS_identity -> ge' a
 
-      | `Virtual ->
+      | CS_virtual ->
         let ts = map tsub ts in
         let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bbdfns index ts in
         if index <> index' then
@@ -769,8 +770,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           clierr2 sr sr3 ("expected instance to be function " ^ id)
         end
 
-      | `Str s -> ce_expr prec s
-      | `StrTemplate s ->
+      | CS_str s -> ce_expr prec s
+      | CS_str_template s ->
         let ts = map tsub ts in
         let retyp = reduce_type (beta_reduce syms sr  (tsubst vs ts retyp)) in
         let retyp = tn retyp in

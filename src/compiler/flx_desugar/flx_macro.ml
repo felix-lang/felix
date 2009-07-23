@@ -942,7 +942,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     List.iter
     (fun (sr,id) ->
       let id = mi sr id in
-      let st = STMT_abs_decl (sr,id, dfltvs, qs, `Str id, rqmap reqs) in
+      let st = STMT_abs_decl (sr,id, dfltvs, qs, CS_str id, rqmap reqs) in
       tack st
     )
     ids

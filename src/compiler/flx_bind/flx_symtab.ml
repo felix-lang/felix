@@ -878,7 +878,7 @@ and build_table_for_dcl
 
       (* Add the _repr_ function to the symbol table. *)
       add_symbol n_repr "_repr_"
-        (SYMDEF_fun ([], [piname], t, `Identity, NREQ_true, "expr"));
+        (SYMDEF_fun ([], [piname], t, CS_identity, NREQ_true, "expr"));
 
       (* Add the _repr_ function to the dfns. *)
       add_function priv_name_map "_repr_" n_repr;
@@ -888,7 +888,7 @@ and build_table_for_dcl
 
       (* Add the _make_ function to the symbol table. *)
       add_symbol n_make ("_make_" ^ id)
-        (SYMDEF_fun ([], [t], piname, `Identity, NREQ_true, "expr"));
+        (SYMDEF_fun ([], [t], piname, CS_identity, NREQ_true, "expr"));
 
       (* Add the _make_ function to the dfns. *)
       add_function priv_name_map ("_make_" ^ id) n_make;

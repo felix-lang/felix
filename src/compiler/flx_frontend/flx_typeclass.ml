@@ -206,7 +206,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       let tckid,tckparent,tcksr,tckentry = Hashtbl.find bbdfns tck in
       match tckentry with
       | BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
-        if ct == `Virtual then
+        if ct == CS_virtual then
           let ft = `BTYP_function (typeoflist params,ret) in
           check_binding true tck tcksr tckid bvs ft
         (*
@@ -214,7 +214,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
         *)
 
       | BBDCL_proc (props,bvs,params,ct,breq) ->
-        if ct == `Virtual then
+        if ct == CS_virtual then
           let ft = `BTYP_function (typeoflist params,`BTYP_void) in
           check_binding true tck tcksr tckid bvs ft
         (*

@@ -1,5 +1,6 @@
 open Flx_util
 open Flx_list
+open Flx_ast
 open Flx_types
 open Flx_mtypes2
 open Flx_print
@@ -774,11 +775,11 @@ let gen_exe filename syms
         sub_end
       in
       begin match ct with
-      | `Identity -> syserr sr "Identity proc is nonsense"
-      | `Virtual ->
+      | CS_identity -> syserr sr "Identity proc is nonsense"
+      | CS_virtual ->
           clierr2 sr sr2 ("Instantiate virtual procedure(1) " ^ id) ;
-      | `Str s -> ws (ce_expr "expr" s)
-      | `StrTemplate s ->
+      | CS_str s -> ws (ce_expr "expr" s)
+      | CS_str_template s ->
         let ss = gen_prim_call syms bbdfns tsub ge' s ts a "Error" sr sr2 "atom"  in
         ws ss
       end
@@ -948,10 +949,10 @@ let gen_exe filename syms
     "      return " ^ frame_ptr ^ ";\n"
   in
   let forget_template sr s = match s with
-  | `Identity -> syserr sr "Identity proc is nonsense(2)!"
-  | `Virtual -> clierr sr "Instantiate virtual procedure(2)!"
-  | `Str s -> s
-  | `StrTemplate s -> s
+  | CS_identity -> syserr sr "Identity proc is nonsense(2)!"
+  | CS_virtual -> clierr sr "Instantiate virtual procedure(2)!"
+  | CS_str s -> s
+  | CS_str_template s -> s
   in
   let rec gexe exe =
     (*

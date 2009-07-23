@@ -14,12 +14,12 @@
 type id_t = string
 type bid_t = int
 type index_map_t = (int,int) Hashtbl.t
-type  c_t = [
-  | `StrTemplate of string
-  | `Str of string
-  | `Virtual
-  | `Identity
-]
+
+type code_spec_t =
+  | CS_str_template of string
+  | CS_str of string
+  | CS_virtual
+  | CS_identity
 
 type base_type_qual_t = [
   | `Incomplete
@@ -336,11 +336,11 @@ and type_qual_t = [
 ]
 
 and requirement_t =
-  | Body_req of c_t
-  | Header_req of c_t
+  | Body_req of code_spec_t
+  | Header_req of code_spec_t
   | Named_req of qualified_name_t
   | Property_req of string
-  | Package_req of c_t
+  | Package_req of code_spec_t
 
 and ikind_t = [
   | `Header
@@ -464,15 +464,15 @@ and statement_t =
   | STMT_newtype of Flx_srcref.t * id_t * vs_list_t * typecode_t
 
   (* binding structures [prolog] *)
-  | STMT_abs_decl of Flx_srcref.t * id_t * vs_list_t * type_qual_t list * c_t * raw_req_expr_t
+  | STMT_abs_decl of Flx_srcref.t * id_t * vs_list_t * type_qual_t list * code_spec_t * raw_req_expr_t
   | STMT_ctypes of Flx_srcref.t * (Flx_srcref.t * id_t) list * type_qual_t list  * raw_req_expr_t
-  | STMT_const_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t * c_t * raw_req_expr_t
-  | STMT_fun_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t list * typecode_t * c_t * raw_req_expr_t * prec_t
+  | STMT_const_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t * code_spec_t * raw_req_expr_t
+  | STMT_fun_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t list * typecode_t * code_spec_t * raw_req_expr_t * prec_t
   | STMT_callback_decl of Flx_srcref.t * id_t * typecode_t list * typecode_t * raw_req_expr_t
   (* embedding *)
-  | STMT_insert of Flx_srcref.t * id_t * vs_list_t * c_t * ikind_t  * raw_req_expr_t
-  | STMT_code of Flx_srcref.t * c_t
-  | STMT_noreturn_code of Flx_srcref.t * c_t
+  | STMT_insert of Flx_srcref.t * id_t * vs_list_t * code_spec_t * ikind_t  * raw_req_expr_t
+  | STMT_code of Flx_srcref.t * code_spec_t
+  | STMT_noreturn_code of Flx_srcref.t * code_spec_t
 
   | STMT_export_fun of Flx_srcref.t * suffixed_name_t * string
   | STMT_export_python_fun of Flx_srcref.t * suffixed_name_t * string
@@ -482,8 +482,8 @@ and statement_t =
   | STMT_scheme_string of Flx_srcref.t * string
 
 and exe_t =
-  | EXE_code of c_t (* for inline C++ code *)
-  | EXE_noreturn_code of c_t (* for inline C++ code *)
+  | EXE_code of code_spec_t (* for inline C++ code *)
+  | EXE_noreturn_code of code_spec_t (* for inline C++ code *)
   | EXE_comment of string (* for documenting generated code *)
   | EXE_label of string (* for internal use only *)
   | EXE_goto of string  (* for internal use only *)

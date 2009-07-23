@@ -327,11 +327,11 @@ let mono syms (bbdfns: fully_bound_symbol_table_t) fi i ts n =
     let entry = BBDCL_proc (props,vs,argtypes,ct,reqs) in
     Hashtbl.replace bbdfns i (id,parent, sr, entry)
 
-  | BBDCL_const (props,vs,t,`Str "#this",reqs) ->
+  | BBDCL_const (props, vs, t, CS_str "#this", reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bbdfns fi (list_subst syms.counter vars t))) in
     let t = mt t in
-    let entry = BBDCL_const(props,[],t,`Str "#this",reqs) in
+    let entry = BBDCL_const (props, [], t, CS_str "#this", reqs) in
     let parent = cal_parent syms bbdfns i ts in
     Hashtbl.replace bbdfns n (id,parent,sr,entry)
 
@@ -346,7 +346,7 @@ let chk_mono syms (bbdfns: fully_bound_symbol_table_t) i =
   | BBDCL_var (vs,t) -> true
   | BBDCL_ref (vs,t) -> true
   | BBDCL_tmp (vs,t) -> true
-  | BBDCL_const (_,_,_,`Str "#this",_) -> true
+  | BBDCL_const (_,_,_,CS_str "#this",_) -> true
   | BBDCL_union (vs,ps) -> false
   | BBDCL_cstruct (vs,ps) -> false
   | BBDCL_struct (vs,ps) -> false

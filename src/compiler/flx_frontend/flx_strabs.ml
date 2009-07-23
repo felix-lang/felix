@@ -31,7 +31,7 @@ let fixtype bbdfns t =
 let id x = x
 
 let isident bbdfns i = match Hashtbl.find bbdfns i with
-  | _,_,_,BBDCL_fun (_,_,_,_,`Identity,_,_) -> true
+  | _,_,_,BBDCL_fun (_,_,_,_,CS_identity,_,_) -> true
   | _ -> false
 
 let fixexpr bbdfns e : tbexpr_t =
@@ -100,7 +100,7 @@ let strabs syms (bbdfns: fully_bound_symbol_table_t) =
     h (BBDCL_const ( props,  bvs, ft t, c, breqs) )
 
   | BBDCL_fun (  props, bvs, ts, t, c, breqs, prec) ->
-    if c = `Identity then () else
+    if c = CS_identity then () else
     h (BBDCL_fun (  props, bvs, fts ts, ft t, c, breqs, prec) )
 
   | BBDCL_callback ( props, bvs, ts1, ts2, j, t, breqs, prec) ->
