@@ -135,7 +135,7 @@ let bbind_sym syms bbdfns i {
       in
       let {raw_type_constraint=icons} = snd ivs in
       let icons = bt icons in
-      let cons = `BTYP_intersect [cons; icons] in
+      let cons = BTYP_intersect [cons; icons] in
       cons
     in
     let bcons = bind_type_constraint ivs in
@@ -148,7 +148,7 @@ let bbind_sym syms bbdfns i {
     let bind_basic_ps ps =
       List.map (fun (k,s,t,_) ->
         let i = find_param name_map s in
-        let t = let t = bt t in match k with `PRef -> `BTYP_pointer t | _ -> t in 
+        let t = let t = bt t in match k with `PRef -> BTYP_pointer t | _ -> t in
 (*        print_endline ("Param " ^ s ^ " type=" ^ sbt syms.dfns t); *)
         {pid=s; pindex=i;pkind=k; ptyp=t}
       )
@@ -207,7 +207,7 @@ let bbind_sym syms bbdfns i {
       let brt',bbexes = bexes env exes brt i bvs in
       let bbdcl =
         match brt' with
-        | `BTYP_void ->
+        | BTYP_void ->
           BBDCL_procedure (props,bvs,bps,bbexes)
         | _ ->
           BBDCL_function (props,bvs,bps,brt',bbexes)
@@ -218,8 +218,8 @@ let bbind_sym syms bbdfns i {
           let d = typeoflist ts in
           let ft =
             if mem `Cfun props
-            then `BTYP_cfunction (d,brt')
-            else `BTYP_function (d,brt')
+            then BTYP_cfunction (d,brt')
+            else BTYP_function (d,brt')
           in
           let t = fold syms.counter syms.dfns ft in
           Hashtbl.add syms.ticache i t
@@ -229,8 +229,8 @@ let bbind_sym syms bbdfns i {
         if syms.compiler_options.print_flag then
         let t =
           if mem `Cfun props
-          then `BTYP_cfunction (atyp,brt')
-          else `BTYP_function (atyp,brt')
+          then BTYP_cfunction (atyp,brt')
+          else BTYP_function (atyp,brt')
         in
         print_endline
         (
@@ -254,7 +254,7 @@ let bbind_sym syms bbdfns i {
           | `PVar -> BBDCL_var (bvs,t)
           | `PVal -> BBDCL_val (bvs,t)
           | `PRef -> BBDCL_val (bvs,t)
-          | `PFun -> BBDCL_val (bvs,`BTYP_function (`BTYP_void,t))
+          | `PFun -> BBDCL_val (bvs,BTYP_function (BTYP_void,t))
           in
           Hashtbl.add bbdfns i (name,true_parent,sr,dcl);
           Hashtbl.add syms.varmap i t;
@@ -289,7 +289,7 @@ let bbind_sym syms bbdfns i {
       );
       begin
         if not (Hashtbl.mem syms.ticache i) then
-        let t = fold syms.counter syms.dfns (`BTYP_function (`BTYP_tuple[],flx_bbool)) in
+        let t = fold syms.counter syms.dfns (BTYP_function (BTYP_tuple[],flx_bbool)) in
         Hashtbl.add syms.ticache i t
       end
       ;
@@ -297,7 +297,7 @@ let bbind_sym syms bbdfns i {
       if syms.compiler_options.print_flag then
       print_endline ("//bound match check " ^ name ^ "<"^si i^">" ^
       print_bvs bvs ^ ":" ^
-        sbt syms.dfns (`BTYP_function (`BTYP_tuple[],flx_bbool))
+        sbt syms.dfns (BTYP_function (BTYP_tuple[],flx_bbool))
       )
 
     | SYMDEF_const_ctor (uidx,ut,ctor_idx,vs') ->
@@ -410,7 +410,7 @@ let bbind_sym syms bbdfns i {
       let bret = bt ret in
       let reqs = bind_reqs reqs in
       let bbdcl = match bret with
-        | `BTYP_void ->
+        | BTYP_void ->
           BBDCL_proc (props,bvs,ts,ct,reqs)
         | _ ->
           BBDCL_fun (props,bvs,ts,bret,ct,reqs,prec)
@@ -418,7 +418,7 @@ let bbind_sym syms bbdfns i {
       Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
       begin
         if not (Hashtbl.mem syms.ticache i) then
-        let t = fold syms.counter syms.dfns (`BTYP_function (typeoflist ts,bret)) in
+        let t = fold syms.counter syms.dfns (BTYP_function (typeoflist ts,bret)) in
         Hashtbl.add syms.ticache i t
       end
       ;
@@ -426,7 +426,7 @@ let bbind_sym syms bbdfns i {
       if syms.compiler_options.print_flag then
       print_endline ("//bound fun " ^ name ^ "<"^si i^">"^
       print_bvs bvs ^ ":" ^
-      sbt syms.dfns (`BTYP_function (atyp,bret)))
+      sbt syms.dfns (BTYP_function (atyp,bret)))
 
     | SYMDEF_callback (props,ts_orig,ret,reqs) ->
 
@@ -491,9 +491,9 @@ let bbind_sym syms bbdfns i {
       in
       let tf_args = match ts_f with
         | [x] -> x
-        | lst -> `BTYP_tuple lst
+        | lst -> BTYP_tuple lst
       in
-      let tf = `BTYP_function (tf_args, bret) in
+      let tf = BTYP_function (tf_args, bret) in
 
       (* The type of the arguments Felix thinks the raw
          C function has on a call. A closure of this
@@ -516,7 +516,7 @@ let bbind_sym syms bbdfns i {
       Hashtbl.add bbdfns i (name,true_parent,sr,bbdcl);
       begin
         if not (Hashtbl.mem syms.ticache i) then
-        let t = fold syms.counter syms.dfns (`BTYP_cfunction (typeoflist ts_cf,bret)) in
+        let t = fold syms.counter syms.dfns (BTYP_cfunction (typeoflist ts_cf,bret)) in
         Hashtbl.add syms.ticache i t
       end
       ;
@@ -524,7 +524,7 @@ let bbind_sym syms bbdfns i {
       if syms.compiler_options.print_flag then
       print_endline ("//bound callback fun " ^ name ^ "<"^si i^">"^
       print_bvs bvs ^ ":" ^
-      sbt syms.dfns (`BTYP_function (atyp,bret)))
+      sbt syms.dfns (BTYP_function (atyp,bret)))
 
     | SYMDEF_union (cs) ->
       (*

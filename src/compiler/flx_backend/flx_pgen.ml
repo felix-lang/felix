@@ -13,7 +13,7 @@ open Flx_maps
 
 let shape_of syms bbdfns tn t =
   match t with
-  | `BTYP_inst (i,ts) ->
+  | BTYP_inst (i,ts) ->
     let id,parent,sr,entry = Hashtbl.find bbdfns i in
     begin match entry with
     | BBDCL_union (vs,idts) ->
@@ -23,11 +23,11 @@ let shape_of syms bbdfns tn t =
       else "_uctor_ptr_map"
     | _ -> tn t ^ "_ptr_map"
     end
-  | `BTYP_sum cpts ->
+  | BTYP_sum cpts ->
       if all_units cpts then "_int_ptr_map"
       else "_uctor_ptr_map"
 
-  | `BTYP_pointer _ -> "_address_ptr_map"
+  | BTYP_pointer _ -> "_address_ptr_map"
   | _ -> tn t ^ "_ptr_map"
 
 let gen_prim_call
@@ -57,7 +57,7 @@ let gen_prim_call
   let ts = map rtn ts in
   let carg =
     match argt with
-    | `BTYP_tuple []  -> ce_atom "UNIT_VALUE_ERROR"
+    | BTYP_tuple []  -> ce_atom "UNIT_VALUE_ERROR"
     | x -> ge sr a
   in
   let ashape = sh argt in
@@ -85,8 +85,8 @@ let gen_prim_call
     in
     let ets,ashapes =
       match argt with
-      | `BTYP_tuple typs -> map rtn typs, map sh typs
-      | `BTYP_array (t,`BTYP_unitsum n) ->
+      | BTYP_tuple typs -> map rtn typs, map sh typs
+      | BTYP_array (t,BTYP_unitsum n) ->
         let t = tn t
         and s = sh t
         in rev_map (fun _ -> t) (nlist n), rev_map (fun _ -> s) (nlist n)
@@ -95,7 +95,7 @@ let gen_prim_call
     csubst sr sr2 ct carg ess ets tt ret ts prec ashape ashapes ["Error"] gshapes
 
   (* the argument isnt a tuple, but the type is *)
-  | (_,`BTYP_tuple typs) as x ->
+  | (_,BTYP_tuple typs) as x ->
     let n = length typs in
     let typs = map rt typs in
     let es =
@@ -108,7 +108,7 @@ let gen_prim_call
     csubst sr sr2 ct carg ess ets tt ret ts prec ashape (map sh typs) ["Error"] gshapes
 
   (* the argument isnt a tuple, but the type is an array *)
-  | (_,(`BTYP_array(t,`BTYP_unitsum n) as ta)) as x ->
+  | (_,(BTYP_array(t,BTYP_unitsum n) as ta)) as x ->
     let t = rt t in
     let typs = map (fun _ -> rt t) (nlist n) in
     let es =

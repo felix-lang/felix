@@ -29,7 +29,7 @@ let bbdfns = Hashtbl.create 97
 
 let dummy_sr = Flx_srcref.make_dummy "[flx_lookup] generated"
 
-let unit_t = `BTYP_tuple []
+let unit_t = BTYP_tuple []
 
 (* use fresh variables, but preserve names *)
 let mkentry syms (vs:ivs_list_t) i =
@@ -39,7 +39,7 @@ let mkentry syms (vs:ivs_list_t) i =
     (*
     print_endline ("[mkentry] Fudging type variable type " ^ si i);
     *)
-    `BTYP_var (i+base,`BTYP_type 0)) (nlist n)
+    BTYP_var (i+base,BTYP_type 0)) (nlist n)
   in
   let vs = List.map2 (fun i (n,_,_) -> n,i+base) (nlist n) (fst vs) in
   {base_sym=i; spec_vs=vs; sub_ts=ts}
@@ -411,9 +411,9 @@ and inner_bind_expression syms env rs e  =
 
 and expand_typeset t =
   match t with
-  | `BTYP_type_tuple ls
-  | `BTYP_typeset ls
-  | `BTYP_typesetunion ls -> List.fold_left (fun ls t -> expand_typeset t @ ls) [] ls
+  | BTYP_type_tuple ls
+  | BTYP_typeset ls
+  | BTYP_typesetunion ls -> List.fold_left (fun ls t -> expand_typeset t @ ls) [] ls
   | x -> [x]
 
 and handle_typeset syms sr elt tset =
@@ -450,19 +450,19 @@ and handle_typeset syms sr elt tset =
 
   *)
   let e = IntSet.empty in
-  let un = `BTYP_tuple [] in
+  let un = BTYP_tuple [] in
   let lss = List.rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
   let fresh = !(syms.counter) in incr (syms.counter);
   let dflt =
     {
-      pattern=`BTYP_var (fresh,`BTYP_type 0);
+      pattern=BTYP_var (fresh,BTYP_type 0);
       pattern_vars = IntSet.singleton fresh;
       assignments=[]
     },
-    `BTYP_void
+    BTYP_void
   in
   let lss = List.rev (dflt :: lss) in
-  `BTYP_type_match (elt, lss)
+  BTYP_type_match (elt, lss)
 
 
 
@@ -688,9 +688,9 @@ and bind_type'
   | TYP_patvar _ -> failwith "Not implemented patvar in typecode"
   | TYP_patany _ -> failwith "Not implemented patany in typecode"
 
-  | TYP_intersect ts -> `BTYP_intersect (List.map bt ts)
-  | TYP_record ts -> `BTYP_record (List.map (fun (s,t) -> s,bt t) ts)
-  | TYP_variant ts -> `BTYP_variant (List.map (fun (s,t) -> s,bt t) ts)
+  | TYP_intersect ts -> BTYP_intersect (List.map bt ts)
+  | TYP_record ts -> BTYP_record (List.map (fun (s,t) -> s,bt t) ts)
+  | TYP_variant ts -> BTYP_variant (List.map (fun (s,t) -> s,bt t) ts)
 
   (* We first attempt to perform the match
     at binding time as an optimisation, if that
@@ -739,7 +739,7 @@ and bind_type'
       (*
       print_endline ("Mapping " ^ s ^ "<"^si i^"> to TYPE");
       *)
-      s,`BTYP_var (i,`BTYP_type 0)) (explicit_vars @ as_vars)
+      s,BTYP_var (i,BTYP_type 0)) (explicit_vars @ as_vars)
       in
       let t' = btp t' (params@args) in
       let t' = list_subst syms.counter eqns t' in
@@ -780,7 +780,7 @@ and bind_type'
     ;
     let pts = List.rev !pts in
 
-    let tm = `BTYP_type_match (t,pts) in
+    let tm = BTYP_type_match (t,pts) in
     (*
     print_endline ("Bound typematch is " ^ sbt syms.dfns tm);
     *)
@@ -795,7 +795,7 @@ and bind_type'
     let t = bt t in
     ignore (try unfold syms.dfns t with _ -> failwith "TYP_proj unfold screwd");
     begin match unfold syms.dfns t with
-    | `BTYP_tuple ls ->
+    | BTYP_tuple ls ->
       if i < 1 or i> List.length ls
       then
        clierr sr
@@ -817,8 +817,8 @@ and bind_type'
   | TYP_dom t ->
     let t = bt t in
     begin match unfold syms.dfns t with
-    | `BTYP_function (a,b) -> a
-    | `BTYP_cfunction (a,b) -> a
+    | BTYP_function (a,b) -> a
+    | BTYP_cfunction (a,b) -> a
     | _ ->
       clierr sr
       (
@@ -829,8 +829,8 @@ and bind_type'
   | TYP_cod t ->
     let t = bt t in
     begin match unfold syms.dfns t with
-    | `BTYP_function (a,b) -> b
-    | `BTYP_cfunction (a,b) -> b
+    | BTYP_function (a,b) -> b
+    | BTYP_cfunction (a,b) -> b
     | _ ->
       clierr sr
       (
@@ -843,7 +843,7 @@ and bind_type'
     let t = bt t in
     ignore (try unfold syms.dfns t with _ -> failwith "TYP_case_arg unfold screwd");
     begin match unfold syms.dfns t with
-    | `BTYP_unitsum k ->
+    | BTYP_unitsum k ->
       if i < 0 or i >= k
       then
         clierr sr
@@ -854,7 +854,7 @@ and bind_type'
         )
       else unit_t
 
-    | `BTYP_sum ls ->
+    | BTYP_sum ls ->
       if i < 0 or i>= List.length ls
       then
         clierr sr
@@ -881,9 +881,9 @@ and bind_type'
 
   | TYP_typeset ts
   | TYP_setunion ts ->
-    `BTYP_typeset (expand_typeset (`BTYP_typeset (List.map bt ts)))
+    BTYP_typeset (expand_typeset (BTYP_typeset (List.map bt ts)))
 
-  | TYP_setintersection ts -> `BTYP_typesetintersection (List.map bt ts)
+  | TYP_setintersection ts -> BTYP_typesetintersection (List.map bt ts)
 
 
   | TYP_isin (elt,tset) ->
@@ -896,7 +896,7 @@ and bind_type'
     (*
     print_endline ("Fudging metatype of type variable " ^ si i);
     *)
-    `BTYP_var (i,`BTYP_type 0)
+    BTYP_var (i,BTYP_type 0)
 
   | TYP_as (t,s) ->
     bind_type' syms env
@@ -920,7 +920,7 @@ and bind_type'
         print_endline ("CURRENT DEPTH " ^ string_of_int rs.depth);
         print_endline ("FIXPOINT IS " ^ string_of_int fixdepth);
         *)
-        `BTYP_fix fixdepth
+        BTYP_fix fixdepth
       end
       else begin
         snd(bind_expression' syms env rs e [])
@@ -933,49 +933,49 @@ and bind_type'
 
   | TYP_array (t1,t2)->
     let index = match bt t2 with
-    | `BTYP_tuple [] -> `BTYP_unitsum 1
+    | BTYP_tuple [] -> BTYP_unitsum 1
     | x -> x
     in
-    `BTYP_array (bt t1, index)
+    BTYP_array (bt t1, index)
 
   | TYP_tuple ts ->
     let ts' = List.map bt ts in
-    `BTYP_tuple ts'
+    BTYP_tuple ts'
 
   | TYP_unitsum k ->
     (match k with
-    | 0 -> `BTYP_void
-    | 1 -> `BTYP_tuple[]
-    | _ -> `BTYP_unitsum k
+    | 0 -> BTYP_void
+    | 1 -> BTYP_tuple[]
+    | _ -> BTYP_unitsum k
     )
 
   | TYP_sum ts ->
     let ts' = List.map bt ts  in
     if all_units ts' then
-      `BTYP_unitsum (List.length ts)
+      BTYP_unitsum (List.length ts)
     else
-      `BTYP_sum ts'
+      BTYP_sum ts'
 
   | TYP_function (d,c) ->
     let
       d' = bt d  and
       c' = bt c
     in
-      `BTYP_function (bt d, bt c)
+      BTYP_function (bt d, bt c)
 
   | TYP_cfunction (d,c) ->
     let
       d' = bt d  and
       c' = bt c
     in
-      `BTYP_cfunction (bt d, bt c)
+      BTYP_cfunction (bt d, bt c)
 
   | TYP_pointer t ->
      let t' = bt t in
-     `BTYP_pointer t'
+     BTYP_pointer t'
 
   | TYP_void _ ->
-    `BTYP_void
+    BTYP_void
 
   | TYP_typefun (ps,r,body) ->
     (*
@@ -997,7 +997,7 @@ and bind_type'
         (*
         print_endline ("Binding param " ^ n ^ "<" ^ si i ^ "> metatype " ^ sbt syms.dfns t);
         *)
-        (n,`BTYP_var (i,t))) data
+        (n,BTYP_var (i,t))) data
     in
     let bbody =
       (*
@@ -1014,32 +1014,32 @@ and bind_type'
       (*
       print_endline "BINDING typefunction DONE\n";
       *)
-      `BTYP_typefun (bparams, bt r, bbody)
+      BTYP_typefun (bparams, bt r, bbody)
 
   | TYP_apply (TYP_name (_,"_flatten",[]),t2) ->
     let t2 = bt t2 in
     begin match t2 with
-    | `BTYP_unitsum a -> t2
-    | `BTYP_sum (`BTYP_sum a :: t) -> `BTYP_sum (List.fold_left (fun acc b ->
+    | BTYP_unitsum a -> t2
+    | BTYP_sum (BTYP_sum a :: t) -> BTYP_sum (List.fold_left (fun acc b ->
       match b with
-      | `BTYP_sum b -> acc @ b
-      | `BTYP_void -> acc
+      | BTYP_sum b -> acc @ b
+      | BTYP_void -> acc
       | _ -> clierr sr "Sum of sums required"
       ) a t)
 
-    | `BTYP_sum (`BTYP_unitsum a :: t) -> `BTYP_unitsum (List.fold_left (fun acc b ->
+    | BTYP_sum (BTYP_unitsum a :: t) -> BTYP_unitsum (List.fold_left (fun acc b ->
       match b with
-      | `BTYP_unitsum b -> acc + b
-      | `BTYP_tuple [] -> acc + 1
-      | `BTYP_void -> acc
+      | BTYP_unitsum b -> acc + b
+      | BTYP_tuple [] -> acc + 1
+      | BTYP_void -> acc
       | _ -> clierr sr "Sum of unitsums required"
       ) a t)
 
-    | `BTYP_sum (`BTYP_tuple []  :: t) -> `BTYP_unitsum (List.fold_left (fun acc b ->
+    | BTYP_sum (BTYP_tuple []  :: t) -> BTYP_unitsum (List.fold_left (fun acc b ->
       match b with
-      | `BTYP_unitsum b -> acc + b
-      | `BTYP_tuple [] -> acc + 1
-      | `BTYP_void -> acc
+      | BTYP_unitsum b -> acc + b
+      | BTYP_tuple [] -> acc + 1
+      | BTYP_void -> acc
       | _ -> clierr sr "Sum of unitsums required"
       ) 1 t)
 
@@ -1074,7 +1074,7 @@ and bind_type'
        try match qn with
        | `AST_name (sr,name,[]) ->
          let t1 = List.assoc name params in
-         `BTYP_apply(t1,t2)
+         BTYP_apply(t1,t2)
        | _ -> raise Not_found
        with Not_found ->
 
@@ -1103,7 +1103,7 @@ and bind_type'
        (*
        print_endline ("Result of binding function term is " ^ sbt syms.dfns t1);
        *)
-       `BTYP_apply (t1,t2)
+       BTYP_apply (t1,t2)
      in
      (*
      print_endline ("type Application is " ^ sbt syms.dfns t);
@@ -1118,19 +1118,19 @@ and bind_type'
   | TYP_apply (t1,t2) ->
     let t1 = bt t1 in
     let t2 = bt t2 in
-    let t = `BTYP_apply (t1,t2) in
+    let t = BTYP_apply (t1,t2) in
     (*
     let t = beta_reduce syms sr t in
     *)
     t
 
   | TYP_type_tuple ts ->
-    `BTYP_type_tuple (List.map bt ts)
+    BTYP_type_tuple (List.map bt ts)
 
-  | TYP_type -> `BTYP_type 0
+  | TYP_type -> BTYP_type 0
 
   | TYP_name (sr,s,[]) when List.mem_assoc s rs.as_fixlist ->
-    `BTYP_fix ((List.assoc s rs.as_fixlist)-rs.depth)
+    BTYP_fix ((List.assoc s rs.as_fixlist)-rs.depth)
 
   | TYP_name (sr,s,[]) when List.mem_assoc s params ->
     (*
@@ -1164,14 +1164,14 @@ and bind_type'
         (*
         print_endline ("[Ast_index] fudging type variable " ^ si i);
         *)
-        `BTYP_var (i,`BTYP_type 0)) (fst vs)
+        BTYP_var (i,BTYP_type 0)) (fst vs)
       in
       (*
       print_endline ("Synthetic name "^name ^ "<"^si index^"> is a nominal type, ts=" ^
       catmap "," (sbt syms.dfns) ts
       );
       *)
-      `BTYP_inst (index,ts)
+      BTYP_inst (index,ts)
 
     | SYMDEF_typevar _ ->
       print_endline ("Synthetic name "^name ^ " is a typevar!");
@@ -1199,7 +1199,7 @@ and bind_type'
        f
 
        (*
-       `BTYP_typefun (params, ret, body)
+       BTYP_typefun (params, ret, body)
 
 
        of (int * 't) list * 't * 't
@@ -1208,7 +1208,7 @@ and bind_type'
        failwith "TYPE FUNCTION CLOSURE REQUIRED!"
        *)
        (*
-       `BTYP_typefun_closure (sye index, ts)
+       BTYP_typefun_closure (sye index, ts)
        *)
 
     | NonFunctionEntry index  ->
@@ -1228,17 +1228,17 @@ and bind_type'
         let ivs,traint = vs in
         let bmt mt =
           match mt with
-          | TYP_patany _ -> `BTYP_type 0 (* default *)
+          | TYP_patany _ -> BTYP_type 0 (* default *)
           | _ -> (try bt mt with _ -> clierr sr "metatyp binding FAILED")
         in
         let body =
           let env = mkenv (sye index) in
-          let xparams = List.map (fun (id,idx,mt) -> id, `BTYP_var (idx, bmt mt)) ivs in
+          let xparams = List.map (fun (id,idx,mt) -> id, BTYP_var (idx, bmt mt)) ivs in
           bind_type' syms env {rs with depth = rs.depth+1} sr t (xparams @ params) mkenv
         in
-        let ret = `BTYP_type 0 in
+        let ret = BTYP_type 0 in
         let params = List.map (fun (id,idx,mt) -> idx, bmt mt) ivs in
-        `BTYP_typefun (params, ret, body)
+        BTYP_typefun (params, ret, body)
 
       | _ ->
         let ts = List.map bt ts in
@@ -1329,7 +1329,7 @@ and cal_assoc_type syms sr t =
   let ct t = cal_assoc_type syms sr t in
   let chk ls =
     match ls with
-    | [] -> `BTYP_void
+    | [] -> BTYP_void
     | h::t ->
       List.fold_left (fun acc t ->
         if acc <> t then
@@ -1339,34 +1339,34 @@ and cal_assoc_type syms sr t =
      ) h t
   in
   match t with
-  | `BTYP_type i -> t
-  | `BTYP_function (a,b) -> `BTYP_function (ct a, ct b)
+  | BTYP_type i -> t
+  | BTYP_function (a,b) -> BTYP_function (ct a, ct b)
 
-  | `BTYP_intersect ls
-  | `BTYP_typesetunion ls
-  | `BTYP_typeset ls
+  | BTYP_intersect ls
+  | BTYP_typesetunion ls
+  | BTYP_typeset ls
     ->
     let ls = List.map ct ls in chk ls
 
-  | `BTYP_tuple _
-  | `BTYP_record _
-  | `BTYP_variant _
-  | `BTYP_unitsum _
-  | `BTYP_sum _
-  | `BTYP_cfunction _
-  | `BTYP_pointer _
-  | `BTYP_array _
-  | `BTYP_void
-    -> `BTYP_type 0
+  | BTYP_tuple _
+  | BTYP_record _
+  | BTYP_variant _
+  | BTYP_unitsum _
+  | BTYP_sum _
+  | BTYP_cfunction _
+  | BTYP_pointer _
+  | BTYP_array _
+  | BTYP_void
+    -> BTYP_type 0
 
-  | `BTYP_inst (i,ts) ->
+  | BTYP_inst (i,ts) ->
     (*
     print_endline ("Assuming named type "^si i^" is a TYPE");
     *)
-    `BTYP_type 0
+    BTYP_type 0
 
 
-  | `BTYP_type_match (_,ls) ->
+  | BTYP_type_match (_,ls) ->
     let ls = List.map snd ls in
     let ls = List.map ct ls in chk ls
 
@@ -1397,7 +1397,7 @@ and bind_type_index syms (rs:recstop)
       )
     );
     *)
-    `BTYP_fix ((List.assoc index rs.type_alias_fixlist)-rs.depth)
+    BTYP_fix ((List.assoc index rs.type_alias_fixlist)-rs.depth)
   end
   else begin
   (*
@@ -1505,7 +1505,7 @@ and bind_type_index syms (rs:recstop)
       let mt = cal_assoc_type syms sr mt in
       print_endline ("Assoc type is " ^ sbt syms.dfns mt);
       *)
-      `BTYP_var (index,mt)
+      BTYP_var (index,mt)
 
     (* type alias RECURSE *)
     | SYMDEF_type_alias t ->
@@ -1515,7 +1515,7 @@ and bind_type_index syms (rs:recstop)
       bt t
 
     | SYMDEF_abs _ ->
-      `BTYP_inst (index,ts)
+      BTYP_inst (index,ts)
 
     | SYMDEF_newtype _
     | SYMDEF_union _
@@ -1523,15 +1523,15 @@ and bind_type_index syms (rs:recstop)
     | SYMDEF_cstruct _
     | SYMDEF_typeclass
       ->
-      `BTYP_inst (index,ts)
+      BTYP_inst (index,ts)
 
 
     (* allow binding to type constructors now too .. *)
     | SYMDEF_const_ctor (uidx,ut,idx,vs') ->
-      `BTYP_inst (index,ts)
+      BTYP_inst (index,ts)
 
     | SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) ->
-      `BTYP_inst (index,ts)
+      BTYP_inst (index,ts)
 
     | _ ->
       clierr sr
@@ -1585,7 +1585,7 @@ and type_of_index' rs syms (index:int) : btypecode_t =
       in
       let t = beta_reduce syms sr t in
       (match t with (* HACK .. *)
-      | `BTYP_fix _ -> ()
+      | BTYP_fix _ -> ()
       | _ -> Hashtbl.add syms.ticache index t
       );
       t
@@ -1640,7 +1640,7 @@ and cal_ret_type syms (rs:recstop) index args =
     let ret_type = ref rt in
     (*
     begin match rt with
-    | `BTYP_var (i,_) when i = index ->
+    | BTYP_var (i,_) when i = index ->
       print_endline "No return type given"
     | _ ->
       print_endline (" .. given type is " ^ sbt syms.dfns rt)
@@ -1707,7 +1707,7 @@ and cal_ret_type syms (rs:recstop) index args =
     ;
     if !return_counter = 0 then (* it's a procedure .. *)
     begin
-      let mgu = do_unify syms !ret_type `BTYP_void in
+      let mgu = do_unify syms !ret_type BTYP_void in
       ret_type := varmap_subst syms.varmap !ret_type
     end
     ;
@@ -1789,7 +1789,7 @@ and inner_type_of_index
 
   (* check index recursion *)
   if List.mem index rs.idx_fixlist
-  then `BTYP_fix (-rs.depth)
+  then BTYP_fix (-rs.depth)
   else begin
   match get_data syms.dfns index with
   | {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=entry}
@@ -1854,8 +1854,8 @@ and inner_type_of_index
         let d =bt (type_of_list pts) in
         let t =
           if List.mem `Cfun props
-          then `BTYP_cfunction (d,rt')
-          else `BTYP_function (d, rt')
+          then BTYP_cfunction (d,rt')
+          else BTYP_function (d, rt')
         in
         t
 
@@ -1863,12 +1863,12 @@ and inner_type_of_index
 
   | SYMDEF_val (t)
   | SYMDEF_var (t) -> bt t
-  | SYMDEF_ref (t) -> `BTYP_pointer (bt t)
+  | SYMDEF_ref (t) -> BTYP_pointer (bt t)
 
   | SYMDEF_parameter (`PVal,t)
   | SYMDEF_parameter (`PFun,t)
   | SYMDEF_parameter (`PVar,t) -> bt t
-  | SYMDEF_parameter (`PRef,t) -> `BTYP_pointer (bt t)
+  | SYMDEF_parameter (`PRef,t) -> BTYP_pointer (bt t)
 
   | SYMDEF_const_ctor (_,t,_,_)
     ->
@@ -1881,7 +1881,7 @@ and inner_type_of_index
     bt (TYP_function (argt,ut))
 
   | SYMDEF_match_check _ ->
-    `BTYP_function (`BTYP_tuple [], flx_bbool)
+    BTYP_function (BTYP_tuple [], flx_bbool)
 
   | SYMDEF_fun (_,pts,rt,_,_,_) ->
     let t = TYP_function (type_of_list pts,rt) in
@@ -1901,7 +1901,7 @@ and inner_type_of_index
   *)
     let ts = adjust_ts syms sr index ts in
     let t = type_of_list (List.map snd ls) in
-    let t = `BTYP_function(bt t,`BTYP_inst (index,ts)) in
+    let t = BTYP_function(bt t,BTYP_inst (index,ts)) in
     (*
     print_endline ("Struct as function type is " ^ sbt syms.dfns t);
     *)
@@ -1939,8 +1939,8 @@ and cal_apply syms sr rs ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
 and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest,reorder =
     match unfold syms.dfns t1 with
-    | `BTYP_function (argt,rest)
-    | `BTYP_cfunction (argt,rest) ->
+    | BTYP_function (argt,rest)
+    | BTYP_cfunction (argt,rest) ->
       if type_match syms.counter syms.dfns argt t2
       then rest, None
       else
@@ -1949,10 +1949,10 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
         | BEXPR_closure (i,ts) ->
           begin match t2 with
           (* a bit of a hack .. *)
-          | `BTYP_record _ | `BTYP_tuple [] ->
+          | BTYP_record _ | BTYP_tuple [] ->
             let rs = match t2 with
-              | `BTYP_record rs -> rs
-              | `BTYP_tuple [] -> []
+              | BTYP_record rs -> rs
+              | BTYP_tuple [] -> []
               | _ -> assert false
             in
             begin let pnames = match hfind "lookup" syms.dfns i with
@@ -2003,7 +2003,7 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
       end
 
     (* HACKERY TO SUPPORT STRUCT CONSTRUCTORS *)
-    | `BTYP_inst (index,ts) ->
+    | BTYP_inst (index,ts) ->
       begin match get_data syms.dfns index with
       { id=id;vs=vs;symdef=entry} ->
         begin match entry with
@@ -2041,7 +2041,7 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   *)
 
   let rest = varmap_subst syms.varmap rest in
-  if rest = `BTYP_void then
+  if rest = BTYP_void then
     clierr sr
     (
       "[cal_apply] Function " ^
@@ -2082,7 +2082,7 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   | Some xs ->
     match xs with
     | [x]-> x
-    | _ -> BEXPR_tuple xs,`BTYP_tuple (List.map snd xs)
+    | _ -> BEXPR_tuple xs,BTYP_tuple (List.map snd xs)
   in
   BEXPR_apply ((be1,t1), x2),rest
 
@@ -2178,7 +2178,7 @@ print_endline (id ^ ": lookup_qn_with_sig: struct");
         let ts = adjust_ts syms sr index ts in
         *)
         begin match t with
-        | `BTYP_function (a,_) ->
+        | BTYP_function (a,_) ->
           if not (type_match syms.counter syms.dfns a sign) then
             clierr sr
             (
@@ -2219,7 +2219,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
         let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
         let t = try tsubst bvs ts t with _ -> failwith "[lookup_qn_with_sig] WOOPS" in
         begin match t with
-        | `BTYP_function (a,b) ->
+        | BTYP_function (a,b) ->
           let sign = try List.hd signs with _ -> assert false in
           if not (type_match syms.counter syms.dfns a sign) then
           clierr srn
@@ -2278,18 +2278,18 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
     begin match unfold syms.dfns t with
-    | `BTYP_unitsum k ->
+    | BTYP_unitsum k ->
       if v<0 or v>= k
       then clierr sra "Case index out of range of sum"
       else
-        let ct = `BTYP_function (unit_t,t) in
+        let ct = BTYP_function (unit_t,t) in
         BEXPR_case (v,t),ct
 
-    | `BTYP_sum ls ->
+    | BTYP_sum ls ->
       if v<0 or v >= List.length ls
       then clierr sra "Case index out of range of sum"
       else let vt = List.nth ls v in
-      let ct = `BTYP_function (vt,t) in
+      let ct = BTYP_function (vt,t) in
       BEXPR_case (v,t), ct
 
     | _ ->
@@ -2352,7 +2352,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     | SYMDEF_match_check _
       ->
       let vs = find_vs syms index in
-      let ts = List.map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
+      let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
       BEXPR_closure (index,ts),
       inner_type_of_index syms rs index
 
@@ -2360,7 +2360,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
       (*
       print_endline "Non function ..";
       *)
-      let ts = List.map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
+      let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
       handle_nonfunction_index index ts
     end
 
@@ -2453,7 +2453,7 @@ and lookup_type_qn_with_sig'
         print_endline ("[lookup_type_qn_with_sig] Struct constructor found, type= " ^ sbt syms.dfns t);
         *)
         begin match t with
-        | `BTYP_function (a,_) ->
+        | BTYP_function (a,_) ->
           if not (type_match syms.counter syms.dfns a sign) then
             clierr sr
             (
@@ -2511,18 +2511,18 @@ and lookup_type_qn_with_sig'
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
     begin match unfold syms.dfns t with
-    | `BTYP_unitsum k ->
+    | BTYP_unitsum k ->
       if v<0 or v>= k
       then clierr sra "Case index out of range of sum"
       else
-        let ct = `BTYP_function (unit_t,t) in
+        let ct = BTYP_function (unit_t,t) in
         ct
 
-    | `BTYP_sum ls ->
+    | BTYP_sum ls ->
       if v<0 or v >= List.length ls
       then clierr sra "Case index out of range of sum"
       else let vt = List.nth ls v in
-      let ct = `BTYP_function (vt,t) in
+      let ct = BTYP_function (vt,t) in
       ct
 
     | _ ->
@@ -2555,14 +2555,14 @@ and lookup_type_qn_with_sig'
     | SYMDEF_match_check _
       ->
       let vs = find_vs syms index in
-      let ts = List.map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
+      let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
       inner_type_of_index syms rs index
 
     | _ ->
       (*
       print_endline "Non function ..";
       *)
-      let ts = List.map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
+      let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
       handle_nonfunction_index index ts
     end
 
@@ -2718,18 +2718,18 @@ and handle_type
   | SYMDEF_callback _
     ->
     print_endline ("Handle function " ^id^"<"^si index^">, ts=" ^ catmap "," (sbt syms.dfns) ts);
-    `BTYP_inst (index,ts)
+    BTYP_inst (index,ts)
     (*
     let t = inner_type_of_index_with_ts syms sr rs index ts
     in
     (
       match t with
-      | `BTYP_cfunction (s,d) as t -> t
-      | `BTYP_function (s,d) as t -> t
+      | BTYP_cfunction (s,d) as t -> t
+      | BTYP_function (s,d) as t -> t
       | t ->
         ignore begin
           match t with
-          | `BTYP_fix _ -> raise (Free_fixpoint t)
+          | BTYP_fix _ -> raise (Free_fixpoint t)
           | _ -> try unfold syms.dfns t with
           | _ -> raise (Free_fixpoint t)
         end
@@ -2790,12 +2790,12 @@ and handle_function
     BEXPR_closure (index,ts),
     (
       match t with
-      | `BTYP_cfunction (s,d) as t -> t
-      | `BTYP_function (s,d) as t -> t
+      | BTYP_cfunction (s,d) as t -> t
+      | BTYP_function (s,d) as t -> t
       | t ->
         ignore begin
           match t with
-          | `BTYP_fix _ -> raise (Free_fixpoint t)
+          | BTYP_fix _ -> raise (Free_fixpoint t)
           | _ -> try unfold syms.dfns t with
           | _ -> raise (Free_fixpoint t)
         end
@@ -2809,15 +2809,15 @@ and handle_function
   | SYMDEF_type_alias (TYP_typefun _) ->
     (* THIS IS A HACK .. WE KNOW THE TYPE IS NOT NEEDED BY THE CALLER .. *)
     (* let t = inner_type_of_index_with_ts syms sr rs index ts in *)
-    let t = `BTYP_function (`BTYP_type 0,`BTYP_type 0) in
+    let t = BTYP_function (BTYP_type 0,BTYP_type 0) in
     BEXPR_closure (index,ts),
     (
       match t with
-      | `BTYP_function (s,d) as t -> t
+      | BTYP_function (s,d) as t -> t
       | t ->
         ignore begin
           match t with
-          | `BTYP_fix _ -> raise (Free_fixpoint t)
+          | BTYP_fix _ -> raise (Free_fixpoint t)
           | _ -> try unfold syms.dfns t with
           | _ -> raise (Free_fixpoint t)
         end
@@ -2853,8 +2853,8 @@ and handle_variable syms
     let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
     let t = beta_reduce syms sr (tsubst bvs ts t) in
     begin match t with
-    | `BTYP_cfunction (d,c)
-    | `BTYP_function (d,c) ->
+    | BTYP_cfunction (d,c)
+    | BTYP_function (d,c) ->
       if not (type_match syms.counter syms.dfns d t2) then
       clierr sr
       (
@@ -2917,7 +2917,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | (SYMDEF_cstruct _ | SYMDEF_struct _ )
       when
         (match t2 with
-        | [`BTYP_record _] -> true
+        | [BTYP_record _] -> true
         | _ -> false
         )
       ->
@@ -2925,7 +2925,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
         print_endline ("Record Argument type is " ^ catmap "," (sbt syms.dfns) t2);
         *)
-        Some (BEXPR_closure (sye index,ts),`BTYP_inst (sye index,ts))
+        Some (BEXPR_closure (sye index,ts),BTYP_inst (sye index,ts))
         (*
         failwith "NOT IMPLEMENTED YET"
         *)
@@ -3160,13 +3160,13 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
       let mt = bt sra mt in
       (* match function a -> b -> c -> d with sigs a b c *)
       let rec m f s = match f,s with
-      | `BTYP_function (d,c),h::t when d = h -> m c t
-      | `BTYP_typefun _,_ -> failwith "Can't handle actual lambda form yet"
+      | BTYP_function (d,c),h::t when d = h -> m c t
+      | BTYP_typefun _,_ -> failwith "Can't handle actual lambda form yet"
       | _,[] -> true
       | _ -> false
       in
       if m mt t2
-      then Some (`BTYP_var (sye index,mt))
+      then Some (BTYP_var (sye index,mt))
       else
       (print_endline
       (
@@ -3179,7 +3179,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
     | SYMDEF_union _
     | SYMDEF_type_alias _ ->
       print_endline "Found abs,union or alias";
-      Some (`BTYP_inst (sye index, ts))
+      Some (BTYP_inst (sye index, ts))
 
 
     | SYMDEF_const_ctor _
@@ -3274,7 +3274,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
               | SYMDEF_union _ -> true
               | _ -> false
            ) ->
-           Some (`BTYP_inst (sye i, ts))
+           Some (BTYP_inst (sye i, ts))
 
         | _ ->
         let fs =
@@ -3312,15 +3312,15 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
 and handle_map sr (f,ft) (a,at) =
     let t =
       match ft with
-      | `BTYP_function (d,c) ->
+      | BTYP_function (d,c) ->
         begin match at with
-        | `BTYP_inst (i,[t]) ->
+        | BTYP_inst (i,[t]) ->
           if t <> d
           then clierr sr
             ("map type of data structure index " ^
             "must agree with function domain")
           else
-            `BTYP_inst (i,[c])
+            BTYP_inst (i,[c])
         | _ -> clierr sr "map requires instance"
         end
       | _ -> clierr sr "map non-function"
@@ -3391,7 +3391,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     let meth_ts = List.map (bt sra) meth_ts in
     let (be2,t2) as x2 = be e2 in
     begin match t2 with
-    | `BTYP_record es ->
+    | BTYP_record es ->
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
       let es = List.sort rcmp es in
       let field_name = String.sub fn 4 (String.length fn -4) in
@@ -3407,7 +3407,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     | _ ->
     let tbe1 =
       match t2 with
-      | `BTYP_inst (index,ts) ->
+      | BTYP_inst (index,ts) ->
         begin match get_data syms.dfns index with
         {id=id; parent=parent;sr=sr;symdef=entry} ->
         match parent with
@@ -3472,10 +3472,10 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     in
     let _,t = be e in
     let rec aux t = match t with
-    | `BTYP_tuple ls ->
+    | BTYP_tuple ls ->
       push (); List.iter aux ls; pop(); inc ()
 
-    | `BTYP_array (t,`BTYP_unitsum n) when n < 20 ->
+    | BTYP_array (t,BTYP_unitsum n) when n < 20 ->
       push(); for i = 0 to n-1 do aux t done; pop(); inc();
 
     | _ ->
@@ -3503,8 +3503,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     let calnrows t =
       let nrows =
         match t with
-        | `BTYP_tuple ls -> List.length ls
-        | `BTYP_array (_,`BTYP_unitsum n) -> n
+        | BTYP_tuple ls -> List.length ls
+        | BTYP_array (_,BTYP_unitsum n) -> n
         | _ -> clierrn [sr] "Tuple transpose requires entry to be tuple"
       in
       if nrows < 2 then
@@ -3514,11 +3514,11 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     in
     let colchk nrows t =
       match t with
-      | `BTYP_tuple ls ->
+      | BTYP_tuple ls ->
         if List.length ls != nrows then
           clierr sr ("Tuple transpose requires entry to be tuple of length " ^ si nrows)
 
-      | `BTYP_array (_,`BTYP_unitsum n) ->
+      | BTYP_array (_,BTYP_unitsum n) ->
         if n != nrows then
           clierr sr ("Tuple transpose requires entry to be tuple of length " ^ si nrows)
 
@@ -3527,13 +3527,13 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     let _,t = be e in
     let ncolumns, nrows =
       match t with
-      | `BTYP_tuple ls ->
+      | BTYP_tuple ls ->
         let ncolumns  = List.length ls in
         let nrows = calnrows (List.hd ls) in
         List.iter (colchk nrows) ls;
         ncolumns, nrows
 
-      | `BTYP_array (t,`BTYP_unitsum ncolumns) ->
+      | BTYP_array (t,BTYP_unitsum ncolumns) ->
         let nrows = calnrows t in
         ncolumns, nrows
 
@@ -3575,8 +3575,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       in be (aux n i)
     in
     begin match t with
-    | `BTYP_tuple ts  -> calfold (List.length ts)
-    | `BTYP_array (_,`BTYP_unitsum n) ->
+    | BTYP_tuple ts  -> calfold (List.length ts)
+    | BTYP_array (_,BTYP_unitsum n) ->
        if  n<20 then calfold n
        else
          clierr sr ("Tuple fold array length " ^ si n ^ " too big, limit 20")
@@ -3638,7 +3638,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     let t' = Flx_maps.reduce_type t' in (* src *)
     let t'' = Flx_maps.reduce_type t'' in (* dst *)
     begin match t',t'' with
-    | `BTYP_inst (i,[]),`BTYP_unitsum n ->
+    | BTYP_inst (i,[]),BTYP_unitsum n ->
       begin match hfind "lookup" syms.dfns i with
       | { id="int"; symdef=SYMDEF_abs (_, CS_str_template "int", _) }  ->
         begin match e' with
@@ -3655,7 +3655,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           let inttype = t' in
           let zero = BEXPR_literal (AST_int ("int",Big_int.zero_big_int)),t' in
           let xn = BEXPR_literal (AST_int ("int",Big_int.big_int_of_int n)),t' in
-          BEXPR_range_check (zero,x',xn),`BTYP_unitsum n
+          BEXPR_range_check (zero,x',xn),BTYP_unitsum n
 
         end
       | _ ->
@@ -3664,7 +3664,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         ^"to unitsum " ^ si n)
       end
 
-    | `BTYP_record ls',`BTYP_record ls'' ->
+    | BTYP_record ls',BTYP_record ls'' ->
       begin
       try
       BEXPR_record
@@ -3697,7 +3697,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         )
       end
 
-    | `BTYP_variant lhs,`BTYP_variant rhs ->
+    | BTYP_variant lhs,BTYP_variant rhs ->
       begin
       try
         List.iter
@@ -3739,7 +3739,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | EXPR_get_n (sr,(n,e')) ->
     let expr,typ = be e' in
     let ctyp = match unfold syms.dfns typ with
-    | `BTYP_array (t,`BTYP_unitsum len)  ->
+    | BTYP_array (t,BTYP_unitsum len)  ->
       if n<0 or n>len-1
       then clierr sr
         (
@@ -3750,7 +3750,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         )
       else t
 
-    | `BTYP_tuple ts
+    | BTYP_tuple ts
       ->
       let len = List.length ts in
       if n<0 or n>len-1
@@ -3776,7 +3776,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | EXPR_get_named_variable (sr,(name,e')) ->
     let e'',t'' as x2 = be e' in
     begin match t'' with
-    | `BTYP_record es
+    | BTYP_record es
       ->
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
       let es = List.sort rcmp es in
@@ -3796,10 +3796,10 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | EXPR_case_index (sr,e) ->
     let (e',t) as e  = be e in
     begin match t with
-    | `BTYP_unitsum _ -> ()
-    | `BTYP_sum _ -> ()
-    | `BTYP_variant _ -> ()
-    | `BTYP_inst (i,_) ->
+    | BTYP_unitsum _ -> ()
+    | BTYP_sum _ -> ()
+    | BTYP_variant _ -> ()
+    | BTYP_inst (i,_) ->
       begin match hfind "lookup" syms.dfns i with
       | {symdef=SYMDEF_union _} -> ()
       | {id=id} -> clierr sr ("Argument of caseno must be sum or union type, got type " ^ id)
@@ -3821,26 +3821,26 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
   | EXPR_variant (sr,(s,e)) ->
     let (_,t) as e = be e in
-    BEXPR_variant (s,e),`BTYP_variant [s,t]
+    BEXPR_variant (s,e),BTYP_variant [s,t]
 
   | EXPR_typed_case (sr,v,t) ->
     let t = bt sr t in
     ignore (try unfold syms.dfns t with _ -> failwith "AST_typed_case unfold screwd");
     begin match unfold syms.dfns t with
-    | `BTYP_unitsum k ->
+    | BTYP_unitsum k ->
       if v<0 or v>= k
       then clierr sr "Case index out of range of sum"
       else
         BEXPR_case (v,t),t  (* const ctor *)
 
-    | `BTYP_sum ls ->
+    | BTYP_sum ls ->
       if v<0 or v>= List.length ls
       then clierr sr "Case index out of range of sum"
       else let vt = List.nth ls v in
       let ct =
         match vt with
-        | `BTYP_tuple [] -> t        (* const ctor *)
-        | _ -> `BTYP_function (vt,t) (* non-const ctor *)
+        | BTYP_tuple [] -> t        (* const ctor *)
+        | _ -> BTYP_function (vt,t) (* non-const ctor *)
       in
       BEXPR_case (v,t), ct
     | _ ->
@@ -3904,7 +3904,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       begin match hfind "lookup:ref-check" syms.dfns index with
       |  {symdef=SYMDEF_parameter (`PRef,_)}
       |  {symdef=SYMDEF_ref _ } ->
-          let t' = match t with `BTYP_pointer t' -> t' | _ -> 
+          let t' = match t with BTYP_pointer t' -> t' | _ ->
             failwith ("[lookup, AST_name] expected ref "^name^" to have pointer type")
           in
           BEXPR_deref (BEXPR_name (index,ts),t),t'
@@ -4122,7 +4122,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           { rs with depth = rs.depth+1 }
          index ts
         in
-          BEXPR_ref (index,ts), `BTYP_pointer vtype
+          BEXPR_ref (index,ts), BTYP_pointer vtype
 
 
       | SYMDEF_parameter _ ->
@@ -4147,7 +4147,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       end
       end
     | BEXPR_apply ((BEXPR_closure (i,ts),_),a) when has_property i `Lvalue ->
-      BEXPR_address (e',t'),`BTYP_pointer t'
+      BEXPR_address (e',t'),BTYP_pointer t'
 
 
     | _ ->
@@ -4166,14 +4166,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | EXPR_deref (sr,e) ->
     let e,t = be e in
     begin match unfold syms.dfns t with
-    | `BTYP_pointer t'
+    | BTYP_pointer t'
       -> BEXPR_deref (e,t),t'
     | _ -> clierr sr "[bind_expression'] Dereference non pointer"
     end
 
   | EXPR_new (srr,e) ->
      let e,t as x = be e in
-     BEXPR_new x, `BTYP_pointer t
+     BEXPR_new x, BTYP_pointer t
 
   | EXPR_literal (sr,v) ->
     let t = type_of_literal syms env sr v in
@@ -4207,17 +4207,17 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     print_endline ("ta=" ^ sbt syms.dfns ta);
     *)
     begin match tf with
-    | `BTYP_cfunction _ -> cal_apply syms sr rs f a
-    | `BTYP_function _ ->
+    | BTYP_cfunction _ -> cal_apply syms sr rs f a
+    | BTYP_function _ ->
       (* print_endline "Function .. cal apply"; *)
       cal_apply syms sr rs f a
 
     (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)
-    | `BTYP_inst (i,ts') when
+    | BTYP_inst (i,ts') when
       (
         match hfind "lookup" syms.dfns i with
         | {symdef=SYMDEF_struct _} ->
-          (match ta with | `BTYP_record _ -> true | _ -> false)
+          (match ta with | BTYP_record _ -> true | _ -> false)
         | _ -> false
       )
       ->
@@ -4229,7 +4229,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         | _ -> assert false
       in
       let alst = match ta with
-        |`BTYP_record ts -> ts
+        |BTYP_record ts -> ts
         | _ -> assert false
       in
       let nf = List.length fls in
@@ -4239,7 +4239,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           "Wrong number of components matching record argument to struct"
         )
       else begin
-        let bvs = List.map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
+        let bvs = List.map (fun (n,i,_) -> n,BTYP_var (i,BTYP_type 0)) (fst vs) in
         let env' = build_env syms (Some i) in
         let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
         let alst = List.sort (fun (a,_) (b,_) -> compare a b) alst in
@@ -4262,7 +4262,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           fls
         in
         let cts = List.map snd a in
-        let t:btypecode_t = match cts with [t]->t | _ -> `BTYP_tuple cts in
+        let t:btypecode_t = match cts with [t]->t | _ -> BTYP_tuple cts in
         let a: bexpr_t = match a with [x,_]->x | _ -> BEXPR_tuple a in
         let a:tbexpr_t = a,t in
         cal_apply syms sr rs f a
@@ -4305,7 +4305,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       )
       (List.tl bts)
       ;
-      let t = `BTYP_array (t,`BTYP_unitsum n) in
+      let t = BTYP_array (t,BTYP_unitsum n) in
       BEXPR_tuple bets,t
     end else if n = 1 then List.hd bets
     else syserr sr "Empty array?"
@@ -4315,12 +4315,12 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
   | EXPR_record (sr,ls) ->
     begin match ls with
-    | [] -> BEXPR_tuple [],`BTYP_tuple []
+    | [] -> BEXPR_tuple [],BTYP_tuple []
     | _ ->
     let ss,es = List.split ls in
     let es = List.map be es in
     let ts = List.map snd es in
-    let t = `BTYP_record (List.combine ss ts) in
+    let t = BTYP_record (List.combine ss ts) in
     BEXPR_record (List.combine ss es),t
     end
 
@@ -4335,14 +4335,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         (fun t' -> if t <> t' then raise Not_found)
         (List.tl bts)
         ;
-        let t = `BTYP_array (t,`BTYP_unitsum n) in
+        let t = BTYP_array (t,BTYP_unitsum n) in
         BEXPR_tuple bets,t
       with Not_found ->
-        BEXPR_tuple bets, `BTYP_tuple bts
+        BEXPR_tuple bets, BTYP_tuple bts
     else if n = 1 then
       List.hd bets
     else
-    BEXPR_tuple [],`BTYP_tuple []
+    BEXPR_tuple [],BTYP_tuple []
 
 
   | EXPR_dot (sr,(e,e2)) ->
@@ -4357,7 +4357,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     let ttt,e,te =
       let (_,tt') as te = be e in (* polymorphic! *)
       let rec aux n t = match t with
-        | `BTYP_pointer t -> aux (n+1) t
+        | BTYP_pointer t -> aux (n+1) t
         | _ -> n,t
       in
       let np,ttt = aux 0 (rt tt') in
@@ -4378,7 +4378,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       begin match ttt with
 
       (* LHS IS A NOMINAL TYPE *)
-      | `BTYP_inst (i,ts') ->
+      | BTYP_inst (i,ts') ->
         begin match hfind "lookup" syms.dfns i with
 
         (* STRUCT *)
@@ -4392,7 +4392,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             in scan 0 ls
           in
           let ct =
-            let bvs = List.map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
+            let bvs = List.map (fun (n,i,_) -> n,BTYP_var (i,BTYP_type 0)) (fst vs) in
             let env' = build_env syms (Some i) in
             bind_type' syms env' rsground sr ct bvs mkenv
           in
@@ -4428,7 +4428,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
               in scan 0 ls
             in
             let ct =
-              let bvs = List.map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
+              let bvs = List.map (fun (n,i,_) -> n,BTYP_var (i,BTYP_type 0)) (fst vs) in
               let env' = build_env syms (Some i) in
               bind_type' syms env' rsground sr ct bvs mkenv
             in
@@ -4478,7 +4478,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         end
 
       (* LHS RECORD *)
-      | `BTYP_record es ->
+      | BTYP_record es ->
         let rcmp (s1,_) (s2,_) = compare s1 s2 in
         let es = List.sort rcmp es in
         let field_name = name in
@@ -4498,7 +4498,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         end
 
       (* LHS FUNCTION TYPE *)
-      | `BTYP_function (d,c) ->
+      | BTYP_function (d,c) ->
         begin try be (EXPR_apply (sr,(e2,e)))
         with exn ->
         clierr sr (
@@ -4509,7 +4509,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         end
 
       (* LHS TUPLE TYPE *)
-      | `BTYP_tuple _ ->
+      | BTYP_tuple _ ->
         begin try be (EXPR_apply (sr,(e2,e)))
         with exn ->
         clierr sr (
@@ -4557,7 +4557,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       print_endline ("Union type is " ^ sbt syms.dfns ut);
       *)
       begin match ut with
-      | `BTYP_inst (i,ts') ->
+      | BTYP_inst (i,ts') ->
         (*
         print_endline ("OK got type " ^ si i);
         *)
@@ -4601,7 +4601,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       print_endline ("Union type is " ^ sbt syms.dfns ut);
       *)
       begin match ut with
-      | `BTYP_inst (i,ts') ->
+      | BTYP_inst (i,ts') ->
         (*
         print_endline ("OK got type " ^ si i);
         *)
@@ -4645,13 +4645,13 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
      let (_,t) as e' = be e in
     ignore (try unfold syms.dfns t with _ -> failwith "AST_case_arg unfold screwd");
      begin match unfold syms.dfns t with
-     | `BTYP_unitsum n ->
+     | BTYP_unitsum n ->
        if v < 0 or v >= n
        then clierr sr "Invalid sum index"
        else
          BEXPR_case_arg (v, e'),unit_t
 
-     | `BTYP_sum ls ->
+     | BTYP_sum ls ->
        let n = List.length ls in
        if v<0 or v>=n
        then clierr sr "Invalid sum index"
@@ -4673,7 +4673,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       print_endline ("Union type is " ^ sbt syms.dfns ut);
       *)
       begin match ut with
-      | `BTYP_inst (i,ts') ->
+      | BTYP_inst (i,ts') ->
         (*
         print_endline ("OK got type " ^ si i);
         *)
@@ -4693,7 +4693,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           print_endline ("Index is " ^ si vidx);
           *)
           let vt =
-            let bvs = List.map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
+            let bvs = List.map (fun (n,i,_) -> n,BTYP_var (i,BTYP_type 0)) (fst vs) in
             (*
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
             *)
@@ -4734,7 +4734,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       print_endline ("Union type is " ^ sbt syms.dfns ut);
       *)
       begin match ut with
-      | `BTYP_inst (i,ts') ->
+      | BTYP_inst (i,ts') ->
         (*
         print_endline ("OK got type " ^ si i);
         *)
@@ -4754,7 +4754,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           print_endline ("Index is " ^ si vidx);
           *)
           let vt =
-            let bvs = List.map (fun (n,i,_) -> n,`BTYP_var (i,`BTYP_type 0)) (fst vs) in
+            let bvs = List.map (fun (n,i,_) -> n,BTYP_var (i,BTYP_type 0)) (fst vs) in
             (*
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
             *)
@@ -4885,7 +4885,7 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
           print_endline ("Constraint = " ^ sbt syms.dfns cons);
           print_endline ("VS Constraint = " ^ sbt syms.dfns icons);
           *)
-          let cons = `BTYP_intersect [cons; icons] in
+          let cons = BTYP_intersect [cons; icons] in
           (*
           print_endline ("Constraint = " ^ sbt syms.dfns cons);
           *)
@@ -4895,8 +4895,8 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
           *)
           let cons = Flx_maps.reduce_type (beta_reduce syms sr cons) in
           match cons with
-          | `BTYP_tuple [] -> true
-          | `BTYP_void -> false
+          | BTYP_tuple [] -> true
+          | BTYP_void -> false
           | _ ->
              (*
               print_endline (
@@ -5290,9 +5290,9 @@ and review_entry syms vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_t
          (*
          print_endline ("SYNTHESISE FRESH VIEW VARIABLE "^si i^" for missing ts");
          *)
-         let h' = `BTYP_var (i,`BTYP_type 0) in
+         let h' = BTYP_var (i,BTYP_type 0) in
          (*
-         let h' = let (_,i) = h in `BTYP_var (i,`BTYP_type 0) in
+         let h' = let (_,i) = h in BTYP_var (i,BTYP_type 0) in
          *)
          aux t [] (h::outvs) (h'::outts)
        | _ -> List.rev outvs, List.rev outts
@@ -5596,50 +5596,50 @@ and build_env syms parent : env_t =
 and rebind_btype syms env sr ts t: btypecode_t =
   let rbt t = rebind_btype syms env sr ts t in
   match t with
-  | `BTYP_inst (i,_) ->
+  | BTYP_inst (i,_) ->
     begin match get_data syms.dfns i with
     | {symdef=SYMDEF_type_alias t'} ->
       inner_bind_type syms env sr rsground t'
     | _ -> t
     end
 
-  | `BTYP_typesetunion ts -> `BTYP_typesetunion (List.map rbt ts)
-  | `BTYP_typesetintersection ts -> `BTYP_typesetintersection (List.map rbt ts)
+  | BTYP_typesetunion ts -> BTYP_typesetunion (List.map rbt ts)
+  | BTYP_typesetintersection ts -> BTYP_typesetintersection (List.map rbt ts)
 
-  | `BTYP_tuple ts -> `BTYP_tuple (List.map rbt ts)
-  | `BTYP_record ts ->
+  | BTYP_tuple ts -> BTYP_tuple (List.map rbt ts)
+  | BTYP_record ts ->
       let ss,ts = List.split ts in
-      `BTYP_record (List.combine ss (List.map rbt ts))
+      BTYP_record (List.combine ss (List.map rbt ts))
 
-  | `BTYP_variant ts ->
+  | BTYP_variant ts ->
       let ss,ts = List.split ts in
-      `BTYP_variant (List.combine ss (List.map rbt ts))
+      BTYP_variant (List.combine ss (List.map rbt ts))
 
-  | `BTYP_typeset ts ->  `BTYP_typeset (List.map rbt ts)
-  | `BTYP_intersect ts ->  `BTYP_intersect (List.map rbt ts)
+  | BTYP_typeset ts ->  BTYP_typeset (List.map rbt ts)
+  | BTYP_intersect ts ->  BTYP_intersect (List.map rbt ts)
 
-  | `BTYP_sum ts ->
+  | BTYP_sum ts ->
     let ts = List.map rbt ts in
     if all_units ts then
-      `BTYP_unitsum (List.length ts)
+      BTYP_unitsum (List.length ts)
     else
-      `BTYP_sum ts
+      BTYP_sum ts
 
-  | `BTYP_function (a,r) -> `BTYP_function (rbt a, rbt r)
-  | `BTYP_cfunction (a,r) -> `BTYP_cfunction (rbt a, rbt r)
-  | `BTYP_pointer t -> `BTYP_pointer (rbt t)
-  | `BTYP_array (t1,t2) -> `BTYP_array (rbt t1, rbt t2)
+  | BTYP_function (a,r) -> BTYP_function (rbt a, rbt r)
+  | BTYP_cfunction (a,r) -> BTYP_cfunction (rbt a, rbt r)
+  | BTYP_pointer t -> BTYP_pointer (rbt t)
+  | BTYP_array (t1,t2) -> BTYP_array (rbt t1, rbt t2)
 
-  | `BTYP_unitsum _
-  | `BTYP_void
-  | `BTYP_fix _ -> t
+  | BTYP_unitsum _
+  | BTYP_void
+  | BTYP_fix _ -> t
 
-  | `BTYP_var (i,mt) -> clierr sr ("[rebind_type] Unexpected type variable " ^ sbt syms.dfns t)
-  | `BTYP_apply _
-  | `BTYP_typefun _
-  | `BTYP_type _
-  | `BTYP_type_tuple _
-  | `BTYP_type_match _
+  | BTYP_var (i,mt) -> clierr sr ("[rebind_type] Unexpected type variable " ^ sbt syms.dfns t)
+  | BTYP_apply _
+  | BTYP_typefun _
+  | BTYP_type _
+  | BTYP_type_tuple _
+  | BTYP_type_match _
     -> clierr sr ("[rebind_type] Unexpected metatype " ^ sbt syms.dfns t)
 
 

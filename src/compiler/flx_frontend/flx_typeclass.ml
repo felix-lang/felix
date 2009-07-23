@@ -19,7 +19,7 @@ open Flx_beta
 
 let dummy_sr = Flx_srcref.make_dummy "[flx_typeclass] generated"
 
-let vs2ts vs = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) vs
+let vs2ts vs = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) vs
 
 (* drop first n elements of list l *)
 let rec drop l n =
@@ -63,22 +63,22 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       match entry with
       | BBDCL_fun (_,bvs,params,ret,_,_,_) ->
         let argt  : btypecode_t= typeoflist params in
-        let qt = bvs,`BTYP_function (argt,ret) in
+        let qt = bvs,BTYP_function (argt,ret) in
         (id,(i,qt)) :: acc
 
       | BBDCL_proc (_,bvs,params,_,_) ->
         let argt  : btypecode_t= typeoflist params in
-        let qt = bvs,`BTYP_function (argt,`BTYP_void) in
+        let qt = bvs,BTYP_function (argt,BTYP_void) in
         (id,(i,qt)) :: acc
 
       | BBDCL_procedure (_,bvs,bps,_) ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
-        let qt = bvs,`BTYP_function (argt,`BTYP_void) in
+        let qt = bvs,BTYP_function (argt,BTYP_void) in
         (id,(i,qt)) :: acc
 
       | BBDCL_function (_,bvs,bps,ret,_) ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
-        let qt = bvs,`BTYP_function (argt,ret) in
+        let qt = bvs,BTYP_function (argt,ret) in
         (id,(i,qt)) :: acc
 
       | BBDCL_const (_,bvs,ret,_,_) ->
@@ -207,7 +207,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
       match tckentry with
       | BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
         if ct == CS_virtual then
-          let ft = `BTYP_function (typeoflist params,ret) in
+          let ft = BTYP_function (typeoflist params,ret) in
           check_binding true tck tcksr tckid bvs ft
         (*
         clierr tcksr "Typeclass requires virtual function";
@@ -215,7 +215,7 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
 
       | BBDCL_proc (props,bvs,params,ct,breq) ->
         if ct == CS_virtual then
-          let ft = `BTYP_function (typeoflist params,`BTYP_void) in
+          let ft = BTYP_function (typeoflist params, BTYP_void) in
           check_binding true tck tcksr tckid bvs ft
         (*
         clierr tcksr "Typeclass requires virtual procedure";
@@ -223,12 +223,12 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map
 
       | BBDCL_function (props,bvs,bps,ret,_) when mem `Virtual props ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
-        let ft = `BTYP_function (argt,ret) in
+        let ft = BTYP_function (argt,ret) in
         check_binding false tck tcksr tckid bvs ft
 
       | BBDCL_procedure (props, bvs, bps,_) when mem `Virtual props ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
-        let ft = `BTYP_function (argt,`BTYP_void) in
+        let ft = BTYP_function (argt, BTYP_void) in
         check_binding false tck tcksr tckid bvs ft
 
       | BBDCL_const (props,bvs,ret,_,_) when mem `Virtual props ->
@@ -323,7 +323,7 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
        | _ -> aux (i-1) ((v0+i-1)::o)
        in aux n []
      in
-     let nuvs = map (fun i -> `BTYP_var (i,`BTYP_type 0)) vis in
+     let nuvs = map (fun i -> BTYP_var (i,BTYP_type 0)) vis in
      let inst_ts' = map (tsubst inst_vs nuvs) inst_ts in
      let vset = fold_left (fun acc i -> IntSet.add i acc) IntSet.empty vis in
 
@@ -368,14 +368,14 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
        let con = list_subst syms.counter mgu inst_constraint in
        let con = reduce_type (Flx_beta.beta_reduce syms sr con) in
        match con with
-       | `BTYP_tuple [] ->
+       | BTYP_tuple [] ->
          let tail = drop ts (length inst_ts) in
          let ts = tsv @ tail in
          (*
          print_endline ("Remap to " ^ si j ^ "[" ^ catmap "," (sbt syms.dfns) ts ^ "]");
          *)
          Some (j,ts)
-       | `BTYP_void -> (* print_endline "constraint reduce failure"; *) None
+       | BTYP_void -> (* print_endline "constraint reduce failure"; *) None
        | _ ->
          if not allow_fail then
          failwith ("Unable to reduce type constraint: " ^ sbt syms.dfns con)
@@ -438,7 +438,7 @@ let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
     *)
     let candidates = fold_left
     (fun oc (((j,ts),(inst_vs,con,inst_ts,k)) as r) ->
-       let c = `BTYP_type_tuple inst_ts in
+       let c = BTYP_type_tuple inst_ts in
        (*
        print_endline ("Considering candidate sig " ^ sbt syms.dfns c);
        *)
@@ -450,7 +450,7 @@ let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
            *)
            r::lhs (* return all non-greater elements plus candidate *)
          | (((j,ts),(inst_vs,con,inst_ts,k)) as x)::tail ->
-           let c' = `BTYP_type_tuple inst_ts in
+           let c' = BTYP_type_tuple inst_ts in
            (*
            print_endline (" .. comparing with " ^ sbt syms.dfns c');
            *)

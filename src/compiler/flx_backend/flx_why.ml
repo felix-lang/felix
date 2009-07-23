@@ -67,10 +67,10 @@ let getname syms bbdfns i =
   try match Hashtbl.find bbdfns i with id,_,_,_ -> mn id
   with Not_found -> "index_" ^ si i
 
-let flx_bool = `BTYP_unitsum 2
+let flx_bool = BTYP_unitsum 2
 
 let isbool2 t =
-  reduce_type t = `BTYP_array (flx_bool, flx_bool)
+  reduce_type t = BTYP_array (flx_bool, flx_bool)
 
 let rec why_expr syms bbdfns (e: tbexpr_t) =
   let ee e = why_expr syms bbdfns e in
@@ -165,14 +165,14 @@ let emit_type syms bbdfns f index name sr bvs =
 let rec cal_type syms bbdfns t =
   let ct t = cal_type syms bbdfns t in
   match t with
-(*  | `BTYP_lvalue t -> ct t ^ " lvalue " *)
-  | `BTYP_tuple [] -> "unit"
-  | `BTYP_void -> "unit" (* cheat *)
-  | `BTYP_unitsum 2 -> "bool"
-  | `BTYP_function (a,b) ->
+(*  | BTYP_lvalue t -> ct t ^ " lvalue " *)
+  | BTYP_tuple [] -> "unit"
+  | BTYP_void -> "unit" (* cheat *)
+  | BTYP_unitsum 2 -> "bool"
+  | BTYP_function (a,b) ->
     "(" ^ ct a ^ ", " ^ ct b ^ ") fn"
 
-  | `BTYP_inst (index,ts) ->
+  | BTYP_inst (index,ts) ->
     let id,sr,parent,entry = Hashtbl.find bbdfns index in
     (* HACK! *)
     let ts = match ts with
@@ -181,7 +181,7 @@ let rec cal_type syms bbdfns t =
       | ts -> "(" ^ catmap ", " ct ts ^ ")"
     in
     ts ^ id
-  | `BTYP_var (index,_) ->
+  | BTYP_var (index,_) ->
     begin try
       let id,sr,parent,entry = Hashtbl.find bbdfns index
       in "'" ^ id
@@ -253,7 +253,7 @@ let calps ps =
     ps
   in ps
 
-let unitt = `BTYP_tuple []
+let unitt = BTYP_tuple []
 
 let emit_whycode filename syms bbdfns root =
   let logics = find_logics syms root in

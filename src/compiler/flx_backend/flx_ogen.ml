@@ -19,7 +19,7 @@ let find_thread_vars_with_type bbdfns =
     | None,BBDCL_val (_,t)
       -> vars := (k,t) :: !vars
     | None,BBDCL_ref (_,t)
-      -> vars := (k,`BTYP_pointer t) :: !vars
+      -> vars := (k,BTYP_pointer t) :: !vars
 
     | _ -> ()
   )
@@ -82,19 +82,19 @@ let rec get_offsets' syms bbdfns typ : string list =
   let t' = unfold syms.dfns typ in
   match t' with
 
-  | `BTYP_pointer t -> ["0"]
+  | BTYP_pointer t -> ["0"]
     (*
     ["offsetof("^tname^",frame)"]
     *)
 
-  | `BTYP_sum args when not (all_units args) ->
+  | BTYP_sum args when not (all_units args) ->
     ["offsetof("^tname^",data)"]
 
   (* need to fix the rule for optimisation here .. *)
-  | `BTYP_variant _ ->
+  | BTYP_variant _ ->
     ["offsetof("^tname^",data)"]
 
-  | `BTYP_inst (i,ts) ->
+  | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
       try Hashtbl.find bbdfns i
       with Not_found -> failwith ("get_offsets'] can't find index " ^ si i)
@@ -130,8 +130,8 @@ let rec get_offsets' syms bbdfns typ : string list =
     | _ -> []
     end
 
-  | `BTYP_array (t,`BTYP_void ) ->  []
-  | `BTYP_array (t,`BTYP_unitsum k) ->
+  | BTYP_array (t,BTYP_void ) ->  []
+  | BTYP_array (t,BTYP_unitsum k) ->
     let toffsets = get_offsets' syms bbdfns t in
     if toffsets = [] then [] else
     if k> 100 then
@@ -150,7 +150,7 @@ let rec get_offsets' syms bbdfns typ : string list =
       (nlist k)
     end
 
-  | `BTYP_tuple args ->
+  | BTYP_tuple args ->
     let n = ref 0 in
     let lst = ref [] in
     iter
@@ -168,7 +168,7 @@ let rec get_offsets' syms bbdfns typ : string list =
     ;
     !lst
 
-  | `BTYP_record args ->
+  | BTYP_record args ->
     let lst = ref [] in
     iter
     (fun (s,t) ->
@@ -183,32 +183,32 @@ let rec get_offsets' syms bbdfns typ : string list =
     ;
     !lst
 
-  | `BTYP_function _ -> ["0"]
-  | `BTYP_cfunction _ -> []
+  | BTYP_function _ -> ["0"]
+  | BTYP_cfunction _ -> []
 
-  | `BTYP_unitsum _ -> []
+  | BTYP_unitsum _ -> []
 
-  | `BTYP_intersect _
+  | BTYP_intersect _
     -> failwith "[ogen] Type intersection has no representation"
 
   (* this is a lie .. it does, namely a plain C union *)
-  | `BTYP_typeset _
+  | BTYP_typeset _
     -> failwith "[ogen] Type set has no representation"
 
-  | `BTYP_sum _
-  | `BTYP_array _
-(*  | `BTYP_lvalue _ *)
-  | `BTYP_fix _
-  | `BTYP_void
-  | `BTYP_var _
+  | BTYP_sum _
+  | BTYP_array _
+(*  | BTYP_lvalue _ *)
+  | BTYP_fix _
+  | BTYP_void
+  | BTYP_var _
 
-  | `BTYP_apply _
-  | `BTYP_type  _
-  | `BTYP_typefun _
-  | `BTYP_type_tuple _
-  | `BTYP_type_match _
-  | `BTYP_typesetintersection _
-  | `BTYP_typesetunion _
+  | BTYP_apply _
+  | BTYP_type  _
+  | BTYP_typefun _
+  | BTYP_type_tuple _
+  | BTYP_type_match _
+  | BTYP_typesetintersection _
+  | BTYP_typesetunion _
     -> assert false
 
 let get_offsets syms bbdfns typ =
@@ -252,7 +252,7 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props 
     )
     @
     (match ret with
-      | `BTYP_void -> [ ("offsetof(" ^ name ^ ",p_svc),");("offsetof(" ^ name ^ ",_caller),")    ]
+      | BTYP_void -> [ ("offsetof(" ^ name ^ ",p_svc),");("offsetof(" ^ name ^ ",_caller),")    ]
       | _ -> []
     )
     @
@@ -282,7 +282,7 @@ let gen_fun_offsets s syms (child_map,bbdfns) index vs ps ret ts instance props 
   bcat s
   (
     "\n//OFFSETS for "^
-    (match ret with |`BTYP_void -> "procedure " | _ -> "function ") ^
+    (match ret with |BTYP_void -> "procedure " | _ -> "function ") ^
     name ^ "\n"
   );
   gen_offset_data s n name offsets true props None last_ptr_map
@@ -370,7 +370,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       scan exes;
       if mem `Cfun props then () else
       if mem `Heap_closure props then
-        gen_fun_offsets s syms (child_map,bbdfns) index vs ps `BTYP_void ts instance props last_ptr_map
+        gen_fun_offsets s syms (child_map,bbdfns) index vs ps BTYP_void ts instance props last_ptr_map
       else if mem `Stack_closure props then ()
       else
         print_endline ("Warning: no closure of " ^ id ^"<" ^ si index ^ "> is used, but not stackable?")
@@ -390,12 +390,12 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
   Hashtbl.iter
   (fun btyp index ->
     match unfold syms.dfns btyp with
-    | `BTYP_sum args ->
+    | BTYP_sum args ->
       iter
       (fun t -> let t = reduce_type t in
         match t with
-        | `BTYP_tuple []
-        | `BTYP_void -> ()
+        | BTYP_tuple []
+        | BTYP_void -> ()
         | _ ->
           try
             let index = Hashtbl.find syms.registry t in
@@ -404,12 +404,12 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       )
       args
 
-    | `BTYP_variant args ->
+    | BTYP_variant args ->
       iter
       (fun (_,t) -> let t = reduce_type t in
         match t with
-        | `BTYP_tuple []
-        | `BTYP_void -> ()
+        | BTYP_tuple []
+        | BTYP_void -> ()
         | _ ->
           try
             let index = Hashtbl.find syms.registry t in
@@ -418,7 +418,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       )
       args
 
-    | `BTYP_inst (i,ts) ->
+    | BTYP_inst (i,ts) ->
       (*
       print_endline ("Thinking about instance type --> " ^ string_of_btypecode syms.dfns btyp);
       *)
@@ -472,8 +472,8 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
         iter
         (fun t -> let t = reduce_type t in
           match t with
-          | `BTYP_tuple []
-          | `BTYP_void -> ()
+          | BTYP_tuple []
+          | BTYP_void -> ()
           | _ ->
             try
               let index = Hashtbl.find syms.registry t in
@@ -493,9 +493,9 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
     print_endline ("allocable type --> " ^ string_of_btypecode syms.dfns btyp);
     *)
     match unfold syms.dfns btyp with
-    | `BTYP_function _ -> ()
+    | BTYP_function _ -> ()
 
-    | `BTYP_tuple args ->
+    | BTYP_tuple args ->
       let name = cpp_type_classname syms btyp in
       let offsets = get_offsets syms bbdfns btyp in
       let n = length offsets in
@@ -504,10 +504,10 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       gen_offset_data s n name offsets false [] None last_ptr_map
 
     (* This is a pointer, the offset data is in the system library *)
-    | `BTYP_pointer t -> ()
+    | BTYP_pointer t -> ()
 
     (* for an array, we only have offsets for the first element *)
-    | `BTYP_array (t,i) ->
+    | BTYP_array (t,i) ->
       let k =
         try int_of_unitsum i
         with Not_found -> failwith "Array index must be unitsum"
@@ -517,7 +517,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       let offsets = get_offsets syms bbdfns t in
       let is_pod =
         match t with
-        | `BTYP_inst (k,ts) ->
+        | BTYP_inst (k,ts) ->
           let id,sr,parent,entry = Hashtbl.find bbdfns k in
           begin match entry with
           | BBDCL_abs (_,quals,_,_) -> mem `Pod quals
@@ -566,7 +566,7 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
       bcat s "  gc_flags_default\n";
       bcat s "};\n"
 
-    | `BTYP_inst (i,ts) ->
+    | BTYP_inst (i,ts) ->
       let name = cpp_typename syms btyp in
       let id,parent,sr,entry =
         try Hashtbl.find bbdfns i
@@ -626,11 +626,11 @@ let gen_offset_tables syms (child_map,bbdfns) module_name =
         )
     end
 
-   | `BTYP_unitsum _ ->
+   | BTYP_unitsum _ ->
      let name = cpp_typename syms btyp in
      bcat s ("static gc_shape_t &"^ name ^"_ptr_map = flx::rtl::_int_ptr_map;\n");
 
-   | `BTYP_sum _ ->
+   | BTYP_sum _ ->
      let name = cpp_typename syms btyp in
      bcat s ("static gc_shape_t &"^ name ^"_ptr_map = flx::rtl::_uctor_ptr_map;\n");
 

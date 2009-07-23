@@ -36,8 +36,8 @@ let rec check_if_parent syms child parent =
 let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
   let be i e = bind_expression syms (build_env syms (Some i)) e in
   match unfold syms.dfns t1 with
-  | `BTYP_cfunction (t, `BTYP_void)
-  | `BTYP_function (t, `BTYP_void) ->
+  | BTYP_cfunction (t, BTYP_void)
+  | BTYP_function (t, BTYP_void) ->
     if type_match syms.counter syms.dfns t t2
     then
       (
@@ -66,10 +66,10 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
         | BEXPR_closure (i,ts) ->
           begin match t2 with
           (* a bit of a hack .. *)
-          | `BTYP_record _ | `BTYP_tuple [] ->
+          | BTYP_record _ | BTYP_tuple [] ->
             let rs = match t2 with
-              | `BTYP_record rs -> rs
-              | `BTYP_tuple [] -> []
+              | BTYP_record rs -> rs
+              | BTYP_tuple [] -> []
               | _ -> assert false
             in
             begin let pnames = match hfind "bexe" syms.dfns i with
@@ -105,7 +105,7 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
         | Some xs ->
           begin match xs with
           | [x]-> x
-          | _ -> BEXPR_tuple xs,`BTYP_tuple (map snd xs)
+          | _ -> BEXPR_tuple xs,BTYP_tuple (map snd xs)
           end
         | None ->
           clierr sr
@@ -131,7 +131,7 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
 
 let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
   match unfold syms.dfns pt with
-  | `BTYP_function (t, `BTYP_void) ->
+  | BTYP_function (t, BTYP_void) ->
     if t = argt
     then
       match p with
@@ -194,7 +194,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
   *)
 
   (* a type variable in executable code just has to be of kind TYPE *)
-  let parent_ts = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) parent_vs in
+  let parent_ts = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) parent_vs in
   let ret_type = ref ret_type in
   let be e : tbexpr_t = bind_expression syms env e in
   let lun sr n = lookup_name_in_env syms env sr n in
@@ -285,10 +285,10 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       print_endline ("ta=" ^ sbt syms.dfns ta);
       *)
       begin match tf with
-      | `BTYP_cfunction _ ->
+      | BTYP_cfunction _ ->
         tack (cal_call syms sr f a)
 
-      | `BTYP_function _ ->
+      | BTYP_function _ ->
         (* print_endline "Function .. cal apply"; *)
         tack (cal_call syms sr f a)
       | _ ->
@@ -348,7 +348,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
     | EXE_proc_return ->
       incr proc_return_count;
       reachable := false;
-      if do_unify syms !ret_type `BTYP_void
+      if do_unify syms !ret_type BTYP_void
       then
         begin
           ret_type := varmap_subst syms.varmap !ret_type;
@@ -456,7 +456,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
         let lhst =
           let {symdef=entry; id=id} = hfind "bexe" syms.dfns index in
           match entry with
-          | SYMDEF_ref _ -> `BTYP_pointer lhst
+          | SYMDEF_ref _ -> BTYP_pointer lhst
           | _ -> lhst
         in
         *)
@@ -515,7 +515,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
   *)
   if !return_count = 0 then
   begin
-    if do_unify syms !ret_type `BTYP_void
+    if do_unify syms !ret_type BTYP_void
     then
       ret_type := varmap_subst syms.varmap !ret_type
     else
@@ -527,7 +527,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
   ;
 
   begin match !ret_type with
-  | `BTYP_void ->
+  | BTYP_void ->
     if
       not !reachable &&
       !proc_return_count = 0 &&

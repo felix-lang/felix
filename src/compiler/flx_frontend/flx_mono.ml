@@ -59,9 +59,9 @@ let cal_parent syms bbdfns i' ts' =
 
 let fixup_type' syms bbdfns fi t =
   match t with
-  | `BTYP_inst (i,ts) ->
+  | BTYP_inst (i,ts) ->
     let i,ts = fi i ts in
-    `BTYP_inst (i,ts)
+    BTYP_inst (i,ts)
   | x -> x
 
 let rec fixup_type syms bbdfns fi t =
@@ -72,7 +72,7 @@ let rec fixup_type syms bbdfns fi t =
 
 let fixup_expr' syms bbdfns fi mt (e:bexpr_t) =
   (*
-  print_endline ("FIXUP EXPR(up) " ^ sbe syms.dfns (e,`BTYP_void));
+  print_endline ("FIXUP EXPR(up) " ^ sbe syms.dfns (e,BTYP_void));
   *)
   let x = match e with
   | BEXPR_apply_prim (i',ts,a) ->
@@ -115,7 +115,7 @@ let fixup_expr' syms bbdfns fi mt (e:bexpr_t) =
   | x -> x
   in
   (*
-  print_endline ("FIXed UP EXPR " ^ sbe syms.dfns (x,`BTYP_void));
+  print_endline ("FIXed UP EXPR " ^ sbe syms.dfns (x,BTYP_void));
   *)
   x
 
@@ -140,8 +140,8 @@ let rec fixup_expr syms bbdfns fi mt e =
     print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs);
     *)
     begin match t with
-    | `BTYP_inst (j,ts)
-(*    | `BTYP_lvalue (`BTYP_inst (j,ts))  *)
+    | BTYP_inst (j,ts)
+(*    | BTYP_lvalue (BTYP_inst (j,ts))  *)
     ->
       (*
       print_endline ("type=" ^ si j ^ ", ts = " ^ catmap "," (sbt syms.dfns) ts);
@@ -198,7 +198,7 @@ let fixup_exe syms bbdfns fi mt exe =
     print_endline ("[init] Deviant case variable " ^ si i);
     *)
     let vs = get_vs bbdfns i in
-    let ts = map (fun (s,j) -> mt (`BTYP_var (j,`BTYP_type 0))) vs in
+    let ts = map (fun (s,j) -> mt (BTYP_var (j,BTYP_type 0))) vs in
     let i,ts = fi i ts in
     (*
     print_endline ("[init] Remapped deviant variable to " ^ si i);
@@ -210,7 +210,7 @@ let fixup_exe syms bbdfns fi mt exe =
     print_endline ("[svc] Deviant case variable " ^ si i);
     *)
     let vs = get_vs bbdfns i in
-    let ts = map (fun (s,j) -> mt (`BTYP_var (j,`BTYP_type 0))) vs in
+    let ts = map (fun (s,j) -> mt (BTYP_var (j,BTYP_type 0))) vs in
     let i,ts = fi i ts in
     (*
     print_endline ("[svc] Remapped deviant variable to " ^ si i);

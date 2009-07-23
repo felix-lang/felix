@@ -24,7 +24,7 @@ let gen_tuple name tn typs =
   "struct " ^ name ^ " {\n" ^
   catmap ""
   (fun (t,i) ->
-    if t = `BTYP_tuple []
+    if t = BTYP_tuple []
     then "  // elided mem_" ^ si i ^ "(type unit)\n"
     else "  "^tn t^ " mem_" ^ si i ^ ";\n"
   )
@@ -33,13 +33,13 @@ let gen_tuple name tn typs =
   "  " ^ name ^ "(){}\n" (* default constructor *)
   ^
   (
-    if fold_left (fun r t -> r && t = `BTYP_tuple []) true typs
+    if fold_left (fun r t -> r && t = BTYP_tuple []) true typs
     then ""
     else
     "  " ^ name ^ "(" ^
     fold_left
     (fun s (t,i) ->
-      if t = `BTYP_tuple [] then s
+      if t = BTYP_tuple [] then s
       else
         s ^
         (if String.length s > 0 then ", " else "") ^
@@ -52,7 +52,7 @@ let gen_tuple name tn typs =
     ^
     fold_left
     (fun s (t,i) ->
-      if t = `BTYP_tuple [] then s
+      if t = BTYP_tuple [] then s
       else
         s ^
         (if String.length s > 0 then ", " else "") ^
@@ -71,7 +71,7 @@ let gen_record name tn typs =
   "struct " ^ name ^ " {\n" ^
   catmap ""
   (fun (n,t) ->
-    if t = `BTYP_tuple []
+    if t = BTYP_tuple []
     then "  // elided " ^ n ^ "(type unit)\n"
     else "  "^tn t^ " " ^ n ^ ";\n"
   )
@@ -80,13 +80,13 @@ let gen_record name tn typs =
   "  " ^ name ^ "(){}\n" (* default constructor *)
   ^
   (
-    if fold_left (fun r (n,t) -> r && t = `BTYP_tuple []) true typs
+    if fold_left (fun r (n,t) -> r && t = BTYP_tuple []) true typs
     then ""
     else
     "  " ^ name ^ "(" ^
     fold_left
     (fun s (n,t) ->
-      if t = `BTYP_tuple [] then s
+      if t = BTYP_tuple [] then s
       else
         s ^
         (if String.length s > 0 then ", " else "") ^
@@ -99,7 +99,7 @@ let gen_record name tn typs =
     ^
     fold_left
     (fun s (n,t) ->
-      if t = `BTYP_tuple [] then s
+      if t = BTYP_tuple [] then s
       else
         s ^
         (if String.length s > 0 then ", " else "") ^
@@ -149,31 +149,31 @@ let gen_type_name syms bbdfns (index,typ) =
   in
   let t = unfold syms.dfns typ in
   match t with
-  | `BTYP_fix i -> ""
-  | `BTYP_var i -> failwith "[gen_type_name] Can't gen name of type variable"
+  | BTYP_fix i -> ""
+  | BTYP_var (i,mt) -> failwith "[gen_type_name] Can't gen name of type variable"
 
-  | `BTYP_tuple [] -> "" (* unit *)
+  | BTYP_tuple [] -> "" (* unit *)
 
-  | `BTYP_pointer b -> ""
+  | BTYP_pointer b -> ""
     (* NEW *)
     (*
     descr ^
     "typedef " ^ tn b ^ " *"^ tn t ^ ";\n"
     *)
 
-  | `BTYP_tuple _
-  | `BTYP_record _
-  | `BTYP_array _
-  | `BTYP_function _ ->
+  | BTYP_tuple _
+  | BTYP_record _
+  | BTYP_array _
+  | BTYP_function _ ->
     descr ^
     let name = cn typ in
     "struct " ^ name ^ ";\n"
 
-  | `BTYP_cfunction (d,c) ->
+  | BTYP_cfunction (d,c) ->
     descr ^
     let name = cn typ in
     let ds = match d with
-      | `BTYP_tuple ls -> ls
+      | BTYP_tuple ls -> ls
       | x -> [x]
     in
     let ctn t = `Ct_base (cpp_typename syms t) in
@@ -181,10 +181,10 @@ let gen_type_name syms bbdfns (index,typ) =
     let cdt = `Cdt_value t in
     "typedef " ^ string_of_cdecl_type name cdt ^ ";\n"
 
-  | `BTYP_unitsum k ->
+  | BTYP_unitsum k ->
       "typedef int " ^ tn typ ^ ";\n"
 
-  | `BTYP_sum ts ->
+  | BTYP_sum ts ->
     descr ^
     if is_unitsum typ
     then
@@ -192,12 +192,12 @@ let gen_type_name syms bbdfns (index,typ) =
     else
       "typedef _uctor_ " ^ tn typ ^ ";\n"
 
-  | `BTYP_variant ts ->
+  | BTYP_variant ts ->
     "typedef _uctor_ " ^ tn typ ^ ";\n"
 
-  | `BTYP_void -> ""
+  | BTYP_void -> ""
 
-  | `BTYP_inst (i,ts) ->
+  | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
       try Hashtbl.find bbdfns i
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
@@ -317,17 +317,17 @@ let gen_type syms bbdfns (index,typ) =
   in
   let t = unfold syms.dfns typ in
   match t with
-  | `BTYP_var _ -> failwith "[gen_type] can't gen type variable"
-  | `BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
+  | BTYP_var _ -> failwith "[gen_type] can't gen type variable"
+  | BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
 
   (* PROCEDURE *)
-  | `BTYP_cfunction _ -> ""
+  | BTYP_cfunction _ -> ""
 
-  | `BTYP_function (a,`BTYP_void) ->
+  | BTYP_function (a,BTYP_void) ->
     descr ^
     let name = cn typ
     and argtype = tn a
-    and unitproc = a = `BTYP_tuple[] or a = `BTYP_void
+    and unitproc = a = BTYP_tuple[] or a = BTYP_void
     in
     "struct " ^ name ^
     ": con_t {\n" ^
@@ -344,12 +344,12 @@ let gen_type syms bbdfns (index,typ) =
     "};\n"
 
   (* FUNCTION *)
-  | `BTYP_function (a,r) ->
+  | BTYP_function (a,r) ->
     descr ^
     let name = cn typ
     and argtype = tn a
     and rettype = tn r
-    and unitfun = a = `BTYP_tuple[] or a = `BTYP_void
+    and unitfun = a = BTYP_tuple[] or a = BTYP_void
     in
     "struct " ^ name ^ " {\n" ^
     "  typedef " ^ rettype ^ " rettype;\n" ^
@@ -361,21 +361,21 @@ let gen_type syms bbdfns (index,typ) =
     "  virtual ~"^name^"(){};\n" ^
     "};\n"
 
-  | `BTYP_unitsum _ -> "" (* union typedef *)
-  | `BTYP_sum _ -> "" (* union typedef *)
-  | `BTYP_variant _ -> ""
+  | BTYP_unitsum _ -> "" (* union typedef *)
+  | BTYP_sum _ -> "" (* union typedef *)
+  | BTYP_variant _ -> ""
 
-  | `BTYP_tuple [] -> ""
-  | `BTYP_tuple ts ->
+  | BTYP_tuple [] -> ""
+  | BTYP_tuple ts ->
      descr ^
      gen_tuple (tn typ) tn ts
 
-  | `BTYP_record ts ->
+  | BTYP_record ts ->
      descr ^
      gen_record (cn typ) tn ts
 
-  | `BTYP_void -> ""
-  | `BTYP_pointer t ->
+  | BTYP_void -> ""
+  | BTYP_pointer t ->
     ""
     (*
     let name = tn typ in
@@ -383,7 +383,7 @@ let gen_type syms bbdfns (index,typ) =
     descr ^ gen_ref name t
     *)
 
-  | `BTYP_array (v,i) ->
+  | BTYP_array (v,i) ->
     let name = tn typ in
     let v = tn v in
     let n = int_of_unitsum i in
@@ -396,7 +396,7 @@ let gen_type syms bbdfns (index,typ) =
     "};\n"
 
 
-  | `BTYP_inst (i,ts) ->
+  | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
       try Hashtbl.find bbdfns i
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)

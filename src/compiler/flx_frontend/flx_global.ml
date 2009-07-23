@@ -38,8 +38,8 @@ let throw_on_gc syms bbdfns e : unit = match e with
 
   | BEXPR_case (_,t),_ ->
     begin match t with
-    | `BTYP_sum args when not (all_units args) -> raise Not_found
-    | `BTYP_inst (i,ts) ->
+    | BTYP_sum args when not (all_units args) -> raise Not_found
+    | BTYP_inst (i,ts) ->
       let id,parent,sr,entry = try Hashtbl.find bbdfns i with Not_found -> failwith "YIKES3" in
       begin match entry with
       | BBDCL_union (vs,idts) when not (all_voids (map (fun (_,_,t)->t) idts)) -> raise Not_found
@@ -68,7 +68,7 @@ let exe_uses_gc syms bbdfns exe =
   | BEXE_call_prim (sr,i,ts,a) ->
     let id,parent,sr,entry = Hashtbl.find bbdfns i in
     begin match entry with
-    | BBDCL_callback (props,vs,ps,_,_,`BTYP_void,rqs,_)
+    | BBDCL_callback (props,vs,ps,_,_,BTYP_void,rqs,_)
     | BBDCL_proc (props,vs,ps,_,rqs) ->
       (*
       print_endline "Checking primitive for gc use[2]";

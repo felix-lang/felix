@@ -147,7 +147,7 @@ let adjust_ts syms sr index ts =
     )
   end;
 
-  map (fun (_,i,_) -> `BTYP_var (i,`BTYP_type 0)) pvs @ ts
+  map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) pvs @ ts
 
 let make_params syms sr i ts =
   let vs,_ = find_vs syms i in

@@ -245,12 +245,12 @@ let type_has_fn cache syms bbdfns children t =
     with Not_found ->
       Hashtbl.add cache t `Recurse;
       match t with
-      | `BTYP_function _ ->
+      | BTYP_function _ ->
         (* if has_fun bbdfns children then *)
         Hashtbl.replace cache t `Unsafe;
         raise Unsafe
 
-      | `BTYP_inst (i,ts) ->
+      | BTYP_inst (i,ts) ->
         let id,parent,sr,entry = hfind "type_has_fun: inst" bbdfns i in
         begin match entry with
         | BBDCL_newtype _ -> () (* FIXME *)
@@ -298,11 +298,11 @@ let type_has_ptr cache syms bbdfns children t =
     with Not_found ->
       Hashtbl.add cache t `Recurse;
       match t with
-      | `BTYP_pointer _ ->
+      | BTYP_pointer _ ->
         (* encode the more lenient condition here!! *)
         Hashtbl.replace cache t `Unsafe;
         raise Unsafe
-      | `BTYP_inst (i,ts) ->
+      | BTYP_inst (i,ts) ->
         let id,parent,sr,entry = hfind "type_has_ptr: inst" bbdfns i in
         begin match entry with
         | BBDCL_newtype _ -> () (* FIXME *)

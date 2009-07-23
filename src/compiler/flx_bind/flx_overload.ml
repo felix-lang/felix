@@ -24,15 +24,15 @@ let is_typeset tss1 =
     p1.assignments = [] &&
     IntSet.cardinal p1.pattern_vars = 1 &&
     match p1.pattern,v1 with 
-    | `BTYP_var (i,`BTYP_type 0), `BTYP_void 
+    | BTYP_var (i,BTYP_type 0), BTYP_void
       when i = IntSet.choose p1.pattern_vars -> 
       begin try 
         List.iter (fun (p,v) -> match p,v with
         | { assignments=[]; 
             pattern_vars=pvs; 
-            pattern=`BTYP_inst (_,[])
+            pattern=BTYP_inst (_,[])
           },
-          `BTYP_tuple [] when IntSet.is_empty pvs -> ()
+          BTYP_tuple [] when IntSet.is_empty pvs -> ()
         | _ -> raise Not_found
         )
         t;
@@ -45,7 +45,7 @@ let make_typeset tss : int list =
   match List.rev tss with
   | h::t -> List.map (fun x ->
     match x with 
-    | {pattern=`BTYP_inst (i,[])},_ -> i 
+    | {pattern=BTYP_inst (i,[])},_ -> i
     | _ -> assert false
     ) 
     t
@@ -77,16 +77,16 @@ let rec scancases syms tss1 tss2 = match (tss1, tss2) with
         else scancases syms c1 t2 (* skip rhs case *)
       (* special case of wildcard, somewhat hacked *)
       else match p1.pattern,p2.pattern with
-      | `BTYP_var _, `BTYP_var _ -> 
+      | BTYP_var _, BTYP_var _ ->
          if type_eq syms.counter syms.dfns v1 v2 
          then scancases syms t1 t2 (* advance both *)
          else scancases syms c1 t2 (* skip rhs case *)
-      | `BTYP_var _,_ -> scancases syms c1 t2 (* skip rhs case *)
+      | BTYP_var _,_ -> scancases syms c1 t2 (* skip rhs case *)
       | _ -> false
    else false
 
 let typematch_implies syms a b = match a, b with
-  | `BTYP_type_match (v1,tss1), `BTYP_type_match (v2,tss2) ->
+  | BTYP_type_match (v1,tss1), BTYP_type_match (v2,tss2) ->
      type_eq syms.counter syms.dfns v1 v2 && 
      if is_typeset tss1 && is_typeset tss2 
      then is_subset tss1 tss2
@@ -114,12 +114,12 @@ let terms_imply syms ls1 ls2 =
 
 let rec split_conjuncts' t : btypecode_t list =
   match t with
-  | `BTYP_intersect ls -> 
+  | BTYP_intersect ls ->
     List.concat (List.map split_conjuncts' ls)
   | _ -> [t]
 
 let filter_out_units ls = 
-   List.filter (fun x -> x <> `BTYP_tuple []) ls
+   List.filter (fun x -> x <> BTYP_tuple []) ls
 
 let split_conjuncts ls = filter_out_units (split_conjuncts' ls)
 
@@ -245,7 +245,7 @@ let resolve syms i =
 
 let rec unravel_ret tin dts =
   match tin with
-  | `BTYP_function (a,b) -> unravel_ret b (a::dts)
+  | BTYP_function (a,b) -> unravel_ret b (a::dts)
   | _ -> List.rev dts
 
 let hack_name qn = match qn with
@@ -300,7 +300,7 @@ let consider syms env bt be luqn2 name
             let t = match ats with
               | [] -> assert false
               | [x] -> x
-              | _ -> `BTYP_tuple ats
+              | _ -> BTYP_tuple ats
             in
             t
           with Not_found -> argt
@@ -309,8 +309,8 @@ let consider syms env bt be luqn2 name
     in
     let arg_types =
       match arg_types with
-      | `BTYP_record rs as argt :: tail -> fixup_argtypes argt rs :: tail
-      | `BTYP_tuple [] as argt :: tail -> fixup_argtypes argt [] :: tail
+      | BTYP_record rs as argt :: tail -> fixup_argtypes argt rs :: tail
+      | BTYP_tuple [] as argt :: tail -> fixup_argtypes argt [] :: tail
       | _ -> arg_types
     in
     (*
@@ -408,7 +408,7 @@ let consider syms env bt be luqn2 name
     print_endline ("Candidate sigs= " ^  catmap "->" (sbt syms.dfns) curry_domains);
     *)
     (*
-    if con <> `BTYP_tuple [] then
+    if con <> BTYP_tuple [] then
       print_endline ("type constraint (for "^name^") = " ^ sbt syms.dfns con)
     ;
     *)
@@ -462,7 +462,7 @@ let consider syms env bt be luqn2 name
 
     (* equations for user specified assignments *)
     let lhsi = List.map (fun (n,i) -> i) spec_vs in
-    let lhs = List.map (fun (n,i) -> `BTYP_var ((i),`BTYP_type 0)) spec_vs in
+    let lhs = List.map (fun (n,i) -> BTYP_var ((i),BTYP_type 0)) spec_vs in
     let n = min n_spec_vs n_input_ts in
     let eqns = List.combine (list_prefix lhs n) (list_prefix input_ts n) in
 
@@ -646,8 +646,8 @@ let consider syms env bt be luqn2 name
            *)
            (* this check is redundant .. we're SCANNING the base vs! *)
            match et with
-           | `BTYP_type _
-           | `BTYP_function _ -> () (* print_endline "ignoring whole metatype" *)
+           | BTYP_type _
+           | BTYP_function _ -> () (* print_endline "ignoring whole metatype" *)
            | _ ->
            if List.mem_assoc j' basemap then begin
              let t1 = List.assoc j' basemap in
@@ -673,8 +673,8 @@ let consider syms env bt be luqn2 name
                 print_endline (
                     "Coupled " ^ s ^ ": " ^ si k ^ "(vs var) <--> " ^ si i ^" (pat var)" ^
                   " pat=" ^ string_of_typecode pat);
-             let t1 = `BTYP_var (i,`BTYP_type 0) in
-             let t2 = `BTYP_var (k,`BTYP_type 0) in
+             let t1 = BTYP_var (i,BTYP_type 0) in
+             let t2 = BTYP_var (k,BTYP_type 0) in
              print_endline ("Adding equation " ^ sbt syms.dfns t1 ^ " = " ^ sbt syms.dfns t2);
              extra_eqns := (t1,t2) :: !extra_eqns;
              (*
@@ -708,7 +708,7 @@ let consider syms env bt be luqn2 name
               t as v
            *)
            List.iter (fun (i,t) -> let t2 = bt sr t in
-             let t1 = `BTYP_var (i,`BTYP_type 0) in
+             let t1 = BTYP_var (i,BTYP_type 0) in
              extra_eqns := (t1,t2) :: !extra_eqns
            ) eqns1;
 
@@ -724,8 +724,8 @@ let consider syms env bt be luqn2 name
 
         (* NOW A SUPER HACK! *)
         let rec xcons con = match con with
-        | `BTYP_intersect cons -> List.iter xcons cons
-        | `BTYP_type_match (arg,[{pattern=pat},`BTYP_tuple[]]) ->
+        | BTYP_intersect cons -> List.iter xcons cons
+        | BTYP_type_match (arg,[{pattern=pat},BTYP_tuple[]]) ->
           let arg = spec arg in
           let arg = list_subst syms.counter !mgu arg in
           let arg = beta_reduce syms sr arg in
@@ -846,9 +846,9 @@ let consider syms env bt be luqn2 name
           in the corresponding ts values. First we need to build
           a map of the correspondence
         *)
-        let parent_ts = List.map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
+        let parent_ts = List.map (fun (n,i,_) -> BTYP_var ((i),BTYP_type 0)) parent_vs in
         let type_constraint = build_type_constraints syms (bt sr) sr base_vs in
-        let type_constraint = `BTYP_intersect [type_constraint; con] in
+        let type_constraint = BTYP_intersect [type_constraint; con] in
         (*
         print_endline ("Raw type constraint " ^ sbt syms.dfns type_constraint);
         *)
@@ -862,13 +862,13 @@ let consider syms env bt be luqn2 name
         print_endline ("Reduced type constraint " ^ sbt syms.dfns reduced_constraint);
         *)
         begin match reduced_constraint with
-        | `BTYP_void ->
+        | BTYP_void ->
           (*
           print_endline "Constraint failure, rejecting candidate";
           *)
           None
-        | `BTYP_tuple [] ->
-          let parent_ts = List.map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
+        | BTYP_tuple [] ->
+          let parent_ts = List.map (fun (n,i,_) -> BTYP_var ((i),BTYP_type 0)) parent_vs in
           Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
 
         | x ->
@@ -877,7 +877,7 @@ let consider syms env bt be luqn2 name
           *)
           let implied = constraint_implies syms env_traint reduced_constraint in
           if implied then 
-            let parent_ts = List.map (fun (n,i,_) -> `BTYP_var ((i),`BTYP_type 0)) parent_vs in
+            let parent_ts = List.map (fun (n,i,_) -> BTYP_var ((i),BTYP_type 0)) parent_vs in
             Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
           else begin
             print_endline "Can't resolve type constraint!";
@@ -918,11 +918,11 @@ let overload
   print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
   print_endline ("Input ts = " ^ catmap ", " (sbt syms.dfns) ts);
   *)
-  let env_traint = `BTYP_intersect (
+  let env_traint = BTYP_intersect (
     filter_out_units  
     (List.map
       (fun (ix,id,_,_,con) -> 
-        if List.mem ix rs.constraint_overload_trail then `BTYP_tuple [] else
+        if List.mem ix rs.constraint_overload_trail then BTYP_tuple [] else
         let rs = { rs with constraint_overload_trail = ix::rs.constraint_overload_trail } in
         let r = bt rs call_sr ix con in
         r

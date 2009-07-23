@@ -160,7 +160,7 @@ let cpp_instance_name syms bbdfns index ts =
 let tix syms t =
   let t =
     match t with
-    | `BTYP_function (`BTYP_void,cod) -> `BTYP_function (`BTYP_tuple [],cod)
+    | BTYP_function (BTYP_void,cod) -> BTYP_function (BTYP_tuple [],cod)
     | x -> x
   in
   try Hashtbl.find syms.registry t
@@ -171,25 +171,25 @@ let rec cpp_type_classname syms t =
   let tix t = tix syms t in
   let t = fold syms.counter syms.dfns t in
   try match unfold syms.dfns t with
-  | `BTYP_var (i,mt) -> failwith ("[cpp_type_classname] Can't name type variable " ^ si i ^":"^ sbt syms.dfns mt)
-  | `BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"
-  | `BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
-  | `BTYP_tuple [] -> "unit"
+  | BTYP_var (i,mt) -> failwith ("[cpp_type_classname] Can't name type variable " ^ si i ^":"^ sbt syms.dfns mt)
+  | BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"
+  | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
+  | BTYP_tuple [] -> "unit"
 
-  | `BTYP_pointer t' -> cpp_type_classname syms t' ^ "*"
+  | BTYP_pointer t' -> cpp_type_classname syms t' ^ "*"
  
-  | `BTYP_function (_,`BTYP_void) -> "_pt" ^ si (tix t)
-  | `BTYP_function _ -> "_ft" ^ si (tix t)
-  | `BTYP_cfunction _ -> "_cft" ^ si (tix t)
-  | `BTYP_array _ -> "_at" ^ si (tix t)
-  | `BTYP_tuple _ -> "_tt" ^ si (tix t)
-  | `BTYP_record _ -> "_art" ^ si (tix t)
-  | `BTYP_variant _ -> "_avt" ^ si (tix t)
-  | `BTYP_sum _ -> "_st" ^ si (tix t)
-  | `BTYP_unitsum k -> "_us" ^ si k
+  | BTYP_function (_,BTYP_void) -> "_pt" ^ si (tix t)
+  | BTYP_function _ -> "_ft" ^ si (tix t)
+  | BTYP_cfunction _ -> "_cft" ^ si (tix t)
+  | BTYP_array _ -> "_at" ^ si (tix t)
+  | BTYP_tuple _ -> "_tt" ^ si (tix t)
+  | BTYP_record _ -> "_art" ^ si (tix t)
+  | BTYP_variant _ -> "_avt" ^ si (tix t)
+  | BTYP_sum _ -> "_st" ^ si (tix t)
+  | BTYP_unitsum k -> "_us" ^ si k
 
 
-  | `BTYP_inst (i,ts) ->
+  | BTYP_inst (i,ts) ->
     let cal_prefix = function
       | SYMDEF_struct _  -> "_s"
       | SYMDEF_union _   -> "_u"
@@ -241,9 +241,9 @@ let rec cpp_type_classname syms t =
 
 let rec cpp_typename syms t =
   match unfold syms.dfns t with
-  | `BTYP_function _ -> cpp_type_classname syms t ^ "*"
-  | `BTYP_cfunction _ -> cpp_type_classname syms t ^ "*"
-  | `BTYP_pointer t -> cpp_typename syms t ^ "*"
+  | BTYP_function _ -> cpp_type_classname syms t ^ "*"
+  | BTYP_cfunction _ -> cpp_type_classname syms t ^ "*"
+  | BTYP_pointer t -> cpp_typename syms t ^ "*"
   | _ -> cpp_type_classname syms t
 
 let cpp_ltypename syms t = cpp_typename syms t 

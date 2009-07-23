@@ -17,12 +17,12 @@ let check_inst bbdfns i ts =
   let id,_,_,entry = Hashtbl.find bbdfns i in
   match entry with
   | BBDCL_newtype (vs,t) -> tsubst vs ts t
-  | _ -> `BTYP_inst (i,ts)
+  | _ -> BTYP_inst (i,ts)
 
 let fixtype bbdfns t =
   let chk i ts = check_inst bbdfns i ts in
   let rec aux t = match map_btype aux t with
-  | `BTYP_inst (i,ts) ->
+  | BTYP_inst (i,ts) ->
     let ts = map aux ts in
     chk i ts
   | x -> x

@@ -153,7 +153,7 @@ let tailit syms (uses,child_map,bbdfns) id this sr ps vs exes : bexe_t list =
   print_endline "======== END BODY ========";
   *)
 
-  let ts' = map (fun (_,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
+  let ts' = map (fun (_,i) -> BTYP_var (i,BTYP_type 0)) vs in
   let pset = fold_left (fun s {pindex=i} -> IntSet.add i s) IntSet.empty ps in
   let parameters = ref [] in
   let descend = descendants child_map this in

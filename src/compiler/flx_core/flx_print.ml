@@ -536,7 +536,7 @@ and sb dfns depth fixlist counter prec tc =
   let sbt prec t = sb dfns (depth+1) fixlist counter prec t in
   let iprec, term =
     match tc with
-    | `BTYP_type_match (t,ps) ->
+    | BTYP_type_match (t,ps) ->
       0,
       (
         "typematch " ^
@@ -551,7 +551,7 @@ and sb dfns depth fixlist counter prec tc =
         "\nendmatch"
       )
 
-    | `BTYP_fix i ->
+    | BTYP_fix i ->
        0,
        (
          try assoc (depth+i) !fixlist
@@ -562,46 +562,46 @@ and sb dfns depth fixlist counter prec tc =
            lab
        )
 
-    | `BTYP_var (i,mt) -> 0,"<T" ^ si i ^
-      (match mt with `BTYP_type i ->"" | _ -> ":"^sbt 0 mt)^
+    | BTYP_var (i,mt) -> 0,"<T" ^ si i ^
+      (match mt with BTYP_type i ->"" | _ -> ":"^sbt 0 mt)^
       ">"
 
-    | `BTYP_inst (i,ts) ->
+    | BTYP_inst (i,ts) ->
       0,qualified_name_of_index dfns i ^
       (if List.length ts = 0 then "" else
       "[" ^cat ", " (map (sbt 9) ts) ^ "]"
       )
 
-    | `BTYP_tuple ls ->
+    | BTYP_tuple ls ->
       begin match ls with
       | [] -> 0,"unit"
       | [x] -> failwith ("UNEXPECTED TUPLE OF ONE ARGUMENT " ^ sbt 9 x)
       | _ -> 4,cat " * " (map (sbt 4) ls)
       end
 
-    | `BTYP_record ls ->
+    | BTYP_record ls ->
       begin match ls with
       | [] -> 0,"record_unit"
       | _ -> 0,"struct {"^catmap "" (fun (s,t)->s^":"^sbt 0 t^";") ls ^"}"
       end
 
-    | `BTYP_variant ls ->
+    | BTYP_variant ls ->
       begin match ls with
       | [] -> 0,"void"
       | _ -> 0,"union {"^catmap "" (fun (s,t)->s^" of "^sbt 0 t^";") ls ^"}"
       end
 
-    | `BTYP_unitsum k ->
+    | BTYP_unitsum k ->
       begin match k with
       | 0 -> 0,"/*unitsum*/void"
       | 2 -> 0,"bool"
       | _ -> 0,si k
       end
 
-    | `BTYP_sum ls ->
+    | BTYP_sum ls ->
       begin match ls with
       | [] -> 9,"UNEXPECTED EMPTY SUM = void"
-      | [`BTYP_tuple[]; `BTYP_tuple[]] -> 0,"unexpected bool"
+      | [BTYP_tuple[]; BTYP_tuple[]] -> 0,"unexpected bool"
       | [x] -> (* failwith *) (9,"UNEXPECTED SUM OF ONE ARGUMENT " ^ sbt 9 x)
       | _ ->
         if (all_units ls)
@@ -611,59 +611,59 @@ and sb dfns depth fixlist counter prec tc =
           5,cat " + " (map (sbt 5) ls)
       end
 
-    | `BTYP_typeset ls ->
+    | BTYP_typeset ls ->
       begin match ls with
       | [] -> 9,"UNEXPECTED EMPTY TYPESET = void"
       | _ ->
           0,"{" ^ cat "," (map (sbt 0) ls) ^ "}"
       end
 
-    | `BTYP_intersect ls ->
+    | BTYP_intersect ls ->
       begin match ls with
       | [] -> 9,"/*intersect*/void"
       | _ ->
           4,cat " and " (map (sbt 5) ls)
       end
 
-    | `BTYP_typesetintersection ls ->
+    | BTYP_typesetintersection ls ->
       begin match ls with
       | [] -> 9,"/*typesetintersect*/void"
       | _ ->
           4,cat " && " (map (sbt 5) ls)
       end
 
-    | `BTYP_typesetunion ls ->
+    | BTYP_typesetunion ls ->
       begin match ls with
       | [] -> 9,"/*typesetunion*/unit"
       | _ ->
           4,cat " || " (map (sbt 5) ls)
       end
 
-    | `BTYP_function (args, result) ->
+    | BTYP_function (args, result) ->
       6,(sbt 6 args) ^ " -> " ^ (sbt 6 result)
 
-    | `BTYP_cfunction (args, result) ->
+    | BTYP_cfunction (args, result) ->
       6,(sbt 6 args) ^ " --> " ^ (sbt 6 result)
 
-    | `BTYP_array (t1,t2) ->
+    | BTYP_array (t1,t2) ->
       begin match t2 with
-      | `BTYP_unitsum k -> 3, sbt 3 t1 ^"^"^si k
+      | BTYP_unitsum k -> 3, sbt 3 t1 ^"^"^si k
       | _ -> 3, sbt 3 t1 ^"^"^sbt 3 t2
       end
 
-    | `BTYP_pointer t -> 1,"&" ^ sbt 1 t
-    | `BTYP_void -> 0,"void"
+    | BTYP_pointer t -> 1,"&" ^ sbt 1 t
+    | BTYP_void -> 0,"void"
 
-    | `BTYP_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
-    | `BTYP_type i -> 0,"TYPE " ^ si i
-    | `BTYP_type_tuple ls ->
+    | BTYP_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
+    | BTYP_type i -> 0,"TYPE " ^ si i
+    | BTYP_type_tuple ls ->
       begin match ls with
       | [] -> 0,"UNEXPECTED TYPE TUPLE NO ARGS"
       | _ -> 4, cat ", " (map (sbt 4) ls)
       end
 
 
-    | `BTYP_typefun (args,ret,body) ->
+    | BTYP_typefun (args,ret,body) ->
        8,
        (
          "fun (" ^ cat ", "
@@ -863,7 +863,7 @@ and special_string_of_typecode ty =  (* used for constructors *)
 
 and special_string_of_btypecode dfns ty =  (* used for constructors *)
   match ty with
-  | `BTYP_tuple [] -> ""
+  | BTYP_tuple [] -> ""
   | _ -> " of " ^ string_of_btypecode dfns ty
 
 and string_of_macro_parameter_type = function
@@ -939,10 +939,10 @@ and print_bvs = function
     "]"
 
 and print_bvs_cons dfns vs cons = match vs,cons with
- | [],`BTYP_tuple [] -> ""
+ | [],BTYP_tuple [] -> ""
  | vs,cons ->
    "[" ^ catmap "," (fun (s,i)->s^"<"^si i^">") vs ^
-   (if cons = `BTYP_tuple[] then ""
+   (if cons = BTYP_tuple[] then ""
    else " where " ^ sbt dfns cons) ^
    "]"
 
@@ -2272,7 +2272,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
   let name = qualified_name_of_index dfns index in
   let sobt t = string_of_btypecode dfns t in
   let se e = string_of_bound_expression dfns bbdfns e in
-  let un = `BTYP_tuple [] in
+  let un = BTYP_tuple [] in
   match bbdcl with
   | BBDCL_function (props,vs,ps,res,es) ->
     string_of_properties props ^

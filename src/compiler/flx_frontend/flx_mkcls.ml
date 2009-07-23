@@ -19,9 +19,9 @@ let gen_closure syms bbdfns i =
   match entry with
   | BBDCL_proc (props,vs,ps,c,reqs) ->
     let arg_t =
-      match ps with | [t] -> t | ps -> `BTYP_tuple ps
+      match ps with | [t] -> t | ps -> BTYP_tuple ps
     in
-    let ts = map (fun (_,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
+    let ts = map (fun (_,i) -> BTYP_var (i,BTYP_type 0)) vs in
     let ps,a =
       let n = !(syms.counter) in incr syms.counter;
       let name = "_a" ^ si n in
@@ -41,9 +41,9 @@ let gen_closure syms bbdfns i =
     j
 
   | BBDCL_fun (props,vs,ps,ret,c,reqs,_) ->
-    let ts = map (fun (_,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
+    let ts = map (fun (_,i) -> BTYP_var (i,BTYP_type 0)) vs in
     let arg_t =
-      match ps with | [t] -> t | ps -> `BTYP_tuple ps
+      match ps with | [t] -> t | ps -> BTYP_tuple ps
     in
     let ps,a =
       let n = !(syms.counter) in incr syms.counter;

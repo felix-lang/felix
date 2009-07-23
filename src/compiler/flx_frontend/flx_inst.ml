@@ -86,8 +86,8 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     *)
     (* instantiate member with binding for class type parameters *)
     begin match ot with
-    | `BTYP_inst (j,ts)
-(*    | `BTYP_lvalue (`BTYP_inst (j,ts)) *)
+    | BTYP_inst (j,ts)
+(*    | BTYP_lvalue (BTYP_inst (j,ts)) *)
       ->
       (*
       print_endline ("Register member " ^ si i^ ", ts=" ^ catmap "," (sbt syms.dfns) ts);
@@ -242,7 +242,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
       hvarmap ""
     );
     *)
-    let ts = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) vs' in
+    let ts = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
     uis i ts; (* this is wrong?: initialisation is not use .. *)
     ue sr e
@@ -251,7 +251,7 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
 
   | BEXE_svc (sr,i) ->
     let vs' = get_vs bbdfns i in
-    let ts = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) vs' in
+    let ts = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
     uis i ts
 
@@ -337,7 +337,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
       )
       ps
     ;
-    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void exes ts
+    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes BTYP_void exes ts
 
   | BBDCL_union (vs,ps) ->
     let argtypes = map (fun (_,_,t)->t) ps in
@@ -346,7 +346,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
-    rtnr (`BTYP_inst (i,ts))
+    rtnr (BTYP_inst (i,ts))
 
 
   | BBDCL_cstruct (vs,ps)
@@ -357,11 +357,11 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
-    rtnr (`BTYP_inst (i,ts))
+    rtnr (BTYP_inst (i,ts))
 
   | BBDCL_newtype (vs,t) ->
     rtnr t;
-    rtnr (`BTYP_inst (i,ts))
+    rtnr (BTYP_inst (i,ts))
 
   | BBDCL_val (vs,t)
   | BBDCL_var (vs,t)
@@ -470,7 +470,7 @@ and process_inst syms bbdfns instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs;
-    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes `BTYP_void [] ts
+    process_function syms bbdfns hvarmap ref_insts1 i sr argtypes BTYP_void [] ts
 
   | BBDCL_abs (vs,_,_,reqs)
     ->
@@ -556,7 +556,7 @@ let instantiate syms bbdfns instps (root:bid_t) (bifaces:biface_t list) =
         | [{ptyp=t}] -> register_type_r ui syms bbdfns [] sr t
         | _ ->
           let t =
-            `BTYP_tuple
+            BTYP_tuple
             (
               map
               (fun {ptyp=t} -> t)

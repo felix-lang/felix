@@ -172,12 +172,12 @@ let gen_body syms (uses,child_map,bbdfns) id
       let pts = map (fun {ptyp=t} -> t) ps in
       match pts with
       | [x] -> x
-      | x -> `BTYP_tuple x
+      | x -> BTYP_tuple x
     in
       varmap_subst varmap pt
   in
 
-  let caller_vars = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
+  let caller_vars = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) vs in
   let ge e = remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e in
   let relab s = try Hashtbl.find relabel s with Not_found -> s in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
@@ -297,11 +297,11 @@ let gen_body syms (uses,child_map,bbdfns) id
       match kind with
       | `PFun ->
         let argt = match argument with
-        | _,`BTYP_function (`BTYP_void,t)
-        | _,`BTYP_function (`BTYP_tuple [],t) -> t
+        | _,BTYP_function (BTYP_void,t)
+        | _,BTYP_function (BTYP_tuple [],t) -> t
         | _,t -> failwith ("Expected argument to be function void->t, got " ^ sbt syms.dfns t)
         in
-        let un = BEXPR_tuple [], `BTYP_tuple [] in
+        let un = BEXPR_tuple [], BTYP_tuple [] in
         let apl = BEXPR_apply (argument, un), argt in
         Hashtbl.add argmap index apl
 
@@ -312,7 +312,7 @@ let gen_body syms (uses,child_map,bbdfns) id
 
       | `PRef ->
         begin match argument with
-        | BEXPR_ref (i,ts),`BTYP_pointer t ->
+        | BEXPR_ref (i,ts),BTYP_pointer t ->
           Hashtbl.add argmap index argument
         | _ -> eagerly ()
         end
@@ -362,7 +362,7 @@ let gen_body syms (uses,child_map,bbdfns) id
 
         (* unpack argument *)
         if length ps > 1 then
-        let ts = map (fun (_,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
+        let ts = map (fun (_,i) -> BTYP_var (i,BTYP_type 0)) vs in
         let p = BEXPR_name (parameter,ts),paramtype in
         let n = ref 0 in
         iter
@@ -417,7 +417,7 @@ let gen_body syms (uses,child_map,bbdfns) id
       print_endline ("Parameter assigned index " ^ si parameter);
       *)
 
-      let ts = map (fun (_,i) -> `BTYP_var (i,`BTYP_type 0)) vs in
+      let ts = map (fun (_,i) -> BTYP_var (i,BTYP_type 0)) vs in
       let n = ref 0 in
       iter
       (fun {pkind=kind; pid=vid; pindex=ix; ptyp=prjt} ->

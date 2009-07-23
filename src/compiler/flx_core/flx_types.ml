@@ -88,49 +88,44 @@ and asm_t =
 
 type bound_iface_t = Flx_srcref.t * iface_t * int option
 
-type 't btpattern_t' = {
-  pattern: 't;
+type btpattern_t = {
+  pattern: btypecode_t;
 
   (* pattern type variables, including 'any' vars *)
   pattern_vars: Flx_set.IntSet.t;
 
   (* assignments for 'as' vars *)
-  assignments : (int * 't) list
+  assignments : (int * btypecode_t) list
 }
 
 (** general typing *)
-type 't btypecode_t' =
-  [
-  | `BTYP_inst of bid_t * 't list
-  | `BTYP_tuple of 't list
-  | `BTYP_record of (string * 't) list
-  | `BTYP_variant of (string * 't) list
-  | `BTYP_unitsum of int
-  | `BTYP_sum of 't list
-  | `BTYP_function of 't * 't
-  | `BTYP_cfunction of 't * 't
-  | `BTYP_pointer  of 't
-(*  | `BTYP_lvalue  of 't *)
-  | `BTYP_array of 't * 't
-  | `BTYP_void
-  | `BTYP_fix of int
-  | `BTYP_intersect of 't list (** intersection type *)
+and btypecode_t =
+  | BTYP_inst of bid_t * btypecode_t list
+  | BTYP_tuple of btypecode_t list
+  | BTYP_record of (string * btypecode_t) list
+  | BTYP_variant of (string * btypecode_t) list
+  | BTYP_unitsum of int
+  | BTYP_sum of btypecode_t list
+  | BTYP_function of btypecode_t * btypecode_t
+  | BTYP_cfunction of btypecode_t * btypecode_t
+  | BTYP_pointer  of btypecode_t
+(*  | BTYP_lvalue  of btypecode_t *)
+  | BTYP_array of btypecode_t * btypecode_t
+  | BTYP_void
+  | BTYP_fix of int
+  | BTYP_intersect of btypecode_t list (** intersection type *)
 
-  | `BTYP_var of int * 't
-  | `BTYP_apply of 't * 't
-  | `BTYP_typefun of (int * 't) list * 't * 't
-  | `BTYP_type of int
-  | `BTYP_type_tuple of 't list
-  | `BTYP_type_match of 't * ('t btpattern_t' * 't) list
+  | BTYP_var of int * btypecode_t
+  | BTYP_apply of btypecode_t * btypecode_t
+  | BTYP_typefun of (int * btypecode_t) list * btypecode_t * btypecode_t
+  | BTYP_type of int
+  | BTYP_type_tuple of btypecode_t list
+  | BTYP_type_match of btypecode_t * (btpattern_t * btypecode_t) list
 
   (* type sets *)
-  | `BTYP_typeset of 't list (** open union *)
-  | `BTYP_typesetunion of 't list (** open union *)
-  | `BTYP_typesetintersection of 't list (** open union *)
-  ]
-
-type btypecode_t = 't btypecode_t' as 't
-type btpattern_t = btypecode_t btpattern_t'
+  | BTYP_typeset of btypecode_t list (** open union *)
+  | BTYP_typesetunion of btypecode_t list (** open union *)
+  | BTYP_typesetintersection of btypecode_t list (** open union *)
 
 type entry_kind_t = {
   base_sym:int;                 (* the function *)

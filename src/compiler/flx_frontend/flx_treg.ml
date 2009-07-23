@@ -16,8 +16,8 @@ let register_type_nr syms t =
   if t <> t' then print_endline ("UNREDUCED TYPE! " ^ sbt syms.dfns t ^ " <> " ^ sbt syms.dfns t');
   *)
   match t with
-  | `BTYP_fix _
-  | `BTYP_tuple []
+  | BTYP_fix _
+  | BTYP_tuple []
     -> ()
   | _
     ->
@@ -35,29 +35,29 @@ let register_type_nr syms t =
 let register_tuple syms t =
   let t = fold syms.counter syms.dfns t in
   match t with
-  | `BTYP_tuple [] -> ()
-  | `BTYP_tuple [_] -> assert false
+  | BTYP_tuple [] -> ()
+  | BTYP_tuple [_] -> assert false
 
-  | `BTYP_tuple ts ->
-    let t = `BTYP_tuple (map reduce_type ts) in
+  | BTYP_tuple ts ->
+    let t = BTYP_tuple (map reduce_type ts) in
     register_type_nr syms t
 
-  | `BTYP_array (t',`BTYP_unitsum n) ->
+  | BTYP_array (t',BTYP_unitsum n) ->
     let t' = reduce_type t' in
     let ts = rev_map (fun _ -> t') (nlist n) in
-    register_type_nr syms (`BTYP_tuple ts)
+    register_type_nr syms (BTYP_tuple ts)
 
-  | `BTYP_record ts ->
+  | BTYP_record ts ->
     let t = reduce_type t in
     begin match t with
-    | `BTYP_tuple [] -> ()
+    | BTYP_tuple [] -> ()
     | _ -> register_type_nr syms t
     end
 
-  | `BTYP_variant ts ->
+  | BTYP_variant ts ->
     let t = reduce_type t in
     begin match t with
-    | `BTYP_void -> ()
+    | BTYP_void -> ()
     | _ -> register_type_nr syms t
     end
 
@@ -79,40 +79,40 @@ let rec register_type_r ui syms bbdfns exclude sr t =
   print_endline (sp ^ "Unfolded type " ^ string_of_btypecode syms.dfns t');
   *)
   match t' with
-  | `BTYP_void -> ()
-  | `BTYP_fix i -> clierr sr ("[register_type_r] Fixpoint "^si i^" encountered")
+  | BTYP_void -> ()
+  | BTYP_fix i -> clierr sr ("[register_type_r] Fixpoint "^si i^" encountered")
   (*
-  | `BTYP_var (i,mt) -> clierr sr ("Attempt to register type variable " ^ si i ^":"^sbt syms.dfns mt)
+  | BTYP_var (i,mt) -> clierr sr ("Attempt to register type variable " ^ si i ^":"^sbt syms.dfns mt)
   *)
-  | `BTYP_var (i,mt) -> print_endline ("Attempt to register type variable " ^ si i ^":"^sbt syms.dfns mt)
-  | `BTYP_function (ps,ret) ->
+  | BTYP_var (i,mt) -> print_endline ("Attempt to register type variable " ^ si i ^":"^sbt syms.dfns mt)
+  | BTYP_function (ps,ret) ->
     let ps = match ps with
-    | `BTYP_void -> `BTYP_tuple []
+    | BTYP_void -> BTYP_tuple []
     | x -> x
     in
-    rr ps; rr ret; rnr (`BTYP_function (ps,ret))
+    rr ps; rr ret; rnr (BTYP_function (ps,ret))
 
-  | `BTYP_cfunction (ps,ret) -> rr ps; rr ret; rnr t
+  | BTYP_cfunction (ps,ret) -> rr ps; rr ret; rnr t
 
-  | `BTYP_array (ps,ret) ->
+  | BTYP_array (ps,ret) ->
     begin match ret with
-    | `BTYP_unitsum 0 | `BTYP_void -> syserr sr "Unexpected array length 0"
-    | `BTYP_unitsum 1 | `BTYP_tuple [] -> syserr sr "Unexpected array length 1"
-    | `BTYP_unitsum _ ->
+    | BTYP_unitsum 0 | BTYP_void -> syserr sr "Unexpected array length 0"
+    | BTYP_unitsum 1 | BTYP_tuple [] -> syserr sr "Unexpected array length 1"
+    | BTYP_unitsum _ ->
       rr ps; rr ret; rnr t
     | _ -> syserr sr "Array bound must be unitsum"
     end
 
-  | `BTYP_tuple ps -> iter rr ps; rnr t
+  | BTYP_tuple ps -> iter rr ps; rnr t
 
-  | `BTYP_record ps -> iter (fun (s,t)->rr t) ps; rnr t
-  | `BTYP_variant ps -> iter (fun (s,t)->rr t) ps; rnr t
+  | BTYP_record ps -> iter (fun (s,t)->rr t) ps; rnr t
+  | BTYP_variant ps -> iter (fun (s,t)->rr t) ps; rnr t
 
-  | `BTYP_sum ps ->
+  | BTYP_sum ps ->
     (* iter rr ps; *) (* should be driven by constructors *)
     rnr t
 
-  | `BTYP_unitsum k -> rnr t
+  | BTYP_unitsum k -> rnr t
 
   (* NOTE: pointer type is registered before the type it points
     to because it can be incomplete, whereas the type it
@@ -122,9 +122,9 @@ let rec register_type_r ui syms bbdfns exclude sr t =
 
   (* pointer type is no longer registered, just us t* *)
 
-  | `BTYP_pointer t' -> rr t'
+  | BTYP_pointer t' -> rr t'
 
-  | `BTYP_inst (i,ts)->
+  | BTYP_inst (i,ts)->
     iter rr ts;
 
     let id, parent, sr,entry =
@@ -165,7 +165,7 @@ let rec register_type_r ui syms bbdfns exclude sr t =
         constructors, etc, unless they're actually used
       *)
       (*
-      if length cts > 1 then rnr (`BTYP_tuple cts);
+      if length cts > 1 then rnr (BTYP_tuple cts);
       *)
 
       (*
@@ -174,7 +174,7 @@ let rec register_type_r ui syms bbdfns exclude sr t =
       *)
       rnr t;
       (*
-      rnr (`BTYP_function (argt,t))         (* constructor as function *)
+      rnr (BTYP_function (argt,t))         (* constructor as function *)
       *)
 
     | BBDCL_abs _ -> ui i ts; rnr t  (* instantiate the type too *)

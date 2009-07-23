@@ -30,7 +30,7 @@ let add (h:usage_table_t) k j sr =
 let rec uses_type h k sr t =
   let ut t = uses_type h k sr t in
   match t with
-  | `BTYP_inst (i,ts)
+  | BTYP_inst (i,ts)
     ->
       add h k i sr;
       iter ut ts
@@ -118,7 +118,7 @@ let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   | BBDCL_val (_,t)
   | BBDCL_var (_,t)
   | BBDCL_tmp (_,t) -> ut t
-  | BBDCL_ref (_,t) -> ut (`BTYP_pointer t)
+  | BBDCL_ref (_,t) -> ut (BTYP_pointer t)
   | BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
     iter ut ps_cf;
     iter ut ps_c;

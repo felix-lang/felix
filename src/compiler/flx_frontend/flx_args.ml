@@ -37,22 +37,22 @@ let unpack syms bbdfns f ps a : tbexpr_t list =
   | [_] -> [a] (* one param, one arg *)
   | _ ->       (* multiple params *)
   match a with
-  | BEXPR_tuple ls,`BTYP_tuple ts ->
+  | BEXPR_tuple ls,BTYP_tuple ts ->
     assert (length ts = length ps);
     assert (length ls = length ts);
     ls
 
-  | BEXPR_tuple ls,`BTYP_array (t,`BTYP_unitsum k) ->
+  | BEXPR_tuple ls,BTYP_array (t,BTYP_unitsum k) ->
     assert (k = length ps);
     assert (length ls = k);
     ls
 
-  | x,`BTYP_tuple ts ->
+  | x,BTYP_tuple ts ->
     assert (length ts = length ps);
     let xs = map (fun i -> BEXPR_get_n (i,a)) (nlist (length ts)) in
     combine xs ts
 
-  | x,`BTYP_array (t,`BTYP_unitsum k) ->
+  | x,BTYP_array (t,BTYP_unitsum k) ->
     assert (k = length ps);
     map (fun i -> BEXPR_get_n (i,a),t) (nlist k)
 
@@ -69,11 +69,11 @@ let merge_args syms bbdfns f c a b =
   let args = unpack syms bbdfns f psf a @ unpack syms bbdfns c psc b in
   match args with
   | [x] -> x
-  | _ -> BEXPR_tuple args,`BTYP_tuple (map snd args)
+  | _ -> BEXPR_tuple args,BTYP_tuple (map snd args)
 
 let append_args syms bbdfns f a b =
   let psf = get_ps bbdfns f in
   let args = unpack syms bbdfns f psf a @ b in
   match args with
   | [x] -> x
-  | _ -> BEXPR_tuple args,`BTYP_tuple (map snd args)
+  | _ -> BEXPR_tuple args,BTYP_tuple (map snd args)

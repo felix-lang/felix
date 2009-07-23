@@ -902,7 +902,7 @@ try
     Hashtbl.iter
     (fun (srct,dstt) vidx ->
       match srct,dstt with
-      | `BTYP_variant srcls, `BTYP_variant dstls ->
+      | BTYP_variant srcls, BTYP_variant dstls ->
         begin
           let rcmp (s,_) (s',_) = compare s s' in
           let srcls = List.sort rcmp srcls in

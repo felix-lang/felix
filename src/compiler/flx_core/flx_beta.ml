@@ -31,12 +31,12 @@ and metatype' syms sr term =
   let mt t = metatype' syms sr t in
   match term with
 
-  | `BTYP_typefun (a,b,c) ->
+  | BTYP_typefun (a,b,c) ->
     let ps = List.map snd a in
     let argt =
       match ps with
       | [x] -> x
-      | _ -> `BTYP_tuple ps
+      | _ -> BTYP_tuple ps
     in
       let rt = metatype syms sr c in
       if b<>rt
@@ -50,17 +50,17 @@ and metatype' syms sr term =
           "\ndoesn't agree with declared type \n" ^
           st b
         )
-      else `BTYP_function (argt,b)
+      else BTYP_function (argt,b)
 
-  | `BTYP_type_tuple ts ->
-    `BTYP_tuple (map mt ts)
+  | BTYP_type_tuple ts ->
+    BTYP_tuple (map mt ts)
 
-  | `BTYP_apply (a,b) ->
+  | BTYP_apply (a,b) ->
     begin
       let ta = mt a
       and tb = mt b
       in match ta with
-      | `BTYP_function (x,y) ->
+      | BTYP_function (x,y) ->
         if x = tb then y
         else
           clierr sr (
@@ -78,7 +78,7 @@ and metatype' syms sr term =
           sbt syms.dfns ta
         )
     end
-  | `BTYP_var (i,mt) ->
+  | BTYP_var (i,mt) ->
     (*
     print_endline ("Type variable " ^ si i^ " has encoded meta type " ^ sbt syms.dfns mt);
     (
@@ -92,8 +92,8 @@ and metatype' syms sr term =
     *)
     mt
 
-  | `BTYP_type i -> `BTYP_type (i+1)
-  | `BTYP_inst (index,ts) ->
+  | BTYP_type i -> BTYP_type (i+1)
+  | BTYP_inst (index,ts) ->
     let {id=id; symdef=entry} =
       try Hashtbl.find syms.dfns index
       with Not_found -> failwith ("[metatype'] can't find type instance index " ^ si index)
@@ -109,12 +109,12 @@ and metatype' syms sr term =
     *)
     begin match entry with
     | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
-      `BTYP_function (`BTYP_type 0,`BTYP_type 0)
+      BTYP_function (BTYP_type 0,BTYP_type 0)
 
     | SYMDEF_const_ctor (_,t,_,_) ->
-      `BTYP_type 0
+      BTYP_type 0
 
-    | SYMDEF_abs _ -> `BTYP_type 0
+    | SYMDEF_abs _ -> BTYP_type 0
 
     | _ ->  clierr sr ("Unexpected argument to metatype: " ^ sbt syms.dfns term)
     end
@@ -122,7 +122,7 @@ and metatype' syms sr term =
 
   | _ ->
      print_endline ("Questionable meta typing of term: " ^ sbt syms.dfns term);
-     `BTYP_type 0 (* THIS ISN'T RIGHT *)
+     BTYP_type 0 (* THIS ISN'T RIGHT *)
 
 
 
@@ -175,8 +175,8 @@ and metatype' syms sr term =
 and fixup syms ps body =
  let param = match ps with
    | [] -> assert false
-   | [i,mt] -> `BTYP_var (i,mt)
-   | x -> `BTYP_type_tuple (List.map (fun (i,mt) -> `BTYP_var (i,mt)) x)
+   | [i,mt] -> BTYP_var (i,mt)
+   | x -> BTYP_type_tuple (List.map (fun (i,mt) -> BTYP_var (i,mt)) x)
  in
  (*
  print_endline ("Body  = " ^ sbt syms.dfns body);
@@ -185,13 +185,13 @@ and fixup syms ps body =
  let rec aux term depth =
    let fx t = aux t (depth+1) in
    match map_btype fx term with
-   | `BTYP_apply (`BTYP_fix i, arg)
+   | BTYP_apply (BTYP_fix i, arg)
      when arg = param
      && i + depth +1  = 0 (* looking inside application, one more level *)
      -> print_endline "SPECIAL REDUCTION";
-     `BTYP_fix (i+2) (* elide application AND skip under lambda abstraction *)
+     BTYP_fix (i+2) (* elide application AND skip under lambda abstraction *)
 
-   | `BTYP_typefun (a,b,c) ->
+   | BTYP_typefun (a,b,c) ->
       (* NOTE we have to add 2 to depth here, an extra
       level for the lambda binder.
       NOTE also: this is NOT a recusive call to fixup!
@@ -202,7 +202,7 @@ and fixup syms ps body =
       print_endline "OOPS >> no alpha conversion?";
       *)
 
-      `BTYP_typefun (a, fx b, aux c (depth + 2))
+      BTYP_typefun (a, fx b, aux c (depth + 2))
    | x -> x
  in
    (* note depth 1: we seek a fix to an abstraction
@@ -221,17 +221,17 @@ and adjust t =
   let rec adj depth t =
     let fx t = adj (depth + 1) t in
     match map_btype fx t with
-    | `BTYP_fix i when i + depth < 0 -> `BTYP_fix (i+1)
+    | BTYP_fix i when i + depth < 0 -> BTYP_fix (i+1)
     | x -> x
   in adj 0 t
 
 and mk_prim_type_inst syms i args =
   print_endline "MK_PRIM_TYPE";
-  let t = `BTYP_inst (i,args) in
+  let t = BTYP_inst (i,args) in
   (*
   let _,t' = normalise_type t in
   let args = match t' with
-    | `BTYP_inst (_,args) -> args
+    | BTYP_inst (_,args) -> args
     | _ -> assert false
   in
   if not (Hashtbl.mem syms.prim_inst (i,args))
@@ -307,7 +307,7 @@ and beta_reduce' syms sr termlist t =
     print_endline ("Beta find fixpoint " ^ si (-j-1));
     print_endline ("Repeated term " ^ sbt syms.dfns t);
     *)
-    `BTYP_fix (-j - 1)
+    BTYP_fix (-j - 1)
 
   | None ->
 
@@ -315,36 +315,36 @@ and beta_reduce' syms sr termlist t =
   let st t = string_of_btypecode syms.dfns t in
   let mt t = metatype syms sr t in
   match t with
-  | `BTYP_fix _ -> t
-  | `BTYP_var (i,_) -> t
+  | BTYP_fix _ -> t
+  | BTYP_var (i,_) -> t
 
-  | `BTYP_typefun (p,r,b) -> t
+  | BTYP_typefun (p,r,b) -> t
   (*
     let b = fixup syms p b in
     let b' = beta_reduce' syms sr (t::termlist) b in
-    let t = `BTYP_typefun (p, br r, b') in
+    let t = BTYP_typefun (p, br r, b') in
     t
   *)
 
-  | `BTYP_inst (i,ts) ->
+  | BTYP_inst (i,ts) ->
     let ts = map br ts in
     begin try match Hashtbl.find syms.dfns i with
     | {id=id; symdef=SYMDEF_type_alias _ } ->
       failwith ("Beta reduce found a type instance of "^id^" to be an alias, which it can't handle")
-    | _ -> `BTYP_inst (i,ts)
-    with Not_found -> `BTYP_inst (i,ts) (* could be reparented class *)
+    | _ -> BTYP_inst (i,ts)
+    with Not_found -> BTYP_inst (i,ts) (* could be reparented class *)
     end
 
-  | `BTYP_tuple ls -> `BTYP_tuple (map br ls)
-  | `BTYP_array (i,t) -> `BTYP_array (i, br t)
-  | `BTYP_sum ls -> `BTYP_sum (map br ls)
-  | `BTYP_record ts ->
+  | BTYP_tuple ls -> BTYP_tuple (map br ls)
+  | BTYP_array (i,t) -> BTYP_array (i, br t)
+  | BTYP_sum ls -> BTYP_sum (map br ls)
+  | BTYP_record ts ->
      let ss,ls = split ts in
-     `BTYP_record (combine ss (map br ls))
+     BTYP_record (combine ss (map br ls))
 
-  | `BTYP_variant ts ->
+  | BTYP_variant ts ->
      let ss,ls = split ts in
-     `BTYP_variant (combine ss (map br ls))
+     BTYP_variant (combine ss (map br ls))
 
   (* Intersection type reduction rule: if any term is 0,
      the result is 0, otherwise the result is the intersection
@@ -353,19 +353,19 @@ and beta_reduce' syms sr termlist t =
      otherwise return the intersection of non units
      (at least two)
   *)
-  | `BTYP_intersect ls ->
+  | BTYP_intersect ls ->
     let ls = map br ls in
-    if mem `BTYP_void ls then `BTYP_void
-    else let ls = filter (fun i -> i <> `BTYP_tuple []) ls in
+    if mem BTYP_void ls then BTYP_void
+    else let ls = filter (fun i -> i <> BTYP_tuple []) ls in
     begin match ls with
-    | [] -> `BTYP_tuple []
+    | [] -> BTYP_tuple []
     | [t] -> t
-    | ls -> `BTYP_intersect ls
+    | ls -> BTYP_intersect ls
     end
 
-  | `BTYP_typeset ls -> `BTYP_typeset (map br ls)
+  | BTYP_typeset ls -> BTYP_typeset (map br ls)
 
-  | `BTYP_typesetunion ls ->
+  | BTYP_typesetunion ls ->
     let ls = rev_map br ls in
     (* split into explicit typesets and other terms
       at the moment, there shouldn't be any 'other'
@@ -374,15 +374,15 @@ and beta_reduce' syms sr termlist t =
     let rec aux ts ot ls  = match ls with
     | [] ->
       begin match ot with
-      | [] -> `BTYP_typeset ts
+      | [] -> BTYP_typeset ts
       | _ ->
         (*
         print_endline "WARNING UNREDUCED TYPESET UNION";
         *)
-        `BTYP_typesetunion (`BTYP_typeset ts :: ot)
+        BTYP_typesetunion (BTYP_typeset ts :: ot)
       end
 
-    | `BTYP_typeset xs :: t -> aux (xs @ ts) ot t
+    | BTYP_typeset xs :: t -> aux (xs @ ts) ot t
     | h :: t -> aux ts (h :: ot) t
     in aux [] [] ls
 
@@ -412,31 +412,31 @@ and beta_reduce' syms sr termlist t =
 
      Bottom line: the rule below is a hack.
   *)
-  | `BTYP_typesetintersection ls ->
+  | BTYP_typesetintersection ls ->
     let ls = map br ls in
-    if mem (`BTYP_typeset []) ls then `BTYP_typeset []
+    if mem (BTYP_typeset []) ls then BTYP_typeset []
     else begin match ls with
     | [t] -> t
-    | ls -> `BTYP_typesetintersection ls
+    | ls -> BTYP_typesetintersection ls
     end
 
 
-  | `BTYP_type_tuple ls -> `BTYP_type_tuple (map br ls)
-  | `BTYP_function (a,b) -> `BTYP_function (br a, br b)
-  | `BTYP_cfunction (a,b) -> `BTYP_cfunction (br a, br b)
-  | `BTYP_pointer a -> `BTYP_pointer (br a)
-(*  | `BTYP_lvalue a -> `BTYP_lvalue (br a) *)
+  | BTYP_type_tuple ls -> BTYP_type_tuple (map br ls)
+  | BTYP_function (a,b) -> BTYP_function (br a, br b)
+  | BTYP_cfunction (a,b) -> BTYP_cfunction (br a, br b)
+  | BTYP_pointer a -> BTYP_pointer (br a)
+(*  | BTYP_lvalue a -> BTYP_lvalue (br a) *)
 
-  | `BTYP_void -> t
-  | `BTYP_type _ -> t
-  | `BTYP_unitsum _ -> t
+  | BTYP_void -> t
+  | BTYP_type _ -> t
+  | BTYP_unitsum _ -> t
 
-  | `BTYP_apply (t1,t2) ->
+  | BTYP_apply (t1,t2) ->
     let t1 = br t1 in (* eager evaluation *)
     let t2 = br t2 in (* eager evaluation *)
     let t1 =
       match t1 with
-      | `BTYP_fix j ->
+      | BTYP_fix j ->
         (*
         print_endline ("++++Fixpoint application " ^ si j);
         print_endline "+++Trail:";
@@ -454,7 +454,7 @@ and beta_reduce' syms sr termlist t =
         print_endline ("Recfun = " ^ sbt syms.dfns whole);
         *)
         begin match whole with
-        | `BTYP_typefun _ -> ()
+        | BTYP_typefun _ -> ()
         | _ -> assert false
         end;
         whole
@@ -467,14 +467,14 @@ and beta_reduce' syms sr termlist t =
     print_endline ("Unfolded = " ^ sbt syms.dfns (unfold syms.dfns t1));
     *)
     begin match unfold syms.dfns t1 with
-    | `BTYP_typefun (ps,r,body) ->
+    | BTYP_typefun (ps,r,body) ->
       let params' =
         match ps with
         | [] -> []
         | [i,_] -> [i,t2]
         | _ ->
           let ts = match t2 with
-          | `BTYP_type_tuple ts -> ts
+          | BTYP_type_tuple ts -> ts
           | _ -> assert false
           in
             if List.length ps <> List.length ts
@@ -500,10 +500,10 @@ and beta_reduce' syms sr termlist t =
       (*
       print_endline "Apply nonfunction .. can't reduce";
       *)
-      `BTYP_apply (t1,t2)
+      BTYP_apply (t1,t2)
     end
 
-  | `BTYP_type_match (tt,pts) ->
+  | BTYP_type_match (tt,pts) ->
     (*
     print_endline ("Typematch [before reduction] " ^ sbt syms.dfns t);
     *)
@@ -547,4 +547,4 @@ and beta_reduce' syms sr termlist t =
         print_endline ("type match reduction result=" ^ sbt syms.dfns t');
         *)
         adjust t'
-      with Not_found -> `BTYP_type_match (tt,pts)
+      with Not_found -> BTYP_type_match (tt,pts)

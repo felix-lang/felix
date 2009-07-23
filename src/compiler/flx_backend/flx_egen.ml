@@ -152,8 +152,8 @@ let get_ref_ref syms bbdfns this index ts : string =
 
 let nth_type ts i =
   try match ts with
-  | `BTYP_tuple ts -> nth ts i
-  | `BTYP_array (t,`BTYP_unitsum n) -> assert (i<n); t
+  | BTYP_tuple ts -> nth ts i
+  | BTYP_array (t,BTYP_unitsum n) -> assert (i<n); t
   | _ -> assert false
   with Not_found ->
     failwith ("Can't find component " ^ si i ^ " of type!")
@@ -182,12 +182,12 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   let gen_case_index e =
     let _,t = e in
     begin match t with
-    | `BTYP_sum _
-    | `BTYP_unitsum _
-    | `BTYP_variant _ ->
+    | BTYP_sum _
+    | BTYP_unitsum _
+    | BTYP_variant _ ->
       if is_unitsum t then ge' e
       else ce_dot (ge' e) "variant"
-    | `BTYP_inst (i,ts) ->
+    | BTYP_inst (i,ts) ->
       let ts = map tsub ts in
       let id,_,_,entry =
         try Hashtbl.find bbdfns i
@@ -208,7 +208,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   let ge_arg ((x,t) as a) =
     let t = tsub t in
     match t with
-    | `BTYP_tuple [] -> ""
+    | BTYP_tuple [] -> ""
     | _ -> ge a
   in
   let id,parent,_,entry =
@@ -220,7 +220,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   let rt t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let t = rt t in
   match t with
-  | `BTYP_tuple [] ->
+  | BTYP_tuple [] ->
       clierr sr
      ("[egen] In "^sbe syms.dfns bbdfns (e,t)^":\nunit value required, should have been eliminated")
 
@@ -248,13 +248,13 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
   | BEXPR_get_n (n,(e',t as e)) ->
     begin match rt t with
-    | `BTYP_array (_,`BTYP_unitsum _) ->
+    | BTYP_array (_,BTYP_unitsum _) ->
       begin match e with
       | BEXPR_tuple _,_ -> print_endline "Failed to slice a tuple!"
       | _ -> ()
       end;
       ce_dot (ge' e) ("data["^si n^"]")
-    | `BTYP_record es ->
+    | BTYP_record es ->
       let field_name,_ =
         try nth es n
         with Not_found ->
@@ -262,7 +262,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       in
       ce_dot (ge' e) field_name
 
-    | `BTYP_inst (i,_) ->
+    | BTYP_inst (i,_) ->
       begin match Hashtbl.find bbdfns i with
       | _,_,_,BBDCL_cstruct (_,ls)
       | _,_,_,BBDCL_struct (_,ls) ->
@@ -284,7 +284,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     print_endline "Handling get_named expression";
     *)
     begin match rt t with
-    | `BTYP_inst (i,ts) ->
+    | BTYP_inst (i,ts) ->
       let cname = cpp_instance_name syms bbdfns n ts in
       ce_arrow (ge' e) cname
     | _ -> assert false
@@ -309,7 +309,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     print_endline ("Decoding nonconst ctor type " ^ sbt syms.dfns t);
     *)
     begin match t with (* t is the result of the whole expression *)
-    | `BTYP_function _ ->
+    | BTYP_function _ ->
       let cast = tn t in
       ce_cast cast (ce_dot (ge' e) "data")
     | _ ->
@@ -317,7 +317,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "data"))
     end
 
-  | BEXPR_deref ((BEXPR_ref (index,ts)),`BTYP_pointer t) ->
+  | BEXPR_deref ((BEXPR_ref (index,ts)),BTYP_pointer t) ->
     ge' (BEXPR_name (index,ts),t)
 
   | BEXPR_address e -> ce_prefix "&" (ge' e)
@@ -350,14 +350,14 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
   | BEXPR_likely e ->
     begin match t with
-    | `BTYP_unitsum 2 ->
+    | BTYP_unitsum 2 ->
       ce_atom ("FLX_LIKELY("^ge e^")")
     | _ -> ge' e
     end
 
   | BEXPR_unlikely e ->
     begin match t with
-    | `BTYP_unitsum 2 ->
+    | BTYP_unitsum 2 ->
       ce_atom ("FLX_UNLIKELY("^ge e^")")
     | _ -> ge' e
     end
@@ -387,7 +387,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
   | BEXPR_case (v,t') ->
     begin match unfold syms.dfns t' with
-    | `BTYP_unitsum n ->
+    | BTYP_unitsum n ->
       if v < 0 or v >= n
       then
         failwith
@@ -397,7 +397,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         )
      else ce_atom (si v)
 
-    | `BTYP_sum ls ->
+    | BTYP_sum ls ->
        let s =
          let n = length ls in
          if v < 0 or v >= n
@@ -408,7 +408,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
              " of " ^ si n ^ " cases"
            )
          else let t' = nth ls v in
-         if t' = `BTYP_tuple []
+         if t' = BTYP_tuple []
          then (* closure of const ctor is just the const value ???? *)
            if is_unitsum t then
              si v
@@ -440,7 +440,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     in
     let ts = map tsub ts' in
     begin match entry with
-      | BBDCL_val (_,`BTYP_function (`BTYP_void,_))  ->
+      | BBDCL_val (_,BTYP_function (BTYP_void,_))  ->
           let ptr = (get_var_ref syms bbdfns this index ts) in
           ce_call (ce_arrow (ce_atom ptr) "apply") []
 
@@ -483,12 +483,12 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
         | CS_str c
         | CS_str_template c when c = "#memcount" ->
           begin match ts with
-          | [`BTYP_void] -> ce_atom "0"
-          | [`BTYP_unitsum n]
-          | [`BTYP_array (_,`BTYP_unitsum n)] -> ce_atom (si n)
-          | [`BTYP_sum ls]
-          | [`BTYP_tuple ls] -> let n = length ls in ce_atom (si n)
-          | [`BTYP_inst (i,_)] ->
+          | [BTYP_void] -> ce_atom "0"
+          | [BTYP_unitsum n]
+          | [BTYP_array (_,BTYP_unitsum n)] -> ce_atom (si n)
+          | [BTYP_sum ls]
+          | [BTYP_tuple ls] -> let n = length ls in ce_atom (si n)
+          | [BTYP_inst (i,_)] ->
             let _,_,_,entry = Hashtbl.find bbdfns i in
             begin match entry with
               | BBDCL_struct (_,ls) -> let n = length ls in ce_atom (si n)
@@ -511,7 +511,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           csubst sr sr2 c (ce_atom "Error") [] [] "Error" "Error" ts "expr" "Error" ["Error"] ["Error"] ["Error"]
         end
 
-      (* | BBDCL_function (_,_,([s,(_,`BTYP_void)],_),_,[BEXE_fun_return e]) -> *)
+      (* | BBDCL_function (_,_,([s,(_,BTYP_void)],_),_,[BEXE_fun_return e]) -> *)
       | BBDCL_function (_,_,([],_),_,[BEXE_fun_return (_,e)]) ->
         ge' e
 
@@ -583,7 +583,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     (*
     let frame_ptr, var_ptr =
       match t with
-      | `BTYP_tuple [] -> "NULL","0"
+      | BTYP_tuple [] -> "NULL","0"
       | _ ->
 
         let parent = match Hashtbl.find bbdfns index with _,parent,sr,_ -> parent in
@@ -610,7 +610,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
 
     ce_cast ref_type
     begin match t with
-      | `BTYP_tuple [] -> ce_atom "0"
+      | BTYP_tuple [] -> ce_atom "0"
       | _ ->
         let v = get_var_ref syms bbdfns this index ts in
         ce_prefix "&" (ce_atom v)
@@ -632,7 +632,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       arg_typename ^ "(" ^ ge_arg e ^ ")"
     in
     let ls = match t with
-      | `BTYP_variant ls -> ls
+      | BTYP_variant ls -> ls
       | _ -> failwith "[egen] Woops variant doesn't have variant type"
     in
     let vidx = match list_assoc_index ls s with
@@ -647,7 +647,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let coerce_variant () =
       let vts =
         match dstt with
-        | `BTYP_variant ls -> ls
+        | BTYP_variant ls -> ls
         | _ -> syserr sr "Coerce non-variant"
       in
       begin match srcx with
@@ -668,7 +668,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       end
     in
     begin match dstt with
-    | `BTYP_variant _ -> coerce_variant ()
+    | BTYP_variant _ -> coerce_variant ()
     | _ -> ce_atom ("reinterpret<"^tn dstt^","^tn srct^">("^ge srce^")")
     end
 
@@ -779,7 +779,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       end
 
     | BBDCL_callback (props,vs,ps_cf,ps_c,_,retyp,_,_) ->
-      assert (retyp <> `BTYP_void);
+      assert (retyp <> BTYP_void);
       if length vs <> length ts then
       clierr sr "[gen_prim_call] Wrong number of type arguments"
       ;
@@ -806,11 +806,11 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     let ts = map tsub ts in
     begin match entry with
     | BBDCL_cstruct (vs,_) ->
-      let name = tn (`BTYP_inst (index,ts)) in
+      let name = tn (BTYP_inst (index,ts)) in
       ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
 
     | BBDCL_struct (vs,cts) ->
-      let name = tn (`BTYP_inst (index,ts)) in
+      let name = tn (BTYP_inst (index,ts)) in
       if length cts > 1 then
         (* argument must be an lvalue *)
         ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
@@ -830,13 +830,13 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       let _,t = a in
       let t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
       begin match ct with
-      | `BTYP_tuple [] ->
+      | BTYP_tuple [] ->
         ce_atom ( "_uctor_(" ^ si cidx ^ ", NULL)")
 
       (* function types are already pointers .. any use of this
          should do a clone .. class types are also pointers ..
       *)
-      | `BTYP_function _ ->
+      | BTYP_function _ ->
         ce_atom (
           "_uctor_(" ^ si cidx ^ ", " ^ ge a ^")"
         )
@@ -1041,8 +1041,8 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
   (* application of C function pointer, type
      f: a --> b
   *)
-(*  | BEXPR_apply ( (_,`BTYP_lvalue(`BTYP_cfunction _)) as f,a) *)
-  | BEXPR_apply ( (_,`BTYP_cfunction _) as f,a) ->
+(*  | BEXPR_apply ( (_,BTYP_lvalue(BTYP_cfunction _)) as f,a) *)
+  | BEXPR_apply ( (_,BTYP_cfunction _) as f,a) ->
     ce_atom (
     (ge f) ^"(" ^ ge_arg a ^ ")"
     )
@@ -1080,9 +1080,9 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     *)
     (* just apply the tuple type ctor to the arguments *)
     begin match t with
-    | `BTYP_array (t',`BTYP_unitsum n) ->
+    | BTYP_array (t',BTYP_unitsum n) ->
       let tuple =
-        let t'' = `BTYP_tuple (map (fun _ -> t') (nlist n)) in
+        let t'' = BTYP_tuple (map (fun _ -> t') (nlist n)) in
         let ctyp = raw_typename t'' in
         ce_atom (
         ctyp ^ "(" ^
@@ -1106,7 +1106,7 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
           (ce_atom ("reinterpret<" ^ atyp ^">"))
           [tuple]
 
-    | `BTYP_tuple _ ->
+    | BTYP_tuple _ ->
       let ctyp = tn t in
       ce_atom (
       ctyp ^ "(" ^

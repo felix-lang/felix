@@ -39,13 +39,13 @@ let nop x = ()
 let rec uses_type syms used bbdfns count_inits (t:btypecode_t) =
   let ut t = uses_type syms used bbdfns count_inits t in
   match t with
-  | `BTYP_inst (i,ts)
+  | BTYP_inst (i,ts)
     ->
       uses syms used bbdfns count_inits i; (* don't care on uses inits? *)
       iter ut ts
 
   (*
-  | `BTYP_type
+  | BTYP_type
     ->
       failwith "[uses_type] Unexpected metatype"
   *)
@@ -152,7 +152,7 @@ and uses syms used bbdfns count_inits i =
       | BBDCL_var (_,t)
       | BBDCL_tmp (_,t) -> ut t
 
-      | BBDCL_ref (_,t) -> ut (`BTYP_pointer t)
+      | BBDCL_ref (_,t) -> ut (BTYP_pointer t)
 
       | BBDCL_const (_,_,t,_,reqs) -> ut t; rq reqs
       | BBDCL_fun (_,_,ps, ret, _,reqs,_) -> iter ut ps; ut ret; rq reqs

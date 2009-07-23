@@ -16,7 +16,7 @@ let mkentry syms (vs:ivs_list_t) i =
   let n = List.length (fst vs) in
   let base = !(syms.Flx_mtypes2.counter) in
   syms.Flx_mtypes2.counter := !(syms.Flx_mtypes2.counter) + n;
-  let ts = List.map (fun i -> `BTYP_var (i+base,`BTYP_type 0)) (Flx_list.nlist n) in
+  let ts = List.map (fun i -> BTYP_var (i+base,BTYP_type 0)) (Flx_list.nlist n) in
   let vs = List.map2 (fun i (n,_,_) -> n,i+base) (Flx_list.nlist n) (fst vs) in
   (*
   print_endline ("Make entry " ^ string_of_int i ^ ", " ^ "vs =" ^
@@ -653,7 +653,7 @@ and build_table_for_dcl
         else
           failwith "WEIRD CASE"
       in
-      let nts = List.map (fun (s,i,t)-> `BTYP_var (i,`BTYP_type 0)) (fst vs) in
+      let nts = List.map (fun (s,i,t)-> BTYP_var (i,BTYP_type 0)) (fst vs) in
       (* fudge the private view to remove the vs *)
       let show { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } =
         string_of_int i ^ " |-> " ^

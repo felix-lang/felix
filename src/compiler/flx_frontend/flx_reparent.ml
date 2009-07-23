@@ -61,7 +61,7 @@ let remap_expr syms bbdfns varmap revariable caller_vars callee_vs_len e =
   let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bbdfns i ts in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let tmap t = match t with
-  | `BTYP_inst (i,ts) -> `BTYP_inst (revar i,ts)
+  | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
   | x -> x
   in
   let auxt t =
@@ -124,7 +124,7 @@ let remap_exe syms bbdfns relabel varmap revariable caller_vars callee_vs_len ex
   let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bbdfns i ts in
 
   let tmap t = match t with
-  | `BTYP_inst (i,ts) -> `BTYP_inst (revar i,ts)
+  | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
   | x -> x
   in
   let auxt t =
@@ -193,7 +193,7 @@ let remap_exes syms bbdfns relabel varmap revariable caller_vars callee_vs_len e
 let remap_reqs syms bbdfns varmap revariable caller_vars callee_vs_len reqs : breqs_t =
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let tmap t = match t with
-  | `BTYP_inst (i,ts) -> `BTYP_inst (revar i,ts)
+  | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
   | x -> x
   in
   let auxt t =
@@ -243,11 +243,11 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bbdfns )
     | None -> "NONE?"
     | Some i -> si i
   in
-  let caller_vars = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) caller_vs in
+  let caller_vars = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) caller_vs in
 
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let tmap t = match t with
-  | `BTYP_inst (i,ts) -> `BTYP_inst (revar i,ts)
+  | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
   | x -> x
   in
   let auxt t =
@@ -510,7 +510,7 @@ let specialise_symbol syms (uses,child_map,bbdfns)
       relabel varmap revariable
       caller_vs callee_vs_len index parent k rescan_flag
     ;
-    let caller_vars = map (fun (s,i) -> `BTYP_var (i,`BTYP_type 0)) caller_vs in
+    let caller_vars = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) caller_vs in
     let ts' = vsplice caller_vars callee_vs_len ts in
     Hashtbl.add syms.transient_specialisation_cache (index,ts) (k,ts');
     k,ts'
