@@ -195,8 +195,8 @@ let emit_axiom syms bbdfns logics f (k:axiom_kind_t) (name,sr,parent,kind,bvs,bp
   let srt = Flx_srcref.short_string_of_src sr in
   let tkind,ykind =
     match kind with
-    | `Axiom -> "axiom","axiom"
-    | `Lemma -> "lemma","goal"
+    | Axiom -> "axiom", "axiom"
+    | Lemma -> "lemma", "goal"
   in
   output_string f ("(* "^tkind^" " ^ name ^ ", at "^srt^" *)\n\n");
   output_string f (ykind ^ " " ^ name ^ ":\n");
@@ -319,7 +319,7 @@ let emit_whycode filename syms bbdfns root =
 
   output_string f "(******* AXIOMS ******)\n";
   iter
-  (emit_axiom syms bbdfns logics f `Axiom)
+  (emit_axiom syms bbdfns logics f Axiom)
   syms.axioms
   ;
 
@@ -331,7 +331,7 @@ let emit_whycode filename syms bbdfns root =
 
   output_string f "(******* LEMMAS (goals) ******)\n";
   iter
-  (emit_axiom syms bbdfns logics f `Lemma)
+  (emit_axiom syms bbdfns logics f Lemma)
   syms.axioms
   ;
   close_out f

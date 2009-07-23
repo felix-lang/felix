@@ -149,7 +149,7 @@ and literal_t =
 (** {7 Expressions}
  *
  * Raw expression terms. *)
-and axiom_kind_t = [`Axiom | `Lemma ]
+and axiom_kind_t = Axiom | Lemma
 and axiom_method_t = [`Predicate of expr_t | `Equation of expr_t * expr_t]
 and expr_t =
   | EXPR_vsprintf of Flx_srcref.t * string

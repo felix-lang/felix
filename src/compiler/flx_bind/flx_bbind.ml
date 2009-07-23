@@ -182,7 +182,7 @@ let bbind_sym syms bbdfns i {
         | `Predicate e -> `BPredicate (be e)
         | `Equation (l,r) -> `BEquation (be l, be r)
       in
-      syms.axioms <- (name,sr,parent,`Axiom, bvs,bps,be1) :: syms.axioms
+      syms.axioms <- (name, sr, parent, Axiom, bvs, bps, be1) :: syms.axioms
       ;
       if syms.compiler_options.print_flag then
       print_endline ("//bound axiom " ^ name ^ "<"^si i^">" ^
@@ -194,7 +194,7 @@ let bbind_sym syms bbdfns i {
         | `Predicate e -> `BPredicate (be e)
         | `Equation (l,r) -> `BEquation (be l, be r)
       in
-      syms.axioms <- (name,sr,parent,`Lemma, bvs,bps,be1) :: syms.axioms
+      syms.axioms <- (name, sr, parent, Lemma, bvs, bps, be1) :: syms.axioms
       ;
       if syms.compiler_options.print_flag then
       print_endline ("//bound lemma " ^ name ^ "<"^si i^">" ^
