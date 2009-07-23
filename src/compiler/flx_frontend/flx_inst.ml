@@ -76,31 +76,6 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_case_index e
     -> ue e
 
-  | BEXPR_get_named (i,((oe,ot) as obj)) ->
-    (*
-    print_endline "Get named: class member";
-    *)
-    ue obj;
-    (*
-    print_endline "Register object expr";
-    *)
-    (* instantiate member with binding for class type parameters *)
-    begin match ot with
-    | BTYP_inst (j,ts)
-(*    | BTYP_lvalue (BTYP_inst (j,ts)) *)
-      ->
-      (*
-      print_endline ("Register member " ^ si i^ ", ts=" ^ catmap "," (sbt syms.dfns) ts);
-      *)
-      let ts = map vs ts in
-      ui i ts
-    | _ ->
-      syserr sr (
-        "[flx_inst:process_expr:BEXPR_get_named] unexpected object type " ^
-        sbt syms.dfns ot
-      )
-    end
-
   | BEXPR_apply_prim (index,ts,a)
   | BEXPR_apply_direct (index,ts,a)
   | BEXPR_apply_struct (index,ts,a)

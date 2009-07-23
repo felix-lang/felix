@@ -204,7 +204,6 @@ and bexpr_t =
   | BEXPR_record of (string * tbexpr_t) list
   | BEXPR_variant of string * tbexpr_t
   | BEXPR_get_n of int * tbexpr_t (* tuple projection *)
-  | BEXPR_get_named of int * tbexpr_t (* struct/class projection *)
   | BEXPR_closure of bid_t * btypecode_t list
   | BEXPR_case of int * btypecode_t
   | BEXPR_match_case of int * tbexpr_t

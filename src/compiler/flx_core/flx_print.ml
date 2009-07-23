@@ -1851,7 +1851,6 @@ and string_of_bound_expression' dfns bbdfns se e =
   match fst e with
 
   | BEXPR_get_n (n,e') -> "(" ^ se e' ^ ").mem_" ^ si n
-  | BEXPR_get_named (i,e') -> "(" ^ se e' ^ ")." ^ sid i
 
   | BEXPR_deref e -> "*("^ se e ^ ")"
   | BEXPR_name (i,ts) -> sid i ^ print_inst dfns ts

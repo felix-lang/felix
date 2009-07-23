@@ -191,14 +191,6 @@ let rec cmp_tbexpr ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_get_n (i,e),BEXPR_get_n (i',e') ->
     i = i' && ecmp e e'
 
-  (* this is probably wrong: says x.y = x'.y' iff x = x && y = y',
-  however, x.y should unify with a simple value .. oh well..
-  hmm .. this should REALLY be a pointer to member, that is,
-  an actual projection function
-  *)
-  | BEXPR_get_named (i,e),BEXPR_get_named (i',e') ->
-    i = i' && ecmp e e'
-
   | BEXPR_case_index e,BEXPR_case_index e' -> ecmp e e'
 
   | BEXPR_case (i,t),BEXPR_case (i',t') -> i = i' && t = t'

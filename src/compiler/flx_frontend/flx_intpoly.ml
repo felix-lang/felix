@@ -60,7 +60,6 @@ let rec check_abstract_expr syms bbdfns rls ((x,t) as e) =
   | BEXPR_variant (s,e) -> fe e
 
   | BEXPR_get_n (i,e) -> fe e
-  | BEXPR_get_named (i,e) -> fi i; fe e
 
   | BEXPR_closure (i,ts) -> fi i
   | BEXPR_name (i,ts) -> fi i

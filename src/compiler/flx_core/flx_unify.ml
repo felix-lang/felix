@@ -1098,7 +1098,6 @@ let rec expr_unification counter dfns
         teqns := (t,t') :: !teqns;
         eqns := (e,e') :: !eqns
 
-      | BEXPR_get_named (n1,e1),BEXPR_get_named (n2,e2)
       | BEXPR_get_n (n1,e1),BEXPR_get_n (n2,e2) when n1 = n2 ->
         eqns := (e1,e2) :: !eqns
 

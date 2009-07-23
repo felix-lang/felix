@@ -279,17 +279,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
     | _ -> ce_dot (ge' e) ("mem_" ^ si n)
     end
 
-  | BEXPR_get_named (n,(e',t as e)) ->
-    (*
-    print_endline "Handling get_named expression";
-    *)
-    begin match rt t with
-    | BTYP_inst (i,ts) ->
-      let cname = cpp_instance_name syms bbdfns n ts in
-      ce_arrow (ge' e) cname
-    | _ -> assert false
-    end
-
   | BEXPR_match_case (n,((e',t') as e)) ->
     let t' = reduce_type (beta_reduce syms sr  t') in
     let x = gen_case_index e in

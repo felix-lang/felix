@@ -127,34 +127,6 @@ let rec fixup_expr syms bbdfns fi mt e =
   *)
   let fe e = fixup_expr syms bbdfns fi mt e in
   let fe' (e,t) = fixup_expr' syms bbdfns fi mt e,t in
-  (* this is deviant case: implied ts is vs of parent!,
-     it has to be done FIRST before the type is remapped
-  *)
-  let e = match e with
-  | BEXPR_get_named (i,(e,t)),t' ->
-    (*
-    print_endline ("REMAPPING component variable " ^ si i);
-    *)
-    let vs = get_vs bbdfns i in
-    (*
-    print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs);
-    *)
-    begin match t with
-    | BTYP_inst (j,ts)
-(*    | BTYP_lvalue (BTYP_inst (j,ts))  *)
-    ->
-      (*
-      print_endline ("type=" ^ si j ^ ", ts = " ^ catmap "," (sbt syms.dfns) ts);
-      *)
-      let i,ts = fi i ts in
-      (*
-      print_endline ("Remapped to " ^ si i);
-      *)
-      BEXPR_get_named (i,(e,t)),t'
-    | _ -> assert false
-    end
-  | x -> x
-  in
   let e = map_tbexpr id fe mt e in
   fe' e
 

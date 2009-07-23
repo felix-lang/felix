@@ -361,7 +361,6 @@ let flat_iter_tbexpr fi fe ft ((x,t) as e) =
   | BEXPR_variant (s,e) -> fe e
 
   | BEXPR_get_n (i,e) -> fe e
-  | BEXPR_get_named (i,e) -> fi i; fe e
 
   | BEXPR_closure (i,ts) -> fi i; List.iter ft ts
   | BEXPR_name (i,ts) -> fi i; List.iter ft ts
@@ -405,7 +404,6 @@ let map_tbexpr fi fe ft e = match e with
   | BEXPR_variant (s,e),t -> BEXPR_variant (s, fe e),ft t
 
   | BEXPR_get_n (i,e),t -> BEXPR_get_n (i, fe e),ft t
-  | BEXPR_get_named (i,e),t -> BEXPR_get_named (fi i, fe e),ft t
 
   | BEXPR_closure (i,ts),t -> BEXPR_closure (fi i, List.map ft ts),ft t
   | BEXPR_name (i,ts),t -> BEXPR_name (fi i, List.map ft ts), ft t
