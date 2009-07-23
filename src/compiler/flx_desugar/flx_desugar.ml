@@ -21,8 +21,8 @@ type desugar_state_t = {
 let generated = Flx_srcref.make_dummy "[flx_desugar] generated"
 
 let block sr body :statement_t =
-  let e = `AST_lambda (sr,(dfltvs,[[],None],TYP_void sr,body)) in
-  `AST_call (sr,e,`AST_tuple(sr,[]))
+  let e = EXPR_lambda (sr,(dfltvs,[[],None],TYP_void sr,body)) in
+  `AST_call (sr,e,EXPR_tuple(sr,[]))
 
 let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
   let rec aux (ps:parameter_t list) :plain_vs_list_t * parameter_t list =
@@ -47,7 +47,7 @@ let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
 
 let arglist x =
   match x with
-  | `AST_tuple (_,ts) -> ts
+  | EXPR_tuple (_,ts) -> ts
   | _ -> [x]
 
 let cal_props = function
@@ -119,7 +119,7 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
           `AST_fun_return
           (
             sr,
-            `AST_suffix
+            EXPR_suffix
             (
               sr,
               (
@@ -136,13 +136,13 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
 let assign sr op l r =
   match op with
   | "_set" -> `AST_cassign (sr,l,r)
-  | "_pset" -> `AST_cassign (sr,`AST_deref (sr,l),r)
+  | "_pset" -> `AST_cassign (sr,EXPR_deref (sr,l),r)
   | _ ->
   `AST_call
   (
     sr,
-    `AST_name (sr, op,[]),
-    `AST_tuple ( sr, [ `AST_ref (sr,l); r ])
+    EXPR_name (sr, op,[]),
+    EXPR_tuple (sr, [EXPR_ref (sr,l); r])
   )
 
 (* split lambdas out. Each lambda is replaced by a
@@ -182,74 +182,74 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   let seq () = let n = !(syms.counter) in incr (syms.counter); n in
   match e with
 
-  | `AST_patvar _
-  | `AST_patany _
-  | `AST_match_ctor _
-  | `AST_match_case _
-  | `AST_ctor_arg _
-  | `AST_case_arg _
-  | `AST_void _
-  | `AST_arrow _
-  | `AST_longarrow _
-  | `AST_superscript _
-  | `AST_as _
-  | `AST_product _
-  | `AST_sum _
-  | `AST_andlist _
-  | `AST_orlist _
-  | `AST_ellipsis _
-  | `AST_setunion  _
-  | `AST_intersect _
-  | `AST_isin _
-  | `AST_setintersection _
-  | `AST_macro_ctor _
-  | `AST_macro_statements _
-  | `AST_user_expr _
+  | EXPR_patvar _
+  | EXPR_patany _
+  | EXPR_match_ctor _
+  | EXPR_match_case _
+  | EXPR_ctor_arg _
+  | EXPR_case_arg _
+  | EXPR_void _
+  | EXPR_arrow _
+  | EXPR_longarrow _
+  | EXPR_superscript _
+  | EXPR_as _
+  | EXPR_product _
+  | EXPR_sum _
+  | EXPR_andlist _
+  | EXPR_orlist _
+  | EXPR_ellipsis _
+  | EXPR_setunion  _
+  | EXPR_intersect _
+  | EXPR_isin _
+  | EXPR_setintersection _
+  | EXPR_macro_ctor _
+  | EXPR_macro_statements _
+  | EXPR_user_expr _
     ->
     clierr sr ("[rex] Unexpected " ^ string_of_expr e)
 
-  | `AST_type_match _ -> [],e
+  | EXPR_type_match _ -> [],e
 
-  | `AST_noexpand (_,e) -> rex e
-  | `AST_name (sr,name,_) -> [],e
+  | EXPR_noexpand (_,e) -> rex e
+  | EXPR_name (sr,name,_) -> [],e
 
-  | `AST_deref (sr,e) ->
+  | EXPR_deref (sr,e) ->
     let l1,x1 = rex e in
-    l1, `AST_deref (sr,x1)
+    l1, EXPR_deref (sr,x1)
 
-  | `AST_ref (sr,e) ->
+  | EXPR_ref (sr,e) ->
     let l1,x1 = rex e in
-    l1, `AST_ref (sr,x1)
+    l1, EXPR_ref (sr,x1)
 
-  | `AST_likely (sr,e) ->
+  | EXPR_likely (sr,e) ->
     let l1,x1 = rex e in
-    l1, `AST_likely (sr,x1)
+    l1, EXPR_likely (sr,x1)
 
-  | `AST_unlikely (sr,e) ->
+  | EXPR_unlikely (sr,e) ->
     let l1,x1 = rex e in
-    l1, `AST_unlikely (sr,x1)
+    l1, EXPR_unlikely (sr,x1)
 
-  | `AST_new (sr,e) ->
+  | EXPR_new (sr,e) ->
     let l1,x1 = rex e in
-    l1, `AST_new (sr,x1)
+    l1, EXPR_new (sr,x1)
 
-  | `AST_suffix _ -> [],e  (* ?? *)
-  | `AST_callback _ -> [],e  (* ?? *)
+  | EXPR_suffix _ -> [],e  (* ?? *)
+  | EXPR_callback _ -> [],e  (* ?? *)
 
-  | `AST_the (_,_) -> [],e
-  | `AST_index (_,_,_) -> [],e
+  | EXPR_the (_,_) -> [],e
+  | EXPR_index (_,_,_) -> [],e
 
-  | `AST_lookup (sr,(e,id,ts)) ->
+  | EXPR_lookup (sr,(e,id,ts)) ->
     let l1,x1 = rex e in
-    l1, `AST_lookup (sr,(x1,id,ts))
+    l1, EXPR_lookup (sr,(x1,id,ts))
 
-  | `AST_case_tag _ -> [],e
-  | `AST_typed_case _ -> [],e
-  | `AST_literal _ -> [],e
+  | EXPR_case_tag _ -> [],e
+  | EXPR_typed_case _ -> [],e
+  | EXPR_literal _ -> [],e
 
-  | `AST_expr _ -> [],e
+  | EXPR_expr _ -> [],e
 
-  | `AST_vsprintf (sr,s) ->
+  | EXPR_vsprintf (sr,s) ->
     let ix = seq () in
     let id = "_fmt_" ^ si ix in
     let str = TYP_name (sr,"string",[]) in
@@ -283,15 +283,15 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
       Array.to_list a
     in
     let f = DCL_fun([],ts,str,`StrTemplate fs,req,"primary") in
-    let x=`AST_index (sr,id,ix) in
+    let x=EXPR_index (sr,id,ix) in
     [
       Dcl (sr,id,Some ix,`Private,dfltvs,f);
     ],x
 
-  | `AST_cond (sr,(e,b1,b2)) ->
+  | EXPR_cond (sr,(e,b1,b2)) ->
      rex
      (
-       `AST_match
+       EXPR_match
        (
          sr,
          (
@@ -308,54 +308,54 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
      even though they're never called,
      so the typing works correctly
   *)
-  | `AST_typeof (sr,e') ->
+  | EXPR_typeof (sr,e') ->
     let l1,x1 = rex e' in
-    l1, `AST_typeof (sr,(x1))
+    l1, EXPR_typeof (sr,(x1))
 
-  | `AST_get_n (sr,(n,e')) ->
+  | EXPR_get_n (sr,(n,e')) ->
     let l1,x1 = rex e' in
-    l1, `AST_get_n (sr,(n,x1))
+    l1, EXPR_get_n (sr,(n,x1))
 
-  | `AST_get_named_variable (sr,(n,e')) ->
+  | EXPR_get_named_variable (sr,(n,e')) ->
     let l1,x1 = rex e' in
-    l1, `AST_get_named_variable (sr,(n,x1))
+    l1, EXPR_get_named_variable (sr,(n,x1))
 
-  | `AST_case_index (sr,e) ->
+  | EXPR_case_index (sr,e) ->
     let l,x = rex e in
-    l,`AST_case_index (sr,x)
+    l,EXPR_case_index (sr,x)
 
-  | `AST_apply (sr,(fn,arg)) ->
+  | EXPR_apply (sr,(fn,arg)) ->
     let l1,x1 = rex fn in
     let l2,x2 = rex arg in
-    l1 @ l2, `AST_apply (sr,(x1,x2))
+    l1 @ l2, EXPR_apply (sr,(x1,x2))
 
-  | `AST_map (sr,fn,arg) ->
+  | EXPR_map (sr,fn,arg) ->
     let l1,x1 = rex fn in
     let l2,x2 = rex arg in
-    l1 @ l2, `AST_map (sr,x1,x2)
+    l1 @ l2, EXPR_map (sr,x1,x2)
 
-  | `AST_tuple (sr,t) ->
+  | EXPR_tuple (sr,t) ->
     let lss,xs = List.split (List.map rex t) in
-    List.concat lss,`AST_tuple (sr,xs)
+    List.concat lss,EXPR_tuple (sr,xs)
 
-  | `AST_record (sr,es) ->
+  | EXPR_record (sr,es) ->
     let ss,es = List.split es in
     let lss,xs = List.split (List.map rex es) in
-    List.concat lss,`AST_record (sr, List.combine ss xs)
+    List.concat lss,EXPR_record (sr, List.combine ss xs)
 
-  | `AST_record_type _ -> assert false
+  | EXPR_record_type _ -> assert false
 
-  | `AST_variant (sr,(s,e)) ->
+  | EXPR_variant (sr,(s,e)) ->
     let l,x = rex e in
-    l,`AST_variant (sr,(s,x))
+    l,EXPR_variant (sr,(s,x))
 
-  | `AST_variant_type _ -> assert false
+  | EXPR_variant_type _ -> assert false
 
-  | `AST_arrayof (sr,t) ->
+  | EXPR_arrayof (sr,t) ->
     let lss,xs = List.split (List.map rex t) in
-    List.concat lss,`AST_arrayof(sr,xs)
+    List.concat lss,EXPR_arrayof(sr,xs)
 
-  | `AST_lambda (sr,(vs,pps,ret,sts)) ->
+  | EXPR_lambda (sr,(vs,pps,ret,sts)) ->
     let kind = `InlineFunction in
     let n = seq() in
     let name' = "_lam_" ^ si n in
@@ -366,7 +366,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     if List.length pps = 0 then syserr sr "[rex] Lambda with no arguments?" else
     let t = type_of_argtypes (List.map (fun(x,y,z,d)->z) (fst (List.hd pps))) in
     let e =
-      `AST_suffix
+      EXPR_suffix
       (
         sr,
         (
@@ -376,17 +376,17 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     in
     sts,e
 
-  | `AST_dot (sr,(a,b)) ->
+  | EXPR_dot (sr,(a,b)) ->
     let l1,x1 = rex a in
     let l2,x2 = rex b in
-    l1@l2 , `AST_dot (sr,(x1,x2))
+    l1@l2 , EXPR_dot (sr,(x1,x2))
 
-  | `AST_coercion (sr,(e,t)) ->
+  | EXPR_coercion (sr,(e,t)) ->
     let l1,x1 = rex e in
-    l1, `AST_coercion (sr,(x1,t))
+    l1, EXPR_coercion (sr,(x1,t))
 
-  | `AST_letin (sr,(pat,e1,e2)) ->
-    rex (`AST_match (sr,(e1,[pat,e2])))
+  | EXPR_letin (sr,(pat,e1,e2)) ->
+    rex (EXPR_match (sr,(e1,[pat,e2])))
 
   (* MATCH HANDLING NEEDS TO BE REWORKED, THE SWITCHING SHOULD BE
      DELAYED TO ALLOW TYPE BASED OPTIMISATION WHERE THE TOP
@@ -402,7 +402,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   *)
 
 
-  | `AST_match (sr,(e,pss)) ->
+  | EXPR_match (sr,(e,pss)) ->
     if List.length pss = 0 then clierr sr "Empty Pattern";
 
     (* step 1: evaluate e *)
@@ -416,7 +416,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 
     let match_var_name = name^ "_mv_"^si match_function_index in
     let match_function_id = name^ "_mf_"^ si match_function_index in
-    let match_function = `AST_index (sr,match_function_id,match_function_index) in
+    let match_function = EXPR_index (sr,match_function_id,match_function_index) in
     let match_seq = ref (seq()) in
 
     let expr_src = src_of_expr e in
@@ -454,8 +454,8 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
         let expr_src = src_of_expr e in
         let match_checker_id = name ^ "_mc" ^ si n1 in
         let match_handler_id = name ^ "_mh" ^ si n1 in
-        let match_checker = `AST_index (patsrc,match_checker_id,mc_idx) in
-        let match_handler = `AST_index (expr_src,match_handler_id,mh_idx) in
+        let match_checker = EXPR_index (patsrc,match_checker_id,mc_idx) in
+        let match_handler = EXPR_index (expr_src,match_handler_id,mh_idx) in
         (*
         print_endline ("Match checker index = " ^ si mc_idx);
         print_endline ("Match handler index = " ^ si mh_idx);
@@ -508,17 +508,17 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
             patsrc,
             EXE_ifgoto
             (
-              `AST_apply
+              EXPR_apply
               (
                 patsrc,
                 (
-                  `AST_name (patsrc,"lnot",[]),
-                  `AST_apply
+                  EXPR_name (patsrc,"lnot",[]),
+                  EXPR_apply
                   (
                     patsrc,
                     (
                       match_checker,
-                      `AST_tuple (patsrc,[])
+                      EXPR_tuple (patsrc,[])
                     )
                   )
                 )
@@ -535,12 +535,12 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
           patsrc,
           EXE_fun_return
           (
-            `AST_apply
+            EXPR_apply
             (
               patsrc,
               (
                 match_handler,
-                `AST_tuple (patsrc,[])
+                EXPR_tuple (patsrc,[])
               )
             )
           )
@@ -596,12 +596,12 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
       )
     ]
     ,
-    `AST_apply
+    EXPR_apply
     (
       sr,
       (
         match_function,
-        `AST_tuple (sr,[])
+        EXPR_tuple (sr,[])
       )
     )
 
@@ -628,17 +628,17 @@ and merge_vs
   { raw_type_constraint=t; raw_typeclass_reqs=rtcr}
 
 and gen_call_init sr name' =
-  let mname = `AST_name (sr,name',[]) in
-  let pname = `AST_lookup ( sr, ( mname, "_init_", [])) in
-  let sname = `AST_suffix ( sr, ( pname, TYP_tuple [])) in
-  let unitt = `AST_tuple (generated,[]) in
+  let mname = EXPR_name (sr,name',[]) in
+  let pname = `AST_lookup (sr, (mname, "_init_", [])) in
+  let sname = EXPR_suffix (sr, (pname, TYP_tuple [])) in
+  let unitt = EXPR_tuple (generated,[]) in
   Exe
   (
     sr,
-    EXE_call ( sname, unitt)
+    EXE_call (sname, unitt)
   )
 
-and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
+and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list =
     List.map (fun (s,tp)-> TYP_name (sr,s,[])) (fst parent_vs)
@@ -792,10 +792,12 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,None,access,vs,DCL_ref  t); Exe (sr,EXE_init (name,`AST_ref (sr,x)))]
+      d @ [Dcl (sr,name,None,access,vs,DCL_ref t); Exe (sr,EXE_init (name,EXPR_ref (sr,x)))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,None,access,vs,DCL_ref (TYP_typeof x)); Exe (sr,EXE_init (name,`AST_ref(sr,x)))]
+      d @ [
+        Dcl (sr,name,None,access,vs,DCL_ref (TYP_typeof x));
+        Exe (sr,EXE_init (name,EXPR_ref (sr,x)))]
     | _,None -> failwith "Expected ref to have initialiser"
     end
 
@@ -888,8 +890,8 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       ]
     | pre,post ->
       let name'' = "_wrap_" ^ name' in
-      let inner = `AST_name (sr,name'',[]) in
-      let un = `AST_tuple (sr,[]) in
+      let inner = EXPR_name (sr,name'',[]) in
+      let un = EXPR_tuple (sr,[]) in
       let sts =
         (match pre with
         | None -> []
@@ -908,7 +910,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
            | Some y -> [`AST_assert (src_of_expr y,y)]
            end
           | _ ->
-            let retval:expr_t = `AST_apply(sr,(inner,un)) in
+            let retval:expr_t = EXPR_apply (sr,(inner,un)) in
             begin match post with
             | None ->
               [`AST_fun_return (sr,retval)]
@@ -916,7 +918,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
               [
                 `AST_val_decl (sr,"result",dfltvs,None,Some retval);
                 `AST_assert (src_of_expr y,y);
-                `AST_fun_return (sr,`AST_name (sr,"result",[]))
+                `AST_fun_return (sr,EXPR_name (sr,"result",[]))
               ]
             end
         end
@@ -1006,14 +1008,14 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       match l with
       | `Expr (sr,e) ->
         begin match e with
-        | `AST_tuple (_,ls) ->
+        | EXPR_tuple (_,ls) ->
           let n = seq() in
           let vn = "_" ^ si n in
           let sts = ref [] in
           let count = ref 0 in
           List.iter
           (fun l ->
-            let r' = `AST_get_n (sr,(!count,`AST_name (sr,vn,[]))) in
+            let r' = EXPR_get_n (sr,(!count,EXPR_name (sr,vn,[]))) in
             let l' = `Expr (sr,l),None in
             let asg = aux l' r' in
             sts := !sts @ asg;
@@ -1026,14 +1028,14 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
           if fid = "_init"
           then
             match e with
-            | `AST_coercion (_,(`AST_name (_,n,[]),t')) ->
+            | EXPR_coercion (_,(EXPR_name (_,n,[]),t')) ->
               let t = match t with
                 | None -> Some t'
                 | t -> t
               in
               [`AST_val_decl (sr,n,dfltvs,t,Some r)]
 
-            | `AST_name (_,n,[]) ->
+            | EXPR_name (_,n,[]) ->
               [`AST_val_decl (sr,n,dfltvs,t,Some r)]
             | x -> clierr sr ("identifier required in val init, got " ^ string_of_expr x)
           else
@@ -1045,7 +1047,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
           [`AST_var_decl (sr,n,dfltvs,t,Some r)]
       | `Skip (sr) ->  []
       | `Name (sr,n) ->
-        let n = `AST_name(sr,n,[]) in
+        let n = EXPR_name(sr,n,[]) in
           [assign sr fid n r]
       | `List ls ->
           let n = seq() in
@@ -1054,7 +1056,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
           let count = ref 0 in
           List.iter
           (fun l ->
-            let r' = `AST_get_n (sr,(!count,`AST_name (sr,vn,[]))) in
+            let r' = EXPR_get_n (sr,(!count,EXPR_name (sr,vn,[]))) in
             let asg = aux l r' in
             sts := !sts @ asg;
             incr count
@@ -1129,7 +1131,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
       iswild := is_universal pat;
       let patsrc = src_of_pat pat in
       let match_checker_id = name ^ "_mc" ^ si n1 in
-      let match_checker = `AST_index (patsrc,match_checker_id,n1) in
+      let match_checker = EXPR_index (patsrc,match_checker_id,n1) in
       let vars = Hashtbl.create 97 in
       Flx_mbind.get_pattern_vars vars pat [];
           (*
@@ -1137,7 +1139,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
           print_endline "VARIABLES ARE";
           Hashtbl.iter (fun vname (sr,extractor) ->
             let component =
-              Flx_mbind.gen_extractor extractor (`AST_index (sr,mvname,match_var_index))
+              Flx_mbind.gen_extractor extractor (EXPR_index (sr,mvname,match_var_index))
             in
             print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
           ) vars;
@@ -1148,7 +1150,7 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
           (fun vname (sr,extractor) ->
             let component =
               Flx_mbind.gen_extractor extractor
-              (`AST_index (sr,match_var_name,match_index))
+              (EXPR_index (sr,match_var_name,match_index))
             in
             let dcl = `AST_val_decl (sr,vname,dfltvs,None,Some component) in
             new_sts := dcl :: !new_sts;
@@ -1172,17 +1174,17 @@ and rst syms name access (parent_vs:vs_list_t) st : asm_t list =
             patsrc,
             EXE_ifgoto
             (
-              `AST_apply
+              EXPR_apply
               (
                 patsrc,
                 (
-                  `AST_name (patsrc,"lnot",[]),
-                  `AST_apply
+                  EXPR_name (patsrc,"lnot",[]),
+                  EXPR_apply
                   (
                     patsrc,
                     (
                       match_checker,
-                      `AST_tuple (patsrc,[])
+                      EXPR_tuple (patsrc,[])
                     )
                   )
                 )

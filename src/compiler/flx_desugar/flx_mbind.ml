@@ -30,9 +30,9 @@ let gen_extractor
 : expr_t =
   List.fold_right
   (fun x marg -> match x with
-    | Proj_n (sr,n) -> `AST_get_n (sr,(n,marg))
-    | Udtor (sr,qn) -> `AST_ctor_arg (sr,(qn,marg))
-    | Proj_s (sr,s) -> `AST_get_named_variable (sr,(s,marg))
+    | Proj_n (sr,n) -> EXPR_get_n (sr,(n,marg))
+    | Udtor (sr,qn) -> EXPR_ctor_arg (sr,(qn,marg))
+    | Proj_s (sr,s) -> EXPR_get_named_variable (sr,(s,marg))
   )
   extractor
   mv
@@ -52,51 +52,51 @@ let rec subst vars (e:expr_t) mv : expr_t =
      name the types of the arguments now)
   *)
   match e with
-  | `AST_patvar _
-  | `AST_patany _
-  | `AST_vsprintf _
-  | `AST_type_match _
-  | `AST_noexpand _
-  | `AST_letin _
-  | `AST_cond _
-  | `AST_expr _
-  | `AST_typeof _
-  | `AST_product _
-  | `AST_void _
-  | `AST_sum _
-  | `AST_andlist _
-  | `AST_orlist _
-  | `AST_typed_case _
-  | `AST_case_arg _
-  | `AST_arrow _
-  | `AST_longarrow _
-  | `AST_superscript _
-  | `AST_match _
-  | `AST_ellipsis _
-  | `AST_setunion _
-  | `AST_setintersection _
-  | `AST_intersect _
-  | `AST_isin _
-  | `AST_macro_ctor _
-  | `AST_macro_statements  _
-  | `AST_callback _
-  | `AST_record_type _
-  | `AST_variant_type _
-  | `AST_user_expr _
+  | EXPR_patvar _
+  | EXPR_patany _
+  | EXPR_vsprintf _
+  | EXPR_type_match _
+  | EXPR_noexpand _
+  | EXPR_letin _
+  | EXPR_cond _
+  | EXPR_expr _
+  | EXPR_typeof _
+  | EXPR_product _
+  | EXPR_void _
+  | EXPR_sum _
+  | EXPR_andlist _
+  | EXPR_orlist _
+  | EXPR_typed_case _
+  | EXPR_case_arg _
+  | EXPR_arrow _
+  | EXPR_longarrow _
+  | EXPR_superscript _
+  | EXPR_match _
+  | EXPR_ellipsis _
+  | EXPR_setunion _
+  | EXPR_setintersection _
+  | EXPR_intersect _
+  | EXPR_isin _
+  | EXPR_macro_ctor _
+  | EXPR_macro_statements  _
+  | EXPR_callback _
+  | EXPR_record_type _
+  | EXPR_variant_type _
+  | EXPR_user_expr _
     ->
       let sr = src_of_expr e in
       clierr sr "[mbind:subst] Not expected in when part of pattern"
 
-  | `AST_case_index _ -> e
-  | `AST_index _  -> e
-  | `AST_the _  -> e
-  | `AST_lookup _ -> e
-  | `AST_suffix _ -> e
-  | `AST_literal _ -> e
-  | `AST_case_tag _ -> e
-  | `AST_as _ -> e
+  | EXPR_case_index _ -> e
+  | EXPR_index _  -> e
+  | EXPR_the _  -> e
+  | EXPR_lookup _ -> e
+  | EXPR_suffix _ -> e
+  | EXPR_literal _ -> e
+  | EXPR_case_tag _ -> e
+  | EXPR_as _ -> e
 
-  | `AST_name (sr,name,idx) ->
+  | EXPR_name (sr,name,idx) ->
     if idx = [] then
     if Hashtbl.mem vars name
     then
@@ -107,33 +107,33 @@ let rec subst vars (e:expr_t) mv : expr_t =
 
 
 
-  | `AST_deref (sr,e') -> `AST_deref (sr,subst e')
-  | `AST_ref (sr,e') -> `AST_ref (sr,subst e')
-  | `AST_likely (sr,e') -> `AST_likely (sr,subst e')
-  | `AST_unlikely (sr,e') -> `AST_unlikely (sr,subst e')
-  | `AST_new (sr,e') -> `AST_new (sr,subst e')
-  | `AST_apply (sr,(f,e)) -> `AST_apply (sr,(subst f,subst e))
-  | `AST_map (sr,f,e) -> `AST_map (sr,subst f,subst e)
-  | `AST_tuple (sr,es) -> `AST_tuple (sr,map subst es)
-  | `AST_record (sr,es) -> `AST_record (sr,map (fun (s,e)->s,subst e) es)
-  | `AST_variant (sr,(s,e)) -> `AST_variant (sr,(s,subst e))
-  | `AST_arrayof (sr,es) -> `AST_arrayof (sr,map subst es)
+  | EXPR_deref (sr,e') -> EXPR_deref (sr,subst e')
+  | EXPR_ref (sr,e') -> EXPR_ref (sr,subst e')
+  | EXPR_likely (sr,e') -> EXPR_likely (sr,subst e')
+  | EXPR_unlikely (sr,e') -> EXPR_unlikely (sr,subst e')
+  | EXPR_new (sr,e') -> EXPR_new (sr,subst e')
+  | EXPR_apply (sr,(f,e)) -> EXPR_apply (sr,(subst f,subst e))
+  | EXPR_map (sr,f,e) -> EXPR_map (sr,subst f,subst e)
+  | EXPR_tuple (sr,es) -> EXPR_tuple (sr,map subst es)
+  | EXPR_record (sr,es) -> EXPR_record (sr,map (fun (s,e)->s,subst e) es)
+  | EXPR_variant (sr,(s,e)) -> EXPR_variant (sr,(s,subst e))
+  | EXPR_arrayof (sr,es) -> EXPR_arrayof (sr,map subst es)
 
-  | `AST_dot (sr,(e,e2)) ->
-    `AST_dot (sr,(subst e, subst e2))
+  | EXPR_dot (sr,(e,e2)) ->
+    EXPR_dot (sr,(subst e, subst e2))
 
-  | `AST_lambda _ -> assert false
+  | EXPR_lambda _ -> assert false
 
-  | `AST_match_case _
-  | `AST_ctor_arg _
-  | `AST_get_n _
-  | `AST_get_named_variable _
-  | `AST_match_ctor _
+  | EXPR_match_case _
+  | EXPR_ctor_arg _
+  | EXPR_get_n _
+  | EXPR_get_named_variable _
+  | EXPR_match_ctor _
     ->
     let sr = src_of_expr e in
     clierr sr "[subst] not implemented in when part of pattern"
 
-  | `AST_coercion _ -> failwith "subst: coercion"
+  | EXPR_coercion _ -> failwith "subst: coercion"
 
 (* This routine runs through a pattern looking for
   pattern variables, and adds a record to a hashtable
@@ -197,32 +197,32 @@ let rec get_pattern_vars
   | _ -> ()
 
 let rec gen_match_check pat (arg:expr_t) =
-  let lint sr t i = `AST_literal (sr, AST_int (t,i))
-  and lstr sr s = `AST_literal (sr, AST_string s)
-  and lfloat sr t x = `AST_literal (sr, AST_float (t,x))
+  let lint sr t i = EXPR_literal (sr, AST_int (t,i))
+  and lstr sr s = EXPR_literal (sr, AST_string s)
+  and lfloat sr t x = EXPR_literal (sr, AST_float (t,x))
   and apl sr f x =
-    `AST_apply
+    EXPR_apply
     (
       sr,
       (
-        `AST_name (sr,f,[]),
+        EXPR_name (sr,f,[]),
         x
       )
     )
   and apl2 sr f x1 x2 =
     match f,x1,x2 with
-    | "land",`AST_typed_case(_,1,TYP_unitsum 2),x -> x
-    | "land",x,`AST_typed_case(_,1,TYP_unitsum 2) -> x
+    | "land",EXPR_typed_case(_,1,TYP_unitsum 2),x -> x
+    | "land",x,EXPR_typed_case(_,1,TYP_unitsum 2) -> x
     | _ ->
-    `AST_apply
+    EXPR_apply
     (
       sr,
       (
-        `AST_name (sr,f,[]),
-        `AST_tuple (sr,[x1;x2])
+        EXPR_name (sr,f,[]),
+        EXPR_tuple (sr,[x1;x2])
       )
     )
-  and truth sr = `AST_typed_case (sr,1,flx_bool)
+  and truth sr = EXPR_typed_case (sr,1,flx_bool)
   and ssrc x = Flx_srcref.short_string_of_src x
   in
   match pat with
@@ -303,13 +303,13 @@ let rec gen_match_check pat (arg:expr_t) =
       incr counter;
       apl2 sr "land" init
         (
-          gen_match_check pat (`AST_get_n (sr,(n, arg)))
+          gen_match_check pat (EXPR_get_n (sr,(n, arg)))
         )
     )
     (
       let pat = List.hd pats in
       let sr = src_of_pat pat in
-      gen_match_check pat (`AST_get_n (sr,(0, arg)))
+      gen_match_check pat (EXPR_get_n (sr,(0, arg)))
     )
     (List.tl pats)
 
@@ -319,23 +319,23 @@ let rec gen_match_check pat (arg:expr_t) =
       let sr = src_of_pat pat in
       apl2 sr "land" init
         (
-          gen_match_check pat (`AST_get_named_variable (sr,(s, arg)))
+          gen_match_check pat (EXPR_get_named_variable (sr,(s, arg)))
         )
     )
     (
       let s,pat = List.hd rpats in
       let sr = src_of_pat pat in
-      gen_match_check pat (`AST_get_named_variable (sr,(s, arg)))
+      gen_match_check pat (EXPR_get_named_variable (sr,(s, arg)))
     )
     (List.tl rpats)
 
   | PAT_any sr -> truth sr
   | PAT_const_ctor (sr,name) ->
-    `AST_match_ctor (sr,(name,arg))
+    EXPR_match_ctor (sr,(name,arg))
 
   | PAT_nonconst_ctor (sr,name,pat) ->
-    let check_component = `AST_match_ctor (sr,(name,arg)) in
-    let tuple = `AST_ctor_arg (sr,(name,arg)) in
+    let check_component = EXPR_match_ctor (sr,(name,arg)) in
+    let tuple = EXPR_ctor_arg (sr,(name,arg)) in
     let check_tuple = gen_match_check pat tuple in
     apl2 sr "land" check_component check_tuple
 

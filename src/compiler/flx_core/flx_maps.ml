@@ -88,152 +88,152 @@ let map_type f (t:typecode_t):typecode_t = match t with
 
 
 let map_expr f (e:expr_t):expr_t = match e with
-  | `AST_patvar _
-  | `AST_patany _
-  | `AST_vsprintf _ -> e
-  | `AST_map (sr,a,b) -> `AST_map (sr,f a, f b)
-  | `AST_noexpand (sr,x) -> e (* DO NOT EXPAND .. HMM .. *)
-  | `AST_name _ -> e
-  | `AST_callback _ -> e
-  | `AST_the _ -> e
-  | `AST_index _ -> e
-  | `AST_case_tag _ -> e
-  | `AST_typed_case _ -> e
-  | `AST_lookup (sr,(x,s,ts)) -> `AST_lookup (sr,(f x, s, ts))
-  | `AST_apply (sr,(a,b)) -> `AST_apply (sr,(f a, f b))
-  | `AST_tuple (sr,es) -> `AST_tuple (sr, List.map f es)
-  | `AST_record (sr,es) -> `AST_record (sr, List.map (fun (s,e) -> s,f e) es)
-  | `AST_variant (sr,(s,e)) -> `AST_variant (sr, (s,f e))
-  | `AST_arrayof (sr, es) -> `AST_arrayof (sr, List.map f es)
-  | `AST_coercion (sr, (x,t)) -> `AST_coercion (sr,(f x, t))
-  | `AST_suffix _ -> e
+  | EXPR_patvar _
+  | EXPR_patany _
+  | EXPR_vsprintf _ -> e
+  | EXPR_map (sr,a,b) -> EXPR_map (sr,f a, f b)
+  | EXPR_noexpand (sr,x) -> e (* DO NOT EXPAND .. HMM .. *)
+  | EXPR_name _ -> e
+  | EXPR_callback _ -> e
+  | EXPR_the _ -> e
+  | EXPR_index _ -> e
+  | EXPR_case_tag _ -> e
+  | EXPR_typed_case _ -> e
+  | EXPR_lookup (sr,(x,s,ts)) -> EXPR_lookup (sr,(f x, s, ts))
+  | EXPR_apply (sr,(a,b)) -> EXPR_apply (sr,(f a, f b))
+  | EXPR_tuple (sr,es) -> EXPR_tuple (sr, List.map f es)
+  | EXPR_record (sr,es) -> EXPR_record (sr, List.map (fun (s,e) -> s,f e) es)
+  | EXPR_variant (sr,(s,e)) -> EXPR_variant (sr, (s,f e))
+  | EXPR_arrayof (sr, es) -> EXPR_arrayof (sr, List.map f es)
+  | EXPR_coercion (sr, (x,t)) -> EXPR_coercion (sr,(f x, t))
+  | EXPR_suffix _ -> e
 
-  | `AST_record_type (sr,ts) -> e
-  | `AST_variant_type (sr,ts) -> e
-  | `AST_void sr -> e
-  | `AST_ellipsis sr -> e
-  | `AST_product (sr,es) -> `AST_product (sr, List.map f es)
-  | `AST_sum (sr,es) -> `AST_sum (sr, List.map f es)
-  | `AST_setunion (sr,es) -> `AST_setunion (sr, List.map f es)
-  | `AST_setintersection (sr,es) -> `AST_setintersection (sr, List.map f es)
-  | `AST_intersect (sr,es) -> `AST_intersect (sr, List.map f es)
-  | `AST_isin (sr,(a,b)) -> `AST_isin (sr, (f a, f b))
-  | `AST_orlist (sr,es) -> `AST_orlist (sr, List.map f es)
-  | `AST_andlist (sr,es) -> `AST_andlist (sr, List.map f es)
-  | `AST_arrow (sr,(a,b)) -> `AST_arrow (sr,(f a, f b))
-  | `AST_longarrow (sr,(a,b)) -> `AST_longarrow (sr,(f a, f b))
-  | `AST_superscript (sr,(a,b)) -> `AST_superscript (sr,(f a, f b))
+  | EXPR_record_type (sr,ts) -> e
+  | EXPR_variant_type (sr,ts) -> e
+  | EXPR_void sr -> e
+  | EXPR_ellipsis sr -> e
+  | EXPR_product (sr,es) -> EXPR_product (sr, List.map f es)
+  | EXPR_sum (sr,es) -> EXPR_sum (sr, List.map f es)
+  | EXPR_setunion (sr,es) -> EXPR_setunion (sr, List.map f es)
+  | EXPR_setintersection (sr,es) -> EXPR_setintersection (sr, List.map f es)
+  | EXPR_intersect (sr,es) -> EXPR_intersect (sr, List.map f es)
+  | EXPR_isin (sr,(a,b)) -> EXPR_isin (sr, (f a, f b))
+  | EXPR_orlist (sr,es) -> EXPR_orlist (sr, List.map f es)
+  | EXPR_andlist (sr,es) -> EXPR_andlist (sr, List.map f es)
+  | EXPR_arrow (sr,(a,b)) -> EXPR_arrow (sr,(f a, f b))
+  | EXPR_longarrow (sr,(a,b)) -> EXPR_longarrow (sr,(f a, f b))
+  | EXPR_superscript (sr,(a,b)) -> EXPR_superscript (sr,(f a, f b))
 
-  | `AST_literal _ -> e
-  | `AST_deref (sr,x) -> `AST_deref (sr,f x)
-  | `AST_ref (sr,x) -> `AST_ref (sr, f x)
-  | `AST_likely (sr,x) -> `AST_likely (sr, f x)
-  | `AST_unlikely (sr,x) -> `AST_unlikely (sr, f x)
-  | `AST_new (sr,x) -> `AST_new (sr, f x)
-  | `AST_dot (sr,(x,x2)) -> `AST_dot (sr,(f x,f x2))
+  | EXPR_literal _ -> e
+  | EXPR_deref (sr,x) -> EXPR_deref (sr,f x)
+  | EXPR_ref (sr,x) -> EXPR_ref (sr, f x)
+  | EXPR_likely (sr,x) -> EXPR_likely (sr, f x)
+  | EXPR_unlikely (sr,x) -> EXPR_unlikely (sr, f x)
+  | EXPR_new (sr,x) -> EXPR_new (sr, f x)
+  | EXPR_dot (sr,(x,x2)) -> EXPR_dot (sr,(f x,f x2))
 
   (* GIVE UP ON LAMBDAS FOR THE MOMENT .. NEEDS STATEMENT MAPPING TOO *)
-  (* | `AST_lambda of Flx_srcref.t * (vs_list_t * params_t list * typecode_t * statement_t list) *)
-  | `AST_lambda _ -> e
+  (* | EXPR_lambda of Flx_srcref.t * (vs_list_t * params_t list * typecode_t * statement_t list) *)
+  | EXPR_lambda _ -> e
 
-  | `AST_match_ctor (sr,(qn,x)) -> `AST_match_ctor (sr,(qn,f x))
-  | `AST_match_case (sr,(j,x)) -> `AST_match_case (sr,(j, f x))
+  | EXPR_match_ctor (sr,(qn,x)) -> EXPR_match_ctor (sr,(qn,f x))
+  | EXPR_match_case (sr,(j,x)) -> EXPR_match_case (sr,(j, f x))
 
-  | `AST_ctor_arg (sr,(qn,x)) -> `AST_ctor_arg (sr,(qn,f x))
-  | `AST_case_arg (sr,(j,x)) -> `AST_case_arg (sr,(j, f x))
-  | `AST_case_index (sr,x) -> `AST_case_index (sr,f x)
+  | EXPR_ctor_arg (sr,(qn,x)) -> EXPR_ctor_arg (sr,(qn,f x))
+  | EXPR_case_arg (sr,(j,x)) -> EXPR_case_arg (sr,(j, f x))
+  | EXPR_case_index (sr,x) -> EXPR_case_index (sr,f x)
 
-  | `AST_letin (sr,(pat,a,b)) -> `AST_letin (sr,(pat,f a, f b))
+  | EXPR_letin (sr,(pat,a,b)) -> EXPR_letin (sr,(pat,f a, f b))
 
-  | `AST_get_n (sr,(j,x)) -> `AST_get_n (sr,(j,f x))
-  | `AST_get_named_variable (sr,(j,x)) -> `AST_get_named_variable (sr,(j,f x))
-  | `AST_as (sr,(x,s)) -> `AST_as (sr,(f x, s))
-  | `AST_match (sr,(a,pes)) ->
-    `AST_match (sr, (f a, List.map (fun (pat,x) -> pat, f x) pes))
+  | EXPR_get_n (sr,(j,x)) -> EXPR_get_n (sr,(j,f x))
+  | EXPR_get_named_variable (sr,(j,x)) -> EXPR_get_named_variable (sr,(j,f x))
+  | EXPR_as (sr,(x,s)) -> EXPR_as (sr,(f x, s))
+  | EXPR_match (sr,(a,pes)) ->
+    EXPR_match (sr, (f a, List.map (fun (pat,x) -> pat, f x) pes))
 
-  | `AST_typeof (sr,x) -> `AST_typeof (sr,f x)
-  | `AST_cond (sr,(a,b,c)) -> `AST_cond (sr, (f a, f b, f c))
+  | EXPR_typeof (sr,x) -> EXPR_typeof (sr,f x)
+  | EXPR_cond (sr,(a,b,c)) -> EXPR_cond (sr, (f a, f b, f c))
 
-  | `AST_expr _ -> e
-  | `AST_type_match _ -> e
-  | `AST_macro_ctor _ -> e
-  | `AST_macro_statements _ -> e
-  | `AST_user_expr (sr,term,ts) -> e (* ouch! *)
+  | EXPR_expr _ -> e
+  | EXPR_type_match _ -> e
+  | EXPR_macro_ctor _ -> e
+  | EXPR_macro_statements _ -> e
+  | EXPR_user_expr (sr,term,ts) -> e (* ouch! *)
 
 
 let iter_expr f (e:expr_t) =
   f e;
   match e with
-  | `AST_patvar _
-  | `AST_patany _
-  | `AST_vsprintf _
-  | `AST_name _
-  | `AST_callback _
-  | `AST_the _
-  | `AST_index _
-  | `AST_case_tag _
-  | `AST_typed_case _
-  | `AST_record_type _
-  | `AST_variant_type _
-  | `AST_void _
-  | `AST_ellipsis _
-  | `AST_noexpand _
-  | `AST_suffix _
-  | `AST_literal _
-  | `AST_lambda _
-  | `AST_expr _
-  | `AST_type_match _
-  | `AST_macro_ctor _
-  | `AST_macro_statements _
+  | EXPR_patvar _
+  | EXPR_patany _
+  | EXPR_vsprintf _
+  | EXPR_name _
+  | EXPR_callback _
+  | EXPR_the _
+  | EXPR_index _
+  | EXPR_case_tag _
+  | EXPR_typed_case _
+  | EXPR_record_type _
+  | EXPR_variant_type _
+  | EXPR_void _
+  | EXPR_ellipsis _
+  | EXPR_noexpand _
+  | EXPR_suffix _
+  | EXPR_literal _
+  | EXPR_lambda _
+  | EXPR_expr _
+  | EXPR_type_match _
+  | EXPR_macro_ctor _
+  | EXPR_macro_statements _
     -> ()
 
-  | `AST_variant (_,(_,x))
-  | `AST_typeof (_,x)
-  | `AST_as (_,(x,_))
-  | `AST_get_n (_,(_,x))
-  | `AST_get_named_variable (_,(_,x))
-  | `AST_ctor_arg (_,(_,x))
-  | `AST_case_arg (_,(_,x))
-  | `AST_case_index (_,x)
-  | `AST_match_ctor (_,(_,x))
-  | `AST_match_case (_,(_,x))
-  | `AST_deref (_,x)
-  | `AST_ref (_,x)
-  | `AST_likely (_,x)
-  | `AST_unlikely (_,x)
-  | `AST_new (_,x)
-  | `AST_lookup (_,(x,_,_))
-  | `AST_coercion (_, (x,_))
+  | EXPR_variant (_,(_,x))
+  | EXPR_typeof (_,x)
+  | EXPR_as (_,(x,_))
+  | EXPR_get_n (_,(_,x))
+  | EXPR_get_named_variable (_,(_,x))
+  | EXPR_ctor_arg (_,(_,x))
+  | EXPR_case_arg (_,(_,x))
+  | EXPR_case_index (_,x)
+  | EXPR_match_ctor (_,(_,x))
+  | EXPR_match_case (_,(_,x))
+  | EXPR_deref (_,x)
+  | EXPR_ref (_,x)
+  | EXPR_likely (_,x)
+  | EXPR_unlikely (_,x)
+  | EXPR_new (_,x)
+  | EXPR_lookup (_,(x,_,_))
+  | EXPR_coercion (_, (x,_))
     -> f x
 
-  | `AST_letin (_,(_,a,b))
-  | `AST_dot (_,(a,b))
-  | `AST_longarrow (_,(a,b))
-  | `AST_superscript (_,(a,b))
-  | `AST_arrow (_,(a,b))
-  | `AST_map (_,a,b)
-  | `AST_apply (_,(a,b))
-  | `AST_isin (_,(a,b))
+  | EXPR_letin (_,(_,a,b))
+  | EXPR_dot (_,(a,b))
+  | EXPR_longarrow (_,(a,b))
+  | EXPR_superscript (_,(a,b))
+  | EXPR_arrow (_,(a,b))
+  | EXPR_map (_,a,b)
+  | EXPR_apply (_,(a,b))
+  | EXPR_isin (_,(a,b))
     -> f a; f b
 
-  | `AST_tuple (_,es)
-  | `AST_product (_,es)
-  | `AST_sum (_,es)
-  | `AST_setunion (_,es)
-  | `AST_intersect (_,es)
-  | `AST_setintersection (_,es)
-  | `AST_orlist (_,es)
-  | `AST_andlist (_,es)
-  | `AST_arrayof (_, es) ->
+  | EXPR_tuple (_,es)
+  | EXPR_product (_,es)
+  | EXPR_sum (_,es)
+  | EXPR_setunion (_,es)
+  | EXPR_intersect (_,es)
+  | EXPR_setintersection (_,es)
+  | EXPR_orlist (_,es)
+  | EXPR_andlist (_,es)
+  | EXPR_arrayof (_, es) ->
     List.iter f es
 
-  | `AST_record (sr,es) -> List.iter (fun (s,e) -> f e) es
+  | EXPR_record (sr,es) -> List.iter (fun (s,e) -> f e) es
 
-  | `AST_match (sr,(a,pes)) ->
+  | EXPR_match (sr,(a,pes)) ->
     f a; List.iter (fun (pat,x) -> f x) pes
 
-  | `AST_cond (sr,(a,b,c)) -> f a; f b; f c
-  | `AST_user_expr (sr,term,ts) -> ()
+  | EXPR_cond (sr,(a,b,c)) -> f a; f b; f c
+  | EXPR_user_expr (sr,term,ts) -> ()
 
 let scan_expr e =
   let ls = ref [] in

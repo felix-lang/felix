@@ -316,7 +316,7 @@ and lookup_qn_in_env'
     | FunctionEntry [x],ts -> x,ts
 
     | FunctionEntry _,_ ->
-      let sr = src_of_expr (qn:>expr_t) in
+      let sr = src_of_qualified_name qn in
       clierr sr
       (
         "[lookup_qn_in_env'] Not expecting " ^
@@ -3366,12 +3366,12 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   (* model infix operator as function call *)
   let apl2 (sri:Flx_srcref.t) (fn : string) (tup:expr_t list) =
     let sr = rslist tup in
-    `AST_apply
+    EXPR_apply
     (
       sr,
       (
-        `AST_name (sri,fn,[]),
-        `AST_tuple (sr,tup)
+        EXPR_name (sri,fn,[]),
+        EXPR_tuple (sr,tup)
       )
     )
   in
@@ -3431,32 +3431,32 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     end
   in  
   match e with
-  | `AST_patvar _
-  | `AST_patany _
-  | `AST_vsprintf _
-  | `AST_type_match _
-  | `AST_noexpand _
-  | `AST_letin _
-  | `AST_cond _
-  | `AST_typeof _
-  | `AST_as _
-  | `AST_void _
-  | `AST_arrow _
-  | `AST_longarrow _
-  | `AST_superscript _
-  | `AST_ellipsis _
-  | `AST_setunion _
-  | `AST_setintersection _
-  | `AST_intersect _
-  | `AST_isin _
-  | `AST_macro_ctor _
-  | `AST_macro_statements  _
-  | `AST_user_expr _
+  | EXPR_patvar _
+  | EXPR_patany _
+  | EXPR_vsprintf _
+  | EXPR_type_match _
+  | EXPR_noexpand _
+  | EXPR_letin _
+  | EXPR_cond _
+  | EXPR_typeof _
+  | EXPR_as _
+  | EXPR_void _
+  | EXPR_arrow _
+  | EXPR_longarrow _
+  | EXPR_superscript _
+  | EXPR_ellipsis _
+  | EXPR_setunion _
+  | EXPR_setintersection _
+  | EXPR_intersect _
+  | EXPR_isin _
+  | EXPR_macro_ctor _
+  | EXPR_macro_statements  _
+  | EXPR_user_expr _
     ->
       clierr sr
      ("[bind_expression] Expected expression, got " ^ string_of_expr e)
 
-  | `AST_apply (sr,(`AST_name (_,"_tuple_flatten",[]),e)) ->
+  | EXPR_apply (sr,(EXPR_name (_,"_tuple_flatten",[]),e)) ->
     let result = ref [] in
     let stack = ref [] in
     let push () = stack := 0 :: !stack in
@@ -3468,7 +3468,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     in
     let rec term stack = match stack with
       | [] -> e
-      | _ -> `AST_get_n (sr, (List.hd stack, term (List.tl stack)))
+      | _ -> EXPR_get_n (sr, (List.hd stack, term (List.tl stack)))
     in
     let _,t = be e in
     let rec aux t = match t with
@@ -3483,22 +3483,22 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       inc ()
     in
     aux t;
-    let e = `AST_tuple (sr,List.rev (!result)) in
+    let e = EXPR_tuple (sr,List.rev (!result)) in
     be e
 
-  | `AST_apply (sr,(`AST_name (_,"_tuple_trans",[]),e)) ->
+  | EXPR_apply (sr,(EXPR_name (_,"_tuple_trans",[]),e)) ->
     let tr nrows ncolumns =
       let e' = ref [] in
       for i = nrows - 1 downto 0 do
         let x = ref [] in
         for j = ncolumns - 1 downto 0 do
-          let v = `AST_get_n (sr,(i,`AST_get_n (sr,(j,e)))) in
+          let v = EXPR_get_n (sr,(i,EXPR_get_n (sr,(j,e)))) in
           x := v :: !x;
         done;
-        e' := `AST_tuple (sr,!x) :: (!e');
+        e' := EXPR_tuple (sr,!x) :: (!e');
       done
       ;
-      be (`AST_tuple (sr,!e'))
+      be (EXPR_tuple (sr,!e'))
     in
     let calnrows t =
       let nrows =
@@ -3547,15 +3547,15 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       ;
       tr nrows ncolumns
 
-  | `AST_apply
+  | EXPR_apply
     (
       sr,
       (
-        `AST_apply
+        EXPR_apply
         (
           _,
           (
-            `AST_apply ( _, ( `AST_name(_,"_tuple_fold",[]), f)),
+            EXPR_apply ( _, ( EXPR_name(_,"_tuple_fold",[]), f)),
             i
           )
         ),
@@ -3569,9 +3569,9 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       let rec aux m result =
         if m = 0 then result else
         let  k = n-m in
-        let arg = `AST_get_n (sr,(k,c)) in
-        let arg = `AST_tuple (sr,[result; arg]) in
-        aux (m-1) (`AST_apply(sr,(f,arg)))
+        let arg = EXPR_get_n (sr,(k,c)) in
+        let arg = EXPR_tuple (sr,[result; arg]) in
+        aux (m-1) (EXPR_apply(sr,(f,arg)))
       in be (aux n i)
     in
     begin match t with
@@ -3585,7 +3585,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     end
 
 
-  | `AST_callback (sr,qn) ->
+  | EXPR_callback (sr,qn) ->
     let es,ts = lookup_qn_in_env2' syms env rs qn in
     begin match es with
     | FunctionEntry [index] ->
@@ -3598,39 +3598,39 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       "'callback' expression denotes non-singleton function set"
     end
 
-  | `AST_expr (sr,s,t) ->
+  | EXPR_expr (sr,s,t) ->
     let t = bt sr t in
     BEXPR_expr (s,t),t
 
-  | `AST_andlist (sri,ls) ->
+  | EXPR_andlist (sri,ls) ->
     begin let mksum a b = apl2 sri "land" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mksum h t)
     | [] -> clierr sri "Not expecting empty and list"
     end
 
-  | `AST_orlist (sri,ls) ->
+  | EXPR_orlist (sri,ls) ->
     begin let mksum a b = apl2 sri "lor" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mksum h t)
     | [] -> clierr sri "Not expecting empty or list"
     end
 
-  | `AST_sum (sri,ls) ->
+  | EXPR_sum (sri,ls) ->
     begin let mksum a b = apl2 sri "add" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mksum h t)
     | [] -> clierr sri "Not expecting empty product (unit)"
     end
 
-  | `AST_product (sri,ls) ->
+  | EXPR_product (sri,ls) ->
     begin let mkprod a b = apl2 sri "mul" [a;b] in
     match ls with
     | h::t -> be (List.fold_left mkprod h t)
     | [] -> clierr sri "Not expecting empty sum (void)"
     end
 
-  | `AST_coercion (sr,(x,t)) ->
+  | EXPR_coercion (sr,(x,t)) ->
     let (e',t') as x' = be x in
     let t'' = bt sr t in
     if type_eq syms.counter syms.dfns t' t'' then x'
@@ -3736,7 +3736,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       )
     end
 
-  | `AST_get_n (sr,(n,e')) ->
+  | EXPR_get_n (sr,(n,e')) ->
     let expr,typ = be e' in
     let ctyp = match unfold syms.dfns typ with
     | `BTYP_array (t,`BTYP_unitsum len)  ->
@@ -3773,7 +3773,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     in
       BEXPR_get_n (n, (expr,typ)), ctyp
 
-  | `AST_get_named_variable (sr,(name,e')) ->
+  | EXPR_get_named_variable (sr,(name,e')) ->
     let e'',t'' as x2 = be e' in
     begin match t'' with
     | `BTYP_record es
@@ -3793,7 +3793,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
     | _ -> clierr sr ("[bind_expression] Projection requires record instance")
     end
-  | `AST_case_index (sr,e) ->
+  | EXPR_case_index (sr,e) ->
     let (e',t) as e  = be e in
     begin match t with
     | `BTYP_unitsum _ -> ()
@@ -3816,14 +3816,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     ,
     int_t
 
-  | `AST_case_tag (sr,v) ->
+  | EXPR_case_tag (sr,v) ->
      clierr sr "plain case tag not allowed in expression (only in pattern)"
 
-  | `AST_variant (sr,(s,e)) ->
+  | EXPR_variant (sr,(s,e)) ->
     let (_,t) as e = be e in
     BEXPR_variant (s,e),`BTYP_variant [s,t]
 
-  | `AST_typed_case (sr,v,t) ->
+  | EXPR_typed_case (sr,v,t) ->
     let t = bt sr t in
     ignore (try unfold syms.dfns t with _ -> failwith "AST_typed_case unfold screwd");
     begin match unfold syms.dfns t with
@@ -3851,13 +3851,13 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       )
     end
 
-  | `AST_name (sr,name,ts) ->
+  | EXPR_name (sr,name,ts) ->
     (*
     print_endline ("BINDING NAME " ^ name);
     *)
     if name = "_felix_type_name" then
        let sname = catmap "," string_of_typecode ts in
-       let x = `AST_literal (sr, AST_string sname) in
+       let x = EXPR_literal (sr, AST_string sname) in
        be x
     else
     let ts = List.map (bt sr) ts in
@@ -3962,7 +3962,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       end
     end
 
-  | `AST_index (_,name,index) as x ->
+  | EXPR_index (_,name,index) as x ->
     (*
     print_endline ("[bind expression] AST_index " ^ string_of_qualified_name x);
     *)
@@ -3992,7 +3992,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       BEXPR_name (index,ts),t
     end
 
-  | `AST_the(_,`AST_name (sr,name,ts)) ->
+  | EXPR_the(_,`AST_name (sr,name,ts)) ->
     (*
     print_endline ("[bind_expression] AST_the " ^ name);
     print_endline ("AST_name " ^ name ^ "[" ^ catmap "," string_of_typecode ts^ "]");
@@ -4020,9 +4020,9 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         " binds to non-singleton function set"
       )
     end
-  | `AST_the (sr,q) -> clierr sr "invalid use of 'the' "
+  | EXPR_the (sr,q) -> clierr sr "invalid use of 'the' "
 
-  | (`AST_lookup (sr,(e,name,ts))) as qn ->
+  | (EXPR_lookup (sr,(e,name,ts))) as qn ->
     (*
     print_endline ("Handling qn " ^ string_of_qualified_name qn);
     *)
@@ -4047,7 +4047,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         | NonFunctionEntry (i) ->
           let i = sye i in
           begin match hfind "lookup" syms.dfns i with
-          | {sr=srn; symdef=SYMDEF_inherit qn} -> be (qn :> expr_t)
+          | {sr=srn; symdef=SYMDEF_inherit qn} -> be (expr_of_qualified_name qn)
           | _ ->
             let ts = adjust_ts syms sr i ts in
             BEXPR_name (i,ts),
@@ -4060,7 +4060,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             clierr sr
             (
               "[bind_expression] Qualified name " ^
-              string_of_qualified_name qn ^
+              string_of_expr qn ^
               " binds to function set"
             )
 
@@ -4088,20 +4088,16 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         )
       end
 
-  | `AST_suffix (sr,(f,suf)) ->
+  | EXPR_suffix (sr,(f,suf)) ->
     let sign = bt sr suf in
-    begin match (f:>expr_t) with
-    | #qualified_name_t as name ->
-      let srn = src_of_expr name in
-      lookup_qn_with_sig' syms sr srn env rs name [sign] 
-    | e -> be e
-    end
+    let srn = src_of_qualified_name f in
+    lookup_qn_with_sig' syms sr srn env rs f [sign]
 
-  | `AST_likely (srr,e) ->  let (_,t) as x = be e in BEXPR_likely x,t
-  | `AST_unlikely (srr,e) ->  let (_,t) as x = be e in BEXPR_unlikely x,t
+  | EXPR_likely (srr,e) ->  let (_,t) as x = be e in BEXPR_likely x,t
+  | EXPR_unlikely (srr,e) ->  let (_,t) as x = be e in BEXPR_unlikely x,t
 
-  | `AST_ref (_,(`AST_deref (_,e))) -> be e
-  | `AST_ref (srr,e) ->
+  | EXPR_ref (_,(EXPR_deref (_,e))) -> be e
+  | EXPR_ref (srr,e) ->
     let has_property i p =
       match get_data syms.dfns i with {symdef=entry} ->
       match entry with
@@ -4162,12 +4158,12 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         )
     end
 
-  | `AST_deref (_,`AST_ref (sr,e)) ->
+  | EXPR_deref (_,EXPR_ref (sr,e)) ->
     let e,t = be e in
 (*    let t = lvalify t in *)
     e,t
 
-  | `AST_deref (sr,e) ->
+  | EXPR_deref (sr,e) ->
     let e,t = be e in
     begin match unfold syms.dfns t with
     | `BTYP_pointer t'
@@ -4175,18 +4171,18 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     | _ -> clierr sr "[bind_expression'] Dereference non pointer"
     end
 
-  | `AST_new (srr,e) ->
+  | EXPR_new (srr,e) ->
      let e,t as x = be e in
      BEXPR_new x, `BTYP_pointer t
 
-  | `AST_literal (sr,v) ->
+  | EXPR_literal (sr,v) ->
     let t = type_of_literal syms env sr v in
     BEXPR_literal v, t
 
-  | `AST_map (sr,f,a) ->
+  | EXPR_map (sr,f,a) ->
     handle_map sr (be f) (be a)
 
-  | `AST_apply (sr,(f',a')) ->
+  | EXPR_apply (sr,(f',a')) ->
     (*
     print_endline ("Apply " ^ string_of_expr f' ^ " to " ^  string_of_expr a');
     print_env env;
@@ -4195,16 +4191,16 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     (*
     print_endline ("Recursive descent into application " ^ string_of_expr e);
     *)
-    let (bf,tf) as f  =
-      match f' with
-      | #qualified_name_t as name ->
+    let (bf,tf) as f =
+      match qualified_name_of_expr f' with
+      | Some name ->
         let sigs = List.map snd args in
-        let srn = src_of_expr name in
+        let srn = src_of_qualified_name name in
         (*
         print_endline "Lookup qn with sig .. ";
         *)
         lookup_qn_with_sig' syms sr srn env rs name (ta::sigs)
-      | _ -> bind_expression' syms env rs f' (a :: args)
+      | None -> bind_expression' syms env rs f' (a :: args)
     in
     (*
     print_endline ("tf=" ^ sbt syms.dfns tf);
@@ -4279,12 +4275,12 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       let apl name =
         be
         (
-          `AST_apply
+          EXPR_apply
           (
             sr,
             (
-              `AST_name (sr,name,[]),
-              `AST_tuple (sr,[f';a'])
+              EXPR_name (sr,name,[]),
+              EXPR_tuple (sr,[f';a'])
             )
           )
         )
@@ -4293,7 +4289,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     end
 
 
-  | `AST_arrayof (sr,es) ->
+  | EXPR_arrayof (sr,es) ->
     let bets = List.map be es in
     let _, bts = List.split bets in
     let n = List.length bets in
@@ -4314,10 +4310,10 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     end else if n = 1 then List.hd bets
     else syserr sr "Empty array?"
 
-  | `AST_record_type _ -> assert false
-  | `AST_variant_type _ -> assert false
+  | EXPR_record_type _ -> assert false
+  | EXPR_variant_type _ -> assert false
 
-  | `AST_record (sr,ls) ->
+  | EXPR_record (sr,ls) ->
     begin match ls with
     | [] -> BEXPR_tuple [],`BTYP_tuple []
     | _ ->
@@ -4328,7 +4324,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     BEXPR_record (List.combine ss es),t
     end
 
-  | `AST_tuple (_,es) ->
+  | EXPR_tuple (_,es) ->
     let bets = List.map be es in
     let _, bts = List.split bets in
     let n = List.length bets in
@@ -4349,7 +4345,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     BEXPR_tuple [],`BTYP_tuple []
 
 
-  | `AST_dot (sr,(e,e2)) ->
+  | EXPR_dot (sr,(e,e2)) ->
 
     (* Analyse LHS.
       If it is a pointer, dereference it transparently.
@@ -4367,7 +4363,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       let np,ttt = aux 0 (rt tt') in
       let rec dref n x = match n with
           | 0 -> x
-          | _ -> dref (n-1) (`AST_deref (sr,x))
+          | _ -> dref (n-1) (EXPR_deref (sr,x))
       in
       let e = dref np e in
       let e',t' = be e in
@@ -4378,7 +4374,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     begin match e2 with
 
     (* RHS IS A SIMPLE NAME *)
-    | `AST_name (_,name,ts) ->
+    | EXPR_name (_,name,ts) ->
       begin match ttt with
 
       (* LHS IS A NOMINAL TYPE *)
@@ -4406,7 +4402,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           with Not_found ->
             let get_name = "get_" ^ name in
             begin try cal_method_apply sr get_name e ts 
-            with exn1 -> try be (`AST_apply (sr,(e2,e)))
+            with exn1 -> try be (EXPR_apply (sr,(e2,e)))
             with exn2 ->
             clierr sr (
               "AST_dot: cstruct type: koenig apply "^get_name ^
@@ -4447,7 +4443,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             *)
             let get_name = "get_" ^ name in
             begin try cal_method_apply sr get_name e ts 
-            with _ -> try be (`AST_apply (sr,(e2,e)))
+            with _ -> try be (EXPR_apply (sr,(e2,e)))
             with exn ->
             clierr sr (
               "AST_dot: cstruct type: koenig apply "^get_name ^
@@ -4465,7 +4461,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             *)
           let get_name = "get_" ^ name in
           begin try cal_method_apply sr get_name e ts
-          with exn1 -> try be (`AST_apply (sr,(e2,e)))
+          with exn1 -> try be (EXPR_apply (sr,(e2,e)))
           with exn2 ->
           clierr sr (
             "AST_dot: Abstract type "^id^"="^sbt syms.dfns ttt ^
@@ -4489,7 +4485,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         begin match list_index (List.map fst es) field_name with
         | Some n -> BEXPR_get_n (n,te),(List.assoc field_name es)
         | None ->
-          try be (`AST_apply (sr,(e2,e)))
+          try be (EXPR_apply (sr,(e2,e)))
           with exn ->
           clierr sr
           (
@@ -4503,7 +4499,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
       (* LHS FUNCTION TYPE *)
       | `BTYP_function (d,c) ->
-        begin try be (`AST_apply (sr,(e2,e)))
+        begin try be (EXPR_apply (sr,(e2,e)))
         with exn ->
         clierr sr (
         "AST_dot, arg "^ string_of_expr e2^
@@ -4514,7 +4510,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
       (* LHS TUPLE TYPE *)
       | `BTYP_tuple _ ->
-        begin try be (`AST_apply (sr,(e2,e)))
+        begin try be (EXPR_apply (sr,(e2,e)))
         with exn ->
         clierr sr (
         "AST_dot, arg "^ string_of_expr e2^
@@ -4525,7 +4521,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
       (* LHS OTHER ALGEBRAIC TYPE *)
       | _ ->
-        begin try be (`AST_apply (sr,(e2,e)))
+        begin try be (EXPR_apply (sr,(e2,e)))
         with exn ->
         clierr sr (
         "AST_dot, arg "^ string_of_expr e2^
@@ -4537,7 +4533,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
     (* RHS NOT A SIMPLE NAME: reverse application *)
     | _ ->
-      try be (`AST_apply (sr,(e2,e)))
+      try be (EXPR_apply (sr,(e2,e)))
       with exn ->
       clierr sr (
         "AST_dot, arg "^ string_of_expr e2^
@@ -4546,10 +4542,10 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         )
   end
 
-  | `AST_match_case (sr,(v,e)) ->
+  | EXPR_match_case (sr,(v,e)) ->
      BEXPR_match_case (v,be e),flx_bbool
 
-  | `AST_match_ctor (sr,(qn,e)) ->
+  | EXPR_match_ctor (sr,(qn,e)) ->
     begin match qn with
     | `AST_name (sr,name,ts) ->
       (*
@@ -4587,8 +4583,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         as C primitives ..
         *)
         | {id=id; symdef=SYMDEF_abs _ } ->
-          let fname = `AST_name (sr,"_match_ctor_" ^ name,ts) in
-          be (`AST_apply ( sr, (fname,e)))
+          let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
+          be (EXPR_apply ( sr, (fname,e)))
 
         | _ -> clierr sr ("expected union of abstract type, got" ^ sbt syms.dfns ut)
         end
@@ -4631,8 +4627,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         as C primitives ..
         *)
         | {id=id; symdef=SYMDEF_abs _ } ->
-          let fname = `AST_lookup (sr,(context,"_match_ctor_" ^ name,ts)) in
-          be (`AST_apply ( sr, (fname,e)))
+          let fname = EXPR_lookup (sr,(context,"_match_ctor_" ^ name,ts)) in
+          be (EXPR_apply ( sr, (fname,e)))
         | _ -> failwith "Woooops expected union or abstract type"
         end
       | _ -> failwith "Woops, expected nominal type"
@@ -4640,12 +4636,12 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
     | `AST_typed_case (sr,v,_)
     | `AST_case_tag (sr,v) ->
-       be (`AST_match_case (sr,(v,e)))
+       be (EXPR_match_case (sr,(v,e)))
 
     | _ -> clierr sr "Expected variant constructor name in union decoder"
     end
 
-  | `AST_case_arg (sr,(v,e)) ->
+  | EXPR_case_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
     ignore (try unfold syms.dfns t with _ -> failwith "AST_case_arg unfold screwd");
      begin match unfold syms.dfns t with
@@ -4665,7 +4661,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
      | _ -> clierr sr ("Expected sum type, got " ^ sbt syms.dfns t)
      end
 
-  | `AST_ctor_arg (sr,(qn,e)) ->
+  | EXPR_ctor_arg (sr,(qn,e)) ->
     begin match qn with
     | `AST_name (sr,name,ts) ->
       (*
@@ -4719,8 +4715,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         as C primitives ..
         *)
         | {id=id; symdef=SYMDEF_abs _ } ->
-          let fname = `AST_name (sr,"_ctor_arg_" ^ name,ts) in
-          be (`AST_apply ( sr, (fname,e)))
+          let fname = EXPR_name (sr,"_ctor_arg_" ^ name,ts) in
+          be (EXPR_apply ( sr, (fname,e)))
 
         | _ -> failwith "Woooops expected union or abstract type"
         end
@@ -4780,8 +4776,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         as C primitives ..
         *)
         | {id=id; symdef=SYMDEF_abs _ } ->
-          let fname = `AST_lookup (sr,(e,"_ctor_arg_" ^ name,ts)) in
-          be (`AST_apply ( sr, (fname,e)))
+          let fname = EXPR_lookup (sr,(e,"_ctor_arg_" ^ name,ts)) in
+          be (EXPR_apply ( sr, (fname,e)))
 
         | _ -> failwith "Woooops expected union or abstract type"
         end
@@ -4791,12 +4787,12 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
     | `AST_typed_case (sr,v,_)
     | `AST_case_tag (sr,v) ->
-      be (`AST_case_arg (sr,(v,e)))
+      be (EXPR_case_arg (sr,(v,e)))
 
     | _ -> clierr sr "Expected variant constructor name in union dtor"
     end
 
-  | `AST_lambda (sr,_) ->
+  | EXPR_lambda (sr,_) ->
     syserr sr
     (
       "[bind_expression] " ^
@@ -4804,7 +4800,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       string_of_expr e
     )
 
-  | `AST_match (sr,_) ->
+  | EXPR_match (sr,_) ->
     clierr sr
     (
       "[bind_expression] " ^
@@ -4993,7 +4989,7 @@ and instance_check syms caller_env called_env mgu sr calledname rtcr tsub =
     *)
     List.iter
     (fun qn ->
-      let call_sr = src_of_expr (qn:>expr_t) in
+      let call_sr = src_of_qualified_name qn in
       let classname = grab_name qn in
       let es,ts' =
         try luqn2 (hack_name qn)
@@ -5681,11 +5677,11 @@ and eval_module_expr syms env e : module_rep_t =
   print_endline ("Eval module expr " ^ string_of_expr e);
   *)
   match e with
-  | `AST_name (sr,name,ts) ->
+  | EXPR_name (sr,name,ts) ->
     let entries = inner_lookup_name_in_env syms env rsground sr name in
     check_module syms name sr entries ts
 
-  | `AST_lookup (sr,(e,name,ts)) ->
+  | EXPR_lookup (sr,(e,name,ts)) ->
     let result = eval_module_expr syms env e in
     begin match result with
       | Simple_module (index,ts',htab,dirs) ->
@@ -5798,7 +5794,7 @@ let lookup_uniq_in_env
     | NonFunctionEntry x,ts -> x,ts
     | FunctionEntry [x],ts -> x,ts
     | _ ->
-      let sr = src_of_expr (qn:>expr_t) in
+      let sr = src_of_qualified_name qn in
       clierr sr
       (
         "[lookup_uniq_in_env] Not expecting " ^
@@ -5832,7 +5828,7 @@ let lookup_sn_in_env
   (sn: suffixed_name_t)
   : int * btypecode_t list
 =
-  let sr = src_of_expr (sn:>expr_t) in
+  let sr = src_of_suffixed_name sn in
   let bt t = inner_bind_type syms env sr rsground t in
   match sn with
   | #qualified_name_t as x ->

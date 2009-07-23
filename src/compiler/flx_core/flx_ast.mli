@@ -152,91 +152,89 @@ and literal_t =
 and axiom_kind_t = [`Axiom | `Lemma ]
 and axiom_method_t = [`Predicate of expr_t | `Equation of expr_t * expr_t]
 and expr_t =
-  [
-  | `AST_vsprintf of Flx_srcref.t * string
-  | `AST_map of Flx_srcref.t * expr_t * expr_t
-  | `AST_noexpand of Flx_srcref.t * expr_t
-  | `AST_name of Flx_srcref.t * string * typecode_t list
-  | `AST_the of Flx_srcref.t * qualified_name_t
-  | `AST_index of Flx_srcref.t * string * int
-  | `AST_case_tag of Flx_srcref.t * int
-  | `AST_typed_case of Flx_srcref.t * int * typecode_t
-  | `AST_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
-  | `AST_apply of Flx_srcref.t * (expr_t * expr_t)
-  | `AST_tuple of Flx_srcref.t * expr_t list
-  | `AST_record of Flx_srcref.t * (string * expr_t) list
-  | `AST_record_type of Flx_srcref.t * (string * typecode_t) list
-  | `AST_variant of Flx_srcref.t * (string * expr_t)
-  | `AST_variant_type of Flx_srcref.t * (string * typecode_t) list
-  | `AST_arrayof of Flx_srcref.t * expr_t list
-  | `AST_coercion of Flx_srcref.t * (expr_t * typecode_t)
-  | `AST_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
+  | EXPR_vsprintf of Flx_srcref.t * string
+  | EXPR_map of Flx_srcref.t * expr_t * expr_t
+  | EXPR_noexpand of Flx_srcref.t * expr_t
+  | EXPR_name of Flx_srcref.t * string * typecode_t list
+  | EXPR_the of Flx_srcref.t * qualified_name_t
+  | EXPR_index of Flx_srcref.t * string * int
+  | EXPR_case_tag of Flx_srcref.t * int
+  | EXPR_typed_case of Flx_srcref.t * int * typecode_t
+  | EXPR_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
+  | EXPR_apply of Flx_srcref.t * (expr_t * expr_t)
+  | EXPR_tuple of Flx_srcref.t * expr_t list
+  | EXPR_record of Flx_srcref.t * (string * expr_t) list
+  | EXPR_record_type of Flx_srcref.t * (string * typecode_t) list
+  | EXPR_variant of Flx_srcref.t * (string * expr_t)
+  | EXPR_variant_type of Flx_srcref.t * (string * typecode_t) list
+  | EXPR_arrayof of Flx_srcref.t * expr_t list
+  | EXPR_coercion of Flx_srcref.t * (expr_t * typecode_t)
+  | EXPR_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
 
-  | `AST_patvar of Flx_srcref.t * string
-  | `AST_patany of Flx_srcref.t
+  | EXPR_patvar of Flx_srcref.t * string
+  | EXPR_patany of Flx_srcref.t
 
-  | `AST_void of Flx_srcref.t
-  | `AST_ellipsis of Flx_srcref.t
-  | `AST_product of Flx_srcref.t * expr_t list
-  | `AST_sum of Flx_srcref.t * expr_t list
-  | `AST_intersect of Flx_srcref.t * expr_t list
-  | `AST_isin of Flx_srcref.t * (expr_t * expr_t)
-  | `AST_setintersection of Flx_srcref.t * expr_t list
-  | `AST_setunion of Flx_srcref.t * expr_t list
-  | `AST_orlist of Flx_srcref.t * expr_t list
-  | `AST_andlist of Flx_srcref.t * expr_t list
-  | `AST_arrow of Flx_srcref.t * (expr_t * expr_t)
-  | `AST_longarrow of Flx_srcref.t * (expr_t * expr_t)
-  | `AST_superscript of Flx_srcref.t * (expr_t * expr_t)
+  | EXPR_void of Flx_srcref.t
+  | EXPR_ellipsis of Flx_srcref.t
+  | EXPR_product of Flx_srcref.t * expr_t list
+  | EXPR_sum of Flx_srcref.t * expr_t list
+  | EXPR_intersect of Flx_srcref.t * expr_t list
+  | EXPR_isin of Flx_srcref.t * (expr_t * expr_t)
+  | EXPR_setintersection of Flx_srcref.t * expr_t list
+  | EXPR_setunion of Flx_srcref.t * expr_t list
+  | EXPR_orlist of Flx_srcref.t * expr_t list
+  | EXPR_andlist of Flx_srcref.t * expr_t list
+  | EXPR_arrow of Flx_srcref.t * (expr_t * expr_t)
+  | EXPR_longarrow of Flx_srcref.t * (expr_t * expr_t)
+  | EXPR_superscript of Flx_srcref.t * (expr_t * expr_t)
 
-  | `AST_literal of Flx_srcref.t * literal_t
-  | `AST_deref of Flx_srcref.t * expr_t
-  | `AST_ref of Flx_srcref.t * expr_t
-  | `AST_likely of Flx_srcref.t * expr_t
-  | `AST_unlikely of Flx_srcref.t * expr_t
-  | `AST_new of Flx_srcref.t * expr_t
-  | `AST_callback of Flx_srcref.t * qualified_name_t
-  | `AST_dot of Flx_srcref.t * (expr_t * expr_t)
-  | `AST_lambda of Flx_srcref.t * (vs_list_t * params_t list * typecode_t * statement_t list)
+  | EXPR_literal of Flx_srcref.t * literal_t
+  | EXPR_deref of Flx_srcref.t * expr_t
+  | EXPR_ref of Flx_srcref.t * expr_t
+  | EXPR_likely of Flx_srcref.t * expr_t
+  | EXPR_unlikely of Flx_srcref.t * expr_t
+  | EXPR_new of Flx_srcref.t * expr_t
+  | EXPR_callback of Flx_srcref.t * qualified_name_t
+  | EXPR_dot of Flx_srcref.t * (expr_t * expr_t)
+  | EXPR_lambda of Flx_srcref.t * (vs_list_t * params_t list * typecode_t * statement_t list)
 
   (* this boolean expression checks its argument is
      the nominated union variant .. not a very good name for it
   *)
-  | `AST_match_ctor of Flx_srcref.t * (qualified_name_t * expr_t)
+  | EXPR_match_ctor of Flx_srcref.t * (qualified_name_t * expr_t)
 
   (* this boolean expression checks its argument is the nominate
      sum variant
   *)
-  | `AST_match_case of Flx_srcref.t * (int * expr_t)
+  | EXPR_match_case of Flx_srcref.t * (int * expr_t)
 
   (* this extracts the argument of a named union variant -- unsafe *)
-  | `AST_ctor_arg of Flx_srcref.t * (qualified_name_t * expr_t)
+  | EXPR_ctor_arg of Flx_srcref.t * (qualified_name_t * expr_t)
 
   (* this extracts the argument of a number sum variant -- unsafe *)
-  | `AST_case_arg of Flx_srcref.t * (int * expr_t)
+  | EXPR_case_arg of Flx_srcref.t * (int * expr_t)
 
   (* this just returns an integer equal to union or sum index *)
-  | `AST_case_index of Flx_srcref.t * expr_t (* the zero origin variant index *)
+  | EXPR_case_index of Flx_srcref.t * expr_t (* the zero origin variant index *)
 
-  | `AST_letin of Flx_srcref.t * (pattern_t * expr_t * expr_t)
+  | EXPR_letin of Flx_srcref.t * (pattern_t * expr_t * expr_t)
 
-  | `AST_get_n of Flx_srcref.t * (int * expr_t) (* get n'th component of a tuple *)
-  | `AST_get_named_variable of Flx_srcref.t * (string * expr_t) (* get named component of a class or record *)
-  | `AST_as of Flx_srcref.t * (expr_t * string)
-  | `AST_match of Flx_srcref.t * (expr_t * (pattern_t * expr_t) list)
+  | EXPR_get_n of Flx_srcref.t * (int * expr_t) (* get n'th component of a tuple *)
+  | EXPR_get_named_variable of Flx_srcref.t * (string * expr_t) (* get named component of a class or record *)
+  | EXPR_as of Flx_srcref.t * (expr_t * string)
+  | EXPR_match of Flx_srcref.t * (expr_t * (pattern_t * expr_t) list)
 
-  | `AST_typeof of Flx_srcref.t * expr_t
-  | `AST_cond of Flx_srcref.t * (expr_t * expr_t * expr_t)
+  | EXPR_typeof of Flx_srcref.t * expr_t
+  | EXPR_cond of Flx_srcref.t * (expr_t * expr_t * expr_t)
 
-  | `AST_expr of Flx_srcref.t * string * typecode_t
+  | EXPR_expr of Flx_srcref.t * string * typecode_t
 
-  | `AST_type_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
+  | EXPR_type_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
 
-  | `AST_macro_ctor of Flx_srcref.t * (string * expr_t)
-  | `AST_macro_statements of Flx_srcref.t * statement_t list
+  | EXPR_macro_ctor of Flx_srcref.t * (string * expr_t)
+  | EXPR_macro_statements of Flx_srcref.t * statement_t list
 
-  | `AST_user_expr of Flx_srcref.t * string * ast_term_t
-  ]
+  | EXPR_user_expr of Flx_srcref.t * string * ast_term_t
 
 (** {7 Patterns}
  *

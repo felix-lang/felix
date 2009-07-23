@@ -6,6 +6,7 @@ open Flx_print
 open Flx_set
 open Flx_mtypes2
 open Flx_typing
+open Flx_typing2
 open Flx_lookup
 open Flx_mbind
 open Flx_unify
@@ -258,7 +259,7 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       bind_exe (sr,EXE_call (a,b));
       bind_exe  (sr,EXE_proc_return)
 
-    | EXE_call (`AST_name (_,"axiom_check",[]), e2) ->
+    | EXE_call (EXPR_name (_,"axiom_check",[]), e2) ->
        tack (BEXE_axiom_check(sr,be e2))
 
     | EXE_call (f',a') ->
@@ -270,14 +271,14 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
       print_endline ("Recursive descent into application " ^ string_of_expr e);
       *)
       let (bf,tf) as f  =
-        match f' with
-        | #qualified_name_t as name ->
-          let srn = src_of_expr name in
+        match qualified_name_of_expr f' with
+        | Some name ->
+          let srn = src_of_qualified_name name in
           (*
           print_endline "Lookup qn with sig .. ";
           *)
           lookup_qn_with_sig syms sr srn env name [ta]
-        | _ -> bind_expression_with_args syms env f' [a]
+        | None -> bind_expression_with_args syms env f' [a]
       in
       (*
       print_endline ("tf=" ^ sbt syms.dfns tf);
@@ -297,8 +298,8 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
             sr,
             EXE_call
             (
-              `AST_name (sr,name,[]),
-              `AST_tuple (sr,[f';a'])
+              EXPR_name (sr,name,[]),
+              EXPR_tuple (sr,[f';a'])
             )
           )
         in

@@ -9,54 +9,54 @@ open Flx_maps
 
 let truth sr r =
   let r = if r then 1 else 0 in
-  `AST_typed_case (sr,r,flx_bool)
+  EXPR_typed_case (sr,r,flx_bool)
 
 let const_fold' e sr name arg =
   match name, arg with
   (* integers *)
   (* -x *)
-  | "neg", `AST_literal (_,AST_int ("int",x))
+  | "neg", EXPR_literal (_,AST_int ("int",x))
     ->
-    `AST_literal (sr,AST_int ("int", (minus_big_int x)))
+    EXPR_literal (sr,AST_int ("int", (minus_big_int x)))
 
   (* +x *)
-  | "pos", `AST_literal (_,AST_int ("int",x))
+  | "pos", EXPR_literal (_,AST_int ("int",x))
     ->
-    `AST_literal (sr,AST_int ("int", x))
+    EXPR_literal (sr,AST_int ("int", x))
 
   (* abs x *)
-  | "abs", `AST_literal (_,AST_int ("int",x))
+  | "abs", EXPR_literal (_,AST_int ("int",x))
     ->
-    `AST_literal (sr,AST_int ("int", (abs_big_int x)))
+    EXPR_literal (sr,AST_int ("int", (abs_big_int x)))
 
   (* x+y *)
-  | "add", `AST_tuple ( _, [
-           `AST_literal (_,AST_int ("int",x));
-           `AST_literal (_,AST_int ("int",y))
+  | "add", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_int ("int",x));
+           EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    `AST_literal (sr,AST_int ("int",(add_big_int x y)))
+    EXPR_literal (sr,AST_int ("int",(add_big_int x y)))
 
   (* x-y *)
-  | "sub", `AST_tuple ( _, [
-           `AST_literal (_,AST_int ("int",x));
-           `AST_literal (_,AST_int ("int",y))
+  | "sub", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_int ("int",x));
+           EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    `AST_literal (sr,AST_int ("int",(sub_big_int x y)))
+    EXPR_literal (sr,AST_int ("int",(sub_big_int x y)))
 
   (* x*y *)
-  | "mul", `AST_tuple ( _, [
-           `AST_literal (_,AST_int ("int",x));
-           `AST_literal (_,AST_int ("int",y))
+  | "mul", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_int ("int",x));
+           EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    `AST_literal (sr,AST_int ("int",(mult_big_int x y)))
+    EXPR_literal (sr,AST_int ("int",(mult_big_int x y)))
 
   (* x/y *)
-  | "div", `AST_tuple ( _, [
-           `AST_literal (_,AST_int ("int",x));
-           `AST_literal (_,AST_int ("int",y))
+  | "div", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_int ("int",x));
+           EXPR_literal (_,AST_int ("int",y))
           ])
     ->
     let r =
@@ -64,13 +64,13 @@ let const_fold' e sr name arg =
       with Division_by_zero ->
         clierr sr "[constfld] Division by zero"
     in
-    `AST_literal (sr,AST_int ("int",r))
+    EXPR_literal (sr,AST_int ("int",r))
 
 
   (* x mod y *)
-  | "mod", `AST_tuple ( _, [
-           `AST_literal (_,AST_int ("int",x));
-           `AST_literal (_,AST_int ("int",y))
+  | "mod", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_int ("int",x));
+           EXPR_literal (_,AST_int ("int",y))
           ])
     ->
     let r =
@@ -78,77 +78,77 @@ let const_fold' e sr name arg =
       with Division_by_zero ->
         clierr sr "[constfld] Division by zero"
     in
-    `AST_literal (sr,AST_int ("int",r))
+    EXPR_literal (sr,AST_int ("int",r))
 
   (* x ** y *)
-  | "pow", `AST_tuple ( _, [
-           `AST_literal (_,AST_int ("int",x));
-           `AST_literal (_,AST_int ("int",y))
+  | "pow", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_int ("int",x));
+           EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    `AST_literal (sr,AST_int ("int",(power_big_int_positive_big_int x y)))
+    EXPR_literal (sr,AST_int ("int",(power_big_int_positive_big_int x y)))
 
   (* x < y *)
-  | "lt", `AST_tuple ( _, [
-           `AST_literal (_,AST_int ("int",x));
-           `AST_literal (_,AST_int ("int",y))
+  | "lt", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_int ("int",x));
+           EXPR_literal (_,AST_int ("int",y))
           ])
     ->
     truth sr (lt_big_int x y)
 
   (* x > y *)
-  | "gt", `AST_tuple ( _, [
-           `AST_literal (_,AST_int ("int",x));
-           `AST_literal (_,AST_int ("int",y))
+  | "gt", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_int ("int",x));
+           EXPR_literal (_,AST_int ("int",y))
           ])
     ->
     truth sr (gt_big_int x y)
 
   (* x <= y *)
-  | "le", `AST_tuple ( _, [
-           `AST_literal (_,AST_int ("int",x));
-           `AST_literal (_,AST_int ("int",y))
+  | "le", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_int ("int",x));
+           EXPR_literal (_,AST_int ("int",y))
           ])
     ->
     truth sr (le_big_int x y)
 
   (* x >= y *)
-  | "ge", `AST_tuple ( _, [
-           `AST_literal (_,AST_int ("int",x));
-           `AST_literal (_,AST_int ("int",y))
+  | "ge", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_int ("int",x));
+           EXPR_literal (_,AST_int ("int",y))
           ])
     ->
     truth sr (ge_big_int x y)
 
   (* x == y *)
-  | "eq", `AST_tuple ( _, [
-           `AST_literal (_,AST_int ("int",x));
-           `AST_literal (_,AST_int ("int",y))
+  | "eq", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_int ("int",x));
+           EXPR_literal (_,AST_int ("int",y))
           ])
     ->
     truth sr (eq_big_int x y)
 
   (* x != y *)
-  | "ne", `AST_tuple ( _, [
-           `AST_literal (_,AST_int ("int",x));
-           `AST_literal (_,AST_int ("int",y))
+  | "ne", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_int ("int",x));
+           EXPR_literal (_,AST_int ("int",y))
           ])
     ->
     truth sr (not (eq_big_int x y))
 
   (* strings *)
   (* x+y *)
-  | "add", `AST_tuple ( _, [
-           `AST_literal (_,AST_string x);
-           `AST_literal (_,AST_string y)
+  | "add", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_string x);
+           EXPR_literal (_,AST_string y)
           ])
     ->
-    `AST_literal (sr,AST_string (String.concat "" [x; y]))
+    EXPR_literal (sr,AST_string (String.concat "" [x; y]))
 
   (* x*y *)
-  | "mul", `AST_tuple ( _, [
-           `AST_literal (_,AST_string x);
-           `AST_literal (_,AST_int ("int",y))
+  | "mul", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_string x);
+           EXPR_literal (_,AST_int ("int",y))
           ])
     ->
     let y =
@@ -157,26 +157,26 @@ let const_fold' e sr name arg =
       with _ -> clierr sr "String repeat count too large"
     in
     if String.length x = 1 then
-      `AST_literal (sr,AST_string (String.make y x.[0]))
+      EXPR_literal (sr,AST_string (String.make y x.[0]))
     else
     let s = Buffer.create (String.length x * y) in
     for i = 1 to y do
       Buffer.add_string s x
     done;
-    `AST_literal (sr,AST_string (Buffer.contents s))
+    EXPR_literal (sr,AST_string (Buffer.contents s))
 
   (* x == y *)
-  | "eq", `AST_tuple ( _, [
-           `AST_literal (_,AST_string x);
-           `AST_literal (_,AST_string y)
+  | "eq", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_string x);
+           EXPR_literal (_,AST_string y)
           ])
     ->
     truth sr (x = y)
 
   (* x != y *)
-  | "ne", `AST_tuple ( _, [
-           `AST_literal (_,AST_string x);
-           `AST_literal (_,AST_string y)
+  | "ne", EXPR_tuple ( _, [
+           EXPR_literal (_,AST_string x);
+           EXPR_literal (_,AST_string y)
           ])
     ->
     truth sr (x <> y)
@@ -184,35 +184,35 @@ let const_fold' e sr name arg =
 
   (* bool *)
   (* not x *)
-  | "lnot", `AST_typed_case (_,x,TYP_unitsum 2)
+  | "lnot", EXPR_typed_case (_,x,TYP_unitsum 2)
     ->
     truth sr (x=0)
 
   (* x or y *)
-  | "lor", `AST_tuple ( _, [
-           `AST_typed_case (_,x,TYP_unitsum 2);
-           `AST_typed_case (_,y,TYP_unitsum 2)
+  | "lor", EXPR_tuple ( _, [
+           EXPR_typed_case (_,x,TYP_unitsum 2);
+           EXPR_typed_case (_,y,TYP_unitsum 2)
           ])
     -> truth sr (x=1 or y=1)
 
   (* x and y *)
-  | "land", `AST_tuple ( _, [
-           `AST_typed_case (_,x,TYP_unitsum 2);
-           `AST_typed_case (_,y,TYP_unitsum 2)
+  | "land", EXPR_tuple ( _, [
+           EXPR_typed_case (_,x,TYP_unitsum 2);
+           EXPR_typed_case (_,y,TYP_unitsum 2)
           ])
     -> truth sr (x=1 && y=1)
 
   (* x eq y *)
-  | "eq", `AST_tuple ( _, [
-           `AST_typed_case (_,x,TYP_unitsum 2);
-           `AST_typed_case (_,y,TYP_unitsum 2)
+  | "eq", EXPR_tuple ( _, [
+           EXPR_typed_case (_,x,TYP_unitsum 2);
+           EXPR_typed_case (_,y,TYP_unitsum 2)
           ])
     -> truth sr (x=y)
 
   (* x ne y *)
-  | "ne", `AST_tuple ( _, [
-           `AST_typed_case (_,x,TYP_unitsum 2);
-           `AST_typed_case (_,y,TYP_unitsum 2)
+  | "ne", EXPR_tuple ( _, [
+           EXPR_typed_case (_,x,TYP_unitsum 2);
+           EXPR_typed_case (_,y,TYP_unitsum 2)
           ])
     -> truth sr (x<>y)
 
@@ -221,10 +221,10 @@ let const_fold' e sr name arg =
 let rec const_fold e =
   let e' = map_expr const_fold e in
   match e' with
-  | `AST_apply (sr, (`AST_name (_,name,[]),arg)) ->
+  | EXPR_apply (sr, (EXPR_name (_,name,[]),arg)) ->
     const_fold' e sr name arg
 
-  | `AST_apply ( sr, (( `AST_literal (_,AST_string _) as x), y)) ->
-    const_fold' e sr "add" (`AST_tuple (sr,[x;y]))
+  | EXPR_apply ( sr, ((EXPR_literal (_,AST_string _) as x), y)) ->
+    const_fold' e sr "add" (EXPR_tuple (sr,[x;y]))
 
   | _ -> e'

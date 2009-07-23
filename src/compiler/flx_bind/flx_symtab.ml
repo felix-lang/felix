@@ -524,7 +524,7 @@ and build_table_for_dcl
         let component =
           Flx_mbind.gen_extractor
             extractor
-            (`AST_index (sr,mvname,match_var_index))
+            (EXPR_index (sr,mvname,match_var_index))
         in
         let dcl =
           Dcl (sr, vname, None,`Private, dfltvs,

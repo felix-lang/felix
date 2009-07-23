@@ -100,110 +100,130 @@ and string_of_expr (e:expr_t) =
   let sme e = string_of_expr e in
   let sqn e = string_of_qualified_name e in
   match e with
-  | #suffixed_name_t as n -> string_of_suffixed_name n
-  | `AST_patvar (sr,s) -> "?"^s
-  | `AST_patany sr -> "ANY"
-  | `AST_vsprintf (sr,s) -> "f"^string_of_string s
-  | `AST_ellipsis _ -> "..."
+  | EXPR_the (sr,q) -> "the " ^ string_of_qualified_name q
+  | EXPR_index (sr,name,idx) -> name ^ "<" ^ si idx ^ ">"
+  | EXPR_void _ -> "void"
+  | EXPR_name (_,name,ts) -> name ^
+    (
+      if List.length ts = 0 then ""
+      else "[" ^ catmap ", " string_of_typecode ts ^ "]"
+    )
+  | EXPR_case_tag (_,v) -> "case " ^ si v
+  | EXPR_typed_case (_,v,t) ->
+    "(case " ^ si v ^
+    " of " ^ string_of_typecode t ^ ")"
+
+  | EXPR_lookup (_,(e,name, ts)) -> "("^se e ^")::" ^ name ^
+    (if length ts = 0 then "" else
+    "[" ^ catmap ", " string_of_typecode ts ^ "]"
+    )
+  | EXPR_callback (_,name) -> "callback " ^string_of_qualified_name name
+  | EXPR_suffix (_,(name,suf)) ->
+    string_of_qualified_name name ^ " of (" ^ string_of_typecode suf ^ ")"
+
+  | EXPR_patvar (sr,s) -> "?"^s
+  | EXPR_patany sr -> "ANY"
+  | EXPR_vsprintf (sr,s) -> "f"^string_of_string s
+  | EXPR_ellipsis _ -> "..."
   (*
-  | `AST_noexpand (sr,e) -> "noexpand(" ^ string_of_expr e ^ ")"
+  | EXPR_noexpand (sr,e) -> "noexpand(" ^ string_of_expr e ^ ")"
   *)
   (* because 'noexpand' is too ugly .. *)
-  | `AST_noexpand (sr,e) -> string_of_expr e
+  | EXPR_noexpand (sr,e) -> string_of_expr e
 
-  | `AST_letin (sr,(pat,e1, e2)) ->
+  | EXPR_letin (sr,(pat,e1, e2)) ->
     "let " ^ string_of_letpat pat ^ " = " ^ se e1 ^ " in " ^ se e2
-  | `AST_coercion (_,(e,t)) ->
+  | EXPR_coercion (_,(e,t)) ->
     "(" ^ sme e ^ ":" ^
     string_of_typecode t ^ ")"
 
-  | `AST_expr (_,s,t) ->
+  | EXPR_expr (_,s,t) ->
     "code ["^string_of_typecode t^"]" ^
     "'" ^ s ^ "'"
 
-  | `AST_cond (_,(e,b1,b2)) ->
+  | EXPR_cond (_,(e,b1,b2)) ->
     "if " ^ se e ^
     " then " ^ se b1 ^
     " else " ^ se b2 ^
     " endif"
 
-  | `AST_typeof (_,e) -> "typeof("^se e^")"
-  | `AST_as (_,(e1, name)) -> "(" ^ se e1 ^ ") as " ^ name
-  | `AST_get_n (_,(n,e)) -> "get (" ^ si n ^ ", " ^se e^")"
-  | `AST_get_named_variable (_,(n,e)) -> "get (" ^ n ^ ", " ^se e^")"
-  | `AST_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
-  | `AST_deref (_,e) -> "*(" ^ se e ^ ")"
-  | `AST_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
-  | `AST_likely (_,e) -> "likely" ^ "(" ^ se e ^ ")"
-  | `AST_unlikely (_,e) -> "unlikely" ^ "(" ^ se e ^ ")"
-  | `AST_new (_,e) -> "new " ^ "(" ^ se e ^ ")"
-  | `AST_literal (_,e) -> string_of_literal e
-  | `AST_apply  (_,(fn, arg)) -> "(" ^
+  | EXPR_typeof (_,e) -> "typeof("^se e^")"
+  | EXPR_as (_,(e1, name)) -> "(" ^ se e1 ^ ") as " ^ name
+  | EXPR_get_n (_,(n,e)) -> "get (" ^ si n ^ ", " ^se e^")"
+  | EXPR_get_named_variable (_,(n,e)) -> "get (" ^ n ^ ", " ^se e^")"
+  | EXPR_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
+  | EXPR_deref (_,e) -> "*(" ^ se e ^ ")"
+  | EXPR_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
+  | EXPR_likely (_,e) -> "likely" ^ "(" ^ se e ^ ")"
+  | EXPR_unlikely (_,e) -> "unlikely" ^ "(" ^ se e ^ ")"
+  | EXPR_new (_,e) -> "new " ^ "(" ^ se e ^ ")"
+  | EXPR_literal (_,e) -> string_of_literal e
+  | EXPR_apply  (_,(fn, arg)) -> "(" ^
     sme fn ^ " " ^
     sme arg ^
     ")"
 
-  | `AST_product (_,ts) ->
+  | EXPR_product (_,ts) ->
      cat "*" (map se ts)
 
-  | `AST_sum (_,ts) ->
+  | EXPR_sum (_,ts) ->
      cat "+" (map se ts)
 
-  | `AST_setunion (_,ts) ->
+  | EXPR_setunion (_,ts) ->
      cat "||" (map se ts)
 
-  | `AST_setintersection (_,ts) ->
+  | EXPR_setintersection (_,ts) ->
      cat "&&" (map se ts)
 
-  | `AST_intersect (_,ts) ->
+  | EXPR_intersect (_,ts) ->
      cat "&" (map se ts)
 
-  | `AST_isin (_,(a,b)) ->
+  | EXPR_isin (_,(a,b)) ->
      sme a ^ " isin " ^ sme b
 
-  | `AST_orlist (_,ts) ->
+  | EXPR_orlist (_,ts) ->
      cat " or " (map se ts)
 
-  | `AST_andlist (_,ts) ->
+  | EXPR_andlist (_,ts) ->
      cat " and " (map se ts)
 
-  | `AST_arrow (_,(a,b)) ->
+  | EXPR_arrow (_,(a,b)) ->
     "(" ^ se a ^ " -> " ^ se b ^ ")"
 
-  | `AST_longarrow (_,(a,b)) ->
+  | EXPR_longarrow (_,(a,b)) ->
     "(" ^ se a ^ " --> " ^ se b ^ ")"
 
-  | `AST_superscript (_,(a,b)) ->
+  | EXPR_superscript (_,(a,b)) ->
     "(" ^ se a ^ " ^ " ^ se b ^ ")"
 
-  | `AST_tuple (_,t) -> "(" ^ catmap ", " sme t ^ ")"
+  | EXPR_tuple (_,t) -> "(" ^ catmap ", " sme t ^ ")"
 
-  | `AST_record (_,ts) -> "struct {" ^
+  | EXPR_record (_,ts) -> "struct {" ^
       catmap "; " (fun (s,e) -> s ^ "="^ sme e ^";") ts ^
     "}"
 
-  | `AST_record_type (_,ts) -> "struct {" ^
+  | EXPR_record_type (_,ts) -> "struct {" ^
       catmap "; " (fun (s,t) -> s ^ ":"^ string_of_typecode t ^";") ts ^
     "}"
 
-  | `AST_variant (_,(s,e)) -> "case " ^ s ^ " of (" ^ se e ^ ")"
+  | EXPR_variant (_,(s,e)) -> "case " ^ s ^ " of (" ^ se e ^ ")"
 
-  | `AST_variant_type (_,ts) -> "union {" ^
+  | EXPR_variant_type (_,ts) -> "union {" ^
       catmap "; " (fun (s,t) -> s ^ " of "^ string_of_typecode t ^";") ts ^
     "}"
 
-  | `AST_arrayof (_,t) -> "[|" ^ catmap ", " sme t ^ "|]"
+  | EXPR_arrayof (_,t) -> "[|" ^ catmap ", " sme t ^ "|]"
   (*
-  | `AST_dot (_,(e,n,ts)) ->
+  | EXPR_dot (_,(e,n,ts)) ->
     "get_" ^ n ^
     (match ts with | [] -> "" | _ -> "[" ^ catmap "," string_of_typecode ts^ "]")^
     "(" ^ se e ^ ")"
   *)
 
-  | `AST_dot (_,(e1,e2)) ->
+  | EXPR_dot (_,(e1,e2)) ->
     "(" ^ se e1 ^ "." ^ se e2 ^  ")"
 
-  | `AST_lambda (_,(vs,paramss,ret, sts)) ->
+  | EXPR_lambda (_,(vs,paramss,ret, sts)) ->
     "(fun " ^ print_vs vs ^
     catmap " "
     (fun ps -> "(" ^ string_of_parameters ps ^ ")") paramss
@@ -214,26 +234,26 @@ and string_of_expr (e:expr_t) =
     " = " ^
     string_of_compound 0 sts ^ ")"
 
-  | `AST_ctor_arg (_,(cn,e)) ->
+  | EXPR_ctor_arg (_,(cn,e)) ->
     "ctor_arg " ^ sqn cn ^ "(" ^
     se e ^ ")"
 
-  | `AST_case_arg (_,(n,e)) ->
+  | EXPR_case_arg (_,(n,e)) ->
     "case_arg " ^ si n ^ "(" ^
     se e ^ ")"
 
-  | `AST_case_index (_,e) ->
+  | EXPR_case_index (_,e) ->
     "caseno (" ^ se e ^ ")"
 
-  | `AST_match_ctor (_,(cn,e)) ->
+  | EXPR_match_ctor (_,(cn,e)) ->
     "match_ctor " ^ sqn cn ^ "(" ^
     se e ^ ")"
 
-  | `AST_match_case (_,(v,e)) ->
+  | EXPR_match_case (_,(v,e)) ->
     "match_case " ^ si v ^ "(" ^
     se e ^ ")"
 
-  | `AST_match (_,(e, ps)) ->
+  | EXPR_match (_,(e, ps)) ->
     "match " ^ se e ^ " with\n" ^
     catmap "\n"
     (fun (p,e')->
@@ -247,7 +267,7 @@ and string_of_expr (e:expr_t) =
     " endmatch"
 
 (*
-  | `AST_type_match (_,(e, ps)) ->
+  | EXPR_type_match (_,(e, ps)) ->
     "typematch " ^ string_of_typecode e ^ " with " ^
     catmap "\n"
     (fun (p,e')->
@@ -261,7 +281,7 @@ and string_of_expr (e:expr_t) =
     " endmatch"
 *)
 
-  | `AST_type_match (_,(e, ps)) ->
+  | EXPR_type_match (_,(e, ps)) ->
     "typematch " ^ string_of_typecode e ^ " with " ^
     catmap ""
     (fun (p,e')->
@@ -274,14 +294,14 @@ and string_of_expr (e:expr_t) =
     ^
     "\n endmatch"
 
-  | `AST_macro_ctor (_,(s,e)) ->
+  | EXPR_macro_ctor (_,(s,e)) ->
     "macro ctor " ^ s ^ string_of_expr e
 
-  | `AST_macro_statements (_,ss) ->
+  | EXPR_macro_statements (_,ss) ->
     "macro statements begin\n" ^
     catmap "\n" (string_of_statement 1) ss ^ "\nend"
 
-  | `AST_user_expr (_,name,term) ->
+  | EXPR_user_expr (_,name,term) ->
     let body = string_of_ast_term 0 term in
     "User expr " ^ name ^ "(" ^ body ^ ")"
 
