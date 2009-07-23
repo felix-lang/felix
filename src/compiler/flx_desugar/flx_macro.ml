@@ -620,7 +620,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
             (* replace the application with a lambda wrapping
               of the corresponding procedure call
             *)
-            let sts = [`AST_call (sr,e1, e2)] in
+            let sts = [STMT_call (sr,e1, e2)] in
             let sts = expand_statements recursion_limit local_prefix seq (ref true) macros sts in
             EXPR_lambda(sr,(dfltvs,[[],None],TYP_none,sts))
             (*
@@ -887,146 +887,146 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   begin match st with
   (* cheat for now and ignore public and private decls *)
   (*
-  | `AST_public (_,_,st) -> List.iter tack (ms [st])
+  | STMT_public (_,_,st) -> List.iter tack (ms [st])
   *)
-  | `AST_private (sr,st) ->
-    List.iter (fun st -> tack (`AST_private (sr,st))) (ms [st])
+  | STMT_private (sr,st) ->
+    List.iter (fun st -> tack (STMT_private (sr,st))) (ms [st])
 
-  | `AST_seq (_,sts) ->
+  | STMT_seq (_,sts) ->
     List.iter tack (ms sts)
 
-  | `AST_include (sr, s) -> tack st
+  | STMT_include (sr, s) -> tack st
 
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)
-  | `AST_open (sr, vs, qn) ->
-    tack (`AST_open (sr, vs, mq qn))
+  | STMT_open (sr, vs, qn) ->
+    tack (STMT_open (sr, vs, mq qn))
 
-  | `AST_inject_module (sr, qn) -> tack st
+  | STMT_inject_module (sr, qn) -> tack st
 
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)
-  | `AST_use (sr, id, qn) -> tack (`AST_use (sr,mi sr id,qn))
+  | STMT_use (sr, id, qn) -> tack (STMT_use (sr,mi sr id,qn))
 
-  | `AST_cassign (sr,l,r) -> tack (`AST_cassign (sr, me l, me r))
+  | STMT_cassign (sr,l,r) -> tack (STMT_cassign (sr, me l, me r))
 
-  | `AST_assign (sr,name,l,r) ->
+  | STMT_assign (sr,name,l,r) ->
     let l = match l with
       | `Expr (sr,e),t -> `Expr (sr,me e),t
       | l -> l
     in
-    tack (`AST_assign (sr, name, l, me r))
+    tack (STMT_assign (sr, name, l, me r))
 
-  | `AST_comment _  ->  tack st
+  | STMT_comment _  ->  tack st
 
-  | `AST_union (sr, id, vs, idts ) ->
+  | STMT_union (sr, id, vs, idts ) ->
     let idts = List.map (fun (id,v,vs,t) -> id,v,vs,mt sr t) idts in
-    tack (`AST_union (sr, mi sr id, vs, idts))
+    tack (STMT_union (sr, mi sr id, vs, idts))
 
-  | `AST_struct (sr, id, vs, idts) ->
+  | STMT_struct (sr, id, vs, idts) ->
     let idts = List.map (fun (id,t) -> id,mt sr t) idts in
-    tack (`AST_struct (sr, mi sr id, vs, idts))
+    tack (STMT_struct (sr, mi sr id, vs, idts))
 
-  | `AST_cstruct (sr, id, vs, idts) ->
+  | STMT_cstruct (sr, id, vs, idts) ->
     let idts = List.map (fun (id,t) -> id,mt sr t) idts in
-    tack (`AST_cstruct (sr, mi sr id, vs, idts))
+    tack (STMT_cstruct (sr, mi sr id, vs, idts))
 
-  | `AST_typeclass (sr, id, vs, sts) ->
-    tack (`AST_typeclass (sr, mi sr id, vs, ms sts))
+  | STMT_typeclass (sr, id, vs, sts) ->
+    tack (STMT_typeclass (sr, mi sr id, vs, ms sts))
 
-  | `AST_type_alias (sr, id, vs, t) ->
-    tack (`AST_type_alias (sr,mi sr id,vs, mt sr t))
+  | STMT_type_alias (sr, id, vs, t) ->
+    tack (STMT_type_alias (sr,mi sr id,vs, mt sr t))
 
-  | `AST_inherit (sr, id, vs, t) ->  tack st
-  | `AST_inherit_fun (sr, id, vs, t) ->  tack st
+  | STMT_inherit (sr, id, vs, t) ->  tack st
+  | STMT_inherit_fun (sr, id, vs, t) ->  tack st
 
-  | `AST_ctypes (sr, ids, qs, reqs) ->
+  | STMT_ctypes (sr, ids, qs, reqs) ->
     List.iter
     (fun (sr,id) ->
       let id = mi sr id in
-      let st = `AST_abs_decl (sr,id, dfltvs, qs, `Str id, rqmap reqs) in
+      let st = STMT_abs_decl (sr,id, dfltvs, qs, `Str id, rqmap reqs) in
       tack st
     )
     ids
 
-  | `AST_abs_decl (sr,id,vs,typs,v,rqs) ->
-    tack (`AST_abs_decl (sr,mi sr id,vs,typs,v, rqmap rqs))
+  | STMT_abs_decl (sr,id,vs,typs,v,rqs) ->
+    tack (STMT_abs_decl (sr,mi sr id,vs,typs,v, rqmap rqs))
 
-  | `AST_newtype (sr,id,vs,t) ->
-    tack (`AST_newtype (sr,mi sr id,vs,mt sr t))
+  | STMT_newtype (sr,id,vs,t) ->
+    tack (STMT_newtype (sr,mi sr id,vs,mt sr t))
 
-  | `AST_callback_decl (sr,id,args,ret,rqs) ->
-    tack (`AST_callback_decl (sr,mi sr id, List.map (mt sr) args,mt sr ret,rqmap rqs))
+  | STMT_callback_decl (sr,id,args,ret,rqs) ->
+    tack (STMT_callback_decl (sr,mi sr id, List.map (mt sr) args,mt sr ret,rqmap rqs))
 
-  | `AST_const_decl (sr, id, vs, t, c, reqs) ->
-     tack (`AST_const_decl (sr, mi sr id, vs, mt sr t, c, rqmap reqs))
+  | STMT_const_decl (sr, id, vs, t, c, reqs) ->
+     tack (STMT_const_decl (sr, mi sr id, vs, mt sr t, c, rqmap reqs))
 
-  | `AST_fun_decl (sr, id, vs, ts, t, c, reqs,prec) ->
-    tack (`AST_fun_decl (sr, mi sr id, vs, List.map (mt sr) ts, mt sr t, c, rqmap reqs,prec))
+  | STMT_fun_decl (sr, id, vs, ts, t, c, reqs,prec) ->
+    tack (STMT_fun_decl (sr, mi sr id, vs, List.map (mt sr) ts, mt sr t, c, rqmap reqs,prec))
 
-  | `AST_insert (sr, n, vs, s, ikind, reqs) ->
-    tack (`AST_insert (sr,n,vs,s, ikind, rqmap reqs))
+  | STMT_insert (sr, n, vs, s, ikind, reqs) ->
+    tack (STMT_insert (sr,n,vs,s, ikind, rqmap reqs))
 
     (*
       NOTE: c code is embedded even  though it isn't
       reachable because it might contain declarations or
       even labels
     *)
-  | `AST_code (sr, s) ->
+  | STMT_code (sr, s) ->
     tack st;
     reachable := true
 
-  | `AST_noreturn_code (sr, s) ->
+  | STMT_noreturn_code (sr, s) ->
     tack st;
     reachable := false
 
   (* IDENTIFIER RENAMING NOT SUPPORTED IN EXPORT *)
-  | `AST_export_python_fun (sr, sn, s) ->  tack st
-  | `AST_export_fun (sr, sn, s) ->  tack st
-  | `AST_export_type (sr, sn, s) ->  tack st
+  | STMT_export_python_fun (sr, sn, s) ->  tack st
+  | STMT_export_fun (sr, sn, s) ->  tack st
+  | STMT_export_type (sr, sn, s) ->  tack st
 
-  | `AST_label (sr, id) ->
+  | STMT_label (sr, id) ->
     reachable:=true;
-    tack (`AST_label (sr, mi sr id))
+    tack (STMT_label (sr, mi sr id))
 
-  | `AST_goto (sr, id) ->
-    ctack (`AST_goto (sr, mi sr id));
+  | STMT_goto (sr, id) ->
+    ctack (STMT_goto (sr, mi sr id));
     reachable := false
 
-  | `AST_svc (sr, id) ->  ctack (`AST_svc (sr, mi sr id))
-  | `AST_proc_return (sr)  ->  ctack st; reachable := false
-  | `AST_halt (sr,s)  ->  ctack st; reachable := false
-  | `AST_trace (sr,v,s)  ->  ctack st
-  | `AST_nop (sr, s) ->  ()
+  | STMT_svc (sr, id) ->  ctack (STMT_svc (sr, mi sr id))
+  | STMT_proc_return (sr)  ->  ctack st; reachable := false
+  | STMT_halt (sr,s)  ->  ctack st; reachable := false
+  | STMT_trace (sr,v,s)  ->  ctack st
+  | STMT_nop (sr, s) ->  ()
 
-  | `AST_reduce (sr, id, vs, ps, e1, e2) ->
+  | STMT_reduce (sr, id, vs, ps, e1, e2) ->
     let ps = List.map (fun (s,t)-> s,mt sr t) ps in
-    tack(`AST_reduce (sr, mi sr id, vs, ps, me e1, me e2))
+    tack(STMT_reduce (sr, mi sr id, vs, ps, me e1, me e2))
 
-  | `AST_axiom (sr, id, vs, psp, e1) ->
+  | STMT_axiom (sr, id, vs, psp, e1) ->
     let e1 = match e1 with
       | `Predicate e -> `Predicate (me e)
       | `Equation (l,r) -> `Equation (me l, me r)
     in
-    tack(`AST_axiom (sr, mi sr id, vs, mpsp sr psp, e1))
+    tack(STMT_axiom (sr, mi sr id, vs, mpsp sr psp, e1))
 
-  | `AST_lemma (sr, id, vs, psp, e1) ->
+  | STMT_lemma (sr, id, vs, psp, e1) ->
     let e1 = match e1 with
       | `Predicate e -> `Predicate (me e)
       | `Equation (l,r) -> `Equation (me l, me r)
     in
-    tack(`AST_lemma (sr, mi sr id, vs, mpsp sr psp, e1))
+    tack(STMT_lemma (sr, mi sr id, vs, mpsp sr psp, e1))
 
-  | `AST_function (sr, id, vs, psp, (t,post), props, sts ) ->
+  | STMT_function (sr, id, vs, psp, (t,post), props, sts ) ->
     let pr = List.map (fun (x,y,z,d)->y) (fst psp) in
     let post = meopt post in
-    tack(`AST_function (sr, mi sr id, vs, mpsp sr psp, (mt sr t, post), props, msp sr pr sts ))
+    tack(STMT_function (sr, mi sr id, vs, mpsp sr psp, (mt sr t, post), props, msp sr pr sts ))
 
-  | `AST_curry (sr,id,vs,pss,(ret,post),kind,sts) ->
+  | STMT_curry (sr,id,vs,pss,(ret,post),kind,sts) ->
     let pr = List.map (fun(x,y,z,d)->y) (List.concat (List.map fst pss)) in
     let post = match post with | None -> None | Some x -> Some (me x) in
     let pss = List.map (fun psp -> mpsp sr psp) pss in
-    tack(`AST_curry(sr, mi sr id, vs, pss, (ret,post),kind, msp sr pr sts ))
+    tack(STMT_curry(sr, mi sr id, vs, pss, (ret,post),kind, msp sr pr sts ))
 
-  | `AST_val_decl (sr, id, vs, optt, opte) ->
+  | STMT_val_decl (sr, id, vs, optt, opte) ->
     let opte = match opte with
     | Some x -> Some (me x)
         (*
@@ -1043,9 +1043,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     | Some t -> Some (mt sr t)
     | None -> None
     in
-      tack (`AST_val_decl (sr, mi sr id, vs, optt, opte))
+      tack (STMT_val_decl (sr, mi sr id, vs, optt, opte))
 
-  | `AST_ref_decl (sr, id, vs, optt, opte) ->
+  | STMT_ref_decl (sr, id, vs, optt, opte) ->
     let opte = match opte with
     | Some x -> Some (me x)
         (*
@@ -1062,9 +1062,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     | Some t -> Some (mt sr t)
     | None -> None
     in
-      tack (`AST_ref_decl (sr, mi sr id, vs, optt, opte))
+      tack (STMT_ref_decl (sr, mi sr id, vs, optt, opte))
 
-  | `AST_lazy_decl (sr, id, vs, optt, opte) ->
+  | STMT_lazy_decl (sr, id, vs, optt, opte) ->
     let opte = match opte with
     | Some x -> Some (me x)
         (*
@@ -1081,9 +1081,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     | Some t -> Some (mt sr t)
     | None -> None
     in
-      tack (`AST_lazy_decl (sr, mi sr id, vs, optt, opte))
+      tack (STMT_lazy_decl (sr, mi sr id, vs, optt, opte))
 
-  | `AST_var_decl (sr, id, vs, optt, opte) ->
+  | STMT_var_decl (sr, id, vs, optt, opte) ->
     let opte =
       match opte with
       | Some x -> Some (me x)
@@ -1096,12 +1096,12 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     | Some t -> Some (mt sr t)
     | None -> None
     in
-      tack (`AST_var_decl (sr, mi sr id, vs, optt, opte))
+      tack (STMT_var_decl (sr, mi sr id, vs, optt, opte))
 
-  | `AST_untyped_module (sr, id, vs, sts) ->
-    tack (`AST_untyped_module (sr, mi sr id, vs, ms sts))
+  | STMT_untyped_module (sr, id, vs, sts) ->
+    tack (STMT_untyped_module (sr, mi sr id, vs, ms sts))
 
-  | `AST_stmt_match (sr, (e, pss)) ->
+  | STMT_stmt_match (sr, (e, pss)) ->
     (* note hack, not protecting pattern vars in stmts like ordinary match,
     just laziness 
     *)
@@ -1111,29 +1111,29 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       )
       pss 
     in
-    tack (`AST_stmt_match (sr, (me e, pss)))
+    tack (STMT_stmt_match (sr, (me e, pss)))
     
-  | `AST_instance (sr, vs, qn, sts) ->
-    tack (`AST_instance (sr, vs, mq qn, ms sts))
+  | STMT_instance (sr, vs, qn, sts) ->
+    tack (STMT_instance (sr, vs, mq qn, ms sts))
 
-  | `AST_ifgoto (sr, e , id) ->
+  | STMT_ifgoto (sr, e , id) ->
     let e = me e in
     let e = cf e in
     begin match e with
     | EXPR_typed_case (_,c,TYP_unitsum 2) ->
       if c = 1 then
       (
-        ctack (`AST_goto (sr,mi sr id));
+        ctack (STMT_goto (sr,mi sr id));
         reachable := false
       )
     | _ ->
-      ctack (`AST_ifgoto (sr, e, mi sr id))
+      ctack (STMT_ifgoto (sr, e, mi sr id))
     end
 
-  | `AST_init (sr,v,e) ->
-    ctack (`AST_init (sr, mi sr v, me e))
+  | STMT_init (sr,v,e) ->
+    ctack (STMT_init (sr, mi sr v, me e))
 
-  | `AST_assert (sr,e) ->
+  | STMT_assert (sr,e) ->
     let e = me e in
     begin match e with
     | EXPR_typed_case (_,c,TYP_unitsum 2) ->
@@ -1142,31 +1142,31 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       else (* assertion proven false *)
         begin
           reachable := false;
-          ctack (`AST_assert (sr,e))
+          ctack (STMT_assert (sr,e))
         end
 
     | _ -> (* check at run time *)
-        ctack (`AST_assert (sr,e))
+        ctack (STMT_assert (sr,e))
     end
 
-  | `AST_ifreturn (sr, e) ->
+  | STMT_ifreturn (sr, e) ->
     let e = me e in
     begin match e with
     | EXPR_typed_case (_,c,TYP_unitsum 2) ->
       if c = 1 then
       (
-        ctack (`AST_proc_return sr);
+        ctack (STMT_proc_return sr);
         reachable := false
       )
     | _ ->
       let n = !seq in incr seq;
       let lab = "_ifret_" ^ string_of_int n in
-      ctack (`AST_ifgoto (sr, EXPR_apply(sr,(EXPR_name (sr,"lnot",[]), e)), lab));
-      ctack (`AST_proc_return sr);
-      ctack (`AST_label (sr,lab))
+      ctack (STMT_ifgoto (sr, EXPR_apply(sr,(EXPR_name (sr,"lnot",[]), e)), lab));
+      ctack (STMT_proc_return sr);
+      ctack (STMT_label (sr,lab))
     end
 
-  | `AST_ifdo (sr, e, sts1, sts2) ->
+  | STMT_ifdo (sr, e, sts1, sts2) ->
     let e = me e in
     let e = cf e in
     begin match e with
@@ -1193,34 +1193,34 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
          So we must tack, not ctack, the code of the inner
          compound statements, they're NOT blocks.
       *)
-      ctack (`AST_ifgoto (sr, EXPR_apply (sr,(EXPR_name (sr,"lnot",[]),e)), lab1));
+      ctack (STMT_ifgoto (sr, EXPR_apply (sr,(EXPR_name (sr,"lnot",[]),e)), lab1));
       let r1 = ref !reachable in
       List.iter tack (ms' r1 sts1);
-      if !r1 then tack (`AST_goto (sr,lab2));
+      if !r1 then tack (STMT_goto (sr,lab2));
 
       (* this is a ctack, because it can only be targetted by prior ifnotgoto *)
-      ctack (`AST_label (sr,lab1));
+      ctack (STMT_label (sr,lab1));
       let r2 = ref !reachable in
       List.iter tack (ms' r2 sts2);
-      if !r1 then tack (`AST_label (sr,lab2));
+      if !r1 then tack (STMT_label (sr,lab2));
       reachable := !r1 or !r2
     end
 
 
-  | `AST_jump (sr, e1, e2) ->
-    ctack (`AST_jump (sr, me e1, me e2));
+  | STMT_jump (sr, e1, e2) ->
+    ctack (STMT_jump (sr, me e1, me e2));
     reachable := false
 
-  | `AST_loop (sr, id, e2) ->
-    ctack (`AST_loop (sr, mi sr id, me e2));
+  | STMT_loop (sr, id, e2) ->
+    ctack (STMT_loop (sr, mi sr id, me e2));
     reachable := false
 
-  | `AST_fun_return (sr, e)  ->
-    ctack (`AST_fun_return (sr, me e));
+  | STMT_fun_return (sr, e)  ->
+    ctack (STMT_fun_return (sr, me e));
     reachable := false
 
-  | `AST_yield (sr, e)  ->
-    ctack (`AST_yield (sr, me e))
+  | STMT_yield (sr, e)  ->
+    ctack (STMT_yield (sr, me e))
 
   | st -> failwith ("[subst_or_expand] Unhandled case " ^ string_of_statement 0 st)
   end
@@ -1257,55 +1257,55 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
   let cf e = const_fold e in
 
   begin match st with
-  | `AST_expr_macro (sr, id, ps, e) ->
+  | STMT_expr_macro (sr, id, ps, e) ->
     let ps,e = alpha_expr sr local_prefix seq ps e in
-    tack (`AST_expr_macro (sr, mi sr id, ps, me e))
+    tack (STMT_expr_macro (sr, mi sr id, ps, me e))
 
-  | `AST_stmt_macro (sr, id, ps, sts) ->
+  | STMT_stmt_macro (sr, id, ps, sts) ->
     let ps,sts = alpha_stmts sr local_prefix seq ps sts in
     let sts = expand_statements recursion_limit local_prefix seq (ref true) macros sts in
-    tack (`AST_stmt_macro (sr,id,ps,sts))
+    tack (STMT_stmt_macro (sr,id,ps,sts))
 
-  | `AST_macro_block (sr, sts) ->
+  | STMT_macro_block (sr, sts) ->
     (*
     let sts = expand_statements recursion_limit local_prefix seq (ref true) macros sts in
     *)
     let sts = mss sts in
-    tack (`AST_macro_block (sr,sts))
+    tack (STMT_macro_block (sr,sts))
 
-  | `AST_macro_name (sr, id1, id2) ->
+  | STMT_macro_name (sr, id1, id2) ->
     (* IN THIS SPECIAL CASE THE LHS NAME IS NOT MAPPED *)
-    tack (`AST_macro_name (sr, id1, mi sr id2))
+    tack (STMT_macro_name (sr, id1, mi sr id2))
 
-  | `AST_macro_names (sr, id1, id2) ->
+  | STMT_macro_names (sr, id1, id2) ->
     (* IN THIS SPECIAL CASE THE LHS NAME IS NOT MAPPED *)
-    tack (`AST_macro_names (sr, id1, List.map (mi sr) id2))
+    tack (STMT_macro_names (sr, id1, List.map (mi sr) id2))
 
-  | `AST_macro_val (sr, ids, e) ->
-    tack (`AST_macro_val (sr, List.map (mi sr) ids, me e))
+  | STMT_macro_val (sr, ids, e) ->
+    tack (STMT_macro_val (sr, List.map (mi sr) ids, me e))
 
-  | `AST_macro_vals (sr, id, e) ->
-    tack (`AST_macro_vals (sr,mi sr id, List.map me e))
+  | STMT_macro_vals (sr, id, e) ->
+    tack (STMT_macro_vals (sr,mi sr id, List.map me e))
 
-  | `AST_macro_var (sr, ids, e) ->
-    tack (`AST_macro_var (sr, List.map (mi sr) ids, me e))
+  | STMT_macro_var (sr, ids, e) ->
+    tack (STMT_macro_var (sr, List.map (mi sr) ids, me e))
 
-  | `AST_macro_assign (sr, ids, e) ->
-    tack (`AST_macro_assign (sr, List.map (mi sr) ids, me e))
+  | STMT_macro_assign (sr, ids, e) ->
+    tack (STMT_macro_assign (sr, List.map (mi sr) ids, me e))
 
-  | `AST_macro_ifor (sr,id,ids,sts) ->
+  | STMT_macro_ifor (sr,id,ids,sts) ->
     (* IN THIS SPECIAL CASE THE LHS NAME IS NOT MAPPED *)
-    tack (`AST_macro_ifor (sr,id, List.map (mi sr) ids,mss sts))
+    tack (STMT_macro_ifor (sr,id, List.map (mi sr) ids,mss sts))
 
-  | `AST_macro_vfor (sr,ids,e,sts) ->
-    tack (`AST_macro_vfor (sr, List.map (mi sr) ids,me e,mss sts))
+  | STMT_macro_vfor (sr,ids,e,sts) ->
+    tack (STMT_macro_vfor (sr, List.map (mi sr) ids,me e,mss sts))
 
   (* during parameter replacement,
     we don't know if a call is executable or not,
     so we can't elide it even if unreachable:
     it might expand to declarations or macros
   *)
-  | `AST_call (sr, (EXPR_name(srn,name,[]) as e1), e2) ->
+  | STMT_call (sr, (EXPR_name(srn,name,[]) as e1), e2) ->
     (* let e1 = EXPR_name(srn, name,[]) in *)
     begin try
       match List.assoc name macros with
@@ -1315,15 +1315,15 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
 *)
         List.iter tack (mss b)
       | _ ->
-        tack (`AST_call (sr, me e1, me e2))
+        tack (STMT_call (sr, me e1, me e2))
     with Not_found ->
-      tack (`AST_call (sr, me e1, me e2))
+      tack (STMT_call (sr, me e1, me e2))
     end
 
-  | `AST_call (sr, e1, e2) ->
-    tack (`AST_call (sr, me e1, me e2))
+  | STMT_call (sr, e1, e2) ->
+    tack (STMT_call (sr, me e1, me e2))
 
-  | `AST_user_statement (sr,name,term) ->
+  | STMT_user_statement (sr,name,term) ->
     (*
     print_endline ("Replacing into user statement call " ^ name);
     *)
@@ -1339,18 +1339,18 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
       (* invariant -- for the moment *)
       | Keyword_term _ -> term
     in
-    tack (`AST_user_statement (sr,name,aux term))
+    tack (STMT_user_statement (sr,name,aux term))
 
-  | `AST_macro_ifgoto (sr,e,id) ->
+  | STMT_macro_ifgoto (sr,e,id) ->
     (*
     print_endline ("Substituting if/goto " ^ string_of_expr e);
     *)
-    tack (`AST_macro_ifgoto (sr, cf (me e), mi sr id))
+    tack (STMT_macro_ifgoto (sr, cf (me e), mi sr id))
 
-  | `AST_macro_label _
-  | `AST_macro_goto _
-  | `AST_macro_proc_return _
-  | `AST_macro_forget _
+  | STMT_macro_label _
+  | STMT_macro_goto _
+  | STMT_macro_proc_return _
+  | STMT_macro_forget _
     -> tack st
 
   | st ->
@@ -1443,7 +1443,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     )
   in
   begin match st with
-  | `AST_macro_forget (sr,ids) ->
+  | STMT_macro_forget (sr,ids) ->
     begin
       match ids with
       | [] -> ref_macros := []
@@ -1451,11 +1451,11 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
         ref_macros := List.filter (fun (x,_) -> not (List.mem x ids)) !ref_macros
     end
 
-  | `AST_expr_macro (sr, id, ps, e) ->
+  | STMT_expr_macro (sr, id, ps, e) ->
     let ps,e = alpha_expr sr local_prefix seq ps e in
     ref_macros := (id,MExpr (ps, e)) :: !ref_macros
 
-  | `AST_macro_val (sr, ids, e) ->
+  | STMT_macro_val (sr, ids, e) ->
     let e = me e in
     let n = List.length ids in
     if n = 1 then
@@ -1482,10 +1482,10 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       ides
     end
 
-  | `AST_macro_vals (sr, id, es) ->
+  | STMT_macro_vals (sr, id, es) ->
     ref_macros := (id,MVals (List.map me es)) :: !ref_macros
 
-  | `AST_macro_var (sr, ids, e) ->
+  | STMT_macro_var (sr, ids, e) ->
     let e = me e in
     let n = List.length ids in
     if n = 1 then
@@ -1512,7 +1512,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       ides
     end
 
-  | `AST_macro_assign (sr, ids, e) ->
+  | STMT_macro_assign (sr, ids, e) ->
     let assign id e =
       try
         let r = List.assoc id (!ref_macros @ macros) in
@@ -1543,7 +1543,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       List.iter (fun (id,v) -> assign id v) ides
     end
 
-  | `AST_macro_ifor (sr, id, names, sts) ->
+  | STMT_macro_ifor (sr, id, names, sts) ->
     let names = expand_names sr names in
     List.iter (fun name ->
       let saved_macros = !ref_macros in
@@ -1552,7 +1552,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       ref_macros := saved_macros
     ) names
 
-  | `AST_macro_vfor (sr, ids, e, sts) ->
+  | STMT_macro_vfor (sr, ids, e, sts) ->
     (*
     print_endline "Expanding vfor";
     *)
@@ -1600,11 +1600,11 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       ref_macros := saved_macros
     ) vals
 
-  | `AST_stmt_macro (sr, id, ps, sts) ->
+  | STMT_stmt_macro (sr, id, ps, sts) ->
     let ps,sts = alpha_stmts sr local_prefix seq ps sts in
     ref_macros := (id, MStmt (ps,sts)) :: !ref_macros
 
-  | `AST_macro_name (sr, id1, id2) ->
+  | STMT_macro_name (sr, id1, id2) ->
     let id2 = mi sr id2 in
     let id2 =
       match id2 with
@@ -1615,11 +1615,11 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     in
     ref_macros := (id1,MName id2) :: !ref_macros
 
-  | `AST_macro_names (sr, id, ids) ->
+  | STMT_macro_names (sr, id, ids) ->
     let ids = List.map (mi sr) ids in
     ref_macros := (id,MNames ids) :: !ref_macros
 
-  | `AST_macro_block (sr,sts) ->
+  | STMT_macro_block (sr,sts) ->
     let b = subst_statements recursion_limit local_prefix seq reachable [] sts in
     (* NOTE SPECIAL HACK -- ANY MACROS DEFINED IN A MACRO BLOCK ARE LOST *)
     let ses ss =
@@ -1628,7 +1628,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     let b = ses b in
     List.iter ctack b
 
-  | `AST_call (sr, EXPR_macro_statements (srs,sts), arg) ->
+  | STMT_call (sr, EXPR_macro_statements (srs,sts), arg) ->
     begin match arg with
     | EXPR_tuple (_,[]) ->
       let sts = ms sts in
@@ -1637,7 +1637,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     | _ -> clierr sr "Apply statements requires unit arg"
     end
 
-  | `AST_call (sr,
+  | STMT_call (sr,
       EXPR_name(srn,"_scheme", []),
       EXPR_literal (srl, AST_string s)
     ) ->
@@ -1686,7 +1686,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
         ctack flx
     end
 
-  | `AST_call (sr, e1', e2') ->
+  | STMT_call (sr, e1', e2') ->
     let
       e1 = me e1' and
       e2 = me e2'
@@ -1753,7 +1753,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
             *)
             let result = me (EXPR_apply (sr,(e1,e2))) in
             let u = EXPR_tuple (sr,[]) in
-            List.iter tack (ms [`AST_call(sr,result,u)])
+            List.iter tack (ms [STMT_call(sr,result,u)])
 
           | MStmt(ps,b) ->
             (*
@@ -1784,13 +1784,13 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
               )
         with
         | Not_found ->
-          ctack (`AST_call (sr, e1, e2))
+          ctack (STMT_call (sr, e1, e2))
         end
 
-      | _ -> ctack (`AST_call (sr,e1,e2))
+      | _ -> ctack (STMT_call (sr,e1,e2))
       end
 
-  | `AST_user_statement (sr,name,term) ->
+  | STMT_user_statement (sr,name,term) ->
     (*
     print_endline ("Expanding statement " ^ name);
     *)
@@ -1887,7 +1887,7 @@ and special_expand_statements recursion_limit local_prefix seq
     List.fold_left
     (fun count x ->
       match x with
-      | `AST_macro_label (sr,s) ->
+      | STMT_macro_label (sr,s) ->
         Hashtbl.add label_map s (sr,count) ; count
       | _ -> count+1
     )
@@ -1898,7 +1898,7 @@ and special_expand_statements recursion_limit local_prefix seq
     Array.of_list
     (
       List.filter
-      (function | `AST_macro_label _ -> false | _ -> true)
+      (function | STMT_macro_label _ -> false | _ -> true)
       ss
     )
   in
@@ -1916,7 +1916,7 @@ and special_expand_statements recursion_limit local_prefix seq
         )
       in
       begin match st with
-      | `AST_macro_goto (sr,label) ->
+      | STMT_macro_goto (sr,label) ->
         begin
           try
             pc := snd (Hashtbl.find label_map label)
@@ -1925,9 +1925,9 @@ and special_expand_statements recursion_limit local_prefix seq
             clierr sr ("Undefined macro label " ^ label)
         end
 
-      | `AST_macro_proc_return _ -> raise Macro_return
+      | STMT_macro_proc_return _ -> raise Macro_return
 
-      | `AST_macro_ifgoto (sr,e,label) ->
+      | STMT_macro_ifgoto (sr,e,label) ->
         (*
         print_endline ("Expanding if/goto " ^ string_of_expr e);
         *)

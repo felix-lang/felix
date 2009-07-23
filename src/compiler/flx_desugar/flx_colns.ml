@@ -146,16 +146,16 @@ let rec collate_namespaces syms sts =
    (fun (_,{name=name; sr=sr; vs=vs; fudges=fudges}) ->
      let sts =
        rev_map
-       (fun fudge -> `AST_inject_module (sr,`AST_name (sr,fudge,map_vs sr vs)))
+       (fun fudge -> STMT_inject_module (sr,`AST_name (sr,fudge,map_vs sr vs)))
        !fudges
      in
-     `AST_untyped_module (sr,name,vs,sts)
+     STMT_untyped_module (sr,name,vs,sts)
    )
    nslist
    @
    rev stsout
 
- | `AST_include (sr,inspec) :: tail ->
+ | STMT_include (sr,inspec) :: tail ->
     let sts = include_file syms inspec in
     cn (sts @ tail) stsout nslist
 

@@ -223,7 +223,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
      | [params,traint] ->
        (* constraint is ignored for now!! *)
        begin match body with
-       | [`AST_fun_return (_,e)] ->
+       | [STMT_fun_return (_,e)] ->
          begin
            try
              let t = typecode_of_expr e in

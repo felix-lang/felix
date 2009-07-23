@@ -564,61 +564,61 @@ and xstatement_t sr x : statement_t =
   let xp x = xpattern_t sr x in
   let lnot sr x = EXPR_apply (sr,(EXPR_name (sr,"lnot",[]),x)) in
   match x with
-  | Lst [] -> `AST_nop(sr,"null")
-  | Lst [Id "ast_include"; sr; Str s] -> `AST_include (xsr sr, ss s)
-  | Lst [Id "ast_open"; sr; vs; qn] -> `AST_open (xsr sr, xvs vs, xq "ast_open" qn)
-  | Lst [Id "ast_inject_module"; sr; qn] -> `AST_inject_module (xsr sr, xq "ast_inject_module" qn)
-  | Lst [Id "ast_use"; sr; Str s; qn] -> `AST_use (xsr sr, ss s, xq "ast_use" qn)
-  | Lst [Id "ast_comment"; sr; Str s] -> `AST_comment(xsr sr, ss s)
-  | Lst [Id "ast_private"; x] -> `AST_private (sr, xs x)
+  | Lst [] -> STMT_nop(sr,"null")
+  | Lst [Id "ast_include"; sr; Str s] -> STMT_include (xsr sr, ss s)
+  | Lst [Id "ast_open"; sr; vs; qn] -> STMT_open (xsr sr, xvs vs, xq "ast_open" qn)
+  | Lst [Id "ast_inject_module"; sr; qn] -> STMT_inject_module (xsr sr, xq "ast_inject_module" qn)
+  | Lst [Id "ast_use"; sr; Str s; qn] -> STMT_use (xsr sr, ss s, xq "ast_use" qn)
+  | Lst [Id "ast_comment"; sr; Str s] -> STMT_comment(xsr sr, ss s)
+  | Lst [Id "ast_private"; x] -> STMT_private (sr, xs x)
   | Lst [Id "ast_reduce"; sr; Str s; vs; spl; e1; e2] ->
-    `AST_reduce (xsr sr,ss s,xvs vs, xpvs spl, ex e1, ex e2)
+    STMT_reduce (xsr sr,ss s,xvs vs, xpvs spl, ex e1, ex e2)
   | Lst [Id "ast_axiom"; sr; Str s; vs; ps; axm] ->
-    `AST_axiom (xsr sr,ss s,xvs vs, xps ps,xam axm)
+    STMT_axiom (xsr sr,ss s,xvs vs, xps ps,xam axm)
   | Lst [Id "ast_lemma"; sr; Str s; vs; ps; axm] ->
-    `AST_lemma(xsr sr,ss s,xvs vs, xps ps,xam axm)
+    STMT_lemma(xsr sr,ss s,xvs vs, xps ps,xam axm)
   | Lst [Id "ast_function"; Str s; vs; ps; ret; props; sts] ->
-    `AST_function(sr,ss s,xvs vs, xps ps,xret ret, xprops props, xsts sts)
+    STMT_function(sr,ss s,xvs vs, xps ps,xret ret, xprops props, xsts sts)
   | Lst [Id "ast_curry"; sr; Str s; vs; Lst pss; ret; fk; sts] ->
-    `AST_curry(xsr sr,ss s,xvs vs, map xps pss,xret ret, xfk fk, xsts sts)
+    STMT_curry(xsr sr,ss s,xvs vs, map xps pss,xret ret, xfk fk, xsts sts)
 
-  | Lst [Id "ast_macro_name"; Str n; Str m] -> `AST_macro_name (sr,n,m)
+  | Lst [Id "ast_macro_name"; Str n; Str m] -> STMT_macro_name (sr,n,m)
   | Lst [Id "ast_macro_names"; Str n; ms] ->
-    `AST_macro_names (sr,n,lst "ast_macro_names" xid ms)
+    STMT_macro_names (sr,n,lst "ast_macro_names" xid ms)
   | Lst [Id "ast_expr_macro"; Str n; mps; e] ->
-    `AST_expr_macro (sr,n, xmps mps, ex e)
+    STMT_expr_macro (sr,n, xmps mps, ex e)
   | Lst [Id "ast_stmt_macro"; Str n; mps; stmts] ->
-    `AST_stmt_macro (sr,n, xmps mps, xsts stmts)
+    STMT_stmt_macro (sr,n, xmps mps, xsts stmts)
   | Lst [Id "ast_macro_block"; sts] ->
-    `AST_macro_block (sr, xsts sts)
+    STMT_macro_block (sr, xsts sts)
   | Lst [Id "ast_macro_val"; ids; v] ->
-    `AST_macro_val (sr, lst "ast_macro_val" xid ids, ex v)
+    STMT_macro_val (sr, lst "ast_macro_val" xid ids, ex v)
   | Lst [Id "ast_macro_vals"; Str n; es] ->
-    `AST_macro_vals (sr, n, lst "macro_vals" ex es)
+    STMT_macro_vals (sr, n, lst "macro_vals" ex es)
   | Lst [Id "ast_macro_var"; ids; v] ->
-    `AST_macro_var (sr, lst "ast_macro_var" xid ids, ex v)
+    STMT_macro_var (sr, lst "ast_macro_var" xid ids, ex v)
   | Lst [Id "ast_macro_assign"; ids; v] ->
-    `AST_macro_assign (sr, lst "ast_macro_assign" xid ids, ex v)
+    STMT_macro_assign (sr, lst "ast_macro_assign" xid ids, ex v)
   | Lst [Id "ast_macro_forget"; ids] ->
-    `AST_macro_forget (sr, lst "ast_macro_forget" xid ids)
+    STMT_macro_forget (sr, lst "ast_macro_forget" xid ids)
   | Lst [Id "ast_macro_label"; Str n] ->
-    `AST_macro_label (sr, n)
+    STMT_macro_label (sr, n)
   | Lst [Id "ast_macro_goto"; Str n] ->
-    `AST_macro_goto (sr, n)
+    STMT_macro_goto (sr, n)
   | Lst [Id "ast_macro_ifgoto"; e; Str n] ->
-    `AST_macro_ifgoto (sr, ex e, n)
+    STMT_macro_ifgoto (sr, ex e, n)
   | Id "ast_macro_proc_return" ->
-    `AST_macro_proc_return (sr)
+    STMT_macro_proc_return (sr)
   | Lst [Id "ast_macro_ifor"; Str n; ids; sts] ->
-    `AST_macro_ifor (sr,n,  lst "ast_macro_ifor" xid ids, xsts sts)
+    STMT_macro_ifor (sr,n,  lst "ast_macro_ifor" xid ids, xsts sts)
   | Lst [Id "ast_macro_vfor";ids; e; sts] ->
-    `AST_macro_vfor (sr,lst "ast_macro_vfor" xid ids, ex e, xsts sts)
+    STMT_macro_vfor (sr,lst "ast_macro_vfor" xid ids, ex e, xsts sts)
   | Lst [Id "ast_seq"; sr; sts] ->
-    `AST_seq (xsr sr,xsts sts)
+    STMT_seq (xsr sr,xsts sts)
 
   | Lst [Id "ast_union"; sr; Str n; vs; ucmp] ->
     let ucmp = lst "union component" xucmp ucmp in
-    `AST_union (xsr sr,n, xvs vs, ucmp)
+    STMT_union (xsr sr,n, xvs vs, ucmp)
 
   | Lst [Id "ast_struct"; sr; Str n; vs; ucmp] ->
     let xscmp = function
@@ -627,7 +627,7 @@ and xstatement_t sr x : statement_t =
       | x -> err x "struct component"
     in
     let ucmp = lst "struct component" xscmp ucmp in
-    `AST_struct (xsr sr,n, xvs vs, ucmp)
+    STMT_struct (xsr sr,n, xvs vs, ucmp)
 
 
   | Lst [Id "ast_cstruct"; sr; Str n; vs; ucmp] ->
@@ -637,10 +637,10 @@ and xstatement_t sr x : statement_t =
       | x -> err x "cstruct component"
     in
     let ucmp = lst "cstruct component" xscmp ucmp in
-    `AST_cstruct (xsr sr,n, xvs vs, ucmp)
+    STMT_cstruct (xsr sr,n, xvs vs, ucmp)
 
   | Lst [Id "ast_type_alias"; sr; Str n; vs; t] ->
-    `AST_type_alias (xsr sr,n, xvs vs, ti t)
+    STMT_type_alias (xsr sr,n, xvs vs, ti t)
 
   | Lst [Id "mktypefun"; sr; Str name; vs; argss; ret; body] ->
     let fixarg  arg = match arg with
@@ -659,28 +659,28 @@ and xstatement_t sr x : statement_t =
     Flx_typing.mktypefun (xsr sr) name (xvs vs) argss (ti ret) (ti body)
 
   | Lst [Id "ast_inherit"; sr; Str n; vs; qn] ->
-    `AST_inherit (xsr sr,n, xvs vs, xq "ast_inherit" qn)
+    STMT_inherit (xsr sr,n, xvs vs, xq "ast_inherit" qn)
 
   | Lst [Id "ast_inherit_fun"; sr; Str n; vs; qn] ->
-    `AST_inherit_fun (xsr sr,n, xvs vs, xq "ast_inherit_fun" qn)
+    STMT_inherit_fun (xsr sr,n, xvs vs, xq "ast_inherit_fun" qn)
 
   | Lst [Id "ast_val_decl"; sr; Str n; vs; ot; oe] ->
-    `AST_val_decl (xsr sr,ss n, xvs vs, opt "val_decl" ti ot, opt "val_decl" ex oe)
+    STMT_val_decl (xsr sr,ss n, xvs vs, opt "val_decl" ti ot, opt "val_decl" ex oe)
 
   | Lst [Id "ast_lazy_decl"; Str n; vs; ot; oe] ->
-    `AST_lazy_decl (sr,ss n, xvs vs, opt "lazy_decl" ti ot, opt "lazy_decl" ex oe)
+    STMT_lazy_decl (sr,ss n, xvs vs, opt "lazy_decl" ti ot, opt "lazy_decl" ex oe)
 
   | Lst [Id "ast_var_decl"; sr; Str n; vs; ot; oe] ->
-    `AST_var_decl (xsr sr,ss n, xvs vs, opt "var_decl" ti ot, opt "var_decl" ex oe)
+    STMT_var_decl (xsr sr,ss n, xvs vs, opt "var_decl" ti ot, opt "var_decl" ex oe)
 
   | Lst [Id "ast_ref_decl"; Str n; vs; ot; oe] ->
-    `AST_ref_decl (sr,ss n, xvs vs, opt "ref_decl" ti ot, opt "ref_decl" ex oe)
+    STMT_ref_decl (sr,ss n, xvs vs, opt "ref_decl" ti ot, opt "ref_decl" ex oe)
 
   | Lst [Id "ast_untyped_module"; sr; Str n; vs; sts] ->
-    `AST_untyped_module (xsr sr, ss n, xvs vs, xsts sts)
+    STMT_untyped_module (xsr sr, ss n, xvs vs, xsts sts)
 
   | Lst [Id "ast_typeclass"; sr; Str n; vs; sts] ->
-    `AST_typeclass(xsr sr, n, xvs vs, xsts sts)
+    STMT_typeclass(xsr sr, n, xvs vs, xsts sts)
 
   | Lst [Id "ast_instance"; sr; vs; qn; sts] ->
     (*
@@ -693,47 +693,47 @@ and xstatement_t sr x : statement_t =
     end
     ;
     *)
-    `AST_instance(xsr sr, xvs vs, xq "ast_instance" qn, xsts sts)
+    STMT_instance(xsr sr, xvs vs, xq "ast_instance" qn, xsts sts)
 
-  | Lst [Id "ast_label"; sr; Str n] -> `AST_label(xsr sr,n)
+  | Lst [Id "ast_label"; sr; Str n] -> STMT_label(xsr sr,n)
 
-  | Lst [Id "ast_goto"; sr; Str n] -> `AST_goto(xsr sr,n)
-  | Lst [Id "ast_ifgoto"; sr; e; Str n] -> `AST_ifgoto(xsr sr,ex e,n)
+  | Lst [Id "ast_goto"; sr; Str n] -> STMT_goto(xsr sr,n)
+  | Lst [Id "ast_ifgoto"; sr; e; Str n] -> STMT_ifgoto(xsr sr,ex e,n)
   | Lst [Id "ast_likely_ifgoto"; sr; e; Str n] ->
-    `AST_ifgoto(xsr sr,EXPR_likely (xsr sr,ex e),n)
+    STMT_ifgoto(xsr sr,EXPR_likely (xsr sr,ex e),n)
 
   | Lst [Id "ast_unlikely_ifgoto"; sr; e; Str n] ->
-    `AST_ifgoto(xsr sr,EXPR_unlikely (xsr sr,ex e),n)
+    STMT_ifgoto(xsr sr,EXPR_unlikely (xsr sr,ex e),n)
 
   | Lst [Id "ast_ifnotgoto"; sr; e; Str n] ->
-    `AST_ifgoto(xsr sr,lnot (xsr sr) (ex e),n)
+    STMT_ifgoto(xsr sr,lnot (xsr sr) (ex e),n)
 
   | Lst [Id "ast_likely_ifnotgoto"; sr; e; Str n] ->
-    `AST_ifgoto(xsr sr,EXPR_likely (xsr sr,lnot (xsr sr) (ex e)),n)
+    STMT_ifgoto(xsr sr,EXPR_likely (xsr sr,lnot (xsr sr) (ex e)),n)
 
   | Lst [Id "ast_unlikely_ifnotgoto"; sr; e; Str n] ->
-    `AST_ifgoto(xsr sr,EXPR_unlikely(xsr sr,lnot (xsr sr) (ex e)),n)
+    STMT_ifgoto(xsr sr,EXPR_unlikely(xsr sr,lnot (xsr sr) (ex e)),n)
 
-  | Lst [Id "ast_ifreturn"; sr; e] -> `AST_ifreturn(xsr sr,ex e)
-  | Lst [Id "ast_ifdo"; sr; e; sts1; sts2] -> `AST_ifdo(xsr sr,ex e, xsts sts1, xsts sts2)
-  | Lst [Id "ast_call"; sr; f; a] -> `AST_call(xsr sr,ex f,ex a)
-  | Lst [Id "ast_assign"; sr; Id v; tlv; a] -> `AST_assign(xsr sr,v,xtlv tlv,ex a)
-  | Lst [Id "ast_cassign"; sr; e1; e2] -> `AST_cassign(xsr sr,ex e1, ex e2)
-  | Lst [Id "ast_jump"; sr; e1; e2] -> `AST_jump(xsr sr,ex e1, ex e2)
-  | Lst [Id "ast_loop"; sr; Str n; e2] -> `AST_loop(xsr sr,n, ex e2)
-  | Lst [Id "ast_svc"; sr; Str n] -> `AST_svc(xsr sr,n)
-  | Lst [Id "ast_fun_return"; sr; e] -> `AST_fun_return(xsr sr,ex e)
+  | Lst [Id "ast_ifreturn"; sr; e] -> STMT_ifreturn(xsr sr,ex e)
+  | Lst [Id "ast_ifdo"; sr; e; sts1; sts2] -> STMT_ifdo(xsr sr,ex e, xsts sts1, xsts sts2)
+  | Lst [Id "ast_call"; sr; f; a] -> STMT_call(xsr sr,ex f,ex a)
+  | Lst [Id "ast_assign"; sr; Id v; tlv; a] -> STMT_assign(xsr sr,v,xtlv tlv,ex a)
+  | Lst [Id "ast_cassign"; sr; e1; e2] -> STMT_cassign(xsr sr,ex e1, ex e2)
+  | Lst [Id "ast_jump"; sr; e1; e2] -> STMT_jump(xsr sr,ex e1, ex e2)
+  | Lst [Id "ast_loop"; sr; Str n; e2] -> STMT_loop(xsr sr,n, ex e2)
+  | Lst [Id "ast_svc"; sr; Str n] -> STMT_svc(xsr sr,n)
+  | Lst [Id "ast_fun_return"; sr; e] -> STMT_fun_return(xsr sr,ex e)
 
-  | Lst [Id "ast_yield"; sr; e] -> `AST_yield(xsr sr,ex e)
-  | Lst [Id "ast_proc_return"; sr]  -> `AST_proc_return(xsr sr)
-  | Lst [Id "ast_halt"; sr; Str s] -> `AST_halt(xsr sr, ss s)
-  | Lst [Id "ast_trace"; sr; Str n; Str s] -> `AST_trace(xsr sr, ss n, ss s)
-  | Lst [Id "ast_nop"; sr; Str s] -> `AST_nop(xsr sr,ss s)
-  | Lst [Id "ast_assert"; sr; e] -> `AST_assert(xsr sr,ex e)
-  | Lst [Id "ast_init"; sr; Str n; e] -> `AST_init(xsr sr,n,ex e)
-  | Lst [Id "ast_newtype"; sr; Str n; vs; t] -> `AST_newtype(xsr sr,n,xvs vs, ti t)
+  | Lst [Id "ast_yield"; sr; e] -> STMT_yield(xsr sr,ex e)
+  | Lst [Id "ast_proc_return"; sr]  -> STMT_proc_return(xsr sr)
+  | Lst [Id "ast_halt"; sr; Str s] -> STMT_halt(xsr sr, ss s)
+  | Lst [Id "ast_trace"; sr; Str n; Str s] -> STMT_trace(xsr sr, ss n, ss s)
+  | Lst [Id "ast_nop"; sr; Str s] -> STMT_nop(xsr sr,ss s)
+  | Lst [Id "ast_assert"; sr; e] -> STMT_assert(xsr sr,ex e)
+  | Lst [Id "ast_init"; sr; Str n; e] -> STMT_init(xsr sr,n,ex e)
+  | Lst [Id "ast_newtype"; sr; Str n; vs; t] -> STMT_newtype(xsr sr,n,xvs vs, ti t)
   | Lst [Id "ast_abs_decl"; sr; Str n; vs; tqs; ct; req] ->
-    `AST_abs_decl (xsr sr,n,xvs vs, xtqs tqs, xc ct, xrr req)
+    STMT_abs_decl (xsr sr,n,xvs vs, xtqs tqs, xc ct, xrr req)
 
   | Lst [Id "ast_ctypes"; sr; Lst ids; tqs; req] ->
     let ids = map (function
@@ -741,16 +741,16 @@ and xstatement_t sr x : statement_t =
       | x -> err x "ast_ctypes"
     ) ids
     in
-    `AST_ctypes (xsr sr,ids, xtqs tqs, xrr req)
+    STMT_ctypes (xsr sr,ids, xtqs tqs, xrr req)
 
   | Lst [Id "ast_const_decl"; sr; Str n; vs; t; ct; req] ->
-    `AST_const_decl (xsr sr, n, xvs vs, ti t, xc ct, xrr req)
+    STMT_const_decl (xsr sr, n, xvs vs, ti t, xc ct, xrr req)
 
   | Lst [Id "ast_fun_decl"; sr; Str n; vs; Lst ps; t; ct; req; Str prec] ->
-    `AST_fun_decl (xsr sr, n, xvs vs, map ti ps, ti t, xc ct, xrr req, ss prec)
+    STMT_fun_decl (xsr sr, n, xvs vs, map ti ps, ti t, xc ct, xrr req, ss prec)
 
   | Lst [Id "ast_callback_decl"; sr; Str n; Lst ps; t; req] ->
-    `AST_callback_decl (xsr sr, n, map ti ps, ti t, xrr req)
+    STMT_callback_decl (xsr sr, n, map ti ps, ti t, xrr req)
 
   | Lst [Id "ast_insert"; sr; Str n; vs; ct; ik; req] ->
     let xik = function
@@ -759,26 +759,26 @@ and xstatement_t sr x : statement_t =
      | Id "package" -> `Package
      | x -> err x "ikind_t"
    in
-    `AST_insert (xsr sr, n, xvs vs, xc ct, xik ik, xrr req)
+    STMT_insert (xsr sr, n, xvs vs, xc ct, xik ik, xrr req)
 
-  | Lst [Id "ast_code"; sr; ct] -> `AST_code (xsr sr, xc ct)
-  | Lst [Id "ast_noreturn_code"; sr; ct] -> `AST_noreturn_code (xsr sr, xc ct)
+  | Lst [Id "ast_code"; sr; ct] -> STMT_code (xsr sr, xc ct)
+  | Lst [Id "ast_noreturn_code"; sr; ct] -> STMT_noreturn_code (xsr sr, xc ct)
   | Lst [Id "ast_export_fun"; sr; sn; Str s] ->
     let xsn x = match suffixed_name_of_expr (ex x) with
     | Some x -> x
     | None -> err x "suffixed_name_t"
     in
-    `AST_export_fun  (xsr sr, xsn sn, ss s)
+    STMT_export_fun  (xsr sr, xsn sn, ss s)
 
   | Lst [Id "ast_export_python_fun"; sr; sn; Str s] ->
     let xsn x = match suffixed_name_of_expr (ex x) with
     | Some x -> x
     | None -> err x "suffixed_name_t"
     in
-    `AST_export_python_fun  (xsr sr, xsn sn, ss s)
+    STMT_export_python_fun  (xsr sr, xsn sn, ss s)
 
   | Lst [Id "ast_export_type"; sr; t; Str s] ->
-    `AST_export_type (xsr sr, ti t, ss s)
+    STMT_export_type (xsr sr, ti t, ss s)
 
   
   | Lst [Id "ast_stmt_match";  Lst [e; Lst pss]]->
@@ -788,6 +788,6 @@ and xstatement_t sr x : statement_t =
       )
      pss
    in
-   `AST_stmt_match (sr, (ex e,pss))
+   STMT_stmt_match (sr, (ex e,pss))
 
   | x -> err x "statement"

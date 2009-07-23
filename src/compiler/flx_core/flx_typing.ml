@@ -24,7 +24,7 @@ let mktypefun sr (name:string) (vs:vs_list_t) (args: (string * typecode_t) list 
     done;
     !b
   in
-  `AST_type_alias
+  STMT_type_alias
   (
     sr,
     name,

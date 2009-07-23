@@ -1101,80 +1101,80 @@ and string_of_statement level s =
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
   match s with
-  | `AST_seq (_,sts) -> catmap "" (string_of_statement level) sts
+  | STMT_seq (_,sts) -> catmap "" (string_of_statement level) sts
   (*
-  | `AST_public (_,s,st) ->
+  | STMT_public (_,s,st) ->
     "\n" ^
     spaces level ^ "public '" ^ s ^ "'\n" ^
     string_of_statement (level+1) st
   *)
 
-  | `AST_private (_,st) ->
+  | STMT_private (_,st) ->
     spaces level ^ "private " ^
     string_of_statement 0 st
 
-  | `AST_export_fun (_,flx_name,cpp_name) ->
+  | STMT_export_fun (_,flx_name,cpp_name) ->
     spaces level ^
     "export fun " ^
     string_of_suffixed_name flx_name ^
     " as \"" ^ cpp_name ^ "\";"
 
-  | `AST_export_python_fun (_,flx_name,cpp_name) ->
+  | STMT_export_python_fun (_,flx_name,cpp_name) ->
     spaces level ^
     "export python fun " ^
     string_of_suffixed_name flx_name ^
     " as \"" ^ cpp_name ^ "\";"
 
-  | `AST_export_type (_,flx_type,cpp_name) ->
+  | STMT_export_type (_,flx_type,cpp_name) ->
     spaces level ^
     "export type (" ^
     string_of_typecode flx_type ^
     ") as \"" ^ cpp_name ^ "\";"
 
-  | `AST_label (_,s) -> s ^ ":"
-  | `AST_goto (_,s) -> spaces level ^ "goto " ^ s ^ ";"
+  | STMT_label (_,s) -> s ^ ":"
+  | STMT_goto (_,s) -> spaces level ^ "goto " ^ s ^ ";"
 
-  | `AST_assert (_,e) -> spaces level ^ "assert " ^ se e ^ ";"
+  | STMT_assert (_,e) -> spaces level ^ "assert " ^ se e ^ ";"
 
-  | `AST_init (_,v,e) ->
+  | STMT_init (_,v,e) ->
     spaces level ^ v ^ " := " ^ se e ^ ";"
 
-  | `AST_comment (_,s) -> spaces level ^ "// " ^ s
+  | STMT_comment (_,s) -> spaces level ^ "// " ^ s
 
-  | `AST_open (_,vs,n) ->
+  | STMT_open (_,vs,n) ->
     spaces level ^ "open" ^ print_vs vs ^ " " ^ sqn n ^ ";"
 
-  | `AST_inject_module (_,n) ->
+  | STMT_inject_module (_,n) ->
     spaces level ^ "inherit " ^ sqn n ^ ";"
 
-  | `AST_include (_,s) ->
+  | STMT_include (_,s) ->
     spaces level ^ "include " ^ s ^ ";"
 
-  | `AST_use (_,n,qn) ->
+  | STMT_use (_,n,qn) ->
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
 
-  | `AST_type_alias (_,t1,vs,t2) ->
+  | STMT_type_alias (_,t1,vs,t2) ->
     spaces level ^ "typedef " ^ t1 ^ print_vs vs ^
     " = " ^
     string_of_typecode t2 ^ ";"
 
-  | `AST_inherit (_,name,vs,qn) ->
+  | STMT_inherit (_,name,vs,qn) ->
     spaces level ^ "inherit " ^ name ^ print_vs vs ^
     " = " ^
     string_of_qualified_name qn ^ ";"
 
-  | `AST_inherit_fun (_,name,vs,qn) ->
+  | STMT_inherit_fun (_,name,vs,qn) ->
     spaces level ^ "inherit fun " ^ name ^ print_vs vs ^
     " = " ^
     string_of_qualified_name qn ^ ";"
 
-  | `AST_untyped_module (_,name, vs,sts)  ->
+  | STMT_untyped_module (_,name, vs,sts)  ->
     spaces level ^ "module " ^ name ^ print_vs vs ^
     " = " ^
     "\n" ^
     string_of_compound level sts
 
-  | `AST_struct (_,name, vs, cs) ->
+  | STMT_struct (_,name, vs, cs) ->
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
     in
@@ -1183,7 +1183,7 @@ and string_of_statement level s =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | `AST_cstruct (_,name, vs, cs) ->
+  | STMT_cstruct (_,name, vs, cs) ->
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
     in
@@ -1192,16 +1192,16 @@ and string_of_statement level s =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | `AST_typeclass (_,name, vs, sts) ->
+  | STMT_typeclass (_,name, vs, sts) ->
     spaces level ^ "typeclass " ^ name ^ print_vs vs ^ " = " ^
     string_of_compound level sts
 
-  | `AST_instance (_,vs,name, sts) ->
+  | STMT_instance (_,vs,name, sts) ->
     spaces level ^ "instance " ^ print_vs vs ^ " " ^
     string_of_qualified_name name ^ " = " ^
     string_of_compound level sts
 
-  | `AST_union (_,name, vs,cs) ->
+  | STMT_union (_,name, vs,cs) ->
     let string_of_union_component (name,cval, vs,ty) =
       (spaces (level+1)) ^ "|" ^ name ^
       (match cval with None -> "" | Some i -> "="^ si i) ^
@@ -1212,32 +1212,32 @@ and string_of_statement level s =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | `AST_ctypes (_,names, quals, reqs) -> spaces level ^
+  | STMT_ctypes (_,names, quals, reqs) -> spaces level ^
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "ctypes " ^ catmap "," snd names ^
     string_of_raw_reqs reqs ^
     ";"
 
-  | `AST_abs_decl (_,t,vs, quals, ct, reqs) -> spaces level ^
+  | STMT_abs_decl (_,t,vs, quals, ct, reqs) -> spaces level ^
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ t ^ print_vs vs ^
     " = " ^ string_of_code_spec ct ^
     string_of_raw_reqs reqs ^
     ";"
 
-  | `AST_newtype (_,t,vs, nt) -> spaces level ^
+  | STMT_newtype (_,t,vs, nt) -> spaces level ^
     "type " ^ t ^ print_vs vs ^
     " = new " ^ string_of_typecode nt ^
     ";"
 
-  | `AST_callback_decl (_,name,args,result, reqs) -> spaces level ^
+  | STMT_callback_decl (_,name,args,result, reqs) -> spaces level ^
     "callback " ^ name ^ ": " ^
     (string_of_typecode (TYP_tuple args)) ^ " -> " ^
     (string_of_typecode result) ^
     string_of_raw_reqs reqs ^
     ";"
 
-  | `AST_fun_decl (_,name,vs,args, result, code, reqs,prec) ->
+  | STMT_fun_decl (_,name,vs,args, result, code, reqs,prec) ->
     spaces level ^
     "fun " ^ name ^ print_vs vs ^
     ": " ^
@@ -1248,7 +1248,7 @@ and string_of_statement level s =
     string_of_raw_reqs reqs ^
     ";"
 
-  | `AST_const_decl (_,name,vs,typ, code, reqs) ->
+  | STMT_const_decl (_,name,vs,typ, code, reqs) ->
     spaces level ^
      "const " ^ name ^
      ": " ^ string_of_typecode typ ^
@@ -1256,41 +1256,41 @@ and string_of_statement level s =
      string_of_raw_reqs reqs ^
      ";"
 
-  | `AST_insert (_,n,vs,s, ikind, reqs) ->
+  | STMT_insert (_,n,vs,s, ikind, reqs) ->
     spaces level ^ string_of_ikind ikind ^
     n^print_vs vs^
     "\n" ^ string_of_code_spec s ^ " " ^
      string_of_raw_reqs reqs ^
     ";\n"
 
-  | `AST_code (_,s) ->
+  | STMT_code (_,s) ->
     "code \n" ^ string_of_long_code_spec s ^ ";\n"
 
-  | `AST_noreturn_code (_,s) ->
+  | STMT_noreturn_code (_,s) ->
     "noreturn_code \n" ^ string_of_long_code_spec s ^ ";\n"
 
-  | `AST_reduce (_,name, vs, ps, rsrc, rdst) ->
+  | STMT_reduce (_,name, vs, ps, rsrc, rdst) ->
     spaces level ^
     "reduce " ^ name ^ print_vs vs ^
     "("^string_of_basic_parameters ps^"): "^
     string_of_expr rsrc ^ " => " ^ string_of_expr rdst ^
     ";\n"
 
-  | `AST_axiom (_,name, vs, ps, a) ->
+  | STMT_axiom (_,name, vs, ps, a) ->
     spaces level ^
     "axiom " ^ name ^ print_vs vs ^
     "("^string_of_parameters ps^"): "^
     string_of_axiom_method a ^
     ";\n"
 
-  | `AST_lemma (_,name, vs, ps, a) ->
+  | STMT_lemma (_,name, vs, ps, a) ->
     spaces level ^
     "lemma " ^ name ^ print_vs vs ^
     "("^string_of_parameters ps^"): "^
     string_of_axiom_method a ^
     ";\n"
 
-  | `AST_function (_,name, vs, ps, (res,post), props, ss) ->
+  | STMT_function (_,name, vs, ps, (res,post), props, ss) ->
     spaces level ^
     string_of_properties props ^
     "fun " ^ name ^ print_vs vs ^
@@ -1300,11 +1300,11 @@ and string_of_statement level s =
     | Some x -> " when " ^ string_of_expr x
     )^
     begin match ss with
-    | [`AST_fun_return (_,e)] -> " => " ^ se e ^ ";\n"
+    | [STMT_fun_return (_,e)] -> " => " ^ se e ^ ";\n"
     | _ -> "\n" ^ string_of_compound level ss
     end
 
-  | `AST_curry (_,name, vs, pss, (res,traint) , kind, ss) ->
+  | STMT_curry (_,name, vs, pss, (res,traint) , kind, ss) ->
     spaces level ^
     (match kind with
     | `Function -> "fun "
@@ -1329,48 +1329,48 @@ and string_of_statement level s =
     | Some x -> " when " ^ string_of_expr x
     )^
     begin match ss with
-    | [`AST_fun_return (_,e)] -> " => " ^ se e ^ ";\n"
+    | [STMT_fun_return (_,e)] -> " => " ^ se e ^ ";\n"
     | _ -> "\n" ^ string_of_compound level ss
     end
 
-  | `AST_macro_val (_,names, e) ->
+  | STMT_macro_val (_,names, e) ->
     spaces level ^
     "macro val " ^ String.concat ", " names ^ " = " ^
     se e ^
     ";"
 
-  | `AST_macro_vals (_,name, es) ->
+  | STMT_macro_vals (_,name, es) ->
     spaces level ^
     "macro val " ^ name ^ " = " ^
     catmap ", " se es ^
     ";"
 
-  | `AST_macro_var (_,names, e) ->
+  | STMT_macro_var (_,names, e) ->
     spaces level ^
     "macro var " ^ String.concat ", " names ^ " = " ^
     se e ^
     ";"
 
-  | `AST_macro_assign (_,names, e) ->
+  | STMT_macro_assign (_,names, e) ->
     spaces level ^
     "macro " ^ String.concat ", " names ^ " = " ^
     se e ^
     ";\n"
 
-  | `AST_macro_name (_,lname, rname) ->
+  | STMT_macro_name (_,lname, rname) ->
     spaces level ^
     "macro ident " ^ lname ^ " = " ^
     (match rname with | "" -> "new" | _ -> rname) ^
     ";"
 
-  | `AST_macro_names (_,lname, rnames) ->
+  | STMT_macro_names (_,lname, rnames) ->
     spaces level ^
     "macro ident " ^ lname ^ " = " ^
     cat ", " rnames ^
     ";"
 
 
-  | `AST_expr_macro (_,name, ps, e) ->
+  | STMT_expr_macro (_,name, ps, e) ->
     let sps =
       map
       (fun (p,t) -> p ^ ":" ^ string_of_macro_parameter_type t)
@@ -1382,7 +1382,7 @@ and string_of_statement level s =
     se e ^
     ";"
 
-  | `AST_stmt_macro (_,name, ps, ss) ->
+  | STMT_stmt_macro (_,name, ps, ss) ->
     let sps =
       map
       (fun (p,t) -> p ^ ":" ^ string_of_macro_parameter_type t)
@@ -1393,13 +1393,13 @@ and string_of_statement level s =
     "("^ cat ", " sps ^") " ^
     short_string_of_compound level ss
 
-  | `AST_macro_block (_,ss) ->
+  | STMT_macro_block (_,ss) ->
     spaces level ^
     "macro " ^
     short_string_of_compound level ss ^
     "}"
 
-  | `AST_macro_forget (_,names) ->
+  | STMT_macro_forget (_,names) ->
     spaces level ^
     "macro forget" ^
     (
@@ -1410,19 +1410,19 @@ and string_of_statement level s =
     cat ", " names ^
     ";"
 
-  | `AST_macro_label (_,id) ->
+  | STMT_macro_label (_,id) ->
     "macro " ^ id ^ ":>\n"
 
-  | `AST_macro_goto (_,id) ->
+  | STMT_macro_goto (_,id) ->
     "macro goto " ^ id ^ ";\n"
 
-  | `AST_macro_ifgoto (_,e,id) ->
+  | STMT_macro_ifgoto (_,e,id) ->
     "macro if "^se e^" goto " ^ id ^ ";\n"
 
-  | `AST_macro_proc_return (_) ->
+  | STMT_macro_proc_return (_) ->
     "macro return;\n"
 
-  | `AST_val_decl (_,name, vs,ty, value) ->
+  | STMT_val_decl (_,name, vs,ty, value) ->
     spaces level ^
     "val " ^ name ^
     (
@@ -1438,7 +1438,7 @@ and string_of_statement level s =
     )
     ^ ";"
 
-  | `AST_ref_decl (_,name, vs,ty, value) ->
+  | STMT_ref_decl (_,name, vs,ty, value) ->
     spaces level ^
     "ref " ^ name ^
     (
@@ -1455,7 +1455,7 @@ and string_of_statement level s =
     ^ ";"
 
 
-  | `AST_lazy_decl (_,name, vs,ty, value) ->
+  | STMT_lazy_decl (_,name, vs,ty, value) ->
     spaces level ^
     "fun " ^ name ^
     (
@@ -1471,7 +1471,7 @@ and string_of_statement level s =
     )
     ^ ";"
 
-  | `AST_var_decl (_,name, vs,ty, value) ->
+  | STMT_var_decl (_,name, vs,ty, value) ->
     spaces level ^
     "var " ^ name ^
     (
@@ -1487,50 +1487,50 @@ and string_of_statement level s =
     )
     ^ ";"
 
-  | `AST_macro_ifor (_,v,ids,sts) ->
+  | STMT_macro_ifor (_,v,ids,sts) ->
     spaces level
     ^ "macro for ident " ^ v ^ " in " ^ cat "," ids ^ " do\n" ^
     catmap "\n" (string_of_statement (level +2)) sts ^
     spaces level ^ "done;"
 
-  | `AST_macro_vfor (_,v,e,sts) ->
+  | STMT_macro_vfor (_,v,e,sts) ->
     let se e = string_of_expr e in
     spaces level
     ^ "macro for val " ^ String.concat ", " v ^ " in " ^ se e ^ " do\n" ^
     catmap "\n" (string_of_statement (level +2)) sts ^
     spaces level ^ "done;"
 
-  | `AST_call (_,pr, args) ->
+  | STMT_call (_,pr, args) ->
     spaces level
     ^ "call " ^ se pr ^ " " ^ se args ^ ";"
 
-  | `AST_assign (_,name,l,r) ->
+  | STMT_assign (_,name,l,r) ->
     spaces level
     ^ "call " ^ name ^ "(" ^ sl l ^ "," ^se r^");"
 
-  | `AST_cassign (_,l,r) ->
+  | STMT_cassign (_,l,r) ->
     spaces level ^
     se l ^ " = " ^ se r ^ ";"
 
-  | `AST_jump (_,pr, args) ->
+  | STMT_jump (_,pr, args) ->
     spaces level
     ^ "jump " ^ se pr ^ " " ^ se args ^ ";"
 
-  | `AST_loop (_,pr, args) ->
+  | STMT_loop (_,pr, args) ->
     spaces level
     ^ "call " ^ pr ^ " " ^ se args ^ ";"
 
-  | `AST_nop (_,s) -> spaces level ^ "{/*"^s^"*/;}"
+  | STMT_nop (_,s) -> spaces level ^ "{/*"^s^"*/;}"
 
-  | `AST_ifgoto (_,e,lab) ->
+  | STMT_ifgoto (_,e,lab) ->
     spaces level ^
     "if("^string_of_expr e^")goto " ^ lab ^ ";"
 
-  | `AST_ifreturn (_,e) ->
+  | STMT_ifreturn (_,e) ->
     spaces level ^
     "if("^string_of_expr e^")return;"
 
-  | `AST_ifdo (_,e,ss1,ss2) ->
+  | STMT_ifdo (_,e,ss1,ss2) ->
     spaces level ^
     "if("^string_of_expr e^")do\n" ^
     catmap "\n" (string_of_statement (level+1)) ss1 ^
@@ -1538,32 +1538,32 @@ and string_of_statement level s =
     catmap "\n" (string_of_statement (level+1)) ss2 ^
     spaces level ^ "done;"
 
-  | `AST_fun_return (_,e) ->
+  | STMT_fun_return (_,e) ->
     spaces level ^ "return " ^ (se e) ^ ";"
 
-  | `AST_yield (_,e) ->
+  | STMT_yield (_,e) ->
     spaces level ^ "yield " ^ (se e) ^ ";"
 
-  | `AST_proc_return _ ->
+  | STMT_proc_return _ ->
     spaces level ^ "return;"
 
-  | `AST_halt (_,s) ->
+  | STMT_halt (_,s) ->
     spaces level ^ "halt "^string_of_string s^";"
 
-  | `AST_trace (_,v,s) ->
+  | STMT_trace (_,v,s) ->
     spaces level ^ "trace "^v^ ", msg="^string_of_string s^";"
 
-  | `AST_svc (_,name) ->
+  | STMT_svc (_,name) ->
     spaces level ^ "read " ^ name ^ ";"
 
-  | `AST_user_statement (_,name,term) ->
+  | STMT_user_statement (_,name,term) ->
     let body = string_of_ast_term level term in
     spaces level ^ "User statement " ^ name ^ "\n" ^ body
 
-  | `AST_scheme_string (_,s) ->
+  | STMT_scheme_string (_,s) ->
     spaces level ^ "Scheme string " ^ s ^ ";\n"
 
-  | `AST_stmt_match (_,(e, ps)) ->
+  | STMT_stmt_match (_,(e, ps)) ->
     spaces level ^ "match " ^ se e ^ " with\n" ^
     catmap "\n"
     (fun (p,sts)->

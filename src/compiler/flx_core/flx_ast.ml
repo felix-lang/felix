@@ -371,115 +371,112 @@ and ast_term_t =
   | Apply_term of ast_term_t * ast_term_t list
 
 and statement_t =
-  [
-  | `AST_include of Flx_srcref.t * string
-  | `AST_open of Flx_srcref.t * vs_list_t * qualified_name_t
+  | STMT_include of Flx_srcref.t * string
+  | STMT_open of Flx_srcref.t * vs_list_t * qualified_name_t
 
   (* the keyword for this one is 'inherit' *)
-  | `AST_inject_module of Flx_srcref.t * qualified_name_t
-  | `AST_use of Flx_srcref.t * id_t * qualified_name_t
-  | `AST_comment of Flx_srcref.t * string (* for documenting generated code *)
+  | STMT_inject_module of Flx_srcref.t * qualified_name_t
+  | STMT_use of Flx_srcref.t * id_t * qualified_name_t
+  | STMT_comment of Flx_srcref.t * string (* for documenting generated code *)
   (*
-  | `AST_public of Flx_srcref.t * string * statement_t
+  | STMT_public of Flx_srcref.t * string * statement_t
   *)
-  | `AST_private of Flx_srcref.t * statement_t
+  | STMT_private of Flx_srcref.t * statement_t
 
   (* definitions *)
-  | `AST_reduce of Flx_srcref.t * id_t * vs_list_t * simple_parameter_t list * expr_t * expr_t
-  | `AST_axiom of Flx_srcref.t * id_t * vs_list_t * params_t * axiom_method_t
-  | `AST_lemma of Flx_srcref.t * id_t * vs_list_t * params_t * axiom_method_t
-  | `AST_function of Flx_srcref.t * id_t * vs_list_t * params_t * (typecode_t * expr_t option) * property_t list * statement_t list
-  | `AST_curry of Flx_srcref.t * id_t * vs_list_t * params_t list * (typecode_t * expr_t option) * funkind_t * statement_t list
+  | STMT_reduce of Flx_srcref.t * id_t * vs_list_t * simple_parameter_t list * expr_t * expr_t
+  | STMT_axiom of Flx_srcref.t * id_t * vs_list_t * params_t * axiom_method_t
+  | STMT_lemma of Flx_srcref.t * id_t * vs_list_t * params_t * axiom_method_t
+  | STMT_function of Flx_srcref.t * id_t * vs_list_t * params_t * (typecode_t * expr_t option) * property_t list * statement_t list
+  | STMT_curry of Flx_srcref.t * id_t * vs_list_t * params_t list * (typecode_t * expr_t option) * funkind_t * statement_t list
 
   (* macros *)
-  | `AST_macro_name of Flx_srcref.t * id_t * id_t
-  | `AST_macro_names of Flx_srcref.t * id_t * id_t list
-  | `AST_expr_macro of Flx_srcref.t * id_t * macro_parameter_t list * expr_t
-  | `AST_stmt_macro of Flx_srcref.t * id_t * macro_parameter_t list * statement_t list
-  | `AST_macro_block of Flx_srcref.t * statement_t list
-  | `AST_macro_val  of Flx_srcref.t * id_t list * expr_t
-  | `AST_macro_vals  of Flx_srcref.t * id_t * expr_t list
-  | `AST_macro_var  of Flx_srcref.t * id_t list * expr_t
-  | `AST_macro_assign of Flx_srcref.t * id_t list * expr_t
-  | `AST_macro_forget of Flx_srcref.t * id_t list
-  | `AST_macro_label of Flx_srcref.t * id_t
-  | `AST_macro_goto of Flx_srcref.t * id_t
-  | `AST_macro_ifgoto of Flx_srcref.t * expr_t * id_t
-  | `AST_macro_proc_return of Flx_srcref.t
+  | STMT_macro_name of Flx_srcref.t * id_t * id_t
+  | STMT_macro_names of Flx_srcref.t * id_t * id_t list
+  | STMT_expr_macro of Flx_srcref.t * id_t * macro_parameter_t list * expr_t
+  | STMT_stmt_macro of Flx_srcref.t * id_t * macro_parameter_t list * statement_t list
+  | STMT_macro_block of Flx_srcref.t * statement_t list
+  | STMT_macro_val  of Flx_srcref.t * id_t list * expr_t
+  | STMT_macro_vals  of Flx_srcref.t * id_t * expr_t list
+  | STMT_macro_var  of Flx_srcref.t * id_t list * expr_t
+  | STMT_macro_assign of Flx_srcref.t * id_t list * expr_t
+  | STMT_macro_forget of Flx_srcref.t * id_t list
+  | STMT_macro_label of Flx_srcref.t * id_t
+  | STMT_macro_goto of Flx_srcref.t * id_t
+  | STMT_macro_ifgoto of Flx_srcref.t * expr_t * id_t
+  | STMT_macro_proc_return of Flx_srcref.t
 
   (* type macros *)
-  | `AST_macro_ifor of Flx_srcref.t * id_t * id_t list * statement_t list
-  | `AST_macro_vfor of Flx_srcref.t * id_t list * expr_t * statement_t list
+  | STMT_macro_ifor of Flx_srcref.t * id_t * id_t list * statement_t list
+  | STMT_macro_vfor of Flx_srcref.t * id_t list * expr_t * statement_t list
 
   (* composition of statements: note NOT A BLOCK *)
-  | `AST_seq of Flx_srcref.t * statement_t list
+  | STMT_seq of Flx_srcref.t * statement_t list
 
   (* types *)
-  | `AST_union of Flx_srcref.t * id_t * vs_list_t * (id_t * int option * vs_list_t * typecode_t) list
-  | `AST_struct of Flx_srcref.t * id_t * vs_list_t * (id_t * typecode_t) list
-  | `AST_cstruct of Flx_srcref.t * id_t * vs_list_t * (id_t * typecode_t) list
-  | `AST_type_alias of Flx_srcref.t * id_t * vs_list_t * typecode_t
-  | `AST_inherit of Flx_srcref.t * id_t * vs_list_t * qualified_name_t
-  | `AST_inherit_fun of Flx_srcref.t * id_t * vs_list_t * qualified_name_t
+  | STMT_union of Flx_srcref.t * id_t * vs_list_t * (id_t * int option * vs_list_t * typecode_t) list
+  | STMT_struct of Flx_srcref.t * id_t * vs_list_t * (id_t * typecode_t) list
+  | STMT_cstruct of Flx_srcref.t * id_t * vs_list_t * (id_t * typecode_t) list
+  | STMT_type_alias of Flx_srcref.t * id_t * vs_list_t * typecode_t
+  | STMT_inherit of Flx_srcref.t * id_t * vs_list_t * qualified_name_t
+  | STMT_inherit_fun of Flx_srcref.t * id_t * vs_list_t * qualified_name_t
 
   (* variables *)
-  | `AST_val_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t option * expr_t option
-  | `AST_lazy_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t option * expr_t option
-  | `AST_var_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t option * expr_t option
-  | `AST_ref_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t option * expr_t option
+  | STMT_val_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t option * expr_t option
+  | STMT_lazy_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t option * expr_t option
+  | STMT_var_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t option * expr_t option
+  | STMT_ref_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t option * expr_t option
 
   (* module system *)
-  | `AST_untyped_module of Flx_srcref.t * id_t * vs_list_t * statement_t list
-  | `AST_typeclass of Flx_srcref.t * id_t * vs_list_t * statement_t list
-  | `AST_instance of Flx_srcref.t * vs_list_t * qualified_name_t * statement_t list
+  | STMT_untyped_module of Flx_srcref.t * id_t * vs_list_t * statement_t list
+  | STMT_typeclass of Flx_srcref.t * id_t * vs_list_t * statement_t list
+  | STMT_instance of Flx_srcref.t * vs_list_t * qualified_name_t * statement_t list
 
   (* control structures: primitives *)
-  | `AST_label of Flx_srcref.t * id_t
+  | STMT_label of Flx_srcref.t * id_t
   (*
-  | `AST_whilst of Flx_srcref.t * expr_t * statement_t list
-  | `AST_until of Flx_srcref.t * expr_t * statement_t list
+  | STMT_whilst of Flx_srcref.t * expr_t * statement_t list
+  | STMT_until of Flx_srcref.t * expr_t * statement_t list
   *)
-  | `AST_goto of Flx_srcref.t * id_t
-  | `AST_ifgoto of Flx_srcref.t * expr_t *id_t
-  | `AST_ifreturn of Flx_srcref.t * expr_t
-  | `AST_ifdo of Flx_srcref.t * expr_t * statement_t list * statement_t list
-  | `AST_call of Flx_srcref.t * expr_t * expr_t
-  | `AST_assign of Flx_srcref.t * string * tlvalue_t * expr_t
-  | `AST_cassign of Flx_srcref.t * expr_t * expr_t
-  | `AST_jump of Flx_srcref.t * expr_t * expr_t
-  | `AST_loop of Flx_srcref.t * id_t * expr_t
-  | `AST_svc of Flx_srcref.t * id_t
-  | `AST_fun_return of Flx_srcref.t * expr_t
-  | `AST_yield of Flx_srcref.t * expr_t
-  | `AST_proc_return of Flx_srcref.t
-  | `AST_halt of Flx_srcref.t  * string
-  | `AST_trace of Flx_srcref.t  * id_t * string
-  | `AST_nop of Flx_srcref.t * string
-  | `AST_assert of Flx_srcref.t * expr_t
-  | `AST_init of Flx_srcref.t * id_t * expr_t
-  | `AST_stmt_match of Flx_srcref.t * (expr_t * (pattern_t * statement_t list) list)
+  | STMT_goto of Flx_srcref.t * id_t
+  | STMT_ifgoto of Flx_srcref.t * expr_t *id_t
+  | STMT_ifreturn of Flx_srcref.t * expr_t
+  | STMT_ifdo of Flx_srcref.t * expr_t * statement_t list * statement_t list
+  | STMT_call of Flx_srcref.t * expr_t * expr_t
+  | STMT_assign of Flx_srcref.t * string * tlvalue_t * expr_t
+  | STMT_cassign of Flx_srcref.t * expr_t * expr_t
+  | STMT_jump of Flx_srcref.t * expr_t * expr_t
+  | STMT_loop of Flx_srcref.t * id_t * expr_t
+  | STMT_svc of Flx_srcref.t * id_t
+  | STMT_fun_return of Flx_srcref.t * expr_t
+  | STMT_yield of Flx_srcref.t * expr_t
+  | STMT_proc_return of Flx_srcref.t
+  | STMT_halt of Flx_srcref.t  * string
+  | STMT_trace of Flx_srcref.t  * id_t * string
+  | STMT_nop of Flx_srcref.t * string
+  | STMT_assert of Flx_srcref.t * expr_t
+  | STMT_init of Flx_srcref.t * id_t * expr_t
+  | STMT_stmt_match of Flx_srcref.t * (expr_t * (pattern_t * statement_t list) list)
 
-  | `AST_newtype of Flx_srcref.t * id_t * vs_list_t * typecode_t
+  | STMT_newtype of Flx_srcref.t * id_t * vs_list_t * typecode_t
 
   (* binding structures [prolog] *)
-  | `AST_abs_decl of Flx_srcref.t * id_t * vs_list_t * type_qual_t list * c_t * raw_req_expr_t
-  | `AST_ctypes of Flx_srcref.t * (Flx_srcref.t * id_t) list * type_qual_t list  * raw_req_expr_t
-  | `AST_const_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t * c_t * raw_req_expr_t
-  | `AST_fun_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t list * typecode_t * c_t * raw_req_expr_t * prec_t
-  | `AST_callback_decl of Flx_srcref.t * id_t * typecode_t list * typecode_t * raw_req_expr_t
+  | STMT_abs_decl of Flx_srcref.t * id_t * vs_list_t * type_qual_t list * c_t * raw_req_expr_t
+  | STMT_ctypes of Flx_srcref.t * (Flx_srcref.t * id_t) list * type_qual_t list  * raw_req_expr_t
+  | STMT_const_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t * c_t * raw_req_expr_t
+  | STMT_fun_decl of Flx_srcref.t * id_t * vs_list_t * typecode_t list * typecode_t * c_t * raw_req_expr_t * prec_t
+  | STMT_callback_decl of Flx_srcref.t * id_t * typecode_t list * typecode_t * raw_req_expr_t
   (* embedding *)
-  | `AST_insert of Flx_srcref.t * id_t * vs_list_t * c_t * ikind_t  * raw_req_expr_t
-  | `AST_code of Flx_srcref.t * c_t
-  | `AST_noreturn_code of Flx_srcref.t * c_t
+  | STMT_insert of Flx_srcref.t * id_t * vs_list_t * c_t * ikind_t  * raw_req_expr_t
+  | STMT_code of Flx_srcref.t * c_t
+  | STMT_noreturn_code of Flx_srcref.t * c_t
 
-  | `AST_export_fun of Flx_srcref.t * suffixed_name_t * string
-  | `AST_export_python_fun of Flx_srcref.t * suffixed_name_t * string
-  | `AST_export_type of Flx_srcref.t * typecode_t * string
+  | STMT_export_fun of Flx_srcref.t * suffixed_name_t * string
+  | STMT_export_python_fun of Flx_srcref.t * suffixed_name_t * string
+  | STMT_export_type of Flx_srcref.t * typecode_t * string
 
-  | `AST_user_statement of Flx_srcref.t * string * ast_term_t
-  | `AST_scheme_string of Flx_srcref.t * string
-  ]
-
+  | STMT_user_statement of Flx_srcref.t * string * ast_term_t
+  | STMT_scheme_string of Flx_srcref.t * string
 
 and exe_t =
   | EXE_code of c_t (* for inline C++ code *)
@@ -634,87 +631,87 @@ let src_of_expr (e : expr_t) = match e with
 
 let src_of_stmt (e : statement_t) = match e with
   (*
-  | `AST_public (s,_,_)
+  | STMT_public (s,_,_)
   *)
-  | `AST_private (s,_)
-  | `AST_label (s,_)
-  | `AST_goto (s,_)
-  | `AST_assert (s,_)
-  | `AST_init (s,_,_)
-  | `AST_function (s,_,_,_,_,_,_)
-  | `AST_reduce (s,_,_,_,_,_)
-  | `AST_axiom (s,_,_,_,_)
-  | `AST_lemma (s,_,_,_,_)
-  | `AST_curry (s,_,_,_,_,_,_)
-  | `AST_macro_name (s,_,_)
-  | `AST_macro_names (s,_,_)
-  | `AST_expr_macro (s,_,_,_)
-  | `AST_stmt_macro (s,_,_,_)
-  | `AST_macro_block (s,_)
-  | `AST_macro_val (s,_,_)
-  | `AST_macro_vals (s,_,_)
-  | `AST_macro_var (s, _,_)
-  | `AST_macro_assign (s,_,_)
-  | `AST_macro_forget (s,_)
-  | `AST_macro_label (s,_)
-  | `AST_macro_goto (s,_)
-  | `AST_macro_ifgoto (s,_,_)
-  | `AST_macro_proc_return s
-  | `AST_macro_ifor (s,_,_,_)
-  | `AST_macro_vfor (s,_,_,_)
-  | `AST_val_decl (s,_,_,_,_)
-  | `AST_lazy_decl (s,_,_,_,_)
-  | `AST_var_decl (s,_,_,_,_)
-  | `AST_ref_decl (s,_,_,_,_)
-  | `AST_type_alias (s,_,_,_)
-  | `AST_inherit (s,_,_,_)
-  | `AST_inherit_fun (s,_,_,_)
-  | `AST_nop (s,_)
-  | `AST_assign (s,_,_,_)
-  | `AST_cassign (s, _,_)
-  | `AST_call (s,_,_)
-  | `AST_jump (s,_,_)
-  | `AST_loop (s,_,_)
-  | `AST_svc (s,_)
-  | `AST_fun_return (s,_)
-  | `AST_yield (s,_)
-  | `AST_proc_return s
-  | `AST_halt (s,_)
-  | `AST_trace (s,_,_)
-  | `AST_ifgoto (s,_,_)
-  | `AST_ifreturn (s,_)
-  | `AST_ifdo (s,_,_,_)
+  | STMT_private (s,_)
+  | STMT_label (s,_)
+  | STMT_goto (s,_)
+  | STMT_assert (s,_)
+  | STMT_init (s,_,_)
+  | STMT_function (s,_,_,_,_,_,_)
+  | STMT_reduce (s,_,_,_,_,_)
+  | STMT_axiom (s,_,_,_,_)
+  | STMT_lemma (s,_,_,_,_)
+  | STMT_curry (s,_,_,_,_,_,_)
+  | STMT_macro_name (s,_,_)
+  | STMT_macro_names (s,_,_)
+  | STMT_expr_macro (s,_,_,_)
+  | STMT_stmt_macro (s,_,_,_)
+  | STMT_macro_block (s,_)
+  | STMT_macro_val (s,_,_)
+  | STMT_macro_vals (s,_,_)
+  | STMT_macro_var (s, _,_)
+  | STMT_macro_assign (s,_,_)
+  | STMT_macro_forget (s,_)
+  | STMT_macro_label (s,_)
+  | STMT_macro_goto (s,_)
+  | STMT_macro_ifgoto (s,_,_)
+  | STMT_macro_proc_return s
+  | STMT_macro_ifor (s,_,_,_)
+  | STMT_macro_vfor (s,_,_,_)
+  | STMT_val_decl (s,_,_,_,_)
+  | STMT_lazy_decl (s,_,_,_,_)
+  | STMT_var_decl (s,_,_,_,_)
+  | STMT_ref_decl (s,_,_,_,_)
+  | STMT_type_alias (s,_,_,_)
+  | STMT_inherit (s,_,_,_)
+  | STMT_inherit_fun (s,_,_,_)
+  | STMT_nop (s,_)
+  | STMT_assign (s,_,_,_)
+  | STMT_cassign (s, _,_)
+  | STMT_call (s,_,_)
+  | STMT_jump (s,_,_)
+  | STMT_loop (s,_,_)
+  | STMT_svc (s,_)
+  | STMT_fun_return (s,_)
+  | STMT_yield (s,_)
+  | STMT_proc_return s
+  | STMT_halt (s,_)
+  | STMT_trace (s,_,_)
+  | STMT_ifgoto (s,_,_)
+  | STMT_ifreturn (s,_)
+  | STMT_ifdo (s,_,_,_)
   (*
-  | `AST_whilst (s,_,_)
-  | `AST_until (s,_,_)
+  | STMT_whilst (s,_,_)
+  | STMT_until (s,_,_)
   *)
-  | `AST_abs_decl (s,_,_,_,_,_)
-  | `AST_newtype (s,_,_,_)
-  | `AST_ctypes (s,_,_,_)
-  | `AST_const_decl (s,_,_,_,_,_)
-  | `AST_fun_decl (s,_,_,_,_,_,_,_)
-  | `AST_callback_decl (s,_,_,_,_)
-  | `AST_insert (s,_,_,_,_,_)
-  | `AST_code (s,_)
-  | `AST_noreturn_code (s,_)
-  | `AST_union (s, _,_,_)
-  | `AST_struct (s,_,_,_)
-  | `AST_cstruct (s,_,_,_)
-  | `AST_typeclass (s,_,_,_)
-  | `AST_instance (s,_,_,_)
-  | `AST_untyped_module (s,_,_,_)
-  | `AST_export_fun (s,_,_)
-  | `AST_export_python_fun (s,_,_)
-  | `AST_export_type (s,_,_)
-  | `AST_open (s,_,_)
-  | `AST_inject_module (s,_)
-  | `AST_include (s,_)
-  | `AST_use (s,_,_)
-  | `AST_seq (s,_)
-  | `AST_user_statement (s,_,_)
-  | `AST_scheme_string (s,_)
-  | `AST_comment (s,_)
-  | `AST_stmt_match (s,_)
+  | STMT_abs_decl (s,_,_,_,_,_)
+  | STMT_newtype (s,_,_,_)
+  | STMT_ctypes (s,_,_,_)
+  | STMT_const_decl (s,_,_,_,_,_)
+  | STMT_fun_decl (s,_,_,_,_,_,_,_)
+  | STMT_callback_decl (s,_,_,_,_)
+  | STMT_insert (s,_,_,_,_,_)
+  | STMT_code (s,_)
+  | STMT_noreturn_code (s,_)
+  | STMT_union (s, _,_,_)
+  | STMT_struct (s,_,_,_)
+  | STMT_cstruct (s,_,_,_)
+  | STMT_typeclass (s,_,_,_)
+  | STMT_instance (s,_,_,_)
+  | STMT_untyped_module (s,_,_,_)
+  | STMT_export_fun (s,_,_)
+  | STMT_export_python_fun (s,_,_)
+  | STMT_export_type (s,_,_)
+  | STMT_open (s,_,_)
+  | STMT_inject_module (s,_)
+  | STMT_include (s,_)
+  | STMT_use (s,_,_)
+  | STMT_seq (s,_)
+  | STMT_user_statement (s,_,_)
+  | STMT_scheme_string (s,_)
+  | STMT_comment (s,_)
+  | STMT_stmt_match (s,_)
   -> s
 
 let src_of_pat (e : pattern_t) = match e with

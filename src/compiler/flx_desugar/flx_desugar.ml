@@ -22,7 +22,7 @@ let generated = Flx_srcref.make_dummy "[flx_desugar] generated"
 
 let block sr body :statement_t =
   let e = EXPR_lambda (sr,(dfltvs,[[],None],TYP_void sr,body)) in
-  `AST_call (sr,e,EXPR_tuple(sr,[]))
+  STMT_call (sr,e,EXPR_tuple(sr,[]))
 
 let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
   let rec aux (ps:parameter_t list) :plain_vs_list_t * parameter_t list =
@@ -89,23 +89,23 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
     | [] ->
         begin match return_type with
         | TYP_void _ ->
-          `AST_function (sr, name n, vs, ([],None), (return_type,postcondition), props, body)
+          STMT_function (sr, name n, vs, ([],None), (return_type,postcondition), props, body)
         | _ ->
           (* allow functions with no arguments now .. *)
           begin match body with
-          | [`AST_fun_return (_,e)] ->
+          | [STMT_fun_return (_,e)] ->
             let rt = match return_type with
             | TYP_none -> None
             | x -> Some x
             in
-            `AST_lazy_decl (sr, name n, vs, rt, Some e)
+            STMT_lazy_decl (sr, name n, vs, rt, Some e)
           | _ ->
           clierr sr "Function with no arguments"
           end
         end
 
     | h :: [] -> (* bottom level *)
-        `AST_function (sr, name n, vs, h, (return_type,postcondition), props, body)
+        STMT_function (sr, name n, vs, h, (return_type,postcondition), props, body)
     | h :: t ->
       let argt =
         let hdt = List.hd t in
@@ -116,7 +116,7 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
       let body =
         [
           aux t dfltvs [];
-          `AST_fun_return
+          STMT_fun_return
           (
             sr,
             EXPR_suffix
@@ -129,16 +129,16 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
           )
         ]
       in
-        `AST_function (sr, name m, vs, h, (rettype t,None), `Generated "curry"::props, body)
+        STMT_function (sr, name m, vs, h, (rettype t,None), `Generated "curry"::props, body)
    in aux args vs (cal_props kind @ props)
 
 (* model binary operator as procedure call *)
 let assign sr op l r =
   match op with
-  | "_set" -> `AST_cassign (sr,l,r)
-  | "_pset" -> `AST_cassign (sr,EXPR_deref (sr,l),r)
+  | "_set" -> STMT_cassign (sr,l,r)
+  | "_pset" -> STMT_cassign (sr,EXPR_deref (sr,l),r)
   | _ ->
-  `AST_call
+  STMT_call
   (
     sr,
     EXPR_name (sr, op,[]),
@@ -731,40 +731,40 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     bindings defined in this entity
   *)
   match st with
-  | `AST_seq _ -> assert false
-  | `AST_private (sr,st) ->
+  | STMT_seq _ -> assert false
+  | STMT_private (sr,st) ->
      rst syms name `Private parent_vs st
 
-  | `AST_include (sr,inspec) -> assert false
+  | STMT_include (sr,inspec) -> assert false
 
     (*
     let sts = include_file syms inspec true in
     rsts name parent_vs  access sts
     *)
 
-  | `AST_label (sr,s) -> [Exe (sr,EXE_label s)]
-  | `AST_proc_return sr -> [Exe (sr,EXE_proc_return)]
-  | `AST_halt (sr,s) -> [Exe (sr,EXE_halt s)]
-  | `AST_trace (sr,v,s) -> [Exe (sr,EXE_trace (v,s))]
-  | `AST_goto (sr,s) -> [Exe (sr,EXE_goto s)]
-  | `AST_open (sr,(vs,aux),name) ->
+  | STMT_label (sr,s) -> [Exe (sr,EXE_label s)]
+  | STMT_proc_return sr -> [Exe (sr,EXE_proc_return)]
+  | STMT_halt (sr,s) -> [Exe (sr,EXE_halt s)]
+  | STMT_trace (sr,v,s) -> [Exe (sr,EXE_trace (v,s))]
+  | STMT_goto (sr,s) -> [Exe (sr,EXE_goto s)]
+  | STMT_open (sr,(vs,aux),name) ->
     let vs = List.map (fun (n,t)->let i = seq() in n,i,t) vs in
     [Dir (DIR_open ((vs,aux),name))]
-  | `AST_inject_module (sr,name) -> [Dir (DIR_inject_module name)]
-  | `AST_use (sr,n,qn) -> [Dir (DIR_use (n,qn))]
-  | `AST_comment (sr,s) -> [Exe (sr,EXE_comment s)]
+  | STMT_inject_module (sr,name) -> [Dir (DIR_inject_module name)]
+  | STMT_use (sr,n,qn) -> [Dir (DIR_use (n,qn))]
+  | STMT_comment (sr,s) -> [Exe (sr,EXE_comment s)]
 
   (* objects *)
-  | `AST_export_python_fun (sr,name,cpp_name) ->
+  | STMT_export_python_fun (sr,name,cpp_name) ->
     [Iface (sr, IFACE_export_python_fun (name, cpp_name))]
 
-  | `AST_export_fun (sr,name,cpp_name) ->
+  | STMT_export_fun (sr,name,cpp_name) ->
     [Iface (sr, IFACE_export_fun (name, cpp_name))]
 
-  | `AST_export_type (sr,typ,cpp_name) ->
+  | STMT_export_type (sr,typ,cpp_name) ->
     [Iface (sr, IFACE_export_type (typ, cpp_name))]
 
-  | `AST_var_decl (sr,name,vs,typ,expr) ->
+  | STMT_var_decl (sr,name,vs,typ,expr) ->
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
@@ -776,7 +776,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     | None,None -> failwith "Expected variable to have type or initialiser"
     end
 
-  | `AST_val_decl (sr,name,vs,typ,expr) ->
+  | STMT_val_decl (sr,name,vs,typ,expr) ->
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
@@ -788,7 +788,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     | None,None -> failwith "Expected value to have type or initialiser"
     end
 
-  | `AST_ref_decl (sr,name,vs,typ,expr) ->
+  | STMT_ref_decl (sr,name,vs,typ,expr) ->
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
@@ -802,7 +802,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     end
 
 
-  | `AST_lazy_decl (sr,name,vs,typ,expr) ->
+  | STMT_lazy_decl (sr,name,vs,typ,expr) ->
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
@@ -813,25 +813,25 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     | _,None -> failwith "Expected lazy value to have initialiser"
     end
 
-  | `AST_const_decl (sr,name, vs,typ, s, reqs) ->
+  | STMT_const_decl (sr,name, vs,typ, s, reqs) ->
     let props,dcls, reqs = mkreqs sr reqs in
     Dcl (sr,name,None,access,vs,DCL_const (props,typ,s, map_reqs sr reqs))
     :: dcls
 
   (* types *)
-  | `AST_abs_decl (sr,name,vs,quals,s, reqs) ->
+  | STMT_abs_decl (sr,name,vs,quals,s, reqs) ->
     let props,dcls, reqs = mkreqs sr reqs in
     Dcl (sr,name,None,access,vs,DCL_abs (quals,s,map_reqs sr reqs))
     :: dcls
 
-  | `AST_newtype (sr,name,vs,t) ->
+  | STMT_newtype (sr,name,vs,t) ->
     [Dcl (sr,name,None,access,vs,DCL_newtype t)]
 
-  | `AST_union (sr,name, vs, components) -> [Dcl (sr,name,None,access,vs,DCL_union (components))]
-  | `AST_struct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,DCL_struct (components))]
-  | `AST_cstruct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,DCL_cstruct (components))]
+  | STMT_union (sr,name, vs, components) -> [Dcl (sr,name,None,access,vs,DCL_union (components))]
+  | STMT_struct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,DCL_struct (components))]
+  | STMT_cstruct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,DCL_cstruct (components))]
 
-  | `AST_typeclass (sr,name, vs, sts) ->
+  | STMT_typeclass (sr,name, vs, sts) ->
     if syms.compiler_options.document_typeclass then
     begin
       print_endline ("DOCUMENT TYPECLASS " ^ name);
@@ -842,7 +842,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     let asms = bridge name sr :: asms in
     [ Dcl (sr,name,None,access,vs, DCL_typeclass asms) ]
 
-  | `AST_instance (sr, vs, name, sts) ->
+  | STMT_instance (sr, vs, name, sts) ->
     let name',ts = match name with
     | `AST_lookup (_,(_,name,ts)) -> name,ts
     | `AST_name (_,name,ts) -> name,ts
@@ -855,24 +855,24 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     in
     mdcl
 
-  | `AST_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,None,access,vs,DCL_type_alias (typ))]
-  | `AST_inherit (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit qn)]
-  | `AST_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit_fun qn)]
+  | STMT_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,None,access,vs,DCL_type_alias (typ))]
+  | STMT_inherit (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit qn)]
+  | STMT_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit_fun qn)]
 
-  | `AST_curry (sr,name',vs,pps,ret,kind,sts) ->
+  | STMT_curry (sr,name',vs,pps,ret,kind,sts) ->
     rst syms name access parent_vs (mkcurry seq sr name' vs pps ret kind sts [])
 
   (* functions *)
-  | `AST_reduce (sr,name,vs,params, rsrc,rdst) ->
+  | STMT_reduce (sr,name,vs,params, rsrc,rdst) ->
     [ Dcl (sr,name,None,access,vs,DCL_reduce (params,rsrc,rdst)) ]
 
-  | `AST_axiom (sr,name,vs,params, rsrc) ->
+  | STMT_axiom (sr,name,vs,params, rsrc) ->
     [ Dcl (sr,name,None,access,vs,DCL_axiom (params,rsrc)) ]
 
-  | `AST_lemma (sr,name,vs,params, rsrc) ->
+  | STMT_lemma (sr,name,vs,params, rsrc) ->
     [ Dcl (sr,name,None,access,vs,DCL_lemma (params,rsrc)) ]
 
-  | `AST_function (sr,name', vs, params, (res,postcondition), props, sts) ->
+  | STMT_function (sr,name', vs, params, (res,postcondition), props, sts) ->
     (*
     print_endline (string_of_statement 0 st);
     *)
@@ -895,41 +895,41 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
       let sts =
         (match pre with
         | None -> []
-        | Some x -> [`AST_assert (src_of_expr x,x)]
+        | Some x -> [STMT_assert (src_of_expr x,x)]
         )
         @
         [
-          `AST_function (sr,name'', dfltvs,([],None),(res,None),props,sts);
+          STMT_function (sr,name'', dfltvs,([],None),(res,None),props,sts);
         ]
         @
         begin match res with
         | TYP_void _ ->
-           [`AST_call (sr,inner,un) ] @
+           [STMT_call (sr,inner,un) ] @
            begin match post with
            | None -> []
-           | Some y -> [`AST_assert (src_of_expr y,y)]
+           | Some y -> [STMT_assert (src_of_expr y,y)]
            end
           | _ ->
             let retval:expr_t = EXPR_apply (sr,(inner,un)) in
             begin match post with
             | None ->
-              [`AST_fun_return (sr,retval)]
+              [STMT_fun_return (sr,retval)]
             | Some y ->
               [
-                `AST_val_decl (sr,"result",dfltvs,None,Some retval);
-                `AST_assert (src_of_expr y,y);
-                `AST_fun_return (sr,EXPR_name (sr,"result",[]))
+                STMT_val_decl (sr,"result",dfltvs,None,Some retval);
+                STMT_assert (src_of_expr y,y);
+                STMT_fun_return (sr,EXPR_name (sr,"result",[]))
               ]
             end
         end
       in
       let st =
-        `AST_function (sr,name',vs,(ps,None),(res,None),props,sts)
+        STMT_function (sr,name',vs,(ps,None),(res,None),props,sts)
       in
       rst syms name access parent_vs st
     end
 
-  | `AST_fun_decl (sr,name',vs,args,result,code, reqs,prec) ->
+  | STMT_fun_decl (sr,name',vs,args,result,code, reqs,prec) ->
     (*
     print_endline (string_of_statement 0 st);
     *)
@@ -957,14 +957,14 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
       DCL_fun (props, List.rev args, result, code, map_reqs sr reqs, prec))
     :: dcls
 
-  | `AST_callback_decl (sr,name',args,result,reqs) ->
+  | STMT_callback_decl (sr,name',args,result,reqs) ->
     let props, dcls, reqs = mkreqs sr reqs in
     Dcl (sr,name',None,access,dfltvs,
       DCL_callback (props,args,result,map_reqs sr reqs))
     :: dcls
 
   (* misc *)
-  | `AST_untyped_module (sr,name', vs', sts) ->
+  | STMT_untyped_module (sr,name', vs', sts) ->
     if syms.compiler_options.document_typeclass then
     begin
       print_endline ("DOCUMENT MODULE " ^ name');
@@ -979,7 +979,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
       (* HACK !!!! *)
     if vs' = dfltvs then gen_call_init sr name' :: mdcl else mdcl
 
-  | `AST_insert (sr,name',vs,s,kind,reqs) ->
+  | STMT_insert (sr,name',vs,s,kind,reqs) ->
     let props, dcls, reqs = mkreqs sr reqs in
     (* SPECIAL case: insertion requires insertion use filo order *)
     dcls @ [
@@ -987,23 +987,23 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     ]
 
   (* executable *)
-  | `AST_fun_return (sr,e) ->
+  | STMT_fun_return (sr,e) ->
     let d,x = rex e in d @ [Exe (sr,EXE_fun_return x)]
 
-  | `AST_yield (sr,e) ->
+  | STMT_yield (sr,e) ->
     let d,x = rex e in d @ [Exe (sr,EXE_yield x)]
 
-  | `AST_assert (sr,e) ->
+  | STMT_assert (sr,e) ->
     let d,x = rex e in d @ [Exe (sr,EXE_assert x)]
 
-  | `AST_nop _ -> []
+  | STMT_nop _ -> []
 
-  | `AST_cassign (sr,l,r) ->
+  | STMT_cassign (sr,l,r) ->
      let l1,x1 = rex l in
      let l2,x2 = rex r in
      l1 @ l2 @ [Exe (sr,EXE_assign (x1,x2))]
 
-  | `AST_assign (sr,fid,l,r) ->
+  | STMT_assign (sr,fid,l,r) ->
     let rec aux (l,t) r =
       match l with
       | `Expr (sr,e) ->
@@ -1023,7 +1023,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
           )
           ls
           ;
-          `AST_val_decl (sr,vn,dfltvs,t,Some r) :: !sts
+          STMT_val_decl (sr,vn,dfltvs,t,Some r) :: !sts
         | _ ->
           if fid = "_init"
           then
@@ -1033,18 +1033,18 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
                 | None -> Some t'
                 | t -> t
               in
-              [`AST_val_decl (sr,n,dfltvs,t,Some r)]
+              [STMT_val_decl (sr,n,dfltvs,t,Some r)]
 
             | EXPR_name (_,n,[]) ->
-              [`AST_val_decl (sr,n,dfltvs,t,Some r)]
+              [STMT_val_decl (sr,n,dfltvs,t,Some r)]
             | x -> clierr sr ("identifier required in val init, got " ^ string_of_expr x)
           else
             [assign sr fid e r]
         end
       | `Val (sr,n) ->
-          [`AST_val_decl (sr,n,dfltvs,t,Some r)]
+          [STMT_val_decl (sr,n,dfltvs,t,Some r)]
       | `Var (sr,n) ->
-          [`AST_var_decl (sr,n,dfltvs,t,Some r)]
+          [STMT_var_decl (sr,n,dfltvs,t,Some r)]
       | `Skip (sr) ->  []
       | `Name (sr,n) ->
         let n = EXPR_name(sr,n,[]) in
@@ -1063,39 +1063,39 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
           )
           ls
           ;
-          `AST_val_decl (sr,vn,dfltvs,t,Some r) :: !sts
+          STMT_val_decl (sr,vn,dfltvs,t,Some r) :: !sts
     in
       let sts = aux l r in
       rsts name parent_vs access sts
 
-  | `AST_call (sr,proc, arg) ->
+  | STMT_call (sr,proc, arg) ->
     let d1,x1 = rex proc in
     let d2,x2 = rex arg in
     d1 @ d2 @ [Exe (sr,EXE_call (x1,x2))]
 
-  | `AST_init (sr,v,e) ->
+  | STMT_init (sr,v,e) ->
     let d,x = rex e in
     d @ [Exe (sr,EXE_init (v,e))]
 
-  | `AST_jump (sr,proc, arg) ->
+  | STMT_jump (sr,proc, arg) ->
     let d1,x1 = rex proc in
     let d2,x2 = rex arg in
     d1 @ d2 @ [Exe (sr,EXE_jump (x1,x2))]
 
-  | `AST_loop (sr,proc, arg) ->
+  | STMT_loop (sr,proc, arg) ->
     let d2,x2 = rex arg in
     d2 @ [Exe (sr,EXE_loop (proc,x2))]
 
-  | `AST_ifgoto (sr,e,lab)->
+  | STMT_ifgoto (sr,e,lab)->
     let d,x = rex e in
     d @ [Exe (sr,EXE_ifgoto (x,lab))]
 
 
-  | `AST_svc (sr,name) ->  [Exe (sr,EXE_svc name)]
-  | `AST_code (sr,s) -> [Exe (sr,EXE_code s)]
-  | `AST_noreturn_code (sr,s) -> [Exe (sr,EXE_noreturn_code s)]
+  | STMT_svc (sr,name) ->  [Exe (sr,EXE_svc name)]
+  | STMT_code (sr,s) -> [Exe (sr,EXE_code s)]
+  | STMT_noreturn_code (sr,s) -> [Exe (sr,EXE_noreturn_code s)]
 
-  | `AST_stmt_match (sr,(e,pss)) ->
+  | STMT_stmt_match (sr,(e,pss)) ->
     if List.length pss = 0 then clierr sr "Empty Pattern";
 
     (* step 1: evaluate e *)
@@ -1152,7 +1152,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
               Flx_mbind.gen_extractor extractor
               (EXPR_index (sr,match_var_name,match_index))
             in
-            let dcl = `AST_val_decl (sr,vname,dfltvs,None,Some component) in
+            let dcl = STMT_val_decl (sr,vname,dfltvs,None,Some component) in
             new_sts := dcl :: !new_sts;
           )
       vars;
@@ -1236,27 +1236,27 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
 
   (* split into multiple declarations *)
 
-  | `AST_user_statement _
-  | `AST_ctypes _
-  | `AST_expr_macro _
-  | `AST_ifdo _
-  | `AST_ifreturn _
-  | `AST_macro_assign _
-  | `AST_macro_forget _
-  | `AST_macro_goto _
-  | `AST_macro_ifgoto _
-  | `AST_macro_label _
-  | `AST_macro_proc_return _
-  | `AST_macro_val _
-  | `AST_macro_vals _
-  | `AST_macro_var _
-  | `AST_macro_name _
-  | `AST_macro_names _
-  | `AST_stmt_macro _
-  | `AST_macro_block _
-  | `AST_macro_ifor _
-  | `AST_macro_vfor _
-  | `AST_scheme_string _
+  | STMT_user_statement _
+  | STMT_ctypes _
+  | STMT_expr_macro _
+  | STMT_ifdo _
+  | STMT_ifreturn _
+  | STMT_macro_assign _
+  | STMT_macro_forget _
+  | STMT_macro_goto _
+  | STMT_macro_ifgoto _
+  | STMT_macro_label _
+  | STMT_macro_proc_return _
+  | STMT_macro_val _
+  | STMT_macro_vals _
+  | STMT_macro_var _
+  | STMT_macro_name _
+  | STMT_macro_names _
+  | STMT_stmt_macro _
+  | STMT_macro_block _
+  | STMT_macro_ifor _
+  | STMT_macro_vfor _
+  | STMT_scheme_string _
     -> assert false
 
 (** Construct a desugar state value needed for desugaring. *)
@@ -1269,7 +1269,7 @@ let make_desugar_state name syms = {
 (** Desugar all the statements in a compilation unit. *)
 let desugar_compilation_unit desugar_state sts =
   let sts = match sts with
-    | [] -> [`AST_nop (generated, "empty module")]
+    | [] -> [STMT_nop (generated, "empty module")]
     | _ -> sts
   in
   let sr =
@@ -1279,14 +1279,14 @@ let desugar_compilation_unit desugar_state sts =
   in
   let sts = Flx_macro.expand_macros desugar_state.macro_state sts in
   (*
-  let sts = `AST_body(sr,"_rqs__top",[],"",[]) :: sts in
+  let sts = STMT_body(sr,"_rqs__top",[],"",[]) :: sts in
   *)
   rst
     desugar_state.syms
     desugar_state.name
     `Public
     dfltvs
-    (`AST_untyped_module (sr, desugar_state.name, dfltvs, sts))
+    (STMT_untyped_module (sr, desugar_state.name, dfltvs, sts))
 
 (** Desguar a statement. *)
 let desugar_statement desugar_state handle_asm stmt init =

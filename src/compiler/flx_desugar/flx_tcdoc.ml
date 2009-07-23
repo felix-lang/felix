@@ -49,7 +49,7 @@ let gen_tcdoc () =
       w (begin_div "rule" ^ ("typeclass " ^ name ^ Flx_print.print_vs vs) ^ end_div);
       iter (fun stmt -> match stmt with
 
-      | `AST_inject_module (sr,qn) ->
+      | STMT_inject_module (sr,qn) ->
         begin match qn with
         | `AST_name (_,name,ts) ->
           w (begin_div "element" ^
@@ -63,7 +63,7 @@ let gen_tcdoc () =
           )
         end
 
-      | `AST_fun_decl (sr,name,vs,args,result,code,reqs,prec)
+      | STMT_fun_decl (sr,name,vs,args,result,code,reqs,prec)
         when code = `Virtual ->
         begin match result with
         | TYP_void _ ->
@@ -132,7 +132,7 @@ let gen_mdoc () =
       w (begin_div "rule" ^ ("module " ^ name ^ Flx_print.print_vs vs) ^ end_div);
       iter (fun stmt -> match stmt with
 
-      | `AST_inject_module (sr,qn) ->
+      | STMT_inject_module (sr,qn) ->
         begin match qn with
         | `AST_name (_,name,ts) ->
           w (begin_div "element" ^
@@ -146,7 +146,7 @@ let gen_mdoc () =
           )
         end
 
-      | `AST_const_decl (sr,name,vs,typ,code,reqs) ->
+      | STMT_const_decl (sr,name,vs,typ,code,reqs) ->
         let seq = !counter in incr counter;
         let id = "ref_"^string_of_int seq in
         w (begin_div "element" ^
@@ -162,7 +162,7 @@ let gen_mdoc () =
         w "</DIV>";
         w end_div;
 
-      | `AST_insert (_,name,vs,code, ikind, reqs) ->
+      | STMT_insert (_,name,vs,code, ikind, reqs) ->
         let seq = !counter in incr counter;
         let id = "ref_"^string_of_int seq in
         w (begin_div "element" ^
@@ -178,7 +178,7 @@ let gen_mdoc () =
         w "</DIV>";
         w end_div;
 
-      | `AST_abs_decl (_,name,vs, quals, code, reqs) ->
+      | STMT_abs_decl (_,name,vs, quals, code, reqs) ->
         let seq = !counter in incr counter;
         let id = "ref_"^string_of_int seq in
         w (begin_div "element" ^
@@ -195,7 +195,7 @@ let gen_mdoc () =
         w "</DIV>";
         w end_div;
 
-      | `AST_fun_decl (sr,name,vs,args,result,code,reqs,prec)  ->
+      | STMT_fun_decl (sr,name,vs,args,result,code,reqs,prec)  ->
         let seq = !counter in incr counter;
         let id = "ref_"^string_of_int seq in
         begin match result with
@@ -221,7 +221,7 @@ let gen_mdoc () =
         w end_div;
 
 
-      | `AST_curry (_,name, vs, pss, (res,traint) , kind, ss) ->
+      | STMT_curry (_,name, vs, pss, (res,traint) , kind, ss) ->
         let s =
           span "category"
           (match kind with
@@ -252,7 +252,7 @@ let gen_mdoc () =
         let seq = !counter in incr counter;
         let id = "ref_"^string_of_int seq in
         begin match ss with
-        | [`AST_fun_return (_,e)] ->
+        | [STMT_fun_return (_,e)] ->
           w s;
           w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
           " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
@@ -270,7 +270,7 @@ let gen_mdoc () =
         end;
         w end_div;
 
-      | `AST_instance (_,vs,name, sts) ->
+      | STMT_instance (_,vs,name, sts) ->
         w (begin_div "element");
         let seq = !counter in incr counter;
         let id = "ref_"^string_of_int seq in
