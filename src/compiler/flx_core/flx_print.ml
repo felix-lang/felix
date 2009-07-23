@@ -1090,8 +1090,8 @@ and string_of_ikind = function
   | `Package -> "package "
 
 and string_of_axiom_method a = match a with
-  | `Predicate e -> string_of_expr e
-  | `Equation (l,r) -> string_of_expr l ^ " = " ^ string_of_expr r
+  | Predicate e -> string_of_expr e
+  | Equation (l,r) -> string_of_expr l ^ " = " ^ string_of_expr r
 
 and string_of_baxiom_method dfns bbdfns a = match a with
   | `BPredicate e -> string_of_expr e

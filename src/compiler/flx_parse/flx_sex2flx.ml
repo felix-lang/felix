@@ -370,8 +370,8 @@ and xvs_list_t sr x : vs_list_t =
 and xaxiom_method_t sr x : axiom_method_t =
   let ex x = xexpr_t sr x in
   match x with
-  | Lst [Id "Predicate"; e] -> `Predicate (ex e)
-  | Lst [Id "Equation"; e1; e2] -> `Equation (ex e1, ex e2)
+  | Lst [Id "Predicate"; e] -> Predicate (ex e)
+  | Lst [Id "Equation"; e1; e2] -> Equation (ex e1, ex e2)
   | x -> err x "axiom_method_t"
 
 and xparam_kind_t sr x : param_kind_t =

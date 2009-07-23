@@ -179,8 +179,8 @@ let bbind_sym syms bbdfns i {
     | SYMDEF_axiom (ps,e1) ->
       let bps = bindps ps in
       let be1 = match e1 with
-        | `Predicate e -> `BPredicate (be e)
-        | `Equation (l,r) -> `BEquation (be l, be r)
+        | Predicate e -> `BPredicate (be e)
+        | Equation (l,r) -> `BEquation (be l, be r)
       in
       syms.axioms <- (name, sr, parent, Axiom, bvs, bps, be1) :: syms.axioms
       ;
@@ -191,8 +191,8 @@ let bbind_sym syms bbdfns i {
     | SYMDEF_lemma (ps,e1) ->
       let bps = bindps ps in
       let be1 = match e1 with
-        | `Predicate e -> `BPredicate (be e)
-        | `Equation (l,r) -> `BEquation (be l, be r)
+        | Predicate e -> `BPredicate (be e)
+        | Equation (l,r) -> `BEquation (be l, be r)
       in
       syms.axioms <- (name, sr, parent, Lemma, bvs, bps, be1) :: syms.axioms
       ;

@@ -1003,15 +1003,15 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | STMT_axiom (sr, id, vs, psp, e1) ->
     let e1 = match e1 with
-      | `Predicate e -> `Predicate (me e)
-      | `Equation (l,r) -> `Equation (me l, me r)
+      | Predicate e -> Predicate (me e)
+      | Equation (l,r) -> Equation (me l, me r)
     in
     tack(STMT_axiom (sr, mi sr id, vs, mpsp sr psp, e1))
 
   | STMT_lemma (sr, id, vs, psp, e1) ->
     let e1 = match e1 with
-      | `Predicate e -> `Predicate (me e)
-      | `Equation (l,r) -> `Equation (me l, me r)
+      | Predicate e -> Predicate (me e)
+      | Equation (l,r) -> Equation (me l, me r)
     in
     tack(STMT_lemma (sr, mi sr id, vs, mpsp sr psp, e1))
 
