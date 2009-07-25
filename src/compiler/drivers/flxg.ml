@@ -202,8 +202,9 @@ try
 
 
   print_debug "//BINDING EXECUTABLE CODE";
-  let bbind_state = Flx_bbind.make_bbind_state syms in
-  let bbdfns = Flx_bbind.bbind bbind_state in
+  let bbdfns = Hashtbl.create 97 in
+  let bbind_state = Flx_bbind.make_bbind_state syms bbdfns in
+  Flx_bbind.bbind bbind_state;
 
   print_debug "//DOWNGRADING ABSTRACT TYPES";
   let bbdfns = Flx_strabs.strabs syms bbdfns in

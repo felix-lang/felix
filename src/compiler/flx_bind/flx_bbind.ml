@@ -13,6 +13,13 @@ open List
 open Flx_generic
 open Flx_tpat
 
+type bbind_state_t = {
+  syms: Flx_mtypes2.sym_state_t;
+  bbdfns: Flx_types.fully_bound_symbol_table_t;
+}
+
+let make_bbind_state syms bbdfns = { syms=syms; bbdfns=bbdfns }
+
 let hfind msg h k =
   try Hashtbl.find h k
   with Not_found ->
@@ -97,7 +104,7 @@ let bind_qual bt qual = match qual with
 
 let bind_quals bt quals = map (bind_qual bt) quals
 
-let bbind_sym syms bbdfns symbol_index {
+let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
   id=name;
   sr=sr;
   parent=parent;
@@ -586,22 +593,6 @@ let bbind_sym syms bbdfns symbol_index {
     flush stdout
     *)
 
-let bbind_index syms bbdfns i =
-  if Hashtbl.mem bbdfns i then ()
-  else let entry = hfind "bbind" syms.dfns i in
-  bbind_sym syms bbdfns i entry
-
-type bbind_state_t = {
-  syms: Flx_mtypes2.sym_state_t;
-  bbdfns: Flx_types.fully_bound_symbol_table_t;
-}
-
-let make_bbind_state syms =
-  {
-    syms = syms;
-    bbdfns = Hashtbl.create 97;
-  }
-
 let bbind bbind_state =
   (* loop through all counter values [HACK]
     to get the indices in sequence, AND,
@@ -626,7 +617,7 @@ let bbind bbind_state =
               failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
           end;
           *)
-          bbind_sym bbind_state.syms bbind_state.bbdfns !i entry
+          bbind_symbol bbind_state !i entry
         with Not_found ->
           try match hfind "bbind" bbind_state.syms.dfns !i with {id=id} ->
             failwith ("Binding error, cannot find in table: " ^ id ^ " index " ^ si !i)
@@ -638,8 +629,6 @@ let bbind bbind_state =
     ;
     incr i
   done
-  ;
-  bbind_state.bbdfns
 
 let bind_interface bbind_state = function
   | sr, IFACE_export_fun (sn, cpp_name), parent ->

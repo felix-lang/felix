@@ -80,8 +80,9 @@ try
   let _, ifaces = Flx_symtab.add_asms symtab asms in
     print_endline "//BINDING EXECUTABLE CODE";
     print_endline "//-----------------------";
-    let bbind_state = Flx_bbind.make_bbind_state syms in
-    let bbdfns = Flx_bbind.bbind bbind_state in
+    let bbdfns = Hashtbl.create 97 in
+    let bbind_state = Flx_bbind.make_bbind_state syms bbdfns in
+    Flx_bbind.bbind bbind_state;
     let child_map = Flx_child.cal_children syms bbdfns in
     let bifaces = List.map (Flx_bbind.bind_interface bbind_state) ifaces in
     print_endline "//Binding complete";

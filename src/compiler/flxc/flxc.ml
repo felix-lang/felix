@@ -4,6 +4,7 @@
 
 type state_t = {
   syms: Flx_mtypes2.sym_state_t;
+  bbdfns: Flx_types.fully_bound_symbol_table_t;
   macro_state: Flx_macro.macro_state_t;
   desugar_state: Flx_desugar.desugar_state_t;
   symtab: Flx_symtab.t;
@@ -18,6 +19,7 @@ let create_state options =
   (* Construct the state needed for compilation *)
   let syms = Flx_mtypes2.make_syms options in
   let symtab = Flx_symtab.make syms in
+  let bbdfns = Hashtbl.create 97 in
 
   (* Declare the module to work within *)
   let module_index, _ = Flx_symtab.add_dcl symtab (
@@ -34,10 +36,11 @@ let create_state options =
   in
   {
     syms = syms;
+    bbdfns = bbdfns;
     macro_state = Flx_macro.make_macro_state "<input>";
     desugar_state = Flx_desugar.make_desugar_state "<input>" syms;
     symtab = symtab;
-    bbind_state = Flx_bbind.make_bbind_state syms;
+    bbind_state = Flx_bbind.make_bbind_state syms bbdfns;
     module_index = module_index;
     init_index = init_index;
   }
@@ -71,6 +74,10 @@ let handle_stmt state stmt () =
   Flx_desugar.desugar_statement state.desugar_state begin fun asm () ->
     print_endline ("... DESUGARED: " ^ (Flx_print.string_of_asm 0 asm));
 
+    (* We need to save the symbol index counter so we can bind all of the
+     * symbols that we just added. *)
+    let i = ref !(state.syms.Flx_mtypes2.counter) in
+
     (* Add declarations to the symbol table *)
     begin
       match asm with
@@ -82,6 +89,29 @@ let handle_stmt state stmt () =
       | Flx_types.Iface _ -> ()
       | Flx_types.Dir _ -> ()
     end;
+
+    (* Now bind in order all of the symbols we added. *)
+    while !i < !(state.syms.Flx_mtypes2.counter) do
+      let entry =
+        try Some (Hashtbl.find state.syms.Flx_mtypes2.dfns !i)
+        with Not_found -> None
+      in
+      begin
+        match entry with
+        | Some entry ->
+          Flx_bbind.bbind_symbol state.bbind_state !i entry;
+
+          (* Look up the bound value in the bbdnfs *)
+          let _, _, _, e = Hashtbl.find state.bbdfns !i in
+          print_endline ("... BOUND:     " ^ Flx_print.string_of_bbdcl
+            state.syms.Flx_mtypes2.dfns
+            state.bbdfns
+            e
+            !i);
+        | None -> ()
+      end;
+      incr i
+    done;
     ()
   end stmt ();
 
@@ -149,15 +179,21 @@ let main () =
   let _, exes, _ = parse_stdin ((handle_stmt state), asms, local_data) in
 
   (* Now, bind all the symbols *)
+  (*
   let bbdfns = Flx_bbind.bbind state.bbind_state in
+  *)
 
   (* And print out the bound values *)
   Hashtbl.iter begin fun index (name,parent,sr,entry) ->
     print_endline (
       string_of_int index ^ " --> " ^
-      Flx_print.string_of_bbdcl state.syms.Flx_mtypes2.dfns bbdfns entry index
+      Flx_print.string_of_bbdcl
+        state.syms.Flx_mtypes2.dfns
+        state.bbdfns
+        entry
+        index
     )
-  end bbdfns;
+  end state.bbdfns;
   0
 ;;
 

@@ -1290,7 +1290,7 @@ let desugar_compilation_unit desugar_state sts =
     dfltvs
     (STMT_untyped_module (sr, desugar_state.name, dfltvs, sts))
 
-(** Desguar a statement. *)
+(** Desugar a statement. *)
 let desugar_statement desugar_state handle_asm stmt init =
   (* First we must expand all the macros in the statement *)
   Flx_macro.expand_macros_in_statement
