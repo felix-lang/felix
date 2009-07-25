@@ -2542,3 +2542,19 @@ let print_symbols dfns (bbdfns:fully_bound_symbol_table_t) =
   | _ -> ()
   )
   bbdfns
+
+let string_of_name_map name_map =
+  let s =
+    Hashtbl.fold begin fun k v s ->
+      k ^ "=" ^ (string_of_entry_set v) ^ ", " ^ s
+    end name_map ""
+  in
+  "{" ^ s ^ "}"
+
+let print_symbol_table dfns =
+  Hashtbl.iter begin fun i symbol_data ->
+    print_endline ("id: " ^ symbol_data.id);
+    print_endline ("pubmap: " ^ (string_of_name_map symbol_data.pubmap));
+    print_endline ("privmap: " ^ (string_of_name_map symbol_data.privmap));
+    print_newline ();
+  end dfns

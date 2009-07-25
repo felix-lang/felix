@@ -114,6 +114,12 @@ val print_function:
   int ->
   unit
 
+val print_symbol_table:
+  symbol_table_t ->
+  unit
+
+val string_of_name_map: name_map_t -> string
+
 val print_vs: vs_list_t -> string
 val print_ivs: ivs_list_t -> string
 val print_ivs_with_index: ivs_list_t -> string
