@@ -279,8 +279,7 @@ try
   let bbdfns = !bbdfns and child_map = !child_map in
 
 
-  let bbdfns = if compiler_options.max_inline_length > 0 then
-  begin
+  let bbdfns = if compiler_options.max_inline_length > 0 then begin
     if compiler_options.print_flag then begin
       print_endline "";
       print_endline "---------------------------";
@@ -288,7 +287,7 @@ try
       print_endline "---------------------------";
       print_endline "";
       print_symbols syms.dfns bbdfns
-   end;
+    end;
 
     syms.reductions <- Flx_reduce.remove_useless_reductions syms bbdfns syms.reductions;
     Flx_typeclass.fixup_typeclass_instances syms bbdfns;
