@@ -261,13 +261,14 @@ and build_table_for_dcl
 
   (* Determine the next index to use. If we already have a symbol index,
    * use that, otherwise use the next number in the counter. *)
-  let n = match seq with
-  | Some n ->
-      (* print_endline ("SPECIAL " ^ id ^ string_of_int n); *)
-      n
-  | None ->
-      let n = !counter in incr counter;
-      n
+  let symbol_index =
+    match seq with
+    | Some n ->
+        (* print_endline ("SPECIAL " ^ id ^ string_of_int n); *)
+        n
+    | None ->
+        let n = !counter in incr counter;
+        n
   in
 
   (* Update the type variable list to include the index. *)
@@ -343,7 +344,7 @@ and build_table_for_dcl
       full_add_typevar syms sr table tvid i;
     end (fst vs)
   in
-  let add_tvars table = add_tvars' (Some n) table vs in
+  let add_tvars table = add_tvars' (Some symbol_index) table vs in
 
   (* Add parameters to the symbol table. *)
   let add_parameters ?(pubtab=pubtab) ?(privtab=privtab) parent ps =
@@ -405,28 +406,28 @@ and build_table_for_dcl
   (* Add the declarations to the symbol table. *)
   match (dcl:Flx_types.dcl_t) with
   | DCL_reduce (ps, e1, e2) ->
-      let ips = add_simple_parameters (Some n) ps in
+      let ips = add_simple_parameters (Some symbol_index) ps in
 
       (* Add the symbol to the symbol table. *)
-      add_symbol n id (SYMDEF_reduce (ips, e1, e2));
+      add_symbol symbol_index id (SYMDEF_reduce (ips, e1, e2));
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | DCL_axiom ((ps, pre), e1) ->
-      let ips = add_parameters (Some n) ps in
+      let ips = add_parameters (Some symbol_index) ps in
 
       (* Add the symbol to the symbol table. *)
-      add_symbol n id (SYMDEF_axiom ((ips, pre),e1));
+      add_symbol symbol_index id (SYMDEF_axiom ((ips, pre),e1));
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | DCL_lemma ((ps, pre), e1) ->
-      let ips = add_parameters (Some n) ps in
+      let ips = add_parameters (Some symbol_index) ps in
 
       (* Add the symbol to the symbol table. *)
-      add_symbol n id (SYMDEF_lemma ((ips, pre), e1));
+      add_symbol symbol_index id (SYMDEF_lemma ((ips, pre), e1));
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
@@ -452,30 +453,29 @@ and build_table_for_dcl
       if is_class && not is_ctor then
         print_endline ("TABLING METHOD " ^ id ^ " OF CLASS " ^ name);
       *)
-      let fun_index = n in
-      let t = if t = TYP_none then TYP_var n else t in
+      let t = if t = TYP_none then TYP_var symbol_index else t in
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           syms
           id
           dfltvs
           (level + 1)
-          (Some n)
+          (Some symbol_index)
           root
           asms
       in
 
-      let ips = add_parameters ~pubtab ~privtab (Some n) ps in
+      let ips = add_parameters ~pubtab ~privtab (Some symbol_index) ps in
 
       (* Add the symbols to the dfns. *)
       add_symbol ~pubtab ~privtab
-        n id (SYMDEF_function ((ips, pre), t, props, exes));
+        symbol_index id (SYMDEF_function ((ips, pre), t, props, exes));
 
       (* Possibly add the function to the public symbol table. *)
-      if access = `Public then add_function pub_name_map id n;
+      if access = `Public then add_function pub_name_map id symbol_index;
 
       (* Add the function to the private symbol table. *)
-      add_function priv_name_map id n;
+      add_function priv_name_map id symbol_index;
 
       (* Add the interface. *)
       interfaces := !interfaces @ ifaces;
@@ -485,17 +485,16 @@ and build_table_for_dcl
 
   | DCL_match_check (pat,(mvname,match_var_index)) ->
       assert (List.length (fst vs) = 0);
-      let fun_index = n in
 
       (* Add the symbol to dfns. *)
-      add_symbol fun_index id
+      add_symbol symbol_index id
         (SYMDEF_match_check (pat, (mvname, match_var_index)));
 
       (* Possibly add the function to the public symbol table. *)
-      if access = `Public then add_function pub_name_map id fun_index;
+      if access = `Public then add_function pub_name_map id symbol_index;
 
       (* Add the function to the private symbol table. *)
-      add_function priv_name_map id fun_index;
+      add_function priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
@@ -503,7 +502,7 @@ and build_table_for_dcl
   | DCL_match_handler (pat,(mvname,match_var_index),asms) ->
       (*
       print_endline ("Parent is " ^ match parent with Some i -> string_of_int i);
-      print_endline ("Match handler, " ^ string_of_int n ^ ", mvname = " ^ mvname);
+      print_endline ("Match handler, " ^ string_of_int symbol_index ^ ", mvname = " ^ mvname);
       *)
       assert (List.length (fst vs) = 0);
       let vars = Hashtbl.create 97 in
@@ -536,28 +535,27 @@ and build_table_for_dcl
       (*
       print_endline ("asms are" ^ string_of_desugared !new_asms);
       *)
-      let fun_index = n in
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           syms
           id
           dfltvs
           (level + 1)
-          (Some fun_index)
+          (Some symbol_index)
           root
           !new_asms
       in
 
       (* Add symbols to dfns. *)
-      add_symbol ~pubtab ~privtab ~dirs fun_index id
-        (SYMDEF_function (([],None), TYP_var fun_index,
+      add_symbol ~pubtab ~privtab ~dirs symbol_index id
+        (SYMDEF_function (([],None), TYP_var symbol_index,
         [`Generated "symtab:match handler" ; `Inline], exes));
 
       (* Possibly add function to public symbol table. *)
-      if access = `Public then add_function pub_name_map id fun_index;
+      if access = `Public then add_function pub_name_map id symbol_index;
 
       (* Add function to private symbol table. *)
-      add_function priv_name_map id fun_index;
+      add_function priv_name_map id symbol_index;
 
       (* Add interface *)
       interfaces := !interfaces @ ifaces;
@@ -566,13 +564,13 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_insert (s,ikind,reqs) ->
-      add_symbol n id (SYMDEF_insert (s,ikind,reqs));
+      add_symbol symbol_index id (SYMDEF_insert (s,ikind,reqs));
 
       (* Possibly add the inserted function to the public symbol table. *)
-      if access = `Public then add_function pub_name_map id n;
+      if access = `Public then add_function pub_name_map id symbol_index;
 
       (* Add the inserted function to the private symbol table. *)
-      add_function priv_name_map id n
+      add_function priv_name_map id symbol_index
 
   | DCL_module asms ->
       let pubtab, privtab, exes, ifaces, dirs =
@@ -581,12 +579,12 @@ and build_table_for_dcl
           id
           (merge_ivs inherit_vs vs)
           (level + 1)
-          (Some n)
+          (Some symbol_index)
           root
           asms
       in
       (* Add the module to the dfns. *)
-      add_symbol ~pubtab ~privtab ~dirs n id  SYMDEF_module;
+      add_symbol ~pubtab ~privtab ~dirs symbol_index id SYMDEF_module;
 
       (* Take all the exes and add them to a function called _init_ that's
        * called when the module is loaded. *)
@@ -601,16 +599,16 @@ and build_table_for_dcl
 
       (* Add the _init_ function to the dfns. *)
       add_symbol
-        ~parent:(Some n)
+        ~parent:(Some symbol_index)
         ~pubtab:null_tab
         ~privtab:null_tab
         n' "_init_" init_def;
 
       (* Possibly add module to the public symbol table. *)
-      if access = `Public then add_unique pub_name_map id n;
+      if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add the module to the private symbol table. *)
-      add_unique priv_name_map id n;
+      add_unique priv_name_map id symbol_index;
 
       (* Possibly add the _init_ function to the public symbol table. *)
       if access = `Public then add_function pubtab "_init_" n';
@@ -637,7 +635,7 @@ and build_table_for_dcl
           id
           (merge_ivs inherit_vs vs)
           (level + 1)
-          (Some n)
+          (Some symbol_index)
           root
           asms
       in
@@ -687,13 +685,13 @@ and build_table_for_dcl
       end privtab;
 
       (* Add the typeclass to the dfns. *)
-      add_symbol ~pubtab ~privtab:fudged_privtab ~dirs n id SYMDEF_typeclass;
+      add_symbol ~pubtab ~privtab:fudged_privtab ~dirs symbol_index id SYMDEF_typeclass;
 
       (* Possibly add the typeclass to the public symbol table. *)
-      if access = `Public then add_unique pub_name_map id n;
+      if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add the typeclass to the private symbol table. *)
-      add_unique priv_name_map id n;
+      add_unique priv_name_map id symbol_index;
 
       (* Add the interface. *)
       interfaces := !interfaces @ ifaces;
@@ -708,23 +706,23 @@ and build_table_for_dcl
           id
           dfltvs
           (level + 1)
-          (Some n)
+          (Some symbol_index)
           root
           asms
       in
 
       (* Add typeclass instance to the dfns. *)
-      add_symbol ~pubtab ~privtab ~dirs n id (SYMDEF_instance qn);
+      add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_instance qn);
 
       (* Prepend _inst_ to the name of the instance.
        * XXX: Why do we need this? *)
       let inst_name = "_inst_" ^ id in
 
       (* Possibly add the typeclass instance to the public symbol table. *)
-      if access = `Public then add_function pub_name_map inst_name n;
+      if access = `Public then add_function pub_name_map inst_name symbol_index;
 
       (* Add the typeclass instance to the private symbol table. *)
-      add_function priv_name_map inst_name n;
+      add_function priv_name_map inst_name symbol_index;
 
       (* Add the interface. *)
       interfaces := !interfaces @ ifaces;
@@ -733,71 +731,71 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_val t ->
-      let t = match t with | TYP_none -> TYP_var n | _ -> t in
+      let t = match t with | TYP_none -> TYP_var symbol_index | _ -> t in
 
       (* Add the value to the dnfs. *)
-      add_symbol n id (SYMDEF_val t);
+      add_symbol symbol_index id (SYMDEF_val t);
 
       (* Possibly add the value to the public symbol table. *)
-      if access = `Public then add_unique pub_name_map id n;
+      if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add the value to the private symbol table. *)
-      add_unique priv_name_map id n;
+      add_unique priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | DCL_var t ->
-      let t = if t = TYP_none then TYP_var n else t in
+      let t = if t = TYP_none then TYP_var symbol_index else t in
 
       (* Add the variable to the dfns. *)
-      add_symbol n id (SYMDEF_var t);
+      add_symbol symbol_index id (SYMDEF_var t);
       (*
-      add_symbol n id (SYMDEF_var (TYP_lvalue t)
+      add_symbol symbol_index id (SYMDEF_var (TYP_lvalue t)
       *)
 
       (* Possibly add the variable to the public symbol table. *)
-      if access = `Public then add_unique pub_name_map id n;
+      if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add the variable to the private symbol table. *)
-      add_unique priv_name_map id n;
+      add_unique priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | DCL_lazy (t,e) ->
-      let t = if t = TYP_none then TYP_var n else t in
+      let t = if t = TYP_none then TYP_var symbol_index else t in
 
       (* Add the lazy value to the dfns. *)
-      add_symbol n id (SYMDEF_lazy (t,e));
+      add_symbol symbol_index id (SYMDEF_lazy (t,e));
 
       (* Possibly add the lazy value to teh public symbol table. *)
-      if access = `Public then add_unique pub_name_map id n;
+      if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add the lazy value to the private symbol table. *)
-      add_unique priv_name_map id n;
+      add_unique priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | DCL_ref t ->
-      let t = match t with | TYP_none -> TYP_var n | _ -> t in
+      let t = match t with | TYP_none -> TYP_var symbol_index | _ -> t in
 
       (* Add the reference value to the dnfs. *)
-      add_symbol n id (SYMDEF_ref t);
+      add_symbol symbol_index id (SYMDEF_ref t);
 
       (* Possibly add the reference value to the private symbol table. *)
-      if access = `Public then add_unique pub_name_map id n;
+      if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add the reference value to the public symbol table. *)
-      add_unique priv_name_map id n;
+      add_unique priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | DCL_type_alias (t) ->
       (* Add the type alias to the dfns. *)
-      add_symbol n id (SYMDEF_type_alias t);
+      add_symbol symbol_index id (SYMDEF_type_alias t);
 
       (* this is a hack, checking for a type function this way, since it will
        * also incorrectly recognize a type lambda like:
@@ -830,11 +828,11 @@ and build_table_for_dcl
        *)
       begin match t with
       | TYP_typefun _ ->
-          if access = `Public then add_function pub_name_map id n;
-          add_function priv_name_map id n
+          if access = `Public then add_function pub_name_map id symbol_index;
+          add_function priv_name_map id symbol_index
       | _ ->
-          if access = `Public then add_unique pub_name_map id n;
-          add_unique priv_name_map id n
+          if access = `Public then add_unique pub_name_map id symbol_index;
+          add_unique priv_name_map id symbol_index
       end;
 
       (* Add the type variables to the private symbol table. *)
@@ -842,33 +840,33 @@ and build_table_for_dcl
 
   | DCL_inherit qn ->
       (* Add the inherited typeclass to the dnfs. *)
-      add_symbol n id (SYMDEF_inherit qn);
+      add_symbol symbol_index id (SYMDEF_inherit qn);
 
       (* Possibly add the inherited typeclass to the public symbol table. *)
-      if access = `Public then add_unique pub_name_map id n;
+      if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add the inherited typeclass to the private symbol table. *)
-      add_unique priv_name_map id n ;
+      add_unique priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | DCL_inherit_fun qn ->
       (* Add the inherited function to the dnfs. *)
-      add_symbol n id (SYMDEF_inherit_fun qn);
+      add_symbol symbol_index id (SYMDEF_inherit_fun qn);
 
       (* Possibly add the inherited function to the public symbol table. *)
-      if access = `Public then add_function pub_name_map id n;
+      if access = `Public then add_function pub_name_map id symbol_index;
 
       (* Add the inherited function to the private symbol table. *)
-      add_function priv_name_map id n;
+      add_function priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | DCL_newtype t ->
       (* Add the newtype to the dfns. *)
-      add_symbol n id (SYMDEF_newtype t);
+      add_symbol symbol_index id (SYMDEF_newtype t);
 
       (* Create an identity function that doesn't do anything. *)
       let piname = TYP_name (sr,id,[]) in
@@ -894,51 +892,51 @@ and build_table_for_dcl
       add_function priv_name_map ("_make_" ^ id) n_make;
 
       (* Possibly add the _make_ function to the public symbol table. *)
-      if access = `Public then add_unique pub_name_map id n;
+      if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add the _make_ function to the private symbol table. *)
-      add_unique priv_name_map id n;
+      add_unique priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | DCL_abs (quals, c, reqs) ->
       (* Add the abs to the dfns. *)
-      add_symbol n id (SYMDEF_abs (quals,c,reqs));
+      add_symbol symbol_index id (SYMDEF_abs (quals, c, reqs));
 
       (* Possibly add the abs to the private symbol table. *)
-      if access = `Public then add_unique pub_name_map id n;
+      if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add the abs to the public symbol table. *)
-      add_unique priv_name_map id n;
+      add_unique priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | DCL_const (props, t, c, reqs) ->
-      let t = if t = TYP_none then TYP_var n else t in
+      let t = if t = TYP_none then TYP_var symbol_index else t in
 
       (* Add the const to the dfns. *)
-      add_symbol n id (SYMDEF_const (props,t,c,reqs));
+      add_symbol symbol_index id (SYMDEF_const (props, t, c, reqs));
 
       (* Possibly add the const to the private symbol table. *)
-      if access = `Public then add_unique pub_name_map id n;
+      if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add the const public symbol table. *)
-      add_unique priv_name_map id n;
+      add_unique priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
   | DCL_fun (props, ts,t,c,reqs,prec) ->
       (* Add the function to the dfns. *)
-      add_symbol n id (SYMDEF_fun (props, ts,t,c,reqs,prec));
+      add_symbol symbol_index id (SYMDEF_fun (props, ts, t, c, reqs, prec));
 
       (* Possibly add the function to the public symbol table. *)
-      if access = `Public then add_function pub_name_map id n;
+      if access = `Public then add_function pub_name_map id symbol_index;
 
       (* Add the function to the private symbol table. *)
-      add_function priv_name_map id n;
+      add_function priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
@@ -949,13 +947,13 @@ and build_table_for_dcl
    * as the C function, with this void* dropped. *)
   | DCL_callback (props, ts,t,reqs) ->
       (* Add the callback to the dfns. *)
-      add_symbol n id (SYMDEF_callback (props, ts,t,reqs));
+      add_symbol symbol_index id (SYMDEF_callback (props, ts, t, reqs));
 
       (* Possibly add the callback to the public symbol table. *)
-      if access = `Public then add_function pub_name_map id n;
+      if access = `Public then add_function pub_name_map id symbol_index;
 
       (* Add the callback to the private symbol table. *)
-      add_function priv_name_map id n;
+      add_function priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
@@ -977,13 +975,13 @@ and build_table_for_dcl
       in
 
       (* Add union to dfns. *)
-      add_symbol n id (SYMDEF_union (its));
+      add_symbol symbol_index id (SYMDEF_union its);
 
       (* Possibly add union to the public symbol table. *)
-      if access = `Public then add_unique pub_name_map id n;
+      if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add the union to the private symbol table. *)
-      add_unique priv_name_map id n;
+      add_unique priv_name_map id symbol_index;
 
       let unit_sum =
         List.fold_left begin fun v (_,_,_,t) ->
@@ -1001,23 +999,23 @@ and build_table_for_dcl
           if unit_sum then begin
             if access = `Public then add_unique pub_name_map component_name dfn_idx;
             add_unique priv_name_map component_name dfn_idx;
-            SYMDEF_const_ctor (n,utype,ctor_idx,evs)
+            SYMDEF_const_ctor (symbol_index, utype, ctor_idx, evs)
           end else
             match t with
             | TYP_void _ -> (* constant constructor *)
                 if access = `Public then add_unique pub_name_map component_name dfn_idx;
                 add_unique priv_name_map component_name dfn_idx;
-                SYMDEF_const_ctor (n,utype,ctor_idx,evs)
+                SYMDEF_const_ctor (symbol_index, utype, ctor_idx, evs)
 
             | TYP_tuple ts -> (* non-constant constructor or 2 or more arguments *)
                 if access = `Public then add_function pub_name_map component_name dfn_idx;
                 add_function priv_name_map component_name dfn_idx;
-                SYMDEF_nonconst_ctor (n,utype,ctor_idx,evs,t)
+                SYMDEF_nonconst_ctor (symbol_index, utype, ctor_idx, evs, t)
 
             | _ -> (* non-constant constructor of 1 argument *)
                 if access = `Public then add_function pub_name_map component_name dfn_idx;
                 add_function priv_name_map component_name dfn_idx;
-                SYMDEF_nonconst_ctor (n,utype,ctor_idx,evs,t)
+                SYMDEF_nonconst_ctor (symbol_index, utype, ctor_idx, evs, t)
         in
 
         if print_flag then
@@ -1040,7 +1038,7 @@ and build_table_for_dcl
       let stype = `AST_name(sr, id, tvars) in
 
       (* Add symbols to dfns *)
-      add_symbol n id (
+      add_symbol symbol_index id (
         match dcl with
         | DCL_struct _ -> SYMDEF_struct (sts)
         | DCL_cstruct _ -> SYMDEF_cstruct (sts)
@@ -1048,10 +1046,10 @@ and build_table_for_dcl
       );
 
       (* Possibly add the struct to the public symbol table. *)
-      if access = `Public then add_unique pub_name_map id n;
+      if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add struct to the private symbol table. *)
-      add_unique priv_name_map id n;
+      add_unique priv_name_map id symbol_index;
 
       (* Add type variables to the private symbol table. *)
       add_tvars privtab
