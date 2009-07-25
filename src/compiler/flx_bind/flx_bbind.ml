@@ -218,6 +218,8 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
         | _ -> BBDCL_function (props,bvs,bps,brt',bbexes)
       in
       Hashtbl.add bbdfns symbol_index (name, true_parent, sr, bbdcl);
+
+      (* Cache the type of the function. *)
       begin
         if not (Hashtbl.mem syms.ticache symbol_index) then
         let d = typeoflist ts in
@@ -288,6 +290,7 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
           ([`Inline; `Generated "bbind: match check"], bvs, ([], None),
           flx_bbool, bbexes));
 
+      (* Cache the type of the match. *)
       begin
         if not (Hashtbl.mem syms.ticache symbol_index) then
         let t = fold
@@ -375,6 +378,8 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
         BBDCL_function (props,bvs,([],None),brt',bbexes)
       in
       Hashtbl.add bbdfns symbol_index (name, true_parent, sr, bbdcl);
+
+      (* Cache the type of the lazy expression. *)
       begin
         if not (Hashtbl.mem syms.ticache symbol_index) then
         (* HACK! *)
@@ -415,16 +420,20 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
         | _ -> BBDCL_fun (props,bvs,ts,bret,ct,reqs,prec)
       in
       Hashtbl.add bbdfns symbol_index (name, true_parent, sr, bbdcl);
+
+      (* Cache the type of the function. *)
       begin
         if not (Hashtbl.mem syms.ticache symbol_index) then
         let t = fold syms.counter syms.dfns (BTYP_function (typeoflist ts,bret)) in
         Hashtbl.add syms.ticache symbol_index t
       end;
-      let atyp = typeoflist ts in
 
-      if syms.compiler_options.print_flag then
+
+      if syms.compiler_options.print_flag then begin
+        let atyp = typeoflist ts in
         print_endline ("//bound fun " ^ name ^ "<" ^ si symbol_index ^ ">" ^
           print_bvs bvs ^ ":" ^ sbt syms.dfns (BTYP_function (atyp, bret)))
+      end
 
     | SYMDEF_callback (props,ts_orig,ret,reqs) ->
       let bret = bt ret in
@@ -511,6 +520,8 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
 
       let bbdcl = BBDCL_callback (props,bvs,ts_cf,ts_c,!client_data_pos,bret,reqs,prec) in
       Hashtbl.add bbdfns symbol_index (name,true_parent,sr,bbdcl);
+
+      (* Cache the type of the callback. *)
       begin
         if not (Hashtbl.mem syms.ticache symbol_index) then
         let t = fold syms.counter syms.dfns (BTYP_cfunction (typeoflist ts_cf, bret)) in
