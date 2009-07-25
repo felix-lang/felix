@@ -214,8 +214,8 @@ let rec build_tables
         (NonFunctionEntry (mkentry syms dfltvs root));
 
   (* Step through each dcl and add the found assemblies to the symbol tables. *)
-  List.iter (
-    build_table_for_dcl
+  List.iter (fun dcl ->
+    ignore(build_table_for_dcl
       syms
       name
       inherit_vs
@@ -225,6 +225,7 @@ let rec build_tables
       pub_name_map
       priv_name_map
       interfaces
+      dcl)
   ) dcls;
 
   pub_name_map, priv_name_map, exes, !interfaces, export_dirs
@@ -404,7 +405,7 @@ and build_table_for_dcl
   in
 
   (* Add the declarations to the symbol table. *)
-  match (dcl:Flx_types.dcl_t) with
+  begin match (dcl:Flx_types.dcl_t) with
   | DCL_reduce (ps, e1, e2) ->
       let ips = add_simple_parameters (Some symbol_index) ps in
 
@@ -1057,6 +1058,8 @@ and build_table_for_dcl
       (* NOTE: we don't add a type constructor for struct, because it would have
        * the same name as the struct type ..  we just check this case as
        * required *)
+  end;
+  symbol_index
 
 
 let make syms =
@@ -1065,6 +1068,39 @@ let make syms =
     pub_name_map = Hashtbl.create 97;
     priv_name_map = Hashtbl.create 97;
   }
+
+
+(* Add the interface to the symbol table. *)
+let add_iface _ (sr, iface) =
+  (* We don't currently use the symbol table. *)
+  (sr, iface, None)
+
+
+(* Add the declaration to symbol table. *)
+let add_dcl ?parent symtab dcl =
+  let level, pubmap, privmap =
+    match parent with
+    | Some index ->
+        let symbol = Hashtbl.find symtab.syms.Flx_mtypes2.dfns index in
+        1, symbol.pubmap, symbol.privmap
+    | None -> 0, symtab.pub_name_map, symtab.priv_name_map
+  in
+
+  let interfaces = ref [] in
+  let symbol_index =
+    build_table_for_dcl
+      symtab.syms
+      "root"
+      Flx_ast.dfltvs
+      level
+      parent
+      !(symtab.syms.Flx_mtypes2.counter)
+      pubmap
+      privmap
+      interfaces
+      dcl
+  in
+  symbol_index, !interfaces
 
 
 (* Add the assemblies to the symbol table. *)

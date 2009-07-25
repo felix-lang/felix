@@ -15,6 +15,22 @@ type t
 val make: Flx_mtypes2.sym_state_t -> t
 
 
+(** Add interface to the symbol table. *)
+val add_iface:
+  t ->                    (** symbol table *)
+  Flx_types.siface_t ->   (** interface *)
+  Flx_types.bound_iface_t (** bound interface *)
+
+
+(** Add declaration to the symbol table. *)
+val add_dcl:
+  ?parent:int ->                      (** optional parent index symbol *)
+  t ->                                (** symbol table *)
+  Flx_types.sdcl_t ->                 (** interface *)
+  int * Flx_types.bound_iface_t list  (** symbol index and bound interfaces
+                                          inside the dcl *)
+
+
 (** Add assemblies to the symbol table. *)
 val add_asms:
   t ->                            (** symbol table *)
