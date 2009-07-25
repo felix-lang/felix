@@ -238,7 +238,7 @@ let resolve syms i =
   match get_data syms.dfns i with
   {id=id; sr=sr;parent=parent;privmap=table;dirs=dirs;symdef=symdef} ->
   let pvs,vs,{raw_type_constraint=con; raw_typeclass_reqs=rtcr} =
-    find_split_vs syms i
+    find_split_vs syms.dfns i
   in
   let t,r,pnames = sig_of_symdef symdef sr id i in
   id,sr,parent,vs,pvs,con,rtcr,t,r,pnames

@@ -87,7 +87,7 @@ let bind_reqs bt syms env sr reqs : (bid_t * btypecode_t list) list =
         let index = sye index in
         if index = 0 then lst else
         try
-          let ts = adjust_ts syms sr index ts in
+          let ts = adjust_ts syms.dfns sr index ts in
           add lst (index,ts)
         with x ->
           print_endline "** Bind_req failed due to vs/ts mismatch";
@@ -133,7 +133,7 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
     let luqn n = Flx_lookup.lookup_qn_in_env syms env n in
     let luqn2 n = Flx_lookup.lookup_qn_in_env2 syms env n in
     let bt t = Flx_lookup.bind_type syms env sr t in
-    let ivs = find_vs syms symbol_index in (* this is the full vs list *)
+    let ivs = find_vs syms.dfns symbol_index in (* this is the full vs list *)
     let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
     let bind_type_constraint ivs =
       let cons = try

@@ -68,15 +68,14 @@ let merge_ivs (vs1,con1) (vs2,con2) :ivs_list_t =
   vs1 @ vs2, merge_con con1 con2
 
 (* finds the complete vs list *)
-let rec find_vs syms i : ivs_list_t =
-  match hfind "find_vs" syms.dfns i with
-  {parent=parent;vs=vs} ->
+let rec find_vs symbol_table i : ivs_list_t =
+  let { parent=parent; vs=vs } = hfind "find_vs" symbol_table i in
   match parent with
-  | Some i -> merge_ivs (find_vs syms i) vs
+  | Some i -> merge_ivs (find_vs symbol_table i) vs
   | None -> vs
 
-let rec find_func_vs syms vs j =
-  match hfind "find_func_vs" syms.dfns j with
+let rec find_func_vs symbol_table vs j =
+  match hfind "find_func_vs" symbol_table j with
   | {parent=parent; vs=vs'; symdef=SYMDEF_module }
   | {parent=parent; vs=vs'; symdef=SYMDEF_typeclass }
     ->
@@ -84,11 +83,11 @@ let rec find_func_vs syms vs j =
     | None ->
       let vs = merge_ivs vs' vs in
       [],fst vs, snd vs
-    | Some j -> find_func_vs syms (merge_ivs vs' vs) j
+    | Some j -> find_func_vs symbol_table (merge_ivs vs' vs) j
     end
 
   | _ ->
-    let (vs',con) = find_vs syms j in
+    let (vs',con) = find_vs symbol_table j in
     (* NOTE: the constraints of the parent are dropped
      * because they're automatically satisfied:
      * No merge is done on the constraints.
@@ -106,62 +105,62 @@ let rec find_func_vs syms vs j =
    vs INCLUDING module vs. pvs is the vs of
    the ultimately containing function and its ancestors.
 *)
-let find_split_vs syms i =
-  match hfind "find_split_vs" syms.dfns i with
+let find_split_vs symbol_table i =
+  match hfind "find_split_vs" symbol_table i with
   { symdef=SYMDEF_typevar _ } -> [], [], Flx_ast.dfltvs_aux
 
   | { parent=parent; vs=vs } ->
   match parent with
   | None -> [],fst vs, snd vs
-  | Some j -> find_func_vs syms vs j
+  | Some j -> find_func_vs symbol_table vs j
 
 let print_ivs vs =
   catmap ", " (fun (s,i,_) -> s ^ "<" ^ si i ^ ">") vs
 
-let adjust_ts syms sr index ts =
-  let pvs,vs,con = find_split_vs syms index in
+let adjust_ts symbol_table sr index ts =
+  let pvs,vs,con = find_split_vs symbol_table index in
   let k = length pvs in
   let m = length vs in
   let n = length ts in
   if n>m then begin
-    match hfind "adjust_ts" syms.dfns index with {id=id} ->
+    match hfind "adjust_ts" symbol_table index with {id=id} ->
     clierr sr
     (
-      "For "^ id^ "<" ^ si index ^
+      "For "^ id ^ "<" ^ si index ^
       "> Too many type subscripts, expected " ^
       si m ^ " got " ^ si n ^
-      "=["^catmap "," (sbt syms.dfns) ts ^ "]"^
-      "\nparent vs="^print_ivs pvs ^
-      "\nvs="^print_ivs vs
+      "=[" ^ catmap "," (sbt symbol_table) ts ^ "]" ^
+      "\nparent vs=" ^ print_ivs pvs ^
+      "\nvs=" ^ print_ivs vs
     )
   end;
   if n<m then begin
-    match hfind "adjust_ts" syms.dfns index with {id=id} ->
+    match hfind "adjust_ts" symbol_table index with {id=id} ->
     clierr sr
     (
-      "For "^id^"<" ^ si index ^
+      "For " ^ id ^ "<" ^ si index ^
       "> [adjust_ts] Not enough type subscripts, expected " ^
       si m ^ " got " ^ si n ^
-      "\nparent vs="^print_ivs pvs ^
+      "\nparent vs=" ^ print_ivs pvs ^
       "\nvs=" ^ print_ivs vs
     )
   end;
 
   map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) pvs @ ts
 
-let make_params syms sr i ts =
-  let vs,_ = find_vs syms i in
-  let ts = adjust_ts syms sr i ts in
+let make_params symbol_table sr i ts =
+  let vs,_ = find_vs symbol_table i in
+  let ts = adjust_ts symbol_table sr i ts in
   assert (length vs = length ts);
   map2 (fun (s,i,_) t -> s,t) vs ts
 
 (* full ts required *)
-let make_varmap syms sr i ts =
-  let vs,_ = find_vs syms i in
+let make_varmap symbol_table sr i ts =
+  let vs,_ = find_vs symbol_table i in
   if length ts != length vs then
     print_endline ("[flx_generic:make_varmap] vs/ts mismatch vs=" ^
     catmap "," (fun (s,_,_) -> s) vs ^
-    "; ts = " ^ catmap "," (sbt syms.dfns) ts)
+    "; ts = " ^ catmap "," (sbt symbol_table) ts)
   ;
   assert (length ts = length vs);
   let vars = map2 (fun (s,i,_) t -> i,t) vs ts in

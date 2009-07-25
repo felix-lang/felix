@@ -1403,7 +1403,7 @@ and bind_type_index syms (rs:recstop)
   (*
   print_endline "bind_type_index";
   *)
-  let ts = adjust_ts syms sr index ts in
+  let ts = adjust_ts syms.dfns sr index ts in
   (*
   print_endline ("Adjusted ts =h ["^ catmap ", " (sbt syms.dfns) ts^ "]");
   *)
@@ -1411,7 +1411,7 @@ and bind_type_index syms (rs:recstop)
       (*
       print_endline "Making params .. ";
       *)
-      let vs,_ = find_vs syms index in
+      let vs,_ = find_vs syms.dfns index in
       if List.length vs <> List.length ts then begin
         print_endline ("vs=" ^ catmap "," (fun (s,i,_)-> s^"<"^si i^">") vs);
         print_endline ("ts=" ^ catmap "," (sbt syms.dfns) ts);
@@ -1421,7 +1421,7 @@ and bind_type_index syms (rs:recstop)
       let params = List.map2 (fun (s,i,_) t -> s,t) vs ts in
 
       (*
-      let params = make_params syms sr index ts in
+      let params = make_params syms.dfns sr index ts in
       *)
       (*
       print_endline ("params made");
@@ -1596,7 +1596,7 @@ and type_of_index_with_ts' rs syms sr (index:int) ts =
   print_endline "OUTER TYPE OF INDEX with TS";
   *)
   let t = type_of_index' rs syms index in
-  let varmap = make_varmap syms sr index ts in
+  let varmap = make_varmap syms.dfns sr index ts in
   let t = varmap_subst varmap t in
   beta_reduce syms sr t
 
@@ -1739,15 +1739,15 @@ and inner_type_of_index_with_ts
  print_endline ("Inner type of index with ts .. " ^ si index ^ ", ts=" ^ catmap "," (sbt syms.dfns) ts);
  *)
  let t = inner_type_of_index syms rs index in
- let pvs,vs,_ = find_split_vs syms index in
+ let pvs,vs,_ = find_split_vs syms.dfns index in
  (*
  print_endline ("#pvs=" ^ si (List.length pvs) ^ ", #vs="^si (List.length vs) ^", #ts="^
  si (List.length ts));
  *)
  (*
- let ts = adjust_ts syms sr index ts in
+ let ts = adjust_ts syms.dfns sr index ts in
  print_endline ("#adj ts = " ^ si (List.length ts));
- let vs,_ = find_vs syms index in
+ let vs,_ = find_vs syms.dfns index in
  assert (List.length vs = List.length ts);
  *)
  if (List.length ts != List.length vs + List.length pvs) then begin
@@ -1759,7 +1759,7 @@ and inner_type_of_index_with_ts
  end
  ;
  assert (List.length ts = List.length vs + List.length pvs);
- let varmap = make_varmap syms sr index ts in
+ let varmap = make_varmap syms.dfns sr index ts in
  let t = varmap_subst varmap t in
  let t = beta_reduce syms sr t in
  (*
@@ -1899,7 +1899,7 @@ and inner_type_of_index
   (*
   print_endline "inner_type_of_index: struct";
   *)
-    let ts = adjust_ts syms sr index ts in
+    let ts = adjust_ts syms.dfns sr index ts in
     let t = type_of_list (List.map snd ls) in
     let t = BTYP_function(bt t,BTYP_inst (index,ts)) in
     (*
@@ -2175,7 +2175,7 @@ and lookup_qn_with_sig'
 print_endline (id ^ ": lookup_qn_with_sig: struct");
 *)
         (*
-        let ts = adjust_ts syms sr index ts in
+        let ts = adjust_ts syms.dfns sr index ts in
         *)
         begin match t with
         | BTYP_function (a,_) ->
@@ -2213,7 +2213,7 @@ print_endline (id ^ ": lookup_qn_with_sig: struct");
         ->
 print_endline (id ^ ": lookup_qn_with_sig: val/var");
         (*
-        let ts = adjust_ts syms sr index ts in
+        let ts = adjust_ts syms.dfns sr index ts in
         *)
         let t = bt sr t in
         let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
@@ -2351,7 +2351,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     | SYMDEF_function _
     | SYMDEF_match_check _
       ->
-      let vs = find_vs syms index in
+      let vs = find_vs syms.dfns index in
       let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
       BEXPR_closure (index,ts),
       inner_type_of_index syms rs index
@@ -2396,7 +2396,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
         print_endline ("ts = [" ^ catmap ", " (sbt syms.dfns) ts ^ "]");
         *)
         (*
-        let ts = adjust_ts syms sr index ts in
+        let ts = adjust_ts syms.dfns sr index ts in
         *)
         BEXPR_closure (index,ts),
          type_of_index_with_ts' rs syms sr index ts
@@ -2554,7 +2554,7 @@ and lookup_type_qn_with_sig'
     | SYMDEF_function _
     | SYMDEF_match_check _
       ->
-      let vs = find_vs syms index in
+      let vs = find_vs syms.dfns index in
       let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
       inner_type_of_index syms rs index
 
@@ -2596,7 +2596,7 @@ and lookup_type_qn_with_sig'
         print_endline ("Resolved overload for " ^ name);
         print_endline ("ts = [" ^ catmap ", " (sbt syms.dfns) ts ^ "]");
         (*
-        let ts = adjust_ts syms sr index ts in
+        let ts = adjust_ts syms.dfns sr index ts in
         *)
         let t =  type_of_index_with_ts' rs syms sr index ts in
         print_endline "WRONG!";
@@ -2848,8 +2848,8 @@ and handle_variable syms
 
     (* we have to check the variable is the right type *)
     let t = bt sr t in
-    let ts = adjust_ts syms sr index ts in
-    let vs = find_vs syms index in
+    let ts = adjust_ts syms.dfns sr index ts in
+    let vs = find_vs syms.dfns index in
     let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
     let t = beta_reduce syms sr (tsubst bvs ts t) in
     begin match t with
@@ -2866,7 +2866,7 @@ and handle_variable syms
       )
       else
         (*
-        let ts = adjust_ts syms sr index ts in
+        let ts = adjust_ts syms.dfns sr index ts in
         *)
         Some
         (
@@ -3003,7 +3003,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
       | Some (index,t,ret,mgu,ts) ->
         (*
         print_endline ("handle_function (3) ts=" ^ catmap "," (sbt syms.dfns) ts);
-        let ts = adjust_ts syms sra index ts in
+        let ts = adjust_ts syms.dfns sra index ts in
         print_endline "Adjusted ts";
         *)
         let ((_,tt) as tb) =
@@ -3223,7 +3223,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
       | Some (index,t,ret,mgu,ts) ->
         (*
         print_endline ("handle_function (3) ts=" ^ catmap "," (sbt syms.dfns) ts);
-        let ts = adjust_ts syms sra index ts in
+        let ts = adjust_ts syms.dfns sra index ts in
         print_endline "Adjusted ts";
         print_endline ("Found functional thingo, " ^ si index);
         print_endline (" ts=" ^ catmap "," (sbt syms.dfns) ts);
@@ -3866,7 +3866,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     ->
       (*
       let index = sye index in
-      let ts = adjust_ts syms sr index ts in
+      let ts = adjust_ts syms.dfns sr index ts in
       *)
       (*
       print_endline ("NAME lookup finds index " ^ si index);
@@ -3899,7 +3899,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       end;
 
       let ts = List.map (tsubst spec_vs ts) sub_ts in
-      let ts = adjust_ts syms sr index ts in
+      let ts = adjust_ts syms.dfns sr index ts in
       let t = ti sr index ts in
       begin match hfind "lookup:ref-check" syms.dfns index with
       |  {symdef=SYMDEF_parameter (`PRef,_)}
@@ -3931,7 +3931,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       end;
 
       let ts = List.map (tsubst spec_vs ts) sub_ts in
-      let ts = adjust_ts syms sr index ts in
+      let ts = adjust_ts syms.dfns sr index ts in
       let t = ti sr index ts in
       BEXPR_closure (index,ts), t
 
@@ -3966,7 +3966,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     (*
     print_endline ("[bind expression] AST_index " ^ string_of_qualified_name x);
     *)
-    let ts = adjust_ts syms sr index [] in
+    let ts = adjust_ts syms.dfns sr index [] in
     (*
     print_endline ("ts=" ^ catmap "," (sbt syms.dfns) ts);
     *)
@@ -4001,14 +4001,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     begin match inner_lookup_name_in_env syms env rs sr name with
     | NonFunctionEntry (index) ->
       let index = sye index in
-      let ts = adjust_ts syms sr index ts in
+      let ts = adjust_ts syms.dfns sr index ts in
       BEXPR_name (index,ts),
       let t = ti sr index ts in
       t
 
     | FunctionEntry [index] ->
       let index = sye index in
-      let ts = adjust_ts syms sr index ts in
+      let ts = adjust_ts syms.dfns sr index ts in
       BEXPR_closure (index,ts),
       let t = ti sr index ts in
       t
@@ -4049,7 +4049,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           begin match hfind "lookup" syms.dfns i with
           | {sr=srn; symdef=SYMDEF_inherit qn} -> be (expr_of_qualified_name qn)
           | _ ->
-            let ts = adjust_ts syms sr i ts in
+            let ts = adjust_ts syms.dfns sr i ts in
             BEXPR_name (i,ts),
             ti sr i ts
           end
@@ -5049,7 +5049,7 @@ and resolve_overload'
     print_endline (" .. mgu = " ^ string_of_varlist syms.dfns mgu);
     print_endline ("Resolve ts = " ^ catmap "," (sbt syms.dfns) ts);
     *)
-    let parent_vs,vs,{raw_typeclass_reqs=rtcr} = find_split_vs syms index in
+    let parent_vs,vs,{raw_typeclass_reqs=rtcr} = find_split_vs syms.dfns index in
     (*
     print_endline ("Function vs=" ^ catmap "," (fun (s,i,_) -> s^"<"^si i^">") vs);
     print_endline ("Parent vs=" ^ catmap "," (fun (s,i,_) -> s^"<"^si i^">") parent_vs);
