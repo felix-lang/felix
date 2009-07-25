@@ -121,7 +121,7 @@ and btypecode_t =
 
 type entry_kind_t = {
   (* the function *)
-  base_sym:int;
+  base_sym: int;
 
   (* the type variables of the specialisation *)
   spec_vs: (string * int) list;
@@ -306,6 +306,6 @@ type symbol_table_t = (int, symbol_data_t) Hashtbl.t
 type symbol_data3_t = string * int option * Flx_srcref.t * bbdcl_t
 type fully_bound_symbol_table_t = (int, symbol_data3_t) Hashtbl.t
 
-type type_registry_t = (btypecode_t,int) Hashtbl.t
+type type_registry_t = (btypecode_t, int) Hashtbl.t
 
 val src_of_bexe : bexe_t -> Flx_srcref.t

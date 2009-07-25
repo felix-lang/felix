@@ -4,7 +4,6 @@
  * provide routines to dump them to a string for debugging purposes. *)
 
 (** {6 Generic partial ordering comparison result} *)
-
 type partial_order_result_t =
 [
   | `Less
@@ -128,11 +127,15 @@ and btypecode_t =
   | BTYP_typesetintersection of btypecode_t list (** open union *)
 
 type entry_kind_t = {
-  base_sym:int;                 (* the function *)
-  spec_vs:(string * int) list;  (* the type variables of the specialisation *)
-  sub_ts:btypecode_t list      (* types to replace the old type variables
-                               expressed in terms of the new ones
-                            *)
+  (* the function *)
+  base_sym: int;
+
+  (* the type variables of the specialisation *)
+  spec_vs: (string * int) list;
+
+  (* types to replace the old type variables expressed in terms of the new
+   * ones *)
+  sub_ts: btypecode_t list
 }
 
 and entry_set_t =
@@ -264,6 +267,7 @@ type env_t = (bid_t * id_t * name_map_t * name_map_t list * typecode_t) list
     (* env: container index, name, primary symbol map, directives, type
      * constraint
      *)
+
 type symbol_definition_t =
   | SYMDEF_newtype of typecode_t
   | SYMDEF_abs of type_qual_t list * code_spec_t * named_req_expr_t
@@ -310,7 +314,7 @@ type symbol_table_t = (int, symbol_data_t) Hashtbl.t
 type symbol_data3_t = string * int option * Flx_srcref.t * bbdcl_t
 type fully_bound_symbol_table_t = (int, symbol_data3_t) Hashtbl.t
 
-type type_registry_t = (btypecode_t,int) Hashtbl.t
+type type_registry_t = (btypecode_t, int) Hashtbl.t
 
 let src_of_bexe (e : bexe_t) = match e with
   | BEXE_goto (sr,_)

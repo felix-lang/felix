@@ -1,6 +1,8 @@
 open Flx_ast
 open Flx_types
+
 exception UnificationError of btypecode_t * btypecode_t
+
 val flx_bool : typecode_t
 val flx_bbool : btypecode_t
 

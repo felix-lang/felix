@@ -91,7 +91,7 @@ let full_add_unique syms sr (vs:ivs_list_t) table key value =
     match entry with
     | NonFunctionEntry (idx)
     | FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.Flx_mtypes2.dfns (Flx_typing.sye idx)  with
+       (match Hashtbl.find syms.Flx_mtypes2.dfns (Flx_typing.sye idx) with
        | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^

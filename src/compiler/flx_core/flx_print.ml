@@ -2451,7 +2451,6 @@ let print_name_table dfns table =
   )
   table
 
-
 let string_of_varlist dfns varlist =
   catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt dfns t) varlist
 
