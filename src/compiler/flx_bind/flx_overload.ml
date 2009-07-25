@@ -234,11 +234,11 @@ let sig_of_symdef symdef sr name i = match symdef with
      string_of_symdef symdef name dfltvs
     ))
 
-let resolve syms i =
-  match get_data syms.dfns i with
+let resolve symbol_table i =
+  match get_data symbol_table i with
   {id=id; sr=sr;parent=parent;privmap=table;dirs=dirs;symdef=symdef} ->
   let pvs,vs,{raw_type_constraint=con; raw_typeclass_reqs=rtcr} =
-    find_split_vs syms.dfns i
+    find_split_vs symbol_table i
   in
   let t,r,pnames = sig_of_symdef symdef sr id i in
   id,sr,parent,vs,pvs,con,rtcr,t,r,pnames
@@ -260,7 +260,7 @@ let consider syms env bt be luqn2 name
 : overload_result option =
     let bt sr t = bt sr i t in
     let id,sr,p,base_vs,parent_vs,con,rtcr,base_domain,base_result,pnames =
-      resolve syms i
+      resolve syms.dfns i
     in
     let fixup_argtypes argt rs =
       begin match pnames with
@@ -348,7 +348,7 @@ let consider syms env bt be luqn2 name
     if (List.length base_vs != List.length sub_ts) then
     begin
       print_endline "WARN: VS != SUB_TS";
-      print_endline (id ^ "|-> " ^string_of_myentry syms.dfns eeek);
+      print_endline (id ^ "|-> " ^ string_of_myentry syms.dfns eeek);
       print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs);
       print_endline ("base VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") base_vs);
       print_endline ("sub TS=" ^ catmap "," (sbt syms.dfns) sub_ts);
