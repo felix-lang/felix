@@ -2,16 +2,21 @@ type bind_state_t = {
   syms: Flx_mtypes2.sym_state_t;
   bbind_state: Flx_bbind.bbind_state_t;
   symtab: Flx_symtab.t;
-  bbdfns: Flx_types.fully_bound_symbol_table_t;
+  bbind_bbdfns: Flx_types.fully_bound_symbol_table_t;
+  strabs_state: Flx_strabs.strabs_state_t;
+  strabs_bbdfns: Flx_types.fully_bound_symbol_table_t;
 }
 
 let make_bind_state syms =
-  let bbdfns = Hashtbl.create 97 in
+  let bbind_bbdfns = Hashtbl.create 97 in
+  let strabs_bbdfns = Hashtbl.create 97 in
   {
     syms = syms;
-    bbind_state = Flx_bbind.make_bbind_state syms bbdfns;
     symtab = Flx_symtab.make syms;
-    bbdfns = bbdfns;
+    bbind_bbdfns = bbind_bbdfns;
+    bbind_state = Flx_bbind.make_bbind_state syms bbind_bbdfns;
+    strabs_bbdfns = strabs_bbdfns;
+    strabs_state = Flx_strabs.make_strabs_state bbind_bbdfns strabs_bbdfns;
   }
 
 let bind_asm ?parent bind_state handle_symbol asm init =
@@ -49,7 +54,8 @@ let bind_asm ?parent bind_state handle_symbol asm init =
           Flx_bbind.bbind_symbol bind_state.bbind_state !i entry;
 
           (* Look up the bound value in the bbdnfs *)
-          init := handle_symbol !i (Hashtbl.find bind_state.bbdfns !i) !init
+          let symbol = Hashtbl.find bind_state.bbind_bbdfns !i in
+          init := handle_symbol !i symbol !init
       | None -> ()
     end;
     incr i
@@ -65,7 +71,7 @@ let bind_asms bind_state asms =
   Flx_bbind.bbind bind_state.bbind_state;
 
   (* Downgrade abstract types. *)
-  let bbdfns = Flx_strabs.strabs bind_state.syms bind_state.bbdfns in
+  Flx_strabs.strabs bind_state.strabs_state;
 
   (* Bind the interfaces. *)
   bind_state.syms.Flx_mtypes2.bifaces <- List.map
@@ -75,4 +81,4 @@ let bind_asms bind_state asms =
   Hashtbl.clear bind_state.syms.Flx_mtypes2.ticache;
 
   (* Return the bound symbol table. *)
-  bbdfns
+  bind_state.strabs_bbdfns

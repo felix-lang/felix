@@ -13,6 +13,17 @@ open Flx_generic
 open Flx_maps
 open Flx_exceptions
 
+type strabs_state_t = {
+  input_bbdfns: fully_bound_symbol_table_t;
+  output_bbdfns: fully_bound_symbol_table_t;
+}
+
+let make_strabs_state input_bbdfns output_bbdfns =
+  {
+    input_bbdfns = input_bbdfns;
+    output_bbdfns = output_bbdfns;
+  }
+
 let check_inst bbdfns i ts =
   let id,_,_,entry = Hashtbl.find bbdfns i in
   match entry with
@@ -61,16 +72,15 @@ let fixps bbdfns (ps,traint) =
   | Some t -> Some (fixexpr bbdfns t)
   )
 
-let strabs syms (bbdfns: fully_bound_symbol_table_t) =
-  let ft t = fixtype bbdfns t in
-  let fts ts = map (fixtype bbdfns) ts in
-  let fe e = fixexpr bbdfns e in
-  let fxs xs = fixbexes bbdfns xs in
-  let fp bps = fixps bbdfns bps in
+let strabs strabs_state =
+  let ft t = fixtype strabs_state.input_bbdfns t in
+  let fts ts = map (fixtype strabs_state.input_bbdfns) ts in
+  let fe e = fixexpr strabs_state.input_bbdfns e in
+  let fxs xs = fixbexes strabs_state.input_bbdfns xs in
+  let fp bps = fixps strabs_state.input_bbdfns bps in
 
-  let nutab = Hashtbl.create 97 in
   Hashtbl.iter begin fun i (id,parent,sr,entry) ->
-     let h x = Hashtbl.add nutab i (id,parent,sr,x) in
+     let h x = Hashtbl.add strabs_state.output_bbdfns i (id,parent,sr,x) in
      match entry with
      | BBDCL_function (props, bvs, bps, ret, bexes) ->
        h (BBDCL_function (props, bvs, fp bps, ft ret, fxs bexes))
@@ -132,6 +142,4 @@ let strabs syms (bbdfns: fully_bound_symbol_table_t) =
      | BBDCL_nonconst_ctor (bvs, j, t1, k,t2, evs, etraint) ->
        h (BBDCL_nonconst_ctor (bvs, j, ft t1, k, ft t2, evs, ft etraint))
   end
-  bbdfns
-  ;
-  nutab
+  strabs_state.input_bbdfns

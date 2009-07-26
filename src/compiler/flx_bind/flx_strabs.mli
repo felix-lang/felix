@@ -2,12 +2,14 @@
  *
  * Convert newtype abstractions to their representations. *)
 
-open Flx_ast
-open Flx_types
-open Flx_set
-open Flx_mtypes2
+type strabs_state_t
+
+(** Construct the state needed for downgrading abstract types. *)
+val make_strabs_state:
+  Flx_types.fully_bound_symbol_table_t -> (** The input symbol table *)
+  Flx_types.fully_bound_symbol_table_t -> (** The output symbol table *)
+  strabs_state_t
 
 val strabs:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  fully_bound_symbol_table_t
+  strabs_state_t -> (** The state needed *)
+  unit
