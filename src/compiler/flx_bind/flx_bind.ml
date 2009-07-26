@@ -14,6 +14,49 @@ let make_bind_state syms =
     bbdfns = bbdfns;
   }
 
+let bind_asm ?parent bind_state handle_symbol asm init =
+  (* We need to save the symbol index counter so we can bind all of the symbols
+   * that we just added. *)
+  let i = ref !(bind_state.syms.Flx_mtypes2.counter) in
+
+  (* Add declarations to the symbol table *)
+  begin
+    match asm with
+    | Flx_types.Exe exe -> ()
+    | Flx_types.Dcl dcl ->
+        ignore(Flx_symtab.add_dcl ?parent bind_state.symtab dcl)
+    | Flx_types.Iface (sr,iface) ->
+        let biface = Flx_bbind.bind_interface
+          bind_state.bbind_state
+          (sr,iface,parent)
+        in
+        bind_state.syms.Flx_mtypes2.bifaces <-
+          biface :: bind_state.syms.Flx_mtypes2.bifaces
+    | Flx_types.Dir dir -> ()
+  end;
+
+  (* Now bind in order all of the symbols we added. *)
+  let init = ref init in
+
+  while !i < !(bind_state.syms.Flx_mtypes2.counter) do
+    let entry =
+      try Some (Hashtbl.find bind_state.syms.Flx_mtypes2.dfns !i)
+      with Not_found -> None
+    in
+    begin
+      match entry with
+      | Some entry ->
+          Flx_bbind.bbind_symbol bind_state.bbind_state !i entry;
+
+          (* Look up the bound value in the bbdnfs *)
+          init := handle_symbol !i (Hashtbl.find bind_state.bbdfns !i) !init
+      | None -> ()
+    end;
+    incr i
+  done;
+
+  !init
+
 let bind_asms bind_state asms =
   (* Add the symbols to the symtab. *)
   let exes, ifaces = Flx_symtab.add_asms bind_state.symtab asms in

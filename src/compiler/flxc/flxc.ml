@@ -8,7 +8,7 @@ type state_t = {
   macro_state: Flx_macro.macro_state_t;
   desugar_state: Flx_desugar.desugar_state_t;
   symtab: Flx_symtab.t;
-  bbind_state: Flx_bbind.bbind_state_t;
+  bind_state: Flx_bind.bind_state_t;
   module_index: int;
   init_index: int;
 }
@@ -40,7 +40,7 @@ let create_state options =
     macro_state = Flx_macro.make_macro_state "<input>";
     desugar_state = Flx_desugar.make_desugar_state "<input>" syms;
     symtab = symtab;
-    bbind_state = Flx_bbind.make_bbind_state syms bbdfns;
+    bind_state = Flx_bind.make_bind_state syms;
     module_index = module_index;
     init_index = init_index;
   }
@@ -74,45 +74,21 @@ let handle_stmt state stmt () =
   Flx_desugar.desugar_statement state.desugar_state begin fun asm () ->
     print_endline ("... DESUGARED: " ^ (Flx_print.string_of_asm 0 asm));
 
-    (* We need to save the symbol index counter so we can bind all of the
-     * symbols that we just added. *)
-    let i = ref !(state.syms.Flx_mtypes2.counter) in
-
     (* Add declarations to the symbol table *)
-    begin
-      match asm with
-      | Flx_types.Exe exe -> add_exe_to_symtab state exe
-      | Flx_types.Dcl dcl ->
-          let _ = Flx_symtab.add_dcl ?parent:(Some state.module_index)
-            state.symtab dcl in
-          ()
-      | Flx_types.Iface _ -> ()
-      | Flx_types.Dir _ -> ()
-    end;
-
-    (* Now bind in order all of the symbols we added. *)
-    while !i < !(state.syms.Flx_mtypes2.counter) do
-      let entry =
-        try Some (Hashtbl.find state.syms.Flx_mtypes2.dfns !i)
-        with Not_found -> None
-      in
-      begin
-        match entry with
-        | Some entry ->
-          Flx_bbind.bbind_symbol state.bbind_state !i entry;
-
-          (* Look up the bound value in the bbdnfs *)
-          let _, _, _, e = Hashtbl.find state.bbdfns !i in
-          print_endline ("... BOUND:     " ^ Flx_print.string_of_bbdcl
-            state.syms.Flx_mtypes2.dfns
-            state.bbdfns
-            e
-            !i);
-        | None -> ()
-      end;
-      incr i
-    done;
-    ()
+    match asm with
+    | Flx_types.Exe exe -> add_exe_to_symtab state exe
+    | _ ->
+        Flx_bind.bind_asm
+          ?parent:(Some state.module_index)
+          state.bind_state
+          begin fun index (_,_,_,e) () ->
+              (* Look up the bound value in the bbdnfs *)
+              print_endline ("... BOUND:     " ^ Flx_print.string_of_bbdcl
+                state.syms.Flx_mtypes2.dfns
+                state.bbdfns
+                e
+                index);
+          end asm ()
   end stmt ();
 
   print_string " >>> "; flush stdout;
