@@ -193,21 +193,9 @@ try
   let root = !(syms.counter) in
   print_debug ("//Top level module '" ^ module_name ^ "' has index " ^ si root);
 
-  print_debug "//BUILDING TABLES";
-
-  let symtab = Flx_symtab.make syms in
-  let exes, ifaces = Flx_symtab.add_asms symtab asms in
-  let build_table_time = tim() in
-  print_debug ("//BUILDING TABLES time " ^ string_of_float build_table_time);
-
-
-  print_debug "//BINDING EXECUTABLE CODE";
-  let bbdfns = Hashtbl.create 97 in
-  let bbind_state = Flx_bbind.make_bbind_state syms bbdfns in
-  Flx_bbind.bbind bbind_state;
-
-  print_debug "//DOWNGRADING ABSTRACT TYPES";
-  let bbdfns = Flx_strabs.strabs syms bbdfns in
+  (* Bind the assemblies. *)
+  let bind_state = Flx_bind.make_bind_state syms in
+  let bbdfns = Flx_bind.bind_asms bind_state asms in
 
   let child_map = Flx_child.cal_children syms bbdfns in
   Flx_typeclass.typeclass_instance_check syms bbdfns child_map;
@@ -217,19 +205,11 @@ try
   Flx_axiom.axiom_check syms bbdfns;
 
   (* generate why file *)
-  Flx_why.emit_whycode why_file_name.out_filename syms bbdfns root
-  ;
-
-
-  syms.bifaces <- List.map (Flx_bbind.bind_interface bbind_state) ifaces;
-  Hashtbl.clear syms.ticache;
+  Flx_why.emit_whycode why_file_name.out_filename syms bbdfns root;
 
   let binding_time = tim() in
 
-  print_debug ("//Binding complete time " ^ string_of_float binding_time);
-
   print_debug "//CHECKING ROOT";
-
   let root_proc =
     match
       try Hashtbl.find syms.dfns root
@@ -941,7 +921,6 @@ try
   let total_time =
     parse_time +.
     desugar_time +.
-    build_table_time +.
     binding_time +.
     opt_time +.
     instantiation_time +.
@@ -952,23 +931,22 @@ try
   let
     old_parse_time,
     old_desugar_time,
-    old_build_table_time,
     old_binding_time,
     old_opt_time,
     old_instantiation_time,
     old_code_generation_time,
     old_total_time
   =
-  let zeroes = 0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0 in
+  let zeroes = 0.0,0.0,0.0,0.0,0.0,0.0,0.0 in
   let f = try Some (open_in fname) with _ -> None in
   begin match f with
   | None -> zeroes
   | Some f ->
     let x =
       try
-        let id x1 x2 x3 x4 x5 x6 x7 x8 = x1, x2, x3, x4, x5, x6, x7, x8 in
+        let id x1 x2 x3 x4 x5 x6 x7 = x1, x2, x3, x4, x5, x6, x7 in
         Scanf.fscanf f
-        "parse=%f desugar=%f build=%f bind=%f opt=%f inst=%f gen=%f tot=%f"
+        "parse=%f desugar=%f bind=%f opt=%f inst=%f gen=%f tot=%f"
         id
       with _ -> zeroes
     in close_in f; x
@@ -978,10 +956,9 @@ try
       let f = open_out fname in
       Printf.fprintf
         f
-        "parse=%f\ndesugar=%f\nbuild=%f\nbind=%f\nopt=%f\ninst=%f\ngen=%f\ntot=%f\n"
+        "parse=%f\ndesugar=%f\nbind=%f\nopt=%f\ninst=%f\ngen=%f\ntot=%f\n"
         (old_parse_time +. parse_time)
         (old_desugar_time +. desugar_time)
-        (old_build_table_time +. build_table_time)
         (old_binding_time +. binding_time)
         (old_opt_time +. opt_time)
         (old_instantiation_time +. instantiation_time)
