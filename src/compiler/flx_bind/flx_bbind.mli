@@ -14,7 +14,7 @@ val bbind_symbol:
   bbind_state_t ->
   int ->
   Flx_types.symbol_data_t ->
-  unit
+  Flx_types.symbol_data3_t option
 
 (* Bind all the symbols in the symtab. *)
 val bbind: bbind_state_t -> unit
