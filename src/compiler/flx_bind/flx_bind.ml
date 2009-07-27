@@ -44,19 +44,20 @@ let bind_asm ?parent bind_state handle_symbol asm init =
   let init = ref init in
 
   while !i < !(bind_state.syms.Flx_mtypes2.counter) do
-    let entry =
-      try Some (Hashtbl.find bind_state.syms.Flx_mtypes2.dfns !i)
-      with Not_found -> None
-    in
+    (* First, find the symbol to bind. *)
     begin
-      match entry with
-      | Some entry ->
-          Flx_bbind.bbind_symbol bind_state.bbind_state !i entry;
-
-          (* Look up the bound value in the bbdnfs *)
-          let symbol = Hashtbl.find bind_state.bbind_bbdfns !i in
-          init := handle_symbol !i symbol !init
+      match Flx_hashtbl.find bind_state.syms.Flx_mtypes2.dfns !i with
       | None -> ()
+      | Some s ->
+          (* Then, bind the symbol. *)
+          match Flx_bbind.bbind_symbol bind_state.bbind_state !i s with
+          | None -> ()
+          | Some s ->
+              (* Finally, downgrade abstract types. *)
+              match Flx_strabs.strabs_symbol bind_state.strabs_state !i s with
+              | None -> ()
+              | Some s ->
+                  init := handle_symbol !i s !init
     end;
     incr i
   done;
