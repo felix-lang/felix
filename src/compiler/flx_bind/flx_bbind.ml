@@ -121,488 +121,487 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
   print_endline ("Parent is " ^ (match parent with | None -> "none" | Some i -> si i));
   print_endline ("True Parent is " ^ (match true_parent with | None -> "none" | Some i -> si i));
   *)
-  begin
-    (* let env = Flx_lookup.build_env syms parent in  *)
-    let env = Flx_lookup.build_env syms (Some symbol_index) in
-    (*
-    print_endline "ENVIRONMENT:";
-    print_env_short env;
-    *)
+  (* let env = Flx_lookup.build_env syms parent in  *)
+  let env = Flx_lookup.build_env syms (Some symbol_index) in
+  (*
+  print_endline "ENVIRONMENT:";
+  print_env_short env;
+  *)
 
-    let be e = Flx_lookup.bind_expression syms env e in
-    let luqn n = Flx_lookup.lookup_qn_in_env syms env n in
-    let luqn2 n = Flx_lookup.lookup_qn_in_env2 syms env n in
-    let bt t = Flx_lookup.bind_type syms env sr t in
-    let ivs = find_vs syms.dfns symbol_index in (* this is the full vs list *)
-    let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
-    let bind_type_constraint ivs =
-      let cons = try
-        Flx_tconstraint.build_type_constraints syms bt sr (fst ivs)
-        with _ -> clierr sr "Can't build type constraints, type binding failed"
-      in
-      let {raw_type_constraint=icons} = snd ivs in
-      let icons = bt icons in
-      let cons = BTYP_intersect [cons; icons] in
-      cons
+  let be e = Flx_lookup.bind_expression syms env e in
+  let luqn n = Flx_lookup.lookup_qn_in_env syms env n in
+  let luqn2 n = Flx_lookup.lookup_qn_in_env2 syms env n in
+  let bt t = Flx_lookup.bind_type syms env sr t in
+  let ivs = find_vs syms.dfns symbol_index in (* this is the full vs list *)
+  let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
+  let bind_type_constraint ivs =
+    let cons = try
+      Flx_tconstraint.build_type_constraints syms bt sr (fst ivs)
+      with _ -> clierr sr "Can't build type constraints, type binding failed"
     in
-    let bcons = bind_type_constraint ivs in
-    let btraint = function | Some x -> Some (be x) | None -> None in
-    let bind_reqs reqs = bind_reqs bt syms env sr reqs in
-    let bind_quals quals = bind_quals bt quals in
-    (*
-    print_endline ("******Binding " ^ name);
-    *)
-    let bind_basic_ps ps =
-      List.map (fun (k,s,t,_) ->
-        let i = find_param name_map s in
-        let t = let t = bt t in match k with `PRef -> BTYP_pointer t | _ -> t in
+    let {raw_type_constraint=icons} = snd ivs in
+    let icons = bt icons in
+    let cons = BTYP_intersect [cons; icons] in
+    cons
+  in
+  let bcons = bind_type_constraint ivs in
+  let btraint = function | Some x -> Some (be x) | None -> None in
+  let bind_reqs reqs = bind_reqs bt syms env sr reqs in
+  let bind_quals quals = bind_quals bt quals in
+  (*
+  print_endline ("******Binding " ^ name);
+  *)
+  let bind_basic_ps ps =
+    List.map (fun (k,s,t,_) ->
+      let i = find_param name_map s in
+      let t = let t = bt t in match k with `PRef -> BTYP_pointer t | _ -> t in
 (*        print_endline ("Param " ^ s ^ " type=" ^ sbt syms.dfns t); *)
-        {pid=s; pindex=i;pkind=k; ptyp=t}
-      )
-      ps
+      {pid=s; pindex=i;pkind=k; ptyp=t}
+    )
+    ps
+  in
+  let bindps (ps,traint) =
+    bind_basic_ps ps, btraint traint
+  in
+  begin match bdcl with
+
+  (* Pure declarations of functions, modules, and type
+     don't generate anything. Variable dcls do, however.
+  *)
+  | SYMDEF_module
+  | SYMDEF_typevar _
+    -> ()
+
+  | SYMDEF_reduce (ps,e1,e2) ->
+    let bps = bind_basic_ps ps in
+    let be1 = be e1 in
+    let be2 = be e2 in
+    syms.reductions <- (name,bvs,bps,be1,be2) :: syms.reductions;
+
+    if syms.compiler_options.print_flag then
+      print_endline ("//bound reduction  " ^ name ^ "<" ^ si symbol_index ^
+        ">" ^ print_bvs bvs)
+
+  | SYMDEF_axiom (ps,e1) ->
+    let bps = bindps ps in
+    let be1 = match e1 with
+      | Predicate e -> `BPredicate (be e)
+      | Equation (l,r) -> `BEquation (be l, be r)
     in
-    let bindps (ps,traint) =
-      bind_basic_ps ps, btraint traint
+    syms.axioms <- (name, sr, parent, Axiom, bvs, bps, be1) :: syms.axioms;
+
+    if syms.compiler_options.print_flag then
+      print_endline ("//bound axiom " ^ name ^ "<" ^ si symbol_index ^ ">" ^
+        print_bvs bvs)
+
+  | SYMDEF_lemma (ps,e1) ->
+    let bps = bindps ps in
+    let be1 = match e1 with
+      | Predicate e -> `BPredicate (be e)
+      | Equation (l,r) -> `BEquation (be l, be r)
     in
-    match bdcl with
+    syms.axioms <- (name, sr, parent, Lemma, bvs, bps, be1) :: syms.axioms;
 
-    (* Pure declarations of functions, modules, and type
-       don't generate anything. Variable dcls do, however.
-    *)
-    | SYMDEF_module
-    | SYMDEF_typevar _
-      -> ()
+    if syms.compiler_options.print_flag then
+      print_endline ("//bound lemma " ^ name ^ "<" ^ si symbol_index ^ ">" ^
+        print_bvs bvs)
 
-    | SYMDEF_reduce (ps,e1,e2) ->
-      let bps = bind_basic_ps ps in
-      let be1 = be e1 in
-      let be2 = be e2 in
-      syms.reductions <- (name,bvs,bps,be1,be2) :: syms.reductions;
+  | SYMDEF_function (ps,rt,props,exes) ->
+    let bps = bindps ps in
+    let ts = typeofbps_traint bps in
+    let brt = bt rt in
+    let brt', bbexes = bexes env exes brt symbol_index bvs in
+    let bbdcl =
+      match brt' with
+      | BTYP_void -> BBDCL_procedure (props,bvs,bps,bbexes)
+      | _ -> BBDCL_function (props,bvs,bps,brt',bbexes)
+    in
+    Hashtbl.add bbdfns symbol_index (name, true_parent, sr, bbdcl);
 
-      if syms.compiler_options.print_flag then
-        print_endline ("//bound reduction  " ^ name ^ "<" ^ si symbol_index ^
-          ">" ^ print_bvs bvs)
-
-    | SYMDEF_axiom (ps,e1) ->
-      let bps = bindps ps in
-      let be1 = match e1 with
-        | Predicate e -> `BPredicate (be e)
-        | Equation (l,r) -> `BEquation (be l, be r)
-      in
-      syms.axioms <- (name, sr, parent, Axiom, bvs, bps, be1) :: syms.axioms;
-
-      if syms.compiler_options.print_flag then
-        print_endline ("//bound axiom " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-          print_bvs bvs)
-
-    | SYMDEF_lemma (ps,e1) ->
-      let bps = bindps ps in
-      let be1 = match e1 with
-        | Predicate e -> `BPredicate (be e)
-        | Equation (l,r) -> `BEquation (be l, be r)
-      in
-      syms.axioms <- (name, sr, parent, Lemma, bvs, bps, be1) :: syms.axioms;
-
-      if syms.compiler_options.print_flag then
-        print_endline ("//bound lemma " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-          print_bvs bvs)
-
-    | SYMDEF_function (ps,rt,props,exes) ->
-      let bps = bindps ps in
-      let ts = typeofbps_traint bps in
-      let brt = bt rt in
-      let brt', bbexes = bexes env exes brt symbol_index bvs in
-      let bbdcl =
-        match brt' with
-        | BTYP_void -> BBDCL_procedure (props,bvs,bps,bbexes)
-        | _ -> BBDCL_function (props,bvs,bps,brt',bbexes)
-      in
-      Hashtbl.add bbdfns symbol_index (name, true_parent, sr, bbdcl);
-
-      (* Cache the type of the function. *)
-      begin
-        if not (Hashtbl.mem syms.ticache symbol_index) then
-        let d = typeoflist ts in
-        let ft =
-          if mem `Cfun props
-          then BTYP_cfunction (d,brt')
-          else BTYP_function (d,brt')
-        in
-        let t = fold syms.counter syms.dfns ft in
-        Hashtbl.add syms.ticache symbol_index t
-      end;
-
-      let atyp = typeoflist ts in
-      if syms.compiler_options.print_flag then
-      let t =
+    (* Cache the type of the function. *)
+    begin
+      if not (Hashtbl.mem syms.ticache symbol_index) then
+      let d = typeoflist ts in
+      let ft =
         if mem `Cfun props
-        then BTYP_cfunction (atyp,brt')
-        else BTYP_function (atyp,brt')
+        then BTYP_cfunction (d,brt')
+        else BTYP_function (d,brt')
       in
-      print_endline ("//bound function " ^ qname ^ "<" ^ si symbol_index ^ ">" ^
+      let t = fold syms.counter syms.dfns ft in
+      Hashtbl.add syms.ticache symbol_index t
+    end;
+
+    let atyp = typeoflist ts in
+    if syms.compiler_options.print_flag then
+    let t =
+      if mem `Cfun props
+      then BTYP_cfunction (atyp,brt')
+      else BTYP_function (atyp,brt')
+    in
+    print_endline ("//bound function " ^ qname ^ "<" ^ si symbol_index ^ ">" ^
+      print_bvs bvs ^ ":" ^ sbt syms.dfns t)
+
+  | SYMDEF_parameter (k,_) ->
+    begin match parent with
+    | None -> failwith "[bbind_sym] expected parameter to have a parent"
+    | Some ip ->
+      match hfind "bbind" syms.dfns ip with
+      | {symdef=SYMDEF_reduce _}
+      | {symdef=SYMDEF_axiom _}
+      | {symdef=SYMDEF_lemma _}
+      | {symdef=SYMDEF_function _}
+        ->
+        let t = Flx_lookup.type_of_index syms symbol_index in
+        let dcl = match k with
+        | `PVar -> BBDCL_var (bvs,t)
+        | `PVal -> BBDCL_val (bvs,t)
+        | `PRef -> BBDCL_val (bvs,t)
+        | `PFun -> BBDCL_val (bvs,BTYP_function (BTYP_void,t))
+        in
+        Hashtbl.add bbdfns symbol_index (name, true_parent, sr, dcl);
+        Hashtbl.add syms.varmap symbol_index t;
+
+        if syms.compiler_options.print_flag then
+          print_endline ("//bound val " ^ name ^ "<" ^ si symbol_index ^ ">" ^
+          print_bvs bvs ^ ":" ^ sbt syms.dfns t)
+
+      | _ ->
+        failwith ("[bbind_sym] expected parameter to have function or " ^
+          "functor parent")
+    end
+
+  | SYMDEF_match_check (pat,(mvname,mvindex)) ->
+    let t = Flx_lookup.type_of_index syms mvindex in
+    let name_map = Hashtbl.create 97 in
+    let exes =
+      [
+      sr,EXE_fun_return (gen_match_check pat (EXPR_index (sr,mvname,mvindex)))
+      ]
+    in
+    let brt',bbexes = bexes env exes flx_bbool symbol_index [] in
+
+    if brt' <> flx_bbool then
+      failwith ("expected boolean return from match checker " ^ name ^
+        " in\n" ^ Flx_srcref.short_string_of_src sr);
+
+    Hashtbl.add bbdfns symbol_index
+      (name, true_parent, sr, BBDCL_function
+        ([`Inline; `Generated "bbind: match check"], bvs, ([], None),
+        flx_bbool, bbexes));
+
+    (* Cache the type of the match. *)
+    begin
+      if not (Hashtbl.mem syms.ticache symbol_index) then
+      let t = fold
+        syms.counter
+        syms.dfns
+        (BTYP_function (BTYP_tuple [], flx_bbool))
+      in
+      Hashtbl.add syms.ticache symbol_index t
+    end;
+
+    if syms.compiler_options.print_flag then
+      print_endline ("//bound match check " ^ name ^ "<" ^ si symbol_index ^
+        ">" ^ print_bvs bvs ^ ":" ^ sbt syms.dfns
+        (BTYP_function (BTYP_tuple[],flx_bbool)))
+
+  | SYMDEF_const_ctor (uidx,ut,ctor_idx,vs') ->
+    (*
+    print_endline ("Binding const ctor " ^ name);
+    *)
+    let unit_sum =
+      match hfind "bbind" syms.dfns uidx with
+      | {symdef=SYMDEF_union its} ->
+        fold_left
+        (fun v (_,_,_,t) ->
+          v && (match t with TYP_void _ -> true | _ -> false)
+        )
+        true
+        its
+      | _ -> assert false
+    in
+    let t = Flx_lookup.type_of_index syms symbol_index in
+    let ut = bt ut in
+    let ct =
+      if unit_sum then si ctor_idx
+      else "_uctor_(" ^ si ctor_idx ^ ",0)"
+    in
+    Hashtbl.add bbdfns symbol_index (name, None, sr,
+      BBDCL_const ([], bvs, t, CS_str ct, []));
+
+    if syms.compiler_options.print_flag then
+      print_endline ("//bound const " ^ name ^ "<" ^ si symbol_index ^ ">:" ^
+        sbt syms.dfns t)
+
+  | SYMDEF_nonconst_ctor (uidx,ut,ctor_idx,vs',argt) ->
+    (*
+    print_endline ("Binding non const ctor " ^ name);
+    *)
+    let t = Flx_lookup.type_of_index syms symbol_index in
+    let argt = bt argt in
+    let ut = bt ut in
+    let btraint = bind_type_constraint vs' in
+    let evs = map (fun (s,i,__) -> s,i) (fst vs') in
+    let bbdcl = BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt,evs,btraint) in
+    Hashtbl.add bbdfns symbol_index (name,None,sr,bbdcl);
+
+    if syms.compiler_options.print_flag then
+      print_endline ("//bound fun " ^ name ^ "<" ^ si symbol_index ^ ">:" ^
+        sbt syms.dfns t)
+
+  | SYMDEF_val (t) ->
+    let t = Flx_lookup.type_of_index syms symbol_index in
+    Hashtbl.add bbdfns symbol_index
+      (name, true_parent, sr, BBDCL_val (bvs, t));
+
+    if syms.compiler_options.print_flag then
+      print_endline ("//bound val " ^ name ^ "<" ^ si symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt syms.dfns t)
 
-    | SYMDEF_parameter (k,_) ->
-      begin match parent with
-      | None -> failwith "[bbind_sym] expected parameter to have a parent"
-      | Some ip ->
-        match hfind "bbind" syms.dfns ip with
-        | {symdef=SYMDEF_reduce _}
-        | {symdef=SYMDEF_axiom _}
-        | {symdef=SYMDEF_lemma _}
-        | {symdef=SYMDEF_function _}
-          ->
-          let t = Flx_lookup.type_of_index syms symbol_index in
-          let dcl = match k with
-          | `PVar -> BBDCL_var (bvs,t)
-          | `PVal -> BBDCL_val (bvs,t)
-          | `PRef -> BBDCL_val (bvs,t)
-          | `PFun -> BBDCL_val (bvs,BTYP_function (BTYP_void,t))
-          in
-          Hashtbl.add bbdfns symbol_index (name, true_parent, sr, dcl);
-          Hashtbl.add syms.varmap symbol_index t;
+  | SYMDEF_ref (t) ->
+    let t = Flx_lookup.type_of_index syms symbol_index in
+    Hashtbl.add bbdfns symbol_index
+      (name, true_parent, sr, BBDCL_ref (bvs, t));
 
-          if syms.compiler_options.print_flag then
-            print_endline ("//bound val " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-            print_bvs bvs ^ ":" ^ sbt syms.dfns t)
+    if syms.compiler_options.print_flag then
+      print_endline ("//bound ref " ^ name ^ "<" ^ si symbol_index ^ ">" ^
+        print_bvs bvs ^ ":" ^ sbt syms.dfns t)
 
-        | _ ->
-          failwith ("[bbind_sym] expected parameter to have function or " ^
-            "functor parent")
-      end
+  | SYMDEF_lazy (rt,e) ->
+    let ps = [("dummy",`AST_void sr)],None in
+    let exes = [sr,EXE_fun_return e] in
+    let brt = bt rt in
+    let brt',bbexes = bexes env exes brt symbol_index bvs in
+    let props = [] in
+    let bbdcl =
+      BBDCL_function (props,bvs,([],None),brt',bbexes)
+    in
+    Hashtbl.add bbdfns symbol_index (name, true_parent, sr, bbdcl);
 
-    | SYMDEF_match_check (pat,(mvname,mvindex)) ->
-      let t = Flx_lookup.type_of_index syms mvindex in
-      let name_map = Hashtbl.create 97 in
-      let exes =
-        [
-        sr,EXE_fun_return (gen_match_check pat (EXPR_index (sr,mvname,mvindex)))
-        ]
-      in
-      let brt',bbexes = bexes env exes flx_bbool symbol_index [] in
+    (* Cache the type of the lazy expression. *)
+    begin
+      if not (Hashtbl.mem syms.ticache symbol_index) then
+      (* HACK! *)
+      Hashtbl.add syms.ticache symbol_index brt'
+    end;
 
-      if brt' <> flx_bbool then
-        failwith ("expected boolean return from match checker " ^ name ^
-          " in\n" ^ Flx_srcref.short_string_of_src sr);
+    if syms.compiler_options.print_flag then
+      print_endline ("//bound lazy " ^ name ^ "<" ^ si symbol_index ^ ">" ^
+        print_bvs bvs ^ ":" ^ sbt syms.dfns brt')
 
-      Hashtbl.add bbdfns symbol_index
-        (name, true_parent, sr, BBDCL_function
-          ([`Inline; `Generated "bbind: match check"], bvs, ([], None),
-          flx_bbool, bbexes));
-
-      (* Cache the type of the match. *)
-      begin
-        if not (Hashtbl.mem syms.ticache symbol_index) then
-        let t = fold
-          syms.counter
-          syms.dfns
-          (BTYP_function (BTYP_tuple [], flx_bbool))
-        in
-        Hashtbl.add syms.ticache symbol_index t
-      end;
-
-      if syms.compiler_options.print_flag then
-        print_endline ("//bound match check " ^ name ^ "<" ^ si symbol_index ^
-          ">" ^ print_bvs bvs ^ ":" ^ sbt syms.dfns
-          (BTYP_function (BTYP_tuple[],flx_bbool)))
-
-    | SYMDEF_const_ctor (uidx,ut,ctor_idx,vs') ->
-      (*
-      print_endline ("Binding const ctor " ^ name);
-      *)
-      let unit_sum =
-        match hfind "bbind" syms.dfns uidx with
-        | {symdef=SYMDEF_union its} ->
-          fold_left
-          (fun v (_,_,_,t) ->
-            v && (match t with TYP_void _ -> true | _ -> false)
-          )
-          true
-          its
-        | _ -> assert false
-      in
-      let t = Flx_lookup.type_of_index syms symbol_index in
-      let ut = bt ut in
-      let ct =
-        if unit_sum then si ctor_idx
-        else "_uctor_(" ^ si ctor_idx ^ ",0)"
-      in
-      Hashtbl.add bbdfns symbol_index (name, None, sr,
-        BBDCL_const ([], bvs, t, CS_str ct, []));
-
-      if syms.compiler_options.print_flag then
-        print_endline ("//bound const " ^ name ^ "<" ^ si symbol_index ^ ">:" ^
-          sbt syms.dfns t)
-
-    | SYMDEF_nonconst_ctor (uidx,ut,ctor_idx,vs',argt) ->
-      (*
-      print_endline ("Binding non const ctor " ^ name);
-      *)
-      let t = Flx_lookup.type_of_index syms symbol_index in
-      let argt = bt argt in
-      let ut = bt ut in
-      let btraint = bind_type_constraint vs' in
-      let evs = map (fun (s,i,__) -> s,i) (fst vs') in
-      let bbdcl = BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt,evs,btraint) in
-      Hashtbl.add bbdfns symbol_index (name,None,sr,bbdcl);
-
-      if syms.compiler_options.print_flag then
-        print_endline ("//bound fun " ^ name ^ "<" ^ si symbol_index ^ ">:" ^
-          sbt syms.dfns t)
-
-    | SYMDEF_val (t) ->
-      let t = Flx_lookup.type_of_index syms symbol_index in
-      Hashtbl.add bbdfns symbol_index
-        (name, true_parent, sr, BBDCL_val (bvs, t));
-
-      if syms.compiler_options.print_flag then
-        print_endline ("//bound val " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-          print_bvs bvs ^ ":" ^ sbt syms.dfns t)
-
-    | SYMDEF_ref (t) ->
-      let t = Flx_lookup.type_of_index syms symbol_index in
-      Hashtbl.add bbdfns symbol_index
-        (name, true_parent, sr, BBDCL_ref (bvs, t));
-
-      if syms.compiler_options.print_flag then
-        print_endline ("//bound ref " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-          print_bvs bvs ^ ":" ^ sbt syms.dfns t)
-
-    | SYMDEF_lazy (rt,e) ->
-      let ps = [("dummy",`AST_void sr)],None in
-      let exes = [sr,EXE_fun_return e] in
-      let brt = bt rt in
-      let brt',bbexes = bexes env exes brt symbol_index bvs in
-      let props = [] in
-      let bbdcl =
-        BBDCL_function (props,bvs,([],None),brt',bbexes)
-      in
-      Hashtbl.add bbdfns symbol_index (name, true_parent, sr, bbdcl);
-
-      (* Cache the type of the lazy expression. *)
-      begin
-        if not (Hashtbl.mem syms.ticache symbol_index) then
-        (* HACK! *)
-        Hashtbl.add syms.ticache symbol_index brt'
-      end;
-
-      if syms.compiler_options.print_flag then
-        print_endline ("//bound lazy " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-          print_bvs bvs ^ ":" ^ sbt syms.dfns brt')
-
-    | SYMDEF_var (t) ->
-      (*
-      print_endline ("Binding variable " ^ name ^"<"^ si i ^">");
-      *)
-      let t = Flx_lookup.type_of_index syms symbol_index in
-      Hashtbl.add bbdfns symbol_index (name,true_parent,sr,BBDCL_var (bvs, t));
-
-      if syms.compiler_options.print_flag then
-        print_endline ("//bound var " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-          print_bvs bvs ^ ":" ^ sbt syms.dfns t)
-
-    | SYMDEF_const (props,t,ct,reqs) ->
-      let t = Flx_lookup.type_of_index syms symbol_index in
-      let reqs = bind_reqs reqs in
-      Hashtbl.add bbdfns symbol_index
-        (name, true_parent, sr, BBDCL_const (props,bvs,t,ct,reqs));
-
-      if syms.compiler_options.print_flag then
-        print_endline ("//bound const " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-          print_bvs bvs ^ ":" ^ sbt syms.dfns t)
-
-    | SYMDEF_fun (props,ts,ret,ct,reqs,prec) ->
-      let ts = map bt ts in
-      let bret = bt ret in
-      let reqs = bind_reqs reqs in
-      let bbdcl = match bret with
-        | BTYP_void -> BBDCL_proc (props,bvs,ts,ct,reqs)
-        | _ -> BBDCL_fun (props,bvs,ts,bret,ct,reqs,prec)
-      in
-      Hashtbl.add bbdfns symbol_index (name, true_parent, sr, bbdcl);
-
-      (* Cache the type of the function. *)
-      begin
-        if not (Hashtbl.mem syms.ticache symbol_index) then
-        let t = fold syms.counter syms.dfns (BTYP_function (typeoflist ts,bret)) in
-        Hashtbl.add syms.ticache symbol_index t
-      end;
-
-
-      if syms.compiler_options.print_flag then begin
-        let atyp = typeoflist ts in
-        print_endline ("//bound fun " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-          print_bvs bvs ^ ":" ^ sbt syms.dfns (BTYP_function (atyp, bret)))
-      end
-
-    | SYMDEF_callback (props,ts_orig,ret,reqs) ->
-      let bret = bt ret in
-
-      (* The type of the raw C function's arguments,
-        using address = void* for the callback.
-        This is the one passed to C, and the one we generate
-        to cast the address to a Felix type and then execute it.
-
-        Note the hack .. binding to C_hack::address .. it isn't
-        necessary because we know it's a void*, but there is no
-        builtin symbol for that.
-
-        This is the function the user must call to actually
-        invoke the Felix callback passed to it.
-
-        A callback is much like an exported function,
-        in that it binds a function to some arguments
-        from a C call, however it is passed a closure,
-        whereas exported functions create their own.
-
-        This function isn't type safe to call at the C
-        level, but it has the correct type to PASS to
-        the usual establishing functions (or pointer to
-        function in a struct)
-
-        this is an extern "C" function with the original
-        name. The name isn't mangled, and so shouldn't
-        conflict with the typesafe ts_cf below.
-      *)
-      let client_data_pos = ref (-1) in
-      let ts_c =
-        let counter = ref 0 in
-        map
-        (function
-          | TYP_name (_,id,[]) when id = name ->
-            if !client_data_pos = -1 then
-              client_data_pos := !counter
-            ;
-            let address = TYP_name(sr,"address",[]) in
-            bt address
-          | t -> incr counter; bt t
-        )
-        ts_orig
-      in
-
-      (* The type of the arguments of the Felix callback function,
-        which are the same as the C function, but with the client
-        data pointer dropped
-      *)
-      let ts_f =
-        map bt
-        (
-          filter
-          (function
-            | TYP_name (_,id,[]) when id = name -> false
-            | t -> true
-          )
-          ts_orig
-        )
-      in
-      let tf_args = match ts_f with
-        | [x] -> x
-        | lst -> BTYP_tuple lst
-      in
-      let tf = BTYP_function (tf_args, bret) in
-
-      (* The type of the arguments Felix thinks the raw
-         C function has on a call. A closure of this
-         function is a Felix function .. NOT the raw
-         C function.
-      *)
-      let ts_cf =
-        map
-        (function
-          | TYP_name (_,id,[]) when id = name -> tf
-          | t -> bt t
-        )
-        ts_orig
-      in
-
-      let prec = "postfix" in
-      let reqs = bind_reqs reqs in
-
-      let bbdcl = BBDCL_callback (props,bvs,ts_cf,ts_c,!client_data_pos,bret,reqs,prec) in
-      Hashtbl.add bbdfns symbol_index (name,true_parent,sr,bbdcl);
-
-      (* Cache the type of the callback. *)
-      begin
-        if not (Hashtbl.mem syms.ticache symbol_index) then
-        let t = fold syms.counter syms.dfns (BTYP_cfunction (typeoflist ts_cf, bret)) in
-        Hashtbl.add syms.ticache symbol_index t
-      end
-      ;
-      let atyp = typeoflist ts_cf in
-
-      if syms.compiler_options.print_flag then
-        print_endline ("//bound callback fun " ^ name ^ "<" ^ si symbol_index
-          ^ ">" ^ print_bvs bvs ^ ":" ^
-          sbt syms.dfns (BTYP_function (atyp, bret)))
-
-    | SYMDEF_union (cs) ->
-      (*
-      print_endline ("//Binding union " ^ si i ^ " --> " ^ name);
-      *)
-      let cs' = List.map (fun (n,v,vs',t) -> n, v,bt t) cs in
-      Hashtbl.add bbdfns symbol_index (name, None, sr, BBDCL_union (bvs, cs'))
-
-    | SYMDEF_struct (cs) ->
-      (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
-      *)
-      let cs' = List.map (fun (n,t) -> n, bt t) cs in
-      Hashtbl.add bbdfns symbol_index (name, None, sr, BBDCL_struct (bvs, cs'))
-
-    | SYMDEF_cstruct (cs) ->
-      (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
-      *)
-      let cs' = List.map (fun (n,t) -> n, bt t) cs in
-      Hashtbl.add bbdfns symbol_index (name, None, sr, BBDCL_cstruct (bvs, cs'))
-
-    | SYMDEF_typeclass ->
-      Hashtbl.add bbdfns symbol_index
-        (name, true_parent, sr, BBDCL_typeclass ([], bvs))
-
-    | SYMDEF_instance qn ->
-      (*
-      print_endline "INSTANCE";
-      *)
-      let (k:entry_kind_t),(ts: typecode_t list) = luqn qn in
-      let k = sye k in
-      (*
-      print_endline ("binding ts = " ^ catmap "," string_of_typecode ts);
-      *)
-      let ts = map bt ts in
-      (*
-      print_endline "DOne ..";
-      *)
-      Hashtbl.add bbdfns symbol_index
-        (name, true_parent, sr, BBDCL_instance ([], bvs, bcons, k, ts))
-
-    | SYMDEF_type_alias _ -> ()
-    | SYMDEF_inherit _ -> ()
-    | SYMDEF_inherit_fun _ -> ()
-
-    | SYMDEF_abs (quals,ct,reqs)->
-      (*
-      print_endline ("//Binding abstract type " ^ si i ^ " --> " ^ name);
-      *)
-      let reqs = bind_reqs reqs in
-      let bquals = bind_quals quals in
-      Hashtbl.add bbdfns symbol_index
-        (name, None, sr, BBDCL_abs (bvs, bquals, ct, reqs))
-
-    | SYMDEF_newtype t ->
-      let t = bt t in
-      Hashtbl.add bbdfns symbol_index (name, None, sr, BBDCL_newtype (bvs, t))
-
-    | SYMDEF_insert (ct,ikind,reqs) ->
-      (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name);
-      *)
-      let reqs = bind_reqs reqs in
-      Hashtbl.add bbdfns symbol_index
-        (name, true_parent, sr, BBDCL_insert (bvs, ct, ikind, reqs))
-    end
+  | SYMDEF_var (t) ->
     (*
-    ;
-    print_endline ("BINDING " ^ name ^ "<" ^ si i ^ "> COMPLETE");
-    flush stdout
+    print_endline ("Binding variable " ^ name ^"<"^ si i ^">");
     *)
+    let t = Flx_lookup.type_of_index syms symbol_index in
+    Hashtbl.add bbdfns symbol_index (name,true_parent,sr,BBDCL_var (bvs, t));
+
+    if syms.compiler_options.print_flag then
+      print_endline ("//bound var " ^ name ^ "<" ^ si symbol_index ^ ">" ^
+        print_bvs bvs ^ ":" ^ sbt syms.dfns t)
+
+  | SYMDEF_const (props,t,ct,reqs) ->
+    let t = Flx_lookup.type_of_index syms symbol_index in
+    let reqs = bind_reqs reqs in
+    Hashtbl.add bbdfns symbol_index
+      (name, true_parent, sr, BBDCL_const (props,bvs,t,ct,reqs));
+
+    if syms.compiler_options.print_flag then
+      print_endline ("//bound const " ^ name ^ "<" ^ si symbol_index ^ ">" ^
+        print_bvs bvs ^ ":" ^ sbt syms.dfns t)
+
+  | SYMDEF_fun (props,ts,ret,ct,reqs,prec) ->
+    let ts = map bt ts in
+    let bret = bt ret in
+    let reqs = bind_reqs reqs in
+    let bbdcl = match bret with
+      | BTYP_void -> BBDCL_proc (props,bvs,ts,ct,reqs)
+      | _ -> BBDCL_fun (props,bvs,ts,bret,ct,reqs,prec)
+    in
+    Hashtbl.add bbdfns symbol_index (name, true_parent, sr, bbdcl);
+
+    (* Cache the type of the function. *)
+    begin
+      if not (Hashtbl.mem syms.ticache symbol_index) then
+      let t = fold syms.counter syms.dfns (BTYP_function (typeoflist ts,bret)) in
+      Hashtbl.add syms.ticache symbol_index t
+    end;
+
+
+    if syms.compiler_options.print_flag then begin
+      let atyp = typeoflist ts in
+      print_endline ("//bound fun " ^ name ^ "<" ^ si symbol_index ^ ">" ^
+        print_bvs bvs ^ ":" ^ sbt syms.dfns (BTYP_function (atyp, bret)))
+    end
+
+  | SYMDEF_callback (props,ts_orig,ret,reqs) ->
+    let bret = bt ret in
+
+    (* The type of the raw C function's arguments,
+      using address = void* for the callback.
+      This is the one passed to C, and the one we generate
+      to cast the address to a Felix type and then execute it.
+
+      Note the hack .. binding to C_hack::address .. it isn't
+      necessary because we know it's a void*, but there is no
+      builtin symbol for that.
+
+      This is the function the user must call to actually
+      invoke the Felix callback passed to it.
+
+      A callback is much like an exported function,
+      in that it binds a function to some arguments
+      from a C call, however it is passed a closure,
+      whereas exported functions create their own.
+
+      This function isn't type safe to call at the C
+      level, but it has the correct type to PASS to
+      the usual establishing functions (or pointer to
+      function in a struct)
+
+      this is an extern "C" function with the original
+      name. The name isn't mangled, and so shouldn't
+      conflict with the typesafe ts_cf below.
+    *)
+    let client_data_pos = ref (-1) in
+    let ts_c =
+      let counter = ref 0 in
+      map
+      (function
+        | TYP_name (_,id,[]) when id = name ->
+          if !client_data_pos = -1 then
+            client_data_pos := !counter
+          ;
+          let address = TYP_name(sr,"address",[]) in
+          bt address
+        | t -> incr counter; bt t
+      )
+      ts_orig
+    in
+
+    (* The type of the arguments of the Felix callback function,
+      which are the same as the C function, but with the client
+      data pointer dropped
+    *)
+    let ts_f =
+      map bt
+      (
+        filter
+        (function
+          | TYP_name (_,id,[]) when id = name -> false
+          | t -> true
+        )
+        ts_orig
+      )
+    in
+    let tf_args = match ts_f with
+      | [x] -> x
+      | lst -> BTYP_tuple lst
+    in
+    let tf = BTYP_function (tf_args, bret) in
+
+    (* The type of the arguments Felix thinks the raw
+       C function has on a call. A closure of this
+       function is a Felix function .. NOT the raw
+       C function.
+    *)
+    let ts_cf =
+      map
+      (function
+        | TYP_name (_,id,[]) when id = name -> tf
+        | t -> bt t
+      )
+      ts_orig
+    in
+
+    let prec = "postfix" in
+    let reqs = bind_reqs reqs in
+
+    let bbdcl = BBDCL_callback (props,bvs,ts_cf,ts_c,!client_data_pos,bret,reqs,prec) in
+    Hashtbl.add bbdfns symbol_index (name,true_parent,sr,bbdcl);
+
+    (* Cache the type of the callback. *)
+    begin
+      if not (Hashtbl.mem syms.ticache symbol_index) then
+      let t = fold syms.counter syms.dfns (BTYP_cfunction (typeoflist ts_cf, bret)) in
+      Hashtbl.add syms.ticache symbol_index t
+    end
+    ;
+    let atyp = typeoflist ts_cf in
+
+    if syms.compiler_options.print_flag then
+      print_endline ("//bound callback fun " ^ name ^ "<" ^ si symbol_index
+        ^ ">" ^ print_bvs bvs ^ ":" ^
+        sbt syms.dfns (BTYP_function (atyp, bret)))
+
+  | SYMDEF_union (cs) ->
+    (*
+    print_endline ("//Binding union " ^ si i ^ " --> " ^ name);
+    *)
+    let cs' = List.map (fun (n,v,vs',t) -> n, v,bt t) cs in
+    Hashtbl.add bbdfns symbol_index (name, None, sr, BBDCL_union (bvs, cs'))
+
+  | SYMDEF_struct (cs) ->
+    (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
+    *)
+    let cs' = List.map (fun (n,t) -> n, bt t) cs in
+    Hashtbl.add bbdfns symbol_index (name, None, sr, BBDCL_struct (bvs, cs'))
+
+  | SYMDEF_cstruct (cs) ->
+    (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
+    *)
+    let cs' = List.map (fun (n,t) -> n, bt t) cs in
+    Hashtbl.add bbdfns symbol_index (name, None, sr, BBDCL_cstruct (bvs, cs'))
+
+  | SYMDEF_typeclass ->
+    Hashtbl.add bbdfns symbol_index
+      (name, true_parent, sr, BBDCL_typeclass ([], bvs))
+
+  | SYMDEF_instance qn ->
+    (*
+    print_endline "INSTANCE";
+    *)
+    let (k:entry_kind_t),(ts: typecode_t list) = luqn qn in
+    let k = sye k in
+    (*
+    print_endline ("binding ts = " ^ catmap "," string_of_typecode ts);
+    *)
+    let ts = map bt ts in
+    (*
+    print_endline "DOne ..";
+    *)
+    Hashtbl.add bbdfns symbol_index
+      (name, true_parent, sr, BBDCL_instance ([], bvs, bcons, k, ts))
+
+  | SYMDEF_type_alias _ -> ()
+  | SYMDEF_inherit _ -> ()
+  | SYMDEF_inherit_fun _ -> ()
+
+  | SYMDEF_abs (quals,ct,reqs)->
+    (*
+    print_endline ("//Binding abstract type " ^ si i ^ " --> " ^ name);
+    *)
+    let reqs = bind_reqs reqs in
+    let bquals = bind_quals quals in
+    Hashtbl.add bbdfns symbol_index
+      (name, None, sr, BBDCL_abs (bvs, bquals, ct, reqs))
+
+  | SYMDEF_newtype t ->
+    let t = bt t in
+    Hashtbl.add bbdfns symbol_index (name, None, sr, BBDCL_newtype (bvs, t))
+
+  | SYMDEF_insert (ct,ikind,reqs) ->
+    (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name);
+    *)
+    let reqs = bind_reqs reqs in
+    Hashtbl.add bbdfns symbol_index
+      (name, true_parent, sr, BBDCL_insert (bvs, ct, ikind, reqs))
+  end
+  (*
+  ;
+  print_endline ("BINDING " ^ name ^ "<" ^ si i ^ "> COMPLETE");
+  flush stdout
+  *)
 
 let bbind bbind_state =
   (* loop through all counter values [HACK]
