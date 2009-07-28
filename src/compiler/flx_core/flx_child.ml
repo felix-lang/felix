@@ -70,7 +70,7 @@ let rec descendants child_map index =
   ;
   !d
 
-let cal_children syms bbdfns =
+let cal_children bbdfns =
   let child_map = Hashtbl.create 97 in
   Hashtbl.iter begin fun i (id,parent,sr,entry) ->
     match parent with

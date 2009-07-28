@@ -197,7 +197,7 @@ try
   let bind_state = Flx_bind.make_bind_state syms in
   let bbdfns = Flx_bind.bind_asms bind_state asms in
 
-  let child_map = Flx_child.cal_children syms bbdfns in
+  let child_map = Flx_child.cal_children bbdfns in
   Flx_typeclass.typeclass_instance_check syms bbdfns child_map;
 
   (* generate axiom checks *)
@@ -243,7 +243,7 @@ try
   print_debug "//OPTIMISING";
   let () = Flx_use.find_roots syms bbdfns root_proc syms.bifaces in
   let bbdfns = Flx_use.copy_used syms bbdfns in
-  let child_map = Flx_child.cal_children syms bbdfns in
+  let child_map = Flx_child.cal_children bbdfns in
   (*
   DISABLE TEMPORARILY DUE TO BUG
   *)
@@ -254,7 +254,7 @@ try
     incr counter;
     if !counter > 10 then failwith "uncurry exceeded 10 passes";
     bbdfns := Flx_use.copy_used syms !bbdfns;
-    child_map := Flx_child.cal_children syms !bbdfns;
+    child_map := Flx_child.cal_children !bbdfns;
   done;
   let bbdfns = !bbdfns and child_map = !child_map in
 
@@ -272,10 +272,10 @@ try
     syms.reductions <- Flx_reduce.remove_useless_reductions syms bbdfns syms.reductions;
     Flx_typeclass.fixup_typeclass_instances syms bbdfns;
     let bbdfns = Flx_use.copy_used syms bbdfns in
-    let child_map = Flx_child.cal_children syms bbdfns in
+    let child_map = Flx_child.cal_children bbdfns in
     Flx_inline.heavy_inlining syms (child_map,bbdfns);
     let bbdfns = Flx_use.copy_used syms bbdfns in
-    let child_map = Flx_child.cal_children syms bbdfns in
+    let child_map = Flx_child.cal_children bbdfns in
 
     print_debug "PHASE 1 INLINING COMPLETE";
     if compiler_options.print_flag then begin
@@ -307,7 +307,7 @@ try
     print_debug "//MONOMORPHISING DONE";
 
     let bbdfns = Flx_use.copy_used syms bbdfns in
-    let child_map = Flx_child.cal_children syms bbdfns in
+    let child_map = Flx_child.cal_children bbdfns in
 
     if compiler_options.print_flag then begin
       print_endline "";
@@ -326,7 +326,7 @@ try
 
     Flx_typeclass.fixup_typeclass_instances syms bbdfns;
     let bbdfns = Flx_use.copy_used syms bbdfns in
-    let child_map = Flx_child.cal_children syms bbdfns in
+    let child_map = Flx_child.cal_children bbdfns in
     Flx_inline.heavy_inlining syms (child_map,bbdfns);
     (*
     print_endline "INLINING DONE: RESULT:";
@@ -338,7 +338,7 @@ try
   in
 
   let bbdfns = Flx_use.copy_used syms bbdfns in
-  let child_map = Flx_child.cal_children syms bbdfns in
+  let child_map = Flx_child.cal_children bbdfns in
 
   let bbdfns = ref bbdfns in
   let child_map = ref child_map in
@@ -347,7 +347,7 @@ try
     incr counter;
     if !counter > 10 then failwith "mkproc exceeded 10 passes";
     bbdfns := Flx_use.copy_used syms !bbdfns;
-    child_map := Flx_child.cal_children syms !bbdfns;
+    child_map := Flx_child.cal_children !bbdfns;
   done;
   let bbdfns = !bbdfns and child_map = !child_map in
 
@@ -417,7 +417,7 @@ try
   let label_map = Flx_label.create_label_map bbdfns syms.counter in
   let label_usage = Flx_label.create_label_usage syms bbdfns label_map in
   let label_info = label_map, label_usage in
-  let child_map = Flx_child.cal_children syms bbdfns in
+  let child_map = Flx_child.cal_children bbdfns in
   Flx_stack_calls.make_stack_calls syms (child_map,bbdfns) label_map label_usage;
 
   let opt_time = tim() in
@@ -427,7 +427,7 @@ try
 
   print_debug "//Generating primitive wrapper closures";
   Flx_mkcls.make_closures syms bbdfns;
-  let child_map = Flx_child.cal_children syms bbdfns in
+  let child_map = Flx_child.cal_children bbdfns in
 
   if compiler_options.print_flag then
   begin
@@ -440,7 +440,7 @@ try
   print_debug "//Finding which functions use globals";
   let bbdfns = Flx_use.copy_used syms bbdfns in
   Flx_global.set_globals syms bbdfns;
-  let child_map = Flx_child.cal_children syms bbdfns in
+  let child_map = Flx_child.cal_children bbdfns in
 
   (*
   print_symbols syms.dfns bbdfns;

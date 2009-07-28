@@ -25,6 +25,4 @@ val descendants:
   child_map_t -> bid_t -> IntSet.t
 
 val cal_children:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  child_map_t
+  fully_bound_symbol_table_t -> child_map_t
