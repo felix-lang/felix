@@ -72,8 +72,7 @@ let rec descendants child_map index =
 
 let cal_children syms bbdfns =
   let child_map = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun i (id,parent,sr,entry) ->
+  Hashtbl.iter begin fun i (id,parent,sr,entry) ->
     match parent with
     | Some parent ->
       Hashtbl.replace child_map parent
@@ -84,7 +83,5 @@ let cal_children syms bbdfns =
         )
       )
     | None -> ()
-  )
-  bbdfns
-  ;
+  end bbdfns;
   child_map
