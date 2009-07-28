@@ -74,14 +74,7 @@ let cal_children bbdfns =
   let child_map = Hashtbl.create 97 in
   Hashtbl.iter begin fun i (id,parent,sr,entry) ->
     match parent with
-    | Some parent ->
-      Hashtbl.replace child_map parent
-      (i ::
-        (
-          try Hashtbl.find child_map parent
-          with Not_found -> []
-        )
-      )
+    | Some parent -> add_child child_map parent i
     | None -> ()
   end bbdfns;
   child_map
