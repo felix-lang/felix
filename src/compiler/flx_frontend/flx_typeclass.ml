@@ -252,20 +252,20 @@ let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:Flx_child
     "is not a typeclass"
     )
 
-let typeclass_instance_check syms bbdfns child_map =
-  Hashtbl.iter begin fun i (id, _, sr, entry) ->
-    match entry with
-    | BBDCL_instance (props, vs, cons, tc, ts) ->
-        let iss =
-          try Hashtbl.find syms.instances_of_typeclass tc
-          with Not_found -> []
-        in
-        let entry = i, (vs, cons, ts) in
-        Hashtbl.replace syms.instances_of_typeclass tc (entry::iss);
-        check_instance syms bbdfns child_map i id vs cons sr props tc ts
+let typeclass_instance_check_symbol syms bbdfns child_map i (id, _, sr, entry) =
+  match entry with
+  | BBDCL_instance (props, vs, cons, tc, ts) ->
+      let iss =
+        try Hashtbl.find syms.instances_of_typeclass tc
+        with Not_found -> []
+      in
+      let entry = i, (vs, cons, ts) in
+      Hashtbl.replace syms.instances_of_typeclass tc (entry::iss);
+      check_instance syms bbdfns child_map i id vs cons sr props tc ts
+  | _ -> ()
 
-    | _ -> ()
-  end bbdfns
+let typeclass_instance_check syms bbdfns child_map =
+  Hashtbl.iter (typeclass_instance_check_symbol syms bbdfns child_map) bbdfns
 
 (* Notes.
 

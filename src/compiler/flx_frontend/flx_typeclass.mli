@@ -5,6 +5,14 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 
+val typeclass_instance_check_symbol:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  Flx_child.t ->
+  int ->
+  Flx_types.symbol_data3_t ->
+  unit
+
 val typeclass_instance_check:
   sym_state_t ->
   fully_bound_symbol_table_t ->

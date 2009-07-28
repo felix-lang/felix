@@ -9,6 +9,7 @@ type state_t = {
   desugar_state: Flx_desugar.desugar_state_t;
   symtab: Flx_symtab.t;
   bind_state: Flx_bind.bind_state_t;
+  child_map: Flx_child.t;
   module_index: int;
   init_index: int;
 }
@@ -41,6 +42,7 @@ let create_state options =
     desugar_state = Flx_desugar.make_desugar_state "<input>" syms;
     symtab = symtab;
     bind_state = Flx_bind.make_bind_state syms;
+    child_map = Flx_child.make ();
     module_index = module_index;
     init_index = init_index;
   }
@@ -81,13 +83,28 @@ let handle_stmt state stmt () =
         Flx_bind.bind_asm
           ?parent:(Some state.module_index)
           state.bind_state
-          begin fun index (_,_,_,e) () ->
-              (* Look up the bound value in the bbdnfs *)
-              print_endline ("... BOUND:     " ^ Flx_print.string_of_bbdcl
-                state.syms.Flx_mtypes2.dfns
-                state.bbdfns
-                e
-                index);
+          begin fun index ((_,parent,_,e) as symbol) () ->
+            (* Look up the bound value in the bbdnfs *)
+            print_endline ("... BOUND:     " ^ Flx_print.string_of_bbdcl
+              state.syms.Flx_mtypes2.dfns
+              state.bbdfns
+              e
+              index);
+
+            (* Add the symbol to the child map. *)
+            begin
+              match parent with
+              | Some parent -> Flx_child.add_child state.child_map parent index
+              | None -> ()
+            end;
+
+            Flx_typeclass.typeclass_instance_check_symbol
+              state.syms
+              state.bbdfns
+              state.child_map
+              index
+              symbol;
+
           end asm ()
   end stmt ();
 
