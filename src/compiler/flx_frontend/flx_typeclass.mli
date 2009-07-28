@@ -4,12 +4,11 @@ open Flx_ast
 open Flx_types
 open Flx_set
 open Flx_mtypes2
-open Flx_child
 
 val typeclass_instance_check:
   sym_state_t ->
   fully_bound_symbol_table_t ->
-  child_map_t ->
+  Flx_child.t ->
   unit
 
 val fixup_typeclass_instance:

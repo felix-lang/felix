@@ -10,7 +10,7 @@ open Flx_label
 
 val make_stack_calls:
   sym_state_t ->
-  child_map_t * fully_bound_symbol_table_t ->
+  Flx_child.t * fully_bound_symbol_table_t ->
   label_map_t -> label_usage_t ->
   unit
 
@@ -18,6 +18,6 @@ val can_stack_func:
   (btypecode_t, [`Recurse | `Safe | `Unsafe] ) Hashtbl.t ->
   (btypecode_t, [`Recurse | `Safe | `Unsafe] ) Hashtbl.t ->
   sym_state_t ->
-  child_map_t * fully_bound_symbol_table_t ->
+  Flx_child.t * fully_bound_symbol_table_t ->
   int ->
   bool

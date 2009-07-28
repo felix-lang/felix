@@ -5,13 +5,12 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 open Flx_call
-open Flx_child
 
 val vsplice : 'a list -> int -> 'a list -> 'a list
 
 val reparent1 :
   sym_state_t ->
-  usage_table_t * child_map_t * fully_bound_symbol_table_t ->
+  usage_table_t * Flx_child.t * fully_bound_symbol_table_t ->
   (string, string) Hashtbl.t ->   (* relabel *)
   (int, btypecode_t) Hashtbl.t -> (* varmap *)
   (bid_t, bid_t) Hashtbl.t ->     (* revariable *)
@@ -25,7 +24,7 @@ val reparent1 :
 
 val reparent_children :
   sym_state_t ->
-  usage_table_t * child_map_t * fully_bound_symbol_table_t ->
+  usage_table_t * Flx_child.t * fully_bound_symbol_table_t ->
   (string * int) list ->           (* caller vs *)
   int ->                           (* callee_vs_len *)
   bid_t ->                         (* routine index *)
@@ -38,7 +37,7 @@ val reparent_children :
 
 val specialise_symbol:
   sym_state_t ->
-  usage_table_t * child_map_t * fully_bound_symbol_table_t ->
+  usage_table_t * Flx_child.t * fully_bound_symbol_table_t ->
   (string * int) list ->           (* caller vs *)
   int ->                           (* callee_vs_len *)
   bid_t ->                         (* routine index *)

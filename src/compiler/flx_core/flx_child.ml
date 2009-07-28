@@ -11,9 +11,9 @@ let hfind msg h k =
     print_endline ("flx_child Hashtbl.find failed " ^ msg);
     raise Not_found
 
+type t = (bid_t, bid_t list) Hashtbl.t
 
-type child_map_t =
-  (bid_t, bid_t list) Hashtbl.t
+let make () = Hashtbl.create 97
 
 let find_children childmap parent =
   try Hashtbl.find childmap parent with Not_found -> []
@@ -71,7 +71,7 @@ let rec descendants child_map index =
   !d
 
 let cal_children bbdfns =
-  let child_map = Hashtbl.create 97 in
+  let child_map = make () in
   Hashtbl.iter begin fun i (id,parent,sr,entry) ->
     match parent with
     | Some parent -> add_child child_map parent i

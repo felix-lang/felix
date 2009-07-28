@@ -3,26 +3,20 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 
-type child_map_t =
-  (bid_t, bid_t list) Hashtbl.t
+type t = (bid_t, bid_t list) Hashtbl.t
 
-val find_children:
-  child_map_t -> bid_t -> bid_t list
+val make: unit -> t
 
-val is_child:
-  child_map_t -> bid_t -> bid_t -> bool
+val find_children: t -> bid_t -> bid_t list
 
-val add_child:
-  child_map_t -> bid_t -> bid_t -> unit
+val is_child: t -> bid_t -> bid_t -> bool
 
-val remove_child:
-  child_map_t -> bid_t -> bid_t -> unit
+val add_child: t -> bid_t -> bid_t -> unit
 
-val is_ancestor:
-  fully_bound_symbol_table_t -> bid_t -> bid_t -> bool
+val remove_child: t -> bid_t -> bid_t -> unit
 
-val descendants:
-  child_map_t -> bid_t -> IntSet.t
+val is_ancestor: fully_bound_symbol_table_t -> bid_t -> bid_t -> bool
 
-val cal_children:
-  fully_bound_symbol_table_t -> child_map_t
+val descendants: t -> bid_t -> IntSet.t
+
+val cal_children: fully_bound_symbol_table_t -> t

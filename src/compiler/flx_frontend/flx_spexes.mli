@@ -5,13 +5,12 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 open Flx_call
-open Flx_child
 
 type submode_t = [`Eager | `Lazy]
 
 val gen_body :
   sym_state_t ->
-  usage_table_t * child_map_t * fully_bound_symbol_table_t ->
+  usage_table_t * Flx_child.t * fully_bound_symbol_table_t ->
   string ->                        (* name *)
   (int, btypecode_t) Hashtbl.t ->  (* varmap *)
   bparameter_t list ->             (* parameters *)

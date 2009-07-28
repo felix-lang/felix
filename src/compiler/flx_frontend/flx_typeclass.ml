@@ -25,7 +25,7 @@ let vs2ts vs = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) vs
 let rec drop l n =
   if n = 0 then l else drop (tl l) (n-1)
 
-let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:child_map_t)
+let check_instance syms (bbdfns:fully_bound_symbol_table_t) (child_map:Flx_child.t)
   (inst:int) (inst_id: string) inst_vs inst_constraint inst_sr inst_props tc inst_ts
 =
   let tc_id, _, tc_sr, tc_entry = Hashtbl.find bbdfns tc in
