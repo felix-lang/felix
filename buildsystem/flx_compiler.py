@@ -99,9 +99,9 @@ def build_flx_frontend(ocaml, ocamllex):
             build_flx_desugar(ocaml, ocamllex),
             build_flx_bind(ocaml, ocamllex)])
 
-def build_flx_backend(ocaml, ocamllex):
-    path = Path('src/compiler/flx_backend')
-    return ocaml.build_lib(path / 'flx_backend',
+def build_flx_cpp_backend(ocaml, ocamllex):
+    path = Path('src/compiler/flx_cpp_backend')
+    return ocaml.build_lib(path / 'flx_cpp_backend',
         srcs=Path.globall(
             path / '*.ml{,i}',
             fbuild.buildroot / path / '*.ml{,i}'),
@@ -123,7 +123,7 @@ def build_flx_drivers(ocaml, ocamllex):
         libs=[
             build_flx_misc(ocaml),
             build_flx_core(ocaml),
-            build_flx_backend(ocaml, ocamllex)])
+            build_flx_cpp_backend(ocaml, ocamllex)])
 
     libs = [
         call('buildsystem.ocs.build_lib', ocaml),
@@ -138,7 +138,7 @@ def build_flx_drivers(ocaml, ocamllex):
         build_flx_desugar(ocaml, ocamllex),
         build_flx_bind(ocaml, ocamllex),
         build_flx_frontend(ocaml, ocamllex),
-        build_flx_backend(ocaml, ocamllex)]
+        build_flx_cpp_backend(ocaml, ocamllex)]
 
     external_libs = ['nums', 'unix', 'str']
 
