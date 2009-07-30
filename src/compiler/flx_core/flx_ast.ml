@@ -571,7 +571,7 @@ let src_of_typecode = function
 
 let src_of_expr (e : expr_t) = match e with
   | EXPR_void s
-  | EXPR_name  (s,_,_)
+  | EXPR_name (s,_,_)
   | EXPR_case_tag (s,_)
   | EXPR_typed_case (s,_,_)
   | EXPR_lookup (s,_)
@@ -599,11 +599,11 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_apply (s,_)
   | EXPR_deref (s,_)
   | EXPR_new (s,_)
-  | EXPR_ref  (s,_)
+  | EXPR_ref (s,_)
   | EXPR_likely (s,_)
   | EXPR_unlikely (s,_)
   | EXPR_literal (s,_)
-  | EXPR_tuple  (s,_)
+  | EXPR_tuple (s,_)
   | EXPR_record (s,_)
   | EXPR_variant (s,_)
   | EXPR_record_type (s,_)
