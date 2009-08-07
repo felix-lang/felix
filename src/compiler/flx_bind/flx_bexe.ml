@@ -201,7 +201,7 @@ let make_bexe_state syms env id index parent_vs ret_type =
     proc_return_count = 0;
   }
 
-let rec bind_exe state rest (sr, exe) =
+let rec bind_exe state handle_bexe (sr, exe) init =
   let be e : tbexpr_t = bind_expression state.syms state.env e in
   let lun sr n = lookup_name_in_env state.syms state.env sr n in
   (*
@@ -221,19 +221,21 @@ let rec bind_exe state rest (sr, exe) =
       );
   end
   ;
-  match exe with | EXE_comment s -> BEXE_comment (sr, s) :: rest
+  match exe with
+  | EXE_comment s ->
+      handle_bexe (BEXE_comment (sr, s)) init
   | EXE_label s ->
       state.reachable <- true;
-      BEXE_label (sr, s) :: rest
+      handle_bexe (BEXE_label (sr, s)) init
   | EXE_goto s ->
       state.reachable <- false;
-      BEXE_goto (sr, s) :: rest
+      handle_bexe (BEXE_goto (sr, s)) init
 
   | EXE_ifgoto (e,s) ->
     let e',t = be e in
     if t = flx_bbool
     then
-      BEXE_ifgoto (sr, (e', t), s) :: rest
+      handle_bexe (BEXE_ifgoto (sr, (e', t), s)) init
     else
       clierr (src_of_expr e)
       (
@@ -252,17 +254,17 @@ let rec bind_exe state rest (sr, exe) =
        [t2]
     in
     (* reverse order .. *)
-    let rest = BEXE_proc_return sr :: rest in
+    let init = handle_bexe (BEXE_proc_return sr) init in
     (* note cal_loop actually generates a call .. *)
-    cal_loop state.syms sr tbe1 (be2,t2) state.index :: rest
+    handle_bexe (cal_loop state.syms sr tbe1 (be2,t2) state.index) init
 
   | EXE_jump (a,b) ->
-    let rest = bind_exe state rest (sr, EXE_call (a, b)) in
-    let rest = bind_exe state rest (sr, EXE_proc_return) in
-    rest
+    let init = bind_exe state handle_bexe (sr, EXE_call (a, b)) init in
+    let init = bind_exe state handle_bexe (sr, EXE_proc_return) init in
+    init
 
   | EXE_call (EXPR_name (_,"axiom_check",[]), e2) ->
-     BEXE_axiom_check (sr, be e2) :: rest
+    handle_bexe (BEXE_axiom_check (sr, be e2)) init
 
   | EXE_call (f',a') ->
     (*
@@ -288,14 +290,14 @@ let rec bind_exe state rest (sr, exe) =
     *)
     begin match tf with
     | BTYP_cfunction _ ->
-      cal_call state.syms sr f a :: rest
+      handle_bexe (cal_call state.syms sr f a) init
 
     | BTYP_function _ ->
       (* print_endline "Function .. cal apply"; *)
-      cal_call state.syms sr f a :: rest
+      handle_bexe (cal_call state.syms sr f a) init
     | _ ->
       let apl name =
-        bind_exe state rest
+        bind_exe state handle_bexe
           (
             sr,
             EXE_call
@@ -304,6 +306,7 @@ let rec bind_exe state rest (sr, exe) =
               EXPR_tuple (sr, [f'; a'])
             )
           )
+          init
       in
       apl "apply"
     end
@@ -322,11 +325,11 @@ let rec bind_exe state rest (sr, exe) =
          qn [t2]
        | _ -> be sn
     in
-      cal_call state.syms sr tbe1 (be2,t2) :: rest
+    handle_bexe (cal_call state.syms sr tbe1 (be2,t2)) init
 
   | EXE_call (p,e) ->
     let p',pt' = be p and e',et' = be e in
-      cal_call state.syms sr (p', pt') (e', et') :: rest
+    handle_bexe (cal_call state.syms sr (p', pt') (e', et')) init
   *)
 
   | EXE_svc s ->
@@ -343,7 +346,7 @@ let rec bind_exe state rest (sr, exe) =
       | _ -> clierr sr ("[bexe] svc requires variable, got " ^ id)
       end
       ;
-      BEXE_svc (sr,index) :: rest
+      handle_bexe (BEXE_svc (sr,index)) init
 
     | FunctionEntry _ -> failwith "Can't svc function!"
     end
@@ -355,7 +358,7 @@ let rec bind_exe state rest (sr, exe) =
     then
       begin
         state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
-        BEXE_proc_return sr :: rest
+        handle_bexe (BEXE_proc_return sr) init
       end
     else
       clierr sr
@@ -366,11 +369,11 @@ let rec bind_exe state rest (sr, exe) =
   | EXE_halt s ->
     state.proc_return_count <- state.proc_return_count + 1;
     state.reachable <- false;
-    BEXE_halt (sr,s) :: rest
+    handle_bexe (BEXE_halt (sr,s)) init
 
   | EXE_trace (v,s) ->
     state.proc_return_count <- state.proc_return_count + 1;
-    BEXE_trace (sr,v,s) :: rest
+    handle_bexe (BEXE_trace (sr,v,s)) init
 
 
   | EXE_fun_return e ->
@@ -381,7 +384,7 @@ let rec bind_exe state rest (sr, exe) =
     ignore(do_unify state.syms state.ret_type t');
     state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
     if type_match state.syms.counter state.syms.dfns state.ret_type t' then
-      BEXE_fun_return (sr,(e',t')) :: rest
+      handle_bexe (BEXE_fun_return (sr,(e',t'))) init
     else clierr sr
       (
         "[bind_exe: fun_return ] return of  " ^
@@ -398,7 +401,7 @@ let rec bind_exe state rest (sr, exe) =
     ignore(do_unify state.syms state.ret_type t');
     state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
     if type_match state.syms.counter state.syms.dfns state.ret_type t' then
-      BEXE_yield (sr,(e',t')) :: rest
+      handle_bexe (BEXE_yield (sr,(e',t'))) init
     else
       clierr sr
       (
@@ -410,19 +413,19 @@ let rec bind_exe state rest (sr, exe) =
       )
 
   | EXE_nop s ->
-      BEXE_nop (sr,s) :: rest
+      handle_bexe (BEXE_nop (sr,s)) init
 
   | EXE_code s ->
-      BEXE_code (sr,s) :: rest
+      handle_bexe (BEXE_code (sr,s)) init
 
   | EXE_noreturn_code s ->
       state.reachable <- false;
-      BEXE_nonreturn_code (sr,s) :: rest
+      handle_bexe (BEXE_nonreturn_code (sr,s)) init
 
   | EXE_assert e ->
       let (x,t) as e' = be e in
       if t = flx_bbool
-      then BEXE_assert (sr,e') :: rest
+      then handle_bexe (BEXE_assert (sr,e')) init
       else clierr sr
       (
         "assert requires bool argument, got " ^
@@ -440,7 +443,7 @@ let rec bind_exe state rest (sr, exe) =
       let rhst = minimise state.syms.counter state.syms.dfns rhst in
       let lhst = reduce_type lhst in
       if type_match state.syms.counter state.syms.dfns lhst rhst
-      then BEXE_init (sr,index, (e',rhst)) :: rest
+      then handle_bexe (BEXE_init (sr,index, (e',rhst))) init
       else clierr sr
       (
         "[bind_exe: iinit] LHS["^s^"<"^si index^">]:\n"^
@@ -479,7 +482,7 @@ let rec bind_exe state rest (sr, exe) =
           in
           *)
           if type_match state.syms.counter state.syms.dfns lhst rhst
-          then BEXE_init (sr,index, (e',rhst)) :: rest
+          then handle_bexe (BEXE_init (sr,index, (e',rhst))) init
           else clierr sr
           (
             "[bind_exe: init] LHS["^s^"<"^si index^">]:\n"^
@@ -502,7 +505,7 @@ let rec bind_exe state rest (sr, exe) =
       let lhst = minimise state.syms.counter state.syms.dfns lhst in
       let rhst = minimise state.syms.counter state.syms.dfns rhst in
       if type_match state.syms.counter state.syms.dfns lhst rhst
-      then BEXE_assign (sr,lx, rx) :: rest
+      then handle_bexe (BEXE_assign (sr,lx, rx)) init
       else clierr sr
       (
         "[bind_exe: assign ] Assignment "^
@@ -531,7 +534,9 @@ let bind_exes state sr exes =
   print_endline "-------------------";
   *)
 
-  let bound_exes = List.fold_left (bind_exe state) [] exes in
+  let bound_exes = List.fold_left begin fun init exe ->
+    bind_exe state (fun bexe init -> bexe :: init) exe init
+  end [] exes in
   let bound_exes = List.rev bound_exes in
   (*
   print_endline ""

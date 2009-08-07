@@ -11,6 +11,14 @@ val make_bexe_state:
   Flx_types.btypecode_t ->    (** The expected return type *)
   bexe_state_t
 
+(** Bind an executable that's inside of a function. *)
+val bind_exe:
+  bexe_state_t ->             (** The state needed to bind the exe. *)
+  (Flx_types.bexe_t -> 'a -> 'a) -> (** Map this function over the bound exes *)
+  Flx_ast.sexe_t ->           (** The executable to bind *)
+  'a ->                       (** The init value *)
+  'a
+
 (** Bind a series of executables that are inside of a function. *)
 val bind_exes:
   bexe_state_t ->             (** The state needed to bind the exes. *)
