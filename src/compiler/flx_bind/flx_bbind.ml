@@ -8,7 +8,6 @@ open Flx_typing
 open Flx_mbind
 open Flx_unify
 open Flx_exceptions
-open Flx_bexe
 open List
 open Flx_generic
 open Flx_tpat
@@ -115,7 +114,17 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
 } =
   let qname = qualified_name_of_index syms.dfns symbol_index in
   let true_parent = find_true_parent syms.dfns name parent in
-  let bexes env exes rt i tvars = bind_exes syms env sr exes rt name i tvars in
+  let bexes env exes ret_type index tvars =
+    let bexe_state = Flx_bexe.make_bexe_state
+      syms
+      env
+      name
+      index
+      tvars
+      ret_type
+    in
+    Flx_bexe.bind_exes bexe_state sr exes
+  in
   (*
   print_endline ("Binding " ^ name ^ "<"^ si symbol_index ^ ">");
   print_endline ("Parent is " ^ (match parent with | None -> "none" | Some i -> si i));
@@ -132,8 +141,11 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
   let luqn n = Flx_lookup.lookup_qn_in_env syms env n in
   let luqn2 n = Flx_lookup.lookup_qn_in_env2 syms env n in
   let bt t = Flx_lookup.bind_type syms env sr t in
+
+  (* bind the type variables *)
   let ivs = find_vs syms.dfns symbol_index in (* this is the full vs list *)
   let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
+
   let bind_type_constraint ivs =
     let cons = try
       Flx_tconstraint.build_type_constraints syms bt sr (fst ivs)

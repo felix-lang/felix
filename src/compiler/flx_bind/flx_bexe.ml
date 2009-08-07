@@ -176,25 +176,38 @@ exception Found of int
 let print_vs vs =
   catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs
 
-let rec bind_exe
-  syms
-  env
-  reachable
-  id
-  index
-  proc_return_count
-  ret_type
-  return_count
-  parent_vs
-  rest
-  (sr, exe)
-=
-  let be e : tbexpr_t = bind_expression syms env e in
-  let lun sr n = lookup_name_in_env syms env sr n in
+type bexe_state_t = {
+  syms: Flx_mtypes2.sym_state_t;
+  env: Flx_types.env_t;
+  id: string;
+  index: Flx_ast.bid_t;
+  parent_vs: Flx_types.bvs_t;
+  mutable ret_type: Flx_types.btypecode_t;
+  mutable reachable: bool;
+  mutable return_count: int;
+  mutable proc_return_count: int;
+}
+
+let make_bexe_state syms env id index parent_vs ret_type =
+  {
+    syms = syms;
+    env = env;
+    id = id;
+    index = index;
+    parent_vs = parent_vs;
+    ret_type = ret_type;
+    reachable = true;
+    return_count = 0;
+    proc_return_count = 0;
+  }
+
+let rec bind_exe state rest (sr, exe) =
+  let be e : tbexpr_t = bind_expression state.syms state.env e in
+  let lun sr n = lookup_name_in_env state.syms state.env sr n in
   (*
   print_endline ("EXE="^string_of_exe 1 x);
   *)
-  if not !reachable then
+  if not state.reachable then
   begin
     match exe with
     | EXE_label _ -> ()
@@ -202,7 +215,7 @@ let rec bind_exe
     | EXE_nop _ -> ()
     | _ -> print_endline
       (
-        "WARNING: Unreachable code in " ^ id ^ ": " ^
+        "WARNING: Unreachable code in " ^ state.id ^ ": " ^
         string_of_exe 1 exe ^ " in\n" ^
         Flx_srcref.short_string_of_src sr
       );
@@ -210,10 +223,10 @@ let rec bind_exe
   ;
   match exe with | EXE_comment s -> BEXE_comment (sr, s) :: rest
   | EXE_label s ->
-      reachable := true;
+      state.reachable <- true;
       BEXE_label (sr, s) :: rest
   | EXE_goto s ->
-      reachable := false;
+      state.reachable <- false;
       BEXE_goto (sr, s) :: rest
 
   | EXE_ifgoto (e,s) ->
@@ -225,53 +238,27 @@ let rec bind_exe
       clierr (src_of_expr e)
       (
         "[bind_exes:ifgoto] Conditional requires bool argument, got " ^
-        string_of_btypecode syms.dfns t
+        string_of_btypecode state.syms.dfns t
       )
 
   | EXE_loop (n,e2) ->
     let be2,t2 = be e2 in
     let tbe1 =
        lookup_qn_with_sig
-       syms
+       state.syms
        sr sr
-       env
+       state.env
        (`AST_name(sr,n,[]) : qualified_name_t)
        [t2]
     in
     (* reverse order .. *)
     let rest = BEXE_proc_return sr :: rest in
     (* note cal_loop actually generates a call .. *)
-    cal_loop syms sr tbe1 (be2,t2) index :: rest
+    cal_loop state.syms sr tbe1 (be2,t2) state.index :: rest
 
   | EXE_jump (a,b) ->
-    let rest =
-      bind_exe
-        syms
-        env
-        reachable
-        id
-        index
-        proc_return_count
-        ret_type
-        return_count
-        parent_vs
-        rest
-        (sr, EXE_call (a, b))
-    in
-    let rest =
-      bind_exe
-        syms
-        env
-        reachable
-        id
-        index
-        proc_return_count
-        ret_type
-        return_count
-        parent_vs
-        rest
-        (sr, EXE_proc_return)
-    in
+    let rest = bind_exe state rest (sr, EXE_call (a, b)) in
+    let rest = bind_exe state rest (sr, EXE_proc_return) in
     rest
 
   | EXE_call (EXPR_name (_,"axiom_check",[]), e2) ->
@@ -292,33 +279,23 @@ let rec bind_exe
         (*
         print_endline "Lookup qn with sig .. ";
         *)
-        lookup_qn_with_sig syms sr srn env name [ta]
-      | None -> bind_expression_with_args syms env f' [a]
+        lookup_qn_with_sig state.syms sr srn state.env name [ta]
+      | None -> bind_expression_with_args state.syms state.env f' [a]
     in
     (*
-    print_endline ("tf=" ^ sbt syms.dfns tf);
-    print_endline ("ta=" ^ sbt syms.dfns ta);
+    print_endline ("tf=" ^ sbt state.syms.dfns tf);
+    print_endline ("ta=" ^ sbt state.syms.dfns ta);
     *)
     begin match tf with
     | BTYP_cfunction _ ->
-      cal_call syms sr f a :: rest
+      cal_call state.syms sr f a :: rest
 
     | BTYP_function _ ->
       (* print_endline "Function .. cal apply"; *)
-      cal_call syms sr f a :: rest
+      cal_call state.syms sr f a :: rest
     | _ ->
       let apl name =
-        bind_exe
-          syms
-          env
-          reachable
-          id
-          index
-          proc_return_count
-          ret_type
-          return_count
-          parent_vs
-          rest
+        bind_exe state rest
           (
             sr,
             EXE_call
@@ -339,24 +316,26 @@ let rec bind_exe
        match sn with
        | #qualified_name_t as qn ->
          lookup_qn_with_sig
-         syms
+         state.syms
          sr sr
-         env
+         state.env
          qn [t2]
        | _ -> be sn
     in
-      cal_call syms sr tbe1 (be2,t2) :: rest
+      cal_call state.syms sr tbe1 (be2,t2) :: rest
 
   | EXE_call (p,e) ->
     let p',pt' = be p and e',et' = be e in
-      cal_call syms sr (p', pt') (e', et') :: rest
+      cal_call state.syms sr (p', pt') (e', et') :: rest
   *)
 
   | EXE_svc s ->
     begin match lun sr s with
-    | NonFunctionEntry (index) ->
+    | NonFunctionEntry index ->
       let index = sye index in
-      let {symdef=entry; id=id} = hfind "bexe" syms.dfns index in
+      let {Flx_types.symdef=entry; Flx_types.id=id} =
+        hfind "bexe" state.syms.dfns index
+      in
       begin match entry with
       | SYMDEF_var _ -> ()
       | SYMDEF_val _ -> clierr sr ("Can't svc into value " ^ id)
@@ -370,63 +349,64 @@ let rec bind_exe
     end
 
   | EXE_proc_return ->
-    incr proc_return_count;
-    reachable := false;
-    if do_unify syms !ret_type BTYP_void
+    state.proc_return_count <- state.proc_return_count + 1;
+    state.reachable <- false;
+    if do_unify state.syms state.ret_type BTYP_void
     then
       begin
-        ret_type := varmap_subst syms.varmap !ret_type;
+        state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
         BEXE_proc_return sr :: rest
       end
     else
       clierr sr
       (
-        "function " ^id^" has void return type"
+        "function " ^ state.id ^ " has void return type"
       )
 
   | EXE_halt s ->
-    incr proc_return_count;
-    reachable := false;
+    state.proc_return_count <- state.proc_return_count + 1;
+    state.reachable <- false;
     BEXE_halt (sr,s) :: rest
 
   | EXE_trace (v,s) ->
-    incr proc_return_count;
+    state.proc_return_count <- state.proc_return_count + 1;
     BEXE_trace (sr,v,s) :: rest
 
 
   | EXE_fun_return e ->
-    reachable := false;
-    incr return_count;
+    state.reachable <- false;
+    state.return_count <- state.return_count + 1;
     let e',t' as e = be e in
-    let t' = minimise syms.counter syms.dfns t' in
-    ignore(do_unify syms !ret_type t');
-    ret_type := varmap_subst syms.varmap !ret_type;
-    if type_match syms.counter syms.dfns !ret_type t' then
+    let t' = minimise state.syms.counter state.syms.dfns t' in
+    ignore(do_unify state.syms state.ret_type t');
+    state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
+    if type_match state.syms.counter state.syms.dfns state.ret_type t' then
       BEXE_fun_return (sr,(e',t')) :: rest
     else clierr sr
       (
-        "[bind_exe: fun_return ] return of  "^sbe syms.dfns bbdfns e ^":\n"^
-        "fun return type:\n" ^ string_of_btypecode syms.dfns !ret_type^
+        "[bind_exe: fun_return ] return of  " ^
+        sbe state.syms.dfns bbdfns e ^ ":\n" ^
+        "fun return type:\n" ^ string_of_btypecode state.syms.dfns state.ret_type ^
         "\nmust have same type as return expression:\n"^
-        string_of_btypecode syms.dfns t'
+        string_of_btypecode state.syms.dfns t'
       )
 
   | EXE_yield e ->
-    incr return_count;
+    state.return_count <- state.return_count + 1;
     let e',t' = be e in
-    let t' = minimise syms.counter syms.dfns t' in
-    ignore(do_unify syms !ret_type t');
-    ret_type := varmap_subst syms.varmap !ret_type;
-    if type_match syms.counter syms.dfns !ret_type t' then
+    let t' = minimise state.syms.counter state.syms.dfns t' in
+    ignore(do_unify state.syms state.ret_type t');
+    state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
+    if type_match state.syms.counter state.syms.dfns state.ret_type t' then
       BEXE_yield (sr,(e',t')) :: rest
     else
       clierr sr
       (
         "In " ^ string_of_exe 0 exe ^ "\n" ^
         "Wrong return type,\nexpected : " ^
-        string_of_btypecode syms.dfns !ret_type ^
+        string_of_btypecode state.syms.dfns state.ret_type ^
         "\nbut we got " ^
-        string_of_btypecode syms.dfns t'
+        string_of_btypecode state.syms.dfns t'
       )
 
   | EXE_nop s ->
@@ -436,7 +416,7 @@ let rec bind_exe
       BEXE_code (sr,s) :: rest
 
   | EXE_noreturn_code s ->
-      reachable := false;
+      state.reachable <- false;
       BEXE_nonreturn_code (sr,s) :: rest
 
   | EXE_assert e ->
@@ -446,27 +426,30 @@ let rec bind_exe
       else clierr sr
       (
         "assert requires bool argument, got " ^
-        string_of_btypecode syms.dfns t
+        string_of_btypecode state.syms.dfns t
       )
 
   | EXE_iinit ((s,index),e) ->
       let e',rhst = be e in
       (* a type variable in executable code just has to be of kind TYPE *)
-      let parent_ts = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) parent_vs in
-      let lhst = type_of_index_with_ts syms sr index parent_ts in
-      let rhst = minimise syms.counter syms.dfns rhst in
+      let parent_ts = map
+        (fun (s,i) -> BTYP_var (i,BTYP_type 0))
+        state.parent_vs
+      in
+      let lhst = type_of_index_with_ts state.syms sr index parent_ts in
+      let rhst = minimise state.syms.counter state.syms.dfns rhst in
       let lhst = reduce_type lhst in
-      if type_match syms.counter syms.dfns lhst rhst
+      if type_match state.syms.counter state.syms.dfns lhst rhst
       then BEXE_init (sr,index, (e',rhst)) :: rest
       else clierr sr
       (
         "[bind_exe: iinit] LHS["^s^"<"^si index^">]:\n"^
-        string_of_btypecode syms.dfns lhst^
+        string_of_btypecode state.syms.dfns lhst^
         "\n of initialisation must have same type as RHS:\n"^
-        string_of_btypecode syms.dfns rhst^
-        "\nunfolded LHS = " ^ sbt syms.dfns (unfold syms.dfns lhst) ^
+        string_of_btypecode state.syms.dfns rhst^
+        "\nunfolded LHS = " ^ sbt state.syms.dfns (unfold state.syms.dfns lhst) ^
         "\nenvironment type variables are " ^
-        print_vs parent_vs
+        print_vs state.parent_vs
 
       )
 
@@ -477,33 +460,36 @@ let rec bind_exe
           let index = sye index in
           let e',rhst = be e in
           (* a type variable in executable code just has to be of kind TYPE *)
-          let parent_ts = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) parent_vs in
-          let lhst = type_of_index_with_ts syms sr index parent_ts in
-          let rhst = minimise syms.counter syms.dfns rhst in
+          let parent_ts = map
+            (fun (s,i) -> BTYP_var (i,BTYP_type 0))
+            state.parent_vs
+          in
+          let lhst = type_of_index_with_ts state.syms sr index parent_ts in
+          let rhst = minimise state.syms.counter state.syms.dfns rhst in
           let lhst = reduce_type lhst in
           (*
-          print_endline ("Checking type match " ^ sbt syms.dfns lhst ^ " ?= " ^ sbt syms.dfns rhst);
+          print_endline ("Checking type match " ^ sbt state.syms.dfns lhst ^ " ?= " ^ sbt state.syms.dfns rhst);
           *)
           (*
           let lhst =
-            let {symdef=entry; id=id} = hfind "bexe" syms.dfns index in
+            let {symdef=entry; id=id} = hfind "bexe" state.syms.dfns index in
             match entry with
             | SYMDEF_ref _ -> BTYP_pointer lhst
             | _ -> lhst
           in
           *)
-          if type_match syms.counter syms.dfns lhst rhst
+          if type_match state.syms.counter state.syms.dfns lhst rhst
           then BEXE_init (sr,index, (e',rhst)) :: rest
           else clierr sr
           (
             "[bind_exe: init] LHS["^s^"<"^si index^">]:\n"^
-            string_of_btypecode syms.dfns lhst^
+            string_of_btypecode state.syms.dfns lhst^
             "\n of initialisation must have same type as RHS:\n"^
-            string_of_btypecode syms.dfns rhst^
-            "\nunfolded LHS = " ^ sbt syms.dfns (unfold syms.dfns lhst) ^
-            (if length parent_vs > 0 then
+            string_of_btypecode state.syms.dfns rhst^
+            "\nunfolded LHS = " ^ sbt state.syms.dfns (unfold state.syms.dfns lhst) ^
+            (if length state.parent_vs > 0 then
             "\nenvironment type variables are " ^
-            print_vs parent_vs
+            print_vs state.parent_vs
             else "")
           )
       end
@@ -513,24 +499,24 @@ let rec bind_exe
       let _,rhst as rx = be r in
       let lhst = reduce_type lhst in
       let rhst = reduce_type rhst in
-      let lhst = minimise syms.counter syms.dfns lhst in
-      let rhst = minimise syms.counter syms.dfns rhst in
-      if type_match syms.counter syms.dfns lhst rhst
+      let lhst = minimise state.syms.counter state.syms.dfns lhst in
+      let rhst = minimise state.syms.counter state.syms.dfns rhst in
+      if type_match state.syms.counter state.syms.dfns lhst rhst
       then BEXE_assign (sr,lx, rx) :: rest
       else clierr sr
       (
         "[bind_exe: assign ] Assignment "^
-          sbe syms.dfns bbdfns lx^"="^
-          sbe syms.dfns bbdfns rx^";\n"^
-        "LHS type: " ^ string_of_btypecode syms.dfns lhst^
+          sbe state.syms.dfns bbdfns lx^"="^
+          sbe state.syms.dfns bbdfns rx^";\n"^
+        "LHS type: " ^ string_of_btypecode state.syms.dfns lhst^
         "\nmust have same type as\n"^
-        "RHS type: " ^ string_of_btypecode syms.dfns rhst
+        "RHS type: " ^ string_of_btypecode state.syms.dfns rhst
       )
 
 
-let bind_exes syms env sr exes ret_type id index parent_vs =
+let bind_exes state sr exes =
   (*
-  print_endline ("bind_exes.. env depth="^ string_of_int (List.length env));
+  print_endline ("bind_exes.. env depth="^ string_of_int (List.length state.env));
   print_endline "Dumping Source Executables";
   print_endline "--------------------------";
   let soe e = Flx_print.string_of_expr e in
@@ -545,33 +531,13 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
   print_endline "-------------------";
   *)
 
-  let ret_type = ref ret_type in
-  let luqn n = lookup_qn_in_env syms env n in
-  let bt sr t : btypecode_t = bind_type syms env sr t in
-  let return_count = ref 0 in
-  let reachable = ref true in
-  let proc_return_count = ref 0 in
-  let bound_exes = List.fold_left
-    (bind_exe
-      syms
-      env
-      reachable
-      id
-      index
-      proc_return_count
-      ret_type
-      return_count
-      parent_vs
-    )
-    []
-    exes
-  in
+  let bound_exes = List.fold_left (bind_exe state) [] exes in
   let bound_exes = List.rev bound_exes in
   (*
   print_endline ""
   ;
   List.iter
-    (fun x -> print_endline (string_of_bexe syms.dfns 1 x))
+    (fun x -> print_endline (string_of_bexe state.syms.dfns 1 x))
     bound_exes
   ;
   print_endline ""
@@ -583,33 +549,33 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
   (* No function return statements found: it must be a procedure,
      so unify void [just a comparison with void .. heh!]
   *)
-  if !return_count = 0 then
+  if state.return_count = 0 then
   begin
-    if do_unify syms !ret_type BTYP_void
+    if do_unify state.syms state.ret_type BTYP_void
     then
-      ret_type := varmap_subst syms.varmap !ret_type
+      state.ret_type <- varmap_subst state.syms.varmap state.ret_type
     else
       clierr sr
       (
-        "procedure " ^id^" has non-void return type"
+        "procedure " ^ state.id ^ " has non-void return type"
       )
   end
   ;
 
-  begin match !ret_type with
+  begin match state.ret_type with
   | BTYP_void ->
     if
-      not !reachable &&
-      !proc_return_count = 0 &&
-      syms.compiler_options.print_flag
+      not state.reachable &&
+      state.proc_return_count = 0 &&
+      state.syms.compiler_options.print_flag
     then print_endline
     (
-      "WARNING: procedure " ^id^
+      "WARNING: procedure " ^ state.id ^
       " has no explicit return and doesn't drop thru end," ^
       "\npossible infinite loop"
     )
   | _ ->
-    if !reachable then begin
+    if state.reachable then begin
       (* this is now a hard error ..
          functions must manifestly return. We have to be careful
          generating code where the compiler cannot deduce
@@ -618,17 +584,22 @@ let bind_exes syms env sr exes ret_type id index parent_vs =
          to prevent the error.
       *)
       print_endline "[DEBUG] Instruction sequence is:";
-      iter (fun exe -> print_endline (string_of_bexe syms.dfns bbdfns 0 exe)) bound_exes;
+      List.iter begin fun exe ->
+        print_endline (string_of_bexe state.syms.dfns bbdfns 0 exe)
+      end bound_exes;
       clierr sr
       (
-        "[bind_exes]: function "^id^" drops off end, missing return statement"
+        "[bind_exes]: function " ^ state.id ^ " drops off end, missing " ^
+        "return statement"
       )
       (*
       ;
       print_endline "[DEBUG] Instruction sequence is:";
-      iter (fun exe -> print_endline (string_of_bexe syms.dfns 0 exe)) bound_exes
+      List.iter begin fun exe ->
+        print_endline (string_of_bexe state.syms.dfns 0 exe)
+      end bound_exes
       *)
     end
   end
   ;
-  !ret_type,bound_exes
+  state.ret_type, bound_exes
