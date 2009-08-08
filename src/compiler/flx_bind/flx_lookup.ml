@@ -5523,23 +5523,28 @@ and merge_opens syms env rs (typeclasses,opens,includes,uses) =
   use_map::tables
 
 and build_env'' syms rs index : env_t =
-  match hfind "lookup" syms.dfns index with
-  {id=id; parent=parent; vs=vs; privmap=table;dirs=dirs} ->
+  let { id=id; parent=parent; vs=vs; privmap=table; dirs=dirs } =
+    hfind "lookup" syms.dfns index
+  in
   let skip_merges = List.mem index rs.idx_fixlist in
   (*
   if skip_merges then
     print_endline ("WARNING: RECURSION: Build_env'' " ^ id ^":" ^ si index ^ " parent="^(match parent with None -> "None" | Some i -> si i))
   ;
   *)
+
   let rs = { rs with idx_fixlist = index :: rs.idx_fixlist } in
   let env = inner_build_env syms rs parent in
+
   (* build temporary bare innermost environment with a full parent env *)
   let typeclasses, constraints = 
-     match vs with 
-     (_,{raw_type_constraint=con; raw_typeclass_reqs=rtcr})-> rtcr,con 
+    let _, { raw_type_constraint=con; raw_typeclass_reqs=rtcr } = vs in
+    rtcr,con
   in
-  let env' = (index,id,table,[],constraints)::env in
-  if skip_merges then env' else
+  let env = (index, id, table, [], constraints) :: env in
+
+  (* exit early if we don't need to do any merges *)
+  if skip_merges then env else
   (*
   print_endline ("Build_env'' " ^ id ^":" ^ si index ^ " parent="^(match parent with None -> "None" | Some i -> si i));
   print_endline ("Privmap=");
@@ -5556,7 +5561,7 @@ and build_env'' syms rs index : env_t =
   (*
   print_endline ("MERGE DIRECTIVES for " ^ id);
   *)
-  let env = merge_directives syms rs env' dirs typeclasses in
+  let env = merge_directives syms rs env dirs typeclasses in
   (*
   print_endline "Build_env'' complete";
   *)
