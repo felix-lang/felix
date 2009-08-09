@@ -73,7 +73,7 @@ let handle_stmt state stmt () =
     print_endline ("... EXPANDED:  " ^ (Flx_print.string_of_statement 0 stmt));
   end () stmt;
 
-  Flx_desugar.desugar_statement state.desugar_state begin fun asm () ->
+  Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
     print_endline ("... DESUGARED: " ^ (Flx_print.string_of_asm 0 asm));
 
     (* Add declarations to the symbol table *)
@@ -104,8 +104,8 @@ let handle_stmt state stmt () =
               index
               symbol;
 
-          end asm ()
-  end stmt ();
+          end () asm
+  end () stmt;
 
   print_string " >>> "; flush stdout;
   ()
