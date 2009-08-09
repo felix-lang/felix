@@ -116,10 +116,9 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
   let true_parent = find_true_parent syms.dfns name parent in
   let bexes env exes ret_type index tvars =
     let bexe_state = Flx_bexe.make_bexe_state
+      ?parent
       syms
       env
-      name
-      index
       tvars
       ret_type
     in

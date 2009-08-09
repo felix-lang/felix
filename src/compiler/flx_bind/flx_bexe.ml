@@ -180,7 +180,7 @@ type bexe_state_t = {
   syms: Flx_mtypes2.sym_state_t;
   env: Flx_types.env_t;
   id: string;
-  index: Flx_ast.bid_t;
+  parent: Flx_ast.bid_t option;
   parent_vs: Flx_types.bvs_t;
   mutable ret_type: Flx_types.btypecode_t;
   mutable reachable: bool;
@@ -188,12 +188,19 @@ type bexe_state_t = {
   mutable proc_return_count: int;
 }
 
-let make_bexe_state syms env id index parent_vs ret_type =
+let make_bexe_state ?parent syms env parent_vs ret_type =
+  let id =
+    match parent with
+    | None -> ""
+    | Some index ->
+        let symbol = Hashtbl.find syms.Flx_mtypes2.dfns index in
+        symbol.Flx_types.id
+  in
   {
     syms = syms;
     env = env;
     id = id;
-    index = index;
+    parent = parent;
     parent_vs = parent_vs;
     ret_type = ret_type;
     reachable = true;
@@ -255,8 +262,15 @@ let rec bind_exe state handle_bexe (sr, exe) init =
     in
     (* reverse order .. *)
     let init = handle_bexe (BEXE_proc_return sr) init in
+
+    let index =
+      match state.parent with
+      | None -> clierr (src_of_expr e2) "no parent specified"
+      | Some index -> index
+    in
+
     (* note cal_loop actually generates a call .. *)
-    handle_bexe (cal_loop state.syms sr tbe1 (be2,t2) state.index) init
+    handle_bexe (cal_loop state.syms sr tbe1 (be2,t2) index) init
 
   | EXE_jump (a,b) ->
     let init = bind_exe state handle_bexe (sr, EXE_call (a, b)) init in
