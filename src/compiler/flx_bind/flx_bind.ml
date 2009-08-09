@@ -1,25 +1,27 @@
 type bind_state_t = {
   syms: Flx_mtypes2.sym_state_t;
-  bbind_state: Flx_bbind.bbind_state_t;
   symtab: Flx_symtab.t;
+  parent: Flx_ast.bid_t option;
+  bbind_state: Flx_bbind.bbind_state_t;
   bbind_bbdfns: Flx_types.fully_bound_symbol_table_t;
   strabs_state: Flx_strabs.strabs_state_t;
   strabs_bbdfns: Flx_types.fully_bound_symbol_table_t;
 }
 
-let make_bind_state syms =
+let make_bind_state ?parent syms =
   let bbind_bbdfns = Hashtbl.create 97 in
   let strabs_bbdfns = Hashtbl.create 97 in
   {
     syms = syms;
     symtab = Flx_symtab.make syms;
+    parent = parent;
     bbind_bbdfns = bbind_bbdfns;
     bbind_state = Flx_bbind.make_bbind_state syms bbind_bbdfns;
     strabs_bbdfns = strabs_bbdfns;
     strabs_state = Flx_strabs.make_strabs_state bbind_bbdfns strabs_bbdfns;
   }
 
-let bind_asm ?parent state handle_symbol asm init =
+let bind_asm state handle_symbol asm init =
   (* We need to save the symbol index counter so we can bind all of the symbols
    * that we just added. *)
   let i = ref !(state.syms.Flx_mtypes2.counter) in
@@ -29,11 +31,11 @@ let bind_asm ?parent state handle_symbol asm init =
     match asm with
     | Flx_types.Exe exe -> ()
     | Flx_types.Dcl dcl ->
-        ignore(Flx_symtab.add_dcl ?parent state.symtab dcl)
+        ignore(Flx_symtab.add_dcl ?parent:state.parent state.symtab dcl)
     | Flx_types.Iface (sr,iface) ->
         let biface = Flx_bbind.bind_interface
           state.bbind_state
-          (sr, iface, parent)
+          (sr, iface, state.parent)
         in
         state.syms.Flx_mtypes2.bifaces <-
           biface :: state.syms.Flx_mtypes2.bifaces

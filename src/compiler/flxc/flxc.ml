@@ -41,7 +41,7 @@ let create_state options =
     macro_state = Flx_macro.make_macro_state "<input>";
     desugar_state = Flx_desugar.make_desugar_state "<input>" syms;
     symtab = symtab;
-    bind_state = Flx_bind.make_bind_state syms;
+    bind_state = Flx_bind.make_bind_state ~parent:module_index syms;
     child_map = Flx_child.make ();
     module_index = module_index;
     init_index = init_index;
@@ -81,7 +81,6 @@ let handle_stmt state stmt () =
     | Flx_types.Exe exe -> add_exe_to_symtab state exe
     | _ ->
         Flx_bind.bind_asm
-          ?parent:(Some state.module_index)
           state.bind_state
           begin fun index ((_,parent,_,e) as symbol) () ->
             (* Look up the bound value in the bbdnfs *)
