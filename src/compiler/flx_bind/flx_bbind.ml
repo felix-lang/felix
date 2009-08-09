@@ -114,7 +114,15 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
 } =
   let qname = qualified_name_of_index syms.dfns symbol_index in
   let true_parent = find_true_parent syms.dfns name parent in
-  let bexes env exes ret_type index tvars =
+
+  (* let env = Flx_lookup.build_env syms parent in  *)
+  let env = Flx_lookup.build_env syms (Some symbol_index) in
+  (*
+  print_endline "ENVIRONMENT:";
+  print_env_short env;
+  *)
+
+  let bexes exes ret_type index tvars =
     let bexe_state = Flx_bexe.make_bexe_state ?parent ~env
       syms
       tvars
@@ -126,12 +134,6 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
   print_endline ("Binding " ^ name ^ "<"^ si symbol_index ^ ">");
   print_endline ("Parent is " ^ (match parent with | None -> "none" | Some i -> si i));
   print_endline ("True Parent is " ^ (match true_parent with | None -> "none" | Some i -> si i));
-  *)
-  (* let env = Flx_lookup.build_env syms parent in  *)
-  let env = Flx_lookup.build_env syms (Some symbol_index) in
-  (*
-  print_endline "ENVIRONMENT:";
-  print_env_short env;
   *)
 
   let be e = Flx_lookup.bind_expression syms env e in
@@ -227,7 +229,7 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
     let bps = bindps ps in
     let ts = typeofbps_traint bps in
     let brt = bt rt in
-    let brt', bbexes = bexes env exes brt symbol_index bvs in
+    let brt', bbexes = bexes exes brt symbol_index bvs in
     let bbdcl =
       match brt' with
       | BTYP_void -> BBDCL_procedure (props,bvs,bps,bbexes)
@@ -297,7 +299,7 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
       sr,EXE_fun_return (gen_match_check pat (EXPR_index (sr,mvname,mvindex)))
       ]
     in
-    let brt',bbexes = bexes env exes flx_bbool symbol_index [] in
+    let brt',bbexes = bexes exes flx_bbool symbol_index [] in
 
     if brt' <> flx_bbool then
       failwith ("expected boolean return from match checker " ^ name ^
@@ -389,7 +391,7 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
     let ps = [("dummy",`AST_void sr)],None in
     let exes = [sr,EXE_fun_return e] in
     let brt = bt rt in
-    let brt',bbexes = bexes env exes brt symbol_index bvs in
+    let brt',bbexes = bexes exes brt symbol_index bvs in
     let props = [] in
     let bbdcl =
       BBDCL_function (props,bvs,([],None),brt',bbexes)
