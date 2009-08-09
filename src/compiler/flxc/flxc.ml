@@ -51,23 +51,6 @@ let create_state options =
   }
 
 
-(* Add an execution to symtab. *)
-let add_exe_to_symtab state exe =
-  (* Look up the _init_ function in symtab. *)
-  let symbol = Hashtbl.find state.syms.Flx_mtypes2.dfns state.init_index in
-
-  (* Create a new _init_ function that appends the exe. *)
-  let symbol =
-    match symbol.Flx_types.symdef with
-    | Flx_types.SYMDEF_function (p, t, ps, exes) ->
-        { symbol with
-          Flx_types.symdef=Flx_types.SYMDEF_function (p, t, ps, exes @ [exe]) }
-    | _ -> assert false
-  in
-  (* And then replace the old _init_ symbol with the new one. *)
-  Hashtbl.replace state.syms.Flx_mtypes2.dfns state.init_index symbol
-
-
 (* Process the stdin input statements *)
 let handle_stmt state stmt () =
   print_endline ("... PARSED:    " ^ (Flx_print.string_of_statement 0 stmt));
