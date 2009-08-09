@@ -24,11 +24,11 @@ val add_iface:
 
 (** Add declaration to the symbol table. *)
 val add_dcl:
-  ?parent:int ->                      (** optional parent index symbol *)
+  ?parent:Flx_ast.bid_t ->            (** optional parent index symbol *)
   t ->                                (** symbol table *)
   Flx_types.sdcl_t ->                 (** interface *)
-  int * Flx_types.bound_iface_t list  (** symbol index and bound interfaces
-                                          inside the dcl *)
+  Flx_ast.bid_t * Flx_types.bound_iface_t list  (** symbol index and bound
+                                                    interfaces inside the dcl *)
 
 
 (** Add assemblies to the symbol table. *)
