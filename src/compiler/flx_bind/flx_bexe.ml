@@ -188,7 +188,7 @@ type bexe_state_t = {
   mutable proc_return_count: int;
 }
 
-let make_bexe_state ?parent syms env parent_vs ret_type =
+let make_bexe_state ?parent ?(env=[]) syms parent_vs ret_type =
   let id =
     match parent with
     | None -> ""
