@@ -41,7 +41,10 @@ let create_state options =
     macro_state = Flx_macro.make_macro_state "<input>";
     desugar_state = Flx_desugar.make_desugar_state "<input>" syms;
     symtab = symtab;
-    bind_state = Flx_bind.make_bind_state ~parent:module_index syms;
+    bind_state = Flx_bind.make_bind_state
+      ~parent:module_index
+      ~env:(Flx_lookup.build_env syms (Some init_index))
+      syms;
     child_map = Flx_child.make ();
     module_index = module_index;
     init_index = init_index;
@@ -76,35 +79,37 @@ let handle_stmt state stmt () =
   Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
     print_endline ("... DESUGARED: " ^ (Flx_print.string_of_asm 0 asm));
 
-    (* Add declarations to the symbol table *)
-    match asm with
-    | Flx_types.Exe exe -> add_exe_to_symtab state exe
-    | _ ->
-        Flx_bind.bind_asm
-          state.bind_state
-          begin fun () index ((_,parent,_,e) as symbol) ->
-            (* Look up the bound value in the bbdnfs *)
-            print_endline ("... BOUND:     " ^ Flx_print.string_of_bbdcl
-              state.syms.Flx_mtypes2.dfns
-              state.bbdfns
-              e
-              index);
+    Flx_bind.bind_asm state.bind_state begin fun () bound_value ->
+      match bound_value with
+      | Flx_bind.Bound_exe bexe ->
+          print_endline ("... BOUND:     " ^ Flx_print.string_of_bexe
+            state.syms.Flx_mtypes2.dfns
+            state.bbdfns
+            0
+            bexe)
 
-            (* Add the symbol to the child map. *)
-            begin
-              match parent with
-              | Some parent -> Flx_child.add_child state.child_map parent index
-              | None -> ()
-            end;
+      | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
+          print_endline ("... BOUND:     " ^ Flx_print.string_of_bbdcl
+            state.syms.Flx_mtypes2.dfns
+            state.bbdfns
+            e
+            index);
 
-            Flx_typeclass.typeclass_instance_check_symbol
-              state.syms
-              state.bbdfns
-              state.child_map
-              index
-              symbol;
+          (* Add the symbol to the child map. *)
+          begin
+            match parent with
+            | Some parent -> Flx_child.add_child state.child_map parent index
+            | None -> ()
+          end;
 
-          end () asm
+          Flx_typeclass.typeclass_instance_check_symbol
+            state.syms
+            state.bbdfns
+            state.child_map
+            index
+            symbol;
+
+    end () asm
   end () stmt;
 
   print_string " >>> "; flush stdout;
