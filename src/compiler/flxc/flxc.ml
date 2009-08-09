@@ -82,7 +82,7 @@ let handle_stmt state stmt () =
     | _ ->
         Flx_bind.bind_asm
           state.bind_state
-          begin fun index ((_,parent,_,e) as symbol) () ->
+          begin fun () index ((_,parent,_,e) as symbol) ->
             (* Look up the bound value in the bbdnfs *)
             print_endline ("... BOUND:     " ^ Flx_print.string_of_bbdcl
               state.syms.Flx_mtypes2.dfns

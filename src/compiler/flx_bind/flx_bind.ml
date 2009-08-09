@@ -21,7 +21,7 @@ let make_bind_state ?parent syms =
     strabs_state = Flx_strabs.make_strabs_state bbind_bbdfns strabs_bbdfns;
   }
 
-let bind_asm state handle_symbol asm init =
+let bind_asm state handle_symbol init asm =
   (* We need to save the symbol index counter so we can bind all of the symbols
    * that we just added. *)
   let i = ref !(state.syms.Flx_mtypes2.counter) in
@@ -59,7 +59,7 @@ let bind_asm state handle_symbol asm init =
               match Flx_strabs.strabs_symbol state.strabs_state !i s with
               | None -> ()
               | Some s ->
-                  init := handle_symbol !i s !init
+                  init := handle_symbol !init !i s
     end;
     incr i
   done;

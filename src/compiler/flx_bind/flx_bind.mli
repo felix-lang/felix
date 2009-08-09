@@ -9,10 +9,10 @@ val make_bind_state:
 (** Bind an individual assembly into a series of symbols. *)
 val bind_asm:
   bind_state_t ->         (** The state needed for binding. *)
-  (int -> Flx_types.symbol_data3_t -> 'a -> 'a) ->  (** Fold this over each
+  ('a -> int -> Flx_types.symbol_data3_t -> 'a) ->  (** Fold this over each
                                                         assembly. *)
-  Flx_types.asm_t ->      (** The assembly to bind. *)
   'a ->                   (** The initial value. *)
+  Flx_types.asm_t ->      (** The assembly to bind. *)
   'a
 
 (** Bind all the symbols. *)
