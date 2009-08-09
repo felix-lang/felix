@@ -1295,7 +1295,7 @@ let desugar_statement desugar_state handle_asm stmt init =
   (* First we must expand all the macros in the statement *)
   Flx_macro.expand_macros_in_statement
     desugar_state.macro_state
-    begin fun stmt init ->
+    begin fun init stmt ->
       (* For each macro-expanded statement, desugar it into a series of
        * assemblies *)
       let asms =
@@ -1304,5 +1304,5 @@ let desugar_statement desugar_state handle_asm stmt init =
       (* Finally, call the fold function over the assemblies *)
       List.fold_right handle_asm asms init
     end
-    stmt
     init
+    stmt

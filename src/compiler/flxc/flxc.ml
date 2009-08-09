@@ -69,9 +69,9 @@ let add_exe_to_symtab state exe =
 let handle_stmt state stmt () =
   print_endline ("... PARSED:    " ^ (Flx_print.string_of_statement 0 stmt));
 
-  Flx_macro.expand_macros_in_statement state.macro_state begin fun stmt () ->
+  Flx_macro.expand_macros_in_statement state.macro_state begin fun () stmt ->
     print_endline ("... EXPANDED:  " ^ (Flx_print.string_of_statement 0 stmt));
-  end stmt ();
+  end () stmt;
 
   Flx_desugar.desugar_statement state.desugar_state begin fun asm () ->
     print_endline ("... DESUGARED: " ^ (Flx_print.string_of_asm 0 asm));

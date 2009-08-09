@@ -1986,7 +1986,7 @@ let expand_macros macro_state stmts =
     macro_state.macros
     stmts
 
-let expand_macros_in_statement macro_state handle_stmt stmt init =
+let expand_macros_in_statement macro_state handle_stmt init stmt =
   let stmts =
     expand_statement
       macro_state.recursion_limit
@@ -1997,7 +1997,7 @@ let expand_macros_in_statement macro_state handle_stmt stmt init =
       macro_state.macros
       stmt
   in
-  List.fold_right handle_stmt stmts init
+  List.fold_left handle_stmt init stmts
 
 let make_macro_state ?(recursion_limit=5000) local_prefix =
   {
