@@ -5,16 +5,17 @@ import fbuild
 import fbuild.db
 from fbuild.functools import call
 from fbuild.path import Path
-from fbuild.record import Record
 
 # ------------------------------------------------------------------------------
 
 class Builder(fbuild.db.PersistentObject):
-    def __init__(self, flxg, cxx,
+    def __init__(self, ctx, flxg, cxx,
             flx_run_exe,
             flx_arun_exe,
             flx_run_lib,
             flx_arun_lib):
+        super().__init__(ctx)
+
         self.flxg = flxg
         self.cxx = cxx
         self.flx_run_exe  = flx_run_exe
@@ -30,8 +31,10 @@ class Builder(fbuild.db.PersistentObject):
             flags=[],
             include_std=True,
             preparse=False,
-            buildroot=fbuild.buildroot,
+            buildroot=None,
             **kwargs) -> fbuild.db.DST:
+        buildroot = buildroot or self.ctx.buildroot
+
         src = Path(src)
         # first, copy the src file into the buildroot
         src_buildroot = src.addroot(buildroot)
@@ -79,7 +82,7 @@ class Builder(fbuild.db.PersistentObject):
         else:
             cmd.append(src)
 
-        fbuild.execute(cmd, self.flxg.name, '%s -> %s' % (src, dst),
+        self.ctx.execute(cmd, self.flxg.name, '%s -> %s' % (src, dst),
                 color='yellow', **kwargs)
 
         return dst
@@ -97,12 +100,14 @@ class Builder(fbuild.db.PersistentObject):
             libs=[],
             lflags=[],
             objects=[],
-            buildroot=fbuild.buildroot):
+            buildroot=None):
+        buildroot = buildroot or self.ctx.buildroot
+
         src = Path(src)
 
         if dst is None:
             dst = src.replaceext('')
-        dst.addroot(src)
+        dst = Path(dst).addroot(buildroot)
 
         obj = self.cxx.compile(src,
             includes=includes,
@@ -137,7 +142,7 @@ class Builder(fbuild.db.PersistentObject):
 
         cmd.append(src)
 
-        return fbuild.execute(cmd, *args, **kwargs)
+        return self.ctx.execute(cmd, *args, **kwargs)
 
     # --------------------------------------------------------------------------
 
@@ -167,8 +172,9 @@ class Builder(fbuild.db.PersistentObject):
 
 # ------------------------------------------------------------------------------
 
-def build(flxg, cxx, drivers):
+def build(ctx, flxg, cxx, drivers):
     return Builder(
+        ctx,
         flxg,
         cxx,
         drivers.flx_run_exe,
@@ -177,30 +183,30 @@ def build(flxg, cxx, drivers):
         drivers.flx_arun_lib,
     )
 
-def build_flx_pkgconfig(flx, phase):
-    return flx.build_exe(
-        dst=fbuild.buildroot / 'bin/flx_pkgconfig',
+def build_flx_pkgconfig(phase):
+    return phase.flx.build_exe(
+        dst='bin/flx_pkgconfig',
         src='src/flx_pkgconfig/flx_pkgconfig.flx',
-        includes=[fbuild.buildroot / 'lib'],
-        cxx_includes=['src/flx_pkgconfig', fbuild.buildroot / 'lib/rtl'],
+        includes=[phase.ctx.buildroot / 'lib'],
+        cxx_includes=['src/flx_pkgconfig', phase.ctx.buildroot / 'lib/rtl'],
         cxx_libs=[call('buildsystem.flx_rtl.build_runtime', phase).static],
     )
 
 # ------------------------------------------------------------------------------
 
-def test_flx(felix, src, *args, **kwargs):
+def test_flx(phase, src, *args, **kwargs):
     src = Path(src)
 
     passed = True
     for static in False, True:
         try:
-            exe = felix.compile(src, static=static)
+            exe = phase.felix.compile(src, static=static)
         except fbuild.ExecutionError as e:
-            fbuild.logger.log(e, verbose=1)
+            phase.ctx.logger.log(e, verbose=1)
             if e.stdout:
-                fbuild.logger.log(e.stdout.decode().strip(), verbose=1)
+                phase.ctx.logger.log(e.stdout.decode().strip(), verbose=1)
             if e.stderr:
-                fbuild.logger.log(e.stderr.decode().strip(), verbose=1)
+                phase.ctx.logger.log(e.stderr.decode().strip(), verbose=1)
             passed = False
             continue
 
@@ -211,7 +217,7 @@ def test_flx(felix, src, *args, **kwargs):
 
         expect = src.replaceext('.expect')
 
-        passed &= check_flx(felix, *args,
+        passed &= check_flx(phase.ctx, phase.felix, *args,
             exe=exe,
             dst=dst,
             expect=expect if expect.exists() else None,
@@ -221,13 +227,13 @@ def test_flx(felix, src, *args, **kwargs):
     return passed
 
 @fbuild.db.caches
-def check_flx(felix,
+def check_flx(ctx, felix,
         exe:fbuild.db.SRC,
         dst:fbuild.db.DST,
         expect:fbuild.db.OPTIONAL_SRC,
         static,
         env={}):
-    fbuild.logger.check('checking ' + exe)
+    ctx.logger.check('checking ' + exe)
     try:
         stdout, stderr = felix.run(exe,
             env=dict(env, TEST_DATA_DIR=Path('test/test-data')),
@@ -236,22 +242,22 @@ def check_flx(felix,
             quieter=1)
     except fbuild.ExecutionError as e:
         if isinstance(e, fbuild.ExecutionTimedOut):
-            fbuild.logger.failed('failed: timed out')
+            ctx.logger.failed('failed: timed out')
         else:
-            fbuild.logger.failed()
+            ctx.logger.failed()
 
-        fbuild.logger.log(e, verbose=1)
+        ctx.logger.log(e, verbose=1)
         if e.stdout:
-            fbuild.logger.log(e.stdout.decode().strip(), verbose=1)
+            ctx.logger.log(e.stdout.decode().strip(), verbose=1)
         if e.stderr:
-            fbuild.logger.log(e.stderr.decode().strip(), verbose=1)
+            ctx.logger.log(e.stderr.decode().strip(), verbose=1)
         return False
 
     with open(dst, 'wb') as f:
         f.write(stdout)
 
     if expect is None:
-        fbuild.logger.log('no .expect', color='cyan')
+        ctx.logger.log('no .expect', color='cyan')
         return True
     else:
         stdout = stdout.replace(b'\r\n', b'\n').replace(b'\r', b'\n')
@@ -260,13 +266,13 @@ def check_flx(felix,
             s = f.read().replace(b'\r\n', b'\n').replace(b'\r', b'\n')
 
         if stdout == s:
-            fbuild.logger.passed()
+            ctx.logger.passed()
             return True
         else:
-            fbuild.logger.failed('failed: output does not match')
+            ctx.logger.failed('failed: output does not match')
             for line in difflib.ndiff(
                     stdout.decode().split('\n'),
                     s.decode().split('\n')):
-                fbuild.logger.log(line)
+                ctx.logger.log(line)
             dst.remove()
             return False

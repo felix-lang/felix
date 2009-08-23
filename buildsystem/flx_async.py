@@ -7,11 +7,11 @@ import buildsystem
 # ------------------------------------------------------------------------------
 
 def build_runtime(phase):
-    dst = fbuild.buildroot / 'lib/rtl/flx_async'
+    dst = 'lib/rtl/flx_async'
     suffix = '.so'
     srcs = ['src/flx_async/flx_async.cpp']
     includes = [
-        fbuild.buildroot / 'config/target',
+        phase.ctx.buildroot / 'config/target',
         'src/exceptions',
         'src/demux',
         'src/faio',

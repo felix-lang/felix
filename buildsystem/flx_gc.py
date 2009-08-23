@@ -10,18 +10,18 @@ import buildsystem
 def build_runtime(phase):
     path = Path('src/gc')
 
-    buildsystem.copy_hpps_to_rtl(
-        fbuild.buildroot / 'config/target/flx_gc_config.hpp',
+    buildsystem.copy_hpps_to_rtl(phase.ctx,
+        phase.ctx.buildroot / 'config/target/flx_gc_config.hpp',
         path / 'flx_gc.hpp',
         path / 'flx_collector.hpp',
         path / 'flx_gc_private.hpp',
         path / 'flx_ts_collector.hpp',
     )
 
-    dst = fbuild.buildroot / 'lib/rtl/flx_gc'
+    dst = 'lib/rtl/flx_gc'
     srcs = Path.glob(path / '*.cpp')
     includes = [
-        fbuild.buildroot / 'config/target',
+        phase.ctx.buildroot / 'config/target',
         'src/rtl',
         'src/pthread',
         'src/exceptions',

@@ -10,9 +10,9 @@ import buildsystem
 def build_runtime(phase):
     path = Path('src', 'rtl')
 
-    buildsystem.copy_hpps_to_rtl(
-        fbuild.buildroot / 'config/target/flx_rtl_config.hpp',
-        fbuild.buildroot / 'config/target/flx_meta.hpp',
+    buildsystem.copy_hpps_to_rtl(phase.ctx,
+        phase.ctx.buildroot / 'config/target/flx_rtl_config.hpp',
+        phase.ctx.buildroot / 'config/target/flx_meta.hpp',
         path / 'flx_rtl.hpp',
         path / 'flx_compiler_support_headers.hpp',
         path / 'flx_compiler_support_bodies.hpp',
@@ -23,10 +23,10 @@ def build_runtime(phase):
         path / 'flx_executil.hpp',
     )
 
-    dst = fbuild.buildroot / 'lib/rtl/flx'
+    dst = 'lib/rtl/flx'
     srcs = Path.glob(path / '*.cpp')
     includes = [
-        fbuild.buildroot / 'config/target',
+        phase.ctx.buildroot / 'config/target',
         'src/exceptions',
         'src/demux',
         'src/faio',

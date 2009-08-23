@@ -5,13 +5,17 @@ from fbuild.path import Path
 # ------------------------------------------------------------------------------
 
 class Builder(fbuild.db.PersistentObject):
-    def __init__(self, exe):
+    def __init__(self, ctx, exe):
+        super().__init__(ctx)
+
         self.exe = exe
 
     @fbuild.db.cachemethod
     def __call__(self, src:fbuild.db.SRC, *,
-            buildroot=fbuild.buildroot,
+            buildroot=None,
             flags=[]) -> fbuild.db.DST:
+        buildroot = buildroot or self.ctx.buildroot
+
         # first, copy the src file into the buildroot
         src_buildroot = src.addroot(buildroot)
         dst = src_buildroot.replaceext('.ml')
@@ -25,24 +29,24 @@ class Builder(fbuild.db.PersistentObject):
         cmd.extend(flags)
         cmd.append(src)
 
-        fbuild.execute(cmd, self.exe.name, '%s -> %s' % (src, dst),
+        self.ctx.execute(cmd, self.exe.name, '%s -> %s' % (src, dst),
             color='yellow')
 
         return dst
 
 # ------------------------------------------------------------------------------
 
-def build_lib(ocaml):
+def build_lib(phase):
     path = Path('src/compiler/dypgen/dyplib')
-    return ocaml.build_lib(path/'dyp', Path.glob(path/'*.ml{,i}'))
+    return phase.ocaml.build_lib(path/'dyp', Path.glob(path/'*.ml{,i}'))
 
-def build_exe(ocaml, ocamllex):
+def build_exe(phase):
     path = Path('src/compiler/dypgen/dypgen')
-    exe = ocaml.build_exe(path/'dypgen', Path.globall(
+    exe = phase.ocaml.build_exe(path/'dypgen', Path.globall(
         path/'*.ml{,i}',
-        ocamllex(path/'dypgen_lexer.mll'),
-        ocamllex(path/'extract_type.mll'),
-        ocamllex(path/'insert_linenum.mll')),
-        libs=[build_lib(ocaml)])
+        phase.ocamllex(path/'dypgen_lexer.mll'),
+        phase.ocamllex(path/'extract_type.mll'),
+        phase.ocamllex(path/'insert_linenum.mll')),
+        libs=[build_lib(phase)])
 
-    return Builder(exe)
+    return Builder(phase.ctx, exe)

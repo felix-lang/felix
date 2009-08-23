@@ -10,9 +10,9 @@ import buildsystem
 def build_runtime(phase):
     path = Path('src/judy')
 
-    buildsystem.copy_hpps_to_rtl(path / 'Judy.h')
+    buildsystem.copy_hpps_to_rtl(phase.ctx, path / 'Judy.h')
 
-    dst = fbuild.buildroot / 'lib/rtl/flx_judy'
+    dst = 'lib/rtl/flx_judy'
     srcs = [
         path / 'JudyCommon/JudyMalloc.c',
         path / 'Judy1/JUDY1_Judy1ByCount.c',
@@ -69,7 +69,7 @@ def build_runtime(phase):
     ]
 
     types = call('fbuild.builders.c.std.config_types',
-        phase.c.shared)
+        phase.ctx, phase.c.shared)
 
     macros = ['BUILD_JUDY']
     if types['void*']['size'] == 8:
@@ -85,5 +85,6 @@ def build_runtime(phase):
             includes=includes,
             macros=macros))
 
-def build_flx(builder):
-    return buildsystem.copy_flxs_to_lib(Path('src/judy/*.flx').glob())
+def build_flx(phase):
+    return buildsystem.copy_flxs_to_lib(phase.ctx,
+        Path('src/judy/*.flx').glob())

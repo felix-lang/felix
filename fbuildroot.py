@@ -174,8 +174,8 @@ def post_options(options, args):
 
 # ------------------------------------------------------------------------------
 
-def make_c_builder(*args, includes=[], libpaths=[], flags=[], **kwargs):
-    flags = list(chain(fbuild.options.c_flags, flags))
+def make_c_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
+    flags = list(chain(ctx.options.c_flags, flags))
 
     kwargs['platform_options'] = [
         ({'posix'},
@@ -186,15 +186,15 @@ def make_c_builder(*args, includes=[], libpaths=[], flags=[], **kwargs):
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
             'optimize_flags': ['/Ox']}),
     ]
-    kwargs['includes'] = list(chain(fbuild.options.includes, includes))
-    kwargs['libpaths'] = list(chain(fbuild.options.libpaths, libpaths))
+    kwargs['includes'] = list(chain(ctx.options.includes, includes))
+    kwargs['libpaths'] = list(chain(ctx.options.libpaths, libpaths))
 
     return Record(
-        static=call('fbuild.builders.c.guess_static', *args, **kwargs),
-        shared=call('fbuild.builders.c.guess_shared', *args, **kwargs))
+        static=call('fbuild.builders.c.guess_static', ctx, *args, **kwargs),
+        shared=call('fbuild.builders.c.guess_shared', ctx, *args, **kwargs))
 
-def make_cxx_builder(*args, includes=[], libpaths=[], flags=[], **kwargs):
-    flags = list(chain(fbuild.options.c_flags, flags))
+def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
+    flags = list(chain(ctx.options.c_flags, flags))
 
     kwargs['platform_options'] = [
         ({'posix'}, {
@@ -205,74 +205,76 @@ def make_cxx_builder(*args, includes=[], libpaths=[], flags=[], **kwargs):
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
             'optimize_flags': ['/Ox']}),
     ]
-    kwargs['includes'] = list(chain(fbuild.options.includes, includes))
-    kwargs['libpaths'] = list(chain(fbuild.options.libpaths, libpaths))
+    kwargs['includes'] = list(chain(ctx.options.includes, includes))
+    kwargs['libpaths'] = list(chain(ctx.options.libpaths, libpaths))
 
     return Record(
-        static=call('fbuild.builders.cxx.guess_static', *args, **kwargs),
-        shared=call('fbuild.builders.cxx.guess_shared', *args, **kwargs))
+        static=call('fbuild.builders.cxx.guess_static', ctx, *args, **kwargs),
+        shared=call('fbuild.builders.cxx.guess_shared', ctx, *args, **kwargs))
 
-def config_build():
-    fbuild.logger.log('configuring build phase', color='cyan')
+def config_build(ctx):
+    ctx.logger.log('configuring build phase', color='cyan')
 
-    platform = call('fbuild.builders.platform.platform',
-        fbuild.options.build_platform)
+    platform = call('fbuild.builders.platform.platform', ctx,
+        ctx.options.build_platform)
 
     return Record(
+        ctx=ctx,
         platform=platform,
-        c=make_c_builder(fbuild.options.build_cc,
+        c=make_c_builder(ctx, ctx.options.build_cc,
             platform=platform,
-            debug=fbuild.options.debug or fbuild.options.build_c_debug,
-            optimize=fbuild.options.optimize or fbuild.options.build_c_optimize,
-            includes=fbuild.options.build_includes,
-            libpaths=fbuild.options.build_libpaths,
-            flags=fbuild.options.build_c_flags),
-        cxx=make_cxx_builder(fbuild.options.build_cxx,
+            debug=ctx.options.debug or ctx.options.build_c_debug,
+            optimize=ctx.options.optimize or ctx.options.build_c_optimize,
+            includes=ctx.options.build_includes,
+            libpaths=ctx.options.build_libpaths,
+            flags=ctx.options.build_c_flags),
+        cxx=make_cxx_builder(ctx, ctx.options.build_cxx,
             platform=platform,
-            debug=fbuild.options.debug or fbuild.options.build_c_debug,
-            optimize=fbuild.options.optimize or fbuild.options.build_c_optimize,
-            includes=fbuild.options.build_includes,
-            libpaths=fbuild.options.build_libpaths,
-            flags=fbuild.options.build_c_flags))
+            debug=ctx.options.debug or ctx.options.build_c_debug,
+            optimize=ctx.options.optimize or ctx.options.build_c_optimize,
+            includes=ctx.options.build_includes,
+            libpaths=ctx.options.build_libpaths,
+            flags=ctx.options.build_c_flags))
 
-def config_host(build):
-    fbuild.logger.log('configuring host phase', color='cyan')
+def config_host(ctx, build):
+    ctx.logger.log('configuring host phase', color='cyan')
 
-    platform = call('fbuild.builders.platform.platform',
-        fbuild.options.build_platform)
+    platform = call('fbuild.builders.platform.platform', ctx,
+        ctx.options.build_platform)
 
     if platform == build.platform:
-        fbuild.logger.log("using build's c and cxx compiler", color='cyan')
+        ctx.logger.log("using build's c and cxx compiler", color='cyan')
         phase = build
     else:
         phase = Record(
+            ctx=ctx,
             platform=platform,
-            c=make_c_builder(fbuild.builders.host_cc,
+            c=make_c_builder(ctx, fbuild.builders.host_cc,
                 platform=platform,
-                debug=fbuild.options.debug or fbuild.options.host_c_debug,
-                optimize=fbuild.options.optimize or
-                    fbuild.options.host_c_optimize,
-                includes=fbuild.options.host_includes,
-                libpaths=fbuild.options.host_libpaths,
-                flags=fbuild.options.host_c_flags),
-            cxx=make_cxx_builder(fbuild.buildesr.host_cxx,
+                debug=ctx.options.debug or ctx.options.host_c_debug,
+                optimize=ctx.options.optimize or
+                    ctx.options.host_c_optimize,
+                includes=ctx.options.host_includes,
+                libpaths=ctx.options.host_libpaths,
+                flags=ctx.options.host_c_flags),
+            cxx=make_cxx_builder(ctx, fbuild.buildesr.host_cxx,
                 platform=platform,
-                debug=fbuild.options.debug or fbuild.options.host_c_debug,
-                optimize=fbuild.options.optimize or
-                    fbuild.options.host_c_optimize,
-                includes=fbuild.options.host_includes,
-                libpaths=fbuild.options.host_libpaths,
-                flags=fbuild.options.host_c_flags))
+                debug=ctx.options.debug or ctx.options.host_c_debug,
+                optimize=ctx.options.optimize or
+                    ctx.options.host_c_optimize,
+                includes=ctx.options.host_includes,
+                libpaths=ctx.options.host_libpaths,
+                flags=ctx.options.host_c_flags))
 
-    phase.ocaml = call('fbuild.builders.ocaml.Ocaml',
-        debug=fbuild.options.debug or fbuild.options.host_ocaml_debug,
-        ocamlc=fbuild.options.host_ocamlc,
-        ocamlopt=fbuild.options.host_ocamlopt,
+    phase.ocaml = call('fbuild.builders.ocaml.Ocaml', ctx,
+        debug=ctx.options.debug or ctx.options.host_ocaml_debug,
+        ocamlc=ctx.options.host_ocamlc,
+        ocamlopt=ctx.options.host_ocamlopt,
         flags=['-w', 'yzex', '-warn-error', 'FDPSU'],
         requires_at_least_version=(3, 11))
 
-    phase.ocamllex = call('fbuild.builders.ocaml.Ocamllex',
-        fbuild.options.host_ocamllex)
+    phase.ocamllex = call('fbuild.builders.ocaml.Ocamllex', ctx,
+        ctx.options.host_ocamllex)
 
     # we prefer the native ocaml as it's much faster
     if hasattr(phase.ocaml, 'ocamlopt'):
@@ -282,85 +284,83 @@ def config_host(build):
 
     return phase
 
-def config_target(host):
-    fbuild.logger.log('configuring target phase', color='cyan')
+def config_target(ctx, host):
+    ctx.logger.log('configuring target phase', color='cyan')
 
-    platform = call('fbuild.builders.platform.platform',
-        fbuild.options.target_platform)
+    platform = call('fbuild.builders.platform.platform', ctx,
+        ctx.options.target_platform)
 
     if platform == host.platform:
-        fbuild.logger.log("using host's c and cxx compiler", color='cyan')
+        ctx.logger.log("using host's c and cxx compiler", color='cyan')
         phase = host
     else:
         phase = Record(
+            ctx=ctx,
             platform=platform,
-            c=make_c_builder(fbuild.options.target_cc,
+            c=make_c_builder(ctx, ctx.options.target_cc,
                 platform=platform,
-                debug=fbuild.options.debug or fbuild.options.target_c_debug,
-                optimize=fbuild.options.optimize or
-                    fbuild.options.target_c_optimize,
-                includes=fbuild.options.target_includes,
-                libpaths=fbuild.options.target_libpaths,
-                flags=fbuild.options.target_c_flags),
-            cxx=make_cxx_builder(fbuild.options.target_cxx,
+                debug=ctx.options.debug or ctx.options.target_c_debug,
+                optimize=ctx.options.optimize or
+                    ctx.options.target_c_optimize,
+                includes=ctx.options.target_includes,
+                libpaths=ctx.options.target_libpaths,
+                flags=ctx.options.target_c_flags),
+            cxx=make_cxx_builder(ctx, ctx.options.target_cxx,
                 platform=platform,
-                debug=fbuild.options.debug or fbuild.options.target_c_debug,
-                optimize=fbuild.options.optimize or
-                    fbuild.options.target_c_optimize,
-                includes=fbuild.options.target_includes,
-                libpaths=fbuild.options.target_libpaths,
-                flags=fbuild.options.target_c_flags))
+                debug=ctx.options.debug or ctx.options.target_c_debug,
+                optimize=ctx.options.optimize or
+                    ctx.options.target_c_optimize,
+                includes=ctx.options.target_includes,
+                libpaths=ctx.options.target_libpaths,
+                flags=ctx.options.target_c_flags))
 
     return phase
 
 # ------------------------------------------------------------------------------
 
 @fbuild.db.caches
-def prefix():
-    prefix = Path(fbuild.options.prefix)
-    fbuild.logger.check('install prefix', prefix, color='cyan')
+def prefix(ctx):
+    prefix = Path(ctx.options.prefix)
+    ctx.logger.check('install prefix', prefix, color='cyan')
 
     return prefix
 
 @fbuild.db.caches
-def src_dir():
+def src_dir(ctx):
     return Path(__file__).parent
 
-def build():
+def build(ctx):
     # configure the phases
-    build = config_build()
-    host = config_host(build)
-    target = config_target(host)
+    build = config_build(ctx)
+    host = config_host(ctx, build)
+    target = config_target(ctx, host)
 
     # extract the configuration
-    iscr = call('buildsystem.iscr.Iscr')
+    iscr = call('buildsystem.iscr.Iscr', ctx)
     iscr('lpsrc/flx_config.pak')
 
     # convert the config into something iscr can use
-    call('buildsystem.iscr.config_iscr_config', build, host, target)
+    call('buildsystem.iscr.config_iscr_config', ctx, build, host, target)
 
     # re-extract packages if any of them changed
-    fbuild.scheduler.map(iscr, (src_dir()/'lpsrc/*.pak').glob())
+    ctx.scheduler.map(iscr, (src_dir(ctx)/'lpsrc/*.pak').glob())
 
     # overwrite or add *.fpc files to the config directory
-    call('buildsystem.post_config.copy_user_fpcs')
+    call('buildsystem.post_config.copy_user_fpcs', ctx)
 
     # --------------------------------------------------------------------------
 
-    compilers = call('buildsystem.flx_compiler.build_flx_drivers',
-        host.ocaml, host.ocamllex)
-
+    compilers = call('buildsystem.flx_compiler.build_flx_drivers', host)
     drivers = call('buildsystem.flx_drivers.build', target)
 
-    flx = call('buildsystem.flx.build',
+    target.flx = call('buildsystem.flx.build', ctx,
         compilers.flxg, target.cxx.static, drivers)
 
     # copy files into the library
     for module in 'flx_stdlib', 'flx_pthread', 'demux', 'faio', 'judy':
-        call('buildsystem.' + module + '.build_flx', flx)
+        call('buildsystem.' + module + '.build_flx', target)
 
-    flx_pkgconfig = call('buildsystem.flx.build_flx_pkgconfig',
-        flx, target)
+    flx_pkgconfig = call('buildsystem.flx.build_flx_pkgconfig', target)
 
     # --------------------------------------------------------------------------
     # build the secondary libraries
@@ -369,57 +369,57 @@ def build():
     call('buildsystem.tre.build_runtime', target)
 
     for module in 'flx_glob', 'tre':
-        call('buildsystem.' + module + '.build_flx', flx)
+        call('buildsystem.' + module + '.build_flx', target)
 
     call('buildsystem.bindings.build_flx', target)
 
     # --------------------------------------------------------------------------
     # now, try building a file
 
-    felix = call('fbuild.builders.felix.Felix',
-        exe=fbuild.buildroot / 'bin/flx.py',
-        debug=fbuild.options.debug,
-        flags=['--test=' + fbuild.buildroot])
+    target.felix = call('fbuild.builders.felix.Felix', ctx,
+        exe=ctx.buildroot / 'bin/flx.py',
+        debug=ctx.options.debug,
+        flags=['--test=' + ctx.buildroot])
 
     # --------------------------------------------------------------------------
     # run the felix tests and other commands
 
-    if 'speed' in fbuild.args:
-        call('buildsystem.speed.run_tests', target, felix)
+    if 'speed' in ctx.args:
+        call('buildsystem.speed.run_tests', target)
     else:
-        if not fbuild.options.skip_tests:
-            run_tests(target, felix)
+        if not ctx.options.skip_tests:
+            run_tests(target)
 
 # ------------------------------------------------------------------------------
 
-def run_tests(target, felix):
+def run_tests(target):
     from buildsystem.flx import test_flx
 
     failed_srcs = []
 
     def test(src):
         try:
-            passed = test_flx(felix, src)
+            passed = test_flx(target, src)
         except fbuild.ConfigFailed as e:
-            fbuild.logger.log(str(e))
+            ctx.logger.log(str(e))
             passed = False
         return src, passed
 
     # Run the dynamic loading tests first
     try:
-        lib1 = felix.compile('test/regress/drt/lib1.flx', static=False)
-        lib2 = felix.compile('test/regress/drt/lib2.flx', static=False)
+        lib1 = target.felix.compile('test/regress/drt/lib1.flx', static=False)
+        lib2 = target.felix.compile('test/regress/drt/lib2.flx', static=False)
     except fbuild.ExecutionError as e:
-        fbuild.logger.log(e, verbose=1)
+        target.ctx.logger.log(e, verbose=1)
     else:
-        if not test_flx(felix, 'test/regress/drt/main1.flx',
+        if not test_flx(target, 'test/regress/drt/main1.flx',
                 env={'lib1': lib1, 'lib2': lib2}):
             failed_srcs.append('test/regress/drt/main1.flx')
 
     srcs = Path.globall(
         'test/*/*.flx',
         'test/*/*/*.flx',
-        fbuild.buildroot / 'tut/*/*.flx',
+        target.ctx.buildroot / 'tut/*/*.flx',
         exclude=[
             'test/drivers/*.flx',
             'test/faio/posix-*.flx',
@@ -437,11 +437,11 @@ def run_tests(target, felix):
     if 'windows' in target.platform:
         srcs.extend(Path.glob('test/faio/win-*.flx'))
 
-    for src, passed in fbuild.scheduler.map(test, sorted(srcs, reverse=True)):
+    for src, passed in target.ctx.scheduler.map(test, sorted(srcs, reverse=True)):
         if not passed:
             failed_srcs.append(src)
 
     if failed_srcs:
-        fbuild.logger.log('\nThe following tests failed:')
+        target.ctx.logger.log('\nThe following tests failed:')
         for src in failed_srcs:
-            fbuild.logger.log('  %s' % src, color='yellow')
+            target.ctx.logger.log('  %s' % src, color='yellow')

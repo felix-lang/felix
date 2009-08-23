@@ -7,7 +7,7 @@ from fbuild.path import Path
 # ------------------------------------------------------------------------------
 
 @fbuild.db.caches
-def copy_to(dstdir, srcs:fbuild.db.SRCS) -> fbuild.db.DSTS:
+def copy_to(ctx, dstdir, srcs:fbuild.db.SRCS) -> fbuild.db.DSTS:
     dstdir.makedirs()
 
     dsts = []
@@ -15,30 +15,29 @@ def copy_to(dstdir, srcs:fbuild.db.SRCS) -> fbuild.db.DSTS:
     for src in srcs:
         src = Path(src)
         dst = dstdir / src.name
-        fbuild.logger.check(' * copy', '%s -> %s' % (src, dst),
-            color='yellow')
+        ctx.logger.check(' * copy', '%s -> %s' % (src, dst), color='yellow')
         src.copy(dst)
         dsts.append(dst)
 
     return dsts
 
-def copy_hpps_to_rtl(*hpps):
-    return copy_to(fbuild.buildroot / 'lib/rtl', tuple(hpps))
+def copy_hpps_to_rtl(ctx, *hpps):
+    return copy_to(ctx, ctx.buildroot / 'lib/rtl', tuple(hpps))
 
-def copy_flxs_to_lib(flxs):
-    return copy_to(fbuild.buildroot / 'lib', tuple(flxs))
+def copy_flxs_to_lib(ctx, flxs):
+    return copy_to(ctx, ctx.buildroot / 'lib', tuple(flxs))
 
-def copy_flxs_to_libstd(flxs):
-    return copy_to(fbuild.buildroot / 'lib/std', tuple(flxs))
+def copy_flxs_to_libstd(ctx, flxs):
+    return copy_to(ctx, ctx.buildroot / 'lib/std', tuple(flxs))
 
-def copy_flxs_to_libstl(flxs):
-    return copy_to(fbuild.buildroot / 'lib/stl', tuple(flxs))
+def copy_flxs_to_libstl(ctx, flxs):
+    return copy_to(ctx, ctx.buildroot / 'lib/stl', tuple(flxs))
 
-def copy_fpc_to_config(fpcs):
-    return copy_to(fbuild.buildroot / 'config', tuple(fpcs))
+def copy_fpc_to_config(ctx, fpcs):
+    return copy_to(ctx, ctx.buildroot / 'config', tuple(fpcs))
 
 @fbuild.db.caches
-def move_to(dstdir, srcs:fbuild.db.SRCS) -> fbuild.db.DSTS:
+def move_to(ctx, dstdir, srcs:fbuild.db.SRCS) -> fbuild.db.DSTS:
     dstdir.makedirs()
 
     dsts = []
@@ -46,8 +45,7 @@ def move_to(dstdir, srcs:fbuild.db.SRCS) -> fbuild.db.DSTS:
     for src in srcs:
         src = Path(src)
         dst = dstdir / src.name
-        fbuild.logger.check(' * move', '%s -> %s' % (src, dst),
-            color='yellow')
+        ctx.logger.check(' * move', '%s -> %s' % (src, dst), color='yellow')
         src.move(dst)
         dsts.append(dst)
 
@@ -64,7 +62,7 @@ def build_c_shared_lib(phase, dst, *args, **kwargs):
     lib = phase.c.shared.build_lib(dst + '_dynamic', *args, **kwargs)
 
     if 'windows' in phase.platform:
-        copy_to(fbuild.buildroot / 'bin', (lib,))
+        copy_to(phase.ctx.buildroot / 'bin', (lib,))
 
     return lib
 
@@ -79,6 +77,6 @@ def build_cxx_shared_lib(phase, dst, *args, **kwargs):
     lib = phase.cxx.shared.build_lib(dst + '_dynamic', *args, **kwargs)
 
     if 'windows' in phase.platform:
-        copy_to(fbuild.buildroot / 'bin', (lib,))
+        copy_to(phase.ctx.buildroot / 'bin', (lib,))
 
     return lib

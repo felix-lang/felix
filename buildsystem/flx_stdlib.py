@@ -4,7 +4,15 @@ import buildsystem
 
 # ------------------------------------------------------------------------------
 
-def build_flx(builder):
-    return (buildsystem.copy_flxs_to_lib(Path('src/lib/*.flx{,h}').glob()) and
-        buildsystem.copy_flxs_to_libstd(Path('src/lib/std/*.flx{,h}').glob()) and
-        buildsystem.copy_flxs_to_libstl(Path('src/lib/stl/*.flx{,h}').glob()))
+def build_flx(phase):
+    path = Path('src/lib')
+
+    dsts = []
+    dsts.extend(buildsystem.copy_flxs_to_lib(phase.ctx,
+        (path / '*.flx{,h}').glob()))
+    dsts.extend(buildsystem.copy_flxs_to_libstd(phase.ctx,
+        (path / 'std/*.flx{,h}').glob()))
+    dsts.extend(buildsystem.copy_flxs_to_libstl(phase.ctx,
+        (path / 'stl/*.flx{,h}').glob()))
+
+    return dsts

@@ -10,8 +10,8 @@ import buildsystem
 def build_runtime(phase):
     path = Path('src/pthread')
 
-    buildsystem.copy_hpps_to_rtl(
-        fbuild.buildroot / 'config/target/flx_pthread_config.hpp',
+    buildsystem.copy_hpps_to_rtl(phase.ctx,
+        phase.ctx.buildroot / 'config/target/flx_pthread_config.hpp',
 
         # portable
         path / 'pthread_thread.hpp',
@@ -28,7 +28,7 @@ def build_runtime(phase):
         path / 'pthread_win_posix_condv_emul.hpp',
     )
 
-    dst = fbuild.buildroot / 'lib/rtl/flx_pthread'
+    dst = 'lib/rtl/flx_pthread'
     srcs = [
         path / 'pthread_win_posix_condv_emul.cpp', # portability hackery
         path / 'pthread_mutex.cpp',
@@ -41,7 +41,7 @@ def build_runtime(phase):
         path / 'pthread_work_fifo.cpp',
         path / 'pthread_thread_control.cpp',
     ]
-    includes = [fbuild.buildroot / 'config/target', 'src/rtl']
+    includes = [phase.ctx.buildroot / 'config/target', 'src/rtl']
     macros = ['BUILD_PTHREAD']
     flags = []
     libs = []
@@ -75,5 +75,5 @@ def build_runtime(phase):
             external_libs=external_libs,
             lflags=flags))
 
-def build_flx(builder):
-    buildsystem.copy_flxs_to_lib(Path('src/pthread/*.flx').glob())
+def build_flx(phase):
+    buildsystem.copy_flxs_to_lib(phase.ctx, Path('src/pthread/*.flx').glob())

@@ -14,8 +14,8 @@ import buildsystem
 def build_runtime(phase):
     path = Path('src/demux')
 
-    buildsystem.copy_hpps_to_rtl(
-        fbuild.buildroot / 'config/target/flx_demux_config.hpp', # portable
+    buildsystem.copy_hpps_to_rtl(phase.ctx,
+        phase.ctx.buildroot / 'config/target/flx_demux_config.hpp', # portable
 
         # portable
         path / 'flx_demux.hpp',
@@ -52,10 +52,10 @@ def build_runtime(phase):
         path / 'evtport/demux_evtport_demuxer.hpp',
     )
 
-    dst = fbuild.buildroot / 'lib/rtl/demux'
+    dst = 'lib/rtl/demux'
     srcs = [path / '*.cpp']
     includes = [
-        fbuild.buildroot / 'config/target',
+        phase.ctx.buildroot / 'config/target',
         Path('src', 'pthread'),
         path,
     ]
@@ -120,5 +120,6 @@ def build_runtime(phase):
             libs=[lib.shared for lib in libs],
             external_libs=extra_libs))
 
-def build_flx(builder):
-    return buildsystem.copy_flxs_to_lib(Path('src/demux/*.flx').glob())
+def build_flx(phase):
+    return buildsystem.copy_flxs_to_lib(phase.ctx,
+        Path('src/demux/*.flx').glob())

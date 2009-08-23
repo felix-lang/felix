@@ -10,14 +10,14 @@ import buildsystem
 def build_runtime(phase):
     path = Path('src/unixem')
 
-    buildsystem.copy_hpps_to_rtl(
-        fbuild.buildroot / 'config/target/flx_glob_config.hpp',
+    buildsystem.copy_hpps_to_rtl(phase.ctx,
+        phase.ctx.buildroot / 'config/target/flx_glob_config.hpp',
         path / 'flx_glob.hpp',
     )
 
-    dst = fbuild.buildroot / 'lib/rtl/flx_glob'
+    dst = phase.ctx.buildroot / 'lib/rtl/flx_glob'
     srcs = []
-    includes = [fbuild.buildroot / 'config/target']
+    includes = [phase.ctx.buildroot / 'config/target']
     macros = ['BUILD_GLOB']
     libs = [call('buildsystem.flx_gc.build_runtime', phase)]
 
@@ -33,5 +33,6 @@ def build_runtime(phase):
             macros=macros,
             libs=[lib.shared for lib in libs]))
 
-def build_flx(builder):
-    return buildsystem.copy_flxs_to_lib(Path.glob('src/unixem/*.flx'))
+def build_flx(phase):
+    return buildsystem.copy_flxs_to_lib(phase.ctx,
+        Path.glob('src/unixem/*.flx'))

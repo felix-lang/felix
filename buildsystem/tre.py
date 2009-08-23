@@ -8,15 +8,15 @@ import buildsystem
 
 def build_runtime(phase):
     path = Path('src/tre')
-    buildsystem.copy_hpps_to_rtl(
-        fbuild.buildroot / 'config/target/flx_target_tre_config.h',
+    buildsystem.copy_hpps_to_rtl(phase.ctx,
+        phase.ctx.buildroot / 'config/target/flx_target_tre_config.h',
         path / 'tre-regex.h',
         path / 'tre-config.h',
     )
 
-    dst = fbuild.buildroot / 'lib/rtl/tre'
+    dst = 'lib/rtl/tre'
     srcs = Path.glob('src/tre/*.c')
-    includes = [fbuild.buildroot / 'config/target']
+    includes = [phase.ctx.buildroot / 'config/target']
     macros = ['BUILD_TRE']
 
     return Record(
@@ -27,5 +27,5 @@ def build_runtime(phase):
             includes=includes,
             macros=macros))
 
-def build_flx(builder):
-    return buildsystem.copy_flxs_to_lib(Path('src/tre/*.flx').glob())
+def build_flx(phase):
+    return buildsystem.copy_flxs_to_lib(phase.ctx, Path('src/tre/*.flx').glob())

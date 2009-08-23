@@ -10,8 +10,8 @@ import buildsystem
 def build_runtime(phase):
     path = Path('src/faio')
 
-    buildsystem.copy_hpps_to_rtl(
-        fbuild.buildroot / 'config/target/flx_faio_config.hpp',
+    buildsystem.copy_hpps_to_rtl(phase.ctx,
+        phase.ctx.buildroot / 'config/target/flx_faio_config.hpp',
         path / 'faio_asyncio.hpp',
         path / 'faio_job.hpp',
         path / 'faio_timer.hpp',
@@ -19,14 +19,14 @@ def build_runtime(phase):
         path / 'faio_winio.hpp',
     )
 
-    dst = fbuild.buildroot / 'lib/rtl/faio'
+    dst = 'lib/rtl/faio'
     srcs = [
         path / 'faio_asyncio.cpp',
         path / 'faio_job.cpp',
         path / 'faio_timer.cpp',
     ]
     includes = [
-        fbuild.buildroot / 'config/target',
+        phase.ctx.buildroot / 'config/target',
         Path('src', 'pthread'),
         Path('src', 'demux'),
         Path('src', 'rtl'),
@@ -58,5 +58,6 @@ def build_runtime(phase):
             macros=macros,
             libs=[lib.shared for lib in libs]))
 
-def build_flx(builder):
-    return buildsystem.copy_flxs_to_lib(Path('src/faio/*.flx').glob())
+def build_flx(phase):
+    return buildsystem.copy_flxs_to_lib(phase.ctx,
+        Path('src/faio/*.flx').glob())

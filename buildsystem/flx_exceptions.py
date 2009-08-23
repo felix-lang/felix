@@ -9,14 +9,14 @@ import buildsystem
 def build_runtime(phase):
     path = Path('src/exceptions')
 
-    buildsystem.copy_hpps_to_rtl(
-        fbuild.buildroot / 'config/target/flx_exceptions_config.hpp',
+    buildsystem.copy_hpps_to_rtl(phase.ctx,
+        phase.ctx.buildroot / 'config/target/flx_exceptions_config.hpp',
         path / 'flx_exceptions.hpp',
     )
 
-    dst = fbuild.buildroot / 'lib/rtl/flx_exceptions'
+    dst = 'lib/rtl/flx_exceptions'
     srcs = [path / 'flx_exceptions.cpp']
-    includes = [fbuild.buildroot / 'config/target']
+    includes = [phase.ctx.buildroot / 'config/target']
     macros = ['BUILD_FLX_EXCEPTIONS']
 
     return Record(

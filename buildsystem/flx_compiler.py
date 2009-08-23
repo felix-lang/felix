@@ -5,159 +5,159 @@ from fbuild.record import Record
 
 # ------------------------------------------------------------------------------
 
-def build_flx_misc(ocaml):
+def build_flx_misc(phase):
     path = Path('src/compiler/flx_misc')
-    return ocaml.build_lib(path / 'flx_misc',
+    return phase.ocaml.build_lib(path / 'flx_misc',
         srcs=Path.glob(path / '*.ml{,i}'),
         external_libs=['nums', 'str', 'unix'])
 
-def build_flx_core(ocaml):
+def build_flx_core(phase):
     path = Path('src/compiler/flx_core')
-    return ocaml.build_lib(path / 'flx_core',
+    return phase.ocaml.build_lib(path / 'flx_core',
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
-            build_flx_misc(ocaml),
-            call('buildsystem.ocs.build_lib', ocaml)],
+            build_flx_misc(phase),
+            call('buildsystem.ocs.build_lib', phase)],
         external_libs=['nums'])
 
-def build_flx_version(ocaml):
-    path = fbuild.buildroot / 'src/compiler/flx_version'
-    return ocaml.build_lib(path / 'flx_version',
+def build_flx_version(phase):
+    path = phase.ctx.buildroot / 'src/compiler/flx_version'
+    return phase.ocaml.build_lib(path / 'flx_version',
         srcs=Path.glob(path / '*.ml{,i}'))
 
-def build_flx_version_hook(ocaml):
-    path = fbuild.buildroot / 'src/compiler/flx_version_hook'
-    return ocaml.build_lib(path / 'flx_version_hook',
+def build_flx_version_hook(phase):
+    path = phase.ctx.buildroot / 'src/compiler/flx_version_hook'
+    return phase.ocaml.build_lib(path / 'flx_version_hook',
         srcs=Path.glob(path / '*.ml{,i}'),
-        libs=[build_flx_version(ocaml)])
+        libs=[build_flx_version(phase)])
 
-def build_flx_lex(ocaml, ocamllex):
+def build_flx_lex(phase):
     path = Path('src/compiler/flx_lex')
-    dypgen = call('buildsystem.dypgen.build_exe', ocaml, ocamllex)
-    return ocaml.build_lib(path/'flx_lex',
+    dypgen = call('buildsystem.dypgen.build_exe', phase)
+    return phase.ocaml.build_lib(path/'flx_lex',
         srcs=Path.globall(
             path / '*.ml{,i}'
             ),
         libs=[
-            call('buildsystem.dypgen.build_lib', ocaml),
-            call('buildsystem.ocs.build_lib', ocaml),
-            call('buildsystem.sex.build', ocaml, ocamllex),
-            build_flx_misc(ocaml),
-            build_flx_core(ocaml),
-            build_flx_version(ocaml)])
+            call('buildsystem.dypgen.build_lib', phase),
+            call('buildsystem.ocs.build_lib', phase),
+            call('buildsystem.sex.build', phase),
+            build_flx_misc(phase),
+            build_flx_core(phase),
+            build_flx_version(phase)])
 
-def build_flx_parse(ocaml, ocamllex):
+def build_flx_parse(phase):
     path = Path('src/compiler/flx_parse')
-    dypgen = call('buildsystem.dypgen.build_exe', ocaml, ocamllex)
-    return ocaml.build_lib(path/'flx_parse',
+    dypgen = call('buildsystem.dypgen.build_exe', phase)
+    return phase.ocaml.build_lib(path/'flx_parse',
         srcs=Path.globall(
             path / '*.ml{,i}',
             dypgen(path / 'flx_parse.dyp',
                 flags=['--no-undef-nt', '--pv-obj', '--noemit-token-type'])),
         libs=[
-            call('buildsystem.dypgen.build_lib', ocaml),
-            call('buildsystem.ocs.build_lib', ocaml),
-            call('buildsystem.sex.build', ocaml, ocamllex),
-            build_flx_misc(ocaml),
-            build_flx_core(ocaml),
-            build_flx_version(ocaml),
-            build_flx_lex(ocaml, ocamllex)])
+            call('buildsystem.dypgen.build_lib', phase),
+            call('buildsystem.ocs.build_lib', phase),
+            call('buildsystem.sex.build', phase),
+            build_flx_misc(phase),
+            build_flx_core(phase),
+            build_flx_version(phase),
+            build_flx_lex(phase)])
 
-def build_flx_desugar(ocaml, ocamllex):
+def build_flx_desugar(phase):
     path = Path('src/compiler/flx_desugar')
 
-    return ocaml.build_lib(path / 'flx_desugar',
+    return phase.ocaml.build_lib(path / 'flx_desugar',
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
-            call('buildsystem.dypgen.build_lib', ocaml),
-            call('buildsystem.ocs.build_lib', ocaml),
-            call('buildsystem.sex.build', ocaml, ocamllex),
-            build_flx_misc(ocaml),
-            build_flx_core(ocaml),
-            build_flx_version(ocaml),
-            build_flx_lex(ocaml, ocamllex),
-            build_flx_parse(ocaml, ocamllex)],
+            call('buildsystem.dypgen.build_lib', phase),
+            call('buildsystem.ocs.build_lib', phase),
+            call('buildsystem.sex.build', phase),
+            build_flx_misc(phase),
+            build_flx_core(phase),
+            build_flx_version(phase),
+            build_flx_lex(phase),
+            build_flx_parse(phase)],
         external_libs=['nums', 'unix'])
 
-def build_flx_bind(ocaml, ocamllex):
+def build_flx_bind(phase):
     path = Path('src/compiler/flx_bind')
-    return ocaml.build_lib(path / 'flx_bind',
+    return phase.ocaml.build_lib(path / 'flx_bind',
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
-            build_flx_misc(ocaml),
-            build_flx_core(ocaml),
-            build_flx_desugar(ocaml, ocamllex)],
+            build_flx_misc(phase),
+            build_flx_core(phase),
+            build_flx_desugar(phase)],
         external_libs=['nums'])
 
-def build_flx_frontend(ocaml, ocamllex):
+def build_flx_frontend(phase):
     path = Path('src/compiler/flx_frontend')
-    return ocaml.build_lib(path / 'flx_frontend',
+    return phase.ocaml.build_lib(path / 'flx_frontend',
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
-            build_flx_misc(ocaml),
-            build_flx_core(ocaml),
-            build_flx_desugar(ocaml, ocamllex),
-            build_flx_bind(ocaml, ocamllex)])
+            build_flx_misc(phase),
+            build_flx_core(phase),
+            build_flx_desugar(phase),
+            build_flx_bind(phase)])
 
-def build_flx_cpp_backend(ocaml, ocamllex):
+def build_flx_cpp_backend(phase):
     path = Path('src/compiler/flx_cpp_backend')
-    return ocaml.build_lib(path / 'flx_cpp_backend',
+    return phase.ocaml.build_lib(path / 'flx_cpp_backend',
         srcs=Path.globall(
             path / '*.ml{,i}',
-            fbuild.buildroot / path / '*.ml{,i}'),
+            phase.ctx.buildroot / path / '*.ml{,i}'),
         libs=[
-            build_flx_misc(ocaml),
-            build_flx_core(ocaml),
-            build_flx_desugar(ocaml, ocamllex),
-            build_flx_bind(ocaml, ocamllex),
-            build_flx_frontend(ocaml, ocamllex)],
+            build_flx_misc(phase),
+            build_flx_core(phase),
+            build_flx_desugar(phase),
+            build_flx_bind(phase),
+            build_flx_frontend(phase)],
         external_libs=['nums'])
 
-def build_flx_drivers(ocaml, ocamllex):
+def build_flx_drivers(phase):
     path = Path('src', 'compiler', 'drivers')
 
-    lib = ocaml.build_lib(path / 'flx_driver',
+    lib = phase.ocaml.build_lib(path / 'flx_driver',
         Path.globall(
             path / 'flx_terminate.ml{,i}',
             path / 'flx_flxopt.ml{,i}'),
         libs=[
-            build_flx_misc(ocaml),
-            build_flx_core(ocaml),
-            build_flx_cpp_backend(ocaml, ocamllex)])
+            build_flx_misc(phase),
+            build_flx_core(phase),
+            build_flx_cpp_backend(phase)])
 
     libs = [
-        call('buildsystem.ocs.build_lib', ocaml),
-        call('buildsystem.sex.build', ocaml, ocamllex),
-        call('buildsystem.dypgen.build_lib', ocaml),
-        build_flx_misc(ocaml),
-        build_flx_core(ocaml),
-        build_flx_version(ocaml),
-        build_flx_version_hook(ocaml),
-        build_flx_lex(ocaml, ocamllex),
-        build_flx_parse(ocaml, ocamllex),
-        build_flx_desugar(ocaml, ocamllex),
-        build_flx_bind(ocaml, ocamllex),
-        build_flx_frontend(ocaml, ocamllex),
-        build_flx_cpp_backend(ocaml, ocamllex)]
+        call('buildsystem.ocs.build_lib', phase),
+        call('buildsystem.sex.build', phase),
+        call('buildsystem.dypgen.build_lib', phase),
+        build_flx_misc(phase),
+        build_flx_core(phase),
+        build_flx_version(phase),
+        build_flx_version_hook(phase),
+        build_flx_lex(phase),
+        build_flx_parse(phase),
+        build_flx_desugar(phase),
+        build_flx_bind(phase),
+        build_flx_frontend(phase),
+        build_flx_cpp_backend(phase)]
 
     external_libs = ['nums', 'unix', 'str']
 
-    flxp = ocaml.build_exe(fbuild.buildroot / 'bin/flxp',
+    flxp = phase.ocaml.build_exe('bin/flxp',
         [path / 'flxp.ml'], libs=libs + [lib], external_libs=external_libs)
 
-    flxm = ocaml.build_exe(fbuild.buildroot / 'bin/flxm',
+    flxm = phase.ocaml.build_exe('bin/flxm',
         [path / 'flxm.ml'], libs=libs + [lib], external_libs=external_libs)
 
-    flxd = ocaml.build_exe(fbuild.buildroot / 'bin/flxd',
+    flxd = phase.ocaml.build_exe('bin/flxd',
         [path / 'flxd.ml'], libs=libs + [lib], external_libs=external_libs)
 
-    flxb = ocaml.build_exe(fbuild.buildroot / 'bin/flxb',
+    flxb = phase.ocaml.build_exe('bin/flxb',
         [path / 'flxb.ml'], libs=libs + [lib], external_libs=external_libs)
 
-    flxg = ocaml.build_exe(fbuild.buildroot / 'bin/flxg',
+    flxg = phase.ocaml.build_exe('bin/flxg',
         [path / 'flxg.ml'], libs=libs + [lib], external_libs=external_libs)
 
-    flxc = ocaml.build_exe(fbuild.buildroot / 'bin/flxc',
+    flxc = phase.ocaml.build_exe('bin/flxc',
         Path('src/compiler/flxc/*.ml{,i}').glob(),
         libs=libs,
         external_libs=external_libs)

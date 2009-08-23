@@ -4,13 +4,13 @@ from fbuild.path import Path
 
 # ------------------------------------------------------------------------------
 
-def build(ocaml, ocamllex):
+def build(phase):
     path = Path('src', 'compiler', 'sex')
-    dypgen = call('buildsystem.dypgen.build_exe', ocaml, ocamllex)
-    return ocaml.build_lib(path/'sex', Path.globall(
+    dypgen = call('buildsystem.dypgen.build_exe', phase)
+    return phase.ocaml.build_lib(path/'sex', Path.globall(
             path/'*.ml{,i}',
             dypgen(path/'sex_parse.dyp'),
-            ocamllex(path/'sex_lex.mll')),
+            phase.ocamllex(path/'sex_lex.mll')),
         libs=[
-            call('buildsystem.ocs.build_lib', ocaml),
-            call('buildsystem.dypgen.build_lib', ocaml)])
+            call('buildsystem.ocs.build_lib', phase),
+            call('buildsystem.dypgen.build_lib', phase)])

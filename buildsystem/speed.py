@@ -64,8 +64,8 @@ def run_tests(target, felix):
 
 # ------------------------------------------------------------------------------
 
-def run_language_tests(path, expect, target, felix, java, scala):
-    dst = fbuild.buildroot / path / 'test'
+def run_language_tests(ctx, path, expect, target, felix, java, scala):
+    dst = path / 'test'
 
     subtests = []
     srcs = []

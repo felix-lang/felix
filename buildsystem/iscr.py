@@ -14,9 +14,11 @@ from fbuild.path import Path
 # ------------------------------------------------------------------------------
 
 class Iscr(fbuild.db.PersistentObject):
-    def __init__(self, exe=None):
+    def __init__(self, ctx, exe=None):
+        super().__init__(ctx)
+
         if exe is None:
-            exe = call('fbuildroot.src_dir') / 'interscript/bin/iscr.py'
+            exe = call('fbuildroot.src_dir', ctx) / 'interscript/bin/iscr.py'
 
         self.exe = Path(exe)
 
@@ -24,8 +26,9 @@ class Iscr(fbuild.db.PersistentObject):
     def __call__(self, src:fbuild.db.SRC, *,
             break_on_error=True,
             flags=[],
-            buildroot=fbuild.buildroot,
+            buildroot=None,
             **kwargs) -> fbuild.db.DSTS:
+        buildroot = buildroot or self.ctx.buildroot
         src = Path(src)
 
         cmd = [
@@ -36,7 +39,7 @@ class Iscr(fbuild.db.PersistentObject):
             '--nocache',
         ]
 
-        if 'windows' in fbuild.builders.platform.platform():
+        if 'windows' in fbuild.builders.platform.platform(self.ctx):
             cmd.insert(0, 'c:\python26\python.exe')
 
         if break_on_error:
@@ -44,7 +47,7 @@ class Iscr(fbuild.db.PersistentObject):
         cmd.extend(flags)
         cmd.append(src.relpath(buildroot))
 
-        stdout, stderr = fbuild.execute(cmd, 'iscr extracting', src,
+        stdout, stderr = self.ctx.execute(cmd, 'iscr extracting', src,
             color='green',
             cwd=buildroot,
             env={'PYTHONPATH': Path('.').relpath(buildroot)},
@@ -67,26 +70,26 @@ class Iscr(fbuild.db.PersistentObject):
                 if m:
                     dsts.append(Path(m.group(1)))
 
-        fbuild.db.add_external_dependencies_to_call(srcs=srcs)
+        fbuild.db.add_external_dependencies_to_call(self.ctx, srcs=srcs)
 
         return dsts
 
 # ------------------------------------------------------------------------------
 
 @fbuild.db.caches
-def config_iscr_config(build, host, target) -> fbuild.db.DST:
+def config_iscr_config(ctx, build, host, target) -> fbuild.db.DST:
     # allow us to import the buildroot
-    with open(fbuild.buildroot/'__init__.py', 'w'):
+    with open(ctx.buildroot/'__init__.py', 'w'):
         pass
 
-    dst = fbuild.buildroot/'config/__init__.py'
+    dst = ctx.buildroot/'config/__init__.py'
 
     with open(dst, 'w') as f:
-        _print_config(f, build, host, target)
+        _print_config(ctx, f, build, host, target)
 
     return dst
 
-def _print_config(f, build, host, target):
+def _print_config(ctx, f, build, host, target):
     def p(msg, *args):
         if not args:
             print(msg, file=f)
@@ -108,8 +111,8 @@ def _print_config(f, build, host, target):
     # --------------------------------------------------------------------------
     # setup paths
 
-    p('src_dir',   str(call('fbuildroot.src_dir')))
-    p('PREFIX',    str(call('fbuildroot.prefix')))
+    p('src_dir',   str(call('fbuildroot.src_dir', ctx)))
+    p('PREFIX',    str(call('fbuildroot.prefix', ctx)))
     p('FLXCC_CPP', 'cpp ')
 
     # --------------------------------------------------------------------------
@@ -141,14 +144,14 @@ def _print_config(f, build, host, target):
 
             lang = phase[lang]
 
-            _print_compiler(lang, platform, pp)
+            _print_compiler(ctx, lang, platform, pp)
             _print_types(lang, pp)
             _print_c99_support(lang, pp)
             _print_posix_support(lang, platform, pp)
             _print_windows_support(lang, platform, pp)
             _print_math_support(lang, pp)
-            _print_openmp_support(lang, pp)
-            _print_cxx_bugs(lang, pp)
+            _print_openmp_support(ctx, lang, pp)
+            _print_cxx_bugs(ctx, lang, pp)
             _print_gcc_extensions(lang, pp)
 
     # --------------------------------------------------------------------------
@@ -169,7 +172,7 @@ def _print_config(f, build, host, target):
     p('  DEFAULT_LINK_MODEL', 'static')
 
 
-def _print_compiler(lang, platform, p):
+def _print_compiler(ctx, lang, platform, p):
     # determine information about the compiler
 
     p('HAVE_PIC', '-fPIC' in lang.shared.compiler.flags)
@@ -219,11 +222,11 @@ def _print_compiler(lang, platform, p):
             ' '.join(shared.lib_linker.flags) + ' ' +
             ' '.join('-L' + i for i in static.compiler.gcc.libpaths))
 
-    p('EXT_STATIC_OBJ', fbuild.builders.platform.static_obj_suffix())
-    p('EXT_SHARED_OBJ', fbuild.builders.platform.shared_obj_suffix())
-    p('EXT_LIB',        fbuild.builders.platform.static_lib_suffix())
-    p('EXT_SHLIB',      fbuild.builders.platform.shared_lib_suffix())
-    p('EXT_EXE',        fbuild.builders.platform.exe_suffix())
+    p('EXT_STATIC_OBJ', fbuild.builders.platform.static_obj_suffix(ctx))
+    p('EXT_SHARED_OBJ', fbuild.builders.platform.shared_obj_suffix(ctx))
+    p('EXT_LIB',        fbuild.builders.platform.static_lib_suffix(ctx))
+    p('EXT_SHLIB',      fbuild.builders.platform.shared_lib_suffix(ctx))
+    p('EXT_EXE',        fbuild.builders.platform.exe_suffix(ctx))
 
     if 'windows' in platform:
         p('OPTIMISE',       ' '.join(static.compiler.cl.optimize_flags))
@@ -233,7 +236,7 @@ def _print_compiler(lang, platform, p):
         p('DEBUG_FLAGS',    ' '.join(static.compiler.gcc.debug_flags))
 
     p('LITTLE_ENDIAN',
-        call('fbuild.builders.c.config_little_endian', static))
+        call('fbuild.builders.c.config_little_endian', ctx, static))
 
 def _print_types(lang, p):
     cxx_types = call('fbuild.config.cxx.cxx03.types', lang.static)
@@ -393,14 +396,14 @@ def _print_math_support(lang, p):
     p('HAVE_ISINF_IN_IEEEFP', bool(ieeefp_h.isinf))
     p('HAVE_ISNANF_IN_IEEEFP', bool(ieeefp_h.isnanf))
 
-def _print_openmp_support(lang, p):
+def _print_openmp_support(ctx, lang, p):
     try:
-        static = call('fbuild.builders.c.openmp.config', lang.static)
+        static = call('fbuild.builders.c.openmp.config', ctx, lang.static)
     except ConfigFailed:
         static = {}
 
     try:
-        shared = call('fbuild.builders.c.openmp.config', lang.shared)
+        shared = call('fbuild.builders.c.openmp.config', ctx, lang.shared)
     except ConfigFailed:
         shared = {}
 
@@ -408,9 +411,9 @@ def _print_openmp_support(lang, p):
     p('HAVE_STATIC_OPENMP', bool(static))
     p('HAVE_SHARED_OPENMP', bool(shared))
 
-def _print_cxx_bugs(lang, p):
+def _print_cxx_bugs(ctx, lang, p):
     try:
-        bugs = call('fbuild.builders.cxx.std.config_compiler_bugs',
+        bugs = call('fbuild.builders.cxx.std.config_compiler_bugs', ctx,
             lang.static)
     except fbuild.ConfigFailed:
         bugs = {}
@@ -422,7 +425,7 @@ def _print_cxx_bugs(lang, p):
         p('HAVE_INCLASS_MEMBER_INITIALIZATION', test)
 
 def _print_gcc_extensions(lang, p):
-    gcc = call('fbuild.config.c.gnu.extensions',         lang.static)
+    gcc = call('fbuild.config.c.gnu.extensions', lang.static)
 
     have_gnu_x86 = gcc.named_registers_x86 and not gcc.named_registers_x86_64
 
