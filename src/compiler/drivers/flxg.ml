@@ -356,56 +356,8 @@ try
   print_symbols syms.dfns bbdfns;
   *)
 
-
-  let rec lvof x = match x with
-    | BEXPR_name (i,_),_ -> i
-    | BEXPR_get_n (_,e),_ -> lvof e
-    | _ -> 0 (* assume 0 isn't the index of any variable *)
-  in
-  let elim_init maybe_unused exes =
-    List.filter (function
-      | BEXE_init (_,i,_) -> not (IntSet.mem i maybe_unused)
-      | BEXE_assign (_,x,_) -> not (IntSet.mem (lvof x) maybe_unused)
-      | _ -> true
-    )
-    exes
-  in
-  let elim_pass () =
-    print_debug "Elim pass";
-    (* check for unused things .. possible, just a diagnostic for now *)
-    let full_use = Flx_use.full_use_closure syms bbdfns in
-    let partial_use = Flx_use.cal_use_closure syms bbdfns false in
-    let maybe_unused = IntSet.diff full_use partial_use in
-
-    Hashtbl.iter
-    (fun i (id,parent,sr,entry) -> match entry with
-    | BBDCL_procedure (props ,bvs,(ps,tr),exes) ->
-      let exes = elim_init maybe_unused exes in
-      let entry = BBDCL_procedure (props,bvs,(ps,tr),exes) in
-      Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
-    | BBDCL_function (props,bvs,(ps,rt),ret,exes) ->
-      let exes = elim_init maybe_unused exes in
-      let entry = BBDCL_function (props,bvs,(ps,rt),ret,exes) in
-      Hashtbl.replace bbdfns i (id,parent,sr,entry)
-
-    | _ -> ()
-    )
-    bbdfns
-    ;
-
-    IntSet.iter
-    (fun i->
-      let id,_,_,_ = Hashtbl.find bbdfns i in
-      print_debug ("Removing unused " ^ id ^ "<" ^ si i ^ ">");
-      Hashtbl.remove bbdfns i
-    )
-    maybe_unused
-    ;
-    IntSet.is_empty maybe_unused
-  in
-
-  while not (elim_pass ()) do () done;
+  let elim_state = Flx_elim.make_elim_state syms bbdfns in
+  Flx_elim.eliminate_unused elim_state;
 
 
   (*
