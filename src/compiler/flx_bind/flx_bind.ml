@@ -35,7 +35,7 @@ let make_bind_state ?parent ?env syms =
 let bind_asm state handle_bound init asm =
   (* We need to save the symbol index counter so we can bind all of the symbols
    * that we just added. *)
-  let i = ref !(state.syms.Flx_mtypes2.counter) in
+  let initial_index = !(state.syms.Flx_mtypes2.counter) in
 
   (* Add declarations to the symbol table *)
   let init =
@@ -59,27 +59,35 @@ let bind_asm state handle_bound init asm =
   in
 
   (* Now bind in order all of the symbols we added. *)
-  let init = ref init in
-
-  while !i < !(state.syms.Flx_mtypes2.counter) do
+  for i = initial_index to !(state.syms.Flx_mtypes2.counter) do
     (* First, find the symbol to bind. *)
-    begin
-      match Flx_hashtbl.find state.syms.Flx_mtypes2.dfns !i with
-      | None -> ()
-      | Some s ->
-          (* Then, bind the symbol. *)
-          match Flx_bbind.bbind_symbol state.bbind_state !i s with
-          | None -> ()
-          | Some s ->
-              (* Finally, downgrade abstract types. *)
-              match Flx_strabs.strabs_symbol state.strabs_state !i s with
-              | None -> ()
-              | Some s ->
-                  init := handle_bound !init (Bound_symbol (!i, s));
-    end;
-    incr i
+    begin match Flx_hashtbl.find state.syms.Flx_mtypes2.dfns i with
+    | None -> ()
+    | Some s ->
+        (* Then, bind the symbol. *)
+        ignore (Flx_bbind.bbind_symbol state.bbind_state i s)
+    end
   done;
 
+  (* Now that we've bound all the symbols, we can downgrade the types and pass
+   * on the bound symbols to the client. *)
+  let init = ref init in
+
+  for i = initial_index to !(state.syms.Flx_mtypes2.counter) do
+    (* First, find the symbol to bind. *)
+    begin match Flx_hashtbl.find state.bbind_bbdfns i with
+    | None -> ()
+    | Some s ->
+        (* Finally, downgrade abstract types. *)
+        match Flx_strabs.strabs_symbol state.strabs_state i s with
+        | None -> ()
+        | Some s ->
+            (* ... and finally pass the symbol to the client *)
+            init := handle_bound !init (Bound_symbol (i, s));
+    end
+  done;
+
+  (* Return the folded value. *)
   !init
 
 let bind_asms state asms =
