@@ -13,9 +13,8 @@ type bound_t =
   | Bound_exe of Flx_types.bexe_t
   | Bound_symbol of (int * Flx_types.symbol_data3_t)
 
-let make_bind_state ?parent ?env syms =
+let make_bind_state ?parent ?env syms strabs_bbdfns =
   let bbind_bbdfns = Hashtbl.create 97 in
-  let strabs_bbdfns = Hashtbl.create 97 in
   {
     syms = syms;
     symtab = Flx_symtab.make syms;
@@ -105,7 +104,4 @@ let bind_asms state asms =
     (Flx_bbind.bind_interface state.bbind_state) ifaces;
 
   (* Clear the type cache. *)
-  Hashtbl.clear state.syms.Flx_mtypes2.ticache;
-
-  (* Return the bound symbol table. *)
-  state.strabs_bbdfns
+  Hashtbl.clear state.syms.Flx_mtypes2.ticache

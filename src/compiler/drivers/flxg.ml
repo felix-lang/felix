@@ -194,8 +194,9 @@ try
   print_debug ("//Top level module '" ^ module_name ^ "' has index " ^ si root);
 
   (* Bind the assemblies. *)
-  let bind_state = Flx_bind.make_bind_state syms in
-  let bbdfns = Flx_bind.bind_asms bind_state asms in
+  let bbdfns = Hashtbl.create 97 in
+  let bind_state = Flx_bind.make_bind_state syms bbdfns in
+  Flx_bind.bind_asms bind_state asms;
 
   let child_map = Flx_child.cal_children bbdfns in
   Flx_typeclass.typeclass_instance_check syms bbdfns child_map;

@@ -44,7 +44,8 @@ let create_state options =
     bind_state = Flx_bind.make_bind_state
       ~parent:module_index
       ~env:(Flx_lookup.build_env syms (Some init_index))
-      syms;
+      syms
+      bbdfns;
     child_map = Flx_child.make ();
     module_index = module_index;
     init_index = init_index;
