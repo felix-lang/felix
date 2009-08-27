@@ -1,8 +1,16 @@
+type phase_t =
+  | Parse
+  | ExpandMacros
+  | Desugar
+  | Bind
+  | Compile
+
 let include_dirs = ref []
 let files = ref []
 let cache_dir = ref None
 let output_dir = ref None
 let imports = ref []
+let phase = ref Compile
 
 let parse_args () =
   let usage = "Usage: flxc <options> <files>\nOptions are:" in
@@ -14,7 +22,16 @@ let parse_args () =
     ("--output-dir", Arg.String (fun d -> output_dir := Some d),
       "Add <dir> to the list of include directories");
     ("--import", Arg.String (fun i -> imports := i :: !imports),
-      "Add <dir> to the list of include directories")
+      "Add <dir> to the list of include directories");
+    ("--phase", Arg.Symbol (["parse"; "macro"; "desugar"; "bind"; "compile"],
+      (function
+        | "parse" -> phase := Parse
+        | "macro" -> phase := ExpandMacros
+        | "desugar" -> phase := Desugar
+        | "bind" -> phase := Bind
+        | "compile" -> phase := Compile
+        | _ -> ()
+      )), "";)
   ] in
   let anonymous file = files := file :: !files in
   Arg.parse options anonymous usage

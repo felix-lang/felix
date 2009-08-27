@@ -350,7 +350,7 @@ def build(ctx):
 
     # --------------------------------------------------------------------------
 
-    compilers = call('buildsystem.flx_compiler.build_flx_drivers', host)
+    compilers = call('buildsystem.flx_compiler.build_flx_drivers', ctx, host)
     drivers = call('buildsystem.flx_drivers.build', target)
 
     target.flx = call('buildsystem.flx.build', ctx,

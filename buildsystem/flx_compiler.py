@@ -1,4 +1,5 @@
 import fbuild
+import fbuild.builders.llvm
 from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
@@ -113,7 +114,14 @@ def build_flx_cpp_backend(phase):
             build_flx_frontend(phase)],
         external_libs=['nums'])
 
-def build_flx_drivers(phase):
+def build_flx_llvm_backend(phase):
+    path = Path('src/compiler/flx_llvm_backend')
+    return phase.ocaml.build_lib(path / 'flx_llvm_backend',
+        srcs=Path.globall(path / '*.ml{,i}'),
+        includes=['/tmp/llvm/lib/ocaml'],
+        libs=[build_flx_core(phase)])
+
+def build_flx_drivers(ctx, phase):
     path = Path('src', 'compiler', 'drivers')
 
     lib = phase.ocaml.build_lib(path / 'flx_driver',
@@ -157,10 +165,20 @@ def build_flx_drivers(phase):
     flxg = phase.ocaml.build_exe('bin/flxg',
         [path / 'flxg.ml'], libs=libs + [lib], external_libs=external_libs)
 
-    flxc = phase.ocaml.build_exe('bin/flxc',
-        Path('src/compiler/flxc/*.ml{,i}').glob(),
-        libs=libs,
-        external_libs=external_libs)
+    # Don't compile flxc if llvm isn't installed
+    try:
+        llvm_config = fbuild.builders.llvm.LlvmConfig(ctx,
+            requires_version=(2, '6svn'))
+    except fbuild.ConfigFailed as err:
+        ctx.logger.failed(err)
+        flxc = None
+    else:
+        flxc = phase.ocaml.build_exe('bin/flxc',
+            Path('src/compiler/flxc/*.ml{,i}').glob(),
+            includes=['/tmp/llvm/lib/ocaml'],
+            libs=libs + [build_flx_llvm_backend(phase)],
+            external_libs=external_libs + ['llvm', 'llvm_analysis'],
+            cc=phase.cxx.static.compiler.gcc.exe)
 
     return Record(
         flxp=flxp,

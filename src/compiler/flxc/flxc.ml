@@ -12,6 +12,10 @@ type state_t = {
   child_map: Flx_child.t;
   module_index: int;
   init_index: int;
+  context: Llvm.llcontext;
+  the_module: Llvm.llmodule;
+  builder: Llvm.llbuilder;
+  codegen_state: Flx_codegen.codegen_state_t;
 }
 
 
@@ -35,6 +39,11 @@ let create_state options =
     | Flx_types.FunctionEntry [ { Flx_types.base_sym=base_sym } ] -> base_sym
     | _ -> assert false
   in
+
+  (* Create the llvm state *)
+  let context = Llvm.create_context () in
+  let the_module = Llvm.create_module context "__root__" in
+  let builder = Llvm.builder context in
   {
     syms = syms;
     bbdfns = bbdfns;
@@ -49,31 +58,45 @@ let create_state options =
     child_map = Flx_child.make ();
     module_index = module_index;
     init_index = init_index;
+    context = context;
+    the_module = the_module;
+    builder = builder;
+    codegen_state = Flx_codegen.make_codegen_state
+      syms
+      bbdfns
+      context
+      the_module
+      builder;
   }
 
 
 (* Process the stdin input statements *)
-let handle_stmt state stmt () =
-  print_endline ("... PARSED:    " ^ (Flx_print.string_of_statement 0 stmt));
+let parse_stmt state stmt () =
+  print_endline ("... PARSED:    " ^ (Flx_print.string_of_statement 0 stmt))
 
+let expand_macros_in_stmt state stmt () =
   Flx_macro.expand_macros_in_statement state.macro_state begin fun () stmt ->
     print_endline ("... EXPANDED:  " ^ (Flx_print.string_of_statement 0 stmt));
-  end () stmt;
+  end () stmt
 
+let desugar_stmt state stmt () =
   Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
     print_endline ("... DESUGARED: " ^ (Flx_print.string_of_asm 0 asm));
+  end () stmt
 
+let bind_stmt state stmt () =
+  Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
     Flx_bind.bind_asm state.bind_state begin fun () bound_value ->
       match bound_value with
       | Flx_bind.Bound_exe bexe ->
-          print_endline ("... BOUND:     " ^ Flx_print.string_of_bexe
+          print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
             state.syms.Flx_mtypes2.dfns
             state.bbdfns
             0
             bexe)
 
       | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
-          print_endline ("... BOUND:     " ^ Flx_print.string_of_bbdcl
+          print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
             state.syms.Flx_mtypes2.dfns
             state.bbdfns
             e
@@ -94,10 +117,48 @@ let handle_stmt state stmt () =
             symbol;
 
     end () asm
-  end () stmt;
+  end () stmt
 
-  print_string " >>> "; flush stdout;
-  ()
+let compile_stmt state stmt () =
+  Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
+    Flx_bind.bind_asm state.bind_state begin fun () bound_value ->
+      match bound_value with
+      | Flx_bind.Bound_exe bexe ->
+          print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
+            state.syms.Flx_mtypes2.dfns
+            state.bbdfns
+            0
+            bexe);
+          print_newline ();
+
+          ignore(Flx_codegen.codegen_bexe state.codegen_state bexe)
+
+      | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
+          print_endline ("... BOUND SYM:     " ^ Flx_print.string_of_bbdcl
+            state.syms.Flx_mtypes2.dfns
+            state.bbdfns
+            e
+            index);
+          print_newline ();
+
+          (* Add the symbol to the child map. *)
+          begin
+            match parent with
+            | Some parent -> Flx_child.add_child state.child_map parent index
+            | None -> ()
+          end;
+
+          Flx_typeclass.typeclass_instance_check_symbol
+            state.syms
+            state.bbdfns
+            state.child_map
+            index
+            symbol;
+
+          Flx_codegen.codegen_symbol state.codegen_state index symbol
+
+    end () asm
+  end () stmt
 
 
 (* Parse all the imports *)
@@ -133,7 +194,15 @@ let parse_imports handle_stmt init =
 
 
 (* Parse stdin *)
-let rec parse_stdin parser_state =
+let rec parse_stdin (handle_stmt, init, local_data) =
+  (* Wrap the handle_stmt so that we can print '>>>'. *)
+  let handle_stmt stmt init =
+    let result = handle_stmt stmt init in
+    print_string ">>> "; flush stdout;
+    result
+  in
+  let parser_state = (handle_stmt, init, local_data) in
+
   print_string ">>> "; flush stdout;
   let parser_state =
     try
@@ -145,6 +214,11 @@ let rec parse_stdin parser_state =
     | Dyp.Syntax_error ->
         print_endline "Syntax error";
         parse_stdin parser_state;
+    | Flx_exceptions.ClientErrorn (_, e)
+    | Flx_exceptions.ClientError2 (_, _, e)
+    | Flx_exceptions.ClientError (_, e) ->
+        print_endline e;
+        parse_stdin parser_state;
   in
   parser_state
 
@@ -154,27 +228,59 @@ let main () =
   let state = create_state options in
 
   (* Parse all the imported files and get the desugared statements *)
-  let _, asms, local_data = parse_imports (handle_stmt state) () in
+  let _, asms, local_data = parse_imports (bind_stmt state) () in
 
   (* Parse stdin and get the desugared statements *)
-  let _, exes, _ = parse_stdin ((handle_stmt state), asms, local_data) in
+  begin match !Options.phase with
+  | Options.Parse ->
+      ignore (parse_stdin ((parse_stmt state), asms, local_data))
 
-  (* Now, bind all the symbols *)
-  (*
-  let bbdfns = Flx_bbind.bbind state.bbind_state in
-  *)
+  | Options.ExpandMacros ->
+      ignore (parse_stdin ((expand_macros_in_stmt state), asms, local_data))
 
-  (* And print out the bound values *)
-  Hashtbl.iter begin fun index (name,parent,sr,entry) ->
-    print_endline (
-      string_of_int index ^ " --> " ^
-      Flx_print.string_of_bbdcl
-        state.syms.Flx_mtypes2.dfns
-        state.bbdfns
-        entry
-        index
-    )
-  end state.bbdfns;
+  | Options.Desugar ->
+      ignore (parse_stdin ((desugar_stmt state), asms, local_data))
+
+  | Options.Bind ->
+      ignore (parse_stdin ((bind_stmt state), asms, local_data));
+
+      Printf.printf "\n\nbound symbols: %d\n" (Hashtbl.length state.bbdfns);
+
+      (* And print out the bound values *)
+      Hashtbl.iter begin fun index (name,parent,sr,entry) ->
+        print_endline (
+          string_of_int index ^ " --> " ^
+          Flx_print.string_of_bbdcl
+            state.syms.Flx_mtypes2.dfns
+            state.bbdfns
+            entry
+            index
+        )
+      end state.bbdfns;
+
+  | Options.Compile ->
+      (* Create the llvm toplevel function. *)
+      let ft = Llvm.function_type (Llvm.void_type state.context) [||] in
+      let the_function = Llvm.declare_function
+        "__init__"
+        ft
+        state.the_module
+      in
+      let bb = Llvm.append_block state.context "entry" the_function in
+      Llvm.position_at_end bb state.builder;
+
+      ignore (parse_stdin ((compile_stmt state), asms, local_data));
+
+      (* Make sure we have a return at the end of the llvm module *)
+      let _ = Llvm.build_ret_void state.builder in
+
+      Printf.printf "\n\nllvm module:";
+      flush stdout;
+
+      (* Print out the generated code. *)
+      Llvm.dump_module state.the_module;
+  end;
+
   0
 ;;
 
