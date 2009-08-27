@@ -1,5 +1,4 @@
 import fbuild
-import fbuild.builders.llvm
 from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
@@ -166,16 +165,10 @@ def build_flx_drivers(ctx, phase):
         [path / 'flxg.ml'], libs=libs + [lib], external_libs=external_libs)
 
     # Don't compile flxc if llvm isn't installed
-    try:
-        llvm_config = fbuild.builders.llvm.LlvmConfig(ctx,
-            requires_version=(2, '6svn'))
-    except fbuild.ConfigFailed as err:
-        ctx.logger.failed(err)
-        flxc = None
-    else:
+    if phase.llvm_config:
         flxc = phase.ocaml.build_exe('bin/flxc',
             Path('src/compiler/flxc/*.ml{,i}').glob(),
-            includes=['/tmp/llvm/lib/ocaml'],
+            includes=[phase.llvm_config.ocaml_libdir()],
             libs=libs + [build_flx_llvm_backend(phase)],
             external_libs=external_libs + ['llvm', 'llvm_analysis'],
             cc=phase.cxx.static.compiler.gcc.exe)

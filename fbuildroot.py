@@ -122,6 +122,8 @@ def pre_options(parser):
             help='specify the ocaml native compiler'),
         make_option('--host-ocamllex',
             help='specify the ocaml lexer'),
+        make_option('--host-llvm-config',
+            help='specify the llvm-config script'),
     ))
 
     group = parser.add_option_group('target phase options')
@@ -281,6 +283,19 @@ def config_host(ctx, build):
         phase.ocaml = phase.ocaml.ocamlopt
     else:
         phase.ocaml = phase.ocaml.ocamlc
+
+    # We optionally support llvm
+    try:
+        llvm_config = call('fbuild.builders.llvm.LlvmConfig', ctx,
+            ctx.options.host_llvm_config,
+            requires_version=(2, '6svn'))
+    except fbuild.ConfigFailed:
+        phase.llvm_config = None
+    else:
+        if llvm_config.ocaml_libdir().exists():
+            phase.llvm_config = llvm_config
+        else:
+            phase.llvm_config = None
 
     return phase
 
