@@ -11,7 +11,6 @@ open Flx_exceptions
 open Flx_display
 open List
 open Flx_label
-open Flx_unravel
 open Flx_ogen
 open Flx_ctypes
 open Flx_cexpr
@@ -1138,7 +1137,7 @@ let gen_exe filename syms
           in
             "  " ^ name ^ "(" ^ s ^ ");\n"
         else
-          let subs,x = unravel syms bbdfns a in
+          let subs,x = Flx_unravel.unravel syms bbdfns a in
           let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
           handle_closure sr false index ts subs x true
       | _ -> failwith "procedure expected"
@@ -1149,7 +1148,7 @@ let gen_exe filename syms
     | BEXE_call_direct (sr,index,ts,a)
     | BEXE_call (sr,(BEXPR_closure (index,ts),_),a) ->
       let a = match a with (a,t) -> a, tsub t in
-      let subs,x = unravel syms bbdfns a in
+      let subs,x = Flx_unravel.unravel syms bbdfns a in
       let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
       let ts = map tsub ts in
       handle_closure sr false index ts subs x false
@@ -1162,7 +1161,7 @@ let gen_exe filename syms
     | BEXE_jump (sr,((BEXPR_closure (index,ts),_)),a)
     | BEXE_jump_direct (sr,index,ts,a) ->
       let a = match a with (a,t) -> a, tsub t in
-      let subs,x = unravel syms bbdfns a in
+      let subs,x = Flx_unravel.unravel syms bbdfns a in
       let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
       let ts = map tsub ts in
       handle_closure sr true index ts subs x false
