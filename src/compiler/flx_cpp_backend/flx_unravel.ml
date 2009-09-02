@@ -10,27 +10,21 @@ let rec eassoc x l = match l with
   Note primitive applications are regarded as unary operators.
 *)
 let unravel syms bbdfns e =
-  let urn = 4 in
   let sube = ref [] in
   let get e =
     try eassoc e !sube
     with Not_found ->
       let n = !(syms.Flx_mtypes2.counter) in incr (syms.Flx_mtypes2.counter);
       let name = "_tmp" ^ string_of_int n in
-      sube := (e,name) :: !sube;
+      sube := (e, name) :: !sube;
       name
-
   in
-  let refer ((_,t) as e) =
-    BEXPR_expr (get e,t),t
-  in
-  let idt t = t in
+  let refer ((_, t) as e) = BEXPR_expr (get e, t), t in
   let e' =
-    let rec aux n e =
-      let n = n - 1 in
+    let rec aux e =
       match e with
-      | BEXPR_apply ((BEXPR_name _,_) as f, b),t ->
-        refer (BEXPR_apply (f, aux urn b),t)
+      | BEXPR_apply ((BEXPR_name _,_) as f, b), t ->
+        refer (BEXPR_apply (f, aux b), t)
 
       (*
       (* no unravelling of primitives *)
@@ -38,26 +32,26 @@ let unravel syms bbdfns e =
         BEXPR_apply_prim (i, ts, aux n b),t
       *)
 
-      | BEXPR_apply_direct (i,ts,b),t
-      | BEXPR_apply ((BEXPR_closure (i,ts),_), b),t ->
+      | BEXPR_apply_direct (i, ts, b), t
+      | BEXPR_apply ((BEXPR_closure (i, ts), _), b), t ->
 
         let id,parent,sr,entry = Hashtbl.find bbdfns i in
         begin match entry with
         | BBDCL_struct _
-        | BBDCL_fun _ -> BEXPR_apply_direct (i, ts, aux n b),t
-        | BBDCL_function _ -> refer (BEXPR_apply_direct (i,ts, aux urn b),t)
+        | BBDCL_fun _ -> BEXPR_apply_direct (i, ts, aux b),t
+        | BBDCL_function _ -> refer (BEXPR_apply_direct (i, ts, aux b),t)
 
         | _ -> assert false
         end
 
-      | BEXPR_apply (f,b),t -> refer (BEXPR_apply (aux urn f, aux urn b),t)
-      | BEXPR_tuple ls,t -> (BEXPR_tuple (List.map (aux n) ls),t)
-      | (BEXPR_name _,t) as x -> x
-      | (BEXPR_literal (Flx_ast.AST_int _ )),t as x -> x
-      | (BEXPR_literal (Flx_ast.AST_float _ )),t as x -> x
+      | BEXPR_apply (f, b), t -> refer (BEXPR_apply (aux f, aux b), t)
+      | BEXPR_tuple ls, t -> (BEXPR_tuple (List.map aux ls), t)
+      | (BEXPR_name _, t) as x -> x
+      | (BEXPR_literal (Flx_ast.AST_int _ )), t as x -> x
+      | (BEXPR_literal (Flx_ast.AST_float _ )), t as x -> x
       | x -> refer x
     in
-      aux urn e
+      aux e
   in
   let sube = List.rev !sube in
   (*
@@ -72,4 +66,4 @@ let unravel syms bbdfns e =
     sube
   );
   *)
-  sube,e'
+  sube, e'
