@@ -1,7 +1,4 @@
 open Flx_types
-open Flx_mtypes2
-open List
-open Flx_util
 
 let rec eassoc x l = match l with
   | [] -> raise Not_found
@@ -18,8 +15,8 @@ let unravel syms bbdfns e =
   let get e =
     try eassoc e !sube
     with Not_found ->
-      let n = !(syms.counter) in incr (syms.counter);
-      let name = "_tmp" ^ si n in
+      let n = !(syms.Flx_mtypes2.counter) in incr (syms.Flx_mtypes2.counter);
+      let name = "_tmp" ^ string_of_int n in
       sube := (e,name) :: !sube;
       name
 
@@ -53,8 +50,8 @@ let unravel syms bbdfns e =
         | _ -> assert false
         end
 
-      | BEXPR_apply (f,b),t -> refer (BEXPR_apply(aux urn f, aux urn b),t)
-      | BEXPR_tuple ls,t -> (BEXPR_tuple (map (aux n) ls),t)
+      | BEXPR_apply (f,b),t -> refer (BEXPR_apply (aux urn f, aux urn b),t)
+      | BEXPR_tuple ls,t -> (BEXPR_tuple (List.map (aux n) ls),t)
       | (BEXPR_name _,t) as x -> x
       | (BEXPR_literal (Flx_ast.AST_int _ )),t as x -> x
       | (BEXPR_literal (Flx_ast.AST_float _ )),t as x -> x
@@ -62,7 +59,7 @@ let unravel syms bbdfns e =
     in
       aux urn e
   in
-  let sube = rev !sube in
+  let sube = List.rev !sube in
   (*
   print_endline
   (
