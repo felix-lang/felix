@@ -118,7 +118,9 @@ def build_flx_llvm_backend(phase):
     return phase.ocaml.build_lib(path / 'flx_llvm_backend',
         srcs=Path.globall(path / '*.ml{,i}'),
         includes=['/tmp/llvm/lib/ocaml'],
-        libs=[build_flx_core(phase)])
+        libs=[
+            build_flx_core(phase),
+            build_flx_frontend(phase)])
 
 def build_flx_drivers(ctx, phase):
     path = Path('src', 'compiler', 'drivers')
@@ -172,6 +174,8 @@ def build_flx_drivers(ctx, phase):
             libs=libs + [build_flx_llvm_backend(phase)],
             external_libs=external_libs + ['llvm', 'llvm_analysis'],
             cc=phase.cxx.static.compiler.gcc.exe)
+    else:
+        flxc = None
 
     return Record(
         flxp=flxp,
