@@ -1,8 +1,4 @@
-type call_t =
-  | Inst_add
-  | Inst_sub
-  | Function of Llvm.llvalue
-
+type call_t = Llvm.llvalue array -> string -> Llvm.llbuilder -> Llvm.llvalue
 
 type codegen_state_t = {
   syms: Flx_mtypes2.sym_state_t;
@@ -10,6 +6,7 @@ type codegen_state_t = {
   context: Llvm.llcontext;
   the_module: Llvm.llmodule;
   builder: Llvm.llbuilder;
+  type_bindings: (Flx_ast.bid_t, Llvm.lltype) Hashtbl.t;
   call_bindings: (Flx_ast.bid_t, call_t) Hashtbl.t;
   value_bindings: (Flx_ast.bid_t, Llvm.llvalue) Hashtbl.t;
 }
@@ -22,6 +19,7 @@ let make_codegen_state syms bbdfns context the_module builder =
     context = context;
     the_module = the_module;
     builder = builder;
+    type_bindings = Hashtbl.create 97;
     call_bindings = Hashtbl.create 97;
     value_bindings = Hashtbl.create 97;
   }
@@ -60,10 +58,38 @@ let name_of_index dfns bbdfns index =
       "index_" ^ string_of_int index
 
 
-let is_instruction call_bindings index =
-  match Hashtbl.find call_bindings index with
-  | Inst_add | Inst_sub -> true
-  | _ -> false
+let rec lltype_of_btype state btypecode =
+  print_endline
+    (Flx_print.string_of_btypecode state.syms.Flx_mtypes2.dfns btypecode);
+
+  match Flx_maps.reduce_type btypecode with
+  | Flx_types.BTYP_inst (index, ts) -> Hashtbl.find state.type_bindings index
+  | Flx_types.BTYP_tuple ls ->
+      let ls = List.map (lltype_of_btype state) ls in
+      Llvm.struct_type state.context (Array.of_list ls)
+  | Flx_types.BTYP_record ls -> assert false
+  | Flx_types.BTYP_variant ls -> assert false
+  | Flx_types.BTYP_unitsum k -> assert false
+  | Flx_types.BTYP_sum ls -> assert false
+  | Flx_types.BTYP_function (args, result) -> assert false
+  | Flx_types.BTYP_cfunction (args, result) -> assert false
+  | Flx_types.BTYP_pointer t -> assert false
+  | Flx_types.BTYP_array (t1, Flx_types.BTYP_unitsum k) ->
+      let t1 = lltype_of_btype state t1 in
+      Llvm.array_type t1 k
+  | Flx_types.BTYP_array (t1, t2) -> assert false
+  | Flx_types.BTYP_void -> Llvm.void_type state.context
+  | Flx_types.BTYP_fix i -> assert false
+  | Flx_types.BTYP_intersect ls -> assert false
+  | Flx_types.BTYP_var (i, mt) -> assert false
+  | Flx_types.BTYP_apply (t1, t2) -> assert false
+  | Flx_types.BTYP_typefun (args, result, body) -> assert false
+  | Flx_types.BTYP_type i -> assert false
+  | Flx_types.BTYP_type_tuple ls -> assert false
+  | Flx_types.BTYP_type_match (t, ps) -> assert false
+  | Flx_types.BTYP_typeset ls -> assert false
+  | Flx_types.BTYP_typesetunion ls -> assert false
+  | Flx_types.BTYP_typesetintersection ls -> assert false
 
 
 (* Generate code for a literal *)
@@ -81,16 +107,21 @@ let codegen_literal state sr literal =
 
 
 (* Generate call for an expression *)
-let rec codegen_expr state sr ((bexpr, typecode) as tbexpr): Llvm.llvalue =
+let rec codegen_expr state sr tbexpr =
   print_endline ("codegen_expr: " ^ Flx_print.string_of_bound_expression
     state.syms.Flx_mtypes2.dfns state.bbdfns tbexpr);
 
+  (* See if there are any simple reductions we can apply to the expression. *)
+  let bexpr, btypecode = Flx_maps.reduce_tbexpr state.bbdfns tbexpr in
+
+  (* Helper function to look up the name of an index. *)
   let name_of_index = name_of_index state.syms.Flx_mtypes2.dfns state.bbdfns in
 
   match bexpr with
   | Flx_types.BEXPR_deref e ->
       print_endline "BEXPR_deref";
-      codegen_expr state sr e
+      let value = codegen_expr state sr e in
+      Llvm.build_load value "deref" state.builder
 
   | Flx_types.BEXPR_name (index, btypecode) ->
       print_endline "BEXPR_name";
@@ -102,14 +133,20 @@ let rec codegen_expr state sr ((bexpr, typecode) as tbexpr): Llvm.llvalue =
 
   | Flx_types.BEXPR_likely e ->
       print_endline "BEXPR_likely";
+      (* Do nothing for now *)
       codegen_expr state sr e
 
   | Flx_types.BEXPR_unlikely e ->
       print_endline "BEXPR_unlikely";
+      (* Do nothing for now *)
       codegen_expr state sr e
 
   | Flx_types.BEXPR_address e ->
       print_endline "BEXPR_address";
+      (* Expressions can only have their address taken if they're on the stack.
+       * So, we shouldn't need to do any work. *)
+
+      (* FIXME: Add a check to make sure we're returning the right type *)
       codegen_expr state sr e
 
   | Flx_types.BEXPR_new e ->
@@ -118,83 +155,50 @@ let rec codegen_expr state sr ((bexpr, typecode) as tbexpr): Llvm.llvalue =
 
   | Flx_types.BEXPR_not e ->
       print_endline "BEXPR_not";
-      codegen_expr state sr e
+      let e = codegen_expr state sr e in
+      let ty = Llvm.type_of e in
+      let e =
+        Llvm.build_icmp Llvm.Icmp.Eq e (Llvm.const_int ty 0) "not" state.builder
+      in
+      Llvm.build_zext e ty "not" state.builder
 
   | Flx_types.BEXPR_literal literal ->
       print_endline "BEXPR_literal";
       codegen_literal state sr literal
 
-  (* Handle the case where we're calling a binary operator. *)
-  | Flx_types.BEXPR_apply (
-    (Flx_types.BEXPR_closure (index, _), _),
-    (Flx_types.BEXPR_tuple [lhs; rhs], _)) ->
-      print_endline ("BEXPR_apply: " ^ name_of_index index);
+  | Flx_types.BEXPR_apply (f, e) ->
+      print_endline "BEXPR_apply";
+      assert false
 
-      let name = name_of_index index in
-      let lhs = codegen_expr state sr lhs in
-      let rhs = codegen_expr state sr rhs in
+  | Flx_types.BEXPR_apply_prim (index, _, (Flx_types.BEXPR_tuple es, _))
+  | Flx_types.BEXPR_apply_direct (index, _, (Flx_types.BEXPR_tuple es, _))
+  | Flx_types.BEXPR_apply_stack (index, _, (Flx_types.BEXPR_tuple es, _))
+  | Flx_types.BEXPR_apply_struct (index, _, (Flx_types.BEXPR_tuple es, _)) ->
+      print_endline "BEXPR_apply_{prim,direct,stack_struct}";
 
-      begin match Hashtbl.find state.call_bindings index with
-      | Function f -> Llvm.build_call f [|lhs; rhs|] name state.builder
-      | Inst_add -> Llvm.build_add lhs rhs name state.builder
-      | Inst_sub -> Llvm.build_sub lhs rhs name state.builder
-      end
-
-  | Flx_types.BEXPR_apply (
-    (Flx_types.BEXPR_closure (index, _), _),
-    (Flx_types.BEXPR_tuple es, _)) ->
-      print_endline ("BEXPR_apply: " ^ name_of_index index);
-
-      let name = name_of_index index in
+      let f = Hashtbl.find state.call_bindings index in
       let es = List.map (codegen_expr state sr) es in
 
-      begin match Hashtbl.find state.call_bindings index with
-      | Function f -> Llvm.build_call f (Array.of_list es) name state.builder
-      | Inst_add
-      | Inst_sub ->
-          failwith ("Invalid argument count for instruction!")
-      end
+      f (Array.of_list es) "apply" state.builder
 
-  | Flx_types.BEXPR_apply (e1, e2) ->
-      print_endline "BEXPR_apply";
+  | Flx_types.BEXPR_apply_prim (index, _, e)
+  | Flx_types.BEXPR_apply_direct (index, _, e)
+  | Flx_types.BEXPR_apply_stack (index, _, e)
+  | Flx_types.BEXPR_apply_struct (index, _, e) ->
+      print_endline "BEXPR_apply_{prim,direct,stack_struct}";
 
-      let _ = codegen_expr state sr e1 in
-      let _ = codegen_expr state sr e2 in
-      assert false
+      let f = Hashtbl.find state.call_bindings index in
+      let e = codegen_expr state sr e in
 
-  | Flx_types.BEXPR_apply_prim (index, btypecode, e) ->
-      print_endline "BEXPR_apply_prim";
-      codegen_expr state sr e
+      f [|e|] "apply" state.builder
 
-  | Flx_types.BEXPR_apply_direct (index, btypecode, e) ->
-      print_endline "BEXPR_apply_direct";
-      codegen_expr state sr e
-
-  | Flx_types.BEXPR_apply_stack (index, btypecode, e) ->
-      print_endline "BEXPR_apply_stack";
-      codegen_expr state sr e
-
-  | Flx_types.BEXPR_apply_struct (index, btypecode, e) ->
-      print_endline "BEXPR_apply_struct";
-      codegen_expr state sr e
-
-  | Flx_types.BEXPR_tuple fields ->
+  | Flx_types.BEXPR_tuple es ->
       print_endline "BEXPR_tuple";
-      let _ =
-        List.map begin fun e ->
-          codegen_expr state sr e;
-        end fields
-      in
-      assert false
+      codegen_struct state sr es btypecode
 
-  | Flx_types.BEXPR_record fields ->
+  | Flx_types.BEXPR_record es ->
       print_endline "BEXPR_record";
-      let _ =
-        List.map begin fun (name, e) ->
-          codegen_expr state sr e;
-        end fields
-      in
-      assert false
+      codegen_struct state sr (List.map snd es) btypecode
 
   | Flx_types.BEXPR_variant (string, e) ->
       print_endline "BEXPR_variant";
@@ -239,11 +243,27 @@ let rec codegen_expr state sr ((bexpr, typecode) as tbexpr): Llvm.llvalue =
       print_endline "BEXPR_coerce";
       assert false
 
+(* Generate code for an llvm struct type. *)
+and codegen_struct state sr es btypecode =
+  let es = List.map (codegen_expr state sr) es in
+  let ts = List.map Llvm.type_of es in
+  let t = lltype_of_btype state btypecode in
+  let _, s =
+    List.fold_left begin fun (i, s) e ->
+      i + 1, Llvm.build_insertvalue s e i "" state.builder
+    end (0, Llvm.undef t) es
+  in
+  s
+
 
 let codegen_bexe state bexe =
   print_endline ("codegen_bexe: " ^ Flx_print.string_of_bexe
     state.syms.Flx_mtypes2.dfns state.bbdfns 0 bexe);
 
+  (* See if there are any simple reductions we can apply to the exe. *)
+  let bexe = Flx_maps.reduce_bexe state.bbdfns bexe in
+
+  (* Helper function to look up the name of an index. *)
   let name_of_index = name_of_index state.syms.Flx_mtypes2.dfns state.bbdfns in
 
   match bexe with
@@ -252,7 +272,7 @@ let codegen_bexe state bexe =
       None
 
   | Flx_types.BEXE_comment (sr, string) ->
-      print_endline "BEXE_comment";
+      (* Ignore the comment. *)
       None
 
   | Flx_types.BEXE_halt (sr, string) ->
@@ -319,7 +339,7 @@ let codegen_bexe state bexe =
       let e = codegen_expr state sr e in
       None
 
-  | Flx_types.BEXE_proc_return (sr) ->
+  | Flx_types.BEXE_proc_return sr ->
       print_endline "BEXE_proc_return";
       None
 
@@ -335,30 +355,18 @@ let codegen_bexe state bexe =
       print_endline "BEXE_nonreturn_code";
       None
 
-  | Flx_types.BEXE_assign (sr, e1, e2) ->
+  | Flx_types.BEXE_assign (sr, lhs, rhs) ->
       print_endline "BEXE_assign";
-      let e1 = codegen_expr state sr e1 in
-      let e2 = codegen_expr state sr e2 in
-      None
+      let lhs = codegen_expr state sr lhs in
+      let rhs = codegen_expr state sr rhs in
+      Some (Llvm.build_store rhs lhs state.builder)
 
-  | Flx_types.BEXE_init (sr, index, init) ->
+  | Flx_types.BEXE_init (sr, index, e) ->
       print_endline "BEXE_init";
 
-      let the_function = Llvm.block_parent
-        (Llvm.insertion_block state.builder)
-      in
-
-      let expr = codegen_expr state sr init in
-      let alloca =
-        let b = Llvm.builder_at state.context
-          (Llvm.instr_begin (Llvm.entry_block the_function))
-        in
-        Llvm.build_alloca (Llvm.type_of expr) (name_of_index index) b
-      in
-
-      Hashtbl.add state.value_bindings index expr;
-
-      let _ = Llvm.build_store expr alloca state.builder in
+      let e = codegen_expr state sr e in
+      Llvm.set_value_name (name_of_index index) e;
+      Hashtbl.add state.value_bindings index e;
       None
 
   | Flx_types.BEXE_begin ->
@@ -392,14 +400,13 @@ let codegen_bexe state bexe =
       None
 
 
-let codegen_proto state index name parameters =
+let codegen_proto state index name parameters ret_type =
   let parameters = Array.of_list parameters in
-  let i32_type = Llvm.i32_type state.context in
 
   (* Make the function type *)
   let ft = Llvm.function_type
-    i32_type
-    (Array.map (fun _ -> i32_type) parameters)
+    (lltype_of_btype state ret_type)
+    (Array.map (fun p -> lltype_of_btype state p.Flx_types.ptyp) parameters)
   in
 
   (* Make the function *)
@@ -413,43 +420,141 @@ let codegen_proto state index name parameters =
   end (Llvm.params f);
 
   (* Register the function. *)
-  Hashtbl.add state.call_bindings index (Function f);
+  Hashtbl.add state.call_bindings index (Llvm.build_call f);
 
   f
 
 
-let codegen_function state index name ps es =
+let codegen_function state index name ps ret_type es =
   (* Declare the function *)
-  let the_function = codegen_proto state index name ps in
+  let the_function = codegen_proto state index name ps ret_type in
 
   (* Create the initial basic block *)
   let bb = Llvm.append_block state.context "entry" the_function in
   let builder = Llvm.builder_at_end state.context bb in
 
-  (* Codegen the sub-expressions inside our function *)
-  let state = { state with builder = builder } in
-  let e =
-    List.fold_left begin fun _ e ->
-      codegen_bexe state e
-    end None es
+  try
+    (* Codegen the sub-expressions inside our function *)
+    let state = { state with builder = builder } in
+    let e =
+      List.fold_left begin fun _ e ->
+        codegen_bexe state e
+      end None es
+    in
+    let _ =
+      match e with
+      | None -> Llvm.build_ret_void builder
+      | Some e -> Llvm.build_ret e builder
+    in
+
+    (* Validate the generated code, checking for consistency. *)
+    Llvm_analysis.assert_valid_function the_function;
+
+    (* Return the function *)
+    the_function
+  with e ->
+    Llvm.delete_function the_function;
+    raise e
+
+
+(* Create an llvm function from a felix function *)
+let codegen_fun state index props vs ps ret_type code reqs prec =
+  (* Helper function to look up the name of an index. *)
+  let name_of_index = name_of_index state.syms.Flx_mtypes2.dfns state.bbdfns in
+
+  let f =
+    match code with
+    | Flx_ast.CS_str_template s ->
+        print_endline ("CS_str_template: " ^ s);
+
+        (* We found an external function. Lets check if it's a native
+         * instruction. Those start with a '%'. Otherwise, it must be the name
+         * of an external function. *)
+        let f =
+          match s with
+          | "%add" -> Llvm.build_add
+          | "%sub" -> Llvm.build_sub
+          | "%subscript" ->
+              fun lhs rhs name builder ->
+                let idx = Llvm.const_int (Llvm.i32_type state.context) 0 in
+                Llvm.build_gep lhs [| idx; rhs |] name builder
+          | s ->
+              failwith ("Unknown instruction " ^ s)
+        in
+
+        begin function
+        | [| lhs; rhs |] -> f lhs rhs
+        | [||] | [| _ |] ->
+            failwith ("Not enough arguments for " ^ (name_of_index index))
+        | _ ->
+            failwith ("Too many arguments for " ^ (name_of_index index))
+        end
+    | Flx_ast.CS_str s ->
+        print_endline ("CS_str: " ^ s);
+        assert false
+
+    | Flx_ast.CS_virtual ->
+        print_endline "CS_virtual";
+        assert false
+
+    | Flx_ast.CS_identity ->
+        print_endline "CS_identity";
+        assert false
   in
-  match e with
-  | None -> Llvm.build_ret_void builder
-  | Some e -> Llvm.build_ret e builder
+  Hashtbl.add state.call_bindings index f
+
+
+(* Convert an external felix type into an llvm type. *)
+let codegen_abs state index vs quals code reqs =
+  let t =
+    match code with
+    | Flx_ast.CS_str_template s ->
+        print_endline ("CS_str_template: " ^ s);
+
+        (* We found an external type. Lets check if it's a native llvm type.
+         * These start with a '%'. *)
+        let t =
+          match s with
+          | "%i1" -> Llvm.i1_type state.context
+          | "%i8" -> Llvm.i8_type state.context
+          | "%i16" -> Llvm.i16_type state.context
+          | "%i32" -> Llvm.i32_type state.context
+          | "%i64" -> Llvm.i64_type state.context
+          | "%float" -> Llvm.float_type state.context
+          | "%double" -> Llvm.double_type state.context
+          | "%void" -> Llvm.void_type state.context
+          | s -> failwith ("Unknown type " ^ s)
+        in
+        t
+    | Flx_ast.CS_str s ->
+        print_endline ("CS_str: " ^ s);
+        assert false
+
+    | Flx_ast.CS_virtual ->
+        print_endline "CS_virtual";
+        assert false
+
+    | Flx_ast.CS_identity ->
+        print_endline "CS_identity";
+        assert false
+  in
+  Hashtbl.add state.type_bindings index t
 
 
 let codegen_symbol state index ((name, parent, sr, bbdcl) as symbol) =
   print_endline ("codegen_symbol: " ^ name);
 
   match bbdcl with
-  | Flx_types.BBDCL_function (_, _, (ps, _), _, es) ->
+  | Flx_types.BBDCL_function (_, _, (ps, _), ret_type, es) ->
       print_endline "BBDCL_function";
-      let _ = codegen_function state index name ps es in
+      let f = codegen_function state index name ps ret_type es in
+      Hashtbl.add state.value_bindings index f;
       ()
 
   | Flx_types.BBDCL_procedure (_, _, (ps, _), es) ->
       print_endline "BBDCL_procedure";
-      let _ = codegen_function state index name ps es in
+      let f = codegen_function state index name ps Flx_types.BTYP_void es in
+      Hashtbl.add state.value_bindings index f;
       ()
 
   | Flx_types.BBDCL_val (vs, ty) ->
@@ -469,38 +574,14 @@ let codegen_symbol state index ((name, parent, sr, bbdcl) as symbol) =
 
   | Flx_types.BBDCL_abs (vs, quals, code, reqs) ->
       print_endline "BBDCL_abs";
+      codegen_abs state index vs quals code reqs
 
   | Flx_types.BBDCL_const (props, vs, ty, code, reqs) ->
       print_endline "BBDCL_const";
 
   | Flx_types.BBDCL_fun (props, vs, ps, ret_type, code, reqs, prec) ->
       print_endline "BBDCL_fun";
-
-      begin match code with
-      | Flx_ast.CS_str_template s ->
-          print_endline ("CS_str_template: " ^ s);
-
-          (* We found an external function. Lets check if it's a native
-           * instruction. Those start with a '%'. Otherwise, it must be the name
-           * of an external function. *)
-          begin match s with
-          | "%add" -> Hashtbl.add state.call_bindings index Inst_add
-          | "%sub" -> Hashtbl.add state.call_bindings index Inst_sub
-          | _ -> assert false
-          end
-
-      | Flx_ast.CS_str s ->
-          print_endline ("CS_str: " ^ s);
-          assert false
-
-      | Flx_ast.CS_virtual ->
-          print_endline "CS_virtual";
-          assert false
-
-      | Flx_ast.CS_identity ->
-          print_endline "CS_identity";
-          assert false
-      end
+      codegen_fun state index props vs ps ret_type code reqs prec
 
   | Flx_types.BBDCL_callback (props, vs, ps_cf, ps_c, k, rt, reqs, prec) ->
       print_endline "BBDCL_callback";
