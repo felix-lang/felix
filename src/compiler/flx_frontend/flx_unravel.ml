@@ -57,11 +57,11 @@ let unravel syms bbdfns e =
   (*
   print_endline
   (
-    "Unravelled " ^ sbe syms.dfns e ^ "-->" ^ sbe syms.dfns e' ^
-    " where:\n" ^
-    catmap ""
+    "Unravelled " ^ Flx_print.sbe syms.Flx_mtypes2.dfns bbdfns e ^ "-->" ^
+    Flx_print.sbe syms.Flx_mtypes2.dfns bbdfns e' ^ " where:\n" ^
+    Flx_util.catmap ""
     (fun (x,s) ->
-      s ^ " = "^sbe syms.dfns x ^";\n"
+      s ^ " = " ^ Flx_print.sbe syms.Flx_mtypes2.dfns bbdfns x ^ ";\n"
     )
     sube
   );
