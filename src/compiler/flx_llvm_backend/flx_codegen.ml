@@ -636,7 +636,7 @@ let codegen_fun state index props vs ps ret_type code reqs prec =
                   check_type rhs Llvm.TypeKind.Integer;
 
                   let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
-                  let gep = Llvm.build_gep lhs [| zero; rhs |] "foo" builder in
+                  let gep = Llvm.build_gep lhs [| zero; rhs |] "" builder in
                   Llvm.build_load gep name builder
               | _ ->
                   failwith ("Invalid arguments for " ^
