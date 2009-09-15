@@ -679,6 +679,46 @@ let codegen_fun state index props vs ps ret_type code reqs prec =
                     name_of_index state index)
             end
 
+        | "%eq" ->
+            begin function
+            | [| lhs; rhs |] ->
+                check_type lhs Llvm.TypeKind.Integer;
+                check_type rhs Llvm.TypeKind.Integer;
+                Llvm.build_icmp Llvm.Icmp.Eq lhs rhs
+            | _ ->
+                failwith ("Invalid arguments for " ^ name_of_index state index)
+            end
+
+        | "%ne" ->
+            begin function
+            | [| lhs; rhs |] ->
+                check_type lhs Llvm.TypeKind.Integer;
+                check_type rhs Llvm.TypeKind.Integer;
+                Llvm.build_icmp Llvm.Icmp.Ne lhs rhs
+            | _ ->
+                failwith ("Invalid arguments for " ^ name_of_index state index)
+            end
+
+        | "%lnot" ->
+            begin fun args name builder ->
+              match args with
+              | [| e |] ->
+                  check_type e Llvm.TypeKind.Integer;
+
+                  let ty = Llvm.type_of e in
+                  let e = Llvm.build_icmp
+                    Llvm.Icmp.Eq
+                    e
+                    (Llvm.const_int ty 0)
+                    ""
+                    builder
+                  in
+                  Llvm.build_zext e ty name builder
+              | _ ->
+                  failwith ("Invalid arguments for " ^
+                    name_of_index state index)
+            end
+
         | s ->
             (* Handle some error cases *)
             if String.length s == 0 then
