@@ -10,6 +10,7 @@ type codegen_state_t = {
   type_bindings: (Flx_ast.bid_t, Llvm.lltype) Hashtbl.t;
   call_bindings: (Flx_ast.bid_t, call_t) Hashtbl.t;
   value_bindings: (Flx_ast.bid_t, Llvm.llvalue) Hashtbl.t;
+  label_bindings: (string, Llvm.llbasicblock) Hashtbl.t;
 }
 
 
@@ -24,6 +25,7 @@ let make_codegen_state syms bbdfns context the_module the_fpm the_ee =
     type_bindings = Hashtbl.create 97;
     call_bindings = Hashtbl.create 97;
     value_bindings = Hashtbl.create 97;
+    label_bindings = Hashtbl.create 97;
   }
 
 
@@ -351,9 +353,21 @@ let codegen_bexe state builder bexe =
   let bexe = Flx_maps.reduce_bexe state.bbdfns bexe in
 
   match bexe with
-  | Flx_types.BEXE_label (sr, string) ->
+  | Flx_types.BEXE_label (sr, label) ->
       print_endline "BEXE_label";
-      assert false
+
+      (* Find or create the basic block of the label *)
+      let bb =
+        try Hashtbl.find state.label_bindings label with Not_found ->
+          (* The label doesn't exist yet, so let's make it. *)
+          let the_function = builder_parent builder in
+          let bb = Llvm.append_block state.context label the_function in
+          Hashtbl.add state.label_bindings label bb;
+          bb
+      in
+
+      (* Set the builder to start generating code on that basic block. *)
+      Llvm.position_at_end bb builder
 
   | Flx_types.BEXE_comment (sr, string) ->
       (* Ignore the comment. *)
@@ -367,11 +381,23 @@ let codegen_bexe state builder bexe =
       print_endline "BEXE_trace";
       assert false
 
-  | Flx_types.BEXE_goto (sr, string) ->
+  | Flx_types.BEXE_goto (sr, label) ->
       print_endline "BEXE_goto";
-      assert false
 
-  | Flx_types.BEXE_ifgoto (sr, e, string) ->
+      (* Find the basic block of the label. *)
+      let bb =
+        try Hashtbl.find state.label_bindings label with Not_found ->
+          (* The label doesn't exist yet, so let's make it. *)
+          let the_function = builder_parent builder in
+          let bb = Llvm.append_block state.context label the_function in
+          Hashtbl.add state.label_bindings label bb;
+          bb
+      in
+
+      (* Branch to that basic block. *)
+      ignore (Llvm.build_br bb builder)
+
+  | Flx_types.BEXE_ifgoto (sr, e, label) ->
       print_endline "BEXE_ifgoto";
       let e = codegen_expr state builder sr e in
       assert false
@@ -574,6 +600,7 @@ let codegen_function state index name parameters ret_type es =
         type_bindings = Hashtbl.copy state.type_bindings;
         call_bindings = Hashtbl.copy state.call_bindings;
         value_bindings = Hashtbl.copy state.value_bindings;
+        label_bindings = Hashtbl.copy state.label_bindings;
       }
     in
 
