@@ -270,7 +270,7 @@ let codegen_bexe state bexe =
   match bexe with
   | Flx_types.BEXE_label (sr, string) ->
       print_endline "BEXE_label";
-      None
+      assert false
 
   | Flx_types.BEXE_comment (sr, string) ->
       (* Ignore the comment. *)
@@ -278,58 +278,58 @@ let codegen_bexe state bexe =
 
   | Flx_types.BEXE_halt (sr, string) ->
       print_endline "BEXE_halt";
-      None
+      assert false
 
   | Flx_types.BEXE_trace (sr, s1, s2) ->
       print_endline "BEXE_trace";
-      None
+      assert false
 
   | Flx_types.BEXE_goto (sr, string) ->
       print_endline "BEXE_goto";
-      None
+      assert false
 
   | Flx_types.BEXE_ifgoto (sr, e, string) ->
       print_endline "BEXE_ifgoto";
       let expr = codegen_expr state sr e in
-      None
+      assert false
 
   | Flx_types.BEXE_call (sr, p, a) ->
       let e1 = codegen_expr state sr p in
       let e2 = codegen_expr state sr a in
-      None
+      assert false
 
   | Flx_types.BEXE_call_direct (sr, index, btypecode, e) ->
       print_endline "BEXE_call_direct";
       let e = codegen_expr state sr e in
-      None
+      assert false
 
   | Flx_types.BEXE_call_stack (sr, index, btypecode, e) ->
       print_endline "BEXE_call_stack";
       let e = codegen_expr state sr e in
-      None
+      assert false
 
   | Flx_types.BEXE_call_prim (sr, index, btypecode, e) ->
       print_endline "BEXE_call_prim";
       let e = codegen_expr state sr e in
-      None
+      assert false
 
   | Flx_types.BEXE_jump (sr, e1, e2) ->
       print_endline "BEXE_jump";
-      None
+      assert false
 
   | Flx_types.BEXE_jump_direct (sr, index, btypecode, e) ->
       print_endline "BEXE_jump_direct";
       let e = codegen_expr state sr e in
-      None
+      assert false
 
   | Flx_types.BEXE_loop (sr, int, e) ->
       print_endline "BEXE_loop";
       let e = codegen_expr state sr e in
-      None
+      assert false
 
   | Flx_types.BEXE_svc (sr, index) ->
       print_endline "BEXE_svc";
-      None
+      assert false
 
   | Flx_types.BEXE_fun_return (sr, e) ->
       print_endline "BEXE_fun_return";
@@ -346,15 +346,15 @@ let codegen_bexe state bexe =
 
   | Flx_types.BEXE_nop (sr, string) ->
       print_endline "BEXE_nop";
-      None
+      assert false
 
   | Flx_types.BEXE_code (sr, code_spec_t) ->
       print_endline "BEXE_code";
-      None
+      assert false
 
   | Flx_types.BEXE_nonreturn_code (sr, code_spec_t) ->
       print_endline "BEXE_nonreturn_code";
-      None
+      assert false
 
   | Flx_types.BEXE_assign (sr, lhs, rhs) ->
       print_endline "BEXE_assign";
@@ -372,16 +372,16 @@ let codegen_bexe state bexe =
 
   | Flx_types.BEXE_begin ->
       print_endline "BEXE_begin";
-      None
+      assert false
 
   | Flx_types.BEXE_end ->
       print_endline "BEXE_end";
-      None
+      assert false
 
   | Flx_types.BEXE_assert (sr, e) ->
       print_endline "BEXE_assert";
       let e = codegen_expr state sr e in
-      None
+      assert false
 
   | Flx_types.BEXE_assert2 (sr1, sr2, e1, e2) ->
       print_endline "BEXE_assert2";
@@ -393,12 +393,12 @@ let codegen_bexe state bexe =
         | None -> ()
       end;
       let e2 = codegen_expr state sr2 e2 in
-      None
+      assert false
 
   | Flx_types.BEXE_axiom_check (sr, e) ->
       print_endline "BEXE_axiom_check";
       let e = codegen_expr state sr e in
-      None
+      assert false
 
 
 let codegen_proto state index name parameters ret_type =
