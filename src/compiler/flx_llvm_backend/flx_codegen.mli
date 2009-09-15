@@ -5,6 +5,8 @@ val make_codegen_state:
   Flx_types.fully_bound_symbol_table_t ->
   Llvm.llcontext ->
   Llvm.llmodule ->
+  [`Function] Llvm.PassManager.t ->
+  Llvm_executionengine.ExecutionEngine.t ->
   codegen_state_t
 
 (** Generate code for a statement. *)

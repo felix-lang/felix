@@ -14,6 +14,8 @@ type state_t = {
   init_index: int;
   context: Llvm.llcontext;
   the_module: Llvm.llmodule;
+  the_fpm: [`Function] Llvm.PassManager.t;
+  the_execution_engine: Llvm_executionengine.ExecutionEngine.t;
   codegen_state: Flx_codegen.codegen_state_t;
 }
 
@@ -40,8 +42,42 @@ let create_state options =
   in
 
   (* Create the llvm state *)
+
+  (* Initialize the native jit. *)
+  ignore (Llvm_executionengine.initialize_native_target ());
+
   let context = Llvm.create_context () in
   let the_module = Llvm.create_module context "__root__" in
+
+  (* Set up the llvm optimizer and execution engine *)
+  let the_module_provider = Llvm.ModuleProvider.create the_module in
+  let the_execution_engine =
+    Llvm_executionengine.ExecutionEngine.create the_module_provider in
+  let the_fpm = Llvm.PassManager.create_function the_module_provider in
+
+  (* Set up the optimizer pipeline.  Start with registering info about how the
+   * target lays out data structures. *)
+  Llvm_target.TargetData.add
+  (Llvm_executionengine.ExecutionEngine.target_data the_execution_engine)
+  the_fpm;
+
+  (* Promote allocas to registers. *)
+  Llvm_scalar_opts.add_memory_to_register_promotion the_fpm;
+
+  (* Do simple "peephole" optimizations and bit-twiddling optzn. *)
+  Llvm_scalar_opts.add_instruction_combining the_fpm;
+
+  (* reassociate expressions. *)
+  Llvm_scalar_opts.add_reassociation the_fpm;
+
+  (* Eliminate Common SubExpressions. *)
+  Llvm_scalar_opts.add_gvn the_fpm;
+
+  (* Simplify the control flow graph (deleting unreachable blocks, etc). *)
+  Llvm_scalar_opts.add_cfg_simplification the_fpm;
+
+  ignore (Llvm.PassManager.initialize the_fpm);
+
   {
     syms = syms;
     bbdfns = bbdfns;
@@ -58,11 +94,15 @@ let create_state options =
     init_index = init_index;
     context = context;
     the_module = the_module;
+    the_fpm = the_fpm;
+    the_execution_engine = the_execution_engine;
     codegen_state = Flx_codegen.make_codegen_state
       syms
       bbdfns
       context
       the_module
+      the_fpm
+      the_execution_engine;
   }
 
 
@@ -141,7 +181,18 @@ let compile_bexe state bexe =
   ignore (Llvm.build_ret_void builder);
 
   (* Make sure the function is valid. *)
-  Llvm_analysis.assert_valid_function the_function
+  Llvm_analysis.assert_valid_function the_function;
+
+  (* Optimize the function. *)
+  ignore (Llvm.PassManager.run_function the_function state.the_fpm);
+
+  Llvm.dump_module state.the_module;
+
+  (* Execute the statement. *)
+  ignore (Llvm_executionengine.ExecutionEngine.run_function
+    the_function
+    [||]
+    state.the_execution_engine)
 
 
 let compile_stmt state stmt () =

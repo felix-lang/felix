@@ -5,18 +5,22 @@ type codegen_state_t = {
   bbdfns: Flx_types.fully_bound_symbol_table_t;
   context: Llvm.llcontext;
   the_module: Llvm.llmodule;
+  the_fpm: [`Function] Llvm.PassManager.t;
+  the_ee: Llvm_executionengine.ExecutionEngine.t;
   type_bindings: (Flx_ast.bid_t, Llvm.lltype) Hashtbl.t;
   call_bindings: (Flx_ast.bid_t, call_t) Hashtbl.t;
   value_bindings: (Flx_ast.bid_t, Llvm.llvalue) Hashtbl.t;
 }
 
 
-let make_codegen_state syms bbdfns context the_module =
+let make_codegen_state syms bbdfns context the_module the_fpm the_ee =
   {
     syms = syms;
     bbdfns = bbdfns;
     context = context;
     the_module = the_module;
+    the_fpm = the_fpm;
+    the_ee = the_ee;
     type_bindings = Hashtbl.create 97;
     call_bindings = Hashtbl.create 97;
     value_bindings = Hashtbl.create 97;
@@ -445,6 +449,9 @@ let codegen_function state index name ps ret_type es =
 
     (* Validate the generated code, checking for consistency. *)
     Llvm_analysis.assert_valid_function the_function;
+
+    (* Optimize the function. *)
+    ignore (Llvm.PassManager.run_function the_function state.the_fpm);
 
     (* Return the function *)
     the_function

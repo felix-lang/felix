@@ -172,7 +172,12 @@ def build_flx_drivers(ctx, phase):
             Path('src/compiler/flxc/*.ml{,i}').glob(),
             includes=[phase.llvm_config.ocaml_libdir()],
             libs=libs + [build_flx_llvm_backend(phase)],
-            external_libs=external_libs + ['llvm', 'llvm_analysis'],
+            external_libs=external_libs + [
+                'llvm',
+                'llvm_analysis',
+                'llvm_executionengine',
+                'llvm_scalar_opts',
+                'llvm_target'],
             cc=phase.cxx.static.compiler.gcc.exe)
     else:
         flxc = None
