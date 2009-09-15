@@ -178,19 +178,22 @@ let rec codegen_expr state the_function builder sr tbexpr =
       print_endline "BEXPR_apply";
       assert false
 
-  | Flx_types.BEXPR_apply_prim (index, _, (Flx_types.BEXPR_tuple es, _))
-  | Flx_types.BEXPR_apply_direct (index, _, (Flx_types.BEXPR_tuple es, _))
-  | Flx_types.BEXPR_apply_stack (index, _, (Flx_types.BEXPR_tuple es, _))
-  | Flx_types.BEXPR_apply_struct (index, _, (Flx_types.BEXPR_tuple es, _)) ->
+  | Flx_types.BEXPR_apply_direct (index, _, e) ->
       print_endline "BEXPR_apply_{prim,direct,stack_struct}";
 
       let f = Hashtbl.find state.call_bindings index in
-      let es = List.map (codegen_expr state the_function builder sr) es in
+      let args =
+        match e with
+        | Flx_types.BEXPR_tuple es, _ ->
+            Array.map
+              (codegen_expr state the_function builder sr) (Array.of_list es)
+        | _ ->
+            [| codegen_expr state the_function builder sr e |]
+      in
 
-      f (Array.of_list es) "apply" builder
+      f args "" builder
 
   | Flx_types.BEXPR_apply_prim (index, _, e)
-  | Flx_types.BEXPR_apply_direct (index, _, e)
   | Flx_types.BEXPR_apply_stack (index, _, e)
   | Flx_types.BEXPR_apply_struct (index, _, e) ->
       print_endline "BEXPR_apply_{prim,direct,stack_struct}";
@@ -310,8 +313,17 @@ let codegen_bexe state the_function builder bexe =
 
   | Flx_types.BEXE_call_direct (sr, index, btypecode, e) ->
       print_endline "BEXE_call_direct";
-      let e = codegen_expr state the_function builder sr e in
-      assert false
+      let f = Hashtbl.find state.call_bindings index in
+      let args =
+        match e with
+        | Flx_types.BEXPR_tuple es, _ ->
+            Array.map
+              (codegen_expr state the_function builder sr)
+              (Array.of_list es)
+        | _ ->
+            [| codegen_expr state the_function builder sr e |]
+      in
+      ignore (f args "" builder)
 
   | Flx_types.BEXE_call_stack (sr, index, btypecode, e) ->
       print_endline "BEXE_call_stack";
