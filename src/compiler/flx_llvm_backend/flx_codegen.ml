@@ -60,6 +60,31 @@ let name_of_index state index =
       "index_" ^ string_of_int index
 
 
+(* Convenience function to get the string value of an Llvm.TypeKind. *)
+let name_of_typekind = function
+  | Llvm.TypeKind.Void -> "void"
+  | Llvm.TypeKind.Float -> "float"
+  | Llvm.TypeKind.Double -> "double"
+  | Llvm.TypeKind.X86fp80 -> "x86fp80"
+  | Llvm.TypeKind.Fp128 -> "fp128"
+  | Llvm.TypeKind.Ppc_fp128 -> "ppc_fp128"
+  | Llvm.TypeKind.Label -> "label"
+  | Llvm.TypeKind.Integer -> "integer"
+  | Llvm.TypeKind.Function -> "function"
+  | Llvm.TypeKind.Struct -> "struct"
+  | Llvm.TypeKind.Array -> "array"
+  | Llvm.TypeKind.Pointer -> "pointer"
+  | Llvm.TypeKind.Opaque -> "opaque"
+  | Llvm.TypeKind.Vector -> "vector"
+  | Llvm.TypeKind.Metadata -> "metadata"
+
+
+(* Convenience function to check we're dealing with the right types. *)
+let check_type value typekind =
+  if Llvm.classify_type (Llvm.type_of value) != typekind then
+    failwith ("invalid type, expected " ^ name_of_typekind typekind)
+
+
 (* Convert a felix type to an llvm type. *)
 let rec lltype_of_btype state btypecode =
   print_endline
