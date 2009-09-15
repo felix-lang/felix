@@ -5,13 +5,15 @@ val make_codegen_state:
   Flx_types.fully_bound_symbol_table_t ->
   Llvm.llcontext ->
   Llvm.llmodule ->
-  Llvm.llbuilder ->
   codegen_state_t
 
+(** Generate code for a statement. *)
 val codegen_bexe:
-  codegen_state_t ->
-  Flx_types.bexe_t ->
-  Llvm.llvalue option
+  codegen_state_t ->    (** The state needed for code generation. *)
+  Llvm.llvalue ->       (** The function containing the statement. *)
+  Llvm.llbuilder ->     (** The function builder. *)
+  Flx_types.bexe_t ->   (** The statement to generate. *)
+  unit
 
 (** Generate code for a symbol. *)
 val codegen_symbol:

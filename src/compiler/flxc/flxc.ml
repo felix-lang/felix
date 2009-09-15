@@ -14,7 +14,6 @@ type state_t = {
   init_index: int;
   context: Llvm.llcontext;
   the_module: Llvm.llmodule;
-  builder: Llvm.llbuilder;
   codegen_state: Flx_codegen.codegen_state_t;
 }
 
@@ -43,7 +42,6 @@ let create_state options =
   (* Create the llvm state *)
   let context = Llvm.create_context () in
   let the_module = Llvm.create_module context "__root__" in
-  let builder = Llvm.builder context in
   {
     syms = syms;
     bbdfns = bbdfns;
@@ -60,13 +58,11 @@ let create_state options =
     init_index = init_index;
     context = context;
     the_module = the_module;
-    builder = builder;
     codegen_state = Flx_codegen.make_codegen_state
       syms
       bbdfns
       context
       the_module
-      builder;
   }
 
 
@@ -119,6 +115,35 @@ let bind_stmt state stmt () =
     end () asm
   end () stmt
 
+
+let compile_bexe state bexe =
+  (* Make a new function to execute the statement in. We use an opaque
+   * type so that we can later refine it to the actual value of the
+   * returned expression. *)
+  let the_function = Llvm.declare_function
+    ""
+    (Llvm.function_type (Llvm.void_type state.context) [||])
+    state.the_module
+  in
+
+  (* Create the initial basic block *)
+  let bb = Llvm.append_block state.context "entry" the_function in
+  let builder = Llvm.builder_at_end state.context bb in
+
+  let e = Flx_codegen.codegen_bexe
+    state.codegen_state
+    the_function
+    builder
+    bexe
+  in
+
+  (* Make sure we have a return at the end of the function. *)
+  ignore (Llvm.build_ret_void builder);
+
+  (* Make sure the function is valid. *)
+  Llvm_analysis.assert_valid_function the_function
+
+
 let compile_stmt state stmt () =
   Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
     Flx_bind.bind_asm state.bind_state begin fun () bound_value ->
@@ -131,7 +156,7 @@ let compile_stmt state stmt () =
             bexe);
           print_newline ();
 
-          ignore(Flx_codegen.codegen_bexe state.codegen_state bexe)
+          compile_bexe state bexe
 
       | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
           print_endline ("... BOUND SYM:     " ^ Flx_print.string_of_bbdcl
@@ -259,20 +284,7 @@ let main () =
       end state.bbdfns;
 
   | Options.Compile ->
-      (* Create the llvm toplevel function. *)
-      let ft = Llvm.function_type (Llvm.void_type state.context) [||] in
-      let the_function = Llvm.declare_function
-        "__init__"
-        ft
-        state.the_module
-      in
-      let bb = Llvm.append_block state.context "entry" the_function in
-      Llvm.position_at_end bb state.builder;
-
       ignore (parse_stdin ((compile_stmt state), asms, local_data));
-
-      (* Make sure we have a return at the end of the llvm module *)
-      let _ = Llvm.build_ret_void state.builder in
 
       Printf.printf "\n\nllvm module:";
       flush stdout;
