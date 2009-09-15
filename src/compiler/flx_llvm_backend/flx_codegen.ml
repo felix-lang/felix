@@ -155,8 +155,12 @@ let rec codegen_expr state the_function builder sr tbexpr =
   match bexpr with
   | Flx_types.BEXPR_deref e ->
       print_endline "BEXPR_deref";
-      let value = codegen_expr state the_function builder sr e in
-      Llvm.build_load value "deref" builder
+
+      (* Make sure we've got a pointer. *)
+      let e = codegen_expr state the_function builder sr e in
+      check_type e Llvm.TypeKind.Pointer;
+
+      Llvm.build_load e "" builder
 
   | Flx_types.BEXPR_name (index, _) ->
       print_endline "BEXPR_name";
@@ -185,11 +189,15 @@ let rec codegen_expr state the_function builder sr tbexpr =
 
   | Flx_types.BEXPR_address e ->
       print_endline "BEXPR_address";
+
+      let e = codegen_expr state the_function builder sr e in
+
+      (* Make sure we've got a pointer. *)
+      check_type e Llvm.TypeKind.Pointer;
+
       (* Expressions can only have their address taken if they're on the stack.
        * So, we shouldn't need to do any work. *)
-
-      (* FIXME: Add a check to make sure we're returning the right type *)
-      codegen_expr state the_function builder sr e
+      e
 
   | Flx_types.BEXPR_new e ->
       print_endline "BEXPR_new";
