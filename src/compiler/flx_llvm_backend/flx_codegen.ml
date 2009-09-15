@@ -355,7 +355,8 @@ let codegen_bexe state the_function builder bexe =
 
   | Flx_types.BEXE_fun_return (sr, e) ->
       print_endline "BEXE_fun_return";
-      ignore (codegen_expr state the_function builder sr e)
+      let e = codegen_expr state the_function builder sr e in
+      ignore (Llvm.build_ret e builder);
 
   | Flx_types.BEXE_yield (sr, e) ->
       print_endline "BEXE_yield";
@@ -364,7 +365,7 @@ let codegen_bexe state the_function builder bexe =
 
   | Flx_types.BEXE_proc_return sr ->
       print_endline "BEXE_proc_return";
-      assert false
+      ignore (Llvm.build_ret_void builder);
 
   | Flx_types.BEXE_nop (sr, string) ->
       print_endline "BEXE_nop";
