@@ -61,20 +61,22 @@ let create_state options =
   (Llvm_executionengine.ExecutionEngine.target_data the_execution_engine)
   the_fpm;
 
-  (* Promote allocas to registers. *)
-  Llvm_scalar_opts.add_memory_to_register_promotion the_fpm;
+  if !Options.optimize >= 1 then begin
+    (* Promote allocas to registers. *)
+    Llvm_scalar_opts.add_memory_to_register_promotion the_fpm;
 
-  (* Do simple "peephole" optimizations and bit-twiddling optzn. *)
-  Llvm_scalar_opts.add_instruction_combining the_fpm;
+    (* Do simple "peephole" optimizations and bit-twiddling optzn. *)
+    Llvm_scalar_opts.add_instruction_combining the_fpm;
 
-  (* reassociate expressions. *)
-  Llvm_scalar_opts.add_reassociation the_fpm;
+    (* reassociate expressions. *)
+    Llvm_scalar_opts.add_reassociation the_fpm;
 
-  (* Eliminate Common SubExpressions. *)
-  Llvm_scalar_opts.add_gvn the_fpm;
+    (* Eliminate Common SubExpressions. *)
+    Llvm_scalar_opts.add_gvn the_fpm;
 
-  (* Simplify the control flow graph (deleting unreachable blocks, etc). *)
-  Llvm_scalar_opts.add_cfg_simplification the_fpm;
+    (* Simplify the control flow graph (deleting unreachable blocks, etc). *)
+    Llvm_scalar_opts.add_cfg_simplification the_fpm;
+  end;
 
   ignore (Llvm.PassManager.initialize the_fpm);
 
@@ -187,11 +189,13 @@ let compile_bexe state bexe =
 
   Llvm.dump_module state.the_module;
 
-  (* Execute the statement. *)
-  ignore (Llvm_executionengine.ExecutionEngine.run_function
-    the_function
-    [||]
-    state.the_execution_engine)
+  if !Options.phase = Options.Run then begin
+    (* Execute the statement. *)
+    ignore (Llvm_executionengine.ExecutionEngine.run_function
+      the_function
+      [||]
+      state.the_execution_engine)
+  end
 
 
 let compile_stmt state stmt () =
@@ -338,7 +342,7 @@ let main () =
         )
       end state.bbdfns;
 
-  | Options.Compile ->
+  | Options.Compile | Options.Run ->
       ignore (parse_stdin ((compile_stmt state), asms, local_data));
 
       Printf.printf "\n\nllvm module:";

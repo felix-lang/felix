@@ -4,13 +4,15 @@ type phase_t =
   | Desugar
   | Bind
   | Compile
+  | Run
 
 let include_dirs = ref []
 let files = ref []
 let cache_dir = ref None
 let output_dir = ref None
 let imports = ref []
-let phase = ref Compile
+let phase = ref Run
+let optimize = ref 0
 
 let parse_args () =
   let usage = "Usage: flxc <options> <files>\nOptions are:" in
@@ -23,15 +25,18 @@ let parse_args () =
       "Add <dir> to the list of include directories");
     ("--import", Arg.String (fun i -> imports := i :: !imports),
       "Add <dir> to the list of include directories");
-    ("--phase", Arg.Symbol (["parse"; "macro"; "desugar"; "bind"; "compile"],
-      (function
-        | "parse" -> phase := Parse
-        | "macro" -> phase := ExpandMacros
-        | "desugar" -> phase := Desugar
-        | "bind" -> phase := Bind
-        | "compile" -> phase := Compile
-        | _ -> ()
-      )), "";)
+      ("--phase", Arg.Symbol
+        (["parse"; "macro"; "desugar"; "bind"; "compile"; "run"],
+        (function
+          | "parse" -> phase := Parse
+          | "macro" -> phase := ExpandMacros
+          | "desugar" -> phase := Desugar
+          | "bind" -> phase := Bind
+          | "compile" -> phase := Compile
+          | "run" -> phase := Run
+          | _ -> ()
+        )), "Select phase of compilation to run";);
+    ("-O", Arg.Set_int optimize, "Select optimization level")
   ] in
   let anonymous file = files := file :: !files in
   Arg.parse options anonymous usage
