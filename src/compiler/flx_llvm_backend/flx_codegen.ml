@@ -572,6 +572,7 @@ let codegen_symbol state index ((name, parent, sr, bbdcl) as symbol) =
 
   | Flx_types.BBDCL_newtype (vs, ty) ->
       print_endline "BBDCL_newtype";
+      assert false
 
   | Flx_types.BBDCL_abs (vs, quals, code, reqs) ->
       print_endline "BBDCL_abs";
@@ -579,6 +580,7 @@ let codegen_symbol state index ((name, parent, sr, bbdcl) as symbol) =
 
   | Flx_types.BBDCL_const (props, vs, ty, code, reqs) ->
       print_endline "BBDCL_const";
+      assert false
 
   | Flx_types.BBDCL_fun (props, vs, ps, ret_type, code, reqs, prec) ->
       print_endline "BBDCL_fun";
@@ -586,28 +588,37 @@ let codegen_symbol state index ((name, parent, sr, bbdcl) as symbol) =
 
   | Flx_types.BBDCL_callback (props, vs, ps_cf, ps_c, k, rt, reqs, prec) ->
       print_endline "BBDCL_callback";
+      assert false
 
   | Flx_types.BBDCL_proc (props, vs, ps, code, reqs) ->
       print_endline "BBDCL_proc";
+      assert false
 
   | Flx_types.BBDCL_insert (vs, s, ikind, reqs) ->
       print_endline "BBDCL_insert";
+      assert false
 
   | Flx_types.BBDCL_union (vs, cs) ->
       print_endline "BBDCL_union";
+      assert false
 
   | Flx_types.BBDCL_struct (vs, cs) ->
       print_endline "BBDCL_struct";
+      assert false
 
   | Flx_types.BBDCL_cstruct (vs, cs) ->
       print_endline "BBDCL_cstruct";
+      assert false
 
   | Flx_types.BBDCL_typeclass (props, vs) ->
       print_endline "BBDCL_typeclass";
+      assert false
 
   | Flx_types.BBDCL_instance (props, vs, cons, index, ts) ->
       print_endline "BBDCL_instance";
+      assert false
 
   | Flx_types.BBDCL_nonconst_ctor
     (vs, uidx, ut, ctor_idx, ctor_argt, evs, etraint) ->
       print_endline "BBDCL_nonconst_ctor";
+      assert false
