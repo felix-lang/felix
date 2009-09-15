@@ -152,7 +152,8 @@ let rec codegen_expr state sr tbexpr =
 
   | Flx_types.BEXPR_new e ->
       print_endline "BEXPR_new";
-      codegen_expr state sr e
+      let _ = codegen_expr state sr e in
+      assert false
 
   | Flx_types.BEXPR_not e ->
       print_endline "BEXPR_not";
@@ -203,11 +204,13 @@ let rec codegen_expr state sr tbexpr =
 
   | Flx_types.BEXPR_variant (string, e) ->
       print_endline "BEXPR_variant";
-      codegen_expr state sr e
+      let _ = codegen_expr state sr e in
+      assert false
 
   | Flx_types.BEXPR_get_n (n, e) ->
       print_endline "BEXPR_get_n";
-      codegen_expr state sr e
+      let _ = codegen_expr state sr e in
+      assert false
 
   | Flx_types.BEXPR_closure (index, btypecode) ->
       print_endline ("BEXPR_closure: " ^ name_of_index index);
@@ -219,15 +222,18 @@ let rec codegen_expr state sr tbexpr =
 
   | Flx_types.BEXPR_match_case (int, e) ->
       print_endline "BEXPR_match_case";
-      codegen_expr state sr e
+      let _ = codegen_expr state sr e in
+      assert false
 
   | Flx_types.BEXPR_case_arg (int, e) ->
       print_endline "BEXPR_case_arg";
-      codegen_expr state sr e
+      let _ = codegen_expr state sr e in
+      assert false
 
   | Flx_types.BEXPR_case_index e ->
       print_endline "BEXPR_case_index";
-      codegen_expr state sr e
+      let _ = codegen_expr state sr e in
+      assert false
 
   | Flx_types.BEXPR_expr (string, btypecode) ->
       print_endline "BEXPR_expr";
@@ -338,7 +344,7 @@ let codegen_bexe state bexe =
   | Flx_types.BEXE_yield (sr, e) ->
       print_endline "BEXE_yield";
       let e = codegen_expr state sr e in
-      None
+      assert false
 
   | Flx_types.BEXE_proc_return sr ->
       print_endline "BEXE_proc_return";
