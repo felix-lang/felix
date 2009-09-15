@@ -172,7 +172,6 @@ let compile_bexe state bexe =
 
   let e = Flx_codegen.codegen_bexe
     state.codegen_state
-    the_function
     builder
     bexe
   in

@@ -12,7 +12,6 @@ val make_codegen_state:
 (** Generate code for a statement. *)
 val codegen_bexe:
   codegen_state_t ->    (** The state needed for code generation. *)
-  Llvm.llvalue ->       (** The function containing the statement. *)
   Llvm.llbuilder ->     (** The function builder. *)
   Flx_types.bexe_t ->   (** The statement to generate. *)
   unit
