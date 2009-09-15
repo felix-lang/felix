@@ -109,6 +109,16 @@ let codegen_literal state sr literal =
       assert false
 
 
+(* Create an alloca instruction in the entry block of the function. This
+ * is used for mutable variables etc. *)
+let create_entry_block_alloca state the_function btype name =
+  let builder = Llvm.builder_at
+    state.context
+    (Llvm.instr_begin (Llvm.entry_block the_function))
+  in
+  Llvm.build_alloca (lltype_of_btype state btype) name builder
+
+
 (* Generate call for an expression *)
 let rec codegen_expr state the_function builder sr tbexpr =
   print_endline ("codegen_expr: " ^ Flx_print.string_of_bound_expression
@@ -261,16 +271,30 @@ let rec codegen_expr state the_function builder sr tbexpr =
 
 
 (* Generate code for an llvm struct type. *)
-and codegen_struct state the_function builder sr es btypecode =
-  let es = List.map (codegen_expr state the_function builder sr) es in
-  let ts = List.map Llvm.type_of es in
-  let t = lltype_of_btype state btypecode in
-  let _, s =
-    List.fold_left begin fun (i, s) e ->
-      i + 1, Llvm.build_insertvalue s e i "" builder
-    end (0, Llvm.undef t) es
+and codegen_struct state the_function builder sr es btype =
+  let the_struct = create_entry_block_alloca state the_function btype "" in
+  load_struct state the_function builder sr the_struct es
+
+
+and load_struct state the_function builder sr the_struct es =
+  (* Add the values to the struct. *)
+  let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
+  let _ =
+    List.fold_left begin fun i e ->
+      let gep = Llvm.build_gep
+        the_struct
+        [| zero; Llvm.const_int (Llvm.i32_type state.context) i |]
+        "foo"
+        builder
+      in
+
+      let e = codegen_expr state the_function builder sr e in
+      ignore (Llvm.build_store e gep builder);
+
+      i + 1
+    end 0 es
   in
-  s
+  the_struct
 
 
 let codegen_bexe state the_function builder bexe =
