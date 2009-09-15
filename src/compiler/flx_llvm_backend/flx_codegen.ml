@@ -547,20 +547,20 @@ let codegen_symbol state index ((name, parent, sr, bbdcl) as symbol) =
   | Flx_types.BBDCL_procedure (_, _, (ps, _), es) ->
       print_endline "BBDCL_procedure";
       let f = codegen_function state index name ps Flx_types.BTYP_void es in
-      Hashtbl.add state.value_bindings index f;
-      ()
+      Hashtbl.add state.value_bindings index f
 
-  | Flx_types.BBDCL_val (vs, ty) ->
-      print_endline "BBDCL_val";
-
-  | Flx_types.BBDCL_var (vs, ty) ->
-      print_endline "BBDCL_var";
-
-  | Flx_types.BBDCL_ref (vs, ty) ->
-      print_endline "BBDCL_ref";
-
-  | Flx_types.BBDCL_tmp (vs, ty) ->
-      print_endline "BBDCL_tmp";
+  | Flx_types.BBDCL_val (vs, btype)
+  | Flx_types.BBDCL_var (vs, btype)
+  | Flx_types.BBDCL_ref (vs, btype)
+  | Flx_types.BBDCL_tmp (vs, btype) ->
+      let e = Llvm.define_global
+        (name_of_index state index)
+        (Llvm.undef (lltype_of_btype state btype))
+        (state.the_module)
+      in
+      (* Don't export the global variable. *)
+      Llvm.set_linkage Llvm.Linkage.Internal e;
+      Hashtbl.add state.value_bindings index e
 
   | Flx_types.BBDCL_newtype (vs, ty) ->
       print_endline "BBDCL_newtype";
