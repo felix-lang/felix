@@ -123,9 +123,16 @@ let rec codegen_expr state the_function builder sr tbexpr =
       let value = codegen_expr state the_function builder sr e in
       Llvm.build_load value "deref" builder
 
-  | Flx_types.BEXPR_name (index, btypecode) ->
+  | Flx_types.BEXPR_name (index, _) ->
       print_endline "BEXPR_name";
-      Hashtbl.find state.value_bindings index
+      let e = Hashtbl.find state.value_bindings index in
+      let t = lltype_of_btype state btypecode in
+
+      (* Arrays and structures are passed around by reference *)
+      begin match Llvm.classify_type t with
+      | Llvm.TypeKind.Array | Llvm.TypeKind.Struct -> e
+      | _ -> Llvm.build_load e (name_of_index state index) builder
+      end
 
   | Flx_types.BEXPR_ref (index, btypecode) ->
       print_endline "BEXPR_ref";
