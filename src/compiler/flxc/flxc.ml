@@ -231,8 +231,13 @@ let compile_stmt state stmt () =
             index
             symbol;
 
-          Flx_codegen.codegen_symbol state.codegen_state index symbol
-
+          (* Only codegen top-level symbols. *)
+          match parent with
+          | Some parent -> ()
+          | None -> Flx_codegen.codegen_symbol
+            state.codegen_state
+            index
+            symbol
     end () asm
   end () stmt
 
