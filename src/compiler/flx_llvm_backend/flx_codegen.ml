@@ -99,7 +99,7 @@ let rec lltype_of_btype state btypecode =
       Llvm.struct_type state.context (Array.of_list ls)
   | Flx_types.BTYP_record ls -> assert false
   | Flx_types.BTYP_variant ls -> assert false
-  | Flx_types.BTYP_unitsum k -> assert false
+  | Flx_types.BTYP_unitsum k -> Llvm.integer_type state.context k
   | Flx_types.BTYP_sum ls -> assert false
   | Flx_types.BTYP_function (args, result) -> assert false
   | Flx_types.BTYP_cfunction (args, result) -> assert false
@@ -283,9 +283,21 @@ let rec codegen_expr state builder sr tbexpr =
       print_endline ("BEXPR_closure: " ^ name_of_index state index);
       Hashtbl.find state.value_bindings index
 
-  | Flx_types.BEXPR_case (int, btypecode) ->
+  | Flx_types.BEXPR_case (index, btype) ->
       print_endline "BEXPR_case";
-      assert false
+      begin match Flx_maps.reduce_type btype with
+      | Flx_types.BTYP_sum _
+      | Flx_types.BTYP_unitsum _
+      | Flx_types.BTYP_variant _ ->
+          if Flx_typing.is_unitsum btype then
+            (* Construct a constant value of the same type as the unitsum. *)
+            let t = lltype_of_btype state btype in
+            Llvm.const_int t index
+          else
+            assert false
+      | _ ->
+          assert false
+      end
 
   | Flx_types.BEXPR_match_case (int, e) ->
       print_endline "BEXPR_match_case";
