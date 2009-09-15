@@ -583,8 +583,7 @@ let codegen_symbol state index ((name, parent, sr, bbdcl) as symbol) =
       assert false
 
   | Flx_types.BBDCL_proc (props, vs, ps, code, reqs) ->
-      print_endline "BBDCL_proc";
-      assert false
+      codegen_fun state index props vs ps Flx_types.BTYP_void code reqs []
 
   | Flx_types.BBDCL_insert (vs, s, ikind, reqs) ->
       print_endline "BBDCL_insert";
