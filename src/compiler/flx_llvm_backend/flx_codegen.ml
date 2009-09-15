@@ -472,9 +472,9 @@ let codegen_proto state index name parameters ret_type =
   f
 
 
-let codegen_function state index name ps ret_type es =
+let codegen_function state index name parameters ret_type es =
   (* Declare the function *)
-  let the_function = codegen_proto state index name ps ret_type in
+  let the_function = codegen_proto state index name parameters ret_type in
 
   (* Create the initial basic block *)
   let bb = Llvm.append_block state.context "entry" the_function in
@@ -490,6 +490,22 @@ let codegen_function state index name ps ret_type es =
       }
     in
 
+    (* Convert the parameters into an array so we can index into it. *)
+    let parameters = Array.of_list parameters in
+
+    (* Create allocas for each of the arguments. *)
+    Array.iteri begin fun i rhs ->
+      let lhs = create_entry_block_alloca
+        state
+        the_function
+        parameters.(i).Flx_types.ptyp
+        parameters.(i).Flx_types.pid
+      in
+      ignore (Llvm.build_store rhs lhs builder);
+      Hashtbl.add state.value_bindings index lhs;
+    end (Llvm.params the_function);
+
+    (* Generate code for the sub-statements. *)
     List.iter (codegen_bexe state the_function builder) es;
 
     (* Validate the generated code, checking for consistency. *)
