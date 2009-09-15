@@ -438,16 +438,57 @@ let codegen_bexe state the_function builder bexe =
 
   | Flx_types.BEXE_assign (sr, lhs, rhs) ->
       print_endline "BEXE_assign";
-      let lhs = codegen_expr state the_function builder sr lhs in
+
+      (* We can only assign to a name *)
+      let lhs =
+        match lhs with
+        | Flx_types.BEXPR_name (index, _), _ ->
+            Hashtbl.find state.value_bindings index
+        | _ ->
+            failwith ("invalid lvalue")
+      in
       let rhs = codegen_expr state the_function builder sr rhs in
+
+      check_type lhs Llvm.TypeKind.Pointer;
+      check_type
+        rhs
+        (Llvm.classify_type (Llvm.element_type (Llvm.type_of lhs)));
+
       ignore (Llvm.build_store rhs lhs builder)
 
-  | Flx_types.BEXE_init (sr, index, e) ->
+  | Flx_types.BEXE_init (sr, index, ((_, btype) as e)) ->
       print_endline "BEXE_init";
 
-      let e = codegen_expr state the_function builder sr e in
-      Llvm.set_value_name (name_of_index state index) e;
-      Hashtbl.add state.value_bindings index e
+      let lhs =
+        (* If the variable doesn't exist, let's define it now. *)
+        try Hashtbl.find state.value_bindings index with Not_found ->
+        let e = create_entry_block_alloca
+          state
+          the_function
+          btype
+          (name_of_index state index)
+        in
+        Hashtbl.add state.value_bindings index e;
+        e
+      in
+
+      (* Make sure the lhs is a pointer. *)
+      check_type lhs Llvm.TypeKind.Pointer;
+
+      begin match e with
+      | Flx_types.BEXPR_tuple es, _ ->
+          (* If the rhs is a tuple, load it directly. *)
+          ignore (load_struct state the_function builder sr lhs es)
+      | _ ->
+          (* Otherwise, just do normal codegen. *)
+          let rhs = codegen_expr state the_function builder sr e in
+
+          (* Make sure the rhs is of the right type. *)
+          check_type rhs
+            (Llvm.classify_type (Llvm.element_type (Llvm.type_of lhs)));
+
+          ignore (Llvm.build_store rhs lhs builder)
+      end
 
   | Flx_types.BEXE_begin ->
       print_endline "BEXE_begin";
