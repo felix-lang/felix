@@ -288,7 +288,7 @@ def config_host(ctx, build):
     try:
         llvm_config = call('fbuild.builders.llvm.LlvmConfig', ctx,
             ctx.options.host_llvm_config,
-            requires_version=(2, '6svn'))
+            requires_version=(2, '7svn'))
     except fbuild.ConfigFailed:
         phase.llvm_config = None
     else:
