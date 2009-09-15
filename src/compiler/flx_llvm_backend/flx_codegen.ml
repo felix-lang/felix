@@ -58,6 +58,7 @@ let name_of_index dfns bbdfns index =
       "index_" ^ string_of_int index
 
 
+(* Convert a felix type to an llvm type. *)
 let rec lltype_of_btype state btypecode =
   print_endline
     (Flx_print.string_of_btypecode state.syms.Flx_mtypes2.dfns btypecode);
