@@ -6,7 +6,6 @@ open Flx_print
 open Flx_util
 open Flx_exceptions
 open Flx_backend_config
-open List
 
 (* these words are either keywords or peculiar to the
    compiler code generator, so we have to avoid a clash.
@@ -74,7 +73,7 @@ let cid_of_flxid s =
     | "errno" -> "__flx_errno_"
     | _ -> name
   in
-  try assoc name fixups with Not_found -> name
+  try List.assoc name fixups with Not_found -> name
 
 (* basic name mangler *)
 let cpp_name bbdfns index =
@@ -108,7 +107,7 @@ let cpp_instance_name' syms bbdfns index ts =
       "unknown"
     in
     let has_variables =
-      fold_left
+      List.fold_left
       (fun truth t -> truth || var_occurs t)
       false
       ts
@@ -125,7 +124,7 @@ let cpp_instance_name' syms bbdfns index ts =
 let is_export syms id =
   let bifaces = syms.bifaces in
   try
-    iter
+    List.iter
     (function
       | BIFACE_export_fun (_,_,s)
       | BIFACE_export_python_fun (_,_,s)
