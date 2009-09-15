@@ -45,13 +45,13 @@ let lltype_of_suffix state suffix =
 
 
 (* Convenience function to look up the name of an index *)
-let name_of_index dfns bbdfns index =
+let name_of_index state index =
   try
-    match Hashtbl.find dfns index with
+    match Hashtbl.find state.syms.Flx_mtypes2.dfns index with
     | { Flx_types.id=id } -> id
   with Not_found ->
     try
-      match Hashtbl.find bbdfns index with id, _, _, _ -> id
+      match Hashtbl.find state.bbdfns index with id, _, _, _ -> id
     with Not_found ->
       "index_" ^ string_of_int index
 
@@ -112,9 +112,6 @@ let rec codegen_expr state the_function builder sr tbexpr =
 
   (* See if there are any simple reductions we can apply to the expression. *)
   let bexpr, btypecode = Flx_maps.reduce_tbexpr state.bbdfns tbexpr in
-
-  (* Helper function to look up the name of an index. *)
-  let name_of_index = name_of_index state.syms.Flx_mtypes2.dfns state.bbdfns in
 
   match bexpr with
   | Flx_types.BEXPR_deref e ->
@@ -211,7 +208,7 @@ let rec codegen_expr state the_function builder sr tbexpr =
       assert false
 
   | Flx_types.BEXPR_closure (index, btypecode) ->
-      print_endline ("BEXPR_closure: " ^ name_of_index index);
+      print_endline ("BEXPR_closure: " ^ name_of_index state index);
       Hashtbl.find state.value_bindings index
 
   | Flx_types.BEXPR_case (int, btypecode) ->
@@ -267,9 +264,6 @@ let codegen_bexe state the_function builder bexe =
 
   (* See if there are any simple reductions we can apply to the exe. *)
   let bexe = Flx_maps.reduce_bexe state.bbdfns bexe in
-
-  (* Helper function to look up the name of an index. *)
-  let name_of_index = name_of_index state.syms.Flx_mtypes2.dfns state.bbdfns in
 
   match bexe with
   | Flx_types.BEXE_label (sr, string) ->
@@ -370,7 +364,7 @@ let codegen_bexe state the_function builder bexe =
       print_endline "BEXE_init";
 
       let e = codegen_expr state the_function builder sr e in
-      Llvm.set_value_name (name_of_index index) e;
+      Llvm.set_value_name (name_of_index state index) e;
       Hashtbl.add state.value_bindings index e
 
   | Flx_types.BEXE_begin ->
@@ -461,9 +455,6 @@ let codegen_function state index name ps ret_type es =
 
 (* Create an llvm function from a felix function *)
 let codegen_fun state index props vs ps ret_type code reqs prec =
-  (* Helper function to look up the name of an index. *)
-  let name_of_index = name_of_index state.syms.Flx_mtypes2.dfns state.bbdfns in
-
   let f =
     match code with
     | Flx_ast.CS_str_template s ->
@@ -487,9 +478,9 @@ let codegen_fun state index props vs ps ret_type code reqs prec =
         begin function
         | [| lhs; rhs |] -> f lhs rhs
         | [||] | [| _ |] ->
-            failwith ("Not enough arguments for " ^ (name_of_index index))
+            failwith ("Not enough arguments for " ^ (name_of_index state index))
         | _ ->
-            failwith ("Too many arguments for " ^ (name_of_index index))
+            failwith ("Too many arguments for " ^ (name_of_index state index))
         end
     | Flx_ast.CS_str s ->
         print_endline ("CS_str: " ^ s);
