@@ -120,6 +120,15 @@ let rec lltype_of_btype state btypecode =
   | Flx_types.BTYP_typesetintersection ls -> assert false
 
 
+(* Convenience function to find the parent of the builder. *)
+let builder_parent builder =
+  (* First we need to get the current basic block. *)
+  let bb = Llvm.insertion_block builder in
+
+  (* Then, return the basic block's parent. *)
+  Llvm.block_parent bb
+
+
 (* Generate code for a literal *)
 let codegen_literal state sr literal =
   match literal with
@@ -138,7 +147,7 @@ let codegen_literal state sr literal =
  * is used for mutable variables etc. *)
 let create_entry_block_alloca state builder btype name =
   (* Get the builder's function. *)
-  let the_function = Llvm.block_parent (Llvm.insertion_block builder) in
+  let the_function = builder_parent builder in
 
   (* Get a builder at the entry block. *)
   let builder = Llvm.builder_at
