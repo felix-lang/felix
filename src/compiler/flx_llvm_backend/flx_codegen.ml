@@ -249,6 +249,7 @@ let rec codegen_expr state the_function builder sr tbexpr =
       print_endline "BEXPR_coerce";
       assert false
 
+
 (* Generate code for an llvm struct type. *)
 and codegen_struct state the_function builder sr es btypecode =
   let es = List.map (codegen_expr state the_function builder sr) es in
@@ -465,8 +466,6 @@ let codegen_fun state index props vs ps ret_type code reqs prec =
   let f =
     match code with
     | Flx_ast.CS_str_template s ->
-        print_endline ("CS_str_template: " ^ s);
-
         (* We found an external function. Lets check if it's a native
          * instruction. Those start with a '%'. Otherwise, it must be the name
          * of an external function. *)
@@ -489,6 +488,7 @@ let codegen_fun state index props vs ps ret_type code reqs prec =
         | _ ->
             failwith ("Too many arguments for " ^ (name_of_index state index))
         end
+
     | Flx_ast.CS_str s ->
         print_endline ("CS_str: " ^ s);
         assert false
@@ -509,8 +509,6 @@ let codegen_abs state index vs quals code reqs =
   let t =
     match code with
     | Flx_ast.CS_str_template s ->
-        print_endline ("CS_str_template: " ^ s);
-
         (* We found an external type. Lets check if it's a native llvm type.
          * These start with a '%'. *)
         let t =
@@ -526,6 +524,7 @@ let codegen_abs state index vs quals code reqs =
           | s -> failwith ("Unknown type " ^ s)
         in
         t
+
     | Flx_ast.CS_str s ->
         print_endline ("CS_str: " ^ s);
         assert false
@@ -546,13 +545,10 @@ let codegen_symbol state index ((name, parent, sr, bbdcl) as symbol) =
 
   match bbdcl with
   | Flx_types.BBDCL_function (_, _, (ps, _), ret_type, es) ->
-      print_endline "BBDCL_function";
       let f = codegen_function state index name ps ret_type es in
-      Hashtbl.add state.value_bindings index f;
-      ()
+      Hashtbl.add state.value_bindings index f
 
   | Flx_types.BBDCL_procedure (_, _, (ps, _), es) ->
-      print_endline "BBDCL_procedure";
       let f = codegen_function state index name ps Flx_types.BTYP_void es in
       Hashtbl.add state.value_bindings index f
 
@@ -574,7 +570,6 @@ let codegen_symbol state index ((name, parent, sr, bbdcl) as symbol) =
       assert false
 
   | Flx_types.BBDCL_abs (vs, quals, code, reqs) ->
-      print_endline "BBDCL_abs";
       codegen_abs state index vs quals code reqs
 
   | Flx_types.BBDCL_const (props, vs, ty, code, reqs) ->
@@ -582,7 +577,6 @@ let codegen_symbol state index ((name, parent, sr, bbdcl) as symbol) =
       assert false
 
   | Flx_types.BBDCL_fun (props, vs, ps, ret_type, code, reqs, prec) ->
-      print_endline "BBDCL_fun";
       codegen_fun state index props vs ps ret_type code reqs prec
 
   | Flx_types.BBDCL_callback (props, vs, ps_cf, ps_c, k, rt, reqs, prec) ->
