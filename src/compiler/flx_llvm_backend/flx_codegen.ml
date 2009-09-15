@@ -562,24 +562,63 @@ let codegen_fun state index props vs ps ret_type code reqs prec =
         (* We found an external function. Lets check if it's a native
          * instruction. Those start with a '%'. Otherwise, it must be the name
          * of an external function. *)
-        let f =
-          match s with
-          | "%add" -> Llvm.build_add
-          | "%sub" -> Llvm.build_sub
-          | "%subscript" ->
-              fun lhs rhs name builder ->
-                let idx = Llvm.const_int (Llvm.i32_type state.context) 0 in
-                Llvm.build_gep lhs [| idx; rhs |] name builder
-          | s ->
-              failwith ("Unknown instruction " ^ s)
-        in
+        begin match s with
+        | "%add" ->
+            begin function
+            | [| lhs; rhs |] ->
+                check_type lhs Llvm.TypeKind.Integer;
+                check_type rhs Llvm.TypeKind.Integer;
+                Llvm.build_add lhs rhs
+            | _ ->
+                failwith ("Invalid arguments for " ^ name_of_index state index)
+            end
 
-        begin function
-        | [| lhs; rhs |] -> f lhs rhs
-        | [||] | [| _ |] ->
-            failwith ("Not enough arguments for " ^ (name_of_index state index))
-        | _ ->
-            failwith ("Too many arguments for " ^ (name_of_index state index))
+        | "%sub" ->
+            begin function
+            | [| lhs; rhs |] ->
+                check_type lhs Llvm.TypeKind.Integer;
+                check_type rhs Llvm.TypeKind.Integer;
+                Llvm.build_sub lhs rhs
+            | _ ->
+                failwith ("Invalid arguments for " ^ name_of_index state index)
+            end
+
+        | "%subscript" ->
+            begin fun args name builder ->
+              match args with
+              | [| lhs; rhs |] ->
+                  check_type lhs Llvm.TypeKind.Pointer;
+                  check_type rhs Llvm.TypeKind.Integer;
+
+                  let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
+                  let gep = Llvm.build_gep lhs [| zero; rhs |] "foo" builder in
+                  Llvm.build_load gep name builder
+              | _ ->
+                  failwith ("Invalid arguments for " ^
+                    name_of_index state index)
+            end
+
+        | s ->
+            (* Handle some error cases *)
+            if String.length s == 0 then
+              failwith ("External function has no name");
+
+            if s.[0] == '%' then
+              failwith ("Unknown instruction " ^ s);
+
+            (* Assume then that we're declaring an external function. So, let's
+             * first register the function with llvm. *)
+            let ft = Llvm.function_type
+              (lltype_of_btype state ret_type)
+              (Array.map (lltype_of_btype state) (Array.of_list ps))
+            in
+            let the_function = Llvm.declare_function s ft state.the_module in
+
+            (* Use the C calling convention. *)
+            Llvm.set_function_call_conv Llvm.CallConv.c the_function;
+
+            (* ... and then return the call instruction. *)
+            Llvm.build_call the_function
         end
 
     | Flx_ast.CS_str s ->
