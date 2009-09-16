@@ -1,17 +1,22 @@
-type call_t = Llvm.llvalue array -> string -> Llvm.llbuilder -> Llvm.llvalue
-
-type codegen_state_t = {
-  syms: Flx_mtypes2.sym_state_t;
-  bbdfns: Flx_types.fully_bound_symbol_table_t;
-  context: Llvm.llcontext;
-  the_module: Llvm.llmodule;
-  the_fpm: [`Function] Llvm.PassManager.t;
-  the_ee: Llvm_executionengine.ExecutionEngine.t;
-  type_bindings: (Flx_ast.bid_t, Llvm.lltype) Hashtbl.t;
-  call_bindings: (Flx_ast.bid_t, call_t) Hashtbl.t;
-  value_bindings: (Flx_ast.bid_t, Llvm.llvalue) Hashtbl.t;
-  label_bindings: (string, Llvm.llbasicblock) Hashtbl.t;
-}
+type codegen_state_t =
+  {
+    syms: Flx_mtypes2.sym_state_t;
+    bbdfns: Flx_types.fully_bound_symbol_table_t;
+    context: Llvm.llcontext;
+    the_module: Llvm.llmodule;
+    the_fpm: [`Function] Llvm.PassManager.t;
+    the_ee: Llvm_executionengine.ExecutionEngine.t;
+    type_bindings: (Flx_ast.bid_t, Llvm.lltype) Hashtbl.t;
+    call_bindings: (Flx_ast.bid_t, call_t) Hashtbl.t;
+    value_bindings: (Flx_ast.bid_t, Llvm.llvalue) Hashtbl.t;
+    label_bindings: (string, Llvm.llbasicblock) Hashtbl.t;
+  }
+and call_t =
+  codegen_state_t ->
+  Llvm.llbuilder ->
+  Flx_srcref.t ->
+  Flx_types.tbexpr_t list ->
+  Llvm.llvalue
 
 
 let make_codegen_state syms bbdfns context the_module the_fpm the_ee =
@@ -82,9 +87,10 @@ let name_of_typekind = function
 
 
 (* Convenience function to check we're dealing with the right types. *)
-let check_type value typekind =
+let check_type sr value typekind =
   if Llvm.classify_type (Llvm.type_of value) != typekind then
-    failwith ("invalid type, expected " ^ name_of_typekind typekind)
+    Flx_exceptions.clierr sr ("invalid type, expected " ^
+      name_of_typekind typekind)
 
 
 (* Convert a felix type to an llvm type. *)
@@ -170,23 +176,11 @@ let rec codegen_expr state builder sr tbexpr =
   match bexpr with
   | Flx_types.BEXPR_deref e ->
       print_endline "BEXPR_deref";
-
-      (* Make sure we've got a pointer. *)
-      let e = codegen_expr state builder sr e in
-      check_type e Llvm.TypeKind.Pointer;
-
-      Llvm.build_load e "" builder
+      codegen_deref state builder sr e
 
   | Flx_types.BEXPR_name (index, _) ->
       print_endline "BEXPR_name";
-      let e = Hashtbl.find state.value_bindings index in
-      let t = lltype_of_btype state btypecode in
-
-      (* Arrays and structures are passed around by reference *)
-      begin match Llvm.classify_type t with
-      | Llvm.TypeKind.Array | Llvm.TypeKind.Struct -> e
-      | _ -> Llvm.build_load e (name_of_index state index) builder
-      end
+      Hashtbl.find state.value_bindings index
 
   | Flx_types.BEXPR_ref (index, btypecode) ->
       print_endline "BEXPR_ref";
@@ -208,7 +202,7 @@ let rec codegen_expr state builder sr tbexpr =
       let e = codegen_expr state builder sr e in
 
       (* Make sure we've got a pointer. *)
-      check_type e Llvm.TypeKind.Pointer;
+      check_type sr e Llvm.TypeKind.Pointer;
 
       (* Expressions can only have their address taken if they're on the stack.
        * So, we shouldn't need to do any work. *)
@@ -230,17 +224,14 @@ let rec codegen_expr state builder sr tbexpr =
   | Flx_types.BEXPR_apply_direct (index, _, e) ->
       print_endline "BEXPR_apply_{prim,direct,stack_struct}";
 
-      let f = Hashtbl.find state.call_bindings index in
-      let args =
+      let es =
         match e with
-        | Flx_types.BEXPR_tuple es, _ ->
-            Array.map
-              (codegen_expr state builder sr) (Array.of_list es)
-        | _ ->
-            [| codegen_expr state builder sr e |]
+        | Flx_types.BEXPR_tuple es, _ -> es
+        | _ -> [e]
       in
 
-      f args "" builder
+      let f = Hashtbl.find state.call_bindings index in
+      f state builder sr es
 
   | Flx_types.BEXPR_apply_prim (index, _, e)
   | Flx_types.BEXPR_apply_stack (index, _, e)
@@ -344,6 +335,94 @@ and load_struct state builder sr the_struct es =
   the_struct
 
 
+(* Optionally dereference a value if it's a pointer. *)
+and codegen_deref state builder sr e =
+  let e = codegen_expr state builder sr e in
+
+  (* Dereference only if we've gotten a pointer *)
+  match Llvm.classify_type (Llvm.type_of e) with
+  | Llvm.TypeKind.Pointer -> Llvm.build_load e "" builder
+  | _ -> e
+
+
+let codegen_call_direct state builder sr f args =
+  let args = Array.of_list args in
+  let args = Array.map (codegen_deref state builder sr) args in
+  Llvm.build_call f args "" builder
+
+
+let codegen_call state builder sr f args =
+  (* Dereference the function. *)
+  let f = codegen_deref state builder sr f in
+  codegen_call_direct state builder sr f args
+
+
+let create_unary_llvm_inst f typekind =
+  fun state builder sr e ->
+    let e = codegen_deref state builder sr e in
+    check_type sr e typekind;
+
+    f e "" builder
+
+
+let codegen_lnot = create_unary_llvm_inst
+  begin fun e name builder ->
+    let t = Llvm.type_of e in
+
+    (* Compare the integer to zero. *)
+    let e = Llvm.build_icmp Llvm.Icmp.Eq e (Llvm.const_int t 0) "" builder in
+
+    (* 0-extend the result to the expected integer type. *)
+    Llvm.build_zext e t name builder
+  end
+  Llvm.TypeKind.Integer
+
+
+let create_binary_llvm_inst f lhs_typekind rhs_typekind =
+  fun state builder sr lhs rhs ->
+    let lhs = codegen_deref state builder sr lhs in
+    check_type sr lhs lhs_typekind;
+
+    let rhs = codegen_deref state builder sr rhs in
+    check_type sr rhs rhs_typekind;
+
+    f lhs rhs "" builder
+
+
+let codegen_add = create_binary_llvm_inst
+  Llvm.build_add
+  Llvm.TypeKind.Integer
+  Llvm.TypeKind.Integer
+
+let codegen_sub = create_binary_llvm_inst
+  Llvm.build_sub
+  Llvm.TypeKind.Integer
+  Llvm.TypeKind.Integer
+
+let codegen_eq = create_binary_llvm_inst
+  (Llvm.build_icmp Llvm.Icmp.Eq)
+  Llvm.TypeKind.Integer
+  Llvm.TypeKind.Integer
+
+let codegen_ne = create_binary_llvm_inst
+  (Llvm.build_icmp Llvm.Icmp.Ne)
+  Llvm.TypeKind.Integer
+  Llvm.TypeKind.Integer
+
+
+let codegen_subscript state builder sr lhs rhs =
+  let lhs = codegen_expr state builder sr lhs in
+  check_type sr lhs Llvm.TypeKind.Pointer;
+
+  let rhs = codegen_deref state builder sr rhs in
+  check_type sr rhs Llvm.TypeKind.Integer;
+
+  let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
+  let gep = Llvm.build_gep lhs [| zero; rhs |] "" builder in
+  Llvm.build_load gep "" builder
+
+
+(* Generate code for a bound statement. *)
 let codegen_bexe state builder bexe =
   print_endline ("codegen_bexe: " ^ Flx_print.string_of_bexe
     state.syms.Flx_mtypes2.dfns state.bbdfns 0 bexe);
@@ -406,19 +485,17 @@ let codegen_bexe state builder bexe =
       let e2 = codegen_expr state builder sr a in
       assert false
 
-  | Flx_types.BEXE_call_direct (sr, index, btypecode, e) ->
+  | Flx_types.BEXE_call_direct (sr, index, _, e) ->
       print_endline "BEXE_call_direct";
-      let f = Hashtbl.find state.call_bindings index in
-      let args =
+
+      let es =
         match e with
-        | Flx_types.BEXPR_tuple es, _ ->
-            Array.map
-              (codegen_expr state builder sr)
-              (Array.of_list es)
-        | _ ->
-            [| codegen_expr state builder sr e |]
+        | Flx_types.BEXPR_tuple es, _ -> es
+        | _ -> [e]
       in
-      ignore (f args "" builder)
+
+      let f = Hashtbl.find state.call_bindings index in
+      ignore (f state builder sr es)
 
   | Flx_types.BEXE_call_stack (sr, index, btypecode, e) ->
       print_endline "BEXE_call_stack";
@@ -487,8 +564,9 @@ let codegen_bexe state builder bexe =
       in
       let rhs = codegen_expr state builder sr rhs in
 
-      check_type lhs Llvm.TypeKind.Pointer;
+      check_type sr lhs Llvm.TypeKind.Pointer;
       check_type
+        sr
         rhs
         (Llvm.classify_type (Llvm.element_type (Llvm.type_of lhs)));
 
@@ -511,7 +589,7 @@ let codegen_bexe state builder bexe =
       in
 
       (* Make sure the lhs is a pointer. *)
-      check_type lhs Llvm.TypeKind.Pointer;
+      check_type sr lhs Llvm.TypeKind.Pointer;
 
       begin match e with
       | Flx_types.BEXPR_tuple es, _ ->
@@ -522,7 +600,7 @@ let codegen_bexe state builder bexe =
           let rhs = codegen_expr state builder sr e in
 
           (* Make sure the rhs is of the right type. *)
-          check_type rhs
+          check_type sr rhs
             (Llvm.classify_type (Llvm.element_type (Llvm.type_of lhs)));
 
           ignore (Llvm.build_store rhs lhs builder)
@@ -579,7 +657,10 @@ let codegen_proto state index name parameters ret_type =
   end (Llvm.params f);
 
   (* Register the function. *)
-  Hashtbl.add state.call_bindings index (Llvm.build_call f);
+  Hashtbl.add state.value_bindings index f;
+  Hashtbl.add state.call_bindings index begin fun state builder sr args ->
+    codegen_call_direct state builder sr f args
+  end;
 
   f
 
@@ -636,6 +717,26 @@ let codegen_function state index name parameters ret_type es =
 
 (* Create an llvm function from a felix function *)
 let codegen_fun state index props vs ps ret_type code reqs prec =
+  (* Convenience function for converting list to unary args. *)
+  let call_unary f =
+    fun state builder sr args ->
+      match args with
+      | [ e ] -> f state builder sr e
+      | _ ->
+          failwith ("1 argument required, provided " ^
+            string_of_int (List.length args))
+  in
+
+  (* Convenience function for converting list to binary args. *)
+  let call_binary f =
+    fun state builder sr args ->
+      match args with
+      | [ lhs; rhs ] -> f state builder sr lhs rhs
+      | _ ->
+          failwith ("2 arguments required, provided " ^
+            string_of_int (List.length args))
+  in
+
   let f =
     match code with
     | Flx_ast.CS_str_template s ->
@@ -643,81 +744,12 @@ let codegen_fun state index props vs ps ret_type code reqs prec =
          * instruction. Those start with a '%'. Otherwise, it must be the name
          * of an external function. *)
         begin match s with
-        | "%add" ->
-            begin function
-            | [| lhs; rhs |] ->
-                check_type lhs Llvm.TypeKind.Integer;
-                check_type rhs Llvm.TypeKind.Integer;
-                Llvm.build_add lhs rhs
-            | _ ->
-                failwith ("Invalid arguments for " ^ name_of_index state index)
-            end
-
-        | "%sub" ->
-            begin function
-            | [| lhs; rhs |] ->
-                check_type lhs Llvm.TypeKind.Integer;
-                check_type rhs Llvm.TypeKind.Integer;
-                Llvm.build_sub lhs rhs
-            | _ ->
-                failwith ("Invalid arguments for " ^ name_of_index state index)
-            end
-
-        | "%subscript" ->
-            begin fun args name builder ->
-              match args with
-              | [| lhs; rhs |] ->
-                  check_type lhs Llvm.TypeKind.Pointer;
-                  check_type rhs Llvm.TypeKind.Integer;
-
-                  let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
-                  let gep = Llvm.build_gep lhs [| zero; rhs |] "" builder in
-                  Llvm.build_load gep name builder
-              | _ ->
-                  failwith ("Invalid arguments for " ^
-                    name_of_index state index)
-            end
-
-        | "%eq" ->
-            begin function
-            | [| lhs; rhs |] ->
-                check_type lhs Llvm.TypeKind.Integer;
-                check_type rhs Llvm.TypeKind.Integer;
-                Llvm.build_icmp Llvm.Icmp.Eq lhs rhs
-            | _ ->
-                failwith ("Invalid arguments for " ^ name_of_index state index)
-            end
-
-        | "%ne" ->
-            begin function
-            | [| lhs; rhs |] ->
-                check_type lhs Llvm.TypeKind.Integer;
-                check_type rhs Llvm.TypeKind.Integer;
-                Llvm.build_icmp Llvm.Icmp.Ne lhs rhs
-            | _ ->
-                failwith ("Invalid arguments for " ^ name_of_index state index)
-            end
-
-        | "%lnot" ->
-            begin fun args name builder ->
-              match args with
-              | [| e |] ->
-                  check_type e Llvm.TypeKind.Integer;
-
-                  let ty = Llvm.type_of e in
-                  let e = Llvm.build_icmp
-                    Llvm.Icmp.Eq
-                    e
-                    (Llvm.const_int ty 0)
-                    ""
-                    builder
-                  in
-                  Llvm.build_zext e ty name builder
-              | _ ->
-                  failwith ("Invalid arguments for " ^
-                    name_of_index state index)
-            end
-
+        | "%add" -> call_binary codegen_add
+        | "%sub" -> call_binary codegen_sub
+        | "%subscript" -> call_binary codegen_subscript
+        | "%eq" -> call_binary codegen_eq
+        | "%ne" -> call_binary codegen_ne
+        | "%lnot" -> call_unary codegen_lnot
         | s ->
             (* Handle some error cases *)
             if String.length s == 0 then
@@ -738,7 +770,9 @@ let codegen_fun state index props vs ps ret_type code reqs prec =
             Llvm.set_function_call_conv Llvm.CallConv.c the_function;
 
             (* ... and then return the call instruction. *)
-            Llvm.build_call the_function
+            begin fun state builder sr args ->
+              codegen_call_direct state builder sr the_function args
+            end
         end
 
     | Flx_ast.CS_str s ->
