@@ -624,7 +624,7 @@ let codegen_function state index name parameters ret_type es =
         parameters.(i).Flx_types.pid
       in
       ignore (Llvm.build_store rhs lhs builder);
-      Hashtbl.add state.value_bindings index lhs;
+      Hashtbl.add state.value_bindings parameters.(i).Flx_types.pindex lhs;
     end (Llvm.params the_function);
 
     (* Generate code for the sub-statements. *)
