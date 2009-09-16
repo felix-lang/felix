@@ -164,7 +164,6 @@ and bexe_t =
   | BEXE_call_prim of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
   | BEXE_jump of Flx_srcref.t * tbexpr_t * tbexpr_t
   | BEXE_jump_direct of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
-  | BEXE_loop of Flx_srcref.t * int * tbexpr_t
   | BEXE_svc of Flx_srcref.t * bid_t
   | BEXE_fun_return of Flx_srcref.t * tbexpr_t
   | BEXE_yield of Flx_srcref.t * tbexpr_t

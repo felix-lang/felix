@@ -1166,38 +1166,6 @@ let gen_exe filename syms
       let ts = map tsub ts in
       handle_closure sr true index ts subs x false
 
-    | BEXE_loop (sr,i,a) ->
-      let ptr =
-        if i= this then "this"
-        else "ptr"^cpp_instance_name syms bbdfns i ts
-      in
-        print_endline ("Looping to " ^ ptr);
-        let args = ptr ^ "->" ^
-          (match a with
-          | _,BTYP_tuple [] -> "_caller"
-          | _ -> "_caller, " ^ ge sr a
-          )
-        in
-        "      //"^ src_str ^ "\n" ^
-        (
-          if i <> this then
-          "      {\n" ^
-          "        con_t *res = " ^ ptr ^ "\n      ->call(" ^ args ^");\n" ^
-          "        printf(\"unwinding from %p to %p\\n\",this,"^ptr^");\n" ^
-          "        con_t *p = this;\n" ^
-          "        while(res && res != "^ptr^") { res = p->_caller; printf(\"called by %p\\n\",p); }\n"^
-          "        for(con_t *tmp=this; tmp != (con_t*)"^ptr^";){//unwind stack\n" ^
-          "           con_t *tmp2 = tmp->_caller;\n" ^
-          "           printf(\"unwinding %p, caller is %p\\n\",tmp,tmp2);\n" ^
-          "           tmp->_caller = 0;\n" ^
-          "           tmp = tmp2;\n"^
-          "        }\n" ^
-          "        return res;\n" ^
-          "      }\n"
-          else
-          "      return " ^ ptr ^ "\n      ->call(" ^ args ^");\n"
-        )
-
     (* If p is a variable containing a closure,
        and p recursively invokes the same closure,
        then the program counter and other state

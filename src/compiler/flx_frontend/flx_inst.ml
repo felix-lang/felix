@@ -191,7 +191,6 @@ and process_exe syms bbdfns ref_insts1 ts hvarmap (exe:bexe_t) =
     -> ue sr e1; ue sr e2
 
   | BEXE_assert (sr,e)
-  | BEXE_loop (sr,_,e)
   | BEXE_ifgoto (sr,e,_)
   | BEXE_fun_return (sr,e)
   | BEXE_yield (sr,e)

@@ -1988,11 +1988,6 @@ and string_of_bexe dfns bbdfns level s =
     se p ^ " " ^
     se a ^ ";"
 
-  | BEXE_loop (_,p,a) -> spc ^
-    "loop<" ^
-    si p ^ "> " ^
-    se a ^ ";"
-
   | BEXE_svc (_,v) -> spc ^
     "_svc " ^ sid v
 

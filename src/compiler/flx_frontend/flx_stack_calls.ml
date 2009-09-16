@@ -462,12 +462,6 @@ let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map labe
        print_endline (id ^ " does jump");
        *)
        raise Unstackable
-    | BEXE_loop _
-       ->
-       (*
-       print_endline (id ^ " has loop?");
-       *)
-       raise Unstackable
 
     | BEXE_label (_,s) ->
        let  lno = hfind "labels" labels s in

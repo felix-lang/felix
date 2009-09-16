@@ -428,9 +428,6 @@ let iter_bexe fi fe ft fl fldef exe =
   | BEXE_jump (sr,e1,e2)
     -> fe e1; fe e2
 
-  | BEXE_loop (sr,i,e)
-    -> fi i; fe e
-
   | BEXE_ifgoto (sr,e,lab)
     -> fe e; fl lab
 
@@ -494,9 +491,6 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
 
   | BEXE_jump (sr,e1,e2) ->
     BEXE_jump (sr,fe e1, fe e2)
-
-  | BEXE_loop (sr,i,e) ->
-    BEXE_loop (sr,fi i,fe e)
 
   | BEXE_ifgoto (sr,e,lab)  ->
     BEXE_ifgoto (sr,fe e,fl lab)

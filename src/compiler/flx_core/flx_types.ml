@@ -172,7 +172,6 @@ and bexe_t =
   | BEXE_call_prim of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
   | BEXE_jump of Flx_srcref.t * tbexpr_t * tbexpr_t
   | BEXE_jump_direct of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
-  | BEXE_loop of Flx_srcref.t * int * tbexpr_t
   | BEXE_svc of Flx_srcref.t * bid_t
   | BEXE_fun_return of Flx_srcref.t * tbexpr_t
   | BEXE_yield of Flx_srcref.t * tbexpr_t
@@ -331,7 +330,6 @@ let src_of_bexe (e : bexe_t) = match e with
   | BEXE_call_stack (sr,_,_,_)
   | BEXE_call_prim (sr,_,_,_)
   | BEXE_jump (sr,_,_)
-  | BEXE_loop (sr,_,_)
   | BEXE_svc (sr,_)
   | BEXE_fun_return (sr,_)
   | BEXE_yield (sr,_)

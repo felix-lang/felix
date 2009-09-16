@@ -565,11 +565,6 @@ let codegen_bexe state builder bexe =
       let e = codegen_expr state builder sr e in
       assert false
 
-  | Flx_types.BEXE_loop (sr, int, e) ->
-      print_endline "BEXE_loop";
-      let e = codegen_expr state builder sr e in
-      assert false
-
   | Flx_types.BEXE_svc (sr, index) ->
       print_endline "BEXE_svc";
       assert false

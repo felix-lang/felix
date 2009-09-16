@@ -383,12 +383,6 @@ let expand_exe syms bbdfns u exe =
 
     | BEXE_jump (sr,e1,e2) -> assert false
 
-    | BEXE_loop (sr,i,e) -> assert false
-      (*
-      let e,xs = u sr e in
-      BEXE_loop (sr,i,e) :: xs
-      *)
-
     | BEXE_ifgoto (sr,e,lab) ->
       let e,xs = u sr e in
       BEXE_ifgoto (sr,e,lab) :: xs

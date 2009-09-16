@@ -123,7 +123,6 @@ let process_exe syms bbdfns all_closures (exe : bexe_t) : bexe_t =
   | BEXE_call (sr,e1,e2)  -> BEXE_call (sr,ue e1, ue e2)
   | BEXE_jump (sr,e1,e2)  -> BEXE_jump (sr,ue e1, ue e2)
 
-  | BEXE_loop (sr,i,e) -> BEXE_loop (sr,i, ue e)
   | BEXE_ifgoto (sr,e,l) -> BEXE_ifgoto (sr, ue e,l)
   | BEXE_fun_return (sr,e) -> BEXE_fun_return (sr,ue e)
   | BEXE_yield (sr,e) -> BEXE_yield (sr,ue e)

@@ -235,7 +235,6 @@ let gen_body syms (uses,child_map,bbdfns) id
   | BEXE_call_stack (sr,i,ts,e2)  -> assert false
   | BEXE_call (sr,e1,e2)  -> [BEXE_call (sr,ge e1, ge e2)]
   | BEXE_jump (sr,e1,e2)  -> assert false
-  | BEXE_loop (sr,i,e) -> assert false
   | BEXE_assert (sr,e) -> [BEXE_assert (sr, ge e)]
   | BEXE_assert2 (sr,sr2,e1,e2) ->
     let e1 = match e1 with Some e1 -> Some (ge e1) | None -> None in

@@ -308,7 +308,6 @@ let fold_vars syms (uses,child_map,bbdfns) i ps exes =
           | BEXE_yield _
           | BEXE_jump _
           | BEXE_jump_direct _
-          | BEXE_loop _
           | BEXE_call_prim _
           | BEXE_call _
           | BEXE_call_direct _
