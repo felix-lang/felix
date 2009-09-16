@@ -503,7 +503,27 @@ let codegen_bexe state builder bexe =
   | Flx_types.BEXE_ifgoto (sr, e, label) ->
       print_endline "BEXE_ifgoto";
       let e = codegen_expr state builder sr e in
-      assert false
+
+      (* Get the builder's current function. *)
+      let the_function = builder_parent builder in
+
+      (* Find the basic block of the label. *)
+      let then_bb =
+        try Hashtbl.find state.label_bindings label with Not_found ->
+          (* The label doesn't exist yet, so let's make it. *)
+          let bb = Llvm.append_block state.context label the_function in
+          Hashtbl.add state.label_bindings label bb;
+          bb
+      in
+
+      (* Create another basic block if the comparison fails. *)
+      let else_bb = Llvm.append_block state.context "else" the_function in
+
+      (* Emit the branch. *)
+      ignore (Llvm.build_cond_br e then_bb else_bb builder);
+
+      (* Continue with the else branch. *)
+      Llvm.position_at_end else_bb builder
 
   | Flx_types.BEXE_call (sr, p, a) ->
       let e1 = codegen_expr state builder sr p in
