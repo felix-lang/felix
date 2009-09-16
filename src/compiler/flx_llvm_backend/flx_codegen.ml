@@ -255,11 +255,7 @@ let rec codegen_expr state builder sr tbexpr =
   | Flx_types.BEXPR_apply_stack (index, _, e)
   | Flx_types.BEXPR_apply_struct (index, _, e) ->
       print_endline "BEXPR_apply_{prim,direct,stack_struct}";
-
-      let f = Hashtbl.find state.call_bindings index in
-      let e = codegen_expr state builder sr e in
-
-      f [|e|] "apply" builder
+      assert false
 
   | Flx_types.BEXPR_tuple es ->
       print_endline "BEXPR_tuple";
