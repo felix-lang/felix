@@ -107,7 +107,14 @@ let rec lltype_of_btype state btypecode =
   | Flx_types.BTYP_variant ls -> assert false
   | Flx_types.BTYP_unitsum k -> Llvm.integer_type state.context k
   | Flx_types.BTYP_sum ls -> assert false
-  | Flx_types.BTYP_function (args, result) -> assert false
+  | Flx_types.BTYP_function (args, ret_type) ->
+      let args =
+        match args with
+        | Flx_types.BTYP_tuple args -> List.map (lltype_of_btype state) args
+        | _ -> [lltype_of_btype state args]
+      in
+      let ret_type = lltype_of_btype state ret_type in
+      Llvm.function_type ret_type (Array.of_list args)
   | Flx_types.BTYP_cfunction (args, result) -> assert false
   | Flx_types.BTYP_pointer t -> assert false
   | Flx_types.BTYP_array (t1, Flx_types.BTYP_unitsum k) ->
