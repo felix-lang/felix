@@ -162,7 +162,6 @@ let rec cmp_tbexpr ((a,_) as xa) ((b,_) as xb) =
     not sure what is really needed here
   *)
   | BEXPR_new e1,BEXPR_new e2 -> false
-  | BEXPR_not e1,BEXPR_not e2 -> false
 
   | _,BEXPR_likely e2
   | _,BEXPR_unlikely e2 -> ecmp xa e2

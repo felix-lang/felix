@@ -327,16 +327,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
      getting here
   *)
 
-  (* double negation is elimnated *)
-  | BEXPR_not (BEXPR_not e,_) -> ge' e
-
-  (* likelyhoods are reversed *)
-  | BEXPR_not (BEXPR_likely e,_) ->
-    ge' (BEXPR_unlikely ((BEXPR_not e),t),t)
-
-  | BEXPR_not (BEXPR_unlikely e,_) ->
-    ge' (BEXPR_likely ((BEXPR_not e),t),t)
-
   | BEXPR_likely e ->
     begin match t with
     | BTYP_unitsum 2 ->
@@ -350,9 +340,6 @@ let rec gen_expr' syms bbdfns this (e,t) vs ts sr : cexpr_t =
       ce_atom ("FLX_UNLIKELY("^ge e^")")
     | _ -> ge' e
     end
-
-  | BEXPR_not e ->
-    ce_prefix "!" (ge' e)
 
   | BEXPR_new e ->
     let ref_type = tn t in

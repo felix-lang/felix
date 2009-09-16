@@ -47,7 +47,6 @@ let rec check_abstract_expr syms bbdfns rls ((x,t) as e) =
   | BEXPR_unlikely e -> fe e
   | BEXPR_new e -> fe e
   | BEXPR_address e -> fe e
-  | BEXPR_not e -> fe e
 
   | BEXPR_apply (e1,e2) -> fe e1; fe e2
 

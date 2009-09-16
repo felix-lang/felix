@@ -153,7 +153,6 @@ let rec process_expr syms bbdfns ref_insts1 hvarmap sr ((e,t) as be) =
     print_endline "ts done";
     *)
 
-  | BEXPR_not e -> ue e
   | BEXPR_new e -> ue e
   | BEXPR_address e -> ue e
   | BEXPR_likely e -> ue e

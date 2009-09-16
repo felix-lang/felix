@@ -188,7 +188,6 @@ and bexpr_t =
   | BEXPR_unlikely of tbexpr_t
   | BEXPR_address of tbexpr_t
   | BEXPR_new of tbexpr_t
-  | BEXPR_not of tbexpr_t
   | BEXPR_literal of literal_t
   | BEXPR_apply of tbexpr_t * tbexpr_t
   | BEXPR_apply_prim of bid_t * btypecode_t list * tbexpr_t

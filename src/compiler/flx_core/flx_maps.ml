@@ -348,7 +348,6 @@ let flat_iter_tbexpr fi fe ft ((x,t) as e) =
   | BEXPR_unlikely e -> fe e
   | BEXPR_address e -> fe e
   | BEXPR_new e -> fe e
-  | BEXPR_not e -> fe e
 
   | BEXPR_apply (e1,e2) -> fe e1; fe e2
 
@@ -388,7 +387,6 @@ let map_tbexpr fi fe ft e = match e with
   | BEXPR_ref (i,ts),t -> BEXPR_ref (fi i, List.map ft ts), ft t
   | BEXPR_new e,t -> BEXPR_new (fe e), ft t
   | BEXPR_address e,t -> BEXPR_address (fe e), ft t
-  | BEXPR_not e,t -> BEXPR_not (fe e), ft t
   | BEXPR_likely e,t -> BEXPR_likely (fe e), ft t
   | BEXPR_unlikely e,t -> BEXPR_unlikely (fe e), ft t
 

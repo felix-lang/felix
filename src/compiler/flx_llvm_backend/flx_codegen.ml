@@ -219,15 +219,6 @@ let rec codegen_expr state builder sr tbexpr =
       let _ = codegen_expr state builder sr e in
       assert false
 
-  | Flx_types.BEXPR_not e ->
-      print_endline "BEXPR_not";
-      let e = codegen_expr state builder sr e in
-      let ty = Llvm.type_of e in
-      let e =
-        Llvm.build_icmp Llvm.Icmp.Eq e (Llvm.const_int ty 0) "not" builder
-      in
-      Llvm.build_zext e ty "not" builder
-
   | Flx_types.BEXPR_literal literal ->
       print_endline "BEXPR_literal";
       codegen_literal state sr literal
