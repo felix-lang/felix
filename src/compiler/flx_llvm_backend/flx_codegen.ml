@@ -99,14 +99,21 @@ let rec lltype_of_btype state btypecode =
     (Flx_print.string_of_btypecode state.syms.Flx_mtypes2.dfns btypecode);
 
   match Flx_maps.reduce_type btypecode with
-  | Flx_types.BTYP_inst (index, ts) -> Hashtbl.find state.type_bindings index
+  | Flx_types.BTYP_inst (index, ts) ->
+      begin try Hashtbl.find state.type_bindings index with Not_found ->
+        failwith ("[lltype_of_btype:BTYP_inst] unable to find index " ^
+          string_of_int index)
+      end
+
   | Flx_types.BTYP_tuple ls ->
       let ls = List.map (lltype_of_btype state) ls in
       Llvm.struct_type state.context (Array.of_list ls)
+
   | Flx_types.BTYP_record ls -> assert false
   | Flx_types.BTYP_variant ls -> assert false
   | Flx_types.BTYP_unitsum k -> Llvm.integer_type state.context k
   | Flx_types.BTYP_sum ls -> assert false
+
   | Flx_types.BTYP_function (args, ret_type) ->
       let args =
         match args with
@@ -115,11 +122,14 @@ let rec lltype_of_btype state btypecode =
       in
       let ret_type = lltype_of_btype state ret_type in
       Llvm.function_type ret_type (Array.of_list args)
+
   | Flx_types.BTYP_cfunction (args, result) -> assert false
   | Flx_types.BTYP_pointer t -> assert false
+
   | Flx_types.BTYP_array (t1, Flx_types.BTYP_unitsum k) ->
       let t1 = lltype_of_btype state t1 in
       Llvm.array_type t1 k
+
   | Flx_types.BTYP_array (t1, t2) -> assert false
   | Flx_types.BTYP_void -> Llvm.void_type state.context
   | Flx_types.BTYP_fix i -> assert false
@@ -187,7 +197,9 @@ let rec codegen_expr state builder sr tbexpr =
 
   | Flx_types.BEXPR_name (index, _) ->
       print_endline "BEXPR_name";
-      Hashtbl.find state.value_bindings index
+      begin try Hashtbl.find state.value_bindings index with Not_found ->
+        Flx_exceptions.clierr sr ("Unable to find index " ^ string_of_int index)
+      end
 
   | Flx_types.BEXPR_ref (index, btypecode) ->
       print_endline "BEXPR_ref";
@@ -237,7 +249,11 @@ let rec codegen_expr state builder sr tbexpr =
         | _ -> [e]
       in
 
-      let f = Hashtbl.find state.call_bindings index in
+      let f =
+        try Hashtbl.find state.call_bindings index with Not_found ->
+          Flx_exceptions.clierr sr ("Unable to find index " ^
+            string_of_int index)
+      in
       f state builder sr es
 
   | Flx_types.BEXPR_apply_prim (index, _, e)
@@ -266,7 +282,9 @@ let rec codegen_expr state builder sr tbexpr =
 
   | Flx_types.BEXPR_closure (index, btypecode) ->
       print_endline ("BEXPR_closure: " ^ name_of_index state index);
-      Hashtbl.find state.value_bindings index
+      begin try Hashtbl.find state.value_bindings index with Not_found ->
+        Flx_exceptions.clierr sr ("Unable to find index " ^ string_of_int index)
+      end
 
   | Flx_types.BEXPR_case (index, btype) ->
       print_endline "BEXPR_case";
@@ -501,7 +519,11 @@ let codegen_bexe state builder bexe =
         | _ -> [e]
       in
 
-      let f = Hashtbl.find state.call_bindings index in
+      let f =
+        try Hashtbl.find state.call_bindings index with Not_found ->
+          Flx_exceptions.clierr sr ("Unable to find index " ^
+          string_of_int index)
+      in
       ignore (f state builder sr es)
 
   | Flx_types.BEXE_call_stack (sr, index, btypecode, e) ->
@@ -565,9 +587,12 @@ let codegen_bexe state builder bexe =
       let lhs =
         match lhs with
         | Flx_types.BEXPR_name (index, _), _ ->
-            Hashtbl.find state.value_bindings index
+            begin try Hashtbl.find state.value_bindings index with Not_found ->
+              Flx_exceptions.clierr sr ("Unable to find index " ^
+                string_of_int index)
+            end
         | _ ->
-            failwith ("invalid lvalue")
+            Flx_exceptions.clierr sr ("invalid lvalue")
       in
       let rhs = codegen_expr state builder sr rhs in
 
