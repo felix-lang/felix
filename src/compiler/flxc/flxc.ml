@@ -199,50 +199,54 @@ let compile_bexe state bexe =
 
 
 let compile_stmt state stmt () =
-  Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
-    Flx_bind.bind_asm state.bind_state begin fun () bound_value ->
-      match bound_value with
-      | Flx_bind.Bound_exe bexe ->
-          print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
-            state.syms.Flx_mtypes2.dfns
-            state.bbdfns
-            0
-            bexe);
-          print_newline ();
+  (* First bind the statement. *)
+  let bs =
+    Flx_desugar.desugar_statement state.desugar_state begin fun bs asm ->
+      Flx_bind.bind_asm state.bind_state (fun bs b -> b :: bs) bs asm
+    end [] stmt
+  in
 
-          compile_bexe state bexe
+  (* Now, step through each bound value and it. We don't do this above so we
+   * make sure that if one statement is split into multiple desugared statements
+   * we'll have all of those statements bound at the same time. *)
+  List.fold_right begin fun bound_value () ->
+    match bound_value with
+    | Flx_bind.Bound_exe bexe ->
+        print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
+          state.syms.Flx_mtypes2.dfns
+          state.bbdfns
+          0
+          bexe);
+        print_newline ();
 
-      | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
-          print_endline ("... BOUND SYM:     " ^ Flx_print.string_of_bbdcl
-            state.syms.Flx_mtypes2.dfns
-            state.bbdfns
-            e
-            index);
-          print_newline ();
+        compile_bexe state bexe
 
-          (* Add the symbol to the child map. *)
-          begin
-            match parent with
-            | Some parent -> Flx_child.add_child state.child_map parent index
-            | None -> ()
-          end;
+    | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
+        print_endline ("... BOUND SYM:     " ^ Flx_print.string_of_bbdcl
+          state.syms.Flx_mtypes2.dfns
+          state.bbdfns
+          e
+          index);
+        print_newline ();
 
-          Flx_typeclass.typeclass_instance_check_symbol
-            state.syms
-            state.bbdfns
-            state.child_map
-            index
-            symbol;
+        (* Add the symbol to the child map. *)
+        begin match parent with
+        | Some parent -> Flx_child.add_child state.child_map parent index
+        | None -> ()
+        end;
 
-          (* Only codegen top-level symbols. *)
-          match parent with
-          | Some parent -> ()
-          | None -> Flx_codegen.codegen_symbol
-            state.codegen_state
-            index
-            symbol
-    end () asm
-  end () stmt
+        Flx_typeclass.typeclass_instance_check_symbol
+          state.syms
+          state.bbdfns
+          state.child_map
+          index
+          symbol;
+
+        (* Only codegen top-level symbols. *)
+        match parent with
+        | Some parent -> ()
+        | None -> Flx_codegen.codegen_symbol state.codegen_state index symbol
+  end bs ()
 
 
 (* Parse all the imports *)
