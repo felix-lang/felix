@@ -51,16 +51,21 @@ val map_bexe:
   (string -> string) ->
   bexe_t -> bexe_t
 
+(** Simplify the bound expression. *)
 val reduce_tbexpr:
-  fully_bound_symbol_table_t ->
-  tbexpr_t -> tbexpr_t
+  fully_bound_symbol_table_t -> (** The symbol table. *)
+  tbexpr_t ->                   (** The bound expression. *)
+  tbexpr_t
 
+(** Simplify the bound exe. *)
 val reduce_bexe:
-  fully_bound_symbol_table_t ->
-  bexe_t -> bexe_t
+  fully_bound_symbol_table_t -> (** The symbol table. *)
+  bexe_t ->                     (** The bound exe. *)
+  bexe_t
 
+(** Simplify the bound type. *)
 val reduce_type:
-  btypecode_t ->
+  btypecode_t ->  (** The bound type. *)
   btypecode_t
 
 val scan_expr: expr_t -> Flx_srcref.t list
