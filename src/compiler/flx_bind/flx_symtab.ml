@@ -180,7 +180,7 @@ let rec build_tables
   ?(priv_name_map=Hashtbl.create 97)
   syms
   name
-  inherit_vs
+  inherit_ivs
   level
   parent
   root
@@ -218,7 +218,7 @@ let rec build_tables
     ignore(build_table_for_dcl
       syms
       name
-      inherit_vs
+      inherit_ivs
       level
       parent
       root
@@ -235,7 +235,7 @@ let rec build_tables
 and build_table_for_dcl
   syms
   name
-  inherit_vs
+  inherit_ivs
   level
   parent
   root
@@ -296,7 +296,7 @@ and build_table_for_dcl
 
   let add_unique table id idx = full_add_unique syms
     sr
-    (merge_ivs ivs inherit_vs)
+    (merge_ivs ivs inherit_ivs)
     table
     id
     idx
@@ -304,7 +304,7 @@ and build_table_for_dcl
   let add_function table id idx = full_add_function
     syms
     sr
-    (merge_ivs ivs inherit_vs)
+    (merge_ivs ivs inherit_ivs)
     table
     id
     idx
@@ -591,7 +591,7 @@ and build_table_for_dcl
         build_tables
           syms
           id
-          (merge_ivs inherit_vs ivs)
+          (merge_ivs inherit_ivs ivs)
           (level + 1)
           (Some symbol_index)
           root
@@ -647,14 +647,14 @@ and build_table_for_dcl
         build_tables
           syms
           id
-          (merge_ivs inherit_vs ivs)
+          (merge_ivs inherit_ivs ivs)
           (level + 1)
           (Some symbol_index)
           root
           asms
       in
       let fudged_privtab = Hashtbl.create 97 in
-      let vsl = List.length (fst inherit_vs) + List.length (fst ivs) in
+      let vsl = List.length (fst inherit_ivs) + List.length (fst ivs) in
       (*
       print_endline ("Strip " ^ string_of_int vsl ^ " vs");
       *)
