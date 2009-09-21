@@ -144,8 +144,8 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
 
 
 (* make_ivs inserts unique indexes into vs_lists, thus creating an ivs_list. *)
-let make_ivs ?(print=false) level counter (vs', con) : ivs_list_t =
-  let vs =
+let make_ivs ?(print=false) level counter (vs, con) : ivs_list_t =
+  let ivs =
     List.map begin fun (tid, tpat) ->
       let n = !counter in
       incr counter;
@@ -153,9 +153,9 @@ let make_ivs ?(print=false) level counter (vs', con) : ivs_list_t =
         print_endline ("//  " ^ Flx_util.spaces level ^ string_of_int n ^
         " -> " ^ tid ^ " (type variable)");
       tid, n, tpat
-    end vs'
+    end vs
   in
-  vs, con
+  ivs, con
 
 
 (* this routine takes a partially filled unbound definition table,
@@ -242,7 +242,7 @@ and build_table_for_dcl
   pub_name_map
   priv_name_map
   interfaces
-  (sr, id, seq, access, vs', dcl)
+  (sr, id, seq, access, vs, dcl)
 =
   let print_flag = syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
 
@@ -253,7 +253,7 @@ and build_table_for_dcl
   let make_ivs = make_ivs ~print:print_flag level counter in
 
   if print_flag then
-    print_endline (Flx_print.string_of_dcl level id seq vs' dcl);
+    print_endline (Flx_print.string_of_dcl level id seq vs dcl);
 
   (* dummy-ish temporary symbol tables could contain type vars for looking
    * at this declaration. *)
@@ -273,7 +273,7 @@ and build_table_for_dcl
   in
 
   (* Update the type variable list to include the index. *)
-  let ivs = make_ivs vs' in
+  let ivs = make_ivs vs in
 
   (*
   begin
@@ -1002,12 +1002,12 @@ and build_table_for_dcl
           v && (match t with TYP_void _ -> true | _ -> false)
         end true its
       in
-      List.iter begin fun (component_name, ctor_idx, vs', t) ->
+      List.iter begin fun (component_name, ctor_idx, vs, t) ->
         let dfn_idx = !counter in incr counter; (* constructor *)
         let match_idx = !counter in incr counter; (* matcher *)
 
         (* existential type variables *)
-        let evs = make_ivs vs' in
+        let evs = make_ivs vs in
         add_tvars' (Some dfn_idx) privtab evs;
         let ctor_dcl2 =
           if unit_sum then begin
