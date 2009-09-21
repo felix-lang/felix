@@ -3,7 +3,9 @@
 open Flx_types
 open Flx_mtypes2
 
-type label_map_t = (Flx_ast.bid_t, (string, Flx_ast.bid_t) Hashtbl.t) Hashtbl.t
+type label_map_t =
+  (Flx_types.bid_t, (string, Flx_types.bid_t) Hashtbl.t) Hashtbl.t
+
 type goto_kind_t =
 [
   | `Local of int          (* index *)
@@ -21,13 +23,13 @@ val create_label_map:
 val find_label:
   fully_bound_symbol_table_t -> (** The symbol table. *)
   label_map_t ->                (** The label map. *)
-  Flx_ast.bid_t ->              (** The index of the container. *)
+  Flx_types.bid_t ->            (** The index of the container. *)
   string ->                     (** The label name. *)
   goto_kind_t
 
 
 type label_kind_t = [`Far | `Near | `Unused]
-type label_usage_t = (Flx_ast.bid_t, label_kind_t) Hashtbl.t
+type label_usage_t = (Flx_types.bid_t, label_kind_t) Hashtbl.t
 
 (** Construct a map that identifies whether the label is local or remote. *)
 val create_label_usage:
@@ -38,14 +40,14 @@ val create_label_usage:
 
 (** For a given container and label name, identify the label kind. *)
 val get_label_kind:
-  label_map_t ->    (** The label map. *)
-  label_usage_t ->  (** The label usage map. *)
-  Flx_ast.bid_t ->  (** The index of the container. *)
-  string ->         (** The label name. *)
+  label_map_t ->      (** The label map. *)
+  label_usage_t ->    (** The label usage map. *)
+  Flx_types.bid_t ->  (** The index of the container. *)
+  string ->           (** The label name. *)
   label_kind_t
 
 (* For a given label index, identify the label kind. *)
 val get_label_kind_from_index:
-  label_usage_t ->  (** The label usage map. *)
-  Flx_ast.bid_t ->  (** The label index. *)
+  label_usage_t ->    (** The label usage map. *)
+  Flx_types.bid_t ->  (** The label index. *)
   label_kind_t

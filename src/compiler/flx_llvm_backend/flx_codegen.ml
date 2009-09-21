@@ -6,9 +6,9 @@ type codegen_state_t =
     the_module: Llvm.llmodule;
     the_fpm: [`Function] Llvm.PassManager.t;
     the_ee: Llvm_executionengine.ExecutionEngine.t;
-    type_bindings: (Flx_ast.bid_t, Llvm.lltype) Hashtbl.t;
-    call_bindings: (Flx_ast.bid_t, call_t) Hashtbl.t;
-    value_bindings: (Flx_ast.bid_t, Llvm.llvalue) Hashtbl.t;
+    type_bindings: (Flx_types.bid_t, Llvm.lltype) Hashtbl.t;
+    call_bindings: (Flx_types.bid_t, call_t) Hashtbl.t;
+    value_bindings: (Flx_types.bid_t, Llvm.llvalue) Hashtbl.t;
     label_bindings: (string, Llvm.llbasicblock) Hashtbl.t;
   }
 and call_t =

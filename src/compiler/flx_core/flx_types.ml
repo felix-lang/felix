@@ -14,6 +14,10 @@ type partial_order_result_t =
 
 open Flx_ast
 
+type bid_t = int
+type plain_ivs_list_t = (id_t * bid_t * typecode_t) list
+type ivs_list_t = plain_ivs_list_t * vs_aux_t
+
 type recstop = {
   constraint_overload_trail: int list;
   idx_fixlist: int list;

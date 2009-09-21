@@ -19,6 +19,6 @@ val codegen_bexe:
 (** Generate code for a symbol. *)
 val codegen_symbol:
   codegen_state_t ->          (** The state needed for code generation. *)
-  Flx_ast.bid_t ->            (** The index of the symbol. *)
+  Flx_types.bid_t ->          (** The index of the symbol. *)
   Flx_types.symbol_data3_t -> (** The symbol data. *)
   unit

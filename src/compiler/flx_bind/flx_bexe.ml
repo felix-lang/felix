@@ -180,7 +180,7 @@ type bexe_state_t = {
   syms: Flx_mtypes2.sym_state_t;
   env: Flx_types.env_t;
   id: string;
-  parent: Flx_ast.bid_t option;
+  parent: Flx_types.bid_t option;
   parent_vs: Flx_types.bvs_t;
   mutable ret_type: Flx_types.btypecode_t;
   mutable reachable: bool;

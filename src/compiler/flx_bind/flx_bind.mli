@@ -5,7 +5,7 @@ type bound_t =
   | Bound_symbol of (int * Flx_types.symbol_data3_t)
 
 val make_bind_state:
-  ?parent:Flx_ast.bid_t ->    (** The module index for all the symbols of the
+  ?parent:Flx_types.bid_t ->  (** The module index for all the symbols of the
                                   assemblies. *)
   ?env:Flx_types.env_t ->     (** Optionally specify the environment. *)
   Flx_mtypes2.sym_state_t ->

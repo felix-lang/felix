@@ -1,7 +1,7 @@
 type bind_state_t = {
   syms: Flx_mtypes2.sym_state_t;
   symtab: Flx_symtab.t;
-  parent: Flx_ast.bid_t option;
+  parent: Flx_types.bid_t option;
   bbind_state: Flx_bbind.bbind_state_t;
   bbind_bbdfns: Flx_types.fully_bound_symbol_table_t;
   strabs_state: Flx_strabs.strabs_state_t;

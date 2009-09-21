@@ -12,7 +12,6 @@
  * of instantiated names, and a instantiated name is a simple name optionally
  * followed by a square bracket enclosed list of type expressions. *)
 type id_t = string
-type bid_t = int
 type index_map_t = (int,int) Hashtbl.t
 
 type code_spec_t =
@@ -133,9 +132,7 @@ and vs_aux_t = {
 }
 
 and plain_vs_list_t = (id_t * typecode_t) list
-and plain_ivs_list_t = (id_t * int * typecode_t) list
 and vs_list_t = plain_vs_list_t * vs_aux_t
-and ivs_list_t = plain_ivs_list_t * vs_aux_t
 
 (** Literals recognized by the lexer. *)
 and literal_t =

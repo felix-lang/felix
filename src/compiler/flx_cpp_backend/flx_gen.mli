@@ -2,20 +2,20 @@
 
 val gen_function_names:
   Flx_mtypes2.sym_state_t ->
-  (Flx_ast.bid_t, Flx_ast.bid_t list) Hashtbl.t *
+  (Flx_types.bid_t, Flx_types.bid_t list) Hashtbl.t *
   Flx_types.fully_bound_symbol_table_t ->
   string
 
 val gen_functions:
   Flx_mtypes2.sym_state_t ->
-  (Flx_ast.bid_t, Flx_ast.bid_t list) Hashtbl.t *
+  (Flx_types.bid_t, Flx_types.bid_t list) Hashtbl.t *
   Flx_types.fully_bound_symbol_table_t ->
   string
 
 val gen_execute_methods:
   string ->
   Flx_mtypes2.sym_state_t ->
-  (Flx_ast.bid_t, Flx_ast.bid_t list) Hashtbl.t *
+  (Flx_types.bid_t, Flx_types.bid_t list) Hashtbl.t *
   Flx_types.fully_bound_symbol_table_t ->
   Flx_label.label_map_t * Flx_label.label_usage_t ->
   int ref ->
@@ -25,7 +25,7 @@ val gen_execute_methods:
 
 val find_members:
   Flx_mtypes2.sym_state_t ->
-  (Flx_ast.bid_t, Flx_ast.bid_t list) Hashtbl.t *
+  (Flx_types.bid_t, Flx_types.bid_t list) Hashtbl.t *
   Flx_types.fully_bound_symbol_table_t ->
   int ->
   Flx_types.btypecode_t list ->
@@ -46,7 +46,7 @@ val gen_biface_bodies:
 val format_vars:
   Flx_mtypes2.sym_state_t ->
   Flx_types.fully_bound_symbol_table_t ->
-  Flx_ast.bid_t list ->
+  Flx_types.bid_t list ->
   Flx_types.btypecode_t list ->
   string
 

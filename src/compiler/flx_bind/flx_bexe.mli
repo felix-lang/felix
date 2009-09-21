@@ -3,7 +3,7 @@
 type bexe_state_t
 
 val make_bexe_state:
-  ?parent:Flx_ast.bid_t ->    (** The parent symbol's index *)
+  ?parent:Flx_types.bid_t ->  (** The parent symbol's index *)
   ?env:Flx_types.env_t ->     (** The local symbol lookup table *)
   Flx_mtypes2.sym_state_t ->  (** The symbol state *)
   Flx_types.bvs_t ->          (** The parent symbol's bound type variables *)
