@@ -273,7 +273,7 @@ and build_table_for_dcl
   in
 
   (* Update the type variable list to include the index. *)
-  let vs = make_ivs vs' in
+  let ivs = make_ivs vs' in
 
   (*
   begin
@@ -294,13 +294,26 @@ and build_table_for_dcl
   in
   *)
 
-  let add_unique table id idx = full_add_unique syms sr (merge_ivs vs inherit_vs) table id idx in
-  let add_function table id idx = full_add_function syms sr (merge_ivs vs inherit_vs) table id idx in
+  let add_unique table id idx = full_add_unique syms
+    sr
+    (merge_ivs ivs inherit_vs)
+    table
+    id
+    idx
+  in
+  let add_function table id idx = full_add_function
+    syms
+    sr
+    (merge_ivs ivs inherit_vs)
+    table
+    id
+    idx
+  in
 
   (* Add the symbol to the symbol table. *)
   let add_symbol
     ?(parent=parent)
-    ?(vs=vs)
+    ?(ivs=ivs)
     ?(pubtab=pubtab)
     ?(privtab=privtab)
     ?(dirs=[])
@@ -312,7 +325,7 @@ and build_table_for_dcl
       Flx_types.id = id;
       sr = sr;
       parent = parent;
-      vs = vs;
+      vs = ivs;
       pubmap = pubtab;
       privmap = privtab;
       dirs = dirs;
@@ -338,14 +351,14 @@ and build_table_for_dcl
 
       (* Add the type variable to the symbol table. *)
       add_symbol
-        ~vs:dfltvs
+        ~ivs:dfltvs
         ~pubtab:null_tab
         ~privtab:null_tab
         index tvid (SYMDEF_typevar mt);
       full_add_typevar syms sr table tvid index;
     end (fst ivs)
   in
-  let add_tvars table = add_tvars' (Some symbol_index) table vs in
+  let add_tvars table = add_tvars' (Some symbol_index) table ivs in
 
   (* Add parameters to the symbol table. *)
   let add_parameters ?(pubtab=pubtab) ?(privtab=privtab) parent ps =
@@ -360,7 +373,7 @@ and build_table_for_dcl
       (* Add the paramater to the symbol table. *)
       add_symbol
         ~parent
-        ~vs:dfltvs
+        ~ivs:dfltvs
         ~pubtab:null_tab
         ~privtab:null_tab
         n name (SYMDEF_parameter (k, typ));
@@ -388,7 +401,7 @@ and build_table_for_dcl
       (* Add the symbol to the symbol table. *)
       add_symbol
         ~parent
-        ~vs:dfltvs
+        ~ivs:dfltvs
         ~pubtab:null_tab
         ~privtab:null_tab
         n name (SYMDEF_parameter (`PVal, typ));
@@ -485,7 +498,7 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_match_check (pat,(mvname,match_var_index)) ->
-      assert (List.length (fst vs) = 0);
+      assert (List.length (fst ivs) = 0);
 
       (* Add the symbol to dfns. *)
       add_symbol symbol_index id
@@ -505,7 +518,7 @@ and build_table_for_dcl
       print_endline ("Parent is " ^ match parent with Some i -> string_of_int i);
       print_endline ("Match handler, " ^ string_of_int symbol_index ^ ", mvname = " ^ mvname);
       *)
-      assert (List.length (fst vs) = 0);
+      assert (List.length (fst ivs) = 0);
       let vars = Hashtbl.create 97 in
       Flx_mbind.get_pattern_vars vars pat [];
       (*
@@ -578,7 +591,7 @@ and build_table_for_dcl
         build_tables
           syms
           id
-          (merge_ivs inherit_vs vs)
+          (merge_ivs inherit_vs ivs)
           (level + 1)
           (Some symbol_index)
           root
@@ -626,7 +639,7 @@ and build_table_for_dcl
   | DCL_typeclass asms ->
       (*
       let symdef = SYMDEF_typeclass in
-      let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
+      let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst ivs) in
       let stype = `AST_name(sr,id,tvars) in
       *)
 
@@ -634,14 +647,14 @@ and build_table_for_dcl
         build_tables
           syms
           id
-          (merge_ivs inherit_vs vs)
+          (merge_ivs inherit_vs ivs)
           (level + 1)
           (Some symbol_index)
           root
           asms
       in
       let fudged_privtab = Hashtbl.create 97 in
-      let vsl = List.length (fst inherit_vs) + List.length (fst vs) in
+      let vsl = List.length (fst inherit_vs) + List.length (fst ivs) in
       (*
       print_endline ("Strip " ^ string_of_int vsl ^ " vs");
       *)
@@ -652,12 +665,12 @@ and build_table_for_dcl
         else
           failwith "WEIRD CASE"
       in
-      let nts = List.map (fun (s,i,t)-> BTYP_var (i,BTYP_type 0)) (fst vs) in
+      let nts = List.map (fun (s,i,t)-> BTYP_var (i,BTYP_type 0)) (fst ivs) in
       (* fudge the private view to remove the vs *)
       let show { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } =
         string_of_int i ^ " |-> " ^
-          "vs= " ^ Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^ ">") vs ^
-          "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt dfns) ts
+          "vs= " ^ Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^
+          ">") vs ^ "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt dfns) ts
       in
       let fixup ({ Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
         let e' = {
@@ -960,7 +973,7 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_union (its) ->
-      let tvars = List.map (fun (s,_,_)-> TYP_name (sr,s,[])) (fst vs) in
+      let tvars = List.map (fun (s,_,_)-> TYP_name (sr,s,[])) (fst ivs) in
       let utype = TYP_name (sr, id, tvars) in
       let its =
         let ccount = ref 0 in (* count component constructors *)
@@ -1035,7 +1048,7 @@ and build_table_for_dcl
       print_endline ("Got a struct " ^ id);
       print_endline ("Members=" ^ Flx_util.catmap "; " (fun (id,t)->id ^ ":" ^ string_of_typecode t) sts);
       *)
-      let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst vs) in
+      let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst ivs) in
       let stype = `AST_name(sr, id, tvars) in
 
       (* Add symbols to dfns *)
