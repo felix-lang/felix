@@ -143,8 +143,8 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
     Hashtbl.add table key (FunctionEntry [mkentry syms vs value])
 
 
-(* make_vs inserts unique indexes into vs_lists, thus creating an ivs_list. *)
-let make_vs ?(print=false) level counter (vs', con) : ivs_list_t =
+(* make_ivs inserts unique indexes into vs_lists, thus creating an ivs_list. *)
+let make_ivs ?(print=false) level counter (vs', con) : ivs_list_t =
   let vs =
     List.map begin fun (tid, tpat) ->
       let n = !counter in
@@ -250,7 +250,7 @@ and build_table_for_dcl
   let dfns = syms.Flx_mtypes2.dfns in
   let counter = syms.Flx_mtypes2.counter in
   let spc = Flx_util.spaces level in
-  let make_vs = make_vs ~print:print_flag level counter in
+  let make_ivs = make_ivs ~print:print_flag level counter in
 
   if print_flag then
     print_endline (Flx_print.string_of_dcl level id seq vs' dcl);
@@ -273,7 +273,7 @@ and build_table_for_dcl
   in
 
   (* Update the type variable list to include the index. *)
-  let vs = make_vs vs' in
+  let vs = make_ivs vs' in
 
   (*
   begin
@@ -320,8 +320,8 @@ and build_table_for_dcl
     }
   in
 
-  let add_tvars' parent table vs =
-    List.iter begin fun (tvid, i, tpat) ->
+  let add_tvars' parent table ivs =
+    List.iter begin fun (tvid, index, tpat) ->
       let mt = match tpat with
       | TYP_patany _ -> TYP_type (* default/unspecified *)
       (*
@@ -341,9 +341,9 @@ and build_table_for_dcl
         ~vs:dfltvs
         ~pubtab:null_tab
         ~privtab:null_tab
-        i tvid (SYMDEF_typevar mt);
-      full_add_typevar syms sr table tvid i;
-    end (fst vs)
+        index tvid (SYMDEF_typevar mt);
+      full_add_typevar syms sr table tvid index;
+    end (fst ivs)
   in
   let add_tvars table = add_tvars' (Some symbol_index) table vs in
 
@@ -994,7 +994,7 @@ and build_table_for_dcl
         let match_idx = !counter in incr counter; (* matcher *)
 
         (* existential type variables *)
-        let evs = make_vs vs' in
+        let evs = make_ivs vs' in
         add_tvars' (Some dfn_idx) privtab evs;
         let ctor_dcl2 =
           if unit_sum then begin
