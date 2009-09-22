@@ -1090,24 +1090,25 @@ let add_iface _ (sr, iface) =
 
 
 (* Add the declaration to symbol table. *)
-let add_dcl ?parent symtab dcl =
+let add_dcl ?parent state dcl =
   let level, pubmap, privmap =
     match parent with
     | Some index ->
-        let symbol = Hashtbl.find symtab.syms.Flx_mtypes2.dfns index in
+        let symbol = Hashtbl.find state.syms.Flx_mtypes2.dfns index in
         1, symbol.pubmap, symbol.privmap
-    | None -> 0, symtab.pub_name_map, symtab.priv_name_map
+    | None ->
+        0, state.pub_name_map, state.priv_name_map
   in
 
   let interfaces = ref [] in
   let symbol_index =
     build_table_for_dcl
-      symtab.syms
+      state.syms
       "root"
       Flx_ast.dfltvs
       level
       parent
-      !(symtab.syms.Flx_mtypes2.counter)
+      !(state.syms.Flx_mtypes2.counter)
       pubmap
       privmap
       interfaces
@@ -1117,17 +1118,17 @@ let add_dcl ?parent symtab dcl =
 
 
 (* Add the assemblies to the symbol table. *)
-let add_asms symtab asms =
+let add_asms state asms =
   let _, _, exes, interfaces, _ =
     build_tables
-      ~pub_name_map:symtab.pub_name_map
-      ~priv_name_map:symtab.priv_name_map
-      symtab.syms
+      ~pub_name_map:state.pub_name_map
+      ~priv_name_map:state.priv_name_map
+      state.syms
       "root"
       dfltvs
       0
       None
-      !(symtab.syms.Flx_mtypes2.counter)
+      !(state.syms.Flx_mtypes2.counter)
       asms
   in
   exes, interfaces
