@@ -65,12 +65,14 @@ val string_of_symdef :
   symbol_definition_t -> string -> ivs_list_t ->
   string
 
+(** [string_of_entry_kind entry-kind] converts the [entry-kind] to a string. *)
 val string_of_entry_kind:
   entry_kind_t -> string
 
 val full_string_of_entry_kind:
   symbol_table_t -> entry_kind_t -> string
 
+(** [string_of_entry_set entry-set] converts the [entry-set] to a string. *)
 val string_of_entry_set:
   entry_set_t -> string
 
@@ -118,6 +120,7 @@ val print_symbol_table:
   symbol_table_t ->
   unit
 
+(** [string_of_name_map name-map] converts the [name-map] to a string. *)
 val string_of_name_map: name_map_t -> string
 
 val print_vs: vs_list_t -> string
