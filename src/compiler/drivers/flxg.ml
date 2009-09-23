@@ -241,207 +241,29 @@ try
     index
   in
 
-  print_debug "//OPTIMISING";
-  let () = Flx_use.find_roots syms bbdfns root_proc syms.bifaces in
-  let bbdfns = Flx_use.copy_used syms bbdfns in
-  let child_map = Flx_child.cal_children bbdfns in
-  (*
-  DISABLE TEMPORARILY DUE TO BUG
-  *)
-  let bbdfns = ref bbdfns in
-  let child_map = ref child_map in
-  let counter = ref 0 in
-  while Flx_uncurry.uncurry_gen syms (!child_map,!bbdfns) > 0 do
-    incr counter;
-    if !counter > 10 then failwith "uncurry exceeded 10 passes";
-    bbdfns := Flx_use.copy_used syms !bbdfns;
-    child_map := Flx_child.cal_children !bbdfns;
-  done;
-  let bbdfns = !bbdfns and child_map = !child_map in
-
-
-  let bbdfns = if compiler_options.max_inline_length > 0 then begin
-    if compiler_options.print_flag then begin
-      print_endline "";
-      print_endline "---------------------------";
-      print_endline "INPUT TO OPTIMISATION PASS";
-      print_endline "---------------------------";
-      print_endline "";
-      print_symbols syms.dfns bbdfns
-    end;
-
-    syms.reductions <- Flx_reduce.remove_useless_reductions syms bbdfns syms.reductions;
-    Flx_typeclass.fixup_typeclass_instances syms bbdfns;
-    let bbdfns = Flx_use.copy_used syms bbdfns in
-    let child_map = Flx_child.cal_children bbdfns in
-    Flx_inline.heavy_inlining syms (child_map,bbdfns);
-    let bbdfns = Flx_use.copy_used syms bbdfns in
-    let child_map = Flx_child.cal_children bbdfns in
-
-    print_debug "PHASE 1 INLINING COMPLETE";
-    if compiler_options.print_flag then begin
-      print_endline "";
-      print_endline "---------------------------";
-      print_endline "POST PHASE 1 FUNCTION SET";
-      print_endline "---------------------------";
-      print_endline "";
-      print_symbols syms.dfns bbdfns
-    end;
-
-    Hashtbl.iter
-    (fun i _ ->
-      Flx_prop.rem_prop bbdfns `Inlining_started i;
-      Flx_prop.rem_prop bbdfns `Inlining_complete i;
-    )
-    bbdfns
-    ;
-
-    Flx_intpoly.cal_polyvars syms bbdfns child_map;
-    Flx_inst.instantiate syms bbdfns true root_proc syms.bifaces;
-    (* EXPERIMENTAL!
-      Adds monomorphic versions of all symbols.
-      This will do nothing, because they're not
-      actually instantiated!
-    *)
-    print_debug "//MONOMORPHISING";
-    Flx_mono.monomorphise syms bbdfns;
-    print_debug "//MONOMORPHISING DONE";
-
-    let bbdfns = Flx_use.copy_used syms bbdfns in
-    let child_map = Flx_child.cal_children bbdfns in
-
-    if compiler_options.print_flag then begin
-      print_endline "";
-      print_endline "---------------------------";
-      print_endline "POST MONOMORPHISATION FUNCTION SET";
-      print_endline "---------------------------";
-      print_endline "";
-      print_symbols syms.dfns bbdfns
-    end;
-
-    print_debug "//Removing useless reductions";
-
-    syms.reductions <- Flx_reduce.remove_useless_reductions syms bbdfns syms.reductions;
-
-    print_debug "//INLINING";
-
-    Flx_typeclass.fixup_typeclass_instances syms bbdfns;
-    let bbdfns = Flx_use.copy_used syms bbdfns in
-    let child_map = Flx_child.cal_children bbdfns in
-    Flx_inline.heavy_inlining syms (child_map,bbdfns);
-    (*
-    print_endline "INLINING DONE: RESULT:";
-    print_symbols syms.dfns bbdfns;
-    *)
-    bbdfns
-  end
-  else bbdfns
-  in
-
-  let bbdfns = Flx_use.copy_used syms bbdfns in
-  let child_map = Flx_child.cal_children bbdfns in
-
-  let bbdfns = ref bbdfns in
-  let child_map = ref child_map in
-  let counter = ref 0 in
-  while Flx_mkproc.mkproc_gen syms (!child_map,!bbdfns) > 0 do
-    incr counter;
-    if !counter > 10 then failwith "mkproc exceeded 10 passes";
-    bbdfns := Flx_use.copy_used syms !bbdfns;
-    child_map := Flx_child.cal_children !bbdfns;
-  done;
-  let bbdfns = !bbdfns and child_map = !child_map in
-
-  (*
-  print_endline "Discarding crud .. left with:";
-  print_symbols syms.dfns bbdfns;
-  *)
-
-  let elim_state = Flx_elim.make_elim_state syms bbdfns in
-  Flx_elim.eliminate_unused elim_state;
-
-
-  (*
-  print_symbols syms.dfns bbdfns;
-  *)
-
-  Flx_typeclass.fixup_typeclass_instances syms bbdfns;
-  print_debug "//Calculating stackable calls";
-  let label_map = Flx_label.create_label_map bbdfns syms.counter in
-  let label_usage = Flx_label.create_label_usage syms bbdfns label_map in
-  let label_info = label_map, label_usage in
-  let child_map = Flx_child.cal_children bbdfns in
-  Flx_stack_calls.make_stack_calls syms (child_map,bbdfns) label_map label_usage;
+  (* Optimize the bound values *)
+  let frontend_state = Flx_frontend.make_frontend_state syms in
+  let bbdfns = Flx_frontend.optimize frontend_state bbdfns root_proc in
 
   let opt_time = tim() in
-
   print_debug ("//Optimisation complete time " ^ string_of_float opt_time);
 
+  (* Lower the bound symbols for the backend. *)
+  let bbdfns, child_map = Flx_frontend.lower_bbdfns frontend_state bbdfns root_proc in
 
-  print_debug "//Generating primitive wrapper closures";
-  Flx_mkcls.make_closures syms bbdfns;
-  let child_map = Flx_child.cal_children bbdfns in
-
-  if compiler_options.print_flag then
-  begin
-    let f = force_open report_file in
-    Flx_call.print_call_report syms bbdfns f;
-    ensure_closed report_file
-  end
-  ;
-
-  print_debug "//Finding which functions use globals";
-  let bbdfns = Flx_use.copy_used syms bbdfns in
-  Flx_global.set_globals syms bbdfns;
-  let child_map = Flx_child.cal_children bbdfns in
-
-  (*
-  print_symbols syms.dfns bbdfns;
-  *)
-
-  print_debug "//instantiating";
-
-  Flx_intpoly.cal_polyvars syms bbdfns child_map;
-  Flx_inst.instantiate syms bbdfns false root_proc syms.bifaces;
+  (* Start working on the backend. *)
 
   let label_map = Flx_label.create_label_map bbdfns syms.counter in
   let label_usage = Flx_label.create_label_usage syms bbdfns label_map in
   let label_info = label_map, label_usage in
 
-
+  (* Make sure we can find the _init_ instance *)
   let top_class =
     try cpp_instance_name syms bbdfns root_proc []
     with Not_found ->
       failwith ("can't name instance of root _init_ procedure index " ^ si root_proc)
   in
 
-  (* fix up root procedures so if they're not stackable,
-     then they need a heap closure -- wrappers require
-     one or the other
-  *)
-  IntSet.iter (fun i ->
-    let id,parent,sr,entry = Hashtbl.find bbdfns i in
-    match entry with
-    | BBDCL_procedure (props,vs,p,exes) ->
-      let props = ref props in
-      if List.mem `Stackable !props then begin
-        if not (List.mem `Stack_closure !props)
-        then props := `Stack_closure :: !props
-      end else begin
-        if not (List.mem `Heap_closure !props)
-        then props := `Heap_closure :: !props
-      end
-      ;
-      if not (List.mem `Requires_ptf !props)
-      then props := `Requires_ptf :: !props
-      ;
-      let entry = BBDCL_procedure (!props, vs,p,exes) in
-      Hashtbl.replace bbdfns i (id,parent,sr,entry)
-    | _ -> ()
-
-  )
-  !(syms.roots)
-  ;
   (* FUDGE the init procedure to make interfacing a bit simpler *)
   let topclass_props =
     let id,parent,sr,entry = Hashtbl.find bbdfns root_proc in
