@@ -35,27 +35,24 @@ let get_labels bbdfns counter exes =
   ;
   labels
 
+let update_label_map bbdfns counter label_map index (_,_,_,entry) =
+  (*
+  print_endline ("Routine " ^ id ^ "<"^ si index ^">");
+  *)
+  match entry with
+  | BBDCL_function (_,_,_,_,exes) ->
+    Hashtbl.add label_map index (get_labels bbdfns counter exes)
+  | BBDCL_procedure (_,_,_,exes) ->
+    Hashtbl.add label_map index (get_labels bbdfns counter exes)
+  | _ -> ()
+
 let create_label_map bbdfns counter =
   (*
   print_endline "Creating label map";
   *)
   let label_map = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun index (id,parent,sr,entry) ->
-    (*
-    print_endline ("Routine " ^ id ^ "<"^ si index ^">");
-    *)
-    match entry with
-    | BBDCL_function (_,_,_,_,exes) ->
-      Hashtbl.add label_map index (get_labels bbdfns counter exes)
-    | BBDCL_procedure (_,_,_,exes) ->
-      Hashtbl.add label_map index (get_labels bbdfns counter exes)
-    | _ -> ()
-  )
-  bbdfns
-  ;
+  Hashtbl.iter (update_label_map bbdfns counter label_map) bbdfns;
   label_map
-
 
 let rec find_label bbdfns label_map caller label =
   let labels = Hashtbl.find label_map caller in
@@ -107,16 +104,14 @@ let cal_usage syms bbdfns label_map caller exes usage =
   )
   exes
 
+let update_label_usage syms bbdfns label_map usage index (_,_,_,entry) =
+  match entry with
+  | BBDCL_function (_,_,_,_,exes)
+  | BBDCL_procedure (_,_,_,exes) ->
+    cal_usage syms bbdfns label_map index exes usage
+  | _ -> ()
+
 let create_label_usage syms bbdfns label_map =
   let usage = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun index (id,parent,sr,entry) ->
-    match entry with
-    | BBDCL_function (_,_,_,_,exes)
-    | BBDCL_procedure (_,_,_,exes) ->
-      cal_usage syms bbdfns label_map index exes usage
-    | _ -> ()
-  )
-  bbdfns
-  ;
+  Hashtbl.iter (update_label_usage syms bbdfns label_map usage) bbdfns;
   usage

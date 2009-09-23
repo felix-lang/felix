@@ -19,6 +19,15 @@ val create_label_map:
   int ref ->                    (** An index to create unique ids. *)
   label_map_t
 
+(** Add a new symbol to the label map. *)
+val update_label_map:
+  fully_bound_symbol_table_t -> (** The symbol table. *)
+  int ref ->                    (** An index to create unique ids. *)
+  label_map_t ->                (** The label map. *)
+  Flx_types.bid_t ->            (** The symbol to add. *)
+  Flx_types.symbol_data3_t ->   (** The symbol data. *)
+  unit
+
 (** Find the type of the label in the label map. *)
 val find_label:
   fully_bound_symbol_table_t -> (** The symbol table. *)
@@ -37,6 +46,16 @@ val create_label_usage:
   fully_bound_symbol_table_t -> (** The symbol table. *)
   label_map_t ->                (** The label map. *)
   label_usage_t
+
+(** Add a new symbol to the label map. *)
+val update_label_usage:
+  sym_state_t ->                (** The symbol state. *)
+  fully_bound_symbol_table_t -> (** The symbol table. *)
+  label_map_t ->                (** The label map. *)
+  label_usage_t ->              (** The label usage map to update. *)
+  Flx_types.bid_t ->            (** The symbol to add. *)
+  Flx_types.symbol_data3_t ->   (** The symbol data. *)
+  unit
 
 (** For a given container and label name, identify the label kind. *)
 val get_label_kind:
