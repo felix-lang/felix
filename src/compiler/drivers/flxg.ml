@@ -459,30 +459,6 @@ try
   then exit (if compiler_options.reverse_return_parity then 1 else 0)
   ;
 
-  begin
-  let find_parsers this sr e = match e with
-    | _ -> ()
-  in
-
-  let nul x = () in
-  Hashtbl.iter
-  (fun i (_,_,_,entry) -> match entry with
-  | BBDCL_function (_,_,_,_,exes)
-  | BBDCL_procedure (_,_,_,exes) ->
-    List.iter
-      (fun exe ->
-         let sr = src_of_bexe exe in
-         Flx_maps.iter_bexe nul (find_parsers i sr) nul nul nul exe
-      )
-    exes
-  | _ -> ()
-  )
-  bbdfns
-  end
-  ;
-
-  let sr = ("unknown",0,0,0,0) in
-
   let psh s = ws header_file s in
   let psb s = ws body_file s in
   let psp s = ws package_file s in
