@@ -663,7 +663,12 @@ let enstack_calls fn_cache ptr_cache syms (child_map,bbdfns) self exes =
   in
   exes
 
-let make_stack_calls syms (child_map, (bbdfns: fully_bound_symbol_table_t)) label_map label_usage =
+let make_stack_calls
+  syms
+  (child_map, (bbdfns: fully_bound_symbol_table_t))
+  label_map
+  label_usage
+=
   let fn_cache, ptr_cache = Hashtbl.create 97 , Hashtbl.create 97 in
   let ea e = enstack_applies fn_cache ptr_cache syms (child_map, bbdfns) e in
   mark_stackable fn_cache ptr_cache syms (child_map,bbdfns) label_map label_usage;
