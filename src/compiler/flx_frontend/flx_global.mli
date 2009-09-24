@@ -23,6 +23,13 @@ open Flx_set
 open Flx_mtypes2
 open Flx_call
 
+val set_globals_for_symbol :
+  fully_bound_symbol_table_t ->
+  Flx_call.usage_table_t ->
+  Flx_types.bid_t ->
+  Flx_types.symbol_data3_t ->
+  unit
+
 val set_globals:
   sym_state_t ->
   fully_bound_symbol_table_t ->

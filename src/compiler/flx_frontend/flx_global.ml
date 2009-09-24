@@ -107,28 +107,37 @@ let exes_use_yield exes =
     true
 
 (* ALSO calculates if a function uses a yield *)
-let set_gc_use bbdfns =
-  Hashtbl.iter
-  (fun i (id,parent,sr,entry) -> match entry with
-  | BBDCL_function (props,vs,ps,rt,exes) ->
+let set_gc_use bbdfns index ((id, parent, sr, entry) as symbol) =
+  match entry with
+  | BBDCL_function (props, vs, ps, rt, exes) ->
     let uses_gc = exes_use_gc bbdfns exes in
     let uses_yield = exes_use_yield exes in
-    let props = if uses_gc then `Uses_gc :: props else props in
-    let props = if uses_yield then `Heap_closure :: `Yields :: `Generator :: props else props in
-    if uses_gc or uses_yield
-    then
-    Hashtbl.replace bbdfns i (id,parent,sr,
-      BBDCL_function (`Uses_gc :: props,vs,ps,rt,exes))
+    let props = if uses_gc
+      then `Uses_gc :: props
+      else props
+    in
+    let props = if uses_yield
+      then `Heap_closure :: `Yields :: `Generator :: props
+      else props
+    in
+    if uses_gc or uses_yield then begin
+      let symbol =
+        id, parent, sr, BBDCL_function (`Uses_gc :: props,vs,ps,rt,exes)
+      in
+      Hashtbl.replace bbdfns index symbol;
+      symbol
+    end else symbol
 
-  | BBDCL_procedure (props,vs,ps,exes) ->
-    if exes_use_gc bbdfns exes then
-    Hashtbl.replace bbdfns i (id,parent,sr,
-      BBDCL_procedure (`Uses_gc :: props,vs,ps,exes))
+  | BBDCL_procedure (props, vs, ps, exes) ->
+    if exes_use_gc bbdfns exes then begin
+      let symbol =
+        id, parent, sr, BBDCL_procedure (`Uses_gc :: props,vs,ps,exes)
+      in
+      Hashtbl.replace bbdfns index symbol;
+      symbol
+    end else symbol
 
-  | _ -> ()
-  )
-  bbdfns
-
+  | _ -> symbol
 
 let is_global_var bbdfns i =
   let id,parent,sr,entry = try Hashtbl.find bbdfns i with Not_found -> failwith "YIKES1" in
@@ -152,32 +161,37 @@ let exes_use_global bbdfns exes =
     false
   with Not_found -> true
 
-let set_local_globals bbdfns =
-  Hashtbl.iter
-  (fun i (id,parent,sr,entry) -> match entry with
+let set_local_globals bbdfns index ((id,parent,sr,entry) as symbol) =
+  match entry with
   | BBDCL_function (props,vs,ps,rt,exes) ->
-    if exes_use_global bbdfns exes then
-    Hashtbl.replace bbdfns i (id,parent,sr,
-      BBDCL_function (`Uses_global_var :: props,vs,ps,rt,exes))
+    if exes_use_global bbdfns exes then begin
+      let symbol =
+        (id,parent,sr, BBDCL_function (`Uses_global_var :: props,vs,ps,rt,exes))
+      in
+      Hashtbl.replace bbdfns index symbol;
+      symbol
+    end else symbol
 
   | BBDCL_procedure (props,vs,ps,exes) ->
-    if exes_use_global bbdfns exes then
-    Hashtbl.replace bbdfns i (id,parent,sr,
-      BBDCL_procedure (`Uses_global_var :: props,vs,ps,exes))
+    if exes_use_global bbdfns exes then begin
+      let symbol =
+        (id,parent,sr, BBDCL_procedure (`Uses_global_var :: props,vs,ps,exes))
+      in
+      Hashtbl.replace bbdfns index symbol;
+      symbol
+    end else symbol
 
-  | _ -> ()
-  )
-  bbdfns
+  | _ -> symbol
 
 type ptf_required = | Required | Not_required | Unknown
 
-let rec set_ptf_usage bbdfns usage excludes i =
-
+let rec set_ptf_usage bbdfns usage excludes i (id, parent, sr, entry) =
   (* cal reqs for functions we call and fold together *)
   let cal_reqs calls i : ptf_required * property_t =
     let result1 =
       List.fold_left begin fun u (j,_) ->
-        let r = set_ptf_usage bbdfns usage (i::excludes) j in
+        let symbol = Hashtbl.find bbdfns j in
+        let r = set_ptf_usage bbdfns usage (i::excludes) j symbol in
           (*
           print_endline ("Call of " ^ si i^ " to " ^ si j ^ " PTF of j " ^ (
             match r with
@@ -208,7 +222,6 @@ let rec set_ptf_usage bbdfns usage excludes i =
   (* main routine *)
   let calls = try Hashtbl.find usage i with Not_found -> [] in
 
-  let id,parent,sr,entry =  try Hashtbl.find bbdfns i with Not_found -> failwith ("YIKES2 -- " ^ si i) in
   match entry with
   | BBDCL_function (props,vs,ps,rt,exes) ->
     (*
@@ -279,12 +292,16 @@ let rec set_ptf_usage bbdfns usage excludes i =
 
   | _ -> Not_required
 
-let set_globals syms bbdfns =
-  set_local_globals bbdfns;
-  set_gc_use bbdfns;
+let set_globals_for_symbol bbdfns uses index symbol =
+  let symbol = set_local_globals bbdfns index symbol in
+  let symbol = set_gc_use bbdfns index symbol in
+  ignore (set_ptf_usage bbdfns uses [] index symbol)
 
-  let usage = match Flx_call.call_data syms bbdfns with u,_ -> u in
-  Hashtbl.iter (fun i _ -> ignore (set_ptf_usage bbdfns usage [] i)) bbdfns
+let set_globals syms bbdfns =
+  let uses, _ = Flx_call.call_data syms bbdfns in
+
+  (* Iterate through each symbol and mark if the function needs a frame. *)
+  Hashtbl.iter (set_globals_for_symbol bbdfns uses) bbdfns
 
 let find_global_vars bbdfns =
   let global_vars = ref IntSet.empty in
