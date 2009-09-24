@@ -1,13 +1,14 @@
-(** Elide unused entries
+(** Construct closures for functions.
  *
  * Name binding pass 2. *)
 
-open Flx_ast
-open Flx_types
-open Flx_typing
-open Flx_set
-open Flx_mtypes2
+type closure_state_t
 
-val make_closures:
-  sym_state_t ->
-  fully_bound_symbol_table_t  -> unit
+(** Create state needed for constructing closures. *)
+val make_closure_state :
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.fully_bound_symbol_table_t ->
+  closure_state_t
+
+(** Extract all closures. *)
+val make_closures : closure_state_t -> unit

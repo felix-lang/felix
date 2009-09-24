@@ -47,7 +47,6 @@ type sym_state_t =
   instances : instance_registry_t;
   include_files : string list ref;
   roots : Flx_set.IntSet.t ref;
-  wrappers : (int, int) Hashtbl.t;
   quick_names : (string, (int * Flx_types.btypecode_t list)) Hashtbl.t;
   mutable bifaces : Flx_types.biface_t list;
   mutable reductions : Flx_types.reduction_t list;

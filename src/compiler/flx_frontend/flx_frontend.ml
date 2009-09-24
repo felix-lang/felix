@@ -212,7 +212,8 @@ let optimize state bbdfns root_proc =
 let lower_bbdfns state bbdfns root_proc =
   (* Wrap closures. *)
   print_debug state "//Generating primitive wrapper closures";
-  Flx_mkcls.make_closures state.syms bbdfns;
+  let closure_state = Flx_mkcls.make_closure_state state.syms bbdfns in
+  Flx_mkcls.make_closures closure_state;
 
   (* Mark which functions are using global state. *)
   print_debug state "//Finding which functions use globals";

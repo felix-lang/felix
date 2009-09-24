@@ -41,7 +41,6 @@ type sym_state_t =
   instances : instance_registry_t;
   include_files : string list ref;
   roots : IntSet.t ref;
-  wrappers : (int, int) Hashtbl.t;
   quick_names : (string, (int * btypecode_t list)) Hashtbl.t;
   mutable bifaces : biface_t list;
   mutable reductions : reduction_t list;
@@ -64,7 +63,6 @@ let make_syms options =
     instances = Hashtbl.create 97;
     include_files = ref [];
     roots = ref IntSet.empty;
-    wrappers = Hashtbl.create 97;
     quick_names = Hashtbl.create 97;
     bifaces = [];
     reductions = [];
