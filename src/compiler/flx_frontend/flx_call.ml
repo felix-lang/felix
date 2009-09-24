@@ -70,62 +70,69 @@ let cal_param_usage syms uses sr parent {pindex=child;ptyp=t} =
   uses_type uses parent sr t;
   add uses parent child sr
 
+let cal_req_usage syms uses sr parent reqs =
+  let ur (j,ts) =
+    if j = 0 then faulty_req syms parent
+    else add uses parent j sr
+  in
+  List.iter ur reqs
+
+let call_data_for_symbol syms bbdfns uses k (_,_,sr,entry) =
+  let ut t = uses_type uses k sr t in
+
+  match entry with
+  | BBDCL_typeclass _ -> ()
+
+  | BBDCL_procedure (_,_,(ps,_),exes)
+  | BBDCL_function (_,_,(ps,_),_,exes) ->
+      List.iter (cal_param_usage syms uses sr k) ps;
+      List.iter (cal_exe_usage syms uses k) exes
+
+  | BBDCL_newtype (_,t) -> ut t
+  | BBDCL_abs (_,_,_,reqs) ->
+      cal_req_usage syms uses sr k reqs
+  | BBDCL_const (_,_,t,_,reqs) ->
+      cal_req_usage syms uses sr k reqs
+  | BBDCL_proc (_,_,ps,_, reqs) ->
+      cal_req_usage syms uses sr k reqs;
+      List.iter ut ps
+  | BBDCL_fun (_,_,ps,ret,_, reqs,_) ->
+      cal_req_usage syms uses sr k reqs;
+      List.iter ut ps;
+      ut ret
+  | BBDCL_insert (_,_,_,reqs)  -> cal_req_usage syms uses sr k reqs
+  | BBDCL_instance (_,_,cons,i,ts) ->
+      (* we dont add the type constraint, since it
+      is only used for instance selection
+      *)
+      add uses k i sr;
+      List.iter ut ts
+
+  | BBDCL_nonconst_ctor (_,_,unt,_,ct, evs, etraint) ->
+      ut unt;
+      ut ct
+
+  | BBDCL_union _  -> ()
+
+  | BBDCL_cstruct (_,ps)
+  | BBDCL_struct (_,ps) ->
+      List.iter ut (List.map snd ps)
+
+  | BBDCL_val (_,t)
+  | BBDCL_var (_,t)
+  | BBDCL_tmp (_,t) -> ut t
+  | BBDCL_ref (_,t) -> ut (BTYP_pointer t)
+  | BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
+      List.iter ut ps_cf;
+      List.iter ut ps_c;
+      ut ret;
+      cal_req_usage syms uses sr k reqs
+
 let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   let uses = Hashtbl.create 97 in
-  let cal_req_usage sr parent reqs =
-    let ur (j,ts) =
-      if j = 0 then faulty_req syms parent
-      else add uses parent j sr
-    in
-    List.iter ur reqs
-  in
-  Hashtbl.iter begin fun k (_,_,sr,entry) ->
-    let ut t = uses_type uses k sr t in
 
-    match entry with
-    | BBDCL_typeclass _ -> ()
-
-    | BBDCL_procedure (_,_,(ps,_),exes)
-    | BBDCL_function (_,_,(ps,_),_,exes) ->
-        List.iter (cal_param_usage syms uses sr k) ps;
-        List.iter (cal_exe_usage syms uses k) exes
-
-    | BBDCL_newtype (_,t) -> ut t
-    | BBDCL_abs (_,_,_,reqs) -> cal_req_usage sr k reqs
-    | BBDCL_const (_,_,t,_,reqs) -> cal_req_usage sr k reqs
-    | BBDCL_proc (_,_,ps,_, reqs) -> cal_req_usage sr k reqs; List.iter ut ps
-    | BBDCL_fun (_,_,ps,ret,_, reqs,_) ->
-        cal_req_usage sr k reqs;
-        List.iter ut ps;
-        ut ret
-    | BBDCL_insert (_,_,_,reqs)  -> cal_req_usage sr k reqs
-    | BBDCL_instance (_,_,cons,i,ts) ->
-        (* we dont add the type constraint, since it
-        is only used for instance selection
-        *)
-        add uses k i sr;
-        List.iter ut ts
-
-    | BBDCL_nonconst_ctor (_,_,unt,_,ct, evs, etraint) ->
-        ut unt;
-        ut ct
-
-    | BBDCL_union _  -> ()
-
-    | BBDCL_cstruct (_,ps)
-    | BBDCL_struct (_,ps) ->
-        List.iter ut (List.map snd ps)
-
-    | BBDCL_val (_,t)
-    | BBDCL_var (_,t)
-    | BBDCL_tmp (_,t) -> ut t
-    | BBDCL_ref (_,t) -> ut (BTYP_pointer t)
-    | BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
-        List.iter ut ps_cf;
-        List.iter ut ps_c;
-        ut ret;
-        cal_req_usage sr k reqs
-  end bbdfns;
+  (* Figure out all the calls of the symbol table. *)
+  Hashtbl.iter (call_data_for_symbol syms bbdfns uses) bbdfns;
 
   (* invert uses table to get usedby table *)
   let usedby = Hashtbl.create 97 in

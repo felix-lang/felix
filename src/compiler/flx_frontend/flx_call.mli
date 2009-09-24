@@ -10,6 +10,18 @@ open Flx_mtypes2
 type usage_table_t =  (bid_t, (bid_t * Flx_srcref.t) list) Hashtbl.t
 type usage_t =  usage_table_t * usage_table_t
 
+(** [call_data_for_symbol syms bbdfns uses index symbol] adds the indexes of the
+ * calls [index] makes to the [uses] table. *)
+val call_data_for_symbol:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  usage_table_t ->
+  Flx_types.bid_t ->
+  Flx_types.symbol_data3_t ->
+  unit
+
+(** [call_data syms bbdfns] returns tables of all the calls, and the calls they
+ * make. *)
 val call_data:
   sym_state_t -> fully_bound_symbol_table_t -> usage_t
 
