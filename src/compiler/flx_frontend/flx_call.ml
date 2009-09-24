@@ -1,7 +1,6 @@
 open Flx_ast
 open Flx_types
 open Flx_set
-open List
 open Flx_exceptions
 open Flx_maps
 open Flx_util
@@ -33,7 +32,7 @@ let rec uses_type h k sr t =
   | BTYP_inst (i,ts)
     ->
       add h k i sr;
-      iter ut ts
+      List.iter ut ts
 
   | _ -> iter_btype ut t
 
@@ -62,10 +61,10 @@ let cal_expr_usage syms h k sr e =
 
 let uses_production h k sr p =
   let uses_symbol (_,nt) = match nt with
-  | `Nonterm jj -> iter (fun i -> add h k i sr) jj
+  | `Nonterm jj -> List.iter (fun i -> add h k i sr) jj
   | `Term _ -> () (* HACK! This is a union constructor name  we need to 'use' the union type!! *)
   in
-  iter uses_symbol p
+  List.iter uses_symbol p
 
 let cal_param_usage syms uses sr parent {pindex=child;ptyp=t} =
   uses_type uses parent sr t;
@@ -73,86 +72,82 @@ let cal_param_usage syms uses sr parent {pindex=child;ptyp=t} =
 
 let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
   let uses = Hashtbl.create 97 in
-  let usedby = Hashtbl.create 97 in
-  let usage = uses,usedby in
   let cal_req_usage sr parent reqs =
     let ur (j,ts) =
       if j = 0 then faulty_req syms parent
       else add uses parent j sr
     in
-    iter ur reqs
+    List.iter ur reqs
   in
-  Hashtbl.iter
-  (fun k (_,_,sr,entry) ->
-  let ut t = uses_type uses k sr t in
+  Hashtbl.iter begin fun k (_,_,sr,entry) ->
+    let ut t = uses_type uses k sr t in
 
-  match entry with
-  | BBDCL_typeclass _ -> ()
+    match entry with
+    | BBDCL_typeclass _ -> ()
 
-  | BBDCL_procedure (_,_,(ps,_),exes)
-  | BBDCL_function (_,_,(ps,_),_,exes) ->
-    iter (cal_param_usage syms uses sr k) ps;
-    iter (cal_exe_usage syms uses k) exes
+    | BBDCL_procedure (_,_,(ps,_),exes)
+    | BBDCL_function (_,_,(ps,_),_,exes) ->
+        List.iter (cal_param_usage syms uses sr k) ps;
+        List.iter (cal_exe_usage syms uses k) exes
 
-  | BBDCL_newtype (_,t) -> ut t
-  | BBDCL_abs (_,_,_,reqs) -> cal_req_usage sr k reqs
-  | BBDCL_const (_,_,t,_,reqs) -> cal_req_usage sr k reqs
-  | BBDCL_proc (_,_,ps,_, reqs)  -> cal_req_usage sr k reqs; iter ut ps
-  | BBDCL_fun (_,_,ps,ret,_, reqs,_)  -> cal_req_usage sr k reqs; iter ut ps; ut ret
-  | BBDCL_insert (_,_,_,reqs)  -> cal_req_usage sr k reqs
-  | BBDCL_instance (_,_,cons,i,ts) ->
-    (* we dont add the type constraint, since it
-    is only used for instance selection
-    *)
-    add uses k i sr; iter ut ts
+    | BBDCL_newtype (_,t) -> ut t
+    | BBDCL_abs (_,_,_,reqs) -> cal_req_usage sr k reqs
+    | BBDCL_const (_,_,t,_,reqs) -> cal_req_usage sr k reqs
+    | BBDCL_proc (_,_,ps,_, reqs) -> cal_req_usage sr k reqs; List.iter ut ps
+    | BBDCL_fun (_,_,ps,ret,_, reqs,_) ->
+        cal_req_usage sr k reqs;
+        List.iter ut ps;
+        ut ret
+    | BBDCL_insert (_,_,_,reqs)  -> cal_req_usage sr k reqs
+    | BBDCL_instance (_,_,cons,i,ts) ->
+        (* we dont add the type constraint, since it
+        is only used for instance selection
+        *)
+        add uses k i sr;
+        List.iter ut ts
 
-  | BBDCL_nonconst_ctor (_,_,unt,_,ct, evs, etraint) ->
-    ut unt; ut ct
+    | BBDCL_nonconst_ctor (_,_,unt,_,ct, evs, etraint) ->
+        ut unt;
+        ut ct
 
-  | BBDCL_union _  -> ()
+    | BBDCL_union _  -> ()
 
-  | BBDCL_cstruct (_,ps)
-  | BBDCL_struct (_,ps) ->
-    iter ut (map snd ps)
+    | BBDCL_cstruct (_,ps)
+    | BBDCL_struct (_,ps) ->
+        List.iter ut (List.map snd ps)
 
-  | BBDCL_val (_,t)
-  | BBDCL_var (_,t)
-  | BBDCL_tmp (_,t) -> ut t
-  | BBDCL_ref (_,t) -> ut (BTYP_pointer t)
-  | BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
-    iter ut ps_cf;
-    iter ut ps_c;
-    ut ret; cal_req_usage sr k reqs
+    | BBDCL_val (_,t)
+    | BBDCL_var (_,t)
+    | BBDCL_tmp (_,t) -> ut t
+    | BBDCL_ref (_,t) -> ut (BTYP_pointer t)
+    | BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
+        List.iter ut ps_cf;
+        List.iter ut ps_c;
+        ut ret;
+        cal_req_usage sr k reqs
+  end bbdfns;
 
-  )
-  bbdfns
-  ;
   (* invert uses table to get usedby table *)
-  Hashtbl.iter
-  (fun k ls ->
-    iter
-    (fun (i,sr) -> add usedby i k sr)
-    ls
-  )
-  uses
-  ;
-  usage
+  let usedby = Hashtbl.create 97 in
+  Hashtbl.iter begin fun k ls ->
+    List.iter (fun (i,sr) -> add usedby i k sr) ls
+  end uses;
+
+  uses, usedby
 
 (* closure of i, excluding i unless it is recursive! *)
 let cls h i =
   let c = ref IntSet.empty in
   let rec add j =
-    if not (IntSet.mem j !c) then
-    begin
+    if not (IntSet.mem j !c) then begin
       c := IntSet.add j !c;
       let x = try Hashtbl.find h j with Not_found -> [] in
-      iter (fun (j,_) -> add j) x
+      List.iter (fun (j,_) -> add j) x
     end
   in
-    let x = try Hashtbl.find h i with Not_found -> [] in
-    iter (fun (j,_) -> add j) x
-    ;
-    !c
+  let x = try Hashtbl.find h i with Not_found -> [] in
+  List.iter (fun (j,_) -> add j) x;
+  !c
 
 let is_recursive_call h caller callee = IntSet.mem caller (cls h callee)
 let is_recursive h i = is_recursive_call h i i
@@ -213,11 +208,11 @@ let child_use_closure k h i =
     begin
       c := IntSet.add j !c;
       let x = try Hashtbl.find h j with Not_found -> [] in
-      iter (fun (j,_) -> add j) x
+      List.iter (fun (j,_) -> add j) x
     end
   in
     let x = try Hashtbl.find h i with Not_found -> [] in
-    iter (fun (j,_) ->  add j) x
+    List.iter (fun (j,_) ->  add j) x
     ;
     !c
 
@@ -241,9 +236,8 @@ let call_report syms bbdfns (uses,usedby) f k =
   w (id ^ " uses: ");
   let u = try Hashtbl.find uses k with Not_found -> [] in
   let x = ref [] in
-  iter
-  (fun (i,_) ->
-    if not (mem i !x) then
+  List.iter begin fun (i,_) ->
+    if not (List.mem i !x) then
     try match Hashtbl.find bbdfns i with
       | _,_,_,BBDCL_procedure _
       | _,_,_,BBDCL_function _
@@ -251,15 +245,15 @@ let call_report syms bbdfns (uses,usedby) f k =
       | _,_,_,BBDCL_val _ -> x := i::!x
       | _ -> ()
     with Not_found -> ()
-  )
+  end
   u;
-  let u = sort compare !x in
+  let u = List.sort compare !x in
   w (catmap "," si u);
   w "; usedby: ";
   let u = try Hashtbl.find usedby k with Not_found -> [] in
   let x = ref [] in
-  iter (fun (i,_) -> if not (mem i !x) then x := i::!x) u;
-  let u = sort compare !x in
+  List.iter (fun (i,_) -> if not (List.mem i !x) then x := i::!x) u;
+  let u = List.sort compare !x in
   w (catmap "," si u);
   w "\n"
 
@@ -277,9 +271,9 @@ let print_call_report' syms bbdfns usage f =
   )
   bbdfns
   ;
-  iter
+  List.iter
     (call_report syms bbdfns usage f)
-    (sort compare (!x))
+    (List.sort compare (!x))
 
 let print_call_report syms bbdfns f =
   let usage = call_data syms bbdfns in
