@@ -6,7 +6,6 @@ open Flx_set
 open Flx_mtypes2
 open Flx_typing
 open Flx_mbind
-open List
 open Flx_unify
 open Flx_treg
 open Flx_generic
@@ -42,7 +41,7 @@ let rec uses_type syms used bbdfns count_inits (t:btypecode_t) =
   | BTYP_inst (i,ts)
     ->
       uses syms used bbdfns count_inits i; (* don't care on uses inits? *)
-      iter ut ts
+      List.iter ut ts
 
   (*
   | BTYP_type
@@ -53,7 +52,7 @@ let rec uses_type syms used bbdfns count_inits (t:btypecode_t) =
   | _ -> iter_btype ut t
 
 and uses_exes syms used bbdfns count_inits exes =
-  iter (uses_exe syms used bbdfns count_inits) exes
+  List.iter (uses_exe syms used bbdfns count_inits) exes
 
 and uses_exe syms used bbdfns count_inits (exe:bexe_t) =
   (*
@@ -91,10 +90,10 @@ and uses_tbexpr syms used bbdfns count_inits ((e,t) as x) =
 
 and uses_production syms used bbdfns count_inits p =
   let uses_symbol (_,nt) = match nt with
-  | `Nonterm ii -> iter (uses syms used bbdfns count_inits) ii
+  | `Nonterm ii -> List.iter (uses syms used bbdfns count_inits) ii
   | `Term i -> () (* HACK! This is a union constructor name  we need to 'use' the union type!! *)
   in
-  iter uses_symbol p
+  List.iter uses_symbol p
 
 and faulty_req syms i =
   match Hashtbl.find syms.dfns i with {id=id; sr=sr } ->
@@ -107,9 +106,9 @@ and uses syms used bbdfns count_inits i =
     let ur (j,ts) =
       if j = 0 then
         faulty_req syms i
-      else begin ui j; iter ut ts end
+      else begin ui j; List.iter ut ts end
     in
-    iter ur reqs
+    List.iter ur reqs
   in
   let ux x = uses_exes syms used bbdfns count_inits x in
   let ue e = uses_tbexpr syms used bbdfns count_inits e in
@@ -126,15 +125,15 @@ and uses syms used bbdfns count_inits i =
 
       | BBDCL_instance (_,_,con,i,ts) ->
         ut con;
-        iter ut ts
+        List.iter ut ts
 
       | BBDCL_function (props,_,(ps,traint),ret,exes) ->
-        iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
+        List.iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
         ut ret;
         ux exes
 
       | BBDCL_procedure (props,_,(ps,traint), exes) ->
-        iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
+        List.iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
         ux exes
 
       | BBDCL_union (_,ps)
@@ -146,7 +145,7 @@ and uses syms used bbdfns count_inits i =
 
       | BBDCL_cstruct (_,ps)
       | BBDCL_struct (_,ps) ->
-        iter ut (map snd ps)
+        List.iter ut (List.map snd ps)
 
       | BBDCL_val (_,t)
       | BBDCL_var (_,t)
@@ -155,14 +154,14 @@ and uses syms used bbdfns count_inits i =
       | BBDCL_ref (_,t) -> ut (BTYP_pointer t)
 
       | BBDCL_const (_,_,t,_,reqs) -> ut t; rq reqs
-      | BBDCL_fun (_,_,ps, ret, _,reqs,_) -> iter ut ps; ut ret; rq reqs
+      | BBDCL_fun (_,_,ps, ret, _,reqs,_) -> List.iter ut ps; ut ret; rq reqs
 
       | BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
-        iter ut ps_cf;
-        iter ut ps_c;
+        List.iter ut ps_cf;
+        List.iter ut ps_c;
         ut ret; rq reqs
 
-      | BBDCL_proc (_,_,ps, _, reqs)  -> iter ut ps; rq reqs
+      | BBDCL_proc (_,_,ps, _, reqs)  -> List.iter ut ps; rq reqs
 
       | BBDCL_newtype (_,t) -> ut t
       | BBDCL_abs (_,_,_,reqs) -> rq reqs
@@ -191,20 +190,19 @@ let find_roots syms bbdfns
   set now too
   *)
   let roots = ref (IntSet.singleton root) in
-  iter
-  (function
+
+  List.iter begin function
      | BIFACE_export_python_fun (_,x,_)
      | BIFACE_export_fun (_,x,_) -> roots := IntSet.add x !roots
      | BIFACE_export_type (_,t,_) ->
         uses_type syms roots bbdfns true t
-  )
-  bifaces
-  ;
+  end bifaces;
+
   syms.roots := !roots
 
 let cal_use_closure syms bbdfns (count_inits:bool) =
   let u = ref IntSet.empty in
-  let v : IntSet.t  = !(syms.roots) in
+  let v : IntSet.t = !(syms.roots) in
   let v = ref v in
 
   let add j =
@@ -218,17 +216,15 @@ let cal_use_closure syms bbdfns (count_inits:bool) =
     end
   in
   let ut t = uses_type syms u bbdfns count_inits t in
-  Hashtbl.iter
-  ( fun i entries ->
-    iter (fun (vs,con,ts,j) ->
-    add i; add j;
-    ut con;
-    iter ut ts
-    )
-    entries
-  )
-  syms.typeclass_to_instance
-  ;
+
+  Hashtbl.iter begin fun i entries ->
+    List.iter begin fun (vs,con,ts,j) ->
+      add i; add j;
+      ut con;
+      List.iter ut ts
+    end entries
+  end syms.typeclass_to_instance;
+
   while not (IntSet.is_empty !v) do
     let j = IntSet.choose !v in
     v := IntSet.remove j !v;
@@ -243,15 +239,17 @@ let full_use_closure syms bbdfns =
 let copy_used syms bbdfns =
   if syms.compiler_options.print_flag then
     print_endline "COPY USED";
+
   let h = Hashtbl.create 97 in
   let u = full_use_closure syms bbdfns in
-  IntSet.iter
-  begin fun i ->
+
+  (* Iterate through the used symbols and copy them to the new table. *)
+  IntSet.iter begin fun i ->
     (*
     if syms.compiler_options.print_flag then
       print_endline ("Copying " ^ si i);
     *)
     Hashtbl.add h i (Hashtbl.find bbdfns i)
-  end
-  u;
+  end u;
+
   h
