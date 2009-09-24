@@ -29,6 +29,5 @@ val set_globals:
   unit
 
 val check_global_vars_all_used:
-  sym_state_t ->
   fully_bound_symbol_table_t ->
   (bid_t, 'a) Hashtbl.t -> unit

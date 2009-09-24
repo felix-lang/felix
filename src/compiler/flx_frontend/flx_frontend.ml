@@ -220,6 +220,8 @@ let lower_bbdfns state bbdfns root_proc =
 
   (* Remove unused symbols. *)
   let bbdfns = Flx_use.copy_used state.syms bbdfns in
+
+  (* Mark all the global functions and values. *)
   Flx_global.set_globals state.syms bbdfns;
 
   (* Instantiate type classes. *)
