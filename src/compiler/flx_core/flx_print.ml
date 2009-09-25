@@ -2547,8 +2547,25 @@ let string_of_name_map name_map =
 
 let print_symbol_table dfns =
   Hashtbl.iter begin fun i symbol_data ->
+    print_endline ("index: " ^ string_of_int i);
     print_endline ("id: " ^ symbol_data.id);
-    print_endline ("pubmap: " ^ (string_of_name_map symbol_data.pubmap));
-    print_endline ("privmap: " ^ (string_of_name_map symbol_data.privmap));
+
+    if Hashtbl.length symbol_data.pubmap != 0 then
+      print_endline ("pubmap: " ^ (string_of_name_map symbol_data.pubmap));
+
+    if Hashtbl.length symbol_data.privmap != 0 then
+      print_endline ("privmap: " ^ (string_of_name_map symbol_data.privmap));
+
+    print_endline ("symdef: " ^ (string_of_symdef
+      symbol_data.symdef
+      symbol_data.id
+      symbol_data.vs));
+
     print_newline ();
   end dfns
+
+let print_fully_bound_symbol_table dfns bbdfns =
+  Hashtbl.iter begin fun index (name,parent,sr,entry) ->
+    print_endline
+      (string_of_int index ^ " --> " ^ string_of_bbdcl dfns bbdfns entry index)
+  end bbdfns

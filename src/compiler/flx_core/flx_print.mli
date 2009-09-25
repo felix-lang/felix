@@ -120,6 +120,11 @@ val print_symbol_table:
   symbol_table_t ->
   unit
 
+val print_fully_bound_symbol_table:
+  symbol_table_t ->
+  fully_bound_symbol_table_t ->
+  unit
+
 (** [string_of_name_map name-map] converts the [name-map] to a string. *)
 val string_of_name_map: name_map_t -> string
 

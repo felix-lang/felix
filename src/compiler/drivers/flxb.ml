@@ -125,14 +125,7 @@ try
       index
     in
 
-    Hashtbl.iter
-    (fun index (name,parent,sr,entry) -> print_endline
-      (
-        string_of_int index ^ " --> " ^
-        Flx_print.string_of_bbdcl syms.Flx_mtypes2.dfns bbdfns entry index
-      )
-    )
-    bbdfns
+    Flx_print.print_fully_bound_symbol_table syms.Flx_mtypes2.dfns bbdfns
 
 with x -> Flx_terminate.terminate !reverse_return_parity x
 ;;
