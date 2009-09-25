@@ -9,14 +9,8 @@ type state_t = {
   desugar_state: Flx_desugar.desugar_state_t;
   symtab: Flx_symtab.t;
   bind_state: Flx_bind.bind_state_t;
-  child_map: Flx_child.t;
-  module_index: int;
-  init_index: int;
-  context: Llvm.llcontext;
-  the_module: Llvm.llmodule;
-  the_fpm: [`Function] Llvm.PassManager.t;
-  the_execution_engine: Llvm_executionengine.ExecutionEngine.t;
-  codegen_state: Flx_codegen.codegen_state_t;
+  module_index: Flx_types.bid_t;
+  init_index: Flx_types.bid_t;
 }
 
 
@@ -41,6 +35,120 @@ let create_state options =
     | _ -> assert false
   in
 
+  {
+    syms = syms;
+    bbdfns = bbdfns;
+    macro_state = Flx_macro.make_macro_state "<input>";
+    desugar_state = Flx_desugar.make_desugar_state "<input>" syms;
+    symtab = symtab;
+    bind_state = Flx_bind.make_bind_state
+      ~parent:module_index
+      ~env:(Flx_lookup.build_env syms (Some init_index))
+      syms
+      bbdfns;
+    module_index = module_index;
+    init_index = init_index;
+  }
+
+
+(* Process the stdin input statements *)
+let parse_stmt state stmt () =
+  print_endline ("... PARSED:    " ^ (Flx_print.string_of_statement 0 stmt))
+
+let expand_macros_in_stmt state stmt () =
+  Flx_macro.expand_macros_in_statement state.macro_state begin fun () stmt ->
+    print_endline ("... EXPANDED:  " ^ (Flx_print.string_of_statement 0 stmt));
+  end () stmt
+
+let desugar_stmt state stmt () =
+  Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
+    print_endline ("... DESUGARED: " ^ (Flx_print.string_of_asm 0 asm));
+  end () stmt
+
+let bind_stmt state =
+  let child_map = Flx_child.make () in
+
+  fun stmt () ->
+  Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
+    Flx_bind.bind_asm state.bind_state begin fun () bound_value ->
+      match bound_value with
+      | Flx_bind.Bound_exe bexe ->
+          print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
+            state.syms.Flx_mtypes2.dfns
+            state.bbdfns
+            0
+            bexe)
+
+      | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
+          print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
+            state.syms.Flx_mtypes2.dfns
+            state.bbdfns
+            e
+            index);
+
+          (* Add the symbol to the child map. *)
+          begin
+            match parent with
+            | Some parent -> Flx_child.add_child child_map parent index
+            | None -> ()
+          end;
+
+          Flx_typeclass.typeclass_instance_check_symbol
+            state.syms
+            state.bbdfns
+            child_map
+            index
+            symbol;
+
+    end () asm
+  end () stmt
+
+
+let compile_bexe
+  state
+  codegen_state
+  the_module
+  context
+  the_fpm
+  the_ee
+  bexe
+=
+  (* Make a new function to execute the statement in. We use an opaque
+   * type so that we can later refine it to the actual value of the
+   * returned expression. *)
+  let the_function = Llvm.declare_function
+    ""
+    (Llvm.function_type (Llvm.void_type context) [||])
+    the_module
+  in
+
+  (* Create the initial basic block *)
+  let bb = Llvm.append_block context "entry" the_function in
+  let builder = Llvm.builder_at_end context bb in
+
+  let e = Flx_codegen.codegen_bexe codegen_state builder bexe in
+
+  (* Make sure we have a return at the end of the function. *)
+  ignore (Llvm.build_ret_void builder);
+
+  (* Make sure the function is valid. *)
+  Llvm_analysis.assert_valid_function the_function;
+
+  (* Optimize the function. *)
+  ignore (Llvm.PassManager.run_function the_function the_fpm);
+
+  Llvm.dump_module the_module;
+
+  if !Options.phase = Options.Run then begin
+    (* Execute the statement. *)
+    ignore (Llvm_executionengine.ExecutionEngine.run_function
+      the_function
+      [||]
+      the_ee)
+  end
+
+
+let compile_stmt state =
   (* Create the llvm state *)
 
   (* Initialize the native jit. *)
@@ -51,14 +159,14 @@ let create_state options =
 
   (* Set up the llvm optimizer and execution engine *)
   let the_module_provider = Llvm.ModuleProvider.create the_module in
-  let the_execution_engine =
+  let the_ee =
     Llvm_executionengine.ExecutionEngine.create the_module_provider in
   let the_fpm = Llvm.PassManager.create_function the_module_provider in
 
   (* Set up the optimizer pipeline.  Start with registering info about how the
    * target lays out data structures. *)
   Llvm_target.TargetData.add
-  (Llvm_executionengine.ExecutionEngine.target_data the_execution_engine)
+  (Llvm_executionengine.ExecutionEngine.target_data the_ee)
   the_fpm;
 
   if !Options.optimize >= 1 then begin
@@ -80,125 +188,21 @@ let create_state options =
 
   ignore (Llvm.PassManager.initialize the_fpm);
 
-  {
-    syms = syms;
-    bbdfns = bbdfns;
-    macro_state = Flx_macro.make_macro_state "<input>";
-    desugar_state = Flx_desugar.make_desugar_state "<input>" syms;
-    symtab = symtab;
-    bind_state = Flx_bind.make_bind_state
-      ~parent:module_index
-      ~env:(Flx_lookup.build_env syms (Some init_index))
-      syms
-      bbdfns;
-    child_map = Flx_child.make ();
-    module_index = module_index;
-    init_index = init_index;
-    context = context;
-    the_module = the_module;
-    the_fpm = the_fpm;
-    the_execution_engine = the_execution_engine;
-    codegen_state = Flx_codegen.make_codegen_state
-      syms
-      bbdfns
-      context
-      the_module
-      the_fpm
-      the_execution_engine;
-  }
-
-
-(* Process the stdin input statements *)
-let parse_stmt state stmt () =
-  print_endline ("... PARSED:    " ^ (Flx_print.string_of_statement 0 stmt))
-
-let expand_macros_in_stmt state stmt () =
-  Flx_macro.expand_macros_in_statement state.macro_state begin fun () stmt ->
-    print_endline ("... EXPANDED:  " ^ (Flx_print.string_of_statement 0 stmt));
-  end () stmt
-
-let desugar_stmt state stmt () =
-  Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
-    print_endline ("... DESUGARED: " ^ (Flx_print.string_of_asm 0 asm));
-  end () stmt
-
-let bind_stmt state stmt () =
-  Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
-    Flx_bind.bind_asm state.bind_state begin fun () bound_value ->
-      match bound_value with
-      | Flx_bind.Bound_exe bexe ->
-          print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
-            state.syms.Flx_mtypes2.dfns
-            state.bbdfns
-            0
-            bexe)
-
-      | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
-          print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
-            state.syms.Flx_mtypes2.dfns
-            state.bbdfns
-            e
-            index);
-
-          (* Add the symbol to the child map. *)
-          begin
-            match parent with
-            | Some parent -> Flx_child.add_child state.child_map parent index
-            | None -> ()
-          end;
-
-          Flx_typeclass.typeclass_instance_check_symbol
-            state.syms
-            state.bbdfns
-            state.child_map
-            index
-            symbol;
-
-    end () asm
-  end () stmt
-
-
-let compile_bexe state bexe =
-  (* Make a new function to execute the statement in. We use an opaque
-   * type so that we can later refine it to the actual value of the
-   * returned expression. *)
-  let the_function = Llvm.declare_function
-    ""
-    (Llvm.function_type (Llvm.void_type state.context) [||])
-    state.the_module
+  let codegen_state = Flx_codegen.make_codegen_state
+    state.syms
+    state.bbdfns
+    context
+    the_module
+    the_fpm
+    the_ee
   in
 
-  (* Create the initial basic block *)
-  let bb = Llvm.append_block state.context "entry" the_function in
-  let builder = Llvm.builder_at_end state.context bb in
+  (* Create a child map of the symbols. *)
+  let child_map = Flx_child.make () in
 
-  let e = Flx_codegen.codegen_bexe
-    state.codegen_state
-    builder
-    bexe
-  in
+  (* Return a function that processes a statement at a time. *)
+  fun stmt () ->
 
-  (* Make sure we have a return at the end of the function. *)
-  ignore (Llvm.build_ret_void builder);
-
-  (* Make sure the function is valid. *)
-  Llvm_analysis.assert_valid_function the_function;
-
-  (* Optimize the function. *)
-  ignore (Llvm.PassManager.run_function the_function state.the_fpm);
-
-  Llvm.dump_module state.the_module;
-
-  if !Options.phase = Options.Run then begin
-    (* Execute the statement. *)
-    ignore (Llvm_executionengine.ExecutionEngine.run_function
-      the_function
-      [||]
-      state.the_execution_engine)
-  end
-
-
-let compile_stmt state stmt () =
   (* First bind the statement. *)
   let bs =
     Flx_desugar.desugar_statement state.desugar_state begin fun bs asm ->
@@ -219,7 +223,7 @@ let compile_stmt state stmt () =
           bexe);
         print_newline ();
 
-        compile_bexe state bexe
+        compile_bexe state codegen_state the_module context the_fpm the_ee bexe
 
     | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
         print_endline ("... BOUND SYM:     " ^ Flx_print.string_of_bbdcl
@@ -231,21 +235,21 @@ let compile_stmt state stmt () =
 
         (* Add the symbol to the child map. *)
         begin match parent with
-        | Some parent -> Flx_child.add_child state.child_map parent index
+        | Some parent -> Flx_child.add_child child_map parent index
         | None -> ()
         end;
 
         Flx_typeclass.typeclass_instance_check_symbol
           state.syms
           state.bbdfns
-          state.child_map
+          child_map
           index
           symbol;
 
         (* Only codegen top-level symbols. *)
         match parent with
         | Some parent -> ()
-        | None -> Flx_codegen.codegen_symbol state.codegen_state index symbol
+        | None -> Flx_codegen.codegen_symbol codegen_state index symbol
   end bs ()
 
 
@@ -347,13 +351,7 @@ let main () =
       end state.bbdfns;
 
   | Options.Compile | Options.Run ->
-      ignore (parse_stdin ((compile_stmt state), asms, local_data));
-
-      Printf.printf "\n\nllvm module:";
-      flush stdout;
-
-      (* Print out the generated code. *)
-      Llvm.dump_module state.the_module;
+      ignore (parse_stdin ((compile_stmt state), asms, local_data))
   end;
 
   0
