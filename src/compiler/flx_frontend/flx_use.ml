@@ -192,10 +192,9 @@ let find_roots syms bbdfns
   let roots = ref (IntSet.singleton root) in
 
   List.iter begin function
-     | BIFACE_export_python_fun (_,x,_)
-     | BIFACE_export_fun (_,x,_) -> roots := IntSet.add x !roots
-     | BIFACE_export_type (_,t,_) ->
-        uses_type syms roots bbdfns true t
+  | BIFACE_export_python_fun (_,x,_)
+  | BIFACE_export_fun (_,x,_) -> roots := IntSet.add x !roots
+  | BIFACE_export_type (_,t,_) -> uses_type syms roots bbdfns true t
   end bifaces;
 
   syms.roots := !roots
