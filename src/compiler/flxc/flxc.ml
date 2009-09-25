@@ -8,6 +8,7 @@ type state_t = {
   desugar_state: Flx_desugar.desugar_state_t;
   symtab: Flx_symtab.t;
   bind_state: Flx_bind.bind_state_t;
+  frontend_state: Flx_frontend.frontend_state_t;
   module_index: Flx_types.bid_t;
   init_index: Flx_types.bid_t;
 }
@@ -42,6 +43,7 @@ let create_state options =
       ~parent:module_index
       ~env:(Flx_lookup.build_env syms (Some init_index))
       syms;
+    frontend_state = Flx_frontend.make_frontend_state syms;
     module_index = module_index;
     init_index = init_index;
   }
@@ -94,6 +96,12 @@ let bind_stmt state =
             state.syms
             !bbdfns
             child_map
+            index
+            symbol;
+
+          bbdfns := Flx_frontend.lower_symbol
+            state.frontend_state
+            !bbdfns
             index
             symbol;
 
@@ -249,6 +257,12 @@ let compile_stmt state =
           state.syms
           !bbdfns
           child_map
+          index
+          symbol;
+
+        bbdfns := Flx_frontend.lower_symbol
+          state.frontend_state
+          !bbdfns
           index
           symbol;
 

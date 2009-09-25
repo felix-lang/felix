@@ -11,4 +11,13 @@ val make_closure_state :
   closure_state_t
 
 (** Extract all closures. *)
-val make_closures : closure_state_t -> unit
+val make_closure :
+  closure_state_t ->
+  Flx_types.bid_t ->
+  Flx_types.symbol_data3_t ->
+  unit
+
+(** Extract all closures. *)
+val make_closures :
+  closure_state_t ->
+  unit

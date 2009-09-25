@@ -1,7 +1,13 @@
-type frontend_state_t = { syms: Flx_mtypes2.sym_state_t }
+type frontend_state_t = {
+  syms: Flx_mtypes2.sym_state_t;
+  use: Flx_call.usage_table_t;
+}
 
 
-let make_frontend_state syms = { syms=syms }
+let make_frontend_state syms = {
+  syms=syms;
+  use=Hashtbl.create 97;
+}
 
 
 (* Convenience function for printing debug statements. *)
@@ -207,6 +213,27 @@ let optimize state bbdfns root_proc =
 
   bbdfns
 
+
+let lower_symbol state bbdfns index symbol =
+  (* Wrap closures. *)
+  print_debug state "//Generating primitive wrapper closures";
+  let closure_state = Flx_mkcls.make_closure_state state.syms bbdfns in
+  Flx_mkcls.make_closure closure_state index symbol;
+
+  (* Mark which functions are using global state. *)
+  print_debug state "//Finding which functions use globals";
+
+  (* Remove unused symbols. *)
+  let bbdfns = Flx_use.copy_used state.syms bbdfns in
+
+  (* Mark all the global functions and values. *)
+  Flx_global.set_globals_for_symbol
+    bbdfns
+    state.use
+    index
+    symbol;
+
+  bbdfns
 
 (* Prep the bbdfns for the backend by lowering and simplifying symbols. *)
 let lower_bbdfns state bbdfns root_proc =

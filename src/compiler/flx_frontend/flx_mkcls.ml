@@ -192,6 +192,12 @@ let process_entry state all_closures i =
 
 let set_closure bbdfns i = add_prop bbdfns `Heap_closure i
 
+let make_closure state index symbol =
+  let all_closures = ref IntSet.empty in
+  let used = full_use_closure_for_symbol state.syms state.bbdfns index symbol in
+  IntSet.iter (process_entry state all_closures) used;
+  IntSet.iter (set_closure state.bbdfns) !all_closures
+
 let make_closures state =
   (*
   let used = ref IntSet.empty in

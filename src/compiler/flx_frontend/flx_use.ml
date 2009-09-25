@@ -199,6 +199,43 @@ let find_roots syms bbdfns
 
   syms.roots := !roots
 
+let cal_use_closure_for_symbol syms bbdfns index symbol (count_inits:bool) =
+  let u = ref IntSet.empty in
+  let v : IntSet.t = !(syms.roots) in
+  let v = ref v in
+
+  let add j =
+    if not (IntSet.mem j !u) then
+    begin
+       (*
+       print_endline ("Scanning " ^ si j);
+       *)
+       u := IntSet.add j !u;
+       uses syms v bbdfns count_inits j
+    end
+  in
+  let ut t = uses_type syms u bbdfns count_inits t in
+
+  let instances =
+    try Some (Hashtbl.find syms.typeclass_to_instance index)
+    with Not_found -> None
+  in
+
+  begin match instances with
+  | Some instances ->
+      List.iter begin fun (vs, con, st, j) ->
+        add index;
+        add j;
+        ut con;
+      end instances
+  | None -> ()
+  end;
+
+  !u
+
+let full_use_closure_for_symbol syms bbdfns index symbol =
+  cal_use_closure_for_symbol syms bbdfns index symbol true
+
 let cal_use_closure syms bbdfns (count_inits:bool) =
   let u = ref IntSet.empty in
   let v : IntSet.t = !(syms.roots) in

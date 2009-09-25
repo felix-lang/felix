@@ -40,6 +40,14 @@ val uses:
 *)
 
 (* counts initialisation as use *)
+val full_use_closure_for_symbol:
+  sym_state_t ->
+  fully_bound_symbol_table_t ->
+  Flx_types.bid_t ->
+  Flx_types.symbol_data3_t ->
+  IntSet.t
+
+(* counts initialisation as use *)
 val full_use_closure:
   sym_state_t ->
   fully_bound_symbol_table_t ->
