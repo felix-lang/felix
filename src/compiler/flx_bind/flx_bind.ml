@@ -5,7 +5,6 @@ type bind_state_t = {
   bbind_state: Flx_bbind.bbind_state_t;
   bbind_bbdfns: Flx_types.fully_bound_symbol_table_t;
   strabs_state: Flx_strabs.strabs_state_t;
-  strabs_bbdfns: Flx_types.fully_bound_symbol_table_t;
   bexe_state: Flx_bexe.bexe_state_t;
 }
 
@@ -13,16 +12,14 @@ type bound_t =
   | Bound_exe of Flx_types.bexe_t
   | Bound_symbol of (int * Flx_types.symbol_data3_t)
 
-let make_bind_state ?parent ?env syms strabs_bbdfns =
-  let bbind_bbdfns = Hashtbl.create 97 in
+let make_bind_state ?parent ?env syms =
   {
     syms = syms;
     symtab = Flx_symtab.make syms;
     parent = parent;
-    bbind_bbdfns = bbind_bbdfns;
-    bbind_state = Flx_bbind.make_bbind_state syms bbind_bbdfns;
-    strabs_bbdfns = strabs_bbdfns;
-    strabs_state = Flx_strabs.make_strabs_state bbind_bbdfns strabs_bbdfns;
+    bbind_state = Flx_bbind.make_bbind_state syms;
+    bbind_bbdfns = Hashtbl.create 97;
+    strabs_state = Flx_strabs.make_strabs_state ();
     bexe_state = Flx_bexe.make_bexe_state
       ?parent
       ?env
@@ -31,7 +28,7 @@ let make_bind_state ?parent ?env syms strabs_bbdfns =
       Flx_types.BTYP_void;
   }
 
-let bind_asm state handle_bound init asm =
+let bind_asm state strabs_bbdfns handle_bound init asm =
   (* We need to save the symbol index counter so we can bind all of the symbols
    * that we just added. *)
   let initial_index = !(state.syms.Flx_mtypes2.counter) in
@@ -64,7 +61,7 @@ let bind_asm state handle_bound init asm =
     | None -> ()
     | Some s ->
         (* Then, bind the symbol. *)
-        ignore (Flx_bbind.bbind_symbol state.bbind_state i s)
+        ignore (Flx_bbind.bbind_symbol state.bbind_state state.bbind_bbdfns i s)
     end
   done;
 
@@ -78,7 +75,14 @@ let bind_asm state handle_bound init asm =
     | None -> ()
     | Some s ->
         (* Finally, downgrade abstract types. *)
-        match Flx_strabs.strabs_symbol state.strabs_state i s with
+        match
+          Flx_strabs.strabs_symbol
+            state.strabs_state
+            state.bbind_bbdfns
+            strabs_bbdfns
+            i
+            s
+        with
         | None -> ()
         | Some s ->
             (* ... and finally pass the symbol to the client *)
@@ -94,14 +98,16 @@ let bind_asms state asms =
   let exes, ifaces = Flx_symtab.add_asms state.symtab asms in
 
   (* Now, bind all the symbols. *)
-  Flx_bbind.bbind state.bbind_state;
+  Flx_bbind.bbind state.bbind_state state.bbind_bbdfns;
 
   (* Downgrade abstract types. *)
-  Flx_strabs.strabs state.strabs_state;
+  let bbdfns = Flx_strabs.strabs state.strabs_state state.bbind_bbdfns in
 
   (* Bind the interfaces. *)
   state.syms.Flx_mtypes2.bifaces <- List.map
     (Flx_bbind.bind_interface state.bbind_state) ifaces;
 
   (* Clear the type cache. *)
-  Hashtbl.clear state.syms.Flx_mtypes2.ticache
+  Hashtbl.clear state.syms.Flx_mtypes2.ticache;
+
+  bbdfns

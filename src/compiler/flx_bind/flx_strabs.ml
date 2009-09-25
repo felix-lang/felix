@@ -13,16 +13,9 @@ open Flx_generic
 open Flx_maps
 open Flx_exceptions
 
-type strabs_state_t = {
-  input_bbdfns: fully_bound_symbol_table_t;
-  output_bbdfns: fully_bound_symbol_table_t;
-}
+type strabs_state_t = unit
 
-let make_strabs_state input_bbdfns output_bbdfns =
-  {
-    input_bbdfns = input_bbdfns;
-    output_bbdfns = output_bbdfns;
-  }
+let make_strabs_state () = ()
 
 let check_inst bbdfns i ts =
   let id,_,_,entry = Hashtbl.find bbdfns i in
@@ -72,16 +65,16 @@ let fixps bbdfns (ps,traint) =
   | Some t -> Some (fixexpr bbdfns t)
   )
 
-let strabs_symbol strabs_state index (id,parent,sr,entry) =
-  let ft t = fixtype strabs_state.input_bbdfns t in
-  let fts ts = map (fixtype strabs_state.input_bbdfns) ts in
-  let fe e = fixexpr strabs_state.input_bbdfns e in
-  let fxs xs = fixbexes strabs_state.input_bbdfns xs in
-  let fp bps = fixps strabs_state.input_bbdfns bps in
+let strabs_symbol state input_bbdfns output_bbdfns index (id,parent,sr,entry) =
+  let ft t = fixtype input_bbdfns t in
+  let fts ts = map (fixtype input_bbdfns) ts in
+  let fe e = fixexpr input_bbdfns e in
+  let fxs xs = fixbexes input_bbdfns xs in
+  let fp bps = fixps input_bbdfns bps in
 
   let h x =
     let symbol = (id,parent,sr,x) in
-    Hashtbl.add strabs_state.output_bbdfns index symbol;
+    Hashtbl.add output_bbdfns index symbol;
     Some symbol
   in
   match entry with
@@ -145,7 +138,11 @@ let strabs_symbol strabs_state index (id,parent,sr,entry) =
   | BBDCL_nonconst_ctor (bvs, j, t1, k,t2, evs, etraint) ->
     h (BBDCL_nonconst_ctor (bvs, j, ft t1, k, ft t2, evs, ft etraint))
 
-let strabs strabs_state =
+let strabs state input_bbdfns =
+  let output_bbdfns = Hashtbl.create 97 in
+
   Hashtbl.iter begin fun index symbol ->
-      ignore(strabs_symbol strabs_state index symbol)
-  end strabs_state.input_bbdfns
+    ignore(strabs_symbol state input_bbdfns output_bbdfns index symbol)
+  end input_bbdfns;
+
+  output_bbdfns

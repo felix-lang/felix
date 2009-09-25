@@ -12,12 +12,9 @@ open List
 open Flx_generic
 open Flx_tpat
 
-type bbind_state_t = {
-  syms: Flx_mtypes2.sym_state_t;
-  bbdfns: Flx_types.fully_bound_symbol_table_t;
-}
+type bbind_state_t = { syms: Flx_mtypes2.sym_state_t }
 
-let make_bbind_state syms bbdfns = { syms=syms; bbdfns=bbdfns }
+let make_bbind_state syms = { syms=syms }
 
 let hfind msg h k =
   try Hashtbl.find h k
@@ -103,7 +100,7 @@ let bind_qual bt qual = match qual with
 
 let bind_quals bt quals = map (bind_qual bt) quals
 
-let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
+let bbind_symbol { syms=syms } bbdfns symbol_index {
   id=name;
   sr=sr;
   parent=parent;
@@ -619,7 +616,7 @@ let bbind_symbol { syms=syms; bbdfns=bbdfns } symbol_index {
   flush stdout
   *)
 
-let bbind bbind_state =
+let bbind bbind_state bbdfns =
   (* loop through all counter values [HACK]
     to get the indices in sequence, AND,
     to ensure any instantiations will be bound,
@@ -643,7 +640,7 @@ let bbind bbind_state =
               failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
           end;
           *)
-          ignore (bbind_symbol bbind_state !i entry)
+          ignore (bbind_symbol bbind_state bbdfns !i entry)
         with Not_found ->
           try match hfind "bbind" bbind_state.syms.dfns !i with {id=id} ->
             failwith ("Binding error, cannot find in table: " ^ id ^ " index " ^ si !i)
