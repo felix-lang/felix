@@ -85,26 +85,6 @@ let bind_stmt state =
             e
             index);
 
-          (* Add the symbol to the child map. *)
-          begin
-            match parent with
-            | Some parent -> Flx_child.add_child child_map parent index
-            | None -> ()
-          end;
-
-          Flx_typeclass.typeclass_instance_check_symbol
-            state.syms
-            !bsym_table
-            child_map
-            index
-            symbol;
-
-          bsym_table := Flx_frontend.lower_symbol
-            state.frontend_state
-            !bsym_table
-            index
-            symbol;
-
     end () asm
   end () stmt
 
@@ -204,73 +184,75 @@ let compile_stmt state =
 
   (* Create a child map of the symbols. *)
   let bsym_table = ref (Hashtbl.create 97) in
-  let child_map = Flx_child.make () in
+  let child_map = ref (Flx_child.make ()) in
 
   (* Return a function that processes a statement at a time. *)
   fun stmt () ->
 
   (* First bind the statement. *)
-  let bs =
+  let bexes, bids =
     Flx_desugar.desugar_statement state.desugar_state begin fun bs asm ->
-      Flx_bind.bind_asm state.bind_state !bsym_table (fun bs b -> b :: bs) bs asm
-    end [] stmt
+      Flx_bind.bind_asm state.bind_state !bsym_table begin fun (bexes, bids) b ->
+        match b with
+        | Flx_bind.Bound_exe bexe -> bexe :: bexes, bids
+        | Flx_bind.Bound_symbol (bid,_) -> bexes, bid :: bids
+      end bs asm
+    end ([], []) stmt
   in
 
-  (* Now, step through each bound value and it. We don't do this above so we
-   * make sure that if one statement is split into multiple desugared statements
-   * we'll have all of those statements bound at the same time. *)
-  List.fold_right begin fun bound_value () ->
-    match bound_value with
-    | Flx_bind.Bound_exe bexe ->
-        print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
-          state.syms.Flx_mtypes2.sym_table
-          !bsym_table
-          0
-          bexe);
-        print_newline ();
+  (* Reverse the bound symbol lists so we can make tail calls. *)
+  let bexes = List.rev bexes in
+  let bids = List.rev bids in
 
-        compile_bexe
-          state
-          codegen_state
-          !bsym_table
-          the_module
-          context
-          the_fpm
-          the_ee
-          bexe
+  (* Lower and optimize the symbols. *)
+  let bsym_table', child_map', bexes, bids = Flx_frontend.lower_symbols
+    state.frontend_state
+    !bsym_table
+    !child_map
+    state.module_index
+    bexes
+    bids
+  in
+  bsym_table := bsym_table';
+  child_map := child_map';
 
-    | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
-        print_endline ("... BOUND SYM:     " ^ Flx_print.string_of_bbdcl
-          state.syms.Flx_mtypes2.sym_table
-          !bsym_table
-          e
-          index);
-        print_newline ();
+  (* Next, do the code generation. First we'll generate the symbols. *)
+  List.iter begin fun bid ->
+    let (_,parent,_,bbdcl) as bsym = Hashtbl.find !bsym_table bid in
 
-        (* Add the symbol to the child map. *)
-        begin match parent with
-        | Some parent -> Flx_child.add_child child_map parent index
-        | None -> ()
-        end;
+    print_endline ("... BOUND SYM:     " ^ Flx_print.string_of_bbdcl
+      state.syms.Flx_mtypes2.sym_table
+      !bsym_table
+      bbdcl
+      bid);
+    print_newline ();
 
-        Flx_typeclass.typeclass_instance_check_symbol
-          state.syms
-          !bsym_table
-          child_map
-          index
-          symbol;
+    (* Only codegen top-level symbols, since that'll be handled by the code
+     * generator. *)
+    match parent with
+    | Some parent -> ()
+    | None -> Flx_codegen.codegen_symbol codegen_state !bsym_table bid bsym
+  end bids;
 
-        bsym_table := Flx_frontend.lower_symbol
-          state.frontend_state
-          !bsym_table
-          index
-          symbol;
+  (* Finally, generate code for the executions. *)
+  List.iter begin fun bexe ->
+    print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
+      state.syms.Flx_mtypes2.sym_table
+      !bsym_table
+      0
+      bexe);
+    print_newline ();
 
-        (* Only codegen top-level symbols. *)
-        match parent with
-        | Some parent -> ()
-        | None -> Flx_codegen.codegen_symbol codegen_state !bsym_table index symbol
-  end bs ()
+    compile_bexe
+      state
+      codegen_state
+      !bsym_table
+      the_module
+      context
+      the_fpm
+      the_ee
+      bexe
+  end bexes
 
 
 (* Parse all the imports *)

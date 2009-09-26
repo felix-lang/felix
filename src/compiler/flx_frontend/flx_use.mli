@@ -40,11 +40,10 @@ val uses:
 *)
 
 (* counts initialisation as use *)
-val full_use_closure_for_symbol:
+val full_use_closure_for_symbols:
   sym_state_t ->
   bsym_table_t ->
-  Flx_types.bid_t ->
-  Flx_types.bsym_t ->
+  Flx_types.bid_t list -> (* The list of symbols to count usage for. *)
   IntSet.t
 
 (* counts initialisation as use *)

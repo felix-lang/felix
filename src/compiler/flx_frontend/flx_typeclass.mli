@@ -5,13 +5,12 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 
-val typeclass_instance_check_symbol:
+val typeclass_instance_check_symbols:
   sym_state_t ->
   bsym_table_t ->
   Flx_child.t ->
-  Flx_types.bid_t ->
-  Flx_types.bsym_t ->
-  unit
+  Flx_types.bid_t list -> (** The list of symbols to check. *)
+  Flx_types.bid_t list
 
 val typeclass_instance_check:
   sym_state_t ->

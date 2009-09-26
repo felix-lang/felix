@@ -1,11 +1,13 @@
 type frontend_state_t = {
   syms: Flx_mtypes2.sym_state_t;
+  closure_state: Flx_mkcls.closure_state_t;
   use: Flx_call.usage_table_t;
 }
 
 
 let make_frontend_state syms = {
   syms=syms;
+  closure_state=Flx_mkcls.make_closure_state syms;
   use=Hashtbl.create 97;
 }
 
@@ -215,11 +217,34 @@ let optimize state bsym_table root_proc =
   bsym_table
 
 
-let lower_symbol state bsym_table index symbol =
+let optimize_symbols state bsym_table bexes symbols =
+  (* FIXME: implement optimizing. *)
+  bsym_table, bexes, symbols
+
+
+let lower_symbols state bsym_table child_map root_proc bexes bids =
+  (* Add the symbols to the child map. *)
+  List.iter begin fun bid ->
+    let (_,parent,_,_) = Hashtbl.find bsym_table bid in
+    match parent with
+    | Some parent -> Flx_child.add_child child_map parent bid
+    | None -> ()
+  end bids;
+
+  (* Check the typeclasses. *)
+  let bids = Flx_typeclass.typeclass_instance_check_symbols
+    state.syms
+    bsym_table
+    child_map
+    bids
+  in
+
+  (* Optimize the symbols. *)
+  let bsym_table, bexes, bids = optimize_symbols state bsym_table bexes bids in
+
   (* Wrap closures. *)
   print_debug state "//Generating primitive wrapper closures";
-  let closure_state = Flx_mkcls.make_closure_state state.syms bsym_table in
-  Flx_mkcls.make_closure closure_state index symbol;
+  let bids = Flx_mkcls.make_closure state.closure_state bsym_table bids in
 
   (* Mark which functions are using global state. *)
   print_debug state "//Finding which functions use globals";
@@ -230,20 +255,19 @@ let lower_symbol state bsym_table index symbol =
   *)
 
   (* Mark all the global functions and values. *)
-  Flx_global.set_globals_for_symbol
+  let symbols = Flx_global.set_globals_for_symbols
     bsym_table
     state.use
-    index
-    symbol;
+    bids
+  in
 
-  bsym_table
+  bsym_table, child_map, bexes, bids
 
 (* Prep the bsym_table for the backend by lowering and simplifying symbols. *)
 let lower_bsym_table state bsym_table root_proc =
   (* Wrap closures. *)
   print_debug state "//Generating primitive wrapper closures";
-  let closure_state = Flx_mkcls.make_closure_state state.syms bsym_table in
-  Flx_mkcls.make_closures closure_state;
+  Flx_mkcls.make_closures state.closure_state bsym_table;
 
   (* Mark which functions are using global state. *)
   print_debug state "//Finding which functions use globals";

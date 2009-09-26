@@ -199,7 +199,7 @@ let find_roots syms bsym_table
 
   syms.roots := !roots
 
-let cal_use_closure_for_symbol syms bsym_table index symbol (count_inits:bool) =
+let cal_use_closure_for_symbols syms bsym_table bids (count_inits:bool) =
   let u = ref IntSet.empty in
   let v : IntSet.t = !(syms.roots) in
   let v = ref v in
@@ -216,25 +216,21 @@ let cal_use_closure_for_symbol syms bsym_table index symbol (count_inits:bool) =
   in
   let ut t = uses_type syms u bsym_table count_inits t in
 
-  let instances =
-    try Some (Hashtbl.find syms.typeclass_to_instance index)
-    with Not_found -> None
-  in
-
-  begin match instances with
-  | Some instances ->
-      List.iter begin fun (vs, con, st, j) ->
-        add index;
-        add j;
-        ut con;
-      end instances
-  | None -> ()
-  end;
+  List.iter begin fun bid ->
+    match Flx_hashtbl.find syms.typeclass_to_instance bid with
+    | Some instances ->
+        List.iter begin fun (vs, con, st, j) ->
+          add bid;
+          add j;
+          ut con;
+        end instances
+    | None -> ()
+  end bids;
 
   !u
 
-let full_use_closure_for_symbol syms bsym_table index symbol =
-  cal_use_closure_for_symbol syms bsym_table index symbol true
+let full_use_closure_for_symbols syms bsym_table bids =
+  cal_use_closure_for_symbols syms bsym_table bids true
 
 let cal_use_closure syms bsym_table (count_inits:bool) =
   let u = ref IntSet.empty in

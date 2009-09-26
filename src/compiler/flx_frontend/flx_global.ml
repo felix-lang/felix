@@ -297,6 +297,15 @@ let rec set_ptf_usage bsym_table usage excludes i (id, parent, sr, entry) =
 let set_globals_for_symbol bsym_table uses index symbol =
   ignore (set_ptf_usage bsym_table uses [] index symbol)
 
+let set_globals_for_symbols bsym_table uses bids =
+  (* Iterate through each symbol and mark if the function needs a frame. *)
+  List.iter begin fun bid ->
+    let bsym = Hashtbl.find bsym_table bid in
+    set_globals_for_symbol bsym_table uses bid bsym
+  end bids;
+
+  bids
+
 let set_globals syms bsym_table =
   Hashtbl.iter begin fun index symbol ->
     ignore (set_local_globals bsym_table index symbol)

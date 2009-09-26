@@ -274,6 +274,16 @@ let typeclass_instance_check_symbol syms bsym_table child_map i (id, _, sr, entr
       check_instance syms bsym_table child_map i id vs cons sr props tc ts
   | _ -> ()
 
+let typeclass_instance_check_symbols syms bsym_table child_map bids =
+  (* Check each symbol. *)
+  List.iter begin fun bid ->
+    let bsym = Hashtbl.find bsym_table bid in
+    typeclass_instance_check_symbol syms bsym_table child_map bid bsym
+  end bids;
+
+  (* We don't insert new symbols into the list, so return it directly. *)
+  bids
+
 let typeclass_instance_check syms bsym_table child_map =
   Hashtbl.iter (typeclass_instance_check_symbol syms bsym_table child_map) bsym_table
 
