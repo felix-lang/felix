@@ -63,25 +63,64 @@ let desugar_stmt state stmt () =
     print_endline ("... DESUGARED: " ^ (Flx_print.string_of_asm 0 asm));
   end () stmt
 
-let bind_stmt state =
+(* Convenience function to make bsym_table from our state. *)
+let make_bind_state state =
+  let bsym_table = Hashtbl.create 97 in
+
+  let module_symbol = Hashtbl.find
+    state.syms.Flx_mtypes2.sym_table
+    state.module_index
+  in
+  let init_symbol = Hashtbl.find
+    state.syms.Flx_mtypes2.sym_table
+    state.init_index
+  in
+
+  (* Bind the module and init function. *)
+  ignore (Flx_bbind.bbind_symbol
+    state.syms
+    bsym_table
+    state.module_index
+    module_symbol);
+  ignore (Flx_bbind.bbind_symbol
+    state.syms
+    bsym_table
+    state.init_index
+    init_symbol);
+
+  (* Add the module and init function to the child map *)
   let child_map = Flx_child.make () in
-  let bsym_table = ref (Hashtbl.create 97) in
+  begin match module_symbol.Flx_types.parent with
+  | Some parent -> Flx_child.add_child child_map parent state.module_index;
+  | None -> ()
+  end;
+
+  begin match init_symbol.Flx_types.parent with
+  | Some parent -> Flx_child.add_child child_map parent state.init_index;
+  | None -> ()
+  end;
+
+  bsym_table, child_map
+
+
+let bind_stmt state =
+  let bsym_table, _ = make_bind_state state in
 
   fun stmt () ->
   Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
-    Flx_bind.bind_asm state.bind_state !bsym_table begin fun () bound_value ->
+    Flx_bind.bind_asm state.bind_state bsym_table begin fun () bound_value ->
       match bound_value with
       | Flx_bind.Bound_exe bexe ->
           print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
             state.syms.Flx_mtypes2.sym_table
-            !bsym_table
+            bsym_table
             0
             bexe)
 
       | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
           print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
             state.syms.Flx_mtypes2.sym_table
-            !bsym_table
+            bsym_table
             e
             index);
 
@@ -183,8 +222,12 @@ let compile_stmt state =
   in
 
   (* Create a child map of the symbols. *)
-  let bsym_table = ref (Hashtbl.create 97) in
-  let child_map = ref (Flx_child.make ()) in
+  let bsym_table, child_map = make_bind_state state in
+
+  (* Make references of the bsym_table and child map since we'll be replacing these
+   * values as we optimize. *)
+  let bsym_table = ref bsym_table in
+  let child_map = ref child_map in
 
   (* Return a function that processes a statement at a time. *)
   fun stmt () ->

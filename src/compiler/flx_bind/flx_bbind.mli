@@ -2,28 +2,22 @@
  *
  * Name binding pass 2 *)
 
-type bbind_state_t
-
-val make_bbind_state:
-  Flx_mtypes2.sym_state_t ->
-  bbind_state_t
-
 (* Bind a single symbol. *)
 val bbind_symbol:
-  bbind_state_t ->
+  Flx_mtypes2.sym_state_t ->
   Flx_types.bsym_table_t ->
-  int ->
+  Flx_types.bid_t ->
   Flx_types.sym_t ->
   Flx_types.bsym_t option
 
 (* Bind all the symbols in the symtab. *)
 val bbind:
-  bbind_state_t ->
+  Flx_mtypes2.sym_state_t ->
   Flx_types.bsym_table_t ->
   unit
 
 (* Bind a single interface *)
 val bind_interface:
-  bbind_state_t ->
+  Flx_mtypes2.sym_state_t ->
   Flx_types.bound_iface_t ->
   Flx_types.biface_t

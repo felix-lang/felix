@@ -12,10 +12,6 @@ open List
 open Flx_generic
 open Flx_tpat
 
-type bbind_state_t = { syms: Flx_mtypes2.sym_state_t }
-
-let make_bbind_state syms = { syms=syms }
-
 let hfind msg h k =
   try Hashtbl.find h k
   with Not_found ->
@@ -100,7 +96,7 @@ let bind_qual bt qual = match qual with
 
 let bind_quals bt quals = map (bind_qual bt) quals
 
-let bbind_symbol { syms=syms } bsym_table symbol_index {
+let bbind_symbol syms bsym_table symbol_index {
   id=name;
   sr=sr;
   parent=parent;
@@ -627,7 +623,7 @@ let bbind_symbol { syms=syms } bsym_table symbol_index {
   flush stdout
   *)
 
-let bbind bbind_state bsym_table =
+let bbind syms bsym_table =
   (* loop through all counter values [HACK]
     to get the indices in sequence, AND,
     to ensure any instantiations will be bound,
@@ -635,25 +631,25 @@ let bbind bbind_state bsym_table =
     of syms.counter for an index
   *)
   let i = ref 0 in
-  while !i < !(bbind_state.syms.counter) do
+  while !i < !(syms.counter) do
     begin
       let entry =
-        try Some (Hashtbl.find bbind_state.syms.sym_table !i)
+        try Some (Hashtbl.find syms.sym_table !i)
         with Not_found -> None
       in match entry with
       | Some entry ->
         begin try
           (*
           begin
-            try match hfind "bbind" bbind_state.syms.sym_table !i with {id=id} ->
+            try match hfind "bbind" syms.sym_table !i with {id=id} ->
               print_endline (" Trying to bind " ^ id ^ " index " ^ si !i)
             with Not_found ->
               failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
           end;
           *)
-          ignore (bbind_symbol bbind_state bsym_table !i entry)
+          ignore (bbind_symbol syms bsym_table !i entry)
         with Not_found ->
-          try match hfind "bbind" bbind_state.syms.sym_table !i with {id=id} ->
+          try match hfind "bbind" syms.sym_table !i with {id=id} ->
             failwith ("Binding error, cannot find in table: " ^ id ^ " index " ^
               si !i)
           with Not_found ->
@@ -665,10 +661,10 @@ let bbind bbind_state bsym_table =
     incr i
   done
 
-let bind_interface bbind_state = function
+let bind_interface syms = function
   | sr, IFACE_export_fun (sn, cpp_name), parent ->
-      let env = Flx_lookup.build_env bbind_state.syms parent in
-      let index,ts = Flx_lookup.lookup_sn_in_env bbind_state.syms env sn in
+      let env = Flx_lookup.build_env syms parent in
+      let index,ts = Flx_lookup.lookup_sn_in_env syms env sn in
       if length ts = 0 then
         BIFACE_export_fun (sr,index, cpp_name)
       else clierr sr
@@ -678,8 +674,8 @@ let bind_interface bbind_state = function
       )
 
   | sr, IFACE_export_python_fun (sn, cpp_name), parent ->
-      let env = Flx_lookup.build_env bbind_state.syms parent in
-      let index,ts = Flx_lookup.lookup_sn_in_env bbind_state.syms env sn in
+      let env = Flx_lookup.build_env syms parent in
+      let index,ts = Flx_lookup.lookup_sn_in_env syms env sn in
       if length ts = 0 then
         BIFACE_export_python_fun (sr,index, cpp_name)
       else clierr sr
@@ -689,18 +685,13 @@ let bind_interface bbind_state = function
       )
 
   | sr, IFACE_export_type (typ, cpp_name), parent ->
-      let env = Flx_lookup.build_env bbind_state.syms parent in
-      let t = Flx_lookup.bind_type
-        bbind_state.syms
-        env
-        Flx_srcref.dummy_sr
-        typ
-      in
+      let env = Flx_lookup.build_env syms parent in
+      let t = Flx_lookup.bind_type syms env Flx_srcref.dummy_sr typ in
       if try var_occurs t with _ -> true then
       clierr sr
       (
         "Can't export generic- or meta- type " ^
-        string_of_btypecode bbind_state.syms.sym_table t
+        string_of_btypecode syms.sym_table t
       )
       else
         BIFACE_export_type (sr, t, cpp_name)
