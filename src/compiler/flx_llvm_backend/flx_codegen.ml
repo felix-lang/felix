@@ -465,6 +465,10 @@ let codegen_bexe state bsym_table builder bexe =
           (* The label doesn't exist yet, so let's make it. *)
           let the_function = builder_parent builder in
           let bb = Llvm.append_block state.context label the_function in
+
+          (* Unconditional branch to the basic block. *)
+          ignore (Llvm.build_br bb builder);
+
           Hashtbl.add state.label_bindings label bb;
           bb
       in
