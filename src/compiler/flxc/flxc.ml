@@ -22,7 +22,7 @@ let create_state options =
 
   (* Declare the module to work within *)
   let module_index, _ = Flx_symtab.add_dcl symtab (
-    Flx_srcref.dummy_sr, "__init_module__", None, `Public, Flx_ast.dfltvs,
+    Flx_srcref.dummy_sr, "", None, `Public, Flx_ast.dfltvs,
     Flx_types.DCL_module [])
   in
   let module_symbol = Hashtbl.find syms.Flx_mtypes2.dfns module_index in

@@ -55,10 +55,14 @@ let lltype_of_suffix state suffix =
 
 
 (* Convenience function to look up the name of an index *)
-let name_of_index state bbdfns index =
+let rec name_of_index state bbdfns index =
+  (* Recursively prepend the name of the parent to *)
   try
     match Hashtbl.find state.syms.Flx_mtypes2.dfns index with
-    | { Flx_types.id=id } -> id
+    | { Flx_types.id=id; parent=Some parent } ->
+        let s = name_of_index state bbdfns parent in
+        if String.length s = 0 then id else s ^ "." ^ id
+    | { Flx_types.id=id; parent=None } -> id
   with Not_found ->
     try
       match Hashtbl.find bbdfns index with id, _, _, _ -> id
