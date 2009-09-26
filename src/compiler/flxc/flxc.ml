@@ -261,20 +261,29 @@ let compile_stmt state =
 
   (* Next, do the code generation. First we'll generate the symbols. *)
   List.iter begin fun bid ->
-    let (_,parent,_,bbdcl) as bsym = Hashtbl.find !bsym_table bid in
+    (* Try to find the bsym corresponding with the bid. It's okay if it doesn't
+     * exist as it may have been optimized away. *)
+    match Flx_hashtbl.find !bsym_table bid with
+    | None -> ()
+    | Some ((_,parent,_,bbdcl) as bsym) ->
+        print_endline ("... BOUND SYM:     " ^ Flx_print.string_of_bbdcl
+          state.syms.Flx_mtypes2.sym_table
+          !bsym_table
+          bbdcl
+          bid);
+        print_newline ();
 
-    print_endline ("... BOUND SYM:     " ^ Flx_print.string_of_bbdcl
-      state.syms.Flx_mtypes2.sym_table
-      !bsym_table
-      bbdcl
-      bid);
-    print_newline ();
-
-    (* Only codegen top-level symbols, since that'll be handled by the code
-     * generator. *)
-    match parent with
-    | Some parent -> ()
-    | None -> Flx_codegen.codegen_symbol codegen_state !bsym_table bid bsym
+        (* Only codegen top-level symbols, since that'll be handled by the code
+         * generator. *)
+        match parent with
+        | Some parent -> ()
+        | None ->
+            Flx_codegen.codegen_symbol
+              codegen_state
+              !bsym_table
+              !child_map
+              bid
+              bsym
   end bids;
 
   (* Finally, generate code for the executions. *)

@@ -300,8 +300,9 @@ let set_globals_for_symbol bsym_table uses index symbol =
 let set_globals_for_symbols bsym_table uses bids =
   (* Iterate through each symbol and mark if the function needs a frame. *)
   List.iter begin fun bid ->
-    let bsym = Hashtbl.find bsym_table bid in
-    set_globals_for_symbol bsym_table uses bid bsym
+    match Flx_hashtbl.find bsym_table bid with
+    | Some bsym -> set_globals_for_symbol bsym_table uses bid bsym
+    | None -> ()
   end bids;
 
   bids

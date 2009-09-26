@@ -10,7 +10,8 @@ val optimize :
   frontend_state_t ->
   Flx_types.bsym_table_t ->
   Flx_types.bid_t ->
-  Flx_types.bsym_table_t
+  bool ->                   (** Whether or not to clean up unused symbols. *)
+  Flx_types.bsym_table_t * Flx_child.t
 
 (** Prep the bound symbol table for the backend by lowering and simplifying
  * symbols. *)

@@ -20,7 +20,7 @@ let print_debug state msg =
 
 (* Convert curried functions to uncurried functions so they can ba applied
  * directly instead of requiring closures. *)
-let uncurry_functions state bsym_table =
+let uncurry_functions state bsym_table clean_bsym_table =
   let child_map = Flx_child.cal_children bsym_table in
   let bsym_table = ref bsym_table in
   let child_map = ref child_map in
@@ -31,14 +31,18 @@ let uncurry_functions state bsym_table =
     if !counter > 10 then failwith "uncurry exceeded 10 passes";
 
     (* Remove unused symbols. *)
-    bsym_table := Flx_use.copy_used state.syms !bsym_table;
+    bsym_table :=
+      if clean_bsym_table
+      then Flx_use.copy_used state.syms !bsym_table
+      else !bsym_table;
+
     child_map := Flx_child.cal_children !bsym_table;
   done;
 
   !bsym_table
 
 
-let inline_functions state bsym_table root_proc =
+let inline_functions state bsym_table root_proc clean_bsym_table =
   if state.syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag then begin
     print_endline "";
     print_endline "---------------------------";
@@ -57,14 +61,22 @@ let inline_functions state bsym_table root_proc =
   Flx_typeclass.fixup_typeclass_instances state.syms bsym_table;
 
   (* Clean up the symbol table. *)
-  let bsym_table = Flx_use.copy_used state.syms bsym_table in
+  let bsym_table =
+    if clean_bsym_table
+    then Flx_use.copy_used state.syms bsym_table
+    else bsym_table
+  in
 
   (* Perform the inlining. *)
   let child_map = Flx_child.cal_children bsym_table in
   Flx_inline.heavy_inlining state.syms bsym_table child_map;
 
   (* Clean up the symbol table. *)
-  let bsym_table = Flx_use.copy_used state.syms bsym_table in
+  let bsym_table =
+    if clean_bsym_table
+    then Flx_use.copy_used state.syms bsym_table
+    else bsym_table
+  in
 
   print_debug state "PHASE 1 INLINING COMPLETE";
   if state.syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag then begin
@@ -101,7 +113,13 @@ let inline_functions state bsym_table root_proc =
   Flx_mono.monomorphise state.syms bsym_table;
   print_debug state "//MONOMORPHISING DONE";
 
-  let bsym_table = Flx_use.copy_used state.syms bsym_table in
+  (* Clean up the symbol table. *)
+  let bsym_table =
+    if clean_bsym_table
+    then Flx_use.copy_used state.syms bsym_table
+    else bsym_table
+  in
+
   let child_map = Flx_child.cal_children bsym_table in
 
   if state.syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag then begin
@@ -123,7 +141,14 @@ let inline_functions state bsym_table root_proc =
   (* Do another inlining pass. *)
   print_debug state "//INLINING";
   Flx_typeclass.fixup_typeclass_instances state.syms bsym_table;
-  let bsym_table = Flx_use.copy_used state.syms bsym_table in
+
+  (* Clean up the symbol table. *)
+  let bsym_table =
+    if clean_bsym_table
+    then Flx_use.copy_used state.syms bsym_table
+    else bsym_table
+  in
+
   let child_map = Flx_child.cal_children bsym_table in
   Flx_inline.heavy_inlining state.syms bsym_table child_map;
 
@@ -133,12 +158,17 @@ let inline_functions state bsym_table root_proc =
   *)
 
   (* Remove unused symbols. *)
-  bsym_table
+  bsym_table, child_map
 
 
-let mkproc state bsym_table =
+let mkproc state bsym_table clean_bsym_table =
   (* Clean up the symbol table. *)
-  let bsym_table = Flx_use.copy_used state.syms bsym_table in
+  let bsym_table =
+    if clean_bsym_table
+    then Flx_use.copy_used state.syms bsym_table
+    else bsym_table
+  in
+
   let child_map = Flx_child.cal_children bsym_table in
 
   (* XXX: What does mkproc do? *)
@@ -148,7 +178,13 @@ let mkproc state bsym_table =
   while Flx_mkproc.mkproc_gen state.syms !bsym_table !child_map > 0 do
     incr counter;
     if !counter > 10 then failwith "mkproc exceeded 10 passes";
-    bsym_table := Flx_use.copy_used state.syms !bsym_table;
+
+    (* Clean up the symbol table. *)
+    bsym_table :=
+      if clean_bsym_table
+      then Flx_use.copy_used state.syms !bsym_table
+      else !bsym_table;
+
     child_map := Flx_child.cal_children !bsym_table;
   done;
 
@@ -182,30 +218,34 @@ let stack_calls state bsym_table =
 
 
 (* Do some platform independent optimizations of the code. *)
-let optimize state bsym_table root_proc =
+let optimize state bsym_table root_proc clean_bsym_table =
   print_debug state "//OPTIMISING";
 
   (* Find the root and exported functions and types. *)
   Flx_use.find_roots state.syms bsym_table root_proc state.syms.Flx_mtypes2.bifaces;
 
-  (* Throw away all the unused symbols. *)
-  let bsym_table = Flx_use.copy_used state.syms bsym_table in
+  (* Clean up the symbol table. *)
+  let bsym_table =
+    if clean_bsym_table
+    then Flx_use.copy_used state.syms bsym_table
+    else bsym_table
+  in
 
   (* Uncurry curried functions. *)
-  let bsym_table = uncurry_functions state bsym_table in
+  let bsym_table = uncurry_functions state bsym_table  clean_bsym_table in
 
   (* Inline functions. *)
-  let bsym_table =
+  let bsym_table, _ =
     let compiler_options = state.syms.Flx_mtypes2.compiler_options in
 
     (* Exit early if we don't want to do any inlining. *)
     if compiler_options.Flx_mtypes2.max_inline_length <= 0
-    then bsym_table
-    else inline_functions state bsym_table root_proc
+    then bsym_table, (Flx_child.make ())
+    else inline_functions state bsym_table root_proc clean_bsym_table
   in
 
   (* XXX: Not sure what this does. *)
-  let bsym_table = mkproc state bsym_table in
+  let bsym_table = mkproc state bsym_table clean_bsym_table in
 
   (* Eliminate dead code. *)
   let elim_state = Flx_elim.make_elim_state state.syms bsym_table in
@@ -214,12 +254,7 @@ let optimize state bsym_table root_proc =
   (* Convert functions into stack calls. *)
   let bsym_table, child_map = stack_calls state bsym_table in
 
-  bsym_table
-
-
-let optimize_symbols state bsym_table bexes symbols =
-  (* FIXME: implement optimizing. *)
-  bsym_table, bexes, symbols
+  bsym_table, child_map
 
 
 let lower_symbols state bsym_table child_map root_proc bexes bids =
@@ -240,7 +275,12 @@ let lower_symbols state bsym_table child_map root_proc bexes bids =
   in
 
   (* Optimize the symbols. *)
-  let bsym_table, bexes, bids = optimize_symbols state bsym_table bexes bids in
+  let bsym_table, child_map = optimize
+    state
+    bsym_table
+    root_proc
+    false
+  in
 
   (* Wrap closures. *)
   print_debug state "//Generating primitive wrapper closures";

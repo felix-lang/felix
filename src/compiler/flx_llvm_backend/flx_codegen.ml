@@ -98,9 +98,6 @@ let check_type sr value typekind =
 
 (* Convert a felix type to an llvm type. *)
 let rec lltype_of_btype state btypecode =
-  print_endline
-    (Flx_print.string_of_btypecode state.syms.Flx_mtypes2.sym_table btypecode);
-
   match Flx_maps.reduce_type btypecode with
   | Flx_types.BTYP_inst (index, ts) ->
       begin try Hashtbl.find state.type_bindings index with Not_found ->
@@ -243,8 +240,9 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
       print_endline "BEXPR_apply";
       assert false
 
-  | Flx_types.BEXPR_apply_direct (index, _, e) ->
-      print_endline "BEXPR_apply_{prim,direct,stack_struct}";
+  | Flx_types.BEXPR_apply_direct (index, _, e)
+  | Flx_types.BEXPR_apply_prim (index, _, e) ->
+      print_endline "BEXPR_apply_{direct,prim}";
 
       let es =
         match e with
@@ -259,10 +257,12 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
       in
       f state bsym_table builder sr es
 
-  | Flx_types.BEXPR_apply_prim (index, _, e)
-  | Flx_types.BEXPR_apply_stack (index, _, e)
+  | Flx_types.BEXPR_apply_stack (index, _, e) ->
+      print_endline "BEXPR_apply_stack";
+      assert false
+
   | Flx_types.BEXPR_apply_struct (index, _, e) ->
-      print_endline "BEXPR_apply_{prim,direct,stack_struct}";
+      print_endline "BEXPR_apply_struct";
       assert false
 
   | Flx_types.BEXPR_tuple es ->
@@ -534,9 +534,9 @@ let codegen_bexe state bsym_table builder bexe =
       let e2 = codegen_expr state bsym_table builder sr a in
       assert false
 
-  | Flx_types.BEXE_call_direct (sr, index, _, e) ->
-      print_endline "BEXE_call_direct";
-
+  | Flx_types.BEXE_call_direct (sr, index, _, e)
+  | Flx_types.BEXE_call_prim (sr, index, _, e) ->
+      print_endline "BEXE_call_{direct,prim}";
       let es =
         match e with
         | Flx_types.BEXPR_tuple es, _ -> es
@@ -552,11 +552,6 @@ let codegen_bexe state bsym_table builder bexe =
 
   | Flx_types.BEXE_call_stack (sr, index, btypecode, e) ->
       print_endline "BEXE_call_stack";
-      let e = codegen_expr state bsym_table builder sr e in
-      assert false
-
-  | Flx_types.BEXE_call_prim (sr, index, btypecode, e) ->
-      print_endline "BEXE_call_prim";
       let e = codegen_expr state bsym_table builder sr e in
       assert false
 
@@ -708,6 +703,7 @@ let codegen_proto state index name parameters ret_type =
 let rec codegen_function
   state
   bsym_table
+  child_map
   index
   name
   parameters
@@ -732,22 +728,9 @@ let rec codegen_function
       }
     in
 
-    (* Generate code for the sub-symbols. *)
-    let symbol_data = Hashtbl.find state.syms.Flx_mtypes2.sym_table index in
-
-    Hashtbl.iter begin fun name entry_set ->
-      match entry_set with
-      | Flx_types.FunctionEntry es ->
-          List.iter begin fun e ->
-            let s = Hashtbl.find bsym_table e.Flx_types.base_sym in
-            codegen_symbol state bsym_table e.Flx_types.base_sym s
-
-          end es
-      | Flx_types.NonFunctionEntry e ->
-          let s = Hashtbl.find bsym_table e.Flx_types.base_sym in
-          codegen_symbol state bsym_table e.Flx_types.base_sym s
-
-    end symbol_data.Flx_types.pubmap;
+    List.iter begin fun i ->
+      ignore (codegen_symbol state bsym_table child_map i (Hashtbl.find bsym_table i))
+    end (Flx_child.find_children child_map index);
 
     (* Convert the parameters into an array so we can index into it. *)
     let parameters = Array.of_list parameters in
@@ -889,7 +872,13 @@ and codegen_abs state index vs quals code reqs =
   Hashtbl.add state.type_bindings index t
 
 
-and codegen_symbol state bsym_table index ((_, parent, sr, bbdcl) as symbol) =
+and codegen_symbol
+  state
+  bsym_table
+  child_map
+  index
+  ((_, parent, sr, bbdcl) as symbol)
+=
   print_endline ("codegen_symbol: " ^
     "parent=" ^ (match parent with Some p -> string_of_int p | None -> "None") ^
     " " ^
@@ -900,11 +889,11 @@ and codegen_symbol state bsym_table index ((_, parent, sr, bbdcl) as symbol) =
 
   match bbdcl with
   | Flx_types.BBDCL_function (_, _, (ps, _), ret_type, es) ->
-      ignore (codegen_function state bsym_table index name ps ret_type es)
+      ignore (codegen_function state bsym_table child_map index name ps ret_type es)
 
   | Flx_types.BBDCL_procedure (_, _, (ps, _), es) ->
       let ret_type = Flx_types.BTYP_void in
-      ignore (codegen_function state bsym_table index name ps ret_type es)
+      ignore (codegen_function state bsym_table child_map index name ps ret_type es)
 
   | Flx_types.BBDCL_val (vs, btype)
   | Flx_types.BBDCL_var (vs, btype)

@@ -242,7 +242,12 @@ try
 
   (* Optimize the bound values *)
   let frontend_state = Flx_frontend.make_frontend_state syms in
-  let bsym_table = Flx_frontend.optimize frontend_state bsym_table root_proc in
+  let bsym_table, _ = Flx_frontend.optimize
+    frontend_state
+    bsym_table
+    root_proc
+    true
+  in
 
   let opt_time = tim() in
   print_debug ("//Optimisation complete time " ^ string_of_float opt_time);
