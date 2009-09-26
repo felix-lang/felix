@@ -622,18 +622,7 @@ let codegen_bexe state bbdfns builder bexe =
   | Flx_types.BEXE_init (sr, index, ((_, btype) as e)) ->
       print_endline "BEXE_init";
 
-      let lhs =
-        (* If the variable doesn't exist, let's define it now. *)
-        try Hashtbl.find state.value_bindings index with Not_found ->
-        let e = create_entry_block_alloca
-          state
-          builder
-          btype
-          (name_of_index state bbdfns index)
-        in
-        Hashtbl.add state.value_bindings index e;
-        e
-      in
+      let lhs = Hashtbl.find state.value_bindings index in
 
       (* Make sure the lhs is a pointer. *)
       check_type sr lhs Llvm.TypeKind.Pointer;
@@ -712,7 +701,15 @@ let codegen_proto state index name parameters ret_type =
   f
 
 
-let codegen_function state bbdfns index name parameters ret_type es =
+let rec codegen_function
+  state
+  bbdfns
+  index
+  name
+  parameters
+  ret_type
+  es
+=
   (* Declare the function *)
   let the_function = codegen_proto state index name parameters ret_type in
 
@@ -731,16 +728,31 @@ let codegen_function state bbdfns index name parameters ret_type es =
       }
     in
 
+    (* Generate code for the sub-symbols. *)
+    let symbol_data = Hashtbl.find state.syms.Flx_mtypes2.dfns index in
+
+    Hashtbl.iter begin fun name entry_set ->
+      match entry_set with
+      | Flx_types.FunctionEntry es ->
+          List.iter begin fun e ->
+            let s = Hashtbl.find bbdfns e.Flx_types.base_sym in
+            codegen_symbol state bbdfns e.Flx_types.base_sym s
+
+          end es
+      | Flx_types.NonFunctionEntry e ->
+          let s = Hashtbl.find bbdfns e.Flx_types.base_sym in
+          codegen_symbol state bbdfns e.Flx_types.base_sym s
+
+    end symbol_data.Flx_types.pubmap;
+
     (* Convert the parameters into an array so we can index into it. *)
     let parameters = Array.of_list parameters in
 
     (* Create allocas for each of the arguments. *)
     Array.iteri begin fun i rhs ->
-      let lhs = create_entry_block_alloca
-        state
-        builder
-        parameters.(i).Flx_types.ptyp
-        parameters.(i).Flx_types.pid
+      (* Find the local symbol that corresponds with this parameter. *)
+      let lhs =
+        Hashtbl.find state.value_bindings parameters.(i).Flx_types.pindex
       in
       ignore (Llvm.build_store rhs lhs builder);
       Hashtbl.add state.value_bindings parameters.(i).Flx_types.pindex lhs;
@@ -763,7 +775,7 @@ let codegen_function state bbdfns index name parameters ret_type es =
 
 
 (* Create an llvm function from a felix function *)
-let codegen_fun state index props vs ps ret_type code reqs prec =
+and codegen_fun state index props vs ps ret_type code reqs prec =
   (* Convenience function for converting list to unary args. *)
   let call_unary f =
     fun state bbdfns builder sr args ->
@@ -838,7 +850,7 @@ let codegen_fun state index props vs ps ret_type code reqs prec =
 
 
 (* Convert an external felix type into an llvm type. *)
-let codegen_abs state index vs quals code reqs =
+and codegen_abs state index vs quals code reqs =
   let t =
     match code with
     | Flx_ast.CS_str_template s ->
@@ -873,30 +885,60 @@ let codegen_abs state index vs quals code reqs =
   Hashtbl.add state.type_bindings index t
 
 
-let codegen_symbol state bbdfns index ((name, parent, sr, bbdcl) as symbol) =
-  print_endline ("codegen_symbol: " ^ name);
+and codegen_symbol state bbdfns index ((_, parent, sr, bbdcl) as symbol) =
+  print_endline ("codegen_symbol: " ^
+    "parent=" ^ (match parent with Some p -> string_of_int p | None -> "None") ^
+    " " ^
+    (Flx_print.string_of_bbdcl state.syms.Flx_mtypes2.dfns bbdfns bbdcl index));
+
+  (* Use the qualified name for the symbol. *)
+  let name = name_of_index state bbdfns index in
 
   match bbdcl with
   | Flx_types.BBDCL_function (_, _, (ps, _), ret_type, es) ->
-      let f = codegen_function state bbdfns index name ps ret_type es in
-      Hashtbl.add state.value_bindings index f
+      ignore (codegen_function state bbdfns index name ps ret_type es)
 
   | Flx_types.BBDCL_procedure (_, _, (ps, _), es) ->
       let ret_type = Flx_types.BTYP_void in
-      let f = codegen_function state bbdfns index name ps ret_type es in
-      Hashtbl.add state.value_bindings index f
+      ignore (codegen_function state bbdfns index name ps ret_type es)
 
   | Flx_types.BBDCL_val (vs, btype)
   | Flx_types.BBDCL_var (vs, btype)
   | Flx_types.BBDCL_ref (vs, btype)
   | Flx_types.BBDCL_tmp (vs, btype) ->
-      let e = Llvm.define_global
-        (name_of_index state bbdfns index)
-        (Llvm.undef (lltype_of_btype state btype))
-        (state.the_module)
+      (*
+      let name = name_of_index state bbdfns index in
+      *)
+
+      (* Get the value expression. If it's a local value, create an alloca,
+       * otherwise, create a global. *)
+      let e = match parent with
+      | Some parent ->
+          (* Find the parent function. *)
+          let the_function = Hashtbl.find state.value_bindings parent in
+
+          (* Create a builder at the entry block. *)
+          let builder = Llvm.builder_at
+            state.context
+            (Llvm.instr_begin (Llvm.entry_block the_function))
+          in
+
+          (* ... and add the alloca. *)
+          Llvm.build_alloca (lltype_of_btype state btype) name builder
+
+      | None ->
+          (* Set the initial value of the global to null. *)
+          let undef = Llvm.undef (lltype_of_btype state btype) in
+
+          (* Create the global. *)
+          let e = Llvm.define_global name undef (state.the_module) in
+
+          (* Don't export the global variable. *)
+          Llvm.set_linkage Llvm.Linkage.Internal e;
+          e
       in
-      (* Don't export the global variable. *)
-      Llvm.set_linkage Llvm.Linkage.Internal e;
+
+      (* Register the symbol. *)
       Hashtbl.add state.value_bindings index e
 
   | Flx_types.BBDCL_newtype (vs, ty) ->
@@ -918,11 +960,13 @@ let codegen_symbol state bbdfns index ((name, parent, sr, bbdcl) as symbol) =
       assert false
 
   | Flx_types.BBDCL_proc (props, vs, ps, code, reqs) ->
-      codegen_fun state index props vs ps Flx_types.BTYP_void code reqs []
+      codegen_fun state index props vs ps Flx_types.BTYP_void code reqs ""
 
   | Flx_types.BBDCL_insert (vs, s, ikind, reqs) ->
       print_endline "BBDCL_insert";
+      (* FIXME: ignore for now.
       assert false
+      *)
 
   | Flx_types.BBDCL_union (vs, cs) ->
       print_endline "BBDCL_union";
