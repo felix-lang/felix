@@ -140,7 +140,9 @@ let set_gc_use bbdfns index ((id, parent, sr, entry) as symbol) =
   | _ -> symbol
 
 let is_global_var bbdfns i =
-  let id,parent,sr,entry = try Hashtbl.find bbdfns i with Not_found -> failwith "YIKES1" in
+  let id,parent,sr,entry =
+    try Hashtbl.find bbdfns i
+    with Not_found -> failwith ("YIKES1: " ^ string_of_int i) in
   match entry with
   | BBDCL_var _
   | BBDCL_val _ when (match parent with None -> true | _ -> false ) -> true

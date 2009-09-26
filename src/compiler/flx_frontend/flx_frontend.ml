@@ -224,7 +224,9 @@ let lower_symbol state bbdfns index symbol =
   print_debug state "//Finding which functions use globals";
 
   (* Remove unused symbols. *)
+  (* FIXME: This is disabled because it deletes all the symbols.
   let bbdfns = Flx_use.copy_used state.syms bbdfns in
+  *)
 
   (* Mark all the global functions and values. *)
   Flx_global.set_globals_for_symbol
