@@ -295,11 +295,17 @@ let rec set_ptf_usage bbdfns usage excludes i (id, parent, sr, entry) =
   | _ -> Not_required
 
 let set_globals_for_symbol bbdfns uses index symbol =
-  let symbol = set_local_globals bbdfns index symbol in
-  let symbol = set_gc_use bbdfns index symbol in
   ignore (set_ptf_usage bbdfns uses [] index symbol)
 
 let set_globals syms bbdfns =
+  Hashtbl.iter begin fun index symbol ->
+    ignore (set_local_globals bbdfns index symbol)
+  end bbdfns;
+
+  Hashtbl.iter begin fun index symbol ->
+    ignore (set_gc_use bbdfns index symbol)
+  end bbdfns;
+
   let uses, _ = Flx_call.call_data syms bbdfns in
 
   (* Iterate through each symbol and mark if the function needs a frame. *)
