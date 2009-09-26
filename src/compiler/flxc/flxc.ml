@@ -252,7 +252,7 @@ let compile_stmt state =
     state.frontend_state
     !bsym_table
     !child_map
-    state.module_index
+    state.init_index
     bexes
     bids
   in
