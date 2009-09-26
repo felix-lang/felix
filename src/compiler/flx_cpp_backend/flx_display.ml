@@ -21,13 +21,13 @@ open Flx_mtypes2
   Hmmm .. should check ..
 *)
 
-let cal_display syms bbdfns parent : (bid_t *int) list =
+let cal_display syms bsym_table parent : (bid_t *int) list =
   let rec aux parent display =
     match parent with
     | None -> rev display
     | Some parent ->
     match
-      try Some (Hashtbl.find bbdfns parent)
+      try Some (Hashtbl.find bsym_table parent)
       with Not_found ->  None
     with
     | Some (_,parent',sr,BBDCL_procedure (_,vs,_,_))
@@ -40,7 +40,7 @@ let cal_display syms bbdfns parent : (bid_t *int) list =
     | None ->
       begin
         try
-          match Hashtbl.find syms.dfns parent with
+          match Hashtbl.find syms.sym_table parent with
           (* instances have to be top level *)
           | {id=id; symdef=SYMDEF_instance _} -> rev display
           | {id=id; symdef=SYMDEF_typeclass } -> rev display
@@ -56,8 +56,8 @@ let cal_display syms bbdfns parent : (bid_t *int) list =
   in aux parent []
 
 (* inner most at head of list *)
-let get_display_list syms bbdfns index : (bid_t * int) list =
-  tl (cal_display syms bbdfns (Some index))
+let get_display_list syms bsym_table index : (bid_t * int) list =
+  tl (cal_display syms bsym_table (Some index))
 
 let strd the_display props =
   if length the_display = 0 then

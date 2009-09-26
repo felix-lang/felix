@@ -15,14 +15,8 @@
  *
  * Clearly this result extends to any child of any parent. *)
 
-open Flx_ast
-open Flx_types
-open Flx_set
-open Flx_mtypes2
-open Flx_call
-
 val heavy_inlining:
-  sym_state_t ->
-  (bid_t, bid_t list) Hashtbl.t *
-  fully_bound_symbol_table_t ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.bsym_table_t ->
+  Flx_child.t ->
   unit

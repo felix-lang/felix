@@ -88,7 +88,7 @@ let build_constraint_element syms bt sr i p1 =
     BTYP_type_match (elt, lss)
   in
     let tm = tyset (fe p1) in
-    (* print_endline ("Bound typematch is " ^ sbt syms.dfns tm); *)
+    (* print_endline ("Bound typematch is " ^ sbt syms.sym_table tm); *)
     tm
 
 let build_type_constraints syms bt sr vs =
@@ -99,7 +99,7 @@ let build_type_constraints syms bt sr vs =
       if tp <> BTYP_tuple [] then
         print_endline (
         " vs entry " ^ s ^ ", var " ^ si i ^
-        " constraint " ^ sbt syms.dfns tp)
+        " constraint " ^ sbt syms.sym_table tp)
       ;
       *)
       tp

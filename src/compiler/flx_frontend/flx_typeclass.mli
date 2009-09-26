@@ -7,35 +7,35 @@ open Flx_mtypes2
 
 val typeclass_instance_check_symbol:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   Flx_child.t ->
-  int ->
-  Flx_types.symbol_data3_t ->
+  Flx_types.bid_t ->
+  Flx_types.bsym_t ->
   unit
 
 val typeclass_instance_check:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   Flx_child.t ->
   unit
 
 val fixup_typeclass_instance:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   int ->
   btypecode_t list ->
   int * btypecode_t list
 
 val maybe_fixup_typeclass_instance:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   int ->
   btypecode_t list ->
   int * btypecode_t list
 
 val fixup_typeclass_instances:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   unit
 
 val tcinst_chk:

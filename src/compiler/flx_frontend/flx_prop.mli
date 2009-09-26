@@ -2,25 +2,19 @@
  *
  * Name binding pass 2. *)
 
-open Flx_ast
-open Flx_types
-open Flx_typing
-open Flx_set
-open Flx_mtypes2
-
 val add_prop:
-  fully_bound_symbol_table_t  ->
-  property_t ->
-  int ->
+  Flx_types.bsym_table_t ->
+  Flx_ast.property_t ->
+  Flx_types.bid_t ->
   unit
 
 val rem_prop:
-  fully_bound_symbol_table_t  ->
-  property_t ->
-  int ->
+  Flx_types.bsym_table_t ->
+  Flx_ast.property_t ->
+  Flx_types.bid_t ->
   unit
 
 val get_vs:
-  fully_bound_symbol_table_t  ->
-  int ->
-  bvs_t
+  Flx_types.bsym_table_t ->
+  Flx_types.bid_t ->
+  Flx_types.bvs_t

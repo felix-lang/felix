@@ -13,7 +13,7 @@ open Flx_beta
 let register_type_nr syms t =
   (*
   let t' = Flx_maps.reduce_type t in
-  if t <> t' then print_endline ("UNREDUCED TYPE! " ^ sbt syms.dfns t ^ " <> " ^ sbt syms.dfns t');
+  if t <> t' then print_endline ("UNREDUCED TYPE! " ^ sbt syms.sym_table t ^ " <> " ^ sbt syms.sym_table t');
   *)
   match t with
   | BTYP_fix _
@@ -21,19 +21,19 @@ let register_type_nr syms t =
     -> ()
   | _
     ->
-    let t = fold syms.counter syms.dfns t in
+    let t = fold syms.counter syms.sym_table t in
     if not (Hashtbl.mem syms.registry t)
     then begin
       let () = check_recursion t in
       let n = !(syms.counter) in
       incr syms.counter;
       if syms.compiler_options.print_flag then
-      print_endline ("//Register type " ^ si n ^ ": " ^ string_of_btypecode syms.dfns t);
+      print_endline ("//Register type " ^ si n ^ ": " ^ string_of_btypecode syms.sym_table t);
       Hashtbl.add syms.registry t n
     end
 
 let register_tuple syms t =
-  let t = fold syms.counter syms.dfns t in
+  let t = fold syms.counter syms.sym_table t in
   match t with
   | BTYP_tuple [] -> ()
   | BTYP_tuple [_] -> assert false
@@ -63,28 +63,28 @@ let register_tuple syms t =
 
   | _ -> assert false
 
-let rec register_type_r ui syms bbdfns exclude sr t =
+let rec register_type_r ui syms bsym_table exclude sr t =
   let t = reduce_type (beta_reduce syms sr t) in
   (*
   let sp = String.make (length exclude * 2) ' ' in
-  print_endline (sp ^ "Register type " ^ string_of_btypecode syms.dfns t);
+  print_endline (sp ^ "Register type " ^ string_of_btypecode syms.sym_table t);
   if (mem t exclude) then print_endline (sp ^ "Excluded ..");
   *)
   if not (Hashtbl.mem syms.registry t) then
   if not (mem t exclude) then
-  let rr t' = register_type_r ui syms bbdfns (t :: exclude) sr t' in
+  let rr t' = register_type_r ui syms bsym_table (t :: exclude) sr t' in
   let rnr t = register_type_nr syms t in
-  let t' = unfold syms.dfns t in
+  let t' = unfold syms.sym_table t in
   (*
-  print_endline (sp ^ "Unfolded type " ^ string_of_btypecode syms.dfns t');
+  print_endline (sp ^ "Unfolded type " ^ string_of_btypecode syms.sym_table t');
   *)
   match t' with
   | BTYP_void -> ()
   | BTYP_fix i -> clierr sr ("[register_type_r] Fixpoint "^si i^" encountered")
   (*
-  | BTYP_var (i,mt) -> clierr sr ("Attempt to register type variable " ^ si i ^":"^sbt syms.dfns mt)
+  | BTYP_var (i,mt) -> clierr sr ("Attempt to register type variable " ^ si i ^":"^sbt syms.sym_table mt)
   *)
-  | BTYP_var (i,mt) -> print_endline ("Attempt to register type variable " ^ si i ^":"^sbt syms.dfns mt)
+  | BTYP_var (i,mt) -> print_endline ("Attempt to register type variable " ^ si i ^":"^sbt syms.sym_table mt)
   | BTYP_function (ps,ret) ->
     let ps = match ps with
     | BTYP_void -> BTYP_tuple []
@@ -128,9 +128,9 @@ let rec register_type_r ui syms bbdfns exclude sr t =
     iter rr ts;
 
     let id, parent, sr,entry =
-      try Hashtbl.find bbdfns i
+      try Hashtbl.find bsym_table i
       with Not_found ->
-        try match Hashtbl.find syms.dfns i with
+        try match Hashtbl.find syms.sym_table i with
         { id=id; sr=sr; parent=parent; symdef=entry } ->
         clierr sr
         (
@@ -183,7 +183,7 @@ let rec register_type_r ui syms bbdfns exclude sr t =
       clierr sr
       (
         "[register_type_r] expected type declaration, got " ^
-        string_of_bbdcl syms.dfns bbdfns entry i
+        string_of_bbdcl syms.sym_table bsym_table entry i
       )
     end
 
@@ -192,6 +192,6 @@ let rec register_type_r ui syms bbdfns exclude sr t =
     clierr sr
     (
       "Unexpected kind in register type: " ^
-      string_of_btypecode syms.dfns t
+      string_of_btypecode syms.sym_table t
     )
     *)

@@ -21,11 +21,11 @@ open Flx_ctorgen
 open Flx_child
 open Flx_beta
 
-let find_variable_indices syms (child_map,bbdfns) index =
+let find_variable_indices syms bsym_table child_map index =
   let children = find_children child_map index in
   filter
   (fun i ->
-    try match Hashtbl.find bbdfns i with _,_,_,entry ->
+    try match Hashtbl.find bsym_table i with _,_,_,entry ->
       match entry with
       | BBDCL_var _
       | BBDCL_ref _
@@ -36,9 +36,9 @@ let find_variable_indices syms (child_map,bbdfns) index =
   )
   children
 
-let get_variable_typename syms bbdfns i ts =
+let get_variable_typename syms bsym_table i ts =
   let id,parent,sr,entry =
-    try Hashtbl.find bbdfns i
+    try Hashtbl.find bsym_table i
     with Not_found -> failwith ("[get_variable_typename] can't find index " ^ si i)
   in
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
@@ -63,24 +63,24 @@ let get_variable_typename syms bbdfns i ts =
   | _ ->
     failwith "[get_variable_typename] Expected variable"
 
-let format_vars syms bbdfns vars ts =
+let format_vars syms bsym_table vars ts =
   catmap  ""
   (fun idx ->
     let instname =
-      try Some (cpp_instance_name syms bbdfns idx ts)
+      try Some (cpp_instance_name syms bsym_table idx ts)
       with _ -> None
     in
       match instname with
       | Some instname ->
-        let typename = get_variable_typename syms bbdfns idx ts in
+        let typename = get_variable_typename syms bsym_table idx ts in
         "  " ^ typename ^ " " ^ instname ^ ";\n"
       | None -> "" (* ignore unused variables *)
   )
   vars
 
-let find_members syms (child_map,bbdfns) index ts =
-  let variables = find_variable_indices syms (child_map,bbdfns) index in
-  match format_vars syms bbdfns variables ts with
+let find_members syms bsym_table child_map index ts =
+  let variables = find_variable_indices syms bsym_table child_map index in
+  match format_vars syms bsym_table variables ts with
   | "" -> ""
   | x ->
   (*
@@ -91,9 +91,9 @@ let find_members syms (child_map,bbdfns) index ts =
 let typeof_bparams bps: btypecode_t  =
   typeoflist  (typeofbps bps)
 
-let get_type bbdfns index =
+let get_type bsym_table index =
   let id,parent,sr,entry =
-    try Hashtbl.find bbdfns index
+    try Hashtbl.find bsym_table index
     with _ -> failwith ("[get_type] Can't find index " ^ si index)
   in
   match entry with
@@ -104,16 +104,16 @@ let get_type bbdfns index =
   | _ -> failwith "Only function and procedure types handles by get_type"
 
 
-let is_gc_pointer syms bbdfns sr t =
+let is_gc_pointer syms bsym_table sr t =
   (*
-  print_endline ("[is_gc_ptr] Checking type " ^ sbt syms.dfns t);
+  print_endline ("[is_gc_ptr] Checking type " ^ sbt syms.sym_table t);
   *)
   match t with
   | BTYP_function _ -> true
   | BTYP_pointer _ -> true
   | BTYP_inst (i,_) ->
     let id,sr,parent,entry =
-      try Hashtbl.find bbdfns i
+      try Hashtbl.find bsym_table i
       with Not_found ->
         clierr sr ("[is_gc_pointer] Can't find nominal type " ^ si i);
    in
@@ -123,7 +123,7 @@ let is_gc_pointer syms bbdfns sr t =
    end
   | _ -> false
 
-let gen_C_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instance_no =
+let gen_C_function syms bsym_table child_map props index id sr vs bps ret' ts instance_no =
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let requires_ptf = mem `Requires_ptf props in
   (*
@@ -139,7 +139,7 @@ let gen_C_function syms (child_map,bbdfns) props index id sr vs bps ret' ts inst
     id ^ "<" ^si index^">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
+      else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
     )
   );
   let argtype = typeof_bparams bps in
@@ -156,12 +156,12 @@ let gen_C_function syms (child_map,bbdfns) props index id sr vs bps ret' ts inst
   let ret = rt' vs ret' in
   if ret = BTYP_tuple [] then "// elided (returns unit)\n" else
 
-  let funtype = fold syms.counter syms.dfns (BTYP_function (argtype, ret)) in
+  let funtype = fold syms.counter syms.sym_table (BTYP_function (argtype, ret)) in
 
   (* let argtypename = cpp_typename syms argtype in *)
-  let display = get_display_list syms bbdfns index in
+  let display = get_display_list syms bsym_table index in
   assert (length display = 0);
-  let name = cpp_instance_name syms bbdfns index ts in
+  let name = cpp_instance_name syms bsym_table index ts in
   let rettypename = cpp_typename syms ret in
   rettypename ^ " " ^
   (if mem `Cfun props then "" else "FLX_REGPARM ")^
@@ -200,7 +200,7 @@ let gen_C_function syms (child_map,bbdfns) props index id sr vs bps ret' ts inst
   ) ^
   ");\n"
 
-let gen_class syms (child_map,bbdfns) props index id sr vs ts instance_no =
+let gen_class syms bsym_table child_map props index id sr vs ts instance_no =
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let requires_ptf = mem `Requires_ptf props in
   if syms.compiler_options.print_flag then
@@ -211,7 +211,7 @@ let gen_class syms (child_map,bbdfns) props index id sr vs ts instance_no =
     id ^ "<" ^si index^">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
+      else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
     )
   );
   if length ts <> length vs then
@@ -222,7 +222,7 @@ let gen_class syms (child_map,bbdfns) props index id sr vs ts instance_no =
     ", got ts=" ^
     si (length ts)
   );
-  let display = get_display_list syms bbdfns index in
+  let display = get_display_list syms bsym_table index in
   let frame_dcls =
     if requires_ptf then
     "  FLX_FMEM_DECL\n"
@@ -236,7 +236,7 @@ let gen_class syms (child_map,bbdfns) props index id sr vs ts instance_no =
         map
         (fun (i, vslen) ->
          try
-         let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
+         let instname = cpp_instance_name syms bsym_table i (list_prefix ts vslen) in
          "  " ^ instname ^ " *ptr" ^ instname ^ ";\n"
          with _ -> failwith "Can't cal display name"
          )
@@ -258,7 +258,7 @@ let gen_class syms (child_map,bbdfns) props index id sr vs ts instance_no =
         map
         (
           fun (i,vslen) ->
-          let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
+          let instname = cpp_instance_name syms bsym_table i (list_prefix ts vslen) in
           instname ^ "*"
         )
         display
@@ -270,8 +270,8 @@ let gen_class syms (child_map,bbdfns) props index id sr vs ts instance_no =
     "  ~" ^ name ^"();\n"
   *)
   in
-  let members = find_members syms (child_map,bbdfns) index ts in
-  let name = cpp_instance_name syms bbdfns index ts in
+  let members = find_members syms bsym_table child_map index ts in
+  let name = cpp_instance_name syms bsym_table index ts in
     let ctor = ctor_dcl name in
   "struct " ^ name ^
   " {\n" ^
@@ -308,7 +308,7 @@ let gen_class syms (child_map,bbdfns) props index id sr vs ts instance_no =
 
 
 (* vs here is the (name,index) list of type variables *)
-let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instance_no =
+let gen_function syms bsym_table child_map props index id sr vs bps ret' ts instance_no =
   let stackable = mem `Stack_closure props in
   let heapable = mem `Heap_closure props in
   (*
@@ -334,7 +334,7 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
     id ^ "<" ^si index^">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
+      else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
     )
   );
   let argtype = typeof_bparams bps in
@@ -351,7 +351,7 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
   let ret = rt' vs ret' in
   if ret = BTYP_tuple [] then "// elided (returns unit)\n" else
 
-  let funtype = fold syms.counter syms.dfns (BTYP_function (argtype, ret)) in
+  let funtype = fold syms.counter syms.sym_table (BTYP_function (argtype, ret)) in
 
   let argtypename = cpp_typename syms argtype in
   let funtypename =
@@ -360,7 +360,7 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
       with _ -> None
     else None
   in
-  let display = get_display_list syms bbdfns index in
+  let display = get_display_list syms bsym_table index in
   let frame_dcls =
     if requires_ptf then
     "  FLX_FMEM_DECL\n"
@@ -379,7 +379,7 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
         map
         (fun (i, vslen) ->
          try
-         let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
+         let instname = cpp_instance_name syms bsym_table i (list_prefix ts vslen) in
          "  " ^ instname ^ " *ptr" ^ instname ^ ";\n"
          with _ -> failwith "Can't cal display name"
          )
@@ -401,7 +401,7 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
         map
         (
           fun (i,vslen) ->
-          let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
+          let instname = cpp_instance_name syms bsym_table i (list_prefix ts vslen) in
           instname ^ "*"
         )
         display
@@ -413,10 +413,10 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
     "  ~" ^ name ^"();\n"
   *)
   in
-  let members = find_members syms (child_map,bbdfns) index ts in
+  let members = find_members syms bsym_table child_map index ts in
   match ret with
   | BTYP_void ->
-    let name = cpp_instance_name syms bbdfns index ts in
+    let name = cpp_instance_name syms bsym_table index ts in
     let ctor = ctor_dcl name in
     "struct " ^ name ^
     (match funtypename with
@@ -466,7 +466,7 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
     "};\n"
 
   | _ ->
-    let name = cpp_instance_name syms bbdfns index ts in
+    let name = cpp_instance_name syms bsym_table index ts in
     let rettypename = cpp_typename syms ret in
     let ctor = ctor_dcl name in
     "struct " ^ name ^
@@ -510,12 +510,12 @@ let gen_function syms (child_map,bbdfns) props index id sr vs bps ret' ts instan
     "};\n"
 
 
-let gen_function_names syms (child_map,bbdfns) =
-  let xxdfns = ref [] in
+let gen_function_names syms bsym_table child_map =
+  let xxsym_table = ref [] in
   Hashtbl.iter
   (fun x i ->
-    (* if proper_descendant syms.dfns parent then  *)
-    xxdfns := (i,x) :: !xxdfns
+    (* if proper_descendant syms.sym_table parent then  *)
+    xxsym_table := (i,x) :: !xxsym_table
   )
   syms.instances
   ;
@@ -525,17 +525,17 @@ let gen_function_names syms (child_map,bbdfns) =
   (fun (i,(index,ts)) ->
     let tss =
       if length ts = 0 then "" else
-      "[" ^ catmap "," (string_of_btypecode syms.dfns) ts^ "]"
+      "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts^ "]"
     in
     match
-      try Hashtbl.find bbdfns index
+      try Hashtbl.find bsym_table index
       with Not_found -> failwith ("[gen_functions] can't find index " ^ si index)
     with (id,parent,sr,entry) ->
     match entry with
     | BBDCL_function (props,vs,(ps,traint), ret, _) ->
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
       end else begin
-        let name = cpp_instance_name syms bbdfns index ts in
+        let name = cpp_instance_name syms bsym_table index ts in
         bcat s ("struct " ^ name ^ ";\n");
       end
 
@@ -544,23 +544,23 @@ let gen_function_names syms (child_map,bbdfns) =
     | BBDCL_procedure (props,vs,(ps,traint),_) ->
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
       end else begin
-        let name = cpp_instance_name syms bbdfns index ts in
+        let name = cpp_instance_name syms bsym_table index ts in
         bcat s ("struct " ^ name ^ ";\n");
       end
 
     | _ -> () (* bcat s ("//SKIPPING " ^ id ^ "\n") *)
   )
-  (sort compare !xxdfns)
+  (sort compare !xxsym_table)
   ;
   Buffer.contents s
 
 (* This code generates the class declarations *)
-let gen_functions syms (child_map,bbdfns) =
-  let xxdfns = ref [] in
+let gen_functions syms bsym_table child_map =
+  let xxsym_table = ref [] in
   Hashtbl.iter
   (fun x i ->
-    (* if proper_descendant syms.dfns parent then  *)
-    xxdfns := (i,x) :: !xxdfns
+    (* if proper_descendant syms.sym_table parent then  *)
+    xxsym_table := (i,x) :: !xxsym_table
   )
   syms.instances
   ;
@@ -570,32 +570,32 @@ let gen_functions syms (child_map,bbdfns) =
   (fun (i,(index,ts)) ->
     let tss =
       if length ts = 0 then "" else
-      "[" ^ catmap "," (string_of_btypecode syms.dfns) ts^ "]"
+      "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts^ "]"
     in
     match
-      try Hashtbl.find bbdfns index
+      try Hashtbl.find bsym_table index
       with Not_found -> failwith ("[gen_functions] can't find index " ^ si index)
     with (id,parent,sr,entry) ->
     match entry with
     | BBDCL_function (props,vs,(ps,traint), ret, _) ->
       bcat s ("\n//------------------------------\n");
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
-        bcat s ("//PURE C FUNCTION <" ^si index^ ">: " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
+        bcat s ("//PURE C FUNCTION <" ^si index^ ">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
         bcat s
-        (gen_C_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
+        (gen_C_function syms bsym_table child_map props index id sr vs ps ret ts i)
       end else begin
-        bcat s ("//FUNCTION <"^si index^">: " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
+        bcat s ("//FUNCTION <"^si index^">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
         bcat s
-        (gen_function syms (child_map,bbdfns) props index id sr vs ps ret ts i)
+        (gen_function syms bsym_table child_map props index id sr vs ps ret ts i)
       end
 
     | BBDCL_callback (props,vs,ps_cf,ps_c,_,ret',_,_) ->
       let instance_no = i in
       bcat s ("\n//------------------------------\n");
       if ret' = BTYP_void then begin
-        bcat s ("//CALLBACK C PROC <"^si index^">: " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C PROC <"^si index^">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
       end else begin
-        bcat s ("//CALLBACK C FUNCTION <"^si index^">: " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C FUNCTION <"^si index^">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
       end
       ;
       let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
@@ -607,7 +607,7 @@ let gen_functions syms (child_map,bbdfns) =
         id ^ "<" ^si index^">" ^
         (
           if length ts = 0 then ""
-          else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
+          else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
         )
       );
       if length ts <> length vs then
@@ -620,7 +620,7 @@ let gen_functions syms (child_map,bbdfns) =
       );
       let ret = rt vs ret' in
       (*
-      let name = cpp_instance_name syms bbdfns index ts in
+      let name = cpp_instance_name syms bsym_table index ts in
       *)
       let name = id in (* callbacks can't be polymorphic .. for now anyhow *)
       let rettypename = cpp_typename syms ret in
@@ -649,33 +649,33 @@ let gen_functions syms (child_map,bbdfns) =
     | BBDCL_procedure (props,vs,(ps,traint),_) ->
       bcat s ("\n//------------------------------\n");
       (*
-      print_endline ("Procedure " ^ qualified_name_of_bindex syms.dfns bbdfns index);
+      print_endline ("Procedure " ^ qualified_name_of_bindex syms.sym_table bsym_table index);
       print_endline ("properties: " ^ string_of_properties props);
       *)
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
-        bcat s ("//PURE C PROC <"^si index^">: " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
+        bcat s ("//PURE C PROC <"^si index^">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
         bcat s
-        (gen_C_function syms (child_map,bbdfns) props index id sr vs ps BTYP_void ts i)
+        (gen_C_function syms bsym_table child_map props index id sr vs ps BTYP_void ts i)
       end else begin
-        bcat s ("//PROC <"^si index^">: " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
+        bcat s ("//PROC <"^si index^">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
         bcat s
-        (gen_function syms (child_map,bbdfns) props index id sr vs ps BTYP_void ts i)
+        (gen_function syms bsym_table child_map props index id sr vs ps BTYP_void ts i)
       end
 
     | _ -> () (* bcat s ("//SKIPPING " ^ id ^ "\n") *)
   )
-  (sort compare !xxdfns)
+  (sort compare !xxsym_table)
   ;
   Buffer.contents s
 
 (*
-let gen_dtor syms bbdfns name display ts =
+let gen_dtor syms bsym_table name display ts =
   name^"::~"^name^"(){}\n"
 *)
-let is_closure_var bbdfns index =
-  let var_type bbdfns index =
+let is_closure_var bsym_table index =
+  let var_type bsym_table index =
     let id,_,entry =
-      try Hashtbl.find bbdfns index
+      try Hashtbl.find bsym_table index
       with Not_found -> failwith ("[var_type] ]Can't get index " ^ si index)
     in match entry with
     | BBDCL_var (_,t)
@@ -683,7 +683,7 @@ let is_closure_var bbdfns index =
     | BBDCL_val (_,t) -> t
     | _ -> failwith ("[var_type] expected "^id^" to be variable")
   in
-  match var_type bbdfns index with
+  match var_type bsym_table index with
   | BTYP_function _ -> true
   | _ -> false
 
@@ -697,9 +697,20 @@ former you'll need to make a dummy variable.
 
 type kind_t = Function | Procedure
 
-let gen_exe filename syms
-  (child_map,bbdfns) (label_map,label_usage_map)
-  counter this vs ts instance_no needs_switch stackable (exe:bexe_t) : string =
+let gen_exe filename
+  syms
+  bsym_table
+  child_map
+  (label_map, label_usage_map)
+  counter
+  this
+  vs
+  ts
+  instance_no
+  needs_switch
+  stackable
+  exe
+=
   let sr = Flx_types.src_of_bexe exe in
   if length ts <> length vs then
   failwith
@@ -709,22 +720,22 @@ let gen_exe filename syms
     ", got ts=" ^
     si (length ts)
   );
-  let src_str = string_of_bexe syms.dfns bbdfns 0 exe in
+  let src_str = string_of_bexe syms.sym_table bsym_table 0 exe in
   let with_comments = syms.compiler_options.with_comments in
   (*
-  print_endline ("generating exe " ^ string_of_bexe syms.dfns bbdfns 0 exe);
+  print_endline ("generating exe " ^ string_of_bexe syms.sym_table bsym_table 0 exe);
   print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
-  print_endline ("ts = " ^ catmap ","  (string_of_btypecode syms.dfns) ts);
+  print_endline ("ts = " ^ catmap ","  (string_of_btypecode syms.sym_table) ts);
   *)
   let tsub t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
-  let ge sr e : string = gen_expr syms bbdfns this e vs ts sr in
-  let ge' sr e : cexpr_t = gen_expr' syms bbdfns this e vs ts sr in
+  let ge sr e : string = gen_expr syms bsym_table this e vs ts sr in
+  let ge' sr e : cexpr_t = gen_expr' syms bsym_table this e vs ts sr in
   let tn t : string = cpp_typename syms (tsub t) in
   let id,parent,parent_sr,entry =
-    try Hashtbl.find bbdfns this
+    try Hashtbl.find bsym_table this
     with _ -> failwith ("[gen_exe] Can't find this " ^ si this)
   in
-  let our_display = get_display_list syms bbdfns this in
+  let our_display = get_display_list syms bsym_table this in
   let kind = match entry with
     | BBDCL_function (_,_,_,_,_) -> Function
     | BBDCL_procedure (_,_,_,_) -> Procedure
@@ -733,7 +744,7 @@ let gen_exe filename syms
 
   let rec handle_closure sr is_jump index ts subs' a stack_call =
     let index',ts' = index,ts in
-    let index, ts = Flx_typeclass.fixup_typeclass_instance syms bbdfns index ts in
+    let index, ts = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
     if index <> index' then
       clierr sr ("Virtual call of " ^ si index' ^ " dispatches to " ^ si index')
     ;
@@ -754,7 +765,7 @@ let gen_exe filename syms
       else "      }\n"
     in
     let id,parent,sr2,entry =
-      try Hashtbl.find bbdfns index
+      try Hashtbl.find bsym_table index
       with _ -> failwith ("[gen_exe(call)] Can't find index " ^ si index)
     in
     begin
@@ -779,7 +790,7 @@ let gen_exe filename syms
           clierr2 sr sr2 ("Instantiate virtual procedure(1) " ^ id) ;
       | CS_str s -> ws (ce_expr "expr" s)
       | CS_str_template s ->
-        let ss = gen_prim_call syms bbdfns tsub ge' s ts a "Error" sr sr2 "atom"  in
+        let ss = gen_prim_call syms bsym_table tsub ge' s ts a "Error" sr sr2 "atom"  in
         ws ss
       end
 
@@ -792,7 +803,7 @@ let gen_exe filename syms
       ;
       let s = id ^ "($a);" in
       let s =
-        gen_prim_call syms bbdfns tsub ge' s ts a "Error" sr sr2 "atom"
+        gen_prim_call syms bsym_table tsub ge' s ts a "Error" sr sr2 "atom"
       in
       let s = sc "expr" s in
       (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
@@ -810,8 +821,8 @@ let gen_exe filename syms
         incr counter;
         let the_display =
           let d' =
-            map (fun (i,vslen) -> "ptr"^cpp_instance_name syms bbdfns i (list_prefix ts vslen))
-            (get_display_list syms bbdfns index)
+            map (fun (i,vslen) -> "ptr"^cpp_instance_name syms bsym_table i (list_prefix ts vslen))
+            (get_display_list syms bsym_table index)
           in
             if length d' > our_level
             then "this" :: tl d'
@@ -844,7 +855,7 @@ let gen_exe filename syms
               if this = "" then a else this ^ ", " ^ a
             )
         in
-        let name = cpp_instance_name syms bbdfns index ts in
+        let name = cpp_instance_name syms bsym_table index ts in
         if mem `Cfun props then begin
           (if with_comments
           then "      //call cproc " ^ src_str ^ "\n"
@@ -918,7 +929,7 @@ let gen_exe filename syms
       failwith
       (
         "[gen_exe] Expected '"^id^"' to be procedure constant, got " ^
-        string_of_bbdcl syms.dfns bbdfns entry index
+        string_of_bbdcl syms.sym_table bsym_table entry index
       )
     end
   in
@@ -933,7 +944,7 @@ let gen_exe filename syms
       try Hashtbl.find syms.instances (frame, ts)
       with Not_found -> failwith "Woops, bugged code, wrong type arguments for instance?"
     in
-    let frame_ptr = "ptr" ^ cpp_instance_name syms bbdfns frame ts in
+    let frame_ptr = "ptr" ^ cpp_instance_name syms bsym_table frame ts in
     "      // non local goto " ^ cid_of_flxid s ^ "\n" ^
     "      {\n" ^
     "        con_t *tmp1 = this;\n" ^
@@ -955,7 +966,7 @@ let gen_exe filename syms
   in
   let rec gexe exe =
     (*
-    print_endline (string_of_bexe syms.dfns bbdfns 0 exe);
+    print_endline (string_of_bexe syms.sym_table bsym_table 0 exe);
     *)
     match exe with
     | BEXE_axiom_check _ -> assert false
@@ -1013,7 +1024,7 @@ let gen_exe filename syms
 
 
     | BEXE_goto (sr,s) ->
-      begin match find_label bbdfns label_map this s with
+      begin match find_label bsym_table label_map this s with
       | `Local _ -> "      goto " ^ cid_of_flxid s ^ ";\n"
       | `Nonlocal (pc,frame) -> gen_nonlocal_goto pc frame s
       | `Unreachable ->
@@ -1028,7 +1039,7 @@ let gen_exe filename syms
       end
 
     | BEXE_ifgoto (sr,e,s) ->
-      begin match find_label bbdfns label_map this s with
+      begin match find_label bsym_table label_map this s with
       | `Local _ ->
         "      if(" ^ ge sr e ^ ") goto " ^ cid_of_flxid s ^ ";\n"
       | `Nonlocal (pc,frame) ->
@@ -1047,7 +1058,7 @@ let gen_exe filename syms
     (* Hmmm .. stack calls ?? *)
     | BEXE_call_stack (sr,index,ts,a)  ->
       let id,parent,sr2,entry =
-        try Hashtbl.find bbdfns index
+        try Hashtbl.find bsym_table index
         with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
       in
       let ge_arg ((x,t) as a) =
@@ -1068,8 +1079,8 @@ let gen_exe filename syms
         let ts = map tsub ts in
         (* C FUNCTION CALL *)
         if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
-          let display = get_display_list syms bbdfns index in
-          let name = cpp_instance_name syms bbdfns index ts in
+          let display = get_display_list syms bsym_table index in
+          let name = cpp_instance_name syms bsym_table index ts in
           let s =
             assert (length display = 0);
             match ps with
@@ -1085,7 +1096,7 @@ let gen_exe filename syms
               begin match a with
               | BEXPR_tuple xs,_ ->
                 (*
-                print_endline ("Arg to C function is tuple " ^ sbe syms.dfns a);
+                print_endline ("Arg to C function is tuple " ^ sbe syms.sym_table a);
                 *)
                 fold_left
                 (fun s (((x,t) as xt),{pindex=i}) ->
@@ -1111,7 +1122,7 @@ let gen_exe filename syms
                 (fun s (i,{pindex=j;ptyp=t}) ->
                   (*
                   print_endline ( "ps = " ^ catmap "," (fun (id,(p,t)) -> id) ps);
-                  print_endline ("tt=" ^ sbt syms.dfns tt);
+                  print_endline ("tt=" ^ sbt syms.sym_table tt);
                   *)
                   let t = nth_type tt i in
                   let a' = BEXPR_get_n (i,a),t in
@@ -1137,7 +1148,7 @@ let gen_exe filename syms
           in
             "  " ^ name ^ "(" ^ s ^ ");\n"
         else
-          let subs,x = Flx_unravel.unravel syms bbdfns a in
+          let subs,x = Flx_unravel.unravel syms bsym_table a in
           let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
           handle_closure sr false index ts subs x true
       | _ -> failwith "procedure expected"
@@ -1148,7 +1159,7 @@ let gen_exe filename syms
     | BEXE_call_direct (sr,index,ts,a)
     | BEXE_call (sr,(BEXPR_closure (index,ts),_),a) ->
       let a = match a with (a,t) -> a, tsub t in
-      let subs,x = Flx_unravel.unravel syms bbdfns a in
+      let subs,x = Flx_unravel.unravel syms bsym_table a in
       let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
       let ts = map tsub ts in
       handle_closure sr false index ts subs x false
@@ -1161,7 +1172,7 @@ let gen_exe filename syms
     | BEXE_jump (sr,((BEXPR_closure (index,ts),_)),a)
     | BEXE_jump_direct (sr,index,ts,a) ->
       let a = match a with (a,t) -> a, tsub t in
-      let subs,x = Flx_unravel.unravel syms bbdfns a in
+      let subs,x = Flx_unravel.unravel syms bsym_table a in
       let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
       let ts = map tsub ts in
       handle_closure sr true index ts subs x false
@@ -1239,7 +1250,7 @@ let gen_exe filename syms
 
     | BEXE_svc (sr,index) ->
       let id,parent,sr,entry =
-        try Hashtbl.find bbdfns index
+        try Hashtbl.find bsym_table index
         with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
       in
       let t =
@@ -1251,7 +1262,7 @@ let gen_exe filename syms
       let n = !counter in incr counter;
       needs_switch := true;
       "      //read variable\n" ^
-      "      p_svc = &" ^ get_var_ref syms bbdfns this index ts^";\n" ^
+      "      p_svc = &" ^ get_var_ref syms bsym_table this index ts^";\n" ^
       "      FLX_SET_PC(" ^ si n ^ ")\n" ^
       "      return this;\n" ^
       "    FLX_CASE_LABEL(" ^ si n ^ ")\n"
@@ -1299,16 +1310,16 @@ let gen_exe filename syms
       | BTYP_tuple [] -> ""
       | _ ->
         let id,_,_,entry =
-          try Hashtbl.find bbdfns v with
+          try Hashtbl.find bsym_table v with
           Not_found -> failwith ("[gen_expr(init) can't find index " ^ si v)
         in
         begin match entry with
           | BBDCL_tmp _ ->
           (if with_comments then "      //"^src_str^"\n" else "") ^
           "      "^
-          get_variable_typename syms bbdfns v [] ^
+          get_variable_typename syms bsym_table v [] ^
           " " ^
-          get_ref_ref syms bbdfns this v ts^
+          get_ref_ref syms bsym_table this v ts^
           " = " ^
           ge sr e ^
           ";\n"
@@ -1320,7 +1331,7 @@ let gen_exe filename syms
           *)
           (if with_comments then "      //"^src_str^"\n" else "") ^
           "      "^
-          get_ref_ref syms bbdfns this v ts^
+          get_ref_ref syms bsym_table this v ts^
           " = " ^
           ge sr e ^
           ";\n"
@@ -1361,10 +1372,37 @@ let gen_exe filename syms
        "        FLX_ASSERT2_FAILURE("^s^"," ^ s2 ^");}\n"
   in gexe exe
 
-let gen_exes filename syms bbdfns display label_info counter index exes vs ts instance_no stackable =
+let gen_exes
+  filename
+  syms
+  bsym_table
+  child_map
+  display
+  label_info
+  counter
+  index
+  exes
+  vs
+  ts
+  instance_no
+  stackable
+=
   let needs_switch = ref false in
   let s = cat ""
-    (map (gen_exe filename syms bbdfns label_info counter index vs ts instance_no needs_switch stackable) exes)
+    (map (gen_exe
+      filename
+      syms
+      bsym_table
+      child_map
+      label_info
+      counter
+      index
+      vs
+      ts
+      instance_no
+      needs_switch
+      stackable)
+    exes)
   in
   s,!needs_switch
 
@@ -1387,12 +1425,12 @@ let gen_exes filename syms bbdfns display label_info counter index exes vs ts in
   accepts the argument and runs the function.
   The machine stack is used for functions.
 *)
-let gen_C_function_body filename syms (child_map,bbdfns)
+let gen_C_function_body filename syms bsym_table child_map
   label_info counter index ts sr instance_no
 =
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let id,parent,sr,entry =
-    try Hashtbl.find bbdfns index
+    try Hashtbl.find bsym_table index
     with Not_found -> failwith ("gen_C_function_body] can't find " ^ si index)
   in
   if syms.compiler_options.print_flag then
@@ -1403,13 +1441,13 @@ let gen_C_function_body filename syms (child_map,bbdfns)
     id ^ "<" ^si index^">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
+      else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
     )
   );
   match entry with
   | BBDCL_function (props,vs,(bps,traint),ret',exes) ->
     (*
-    print_endline ("Properties=" ^ catmap "," (fun x->st syms.dfns (x:>felix_term_t)) props);
+    print_endline ("Properties=" ^ catmap "," (fun x->st syms.sym_table (x:>felix_term_t)) props);
     *)
     let requires_ptf = mem `Requires_ptf props in
     if length ts <> length vs then
@@ -1420,7 +1458,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
       ", got ts=" ^
       si (length ts)
     );
-    let name = cpp_instance_name syms bbdfns index ts in
+    let name = cpp_instance_name syms bsym_table index ts in
 
     "//C FUNC <" ^si index^ ">: " ^ name ^ "\n" ^
 
@@ -1431,17 +1469,17 @@ let gen_C_function_body filename syms (child_map,bbdfns)
     if ret = BTYP_tuple [] then "// elided (returns unit)\n\n" else
 
 
-    let funtype = fold syms.counter syms.dfns (BTYP_function (argtype, ret)) in
+    let funtype = fold syms.counter syms.sym_table (BTYP_function (argtype, ret)) in
     (* let argtypename = cpp_typename syms argtype in *)
     let rettypename = cpp_typename syms ret in
 
     let params = map (fun {pindex=ix} -> ix) bps in
     let exe_string,_ =
       try
-        gen_exes filename syms (child_map,bbdfns) [] label_info counter index exes vs ts instance_no true
+        gen_exes filename syms bsym_table child_map [] label_info counter index exes vs ts instance_no true
       with x ->
         print_endline (Printexc.to_string x);
-        print_endline (catmap "\n" (string_of_bexe syms.dfns bbdfns 1) exes);
+        print_endline (catmap "\n" (string_of_bexe syms.sym_table bsym_table 1) exes);
         print_endline "Can't gen exes ..";
         raise x
     in
@@ -1451,7 +1489,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
         fold_left
         (fun lst i ->
           let _,_,_,entry =
-            try Hashtbl.find bbdfns i
+            try Hashtbl.find bsym_table i
             with Not_found -> failwith ("[C func body, vars] Can't find index " ^ si i);
           in
           match entry with
@@ -1469,7 +1507,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
       fold_left
       (fun s (i,t) -> s ^ "  " ^
         cpp_typename syms t ^ " " ^
-        cpp_instance_name syms bbdfns i ts ^ ";\n"
+        cpp_instance_name syms bsym_table i ts ^ ";\n"
       )
       "" kids
     in
@@ -1493,7 +1531,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
                 | _ -> t
               in
               cpp_typename syms t ^ " " ^
-              cpp_instance_name syms bbdfns i ts
+              cpp_instance_name syms bsym_table i ts
             else ""
             end
           | _ ->
@@ -1511,7 +1549,7 @@ let gen_C_function_body filename syms (child_map,bbdfns)
                 then s ^
                   (if String.length s > 0 then ", " else " ") ^
                   cpp_typename syms t ^ " " ^
-                  cpp_instance_name syms bbdfns i ts
+                  cpp_instance_name syms bsym_table i ts
                 else s (* elide initialisation of elided variable *)
               )
               ""
@@ -1533,12 +1571,12 @@ let gen_C_function_body filename syms (child_map,bbdfns)
 
   | _ -> failwith "function expected"
 
-let gen_C_procedure_body filename syms (child_map,bbdfns)
+let gen_C_procedure_body filename syms bsym_table child_map
   label_info counter index ts sr instance_no
 =
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let id,parent,sr,entry =
-    try Hashtbl.find bbdfns index
+    try Hashtbl.find bsym_table index
     with Not_found -> failwith ("gen_C_function_body] can't find " ^ si index)
   in
   if syms.compiler_options.print_flag then
@@ -1549,7 +1587,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
     id ^ "<" ^si index^">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
+      else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
     )
   );
   match entry with
@@ -1563,24 +1601,24 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
       ", got ts=" ^
       si (length ts)
     );
-    let name = cpp_instance_name syms bbdfns index ts in
+    let name = cpp_instance_name syms bsym_table index ts in
 
     "//C PROC <"^si index^ ">: " ^ name ^ "\n" ^
 
     let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
 
-    let funtype = fold syms.counter syms.dfns (BTYP_function (argtype, BTYP_void)) in
+    let funtype = fold syms.counter syms.sym_table (BTYP_function (argtype, BTYP_void)) in
     (* let argtypename = cpp_typename syms argtype in *)
 
     let params = map (fun {pindex=ix} -> ix) bps in
     let exe_string,_ =
       try
-        gen_exes filename syms (child_map,bbdfns) [] label_info counter index exes vs ts instance_no true
+        gen_exes filename syms bsym_table child_map [] label_info counter index exes vs ts instance_no true
       with x ->
         (*
         print_endline (Printexc.to_string x);
-        print_endline (catmap "\n" (string_of_bexe syms.dfns bbdfns 1) exes);
+        print_endline (catmap "\n" (string_of_bexe syms.sym_table bsym_table 1) exes);
         print_endline "Can't gen exes ..";
         *)
         raise x
@@ -1591,7 +1629,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
         fold_left
         (fun lst i ->
           let _,_,_,entry =
-            try Hashtbl.find bbdfns i
+            try Hashtbl.find bsym_table i
             with Not_found -> failwith ("[C func body, vars] Can't find index " ^ si i);
           in
           match entry with
@@ -1609,7 +1647,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
       fold_left
       (fun s (i,t) -> s ^ "  " ^
         cpp_typename syms t ^ " " ^
-        cpp_instance_name syms bbdfns i ts ^ ";\n"
+        cpp_instance_name syms bsym_table i ts ^ ";\n"
       )
       "" kids
     in
@@ -1633,7 +1671,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
                 | _ -> t
               in
               cpp_typename syms t ^ " " ^
-              cpp_instance_name syms bbdfns i ts
+              cpp_instance_name syms bsym_table i ts
             else ""
             end
           | _ ->
@@ -1650,7 +1688,7 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
                 then s ^
                   (if String.length s > 0 then ", " else " ") ^
                   cpp_typename syms t ^ " " ^
-                  cpp_instance_name syms bbdfns i ts
+                  cpp_instance_name syms bsym_table i ts
                 else s (* elide initialisation of elided variable *)
               )
               ""
@@ -1671,11 +1709,11 @@ let gen_C_procedure_body filename syms (child_map,bbdfns)
 
   | _ -> failwith "procedure expected"
 
-let gen_function_methods filename syms (child_map,bbdfns)
+let gen_function_methods filename syms bsym_table child_map
   label_info counter index ts sr instance_no : string * string
 =
   let id,parent,sr,entry =
-    try Hashtbl.find bbdfns index
+    try Hashtbl.find bsym_table index
     with Not_found -> failwith ("[gen_function_methods] can't find " ^ si index)
   in
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
@@ -1687,7 +1725,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
     id ^ "<" ^si index^">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
+      else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
     )
   );
   match entry with
@@ -1706,28 +1744,28 @@ let gen_function_methods filename syms (child_map,bbdfns)
     let ret = rt' vs ret' in
     if ret = BTYP_tuple [] then "// elided (returns unit)\n","" else
 
-    let funtype = fold syms.counter syms.dfns (BTYP_function (argtype, ret)) in
+    let funtype = fold syms.counter syms.sym_table (BTYP_function (argtype, ret)) in
 
     let argtypename = cpp_typename syms argtype in
-    let name = cpp_instance_name syms bbdfns index ts in
+    let name = cpp_instance_name syms bsym_table index ts in
 
-    let display = get_display_list syms bbdfns index in
+    let display = get_display_list syms bsym_table index in
 
     let rettypename = cpp_typename syms ret in
 
     let ctor =
-      let vars =  find_references syms (child_map,bbdfns) index ts in
-      let funs = filter (fun (_,t) -> is_gc_pointer syms bbdfns sr t) vars in
-      gen_ctor syms bbdfns name display funs [] [] ts props
+      let vars = find_references syms bsym_table child_map index ts in
+      let funs = filter (fun (_,t) -> is_gc_pointer syms bsym_table sr t) vars in
+      gen_ctor syms bsym_table name display funs [] [] ts props
     in
     let params = map (fun {pindex=ix} -> ix) bps in
     let exe_string,needs_switch =
       try
-        gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no false
+        gen_exes filename syms bsym_table child_map display label_info counter index exes vs ts instance_no false
       with x ->
         (*
         print_endline (Printexc.to_string x);
-        print_endline (catmap "\n" (string_of_bexe syms.dfns bbdfns 1) exes);
+        print_endline (catmap "\n" (string_of_bexe syms.sym_table bsym_table 1) exes);
         print_endline "Can't gen exes ..";
         *)
         raise x
@@ -1755,7 +1793,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
           if Hashtbl.mem syms.instances (i, ts)
           && not (argtype = BTYP_tuple [] or argtype = BTYP_void)
           then
-            "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg;\n"
+            "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg;\n"
           else ""
         | _ ->
           let counter = ref 0 in fold_left
@@ -1769,7 +1807,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
                 | BTYP_tuple _ -> ".mem_"^ si n
                 | _ -> assert false
               in
-              s ^ "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg"^ memexpr ^";\n"
+              s ^ "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg"^ memexpr ^";\n"
             else s (* elide initialisation of elided variable *)
           )
           "" params
@@ -1793,7 +1831,7 @@ let gen_function_methods filename syms (child_map,bbdfns)
       )^
       "}\n"
     in
-      let q = qualified_name_of_bindex syms.dfns bbdfns index in
+      let q = qualified_name_of_bindex syms.sym_table bsym_table index in
       let ctor =
       "//FUNCTION <" ^ si index ^ ">: " ^ q ^ ": Constructor\n" ^
       ctor^ "\n" ^
@@ -1811,11 +1849,11 @@ let gen_function_methods filename syms (child_map,bbdfns)
 
   | _ -> failwith "function expected"
 
-let gen_procedure_methods filename syms (child_map,bbdfns)
+let gen_procedure_methods filename syms bsym_table child_map
   label_info counter index ts instance_no : string * string
 =
   let id,parent,sr,entry =
-    try Hashtbl.find bbdfns index
+    try Hashtbl.find bsym_table index
     with Not_found -> failwith ("[gen_procedure_methods] Can't find index " ^ si index)
   in (* can't fail *)
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
@@ -1827,7 +1865,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     id ^ "<" ^si index^">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
+      else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
     )
   );
   match entry with
@@ -1847,29 +1885,29 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
     *)
     let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
-    let funtype = fold syms.counter syms.dfns (BTYP_function (argtype, BTYP_void)) in
+    let funtype = fold syms.counter syms.sym_table (BTYP_function (argtype, BTYP_void)) in
 
     let argtypename = cpp_typename syms argtype in
-    let name = cpp_instance_name syms bbdfns index ts in
+    let name = cpp_instance_name syms bsym_table index ts in
 
-    let display = get_display_list syms bbdfns index in
+    let display = get_display_list syms bsym_table index in
 
     let ctor =
-      let vars =  find_references syms (child_map,bbdfns) index ts in
-      let funs = filter (fun (i,t) -> is_gc_pointer syms bbdfns sr t) vars in
-      gen_ctor syms bbdfns name display funs [] [] ts props
+      let vars = find_references syms bsym_table child_map index ts in
+      let funs = filter (fun (i,t) -> is_gc_pointer syms bsym_table sr t) vars in
+      gen_ctor syms bsym_table name display funs [] [] ts props
     in
 
     (*
-    let dtor = gen_dtor syms bbdfns name display ts in
+    let dtor = gen_dtor syms bsym_table name display ts in
     *)
     let ps = map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
     let params = map (fun {pindex=ix} -> ix) bps in
     let exe_string,needs_switch =
       (*
-      gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no (stackable && not heapable)
+      gen_exes filename syms bsym_table child_map display label_info counter index exes vs ts instance_no (stackable && not heapable)
       *)
-      gen_exes filename syms (child_map,bbdfns) display label_info counter index exes vs ts instance_no stackable
+      gen_exes filename syms bsym_table child_map display label_info counter index exes vs ts instance_no stackable
     in
 
     let cont = "con_t *" in
@@ -1890,7 +1928,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
           if Hashtbl.mem syms.instances (i,ts)
           && not (argtype = BTYP_tuple[] or argtype = BTYP_void)
           then
-            "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg;\n"
+            "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg;\n"
           else ""
 
         | _ -> let counter = ref 0 in fold_left
@@ -1904,7 +1942,7 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
                 | BTYP_tuple _ -> ".mem_"^ si n
                 | _ -> assert false
               in
-              s ^ "  " ^ cpp_instance_name syms bbdfns i ts ^ " = _arg" ^ memexpr ^";\n"
+              s ^ "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg" ^ memexpr ^";\n"
             else s (* elide initialisation of elided variables *)
           )
           "" params
@@ -1948,13 +1986,13 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
         "}\n"
     in
       let q =
-        try qualified_name_of_bindex syms.dfns bbdfns index
+        try qualified_name_of_bindex syms.sym_table bsym_table index
         with Not_found ->
           si instance_no ^ "=" ^
           id ^ "<" ^si index^">" ^
           (
             if length ts = 0 then ""
-            else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
+            else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
           )
       in
       let ctor =
@@ -1980,13 +2018,13 @@ let gen_procedure_methods filename syms (child_map,bbdfns)
   | _ -> failwith "procedure expected"
 
 
-let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf bf2 =
+let gen_execute_methods filename syms bsym_table child_map label_info counter bf bf2 =
   let s = Buffer.create 2000 in
   let s2 = Buffer.create 2000 in
   Hashtbl.iter
   (fun (index,ts) instance_no ->
   let id,parent,sr,entry =
-    try Hashtbl.find bbdfns index
+    try Hashtbl.find bsym_table index
     with Not_found -> failwith ("[gen_execute_methods] Can't find index " ^ si index)
   in
   begin match entry with
@@ -1994,12 +2032,12 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf b
     bcat s ("//------------------------------\n");
     if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
       bcat s (
-        gen_C_function_body filename syms (child_map,bbdfns)
+        gen_C_function_body filename syms bsym_table child_map
         label_info counter index ts sr instance_no
       )
     else
       let apply,ctor =
-        gen_function_methods filename syms (child_map,bbdfns)
+        gen_function_methods filename syms bsym_table child_map
         label_info counter index ts sr instance_no
       in
       bcat s2 ctor;
@@ -2008,13 +2046,13 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf b
   | BBDCL_callback (props,vs,ps_cf,ps_c,client_data_pos,ret',_,_) ->
       let tss =
         if length ts = 0 then "" else
-        "[" ^ catmap "," (string_of_btypecode syms.dfns) ts^ "]"
+        "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts^ "]"
       in
       bcat s ("\n//------------------------------\n");
       if ret' = BTYP_void then begin
-        bcat s ("//CALLBACK C PROCEDURE <" ^ si index ^ ">: " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C PROCEDURE <" ^ si index ^ ">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
       end else begin
-        bcat s ("//CALLBACK C FUNCTION <" ^ si index ^ ">: " ^ qualified_name_of_bindex syms.dfns bbdfns index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C FUNCTION <" ^ si index ^ ">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
       end
       ;
       let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
@@ -2029,7 +2067,7 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf b
         id ^ "<" ^si index^">" ^
         (
           if length ts = 0 then ""
-          else "[" ^ catmap "," (string_of_btypecode syms.dfns) ts ^ "]"
+          else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
         )
       );
       if length ts <> length vs then
@@ -2041,7 +2079,7 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf b
         si (length ts)
       );
       (*
-      let name = cpp_instance_name syms bbdfns index ts in
+      let name = cpp_instance_name syms bsym_table index ts in
       *)
       let name = id in (* callbacks can't be polymorphic .. for now anyhow *)
       let rettypename = cpp_typename syms ret in
@@ -2124,12 +2162,12 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf b
     bcat s ("//------------------------------\n");
     if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
       bcat s (
-        gen_C_procedure_body filename syms (child_map,bbdfns)
+        gen_C_procedure_body filename syms bsym_table child_map
         label_info counter index ts sr instance_no
       )
     else
       let call,ctor =
-        gen_procedure_methods filename syms (child_map,bbdfns)
+        gen_procedure_methods filename syms bsym_table child_map
         label_info counter index ts instance_no
       in
       bcat s call;
@@ -2145,18 +2183,18 @@ let gen_execute_methods filename syms (child_map,bbdfns) label_info counter bf b
   )
   syms.instances
 
-let gen_biface_header syms bbdfns biface = match biface with
+let gen_biface_header syms bsym_table biface = match biface with
   | BIFACE_export_python_fun (sr,index, export_name) ->
      "// PYTHON FUNCTION " ^ export_name ^ " header to go here??\n"
 
   | BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bbdfns index
+      try Hashtbl.find bsym_table index
       with Not_found -> failwith ("[gen_biface_header] Can't find index " ^ si index)
     in
     begin match entry with
     | BBDCL_function (props,vs,(ps,traint), ret, _) ->
-      let display = get_display_list syms bbdfns index in
+      let display = get_display_list syms bsym_table index in
       if length display <> 0
       then clierr sr "Can't export nested function";
 
@@ -2172,13 +2210,13 @@ let gen_biface_header syms bbdfns biface = match biface with
       in
       let rettypename = cpp_typename syms ret in
 
-      "//EXPORT FUNCTION " ^ cpp_instance_name syms bbdfns index [] ^
+      "//EXPORT FUNCTION " ^ cpp_instance_name syms bsym_table index [] ^
       " as " ^ export_name ^ "\n" ^
       "extern \"C\" FLX_EXPORT " ^ rettypename ^" " ^
       export_name ^ "(\n" ^ arglist ^ "\n);\n"
 
     | BBDCL_procedure (props,vs,(ps,traint), _) ->
-      let display = get_display_list syms bbdfns index in
+      let display = get_display_list syms bsym_table index in
       if length display <> 0
       then clierr sr "Can't export nested proc";
 
@@ -2193,7 +2231,7 @@ let gen_biface_header syms bbdfns biface = match biface with
         )
       in
 
-      "//EXPORT PROCEDURE " ^ cpp_instance_name syms bbdfns index [] ^
+      "//EXPORT PROCEDURE " ^ cpp_instance_name syms bsym_table index [] ^
       " as " ^ export_name ^ "\n" ^
       "extern \"C\" FLX_EXPORT con_t * "  ^ export_name ^
       "(\n" ^ arglist ^ "\n);\n"
@@ -2202,17 +2240,17 @@ let gen_biface_header syms bbdfns biface = match biface with
     end
 
   | BIFACE_export_type (sr, typ, export_name) ->
-    "//EXPORT type " ^ sbt  syms.dfns typ ^ " as " ^ export_name  ^ "\n" ^
+    "//EXPORT type " ^ sbt  syms.sym_table typ ^ " as " ^ export_name  ^ "\n" ^
     "typedef " ^ cpp_type_classname syms typ ^ " " ^ export_name ^ "_class;\n" ^
     "typedef " ^ cpp_typename syms typ ^ " " ^ export_name ^ ";\n"
 
-let gen_biface_body syms bbdfns biface = match biface with
+let gen_biface_body syms bsym_table biface = match biface with
   | BIFACE_export_python_fun (sr,index, export_name) ->
      "// PYTHON FUNCTION " ^ export_name ^ " body to go here??\n"
 
   | BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bbdfns index
+      try Hashtbl.find bsym_table index
       with Not_found -> failwith ("[gen_biface_body] Can't find index " ^ si index)
     in
     begin match entry with
@@ -2220,7 +2258,7 @@ let gen_biface_body syms bbdfns biface = match biface with
       if length vs <> 0
       then clierr sr ("Can't export generic function " ^ id)
       ;
-      let display = get_display_list syms bbdfns index in
+      let display = get_display_list syms bsym_table index in
       if length display <> 0
       then clierr sr "Can't export nested function";
       let arglist =
@@ -2241,7 +2279,7 @@ let gen_biface_body syms bbdfns biface = match biface with
       let requires_ptf = mem `Requires_ptf props in
 
       let rettypename = cpp_typename syms ret in
-      let class_name = cpp_instance_name syms bbdfns index [] in
+      let class_name = cpp_instance_name syms bsym_table index [] in
 
       "//EXPORT FUNCTION " ^ class_name ^
       " as " ^ export_name ^ "\n" ^
@@ -2266,13 +2304,13 @@ let gen_biface_body syms bbdfns biface = match biface with
       if length vs <> 0
       then clierr sr ("Can't export generic procedure " ^ id)
       ;
-      let display = get_display_list syms bbdfns index in
+      let display = get_display_list syms bsym_table index in
       if length display <> 0
       then clierr sr "Can't export nested function";
 
       let args = rev (fold_left (fun args
         ({ptyp=t; pid=name; pindex=pidx} as arg) ->
-        try ignore(cpp_instance_name syms bbdfns pidx []); arg:: args
+        try ignore(cpp_instance_name syms bsym_table pidx []); arg:: args
         with _ -> args
         )
         []
@@ -2290,9 +2328,9 @@ let gen_biface_body syms bbdfns biface = match biface with
         else "FLX_FPAR_DECL\n  " ^ cat ",\n  " params
         )
       in
-      let class_name = cpp_instance_name syms bbdfns index [] in
+      let class_name = cpp_instance_name syms bsym_table index [] in
       let strargs =
-        let ge sr e : string = gen_expr syms bbdfns index e [] [] sr in
+        let ge sr e : string = gen_expr syms bsym_table index e [] [] sr in
         match ps with
         | [] -> "0"
         | [{ptyp=t; pid=name; pindex=idx}] -> "0" ^ ", " ^ name
@@ -2320,7 +2358,7 @@ let gen_biface_body syms bbdfns biface = match biface with
           "0" ^ ", " ^ ge sr a
       in
 
-      "//EXPORT PROC " ^ cpp_instance_name syms bbdfns index [] ^
+      "//EXPORT PROC " ^ cpp_instance_name syms bsym_table index [] ^
       " as " ^ export_name ^ "\n" ^
       "con_t *" ^ export_name ^ "(\n" ^ strparams ^ "\n){\n" ^
       (
@@ -2360,20 +2398,20 @@ let gen_biface_body syms bbdfns biface = match biface with
 
   | BIFACE_export_type _ -> ""
 
-let gen_biface_headers syms bbdfns bifaces =
-  cat "" (map (gen_biface_header syms bbdfns) bifaces)
+let gen_biface_headers syms bsym_table bifaces =
+  cat "" (map (gen_biface_header syms bsym_table) bifaces)
 
-let gen_biface_bodies syms bbdfns bifaces =
-  cat "" (map (gen_biface_body syms bbdfns) bifaces)
+let gen_biface_bodies syms bsym_table bifaces =
+  cat "" (map (gen_biface_body syms bsym_table) bifaces)
 
 (*  Generate Python module initialisation entry point
 if a Python module function is detected as an export
 *)
 
-let gen_python_module modname syms bbdfns bifaces =
+let gen_python_module modname syms bsym_table bifaces =
   let pychk acc elt = match elt with
   | BIFACE_export_python_fun (sr,index,name) ->
-    let class_name = cpp_instance_name syms bbdfns index [] in
+    let class_name = cpp_instance_name syms bsym_table index [] in
     let loc = Flx_srcref.short_string_of_src sr in
     let entry = name, class_name, loc in
     entry :: acc

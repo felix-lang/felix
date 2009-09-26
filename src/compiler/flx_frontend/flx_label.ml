@@ -20,7 +20,7 @@ type goto_kind_t =
   | `Unreachable
 ]
 
-let get_labels bbdfns counter exes =
+let get_labels bsym_table counter exes =
   let labels = Hashtbl.create 97 in
   List.iter
     (fun exe -> match exe with
@@ -35,36 +35,36 @@ let get_labels bbdfns counter exes =
   ;
   labels
 
-let update_label_map bbdfns counter label_map index (_,_,_,entry) =
+let update_label_map bsym_table counter label_map index (_,_,_,entry) =
   (*
   print_endline ("Routine " ^ id ^ "<"^ si index ^">");
   *)
   match entry with
   | BBDCL_function (_,_,_,_,exes) ->
-    Hashtbl.add label_map index (get_labels bbdfns counter exes)
+    Hashtbl.add label_map index (get_labels bsym_table counter exes)
   | BBDCL_procedure (_,_,_,exes) ->
-    Hashtbl.add label_map index (get_labels bbdfns counter exes)
+    Hashtbl.add label_map index (get_labels bsym_table counter exes)
   | _ -> ()
 
-let create_label_map bbdfns counter =
+let create_label_map bsym_table counter =
   (*
   print_endline "Creating label map";
   *)
   let label_map = Hashtbl.create 97 in
-  Hashtbl.iter (update_label_map bbdfns counter label_map) bbdfns;
+  Hashtbl.iter (update_label_map bsym_table counter label_map) bsym_table;
   label_map
 
-let rec find_label bbdfns label_map caller label =
+let rec find_label bsym_table label_map caller label =
   let labels = Hashtbl.find label_map caller in
   try `Local (Hashtbl.find labels label)
   with Not_found ->
-  let id,parent,sr,entry = Hashtbl.find bbdfns caller in
+  let id,parent,sr,entry = Hashtbl.find bsym_table caller in
   match entry with
   | BBDCL_function _ -> `Unreachable
   | BBDCL_procedure _ ->
     begin match parent with None -> `Unreachable
     | Some parent ->
-      begin match find_label bbdfns label_map parent label with
+      begin match find_label bsym_table label_map parent label with
       | `Local i -> `Nonlocal (i,parent)
       | x -> x
       end
@@ -80,15 +80,15 @@ let get_label_kind label_map usage_map proc label =
   get_label_kind_from_index usage_map lix
 
 
-let cal_usage syms bbdfns label_map caller exes usage =
+let cal_usage syms bsym_table label_map caller exes usage =
   iter
   (function
     | BEXE_goto (sr,label)
     | BEXE_ifgoto (sr,_,label) ->
-      begin match find_label bbdfns label_map caller label with
+      begin match find_label bsym_table label_map caller label with
       | `Unreachable ->
         syserr sr ("[flx_label] Caller "^si caller^" Jump to unreachable label " ^ label ^ "\n" ^
-        (catmap "\n" (string_of_bexe syms.dfns bbdfns 2) exes))
+        (catmap "\n" (string_of_bexe syms.sym_table bsym_table 2) exes))
       | `Local lix ->
         begin match get_label_kind_from_index usage lix with
         | `Unused -> Hashtbl.replace usage lix `Near
@@ -104,14 +104,14 @@ let cal_usage syms bbdfns label_map caller exes usage =
   )
   exes
 
-let update_label_usage syms bbdfns label_map usage index (_,_,_,entry) =
+let update_label_usage syms bsym_table label_map usage index (_,_,_,entry) =
   match entry with
   | BBDCL_function (_,_,_,_,exes)
   | BBDCL_procedure (_,_,_,exes) ->
-    cal_usage syms bbdfns label_map index exes usage
+    cal_usage syms bsym_table label_map index exes usage
   | _ -> ()
 
-let create_label_usage syms bbdfns label_map =
+let create_label_usage syms bsym_table label_map =
   let usage = Hashtbl.create 97 in
-  Hashtbl.iter (update_label_usage syms bbdfns label_map usage) bbdfns;
+  Hashtbl.iter (update_label_usage syms bsym_table label_map usage) bsym_table;
   usage

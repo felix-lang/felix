@@ -10,7 +10,7 @@ type submode_t = [`Eager | `Lazy]
 
 val gen_body :
   sym_state_t ->
-  usage_table_t * Flx_child.t * fully_bound_symbol_table_t ->
+  usage_table_t * Flx_child.t * bsym_table_t ->
   string ->                        (* name *)
   (int, btypecode_t) Hashtbl.t ->  (* varmap *)
   bparameter_t list ->             (* parameters *)

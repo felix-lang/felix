@@ -195,24 +195,24 @@ try
 
   (* Bind the assemblies. *)
   let bind_state = Flx_bind.make_bind_state syms in
-  let bbdfns = Flx_bind.bind_asms bind_state asms in
+  let bsym_table = Flx_bind.bind_asms bind_state asms in
 
-  let child_map = Flx_child.cal_children bbdfns in
-  Flx_typeclass.typeclass_instance_check syms bbdfns child_map;
+  let child_map = Flx_child.cal_children bsym_table in
+  Flx_typeclass.typeclass_instance_check syms bsym_table child_map;
 
   (* generate axiom checks *)
   if compiler_options.generate_axiom_checks then
-  Flx_axiom.axiom_check syms bbdfns;
+  Flx_axiom.axiom_check syms bsym_table;
 
   (* generate why file *)
-  Flx_why.emit_whycode why_file_name.out_filename syms bbdfns root;
+  Flx_why.emit_whycode why_file_name.out_filename syms bsym_table root;
 
   let binding_time = tim() in
 
   print_debug "//CHECKING ROOT";
   let root_proc =
     match
-      try Hashtbl.find syms.dfns root
+      try Hashtbl.find syms.sym_table root
       with Not_found ->
         failwith
         (
@@ -242,30 +242,30 @@ try
 
   (* Optimize the bound values *)
   let frontend_state = Flx_frontend.make_frontend_state syms in
-  let bbdfns = Flx_frontend.optimize frontend_state bbdfns root_proc in
+  let bsym_table = Flx_frontend.optimize frontend_state bsym_table root_proc in
 
   let opt_time = tim() in
   print_debug ("//Optimisation complete time " ^ string_of_float opt_time);
 
   (* Lower the bound symbols for the backend. *)
-  let bbdfns, child_map = Flx_frontend.lower_bbdfns frontend_state bbdfns root_proc in
+  let bsym_table, child_map = Flx_frontend.lower_bsym_table frontend_state bsym_table root_proc in
 
   (* Start working on the backend. *)
 
-  let label_map = Flx_label.create_label_map bbdfns syms.counter in
-  let label_usage = Flx_label.create_label_usage syms bbdfns label_map in
+  let label_map = Flx_label.create_label_map bsym_table syms.counter in
+  let label_usage = Flx_label.create_label_usage syms bsym_table label_map in
   let label_info = label_map, label_usage in
 
   (* Make sure we can find the _init_ instance *)
   let top_class =
-    try cpp_instance_name syms bbdfns root_proc []
+    try cpp_instance_name syms bsym_table root_proc []
     with Not_found ->
       failwith ("can't name instance of root _init_ procedure index " ^ si root_proc)
   in
 
   (* FUDGE the init procedure to make interfacing a bit simpler *)
   let topclass_props =
-    let id,parent,sr,entry = Hashtbl.find bbdfns root_proc in
+    let id,parent,sr,entry = Hashtbl.find bsym_table root_proc in
     match entry with
     | BBDCL_procedure (props,vs,p,exes) -> props
     | _ -> syserr sr "Expected root to be procedure"
@@ -303,7 +303,7 @@ try
     List.iter
     (fun (i,ts)->
       match
-        try Hashtbl.find bbdfns i
+        try Hashtbl.find bsym_table i
         with Not_found -> failwith ("[package] can't find index " ^ si i)
       with (id,parent,sr,entry) ->
       match entry with
@@ -368,7 +368,7 @@ try
     List.iter
     (fun (i,ts)->
       match
-        try Hashtbl.find bbdfns i
+        try Hashtbl.find bsym_table i
         with Not_found -> failwith ("[user header] can't find index " ^ si i)
       with (id,parent,sr,entry) ->
       match entry with
@@ -422,7 +422,7 @@ try
   in
   (*
   List.iter
-  (fun (_,t) -> print_endline (string_of_btypecode dfns t))
+  (fun (_,t) -> print_endline (string_of_btypecode sym_table t))
   types
   ;
   *)
@@ -430,23 +430,23 @@ try
   print_debug "//GENERATING C++: type class names";
   plh "\n//-----------------------------------------";
   plh "//NAME THE TYPES";
-  plh  (gen_type_names syms bbdfns types);
+  plh  (gen_type_names syms bsym_table types);
 
   print_debug "//GENERATING C++: type class definitions";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE THE TYPES";
-  plh  (gen_types syms bbdfns types);
+  plh  (gen_types syms bsym_table types);
 
   print_debug "//GENERATING C++: function and procedure classes";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASS NAMES";
-  plh  (gen_function_names syms (child_map,bbdfns));
+  plh  (gen_function_names syms bsym_table child_map);
 
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASSES";
-  plh  (gen_functions syms (child_map,bbdfns));
+  plh  (gen_functions syms bsym_table child_map);
 
-  let topvars_with_type = find_thread_vars_with_type bbdfns in
+  let topvars_with_type = find_thread_vars_with_type bsym_table in
   let topvars = List.map fst topvars_with_type in
   List.iter plh
   [
@@ -461,7 +461,7 @@ try
   "  );";
   ]
   ;
-  plh (format_vars syms bbdfns topvars []);
+  plh (format_vars syms bsym_table topvars []);
   plh "};";
   plh "";
   plh "FLX_DCL_THREAD_FRAME";
@@ -493,7 +493,7 @@ try
     List.iter
     (fun (i,ts) ->
       match
-        try Hashtbl.find bbdfns i
+        try Hashtbl.find bsym_table i
         with Not_found -> failwith ("[user body] can't find index " ^ si i)
       with (id,parent,sr,entry) ->
       match entry with
@@ -532,7 +532,7 @@ try
   plb "//Thread Frame Constructor";
 
   let sr = Flx_srcref.make_dummy "Thread Frame" in
-  let topfuns = List.filter (fun (_,t) -> is_gc_pointer syms bbdfns sr t) topvars_with_type in
+  let topfuns = List.filter (fun (_,t) -> is_gc_pointer syms bsym_table sr t) topvars_with_type in
   let topfuns = List.map fst topfuns in
   let topinits =
     [
@@ -542,7 +542,7 @@ try
     List.map
     (fun index ->
       "  " ^
-      cpp_instance_name syms bbdfns index [] ^
+      cpp_instance_name syms bsym_table index [] ^
       "(0)"
     )
     topfuns
@@ -556,7 +556,7 @@ try
   "{}"
   ];
 
-  plr (Flx_ogen.gen_offset_tables syms (child_map,bbdfns) module_name);
+  plr (Flx_ogen.gen_offset_tables syms bsym_table child_map module_name);
   ensure_closed rtti_file;
   if was_used rtti_file then begin
     plb "\n//-----------------------------------------";
@@ -599,7 +599,15 @@ try
   plb "\n//-----------------------------------------";
   plb "//DEFINE FUNCTION CLASS METHODS";
   plb ("#include \"" ^module_name ^ "_ctors.cpp\"");
-  gen_execute_methods body_file.out_filename syms (child_map,bbdfns) label_info syms.counter (force_open body_file) (force_open ctors_file);
+  gen_execute_methods
+    body_file.out_filename
+    syms
+    bsym_table
+    child_map
+    label_info
+    syms.counter
+    (force_open body_file)
+    (force_open ctors_file);
 
   print_debug "//GENERATING C++: interface";
   plb "\n//-----------------------------------------";
@@ -619,10 +627,10 @@ try
   plh ("using namespace flxusr::" ^ cid_of_flxid module_name ^ ";");
   if List.length syms.bifaces > 0 then begin
     plh "//DECLARE USER EXPORTS";
-    plh (gen_biface_headers syms bbdfns syms.bifaces);
+    plh (gen_biface_headers syms bsym_table syms.bifaces);
     plb "//DEFINE EXPORTS";
-    plb (gen_biface_bodies syms bbdfns syms.bifaces);
-    plb (gen_python_module module_name syms bbdfns syms.bifaces);
+    plb (gen_biface_bodies syms bsym_table syms.bifaces);
+    plb (gen_python_module module_name syms bsym_table syms.bifaces);
   end
   ;
 

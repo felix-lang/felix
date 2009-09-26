@@ -9,7 +9,7 @@ open Flx_mtypes2
 
 val instantiate:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   bool -> (* instantiate parameters? *)
   bid_t ->
   biface_t list ->

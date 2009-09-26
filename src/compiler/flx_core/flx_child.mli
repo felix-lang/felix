@@ -15,8 +15,8 @@ val add_child: t -> bid_t -> bid_t -> unit
 
 val remove_child: t -> bid_t -> bid_t -> unit
 
-val is_ancestor: fully_bound_symbol_table_t -> bid_t -> bid_t -> bool
+val is_ancestor: bsym_table_t -> bid_t -> bid_t -> bool
 
 val descendants: t -> bid_t -> IntSet.t
 
-val cal_children: fully_bound_symbol_table_t -> t
+val cal_children: bsym_table_t -> t

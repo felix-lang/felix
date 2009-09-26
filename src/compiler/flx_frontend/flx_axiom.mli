@@ -10,5 +10,5 @@ open Flx_mtypes2
 
 val axiom_check:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   unit

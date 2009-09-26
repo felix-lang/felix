@@ -2,13 +2,13 @@ open Flx_types
 open Flx_mtypes2
 
 val cpp_name :
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   int ->
   string
 
 val cpp_instance_name :
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   int ->
   btypecode_t list ->
   string

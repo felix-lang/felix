@@ -25,7 +25,7 @@ let create_state options =
     Flx_srcref.dummy_sr, "", None, `Public, Flx_ast.dfltvs,
     Flx_types.DCL_module [])
   in
-  let module_symbol = Hashtbl.find syms.Flx_mtypes2.dfns module_index in
+  let module_symbol = Hashtbl.find syms.Flx_mtypes2.sym_table module_index in
 
   (* Find the module's _init_ function *)
   let init_index =
@@ -65,23 +65,23 @@ let desugar_stmt state stmt () =
 
 let bind_stmt state =
   let child_map = Flx_child.make () in
-  let bbdfns = ref (Hashtbl.create 97) in
+  let bsym_table = ref (Hashtbl.create 97) in
 
   fun stmt () ->
   Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
-    Flx_bind.bind_asm state.bind_state !bbdfns begin fun () bound_value ->
+    Flx_bind.bind_asm state.bind_state !bsym_table begin fun () bound_value ->
       match bound_value with
       | Flx_bind.Bound_exe bexe ->
           print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
-            state.syms.Flx_mtypes2.dfns
-            !bbdfns
+            state.syms.Flx_mtypes2.sym_table
+            !bsym_table
             0
             bexe)
 
       | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
           print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
-            state.syms.Flx_mtypes2.dfns
-            !bbdfns
+            state.syms.Flx_mtypes2.sym_table
+            !bsym_table
             e
             index);
 
@@ -94,14 +94,14 @@ let bind_stmt state =
 
           Flx_typeclass.typeclass_instance_check_symbol
             state.syms
-            !bbdfns
+            !bsym_table
             child_map
             index
             symbol;
 
-          bbdfns := Flx_frontend.lower_symbol
+          bsym_table := Flx_frontend.lower_symbol
             state.frontend_state
-            !bbdfns
+            !bsym_table
             index
             symbol;
 
@@ -112,7 +112,7 @@ let bind_stmt state =
 let compile_bexe
   state
   codegen_state
-  bbdfns
+  bsym_table
   the_module
   context
   the_fpm
@@ -132,7 +132,7 @@ let compile_bexe
   let bb = Llvm.append_block context "entry" the_function in
   let builder = Llvm.builder_at_end context bb in
 
-  let e = Flx_codegen.codegen_bexe codegen_state bbdfns builder bexe in
+  let e = Flx_codegen.codegen_bexe codegen_state bsym_table builder bexe in
 
   (* Make sure we have a return at the end of the function. *)
   ignore (Llvm.build_ret_void builder);
@@ -203,7 +203,7 @@ let compile_stmt state =
   in
 
   (* Create a child map of the symbols. *)
-  let bbdfns = ref (Hashtbl.create 97) in
+  let bsym_table = ref (Hashtbl.create 97) in
   let child_map = Flx_child.make () in
 
   (* Return a function that processes a statement at a time. *)
@@ -212,7 +212,7 @@ let compile_stmt state =
   (* First bind the statement. *)
   let bs =
     Flx_desugar.desugar_statement state.desugar_state begin fun bs asm ->
-      Flx_bind.bind_asm state.bind_state !bbdfns (fun bs b -> b :: bs) bs asm
+      Flx_bind.bind_asm state.bind_state !bsym_table (fun bs b -> b :: bs) bs asm
     end [] stmt
   in
 
@@ -223,8 +223,8 @@ let compile_stmt state =
     match bound_value with
     | Flx_bind.Bound_exe bexe ->
         print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
-          state.syms.Flx_mtypes2.dfns
-          !bbdfns
+          state.syms.Flx_mtypes2.sym_table
+          !bsym_table
           0
           bexe);
         print_newline ();
@@ -232,7 +232,7 @@ let compile_stmt state =
         compile_bexe
           state
           codegen_state
-          !bbdfns
+          !bsym_table
           the_module
           context
           the_fpm
@@ -241,8 +241,8 @@ let compile_stmt state =
 
     | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
         print_endline ("... BOUND SYM:     " ^ Flx_print.string_of_bbdcl
-          state.syms.Flx_mtypes2.dfns
-          !bbdfns
+          state.syms.Flx_mtypes2.sym_table
+          !bsym_table
           e
           index);
         print_newline ();
@@ -255,21 +255,21 @@ let compile_stmt state =
 
         Flx_typeclass.typeclass_instance_check_symbol
           state.syms
-          !bbdfns
+          !bsym_table
           child_map
           index
           symbol;
 
-        bbdfns := Flx_frontend.lower_symbol
+        bsym_table := Flx_frontend.lower_symbol
           state.frontend_state
-          !bbdfns
+          !bsym_table
           index
           symbol;
 
         (* Only codegen top-level symbols. *)
         match parent with
         | Some parent -> ()
-        | None -> Flx_codegen.codegen_symbol codegen_state !bbdfns index symbol
+        | None -> Flx_codegen.codegen_symbol codegen_state !bsym_table index symbol
   end bs ()
 
 
@@ -298,7 +298,7 @@ let parse_imports handle_stmt init =
 
   (*
   (* Now, bind all the symbols *)
-  let bbdfns = Flx_bbind.bbind state.bbind_state in
+  let bsym_table = Flx_bbind.bbind state.bbind_state in
   *)
   *)
 

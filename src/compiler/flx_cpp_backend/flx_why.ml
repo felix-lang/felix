@@ -27,7 +27,7 @@ let find_function syms env name =
   let entries =
     filter (fun {base_sym=i} ->
       match
-        try Some (Hashtbl.find syms.dfns i)
+        try Some (Hashtbl.find syms.sym_table i)
         with Not_found -> None
       with
       | Some {symdef=SYMDEF_fun (_,args,res,ct,_,_) } ->
@@ -61,10 +61,10 @@ let find_logics syms root =
 
 let mn s = Flx_name.cid_of_flxid s
 
-let getname syms bbdfns i =
-  try match Hashtbl.find syms.dfns i with {id=id} -> mn id
+let getname syms bsym_table i =
+  try match Hashtbl.find syms.sym_table i with {id=id} -> mn id
   with Not_found ->
-  try match Hashtbl.find bbdfns i with id,_,_,_ -> mn id
+  try match Hashtbl.find bsym_table i with id,_,_,_ -> mn id
   with Not_found -> "index_" ^ si i
 
 let flx_bool = BTYP_unitsum 2
@@ -72,11 +72,11 @@ let flx_bool = BTYP_unitsum 2
 let isbool2 t =
   reduce_type t = BTYP_array (flx_bool, flx_bool)
 
-let rec why_expr syms bbdfns (e: tbexpr_t) =
-  let ee e = why_expr syms bbdfns e in
+let rec why_expr syms bsym_table (e: tbexpr_t) =
+  let ee e = why_expr syms bsym_table e in
   match e with
   | BEXPR_apply ((BEXPR_closure (i,ts),_),b),_ ->
-    let id = getname syms bbdfns i in
+    let id = getname syms bsym_table i in
     id ^ "_" ^ si i ^ "(" ^
     (
       match b with
@@ -92,12 +92,12 @@ let rec why_expr syms bbdfns (e: tbexpr_t) =
 
   (* this probably isn't right, ignoring ts *)
   | BEXPR_closure (i,ts),_ ->
-    let id = getname syms bbdfns i in
+    let id = getname syms bsym_table i in
     id ^ "_" ^ si i
 
   (* this probably isn't right, ignoring ts *)
   | BEXPR_name (i,ts),_ ->
-    let id = getname syms bbdfns i in
+    let id = getname syms bsym_table i in
     id ^ "_" ^ si i
 
   | BEXPR_tuple ls,_ ->
@@ -110,9 +110,9 @@ let rec why_expr syms bbdfns (e: tbexpr_t) =
   | _ -> "UNKEXPR"
 
 
-let rec why_prop syms bbdfns logics (e: tbexpr_t) =
-  let ee e = why_expr syms bbdfns e in
-  let ep e = why_prop syms bbdfns logics e in
+let rec why_prop syms bsym_table logics (e: tbexpr_t) =
+  let ee e = why_expr syms bsym_table e in
+  let ep e = why_prop syms bsym_table logics e in
   match e with
   | BEXPR_apply ((BEXPR_closure (i,ts),_),b),_ ->
     let op = try assoc i logics with Not_found -> "" in
@@ -151,7 +151,7 @@ let cal_bvs bvs =
     | ss -> "('" ^ catmap ", '" fst ss ^ ") "
   in tps
 
-let emit_type syms bbdfns f index name sr bvs =
+let emit_type syms bsym_table f index name sr bvs =
   let srt = Flx_srcref.short_string_of_src sr in
   output_string f ("(* type " ^ name ^ ", at "^srt^" *)\n");
 
@@ -162,8 +162,8 @@ let emit_type syms bbdfns f index name sr bvs =
     let tps = cal_bvs bvs in
     output_string f ("type " ^ tps ^ name ^ "\n\n")
 
-let rec cal_type syms bbdfns t =
-  let ct t = cal_type syms bbdfns t in
+let rec cal_type syms bsym_table t =
+  let ct t = cal_type syms bsym_table t in
   match t with
 (*  | BTYP_lvalue t -> ct t ^ " lvalue " *)
   | BTYP_tuple [] -> "unit"
@@ -173,24 +173,24 @@ let rec cal_type syms bbdfns t =
     "(" ^ ct a ^ ", " ^ ct b ^ ") fn"
 
   | BTYP_inst (index,ts) ->
-    let id,sr,parent,entry = Hashtbl.find bbdfns index in
+    let id,sr,parent,entry = Hashtbl.find bsym_table index in
     (* HACK! *)
     let ts = match ts with
       | [] -> ""
-      | [t] -> cal_type syms bbdfns t ^ " "
+      | [t] -> cal_type syms bsym_table t ^ " "
       | ts -> "(" ^ catmap ", " ct ts ^ ")"
     in
     ts ^ id
   | BTYP_var (index,_) ->
     begin try
-      let id,sr,parent,entry = Hashtbl.find bbdfns index
+      let id,sr,parent,entry = Hashtbl.find bsym_table index
       in "'" ^ id
     with Not_found -> "'T" ^ si index
     end
 
   | _ -> "dunno"
 
-let emit_axiom syms bbdfns logics f (k:axiom_kind_t) (name,sr,parent,kind,bvs,bps,e) =
+let emit_axiom syms bsym_table logics f (k:axiom_kind_t) (name,sr,parent,kind,bvs,bps,e) =
   if k <> kind then () else
   let srt = Flx_srcref.short_string_of_src sr in
   let tkind,ykind =
@@ -202,46 +202,46 @@ let emit_axiom syms bbdfns logics f (k:axiom_kind_t) (name,sr,parent,kind,bvs,bp
   output_string f (ykind ^ " " ^ name ^ ":\n");
   iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} ->
     output_string f
-    ("  forall " ^ pid ^ "_" ^ si pindex^ ": " ^ cal_type syms bbdfns ptyp ^ ".\n")
+    ("  forall " ^ pid ^ "_" ^ si pindex^ ": " ^ cal_type syms bsym_table ptyp ^ ".\n")
   )
   (fst bps)
   ;
   begin match e with
   | `BPredicate e ->
-    output_string f ("    " ^ why_prop syms bbdfns logics e)
+    output_string f ("    " ^ why_prop syms bsym_table logics e)
 
   | `BEquation (l,r) ->
     output_string f ("  " ^
-      why_expr syms bbdfns l ^ " = " ^
-      why_expr syms bbdfns r
+      why_expr syms bsym_table l ^ " = " ^
+      why_expr syms bsym_table r
     )
 
   end;
   output_string f "\n\n"
 
-let emit_reduction syms bbdfns logics f (name,bvs,bps,el,er) =
+let emit_reduction syms bsym_table logics f (name,bvs,bps,el,er) =
   output_string f ("(* reduction " ^ name ^ " *)\n\n");
   output_string f ("axiom " ^ name ^ ":\n");
   iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} ->
     output_string f
-    ("  forall " ^ pid ^ "_" ^ si pindex^ ": " ^ cal_type syms bbdfns ptyp ^ ".\n")
+    ("  forall " ^ pid ^ "_" ^ si pindex^ ": " ^ cal_type syms bsym_table ptyp ^ ".\n")
   )
   bps
   ;
-  output_string f ("    " ^ why_expr syms bbdfns el);
-  output_string f ("\n  = " ^ why_expr syms bbdfns er);
+  output_string f ("    " ^ why_expr syms bsym_table el);
+  output_string f ("\n  = " ^ why_expr syms bsym_table er);
   output_string f "\n\n"
 
 
-let emit_function syms (bbdfns:fully_bound_symbol_table_t) f index id sr bvs ps ret =
+let emit_function syms bsym_table f index id sr bvs ps ret =
   let srt = Flx_srcref.short_string_of_src sr in
   output_string f ("(* function " ^ id ^ ", at "^srt^" *)\n");
   let name = mn id ^ "_" ^ si index in
   let dom = match ps with
     | [] -> "unit"
-    | _ -> catmap ", " (cal_type syms bbdfns) ps
+    | _ -> catmap ", " (cal_type syms bsym_table) ps
   in
-  let cod = cal_type syms bbdfns ret in
+  let cod = cal_type syms bsym_table ret in
   output_string f ("logic " ^ name ^ ": " ^ dom ^ " -> " ^ cod ^ "\n\n")
 
 let calps ps =
@@ -255,7 +255,7 @@ let calps ps =
 
 let unitt = BTYP_tuple []
 
-let emit_whycode filename syms bbdfns root =
+let emit_whycode filename syms bsym_table root =
   let logics = find_logics syms root in
   let f = open_out filename in
   output_string f "(****** HACKS *******)\n";
@@ -269,30 +269,30 @@ let emit_whycode filename syms bbdfns root =
   Hashtbl.iter
   (fun index (id,parent,sr,entry) -> match entry with
   | BBDCL_abs (bvs,qual,ct,breqs) ->
-    emit_type syms bbdfns f index id sr bvs
+    emit_type syms bsym_table f index id sr bvs
   | _ -> ()
   )
-  bbdfns
+  bsym_table
   ;
 
   output_string f "(****** UNIONS *******)\n";
   Hashtbl.iter
   (fun index (id,parent,sr,entry) -> match entry with
   | BBDCL_union (bvs,variants) ->
-    emit_type syms bbdfns f index id sr bvs
+    emit_type syms bsym_table f index id sr bvs
   | _ -> ()
   )
-  bbdfns
+  bsym_table
   ;
 
   output_string f "(****** STRUCTS *******)\n";
   Hashtbl.iter
   (fun index (id,parent,sr,entry) -> match entry with
   | BBDCL_struct (bvs,variants) ->
-    emit_type syms bbdfns f index id sr bvs
+    emit_type syms bsym_table f index id sr bvs
   | _ -> ()
   )
-  bbdfns
+  bsym_table
   ;
 
   output_string f "(******* FUNCTIONS ******)\n";
@@ -300,38 +300,38 @@ let emit_whycode filename syms bbdfns root =
   (fun index (id,parent,sr,entry) -> match entry with
   | BBDCL_procedure (_,bvs,ps,_) ->
     let ps = calps ps in
-    emit_function syms bbdfns f index id sr bvs ps unitt
+    emit_function syms bsym_table f index id sr bvs ps unitt
 
   | BBDCL_function (_,bvs,ps,ret,_) ->
     let ps = calps ps in
-    emit_function syms bbdfns f index id sr bvs ps ret
+    emit_function syms bsym_table f index id sr bvs ps ret
 
   | BBDCL_fun (_,bvs,ps,ret,_,_,_) ->
-    emit_function syms bbdfns f index id sr bvs ps ret
+    emit_function syms bsym_table f index id sr bvs ps ret
 
   | BBDCL_proc (_,bvs,ps,_,_) ->
-    emit_function syms bbdfns f index id sr bvs ps unitt
+    emit_function syms bsym_table f index id sr bvs ps unitt
 
   | _ -> ()
   )
-  bbdfns
+  bsym_table
   ;
 
   output_string f "(******* AXIOMS ******)\n";
   iter
-  (emit_axiom syms bbdfns logics f Axiom)
+  (emit_axiom syms bsym_table logics f Axiom)
   syms.axioms
   ;
 
   output_string f "(******* REDUCTIONS ******)\n";
   iter
-  (emit_reduction syms bbdfns logics f)
+  (emit_reduction syms bsym_table logics f)
   syms.reductions
   ;
 
   output_string f "(******* LEMMAS (goals) ******)\n";
   iter
-  (emit_axiom syms bbdfns logics f Lemma)
+  (emit_axiom syms bsym_table logics f Lemma)
   syms.axioms
   ;
   close_out f

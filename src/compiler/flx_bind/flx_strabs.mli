@@ -8,14 +8,14 @@ type strabs_state_t
 val make_strabs_state: unit -> strabs_state_t
 
 val strabs_symbol:
-  strabs_state_t -> (** The state needed for downgrading types. *)
-  Flx_types.fully_bound_symbol_table_t -> (** The input symbol table *)
-  Flx_types.fully_bound_symbol_table_t -> (** The output symbol table *)
-  int ->
-  Flx_types.symbol_data3_t ->
-  Flx_types.symbol_data3_t option
+  strabs_state_t ->         (** The state needed for downgrading types. *)
+  Flx_types.bsym_table_t -> (** The input symbol table. *)
+  Flx_types.bsym_table_t -> (** The output symbol table. *)
+  Flx_types.bid_t ->        (** The symbol index. *)
+  Flx_types.bsym_t ->       (** The symbol to lower. *)
+  Flx_types.bsym_t option
 
 val strabs:
-  strabs_state_t -> (** The state needed for downgrading types. *)
-  Flx_types.fully_bound_symbol_table_t -> (** The input symbol table *)
-  Flx_types.fully_bound_symbol_table_t    (** The output symbol table *)
+  strabs_state_t ->         (** The state needed for downgrading types. *)
+  Flx_types.bsym_table_t -> (** The input symbol table. *)
+  Flx_types.bsym_table_t    (** The output symbol table. *)

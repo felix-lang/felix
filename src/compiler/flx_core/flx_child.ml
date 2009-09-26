@@ -29,12 +29,12 @@ let add_child childmap parent child =
   except perhaps for typeclass methods,
   but it seems to and appear harmless ..??
 *)
-let is_ancestor bbdfns child anc =
+let is_ancestor bsym_table child anc =
   let rec is_anc child anc =
     (*
-    let _,parent,_,_ = hfind ("is_ancestor " ^ si child) bbdfns child in
+    let _,parent,_,_ = hfind ("is_ancestor " ^ si child) bsym_table child in
     *)
-    let _,parent,_,_ = Hashtbl.find bbdfns child in
+    let _,parent,_,_ = Hashtbl.find bsym_table child in
     match parent with
     | None -> false
     | Some x ->
@@ -70,11 +70,11 @@ let rec descendants child_map index =
   ;
   !d
 
-let cal_children bbdfns =
+let cal_children bsym_table =
   let child_map = make () in
   Hashtbl.iter begin fun i (id,parent,sr,entry) ->
     match parent with
     | Some parent -> add_child child_map parent i
     | None -> ()
-  end bbdfns;
+  end bsym_table;
   child_map

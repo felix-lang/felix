@@ -9,7 +9,7 @@ let rec eassoc x l = match l with
   at the same time eliminating common sub-expressions.
   Note primitive applications are regarded as unary operators.
 *)
-let unravel syms bbdfns e =
+let unravel syms bsym_table e =
   let sube = ref [] in
   let get e =
     try eassoc e !sube
@@ -35,7 +35,7 @@ let unravel syms bbdfns e =
       | BEXPR_apply_direct (i, ts, b), t
       | BEXPR_apply ((BEXPR_closure (i, ts), _), b), t ->
 
-        let id,parent,sr,entry = Hashtbl.find bbdfns i in
+        let id,parent,sr,entry = Hashtbl.find bsym_table i in
         begin match entry with
         | BBDCL_struct _
         | BBDCL_fun _ -> BEXPR_apply_direct (i, ts, aux b),t
@@ -57,11 +57,11 @@ let unravel syms bbdfns e =
   (*
   print_endline
   (
-    "Unravelled " ^ Flx_print.sbe syms.Flx_mtypes2.dfns bbdfns e ^ "-->" ^
-    Flx_print.sbe syms.Flx_mtypes2.dfns bbdfns e' ^ " where:\n" ^
+    "Unravelled " ^ Flx_print.sbe syms.Flx_mtypes2.sym_table bsym_table e ^ "-->" ^
+    Flx_print.sbe syms.Flx_mtypes2.sym_table bsym_table e' ^ " where:\n" ^
     Flx_util.catmap ""
     (fun (x,s) ->
-      s ^ " = " ^ Flx_print.sbe syms.Flx_mtypes2.dfns bbdfns x ^ ";\n"
+      s ^ " = " ^ Flx_print.sbe syms.Flx_mtypes2.sym_table bsym_table x ^ ";\n"
     )
     sube
   );

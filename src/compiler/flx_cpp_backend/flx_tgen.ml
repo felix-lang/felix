@@ -134,20 +134,20 @@ let gen_ref name typ =
 or struct declaration which names the type.
 *)
 
-let gen_type_name syms bbdfns (index,typ) =
+let gen_type_name syms bsym_table (index,typ) =
   (*
   print_endline (
     "GENERATING TYPE NAME " ^
     si index^": " ^
-    sbt syms.dfns typ
+    sbt syms.sym_table typ
   );
   *)
   let cn t = cpp_type_classname syms t in
   let tn t = cpp_typename syms t in
   let descr =
-    "\n//TYPE "^si index^": " ^ sbt syms.dfns typ ^ "\n"
+    "\n//TYPE "^si index^": " ^ sbt syms.sym_table typ ^ "\n"
   in
-  let t = unfold syms.dfns typ in
+  let t = unfold syms.sym_table typ in
   match t with
   | BTYP_fix i -> ""
   | BTYP_var (i,mt) -> failwith "[gen_type_name] Can't gen name of type variable"
@@ -199,7 +199,7 @@ let gen_type_name syms bbdfns (index,typ) =
 
   | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bbdfns i
+      try Hashtbl.find bsym_table i
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
     in
     begin match entry with
@@ -209,7 +209,7 @@ let gen_type_name syms bbdfns (index,typ) =
         "\n//"^(if complete then "" else "INCOMPLETE ")^
         "PRIMITIVE "^si i ^" INSTANCE " ^
         si index^": " ^
-        sbt syms.dfns typ ^
+        sbt syms.sym_table typ ^
         "\n"
       in
       let instance_name = cn typ in
@@ -241,7 +241,7 @@ let gen_type_name syms bbdfns (index,typ) =
       let descr =
         "\n//CSTRUCT "^si i ^" INSTANCE " ^
         si index^": " ^
-        sbt syms.dfns typ ^
+        sbt syms.sym_table typ ^
         "\n"
       in
       let instance_name = cn typ in
@@ -253,7 +253,7 @@ let gen_type_name syms bbdfns (index,typ) =
       let descr =
         "\n//STRUCT "^si i ^" INSTANCE " ^
         si index^": " ^
-        sbt syms.dfns typ ^
+        sbt syms.sym_table typ ^
         "\n"
       in
       let name = cn typ in
@@ -263,7 +263,7 @@ let gen_type_name syms bbdfns (index,typ) =
       let descr =
         "\n//UNION "^si i ^" INSTANCE " ^
         si index^": " ^
-        sbt syms.dfns typ ^
+        sbt syms.sym_table typ ^
         "\n"
       in
       let name = cn typ in
@@ -282,14 +282,14 @@ let gen_type_name syms bbdfns (index,typ) =
       failwith
       (
         "[gen_type_name] Expected definition "^si i^" to be generic primitive, got " ^
-        string_of_bbdcl syms.dfns bbdfns entry i ^
+        string_of_bbdcl syms.sym_table bsym_table entry i ^
         " instance types [" ^
         catmap ", " tn ts ^
         "]"
       )
     end
 
-  | _ -> failwith ("Unexpected metatype "^ sbt syms.dfns t ^ " in gen_type_name")
+  | _ -> failwith ("Unexpected metatype "^ sbt syms.sym_table t ^ " in gen_type_name")
 
 let mk_listwise_ctor syms i name typ cts ctss =
   if length cts = 1 then
@@ -300,22 +300,22 @@ let mk_listwise_ctor syms i name typ cts ctss =
 
 
 (* This routine generates complete types when needed *)
-let gen_type syms bbdfns (index,typ) =
+let gen_type syms bsym_table (index,typ) =
   (*
   print_endline (
     "GENERATING TYPE " ^
     si index^": " ^
-    sbt syms.dfns typ
+    sbt syms.sym_table typ
   );
   *)
   let tn t = cpp_typename syms t in
   let cn t = cpp_type_classname syms t in
   let descr =
     "\n//TYPE "^ si index^ ": " ^
-    sbt syms.dfns typ ^
+    sbt syms.sym_table typ ^
     "\n"
   in
-  let t = unfold syms.dfns typ in
+  let t = unfold syms.sym_table typ in
   match t with
   | BTYP_var _ -> failwith "[gen_type] can't gen type variable"
   | BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
@@ -398,7 +398,7 @@ let gen_type syms bbdfns (index,typ) =
 
   | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bbdfns i
+      try Hashtbl.find bsym_table i
       with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
     in
     begin match entry with
@@ -407,7 +407,7 @@ let gen_type syms bbdfns (index,typ) =
       let descr =
         "\n//NEWTYPE "^si i ^" INSTANCE " ^
         si index^": " ^
-        sbt syms.dfns typ ^
+        sbt syms.sym_table typ ^
         "\n"
       in
       let instance_name = cn typ in
@@ -427,7 +427,7 @@ let gen_type syms bbdfns (index,typ) =
       let descr =
         "\n//GENERIC STRUCT "^si i ^" INSTANCE " ^
         si index^": " ^
-        sbt syms.dfns typ ^
+        sbt syms.sym_table typ ^
         "\n"
       in
       descr ^ "struct " ^ name ^ " {\n"
@@ -448,14 +448,14 @@ let gen_type syms bbdfns (index,typ) =
       failwith
       (
         "[gen_type] Expected definition "^si i^" to be generic primitive, got " ^
-        string_of_bbdcl syms.dfns bbdfns entry i ^
+        string_of_bbdcl syms.sym_table bsym_table entry i ^
         " instance types [" ^
         catmap ", " tn ts ^
         "]"
       )
     end
 
-  | _ -> failwith ("[gen_type] Unexpected metatype " ^ sbt syms.dfns t)
+  | _ -> failwith ("[gen_type] Unexpected metatype " ^ sbt syms.sym_table t)
 
 (* NOTE: distinct types can have the same name if they have the
 same simple representation, two types t1,t2 both represented by "int".
@@ -465,7 +465,7 @@ So we have to check the name at this point, because this special
 trick is based on the representation.
 *)
 
-let gen_type_names syms bbdfns ts =
+let gen_type_names syms bsym_table ts =
   (* print_endline "GENERATING TYPE NAMES"; *)
   let s = Buffer.create 100 in
   let handled = ref [] in
@@ -477,15 +477,15 @@ let gen_type_names syms bbdfns ts =
         () (* print_endline ("WOOPS ALREADY HANDLED " ^ name) *)
       else (
         handled := name :: !handled;
-        Buffer.add_string s (gen_type_name syms bbdfns (i,t))
+        Buffer.add_string s (gen_type_name syms bsym_table (i,t))
       )
     with Not_found ->
-      failwith ("Can't gen type name " ^ si i ^ "=" ^ sbt syms.dfns t)
+      failwith ("Can't gen type name " ^ si i ^ "=" ^ sbt syms.sym_table t)
   )
   ts;
   Buffer.contents s
 
-let gen_types syms bbdfns ts =
+let gen_types syms bsym_table ts =
   (* print_endline "GENERATING TYPES"; *)
   let handled = ref [] in
   let s = Buffer.create 100 in
@@ -496,7 +496,7 @@ let gen_types syms bbdfns ts =
       () (* print_endline ("WOOPS ALREADY HANDLED " ^ name) *)
     else (
       handled := name :: !handled;
-      Buffer.add_string s (gen_type syms bbdfns t')
+      Buffer.add_string s (gen_type syms bsym_table t')
     )
   )
   ts;

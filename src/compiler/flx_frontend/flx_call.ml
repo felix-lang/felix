@@ -37,7 +37,7 @@ let rec uses_type h k sr t =
   | _ -> iter_btype ut t
 
 let faulty_req syms i =
-  match Hashtbl.find syms.dfns i with {id=id; sr=sr } ->
+  match Hashtbl.find syms.sym_table i with {id=id; sr=sr } ->
   clierr sr (id ^ " is used but has unsatisfied requirement")
 
 let rec process_expr h k sr e =
@@ -48,7 +48,7 @@ let rec process_expr h k sr e =
 
 and cal_exe_usage syms h k exe =
   (*
-  print_endline ("Checking uses in " ^ si k ^ ", exe: " ^ string_of_bexe syms.dfns 2 exe);
+  print_endline ("Checking uses in " ^ si k ^ ", exe: " ^ string_of_bexe syms.sym_table 2 exe);
   *)
   let sr = src_of_bexe exe in
   let ue e = process_expr h k sr e in
@@ -77,7 +77,7 @@ let cal_req_usage syms uses sr parent reqs =
   in
   List.iter ur reqs
 
-let call_data_for_symbol syms bbdfns uses k (_,_,sr,entry) =
+let call_data_for_symbol syms bsym_table uses k (_,_,sr,entry) =
   let ut t = uses_type uses k sr t in
 
   match entry with
@@ -128,11 +128,11 @@ let call_data_for_symbol syms bbdfns uses k (_,_,sr,entry) =
       ut ret;
       cal_req_usage syms uses sr k reqs
 
-let call_data syms (bbdfns:fully_bound_symbol_table_t):usage_t =
+let call_data syms bsym_table =
   let uses = Hashtbl.create 97 in
 
   (* Figure out all the calls of the symbol table. *)
-  Hashtbl.iter (call_data_for_symbol syms bbdfns uses) bbdfns;
+  Hashtbl.iter (call_data_for_symbol syms bsym_table uses) bsym_table;
 
   (* invert uses table to get usedby table *)
   let usedby = Hashtbl.create 97 in
@@ -223,12 +223,12 @@ let child_use_closure k h i =
     ;
     !c
 
-let call_report syms bbdfns (uses,usedby) f k =
+let call_report syms bsym_table (uses,usedby) f k =
   let si = string_of_int in
   let catmap = Flx_util.catmap in
   let w s = output_string f s in
   let isr = is_recursive uses k in
-  let id,_,sr,entry = Hashtbl.find bbdfns k in
+  let id,_,sr,entry = Hashtbl.find bsym_table k in
   w (si k ^ ": ");
   w (if isr then "recursive " else "");
   w
@@ -245,7 +245,7 @@ let call_report syms bbdfns (uses,usedby) f k =
   let x = ref [] in
   List.iter begin fun (i,_) ->
     if not (List.mem i !x) then
-    try match Hashtbl.find bbdfns i with
+    try match Hashtbl.find bsym_table i with
       | _,_,_,BBDCL_procedure _
       | _,_,_,BBDCL_function _
       | _,_,_,BBDCL_var _
@@ -264,7 +264,7 @@ let call_report syms bbdfns (uses,usedby) f k =
   w (catmap "," si u);
   w "\n"
 
-let print_call_report' syms bbdfns usage f =
+let print_call_report' syms bsym_table usage f =
   let x = ref [] in
   Hashtbl.iter
   (fun k (id,_,sr,entry) ->
@@ -276,15 +276,15 @@ let print_call_report' syms bbdfns usage f =
       -> x := k :: !x
     | _ -> ()
   )
-  bbdfns
+  bsym_table
   ;
   List.iter
-    (call_report syms bbdfns usage f)
+    (call_report syms bsym_table usage f)
     (List.sort compare (!x))
 
-let print_call_report syms bbdfns f =
-  let usage = call_data syms bbdfns in
-  print_call_report' syms bbdfns usage f
+let print_call_report syms bsym_table f =
+  let usage = call_data syms bsym_table in
+  print_call_report' syms bsym_table usage f
 
 let expr_uses_unrestricted syms descend usage e =
   let u = ref IntSet.empty in
@@ -293,7 +293,7 @@ let expr_uses_unrestricted syms descend usage e =
 
 
   (*
-  print_string ("Direct usage of expr " ^ sbe syms.dfns e ^ ": ");
+  print_string ("Direct usage of expr " ^ sbe syms.sym_table e ^ ": ");
   IntSet.iter (fun i -> print_string (si i^" ")) !u;
   print_endline "";
 

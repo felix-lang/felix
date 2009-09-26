@@ -81,15 +81,15 @@ try
     print_endline "//BINDING EXECUTABLE CODE";
     print_endline "//-----------------------";
     let bbind_state = Flx_bbind.make_bbind_state syms in
-    let bbdfns = Hashtbl.create 97 in
-    Flx_bbind.bbind bbind_state bbdfns;
-    let child_map = Flx_child.cal_children bbdfns in
+    let bsym_table = Hashtbl.create 97 in
+    Flx_bbind.bbind bbind_state bsym_table;
+    let child_map = Flx_child.cal_children bsym_table in
     let bifaces = List.map (Flx_bbind.bind_interface bbind_state) ifaces in
     print_endline "//Binding complete";
 
     let root_proc =
       match
-        try Hashtbl.find syms.Flx_mtypes2.dfns root
+        try Hashtbl.find syms.Flx_mtypes2.sym_table root
         with Not_found ->
           failwith
           (
@@ -125,7 +125,7 @@ try
       index
     in
 
-    Flx_print.print_fully_bound_symbol_table syms.Flx_mtypes2.dfns bbdfns
+    Flx_print.print_bsym_table syms.Flx_mtypes2.sym_table bsym_table
 
 with x -> Flx_terminate.terminate !reverse_return_parity x
 ;;

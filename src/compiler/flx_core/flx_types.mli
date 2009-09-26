@@ -292,10 +292,10 @@ type symbol_definition_t =
   | SYMDEF_inherit_fun of qualified_name_t
   | SYMDEF_instance of qualified_name_t
 
-type symbol_data_t = {
+type sym_t = {
   id:string;
   sr:Flx_srcref.t;
-  parent:int option;
+  parent:bid_t option;
   vs:ivs_list_t;
   pubmap:name_map_t;
   privmap:name_map_t;
@@ -303,11 +303,11 @@ type symbol_data_t = {
   symdef:symbol_definition_t;
 }
 
-type symbol_table_t = (int, symbol_data_t) Hashtbl.t
+type sym_table_t = (bid_t, sym_t) Hashtbl.t
 
-type symbol_data3_t = string * int option * Flx_srcref.t * bbdcl_t
-type fully_bound_symbol_table_t = (int, symbol_data3_t) Hashtbl.t
+type bsym_t = string * bid_t option * Flx_srcref.t * bbdcl_t
+type bsym_table_t = (bid_t, bsym_t) Hashtbl.t
 
-type type_registry_t = (btypecode_t, int) Hashtbl.t
+type type_registry_t = (btypecode_t, bid_t) Hashtbl.t
 
 val src_of_bexe : bexe_t -> Flx_srcref.t

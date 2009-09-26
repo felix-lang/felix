@@ -21,7 +21,7 @@ let mkentry syms (vs:ivs_list_t) i =
   (*
   print_endline ("Make entry " ^ string_of_int i ^ ", " ^ "vs =" ^
     Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^ ">") vs ^
-    ", ts=" ^ Flx_util.catmap "," (Flx_print.sbt syms.Flx_mtypes2.dfns) ts
+    ", ts=" ^ Flx_util.catmap "," (Flx_print.sbt syms.Flx_mtypes2.sym_table) ts
   );
   *)
   { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts }
@@ -91,7 +91,7 @@ let full_add_unique syms sr (vs:ivs_list_t) table key value =
     match entry with
     | NonFunctionEntry (idx)
     | FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.Flx_mtypes2.dfns (Flx_typing.sye idx) with
+       (match Hashtbl.find syms.Flx_mtypes2.sym_table (Flx_typing.sye idx) with
        | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
@@ -108,7 +108,7 @@ let full_add_typevar syms sr table key value =
     match entry with
     | NonFunctionEntry (idx)
     | FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.Flx_mtypes2.dfns (Flx_typing.sye idx)  with
+       (match Hashtbl.find syms.Flx_mtypes2.sym_table (Flx_typing.sye idx)  with
        | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
@@ -125,7 +125,7 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
     match Hashtbl.find table key with
     | NonFunctionEntry entry ->
       begin
-        match Hashtbl.find syms.Flx_mtypes2.dfns (Flx_typing.sye entry) with
+        match Hashtbl.find syms.Flx_mtypes2.sym_table (Flx_typing.sye entry) with
         { Flx_types.id=id; sr=sr2 } ->
         Flx_exceptions.clierr2 sr sr2
         (
@@ -159,7 +159,7 @@ let make_ivs ?(print=false) level counter (vs, con) : ivs_list_t =
 
 
 (* this routine takes a partially filled unbound definition table,
-  'dfns' and a counter 'counter', and adds entries to the table
+  'sym_table' and a counter 'counter', and adds entries to the table
   at locations equal to and above the counter
 
   Each entity is also added to the name map of the parent entity.
@@ -247,7 +247,7 @@ and build_table_for_dcl
   let print_flag = syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
 
   (* Make some shorthand functions *)
-  let dfns = syms.Flx_mtypes2.dfns in
+  let sym_table = syms.Flx_mtypes2.sym_table in
   let counter = syms.Flx_mtypes2.counter in
   let spc = Flx_util.spaces level in
   let make_ivs = make_ivs ~print:print_flag level counter in
@@ -321,7 +321,7 @@ and build_table_for_dcl
     id
     symdef
   =
-    Hashtbl.add dfns index {
+    Hashtbl.add sym_table index {
       Flx_types.id = id;
       sr = sr;
       parent = parent;
@@ -481,7 +481,7 @@ and build_table_for_dcl
 
       let ips = add_parameters ~pubtab ~privtab (Some symbol_index) ps in
 
-      (* Add the symbols to the dfns. *)
+      (* Add the symbols to the sym_table. *)
       add_symbol ~pubtab ~privtab
         symbol_index id (SYMDEF_function ((ips, pre), t, props, exes));
 
@@ -500,7 +500,7 @@ and build_table_for_dcl
   | DCL_match_check (pat,(mvname,match_var_index)) ->
       assert (List.length (fst ivs) = 0);
 
-      (* Add the symbol to dfns. *)
+      (* Add the symbol to sym_table. *)
       add_symbol symbol_index id
         (SYMDEF_match_check (pat, (mvname, match_var_index)));
 
@@ -560,7 +560,7 @@ and build_table_for_dcl
           !new_asms
       in
 
-      (* Add symbols to dfns. *)
+      (* Add symbols to sym_table. *)
       add_symbol ~pubtab ~privtab ~dirs symbol_index id
         (SYMDEF_function (([],None), TYP_var symbol_index,
         [`Generated "symtab:match handler" ; `Inline], exes));
@@ -597,7 +597,7 @@ and build_table_for_dcl
           root
           asms
       in
-      (* Add the module to the dfns. *)
+      (* Add the module to the sym_table. *)
       add_symbol ~pubtab ~privtab ~dirs symbol_index id SYMDEF_module;
 
       (* Take all the exes and add them to a function called _init_ that's
@@ -611,7 +611,7 @@ and build_table_for_dcl
         print_endline ("//  " ^ spc ^ string_of_int n' ^
         " -> _init_  (module " ^ id ^ ")");
 
-      (* Add the _init_ function to the dfns. *)
+      (* Add the _init_ function to the sym_table. *)
       add_symbol
         ~parent:(Some symbol_index)
         ~pubtab:null_tab
@@ -670,7 +670,7 @@ and build_table_for_dcl
       let show { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } =
         string_of_int i ^ " |-> " ^
           "vs= " ^ Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^
-          ">") vs ^ "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt dfns) ts
+          ">") vs ^ "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt sym_table) ts
       in
       let fixup ({ Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
         let e' = {
@@ -698,7 +698,7 @@ and build_table_for_dcl
         Hashtbl.add fudged_privtab s nues
       end privtab;
 
-      (* Add the typeclass to the dfns. *)
+      (* Add the typeclass to the sym_table. *)
       add_symbol ~pubtab ~privtab:fudged_privtab ~dirs symbol_index id SYMDEF_typeclass;
 
       (* Possibly add the typeclass to the public symbol table. *)
@@ -725,7 +725,7 @@ and build_table_for_dcl
           asms
       in
 
-      (* Add typeclass instance to the dfns. *)
+      (* Add typeclass instance to the sym_table. *)
       add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_instance qn);
 
       (* Prepend _inst_ to the name of the instance.
@@ -762,7 +762,7 @@ and build_table_for_dcl
   | DCL_var t ->
       let t = if t = TYP_none then TYP_var symbol_index else t in
 
-      (* Add the variable to the dfns. *)
+      (* Add the variable to the sym_table. *)
       add_symbol symbol_index id (SYMDEF_var t);
       (*
       add_symbol symbol_index id (SYMDEF_var (TYP_lvalue t)
@@ -780,7 +780,7 @@ and build_table_for_dcl
   | DCL_lazy (t,e) ->
       let t = if t = TYP_none then TYP_var symbol_index else t in
 
-      (* Add the lazy value to the dfns. *)
+      (* Add the lazy value to the sym_table. *)
       add_symbol symbol_index id (SYMDEF_lazy (t,e));
 
       (* Possibly add the lazy value to teh public symbol table. *)
@@ -808,7 +808,7 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_type_alias (t) ->
-      (* Add the type alias to the dfns. *)
+      (* Add the type alias to the sym_table. *)
       add_symbol symbol_index id (SYMDEF_type_alias t);
 
       (* this is a hack, checking for a type function this way, since it will
@@ -879,7 +879,7 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_newtype t ->
-      (* Add the newtype to the dfns. *)
+      (* Add the newtype to the sym_table. *)
       add_symbol symbol_index id (SYMDEF_newtype t);
 
       (* Create an identity function that doesn't do anything. *)
@@ -892,7 +892,7 @@ and build_table_for_dcl
       add_symbol n_repr "_repr_"
         (SYMDEF_fun ([], [piname], t, CS_identity, NREQ_true, "expr"));
 
-      (* Add the _repr_ function to the dfns. *)
+      (* Add the _repr_ function to the sym_table. *)
       add_function priv_name_map "_repr_" n_repr;
 
       (* XXX: What's the _make_ function for? *)
@@ -902,7 +902,7 @@ and build_table_for_dcl
       add_symbol n_make ("_make_" ^ id)
         (SYMDEF_fun ([], [t], piname, CS_identity, NREQ_true, "expr"));
 
-      (* Add the _make_ function to the dfns. *)
+      (* Add the _make_ function to the sym_table. *)
       add_function priv_name_map ("_make_" ^ id) n_make;
 
       (* Possibly add the _make_ function to the public symbol table. *)
@@ -915,7 +915,7 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_abs (quals, c, reqs) ->
-      (* Add the abs to the dfns. *)
+      (* Add the abs to the sym_table. *)
       add_symbol symbol_index id (SYMDEF_abs (quals, c, reqs));
 
       (* Possibly add the abs to the private symbol table. *)
@@ -930,7 +930,7 @@ and build_table_for_dcl
   | DCL_const (props, t, c, reqs) ->
       let t = if t = TYP_none then TYP_var symbol_index else t in
 
-      (* Add the const to the dfns. *)
+      (* Add the const to the sym_table. *)
       add_symbol symbol_index id (SYMDEF_const (props, t, c, reqs));
 
       (* Possibly add the const to the private symbol table. *)
@@ -943,7 +943,7 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_fun (props, ts,t,c,reqs,prec) ->
-      (* Add the function to the dfns. *)
+      (* Add the function to the sym_table. *)
       add_symbol symbol_index id (SYMDEF_fun (props, ts, t, c, reqs, prec));
 
       (* Possibly add the function to the public symbol table. *)
@@ -960,7 +960,7 @@ and build_table_for_dcl
    * but which Felix must consider as the type of a closure with the same type
    * as the C function, with this void* dropped. *)
   | DCL_callback (props, ts,t,reqs) ->
-      (* Add the callback to the dfns. *)
+      (* Add the callback to the sym_table. *)
       add_symbol symbol_index id (SYMDEF_callback (props, ts, t, reqs));
 
       (* Possibly add the callback to the public symbol table. *)
@@ -988,7 +988,7 @@ and build_table_for_dcl
         end its
       in
 
-      (* Add union to dfns. *)
+      (* Add union to sym_table. *)
       add_symbol symbol_index id (SYMDEF_union its);
 
       (* Possibly add union to the public symbol table. *)
@@ -1035,7 +1035,7 @@ and build_table_for_dcl
         if print_flag then
           print_endline ("//  " ^ spc ^ string_of_int dfn_idx ^ " -> " ^ component_name);
 
-        (* Add the component to the dfns. *)
+        (* Add the component to the sym_table. *)
         add_symbol dfn_idx component_name ctor_dcl2;
       end its;
 
@@ -1051,7 +1051,7 @@ and build_table_for_dcl
       let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst ivs) in
       let stype = `AST_name(sr, id, tvars) in
 
-      (* Add symbols to dfns *)
+      (* Add symbols to sym_table *)
       add_symbol symbol_index id (
         match dcl with
         | DCL_struct _ -> SYMDEF_struct (sts)
@@ -1094,7 +1094,7 @@ let add_dcl ?parent state dcl =
   let level, pubmap, privmap =
     match parent with
     | Some index ->
-        let symbol = Hashtbl.find state.syms.Flx_mtypes2.dfns index in
+        let symbol = Hashtbl.find state.syms.Flx_mtypes2.sym_table index in
         1, symbol.pubmap, symbol.privmap
     | None ->
         0, state.pub_name_map, state.priv_name_map

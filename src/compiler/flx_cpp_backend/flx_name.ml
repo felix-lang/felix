@@ -76,9 +76,9 @@ let cid_of_flxid s =
   try List.assoc name fixups with Not_found -> name
 
 (* basic name mangler *)
-let cpp_name bbdfns index =
+let cpp_name bsym_table index =
   let id,parent,sr,entry =
-    try Hashtbl.find bbdfns index
+    try Hashtbl.find bsym_table index
     with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
   in
   (match entry with
@@ -92,16 +92,16 @@ let cpp_name bbdfns index =
   | _ -> syserr sr "cpp_name expected func,proc,var,val,class,reglex or regmatch"
   ) ^ si index ^ "_" ^ cid_of_flxid id
 
-let cpp_instance_name' syms bbdfns index ts =
+let cpp_instance_name' syms bsym_table index ts =
   let inst =
     try Hashtbl.find syms.instances (index,ts)
     with Not_found ->
     let id =
       try
-        let id,parent,sr,entry = Hashtbl.find bbdfns index in id
+        let id,parent,sr,entry = Hashtbl.find bsym_table index in id
       with Not_found ->
       try
-        match Hashtbl.find syms.dfns index with
+        match Hashtbl.find syms.sym_table index with
         {id=id} -> id ^ "[unbound]"
       with Not_found ->
       "unknown"
@@ -115,11 +115,11 @@ let cpp_instance_name' syms bbdfns index ts =
     failwith
     (
       "[cpp_instance_name] unable to find instance " ^ id ^
-      "<" ^ si index ^ ">[" ^catmap ", " (string_of_btypecode syms.dfns) ts ^ "]"
+      "<" ^ si index ^ ">[" ^catmap ", " (string_of_btypecode syms.sym_table) ts ^ "]"
       ^ (if has_variables then " .. a subscript contains a type variable" else "")
     )
   in
-  "_i" ^ si inst ^ cpp_name bbdfns index
+  "_i" ^ si inst ^ cpp_name bsym_table index
 
 let is_export syms id =
   let bifaces = syms.bifaces in
@@ -135,11 +135,11 @@ let is_export syms id =
      false
   with Not_found -> true
 
-let cpp_instance_name syms bbdfns index ts =
-  let long_name = cpp_instance_name' syms bbdfns index ts in
+let cpp_instance_name syms bsym_table index ts =
+  let long_name = cpp_instance_name' syms bsym_table index ts in
   if syms.compiler_options.mangle_names then long_name else
   let id,parent,sr,entry =
-    try Hashtbl.find bbdfns index
+    try Hashtbl.find bsym_table index
     with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
   in
   let id' = cid_of_flxid id in
@@ -164,13 +164,13 @@ let tix syms t =
   in
   try Hashtbl.find syms.registry t
   with Not_found ->
-    failwith ("Cannot find type " ^sbt syms.dfns t ^" in registry")
+    failwith ("Cannot find type " ^sbt syms.sym_table t ^" in registry")
 
 let rec cpp_type_classname syms t =
   let tix t = tix syms t in
-  let t = fold syms.counter syms.dfns t in
-  try match unfold syms.dfns t with
-  | BTYP_var (i,mt) -> failwith ("[cpp_type_classname] Can't name type variable " ^ si i ^":"^ sbt syms.dfns mt)
+  let t = fold syms.counter syms.sym_table t in
+  try match unfold syms.sym_table t with
+  | BTYP_var (i,mt) -> failwith ("[cpp_type_classname] Can't name type variable " ^ si i ^":"^ sbt syms.sym_table mt)
   | BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"
   | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
   | BTYP_tuple [] -> "unit"
@@ -199,7 +199,7 @@ let rec cpp_type_classname syms t =
     if ts = [] then
       match
         try
-          match Hashtbl.find syms.dfns i with
+          match Hashtbl.find syms.sym_table i with
           { id=id; symdef=symdef } -> Some (id,symdef )
         with Not_found -> None
       with
@@ -228,18 +228,18 @@ let rec cpp_type_classname syms t =
     failwith
     (
       "[cpp_type_classname] Unexpected " ^
-      string_of_btypecode syms.dfns t
+      string_of_btypecode syms.sym_table t
     )
   with Not_found ->
     failwith
     (
       "[cpp_type_classname] Expected type "^
-      string_of_btypecode syms.dfns t ^
+      string_of_btypecode syms.sym_table t ^
       " to be in registry"
     )
 
 let rec cpp_typename syms t =
-  match unfold syms.dfns t with
+  match unfold syms.sym_table t with
   | BTYP_function _ -> cpp_type_classname syms t ^ "*"
   | BTYP_cfunction _ -> cpp_type_classname syms t ^ "*"
   | BTYP_pointer t -> cpp_typename syms t ^ "*"

@@ -31,15 +31,15 @@ let print_bvs vs =
   if length vs = 0 then "" else
   "[" ^ catmap "," (fun (s,i) -> s ^ "<"^si i^">") vs^ "]"
 
-let rec find_true_parent dfns child parent =
+let rec find_true_parent sym_table child parent =
   match parent with
   | None -> None
   | Some parent ->
-    match hfind "find_true_parent" dfns parent with
+    match hfind "find_true_parent" sym_table parent with
     | {id=id; parent=grandparent; symdef=bdcl} ->
       match bdcl with
       | SYMDEF_module
-        -> find_true_parent dfns id grandparent
+        -> find_true_parent sym_table id grandparent
       | _ -> Some parent
 
 let bind_req syms env sr tag =
@@ -83,7 +83,7 @@ let bind_reqs bt syms env sr reqs : (bid_t * btypecode_t list) list =
         let index = sye index in
         if index = 0 then lst else
         try
-          let ts = adjust_ts syms.dfns sr index ts in
+          let ts = adjust_ts syms.sym_table sr index ts in
           add lst (index,ts)
         with x ->
           print_endline "** Bind_req failed due to vs/ts mismatch";
@@ -100,7 +100,7 @@ let bind_qual bt qual = match qual with
 
 let bind_quals bt quals = map (bind_qual bt) quals
 
-let bbind_symbol { syms=syms } bbdfns symbol_index {
+let bbind_symbol { syms=syms } bsym_table symbol_index {
   id=name;
   sr=sr;
   parent=parent;
@@ -109,8 +109,8 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
   dirs=dirs;
   symdef=bdcl
 } =
-  let qname = qualified_name_of_index syms.dfns symbol_index in
-  let true_parent = find_true_parent syms.dfns name parent in
+  let qname = qualified_name_of_index syms.sym_table symbol_index in
+  let true_parent = find_true_parent syms.sym_table name parent in
 
   (* let env = Flx_lookup.build_env syms parent in  *)
   let env = Flx_lookup.build_env syms (Some symbol_index) in
@@ -129,8 +129,10 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
   in
   (*
   print_endline ("Binding " ^ name ^ "<"^ si symbol_index ^ ">");
-  print_endline ("Parent is " ^ (match parent with | None -> "none" | Some i -> si i));
-  print_endline ("True Parent is " ^ (match true_parent with | None -> "none" | Some i -> si i));
+  print_endline ("Parent is " ^
+    (match parent with | None -> "none" | Some i -> si i));
+  print_endline ("True Parent is " ^
+    (match true_parent with | None -> "none" | Some i -> si i));
   *)
 
   let be e = Flx_lookup.bind_expression syms env e in
@@ -138,8 +140,10 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
   let luqn2 n = Flx_lookup.lookup_qn_in_env2 syms env n in
   let bt t = Flx_lookup.bind_type syms env sr t in
 
+  (* this is the full vs list *)
+  let ivs = find_vs syms.sym_table symbol_index in
+
   (* bind the type variables *)
-  let ivs = find_vs syms.dfns symbol_index in (* this is the full vs list *)
   let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
 
   let bind_type_constraint ivs =
@@ -163,7 +167,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
     List.map (fun (k,s,t,_) ->
       let i = find_param name_map s in
       let t = let t = bt t in match k with `PRef -> BTYP_pointer t | _ -> t in
-(*        print_endline ("Param " ^ s ^ " type=" ^ sbt syms.dfns t); *)
+(*        print_endline ("Param " ^ s ^ " type=" ^ sbt syms.sym_table t); *)
       {pid=s; pindex=i;pkind=k; ptyp=t}
     )
     ps
@@ -172,7 +176,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
     bind_basic_ps ps, btraint traint
   in
   let add_symbol symbol =
-    Hashtbl.add bbdfns symbol_index symbol;
+    Hashtbl.add bsym_table symbol_index symbol;
     Some symbol
   in
   begin match bdcl with
@@ -241,7 +245,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
         then BTYP_cfunction (d,brt')
         else BTYP_function (d,brt')
       in
-      let t = fold syms.counter syms.dfns ft in
+      let t = fold syms.counter syms.sym_table ft in
       Hashtbl.add syms.ticache symbol_index t
     end;
 
@@ -253,7 +257,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
         else BTYP_function (atyp,brt')
       in
       print_endline ("//bound function " ^ qname ^ "<" ^ si symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt syms.dfns t)
+        print_bvs bvs ^ ":" ^ sbt syms.sym_table t)
     end;
 
     add_symbol (name, true_parent, sr, bbdcl)
@@ -262,7 +266,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
     begin match parent with
     | None -> failwith "[bbind_sym] expected parameter to have a parent"
     | Some ip ->
-      match hfind "bbind" syms.dfns ip with
+      match hfind "bbind" syms.sym_table ip with
       | {symdef=SYMDEF_reduce _}
       | {symdef=SYMDEF_axiom _}
       | {symdef=SYMDEF_lemma _}
@@ -279,7 +283,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
 
         if syms.compiler_options.print_flag then
           print_endline ("//bound val " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-          print_bvs bvs ^ ":" ^ sbt syms.dfns t);
+          print_bvs bvs ^ ":" ^ sbt syms.sym_table t);
 
         add_symbol (name, true_parent, sr, dcl)
 
@@ -306,7 +310,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
     if not (Hashtbl.mem syms.ticache symbol_index) then begin
       let t = fold
         syms.counter
-        syms.dfns
+        syms.sym_table
         (BTYP_function (BTYP_tuple [], flx_bbool))
       in
       Hashtbl.add syms.ticache symbol_index t
@@ -314,7 +318,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
 
     if syms.compiler_options.print_flag then
       print_endline ("//bound match check " ^ name ^ "<" ^ si symbol_index ^
-        ">" ^ print_bvs bvs ^ ":" ^ sbt syms.dfns
+        ">" ^ print_bvs bvs ^ ":" ^ sbt syms.sym_table
         (BTYP_function (BTYP_tuple[],flx_bbool)));
 
     add_symbol (name, true_parent, sr, BBDCL_function
@@ -326,7 +330,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
     print_endline ("Binding const ctor " ^ name);
     *)
     let unit_sum =
-      match hfind "bbind" syms.dfns uidx with
+      match hfind "bbind" syms.sym_table uidx with
       | {symdef=SYMDEF_union its} ->
         fold_left
         (fun v (_,_,_,t) ->
@@ -345,7 +349,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
 
     if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<" ^ si symbol_index ^ ">:" ^
-        sbt syms.dfns t);
+        sbt syms.sym_table t);
 
     add_symbol (name, None, sr, BBDCL_const ([], bvs, t, CS_str ct, []))
 
@@ -362,7 +366,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
 
     if syms.compiler_options.print_flag then
       print_endline ("//bound fun " ^ name ^ "<" ^ si symbol_index ^ ">:" ^
-        sbt syms.dfns t);
+        sbt syms.sym_table t);
 
     add_symbol (name, None, sr, bbdcl)
 
@@ -371,7 +375,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
 
     if syms.compiler_options.print_flag then
       print_endline ("//bound val " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt syms.dfns t);
+        print_bvs bvs ^ ":" ^ sbt syms.sym_table t);
 
     add_symbol (name, true_parent, sr, BBDCL_val (bvs, t))
 
@@ -380,7 +384,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
 
     if syms.compiler_options.print_flag then
       print_endline ("//bound ref " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt syms.dfns t);
+        print_bvs bvs ^ ":" ^ sbt syms.sym_table t);
 
     add_symbol (name, true_parent, sr, BBDCL_ref (bvs, t))
 
@@ -402,7 +406,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
 
     if syms.compiler_options.print_flag then
       print_endline ("//bound lazy " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt syms.dfns brt');
+        print_bvs bvs ^ ":" ^ sbt syms.sym_table brt');
 
     add_symbol (name, true_parent, sr, bbdcl)
 
@@ -414,7 +418,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
 
     if syms.compiler_options.print_flag then
       print_endline ("//bound var " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt syms.dfns t);
+        print_bvs bvs ^ ":" ^ sbt syms.sym_table t);
 
     add_symbol (name, true_parent, sr, BBDCL_var (bvs, t))
 
@@ -424,7 +428,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
 
     if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt syms.dfns t);
+        print_bvs bvs ^ ":" ^ sbt syms.sym_table t);
 
     add_symbol (name, true_parent, sr, BBDCL_const (props,bvs,t,ct,reqs))
 
@@ -439,14 +443,18 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
 
     (* Cache the type of the function. *)
     if not (Hashtbl.mem syms.ticache symbol_index) then begin
-      let t = fold syms.counter syms.dfns (BTYP_function (typeoflist ts,bret)) in
+      let t = fold
+        syms.counter
+        syms.sym_table
+        (BTYP_function (typeoflist ts, bret))
+      in
       Hashtbl.add syms.ticache symbol_index t
     end;
 
     if syms.compiler_options.print_flag then begin
       let atyp = typeoflist ts in
       print_endline ("//bound fun " ^ name ^ "<" ^ si symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt syms.dfns (BTYP_function (atyp, bret)))
+        print_bvs bvs ^ ":" ^ sbt syms.sym_table (BTYP_function (atyp, bret)))
     end;
 
     add_symbol (name, true_parent, sr, bbdcl)
@@ -534,11 +542,14 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
     let prec = "postfix" in
     let reqs = bind_reqs reqs in
 
-    let bbdcl = BBDCL_callback (props,bvs,ts_cf,ts_c,!client_data_pos,bret,reqs,prec) in
+    let bbdcl = BBDCL_callback
+      (props,bvs,ts_cf,ts_c,!client_data_pos,bret,reqs,prec) in
 
     (* Cache the type of the callback. *)
     if not (Hashtbl.mem syms.ticache symbol_index) then begin
-      let t = fold syms.counter syms.dfns (BTYP_cfunction (typeoflist ts_cf, bret)) in
+      let t = fold syms.counter syms.sym_table
+        (BTYP_cfunction (typeoflist ts_cf, bret))
+      in
       Hashtbl.add syms.ticache symbol_index t
     end;
 
@@ -546,7 +557,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
       let atyp = typeoflist ts_cf in
       print_endline ("//bound callback fun " ^ name ^ "<" ^ si symbol_index
         ^ ">" ^ print_bvs bvs ^ ":" ^
-        sbt syms.dfns (BTYP_function (atyp, bret)))
+        sbt syms.sym_table (BTYP_function (atyp, bret)))
     end;
 
     add_symbol (name, true_parent, sr, bbdcl)
@@ -616,7 +627,7 @@ let bbind_symbol { syms=syms } bbdfns symbol_index {
   flush stdout
   *)
 
-let bbind bbind_state bbdfns =
+let bbind bbind_state bsym_table =
   (* loop through all counter values [HACK]
     to get the indices in sequence, AND,
     to ensure any instantiations will be bound,
@@ -627,23 +638,24 @@ let bbind bbind_state bbdfns =
   while !i < !(bbind_state.syms.counter) do
     begin
       let entry =
-        try Some (Hashtbl.find bbind_state.syms.dfns !i)
+        try Some (Hashtbl.find bbind_state.syms.sym_table !i)
         with Not_found -> None
       in match entry with
       | Some entry ->
         begin try
           (*
           begin
-            try match hfind "bbind" bbind_state.syms.dfns !i with {id=id} ->
+            try match hfind "bbind" bbind_state.syms.sym_table !i with {id=id} ->
               print_endline (" Trying to bind " ^ id ^ " index " ^ si !i)
             with Not_found ->
               failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
           end;
           *)
-          ignore (bbind_symbol bbind_state bbdfns !i entry)
+          ignore (bbind_symbol bbind_state bsym_table !i entry)
         with Not_found ->
-          try match hfind "bbind" bbind_state.syms.dfns !i with {id=id} ->
-            failwith ("Binding error, cannot find in table: " ^ id ^ " index " ^ si !i)
+          try match hfind "bbind" bbind_state.syms.sym_table !i with {id=id} ->
+            failwith ("Binding error, cannot find in table: " ^ id ^ " index " ^
+              si !i)
           with Not_found ->
             failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
         end
@@ -678,12 +690,17 @@ let bind_interface bbind_state = function
 
   | sr, IFACE_export_type (typ, cpp_name), parent ->
       let env = Flx_lookup.build_env bbind_state.syms parent in
-      let t = Flx_lookup.bind_type bbind_state.syms env Flx_srcref.dummy_sr typ in
+      let t = Flx_lookup.bind_type
+        bbind_state.syms
+        env
+        Flx_srcref.dummy_sr
+        typ
+      in
       if try var_occurs t with _ -> true then
       clierr sr
       (
         "Can't export generic- or meta- type " ^
-        string_of_btypecode bbind_state.syms.dfns t
+        string_of_btypecode bbind_state.syms.sym_table t
       )
       else
         BIFACE_export_type (sr, t, cpp_name)

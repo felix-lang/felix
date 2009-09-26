@@ -21,7 +21,7 @@ let polyfix syms polyvars i ts =
 
 let remove i ls = filter (fun (k,j) -> i <> k) ls
 
-let rec check_abstract_type syms bbdfns rls (t:btypecode_t) = match t with
+let rec check_abstract_type syms bsym_table rls (t:btypecode_t) = match t with
     | BTYP_pointer (BTYP_var _) -> ()
     | BTYP_var (i,_) ->
        (*
@@ -29,17 +29,17 @@ let rec check_abstract_type syms bbdfns rls (t:btypecode_t) = match t with
        *)
        rls := remove i !rls;
        if !rls = [] then raise Not_found
-    | t' -> iter_btype (check_abstract_type syms bbdfns rls) t'
+    | t' -> iter_btype (check_abstract_type syms bsym_table rls) t'
 
 (* note this routine doesn't check types in ts lists, because
  * these apply to variables including parameters as qualifiers:
  * we're only interested in the actual types.
  *)
-let rec check_abstract_expr syms bbdfns rls ((x,t) as e) =
+let rec check_abstract_expr syms bsym_table rls ((x,t) as e) =
   let fi = ignore in
-  let fe e = check_abstract_expr syms bbdfns rls e in
-  let ft t = check_abstract_type syms bbdfns rls t in
-  check_abstract_type syms bbdfns rls t;
+  let fe e = check_abstract_expr syms bsym_table rls e in
+  let ft t = check_abstract_type syms bsym_table rls t in
+  check_abstract_type syms bsym_table rls t;
   match x with
   | BEXPR_deref e -> fe e
   | BEXPR_ref (i,ts) -> fi i
@@ -73,17 +73,17 @@ let rec check_abstract_expr syms bbdfns rls ((x,t) as e) =
   | BEXPR_coerce (e,t) -> fe e; ft t
 
 
-let check_abstract_exe syms bbdfns rls (exe:bexe_t) =
+let check_abstract_exe syms bsym_table rls (exe:bexe_t) =
  iter_bexe 
    ignore 
-   (check_abstract_expr syms bbdfns rls) 
-   (check_abstract_type syms bbdfns rls) 
+   (check_abstract_expr syms bsym_table rls)
+   (check_abstract_type syms bsym_table rls)
    ignore 
    ignore 
    exe 
 
 
-let cal_polyvars syms bbdfns child_map =
+let cal_polyvars syms bsym_table child_map =
   let absvars = Hashtbl.create 97 in
   Hashtbl.iter (fun i (name,parent,sr,bbdfn) -> 
   match bbdfn with
@@ -96,7 +96,7 @@ let cal_polyvars syms bbdfns child_map =
   (*
   print_endline ("Checking abstract " ^ name ^ "<"^si i^">");
   *)
-      iter (check_abstract_exe syms bbdfns tvars) exes;
+      iter (check_abstract_exe syms bsym_table tvars) exes;
       if !tvars <> [] then begin
         print_endline ("Fun  " ^ name ^ "<"^si i ^ "> polyvars = " ^ catmap ","
         (fun (i,j)-> si i) !tvars);
@@ -114,7 +114,7 @@ let cal_polyvars syms bbdfns child_map =
   (*
   print_endline ("Checking abstract " ^ name ^ "<"^si i^">");
   *)
-      iter (check_abstract_exe syms bbdfns tvars) exes;
+      iter (check_abstract_exe syms bsym_table tvars) exes;
       if !tvars <> [] then begin
         print_endline ("Proc " ^ name ^ "<"^si i ^ "> polyvars = " ^ catmap ","
         (fun (i,j) -> si i) !tvars);
@@ -126,7 +126,7 @@ let cal_polyvars syms bbdfns child_map =
   | _ -> ()      
 
   )
-  bbdfns
+  bsym_table
   ;
   (* Now, add in all the children *)
   let polyvars = Hashtbl.create 97 in
@@ -147,7 +147,7 @@ let cal_polyvars syms bbdfns child_map =
       print_endline ("Found polyvars for " ^ si i);
       let varmap = map (fun (i,j) -> i,BTYP_void) pvs in
       let t = 
-          let ps = match Hashtbl.find bbdfns i with
+          let ps = match Hashtbl.find bsym_table i with
           | name, parent, sr, bbdfn -> match bbdfn with
           | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps
           | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps
@@ -158,7 +158,7 @@ let cal_polyvars syms bbdfns child_map =
           pt
       in
       let t = Flx_unify.list_subst syms.counter varmap t in
-      print_endline ("COERCION arg(output) " ^ sbt syms.dfns t);
+      print_endline ("COERCION arg(output) " ^ sbt syms.sym_table t);
       BEXPR_coerce (e,t),t
     end
   in
@@ -168,13 +168,13 @@ let cal_polyvars syms bbdfns child_map =
       print_endline ("Found polyvars for " ^ si i);
       let varmap = map (fun (i,j) -> i,BTYP_void) pvs in
       let ta = 
-        match Hashtbl.find bbdfns i with
+        match Hashtbl.find bsym_table i with
         | name, parent, sr, bbdfn -> match bbdfn with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ret
         | _ -> assert false
       in
       let t' = Flx_unify.list_subst syms.counter varmap ta in
-      print_endline ("COERCION result(input) " ^ sbt syms.dfns t');
+      print_endline ("COERCION result(input) " ^ sbt syms.sym_table t');
       BEXPR_coerce ((x,t'),t),t
     end
   in
@@ -183,7 +183,7 @@ let cal_polyvars syms bbdfns child_map =
     if pvs = [] then t else begin 
       let varmap = map (fun (i,j) -> i,BTYP_void) pvs in
       let tf = 
-          let ps,ret = match Hashtbl.find bbdfns i with
+          let ps,ret = match Hashtbl.find bsym_table i with
           | name, parent, sr, bbdfn -> match bbdfn with
           | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret
           | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, BTYP_void
@@ -194,7 +194,7 @@ let cal_polyvars syms bbdfns child_map =
           BTYP_function (pt,ret)
       in
       let t' = Flx_unify.list_subst syms.counter varmap tf in
-      print_endline ("fun type " ^ sbt syms.dfns t');
+      print_endline ("fun type " ^ sbt syms.sym_table t');
       t'
     end
   in
@@ -232,20 +232,20 @@ let cal_polyvars syms bbdfns child_map =
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let exes = fixexes exes in
     let bbdfn = BBDCL_function (props,vs,(ps,traint),ret,exes) in
-    Hashtbl.replace bbdfns i (name,parent,sr,bbdfn)
+    Hashtbl.replace bsym_table i (name,parent,sr,bbdfn)
 
   | BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let exes = fixexes exes in
     let bbdfn = BBDCL_procedure (props,vs,(ps,traint), exes) in
-    Hashtbl.replace bbdfns i (name,parent,sr,bbdfn)
+    Hashtbl.replace bsym_table i (name,parent,sr,bbdfn)
   | _ -> ()      
 
   )
-  bbdfns
+  bsym_table
   ;
 
   let polyfix2 i ts =
-    match Hashtbl.find bbdfns i with
+    match Hashtbl.find bsym_table i with
     | name, parent, sr, bbdfn -> match bbdfn with
     | BBDCL_function _
     | BBDCL_procedure _ ->
@@ -256,7 +256,7 @@ let cal_polyvars syms bbdfns child_map =
     try
     let counter = ref 0 in 
     let t,vsi = 
-        let ps,vs = match Hashtbl.find bbdfns i with
+        let ps,vs = match Hashtbl.find bsym_table i with
         | name, parent, sr, bbdfn -> match bbdfn with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,vs
         | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps,vs
@@ -270,7 +270,7 @@ let cal_polyvars syms bbdfns child_map =
     let varmap = map2 (fun i t -> i, match t with | BTYP_pointer _ -> incr counter; BTYP_pointer BTYP_void | _ -> t ) vsi ts in
     if !counter = 0 then e else
     let t = Flx_unify.list_subst syms.counter varmap t in
-    print_endline ("COERCION2 arg(output) " ^ sbt syms.dfns t);
+    print_endline ("COERCION2 arg(output) " ^ sbt syms.sym_table t);
     BEXPR_coerce (e,t),t
     with Skip -> e
   in
@@ -279,7 +279,7 @@ let cal_polyvars syms bbdfns child_map =
     try
     let counter = ref 0 in
     let ta,vsi = 
-      match Hashtbl.find bbdfns i with
+      match Hashtbl.find bsym_table i with
       | name, parent, sr, bbdfn -> match bbdfn with
       | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ret,map (fun (s,i) -> i) vs
       | _ -> raise Skip
@@ -287,7 +287,7 @@ let cal_polyvars syms bbdfns child_map =
     let varmap = map2 (fun i t -> i, match t with | BTYP_pointer _ -> incr counter; BTYP_pointer BTYP_void | _ -> t ) vsi ts in
     if !counter = 0 then e else
     let t' = Flx_unify.list_subst syms.counter varmap ta in
-    print_endline ("COERCION2 result(input) " ^ sbt syms.dfns t');
+    print_endline ("COERCION2 result(input) " ^ sbt syms.sym_table t');
     BEXPR_coerce ((x,t'),t),t
     with Skip -> e
   in
@@ -296,7 +296,7 @@ let cal_polyvars syms bbdfns child_map =
     try
     let counter = ref 0 in
     let tf,vsi = 
-      let ps,ret,vs = match Hashtbl.find bbdfns i with
+      let ps,ret,vs = match Hashtbl.find bsym_table i with
       | name, parent, sr, bbdfn -> match bbdfn with
       | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret,vs
       | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, BTYP_void,vs
@@ -311,7 +311,7 @@ let cal_polyvars syms bbdfns child_map =
     let varmap = map2 (fun i t -> i, match t with | BTYP_pointer _ -> incr counter; BTYP_pointer BTYP_void | _ -> t ) vsi ts in
     if !counter = 0 then t else
     let t' = Flx_unify.list_subst syms.counter varmap tf in
-    print_endline ("fun2 type " ^ sbt syms.dfns t');
+    print_endline ("fun2 type " ^ sbt syms.sym_table t');
     t'
     with Skip -> t
   in
@@ -351,16 +351,16 @@ let cal_polyvars syms bbdfns child_map =
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let exes = fixexes2 exes in
     let bbdfn = BBDCL_function (props,vs,(ps,traint),ret,exes) in
-    Hashtbl.replace bbdfns i (name,parent,sr,bbdfn)
+    Hashtbl.replace bsym_table i (name,parent,sr,bbdfn)
 
   | BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let exes = fixexes2 exes in
     let bbdfn = BBDCL_procedure (props,vs,(ps,traint), exes) in
-    Hashtbl.replace bbdfns i (name,parent,sr,bbdfn)
+    Hashtbl.replace bsym_table i (name,parent,sr,bbdfn)
   | _ -> ()      
 
   )
-  bbdfns
+  bsym_table
 
 
 

@@ -534,7 +534,7 @@ let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
   | BEXE_end
     -> exe
 
-let reduce_tbexpr bbdfns e =
+let reduce_tbexpr bsym_table e =
   let rec aux e =
     match map_tbexpr ident aux ident e with
     | BEXPR_apply((BEXPR_closure (i,ts),_),a),t ->
@@ -552,8 +552,8 @@ let reduce_tbexpr bbdfns e =
     | x -> x
   in aux e
 
-let reduce_bexe bbdfns exe =
-  match map_bexe ident (reduce_tbexpr bbdfns) ident ident ident exe with
+let reduce_bexe bsym_table exe =
+  match map_bexe ident (reduce_tbexpr bsym_table) ident ident ident exe with
   | BEXE_call (sr,(BEXPR_closure (i,ts),_),a) ->
     BEXE_call_direct (sr,i,ts,a)
   | x -> x

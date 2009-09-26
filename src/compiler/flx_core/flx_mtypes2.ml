@@ -31,11 +31,11 @@ type felix_compiler_options_t =
 
 type sym_state_t =
 {
-  dfns : symbol_table_t;
-  counter : int ref;
+  sym_table : sym_table_t;
+  counter : bid_t ref;
   varmap : typevarmap_t;
-  ticache : (int, btypecode_t) Hashtbl.t;
-  env_cache : (int, env_t) Hashtbl.t;
+  ticache : (bid_t, btypecode_t) Hashtbl.t;
+  env_cache : (bid_t, env_t) Hashtbl.t;
   registry : type_registry_t;
   compiler_options : felix_compiler_options_t;
   instances : instance_registry_t;
@@ -53,12 +53,12 @@ type sym_state_t =
 
 let make_syms options =
   {
-    registry = Hashtbl.create 97;
+    sym_table = Hashtbl.create 97;
     counter = ref 1;
-    dfns = Hashtbl.create 97;
     varmap = Hashtbl.create 97;
     ticache = Hashtbl.create 97;
     env_cache = Hashtbl.create 97;
+    registry = Hashtbl.create 97;
     compiler_options = options;
     instances = Hashtbl.create 97;
     include_files = ref [];

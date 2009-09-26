@@ -12,7 +12,7 @@ type codegen_state_t =
   }
 and call_t =
   codegen_state_t ->
-  Flx_types.fully_bound_symbol_table_t ->
+  Flx_types.bsym_table_t ->
   Llvm.llbuilder ->
   Flx_srcref.t ->
   Flx_types.tbexpr_t list ->
@@ -55,17 +55,17 @@ let lltype_of_suffix state suffix =
 
 
 (* Convenience function to look up the name of an index *)
-let rec name_of_index state bbdfns index =
+let rec name_of_index state bsym_table index =
   (* Recursively prepend the name of the parent to *)
   try
-    match Hashtbl.find state.syms.Flx_mtypes2.dfns index with
+    match Hashtbl.find state.syms.Flx_mtypes2.sym_table index with
     | { Flx_types.id=id; parent=Some parent } ->
-        let s = name_of_index state bbdfns parent in
+        let s = name_of_index state bsym_table parent in
         if String.length s = 0 then id else s ^ "." ^ id
     | { Flx_types.id=id; parent=None } -> id
   with Not_found ->
     try
-      match Hashtbl.find bbdfns index with id, _, _, _ -> id
+      match Hashtbl.find bsym_table index with id, _, _, _ -> id
     with Not_found ->
       "index_" ^ string_of_int index
 
@@ -99,7 +99,7 @@ let check_type sr value typekind =
 (* Convert a felix type to an llvm type. *)
 let rec lltype_of_btype state btypecode =
   print_endline
-    (Flx_print.string_of_btypecode state.syms.Flx_mtypes2.dfns btypecode);
+    (Flx_print.string_of_btypecode state.syms.Flx_mtypes2.sym_table btypecode);
 
   match Flx_maps.reduce_type btypecode with
   | Flx_types.BTYP_inst (index, ts) ->
@@ -186,17 +186,17 @@ let create_entry_block_alloca state builder btype name =
 
 
 (* Generate call for an expression *)
-let rec codegen_expr state (bbdfns:Flx_types.fully_bound_symbol_table_t) builder sr tbexpr =
+let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr =
   print_endline ("codegen_expr: " ^ Flx_print.string_of_bound_expression
-    state.syms.Flx_mtypes2.dfns bbdfns tbexpr);
+    state.syms.Flx_mtypes2.sym_table bsym_table tbexpr);
 
   (* See if there are any simple reductions we can apply to the expression. *)
-  let bexpr, btypecode = Flx_maps.reduce_tbexpr bbdfns tbexpr in
+  let bexpr, btypecode = Flx_maps.reduce_tbexpr bsym_table tbexpr in
 
   match bexpr with
   | Flx_types.BEXPR_deref e ->
       print_endline "BEXPR_deref";
-      codegen_deref state bbdfns builder sr e
+      codegen_deref state bsym_table builder sr e
 
   | Flx_types.BEXPR_name (index, _) ->
       print_endline "BEXPR_name";
@@ -211,17 +211,17 @@ let rec codegen_expr state (bbdfns:Flx_types.fully_bound_symbol_table_t) builder
   | Flx_types.BEXPR_likely e ->
       print_endline "BEXPR_likely";
       (* Do nothing for now *)
-      codegen_expr state bbdfns builder sr e
+      codegen_expr state bsym_table builder sr e
 
   | Flx_types.BEXPR_unlikely e ->
       print_endline "BEXPR_unlikely";
       (* Do nothing for now *)
-      codegen_expr state bbdfns builder sr e
+      codegen_expr state bsym_table builder sr e
 
   | Flx_types.BEXPR_address e ->
       print_endline "BEXPR_address";
 
-      let e = codegen_expr state bbdfns builder sr e in
+      let e = codegen_expr state bsym_table builder sr e in
 
       (* Make sure we've got a pointer. *)
       check_type sr e Llvm.TypeKind.Pointer;
@@ -232,7 +232,7 @@ let rec codegen_expr state (bbdfns:Flx_types.fully_bound_symbol_table_t) builder
 
   | Flx_types.BEXPR_new e ->
       print_endline "BEXPR_new";
-      let _ = codegen_expr state bbdfns builder sr e in
+      let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
   | Flx_types.BEXPR_literal literal ->
@@ -257,7 +257,7 @@ let rec codegen_expr state (bbdfns:Flx_types.fully_bound_symbol_table_t) builder
           Flx_exceptions.clierr sr ("Unable to find index " ^
             string_of_int index)
       in
-      f state bbdfns builder sr es
+      f state bsym_table builder sr es
 
   | Flx_types.BEXPR_apply_prim (index, _, e)
   | Flx_types.BEXPR_apply_stack (index, _, e)
@@ -267,24 +267,24 @@ let rec codegen_expr state (bbdfns:Flx_types.fully_bound_symbol_table_t) builder
 
   | Flx_types.BEXPR_tuple es ->
       print_endline "BEXPR_tuple";
-      codegen_struct state bbdfns builder sr es btypecode
+      codegen_struct state bsym_table builder sr es btypecode
 
   | Flx_types.BEXPR_record es ->
       print_endline "BEXPR_record";
-      codegen_struct state bbdfns builder sr (List.map snd es) btypecode
+      codegen_struct state bsym_table builder sr (List.map snd es) btypecode
 
   | Flx_types.BEXPR_variant (string, e) ->
       print_endline "BEXPR_variant";
-      let _ = codegen_expr state bbdfns builder sr e in
+      let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
   | Flx_types.BEXPR_get_n (n, e) ->
       print_endline "BEXPR_get_n";
-      let _ = codegen_expr state bbdfns builder sr e in
+      let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
   | Flx_types.BEXPR_closure (index, btypecode) ->
-      print_endline ("BEXPR_closure: " ^ name_of_index state bbdfns index);
+      print_endline ("BEXPR_closure: " ^ name_of_index state bsym_table index);
       begin try Hashtbl.find state.value_bindings index with Not_found ->
         Flx_exceptions.clierr sr ("Unable to find index " ^ string_of_int index)
       end
@@ -307,17 +307,17 @@ let rec codegen_expr state (bbdfns:Flx_types.fully_bound_symbol_table_t) builder
 
   | Flx_types.BEXPR_match_case (int, e) ->
       print_endline "BEXPR_match_case";
-      let _ = codegen_expr state bbdfns builder sr e in
+      let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
   | Flx_types.BEXPR_case_arg (int, e) ->
       print_endline "BEXPR_case_arg";
-      let _ = codegen_expr state bbdfns builder sr e in
+      let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
   | Flx_types.BEXPR_case_index e ->
       print_endline "BEXPR_case_index";
-      let _ = codegen_expr state bbdfns builder sr e in
+      let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
   | Flx_types.BEXPR_expr (string, btypecode) ->
@@ -326,9 +326,9 @@ let rec codegen_expr state (bbdfns:Flx_types.fully_bound_symbol_table_t) builder
 
   | Flx_types.BEXPR_range_check (e1, e2, e3) ->
       print_endline "BEXPR_range_check";
-      let _ = codegen_expr state bbdfns builder sr e1 in
-      let _ = codegen_expr state bbdfns builder sr e2 in
-      let _ = codegen_expr state bbdfns builder sr e3 in
+      let _ = codegen_expr state bsym_table builder sr e1 in
+      let _ = codegen_expr state bsym_table builder sr e2 in
+      let _ = codegen_expr state bsym_table builder sr e3 in
       assert false
 
   | Flx_types.BEXPR_coerce (tbexpr_t, btypecode) ->
@@ -336,12 +336,12 @@ let rec codegen_expr state (bbdfns:Flx_types.fully_bound_symbol_table_t) builder
       assert false
 
 (* Generate code for an llvm struct type. *)
-and codegen_struct state bbdfns builder sr es btype =
+and codegen_struct state bsym_table builder sr es btype =
   let the_struct = create_entry_block_alloca state builder btype "" in
-  load_struct state bbdfns builder sr the_struct es
+  load_struct state bsym_table builder sr the_struct es
 
 
-and load_struct state bbdfns builder sr the_struct es =
+and load_struct state bsym_table builder sr the_struct es =
   (* Add the values to the struct. *)
   let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
   let _ =
@@ -353,7 +353,7 @@ and load_struct state bbdfns builder sr the_struct es =
         builder
       in
 
-      let e = codegen_expr state bbdfns builder sr e in
+      let e = codegen_expr state bsym_table builder sr e in
       ignore (Llvm.build_store e gep builder);
 
       i + 1
@@ -363,29 +363,29 @@ and load_struct state bbdfns builder sr the_struct es =
 
 
 (* Optionally dereference a value if it's a pointer. *)
-and codegen_deref state bbdfns builder sr e =
-  let e = codegen_expr state bbdfns builder sr e in
+and codegen_deref state bsym_table builder sr e =
+  let e = codegen_expr state bsym_table builder sr e in
 
   (* Dereference only if we've gotten a pointer *)
   match Llvm.classify_type (Llvm.type_of e) with
   | Llvm.TypeKind.Pointer -> Llvm.build_load e "" builder
   | _ -> e
 
-let codegen_call_direct state bbdfns builder sr f args =
+let codegen_call_direct state bsym_table builder sr f args =
   let args = Array.of_list args in
-  let args = Array.map (codegen_deref state bbdfns builder sr) args in
+  let args = Array.map (codegen_deref state bsym_table builder sr) args in
   Llvm.build_call f args "" builder
 
 
-let codegen_call state bbdfns builder sr f args =
+let codegen_call state bsym_table builder sr f args =
   (* Dereference the function. *)
-  let f = codegen_deref state bbdfns builder sr f in
-  codegen_call_direct state bbdfns builder sr f args
+  let f = codegen_deref state bsym_table builder sr f in
+  codegen_call_direct state bsym_table builder sr f args
 
 
 let create_unary_llvm_inst f typekind =
-  fun state bbdfns builder sr e ->
-    let e = codegen_deref state bbdfns builder sr e in
+  fun state bsym_table builder sr e ->
+    let e = codegen_deref state bsym_table builder sr e in
     check_type sr e typekind;
 
     f e "" builder
@@ -405,11 +405,11 @@ let codegen_lnot = create_unary_llvm_inst
 
 
 let create_binary_llvm_inst f lhs_typekind rhs_typekind =
-  fun state bbdfns builder sr lhs rhs ->
-    let lhs = codegen_deref state bbdfns builder sr lhs in
+  fun state bsym_table builder sr lhs rhs ->
+    let lhs = codegen_deref state bsym_table builder sr lhs in
     check_type sr lhs lhs_typekind;
 
-    let rhs = codegen_deref state bbdfns builder sr rhs in
+    let rhs = codegen_deref state bsym_table builder sr rhs in
     check_type sr rhs rhs_typekind;
 
     f lhs rhs "" builder
@@ -435,11 +435,11 @@ let codegen_ne = create_binary_llvm_inst
   Llvm.TypeKind.Integer
   Llvm.TypeKind.Integer
 
-let codegen_subscript state bbdfns builder sr lhs rhs =
-  let lhs = codegen_expr state bbdfns builder sr lhs in
+let codegen_subscript state bsym_table builder sr lhs rhs =
+  let lhs = codegen_expr state bsym_table builder sr lhs in
   check_type sr lhs Llvm.TypeKind.Pointer;
 
-  let rhs = codegen_deref state bbdfns builder sr rhs in
+  let rhs = codegen_deref state bsym_table builder sr rhs in
   check_type sr rhs Llvm.TypeKind.Integer;
 
   let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
@@ -448,12 +448,12 @@ let codegen_subscript state bbdfns builder sr lhs rhs =
 
 
 (* Generate code for a bound statement. *)
-let codegen_bexe state bbdfns builder bexe =
+let codegen_bexe state bsym_table builder bexe =
   print_endline ("codegen_bexe: " ^ Flx_print.string_of_bexe
-    state.syms.Flx_mtypes2.dfns bbdfns 0 bexe);
+    state.syms.Flx_mtypes2.sym_table bsym_table 0 bexe);
 
   (* See if there are any simple reductions we can apply to the exe. *)
-  let bexe = Flx_maps.reduce_bexe bbdfns bexe in
+  let bexe = Flx_maps.reduce_bexe bsym_table bexe in
 
   match bexe with
   | Flx_types.BEXE_label (sr, label) ->
@@ -502,7 +502,7 @@ let codegen_bexe state bbdfns builder bexe =
 
   | Flx_types.BEXE_ifgoto (sr, e, label) ->
       print_endline "BEXE_ifgoto";
-      let e = codegen_expr state bbdfns builder sr e in
+      let e = codegen_expr state bsym_table builder sr e in
 
       (* Get the builder's current function. *)
       let the_function = builder_parent builder in
@@ -526,8 +526,8 @@ let codegen_bexe state bbdfns builder bexe =
       Llvm.position_at_end else_bb builder
 
   | Flx_types.BEXE_call (sr, p, a) ->
-      let e1 = codegen_expr state bbdfns builder sr p in
-      let e2 = codegen_expr state bbdfns builder sr a in
+      let e1 = codegen_expr state bsym_table builder sr p in
+      let e2 = codegen_expr state bsym_table builder sr a in
       assert false
 
   | Flx_types.BEXE_call_direct (sr, index, _, e) ->
@@ -544,16 +544,16 @@ let codegen_bexe state bbdfns builder bexe =
           Flx_exceptions.clierr sr ("Unable to find index " ^
           string_of_int index)
       in
-      ignore (f state bbdfns builder sr es)
+      ignore (f state bsym_table builder sr es)
 
   | Flx_types.BEXE_call_stack (sr, index, btypecode, e) ->
       print_endline "BEXE_call_stack";
-      let e = codegen_expr state bbdfns builder sr e in
+      let e = codegen_expr state bsym_table builder sr e in
       assert false
 
   | Flx_types.BEXE_call_prim (sr, index, btypecode, e) ->
       print_endline "BEXE_call_prim";
-      let e = codegen_expr state bbdfns builder sr e in
+      let e = codegen_expr state bsym_table builder sr e in
       assert false
 
   | Flx_types.BEXE_jump (sr, e1, e2) ->
@@ -562,7 +562,7 @@ let codegen_bexe state bbdfns builder bexe =
 
   | Flx_types.BEXE_jump_direct (sr, index, btypecode, e) ->
       print_endline "BEXE_jump_direct";
-      let e = codegen_expr state bbdfns builder sr e in
+      let e = codegen_expr state bsym_table builder sr e in
       assert false
 
   | Flx_types.BEXE_svc (sr, index) ->
@@ -571,12 +571,12 @@ let codegen_bexe state bbdfns builder bexe =
 
   | Flx_types.BEXE_fun_return (sr, e) ->
       print_endline "BEXE_fun_return";
-      let e = codegen_expr state bbdfns builder sr e in
+      let e = codegen_expr state bsym_table builder sr e in
       ignore (Llvm.build_ret e builder);
 
   | Flx_types.BEXE_yield (sr, e) ->
       print_endline "BEXE_yield";
-      let e = codegen_expr state bbdfns builder sr e in
+      let e = codegen_expr state bsym_table builder sr e in
       assert false
 
   | Flx_types.BEXE_proc_return sr ->
@@ -609,7 +609,7 @@ let codegen_bexe state bbdfns builder bexe =
         | _ ->
             Flx_exceptions.clierr sr ("invalid lvalue")
       in
-      let rhs = codegen_expr state bbdfns builder sr rhs in
+      let rhs = codegen_expr state bsym_table builder sr rhs in
 
       check_type sr lhs Llvm.TypeKind.Pointer;
       check_type
@@ -630,10 +630,10 @@ let codegen_bexe state bbdfns builder bexe =
       begin match e with
       | Flx_types.BEXPR_tuple es, _ ->
           (* If the rhs is a tuple, load it directly. *)
-          ignore (load_struct state bbdfns builder sr lhs es)
+          ignore (load_struct state bsym_table builder sr lhs es)
       | _ ->
           (* Otherwise, just do normal codegen. *)
-          let rhs = codegen_expr state bbdfns builder sr e in
+          let rhs = codegen_expr state bsym_table builder sr e in
 
           (* Make sure the rhs is of the right type. *)
           check_type sr rhs
@@ -652,7 +652,7 @@ let codegen_bexe state bbdfns builder bexe =
 
   | Flx_types.BEXE_assert (sr, e) ->
       print_endline "BEXE_assert";
-      let e = codegen_expr state bbdfns builder sr e in
+      let e = codegen_expr state bsym_table builder sr e in
       assert false
 
   | Flx_types.BEXE_assert2 (sr1, sr2, e1, e2) ->
@@ -660,16 +660,16 @@ let codegen_bexe state bbdfns builder bexe =
       begin
         match e1 with
         | Some e1 ->
-            let e1 = codegen_expr state bbdfns builder sr1 e1 in
+            let e1 = codegen_expr state bsym_table builder sr1 e1 in
             ()
         | None -> ()
       end;
-      let e2 = codegen_expr state bbdfns builder sr2 e2 in
+      let e2 = codegen_expr state bsym_table builder sr2 e2 in
       assert false
 
   | Flx_types.BEXE_axiom_check (sr, e) ->
       print_endline "BEXE_axiom_check";
-      let e = codegen_expr state bbdfns builder sr e in
+      let e = codegen_expr state bsym_table builder sr e in
       assert false
 
 
@@ -694,8 +694,8 @@ let codegen_proto state index name parameters ret_type =
 
   (* Register the function. *)
   Hashtbl.add state.value_bindings index f;
-  Hashtbl.add state.call_bindings index begin fun state bbdfns builder sr args ->
-    codegen_call_direct state bbdfns builder sr f args
+  Hashtbl.add state.call_bindings index begin fun state bsym_table builder sr args ->
+    codegen_call_direct state bsym_table builder sr f args
   end;
 
   f
@@ -703,7 +703,7 @@ let codegen_proto state index name parameters ret_type =
 
 let rec codegen_function
   state
-  bbdfns
+  bsym_table
   index
   name
   parameters
@@ -729,19 +729,19 @@ let rec codegen_function
     in
 
     (* Generate code for the sub-symbols. *)
-    let symbol_data = Hashtbl.find state.syms.Flx_mtypes2.dfns index in
+    let symbol_data = Hashtbl.find state.syms.Flx_mtypes2.sym_table index in
 
     Hashtbl.iter begin fun name entry_set ->
       match entry_set with
       | Flx_types.FunctionEntry es ->
           List.iter begin fun e ->
-            let s = Hashtbl.find bbdfns e.Flx_types.base_sym in
-            codegen_symbol state bbdfns e.Flx_types.base_sym s
+            let s = Hashtbl.find bsym_table e.Flx_types.base_sym in
+            codegen_symbol state bsym_table e.Flx_types.base_sym s
 
           end es
       | Flx_types.NonFunctionEntry e ->
-          let s = Hashtbl.find bbdfns e.Flx_types.base_sym in
-          codegen_symbol state bbdfns e.Flx_types.base_sym s
+          let s = Hashtbl.find bsym_table e.Flx_types.base_sym in
+          codegen_symbol state bsym_table e.Flx_types.base_sym s
 
     end symbol_data.Flx_types.pubmap;
 
@@ -759,7 +759,7 @@ let rec codegen_function
     end (Llvm.params the_function);
 
     (* Generate code for the sub-statements. *)
-    List.iter (codegen_bexe state bbdfns builder) es;
+    List.iter (codegen_bexe state bsym_table builder) es;
 
     (* Validate the generated code, checking for consistency. *)
     Llvm_analysis.assert_valid_function the_function;
@@ -778,9 +778,9 @@ let rec codegen_function
 and codegen_fun state index props vs ps ret_type code reqs prec =
   (* Convenience function for converting list to unary args. *)
   let call_unary f =
-    fun state bbdfns builder sr args ->
+    fun state bsym_table builder sr args ->
       match args with
-      | [ e ] -> f state bbdfns builder sr e
+      | [ e ] -> f state bsym_table builder sr e
       | _ ->
           failwith ("1 argument required, provided " ^
             string_of_int (List.length args))
@@ -788,9 +788,9 @@ and codegen_fun state index props vs ps ret_type code reqs prec =
 
   (* Convenience function for converting list to binary args. *)
   let call_binary f =
-    fun state bbdfns builder sr args ->
+    fun state bsym_table builder sr args ->
       match args with
-      | [ lhs; rhs ] -> f state bbdfns builder sr lhs rhs
+      | [ lhs; rhs ] -> f state bsym_table builder sr lhs rhs
       | _ ->
           failwith ("2 arguments required, provided " ^
             string_of_int (List.length args))
@@ -829,8 +829,8 @@ and codegen_fun state index props vs ps ret_type code reqs prec =
             Llvm.set_function_call_conv Llvm.CallConv.c the_function;
 
             (* ... and then return the call instruction. *)
-            begin fun state bbdfns builder sr args ->
-              codegen_call_direct state bbdfns builder sr the_function args
+            begin fun state bsym_table builder sr args ->
+              codegen_call_direct state bsym_table builder sr the_function args
             end
         end
 
@@ -885,29 +885,29 @@ and codegen_abs state index vs quals code reqs =
   Hashtbl.add state.type_bindings index t
 
 
-and codegen_symbol state bbdfns index ((_, parent, sr, bbdcl) as symbol) =
+and codegen_symbol state bsym_table index ((_, parent, sr, bbdcl) as symbol) =
   print_endline ("codegen_symbol: " ^
     "parent=" ^ (match parent with Some p -> string_of_int p | None -> "None") ^
     " " ^
-    (Flx_print.string_of_bbdcl state.syms.Flx_mtypes2.dfns bbdfns bbdcl index));
+    (Flx_print.string_of_bbdcl state.syms.Flx_mtypes2.sym_table bsym_table bbdcl index));
 
   (* Use the qualified name for the symbol. *)
-  let name = name_of_index state bbdfns index in
+  let name = name_of_index state bsym_table index in
 
   match bbdcl with
   | Flx_types.BBDCL_function (_, _, (ps, _), ret_type, es) ->
-      ignore (codegen_function state bbdfns index name ps ret_type es)
+      ignore (codegen_function state bsym_table index name ps ret_type es)
 
   | Flx_types.BBDCL_procedure (_, _, (ps, _), es) ->
       let ret_type = Flx_types.BTYP_void in
-      ignore (codegen_function state bbdfns index name ps ret_type es)
+      ignore (codegen_function state bsym_table index name ps ret_type es)
 
   | Flx_types.BBDCL_val (vs, btype)
   | Flx_types.BBDCL_var (vs, btype)
   | Flx_types.BBDCL_ref (vs, btype)
   | Flx_types.BBDCL_tmp (vs, btype) ->
       (*
-      let name = name_of_index state bbdfns index in
+      let name = name_of_index state bsym_table index in
       *)
 
       (* Get the value expression. If it's a local value, create an alloca,

@@ -2,22 +2,19 @@
  *
  * Name binding pass 2 *)
 
-open Flx_ast
-open Flx_types
-open Flx_mtypes2
-open Flx_child
-open Flx_label
-
 val make_stack_calls:
-  sym_state_t ->
-  Flx_child.t * fully_bound_symbol_table_t ->
-  label_map_t -> label_usage_t ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.bsym_table_t ->
+  Flx_child.t ->
+  Flx_label.label_map_t ->
+  Flx_label.label_usage_t ->
   unit
 
 val can_stack_func:
-  (btypecode_t, [`Recurse | `Safe | `Unsafe] ) Hashtbl.t ->
-  (btypecode_t, [`Recurse | `Safe | `Unsafe] ) Hashtbl.t ->
-  sym_state_t ->
-  Flx_child.t * fully_bound_symbol_table_t ->
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.bsym_table_t ->
+  Flx_child.t ->
+  (Flx_types.btypecode_t, [`Recurse | `Safe | `Unsafe]) Hashtbl.t ->
+  (Flx_types.btypecode_t, [`Recurse | `Safe | `Unsafe]) Hashtbl.t ->
   int ->
   bool

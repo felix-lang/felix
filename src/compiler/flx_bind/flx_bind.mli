@@ -2,7 +2,7 @@ type bind_state_t
 
 type bound_t =
   | Bound_exe of Flx_types.bexe_t
-  | Bound_symbol of (int * Flx_types.symbol_data3_t)
+  | Bound_symbol of (int * Flx_types.bsym_t)
 
 val make_bind_state:
   ?parent:Flx_types.bid_t ->  (** The module index for all the symbols of the
@@ -14,7 +14,7 @@ val make_bind_state:
 (** Bind an individual assembly into a series of symbols. *)
 val bind_asm:
   bind_state_t ->           (** The state needed for binding. *)
-  Flx_types.fully_bound_symbol_table_t -> (* The output bound symbol table. *)
+  Flx_types.bsym_table_t -> (* The output bound symbol table. *)
   ('a -> bound_t -> 'a) ->  (** Fold this over each assembly. *)
   'a ->                     (** The initial value. *)
   Flx_types.asm_t ->        (** The assembly to bind. *)
@@ -24,4 +24,4 @@ val bind_asm:
 val bind_asms:
   bind_state_t ->           (** The state needed for binding. *)
   Flx_types.asm_t list ->   (** All the assemblies to bind. *)
-  Flx_types.fully_bound_symbol_table_t (** The output bound symbol table. *)
+  Flx_types.bsym_table_t    (** The output bound symbol table. *)

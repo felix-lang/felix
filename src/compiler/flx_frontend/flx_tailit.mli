@@ -6,7 +6,9 @@ open Flx_call
 
 val tailit:
   sym_state_t ->
-  usage_table_t * Flx_child.t * fully_bound_symbol_table_t ->
+  bsym_table_t ->
+  Flx_child.t ->
+  usage_table_t ->
   string ->
   bid_t ->
   Flx_srcref.t ->

@@ -1,11 +1,7 @@
 (** Expression unraveller *)
 
-open Flx_types
-open Flx_mtypes2
-
 val unravel:
-  sym_state_t ->
-  fully_bound_symbol_table_t ->
-  tbexpr_t ->
-  (tbexpr_t * string) list *
-  tbexpr_t
+  Flx_mtypes2.sym_state_t ->
+  Flx_types.bsym_table_t ->
+  Flx_types.tbexpr_t ->
+  (Flx_types.tbexpr_t * string) list * Flx_types.tbexpr_t

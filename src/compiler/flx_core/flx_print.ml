@@ -216,8 +216,10 @@ and string_of_expr (e:expr_t) =
   (*
   | EXPR_dot (_,(e,n,ts)) ->
     "get_" ^ n ^
-    (match ts with | [] -> "" | _ -> "[" ^ catmap "," string_of_typecode ts^ "]")^
-    "(" ^ se e ^ ")"
+      begin match ts with | [] ->
+        "" | _ -> "[" ^ catmap "," string_of_typecode ts^ "]"
+      end ^
+      "(" ^ se e ^ ")"
   *)
 
   | EXPR_dot (_,(e1,e2)) ->
@@ -383,13 +385,15 @@ and st prec tc : string =
     | TYP_record ls ->
       begin match ls with
       | [] -> 0,"unit"
-      | _ -> 0, "struct {" ^ catmap "" (fun (s,t)->s^":"^st 0 t ^"; ") ls ^ "}"
+      | _ ->
+          0, "struct {" ^ catmap "" (fun (s,t)->s^":"^st 0 t ^"; ") ls ^ "}"
       end
 
     | TYP_variant ls ->
       begin match ls with
       | [] -> 0,"void"
-      | _ -> 0, "union {" ^ catmap "" (fun (s,t)->s^" of "^st 0 t ^"; ") ls ^ "}"
+      | _ ->
+          0, "union {" ^ catmap "" (fun (s,t)->s^" of "^st 0 t ^"; ") ls ^ "}"
       end
 
     | TYP_sum ls ->
@@ -469,12 +473,12 @@ and st prec tc : string =
 
 and string_of_typecode tc = st 99 tc
 
-and qualified_name_of_index_with_vs dfns index =
-  match Hashtbl.find dfns index with
+and qualified_name_of_index_with_vs sym_table index =
+  match Hashtbl.find sym_table index with
   | { id=id; vs=vs; parent=parent } ->
     match parent with
     | Some index' ->
-      qualified_name_of_index_with_vs dfns index' ^
+      qualified_name_of_index_with_vs sym_table index' ^
       id ^
       print_ivs vs ^
       "::"
@@ -483,39 +487,39 @@ and qualified_name_of_index_with_vs dfns index =
         and we don't bother to print its name as a prefix
       *)
 
-and qualified_name_of_index' dfns index =
-  match Hashtbl.find dfns index with
+and qualified_name_of_index' sym_table index =
+  match Hashtbl.find sym_table index with
   | { id=id; parent=parent } ->
     begin match parent with
-    | Some index' -> qualified_name_of_index_with_vs dfns index'
+    | Some index' -> qualified_name_of_index_with_vs sym_table index'
     | None -> ""
     end ^
     id
 
-and qualified_name_of_index dfns index =
-  try qualified_name_of_index' dfns index ^ "<"^si index ^">"
+and qualified_name_of_index sym_table index =
+  try qualified_name_of_index' sym_table index ^ "<"^si index ^">"
   with Not_found -> "index_"^ si index
 
-and get_name_parent dfns bbdfns index =
+and get_name_parent sym_table bsym_table index =
   try
-    match Hashtbl.find dfns index with
+    match Hashtbl.find sym_table index with
     { id=id; vs=vs; parent=parent} -> id, parent
   with Not_found ->
   try
-    match Hashtbl.find bbdfns index with
+    match Hashtbl.find bsym_table index with
     id,parent,_,_ -> id,parent
   with Not_found -> "index_" ^ string_of_int index,None
 
 
-and qualified_name_of_bindex dfns bbdfns index =
-  let name,parent = get_name_parent dfns bbdfns index in
+and qualified_name_of_bindex sym_table bsym_table index =
+  let name,parent = get_name_parent sym_table bsym_table index in
   match parent with
   | Some index' ->
-    qualified_name_of_bindex dfns bbdfns index' ^ "::" ^ name
+    qualified_name_of_bindex sym_table bsym_table index' ^ "::" ^ name
   | None -> name
 
-and bound_name_of_bindex dfns bbdfns index =
-  let name,parent = get_name_parent dfns bbdfns index in
+and bound_name_of_bindex sym_table bsym_table index =
+  let name,parent = get_name_parent sym_table bsym_table index in
   name ^ "<" ^ si index ^ ">"
 
 (* fixppoint labeller .. very sloppy, ignores precedence .. *)
@@ -532,8 +536,8 @@ and print_fixpoints depth fixlist =
     " as " ^ lab ^ " " ^ txt, lst
   | _ -> "", fixlist
 
-and sb dfns depth fixlist counter prec tc =
-  let sbt prec t = sb dfns (depth+1) fixlist counter prec t in
+and sb sym_table depth fixlist counter prec tc =
+  let sbt prec t = sb sym_table (depth+1) fixlist counter prec t in
   let iprec, term =
     match tc with
     | BTYP_type_match (t,ps) ->
@@ -567,7 +571,7 @@ and sb dfns depth fixlist counter prec tc =
       ">"
 
     | BTYP_inst (i,ts) ->
-      0,qualified_name_of_index dfns i ^
+      0,qualified_name_of_index sym_table i ^
       (if List.length ts = 0 then "" else
       "[" ^cat ", " (map (sbt 9) ts) ^ "]"
       )
@@ -683,9 +687,9 @@ and sb dfns depth fixlist counter prec tc =
     else
     "(" ^ term ^ txt ^ ")"
 
-and string_of_btypecode (dfns:symbol_table_t) tc =
+and string_of_btypecode sym_table tc =
   let fixlist = ref [] in
-  let term = sb dfns 0 fixlist (ref 0) 99 tc in
+  let term = sb sym_table 0 fixlist (ref 0) 99 tc in
   let bad = ref "" in
   while List.length !fixlist > 0 do
     match !fixlist with
@@ -728,31 +732,30 @@ and string_of_parameters (ps:params_t) =
   )
 
 (*
-and string_of_iparameters dfns ps =
+and string_of_iparameters sym_table ps =
   let ps,traint = ps in
   cat
     ", "
     (map (fun (x,(i,y))-> x ^ "["^si i^"]: "^(string_of_typecode y)) ps)
   ^
   (match traint with
-  | Some x ->  " where " ^ sbe dfns bbdfns x
+  | Some x ->  " where " ^ sbe sym_table bsym_table x
   | None -> ""
   )
 *)
 
-and string_of_basic_bparameters dfns ps : string =
-  catmap ","
-  (fun {pid=x; pkind=kind; pindex=i; ptyp=y}->
-    string_of_param_kind kind ^ " " ^ x ^ "<"^si i^">: "^(string_of_btypecode dfns y)
-  )
-  ps
+and string_of_basic_bparameters sym_table ps : string =
+  catmap "," begin fun {pid=x; pkind=kind; pindex=i; ptyp=y} ->
+    string_of_param_kind kind ^ " " ^ x ^ "<"^ si i ^ ">: " ^
+      (string_of_btypecode sym_table y)
+  end ps
 
-and string_of_bparameters dfns bbdfns ps : string =
+and string_of_bparameters sym_table bsym_table ps : string =
   let ps, traint = ps in
-  string_of_basic_bparameters dfns ps
+  string_of_basic_bparameters sym_table ps
   ^
   (match traint with
-  | Some x -> " where " ^ sbe dfns bbdfns x
+  | Some x -> " where " ^ sbe sym_table bsym_table x
   | None -> ""
   )
 
@@ -861,10 +864,10 @@ and special_string_of_typecode ty =  (* used for constructors *)
   | TYP_tuple [] -> ""
   | _ -> " of " ^ string_of_typecode ty
 
-and special_string_of_btypecode dfns ty =  (* used for constructors *)
+and special_string_of_btypecode sym_table ty =  (* used for constructors *)
   match ty with
   | BTYP_tuple [] -> ""
-  | _ -> " of " ^ string_of_btypecode dfns ty
+  | _ -> " of " ^ string_of_btypecode sym_table ty
 
 and string_of_macro_parameter_type = function
   | Expr -> "fun"
@@ -938,21 +941,21 @@ and print_bvs = function
     ) ^
     "]"
 
-and print_bvs_cons dfns vs cons = match vs,cons with
+and print_bvs_cons sym_table vs cons = match vs,cons with
  | [],BTYP_tuple [] -> ""
  | vs,cons ->
    "[" ^ catmap "," (fun (s,i)->s^"<"^si i^">") vs ^
    (if cons = BTYP_tuple[] then ""
-   else " where " ^ sbt dfns cons) ^
+   else " where " ^ sbt sym_table cons) ^
    "]"
 
-and print_inst dfns = function
+and print_inst sym_table = function
   | [] -> ""
   | ts ->
     "[" ^
     cat ", "
     (
-      map (string_of_btypecode dfns) ts
+      map (string_of_btypecode sym_table) ts
     ) ^
     "]"
 
@@ -1054,12 +1057,12 @@ and string_of_qual = function
 | #base_type_qual_t as x -> string_of_base_qual x
 | `Raw_needs_shape t -> "needs_shape(" ^ string_of_typecode t ^ ")"
 
-and string_of_bqual dfns = function
+and string_of_bqual sym_table = function
 | #base_type_qual_t as x -> string_of_base_qual x
-| `Bound_needs_shape t -> "needs_shape(" ^ string_of_btypecode dfns t ^ ")"
+| `Bound_needs_shape t -> "needs_shape(" ^ string_of_btypecode sym_table t ^ ")"
 
 and string_of_quals qs = catmap " " string_of_qual qs
-and string_of_bquals dfns qs = catmap " " (string_of_bqual dfns) qs
+and string_of_bquals sym_table qs = catmap " " (string_of_bqual sym_table) qs
 
 and string_of_ast_term level (term:ast_term_t) =
   let sast level x = string_of_ast_term level x in
@@ -1093,9 +1096,9 @@ and string_of_axiom_method a = match a with
   | Predicate e -> string_of_expr e
   | Equation (l,r) -> string_of_expr l ^ " = " ^ string_of_expr r
 
-and string_of_baxiom_method dfns bbdfns a = match a with
+and string_of_baxiom_method sym_table bsym_table a = match a with
   | `BPredicate e -> string_of_expr e
-  | `BEquation (l,r) -> sbe dfns bbdfns l ^ " = " ^ sbe dfns bbdfns r
+  | `BEquation (l,r) -> sbe sym_table bsym_table l ^ " = " ^ sbe sym_table bsym_table r
 
 and string_of_statement level s =
   let se e = string_of_expr e in
@@ -1832,30 +1835,38 @@ and string_of_exe level s =
   | EXE_assign (l,r) -> spc ^
     se l ^ " = " ^ se r ^ ";"
 
-and sbe dfns bbdfns e = string_of_bound_expression dfns bbdfns e
-and tsbe dfns bbdfns e = string_of_bound_expression_with_type dfns bbdfns e
+and sbe sym_table bsym_table e =
+  string_of_bound_expression sym_table bsym_table e
 
-and string_of_bound_expression_with_type dfns bbdfns ((e',t) as e) =
-  string_of_bound_expression' dfns bbdfns (tsbe dfns bbdfns) e ^ ":" ^
-  sbt dfns t
+and tsbe sym_table bsym_table e =
+  string_of_bound_expression_with_type sym_table bsym_table e
 
-and string_of_bound_expression dfns bbdfns e =
-  string_of_bound_expression' dfns bbdfns (sbe dfns bbdfns) e
+and string_of_bound_expression_with_type sym_table bsym_table ((e',t) as e) =
+  string_of_bound_expression'
+    sym_table
+    bsym_table
+    (tsbe sym_table bsym_table)
+    e ^
+    ":" ^
+    sbt sym_table t
 
-and string_of_bound_expression' dfns bbdfns se e =
+and string_of_bound_expression sym_table bsym_table e =
+  string_of_bound_expression' sym_table bsym_table (sbe sym_table bsym_table) e
+
+and string_of_bound_expression' sym_table bsym_table se e =
   (*
-  let sid n = qualified_name_of_bindex dfns bbdfns n in
-  let sid n = fst (get_name_parent dfns bbdfns n) in
+  let sid n = qualified_name_of_bindex sym_table bsym_table n in
+  let sid n = fst (get_name_parent sym_table bsym_table n) in
   *)
-  let sid n = bound_name_of_bindex dfns bbdfns n in
+  let sid n = bound_name_of_bindex sym_table bsym_table n in
   match fst e with
 
   | BEXPR_get_n (n,e') -> "(" ^ se e' ^ ").mem_" ^ si n
 
   | BEXPR_deref e -> "*("^ se e ^ ")"
-  | BEXPR_name (i,ts) -> sid i ^ print_inst dfns ts
-  | BEXPR_closure (i,ts) -> sid i ^ print_inst dfns ts
-  | BEXPR_ref (i,ts) -> "&" ^ sid i ^ print_inst dfns ts
+  | BEXPR_name (i,ts) -> sid i ^ print_inst sym_table ts
+  | BEXPR_closure (i,ts) -> sid i ^ print_inst sym_table ts
+  | BEXPR_ref (i,ts) -> "&" ^ sid i ^ print_inst sym_table ts
   | BEXPR_new e -> "new " ^ se e
   | BEXPR_address e -> "&" ^ se e
   | BEXPR_likely e -> "likely(" ^ se e ^")"
@@ -1868,22 +1879,22 @@ and string_of_bound_expression' dfns bbdfns se e =
     ")"
 
   | BEXPR_apply_prim (i,ts, arg) -> "(" ^
-    sid i ^ print_inst dfns ts ^ " " ^
+    sid i ^ print_inst sym_table ts ^ " " ^
     se arg ^
     ")"
 
   | BEXPR_apply_direct  (i,ts, arg) -> "(" ^
-    sid i ^ print_inst dfns ts ^ " " ^
+    sid i ^ print_inst sym_table ts ^ " " ^
     se arg ^
     ")"
 
   | BEXPR_apply_struct (i,ts, arg) -> "(" ^
-    sid i ^ print_inst dfns ts ^ " " ^
+    sid i ^ print_inst sym_table ts ^ " " ^
     se arg ^
     ")"
 
   | BEXPR_apply_stack (i,ts, arg) -> "(" ^
-    sid i ^ print_inst dfns ts ^ " " ^
+    sid i ^ print_inst sym_table ts ^ " " ^
     se arg ^
     ")"
 
@@ -1895,7 +1906,7 @@ and string_of_bound_expression' dfns bbdfns se e =
   | BEXPR_variant (s,e) -> "case " ^ s ^ " of (" ^ se e ^ ")"
 
   | BEXPR_case (v,t) ->
-    "case " ^ si v ^ " of " ^ string_of_btypecode dfns t
+    "case " ^ si v ^ " of " ^ string_of_btypecode sym_table t
 
   | BEXPR_match_case (v,e) ->
     "(match case " ^ si v ^ ")(" ^ se e ^ ")"
@@ -1907,36 +1918,36 @@ and string_of_bound_expression' dfns bbdfns se e =
     "caseno (" ^ se e ^ ")"
 
   | BEXPR_expr (s,t) ->
-    "code ["^string_of_btypecode dfns t^"]" ^ "'" ^ s ^ "'"
+    "code ["^string_of_btypecode sym_table t^"]" ^ "'" ^ s ^ "'"
 
   | BEXPR_range_check (e1,e2,e3) ->
     "range_check(" ^ se e1 ^"," ^ se e2 ^"," ^se e3 ^ ")"
 
-  | BEXPR_coerce (e,t) -> se e ^ " : " ^ string_of_btypecode dfns t
+  | BEXPR_coerce (e,t) -> se e ^ " : " ^ string_of_btypecode sym_table t
 
-and string_of_biface dfns bbdfns level s =
+and string_of_biface sym_table bsym_table level s =
   let spc = spaces level in
-  let se e = string_of_bound_expression dfns bbdfns e in
-  let sid n = qualified_name_of_index dfns n in
+  let se e = string_of_bound_expression sym_table bsym_table e in
+  let sid n = qualified_name_of_index sym_table n in
   match s with
   | BIFACE_export_fun (_,index,cpp_name) ->
-    spc ^ "export fun " ^ qualified_name_of_index dfns index ^
+    spc ^ "export fun " ^ qualified_name_of_index sym_table index ^
     " as \"" ^ cpp_name ^ "\";"
 
   | BIFACE_export_python_fun (_,index,cpp_name) ->
-    spc ^ "export python fun " ^ qualified_name_of_index dfns index ^
+    spc ^ "export python fun " ^ qualified_name_of_index sym_table index ^
     " as \"" ^ cpp_name ^ "\";"
 
   | BIFACE_export_type (_,btyp,cpp_name) ->
-    spc ^ "export type (" ^ string_of_btypecode dfns btyp ^
+    spc ^ "export type (" ^ string_of_btypecode sym_table btyp ^
     ") as \"" ^ cpp_name ^ "\";"
 
-and sbx dfns bbdfns s =  string_of_bexe dfns bbdfns 0 s
+and sbx sym_table bsym_table s =  string_of_bexe sym_table bsym_table 0 s
 
-and string_of_bexe dfns bbdfns level s =
+and string_of_bexe sym_table bsym_table level s =
   let spc = spaces level in
-  let se e = string_of_bound_expression dfns bbdfns e in
-  let sid n = bound_name_of_bindex dfns bbdfns n in
+  let se e = string_of_bound_expression sym_table bsym_table e in
+  let sid n = bound_name_of_bindex sym_table bsym_table n in
   match s with
   | BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
 
@@ -1965,22 +1976,22 @@ and string_of_bexe dfns bbdfns level s =
 
   | BEXE_call_direct (_,i,ts,a) -> spc ^
     "directcall " ^
-    sid i ^ print_inst dfns ts ^ " " ^
+    sid i ^ print_inst sym_table ts ^ " " ^
     se a ^ ";"
 
   | BEXE_jump_direct (_,i,ts,a) -> spc ^
     "direct tail call " ^
-    sid i ^ print_inst dfns ts ^ " " ^
+    sid i ^ print_inst sym_table ts ^ " " ^
     se a ^ ";"
 
   | BEXE_call_stack (_,i,ts,a) -> spc ^
     "stackcall " ^
-    sid i ^ print_inst dfns ts ^ " " ^
+    sid i ^ print_inst sym_table ts ^ " " ^
     se a ^ ";"
 
   | BEXE_call_prim (_,i,ts,a) -> spc ^
     "primcall " ^
-    sid i ^ print_inst dfns ts ^ " " ^
+    sid i ^ print_inst sym_table ts ^ " " ^
     se a ^ ";"
 
   | BEXE_jump (_,p,a) -> spc ^
@@ -2222,11 +2233,12 @@ and string_of_dir level s =
   | DIR_inject_module (qn) ->
     spaces level ^ "inherit " ^ sqn qn ^ ";"
 
-and string_of_breq dfns (i,ts) = "rq<"^si i^">" ^ print_inst dfns ts
-and string_of_breqs dfns reqs = catmap ", " (string_of_breq dfns) reqs
+and string_of_breq sym_table (i,ts) = "rq<"^si i^">" ^ print_inst sym_table ts
+and string_of_breqs sym_table reqs = catmap ", " (string_of_breq sym_table) reqs
 and string_of_production p = catmap " " string_of_glr_entry p
 and string_of_reduced_production p = catmap " " string_of_reduced_glr_entry p
-and string_of_bproduction dfns p = catmap " " (string_of_bglr_entry dfns) p
+and string_of_bproduction sym_table p =
+  catmap " " (string_of_bglr_entry sym_table) p
 
 and string_of_glr_term t = match t with
   | `GLR_name qn -> string_of_qualified_name qn
@@ -2250,38 +2262,38 @@ and string_of_reduced_glr_entry (name,t) =
   )^
   string_of_qualified_name t
 
-and string_of_bglr_entry dfns (name,symbol) =
+and string_of_bglr_entry sym_table (name,symbol) =
   (match name with
   | Some n -> n ^ ":"
   | None -> ""
   )^
   (match symbol with
   | `Nonterm (i::_)
-  | `Term i -> qualified_name_of_index dfns i
+  | `Term i -> qualified_name_of_index sym_table i
   | `Nonterm [] -> "<Undefined nonterminal>"
   )
 
-and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
-  let name = qualified_name_of_index dfns index in
-  let sobt t = string_of_btypecode dfns t in
-  let se e = string_of_bound_expression dfns bbdfns e in
+and string_of_bbdcl sym_table bsym_table (bbdcl:bbdcl_t) index : string =
+  let name = qualified_name_of_index sym_table index in
+  let sobt t = string_of_btypecode sym_table t in
+  let se e = string_of_bound_expression sym_table bsym_table e in
   let un = BTYP_tuple [] in
   match bbdcl with
   | BBDCL_function (props,vs,ps,res,es) ->
     string_of_properties props ^
     "fun " ^ name ^ print_bvs vs ^
-    "("^ (string_of_bparameters dfns bbdfns ps)^"): "^(sobt res) ^
+    "("^ (string_of_bparameters sym_table bsym_table ps)^"): "^(sobt res) ^
     "{\n" ^
-    cat "\n" (map (string_of_bexe dfns bbdfns 1) es) ^
+    cat "\n" (map (string_of_bexe sym_table bsym_table 1) es) ^
     "}"
 
 
   | BBDCL_procedure (props,vs,ps,es) ->
     string_of_properties props ^
     "proc " ^ name ^ print_bvs vs ^
-    "("^ (string_of_bparameters dfns bbdfns ps)^")" ^
+    "("^ (string_of_bparameters sym_table bsym_table ps)^")" ^
     "{\n" ^
-    cat "\n" (map (string_of_bexe dfns bbdfns 1) es) ^
+    cat "\n" (map (string_of_bexe sym_table bsym_table 1) es) ^
     "}"
 
   | BBDCL_val (vs,ty) ->
@@ -2302,7 +2314,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     " = new " ^ sobt t ^ ";"
 
   | BBDCL_abs (vs,quals,code,reqs) ->
-    (match quals with [] ->"" | _ -> string_of_bquals dfns quals ^ " ") ^
+    (match quals with [] ->"" | _ -> string_of_bquals sym_table quals ^ " ") ^
     "type " ^ name ^  print_bvs vs ^
     " = " ^ string_of_code_spec code ^ ";"
 
@@ -2311,7 +2323,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
      "const " ^ name ^ print_bvs vs ^
      ": " ^ sobt ty ^
      " = " ^ string_of_code_spec code ^
-     string_of_breqs dfns reqs ^
+     string_of_breqs sym_table reqs ^
      ";"
 
   | BBDCL_fun (props,vs,ps,rt,code,reqs,prec) ->
@@ -2322,7 +2334,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     (sobt rt) ^
     " = " ^ string_of_code_spec code ^
     (if prec = "" then "" else ":"^prec^" ")^
-     string_of_breqs dfns reqs ^
+     string_of_breqs sym_table reqs ^
     ";"
 
   | BBDCL_callback (props,vs,ps_cf,ps_c,k,rt,reqs,prec) ->
@@ -2333,7 +2345,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     (sobt rt) ^
     " : " ^
     (if prec = "" then "" else ":"^prec^" ")^
-     string_of_breqs dfns reqs ^
+     string_of_breqs sym_table reqs ^
     ";"
 
   | BBDCL_proc (props,vs, ps,code,reqs) ->
@@ -2342,7 +2354,7 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     ": " ^
      (sobt (typeoflist ps)) ^
      " = " ^ string_of_code_spec code ^
-     string_of_breqs dfns reqs ^
+     string_of_breqs sym_table reqs ^
      ";"
 
   | BBDCL_insert (vs,s,ikind,reqs) ->
@@ -2353,13 +2365,13 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
      ) ^
     name^  print_bvs vs ^
     " "^ string_of_code_spec s ^
-    string_of_breqs dfns reqs
+    string_of_breqs sym_table reqs
 
   | BBDCL_union (vs,cs) ->
     let string_of_union_component (name,v,ty) =
       "  " ^ "|" ^name ^
      "="^si v^
-      special_string_of_btypecode dfns ty
+      special_string_of_btypecode sym_table ty
     in
     "union " ^ name ^ print_bvs vs ^ " = " ^
     "{\n" ^
@@ -2390,8 +2402,8 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
 
   | BBDCL_instance (props,vs,cons,bid,ts) ->
     string_of_properties props ^
-    "instance "^print_bvs_cons dfns vs cons^
-    " of <" ^ si bid ^">["^ catmap "," (sbt dfns) ts ^ "];"
+    "instance "^print_bvs_cons sym_table vs cons^
+    " of <" ^ si bid ^">["^ catmap "," (sbt sym_table) ts ^ "];"
 
   | BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx, ctor_argt, evs, etraint) ->
     "  uctor<" ^ name ^ ">"^ print_bvs vs ^
@@ -2400,17 +2412,17 @@ and string_of_bbdcl dfns bbdfns (bbdcl:bbdcl_t) index : string =
     ";"
 
 
-let string_of_dfn dfns i =
-  match Hashtbl.find dfns i with
+let string_of_dfn sym_table i =
+  match Hashtbl.find sym_table i with
   | { id=id; sr=sr; vs=vs; symdef=entry } ->
   string_of_symdef entry id vs
   ^ "\n  defined at " ^ Flx_srcref.short_string_of_src sr
 
-let full_string_of_entry_kind dfns {base_sym=i; spec_vs=vs; sub_ts=ts} =
-  string_of_dfn dfns i ^
+let full_string_of_entry_kind sym_table {base_sym=i; spec_vs=vs; sub_ts=ts} =
+  string_of_dfn sym_table i ^
   "\n  with view" ^
   " vs=" ^ catmap "," (fun (s,_)->s) vs ^
-  " ts=" ^ catmap "," (sbt dfns) ts
+  " ts=" ^ catmap "," (sbt sym_table) ts
 
 
 let string_of_entry_kind {base_sym=i} = si i
@@ -2422,31 +2434,32 @@ let string_of_entry_set = function
       catmap "," string_of_entry_kind ls ^
     "}"
 
-let full_string_of_entry_set dfns = function
-  | NonFunctionEntry x -> full_string_of_entry_kind dfns x
+let full_string_of_entry_set sym_table = function
+  | NonFunctionEntry x -> full_string_of_entry_kind sym_table x
   | FunctionEntry ls -> if length ls = 0 then "{}" else
     "{\n" ^
-      catmap "\n" (full_string_of_entry_kind dfns) ls ^
+      catmap "\n" (full_string_of_entry_kind sym_table) ls ^
     "\n}"
 
-let string_of_myentry dfns {base_sym=i; spec_vs=vs; sub_ts=ts} =
+let string_of_myentry sym_table {base_sym=i; spec_vs=vs; sub_ts=ts} =
  si i ^
  " vs=" ^ catmap "," (fun (s,_)->s) vs ^
- " ts=" ^ catmap "," (sbt dfns) ts
+ " ts=" ^ catmap "," (sbt sym_table) ts
 
-let print_name_table dfns table =
+let print_name_table sym_table table =
   Hashtbl.iter
   (fun s v ->
     print_endline (s ^ " --> " ^
       match v with
-      | NonFunctionEntry i -> string_of_myentry dfns i
-      | FunctionEntry ii -> "{"^ catmap "," (string_of_myentry dfns) ii ^ "}"
+      | NonFunctionEntry i -> string_of_myentry sym_table i
+      | FunctionEntry ii ->
+          "{"^ catmap "," (string_of_myentry sym_table) ii ^ "}"
     );
   )
   table
 
-let string_of_varlist dfns varlist =
-  catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt dfns t) varlist
+let string_of_varlist sym_table varlist =
+  catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt sym_table t) varlist
 
 let print_env e =
   let print_entry k v =
@@ -2481,61 +2494,61 @@ let print_env_short e =
   in
   List.iter print_level e
 
-let print_function_body dfns bbdfns id i (bvs:bvs_t) ps exes parent =
+let print_function_body sym_table bsym_table id i (bvs:bvs_t) ps exes parent =
   print_endline "";
   print_endline ("BODY OF " ^ id ^ "<" ^ si i ^ "> [" ^
   catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") bvs ^
   "] parent " ^
     (match parent with None -> "NONE" | Some k -> si k)
     ^
-    "(" ^ string_of_bparameters dfns bbdfns ps ^ ")"
+    "(" ^ string_of_bparameters sym_table bsym_table ps ^ ")"
   );
   iter
-  (fun exe -> print_endline (string_of_bexe dfns bbdfns 1 exe))
+  (fun exe -> print_endline (string_of_bexe sym_table bsym_table 1 exe))
   exes
 
-let print_function dfns bbdfns i =
-  match Hashtbl.find bbdfns i with (id,parent,_,entry) ->
+let print_function sym_table bsym_table i =
+  match Hashtbl.find bsym_table i with (id,parent,_,entry) ->
   match entry with
   | BBDCL_function (_,bvs,ps,_,exes)
   | BBDCL_procedure (_,bvs,ps,exes) ->
-    print_function_body dfns bbdfns id i bvs ps exes parent
+    print_function_body sym_table bsym_table id i bvs ps exes parent
   | _ -> ()
 
-let print_functions dfns (bbdfns:fully_bound_symbol_table_t) =
+let print_functions sym_table bsym_table =
   Hashtbl.iter
   (fun i (id,parent,_,entry) -> match entry with
   | BBDCL_function (_,bvs,ps,_,exes)
   | BBDCL_procedure (_,bvs,ps,exes) ->
-    print_function_body dfns bbdfns id i bvs ps exes parent
+    print_function_body sym_table bsym_table id i bvs ps exes parent
 
   | _ -> ()
   )
-  bbdfns
+  bsym_table
 
-let print_symbols dfns (bbdfns:fully_bound_symbol_table_t) =
+let print_symbols sym_table bsym_table =
   Hashtbl.iter
   (fun i (id,parent,_,entry) -> match entry with
   | BBDCL_function (_,bvs,ps,_,exes)
   | BBDCL_procedure (_,bvs,ps,exes) ->
-    print_function_body dfns bbdfns id i bvs ps exes parent
+    print_function_body sym_table bsym_table id i bvs ps exes parent
   | BBDCL_var (bvs,t) ->
     print_endline ("VARIABLE " ^ id ^ "<" ^ si i ^ "> [" ^
       catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") bvs ^
       "] parent " ^
       (match parent with None -> "NONE" | Some k -> si k) ^
-      " type " ^ sbt dfns t
+      " type " ^ sbt sym_table t
     )
   | BBDCL_val (bvs,t) ->
     print_endline ("VALUE " ^ id ^ "<" ^ si i ^ "> [" ^
       catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") bvs ^
       "] parent " ^
       (match parent with None -> "NONE" | Some k -> si k) ^
-      " type " ^ sbt dfns t
+      " type " ^ sbt sym_table t
     )
   | _ -> ()
   )
-  bbdfns
+  bsym_table
 
 let string_of_name_map name_map =
   let s =
@@ -2545,7 +2558,7 @@ let string_of_name_map name_map =
   in
   "{" ^ s ^ "}"
 
-let print_symbol_table dfns =
+let print_sym_table sym_table =
   Hashtbl.iter begin fun i symbol_data ->
     print_endline ("index: " ^ string_of_int i);
     print_endline ("id: " ^ symbol_data.id);
@@ -2562,10 +2575,10 @@ let print_symbol_table dfns =
       symbol_data.vs));
 
     print_newline ();
-  end dfns
+  end sym_table
 
-let print_fully_bound_symbol_table dfns bbdfns =
+let print_bsym_table sym_table bsym_table =
   Hashtbl.iter begin fun index (name,parent,sr,entry) ->
-    print_endline
-      (string_of_int index ^ " --> " ^ string_of_bbdcl dfns bbdfns entry index)
-  end bbdfns
+    print_endline (string_of_int index ^ " --> " ^
+      string_of_bbdcl sym_table bsym_table entry index)
+  end bsym_table

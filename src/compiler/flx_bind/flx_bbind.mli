@@ -11,15 +11,15 @@ val make_bbind_state:
 (* Bind a single symbol. *)
 val bbind_symbol:
   bbind_state_t ->
-  Flx_types.fully_bound_symbol_table_t ->
+  Flx_types.bsym_table_t ->
   int ->
-  Flx_types.symbol_data_t ->
-  Flx_types.symbol_data3_t option
+  Flx_types.sym_t ->
+  Flx_types.bsym_t option
 
 (* Bind all the symbols in the symtab. *)
 val bbind:
   bbind_state_t ->
-  Flx_types.fully_bound_symbol_table_t ->
+  Flx_types.bsym_table_t ->
   unit
 
 (* Bind a single interface *)

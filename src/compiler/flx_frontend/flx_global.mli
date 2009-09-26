@@ -24,17 +24,17 @@ open Flx_mtypes2
 open Flx_call
 
 val set_globals_for_symbol :
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   Flx_call.usage_table_t ->
   Flx_types.bid_t ->
-  Flx_types.symbol_data3_t ->
+  Flx_types.bsym_t ->
   unit
 
 val set_globals:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   unit
 
 val check_global_vars_all_used:
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   (bid_t, 'a) Hashtbl.t -> unit

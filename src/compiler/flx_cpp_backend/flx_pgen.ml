@@ -11,10 +11,10 @@ open Flx_ctypes
 open Flx_cexpr
 open Flx_maps
 
-let shape_of syms bbdfns tn t =
+let shape_of syms bsym_table tn t =
   match t with
   | BTYP_inst (i,ts) ->
-    let id,parent,sr,entry = Hashtbl.find bbdfns i in
+    let id,parent,sr,entry = Hashtbl.find bsym_table i in
     begin match entry with
     | BBDCL_union (vs,idts) ->
       let varmap = mk_varmap vs ts in
@@ -32,7 +32,7 @@ let shape_of syms bbdfns tn t =
 
 let gen_prim_call
   syms
-  (bbdfns:fully_bound_symbol_table_t)
+  bsym_table
   (tsub:btypecode_t -> btypecode_t)
   (ge: Flx_srcref.t -> tbexpr_t -> cexpr_t)
   (ct:string)
@@ -42,9 +42,9 @@ let gen_prim_call
 =
   (*
   print_endline ("ct= "^ct);
-  print_endline ("ts= "^catmap "," (sbt syms.dfns) ts);
-  print_endline ("argt = " ^ sbt syms.dfns argt);
-  print_endline ("arg = " ^ sbe syms.dfns a);
+  print_endline ("ts= "^catmap "," (sbt syms.sym_table) ts);
+  print_endline ("argt = " ^ sbt syms.sym_table argt);
+  print_endline ("arg = " ^ sbe syms.sym_table a);
   *)
   let tn t = cpp_typename syms t in
   let rt t = reduce_type (tsub t) in
@@ -52,7 +52,7 @@ let gen_prim_call
 
   let argt = rt argt in
   let tt = tn argt in
-  let sh t = shape_of syms bbdfns tn t in
+  let sh t = shape_of syms bsym_table tn t in
   let gshapes = map sh ts in
   let ts = map rtn ts in
   let carg =

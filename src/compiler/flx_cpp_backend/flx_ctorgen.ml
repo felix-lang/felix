@@ -3,7 +3,7 @@ open Flx_list
 open Flx_name
 open List
 
-let gen_ctor syms bbdfns name display funs extra_args extra_inits ts props =
+let gen_ctor syms bsym_table name display funs extra_args extra_inits ts props =
   let requires_ptf = mem `Requires_ptf props in
   let requires_pc = mem `Yields props in
   name^"::"^name^
@@ -21,7 +21,7 @@ let gen_ctor syms bbdfns name display funs extra_args extra_inits ts props =
     map
     (
       fun (i,vslen) ->
-        let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
+        let instname = cpp_instance_name syms bsym_table i (list_prefix ts vslen) in
       "    " ^ instname ^ " *pptr" ^ instname
     )
     display
@@ -53,14 +53,14 @@ let gen_ctor syms bbdfns name display funs extra_args extra_inits ts props =
     @
     map
     (
-      fun (i,vslen) -> let instname = cpp_instance_name syms bbdfns i (list_prefix ts vslen) in
+      fun (i,vslen) -> let instname = cpp_instance_name syms bsym_table i (list_prefix ts vslen) in
       "  ptr" ^ instname ^ "(pptr"^instname^")"
     )
     display
     @
     map
     (fun (index,t)->
-      cpp_instance_name syms bbdfns index ts
+      cpp_instance_name syms bsym_table index ts
       ^ "(0)"
     )
     funs

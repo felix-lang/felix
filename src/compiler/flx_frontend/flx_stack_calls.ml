@@ -53,9 +53,9 @@ let hfind msg h k =
   it is also stackable, and the C function model can't be used
   for either if a heap closure is formed.
 *)
-let rec is_pure syms (child_map, bbdfns) i =
+let rec is_pure syms (child_map, bsym_table) i =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
-  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  let id,parent,sr,entry = Hashtbl.find bsym_table i in
   (*
   print_endline ("Checking purity of " ^ id ^ "<" ^ si i ^ ">");
   *)
@@ -98,7 +98,7 @@ let rec is_pure syms (child_map, bbdfns) i =
     | None ->
     try
       iter (fun kid ->
-        if not (is_pure syms (child_map, bbdfns) kid)
+        if not (is_pure syms (child_map, bsym_table) kid)
         then begin
           (*
           print_endline ("Child " ^ si kid ^ " of " ^ id ^ " is not pure");
@@ -171,11 +171,11 @@ exception Found
   property is also satisfied (along with the others).
 *)
 
-let has_var_children bbdfns children =
+let has_var_children bsym_table children =
   try
     iter
     (fun i ->
-      let id,parent,sr,entry = hfind "has_var_children" bbdfns i in
+      let id,parent,sr,entry = hfind "has_var_children" bsym_table i in
       match entry with
       | BBDCL_var _  -> raise Found
       | _ -> ()
@@ -185,11 +185,11 @@ let has_var_children bbdfns children =
     false
   with Found -> true
 
-let has_fun_children bbdfns children =
+let has_fun_children bsym_table children =
   try
     iter
     (fun i ->
-      let id,parent,sr,entry = hfind "has_fun_children" bbdfns i in
+      let id,parent,sr,entry = hfind "has_fun_children" bsym_table i in
       match entry with
       | BBDCL_procedure _
       | BBDCL_function _ -> raise Found
@@ -200,11 +200,11 @@ let has_fun_children bbdfns children =
    false 
   with Found -> true
  
-let has_proc_children bbdfns children =
+let has_proc_children bsym_table children =
   try
     iter
     (fun i -> 
-      let id,parent,sr,entry = hfind "has_proc_children" bbdfns i in
+      let id,parent,sr,entry = hfind "has_proc_children" bsym_table i in
       match entry with
       | BBDCL_procedure _ -> raise Found
       | _ -> ()
@@ -221,7 +221,7 @@ let has_proc_children bbdfns children =
 *)
 exception Unsafe
 
-let type_has_fn cache syms bbdfns children t =
+let type_has_fn cache syms bsym_table children t =
   let rec aux t =
     let check_components vs ts tlist =
       let varmap = mk_varmap vs ts in
@@ -246,12 +246,12 @@ let type_has_fn cache syms bbdfns children t =
       Hashtbl.add cache t `Recurse;
       match t with
       | BTYP_function _ ->
-        (* if has_fun bbdfns children then *)
+        (* if has_fun bsym_table children then *)
         Hashtbl.replace cache t `Unsafe;
         raise Unsafe
 
       | BTYP_inst (i,ts) ->
-        let id,parent,sr,entry = hfind "type_has_fun: inst" bbdfns i in
+        let id,parent,sr,entry = hfind "type_has_fun: inst" bsym_table i in
         begin match entry with
         | BBDCL_newtype _ -> () (* FIXME *)
         | BBDCL_abs _ -> ()
@@ -274,7 +274,7 @@ let type_has_fn cache syms bbdfns children t =
 
   in try aux t; false with Unsafe -> true
 
-let type_has_ptr cache syms bbdfns children t =
+let type_has_ptr cache syms bsym_table children t =
   let rec aux t =
     let check_components vs ts tlist =
       let varmap = mk_varmap vs ts in
@@ -303,7 +303,7 @@ let type_has_ptr cache syms bbdfns children t =
         Hashtbl.replace cache t `Unsafe;
         raise Unsafe
       | BTYP_inst (i,ts) ->
-        let id,parent,sr,entry = hfind "type_has_ptr: inst" bbdfns i in
+        let id,parent,sr,entry = hfind "type_has_ptr: inst" bsym_table i in
         begin match entry with
         | BBDCL_newtype _ -> () (* FIXME *)
         | BBDCL_abs _ -> ()
@@ -326,15 +326,15 @@ let type_has_ptr cache syms bbdfns children t =
 
   in try aux t; false with Unsafe -> true
 
-let can_stack_func fn_cache ptr_cache syms (child_map,bbdfns) i =
+let can_stack_func syms bsym_table child_map fn_cache ptr_cache i =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
-  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  let id,parent,sr,entry = Hashtbl.find bsym_table i in
   match entry with
   | BBDCL_function (_,_,_,ret,_) ->
-    let has_vars = has_var_children bbdfns children in
-    let has_funs = has_fun_children bbdfns children in
-    let returns_fun = type_has_fn fn_cache syms bbdfns children ret in
-    let returns_ptr = type_has_ptr ptr_cache syms bbdfns children ret in
+    let has_vars = has_var_children bsym_table children in
+    let has_funs = has_fun_children bsym_table children in
+    let returns_fun = type_has_fn fn_cache syms bsym_table children ret in
+    let returns_ptr = type_has_ptr ptr_cache syms bsym_table children ret in
     let can_stack = 
       (* if we have a child function and return a function, it might be
        * the child so we cannot stack. If we have variables and return
@@ -367,9 +367,19 @@ let can_stack_func fn_cache ptr_cache syms (child_map,bbdfns) i =
 
 exception Unstackable
 
-let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map label_usage i recstop =
+let rec can_stack_proc
+  syms
+  bsym_table
+  child_map
+  fn_cache
+  ptr_cache
+  label_map
+  label_usage
+  i
+  recstop
+=
   let children = try Hashtbl.find child_map i with Not_found -> [] in
-  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  let id,parent,sr,entry = Hashtbl.find bsym_table i in
   (*
   print_endline ("Stackability Checking procedure " ^ id);
   *)
@@ -378,11 +388,11 @@ let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map labe
     (* if a procedure has procedural children they can do anything naughty
      * a recursive check would be more aggressive
     *)
-    if has_proc_children bbdfns children then false else 
+    if has_proc_children bsym_table children then false else
     let labels = hfind "label_map" label_map i in
     begin try iter (fun exe ->
     (*
-    print_endline (string_of_bexe syms.dfns 0 exe);
+    print_endline (string_of_bexe syms.sym_table 0 exe);
     *)
     match exe with
 
@@ -400,7 +410,16 @@ let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map labe
     (* this case needed for virtuals/typeclasses .. *)
     | BEXE_call_prim (_,j,_,_)
       ->
-      if not (check_stackable_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map label_usage j (i::recstop))
+      if not (check_stackable_proc
+        syms
+        bsym_table
+        child_map
+        fn_cache
+        ptr_cache
+        label_map
+        label_usage
+        j
+        (i::recstop))
       then begin
         (*
         print_endline (id ^ " calls unstackable proc " ^ si j);
@@ -417,10 +436,10 @@ let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map labe
     | BEXE_init (sr,_,(_,t))
     | BEXE_assign (sr,(_,t),_)
       when 
-        let has_vars = has_var_children bbdfns children in
-        let has_funs = has_fun_children bbdfns children in
-        let returns_fun = type_has_fn fn_cache syms bbdfns children t in
-        let returns_ptr = type_has_ptr ptr_cache syms bbdfns children t in
+        let has_vars = has_var_children bsym_table children in
+        let has_funs = has_fun_children bsym_table children in
+        let returns_fun = type_has_fn fn_cache syms bsym_table children t in
+        let returns_ptr = type_has_ptr ptr_cache syms bsym_table children t in
         let can_stack = 
           (* this is the similar to a function, except we're talking
            * about storing a value in an external variable instead
@@ -476,7 +495,7 @@ let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map labe
 
     | BEXE_goto (_,s) ->
       begin
-        match Flx_label.find_label bbdfns label_map i s with
+        match Flx_label.find_label bsym_table label_map i s with
         | `Nonlocal _ ->
           (*
           print_endline (id ^ " does non-local goto");
@@ -522,31 +541,41 @@ let rec can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map labe
 
   | _ -> assert false
 
-and check_stackable_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map label_usage i recstop =
+and check_stackable_proc
+  syms
+  bsym_table
+  child_map
+  fn_cache
+  ptr_cache
+  label_map
+  label_usage
+  i
+  recstop
+=
   if mem i recstop then true else
-  let id,parent,sr,entry = Hashtbl.find bbdfns i in
+  let id,parent,sr,entry = Hashtbl.find bsym_table i in
   match entry with
   | BBDCL_callback _ -> false (* not sure if this is right .. *)
   | BBDCL_proc (_,_,_,ct,_) -> ct <> CS_virtual
   | BBDCL_procedure (props,vs,p,exes) ->
     if mem `Stackable props then true
     else if mem `Unstackable props then false
-    else if can_stack_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map label_usage i recstop
+    else if can_stack_proc syms bsym_table child_map fn_cache ptr_cache label_map label_usage i recstop
     then begin
       (*
       print_endline ("MARKING PROCEDURE " ^ id ^ " stackable!");
       *)
       let props = `Stackable :: props in
       let props =
-        if is_pure syms (child_map,bbdfns) i then `Pure :: props else props
+        if is_pure syms (child_map,bsym_table) i then `Pure :: props else props
       in
       let entry : bbdcl_t = BBDCL_procedure (props,vs,p,exes) in
-      Hashtbl.replace bbdfns i (id,parent,sr,entry);
+      Hashtbl.replace bsym_table i (id,parent,sr,entry);
       true
     end
     else begin
       let entry : bbdcl_t = BBDCL_procedure (`Unstackable :: props,vs,p,exes) in
-      Hashtbl.replace bbdfns i (id,parent,sr,entry);
+      Hashtbl.replace bsym_table i (id,parent,sr,entry);
       false
     end
   | _ -> failwith ("Unexpected non-procedure " ^ id)
@@ -564,15 +593,15 @@ let tident t = t
   apply_struct -- apply struct, cstruct, or nonconst variant type constructor
   apply        -- general apply
 *)
-let rec enstack_applies fn_cache ptr_cache syms (child_map, bbdfns) x =
-  let ea e = enstack_applies fn_cache ptr_cache syms (child_map, bbdfns) e in
+let rec enstack_applies syms bsym_table child_map fn_cache ptr_cache x =
+  let ea e = enstack_applies syms bsym_table child_map fn_cache ptr_cache e in
   match map_tbexpr ident ea tident x with
   | (
        BEXPR_apply ((BEXPR_closure(i,ts),_),b),t
      | BEXPR_apply_direct (i,ts,b),t
     ) as x ->
       begin
-        let _,_,_,entry = Hashtbl.find bbdfns i in
+        let _,_,_,entry = Hashtbl.find bsym_table i in
         match entry with
         | BBDCL_function (props,_,_,_,_) ->
           if mem `Stackable props
@@ -590,16 +619,16 @@ let rec enstack_applies fn_cache ptr_cache syms (child_map, bbdfns) x =
       end
   | x -> x
 
-let mark_stackable fn_cache ptr_cache syms (child_map,bbdfns) label_map label_usage =
+let mark_stackable syms bsym_table child_map fn_cache ptr_cache label_map label_usage =
   Hashtbl.iter
   (fun i (id,parent,sr,entry) ->
     match entry with
     | BBDCL_function (props,vs,p,ret,exes) ->
       let props: property_t list ref = ref props in
-      if can_stack_func fn_cache ptr_cache syms (child_map,bbdfns) i then
+      if can_stack_func syms bsym_table child_map fn_cache ptr_cache i then
       begin
         props := `Stackable :: !props;
-        if is_pure syms (child_map,bbdfns) i then
+        if is_pure syms (child_map,bsym_table) i then
         begin
           (*
           print_endline ("Function " ^ id ^ "<" ^ si i ^ "> is PURE");
@@ -617,30 +646,39 @@ let mark_stackable fn_cache ptr_cache syms (child_map,bbdfns) label_map label_us
       ;
       let props : property_t list = !props in
       let entry : bbdcl_t = BBDCL_function (props,vs,p,ret,exes) in
-      Hashtbl.replace bbdfns i (id,parent,sr,entry)
+      Hashtbl.replace bsym_table i (id,parent,sr,entry)
 
     | BBDCL_procedure (props,vs,p,exes) ->
-      if mem `Stackable props or mem `Unstackable props then ()
-      else ignore(check_stackable_proc fn_cache ptr_cache syms (child_map,bbdfns) label_map label_usage i [])
+      if mem `Stackable props or mem `Unstackable props then () else
+      ignore(check_stackable_proc
+        syms
+        bsym_table
+        child_map
+        fn_cache
+        ptr_cache
+        label_map
+        label_usage
+        i
+        [])
     | _ -> ()
   )
-  bbdfns
+  bsym_table
 
-let enstack_calls fn_cache ptr_cache syms (child_map,bbdfns) self exes =
-  let ea e = enstack_applies fn_cache ptr_cache syms (child_map, bbdfns) e in
+let enstack_calls syms bsym_table child_map fn_cache ptr_cache self exes =
+  let ea e = enstack_applies syms bsym_table child_map fn_cache ptr_cache e in
   let id x = x in
   let exes =
     map (
       fun exe -> let exe = match exe with
       | BEXE_call (sr,(BEXPR_closure (i,ts),_),a)
       | BEXE_call_direct (sr,i,ts,a) ->
-        let id,parent,sr,entry = Hashtbl.find bbdfns i in
+        let id,parent,sr,entry = Hashtbl.find bsym_table i in
         begin match entry with
         | BBDCL_procedure (props,vs,p,exes) ->
           if mem `Stackable props then
           begin
             if not (mem `Stack_closure props) then
-              Hashtbl.replace bbdfns i (id,parent,sr,BBDCL_procedure (`Stack_closure::props,vs,p,exes))
+              Hashtbl.replace bsym_table i (id,parent,sr,BBDCL_procedure (`Stack_closure::props,vs,p,exes))
             ;
             BEXE_call_stack (sr,i,ts,a)
           end
@@ -665,34 +703,66 @@ let enstack_calls fn_cache ptr_cache syms (child_map,bbdfns) self exes =
 
 let make_stack_calls
   syms
-  (child_map, (bbdfns: fully_bound_symbol_table_t))
+  bsym_table
+  child_map
   label_map
   label_usage
 =
   let fn_cache, ptr_cache = Hashtbl.create 97 , Hashtbl.create 97 in
-  let ea e = enstack_applies fn_cache ptr_cache syms (child_map, bbdfns) e in
-  mark_stackable fn_cache ptr_cache syms (child_map,bbdfns) label_map label_usage;
+  let ea e = enstack_applies syms bsym_table child_map fn_cache ptr_cache e in
+
+  mark_stackable
+    syms
+    bsym_table
+    child_map
+    fn_cache
+    ptr_cache
+    label_map
+    label_usage;
+
   Hashtbl.iter
   (fun i (id,parent,sr,entry) -> match entry with
     | BBDCL_procedure (props,vs,p,exes) ->
-      let exes = enstack_calls fn_cache ptr_cache syms (child_map,bbdfns) i exes in
+      let exes = enstack_calls
+        syms
+        bsym_table
+        child_map
+        fn_cache
+        ptr_cache
+        i
+        exes
+      in
       let exes = Flx_cflow.final_tailcall_opt exes in
-      let id,parent,sr,entry = Hashtbl.find bbdfns i in
+      let id,parent,sr,entry = Hashtbl.find bsym_table i in
       begin match entry with
       | BBDCL_procedure (props,vs,p,_) ->
-        Hashtbl.replace bbdfns i (id,parent,sr,BBDCL_procedure (props,vs,p,exes))
+        Hashtbl.replace
+          bsym_table
+          i
+          (id,parent,sr,BBDCL_procedure (props,vs,p,exes))
       | _ -> assert false
       end
 
     | BBDCL_function (props,vs,p,ret,exes) ->
-      let exes = enstack_calls fn_cache ptr_cache syms (child_map,bbdfns) i exes in
-      let id,parent,sr,entry = Hashtbl.find bbdfns i in
+      let exes = enstack_calls
+        syms
+        bsym_table
+        child_map
+        fn_cache
+        ptr_cache
+        i
+        exes
+      in
+      let id,parent,sr,entry = Hashtbl.find bsym_table i in
       begin match entry with
       | BBDCL_function (props,vs,p,ret,_) ->
-        Hashtbl.replace bbdfns i (id,parent,sr,BBDCL_function (props,vs,p,ret,exes))
+        Hashtbl.replace
+          bsym_table
+          i
+          (id,parent,sr,BBDCL_function (props,vs,p,ret,exes))
       | _ -> assert false
       end
 
     | _ -> ()
   )
-  bbdfns
+  bsym_table

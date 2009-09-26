@@ -14,20 +14,20 @@ open Flx_prop
 
 type closure_state_t = {
   syms: Flx_mtypes2.sym_state_t;
-  bbdfns: Flx_types.fully_bound_symbol_table_t;
+  bsym_table: Flx_types.bsym_table_t;
   wrappers : (Flx_types.bid_t, Flx_types.bid_t) Hashtbl.t;
 }
 
-let make_closure_state syms bbdfns =
+let make_closure_state syms bsym_table =
   {
     syms = syms;
-    bbdfns = bbdfns;
+    bsym_table = bsym_table;
     wrappers = Hashtbl.create 97;
   }
 
 let gen_closure state i =
   let j = !(state.syms.counter) in incr state.syms.counter;
-  let id,parent,sr,entry = Hashtbl.find state.bbdfns i in
+  let id,parent,sr,entry = Hashtbl.find state.bsym_table i in
   match entry with
   | BBDCL_proc (props,vs,ps,c,reqs) ->
     let arg_t =
@@ -38,7 +38,7 @@ let gen_closure state i =
       let n = !(state.syms.counter) in incr state.syms.counter;
       let name = "_a" ^ si n in
       let ventry = BBDCL_val (vs,arg_t) in
-      Hashtbl.add state.bbdfns n (name,Some j,sr,ventry);
+      Hashtbl.add state.bsym_table n (name,Some j,sr,ventry);
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
     in
 
@@ -49,7 +49,7 @@ let gen_closure state i =
       ]
     in
     let entry = BBDCL_procedure ([],vs,(ps,None),exes) in
-    Hashtbl.add state.bbdfns j (id,parent,sr,entry);
+    Hashtbl.add state.bsym_table j (id,parent,sr,entry);
     j
 
   | BBDCL_fun (props,vs,ps,ret,c,reqs,_) ->
@@ -61,13 +61,13 @@ let gen_closure state i =
       let n = !(state.syms.counter) in incr state.syms.counter;
       let name = "_a" ^ si n in
       let ventry = BBDCL_val (vs,arg_t) in
-      Hashtbl.add state.bbdfns n (name,Some j,sr,ventry);
+      Hashtbl.add state.bsym_table n (name,Some j,sr,ventry);
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
     in
     let e = BEXPR_apply_prim (i,ts,a),ret in
     let exes : bexe_t list = [BEXE_fun_return (sr,e)] in
     let entry = BBDCL_function ([],vs,(ps,None),ret,exes) in
-    Hashtbl.add state.bbdfns j (id,parent,sr,entry);
+    Hashtbl.add state.bsym_table j (id,parent,sr,entry);
     j
 
   | _ -> assert false
@@ -85,7 +85,7 @@ let mkcls state all_closures i ts =
     BEXPR_closure (j,ts)
 
 let check_prim state all_closures i ts =
-  let _,_,_,entry = Hashtbl.find state.bbdfns i in
+  let _,_,_,entry = Hashtbl.find state.bsym_table i in
   match entry with
   | BBDCL_proc _
   | BBDCL_fun _ ->
@@ -166,17 +166,17 @@ let process_exes state all_closures exes =
 
 let process_entry state all_closures i =
   let ue e = adj_cls state all_closures e in
-  let id,parent,sr,entry = Hashtbl.find state.bbdfns i in
+  let id,parent,sr,entry = Hashtbl.find state.bsym_table i in
   match entry with
   | BBDCL_function (props,vs,ps,ret,exes) ->
     let exes = process_exes state all_closures exes in
     let entry = BBDCL_function (props,vs,ps,ret,exes) in
-    Hashtbl.replace state.bbdfns i (id,parent,sr,entry)
+    Hashtbl.replace state.bsym_table i (id,parent,sr,entry)
 
   | BBDCL_procedure (props,vs,ps,exes) ->
     let exes = process_exes state all_closures exes in
     let entry = BBDCL_procedure (props,vs,ps,exes) in
-    Hashtbl.replace state.bbdfns i (id,parent,sr,entry)
+    Hashtbl.replace state.bsym_table i (id,parent,sr,entry)
 
   | _ -> ()
 
@@ -190,23 +190,23 @@ let process_entry state all_closures i =
   enstack has already run .. won't affect enstack.
 *)
 
-let set_closure bbdfns i = add_prop bbdfns `Heap_closure i
+let set_closure bsym_table i = add_prop bsym_table `Heap_closure i
 
 let make_closure state index symbol =
   let all_closures = ref IntSet.empty in
-  let used = full_use_closure_for_symbol state.syms state.bbdfns index symbol in
+  let used = full_use_closure_for_symbol state.syms state.bsym_table index symbol in
   IntSet.iter (process_entry state all_closures) used;
-  IntSet.iter (set_closure state.bbdfns) !all_closures
+  IntSet.iter (set_closure state.bsym_table) !all_closures
 
 let make_closures state =
   (*
   let used = ref IntSet.empty in
-  let uses i = Flx_use.uses state.syms used bbdfns true i in
+  let uses i = Flx_use.uses state.syms used bsym_table true i in
   IntSet.iter uses !(state.syms.roots);
   *)
 
   let all_closures = ref IntSet.empty in
-  let used = full_use_closure state.syms state.bbdfns in
+  let used = full_use_closure state.syms state.bsym_table in
   IntSet.iter (process_entry state all_closures) used;
 
   (*
@@ -214,11 +214,11 @@ let make_closures state =
   Hashtbl.iter
   ( fun i entries ->
     iter (fun (vs,con,ts,j) ->
-    set_closure state.bbdfns i;
-    process_entry state.syms state.bbdfns all_closures j;
+    set_closure state.bsym_table i;
+    process_entry state.syms state.bsym_table all_closures j;
 
     (*
-    set_closure state.bbdfns j;
+    set_closure state.bsym_table j;
     *)
     )
     entries
@@ -228,10 +228,10 @@ let make_closures state =
   *)
 
   (*
-  IntSet.iter (set_closure state.bbdfns `Heap_closure) (IntSet.union !all_closures !(syms.roots));
+  IntSet.iter (set_closure state.bsym_table `Heap_closure) (IntSet.union !all_closures !(syms.roots));
   *)
 
   (* Now root proc might not need a closure .. since it can be
      executed all at once
   *)
-  IntSet.iter (set_closure state.bbdfns) !all_closures
+  IntSet.iter (set_closure state.bsym_table) !all_closures

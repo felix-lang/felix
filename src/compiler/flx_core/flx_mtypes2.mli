@@ -37,11 +37,11 @@ type felix_compiler_options_t =
 
 type sym_state_t =
 {
-  dfns : Flx_types.symbol_table_t;
-  counter : int ref;
+  sym_table : Flx_types.sym_table_t;
+  counter : Flx_types.bid_t ref;
   varmap : Flx_types.typevarmap_t;
-  ticache : (int, Flx_types.btypecode_t) Hashtbl.t;
-  env_cache : (int, Flx_types.env_t) Hashtbl.t;
+  ticache : (Flx_types.bid_t, Flx_types.btypecode_t) Hashtbl.t;
+  env_cache : (Flx_types.bid_t, Flx_types.env_t) Hashtbl.t;
   registry : Flx_types.type_registry_t;
   compiler_options : felix_compiler_options_t;
   instances : instance_registry_t;

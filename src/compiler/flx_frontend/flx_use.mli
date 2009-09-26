@@ -9,7 +9,7 @@ open Flx_mtypes2
 
 val find_roots:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   bid_t ->
   biface_t list -> unit
 
@@ -17,7 +17,7 @@ val find_roots:
 val uses_type:
   sym_state_t ->
   IntSet.t ref ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   bool -> (* count inits *)
   btypecode_t ->
   unit
@@ -25,7 +25,7 @@ val uses_type:
 val uses_tbexpr:
   sym_state_t ->
   IntSet.t ref ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   bool -> (* count inits *)
   tbexpr_t ->
   unit
@@ -33,7 +33,7 @@ val uses_tbexpr:
 val uses:
   sym_state_t ->
   IntSet.t ref ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   bool -> (* true to count initialisations as uses *)
   int ->
   unit
@@ -42,25 +42,25 @@ val uses:
 (* counts initialisation as use *)
 val full_use_closure_for_symbol:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   Flx_types.bid_t ->
-  Flx_types.symbol_data3_t ->
+  Flx_types.bsym_t ->
   IntSet.t
 
 (* counts initialisation as use *)
 val full_use_closure:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   IntSet.t
 
 (* conditionally count initialisation as use *)
 val cal_use_closure:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   bool ->
   IntSet.t
 
 val copy_used:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
-  fully_bound_symbol_table_t
+  bsym_table_t ->
+  bsym_table_t

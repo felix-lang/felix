@@ -25,7 +25,7 @@ let hfind msg h k =
   THIS IS A DUMMY BOUND SYMBOL TABLE
   REQUIRED FOR THE PRINTING OF BOUND EXPRESSIONS
 *)
-let bbdfns = Hashtbl.create 97
+let bsym_table = Hashtbl.create 97
 
 let dummy_sr = Flx_srcref.make_dummy "[flx_lookup] generated"
 
@@ -50,7 +50,7 @@ exception Tfound of btypecode_t
 
 type kind_t = Parameter | Other
 
-let get_data table index : symbol_data_t =
+let get_data table index : sym_t =
   try Hashtbl.find table index
   with Not_found ->
     failwith ("[Flx_lookup.get_data] No definition of <" ^ string_of_int index ^ ">")
@@ -169,7 +169,7 @@ let rec trclose syms rs sr fs =
         (* say we're handling this one *)
         exclude := EntrySet.add x !exclude;
 
-        match hfind "lookup" syms.dfns (sye x) with
+        match hfind "lookup" syms.sym_table (sye x) with
         | {parent=parent; sr=sr2; symdef=SYMDEF_inherit_fun qn} ->
           let env = build_env syms parent in
           begin match fst (lookup_qn_in_env2' syms env rs qn) with
@@ -189,7 +189,7 @@ let rec trclose syms rs sr fs =
 and resolve_inherits syms rs sr x =
   match x with
   | NonFunctionEntry z ->
-    begin match hfind "lookup" syms.dfns (sye z) with
+    begin match hfind "lookup" syms.sym_table (sye z) with
     | {parent=parent; symdef=SYMDEF_inherit qn} ->
       (*
       print_endline ("Found an inherit symbol qn=" ^ string_of_qualified_name qn);
@@ -362,19 +362,19 @@ and inner_bind_type syms env sr rs t : btypecode_t =
     with
       | Free_fixpoint b ->
         clierr sr
-        ("Unresolvable recursive type " ^ sbt syms.dfns b)
+        ("Unresolvable recursive type " ^ sbt syms.sym_table b)
       | Not_found ->
         failwith "Bind type' failed with Not_found"
   in
   (*
-  print_endline ("Bound type= " ^ sbt syms.dfns bt);
+  print_endline ("Bound type= " ^ sbt syms.sym_table bt);
   *)
   let bt =
     try beta_reduce syms sr bt
-    with Not_found -> failwith ("Beta reduce failed with Not_found " ^ sbt syms.dfns bt)
+    with Not_found -> failwith ("Beta reduce failed with Not_found " ^ sbt syms.sym_table bt)
   in
     (*
-    print_endline ("Beta reduced type= " ^ sbt syms.dfns bt);
+    print_endline ("Beta reduced type= " ^ sbt syms.sym_table bt);
     *)
     bt
 
@@ -385,7 +385,7 @@ and inner_bind_expression syms env rs e  =
      let x = bind_expression' syms env rs e [] in
      (*
      print_endline ("Bound expression " ^
-       string_of_bound_expression_with_type syms.dfns x
+       string_of_bound_expression_with_type syms.sym_table x
      );
      *)
      x
@@ -675,7 +675,7 @@ and bind_type'
   begin
     print_endline ("  [" ^
     catmap ", "
-    (fun (s,t) -> s ^ " -> " ^ sbt syms.dfns t)
+    (fun (s,t) -> s ^ " -> " ^ sbt syms.sym_table t)
     params
     ^ "]"
     )
@@ -701,8 +701,8 @@ and bind_type'
   | TYP_type_match (t,ps) ->
     let t = bt t in
     (*
-    print_endline ("Typematch " ^ sbt syms.dfns t);
-    print_endline ("Context " ^ catmap "" (fun (n,t) -> "\n"^ n ^ " -> " ^ sbt syms.dfns t) params);
+    print_endline ("Typematch " ^ sbt syms.sym_table t);
+    print_endline ("Context " ^ catmap "" (fun (n,t) -> "\n"^ n ^ " -> " ^ sbt syms.sym_table t) params);
     *)
     let pts = ref [] in
     let finished = ref false in
@@ -744,10 +744,10 @@ and bind_type'
       let t' = btp t' (params@args) in
       let t' = list_subst syms.counter eqns t' in
       (*
-        print_endline ("Bound matching is " ^ sbt syms.dfns p' ^ " => " ^ sbt syms.dfns t');
+        print_endline ("Bound matching is " ^ sbt syms.sym_table p' ^ " => " ^ sbt syms.sym_table t');
       *)
       pts := ({pattern=p'; pattern_vars=varset; assignments=eqns},t') :: !pts;
-      let u = maybe_unification syms.counter syms.dfns [p', t] in
+      let u = maybe_unification syms.counter syms.sym_table [p', t] in
       match u with
       | None ->  ()
         (* CRAP! The below argument is correct BUT ..
@@ -764,9 +764,9 @@ and bind_type'
         (*
         clierr sr
           ("[bind_type'] type match argument\n" ^
-          sbt syms.dfns t ^
+          sbt syms.sym_table t ^
           "\nwill never unify with pattern\n" ^
-          sbt syms.dfns p'
+          sbt syms.sym_table p'
           )
         *)
       | Some mgu ->
@@ -782,7 +782,7 @@ and bind_type'
 
     let tm = BTYP_type_match (t,pts) in
     (*
-    print_endline ("Bound typematch is " ^ sbt syms.dfns tm);
+    print_endline ("Bound typematch is " ^ sbt syms.sym_table tm);
     *)
     tm
 
@@ -793,8 +793,8 @@ and bind_type'
 
   | TYP_proj (i,t) ->
     let t = bt t in
-    ignore (try unfold syms.dfns t with _ -> failwith "TYP_proj unfold screwd");
-    begin match unfold syms.dfns t with
+    ignore (try unfold syms.sym_table t with _ -> failwith "TYP_proj unfold screwd");
+    begin match unfold syms.sym_table t with
     | BTYP_tuple ls ->
       if i < 1 or i> List.length ls
       then
@@ -816,7 +816,7 @@ and bind_type'
 
   | TYP_dom t ->
     let t = bt t in
-    begin match unfold syms.dfns t with
+    begin match unfold syms.sym_table t with
     | BTYP_function (a,b) -> a
     | BTYP_cfunction (a,b) -> a
     | _ ->
@@ -828,7 +828,7 @@ and bind_type'
     end
   | TYP_cod t ->
     let t = bt t in
-    begin match unfold syms.dfns t with
+    begin match unfold syms.sym_table t with
     | BTYP_function (a,b) -> b
     | BTYP_cfunction (a,b) -> b
     | _ ->
@@ -841,8 +841,8 @@ and bind_type'
 
   | TYP_case_arg (i,t) ->
     let t = bt t in
-    ignore (try unfold syms.dfns t with _ -> failwith "TYP_case_arg unfold screwd");
-    begin match unfold syms.dfns t with
+    ignore (try unfold syms.sym_table t with _ -> failwith "TYP_case_arg unfold screwd");
+    begin match unfold syms.sym_table t with
     | BTYP_unitsum k ->
       if i < 0 or i >= k
       then
@@ -927,7 +927,7 @@ and bind_type'
       end
     in
       (*
-      print_endline ("typeof --> " ^ sbt syms.dfns t);
+      print_endline ("typeof --> " ^ sbt syms.sym_table t);
       *)
       t
 
@@ -995,14 +995,14 @@ and bind_type'
     let pnames =  (* reverse order .. *)
       List.map (fun (n, t, i) ->
         (*
-        print_endline ("Binding param " ^ n ^ "<" ^ si i ^ "> metatype " ^ sbt syms.dfns t);
+        print_endline ("Binding param " ^ n ^ "<" ^ si i ^ "> metatype " ^ sbt syms.sym_table t);
         *)
         (n,BTYP_var (i,t))) data
     in
     let bbody =
       (*
       print_endline (" ... binding body .. " ^ string_of_typecode body);
-      print_endline ("Context " ^ catmap "" (fun (n,t) -> "\n"^ n ^ " -> " ^ sbt syms.dfns t) (pnames @ params));
+      print_endline ("Context " ^ catmap "" (fun (n,t) -> "\n"^ n ^ " -> " ^ sbt syms.sym_table t) (pnames @ params));
       *)
       bind_type' syms env { rs with depth=rs.depth+1 }
       sr
@@ -1043,7 +1043,7 @@ and bind_type'
       | _ -> clierr sr "Sum of unitsums required"
       ) 1 t)
 
-    | _ -> clierr sr ("Cannot flatten type " ^ sbt syms.dfns t2)
+    | _ -> clierr sr ("Cannot flatten type " ^ sbt syms.sym_table t2)
     end
 
   | TYP_apply (TYP_void _ as qn, t2)
@@ -1064,11 +1064,11 @@ and bind_type'
      *)
      let t2 = bt t2 in
      (*
-     print_endline ("meta typing argument " ^ sbt syms.dfns t2);
+     print_endline ("meta typing argument " ^ sbt syms.sym_table t2);
      *)
      let sign = metatype syms sr t2 in
      (*
-     print_endline ("Arg type " ^ sbt syms.dfns t2 ^ " meta type " ^ sbt syms.dfns sign);
+     print_endline ("Arg type " ^ sbt syms.sym_table t2 ^ " meta type " ^ sbt syms.sym_table sign);
      *)
      let t =
        try match qn with
@@ -1091,26 +1091,26 @@ and bind_type'
          of the actual constructor ..
        *)
        (*
-       print_endline ("Lookup type qn " ^ string_of_qualified_name qn ^ " with sig " ^ sbt syms.dfns sign);
+       print_endline ("Lookup type qn " ^ string_of_qualified_name qn ^ " with sig " ^ sbt syms.sym_table sign);
        *)
        let t1 = lookup_type_qn_with_sig' syms sr sr env
          {rs with depth=rs.depth+1 } qn [sign]
        in
        (*
-       print_endline ("DONE: Lookup type qn " ^ string_of_qualified_name qn ^ " with sig " ^ sbt syms.dfns sign);
+       print_endline ("DONE: Lookup type qn " ^ string_of_qualified_name qn ^ " with sig " ^ sbt syms.sym_table sign);
        let t1 = bisub j ts in
        *)
        (*
-       print_endline ("Result of binding function term is " ^ sbt syms.dfns t1);
+       print_endline ("Result of binding function term is " ^ sbt syms.sym_table t1);
        *)
        BTYP_apply (t1,t2)
      in
      (*
-     print_endline ("type Application is " ^ sbt syms.dfns t);
+     print_endline ("type Application is " ^ sbt syms.sym_table t);
      let t = beta_reduce syms sr t in
      *)
      (*
-     print_endline ("after beta reduction is " ^ sbt syms.dfns t);
+     print_endline ("after beta reduction is " ^ sbt syms.sym_table t);
      *)
      t
 
@@ -1143,7 +1143,7 @@ and bind_type'
     print_endline ("[bind type] AST_index " ^ string_of_qualified_name x);
     *)
     let { vs=vs; symdef=entry } =
-      try hfind "lookup" syms.dfns index
+      try hfind "lookup" syms.sym_table index
       with Not_found ->
         syserr sr ("Synthetic name "^name ^ " not in symbol table!")
     in
@@ -1168,7 +1168,7 @@ and bind_type'
       in
       (*
       print_endline ("Synthetic name "^name ^ "<"^si index^"> is a nominal type, ts=" ^
-      catmap "," (sbt syms.dfns) ts
+      catmap "," (sbt syms.sym_table) ts
       );
       *)
       BTYP_inst (index,ts)
@@ -1194,7 +1194,7 @@ and bind_type'
        let ts = List.map bt ts in
        let f =  bi (sye index) ts in
        (*
-       print_endline ("f = " ^ sbt syms.dfns f);
+       print_endline ("f = " ^ sbt syms.sym_table f);
        *)
        f
 
@@ -1212,7 +1212,7 @@ and bind_type'
        *)
 
     | NonFunctionEntry index  ->
-      let {id=id; vs=vs; sr=sr;symdef=entry} = hfind "lookup" syms.dfns (sye index) in
+      let {id=id; vs=vs; sr=sr;symdef=entry} = hfind "lookup" syms.sym_table (sye index) in
       (*
       print_endline ("NON FUNCTION ENTRY " ^ id);
       *)
@@ -1270,9 +1270,9 @@ and bind_type'
       (*
       print_endline ("Qualified name lookup finds index " ^ si i);
       print_endline ("spec_vs=" ^ catmap "," (fun (s,j)->s^"<"^si j^">") spec_vs);
-      print_endline ("spec_ts=" ^ catmap "," (sbt syms.dfns) sub_ts);
-      print_endline ("input_ts=" ^ catmap "," (sbt syms.dfns) ts);
-      begin match hfind "lookup" syms.dfns i with
+      print_endline ("spec_ts=" ^ catmap "," (sbt syms.sym_table) sub_ts);
+      print_endline ("input_ts=" ^ catmap "," (sbt syms.sym_table) ts);
+      begin match hfind "lookup" syms.sym_table i with
         | {id=id;vs=vs;symdef=SYMDEF_typevar _} ->
           print_endline (id ^ " is a typevariable, vs=" ^
             catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
@@ -1285,9 +1285,9 @@ and bind_type'
       if List.length ts != List.length spec_vs then begin
         print_endline ("Qualified name lookup finds index " ^ si i);
         print_endline ("spec_vs=" ^ catmap "," (fun (s,j)->s^"<"^si j^">") spec_vs);
-        print_endline ("spec_ts=" ^ catmap "," (sbt syms.dfns) sub_ts);
-        print_endline ("input_ts=" ^ catmap "," (sbt syms.dfns) ts);
-        begin match hfind "lookup" syms.dfns i with
+        print_endline ("spec_ts=" ^ catmap "," (sbt syms.sym_table) sub_ts);
+        print_endline ("input_ts=" ^ catmap "," (sbt syms.sym_table) ts);
+        begin match hfind "lookup" syms.sym_table i with
           | {id=id;vs=vs;symdef=SYMDEF_typevar _} ->
             print_endline (id ^ " is a typevariable, vs=" ^
               catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
@@ -1316,12 +1316,12 @@ and bind_type'
     | _  -> clierr sr
       (
         "[typecode_of_expr] Type expected, got: " ^
-        sbe syms.dfns bbdfns result
+        sbe syms.sym_table bsym_table result
       )
     end
   in
     (*
-    print_endline ("Bound type is " ^ sbt syms.dfns t);
+    print_endline ("Bound type is " ^ sbt syms.sym_table t);
     *)
     t
 
@@ -1333,7 +1333,7 @@ and cal_assoc_type syms sr t =
     | h::t ->
       List.fold_left (fun acc t ->
         if acc <> t then
-          clierr sr ("[cal_assoc_type] typeset elements should all be assoc type " ^ sbt syms.dfns acc)
+          clierr sr ("[cal_assoc_type] typeset elements should all be assoc type " ^ sbt syms.sym_table acc)
         ;
         acc
      ) h t
@@ -1370,7 +1370,7 @@ and cal_assoc_type syms sr t =
     let ls = List.map snd ls in
     let ls = List.map ct ls in chk ls
 
-  | _ -> clierr sr ("Don't know what to make of " ^ sbt syms.dfns t)
+  | _ -> clierr sr ("Don't know what to make of " ^ sbt syms.sym_table t)
 
 and bind_type_index syms (rs:recstop)
   sr index ts mkenv
@@ -1379,7 +1379,7 @@ and bind_type_index syms (rs:recstop)
   print_endline
   (
     "BINDING INDEX " ^ string_of_int index ^
-    " with ["^ catmap ", " (sbt syms.dfns) ts^ "]"
+    " with ["^ catmap ", " (sbt syms.sym_table) ts^ "]"
   );
   print_endline ("type alias fixlist is " ^ catmap ","
     (fun (i,j) -> si i ^ "(depth "^si j^")") type_alias_fixlist
@@ -1391,7 +1391,7 @@ and bind_type_index syms (rs:recstop)
     print_endline (
       "Making fixpoint for Recursive type alias " ^
       (
-        match get_data syms.dfns index with {id=id;sr=sr}->
+        match get_data syms.sym_table index with {id=id;sr=sr}->
           id ^ " defined at " ^
           Flx_srcref.short_string_of_src sr
       )
@@ -1403,25 +1403,25 @@ and bind_type_index syms (rs:recstop)
   (*
   print_endline "bind_type_index";
   *)
-  let ts = adjust_ts syms.dfns sr index ts in
+  let ts = adjust_ts syms.sym_table sr index ts in
   (*
-  print_endline ("Adjusted ts =h ["^ catmap ", " (sbt syms.dfns) ts^ "]");
+  print_endline ("Adjusted ts =h ["^ catmap ", " (sbt syms.sym_table) ts^ "]");
   *)
   let bt t =
       (*
       print_endline "Making params .. ";
       *)
-      let vs,_ = find_vs syms.dfns index in
+      let vs,_ = find_vs syms.sym_table index in
       if List.length vs <> List.length ts then begin
         print_endline ("vs=" ^ catmap "," (fun (s,i,_)-> s^"<"^si i^">") vs);
-        print_endline ("ts=" ^ catmap "," (sbt syms.dfns) ts);
+        print_endline ("ts=" ^ catmap "," (sbt syms.sym_table) ts);
         failwith "len vs != len ts"
       end
       else
       let params = List.map2 (fun (s,i,_) t -> s,t) vs ts in
 
       (*
-      let params = make_params syms.dfns sr index ts in
+      let params = make_params syms.sym_table sr index ts in
       *)
       (*
       print_endline ("params made");
@@ -1433,17 +1433,17 @@ and bind_type_index syms (rs:recstop)
         sr t params mkenv
       in
         (*
-        print_endline ("Unravelled and bound is " ^ sbt syms.dfns t);
+        print_endline ("Unravelled and bound is " ^ sbt syms.sym_table t);
         *)
         (*
         let t = beta_reduce syms sr t in
         *)
         (*
-        print_endline ("Beta reduced: " ^ sbt syms.dfns t);
+        print_endline ("Beta reduced: " ^ sbt syms.sym_table t);
         *)
         t
   in
-  match get_data syms.dfns index with
+  match get_data syms.sym_table index with
   | {id=id;sr=sr;parent=parent;vs=vs;pubmap=tabl;dirs=dirs;symdef=entry} ->
     (*
     if List.length vs <> List.length ts
@@ -1486,7 +1486,7 @@ and bind_type_index syms (rs:recstop)
           print_endline ("It's parent is " ^ si parent);
           *)
           (*
-          let {parent=parent} = hfind "lookup" syms.dfns parent in
+          let {parent=parent} = hfind "lookup" syms.sym_table parent in
           begin match parent with
           | Some parent ->
              print_endline ("and IT's parent is " ^ si parent);
@@ -1501,9 +1501,9 @@ and bind_type_index syms (rs:recstop)
       in
       let mt = inner_bind_type syms env sr rs mt in
       (*
-      print_endline ("Bound metatype is " ^ sbt syms.dfns mt);
+      print_endline ("Bound metatype is " ^ sbt syms.sym_table mt);
       let mt = cal_assoc_type syms sr mt in
-      print_endline ("Assoc type is " ^ sbt syms.dfns mt);
+      print_endline ("Assoc type is " ^ sbt syms.sym_table mt);
       *)
       BTYP_var (index,mt)
 
@@ -1566,21 +1566,21 @@ and type_of_index' rs syms (index:int) : btypecode_t =
     then begin
       let t = Hashtbl.find syms.ticache index in
       (*
-      let () = print_endline ("Cached .." ^ sbt syms.dfns t) in
+      let () = print_endline ("Cached .." ^ sbt syms.sym_table t) in
       *)
       t
     end
     else
       let t = inner_type_of_index syms rs index in
       (*
-      print_endline ("Type of index after inner "^ si index ^ " is " ^ sbt syms.dfns t);
+      print_endline ("Type of index after inner "^ si index ^ " is " ^ sbt syms.sym_table t);
       *)
-      let _ = try unfold syms.dfns t with _ ->
+      let _ = try unfold syms.sym_table t with _ ->
         print_endline "type_of_index produced free fixpoint";
-        failwith ("[type_of_index] free fixpoint constructed for " ^ sbt syms.dfns t)
+        failwith ("[type_of_index] free fixpoint constructed for " ^ sbt syms.sym_table t)
       in
       let sr = try
-        match hfind "lookup" syms.dfns index with {sr=sr}-> sr
+        match hfind "lookup" syms.sym_table index with {sr=sr}-> sr
         with Not_found -> dummy_sr
       in
       let t = beta_reduce syms sr t in
@@ -1596,7 +1596,7 @@ and type_of_index_with_ts' rs syms sr (index:int) ts =
   print_endline "OUTER TYPE OF INDEX with TS";
   *)
   let t = type_of_index' rs syms index in
-  let varmap = make_varmap syms.dfns sr index ts in
+  let varmap = make_varmap syms.sym_table sr index ts in
   let t = varmap_subst varmap t in
   beta_reduce syms sr t
 
@@ -1628,7 +1628,7 @@ and cal_ret_type syms (rs:recstop) index args =
   (*
   print_env_short env;
   *)
-  match (get_data syms.dfns index) with
+  match (get_data syms.sym_table index) with
   | {id=id;sr=sr;parent=parent;vs=vs;privmap=name_map;dirs=dirs;
      symdef=SYMDEF_function ((ps,_),rt,props,exes)
     } ->
@@ -1643,7 +1643,7 @@ and cal_ret_type syms (rs:recstop) index args =
     | BTYP_var (i,_) when i = index ->
       print_endline "No return type given"
     | _ ->
-      print_endline (" .. given type is " ^ sbt syms.dfns rt)
+      print_endline (" .. given type is " ^ sbt syms.sym_table rt)
     end
     ;
     *)
@@ -1676,16 +1676,16 @@ and cal_ret_type syms (rs:recstop) index args =
           print_endline
           (
             "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<"^string_of_int index^">" ^
-            "\nGot: " ^ sbt syms.dfns !ret_type ^
-            "\nAnd: " ^ sbt syms.dfns t
+            "\nGot: " ^ sbt syms.sym_table !ret_type ^
+            "\nAnd: " ^ sbt syms.sym_table t
           )
           ;
           *)
           clierr sr
           (
             "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<"^string_of_int index^">" ^
-            "\nGot: " ^ sbt syms.dfns !ret_type ^
-            "\nAnd: " ^ sbt syms.dfns t
+            "\nGot: " ^ sbt syms.sym_table !ret_type ^
+            "\nAnd: " ^ sbt syms.sym_table t
           )
         end
       with
@@ -1720,10 +1720,10 @@ and cal_ret_type syms (rs:recstop) index args =
     (*
     let ss = ref "" in
     Hashtbl.iter
-    (fun i t -> ss:=!ss ^si i^ " --> " ^sbt syms.dfns t^ "\n")
+    (fun i t -> ss:=!ss ^si i^ " --> " ^sbt syms.sym_table t^ "\n")
     syms.varmap;
     print_endline ("syms.varmap=" ^ !ss);
-    print_endline ("  .. ret type index " ^ si index ^ " = " ^ sbt syms.dfns !ret_type);
+    print_endline ("  .. ret type index " ^ si index ^ " = " ^ sbt syms.sym_table !ret_type);
     *)
     !ret_type
 
@@ -1736,18 +1736,18 @@ and inner_type_of_index_with_ts
   (ts: btypecode_t list)
 : btypecode_t =
  (*
- print_endline ("Inner type of index with ts .. " ^ si index ^ ", ts=" ^ catmap "," (sbt syms.dfns) ts);
+ print_endline ("Inner type of index with ts .. " ^ si index ^ ", ts=" ^ catmap "," (sbt syms.sym_table) ts);
  *)
  let t = inner_type_of_index syms rs index in
- let pvs,vs,_ = find_split_vs syms.dfns index in
+ let pvs,vs,_ = find_split_vs syms.sym_table index in
  (*
  print_endline ("#pvs=" ^ si (List.length pvs) ^ ", #vs="^si (List.length vs) ^", #ts="^
  si (List.length ts));
  *)
  (*
- let ts = adjust_ts syms.dfns sr index ts in
+ let ts = adjust_ts syms.sym_table sr index ts in
  print_endline ("#adj ts = " ^ si (List.length ts));
- let vs,_ = find_vs syms.dfns index in
+ let vs,_ = find_vs syms.sym_table index in
  assert (List.length vs = List.length ts);
  *)
  if (List.length ts != List.length vs + List.length pvs) then begin
@@ -1759,11 +1759,11 @@ and inner_type_of_index_with_ts
  end
  ;
  assert (List.length ts = List.length vs + List.length pvs);
- let varmap = make_varmap syms.dfns sr index ts in
+ let varmap = make_varmap syms.sym_table sr index ts in
  let t = varmap_subst varmap t in
  let t = beta_reduce syms sr t in
  (*
- print_endline ("type_of_index=" ^ sbt syms.dfns t);
+ print_endline ("type_of_index=" ^ sbt syms.sym_table t);
  *)
  t
 
@@ -1791,7 +1791,7 @@ and inner_type_of_index
   if List.mem index rs.idx_fixlist
   then BTYP_fix (-rs.depth)
   else begin
-  match get_data syms.dfns index with
+  match get_data syms.sym_table index with
   | {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=entry}
   ->
   let mkenv i = build_env syms (Some i) in
@@ -1815,7 +1815,7 @@ and inner_type_of_index
       let t = bt t in
       let mt = metatype syms sr t in
       (*
-      print_endline ("Type of type alias is meta_type: " ^ sbt syms.dfns mt);
+      print_endline ("Type of type alias is meta_type: " ^ sbt syms.sym_table mt);
       *)
       mt
     end
@@ -1836,7 +1836,7 @@ and inner_type_of_index
           "[type_of_index'] " ^
           "function "^id^"<"^string_of_int index^
           ">: Can't resolve return type, got : " ^
-          sbt syms.dfns rt' ^
+          sbt syms.sym_table rt' ^
           "\nPossibly each returned expression depends on the return type" ^
           "\nTry adding an explicit return type annotation"
         );
@@ -1846,7 +1846,7 @@ and inner_type_of_index
           "[type_of_index'] " ^
           "function "^id^"<"^string_of_int index^
           ">: Can't resolve return type, got : " ^
-          sbt syms.dfns rt' ^
+          sbt syms.sym_table rt' ^
           "\nPossibly each returned expression depends on the return type" ^
           "\nTry adding an explicit return type annotation"
         )))
@@ -1899,11 +1899,11 @@ and inner_type_of_index
   (*
   print_endline "inner_type_of_index: struct";
   *)
-    let ts = adjust_ts syms.dfns sr index ts in
+    let ts = adjust_ts syms.sym_table sr index ts in
     let t = type_of_list (List.map snd ls) in
     let t = BTYP_function(bt t,BTYP_inst (index,ts)) in
     (*
-    print_endline ("Struct as function type is " ^ sbt syms.dfns t);
+    print_endline ("Struct as function type is " ^ sbt syms.sym_table t);
     *)
     t
 
@@ -1928,20 +1928,20 @@ and cal_apply syms sr rs ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let mkenv i = build_env syms (Some i) in
   let be i e = bind_expression' syms (mkenv i) rs e [] in
   (*
-  print_endline ("Cal apply of " ^ sbe syms.dfns bbdfns tbe1 ^ " to " ^ sbe syms.dfns bbdfns tbe2);
+  print_endline ("Cal apply of " ^ sbe syms.sym_table bsym_table tbe1 ^ " to " ^ sbe syms.sym_table bsym_table tbe2);
   *)
   let ((re,rt) as r) = cal_apply' syms be sr tbe1 tbe2 in
   (*
-  print_endline ("Cal_apply, ret type=" ^ sbt syms.dfns rt);
+  print_endline ("Cal_apply, ret type=" ^ sbt syms.sym_table rt);
   *)
   r
 
 and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest,reorder =
-    match unfold syms.dfns t1 with
+    match unfold syms.sym_table t1 with
     | BTYP_function (argt,rest)
     | BTYP_cfunction (argt,rest) ->
-      if type_match syms.counter syms.dfns argt t2
+      if type_match syms.counter syms.sym_table argt t2
       then rest, None
       else
       let reorder: tbexpr_t list option =
@@ -1955,7 +1955,7 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
               | BTYP_tuple [] -> []
               | _ -> assert false
             in
-            begin let pnames = match hfind "lookup" syms.dfns i with
+            begin let pnames = match hfind "lookup" syms.sym_table i with
             | {symdef=SYMDEF_function (ps,_,_,_)} ->
               List.map (fun (_,name,_,d)->
                 name,
@@ -1990,21 +1990,21 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
         clierr sr
         (
           "[cal_apply] Function " ^
-          sbe syms.dfns bbdfns tbe1 ^
+          sbe syms.sym_table bsym_table tbe1 ^
           "\nof type " ^
-          sbt syms.dfns t1 ^
+          sbt syms.sym_table t1 ^
           "\napplied to argument " ^
-          sbe syms.dfns bbdfns tbe2 ^
+          sbe syms.sym_table bsym_table tbe2 ^
           "\n of type " ^
-          sbt syms.dfns t2 ^
+          sbt syms.sym_table t2 ^
           "\nwhich doesn't agree with parameter type\n" ^
-          sbt syms.dfns argt
+          sbt syms.sym_table argt
         )
       end
 
     (* HACKERY TO SUPPORT STRUCT CONSTRUCTORS *)
     | BTYP_inst (index,ts) ->
-      begin match get_data syms.dfns index with
+      begin match get_data syms.sym_table index with
       { id=id;vs=vs;symdef=entry} ->
         begin match entry with
         | SYMDEF_cstruct (cs) -> t1, None
@@ -2013,7 +2013,7 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
           clierr sr
           (
             "[cal_apply] Attempt to apply non-struct " ^ id ^ ", type " ^
-            sbt syms.dfns t1 ^
+            sbt syms.sym_table t1 ^
             " as constructor"
           )
         end
@@ -2022,20 +2022,20 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
       clierr sr
       (
         "Attempt to apply non-function\n" ^
-        sbe syms.dfns bbdfns tbe1 ^
+        sbe syms.sym_table bsym_table tbe1 ^
         "\nof type\n" ^
-        sbt syms.dfns t1 ^
+        sbt syms.sym_table t1 ^
         "\nto argument of type\n" ^
-        sbe syms.dfns bbdfns tbe2
+        sbe syms.sym_table bsym_table tbe2
       )
   in
   (*
   print_endline
   (
     "---------------------------------------" ^
-    "\nApply type " ^ sbt syms.dfns t1 ^
-    "\nto argument of type " ^ sbt syms.dfns t2 ^
-    "\nresult type is " ^ sbt syms.dfns rest ^
+    "\nApply type " ^ sbt syms.sym_table t1 ^
+    "\nto argument of type " ^ sbt syms.sym_table t2 ^
+    "\nresult type is " ^ sbt syms.sym_table rest ^
     "\n-------------------------------------"
   );
   *)
@@ -2045,13 +2045,13 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
     clierr sr
     (
       "[cal_apply] Function " ^
-      sbe syms.dfns bbdfns tbe1 ^
+      sbe syms.sym_table bsym_table tbe1 ^
       "\nof type " ^
-      sbt syms.dfns t1 ^
+      sbt syms.sym_table t1 ^
       "\napplied to argument " ^
-      sbe syms.dfns bbdfns tbe2 ^
+      sbe syms.sym_table bsym_table tbe2 ^
       "\n of type " ^
-      sbt syms.dfns t2 ^
+      sbt syms.sym_table t2 ^
       "\nreturns void"
     )
   else
@@ -2069,11 +2069,11 @@ and cal_apply' syms be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
     clierr sr
     (
       "[cal_apply] Type variable in return type applying\n" ^
-        sbe syms.dfns bbdfns tbe1 ^
+        sbe syms.sym_table bsym_table tbe1 ^
         "\nof type\n" ^
-        sbt syms.dfns t1 ^
+        sbt syms.sym_table t1 ^
         "\nto argument of type\n" ^
-        sbe syms.dfns bbdfns tbe2
+        sbe syms.sym_table bsym_table tbe2
     )
   ;
   *)
@@ -2126,7 +2126,7 @@ and koenig_lookup syms env rs sra id' name_map fn t2 ts =
         clierr sra
         (
           "[flx_ebind] Koenig lookup: Can't find match for " ^ fn ^
-          "\ncandidates are: " ^ full_string_of_entry_set syms.dfns entries
+          "\ncandidates are: " ^ full_string_of_entry_set syms.sym_table entries
         )
     end
   | NonFunctionEntry _ -> clierr sra "Koenig lookup expected function"
@@ -2140,7 +2140,7 @@ and lookup_qn_with_sig'
 : tbexpr_t =
   (*
   print_endline ("[lookup_qn_with_sig] " ^ string_of_qualified_name qn);
-  print_endline ("sigs = " ^ catmap "," (sbt syms.dfns) signs);
+  print_endline ("sigs = " ^ catmap "," (sbt syms.sym_table) signs);
   print_endline ("expr_fixlist is " ^
     catmap ","
     (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]")
@@ -2154,7 +2154,7 @@ and lookup_qn_with_sig'
     inner_bind_type syms env sr rs t
   in
   let handle_nonfunction_index index ts =
-    begin match get_data syms.dfns index with
+    begin match get_data syms.sym_table index with
     {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=entry}
     ->
       begin match entry with
@@ -2169,23 +2169,23 @@ and lookup_qn_with_sig'
         let sign = try List.hd signs with _ -> assert false in
         let t = type_of_index_with_ts' rs syms sr index ts in
         (*
-        print_endline ("Struct constructor found, type= " ^ sbt syms.dfns t);
+        print_endline ("Struct constructor found, type= " ^ sbt syms.sym_table t);
         *)
 (*
 print_endline (id ^ ": lookup_qn_with_sig: struct");
 *)
         (*
-        let ts = adjust_ts syms.dfns sr index ts in
+        let ts = adjust_ts syms.sym_table sr index ts in
         *)
         begin match t with
         | BTYP_function (a,_) ->
-          if not (type_match syms.counter syms.dfns a sign) then
+          if not (type_match syms.counter syms.sym_table a sign) then
             clierr sr
             (
               "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
-              sbt syms.dfns t ^
+              sbt syms.sym_table t ^
               "\nexpected:\n" ^
-              sbt syms.dfns sign
+              sbt syms.sym_table sign
             )
         | _ -> assert false
         end
@@ -2213,7 +2213,7 @@ print_endline (id ^ ": lookup_qn_with_sig: struct");
         ->
 print_endline (id ^ ": lookup_qn_with_sig: val/var");
         (*
-        let ts = adjust_ts syms.dfns sr index ts in
+        let ts = adjust_ts syms.sym_table sr index ts in
         *)
         let t = bt sr t in
         let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
@@ -2221,14 +2221,14 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
         begin match t with
         | BTYP_function (a,b) ->
           let sign = try List.hd signs with _ -> assert false in
-          if not (type_match syms.counter syms.dfns a sign) then
+          if not (type_match syms.counter syms.sym_table a sign) then
           clierr srn
           (
             "[lookup_qn_with_sig] Expected variable "^id ^
             "<" ^ si index ^ "> to have function type with signature " ^
-            sbt syms.dfns sign ^
+            sbt syms.sym_table sign ^
             ", got function type:\n" ^
-            sbt syms.dfns t
+            sbt syms.sym_table t
           )
           else
             BEXPR_name (index, ts),
@@ -2239,7 +2239,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
           (
             "[lookup_qn_with_sig] expected variable " ^
             id ^ "<" ^ si index ^ "> to be of function type, got:\n" ^
-            sbt syms.dfns t
+            sbt syms.sym_table t
 
           )
         end
@@ -2277,7 +2277,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
   *)
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
-    begin match unfold syms.dfns t with
+    begin match unfold syms.sym_table t with
     | BTYP_unitsum k ->
       if v<0 or v>= k
       then clierr sra "Case index out of range of sum"
@@ -2296,7 +2296,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
       clierr sr
       (
         "[lookup_qn_with_sig] Type of case must be sum, got " ^
-        sbt syms.dfns t
+        sbt syms.sym_table t
       )
     end
 
@@ -2344,14 +2344,14 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     (*
     print_endline ("[lookup qn with sig] AST_index " ^ string_of_qualified_name x);
     *)
-    begin match get_data syms.dfns index with
+    begin match get_data syms.sym_table index with
     | {vs=vs; id=id; sr=sra; symdef=entry} ->
     match entry with
     | SYMDEF_fun _
     | SYMDEF_function _
     | SYMDEF_match_check _
       ->
-      let vs = find_vs syms.dfns index in
+      let vs = find_vs syms.sym_table index in
       let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
       BEXPR_closure (index,ts),
       inner_type_of_index syms rs index
@@ -2370,7 +2370,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     (* let n = List.length ts in *)
     let ts = List.map (bt sr)( ts' @ ts) in
     (*
-    print_endline ("Module " ^ si impl ^ "[" ^ catmap "," (sbt syms.dfns) ts' ^"]");
+    print_endline ("Module " ^ si impl ^ "[" ^ catmap "," (sbt syms.sym_table) ts' ^"]");
     *)
     let env' = mk_bare_env syms impl in
     let tables = get_pub_tables syms env' rs dirs in
@@ -2393,10 +2393,10 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
       | Some (index,t,ret,mgu,ts) ->
         (*
         print_endline ("Resolved overload for " ^ name);
-        print_endline ("ts = [" ^ catmap ", " (sbt syms.dfns) ts ^ "]");
+        print_endline ("ts = [" ^ catmap ", " (sbt syms.sym_table) ts ^ "]");
         *)
         (*
-        let ts = adjust_ts syms.dfns sr index ts in
+        let ts = adjust_ts syms.sym_table sr index ts in
         *)
         BEXPR_closure (index,ts),
          type_of_index_with_ts' rs syms sr index ts
@@ -2406,8 +2406,8 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
         (
           "[lookup_qn_with_sig] (Simple module) Unable to resolve overload of " ^
           string_of_qualified_name qn ^
-          " of (" ^ catmap "," (sbt syms.dfns) signs ^")\n" ^
-          "candidates are: " ^ full_string_of_entry_set syms.dfns entries
+          " of (" ^ catmap "," (sbt syms.sym_table) signs ^")\n" ^
+          "candidates are: " ^ full_string_of_entry_set syms.sym_table entries
         )
     end
 
@@ -2420,7 +2420,7 @@ and lookup_type_qn_with_sig'
 : btypecode_t =
   (*
   print_endline ("[lookup_type_qn_with_sig] " ^ string_of_qualified_name qn);
-  print_endline ("sigs = " ^ catmap "," (sbt syms.dfns) signs);
+  print_endline ("sigs = " ^ catmap "," (sbt syms.sym_table) signs);
   print_endline ("expr_fixlist is " ^
     catmap ","
     (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]")
@@ -2435,7 +2435,7 @@ and lookup_type_qn_with_sig'
   in
   let handle_nonfunction_index index ts =
     print_endline ("Found non function? index " ^ si index);
-    begin match get_data syms.dfns index with
+    begin match get_data syms.sym_table index with
     {id=id;sr=sr;parent=parent;vs=vs;privmap=table;dirs=dirs;symdef=entry}
     ->
       begin match entry with
@@ -2450,17 +2450,17 @@ and lookup_type_qn_with_sig'
         let sign = try List.hd signs with _ -> assert false in
         let t = type_of_index_with_ts' rs syms sr index ts in
         (*
-        print_endline ("[lookup_type_qn_with_sig] Struct constructor found, type= " ^ sbt syms.dfns t);
+        print_endline ("[lookup_type_qn_with_sig] Struct constructor found, type= " ^ sbt syms.sym_table t);
         *)
         begin match t with
         | BTYP_function (a,_) ->
-          if not (type_match syms.counter syms.dfns a sign) then
+          if not (type_match syms.counter syms.sym_table a sign) then
             clierr sr
             (
               "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
-              sbt syms.dfns t ^
+              sbt syms.sym_table t ^
               "\nexpected:\n" ^
-              sbt syms.dfns sign
+              sbt syms.sym_table sign
             )
         | _ -> assert false
         end
@@ -2510,7 +2510,7 @@ and lookup_type_qn_with_sig'
 
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
-    begin match unfold syms.dfns t with
+    begin match unfold syms.sym_table t with
     | BTYP_unitsum k ->
       if v<0 or v>= k
       then clierr sra "Case index out of range of sum"
@@ -2529,7 +2529,7 @@ and lookup_type_qn_with_sig'
       clierr sr
       (
         "[lookup_qn_with_sig] Type of case must be sum, got " ^
-        sbt syms.dfns t
+        sbt syms.sym_table t
       )
     end
 
@@ -2547,14 +2547,14 @@ and lookup_type_qn_with_sig'
     (*
     print_endline ("[lookup qn with sig] AST_index " ^ string_of_qualified_name x);
     *)
-    begin match get_data syms.dfns index with
+    begin match get_data syms.sym_table index with
     | {vs=vs; id=id; sr=sra; symdef=entry} ->
     match entry with
     | SYMDEF_fun _
     | SYMDEF_function _
     | SYMDEF_match_check _
       ->
-      let vs = find_vs syms.dfns index in
+      let vs = find_vs syms.sym_table index in
       let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
       inner_type_of_index syms rs index
 
@@ -2572,7 +2572,7 @@ and lookup_type_qn_with_sig'
     (* let n = List.length ts in *)
     let ts = List.map (bt sr)( ts' @ ts) in
     (*
-    print_endline ("Module " ^ si impl ^ "[" ^ catmap "," (sbt syms.dfns) ts' ^"]");
+    print_endline ("Module " ^ si impl ^ "[" ^ catmap "," (sbt syms.sym_table) ts' ^"]");
     *)
     let env' = mk_bare_env syms impl in
     let tables = get_pub_tables syms env' rs dirs in
@@ -2594,9 +2594,9 @@ and lookup_type_qn_with_sig'
       with
       | Some (index,t,ret,mgu,ts) ->
         print_endline ("Resolved overload for " ^ name);
-        print_endline ("ts = [" ^ catmap ", " (sbt syms.dfns) ts ^ "]");
+        print_endline ("ts = [" ^ catmap ", " (sbt syms.sym_table) ts ^ "]");
         (*
-        let ts = adjust_ts syms.dfns sr index ts in
+        let ts = adjust_ts syms.sym_table sr index ts in
         *)
         let t =  type_of_index_with_ts' rs syms sr index ts in
         print_endline "WRONG!";
@@ -2607,8 +2607,8 @@ and lookup_type_qn_with_sig'
         (
           "[lookup_type_qn_with_sig] (Simple module) Unable to resolve overload of " ^
           string_of_qualified_name qn ^
-          " of (" ^ catmap "," (sbt syms.dfns) signs ^")\n" ^
-          "candidates are: " ^ full_string_of_entry_set syms.dfns entries
+          " of (" ^ catmap "," (sbt syms.sym_table) signs ^")\n" ^
+          "candidates are: " ^ full_string_of_entry_set syms.sym_table entries
         )
     end
 
@@ -2623,7 +2623,7 @@ and lookup_name_with_sig
 : tbexpr_t =
   (*
   print_endline ("[lookup_name_with_sig] " ^ name ^
-    " of " ^ catmap "," (sbt syms.dfns) t2)
+    " of " ^ catmap "," (sbt syms.sym_table) t2)
   ;
   *)
   match env with
@@ -2631,7 +2631,7 @@ and lookup_name_with_sig
     clierr srn
     (
       "[lookup_name_with_sig] Can't find " ^ name ^
-      " of " ^ catmap "," (sbt syms.dfns) t2
+      " of " ^ catmap "," (sbt syms.sym_table) t2
     )
   | (_,_,table,dirs,_)::tail ->
     match
@@ -2660,7 +2660,7 @@ and lookup_type_name_with_sig
 : btypecode_t =
   (*
   print_endline ("[lookup_type_name_with_sig] " ^ name ^
-    " of " ^ catmap "," (sbt syms.dfns) t2)
+    " of " ^ catmap "," (sbt syms.sym_table) t2)
   ;
   *)
   match env with
@@ -2668,7 +2668,7 @@ and lookup_type_name_with_sig
     clierr srn
     (
       "[lookup_name_with_sig] Can't find " ^ name ^
-      " of " ^ catmap "," (sbt syms.dfns) t2
+      " of " ^ catmap "," (sbt syms.sym_table) t2
     )
   | (_,_,table,dirs,_)::tail ->
     match
@@ -2701,7 +2701,7 @@ and handle_type
     bind_type' syms (mkenv index) rs sr t [] mkenv
   in
 
-  match get_data syms.dfns index with
+  match get_data syms.sym_table index with
   {
     id=id;sr=sr;vs=vs;parent=parent;
     privmap=tabl;dirs=dirs;
@@ -2717,7 +2717,7 @@ and handle_type
   | SYMDEF_nonconst_ctor _
   | SYMDEF_callback _
     ->
-    print_endline ("Handle function " ^id^"<"^si index^">, ts=" ^ catmap "," (sbt syms.dfns) ts);
+    print_endline ("Handle function " ^id^"<"^si index^">, ts=" ^ catmap "," (sbt syms.sym_table) ts);
     BTYP_inst (index,ts)
     (*
     let t = inner_type_of_index_with_ts syms sr rs index ts
@@ -2730,14 +2730,14 @@ and handle_type
         ignore begin
           match t with
           | BTYP_fix _ -> raise (Free_fixpoint t)
-          | _ -> try unfold syms.dfns t with
+          | _ -> try unfold syms.sym_table t with
           | _ -> raise (Free_fixpoint t)
         end
         ;
         clierr sra
         (
           "[handle_function]: closure operator expected '"^name^"' to have function type, got '"^
-          sbt syms.dfns t ^ "'"
+          sbt syms.sym_table t ^ "'"
         )
     )
     *)
@@ -2745,7 +2745,7 @@ and handle_type
   | SYMDEF_type_alias _ ->
     (*
     print_endline ("Binding type alias " ^ name ^ "<" ^ si index ^ ">" ^
-      "[" ^catmap "," (sbt syms.dfns) ts^ "]"
+      "[" ^catmap "," (sbt syms.sym_table) ts^ "]"
     );
     *)
     bind_type_index syms (rs:recstop) sr index ts mkenv
@@ -2766,7 +2766,7 @@ and handle_function
   (index : int)
 : tbexpr_t
 =
-  match get_data syms.dfns index with
+  match get_data syms.sym_table index with
   {
     id=id;sr=sr;vs=vs;parent=parent;
     privmap=tabl;dirs=dirs;
@@ -2783,7 +2783,7 @@ and handle_function
   | SYMDEF_callback _
     ->
     (*
-    print_endline ("Handle function " ^id^"<"^si index^">, ts=" ^ catmap "," (sbt syms.dfns) ts);
+    print_endline ("Handle function " ^id^"<"^si index^">, ts=" ^ catmap "," (sbt syms.sym_table) ts);
     *)
     let t = inner_type_of_index_with_ts syms sr rs index ts
     in
@@ -2796,14 +2796,14 @@ and handle_function
         ignore begin
           match t with
           | BTYP_fix _ -> raise (Free_fixpoint t)
-          | _ -> try unfold syms.dfns t with
+          | _ -> try unfold syms.sym_table t with
           | _ -> raise (Free_fixpoint t)
         end
         ;
         clierr sra
         (
           "[handle_function]: closure operator expected '"^name^"' to have function type, got '"^
-          sbt syms.dfns t ^ "'"
+          sbt syms.sym_table t ^ "'"
         )
     )
   | SYMDEF_type_alias (TYP_typefun _) ->
@@ -2818,14 +2818,14 @@ and handle_function
         ignore begin
           match t with
           | BTYP_fix _ -> raise (Free_fixpoint t)
-          | _ -> try unfold syms.dfns t with
+          | _ -> try unfold syms.sym_table t with
           | _ -> raise (Free_fixpoint t)
         end
         ;
         clierr sra
         (
           "[handle_function]: closure operator expected '"^name^"' to have function type, got '"^
-          sbt syms.dfns t ^ "'"
+          sbt syms.sym_table t ^ "'"
         )
     )
 
@@ -2848,25 +2848,25 @@ and handle_variable syms
 
     (* we have to check the variable is the right type *)
     let t = bt sr t in
-    let ts = adjust_ts syms.dfns sr index ts in
-    let vs = find_vs syms.dfns index in
+    let ts = adjust_ts syms.sym_table sr index ts in
+    let vs = find_vs syms.sym_table index in
     let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
     let t = beta_reduce syms sr (tsubst bvs ts t) in
     begin match t with
     | BTYP_cfunction (d,c)
     | BTYP_function (d,c) ->
-      if not (type_match syms.counter syms.dfns d t2) then
+      if not (type_match syms.counter syms.sym_table d t2) then
       clierr sr
       (
         "[handle_variable(1)] Expected variable "^id ^
         "<" ^ si index ^ "> to have function type with signature " ^
-        sbt syms.dfns t2 ^
+        sbt syms.sym_table t2 ^
         ", got function type:\n" ^
-        sbt syms.dfns t
+        sbt syms.sym_table t
       )
       else
         (*
-        let ts = adjust_ts syms.dfns sr index ts in
+        let ts = adjust_ts syms.sym_table sr index ts in
         *)
         Some
         (
@@ -2892,8 +2892,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
   print_endline
   (
     "LOOKUP NAME "^name ^"["^
-    catmap "," (sbt syms.dfns) ts ^
-    "] IN TABLE DIRS WITH SIG " ^ catmap "," (sbt syms.dfns) t2
+    catmap "," (sbt syms.sym_table) ts ^
+    "] IN TABLE DIRS WITH SIG " ^ catmap "," (sbt syms.sym_table) t2
   );
   *)
   let result:entry_set_t =
@@ -2903,7 +2903,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
   in
   match result with
   | NonFunctionEntry (index) ->
-    begin match get_data syms.dfns (sye index) with
+    begin match get_data syms.sym_table (sye index) with
     {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
     (*
     print_endline ("FOUND " ^ id);
@@ -2923,7 +2923,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
       ->
         (*
         print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
-        print_endline ("Record Argument type is " ^ catmap "," (sbt syms.dfns) t2);
+        print_endline ("Record Argument type is " ^ catmap "," (sbt syms.sym_table) t2);
         *)
         Some (BEXPR_closure (sye index,ts),BTYP_inst (sye index,ts))
         (*
@@ -2936,7 +2936,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
       ->
         (*
         print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
-        print_endline ("Argument types are " ^ catmap "," (sbt syms.dfns) t2);
+        print_endline ("Argument types are " ^ catmap "," (sbt syms.sym_table) t2);
         *)
         let ro =
           resolve_overload'
@@ -3002,8 +3002,8 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     match ro with
       | Some (index,t,ret,mgu,ts) ->
         (*
-        print_endline ("handle_function (3) ts=" ^ catmap "," (sbt syms.dfns) ts);
-        let ts = adjust_ts syms.dfns sra index ts in
+        print_endline ("handle_function (3) ts=" ^ catmap "," (sbt syms.sym_table) ts);
+        let ts = adjust_ts syms.sym_table sra index ts in
         print_endline "Adjusted ts";
         *)
         let ((_,tt) as tb) =
@@ -3013,10 +3013,10 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
           sra srn name ts index
         in
           (*
-          print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind syms.dfns (mkentry syms dfltvs index));
-          print_endline ("Value of ts is " ^ catmap "," (sbt syms.dfns) ts);
-          print_endline ("Instantiated closure value is " ^ sbe syms.dfns bbdfns tb);
-          print_endline ("type is " ^ sbt syms.dfns tt);
+          print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind syms.sym_table (mkentry syms dfltvs index));
+          print_endline ("Value of ts is " ^ catmap "," (sbt syms.sym_table) ts);
+          print_endline ("Instantiated closure value is " ^ sbe syms.sym_table bsym_table tb);
+          print_endline ("type is " ^ sbt syms.sym_table tt);
           *)
           Some tb
 
@@ -3045,7 +3045,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         match opens with
         | [NonFunctionEntry i] when
           (
-              match get_data syms.dfns (sye i) with
+              match get_data syms.sym_table (sye i) with
               {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
               (*
               print_endline ("FOUND " ^ id);
@@ -3103,8 +3103,8 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
   print_endline
   (
     "LOOKUP TYPE NAME "^name ^"["^
-    catmap "," (sbt syms.dfns) ts ^
-    "] IN TABLE DIRS WITH SIG " ^ catmap "," (sbt syms.dfns) t2
+    catmap "," (sbt syms.sym_table) ts ^
+    "] IN TABLE DIRS WITH SIG " ^ catmap "," (sbt syms.sym_table) t2
   );
   *)
   let mkenv i = build_env syms (Some i) in
@@ -3119,7 +3119,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
   in
   match result with
   | NonFunctionEntry (index) ->
-    begin match get_data syms.dfns (sye index) with
+    begin match get_data syms.sym_table (sye index) with
     {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
     (*
     print_endline ("FOUND " ^ id);
@@ -3171,8 +3171,8 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
       (print_endline
       (
         "Typevariable has wrong meta-type" ^
-        "\nexpected domains " ^ catmap ", " (sbt syms.dfns) t2 ^
-        "\ngot " ^ sbt syms.dfns mt
+        "\nexpected domains " ^ catmap ", " (sbt syms.sym_table) t2 ^
+        "\ngot " ^ sbt syms.sym_table mt
       ); None)
 
     | SYMDEF_abs _
@@ -3222,11 +3222,11 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
     match ro with
       | Some (index,t,ret,mgu,ts) ->
         (*
-        print_endline ("handle_function (3) ts=" ^ catmap "," (sbt syms.dfns) ts);
-        let ts = adjust_ts syms.dfns sra index ts in
+        print_endline ("handle_function (3) ts=" ^ catmap "," (sbt syms.sym_table) ts);
+        let ts = adjust_ts syms.sym_table sra index ts in
         print_endline "Adjusted ts";
         print_endline ("Found functional thingo, " ^ si index);
-        print_endline (" ts=" ^ catmap "," (sbt syms.dfns) ts);
+        print_endline (" ts=" ^ catmap "," (sbt syms.sym_table) ts);
         *)
 
         let tb =
@@ -3236,9 +3236,9 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
           sra srn name ts index
         in
           (*
-          print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind syms.dfns (mkentry syms dfltvs index));
-          print_endline ("Value of ts is " ^ catmap "," (sbt syms.dfns) ts);
-          print_endline ("Instantiated type is " ^ sbt syms.dfns tb);
+          print_endline ("SUCCESS: overload chooses " ^ full_string_of_entry_kind syms.sym_table (mkentry syms dfltvs index));
+          print_endline ("Value of ts is " ^ catmap "," (sbt syms.sym_table) ts);
+          print_endline ("Instantiated type is " ^ sbt syms.sym_table tb);
           *)
           Some tb
 
@@ -3264,7 +3264,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
         match opens with
         | [NonFunctionEntry i] when
           (
-              match get_data syms.dfns (sye i) with
+              match get_data syms.sym_table (sye i) with
               {id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
               (*
               print_endline ("FOUND " ^ id);
@@ -3401,19 +3401,19 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
          (
            "Field " ^ field_name ^
            " is not a member of anonymous structure " ^
-           sbt syms.dfns t2
+           sbt syms.sym_table t2
           )
       end
     | _ ->
     let tbe1 =
       match t2 with
       | BTYP_inst (index,ts) ->
-        begin match get_data syms.dfns index with
+        begin match get_data syms.sym_table index with
         {id=id; parent=parent;sr=sr;symdef=entry} ->
         match parent with
         | None -> clierr sra "Koenig lookup: No parent for method apply (can't handle global yet)"
         | Some index' ->
-          match get_data syms.dfns index' with
+          match get_data syms.sym_table index' with
           {id=id';sr=sr';parent=parent';vs=vs';pubmap=name_map;dirs=dirs;symdef=entry'}
           ->
           match entry' with
@@ -3633,13 +3633,13 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | EXPR_coercion (sr,(x,t)) ->
     let (e',t') as x' = be x in
     let t'' = bt sr t in
-    if type_eq syms.counter syms.dfns t' t'' then x'
+    if type_eq syms.counter syms.sym_table t' t'' then x'
     else
     let t' = Flx_maps.reduce_type t' in (* src *)
     let t'' = Flx_maps.reduce_type t'' in (* dst *)
     begin match t',t'' with
     | BTYP_inst (i,[]),BTYP_unitsum n ->
-      begin match hfind "lookup" syms.dfns i with
+      begin match hfind "lookup" syms.sym_table i with
       | { id="int"; symdef=SYMDEF_abs (_, CS_str_template "int", _) }  ->
         begin match e' with
         | BEXPR_literal (AST_int (kind,big)) ->
@@ -3660,7 +3660,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         end
       | _ ->
         clierr sr ("Attempt to to coerce type:\n"^
-        sbt syms.dfns t'
+        sbt syms.sym_table t'
         ^"to unitsum " ^ si n)
       end
 
@@ -3674,13 +3674,13 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           match list_assoc_index ls' s with
           | Some j ->
             let tt = List.assoc s ls' in
-            if type_eq syms.counter syms.dfns t tt then
+            if type_eq syms.counter syms.sym_table t tt then
               s,(BEXPR_get_n (j,x'),t)
             else clierr sr (
               "Source Record field '" ^ s ^ "' has type:\n" ^
-              sbt syms.dfns tt ^ "\n" ^
+              sbt syms.sym_table tt ^ "\n" ^
               "but coercion target has the different type:\n" ^
-              sbt syms.dfns t ^"\n" ^
+              sbt syms.sym_table t ^"\n" ^
               "The types must be the same!"
             )
           | None -> raise Not_found
@@ -3692,8 +3692,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         clierr sr
          (
          "Record coercion dst requires subset of fields of src:\n" ^
-         sbe syms.dfns bbdfns x' ^ " has type " ^ sbt syms.dfns t' ^
-        "\nwhereas annotation requires " ^ sbt syms.dfns t''
+         sbe syms.sym_table bsym_table x' ^ " has type " ^ sbt syms.sym_table t' ^
+        "\nwhereas annotation requires " ^ sbt syms.sym_table t''
         )
       end
 
@@ -3705,40 +3705,40 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           match list_assoc_index rhs s with
           | Some j ->
             let tt = List.assoc s rhs in
-            if not (type_eq syms.counter syms.dfns t tt) then
+            if not (type_eq syms.counter syms.sym_table t tt) then
             clierr sr (
               "Source Variant field '" ^ s ^ "' has type:\n" ^
-              sbt syms.dfns t ^ "\n" ^
+              sbt syms.sym_table t ^ "\n" ^
               "but coercion target has the different type:\n" ^
-              sbt syms.dfns tt ^"\n" ^
+              sbt syms.sym_table tt ^"\n" ^
               "The types must be the same!"
             )
           | None -> raise Not_found
         )
         lhs
         ;
-        print_endline ("Coercion of variant to type " ^ sbt syms.dfns t'');
+        print_endline ("Coercion of variant to type " ^ sbt syms.sym_table t'');
         BEXPR_coerce (x',t''),t''
       with Not_found ->
         clierr sr
          (
          "Variant coercion src requires subset of fields of dst:\n" ^
-         sbe syms.dfns bbdfns x' ^ " has type " ^ sbt syms.dfns t' ^
-        "\nwhereas annotation requires " ^ sbt syms.dfns t''
+         sbe syms.sym_table bsym_table x' ^ " has type " ^ sbt syms.sym_table t' ^
+        "\nwhereas annotation requires " ^ sbt syms.sym_table t''
         )
       end
     | _ ->
       clierr sr
       (
         "Wrong type in coercion:\n" ^
-        sbe syms.dfns bbdfns x' ^ " has type " ^ sbt syms.dfns t' ^
-        "\nwhereas annotation requires " ^ sbt syms.dfns t''
+        sbe syms.sym_table bsym_table x' ^ " has type " ^ sbt syms.sym_table t' ^
+        "\nwhereas annotation requires " ^ sbt syms.sym_table t''
       )
     end
 
   | EXPR_get_n (sr,(n,e')) ->
     let expr,typ = be e' in
-    let ctyp = match unfold syms.dfns typ with
+    let ctyp = match unfold syms.sym_table typ with
     | BTYP_array (t,BTYP_unitsum len)  ->
       if n<0 or n>len-1
       then clierr sr
@@ -3768,7 +3768,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         "[bind_expression] Expected tuple " ^
         string_of_expr e' ^
         " to have tuple type, got " ^
-        sbt syms.dfns typ
+        sbt syms.sym_table typ
       )
     in
       BEXPR_get_n (n, (expr,typ)), ctyp
@@ -3787,7 +3787,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
          (
            "Field " ^ field_name ^
            " is not a member of anonymous structure " ^
-           sbt syms.dfns t''
+           sbt syms.sym_table t''
           )
       end
 
@@ -3800,11 +3800,11 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     | BTYP_sum _ -> ()
     | BTYP_variant _ -> ()
     | BTYP_inst (i,_) ->
-      begin match hfind "lookup" syms.dfns i with
+      begin match hfind "lookup" syms.sym_table i with
       | {symdef=SYMDEF_union _} -> ()
       | {id=id} -> clierr sr ("Argument of caseno must be sum or union type, got type " ^ id)
       end
-    | _ -> clierr sr ("Argument of caseno must be sum or union type, got " ^ sbt syms.dfns t)
+    | _ -> clierr sr ("Argument of caseno must be sum or union type, got " ^ sbt syms.sym_table t)
     end
     ;
     let int_t = bt sr (TYP_name (sr,"int",[])) in
@@ -3825,8 +3825,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
   | EXPR_typed_case (sr,v,t) ->
     let t = bt sr t in
-    ignore (try unfold syms.dfns t with _ -> failwith "AST_typed_case unfold screwd");
-    begin match unfold syms.dfns t with
+    ignore (try unfold syms.sym_table t with _ -> failwith "AST_typed_case unfold screwd");
+    begin match unfold syms.sym_table t with
     | BTYP_unitsum k ->
       if v<0 or v>= k
       then clierr sr "Case index out of range of sum"
@@ -3847,7 +3847,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       clierr sr
       (
         "[bind_expression] Type of case must be sum, got " ^
-        sbt syms.dfns t
+        sbt syms.sym_table t
       )
     end
 
@@ -3866,14 +3866,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     ->
       (*
       let index = sye index in
-      let ts = adjust_ts syms.dfns sr index ts in
+      let ts = adjust_ts syms.sym_table sr index ts in
       *)
       (*
       print_endline ("NAME lookup finds index " ^ si index);
       print_endline ("spec_vs=" ^ catmap "," (fun (s,j)->s^"<"^si j^">") spec_vs);
-      print_endline ("spec_ts=" ^ catmap "," (sbt syms.dfns) sub_ts);
-      print_endline ("input_ts=" ^ catmap "," (sbt syms.dfns) ts);
-      begin match hfind "lookup" syms.dfns index with
+      print_endline ("spec_ts=" ^ catmap "," (sbt syms.sym_table) sub_ts);
+      print_endline ("input_ts=" ^ catmap "," (sbt syms.sym_table) ts);
+      begin match hfind "lookup" syms.sym_table index with
         | {id=id;vs=vs;symdef=SYMDEF_typevar _} ->
           print_endline (id ^ " is a typevariable, vs=" ^
             catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
@@ -3884,7 +3884,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       (* should be a client error not an assertion *)
       if List.length spec_vs <> List.length ts then begin
         print_endline ("BINDING NAME " ^ name);
-        begin match hfind "lookup" syms.dfns index with
+        begin match hfind "lookup" syms.sym_table index with
           | {id=id;vs=vs;symdef=SYMDEF_typevar _} ->
             print_endline (id ^ " is a typevariable, vs=" ^
               catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
@@ -3893,15 +3893,15 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         end;
         print_endline ("NAME lookup finds index " ^ si index);
         print_endline ("spec_vs=" ^ catmap "," (fun (s,j)->s^"<"^si j^">") spec_vs);
-        print_endline ("spec_ts=" ^ catmap "," (sbt syms.dfns) sub_ts);
-        print_endline ("input_ts=" ^ catmap "," (sbt syms.dfns) ts);
+        print_endline ("spec_ts=" ^ catmap "," (sbt syms.sym_table) sub_ts);
+        print_endline ("input_ts=" ^ catmap "," (sbt syms.sym_table) ts);
         clierr sr "[lookup,AST_name] ts/vs mismatch"
       end;
 
       let ts = List.map (tsubst spec_vs ts) sub_ts in
-      let ts = adjust_ts syms.dfns sr index ts in
+      let ts = adjust_ts syms.sym_table sr index ts in
       let t = ti sr index ts in
-      begin match hfind "lookup:ref-check" syms.dfns index with
+      begin match hfind "lookup:ref-check" syms.sym_table index with
       |  {symdef=SYMDEF_parameter (`PRef,_)}
       |  {symdef=SYMDEF_ref _ } ->
           let t' = match t with BTYP_pointer t' -> t' | _ ->
@@ -3916,7 +3916,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       (* should be a client error not an assertion *)
       if List.length spec_vs <> List.length ts then begin
         print_endline ("BINDING NAME " ^ name);
-        begin match hfind "lookup" syms.dfns index with
+        begin match hfind "lookup" syms.sym_table index with
           | {id=id;vs=vs;symdef=SYMDEF_typevar _} ->
             print_endline (id ^ " is a typevariable, vs=" ^
               catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
@@ -3925,13 +3925,13 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         end;
         print_endline ("NAME lookup finds index " ^ si index);
         print_endline ("spec_vs=" ^ catmap "," (fun (s,j)->s^"<"^si j^">") spec_vs);
-        print_endline ("spec_ts=" ^ catmap "," (sbt syms.dfns) sub_ts);
-        print_endline ("input_ts=" ^ catmap "," (sbt syms.dfns) ts);
+        print_endline ("spec_ts=" ^ catmap "," (sbt syms.sym_table) sub_ts);
+        print_endline ("input_ts=" ^ catmap "," (sbt syms.sym_table) ts);
         clierr sr "[lookup,AST_name] ts/vs mismatch"
       end;
 
       let ts = List.map (tsubst spec_vs ts) sub_ts in
-      let ts = adjust_ts syms.dfns sr index ts in
+      let ts = adjust_ts syms.sym_table sr index ts in
       let t = ti sr index ts in
       BEXPR_closure (index,ts), t
 
@@ -3966,18 +3966,18 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     (*
     print_endline ("[bind expression] AST_index " ^ string_of_qualified_name x);
     *)
-    let ts = adjust_ts syms.dfns sr index [] in
+    let ts = adjust_ts syms.sym_table sr index [] in
     (*
-    print_endline ("ts=" ^ catmap "," (sbt syms.dfns) ts);
+    print_endline ("ts=" ^ catmap "," (sbt syms.sym_table) ts);
     *)
     let t =
       try ti sr index ts
       with _ -> print_endline "type of index with ts failed"; raise Not_found
     in
     (*
-    print_endline ("Type is " ^ sbt syms.dfns t);
+    print_endline ("Type is " ^ sbt syms.sym_table t);
     *)
-    begin match hfind "lookup" syms.dfns index with
+    begin match hfind "lookup" syms.sym_table index with
     | {symdef=SYMDEF_fun _ }
     | {symdef=SYMDEF_function _ }
     ->
@@ -4001,14 +4001,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     begin match inner_lookup_name_in_env syms env rs sr name with
     | NonFunctionEntry (index) ->
       let index = sye index in
-      let ts = adjust_ts syms.dfns sr index ts in
+      let ts = adjust_ts syms.sym_table sr index ts in
       BEXPR_name (index,ts),
       let t = ti sr index ts in
       t
 
     | FunctionEntry [index] ->
       let index = sye index in
-      let ts = adjust_ts syms.dfns sr index ts in
+      let ts = adjust_ts syms.sym_table sr index ts in
       BEXPR_closure (index,ts),
       let t = ti sr index ts in
       t
@@ -4046,10 +4046,10 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         begin match entry with
         | NonFunctionEntry (i) ->
           let i = sye i in
-          begin match hfind "lookup" syms.dfns i with
+          begin match hfind "lookup" syms.sym_table i with
           | {sr=srn; symdef=SYMDEF_inherit qn} -> be (expr_of_qualified_name qn)
           | _ ->
-            let ts = adjust_ts syms.dfns sr i ts in
+            let ts = adjust_ts syms.sym_table sr i ts in
             BEXPR_name (i,ts),
             ti sr i ts
           end
@@ -4099,7 +4099,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
   | EXPR_ref (_,(EXPR_deref (_,e))) -> be e
   | EXPR_ref (srr,e) ->
     let has_property i p =
-      match get_data syms.dfns i with {symdef=entry} ->
+      match get_data syms.sym_table i with {symdef=entry} ->
       match entry with
       | SYMDEF_fun (props,_,_,_,_,_) -> List.mem p props
       | _ -> false
@@ -4108,7 +4108,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     begin match e' with
     | BEXPR_deref e -> e
     | BEXPR_name (index,ts) ->
-      begin match get_data syms.dfns index with
+      begin match get_data syms.sym_table index with
       {id=id; sr=sr; symdef=entry} ->
       begin match entry with
       | SYMDEF_inherit _ -> clierr srr "Woops, bindexpr yielded inherit"
@@ -4154,7 +4154,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
        clierr srr
         (
           "[bind_expression] " ^
-          "Address non variable " ^ sbe syms.dfns bbdfns (e',t')
+          "Address non variable " ^ sbe syms.sym_table bsym_table (e',t')
         )
     end
 
@@ -4165,7 +4165,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
   | EXPR_deref (sr,e) ->
     let e,t = be e in
-    begin match unfold syms.dfns t with
+    begin match unfold syms.sym_table t with
     | BTYP_pointer t'
       -> BEXPR_deref (e,t),t'
     | _ -> clierr sr "[bind_expression'] Dereference non pointer"
@@ -4203,8 +4203,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       | None -> bind_expression' syms env rs f' (a :: args)
     in
     (*
-    print_endline ("tf=" ^ sbt syms.dfns tf);
-    print_endline ("ta=" ^ sbt syms.dfns ta);
+    print_endline ("tf=" ^ sbt syms.sym_table tf);
+    print_endline ("ta=" ^ sbt syms.sym_table ta);
     *)
     begin match tf with
     | BTYP_cfunction _ -> cal_apply syms sr rs f a
@@ -4215,7 +4215,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)
     | BTYP_inst (i,ts') when
       (
-        match hfind "lookup" syms.dfns i with
+        match hfind "lookup" syms.sym_table i with
         | {symdef=SYMDEF_struct _} ->
           (match ta with | BTYP_record _ -> true | _ -> false)
         | _ -> false
@@ -4224,7 +4224,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       (*
       print_endline "struct applied to record .. ";
       *)
-      let id,vs,fls = match hfind "lookup" syms.dfns i with
+      let id,vs,fls = match hfind "lookup" syms.sym_table i with
         | {id=id; vs=vs; symdef=SYMDEF_struct ls } -> id,vs,ls
         | _ -> assert false
       in
@@ -4252,11 +4252,11 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             in
           let ct = bind_type' syms env' rsground sr ct bvs mkenv in
           let ct = tsubst vs' ts' ct in
-            if type_eq syms.counter syms.dfns ct t then
+            if type_eq syms.counter syms.sym_table ct t then
               BEXPR_get_n (j,a),t
             else clierr sr ("Component " ^ name ^
-              " struct component type " ^ sbt syms.dfns ct ^
-              "\ndoesn't match record type " ^ sbt syms.dfns t
+              " struct component type " ^ sbt syms.sym_table ct ^
+              "\ndoesn't match record type " ^ sbt syms.sym_table t
             )
           )
           fls
@@ -4270,7 +4270,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
     | t ->
       (*
-      print_endline ("Expected f to be function, got " ^ sbt syms.dfns t);
+      print_endline ("Expected f to be function, got " ^ sbt syms.sym_table t);
       *)
       let apl name =
         be
@@ -4300,7 +4300,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
          clierr sr
          (
            "Elements of this array must all be of type:\n" ^
-           sbt syms.dfns t ^ "\ngot:\n"^ sbt syms.dfns t'
+           sbt syms.sym_table t ^ "\ngot:\n"^ sbt syms.sym_table t'
          )
       )
       (List.tl bts)
@@ -4379,7 +4379,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
       (* LHS IS A NOMINAL TYPE *)
       | BTYP_inst (i,ts') ->
-        begin match hfind "lookup" syms.dfns i with
+        begin match hfind "lookup" syms.sym_table i with
 
         (* STRUCT *)
         | {id=id; vs=vs; symdef=SYMDEF_struct ls } ->
@@ -4464,7 +4464,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           with exn1 -> try be (EXPR_apply (sr,(e2,e)))
           with exn2 ->
           clierr sr (
-            "AST_dot: Abstract type "^id^"="^sbt syms.dfns ttt ^
+            "AST_dot: Abstract type "^id^"="^sbt syms.sym_table ttt ^
             "\napply " ^ name ^
             " failed with " ^ Printexc.to_string exn2
             )
@@ -4473,7 +4473,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
         | _ ->
           failwith ("[lookup] operator . Expected LHS nominal type to be"^
           " (c)struct or abstract primitive, got " ^
-          sbt syms.dfns ttt)
+          sbt syms.sym_table ttt)
 
         end
 
@@ -4491,7 +4491,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           (
             "[bind_expression] operator dot: Field " ^ field_name ^
             " is not a member of anonymous structure type " ^
-             sbt syms.dfns ttt ^
+             sbt syms.sym_table ttt ^
              "\n and trying " ^ field_name ^
              " as a function also failed"
           )
@@ -4554,14 +4554,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       let (_,ut) as ue = be e in
       let ut = rt ut in
       (*
-      print_endline ("Union type is " ^ sbt syms.dfns ut);
+      print_endline ("Union type is " ^ sbt syms.sym_table ut);
       *)
       begin match ut with
       | BTYP_inst (i,ts') ->
         (*
         print_endline ("OK got type " ^ si i);
         *)
-        begin match hfind "lookup" syms.dfns i with
+        begin match hfind "lookup" syms.sym_table i with
         | {id=id; symdef=SYMDEF_union ls } ->
           (*
           print_endline ("UNION TYPE! " ^ id);
@@ -4586,9 +4586,9 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
           let fname = EXPR_name (sr,"_match_ctor_" ^ name,ts) in
           be (EXPR_apply ( sr, (fname,e)))
 
-        | _ -> clierr sr ("expected union of abstract type, got" ^ sbt syms.dfns ut)
+        | _ -> clierr sr ("expected union of abstract type, got" ^ sbt syms.sym_table ut)
         end
-      | _ -> clierr sr ("expected nominal type, got" ^ sbt syms.dfns ut)
+      | _ -> clierr sr ("expected nominal type, got" ^ sbt syms.sym_table ut)
       end
 
     | `AST_lookup (sr,(context,name,ts)) ->
@@ -4598,14 +4598,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       let (_,ut) as ue = be e in
       let ut = rt ut in
       (*
-      print_endline ("Union type is " ^ sbt syms.dfns ut);
+      print_endline ("Union type is " ^ sbt syms.sym_table ut);
       *)
       begin match ut with
       | BTYP_inst (i,ts') ->
         (*
         print_endline ("OK got type " ^ si i);
         *)
-        begin match hfind "lookup" syms.dfns i with
+        begin match hfind "lookup" syms.sym_table i with
         | {id=id; symdef=SYMDEF_union ls } ->
           (*
           print_endline ("UNION TYPE! " ^ id);
@@ -4643,8 +4643,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
 
   | EXPR_case_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
-    ignore (try unfold syms.dfns t with _ -> failwith "AST_case_arg unfold screwd");
-     begin match unfold syms.dfns t with
+    ignore (try unfold syms.sym_table t with _ -> failwith "AST_case_arg unfold screwd");
+     begin match unfold syms.sym_table t with
      | BTYP_unitsum n ->
        if v < 0 or v >= n
        then clierr sr "Invalid sum index"
@@ -4658,7 +4658,7 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
        else let t = List.nth ls v in
        BEXPR_case_arg (v, e'),t
 
-     | _ -> clierr sr ("Expected sum type, got " ^ sbt syms.dfns t)
+     | _ -> clierr sr ("Expected sum type, got " ^ sbt syms.sym_table t)
      end
 
   | EXPR_ctor_arg (sr,(qn,e)) ->
@@ -4670,14 +4670,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       let (_,ut) as ue = be e in
       let ut = rt ut in
       (*
-      print_endline ("Union type is " ^ sbt syms.dfns ut);
+      print_endline ("Union type is " ^ sbt syms.sym_table ut);
       *)
       begin match ut with
       | BTYP_inst (i,ts') ->
         (*
         print_endline ("OK got type " ^ si i);
         *)
-        begin match hfind "lookup" syms.dfns i with
+        begin match hfind "lookup" syms.sym_table i with
         | {id=id; vs=vs; symdef=SYMDEF_union ls } ->
           (*
           print_endline ("UNION TYPE! " ^ id);
@@ -4701,12 +4701,12 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             bind_type' syms env' rsground sr vt bvs mkenv
           in
           (*
-          print_endline ("Bound polymorphic type = " ^ sbt syms.dfns vt);
+          print_endline ("Bound polymorphic type = " ^ sbt syms.sym_table vt);
           *)
           let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
           let vt = tsubst vs' ts' vt in
           (*
-          print_endline ("Instantiated type = " ^ sbt syms.dfns vt);
+          print_endline ("Instantiated type = " ^ sbt syms.sym_table vt);
           *)
           BEXPR_case_arg (vidx,ue),vt
 
@@ -4731,14 +4731,14 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       let (_,ut) as ue = be e in
       let ut = rt ut in
       (*
-      print_endline ("Union type is " ^ sbt syms.dfns ut);
+      print_endline ("Union type is " ^ sbt syms.sym_table ut);
       *)
       begin match ut with
       | BTYP_inst (i,ts') ->
         (*
         print_endline ("OK got type " ^ si i);
         *)
-        begin match hfind "lookup" syms.dfns i with
+        begin match hfind "lookup" syms.sym_table i with
         | {id=id; vs=vs; symdef=SYMDEF_union ls } ->
           (*
           print_endline ("UNION TYPE! " ^ id);
@@ -4762,12 +4762,12 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
             bind_type' syms env' rsground sr vt bvs mkenv
           in
           (*
-          print_endline ("Bound polymorphic type = " ^ sbt syms.dfns vt);
+          print_endline ("Bound polymorphic type = " ^ sbt syms.sym_table vt);
           *)
           let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
           let vt = tsubst vs' ts' vt in
           (*
-          print_endline ("Instantiated type = " ^ sbt syms.dfns vt);
+          print_endline ("Instantiated type = " ^ sbt syms.sym_table vt);
           *)
           BEXPR_case_arg (vidx,ue),vt
 
@@ -4845,7 +4845,7 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
     *)
     List.iter
     (fun {base_sym=i; spec_vs=spec_vs; sub_ts=sub_ts} ->
-    match hfind "lookup" syms.dfns i  with
+    match hfind "lookup" syms.sym_table i  with
     {id=id;sr=sr;parent=parent;vs=vs;symdef=entry} ->
     match entry with
     | SYMDEF_instance qn' ->
@@ -4853,7 +4853,7 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
       print_endline ("Verified " ^ si i ^ " is an instance of " ^ id);
       print_endline ("  base vs = " ^ print_ivs_with_index vs);
       print_endline ("  spec vs = " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") spec_vs);
-      print_endline ("  view ts = " ^ catmap "," (fun t -> sbt syms.dfns t) sub_ts);
+      print_endline ("  view ts = " ^ catmap "," (fun t -> sbt syms.sym_table t) sub_ts);
       *)
       let inst_ts = grab_ts qn' in
       (*
@@ -4863,16 +4863,16 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
       let bt t = bind_type' syms instance_env rsground sr t [] mkenv in
       let inst_ts = List.map bt inst_ts in
       (*
-      print_endline ("  instance ts = " ^ catmap "," (fun t -> sbt syms.dfns t) inst_ts);
-      print_endline ("  caller   ts = " ^ catmap "," (fun t -> sbt syms.dfns t) ts');
+      print_endline ("  instance ts = " ^ catmap "," (fun t -> sbt syms.sym_table t) inst_ts);
+      print_endline ("  caller   ts = " ^ catmap "," (fun t -> sbt syms.sym_table t) ts');
       *)
       let matches =
         if List.length inst_ts <> List.length ts' then false else
-        match maybe_specialisation syms.counter syms.dfns (List.combine inst_ts ts') with
+        match maybe_specialisation syms.counter syms.sym_table (List.combine inst_ts ts') with
         | None -> false
         | Some mgu ->
           (*
-          print_endline ("MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt syms.dfns t) mgu);
+          print_endline ("MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt syms.sym_table t) mgu);
           print_endline ("check base vs (constraint) = " ^ print_ivs_with_index vs);
           *)
           let cons = try
@@ -4882,16 +4882,16 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
           let {raw_type_constraint=icons} = snd vs in
           let icons = bt icons in
           (*
-          print_endline ("Constraint = " ^ sbt syms.dfns cons);
-          print_endline ("VS Constraint = " ^ sbt syms.dfns icons);
+          print_endline ("Constraint = " ^ sbt syms.sym_table cons);
+          print_endline ("VS Constraint = " ^ sbt syms.sym_table icons);
           *)
           let cons = BTYP_intersect [cons; icons] in
           (*
-          print_endline ("Constraint = " ^ sbt syms.dfns cons);
+          print_endline ("Constraint = " ^ sbt syms.sym_table cons);
           *)
           let cons = list_subst syms.counter mgu cons in
           (*
-          print_endline ("Constraint = " ^ sbt syms.dfns cons);
+          print_endline ("Constraint = " ^ sbt syms.sym_table cons);
           *)
           let cons = Flx_maps.reduce_type (beta_reduce syms sr cons) in
           match cons with
@@ -4901,7 +4901,7 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
              (*
               print_endline (
                "[instance_check] Can't reduce instance type constraint " ^
-               sbt syms.dfns cons
+               sbt syms.sym_table cons
              );
              *)
              true
@@ -4925,7 +4925,7 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
       print_endline ("Verified " ^ si i ^ " is an typeclass specialisation of " ^ classname);
       print_endline ("  base vs = " ^ print_ivs_with_index vs);
       print_endline ("  spec vs = " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") spec_vs);
-      print_endline ("  view ts = " ^ catmap "," (fun t -> sbt syms.dfns t) sub_ts);
+      print_endline ("  view ts = " ^ catmap "," (fun t -> sbt syms.sym_table t) sub_ts);
       *)
       if sub_ts = ts' then begin
         (*
@@ -4949,25 +4949,25 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
     | [`Typeclass (i,ts)] -> ()
     | [] ->
       print_endline ("WARNING: In call of " ^ calledname ^", Typeclass instance matching " ^
-        classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^
+        classname ^"["^catmap "," (sbt syms.sym_table) ts' ^"]" ^
         " not found"
       )
     | `Inst i :: t ->
       print_endline ("WARNING: In call of " ^ calledname ^", More than one instances matching " ^
-        classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^
+        classname ^"["^catmap "," (sbt syms.sym_table) ts' ^"]" ^
         " found"
       );
       print_endline ("Call of " ^ calledname ^ " at " ^ Flx_srcref.short_string_of_src call_sr);
       List.iter (fun i ->
         match i with
         | `Inst i -> print_endline ("Instance " ^ si i)
-        | `Typeclass (i,ts) -> print_endline ("Typeclass " ^ si i^"[" ^ catmap "," (sbt syms.dfns) ts ^ "]")
+        | `Typeclass (i,ts) -> print_endline ("Typeclass " ^ si i^"[" ^ catmap "," (sbt syms.sym_table) ts ^ "]")
       )
       !insts
 
     | `Typeclass (i,ts) :: tail ->
       clierr call_sr ("In call of " ^ calledname ^", Multiple typeclass specialisations matching " ^
-        classname ^"["^catmap "," (sbt syms.dfns) ts' ^"]" ^
+        classname ^"["^catmap "," (sbt syms.sym_table) ts' ^"]" ^
         " found"
       )
     end
@@ -4976,7 +4976,7 @@ and check_instances syms call_sr calledname classname es ts' mkenv =
 
 and instance_check syms caller_env called_env mgu sr calledname rtcr tsub =
   (*
-  print_endline ("INSTANCE CHECK MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt syms.dfns t) mgu);
+  print_endline ("INSTANCE CHECK MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt syms.sym_table t) mgu);
   print_endline "SEARCH FOR INSTANCE!";
   print_env caller_env;
   *)
@@ -5004,11 +5004,11 @@ and instance_check syms caller_env called_env mgu sr calledname rtcr tsub =
       *)
       let ts' = List.map (fun t -> try inner_bind_type syms called_env sr rsground t with _ -> print_endline "Bind type failed .."; assert false) ts' in
       (*
-      print_endline ("With bound ts = " ^ catmap "," (sbt syms.dfns) ts');
+      print_endline ("With bound ts = " ^ catmap "," (sbt syms.sym_table) ts');
       *)
       let ts' = List.map tsub ts' in
       (*
-      print_endline ("With bound, mapped ts = " ^ catmap "," (sbt syms.dfns) ts');
+      print_endline ("With bound, mapped ts = " ^ catmap "," (sbt syms.sym_table) ts');
       *)
       check_instances syms call_sr calledname classname es ts' (fun i->build_env syms (Some i))
     )
@@ -5046,10 +5046,10 @@ and resolve_overload'
   | Some (index,sign,ret,mgu,ts) ->
     (*
     print_endline ("RESOLVED OVERLOAD OF " ^ name);
-    print_endline (" .. mgu = " ^ string_of_varlist syms.dfns mgu);
-    print_endline ("Resolve ts = " ^ catmap "," (sbt syms.dfns) ts);
+    print_endline (" .. mgu = " ^ string_of_varlist syms.sym_table mgu);
+    print_endline ("Resolve ts = " ^ catmap "," (sbt syms.sym_table) ts);
     *)
-    let parent_vs,vs,{raw_typeclass_reqs=rtcr} = find_split_vs syms.dfns index in
+    let parent_vs,vs,{raw_typeclass_reqs=rtcr} = find_split_vs syms.sym_table index in
     (*
     print_endline ("Function vs=" ^ catmap "," (fun (s,i,_) -> s^"<"^si i^">") vs);
     print_endline ("Parent vs=" ^ catmap "," (fun (s,i,_) -> s^"<"^si i^">") parent_vs);
@@ -5131,13 +5131,13 @@ and get_includes syms rs xs =
     begin
       (*
       if List.length ts != 0 then
-        print_endline ("INCLUDES, ts="^catmap "," (sbt syms.dfns) ts)
+        print_endline ("INCLUDES, ts="^catmap "," (sbt syms.sym_table) ts)
       ;
       *)
       includes := index :: !includes;
       let env = mk_bare_env syms i in (* should have ts in .. *)
       let qns,sr,vs =
-        match hfind "lookup" syms.dfns i with
+        match hfind "lookup" syms.sym_table i with
         {id=id;sr=sr;parent=parent;vs=vs;pubmap=table;dirs=dirs} ->
         (*
         print_endline (id ^", Raw vs = " ^ catmap "," (fun (n,k,_) -> n ^ "<" ^ si k ^ ">") (fst vs));
@@ -5158,21 +5158,21 @@ and get_includes syms rs xs =
             let bt t = bind_type' syms env rs sr t [] mkenv in
             let ts'' = List.map bt ts'' in
             (*
-            print_endline ("BOUND types " ^ catmap "," (sbt syms.dfns) ts'');
+            print_endline ("BOUND types " ^ catmap "," (sbt syms.sym_table) ts'');
             *)
             (*
             print_endline ("inherit " ^ string_of_qualified_name qn ^
-            ", bound ts="^catmap "," (sbt syms.dfns) ts'');
+            ", bound ts="^catmap "," (sbt syms.sym_table) ts'');
             print_endline ("Spec vs = " ^ catmap "," (fun (n,k) -> n ^ "<" ^ si k ^ ">") vs');
             *)
 
             let ts'' = List.map (tsubst vs ts) ts'' in
             (*
-            print_endline ("Inherit after subs(1): " ^ si j ^ "["^catmap "," (sbt syms.dfns) ts'' ^"]");
+            print_endline ("Inherit after subs(1): " ^ si j ^ "["^catmap "," (sbt syms.sym_table) ts'' ^"]");
             *)
             let ts' = List.map (tsubst vs' ts'') ts' in
             (*
-            print_endline ("Inherit after subs(2): " ^ si j ^ "["^catmap "," (sbt syms.dfns) ts' ^"]");
+            print_endline ("Inherit after subs(2): " ^ si j ^ "["^catmap "," (sbt syms.sym_table) ts' ^"]");
             *)
             get_includes' syms includes (invs,j,ts')
       )
@@ -5200,8 +5200,8 @@ and bind_dir
   (fun (n,i,_) ->
    let entry = NonFunctionEntry {base_sym=i; spec_vs=[]; sub_ts=[]} in
     Hashtbl.add cheat_table n entry;
-    if not (Hashtbl.mem syms.dfns i) then
-      Hashtbl.add syms.dfns i {id=n;sr=dummy_sr;parent=None;vs=dfltvs;
+    if not (Hashtbl.mem syms.sym_table i) then
+      Hashtbl.add syms.sym_table i {id=n;sr=dummy_sr;parent=None;vs=dfltvs;
       pubmap=nullmap; privmap=nullmap;dirs=[];
       symdef=SYMDEF_typevar TYP_type
       }
@@ -5242,7 +5242,7 @@ and bind_dir
        (bind_type' syms (cheat_env::env) rsground dummy_sr t [] mkenv)
      ) ts' in
    (*
-   print_endline ("Ts bound = " ^ catmap "," (sbt syms.dfns) ts');
+   print_endline ("Ts bound = " ^ catmap "," (sbt syms.sym_table) ts');
    *)
    (*
    let ts' = List.map (fun t-> bind_type syms env dummy_sr t) ts' in
@@ -5274,9 +5274,9 @@ and review_entry syms vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_t
    *)
     (*
     print_endline ("input vs="^catmap "," (fun (s,i)->s^"<"^si i^">") vs^
-      ", input ts="^catmap "," (sbt syms.dfns) ts);
+      ", input ts="^catmap "," (sbt syms.sym_table) ts);
     print_endline ("old vs="^catmap "," (fun (s,i)->s^"<"^si i^">") vs'^
-      ", old ts="^catmap "," (sbt syms.dfns) ts');
+      ", old ts="^catmap "," (sbt syms.sym_table) ts');
    *)
    let vs = ref (List.rev vs) in
    let vs',ts =
@@ -5308,7 +5308,7 @@ and review_entry_set syms v vs ts : entry_set_t = match v with
 
 and make_view_table syms table (vs: (string * int) list) ts : name_map_t =
   (*
-  print_endline ("vs="^catmap "," (fun (s,_)->s) vs^", ts="^catmap "," (sbt syms.dfns) ts);
+  print_endline ("vs="^catmap "," (fun (s,_)->s) vs^", ts="^catmap "," (sbt syms.sym_table) ts);
   print_endline "Building view table!";
   *)
   let h = Hashtbl.create 97 in
@@ -5329,7 +5329,7 @@ and pub_table_dir
   (invs,i,ts)
 : name_map_t =
   let invs = List.map (fun (i,n,_)->i,n) (fst invs) in
-  match get_data syms.dfns i with
+  match get_data syms.sym_table i with
   | {id=id; vs=vs; sr=sr; pubmap=table;symdef=SYMDEF_module} ->
     if List.length ts = 0 then table else
     begin
@@ -5338,7 +5338,7 @@ and pub_table_dir
       *)
       let table = make_view_table syms table invs ts in
       (*
-      print_name_table syms.dfns table;
+      print_name_table syms.sym_table table;
       *)
       table
     end
@@ -5356,7 +5356,7 @@ and pub_table_dir
     begin
       if syms.compiler_options.print_flag then
       print_endline ("Added typeclass "^si i^
-        " as instance " ^ inst_name ^": "^ string_of_myentry syms.dfns inst
+        " as instance " ^ inst_name ^": "^ string_of_myentry syms.sym_table inst
       );
       let luqn2 qn =
         try
@@ -5367,7 +5367,7 @@ and pub_table_dir
       match res with
       | None -> clierr sr
         ("Couldn't find any instances to open for " ^ id ^
-          "[" ^ catmap "," (sbt syms.dfns) ts ^ "]"
+          "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]"
         )
       | Some (es,_) -> check_instances syms sr "open" id es ts (mk_bare_env syms)
     end
@@ -5385,7 +5385,7 @@ and get_pub_tables syms env rs dirs =
   tables
 
 and mk_bare_env syms index =
-  match hfind "lookup" syms.dfns index with
+  match hfind "lookup" syms.sym_table index with
   {id=id;parent=parent;privmap=table} -> (index,id,table,[],TYP_tuple []) ::
   match parent with
   | None -> []
@@ -5524,7 +5524,7 @@ and merge_opens syms env rs (typeclasses,opens,includes,uses) =
 
 and build_env'' syms rs index : env_t =
   let { id=id; parent=parent; vs=vs; privmap=table; dirs=dirs } =
-    hfind "lookup" syms.dfns index
+    hfind "lookup" syms.sym_table index
   in
   let skip_merges = List.mem index rs.idx_fixlist in
   (*
@@ -5602,7 +5602,7 @@ and rebind_btype syms env sr ts t: btypecode_t =
   let rbt t = rebind_btype syms env sr ts t in
   match t with
   | BTYP_inst (i,_) ->
-    begin match get_data syms.dfns i with
+    begin match get_data syms.sym_table i with
     | {symdef=SYMDEF_type_alias t'} ->
       inner_bind_type syms env sr rsground t'
     | _ -> t
@@ -5639,19 +5639,19 @@ and rebind_btype syms env sr ts t: btypecode_t =
   | BTYP_void
   | BTYP_fix _ -> t
 
-  | BTYP_var (i,mt) -> clierr sr ("[rebind_type] Unexpected type variable " ^ sbt syms.dfns t)
+  | BTYP_var (i,mt) -> clierr sr ("[rebind_type] Unexpected type variable " ^ sbt syms.sym_table t)
   | BTYP_apply _
   | BTYP_typefun _
   | BTYP_type _
   | BTYP_type_tuple _
   | BTYP_type_match _
-    -> clierr sr ("[rebind_type] Unexpected metatype " ^ sbt syms.dfns t)
+    -> clierr sr ("[rebind_type] Unexpected metatype " ^ sbt syms.sym_table t)
 
 
 and check_module syms name sr entries ts =
     begin match entries with
     | NonFunctionEntry (index) ->
-      begin match get_data syms.dfns (sye index) with
+      begin match get_data syms.sym_table (sye index) with
       | {dirs=dirs;pubmap=table;symdef=SYMDEF_module} ->
         Simple_module (sye index,ts,table,dirs)
       | {dirs=dirs;pubmap=table;symdef=SYMDEF_typeclass} ->
@@ -5764,7 +5764,7 @@ let lookup_code_in_env syms env sr qn =
   | Some (FunctionEntry x,ts) ->
     List.iter
     (fun i ->
-      match hfind "lookup" syms.dfns (sye i) with
+      match hfind "lookup" syms.sym_table (sye i) with
       | {symdef=SYMDEF_insert _} -> ()
       | {id=id; vs=vs; symdef=y} -> clierr sr
         (

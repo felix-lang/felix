@@ -81,12 +81,11 @@ let term_subst counter t1 i t2 =
   | BTYP_type_match (tt, pts) ->
     let tt = s tt in
     let pts =
-      List.map (fun ({pattern=p; pattern_vars=vs; assignments=asgs},x as case) ->
-       if IntSet.mem i vs then case else
-       let asgs = List.map (fun (i,t) -> i, s t) asgs in
-       {pattern= s p; pattern_vars=vs; assignments=asgs}, s x
-      )
-    pts
+      List.map begin fun ((bpat, x) as case) ->
+       if IntSet.mem i bpat.pattern_vars then case else
+       let asgs = List.map (fun (i,t) -> i, s t) bpat.assignments in
+       { bpat with pattern=s bpat.pattern; assignments=asgs }, s x
+      end pts
     in
     BTYP_type_match (tt,pts)
 
@@ -292,7 +291,7 @@ let var_list_occurs ls t =
   that right requires unification .. :)
 *)
 
-let rec unification counter dfns
+let rec unification counter sym_table
   (eqns: (btypecode_t * btypecode_t) list)
   (dvars: IntSet.t)
 : (int * btypecode_t) list =
@@ -325,7 +324,7 @@ let rec unification counter dfns
       | BTYP_var (i,_), t
       | t,BTYP_var (i,_) ->
         (*
-        print_endline ("variable assignment " ^ si i ^ " -> " ^ sbt dfns t);
+        print_endline ("variable assignment " ^ si i ^ " -> " ^ sbt sym_table t);
         *)
 
         (* WE SHOULD CHECK THAT t has the right meta type .. but
@@ -339,7 +338,7 @@ let rec unification counter dfns
           (
             "recursion in unification, terms: " ^
             match h with (a,b) ->
-            sbt dfns a ^ " = " ^ sbt dfns b
+            sbt sym_table a ^ " = " ^ sbt sym_table b
           );
           *)
           s := Some (i, fix i t)
@@ -478,7 +477,7 @@ let rec unification counter dfns
 
       | x,y ->
         (*
-        print_endline ("Terms do not match: " ^ sbt dfns x ^ " <-> " ^ sbt dfns y);
+        print_endline ("Terms do not match: " ^ sbt sym_table x ^ " <-> " ^ sbt sym_table y);
         *)
         raise Not_found
       end
@@ -487,7 +486,7 @@ let rec unification counter dfns
       | None -> ()
       | Some (i,t) ->
         (*
-        print_endline ("Substituting " ^ si i ^ " -> " ^ sbt dfns t);
+        print_endline ("Substituting " ^ si i ^ " -> " ^ sbt sym_table t);
         *)
         eqns :=
           List.map
@@ -522,45 +521,45 @@ let find_vars_eqns eqns =
   ;
   !lhs_vars,!rhs_vars
 
-let maybe_unification counter dfns eqns =
+let maybe_unification counter sym_table eqns =
   let l,r = find_vars_eqns eqns in
   let dvars = IntSet.union l r in
-  try Some (unification counter dfns eqns dvars)
+  try Some (unification counter sym_table eqns dvars)
   with Not_found -> None
 
-let maybe_matches counter dfns eqns =
+let maybe_matches counter sym_table eqns =
   let l,r = find_vars_eqns eqns in
   let dvars = IntSet.union l r in
-  try Some (unification counter dfns eqns dvars)
+  try Some (unification counter sym_table eqns dvars)
   with Not_found -> None
 
-let maybe_specialisation counter dfns eqns =
+let maybe_specialisation counter sym_table eqns =
   let l,_ = find_vars_eqns eqns in
-  try Some (unification counter dfns eqns l)
+  try Some (unification counter sym_table eqns l)
   with Not_found -> None
 
-let unifies counter dfns t1 t2 =
+let unifies counter sym_table t1 t2 =
   let eqns = [t1,t2] in
-  match maybe_unification counter dfns eqns with
+  match maybe_unification counter sym_table eqns with
   | None -> false
   | Some _ -> true
 
-let ge counter dfns a b =
+let ge counter sym_table a b =
   (*
-  print_endline ("Compare terms " ^ sbt dfns a ^ " >? " ^ sbt dfns b);
+  print_endline ("Compare terms " ^ sbt sym_table a ^ " >? " ^ sbt sym_table b);
   *)
-  match maybe_specialisation counter dfns [a,b] with
+  match maybe_specialisation counter sym_table [a,b] with
   | None -> false
   | Some mgu ->
     (*
     print_endline ("MGU from specialisation = ");
-    List.iter (fun (i, t) -> print_endline (si i ^ " --> " ^ sbt dfns t)) mgu;
+    List.iter (fun (i, t) -> print_endline (si i ^ " --> " ^ sbt sym_table t)) mgu;
     print_endline "";
     *)
     true
 
-let compare_sigs counter dfns a b =
-  match ge counter dfns a b, ge counter dfns b a with
+let compare_sigs counter sym_table a b =
+  match ge counter sym_table a b, ge counter sym_table b a with
   | true, true -> `Equal
   | false, false -> `Incomparable
   | true, false -> `Greater
@@ -605,12 +604,12 @@ let do_unify syms a b =
     (*
     print_endline "Calling unification";
     *)
-    let mgu = unification syms.counter syms.dfns eqns dvars in
+    let mgu = unification syms.counter syms.sym_table eqns dvars in
     (*
     print_endline "mgu=";
     List.iter
     (fun (i, t) ->
-      print_endline (string_of_int i ^ " -> " ^ string_of_btypecode syms.dfns t)
+      print_endline (string_of_int i ^ " -> " ^ string_of_btypecode syms.sym_table t)
     )
     mgu;
     *)
@@ -641,13 +640,13 @@ let do_unify syms a b =
       end else begin
         match
           begin
-            try Hashtbl.find syms.dfns i with Not_found -> failwith
+            try Hashtbl.find syms.sym_table i with Not_found -> failwith
               ("BUG, flx_unify can't find symbol " ^ string_of_int i)
           end
         with
         | { symdef=SYMDEF_function _ } ->
           (*
-          print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.dfns t);
+          print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.sym_table t);
           *)
           Hashtbl.add syms.varmap i t
 
@@ -658,7 +657,7 @@ let do_unify syms a b =
           failwith
           (
             "[do_unify] attempt to add non-function return unknown type variable "^
-            si i^", type "^sbt syms.dfns t^" to hashtble"
+            si i^", type "^sbt syms.sym_table t^" to hashtble"
           )
       end
     end mgu;
@@ -669,10 +668,10 @@ let rec memq trail (a,b) = match trail with
   | [] -> false
   | (i,j)::t -> i == a && j == b || memq t (a,b)
 
-let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
-  (* print_endline (sbt dfns t1 ^ " =? " ^ sbt dfns t2); *)
+let rec type_eq' counter sym_table ltrail ldepth rtrail rdepth trail t1 t2 =
+  (* print_endline (sbt sym_table t1 ^ " =? " ^ sbt sym_table t2); *)
   if memq trail (t1,t2) then true
-  else let te a b = type_eq' counter dfns 
+  else let te a b = type_eq' counter sym_table
     ((ldepth,t1)::ltrail) (ldepth+1)
     ((rdepth,t2)::rtrail) (rdepth+1)
     ((t1,t2)::trail)
@@ -685,7 +684,7 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
       (*
       print_endline (
       "trail failure, index=" ^ si i ^ ", trail="
-      ^ catmap "," (fun (k,t) -> si k ^ "->" ^ sbt dfns t) ls
+      ^ catmap "," (fun (k,t) -> si k ^ "->" ^ sbt sym_table t) ls
       );
       failwith "Trail failure"
       *)
@@ -716,7 +715,7 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
     print_endline ("Tuple/sum compared " ^ (if result then "TRUE" else "FALSE"));
     if List.length ts1 = List.length ts2 then
     print_endline ("Args = " ^ catmap "\n  " (fun (t1,t2) ->
-      "lhs=" ^sbt dfns t1 ^" vs rhs=" ^ sbt dfns t2)
+      "lhs=" ^sbt sym_table t1 ^" vs rhs=" ^ sbt sym_table t2)
      (combine ts1 ts2))
     else print_endline ("unequal lengths");
     *)
@@ -795,7 +794,7 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
       try
       let a = List.assoc (ldepth+i) ltrail in
       let b = List.assoc (rdepth+j) rtrail in
-      type_eq' counter dfns ltrail ldepth rtrail rdepth trail a b
+      type_eq' counter sym_table ltrail ldepth rtrail rdepth trail a b
       with Not_found -> false
     end
 
@@ -805,7 +804,7 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
     *)
     begin try
     let a = List.assoc (ldepth+i) ltrail in
-    type_eq' counter dfns ltrail ldepth rtrail rdepth trail a t
+    type_eq' counter sym_table ltrail ldepth rtrail rdepth trail a t
     with Not_found -> false
     end
 
@@ -815,7 +814,7 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
     *)
     begin try
     let b = List.assoc (rdepth+j) rtrail in
-    type_eq' counter dfns ltrail ldepth rtrail rdepth trail t b
+    type_eq' counter sym_table ltrail ldepth rtrail rdepth trail t b
     with Not_found -> false
     end
 
@@ -824,12 +823,12 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
     let vs = List.map2 (fun (i1,_) (i2,t) -> i1,BTYP_var (i2,t))  p1 p2 in
     (*
     print_endline "Comparing type functions";
-    print_endline ("b1 =          " ^ sbt dfns b1);
+    print_endline ("b1 =          " ^ sbt sym_table b1);
     *)
     let b1 = list_subst counter vs b1 in
     (*
-    print_endline ("Adjusted b1 = " ^ sbt dfns b1);
-    print_endline ("b2 =          " ^ sbt dfns b2);
+    print_endline ("Adjusted b1 = " ^ sbt sym_table b1);
+    print_endline ("b2 =          " ^ sbt sym_table b2);
     *)
     let result = te b1 b2 in
     (*
@@ -839,15 +838,15 @@ let rec type_eq' counter dfns ltrail ldepth rtrail rdepth trail t1 t2 =
 
   | l,r ->
     (*
-    print_endline ("WOOOPS .. dunno.." ^ sbt dfns l ^" vs " ^ sbt dfns r);
+    print_endline ("WOOOPS .. dunno.." ^ sbt sym_table l ^" vs " ^ sbt sym_table r);
     *)
     false
 
-let type_eq counter dfns t1 t2 = (* print_endline "TYPE EQ";  *)
-  type_eq' counter dfns [] 0 [] 0 [] t1 t2
+let type_eq counter sym_table t1 t2 = (* print_endline "TYPE EQ";  *)
+  type_eq' counter sym_table [] 0 [] 0 [] t1 t2
 
-let type_match counter dfns t1 t2 = (* print_endline "TYPE MATCH"; *)
-  type_eq' counter dfns [] 0 [] 0 [] t1 t2
+let type_match counter sym_table t1 t2 = (* print_endline "TYPE MATCH"; *)
+  type_eq' counter sym_table [] 0 [] 0 [] t1 t2
 
 (* NOTE: only works on explicit fixpoint operators,
   i.e. it won't work on typedefs: no name lookup,
@@ -855,7 +854,7 @@ let type_match counter dfns t1 t2 = (* print_endline "TYPE MATCH"; *)
   another view: only works on non-generative types.
 *)
 
-let unfold dfns t =
+let unfold sym_table t =
   let rec aux depth t' =
   let uf t = aux (depth+1) t in
   match t' with
@@ -890,7 +889,7 @@ let unfold dfns t =
 exception Found of btypecode_t
 
 (* this undoes an unfold: it won't minimise an arbitrary type *)
-let fold counter dfns t =
+let fold counter sym_table t =
   let rec aux trail depth t' =
     let ax t = aux ((depth,t')::trail) (depth+1) t in
     match t' with
@@ -916,7 +915,7 @@ let fold counter dfns t =
       let k = depth + i in
       begin try
         let t'' = List.assoc k trail in
-        if type_eq counter dfns t'' t then raise (Found t'')
+        if type_eq counter sym_table t'' t then raise (Found t'')
       with Not_found -> ()
       end
 
@@ -929,7 +928,7 @@ let fold counter dfns t =
     | BTYP_type _
     | BTYP_type_tuple _
     | BTYP_type_match _ -> () (* assume fixpoint can't span these boundaries *)
-      (* failwith ("[fold] unexpected metatype " ^ sbt dfns t') *)
+      (* failwith ("[fold] unexpected metatype " ^ sbt sym_table t') *)
   in
     try aux [] 0 t; t
     with Found t -> t
@@ -937,7 +936,7 @@ let fold counter dfns t =
 (* produces a unique minimal representation of a type
 by folding at every node *)
 
-let minimise counter dfns t = match map_btype (fold counter dfns) t with x -> fold counter dfns x
+let minimise counter sym_table t = match map_btype (fold counter sym_table) t with x -> fold counter sym_table x
 
 let var_occurs t =
   let rec aux' excl t = let aux t = aux' excl t in
@@ -1006,7 +1005,7 @@ let expr_term_subst e1 i e2 =
   | e -> e
   in s e1
 
-let rec expr_unification counter dfns
+let rec expr_unification counter sym_table
   (eqns: (tbexpr_t * tbexpr_t) list)
   (tdvars: IntSet.t)
   (edvars: IntSet.t)
@@ -1122,7 +1121,7 @@ let rec expr_unification counter dfns
       | x,y ->
         (* the BTYP_void is a hack .. *)
         (*
-        print_endline ("Terms do not match: " ^ sbe dfns (x,BTYP_void) ^ " <-> " ^ sbe dfns (y,BTYP_void));
+        print_endline ("Terms do not match: " ^ sbe sym_table (x,BTYP_void) ^ " <-> " ^ sbe sym_table (y,BTYP_void));
         *)
         raise Not_found
       end
@@ -1131,7 +1130,7 @@ let rec expr_unification counter dfns
       | None -> ()
       | Some (i,t) ->
         (*
-        print_endline ("Substituting " ^ si i ^ " -> " ^ sbt dfns t);
+        print_endline ("Substituting " ^ si i ^ " -> " ^ sbt sym_table t);
         *)
         eqns :=
           List.map
@@ -1153,13 +1152,13 @@ let rec expr_unification counter dfns
       loop ()
     in
       loop ();
-      let tmgu = unification counter dfns !teqns tdvars in
+      let tmgu = unification counter sym_table !teqns tdvars in
       tmgu,
       !mgu
 
 let setoflist ls = List.fold_left (fun s i -> IntSet.add i s) IntSet.empty ls
 
-let expr_maybe_matches counter (dfns:symbol_table_t)
+let expr_maybe_matches counter (sym_table:sym_table_t)
   (tvars:int list) (evars:int list)
   (le: tbexpr_t)
   (re:tbexpr_t)
@@ -1171,7 +1170,7 @@ let expr_maybe_matches counter (dfns:symbol_table_t)
   let evars = setoflist evars in
   let eqns = [le,re] in
   (*
-  print_endline ("Expr unify: le = " ^ sbe dfns le ^  "\nre = " ^ sbe dfns re);
+  print_endline ("Expr unify: le = " ^ sbe sym_table le ^  "\nre = " ^ sbe sym_table re);
   *)
-  try Some (expr_unification counter dfns eqns tvars evars)
+  try Some (expr_unification counter sym_table eqns tvars evars)
   with Not_found -> None

@@ -4,7 +4,7 @@ open Flx_mtypes2
 
 val gen_ctor:
   sym_state_t ->
-  fully_bound_symbol_table_t ->
+  bsym_table_t ->
   string ->                   (* name *)
   (int * int) list ->         (* display *)
   (int * btypecode_t) list -> (* funs *)
