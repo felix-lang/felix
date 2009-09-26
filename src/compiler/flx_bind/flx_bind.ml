@@ -65,8 +65,7 @@ let bind_asm state strabs_bbdfns handle_bound init asm =
     end
   done;
 
-  (* Now that we've bound all the symbols, we can downgrade the types and pass
-   * on the bound symbols to the client. *)
+  (* Now that we've bound all the symbols, we can downgrade the types. *)
   let init = ref init in
 
   for i = initial_index to !(state.syms.Flx_mtypes2.counter) do
@@ -75,18 +74,23 @@ let bind_asm state strabs_bbdfns handle_bound init asm =
     | None -> ()
     | Some s ->
         (* Finally, downgrade abstract types. *)
-        match
-          Flx_strabs.strabs_symbol
+        ignore (Flx_strabs.strabs_symbol
             state.strabs_state
             state.bbind_bbdfns
             strabs_bbdfns
             i
-            s
-        with
-        | None -> ()
-        | Some s ->
-            (* ... and finally pass the symbol to the client *)
-            init := handle_bound !init (Bound_symbol (i, s));
+            s)
+    end
+  done;
+
+  (* Finally, pass on the bound symbols to the client. *)
+  for i = initial_index to !(state.syms.Flx_mtypes2.counter) do
+    (* First, find the symbol to bind. *)
+    begin match Flx_hashtbl.find strabs_bbdfns i with
+    | None -> ()
+    | Some s ->
+        (* ... and finally pass the symbol to the client *)
+        init := handle_bound !init (Bound_symbol (i, s));
     end
   done;
 
