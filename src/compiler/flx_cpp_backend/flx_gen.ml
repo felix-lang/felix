@@ -821,8 +821,9 @@ let gen_exe filename
         incr counter;
         let the_display =
           let d' =
-            map (fun (i,vslen) -> "ptr"^cpp_instance_name syms bsym_table i (list_prefix ts vslen))
-            (get_display_list syms bsym_table index)
+            map begin fun (i,vslen) ->
+              "ptr" ^ cpp_instance_name syms bsym_table i (list_prefix ts vslen)
+            end (get_display_list syms bsym_table index)
           in
             if length d' > our_level
             then "this" :: tl d'

@@ -528,8 +528,9 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     | BBDCL_procedure (props,_,_,_) ->
       let the_display =
         let d' =
-          map (fun (i,vslen) -> "ptr"^ cpp_instance_name syms bsym_table i (list_prefix ts vslen))
-          (get_display_list syms bsym_table index)
+          map begin fun (i,vslen) ->
+            "ptr" ^ cpp_instance_name syms bsym_table i (list_prefix ts vslen)
+          end (get_display_list syms bsym_table index)
         in
           if length d' > our_level
           then "this" :: tl d'
@@ -864,8 +865,9 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
       *)
       let the_display =
         let d' =
-          map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bsym_table i (list_prefix ts vslen))
-          (get_display_list syms bsym_table index)
+          map begin fun (i,vslen)->
+            "ptr" ^ cpp_instance_name syms bsym_table i (list_prefix ts vslen)
+          end (get_display_list syms bsym_table index)
         in
           if length d' > our_level
           then "this" :: tl d'
