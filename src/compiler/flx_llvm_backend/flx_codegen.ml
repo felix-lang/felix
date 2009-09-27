@@ -418,6 +418,11 @@ and codegen_deref state bsym_table builder sr e =
 let codegen_call_direct state bsym_table builder sr f args =
   let args = Array.of_list args in
   let args = Array.map (codegen_deref state bsym_table builder sr) args in
+
+  (* Make sure the number of arguments equals the function arguments. *)
+  if Array.length args != Array.length (Llvm.params f) then
+    failwith ("Not enough arguments for " ^ Llvm.value_name f);
+
   Llvm.build_call f args "" builder
 
 
