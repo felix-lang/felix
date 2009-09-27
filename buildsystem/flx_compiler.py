@@ -119,6 +119,7 @@ def build_flx_llvm_backend(phase):
         srcs=Path.globall(path / '*.ml{,i}'),
         includes=[phase.llvm_config.ocaml_libdir()],
         libs=[
+            build_flx_misc(phase),
             build_flx_core(phase),
             build_flx_frontend(phase)])
 

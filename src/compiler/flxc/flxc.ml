@@ -128,51 +128,6 @@ let bind_stmt state =
   end () stmt
 
 
-let compile_bexe
-  state
-  codegen_state
-  bsym_table
-  the_module
-  context
-  the_fpm
-  the_ee
-  bexe
-=
-  (* Make a new function to execute the statement in. We use an opaque
-   * type so that we can later refine it to the actual value of the
-   * returned expression. *)
-  let the_function = Llvm.declare_function
-    ""
-    (Llvm.function_type (Llvm.void_type context) [||])
-    the_module
-  in
-
-  (* Create the initial basic block *)
-  let bb = Llvm.append_block context "entry" the_function in
-  let builder = Llvm.builder_at_end context bb in
-
-  let e = Flx_codegen.codegen_bexe codegen_state bsym_table builder bexe in
-
-  (* Make sure we have a return at the end of the function. *)
-  ignore (Llvm.build_ret_void builder);
-
-  (* Make sure the function is valid. *)
-  Llvm_analysis.assert_valid_function the_function;
-
-  (* Optimize the function. *)
-  ignore (Llvm.PassManager.run_function the_function the_fpm);
-
-  Llvm.dump_module the_module;
-
-  if !Options.phase = Options.Run then begin
-    (* Execute the statement. *)
-    ignore (Llvm_executionengine.ExecutionEngine.run_function
-      the_function
-      [||]
-      the_ee)
-  end
-
-
 let compile_stmt state =
   (* Create the llvm state *)
 
@@ -259,52 +214,14 @@ let compile_stmt state =
   bsym_table := bsym_table';
   child_map := child_map';
 
-  (* Next, do the code generation. First we'll generate the symbols. *)
-  List.iter begin fun bid ->
-    (* Try to find the bsym corresponding with the bid. It's okay if it doesn't
-     * exist as it may have been optimized away. *)
-    match Flx_hashtbl.find !bsym_table bid with
-    | None -> ()
-    | Some ((_,parent,_,bbdcl) as bsym) ->
-        print_endline ("... BOUND SYM:     " ^ Flx_print.string_of_bbdcl
-          state.syms.Flx_mtypes2.sym_table
-          !bsym_table
-          bbdcl
-          bid);
-        print_newline ();
+  (* Generate code for the exes and bsyms. *)
+  let f =
+    if !Options.phase = Options.Run
+    then Flx_codegen.codegen_and_run
+    else Flx_codegen.codegen
+  in
 
-        (* Only codegen top-level symbols, since that'll be handled by the code
-         * generator. *)
-        match parent with
-        | Some parent -> ()
-        | None ->
-            Flx_codegen.codegen_symbol
-              codegen_state
-              !bsym_table
-              !child_map
-              bid
-              bsym
-  end bids;
-
-  (* Finally, generate code for the executions. *)
-  List.iter begin fun bexe ->
-    print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
-      state.syms.Flx_mtypes2.sym_table
-      !bsym_table
-      0
-      bexe);
-    print_newline ();
-
-    compile_bexe
-      state
-      codegen_state
-      !bsym_table
-      the_module
-      context
-      the_fpm
-      the_ee
-      bexe
-  end bexes
+  ignore (f codegen_state !bsym_table !child_map bids bexes)
 
 
 (* Parse all the imports *)

@@ -986,3 +986,74 @@ and codegen_symbol
     (vs, uidx, ut, ctor_idx, ctor_argt, evs, etraint) ->
       print_endline "BBDCL_nonconst_ctor";
       assert false
+
+let codegen state bsym_table child_map bids bexes =
+  (* First we'll generate the symbols. *)
+  List.iter begin fun bid ->
+    (* Try to find the bsym corresponding with the bid. It's okay if it doesn't
+     * exist as it may have been optimized away. *)
+    match Flx_hashtbl.find bsym_table bid with
+    | None -> ()
+    | Some ((_,parent,_,_) as bsym) ->
+        (* Only codegen top-level symbols, since that'll be handled by the code
+         * generator. *)
+        match parent with
+        | Some parent -> ()
+        | None ->
+            codegen_symbol
+              state
+              bsym_table
+              child_map
+              bid
+              bsym
+  end bids;
+
+  (* If we don't have any executables, don't make a function. *)
+  if bexes = [] then None else
+
+  (* Make a new function to execute the statement in. We use an opaque
+   * type so that we can later refine it to the actual value of the
+   * returned expression. *)
+  let the_function = Llvm.declare_function
+    ""
+    (Llvm.function_type (Llvm.void_type state.context) [||])
+    state.the_module
+  in
+
+  (* Create the initial basic block *)
+  let bb = Llvm.append_block state.context "entry" the_function in
+  let builder = Llvm.builder_at_end state.context bb in
+
+  (* Finally, generate code for the executions. *)
+  List.iter begin fun bexe ->
+    ignore (codegen_bexe state bsym_table builder bexe)
+  end bexes;
+
+  (* Make sure we have a return at the end of the function. *)
+  ignore (Llvm.build_ret_void builder);
+
+  (* Make sure the function is valid. *)
+  Llvm_analysis.assert_valid_function the_function;
+
+  (* Optimize the function. *)
+  ignore (Llvm.PassManager.run_function the_function state.the_fpm);
+
+  Some the_function
+
+let codegen_and_run state bsym_table child_map bids bexes =
+  let the_function = codegen state bsym_table child_map bids bexes in
+
+  (* Run the function. *)
+  begin match the_function with
+  | None -> ()
+  | Some the_function ->
+      Llvm.dump_module state.the_module;
+
+      (* Execute the function. *)
+      ignore (Llvm_executionengine.ExecutionEngine.run_function
+        the_function
+        [||]
+        state.the_ee)
+  end;
+
+  the_function
