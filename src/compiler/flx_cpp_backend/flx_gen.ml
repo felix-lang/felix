@@ -872,7 +872,7 @@ let gen_exe filename
           else "") ^
           "      {\n" ^
           subs ^
-          "      " ^ name ^ strd the_display props^ "\n" ^
+          "      " ^ name ^ Flx_gen_display.strd the_display props^ "\n" ^
           "      .stack_call(" ^ args ^ ");\n" ^
           "      }\n"
         end
@@ -887,14 +887,14 @@ let gen_exe filename
             "      {\n" ^
             subs ^
             "      con_t *_p =\n" ^
-            "      (FLX_NEWP(" ^ name ^ ")" ^ strd the_display props^ ")\n" ^
+            "      (FLX_NEWP(" ^ name ^ ")" ^ Flx_gen_display.strd the_display props^ ")\n" ^
             "      ->call(" ^ args ^ ");\n" ^
             "      while(_p) _p=_p->resume();\n" ^
             "      }\n"
 
           | Procedure ->
             let call_string =
-              "      return (FLX_NEWP(" ^ name ^ ")"^strd the_display props ^ ")" ^
+              "      return (FLX_NEWP(" ^ name ^ ")" ^ Flx_gen_display.strd the_display props ^ ")" ^
               "\n      ->call(" ^ args ^ ");\n"
             in
             if is_jump

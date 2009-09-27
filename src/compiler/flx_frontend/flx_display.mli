@@ -15,6 +15,3 @@ val cal_display:
   bsym_table_t ->
   bid_t option ->
   (bid_t * int) list
-
-val strd:
-  string list -> property_t list -> string

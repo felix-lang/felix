@@ -58,9 +58,3 @@ let cal_display syms bsym_table parent : (bid_t *int) list =
 (* inner most at head of list *)
 let get_display_list syms bsym_table index : (bid_t * int) list =
   tl (cal_display syms bsym_table (Some index))
-
-let strd the_display props =
-  if length the_display = 0 then
-  (if mem `Requires_ptf props then "(FLX_FPAR_PASS_ONLY)" else "()")
-  else
-  (if mem `Requires_ptf props then "(FLX_FPAR_PASS " else "(") ^ cat ", " the_display ^ ")"

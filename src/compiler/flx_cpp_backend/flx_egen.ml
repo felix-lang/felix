@@ -540,7 +540,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
       if mem `Cfun props then ce_atom name
       else
         ce_atom (
-        "(FLX_NEWP("^name^")" ^ strd the_display props ^")"
+        "(FLX_NEWP("^name^")" ^ Flx_gen_display.strd the_display props ^")"
         )
 
     | BBDCL_callback _ ->
@@ -879,7 +879,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
         ce_call (ce_atom name) [ce_atom (ge_arg a)]
       else
         ce_atom (
-        "(FLX_NEWP("^name^")"^ strd the_display props ^")"^
+        "(FLX_NEWP("^name^")"^ Flx_gen_display.strd the_display props ^")"^
         "\n      ->apply(" ^ ge_arg a ^ ")"
         )
 
@@ -1000,7 +1000,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
             else d'
         in
         let s =
-          name^ strd the_display props
+          name^ Flx_gen_display.strd the_display props
           ^
           "\n      .apply(" ^ ge_arg a ^ ")"
         in ce_atom s
