@@ -570,7 +570,8 @@ let codegen_bexe state bsym_table builder bexe =
 
   | Flx_types.BEXE_fun_return (sr, e) ->
       print_endline "BEXE_fun_return";
-      let e = codegen_expr state bsym_table builder sr e in
+      let e = codegen_deref state bsym_table builder sr e in
+
       ignore (Llvm.build_ret e builder);
 
   | Flx_types.BEXE_yield (sr, e) ->
