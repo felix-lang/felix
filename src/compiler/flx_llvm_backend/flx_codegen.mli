@@ -2,10 +2,7 @@ type codegen_state_t
 
 val make_codegen_state:
   Flx_mtypes2.sym_state_t ->
-  Llvm.llcontext ->
-  Llvm.llmodule ->
-  [`Function] Llvm.PassManager.t ->
-  Llvm_executionengine.ExecutionEngine.t ->
+  int ->                      (** Optimization level. *)
   codegen_state_t
 
 (** Generate code for the given symbols and exes. *)

@@ -19,7 +19,41 @@ and call_t =
   Llvm.llvalue
 
 
-let make_codegen_state syms context the_module the_fpm the_ee =
+let make_codegen_state syms optimization_level =
+  let context = Llvm.create_context () in
+  let the_module = Llvm.create_module context "__root__" in
+
+  (* Set up the llvm optimizer and execution engine *)
+  let the_module_provider = Llvm.ModuleProvider.create the_module in
+  let the_ee =
+    Llvm_executionengine.ExecutionEngine.create the_module_provider in
+  let the_fpm = Llvm.PassManager.create_function the_module_provider in
+
+  (* Set up the optimizer pipeline.  Start with registering info about how the
+   * target lays out data structures. *)
+  Llvm_target.TargetData.add
+  (Llvm_executionengine.ExecutionEngine.target_data the_ee)
+  the_fpm;
+
+  if optimization_level >= 1 then begin
+    (* Promote allocas to registers. *)
+    Llvm_scalar_opts.add_memory_to_register_promotion the_fpm;
+
+    (* Do simple "peephole" optimizations and bit-twiddling optzn. *)
+    Llvm_scalar_opts.add_instruction_combining the_fpm;
+
+    (* reassociate expressions. *)
+    Llvm_scalar_opts.add_reassociation the_fpm;
+
+    (* Eliminate Common SubExpressions. *)
+    Llvm_scalar_opts.add_gvn the_fpm;
+
+    (* Simplify the control flow graph (deleting unreachable blocks, etc). *)
+    Llvm_scalar_opts.add_cfg_simplification the_fpm;
+  end;
+
+  ignore (Llvm.PassManager.initialize the_fpm);
+
   {
     syms = syms;
     context = context;
