@@ -682,7 +682,7 @@ let codegen_bexe state bsym_table builder bexe =
           ignore (load_struct state bsym_table builder sr lhs es)
       | _ ->
           (* Otherwise, just do normal codegen. *)
-          let rhs = codegen_expr state bsym_table builder sr e in
+          let rhs = codegen_deref state bsym_table builder sr e in
 
           (* Make sure the rhs is of the right type. *)
           check_type sr rhs
