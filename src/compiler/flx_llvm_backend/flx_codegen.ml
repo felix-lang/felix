@@ -124,10 +124,13 @@ let name_of_typekind = function
 
 
 (* Convenience function to check we're dealing with the right types. *)
-let check_type sr value typekind =
-  if Llvm.classify_type (Llvm.type_of value) != typekind then
-    Flx_exceptions.clierr sr ("invalid type, expected " ^
-      name_of_typekind typekind)
+let check_type sr value expected_typekind =
+  let typekind = Llvm.classify_type (Llvm.type_of value) in
+  if typekind != expected_typekind then
+    Flx_exceptions.clierr sr ("invalid type. got " ^
+      name_of_typekind typekind ^
+      " expected " ^
+      name_of_typekind expected_typekind)
 
 
 (* Convert a felix type to an llvm type. *)
