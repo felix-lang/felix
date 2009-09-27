@@ -67,3 +67,9 @@ let uniq_cat u nu  =
   nu
 
 let uniq_list lst = uniq_cat [] lst
+
+let iteri f lst =
+  ignore (fold_left (fun i x -> f i x; i + 1) 0 lst)
+
+let mapi (f:int -> 'a -> 'b) (lst:'a list) : 'b list =
+  snd (fold_right (fun x (i,xs) -> i + 1, f i x :: xs) lst (0, []))

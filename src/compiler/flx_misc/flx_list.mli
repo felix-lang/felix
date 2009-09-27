@@ -36,3 +36,12 @@ val uniq_cat: 'a list -> 'a list -> 'a list
 
 (** make a list of unique elements *)
 val uniq_list: 'a list -> 'a list
+
+(** [iteri f [a1; ...; an]] applies function [f] to turn to [a1; ...; an]. It is
+ * equivalent to [f 0 a1; ...; f n an]. *)
+val iteri: (int -> 'a -> unit) -> 'a list -> unit
+
+(** [mapi f [a1; ...; an]] applies function [f] to [a1, ..., an], and builds
+ * the list [[f 0 a1; ...; f n an]] with the results returned by f. Not tail
+ * recursive. *)
+val mapi: (int -> 'a -> 'b) -> 'a list -> 'b list
