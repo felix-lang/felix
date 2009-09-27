@@ -388,6 +388,13 @@ and load_struct state bsym_table builder sr the_struct es =
       in
 
       let e = codegen_expr state bsym_table builder sr e in
+
+      check_type sr the_struct Llvm.TypeKind.Pointer;
+      check_type
+        sr
+        e
+        (Llvm.classify_type (Llvm.element_type (Llvm.type_of the_struct)));
+
       ignore (Llvm.build_store e gep builder);
 
       i + 1
@@ -776,7 +783,17 @@ let rec codegen_function
       let lhs =
         Hashtbl.find state.value_bindings parameters.(i).Flx_types.pindex
       in
+
+      (* Make sure that we're dealing with the right types. *)
+      check_type Flx_srcref.dummy_sr lhs Llvm.TypeKind.Pointer;
+      check_type
+        Flx_srcref.dummy_sr
+        rhs
+        (Llvm.classify_type (Llvm.element_type (Llvm.type_of lhs)));
+
+      (* Store the argument in the alloca. *)
       ignore (Llvm.build_store rhs lhs builder);
+
       Hashtbl.add state.value_bindings parameters.(i).Flx_types.pindex lhs;
     end (Llvm.params the_function);
 
