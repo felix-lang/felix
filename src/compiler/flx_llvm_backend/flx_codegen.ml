@@ -189,8 +189,7 @@ let rec lltype_of_btype state btype =
       Llvm.function_type ret_type (Array.of_list args)
 
   | Flx_types.BTYP_cfunction (args, result) -> assert false
-  | Flx_types.BTYP_pointer t -> assert false
-
+  | Flx_types.BTYP_pointer t -> Llvm.pointer_type (lltype_of_btype state t)
   | Flx_types.BTYP_array (t1, Flx_types.BTYP_unitsum k) ->
       let t1 = lltype_of_btype state t1 in
       Llvm.array_type t1 k
