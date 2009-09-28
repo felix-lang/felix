@@ -386,7 +386,7 @@ and load_struct state bsym_table builder sr the_struct es =
       let gep = Llvm.build_gep
         the_struct
         [| zero; Llvm.const_int (Llvm.i32_type state.context) i |]
-        "foo"
+        ""
         builder
       in
 
