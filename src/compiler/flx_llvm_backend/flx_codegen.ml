@@ -1097,6 +1097,8 @@ let codegen state bsym_table child_map bids bexes =
   (* Optimize the function. *)
   ignore (Llvm.PassManager.run_function the_function state.the_fpm);
 
+  Llvm.dump_module state.the_module;
+
   Some the_function
 
 let codegen_and_run state bsym_table child_map bids bexes =
@@ -1106,8 +1108,6 @@ let codegen_and_run state bsym_table child_map bids bexes =
   begin match the_function with
   | None -> ()
   | Some the_function ->
-      Llvm.dump_module state.the_module;
-
       (* Execute the function. *)
       ignore (Llvm_executionengine.ExecutionEngine.run_function
         the_function
