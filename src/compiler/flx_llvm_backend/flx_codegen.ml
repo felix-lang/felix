@@ -219,7 +219,7 @@ let builder_parent builder =
 
 
 (* Generate code for a literal *)
-let codegen_literal state sr literal =
+let codegen_literal state builder sr literal =
   match literal with
   | Flx_ast.AST_float (suffix, f) ->
       Llvm.const_float_of_string (lltype_of_suffix state suffix) f
@@ -228,6 +228,16 @@ let codegen_literal state sr literal =
         (lltype_of_suffix state suffix)
         (Big_int.string_of_big_int i)
         10
+  | Flx_ast.AST_cstring s ->
+      (* Create a global constant string. *)
+      let c = Llvm.const_stringz state.context s in
+      let g = Llvm.define_global "" c state.the_module in
+      Llvm.set_linkage Llvm.Linkage.Internal g;
+
+      (* Return a gep to the value in order to be the right type. *)
+      let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
+      Llvm.build_gep g [| zero; zero |] "" builder
+
   | _ ->
       assert false
 
@@ -298,7 +308,7 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
 
   | Flx_types.BEXPR_literal literal ->
       print_endline "BEXPR_literal";
-      codegen_literal state sr literal
+      codegen_literal state builder sr literal
 
   | Flx_types.BEXPR_apply (f, e) ->
       print_endline "BEXPR_apply";
