@@ -144,8 +144,8 @@ let check_type sr value expected_typekind =
 
 
 (* Convert a felix type to an llvm type. *)
-let rec lltype_of_btype state btypecode =
-  match Flx_maps.reduce_type btypecode with
+let rec lltype_of_btype state btype =
+  match Flx_maps.reduce_type btype with
   | Flx_types.BTYP_inst (index, ts) ->
       begin try Hashtbl.find state.type_bindings index with Not_found ->
         failwith ("[lltype_of_btype:BTYP_inst] unable to find index " ^
@@ -235,7 +235,7 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
     state.syms.Flx_mtypes2.sym_table bsym_table tbexpr);
 
   (* See if there are any simple reductions we can apply to the expression. *)
-  let bexpr, btypecode = Flx_maps.reduce_tbexpr bsym_table tbexpr in
+  let bexpr, btype = Flx_maps.reduce_tbexpr bsym_table tbexpr in
 
   match bexpr with
   | Flx_types.BEXPR_deref e ->
@@ -248,7 +248,7 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
         Flx_exceptions.clierr sr ("Unable to find index " ^ string_of_int index)
       end
 
-  | Flx_types.BEXPR_ref (index, btypecode) ->
+  | Flx_types.BEXPR_ref (index, btype) ->
       print_endline "BEXPR_ref";
       assert false
 
@@ -302,11 +302,11 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
 
   | Flx_types.BEXPR_tuple es ->
       print_endline "BEXPR_tuple";
-      codegen_struct state bsym_table builder sr es btypecode
+      codegen_struct state bsym_table builder sr es btype
 
   | Flx_types.BEXPR_record es ->
       print_endline "BEXPR_record";
-      codegen_struct state bsym_table builder sr (List.map snd es) btypecode
+      codegen_struct state bsym_table builder sr (List.map snd es) btype
 
   | Flx_types.BEXPR_variant (string, e) ->
       print_endline "BEXPR_variant";
@@ -318,7 +318,7 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
       let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
-  | Flx_types.BEXPR_closure (index, btypecode) ->
+  | Flx_types.BEXPR_closure (index, btype) ->
       print_endline ("BEXPR_closure: " ^ name_of_index state bsym_table index);
       begin try Hashtbl.find state.value_bindings index with Not_found ->
         Flx_exceptions.clierr sr ("Unable to find index " ^ string_of_int index)
@@ -355,7 +355,7 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
       let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
-  | Flx_types.BEXPR_expr (string, btypecode) ->
+  | Flx_types.BEXPR_expr (string, btype) ->
       print_endline "BEXPR_expr";
       assert false
 
@@ -366,7 +366,7 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
       let _ = codegen_expr state bsym_table builder sr e3 in
       assert false
 
-  | Flx_types.BEXPR_coerce (tbexpr_t, btypecode) ->
+  | Flx_types.BEXPR_coerce (tbexpr_t, btype) ->
       print_endline "BEXPR_coerce";
       assert false
 
@@ -647,7 +647,7 @@ let codegen_bexe state bsym_table builder bexe =
       print_endline "BEXE_jump";
       assert false
 
-  | Flx_types.BEXE_jump_direct (sr, index, btypecode, e) ->
+  | Flx_types.BEXE_jump_direct (sr, index, _, e) ->
       print_endline "BEXE_jump_direct";
       let e = codegen_expr state bsym_table builder sr e in
       assert false
