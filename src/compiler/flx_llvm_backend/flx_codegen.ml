@@ -287,22 +287,10 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
       print_endline "BEXPR_apply";
       assert false
 
-  | Flx_types.BEXPR_apply_direct (index, _, e)
-  | Flx_types.BEXPR_apply_prim (index, _, e) ->
+  | Flx_types.BEXPR_apply_direct (bid, _, e)
+  | Flx_types.BEXPR_apply_prim (bid, _, e) ->
       print_endline "BEXPR_apply_{direct,prim}";
-
-      let es =
-        match e with
-        | Flx_types.BEXPR_tuple es, _ -> es
-        | _ -> [e]
-      in
-
-      let f =
-        try Hashtbl.find state.call_bindings index with Not_found ->
-          Flx_exceptions.clierr sr ("Unable to find index " ^
-            string_of_int index)
-      in
-      f state bsym_table builder sr es
+      codegen_apply_direct state bsym_table builder sr bid e
 
   | Flx_types.BEXPR_apply_stack (bid, _, e) ->
       print_endline "BEXPR_apply_stack";
@@ -424,6 +412,21 @@ and codegen_deref state bsym_table builder sr e =
   match Llvm.classify_type (Llvm.type_of e) with
   | Llvm.TypeKind.Pointer -> Llvm.build_load e "" builder
   | _ -> e
+
+
+and codegen_apply_direct state bsym_table builder sr bid e =
+  let es =
+    match e with
+    | Flx_types.BEXPR_tuple es, _ -> es
+    | _ -> [e]
+  in
+
+  let f =
+    try Hashtbl.find state.call_bindings bid with Not_found ->
+      Flx_exceptions.clierr sr ("Unable to find bid " ^
+        string_of_int bid)
+  in
+  f state bsym_table builder sr es
 
 
 and codegen_apply_stack state bsym_table builder sr bid e =
@@ -631,21 +634,10 @@ let codegen_bexe state bsym_table builder bexe =
       let e2 = codegen_expr state bsym_table builder sr a in
       assert false
 
-  | Flx_types.BEXE_call_direct (sr, index, _, e)
-  | Flx_types.BEXE_call_prim (sr, index, _, e) ->
+  | Flx_types.BEXE_call_direct (sr, bid, _, e)
+  | Flx_types.BEXE_call_prim (sr, bid, _, e) ->
       print_endline "BEXE_call_{direct,prim}";
-      let es =
-        match e with
-        | Flx_types.BEXPR_tuple es, _ -> es
-        | _ -> [e]
-      in
-
-      let f =
-        try Hashtbl.find state.call_bindings index with Not_found ->
-          Flx_exceptions.clierr sr ("Unable to find index " ^
-          string_of_int index)
-      in
-      ignore (f state bsym_table builder sr es)
+      ignore (codegen_apply_direct state bsym_table builder sr bid e)
 
   | Flx_types.BEXE_call_stack (sr, bid, _, e) ->
       print_endline "BEXE_call_stack";
