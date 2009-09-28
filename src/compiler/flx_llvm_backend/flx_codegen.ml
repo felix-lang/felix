@@ -409,15 +409,13 @@ and load_struct state bsym_table builder sr the_struct es =
   (* Add the values to the struct. *)
   let _ =
     List.fold_left begin fun i e ->
-      let gep = codegen_gep state the_struct [| 0; i |] "" builder in
-      let e = codegen_expr state bsym_table builder sr e in
+      let lhs = codegen_gep state the_struct [| 0; i |] "" builder in
+      let rhs = codegen_expr state bsym_table builder sr e in
 
-      check_typekind
-        sr
-        e
-        (Llvm.classify_type (Llvm.element_type (Llvm.type_of the_struct)));
+      (* Make sure we've got the right types. *)
+      check_type sr (Llvm.type_of lhs) (Llvm.pointer_type (Llvm.type_of rhs));
 
-      ignore (Llvm.build_store e gep builder);
+      ignore (Llvm.build_store rhs lhs builder);
 
       i + 1
     end 0 es
@@ -426,13 +424,17 @@ and load_struct state bsym_table builder sr the_struct es =
 
 
 (* Optionally dereference a value if it's a pointer. *)
-and codegen_deref state bsym_table builder sr e =
+and codegen_deref state bsym_table builder sr ((bexpr,_) as e) =
   let e = codegen_expr state bsym_table builder sr e in
 
-  (* Dereference only if we've gotten a pointer *)
-  match Llvm.classify_type (Llvm.type_of e) with
-  | Llvm.TypeKind.Pointer -> Llvm.build_load e "" builder
-  | _ -> e
+  (* Literal values aren't dereferenced. *)
+  match bexpr with
+  | Flx_types.BEXPR_literal _ -> e
+  | _ ->
+      (* Dereference only if we've gotten a pointer *)
+      match Llvm.classify_type (Llvm.type_of e) with
+      | Llvm.TypeKind.Pointer -> Llvm.build_load e "" builder
+      | _ -> e
 
 
 and codegen_apply sr f args name builder =
