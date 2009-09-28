@@ -425,6 +425,23 @@ and codegen_deref state bsym_table builder sr e =
   | _ -> e
 
 
+and codegen_apply sr f args name builder =
+  (* Directly call the function. *)
+  let args = Array.of_list args in
+  let params = Llvm.params f in
+
+  (* Make sure the number of arguments equals the function arguments. *)
+  if Array.length args != Array.length params then
+    failwith ("Not enough arguments for " ^ Llvm.value_name f);
+
+  (* Make sure that the types are the same. *)
+  Array.iteri begin fun i arg ->
+    check_type sr (Llvm.type_of arg) (Llvm.type_of params.(i))
+  end args;
+
+  Llvm.build_call f args name builder
+
+
 and codegen_apply_direct state bsym_table builder sr bid e =
   let es =
     match e with
@@ -464,34 +481,12 @@ and codegen_apply_stack state bsym_table builder sr bid e =
     es display
   in
 
-  let args = Array.of_list es in
-
-  (* Finally, call the function. As opposed to the other call types, we'll
-   * call the function directly, since we know that this is a felix function
-   * and not an instruction. *)
-
-  (* Make sure the number of arguments equals the function arguments. *)
-  if Array.length args != Array.length (Llvm.params f) then
-    failwith ("Not enough arguments for " ^ Llvm.value_name f);
-
-  Llvm.build_call f args "" builder
+  codegen_apply sr f es "" builder
 
 
 let codegen_call_direct state bsym_table builder sr f args =
-  let args = Array.of_list args in
-  let args = Array.map (codegen_deref state bsym_table builder sr) args in
-
-  (* Make sure the number of arguments equals the function arguments. *)
-  if Array.length args != Array.length (Llvm.params f) then
-    failwith ("Not enough arguments for " ^ Llvm.value_name f);
-
-  Llvm.build_call f args "" builder
-
-
-let codegen_call state bsym_table builder sr f args =
-  (* Dereference the function. *)
-  let f = codegen_deref state bsym_table builder sr f in
-  codegen_call_direct state bsym_table builder sr f args
+  let args = List.map (codegen_deref state bsym_table builder sr) args in
+  codegen_apply sr f args "" builder
 
 
 let create_unary_llvm_inst f typekind =
