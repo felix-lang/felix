@@ -134,7 +134,16 @@ let name_of_typekind = function
 
 
 (* Convenience function to check we're dealing with the right types. *)
-let check_type sr value expected_typekind =
+let check_type sr typ expected_type =
+  if typ != expected_type then
+    Flx_exceptions.clierr sr ("invalid type. got " ^
+      Llvm.string_of_lltype typ ^
+      " expected " ^
+      Llvm.string_of_lltype expected_type)
+
+
+(* Convenience function to check we're dealing with the right typekind. *)
+let check_typekind sr value expected_typekind =
   let typekind = Llvm.classify_type (Llvm.type_of value) in
   if typekind != expected_typekind then
     Flx_exceptions.clierr sr ("invalid type. got " ^
@@ -277,7 +286,7 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
       let e = codegen_expr state bsym_table builder sr e in
 
       (* Make sure we've got a pointer. *)
-      check_type sr e Llvm.TypeKind.Pointer;
+      check_typekind sr e Llvm.TypeKind.Pointer;
 
       (* Expressions can only have their address taken if they're on the stack.
        * So, we shouldn't need to do any work. *)
@@ -386,14 +395,15 @@ and codegen_struct state bsym_table builder sr es btype =
 
 
 and load_struct state bsym_table builder sr the_struct es =
+  check_typekind sr the_struct Llvm.TypeKind.Pointer;
+
   (* Add the values to the struct. *)
   let _ =
     List.fold_left begin fun i e ->
       let gep = codegen_gep state the_struct [| 0; i |] "" builder in
       let e = codegen_expr state bsym_table builder sr e in
 
-      check_type sr the_struct Llvm.TypeKind.Pointer;
-      check_type
+      check_typekind
         sr
         e
         (Llvm.classify_type (Llvm.element_type (Llvm.type_of the_struct)));
@@ -488,7 +498,7 @@ let codegen_call state bsym_table builder sr f args =
 let create_unary_llvm_inst f typekind =
   fun state bsym_table builder sr e ->
     let e = codegen_deref state bsym_table builder sr e in
-    check_type sr e typekind;
+    check_typekind sr e typekind;
 
     f e "" builder
 
@@ -509,10 +519,10 @@ let codegen_lnot = create_unary_llvm_inst
 let create_binary_llvm_inst f lhs_typekind rhs_typekind =
   fun state bsym_table builder sr lhs rhs ->
     let lhs = codegen_deref state bsym_table builder sr lhs in
-    check_type sr lhs lhs_typekind;
+    check_typekind sr lhs lhs_typekind;
 
     let rhs = codegen_deref state bsym_table builder sr rhs in
-    check_type sr rhs rhs_typekind;
+    check_typekind sr rhs rhs_typekind;
 
     f lhs rhs "" builder
 
@@ -539,10 +549,10 @@ let codegen_ne = create_binary_llvm_inst
 
 let codegen_subscript state bsym_table builder sr lhs rhs =
   let lhs = codegen_expr state bsym_table builder sr lhs in
-  check_type sr lhs Llvm.TypeKind.Pointer;
+  check_typekind sr lhs Llvm.TypeKind.Pointer;
 
   let rhs = codegen_deref state bsym_table builder sr rhs in
-  check_type sr rhs Llvm.TypeKind.Integer;
+  check_typekind sr rhs Llvm.TypeKind.Integer;
 
   let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
   let gep = Llvm.build_gep lhs [| zero; rhs |] "" builder in
@@ -701,11 +711,11 @@ let codegen_bexe state bsym_table builder bexe =
       in
       let rhs = codegen_expr state bsym_table builder sr rhs in
 
-      check_type sr lhs Llvm.TypeKind.Pointer;
+      (* Check to make sure we're dealing with the right types. *)
       check_type
         sr
-        rhs
-        (Llvm.classify_type (Llvm.element_type (Llvm.type_of lhs)));
+        (Llvm.type_of lhs)
+        (Llvm.pointer_type (Llvm.type_of rhs));
 
       ignore (Llvm.build_store rhs lhs builder)
 
@@ -713,9 +723,6 @@ let codegen_bexe state bsym_table builder bexe =
       print_endline "BEXE_init";
 
       let lhs = Hashtbl.find state.value_bindings index in
-
-      (* Make sure the lhs is a pointer. *)
-      check_type sr lhs Llvm.TypeKind.Pointer;
 
       begin match e with
       | Flx_types.BEXPR_tuple es, _ ->
@@ -725,9 +732,13 @@ let codegen_bexe state bsym_table builder bexe =
           (* Otherwise, just do normal codegen. *)
           let rhs = codegen_deref state bsym_table builder sr e in
 
-          (* Make sure the rhs is of the right type. *)
-          check_type sr rhs
-            (Llvm.classify_type (Llvm.element_type (Llvm.type_of lhs)));
+          Llvm.dump_module state.the_module;
+
+          (* Check to make sure we're dealing with the right types. *)
+          check_type
+            sr
+            (Llvm.type_of lhs)
+            (Llvm.pointer_type (Llvm.type_of rhs));
 
           ignore (Llvm.build_store rhs lhs builder)
       end
@@ -946,6 +957,7 @@ let rec codegen_function
   state
   bsym_table
   child_map
+  sr
   bid
   name
   props
@@ -1042,11 +1054,7 @@ let rec codegen_function
         let lhs = Hashtbl.find state.value_bindings p.Flx_types.pindex in
 
         (* Make sure that we're dealing with the right types. *)
-        check_type Flx_srcref.dummy_sr lhs Llvm.TypeKind.Pointer;
-        check_type
-          Flx_srcref.dummy_sr
-          rhs
-          (Llvm.classify_type (Llvm.element_type (Llvm.type_of lhs)));
+        check_type sr (Llvm.type_of lhs) (Llvm.pointer_type (Llvm.type_of rhs));
 
         (* Store the argument in the alloca. *)
         ignore (Llvm.build_store rhs lhs builder);
@@ -1206,6 +1214,7 @@ and codegen_symbol
         state
         bsym_table
         child_map
+        sr
         index
         name
         props
@@ -1218,6 +1227,7 @@ and codegen_symbol
         state
         bsym_table
         child_map
+        sr
         index
         name
         props
