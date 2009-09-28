@@ -9,6 +9,8 @@ type codegen_state_t =
     call_bindings: (Flx_types.bid_t, call_t) Hashtbl.t;
     value_bindings: (Flx_types.bid_t, Llvm.llvalue) Hashtbl.t;
     label_bindings: (string, Llvm.llbasicblock) Hashtbl.t;
+    closure_type_bindings: (Flx_types.bid_t, Llvm.lltype) Hashtbl.t;
+    closure_bindings: (Flx_types.bid_t, Llvm.llvalue) Hashtbl.t;
   }
 and call_t =
   codegen_state_t ->
@@ -17,6 +19,12 @@ and call_t =
   Flx_srcref.t ->
   Flx_types.tbexpr_t list ->
   Llvm.llvalue
+
+(* Used to represent what kind of closure to use to store values. *)
+type closure_kind_t =
+  | Global
+  | Stack of Llvm.llvalue * Llvm.llbuilder
+  | Stack_closure of Flx_types.bid_t * Llvm.llvalue * Llvm.llbuilder
 
 
 let make_codegen_state syms optimization_level =
@@ -64,6 +72,8 @@ let make_codegen_state syms optimization_level =
     call_bindings = Hashtbl.create 97;
     value_bindings = Hashtbl.create 97;
     label_bindings = Hashtbl.create 97;
+    closure_bindings = Hashtbl.create 97;
+    closure_type_bindings = Hashtbl.create 97;
   }
 
 
@@ -294,9 +304,9 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
       in
       f state bsym_table builder sr es
 
-  | Flx_types.BEXPR_apply_stack (index, _, e) ->
+  | Flx_types.BEXPR_apply_stack (bid, _, e) ->
       print_endline "BEXPR_apply_stack";
-      assert false
+      codegen_apply_stack state bsym_table builder sr bid e
 
   | Flx_types.BEXPR_apply_struct (index, _, e) ->
       print_endline "BEXPR_apply_struct";
@@ -414,6 +424,44 @@ and codegen_deref state bsym_table builder sr e =
   match Llvm.classify_type (Llvm.type_of e) with
   | Llvm.TypeKind.Pointer -> Llvm.build_load e "" builder
   | _ -> e
+
+
+and codegen_apply_stack state bsym_table builder sr bid e =
+  let f =
+    try Hashtbl.find state.value_bindings bid with Not_found ->
+      Flx_exceptions.clierr sr ("Unable to find bid " ^
+        string_of_int bid)
+  in
+
+  Llvm.dump_value f;
+
+  (* First get all the arguments. *)
+  let es =
+    match e with
+    | Flx_types.BEXPR_tuple es, _ -> es
+    | _ -> [e]
+  in
+  let es = List.map (codegen_deref state bsym_table builder sr) es in
+
+  (* Now, add all of the closures it needs. *)
+  let display = Flx_display.get_display_list state.syms bsym_table bid in
+  let es = List.fold_left
+    (fun es (bid,_) -> Hashtbl.find state.closure_bindings bid :: es)
+    es display
+  in
+
+  let args = Array.of_list es in
+
+  (* Finally, call the function. As opposed to the other call types, we'll
+   * call the function directly, since we know that this is a felix function
+   * and not an instruction. *)
+
+  (* Make sure the number of arguments equals the function arguments. *)
+  if Array.length args != Array.length (Llvm.params f) then
+    failwith ("Not enough arguments for " ^ Llvm.value_name f);
+
+  Llvm.build_call f args "" builder
+
 
 let codegen_call_direct state bsym_table builder sr f args =
   let args = Array.of_list args in
@@ -599,10 +647,9 @@ let codegen_bexe state bsym_table builder bexe =
       in
       ignore (f state bsym_table builder sr es)
 
-  | Flx_types.BEXE_call_stack (sr, index, btypecode, e) ->
+  | Flx_types.BEXE_call_stack (sr, bid, _, e) ->
       print_endline "BEXE_call_stack";
-      let e = codegen_expr state bsym_table builder sr e in
-      assert false
+      ignore (codegen_apply_stack state bsym_table builder sr bid e)
 
   | Flx_types.BEXE_jump (sr, e1, e2) ->
       print_endline "BEXE_jump";
@@ -722,46 +769,214 @@ let codegen_bexe state bsym_table builder bexe =
       assert false
 
 
-let codegen_proto state index name parameters ret_type =
-  let parameters = Array.of_list parameters in
+(* Convenience function to find all the values in a function. *)
+let find_value_indicies state bsym_table child_map bid =
+  List.filter begin fun bid ->
+    try match Hashtbl.find bsym_table bid with _,_,_,entry ->
+      match entry with
+      | Flx_types.BBDCL_var _
+      | Flx_types.BBDCL_ref _
+      | Flx_types.BBDCL_val _ -> true
+      | _ -> false
+    with Not_found -> false
+  end (Flx_child.find_children child_map bid)
 
-  (* Make the function type *)
-  let ft = Llvm.function_type
-    (lltype_of_btype state ret_type)
-    (Array.map (fun p -> lltype_of_btype state p.Flx_types.ptyp) parameters)
+
+(* Convenience function to create the closure type of a function. *)
+let find_closure_type state bsym_table child_map bid =
+  let ts =
+    List.fold_left begin fun ts bid ->
+      try match Hashtbl.find bsym_table bid with _,_,_,entry ->
+        match entry with
+        | Flx_types.BBDCL_var (_,btype)
+        | Flx_types.BBDCL_ref (_,btype)
+        | Flx_types.BBDCL_val (_,btype) -> (lltype_of_btype state btype) :: ts
+        | _ -> ts
+      with Not_found -> ts
+    end [] (find_value_indicies state bsym_table child_map bid)
+  in
+  Llvm.struct_type state.context (Array.of_list ts)
+
+
+let codegen_proto state bsym_table child_map bid name parameters ret_type =
+  (* Register the function's closure type. *)
+  let closure_type = find_closure_type state bsym_table child_map bid in
+  Hashtbl.add
+    state.closure_type_bindings
+    bid
+    (Llvm.pointer_type closure_type);
+
+  (* Now let's build up the parameter types. For a function like:
+   *
+   * fun f () = {
+   *  val x = 1;
+   *  fun g () = {
+   *    val y = 2;
+   *    fun h (a:int, b:int, c:int) = {
+   *      return x + y + a + b + c;
+   *    }
+   *  }
+   * }
+   *
+   * We want to create an llvm function for `h` to look like this:
+   *
+   * %0 = type { i32 }
+   * %1 = type { i32, i32 }
+   *
+   * define i32 @f.g.h(%0 %f-closure, %1 %f.g-closure, i32 %a, i32 %b, i32 %c)
+   *
+   * In order to do this, we'll build up the argument list in reverse, first by
+   * creating the parameters for the regular parameters. *)
+  let ts = List.map
+    (fun p -> lltype_of_btype state p.Flx_types.ptyp)
+    parameters
   in
 
-  (* Make the function *)
-  let f = Llvm.declare_function name ft state.the_module in
+  (* Next we'll handle the parent closure types. First, find the parent
+   * closures. *)
+  let display = Flx_display.get_display_list state.syms bsym_table bid in
 
-  (* Set the names for all the arguments *)
-  Array.iteri begin fun i a ->
-    let bparam = parameters.(i) in
-    Llvm.set_value_name bparam.Flx_types.pid a;
-    Hashtbl.add state.value_bindings bparam.Flx_types.pindex a;
-  end (Llvm.params f);
+  (* Then grab the closure types and add them to our paramter type list. *)
+  let ts = List.fold_left
+    (fun ts (bid, _) -> Hashtbl.find state.closure_type_bindings bid :: ts)
+    ts display
+  in
 
-  (* Register the function. *)
-  Hashtbl.add state.value_bindings index f;
-  Hashtbl.add state.call_bindings index begin fun state bsym_table builder sr args ->
-    codegen_call_direct state bsym_table builder sr f args
-  end;
+  (* We've got all the types we need, so make the function. *)
+  let the_function_type = Llvm.function_type
+    (lltype_of_btype state ret_type)
+    (Array.of_list ts)
+  in
+  let the_function = Llvm.declare_function
+    name
+    the_function_type
+    state.the_module
+  in
 
-  f
+  (* Let's now set the names for the parameters. We'll do this in the reverse
+   * order as above in order to have proper array indexing. So, let's set the
+   * closure names in order. *)
+  let i =
+    List.fold_right begin fun (bid, _) i ->
+      let f = Hashtbl.find state.value_bindings bid in
+      Llvm.set_value_name
+        (Llvm.value_name f ^ "-closure")
+        (Llvm.param the_function i);
+      i + 1
+    end display 0
+  in
+
+  (* Then set the regular parameter names in order. *)
+  let _ =
+    List.fold_left begin fun i p ->
+      Llvm.set_value_name
+        p.Flx_types.pid
+        (Llvm.param the_function i);
+      i + 1
+    end i parameters
+  in
+
+  (* Register the function value. *)
+  Hashtbl.add state.value_bindings bid the_function;
+
+  (* And add the callback function. *)
+  Hashtbl.add state.call_bindings bid
+    begin fun state bsym_table builder sr args ->
+      codegen_call_direct state bsym_table builder sr the_function args
+    end;
+
+  Llvm.dump_module state.the_module;
+
+  the_function, display
+
+
+let codegen_closure state closure closure_kind =
+  (* Exit early if we don't have any values to generate. *)
+  if closure = [] then () else
+
+  match closure_kind with
+  | Global ->
+      List.iter begin fun (bid, name, btype) ->
+        (* Create the global. *)
+        let e = Llvm.define_global
+          name
+          (Llvm.undef (lltype_of_btype state btype))
+          state.the_module
+        in
+
+        (* Don't export the global variable. *)
+        Llvm.set_linkage Llvm.Linkage.Internal e;
+
+        Hashtbl.add state.value_bindings bid e;
+      end closure
+
+  | Stack (the_function, builder) ->
+      (* ... Add the allocas. *)
+      List.iter begin fun (bid, name, btype) ->
+        Hashtbl.add
+          state.value_bindings
+          bid
+          (Llvm.build_alloca (lltype_of_btype state btype) name builder)
+      end closure
+
+  | Stack_closure (bid, the_function, builder) ->
+      let closure = Array.of_list closure in
+
+      (* First build up the types for the struct. *)
+      let ts = Array.map
+        (fun (_,_,btype) -> lltype_of_btype state btype)
+        closure
+      in
+
+      (* Then build the closure struct. *)
+      let the_struct = Llvm.build_alloca
+        (Llvm.struct_type state.context ts)
+        ((Llvm.value_name the_function) ^ "-closure")
+        builder
+      in
+
+      (* Add a closure loop. *)
+      Hashtbl.add state.closure_bindings bid the_struct;
+
+      (* Then, build local references to the closure. *)
+      let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
+
+      (* Step through all the closed values and get the addresses for them and
+       * register them to the value bindings. *)
+      Array.iteri begin fun i (bid, name, btype) ->
+        let e = Llvm.build_gep
+          the_struct
+          [| zero; Llvm.const_int (Llvm.i32_type state.context) i |]
+          name
+          builder
+        in
+
+        (* Register the gep as the value. *)
+        Hashtbl.add state.value_bindings bid e
+      end closure
 
 
 let rec codegen_function
   state
   bsym_table
   child_map
-  index
+  bid
   name
+  props
   parameters
   ret_type
   es
 =
   (* Declare the function *)
-  let the_function = codegen_proto state index name parameters ret_type in
+  let the_function, display = codegen_proto
+    state
+    bsym_table
+    child_map
+    bid
+    name
+    parameters
+    ret_type
+  in
 
   (* Create the initial basic block *)
   let bb = Llvm.append_block state.context "entry" the_function in
@@ -775,35 +990,87 @@ let rec codegen_function
         call_bindings = Hashtbl.copy state.call_bindings;
         value_bindings = Hashtbl.copy state.value_bindings;
         label_bindings = Hashtbl.copy state.label_bindings;
+        closure_type_bindings = Hashtbl.copy state.closure_type_bindings;
+        closure_bindings = Hashtbl.copy state.closure_bindings;
       }
     in
 
+    (* Build our stack frame. *)
+    let closure = ref [] in
+
+    (* Generate the symbols for the children. *)
     List.iter begin fun i ->
-      ignore (codegen_symbol state bsym_table child_map i (Hashtbl.find bsym_table i))
-    end (Flx_child.find_children child_map index);
+      ignore (codegen_symbol
+        state
+        bsym_table
+        child_map
+        closure
+        i
+        (Hashtbl.find bsym_table i))
+    end (Flx_child.find_children child_map bid);
 
-    (* Convert the parameters into an array so we can index into it. *)
-    let parameters = Array.of_list parameters in
+    (* Create local bindings for the closures. *)
+    let i =
+      let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
 
-    (* Create allocas for each of the arguments. *)
-    Array.iteri begin fun i rhs ->
-      (* Find the local symbol that corresponds with this parameter. *)
-      let lhs =
-        Hashtbl.find state.value_bindings parameters.(i).Flx_types.pindex
-      in
+      List.fold_right begin fun (bid,_) i ->
+        (* Grab the closure argument. *)
+        let closure = Llvm.param the_function i in
 
-      (* Make sure that we're dealing with the right types. *)
-      check_type Flx_srcref.dummy_sr lhs Llvm.TypeKind.Pointer;
-      check_type
-        Flx_srcref.dummy_sr
-        rhs
-        (Llvm.classify_type (Llvm.element_type (Llvm.type_of lhs)));
+        (* Add the closure to the closure lookup binding. *)
+        Hashtbl.add state.closure_bindings bid closure;
 
-      (* Store the argument in the alloca. *)
-      ignore (Llvm.build_store rhs lhs builder);
+        (* Now step through all the items in the closure and bind them locally. *)
+        let children = find_value_indicies state bsym_table child_map bid in
 
-      Hashtbl.add state.value_bindings parameters.(i).Flx_types.pindex lhs;
-    end (Llvm.params the_function);
+        Flx_list.iteri begin fun i bid ->
+          let gep = Llvm.build_gep
+            closure
+            [| zero; Llvm.const_int (Llvm.i32_type state.context) i |]
+            (name_of_index state bsym_table bid)
+            builder
+          in
+
+          Hashtbl.add state.value_bindings bid gep
+        end (List.rev children);
+
+        i + 1
+      end display 0
+    in
+
+    (* Next, make the closure to store our local values in. *)
+    let closure_kind =
+      if List.mem `Cfun props ||
+         List.mem `Pure props &&
+         not (List.mem `Heap_closure props)
+      then Stack (the_function, builder)
+      else Stack_closure (bid, the_function, builder)
+    in
+    codegen_closure state !closure closure_kind;
+
+    (* Finally, create allocas for each of the regular arguments. *)
+    let _ =
+      List.fold_left begin fun i p ->
+        let rhs = Llvm.param the_function i in
+
+        (* Find the local symbol that corresponds with this parameter. *)
+        let lhs = Hashtbl.find state.value_bindings p.Flx_types.pindex in
+
+        (* Make sure that we're dealing with the right types. *)
+        check_type Flx_srcref.dummy_sr lhs Llvm.TypeKind.Pointer;
+        check_type
+          Flx_srcref.dummy_sr
+          rhs
+          (Llvm.classify_type (Llvm.element_type (Llvm.type_of lhs)));
+
+        (* Store the argument in the alloca. *)
+        ignore (Llvm.build_store rhs lhs builder);
+
+        Hashtbl.add state.value_bindings p.Flx_types.pindex lhs;
+
+        i + 1
+      end i parameters
+    in
 
     (* Generate code for the sub-statements. *)
     List.iter (codegen_bexe state bsym_table builder) es;
@@ -936,6 +1203,7 @@ and codegen_symbol
   state
   bsym_table
   child_map
+  closure
   index
   ((_, parent, sr, bbdcl) as symbol)
 =
@@ -948,51 +1216,35 @@ and codegen_symbol
   let name = name_of_index state bsym_table index in
 
   match bbdcl with
-  | Flx_types.BBDCL_function (_, _, (ps, _), ret_type, es) ->
-      ignore (codegen_function state bsym_table child_map index name ps ret_type es)
+  | Flx_types.BBDCL_function (props, _, (ps, _), ret_type, es) ->
+      ignore (codegen_function
+        state
+        bsym_table
+        child_map
+        index
+        name
+        props
+        ps
+        ret_type
+        es)
 
-  | Flx_types.BBDCL_procedure (_, _, (ps, _), es) ->
-      let ret_type = Flx_types.BTYP_void in
-      ignore (codegen_function state bsym_table child_map index name ps ret_type es)
+  | Flx_types.BBDCL_procedure (props, _, (ps, _), es) ->
+      ignore (codegen_function
+        state
+        bsym_table
+        child_map
+        index
+        name
+        props
+        ps
+        Flx_types.BTYP_void
+        es)
 
-  | Flx_types.BBDCL_val (vs, btype)
-  | Flx_types.BBDCL_var (vs, btype)
-  | Flx_types.BBDCL_ref (vs, btype)
-  | Flx_types.BBDCL_tmp (vs, btype) ->
-      (*
-      let name = name_of_index state bsym_table index in
-      *)
-
-      (* Get the value expression. If it's a local value, create an alloca,
-       * otherwise, create a global. *)
-      let e = match parent with
-      | Some parent ->
-          (* Find the parent function. *)
-          let the_function = Hashtbl.find state.value_bindings parent in
-
-          (* Create a builder at the entry block. *)
-          let builder = Llvm.builder_at
-            state.context
-            (Llvm.instr_begin (Llvm.entry_block the_function))
-          in
-
-          (* ... and add the alloca. *)
-          Llvm.build_alloca (lltype_of_btype state btype) name builder
-
-      | None ->
-          (* Set the initial value of the global to null. *)
-          let undef = Llvm.undef (lltype_of_btype state btype) in
-
-          (* Create the global. *)
-          let e = Llvm.define_global name undef (state.the_module) in
-
-          (* Don't export the global variable. *)
-          Llvm.set_linkage Llvm.Linkage.Internal e;
-          e
-      in
-
-      (* Register the symbol. *)
-      Hashtbl.add state.value_bindings index e
+  | Flx_types.BBDCL_val (_, btype)
+  | Flx_types.BBDCL_var (_, btype)
+  | Flx_types.BBDCL_ref (_, btype)
+  | Flx_types.BBDCL_tmp (_, btype) ->
+      closure := (index, name, btype) :: !closure
 
   | Flx_types.BBDCL_newtype (vs, ty) ->
       print_endline "BBDCL_newtype";
@@ -1048,6 +1300,8 @@ and codegen_symbol
 
 let codegen state bsym_table child_map bids bexes =
   (* First we'll generate the symbols. *)
+  let global_closure = ref [] in
+
   List.iter begin fun bid ->
     (* Try to find the bsym corresponding with the bid. It's okay if it doesn't
      * exist as it may have been optimized away. *)
@@ -1063,9 +1317,13 @@ let codegen state bsym_table child_map bids bexes =
               state
               bsym_table
               child_map
+              global_closure
               bid
               bsym
   end bids;
+
+  (* Define all the global values. *)
+  codegen_closure state !global_closure Global;
 
   (* If we don't have any executables, don't make a function. *)
   if bexes = [] then None else
