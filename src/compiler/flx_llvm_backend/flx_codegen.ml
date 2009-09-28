@@ -143,6 +143,15 @@ let check_type sr value expected_typekind =
       name_of_typekind expected_typekind)
 
 
+(* Convenience wrapper to creating a gep. *)
+let codegen_gep state value args name builder =
+  let args = Array.map
+    (fun i -> Llvm.const_int (Llvm.i32_type state.context) i)
+    args
+  in
+  Llvm.build_gep value args name builder
+
+
 (* Convert a felix type to an llvm type. *)
 let rec lltype_of_btype state btype =
   match Flx_maps.reduce_type btype with
@@ -378,16 +387,9 @@ and codegen_struct state bsym_table builder sr es btype =
 
 and load_struct state bsym_table builder sr the_struct es =
   (* Add the values to the struct. *)
-  let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
   let _ =
     List.fold_left begin fun i e ->
-      let gep = Llvm.build_gep
-        the_struct
-        [| zero; Llvm.const_int (Llvm.i32_type state.context) i |]
-        ""
-        builder
-      in
-
+      let gep = codegen_gep state the_struct [| 0; i |] "" builder in
       let e = codegen_expr state bsym_table builder sr e in
 
       check_type sr the_struct Llvm.TypeKind.Pointer;
@@ -930,18 +932,10 @@ let codegen_closure state closure closure_kind =
       (* Add a closure loop. *)
       Hashtbl.add state.closure_bindings bid the_struct;
 
-      (* Then, build local references to the closure. *)
-      let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
-
       (* Step through all the closed values and get the addresses for them and
        * register them to the value bindings. *)
       Array.iteri begin fun i (bid, name, btype) ->
-        let e = Llvm.build_gep
-          the_struct
-          [| zero; Llvm.const_int (Llvm.i32_type state.context) i |]
-          name
-          builder
-        in
+        let e = codegen_gep state the_struct [| 0; i |] name builder in
 
         (* Register the gep as the value. *)
         Hashtbl.add state.value_bindings bid e
@@ -1003,8 +997,6 @@ let rec codegen_function
 
     (* Create local bindings for the closures. *)
     let i =
-      let zero = Llvm.const_int (Llvm.i32_type state.context) 0 in
-
       List.fold_right begin fun (bid,_) i ->
         (* Grab the closure argument. *)
         let closure = Llvm.param the_function i in
@@ -1016,9 +1008,10 @@ let rec codegen_function
         let children = find_value_indicies state bsym_table child_map bid in
 
         Flx_list.iteri begin fun i bid ->
-          let gep = Llvm.build_gep
+          let gep = codegen_gep
+            state
             closure
-            [| zero; Llvm.const_int (Llvm.i32_type state.context) i |]
+            [| 0; i |]
             (name_of_index state bsym_table bid)
             builder
           in
