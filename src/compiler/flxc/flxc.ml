@@ -128,6 +128,70 @@ let bind_stmt state =
   end () stmt
 
 
+let frontend_stmt state =
+  (* Create a child map of the symbols. *)
+  let bsym_table, child_map = make_bind_state state in
+
+  (* Make references of the bsym_table and child map since we'll be replacing these
+   * values as we optimize. *)
+  let bsym_table = ref bsym_table in
+  let child_map = ref child_map in
+
+  (* Return a function that processes a statement at a time. *)
+  fun stmt () ->
+
+  (* First bind the statement. *)
+  let bexes, bids =
+    Flx_desugar.desugar_statement state.desugar_state begin fun bs asm ->
+      Flx_bind.bind_asm state.bind_state !bsym_table begin fun (bexes, bids) b ->
+        match b with
+        | Flx_bind.Bound_exe bexe -> bexe :: bexes, bids
+        | Flx_bind.Bound_symbol (bid,_) -> bexes, bid :: bids
+      end bs asm
+    end ([], []) stmt
+  in
+
+  (* Reverse the bound symbol lists so we can make tail calls. *)
+  let bexes = List.rev bexes in
+  let bids = List.rev bids in
+
+  (* Lower and optimize the symbols. *)
+  let bsym_table', child_map', bexes, bids = Flx_frontend.lower_symbols
+    state.frontend_state
+    !bsym_table
+    !child_map
+    state.init_index
+    bexes
+    bids
+  in
+  bsym_table := bsym_table';
+  child_map := child_map';
+
+  List.iter begin fun bid ->
+    match Flx_hashtbl.find !bsym_table bid with
+    | None -> ()
+    | Some (_,_,_,bbdcl) ->
+        print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
+          state.syms.Flx_mtypes2.sym_table
+          !bsym_table
+          bbdcl
+          bid);
+  end bids;
+
+  List.iter begin fun bexe ->
+    print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
+      state.syms.Flx_mtypes2.sym_table
+      !bsym_table
+      0
+      bexe)
+  end bexes;
+
+  print_newline ();
+
+  Flx_print.print_bsym_table state.syms.Flx_mtypes2.sym_table !bsym_table
+
+
+
 let compile_stmt state =
   (* Create the llvm state *)
 
@@ -269,6 +333,9 @@ let main () =
 
   | Options.Bind ->
       ignore (parse_stdin ((bind_stmt state), asms, local_data));
+
+  | Options.Frontend ->
+      ignore (parse_stdin ((frontend_stmt state), asms, local_data));
 
   | Options.Compile | Options.Run ->
       ignore (parse_stdin ((compile_stmt state), asms, local_data))
