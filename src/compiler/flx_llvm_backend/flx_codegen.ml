@@ -11,6 +11,8 @@ type codegen_state_t =
     label_bindings: (string, Llvm.llbasicblock) Hashtbl.t;
     closure_type_bindings: (Flx_types.bid_t, Llvm.lltype) Hashtbl.t;
     closure_bindings: (Flx_types.bid_t, Llvm.llvalue) Hashtbl.t;
+    name_bindings:
+      (string, Flx_types.bid_t * Flx_types.btypecode_t list) Hashtbl.t;
   }
 and call_t =
   codegen_state_t ->
@@ -74,6 +76,7 @@ let make_codegen_state syms optimization_level =
     label_bindings = Hashtbl.create 97;
     closure_bindings = Hashtbl.create 97;
     closure_type_bindings = Hashtbl.create 97;
+    name_bindings = Hashtbl.create 97;
   }
 
 
@@ -99,19 +102,27 @@ let lltype_of_suffix state suffix =
 
 
 (* Convenience function to look up the name of an index *)
-let rec name_of_index state bsym_table index =
+let rec name_of_index state bsym_table bid ts =
   (* Recursively prepend the name of the parent to *)
-  try
-    match Hashtbl.find state.syms.Flx_mtypes2.sym_table index with
-    | { Flx_types.id=id; parent=Some parent } ->
-        let s = name_of_index state bsym_table parent in
-        if String.length s = 0 then id else s ^ "." ^ id
-    | { Flx_types.id=id; parent=None } -> id
-  with Not_found ->
-    try
-      match Hashtbl.find bsym_table index with id, _, _, _ -> id
-    with Not_found ->
-      "index_" ^ string_of_int index
+  let name, ts =
+    match Flx_hashtbl.find bsym_table bid with
+    | None -> "index_" ^ string_of_int bid, []
+    | Some (id, None, _, bbdcl) -> id, (Flx_types.ts_of_bbdcl bbdcl)
+    | Some (id, Some parent, _, bbdcl) ->
+        let ts = Flx_types.ts_of_bbdcl bbdcl in
+        let name = name_of_index state bsym_table parent ts in
+        (if String.length name = 0 then id else name ^ "." ^ id), ts
+  in
+  (* Check our name cache if we need to mangle the function name. *)
+  match Flx_hashtbl.find state.name_bindings name with
+  | None ->
+      (* It's not in the cache, so claim the name and return it. *)
+      Hashtbl.add state.name_bindings name (bid, ts);
+      name
+
+  | Some (bid', ts') ->
+      (* Uh oh, someone else has this name, so lets mangle the name. *)
+      name ^ "$_i" ^ string_of_int bid
 
 
 (* Convenience function to get the string value of an Llvm.TypeKind. *)
@@ -345,10 +356,10 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
       let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
-  | Flx_types.BEXPR_closure (index, btype) ->
-      print_endline ("BEXPR_closure: " ^ name_of_index state bsym_table index);
-      begin try Hashtbl.find state.value_bindings index with Not_found ->
-        Flx_exceptions.clierr sr ("Unable to find index " ^ string_of_int index)
+  | Flx_types.BEXPR_closure (bid, ts) ->
+      print_endline ("BEXPR_closure: " ^ name_of_index state bsym_table bid ts);
+      begin try Hashtbl.find state.value_bindings bid with Not_found ->
+        Flx_exceptions.clierr sr ("Unable to find index " ^ string_of_int bid)
       end
 
   | Flx_types.BEXPR_case (index, btype) ->
@@ -1031,7 +1042,7 @@ let rec codegen_function
             state
             closure
             [| 0; i |]
-            (name_of_index state bsym_table bid)
+            (name_of_index state bsym_table bid [])
             builder
           in
 
@@ -1215,9 +1226,6 @@ and codegen_symbol
     " " ^
     (Flx_print.string_of_bbdcl state.syms.Flx_mtypes2.sym_table bsym_table bbdcl index));
 
-  (* Use the qualified name for the symbol. *)
-  let name = name_of_index state bsym_table index in
-
   match bbdcl with
   | Flx_types.BBDCL_function (props, _, (ps, _), ret_type, es) ->
       ignore (codegen_function
@@ -1226,7 +1234,7 @@ and codegen_symbol
         child_map
         sr
         index
-        name
+        (name_of_index state bsym_table index [])
         props
         ps
         ret_type
@@ -1239,7 +1247,7 @@ and codegen_symbol
         child_map
         sr
         index
-        name
+        (name_of_index state bsym_table index [])
         props
         ps
         Flx_types.BTYP_void
@@ -1249,6 +1257,7 @@ and codegen_symbol
   | Flx_types.BBDCL_var (_, btype)
   | Flx_types.BBDCL_ref (_, btype)
   | Flx_types.BBDCL_tmp (_, btype) ->
+      let name = name_of_index state bsym_table index [] in
       closure := (index, name, btype) :: !closure
 
   | Flx_types.BBDCL_newtype (vs, ty) ->
