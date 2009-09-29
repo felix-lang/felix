@@ -347,3 +347,16 @@ let src_of_bexe (e : bexe_t) = match e with
 
   | BEXE_begin
   | BEXE_end -> Flx_srcref.dummy_sr
+
+let ts_of_bexpr = function
+  | BEXPR_name (_, ts)
+  | BEXPR_closure (_, ts)
+  | BEXPR_ref (_, ts)
+  | BEXPR_apply_prim (_, ts, _)
+  | BEXPR_apply_direct (_, ts, _)
+  | BEXPR_apply_struct (_, ts, _) -> ts
+  | _ -> []
+
+let ts_of_bbdcl = function
+  | BBDCL_instance (_, _, _, _, ts) -> ts
+  | _ -> []

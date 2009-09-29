@@ -311,3 +311,6 @@ type bsym_table_t = (bid_t, bsym_t) Hashtbl.t
 type type_registry_t = (btypecode_t, bid_t) Hashtbl.t
 
 val src_of_bexe : bexe_t -> Flx_srcref.t
+
+val ts_of_bexpr : bexpr_t -> btypecode_t list
+val ts_of_bbdcl : bbdcl_t -> btypecode_t list
