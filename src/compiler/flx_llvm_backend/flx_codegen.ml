@@ -858,10 +858,11 @@ let codegen_proto state bsym_table child_map bid name parameters ret_type =
     (lltype_of_btype state ret_type)
     (Array.of_list ts)
   in
-  let the_function = Llvm.declare_function
-    name
-    the_function_type
-    state.the_module
+
+  let the_function =
+    match Llvm.lookup_function name state.the_module with
+    | None -> Llvm.declare_function name the_function_type state.the_module
+    | Some f -> assert false
   in
 
   (* Let's now set the names for the parameters. We'll do this in the reverse
@@ -1122,12 +1123,10 @@ and codegen_fun state index props vs ps ret_type code reqs prec =
         | "%eq" -> call_binary codegen_eq
         | "%ne" -> call_binary codegen_ne
         | "%lnot" -> call_unary codegen_lnot
-        | s ->
+        | "" -> failwith ("External function has no name");
+        | name ->
             (* Handle some error cases *)
-            if String.length s == 0 then
-              failwith ("External function has no name");
-
-            if s.[0] == '%' then
+            if name.[0] == '%' then
               failwith ("Unknown instruction " ^ s);
 
             (* Assume then that we're declaring an external function. So, let's
@@ -1136,7 +1135,12 @@ and codegen_fun state index props vs ps ret_type code reqs prec =
               (lltype_of_btype state ret_type)
               (Array.map (lltype_of_btype state) (Array.of_list ps))
             in
-            let the_function = Llvm.declare_function s ft state.the_module in
+
+            let the_function =
+              match Llvm.lookup_function s state.the_module with
+              | None -> Llvm.declare_function name ft state.the_module
+              | Some f -> assert false
+            in
 
             (* Use the C calling convention. *)
             Llvm.set_function_call_conv Llvm.CallConv.c the_function;
