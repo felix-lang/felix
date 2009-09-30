@@ -104,7 +104,10 @@ def build_flx_opt(phase):
     return phase.ocaml.build_lib(path / 'flx_opt',
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
+            build_flx_misc(phase),
             build_flx_core(phase),
+            build_flx_desugar(phase),
+            build_flx_bind(phase),
             build_flx_frontend(phase)])
 
 def build_flx_lower(phase):
@@ -114,6 +117,8 @@ def build_flx_lower(phase):
         libs=[
             build_flx_misc(phase),
             build_flx_core(phase),
+            build_flx_desugar(phase),
+            build_flx_bind(phase),
             build_flx_frontend(phase)])
 
 def build_flx_cpp_backend(phase):
