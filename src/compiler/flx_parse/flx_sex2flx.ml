@@ -431,7 +431,7 @@ and xproperty_t sr x : property_t =
 
   (* one of the below must be set before code generation *)
   | Id "Requires_ptf" -> `Requires_ptf        (* a pointer to thread frame is needed *)
-  | Id "Not_requyires_ptf" -> `Not_requires_ptf    (* no pointer to thread frame is needed *)
+  | Id "Not_requires_ptf" -> `Not_requires_ptf    (* no pointer to thread frame is needed *)
 
   | Id "Uses_gc" -> `Uses_gc             (* requires gc locally *)
   | Id "Virtual" -> `Virtual             (* interface in a typeclass *)
