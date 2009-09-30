@@ -99,6 +99,23 @@ def build_flx_frontend(phase):
             build_flx_desugar(phase),
             build_flx_bind(phase)])
 
+def build_flx_opt(phase):
+    path = Path('src/compiler/flx_opt')
+    return phase.ocaml.build_lib(path / 'flx_opt',
+        srcs=Path.glob(path / '*.ml{,i}'),
+        libs=[
+            build_flx_core(phase),
+            build_flx_frontend(phase)])
+
+def build_flx_lower(phase):
+    path = Path('src/compiler/flx_lower')
+    return phase.ocaml.build_lib(path / 'flx_lower',
+        srcs=Path.glob(path / '*.ml{,i}'),
+        libs=[
+            build_flx_misc(phase),
+            build_flx_core(phase),
+            build_flx_frontend(phase)])
+
 def build_flx_cpp_backend(phase):
     path = Path('src/compiler/flx_cpp_backend')
     return phase.ocaml.build_lib(path / 'flx_cpp_backend',
@@ -108,7 +125,6 @@ def build_flx_cpp_backend(phase):
         libs=[
             build_flx_misc(phase),
             build_flx_core(phase),
-            build_flx_desugar(phase),
             build_flx_bind(phase),
             build_flx_frontend(phase)],
         external_libs=['nums'])
@@ -136,6 +152,7 @@ def build_flx_drivers(ctx, phase):
             build_flx_cpp_backend(phase)])
 
     libs = [
+        lib,
         call('buildsystem.ocs.build_lib', phase),
         call('buildsystem.sex.build', phase),
         call('buildsystem.dypgen.build_lib', phase),
@@ -148,6 +165,8 @@ def build_flx_drivers(ctx, phase):
         build_flx_desugar(phase),
         build_flx_bind(phase),
         build_flx_frontend(phase),
+        build_flx_opt(phase),
+        build_flx_lower(phase),
         build_flx_cpp_backend(phase)]
 
     external_libs = ['nums', 'unix', 'str']

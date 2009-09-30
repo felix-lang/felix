@@ -3,7 +3,8 @@ type phase_t =
   | ExpandMacros
   | Desugar
   | Bind
-  | Frontend
+  | Optimize
+  | Lower
   | Compile
   | Run
 
@@ -27,13 +28,15 @@ let parse_args () =
     ("--import", Arg.String (fun i -> imports := i :: !imports),
       "Add <dir> to the list of include directories");
       ("--phase", Arg.Symbol
-        (["parse"; "macro"; "desugar"; "bind"; "frontend"; "compile"; "run"],
+        (["parse"; "macro"; "desugar"; "bind"; "optimize"; "lower"; "compile";
+          "run"],
         (function
           | "parse" -> phase := Parse
           | "macro" -> phase := ExpandMacros
           | "desugar" -> phase := Desugar
           | "bind" -> phase := Bind
-          | "frontend" -> phase := Frontend
+          | "optimize" -> phase := Optimize
+          | "lower" -> phase := Lower
           | "compile" -> phase := Compile
           | "run" -> phase := Run
           | _ -> ()

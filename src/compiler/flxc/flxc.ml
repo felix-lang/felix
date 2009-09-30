@@ -8,7 +8,6 @@ type state_t = {
   desugar_state: Flx_desugar.desugar_state_t;
   symtab: Flx_symtab.t;
   bind_state: Flx_bind.bind_state_t;
-  frontend_state: Flx_frontend.frontend_state_t;
   module_index: Flx_types.bid_t;
   init_index: Flx_types.bid_t;
 }
@@ -43,7 +42,6 @@ let create_state options =
       ~parent:module_index
       ~env:(Flx_lookup.build_env syms (Some init_index))
       syms;
-    frontend_state = Flx_frontend.make_frontend_state syms;
     module_index = module_index;
     init_index = init_index;
   }
@@ -103,32 +101,67 @@ let make_bind_state state =
   bsym_table, child_map
 
 
+(* Helper function to simplify binding a statement. *)
+let bind_stmt' state bsym_table stmt =
+  (* First bind the statement. *)
+  let bids, bexes =
+    Flx_desugar.desugar_statement state.desugar_state begin fun bs asm ->
+      Flx_bind.bind_asm state.bind_state bsym_table begin fun (bids, bexes) b ->
+        match b with
+        | Flx_bind.Bound_symbol (bid,_) -> bid :: bids, bexes
+        | Flx_bind.Bound_exe bexe -> bids, bexe :: bexes
+      end bs asm
+    end ([], []) stmt
+  in
+
+  (* Reverse the bound symbol lists so we can make tail calls. *)
+  List.rev bids, List.rev bexes
+
+
+(* Helper function to print to bsyms. *)
+let print_bids state bsym_table bids =
+  List.iter begin fun bid ->
+    match Flx_hashtbl.find bsym_table bid with
+    | None -> ()
+    | Some (_,_,_,bbdcl) ->
+        print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
+          state.syms.Flx_mtypes2.sym_table
+          bsym_table
+          bbdcl
+          bid)
+  end bids
+
+
+(* Helper function to help print out bexes. *)
+let print_bexes state bsym_table bexes =
+  List.iter begin fun bexe ->
+    print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
+      state.syms.Flx_mtypes2.sym_table
+      bsym_table
+      0
+      bexe)
+  end bexes
+
+
 let bind_stmt state =
   let bsym_table, _ = make_bind_state state in
 
   fun stmt () ->
-  Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
-    Flx_bind.bind_asm state.bind_state bsym_table begin fun () bound_value ->
-      match bound_value with
-      | Flx_bind.Bound_exe bexe ->
-          print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
-            state.syms.Flx_mtypes2.sym_table
-            bsym_table
-            0
-            bexe)
-
-      | Flx_bind.Bound_symbol (index, ((_,parent,_,e) as symbol)) ->
-          print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
-            state.syms.Flx_mtypes2.sym_table
-            bsym_table
-            e
-            index);
-
-    end () asm
-  end () stmt
+    let bids, bexes = bind_stmt' state bsym_table stmt in
+    print_bids state bsym_table bids;
+    print_bexes state bsym_table bexes
 
 
-let frontend_stmt state =
+(* Helper function to simplify optimizing values. *)
+let optimize_stmt' state bsym_table child_map stmt =
+  (* Bind the bsyms and bexes. *)
+  let bids, bexes = bind_stmt' state bsym_table stmt in
+
+  (* Optimize the bsyms and bexes. *)
+  Flx_opt.optimize state.syms bsym_table child_map state.init_index bids bexes
+
+
+let optimize_stmt state =
   (* Create a child map of the symbols. *)
   let bsym_table, child_map = make_bind_state state in
 
@@ -139,116 +172,101 @@ let frontend_stmt state =
 
   (* Return a function that processes a statement at a time. *)
   fun stmt () ->
-
-  (* First bind the statement. *)
-  let bexes, bids =
-    Flx_desugar.desugar_statement state.desugar_state begin fun bs asm ->
-      Flx_bind.bind_asm state.bind_state !bsym_table begin fun (bexes, bids) b ->
-        match b with
-        | Flx_bind.Bound_exe bexe -> bexe :: bexes, bids
-        | Flx_bind.Bound_symbol (bid,_) -> bexes, bid :: bids
-      end bs asm
-    end ([], []) stmt
-  in
-
-  (* Reverse the bound symbol lists so we can make tail calls. *)
-  let bexes = List.rev bexes in
-  let bids = List.rev bids in
-
-  (* Lower and optimize the symbols. *)
-  let bsym_table', child_map', bexes, bids = Flx_frontend.lower_symbols
-    state.frontend_state
-    !bsym_table
-    !child_map
-    state.init_index
-    bexes
-    bids
-  in
-  bsym_table := bsym_table';
-  child_map := child_map';
-
-  List.iter begin fun bid ->
-    match Flx_hashtbl.find !bsym_table bid with
-    | None -> ()
-    | Some (_,_,_,bbdcl) ->
-        print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
-          state.syms.Flx_mtypes2.sym_table
-          !bsym_table
-          bbdcl
-          bid);
-  end bids;
-
-  List.iter begin fun bexe ->
-    print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
-      state.syms.Flx_mtypes2.sym_table
+    let bsym_table', child_map', bids, bexes = optimize_stmt'
+      state
       !bsym_table
-      0
-      bexe)
-  end bexes;
+      !child_map
+      stmt
+    in
+    bsym_table := bsym_table';
+    child_map := child_map';
 
-  print_newline ();
+    print_bids state !bsym_table bids;
+    print_bexes state !bsym_table bexes
 
-  Flx_print.print_bsym_table state.syms.Flx_mtypes2.sym_table !bsym_table
 
+let lower_stmt' state bsym_table child_map lower_state stmt =
+  (* Optimize the bsyms and bexes. *)
+  let bsym_table, child_map, bids, bexes = optimize_stmt'
+    state
+    bsym_table
+    child_map
+    stmt
+  in
+
+  (* Then, lower the bsyms and bexes. *)
+  Flx_lower.lower lower_state bsym_table child_map state.init_index bids bexes
+
+
+let lower_stmt state =
+  (* Create a child map of the symbols. *)
+  let bsym_table, child_map = make_bind_state state in
+
+  (* Make references of the bsym_table and child map since we'll be replacing these
+   * values as we optimize. *)
+  let bsym_table = ref bsym_table in
+  let child_map = ref child_map in
+
+  (* Create the stat needed for lowering symbols. *)
+  let lower_state = Flx_lower.make_lower_state state.syms in
+
+  (* Return a function that processes a statement at a time. *)
+  fun stmt () ->
+    let bsym_table', child_map', bids, bexes = lower_stmt'
+      state
+      !bsym_table
+      !child_map
+      lower_state
+      stmt
+    in
+    bsym_table := bsym_table';
+    child_map := child_map';
+
+    print_bids state !bsym_table bids;
+    print_bexes state !bsym_table bexes
 
 
 let compile_stmt state =
-  (* Create the llvm state *)
+  (* Create a child map of the symbols. *)
+  let bsym_table, child_map = make_bind_state state in
+
+  (* Make references of the bsym_table and child map since we'll be replacing these
+   * values as we optimize. *)
+  let bsym_table = ref bsym_table in
+  let child_map = ref child_map in
+
+  (* Create the stat needed for lowering symbols. *)
+  let lower_state = Flx_lower.make_lower_state state.syms in
 
   (* Initialize the native jit. *)
   ignore (Llvm_executionengine.initialize_native_target ());
 
+  (* Make the state needed for code generation. *)
   let codegen_state = Flx_codegen.make_codegen_state
     state.syms
     !Options.optimize
   in
 
-  (* Create a child map of the symbols. *)
-  let bsym_table, child_map = make_bind_state state in
-
-  (* Make references of the bsym_table and child map since we'll be replacing these
-   * values as we optimize. *)
-  let bsym_table = ref bsym_table in
-  let child_map = ref child_map in
-
   (* Return a function that processes a statement at a time. *)
   fun stmt () ->
+    let bsym_table', child_map', bids, bexes = lower_stmt'
+      state
+      !bsym_table
+      !child_map
+      lower_state
+      stmt
+    in
+    bsym_table := bsym_table';
+    child_map := child_map';
 
-  (* First bind the statement. *)
-  let bexes, bids =
-    Flx_desugar.desugar_statement state.desugar_state begin fun bs asm ->
-      Flx_bind.bind_asm state.bind_state !bsym_table begin fun (bexes, bids) b ->
-        match b with
-        | Flx_bind.Bound_exe bexe -> bexe :: bexes, bids
-        | Flx_bind.Bound_symbol (bid,_) -> bexes, bid :: bids
-      end bs asm
-    end ([], []) stmt
-  in
+    (* Generate code for the exes and bsyms. *)
+    let f =
+      if !Options.phase = Options.Run
+      then Flx_codegen.codegen_and_run
+      else Flx_codegen.codegen
+    in
 
-  (* Reverse the bound symbol lists so we can make tail calls. *)
-  let bexes = List.rev bexes in
-  let bids = List.rev bids in
-
-  (* Lower and optimize the symbols. *)
-  let bsym_table', child_map', bexes, bids = Flx_frontend.lower_symbols
-    state.frontend_state
-    !bsym_table
-    !child_map
-    state.init_index
-    bexes
-    bids
-  in
-  bsym_table := bsym_table';
-  child_map := child_map';
-
-  (* Generate code for the exes and bsyms. *)
-  let f =
-    if !Options.phase = Options.Run
-    then Flx_codegen.codegen_and_run
-    else Flx_codegen.codegen
-  in
-
-  ignore (f codegen_state !bsym_table !child_map bids bexes)
+    ignore (f codegen_state !bsym_table !child_map bids bexes)
 
 
 (* Parse all the imports *)
@@ -334,8 +352,11 @@ let main () =
   | Options.Bind ->
       ignore (parse_stdin ((bind_stmt state), asms, local_data));
 
-  | Options.Frontend ->
-      ignore (parse_stdin ((frontend_stmt state), asms, local_data));
+  | Options.Optimize ->
+      ignore (parse_stdin ((optimize_stmt state), asms, local_data));
+
+  | Options.Lower ->
+      ignore (parse_stdin ((lower_stmt state), asms, local_data));
 
   | Options.Compile | Options.Run ->
       ignore (parse_stdin ((compile_stmt state), asms, local_data))

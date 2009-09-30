@@ -241,19 +241,21 @@ try
   in
 
   (* Optimize the bound values *)
-  let frontend_state = Flx_frontend.make_frontend_state syms in
-  let bsym_table, _ = Flx_frontend.optimize
-    frontend_state
+  let bsym_table, _ = Flx_opt.optimize_bsym_table
+    syms
     bsym_table
     root_proc
-    true
   in
 
   let opt_time = tim() in
   print_debug ("//Optimisation complete time " ^ string_of_float opt_time);
 
   (* Lower the bound symbols for the backend. *)
-  let bsym_table, child_map = Flx_frontend.lower_bsym_table frontend_state bsym_table root_proc in
+  let bsym_table, child_map = Flx_lower.lower_bsym_table
+    (Flx_lower.make_lower_state syms)
+    bsym_table
+    root_proc
+  in
 
   (* Start working on the backend. *)
 
