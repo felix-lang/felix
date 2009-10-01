@@ -102,4 +102,16 @@ let lower state bsym_table child_map root_proc bids bexes =
     bids
   in
 
+  (* Instantiate type classes. *)
+  print_debug state "//instantiating";
+
+  let child_map = Flx_child.cal_children bsym_table in
+  Flx_intpoly.cal_polyvars state.syms bsym_table child_map;
+  Flx_inst.instantiate
+    state.syms
+    bsym_table
+    false
+    root_proc
+    state.syms.Flx_mtypes2.bifaces;
+
   bsym_table, child_map, bids, bexes
