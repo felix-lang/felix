@@ -321,12 +321,14 @@ let rec parse_stdin (handle_stmt, init, local_data) =
     with
     | Dyp.Syntax_error ->
         print_endline "Syntax error";
-        parse_stdin parser_state;
+        (* parse_stdin parser_state; *)
+        parser_state
     | Flx_exceptions.ClientErrorn (_, e)
     | Flx_exceptions.ClientError2 (_, _, e)
     | Flx_exceptions.ClientError (_, e) ->
         print_endline e;
-        parse_stdin parser_state;
+        (* parse_stdin parser_state; *)
+        parser_state
   in
   parser_state
 
