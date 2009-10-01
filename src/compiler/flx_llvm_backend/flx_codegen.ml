@@ -102,27 +102,31 @@ let lltype_of_suffix state suffix =
 
 
 (* Convenience function to look up the name of an index *)
-let rec name_of_index state bsym_table bid ts =
-  (* Recursively prepend the name of the parent to *)
-  let name, ts =
-    match Flx_hashtbl.find bsym_table bid with
-    | None -> "index_" ^ string_of_int bid, []
-    | Some (id, None, _, bbdcl) -> id, (Flx_types.ts_of_bbdcl bbdcl)
-    | Some (id, Some parent, _, bbdcl) ->
-        let ts = Flx_types.ts_of_bbdcl bbdcl in
-        let name = name_of_index state bsym_table parent ts in
-        (if String.length name = 0 then id else name ^ "." ^ id), ts
-  in
-  (* Check our name cache if we need to mangle the function name. *)
-  match Flx_hashtbl.find state.name_bindings name with
-  | None ->
-      (* It's not in the cache, so claim the name and return it. *)
-      Hashtbl.add state.name_bindings name (bid, ts);
-      name
+let name_of_index state bsym_table bid ts =
+  let rec aux bid ts =
+    (* Recursively prepend the name of the parent to *)
+    let name, ts =
+      match Flx_hashtbl.find bsym_table bid with
+      | None -> "index_" ^ string_of_int bid, []
+      | Some (id, None, _, bbdcl) -> id, (Flx_types.ts_of_bbdcl bbdcl)
+      | Some (id, Some parent, _, bbdcl) ->
+          let ts = Flx_types.ts_of_bbdcl bbdcl in
+          let name = aux parent ts in
+          (if String.length name = 0 then id else name ^ "." ^ id), ts
+    in
+    (* Check our name cache if we need to mangle the function name. *)
+    match Flx_hashtbl.find state.name_bindings name with
+    | None ->
+        (* It's not in the cache, so claim the name and return it. *)
+        Hashtbl.add state.name_bindings name (bid, ts);
+        name
 
-  | Some (bid', ts') ->
-      (* Uh oh, someone else has this name, so lets mangle the name. *)
-      name ^ "$_i" ^ string_of_int bid
+    | Some (bid', ts') ->
+        (* Uh oh, someone else has this name, so lets mangle the name. *)
+        name ^ "$_i" ^ string_of_int bid
+  in
+  (* Prefix '_Z' in order to not conflict with any exported symbols. *)
+  "_Z" ^ (aux bid ts)
 
 
 (* Convenience function to get the string value of an Llvm.TypeKind. *)
