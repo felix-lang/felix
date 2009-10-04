@@ -607,6 +607,27 @@ let gen_offset_tables syms bsym_table child_map module_name =
           ("[ogen] attempt to allocate an incomplete type: '" ^ id ^"'")
 
       | BBDCL_union _ -> () (* handled by universal _uctor_ *)
+      | BBDCL_cstruct (vs,cps) ->
+        (* cstruct shouldn't have allocable stuff in it *)
+
+        let this_ptr_map = name ^ "_ptr_map" in
+        let old_ptr_map = !last_ptr_map in
+        last_ptr_map := "&"^this_ptr_map;
+
+        bcat s ("\n//OFFSETS for cstruct type " ^ name ^ " instance\n");
+
+        (* HACK .. in fact, some C structs might have finalisers! *)
+        let pod = true in
+        if not pod then bcat s ("FLX_FINALISER("^name^")\n");
+        bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map ={\n") ;
+        bcat s ("  " ^ old_ptr_map ^ ",\n");
+        bcat s ("  \"" ^ name ^ "\",\n");
+        if pod then
+          bcat s ("  1,sizeof("^name^"),0,0,0,gc_flags_default\n")
+        else
+          bcat s ("  1,sizeof("^name^"),"^name^"_finaliser,0,0,gc_flags_default\n")
+        ;
+        bcat s "};\n"
 
       | BBDCL_struct (vs,cps) ->
         failwith

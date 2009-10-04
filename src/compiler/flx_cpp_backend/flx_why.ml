@@ -288,6 +288,7 @@ let emit_whycode filename syms bsym_table root =
   output_string f "(****** STRUCTS *******)\n";
   Hashtbl.iter
   (fun index (id,parent,sr,entry) -> match entry with
+  | BBDCL_cstruct (bvs,variants)
   | BBDCL_struct (bvs,variants) ->
     emit_type syms bsym_table f index id sr bvs
   | _ -> ()
