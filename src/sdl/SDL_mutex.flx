@@ -1,0 +1,47 @@
+//Module        : SDL_mutex_h
+//Timestamp     : 2006/1/6 2:5:23 UTC
+//Timestamp     : 2006/1/6 13:5:23 (local)
+//Raw Header    : SDL_mutex.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define SDL_MUTEX_MAXWAIT     (~(Uint32)0)
+//#define SDL_MUTEX_TIMEDOUT    1
+//#define _SDL_mutex_h
+
+// DO NOT USE THIS MODULE
+// FELIX HAS ITS OWN THREAD HANDLING
+
+module SDL_mutex_h
+{
+  requires package "sdl";
+  header '#include "SDL_mutex.h"';
+  open C_hack;
+
+  incomplete ctypes SDL_mutex, SDL_cond, SDL_sem;
+
+  //PROCEDURES
+  proc SDL_DestroyCond: ptr[SDL_cond];
+  proc SDL_DestroyMutex: ptr[SDL_mutex];
+  proc SDL_DestroySemaphore: ptr[SDL_sem];
+
+  //FUNCTIONS
+  fun SDL_CondBroadcast: ptr[SDL_cond] -> int;
+  fun SDL_CondSignal: ptr[SDL_cond] -> int;
+  fun SDL_CondWait: ptr[SDL_cond] * ptr[SDL_mutex] -> int;
+  fun SDL_CondWaitTimeout: ptr[SDL_cond] * ptr[SDL_mutex] * uint32 -> int;
+  fun SDL_CreateCond: 1 -> ptr[SDL_cond];
+  fun SDL_CreateMutex: 1 -> ptr[SDL_mutex];
+  fun SDL_CreateSemaphore: uint32 -> ptr[SDL_sem];
+  fun SDL_SemPost: ptr[SDL_sem] -> int;
+  fun SDL_SemTryWait: ptr[SDL_sem] -> int;
+  fun SDL_SemValue: ptr[SDL_sem] -> uint32;
+  fun SDL_SemWait: ptr[SDL_sem] -> int;
+  fun SDL_SemWaitTimeout: ptr[SDL_sem] * uint32 -> int;
+  fun SDL_mutexP: ptr[SDL_mutex] -> int;
+  fun SDL_mutexV: ptr[SDL_mutex] -> int;
+  fun SDL_LockMutex: ptr[SDL_mutex] -> int;
+  fun SDL_UnlockMutex: ptr[SDL_mutex] -> int;
+}

@@ -1,0 +1,43 @@
+//Module        : SDL_h
+//Timestamp     : 2006/1/6 2:5:23 UTC
+//Timestamp     : 2006/1/6 13:5:23 (local)
+//Raw Header    : SDL.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define SDL_INIT_EVERYTHING   0x0000FFFF
+//#define SDL_INIT_EVENTTHREAD  0x01000000      /* Not supported on all OS's */
+//#define SDL_INIT_NOPARACHUTE  0x00100000      /* Don't catch fatal signals */
+//#define SDL_INIT_JOYSTICK     0x00000200
+//#define SDL_INIT_CDROM                0x00000100
+//#define SDL_INIT_VIDEO                0x00000020
+//#define SDL_INIT_AUDIO                0x00000010
+//#define       SDL_INIT_TIMER          0x00000001
+//#define _SDL_H
+
+module SDL_h
+{
+  requires package "sdl";
+  header '#include "SDL.h"';
+  open C_hack;
+
+  const SDL_INIT_EVERYTHING: uint32;
+  const SDL_INIT_EVENTTHREAD: uint32;
+  const SDL_INIT_NOPARACHUTE: uint32;
+  const SDL_INIT_JOYSTICK: uint32;
+  const SDL_INIT_CDROM : uint32;
+  const SDL_INIT_VIDEO: uint32;
+  const SDL_INIT_AUDIO: uint32;
+  const SDL_INIT_TIMER: uint32;
+
+  //PROCEDURES
+  proc SDL_Quit: 1;
+  proc SDL_QuitSubSystem: uint32;
+
+  //FUNCTIONS
+  fun SDL_Init: uint32 -> int;
+  fun SDL_InitSubSystem: uint32 -> int;
+  fun SDL_WasInit: uint32 -> uint32;
+}

@@ -1,0 +1,60 @@
+//Module        : SDL_image_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_image.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define IMG_GetError  SDL_GetError
+//#define IMG_SetError  SDL_SetError
+//#define SDL_IMAGE_VERSION(X)                                          \
+//#define SDL_IMAGE_PATCHLEVEL  4
+//#define SDL_IMAGE_MINOR_VERSION       2
+//#define SDL_IMAGE_MAJOR_VERSION       1
+//#define _SDL_IMAGE_H
+
+//INCLUDES
+include "SDL/SDL_rwops";
+include "SDL/SDL_version";
+include "SDL/SDL_video";
+
+module SDL_image_h
+{
+  requires package "sdl";
+  header '#include "SDL_image.h"';
+  open C_hack;
+  open SDL_rwops_h;
+  open SDL_version_h;
+  open SDL_video_h;
+
+  //FUNCTIONS
+  fun IMG_InvertAlpha: int -> int;
+  fun IMG_Linked_Version: 1 -> cptr[SDL_version];
+  fun IMG_Load: cptr[char] -> ptr[SDL_Surface];
+  fun IMG_LoadBMP_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadGIF_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadJPG_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadLBM_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadPCX_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadPNG_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadPNM_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadTGA_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadTIF_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadTyped_RW: ptr[SDL_RWops] * int * ptr[char] -> ptr[SDL_Surface];
+  fun IMG_LoadXCF_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_LoadXPM_RW: ptr[SDL_RWops] -> ptr[SDL_Surface];
+  fun IMG_Load_RW: ptr[SDL_RWops] * int -> ptr[SDL_Surface];
+  fun IMG_ReadXPMFromArray: ptr[ptr[char]] -> ptr[SDL_Surface];
+  fun IMG_isBMP: ptr[SDL_RWops] -> int;
+  fun IMG_isGIF: ptr[SDL_RWops] -> int;
+  fun IMG_isJPG: ptr[SDL_RWops] -> int;
+  fun IMG_isLBM: ptr[SDL_RWops] -> int;
+  fun IMG_isPCX: ptr[SDL_RWops] -> int;
+  fun IMG_isPNG: ptr[SDL_RWops] -> int;
+  fun IMG_isPNM: ptr[SDL_RWops] -> int;
+  fun IMG_isTIF: ptr[SDL_RWops] -> int;
+  fun IMG_isXCF: ptr[SDL_RWops] -> int;
+  fun IMG_isXPM: ptr[SDL_RWops] -> int;
+}

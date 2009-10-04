@@ -1,0 +1,64 @@
+//Module        : SDL_mouse_h
+//Timestamp     : 2006/1/6 2:18:42 UTC
+//Timestamp     : 2006/1/6 13:18:42 (local)
+//Raw Header    : SDL_mouse.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define SDL_BUTTON_RMASK      SDL_BUTTON(SDL_BUTTON_RIGHT)
+//#define SDL_BUTTON_MMASK      SDL_BUTTON(SDL_BUTTON_MIDDLE)
+//#define SDL_BUTTON_LMASK      SDL_BUTTON(SDL_BUTTON_LEFT)
+//#define SDL_BUTTON_WHEELDOWN  5
+//#define SDL_BUTTON_WHEELUP    4
+//#define SDL_BUTTON_RIGHT      3
+//#define SDL_BUTTON_MIDDLE     2
+//#define SDL_BUTTON_LEFT               1
+//#define SDL_BUTTON(X)         (SDL_PRESSED<<(X-1))
+//#define _SDL_mouse_h
+
+//INCLUDES
+include"SDL/SDL_video";
+
+module SDL_mouse_h
+{
+  requires package "sdl";
+  header '#include "SDL_mouse.h"';
+  open C_hack;
+  open SDL_video_h;
+
+  //CSTRUCTS
+  cstruct SDL_Cursor {
+    area: SDL_Rect;
+    hot_x: int16;
+    hot_y: int16;
+    data: ptr[uint8];
+    mask: ptr[uint8];
+    save: ptr[ptr[uint8]];
+    wm_cursor: ptr[WMcursor];
+  }
+
+  //PURE INCOMPLETE TYPES
+  type _struct_WMcursor = 'struct WMcursor'; //local
+
+  //STRUCT or UNION TAG ALIASES
+  typedef WMcursor = _struct_WMcursor;
+
+  /*
+  //TYPE ALIASES
+  typedef _struct_SDL_Cursor = SDL_Cursor;
+  */
+
+  //PROCEDURES
+  proc SDL_FreeCursor: ptr[SDL_Cursor];
+  proc SDL_SetCursor: ptr[SDL_Cursor];
+  proc SDL_WarpMouse: uint16 * uint16;
+
+  //FUNCTIONS
+  fun SDL_CreateCursor: ptr[uint8] * ptr[uint8] * int * int * int * int -> ptr[SDL_Cursor];
+  fun SDL_GetCursor: 1 -> ptr[SDL_Cursor];
+  fun SDL_GetMouseState: ptr[int] * ptr[int] -> uint8;
+  fun SDL_GetRelativeMouseState: ptr[int] * ptr[int] -> uint8;
+  fun SDL_ShowCursor: int -> int;
+}
