@@ -243,7 +243,7 @@ proc handle_key( keysym : SDL_keysym)
 
 var event_lock = SDL_CreateMutex ();
 
-proc poll_event(e: &SDL_Event)
+proc poll_event(e:ptr[SDL_Event])
 {
 tryagain:>
   //print "Polling event"; endl;
@@ -261,7 +261,7 @@ proc waitk(f:schannel[uint8]) {
   // So we have busy wait ;(
   //var &e : SDL_Event <- get_sdl_event event_lock;
   var e : SDL_Event;
-  poll_event(&e);
+  poll_event(addr e);
 
   var et = event_type e;
   whilst
@@ -270,7 +270,7 @@ proc waitk(f:schannel[uint8]) {
     et != SDL_QUIT
   do
     //&e <- get_sdl_event event_lock;
-    poll_event(&e);
+    poll_event(addr e);
     et = event_type e;
   done;
   if et == SDL_KEYDOWN call handle_key e.key.keysym;
