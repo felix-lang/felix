@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "flx_strutil.hpp"
 
 namespace flx { namespace rtl { namespace strutil {
