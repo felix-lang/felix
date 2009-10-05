@@ -292,7 +292,6 @@ def config_host(ctx, build):
             ctx.options.host_llvm_config,
             requires_version=(2, '7svn'))
     except fbuild.ConfigFailed:
-        ctx.logger.failed()
         phase.llvm_config = None
     else:
         if llvm_config.ocaml_libdir().exists():
@@ -338,7 +337,6 @@ def config_target(ctx, host):
             ctx.options.target_sdl_config,
             requires_at_least_version=(1, 3))
     except fbuild.ConfigFailed:
-        ctx.logger.failed()
         phase.sdl_config = None
 
     return phase
