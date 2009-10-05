@@ -290,6 +290,7 @@ def config_host(ctx, build):
             ctx.options.host_llvm_config,
             requires_version=(2, '7svn'))
     except fbuild.ConfigFailed:
+        ctx.logger.failed()
         phase.llvm_config = None
     else:
         if llvm_config.ocaml_libdir().exists():
