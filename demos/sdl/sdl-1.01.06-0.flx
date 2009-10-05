@@ -82,9 +82,9 @@ proc resizeWindow( wwidth : int, hheight :int)
 proc LoadGLTextures( )
 {
   /* Create storage space for the texture */
-  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl209.bmp");
+  var TextureImage = SDL_LoadBMP(enconst c"demos/sdl/textures/nehe.bmp");
   if isNULL TextureImage do
-    print "Can't load texture file media/textures/sdl209.bmp";
+    print "Can't load texture file demos/sdl/textures/nehe.bmp";
     Quit 1;
   done;
 
@@ -95,9 +95,9 @@ proc LoadGLTextures( )
   glBindTexture( GL_TEXTURE_2D, texture.[0] );
 
     /* Generate The Texture */
-  glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.w,
-    TextureImage.h, 0, GL_RGB,
-    GL_UNSIGNED_BYTE, TextureImage.pixels
+  glTexImage2D( GL_TEXTURE_2D, 0, 3, (*TextureImage).w,
+    (*TextureImage).h, 0, GL_RGB,
+    GL_UNSIGNED_BYTE, (*TextureImage).pixels
   );
 
   /* Linear Filtering */
@@ -179,14 +179,14 @@ proc rotate()
     /* Used To Spin The Stars */
     spin += 0.01f;
     /* Changes The Angle Of A Star */
-    stars.[i].angle += float_of i / float_of NUM;
+    stars.[i].angle = stars.[i].angle + float_of i / float_of NUM;
     /* Changes The Distance Of A Star */
-    stars.[i].dist -= 0.01f;
+    stars.[i].dist = stars.[i].dist - 0.01f;
 
     /* Is The Star In The Middle Yet */
     if stars.[i].dist < 0.0f do
       /* Move The Star 5 Units From The Center */
-      stars.[i].dist += 5.0f;
+      stars.[i].dist = stars.[i].dist + 5.0f;
       /* Give It A New Red Value */
       stars.[i].r = Cstdlib::rand( ) % 256;
       /* Give It A New Green Value */

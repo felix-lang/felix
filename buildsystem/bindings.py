@@ -76,7 +76,8 @@ def build_flx(phase):
         phase.ctx.buildroot / 'lib/GL', Path('src/opengl/*.flx').glob()))
 
     if fbuild.config.c.sdl.SDL_SDL_h(phase.cxx.shared).header:
-        sdl_config = fbuild.builders.sdl.SDLConfig(phase.ctx)
+        sdl_config = fbuild.builders.sdl.SDLConfig(phase.ctx,
+                requires_at_least_version=(1, 3))
         sdl_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
             'src/sdl/sdl.fpc', 'src/sdl/sdl.fpc.in', {
                 'VERSION': sdl_config.version(),

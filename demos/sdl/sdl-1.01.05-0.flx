@@ -81,9 +81,9 @@ proc resizeWindow( wwidth : int, hheight :int)
 proc LoadGLTextures( )
 {
   /* Create storage space for the texture */
-  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl208.bmp");
+  var TextureImage = SDL_LoadBMP(enconst c"demos/sdl/textures/nehe.bmp");
   if isNULL TextureImage do
-    print "Can't load texture file media/textures/sdl208.bmp";
+    print "Can't load texture file demos/sdl/textures/nehe.bmp";
     Quit 1;
   done;
 
@@ -94,9 +94,9 @@ proc LoadGLTextures( )
   glBindTexture( GL_TEXTURE_2D, texture.[0] );
 
     /* Generate The Texture */
-  glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.w,
-    TextureImage.h, 0, GL_RGB,
-    GL_UNSIGNED_BYTE, TextureImage.pixels
+  glTexImage2D( GL_TEXTURE_2D, 0, 3, (*TextureImage).w,
+    (*TextureImage).h, 0, GL_RGB,
+    GL_UNSIGNED_BYTE, (*TextureImage).pixels
   );
 
   /* Linear Filtering */
@@ -110,9 +110,9 @@ proc LoadGLTextures( )
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
     /* Generate The Texture */
-  glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.w,
-    TextureImage.h, 0, cast[uint] GL_RGB,
-    GL_UNSIGNED_BYTE, TextureImage.pixels
+  glTexImage2D( GL_TEXTURE_2D, 0, 3, (*TextureImage).w,
+    (*TextureImage).h, 0, cast[uint] GL_RGB,
+    GL_UNSIGNED_BYTE, (*TextureImage).pixels
   );
 
   glBindTexture( GL_TEXTURE_2D, texture.[2] );
@@ -124,9 +124,9 @@ proc LoadGLTextures( )
   /* Generate The MipMapped Texture ( NEW ) */
   ignore(gluBuild2DMipmaps(
     GL_TEXTURE_2D, 3,
-    TextureImage.w, TextureImage.h,
+    (*TextureImage).w, (*TextureImage).h,
     GL_RGB, GL_UNSIGNED_BYTE,
-    cast[caddress] TextureImage.pixels
+    cast[caddress] (*TextureImage).pixels
   ));
 
   /* Free up any memory we may have used */

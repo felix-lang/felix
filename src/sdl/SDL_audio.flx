@@ -61,7 +61,6 @@ module SDL_audio_h
   }
 
   fun get_callback: SDL_AudioSpec -> SDL_audio_h_cft_1 = "$1.callback";
-  fun get_callback: lvalue[SDL_AudioSpec] -> lvalue[SDL_audio_h_cft_1] = "$1.callback";
 
   //C FUNCTION POINTER TYPES
   header '''typedef void (*SDL_audio_h_cft_2)(struct SDL_AudioCVT *,  Uint16);''';
