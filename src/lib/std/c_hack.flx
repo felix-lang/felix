@@ -39,8 +39,15 @@ module C_hack
   fun int_of:size->int='$1';
   fun size_of:int->size='$1';
 
+  publish "Pointer equality"
   fun eq: address * address -> bool = "$1==$2";
   fun ne: address * address -> bool = "$1!=$2";
+  fun eq[T]: ptr[T] * ptr[T] -> bool = "$1==$2";
+  fun ne[T]: ptr[T] * ptr[T] -> bool = "$1!=$2";
+  fun eq[T]: cptr[T] * cptr[T] -> bool = "$1==$2";
+  fun ne[T]: cptr[T] * cptr[T] -> bool = "$1!=$2";
+  fun eq[T]: gcptr[T] * gcptr[T] -> bool = "$1==$2";
+  fun ne[T]: gcptr[T] * gcptr[T] -> bool = "$1!=$2";
 
   publish "Abstract type for C pointer"
   pod type ptr[t]= "?1 *";

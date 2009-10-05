@@ -81,6 +81,54 @@ open module Uvlong
   proc fprint: ostream * uvlong = "*$1<<$2;" requires iostream;
 }
 
+open module Int8
+{
+  fun _ctor_int8: string -> int8 = "static_cast<?1>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_int8[T in reals]: T -> int8 = "static_cast<?1>($1)";
+}
+
+open module Int16
+{
+  fun _ctor_int16: string -> int16 = "static_cast<?1>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_int16[T in reals]: T -> int16 = "static_cast<?1>($1)";
+}
+
+open module Int32
+{
+  fun _ctor_int32: string -> int32 = "static_cast<?1>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_int32[T in reals]: T -> int32 = "static_cast<?1>($1)";
+}
+
+open module Int64
+{
+  fun _ctor_int64: string -> int64 = "static_cast<?1>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_int64[T in reals]: T -> int64 = "static_cast<?1>($1)";
+}
+
+open module Uint8
+{
+  fun _ctor_uint8: string -> uint8 = "static_cast<?1>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_uint8[T in reals]: T -> uint8 = "static_cast<?1>($1)";
+}
+
+open module Uint16
+{
+  fun _ctor_uint16: string -> uint16 = "static_cast<?1>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_uint16[T in reals]: T -> uint16 = "static_cast<?1>($1)";
+}
+
+open module Uint32
+{
+  fun _ctor_uint32: string -> uint32 = "static_cast<?1>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_uint32[T in reals]: T -> uint32 = "static_cast<?1>($1)";
+}
+
+open module Uint64
+{
+  fun _ctor_uint64: string -> uint64 = "static_cast<?1>(std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_uint64[T in reals]: T -> uint64 = "static_cast<?1>($1)";
+}
+
 instance Str[tiny] {
   fun str: tiny -> string = "flx::rtl::strutil::str<int>($1)" requires flx_strutil;
 }
@@ -155,4 +203,3 @@ open Unsigned_integer[ushort];
 open Unsigned_integer[uint];
 open Unsigned_integer[ulong];
 open Unsigned_integer[uvlong];
-
