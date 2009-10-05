@@ -468,6 +468,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
             let _,_,_,entry = Hashtbl.find bsym_table i in
             begin match entry with
               | BBDCL_struct (_,ls) -> let n = length ls in ce_atom (si n)
+              | BBDCL_cstruct (_,ls) -> let n = length ls in ce_atom (si n)
               | BBDCL_union (_,ls) -> let n = length ls in ce_atom (si n)
               | _ ->
                 clierr sr (
@@ -491,6 +492,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
       | BBDCL_function (_,_,([],_),_,[BEXE_fun_return (_,e)]) ->
         ge' e
 
+      | BBDCL_cstruct _
       | BBDCL_struct _
       | BBDCL_function _
       | BBDCL_procedure _
@@ -547,6 +549,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
       print_endline "Mapping closure of callback to C function pointer";
       ce_atom id
 
+    | BBDCL_cstruct _
     | BBDCL_struct _
     | BBDCL_fun _
     | BBDCL_proc _ ->

@@ -4216,7 +4216,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
     | BTYP_inst (i,ts') when
       (
         match hfind "lookup" syms.sym_table i with
-        | {symdef=SYMDEF_struct _} ->
+        | {symdef=SYMDEF_struct _}
+        | {symdef=SYMDEF_cstruct _} ->
           (match ta with | BTYP_record _ -> true | _ -> false)
         | _ -> false
       )
@@ -4225,7 +4226,8 @@ and bind_expression' syms env (rs:recstop) e args : tbexpr_t =
       print_endline "struct applied to record .. ";
       *)
       let id,vs,fls = match hfind "lookup" syms.sym_table i with
-        | {id=id; vs=vs; symdef=SYMDEF_struct ls } -> id,vs,ls
+        | {id=id; vs=vs; symdef=SYMDEF_struct ls }
+        | {id=id; vs=vs; symdef=SYMDEF_cstruct ls } -> id,vs,ls
         | _ -> assert false
       in
       let alst = match ta with

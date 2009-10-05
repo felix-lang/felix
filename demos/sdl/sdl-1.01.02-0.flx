@@ -159,14 +159,14 @@ var
   videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
 
 /* This checks to see if surfaces can be stored in memory */
-if  videoInfo.hw_available != 0 do
+if (*videoInfo).hw_available != 0 do
     videoFlags |= SDL_HWSURFACE;
 else
     videoFlags |= SDL_SWSURFACE;
 done;
 
 /* This checks if hardware blits can be done */
-if videoInfo.blit_hw != 0 do
+if (*videoInfo).blit_hw != 0 do
     videoFlags |= SDL_HWACCEL;
 done;
 
@@ -270,7 +270,7 @@ proc drawchan(x:schannel[int], drawing:1->0)
 }
 
 val clock = Faio::mk_alarm_clock();
-proc poll_event(e: &SDL_Event)
+proc poll_event(e:ptr[SDL_Event])
 {
 tryagain:>
   //print "Polling event"; endl;
@@ -292,7 +292,7 @@ proc dispatch_event(
   whilst true do
     // var &e : SDL_Event <- get_sdl_event event_lock;
     var e : SDL_Event;
-    poll_event(&e);
+    poll_event(addr e);
 
     match e.type_ with
     | ?et when et == SDL_ACTIVEEVENT =>

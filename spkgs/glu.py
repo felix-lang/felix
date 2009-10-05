@@ -1,0 +1,1 @@
+pkg_requires = ['gl']

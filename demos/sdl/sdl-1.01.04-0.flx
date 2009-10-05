@@ -81,9 +81,9 @@ proc resizeWindow( wwidth : int, hheight :int)
 proc LoadGLTextures( )
 {
   /* Create storage space for the texture */
-  var TextureImage = SDL_LoadBMP(enconst c"media/textures/sdl206.bmp");
+  var TextureImage = SDL_LoadBMP(enconst c"demos/sdl/textures/nehe.bmp");
   if isNULL TextureImage do
-    print "Can't load texture file media/textures/sdl206.bmp";
+    print "Can't load texture file demos/sdl/textures/nehe.bmp";
     Quit 1;
   done;
 
@@ -94,9 +94,9 @@ proc LoadGLTextures( )
   glBindTexture( GL_TEXTURE_2D, texture.[0] );
 
     /* Generate The Texture */
-  glTexImage2D( GL_TEXTURE_2D, 0, 3, TextureImage.w,
-    TextureImage.h, 0, GL_RGB,
-    GL_UNSIGNED_BYTE, TextureImage.pixels
+  glTexImage2D( GL_TEXTURE_2D, 0, 3, (*TextureImage).w,
+    (*TextureImage).h, 0, GL_RGB,
+    GL_UNSIGNED_BYTE, (*TextureImage).pixels
   );
 
   /* Linear Filtering */
@@ -207,14 +207,14 @@ var
   videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
 
 /* This checks to see if surfaces can be stored in memory */
-if  videoInfo.hw_available != 0 do
+if (*videoInfo).hw_available != 0 do
     videoFlags |= SDL_HWSURFACE;
 else
     videoFlags |= SDL_SWSURFACE;
 done;
 
 /* This checks if hardware blits can be done */
-if videoInfo.blit_hw != 0 do
+if (*videoInfo).blit_hw != 0 do
     videoFlags |= SDL_HWACCEL;
 done;
 
@@ -318,7 +318,7 @@ proc execute(x:schannel[int], something:1->0)
 }
 
 val clock = Faio::mk_alarm_clock();
-proc poll_event(e: &SDL_Event)
+proc poll_event(e:ptr[SDL_Event])
 {
 tryagain:>
   //print "Polling event"; endl;
@@ -341,7 +341,7 @@ proc dispatch_event(
   whilst true do
     //var &e : SDL_Event <- get_sdl_event event_lock;
     var e : SDL_Event;
-    poll_event(&e);
+    poll_event(addr e);
     match e.type_ with
     | ?et when et == SDL_ACTIVEEVENT =>
       { write (active, e.active); }

@@ -1,0 +1,62 @@
+//Module        : SDL_imageFilter_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_imageFilter.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define DLLINTERFACE
+//#define DLLINTERFACE __declspec(dllimport)
+//#define DLLINTERFACE __declspec(dllexport)
+//#define _SDL_imageFilter_h
+
+module SDL_imageFilter_h
+{
+  requires package "sdl";
+  header '#include "SDL_imageFilter.h"';
+  open C_hack;
+
+  //PROCEDURES
+  proc SDL_imageFilterAlignStack: 1;
+  proc SDL_imageFilterMMXoff: 1;
+  proc SDL_imageFilterMMXon: 1;
+  proc SDL_imageFilterRestoreStack: 1;
+
+  //FUNCTIONS
+  fun SDL_imageFilterAbsDiff: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterAdd: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterAddByte: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterAddByteToHalf: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterBinarizeUsingThreshold: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterBitAnd: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterBitNegation: ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterBitOr: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterClipToRange: ptr[utiny] * ptr[utiny] * int * utiny * utiny -> int;
+  fun SDL_imageFilterConvolveKernel3x3Divide: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel3x3ShiftRight: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel5x5Divide: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel5x5ShiftRight: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel7x7Divide: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel7x7ShiftRight: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel9x9Divide: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterConvolveKernel9x9ShiftRight: ptr[utiny] * ptr[utiny] * int * int * ptr[short] * utiny -> int;
+  fun SDL_imageFilterDiv: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterMMXdetect: 1 -> int;
+  fun SDL_imageFilterMean: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterMult: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterMultByByte: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterMultDivby2: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterMultDivby4: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterMultNor: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterNormalizeLinear: ptr[utiny] * ptr[utiny] * int * int * int * int * int -> int;
+  fun SDL_imageFilterShiftLeft: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterShiftLeftByte: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterShiftRight: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+  fun SDL_imageFilterShiftRightAndMultByByte: ptr[utiny] * ptr[utiny] * int * utiny * utiny -> int;
+  fun SDL_imageFilterSobelX: ptr[utiny] * ptr[utiny] * int * int -> int;
+  fun SDL_imageFilterSobelXShiftRight: ptr[utiny] * ptr[utiny] * int * int * utiny -> int;
+  fun SDL_imageFilterSub: ptr[utiny] * ptr[utiny] * ptr[utiny] * int -> int;
+  fun SDL_imageFilterSubByte: ptr[utiny] * ptr[utiny] * int * utiny -> int;
+}

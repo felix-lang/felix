@@ -1,0 +1,26 @@
+include "SDL/SDL";
+include "SDL/SDL_events";
+include "SDL/SDL_mutex";
+include "flx_faio";
+
+module SDL_events
+{
+  requires package "sdl";
+  open SDL_events_h;
+  open SDL_mutex_h;
+  open C_hack;
+
+  fun event_type: SDL_Event -> uint8 = "$1.type";
+
+  proc block_sdl_events(m:ptr[SDL_mutex])
+  {
+    var dummy = SDL_UserEvent(SDL_USEREVENT,0,NULL,NULL);
+    ignore(SDL_PushEvent(cast [ptr[SDL_Event]] (addr dummy)));
+    ignore(SDL_LockMutex(m));
+  }
+
+  proc unblock_sdl_events(m:ptr[SDL_mutex])
+  {
+    ignore(SDL_UnlockMutex(m));
+  }
+}

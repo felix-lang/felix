@@ -179,7 +179,6 @@ _gc_pointer type gcptr[t]= "?1*";
 @for t in exact_ints:
   equiv = cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]
   tangle('typedef ' + t + ' = ' + equiv + ';')
-  tangle('rename ' + string.capitalize(t) + ' = ' + string.capitalize(equiv) + ';')
 
 @select(tangler('lib/plat/arithmax.flx','data'))
 // arithmetic conversion rule

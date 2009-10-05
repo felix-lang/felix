@@ -1,0 +1,77 @@
+//Module        : SDL_gfxPrimitives_h
+//Timestamp     : 2006/1/8 3:36:0 UTC
+//Timestamp     : 2006/1/8 14:36:0 (local)
+//Raw Header    : /usr/include/SDL/SDL_gfxPrimitives.h
+//Preprocessor  : gcc -E
+//Input file: sdl.flxcc.i
+//Flxcc Control : sdl.flxcc
+//Felix Version : 1.1.2_rc1
+
+//#define DLLINTERFACE
+//#define DLLINTERFACE __declspec(dllimport)
+//#define DLLINTERFACE __declspec(dllexport)
+//#define SDL_GFXPRIMITIVES_MINOR       0
+//#define SDL_GFXPRIMITIVES_MAJOR       2
+//#define M_PI  3.141592654
+//#define _SDL_gfxPrimitives_h
+
+//INCLUDES
+include "SDL/SDL";
+include "SDL/SDL_video";
+
+module SDL_gfxPrimitives_h
+{
+  requires package "sdl";
+  header '#include "SDL_gfxPrimitives.h"';
+  open C_hack;
+  open SDL_h;
+  open SDL_video_h;
+
+  //FUNCTIONS
+  fun aacircleColor: ptr[SDL_Surface] * int16 * int16 * int16 * uint32 -> int;
+  fun aacircleRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun aaellipseColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun aaellipseRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun aalineColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun aalineRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun aapolygonColor: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * uint32 -> int;
+  fun aapolygonRGBA: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * uint8 * uint8 * uint8 * uint8 -> int;
+  fun aatrigonColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun aatrigonRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun bezierColor: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * int * uint32 -> int;
+  fun bezierRGBA: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * int * uint8 * uint8 * uint8 * uint8 -> int;
+  fun boxColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun boxRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun characterColor: ptr[SDL_Surface] * int16 * int16 * char * uint32 -> int;
+  fun characterRGBA: ptr[SDL_Surface] * int16 * int16 * char * uint8 * uint8 * uint8 * uint8 -> int;
+  fun circleColor: ptr[SDL_Surface] * int16 * int16 * int16 * uint32 -> int;
+  fun circleRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun ellipseColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun ellipseRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledCircleColor: ptr[SDL_Surface] * int16 * int16 * int16 * uint32 -> int;
+  fun filledCircleRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledEllipseColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun filledEllipseRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledPolygonColor: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * int -> int;
+  fun filledPolygonRGBA: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledTrigonColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * int16 * int -> int;
+  fun filledTrigonRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun filledpieColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun filledpieRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun hlineColor: ptr[SDL_Surface] * int16 * int16 * int16 * uint32 -> int;
+  fun hlineRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun lineColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun lineRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun pixelColor: ptr[SDL_Surface] * int16 * int16 * uint32 -> int;
+  fun pixelRGBA: ptr[SDL_Surface] * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun polygonColor: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * uint32 -> int;
+  fun polygonRGBA: ptr[SDL_Surface] * ptr[int16] * ptr[int16] * int * uint8 * uint8 * uint8 * uint8 -> int;
+  fun rectangleColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun rectangleRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun stringColor: ptr[SDL_Surface] * int16 * int16 * ptr[char] * uint32 -> int;
+  fun stringRGBA: ptr[SDL_Surface] * int16 * int16 * ptr[char] * uint8 * uint8 * uint8 * uint8 -> int;
+  fun trigonColor: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * int16 * uint32 -> int;
+  fun trigonRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+  fun vlineColor: ptr[SDL_Surface] * int16 * int16 * int16 * uint32 -> int;
+  fun vlineRGBA: ptr[SDL_Surface] * int16 * int16 * int16 * uint8 * uint8 * uint8 * uint8 -> int;
+}
