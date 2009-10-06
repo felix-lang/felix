@@ -159,6 +159,8 @@ def pre_options(parser):
             default=[],
             action='append',
             help='Add this flag to the c compiler for the target phase'),
+        make_option('--target-sdl-config',
+            help='specify the sdl-config script'),
     ))
 
 def post_options(options, args):
@@ -328,6 +330,14 @@ def config_target(ctx, host):
                 includes=ctx.options.target_includes,
                 libpaths=ctx.options.target_libpaths,
                 flags=ctx.options.target_c_flags))
+
+    # We optionally support sdl
+    try:
+        phase.sdl_config = call('fbuild.builders.sdl.SDLConfig', ctx,
+            ctx.options.target_sdl_config,
+            requires_at_least_version=(1, 3))
+    except fbuild.ConfigFailed:
+        phase.sdl_config = None
 
     return phase
 

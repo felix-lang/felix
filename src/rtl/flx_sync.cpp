@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "flx_sync.hpp"
 
 using namespace flx::rtl;

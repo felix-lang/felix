@@ -8,6 +8,7 @@
 
 #include <iostream>   // for cerr
 #include <queue>      // stl seems to have a prio_queue
+#include <stdio.h>    // for perror
 #include <sys/time.h> // gettimeofday for calculating "now"
 
 //using namespace flx::pthread;
