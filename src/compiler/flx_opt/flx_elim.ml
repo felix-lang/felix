@@ -15,7 +15,7 @@ let rec lvof x =
   match x with
   | Flx_types.BEXPR_name (i, _), _ -> i
   | Flx_types.BEXPR_get_n (_, e), _ -> lvof e
-  | _ -> 0 (* Assume 0 isn't the index of any variable. *)
+  | _ -> Flx_types.dummy_bid
 
 
 let eliminate_init maybe_unused exes =

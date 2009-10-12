@@ -9,6 +9,9 @@ type partial_order_result_t =
 ]
 
 type bid_t = int
+
+val dummy_bid : bid_t
+
 module BidSet : Set.S with type elt = bid_t
 
 type plain_ivs_list_t = (id_t * bid_t * typecode_t) list

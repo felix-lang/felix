@@ -5227,7 +5227,7 @@ and bind_dir
   )
   (fst vs)
   ;
-  let cheat_env = (0,"cheat",cheat_table,[],TYP_tuple []) in
+  let cheat_env = (dummy_bid,"cheat",cheat_table,[],TYP_tuple []) in
   let {base_sym=i; spec_vs=spec_vs; sub_ts=ts}, ts' =
     try
       lookup_qn_in_env' syms env
@@ -5794,7 +5794,7 @@ let lookup_code_in_env syms env sr qn =
     ;
     x,ts
 
-  | None -> [mkentry syms dfltvs 0],[]
+  | None -> [mkentry syms dfltvs dummy_bid],[]
 
 let lookup_qn_in_env
   syms

@@ -262,10 +262,10 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   in
   let do_reqs vs reqs =
     iter (
-      fun (i,ts)->
-      if i = 0 then
+      fun (i, ts)->
+      if i = dummy_bid then
         clierr sr ("Entity " ^ id ^ " has uninstantiable requirements");
-      uis i( map vs ts)
+      uis i (map vs ts)
     )
     reqs
   in

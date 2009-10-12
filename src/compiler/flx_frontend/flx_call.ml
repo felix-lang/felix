@@ -72,7 +72,7 @@ let cal_param_usage syms uses sr parent {pindex=child;ptyp=t} =
 
 let cal_req_usage syms uses sr parent reqs =
   let ur (j,ts) =
-    if j = 0 then faulty_req syms parent
+    if j = dummy_bid then faulty_req syms parent
     else add uses parent j sr
   in
   List.iter ur reqs

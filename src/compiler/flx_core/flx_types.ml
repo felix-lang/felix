@@ -18,6 +18,8 @@ open Flx_ast
  * the symbol. *)
 type bid_t = int
 
+let dummy_bid = 0
+
 (** Create a set type for bound symbol indices. *)
 module BidSet = Set.Make (
   struct

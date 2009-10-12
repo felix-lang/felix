@@ -1547,7 +1547,7 @@ let gen_C_function_body filename syms bsym_table child_map
             else ""
             end
           | _ ->
-              let counter = ref 0 in
+              let counter = ref dummy_bid in
               fold_left
               (fun s {pkind=k; pindex=i; ptyp=t} ->
                 let t = rt vs t in

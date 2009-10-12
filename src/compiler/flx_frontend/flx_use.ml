@@ -104,7 +104,7 @@ and uses syms used bsym_table count_inits i =
   let ut t = uses_type syms used bsym_table count_inits t in
   let rq reqs =
     let ur (j,ts) =
-      if j = 0 then
+      if j = dummy_bid then
         faulty_req syms i
       else begin ui j; List.iter ut ts end
     in

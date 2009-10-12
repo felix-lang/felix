@@ -45,10 +45,10 @@ let find_function syms env name =
   | [] ->
       if syms.compiler_options.print_flag then
       print_endline ("WARNING: flx_why cannot find '" ^ name ^ "'");
-      0
+      dummy_bid
   | _ ->
       print_endline ("WARNING: flx_why found too many '" ^ name ^ "'");
-      0
+      dummy_bid
 
 let find_logics syms root =
   let env = build_env syms (Some root) in
