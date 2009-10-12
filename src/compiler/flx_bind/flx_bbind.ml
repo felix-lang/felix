@@ -674,7 +674,7 @@ let bind_interface syms = function
   | sr, IFACE_export_fun (sn, cpp_name), parent ->
       let env = Flx_lookup.build_env syms parent in
       let index,ts = Flx_lookup.lookup_sn_in_env syms env sn in
-      if length ts = 0 then
+      if ts = [] then
         BIFACE_export_fun (sr,index, cpp_name)
       else clierr sr
       (
@@ -685,7 +685,7 @@ let bind_interface syms = function
   | sr, IFACE_export_python_fun (sn, cpp_name), parent ->
       let env = Flx_lookup.build_env syms parent in
       let index,ts = Flx_lookup.lookup_sn_in_env syms env sn in
-      if length ts = 0 then
+      if ts = [] then
         BIFACE_export_python_fun (sr,index, cpp_name)
       else clierr sr
       (
