@@ -141,7 +141,8 @@ type result =
 let get_data table index =
   try Hashtbl.find table index
   with Not_found ->
-    failwith ("[Flx_lookup.get_data] No definition of <" ^ string_of_int index ^ ">")
+    failwith ("[Flx_lookup.get_data] No definition of <" ^
+      string_of_bid index ^ ">")
 
 let sig_of_symdef symdef sr name i = match symdef with
   | SYMDEF_match_check (_)
@@ -349,10 +350,13 @@ let consider syms env bt be luqn2 name
     begin
       print_endline "WARN: VS != SUB_TS";
       print_endline (id ^ "|-> " ^ string_of_myentry syms.sym_table eeek);
-      print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs);
-      print_endline ("base VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") base_vs);
+      print_endline ("PARENT VS=" ^
+        catmap "," (fun (s,i,_)->s ^ "<"^ string_of_bid i ^ ">") parent_vs);
+      print_endline ("base VS=" ^
+        catmap "," (fun (s,i,_)->s ^ "<" ^ string_of_bid i ^ ">") base_vs);
       print_endline ("sub TS=" ^ catmap "," (sbt syms.sym_table) sub_ts);
-      print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") spec_vs);
+      print_endline ("spec VS=" ^
+        catmap "," (fun (s,i)-> s ^ "<" ^ string_of_bid i ^ ">") spec_vs);
       print_endline ("input TS=" ^ catmap "," (sbt syms.sym_table) input_ts);
     end
     ;
@@ -567,7 +571,7 @@ let consider syms env bt be luqn2 name
 
       let report_unresolved =
         List.fold_left (fun acc (s,i,tp,k) -> acc ^
-          "  The " ^th k ^" subscript  " ^ s ^ "["^si i^"]" ^
+          "  The " ^th k ^" subscript  " ^ s ^ "[" ^ string_of_bid i ^ "]" ^
            Flx_print.string_of_maybe_typecode tp ^ "\n"
         ) "" !unresolved
       in
@@ -662,7 +666,9 @@ let consider syms env bt be luqn2 name
            (* THIS CODE DOES NOT WORK RIGHT YET *)
            if List.length explicit_vars1 > 0 then
            print_endline ("Explicit ?variables: " ^
-             catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") explicit_vars1)
+             catmap ","
+              (fun (i,s) -> s ^ "<" ^ string_of_bid i ^ ">")
+              explicit_vars1)
            ;
            List.iter
            (fun (i,s) ->
@@ -671,7 +677,8 @@ let consider syms env bt be luqn2 name
              | [] -> ()
              | [s',k,pat] ->
                 print_endline (
-                    "Coupled " ^ s ^ ": " ^ si k ^ "(vs var) <--> " ^ si i ^" (pat var)" ^
+                  "Coupled " ^ s ^ ": " ^ string_of_bid k ^ "(vs var) <--> " ^
+                  string_of_bid i ^" (pat var)" ^
                   " pat=" ^ string_of_typecode pat);
              let t1 = BTYP_var (i,BTYP_type 0) in
              let t2 = BTYP_var (k,BTYP_type 0) in
@@ -689,8 +696,8 @@ let consider syms env bt be luqn2 name
 
            if List.length as_vars1 > 0 then begin
              print_endline ("As variables: " ^
-               catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") as_vars1)
-             ;
+               catmap ","
+                 (fun (i,s) -> s ^ "<" ^ string_of_bid i ^ ">") as_vars1);
              print_endline "RECURSIVE?? AS VARS NOT HANDLED YET"
            end;
 
@@ -1006,8 +1013,8 @@ let overload
            clierrn [call_sr; sr2; sr]
            (
              "[resolve_overload] Ambiguous call: Not expecting equal signatures" ^
-             "\n(1) fun " ^ si i^ ":" ^ sbt syms.sym_table typ ^
-             "\n(2) fun " ^ si j^ ":"^ sbt syms.sym_table c
+             "\n(1) fun " ^ string_of_bid i ^ ":" ^ sbt syms.sym_table typ ^
+             "\n(2) fun " ^ string_of_bid j ^ ":" ^ sbt syms.sym_table c
            )
 
          | `Greater ->
@@ -1043,8 +1050,8 @@ let overload
       "\nOf the matching candidates, the following are most specialised ones are incomparable\n" ^
       catmap "\n" (function
         | Unique (i,t,_,_,_) ->
-          qualified_name_of_index syms.sym_table i ^ "<" ^ si i ^ "> sig " ^
-          sbt syms.sym_table t
+          qualified_name_of_index syms.sym_table i ^ "<" ^ string_of_bid i ^
+          "> sig " ^ sbt syms.sym_table t
         | Fail -> assert false
       )
       candidates

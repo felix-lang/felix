@@ -101,7 +101,8 @@ and metatype' syms sr term =
   | BTYP_inst (index,ts) ->
     let {id=id; symdef=entry} =
       try Hashtbl.find syms.sym_table index with Not_found ->
-        failwith ("[metatype'] can't find type instance index " ^ si index)
+        failwith ("[metatype'] can't find type instance index " ^
+          string_of_bid index)
     in
     (*
     print_endline ("Yup .. instance id=" ^ id);

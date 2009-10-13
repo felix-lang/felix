@@ -43,9 +43,9 @@ let cal_parent syms bsym_table i' ts' =
        try (Hashtbl.find syms.instances (i,ts))
        with Not_found ->
         print_endline ("Wah? Not found parent of " ^
-          id ^ "<" ^ si i' ^ ">" ^
+          id ^ "<" ^ string_of_bid i' ^ ">" ^
           "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]\n" ^
-          "Which should be " ^ si i ^
+          "Which should be " ^ string_of_bid i ^
           "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]"
         )
         ;
@@ -386,11 +386,11 @@ let monomorphise syms bsym_table =
   (fun (i,ts) n ->
     if syms.compiler_options.print_flag then begin
       if (n <> i) then print_endline (
-         "[monomorphise] Adding instance " ^ si n ^ " = " ^
-         si i ^ "["^catmap "," (sbt syms.sym_table) ts^"]"
+         "[monomorphise] Adding instance " ^ string_of_bid n ^ " = " ^
+         string_of_bid i ^ "["^catmap "," (sbt syms.sym_table) ts^"]"
       ) else print_endline (
-         "[monomorphise] Process instance " ^ si n ^ " = " ^
-         si i ^ "["^catmap "," (sbt syms.sym_table) ts^"]"
+         "[monomorphise] Process instance " ^ string_of_bid n ^ " = " ^
+         string_of_bid i ^ "["^catmap "," (sbt syms.sym_table) ts^"]"
       );
     end;
 

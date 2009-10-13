@@ -28,7 +28,8 @@ let register_type_nr syms t =
       let n = !(syms.counter) in
       incr syms.counter;
       if syms.compiler_options.print_flag then
-      print_endline ("//Register type " ^ si n ^ ": " ^ string_of_btypecode syms.sym_table t);
+      print_endline ("//Register type " ^ string_of_bid n ^ ": " ^
+        string_of_btypecode syms.sym_table t);
       Hashtbl.add syms.registry t n
     end
 
@@ -84,7 +85,9 @@ let rec register_type_r ui syms bsym_table exclude sr t =
   (*
   | BTYP_var (i,mt) -> clierr sr ("Attempt to register type variable " ^ si i ^":"^sbt syms.sym_table mt)
   *)
-  | BTYP_var (i,mt) -> print_endline ("Attempt to register type variable " ^ si i ^":"^sbt syms.sym_table mt)
+  | BTYP_var (i,mt) ->
+    print_endline ("Attempt to register type variable " ^ string_of_bid i ^
+      ":" ^ sbt syms.sym_table mt)
   | BTYP_function (ps,ret) ->
     let ps = match ps with
     | BTYP_void -> BTYP_tuple []
@@ -135,11 +138,12 @@ let rec register_type_r ui syms bsym_table exclude sr t =
         clierr sr
         (
           "register_type_r Can't find " ^
-          id ^ "[" ^ si i ^ "]" ^
+          id ^ "[" ^ string_of_bid i ^ "]" ^
           " in fully bound symbol table: " ^
           Flx_srcref.short_string_of_src sr
         )
-        with Not_found -> failwith ("[register_type_r] Can't find index " ^ si i)
+        with Not_found -> failwith ("[register_type_r] Can't find index " ^
+          string_of_bid i)
     in
     begin match entry with
 

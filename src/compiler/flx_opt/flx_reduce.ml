@@ -18,7 +18,8 @@ let remove_useless_reductions syms bsym_table reductions =
       let used = List.mem i psi or Hashtbl.mem bsym_table i in
       if not used then begin
         if syms.compiler_options.print_flag then
-        print_endline ("ELIDING USELESS REDUCTION " ^ id ^ " because " ^ si i ^ " isn't found");
+        print_endline ("ELIDING USELESS REDUCTION " ^ id ^ " because "
+          ^ string_of_bid i ^ " isn't found");
         raise Not_found
       end
     in

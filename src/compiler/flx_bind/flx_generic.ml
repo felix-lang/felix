@@ -115,7 +115,7 @@ let find_split_vs sym_table i =
   | Some j -> find_func_vs sym_table vs j
 
 let print_ivs vs =
-  catmap ", " (fun (s,i,_) -> s ^ "<" ^ si i ^ ">") vs
+  catmap ", " (fun (s,i,_) -> s ^ "<" ^ string_of_bid i ^ ">") vs
 
 let adjust_ts sym_table sr index ts =
   let pvs,vs,con = find_split_vs sym_table index in
@@ -126,7 +126,7 @@ let adjust_ts sym_table sr index ts =
     match hfind "adjust_ts" sym_table index with {id=id} ->
     clierr sr
     (
-      "For "^ id ^ "<" ^ si index ^
+      "For "^ id ^ "<" ^ string_of_bid index ^
       "> Too many type subscripts, expected " ^
       si m ^ " got " ^ si n ^
       "=[" ^ catmap "," (sbt sym_table) ts ^ "]" ^
@@ -138,7 +138,7 @@ let adjust_ts sym_table sr index ts =
     match hfind "adjust_ts" sym_table index with {id=id} ->
     clierr sr
     (
-      "For " ^ id ^ "<" ^ si index ^
+      "For " ^ id ^ "<" ^ string_of_bid index ^
       "> [adjust_ts] Not enough type subscripts, expected " ^
       si m ^ " got " ^ si n ^
       "\nparent vs=" ^ print_ivs pvs ^

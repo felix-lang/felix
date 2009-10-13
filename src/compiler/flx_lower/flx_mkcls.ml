@@ -34,7 +34,7 @@ let gen_closure state bsym_table i =
     let ts = List.map (fun (_,i) -> BTYP_var (i,BTYP_type 0)) vs in
     let ps,a =
       let n = !(state.syms.counter) in incr state.syms.counter;
-      let name = "_a" ^ si n in
+      let name = "_a" ^ string_of_bid n in
       let ventry = BBDCL_val (vs,arg_t) in
       Hashtbl.add bsym_table n (name,Some j,sr,ventry);
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
@@ -57,7 +57,7 @@ let gen_closure state bsym_table i =
     in
     let ps,a =
       let n = !(state.syms.counter) in incr state.syms.counter;
-      let name = "_a" ^ si n in
+      let name = "_a" ^ string_of_bid n in
       let ventry = BBDCL_val (vs,arg_t) in
       Hashtbl.add bsym_table n (name,Some j,sr,ventry);
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)

@@ -203,7 +203,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
 
   let jump_done = ref false in
   let lc = !(syms.counter) in incr (syms.counter);
-  let start_label = "start_" ^ si lc in
+  let start_label = "start_" ^ string_of_bid lc in
 
   (* note reverse order *)
   (* Weirdly, this works for BOTH tail calls
@@ -288,7 +288,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
     let vset = fold_left (fun acc (k,_,_) ->IntSet.add k acc) IntSet.empty pas in
     let asgns = map
       (fun (k,p,t) ->
-        let name = "DUNNO_" ^ si k in
+        let name = "DUNNO_" ^ string_of_bid k in
         let e = nth ls p in
         let d = expr_uses syms descend uses vset e in
         k, (name,t,e,d)
@@ -373,8 +373,8 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
           let rec pr xs = match xs with
           | (k,p,t) :: tl ->
              print_endline (
-               "var " ^ si k ^ " : " ^sbt syms.sym_table t^
-               " = var " ^ si i^ ".(" ^ si p ^") = " ^
+               "var " ^ string_of_bid k ^ " : " ^ sbt syms.sym_table t ^
+               " = var " ^ string_of_bid i ^ ".(" ^ string_of_int p ^ ") = " ^
                sbe syms.sym_table bsym_table (nth ls p)
              );
              pr tl
@@ -598,7 +598,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
             with Not_found -> []
           in
           Hashtbl.replace child_map this (parameter::kids);
-          let id = "_trp_" ^ si  parameter in
+          let id = "_trp_" ^ string_of_bid parameter in
           Hashtbl.add bsym_table parameter (id,Some this,sr,entry);
         )
       !parameters

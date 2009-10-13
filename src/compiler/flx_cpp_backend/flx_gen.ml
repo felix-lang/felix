@@ -38,8 +38,8 @@ let find_variable_indices syms bsym_table child_map index =
 
 let get_variable_typename syms bsym_table i ts =
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table i
-    with Not_found -> failwith ("[get_variable_typename] can't find index " ^ si i)
+    try Hashtbl.find bsym_table i with Not_found ->
+      failwith ("[get_variable_typename] can't find index " ^ string_of_bid i)
   in
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   match entry with
@@ -113,9 +113,9 @@ let is_gc_pointer syms bsym_table sr t =
   | BTYP_pointer _ -> true
   | BTYP_inst (i,_) ->
     let id,sr,parent,entry =
-      try Hashtbl.find bsym_table i
-      with Not_found ->
-        clierr sr ("[is_gc_pointer] Can't find nominal type " ^ si i);
+      try Hashtbl.find bsym_table i with Not_found ->
+        clierr sr ("[is_gc_pointer] Can't find nominal type " ^
+          string_of_bid i);
    in
    begin match entry with
    | BBDCL_abs (_,tqs,_,_) -> mem `GC_pointer tqs
@@ -135,8 +135,8 @@ let gen_C_function syms bsym_table child_map props index id sr vs bps ret' ts in
   print_endline
   (
     "//Generating C function inst " ^
-    si instance_no ^ "=" ^
-    id ^ "<" ^si index^">" ^
+    string_of_bid instance_no ^ "=" ^
+    id ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
       else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
@@ -208,7 +208,7 @@ let gen_class syms bsym_table child_map props index id sr vs ts instance_no =
   (
     "//Generating class inst " ^
     si instance_no ^ "=" ^
-    id ^ "<" ^si index^">" ^
+    id ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
       else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
@@ -330,8 +330,8 @@ let gen_function syms bsym_table child_map props index id sr vs bps ret' ts inst
   print_endline
   (
     "//Generating function inst " ^
-    si instance_no ^ "=" ^
-    id ^ "<" ^si index^">" ^
+    string_of_bid instance_no ^ "=" ^
+    id ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
       else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
@@ -528,8 +528,8 @@ let gen_function_names syms bsym_table child_map =
       "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts^ "]"
     in
     match
-      try Hashtbl.find bsym_table index
-      with Not_found -> failwith ("[gen_functions] can't find index " ^ si index)
+      try Hashtbl.find bsym_table index with Not_found ->
+        failwith ("[gen_functions] can't find index " ^ string_of_bid index)
     with (id,parent,sr,entry) ->
     match entry with
     | BBDCL_function (props,vs,(ps,traint), ret, _) ->
@@ -567,24 +567,28 @@ let gen_functions syms bsym_table child_map =
 
   let s = Buffer.create 2000 in
   iter
-  (fun (i,(index,ts)) ->
+  (fun ((i:bid_t),(index,ts)) ->
     let tss =
       if length ts = 0 then "" else
       "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts^ "]"
     in
     match
-      try Hashtbl.find bsym_table index
-      with Not_found -> failwith ("[gen_functions] can't find index " ^ si index)
+      try Hashtbl.find bsym_table index with Not_found ->
+        failwith ("[gen_functions] can't find index " ^ string_of_bid index)
     with (id,parent,sr,entry) ->
     match entry with
     | BBDCL_function (props,vs,(ps,traint), ret, _) ->
       bcat s ("\n//------------------------------\n");
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
-        bcat s ("//PURE C FUNCTION <" ^si index^ ">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
+        bcat s ("//PURE C FUNCTION <" ^ string_of_bid index ^ ">: " ^
+          qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^
+          "\n");
         bcat s
         (gen_C_function syms bsym_table child_map props index id sr vs ps ret ts i)
       end else begin
-        bcat s ("//FUNCTION <"^si index^">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
+        bcat s ("//FUNCTION <" ^ string_of_bid index ^ ">: " ^
+          qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^
+          "\n");
         bcat s
         (gen_function syms bsym_table child_map props index id sr vs ps ret ts i)
       end
@@ -593,9 +597,13 @@ let gen_functions syms bsym_table child_map =
       let instance_no = i in
       bcat s ("\n//------------------------------\n");
       if ret' = BTYP_void then begin
-        bcat s ("//CALLBACK C PROC <"^si index^">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C PROC <" ^ string_of_bid index ^ ">: " ^
+          qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^
+          "\n");
       end else begin
-        bcat s ("//CALLBACK C FUNCTION <"^si index^">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C FUNCTION <" ^ string_of_bid index ^ ">: " ^
+          qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^
+          "\n");
       end
       ;
       let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
@@ -603,8 +611,8 @@ let gen_functions syms bsym_table child_map =
       print_endline
       (
         "//Generating C callback function inst " ^
-        si instance_no ^ "=" ^
-        id ^ "<" ^si index^">" ^
+        string_of_bid instance_no ^ "=" ^
+        id ^ "<" ^ string_of_bid index ^ ">" ^
         (
           if length ts = 0 then ""
           else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
@@ -653,11 +661,13 @@ let gen_functions syms bsym_table child_map =
       print_endline ("properties: " ^ string_of_properties props);
       *)
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
-        bcat s ("//PURE C PROC <"^si index^">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
+        bcat s ("//PURE C PROC <" ^ string_of_bid index ^ ">: " ^
+        qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
         bcat s
         (gen_C_function syms bsym_table child_map props index id sr vs ps BTYP_void ts i)
       end else begin
-        bcat s ("//PROC <"^si index^">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
+        bcat s ("//PROC <" ^ string_of_bid index ^ ">: " ^
+        qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
         bcat s
         (gen_function syms bsym_table child_map props index id sr vs ps BTYP_void ts i)
       end
@@ -732,8 +742,8 @@ let gen_exe filename
   let ge' sr e : cexpr_t = gen_expr' syms bsym_table this e vs ts sr in
   let tn t : string = cpp_typename syms (tsub t) in
   let id,parent,parent_sr,entry =
-    try Hashtbl.find bsym_table this
-    with _ -> failwith ("[gen_exe] Can't find this " ^ si this)
+    try Hashtbl.find bsym_table this with _ ->
+      failwith ("[gen_exe] Can't find this " ^ string_of_bid this)
   in
   let our_display = get_display_list syms bsym_table this in
   let kind = match entry with
@@ -746,7 +756,8 @@ let gen_exe filename
     let index',ts' = index,ts in
     let index, ts = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
     if index <> index' then
-      clierr sr ("Virtual call of " ^ si index' ^ " dispatches to " ^ si index')
+      clierr sr ("Virtual call of " ^ string_of_bid index' ^ " dispatches to " ^
+        string_of_bid index')
     ;
     let subs =
       catmap ""
@@ -765,8 +776,8 @@ let gen_exe filename
       else "      }\n"
     in
     let id,parent,sr2,entry =
-      try Hashtbl.find bsym_table index
-      with _ -> failwith ("[gen_exe(call)] Can't find index " ^ si index)
+      try Hashtbl.find bsym_table index with _ ->
+        failwith ("[gen_exe(call)] Can't find index " ^ string_of_bid index)
     in
     begin
     match entry with
@@ -918,10 +929,10 @@ let gen_exe filename
               ^
 
               sub_start ^
-              "      FLX_SET_PC(" ^ si n ^ ")\n" ^
+              "      FLX_SET_PC(" ^ string_of_bid n ^ ")\n" ^
               call_string ^
               sub_end ^
-              "    FLX_CASE_LABEL(" ^ si n ^ ")\n"
+              "    FLX_CASE_LABEL(" ^ string_of_bid n ^ ")\n"
             )
         end
       end
@@ -956,7 +967,7 @@ let gen_exe filename
     "          tmp1 = tmp2;\n" ^
     "        }\n" ^
     "      }\n" ^
-    "      " ^ frame_ptr ^ "->pc = FLX_FARTARGET("^si pc^","^si target_instance^","^s^");\n" ^
+    "      " ^ frame_ptr ^ "->pc = FLX_FARTARGET(" ^ string_of_bid pc ^ "," ^ string_of_bid target_instance ^ "," ^ s ^ ");\n" ^
     "      return " ^ frame_ptr ^ ";\n"
   in
   let forget_template sr s = match s with
@@ -976,8 +987,8 @@ let gen_exe filename
     | BEXE_comment (_,s) -> "/*" ^ s ^ "*/\n"
     | BEXE_label (_,s) ->
       let local_labels =
-        try Hashtbl.find label_map this
-        with _ -> failwith ("[gen_exe] Can't find label map of " ^ si this)
+        try Hashtbl.find label_map this with _ ->
+          failwith ("[gen_exe] Can't find label map of " ^ string_of_bid this)
       in
       let label_index =
         try Hashtbl.find local_labels s
@@ -989,7 +1000,8 @@ let gen_exe filename
           begin match label_kind with
           | `Far ->
             needs_switch := true;
-            "    FLX_LABEL(" ^ si label_index ^ ","^si instance_no ^"," ^ cid_of_flxid s ^ ")\n"
+            "    FLX_LABEL(" ^ string_of_bid label_index ^ "," ^
+              string_of_bid instance_no ^ "," ^ cid_of_flxid s ^ ")\n"
           | `Near ->
             "    " ^ cid_of_flxid s ^ ":;\n"
           | `Unused -> ""
@@ -1032,7 +1044,7 @@ let gen_exe filename
         print_endline "LABELS ..";
         let labels = Hashtbl.find label_map this in
         Hashtbl.iter (fun lab lno ->
-          print_endline ("Label " ^ lab ^ " -> " ^ si lno);
+          print_endline ("Label " ^ lab ^ " -> " ^ string_of_bid lno);
         )
         labels
         ;
@@ -1059,8 +1071,9 @@ let gen_exe filename
     (* Hmmm .. stack calls ?? *)
     | BEXE_call_stack (sr,index,ts,a)  ->
       let id,parent,sr2,entry =
-        try Hashtbl.find bsym_table index
-        with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
+        try Hashtbl.find bsym_table index with _ ->
+          failwith ("[gen_expr(apply instance)] Can't find index " ^
+            string_of_bid index)
       in
       let ge_arg ((x,t) as a) =
         let t = tsub t in
@@ -1219,9 +1232,9 @@ let gen_exe filename
         (if with_comments then
         "      //"^ src_str ^ "\n"
         else "") ^
-        "      FLX_SET_PC(" ^ si n ^ ")\n" ^
+        "      FLX_SET_PC(" ^ string_of_bid n ^ ")\n" ^
         "      return (" ^ ge sr p ^ ")->clone()\n      ->call(" ^ args ^");\n" ^
-        "    FLX_CASE_LABEL(" ^ si n ^ ")\n"
+        "    FLX_CASE_LABEL(" ^ string_of_bid n ^ ")\n"
       end
 
     | BEXE_jump (sr,p,a) ->
@@ -1251,8 +1264,8 @@ let gen_exe filename
 
     | BEXE_svc (sr,index) ->
       let id,parent,sr,entry =
-        try Hashtbl.find bsym_table index
-        with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
+        try Hashtbl.find bsym_table index with _ ->
+          failwith ("[gen_expr(name)] Can't find index " ^ string_of_bid index)
       in
       let t =
         match entry with
@@ -1264,15 +1277,15 @@ let gen_exe filename
       needs_switch := true;
       "      //read variable\n" ^
       "      p_svc = &" ^ get_var_ref syms bsym_table this index ts^";\n" ^
-      "      FLX_SET_PC(" ^ si n ^ ")\n" ^
+      "      FLX_SET_PC(" ^ string_of_bid n ^ ")\n" ^
       "      return this;\n" ^
-      "    FLX_CASE_LABEL(" ^ si n ^ ")\n"
+      "    FLX_CASE_LABEL(" ^ string_of_bid n ^ ")\n"
 
 
     | BEXE_yield (sr,e) ->
       let labno = !counter in incr counter;
       let code =
-        "      FLX_SET_PC(" ^ si labno ^ ")\n" ^
+        "      FLX_SET_PC(" ^ string_of_bid labno ^ ")\n" ^
         (
           let _,t = e in
           (if with_comments then
@@ -1281,7 +1294,7 @@ let gen_exe filename
           "      return "^ge sr e^";\n"
         )
         ^
-        "    FLX_CASE_LABEL(" ^ si labno ^ ")\n"
+        "    FLX_CASE_LABEL(" ^ string_of_bid labno ^ ")\n"
       in
       needs_switch := true;
       code
@@ -1311,8 +1324,8 @@ let gen_exe filename
       | BTYP_tuple [] -> ""
       | _ ->
         let id,_,_,entry =
-          try Hashtbl.find bsym_table v with
-          Not_found -> failwith ("[gen_expr(init) can't find index " ^ si v)
+          try Hashtbl.find bsym_table v with Not_found ->
+            failwith ("[gen_expr(init) can't find index " ^ string_of_bid v)
         in
         begin match entry with
           | BBDCL_tmp _ ->
@@ -1431,15 +1444,15 @@ let gen_C_function_body filename syms bsym_table child_map
 =
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index
-    with Not_found -> failwith ("gen_C_function_body] can't find " ^ si index)
+    try Hashtbl.find bsym_table index with Not_found ->
+      failwith ("gen_C_function_body] can't find " ^ string_of_bid index)
   in
   if syms.compiler_options.print_flag then
   print_endline
   (
     "//Generating C function body inst " ^
-    si instance_no ^ "=" ^
-    id ^ "<" ^si index^">" ^
+    string_of_bid instance_no ^ "=" ^
+    id ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
       else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
@@ -1461,7 +1474,7 @@ let gen_C_function_body filename syms bsym_table child_map
     );
     let name = cpp_instance_name syms bsym_table index ts in
 
-    "//C FUNC <" ^si index^ ">: " ^ name ^ "\n" ^
+    "//C FUNC <" ^ string_of_bid index ^ ">: " ^ name ^ "\n" ^
 
     let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
@@ -1490,8 +1503,9 @@ let gen_C_function_body filename syms bsym_table child_map
         fold_left
         (fun lst i ->
           let _,_,_,entry =
-            try Hashtbl.find bsym_table i
-            with Not_found -> failwith ("[C func body, vars] Can't find index " ^ si i);
+            try Hashtbl.find bsym_table i with Not_found ->
+              failwith ("[C func body, vars] Can't find index " ^
+                string_of_bid i);
           in
           match entry with
           | BBDCL_val (vs,t)
@@ -1577,15 +1591,15 @@ let gen_C_procedure_body filename syms bsym_table child_map
 =
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index
-    with Not_found -> failwith ("gen_C_function_body] can't find " ^ si index)
+    try Hashtbl.find bsym_table index with Not_found ->
+      failwith ("gen_C_function_body] can't find " ^ string_of_bid index)
   in
   if syms.compiler_options.print_flag then
   print_endline
   (
     "//Generating C procedure body inst " ^
-    si instance_no ^ "=" ^
-    id ^ "<" ^si index^">" ^
+    string_of_bid instance_no ^ "=" ^
+    id ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
       else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
@@ -1604,7 +1618,7 @@ let gen_C_procedure_body filename syms bsym_table child_map
     );
     let name = cpp_instance_name syms bsym_table index ts in
 
-    "//C PROC <"^si index^ ">: " ^ name ^ "\n" ^
+    "//C PROC <" ^ string_of_bid index ^ ">: " ^ name ^ "\n" ^
 
     let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
@@ -1630,8 +1644,9 @@ let gen_C_procedure_body filename syms bsym_table child_map
         fold_left
         (fun lst i ->
           let _,_,_,entry =
-            try Hashtbl.find bsym_table i
-            with Not_found -> failwith ("[C func body, vars] Can't find index " ^ si i);
+            try Hashtbl.find bsym_table i with Not_found ->
+              failwith ("[C func body, vars] Can't find index " ^
+                string_of_bid i);
           in
           match entry with
           | BBDCL_var (vs,t)
@@ -1714,16 +1729,16 @@ let gen_function_methods filename syms bsym_table child_map
   label_info counter index ts sr instance_no : string * string
 =
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index
-    with Not_found -> failwith ("[gen_function_methods] can't find " ^ si index)
+    try Hashtbl.find bsym_table index with Not_found ->
+      failwith ("[gen_function_methods] can't find " ^ string_of_bid index)
   in
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   if syms.compiler_options.print_flag then
   print_endline
   (
     "//Generating function body inst " ^
-    si instance_no ^ "=" ^
-    id ^ "<" ^si index^">" ^
+    string_of_bid instance_no ^ "=" ^
+    id ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
       else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
@@ -1834,16 +1849,16 @@ let gen_function_methods filename syms bsym_table child_map
     in
       let q = qualified_name_of_bindex syms.sym_table bsym_table index in
       let ctor =
-      "//FUNCTION <" ^ si index ^ ">: " ^ q ^ ": Constructor\n" ^
+      "//FUNCTION <" ^ string_of_bid index ^ ">: " ^ q ^ ": Constructor\n" ^
       ctor^ "\n" ^
       (
         if mem `Heap_closure props then
-        "\n//FUNCTION <" ^ si index ^ ">: " ^ q ^ ": Clone method\n" ^
+        "\n//FUNCTION <" ^ string_of_bid index ^ ">: " ^ q ^ ": Clone method\n" ^
         clone^ "\n"
         else ""
       )
       and apply =
-      "//FUNCTION <" ^ si index ^">: "  ^ q ^ ": Apply method\n" ^
+      "//FUNCTION <" ^ string_of_bid index ^">: "  ^ q ^ ": Apply method\n" ^
       apply^ "\n"
       in apply,ctor
 
@@ -1854,16 +1869,17 @@ let gen_procedure_methods filename syms bsym_table child_map
   label_info counter index ts instance_no : string * string
 =
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index
-    with Not_found -> failwith ("[gen_procedure_methods] Can't find index " ^ si index)
+    try Hashtbl.find bsym_table index with Not_found ->
+      failwith ("[gen_procedure_methods] Can't find index " ^
+        string_of_bid index)
   in (* can't fail *)
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   if syms.compiler_options.print_flag then
   print_endline
   (
     "//Generating procedure body inst " ^
-    si instance_no ^ "=" ^
-    id ^ "<" ^si index^">" ^
+    string_of_bid instance_no ^ "=" ^
+    id ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
       else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
@@ -1989,28 +2005,28 @@ let gen_procedure_methods filename syms bsym_table child_map
       let q =
         try qualified_name_of_bindex syms.sym_table bsym_table index
         with Not_found ->
-          si instance_no ^ "=" ^
-          id ^ "<" ^si index^">" ^
+          string_of_bid instance_no ^ "=" ^
+          id ^ "<" ^ string_of_bid index ^ ">" ^
           (
             if length ts = 0 then ""
             else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
           )
       in
       let ctor =
-      "//PROCEDURE <" ^si index ^ ":> " ^ q ^ ": Constructor\n" ^
+      "//PROCEDURE <" ^ string_of_bid index ^ ":> " ^ q ^ ": Constructor\n" ^
       ctor^
       (
         if mem `Heap_closure props then
-        "\n//PROCEDURE <" ^si index ^ ":> " ^ q ^ ": Clone method\n" ^
+        "\n//PROCEDURE <" ^ string_of_bid index ^ ":> " ^ q ^ ": Clone method\n" ^
         clone
         else ""
       )
       and call =
-      "\n//PROCEDURE <" ^si index ^ ":> " ^ q ^ ": Call method\n" ^
+      "\n//PROCEDURE <" ^ string_of_bid index ^ ":> " ^ q ^ ": Call method\n" ^
       (if stackable then stack_call else "") ^
       (if heapable then heap_call else "") ^
       (if heapable then
-        "\n//PROCEDURE <" ^si index ^ ":> " ^ q ^ ": Resume method\n" ^
+        "\n//PROCEDURE <" ^ string_of_bid index ^ ":> " ^ q ^ ": Resume method\n" ^
         resume
         else ""
       )
@@ -2025,8 +2041,8 @@ let gen_execute_methods filename syms bsym_table child_map label_info counter bf
   Hashtbl.iter
   (fun (index,ts) instance_no ->
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index
-    with Not_found -> failwith ("[gen_execute_methods] Can't find index " ^ si index)
+    try Hashtbl.find bsym_table index with Not_found ->
+      failwith ("[gen_execute_methods] Can't find index " ^ string_of_bid index)
   in
   begin match entry with
   | BBDCL_function (props,vs,(ps,traint), ret, _) ->
@@ -2051,9 +2067,11 @@ let gen_execute_methods filename syms bsym_table child_map label_info counter bf
       in
       bcat s ("\n//------------------------------\n");
       if ret' = BTYP_void then begin
-        bcat s ("//CALLBACK C PROCEDURE <" ^ si index ^ ">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C PROCEDURE <" ^ string_of_bid index ^ ">: " ^
+          qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
       end else begin
-        bcat s ("//CALLBACK C FUNCTION <" ^ si index ^ ">: " ^ qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
+        bcat s ("//CALLBACK C FUNCTION <" ^ string_of_bid index ^ ">: " ^
+          qualified_name_of_bindex syms.sym_table bsym_table index ^ tss ^ "\n");
       end
       ;
       let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
@@ -2064,8 +2082,8 @@ let gen_execute_methods filename syms bsym_table child_map label_info counter bf
       print_endline
       (
         "//Generating C callback function inst " ^
-        si instance_no ^ "=" ^
-        id ^ "<" ^si index^">" ^
+        string_of_bid instance_no ^ "=" ^
+        id ^ "<" ^ string_of_bid index ^ ">" ^
         (
           if length ts = 0 then ""
           else "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]"
@@ -2190,8 +2208,8 @@ let gen_biface_header syms bsym_table biface = match biface with
 
   | BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table index
-      with Not_found -> failwith ("[gen_biface_header] Can't find index " ^ si index)
+      try Hashtbl.find bsym_table index with Not_found ->
+        failwith ("[gen_biface_header] Can't find index " ^ string_of_bid index)
     in
     begin match entry with
     | BBDCL_function (props,vs,(ps,traint), ret, _) ->
@@ -2251,8 +2269,8 @@ let gen_biface_body syms bsym_table biface = match biface with
 
   | BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table index
-      with Not_found -> failwith ("[gen_biface_body] Can't find index " ^ si index)
+      try Hashtbl.find bsym_table index with Not_found ->
+        failwith ("[gen_biface_body] Can't find index " ^ string_of_bid index)
     in
     begin match entry with
     | BBDCL_function (props,vs,(ps,traint), ret, _) ->

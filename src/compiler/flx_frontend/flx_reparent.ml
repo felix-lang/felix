@@ -241,7 +241,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table )
   in
   let sop = function
     | None -> "NONE?"
-    | Some i -> si i
+    | Some i -> string_of_bid i
   in
   let caller_vars = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) caller_vs in
 

@@ -178,7 +178,8 @@ let fold_vars syms bsym_table child_map uses i ps exes =
         let delete_var () =
           let id,_,_,_ = Hashtbl.find bsym_table j in
           if syms.compiler_options.print_flag then
-            print_endline ("ELIMINATING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe syms.sym_table bsym_table y);
+            print_endline ("ELIMINATING VARIABLE " ^ id ^ "<" ^ string_of_bid j
+              ^ "> -> " ^ sbe syms.sym_table bsym_table y);
 
           (* remove the variable *)
           Hashtbl.remove bsym_table j;
@@ -207,7 +208,8 @@ let fold_vars syms bsym_table child_map uses i ps exes =
         (* it is not used anywhere (except the init) *)
         end else if usecnt = 1 then begin
           if syms.compiler_options.print_flag then
-          print_endline ("WARNING: unused variable "^si j^" found ..");
+          print_endline ("WARNING: unused variable " ^ string_of_bid j
+            ^ " found ..");
           delete_var();
           find_tassign t outexes
 

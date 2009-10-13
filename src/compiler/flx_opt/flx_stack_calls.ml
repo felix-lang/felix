@@ -690,7 +690,9 @@ let enstack_calls syms bsym_table child_map fn_cache ptr_cache self exes =
         (* seems to work at the moment *)
         | BBDCL_callback _ -> BEXE_call_direct (sr,i,ts,a)
 
-        | _ -> syserr sr ("Call to non-procedure " ^ id ^ "<" ^ si i ^ ">")
+        | _ ->
+            syserr sr ("Call to non-procedure " ^ id ^ "<" ^ string_of_bid i ^
+              ">")
         end
 
       | x -> x

@@ -72,7 +72,8 @@ let exe_uses_gc bsym_table exe =
       else
       iter_bexe ignore (expr_uses_gc bsym_table) ignore ignore ignore exe
     | _ ->
-      print_endline ("Call primitive to non-primitive " ^ id ^ "<"^ si i^ ">");
+      print_endline ("Call primitive to non-primitive " ^ id ^ "<" ^
+        string_of_bid i ^ ">");
       assert false
     end
 
@@ -142,7 +143,7 @@ let set_gc_use bsym_table index ((id, parent, sr, entry) as symbol) =
 let is_global_var bsym_table i =
   let id,parent,sr,entry =
     try Hashtbl.find bsym_table i
-    with Not_found -> failwith ("YIKES1: " ^ string_of_int i) in
+    with Not_found -> failwith ("YIKES1: " ^ string_of_bid i) in
   match entry with
   | BBDCL_var _
   | BBDCL_val _ when (match parent with None -> true | _ -> false ) -> true
@@ -334,9 +335,9 @@ let check_used used i =
 
 let check_all_used used ii =
   let all_used = ref true in
-  IntSet.iter (fun i-> if not (check_used used i)
+  IntSet.iter (fun i -> if not (check_used used i)
     then begin
-      print_endline ("FOUND UNUSED VARIABLE " ^ si i);
+      print_endline ("FOUND UNUSED VARIABLE " ^ string_of_bid i);
       all_used := false
     end
   )

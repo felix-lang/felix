@@ -138,14 +138,14 @@ let gen_type_name syms bsym_table (index,typ) =
   (*
   print_endline (
     "GENERATING TYPE NAME " ^
-    si index^": " ^
+    string_of_bid index ^ ": " ^
     sbt syms.sym_table typ
   );
   *)
   let cn t = cpp_type_classname syms t in
   let tn t = cpp_typename syms t in
   let descr =
-    "\n//TYPE "^si index^": " ^ sbt syms.sym_table typ ^ "\n"
+    "\n//TYPE " ^ string_of_bid index ^ ": " ^ sbt syms.sym_table typ ^ "\n"
   in
   let t = unfold syms.sym_table typ in
   match t with
@@ -200,15 +200,15 @@ let gen_type_name syms bsym_table (index,typ) =
   | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
       try Hashtbl.find bsym_table i
-      with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
+      with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_bid i)
     in
     begin match entry with
     | BBDCL_abs (vs,quals,ct,_) ->
       let complete = not (mem `Incomplete quals) in
       let descr =
         "\n//"^(if complete then "" else "INCOMPLETE ")^
-        "PRIMITIVE "^si i ^" INSTANCE " ^
-        si index^": " ^
+        "PRIMITIVE " ^ string_of_bid i ^" INSTANCE " ^
+        string_of_bid index ^ ": " ^
         sbt syms.sym_table typ ^
         "\n"
       in
@@ -239,8 +239,8 @@ let gen_type_name syms bsym_table (index,typ) =
 
     | BBDCL_cstruct _ -> if ts = [] then "" else
       let descr =
-        "\n//CSTRUCT "^si i ^" INSTANCE " ^
-        si index^": " ^
+        "\n//CSTRUCT " ^ string_of_bid i ^ " INSTANCE " ^
+        string_of_bid index ^ ": " ^
         sbt syms.sym_table typ ^
         "\n"
       in
@@ -251,8 +251,8 @@ let gen_type_name syms bsym_table (index,typ) =
 
     | BBDCL_struct _ ->
       let descr =
-        "\n//STRUCT "^si i ^" INSTANCE " ^
-        si index^": " ^
+        "\n//STRUCT " ^ string_of_bid i ^ " INSTANCE " ^
+        string_of_bid index ^ ": " ^
         sbt syms.sym_table typ ^
         "\n"
       in
@@ -261,8 +261,8 @@ let gen_type_name syms bsym_table (index,typ) =
 
     | BBDCL_union (vs,ls) ->
       let descr =
-        "\n//UNION "^si i ^" INSTANCE " ^
-        si index^": " ^
+        "\n//UNION " ^ string_of_bid i ^ " INSTANCE " ^
+        string_of_bid index ^ ": " ^
         sbt syms.sym_table typ ^
         "\n"
       in
@@ -281,7 +281,8 @@ let gen_type_name syms bsym_table (index,typ) =
     | _ ->
       failwith
       (
-        "[gen_type_name] Expected definition "^si i^" to be generic primitive, got " ^
+        "[gen_type_name] Expected definition " ^ string_of_bid i ^
+        " to be generic primitive, got " ^
         string_of_bbdcl syms.sym_table bsym_table entry i ^
         " instance types [" ^
         catmap ", " tn ts ^
@@ -304,14 +305,14 @@ let gen_type syms bsym_table (index,typ) =
   (*
   print_endline (
     "GENERATING TYPE " ^
-    si index^": " ^
+    string_of_bid index ^ ": " ^
     sbt syms.sym_table typ
   );
   *)
   let tn t = cpp_typename syms t in
   let cn t = cpp_type_classname syms t in
   let descr =
-    "\n//TYPE "^ si index^ ": " ^
+    "\n//TYPE " ^ string_of_bid index ^ ": " ^
     sbt syms.sym_table typ ^
     "\n"
   in
@@ -399,14 +400,14 @@ let gen_type syms bsym_table (index,typ) =
   | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
       try Hashtbl.find bsym_table i
-      with _ -> failwith ("[gen_type_name] can't find type" ^ si i)
+      with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_bid i)
     in
     begin match entry with
     | BBDCL_newtype (vs,t') ->
       let t' = reduce_type t' in
       let descr =
-        "\n//NEWTYPE "^si i ^" INSTANCE " ^
-        si index^": " ^
+        "\n//NEWTYPE " ^ string_of_bid i ^ " INSTANCE " ^
+        string_of_bid index ^ ": " ^
         sbt syms.sym_table typ ^
         "\n"
       in
@@ -425,8 +426,8 @@ let gen_type syms bsym_table (index,typ) =
       let name = cn typ in
       let listwise_ctor = mk_listwise_ctor syms i name typ cts ctss in
       let descr =
-        "\n//GENERIC STRUCT "^si i ^" INSTANCE " ^
-        si index^": " ^
+        "\n//GENERIC STRUCT " ^ string_of_bid i ^ " INSTANCE " ^
+        string_of_bid index ^ ": " ^
         sbt syms.sym_table typ ^
         "\n"
       in
@@ -447,7 +448,8 @@ let gen_type syms bsym_table (index,typ) =
     | _ ->
       failwith
       (
-        "[gen_type] Expected definition "^si i^" to be generic primitive, got " ^
+        "[gen_type] Expected definition " ^ string_of_bid i ^
+        " to be generic primitive, got " ^
         string_of_bbdcl syms.sym_table bsym_table entry i ^
         " instance types [" ^
         catmap ", " tn ts ^
@@ -480,7 +482,8 @@ let gen_type_names syms bsym_table ts =
         Buffer.add_string s (gen_type_name syms bsym_table (i,t))
       )
     with Not_found ->
-      failwith ("Can't gen type name " ^ si i ^ "=" ^ sbt syms.sym_table t)
+      failwith ("Can't gen type name " ^ string_of_bid i ^ "=" ^
+        sbt syms.sym_table t)
   )
   ts;
   Buffer.contents s

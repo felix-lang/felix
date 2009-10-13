@@ -159,7 +159,7 @@ let call_lifting syms (uses,child_map,bsym_table) caller caller_vs callee ts a a
     (* replace all function returns with tailed calls *)
     let body2 = ref [] in
     let n = !(syms.counter) in incr (syms.counter);
-    let end_label = "_end_call_lift_" ^ si n in
+    let end_label = "_end_call_lift_" ^ string_of_bid n in
     body2 := BEXE_label (sr,end_label) :: !body2;
     iter
       (function
@@ -275,7 +275,7 @@ let inline_function syms (uses,child_map,bsym_table) caller caller_vs callee ts 
     (* replace all function returns with variable initialisations *)
     let body2 = ref [] in
     let n = !(syms.counter) in incr (syms.counter);
-    let end_label = "_end_inline_" ^ id ^ "_" ^ si n in
+    let end_label = "_end_inline_" ^ id ^ "_" ^ string_of_bid n in
     let t = ref None in
     let end_label_used = ref false in
     iter
@@ -646,7 +646,9 @@ is an instance .. so nothing is lost here.. :)
 *)
 
 let virtual_check syms bsym_table sr i ts =
-  let id,parent,callee_sr,entry = hfind ("virtual-check " ^ si i) bsym_table i in
+  let id,parent,callee_sr,entry =
+    hfind ("virtual-check " ^ string_of_bid i) bsym_table i
+  in
   (*
   print_endline ("virtual check Examining call to " ^ id ^ "<" ^ si i ^ ">");
   *)
@@ -672,7 +674,8 @@ let virtual_check syms bsym_table sr i ts =
           print_endline "Woops, parent isn't typeclass?";
           assert false
       with Not_found ->
-        print_endline ("Parent typeclass " ^ si parent ^ " not found!");
+        print_endline ("Parent typeclass " ^ string_of_bid parent ^
+          " not found!");
         assert false
     in
     let tslen = List.length ts in
@@ -791,7 +794,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
 
           (* create a new variable *)
           let urv = !(syms.counter) in incr (syms.counter);
-          let urvid = "_genout_urv" ^ si urv in
+          let urvid = "_genout_urv" ^ string_of_bid urv in
           add_child child_map caller urv;
           add_use uses caller urv sr;
           let entry = BBDCL_var (caller_vs,t) in
@@ -930,7 +933,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
                     e'
 
                   | rxs ->
-                    let urvid = "_urv" ^ si urv in
+                    let urvid = "_urv" ^ string_of_bid urv in
                     add_child child_map caller urv;
                     add_use uses caller urv sr;
                     let entry = BBDCL_val (caller_vs,t) in
@@ -1140,7 +1143,9 @@ and heavy_inline_calls
       | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         if can_inline && inline_check caller callee props exes then
           begin
-            let vid,vparent,vsr,ventry = hfind ("init variable " ^ si i) bsym_table i in
+            let vid,vparent,vsr,ventry =
+              hfind ("init variable " ^ string_of_bid i) bsym_table i
+            in
             begin match ventry with
             | BBDCL_tmp (vs,t) ->
               (*
@@ -1270,7 +1275,8 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       IntSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bsym_table) excludes i) xcls;
 
       if syms.compiler_options.print_flag then
-      print_endline ("HIB: Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
+      print_endline ("HIB: Examining procedure " ^ id ^ "<" ^ string_of_bid i ^
+        "> for inlinable calls");
       (*
       print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.sym_table bsym_table 0) exes);
       *)
@@ -1341,7 +1347,8 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       IntSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bsym_table) excludes i) xcls;
 
       if syms.compiler_options.print_flag then
-      print_endline ("HIB:Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
+      print_endline ("HIB:Examining function " ^ id ^ "<" ^ string_of_bid i ^
+        "> for inlinable calls");
       (*
       print_endline (id ^ " Input:\n" ^ catmap "\n" (string_of_bexe syms.sym_table bsym_table 0) exes);
       *)

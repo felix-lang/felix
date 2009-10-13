@@ -174,7 +174,7 @@ let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
 exception Found of int
 
 let print_vs vs =
-  catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs
+  catmap "," (fun (s,i) -> s ^ "->" ^ string_of_bid i) vs
 
 type bexe_state_t = {
   syms: Flx_mtypes2.sym_state_t;
@@ -460,7 +460,7 @@ let rec bind_exe state handle_bexe (sr, exe) init =
       then handle_bexe (BEXE_init (sr,index, (e',rhst))) init
       else clierr sr
       (
-        "[bind_exe: iinit] LHS["^s^"<"^si index^">]:\n"^
+        "[bind_exe: iinit] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
         string_of_btypecode state.syms.sym_table lhst^
         "\n of initialisation must have same type as RHS:\n"^
         string_of_btypecode state.syms.sym_table rhst^
@@ -499,7 +499,7 @@ let rec bind_exe state handle_bexe (sr, exe) init =
           then handle_bexe (BEXE_init (sr,index, (e',rhst))) init
           else clierr sr
           (
-            "[bind_exe: init] LHS["^s^"<"^si index^">]:\n"^
+            "[bind_exe: init] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
             string_of_btypecode state.syms.sym_table lhst^
             "\n of initialisation must have same type as RHS:\n"^
             string_of_btypecode state.syms.sym_table rhst^

@@ -141,7 +141,7 @@ let mk_varmap
       si (List.length vs) ^
       ", got ts=" ^
       si (List.length ts) ^
-      "\nvs= " ^ catmap "," (fun (s,i) -> s ^ "<"^si i^">") vs
+      "\nvs= " ^ catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs
     )
   ;
   let varmap = Hashtbl.create 97 in
@@ -633,7 +633,7 @@ let do_unify syms a b =
         let t' = Hashtbl.find syms.varmap i in
         if t' <> t then
           failwith (
-            "[do_unify] binding for type variable " ^ string_of_int i ^
+            "[do_unify] binding for type variable " ^ string_of_bid i ^
             " is inconsistent\n"
           )
         else ()
@@ -641,7 +641,7 @@ let do_unify syms a b =
         match
           begin
             try Hashtbl.find syms.sym_table i with Not_found -> failwith
-              ("BUG, flx_unify can't find symbol " ^ string_of_int i)
+              ("BUG, flx_unify can't find symbol " ^ string_of_bid i)
           end
         with
         | { symdef=SYMDEF_function _ } ->
@@ -657,7 +657,7 @@ let do_unify syms a b =
           failwith
           (
             "[do_unify] attempt to add non-function return unknown type variable "^
-            si i^", type "^sbt syms.sym_table t^" to hashtble"
+            string_of_bid i^", type "^sbt syms.sym_table t^" to hashtble"
           )
       end
     end mgu;

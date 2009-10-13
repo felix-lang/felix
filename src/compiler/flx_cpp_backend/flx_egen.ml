@@ -67,8 +67,8 @@ let is_native_literal e = match e with
 
 let get_var_frame syms bsym_table this index ts : string =
   match
-    try Hashtbl.find bsym_table index
-    with Not_found -> failwith ("[get_var_frame(1)] Can't find index " ^ si index)
+    try Hashtbl.find bsym_table index with Not_found ->
+      failwith ("[get_var_frame(1)] Can't find index " ^ string_of_bid index)
   with (id,parent,sr,entry) ->
   match entry with
   | BBDCL_val (vs,t)
@@ -88,8 +88,8 @@ let get_var_frame syms bsym_table this index ts : string =
 
 let get_var_ref syms bsym_table this index ts : string =
   match
-    try Hashtbl.find bsym_table index
-    with Not_found -> failwith ("[get_var_ref] Can't find index " ^ si index)
+    try Hashtbl.find bsym_table index with Not_found ->
+      failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
   with (id,parent,sr,entry) ->
   (*
   print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode syms.sym_table) ts^"]");
@@ -120,8 +120,8 @@ let get_var_ref syms bsym_table this index ts : string =
 
 let get_ref_ref syms bsym_table this index ts : string =
   match
-    try Hashtbl.find bsym_table index
-    with Not_found -> failwith ("[get_var_ref] Can't find index " ^ si index)
+    try Hashtbl.find bsym_table index with Not_found ->
+      failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
   with (id,parent,sr,entry) ->
   (*
   print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode syms.sym_table) ts^"]");
@@ -190,8 +190,9 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     | BTYP_inst (i,ts) ->
       let ts = map tsub ts in
       let id,_,_,entry =
-        try Hashtbl.find bsym_table i
-        with Not_found -> failwith ("[gen_expr: case_index] Can't find index " ^ si i)
+        try Hashtbl.find bsym_table i with Not_found ->
+          failwith ("[gen_expr: case_index] Can't find index " ^
+            string_of_bid i)
       in
       begin match entry with
       | BBDCL_union (bvs,cts) ->
@@ -212,8 +213,8 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     | _ -> ge a
   in
   let id,parent,_,entry =
-    try Hashtbl.find bsym_table this
-    with Not_found -> failwith ("[gen_expr] Can't find this = " ^ si this)
+    try Hashtbl.find bsym_table this with Not_found ->
+      failwith ("[gen_expr] Can't find this = " ^ string_of_bid this)
   in
   let our_display = get_display_list syms bsym_table this in
   let our_level = length our_display in
@@ -412,7 +413,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
           with Not_found -> assert false
         with
         {id=id; sr=sr} -> syserr sr
-        ("[gen_expr(name)] Can't find "^ id ^ "<" ^ si index ^ ">")
+        ("[gen_expr(name)] Can't find "^ id ^ "<" ^ string_of_bid index ^ ">")
     in
     let ts = map tsub ts' in
     begin match entry with
@@ -501,7 +502,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
          syserr sr
          (
            "[gen_expr: name] Open function '" ^
-           id ^ "'<"^si index^
+           id ^ "'<" ^ string_of_bid index ^
            "> in expression (closure required)"
          )
       | _ ->
@@ -517,8 +518,8 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     print_endline ("Generating closure of " ^ si index);
     *)
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table index
-      with _ -> failwith ("[gen_expr(name)] Can't find index " ^ si index)
+      try Hashtbl.find bsym_table index with _ ->
+        failwith ("[gen_expr(name)] Can't find index " ^ string_of_bid index)
     in
     (*
     Should not be needed now ..
@@ -644,7 +645,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
             i
         end
         in
-        ce_atom ("_uctor_(vmap_"^si i^","^ge srce^")")
+        ce_atom ("_uctor_(vmap_" ^ string_of_bid i ^ "," ^ ge srce ^ ")")
       end
     in
     begin match dstt with
@@ -699,8 +700,9 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     *)
     let argt = tsub argt in
     let id,parent,sr2,entry =
-      try Hashtbl.find bsym_table index
-      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
+      try Hashtbl.find bsym_table index with _ ->
+        failwith ("[gen_expr(apply instance)] Can't find index " ^
+          string_of_bid index)
     in
     begin
     match entry with
@@ -709,7 +711,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
       failwith
       (
         "[get_expr:apply closure of fun] function " ^
-        id ^ "<" ^ si index ^">" ^
+        id ^ "<" ^ string_of_bid index ^">" ^
         ", wrong number of args, expected vs = " ^
         si (length vs) ^
         ", got ts=" ^
@@ -722,7 +724,8 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
         let ts = map tsub ts in
         let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
         if index <> index' then
-          clierr sr ("Virtual call of " ^ si index ^ " dispatches to " ^ si index')
+          clierr sr ("Virtual call of " ^ string_of_bid index ^ " dispatches to
+            " ^ string_of_bid index')
         ;
         if index = index' then
         begin
@@ -730,18 +733,19 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
             try Hashtbl.find syms.typeclass_to_instance index
             with Not_found -> (* print_endline ("Symbol " ^ si index ^ " Not instantiated?"); *) []
           in
-          iter
-          (fun (bvs,t,ts,j) -> print_endline ("Candidate Instance " ^ si j ^ "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]"))
-          entries
-          ;
+          iter begin fun (bvs,t,ts,j) ->
+            print_endline ("Candidate Instance " ^ string_of_bid j ^ "[" ^
+              catmap "," (sbt syms.sym_table) ts ^ "]")
+          end entries;
 
-          clierr2 sr sr2 ("Instantiate virtual function(2) " ^ id ^ "<" ^si index ^
-            ">, no instance for ts="^ catmap "," (sbt syms.sym_table) ts
-          )
+          clierr2 sr sr2 ("Instantiate virtual function(2) " ^ id ^ "<" ^
+            string_of_bid index ^ ">, no instance for ts="^
+            catmap "," (sbt syms.sym_table) ts)
         end;
         begin let _,_,sr3,entry =
           try Hashtbl.find bsym_table index'
-          with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
+          with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^
+            string_of_bid index')
         in
         match entry with
         | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
@@ -780,8 +784,9 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
 
   | BEXPR_apply_struct (index,ts,a) ->
     let id,parent,sr2,entry =
-      try Hashtbl.find bsym_table index
-      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
+      try Hashtbl.find bsym_table index with _ ->
+        failwith ("[gen_expr(apply instance)] Can't find index " ^
+          string_of_bid index)
     in
     let ts = map tsub ts in
     begin match entry with
@@ -837,13 +842,14 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     let ts = map tsub ts in
     let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
     if index <> index' then
-      clierr sr ("Virtual call of " ^ si index ^ " dispatches to " ^ si index')
+      clierr sr ("Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
+        string_of_bid index')
     ;
     if index <> index' then
     begin
       let _,_,sr3,entry =
-        try Hashtbl.find bsym_table index'
-        with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
+        try Hashtbl.find bsym_table index' with Not_found ->
+          syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
       in
       match entry with
       | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
@@ -853,8 +859,9 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     end else
 
     let id,parent,sr2,entry =
-      try Hashtbl.find bsym_table index
-      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
+      try Hashtbl.find bsym_table index with _ ->
+        failwith ("[gen_expr(apply instance)] Can't find index " ^
+          string_of_bid index)
     in
     begin
     (*
@@ -903,13 +910,14 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     let ts = map tsub ts in
     let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
     if index <> index' then
-      clierr sr ("Virtual call of " ^ si index ^ " dispatches to " ^ si index')
+      clierr sr ("Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
+        string_of_bid index')
     ;
     if index <> index' then
     begin
       let _,_,sr3,entry =
-        try Hashtbl.find bsym_table index'
-        with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^ si index')
+        try Hashtbl.find bsym_table index' with Not_found ->
+          syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
       in
       match entry with
       | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
@@ -919,8 +927,9 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     end else
 
     let id,parent,sr2,entry =
-      try Hashtbl.find bsym_table index
-      with _ -> failwith ("[gen_expr(apply instance)] Can't find index " ^ si index)
+      try Hashtbl.find bsym_table index with _ ->
+        failwith ("[gen_expr(apply instance)] Can't find index " ^
+          string_of_bid index)
     in
     begin
     (*

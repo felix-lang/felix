@@ -95,7 +95,7 @@ let full_add_unique syms sr (vs:ivs_list_t) table key value =
        | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
-         string_of_int (Flx_typing.sye idx) ^ ">")
+         Flx_print.string_of_bid (Flx_typing.sye idx) ^ ">")
        )
      | FunctionEntry [] -> assert false
   with Not_found ->
@@ -112,7 +112,7 @@ let full_add_typevar syms sr table key value =
        | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
-         string_of_int (Flx_typing.sye idx) ^ ">")
+         Flx_print.string_of_bid (Flx_typing.sye idx) ^ ">")
        )
      | FunctionEntry [] -> assert false
   with Not_found ->
@@ -130,9 +130,9 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
         Flx_exceptions.clierr2 sr sr2
         (
           "[build_tables] Cannot overload " ^
-          key ^ "<" ^ string_of_int value ^ ">" ^
+          key ^ "<" ^ Flx_print.string_of_bid value ^ ">" ^
           " with non-function " ^
-          id ^ "<" ^ string_of_int (Flx_typing.sye entry) ^ ">"
+          id ^ "<" ^ Flx_print.string_of_bid (Flx_typing.sye entry) ^ ">"
         )
       end
 
@@ -368,7 +368,8 @@ and build_table_for_dcl
       let n = !counter in incr counter;
 
       if print_flag then
-        print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name ^ " (parameter)");
+        print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
+          name ^ " (parameter)");
 
       (* Add the paramater to the symbol table. *)
       add_symbol
@@ -396,7 +397,8 @@ and build_table_for_dcl
       let n = !counter in incr counter;
 
       if print_flag then
-        print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name ^ " (parameter)");
+        print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
+          name ^ " (parameter)");
 
       (* Add the symbol to the symbol table. *)
       add_symbol
@@ -608,7 +610,7 @@ and build_table_for_dcl
       let n' = !counter in incr counter;
 
       if print_flag then
-        print_endline ("//  " ^ spc ^ string_of_int n' ^
+        print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n' ^
         " -> _init_  (module " ^ id ^ ")");
 
       (* Add the _init_ function to the sym_table. *)
@@ -668,9 +670,11 @@ and build_table_for_dcl
       let nts = List.map (fun (s,i,t)-> BTYP_var (i,BTYP_type 0)) (fst ivs) in
       (* fudge the private view to remove the vs *)
       let show { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } =
-        string_of_int i ^ " |-> " ^
-          "vs= " ^ Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^
-          ">") vs ^ "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt sym_table) ts
+        Flx_print.string_of_bid i ^ " |-> " ^
+          "vs= " ^ Flx_util.catmap
+            ","
+            (fun (s,i) -> s ^ "<" ^ Flx_print.string_of_bid i ^ ">")
+          vs ^ "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt sym_table) ts
       in
       let fixup ({ Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
         let e' = {
@@ -1033,7 +1037,8 @@ and build_table_for_dcl
         in
 
         if print_flag then
-          print_endline ("//  " ^ spc ^ string_of_int dfn_idx ^ " -> " ^ component_name);
+          print_endline ("//  " ^ spc ^ Flx_print.string_of_bid dfn_idx ^
+            " -> " ^ component_name);
 
         (* Add the component to the sym_table. *)
         add_symbol dfn_idx component_name ctor_dcl2;
