@@ -130,7 +130,6 @@ val string_of_name_map: name_map_t -> string
 
 val print_vs: vs_list_t -> string
 val print_ivs: ivs_list_t -> string
-val print_ivs_with_index: ivs_list_t -> string
 
 val string_of_ast_term: int -> ast_term_t -> string
 val string_of_string: string -> string

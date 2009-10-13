@@ -874,10 +874,6 @@ and string_of_macro_parameter_type = function
   | Ident -> "ident"
   | Stmt -> "proc"
 
-and print_ixs = function
-  | [] -> ""
-  | ixs -> "[" ^ cat ", " ixs ^ "]"
-
 (*
 and string_of_maybe_tpattern = function
   | TPAT_any -> ""
@@ -908,14 +904,6 @@ and print_ivs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) 
   | [],TYP_tuple [],[] -> ""
   | _ ->
     "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ string_of_maybe_typecode tpat) vs) ^
-    print_tcon con ^
-    "]"
-
-and print_ivs_with_index (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
-  match vs,tcon,rtcr with
-  | [],TYP_tuple [],[] -> ""
-  | _ ->
-    "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ "<"^si ix^">"^string_of_maybe_typecode tpat) vs) ^
     print_tcon con ^
     "]"
 
