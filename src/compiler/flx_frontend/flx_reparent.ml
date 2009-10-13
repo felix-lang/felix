@@ -260,8 +260,8 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
   if syms.compiler_options.print_flag then
   print_endline
   (
-    "COPYING " ^ id ^ " index " ^ si index ^ " with old parent " ^
-    sop old_parent ^ " to index " ^ si k ^ " with new parent " ^
+    "COPYING " ^ id ^ " index " ^ string_of_bid index ^ " with old parent " ^
+    sop old_parent ^ " to index " ^ string_of_bid k ^ " with new parent " ^
     sop parent
   );
   begin match parent with
@@ -274,7 +274,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
   | None -> ()
   end
   ;
-  let id2 = id ^ "_clone_" ^ si index in
+  let id2 = id ^ "_clone_" ^ string_of_bid index in
   match entry with
   | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = rexes exes in
@@ -408,9 +408,9 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
 *)
 
 let reparent_children syms (uses,child_map,bsym_table)
-  caller_vs callee_vs_len index parent relabel varmap rescan_flag extras
+  caller_vs callee_vs_len index (parent:bid_t option) relabel varmap rescan_flag extras
 =
-  let pp p = match p with None -> "NONE" | Some i -> si i in
+  let pp p = match p with None -> "NONE" | Some i -> string_of_bid i in
   (*
   print_endline
   (
@@ -449,7 +449,8 @@ let reparent_children syms (uses,child_map,bsym_table)
   if syms.compiler_options.print_flag then begin
     Hashtbl.iter
     (fun i j ->
-      print_endline ("//Reparent " ^ si j ^ " <-- " ^ si i)
+      print_endline ("//Reparent " ^ string_of_bid j ^ " <-- " ^
+        string_of_bid i)
     )
     revariable
   end

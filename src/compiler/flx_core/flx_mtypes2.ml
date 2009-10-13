@@ -78,6 +78,12 @@ let fresh_bid counter =
   incr counter;
   bid
 
+let iter_bids f counter start_bid =
+  let bid = !counter in
+  for i = start_bid to bid do
+    f i
+  done
+
 module VarMap = StringMap
 type varmap_t = string_string_map_t
 

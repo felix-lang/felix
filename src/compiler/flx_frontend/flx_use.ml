@@ -174,7 +174,8 @@ and uses syms used bsym_table count_inits i =
       in
       failwith
       (
-        "[Flx_use.uses] Cannot find bound defn for " ^ id ^ "<"^si i ^ ">"
+        "[Flx_use.uses] Cannot find bound defn for " ^ id ^ "<" ^
+        string_of_bid i ^ ">"
       )
   end
 

@@ -106,8 +106,8 @@ let gen_body syms (uses,child_map,bsym_table) id
   sr caller callee vs callee_vs_len inline_method props
 =
   if syms.compiler_options.print_flag then
-  print_endline ("Gen body caller = " ^ si caller ^
-    ", callee=" ^ id ^ "<" ^ si callee ^ ">"
+  print_endline ("Gen body caller = " ^ string_of_bid caller ^
+    ", callee=" ^ id ^ "<" ^ string_of_bid callee ^ ">"
   );
   (*
   let argument = reduce_tbexpr bsym_table argument in
@@ -157,9 +157,13 @@ let gen_body syms (uses,child_map,bsym_table) id
   if syms.compiler_options.print_flag then
   begin begin match inline_method with
   | `Eager ->
-    print_endline ("Eager INLINING " ^ id ^ "<"^si callee^">("^sbe syms.sym_table bsym_table argument^") into " ^ si caller ^ " .. INPUT:");
+      print_endline ("Eager INLINING " ^ id ^ "<" ^
+        string_of_bid callee ^ ">(" ^ sbe syms.sym_table bsym_table argument ^
+        ") into " ^ string_of_bid caller ^ " .. INPUT:");
   | `Lazy ->
-    print_endline ("Lazy INLINING " ^ id ^ "<"^si callee^">("^sbe syms.sym_table bsym_table argument^") into " ^ si caller ^ " .. INPUT:");
+      print_endline ("Lazy INLINING " ^ id ^ "<" ^ string_of_bid callee ^ ">(" ^
+        sbe syms.sym_table bsym_table argument ^") into " ^
+        string_of_bid caller ^ " .. INPUT:");
   end
   ;
   iter (fun x -> print_endline (string_of_bexe syms.sym_table bsym_table 0 x)) exes;
@@ -281,7 +285,8 @@ let gen_body syms (uses,child_map,bsym_table) id
       ref
       (
         if source = "" && id <> "_init_" then
-          [BEXE_comment (sr,(kind ^ "inline call to " ^ id ^"<"^si callee^">"^source))]
+          [BEXE_comment (sr,(kind ^ "inline call to " ^ id ^ "<" ^
+            string_of_bid callee ^ ">" ^ source))]
         else []
       )
     in

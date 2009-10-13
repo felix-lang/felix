@@ -229,7 +229,7 @@ let call_report syms bsym_table (uses,usedby) f k =
   let w s = output_string f s in
   let isr = is_recursive uses k in
   let id,_,sr,entry = Hashtbl.find bsym_table k in
-  w (si k ^ ": ");
+  w (string_of_bid k ^ ": ");
   w (if isr then "recursive " else "");
   w
     begin match entry with
@@ -255,13 +255,13 @@ let call_report syms bsym_table (uses,usedby) f k =
   end
   u;
   let u = List.sort compare !x in
-  w (catmap "," si u);
+  w (catmap "," string_of_bid u);
   w "; usedby: ";
   let u = try Hashtbl.find usedby k with Not_found -> [] in
   let x = ref [] in
   List.iter (fun (i,_) -> if not (List.mem i !x) then x := i::!x) u;
   let u = List.sort compare !x in
-  w (catmap "," si u);
+  w (catmap "," string_of_bid u);
   w "\n"
 
 let print_call_report' syms bsym_table usage f =

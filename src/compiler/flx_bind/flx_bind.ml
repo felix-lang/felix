@@ -53,7 +53,7 @@ let bind_asm state strabs_bsym_table handle_bound init asm =
   in
 
   (* Now bind in order all of the symbols we added. *)
-  for i = initial_index to !(state.syms.Flx_mtypes2.counter) do
+  Flx_mtypes2.iter_bids begin fun i ->
     (* First, find the symbol to bind. *)
     begin match Flx_hashtbl.find state.syms.Flx_mtypes2.sym_table i with
     | None -> ()
@@ -61,12 +61,12 @@ let bind_asm state strabs_bsym_table handle_bound init asm =
         (* Then, bind the symbol. *)
         ignore (Flx_bbind.bbind_symbol state.syms state.bbind_bsym_table i s)
     end
-  done;
+  end state.syms.Flx_mtypes2.counter initial_index;
 
   (* Now that we've bound all the symbols, we can downgrade the types. *)
   let init = ref init in
 
-  for i = initial_index to !(state.syms.Flx_mtypes2.counter) do
+  Flx_mtypes2.iter_bids begin fun i ->
     (* First, find the symbol to bind. *)
     begin match Flx_hashtbl.find state.bbind_bsym_table i with
     | None -> ()
@@ -79,10 +79,10 @@ let bind_asm state strabs_bsym_table handle_bound init asm =
             i
             s)
     end
-  done;
+  end state.syms.Flx_mtypes2.counter initial_index;
 
   (* Finally, pass on the bound symbols to the client. *)
-  for i = initial_index to !(state.syms.Flx_mtypes2.counter) do
+  Flx_mtypes2.iter_bids begin fun i ->
     (* First, find the symbol to bind. *)
     begin match Flx_hashtbl.find strabs_bsym_table i with
     | None -> ()
@@ -90,7 +90,7 @@ let bind_asm state strabs_bsym_table handle_bound init asm =
         (* ... and finally pass the symbol to the client *)
         init := handle_bound !init (Bound_symbol (i, s));
     end
-  done;
+  end state.syms.Flx_mtypes2.counter initial_index;
 
   (* Return the folded value. *)
   !init

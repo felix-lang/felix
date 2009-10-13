@@ -44,7 +44,7 @@ let add_inst syms bsym_table ref_insts1 (i,ts) =
   if has_variables then
   failwith
   (
-    "Attempt to register instance " ^ si i ^ "[" ^
+    "Attempt to register instance " ^ string_of_bid i ^ "[" ^
     catmap ", " (sbt syms.sym_table) ts ^
     "] with type variable in a subscript"
   )
@@ -86,7 +86,8 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
     *)
     let id,parent,sr2,entry =
       try Hashtbl.find bsym_table index
-      with _ -> failwith ("[process_expr(apply instance)] Can't find index " ^ si index)
+      with _ -> failwith ("[process_expr(apply instance)] Can't find index " ^
+        string_of_bid index)
     in
     begin match entry with
     (* function type not needed for direct call *)
@@ -258,7 +259,8 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   let ui i = uis i ts in
   let id,parent,sr,entry =
     try Hashtbl.find bsym_table i
-    with Not_found -> failwith ("[process_inst] Can't find index " ^ si i)
+    with Not_found -> failwith ("[process_inst] Can't find index " ^
+      string_of_bid i)
   in
   let do_reqs vs reqs =
     iter (
@@ -273,7 +275,9 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   let rtr t = register_type_r uis syms bsym_table [] sr t in
   let rtnr t = register_type_nr syms (reduce_type t) in
   if syms.compiler_options.print_flag then
-  print_endline ("//Instance "^si inst ^ "="^id^"<" ^ si i ^ ">[" ^ catmap "," (string_of_btypecode syms.sym_table) ts ^ "]");
+  print_endline ("//Instance " ^ string_of_bid inst ^ "=" ^ id ^ "<" ^
+    string_of_bid i ^ ">[" ^
+    catmap "," (string_of_btypecode syms.sym_table) ts ^ "]");
   match entry with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let argtypes = map (fun {ptyp=t}->t) ps in
@@ -350,8 +354,9 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     if length vs <> length ts
     then syserr sr
     (
-      "ts/vs mismatch instantiating variable " ^ id ^ "<"^si i^">, inst "^si inst^": vs = [" ^
-      catmap ";" (fun (s,i)-> s ^"<"^si i^">") vs ^ "], " ^
+      "ts/vs mismatch instantiating variable " ^ id ^ "<" ^ string_of_bid i ^
+      ">, inst " ^ string_of_bid inst ^ ": vs = [" ^
+      catmap ";" (fun (s,i)-> s ^ "<" ^ string_of_bid i ^ ">") vs ^ "], " ^
       "ts = [" ^
       catmap ";" (fun t->sbt syms.sym_table t) ts ^ "]"
     );

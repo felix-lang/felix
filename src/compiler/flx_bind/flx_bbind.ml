@@ -639,11 +639,10 @@ let bbind syms bsym_table =
     (since they're always using the current value
     of syms.counter for an index
   *)
-  let i = ref 0 in
-  while !i < !(syms.counter) do
+  Flx_mtypes2.iter_bids begin fun i ->
     begin
       let entry =
-        try Some (Hashtbl.find syms.sym_table !i)
+        try Some (Hashtbl.find syms.sym_table i)
         with Not_found -> None
       in match entry with
       | Some entry ->
@@ -656,19 +655,17 @@ let bbind syms bsym_table =
               failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
           end;
           *)
-          ignore (bbind_symbol syms bsym_table !i entry)
+          ignore (bbind_symbol syms bsym_table i entry)
         with Not_found ->
-          try match hfind "bbind" syms.sym_table !i with {id=id} ->
+          try match hfind "bbind" syms.sym_table i with {id=id} ->
             failwith ("Binding error, cannot find in table: " ^ id ^ " index " ^
-              si !i)
+              string_of_bid i)
           with Not_found ->
-            failwith ("Binding error UNKNOWN SYMBOL, index " ^ string_of_bid !i)
+            failwith ("Binding error UNKNOWN SYMBOL, index " ^ string_of_bid i)
         end
       | None -> ()
     end
-    ;
-    incr i
-  done
+  end syms.counter dummy_bid
 
 let bind_interface syms = function
   | sr, IFACE_export_fun (sn, cpp_name), parent ->
