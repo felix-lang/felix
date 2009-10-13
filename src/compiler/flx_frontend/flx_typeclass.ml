@@ -194,7 +194,7 @@ let check_instance
           try Hashtbl.find syms.typeclass_to_instance tck
           with Not_found -> []
         in
-        let entry = inst_vs , inst_constraint, inst_ts , i in
+        let entry = inst_vs, inst_constraint, inst_ts, i in
         if mem entry old then
           clierr sr "Instance already registered??"
         else

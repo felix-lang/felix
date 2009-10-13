@@ -11,27 +11,27 @@ type submode_t = [`Eager | `Lazy]
 val gen_body :
   sym_state_t ->
   usage_table_t * Flx_child.t * bsym_table_t ->
-  string ->                        (* name *)
-  (int, btypecode_t) Hashtbl.t ->  (* varmap *)
-  bparameter_t list ->             (* parameters *)
-  (string, string) Hashtbl.t ->    (* relabel *)
-  (bid_t, bid_t) Hashtbl.t ->      (* revariable *)
-  bexe_t list ->                   (* the exes *)
-  tbexpr_t ->                      (* argument *)
-  Flx_srcref.t ->                  (* srcref *)
-  int ->                           (* caller *)
-  bid_t ->                         (* callee *)
-  bvs_t ->                         (* caller vs *)
-  int ->                           (* callee vs len *)
-  submode_t ->                     (* default arg passing mode *)
-  property_t list ->               (* properties *)
+  string ->                         (* name *)
+  (bid_t, btypecode_t) Hashtbl.t -> (* varmap *)
+  bparameter_t list ->              (* parameters *)
+  (string, string) Hashtbl.t ->     (* relabel *)
+  (bid_t, bid_t) Hashtbl.t ->       (* revariable *)
+  bexe_t list ->                    (* the exes *)
+  tbexpr_t ->                       (* argument *)
+  Flx_srcref.t ->                   (* srcref *)
+  bid_t ->                          (* caller *)
+  bid_t ->                          (* callee *)
+  bvs_t ->                          (* caller vs *)
+  int ->                            (* callee vs len *)
+  submode_t ->                      (* default arg passing mode *)
+  property_t list ->                (* properties *)
   bexe_t list
 
 val recal_exes_usage:
   sym_state_t ->
   usage_table_t ->
   Flx_srcref.t ->
-  int ->
+  bid_t ->
   bparameter_t list ->
   bexe_t list ->
   unit

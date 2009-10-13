@@ -7,16 +7,16 @@ open Flx_util
 open Flx_print
 
 type label_map_t =
-  (bid_t,(string, int) Hashtbl.t) Hashtbl.t
+  (bid_t, (string, bid_t) Hashtbl.t) Hashtbl.t
 
 type label_kind_t = [`Far | `Near | `Unused]
 
-type label_usage_t = (int,label_kind_t) Hashtbl.t
+type label_usage_t = (bid_t, label_kind_t) Hashtbl.t
 
 type goto_kind_t =
 [
-  | `Local of int
-  | `Nonlocal of int * int
+  | `Local of bid_t
+  | `Nonlocal of bid_t * bid_t
   | `Unreachable
 ]
 

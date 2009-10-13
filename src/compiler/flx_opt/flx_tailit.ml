@@ -84,7 +84,7 @@ let functions_find_xclosures syms cls bsym_table ii =
   (function_find_xclosure syms cls bsym_table)
   ii
 
-let rec check_ahead i n ls res : (int * int * btypecode_t) list =
+let rec check_ahead i n ls res =
   if n = 0 then rev res else match ls with
   | [] -> []
   | h :: t ->  match h with

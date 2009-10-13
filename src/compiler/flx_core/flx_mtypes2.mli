@@ -10,7 +10,7 @@ val typecodeset_map :
   (TypecodeSet.elt -> TypecodeSet.elt) -> TypecodeSet.t -> TypecodeSet.t
 
 (* generic entity instances: functions, variables *)
-type instance_registry_t = (int * Flx_types.btypecode_t list, int) Hashtbl.t
+type instance_registry_t = (Flx_types.bid_t * Flx_types.btypecode_t list, Flx_types.bid_t) Hashtbl.t
 
 type felix_compiler_options_t =
 {
@@ -47,14 +47,14 @@ type sym_state_t =
   instances : instance_registry_t;
   include_files : string list ref;
   roots : Flx_types.BidSet.t ref;
-  quick_names : (string, (int * Flx_types.btypecode_t list)) Hashtbl.t;
+  quick_names : (string, (Flx_types.bid_t * Flx_types.btypecode_t list)) Hashtbl.t;
   mutable bifaces : Flx_types.biface_t list;
   mutable reductions : Flx_types.reduction_t list;
   mutable axioms : Flx_types.axiom_t list;
-  variant_map: (Flx_types.btypecode_t * Flx_types.btypecode_t,int) Hashtbl.t;
-  typeclass_to_instance: (int, (Flx_types.bvs_t * Flx_types.btypecode_t * Flx_types.btypecode_t list * int) list) Hashtbl.t;
-  instances_of_typeclass: (int, (int * (Flx_types.bvs_t * Flx_types.btypecode_t * Flx_types.btypecode_t list)) list) Hashtbl.t;
-  transient_specialisation_cache: (int * Flx_types.btypecode_t list, int * Flx_types.btypecode_t list) Hashtbl.t;
+  variant_map: (Flx_types.btypecode_t * Flx_types.btypecode_t, Flx_types.bid_t) Hashtbl.t;
+  typeclass_to_instance: (Flx_types.bid_t, (Flx_types.bvs_t * Flx_types.btypecode_t * Flx_types.btypecode_t list * Flx_types.bid_t) list) Hashtbl.t;
+  instances_of_typeclass: (Flx_types.bid_t, (Flx_types.bid_t * (Flx_types.bvs_t * Flx_types.btypecode_t * Flx_types.btypecode_t list)) list) Hashtbl.t;
+  transient_specialisation_cache: (Flx_types.bid_t * Flx_types.btypecode_t list, Flx_types.bid_t * Flx_types.btypecode_t list) Hashtbl.t;
 }
 
 val make_syms: felix_compiler_options_t -> sym_state_t

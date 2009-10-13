@@ -5,8 +5,8 @@ type label_map_t =
 
 type goto_kind_t =
 [
-  | `Local of int          (* index *)
-  | `Nonlocal of int * int (* index, parent *)
+  | `Local of Flx_types.bid_t                      (* index *)
+  | `Nonlocal of Flx_types.bid_t * Flx_types.bid_t (* index, parent *)
   | `Unreachable
 ]
 

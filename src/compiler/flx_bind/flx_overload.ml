@@ -41,7 +41,7 @@ let is_typeset tss1 =
       end
     | _ -> false
 
-let make_typeset tss : int list =
+let make_typeset tss : bid_t list =
   match List.rev tss with
   | h::t -> List.map (fun x ->
     match x with 
@@ -52,7 +52,8 @@ let make_typeset tss : int list =
   | _ -> assert false
 
 let is_subset tss1 tss2 : bool =
-  let tss1: int list = make_typeset tss1 and tss2 : int list = make_typeset tss2 in
+  let tss1: bid_t list = make_typeset tss1
+  and tss2: bid_t list = make_typeset tss2 in
   try List.iter (fun x -> if not (List.mem x tss2) then raise Not_found) tss1; true
   with Not_found -> false
 
@@ -128,10 +129,10 @@ let constraint_implies syms a b =
   r
 
 type overload_result =
- int *  (* index of function *)
+ bid_t *  (* index of function *)
  btypecode_t * (* type of function signature *)
  btypecode_t * (* type of function return *)
- (int * btypecode_t) list * (* mgu *)
+ (bid_t * btypecode_t) list * (* mgu *)
  btypecode_t list (* ts *)
 
 type result =

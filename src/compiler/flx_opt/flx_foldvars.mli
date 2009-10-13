@@ -11,10 +11,10 @@ val fold_vars:
   bsym_table_t ->
   Flx_child.t ->
   usage_table_t ->
-  int ->
+  bid_t ->
   bparameter_t list ->
   bexe_t list ->
   bexe_t list
 
 val add_use:
-  usage_table_t -> int -> int -> Flx_srcref.t -> unit
+  usage_table_t -> bid_t -> bid_t -> Flx_srcref.t -> unit

@@ -9,7 +9,7 @@ type bind_state_t = {
 
 type bound_t =
   | Bound_exe of Flx_types.bexe_t
-  | Bound_symbol of (int * Flx_types.bsym_t)
+  | Bound_symbol of (Flx_types.bid_t * Flx_types.bsym_t)
 
 let make_bind_state ?parent ?env syms =
   {

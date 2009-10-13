@@ -1376,8 +1376,7 @@ and cal_assoc_type syms sr t =
 
   | _ -> clierr sr ("Don't know what to make of " ^ sbt syms.sym_table t)
 
-and bind_type_index syms (rs:recstop)
-  sr index ts mkenv
+and bind_type_index syms (rs:recstop) sr index ts mkenv
 =
   (*
   print_endline
@@ -1563,7 +1562,7 @@ and  type_of_literal syms env sr v : btypecode_t =
   let bt = inner_bind_type syms env sr rsground t in
   bt
 
-and type_of_index' rs syms (index:int) : btypecode_t =
+and type_of_index' rs syms (index:bid_t) : btypecode_t =
     (*
     let () = print_endline ("Top level type of index " ^ si index) in
     *)
@@ -1596,7 +1595,7 @@ and type_of_index' rs syms (index:int) : btypecode_t =
       t
 
 
-and type_of_index_with_ts' rs syms sr (index:int) ts =
+and type_of_index_with_ts' rs syms sr (index:bid_t) ts =
   (*
   print_endline "OUTER TYPE OF INDEX with TS";
   *)
@@ -1738,7 +1737,7 @@ and cal_ret_type syms (rs:recstop) index args =
 
 and inner_type_of_index_with_ts
   syms sr (rs:recstop)
-  (index:int)
+  (index:bid_t)
   (ts: btypecode_t list)
 : btypecode_t =
  (*
@@ -1779,7 +1778,7 @@ or variable .. so there's no type_alias_fixlist ..
 *)
 and inner_type_of_index
   syms (rs:recstop)
-  (index:int)
+  (index:bid_t)
 : btypecode_t =
   (*
   print_endline ("[inner_type_of_index] " ^ si index);
@@ -2706,7 +2705,7 @@ and handle_type
   sra srn
   name
   ts
-  (index : int)
+  index
 : btypecode_t
 =
 
@@ -2779,7 +2778,7 @@ and handle_function
   sra srn
   name
   ts
-  (index : int)
+  index
 : tbexpr_t
 =
   match get_data syms.sym_table index with
@@ -5211,7 +5210,7 @@ and bind_dir
   syms
   (env:env_t) rs
   (vs,qn)
-: ivs_list_t * int * btypecode_t list =
+: ivs_list_t * bid_t * btypecode_t list =
   (*
   print_endline ("Try to bind dir " ^ string_of_qualified_name qn);
   *)
@@ -5326,7 +5325,7 @@ and review_entry_set syms v vs ts : entry_set_t = match v with
   | NonFunctionEntry i -> NonFunctionEntry (review_entry syms vs ts i)
   | FunctionEntry fs -> FunctionEntry (List.map (review_entry syms vs ts) fs)
 
-and make_view_table syms table (vs: (string * int) list) ts : name_map_t =
+and make_view_table syms table vs ts : name_map_t =
   (*
   print_endline ("vs="^catmap "," (fun (s,_)->s) vs^", ts="^catmap "," (sbt syms.sym_table) ts);
   print_endline "Building view table!";
@@ -5851,7 +5850,7 @@ let lookup_sn_in_env
   syms
   (env:env_t)
   (sn: suffixed_name_t)
-  : int * btypecode_t list
+  : bid_t * btypecode_t list
 =
   let sr = src_of_suffixed_name sn in
   let bt t = inner_bind_type syms env sr rsground t in
@@ -5881,8 +5880,8 @@ let bind_type syms env sr t : btypecode_t =
 let bind_expression syms env e  =
   inner_bind_expression syms env rsground e 
 
-let type_of_index syms (index:int) : btypecode_t =
+let type_of_index syms (index:bid_t) : btypecode_t =
  type_of_index' rsground syms index
 
-let type_of_index_with_ts syms sr (index:int) ts =
+let type_of_index_with_ts syms sr (index:bid_t) ts =
  type_of_index_with_ts' rsground syms sr index ts

@@ -3,7 +3,7 @@ open Flx_types
 open List
 
 (* generic entity instances: functions, variables *)
-type instance_registry_t = (int * btypecode_t list, int) Hashtbl.t
+type instance_registry_t = (bid_t * btypecode_t list, bid_t) Hashtbl.t
 
 type felix_compiler_options_t =
 {
@@ -41,14 +41,14 @@ type sym_state_t =
   instances : instance_registry_t;
   include_files : string list ref;
   roots : BidSet.t ref;
-  quick_names : (string, (int * btypecode_t list)) Hashtbl.t;
+  quick_names : (string, (bid_t * btypecode_t list)) Hashtbl.t;
   mutable bifaces : biface_t list;
   mutable reductions : reduction_t list;
   mutable axioms: axiom_t list;
-  variant_map: (btypecode_t * btypecode_t,int) Hashtbl.t;
-  typeclass_to_instance: (int, (bvs_t * btypecode_t * btypecode_t list * int) list) Hashtbl.t;
-  instances_of_typeclass: (int, (int * (bvs_t * btypecode_t * btypecode_t list)) list) Hashtbl.t;
-  transient_specialisation_cache: (int * btypecode_t list, int * btypecode_t list) Hashtbl.t;
+  variant_map: (btypecode_t * btypecode_t, bid_t) Hashtbl.t;
+  typeclass_to_instance: (bid_t, (bvs_t * btypecode_t * btypecode_t list * bid_t) list) Hashtbl.t;
+  instances_of_typeclass: (bid_t, (bid_t * (bvs_t * btypecode_t * btypecode_t list)) list) Hashtbl.t;
+  transient_specialisation_cache: (bid_t * btypecode_t list, bid_t * btypecode_t list) Hashtbl.t;
 }
 
 let make_syms options =

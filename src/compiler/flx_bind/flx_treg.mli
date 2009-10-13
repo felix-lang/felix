@@ -37,7 +37,7 @@ val register_tuple:
   unit
 
 val register_type_r:
-  (int -> btypecode_t list -> unit) ->
+  (bid_t -> btypecode_t list -> unit) ->
   sym_state_t ->
   bsym_table_t ->
   btypecode_t list ->

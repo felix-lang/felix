@@ -53,13 +53,7 @@ let type_of_tpattern syms p :
     t,!explicit_vars, !any_vars, !as_vars, !eqns
 
 *)
-let type_of_tpattern syms p :
-  typecode_t *
-  (int * string) list *     (* variables for '?' terms *)
-  int list *                (* variables for 'any' terms *)
-  (int * string) list *     (* variables for 'as' terms *)
-  (int * typecode_t) list   (* assignments for as terms *)
-=
+let type_of_tpattern syms p =
   let explicit_vars = ref [] in
   let any_vars = ref [] in
   let as_vars = ref [] in

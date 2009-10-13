@@ -112,7 +112,7 @@ let gen_body syms (uses,child_map,bsym_table) id
   (*
   let argument = reduce_tbexpr bsym_table argument in
   *)
-  let psis: int list = map (fun {pindex=i} -> i) ps in
+  let psis = map (fun {pindex=i} -> i) ps in
 
   (* NOTE: this is the inline method for val's ONLY.
     If a parameter is a var, it is inlined eagerly no

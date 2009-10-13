@@ -49,12 +49,7 @@ let merge_ivs
   { raw_type_constraint=t; raw_typeclass_reqs=rtcr }
 
 
-let split_asms asms :
-  (Flx_srcref.t * id_t * int option * Flx_types.access_t * vs_list_t * Flx_types.dcl_t) list *
-  sexe_t list *
-  (Flx_srcref.t * Flx_types.iface_t) list *
-  Flx_types.dir_t list
-=
+let split_asms asms =
   let rec aux asms dcls exes ifaces dirs =
     match asms with
     | [] -> (dcls, exes, ifaces, dirs)

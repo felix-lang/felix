@@ -16,5 +16,5 @@ val can_stack_func:
   Flx_child.t ->
   (Flx_types.btypecode_t, [`Recurse | `Safe | `Unsafe]) Hashtbl.t ->
   (Flx_types.btypecode_t, [`Recurse | `Safe | `Unsafe]) Hashtbl.t ->
-  int ->
+  Flx_types.bid_t ->
   bool

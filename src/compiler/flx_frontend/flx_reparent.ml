@@ -230,7 +230,7 @@ let allow_rescan flag props =
   | false -> props
   | true -> filter (function | `Inlining_complete | `Inlining_started -> false | _ -> true ) props
 
-let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table )
+let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
   relabel varmap revariable
   caller_vs callee_vs_len index parent k rescan_flag
 =

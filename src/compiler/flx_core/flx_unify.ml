@@ -130,7 +130,7 @@ let varmap_subst varmap t =
   where vs_t might be (fred,var j)
 *)
 let mk_varmap
-  (vs:(string * int) list)
+  (vs:(string * bid_t) list)
   (ts:btypecode_t list)
 =
   if List.length ts <> List.length vs
@@ -152,7 +152,7 @@ let mk_varmap
   varmap
 
 let tsubst
-  (vs:(string * int) list)
+  (vs:(string * bid_t) list)
   (ts:btypecode_t list)
   (t:btypecode_t)
 =
@@ -1010,12 +1010,12 @@ let rec expr_unification counter sym_table
   (tdvars: BidSet.t)
   (edvars: BidSet.t)
 :
-  (int * btypecode_t) list *
-  (int * tbexpr_t) list
+  (bid_t * btypecode_t) list *
+  (bid_t * tbexpr_t) list
 =
   (*
-  print_endline ( "Tdvars = { " ^ catmap ", " si (IntSet.elements tdvars) ^ "}");
-  print_endline ( "Edvars = { " ^ catmap ", " si (IntSet.elements edvars) ^ "}");
+  print_endline ( "Tdvars = { " ^ catmap ", " si (BidSet.elements tdvars) ^ "}");
+  print_endline ( "Edvars = { " ^ catmap ", " si (BidSet.elements edvars) ^ "}");
   *)
   let teqns = ref [] in
   let eqns = ref eqns in
@@ -1159,12 +1159,12 @@ let rec expr_unification counter sym_table
 let setoflist ls = List.fold_left (fun s i -> BidSet.add i s) BidSet.empty ls
 
 let expr_maybe_matches counter (sym_table:sym_table_t)
-  (tvars:int list) (evars:int list)
-  (le: tbexpr_t)
+  (tvars:bid_t list) (evars:bid_t list)
+  (le:tbexpr_t)
   (re:tbexpr_t)
 :
-  ((int * btypecode_t) list *
-  (int * tbexpr_t) list) option
+  ((bid_t * btypecode_t) list *
+  (bid_t * tbexpr_t) list) option
 =
   let tvars = setoflist tvars in
   let evars = setoflist evars in

@@ -12,6 +12,8 @@
  * of instantiated names, and a instantiated name is a simple name optionally
  * followed by a square bracket enclosed list of type expressions. *)
 type id_t = string
+
+type index_t = int
 type index_map_t = (int,int) Hashtbl.t
 
 (** Type of embedded C++ code. *)
@@ -36,7 +38,7 @@ type qualified_name_t =
   | `AST_typed_case of Flx_srcref.t * int * typecode_t
   | `AST_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
   | `AST_the of Flx_srcref.t * qualified_name_t
-  | `AST_index of Flx_srcref.t * string * int
+  | `AST_index of Flx_srcref.t * string * index_t
   | `AST_callback of Flx_srcref.t * qualified_name_t
   ]
 
@@ -49,7 +51,7 @@ and suffixed_name_t =
   | `AST_typed_case of Flx_srcref.t * int * typecode_t
   | `AST_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
   | `AST_the of Flx_srcref.t * qualified_name_t
-  | `AST_index of Flx_srcref.t * string * int
+  | `AST_index of Flx_srcref.t * string * index_t
   | `AST_callback of Flx_srcref.t * qualified_name_t
   | `AST_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
   ]
@@ -68,7 +70,7 @@ and typecode_t =
   | TYP_typed_case of Flx_srcref.t * int * typecode_t
   | TYP_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
   | TYP_the of Flx_srcref.t * qualified_name_t
-  | TYP_index of Flx_srcref.t * string * int
+  | TYP_index of Flx_srcref.t * string * index_t
   | TYP_callback of Flx_srcref.t * qualified_name_t
   | TYP_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
   | TYP_patvar of Flx_srcref.t * string
@@ -85,7 +87,7 @@ and typecode_t =
   | TYP_array of typecode_t * typecode_t       (** array type base ^ index *)
   | TYP_as of typecode_t * string              (** fixpoint *)
   | TYP_typeof of expr_t                       (** typeof *)
-  | TYP_var of int                             (** unknown type *)
+  | TYP_var of index_t                         (** unknown type *)
   | TYP_none                                   (** unspecified *)
   | TYP_ellipsis                               (** ... for varargs *)
 (*  | TYP_lvalue of typecode_t *)                  (** ... lvalue annotation *)
@@ -156,7 +158,7 @@ and expr_t =
   | EXPR_noexpand of Flx_srcref.t * expr_t
   | EXPR_name of Flx_srcref.t * string * typecode_t list
   | EXPR_the of Flx_srcref.t * qualified_name_t
-  | EXPR_index of Flx_srcref.t * string * int
+  | EXPR_index of Flx_srcref.t * string * index_t
   | EXPR_case_tag of Flx_srcref.t * int
   | EXPR_typed_case of Flx_srcref.t * int * typecode_t
   | EXPR_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
@@ -495,7 +497,7 @@ type exe_t =
   | EXE_trace of id_t * string
   | EXE_nop of string
   | EXE_init of id_t * expr_t
-  | EXE_iinit of (id_t * int) * expr_t
+  | EXE_iinit of (id_t * index_t) * expr_t
   | EXE_assign of expr_t * expr_t
   | EXE_assert of expr_t
 

@@ -90,7 +90,7 @@ val lookup_name_in_htab:
 
 val build_env:
   sym_state_t ->
-  int option -> (* parent *)
+  bid_t option -> (* parent *)
   env_t
 
 val lookup_name_in_env :
@@ -116,7 +116,7 @@ val lookup_sn_in_env :
   sym_state_t ->
   env_t ->
   suffixed_name_t ->
-  int * btypecode_t list
+  bid_t * btypecode_t list
 
 val lookup_code_in_env:
   sym_state_t ->
@@ -173,13 +173,13 @@ val bind_expression_with_args :
 
 val type_of_index :
   sym_state_t ->
-  int ->
+  bid_t ->
   btypecode_t
 
 val type_of_index_with_ts:
   sym_state_t ->
   Flx_srcref.t ->
-  int ->
+  bid_t ->
   btypecode_t list ->
   btypecode_t
 
