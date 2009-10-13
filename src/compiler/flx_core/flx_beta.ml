@@ -236,23 +236,7 @@ and adjust t =
 
 and mk_prim_type_inst syms i args =
   print_endline "MK_PRIM_TYPE";
-  let t = BTYP_inst (i,args) in
-  (*
-  let _,t' = normalise_type t in
-  let args = match t' with
-    | BTYP_inst (_,args) -> args
-    | _ -> assert false
-  in
-  if not (Hashtbl.mem syms.prim_inst (i,args))
-  then begin
-    let n = !(syms.counter) in
-    incr (syms.counter);
-    Hashtbl.add syms.prim_inst (i, args) n;
-    Hashtbl.add syms.rev_prim_inst n (i, args)
-  end;
-  *)
-  t
-
+  BTYP_inst (i,args)
 
 and beta_reduce syms sr t1 =
   (*

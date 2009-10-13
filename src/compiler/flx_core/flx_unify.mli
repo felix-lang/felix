@@ -156,13 +156,6 @@ val var_list_occurs:
   btypecode_t ->
   bool
 
-(** normalise returns count of the type variables
-  occuring in a type, and the type rewritten so the type variables
-  are systematically numbered from 0 - n-1
-*)
-val normalise_type:
-  btypecode_t -> int list * btypecode_t
-
 (** check for bad recursions *)
 val check_recursion:
   btypecode_t -> unit

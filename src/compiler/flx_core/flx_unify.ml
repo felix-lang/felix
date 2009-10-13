@@ -969,28 +969,6 @@ let var_occurs t =
 
  in try aux' [] t; false with Not_found -> true
 
-let normalise_type t =
-  let counter = ref 0 in
-  let varmap = ref [] in
-  let rec aux t = match map_btype aux t with
-  | BTYP_record [] -> BTYP_tuple []
-  | BTYP_variant [] -> BTYP_void
-  | BTYP_var (i,mt) ->
-    BTYP_var
-    ((
-      match list_index !varmap i with
-      | Some j -> j
-      | None ->
-        let n = !counter in
-        incr counter;
-        varmap := !varmap @ [i];
-        n
-     ),mt)
-   | x -> x
-   in
-     let x = aux t in
-     !varmap, x
-
 let ident x = x
 
 (* not really right! Need to map the types as well,
