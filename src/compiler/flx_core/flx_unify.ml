@@ -82,7 +82,7 @@ let term_subst counter t1 i t2 =
     let tt = s tt in
     let pts =
       List.map begin fun ((bpat, x) as case) ->
-       if IntSet.mem i bpat.pattern_vars then case else
+       if BidSet.mem i bpat.pattern_vars then case else
        let asgs = List.map (fun (i,t) -> i, s t) bpat.assignments in
        { bpat with pattern=s bpat.pattern; assignments=asgs }, s x
       end pts
@@ -231,8 +231,8 @@ let var_i_occurs i t =
    with Not_found -> true
 
 let rec vars_in t =
-  let vs = ref IntSet.empty in
-  let add_var i = vs := IntSet.add i !vs in
+  let vs = ref BidSet.empty in
+  let add_var i = vs := BidSet.add i !vs in
   let rec aux t = match t with
     | BTYP_var (i,_) -> add_var i
     | _ -> iter_btype aux t
@@ -293,10 +293,10 @@ let var_list_occurs ls t =
 
 let rec unification counter sym_table
   (eqns: (btypecode_t * btypecode_t) list)
-  (dvars: IntSet.t)
-: (int * btypecode_t) list =
+  (dvars: BidSet.t)
+: (bid_t * btypecode_t) list =
   (*
-  print_endline ( "Dvars = { " ^ catmap ", " si (IntSet.elements dvars) ^ "}");
+  print_endline ( "Dvars = { " ^ catmap ", " si (BidSet.elements dvars) ^ "}");
   *)
   let eqns = ref eqns in
   let mgu = ref [] in
@@ -316,9 +316,9 @@ let rec unification counter sym_table
         if mi <> mj then raise Not_found;
 
         if i <> j then
-          if IntSet.mem i dvars then
+          if BidSet.mem i dvars then
             s := Some (i,tj)
-          else if IntSet.mem j dvars then
+          else if BidSet.mem j dvars then
             s := Some (j,ti)
           else raise Not_found
       | BTYP_var (i,_), t
@@ -330,7 +330,7 @@ let rec unification counter sym_table
         (* WE SHOULD CHECK THAT t has the right meta type .. but
         the metatype routine isn't defined yet ..
         *)
-        if not (IntSet.mem i dvars) then raise Not_found;
+        if not (BidSet.mem i dvars) then raise Not_found;
         if var_i_occurs i t
         then begin
           (*
@@ -511,11 +511,11 @@ let rec unification counter sym_table
       !mgu
 
 let find_vars_eqns eqns =
-  let lhs_vars = ref IntSet.empty in
-  let rhs_vars = ref IntSet.empty in
+  let lhs_vars = ref BidSet.empty in
+  let rhs_vars = ref BidSet.empty in
   List.iter (fun (l,r) ->
-    lhs_vars := IntSet.union !lhs_vars (vars_in l);
-    rhs_vars := IntSet.union !rhs_vars (vars_in r)
+    lhs_vars := BidSet.union !lhs_vars (vars_in l);
+    rhs_vars := BidSet.union !rhs_vars (vars_in r)
   )
   eqns
   ;
@@ -523,13 +523,13 @@ let find_vars_eqns eqns =
 
 let maybe_unification counter sym_table eqns =
   let l,r = find_vars_eqns eqns in
-  let dvars = IntSet.union l r in
+  let dvars = BidSet.union l r in
   try Some (unification counter sym_table eqns dvars)
   with Not_found -> None
 
 let maybe_matches counter sym_table eqns =
   let l,r = find_vars_eqns eqns in
-  let dvars = IntSet.union l r in
+  let dvars = BidSet.union l r in
   try Some (unification counter sym_table eqns dvars)
   with Not_found -> None
 
@@ -599,7 +599,7 @@ let do_unify syms a b =
     ]
   in
   let l,r = find_vars_eqns eqns in
-  let dvars = IntSet.union l r in
+  let dvars = BidSet.union l r in
   try
     (*
     print_endline "Calling unification";
@@ -1007,8 +1007,8 @@ let expr_term_subst e1 i e2 =
 
 let rec expr_unification counter sym_table
   (eqns: (tbexpr_t * tbexpr_t) list)
-  (tdvars: IntSet.t)
-  (edvars: IntSet.t)
+  (tdvars: BidSet.t)
+  (edvars: BidSet.t)
 :
   (int * btypecode_t) list *
   (int * tbexpr_t) list
@@ -1047,18 +1047,18 @@ let rec expr_unification counter sym_table
         *)
 
         if i <> j then
-          if IntSet.mem i edvars then
+          if BidSet.mem i edvars then
             s := Some (i,(ej,rhst))
-          else if IntSet.mem j edvars then
+          else if BidSet.mem j edvars then
             s := Some (j,(ei,lhst))
           else raise Not_found
 
       | BEXPR_name (i,_),x ->
-        if not (IntSet.mem i edvars) then raise Not_found;
+        if not (BidSet.mem i edvars) then raise Not_found;
         s := Some (i,(x,rhst))
 
       | x,BEXPR_name (i,_) ->
-        if not (IntSet.mem i edvars) then raise Not_found;
+        if not (BidSet.mem i edvars) then raise Not_found;
         s := Some (i,(x,lhst))
 
       | BEXPR_apply (f1,e1),BEXPR_apply(f2,e2) ->
@@ -1156,7 +1156,7 @@ let rec expr_unification counter sym_table
       tmgu,
       !mgu
 
-let setoflist ls = List.fold_left (fun s i -> IntSet.add i s) IntSet.empty ls
+let setoflist ls = List.fold_left (fun s i -> BidSet.add i s) BidSet.empty ls
 
 let expr_maybe_matches counter (sym_table:sym_table_t)
   (tvars:int list) (evars:int list)

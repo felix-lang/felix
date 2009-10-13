@@ -56,14 +56,14 @@ let remove_child childmap parent child =
 
 (* closure of index with respect to children, EXCLUDES self *)
 let rec descendants child_map index =
-  let d = ref IntSet.empty in
+  let d = ref BidSet.empty in
   let children = find_children child_map index in
   iter
   (fun i ->
-    if not (IntSet.mem i !d) then
+    if not (BidSet.mem i !d) then
     begin
-      d := IntSet.add i !d;
-      d := IntSet.union !d (descendants child_map i)
+      d := BidSet.add i !d;
+      d := BidSet.union !d (descendants child_map i)
     end
   )
   children

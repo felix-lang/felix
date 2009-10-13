@@ -20,8 +20,8 @@ let rec lvof x =
 
 let eliminate_init maybe_unused exes =
   List.filter begin function
-    | Flx_types.BEXE_init (_, i, _) -> not (Flx_set.IntSet.mem i maybe_unused)
-    | Flx_types.BEXE_assign (_, x, _) -> not (Flx_set.IntSet.mem (lvof x) maybe_unused)
+    | Flx_types.BEXE_init (_, i, _) -> not (Flx_types.BidSet.mem i maybe_unused)
+    | Flx_types.BEXE_assign (_, x, _) -> not (Flx_types.BidSet.mem (lvof x) maybe_unused)
     | _ -> true
   end exes
 
@@ -30,7 +30,7 @@ let eliminate_unused_pass state =
   (* Check for unused things .. possible, just a diagnostic for now *)
   let full_use = Flx_use.full_use_closure state.syms state.bsym_table in
   let partial_use = Flx_use.cal_use_closure state.syms state.bsym_table false in
-  let maybe_unused = Flx_set.IntSet.diff full_use partial_use in
+  let maybe_unused = Flx_types.BidSet.diff full_use partial_use in
 
   (* Iterate over every symbol and check if anyone's referencing it. *)
   Hashtbl.iter begin fun i (id, parent, sr, entry) ->
@@ -57,7 +57,7 @@ let eliminate_unused_pass state =
   end state.bsym_table;
 
   (* Delete all the unused symbols *)
-  Flx_set.IntSet.iter begin fun i->
+  Flx_types.BidSet.iter begin fun i->
     let id,_,_,_ = Hashtbl.find state.bsym_table i in
     (*
     print_endline ("Removing unused " ^ id ^ "<" ^ si i ^ ">");
@@ -65,7 +65,7 @@ let eliminate_unused_pass state =
     Hashtbl.remove state.bsym_table i
   end maybe_unused;
 
-  Flx_set.IntSet.is_empty maybe_unused
+  Flx_types.BidSet.is_empty maybe_unused
 
 let eliminate_unused state =
   while not (eliminate_unused_pass state) do

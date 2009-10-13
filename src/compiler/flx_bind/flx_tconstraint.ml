@@ -50,15 +50,15 @@ let build_constraint_element syms bt sr i p1 =
   ;
   *)
   let varset1 =
-    fold_left (fun s i -> IntSet.add i s)
-    IntSet.empty any_vars1
+    fold_left (fun s i -> BidSet.add i s)
+    BidSet.empty any_vars1
   in
     let varset1 =
-    fold_left (fun s (i,_) -> IntSet.add i s)
+    fold_left (fun s (i,_) -> BidSet.add i s)
     varset1 as_vars1
   in
   let varset1 =
-    fold_left (fun s (i,_) -> IntSet.add i s)
+    fold_left (fun s (i,_) -> BidSet.add i s)
     varset1 explicit_vars1
   in
   let un = BTYP_tuple [] in (* the 'true' value of the type system *)
@@ -72,14 +72,14 @@ let build_constraint_element syms bt sr i p1 =
   | t -> [t]
   in
   let tyset ls =
-    let e = IntSet.empty in
+    let e = BidSet.empty in
     let un = BTYP_tuple [] in
     let lss = rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
     let fresh = !(syms.counter) in incr (syms.counter);
     let dflt =
       {
         pattern=BTYP_var (fresh,BTYP_type 0);
-        pattern_vars = IntSet.singleton fresh;
+        pattern_vars = BidSet.singleton fresh;
         assignments=[]
       },
       BTYP_void

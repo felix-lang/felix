@@ -323,9 +323,9 @@ let set_globals syms bsym_table =
   Hashtbl.iter (set_globals_for_symbol bsym_table uses) bsym_table
 
 let find_global_vars bsym_table =
-  let global_vars = ref IntSet.empty in
+  let global_vars = ref BidSet.empty in
   Hashtbl.iter begin fun i _ ->
-    if is_global_var bsym_table i then global_vars := IntSet.add i !global_vars
+    if is_global_var bsym_table i then global_vars := BidSet.add i !global_vars
   end bsym_table;
 
   !global_vars
@@ -335,7 +335,7 @@ let check_used used i =
 
 let check_all_used used ii =
   let all_used = ref true in
-  IntSet.iter (fun i -> if not (check_used used i)
+  BidSet.iter (fun i -> if not (check_used used i)
     then begin
       print_endline ("FOUND UNUSED VARIABLE " ^ string_of_bid i);
       all_used := false

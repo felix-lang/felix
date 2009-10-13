@@ -17,8 +17,8 @@ open Flx_child
 open Flx_call
 
 type aentry_t =
-  int *
-  (string * btypecode_t * tbexpr_t * IntSet.t)
+  bid_t *
+  (string * btypecode_t * tbexpr_t * BidSet.t)
 
 
 (* Parallel Assignment algorithm.
@@ -93,7 +93,7 @@ where
   name = the LHS target name for debug purpose
   t = the LHS type
   e = the RHS expression
-  u = an IntSet of all the symbols used in e
+  u = an BidSet of all the symbols used in e
       being a subset of the set of all the LHS variables
       but including any indirect use!
 
@@ -117,10 +117,10 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
     pinits
   in
   let fixdeps pinits =
-    let vars = fold_left (fun s (i,_) -> IntSet.add i s) IntSet.empty pinits in
+    let vars = fold_left (fun s (i,_) -> BidSet.add i s) BidSet.empty pinits in
     map
     (fun (i,(name,t,e,u)) ->
-      let u = IntSet.remove i (IntSet.inter u vars) in
+      let u = BidSet.remove i (BidSet.inter u vars) in
       i,(name,t,e,u)
     )
     pinits
@@ -130,7 +130,7 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
   (fun (i,(name,t,e,u)) ->
     print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.sym_table bsym_table e);
     print_string "  Depends: ";
-      IntSet.iter (fun i -> print_string (si i ^ ", ")) u;
+      BidSet.iter (fun i -> print_string (si i ^ ", ")) u;
     print_endline "";
   )
   pinits;
@@ -140,7 +140,7 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
   *)
   let depend pinits i j =
      let u = match assoc i pinits with _,_,_,u -> u in
-     IntSet.mem j u
+     BidSet.mem j u
   in
   (* return true if an assignment in inits depends on j *)
   let used j inits =
@@ -149,7 +149,7 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
   let rec aux ((head, middle, tail) as arg) = function
     | [] -> arg
     | (i,(name,ty,e,u)) as h :: ta ->
-      if IntSet.cardinal u = 0 then
+      if BidSet.cardinal u = 0 then
         aux (head,middle,h::tail) ta
       else if not (used i (middle @ ta)) then
         aux (h::head, middle, tail) ta
@@ -207,9 +207,9 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
       let name2 = "_tmp_" ^ name in
       parameters := (ty,k) :: !parameters;
       tmplist := k :: !tmplist;
-      let h' = k,(name2,ty,e,IntSet.empty) in
+      let h' = k,(name2,ty,e,BidSet.empty) in
       let e' = BEXPR_name (k,ts'),ty in
-      let t' = i,(name,ty,e',IntSet.empty) in
+      let t' = i,(name,ty,e',BidSet.empty) in
       aux3 (h' :: h, ta, t' :: t)
   in
   let m = aux3 ([],pinits,[]) in

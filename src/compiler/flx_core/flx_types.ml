@@ -14,7 +14,18 @@ type partial_order_result_t =
 
 open Flx_ast
 
+(** bid_t is the bound symbol index type, which is used to uniquely identifies
+ * the symbol. *)
 type bid_t = int
+
+(** Create a set type for bound symbol indices. *)
+module BidSet = Set.Make (
+  struct
+    type t = bid_t
+    let compare = compare
+  end
+)
+
 type plain_ivs_list_t = (id_t * bid_t * typecode_t) list
 type ivs_list_t = plain_ivs_list_t * vs_aux_t
 
@@ -95,7 +106,7 @@ type btpattern_t = {
   pattern: btypecode_t;
 
   (* pattern type variables, including 'any' vars *)
-  pattern_vars: Flx_set.IntSet.t;
+  pattern_vars: BidSet.t;
 
   (* assignments for 'as' vars *)
   assignments : (int * btypecode_t) list

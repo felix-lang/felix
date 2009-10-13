@@ -46,22 +46,22 @@ val cal_param_usage:
   unit
 
 val use_closure:
-  usage_table_t -> int -> IntSet.t
+  usage_table_t -> bid_t -> BidSet.t
 
 val child_use_closure:
-  IntSet.t -> usage_table_t -> int -> IntSet.t
+  BidSet.t -> usage_table_t -> bid_t -> BidSet.t
 
 val expr_uses:
  sym_state_t ->
- IntSet.t ->
+ BidSet.t ->
  usage_table_t ->
- IntSet.t ->
+ BidSet.t ->
  tbexpr_t ->
- IntSet.t
+ BidSet.t
 
 val expr_uses_unrestricted:
  sym_state_t ->
- IntSet.t ->
+ BidSet.t ->
  usage_table_t ->
  tbexpr_t ->
- IntSet.t
+ BidSet.t

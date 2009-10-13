@@ -344,7 +344,7 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
      in
      let nuvs = map (fun i -> BTYP_var (i,BTYP_type 0)) vis in
      let inst_ts' = map (tsubst inst_vs nuvs) inst_ts in
-     let vset = fold_left (fun acc i -> IntSet.add i acc) IntSet.empty vis in
+     let vset = fold_left (fun acc i -> BidSet.add i acc) BidSet.empty vis in
 
      (*
      let vset = fold_left (fun acc (_,i) -> IntSet.add i acc) IntSet.empty inst_vs' in

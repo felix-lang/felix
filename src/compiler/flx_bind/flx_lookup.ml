@@ -309,7 +309,7 @@ and lookup_qn_in_env'
   syms
   (env:env_t) rs
   (qn: qualified_name_t)
-  : entry_kind_t  * typecode_t list
+  : entry_kind_t * typecode_t list
 =
   match lookup_qn_in_env2' syms env rs qn with
     | NonFunctionEntry x,ts -> x,ts
@@ -450,14 +450,14 @@ and handle_typeset syms sr elt tset =
     a sequence of type patterns, not types.
 
   *)
-  let e = IntSet.empty in
+  let e = BidSet.empty in
   let un = BTYP_tuple [] in
   let lss = List.rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
   let fresh = !(syms.counter) in incr (syms.counter);
   let dflt =
     {
       pattern=BTYP_var (fresh,BTYP_type 0);
-      pattern_vars = IntSet.singleton fresh;
+      pattern_vars = BidSet.singleton fresh;
       assignments=[]
     },
     BTYP_void
@@ -717,10 +717,10 @@ and bind_type'
       let eqns = List.map (fun (j,t) -> j, bt t) eqns in
       let varset =
         let x =
-          List.fold_left (fun s (i,_) -> IntSet.add i s)
-          IntSet.empty explicit_vars
+          List.fold_left (fun s (i,_) -> BidSet.add i s)
+          BidSet.empty explicit_vars
         in
-          List.fold_left (fun s i -> IntSet.add i s)
+          List.fold_left (fun s i -> BidSet.add i s)
           x any_vars
       in
       (* HACK! GACK! we have to assume a variable in a pattern is
@@ -774,7 +774,7 @@ and bind_type'
         if !finished then
           print_endline "[bind_type] Warning: useless match case ignored"
         else
-          let mguvars = List.fold_left (fun s (i,_) -> IntSet.add i s) IntSet.empty mgu in
+          let mguvars = List.fold_left (fun s (i,_) -> BidSet.add i s) BidSet.empty mgu in
           if varset = mguvars then finished := true
     )
     ps

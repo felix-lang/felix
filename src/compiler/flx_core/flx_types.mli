@@ -9,6 +9,8 @@ type partial_order_result_t =
 ]
 
 type bid_t = int
+module BidSet : Set.S with type elt = bid_t
+
 type plain_ivs_list_t = (id_t * bid_t * typecode_t) list
 type ivs_list_t = plain_ivs_list_t * vs_aux_t
 
@@ -88,7 +90,7 @@ type btpattern_t = {
   pattern: btypecode_t;
 
   (* pattern type variables, including 'any' vars *)
-  pattern_vars: Flx_set.IntSet.t;
+  pattern_vars: BidSet.t;
 
   (* assignments for 'as' vars *)
   assignments : (int * btypecode_t) list

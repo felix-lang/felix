@@ -26,12 +26,6 @@ let hfind msg h k =
     print_endline ("flx_inline Hashtbl.find failed " ^ msg);
     raise Not_found
 
-module BidSet = IntSet
-
-let intset_of_list ls =
-  fold_left (fun s i -> IntSet.add i s) IntSet.empty ls
-
-
 let string_of_vs vs =
   "[" ^ catmap "," (fun (s,i)->s^"<"^si i^">") vs ^ "]"
 
@@ -1208,13 +1202,13 @@ and heavy_inline_calls
 
 and remove_unused_children syms (uses,child_map,bsym_table) i =
   let desc = descendants child_map i in
-  if desc <> IntSet.empty then begin
+  if desc <> BidSet.empty then begin
     (* all the descendants of a routine, excluding self *)
     (*
     print_endline "CANDIDATE FOR CHILD REMOVAL";
     print_function syms.sym_table bsym_table i;
-    print_endline ("Descendants of " ^ si i ^ " =" ^ IntSet.fold (fun j s -> s ^ " " ^ si j) desc "");
-    IntSet.iter (fun i-> print_function syms.sym_table bsym_table i) desc;
+    print_endline ("Descendants of " ^ si i ^ " =" ^ BidSet.fold (fun j s -> s ^ " " ^ si j) desc "");
+    BidSet.iter (fun i-> print_function syms.sym_table bsym_table i) desc;
     *)
 
 
@@ -1222,13 +1216,13 @@ and remove_unused_children syms (uses,child_map,bsym_table) i =
     let used = Flx_call.use_closure uses i in
 
     (*
-    print_endline ("Usage closure of " ^ si i ^ " =" ^ IntSet.fold (fun j s -> s ^ " " ^ si j) used "");
+    print_endline ("Usage closure of " ^ si i ^ " =" ^ BidSet.fold (fun j s -> s ^ " " ^ si j) used "");
     *)
     (* any desendants not used by this routine *)
-    let unused_descendants = IntSet.diff desc used in
+    let unused_descendants = BidSet.diff desc used in
 
     (* remove the item *)
-    IntSet.iter
+    BidSet.iter
     (fun i ->
       begin
         try
@@ -1272,7 +1266,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
 
       let exes = check_reductions syms bsym_table exes in
       let xcls = Flx_tailit.exes_get_xclosures syms exes in
-      IntSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bsym_table) excludes i) xcls;
+      BidSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bsym_table) excludes i) xcls;
 
       if syms.compiler_options.print_flag then
       print_endline ("HIB: Examining procedure " ^ id ^ "<" ^ string_of_bid i ^
@@ -1344,7 +1338,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
 
       let exes = check_reductions syms bsym_table exes in
       let xcls = Flx_tailit.exes_get_xclosures syms exes in
-      IntSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bsym_table) excludes i) xcls;
+      BidSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bsym_table) excludes i) xcls;
 
       if syms.compiler_options.print_flag then
       print_endline ("HIB:Examining function " ^ id ^ "<" ^ string_of_bid i ^
@@ -1409,9 +1403,9 @@ let heavy_inlining syms bsym_table child_map =
   let used = ref (!(syms.roots)) in
   let (uses,usedby) = Flx_call.call_data syms bsym_table in
 
-  while not (IntSet.is_empty !used) do
-    let i = IntSet.choose !used in
-    used := IntSet.remove i !used;
+  while not (BidSet.is_empty !used) do
+    let i = BidSet.choose !used in
+    used := BidSet.remove i !used;
     heavily_inline_bbdcl syms (uses,child_map,bsym_table) [i] i
   done;
 

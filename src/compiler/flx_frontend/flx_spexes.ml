@@ -20,8 +20,6 @@ open Flx_call
 
 type submode_t = [`Eager | `Lazy]
 
-module BidSet = IntSet
-
 (* this only updates the uses table not the usedby table,
   because inlining changes usage (obviously).
   we need it in particular for the is_recursive test,
@@ -474,16 +472,16 @@ let gen_body syms (uses,child_map,bsym_table) id
     if Hashtbl.length argmap > 0 then begin
       let closure = descendants child_map callee in
       (*
-         let cl = ref [] in IntSet.iter (fun i -> cl := i :: !cl) closure;
+         let cl = ref [] in BidSet.iter (fun i -> cl := i :: !cl) closure;
          print_endline ("Closure is " ^ catmap " " si !cl);
       *)
       let kids =
-        IntSet.fold
-        (fun i s -> IntSet.add (revar i) s)
+        BidSet.fold
+        (fun i s -> BidSet.add (revar i) s)
         closure
-        IntSet.empty
+        BidSet.empty
       in
-      IntSet.iter (fun i ->
+      BidSet.iter (fun i ->
         let id,parent,sr,entry = Hashtbl.find bsym_table i in
         match entry with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) ->

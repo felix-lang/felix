@@ -15,11 +15,9 @@ open Flx_exceptions
 open Flx_use
 open Flx_child
 
-module BidSet = IntSet
-
 let mk_remap counter d =
   let m = Hashtbl.create 97 in
-  IntSet.iter
+  BidSet.iter
   (fun i ->
     let n = !counter in
     incr counter;
@@ -430,14 +428,14 @@ let reparent_children syms (uses,child_map,bsym_table)
   );
   *)
   let closure = descendants child_map index in
-  assert (not (IntSet.mem index closure));
-  let revariable = fold_left (fun acc i -> IntSet.add i acc) closure extras in
+  assert (not (BidSet.mem index closure));
+  let revariable = fold_left (fun acc i -> BidSet.add i acc) closure extras in
   (*
-  let cl = ref [] in IntSet.iter (fun i -> cl := i :: !cl) closure;
+  let cl = ref [] in BidSet.iter (fun i -> cl := i :: !cl) closure;
   print_endline ("Closure is " ^ catmap " " si !cl);
   *)
   let revariable = mk_remap syms.counter revariable in
-  IntSet.iter
+  BidSet.iter
   (fun i ->
     let old_parent =
       match Hashtbl.find bsym_table i with id,oldp,_,_ -> oldp

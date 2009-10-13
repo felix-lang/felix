@@ -22,17 +22,17 @@ let is_typeset tss1 =
   | [] -> false
   | (p1,v1) ::t ->
     p1.assignments = [] &&
-    IntSet.cardinal p1.pattern_vars = 1 &&
+    BidSet.cardinal p1.pattern_vars = 1 &&
     match p1.pattern,v1 with 
     | BTYP_var (i,BTYP_type 0), BTYP_void
-      when i = IntSet.choose p1.pattern_vars -> 
+      when i = BidSet.choose p1.pattern_vars ->
       begin try 
         List.iter (fun (p,v) -> match p,v with
         | { assignments=[]; 
             pattern_vars=pvs; 
             pattern=BTYP_inst (_,[])
           },
-          BTYP_tuple [] when IntSet.is_empty pvs -> ()
+          BTYP_tuple [] when BidSet.is_empty pvs -> ()
         | _ -> raise Not_found
         )
         t;
@@ -68,8 +68,8 @@ let rec scancases syms tss1 tss2 = match (tss1, tss2) with
     if p1.assignments = [] 
     && p2.assignments = []
     then
-      if IntSet.is_empty (p1.pattern_vars) 
-      && IntSet.is_empty (p2.pattern_vars)
+      if BidSet.is_empty (p1.pattern_vars)
+      && BidSet.is_empty (p2.pattern_vars)
       then
         if type_eq syms.counter syms.sym_table p1.pattern p2.pattern
         && type_eq syms.counter syms.sym_table v1 v2
@@ -498,8 +498,8 @@ let consider syms env bt be luqn2 name
     let n = min (List.length curry_domains) (List.length arg_types) in
     let eqns = eqns @ List.combine (list_prefix curry_domains n) (list_prefix arg_types n) in
 
-    let dvars = ref IntSet.empty in
-    List.iter (fun (_,i)-> dvars := IntSet.add i !dvars) spec_vs;
+    let dvars = ref BidSet.empty in
+    List.iter (fun (_,i)-> dvars := BidSet.add i !dvars) spec_vs;
 
     (*
     print_endline "EQUATIONS ARE:";
@@ -508,7 +508,7 @@ let consider syms env bt be luqn2 name
     ;
     (* WRONG!! dunno why, but it is! *)
     print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
-      (IntSet.fold (fun i l-> i::l) !dvars [])
+      (BidSet.fold (fun i l-> i::l) !dvars [])
     );
     print_endline "...";
     *)
@@ -608,10 +608,10 @@ let consider syms env bt be luqn2 name
         *)
 
         let extra_eqns = ref [] in
-        let dvars = ref IntSet.empty in
+        let dvars = ref BidSet.empty in
         List.iter (fun (_,i)->
           if not (List.mem_assoc i !mgu) then (* mgu vars get eliminated *)
-          dvars := IntSet.add i !dvars
+          dvars := BidSet.add i !dvars
         )
         spec_vs;
 
@@ -685,7 +685,7 @@ let consider syms env bt be luqn2 name
              print_endline ("Adding equation " ^ sbt syms.sym_table t1 ^ " = " ^ sbt syms.sym_table t2);
              extra_eqns := (t1,t2) :: !extra_eqns;
              (*
-             dvars := IntSet.add i !dvars;
+             dvars := BidSet.add i !dvars;
              print_endline ("ADDING DEPENDENT VARIABLE " ^ si i);
              *)
 
@@ -709,7 +709,7 @@ let consider syms env bt be luqn2 name
            *)
 
            (* add wildcards to dependent variable set ?? *)
-           List.iter (fun i-> dvars := IntSet.add i !dvars) any_vars1;
+           List.iter (fun i-> dvars := BidSet.add i !dvars) any_vars1;
 
            (* add 'as' equations from patterns like
               t as v
@@ -752,7 +752,7 @@ let consider syms env bt be luqn2 name
         ;
         print_endline "...";
         print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
-          (IntSet.fold (fun i l-> i::l) !dvars [])
+          (BidSet.fold (fun i l-> i::l) !dvars [])
         );
         *)
         let maybe_extra_mgu =

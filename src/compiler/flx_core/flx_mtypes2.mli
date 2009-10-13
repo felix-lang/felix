@@ -46,7 +46,7 @@ type sym_state_t =
   compiler_options : felix_compiler_options_t;
   instances : instance_registry_t;
   include_files : string list ref;
-  roots : Flx_set.IntSet.t ref;
+  roots : Flx_types.BidSet.t ref;
   quick_names : (string, (int * Flx_types.btypecode_t list)) Hashtbl.t;
   mutable bifaces : Flx_types.biface_t list;
   mutable reductions : Flx_types.reduction_t list;

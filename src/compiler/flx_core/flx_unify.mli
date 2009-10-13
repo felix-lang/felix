@@ -13,9 +13,8 @@ val unification:
   int ref -> (* alpha conversion counter *)
   sym_table_t -> (* just for diagnostics *)
   (btypecode_t * btypecode_t) list ->
-  IntSet.t -> (* dependent variable set *)
-  (int * btypecode_t) list
-
+  BidSet.t -> (* dependent variable set *)
+  (bid_t * btypecode_t) list
 
 (** obtain the mgu of a set of type equations *)
 val maybe_unification:

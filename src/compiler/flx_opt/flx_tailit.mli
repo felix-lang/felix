@@ -20,4 +20,4 @@ val tailit:
 val exes_get_xclosures:
   sym_state_t ->
   bexe_t list ->
-  IntSet.t
+  BidSet.t

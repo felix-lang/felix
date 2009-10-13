@@ -21,12 +21,7 @@ let hfind msg h k =
     print_endline ("flx_inline Hashtbl.find failed " ^ msg);
     raise Not_found
 
-module BidSet = IntSet
-
 let ident x = x
-
-let intset_of_list ls =
-  fold_left (fun s i -> IntSet.add i s) IntSet.empty ls
 
 (* THIS CODE JUST COUNTS APPLICATIONS *)
 let find_mkproc_expr mkproc_map e =
