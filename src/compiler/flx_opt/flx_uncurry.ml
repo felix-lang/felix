@@ -144,7 +144,7 @@ let uncurry_gen syms bsym_table child_map : int =
     | [BEXE_fun_return (sr2,(BEXPR_closure (f,ts),_))]
       when is_child child_map i f && vs_is_ts vs ts
       ->
-      let k = !(syms.counter) in incr (syms.counter);
+      let k = fresh_bid syms.counter in
       Hashtbl.add uncurry_map i (f,k,0);
       if syms.compiler_options.print_flag then
       print_endline ("Detected curried function " ^ id ^ "<" ^ string_of_bid i

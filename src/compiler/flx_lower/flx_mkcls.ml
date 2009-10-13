@@ -24,7 +24,7 @@ let make_closure_state syms =
   }
 
 let gen_closure state bsym_table i =
-  let j = !(state.syms.counter) in incr state.syms.counter;
+  let j = fresh_bid state.syms.counter in
   let id,parent,sr,entry = Hashtbl.find bsym_table i in
   match entry with
   | BBDCL_proc (props,vs,ps,c,reqs) ->
@@ -33,7 +33,7 @@ let gen_closure state bsym_table i =
     in
     let ts = List.map (fun (_,i) -> BTYP_var (i,BTYP_type 0)) vs in
     let ps,a =
-      let n = !(state.syms.counter) in incr state.syms.counter;
+      let n = fresh_bid state.syms.counter in
       let name = "_a" ^ string_of_bid n in
       let ventry = BBDCL_val (vs,arg_t) in
       Hashtbl.add bsym_table n (name,Some j,sr,ventry);
@@ -56,7 +56,7 @@ let gen_closure state bsym_table i =
       match ps with | [t] -> t | ps -> BTYP_tuple ps
     in
     let ps,a =
-      let n = !(state.syms.counter) in incr state.syms.counter;
+      let n = fresh_bid state.syms.counter in
       let name = "_a" ^ string_of_bid n in
       let ventry = BBDCL_val (vs,arg_t) in
       Hashtbl.add bsym_table n (name,Some j,sr,ventry);

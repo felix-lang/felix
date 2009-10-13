@@ -202,7 +202,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
   in
 
   let jump_done = ref false in
-  let lc = !(syms.counter) in incr (syms.counter);
+  let lc = fresh_bid syms.counter in
   let start_label = "start_" ^ string_of_bid lc in
 
   (* note reverse order *)
@@ -253,7 +253,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
         let pix =
           try assoc t !parameters
           with Not_found ->
-            let pix = !(syms.counter) in incr syms.counter;
+            let pix = fresh_bid syms.counter in
             parameters := (t,pix) :: !parameters;
             pix
         in

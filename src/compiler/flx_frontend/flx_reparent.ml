@@ -17,14 +17,7 @@ open Flx_child
 
 let mk_remap counter d =
   let m = Hashtbl.create 97 in
-  BidSet.iter
-  (fun i ->
-    let n = !counter in
-    incr counter;
-    Hashtbl.add m i n
-  )
-  d
-  ;
+  BidSet.iter (fun i -> Hashtbl.add m i (fresh_bid counter)) d;
   m
 
 (* replace callee type variables with callers *)
@@ -499,7 +492,7 @@ let specialise_symbol syms (uses,child_map,bsym_table)
 =
   try Hashtbl.find syms.transient_specialisation_cache (index,ts)
   with Not_found ->
-    let k = !(syms.counter) in incr (syms.counter);
+    let k = fresh_bid syms.counter in
     let revariable =
        reparent_children syms (uses,child_map,bsym_table)
        caller_vs callee_vs_len index (Some k) relabel varmap rescan_flag []

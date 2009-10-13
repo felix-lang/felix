@@ -203,7 +203,7 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
     | [] -> rev h @ t
     | [_] -> assert false
     | (i,(name,ty,e,u)) :: ta ->
-      let k = !(syms.counter) in incr syms.counter;
+      let k = fresh_bid syms.counter in
       let name2 = "_tmp_" ^ name in
       parameters := (ty,k) :: !parameters;
       tmplist := k :: !tmplist;

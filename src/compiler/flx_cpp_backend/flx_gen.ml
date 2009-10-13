@@ -828,8 +828,7 @@ let gen_exe filename
       then
       "      //call to empty procedure " ^ id ^ " elided\n"
       else begin
-        let n = !counter in
-        incr counter;
+        let n = fresh_bid counter in
         let the_display =
           let d' =
             map begin fun (i,vslen) ->
@@ -1056,8 +1055,7 @@ let gen_exe filename
       | `Local _ ->
         "      if(" ^ ge sr e ^ ") goto " ^ cid_of_flxid s ^ ";\n"
       | `Nonlocal (pc,frame) ->
-        let skip = "_" ^ si !(syms.counter) in
-        incr syms.counter;
+        let skip = "_" ^ string_of_bid (fresh_bid syms.counter) in
         let not_e = ce_prefix "!" (ge' sr e) in
         let not_e = string_of_cexpr not_e in
         "      if("^not_e^") goto " ^ cid_of_flxid skip ^ ";\n"  ^
@@ -1227,8 +1225,7 @@ let gen_exe filename
 
       | Procedure ->
         needs_switch := true;
-        let n = !counter in
-        incr counter;
+        let n = fresh_bid counter in
         (if with_comments then
         "      //"^ src_str ^ "\n"
         else "") ^
@@ -1273,7 +1270,7 @@ let gen_exe filename
         | BBDCL_val (_,t) -> t
         | _ -> syserr sr "Expected read argument to be variable"
       in
-      let n = !counter in incr counter;
+      let n = fresh_bid counter in
       needs_switch := true;
       "      //read variable\n" ^
       "      p_svc = &" ^ get_var_ref syms bsym_table this index ts^";\n" ^
@@ -1283,7 +1280,7 @@ let gen_exe filename
 
 
     | BEXE_yield (sr,e) ->
-      let labno = !counter in incr counter;
+      let labno = fresh_bid counter in
       let code =
         "      FLX_SET_PC(" ^ string_of_bid labno ^ ")\n" ^
         (
@@ -1559,7 +1556,7 @@ let gen_C_function_body filename syms bsym_table child_map
                   | `PFun -> BTYP_function (BTYP_void,t)
                   | _ -> t
                 in
-                let n = !counter in incr counter;
+                let n = fresh_bid counter in
                 if Hashtbl.mem syms.instances (i,ts) && not (t = BTYP_tuple [])
                 then s ^
                   (if String.length s > 0 then ", " else " ") ^

@@ -640,7 +640,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
           begin try
             Hashtbl.find syms.variant_map (srct,dstt)
           with Not_found ->
-            let i = !(syms.counter) in incr (syms.counter);
+            let i = fresh_bid syms.counter in
             Hashtbl.add syms.variant_map (srct,dstt) i;
             i
         end

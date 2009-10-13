@@ -63,14 +63,11 @@ let vars_subst ls t = List.fold_left var_subst t ls
 let rec alpha counter t =
   match t with
   | BTYP_typefun (ps,r,b) ->
-    let fresh = !counter in
-    let n = List.length ps in
-    counter := !counter + n;
-    let remap_list = List.map2 (fun (i,t) j -> i,fresh+j) ps (nlist n) in
-    let remap i = List.assoc i remap_list in
-    let cvt t = alpha counter (vars_subst remap_list t) in
-    let ps = List.map (fun (i,t) -> remap i,t) ps in
-    BTYP_typefun (ps, cvt r, cvt b)
+      let remap_list = List.map (fun (i,_) -> i, fresh_bid counter) ps in
+      let remap i = List.assoc i remap_list in
+      let cvt t = alpha counter (vars_subst remap_list t) in
+      let ps = List.map (fun (i,t) -> remap i,t) ps in
+      BTYP_typefun (ps, cvt r, cvt b)
   | t -> map_btype (alpha counter) t
 
 let term_subst counter t1 i t2 =

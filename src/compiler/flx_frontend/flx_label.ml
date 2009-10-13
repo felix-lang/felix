@@ -28,7 +28,7 @@ let get_labels bsym_table counter exes =
         (*
         print_endline ("Label " ^ s);
         *)
-        Hashtbl.add labels s !counter; incr counter
+        Hashtbl.add labels s (fresh_bid counter)
       | _ -> ()
     )
     exes

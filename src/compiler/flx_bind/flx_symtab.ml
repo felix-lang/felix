@@ -13,14 +13,15 @@ let null_tab = Hashtbl.create 3
 
 (* use fresh variables, but preserve names *)
 let mkentry syms (vs:ivs_list_t) i =
-  let n = List.length (fst vs) in
-  let base = !(syms.Flx_mtypes2.counter) in
-  syms.Flx_mtypes2.counter := !(syms.Flx_mtypes2.counter) + n;
-  let ts = List.map (fun i -> BTYP_var (i+base,BTYP_type 0)) (Flx_list.nlist n) in
-  let vs = List.map2 (fun i (n,_,_) -> n,i+base) (Flx_list.nlist n) (fst vs) in
+  let is = List.map
+    (fun _ -> Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter)
+    (fst vs)
+  in
+  let ts = List.map (fun i -> BTYP_var (i, BTYP_type 0)) is in
+  let vs = List.map2 (fun i (n,_,_) -> n,i) is (fst vs) in
   (*
-  print_endline ("Make entry " ^ string_of_int i ^ ", " ^ "vs =" ^
-    Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^ ">") vs ^
+  print_endline ("Make entry " ^ string_of_bid ^ ", " ^ "vs =" ^
+    Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs ^
     ", ts=" ^ Flx_util.catmap "," (Flx_print.sbt syms.Flx_mtypes2.sym_table) ts
   );
   *)
@@ -142,11 +143,10 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
 let make_ivs ?(print=false) level counter (vs, con) : ivs_list_t =
   let ivs =
     List.map begin fun (tid, tpat) ->
-      let n = !counter in
-      incr counter;
+      let n = Flx_mtypes2.fresh_bid counter in
       if print then
-        print_endline ("//  " ^ Flx_util.spaces level ^ string_of_int n ^
-        " -> " ^ tid ^ " (type variable)");
+        print_endline ("//  " ^ Flx_util.spaces level ^
+          Flx_print.string_of_bid n ^ " -> " ^ tid ^ " (type variable)");
       tid, n, tpat
     end vs
   in
@@ -263,8 +263,7 @@ and build_table_for_dcl
         (* print_endline ("SPECIAL " ^ id ^ string_of_int n); *)
         n
     | None ->
-        let n = !counter in incr counter;
-        n
+        Flx_mtypes2.fresh_bid counter
   in
 
   (* Update the type variable list to include the index. *)
@@ -360,7 +359,7 @@ and build_table_for_dcl
     let ips = ref [] in
 
     List.iter begin fun (k, name, typ, dflt) ->
-      let n = !counter in incr counter;
+      let n = Flx_mtypes2.fresh_bid counter in
 
       if print_flag then
         print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
@@ -389,7 +388,7 @@ and build_table_for_dcl
   let add_simple_parameters parent ps =
     let ips = ref [] in
     List.iter begin fun (name, typ) ->
-      let n = !counter in incr counter;
+      let n = Flx_mtypes2.fresh_bid counter in
 
       if print_flag then
         print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
@@ -602,7 +601,7 @@ and build_table_for_dcl
       let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
 
       (* Get a unique index for the _init_ function. *)
-      let n' = !counter in incr counter;
+      let n' = Flx_mtypes2.fresh_bid counter in
 
       if print_flag then
         print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n' ^
@@ -885,7 +884,7 @@ and build_table_for_dcl
       let piname = TYP_name (sr,id,[]) in
 
       (* XXX: What's the _repr_ function for? *)
-      let n_repr = !(syms.Flx_mtypes2.counter) in incr (syms.Flx_mtypes2.counter);
+      let n_repr = Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter in
 
       (* Add the _repr_ function to the symbol table. *)
       add_symbol n_repr "_repr_"
@@ -895,7 +894,7 @@ and build_table_for_dcl
       add_function priv_name_map "_repr_" n_repr;
 
       (* XXX: What's the _make_ function for? *)
-      let n_make = !(syms.Flx_mtypes2.counter) in incr (syms.Flx_mtypes2.counter);
+      let n_make = Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter in
 
       (* Add the _make_ function to the symbol table. *)
       add_symbol n_make ("_make_" ^ id)
@@ -1002,8 +1001,8 @@ and build_table_for_dcl
         end true its
       in
       List.iter begin fun (component_name, ctor_idx, vs, t) ->
-        let dfn_idx = !counter in incr counter; (* constructor *)
-        let match_idx = !counter in incr counter; (* matcher *)
+        let dfn_idx = Flx_mtypes2.fresh_bid counter in (* constructor *)
+        let match_idx = Flx_mtypes2.fresh_bid counter in (* matcher *)
 
         (* existential type variables *)
         let evs = make_ivs vs in

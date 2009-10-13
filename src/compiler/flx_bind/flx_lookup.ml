@@ -33,15 +33,14 @@ let unit_t = BTYP_tuple []
 
 (* use fresh variables, but preserve names *)
 let mkentry syms (vs:ivs_list_t) i =
-  let n = List.length (fst vs) in
-  let base = !(syms.counter) in syms.counter := !(syms.counter) + n;
+  let is = List.map (fun _ -> fresh_bid syms.counter) (fst vs) in
   let ts = List.map (fun i ->
     (*
     print_endline ("[mkentry] Fudging type variable type " ^ si i);
     *)
-    BTYP_var (i+base,BTYP_type 0)) (nlist n)
+    BTYP_var (i, BTYP_type 0)) is
   in
-  let vs = List.map2 (fun i (n,_,_) -> n,i+base) (nlist n) (fst vs) in
+  let vs = List.map2 (fun i (n,_,_) -> n,i) is (fst vs) in
   {base_sym=i; spec_vs=vs; sub_ts=ts}
 
 
@@ -453,7 +452,7 @@ and handle_typeset syms sr elt tset =
   let e = BidSet.empty in
   let un = BTYP_tuple [] in
   let lss = List.rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
-  let fresh = !(syms.counter) in incr (syms.counter);
+  let fresh = fresh_bid syms.counter in
   let dflt =
     {
       pattern=BTYP_var (fresh,BTYP_type 0);
@@ -987,9 +986,7 @@ and bind_type'
       (fun (name,mt) ->
         name,
         bt mt,
-        let n = !(syms.counter) in
-        incr (syms.counter);
-        n
+        fresh_bid syms.counter
       )
       ps
     in
@@ -5303,7 +5300,7 @@ and review_entry syms vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_t
        match invs,ints with
        | h::t,h'::t' -> aux t t' (h::outvs) (h'::outts)
        | h::t,[] ->
-         let i = !(syms.counter) in incr syms.counter;
+         let i = fresh_bid syms.counter in
          let (name,_) = h in
          vs := (name,i)::!vs;
          (*

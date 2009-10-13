@@ -559,7 +559,7 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
     let n =
       match ts with
       | [] -> i
-      | _ -> let n = !(syms.counter) in incr (syms.counter); n
+      | _ -> fresh_bid syms.counter
     in
     Hashtbl.add syms.instances (i,ts) n;
     n

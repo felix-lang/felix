@@ -75,7 +75,7 @@ let build_constraint_element syms bt sr i p1 =
     let e = BidSet.empty in
     let un = BTYP_tuple [] in
     let lss = rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
-    let fresh = !(syms.counter) in incr (syms.counter);
+    let fresh = fresh_bid syms.counter in
     let dflt =
       {
         pattern=BTYP_var (fresh,BTYP_type 0);

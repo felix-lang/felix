@@ -25,8 +25,7 @@ let register_type_nr syms t =
     if not (Hashtbl.mem syms.registry t)
     then begin
       let () = check_recursion t in
-      let n = !(syms.counter) in
-      incr syms.counter;
+      let n = fresh_bid syms.counter in
       if syms.compiler_options.print_flag then
       print_endline ("//Register type " ^ string_of_bid n ^ ": " ^
         string_of_btypecode syms.sym_table t);

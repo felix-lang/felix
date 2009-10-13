@@ -73,9 +73,8 @@ let mk_label_map syms exes =
   let h = Hashtbl.create 97 in
   let aux = function
   | BEXE_label (sr,s) ->
-    let n = !(syms.counter) in
-    incr syms.counter;
-    let s' =  "_" ^ si n in
+    let n = fresh_bid syms.counter in
+    let s' =  "_" ^ string_of_bid n in
     Hashtbl.add h s s'
   | _ -> ()
   in
@@ -152,7 +151,7 @@ let call_lifting syms (uses,child_map,bsym_table) caller caller_vs callee ts a a
 
     (* replace all function returns with tailed calls *)
     let body2 = ref [] in
-    let n = !(syms.counter) in incr (syms.counter);
+    let n = fresh_bid syms.counter in
     let end_label = "_end_call_lift_" ^ string_of_bid n in
     body2 := BEXE_label (sr,end_label) :: !body2;
     iter
@@ -268,7 +267,7 @@ let inline_function syms (uses,child_map,bsym_table) caller caller_vs callee ts 
     *)
     (* replace all function returns with variable initialisations *)
     let body2 = ref [] in
-    let n = !(syms.counter) in incr (syms.counter);
+    let n = fresh_bid syms.counter in
     let end_label = "_end_inline_" ^ id ^ "_" ^ string_of_bid n in
     let t = ref None in
     let end_label_used = ref false in
@@ -787,7 +786,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
           *)
 
           (* create a new variable *)
-          let urv = !(syms.counter) in incr (syms.counter);
+          let urv = fresh_bid syms.counter in
           let urvid = "_genout_urv" ^ string_of_bid urv in
           add_child child_map caller urv;
           add_use uses caller urv sr;
@@ -887,7 +886,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
                   print_endline ("Special inline " ^ si caller ^" calls " ^ si callee);
                   *)
                   (* GENERAL CASE -- we need to add a variable *)
-                  let urv = !(syms.counter) in incr (syms.counter);
+                  let urv = fresh_bid syms.counter in
                   (* inline the code, replacing returns with variable inits *)
                   let revariable,xs =
                      inline_function syms (uses,child_map,bsym_table) caller caller_vs callee ts a urv

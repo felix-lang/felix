@@ -14,7 +14,7 @@ let unravel syms bsym_table e =
   let get e =
     try eassoc e !sube
     with Not_found ->
-      let n = !(syms.Flx_mtypes2.counter) in incr (syms.Flx_mtypes2.counter);
+      let n = Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter in
       let name = "_tmp" ^ Flx_print.string_of_bid n in
       sube := (e, name) :: !sube;
       name

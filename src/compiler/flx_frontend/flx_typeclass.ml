@@ -334,14 +334,7 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
      ;
      *)
      (* solve for vs' *)
-     let v0 = !(syms.counter) in
-     let n = length inst_vs in
-     let vis =  (* list of ints from v0 to v0+n-1 *)
-       let rec aux i o = match i with
-       | 0 -> o
-       | _ -> aux (i-1) ((v0+i-1)::o)
-       in aux n []
-     in
+     let vis = List.map (fun _ -> fresh_bid syms.counter) inst_vs in
      let nuvs = map (fun i -> BTYP_var (i,BTYP_type 0)) vis in
      let inst_ts' = map (tsubst inst_vs nuvs) inst_ts in
      let vset = fold_left (fun acc i -> BidSet.add i acc) BidSet.empty vis in

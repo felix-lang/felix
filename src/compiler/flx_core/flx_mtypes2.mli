@@ -59,4 +59,6 @@ type sym_state_t =
 
 val make_syms: felix_compiler_options_t -> sym_state_t
 
+val fresh_bid: Flx_types.bid_t ref -> Flx_types.bid_t
+
 module Drules : Map.S with type key = string

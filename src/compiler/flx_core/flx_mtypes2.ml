@@ -73,6 +73,11 @@ let make_syms options =
     transient_specialisation_cache = Hashtbl.create 97;
   }
 
+let fresh_bid counter =
+  let bid = !counter in
+  incr counter;
+  bid
+
 module VarMap = StringMap
 type varmap_t = string_string_map_t
 

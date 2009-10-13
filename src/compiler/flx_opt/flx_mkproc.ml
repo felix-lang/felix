@@ -64,7 +64,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       Hashtbl.replace mkproc_map f (p,n+1);
 
       (* create a new variable *)
-      let k = !(syms.counter) in incr (syms.counter);
+      let k = fresh_bid syms.counter in
       let vid = "_mkp_" ^ string_of_bid k in
       let vardecl = BBDCL_var (vs,ret) in
       Hashtbl.add bsym_table k (vid,Some this,sr,vardecl);
@@ -157,7 +157,7 @@ let mkproc_gen syms bsym_table child_map =
   Hashtbl.iter
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-    let k = !(syms.counter) in incr (syms.counter);
+    let k = fresh_bid syms.counter in
     Hashtbl.add mkproc_map i (k,0);
     if syms.compiler_options.print_flag then
     print_endline ("Detected function to make into a proc? " ^ id ^ "<" ^
@@ -278,7 +278,7 @@ let mkproc_gen syms bsym_table child_map =
         end;
 
         (* make new parameter: note the name is remapped to _k_mkproc below *)
-        let vix = !(syms.counter) in incr (syms.counter);
+        let vix = fresh_bid syms.counter in
         let vdcl = BBDCL_var (vs,BTYP_pointer ret) in
         let vid = "_" ^ string_of_bid vix in
         let ps = ps @ [{pindex=vix; pkind=`PVal; ptyp=BTYP_pointer ret; pid=vid}] in

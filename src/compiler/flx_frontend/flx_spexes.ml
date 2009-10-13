@@ -181,9 +181,8 @@ let gen_body syms (uses,child_map,bsym_table) id
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let end_label_uses = ref 0 in
   let end_label =
-    let end_index = !(syms.counter) in
-    incr syms.counter;
-    "_end_" ^ (si end_index)
+    let end_index = fresh_bid syms.counter in
+    "_end_" ^ (string_of_bid end_index)
   in
 
 
@@ -321,11 +320,10 @@ let gen_body syms (uses,child_map,bsym_table) id
     (*
     if inline_method = `Eager then begin
       (* create a variable for the parameter *)
-      let parameter = !(syms.counter) in
-      incr syms.counter;
-      let param_id = "_p" ^ si parameter in
+      let parameter = fresh_bid syms.counter in
+      let param_id = "_p" ^ string_of_bid parameter in
       (*
-      print_endline ("Parameter assigned index " ^ si parameter);
+      print_endline ("Parameter assigned index " ^ string_of_bid parameter);
       *)
 
       (* create variables for parameter components *)
@@ -407,9 +405,8 @@ let gen_body syms (uses,child_map,bsym_table) id
       handle_arg b argmap index argument kind
     | _ ->
       (* create a variable for the parameter *)
-      let parameter = !(syms.counter) in
-      incr syms.counter;
-      let param_id = "_p" ^ si parameter in
+      let parameter = fresh_bid syms.counter in
+      let param_id = "_p" ^ string_of_bid parameter in
       (*
       print_endline ("Parameter assigned index " ^ si parameter);
       *)

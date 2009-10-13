@@ -179,7 +179,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     (collate_namespaces syms sts))
   in
   let sr = src_of_expr e in
-  let seq () = let n = !(syms.counter) in incr (syms.counter); n in
+  let seq () = fresh_bid syms.counter in
   match e with
 
   | EXPR_patvar _
@@ -686,7 +686,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     let props = ref [] in
     let decls = ref [] in
     let mkreq s kind =
-      let n = !(syms.counter) in incr syms.counter;
+      let n = fresh_bid syms.counter in
       let n = "_req_" ^ string_of_bid n in
       let dcl = Dcl (sr,n,ix,access,dfltvs,DCL_insert (s,kind,NREQ_true)) in
       decls := dcl :: !decls;
@@ -731,7 +731,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   let rsts name vs access sts = List.concat (List.map (rst syms name access vs)
     (collate_namespaces syms sts))
   in
-  let seq () = let n = !(syms.counter) in incr (syms.counter); n in
+  let seq () = fresh_bid syms.counter in
   (* add _root headers and bodies as requirements for all
     bindings defined in this entity
   *)
