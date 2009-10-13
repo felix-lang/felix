@@ -418,17 +418,9 @@ try
   ;
   print_debug "//GENERATING C++: collect types";
   let types = ref [] in
-    Hashtbl.iter
-    (fun t index-> types := (index, t) :: !types)
-    syms.registry
-  ;
-  let types =
-    List.sort
-    (
-      fun a1 a2 -> compare (fst a1) (fst a2)
-    )
-    !types
-  in
+  Hashtbl.iter (fun t index -> types := (index, t) :: !types) syms.registry;
+
+  let types = List.sort (fun a1 a2 -> compare (fst a1) (fst a2)) !types in
   (*
   List.iter
   (fun (_,t) -> print_endline (string_of_btypecode sym_table t))
