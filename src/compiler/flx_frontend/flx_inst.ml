@@ -401,7 +401,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     print_endline ("Handling requirements of fun " ^ id);
     *)
     if length vs <> length ts then
-      print_endline ("For fun " ^ id ^ " vs=" ^ print_bvs vs ^
+      print_endline ("For fun " ^ id ^ " vs=" ^ string_of_bvs vs ^
       ", but ts=" ^ catmap "," (sbt syms.sym_table) ts)
     ;
     assert (length vs = length ts);

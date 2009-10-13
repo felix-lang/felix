@@ -128,13 +128,13 @@ val print_bsym_table:
 (** [string_of_name_map name-map] converts the [name-map] to a string. *)
 val string_of_name_map: name_map_t -> string
 
-val print_vs: vs_list_t -> string
-val print_ivs: ivs_list_t -> string
+val string_of_vs: vs_list_t -> string
+val string_of_ivs: ivs_list_t -> string
 
 val string_of_ast_term: int -> ast_term_t -> string
 val string_of_string: string -> string
 val string_of_bquals: sym_table_t -> btype_qual_t list -> string
-val print_bvs: bvs_t -> string
+val string_of_bvs: bvs_t -> string
 val string_of_code_spec: code_spec_t -> string
 val string_of_raw_reqs: raw_req_expr_t -> string
 val string_of_ikind: ikind_t -> string

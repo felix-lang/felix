@@ -226,7 +226,7 @@ and string_of_expr (e:expr_t) =
     "(" ^ se e1 ^ "." ^ se e2 ^  ")"
 
   | EXPR_lambda (_,(vs,paramss,ret, sts)) ->
-    "(fun " ^ print_vs vs ^
+    "(fun " ^ string_of_vs vs ^
     catmap " "
     (fun ps -> "(" ^ string_of_parameters ps ^ ")") paramss
     ^
@@ -480,7 +480,7 @@ and qualified_name_of_index_with_vs sym_table index =
     | Some index' ->
       qualified_name_of_index_with_vs sym_table index' ^
       id ^
-      print_ivs vs ^
+      string_of_ivs vs ^
       "::"
     | None -> ""
       (* If this entity has no parent, its the root module,
@@ -529,10 +529,10 @@ and get_label i =
     let ch = Char.chr (i mod 26 + Char.code('a')-1) in
     get_label (i/26) ^ String.make 1 ch
 
-and print_fixpoints depth fixlist =
+and string_of_fixpoints depth fixlist =
   match fixlist with
   | (d,lab) :: t when d = depth ->
-    let txt,lst = print_fixpoints depth t in
+    let txt,lst = string_of_fixpoints depth t in
     " as " ^ lab ^ " " ^ txt, lst
   | _ -> "", fixlist
 
@@ -679,7 +679,7 @@ and sb sym_table depth fixlist counter prec tc =
          "): " ^ sbt 0 ret ^ "=" ^ sbt 8 body
        )
   in
-    let txt,lst = print_fixpoints depth !fixlist in
+    let txt,lst = string_of_fixpoints depth !fixlist in
     fixlist := lst;
     if txt = "" then
       if iprec >= prec then "(" ^ term ^ ")"
@@ -884,40 +884,40 @@ and string_of_maybe_typecode = function
   | TYP_patany _ -> ""
   | t -> ": " ^ string_of_typecode t
 
-and print_tconstraint = function
+and string_of_tconstraint = function
   | TYP_tuple [] -> ""
   | TYP_intersect [TYP_tuple []] -> ""
   | t -> let x = string_of_typecode t in
     if x <> "unit" then " where " ^ x else ""
 
-and print_tclass_req qn = string_of_qualified_name qn
+and string_of_tclass_req qn = string_of_qualified_name qn
 
-and print_tclass_reqs = function
+and string_of_tclass_reqs = function
   | [] -> ""
-  | t -> " with " ^ catmap "," print_tclass_req t
+  | t -> " with " ^ catmap "," string_of_tclass_req t
 
-and print_tcon {raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} =
-  print_tconstraint tcon ^ print_tclass_reqs rtcr
+and string_of_tcon {raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} =
+  string_of_tconstraint tcon ^ string_of_tclass_reqs rtcr
 
-and print_ivs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
+and string_of_ivs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
   match vs,tcon,rtcr with
   | [],TYP_tuple [],[] -> ""
   | _ ->
     "[" ^ cat ", " (map (fun (name,ix,tpat) -> name ^ string_of_maybe_typecode tpat) vs) ^
-    print_tcon con ^
+    string_of_tcon con ^
     "]"
 
-and print_vs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
+and string_of_vs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
   match vs,tcon,rtcr with
   | [],TYP_tuple [],[] -> ""
   | _ ->
     "[" ^
     cat ", "
     (map (fun (name,tpat) -> name ^ string_of_maybe_typecode tpat) vs) ^
-    print_tcon con ^
+    string_of_tcon con ^
     "]"
 
-and print_bvs = function
+and string_of_bvs = function
   | [] -> ""
   | vs ->
     "[" ^
@@ -929,7 +929,7 @@ and print_bvs = function
     ) ^
     "]"
 
-and print_bvs_cons sym_table vs cons = match vs,cons with
+and string_of_bvs_cons sym_table vs cons = match vs,cons with
  | [],BTYP_tuple [] -> ""
  | vs,cons ->
    "[" ^ catmap "," (fun (s,i)->s^"<"^si i^">") vs ^
@@ -937,7 +937,7 @@ and print_bvs_cons sym_table vs cons = match vs,cons with
    else " where " ^ sbt sym_table cons) ^
    "]"
 
-and print_inst sym_table = function
+and string_of_inst sym_table = function
   | [] -> ""
   | ts ->
     "[" ^
@@ -1071,7 +1071,7 @@ and string_of_class_component level mem =
   | `MemberCtor (name,mix,typ,cc) -> "ctor",name,mix,dfltvs,typ,cc
   in
     (spaces (level+1)) ^
-    kind ^ " " ^ name ^ print_vs vs ^ ": " ^ string_of_typecode ty ^
+    kind ^ " " ^ name ^ string_of_vs vs ^ ": " ^ string_of_typecode ty ^
     (match cc with None -> "" | Some cc -> string_of_code_spec cc) ^
     ";"
 
@@ -1133,7 +1133,7 @@ and string_of_statement level s =
   | STMT_comment (_,s) -> spaces level ^ "// " ^ s
 
   | STMT_open (_,vs,n) ->
-    spaces level ^ "open" ^ print_vs vs ^ " " ^ sqn n ^ ";"
+    spaces level ^ "open" ^ string_of_vs vs ^ " " ^ sqn n ^ ";"
 
   | STMT_inject_module (_,n) ->
     spaces level ^ "inherit " ^ sqn n ^ ";"
@@ -1145,22 +1145,22 @@ and string_of_statement level s =
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
 
   | STMT_type_alias (_,t1,vs,t2) ->
-    spaces level ^ "typedef " ^ t1 ^ print_vs vs ^
+    spaces level ^ "typedef " ^ t1 ^ string_of_vs vs ^
     " = " ^
     string_of_typecode t2 ^ ";"
 
   | STMT_inherit (_,name,vs,qn) ->
-    spaces level ^ "inherit " ^ name ^ print_vs vs ^
+    spaces level ^ "inherit " ^ name ^ string_of_vs vs ^
     " = " ^
     string_of_qualified_name qn ^ ";"
 
   | STMT_inherit_fun (_,name,vs,qn) ->
-    spaces level ^ "inherit fun " ^ name ^ print_vs vs ^
+    spaces level ^ "inherit fun " ^ name ^ string_of_vs vs ^
     " = " ^
     string_of_qualified_name qn ^ ";"
 
   | STMT_untyped_module (_,name, vs,sts)  ->
-    spaces level ^ "module " ^ name ^ print_vs vs ^
+    spaces level ^ "module " ^ name ^ string_of_vs vs ^
     " = " ^
     "\n" ^
     string_of_compound level sts
@@ -1169,7 +1169,7 @@ and string_of_statement level s =
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
     in
-    spaces level ^ "struct " ^ name ^ print_vs vs ^ " = " ^
+    spaces level ^ "struct " ^ name ^ string_of_vs vs ^ " = " ^
     spaces level ^ "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}"
@@ -1178,17 +1178,17 @@ and string_of_statement level s =
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
     in
-    spaces level ^ "cstruct " ^ name ^ print_vs vs ^ " = " ^
+    spaces level ^ "cstruct " ^ name ^ string_of_vs vs ^ " = " ^
     spaces level ^ "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}"
 
   | STMT_typeclass (_,name, vs, sts) ->
-    spaces level ^ "typeclass " ^ name ^ print_vs vs ^ " = " ^
+    spaces level ^ "typeclass " ^ name ^ string_of_vs vs ^ " = " ^
     string_of_compound level sts
 
   | STMT_instance (_,vs,name, sts) ->
-    spaces level ^ "instance " ^ print_vs vs ^ " " ^
+    spaces level ^ "instance " ^ string_of_vs vs ^ " " ^
     string_of_qualified_name name ^ " = " ^
     string_of_compound level sts
 
@@ -1198,7 +1198,7 @@ and string_of_statement level s =
       (match cval with None -> "" | Some i -> "="^ si i) ^
       special_string_of_typecode ty
     in
-    spaces level ^ "union " ^ name ^ print_vs vs ^ " = " ^
+    spaces level ^ "union " ^ name ^ string_of_vs vs ^ " = " ^
     spaces level ^ "{\n" ^
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
@@ -1211,13 +1211,13 @@ and string_of_statement level s =
 
   | STMT_abs_decl (_,t,vs, quals, ct, reqs) -> spaces level ^
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
-    "type " ^ t ^ print_vs vs ^
+    "type " ^ t ^ string_of_vs vs ^
     " = " ^ string_of_code_spec ct ^
     string_of_raw_reqs reqs ^
     ";"
 
   | STMT_newtype (_,t,vs, nt) -> spaces level ^
-    "type " ^ t ^ print_vs vs ^
+    "type " ^ t ^ string_of_vs vs ^
     " = new " ^ string_of_typecode nt ^
     ";"
 
@@ -1230,7 +1230,7 @@ and string_of_statement level s =
 
   | STMT_fun_decl (_,name,vs,args, result, code, reqs,prec) ->
     spaces level ^
-    "fun " ^ name ^ print_vs vs ^
+    "fun " ^ name ^ string_of_vs vs ^
     ": " ^
     (string_of_typecode (TYP_tuple args)) ^ " -> " ^
     (string_of_typecode result) ^
@@ -1249,7 +1249,7 @@ and string_of_statement level s =
 
   | STMT_insert (_,n,vs,s, ikind, reqs) ->
     spaces level ^ string_of_ikind ikind ^
-    n^print_vs vs^
+    n^string_of_vs vs^
     "\n" ^ string_of_code_spec s ^ " " ^
      string_of_raw_reqs reqs ^
     ";\n"
@@ -1262,21 +1262,21 @@ and string_of_statement level s =
 
   | STMT_reduce (_,name, vs, ps, rsrc, rdst) ->
     spaces level ^
-    "reduce " ^ name ^ print_vs vs ^
+    "reduce " ^ name ^ string_of_vs vs ^
     "("^string_of_basic_parameters ps^"): "^
     string_of_expr rsrc ^ " => " ^ string_of_expr rdst ^
     ";\n"
 
   | STMT_axiom (_,name, vs, ps, a) ->
     spaces level ^
-    "axiom " ^ name ^ print_vs vs ^
+    "axiom " ^ name ^ string_of_vs vs ^
     "("^string_of_parameters ps^"): "^
     string_of_axiom_method a ^
     ";\n"
 
   | STMT_lemma (_,name, vs, ps, a) ->
     spaces level ^
-    "lemma " ^ name ^ print_vs vs ^
+    "lemma " ^ name ^ string_of_vs vs ^
     "("^string_of_parameters ps^"): "^
     string_of_axiom_method a ^
     ";\n"
@@ -1284,7 +1284,7 @@ and string_of_statement level s =
   | STMT_function (_,name, vs, ps, (res,post), props, ss) ->
     spaces level ^
     string_of_properties props ^
-    "fun " ^ name ^ print_vs vs ^
+    "fun " ^ name ^ string_of_vs vs ^
     "("^string_of_parameters ps^"): "^string_of_typecode res^
     (match post with
     | None -> ""
@@ -1307,7 +1307,7 @@ and string_of_statement level s =
     | `Generator -> "generator "
     )
     ^
-    name ^ print_vs vs ^
+    name ^ string_of_vs vs ^
     catmap " "
     (fun ps ->
       "("^string_of_parameters ps^")"
@@ -1594,85 +1594,85 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
   let st t = string_of_typecode t in
   match entry with
   | SYMDEF_instance qn ->
-    "instance " ^ print_ivs vs ^ " " ^
+    "instance " ^ string_of_ivs vs ^ " " ^
     string_of_qualified_name qn ^ ";\n"
 
   | SYMDEF_const_ctor (uidx,ut,idx,vs') ->
      st ut ^ "  const_ctor: " ^
-     name ^ print_ivs vs ^
+     name ^ string_of_ivs vs ^
      ";"
 
   | SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) ->
      st ut ^ "  nonconst_ctor: " ^
-     name ^ print_ivs vs ^
+     name ^ string_of_ivs vs ^
      " of " ^ st argt ^
      ";"
 
   | SYMDEF_type_alias t ->
-    "typedef " ^ name ^ print_ivs vs ^" = " ^ st t ^ ";"
+    "typedef " ^ name ^ string_of_ivs vs ^" = " ^ st t ^ ";"
 
   | SYMDEF_inherit qn ->
-    "inherit " ^ name ^ print_ivs vs ^" = " ^ string_of_qualified_name qn ^ ";"
+    "inherit " ^ name ^ string_of_ivs vs ^" = " ^ string_of_qualified_name qn ^ ";"
 
   | SYMDEF_inherit_fun qn ->
-    "inherit fun " ^ name ^ print_ivs vs ^" = " ^ string_of_qualified_name qn ^ ";"
+    "inherit fun " ^ name ^ string_of_ivs vs ^" = " ^ string_of_qualified_name qn ^ ";"
 
   | SYMDEF_abs (quals,code, reqs) ->
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
-    "type " ^ name ^ print_ivs vs ^
+    "type " ^ name ^ string_of_ivs vs ^
     " = " ^ string_of_code_spec code ^
     string_of_named_reqs reqs ^
     ";"
 
   | SYMDEF_newtype (nt) ->
-    "type " ^ name ^ print_ivs vs ^
+    "type " ^ name ^ string_of_ivs vs ^
     " = new " ^ st nt ^
     ";"
 
   | SYMDEF_var (t) ->
-    "var " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
+    "var " ^ name ^ string_of_ivs vs ^":"^ st t ^ ";"
 
   | SYMDEF_val (t) ->
-    "val " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
+    "val " ^ name ^ string_of_ivs vs ^":"^ st t ^ ";"
 
   | SYMDEF_ref (t) ->
-    "ref " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
+    "ref " ^ name ^ string_of_ivs vs ^":"^ st t ^ ";"
 
   | SYMDEF_lazy (t,e) ->
-    "fun " ^ name ^ print_ivs vs ^
+    "fun " ^ name ^ string_of_ivs vs ^
     ": "^ st t ^
     "= " ^ se e ^
     ";"
 
   | SYMDEF_parameter (k,t) ->
     "parameter " ^ string_of_param_kind k ^ " " ^
-    name ^ print_ivs vs ^":"^ st t ^ ";"
+    name ^ string_of_ivs vs ^":"^ st t ^ ";"
 
   | SYMDEF_typevar (t) ->
-    "typevar " ^ name ^ print_ivs vs ^":"^ st t ^ ";"
+    "typevar " ^ name ^ string_of_ivs vs ^":"^ st t ^ ";"
 
   | SYMDEF_const (props,t,ct, reqs) ->
     string_of_properties props ^
-    "const " ^ name ^ print_ivs vs ^":"^
+    "const " ^ name ^ string_of_ivs vs ^":"^
     st t ^ " = " ^string_of_code_spec ct^
     string_of_named_reqs reqs ^
     ";"
 
   | SYMDEF_union (cts) ->
-    "union " ^ name ^ print_ivs vs ^ ";"
+    "union " ^ name ^ string_of_ivs vs ^ ";"
 
   | SYMDEF_struct (cts) ->
-    "struct " ^ name ^ print_ivs vs ^ ";"
+    "struct " ^ name ^ string_of_ivs vs ^ ";"
 
   | SYMDEF_cstruct (cts) ->
-    "cstruct " ^ name ^ print_ivs vs ^ ";"
+    "cstruct " ^ name ^ string_of_ivs vs ^ ";"
 
   | SYMDEF_typeclass ->
-    "typeclass " ^ name ^ print_ivs vs ^ ";"
+    "typeclass " ^ name ^ string_of_ivs vs ^ ";"
 
   | SYMDEF_fun (props, pts,res,cts, reqs,prec) ->
     string_of_properties props ^
-    "fun " ^ name ^ print_ivs vs ^
+    "fun " ^ name ^ string_of_ivs vs ^
     ": " ^ st
     (
       TYP_function
@@ -1692,7 +1692,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
 
   | SYMDEF_callback (props, pts,res,reqs) ->
     string_of_properties props ^
-    "callback fun " ^ name ^ print_ivs vs ^
+    "callback fun " ^ name ^ string_of_ivs vs ^
     ": " ^ st
     (
       TYP_cfunction
@@ -1715,24 +1715,24 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
     | `Body -> "body "
     | `Package -> "package "
     ) ^
-    name ^ print_ivs vs ^
+    name ^ string_of_ivs vs ^
     " "^ string_of_code_spec s ^
      string_of_named_reqs reqs ^
     ";\n"
 
   | SYMDEF_reduce (ps,e1,e2) ->
-    "reduce " ^ name ^ print_ivs vs ^ ";"
+    "reduce " ^ name ^ string_of_ivs vs ^ ";"
 
   | SYMDEF_axiom (ps,e1) ->
-    "axiom " ^ name ^ print_ivs vs ^ ";"
+    "axiom " ^ name ^ string_of_ivs vs ^ ";"
 
   | SYMDEF_lemma (ps,e1) ->
-    "lemma " ^ name ^ print_ivs vs ^ ";"
+    "lemma " ^ name ^ string_of_ivs vs ^ ";"
 
   | SYMDEF_function (ps,res,props, es) ->
     let ps,traint = ps in
     string_of_properties props ^
-    "fun " ^ name ^ print_ivs vs ^
+    "fun " ^ name ^ string_of_ivs vs ^
     ": " ^ st
     (
       TYP_function
@@ -1852,9 +1852,9 @@ and string_of_bound_expression' sym_table bsym_table se e =
   | BEXPR_get_n (n,e') -> "(" ^ se e' ^ ").mem_" ^ si n
 
   | BEXPR_deref e -> "*("^ se e ^ ")"
-  | BEXPR_name (i,ts) -> sid i ^ print_inst sym_table ts
-  | BEXPR_closure (i,ts) -> sid i ^ print_inst sym_table ts
-  | BEXPR_ref (i,ts) -> "&" ^ sid i ^ print_inst sym_table ts
+  | BEXPR_name (i,ts) -> sid i ^ string_of_inst sym_table ts
+  | BEXPR_closure (i,ts) -> sid i ^ string_of_inst sym_table ts
+  | BEXPR_ref (i,ts) -> "&" ^ sid i ^ string_of_inst sym_table ts
   | BEXPR_new e -> "new " ^ se e
   | BEXPR_address e -> "&" ^ se e
   | BEXPR_likely e -> "likely(" ^ se e ^")"
@@ -1867,22 +1867,22 @@ and string_of_bound_expression' sym_table bsym_table se e =
     ")"
 
   | BEXPR_apply_prim (i,ts, arg) -> "(" ^
-    sid i ^ print_inst sym_table ts ^ " " ^
+    sid i ^ string_of_inst sym_table ts ^ " " ^
     se arg ^
     ")"
 
   | BEXPR_apply_direct  (i,ts, arg) -> "(" ^
-    sid i ^ print_inst sym_table ts ^ " " ^
+    sid i ^ string_of_inst sym_table ts ^ " " ^
     se arg ^
     ")"
 
   | BEXPR_apply_struct (i,ts, arg) -> "(" ^
-    sid i ^ print_inst sym_table ts ^ " " ^
+    sid i ^ string_of_inst sym_table ts ^ " " ^
     se arg ^
     ")"
 
   | BEXPR_apply_stack (i,ts, arg) -> "(" ^
-    sid i ^ print_inst sym_table ts ^ " " ^
+    sid i ^ string_of_inst sym_table ts ^ " " ^
     se arg ^
     ")"
 
@@ -1964,22 +1964,22 @@ and string_of_bexe sym_table bsym_table level s =
 
   | BEXE_call_direct (_,i,ts,a) -> spc ^
     "directcall " ^
-    sid i ^ print_inst sym_table ts ^ " " ^
+    sid i ^ string_of_inst sym_table ts ^ " " ^
     se a ^ ";"
 
   | BEXE_jump_direct (_,i,ts,a) -> spc ^
     "direct tail call " ^
-    sid i ^ print_inst sym_table ts ^ " " ^
+    sid i ^ string_of_inst sym_table ts ^ " " ^
     se a ^ ";"
 
   | BEXE_call_stack (_,i,ts,a) -> spc ^
     "stackcall " ^
-    sid i ^ print_inst sym_table ts ^ " " ^
+    sid i ^ string_of_inst sym_table ts ^ " " ^
     se a ^ ";"
 
   | BEXE_call_prim (_,i,ts,a) -> spc ^
     "primcall " ^
-    sid i ^ print_inst sym_table ts ^ " " ^
+    sid i ^ string_of_inst sym_table ts ^ " " ^
     se a ^ ";"
 
   | BEXE_jump (_,p,a) -> spc ^
@@ -2026,24 +2026,24 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   let seq = match seq with Some i -> "<" ^ si i ^ ">" | None -> "" in
   match s with
   | DCL_type_alias (t2) ->
-    sl ^ "typedef " ^ name^seq ^ print_vs vs ^
+    sl ^ "typedef " ^ name^seq ^ string_of_vs vs ^
     " = " ^ st t2 ^ ";"
 
   | DCL_inherit qn ->
-    sl ^ "inherit " ^ name^seq ^ print_vs vs ^
+    sl ^ "inherit " ^ name^seq ^ string_of_vs vs ^
     " = " ^ string_of_qualified_name qn ^ ";"
 
   | DCL_inherit_fun qn ->
-    sl ^ "inherit fun " ^ name^seq ^ print_vs vs ^
+    sl ^ "inherit fun " ^ name^seq ^ string_of_vs vs ^
     " = " ^ string_of_qualified_name qn ^ ";"
 
   | DCL_module (asms) ->
-    sl ^ "module " ^ name^seq ^ print_vs vs ^ " = " ^
+    sl ^ "module " ^ name^seq ^ string_of_vs vs ^ " = " ^
     "\n" ^
     string_of_asm_compound level asms
 
   | DCL_instance (name,asms) ->
-    sl ^ "instance " ^ print_vs vs ^ " " ^
+    sl ^ "instance " ^ string_of_vs vs ^ " " ^
     string_of_qualified_name name ^seq ^ " = " ^
     "\n" ^
     string_of_asm_compound level asms
@@ -2052,7 +2052,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name^ ": " ^ st ty ^ ";"
     in
-    sl ^ "struct " ^ name^seq ^ print_vs vs ^ " = " ^
+    sl ^ "struct " ^ name^seq ^ string_of_vs vs ^ " = " ^
     sl ^ "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     sl ^ "}"
@@ -2061,13 +2061,13 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name^ ": " ^ st ty ^ ";"
     in
-    sl ^ "cstruct " ^ name^seq ^ print_vs vs ^ " = " ^
+    sl ^ "cstruct " ^ name^seq ^ string_of_vs vs ^ " = " ^
     sl ^ "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     sl ^ "}"
 
   | DCL_typeclass (asms) ->
-    sl ^ "type class " ^ name^seq ^ print_vs vs ^ " =\n" ^
+    sl ^ "type class " ^ name^seq ^ string_of_vs vs ^ " =\n" ^
     string_of_asm_compound level asms
 
   | DCL_union (cs) ->
@@ -2077,19 +2077,19 @@ and string_of_dcl level name seq vs (s:dcl_t) =
       (match v with | None -> "" | Some i -> "="^si i) ^
       special_string_of_typecode ty
     in
-    sl ^ "union " ^ name^seq ^ print_vs vs ^
+    sl ^ "union " ^ name^seq ^ string_of_vs vs ^
     " = " ^
     sl ^ "{\n" ^
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     sl ^ "}"
 
   | DCL_newtype (nt)-> sl ^
-    "type " ^ name^seq ^ print_vs vs ^
+    "type " ^ name^seq ^ string_of_vs vs ^
     " = new " ^ st nt ^ ";"
 
   | DCL_abs (quals, code, reqs) -> sl ^
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
-    "type " ^ name^seq ^ print_vs vs ^
+    "type " ^ name^seq ^ string_of_vs vs ^
     " = " ^ string_of_code_spec code ^
     string_of_named_reqs reqs ^
     ";"
@@ -2099,7 +2099,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     let t:typecode_t = TYP_function (argtype,result) in
     sl ^
     string_of_properties props ^
-    "fun " ^ name^seq ^ print_vs vs ^
+    "fun " ^ name^seq ^ string_of_vs vs ^
     ": " ^ st t ^
     " = " ^ string_of_code_spec code ^
     (if prec = "" then "" else ":"^prec^" ")^
@@ -2111,7 +2111,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     let t:typecode_t = TYP_cfunction (argtype,result) in
     sl ^
     string_of_properties props ^
-    "callback fun " ^ name^seq ^ print_vs vs ^
+    "callback fun " ^ name^seq ^ string_of_vs vs ^
     ": " ^ st t ^
     string_of_named_reqs reqs ^
     ";"
@@ -2123,14 +2123,14 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     | `Body -> "body "
     | `Package -> "package "
     ) ^
-    name^seq ^  print_vs vs ^
+    name^seq ^  string_of_vs vs ^
     " = "^ string_of_code_spec s ^
     string_of_named_reqs reqs ^ ";"
 
   | DCL_const (props,typ, code, reqs) ->
     sl ^
     string_of_properties props ^
-    "const " ^ name^seq ^print_vs vs ^
+    "const " ^ name^seq ^string_of_vs vs ^
     ": " ^ st typ ^
     " = "^string_of_code_spec code^
     string_of_named_reqs reqs ^
@@ -2138,26 +2138,26 @@ and string_of_dcl level name seq vs (s:dcl_t) =
 
   | DCL_reduce (ps, e1,e2) ->
     sl ^
-    "reduce " ^ name^seq ^ print_vs vs ^
+    "reduce " ^ name^seq ^ string_of_vs vs ^
     "("^ string_of_basic_parameters ps ^"): " ^
     string_of_expr e1 ^ " => " ^ string_of_expr e2 ^ ";"
 
   | DCL_axiom (ps, e1) ->
     sl ^
-    "axiom " ^ name^seq ^ print_vs vs ^
+    "axiom " ^ name^seq ^ string_of_vs vs ^
     "("^ string_of_parameters ps ^"): " ^
     string_of_axiom_method e1 ^ ";"
 
   | DCL_lemma (ps, e1) ->
     sl ^
-    "lemma " ^ name^seq ^ print_vs vs ^
+    "lemma " ^ name^seq ^ string_of_vs vs ^
     "("^ string_of_parameters ps ^"): " ^
     string_of_axiom_method e1 ^ ";"
 
   | DCL_function (ps, res, props, ss) ->
     sl ^
     string_of_properties props ^
-    "fun " ^ name^seq ^ print_vs vs ^
+    "fun " ^ name^seq ^ string_of_vs vs ^
     "("^ (string_of_parameters ps)^"): "^(st res)^"\n" ^
     string_of_asm_compound level ss
 
@@ -2176,19 +2176,19 @@ and string_of_dcl level name seq vs (s:dcl_t) =
 
   | DCL_val (ty) ->
     sl ^
-    "val " ^ name^seq ^ print_vs vs ^ ": " ^ st ty ^ ";"
+    "val " ^ name^seq ^ string_of_vs vs ^ ": " ^ st ty ^ ";"
 
   | DCL_ref (ty) ->
     sl ^
-    "ref " ^ name^seq ^ print_vs vs ^ ": " ^ st ty ^ ";"
+    "ref " ^ name^seq ^ string_of_vs vs ^ ": " ^ st ty ^ ";"
 
   | DCL_var (ty) ->
     sl ^
-    "var " ^ name^seq ^ print_vs vs ^ ": " ^ st ty ^ ";"
+    "var " ^ name^seq ^ string_of_vs vs ^ ": " ^ st ty ^ ";"
 
   | DCL_lazy (ty,e) ->
     sl ^
-    "fun " ^ name^seq ^ print_vs vs ^
+    "fun " ^ name^seq ^ string_of_vs vs ^
     ": " ^ st ty ^
     "= " ^ se e ^
     ";"
@@ -2213,7 +2213,7 @@ and string_of_dir level s =
   let sqn n = string_of_qualified_name n in
   match s with
   | DIR_open (vs,qn) ->
-    spaces level ^ "open" ^ print_ivs vs ^ sqn qn ^ ";"
+    spaces level ^ "open" ^ string_of_ivs vs ^ sqn qn ^ ";"
 
   | DIR_use (n,qn) ->
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
@@ -2221,7 +2221,7 @@ and string_of_dir level s =
   | DIR_inject_module (qn) ->
     spaces level ^ "inherit " ^ sqn qn ^ ";"
 
-and string_of_breq sym_table (i,ts) = "rq<"^si i^">" ^ print_inst sym_table ts
+and string_of_breq sym_table (i,ts) = "rq<"^si i^">" ^ string_of_inst sym_table ts
 and string_of_breqs sym_table reqs = catmap ", " (string_of_breq sym_table) reqs
 and string_of_production p = catmap " " string_of_glr_entry p
 and string_of_reduced_production p = catmap " " string_of_reduced_glr_entry p
@@ -2269,7 +2269,7 @@ and string_of_bbdcl sym_table bsym_table (bbdcl:bbdcl_t) index : string =
   match bbdcl with
   | BBDCL_function (props,vs,ps,res,es) ->
     string_of_properties props ^
-    "fun " ^ name ^ print_bvs vs ^
+    "fun " ^ name ^ string_of_bvs vs ^
     "("^ (string_of_bparameters sym_table bsym_table ps)^"): "^(sobt res) ^
     "{\n" ^
     cat "\n" (map (string_of_bexe sym_table bsym_table 1) es) ^
@@ -2278,37 +2278,37 @@ and string_of_bbdcl sym_table bsym_table (bbdcl:bbdcl_t) index : string =
 
   | BBDCL_procedure (props,vs,ps,es) ->
     string_of_properties props ^
-    "proc " ^ name ^ print_bvs vs ^
+    "proc " ^ name ^ string_of_bvs vs ^
     "("^ (string_of_bparameters sym_table bsym_table ps)^")" ^
     "{\n" ^
     cat "\n" (map (string_of_bexe sym_table bsym_table 1) es) ^
     "}"
 
   | BBDCL_val (vs,ty) ->
-    "val " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
+    "val " ^ name ^ string_of_bvs vs ^ ": " ^ sobt ty ^ ";"
 
   | BBDCL_var (vs,ty) ->
-    "var " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
+    "var " ^ name ^ string_of_bvs vs ^ ": " ^ sobt ty ^ ";"
 
   | BBDCL_ref (vs,ty) ->
-    "ref " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
+    "ref " ^ name ^ string_of_bvs vs ^ ": " ^ sobt ty ^ ";"
 
   | BBDCL_tmp (vs,ty) ->
-    "tmp " ^ name ^ print_bvs vs ^ ": " ^ sobt ty ^ ";"
+    "tmp " ^ name ^ string_of_bvs vs ^ ": " ^ sobt ty ^ ";"
 
   (* binding structures [prolog] *)
   | BBDCL_newtype (vs,t) ->
-    "type " ^ name ^  print_bvs vs ^
+    "type " ^ name ^  string_of_bvs vs ^
     " = new " ^ sobt t ^ ";"
 
   | BBDCL_abs (vs,quals,code,reqs) ->
     (match quals with [] ->"" | _ -> string_of_bquals sym_table quals ^ " ") ^
-    "type " ^ name ^  print_bvs vs ^
+    "type " ^ name ^  string_of_bvs vs ^
     " = " ^ string_of_code_spec code ^ ";"
 
   | BBDCL_const (props, vs,ty,code,reqs) ->
     string_of_properties props ^
-     "const " ^ name ^ print_bvs vs ^
+     "const " ^ name ^ string_of_bvs vs ^
      ": " ^ sobt ty ^
      " = " ^ string_of_code_spec code ^
      string_of_breqs sym_table reqs ^
@@ -2316,7 +2316,7 @@ and string_of_bbdcl sym_table bsym_table (bbdcl:bbdcl_t) index : string =
 
   | BBDCL_fun (props,vs,ps,rt,code,reqs,prec) ->
     string_of_properties props ^
-    "fun " ^ name ^ print_bvs vs ^
+    "fun " ^ name ^ string_of_bvs vs ^
     ": " ^
     (sobt (typeoflist ps)) ^ " -> " ^
     (sobt rt) ^
@@ -2327,7 +2327,7 @@ and string_of_bbdcl sym_table bsym_table (bbdcl:bbdcl_t) index : string =
 
   | BBDCL_callback (props,vs,ps_cf,ps_c,k,rt,reqs,prec) ->
     string_of_properties props ^
-    "callback fun " ^ name ^ print_bvs vs ^
+    "callback fun " ^ name ^ string_of_bvs vs ^
     ": " ^
     (sobt (typeoflist ps_cf)) ^ " -> " ^
     (sobt rt) ^
@@ -2338,7 +2338,7 @@ and string_of_bbdcl sym_table bsym_table (bbdcl:bbdcl_t) index : string =
 
   | BBDCL_proc (props,vs, ps,code,reqs) ->
     string_of_properties props ^
-    "proc " ^ name ^ print_bvs vs ^
+    "proc " ^ name ^ string_of_bvs vs ^
     ": " ^
      (sobt (typeoflist ps)) ^
      " = " ^ string_of_code_spec code ^
@@ -2351,7 +2351,7 @@ and string_of_bbdcl sym_table bsym_table (bbdcl:bbdcl_t) index : string =
      | `Body -> "body "
      | `Package -> "package "
      ) ^
-    name^  print_bvs vs ^
+    name^  string_of_bvs vs ^
     " "^ string_of_code_spec s ^
     string_of_breqs sym_table reqs
 
@@ -2361,7 +2361,7 @@ and string_of_bbdcl sym_table bsym_table (bbdcl:bbdcl_t) index : string =
      "="^si v^
       special_string_of_btypecode sym_table ty
     in
-    "union " ^ name ^ print_bvs vs ^ " = " ^
+    "union " ^ name ^ string_of_bvs vs ^ " = " ^
     "{\n" ^
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     "}"
@@ -2370,7 +2370,7 @@ and string_of_bbdcl sym_table bsym_table (bbdcl:bbdcl_t) index : string =
     let string_of_struct_component (name,ty) =
       "  " ^ name ^ ": " ^ sobt ty ^ ";"
     in
-    "struct " ^ name ^ print_bvs vs ^ " = " ^
+    "struct " ^ name ^ string_of_bvs vs ^ " = " ^
     "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"
@@ -2379,22 +2379,22 @@ and string_of_bbdcl sym_table bsym_table (bbdcl:bbdcl_t) index : string =
     let string_of_struct_component (name,ty) =
       "  " ^ name ^ ": " ^ sobt ty ^ ";"
     in
-    "cstruct " ^ name ^ print_bvs vs ^ " = " ^
+    "cstruct " ^ name ^ string_of_bvs vs ^ " = " ^
     "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"
 
   | BBDCL_typeclass (props,vs) ->
     string_of_properties props ^
-    "typeclass " ^ name ^ print_bvs vs ^ ";"
+    "typeclass " ^ name ^ string_of_bvs vs ^ ";"
 
   | BBDCL_instance (props,vs,cons,bid,ts) ->
     string_of_properties props ^
-    "instance "^print_bvs_cons sym_table vs cons^
+    "instance "^string_of_bvs_cons sym_table vs cons^
     " of <" ^ si bid ^">["^ catmap "," (sbt sym_table) ts ^ "];"
 
   | BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx, ctor_argt, evs, etraint) ->
-    "  uctor<" ^ name ^ ">"^ print_bvs vs ^
+    "  uctor<" ^ name ^ ">"^ string_of_bvs vs ^
     " : " ^ sobt ut ^
     " of " ^ sobt ctor_argt ^
     ";"

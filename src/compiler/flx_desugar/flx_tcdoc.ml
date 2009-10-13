@@ -46,7 +46,7 @@ let gen_tcdoc () =
       w "</head>\n";
       w "<body>";
       w ("<h1>" ^ name ^ "</h1>\n");
-      w (begin_div "rule" ^ ("typeclass " ^ name ^ Flx_print.print_vs vs) ^ end_div);
+      w (begin_div "rule" ^ ("typeclass " ^ name ^ Flx_print.string_of_vs vs) ^ end_div);
       iter (fun stmt -> match stmt with
 
       | STMT_inject_module (sr,qn) ->
@@ -68,13 +68,13 @@ let gen_tcdoc () =
         begin match result with
         | TYP_void _ ->
           w (begin_div "element" ^
-            span "category" "   virtual proc " ^ span "ident" name ^ Flx_print.print_vs vs ^ ": " ^
+            span "category" "   virtual proc " ^ span "ident" name ^ Flx_print.string_of_vs vs ^ ": " ^
             catmap "*" st args ^
             end_div
           )
         | _ ->
           w (begin_div "element" ^
-            span "category" "   virtual fun " ^ span "ident" name ^ Flx_print.print_vs vs ^ ": " ^
+            span "category" "   virtual fun " ^ span "ident" name ^ Flx_print.string_of_vs vs ^ ": " ^
             catmap "*" st args ^ " -> " ^ st result ^
             end_div
           )
@@ -129,7 +129,7 @@ let gen_mdoc () =
       w "</head>\n";
       w "<body>";
       w ("<h1>" ^ name ^ "</h1>\n");
-      w (begin_div "rule" ^ ("module " ^ name ^ Flx_print.print_vs vs) ^ end_div);
+      w (begin_div "rule" ^ ("module " ^ name ^ Flx_print.string_of_vs vs) ^ end_div);
       iter (fun stmt -> match stmt with
 
       | STMT_inject_module (sr,qn) ->
@@ -151,7 +151,7 @@ let gen_mdoc () =
         let id = "ref_"^string_of_int seq in
         w (begin_div "element" ^
           span "category" "const " ^ span "ident" name ^
-          Flx_print.print_vs vs ^
+          Flx_print.string_of_vs vs ^
           ": " ^ string_of_typecode typ
         );
         w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
@@ -168,7 +168,7 @@ let gen_mdoc () =
         w (begin_div "element" ^
           span "category" (string_of_ikind ikind) ^
           span "ident" name ^
-          Flx_print.print_vs vs
+          Flx_print.string_of_vs vs
         );
         w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
         " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
@@ -185,7 +185,7 @@ let gen_mdoc () =
           (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
           span "category" "type " ^
           span "ident" name ^
-          print_vs vs
+          string_of_vs vs
         );
         w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
         " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
@@ -202,12 +202,12 @@ let gen_mdoc () =
         | TYP_void _ ->
           w (begin_div "element" ^
             span "category" "proc " ^ span "ident" name ^
-            Flx_print.print_vs vs ^ ": " ^
+            Flx_print.string_of_vs vs ^ ": " ^
             catmap "*" st args
           )
         | _ ->
           w (begin_div "element" ^
-            span "category" "fun " ^ span "ident" name ^ Flx_print.print_vs vs ^ ": " ^
+            span "category" "fun " ^ span "ident" name ^ Flx_print.string_of_vs vs ^ ": " ^
             catmap "*" st args ^ " -> " ^ st result
           )
         end
@@ -234,7 +234,7 @@ let gen_mdoc () =
           | `Generator -> "generator "
           )
           ^
-          span "ident" name ^ print_vs vs ^
+          span "ident" name ^ string_of_vs vs ^
           catmap " "
           (fun ps ->
             "("^string_of_parameters ps^")"
@@ -274,7 +274,7 @@ let gen_mdoc () =
         w (begin_div "element");
         let seq = !counter in incr counter;
         let id = "ref_"^string_of_int seq in
-        w (span "category" "instance " ^ print_vs vs ^ " " ^
+        w (span "category" "instance " ^ string_of_vs vs ^ " " ^
         span "ident" (string_of_qualified_name name) ^ " = ");
         w ("&nbsp;&nbsp;&nbsp; <IMG SRC=\"plus.gif\""^id^
         " ONCLICK=\"toggle(this,'"^id^"')\" ALT=\"+\">" ^
