@@ -32,4 +32,4 @@ val cpp_ltypename :
 
 (** mangle a Felix identifier to a C one *)
 val cid_of_flxid:
- string-> string
+ string -> string

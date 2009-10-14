@@ -196,16 +196,16 @@ and cep cp e =
   (if need_brackets then "(" else "")
   ^
   begin match e with
-    | `Ce_atom s ->  s
+    | `Ce_atom s -> s
     | `Ce_postfix (s,e) -> rce e ^ s
     | `Ce_prefix (s,e) -> s ^ rce e
     | `Ce_infix (s,e1,e2) -> lce e1 ^ s ^ rce e2
 
-    | `Ce_call (f,es) -> rce f ^comma es
-    | `Ce_array (f,e) -> rce f ^ "["^lce e^"]"
+    | `Ce_call (f,es) -> rce f ^ comma es
+    | `Ce_array (f,e) -> rce f ^ "[" ^ lce e ^ "]"
     | `Ce_new (ps,cls,args) ->
-      "new" ^ comma_opt ps ^ " " ^ cls ^ " " ^ comma_opt args
-    | `Ce_cast (cast,e) -> "("^cast^")" ^ rce e
+        "new" ^ comma_opt ps ^ " " ^ cls ^ " " ^ comma_opt args
+    | `Ce_cast (cast,e) -> "(" ^ cast ^ ")" ^ rce e
     | `Ce_cond (e,e1,e2) -> lce e ^ "?" ^ rce e1 ^ ":" ^ rce e2
     | `Ce_expr (_, s) -> s
   end
