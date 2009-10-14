@@ -46,10 +46,12 @@ let cal_display syms bsym_table parent : (bid_t *int) list =
           | {id=id; symdef=SYMDEF_typeclass } -> rev display
 
           | {id=id} ->
-            failwith ("[cal_display] Can't find index(1) " ^id^"<"^ si parent^">")
+            failwith ("[cal_display] Can't find index(1) " ^ id ^ "<" ^
+              Flx_print.string_of_bid parent ^ ">")
 
         with Not_found ->
-          failwith ("[cal_display] Can't find index(2) " ^ si parent)
+          failwith ("[cal_display] Can't find index(2) " ^
+            Flx_print.string_of_bid parent)
       end
 
     | _ -> assert false

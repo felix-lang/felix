@@ -144,10 +144,11 @@ let uncurry_gen syms bsym_table child_map : int =
     | [BEXE_fun_return (sr2,(BEXPR_closure (f,ts),_))]
       when is_child child_map i f && vs_is_ts vs ts
       ->
-      let k = !(syms.counter) in incr (syms.counter);
+      let k = fresh_bid syms.counter in
       Hashtbl.add uncurry_map i (f,k,0);
       if syms.compiler_options.print_flag then
-      print_endline ("Detected curried function " ^ id ^ "<" ^ si i ^"> ret child= " ^ si f ^ " synth= " ^ si k)
+      print_endline ("Detected curried function " ^ id ^ "<" ^ string_of_bid i
+        ^ "> ret child= " ^ string_of_bid f ^ " synth= " ^ string_of_bid k)
 
     | _ -> ()
     end
@@ -173,7 +174,9 @@ let uncurry_gen syms bsym_table child_map : int =
   if syms.compiler_options.print_flag then
   Hashtbl.iter
   (fun i (c,k,n) ->
-     print_endline ("MAYBE UNCURRY: Orig " ^ si i ^ " ret child " ^ si c ^ " synth " ^ si k ^ " count=" ^ si n);
+     print_endline ("MAYBE UNCURRY: Orig " ^ string_of_bid i ^ " ret child " ^
+      string_of_bid c ^ " synth " ^ string_of_bid k ^ " count=" ^
+      string_of_int n);
   )
   uncurry_map
   ;
@@ -221,7 +224,9 @@ let uncurry_gen syms bsym_table child_map : int =
   if syms.compiler_options.print_flag then
   Hashtbl.iter
   (fun i (c,k,n) ->
-     print_endline ("ACTUALLY UNCURRY: Orig " ^ si i ^ " ret child " ^ si c ^ " synth " ^ si k ^ " count=" ^ si n);
+    print_endline ("ACTUALLY UNCURRY: Orig " ^ string_of_bid i ^
+      " ret child " ^ string_of_bid c ^ " synth " ^ string_of_bid k ^
+      " count=" ^ si n);
   )
   uncurry_map
   ;
@@ -234,7 +239,8 @@ let uncurry_gen syms bsym_table child_map : int =
     begin
       incr nufuns;
       if syms.compiler_options.print_flag then
-      print_endline ("UNCURRY: Orig " ^ si i ^ " ret child " ^ si c ^ " synth " ^ si k ^ " count=" ^ si n);
+      print_endline ("UNCURRY: Orig " ^ string_of_bid i ^ " ret child " ^
+        string_of_bid c ^ " synth " ^ string_of_bid k ^ " count=" ^ si n);
       let idm,parent,sr,bbdcl = Hashtbl.find bsym_table i in
       let idc,parentc,src,bbdclc = Hashtbl.find bsym_table c in
       assert (parentc = Some i);
@@ -263,8 +269,11 @@ let uncurry_gen syms bsym_table child_map : int =
             | _ -> failwith "Unimplemented curried fun param not var or val"
             in
             if syms.compiler_options.print_flag then
-              print_endline ("New param " ^ s ^ "_uncurry<" ^ si n ^ ">["^catmap
-              "," (fun (s,i)->s^"<"^si i^">") vs ^"] <-- " ^ si pi ^ ", parent " ^ si k ^ " <-- " ^ si i);
+              print_endline ("New param " ^ s ^ "_uncurry<" ^ string_of_bid n ^
+                ">[" ^ catmap
+                "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs ^
+                "] <-- " ^ string_of_bid pi ^ ", parent " ^ string_of_bid k ^
+                " <-- " ^ string_of_bid i);
             Hashtbl.add bsym_table n (s ^ "_uncurry",Some k,sr,bbdcl);
             Flx_child.add_child child_map k n
           )

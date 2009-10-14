@@ -20,8 +20,6 @@ open Flx_call
 
 type submode_t = [`Eager | `Lazy]
 
-module BidSet = IntSet
-
 (* this only updates the uses table not the usedby table,
   because inlining changes usage (obviously).
   we need it in particular for the is_recursive test,
@@ -108,13 +106,13 @@ let gen_body syms (uses,child_map,bsym_table) id
   sr caller callee vs callee_vs_len inline_method props
 =
   if syms.compiler_options.print_flag then
-  print_endline ("Gen body caller = " ^ si caller ^
-    ", callee=" ^ id ^ "<" ^ si callee ^ ">"
+  print_endline ("Gen body caller = " ^ string_of_bid caller ^
+    ", callee=" ^ id ^ "<" ^ string_of_bid callee ^ ">"
   );
   (*
   let argument = reduce_tbexpr bsym_table argument in
   *)
-  let psis: int list = map (fun {pindex=i} -> i) ps in
+  let psis = map (fun {pindex=i} -> i) ps in
 
   (* NOTE: this is the inline method for val's ONLY.
     If a parameter is a var, it is inlined eagerly no
@@ -159,9 +157,13 @@ let gen_body syms (uses,child_map,bsym_table) id
   if syms.compiler_options.print_flag then
   begin begin match inline_method with
   | `Eager ->
-    print_endline ("Eager INLINING " ^ id ^ "<"^si callee^">("^sbe syms.sym_table bsym_table argument^") into " ^ si caller ^ " .. INPUT:");
+      print_endline ("Eager INLINING " ^ id ^ "<" ^
+        string_of_bid callee ^ ">(" ^ sbe syms.sym_table bsym_table argument ^
+        ") into " ^ string_of_bid caller ^ " .. INPUT:");
   | `Lazy ->
-    print_endline ("Lazy INLINING " ^ id ^ "<"^si callee^">("^sbe syms.sym_table bsym_table argument^") into " ^ si caller ^ " .. INPUT:");
+      print_endline ("Lazy INLINING " ^ id ^ "<" ^ string_of_bid callee ^ ">(" ^
+        sbe syms.sym_table bsym_table argument ^") into " ^
+        string_of_bid caller ^ " .. INPUT:");
   end
   ;
   iter (fun x -> print_endline (string_of_bexe syms.sym_table bsym_table 0 x)) exes;
@@ -183,9 +185,8 @@ let gen_body syms (uses,child_map,bsym_table) id
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let end_label_uses = ref 0 in
   let end_label =
-    let end_index = !(syms.counter) in
-    incr syms.counter;
-    "_end_" ^ (si end_index)
+    let end_index = fresh_bid syms.counter in
+    "_end_" ^ (string_of_bid end_index)
   in
 
 
@@ -284,7 +285,8 @@ let gen_body syms (uses,child_map,bsym_table) id
       ref
       (
         if source = "" && id <> "_init_" then
-          [BEXE_comment (sr,(kind ^ "inline call to " ^ id ^"<"^si callee^">"^source))]
+          [BEXE_comment (sr,(kind ^ "inline call to " ^ id ^ "<" ^
+            string_of_bid callee ^ ">" ^ source))]
         else []
       )
     in
@@ -323,11 +325,10 @@ let gen_body syms (uses,child_map,bsym_table) id
     (*
     if inline_method = `Eager then begin
       (* create a variable for the parameter *)
-      let parameter = !(syms.counter) in
-      incr syms.counter;
-      let param_id = "_p" ^ si parameter in
+      let parameter = fresh_bid syms.counter in
+      let param_id = "_p" ^ string_of_bid parameter in
       (*
-      print_endline ("Parameter assigned index " ^ si parameter);
+      print_endline ("Parameter assigned index " ^ string_of_bid parameter);
       *)
 
       (* create variables for parameter components *)
@@ -409,9 +410,8 @@ let gen_body syms (uses,child_map,bsym_table) id
       handle_arg b argmap index argument kind
     | _ ->
       (* create a variable for the parameter *)
-      let parameter = !(syms.counter) in
-      incr syms.counter;
-      let param_id = "_p" ^ si parameter in
+      let parameter = fresh_bid syms.counter in
+      let param_id = "_p" ^ string_of_bid parameter in
       (*
       print_endline ("Parameter assigned index " ^ si parameter);
       *)
@@ -474,16 +474,16 @@ let gen_body syms (uses,child_map,bsym_table) id
     if Hashtbl.length argmap > 0 then begin
       let closure = descendants child_map callee in
       (*
-         let cl = ref [] in IntSet.iter (fun i -> cl := i :: !cl) closure;
+         let cl = ref [] in BidSet.iter (fun i -> cl := i :: !cl) closure;
          print_endline ("Closure is " ^ catmap " " si !cl);
       *)
       let kids =
-        IntSet.fold
-        (fun i s -> IntSet.add (revar i) s)
+        BidSet.fold
+        (fun i s -> BidSet.add (revar i) s)
         closure
-        IntSet.empty
+        BidSet.empty
       in
-      IntSet.iter (fun i ->
+      BidSet.iter (fun i ->
         let id,parent,sr,entry = Hashtbl.find bsym_table i in
         match entry with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) ->

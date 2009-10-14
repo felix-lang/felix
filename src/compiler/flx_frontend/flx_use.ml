@@ -104,7 +104,7 @@ and uses syms used bsym_table count_inits i =
   let ut t = uses_type syms used bsym_table count_inits t in
   let rq reqs =
     let ur (j,ts) =
-      if j = 0 then
+      if j = dummy_bid then
         faulty_req syms i
       else begin ui j; List.iter ut ts end
     in
@@ -112,14 +112,11 @@ and uses syms used bsym_table count_inits i =
   in
   let ux x = uses_exes syms used bsym_table count_inits x in
   let ue e = uses_tbexpr syms used bsym_table count_inits e in
-  if not (IntSet.mem i !used) then
+  if not (BidSet.mem i !used) then
   begin
-    match
-      try Some (Hashtbl.find bsym_table i)
-      with Not_found -> None
-    with
+    match Flx_hashtbl.find bsym_table i with
     | Some (id,_,_,bbdcl) ->
-      used := IntSet.add i !used;
+      used := BidSet.add i !used;
       begin match bbdcl with
       | BBDCL_typeclass _ -> ()
 
@@ -177,7 +174,8 @@ and uses syms used bsym_table count_inits i =
       in
       failwith
       (
-        "[Flx_use.uses] Cannot find bound defn for " ^ id ^ "<"^si i ^ ">"
+        "[Flx_use.uses] Cannot find bound defn for " ^ id ^ "<" ^
+        string_of_bid i ^ ">"
       )
   end
 
@@ -189,28 +187,28 @@ let find_roots syms bsym_table
   add exported types and components thereof into the used
   set now too
   *)
-  let roots = ref (IntSet.singleton root) in
+  let roots = ref (BidSet.singleton root) in
 
   List.iter begin function
   | BIFACE_export_python_fun (_,x,_)
-  | BIFACE_export_fun (_,x,_) -> roots := IntSet.add x !roots
+  | BIFACE_export_fun (_,x,_) -> roots := BidSet.add x !roots
   | BIFACE_export_type (_,t,_) -> uses_type syms roots bsym_table true t
   end bifaces;
 
   syms.roots := !roots
 
 let cal_use_closure_for_symbols syms bsym_table bids (count_inits:bool) =
-  let u = ref IntSet.empty in
-  let v : IntSet.t = !(syms.roots) in
+  let u = ref BidSet.empty in
+  let v : BidSet.t = !(syms.roots) in
   let v = ref v in
 
   let add j =
-    if not (IntSet.mem j !u) then
+    if not (BidSet.mem j !u) then
     begin
        (*
        print_endline ("Scanning " ^ si j);
        *)
-       u := IntSet.add j !u;
+       u := BidSet.add j !u;
        uses syms v bsym_table count_inits j
     end
   in
@@ -233,17 +231,17 @@ let full_use_closure_for_symbols syms bsym_table bids =
   cal_use_closure_for_symbols syms bsym_table bids true
 
 let cal_use_closure syms bsym_table (count_inits:bool) =
-  let u = ref IntSet.empty in
-  let v : IntSet.t = !(syms.roots) in
+  let u = ref BidSet.empty in
+  let v : BidSet.t = !(syms.roots) in
   let v = ref v in
 
   let add j =
-    if not (IntSet.mem j !u) then
+    if not (BidSet.mem j !u) then
     begin
        (*
        print_endline ("Scanning " ^ si j);
        *)
-       u:= IntSet.add j !u;
+       u:= BidSet.add j !u;
        uses syms v bsym_table count_inits j
     end
   in
@@ -257,9 +255,9 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
     end entries
   end syms.typeclass_to_instance;
 
-  while not (IntSet.is_empty !v) do
-    let j = IntSet.choose !v in
-    v := IntSet.remove j !v;
+  while not (BidSet.is_empty !v) do
+    let j = BidSet.choose !v in
+    v := BidSet.remove j !v;
     add j
   done
   ;
@@ -276,7 +274,7 @@ let copy_used syms bsym_table =
   let u = full_use_closure syms bsym_table in
 
   (* Iterate through the used symbols and copy them to the new table. *)
-  IntSet.iter begin fun i ->
+  BidSet.iter begin fun i ->
     (*
     if syms.compiler_options.print_flag then
       print_endline ("Copying " ^ si i);

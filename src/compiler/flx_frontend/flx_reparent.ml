@@ -15,18 +15,9 @@ open Flx_exceptions
 open Flx_use
 open Flx_child
 
-module BidSet = IntSet
-
 let mk_remap counter d =
   let m = Hashtbl.create 97 in
-  IntSet.iter
-  (fun i ->
-    let n = !counter in
-    incr counter;
-    Hashtbl.add m i n
-  )
-  d
-  ;
+  BidSet.iter (fun i -> Hashtbl.add m i (fresh_bid counter)) d;
   m
 
 (* replace callee type variables with callers *)
@@ -232,7 +223,7 @@ let allow_rescan flag props =
   | false -> props
   | true -> filter (function | `Inlining_complete | `Inlining_started -> false | _ -> true ) props
 
-let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table )
+let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
   relabel varmap revariable
   caller_vs callee_vs_len index parent k rescan_flag
 =
@@ -241,7 +232,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table )
   in
   let sop = function
     | None -> "NONE?"
-    | Some i -> si i
+    | Some i -> string_of_bid i
   in
   let caller_vars = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) caller_vs in
 
@@ -269,8 +260,8 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table )
   if syms.compiler_options.print_flag then
   print_endline
   (
-    "COPYING " ^ id ^ " index " ^ si index ^ " with old parent " ^
-    sop old_parent ^ " to index " ^ si k ^ " with new parent " ^
+    "COPYING " ^ id ^ " index " ^ string_of_bid index ^ " with old parent " ^
+    sop old_parent ^ " to index " ^ string_of_bid k ^ " with new parent " ^
     sop parent
   );
   begin match parent with
@@ -283,7 +274,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table )
   | None -> ()
   end
   ;
-  let id2 = id ^ "_clone_" ^ si index in
+  let id2 = id ^ "_clone_" ^ string_of_bid index in
   match entry with
   | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = rexes exes in
@@ -417,9 +408,9 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table )
 *)
 
 let reparent_children syms (uses,child_map,bsym_table)
-  caller_vs callee_vs_len index parent relabel varmap rescan_flag extras
+  caller_vs callee_vs_len index (parent:bid_t option) relabel varmap rescan_flag extras
 =
-  let pp p = match p with None -> "NONE" | Some i -> si i in
+  let pp p = match p with None -> "NONE" | Some i -> string_of_bid i in
   (*
   print_endline
   (
@@ -430,14 +421,14 @@ let reparent_children syms (uses,child_map,bsym_table)
   );
   *)
   let closure = descendants child_map index in
-  assert (not (IntSet.mem index closure));
-  let revariable = fold_left (fun acc i -> IntSet.add i acc) closure extras in
+  assert (not (BidSet.mem index closure));
+  let revariable = fold_left (fun acc i -> BidSet.add i acc) closure extras in
   (*
-  let cl = ref [] in IntSet.iter (fun i -> cl := i :: !cl) closure;
+  let cl = ref [] in BidSet.iter (fun i -> cl := i :: !cl) closure;
   print_endline ("Closure is " ^ catmap " " si !cl);
   *)
   let revariable = mk_remap syms.counter revariable in
-  IntSet.iter
+  BidSet.iter
   (fun i ->
     let old_parent =
       match Hashtbl.find bsym_table i with id,oldp,_,_ -> oldp
@@ -458,7 +449,8 @@ let reparent_children syms (uses,child_map,bsym_table)
   if syms.compiler_options.print_flag then begin
     Hashtbl.iter
     (fun i j ->
-      print_endline ("//Reparent " ^ si j ^ " <-- " ^ si i)
+      print_endline ("//Reparent " ^ string_of_bid j ^ " <-- " ^
+        string_of_bid i)
     )
     revariable
   end
@@ -501,7 +493,7 @@ let specialise_symbol syms (uses,child_map,bsym_table)
 =
   try Hashtbl.find syms.transient_specialisation_cache (index,ts)
   with Not_found ->
-    let k = !(syms.counter) in incr (syms.counter);
+    let k = fresh_bid syms.counter in
     let revariable =
        reparent_children syms (uses,child_map,bsym_table)
        caller_vs callee_vs_len index (Some k) relabel varmap rescan_flag []

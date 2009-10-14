@@ -31,7 +31,7 @@ module FuntypeSet : Set.S with type elt = typecode_t
 
 module FunInstSet : Set.S with type elt = bid_t * btypecode_t list
 
-val sye: entry_kind_t -> int
+val sye: entry_kind_t -> bid_t
 
 val mktypefun:
   Flx_srcref.t ->

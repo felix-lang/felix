@@ -18,7 +18,7 @@ val gen_execute_methods:
   Flx_types.bsym_table_t ->
   Flx_child.t ->
   Flx_label.label_map_t * Flx_label.label_usage_t ->
-  int ref ->
+  Flx_types.bid_t ref ->
   out_channel ->
   out_channel ->
   unit
@@ -27,7 +27,7 @@ val find_members:
   Flx_mtypes2.sym_state_t ->
   Flx_types.bsym_table_t ->
   Flx_child.t ->
-  int ->
+  Flx_types.bid_t ->
   Flx_types.btypecode_t list ->
   string
 

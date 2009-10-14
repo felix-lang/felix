@@ -26,12 +26,6 @@ let hfind msg h k =
     print_endline ("flx_inline Hashtbl.find failed " ^ msg);
     raise Not_found
 
-module BidSet = IntSet
-
-let intset_of_list ls =
-  fold_left (fun s i -> IntSet.add i s) IntSet.empty ls
-
-
 let string_of_vs vs =
   "[" ^ catmap "," (fun (s,i)->s^"<"^si i^">") vs ^ "]"
 
@@ -79,9 +73,8 @@ let mk_label_map syms exes =
   let h = Hashtbl.create 97 in
   let aux = function
   | BEXE_label (sr,s) ->
-    let n = !(syms.counter) in
-    incr syms.counter;
-    let s' =  "_" ^ si n in
+    let n = fresh_bid syms.counter in
+    let s' =  "_" ^ string_of_bid n in
     Hashtbl.add h s s'
   | _ -> ()
   in
@@ -158,8 +151,8 @@ let call_lifting syms (uses,child_map,bsym_table) caller caller_vs callee ts a a
 
     (* replace all function returns with tailed calls *)
     let body2 = ref [] in
-    let n = !(syms.counter) in incr (syms.counter);
-    let end_label = "_end_call_lift_" ^ si n in
+    let n = fresh_bid syms.counter in
+    let end_label = "_end_call_lift_" ^ string_of_bid n in
     body2 := BEXE_label (sr,end_label) :: !body2;
     iter
       (function
@@ -274,8 +267,8 @@ let inline_function syms (uses,child_map,bsym_table) caller caller_vs callee ts 
     *)
     (* replace all function returns with variable initialisations *)
     let body2 = ref [] in
-    let n = !(syms.counter) in incr (syms.counter);
-    let end_label = "_end_inline_" ^ id ^ "_" ^ si n in
+    let n = fresh_bid syms.counter in
+    let end_label = "_end_inline_" ^ id ^ "_" ^ string_of_bid n in
     let t = ref None in
     let end_label_used = ref false in
     iter
@@ -646,7 +639,9 @@ is an instance .. so nothing is lost here.. :)
 *)
 
 let virtual_check syms bsym_table sr i ts =
-  let id,parent,callee_sr,entry = hfind ("virtual-check " ^ si i) bsym_table i in
+  let id,parent,callee_sr,entry =
+    hfind ("virtual-check " ^ string_of_bid i) bsym_table i
+  in
   (*
   print_endline ("virtual check Examining call to " ^ id ^ "<" ^ si i ^ ">");
   *)
@@ -672,7 +667,8 @@ let virtual_check syms bsym_table sr i ts =
           print_endline "Woops, parent isn't typeclass?";
           assert false
       with Not_found ->
-        print_endline ("Parent typeclass " ^ si parent ^ " not found!");
+        print_endline ("Parent typeclass " ^ string_of_bid parent ^
+          " not found!");
         assert false
     in
     let tslen = List.length ts in
@@ -790,8 +786,8 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
           *)
 
           (* create a new variable *)
-          let urv = !(syms.counter) in incr (syms.counter);
-          let urvid = "_genout_urv" ^ si urv in
+          let urv = fresh_bid syms.counter in
+          let urvid = "_genout_urv" ^ string_of_bid urv in
           add_child child_map caller urv;
           add_use uses caller urv sr;
           let entry = BBDCL_var (caller_vs,t) in
@@ -890,7 +886,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
                   print_endline ("Special inline " ^ si caller ^" calls " ^ si callee);
                   *)
                   (* GENERAL CASE -- we need to add a variable *)
-                  let urv = !(syms.counter) in incr (syms.counter);
+                  let urv = fresh_bid syms.counter in
                   (* inline the code, replacing returns with variable inits *)
                   let revariable,xs =
                      inline_function syms (uses,child_map,bsym_table) caller caller_vs callee ts a urv
@@ -930,7 +926,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
                     e'
 
                   | rxs ->
-                    let urvid = "_urv" ^ si urv in
+                    let urvid = "_urv" ^ string_of_bid urv in
                     add_child child_map caller urv;
                     add_use uses caller urv sr;
                     let entry = BBDCL_val (caller_vs,t) in
@@ -1140,7 +1136,9 @@ and heavy_inline_calls
       | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         if can_inline && inline_check caller callee props exes then
           begin
-            let vid,vparent,vsr,ventry = hfind ("init variable " ^ si i) bsym_table i in
+            let vid,vparent,vsr,ventry =
+              hfind ("init variable " ^ string_of_bid i) bsym_table i
+            in
             begin match ventry with
             | BBDCL_tmp (vs,t) ->
               (*
@@ -1203,13 +1201,13 @@ and heavy_inline_calls
 
 and remove_unused_children syms (uses,child_map,bsym_table) i =
   let desc = descendants child_map i in
-  if desc <> IntSet.empty then begin
+  if desc <> BidSet.empty then begin
     (* all the descendants of a routine, excluding self *)
     (*
     print_endline "CANDIDATE FOR CHILD REMOVAL";
     print_function syms.sym_table bsym_table i;
-    print_endline ("Descendants of " ^ si i ^ " =" ^ IntSet.fold (fun j s -> s ^ " " ^ si j) desc "");
-    IntSet.iter (fun i-> print_function syms.sym_table bsym_table i) desc;
+    print_endline ("Descendants of " ^ si i ^ " =" ^ BidSet.fold (fun j s -> s ^ " " ^ si j) desc "");
+    BidSet.iter (fun i-> print_function syms.sym_table bsym_table i) desc;
     *)
 
 
@@ -1217,13 +1215,13 @@ and remove_unused_children syms (uses,child_map,bsym_table) i =
     let used = Flx_call.use_closure uses i in
 
     (*
-    print_endline ("Usage closure of " ^ si i ^ " =" ^ IntSet.fold (fun j s -> s ^ " " ^ si j) used "");
+    print_endline ("Usage closure of " ^ si i ^ " =" ^ BidSet.fold (fun j s -> s ^ " " ^ si j) used "");
     *)
     (* any desendants not used by this routine *)
-    let unused_descendants = IntSet.diff desc used in
+    let unused_descendants = BidSet.diff desc used in
 
     (* remove the item *)
-    IntSet.iter
+    BidSet.iter
     (fun i ->
       begin
         try
@@ -1267,10 +1265,11 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
 
       let exes = check_reductions syms bsym_table exes in
       let xcls = Flx_tailit.exes_get_xclosures syms exes in
-      IntSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bsym_table) excludes i) xcls;
+      BidSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bsym_table) excludes i) xcls;
 
       if syms.compiler_options.print_flag then
-      print_endline ("HIB: Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
+      print_endline ("HIB: Examining procedure " ^ id ^ "<" ^ string_of_bid i ^
+        "> for inlinable calls");
       (*
       print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.sym_table bsym_table 0) exes);
       *)
@@ -1338,10 +1337,11 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
 
       let exes = check_reductions syms bsym_table exes in
       let xcls = Flx_tailit.exes_get_xclosures syms exes in
-      IntSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bsym_table) excludes i) xcls;
+      BidSet.iter (fun i-> heavily_inline_bbdcl syms (uses, child_map, bsym_table) excludes i) xcls;
 
       if syms.compiler_options.print_flag then
-      print_endline ("HIB:Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
+      print_endline ("HIB:Examining function " ^ id ^ "<" ^ string_of_bid i ^
+        "> for inlinable calls");
       (*
       print_endline (id ^ " Input:\n" ^ catmap "\n" (string_of_bexe syms.sym_table bsym_table 0) exes);
       *)
@@ -1402,9 +1402,9 @@ let heavy_inlining syms bsym_table child_map =
   let used = ref (!(syms.roots)) in
   let (uses,usedby) = Flx_call.call_data syms bsym_table in
 
-  while not (IntSet.is_empty !used) do
-    let i = IntSet.choose !used in
-    used := IntSet.remove i !used;
+  while not (BidSet.is_empty !used) do
+    let i = BidSet.choose !used in
+    used := BidSet.remove i !used;
     heavily_inline_bbdcl syms (uses,child_map,bsym_table) [i] i
   done;
 

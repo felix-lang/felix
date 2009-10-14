@@ -28,7 +28,7 @@ let fix_params sr seq (ps:params_t):plain_vs_list_t * params_t =
   let rec aux (ps:parameter_t list) :plain_vs_list_t * parameter_t list =
     match ps with
     | (k,x,TYP_none,d) :: t ->
-      let v = "_v"^si (seq()) in
+      let v = "_v" ^ string_of_bid (seq()) in
       let vt: typecode_t = TYP_name (generated,v,[]) in
       let vs,ps = aux t in
       (*
@@ -179,7 +179,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     (collate_namespaces syms sts))
   in
   let sr = src_of_expr e in
-  let seq () = let n = !(syms.counter) in incr (syms.counter); n in
+  let seq () = fresh_bid syms.counter in
   match e with
 
   | EXPR_patvar _
@@ -251,7 +251,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
 
   | EXPR_vsprintf (sr,s) ->
     let ix = seq () in
-    let id = "_fmt_" ^ si ix in
+    let id = "_fmt_" ^ string_of_bid ix in
     let str = TYP_name (sr,"string",[]) in
     let fmt,its = Flx_cformat.types_of_cformat_string sr s in
     let args = catmap ","
@@ -358,7 +358,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
   | EXPR_lambda (sr,(vs,pps,ret,sts)) ->
     let kind = `InlineFunction in
     let n = seq() in
-    let name' = "_lam_" ^ si n in
+    let name' = "_lam_" ^ string_of_bid n in
     let access = `Private in
     let sts =
       rst syms name access dfltvs (mkcurry seq sr name' vs pps (ret,None) kind sts [`Generated "lambda"])
@@ -410,13 +410,17 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let match_function_index = seq() in
     let match_var_index = seq() in
     (*
-    print_endline ("Match function index = " ^ si match_function_index );
-    print_endline ("Match variable index = " ^ si match_var_index );
+    print_endline ("Match function index = " ^ string_of_bid match_function_index );
+    print_endline ("Match variable index = " ^ string_of_bid match_var_index );
     *)
 
-    let match_var_name = name^ "_mv_"^si match_function_index in
-    let match_function_id = name^ "_mf_"^ si match_function_index in
-    let match_function = EXPR_index (sr,match_function_id,match_function_index) in
+    let match_var_name = name ^ "_mv_" ^ string_of_bid match_function_index in
+    let match_function_id =
+      name ^ "_mf_" ^ string_of_bid match_function_index
+    in
+    let match_function =
+      EXPR_index (sr,match_function_id,match_function_index)
+    in
     let match_seq = ref (seq()) in
 
     let expr_src = src_of_expr e in
@@ -435,7 +439,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     ;
     let ematch_seq = seq() in
     (*
-    let end_match_label = "_em" ^ si ematch_seq in
+    let end_match_label = "_em" ^ string_of_bid ematch_seq in
     *)
     let matches = ref [Exe (generated,EXE_comment "begin match")] in
     let match_caseno = ref 1 in
@@ -452,13 +456,13 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
         iswild := is_universal pat;
         let patsrc = src_of_pat pat in
         let expr_src = src_of_expr e in
-        let match_checker_id = name ^ "_mc" ^ si n1 in
-        let match_handler_id = name ^ "_mh" ^ si n1 in
+        let match_checker_id = name ^ "_mc" ^ string_of_bid n1 in
+        let match_handler_id = name ^ "_mh" ^ string_of_bid n1 in
         let match_checker = EXPR_index (patsrc,match_checker_id,mc_idx) in
         let match_handler = EXPR_index (expr_src,match_handler_id,mh_idx) in
         (*
-        print_endline ("Match checker index = " ^ si mc_idx);
-        print_endline ("Match handler index = " ^ si mh_idx);
+        print_endline ("Match checker index = " ^ string_of_bid mc_idx);
+        print_endline ("Match handler index = " ^ string_of_bid mh_idx);
         *)
         let sts,result_expr = rex e in
         let body =
@@ -492,7 +496,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
         (* we dont need a label for the first case *)
         if !match_caseno <> 1 then
         [
-        Exe (patsrc,EXE_label ("_ml" ^ si n1))
+        Exe (patsrc,EXE_label ("_ml" ^ string_of_bid n1))
         ]
         else []
         )
@@ -523,7 +527,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
                   )
                 )
               ),
-              "_ml" ^ si n2
+              "_ml" ^ string_of_bid n2
             )
           )
         ]
@@ -557,7 +561,7 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     )
     pss
     ;
-    let failure_label = "_ml" ^ si !match_seq in
+    let failure_label = "_ml" ^ string_of_bid !match_seq in
 
     let match_function_body =
     d
@@ -682,8 +686,8 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     let props = ref [] in
     let decls = ref [] in
     let mkreq s kind =
-      let n = !(syms.counter) in incr syms.counter;
-      let n = "_req_" ^ si n in
+      let n = fresh_bid syms.counter in
+      let n = "_req_" ^ string_of_bid n in
       let dcl = Dcl (sr,n,ix,access,dfltvs,DCL_insert (s,kind,NREQ_true)) in
       decls := dcl :: !decls;
       NREQ_atom (`AST_name (sr,n,parent_ts sr))
@@ -727,7 +731,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   let rsts name vs access sts = List.concat (List.map (rst syms name access vs)
     (collate_namespaces syms sts))
   in
-  let seq () = let n = !(syms.counter) in incr (syms.counter); n in
+  let seq () = fresh_bid syms.counter in
   (* add _root headers and bodies as requirements for all
     bindings defined in this entity
   *)
@@ -941,7 +945,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
       match arg with
       | TYP_apply (TYP_name (_,"excl",[]), TYP_name (sr,name,[])) ->
           let n = seq() in
-          let var = "T"^si n in
+          let var = "T" ^ string_of_bid n in
           (*
           print_endline ("Implicit var " ^ var);
           *)
@@ -1011,7 +1015,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
         begin match e with
         | EXPR_tuple (_,ls) ->
           let n = seq() in
-          let vn = "_" ^ si n in
+          let vn = "_" ^ string_of_bid n in
           let sts = ref [] in
           let count = ref 0 in
           List.iter
@@ -1052,7 +1056,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
           [assign sr fid n r]
       | `List ls ->
           let n = seq() in
-          let vn = "_" ^ si n in
+          let vn = "_" ^ string_of_bid n in
           let sts = ref [] in
           let count = ref 0 in
           List.iter
@@ -1101,11 +1105,11 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
 
     (* step 1: evaluate e *)
     let d,x = rex e in
-    let match_index : int = seq() in
+    let match_index : bid_t = seq () in
 
-    let match_var_name = name^ "_mv_"^si match_index in
-    let match_id = name^ "_mf_"^ si match_index in
-    let end_match_label = "_em" ^ si match_index in
+    let match_var_name = name^ "_mv_" ^ string_of_bid match_index in
+    let match_id = name^ "_mf_" ^ string_of_bid match_index in
+    let end_match_label = "_em" ^ string_of_bid match_index in
 
     let expr_src = src_of_expr e in
 
@@ -1131,7 +1135,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
       n2 := seq(); (* the next case *)
       iswild := is_universal pat;
       let patsrc = src_of_pat pat in
-      let match_checker_id = name ^ "_mc" ^ si n1 in
+      let match_checker_id = name ^ "_mc" ^ string_of_bid n1 in
       let match_checker = EXPR_index (patsrc,match_checker_id,n1) in
       let vars = Hashtbl.create 97 in
       Flx_mbind.get_pattern_vars vars pat [];
@@ -1190,7 +1194,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
                   )
                 )
               ),
-              "_ml" ^ si (!n2)
+              "_ml" ^ string_of_bid (!n2)
             )
           )
         ]
@@ -1200,7 +1204,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
         @
         [
         Exe (patsrc,EXE_goto end_match_label);
-        Exe (patsrc,EXE_label ("_ml" ^ si (!n2)))
+        Exe (patsrc,EXE_label ("_ml" ^ string_of_bid (!n2)))
         ]
 
       ;

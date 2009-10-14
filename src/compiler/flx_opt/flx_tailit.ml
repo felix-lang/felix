@@ -41,7 +41,7 @@ let add_xclosure syms cls e =
   print_endline ("chk cls for " ^ sbe syms.sym_table bsym_table e);
   *)
   match e with
-  | BEXPR_closure (i,ts),t -> cls := IntSet.add i !cls
+  | BEXPR_closure (i,ts),t -> cls := BidSet.add i !cls
   | _ -> ()
 
 let ident x = x
@@ -61,7 +61,7 @@ let exes_find_xclosure syms cls exes =
   iter (exe_find_xclosure syms cls) exes
 
 let exes_get_xclosures syms exes =
-  let cls = ref IntSet.empty in
+  let cls = ref BidSet.empty in
   exes_find_xclosure syms cls exes;
   !cls
 
@@ -80,11 +80,11 @@ let function_find_xclosure syms cls bsym_table i =
   exes_find_xclosure syms cls exes
 
 let functions_find_xclosures syms cls bsym_table ii =
-  IntSet.iter
+  BidSet.iter
   (function_find_xclosure syms cls bsym_table)
   ii
 
-let rec check_ahead i n ls res : (int * int * btypecode_t) list =
+let rec check_ahead i n ls res =
   if n = 0 then rev res else match ls with
   | [] -> []
   | h :: t ->  match h with
@@ -144,7 +144,7 @@ let check_proj_wrap_closure syms bsym_table descend usage n i e =
   print_endline "Now, check in dependents";
   *)
   let u = expr_uses_unrestricted syms descend usage e in
-  IntSet.iter (check_proj_wrap_entry syms bsym_table n i) u
+  BidSet.iter (check_proj_wrap_entry syms bsym_table n i) u
 
 let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
   (*
@@ -154,32 +154,32 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
   *)
 
   let ts' = map (fun (_,i) -> BTYP_var (i,BTYP_type 0)) vs in
-  let pset = fold_left (fun s {pindex=i} -> IntSet.add i s) IntSet.empty ps in
+  let pset = fold_left (fun s {pindex=i} -> BidSet.add i s) BidSet.empty ps in
   let parameters = ref [] in
   let descend = descendants child_map this in
   let children = try Hashtbl.find child_map this with Not_found -> [] in
   let can_loop () =
     let varlist = filter (isvariable bsym_table) children in
-    let funset = IntSet.filter (isfun bsym_table) descend in
+    let funset = BidSet.filter (isfun bsym_table) descend in
 
     (*
     print_endline ("Procedure has " ^ si (length varlist) ^ " variables");
-    print_endline ("Procedure has " ^ si (IntSet.cardinal funset) ^ " child funcs");
+    print_endline ("Procedure has " ^ si (BidSet.cardinal funset) ^ " child funcs");
     *)
 
-    let cls = ref IntSet.empty in
+    let cls = ref BidSet.empty in
     functions_find_xclosures syms cls bsym_table funset;
     (* THIS FUNCTION IS BEING INLINED .. WE CANNOT LOOKUP ITS EXES!! *)
     exes_find_xclosure syms cls exes;
     (*
-    print_endline ("Total xclosures " ^ si (IntSet.cardinal !cls));
+    print_endline ("Total xclosures " ^ si (BidSet.cardinal !cls));
     *)
-    let kidcls = IntSet.inter !cls funset in
+    let kidcls = BidSet.inter !cls funset in
     (*
-    print_endline ("Kid xclosures " ^ si (IntSet.cardinal kidcls));
+    print_endline ("Kid xclosures " ^ si (BidSet.cardinal kidcls));
     *)
     try
-      IntSet.iter
+      BidSet.iter
       (fun i ->
         let usage = Hashtbl.find uses i in
         iter
@@ -202,8 +202,8 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
   in
 
   let jump_done = ref false in
-  let lc = !(syms.counter) in incr (syms.counter);
-  let start_label = "start_" ^ si lc in
+  let lc = fresh_bid syms.counter in
+  let start_label = "start_" ^ string_of_bid lc in
 
   (* note reverse order *)
   (* Weirdly, this works for BOTH tail calls
@@ -253,7 +253,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
         let pix =
           try assoc t !parameters
           with Not_found ->
-            let pix = !(syms.counter) in incr syms.counter;
+            let pix = fresh_bid syms.counter in
             parameters := (t,pix) :: !parameters;
             pix
         in
@@ -285,10 +285,10 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
     (* vset is the restriction set applied to the usage closure to
       restrict attention to the LHS variables
     *)
-    let vset = fold_left (fun acc (k,_,_) ->IntSet.add k acc) IntSet.empty pas in
+    let vset = fold_left (fun acc (k,_,_) ->BidSet.add k acc) BidSet.empty pas in
     let asgns = map
       (fun (k,p,t) ->
-        let name = "DUNNO_" ^ si k in
+        let name = "DUNNO_" ^ string_of_bid k in
         let e = nth ls p in
         let d = expr_uses syms descend uses vset e in
         k, (name,t,e,d)
@@ -340,8 +340,8 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
       let descend = match parent with
         | Some parent -> descendants child_map parent
         | None ->
-          let d = ref IntSet.empty in
-          Hashtbl.iter (fun i _ -> d := IntSet.add i !d) child_map;
+          let d = ref BidSet.empty in
+          Hashtbl.iter (fun i _ -> d := BidSet.add i !d) child_map;
           !d
       in
 
@@ -373,8 +373,8 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
           let rec pr xs = match xs with
           | (k,p,t) :: tl ->
              print_endline (
-               "var " ^ si k ^ " : " ^sbt syms.sym_table t^
-               " = var " ^ si i^ ".(" ^ si p ^") = " ^
+               "var " ^ string_of_bid k ^ " : " ^ sbt syms.sym_table t ^
+               " = var " ^ string_of_bid i ^ ".(" ^ string_of_int p ^ ") = " ^
                sbe syms.sym_table bsym_table (nth ls p)
              );
              pr tl
@@ -415,7 +415,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
         end
         else begin
           (*
-          assert (d = IntSet.singleton i);
+          assert (d = BidSet.singleton i);
           *)
           if syms.compiler_options.print_flag then
             print_endline ("UNOPTIMISED");
@@ -530,7 +530,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
         ls ls'
         ;
         *)
-        let vset = fold_left (fun acc k ->IntSet.add (k+pbase) acc) IntSet.empty (nlist n) in
+        let vset = fold_left (fun acc k -> BidSet.add (k+pbase) acc) BidSet.empty (nlist n) in
         let asgns = map
           (fun k ->
           let name = "DUNNO_" ^ si (k+pbase) in
@@ -598,7 +598,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
             with Not_found -> []
           in
           Hashtbl.replace child_map this (parameter::kids);
-          let id = "_trp_" ^ si  parameter in
+          let id = "_trp_" ^ string_of_bid parameter in
           Hashtbl.add bsym_table parameter (id,Some this,sr,entry);
         )
       !parameters

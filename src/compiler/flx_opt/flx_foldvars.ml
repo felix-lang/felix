@@ -17,9 +17,9 @@ open Flx_child
 open Flx_reparent
 open Flx_spexes
 
-let string_of_intset s =
+let string_of_bidset s =
   "{ " ^
-  IntSet.fold (fun i x -> x ^ si i ^ " ") s "" ^
+  BidSet.fold (fun i x -> x ^ string_of_bid i ^ " ") s "" ^
   "}"
 
 
@@ -27,7 +27,7 @@ let ident x = x
 
 let useset uses i =
   let u = try Hashtbl.find uses i with Not_found -> [] in
-  fold_left (fun s (i,_) -> IntSet.add i s) IntSet.empty u
+  fold_left (fun s (i,_) -> BidSet.add i s) BidSet.empty u
 
 (* remove all uses of j from i *)
 let remove_uses uses i j =
@@ -51,54 +51,58 @@ let add_use uses i j sr =
    child functions.
 *)
 let locals child_map uses i =
-  let kids = intset_of_list (find_children child_map i) in
+  let kids = List.fold_left
+    (fun ii i -> BidSet.add i ii)
+    BidSet.empty
+    (find_children child_map i)
+  in
   (*
-  print_endline ("Kid of " ^ si i ^ " = " ^ string_of_intset kids);
+  print_endline ("Kid of " ^ si i ^ " = " ^ string_of_bidset kids);
   *)
   (*
   let u = useset uses i in
   *)
   let u = Flx_call.child_use_closure kids uses i in
-  let unused_kids = IntSet.diff kids u in
+  let unused_kids = BidSet.diff kids u in
   (*
-  print_endline ("Unused kids are " ^ si i ^ " = " ^ string_of_intset unused_kids);
+  print_endline ("Unused kids are " ^ si i ^ " = " ^ string_of_bidset unused_kids);
   *)
-  let used_kids = IntSet.diff kids unused_kids in
+  let used_kids = BidSet.diff kids unused_kids in
   (*
-  print_endline ("Used kids are " ^ si i ^ " = " ^ string_of_intset used_kids);
+  print_endline ("Used kids are " ^ si i ^ " = " ^ string_of_bidset used_kids);
   *)
   (*
   let desc = descendants child_map i in
   *)
   let desc =
-    IntSet.fold
-    (fun j s -> let u = descendants child_map j in IntSet.union u s)
+    BidSet.fold
+    (fun j s -> let u = descendants child_map j in BidSet.union u s)
     used_kids
-    IntSet.empty
+    BidSet.empty
   in
   (*
-  print_endline ("Descendants of " ^ si i ^ " = " ^ string_of_intset desc);
+  print_endline ("Descendants of " ^ si i ^ " = " ^ string_of_bidset desc);
   *)
   let u =
-    IntSet.fold
+    BidSet.fold
     (fun j s ->
       let u = useset uses j in
       (*
-      print_endline ("Descendant " ^ si j ^ " of " ^ si i ^ " uses " ^ string_of_intset u);
+      print_endline ("Descendant " ^ si j ^ " of " ^ si i ^ " uses " ^ string_of_bidset u);
       *)
-      IntSet.union s u
+      BidSet.union s u
     )
     desc
-    IntSet.empty
+    BidSet.empty
   in
   (*
-  print_endline ("Stuff used by some descendant = " ^ string_of_intset u);
+  print_endline ("Stuff used by some descendant = " ^ string_of_bidset u);
   *)
-  IntSet.diff kids u
+  BidSet.diff kids u
 
 
 let fold_vars syms bsym_table child_map uses i ps exes =
-  let pset = fold_left (fun s {pindex=i}-> IntSet.add i s) IntSet.empty ps in
+  let pset = fold_left (fun s {pindex=i}-> BidSet.add i s) BidSet.empty ps in
   let kids = find_children child_map i in
   let id,_,_,_ = Hashtbl.find bsym_table i in
   (*
@@ -107,11 +111,11 @@ let fold_vars syms bsym_table child_map uses i ps exes =
   *)
   let descend = descendants child_map i in
   (*
-  print_endline ("Descendants are " ^ string_of_intset descend);
+  print_endline ("Descendants are " ^ string_of_bidset descend);
   *)
   let locls = locals child_map uses i in
   (*
-  print_endline ("Locals of " ^ si i ^ " are " ^ string_of_intset locls);
+  print_endline ("Locals of " ^ si i ^ " are " ^ string_of_bidset locls);
   print_endline "INPUT Code is";
   iter (fun exe -> print_endline (string_of_bexe syms.sym_table 0 exe)) exes;
   *)
@@ -124,7 +128,7 @@ let fold_vars syms bsym_table child_map uses i ps exes =
       | ((
         BEXE_init (_,j,y)
         | BEXE_assign (_, (BEXPR_name (j,_),_),y)
-      ) as x) :: t  when IntSet.mem j locls ->
+      ) as x) :: t  when BidSet.mem j locls ->
 
         let id,_,_,_ = Hashtbl.find bsym_table j in
         (*
@@ -134,10 +138,10 @@ let fold_vars syms bsym_table child_map uses i ps exes =
 
         (* check if the variable is used by any descendants *)
         let nlocal_uses =
-          IntSet.fold
+          BidSet.fold
           (fun child u ->
              let luses = Flx_call.use_closure uses child in
-             u || IntSet.mem j luses
+             u || BidSet.mem j luses
           )
           descend
           false
@@ -157,7 +161,7 @@ let fold_vars syms bsym_table child_map uses i ps exes =
         (*
         print_endline ("Use count = " ^ si usecnt);
         *)
-        let setcnt = ref (if IntSet.mem j pset then 2 else 1) in
+        let setcnt = ref (if BidSet.mem j pset then 2 else 1) in
         let sets exe =
           match exe with
            | BEXE_init (_,k,_) when j = k -> incr setcnt
@@ -170,15 +174,16 @@ let fold_vars syms bsym_table child_map uses i ps exes =
         (* Lets not get too fancy .. fancy didn't work! *)
         let yuses = Flx_call.expr_uses_unrestricted syms descend uses y in
         (*
-        print_endline ("Usage (unrestricted) = " ^ string_of_intset yuses_ur);
-        print_endline ("restriction = " ^ string_of_intset pset);
+        print_endline ("Usage (unrestricted) = " ^ string_of_bidset yuses_ur);
+        print_endline ("restriction = " ^ string_of_bidset pset);
         let yuses = Flx_call.expr_uses syms descend uses pset y in
-        print_endline ("Usage (restricted) = " ^ string_of_intset yuses);
+        print_endline ("Usage (restricted) = " ^ string_of_bidset yuses);
         *)
         let delete_var () =
           let id,_,_,_ = Hashtbl.find bsym_table j in
           if syms.compiler_options.print_flag then
-            print_endline ("ELIMINATING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe syms.sym_table bsym_table y);
+            print_endline ("ELIMINATING VARIABLE " ^ id ^ "<" ^ string_of_bid j
+              ^ "> -> " ^ sbe syms.sym_table bsym_table y);
 
           (* remove the variable *)
           Hashtbl.remove bsym_table j;
@@ -207,7 +212,8 @@ let fold_vars syms bsym_table child_map uses i ps exes =
         (* it is not used anywhere (except the init) *)
         end else if usecnt = 1 then begin
           if syms.compiler_options.print_flag then
-          print_endline ("WARNING: unused variable "^si j^" found ..");
+          print_endline ("WARNING: unused variable " ^ string_of_bid j
+            ^ " found ..");
           delete_var();
           find_tassign t outexes
 
@@ -221,7 +227,7 @@ let fold_vars syms bsym_table child_map uses i ps exes =
             (*
             print_endline "Tuple init found";
             print_endline ("initialiser y =" ^ sbe syms.sym_table bsym_table y);
-            print_endline ("Y uses = " ^ string_of_intset yuses);
+            print_endline ("Y uses = " ^ string_of_bidset yuses);
             *)
             let rec subi j ys e =
               match map_tbexpr ident (subi j ys) ident e with
@@ -286,9 +292,9 @@ let fold_vars syms bsym_table child_map uses i ps exes =
              *)
              (*
              print_endline ("Assignment of " ^ si k);
-             print_endline ("Y uses = " ^ string_of_intset yuses);
+             print_endline ("Y uses = " ^ string_of_bidset yuses);
              *)
-             let can_replace = not (IntSet.mem k yuses) in
+             let can_replace = not (BidSet.mem k yuses) in
              subs := can_replace;
              (* we could actually allow THIS assignment to go
              thru .. but it might screw up parallel assignemnt

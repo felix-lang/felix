@@ -7,16 +7,16 @@ open Flx_util
 open Flx_print
 
 type label_map_t =
-  (bid_t,(string, int) Hashtbl.t) Hashtbl.t
+  (bid_t, (string, bid_t) Hashtbl.t) Hashtbl.t
 
 type label_kind_t = [`Far | `Near | `Unused]
 
-type label_usage_t = (int,label_kind_t) Hashtbl.t
+type label_usage_t = (bid_t, label_kind_t) Hashtbl.t
 
 type goto_kind_t =
 [
-  | `Local of int
-  | `Nonlocal of int * int
+  | `Local of bid_t
+  | `Nonlocal of bid_t * bid_t
   | `Unreachable
 ]
 
@@ -28,7 +28,7 @@ let get_labels bsym_table counter exes =
         (*
         print_endline ("Label " ^ s);
         *)
-        Hashtbl.add labels s !counter; incr counter
+        Hashtbl.add labels s (fresh_bid counter)
       | _ -> ()
     )
     exes
@@ -87,8 +87,9 @@ let cal_usage syms bsym_table label_map caller exes usage =
     | BEXE_ifgoto (sr,_,label) ->
       begin match find_label bsym_table label_map caller label with
       | `Unreachable ->
-        syserr sr ("[flx_label] Caller "^si caller^" Jump to unreachable label " ^ label ^ "\n" ^
-        (catmap "\n" (string_of_bexe syms.sym_table bsym_table 2) exes))
+        syserr sr ("[flx_label] Caller " ^ string_of_bid caller ^
+          " Jump to unreachable label " ^ label ^ "\n" ^
+          (catmap "\n" (string_of_bexe syms.sym_table bsym_table 2) exes))
       | `Local lix ->
         begin match get_label_kind_from_index usage lix with
         | `Unused -> Hashtbl.replace usage lix `Near

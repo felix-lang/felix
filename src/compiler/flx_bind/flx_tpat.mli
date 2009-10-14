@@ -15,7 +15,7 @@ val type_of_tpattern:
 val type_of_tpattern:
   sym_state_t -> typecode_t ->
   typecode_t *
-  (int * string) list *     (* variables for '?' terms *)
-  int list *                (* variables for 'any' terms *)
-  (int * string) list *     (* variables for 'as' terms *)
-  (int * typecode_t) list   (* variables for as terms *)
+  (bid_t * string) list *     (* variables for '?' terms *)
+  bid_t list *                (* variables for 'any' terms *)
+  (bid_t * string) list *     (* variables for 'as' terms *)
+  (bid_t * typecode_t) list   (* variables for as terms *)

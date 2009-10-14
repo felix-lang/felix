@@ -13,14 +13,15 @@ let null_tab = Hashtbl.create 3
 
 (* use fresh variables, but preserve names *)
 let mkentry syms (vs:ivs_list_t) i =
-  let n = List.length (fst vs) in
-  let base = !(syms.Flx_mtypes2.counter) in
-  syms.Flx_mtypes2.counter := !(syms.Flx_mtypes2.counter) + n;
-  let ts = List.map (fun i -> BTYP_var (i+base,BTYP_type 0)) (Flx_list.nlist n) in
-  let vs = List.map2 (fun i (n,_,_) -> n,i+base) (Flx_list.nlist n) (fst vs) in
+  let is = List.map
+    (fun _ -> Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter)
+    (fst vs)
+  in
+  let ts = List.map (fun i -> BTYP_var (i, BTYP_type 0)) is in
+  let vs = List.map2 (fun i (n,_,_) -> n,i) is (fst vs) in
   (*
-  print_endline ("Make entry " ^ string_of_int i ^ ", " ^ "vs =" ^
-    Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^ ">") vs ^
+  print_endline ("Make entry " ^ string_of_bid ^ ", " ^ "vs =" ^
+    Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs ^
     ", ts=" ^ Flx_util.catmap "," (Flx_print.sbt syms.Flx_mtypes2.sym_table) ts
   );
   *)
@@ -49,12 +50,7 @@ let merge_ivs
   { raw_type_constraint=t; raw_typeclass_reqs=rtcr }
 
 
-let split_asms asms :
-  (Flx_srcref.t * id_t * int option * Flx_types.access_t * vs_list_t * Flx_types.dcl_t) list *
-  sexe_t list *
-  (Flx_srcref.t * Flx_types.iface_t) list *
-  Flx_types.dir_t list
-=
+let split_asms asms =
   let rec aux asms dcls exes ifaces dirs =
     match asms with
     | [] -> (dcls, exes, ifaces, dirs)
@@ -95,7 +91,7 @@ let full_add_unique syms sr (vs:ivs_list_t) table key value =
        | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
-         string_of_int (Flx_typing.sye idx) ^ ">")
+         Flx_print.string_of_bid (Flx_typing.sye idx) ^ ">")
        )
      | FunctionEntry [] -> assert false
   with Not_found ->
@@ -112,7 +108,7 @@ let full_add_typevar syms sr table key value =
        | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
-         string_of_int (Flx_typing.sye idx) ^ ">")
+         Flx_print.string_of_bid (Flx_typing.sye idx) ^ ">")
        )
      | FunctionEntry [] -> assert false
   with Not_found ->
@@ -130,9 +126,9 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
         Flx_exceptions.clierr2 sr sr2
         (
           "[build_tables] Cannot overload " ^
-          key ^ "<" ^ string_of_int value ^ ">" ^
+          key ^ "<" ^ Flx_print.string_of_bid value ^ ">" ^
           " with non-function " ^
-          id ^ "<" ^ string_of_int (Flx_typing.sye entry) ^ ">"
+          id ^ "<" ^ Flx_print.string_of_bid (Flx_typing.sye entry) ^ ">"
         )
       end
 
@@ -147,11 +143,10 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
 let make_ivs ?(print=false) level counter (vs, con) : ivs_list_t =
   let ivs =
     List.map begin fun (tid, tpat) ->
-      let n = !counter in
-      incr counter;
+      let n = Flx_mtypes2.fresh_bid counter in
       if print then
-        print_endline ("//  " ^ Flx_util.spaces level ^ string_of_int n ^
-        " -> " ^ tid ^ " (type variable)");
+        print_endline ("//  " ^ Flx_util.spaces level ^
+          Flx_print.string_of_bid n ^ " -> " ^ tid ^ " (type variable)");
       tid, n, tpat
     end vs
   in
@@ -268,8 +263,7 @@ and build_table_for_dcl
         (* print_endline ("SPECIAL " ^ id ^ string_of_int n); *)
         n
     | None ->
-        let n = !counter in incr counter;
-        n
+        Flx_mtypes2.fresh_bid counter
   in
 
   (* Update the type variable list to include the index. *)
@@ -365,10 +359,11 @@ and build_table_for_dcl
     let ips = ref [] in
 
     List.iter begin fun (k, name, typ, dflt) ->
-      let n = !counter in incr counter;
+      let n = Flx_mtypes2.fresh_bid counter in
 
       if print_flag then
-        print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name ^ " (parameter)");
+        print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
+          name ^ " (parameter)");
 
       (* Add the paramater to the symbol table. *)
       add_symbol
@@ -393,10 +388,11 @@ and build_table_for_dcl
   let add_simple_parameters parent ps =
     let ips = ref [] in
     List.iter begin fun (name, typ) ->
-      let n = !counter in incr counter;
+      let n = Flx_mtypes2.fresh_bid counter in
 
       if print_flag then
-        print_endline ("//  " ^ spc ^ string_of_int n ^ " -> " ^ name ^ " (parameter)");
+        print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
+          name ^ " (parameter)");
 
       (* Add the symbol to the symbol table. *)
       add_symbol
@@ -605,10 +601,10 @@ and build_table_for_dcl
       let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
 
       (* Get a unique index for the _init_ function. *)
-      let n' = !counter in incr counter;
+      let n' = Flx_mtypes2.fresh_bid counter in
 
       if print_flag then
-        print_endline ("//  " ^ spc ^ string_of_int n' ^
+        print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n' ^
         " -> _init_  (module " ^ id ^ ")");
 
       (* Add the _init_ function to the sym_table. *)
@@ -668,9 +664,11 @@ and build_table_for_dcl
       let nts = List.map (fun (s,i,t)-> BTYP_var (i,BTYP_type 0)) (fst ivs) in
       (* fudge the private view to remove the vs *)
       let show { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } =
-        string_of_int i ^ " |-> " ^
-          "vs= " ^ Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_int i ^
-          ">") vs ^ "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt sym_table) ts
+        Flx_print.string_of_bid i ^ " |-> " ^
+          "vs= " ^ Flx_util.catmap
+            ","
+            (fun (s,i) -> s ^ "<" ^ Flx_print.string_of_bid i ^ ">")
+          vs ^ "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt sym_table) ts
       in
       let fixup ({ Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
         let e' = {
@@ -886,7 +884,7 @@ and build_table_for_dcl
       let piname = TYP_name (sr,id,[]) in
 
       (* XXX: What's the _repr_ function for? *)
-      let n_repr = !(syms.Flx_mtypes2.counter) in incr (syms.Flx_mtypes2.counter);
+      let n_repr = Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter in
 
       (* Add the _repr_ function to the symbol table. *)
       add_symbol n_repr "_repr_"
@@ -896,7 +894,7 @@ and build_table_for_dcl
       add_function priv_name_map "_repr_" n_repr;
 
       (* XXX: What's the _make_ function for? *)
-      let n_make = !(syms.Flx_mtypes2.counter) in incr (syms.Flx_mtypes2.counter);
+      let n_make = Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter in
 
       (* Add the _make_ function to the symbol table. *)
       add_symbol n_make ("_make_" ^ id)
@@ -1003,8 +1001,8 @@ and build_table_for_dcl
         end true its
       in
       List.iter begin fun (component_name, ctor_idx, vs, t) ->
-        let dfn_idx = !counter in incr counter; (* constructor *)
-        let match_idx = !counter in incr counter; (* matcher *)
+        let dfn_idx = Flx_mtypes2.fresh_bid counter in (* constructor *)
+        let match_idx = Flx_mtypes2.fresh_bid counter in (* matcher *)
 
         (* existential type variables *)
         let evs = make_ivs vs in
@@ -1033,7 +1031,8 @@ and build_table_for_dcl
         in
 
         if print_flag then
-          print_endline ("//  " ^ spc ^ string_of_int dfn_idx ^ " -> " ^ component_name);
+          print_endline ("//  " ^ spc ^ Flx_print.string_of_bid dfn_idx ^
+            " -> " ^ component_name);
 
         (* Add the component to the sym_table. *)
         add_symbol dfn_idx component_name ctor_dcl2;

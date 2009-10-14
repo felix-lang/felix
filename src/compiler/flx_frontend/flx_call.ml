@@ -72,7 +72,7 @@ let cal_param_usage syms uses sr parent {pindex=child;ptyp=t} =
 
 let cal_req_usage syms uses sr parent reqs =
   let ur (j,ts) =
-    if j = 0 then faulty_req syms parent
+    if j = dummy_bid then faulty_req syms parent
     else add uses parent j sr
   in
   List.iter ur reqs
@@ -144,10 +144,10 @@ let call_data syms bsym_table =
 
 (* closure of i, excluding i unless it is recursive! *)
 let cls h i =
-  let c = ref IntSet.empty in
+  let c = ref BidSet.empty in
   let rec add j =
-    if not (IntSet.mem j !c) then begin
-      c := IntSet.add j !c;
+    if not (BidSet.mem j !c) then begin
+      c := BidSet.add j !c;
       let x = try Hashtbl.find h j with Not_found -> [] in
       List.iter (fun (j,_) -> add j) x
     end
@@ -156,7 +156,7 @@ let cls h i =
   List.iter (fun (j,_) -> add j) x;
   !c
 
-let is_recursive_call h caller callee = IntSet.mem caller (cls h callee)
+let is_recursive_call h caller callee = BidSet.mem caller (cls h callee)
 let is_recursive h i = is_recursive_call h i i
 
 let use_closure h i = cls h i
@@ -209,11 +209,11 @@ let use_closure h i = cls h i
 *)
 
 let child_use_closure k h i =
-  let c = ref IntSet.empty in
+  let c = ref BidSet.empty in
   let rec add j =
-    if not (IntSet.mem j !c) && IntSet.mem j k then
+    if not (BidSet.mem j !c) && BidSet.mem j k then
     begin
-      c := IntSet.add j !c;
+      c := BidSet.add j !c;
       let x = try Hashtbl.find h j with Not_found -> [] in
       List.iter (fun (j,_) -> add j) x
     end
@@ -229,7 +229,7 @@ let call_report syms bsym_table (uses,usedby) f k =
   let w s = output_string f s in
   let isr = is_recursive uses k in
   let id,_,sr,entry = Hashtbl.find bsym_table k in
-  w (si k ^ ": ");
+  w (string_of_bid k ^ ": ");
   w (if isr then "recursive " else "");
   w
     begin match entry with
@@ -255,13 +255,13 @@ let call_report syms bsym_table (uses,usedby) f k =
   end
   u;
   let u = List.sort compare !x in
-  w (catmap "," si u);
+  w (catmap "," string_of_bid u);
   w "; usedby: ";
   let u = try Hashtbl.find usedby k with Not_found -> [] in
   let x = ref [] in
   List.iter (fun (i,_) -> if not (List.mem i !x) then x := i::!x) u;
   let u = List.sort compare !x in
-  w (catmap "," si u);
+  w (catmap "," string_of_bid u);
   w "\n"
 
 let print_call_report' syms bsym_table usage f =
@@ -287,28 +287,28 @@ let print_call_report syms bsym_table f =
   print_call_report' syms bsym_table usage f
 
 let expr_uses_unrestricted syms descend usage e =
-  let u = ref IntSet.empty in
-  let add u i = u := IntSet.add i !u in
+  let u = ref BidSet.empty in
+  let add u i = u := BidSet.add i !u in
   iter_tbexpr (add u) ignore ignore e;
 
 
   (*
   print_string ("Direct usage of expr " ^ sbe syms.sym_table e ^ ": ");
-  IntSet.iter (fun i -> print_string (si i^" ")) !u;
+  BidSet.iter (fun i -> print_string (si i^" ")) !u;
   print_endline "";
 
 
   print_string ("Restrict =  ");
-  IntSet.iter (fun i -> print_string (si i^" ")) restrict;
+  BidSet.iter (fun i -> print_string (si i^" ")) restrict;
   print_endline "";
   *)
 
-  let u = IntSet.fold
-    (fun i cls -> IntSet.union cls (
+  let u = BidSet.fold
+    (fun i cls -> BidSet.union cls (
      let cl = child_use_closure descend usage i in
      (*
      print_string ("Closure of " ^ si i ^ " is: ");
-     IntSet.iter (fun i -> print_string (si i ^ " ")) cl;
+     BidSet.iter (fun i -> print_string (si i ^ " ")) cl;
      print_endline "";
      *)
      cl
@@ -320,4 +320,4 @@ let expr_uses_unrestricted syms descend usage e =
 
 let expr_uses syms descend usage restrict e =
   let u = expr_uses_unrestricted syms descend usage e in
-  IntSet.inter restrict u
+  BidSet.inter restrict u

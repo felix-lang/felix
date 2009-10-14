@@ -48,7 +48,7 @@ let lower_bsym_table state bsym_table root_proc =
   (* fix up root procedures so if they're not stackable,
      then they need a heap closure -- wrappers require
      one or the other *)
-  Flx_set.IntSet.iter begin fun i ->
+  Flx_types.BidSet.iter begin fun i ->
     let id,parent,sr,entry = Hashtbl.find bsym_table i in
     match entry with
     | Flx_types.BBDCL_procedure (props,vs,p,exes) ->

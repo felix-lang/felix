@@ -49,8 +49,8 @@ let find_references syms bsym_table child_map index ts =
         if length ts <> length vs then
         failwith
         (
-          "[find_references] entry " ^ si index ^
-          ", child " ^ id ^ "<" ^ si idx ^ ">" ^
+          "[find_references] entry " ^ string_of_bid index ^
+          ", child " ^ id ^ "<" ^ string_of_bid idx ^ ">" ^
           ", wrong number of args, expected vs = " ^
           si (length vs) ^
           ", got ts=" ^
@@ -97,7 +97,8 @@ let rec get_offsets' syms bsym_table typ : string list =
   | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
       try Hashtbl.find bsym_table i
-      with Not_found -> failwith ("get_offsets'] can't find index " ^ si i)
+      with Not_found -> failwith
+        ("get_offsets'] can't find index " ^ string_of_bid i)
     in
     begin match entry with
     | BBDCL_union (vs,idts) ->
@@ -350,7 +351,8 @@ let gen_offset_tables syms bsym_table child_map module_name =
   (fun (index,ts) instance ->
     let id,parent,sr,entry =
       try Hashtbl.find bsym_table index
-      with Not_found -> failwith ("[gen_offset_tables] can't find index " ^ si index)
+      with Not_found ->
+        failwith ("[gen_offset_tables] can't find index " ^ string_of_bid index)
     in
     (*
     print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt syms.sym_table) ts ^"]");
@@ -373,7 +375,8 @@ let gen_offset_tables syms bsym_table child_map module_name =
         gen_fun_offsets s syms (child_map,bsym_table) index vs ps BTYP_void ts instance props last_ptr_map
       else if mem `Stack_closure props then ()
       else
-        print_endline ("Warning: no closure of " ^ id ^"<" ^ si index ^ "> is used, but not stackable?")
+        print_endline ("Warning: no closure of " ^ id ^"<" ^
+          string_of_bid index ^ "> is used, but not stackable?")
     | _ -> ()
   )
   syms.instances
@@ -424,7 +427,9 @@ let gen_offset_tables syms bsym_table child_map module_name =
       *)
       let id,parent,sr,entry =
         try Hashtbl.find bsym_table i
-        with Not_found -> failwith ("[gen_offset_tables:BTYP_inst] can't find index " ^ si i)
+        with Not_found ->
+          failwith ("[gen_offset_tables:BTYP_inst] can't find index " ^
+            string_of_bid i)
       in
       begin match entry with
       | BBDCL_abs (vs,bquals,_,_) ->
@@ -500,7 +505,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
       let offsets = get_offsets syms bsym_table btyp in
       let n = length offsets in
       let classname = cpp_type_classname syms btyp in
-      bcat s ("\n//OFFSETS for tuple type " ^ si index ^ "\n");
+      bcat s ("\n//OFFSETS for tuple type " ^ string_of_bid index ^ "\n");
       gen_offset_data s n name offsets false [] None last_ptr_map
 
     (* This is a pointer, the offset data is in the system library *)
@@ -526,7 +531,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
         | _ -> false
       in
       let n = length offsets in
-      bcat s ("\n//OFFSETS for array type " ^ si index ^ "\n");
+      bcat s ("\n//OFFSETS for array type " ^ string_of_bid index ^ "\n");
       if n <> 0 then begin
         bcat s ("static std::size_t " ^ name ^ "_offsets["^si n^"]={\n  ");
         bcat s ("  " ^ cat ",\n  " offsets);
@@ -570,7 +575,10 @@ let gen_offset_tables syms bsym_table child_map module_name =
       let name = cpp_typename syms btyp in
       let id,parent,sr,entry =
         try Hashtbl.find bsym_table i
-        with Not_found -> failwith ("[gen_offset_tables:BTYP_inst:allocable_types] can't find index " ^ si i)
+        with Not_found ->
+          failwith (
+            "[gen_offset_tables:BTYP_inst:allocable_types] can't find index " ^
+            string_of_bid i)
       in
       begin match entry with
       | BBDCL_abs (_,quals,_,_) ->

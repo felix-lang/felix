@@ -32,36 +32,36 @@ val is_recursive_call: usage_table_t -> bid_t -> bid_t -> bool
 val is_recursive: usage_table_t -> bid_t -> bool
 
 val cal_exe_usage:
-  sym_state_t -> usage_table_t -> int -> bexe_t -> unit
+  sym_state_t -> usage_table_t -> bid_t -> bexe_t -> unit
 
 val cal_expr_usage:
-  sym_state_t -> usage_table_t -> int -> Flx_srcref.t -> tbexpr_t -> unit
+  sym_state_t -> usage_table_t -> bid_t -> Flx_srcref.t -> tbexpr_t -> unit
 
 val cal_param_usage:
   sym_state_t ->
   usage_table_t ->
   Flx_srcref.t ->
-  int ->
+  bid_t ->
   bparameter_t ->
   unit
 
 val use_closure:
-  usage_table_t -> int -> IntSet.t
+  usage_table_t -> bid_t -> BidSet.t
 
 val child_use_closure:
-  IntSet.t -> usage_table_t -> int -> IntSet.t
+  BidSet.t -> usage_table_t -> bid_t -> BidSet.t
 
 val expr_uses:
  sym_state_t ->
- IntSet.t ->
+ BidSet.t ->
  usage_table_t ->
- IntSet.t ->
+ BidSet.t ->
  tbexpr_t ->
- IntSet.t
+ BidSet.t
 
 val expr_uses_unrestricted:
  sym_state_t ->
- IntSet.t ->
+ BidSet.t ->
  usage_table_t ->
  tbexpr_t ->
- IntSet.t
+ BidSet.t

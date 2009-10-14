@@ -10,39 +10,38 @@ open Flx_mtypes2
   dependent variable set, throws Not_found if cannot unify
 *)
 val unification:
-  int ref -> (* alpha conversion counter *)
+  bid_t ref -> (* alpha conversion counter *)
   sym_table_t -> (* just for diagnostics *)
   (btypecode_t * btypecode_t) list ->
-  IntSet.t -> (* dependent variable set *)
-  (int * btypecode_t) list
-
+  BidSet.t -> (* dependent variable set *)
+  (bid_t * btypecode_t) list
 
 (** obtain the mgu of a set of type equations *)
 val maybe_unification:
-  int ref -> (* alpha conversion counter *)
+  bid_t ref -> (* alpha conversion counter *)
   sym_table_t -> (* just for diagnostics *)
   (btypecode_t * btypecode_t) list ->
-  (int * btypecode_t) list option
+  (bid_t * btypecode_t) list option
 
 (** obtain the mgu of a set of type equations,
 for matching parameters against arguments: allows
 special subtyping for lvalues
 *)
 val maybe_matches:
-  int ref -> (* alpha conversion counter *)
+  bid_t ref -> (* alpha conversion counter *)
   sym_table_t -> (* just for diagnostics *)
   (btypecode_t * btypecode_t) list ->
-  (int * btypecode_t) list option
+  (bid_t * btypecode_t) list option
 
 val maybe_specialisation:
-  int ref -> (* alpha conversion counter *)
+  bid_t ref -> (* alpha conversion counter *)
   sym_table_t -> (* just for diagnostics *)
   (btypecode_t * btypecode_t) list ->
-  (int * btypecode_t) list option
+  (bid_t * btypecode_t) list option
 
 (** test if two types unify *)
 val unifies:
-  int ref -> (* alpha conversion counter *)
+  bid_t ref -> (* alpha conversion counter *)
   sym_table_t -> (* just for diagnostics *)
   btypecode_t ->
   btypecode_t ->
@@ -50,7 +49,7 @@ val unifies:
 
 (** compare type for structural/unificational ordering *)
 val compare_sigs:
-  int ref -> (* alpha conversion counter *)
+  bid_t ref -> (* alpha conversion counter *)
   sym_table_t ->
   btypecode_t ->
   btypecode_t ->
@@ -69,7 +68,7 @@ val do_unify:
 
 (** compare for iso-equality *)
 val type_eq:
-  int ref -> (* alpha conversion counter *)
+  bid_t ref -> (* alpha conversion counter *)
   sym_table_t ->
   btypecode_t ->
   btypecode_t ->
@@ -79,7 +78,7 @@ val type_eq:
   argument may have extra lvalue in it
 *)
 val type_match:
-  int ref -> (* alpha conversion counter *)
+  bid_t ref -> (* alpha conversion counter *)
   sym_table_t ->
   btypecode_t ->
   btypecode_t ->
@@ -95,7 +94,7 @@ val unfold:
 
 (** undo an unfold *)
 val fold:
-  int ref -> (* counter for alpha conversion *)
+  bid_t ref -> (* counter for alpha conversion *)
   sym_table_t ->
   btypecode_t ->
   btypecode_t
@@ -105,7 +104,7 @@ with respect to recursion
 *)
 
 val minimise:
-  int ref -> (* counter for alpha conversion *)
+  bid_t ref -> (* counter for alpha conversion *)
   sym_table_t ->
   btypecode_t ->
   btypecode_t
@@ -113,21 +112,21 @@ val minimise:
 (** replace variables in the term using
 the mapping in a list *)
 val list_subst:
-  int ref -> (* counter for alpha conversion *)
-  (int * btypecode_t) list ->
+  bid_t ref -> (* counter for alpha conversion *)
+  (bid_t * btypecode_t) list ->
   btypecode_t ->
   btypecode_t
 
 (** make a varmap using vs and ts list *)
 val mk_varmap:
-  (string * int) list -> (* vs list *)
+  (string * bid_t) list -> (* vs list *)
   btypecode_t list ->  (* ts list *)
-  (int,btypecode_t) Hashtbl.t
+  (bid_t, btypecode_t) Hashtbl.t
 
 (** replace variables using vs and ts list to
 determine mapping *)
 val tsubst :
-  (string * int) list -> (* vs list *)
+  (string * bid_t) list -> (* vs list *)
   btypecode_t list ->  (* ts list *)
   btypecode_t ->
   btypecode_t
@@ -136,7 +135,7 @@ val tsubst :
 the mapping in the hashtable
 *)
 val varmap_subst:
-  (int,btypecode_t) Hashtbl.t ->
+  (bid_t, btypecode_t) Hashtbl.t ->
   btypecode_t ->
   btypecode_t
 
@@ -147,22 +146,15 @@ val var_occurs:
 
 (** check for a particular variable *)
 val var_i_occurs:
-  int ->
+  bid_t ->
   btypecode_t ->
   bool
 
 (** check for variables *)
 val var_list_occurs:
-  int list ->
+  bid_t list ->
   btypecode_t ->
   bool
-
-(** normalise returns count of the type variables
-  occuring in a type, and the type rewritten so the type variables
-  are systematically numbered from 0 - n-1
-*)
-val normalise_type:
-  btypecode_t -> int list * btypecode_t
 
 (** check for bad recursions *)
 val check_recursion:
@@ -173,26 +165,26 @@ val dual:
   btypecode_t -> btypecode_t
 
 val expr_maybe_matches:
-  int ref -> (* counter for alpha conversion *)
+  bid_t ref -> (* counter for alpha conversion *)
   sym_table_t -> (* just for diagnostics *)
-  int list -> (* type variables *)
-  int list -> (* variables *)
+  bid_t list -> (* type variables *)
+  bid_t list -> (* variables *)
   tbexpr_t -> (* match term *)
   tbexpr_t   (* candidate *)
   ->
   (
-    (int * btypecode_t) list * (* type mgu *)
-    (int * tbexpr_t) list      (* expr mgu *)
+    (bid_t * btypecode_t) list * (* type mgu *)
+    (bid_t * tbexpr_t) list      (* expr mgu *)
   )
   option
 
 val expr_term_subst:
   tbexpr_t -> (* candidate *)
-  int ->      (* variable index *)
+  bid_t ->    (* variable index *)
   tbexpr_t -> (* variable value *)
   tbexpr_t    (* candidate with index -> value *)
 
 val alpha:
-  int ref ->
+  bid_t ref ->
   btypecode_t ->
   btypecode_t

@@ -21,12 +21,7 @@ let hfind msg h k =
     print_endline ("flx_inline Hashtbl.find failed " ^ msg);
     raise Not_found
 
-module BidSet = IntSet
-
 let ident x = x
-
-let intset_of_list ls =
-  fold_left (fun s i -> IntSet.add i s) IntSet.empty ls
 
 (* THIS CODE JUST COUNTS APPLICATIONS *)
 let find_mkproc_expr mkproc_map e =
@@ -69,8 +64,8 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       Hashtbl.replace mkproc_map f (p,n+1);
 
       (* create a new variable *)
-      let k = !(syms.counter) in incr (syms.counter);
-      let vid = "_mkp_" ^ si k in
+      let k = fresh_bid syms.counter in
+      let vid = "_mkp_" ^ string_of_bid k in
       let vardecl = BBDCL_var (vs,ret) in
       Hashtbl.add bsym_table k (vid,Some this,sr,vardecl);
 
@@ -162,10 +157,11 @@ let mkproc_gen syms bsym_table child_map =
   Hashtbl.iter
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-    let k = !(syms.counter) in incr (syms.counter);
+    let k = fresh_bid syms.counter in
     Hashtbl.add mkproc_map i (k,0);
     if syms.compiler_options.print_flag then
-    print_endline ("Detected function to make into a proc? " ^ id ^ "<" ^ si i ^"> synth= " ^ si k)
+    print_endline ("Detected function to make into a proc? " ^ id ^ "<" ^
+      string_of_bid i ^ "> synth= " ^ string_of_bid k)
 
   | _ -> ()
   )
@@ -188,7 +184,8 @@ let mkproc_gen syms bsym_table child_map =
   if syms.compiler_options.print_flag then
   Hashtbl.iter
   (fun i (k,n) ->
-     print_endline ("MAYBE MAKE PROC: Orig " ^ si i ^ " synth " ^ si k ^ " count=" ^ si n);
+    print_endline ("MAYBE MAKE PROC: Orig " ^ string_of_bid i ^ " synth " ^
+      string_of_bid k ^ " count=" ^ si n);
   )
   mkproc_map
   ;
@@ -237,7 +234,8 @@ let mkproc_gen syms bsym_table child_map =
   if syms.compiler_options.print_flag then
   Hashtbl.iter
   (fun i (k,n) ->
-     print_endline ("ACTUALLY MKPROC: Orig " ^ si i ^ " synth " ^ si k ^ " count=" ^ si n);
+    print_endline ("ACTUALLY MKPROC: Orig " ^ string_of_bid i ^ " synth " ^
+      string_of_bid k ^ " count=" ^ si n);
   )
   mkproc_map
   ;
@@ -248,7 +246,8 @@ let mkproc_gen syms bsym_table child_map =
   (fun i (k,n) ->
       incr nuprocs;
       if syms.compiler_options.print_flag then
-      print_endline ("MKPROC: Orig " ^ si i ^ " synth " ^ si k ^ " count=" ^ si n);
+      print_endline ("MKPROC: Orig " ^ string_of_bid i ^ " synth " ^
+        string_of_bid k ^ " count=" ^ si n);
 
       let idm,parent,sr,bbdcl = Hashtbl.find bsym_table i in
       let props, vs, ps, traint, ret, exes =
@@ -279,9 +278,9 @@ let mkproc_gen syms bsym_table child_map =
         end;
 
         (* make new parameter: note the name is remapped to _k_mkproc below *)
-        let vix = !(syms.counter) in incr (syms.counter);
+        let vix = fresh_bid syms.counter in
         let vdcl = BBDCL_var (vs,BTYP_pointer ret) in
-        let vid = "_" ^ si vix in
+        let vid = "_" ^ string_of_bid vix in
         let ps = ps @ [{pindex=vix; pkind=`PVal; ptyp=BTYP_pointer ret; pid=vid}] in
 
         (* clone old parameters, also happens to create our new one *)
@@ -294,7 +293,9 @@ let mkproc_gen syms bsym_table child_map =
             | _ -> failwith "Unimplemented mkproc fun param not var or val (fixme!)"
             in
             if syms.compiler_options.print_flag then
-            print_endline ("New param " ^ s ^ " " ^ si n ^ " <-- " ^ si pi ^ ", parent " ^ si k ^ " <-- " ^ si i);
+            print_endline ("New param " ^ s ^ " " ^ string_of_bid n ^ " <-- " ^
+              string_of_bid pi ^ ", parent " ^ string_of_bid k ^ " <-- " ^
+              string_of_bid i);
             Hashtbl.add bsym_table n (s ^ "_mkproc",Some k,sr,bbdcl);
             Flx_child.add_child child_map k n
           )

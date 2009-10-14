@@ -107,7 +107,7 @@ let name_of_index state bsym_table bid ts =
     (* Recursively prepend the name of the parent to *)
     let name, ts =
       match Flx_hashtbl.find bsym_table bid with
-      | None -> "index_" ^ string_of_int bid, []
+      | None -> "index_" ^ Flx_print.string_of_bid bid, []
       | Some (id, None, _, bbdcl) -> id, (Flx_types.ts_of_bbdcl bbdcl)
       | Some (id, Some parent, _, bbdcl) ->
           let ts = Flx_types.ts_of_bbdcl bbdcl in
@@ -123,7 +123,7 @@ let name_of_index state bsym_table bid ts =
 
     | Some (bid', ts') ->
         (* Uh oh, someone else has this name, so lets mangle the name. *)
-        name ^ "$_i" ^ string_of_int bid
+        name ^ "$_i" ^ Flx_print.string_of_bid bid
   in
   (* Prefix '_Z' in order to not conflict with any exported symbols. *)
   "_Z" ^ (aux bid ts)
@@ -182,7 +182,7 @@ let rec lltype_of_btype state btype =
   | Flx_types.BTYP_inst (index, ts) ->
       begin try Hashtbl.find state.type_bindings index with Not_found ->
         failwith ("[lltype_of_btype:BTYP_inst] unable to find index " ^
-          string_of_int index)
+          Flx_print.string_of_bid index)
       end
 
   | Flx_types.BTYP_tuple ls ->
@@ -287,7 +287,8 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
   | Flx_types.BEXPR_name (index, _) ->
       print_endline "BEXPR_name";
       begin try Hashtbl.find state.value_bindings index with Not_found ->
-        Flx_exceptions.clierr sr ("Unable to find index " ^ string_of_int index)
+        Flx_exceptions.clierr sr ("Unable to find index " ^
+          Flx_print.string_of_bid index)
       end
 
   | Flx_types.BEXPR_ref (index, btype) ->
@@ -363,7 +364,8 @@ let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr
   | Flx_types.BEXPR_closure (bid, ts) ->
       print_endline ("BEXPR_closure: " ^ name_of_index state bsym_table bid ts);
       begin try Hashtbl.find state.value_bindings bid with Not_found ->
-        Flx_exceptions.clierr sr ("Unable to find index " ^ string_of_int bid)
+        Flx_exceptions.clierr sr ("Unable to find index " ^
+          Flx_print.string_of_bid bid)
       end
 
   | Flx_types.BEXPR_case (index, btype) ->
@@ -479,7 +481,7 @@ and codegen_apply_direct state bsym_table builder sr bid e =
   let f =
     try Hashtbl.find state.call_bindings bid with Not_found ->
       Flx_exceptions.clierr sr ("Unable to find bid " ^
-        string_of_int bid)
+        Flx_print.string_of_bid bid)
   in
   f state bsym_table builder sr es
 
@@ -488,7 +490,7 @@ and codegen_apply_stack state bsym_table builder sr bid e =
   let f =
     try Hashtbl.find state.value_bindings bid with Not_found ->
       Flx_exceptions.clierr sr ("Unable to find bid " ^
-        string_of_int bid)
+        Flx_print.string_of_bid bid)
   in
 
   Llvm.dump_value f;
@@ -725,7 +727,7 @@ let codegen_bexe state bsym_table builder bexe =
         | Flx_types.BEXPR_name (index, _), _ ->
             begin try Hashtbl.find state.value_bindings index with Not_found ->
               Flx_exceptions.clierr sr ("Unable to find index " ^
-                string_of_int index)
+                Flx_print.string_of_bid index)
             end
         | _ ->
             Flx_exceptions.clierr sr ("invalid lvalue")
@@ -1226,7 +1228,9 @@ and codegen_symbol
   ((_, parent, sr, bbdcl) as symbol)
 =
   print_endline ("codegen_symbol: " ^
-    "parent=" ^ (match parent with Some p -> string_of_int p | None -> "None") ^
+    "parent=" ^ (match parent with
+      | Some p -> Flx_print.string_of_bid p
+      | None -> "None") ^
     " " ^
     (Flx_print.string_of_bbdcl state.syms.Flx_mtypes2.sym_table bsym_table bbdcl index));
 

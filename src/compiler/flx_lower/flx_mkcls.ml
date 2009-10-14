@@ -24,7 +24,7 @@ let make_closure_state syms =
   }
 
 let gen_closure state bsym_table i =
-  let j = !(state.syms.counter) in incr state.syms.counter;
+  let j = fresh_bid state.syms.counter in
   let id,parent,sr,entry = Hashtbl.find bsym_table i in
   match entry with
   | BBDCL_proc (props,vs,ps,c,reqs) ->
@@ -33,8 +33,8 @@ let gen_closure state bsym_table i =
     in
     let ts = List.map (fun (_,i) -> BTYP_var (i,BTYP_type 0)) vs in
     let ps,a =
-      let n = !(state.syms.counter) in incr state.syms.counter;
-      let name = "_a" ^ si n in
+      let n = fresh_bid state.syms.counter in
+      let name = "_a" ^ string_of_bid n in
       let ventry = BBDCL_val (vs,arg_t) in
       Hashtbl.add bsym_table n (name,Some j,sr,ventry);
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
@@ -56,8 +56,8 @@ let gen_closure state bsym_table i =
       match ps with | [t] -> t | ps -> BTYP_tuple ps
     in
     let ps,a =
-      let n = !(state.syms.counter) in incr state.syms.counter;
-      let name = "_a" ^ si n in
+      let n = fresh_bid state.syms.counter in
+      let name = "_a" ^ string_of_bid n in
       let ventry = BBDCL_val (vs,arg_t) in
       Hashtbl.add bsym_table n (name,Some j,sr,ventry);
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
@@ -79,7 +79,7 @@ let mkcls state bsym_table all_closures i ts =
       Hashtbl.add state.wrappers i j;
       j
   in
-    all_closures := IntSet.add j !all_closures;
+    all_closures := BidSet.add j !all_closures;
     BEXPR_closure (j,ts)
 
 let check_prim state bsym_table all_closures i ts =
@@ -89,7 +89,7 @@ let check_prim state bsym_table all_closures i ts =
   | BBDCL_fun _ ->
     mkcls state bsym_table all_closures i ts
   | _ ->
-    all_closures := IntSet.add i !all_closures;
+    all_closures := BidSet.add i !all_closures;
     BEXPR_closure (i,ts)
 
 let idt t = t
@@ -106,7 +106,7 @@ let rec adj_cls state bsym_table all_closures e =
      but not a clone ..
   *)
   | BEXPR_apply_direct (i,ts,a),t as x ->
-    all_closures := IntSet.add i !all_closures;
+    all_closures := BidSet.add i !all_closures;
     x
 
   | x -> x
@@ -119,11 +119,11 @@ let process_exe state bsym_table all_closures (exe : bexe_t) : bexe_t =
   | BEXE_call_prim (sr,i,ts,e2)  -> BEXE_call_prim (sr,i,ts, ue e2)
 
   | BEXE_call_direct (sr,i,ts,e2)  ->
-    all_closures := IntSet.add i !all_closures;
+    all_closures := BidSet.add i !all_closures;
     BEXE_call_direct (sr,i,ts, ue e2)
 
   | BEXE_jump_direct (sr,i,ts,e2)  ->
-    all_closures := IntSet.add i !all_closures;
+    all_closures := BidSet.add i !all_closures;
     BEXE_jump_direct (sr,i,ts, ue e2)
 
   | BEXE_call_stack (sr,i,ts,e2)  ->
@@ -191,23 +191,23 @@ let process_entry state bsym_table all_closures i =
 let set_closure bsym_table i = add_prop bsym_table `Heap_closure i
 
 let make_closure state bsym_table bsyms =
-  let all_closures = ref IntSet.empty in
+  let all_closures = ref BidSet.empty in
   let used = full_use_closure_for_symbols state.syms bsym_table bsyms in
-  IntSet.iter (process_entry state bsym_table all_closures) used;
-  IntSet.iter (set_closure bsym_table) !all_closures;
+  BidSet.iter (process_entry state bsym_table all_closures) used;
+  BidSet.iter (set_closure bsym_table) !all_closures;
 
   bsyms
 
 let make_closures state bsym_table =
   (*
-  let used = ref IntSet.empty in
+  let used = ref BidSet.empty in
   let uses i = Flx_use.uses state.syms used bsym_table true i in
-  IntSet.iter uses !(state.syms.roots);
+  BidSet.iter uses !(state.syms.roots);
   *)
 
-  let all_closures = ref IntSet.empty in
+  let all_closures = ref BidSet.empty in
   let used = full_use_closure state.syms bsym_table in
-  IntSet.iter (process_entry state bsym_table all_closures) used;
+  BidSet.iter (process_entry state bsym_table all_closures) used;
 
   (*
   (* this is a hack! *)
@@ -228,10 +228,10 @@ let make_closures state bsym_table =
   *)
 
   (*
-  IntSet.iter (set_closure bsym_table `Heap_closure) (IntSet.union !all_closures !(syms.roots));
+  BidSet.iter (set_closure bsym_table `Heap_closure) (BidSet.union !all_closures !(syms.roots));
   *)
 
   (* Now root proc might not need a closure .. since it can be
      executed all at once
   *)
-  IntSet.iter (set_closure bsym_table) !all_closures
+  BidSet.iter (set_closure bsym_table) !all_closures

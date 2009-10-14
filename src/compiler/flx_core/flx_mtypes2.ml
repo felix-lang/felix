@@ -3,7 +3,7 @@ open Flx_types
 open List
 
 (* generic entity instances: functions, variables *)
-type instance_registry_t = (int * btypecode_t list, int) Hashtbl.t
+type instance_registry_t = (bid_t * btypecode_t list, bid_t) Hashtbl.t
 
 type felix_compiler_options_t =
 {
@@ -40,15 +40,15 @@ type sym_state_t =
   compiler_options : felix_compiler_options_t;
   instances : instance_registry_t;
   include_files : string list ref;
-  roots : IntSet.t ref;
-  quick_names : (string, (int * btypecode_t list)) Hashtbl.t;
+  roots : BidSet.t ref;
+  quick_names : (string, (bid_t * btypecode_t list)) Hashtbl.t;
   mutable bifaces : biface_t list;
   mutable reductions : reduction_t list;
   mutable axioms: axiom_t list;
-  variant_map: (btypecode_t * btypecode_t,int) Hashtbl.t;
-  typeclass_to_instance: (int, (bvs_t * btypecode_t * btypecode_t list * int) list) Hashtbl.t;
-  instances_of_typeclass: (int, (int * (bvs_t * btypecode_t * btypecode_t list)) list) Hashtbl.t;
-  transient_specialisation_cache: (int * btypecode_t list, int * btypecode_t list) Hashtbl.t;
+  variant_map: (btypecode_t * btypecode_t, bid_t) Hashtbl.t;
+  typeclass_to_instance: (bid_t, (bvs_t * btypecode_t * btypecode_t list * bid_t) list) Hashtbl.t;
+  instances_of_typeclass: (bid_t, (bid_t * (bvs_t * btypecode_t * btypecode_t list)) list) Hashtbl.t;
+  transient_specialisation_cache: (bid_t * btypecode_t list, bid_t * btypecode_t list) Hashtbl.t;
 }
 
 let make_syms options =
@@ -62,7 +62,7 @@ let make_syms options =
     compiler_options = options;
     instances = Hashtbl.create 97;
     include_files = ref [];
-    roots = ref IntSet.empty;
+    roots = ref BidSet.empty;
     quick_names = Hashtbl.create 97;
     bifaces = [];
     reductions = [];
@@ -72,6 +72,17 @@ let make_syms options =
     instances_of_typeclass = Hashtbl.create 97;
     transient_specialisation_cache = Hashtbl.create 97;
   }
+
+let fresh_bid counter =
+  let bid = !counter in
+  incr counter;
+  bid
+
+let iter_bids f counter start_bid =
+  let bid = !counter in
+  for i = start_bid to bid do
+    f i
+  done
 
 module VarMap = StringMap
 type varmap_t = string_string_map_t

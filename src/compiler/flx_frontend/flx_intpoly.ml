@@ -98,8 +98,8 @@ let cal_polyvars syms bsym_table child_map =
   *)
       iter (check_abstract_exe syms bsym_table tvars) exes;
       if !tvars <> [] then begin
-        print_endline ("Fun  " ^ name ^ "<"^si i ^ "> polyvars = " ^ catmap ","
-        (fun (i,j)-> si i) !tvars);
+        print_endline ("Fun  " ^ name ^ "<" ^ string_of_bid i ^
+          "> polyvars = " ^ catmap "," (fun (i,j)-> string_of_bid i) !tvars);
         Hashtbl.add absvars i (!tvars)
       end
     with Not_found -> ()
@@ -116,8 +116,8 @@ let cal_polyvars syms bsym_table child_map =
   *)
       iter (check_abstract_exe syms bsym_table tvars) exes;
       if !tvars <> [] then begin
-        print_endline ("Proc " ^ name ^ "<"^si i ^ "> polyvars = " ^ catmap ","
-        (fun (i,j) -> si i) !tvars);
+        print_endline ("Proc " ^ name ^ "<" ^ string_of_bid i ^
+          "> polyvars = " ^ catmap "," (fun (i,j) -> string_of_bid i) !tvars);
         Hashtbl.add absvars i (!tvars)
       end
     with Not_found -> ()
@@ -144,7 +144,7 @@ let cal_polyvars syms bsym_table child_map =
   let cast_a i e =
     let pvs = try Hashtbl.find polyvars i with Not_found -> [] in
     if pvs = [] then e else begin 
-      print_endline ("Found polyvars for " ^ si i);
+      print_endline ("Found polyvars for " ^ string_of_bid i);
       let varmap = map (fun (i,j) -> i,BTYP_void) pvs in
       let t = 
           let ps = match Hashtbl.find bsym_table i with
@@ -165,7 +165,7 @@ let cal_polyvars syms bsym_table child_map =
   let cast_r i ((x,t) as e) =
     let pvs = try Hashtbl.find polyvars i with Not_found -> [] in
     if pvs = [] then e else begin 
-      print_endline ("Found polyvars for " ^ si i);
+      print_endline ("Found polyvars for " ^ string_of_bid i);
       let varmap = map (fun (i,j) -> i,BTYP_void) pvs in
       let ta = 
         match Hashtbl.find bsym_table i with

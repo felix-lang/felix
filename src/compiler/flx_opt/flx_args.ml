@@ -57,9 +57,10 @@ let unpack syms bsym_table f ps a : tbexpr_t list =
     map (fun i -> BEXPR_get_n (i,a),t) (nlist k)
 
   | x,t ->
-    print_endline ("Function " ^ si f);
+    print_endline ("Function " ^ string_of_bid f);
     print_endline ("Unexpected non tuple arg type " ^ sbt syms.sym_table t);
-    print_endline ("Parameters = " ^ catmap ", " (fun {pid=s;pindex=i} -> s ^ "<" ^ si i ^ ">") ps);
+    print_endline ("Parameters = " ^
+      catmap ", " (fun {pid=s;pindex=i} -> s ^ "<" ^ string_of_bid i ^ ">") ps);
     print_endline ("Argument " ^ sbe syms.sym_table bsym_table a);
     assert false (* argument isn't a tuple type .. but there are multiple parameters!  *)
 

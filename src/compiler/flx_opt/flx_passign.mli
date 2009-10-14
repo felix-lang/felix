@@ -6,8 +6,8 @@ open Flx_call
 open Flx_child
 
 type aentry_t =
-  int *
-  (string * btypecode_t * tbexpr_t * IntSet.t)
+  bid_t *
+  (string * btypecode_t * tbexpr_t * BidSet.t)
 
 val passign:
   sym_state_t ->
@@ -15,5 +15,5 @@ val passign:
   aentry_t list ->                (* list of assignments to fix *)
   btypecode_t list ->             (* ts to use when creating temporaries *)
   Flx_srcref.t ->                 (* source ref *)
-  (btypecode_t * int) list *
+  (btypecode_t * bid_t) list *
   bexe_t list

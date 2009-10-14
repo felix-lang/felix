@@ -53,12 +53,14 @@ let check_instance
     if length tc_bvs <> length inst_ts then
       clierr2 inst_sr tc_sr
       (
-        "Instance " ^
-        "["^catmap "," (fun (s,j) -> s^"<"^si j^">") inst_vs^"] " ^
-        inst_id ^"<"^ si inst^">"^
+        "Instance [" ^
+        catmap "," (fun (s,j) -> s ^ "<" ^ string_of_bid j ^ ">") inst_vs
+        ^ "] " ^
+        inst_id ^"<"^ string_of_bid inst ^ ">" ^
         "[" ^ catmap "," (sbt syms.sym_table) inst_ts ^ "]" ^
         "\nsupplies wrong number of type arguments for typeclass parameters\n" ^
-        inst_id^"["^catmap "," (fun (s,j) -> s^"<"^si j^">") tc_bvs^"]"
+        inst_id ^ "[" ^
+        catmap "," (fun (s,j) -> s ^ "<" ^ string_of_bid j ^ ">") tc_bvs ^ "]"
       )
     ;
 
@@ -98,8 +100,6 @@ let check_instance
       | BBDCL_val (bvs,ret) ->
         let qt = bvs,ret in
         (id,(i,qt)) :: acc
-
-
       | _ -> acc
       ) [] inst_kids
     in
@@ -118,8 +118,10 @@ let check_instance
       let entries = filter (fun (name,(i,(inst_funbvs,t))) -> name = id && sigmatch i inst_funbvs t) inst_map in
       match entries with
       | [] ->
-         if force then
-         clierr2 sr inst_sr ("Cannot find typeclass "^inst_id^" virtual " ^ id ^ " in instance ["^catmap "," (sbt syms.sym_table) inst_ts ^"]")
+          if force then
+          clierr2 sr inst_sr ("Cannot find typeclass " ^ inst_id ^ " virtual " ^
+            id ^ " in instance [" ^ catmap "," (sbt syms.sym_table) inst_ts ^
+            "]")
 
       | [_,(i,(inst_funbvs,t))] ->
         let t = reduce_type t in
@@ -194,7 +196,7 @@ let check_instance
           try Hashtbl.find syms.typeclass_to_instance tck
           with Not_found -> []
         in
-        let entry = inst_vs , inst_constraint, inst_ts , i in
+        let entry = inst_vs, inst_constraint, inst_ts, i in
         if mem entry old then
           clierr sr "Instance already registered??"
         else
@@ -256,9 +258,9 @@ let check_instance
 
 
   | _ ->
-    clierr2 inst_sr tc_sr ("Expected " ^ inst_id ^ "<"^si inst ^ ">" ^
-    "[" ^ catmap "," (sbt syms.sym_table) inst_ts ^ "]" ^
-    " to be typeclass instance, but" ^ tc_id ^ "<"^si tc^">, " ^
+    clierr2 inst_sr tc_sr ("Expected " ^ inst_id ^ "<" ^ string_of_bid inst ^
+    ">[" ^ catmap "," (sbt syms.sym_table) inst_ts ^ "]" ^
+    " to be typeclass instance, but" ^ tc_id ^ "<" ^ string_of_bid tc ^ ">, " ^
     "is not a typeclass"
     )
 
@@ -334,17 +336,10 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
      ;
      *)
      (* solve for vs' *)
-     let v0 = !(syms.counter) in
-     let n = length inst_vs in
-     let vis =  (* list of ints from v0 to v0+n-1 *)
-       let rec aux i o = match i with
-       | 0 -> o
-       | _ -> aux (i-1) ((v0+i-1)::o)
-       in aux n []
-     in
+     let vis = List.map (fun _ -> fresh_bid syms.counter) inst_vs in
      let nuvs = map (fun i -> BTYP_var (i,BTYP_type 0)) vis in
      let inst_ts' = map (tsubst inst_vs nuvs) inst_ts in
-     let vset = fold_left (fun acc i -> IntSet.add i acc) IntSet.empty vis in
+     let vset = fold_left (fun acc i -> BidSet.add i acc) BidSet.empty vis in
 
      (*
      let vset = fold_left (fun acc (_,i) -> IntSet.add i acc) IntSet.empty inst_vs' in
@@ -433,7 +428,8 @@ let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
   | candidates ->
     let id,parent,sr,entry =
        try Hashtbl.find bbdcls i
-       with Not_found -> failwith ("Woops can't find virtual function index "  ^ si i)
+       with Not_found -> failwith
+        ("Woops can't find virtual function index "  ^ string_of_bid i)
     in
     (*
     print_endline
@@ -510,14 +506,18 @@ let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
     | candidates ->
       iter
       (fun ((j,ts),(inst_vs,con,inst_ts,k)) ->
-         let id,parent,sr,entry =
-           try Hashtbl.find bbdcls j
-           with Not_found -> failwith ("Woops can't find instance function index "  ^ si j)
-         in
-         let parent = match parent with Some k -> k | None -> assert false in
-         print_endline ("Function " ^ si j ^ "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]");
-         print_endline (" instance parent " ^ si parent ^ "[" ^ catmap "," (sbt syms.sym_table) inst_ts ^ "]");
-         print_endline (" instance vs= " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") inst_vs );
+        let id,parent,sr,entry =
+          try Hashtbl.find bbdcls j
+          with Not_found -> failwith
+            ("Woops can't find instance function index " ^ string_of_bid j)
+        in
+        let parent = match parent with Some k -> k | None -> assert false in
+        print_endline ("Function " ^ string_of_bid j ^ "[" ^
+          catmap "," (sbt syms.sym_table) ts ^ "]");
+        print_endline (" instance parent " ^ string_of_bid parent ^ "[" ^
+          catmap "," (sbt syms.sym_table) inst_ts ^ "]");
+        print_endline (" instance vs= " ^
+          catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") inst_vs);
       )
       candidates
       ;

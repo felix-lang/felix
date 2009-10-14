@@ -9,5 +9,5 @@ val emit_whycode:
   string ->
   sym_state_t ->
   bsym_table_t ->
-  int -> (* root for lookup of and/or/not etc *)
+  bid_t -> (* root for lookup of and/or/not etc *)
   unit

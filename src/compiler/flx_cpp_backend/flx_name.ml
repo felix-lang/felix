@@ -75,11 +75,14 @@ let cid_of_flxid s =
   in
   try List.assoc name fixups with Not_found -> name
 
+let cid_of_bid bid =
+  string_of_int bid
+
 (* basic name mangler *)
 let cpp_name bsym_table index =
   let id,parent,sr,entry =
     try Hashtbl.find bsym_table index
-    with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
+    with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_bid index)
   in
   (match entry with
   | BBDCL_function _ -> "_f"
@@ -90,7 +93,7 @@ let cpp_name bsym_table index =
   | BBDCL_ref _ -> "_v"
   | BBDCL_tmp _ -> "_tmp"
   | _ -> syserr sr "cpp_name expected func,proc,var,val,class,reglex or regmatch"
-  ) ^ si index ^ "_" ^ cid_of_flxid id
+  ) ^ cid_of_bid index ^ "_" ^ cid_of_flxid id
 
 let cpp_instance_name' syms bsym_table index ts =
   let inst =
@@ -115,11 +118,12 @@ let cpp_instance_name' syms bsym_table index ts =
     failwith
     (
       "[cpp_instance_name] unable to find instance " ^ id ^
-      "<" ^ si index ^ ">[" ^catmap ", " (string_of_btypecode syms.sym_table) ts ^ "]"
+      "<" ^ string_of_bid index ^ ">[" ^
+      catmap ", " (string_of_btypecode syms.sym_table) ts ^ "]"
       ^ (if has_variables then " .. a subscript contains a type variable" else "")
     )
   in
-  "_i" ^ si inst ^ cpp_name bsym_table index
+  "_i" ^ cid_of_bid inst ^ cpp_name bsym_table index
 
 let is_export syms id =
   let bifaces = syms.bifaces in
@@ -140,7 +144,7 @@ let cpp_instance_name syms bsym_table index ts =
   if syms.compiler_options.mangle_names then long_name else
   let id,parent,sr,entry =
     try Hashtbl.find bsym_table index
-    with _ -> failwith ("[cpp_name] Can't find index " ^ si index)
+    with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_bid index)
   in
   let id' = cid_of_flxid id in
   if id = id' then
@@ -170,22 +174,24 @@ let rec cpp_type_classname syms t =
   let tix t = tix syms t in
   let t = fold syms.counter syms.sym_table t in
   try match unfold syms.sym_table t with
-  | BTYP_var (i,mt) -> failwith ("[cpp_type_classname] Can't name type variable " ^ si i ^":"^ sbt syms.sym_table mt)
+  | BTYP_var (i,mt) ->
+      failwith ("[cpp_type_classname] Can't name type variable " ^
+        string_of_bid i ^ ":"^ sbt syms.sym_table mt)
   | BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"
   | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
   | BTYP_tuple [] -> "unit"
 
   | BTYP_pointer t' -> cpp_type_classname syms t' ^ "*"
  
-  | BTYP_function (_,BTYP_void) -> "_pt" ^ si (tix t)
-  | BTYP_function _ -> "_ft" ^ si (tix t)
-  | BTYP_cfunction _ -> "_cft" ^ si (tix t)
-  | BTYP_array _ -> "_at" ^ si (tix t)
-  | BTYP_tuple _ -> "_tt" ^ si (tix t)
-  | BTYP_record _ -> "_art" ^ si (tix t)
-  | BTYP_variant _ -> "_avt" ^ si (tix t)
-  | BTYP_sum _ -> "_st" ^ si (tix t)
-  | BTYP_unitsum k -> "_us" ^ si k
+  | BTYP_function (_,BTYP_void) -> "_pt" ^ cid_of_bid (tix t)
+  | BTYP_function _ -> "_ft" ^ cid_of_bid (tix t)
+  | BTYP_cfunction _ -> "_cft" ^ cid_of_bid (tix t)
+  | BTYP_array _ -> "_at" ^ cid_of_bid (tix t)
+  | BTYP_tuple _ -> "_tt" ^ cid_of_bid (tix t)
+  | BTYP_record _ -> "_art" ^ cid_of_bid (tix t)
+  | BTYP_variant _ -> "_avt" ^ cid_of_bid (tix t)
+  | BTYP_sum _ -> "_st" ^ cid_of_bid (tix t)
+  | BTYP_unitsum k -> "_us" ^ string_of_int k
 
 
   | BTYP_inst (i,ts) ->
@@ -218,11 +224,11 @@ let rec cpp_type_classname syms t =
       | Some (_,SYMDEF_abs (_,CS_str_template "double",_)) -> "double" (* hack .. *)
       | Some (_,data)  ->
         let prefix = cal_prefix data in
-        prefix ^ si i ^ "t_" ^ si (tix t)
+        prefix ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
       | None ->
-         "_unk_" ^ si i ^ "t_" ^ si (tix t)
+         "_unk_" ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
     else
-      "_poly_" ^ si i ^ "t_" ^ si (tix t)
+      "_poly_" ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
 
   | _ ->
     failwith

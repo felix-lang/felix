@@ -5,6 +5,8 @@
 open Flx_ast
 open Flx_types
 
+val string_of_bid : bid_t -> string
+
 val string_of_typecode : typecode_t -> string
 val string_of_maybe_typecode : typecode_t -> string
 val string_of_btypecode : sym_table_t -> btypecode_t -> string
@@ -45,20 +47,21 @@ val string_of_asm : int -> asm_t -> string
 val string_of_desugared : asm_t list -> string
 val string_of_suffixed_name : suffixed_name_t -> string
 val string_of_qualified_name : qualified_name_t -> string
-val string_of_dcl : int -> id_t -> int option -> vs_list_t -> dcl_t -> string
+val string_of_dcl : int -> id_t -> bid_t option -> vs_list_t -> dcl_t -> string
 val string_of_bexe : sym_table_t -> bsym_table_t -> int -> bexe_t -> string
 val sbx: sym_table_t -> bsym_table_t -> bexe_t -> string
 val string_of_exe : int -> exe_t -> string
-val qualified_name_of_index : sym_table_t -> int -> string
+val qualified_name_of_index : sym_table_t -> bid_t -> string
 val qualified_name_of_bindex :
   sym_table_t ->
   bsym_table_t ->
-  int -> string
+  bid_t ->
+  string
 val string_of_bbdcl :
   sym_table_t ->
   bsym_table_t ->
   bbdcl_t ->
-  int ->
+  bid_t ->
   string
 
 val string_of_symdef :
@@ -107,13 +110,13 @@ val print_symbols:
 val print_function_body:
   sym_table_t ->
   bsym_table_t ->
-  string -> int -> bvs_t -> bparams_t -> bexe_t list -> int option ->
+  string -> bid_t -> bvs_t -> bparams_t -> bexe_t list -> bid_t option ->
   unit
 
 val print_function:
   sym_table_t ->
   bsym_table_t ->
-  int ->
+  bid_t ->
   unit
 
 val print_sym_table:
@@ -128,14 +131,13 @@ val print_bsym_table:
 (** [string_of_name_map name-map] converts the [name-map] to a string. *)
 val string_of_name_map: name_map_t -> string
 
-val print_vs: vs_list_t -> string
-val print_ivs: ivs_list_t -> string
-val print_ivs_with_index: ivs_list_t -> string
+val string_of_vs: vs_list_t -> string
+val string_of_ivs: ivs_list_t -> string
 
 val string_of_ast_term: int -> ast_term_t -> string
 val string_of_string: string -> string
 val string_of_bquals: sym_table_t -> btype_qual_t list -> string
-val print_bvs: bvs_t -> string
+val string_of_bvs: bvs_t -> string
 val string_of_code_spec: code_spec_t -> string
 val string_of_raw_reqs: raw_req_expr_t -> string
 val string_of_ikind: ikind_t -> string

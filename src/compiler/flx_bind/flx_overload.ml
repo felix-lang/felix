@@ -22,17 +22,17 @@ let is_typeset tss1 =
   | [] -> false
   | (p1,v1) ::t ->
     p1.assignments = [] &&
-    IntSet.cardinal p1.pattern_vars = 1 &&
+    BidSet.cardinal p1.pattern_vars = 1 &&
     match p1.pattern,v1 with 
     | BTYP_var (i,BTYP_type 0), BTYP_void
-      when i = IntSet.choose p1.pattern_vars -> 
+      when i = BidSet.choose p1.pattern_vars ->
       begin try 
         List.iter (fun (p,v) -> match p,v with
         | { assignments=[]; 
             pattern_vars=pvs; 
             pattern=BTYP_inst (_,[])
           },
-          BTYP_tuple [] when IntSet.is_empty pvs -> ()
+          BTYP_tuple [] when BidSet.is_empty pvs -> ()
         | _ -> raise Not_found
         )
         t;
@@ -41,7 +41,7 @@ let is_typeset tss1 =
       end
     | _ -> false
 
-let make_typeset tss : int list =
+let make_typeset tss : bid_t list =
   match List.rev tss with
   | h::t -> List.map (fun x ->
     match x with 
@@ -52,7 +52,8 @@ let make_typeset tss : int list =
   | _ -> assert false
 
 let is_subset tss1 tss2 : bool =
-  let tss1: int list = make_typeset tss1 and tss2 : int list = make_typeset tss2 in
+  let tss1: bid_t list = make_typeset tss1
+  and tss2: bid_t list = make_typeset tss2 in
   try List.iter (fun x -> if not (List.mem x tss2) then raise Not_found) tss1; true
   with Not_found -> false
 
@@ -68,8 +69,8 @@ let rec scancases syms tss1 tss2 = match (tss1, tss2) with
     if p1.assignments = [] 
     && p2.assignments = []
     then
-      if IntSet.is_empty (p1.pattern_vars) 
-      && IntSet.is_empty (p2.pattern_vars)
+      if BidSet.is_empty (p1.pattern_vars)
+      && BidSet.is_empty (p2.pattern_vars)
       then
         if type_eq syms.counter syms.sym_table p1.pattern p2.pattern
         && type_eq syms.counter syms.sym_table v1 v2
@@ -128,10 +129,10 @@ let constraint_implies syms a b =
   r
 
 type overload_result =
- int *  (* index of function *)
+ bid_t *  (* index of function *)
  btypecode_t * (* type of function signature *)
  btypecode_t * (* type of function return *)
- (int * btypecode_t) list * (* mgu *)
+ (bid_t * btypecode_t) list * (* mgu *)
  btypecode_t list (* ts *)
 
 type result =
@@ -141,7 +142,8 @@ type result =
 let get_data table index =
   try Hashtbl.find table index
   with Not_found ->
-    failwith ("[Flx_lookup.get_data] No definition of <" ^ string_of_int index ^ ">")
+    failwith ("[Flx_lookup.get_data] No definition of <" ^
+      string_of_bid index ^ ">")
 
 let sig_of_symdef symdef sr name i = match symdef with
   | SYMDEF_match_check (_)
@@ -349,10 +351,13 @@ let consider syms env bt be luqn2 name
     begin
       print_endline "WARN: VS != SUB_TS";
       print_endline (id ^ "|-> " ^ string_of_myentry syms.sym_table eeek);
-      print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs);
-      print_endline ("base VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") base_vs);
+      print_endline ("PARENT VS=" ^
+        catmap "," (fun (s,i,_)->s ^ "<"^ string_of_bid i ^ ">") parent_vs);
+      print_endline ("base VS=" ^
+        catmap "," (fun (s,i,_)->s ^ "<" ^ string_of_bid i ^ ">") base_vs);
       print_endline ("sub TS=" ^ catmap "," (sbt syms.sym_table) sub_ts);
-      print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") spec_vs);
+      print_endline ("spec VS=" ^
+        catmap "," (fun (s,i)-> s ^ "<" ^ string_of_bid i ^ ">") spec_vs);
       print_endline ("input TS=" ^ catmap "," (sbt syms.sym_table) input_ts);
     end
     ;
@@ -494,8 +499,8 @@ let consider syms env bt be luqn2 name
     let n = min (List.length curry_domains) (List.length arg_types) in
     let eqns = eqns @ List.combine (list_prefix curry_domains n) (list_prefix arg_types n) in
 
-    let dvars = ref IntSet.empty in
-    List.iter (fun (_,i)-> dvars := IntSet.add i !dvars) spec_vs;
+    let dvars = ref BidSet.empty in
+    List.iter (fun (_,i)-> dvars := BidSet.add i !dvars) spec_vs;
 
     (*
     print_endline "EQUATIONS ARE:";
@@ -504,7 +509,7 @@ let consider syms env bt be luqn2 name
     ;
     (* WRONG!! dunno why, but it is! *)
     print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
-      (IntSet.fold (fun i l-> i::l) !dvars [])
+      (BidSet.fold (fun i l-> i::l) !dvars [])
     );
     print_endline "...";
     *)
@@ -567,7 +572,7 @@ let consider syms env bt be luqn2 name
 
       let report_unresolved =
         List.fold_left (fun acc (s,i,tp,k) -> acc ^
-          "  The " ^th k ^" subscript  " ^ s ^ "["^si i^"]" ^
+          "  The " ^th k ^" subscript  " ^ s ^ "[" ^ string_of_bid i ^ "]" ^
            Flx_print.string_of_maybe_typecode tp ^ "\n"
         ) "" !unresolved
       in
@@ -604,10 +609,10 @@ let consider syms env bt be luqn2 name
         *)
 
         let extra_eqns = ref [] in
-        let dvars = ref IntSet.empty in
+        let dvars = ref BidSet.empty in
         List.iter (fun (_,i)->
           if not (List.mem_assoc i !mgu) then (* mgu vars get eliminated *)
-          dvars := IntSet.add i !dvars
+          dvars := BidSet.add i !dvars
         )
         spec_vs;
 
@@ -662,7 +667,9 @@ let consider syms env bt be luqn2 name
            (* THIS CODE DOES NOT WORK RIGHT YET *)
            if List.length explicit_vars1 > 0 then
            print_endline ("Explicit ?variables: " ^
-             catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") explicit_vars1)
+             catmap ","
+              (fun (i,s) -> s ^ "<" ^ string_of_bid i ^ ">")
+              explicit_vars1)
            ;
            List.iter
            (fun (i,s) ->
@@ -671,14 +678,15 @@ let consider syms env bt be luqn2 name
              | [] -> ()
              | [s',k,pat] ->
                 print_endline (
-                    "Coupled " ^ s ^ ": " ^ si k ^ "(vs var) <--> " ^ si i ^" (pat var)" ^
+                  "Coupled " ^ s ^ ": " ^ string_of_bid k ^ "(vs var) <--> " ^
+                  string_of_bid i ^" (pat var)" ^
                   " pat=" ^ string_of_typecode pat);
              let t1 = BTYP_var (i,BTYP_type 0) in
              let t2 = BTYP_var (k,BTYP_type 0) in
              print_endline ("Adding equation " ^ sbt syms.sym_table t1 ^ " = " ^ sbt syms.sym_table t2);
              extra_eqns := (t1,t2) :: !extra_eqns;
              (*
-             dvars := IntSet.add i !dvars;
+             dvars := BidSet.add i !dvars;
              print_endline ("ADDING DEPENDENT VARIABLE " ^ si i);
              *)
 
@@ -689,8 +697,8 @@ let consider syms env bt be luqn2 name
 
            if List.length as_vars1 > 0 then begin
              print_endline ("As variables: " ^
-               catmap "," (fun (i,s) -> s ^ "<" ^ si i ^ ">") as_vars1)
-             ;
+               catmap ","
+                 (fun (i,s) -> s ^ "<" ^ string_of_bid i ^ ">") as_vars1);
              print_endline "RECURSIVE?? AS VARS NOT HANDLED YET"
            end;
 
@@ -702,7 +710,7 @@ let consider syms env bt be luqn2 name
            *)
 
            (* add wildcards to dependent variable set ?? *)
-           List.iter (fun i-> dvars := IntSet.add i !dvars) any_vars1;
+           List.iter (fun i-> dvars := BidSet.add i !dvars) any_vars1;
 
            (* add 'as' equations from patterns like
               t as v
@@ -745,7 +753,7 @@ let consider syms env bt be luqn2 name
         ;
         print_endline "...";
         print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
-          (IntSet.fold (fun i l-> i::l) !dvars [])
+          (BidSet.fold (fun i l-> i::l) !dvars [])
         );
         *)
         let maybe_extra_mgu =
@@ -1006,8 +1014,8 @@ let overload
            clierrn [call_sr; sr2; sr]
            (
              "[resolve_overload] Ambiguous call: Not expecting equal signatures" ^
-             "\n(1) fun " ^ si i^ ":" ^ sbt syms.sym_table typ ^
-             "\n(2) fun " ^ si j^ ":"^ sbt syms.sym_table c
+             "\n(1) fun " ^ string_of_bid i ^ ":" ^ sbt syms.sym_table typ ^
+             "\n(2) fun " ^ string_of_bid j ^ ":" ^ sbt syms.sym_table c
            )
 
          | `Greater ->
@@ -1043,8 +1051,8 @@ let overload
       "\nOf the matching candidates, the following are most specialised ones are incomparable\n" ^
       catmap "\n" (function
         | Unique (i,t,_,_,_) ->
-          qualified_name_of_index syms.sym_table i ^ "<" ^ si i ^ "> sig " ^
-          sbt syms.sym_table t
+          qualified_name_of_index syms.sym_table i ^ "<" ^ string_of_bid i ^
+          "> sig " ^ sbt syms.sym_table t
         | Fail -> assert false
       )
       candidates

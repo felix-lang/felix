@@ -17,6 +17,6 @@ val remove_child: t -> bid_t -> bid_t -> unit
 
 val is_ancestor: bsym_table_t -> bid_t -> bid_t -> bool
 
-val descendants: t -> bid_t -> IntSet.t
+val descendants: t -> bid_t -> BidSet.t
 
 val cal_children: bsym_table_t -> t

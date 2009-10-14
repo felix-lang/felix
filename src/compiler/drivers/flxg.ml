@@ -191,7 +191,8 @@ try
 
   (* THIS IS A HACK! *)
   let root = !(syms.counter) in
-  print_debug ("//Top level module '" ^ module_name ^ "' has index " ^ si root);
+  print_debug ("//Top level module '" ^ module_name ^ "' has index " ^
+    string_of_bid root);
 
   (* Bind the assemblies. *)
   let bind_state = Flx_bind.make_bind_state syms in
@@ -216,7 +217,7 @@ try
       with Not_found ->
         failwith
         (
-          "Can't find root module " ^ si root ^
+          "Can't find root module " ^ string_of_bid root ^
           " in symbol table?"
         )
     with {id=id; sr=sr; parent=parent;vs=vs;pubmap=name_map;symdef=entry} ->
@@ -236,7 +237,8 @@ try
       | FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
       | NonFunctionEntry _ -> failwith "_init_ found but not procedure"
     in
-    print_debug ("//root module's init procedure has index " ^ si index);
+    print_debug ("//root module's init procedure has index " ^
+      string_of_bid index);
     index
   in
 
@@ -265,9 +267,9 @@ try
 
   (* Make sure we can find the _init_ instance *)
   let top_class =
-    try cpp_instance_name syms bsym_table root_proc []
-    with Not_found ->
-      failwith ("can't name instance of root _init_ procedure index " ^ si root_proc)
+    try cpp_instance_name syms bsym_table root_proc [] with Not_found ->
+      failwith ("can't name instance of root _init_ procedure index " ^
+        string_of_bid root_proc)
   in
 
   (* FUDGE the init procedure to make interfacing a bit simpler *)
@@ -310,8 +312,8 @@ try
     List.iter
     (fun (i,ts)->
       match
-        try Hashtbl.find bsym_table i
-        with Not_found -> failwith ("[package] can't find index " ^ si i)
+        try Hashtbl.find bsym_table i with Not_found ->
+          failwith ("[package] can't find index " ^ string_of_bid i)
       with (id,parent,sr,entry) ->
       match entry with
       | BBDCL_insert (_,s,`Package,_) ->
@@ -375,8 +377,8 @@ try
     List.iter
     (fun (i,ts)->
       match
-        try Hashtbl.find bsym_table i
-        with Not_found -> failwith ("[user header] can't find index " ^ si i)
+        try Hashtbl.find bsym_table i with Not_found ->
+          failwith ("[user header] can't find index " ^ string_of_bid i)
       with (id,parent,sr,entry) ->
       match entry with
       | BBDCL_insert (_,s,`Header,_) ->
@@ -416,17 +418,9 @@ try
   ;
   print_debug "//GENERATING C++: collect types";
   let types = ref [] in
-    Hashtbl.iter
-    (fun t index-> types := (index, t) :: !types)
-    syms.registry
-  ;
-  let types =
-    List.sort
-    (
-      fun a1 a2 -> compare (fst a1) (fst a2)
-    )
-    !types
-  in
+  Hashtbl.iter (fun t index -> types := (index, t) :: !types) syms.registry;
+
+  let types = List.sort (fun a1 a2 -> compare (fst a1) (fst a2)) !types in
   (*
   List.iter
   (fun (_,t) -> print_endline (string_of_btypecode sym_table t))
@@ -500,8 +494,8 @@ try
     List.iter
     (fun (i,ts) ->
       match
-        try Hashtbl.find bsym_table i
-        with Not_found -> failwith ("[user body] can't find index " ^ si i)
+        try Hashtbl.find bsym_table i with Not_found ->
+          failwith ("[user body] can't find index " ^ string_of_bid i)
       with (id,parent,sr,entry) ->
       match entry with
       | BBDCL_insert (_,s,`Body,_) ->
@@ -588,7 +582,8 @@ try
               header_emitted := true;
             end
             ;
-            plb ("FLX_DECLARE_LABEL(" ^ si lno ^ ","^ si inst ^ "," ^ lab^")")
+            plb ("FLX_DECLARE_LABEL(" ^ string_of_bid lno ^ "," ^
+              string_of_bid inst ^ "," ^ lab ^ ")")
           | `Near -> ()
           | `Unused -> ()
         )
@@ -662,7 +657,7 @@ try
             )
             srcls
           in
-          plr ("static int vmap_" ^ si vidx^ "["^si n^"]={" ^
+          plr ("static int vmap_" ^ string_of_bid vidx ^ "[" ^ si n ^ "]={" ^
             catmap "," (fun i -> si i) remap ^
           "};")
         end

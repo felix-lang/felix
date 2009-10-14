@@ -9,17 +9,22 @@ type partial_order_result_t =
 ]
 
 type bid_t = int
+
+val dummy_bid : bid_t
+
+module BidSet : Set.S with type elt = bid_t
+
 type plain_ivs_list_t = (id_t * bid_t * typecode_t) list
 type ivs_list_t = plain_ivs_list_t * vs_aux_t
 
 type recstop = {
-  constraint_overload_trail: int list;
-  idx_fixlist: int list;
-  type_alias_fixlist: (int * int) list;
+  constraint_overload_trail: bid_t list;
+  idx_fixlist: bid_t list;
+  type_alias_fixlist: (bid_t * int) list;
   as_fixlist: (string * int) list;
   expr_fixlist: (expr_t * int) list;
-  depth:int;
-  open_excludes : (ivs_list_t * qualified_name_t) list
+  depth: int;
+  open_excludes: (ivs_list_t * qualified_name_t) list
 }
 
 (** {6 Pattern extractor}
@@ -41,8 +46,8 @@ type dcl_t =
   | DCL_struct of        (id_t * typecode_t) list
   | DCL_cstruct of       (id_t * typecode_t) list
   | DCL_typeclass of     asm_t list
-  | DCL_match_check of   pattern_t * (string * int)
-  | DCL_match_handler of pattern_t * (string * int) * asm_t list
+  | DCL_match_check of   pattern_t * (string * bid_t)
+  | DCL_match_handler of pattern_t * (string * bid_t) * asm_t list
 
   (* variables *)
   | DCL_val of           typecode_t
@@ -67,7 +72,7 @@ type dcl_t =
 
 and access_t = [`Private | `Public ]
 
-and sdcl_t = Flx_srcref.t * id_t * int option * access_t * vs_list_t * dcl_t
+and sdcl_t = Flx_srcref.t * id_t * bid_t option * access_t * vs_list_t * dcl_t
 
 and iface_t =
   | IFACE_export_fun of suffixed_name_t * string
@@ -82,16 +87,16 @@ and asm_t =
   | Iface of siface_t
   | Dir of dir_t
 
-type bound_iface_t = Flx_srcref.t * iface_t * int option
+type bound_iface_t = Flx_srcref.t * iface_t * bid_t option
 
 type btpattern_t = {
   pattern: btypecode_t;
 
   (* pattern type variables, including 'any' vars *)
-  pattern_vars: Flx_set.IntSet.t;
+  pattern_vars: BidSet.t;
 
   (* assignments for 'as' vars *)
-  assignments : (int * btypecode_t) list
+  assignments : (bid_t * btypecode_t) list
 }
 
 (** general typing *)
@@ -111,9 +116,9 @@ and btypecode_t =
   | BTYP_fix of int
   | BTYP_intersect of btypecode_t list (** intersection type *)
 
-  | BTYP_var of int * btypecode_t
+  | BTYP_var of bid_t * btypecode_t
   | BTYP_apply of btypecode_t * btypecode_t
-  | BTYP_typefun of (int * btypecode_t) list * btypecode_t * btypecode_t
+  | BTYP_typefun of (bid_t * btypecode_t) list * btypecode_t * btypecode_t
   | BTYP_type of int
   | BTYP_type_tuple of btypecode_t list
   | BTYP_type_match of btypecode_t * (btpattern_t * btypecode_t) list
@@ -125,10 +130,10 @@ and btypecode_t =
 
 type entry_kind_t = {
   (* the function *)
-  base_sym: int;
+  base_sym: bid_t;
 
   (* the type variables of the specialisation *)
-  spec_vs: (string * int) list;
+  spec_vs: (string * bid_t) list;
 
   (* types to replace the old type variables expressed in terms of the new
    * ones *)
@@ -212,9 +217,9 @@ and bexpr_t =
 
 and tbexpr_t = bexpr_t * btypecode_t
 
-and bparameter_t = {pkind:param_kind_t; pid:string; pindex:int; ptyp:btypecode_t}
+and bparameter_t = {pkind:param_kind_t; pid:string; pindex:bid_t; ptyp:btypecode_t}
 and breqs_t = (bid_t * btypecode_t list) list
-and bvs_t = (string * int) list
+and bvs_t = (string * bid_t) list
 and bparams_t = bparameter_t list * tbexpr_t option
 
 and btype_qual_t = [
@@ -248,14 +253,14 @@ and bbdcl_t =
                         btypecode_t (* constraint *) *
                         bid_t *
                         btypecode_t list
-  | BBDCL_nonconst_ctor of bvs_t * int * btypecode_t * int * btypecode_t *
+  | BBDCL_nonconst_ctor of bvs_t * bid_t * btypecode_t * int * btypecode_t *
                          bvs_t * btypecode_t (* existentials and constraint for GADTs *)
 
 and baxiom_method_t = [`BPredicate of tbexpr_t | `BEquation of tbexpr_t * tbexpr_t]
 and reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
-and axiom_t = id_t * Flx_srcref.t * int option * axiom_kind_t * bvs_t * bparams_t * baxiom_method_t
+and axiom_t = id_t * Flx_srcref.t * bid_t option * axiom_kind_t * bvs_t * bparams_t * baxiom_method_t
 
-and typevarmap_t = (int, btypecode_t) Hashtbl.t
+and typevarmap_t = (bid_t, btypecode_t) Hashtbl.t
 
 type env_t = (bid_t * id_t * name_map_t * name_map_t list * typecode_t) list
     (* env: container index, name, primary symbol map, directives, type
@@ -271,10 +276,10 @@ type symbol_definition_t =
   | SYMDEF_lemma of params_t * axiom_method_t
   | SYMDEF_reduce of parameter_t list * expr_t * expr_t
   | SYMDEF_function of params_t * typecode_t * property_t list * sexe_t list
-  | SYMDEF_match_check of pattern_t * (string *int)
+  | SYMDEF_match_check of pattern_t * (string * bid_t)
   | SYMDEF_module
-  | SYMDEF_const_ctor of int * typecode_t * int * ivs_list_t
-  | SYMDEF_nonconst_ctor of int * typecode_t * int * ivs_list_t * typecode_t
+  | SYMDEF_const_ctor of bid_t * typecode_t * int * ivs_list_t
+  | SYMDEF_nonconst_ctor of bid_t * typecode_t * int * ivs_list_t * typecode_t
   | SYMDEF_const of property_t list * typecode_t * code_spec_t * named_req_expr_t
   | SYMDEF_var of typecode_t
   | SYMDEF_val of typecode_t
@@ -282,8 +287,8 @@ type symbol_definition_t =
   | SYMDEF_lazy of typecode_t * expr_t
   | SYMDEF_fun of property_t list * typecode_t list * typecode_t * code_spec_t  * named_req_expr_t * prec_t
   | SYMDEF_callback of property_t list * typecode_t list * typecode_t * named_req_expr_t
-  | SYMDEF_insert of code_spec_t  * ikind_t * named_req_expr_t
-  | SYMDEF_union of (id_t * int *  vs_list_t * typecode_t) list
+  | SYMDEF_insert of code_spec_t * ikind_t * named_req_expr_t
+  | SYMDEF_union of (id_t * int * vs_list_t * typecode_t) list
   | SYMDEF_struct of (id_t * typecode_t) list
   | SYMDEF_cstruct of (id_t * typecode_t) list
   | SYMDEF_typeclass

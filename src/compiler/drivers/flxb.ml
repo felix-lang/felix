@@ -73,8 +73,8 @@ try
   let asms = Flx_desugar.desugar_compilation_unit desugar_state parse_tree in
 
   let root = !(syms.Flx_mtypes2.counter) in
-  print_endline
-    ("//Top level module '" ^ module_name ^ "' has index " ^ string_of_int root);
+  print_endline ("//Top level module '" ^ module_name ^ "' has index " ^
+    Flx_print.string_of_bid root);
 
   let symtab = Flx_symtab.make syms in
   let _, ifaces = Flx_symtab.add_asms symtab asms in
@@ -92,7 +92,7 @@ try
         with Not_found ->
           failwith
           (
-            "Can't find root module " ^ string_of_int root ^
+            "Can't find root module " ^ Flx_print.string_of_bid root ^
             " in symbol table?"
           )
       with {
@@ -118,9 +118,9 @@ try
         | Flx_types.FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
         | Flx_types.NonFunctionEntry _ -> failwith "_init_ found but not procedure"
       in
-      if compiler_options.Flx_mtypes2.print_flag
-      then print_endline
-        ("//root module's init procedure has index " ^ string_of_int index);
+      if compiler_options.Flx_mtypes2.print_flag then
+        print_endline ("//root module's init procedure has index " ^
+          Flx_print.string_of_bid index);
       index
     in
 

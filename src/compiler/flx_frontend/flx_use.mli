@@ -16,7 +16,7 @@ val find_roots:
 (*
 val uses_type:
   sym_state_t ->
-  IntSet.t ref ->
+  BidSet.t ref ->
   bsym_table_t ->
   bool -> (* count inits *)
   btypecode_t ->
@@ -24,7 +24,7 @@ val uses_type:
 
 val uses_tbexpr:
   sym_state_t ->
-  IntSet.t ref ->
+  BidSet.t ref ->
   bsym_table_t ->
   bool -> (* count inits *)
   tbexpr_t ->
@@ -32,7 +32,7 @@ val uses_tbexpr:
 
 val uses:
   sym_state_t ->
-  IntSet.t ref ->
+  BidSet.t ref ->
   bsym_table_t ->
   bool -> (* true to count initialisations as uses *)
   int ->
@@ -44,20 +44,20 @@ val full_use_closure_for_symbols:
   sym_state_t ->
   bsym_table_t ->
   Flx_types.bid_t list -> (* The list of symbols to count usage for. *)
-  IntSet.t
+  BidSet.t
 
 (* counts initialisation as use *)
 val full_use_closure:
   sym_state_t ->
   bsym_table_t ->
-  IntSet.t
+  BidSet.t
 
 (* conditionally count initialisation as use *)
 val cal_use_closure:
   sym_state_t ->
   bsym_table_t ->
   bool ->
-  IntSet.t
+  BidSet.t
 
 val copy_used:
   sym_state_t ->
