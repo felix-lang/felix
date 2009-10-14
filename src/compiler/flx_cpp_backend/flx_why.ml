@@ -67,7 +67,7 @@ let getname syms bsym_table i =
   try match Hashtbl.find syms.sym_table i with {id=id} -> mn id
   with Not_found ->
   try match Hashtbl.find bsym_table i with id,_,_,_ -> mn id
-  with Not_found -> "index_" ^ Flx_print.string_of_bid i
+  with Not_found -> "index_" ^ Flx_name.cid_of_bid i
 
 let flx_bool = BTYP_unitsum 2
 
@@ -79,7 +79,7 @@ let rec why_expr syms bsym_table (e: tbexpr_t) =
   match e with
   | BEXPR_apply ((BEXPR_closure (i,ts),_),b),_ ->
     let id = getname syms bsym_table i in
-    id ^ "_" ^ Flx_print.string_of_bid i ^ "(" ^
+    id ^ "_" ^ Flx_name.cid_of_bid i ^ "(" ^
     (
       match b with
       | BEXPR_tuple [],_ -> "void"
@@ -95,12 +95,12 @@ let rec why_expr syms bsym_table (e: tbexpr_t) =
   (* this probably isn't right, ignoring ts *)
   | BEXPR_closure (i,ts),_ ->
     let id = getname syms bsym_table i in
-    id ^ "_" ^ Flx_print.string_of_bid i
+    id ^ "_" ^ Flx_name.cid_of_bid i
 
   (* this probably isn't right, ignoring ts *)
   | BEXPR_name (i,ts),_ ->
     let id = getname syms bsym_table i in
-    id ^ "_" ^ Flx_print.string_of_bid i
+    id ^ "_" ^ Flx_name.cid_of_bid i
 
   | BEXPR_tuple ls,_ ->
     "(" ^ catmap ", " ee ls ^ ")"
@@ -187,7 +187,7 @@ let rec cal_type syms bsym_table t =
     begin try
       let id,sr,parent,entry = Hashtbl.find bsym_table index
       in "'" ^ id
-    with Not_found -> "'T" ^ Flx_print.string_of_bid index
+    with Not_found -> "'T" ^ Flx_name.cid_of_bid index
     end
 
   | _ -> "dunno"
@@ -204,7 +204,7 @@ let emit_axiom syms bsym_table logics f (k:axiom_kind_t) (name,sr,parent,kind,bv
   output_string f (ykind ^ " " ^ name ^ ":\n");
   iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} ->
     output_string f
-    ("  forall " ^ pid ^ "_" ^ Flx_print.string_of_bid pindex ^ ": " ^
+    ("  forall " ^ pid ^ "_" ^ Flx_name.cid_of_bid pindex ^ ": " ^
       cal_type syms bsym_table ptyp ^ ".\n")
   )
   (fst bps)

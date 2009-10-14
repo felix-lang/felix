@@ -928,10 +928,10 @@ let gen_exe filename
               ^
 
               sub_start ^
-              "      FLX_SET_PC(" ^ string_of_bid n ^ ")\n" ^
+              "      FLX_SET_PC(" ^ cid_of_bid n ^ ")\n" ^
               call_string ^
               sub_end ^
-              "    FLX_CASE_LABEL(" ^ string_of_bid n ^ ")\n"
+              "    FLX_CASE_LABEL(" ^ cid_of_bid n ^ ")\n"
             )
         end
       end
@@ -966,7 +966,7 @@ let gen_exe filename
     "          tmp1 = tmp2;\n" ^
     "        }\n" ^
     "      }\n" ^
-    "      " ^ frame_ptr ^ "->pc = FLX_FARTARGET(" ^ string_of_bid pc ^ "," ^ string_of_bid target_instance ^ "," ^ s ^ ");\n" ^
+    "      " ^ frame_ptr ^ "->pc = FLX_FARTARGET(" ^ cid_of_bid pc ^ "," ^ cid_of_bid target_instance ^ "," ^ s ^ ");\n" ^
     "      return " ^ frame_ptr ^ ";\n"
   in
   let forget_template sr s = match s with
@@ -999,8 +999,8 @@ let gen_exe filename
           begin match label_kind with
           | `Far ->
             needs_switch := true;
-            "    FLX_LABEL(" ^ string_of_bid label_index ^ "," ^
-              string_of_bid instance_no ^ "," ^ cid_of_flxid s ^ ")\n"
+            "    FLX_LABEL(" ^ cid_of_bid label_index ^ "," ^
+              cid_of_bid instance_no ^ "," ^ cid_of_flxid s ^ ")\n"
           | `Near ->
             "    " ^ cid_of_flxid s ^ ":;\n"
           | `Unused -> ""
@@ -1055,7 +1055,7 @@ let gen_exe filename
       | `Local _ ->
         "      if(" ^ ge sr e ^ ") goto " ^ cid_of_flxid s ^ ";\n"
       | `Nonlocal (pc,frame) ->
-        let skip = "_" ^ string_of_bid (fresh_bid syms.counter) in
+        let skip = "_" ^ cid_of_bid (fresh_bid syms.counter) in
         let not_e = ce_prefix "!" (ge' sr e) in
         let not_e = string_of_cexpr not_e in
         "      if("^not_e^") goto " ^ cid_of_flxid skip ^ ";\n"  ^
@@ -1229,9 +1229,9 @@ let gen_exe filename
         (if with_comments then
         "      //"^ src_str ^ "\n"
         else "") ^
-        "      FLX_SET_PC(" ^ string_of_bid n ^ ")\n" ^
+        "      FLX_SET_PC(" ^ cid_of_bid n ^ ")\n" ^
         "      return (" ^ ge sr p ^ ")->clone()\n      ->call(" ^ args ^");\n" ^
-        "    FLX_CASE_LABEL(" ^ string_of_bid n ^ ")\n"
+        "    FLX_CASE_LABEL(" ^ cid_of_bid n ^ ")\n"
       end
 
     | BEXE_jump (sr,p,a) ->
@@ -1274,15 +1274,15 @@ let gen_exe filename
       needs_switch := true;
       "      //read variable\n" ^
       "      p_svc = &" ^ get_var_ref syms bsym_table this index ts^";\n" ^
-      "      FLX_SET_PC(" ^ string_of_bid n ^ ")\n" ^
+      "      FLX_SET_PC(" ^ cid_of_bid n ^ ")\n" ^
       "      return this;\n" ^
-      "    FLX_CASE_LABEL(" ^ string_of_bid n ^ ")\n"
+      "    FLX_CASE_LABEL(" ^ cid_of_bid n ^ ")\n"
 
 
     | BEXE_yield (sr,e) ->
       let labno = fresh_bid counter in
       let code =
-        "      FLX_SET_PC(" ^ string_of_bid labno ^ ")\n" ^
+        "      FLX_SET_PC(" ^ cid_of_bid labno ^ ")\n" ^
         (
           let _,t = e in
           (if with_comments then
@@ -1291,7 +1291,7 @@ let gen_exe filename
           "      return "^ge sr e^";\n"
         )
         ^
-        "    FLX_CASE_LABEL(" ^ string_of_bid labno ^ ")\n"
+        "    FLX_CASE_LABEL(" ^ cid_of_bid labno ^ ")\n"
       in
       needs_switch := true;
       code

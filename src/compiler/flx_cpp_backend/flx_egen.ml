@@ -645,7 +645,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
             i
         end
         in
-        ce_atom ("_uctor_(vmap_" ^ string_of_bid i ^ "," ^ ge srce ^ ")")
+        ce_atom ("_uctor_(vmap_" ^ cid_of_bid i ^ "," ^ ge srce ^ ")")
       end
     in
     begin match dstt with

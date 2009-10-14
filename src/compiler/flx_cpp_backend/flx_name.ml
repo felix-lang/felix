@@ -75,6 +75,9 @@ let cid_of_flxid s =
   in
   try List.assoc name fixups with Not_found -> name
 
+let cid_of_bid bid =
+  string_of_int bid
+
 (* basic name mangler *)
 let cpp_name bsym_table index =
   let id,parent,sr,entry =
@@ -90,7 +93,7 @@ let cpp_name bsym_table index =
   | BBDCL_ref _ -> "_v"
   | BBDCL_tmp _ -> "_tmp"
   | _ -> syserr sr "cpp_name expected func,proc,var,val,class,reglex or regmatch"
-  ) ^ string_of_bid index ^ "_" ^ cid_of_flxid id
+  ) ^ cid_of_bid index ^ "_" ^ cid_of_flxid id
 
 let cpp_instance_name' syms bsym_table index ts =
   let inst =
@@ -120,7 +123,7 @@ let cpp_instance_name' syms bsym_table index ts =
       ^ (if has_variables then " .. a subscript contains a type variable" else "")
     )
   in
-  "_i" ^ string_of_bid inst ^ cpp_name bsym_table index
+  "_i" ^ cid_of_bid inst ^ cpp_name bsym_table index
 
 let is_export syms id =
   let bifaces = syms.bifaces in
@@ -180,14 +183,14 @@ let rec cpp_type_classname syms t =
 
   | BTYP_pointer t' -> cpp_type_classname syms t' ^ "*"
  
-  | BTYP_function (_,BTYP_void) -> "_pt" ^ string_of_bid (tix t)
-  | BTYP_function _ -> "_ft" ^ string_of_bid (tix t)
-  | BTYP_cfunction _ -> "_cft" ^ string_of_bid (tix t)
-  | BTYP_array _ -> "_at" ^ string_of_bid (tix t)
-  | BTYP_tuple _ -> "_tt" ^ string_of_bid (tix t)
-  | BTYP_record _ -> "_art" ^ string_of_bid (tix t)
-  | BTYP_variant _ -> "_avt" ^ string_of_bid (tix t)
-  | BTYP_sum _ -> "_st" ^ string_of_bid (tix t)
+  | BTYP_function (_,BTYP_void) -> "_pt" ^ cid_of_bid (tix t)
+  | BTYP_function _ -> "_ft" ^ cid_of_bid (tix t)
+  | BTYP_cfunction _ -> "_cft" ^ cid_of_bid (tix t)
+  | BTYP_array _ -> "_at" ^ cid_of_bid (tix t)
+  | BTYP_tuple _ -> "_tt" ^ cid_of_bid (tix t)
+  | BTYP_record _ -> "_art" ^ cid_of_bid (tix t)
+  | BTYP_variant _ -> "_avt" ^ cid_of_bid (tix t)
+  | BTYP_sum _ -> "_st" ^ cid_of_bid (tix t)
   | BTYP_unitsum k -> "_us" ^ string_of_int k
 
 
@@ -221,11 +224,11 @@ let rec cpp_type_classname syms t =
       | Some (_,SYMDEF_abs (_,CS_str_template "double",_)) -> "double" (* hack .. *)
       | Some (_,data)  ->
         let prefix = cal_prefix data in
-        prefix ^ string_of_bid i ^ "t_" ^ string_of_bid (tix t)
+        prefix ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
       | None ->
-         "_unk_" ^ string_of_bid i ^ "t_" ^ string_of_bid (tix t)
+         "_unk_" ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
     else
-      "_poly_" ^ string_of_bid i ^ "t_" ^ string_of_bid (tix t)
+      "_poly_" ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
 
   | _ ->
     failwith
