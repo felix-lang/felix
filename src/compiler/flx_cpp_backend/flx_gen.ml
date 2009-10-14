@@ -1161,7 +1161,7 @@ let gen_exe filename
             "  " ^ name ^ "(" ^ s ^ ");\n"
         else
           let subs,x = Flx_unravel.unravel syms bsym_table a in
-          let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
+          let subs = map (fun ((e,t),s) -> (e,tsub t), cid_of_flxid s) subs in
           handle_closure sr false index ts subs x true
       | _ -> failwith "procedure expected"
       end
@@ -1172,7 +1172,7 @@ let gen_exe filename
     | BEXE_call (sr,(BEXPR_closure (index,ts),_),a) ->
       let a = match a with (a,t) -> a, tsub t in
       let subs,x = Flx_unravel.unravel syms bsym_table a in
-      let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
+      let subs = map (fun ((e,t),s) -> (e,tsub t), cid_of_flxid s) subs in
       let ts = map tsub ts in
       handle_closure sr false index ts subs x false
 
@@ -1185,7 +1185,7 @@ let gen_exe filename
     | BEXE_jump_direct (sr,index,ts,a) ->
       let a = match a with (a,t) -> a, tsub t in
       let subs,x = Flx_unravel.unravel syms bsym_table a in
-      let subs = map (fun ((e,t),s) -> (e,tsub t),s) subs in
+      let subs = map (fun ((e,t),s) -> (e,tsub t), cid_of_flxid s) subs in
       let ts = map tsub ts in
       handle_closure sr true index ts subs x false
 
