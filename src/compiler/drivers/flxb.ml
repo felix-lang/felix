@@ -78,53 +78,54 @@ try
 
   let symtab = Flx_symtab.make syms in
   let _, ifaces = Flx_symtab.add_asms symtab asms in
-    print_endline "//BINDING EXECUTABLE CODE";
-    print_endline "//-----------------------";
-    let bsym_table = Hashtbl.create 97 in
-    Flx_bbind.bbind syms bsym_table;
-    let child_map = Flx_child.cal_children bsym_table in
-    let bifaces = List.map (Flx_bbind.bind_interface syms) ifaces in
-    print_endline "//Binding complete";
 
-    let root_proc =
-      match
-        try Hashtbl.find syms.Flx_mtypes2.sym_table root
-        with Not_found ->
-          failwith
-          (
-            "Can't find root module " ^ Flx_print.string_of_bid root ^
-            " in symbol table?"
-          )
-      with {
-        Flx_types.id=id;
-        Flx_types.sr = sr;
-        Flx_types.parent = parent;
-        Flx_types.vs = vs;
-        Flx_types.pubmap = name_map;
-        Flx_types.symdef = entry } ->
-      begin match entry with
-        | Flx_types.SYMDEF_module -> ()
-        | _ -> failwith "Expected to find top level module ''"
-      end
-      ;
-      let entry =
-        try Hashtbl.find name_map "_init_"
-        with Not_found ->
-          failwith "Can't find name _init_ in top level module's name map"
-      in
-      let index = match entry with
-        | Flx_types.FunctionEntry [x] -> Flx_typing.sye x
-        | Flx_types.FunctionEntry [] -> failwith "Couldn't find '_init_'"
-        | Flx_types.FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
-        | Flx_types.NonFunctionEntry _ -> failwith "_init_ found but not procedure"
-      in
-      if compiler_options.Flx_mtypes2.print_flag then
-        print_endline ("//root module's init procedure has index " ^
-          Flx_print.string_of_bid index);
-      index
+  print_endline "//BINDING EXECUTABLE CODE";
+  print_endline "//-----------------------";
+  let bsym_table = Hashtbl.create 97 in
+  Flx_bbind.bbind syms bsym_table;
+  let child_map = Flx_child.cal_children bsym_table in
+  let bifaces = List.map (Flx_bbind.bind_interface syms) ifaces in
+  print_endline "//Binding complete";
+
+  let root_proc =
+    match
+      try Hashtbl.find syms.Flx_mtypes2.sym_table root
+      with Not_found ->
+        failwith
+        (
+          "Can't find root module " ^ Flx_print.string_of_bid root ^
+          " in symbol table?"
+        )
+    with {
+      Flx_types.id=id;
+      Flx_types.sr = sr;
+      Flx_types.parent = parent;
+      Flx_types.vs = vs;
+      Flx_types.pubmap = name_map;
+      Flx_types.symdef = entry } ->
+    begin match entry with
+      | Flx_types.SYMDEF_module -> ()
+      | _ -> failwith "Expected to find top level module ''"
+    end
+    ;
+    let entry =
+      try Hashtbl.find name_map "_init_"
+      with Not_found ->
+        failwith "Can't find name _init_ in top level module's name map"
     in
+    let index = match entry with
+      | Flx_types.FunctionEntry [x] -> Flx_typing.sye x
+      | Flx_types.FunctionEntry [] -> failwith "Couldn't find '_init_'"
+      | Flx_types.FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
+      | Flx_types.NonFunctionEntry _ -> failwith "_init_ found but not procedure"
+    in
+    if compiler_options.Flx_mtypes2.print_flag then
+      print_endline ("//root module's init procedure has index " ^
+        Flx_print.string_of_bid index);
+    index
+  in
 
-    Flx_print.print_bsym_table syms.Flx_mtypes2.sym_table bsym_table
+  Flx_print.print_bsym_table syms.Flx_mtypes2.sym_table bsym_table
 
 with x -> Flx_terminate.terminate !reverse_return_parity x
 ;;
