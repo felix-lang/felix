@@ -72,4 +72,9 @@ let iteri f lst =
   ignore (fold_left (fun i x -> f i x; i + 1) 0 lst)
 
 let mapi (f:int -> 'a -> 'b) (lst:'a list) : 'b list =
-  snd (fold_right (fun x (i,xs) -> i + 1, f i x :: xs) lst (0, []))
+  let i = ref 0 in
+  List.map begin fun x ->
+    let result = f !i x in
+    incr i;
+    result
+  end lst
