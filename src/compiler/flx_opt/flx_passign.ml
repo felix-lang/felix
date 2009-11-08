@@ -128,9 +128,9 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
   (*
   iter
   (fun (i,(name,t,e,u)) ->
-    print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.sym_table bsym_table e);
+    print_endline ("ASG " ^ name ^ "<"^string_of_bid i ^ "> = " ^ sbe syms.sym_table bsym_table e);
     print_string "  Depends: ";
-      BidSet.iter (fun i -> print_string (si i ^ ", ")) u;
+      BidSet.iter (fun i -> print_string (string_of_bid i ^ ", ")) u;
     print_endline "";
   )
   pinits;
@@ -161,21 +161,21 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
     print_endline "HEAD:";
     iter
     (fun (i,(name,t,e,u)) ->
-      print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.sym_table bsym_table e)
+      print_endline ("ASG " ^ name ^ "<"^string_of_bid i ^ "> = " ^ sbe syms.sym_table bsym_table e)
     )
     h;
 
     print_endline "MIDDLE:";
     iter
     (fun (i,(name,t,e,u)) ->
-      print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.sym_table bsym_table e)
+      print_endline ("ASG " ^ name ^ "<"^string_of_bid i ^ "> = " ^ sbe syms.sym_table bsym_table e)
     )
     m;
 
     print_endline "TAIL:";
     iter
     (fun (i,(name,t,e,u)) ->
-      print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.sym_table bsym_table e)
+      print_endline ("ASG " ^ name ^ "<"^string_of_bid i ^ "> = " ^ sbe syms.sym_table bsym_table e)
     )
     t
   in
@@ -217,7 +217,7 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
   print_endline "FINAL SPLIT UP:";
   iter
   (fun (i,(name,t,e,u)) ->
-    print_endline ("ASG " ^ name ^ "<"^si i ^ "> = " ^ sbe syms.sym_table bsym_table e)
+    print_endline ("ASG " ^ name ^ "<"^string_of_bid i ^ "> = " ^ sbe syms.sym_table bsym_table e)
   )
   m;
   *)

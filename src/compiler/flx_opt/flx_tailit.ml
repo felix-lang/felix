@@ -521,7 +521,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
         iter2 (fun x x' ->
           print_endline ("Recoded " ^
             sbe syms.sym_table bsym_table x ^
-            "\nas var " ^ si (!j+pbase) ^ "=" ^
+            "\nas var " ^ string_of_bid (List.nth is !j) ^ "=" ^
             sbe syms.sym_table bsym_table x' ^
             "\n"
           );
@@ -539,6 +539,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
           let d = expr_uses syms descend uses vset e in
           (*
           print_endline ("var " ^ si (k+pbase) ^ " = " ^
+          print_endline ("var " ^ string_of_bid k ^ " = " ^
             sbe syms.sym_table bsym_table e ^ " USES " ^ string_of_bidset d);
           *)
           k+pbase, (name,t,e,d)
