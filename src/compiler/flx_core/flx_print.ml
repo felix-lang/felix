@@ -40,6 +40,11 @@ let suffix_of_type s = match s with
 let string_of_bid bid =
   string_of_int bid
 
+let string_of_bidset bidset =
+  let bidlist = BidSet.fold (fun i lst -> i :: lst) bidset [] in
+  Printf.sprintf "{%s}"
+    (String.concat ";" (List.map string_of_bid bidlist))
+
 let string_of_literal e = match e with
   | AST_int (s,i) -> (Big_int.string_of_big_int i)^suffix_of_type s
   | AST_float (t,v) -> v ^ suffix_of_type t

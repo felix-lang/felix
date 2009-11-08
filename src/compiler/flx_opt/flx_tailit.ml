@@ -539,7 +539,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
           let d = expr_uses syms descend uses vset e in
           (*
           print_endline ("var " ^ si (k+pbase) ^ " = " ^
-            sbe syms.sym_table bsym_table e ^ " USES " ^ string_of_intset d);
+            sbe syms.sym_table bsym_table e ^ " USES " ^ string_of_bidset d);
           *)
           k+pbase, (name,t,e,d)
         )
