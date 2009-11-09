@@ -2208,7 +2208,7 @@ and string_of_asm level s =
     string_of_dcl level name seq vs d
   | Exe (sr,s) -> string_of_exe level s
   | Iface (sr,s) -> string_of_iface level s
-  | Dir s -> string_of_dir level s
+  | Dir (sr,s) -> string_of_dir level s
 
 and string_of_dir level s =
   let sqn n = string_of_qualified_name n in

@@ -5100,7 +5100,7 @@ and split_dirs open_excludes dirs :
      List.concat
      (
        List.map
-       (fun x -> match x with
+       (fun (sr,x) -> match x with
          | DIR_open (vs,qn) -> if List.mem (vs,qn) open_excludes then [] else [vs,qn]
          | DIR_inject_module qn -> []
          | DIR_use (n,qn) -> []
@@ -5111,7 +5111,7 @@ and split_dirs open_excludes dirs :
      List.concat
      (
        List.map
-       (fun x -> match x with
+       (fun (sr,x) -> match x with
          | DIR_open _-> []
          | DIR_inject_module qn -> [dfltvs,qn]
          | DIR_use (n,qn) -> []
@@ -5122,7 +5122,7 @@ and split_dirs open_excludes dirs :
      List.concat
      (
        List.map
-       (fun x -> match x with
+       (fun (sr,x) -> match x with
          | DIR_open _-> []
          | DIR_inject_module qn -> []
          | DIR_use (n,qn) -> [n,qn]
@@ -5441,7 +5441,7 @@ and merge_directives syms rs env dirs typeclasses =
     end
   in
   List.iter
-  (fun dir -> match dir with
+  (fun (sr,dir) -> match dir with
   | DIR_inject_module qn -> add_qn (dfltvs,qn)
   | DIR_use (n,qn) ->
     begin let entry,_ = lookup_qn_in_env2' syms !env rs qn in
