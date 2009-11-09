@@ -1140,7 +1140,7 @@ and string_of_statement level s =
     spaces level ^ "inherit " ^ sqn n ^ ";"
 
   | STMT_include (_,s) ->
-    spaces level ^ "include " ^ s ^ ";"
+    spaces level ^ "include " ^ string_of_string s ^ ";"
 
   | STMT_use (_,n,qn) ->
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
