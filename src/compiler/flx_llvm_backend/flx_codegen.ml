@@ -16,7 +16,7 @@ type codegen_state_t =
   }
 and call_t =
   codegen_state_t ->
-  Flx_types.bsym_table_t ->
+  Flx_bsym_table.t ->
   Llvm.llbuilder ->
   Flx_srcref.t ->
   Flx_types.tbexpr_t list ->
@@ -106,7 +106,11 @@ let name_of_index state bsym_table bid ts =
   let rec aux bid ts =
     (* Recursively prepend the name of the parent to *)
     let name, ts =
-      match Flx_hashtbl.find bsym_table bid with
+      let symbol =
+        try Some (Flx_bsym_table.find bsym_table bid)
+        with Not_found -> None
+      in
+      match symbol with
       | None -> "index_" ^ Flx_print.string_of_bid bid, []
       | Some (id, None, _, bbdcl) -> id, (Flx_types.ts_of_bbdcl bbdcl)
       | Some (id, Some parent, _, bbdcl) ->
@@ -272,7 +276,7 @@ let create_entry_block_alloca state builder btype name =
 
 
 (* Generate call for an expression *)
-let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr =
+let rec codegen_expr state (bsym_table:Flx_bsym_table.t) builder sr tbexpr =
   print_endline ("codegen_expr: " ^ Flx_print.string_of_bound_expression
     state.syms.Flx_mtypes2.sym_table bsym_table tbexpr);
 
@@ -800,7 +804,7 @@ let codegen_bexe state bsym_table builder bexe =
 (* Convenience function to find all the values in a function. *)
 let find_value_indicies state bsym_table child_map bid =
   List.filter begin fun bid ->
-    try match Hashtbl.find bsym_table bid with _,_,_,entry ->
+    try match Flx_bsym_table.find bsym_table bid with _,_,_,entry ->
       match entry with
       | Flx_types.BBDCL_var _
       | Flx_types.BBDCL_ref _
@@ -814,7 +818,7 @@ let find_value_indicies state bsym_table child_map bid =
 let find_closure_type state bsym_table child_map bid =
   let ts =
     List.fold_left begin fun ts bid ->
-      try match Hashtbl.find bsym_table bid with _,_,_,entry ->
+      try match Flx_bsym_table.find bsym_table bid with _,_,_,entry ->
         match entry with
         | Flx_types.BBDCL_var (_,btype)
         | Flx_types.BBDCL_ref (_,btype)
@@ -1028,7 +1032,7 @@ let rec codegen_function
         child_map
         closure
         i
-        (Hashtbl.find bsym_table i))
+        (Flx_bsym_table.find bsym_table i))
     end (Flx_child.find_children child_map bid);
 
     (* Create local bindings for the closures. *)
@@ -1327,7 +1331,11 @@ let codegen state bsym_table child_map bids bexes =
   List.iter begin fun bid ->
     (* Try to find the bsym corresponding with the bid. It's okay if it doesn't
      * exist as it may have been optimized away. *)
-    match Flx_hashtbl.find bsym_table bid with
+    let symbol =
+      try Some (Flx_bsym_table.find bsym_table bid)
+      with Not_found -> None
+    in
+    match symbol with
     | None -> ()
     | Some ((_,parent,_,_) as bsym) ->
         (* Only codegen top-level symbols, since that'll be handled by the code

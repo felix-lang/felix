@@ -10,11 +10,10 @@ open Flx_mtypes2
 type usage_table_t =  (bid_t, (bid_t * Flx_srcref.t) list) Hashtbl.t
 type usage_t =  usage_table_t * usage_table_t
 
-(** [call_data_for_symbol syms bsym_table uses index symbol] adds the indexes of
- * the calls [index] makes to the [uses] table. *)
+(** [call_data_for_symbol syms uses index symbol] adds the indexes of the calls
+ * [index] makes to the [uses] table. *)
 val call_data_for_symbol:
   sym_state_t ->
-  bsym_table_t ->
   usage_table_t ->
   Flx_types.bid_t ->
   Flx_types.bsym_t ->
@@ -23,10 +22,10 @@ val call_data_for_symbol:
 (** [call_data syms bsym_table] returns tables of all the calls, and the calls
  * they make. *)
 val call_data:
-  sym_state_t -> bsym_table_t -> usage_t
+  sym_state_t -> Flx_bsym_table.t -> usage_t
 
 val print_call_report:
-  sym_state_t -> bsym_table_t -> out_channel -> unit
+  sym_state_t -> Flx_bsym_table.t -> out_channel -> unit
 
 val is_recursive_call: usage_table_t -> bid_t -> bid_t -> bool
 val is_recursive: usage_table_t -> bid_t -> bool

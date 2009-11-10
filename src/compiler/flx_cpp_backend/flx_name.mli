@@ -2,13 +2,13 @@ open Flx_types
 open Flx_mtypes2
 
 val cpp_name :
-  bsym_table_t ->
+  Flx_bsym_table.t ->
   bid_t ->
   string
 
 val cpp_instance_name :
   sym_state_t ->
-  bsym_table_t ->
+  Flx_bsym_table.t ->
   bid_t ->
   btypecode_t list ->
   string

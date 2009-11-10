@@ -50,7 +50,7 @@ let verify syms bsym_table csr e =
       | None -> true
       | Some i ->
         try
-          let tcid,_,sr,entry = Hashtbl.find bsym_table i in
+          let tcid,_,sr,entry = Flx_bsym_table.find bsym_table i in
           match entry with
           | BBDCL_typeclass (_,tcbvs) ->
             begin
@@ -141,18 +141,18 @@ let fixup_exes syms bsym_table bexes =
   aux bexes []
 
 let axiom_check syms bsym_table =
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun i (id,sr,parent,entry) ->
     match entry with
     | BBDCL_function (ps,bvs,bpar,bty,bexes) ->
       let bexes = fixup_exes syms bsym_table bexes in
       let entry = BBDCL_function (ps,bvs,bpar,bty,bexes) in
-      Hashtbl.replace bsym_table i (id,sr,parent,entry)
+      Flx_bsym_table.add bsym_table i (id,sr,parent,entry)
 
     | BBDCL_procedure (ps,bvs,bpar,bexes) ->
       let bexes = fixup_exes syms bsym_table bexes in
       let entry = BBDCL_procedure (ps,bvs,bpar,bexes) in
-      Hashtbl.replace bsym_table i (id,sr,parent,entry)
+      Flx_bsym_table.add bsym_table i (id,sr,parent,entry)
 
     | _ -> ()
   )

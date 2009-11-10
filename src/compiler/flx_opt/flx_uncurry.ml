@@ -21,9 +21,9 @@ open Flx_args
 
 
 let hfind msg h k =
-  try Hashtbl.find h k
+  try Flx_bsym_table.find h k
   with Not_found ->
-    print_endline ("flx_inline Hashtbl.find failed " ^ msg);
+    print_endline ("flx_inline Flx_bsym_table.find failed " ^ msg);
     raise Not_found
 
 let rec vs_is_ts vs ts =  match vs,ts with
@@ -137,7 +137,7 @@ let uncurry_gen syms bsym_table child_map : int =
   let uncurry_map = Hashtbl.create 97 in
 
   (* make the uncurry map *)
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     begin match exes with
@@ -159,7 +159,7 @@ let uncurry_gen syms bsym_table child_map : int =
   ;
 
   (* count curried calls to these functions *)
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
   | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     find_uncurry_exes syms bsym_table uncurry_map vs exes
@@ -241,8 +241,8 @@ let uncurry_gen syms bsym_table child_map : int =
       if syms.compiler_options.print_flag then
       print_endline ("UNCURRY: Orig " ^ string_of_bid i ^ " ret child " ^
         string_of_bid c ^ " synth " ^ string_of_bid k ^ " count=" ^ si n);
-      let idm,parent,sr,bbdcl = Hashtbl.find bsym_table i in
-      let idc,parentc,src,bbdclc = Hashtbl.find bsym_table c in
+      let idm,parent,sr,bbdcl = Flx_bsym_table.find bsym_table i in
+      let idc,parentc,src,bbdclc = Flx_bsym_table.find bsym_table c in
       assert (parentc = Some i);
       let props, vs, ps, traint, ret, exes =
         match bbdcl with
@@ -274,7 +274,7 @@ let uncurry_gen syms bsym_table child_map : int =
                 "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs ^
                 "] <-- " ^ string_of_bid pi ^ ", parent " ^ string_of_bid k ^
                 " <-- " ^ string_of_bid i);
-            Hashtbl.add bsym_table n (s ^ "_uncurry",Some k,sr,bbdcl);
+            Flx_bsym_table.add bsym_table n (s ^ "_uncurry",Some k,sr,bbdcl);
             Flx_child.add_child child_map k n
           )
           ps
@@ -300,12 +300,12 @@ let uncurry_gen syms bsym_table child_map : int =
       | BBDCL_function (propsc,vsc,(psc,traintc),retc,exesc) ->
         let ps,exes = fixup vsc psc exesc in
         let bbdcl = BBDCL_function (propsc,vs,(ps,traintc), retc, exes) in
-        Hashtbl.add bsym_table k (idm^"_uncurry",parent,sr,bbdcl)
+        Flx_bsym_table.add bsym_table k (idm^"_uncurry",parent,sr,bbdcl)
 
       | BBDCL_procedure (propsc,vsc,(psc,traintc),exesc) ->
         let ps,exes = fixup vsc psc exesc in
         let bbdcl = BBDCL_procedure (propsc,vs,(ps,traintc), exes) in
-        Hashtbl.add bsym_table k (idm^"_uncurry",parent,sr,bbdcl)
+        Flx_bsym_table.add bsym_table k (idm^"_uncurry",parent,sr,bbdcl)
 
       | _ -> assert false
     end
@@ -313,16 +313,16 @@ let uncurry_gen syms bsym_table child_map : int =
   uncurry_map
   ;
   (* replace calls *)
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
   | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
-    Hashtbl.replace bsym_table i
+    Flx_bsym_table.add bsym_table i
       (id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes))
 
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
-    Hashtbl.replace bsym_table i
+    Flx_bsym_table.add bsym_table i
       (id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes))
   | _ -> ()
   )

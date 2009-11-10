@@ -114,7 +114,11 @@ and uses syms used bsym_table count_inits i =
   let ue e = uses_tbexpr syms used bsym_table count_inits e in
   if not (BidSet.mem i !used) then
   begin
-    match Flx_hashtbl.find bsym_table i with
+    let symbol =
+      try Some (Flx_bsym_table.find bsym_table i)
+      with Not_found -> None
+    in
+    match symbol with
     | Some (id,_,_,bbdcl) ->
       used := BidSet.add i !used;
       begin match bbdcl with
@@ -270,7 +274,7 @@ let copy_used syms bsym_table =
   if syms.compiler_options.print_flag then
     print_endline "COPY USED";
 
-  let h = Hashtbl.create 97 in
+  let h = Flx_bsym_table.create () in
   let u = full_use_closure syms bsym_table in
 
   (* Iterate through the used symbols and copy them to the new table. *)
@@ -279,7 +283,7 @@ let copy_used syms bsym_table =
     if syms.compiler_options.print_flag then
       print_endline ("Copying " ^ si i);
     *)
-    Hashtbl.add h i (Hashtbl.find bsym_table i)
+    Flx_bsym_table.add h i (Flx_bsym_table.find bsym_table i)
   end u;
 
   h

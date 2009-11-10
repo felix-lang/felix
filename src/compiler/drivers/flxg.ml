@@ -274,7 +274,7 @@ try
 
   (* FUDGE the init procedure to make interfacing a bit simpler *)
   let topclass_props =
-    let id,parent,sr,entry = Hashtbl.find bsym_table root_proc in
+    let id,parent,sr,entry = Flx_bsym_table.find bsym_table root_proc in
     match entry with
     | BBDCL_procedure (props,vs,p,exes) -> props
     | _ -> syserr sr "Expected root to be procedure"
@@ -312,7 +312,7 @@ try
     List.iter
     (fun (i,ts)->
       match
-        try Hashtbl.find bsym_table i with Not_found ->
+        try Flx_bsym_table.find bsym_table i with Not_found ->
           failwith ("[package] can't find index " ^ string_of_bid i)
       with (id,parent,sr,entry) ->
       match entry with
@@ -377,7 +377,7 @@ try
     List.iter
     (fun (i,ts)->
       match
-        try Hashtbl.find bsym_table i with Not_found ->
+        try Flx_bsym_table.find bsym_table i with Not_found ->
           failwith ("[user header] can't find index " ^ string_of_bid i)
       with (id,parent,sr,entry) ->
       match entry with
@@ -494,7 +494,7 @@ try
     List.iter
     (fun (i,ts) ->
       match
-        try Hashtbl.find bsym_table i with Not_found ->
+        try Flx_bsym_table.find bsym_table i with Not_found ->
           failwith ("[user body] can't find index " ^ string_of_bid i)
       with (id,parent,sr,entry) ->
       match entry with

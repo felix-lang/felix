@@ -12,7 +12,7 @@ open Flx_maps
 
 let find_thread_vars_with_type bsym_table =
   let vars = ref [] in
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun k (id,parent,sr,entry) ->
     match parent,entry with
     | None,BBDCL_var (_,t)
@@ -39,7 +39,7 @@ let find_references syms bsym_table child_map index ts =
   (fun idx ->
     try
       let id,_,_,bbdfn =
-        Hashtbl.find bsym_table idx
+        Flx_bsym_table.find bsym_table idx
       in
       match bbdfn with
       | BBDCL_var (vs,t)
@@ -96,7 +96,7 @@ let rec get_offsets' syms bsym_table typ : string list =
 
   | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table i
+      try Flx_bsym_table.find bsym_table i
       with Not_found -> failwith
         ("get_offsets'] can't find index " ^ string_of_bid i)
     in
@@ -350,7 +350,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
   Hashtbl.iter
   (fun (index,ts) instance ->
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table index
+      try Flx_bsym_table.find bsym_table index
       with Not_found ->
         failwith ("[gen_offset_tables] can't find index " ^ string_of_bid index)
     in
@@ -426,7 +426,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
       print_endline ("Thinking about instance type --> " ^ string_of_btypecode syms.sym_table btyp);
       *)
       let id,parent,sr,entry =
-        try Hashtbl.find bsym_table i
+        try Flx_bsym_table.find bsym_table i
         with Not_found ->
           failwith ("[gen_offset_tables:BTYP_inst] can't find index " ^
             string_of_bid i)
@@ -523,7 +523,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
       let is_pod =
         match t with
         | BTYP_inst (k,ts) ->
-          let id,sr,parent,entry = Hashtbl.find bsym_table k in
+          let id,sr,parent,entry = Flx_bsym_table.find bsym_table k in
           begin match entry with
           | BBDCL_abs (_,quals,_,_) -> mem `Pod quals
           | _ -> false
@@ -574,7 +574,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
     | BTYP_inst (i,ts) ->
       let name = cpp_typename syms btyp in
       let id,parent,sr,entry =
-        try Hashtbl.find bsym_table i
+        try Flx_bsym_table.find bsym_table i
         with Not_found ->
           failwith (
             "[gen_offset_tables:BTYP_inst:allocable_types] can't find index " ^

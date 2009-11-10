@@ -24,7 +24,7 @@ let hfind msg h k =
   THIS IS A DUMMY BOUND SYMBOL TABLE
   REQUIRED FOR THE PRINTING OF BOUND EXPRESSIONS
 *)
-let bsym_table = Hashtbl.create 97
+let bsym_table = Flx_bsym_table.create ()
 
 let rec check_if_parent syms child parent =
   if child = parent then true

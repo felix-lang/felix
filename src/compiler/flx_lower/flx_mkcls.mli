@@ -12,7 +12,7 @@ val make_closure_state :
 (** Extract all closures. *)
 val make_closure :
   closure_state_t ->
-  Flx_types.bsym_table_t ->
+  Flx_bsym_table.t ->
   Flx_types.bid_t list -> (* The list of symbols to possibly make closures
                            * for. *)
   Flx_types.bid_t list
@@ -20,5 +20,5 @@ val make_closure :
 (** Extract all closures. *)
 val make_closures :
   closure_state_t ->
-  Flx_types.bsym_table_t ->
+  Flx_bsym_table.t ->
   unit

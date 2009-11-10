@@ -39,7 +39,7 @@ val register_tuple:
 val register_type_r:
   (bid_t -> btypecode_t list -> unit) ->
   sym_state_t ->
-  bsym_table_t ->
+  Flx_bsym_table.t ->
   btypecode_t list ->
   Flx_srcref.t ->
   btypecode_t ->

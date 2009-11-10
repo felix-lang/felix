@@ -172,7 +172,7 @@ let bbind_symbol syms bsym_table symbol_index {
     bind_basic_ps ps, btraint traint
   in
   let add_symbol symbol =
-    Hashtbl.add bsym_table symbol_index symbol;
+    Flx_bsym_table.add bsym_table symbol_index symbol;
     Some symbol
   in
   begin match bdcl with

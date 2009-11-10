@@ -25,7 +25,7 @@ let find_variable_indices syms bsym_table child_map index =
   let children = find_children child_map index in
   filter
   (fun i ->
-    try match Hashtbl.find bsym_table i with _,_,_,entry ->
+    try match Flx_bsym_table.find bsym_table i with _,_,_,entry ->
       match entry with
       | BBDCL_var _
       | BBDCL_ref _
@@ -38,7 +38,7 @@ let find_variable_indices syms bsym_table child_map index =
 
 let get_variable_typename syms bsym_table i ts =
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table i with Not_found ->
+    try Flx_bsym_table.find bsym_table i with Not_found ->
       failwith ("[get_variable_typename] can't find index " ^ string_of_bid i)
   in
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
@@ -93,7 +93,7 @@ let typeof_bparams bps: btypecode_t  =
 
 let get_type bsym_table index =
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index
+    try Flx_bsym_table.find bsym_table index
     with _ -> failwith ("[get_type] Can't find index " ^ si index)
   in
   match entry with
@@ -113,7 +113,7 @@ let is_gc_pointer syms bsym_table sr t =
   | BTYP_pointer _ -> true
   | BTYP_inst (i,_) ->
     let id,sr,parent,entry =
-      try Hashtbl.find bsym_table i with Not_found ->
+      try Flx_bsym_table.find bsym_table i with Not_found ->
         clierr sr ("[is_gc_pointer] Can't find nominal type " ^
           string_of_bid i);
    in
@@ -528,7 +528,7 @@ let gen_function_names syms bsym_table child_map =
       "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts^ "]"
     in
     match
-      try Hashtbl.find bsym_table index with Not_found ->
+      try Flx_bsym_table.find bsym_table index with Not_found ->
         failwith ("[gen_functions] can't find index " ^ string_of_bid index)
     with (id,parent,sr,entry) ->
     match entry with
@@ -573,7 +573,7 @@ let gen_functions syms bsym_table child_map =
       "[" ^ catmap "," (string_of_btypecode syms.sym_table) ts^ "]"
     in
     match
-      try Hashtbl.find bsym_table index with Not_found ->
+      try Flx_bsym_table.find bsym_table index with Not_found ->
         failwith ("[gen_functions] can't find index " ^ string_of_bid index)
     with (id,parent,sr,entry) ->
     match entry with
@@ -742,7 +742,7 @@ let gen_exe filename
   let ge' sr e : cexpr_t = gen_expr' syms bsym_table this e vs ts sr in
   let tn t : string = cpp_typename syms (tsub t) in
   let id,parent,parent_sr,entry =
-    try Hashtbl.find bsym_table this with _ ->
+    try Flx_bsym_table.find bsym_table this with _ ->
       failwith ("[gen_exe] Can't find this " ^ string_of_bid this)
   in
   let our_display = get_display_list syms bsym_table this in
@@ -776,7 +776,7 @@ let gen_exe filename
       else "      }\n"
     in
     let id,parent,sr2,entry =
-      try Hashtbl.find bsym_table index with _ ->
+      try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_exe(call)] Can't find index " ^ string_of_bid index)
     in
     begin
@@ -1069,7 +1069,7 @@ let gen_exe filename
     (* Hmmm .. stack calls ?? *)
     | BEXE_call_stack (sr,index,ts,a)  ->
       let id,parent,sr2,entry =
-        try Hashtbl.find bsym_table index with _ ->
+        try Flx_bsym_table.find bsym_table index with _ ->
           failwith ("[gen_expr(apply instance)] Can't find index " ^
             string_of_bid index)
       in
@@ -1261,7 +1261,7 @@ let gen_exe filename
 
     | BEXE_svc (sr,index) ->
       let id,parent,sr,entry =
-        try Hashtbl.find bsym_table index with _ ->
+        try Flx_bsym_table.find bsym_table index with _ ->
           failwith ("[gen_expr(name)] Can't find index " ^ string_of_bid index)
       in
       let t =
@@ -1321,7 +1321,7 @@ let gen_exe filename
       | BTYP_tuple [] -> ""
       | _ ->
         let id,_,_,entry =
-          try Hashtbl.find bsym_table v with Not_found ->
+          try Flx_bsym_table.find bsym_table v with Not_found ->
             failwith ("[gen_expr(init) can't find index " ^ string_of_bid v)
         in
         begin match entry with
@@ -1441,7 +1441,7 @@ let gen_C_function_body filename syms bsym_table child_map
 =
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index with Not_found ->
+    try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("gen_C_function_body] can't find " ^ string_of_bid index)
   in
   if syms.compiler_options.print_flag then
@@ -1500,7 +1500,7 @@ let gen_C_function_body filename syms bsym_table child_map
         fold_left
         (fun lst i ->
           let _,_,_,entry =
-            try Hashtbl.find bsym_table i with Not_found ->
+            try Flx_bsym_table.find bsym_table i with Not_found ->
               failwith ("[C func body, vars] Can't find index " ^
                 string_of_bid i);
           in
@@ -1588,7 +1588,7 @@ let gen_C_procedure_body filename syms bsym_table child_map
 =
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index with Not_found ->
+    try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("gen_C_function_body] can't find " ^ string_of_bid index)
   in
   if syms.compiler_options.print_flag then
@@ -1641,7 +1641,7 @@ let gen_C_procedure_body filename syms bsym_table child_map
         fold_left
         (fun lst i ->
           let _,_,_,entry =
-            try Hashtbl.find bsym_table i with Not_found ->
+            try Flx_bsym_table.find bsym_table i with Not_found ->
               failwith ("[C func body, vars] Can't find index " ^
                 string_of_bid i);
           in
@@ -1726,7 +1726,7 @@ let gen_function_methods filename syms bsym_table child_map
   label_info counter index ts sr instance_no : string * string
 =
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index with Not_found ->
+    try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[gen_function_methods] can't find " ^ string_of_bid index)
   in
   let rt vs t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
@@ -1866,7 +1866,7 @@ let gen_procedure_methods filename syms bsym_table child_map
   label_info counter index ts instance_no : string * string
 =
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index with Not_found ->
+    try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[gen_procedure_methods] Can't find index " ^
         string_of_bid index)
   in (* can't fail *)
@@ -2038,7 +2038,7 @@ let gen_execute_methods filename syms bsym_table child_map label_info counter bf
   Hashtbl.iter
   (fun (index,ts) instance_no ->
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index with Not_found ->
+    try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[gen_execute_methods] Can't find index " ^ string_of_bid index)
   in
   begin match entry with
@@ -2205,7 +2205,7 @@ let gen_biface_header syms bsym_table biface = match biface with
 
   | BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table index with Not_found ->
+      try Flx_bsym_table.find bsym_table index with Not_found ->
         failwith ("[gen_biface_header] Can't find index " ^ string_of_bid index)
     in
     begin match entry with
@@ -2266,7 +2266,7 @@ let gen_biface_body syms bsym_table biface = match biface with
 
   | BIFACE_export_fun (sr,index, export_name) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table index with Not_found ->
+      try Flx_bsym_table.find bsym_table index with Not_found ->
         failwith ("[gen_biface_body] Can't find index " ^ string_of_bid index)
     in
     begin match entry with

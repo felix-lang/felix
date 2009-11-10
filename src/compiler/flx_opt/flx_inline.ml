@@ -21,9 +21,9 @@ open Flx_foldvars
 
 
 let hfind msg h k =
-  try Hashtbl.find h k
+  try Flx_bsym_table.find h k
   with Not_found ->
-    print_endline ("flx_inline Hashtbl.find failed " ^ msg);
+    print_endline ("flx_inline Flx_bsym_table.find failed " ^ msg);
     raise Not_found
 
 let string_of_vs vs =
@@ -791,7 +791,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
           add_child child_map caller urv;
           add_use uses caller urv sr;
           let entry = BBDCL_var (caller_vs,t) in
-          Hashtbl.add bsym_table urv (urvid,Some caller,sr,entry);
+          Flx_bsym_table.add bsym_table urv (urvid,Some caller,sr,entry);
 
           (* set variable to function appliction *)
           let cll = BEXE_init (sr,urv,e) in
@@ -812,7 +812,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
           add_child child_map caller urv;
           add_use uses caller urv sr;
           let entry = BBDCL_val (caller_vs,t) in
-          Hashtbl.add bsym_table urv (urvid,Some caller,sr,entry);
+          Flx_bsym_table.add bsym_table urv (urvid,Some caller,sr,entry);
 
           (* set variable to function appliction *)
           let cll = BEXE_init (sr,urv,e) in
@@ -930,7 +930,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
                     add_child child_map caller urv;
                     add_use uses caller urv sr;
                     let entry = BBDCL_val (caller_vs,t) in
-                    Hashtbl.add bsym_table urv (urvid,Some caller,sr,entry);
+                    Flx_bsym_table.add bsym_table urv (urvid,Some caller,sr,entry);
 
                     let rxs = hic revariable callee xs in
                     exes' := rev rxs @ !exes';
@@ -1145,7 +1145,7 @@ and heavy_inline_calls
               print_endline ("Downgrading temporary .." ^ si i);
               *)
               (* should this be a VAR or a VAL? *)
-              Hashtbl.replace bsym_table i (vid,vparent,vsr,BBDCL_var (vs,t))
+              Flx_bsym_table.add bsym_table i (vid,vparent,vsr,BBDCL_var (vs,t))
             | _ -> ()
             end;
             if syms.compiler_options.print_flag then
@@ -1226,7 +1226,7 @@ and remove_unused_children syms (uses,child_map,bsym_table) i =
       begin
         try
           (* any parent disowns the child *)
-          match Hashtbl.find bsym_table i with
+          match Flx_bsym_table.find bsym_table i with
           | _,Some parent,_,_ -> remove_child child_map parent i
           | _ -> ()
         with Not_found -> ()
@@ -1234,7 +1234,7 @@ and remove_unused_children syms (uses,child_map,bsym_table) i =
       ;
 
       (* remove from symbol table, child map, and usage map *)
-      Hashtbl.remove bsym_table i;
+      Flx_bsym_table.remove bsym_table i;
       Hashtbl.remove child_map i;
       Hashtbl.remove uses i;
       if syms.compiler_options.print_flag then
@@ -1245,7 +1245,7 @@ and remove_unused_children syms (uses,child_map,bsym_table) i =
 
 and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
   let specs =
-    try Some (Hashtbl.find bsym_table i)
+    try Some (Flx_bsym_table.find bsym_table i)
     with Not_found -> None
   in
   match specs with None -> () | Some spec ->
@@ -1257,7 +1257,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
       let data = id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes) in
-      Hashtbl.replace bsym_table i data;
+      Flx_bsym_table.add bsym_table i data;
 
       (* inline into all children first *)
       let children = find_children child_map i in
@@ -1316,7 +1316,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes) in
-      Hashtbl.replace bsym_table i data;
+      Flx_bsym_table.add bsym_table i data;
       recal_exes_usage syms uses sr i ps exes;
       remove_unused_children syms (uses,child_map,bsym_table) i;
       (*
@@ -1329,7 +1329,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
       let data = id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes) in
-      Hashtbl.replace bsym_table i data;
+      Flx_bsym_table.add bsym_table i data;
 
       (* inline into all children first *)
       let children = find_children child_map i in
@@ -1388,7 +1388,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes) in
-      Hashtbl.replace bsym_table i data;
+      Flx_bsym_table.add bsym_table i data;
       recal_exes_usage syms uses sr i ps exes;
       remove_unused_children syms (uses,child_map,bsym_table) i;
       (*
@@ -1411,7 +1411,7 @@ let heavy_inlining syms bsym_table child_map =
   (* This code is here to attempt to optimise closures (and clones?)
      which aren't handled by the above loop.
   *)
-  Hashtbl.iter
+  Flx_bsym_table.iter
     (fun i _ ->
       try heavily_inline_bbdcl syms (uses,child_map,bsym_table) [i] i
       with exn ->  ()

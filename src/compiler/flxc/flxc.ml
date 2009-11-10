@@ -66,7 +66,7 @@ let desugar_stmt state stmt () =
 
 (* Convenience function to make bsym_table from our state. *)
 let make_bind_state state =
-  let bsym_table = Hashtbl.create 97 in
+  let bsym_table = Flx_bsym_table.create () in
 
   let module_symbol = Flx_sym_table.find
     state.syms.Flx_mtypes2.sym_table
@@ -124,7 +124,11 @@ let bind_stmt' state bsym_table stmt =
 (* Helper function to print to bsyms. *)
 let print_bids state bsym_table bids =
   List.iter begin fun bid ->
-    match Flx_hashtbl.find bsym_table bid with
+    let symbol =
+      try Some (Flx_bsym_table.find bsym_table bid)
+      with Not_found -> None
+    in
+    match symbol with
     | None -> ()
     | Some (_,_,_,bbdcl) ->
         print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl

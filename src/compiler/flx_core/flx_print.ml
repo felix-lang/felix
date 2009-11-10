@@ -514,7 +514,7 @@ and get_name_parent sym_table bsym_table index =
     { id=id; vs=vs; parent=parent} -> id, parent
   with Not_found ->
   try
-    match Hashtbl.find bsym_table index with
+    match Flx_bsym_table.find bsym_table index with
     id,parent,_,_ -> id,parent
   with Not_found -> "index_" ^ string_of_bid index,None
 
@@ -2498,7 +2498,7 @@ let print_function_body sym_table bsym_table id i (bvs:bvs_t) ps exes parent =
   exes
 
 let print_function sym_table bsym_table i =
-  match Hashtbl.find bsym_table i with (id,parent,_,entry) ->
+  match Flx_bsym_table.find bsym_table i with (id,parent,_,entry) ->
   match entry with
   | BBDCL_function (_,bvs,ps,_,exes)
   | BBDCL_procedure (_,bvs,ps,exes) ->
@@ -2506,7 +2506,7 @@ let print_function sym_table bsym_table i =
   | _ -> ()
 
 let print_functions sym_table bsym_table =
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun i (id,parent,_,entry) -> match entry with
   | BBDCL_function (_,bvs,ps,_,exes)
   | BBDCL_procedure (_,bvs,ps,exes) ->
@@ -2517,7 +2517,7 @@ let print_functions sym_table bsym_table =
   bsym_table
 
 let print_symbols sym_table bsym_table =
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun i (id,parent,_,entry) -> match entry with
   | BBDCL_function (_,bvs,ps,_,exes)
   | BBDCL_procedure (_,bvs,ps,exes) ->
@@ -2568,7 +2568,7 @@ let print_sym_table sym_table =
   end sym_table
 
 let print_bsym_table sym_table bsym_table =
-  Hashtbl.iter begin fun index (name,parent,sr,entry) ->
+  Flx_bsym_table.iter begin fun index (name,parent,sr,entry) ->
     print_endline (string_of_bid index ^ " --> " ^
       string_of_bbdcl sym_table bsym_table entry index)
   end bsym_table

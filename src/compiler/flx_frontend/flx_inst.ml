@@ -85,7 +85,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
     print_endline "apply direct";
     *)
     let id,parent,sr2,entry =
-      try Hashtbl.find bsym_table index
+      try Flx_bsym_table.find bsym_table index
       with _ -> failwith ("[process_expr(apply instance)] Can't find index " ^
         string_of_bid index)
     in
@@ -258,7 +258,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   let uis i ts = add_inst syms bsym_table ref_insts1 (i,ts) in
   let ui i = uis i ts in
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table i
+    try Flx_bsym_table.find bsym_table i
     with Not_found -> failwith ("[process_inst] Can't find index " ^
       string_of_bid i)
   in
@@ -525,7 +525,7 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
     (function
       | BIFACE_export_python_fun (_,x,_)
       | BIFACE_export_fun (_,x,_) ->
-        let _,_,sr,entry = Hashtbl.find bsym_table x in
+        let _,_,sr,entry = Flx_bsym_table.find bsym_table x in
         begin match entry with
         | BBDCL_procedure (props,_,(ps,_),_)
         | BBDCL_function (props,_,(ps,_),_,_) ->

@@ -77,7 +77,7 @@ let cal_req_usage syms uses sr parent reqs =
   in
   List.iter ur reqs
 
-let call_data_for_symbol syms bsym_table uses k (_,_,sr,entry) =
+let call_data_for_symbol syms uses k (_,_,sr,entry) =
   let ut t = uses_type uses k sr t in
 
   match entry with
@@ -132,7 +132,7 @@ let call_data syms bsym_table =
   let uses = Hashtbl.create 97 in
 
   (* Figure out all the calls of the symbol table. *)
-  Hashtbl.iter (call_data_for_symbol syms bsym_table uses) bsym_table;
+  Flx_bsym_table.iter (call_data_for_symbol syms uses) bsym_table;
 
   (* invert uses table to get usedby table *)
   let usedby = Hashtbl.create 97 in
@@ -228,7 +228,7 @@ let call_report syms bsym_table (uses,usedby) f k =
   let catmap = Flx_util.catmap in
   let w s = output_string f s in
   let isr = is_recursive uses k in
-  let id,_,sr,entry = Hashtbl.find bsym_table k in
+  let id,_,sr,entry = Flx_bsym_table.find bsym_table k in
   w (string_of_bid k ^ ": ");
   w (if isr then "recursive " else "");
   w
@@ -245,7 +245,7 @@ let call_report syms bsym_table (uses,usedby) f k =
   let x = ref [] in
   List.iter begin fun (i,_) ->
     if not (List.mem i !x) then
-    try match Hashtbl.find bsym_table i with
+    try match Flx_bsym_table.find bsym_table i with
       | _,_,_,BBDCL_procedure _
       | _,_,_,BBDCL_function _
       | _,_,_,BBDCL_var _
@@ -266,7 +266,7 @@ let call_report syms bsym_table (uses,usedby) f k =
 
 let print_call_report' syms bsym_table usage f =
   let x = ref [] in
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun k (id,_,sr,entry) ->
     match entry with
     | BBDCL_procedure _

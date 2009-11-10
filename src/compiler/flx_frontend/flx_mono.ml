@@ -21,13 +21,13 @@ open Flx_beta
 open Flx_prop
 
 let cal_parent syms bsym_table i' ts' =
-  let id,parent,sr,_ = Hashtbl.find bsym_table i' in
+  let id,parent,sr,_ = Flx_bsym_table.find bsym_table i' in
   match parent with
   | None -> None
   | Some i ->
     let vsc = get_vs bsym_table i' in
     assert (length vsc = length ts');
-    if not (Hashtbl.mem bsym_table i) then
+    if not (Flx_bsym_table.mem bsym_table i) then
     (
       (*
       print_endline ("WHA?? Parent " ^ si i ^ " of " ^ si i' ^ " does not exist??");
@@ -201,7 +201,7 @@ let fixup_exes syms bsym_table fi mt exes =
   map (fixup_exe syms bsym_table fi mt) exes
 
 let mono syms bsym_table fi i ts n =
-  let id,parent,sr,entry = Hashtbl.find bsym_table i in
+  let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
   match entry with
 
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
@@ -219,7 +219,7 @@ let mono syms bsym_table fi i ts n =
     let exes = fixup_exes syms bsym_table fi mt exes in
     let entry = BBDCL_function (props,[],(ps,traint),ret,exes) in
     let parent = cal_parent syms bsym_table i ts in
-    Hashtbl.replace bsym_table n (id,parent,sr,entry)
+    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
 
   | BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
@@ -242,7 +242,7 @@ let mono syms bsym_table fi i ts n =
     let exes = fixup_exes syms bsym_table fi mt exes in
     let entry = BBDCL_procedure (props,[],(ps,traint), exes) in
     let parent = cal_parent syms bsym_table i ts in
-    Hashtbl.replace bsym_table n (id,parent,sr,entry)
+    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
 
   | BBDCL_val (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -250,7 +250,7 @@ let mono syms bsym_table fi i ts n =
     let t = mt t in
     let entry = BBDCL_val ([],t) in
     let parent = cal_parent syms bsym_table i ts in
-    Hashtbl.replace bsym_table n (id,parent,sr,entry)
+    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
 
   | BBDCL_var (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -258,7 +258,7 @@ let mono syms bsym_table fi i ts n =
     let t = mt t in
     let entry = BBDCL_var ([],t) in
     let parent = cal_parent syms bsym_table i ts in
-    Hashtbl.replace bsym_table n (id,parent,sr,entry)
+    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
 
   | BBDCL_ref (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -266,7 +266,7 @@ let mono syms bsym_table fi i ts n =
     let t = mt t in
     let entry = BBDCL_ref ([],t) in
     let parent = cal_parent syms bsym_table i ts in
-    Hashtbl.replace bsym_table n (id,parent,sr,entry)
+    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
 
   | BBDCL_tmp (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -274,7 +274,7 @@ let mono syms bsym_table fi i ts n =
     let t = mt t in
     let entry = BBDCL_tmp ([],t) in
     let parent = cal_parent syms bsym_table i ts in
-    Hashtbl.replace bsym_table n (id,parent,sr,entry)
+    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
 
   (* we have tp replace types in interfaces like Vector[int]
     with monomorphic versions if any .. even if we don't
@@ -289,7 +289,7 @@ let mono syms bsym_table fi i ts n =
     let argtypes = map mt argtypes in
     let ret = mt ret in
     let entry = BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) in
-    Hashtbl.replace bsym_table i (id,parent, sr, entry)
+    Flx_bsym_table.add bsym_table i (id,parent, sr, entry)
 
 
   | BBDCL_proc (props,vs,argtypes,ct,reqs) ->
@@ -297,7 +297,7 @@ let mono syms bsym_table fi i ts n =
     let mt t = reduce_type (beta_reduce syms sr (fixup_type syms bsym_table fi (list_subst syms.counter vars t))) in
     let argtypes = map mt argtypes in
     let entry = BBDCL_proc (props,vs,argtypes,ct,reqs) in
-    Hashtbl.replace bsym_table i (id,parent, sr, entry)
+    Flx_bsym_table.add bsym_table i (id,parent, sr, entry)
 
   | BBDCL_const (props, vs, t, CS_str "#this", reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -305,12 +305,12 @@ let mono syms bsym_table fi i ts n =
     let t = mt t in
     let entry = BBDCL_const (props, [], t, CS_str "#this", reqs) in
     let parent = cal_parent syms bsym_table i ts in
-    Hashtbl.replace bsym_table n (id,parent,sr,entry)
+    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
 
   | _ -> ()
 
 let chk_mono syms bsym_table i =
-  let id,parent,sr,entry = Hashtbl.find bsym_table i in
+  let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
   match entry with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->  true
   | BBDCL_procedure (props,vs,(ps,traint), exes) -> true

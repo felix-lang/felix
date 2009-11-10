@@ -484,12 +484,12 @@ let gen_body syms (uses,child_map,bsym_table) id
         BidSet.empty
       in
       BidSet.iter (fun i ->
-        let id,parent,sr,entry = Hashtbl.find bsym_table i in
+        let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
         match entry with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
           let exes = map (subarg syms bsym_table argmap) exes in
           recal_exes_usage syms uses sr i ps exes;
-          Hashtbl.replace bsym_table i
+          Flx_bsym_table.add bsym_table i
           (id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes))
 
         | BBDCL_procedure (props,vs,(ps,traint),exes) ->
@@ -498,7 +498,7 @@ let gen_body syms (uses,child_map,bsym_table) id
           *)
           let exes = map (subarg syms bsym_table argmap) exes in
           recal_exes_usage syms uses sr i ps exes;
-          Hashtbl.replace bsym_table i
+          Flx_bsym_table.add bsym_table i
           (id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes))
 
         | _ -> ()

@@ -199,7 +199,7 @@ let gen_type_name syms bsym_table (index,typ) =
 
   | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table i
+      try Flx_bsym_table.find bsym_table i
       with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_bid i)
     in
     begin match entry with
@@ -399,7 +399,7 @@ let gen_type syms bsym_table (index,typ) =
 
   | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table i
+      try Flx_bsym_table.find bsym_table i
       with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_bid i)
     in
     begin match entry with

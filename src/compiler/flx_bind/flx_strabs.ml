@@ -18,7 +18,7 @@ type strabs_state_t = unit
 let make_strabs_state () = ()
 
 let check_inst bsym_table i ts =
-  let id,_,_,entry = Hashtbl.find bsym_table i in
+  let id,_,_,entry = Flx_bsym_table.find bsym_table i in
   match entry with
   | BBDCL_newtype (vs,t) -> tsubst vs ts t
   | _ -> BTYP_inst (i,ts)
@@ -34,7 +34,7 @@ let fixtype bsym_table t =
 
 let id x = x
 
-let isident bsym_table i = match Hashtbl.find bsym_table i with
+let isident bsym_table i = match Flx_bsym_table.find bsym_table i with
   | _,_,_,BBDCL_fun (_,_,_,_,CS_identity,_,_) -> true
   | _ -> false
 
@@ -74,7 +74,7 @@ let strabs_symbol state input_bsym_table output_bsym_table index (id,parent,sr,e
 
   let h x =
     let symbol = (id,parent,sr,x) in
-    Hashtbl.add output_bsym_table index symbol;
+    Flx_bsym_table.add output_bsym_table index symbol;
     Some symbol
   in
   match entry with
@@ -139,9 +139,9 @@ let strabs_symbol state input_bsym_table output_bsym_table index (id,parent,sr,e
     h (BBDCL_nonconst_ctor (bvs, j, ft t1, k, ft t2, evs, ft etraint))
 
 let strabs state input_bsym_table =
-  let output_bsym_table = Hashtbl.create 97 in
+  let output_bsym_table = Flx_bsym_table.create () in
 
-  Hashtbl.iter begin fun index symbol ->
+  Flx_bsym_table.iter begin fun index symbol ->
     ignore(strabs_symbol state input_bsym_table output_bsym_table index symbol)
   end input_bsym_table;
 

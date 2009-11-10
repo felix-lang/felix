@@ -67,7 +67,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       let k = fresh_bid syms.counter in
       let vid = "_mkp_" ^ string_of_bid k in
       let vardecl = BBDCL_var (vs,ret) in
-      Hashtbl.add bsym_table k (vid,Some this,sr,vardecl);
+      Flx_bsym_table.add bsym_table k (vid,Some this,sr,vardecl);
 
       (* append a pointer to this variable to the argument *)
       let ts' = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) vs in
@@ -154,7 +154,7 @@ let mkproc_gen syms bsym_table child_map =
   in
 
   (* make the funproc map *)
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let k = fresh_bid syms.counter in
@@ -169,7 +169,7 @@ let mkproc_gen syms bsym_table child_map =
   ;
 
   (* count direct applications of these functions *)
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun i (id,parent,sr,bbdcl) -> match bbdcl with
   | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     find_mkproc_exes mkproc_map exes
@@ -249,7 +249,7 @@ let mkproc_gen syms bsym_table child_map =
       print_endline ("MKPROC: Orig " ^ string_of_bid i ^ " synth " ^
         string_of_bid k ^ " count=" ^ si n);
 
-      let idm,parent,sr,bbdcl = Hashtbl.find bsym_table i in
+      let idm,parent,sr,bbdcl = Flx_bsym_table.find bsym_table i in
       let props, vs, ps, traint, ret, exes =
         match bbdcl with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) -> props, vs, ps, traint, ret, exes
@@ -296,7 +296,7 @@ let mkproc_gen syms bsym_table child_map =
             print_endline ("New param " ^ s ^ " " ^ string_of_bid n ^ " <-- " ^
               string_of_bid pi ^ ", parent " ^ string_of_bid k ^ " <-- " ^
               string_of_bid i);
-            Hashtbl.add bsym_table n (s ^ "_mkproc",Some k,sr,bbdcl);
+            Flx_bsym_table.add bsym_table n (s ^ "_mkproc",Some k,sr,bbdcl);
             Flx_child.add_child child_map k n
           )
           ps
@@ -329,7 +329,7 @@ let mkproc_gen syms bsym_table child_map =
 
       (* save the new procedure *)
       let bbdcl = BBDCL_procedure (props,vs,(ps,traint), exes) in
-      Hashtbl.add bsym_table k (idm^"_mkproc",parent,sr,bbdcl);
+      Flx_bsym_table.add bsym_table k (idm^"_mkproc",parent,sr,bbdcl);
 
       if syms.compiler_options.print_flag then
       begin
@@ -344,14 +344,14 @@ let mkproc_gen syms bsym_table child_map =
 
   (* replace applications *)
   (* DISABLE MODIFICATIONS DURING INITIAL DEPLOYMENT *)
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun i (id, parent, sr, bbdcl) -> match bbdcl with
   | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = mkproc_exes syms bsym_table sr i mkproc_map vs exes in
     (*
     ()
     *)
-    Hashtbl.replace bsym_table i
+    Flx_bsym_table.add bsym_table i
       (id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes))
 
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
@@ -359,7 +359,7 @@ let mkproc_gen syms bsym_table child_map =
     (*
     ()
     *)
-    Hashtbl.replace bsym_table i
+    Flx_bsym_table.add bsym_table i
       (id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes))
 
   | _ -> ()

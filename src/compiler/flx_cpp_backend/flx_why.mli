@@ -8,6 +8,6 @@ open Flx_mtypes2
 val emit_whycode:
   string ->
   sym_state_t ->
-  bsym_table_t ->
+  Flx_bsym_table.t ->
   bid_t -> (* root for lookup of and/or/not etc *)
   unit

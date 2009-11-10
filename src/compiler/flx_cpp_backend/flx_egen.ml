@@ -67,7 +67,7 @@ let is_native_literal e = match e with
 
 let get_var_frame syms bsym_table this index ts : string =
   match
-    try Hashtbl.find bsym_table index with Not_found ->
+    try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[get_var_frame(1)] Can't find index " ^ string_of_bid index)
   with (id,parent,sr,entry) ->
   match entry with
@@ -88,7 +88,7 @@ let get_var_frame syms bsym_table this index ts : string =
 
 let get_var_ref syms bsym_table this index ts : string =
   match
-    try Hashtbl.find bsym_table index with Not_found ->
+    try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
   with (id,parent,sr,entry) ->
   (*
@@ -120,7 +120,7 @@ let get_var_ref syms bsym_table this index ts : string =
 
 let get_ref_ref syms bsym_table this index ts : string =
   match
-    try Hashtbl.find bsym_table index with Not_found ->
+    try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
   with (id,parent,sr,entry) ->
   (*
@@ -190,7 +190,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     | BTYP_inst (i,ts) ->
       let ts = map tsub ts in
       let id,_,_,entry =
-        try Hashtbl.find bsym_table i with Not_found ->
+        try Flx_bsym_table.find bsym_table i with Not_found ->
           failwith ("[gen_expr: case_index] Can't find index " ^
             string_of_bid i)
       in
@@ -213,7 +213,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     | _ -> ge a
   in
   let id,parent,_,entry =
-    try Hashtbl.find bsym_table this with Not_found ->
+    try Flx_bsym_table.find bsym_table this with Not_found ->
       failwith ("[gen_expr] Can't find this = " ^ string_of_bid this)
   in
   let our_display = get_display_list syms bsym_table this in
@@ -264,7 +264,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
       ce_dot (ge' e) field_name
 
     | BTYP_inst (i,_) ->
-      begin match Hashtbl.find bsym_table i with
+      begin match Flx_bsym_table.find bsym_table i with
       | _,_,_,BBDCL_cstruct (_,ls)
       | _,_,_,BBDCL_struct (_,ls) ->
         let name,_ =
@@ -406,7 +406,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
 
   | BEXPR_name (index,ts') ->
     let id,parent,sr2,entry =
-      try Hashtbl.find bsym_table index
+      try Flx_bsym_table.find bsym_table index
       with _ ->
         match
           try Flx_sym_table.find syms.sym_table index
@@ -466,7 +466,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
           | [BTYP_sum ls]
           | [BTYP_tuple ls] -> let n = length ls in ce_atom (si n)
           | [BTYP_inst (i,_)] ->
-            let _,_,_,entry = Hashtbl.find bsym_table i in
+            let _,_,_,entry = Flx_bsym_table.find bsym_table i in
             begin match entry with
               | BBDCL_struct (_,ls) -> let n = length ls in ce_atom (si n)
               | BBDCL_cstruct (_,ls) -> let n = length ls in ce_atom (si n)
@@ -518,7 +518,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     print_endline ("Generating closure of " ^ si index);
     *)
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table index with _ ->
+      try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(name)] Can't find index " ^ string_of_bid index)
     in
     (*
@@ -567,7 +567,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
       | BTYP_tuple [] -> "NULL","0"
       | _ ->
 
-        let parent = match Hashtbl.find bsym_table index with _,parent,sr,_ -> parent in
+        let parent = match Flx_bsym_table.find bsym_table index with _,parent,sr,_ -> parent in
         if Some this = parent &&
         (
           let props = match entry with
@@ -700,7 +700,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     *)
     let argt = tsub argt in
     let id,parent,sr2,entry =
-      try Hashtbl.find bsym_table index with _ ->
+      try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(apply instance)] Can't find index " ^
           string_of_bid index)
     in
@@ -743,7 +743,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
             catmap "," (sbt syms.sym_table) ts)
         end;
         begin let _,_,sr3,entry =
-          try Hashtbl.find bsym_table index'
+          try Flx_bsym_table.find bsym_table index'
           with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^
             string_of_bid index')
         in
@@ -784,7 +784,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
 
   | BEXPR_apply_struct (index,ts,a) ->
     let id,parent,sr2,entry =
-      try Hashtbl.find bsym_table index with _ ->
+      try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(apply instance)] Can't find index " ^
           string_of_bid index)
     in
@@ -848,7 +848,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     if index <> index' then
     begin
       let _,_,sr3,entry =
-        try Hashtbl.find bsym_table index' with Not_found ->
+        try Flx_bsym_table.find bsym_table index' with Not_found ->
           syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
       in
       match entry with
@@ -859,7 +859,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     end else
 
     let id,parent,sr2,entry =
-      try Hashtbl.find bsym_table index with _ ->
+      try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(apply instance)] Can't find index " ^
           string_of_bid index)
     in
@@ -916,7 +916,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     if index <> index' then
     begin
       let _,_,sr3,entry =
-        try Hashtbl.find bsym_table index' with Not_found ->
+        try Flx_bsym_table.find bsym_table index' with Not_found ->
           syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
       in
       match entry with
@@ -927,7 +927,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     end else
 
     let id,parent,sr2,entry =
-      try Hashtbl.find bsym_table index with _ ->
+      try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(apply instance)] Can't find index " ^
           string_of_bid index)
     in

@@ -51,14 +51,14 @@ let create_label_map bsym_table counter =
   print_endline "Creating label map";
   *)
   let label_map = Hashtbl.create 97 in
-  Hashtbl.iter (update_label_map counter label_map) bsym_table;
+  Flx_bsym_table.iter (update_label_map counter label_map) bsym_table;
   label_map
 
 let rec find_label bsym_table label_map caller label =
   let labels = Hashtbl.find label_map caller in
   try `Local (Hashtbl.find labels label)
   with Not_found ->
-  let id,parent,sr,entry = Hashtbl.find bsym_table caller in
+  let id,parent,sr,entry = Flx_bsym_table.find bsym_table caller in
   match entry with
   | BBDCL_function _ -> `Unreachable
   | BBDCL_procedure _ ->
@@ -114,5 +114,7 @@ let update_label_usage syms bsym_table label_map usage index (_,_,_,entry) =
 
 let create_label_usage syms bsym_table label_map =
   let usage = Hashtbl.create 97 in
-  Hashtbl.iter (update_label_usage syms bsym_table label_map usage) bsym_table;
+  Flx_bsym_table.iter
+    (update_label_usage syms bsym_table label_map usage)
+    bsym_table;
   usage

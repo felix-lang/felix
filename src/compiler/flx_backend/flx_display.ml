@@ -27,7 +27,7 @@ let cal_display syms bsym_table parent : (bid_t *int) list =
     | None -> rev display
     | Some parent ->
     match
-      try Some (Hashtbl.find bsym_table parent)
+      try Some (Flx_bsym_table.find bsym_table parent)
       with Not_found ->  None
     with
     | Some (_,parent',sr,BBDCL_procedure (_,vs,_,_))

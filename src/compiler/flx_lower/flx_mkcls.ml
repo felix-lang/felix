@@ -25,7 +25,7 @@ let make_closure_state syms =
 
 let gen_closure state bsym_table i =
   let j = fresh_bid state.syms.counter in
-  let id,parent,sr,entry = Hashtbl.find bsym_table i in
+  let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
   match entry with
   | BBDCL_proc (props,vs,ps,c,reqs) ->
     let arg_t =
@@ -36,7 +36,7 @@ let gen_closure state bsym_table i =
       let n = fresh_bid state.syms.counter in
       let name = "_a" ^ string_of_bid n in
       let ventry = BBDCL_val (vs,arg_t) in
-      Hashtbl.add bsym_table n (name,Some j,sr,ventry);
+      Flx_bsym_table.add bsym_table n (name,Some j,sr,ventry);
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
     in
 
@@ -47,7 +47,7 @@ let gen_closure state bsym_table i =
       ]
     in
     let entry = BBDCL_procedure ([],vs,(ps,None),exes) in
-    Hashtbl.add bsym_table j (id,parent,sr,entry);
+    Flx_bsym_table.add bsym_table j (id,parent,sr,entry);
     j
 
   | BBDCL_fun (props,vs,ps,ret,c,reqs,_) ->
@@ -59,13 +59,13 @@ let gen_closure state bsym_table i =
       let n = fresh_bid state.syms.counter in
       let name = "_a" ^ string_of_bid n in
       let ventry = BBDCL_val (vs,arg_t) in
-      Hashtbl.add bsym_table n (name,Some j,sr,ventry);
+      Flx_bsym_table.add bsym_table n (name,Some j,sr,ventry);
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
     in
     let e = BEXPR_apply_prim (i,ts,a),ret in
     let exes : bexe_t list = [BEXE_fun_return (sr,e)] in
     let entry = BBDCL_function ([],vs,(ps,None),ret,exes) in
-    Hashtbl.add bsym_table j (id,parent,sr,entry);
+    Flx_bsym_table.add bsym_table j (id,parent,sr,entry);
     j
 
   | _ -> assert false
@@ -83,7 +83,7 @@ let mkcls state bsym_table all_closures i ts =
     BEXPR_closure (j,ts)
 
 let check_prim state bsym_table all_closures i ts =
-  let _,_,_,entry = Hashtbl.find bsym_table i in
+  let _,_,_,entry = Flx_bsym_table.find bsym_table i in
   match entry with
   | BBDCL_proc _
   | BBDCL_fun _ ->
@@ -164,17 +164,17 @@ let process_exes state bsym_table all_closures exes =
 
 let process_entry state bsym_table all_closures i =
   let ue e = adj_cls state bsym_table all_closures e in
-  let id,parent,sr,entry = Hashtbl.find bsym_table i in
+  let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
   match entry with
   | BBDCL_function (props,vs,ps,ret,exes) ->
     let exes = process_exes state bsym_table all_closures exes in
     let entry = BBDCL_function (props,vs,ps,ret,exes) in
-    Hashtbl.replace bsym_table i (id,parent,sr,entry)
+    Flx_bsym_table.add bsym_table i (id,parent,sr,entry)
 
   | BBDCL_procedure (props,vs,ps,exes) ->
     let exes = process_exes state bsym_table all_closures exes in
     let entry = BBDCL_procedure (props,vs,ps,exes) in
-    Hashtbl.replace bsym_table i (id,parent,sr,entry)
+    Flx_bsym_table.add bsym_table i (id,parent,sr,entry)
 
   | _ -> ()
 

@@ -18,20 +18,20 @@ open Flx_child
 open Flx_call
 
 let hfind msg h k =
-  try Hashtbl.find h k
+  try Flx_bsym_table.find h k
   with Not_found ->
-    print_endline ("flx_inline Hashtbl.find failed " ^ msg);
+    print_endline ("flx_inline Flx_bsym_table.find failed " ^ msg);
     raise Not_found
 
 
 let isvariable bsym_table i =
-  let id,_,_,entry = Hashtbl.find bsym_table i in match entry with
+  let id,_,_,entry = Flx_bsym_table.find bsym_table i in match entry with
   | BBDCL_var _ | BBDCL_val _ ->
   (* print_endline ("Var/Val " ^ id ^ "<" ^ si i ^">"); *) true
   | _ -> false
 
 let isfun bsym_table i =
-  let id,_,_,entry = Hashtbl.find bsym_table i in match entry with
+  let id,_,_,entry = Flx_bsym_table.find bsym_table i in match entry with
   | BBDCL_function _ | BBDCL_procedure _ ->
   (*print_endline ("Fun/proc " ^ id ^ "<" ^ si i ^">"); *) true
   | _ -> false
@@ -66,7 +66,7 @@ let exes_get_xclosures syms exes =
   !cls
 
 let function_find_xclosure syms cls bsym_table i =
-  let _,_,_,entry = Hashtbl.find bsym_table i in
+  let _,_,_,entry = Flx_bsym_table.find bsym_table i in
   let exes =
     match entry with
     | BBDCL_procedure (_,_,_,exes)
@@ -600,7 +600,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
           in
           Hashtbl.replace child_map this (parameter::kids);
           let id = "_trp_" ^ string_of_bid parameter in
-          Hashtbl.add bsym_table parameter (id,Some this,sr,entry);
+          Flx_bsym_table.add bsym_table parameter (id,Some this,sr,entry);
         )
       !parameters
       ;

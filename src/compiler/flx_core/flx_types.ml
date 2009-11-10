@@ -329,7 +329,6 @@ type sym_t = {
 type sym_table_t = (bid_t, sym_t) Hashtbl.t
 
 type bsym_t = string * bid_t option * Flx_srcref.t * bbdcl_t
-type bsym_table_t = (bid_t, bsym_t) Hashtbl.t
 
 type type_registry_t = (btypecode_t, bid_t) Hashtbl.t
 

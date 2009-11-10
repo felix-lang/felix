@@ -104,7 +104,7 @@ let locals child_map uses i =
 let fold_vars syms bsym_table child_map uses i ps exes =
   let pset = fold_left (fun s {pindex=i}-> BidSet.add i s) BidSet.empty ps in
   let kids = find_children child_map i in
-  let id,_,_,_ = Hashtbl.find bsym_table i in
+  let id,_,_,_ = Flx_bsym_table.find bsym_table i in
   (*
   print_endline ("\nFOLDing " ^ id ^ "<" ^ si i ^">");
   print_endline ("Kids = " ^ catmap ", " si kids);
@@ -130,7 +130,7 @@ let fold_vars syms bsym_table child_map uses i ps exes =
         | BEXE_assign (_, (BEXPR_name (j,_),_),y)
       ) as x) :: t  when BidSet.mem j locls ->
 
-        let id,_,_,_ = Hashtbl.find bsym_table j in
+        let id,_,_,_ = Flx_bsym_table.find bsym_table j in
         (*
         print_endline ("CONSIDERING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe syms.sym_table bsym_table y);
         *)
@@ -180,19 +180,19 @@ let fold_vars syms bsym_table child_map uses i ps exes =
         print_endline ("Usage (restricted) = " ^ string_of_bidset yuses);
         *)
         let delete_var () =
-          let id,_,_,_ = Hashtbl.find bsym_table j in
+          let id,_,_,_ = Flx_bsym_table.find bsym_table j in
           if syms.compiler_options.print_flag then
             print_endline ("ELIMINATING VARIABLE " ^ id ^ "<" ^ string_of_bid j
               ^ "> -> " ^ sbe syms.sym_table bsym_table y);
 
           (* remove the variable *)
-          Hashtbl.remove bsym_table j;
+          Flx_bsym_table.remove bsym_table j;
           remove_child child_map i j;
           remove_uses uses i j;
           incr count
         in
         let isvar =
-          match Hashtbl.find bsym_table j with
+          match Flx_bsym_table.find bsym_table j with
           | _,_,_,(BBDCL_var _ | BBDCL_tmp _ | BBDCL_ref _ ) -> true
           | _,_,_,BBDCL_val _ -> false
           | _ -> assert false

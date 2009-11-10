@@ -38,7 +38,7 @@ let check_instance
   tc
   inst_ts
 =
-  let tc_id, _, tc_sr, tc_entry = Hashtbl.find bsym_table tc in
+  let tc_id, _, tc_sr, tc_entry = Flx_bsym_table.find bsym_table tc in
   match tc_entry with
   | BBDCL_typeclass (tc_props, tc_bvs) ->
     (*
@@ -71,7 +71,7 @@ let check_instance
     print_endline ("Instance kids " ^ catmap "," si inst_kids);
     *)
     let inst_map = fold_left (fun acc i->
-      let id,_,_,entry = Hashtbl.find bsym_table i in
+      let id,_,_,entry = Flx_bsym_table.find bsym_table i in
       match entry with
       | BBDCL_fun (_,bvs,params,ret,_,_,_) ->
         let argt  : btypecode_t= typeoflist params in
@@ -215,7 +215,7 @@ let check_instance
     in
     iter
     (fun tck ->
-      let tckid,tckparent,tcksr,tckentry = Hashtbl.find bsym_table tck in
+      let tckid,tckparent,tcksr,tckentry = Flx_bsym_table.find bsym_table tck in
       match tckentry with
       | BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
         if ct == CS_virtual then
@@ -279,7 +279,7 @@ let typeclass_instance_check_symbol syms bsym_table child_map i (id, _, sr, entr
 let typeclass_instance_check_symbols syms bsym_table child_map bids =
   (* Check each symbol. *)
   List.iter begin fun bid ->
-    let bsym = Hashtbl.find bsym_table bid in
+    let bsym = Flx_bsym_table.find bsym_table bid in
     typeclass_instance_check_symbol syms bsym_table child_map bid bsym
   end bids;
 
@@ -287,7 +287,9 @@ let typeclass_instance_check_symbols syms bsym_table child_map bids =
   bids
 
 let typeclass_instance_check syms bsym_table child_map =
-  Hashtbl.iter (typeclass_instance_check_symbol syms bsym_table child_map) bsym_table
+  Flx_bsym_table.iter
+    (typeclass_instance_check_symbol syms bsym_table child_map)
+    bsym_table
 
 (* Notes.
 
@@ -403,7 +405,7 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
      end
 
 
-let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
+let fixup_typeclass_instance' syms (bsym_table:Flx_bsym_table.t) allow_fail i ts =
   let entries =
     try Hashtbl.find syms.typeclass_to_instance i
     with Not_found -> (* print_endline ("Symbol " ^ si i ^ " Not instantiated?"); *) []
@@ -427,7 +429,7 @@ let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
 
   | candidates ->
     let id,parent,sr,entry =
-       try Hashtbl.find bbdcls i
+       try Flx_bsym_table.find bsym_table i
        with Not_found -> failwith
         ("Woops can't find virtual function index "  ^ string_of_bid i)
     in
@@ -440,7 +442,7 @@ let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
     iter
     (fun ((j,ts),(inst_vs,con,inst_ts,k)) ->
        let id,parent,sr,entry =
-         try Hashtbl.find bbdcls j
+         try Flx_bsym_table.find bsym_table j
          with Not_found -> failwith ("Woops can't find instance function index "  ^ si j)
        in
        let parent = match parent with Some k -> k | None -> assert false in
@@ -507,7 +509,7 @@ let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
       iter
       (fun ((j,ts),(inst_vs,con,inst_ts,k)) ->
         let id,parent,sr,entry =
-          try Hashtbl.find bbdcls j
+          try Flx_bsym_table.find bsym_table j
           with Not_found -> failwith
             ("Woops can't find instance function index " ^ string_of_bid j)
         in
@@ -574,15 +576,15 @@ let fixup_exe syms bsym_table exe = match exe with
 let fixup_exes syms bsym_table exes = map (fixup_exe syms bsym_table) exes
 
 let fixup_typeclass_instances syms bsym_table =
-  Hashtbl.iter (fun i (id,parent,sr,entry) -> match entry with
+  Flx_bsym_table.iter (fun i (id,parent,sr,entry) -> match entry with
   | BBDCL_function (props,bvs,bps,ret,exes) ->
     let exes = fixup_exes syms bsym_table exes in
     let entry = BBDCL_function (props, bvs, bps, ret, exes) in
-    Hashtbl.replace bsym_table i (id,parent,sr,entry)
+    Flx_bsym_table.add bsym_table i (id,parent,sr,entry)
   | BBDCL_procedure (props, bvs, bps,exes)  ->
     let exes = fixup_exes syms bsym_table exes in
     let entry = BBDCL_procedure (props, bvs, bps,exes) in
-    Hashtbl.replace bsym_table i (id,parent,sr,entry)
+    Flx_bsym_table.add bsym_table i (id,parent,sr,entry)
   | _ -> ()
   )
   bsym_table
@@ -590,11 +592,11 @@ let fixup_typeclass_instances syms bsym_table =
 (* this routine doesn't allow constraint reduction failure
   and should only be run at instantiation time
 *)
-let fixup_typeclass_instance syms bbdcls i ts =
-  fixup_typeclass_instance' syms bbdcls false i ts
+let fixup_typeclass_instance syms bsym_table i ts =
+  fixup_typeclass_instance' syms bsym_table false i ts
 
 (* this routine allows failure, only use for early
   instantiation for optimisation
 *)
-let maybe_fixup_typeclass_instance syms bbdcls i ts =
-  fixup_typeclass_instance' syms bbdcls true i ts
+let maybe_fixup_typeclass_instance syms bsym_table i ts =
+  fixup_typeclass_instance' syms bsym_table true i ts

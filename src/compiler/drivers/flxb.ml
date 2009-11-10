@@ -81,7 +81,7 @@ try
 
   print_endline "//BINDING EXECUTABLE CODE";
   print_endline "//-----------------------";
-  let bsym_table = Hashtbl.create 97 in
+  let bsym_table = Flx_bsym_table.create () in
   Flx_bbind.bbind syms bsym_table;
   let child_map = Flx_child.cal_children bsym_table in
   let bifaces = List.map (Flx_bbind.bind_interface syms) ifaces in

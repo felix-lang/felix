@@ -76,7 +76,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
   end;
 
   (* Clean up the inlining symbol properties. *)
-  Hashtbl.iter begin fun i _ ->
+  Flx_bsym_table.iter begin fun i _ ->
     Flx_prop.rem_prop bsym_table `Inlining_started i;
     Flx_prop.rem_prop bsym_table `Inlining_complete i;
   end bsym_table;
@@ -252,7 +252,7 @@ let optimize_bsym_table syms bsym_table root_proc =
 let optimize syms bsym_table child_map root_proc bids bexes =
   (* Add the symbols to the child map. *)
   List.iter begin fun bid ->
-    let (_,parent,_,_) = Hashtbl.find bsym_table bid in
+    let (_,parent,_,_) = Flx_bsym_table.find bsym_table bid in
     match parent with
     | Some parent -> Flx_child.add_child child_map parent bid
     | None -> ()

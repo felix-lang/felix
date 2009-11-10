@@ -49,7 +49,7 @@ let lower_bsym_table state bsym_table root_proc =
      then they need a heap closure -- wrappers require
      one or the other *)
   Flx_types.BidSet.iter begin fun i ->
-    let id,parent,sr,entry = Hashtbl.find bsym_table i in
+    let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
     match entry with
     | Flx_types.BBDCL_procedure (props,vs,p,exes) ->
         let props = ref props in
@@ -73,7 +73,7 @@ let lower_bsym_table state bsym_table root_proc =
 
         (* Update the procedure with the new properties. *)
         let entry = Flx_types.BBDCL_procedure (!props, vs,p,exes) in
-        Hashtbl.replace bsym_table i (id,parent,sr,entry)
+        Flx_bsym_table.add bsym_table i (id,parent,sr,entry)
     | _ -> ()
   end !(state.syms.Flx_mtypes2.roots);
 

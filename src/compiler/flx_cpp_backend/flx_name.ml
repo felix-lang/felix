@@ -81,7 +81,7 @@ let cid_of_bid bid =
 (* basic name mangler *)
 let cpp_name bsym_table index =
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index
+    try Flx_bsym_table.find bsym_table index
     with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_bid index)
   in
   (match entry with
@@ -101,7 +101,7 @@ let cpp_instance_name' syms bsym_table index ts =
     with Not_found ->
     let id =
       try
-        let id,parent,sr,entry = Hashtbl.find bsym_table index in id
+        let id,parent,sr,entry = Flx_bsym_table.find bsym_table index in id
       with Not_found ->
       try
         match Flx_sym_table.find syms.sym_table index with
@@ -143,7 +143,7 @@ let cpp_instance_name syms bsym_table index ts =
   let long_name = cpp_instance_name' syms bsym_table index ts in
   if syms.compiler_options.mangle_names then long_name else
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index
+    try Flx_bsym_table.find bsym_table index
     with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_bid index)
   in
   let id' = cid_of_flxid id in

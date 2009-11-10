@@ -2,7 +2,7 @@ type bind_state_t = {
   syms: Flx_mtypes2.sym_state_t;
   symtab: Flx_symtab.t;
   parent: Flx_types.bid_t option;
-  bbind_bsym_table: Flx_types.bsym_table_t;
+  bbind_bsym_table: Flx_bsym_table.t;
   strabs_state: Flx_strabs.strabs_state_t;
   bexe_state: Flx_bexe.bexe_state_t;
 }
@@ -16,7 +16,7 @@ let make_bind_state ?parent ?env syms =
     syms = syms;
     symtab = Flx_symtab.make syms;
     parent = parent;
-    bbind_bsym_table = Hashtbl.create 97;
+    bbind_bsym_table = Flx_bsym_table.create ();
     strabs_state = Flx_strabs.make_strabs_state ();
     bexe_state = Flx_bexe.make_bexe_state
       ?parent
@@ -72,7 +72,11 @@ let bind_asm state strabs_bsym_table handle_bound init asm =
 
   Flx_mtypes2.iter_bids begin fun i ->
     (* First, find the symbol to bind. *)
-    begin match Flx_hashtbl.find state.bbind_bsym_table i with
+    let symbol =
+      try Some (Flx_bsym_table.find state.bbind_bsym_table i)
+      with Not_found -> None
+    in
+    begin match symbol with
     | None -> ()
     | Some s ->
         (* Finally, downgrade abstract types. *)
@@ -88,7 +92,11 @@ let bind_asm state strabs_bsym_table handle_bound init asm =
   (* Finally, pass on the bound symbols to the client. *)
   Flx_mtypes2.iter_bids begin fun i ->
     (* First, find the symbol to bind. *)
-    begin match Flx_hashtbl.find strabs_bsym_table i with
+    let symbol =
+      try Some (Flx_bsym_table.find strabs_bsym_table i)
+      with Not_found -> None
+    in
+    begin match symbol with
     | None -> ()
     | Some s ->
         (* ... and finally pass the symbol to the client *)

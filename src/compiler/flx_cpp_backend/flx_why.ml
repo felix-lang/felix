@@ -66,7 +66,7 @@ let mn s = Flx_name.cid_of_flxid s
 let getname syms bsym_table i =
   try match Flx_sym_table.find syms.sym_table i with {id=id} -> mn id
   with Not_found ->
-  try match Hashtbl.find bsym_table i with id,_,_,_ -> mn id
+  try match Flx_bsym_table.find bsym_table i with id,_,_,_ -> mn id
   with Not_found -> "index_" ^ Flx_name.cid_of_bid i
 
 let flx_bool = BTYP_unitsum 2
@@ -175,7 +175,7 @@ let rec cal_type syms bsym_table t =
     "(" ^ ct a ^ ", " ^ ct b ^ ") fn"
 
   | BTYP_inst (index,ts) ->
-    let id,sr,parent,entry = Hashtbl.find bsym_table index in
+    let id,sr,parent,entry = Flx_bsym_table.find bsym_table index in
     (* HACK! *)
     let ts = match ts with
       | [] -> ""
@@ -185,7 +185,7 @@ let rec cal_type syms bsym_table t =
     ts ^ id
   | BTYP_var (index,_) ->
     begin try
-      let id,sr,parent,entry = Hashtbl.find bsym_table index
+      let id,sr,parent,entry = Flx_bsym_table.find bsym_table index
       in "'" ^ id
     with Not_found -> "'T" ^ Flx_name.cid_of_bid index
     end
@@ -270,7 +270,7 @@ let emit_whycode filename syms bsym_table root =
   output_string f "\n";
 
   output_string f "(****** ABSTRACT TYPES *******)\n";
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun index (id,parent,sr,entry) -> match entry with
   | BBDCL_abs (bvs,qual,ct,breqs) ->
     emit_type syms bsym_table f index id sr bvs
@@ -280,7 +280,7 @@ let emit_whycode filename syms bsym_table root =
   ;
 
   output_string f "(****** UNIONS *******)\n";
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun index (id,parent,sr,entry) -> match entry with
   | BBDCL_union (bvs,variants) ->
     emit_type syms bsym_table f index id sr bvs
@@ -290,7 +290,7 @@ let emit_whycode filename syms bsym_table root =
   ;
 
   output_string f "(****** STRUCTS *******)\n";
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun index (id,parent,sr,entry) -> match entry with
   | BBDCL_cstruct (bvs,variants)
   | BBDCL_struct (bvs,variants) ->
@@ -301,7 +301,7 @@ let emit_whycode filename syms bsym_table root =
   ;
 
   output_string f "(******* FUNCTIONS ******)\n";
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun index (id,parent,sr,entry) -> match entry with
   | BBDCL_procedure (_,bvs,ps,_) ->
     let ps = calps ps in
