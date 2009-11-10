@@ -18,11 +18,10 @@ val create_label_map:
 
 (** Add a new symbol to the label map. *)
 val update_label_map:
-  Flx_types.bsym_table_t -> (** The symbol table. *)
-  Flx_types.bid_t ref ->    (** An index to create unique ids. *)
-  label_map_t ->            (** The label map. *)
-  Flx_types.bid_t ->        (** The symbol to add. *)
-  Flx_types.bsym_t ->       (** The symbol data. *)
+  Flx_types.bid_t ref ->  (** An index to create unique ids. *)
+  label_map_t ->          (** The label map. *)
+  Flx_types.bid_t ->      (** The symbol to add. *)
+  Flx_types.bsym_t ->     (** The symbol data. *)
   unit
 
 (** Find the type of the label in the label map. *)

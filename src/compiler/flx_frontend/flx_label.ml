@@ -20,7 +20,7 @@ type goto_kind_t =
   | `Unreachable
 ]
 
-let get_labels bsym_table counter exes =
+let get_labels counter exes =
   let labels = Hashtbl.create 97 in
   List.iter
     (fun exe -> match exe with
@@ -35,15 +35,15 @@ let get_labels bsym_table counter exes =
   ;
   labels
 
-let update_label_map bsym_table counter label_map index (_,_,_,entry) =
+let update_label_map counter label_map index (_,_,_,entry) =
   (*
   print_endline ("Routine " ^ id ^ "<"^ si index ^">");
   *)
   match entry with
   | BBDCL_function (_,_,_,_,exes) ->
-    Hashtbl.add label_map index (get_labels bsym_table counter exes)
+    Hashtbl.add label_map index (get_labels counter exes)
   | BBDCL_procedure (_,_,_,exes) ->
-    Hashtbl.add label_map index (get_labels bsym_table counter exes)
+    Hashtbl.add label_map index (get_labels counter exes)
   | _ -> ()
 
 let create_label_map bsym_table counter =
@@ -51,7 +51,7 @@ let create_label_map bsym_table counter =
   print_endline "Creating label map";
   *)
   let label_map = Hashtbl.create 97 in
-  Hashtbl.iter (update_label_map bsym_table counter label_map) bsym_table;
+  Hashtbl.iter (update_label_map counter label_map) bsym_table;
   label_map
 
 let rec find_label bsym_table label_map caller label =
