@@ -96,7 +96,7 @@ and uses_production syms used bsym_table count_inits p =
   List.iter uses_symbol p
 
 and faulty_req syms i =
-  match Hashtbl.find syms.sym_table i with {id=id; sr=sr } ->
+  match Flx_sym_table.find syms.sym_table i with {id=id; sr=sr } ->
   clierr sr (id ^ " is used but has unsatisfied requirement")
 
 and uses syms used bsym_table count_inits i =
@@ -169,7 +169,7 @@ and uses syms used bsym_table count_inits i =
       end
     | None ->
       let id =
-        try match Hashtbl.find syms.sym_table i with {id=id} -> id
+        try match Flx_sym_table.find syms.sym_table i with {id=id} -> id
         with Not_found -> "not found in unbound symbol table"
       in
       failwith

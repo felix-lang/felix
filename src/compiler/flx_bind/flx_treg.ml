@@ -132,7 +132,7 @@ let rec register_type_r ui syms bsym_table exclude sr t =
     let id, parent, sr,entry =
       try Hashtbl.find bsym_table i
       with Not_found ->
-        try match Hashtbl.find syms.sym_table i with
+        try match Flx_sym_table.find syms.sym_table i with
         { id=id; sr=sr; parent=parent; symdef=entry } ->
         clierr sr
         (

@@ -27,7 +27,7 @@ let find_function syms env name =
   let entries =
     filter (fun {base_sym=i} ->
       match
-        try Some (Hashtbl.find syms.sym_table i)
+        try Some (Flx_sym_table.find syms.sym_table i)
         with Not_found -> None
       with
       | Some {symdef=SYMDEF_fun (_,args,res,ct,_,_) } ->
@@ -64,7 +64,7 @@ let find_logics syms root =
 let mn s = Flx_name.cid_of_flxid s
 
 let getname syms bsym_table i =
-  try match Hashtbl.find syms.sym_table i with {id=id} -> mn id
+  try match Flx_sym_table.find syms.sym_table i with {id=id} -> mn id
   with Not_found ->
   try match Hashtbl.find bsym_table i with id,_,_,_ -> mn id
   with Not_found -> "index_" ^ Flx_name.cid_of_bid i

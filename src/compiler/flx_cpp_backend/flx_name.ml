@@ -104,7 +104,7 @@ let cpp_instance_name' syms bsym_table index ts =
         let id,parent,sr,entry = Hashtbl.find bsym_table index in id
       with Not_found ->
       try
-        match Hashtbl.find syms.sym_table index with
+        match Flx_sym_table.find syms.sym_table index with
         {id=id} -> id ^ "[unbound]"
       with Not_found ->
       "unknown"
@@ -205,7 +205,7 @@ let rec cpp_type_classname syms t =
     if ts = [] then
       match
         try
-          match Hashtbl.find syms.sym_table i with
+          match Flx_sym_table.find syms.sym_table i with
           { id=id; symdef=symdef } -> Some (id,symdef )
         with Not_found -> None
       with

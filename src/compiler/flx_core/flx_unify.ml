@@ -637,7 +637,7 @@ let do_unify syms a b =
       end else begin
         match
           begin
-            try Hashtbl.find syms.sym_table i with Not_found -> failwith
+            try Flx_sym_table.find syms.sym_table i with Not_found -> failwith
               ("BUG, flx_unify can't find symbol " ^ string_of_bid i)
           end
         with
@@ -1133,7 +1133,7 @@ let rec expr_unification counter sym_table
 
 let setoflist ls = List.fold_left (fun s i -> BidSet.add i s) BidSet.empty ls
 
-let expr_maybe_matches counter (sym_table:sym_table_t)
+let expr_maybe_matches counter (sym_table:Flx_sym_table.t)
   (tvars:bid_t list) (evars:bid_t list)
   (le:tbexpr_t)
   (re:tbexpr_t)

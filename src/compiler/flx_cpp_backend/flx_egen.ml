@@ -409,7 +409,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
       try Hashtbl.find bsym_table index
       with _ ->
         match
-          try Hashtbl.find syms.sym_table index
+          try Flx_sym_table.find syms.sym_table index
           with Not_found -> assert false
         with
         {id=id; sr=sr} -> syserr sr

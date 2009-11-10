@@ -140,7 +140,7 @@ type result =
   | Fail
 
 let get_data table index =
-  try Hashtbl.find table index
+  try Flx_sym_table.find table index
   with Not_found ->
     failwith ("[Flx_lookup.get_data] No definition of <" ^
       string_of_bid index ^ ">")
@@ -1009,8 +1009,8 @@ let overload
          | `Equal ->
            (* same function .. *)
            if i = j then aux lhs t else
-           let sr = match (try Hashtbl.find syms.sym_table i with Not_found -> failwith "ovrload BUGGED") with {sr=sr} -> sr in
-           let sr2 = match (try Hashtbl.find syms.sym_table j with Not_found -> failwith "overload Bugged") with {sr=sr} -> sr in
+           let sr = match (try Flx_sym_table.find syms.sym_table i with Not_found -> failwith "ovrload BUGGED") with {sr=sr} -> sr in
+           let sr2 = match (try Flx_sym_table.find syms.sym_table j with Not_found -> failwith "overload Bugged") with {sr=sr} -> sr in
            clierrn [call_sr; sr2; sr]
            (
              "[resolve_overload] Ambiguous call: Not expecting equal signatures" ^

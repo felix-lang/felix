@@ -482,7 +482,7 @@ and st prec tc : string =
 and string_of_typecode tc = st 99 tc
 
 and qualified_name_of_index_with_vs sym_table index =
-  match Hashtbl.find sym_table index with
+  match Flx_sym_table.find sym_table index with
   | { id=id; vs=vs; parent=parent } ->
     match parent with
     | Some index' ->
@@ -496,7 +496,7 @@ and qualified_name_of_index_with_vs sym_table index =
       *)
 
 and qualified_name_of_index' sym_table index =
-  match Hashtbl.find sym_table index with
+  match Flx_sym_table.find sym_table index with
   | { id=id; parent=parent } ->
     begin match parent with
     | Some index' -> qualified_name_of_index_with_vs sym_table index'
@@ -510,7 +510,7 @@ and qualified_name_of_index sym_table index =
 
 and get_name_parent sym_table bsym_table index =
   try
-    match Hashtbl.find sym_table index with
+    match Flx_sym_table.find sym_table index with
     { id=id; vs=vs; parent=parent} -> id, parent
   with Not_found ->
   try
@@ -2403,7 +2403,7 @@ and string_of_bbdcl sym_table bsym_table (bbdcl:bbdcl_t) index : string =
 
 
 let string_of_dfn sym_table i =
-  match Hashtbl.find sym_table i with
+  match Flx_sym_table.find sym_table i with
   | { id=id; sr=sr; vs=vs; symdef=entry } ->
   string_of_symdef entry id vs
   ^ "\n  defined at " ^ Flx_srcref.short_string_of_src sr
@@ -2549,7 +2549,7 @@ let string_of_name_map name_map =
   "{" ^ s ^ "}"
 
 let print_sym_table sym_table =
-  Hashtbl.iter begin fun i symbol_data ->
+  Flx_sym_table.iter begin fun i symbol_data ->
     print_endline ("index: " ^ string_of_bid i);
     print_endline ("id: " ^ symbol_data.id);
 

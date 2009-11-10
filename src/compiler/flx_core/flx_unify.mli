@@ -11,7 +11,7 @@ open Flx_mtypes2
 *)
 val unification:
   bid_t ref -> (* alpha conversion counter *)
-  sym_table_t -> (* just for diagnostics *)
+  Flx_sym_table.t -> (* just for diagnostics *)
   (btypecode_t * btypecode_t) list ->
   BidSet.t -> (* dependent variable set *)
   (bid_t * btypecode_t) list
@@ -19,7 +19,7 @@ val unification:
 (** obtain the mgu of a set of type equations *)
 val maybe_unification:
   bid_t ref -> (* alpha conversion counter *)
-  sym_table_t -> (* just for diagnostics *)
+  Flx_sym_table.t -> (* just for diagnostics *)
   (btypecode_t * btypecode_t) list ->
   (bid_t * btypecode_t) list option
 
@@ -29,20 +29,20 @@ special subtyping for lvalues
 *)
 val maybe_matches:
   bid_t ref -> (* alpha conversion counter *)
-  sym_table_t -> (* just for diagnostics *)
+  Flx_sym_table.t -> (* just for diagnostics *)
   (btypecode_t * btypecode_t) list ->
   (bid_t * btypecode_t) list option
 
 val maybe_specialisation:
   bid_t ref -> (* alpha conversion counter *)
-  sym_table_t -> (* just for diagnostics *)
+  Flx_sym_table.t -> (* just for diagnostics *)
   (btypecode_t * btypecode_t) list ->
   (bid_t * btypecode_t) list option
 
 (** test if two types unify *)
 val unifies:
   bid_t ref -> (* alpha conversion counter *)
-  sym_table_t -> (* just for diagnostics *)
+  Flx_sym_table.t -> (* just for diagnostics *)
   btypecode_t ->
   btypecode_t ->
   bool
@@ -50,7 +50,7 @@ val unifies:
 (** compare type for structural/unificational ordering *)
 val compare_sigs:
   bid_t ref -> (* alpha conversion counter *)
-  sym_table_t ->
+  Flx_sym_table.t ->
   btypecode_t ->
   btypecode_t ->
   partial_order_result_t
@@ -69,7 +69,7 @@ val do_unify:
 (** compare for iso-equality *)
 val type_eq:
   bid_t ref -> (* alpha conversion counter *)
-  sym_table_t ->
+  Flx_sym_table.t ->
   btypecode_t ->
   btypecode_t ->
   bool
@@ -79,7 +79,7 @@ val type_eq:
 *)
 val type_match:
   bid_t ref -> (* alpha conversion counter *)
-  sym_table_t ->
+  Flx_sym_table.t ->
   btypecode_t ->
   btypecode_t ->
   bool
@@ -88,14 +88,14 @@ val type_match:
   denoting t replaced with t
 *)
 val unfold:
-  sym_table_t ->
+  Flx_sym_table.t ->
   btypecode_t ->
   btypecode_t
 
 (** undo an unfold *)
 val fold:
   bid_t ref -> (* counter for alpha conversion *)
-  sym_table_t ->
+  Flx_sym_table.t ->
   btypecode_t ->
   btypecode_t
 
@@ -105,7 +105,7 @@ with respect to recursion
 
 val minimise:
   bid_t ref -> (* counter for alpha conversion *)
-  sym_table_t ->
+  Flx_sym_table.t ->
   btypecode_t ->
   btypecode_t
 
@@ -166,7 +166,7 @@ val dual:
 
 val expr_maybe_matches:
   bid_t ref -> (* counter for alpha conversion *)
-  sym_table_t -> (* just for diagnostics *)
+  Flx_sym_table.t -> (* just for diagnostics *)
   bid_t list -> (* type variables *)
   bid_t list -> (* variables *)
   tbexpr_t -> (* match term *)

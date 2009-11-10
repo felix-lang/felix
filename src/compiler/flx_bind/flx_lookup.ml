@@ -15,9 +15,9 @@ open Flx_overload
 open Flx_tpat
 
 let hfind msg h k =
-  try Hashtbl.find h k
+  try Flx_sym_table.find h k
   with Not_found ->
-    print_endline ("flx_lookup Hashtbl.find failed " ^ msg);
+    print_endline ("flx_lookup Flx_sym_table.find failed " ^ msg);
     raise Not_found
 
 
@@ -50,7 +50,7 @@ exception Tfound of btypecode_t
 type kind_t = Parameter | Other
 
 let get_data table index : sym_t =
-  try Hashtbl.find table index
+  try Flx_sym_table.find table index
   with Not_found ->
     failwith ("[Flx_lookup.get_data] No definition of <" ^
       string_of_bid index ^ ">")
@@ -5218,8 +5218,8 @@ and bind_dir
   (fun (n,i,_) ->
    let entry = NonFunctionEntry {base_sym=i; spec_vs=[]; sub_ts=[]} in
     Hashtbl.add cheat_table n entry;
-    if not (Hashtbl.mem syms.sym_table i) then
-      Hashtbl.add syms.sym_table i {id=n;sr=dummy_sr;parent=None;vs=dfltvs;
+    if not (Flx_sym_table.mem syms.sym_table i) then
+      Flx_sym_table.add syms.sym_table i {id=n;sr=dummy_sr;parent=None;vs=dfltvs;
       pubmap=nullmap; privmap=nullmap;dirs=[];
       symdef=SYMDEF_typevar TYP_type
       }

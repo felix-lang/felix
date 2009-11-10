@@ -55,7 +55,11 @@ let bind_asm state strabs_bsym_table handle_bound init asm =
   (* Now bind in order all of the symbols we added. *)
   Flx_mtypes2.iter_bids begin fun i ->
     (* First, find the symbol to bind. *)
-    begin match Flx_hashtbl.find state.syms.Flx_mtypes2.sym_table i with
+    let symbol =
+      try Some (Flx_sym_table.find state.syms.Flx_mtypes2.sym_table i)
+      with Not_found -> None
+    in
+    begin match symbol with
     | None -> ()
     | Some s ->
         (* Then, bind the symbol. *)

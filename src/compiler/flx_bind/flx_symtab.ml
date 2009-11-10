@@ -87,7 +87,7 @@ let full_add_unique syms sr (vs:ivs_list_t) table key value =
     match entry with
     | NonFunctionEntry (idx)
     | FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.Flx_mtypes2.sym_table (Flx_typing.sye idx) with
+       (match Flx_sym_table.find syms.Flx_mtypes2.sym_table (Flx_typing.sye idx) with
        | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
@@ -104,7 +104,7 @@ let full_add_typevar syms sr table key value =
     match entry with
     | NonFunctionEntry (idx)
     | FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.Flx_mtypes2.sym_table (Flx_typing.sye idx)  with
+       (match Flx_sym_table.find syms.Flx_mtypes2.sym_table (Flx_typing.sye idx)  with
        | { Flx_types.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
@@ -121,7 +121,7 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
     match Hashtbl.find table key with
     | NonFunctionEntry entry ->
       begin
-        match Hashtbl.find syms.Flx_mtypes2.sym_table (Flx_typing.sye entry) with
+        match Flx_sym_table.find syms.Flx_mtypes2.sym_table (Flx_typing.sye entry) with
         { Flx_types.id=id; sr=sr2 } ->
         Flx_exceptions.clierr2 sr sr2
         (
@@ -315,7 +315,7 @@ and build_table_for_dcl
     id
     symdef
   =
-    Hashtbl.add sym_table index {
+    Flx_sym_table.add sym_table index {
       Flx_types.id = id;
       sr = sr;
       parent = parent;
@@ -1093,7 +1093,10 @@ let add_dcl ?parent state dcl =
   let level, pubmap, privmap =
     match parent with
     | Some index ->
-        let symbol = Hashtbl.find state.syms.Flx_mtypes2.sym_table index in
+        let symbol = Flx_sym_table.find
+          state.syms.Flx_mtypes2.sym_table
+          index
+        in
         1, symbol.pubmap, symbol.privmap
     | None ->
         0, state.pub_name_map, state.priv_name_map

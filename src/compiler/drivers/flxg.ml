@@ -213,7 +213,7 @@ try
   print_debug "//CHECKING ROOT";
   let root_proc =
     match
-      try Hashtbl.find syms.sym_table root
+      try Flx_sym_table.find syms.sym_table root
       with Not_found ->
         failwith
         (

@@ -409,7 +409,7 @@ let fixup_typeclass_instance' syms bbdcls allow_fail i ts =
     with Not_found -> (* print_endline ("Symbol " ^ si i ^ " Not instantiated?"); *) []
   in
   let sr =
-     try match Hashtbl.find syms.sym_table i with {sr=sr} -> sr
+     try match Flx_sym_table.find syms.sym_table i with {sr=sr} -> sr
      with Not_found -> dummy_sr
   in
   let entries = fold_left (fun acc x -> match tcinst_chk syms allow_fail i ts sr x with

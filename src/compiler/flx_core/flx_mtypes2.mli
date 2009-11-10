@@ -37,7 +37,7 @@ type felix_compiler_options_t =
 
 type sym_state_t =
 {
-  sym_table : Flx_types.sym_table_t;
+  sym_table : Flx_sym_table.t;
   counter : Flx_types.bid_t ref;
   varmap : Flx_types.typevarmap_t;
   ticache : (Flx_types.bid_t, Flx_types.btypecode_t) Hashtbl.t;

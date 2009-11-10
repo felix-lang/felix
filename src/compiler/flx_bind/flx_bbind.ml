@@ -13,9 +13,9 @@ open Flx_generic
 open Flx_tpat
 
 let hfind msg h k =
-  try Hashtbl.find h k
+  try Flx_sym_table.find h k
   with Not_found ->
-    print_endline ("flx_bbind Hashtbl.find failed " ^ msg);
+    print_endline ("flx_bbind Flx_sym_table.find failed " ^ msg);
     raise Not_found
 
 let find_param name_map s =
@@ -642,7 +642,7 @@ let bbind syms bsym_table =
   Flx_mtypes2.iter_bids begin fun i ->
     begin
       let entry =
-        try Some (Hashtbl.find syms.sym_table i)
+        try Some (Flx_sym_table.find syms.sym_table i)
         with Not_found -> None
       in match entry with
       | Some entry ->

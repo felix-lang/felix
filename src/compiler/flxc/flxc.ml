@@ -24,7 +24,10 @@ let create_state options =
     Flx_srcref.dummy_sr, "", None, `Public, Flx_ast.dfltvs,
     Flx_types.DCL_module [])
   in
-  let module_symbol = Hashtbl.find syms.Flx_mtypes2.sym_table module_index in
+  let module_symbol = Flx_sym_table.find
+    syms.Flx_mtypes2.sym_table
+    module_index
+  in
 
   (* Find the module's _init_ function *)
   let init_index =
@@ -65,11 +68,11 @@ let desugar_stmt state stmt () =
 let make_bind_state state =
   let bsym_table = Hashtbl.create 97 in
 
-  let module_symbol = Hashtbl.find
+  let module_symbol = Flx_sym_table.find
     state.syms.Flx_mtypes2.sym_table
     state.module_index
   in
-  let init_symbol = Hashtbl.find
+  let init_symbol = Flx_sym_table.find
     state.syms.Flx_mtypes2.sym_table
     state.init_index
   in

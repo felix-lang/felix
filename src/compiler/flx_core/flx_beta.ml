@@ -86,7 +86,7 @@ and metatype' syms sr term =
       sbt syms.sym_table mt);
     (
       try
-        let symdef = Hashtbl.find syms.sym_table i in begin match symdef with
+        let symdef = Flx_sym_table.find syms.sym_table i in begin match symdef with
         | {symdef=SYMDEF_typevar mt} ->
             print_endline ("Table shows metatype is " ^ string_of_typecode mt);
         | _ -> print_endline "Type variable isn't a type variable?"
@@ -100,7 +100,7 @@ and metatype' syms sr term =
   | BTYP_type i -> BTYP_type (i+1)
   | BTYP_inst (index,ts) ->
     let {id=id; symdef=entry} =
-      try Hashtbl.find syms.sym_table index with Not_found ->
+      try Flx_sym_table.find syms.sym_table index with Not_found ->
         failwith ("[metatype'] can't find type instance index " ^
           string_of_bid index)
     in
@@ -326,7 +326,7 @@ and beta_reduce' syms sr termlist t =
 
   | BTYP_inst (i,ts) ->
     let ts = map br ts in
-    begin try match Hashtbl.find syms.sym_table i with
+    begin try match Flx_sym_table.find syms.sym_table i with
     | {id=id; symdef=SYMDEF_type_alias _ } ->
       failwith ("Beta reduce found a type instance of " ^ id ^
         " to be an alias, which it can't handle")

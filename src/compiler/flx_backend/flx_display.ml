@@ -40,7 +40,7 @@ let cal_display syms bsym_table parent : (bid_t *int) list =
     | None ->
       begin
         try
-          match Hashtbl.find syms.sym_table parent with
+          match Flx_sym_table.find syms.sym_table parent with
           (* instances have to be top level *)
           | {id=id; symdef=SYMDEF_instance _} -> rev display
           | {id=id; symdef=SYMDEF_typeclass } -> rev display

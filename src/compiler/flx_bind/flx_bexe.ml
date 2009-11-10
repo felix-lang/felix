@@ -15,9 +15,9 @@ open List
 open Flx_maps
 
 let hfind msg h k =
-  try Hashtbl.find h k
+  try Flx_sym_table.find h k
   with Not_found ->
-    print_endline ("flx_bexe Hashtbl.find failed " ^ msg);
+    print_endline ("flx_bexe Flx_sym_table.find failed " ^ msg);
     raise Not_found
 
 (*
@@ -193,7 +193,7 @@ let make_bexe_state ?parent ?(env=[]) syms parent_vs ret_type =
     match parent with
     | None -> ""
     | Some index ->
-        let symbol = Hashtbl.find syms.Flx_mtypes2.sym_table index in
+        let symbol = Flx_sym_table.find syms.Flx_mtypes2.sym_table index in
         symbol.Flx_types.id
   in
   {

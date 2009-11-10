@@ -9,9 +9,9 @@ open Flx_print
 open Flx_ast
 
 let hfind msg h k =
-  try Hashtbl.find h k
+  try Flx_sym_table.find h k
   with Not_found ->
-    print_endline ("flx_generic Hashtbl.find failed " ^ msg);
+    print_endline ("flx_generic Flx_sym_table.find failed " ^ msg);
     raise Not_found
 
 (* Adjustment of type argument lists works much

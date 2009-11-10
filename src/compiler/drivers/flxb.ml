@@ -89,7 +89,7 @@ try
 
   let root_proc =
     match
-      try Hashtbl.find syms.Flx_mtypes2.sym_table root
+      try Flx_sym_table.find syms.Flx_mtypes2.sym_table root
       with Not_found ->
         failwith
         (
