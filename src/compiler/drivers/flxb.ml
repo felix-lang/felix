@@ -76,15 +76,14 @@ try
   print_endline ("//Top level module '" ^ module_name ^ "' has index " ^
     Flx_print.string_of_bid root);
 
-  let symtab = Flx_symtab.make syms in
-  let _, ifaces = Flx_symtab.add_asms symtab asms in
-
+  (* Bind the assemblies. *)
   print_endline "//BINDING EXECUTABLE CODE";
   print_endline "//-----------------------";
-  let bsym_table = Flx_bsym_table.create () in
-  Flx_bbind.bbind syms bsym_table;
+
+  let bind_state = Flx_bind.make_bind_state syms in
+  let bsym_table = Flx_bind.bind_asms bind_state asms in
+
   let child_map = Flx_child.cal_children bsym_table in
-  let bifaces = List.map (Flx_bbind.bind_interface syms) ifaces in
   print_endline "//Binding complete";
 
   let root_proc =
