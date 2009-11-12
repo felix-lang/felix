@@ -53,14 +53,12 @@ val map_bexe:
 
 (** Simplify the bound expression. *)
 val reduce_tbexpr:
-  Flx_bsym_table.t -> (** The symbol table. *)
-  tbexpr_t ->         (** The bound expression. *)
+  tbexpr_t -> (** The bound expression. *)
   tbexpr_t
 
 (** Simplify the bound exe. *)
 val reduce_bexe:
-  Flx_bsym_table.t -> (** The symbol table. *)
-  bexe_t ->           (** The bound exe. *)
+  bexe_t -> (** The bound exe. *)
   bexe_t
 
 (** Simplify the bound type. *)

@@ -262,7 +262,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
         let param_decode =
           map
           (fun {pindex=ix; ptyp=prjt} ->
-            let prj = reduce_tbexpr bsym_table (BEXPR_get_n (!n,p),prjt) in
+            let prj = reduce_tbexpr (BEXPR_get_n (!n,p),prjt) in
             incr n;
             BEXE_init (sr,ix,prj)
           )

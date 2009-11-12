@@ -281,7 +281,7 @@ let rec codegen_expr state (bsym_table:Flx_bsym_table.t) builder sr tbexpr =
     state.syms.Flx_mtypes2.sym_table bsym_table tbexpr);
 
   (* See if there are any simple reductions we can apply to the expression. *)
-  let bexpr, btype = Flx_maps.reduce_tbexpr bsym_table tbexpr in
+  let bexpr, btype = Flx_maps.reduce_tbexpr tbexpr in
 
   match bexpr with
   | Flx_types.BEXPR_deref e ->
@@ -592,7 +592,7 @@ let codegen_bexe state bsym_table builder bexe =
     state.syms.Flx_mtypes2.sym_table bsym_table 0 bexe);
 
   (* See if there are any simple reductions we can apply to the exe. *)
-  let bexe = Flx_maps.reduce_bexe bsym_table bexe in
+  let bexe = Flx_maps.reduce_bexe bexe in
 
   match bexe with
   | Flx_types.BEXE_label (sr, label) ->
