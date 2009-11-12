@@ -13,5 +13,8 @@ let mem = Hashtbl.mem
 (** Searches the symbol table for the given symbol. *)
 let find = Hashtbl.find
 
+(** Remove a binding from the bound symbol table. *)
+let remove = Hashtbl.remove
+
 (** Iterate over all the items in the symbol table. *)
 let iter = Hashtbl.iter

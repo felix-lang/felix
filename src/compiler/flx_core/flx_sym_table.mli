@@ -14,5 +14,8 @@ val mem : t -> Flx_types.bid_t -> bool
  * index is not in the symbol table. *)
 val find : t -> Flx_types.bid_t -> Flx_types.sym_t
 
+(** Remove a binding from the bound symbol table. *)
+val remove : t -> Flx_types.bid_t -> unit
+
 (** Iterate over all the items in the symbol table. *)
 val iter : (Flx_types.bid_t -> Flx_types.sym_t -> unit) -> t -> unit
