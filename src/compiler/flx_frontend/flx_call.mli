@@ -16,7 +16,7 @@ val call_data_for_symbol:
   sym_state_t ->
   usage_table_t ->
   Flx_types.bid_t ->
-  Flx_types.bsym_t ->
+  Flx_bsym.t ->
   unit
 
 (** [call_data syms bsym_table] returns tables of all the calls, and the calls

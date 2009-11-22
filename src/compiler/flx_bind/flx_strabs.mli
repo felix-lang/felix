@@ -12,8 +12,8 @@ val strabs_symbol:
   Flx_bsym_table.t -> (** The input symbol table. *)
   Flx_bsym_table.t -> (** The output symbol table. *)
   Flx_types.bid_t ->  (** The symbol index. *)
-  Flx_types.bsym_t -> (** The symbol to lower. *)
-  Flx_types.bsym_t option
+  Flx_bsym.t ->       (** The symbol to lower. *)
+  Flx_bsym.t option
 
 val strabs:
   strabs_state_t ->   (** The state needed for downgrading types. *)

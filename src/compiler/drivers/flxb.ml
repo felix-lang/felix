@@ -96,12 +96,12 @@ try
           " in symbol table?"
         )
     with {
-      Flx_types.id=id;
-      Flx_types.sr = sr;
-      Flx_types.parent = parent;
-      Flx_types.vs = vs;
-      Flx_types.pubmap = name_map;
-      Flx_types.symdef = entry } ->
+      Flx_sym.id=id;
+      sr = sr;
+      parent = parent;
+      vs = vs;
+      pubmap = name_map;
+      symdef = entry } ->
     begin match entry with
       | Flx_types.SYMDEF_module -> ()
       | _ -> failwith "Expected to find top level module ''"

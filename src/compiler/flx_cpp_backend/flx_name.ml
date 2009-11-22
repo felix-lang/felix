@@ -105,7 +105,7 @@ let cpp_instance_name' syms bsym_table index ts =
       with Not_found ->
       try
         match Flx_sym_table.find syms.sym_table index with
-        {id=id} -> id ^ "[unbound]"
+        { Flx_sym.id=id } -> id ^ "[unbound]"
       with Not_found ->
       "unknown"
     in
@@ -206,7 +206,7 @@ let rec cpp_type_classname syms t =
       match
         try
           match Flx_sym_table.find syms.sym_table i with
-          { id=id; symdef=symdef } -> Some (id,symdef )
+          { Flx_sym.id=id; symdef=symdef } -> Some (id, symdef)
         with Not_found -> None
       with
       | Some (id,SYMDEF_cstruct _) -> id

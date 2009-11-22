@@ -237,8 +237,14 @@ let sig_of_symdef symdef sr name i = match symdef with
     ))
 
 let resolve sym_table i =
-  match get_data sym_table i with
-  {id=id; sr=sr;parent=parent;privmap=table;dirs=dirs;symdef=symdef} ->
+  let { Flx_sym.id=id;
+        sr=sr;
+        parent=parent;
+        privmap=table;
+        dirs=dirs;
+        symdef=symdef } =
+    get_data sym_table i
+  in
   let pvs,vs,{raw_type_constraint=con; raw_typeclass_reqs=rtcr} =
     find_split_vs sym_table i
   in
@@ -1009,8 +1015,14 @@ let overload
          | `Equal ->
            (* same function .. *)
            if i = j then aux lhs t else
-           let sr = match (try Flx_sym_table.find syms.sym_table i with Not_found -> failwith "ovrload BUGGED") with {sr=sr} -> sr in
-           let sr2 = match (try Flx_sym_table.find syms.sym_table j with Not_found -> failwith "overload Bugged") with {sr=sr} -> sr in
+           let { Flx_sym.sr=sr } =
+             try Flx_sym_table.find syms.sym_table i with Not_found ->
+               failwith "ovrload BUGGED"
+           in
+           let { Flx_sym.sr=sr2 } =
+             try Flx_sym_table.find syms.sym_table j with Not_found ->
+               failwith "overload Bugged"
+           in
            clierrn [call_sr; sr2; sr]
            (
              "[resolve_overload] Ambiguous call: Not expecting equal signatures" ^

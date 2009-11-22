@@ -483,7 +483,7 @@ and string_of_typecode tc = st 99 tc
 
 and qualified_name_of_index_with_vs sym_table index =
   match Flx_sym_table.find sym_table index with
-  | { id=id; vs=vs; parent=parent } ->
+  | { Flx_sym.id=id; vs=vs; parent=parent } ->
     match parent with
     | Some index' ->
       qualified_name_of_index_with_vs sym_table index' ^
@@ -497,7 +497,7 @@ and qualified_name_of_index_with_vs sym_table index =
 
 and qualified_name_of_index' sym_table index =
   match Flx_sym_table.find sym_table index with
-  | { id=id; parent=parent } ->
+  | { Flx_sym.id=id; parent=parent } ->
     begin match parent with
     | Some index' -> qualified_name_of_index_with_vs sym_table index'
     | None -> ""
@@ -511,7 +511,7 @@ and qualified_name_of_index sym_table index =
 and get_name_parent sym_table bsym_table index =
   try
     match Flx_sym_table.find sym_table index with
-    { id=id; vs=vs; parent=parent} -> id, parent
+    { Flx_sym.id=id; vs=vs; parent=parent} -> id, parent
   with Not_found ->
   try
     match Flx_bsym_table.find bsym_table index with
@@ -2404,7 +2404,7 @@ and string_of_bbdcl sym_table bsym_table (bbdcl:bbdcl_t) index : string =
 
 let string_of_dfn sym_table i =
   match Flx_sym_table.find sym_table i with
-  | { id=id; sr=sr; vs=vs; symdef=entry } ->
+  | { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry } ->
   string_of_symdef entry id vs
   ^ "\n  defined at " ^ Flx_srcref.short_string_of_src sr
 
@@ -2551,18 +2551,20 @@ let string_of_name_map name_map =
 let print_sym_table sym_table =
   Flx_sym_table.iter begin fun i symbol_data ->
     print_endline ("index: " ^ string_of_bid i);
-    print_endline ("id: " ^ symbol_data.id);
+    print_endline ("id: " ^ symbol_data.Flx_sym.id);
 
-    if Hashtbl.length symbol_data.pubmap != 0 then
-      print_endline ("pubmap: " ^ (string_of_name_map symbol_data.pubmap));
+    if Hashtbl.length symbol_data.Flx_sym.pubmap != 0 then
+      print_endline ("pubmap: " ^
+        (string_of_name_map symbol_data.Flx_sym.pubmap));
 
-    if Hashtbl.length symbol_data.privmap != 0 then
-      print_endline ("privmap: " ^ (string_of_name_map symbol_data.privmap));
+    if Hashtbl.length symbol_data.Flx_sym.privmap != 0 then
+      print_endline ("privmap: " ^
+        (string_of_name_map symbol_data.Flx_sym.privmap));
 
     print_endline ("symdef: " ^ (string_of_symdef
-      symbol_data.symdef
-      symbol_data.id
-      symbol_data.vs));
+      symbol_data.Flx_sym.symdef
+      symbol_data.Flx_sym.id
+      symbol_data.Flx_sym.vs));
 
     print_newline ();
   end sym_table

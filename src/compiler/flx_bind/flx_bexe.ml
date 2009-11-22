@@ -30,8 +30,8 @@ let rec check_if_parent syms child parent =
   if child = parent then true
   else
       match hfind "bexe" syms.sym_table child with
-      | {parent=Some parent} -> check_if_parent syms child parent
-      | {parent=None} -> false
+      | { Flx_sym.parent=Some parent} -> check_if_parent syms child parent
+      | { Flx_sym.parent=None} -> false
 
 let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
   let be i e = bind_expression syms (build_env syms (Some i)) e in
@@ -45,12 +45,12 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
         match p with
         | BEXPR_closure (i,ts) ->
           begin match hfind "bexe" syms.sym_table i with
-          | {symdef=SYMDEF_fun _ }
-          | {symdef=SYMDEF_callback _ }
+          | { Flx_sym.symdef=SYMDEF_fun _ }
+          | { Flx_sym.symdef=SYMDEF_callback _ }
             ->
             BEXE_call_prim (sr,i,ts,tbe2)
 
-          | {symdef=SYMDEF_function _} ->
+          | { Flx_sym.symdef=SYMDEF_function _} ->
             BEXE_call_direct (sr,i,ts,tbe2)
 
           | _ -> assert false
@@ -73,7 +73,7 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
               | _ -> assert false
             in
             begin let pnames = match hfind "bexe" syms.sym_table i with
-            | {symdef=SYMDEF_function (ps,_,_,_)} ->
+            | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_)} ->
               map (fun (_,name,_,d)->
                 name,
                 match d with None -> None | Some e -> Some (be i e)
@@ -194,7 +194,7 @@ let make_bexe_state ?parent ?(env=[]) syms parent_vs ret_type =
     | None -> ""
     | Some index ->
         let symbol = Flx_sym_table.find syms.Flx_mtypes2.sym_table index in
-        symbol.Flx_types.id
+        symbol.Flx_sym.id
   in
   {
     syms = syms;
@@ -350,7 +350,7 @@ let rec bind_exe state handle_bexe (sr, exe) init =
     begin match lun sr s with
     | NonFunctionEntry index ->
       let index = sye index in
-      let {Flx_types.symdef=entry; Flx_types.id=id} =
+      let {Flx_sym.symdef=entry; id=id} =
         hfind "bexe" state.syms.sym_table index
       in
       begin match entry with
@@ -489,7 +489,7 @@ let rec bind_exe state handle_bexe (sr, exe) init =
           *)
           (*
           let lhst =
-            let {symdef=entry; id=id} = hfind "bexe" state.syms.sym_table index in
+            let { Flx_sym.symdef=entry; id=id} = hfind "bexe" state.syms.sym_table index in
             match entry with
             | SYMDEF_ref _ -> BTYP_pointer lhst
             | _ -> lhst

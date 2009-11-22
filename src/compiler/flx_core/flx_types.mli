@@ -299,19 +299,6 @@ type symbol_definition_t =
   | SYMDEF_inherit_fun of qualified_name_t
   | SYMDEF_instance of qualified_name_t
 
-type sym_t = {
-  id:string;
-  sr:Flx_srcref.t;
-  parent:bid_t option;
-  vs:ivs_list_t;
-  pubmap:name_map_t;
-  privmap:name_map_t;
-  dirs:sdir_t list;
-  symdef:symbol_definition_t;
-}
-
-type bsym_t = string * bid_t option * Flx_srcref.t * bbdcl_t
-
 type type_registry_t = (btypecode_t, bid_t) Hashtbl.t
 
 val src_of_bexe : bexe_t -> Flx_srcref.t

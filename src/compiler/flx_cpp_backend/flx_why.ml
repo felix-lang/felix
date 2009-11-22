@@ -30,7 +30,7 @@ let find_function syms env name =
         try Some (Flx_sym_table.find syms.sym_table i)
         with Not_found -> None
       with
-      | Some {symdef=SYMDEF_fun (_,args,res,ct,_,_) } ->
+      | Some { Flx_sym.symdef=SYMDEF_fun (_,args,res,ct,_,_) } ->
         begin match name,args,res with
         | "lnot",[TYP_name (_,"bool",[])],TYP_name (_,"bool",[]) -> true
         | _,[TYP_name (_,"bool",[]); TYP_name (_,"bool",[])],TYP_name (_,"bool",[]) -> true
@@ -64,7 +64,7 @@ let find_logics syms root =
 let mn s = Flx_name.cid_of_flxid s
 
 let getname syms bsym_table i =
-  try match Flx_sym_table.find syms.sym_table i with {id=id} -> mn id
+  try match Flx_sym_table.find syms.sym_table i with { Flx_sym.id=id } -> mn id
   with Not_found ->
   try match Flx_bsym_table.find bsym_table i with id,_,_,_ -> mn id
   with Not_found -> "index_" ^ Flx_name.cid_of_bid i

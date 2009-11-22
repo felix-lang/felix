@@ -133,7 +133,7 @@ let rec register_type_r ui syms bsym_table exclude sr t =
       try Flx_bsym_table.find bsym_table i
       with Not_found ->
         try match Flx_sym_table.find syms.sym_table i with
-        { id=id; sr=sr; parent=parent; symdef=entry } ->
+        { Flx_sym.id=id; sr=sr; parent=parent; symdef=entry } ->
         clierr sr
         (
           "register_type_r Can't find " ^

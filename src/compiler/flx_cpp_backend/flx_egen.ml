@@ -412,7 +412,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
           try Flx_sym_table.find syms.sym_table index
           with Not_found -> assert false
         with
-        {id=id; sr=sr} -> syserr sr
+        { Flx_sym.id=id; sr=sr } -> syserr sr
         ("[gen_expr(name)] Can't find "^ id ^ "<" ^ string_of_bid index ^ ">")
     in
     let ts = map tsub ts' in

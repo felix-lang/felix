@@ -7,8 +7,8 @@ val bbind_symbol:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
   Flx_types.bid_t ->
-  Flx_types.sym_t ->
-  Flx_types.bsym_t option
+  Flx_sym.t ->
+  Flx_bsym.t option
 
 (* Bind all the symbols in the symtab. *)
 val bbind:

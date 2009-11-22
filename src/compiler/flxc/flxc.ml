@@ -31,7 +31,7 @@ let create_state options =
 
   (* Find the module's _init_ function *)
   let init_index =
-    match Hashtbl.find module_symbol.Flx_types.pubmap "_init_" with
+    match Hashtbl.find module_symbol.Flx_sym.pubmap "_init_" with
     | Flx_types.FunctionEntry [ { Flx_types.base_sym=base_sym } ] -> base_sym
     | _ -> assert false
   in
@@ -91,12 +91,12 @@ let make_bind_state state =
 
   (* Add the module and init function to the child map *)
   let child_map = Flx_child.make () in
-  begin match module_symbol.Flx_types.parent with
+  begin match module_symbol.Flx_sym.parent with
   | Some parent -> Flx_child.add_child child_map parent state.module_index;
   | None -> ()
   end;
 
-  begin match init_symbol.Flx_types.parent with
+  begin match init_symbol.Flx_sym.parent with
   | Some parent -> Flx_child.add_child child_map parent state.init_index;
   | None -> ()
   end;

@@ -99,7 +99,7 @@ and metatype' syms sr term =
 
   | BTYP_type i -> BTYP_type (i+1)
   | BTYP_inst (index,ts) ->
-    let {id=id; symdef=entry} =
+    let { Flx_sym.id=id; symdef=entry } =
       try Flx_sym_table.find syms.sym_table index with Not_found ->
         failwith ("[metatype'] can't find type instance index " ^
           string_of_bid index)
@@ -327,7 +327,7 @@ and beta_reduce' syms sr termlist t =
   | BTYP_inst (i,ts) ->
     let ts = map br ts in
     begin try match Flx_sym_table.find syms.sym_table i with
-    | {id=id; symdef=SYMDEF_type_alias _ } ->
+    | { Flx_sym.id=id; symdef=SYMDEF_type_alias _ } ->
       failwith ("Beta reduce found a type instance of " ^ id ^
         " to be an alias, which it can't handle")
     | _ -> BTYP_inst (i,ts)

@@ -21,7 +21,7 @@ val update_label_map:
   Flx_types.bid_t ref ->  (** An index to create unique ids. *)
   label_map_t ->          (** The label map. *)
   Flx_types.bid_t ->      (** The symbol to add. *)
-  Flx_types.bsym_t ->     (** The symbol data. *)
+  Flx_bsym.t ->           (** The symbol data. *)
   unit
 
 (** Find the type of the label in the label map. *)
@@ -50,7 +50,7 @@ val update_label_usage:
   label_map_t ->              (** The label map. *)
   label_usage_t ->            (** The label usage map to update. *)
   Flx_types.bid_t ->          (** The symbol to add. *)
-  Flx_types.bsym_t ->         (** The symbol data. *)
+  Flx_bsym.t ->               (** The symbol data. *)
   unit
 
 (** For a given container and label name, identify the label kind. *)

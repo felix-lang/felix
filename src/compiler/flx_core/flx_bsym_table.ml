@@ -1,5 +1,5 @@
 (** The type of the bound symbol table. *)
-type t = (Flx_types.bid_t, Flx_types.bsym_t) Hashtbl.t
+type t = (Flx_types.bid_t, Flx_bsym.t) Hashtbl.t
 
 (** Construct a bound symbol table. *)
 let create () = Hashtbl.create 97

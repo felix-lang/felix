@@ -88,7 +88,7 @@ let full_add_unique syms sr (vs:ivs_list_t) table key value =
     | NonFunctionEntry (idx)
     | FunctionEntry (idx :: _ ) ->
        (match Flx_sym_table.find syms.Flx_mtypes2.sym_table (Flx_typing.sye idx) with
-       | { Flx_types.sr=sr2 } ->
+       | { Flx_sym.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
          Flx_print.string_of_bid (Flx_typing.sye idx) ^ ">")
@@ -105,7 +105,7 @@ let full_add_typevar syms sr table key value =
     | NonFunctionEntry (idx)
     | FunctionEntry (idx :: _ ) ->
        (match Flx_sym_table.find syms.Flx_mtypes2.sym_table (Flx_typing.sye idx)  with
-       | { Flx_types.sr=sr2 } ->
+       | { Flx_sym.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
          Flx_print.string_of_bid (Flx_typing.sye idx) ^ ">")
@@ -122,7 +122,7 @@ let full_add_function syms sr (vs:ivs_list_t) table key value =
     | NonFunctionEntry entry ->
       begin
         match Flx_sym_table.find syms.Flx_mtypes2.sym_table (Flx_typing.sye entry) with
-        { Flx_types.id=id; sr=sr2 } ->
+        { Flx_sym.id=id; sr=sr2 } ->
         Flx_exceptions.clierr2 sr sr2
         (
           "[build_tables] Cannot overload " ^
@@ -316,7 +316,7 @@ and build_table_for_dcl
     symdef
   =
     Flx_sym_table.add sym_table index {
-      Flx_types.id = id;
+      Flx_sym.id = id;
       sr = sr;
       parent = parent;
       vs = ivs;
@@ -1097,7 +1097,7 @@ let add_dcl ?parent state dcl =
           state.syms.Flx_mtypes2.sym_table
           index
         in
-        1, symbol.pubmap, symbol.privmap
+        1, symbol.Flx_sym.pubmap, symbol.Flx_sym.privmap
     | None ->
         0, state.pub_name_map, state.priv_name_map
   in

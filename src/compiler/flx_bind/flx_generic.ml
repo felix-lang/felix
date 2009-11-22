@@ -69,15 +69,15 @@ let merge_ivs (vs1,con1) (vs2,con2) :ivs_list_t =
 
 (* finds the complete vs list *)
 let rec find_vs sym_table i : ivs_list_t =
-  let { parent=parent; vs=vs } = hfind "find_vs" sym_table i in
+  let { Flx_sym.parent=parent; vs=vs } = hfind "find_vs" sym_table i in
   match parent with
   | Some i -> merge_ivs (find_vs sym_table i) vs
   | None -> vs
 
 let rec find_func_vs sym_table vs j =
   match hfind "find_func_vs" sym_table j with
-  | {parent=parent; vs=vs'; symdef=SYMDEF_module }
-  | {parent=parent; vs=vs'; symdef=SYMDEF_typeclass }
+  | { Flx_sym.parent=parent; vs=vs'; symdef=SYMDEF_module }
+  | { Flx_sym.parent=parent; vs=vs'; symdef=SYMDEF_typeclass }
     ->
     begin match parent with
     | None ->
@@ -107,9 +107,8 @@ let rec find_func_vs sym_table vs j =
 *)
 let find_split_vs sym_table i =
   match hfind "find_split_vs" sym_table i with
-  { symdef=SYMDEF_typevar _ } -> [], [], Flx_ast.dfltvs_aux
-
-  | { parent=parent; vs=vs } ->
+  | { Flx_sym.symdef=SYMDEF_typevar _ } -> [], [], Flx_ast.dfltvs_aux
+  | { Flx_sym.parent=parent; vs=vs } ->
   match parent with
   | None -> [],fst vs, snd vs
   | Some j -> find_func_vs sym_table vs j
@@ -123,7 +122,7 @@ let adjust_ts sym_table sr index ts =
   let m = length vs in
   let n = length ts in
   if n>m then begin
-    match hfind "adjust_ts" sym_table index with {id=id} ->
+    match hfind "adjust_ts" sym_table index with { Flx_sym.id=id } ->
     clierr sr
     (
       "For "^ id ^ "<" ^ string_of_bid index ^
@@ -135,7 +134,7 @@ let adjust_ts sym_table sr index ts =
     )
   end;
   if n<m then begin
-    match hfind "adjust_ts" sym_table index with {id=id} ->
+    match hfind "adjust_ts" sym_table index with { Flx_sym.id=id } ->
     clierr sr
     (
       "For " ^ id ^ "<" ^ string_of_bid index ^

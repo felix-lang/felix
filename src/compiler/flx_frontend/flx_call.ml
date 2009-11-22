@@ -37,7 +37,7 @@ let rec uses_type h k sr t =
   | _ -> iter_btype ut t
 
 let faulty_req syms i =
-  match Flx_sym_table.find syms.sym_table i with {id=id; sr=sr } ->
+  match Flx_sym_table.find syms.sym_table i with { Flx_sym.id=id; sr=sr } ->
   clierr sr (id ^ " is used but has unsatisfied requirement")
 
 let rec process_expr h k sr e =

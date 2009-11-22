@@ -32,7 +32,7 @@ let rec find_true_parent sym_table child parent =
   | None -> None
   | Some parent ->
     match hfind "find_true_parent" sym_table parent with
-    | {id=id; parent=grandparent; symdef=bdcl} ->
+    | { Flx_sym.id=id; parent=grandparent; symdef=bdcl} ->
       match bdcl with
       | SYMDEF_module
         -> find_true_parent sym_table id grandparent
@@ -97,7 +97,7 @@ let bind_qual bt qual = match qual with
 let bind_quals bt quals = map (bind_qual bt) quals
 
 let bbind_symbol syms bsym_table symbol_index {
-  id=name;
+  Flx_sym.id=name;
   sr=sr;
   parent=parent;
   vs=local_vs;
@@ -264,10 +264,10 @@ let bbind_symbol syms bsym_table symbol_index {
     | None -> failwith "[bbind_sym] expected parameter to have a parent"
     | Some ip ->
       match hfind "bbind" syms.sym_table ip with
-      | {symdef=SYMDEF_reduce _}
-      | {symdef=SYMDEF_axiom _}
-      | {symdef=SYMDEF_lemma _}
-      | {symdef=SYMDEF_function _}
+      | { Flx_sym.symdef=SYMDEF_reduce _}
+      | { Flx_sym.symdef=SYMDEF_axiom _}
+      | { Flx_sym.symdef=SYMDEF_lemma _}
+      | { Flx_sym.symdef=SYMDEF_function _}
         ->
         let t = Flx_lookup.type_of_index syms symbol_index in
         let dcl = match k with
@@ -330,7 +330,7 @@ let bbind_symbol syms bsym_table symbol_index {
     *)
     let unit_sum =
       match hfind "bbind" syms.sym_table uidx with
-      | {symdef=SYMDEF_union its} ->
+      | { Flx_sym.symdef=SYMDEF_union its} ->
         fold_left
         (fun v (_,_,_,t) ->
           v && (match t with TYP_void _ -> true | _ -> false)
@@ -649,7 +649,7 @@ let bbind syms bsym_table =
         begin try
           (*
           begin
-            try match hfind "bbind" syms.sym_table !i with {id=id} ->
+            try match hfind "bbind" syms.sym_table !i with { Flx_sym.id=id} ->
               print_endline (" Trying to bind " ^ id ^ " index " ^ si !i)
             with Not_found ->
               failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
@@ -657,7 +657,7 @@ let bbind syms bsym_table =
           *)
           ignore (bbind_symbol syms bsym_table i entry)
         with Not_found ->
-          try match hfind "bbind" syms.sym_table i with {id=id} ->
+          try match hfind "bbind" syms.sym_table i with { Flx_sym.id=id } ->
             failwith ("Binding error, cannot find in table: " ^ id ^ " index " ^
               string_of_bid i)
           with Not_found ->
