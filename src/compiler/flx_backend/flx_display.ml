@@ -35,7 +35,8 @@ let cal_display syms bsym_table parent : (bid_t *int) list =
 
     (* typeclasses have to be treated 'as if' top level *)
     (* MAY NEED REVISION! *)
-    | Some (_,parent',sr,BBDCL_typeclass _ ) -> List.rev display
+    | Some (_,parent',sr,BBDCL_typeclass _) -> List.rev display
+    | Some (_,_,_,BBDCL_instance _) -> List.rev display
     | None ->
       begin
         try
