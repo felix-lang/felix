@@ -247,6 +247,17 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
   in
   let ut t = uses_type u bsym_table count_inits t in
 
+  (* Register use of the typeclass instances. *)
+  Hashtbl.iter begin fun i entries ->
+    add i;
+    List.iter begin fun (j, (vs, con, ts)) ->
+      add j;
+      ut con;
+      List.iter ut ts
+    end entries
+  end syms.instances_of_typeclass;
+
+  (* Register use for the typeclass instance functions. *)
   Hashtbl.iter begin fun i entries ->
     add i;
     List.iter begin fun (vs,con,ts,j) ->

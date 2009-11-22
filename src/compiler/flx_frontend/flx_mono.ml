@@ -40,16 +40,9 @@ let cal_parent syms bsym_table i' ts' =
     assert (n <= length vsc);
     let ts = list_prefix ts' n in
     let k =
-       try (Hashtbl.find syms.instances (i,ts))
-       with Not_found ->
-        print_endline ("Wah? Not found parent of " ^
-          id ^ "<" ^ string_of_bid i' ^ ">" ^
-          "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]\n" ^
-          "Which should be " ^ string_of_bid i ^
-          "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]"
-        )
-        ;
-        assert false
+      (* Try to find the instance, but if it's not there, just use the
+       * parent. *)
+      try (Hashtbl.find syms.instances (i,ts)) with Not_found -> i
     in
       if ts = [] then assert (i=k);
       (*
