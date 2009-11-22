@@ -42,9 +42,8 @@ let cal_display syms bsym_table parent : (bid_t *int) list =
         try
           match Flx_sym_table.find syms.sym_table parent with
           (* instances have to be top level *)
-          | { Flx_sym.id=id; symdef=SYMDEF_instance _ } -> rev display
-          | { Flx_sym.id=id; symdef=SYMDEF_typeclass } -> rev display
-
+          | { Flx_sym.symdef=SYMDEF_instance _ } -> rev display
+          | { Flx_sym.symdef=SYMDEF_typeclass } -> rev display
           | { Flx_sym.id=id } ->
             failwith ("[cal_display] Can't find index(1) " ^ id ^ "<" ^
               Flx_print.string_of_bid parent ^ ">")

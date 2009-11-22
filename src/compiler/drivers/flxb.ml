@@ -95,13 +95,7 @@ try
           "Can't find root module " ^ Flx_print.string_of_bid root ^
           " in symbol table?"
         )
-    with {
-      Flx_sym.id=id;
-      sr = sr;
-      parent = parent;
-      vs = vs;
-      pubmap = name_map;
-      symdef = entry } ->
+    with { Flx_sym.id=id; pubmap=name_map; symdef=entry } ->
     begin match entry with
       | Flx_types.SYMDEF_module -> ()
       | _ -> failwith "Expected to find top level module ''"

@@ -656,7 +656,9 @@ let virtual_check syms bsym_table sr i ts =
     let parent = match parent with | Some p -> p | None -> assert false in
     let tcvslen =
       try
-        let { Flx_sym.id=pid; vs=vs; symdef=entry } = Flx_sym_table.find syms.sym_table parent in
+        let { Flx_sym.id=pid; vs=vs; symdef=entry } =
+          Flx_sym_table.find syms.sym_table parent
+        in
         match entry with
         | SYMDEF_typeclass ->
           (*
