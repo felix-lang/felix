@@ -218,7 +218,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
   in
   let our_display = get_display_list syms bsym_table this in
   let our_level = length our_display in
-  let rt t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
+  let rt t = reduce_type (beta_reduce syms sr (tsubst vs ts t)) in
   let t = rt t in
   match t with
   | BTYP_tuple [] ->
