@@ -405,14 +405,15 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
      end
 
 
-let fixup_typeclass_instance' syms (bsym_table:Flx_bsym_table.t) allow_fail i ts =
+let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
   let entries =
     try Hashtbl.find syms.typeclass_to_instance i
     with Not_found -> (* print_endline ("Symbol " ^ si i ^ " Not instantiated?"); *) []
   in
-  let sr =
-     try match Flx_sym_table.find syms.sym_table i with { Flx_sym.sr=sr } -> sr
-     with Not_found -> dummy_sr
+  let _, _, sr, _ =
+    try Flx_bsym_table.find bsym_table i with Not_found ->
+      failwith ("fixup_typeclass_instance': Can't find <" ^
+        string_of_bid i ^ ">")
   in
   let entries = fold_left (fun acc x -> match tcinst_chk syms allow_fail i ts sr x with
      | None -> acc

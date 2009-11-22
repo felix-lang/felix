@@ -30,7 +30,6 @@ val set_globals_for_symbols :
   Flx_types.bid_t list
 
 val set_globals:
-  sym_state_t ->
   Flx_bsym_table.t ->
   unit
 

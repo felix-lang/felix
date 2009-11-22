@@ -1275,9 +1275,9 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       (*
       print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe syms.sym_table bsym_table 0) exes);
       *)
-      recal_exes_usage syms uses sr i ps exes;
+      recal_exes_usage uses sr i ps exes;
       let exes = fold_vars syms bsym_table child_map uses i ps exes in
-      recal_exes_usage syms uses sr i ps exes;
+      recal_exes_usage uses sr i ps exes;
       (*
       print_endline (id ^ " Before inlining calls:\n" ^ catmap "\n" (string_of_bexe syms.sym_table bsym_table 0) exes);
       *)
@@ -1294,7 +1294,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       (*
       print_endline (id ^ " After inlining calls:\n" ^ catmap "\n" (string_of_bexe syms.sym_table bsym_table 0) exes);
       *)
-      recal_exes_usage syms uses sr i ps exes;
+      recal_exes_usage uses sr i ps exes;
       let exes = Flx_tailit.tailit
         syms
         bsym_table
@@ -1311,15 +1311,15 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       print_endline (id ^ " After tailing:\n" ^ catmap "\n" (string_of_bexe syms.sym_table bsym_table 0) exes);
       *)
       let exes = check_reductions syms bsym_table exes in
-      recal_exes_usage syms uses sr i ps exes;
+      recal_exes_usage uses sr i ps exes;
       let exes = fold_vars syms bsym_table child_map uses i ps exes in
-      recal_exes_usage syms uses sr i ps exes;
+      recal_exes_usage uses sr i ps exes;
       let exes = check_reductions syms bsym_table exes in
       let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes) in
       Flx_bsym_table.add bsym_table i data;
-      recal_exes_usage syms uses sr i ps exes;
+      recal_exes_usage uses sr i ps exes;
       remove_unused_children syms (uses,child_map,bsym_table) i;
       (*
       print_endline ("DONE Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
@@ -1347,9 +1347,9 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       (*
       print_endline (id ^ " Input:\n" ^ catmap "\n" (string_of_bexe syms.sym_table bsym_table 0) exes);
       *)
-      recal_exes_usage syms uses sr i ps exes;
+      recal_exes_usage uses sr i ps exes;
       let exes = fold_vars syms bsym_table child_map uses i ps exes in
-      recal_exes_usage syms uses sr i ps exes;
+      recal_exes_usage uses sr i ps exes;
       let exes = heavy_inline_calls
         syms
         bsym_table
@@ -1366,7 +1366,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       (*
       print_endline ("Tailing " ^ si i);
       *)
-      recal_exes_usage syms uses sr i ps exes;
+      recal_exes_usage uses sr i ps exes;
       let exes = Flx_tailit.tailit
         syms
         bsym_table
@@ -1383,15 +1383,15 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       print_endline (id^ " After tailing(2):\n" ^ catmap "\n" (string_of_bexe syms.sym_table bsym_table 0) exes);
       *)
       let exes = check_reductions syms bsym_table exes in
-      recal_exes_usage syms uses sr i ps exes;
+      recal_exes_usage uses sr i ps exes;
       let exes = fold_vars syms bsym_table child_map uses i ps exes in
-      recal_exes_usage syms uses sr i ps exes;
+      recal_exes_usage uses sr i ps exes;
       let exes = check_reductions syms bsym_table exes in
       let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
       let data = id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes) in
       Flx_bsym_table.add bsym_table i data;
-      recal_exes_usage syms uses sr i ps exes;
+      recal_exes_usage uses sr i ps exes;
       remove_unused_children syms (uses,child_map,bsym_table) i;
       (*
       print_endline ("DONE Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
@@ -1402,7 +1402,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
 
 let heavy_inlining syms bsym_table child_map =
   let used = ref (!(syms.roots)) in
-  let (uses,usedby) = Flx_call.call_data syms bsym_table in
+  let (uses,usedby) = Flx_call.call_data bsym_table in
 
   while not (BidSet.is_empty !used) do
     let i = BidSet.choose !used in

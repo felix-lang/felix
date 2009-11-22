@@ -27,14 +27,14 @@ type submode_t = [`Eager | `Lazy]
   won't cause the test to return a false positive
 *)
 
-let recal_exes_usage syms uses sr i ps exes =
+let recal_exes_usage uses sr i ps exes =
   (*
   print_endline ("Recal usage of "^ si i^", this code:\n" ^ catmap "\n" (sbx syms.sym_table) exes);
   *)
   (* delete old entry *)
   (try Hashtbl.remove uses i with Not_found -> ());
-  iter (Flx_call.cal_param_usage syms uses sr i) ps;
-  iter (Flx_call.cal_exe_usage syms uses i) exes
+  iter (Flx_call.cal_param_usage uses sr i) ps;
+  iter (Flx_call.cal_exe_usage uses i) exes
 
 let is_tailed ps exes =
   try iter
@@ -488,7 +488,7 @@ let gen_body syms (uses,child_map,bsym_table) id
         match entry with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
           let exes = map (subarg syms bsym_table argmap) exes in
-          recal_exes_usage syms uses sr i ps exes;
+          recal_exes_usage uses sr i ps exes;
           Flx_bsym_table.add bsym_table i
           (id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes))
 
@@ -497,7 +497,7 @@ let gen_body syms (uses,child_map,bsym_table) id
           print_endline ("MODIFY " ^ si i);
           *)
           let exes = map (subarg syms bsym_table argmap) exes in
-          recal_exes_usage syms uses sr i ps exes;
+          recal_exes_usage uses sr i ps exes;
           Flx_bsym_table.add bsym_table i
           (id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes))
 

@@ -35,12 +35,12 @@ changing the data structures.
 
 let nop x = ()
 
-let rec uses_type syms used bsym_table count_inits (t:btypecode_t) =
-  let ut t = uses_type syms used bsym_table count_inits t in
+let rec uses_type used bsym_table count_inits (t:btypecode_t) =
+  let ut t = uses_type used bsym_table count_inits t in
   match t with
   | BTYP_inst (i,ts)
     ->
-      uses syms used bsym_table count_inits i; (* don't care on uses inits? *)
+      uses used bsym_table count_inits i; (* don't care on uses inits? *)
       List.iter ut ts
 
   (*
@@ -51,12 +51,12 @@ let rec uses_type syms used bsym_table count_inits (t:btypecode_t) =
 
   | _ -> iter_btype ut t
 
-and uses_exes syms used bsym_table count_inits exes =
-  List.iter (uses_exe syms used bsym_table count_inits) exes
+and uses_exes used bsym_table count_inits exes =
+  List.iter (uses_exe used bsym_table count_inits) exes
 
-and uses_exe syms used bsym_table count_inits (exe:bexe_t) =
+and uses_exe used bsym_table count_inits (exe:bexe_t) =
   (*
-  print_endline ("EXE=" ^ string_of_bexe syms.sym_table 0 exe);
+  print_endline ("EXE=" ^ string_of_bexe bsym_table 0 exe);
   *)
   (* check is a term is a tuple projection of a variable *)
   let rec is_proj e = match e with
@@ -64,9 +64,9 @@ and uses_exe syms used bsym_table count_inits (exe:bexe_t) =
     | BEXPR_get_n (_,e),_ -> is_proj e
     | _ -> false
   in
-  let ue e = uses_tbexpr syms used bsym_table count_inits e in
-  let ui i = uses syms used bsym_table count_inits i in
-  let ut t = uses_type syms used bsym_table count_inits t in
+  let ue e = uses_tbexpr used bsym_table count_inits e in
+  let ui i = uses used bsym_table count_inits i in
+  let ut t = uses_type used bsym_table count_inits t in
   match exe,count_inits with
   | BEXE_init (_,i,e),false -> ue e
   | BEXE_assign (_,lhs,rhs),_ ->
@@ -76,10 +76,10 @@ and uses_exe syms used bsym_table count_inits (exe:bexe_t) =
   | _ ->
     iter_bexe ui ue ut nop nop exe
 
-and uses_tbexpr syms used bsym_table count_inits ((e,t) as x) =
-  let ue e = uses_tbexpr syms used bsym_table count_inits e in
-  let ut t = uses_type syms used bsym_table count_inits t in
-  let ui i = uses syms used bsym_table count_inits i in
+and uses_tbexpr used bsym_table count_inits ((e,t) as x) =
+  let ue e = uses_tbexpr used bsym_table count_inits e in
+  let ut t = uses_type used bsym_table count_inits t in
+  let ui i = uses used bsym_table count_inits i in
 
   (* already done in the iter .. *)
   (*
@@ -88,30 +88,33 @@ and uses_tbexpr syms used bsym_table count_inits ((e,t) as x) =
   (* use a MAP now *)
   iter_tbexpr ui ignore ut x;
 
-and uses_production syms used bsym_table count_inits p =
+and uses_production used bsym_table count_inits p =
   let uses_symbol (_,nt) = match nt with
-  | `Nonterm ii -> List.iter (uses syms used bsym_table count_inits) ii
+  | `Nonterm ii -> List.iter (uses used bsym_table count_inits) ii
   | `Term i -> () (* HACK! This is a union constructor name  we need to 'use' the union type!! *)
   in
   List.iter uses_symbol p
 
-and faulty_req syms i =
-  match Flx_sym_table.find syms.sym_table i with { Flx_sym.id=id; sr=sr } ->
+and faulty_req bsym_table i =
+  let id, _, sr, _ = Flx_bsym_table.find bsym_table i in
   clierr sr (id ^ " is used but has unsatisfied requirement")
 
-and uses syms used bsym_table count_inits i =
-  let ui i = uses syms used bsym_table count_inits i in
-  let ut t = uses_type syms used bsym_table count_inits t in
+and uses used bsym_table count_inits i =
+  let ui i = uses used bsym_table count_inits i in
+  let ut t = uses_type used bsym_table count_inits t in
   let rq reqs =
     let ur (j,ts) =
       if j = dummy_bid then
-        faulty_req syms i
-      else begin ui j; List.iter ut ts end
+        faulty_req bsym_table i
+      else begin
+        ui j;
+        List.iter ut ts
+      end
     in
     List.iter ur reqs
   in
-  let ux x = uses_exes syms used bsym_table count_inits x in
-  let ue e = uses_tbexpr syms used bsym_table count_inits e in
+  let ux x = uses_exes used bsym_table count_inits x in
+  let ue e = uses_tbexpr used bsym_table count_inits e in
   if not (BidSet.mem i !used) then
   begin
     let symbol =
@@ -172,15 +175,8 @@ and uses syms used bsym_table count_inits i =
 
       end
     | None ->
-      let id =
-        try match Flx_sym_table.find syms.sym_table i with { Flx_sym.id=id } -> id
-        with Not_found -> "not found in unbound symbol table"
-      in
-      failwith
-      (
-        "[Flx_use.uses] Cannot find bound defn for " ^ id ^ "<" ^
-        string_of_bid i ^ ">"
-      )
+      failwith ("[Flx_use.uses] Cannot find bound defn for <" ^
+        string_of_bid i ^ ">")
   end
 
 let find_roots syms bsym_table
@@ -196,7 +192,7 @@ let find_roots syms bsym_table
   List.iter begin function
   | BIFACE_export_python_fun (_,x,_)
   | BIFACE_export_fun (_,x,_) -> roots := BidSet.add x !roots
-  | BIFACE_export_type (_,t,_) -> uses_type syms roots bsym_table true t
+  | BIFACE_export_type (_,t,_) -> uses_type roots bsym_table true t
   end bifaces;
 
   syms.roots := !roots
@@ -213,10 +209,10 @@ let cal_use_closure_for_symbols syms bsym_table bids (count_inits:bool) =
        print_endline ("Scanning " ^ si j);
        *)
        u := BidSet.add j !u;
-       uses syms v bsym_table count_inits j
+       uses v bsym_table count_inits j
     end
   in
-  let ut t = uses_type syms u bsym_table count_inits t in
+  let ut t = uses_type u bsym_table count_inits t in
 
   List.iter begin fun bid ->
     match Flx_hashtbl.find syms.typeclass_to_instance bid with
@@ -246,10 +242,10 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
        print_endline ("Scanning " ^ si j);
        *)
        u:= BidSet.add j !u;
-       uses syms v bsym_table count_inits j
+       uses v bsym_table count_inits j
     end
   in
-  let ut t = uses_type syms u bsym_table count_inits t in
+  let ut t = uses_type u bsym_table count_inits t in
 
   Hashtbl.iter begin fun i entries ->
     List.iter begin fun (vs,con,ts,j) ->

@@ -28,7 +28,6 @@ val gen_body :
   bexe_t list
 
 val recal_exes_usage:
-  sym_state_t ->
   usage_table_t ->
   Flx_srcref.t ->
   bid_t ->

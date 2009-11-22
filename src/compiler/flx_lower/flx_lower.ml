@@ -31,7 +31,7 @@ let lower_bsym_table state bsym_table root_proc =
   let bsym_table = Flx_use.copy_used state.syms bsym_table in
 
   (* Mark all the global functions and values. *)
-  Flx_global.set_globals state.syms bsym_table;
+  Flx_global.set_globals bsym_table;
 
   (* Instantiate type classes. *)
   print_debug state "//instantiating";

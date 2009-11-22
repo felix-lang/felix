@@ -312,7 +312,7 @@ let set_globals_for_symbols bsym_table uses bids =
 
   bids
 
-let set_globals syms bsym_table =
+let set_globals bsym_table =
   Flx_bsym_table.iter begin fun index symbol ->
     ignore (set_local_globals bsym_table index symbol)
   end bsym_table;
@@ -321,7 +321,7 @@ let set_globals syms bsym_table =
     ignore (set_gc_use bsym_table index symbol)
   end bsym_table;
 
-  let uses, _ = Flx_call.call_data syms bsym_table in
+  let uses, _ = Flx_call.call_data bsym_table in
 
   (* Iterate through each symbol and mark if the function needs a frame. *)
   Flx_bsym_table.iter (set_globals_for_symbol bsym_table uses) bsym_table
