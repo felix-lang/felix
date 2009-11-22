@@ -99,15 +99,10 @@ let cpp_instance_name' syms bsym_table index ts =
   let inst =
     try Hashtbl.find syms.instances (index,ts)
     with Not_found ->
-    let id =
-      try
-        let id,parent,sr,entry = Flx_bsym_table.find bsym_table index in id
-      with Not_found ->
-      try
-        match Flx_sym_table.find syms.sym_table index with
-        { Flx_sym.id=id } -> id ^ "[unbound]"
-      with Not_found ->
-      "unknown"
+    let id,_,_,_ =
+      try Flx_bsym_table.find bsym_table index with Not_found ->
+        failwith ("[cpp_instance_name'] Can't find <" ^
+          string_of_bid index ^ ">")
     in
     let has_variables =
       List.fold_left

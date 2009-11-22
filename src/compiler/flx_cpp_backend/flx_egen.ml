@@ -407,13 +407,8 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
   | BEXPR_name (index,ts') ->
     let id,parent,sr2,entry =
       try Flx_bsym_table.find bsym_table index
-      with _ ->
-        match
-          try Flx_sym_table.find syms.sym_table index
-          with Not_found -> assert false
-        with
-        { Flx_sym.id=id; sr=sr } -> syserr sr
-        ("[gen_expr(name)] Can't find "^ id ^ "<" ^ string_of_bid index ^ ">")
+      with Not_found ->
+        syserr sr ("[gen_expr(name)] Can't find <" ^ string_of_bid index ^ ">")
     in
     let ts = map tsub ts' in
     begin match entry with
