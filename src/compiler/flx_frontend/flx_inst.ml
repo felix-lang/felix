@@ -512,49 +512,38 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
   (* empty instantiation registry *)
   let insts1 = ref FunInstSet.empty in
 
-  begin
-    (* append routine to add an instance *)
-    let add_cand i ts = insts1 := FunInstSet.add (i,ts) !insts1 in
+  (* append routine to add an instance *)
+  let add_cand i ts = insts1 := FunInstSet.add (i,ts) !insts1 in
 
-    (* add the root *)
-    add_cand root [];
+  (* add the root *)
+  add_cand root [];
 
-    (* add exported functions, and register exported types *)
-    let ui i ts = add_inst syms bsym_table insts1 (i,ts) in
-    iter
-    (function
-      | BIFACE_export_python_fun (_,x,_)
-      | BIFACE_export_fun (_,x,_) ->
-        let _,_,sr,entry = Flx_bsym_table.find bsym_table x in
-        begin match entry with
-        | BBDCL_procedure (props,_,(ps,_),_)
-        | BBDCL_function (props,_,(ps,_),_,_) ->
+  (* add exported functions, and register exported types *)
+  let ui i ts = add_inst syms bsym_table insts1 (i,ts) in
+  iter
+  (function
+    | BIFACE_export_python_fun (_,x,_)
+    | BIFACE_export_fun (_,x,_) ->
+      let _,_,sr,entry = Flx_bsym_table.find bsym_table x in
+      begin match entry with
+      | BBDCL_procedure (props,_,(ps,_),_)
+      | BBDCL_function (props,_,(ps,_),_,_) ->
         begin match ps with
         | [] -> ()
         | [{ptyp=t}] -> register_type_r ui syms bsym_table [] sr t
         | _ ->
-          let t =
-            BTYP_tuple
-            (
-              map
-              (fun {ptyp=t} -> t)
-              ps
-            )
-          in
+          let t = BTYP_tuple (map (fun {ptyp=t} -> t) ps) in
           register_type_r ui syms bsym_table [] sr t;
           register_type_nr syms t;
         end
-        | _ -> assert false
-        end
-        ;
-        add_cand x []
+      | _ -> assert false
+      end;
+      add_cand x []
 
-      | BIFACE_export_type (sr,t,_) ->
-        register_type_r ui syms bsym_table [] sr t
-    )
-    bifaces
-  end
-  ;
+    | BIFACE_export_type (sr,t,_) ->
+      register_type_r ui syms bsym_table [] sr t
+  )
+  bifaces;
 
   (* NEW: if a symbol is monomorphic use its index as its instance! *)
   (* this is a TRICK .. saves remapping the root/exports, since they
