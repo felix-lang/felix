@@ -248,8 +248,9 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
   let ut t = uses_type u bsym_table count_inits t in
 
   Hashtbl.iter begin fun i entries ->
+    add i;
     List.iter begin fun (vs,con,ts,j) ->
-      add i; add j;
+      add j;
       ut con;
       List.iter ut ts
     end entries
