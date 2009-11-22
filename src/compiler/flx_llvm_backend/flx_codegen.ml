@@ -508,7 +508,7 @@ and codegen_apply_stack state bsym_table builder sr bid e =
   let es = List.map (codegen_deref state bsym_table builder sr) es in
 
   (* Now, add all of the closures it needs. *)
-  let display = Flx_display.get_display_list state.syms bsym_table bid in
+  let display = Flx_display.get_display_list bsym_table bid in
   let es = List.fold_left
     (fun es (bid,_) -> Hashtbl.find state.closure_bindings bid :: es)
     es display
@@ -866,7 +866,7 @@ let codegen_proto state bsym_table child_map bid name parameters ret_type =
 
   (* Next we'll handle the parent closure types. First, find the parent
    * closures. *)
-  let display = Flx_display.get_display_list state.syms bsym_table bid in
+  let display = Flx_display.get_display_list bsym_table bid in
 
   (* Then grab the closure types and add them to our paramter type list. *)
   let ts = List.fold_left

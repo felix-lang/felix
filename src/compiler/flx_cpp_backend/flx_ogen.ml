@@ -245,7 +245,7 @@ let gen_fun_offsets s syms (child_map,bsym_table) index vs ps ret ts instance pr
   let vars =  (find_references syms bsym_table child_map index ts) in
   let vars = filter (fun (i, _) -> is_instantiated syms i ts) vars in
   let name = cpp_instance_name syms bsym_table index ts in
-  let display = Flx_display.get_display_list syms bsym_table index in
+  let display = Flx_display.get_display_list bsym_table index in
   let offsets =
     (if mem `Requires_ptf props then
     ["FLX_EAT_PTF(offsetof(" ^ name ^ ",ptf)comma)"]

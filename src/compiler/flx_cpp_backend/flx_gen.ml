@@ -159,7 +159,7 @@ let gen_C_function syms bsym_table child_map props index id sr vs bps ret' ts in
   let funtype = fold syms.counter syms.sym_table (BTYP_function (argtype, ret)) in
 
   (* let argtypename = cpp_typename syms argtype in *)
-  let display = get_display_list syms bsym_table index in
+  let display = get_display_list bsym_table index in
   assert (length display = 0);
   let name = cpp_instance_name syms bsym_table index ts in
   let rettypename = cpp_typename syms ret in
@@ -222,7 +222,7 @@ let gen_class syms bsym_table child_map props index id sr vs ts instance_no =
     ", got ts=" ^
     si (length ts)
   );
-  let display = get_display_list syms bsym_table index in
+  let display = get_display_list bsym_table index in
   let frame_dcls =
     if requires_ptf then
     "  FLX_FMEM_DECL\n"
@@ -360,7 +360,7 @@ let gen_function syms bsym_table child_map props index id sr vs bps ret' ts inst
       with _ -> None
     else None
   in
-  let display = get_display_list syms bsym_table index in
+  let display = get_display_list bsym_table index in
   let frame_dcls =
     if requires_ptf then
     "  FLX_FMEM_DECL\n"
@@ -745,7 +745,7 @@ let gen_exe filename
     try Flx_bsym_table.find bsym_table this with _ ->
       failwith ("[gen_exe] Can't find this " ^ string_of_bid this)
   in
-  let our_display = get_display_list syms bsym_table this in
+  let our_display = get_display_list bsym_table this in
   let kind = match entry with
     | BBDCL_function (_,_,_,_,_) -> Function
     | BBDCL_procedure (_,_,_,_) -> Procedure
@@ -833,7 +833,7 @@ let gen_exe filename
           let d' =
             map begin fun (i,vslen) ->
               "ptr" ^ cpp_instance_name syms bsym_table i (list_prefix ts vslen)
-            end (get_display_list syms bsym_table index)
+            end (get_display_list bsym_table index)
           in
             if length d' > our_level
             then "this" :: tl d'
@@ -1091,7 +1091,7 @@ let gen_exe filename
         let ts = map tsub ts in
         (* C FUNCTION CALL *)
         if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
-          let display = get_display_list syms bsym_table index in
+          let display = get_display_list bsym_table index in
           let name = cpp_instance_name syms bsym_table index ts in
           let s =
             assert (length display = 0);
@@ -1762,7 +1762,7 @@ let gen_function_methods filename syms bsym_table child_map
     let argtypename = cpp_typename syms argtype in
     let name = cpp_instance_name syms bsym_table index ts in
 
-    let display = get_display_list syms bsym_table index in
+    let display = get_display_list bsym_table index in
 
     let rettypename = cpp_typename syms ret in
 
@@ -1904,7 +1904,7 @@ let gen_procedure_methods filename syms bsym_table child_map
     let argtypename = cpp_typename syms argtype in
     let name = cpp_instance_name syms bsym_table index ts in
 
-    let display = get_display_list syms bsym_table index in
+    let display = get_display_list bsym_table index in
 
     let ctor =
       let vars = find_references syms bsym_table child_map index ts in
@@ -2210,7 +2210,7 @@ let gen_biface_header syms bsym_table biface = match biface with
     in
     begin match entry with
     | BBDCL_function (props,vs,(ps,traint), ret, _) ->
-      let display = get_display_list syms bsym_table index in
+      let display = get_display_list bsym_table index in
       if length display <> 0
       then clierr sr "Can't export nested function";
 
@@ -2232,7 +2232,7 @@ let gen_biface_header syms bsym_table biface = match biface with
       export_name ^ "(\n" ^ arglist ^ "\n);\n"
 
     | BBDCL_procedure (props,vs,(ps,traint), _) ->
-      let display = get_display_list syms bsym_table index in
+      let display = get_display_list bsym_table index in
       if length display <> 0
       then clierr sr "Can't export nested proc";
 
@@ -2274,7 +2274,7 @@ let gen_biface_body syms bsym_table biface = match biface with
       if length vs <> 0
       then clierr sr ("Can't export generic function " ^ id)
       ;
-      let display = get_display_list syms bsym_table index in
+      let display = get_display_list bsym_table index in
       if length display <> 0
       then clierr sr "Can't export nested function";
       let arglist =
@@ -2320,7 +2320,7 @@ let gen_biface_body syms bsym_table biface = match biface with
       if length vs <> 0
       then clierr sr ("Can't export generic procedure " ^ id)
       ;
-      let display = get_display_list syms bsym_table index in
+      let display = get_display_list bsym_table index in
       if length display <> 0
       then clierr sr "Can't export nested function";
 

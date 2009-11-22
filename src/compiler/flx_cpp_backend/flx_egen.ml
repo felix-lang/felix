@@ -216,7 +216,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     try Flx_bsym_table.find bsym_table this with Not_found ->
       failwith ("[gen_expr] Can't find this = " ^ string_of_bid this)
   in
-  let our_display = get_display_list syms bsym_table this in
+  let our_display = get_display_list bsym_table this in
   let our_level = length our_display in
   let rt t = reduce_type (beta_reduce syms sr (tsubst vs ts t)) in
   let t = rt t in
@@ -528,7 +528,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
         let d' =
           map begin fun (i,vslen) ->
             "ptr" ^ cpp_instance_name syms bsym_table i (list_prefix ts vslen)
-          end (get_display_list syms bsym_table index)
+          end (get_display_list bsym_table index)
         in
           if length d' > our_level
           then "this" :: tl d'
@@ -872,7 +872,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
         let d' =
           map begin fun (i,vslen)->
             "ptr" ^ cpp_instance_name syms bsym_table i (list_prefix ts vslen)
-          end (get_display_list syms bsym_table index)
+          end (get_display_list bsym_table index)
         in
           if length d' > our_level
           then "this" :: tl d'
@@ -933,7 +933,7 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     *)
     match entry with
     | BBDCL_function (props,vs,(ps,traint),retyp,_) ->
-      let display = get_display_list syms bsym_table index in
+      let display = get_display_list bsym_table index in
       let name = cpp_instance_name syms bsym_table index ts in
 
       (* C FUNCTION CALL *)
