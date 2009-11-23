@@ -54,7 +54,6 @@ val sbx: Flx_sym_table.t -> Flx_bsym_table.t -> bexe_t -> string
 val string_of_exe : int -> exe_t -> string
 val qualified_name_of_index : Flx_sym_table.t -> bid_t -> string
 val qualified_name_of_bindex :
-  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   bid_t ->
   string

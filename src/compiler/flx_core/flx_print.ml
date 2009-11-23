@@ -508,26 +508,22 @@ and qualified_name_of_index sym_table index =
   try qualified_name_of_index' sym_table index ^ "<" ^ string_of_bid index ^ ">"
   with Not_found -> "index_"^ string_of_bid index
 
-and get_name_parent sym_table bsym_table index =
-  try
-    match Flx_sym_table.find sym_table index with
-    { Flx_sym.id=id; vs=vs; parent=parent} -> id, parent
-  with Not_found ->
+and get_name_parent bsym_table index =
   try
     match Flx_bsym_table.find bsym_table index with
     id,parent,_,_ -> id,parent
   with Not_found -> "index_" ^ string_of_bid index,None
 
 
-and qualified_name_of_bindex sym_table bsym_table index =
-  let name,parent = get_name_parent sym_table bsym_table index in
+and qualified_name_of_bindex bsym_table index =
+  let name,parent = get_name_parent bsym_table index in
   match parent with
   | Some index' ->
-    qualified_name_of_bindex sym_table bsym_table index' ^ "::" ^ name
+    qualified_name_of_bindex bsym_table index' ^ "::" ^ name
   | None -> name
 
-and bound_name_of_bindex sym_table bsym_table index =
-  let name,parent = get_name_parent sym_table bsym_table index in
+and bound_name_of_bindex bsym_table index =
+  let name,parent = get_name_parent bsym_table index in
   Printf.sprintf "%s<%s>" name (string_of_bid index)
 
 (* fixppoint labeller .. very sloppy, ignores precedence .. *)
@@ -1847,7 +1843,7 @@ and string_of_bound_expression' sym_table bsym_table se e =
   let sid n = qualified_name_of_bindex sym_table bsym_table n in
   let sid n = fst (get_name_parent sym_table bsym_table n) in
   *)
-  let sid n = bound_name_of_bindex sym_table bsym_table n in
+  let sid n = bound_name_of_bindex bsym_table n in
   match fst e with
 
   | BEXPR_get_n (n,e') -> "(" ^ se e' ^ ").mem_" ^ si n
@@ -1936,7 +1932,7 @@ and sbx sym_table bsym_table s =  string_of_bexe sym_table bsym_table 0 s
 and string_of_bexe sym_table bsym_table level s =
   let spc = spaces level in
   let se e = string_of_bound_expression sym_table bsym_table e in
-  let sid n = bound_name_of_bindex sym_table bsym_table n in
+  let sid n = bound_name_of_bindex bsym_table n in
   match s with
   | BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
 

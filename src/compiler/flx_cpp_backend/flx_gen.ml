@@ -581,13 +581,13 @@ let gen_functions syms sym_table bsym_table child_map =
       bcat s ("\n//------------------------------\n");
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
         bcat s ("//PURE C FUNCTION <" ^ string_of_bid index ^ ">: " ^
-          qualified_name_of_bindex sym_table bsym_table index ^ tss ^
+          qualified_name_of_bindex bsym_table index ^ tss ^
           "\n");
         bcat s
         (gen_C_function syms sym_table bsym_table child_map props index id sr vs ps ret ts i)
       end else begin
         bcat s ("//FUNCTION <" ^ string_of_bid index ^ ">: " ^
-          qualified_name_of_bindex sym_table bsym_table index ^ tss ^
+          qualified_name_of_bindex bsym_table index ^ tss ^
           "\n");
         bcat s
         (gen_function syms sym_table bsym_table child_map props index id sr vs ps ret ts i)
@@ -598,11 +598,11 @@ let gen_functions syms sym_table bsym_table child_map =
       bcat s ("\n//------------------------------\n");
       if ret' = BTYP_void then begin
         bcat s ("//CALLBACK C PROC <" ^ string_of_bid index ^ ">: " ^
-          qualified_name_of_bindex sym_table bsym_table index ^ tss ^
+          qualified_name_of_bindex bsym_table index ^ tss ^
           "\n");
       end else begin
         bcat s ("//CALLBACK C FUNCTION <" ^ string_of_bid index ^ ">: " ^
-          qualified_name_of_bindex sym_table bsym_table index ^ tss ^
+          qualified_name_of_bindex bsym_table index ^ tss ^
           "\n");
       end
       ;
@@ -657,17 +657,17 @@ let gen_functions syms sym_table bsym_table child_map =
     | BBDCL_procedure (props,vs,(ps,traint),_) ->
       bcat s ("\n//------------------------------\n");
       (*
-      print_endline ("Procedure " ^ qualified_name_of_bindex sym_table bsym_table index);
+      print_endline ("Procedure " ^ qualified_name_of_bindex bsym_table index);
       print_endline ("properties: " ^ string_of_properties props);
       *)
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
         bcat s ("//PURE C PROC <" ^ string_of_bid index ^ ">: " ^
-        qualified_name_of_bindex sym_table bsym_table index ^ tss ^ "\n");
+        qualified_name_of_bindex bsym_table index ^ tss ^ "\n");
         bcat s
         (gen_C_function syms sym_table bsym_table child_map props index id sr vs ps BTYP_void ts i)
       end else begin
         bcat s ("//PROC <" ^ string_of_bid index ^ ">: " ^
-        qualified_name_of_bindex sym_table bsym_table index ^ tss ^ "\n");
+        qualified_name_of_bindex bsym_table index ^ tss ^ "\n");
         bcat s
         (gen_function syms sym_table bsym_table child_map props index id sr vs ps BTYP_void ts i)
       end
@@ -1847,7 +1847,7 @@ let gen_function_methods filename syms sym_table bsym_table child_map
       )^
       "}\n"
     in
-      let q = qualified_name_of_bindex sym_table bsym_table index in
+      let q = qualified_name_of_bindex bsym_table index in
       let ctor =
       "//FUNCTION <" ^ string_of_bid index ^ ">: " ^ q ^ ": Constructor\n" ^
       ctor^ "\n" ^
@@ -2003,7 +2003,7 @@ let gen_procedure_methods filename syms sym_table bsym_table child_map
         "}\n"
     in
       let q =
-        try qualified_name_of_bindex sym_table bsym_table index
+        try qualified_name_of_bindex bsym_table index
         with Not_found ->
           string_of_bid instance_no ^ "=" ^
           id ^ "<" ^ string_of_bid index ^ ">" ^
@@ -2068,10 +2068,10 @@ let gen_execute_methods filename syms sym_table bsym_table child_map label_info 
       bcat s ("\n//------------------------------\n");
       if ret' = BTYP_void then begin
         bcat s ("//CALLBACK C PROCEDURE <" ^ string_of_bid index ^ ">: " ^
-          qualified_name_of_bindex sym_table bsym_table index ^ tss ^ "\n");
+          qualified_name_of_bindex bsym_table index ^ tss ^ "\n");
       end else begin
         bcat s ("//CALLBACK C FUNCTION <" ^ string_of_bid index ^ ">: " ^
-          qualified_name_of_bindex sym_table bsym_table index ^ tss ^ "\n");
+          qualified_name_of_bindex bsym_table index ^ tss ^ "\n");
       end
       ;
       let rt vs t = reduce_type (beta_reduce syms sym_table sr  (tsubst vs ts t)) in
