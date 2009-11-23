@@ -22,5 +22,6 @@ val bbind:
 val bind_interface:
   Flx_mtypes2.sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   Flx_types.bound_iface_t ->
   Flx_types.biface_t

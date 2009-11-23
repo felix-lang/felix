@@ -138,7 +138,6 @@ let print_bids state bsym_table bids =
     | None -> ()
     | Some (_,_,_,bbdcl) ->
         print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
-          state.sym_table
           bsym_table
           bbdcl
           bid)
@@ -149,7 +148,6 @@ let print_bids state bsym_table bids =
 let print_bexes state bsym_table bexes =
   List.iter begin fun bexe ->
     print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
-      state.sym_table
       bsym_table
       0
       bexe)

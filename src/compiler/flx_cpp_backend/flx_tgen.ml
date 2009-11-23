@@ -139,13 +139,13 @@ let gen_type_name syms sym_table bsym_table (index,typ) =
   print_endline (
     "GENERATING TYPE NAME " ^
     string_of_bid index ^ ": " ^
-    sbt sym_table typ
+    sbt bsym_table typ
   );
   *)
   let cn t = cpp_type_classname syms sym_table bsym_table t in
   let tn t = cpp_typename syms sym_table bsym_table t in
   let descr =
-    "\n//TYPE " ^ string_of_bid index ^ ": " ^ sbt sym_table typ ^ "\n"
+    "\n//TYPE " ^ string_of_bid index ^ ": " ^ sbt bsym_table typ ^ "\n"
   in
   let t = unfold sym_table typ in
   match t with
@@ -209,7 +209,7 @@ let gen_type_name syms sym_table bsym_table (index,typ) =
         "\n//"^(if complete then "" else "INCOMPLETE ")^
         "PRIMITIVE " ^ string_of_bid i ^" INSTANCE " ^
         string_of_bid index ^ ": " ^
-        sbt sym_table typ ^
+        sbt bsym_table typ ^
         "\n"
       in
       let instance_name = cn typ in
@@ -241,7 +241,7 @@ let gen_type_name syms sym_table bsym_table (index,typ) =
       let descr =
         "\n//CSTRUCT " ^ string_of_bid i ^ " INSTANCE " ^
         string_of_bid index ^ ": " ^
-        sbt sym_table typ ^
+        sbt bsym_table typ ^
         "\n"
       in
       let instance_name = cn typ in
@@ -253,7 +253,7 @@ let gen_type_name syms sym_table bsym_table (index,typ) =
       let descr =
         "\n//STRUCT " ^ string_of_bid i ^ " INSTANCE " ^
         string_of_bid index ^ ": " ^
-        sbt sym_table typ ^
+        sbt bsym_table typ ^
         "\n"
       in
       let name = cn typ in
@@ -263,7 +263,7 @@ let gen_type_name syms sym_table bsym_table (index,typ) =
       let descr =
         "\n//UNION " ^ string_of_bid i ^ " INSTANCE " ^
         string_of_bid index ^ ": " ^
-        sbt sym_table typ ^
+        sbt bsym_table typ ^
         "\n"
       in
       let name = cn typ in
@@ -283,14 +283,14 @@ let gen_type_name syms sym_table bsym_table (index,typ) =
       (
         "[gen_type_name] Expected definition " ^ string_of_bid i ^
         " to be generic primitive, got " ^
-        string_of_bbdcl sym_table bsym_table entry i ^
+        string_of_bbdcl bsym_table entry i ^
         " instance types [" ^
         catmap ", " tn ts ^
         "]"
       )
     end
 
-  | _ -> failwith ("Unexpected metatype "^ sbt sym_table t ^ " in gen_type_name")
+  | _ -> failwith ("Unexpected metatype "^ sbt bsym_table t ^ " in gen_type_name")
 
 let mk_listwise_ctor syms sym_table i name typ cts ctss =
   if length cts = 1 then
@@ -306,14 +306,14 @@ let gen_type syms sym_table bsym_table (index,typ) =
   print_endline (
     "GENERATING TYPE " ^
     string_of_bid index ^ ": " ^
-    sbt sym_table typ
+    sbt bsym_table typ
   );
   *)
   let tn t = cpp_typename syms sym_table bsym_table t in
   let cn t = cpp_type_classname syms sym_table bsym_table t in
   let descr =
     "\n//TYPE " ^ string_of_bid index ^ ": " ^
-    sbt sym_table typ ^
+    sbt bsym_table typ ^
     "\n"
   in
   let t = unfold sym_table typ in
@@ -408,7 +408,7 @@ let gen_type syms sym_table bsym_table (index,typ) =
       let descr =
         "\n//NEWTYPE " ^ string_of_bid i ^ " INSTANCE " ^
         string_of_bid index ^ ": " ^
-        sbt sym_table typ ^
+        sbt bsym_table typ ^
         "\n"
       in
       let instance_name = cn typ in
@@ -428,7 +428,7 @@ let gen_type syms sym_table bsym_table (index,typ) =
       let descr =
         "\n//GENERIC STRUCT " ^ string_of_bid i ^ " INSTANCE " ^
         string_of_bid index ^ ": " ^
-        sbt sym_table typ ^
+        sbt bsym_table typ ^
         "\n"
       in
       descr ^ "struct " ^ name ^ " {\n"
@@ -450,14 +450,14 @@ let gen_type syms sym_table bsym_table (index,typ) =
       (
         "[gen_type] Expected definition " ^ string_of_bid i ^
         " to be generic primitive, got " ^
-        string_of_bbdcl sym_table bsym_table entry i ^
+        string_of_bbdcl bsym_table entry i ^
         " instance types [" ^
         catmap ", " tn ts ^
         "]"
       )
     end
 
-  | _ -> failwith ("[gen_type] Unexpected metatype " ^ sbt sym_table t)
+  | _ -> failwith ("[gen_type] Unexpected metatype " ^ sbt bsym_table t)
 
 (* NOTE: distinct types can have the same name if they have the
 same simple representation, two types t1,t2 both represented by "int".
@@ -483,7 +483,7 @@ let gen_type_names syms sym_table bsym_table ts =
       )
     with Not_found ->
       failwith ("Can't gen type name " ^ string_of_bid i ^ "=" ^
-        sbt sym_table t)
+        sbt bsym_table t)
   )
   ts;
   Buffer.contents s

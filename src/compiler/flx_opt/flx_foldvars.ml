@@ -132,7 +132,7 @@ let fold_vars syms sym_table bsym_table child_map uses i ps exes =
 
         let id,_,_,_ = Flx_bsym_table.find bsym_table j in
         (*
-        print_endline ("CONSIDERING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe sym_table bsym_table y);
+        print_endline ("CONSIDERING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe bsym_table y);
         *)
         (* does uses include initialisations or not ..?? *)
 
@@ -183,7 +183,7 @@ let fold_vars syms sym_table bsym_table child_map uses i ps exes =
           let id,_,_,_ = Flx_bsym_table.find bsym_table j in
           if syms.compiler_options.print_flag then
             print_endline ("ELIMINATING VARIABLE " ^ id ^ "<" ^ string_of_bid j
-              ^ "> -> " ^ sbe sym_table bsym_table y);
+              ^ "> -> " ^ sbe bsym_table y);
 
           (* remove the variable *)
           Flx_bsym_table.remove bsym_table j;
@@ -226,7 +226,7 @@ let fold_vars syms sym_table bsym_table child_map uses i ps exes =
           | BEXPR_tuple ys,_ ->
             (*
             print_endline "Tuple init found";
-            print_endline ("initialiser y =" ^ sbe sym_table bsym_table y);
+            print_endline ("initialiser y =" ^ sbe bsym_table y);
             print_endline ("Y uses = " ^ string_of_bidset yuses);
             *)
             let rec subi j ys e =
@@ -234,8 +234,8 @@ let fold_vars syms sym_table bsym_table child_map uses i ps exes =
               | BEXPR_get_n (k, (BEXPR_name(i,_),_) ),_
                 when j = i ->
                 if syms.compiler_options.print_flag then
-                print_endline ("[flx_fold_vars: tuple init] Replacing " ^ sbe sym_table bsym_table e ^
-                  " with " ^ sbe sym_table bsym_table (nth ys k)
+                print_endline ("[flx_fold_vars: tuple init] Replacing " ^ sbe bsym_table e ^
+                  " with " ^ sbe bsym_table (nth ys k)
                 );
                 incr rplcnt; nth ys k
               | x -> x

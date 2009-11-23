@@ -270,7 +270,7 @@ try
 
   (* Make sure we can find the _init_ instance *)
   let top_class =
-    try cpp_instance_name syms sym_table bsym_table root_proc [] with Not_found ->
+    try cpp_instance_name syms bsym_table root_proc [] with Not_found ->
       failwith ("can't name instance of root _init_ procedure index " ^
         string_of_bid root_proc)
   in
@@ -546,7 +546,7 @@ try
     List.map
     (fun index ->
       "  " ^
-      cpp_instance_name syms sym_table bsym_table index [] ^
+      cpp_instance_name syms bsym_table index [] ^
       "(0)"
     )
     topfuns

@@ -45,6 +45,7 @@ val fixup_typeclass_instances:
 val tcinst_chk:
   sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   bool ->
   bid_t ->
   btypecode_t list ->

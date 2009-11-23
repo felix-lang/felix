@@ -675,13 +675,6 @@ and build_table_for_dcl
       in
       let nts = List.map (fun (s,i,t)-> BTYP_var (i,BTYP_type 0)) (fst ivs) in
       (* fudge the private view to remove the vs *)
-      let show { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } =
-        Flx_print.string_of_bid i ^ " |-> " ^
-          "vs= " ^ Flx_util.catmap
-            ","
-            (fun (s,i) -> s ^ "<" ^ Flx_print.string_of_bid i ^ ">")
-          vs ^ "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt sym_table) ts
-      in
       let fixup ({ Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
         let e' = {
           Flx_types.base_sym=i;

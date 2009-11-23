@@ -158,15 +158,15 @@ let gen_body syms sym_table (uses,child_map,bsym_table) id
   begin begin match inline_method with
   | `Eager ->
       print_endline ("Eager INLINING " ^ id ^ "<" ^
-        string_of_bid callee ^ ">(" ^ sbe sym_table bsym_table argument ^
+        string_of_bid callee ^ ">(" ^ sbe bsym_table argument ^
         ") into " ^ string_of_bid caller ^ " .. INPUT:");
   | `Lazy ->
       print_endline ("Lazy INLINING " ^ id ^ "<" ^ string_of_bid callee ^ ">(" ^
-        sbe sym_table bsym_table argument ^") into " ^
+        sbe bsym_table argument ^") into " ^
         string_of_bid caller ^ " .. INPUT:");
   end
   ;
-  iter (fun x -> print_endline (string_of_bexe sym_table bsym_table 0 x)) exes;
+  iter (fun x -> print_endline (string_of_bexe bsym_table 0 x)) exes;
   end
   ;
   let paramtype  =
@@ -300,7 +300,7 @@ let gen_body syms sym_table (uses,child_map,bsym_table) id
         let argt = match argument with
         | _,BTYP_function (BTYP_void,t)
         | _,BTYP_function (BTYP_tuple [],t) -> t
-        | _,t -> failwith ("Expected argument to be function void->t, got " ^ sbt sym_table t)
+        | _,t -> failwith ("Expected argument to be function void->t, got " ^ sbt bsym_table t)
         in
         let un = BEXPR_tuple [], BTYP_tuple [] in
         let apl = BEXPR_apply (argument, un), argt in

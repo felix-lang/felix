@@ -80,7 +80,7 @@ let verify syms sym_table bsym_table csr e =
               match insts with | None -> false | Some insts ->
               try
                 iter (fun (instidx,(inst_bvs, inst_traint, inst_ts)) ->
-                  match tcinst_chk syms sym_table true i ts sr (inst_bvs, inst_traint, inst_ts, instidx) with
+                  match tcinst_chk syms sym_table bsym_table true i ts sr (inst_bvs, inst_traint, inst_ts, instidx) with
                   | None -> ()
                   | Some _ -> raise Not_found
                 )

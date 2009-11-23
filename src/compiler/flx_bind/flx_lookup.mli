@@ -119,6 +119,7 @@ val lookup_qn_in_env2:
 val lookup_sn_in_env :
   sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   env_t ->
   suffixed_name_t ->
   bid_t * btypecode_t list
@@ -144,6 +145,7 @@ variables is not a type function.
 val bind_type:
   sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
   typecode_t ->
@@ -159,6 +161,7 @@ val eval_module_expr:
 val resolve_overload:
   sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
   entry_kind_t list ->
@@ -170,6 +173,7 @@ val resolve_overload:
 val bind_expression :
   sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   env_t ->
   expr_t ->
   tbexpr_t
@@ -177,6 +181,7 @@ val bind_expression :
 val bind_expression_with_args :
   sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   env_t ->
   expr_t ->
   tbexpr_t list ->
@@ -191,6 +196,7 @@ val type_of_index :
 val type_of_index_with_ts:
   sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   Flx_srcref.t ->
   bid_t ->
   btypecode_t list ->
@@ -199,6 +205,7 @@ val type_of_index_with_ts:
 val type_of_literal:
   sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
   literal_t ->
@@ -207,6 +214,7 @@ val type_of_literal:
 val lookup_qn_with_sig:
   sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   Flx_srcref.t ->
   Flx_srcref.t ->
   env_t ->

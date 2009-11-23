@@ -397,7 +397,7 @@ let reparent1 (syms:sym_state_t) sym_table (uses,child_map,bsym_table)
     Flx_bsym_table.add bsym_table k (id,parent,sr,entry)
   *)
 
-  | _ -> syserr sr ("[reparent1] Unexpected: bbdcl " ^ string_of_bbdcl sym_table bsym_table entry index)
+  | _ -> syserr sr ("[reparent1] Unexpected: bbdcl " ^ string_of_bbdcl bsym_table entry index)
 
 (* make a copy all the descendants of i, changing any
   parent which is i to the given new parent

@@ -105,9 +105,9 @@ let mkproc_exe syms sym_table bsym_table sr this mkproc_map vs exe =
   if syms.compiler_options.print_flag then
   begin
     if length exes > 1 then begin
-      print_endline ("Unravelling exe=\n" ^ string_of_bexe sym_table bsym_table 2 exe);
+      print_endline ("Unravelling exe=\n" ^ string_of_bexe bsym_table 2 exe);
       print_endline ("Unravelled exes =");
-      iter (fun exe -> print_endline (string_of_bexe sym_table bsym_table 2 exe)) exes;
+      iter (fun exe -> print_endline (string_of_bexe bsym_table 2 exe)) exes;
     end;
   end;
   exes
@@ -259,7 +259,7 @@ let mkproc_gen syms sym_table bsym_table child_map =
       if syms.compiler_options.print_flag then
       begin
         print_endline "OLD FUNCTION BODY ****************";
-        iter (fun exe -> print_endline (string_of_bexe sym_table bsym_table 2 exe)) exes;
+        iter (fun exe -> print_endline (string_of_bexe bsym_table 2 exe)) exes;
       end;
 
       let fixup vsc exesc =
@@ -334,7 +334,7 @@ let mkproc_gen syms sym_table bsym_table child_map =
       if syms.compiler_options.print_flag then
       begin
         print_endline "NEW PROCEDURE BODY ****************";
-        iter (fun exe -> print_endline (string_of_bexe sym_table bsym_table 2 exe)) exes;
+        iter (fun exe -> print_endline (string_of_bexe bsym_table 2 exe)) exes;
       end;
 
   )

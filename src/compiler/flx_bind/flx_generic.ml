@@ -116,7 +116,7 @@ let find_split_vs sym_table i =
 let print_ivs vs =
   catmap ", " (fun (s,i,_) -> s ^ "<" ^ string_of_bid i ^ ">") vs
 
-let adjust_ts sym_table sr index ts =
+let adjust_ts sym_table bsym_table sr index ts =
   let pvs,vs,con = find_split_vs sym_table index in
   let k = length pvs in
   let m = length vs in
@@ -128,7 +128,7 @@ let adjust_ts sym_table sr index ts =
       "For "^ id ^ "<" ^ string_of_bid index ^
       "> Too many type subscripts, expected " ^
       si m ^ " got " ^ si n ^
-      "=[" ^ catmap "," (sbt sym_table) ts ^ "]" ^
+      "=[" ^ catmap "," (sbt bsym_table) ts ^ "]" ^
       "\nparent vs=" ^ print_ivs pvs ^
       "\nvs=" ^ print_ivs vs
     )
@@ -147,19 +147,19 @@ let adjust_ts sym_table sr index ts =
 
   map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) pvs @ ts
 
-let make_params sym_table sr i ts =
+let make_params sym_table bsym_table sr i ts =
   let vs,_ = find_vs sym_table i in
-  let ts = adjust_ts sym_table sr i ts in
+  let ts = adjust_ts sym_table bsym_table sr i ts in
   assert (length vs = length ts);
   map2 (fun (s,i,_) t -> s,t) vs ts
 
 (* full ts required *)
-let make_varmap sym_table sr i ts =
+let make_varmap sym_table bsym_table sr i ts =
   let vs,_ = find_vs sym_table i in
   if length ts != length vs then
     print_endline ("[flx_generic:make_varmap] vs/ts mismatch vs=" ^
     catmap "," (fun (s,_,_) -> s) vs ^
-    "; ts = " ^ catmap "," (sbt sym_table) ts)
+    "; ts = " ^ catmap "," (sbt bsym_table) ts)
   ;
   assert (length ts = length vs);
   let vars = map2 (fun (s,i,_) t -> i,t) vs ts in

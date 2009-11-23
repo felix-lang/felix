@@ -95,8 +95,8 @@ let fixup_expr' syms sym_table bsym_table fi mt (e:bexpr_t) =
     let i,ts = fi i' ts' in
     (*
     print_endline (
-      "Ref to Variable " ^ si i' ^ "[" ^ catmap "," (sbt sym_table) ts' ^"]" ^
-      " mapped to " ^ si i ^ "[" ^ catmap "," (sbt sym_table) ts ^"]"
+      "Ref to Variable " ^ si i' ^ "[" ^ catmap "," (sbt bsym_table) ts' ^"]" ^
+      " mapped to " ^ si i ^ "[" ^ catmap "," (sbt bsym_table) ts ^"]"
     );
     *)
     BEXPR_name (i,ts)
@@ -200,7 +200,7 @@ let mono syms sym_table bsym_table fi i ts n =
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
+    let mt t = reduce_type (beta_reduce syms sym_table bsym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
     let ret = mt ret in
     (*
     let fi i ts = fi i (map mt ts) in
@@ -217,14 +217,14 @@ let mono syms sym_table bsym_table fi i ts n =
   | BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
+    let mt t = reduce_type (beta_reduce syms sym_table bsym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
     let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
       let k = fst (fi i ts) in
       let u = mt t in
       (*
       print_endline ("Remap parameter " ^ s ^"<"^ si i ^ "> (type " ^
-        sbt sym_table t ^
-      ")to " ^ si k ^ " type " ^ sbt sym_table u);
+        sbt bsym_table t ^
+      ")to " ^ si k ^ " type " ^ sbt bsym_table u);
       *)
       {pkind=pk;pid=s;pindex=k;ptyp=u}) ps
     in
@@ -239,7 +239,7 @@ let mono syms sym_table bsym_table fi i ts n =
 
   | BBDCL_val (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
+    let mt t = reduce_type (beta_reduce syms sym_table bsym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
     let t = mt t in
     let entry = BBDCL_val ([],t) in
     let parent = cal_parent syms sym_table bsym_table i ts in
@@ -247,7 +247,7 @@ let mono syms sym_table bsym_table fi i ts n =
 
   | BBDCL_var (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
+    let mt t = reduce_type (beta_reduce syms sym_table bsym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
     let t = mt t in
     let entry = BBDCL_var ([],t) in
     let parent = cal_parent syms sym_table bsym_table i ts in
@@ -255,7 +255,7 @@ let mono syms sym_table bsym_table fi i ts n =
 
   | BBDCL_ref (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
+    let mt t = reduce_type (beta_reduce syms sym_table bsym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
     let t = mt t in
     let entry = BBDCL_ref ([],t) in
     let parent = cal_parent syms sym_table bsym_table i ts in
@@ -263,7 +263,7 @@ let mono syms sym_table bsym_table fi i ts n =
 
   | BBDCL_tmp (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
+    let mt t = reduce_type (beta_reduce syms sym_table bsym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
     let t = mt t in
     let entry = BBDCL_tmp ([],t) in
     let parent = cal_parent syms sym_table bsym_table i ts in
@@ -278,7 +278,7 @@ let mono syms sym_table bsym_table fi i ts n =
   *)
   | BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
+    let mt t = reduce_type (beta_reduce syms sym_table bsym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
     let argtypes = map mt argtypes in
     let ret = mt ret in
     let entry = BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) in
@@ -287,14 +287,14 @@ let mono syms sym_table bsym_table fi i ts n =
 
   | BBDCL_proc (props,vs,argtypes,ct,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
+    let mt t = reduce_type (beta_reduce syms sym_table bsym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
     let argtypes = map mt argtypes in
     let entry = BBDCL_proc (props,vs,argtypes,ct,reqs) in
     Flx_bsym_table.add bsym_table i (id,parent, sr, entry)
 
   | BBDCL_const (props, vs, t, CS_str "#this", reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms sym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
+    let mt t = reduce_type (beta_reduce syms sym_table bsym_table sr (fixup_type syms sym_table bsym_table fi (list_subst syms.counter vars t))) in
     let t = mt t in
     let entry = BBDCL_const (props, [], t, CS_str "#this", reqs) in
     let parent = cal_parent syms sym_table bsym_table i ts in
@@ -339,13 +339,13 @@ let monomorphise syms sym_table bsym_table =
      then begin
        (*
        print_endline ("polyinst " ^ si n ^ " = " ^
-       si i ^ "["^catmap "," (sbt sym_table) ts^"]");
+       si i ^ "["^catmap "," (sbt bsym_table) ts^"]");
        *)
        Hashtbl.add polyinst (i,ts) n
      end else begin
        (*
        print_endline ("*** NO polyinst " ^ si n ^ " = " ^
-       si i ^ "["^catmap "," (sbt sym_table) ts^"]");
+       si i ^ "["^catmap "," (sbt bsym_table) ts^"]");
        *)
      end
 
@@ -380,10 +380,10 @@ let monomorphise syms sym_table bsym_table =
     if syms.compiler_options.print_flag then begin
       if (n <> i) then print_endline (
          "[monomorphise] Adding instance " ^ string_of_bid n ^ " = " ^
-         string_of_bid i ^ "["^catmap "," (sbt sym_table) ts^"]"
+         string_of_bid i ^ "["^catmap "," (sbt bsym_table) ts^"]"
       ) else print_endline (
          "[monomorphise] Process instance " ^ string_of_bid n ^ " = " ^
-         string_of_bid i ^ "["^catmap "," (sbt sym_table) ts^"]"
+         string_of_bid i ^ "["^catmap "," (sbt bsym_table) ts^"]"
       );
     end;
 

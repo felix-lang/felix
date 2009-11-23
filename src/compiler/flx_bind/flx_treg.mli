@@ -29,12 +29,14 @@ open Flx_mtypes2
 val register_type_nr:
   sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   btypecode_t ->
   unit
 
 val register_tuple:
   sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   btypecode_t ->
   unit
 

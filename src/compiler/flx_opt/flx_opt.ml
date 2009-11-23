@@ -36,7 +36,7 @@ let inline_functions syms sym_table bsym_table root_proc clean_bsym_table =
     print_endline "INPUT TO OPTIMISATION PASS";
     print_endline "---------------------------";
     print_endline "";
-    Flx_print.print_symbols sym_table bsym_table
+    Flx_print.print_symbols bsym_table
   end;
 
   (* Remove unused reductions. *)
@@ -73,7 +73,7 @@ let inline_functions syms sym_table bsym_table root_proc clean_bsym_table =
     print_endline "POST PHASE 1 FUNCTION SET";
     print_endline "---------------------------";
     print_endline "";
-    Flx_print.print_symbols sym_table bsym_table
+    Flx_print.print_symbols bsym_table
   end;
 
   (* Clean up the inlining symbol properties. *)
@@ -117,7 +117,7 @@ let inline_functions syms sym_table bsym_table root_proc clean_bsym_table =
     print_endline "POST MONOMORPHISATION FUNCTION SET";
     print_endline "---------------------------";
     print_endline "";
-    Flx_print.print_symbols sym_table bsym_table
+    Flx_print.print_symbols bsym_table
   end;
 
   (* Remove any newly unused reductions. *)

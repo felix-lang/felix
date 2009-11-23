@@ -89,7 +89,7 @@ let cal_usage syms sym_table bsym_table label_map caller exes usage =
       | `Unreachable ->
         syserr sr ("[flx_label] Caller " ^ string_of_bid caller ^
           " Jump to unreachable label " ^ label ^ "\n" ^
-          (catmap "\n" (string_of_bexe sym_table bsym_table 2) exes))
+          (catmap "\n" (string_of_bexe bsym_table 2) exes))
       | `Local lix ->
         begin match get_label_kind_from_index usage lix with
         | `Unused -> Hashtbl.replace usage lix `Near

@@ -63,6 +63,7 @@ the function return type unknown variable case..
 val do_unify:
   sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   btypecode_t ->
   btypecode_t ->
   bool

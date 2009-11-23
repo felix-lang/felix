@@ -262,7 +262,7 @@ let hack_name qn = match qn with
 | _ -> failwith "expected qn .."
 
 (* Note this bt must bind types in the base context *)
-let consider syms sym_table env bt be luqn2 name
+let consider syms sym_table bsym_table env bt be luqn2 name
   ({base_sym=i;spec_vs=spec_vs; sub_ts=sub_ts} as eeek)
   input_ts arg_types call_sr env_traint 
 : overload_result option =
@@ -356,15 +356,15 @@ let consider syms sym_table env bt be luqn2 name
     if (List.length base_vs != List.length sub_ts) then
     begin
       print_endline "WARN: VS != SUB_TS";
-      print_endline (id ^ "|-> " ^ string_of_myentry sym_table eeek);
+      print_endline (id ^ "|-> " ^ string_of_myentry bsym_table eeek);
       print_endline ("PARENT VS=" ^
         catmap "," (fun (s,i,_)->s ^ "<"^ string_of_bid i ^ ">") parent_vs);
       print_endline ("base VS=" ^
         catmap "," (fun (s,i,_)->s ^ "<" ^ string_of_bid i ^ ">") base_vs);
-      print_endline ("sub TS=" ^ catmap "," (sbt sym_table) sub_ts);
+      print_endline ("sub TS=" ^ catmap "," (sbt bsym_table) sub_ts);
       print_endline ("spec VS=" ^
         catmap "," (fun (s,i)-> s ^ "<" ^ string_of_bid i ^ ">") spec_vs);
-      print_endline ("input TS=" ^ catmap "," (sbt sym_table) input_ts);
+      print_endline ("input TS=" ^ catmap "," (sbt bsym_table) input_ts);
     end
     ;
     (*
@@ -496,7 +496,10 @@ let consider syms sym_table env bt be luqn2 name
     print_endline ("Curry domains (postsub)  = " ^ catmap ", " (sbt sym_table) curry_domains);
     *)
 
-    let curry_domains = List.map (fun t -> reduce_type (beta_reduce syms sym_table sr t)) curry_domains in
+    let curry_domains = List.map
+      (fun t -> reduce_type (beta_reduce syms sym_table bsym_table sr t))
+      curry_domains
+    in
 
     (*
     print_endline ("Curry domains (postbeta) = " ^ catmap ", " (sbt sym_table) curry_domains);
@@ -628,7 +631,7 @@ let consider syms sym_table env bt be luqn2 name
            in
            let et = spec_bt sr et in
            let et = list_subst syms.counter !mgu et in
-           let et = beta_reduce syms sym_table sr et in
+           let et = beta_reduce syms sym_table bsym_table sr et in
            (*
            print_endline ("After substitution of mgu, Reduced type is:\n  " ^
              sbt sym_table et)
@@ -689,7 +692,7 @@ let consider syms sym_table env bt be luqn2 name
                   " pat=" ^ string_of_typecode pat);
              let t1 = BTYP_var (i,BTYP_type 0) in
              let t2 = BTYP_var (k,BTYP_type 0) in
-             print_endline ("Adding equation " ^ sbt sym_table t1 ^ " = " ^ sbt sym_table t2);
+             print_endline ("Adding equation " ^ sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2);
              extra_eqns := (t1,t2) :: !extra_eqns;
              (*
              dvars := BidSet.add i !dvars;
@@ -742,10 +745,10 @@ let consider syms sym_table env bt be luqn2 name
         | BTYP_type_match (arg,[{pattern=pat},BTYP_tuple[]]) ->
           let arg = spec arg in
           let arg = list_subst syms.counter !mgu arg in
-          let arg = beta_reduce syms sym_table sr arg in
+          let arg = beta_reduce syms sym_table bsym_table sr arg in
           let pat = spec pat in
           let pat = list_subst syms.counter !mgu pat in
-          let pat = beta_reduce syms sym_table sr pat in
+          let pat = beta_reduce syms sym_table bsym_table sr pat in
           extra_eqns := (arg, pat)::!extra_eqns
         | _ -> ()
         in
@@ -871,7 +874,7 @@ let consider syms sym_table env bt be luqn2 name
         (*
         print_endline ("Substituted type constraint " ^ sbt sym_table type_constraint);
         *)
-        let reduced_constraint = beta_reduce syms sym_table sr type_constraint in
+        let reduced_constraint = beta_reduce syms sym_table bsym_table sr type_constraint in
         (*
         print_endline ("Reduced type constraint " ^ sbt sym_table reduced_constraint);
         *)
@@ -895,13 +898,13 @@ let consider syms sym_table env bt be luqn2 name
             Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
           else begin
             print_endline "Can't resolve type constraint!";
-            print_endline ("Env traint = " ^ sbt sym_table env_traint);
-            print_endline ("Fun traint = " ^ sbt sym_table reduced_constraint);
+            print_endline ("Env traint = " ^ sbt bsym_table env_traint);
+            print_endline ("Fun traint = " ^ sbt bsym_table reduced_constraint);
             print_endline ("Implication result = " ^ if implied then "true" else "false");
             clierr sr
             ("[overload] Cannot resolve type constraint! " ^
-              sbt sym_table type_constraint ^
-              "\nReduced to " ^ sbt sym_table x
+              sbt bsym_table type_constraint ^
+              "\nReduced to " ^ sbt bsym_table x
             )
           end
         end
@@ -916,6 +919,7 @@ let consider syms sym_table env bt be luqn2 name
 let overload
   syms
   sym_table
+  bsym_table
   env
   rs
   bt be
@@ -949,7 +953,7 @@ let overload
 
   (* HACK for the moment *)
   let aux i =
-    match consider syms sym_table env (bt rs) be luqn2 name i ts sufs call_sr env_traint with
+    match consider syms sym_table bsym_table env (bt rs) be luqn2 name i ts sufs call_sr env_traint with
     | Some x -> Unique x
     | None -> Fail
   in
@@ -1028,8 +1032,8 @@ let overload
            clierrn [call_sr; sr2; sr]
            (
              "[resolve_overload] Ambiguous call: Not expecting equal signatures" ^
-             "\n(1) fun " ^ string_of_bid i ^ ":" ^ sbt sym_table typ ^
-             "\n(2) fun " ^ string_of_bid j ^ ":" ^ sbt sym_table c
+             "\n(1) fun " ^ string_of_bid i ^ ":" ^ sbt bsym_table typ ^
+             "\n(2) fun " ^ string_of_bid j ^ ":" ^ sbt bsym_table c
            )
 
          | `Greater ->
@@ -1061,12 +1065,12 @@ let overload
     clierr call_sr
     (
       "Too many candidates match in overloading " ^ name ^
-      " with argument types " ^ catmap "," (sbt sym_table) sufs ^
+      " with argument types " ^ catmap "," (sbt bsym_table) sufs ^
       "\nOf the matching candidates, the following are most specialised ones are incomparable\n" ^
       catmap "\n" (function
         | Unique (i,t,_,_,_) ->
           qualified_name_of_index sym_table i ^ "<" ^ string_of_bid i ^
-          "> sig " ^ sbt sym_table t
+          "> sig " ^ sbt bsym_table t
         | Fail -> assert false
       )
       candidates

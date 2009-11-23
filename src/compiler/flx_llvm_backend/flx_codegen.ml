@@ -280,7 +280,7 @@ let create_entry_block_alloca state builder btype name =
 (* Generate call for an expression *)
 let rec codegen_expr state bsym_table builder sr tbexpr =
   print_endline ("codegen_expr: " ^ Flx_print.string_of_bound_expression
-    state.sym_table bsym_table tbexpr);
+    bsym_table tbexpr);
 
   (* See if there are any simple reductions we can apply to the expression. *)
   let bexpr, btype = Flx_maps.reduce_tbexpr tbexpr in
@@ -591,7 +591,7 @@ let codegen_subscript state bsym_table builder sr lhs rhs =
 (* Generate code for a bound statement. *)
 let codegen_bexe state bsym_table builder bexe =
   print_endline ("codegen_bexe: " ^ Flx_print.string_of_bexe
-    state.sym_table bsym_table 0 bexe);
+    bsym_table 0 bexe);
 
   (* See if there are any simple reductions we can apply to the exe. *)
   let bexe = Flx_maps.reduce_bexe bexe in
@@ -1238,7 +1238,7 @@ and codegen_symbol
       | Some p -> Flx_print.string_of_bid p
       | None -> "None") ^
     " " ^
-    (Flx_print.string_of_bbdcl state.sym_table bsym_table bbdcl index));
+    (Flx_print.string_of_bbdcl bsym_table bbdcl index));
 
   match bbdcl with
   | Flx_types.BBDCL_function (props, _, (ps, _), ret_type, es) ->

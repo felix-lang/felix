@@ -53,7 +53,7 @@ let bind_req syms sym_table env sr tag =
   and -2,[] is false (impossible to satisfy)
 *)
 
-let bind_reqs bt syms sym_table env sr reqs : (bid_t * btypecode_t list) list =
+let bind_reqs bt syms sym_table bsym_table env sr reqs : (bid_t * btypecode_t list) list =
   let add lst i =
     if
       lst = [-2,[]] or
@@ -79,7 +79,7 @@ let bind_reqs bt syms sym_table env sr reqs : (bid_t * btypecode_t list) list =
         let index = sye index in
         if index = 0 then lst else
         try
-          let ts = adjust_ts sym_table sr index ts in
+          let ts = adjust_ts sym_table bsym_table sr index ts in
           add lst (index,ts)
         with x ->
           print_endline "** Bind_req failed due to vs/ts mismatch";
@@ -132,10 +132,10 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     (match true_parent with | None -> "none" | Some i -> si i));
   *)
 
-  let be e = Flx_lookup.bind_expression syms sym_table env e in
+  let be e = Flx_lookup.bind_expression syms sym_table bsym_table env e in
   let luqn n = Flx_lookup.lookup_qn_in_env syms sym_table env n in
   let luqn2 n = Flx_lookup.lookup_qn_in_env2 syms sym_table env n in
-  let bt t = Flx_lookup.bind_type syms sym_table env sr t in
+  let bt t = Flx_lookup.bind_type syms sym_table bsym_table env sr t in
 
   (* this is the full vs list *)
   let ivs = find_vs sym_table symbol_index in
@@ -155,7 +155,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
   in
   let bcons = bind_type_constraint ivs in
   let btraint = function | Some x -> Some (be x) | None -> None in
-  let bind_reqs reqs = bind_reqs bt syms sym_table env sr reqs in
+  let bind_reqs reqs = bind_reqs bt syms sym_table bsym_table env sr reqs in
   let bind_quals quals = bind_quals bt quals in
   (*
   print_endline ("******Binding " ^ name);
@@ -164,7 +164,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     List.map (fun (k,s,t,_) ->
       let i = find_param name_map s in
       let t = let t = bt t in match k with `PRef -> BTYP_pointer t | _ -> t in
-(*        print_endline ("Param " ^ s ^ " type=" ^ sbt sym_table t); *)
+(*        print_endline ("Param " ^ s ^ " type=" ^ sbt bsym_table t); *)
       {pid=s; pindex=i;pkind=k; ptyp=t}
     )
     ps
@@ -255,7 +255,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
       in
       print_endline ("//bound function " ^ qname ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt sym_table t)
+        print_bvs bvs ^ ":" ^ sbt bsym_table t)
     end;
 
     add_symbol (name, true_parent, sr, bbdcl)
@@ -282,7 +282,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
         if syms.compiler_options.print_flag then
           print_endline ("//bound val " ^ name ^ "<" ^
             string_of_bid symbol_index ^ ">" ^
-            print_bvs bvs ^ ":" ^ sbt sym_table t);
+            print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
         add_symbol (name, true_parent, sr, dcl)
 
@@ -318,7 +318,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     if syms.compiler_options.print_flag then
       print_endline ("//bound match check " ^ name ^ "<" ^
         string_of_bid symbol_index ^
-        ">" ^ print_bvs bvs ^ ":" ^ sbt sym_table
+        ">" ^ print_bvs bvs ^ ":" ^ sbt bsym_table
         (BTYP_function (BTYP_tuple[],flx_bbool)));
 
     add_symbol (name, true_parent, sr, BBDCL_function
@@ -349,7 +349,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
 
     if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<" ^
-        string_of_bid symbol_index ^ ">:" ^ sbt sym_table t);
+        string_of_bid symbol_index ^ ">:" ^ sbt bsym_table t);
 
     add_symbol (name, None, sr, BBDCL_const ([], bvs, t, CS_str ct, []))
 
@@ -366,7 +366,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
 
     if syms.compiler_options.print_flag then
       print_endline ("//bound fun " ^ name ^ "<" ^
-        string_of_bid symbol_index ^ ">:" ^ sbt sym_table t);
+        string_of_bid symbol_index ^ ">:" ^ sbt bsym_table t);
 
     add_symbol (name, None, sr, bbdcl)
 
@@ -376,7 +376,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     if syms.compiler_options.print_flag then
       print_endline ("//bound val " ^ name ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt sym_table t);
+        print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
     add_symbol (name, true_parent, sr, BBDCL_val (bvs, t))
 
@@ -386,7 +386,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     if syms.compiler_options.print_flag then
       print_endline ("//bound ref " ^ name ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt sym_table t);
+        print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
     add_symbol (name, true_parent, sr, BBDCL_ref (bvs, t))
 
@@ -409,7 +409,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     if syms.compiler_options.print_flag then
       print_endline ("//bound lazy " ^ name ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt sym_table brt');
+        print_bvs bvs ^ ":" ^ sbt bsym_table brt');
 
     add_symbol (name, true_parent, sr, bbdcl)
 
@@ -422,7 +422,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     if syms.compiler_options.print_flag then
       print_endline ("//bound var " ^ name ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt sym_table t);
+        print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
     add_symbol (name, true_parent, sr, BBDCL_var (bvs, t))
 
@@ -433,7 +433,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     if syms.compiler_options.print_flag then
       print_endline ("//bound const " ^ name ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt sym_table t);
+        print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
     add_symbol (name, true_parent, sr, BBDCL_const (props,bvs,t,ct,reqs))
 
@@ -460,7 +460,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
       let atyp = typeoflist ts in
       print_endline ("//bound fun " ^ name ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt sym_table (BTYP_function (atyp, bret)))
+        print_bvs bvs ^ ":" ^ sbt bsym_table (BTYP_function (atyp, bret)))
     end;
 
     add_symbol (name, true_parent, sr, bbdcl)
@@ -563,7 +563,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
       let atyp = typeoflist ts_cf in
       print_endline ("//bound callback fun " ^ name ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs ^ ":" ^
-        sbt sym_table (BTYP_function (atyp, bret)))
+        sbt bsym_table (BTYP_function (atyp, bret)))
     end;
 
     add_symbol (name, true_parent, sr, bbdcl)
@@ -668,10 +668,10 @@ let bbind syms sym_table bsym_table =
     end
   end syms.counter dummy_bid
 
-let bind_interface syms sym_table = function
+let bind_interface syms sym_table bsym_table = function
   | sr, IFACE_export_fun (sn, cpp_name), parent ->
       let env = Flx_lookup.build_env syms sym_table parent in
-      let index,ts = Flx_lookup.lookup_sn_in_env syms sym_table env sn in
+      let index,ts = Flx_lookup.lookup_sn_in_env syms sym_table bsym_table env sn in
       if ts = [] then
         BIFACE_export_fun (sr,index, cpp_name)
       else clierr sr
@@ -682,7 +682,7 @@ let bind_interface syms sym_table = function
 
   | sr, IFACE_export_python_fun (sn, cpp_name), parent ->
       let env = Flx_lookup.build_env syms sym_table parent in
-      let index,ts = Flx_lookup.lookup_sn_in_env syms sym_table env sn in
+      let index,ts = Flx_lookup.lookup_sn_in_env syms sym_table bsym_table env sn in
       if ts = [] then
         BIFACE_export_python_fun (sr,index, cpp_name)
       else clierr sr
@@ -693,12 +693,12 @@ let bind_interface syms sym_table = function
 
   | sr, IFACE_export_type (typ, cpp_name), parent ->
       let env = Flx_lookup.build_env syms sym_table parent in
-      let t = Flx_lookup.bind_type syms sym_table env Flx_srcref.dummy_sr typ in
+      let t = Flx_lookup.bind_type syms sym_table bsym_table env Flx_srcref.dummy_sr typ in
       if try var_occurs t with _ -> true then
       clierr sr
       (
         "Can't export generic- or meta- type " ^
-        string_of_btypecode sym_table t
+        string_of_btypecode bsym_table t
       )
       else
         BIFACE_export_type (sr, t, cpp_name)

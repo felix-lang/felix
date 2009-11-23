@@ -48,6 +48,7 @@ let bind_asm state strabs_bsym_table handle_bound init asm =
         let biface = Flx_bbind.bind_interface
           state.syms
           state.sym_table
+          state.bbind_bsym_table
           (sr, iface, state.parent)
         in
         state.syms.Flx_mtypes2.bifaces <-
@@ -131,7 +132,7 @@ let bind_asms state asms =
 
   (* Bind the interfaces. *)
   state.syms.Flx_mtypes2.bifaces <- List.map
-    (Flx_bbind.bind_interface state.syms state.sym_table) ifaces;
+    (Flx_bbind.bind_interface state.syms state.sym_table bsym_table) ifaces;
 
   (* Clear the type cache. *)
   Hashtbl.clear state.syms.Flx_mtypes2.ticache;

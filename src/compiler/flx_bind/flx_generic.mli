@@ -14,6 +14,7 @@ val find_vs:
 
 val adjust_ts:
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   Flx_srcref.t ->
   Flx_types.bid_t ->
   Flx_types.btypecode_t list ->
@@ -21,6 +22,7 @@ val adjust_ts:
 
 val make_params:
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   Flx_srcref.t ->
   Flx_types.bid_t ->
   Flx_types.btypecode_t list ->
@@ -28,6 +30,7 @@ val make_params:
 
 val make_varmap:
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   Flx_srcref.t ->
   Flx_types.bid_t ->
   Flx_types.btypecode_t list ->

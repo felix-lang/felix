@@ -21,14 +21,14 @@ let null_table = Hashtbl.create 3
 let add_inst syms sym_table bsym_table ref_insts1 (i,ts) =
     (*
     print_endline ("Attempt to register instance " ^ si i ^ "[" ^
-    catmap ", " (sbt sym_table) ts ^ "]");
+    catmap ", " (sbt bsym_table) ts ^ "]");
     *)
-  let ts = map (fun t -> beta_reduce syms sym_table dummy_sr t) ts in
+  let ts = map (fun t -> beta_reduce syms sym_table bsym_table dummy_sr t) ts in
 
   let i,ts = Flx_typeclass.fixup_typeclass_instance syms sym_table bsym_table i ts in
     (*
     print_endline ("remapped to instance " ^ si i ^ "[" ^
-    catmap ", " (sbt sym_table) ts ^ "]");
+    catmap ", " (sbt bsym_table) ts ^ "]");
     *)
   let ts = map (fun t -> reduce_type t) ts in
   let x = i, ts in
@@ -36,7 +36,7 @@ let add_inst syms sym_table bsym_table ref_insts1 (i,ts) =
     fold_left
     (fun truth t -> truth ||
       try var_occurs t
-      with _ -> failwith ("[add_inst] metatype in var_occurs for " ^ sbt sym_table t)
+      with _ -> failwith ("[add_inst] metatype in var_occurs for " ^ sbt bsym_table t)
     )
     false
     ts
@@ -45,7 +45,7 @@ let add_inst syms sym_table bsym_table ref_insts1 (i,ts) =
   failwith
   (
     "Attempt to register instance " ^ string_of_bid i ^ "[" ^
-    catmap ", " (sbt sym_table) ts ^
+    catmap ", " (sbt bsym_table) ts ^
     "] with type variable in a subscript"
   )
   ;
@@ -57,7 +57,7 @@ let add_inst syms sym_table bsym_table ref_insts1 (i,ts) =
 
 let rec process_expr syms sym_table bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   (*
-  print_endline ("Process expr " ^ sbe sym_table be ^ " .. raw type " ^ sbt sym_table t);
+  print_endline ("Process expr " ^ sbe sym_table be ^ " .. raw type " ^ sbt bsym_table t);
   print_endline (" .. instantiated type " ^ string_of_btypecode sym_table (varmap_subst hvarmap t));
   *)
   let ue e = process_expr syms sym_table bsym_table ref_insts1 hvarmap sr e in
@@ -120,12 +120,12 @@ let rec process_expr syms sym_table bsym_table ref_insts1 hvarmap sr ((e,t) as b
 
   | BEXPR_tuple es ->
     iter ue es;
-    register_tuple syms sym_table (vs t)
+    register_tuple syms sym_table bsym_table (vs t)
 
   | BEXPR_record es ->
     let ss,es = split es in
     iter ue es;
-    register_tuple syms sym_table (vs t)
+    register_tuple syms sym_table bsym_table (vs t)
 
   | BEXPR_variant (s,e) ->
     ue e
@@ -138,11 +138,11 @@ let rec process_expr syms sym_table bsym_table ref_insts1 hvarmap sr ((e,t) as b
     ->
     (* substitute out display variables *)
     (*
-    print_endline ("Raw Variable " ^ si i ^ "[" ^ catmap "," (sbt sym_table) ts ^ "]");
+    print_endline ("Raw Variable " ^ si i ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]");
     *)
     let ts = map vs ts in
     (*
-    print_endline ("Variable with mapped ts " ^ si i ^ "[" ^ catmap "," (sbt sym_table) ts ^ "]");
+    print_endline ("Variable with mapped ts " ^ si i ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]");
     *)
     ui i ts;
     (*
@@ -170,7 +170,7 @@ and process_exe syms sym_table bsym_table ref_insts1 ts hvarmap (exe:bexe_t) =
   let ui i = uis i ts in
   (*
   print_endline ("processing exe " ^ string_of_bexe sym_table bsym_table 0 exe);
-  print_endline ("With ts = " ^ catmap "," (sbt sym_table) ts);
+  print_endline ("With ts = " ^ catmap "," (sbt bsym_table) ts);
   *)
   (* TODO: replace with a map *)
   match exe with
@@ -210,9 +210,9 @@ and process_exe syms sym_table bsym_table ref_insts1 ts hvarmap (exe:bexe_t) =
     let vs' = get_vs bsym_table i in
     (*
     print_endline ("vs=" ^ catmap "," (fun (s,i)-> s^ "<" ^ si i ^ ">") vs');
-    print_endline ("Input ts = " ^ catmap "," (sbt sym_table) ts);
+    print_endline ("Input ts = " ^ catmap "," (sbt bsym_table) ts);
     print_endline ("Varmap = " ^ Hashtbl.fold
-      (fun i k acc -> acc ^ "\n"^si i ^ " |-> " ^ sbt sym_table k )
+      (fun i k acc -> acc ^ "\n"^si i ^ " |-> " ^ sbt bsym_table k )
       hvarmap ""
     );
     *)
@@ -273,11 +273,11 @@ and process_inst syms sym_table bsym_table instps ref_insts1 i ts inst =
   in
   let ue hvarmap e = process_expr syms sym_table bsym_table ref_insts1 hvarmap sr e in
   let rtr t = register_type_r uis syms sym_table bsym_table [] sr t in
-  let rtnr t = register_type_nr syms sym_table (reduce_type t) in
+  let rtnr t = register_type_nr syms sym_table bsym_table (reduce_type t) in
   if syms.compiler_options.print_flag then
   print_endline ("//Instance " ^ string_of_bid inst ^ "=" ^ id ^ "<" ^
     string_of_bid i ^ ">[" ^
-    catmap "," (string_of_btypecode sym_table) ts ^ "]");
+    catmap "," (string_of_btypecode bsym_table) ts ^ "]");
   match entry with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let argtypes = map (fun {ptyp=t}->t) ps in
@@ -294,9 +294,9 @@ and process_inst syms sym_table bsym_table instps ref_insts1 i ts inst =
     (*
     print_endline ("Instantiating function " ^ id);
     print_endline ("vs=" ^ catmap "," (fun (s,i)-> s^ "<" ^ si i ^ ">") vs);
-    print_endline ("Input ts = " ^ catmap "," (sbt sym_table) ts);
+    print_endline ("Input ts = " ^ catmap "," (sbt bsym_table) ts);
     print_endline ("Varmap = " ^ Hashtbl.fold
-      (fun i k acc -> acc ^ "\n"^si i ^ " |-> " ^ sbt sym_table k )
+      (fun i k acc -> acc ^ "\n"^si i ^ " |-> " ^ sbt bsym_table k )
       hvarmap ""
     );
     *)
@@ -349,7 +349,7 @@ and process_inst syms sym_table bsym_table instps ref_insts1 i ts inst =
     (*
     (print_endline ("Registering variable " ^ 
     (try match Hashtbl.find sym_table i with {id=id} ->  id
-    with Not_found -> si i) ^ " type " ^ sbt sym_table t));
+    with Not_found -> si i) ^ " type " ^ sbt bsym_table t));
     *)
     if length vs <> length ts
     then syserr sr
@@ -358,7 +358,7 @@ and process_inst syms sym_table bsym_table instps ref_insts1 i ts inst =
       ">, inst " ^ string_of_bid inst ^ ": vs = [" ^
       catmap ";" (fun (s,i)-> s ^ "<" ^ string_of_bid i ^ ">") vs ^ "], " ^
       "ts = [" ^
-      catmap ";" (fun t->sbt sym_table t) ts ^ "]"
+      catmap ";" (fun t->sbt bsym_table t) ts ^ "]"
     );
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
@@ -377,7 +377,7 @@ and process_inst syms sym_table bsym_table instps ref_insts1 i ts inst =
       "ts/vs mismatch index "^si i^", inst "^si inst^": vs = [" ^
       catmap ";" (fun (s,i)-> s ^"<"^si i^">") vs ^ "], " ^
       "ts = [" ^
-      catmap ";" (fun t->sbt sym_table t) ts ^ "]"
+      catmap ";" (fun t->sbt bsym_table t) ts ^ "]"
     );
     *)
     assert (length vs = length ts);
@@ -407,7 +407,7 @@ and process_inst syms sym_table bsym_table instps ref_insts1 i ts inst =
     *)
     if length vs <> length ts then
       print_endline ("For fun " ^ id ^ " vs=" ^ string_of_bvs vs ^
-      ", but ts=" ^ catmap "," (sbt sym_table) ts)
+      ", but ts=" ^ catmap "," (sbt bsym_table) ts)
     ;
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -441,7 +441,7 @@ and process_inst syms sym_table bsym_table instps ref_insts1 i ts inst =
     (*
     print_endline ("[flx_inst] Handling requirements of proc " ^ id);
     print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs);
-    print_endline ("ts = " ^ catmap "," (sbt sym_table) ts);
+    print_endline ("ts = " ^ catmap "," (sbt bsym_table) ts);
     *)
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -534,7 +534,7 @@ let instantiate syms sym_table bsym_table instps (root:bid_t) (bifaces:biface_t 
         | _ ->
           let t = BTYP_tuple (map (fun {ptyp=t} -> t) ps) in
           register_type_r ui syms sym_table bsym_table [] sr t;
-          register_type_nr syms sym_table t;
+          register_type_nr syms sym_table bsym_table t;
         end
       | _ -> assert false
       end;

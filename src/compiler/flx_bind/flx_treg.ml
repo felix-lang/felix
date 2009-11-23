@@ -10,7 +10,7 @@ open List
 open Flx_maps
 open Flx_beta
 
-let register_type_nr syms sym_table t =
+let register_type_nr syms sym_table bsym_table t =
   (*
   let t' = Flx_maps.reduce_type t in
   if t <> t' then print_endline ("UNREDUCED TYPE! " ^ sbt sym_table t ^ " <> " ^ sbt sym_table t');
@@ -28,11 +28,11 @@ let register_type_nr syms sym_table t =
       let n = fresh_bid syms.counter in
       if syms.compiler_options.print_flag then
       print_endline ("//Register type " ^ string_of_bid n ^ ": " ^
-        string_of_btypecode sym_table t);
+        string_of_btypecode bsym_table t);
       Hashtbl.add syms.registry t n
     end
 
-let register_tuple syms sym_table t =
+let register_tuple syms sym_table bsym_table t =
   let t = fold syms.counter sym_table t in
   match t with
   | BTYP_tuple [] -> ()
@@ -40,31 +40,31 @@ let register_tuple syms sym_table t =
 
   | BTYP_tuple ts ->
     let t = BTYP_tuple (map reduce_type ts) in
-    register_type_nr syms sym_table t
+    register_type_nr syms sym_table bsym_table t
 
   | BTYP_array (t',BTYP_unitsum n) ->
     let t' = reduce_type t' in
     let ts = rev_map (fun _ -> t') (nlist n) in
-    register_type_nr syms sym_table (BTYP_tuple ts)
+    register_type_nr syms sym_table bsym_table (BTYP_tuple ts)
 
   | BTYP_record ts ->
     let t = reduce_type t in
     begin match t with
     | BTYP_tuple [] -> ()
-    | _ -> register_type_nr syms sym_table t
+    | _ -> register_type_nr syms sym_table bsym_table t
     end
 
   | BTYP_variant ts ->
     let t = reduce_type t in
     begin match t with
     | BTYP_void -> ()
-    | _ -> register_type_nr syms sym_table t
+    | _ -> register_type_nr syms sym_table bsym_table t
     end
 
   | _ -> assert false
 
 let rec register_type_r ui syms sym_table bsym_table exclude sr t =
-  let t = reduce_type (beta_reduce syms sym_table sr t) in
+  let t = reduce_type (beta_reduce syms sym_table bsym_table sr t) in
   (*
   let sp = String.make (length exclude * 2) ' ' in
   print_endline (sp ^ "Register type " ^ string_of_btypecode sym_table t);
@@ -73,7 +73,7 @@ let rec register_type_r ui syms sym_table bsym_table exclude sr t =
   if not (Hashtbl.mem syms.registry t) then
   if not (mem t exclude) then
   let rr t' = register_type_r ui syms sym_table bsym_table (t :: exclude) sr t' in
-  let rnr t = register_type_nr syms sym_table t in
+  let rnr t = register_type_nr syms sym_table bsym_table t in
   let t' = unfold sym_table t in
   (*
   print_endline (sp ^ "Unfolded type " ^ string_of_btypecode sym_table t');
@@ -86,7 +86,7 @@ let rec register_type_r ui syms sym_table bsym_table exclude sr t =
   *)
   | BTYP_var (i,mt) ->
     print_endline ("Attempt to register type variable " ^ string_of_bid i ^
-      ":" ^ sbt sym_table mt)
+      ":" ^ sbt bsym_table mt)
   | BTYP_function (ps,ret) ->
     let ps = match ps with
     | BTYP_void -> BTYP_tuple []
@@ -186,7 +186,7 @@ let rec register_type_r ui syms sym_table bsym_table exclude sr t =
       clierr sr
       (
         "[register_type_r] expected type declaration, got " ^
-        string_of_bbdcl sym_table bsym_table entry i
+        string_of_bbdcl bsym_table entry i
       )
     end
 

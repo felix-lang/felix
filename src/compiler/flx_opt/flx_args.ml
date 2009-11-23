@@ -58,10 +58,10 @@ let unpack syms sym_table bsym_table f ps a : tbexpr_t list =
 
   | x,t ->
     print_endline ("Function " ^ string_of_bid f);
-    print_endline ("Unexpected non tuple arg type " ^ sbt sym_table t);
+    print_endline ("Unexpected non tuple arg type " ^ sbt bsym_table t);
     print_endline ("Parameters = " ^
       catmap ", " (fun {pid=s;pindex=i} -> s ^ "<" ^ string_of_bid i ^ ">") ps);
-    print_endline ("Argument " ^ sbe sym_table bsym_table a);
+    print_endline ("Argument " ^ sbe bsym_table a);
     assert false (* argument isn't a tuple type .. but there are multiple parameters!  *)
 
 let merge_args syms sym_table bsym_table f c a b =

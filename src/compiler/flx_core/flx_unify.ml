@@ -588,7 +588,7 @@ let compare_sigs counter sym_table a b =
    and the declared type the LHS.
 *)
 
-let do_unify syms sym_table a b =
+let do_unify syms sym_table bsym_table a b =
   let eqns =
     [
       varmap_subst syms.varmap a,
@@ -654,7 +654,7 @@ let do_unify syms sym_table a b =
           failwith
           (
             "[do_unify] attempt to add non-function return unknown type variable "^
-            string_of_bid i^", type "^sbt sym_table t^" to hashtble"
+            string_of_bid i^", type "^sbt bsym_table t^" to hashtble"
           )
       end
     end mgu;

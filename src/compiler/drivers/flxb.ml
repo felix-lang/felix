@@ -119,7 +119,7 @@ try
     index
   in
 
-  Flx_print.print_bsym_table sym_table bsym_table
+  Flx_print.print_bsym_table bsym_table
 
 with x -> Flx_terminate.terminate !reverse_return_parity x
 ;;

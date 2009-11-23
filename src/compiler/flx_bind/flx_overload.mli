@@ -14,6 +14,7 @@ type overload_result =
 val overload:
   sym_state_t ->
   Flx_sym_table.t ->
+  Flx_bsym_table.t ->
   env_t ->
   recstop ->
   (recstop -> Flx_srcref.t -> bid_t -> typecode_t -> btypecode_t) -> (* bind type *)

@@ -8,7 +8,6 @@ val cpp_name :
 
 val cpp_instance_name :
   sym_state_t ->
-  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   bid_t ->
   btypecode_t list ->
