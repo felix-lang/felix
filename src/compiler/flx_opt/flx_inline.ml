@@ -656,15 +656,13 @@ let virtual_check syms bsym_table sr i ts =
     let parent = match parent with | Some p -> p | None -> assert false in
     let tcvslen =
       try
-        let { Flx_sym.id=pid; vs=vs; symdef=entry } =
-          Flx_sym_table.find syms.sym_table parent
-        in
-        match entry with
-        | SYMDEF_typeclass ->
+        let id,_,_,bbdcl = Flx_bsym_table.find bsym_table parent in
+        match bbdcl with
+        | BBDCL_typeclass (_, vs) ->
           (*
           print_endline ("Found parent " ^ pid ^ "<" ^ si i ^ ">");
           *)
-          List.length (fst vs)
+          List.length vs
         | _ ->
           print_endline "Woops, parent isn't typeclass?";
           assert false
