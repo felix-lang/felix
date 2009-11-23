@@ -11,7 +11,7 @@ open Flx_ctypes
 open Flx_cexpr
 open Flx_maps
 
-let shape_of syms bsym_table tn t =
+let shape_of syms sym_table bsym_table tn t =
   match t with
   | BTYP_inst (i,ts) ->
     let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
@@ -32,6 +32,7 @@ let shape_of syms bsym_table tn t =
 
 let gen_prim_call
   syms
+  sym_table
   bsym_table
   (tsub:btypecode_t -> btypecode_t)
   (ge: Flx_srcref.t -> tbexpr_t -> cexpr_t)
@@ -42,17 +43,17 @@ let gen_prim_call
 =
   (*
   print_endline ("ct= "^ct);
-  print_endline ("ts= "^catmap "," (sbt syms.sym_table) ts);
-  print_endline ("argt = " ^ sbt syms.sym_table argt);
-  print_endline ("arg = " ^ sbe syms.sym_table a);
+  print_endline ("ts= "^catmap "," (sbt sym_table) ts);
+  print_endline ("argt = " ^ sbt sym_table argt);
+  print_endline ("arg = " ^ sbe sym_table a);
   *)
-  let tn t = cpp_typename syms bsym_table t in
+  let tn t = cpp_typename syms sym_table bsym_table t in
   let rt t = reduce_type (tsub t) in
   let rtn t = tn (rt t) in
 
   let argt = rt argt in
   let tt = tn argt in
-  let sh t = shape_of syms bsym_table tn t in
+  let sh t = shape_of syms sym_table bsym_table tn t in
   let gshapes = map sh ts in
   let ts = map rtn ts in
   let carg =

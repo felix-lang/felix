@@ -80,7 +80,8 @@ try
   print_endline "//BINDING EXECUTABLE CODE";
   print_endline "//-----------------------";
 
-  let bind_state = Flx_bind.make_bind_state syms in
+  let sym_table = Flx_sym_table.create () in
+  let bind_state = Flx_bind.make_bind_state syms sym_table in
   let bsym_table = Flx_bind.bind_asms bind_state asms in
 
   let child_map = Flx_child.cal_children bsym_table in
@@ -88,7 +89,7 @@ try
 
   let root_proc =
     match
-      try Flx_sym_table.find syms.Flx_mtypes2.sym_table root
+      try Flx_sym_table.find sym_table root
       with Not_found ->
         failwith
         (
@@ -118,7 +119,7 @@ try
     index
   in
 
-  Flx_print.print_bsym_table syms.Flx_mtypes2.sym_table bsym_table
+  Flx_print.print_bsym_table sym_table bsym_table
 
 with x -> Flx_terminate.terminate !reverse_return_parity x
 ;;

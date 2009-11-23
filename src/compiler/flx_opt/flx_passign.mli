@@ -11,6 +11,7 @@ type aentry_t =
 
 val passign:
   sym_state_t ->
+  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   aentry_t list ->                (* list of assignments to fix *)
   btypecode_t list ->             (* ts to use when creating temporaries *)

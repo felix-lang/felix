@@ -7,6 +7,7 @@ open Flx_mtypes2
 
 val typeclass_instance_check_symbols:
   sym_state_t ->
+  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   Flx_child.t ->
   Flx_types.bid_t list -> (** The list of symbols to check. *)
@@ -14,12 +15,14 @@ val typeclass_instance_check_symbols:
 
 val typeclass_instance_check:
   sym_state_t ->
+  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   Flx_child.t ->
   unit
 
 val fixup_typeclass_instance:
   sym_state_t ->
+  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   bid_t ->
   btypecode_t list ->
@@ -27,6 +30,7 @@ val fixup_typeclass_instance:
 
 val maybe_fixup_typeclass_instance:
   sym_state_t ->
+  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   bid_t ->
   btypecode_t list ->
@@ -34,11 +38,13 @@ val maybe_fixup_typeclass_instance:
 
 val fixup_typeclass_instances:
   sym_state_t ->
+  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   unit
 
 val tcinst_chk:
   sym_state_t ->
+  Flx_sym_table.t ->
   bool ->
   bid_t ->
   btypecode_t list ->

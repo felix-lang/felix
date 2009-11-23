@@ -26,25 +26,25 @@ let hfind msg h k =
 *)
 let bsym_table = Flx_bsym_table.create ()
 
-let rec check_if_parent syms child parent =
+let rec check_if_parent syms sym_table child parent =
   if child = parent then true
   else
-      match hfind "bexe" syms.sym_table child with
-      | { Flx_sym.parent=Some parent} -> check_if_parent syms child parent
+      match hfind "bexe" sym_table child with
+      | { Flx_sym.parent=Some parent} -> check_if_parent syms sym_table child parent
       | { Flx_sym.parent=None} -> false
 
-let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
-  let be i e = bind_expression syms (build_env syms (Some i)) e in
-  match unfold syms.sym_table t1 with
+let cal_call syms sym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
+  let be i e = bind_expression syms sym_table (build_env syms sym_table (Some i)) e in
+  match unfold sym_table t1 with
   | BTYP_cfunction (t, BTYP_void)
   | BTYP_function (t, BTYP_void) ->
-    if type_match syms.counter syms.sym_table t t2
+    if type_match syms.counter sym_table t t2
     then
       (
         (*
         match p with
         | BEXPR_closure (i,ts) ->
-          begin match hfind "bexe" syms.sym_table i with
+          begin match hfind "bexe" sym_table i with
           | { Flx_sym.symdef=SYMDEF_fun _ }
           | { Flx_sym.symdef=SYMDEF_callback _ }
             ->
@@ -72,7 +72,7 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
               | BTYP_tuple [] -> []
               | _ -> assert false
             in
-            begin let pnames = match hfind "bexe" syms.sym_table i with
+            begin let pnames = match hfind "bexe" sym_table i with
             | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_)} ->
               map (fun (_,name,_,d)->
                 name,
@@ -111,32 +111,32 @@ let cal_call syms sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
           clierr sr
           (
             "[cal_call] Procedure " ^
-            sbe syms.sym_table bsym_table tbe1 ^
+            sbe sym_table bsym_table tbe1 ^
             "\nof type " ^
-            sbt syms.sym_table t1 ^
+            sbt sym_table t1 ^
             "\napplied to argument " ^
-            sbe syms.sym_table bsym_table tbe2 ^
+            sbe sym_table bsym_table tbe2 ^
             "\n of type " ^
-            sbt syms.sym_table t2 ^
+            sbt sym_table t2 ^
             "\nwhich doesn't agree with parameter type\n" ^
-            sbt syms.sym_table t
+            sbt sym_table t
           )
       in BEXE_call (sr,tbe1,x2)
     end
 
   | _ ->
     clierr sr ("[cal_call] call non procedure, "^
-    sbe syms.sym_table bsym_table tbe1
-    ^"\ntype=" ^ sbt syms.sym_table t1)
+    sbe sym_table bsym_table tbe1
+    ^"\ntype=" ^ sbt sym_table t1)
 
-let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
-  match unfold syms.sym_table pt with
+let cal_loop syms sym_table sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
+  match unfold sym_table pt with
   | BTYP_function (t, BTYP_void) ->
     if t = argt
     then
       match p with
       | BEXPR_closure (i,ts) ->
-        if check_if_parent syms i this
+        if check_if_parent syms sym_table i this
         then
           BEXE_call (sr,(p,pt), tbe2)
           (*
@@ -149,27 +149,27 @@ let cal_loop syms sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
       | _ ->
         clierr sr (
           "[cal_loop] Expected procedure closure, got "^
-          sbe syms.sym_table bsym_table (p,pt)
+          sbe sym_table bsym_table (p,pt)
         )
     else
       clierr sr
       (
         "[cal_loop] Procedure " ^
-        sbe syms.sym_table bsym_table tbe1 ^
+        sbe sym_table bsym_table tbe1 ^
         "\nof type " ^
-        sbt syms.sym_table pt ^
+        sbt sym_table pt ^
         "\napplied to argument " ^
-        sbe syms.sym_table bsym_table tbe2 ^
+        sbe sym_table bsym_table tbe2 ^
         "\n of type " ^
-        sbt syms.sym_table argt ^
+        sbt sym_table argt ^
         "\nwhich doesn't agree with parameter type\n" ^
-        sbt syms.sym_table t
+        sbt sym_table t
       )
 
   | _ ->
     clierr sr ("[cal_loop] loop to non procedure, "^
-    sbe syms.sym_table bsym_table (p,pt)
-    ^"\ntype=" ^ string_of_btypecode syms.sym_table pt)
+    sbe sym_table bsym_table (p,pt)
+    ^"\ntype=" ^ string_of_btypecode sym_table pt)
 
 exception Found of int
 
@@ -178,6 +178,7 @@ let print_vs vs =
 
 type bexe_state_t = {
   syms: Flx_mtypes2.sym_state_t;
+  sym_table: Flx_sym_table.t;
   env: Flx_types.env_t;
   id: string;
   parent: Flx_types.bid_t option;
@@ -188,16 +189,17 @@ type bexe_state_t = {
   mutable proc_return_count: int;
 }
 
-let make_bexe_state ?parent ?(env=[]) syms parent_vs ret_type =
+let make_bexe_state ?parent ?(env=[]) syms sym_table parent_vs ret_type =
   let id =
     match parent with
     | None -> ""
     | Some index ->
-        let symbol = Flx_sym_table.find syms.Flx_mtypes2.sym_table index in
+        let symbol = Flx_sym_table.find sym_table index in
         symbol.Flx_sym.id
   in
   {
     syms = syms;
+    sym_table = sym_table;
     env = env;
     id = id;
     parent = parent;
@@ -209,8 +211,8 @@ let make_bexe_state ?parent ?(env=[]) syms parent_vs ret_type =
   }
 
 let rec bind_exe state handle_bexe (sr, exe) init =
-  let be e : tbexpr_t = bind_expression state.syms state.env e in
-  let lun sr n = lookup_name_in_env state.syms state.env sr n in
+  let be e : tbexpr_t = bind_expression state.syms state.sym_table state.env e in
+  let lun sr n = lookup_name_in_env state.syms state.sym_table state.env sr n in
   (*
   print_endline ("EXE="^string_of_exe 1 x);
   *)
@@ -247,7 +249,7 @@ let rec bind_exe state handle_bexe (sr, exe) init =
       clierr (src_of_expr e)
       (
         "[bind_exes:ifgoto] Conditional requires bool argument, got " ^
-        string_of_btypecode state.syms.sym_table t
+        string_of_btypecode state.sym_table t
       )
 
   | EXE_loop (n,e2) ->
@@ -255,6 +257,7 @@ let rec bind_exe state handle_bexe (sr, exe) init =
     let tbe1 =
        lookup_qn_with_sig
        state.syms
+       state.sym_table
        sr sr
        state.env
        (`AST_name(sr,n,[]) : qualified_name_t)
@@ -270,7 +273,7 @@ let rec bind_exe state handle_bexe (sr, exe) init =
     in
 
     (* note cal_loop actually generates a call .. *)
-    handle_bexe (cal_loop state.syms sr tbe1 (be2,t2) index) init
+    handle_bexe (cal_loop state.syms state.sym_table sr tbe1 (be2,t2) index) init
 
   | EXE_jump (a,b) ->
     let init = bind_exe state handle_bexe (sr, EXE_call (a, b)) init in
@@ -295,20 +298,20 @@ let rec bind_exe state handle_bexe (sr, exe) init =
         (*
         print_endline "Lookup qn with sig .. ";
         *)
-        lookup_qn_with_sig state.syms sr srn state.env name [ta]
-      | None -> bind_expression_with_args state.syms state.env f' [a]
+        lookup_qn_with_sig state.syms state.sym_table sr srn state.env name [ta]
+      | None -> bind_expression_with_args state.syms state.sym_table state.env f' [a]
     in
     (*
-    print_endline ("tf=" ^ sbt state.syms.sym_table tf);
-    print_endline ("ta=" ^ sbt state.syms.sym_table ta);
+    print_endline ("tf=" ^ sbt state.sym_table tf);
+    print_endline ("ta=" ^ sbt state.sym_table ta);
     *)
     begin match tf with
     | BTYP_cfunction _ ->
-      handle_bexe (cal_call state.syms sr f a) init
+      handle_bexe (cal_call state.syms state.sym_table sr f a) init
 
     | BTYP_function _ ->
       (* print_endline "Function .. cal apply"; *)
-      handle_bexe (cal_call state.syms sr f a) init
+      handle_bexe (cal_call state.syms state.sym_table sr f a) init
     | _ ->
       let apl name =
         bind_exe state handle_bexe
@@ -339,11 +342,11 @@ let rec bind_exe state handle_bexe (sr, exe) init =
          qn [t2]
        | _ -> be sn
     in
-    handle_bexe (cal_call state.syms sr tbe1 (be2,t2)) init
+    handle_bexe (cal_call state.syms state.sym_table sr tbe1 (be2,t2)) init
 
   | EXE_call (p,e) ->
     let p',pt' = be p and e',et' = be e in
-    handle_bexe (cal_call state.syms sr (p', pt') (e', et')) init
+    handle_bexe (cal_call state.syms state.sym_table sr (p', pt') (e', et')) init
   *)
 
   | EXE_svc s ->
@@ -351,7 +354,7 @@ let rec bind_exe state handle_bexe (sr, exe) init =
     | NonFunctionEntry index ->
       let index = sye index in
       let {Flx_sym.symdef=entry; id=id} =
-        hfind "bexe" state.syms.sym_table index
+        hfind "bexe" state.sym_table index
       in
       begin match entry with
       | SYMDEF_var _ -> ()
@@ -368,7 +371,7 @@ let rec bind_exe state handle_bexe (sr, exe) init =
   | EXE_proc_return ->
     state.proc_return_count <- state.proc_return_count + 1;
     state.reachable <- false;
-    if do_unify state.syms state.ret_type BTYP_void
+    if do_unify state.syms state.sym_table state.ret_type BTYP_void
     then
       begin
         state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
@@ -394,36 +397,36 @@ let rec bind_exe state handle_bexe (sr, exe) init =
     state.reachable <- false;
     state.return_count <- state.return_count + 1;
     let e',t' as e = be e in
-    let t' = minimise state.syms.counter state.syms.sym_table t' in
-    ignore(do_unify state.syms state.ret_type t');
+    let t' = minimise state.syms.counter state.sym_table t' in
+    ignore(do_unify state.syms state.sym_table state.ret_type t');
     state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
-    if type_match state.syms.counter state.syms.sym_table state.ret_type t' then
+    if type_match state.syms.counter state.sym_table state.ret_type t' then
       handle_bexe (BEXE_fun_return (sr,(e',t'))) init
     else clierr sr
       (
         "[bind_exe: fun_return ] return of  " ^
-        sbe state.syms.sym_table bsym_table e ^ ":\n" ^
-        "fun return type:\n" ^ string_of_btypecode state.syms.sym_table state.ret_type ^
+        sbe state.sym_table bsym_table e ^ ":\n" ^
+        "fun return type:\n" ^ string_of_btypecode state.sym_table state.ret_type ^
         "\nmust have same type as return expression:\n"^
-        string_of_btypecode state.syms.sym_table t'
+        string_of_btypecode state.sym_table t'
       )
 
   | EXE_yield e ->
     state.return_count <- state.return_count + 1;
     let e',t' = be e in
-    let t' = minimise state.syms.counter state.syms.sym_table t' in
-    ignore(do_unify state.syms state.ret_type t');
+    let t' = minimise state.syms.counter state.sym_table t' in
+    ignore(do_unify state.syms state.sym_table state.ret_type t');
     state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
-    if type_match state.syms.counter state.syms.sym_table state.ret_type t' then
+    if type_match state.syms.counter state.sym_table state.ret_type t' then
       handle_bexe (BEXE_yield (sr,(e',t'))) init
     else
       clierr sr
       (
         "In " ^ string_of_exe 0 exe ^ "\n" ^
         "Wrong return type,\nexpected : " ^
-        string_of_btypecode state.syms.sym_table state.ret_type ^
+        string_of_btypecode state.sym_table state.ret_type ^
         "\nbut we got " ^
-        string_of_btypecode state.syms.sym_table t'
+        string_of_btypecode state.sym_table t'
       )
 
   | EXE_nop s ->
@@ -443,7 +446,7 @@ let rec bind_exe state handle_bexe (sr, exe) init =
       else clierr sr
       (
         "assert requires bool argument, got " ^
-        string_of_btypecode state.syms.sym_table t
+        string_of_btypecode state.sym_table t
       )
 
   | EXE_iinit ((s,index),e) ->
@@ -453,18 +456,18 @@ let rec bind_exe state handle_bexe (sr, exe) init =
         (fun (s,i) -> BTYP_var (i,BTYP_type 0))
         state.parent_vs
       in
-      let lhst = type_of_index_with_ts state.syms sr index parent_ts in
-      let rhst = minimise state.syms.counter state.syms.sym_table rhst in
+      let lhst = type_of_index_with_ts state.syms state.sym_table sr index parent_ts in
+      let rhst = minimise state.syms.counter state.sym_table rhst in
       let lhst = reduce_type lhst in
-      if type_match state.syms.counter state.syms.sym_table lhst rhst
+      if type_match state.syms.counter state.sym_table lhst rhst
       then handle_bexe (BEXE_init (sr,index, (e',rhst))) init
       else clierr sr
       (
         "[bind_exe: iinit] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
-        string_of_btypecode state.syms.sym_table lhst^
+        string_of_btypecode state.sym_table lhst^
         "\n of initialisation must have same type as RHS:\n"^
-        string_of_btypecode state.syms.sym_table rhst^
-        "\nunfolded LHS = " ^ sbt state.syms.sym_table (unfold state.syms.sym_table lhst) ^
+        string_of_btypecode state.sym_table rhst^
+        "\nunfolded LHS = " ^ sbt state.sym_table (unfold state.sym_table lhst) ^
         "\nenvironment type variables are " ^
         print_vs state.parent_vs
 
@@ -481,29 +484,29 @@ let rec bind_exe state handle_bexe (sr, exe) init =
             (fun (s,i) -> BTYP_var (i,BTYP_type 0))
             state.parent_vs
           in
-          let lhst = type_of_index_with_ts state.syms sr index parent_ts in
-          let rhst = minimise state.syms.counter state.syms.sym_table rhst in
+          let lhst = type_of_index_with_ts state.syms state.sym_table sr index parent_ts in
+          let rhst = minimise state.syms.counter state.sym_table rhst in
           let lhst = reduce_type lhst in
           (*
-          print_endline ("Checking type match " ^ sbt state.syms.sym_table lhst ^ " ?= " ^ sbt state.syms.sym_table rhst);
+          print_endline ("Checking type match " ^ sbt state.sym_table lhst ^ " ?= " ^ sbt state.sym_table rhst);
           *)
           (*
           let lhst =
-            let { Flx_sym.symdef=entry; id=id} = hfind "bexe" state.syms.sym_table index in
+            let { Flx_sym.symdef=entry; id=id} = hfind "bexe" state.sym_table index in
             match entry with
             | SYMDEF_ref _ -> BTYP_pointer lhst
             | _ -> lhst
           in
           *)
-          if type_match state.syms.counter state.syms.sym_table lhst rhst
+          if type_match state.syms.counter state.sym_table lhst rhst
           then handle_bexe (BEXE_init (sr,index, (e',rhst))) init
           else clierr sr
           (
             "[bind_exe: init] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
-            string_of_btypecode state.syms.sym_table lhst^
+            string_of_btypecode state.sym_table lhst^
             "\n of initialisation must have same type as RHS:\n"^
-            string_of_btypecode state.syms.sym_table rhst^
-            "\nunfolded LHS = " ^ sbt state.syms.sym_table (unfold state.syms.sym_table lhst) ^
+            string_of_btypecode state.sym_table rhst^
+            "\nunfolded LHS = " ^ sbt state.sym_table (unfold state.sym_table lhst) ^
             (if length state.parent_vs > 0 then
             "\nenvironment type variables are " ^
             print_vs state.parent_vs
@@ -516,18 +519,18 @@ let rec bind_exe state handle_bexe (sr, exe) init =
       let _,rhst as rx = be r in
       let lhst = reduce_type lhst in
       let rhst = reduce_type rhst in
-      let lhst = minimise state.syms.counter state.syms.sym_table lhst in
-      let rhst = minimise state.syms.counter state.syms.sym_table rhst in
-      if type_match state.syms.counter state.syms.sym_table lhst rhst
+      let lhst = minimise state.syms.counter state.sym_table lhst in
+      let rhst = minimise state.syms.counter state.sym_table rhst in
+      if type_match state.syms.counter state.sym_table lhst rhst
       then handle_bexe (BEXE_assign (sr,lx, rx)) init
       else clierr sr
       (
         "[bind_exe: assign ] Assignment "^
-          sbe state.syms.sym_table bsym_table lx^"="^
-          sbe state.syms.sym_table bsym_table rx^";\n"^
-        "LHS type: " ^ string_of_btypecode state.syms.sym_table lhst^
+          sbe state.sym_table bsym_table lx^"="^
+          sbe state.sym_table bsym_table rx^";\n"^
+        "LHS type: " ^ string_of_btypecode state.sym_table lhst^
         "\nmust have same type as\n"^
-        "RHS type: " ^ string_of_btypecode state.syms.sym_table rhst
+        "RHS type: " ^ string_of_btypecode state.sym_table rhst
       )
 
 
@@ -556,7 +559,7 @@ let bind_exes state sr exes =
   print_endline ""
   ;
   List.iter
-    (fun x -> print_endline (string_of_bexe state.syms.sym_table 1 x))
+    (fun x -> print_endline (string_of_bexe state.sym_table 1 x))
     bound_exes
   ;
   print_endline ""
@@ -570,7 +573,7 @@ let bind_exes state sr exes =
   *)
   if state.return_count = 0 then
   begin
-    if do_unify state.syms state.ret_type BTYP_void
+    if do_unify state.syms state.sym_table state.ret_type BTYP_void
     then
       state.ret_type <- varmap_subst state.syms.varmap state.ret_type
     else
@@ -604,7 +607,7 @@ let bind_exes state sr exes =
       *)
       print_endline "[DEBUG] Instruction sequence is:";
       List.iter begin fun exe ->
-        print_endline (string_of_bexe state.syms.sym_table bsym_table 0 exe)
+        print_endline (string_of_bexe state.sym_table bsym_table 0 exe)
       end bound_exes;
       clierr sr
       (
@@ -615,7 +618,7 @@ let bind_exes state sr exes =
       ;
       print_endline "[DEBUG] Instruction sequence is:";
       List.iter begin fun exe ->
-        print_endline (string_of_bexe state.syms.sym_table 0 exe)
+        print_endline (string_of_bexe state.sym_table 0 exe)
       end bound_exes
       *)
     end

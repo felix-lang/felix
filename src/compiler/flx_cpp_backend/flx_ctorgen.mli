@@ -4,6 +4,7 @@ open Flx_mtypes2
 
 val gen_ctor:
   sym_state_t ->
+  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   string ->                     (* name *)
   (bid_t * int) list ->         (* display *)

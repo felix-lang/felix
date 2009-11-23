@@ -19,7 +19,7 @@ let print_debug state msg =
 
 
 (* Prep the bsym_table for the backend by lowering and simplifying symbols. *)
-let lower_bsym_table state bsym_table root_proc =
+let lower_bsym_table state sym_table bsym_table root_proc =
   (* Wrap closures. *)
   print_debug state "//Generating primitive wrapper closures";
   Flx_mkcls.make_closures state.closure_state bsym_table;
@@ -40,6 +40,7 @@ let lower_bsym_table state bsym_table root_proc =
   Flx_intpoly.cal_polyvars state.syms bsym_table child_map;
   Flx_inst.instantiate
     state.syms
+    sym_table
     bsym_table
     false
     root_proc
@@ -82,7 +83,7 @@ let lower_bsym_table state bsym_table root_proc =
 
 (* Prep the bexes and symbols for the backend by lowering and simplifying
  * symbols. *)
-let lower state bsym_table child_map root_proc bids bexes =
+let lower state sym_table bsym_table child_map root_proc bids bexes =
   (* Wrap closures. *)
   print_debug state "//Generating primitive wrapper closures";
   let bids = Flx_mkcls.make_closure state.closure_state bsym_table bids in
@@ -92,7 +93,7 @@ let lower state bsym_table child_map root_proc bids bexes =
 
   (* Remove unused symbols. *)
   (* FIXME: This is disabled because it deletes all the symbols.
-  let bsym_table = Flx_use.copy_used state.syms bsym_table in
+  let bsym_table = Flx_use.copy_used state.syms sym_table bsym_table in
   *)
 
   (* Mark all the global functions and values. *)
@@ -109,6 +110,7 @@ let lower state bsym_table child_map root_proc bids bexes =
   Flx_intpoly.cal_polyvars state.syms bsym_table child_map;
   Flx_inst.instantiate
     state.syms
+    sym_table
     bsym_table
     false
     root_proc

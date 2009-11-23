@@ -195,25 +195,26 @@ try
     string_of_bid root);
 
   (* Bind the assemblies. *)
-  let bind_state = Flx_bind.make_bind_state syms in
+  let sym_table = Flx_sym_table.create () in
+  let bind_state = Flx_bind.make_bind_state syms sym_table in
   let bsym_table = Flx_bind.bind_asms bind_state asms in
 
   let child_map = Flx_child.cal_children bsym_table in
-  Flx_typeclass.typeclass_instance_check syms bsym_table child_map;
+  Flx_typeclass.typeclass_instance_check syms sym_table bsym_table child_map;
 
   (* generate axiom checks *)
   if compiler_options.generate_axiom_checks then
-  Flx_axiom.axiom_check syms bsym_table;
+  Flx_axiom.axiom_check syms sym_table bsym_table;
 
   (* generate why file *)
-  Flx_why.emit_whycode why_file_name.out_filename syms bsym_table root;
+  Flx_why.emit_whycode why_file_name.out_filename syms sym_table bsym_table root;
 
   let binding_time = tim() in
 
   print_debug "//CHECKING ROOT";
   let root_proc =
     match
-      try Flx_sym_table.find syms.sym_table root
+      try Flx_sym_table.find sym_table root
       with Not_found ->
         failwith
         (
@@ -245,6 +246,7 @@ try
   (* Optimize the bound values *)
   let bsym_table, _ = Flx_opt.optimize_bsym_table
     syms
+    sym_table
     bsym_table
     root_proc
   in
@@ -255,6 +257,7 @@ try
   (* Lower the bound symbols for the backend. *)
   let bsym_table, child_map = Flx_lower.lower_bsym_table
     (Flx_lower.make_lower_state syms)
+    sym_table
     bsym_table
     root_proc
   in
@@ -262,12 +265,12 @@ try
   (* Start working on the backend. *)
 
   let label_map = Flx_label.create_label_map bsym_table syms.counter in
-  let label_usage = Flx_label.create_label_usage syms bsym_table label_map in
+  let label_usage = Flx_label.create_label_usage syms sym_table bsym_table label_map in
   let label_info = label_map, label_usage in
 
   (* Make sure we can find the _init_ instance *)
   let top_class =
-    try cpp_instance_name syms bsym_table root_proc [] with Not_found ->
+    try cpp_instance_name syms sym_table bsym_table root_proc [] with Not_found ->
       failwith ("can't name instance of root _init_ procedure index " ^
         string_of_bid root_proc)
   in
@@ -327,7 +330,7 @@ try
             | CS_str s -> Flx_cexpr.ce_expr "atom" s
             | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename syms bsym_table t in
+              let tn t = cpp_typename syms sym_table bsym_table t in
               let ts = List.map tn ts in
               Flx_csubst.csubst sr sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in
@@ -392,7 +395,7 @@ try
             | CS_str s -> Flx_cexpr.ce_expr "atom" s
             | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename syms bsym_table t in
+              let tn t = cpp_typename syms sym_table bsym_table t in
               let ts = List.map tn ts in
               Flx_csubst.csubst sr sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in
@@ -431,21 +434,21 @@ try
   print_debug "//GENERATING C++: type class names";
   plh "\n//-----------------------------------------";
   plh "//NAME THE TYPES";
-  plh  (gen_type_names syms bsym_table types);
+  plh  (gen_type_names syms sym_table bsym_table types);
 
   print_debug "//GENERATING C++: type class definitions";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE THE TYPES";
-  plh  (gen_types syms bsym_table types);
+  plh  (gen_types syms sym_table bsym_table types);
 
   print_debug "//GENERATING C++: function and procedure classes";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASS NAMES";
-  plh  (gen_function_names syms bsym_table child_map);
+  plh  (gen_function_names syms sym_table bsym_table child_map);
 
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASSES";
-  plh  (gen_functions syms bsym_table child_map);
+  plh  (gen_functions syms sym_table bsym_table child_map);
 
   let topvars_with_type = find_thread_vars_with_type bsym_table in
   let topvars = List.map fst topvars_with_type in
@@ -462,7 +465,7 @@ try
   "  );";
   ]
   ;
-  plh (format_vars syms bsym_table topvars []);
+  plh (format_vars syms sym_table bsym_table topvars []);
   plh "};";
   plh "";
   plh "FLX_DCL_THREAD_FRAME";
@@ -509,7 +512,7 @@ try
             | CS_str s -> Flx_cexpr.ce_expr "atom" s
             | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename syms bsym_table t in
+              let tn t = cpp_typename syms sym_table bsym_table t in
               let ts = List.map tn ts in
               Flx_csubst.csubst sr sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in
@@ -533,7 +536,7 @@ try
   plb "//Thread Frame Constructor";
 
   let sr = Flx_srcref.make_dummy "Thread Frame" in
-  let topfuns = List.filter (fun (_,t) -> is_gc_pointer syms bsym_table sr t) topvars_with_type in
+  let topfuns = List.filter (fun (_,t) -> is_gc_pointer syms sym_table bsym_table sr t) topvars_with_type in
   let topfuns = List.map fst topfuns in
   let topinits =
     [
@@ -543,7 +546,7 @@ try
     List.map
     (fun index ->
       "  " ^
-      cpp_instance_name syms bsym_table index [] ^
+      cpp_instance_name syms sym_table bsym_table index [] ^
       "(0)"
     )
     topfuns
@@ -557,7 +560,7 @@ try
   "{}"
   ];
 
-  plr (Flx_ogen.gen_offset_tables syms bsym_table child_map module_name);
+  plr (Flx_ogen.gen_offset_tables syms sym_table bsym_table child_map module_name);
   ensure_closed rtti_file;
   if was_used rtti_file then begin
     plb "\n//-----------------------------------------";
@@ -604,6 +607,7 @@ try
   gen_execute_methods
     body_file.out_filename
     syms
+    sym_table
     bsym_table
     child_map
     label_info
@@ -629,10 +633,10 @@ try
   plh ("using namespace flxusr::" ^ cid_of_flxid module_name ^ ";");
   if List.length syms.bifaces > 0 then begin
     plh "//DECLARE USER EXPORTS";
-    plh (gen_biface_headers syms bsym_table syms.bifaces);
+    plh (gen_biface_headers syms sym_table bsym_table syms.bifaces);
     plb "//DEFINE EXPORTS";
-    plb (gen_biface_bodies syms bsym_table syms.bifaces);
-    plb (gen_python_module module_name syms bsym_table syms.bifaces);
+    plb (gen_biface_bodies syms sym_table bsym_table syms.bifaces);
+    plb (gen_python_module module_name syms sym_table bsym_table syms.bifaces);
   end
   ;
 

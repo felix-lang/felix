@@ -31,7 +31,6 @@ type felix_compiler_options_t =
 
 type sym_state_t =
 {
-  sym_table : Flx_sym_table.t;
   counter : bid_t ref;
   varmap : typevarmap_t;
   ticache : (bid_t, btypecode_t) Hashtbl.t;
@@ -53,7 +52,6 @@ type sym_state_t =
 
 let make_syms options =
   {
-    sym_table = Flx_sym_table.create ();
     counter = ref 1;
     varmap = Hashtbl.create 97;
     ticache = Hashtbl.create 97;

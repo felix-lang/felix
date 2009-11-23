@@ -6,6 +6,7 @@ open Flx_call
 
 val tailit:
   sym_state_t ->
+  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   Flx_child.t ->
   usage_table_t ->
@@ -19,5 +20,6 @@ val tailit:
 
 val exes_get_xclosures:
   sym_state_t ->
+  Flx_sym_table.t ->
   bexe_t list ->
   BidSet.t

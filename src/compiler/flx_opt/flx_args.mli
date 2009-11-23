@@ -12,6 +12,7 @@ val get_ps:
 
 val unpack:
   sym_state_t ->
+  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   bid_t ->
   bparameter_t list ->
@@ -20,12 +21,14 @@ val unpack:
 
 val merge_args:
   sym_state_t ->
+  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   bid_t -> bid_t -> tbexpr_t -> tbexpr_t ->
   tbexpr_t
 
 val append_args:
   sym_state_t ->
+  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   bid_t -> tbexpr_t -> tbexpr_t list ->
   tbexpr_t

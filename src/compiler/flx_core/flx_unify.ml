@@ -588,7 +588,7 @@ let compare_sigs counter sym_table a b =
    and the declared type the LHS.
 *)
 
-let do_unify syms a b =
+let do_unify syms sym_table a b =
   let eqns =
     [
       varmap_subst syms.varmap a,
@@ -601,12 +601,12 @@ let do_unify syms a b =
     (*
     print_endline "Calling unification";
     *)
-    let mgu = unification syms.counter syms.sym_table eqns dvars in
+    let mgu = unification syms.counter sym_table eqns dvars in
     (*
     print_endline "mgu=";
     List.iter
     (fun (i, t) ->
-      print_endline (string_of_int i ^ " -> " ^ string_of_btypecode syms.sym_table t)
+      print_endline (string_of_int i ^ " -> " ^ string_of_btypecode sym_table t)
     )
     mgu;
     *)
@@ -637,13 +637,13 @@ let do_unify syms a b =
       end else begin
         match
           begin
-            try Flx_sym_table.find syms.sym_table i with Not_found -> failwith
+            try Flx_sym_table.find sym_table i with Not_found -> failwith
               ("BUG, flx_unify can't find symbol " ^ string_of_bid i)
           end
         with
         | { Flx_sym.symdef=SYMDEF_function _ } ->
           (*
-          print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.sym_table t);
+          print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode sym_table t);
           *)
           Hashtbl.add syms.varmap i t
 
@@ -654,7 +654,7 @@ let do_unify syms a b =
           failwith
           (
             "[do_unify] attempt to add non-function return unknown type variable "^
-            string_of_bid i^", type "^sbt syms.sym_table t^" to hashtble"
+            string_of_bid i^", type "^sbt sym_table t^" to hashtble"
           )
       end
     end mgu;

@@ -8,7 +8,8 @@ val make_bind_state:
   ?parent:Flx_types.bid_t ->  (** The module index for all the symbols of the
                                   assemblies. *)
   ?env:Flx_types.env_t ->     (** Optionally specify the environment. *)
-  Flx_mtypes2.sym_state_t ->
+  Flx_mtypes2.sym_state_t ->  (** The symbol state *)
+  Flx_sym_table.t ->          (** The symbol table *)
   bind_state_t
 
 (** Bind an individual assembly into a series of symbols. *)

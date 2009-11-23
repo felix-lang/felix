@@ -101,7 +101,7 @@ let locals child_map uses i =
   BidSet.diff kids u
 
 
-let fold_vars syms bsym_table child_map uses i ps exes =
+let fold_vars syms sym_table bsym_table child_map uses i ps exes =
   let pset = fold_left (fun s {pindex=i}-> BidSet.add i s) BidSet.empty ps in
   let kids = find_children child_map i in
   let id,_,_,_ = Flx_bsym_table.find bsym_table i in
@@ -117,7 +117,7 @@ let fold_vars syms bsym_table child_map uses i ps exes =
   (*
   print_endline ("Locals of " ^ si i ^ " are " ^ string_of_bidset locls);
   print_endline "INPUT Code is";
-  iter (fun exe -> print_endline (string_of_bexe syms.sym_table 0 exe)) exes;
+  iter (fun exe -> print_endline (string_of_bexe sym_table 0 exe)) exes;
   *)
 
   let elim_pass exes =
@@ -132,7 +132,7 @@ let fold_vars syms bsym_table child_map uses i ps exes =
 
         let id,_,_,_ = Flx_bsym_table.find bsym_table j in
         (*
-        print_endline ("CONSIDERING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe syms.sym_table bsym_table y);
+        print_endline ("CONSIDERING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe sym_table bsym_table y);
         *)
         (* does uses include initialisations or not ..?? *)
 
@@ -176,14 +176,14 @@ let fold_vars syms bsym_table child_map uses i ps exes =
         (*
         print_endline ("Usage (unrestricted) = " ^ string_of_bidset yuses_ur);
         print_endline ("restriction = " ^ string_of_bidset pset);
-        let yuses = Flx_call.expr_uses syms descend uses pset y in
+        let yuses = Flx_call.expr_uses syms sym_table descend uses pset y in
         print_endline ("Usage (restricted) = " ^ string_of_bidset yuses);
         *)
         let delete_var () =
           let id,_,_,_ = Flx_bsym_table.find bsym_table j in
           if syms.compiler_options.print_flag then
             print_endline ("ELIMINATING VARIABLE " ^ id ^ "<" ^ string_of_bid j
-              ^ "> -> " ^ sbe syms.sym_table bsym_table y);
+              ^ "> -> " ^ sbe sym_table bsym_table y);
 
           (* remove the variable *)
           Flx_bsym_table.remove bsym_table j;
@@ -226,7 +226,7 @@ let fold_vars syms bsym_table child_map uses i ps exes =
           | BEXPR_tuple ys,_ ->
             (*
             print_endline "Tuple init found";
-            print_endline ("initialiser y =" ^ sbe syms.sym_table bsym_table y);
+            print_endline ("initialiser y =" ^ sbe sym_table bsym_table y);
             print_endline ("Y uses = " ^ string_of_bidset yuses);
             *)
             let rec subi j ys e =
@@ -234,8 +234,8 @@ let fold_vars syms bsym_table child_map uses i ps exes =
               | BEXPR_get_n (k, (BEXPR_name(i,_),_) ),_
                 when j = i ->
                 if syms.compiler_options.print_flag then
-                print_endline ("[flx_fold_vars: tuple init] Replacing " ^ sbe syms.sym_table bsym_table e ^
-                  " with " ^ sbe syms.sym_table bsym_table (nth ys k)
+                print_endline ("[flx_fold_vars: tuple init] Replacing " ^ sbe sym_table bsym_table e ^
+                  " with " ^ sbe sym_table bsym_table (nth ys k)
                 );
                 incr rplcnt; nth ys k
               | x -> x
@@ -254,7 +254,7 @@ let fold_vars syms bsym_table child_map uses i ps exes =
         let elim exes = map
           (fun exe ->
           (*
-          print_endline ("In Exe = " ^ string_of_bexe syms.sym_table 2 exe);
+          print_endline ("In Exe = " ^ string_of_bexe sym_table 2 exe);
           *)
           if !subs then
           match exe with
@@ -350,7 +350,7 @@ let fold_vars syms bsym_table child_map uses i ps exes =
           begin
             delete_var();
             (*
-            print_endline ("DELETE VAR "^si j^", ELIMINATING Exe = " ^ string_of_bexe syms.sym_table 0 x);
+            print_endline ("DELETE VAR "^si j^", ELIMINATING Exe = " ^ string_of_bexe sym_table 0 x);
             *)
             find_tassign t' outexes
           end
@@ -377,7 +377,7 @@ let fold_vars syms bsym_table child_map uses i ps exes =
     print_endline ("Removed " ^ si !master_count ^" variables in " ^ si !iters ^ " passes");
     (*
     print_endline "OUTPUT Code is";
-    iter (fun exe -> print_endline (string_of_bexe syms.sym_table 0 exe)) exes;
+    iter (fun exe -> print_endline (string_of_bexe sym_table 0 exe)) exes;
     *)
   end
   ;

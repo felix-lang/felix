@@ -95,7 +95,7 @@ let cpp_name bsym_table index =
   | _ -> syserr sr "cpp_name expected func,proc,var,val,class,reglex or regmatch"
   ) ^ cid_of_bid index ^ "_" ^ cid_of_flxid id
 
-let cpp_instance_name' syms bsym_table index ts =
+let cpp_instance_name' syms sym_table bsym_table index ts =
   let inst =
     try Hashtbl.find syms.instances (index,ts)
     with Not_found ->
@@ -114,13 +114,13 @@ let cpp_instance_name' syms bsym_table index ts =
     (
       "[cpp_instance_name] unable to find instance " ^ id ^
       "<" ^ string_of_bid index ^ ">[" ^
-      catmap ", " (string_of_btypecode syms.sym_table) ts ^ "]"
+      catmap ", " (string_of_btypecode sym_table) ts ^ "]"
       ^ (if has_variables then " .. a subscript contains a type variable" else "")
     )
   in
   "_i" ^ cid_of_bid inst ^ cpp_name bsym_table index
 
-let is_export syms id =
+let is_export syms sym_table id =
   let bifaces = syms.bifaces in
   try
     List.iter
@@ -134,8 +134,8 @@ let is_export syms id =
      false
   with Not_found -> true
 
-let cpp_instance_name syms bsym_table index ts =
-  let long_name = cpp_instance_name' syms bsym_table index ts in
+let cpp_instance_name syms sym_table bsym_table index ts =
+  let long_name = cpp_instance_name' syms sym_table bsym_table index ts in
   if syms.compiler_options.mangle_names then long_name else
   let id,parent,sr,entry =
     try Flx_bsym_table.find bsym_table index
@@ -151,11 +151,11 @@ let cpp_instance_name syms bsym_table index ts =
         index,ts
     in
       if (index,ts) <> inst then long_name else
-      if is_export syms id then long_name else id
+      if is_export syms sym_table id then long_name else id
   end
   else long_name
 
-let tix syms t =
+let tix syms sym_table t =
   let t =
     match t with
     | BTYP_function (BTYP_void,cod) -> BTYP_function (BTYP_tuple [],cod)
@@ -163,20 +163,20 @@ let tix syms t =
   in
   try Hashtbl.find syms.registry t
   with Not_found ->
-    failwith ("Cannot find type " ^sbt syms.sym_table t ^" in registry")
+    failwith ("Cannot find type " ^sbt sym_table t ^" in registry")
 
-let rec cpp_type_classname syms bsym_table t =
-  let tix t = tix syms t in
-  let t = fold syms.counter syms.sym_table t in
-  try match unfold syms.sym_table t with
+let rec cpp_type_classname syms sym_table bsym_table t =
+  let tix t = tix syms sym_table t in
+  let t = fold syms.counter sym_table t in
+  try match unfold sym_table t with
   | BTYP_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
-        string_of_bid i ^ ":"^ sbt syms.sym_table mt)
+        string_of_bid i ^ ":"^ sbt sym_table mt)
   | BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"
   | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
   | BTYP_tuple [] -> "unit"
 
-  | BTYP_pointer t' -> cpp_type_classname syms bsym_table t' ^ "*"
+  | BTYP_pointer t' -> cpp_type_classname syms sym_table bsym_table t' ^ "*"
  
   | BTYP_function (_,BTYP_void) -> "_pt" ^ cid_of_bid (tix t)
   | BTYP_function _ -> "_ft" ^ cid_of_bid (tix t)
@@ -225,21 +225,21 @@ let rec cpp_type_classname syms bsym_table t =
     failwith
     (
       "[cpp_type_classname] Unexpected " ^
-      string_of_btypecode syms.sym_table t
+      string_of_btypecode sym_table t
     )
   with Not_found ->
     failwith
     (
       "[cpp_type_classname] Expected type "^
-      string_of_btypecode syms.sym_table t ^
+      string_of_btypecode sym_table t ^
       " to be in registry"
     )
 
-let rec cpp_typename syms bsym_table t =
-  match unfold syms.sym_table t with
-  | BTYP_function _ -> cpp_type_classname syms bsym_table t ^ "*"
-  | BTYP_cfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
-  | BTYP_pointer t -> cpp_typename syms bsym_table t ^ "*"
-  | _ -> cpp_type_classname syms bsym_table t
+let rec cpp_typename syms sym_table bsym_table t =
+  match unfold sym_table t with
+  | BTYP_function _ -> cpp_type_classname syms sym_table bsym_table t ^ "*"
+  | BTYP_cfunction _ -> cpp_type_classname syms sym_table bsym_table t ^ "*"
+  | BTYP_pointer t -> cpp_typename syms sym_table bsym_table t ^ "*"
+  | _ -> cpp_type_classname syms sym_table bsym_table t
 
-let cpp_ltypename syms bsym_table t = cpp_typename syms bsym_table t
+let cpp_ltypename syms sym_table bsym_table t = cpp_typename syms sym_table bsym_table t

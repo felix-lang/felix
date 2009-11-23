@@ -45,11 +45,11 @@ let vsplice caller_vars callee_vs_len ts =
 *)
 let ident x = x
 
-let remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e =
+let remap_expr syms sym_table bsym_table varmap revariable caller_vars callee_vs_len e =
   (*
-  print_endline ("Remapping expression " ^ sbe syms.sym_table bsym_table e);
+  print_endline ("Remapping expression " ^ sbe sym_table bsym_table e);
   *)
-  let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts in
+  let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms sym_table bsym_table i ts in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let tmap t = match t with
   | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
@@ -59,7 +59,7 @@ let remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e =
     let t' = varmap_subst varmap t in
     let rec s t = tmap (map_btype s t) in
     let t' = s t' in
-    (* print_endline ("Remap type " ^ sbt syms.sym_table t ^ " to " ^ sbt syms.sym_table * t'); *)
+    (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
   let fixup i ts =
@@ -101,18 +101,18 @@ let remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e =
   in
     let a = aux e in
     (*
-    print_endline ("replace " ^ sbe syms.sym_table e ^ "-->" ^ sbe syms.sym_table a);
+    print_endline ("replace " ^ sbe sym_table e ^ "-->" ^ sbe sym_table a);
     *)
     a
 
-let remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_len exe =
+let remap_exe syms sym_table bsym_table relabel varmap revariable caller_vars callee_vs_len exe =
   (*
-  print_endline ("remap_exe " ^ string_of_bexe syms.sym_table bsym_table 0 exe);
+  print_endline ("remap_exe " ^ string_of_bexe sym_table bsym_table 0 exe);
   *)
-  let ge e = remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e in
+  let ge e = remap_expr syms sym_table bsym_table varmap revariable caller_vars callee_vs_len e in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let relab s = try Hashtbl.find relabel s with Not_found -> s in
-  let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts in
+  let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms sym_table bsym_table i ts in
 
   let tmap t = match t with
   | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
@@ -122,7 +122,7 @@ let remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_le
     let t' = varmap_subst varmap t in
     let rec s t = tmap (map_btype s t) in
     let t' = s t' in
-    (* print_endline ("Remap type " ^ sbt syms.sym_table t ^ " to " ^ sbt syms.sym_table * t'); *)
+    (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
   let exe =
@@ -173,15 +173,15 @@ let remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_le
   | x -> map_bexe revar ge ident relab relab x
   in
   (*
-  print_endline ("remapped_exe " ^ string_of_bexe syms.sym_table bsym_table 0 exe);
+  print_endline ("remapped_exe " ^ string_of_bexe sym_table bsym_table 0 exe);
   *)
   exe
 
 
-let remap_exes syms bsym_table relabel varmap revariable caller_vars callee_vs_len exes =
-  map (remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_len) exes
+let remap_exes syms sym_table bsym_table relabel varmap revariable caller_vars callee_vs_len exes =
+  map (remap_exe syms sym_table bsym_table relabel varmap revariable caller_vars callee_vs_len) exes
 
-let remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len reqs : breqs_t =
+let remap_reqs syms sym_table bsym_table varmap revariable caller_vars callee_vs_len reqs : breqs_t =
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let tmap t = match t with
   | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
@@ -191,7 +191,7 @@ let remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len reqs 
     let t' = varmap_subst varmap t in
     let rec s t = tmap (map_btype s t) in
     let t' = s t' in
-    (* print_endline ("Remap type " ^ sbt syms.sym_table t ^ " to " ^ sbt syms.sym_table * t'); *)
+    (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
   let fixup (i, ts) =
@@ -223,7 +223,7 @@ let allow_rescan flag props =
   | false -> props
   | true -> filter (function | `Inlining_complete | `Inlining_started -> false | _ -> true ) props
 
-let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
+let reparent1 (syms:sym_state_t) sym_table (uses,child_map,bsym_table)
   relabel varmap revariable
   caller_vs callee_vs_len index parent k rescan_flag
 =
@@ -245,7 +245,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
     let t' = varmap_subst varmap t in
     let rec s t = tmap (map_btype s t) in
     let t' = s t' in
-    (* print_endline ("Remap type " ^ sbt syms.sym_table t ^ " to " ^ sbt syms.sym_table * t'); *)
+    (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
   let remap_ps ps = map (fun {pid=id; pindex=i; ptyp=t; pkind=k} ->
@@ -253,9 +253,9 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
      ps
    in
 
-  let rexes xs = remap_exes syms bsym_table relabel varmap revariable caller_vars callee_vs_len xs in
-  let rexpr e = remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e in
-  let rreqs rqs = remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len rqs in
+  let rexes xs = remap_exes syms sym_table bsym_table relabel varmap revariable caller_vars callee_vs_len xs in
+  let rexpr e = remap_expr syms sym_table bsym_table varmap revariable caller_vars callee_vs_len e in
+  let rreqs rqs = remap_reqs syms sym_table bsym_table varmap revariable caller_vars callee_vs_len rqs in
   let id,old_parent,sr,entry = Flx_bsym_table.find bsym_table index in
   if syms.compiler_options.print_flag then
   print_endline
@@ -284,7 +284,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
     Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_procedure (props,splice vs,(ps,traint),exes));
     (*
     print_endline "NEW PROCEDURE (clone):";
-    print_function syms.sym_table bsym_table k;
+    print_function sym_table bsym_table k;
     *)
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
@@ -303,7 +303,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
     Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_function (props,splice vs,(ps,traint),ret,exes));
     (*
     print_endline "NEW FUNCTION (clone):";
-    print_function syms.sym_table bsym_table k;
+    print_function sym_table bsym_table k;
     *)
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
@@ -319,8 +319,8 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
       catmap "," (fun (s,i) -> s^"<"^si i^">") vs);
     print_endline ("         variable new: id<"^si k^"> vs=" ^
       catmap "," (fun (s,i) -> s^"<"^si i^">") (splice vs));
-     print_endline ("Type old " ^ sbt syms.sym_table t ^ " -> type new " ^ sbt
-     syms.sym_table (auxt t));
+     print_endline ("Type old " ^ sbt sym_table t ^ " -> type new " ^ sbt
+     sym_table (auxt t));
     *)
     Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_var (splice vs,auxt t))
 
@@ -374,7 +374,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
     Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_fun (props,vs,params,ret,ct,breqs,prec));
     (*
     print_endline "NEW FUNCTION (clone):";
-    print_function syms.sym_table bsym_table k;
+    print_function sym_table bsym_table k;
     *)
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
@@ -397,7 +397,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
     Flx_bsym_table.add bsym_table k (id,parent,sr,entry)
   *)
 
-  | _ -> syserr sr ("[reparent1] Unexpected: bbdcl " ^ string_of_bbdcl syms.sym_table bsym_table entry index)
+  | _ -> syserr sr ("[reparent1] Unexpected: bbdcl " ^ string_of_bbdcl sym_table bsym_table entry index)
 
 (* make a copy all the descendants of i, changing any
   parent which is i to the given new parent
@@ -407,7 +407,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
    routine, but it doesn't reparent the routine itself
 *)
 
-let reparent_children syms (uses,child_map,bsym_table)
+let reparent_children syms sym_table (uses,child_map,bsym_table)
   caller_vs callee_vs_len index (parent:bid_t option) relabel varmap rescan_flag extras
 =
   let pp p = match p with None -> "NONE" | Some i -> string_of_bid i in
@@ -441,7 +441,7 @@ let reparent_children syms (uses,child_map,bsym_table)
         else Some (Hashtbl.find revariable p)
     in
     let k = Hashtbl.find revariable i in
-    reparent1 syms (uses,child_map,bsym_table) relabel varmap revariable
+    reparent1 syms sym_table (uses,child_map,bsym_table) relabel varmap revariable
     caller_vs callee_vs_len i new_parent k rescan_flag
   )
   closure
@@ -488,17 +488,17 @@ let reparent_children syms (uses,child_map,bsym_table)
 *)
 
 
-let specialise_symbol syms (uses,child_map,bsym_table)
+let specialise_symbol syms sym_table (uses,child_map,bsym_table)
   caller_vs callee_vs_len index ts parent relabel varmap rescan_flag
 =
   try Hashtbl.find syms.transient_specialisation_cache (index,ts)
   with Not_found ->
     let k = fresh_bid syms.counter in
     let revariable =
-       reparent_children syms (uses,child_map,bsym_table)
+       reparent_children syms sym_table (uses,child_map,bsym_table)
        caller_vs callee_vs_len index (Some k) relabel varmap rescan_flag []
     in
-    reparent1 (syms:sym_state_t) (uses,child_map,bsym_table )
+    reparent1 (syms:sym_state_t) sym_table (uses,child_map,bsym_table )
       relabel varmap revariable
       caller_vs callee_vs_len index parent k rescan_flag
     ;

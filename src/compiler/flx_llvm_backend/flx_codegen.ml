@@ -1,6 +1,7 @@
 type codegen_state_t =
   {
     syms: Flx_mtypes2.sym_state_t;
+    sym_table: Flx_sym_table.t;
     context: Llvm.llcontext;
     the_module: Llvm.llmodule;
     the_fpm: [`Function] Llvm.PassManager.t;
@@ -29,7 +30,7 @@ type closure_kind_t =
   | Stack_closure of Flx_types.bid_t * Llvm.llvalue * Llvm.llbuilder
 
 
-let make_codegen_state syms optimization_level =
+let make_codegen_state syms sym_table optimization_level =
   let context = Llvm.create_context () in
   let the_module = Llvm.create_module context "__root__" in
 
@@ -66,6 +67,7 @@ let make_codegen_state syms optimization_level =
 
   {
     syms = syms;
+    sym_table = sym_table;
     context = context;
     the_module = the_module;
     the_fpm = the_fpm;
@@ -276,9 +278,9 @@ let create_entry_block_alloca state builder btype name =
 
 
 (* Generate call for an expression *)
-let rec codegen_expr state (bsym_table:Flx_bsym_table.t) builder sr tbexpr =
+let rec codegen_expr state bsym_table builder sr tbexpr =
   print_endline ("codegen_expr: " ^ Flx_print.string_of_bound_expression
-    state.syms.Flx_mtypes2.sym_table bsym_table tbexpr);
+    state.sym_table bsym_table tbexpr);
 
   (* See if there are any simple reductions we can apply to the expression. *)
   let bexpr, btype = Flx_maps.reduce_tbexpr tbexpr in
@@ -589,7 +591,7 @@ let codegen_subscript state bsym_table builder sr lhs rhs =
 (* Generate code for a bound statement. *)
 let codegen_bexe state bsym_table builder bexe =
   print_endline ("codegen_bexe: " ^ Flx_print.string_of_bexe
-    state.syms.Flx_mtypes2.sym_table bsym_table 0 bexe);
+    state.sym_table bsym_table 0 bexe);
 
   (* See if there are any simple reductions we can apply to the exe. *)
   let bexe = Flx_maps.reduce_bexe bexe in
@@ -1236,7 +1238,7 @@ and codegen_symbol
       | Some p -> Flx_print.string_of_bid p
       | None -> "None") ^
     " " ^
-    (Flx_print.string_of_bbdcl state.syms.Flx_mtypes2.sym_table bsym_table bbdcl index));
+    (Flx_print.string_of_bbdcl state.sym_table bsym_table bbdcl index));
 
   match bbdcl with
   | Flx_types.BBDCL_function (props, _, (ps, _), ret_type, es) ->

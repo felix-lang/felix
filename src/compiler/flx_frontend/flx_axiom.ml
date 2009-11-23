@@ -19,7 +19,7 @@ open Flx_typeclass
 let string_of_bvs bvs =
   catmap "," (fun (s,i)->s^"<"^si i^">") bvs
 
-let verify syms bsym_table csr e =
+let verify syms sym_table bsym_table csr e =
   let xx = ref [] in
   iter
   ( fun (id, axsr, parent, axiom_kind, bvs, (bpl,precond), x) ->
@@ -37,14 +37,14 @@ let verify syms bsym_table csr e =
     in
     let tvars = map (fun (_,i) -> i) bvs in
     let evars = map (fun {pindex=i} -> i) bpl in
-    let result = expr_maybe_matches syms.counter syms.sym_table tvars evars param e in
+    let result = expr_maybe_matches syms.counter sym_table tvars evars param e in
     match result with
     | None -> ()
     | Some (tmgu, emgu) ->
       (*
-      print_endline (sbe syms.sym_table e ^  " MATCHES AXIOM " ^ id);
+      print_endline (sbe sym_table e ^  " MATCHES AXIOM " ^ id);
       print_endline ("Axiom vs =" ^ string_of_bvs bvs);
-      print_endline ("TMgu=" ^ string_of_varlist syms.sym_table tmgu);
+      print_endline ("TMgu=" ^ string_of_varlist sym_table tmgu);
       *)
       let ok = match parent with
       | None -> true
@@ -80,7 +80,7 @@ let verify syms bsym_table csr e =
               match insts with | None -> false | Some insts ->
               try
                 iter (fun (instidx,(inst_bvs, inst_traint, inst_ts)) ->
-                  match tcinst_chk syms true i ts sr (inst_bvs, inst_traint, inst_ts, instidx) with
+                  match tcinst_chk syms sym_table true i ts sr (inst_bvs, inst_traint, inst_ts, instidx) with
                   | None -> ()
                   | Some _ -> raise Not_found
                 )
@@ -107,7 +107,7 @@ let verify syms bsym_table csr e =
       let xsub x = fold_left (fun x (i,e) -> expr_term_subst x i e) x emgu in
       let tsub t = list_subst syms.counter tmgu t in
       (*
-      print_endline ("tmgu= " ^ catmap ", " (fun (i,t) -> si i ^ "->" ^ sbt syms.sym_table t) tmgu);
+      print_endline ("tmgu= " ^ catmap ", " (fun (i,t) -> si i ^ "->" ^ sbt sym_table t) tmgu);
       *)
       let ident x = x in
       let rec aux x = map_tbexpr ident aux tsub x in
@@ -119,7 +119,7 @@ let verify syms bsym_table csr e =
       let comment = BEXE_comment (csr,"Check " ^ id) in
       let ax = BEXE_assert2 (csr,axsr,precond,cond) in
       (*
-      print_endline ("Assertion: " ^ tsbe syms.sym_table cond);
+      print_endline ("Assertion: " ^ tsbe sym_table cond);
       *)
       xx := ax :: comment :: !xx
   )
@@ -127,30 +127,30 @@ let verify syms bsym_table csr e =
   ;
   !xx
 
-let fixup_exes syms bsym_table bexes =
+let fixup_exes syms sym_table bsym_table bexes =
   let rec aux inx outx = match inx with
   | [] -> rev outx
   | BEXE_axiom_check (sr,e) :: t ->
     (*
-    print_endline ("Axiom check case "  ^ sbe syms.sym_table e);
+    print_endline ("Axiom check case "  ^ sbe sym_table e);
     *)
-    aux t ((verify syms bsym_table sr e) @ outx)
+    aux t ((verify syms sym_table bsym_table sr e) @ outx)
 
   | h :: t -> aux t (h::outx)
   in
   aux bexes []
 
-let axiom_check syms bsym_table =
+let axiom_check syms sym_table bsym_table =
   Flx_bsym_table.iter
   (fun i (id,sr,parent,entry) ->
     match entry with
     | BBDCL_function (ps,bvs,bpar,bty,bexes) ->
-      let bexes = fixup_exes syms bsym_table bexes in
+      let bexes = fixup_exes syms sym_table bsym_table bexes in
       let entry = BBDCL_function (ps,bvs,bpar,bty,bexes) in
       Flx_bsym_table.add bsym_table i (id,sr,parent,entry)
 
     | BBDCL_procedure (ps,bvs,bpar,bexes) ->
-      let bexes = fixup_exes syms bsym_table bexes in
+      let bexes = fixup_exes syms sym_table bsym_table bexes in
       let entry = BBDCL_procedure (ps,bvs,bpar,bexes) in
       Flx_bsym_table.add bsym_table i (id,sr,parent,entry)
 

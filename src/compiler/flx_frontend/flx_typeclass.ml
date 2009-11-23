@@ -27,6 +27,7 @@ let rec drop l n =
 
 let check_instance
   syms
+  sym_table
   bsym_table
   child_map
   inst
@@ -43,7 +44,7 @@ let check_instance
   | BBDCL_typeclass (tc_props, tc_bvs) ->
     (*
     print_endline ("Found " ^ inst_id ^ "<"^si inst ^ ">" ^
-    "[" ^ catmap "," (sbt syms.sym_table) inst_ts ^ "]" ^
+    "[" ^ catmap "," (sbt sym_table) inst_ts ^ "]" ^
     " to be instance of typeclass " ^ tc_id ^ "<"^si tc^">")
     ;
     print_endline ("Typeclass vs = " ^
@@ -57,7 +58,7 @@ let check_instance
         catmap "," (fun (s,j) -> s ^ "<" ^ string_of_bid j ^ ">") inst_vs
         ^ "] " ^
         inst_id ^"<"^ string_of_bid inst ^ ">" ^
-        "[" ^ catmap "," (sbt syms.sym_table) inst_ts ^ "]" ^
+        "[" ^ catmap "," (sbt sym_table) inst_ts ^ "]" ^
         "\nsupplies wrong number of type arguments for typeclass parameters\n" ^
         inst_id ^ "[" ^
         catmap "," (fun (s,j) -> s ^ "<" ^ string_of_bid j ^ ">") tc_bvs ^ "]"
@@ -111,7 +112,7 @@ let check_instance
         if inst_ptv <> tc_ptv then false else
         let inst_funts = inst_ts @ vs2ts (drop inst_funbvs (length inst_vs)) in
         assert (length tck_bvs = length inst_funts);
-        let tct = reduce_type (beta_reduce syms sr (tsubst tck_bvs inst_funts tctype)) in
+        let tct = reduce_type (beta_reduce syms sym_table sr (tsubst tck_bvs inst_funts tctype)) in
         let matches =  tct = t in
         matches
       in
@@ -120,7 +121,7 @@ let check_instance
       | [] ->
           if force then
           clierr2 sr inst_sr ("Cannot find typeclass " ^ inst_id ^ " virtual " ^
-            id ^ " in instance [" ^ catmap "," (sbt syms.sym_table) inst_ts ^
+            id ^ " in instance [" ^ catmap "," (sbt sym_table) inst_ts ^
             "]")
 
       | [_,(i,(inst_funbvs,t))] ->
@@ -128,13 +129,13 @@ let check_instance
         (*
         print_endline ("Typeclass " ^ tc_id ^ "<" ^ si tc ^">" ^ print_bvs tc_bvs);
         print_endline ("Typeclass function " ^ id ^ "<" ^ si tck ^ ">" ^
-          print_bvs tck_bvs ^ ":" ^ sbt syms.sym_table tctype
+          print_bvs tck_bvs ^ ":" ^ sbt sym_table tctype
         );
 
         print_endline ("Instance vs = " ^ print_bvs inst_vs);
-        print_endline ("Instance ts = " ^ catmap "," (sbt syms.sym_table) inst_ts);
+        print_endline ("Instance ts = " ^ catmap "," (sbt sym_table) inst_ts);
         print_endline ("Instance function " ^ id ^ "<"^si i^">" ^ print_bvs inst_funbvs ^
-        ":" ^ sbt syms.sym_table t);
+        ":" ^ sbt sym_table t);
         *)
 
         let tc_ptv = length tck_bvs - length tc_bvs in
@@ -157,10 +158,10 @@ let check_instance
 
         assert (length tck_bvs = length inst_funts);
 
-        let tct = reduce_type (beta_reduce syms sr (tsubst tck_bvs inst_funts tctype)) in
+        let tct = reduce_type (beta_reduce syms sym_table sr (tsubst tck_bvs inst_funts tctype)) in
         (*
         print_endline ("Typeclass function (instantiated) " ^ id ^ "<" ^ si tck ^ ">" ^
-          ":" ^ sbt syms.sym_table tct
+          ":" ^ sbt sym_table tct
         );
         *)
 
@@ -179,15 +180,15 @@ let check_instance
           print_endline "Warning: Sole instance doesn't match virtual";
           print_endline ("Typeclass " ^ tc_id ^ "<" ^ si tc ^">" ^ print_bvs tc_bvs);
           print_endline ("Typeclass function " ^ id ^ "<" ^ si tck ^ ">" ^
-            print_bvs tck_bvs ^ ":" ^ sbt syms.sym_table tctype
+            print_bvs tck_bvs ^ ":" ^ sbt sym_table tctype
           );
 
           print_endline ("Instance vs = " ^ print_bvs inst_vs);
-          print_endline ("Instance ts = " ^ catmap "," (sbt syms.sym_table) inst_ts);
+          print_endline ("Instance ts = " ^ catmap "," (sbt sym_table) inst_ts);
           print_endline ("Instance function " ^ id ^ "<"^si i^">" ^ print_bvs inst_funbvs ^
-          ":" ^ sbt syms.sym_table t);
+          ":" ^ sbt sym_table t);
           print_endline ("Typeclass function (instantiated) " ^ id ^ "<" ^ si tck ^ ">" ^
-            ":" ^ sbt syms.sym_table tct
+            ":" ^ sbt sym_table tct
           );
         end
         ;
@@ -205,8 +206,8 @@ let check_instance
         (*
         print_endline ("Register mapping " ^ si tck ^ " vs=" ^
           print_bvs inst_vs ^
-          " constraint=(" ^ sbt syms.sym_table inst_constraint ^
-          ") ts=[" ^ catmap "," (sbt syms.sym_table) inst_ts ^ "] -----> " ^ si i
+          " constraint=(" ^ sbt sym_table inst_constraint ^
+          ") ts=[" ^ catmap "," (sbt sym_table) inst_ts ^ "] -----> " ^ si i
         );
         *)
 
@@ -259,12 +260,12 @@ let check_instance
 
   | _ ->
     clierr2 inst_sr tc_sr ("Expected " ^ inst_id ^ "<" ^ string_of_bid inst ^
-    ">[" ^ catmap "," (sbt syms.sym_table) inst_ts ^ "]" ^
+    ">[" ^ catmap "," (sbt sym_table) inst_ts ^ "]" ^
     " to be typeclass instance, but" ^ tc_id ^ "<" ^ string_of_bid tc ^ ">, " ^
     "is not a typeclass"
     )
 
-let typeclass_instance_check_symbol syms bsym_table child_map i (id, _, sr, entry) =
+let typeclass_instance_check_symbol syms sym_table bsym_table child_map i (id, _, sr, entry) =
   match entry with
   | BBDCL_instance (props, vs, cons, tc, ts) ->
       let iss =
@@ -273,22 +274,22 @@ let typeclass_instance_check_symbol syms bsym_table child_map i (id, _, sr, entr
       in
       let entry = i, (vs, cons, ts) in
       Hashtbl.replace syms.instances_of_typeclass tc (entry::iss);
-      check_instance syms bsym_table child_map i id vs cons sr props tc ts
+      check_instance syms sym_table bsym_table child_map i id vs cons sr props tc ts
   | _ -> ()
 
-let typeclass_instance_check_symbols syms bsym_table child_map bids =
+let typeclass_instance_check_symbols syms sym_table bsym_table child_map bids =
   (* Check each symbol. *)
   List.iter begin fun bid ->
     let bsym = Flx_bsym_table.find bsym_table bid in
-    typeclass_instance_check_symbol syms bsym_table child_map bid bsym
+    typeclass_instance_check_symbol syms sym_table bsym_table child_map bid bsym
   end bids;
 
   (* We don't insert new symbols into the list, so return it directly. *)
   bids
 
-let typeclass_instance_check syms bsym_table child_map =
+let typeclass_instance_check syms sym_table bsym_table child_map =
   Flx_bsym_table.iter
-    (typeclass_instance_check_symbol syms bsym_table child_map)
+    (typeclass_instance_check_symbol syms sym_table bsym_table child_map)
     bsym_table
 
 (* Notes.
@@ -326,10 +327,10 @@ let typeclass_instance_check syms bsym_table child_map =
 *)
 
 
-let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
+let tcinst_chk syms sym_table allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
      (*
      print_endline
-     ("virtual " ^ si i ^ "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]");
+     ("virtual " ^ si i ^ "[" ^ catmap "," (sbt sym_table) ts ^ "]");
      if length inst_ts > length ts then
        failwith (
          "Not enough ts given, expected at least " ^
@@ -349,11 +350,11 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
      let eqns = combine (list_prefix ts (length inst_ts)) inst_ts' in
      (*
      print_endline ("Solving equations\n " ^
-       catmap "\n" (fun (a,b) -> sbt syms.sym_table a ^ " = " ^ sbt syms.sym_table b ) eqns
+       catmap "\n" (fun (a,b) -> sbt sym_table a ^ " = " ^ sbt sym_table b ) eqns
      );
      *)
      let mgu =
-       try Some (unification syms.counter syms.sym_table eqns vset)
+       try Some (unification syms.counter sym_table eqns vset)
        with Not_found -> None
      in
      begin match mgu with
@@ -371,7 +372,7 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
            else
            (
              (*
-             print_endline ("Solved " ^ s ^"<"^si i^">" ^ "-> " ^ sbt syms.sym_table (assoc i mgu));
+             print_endline ("Solved " ^ s ^"<"^si i^">" ^ "-> " ^ sbt sym_table (assoc i mgu));
              *)
              assoc i mgu
            )
@@ -379,33 +380,33 @@ let tcinst_chk syms allow_fail i ts sr (inst_vs, inst_constraint, inst_ts, j)  =
          inst_vs
        in
        (*
-       print_endline ("instance constraint: " ^ sbt syms.sym_table inst_constraint);
+       print_endline ("instance constraint: " ^ sbt sym_table inst_constraint);
        *)
        let con = list_subst syms.counter mgu inst_constraint in
-       let con = reduce_type (Flx_beta.beta_reduce syms sr con) in
+       let con = reduce_type (Flx_beta.beta_reduce syms sym_table sr con) in
        match con with
        | BTYP_tuple [] ->
          let tail = drop ts (length inst_ts) in
          let ts = tsv @ tail in
          (*
-         print_endline ("Remap to " ^ si j ^ "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]");
+         print_endline ("Remap to " ^ si j ^ "[" ^ catmap "," (sbt sym_table) ts ^ "]");
          *)
          Some (j,ts)
        | BTYP_void -> (* print_endline "constraint reduce failure"; *) None
        | _ ->
          if not allow_fail then
-         failwith ("Unable to reduce type constraint: " ^ sbt syms.sym_table con)
+         failwith ("Unable to reduce type constraint: " ^ sbt sym_table con)
          else
          (
            (*
-           print_endline ("Unable to reduce type constraint! " ^ sbt syms.sym_table con);
+           print_endline ("Unable to reduce type constraint! " ^ sbt sym_table con);
            *)
            None
          )
      end
 
 
-let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
+let fixup_typeclass_instance' syms sym_table bsym_table allow_fail i ts =
   let entries =
     try Hashtbl.find syms.typeclass_to_instance i
     with Not_found -> (* print_endline ("Symbol " ^ si i ^ " Not instantiated?"); *) []
@@ -415,7 +416,7 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
       failwith ("fixup_typeclass_instance': Can't find <" ^
         string_of_bid i ^ ">")
   in
-  let entries = fold_left (fun acc x -> match tcinst_chk syms allow_fail i ts sr x with
+  let entries = fold_left (fun acc x -> match tcinst_chk syms sym_table allow_fail i ts sr x with
      | None -> acc
      | Some jts -> (jts,x)::acc
      ) [] entries
@@ -424,7 +425,7 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
   | [] -> i,ts
   | [(j,ts),_] ->
      (*
-     print_endline ("Found instance " ^ si j ^ "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]");
+     print_endline ("Found instance " ^ si j ^ "[" ^ catmap "," (sbt sym_table) ts ^ "]");
      *)
      j,ts
 
@@ -437,7 +438,7 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
     (*
     print_endline
     ("Unimplemented: Multiple matching instances for typeclass virtual instance\n"
-     ^id^"<"^ si i^">["^ catmap "," (sbt syms.sym_table) ts ^"]"
+     ^id^"<"^ si i^">["^ catmap "," (sbt sym_table) ts ^"]"
     )
     ;
     iter
@@ -447,8 +448,8 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
          with Not_found -> failwith ("Woops can't find instance function index "  ^ si j)
        in
        let parent = match parent with Some k -> k | None -> assert false in
-       print_endline ("Function " ^ si j ^ "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]");
-       print_endline (" instance parent " ^ si parent ^ "[" ^ catmap "," (sbt syms.sym_table) inst_ts ^ "]");
+       print_endline ("Function " ^ si j ^ "[" ^ catmap "," (sbt sym_table) ts ^ "]");
+       print_endline (" instance parent " ^ si parent ^ "[" ^ catmap "," (sbt sym_table) inst_ts ^ "]");
        print_endline (" instance vs= " ^ catmap "," (fun (s,i) -> s^"<"^si i^">") inst_vs );
     )
     candidates
@@ -458,7 +459,7 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
     (fun oc (((j,ts),(inst_vs,con,inst_ts,k)) as r) ->
        let c = BTYP_type_tuple inst_ts in
        (*
-       print_endline ("Considering candidate sig " ^ sbt syms.sym_table c);
+       print_endline ("Considering candidate sig " ^ sbt sym_table c);
        *)
        let rec aux lhs rhs =
          match rhs with
@@ -470,9 +471,9 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
          | (((j,ts),(inst_vs,con,inst_ts,k)) as x)::tail ->
            let c' = BTYP_type_tuple inst_ts in
            (*
-           print_endline (" .. comparing with " ^ sbt syms.sym_table c');
+           print_endline (" .. comparing with " ^ sbt sym_table c');
            *)
-           begin match compare_sigs syms.counter syms.sym_table c' c with
+           begin match compare_sigs syms.counter sym_table c' c with
            | `Less ->
              (*
              print_endline "Candidate is more general, discard it, retain whole list";
@@ -501,8 +502,8 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
     | [] -> i,ts
     | [(j,ts),(inst_vs,con,inst_ts,k)] ->
        (*
-       print_endline ("Found most specialised instance " ^ si j ^ "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]");
-       print_endline (" instance [" ^ catmap "," (sbt syms.sym_table) inst_ts ^ "]");
+       print_endline ("Found most specialised instance " ^ si j ^ "[" ^ catmap "," (sbt sym_table) ts ^ "]");
+       print_endline (" instance [" ^ catmap "," (sbt sym_table) inst_ts ^ "]");
        *)
        j,ts
 
@@ -516,9 +517,9 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
         in
         let parent = match parent with Some k -> k | None -> assert false in
         print_endline ("Function " ^ string_of_bid j ^ "[" ^
-          catmap "," (sbt syms.sym_table) ts ^ "]");
+          catmap "," (sbt sym_table) ts ^ "]");
         print_endline (" instance parent " ^ string_of_bid parent ^ "[" ^
-          catmap "," (sbt syms.sym_table) inst_ts ^ "]");
+          catmap "," (sbt sym_table) inst_ts ^ "]");
         print_endline (" instance vs= " ^
           catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") inst_vs);
       )
@@ -528,15 +529,15 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
 
 let id x = x
 
-let fixup_expr syms bsym_table e =
+let fixup_expr syms sym_table bsym_table e =
   (*
-  print_endline ("Check expr " ^ sbe syms.sym_table e);
+  print_endline ("Check expr " ^ sbe sym_table e);
   *)
   let rec aux e =  match map_tbexpr id aux id e with
   | BEXPR_apply_direct (i,ts,a),t ->
     let a = aux a in
     let j,ts = (* print_endline ("Check apply direct " ^ si i);  *)
-      fixup_typeclass_instance' syms bsym_table true i ts in
+      fixup_typeclass_instance' syms sym_table bsym_table true i ts in
     (*
     if j <> i then print_endline ("[direct] instantiate virtual as " ^ si j);
     *)
@@ -544,46 +545,46 @@ let fixup_expr syms bsym_table e =
 
   | BEXPR_apply_prim (i,ts,a),t ->
     let a = aux a in
-    let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]"); *)
-      fixup_typeclass_instance' syms bsym_table true i ts in
+    let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt sym_table) ts ^ "]"); *)
+      fixup_typeclass_instance' syms sym_table bsym_table true i ts in
     (*
     if j <> i then
       print_endline ("[prim] instantiate virtual as " ^
-        si j ^ "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]"
+        si j ^ "[" ^ catmap "," (sbt sym_table) ts ^ "]"
       )
     ;
     *)
     BEXPR_apply_direct (j,ts,a),t
 
   | BEXPR_name (i,ts),t ->
-    let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt syms.sym_table) ts ^ "]"); *)
-      fixup_typeclass_instance' syms bsym_table true i ts in
+    let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt sym_table) ts ^ "]"); *)
+      fixup_typeclass_instance' syms sym_table bsym_table true i ts in
     BEXPR_name (j,ts),t
 
   | x -> x
   in aux e
 
-let fixup_exe syms bsym_table exe = match exe with
+let fixup_exe syms sym_table bsym_table exe = match exe with
   | BEXE_call_direct (sr,i,ts,a) ->
-    let j,ts = fixup_typeclass_instance' syms bsym_table true i ts in
+    let j,ts = fixup_typeclass_instance' syms sym_table bsym_table true i ts in
     (*
     if j <> i then print_endline "instantiate virtual ..";
     *)
-    let a  = fixup_expr syms bsym_table a in
+    let a  = fixup_expr syms sym_table bsym_table a in
     BEXE_call_direct (sr,j,ts,a)
   | x ->
-    map_bexe id (fixup_expr syms bsym_table) id id id x
+    map_bexe id (fixup_expr syms sym_table bsym_table) id id id x
 
-let fixup_exes syms bsym_table exes = map (fixup_exe syms bsym_table) exes
+let fixup_exes syms sym_table bsym_table exes = map (fixup_exe syms sym_table bsym_table) exes
 
-let fixup_typeclass_instances syms bsym_table =
+let fixup_typeclass_instances syms sym_table bsym_table =
   Flx_bsym_table.iter (fun i (id,parent,sr,entry) -> match entry with
   | BBDCL_function (props,bvs,bps,ret,exes) ->
-    let exes = fixup_exes syms bsym_table exes in
+    let exes = fixup_exes syms sym_table bsym_table exes in
     let entry = BBDCL_function (props, bvs, bps, ret, exes) in
     Flx_bsym_table.add bsym_table i (id,parent,sr,entry)
   | BBDCL_procedure (props, bvs, bps,exes)  ->
-    let exes = fixup_exes syms bsym_table exes in
+    let exes = fixup_exes syms sym_table bsym_table exes in
     let entry = BBDCL_procedure (props, bvs, bps,exes) in
     Flx_bsym_table.add bsym_table i (id,parent,sr,entry)
   | _ -> ()
@@ -593,11 +594,11 @@ let fixup_typeclass_instances syms bsym_table =
 (* this routine doesn't allow constraint reduction failure
   and should only be run at instantiation time
 *)
-let fixup_typeclass_instance syms bsym_table i ts =
-  fixup_typeclass_instance' syms bsym_table false i ts
+let fixup_typeclass_instance syms sym_table bsym_table i ts =
+  fixup_typeclass_instance' syms sym_table bsym_table false i ts
 
 (* this routine allows failure, only use for early
   instantiation for optimisation
 *)
-let maybe_fixup_typeclass_instance syms bsym_table i ts =
-  fixup_typeclass_instance' syms bsym_table true i ts
+let maybe_fixup_typeclass_instance syms sym_table bsym_table i ts =
+  fixup_typeclass_instance' syms sym_table bsym_table true i ts
