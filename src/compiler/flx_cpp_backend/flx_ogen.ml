@@ -78,7 +78,7 @@ let comma_sub s =
 (* this code handles pointers in types *)
 let rec get_offsets' syms bsym_table typ : string list =
   let typ = reduce_type typ in
-  let tname = cpp_typename syms typ in
+  let tname = cpp_typename syms bsym_table typ in
   let t' = unfold syms.sym_table typ in
   match t' with
 
@@ -138,7 +138,7 @@ let rec get_offsets' syms bsym_table typ : string list =
     if k> 100 then
       failwith ("[get_offsets] Too many elements in array for shape, type " ^ sbt syms.sym_table t')
     else begin
-      let eltype = cpp_typename syms t in
+      let eltype = cpp_typename syms bsym_table t in
       fold_left
       (fun result i ->
         let ss = "+" ^ si i ^ "*sizeof("^eltype^")" in
@@ -501,10 +501,10 @@ let gen_offset_tables syms bsym_table child_map module_name =
     | BTYP_function _ -> ()
 
     | BTYP_tuple args ->
-      let name = cpp_type_classname syms btyp in
+      let name = cpp_type_classname syms bsym_table btyp in
       let offsets = get_offsets syms bsym_table btyp in
       let n = length offsets in
-      let classname = cpp_type_classname syms btyp in
+      let classname = cpp_type_classname syms bsym_table btyp in
       bcat s ("\n//OFFSETS for tuple type " ^ string_of_bid index ^ "\n");
       gen_offset_data s n name offsets false [] None last_ptr_map
 
@@ -517,8 +517,8 @@ let gen_offset_tables syms bsym_table child_map module_name =
         try int_of_unitsum i
         with Not_found -> failwith "Array index must be unitsum"
       in
-      let name = cpp_typename syms btyp in
-      let tname = cpp_typename syms t in
+      let name = cpp_typename syms bsym_table btyp in
+      let tname = cpp_typename syms bsym_table t in
       let offsets = get_offsets syms bsym_table t in
       let is_pod =
         match t with
@@ -572,7 +572,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
       bcat s "};\n"
 
     | BTYP_inst (i,ts) ->
-      let name = cpp_typename syms btyp in
+      let name = cpp_typename syms bsym_table btyp in
       let id,parent,sr,entry =
         try Flx_bsym_table.find bsym_table i
         with Not_found ->
@@ -656,11 +656,11 @@ let gen_offset_tables syms bsym_table child_map module_name =
     end
 
    | BTYP_unitsum _ ->
-     let name = cpp_typename syms btyp in
+     let name = cpp_typename syms bsym_table btyp in
      bcat s ("static gc_shape_t &"^ name ^"_ptr_map = flx::rtl::_int_ptr_map;\n");
 
    | BTYP_sum _ ->
-     let name = cpp_typename syms btyp in
+     let name = cpp_typename syms bsym_table btyp in
      bcat s ("static gc_shape_t &"^ name ^"_ptr_map = flx::rtl::_uctor_ptr_map;\n");
 
    | _ ->

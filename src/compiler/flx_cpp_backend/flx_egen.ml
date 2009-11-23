@@ -174,11 +174,11 @@ let rec gen_expr' syms bsym_table this (e,t) vs ts sr : cexpr_t =
     ", got ts=" ^
     si (length ts)
   );
-  let tsub t = reduce_type (beta_reduce syms sr  (tsubst vs ts t)) in
-  let tn t = cpp_typename syms (tsub t) in
+  let tsub t = reduce_type (beta_reduce syms sr (tsubst vs ts t)) in
+  let tn t = cpp_typename syms bsym_table (tsub t) in
 
   (* NOTE this function does not do a reduce_type *)
-  let raw_typename t = cpp_typename syms (beta_reduce syms sr  (tsubst vs ts t)) in
+  let raw_typename t = cpp_typename syms bsym_table (beta_reduce syms sr (tsubst vs ts t)) in
   let gen_case_index e =
     let _,t = e in
     begin match t with

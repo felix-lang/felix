@@ -46,7 +46,7 @@ let gen_prim_call
   print_endline ("argt = " ^ sbt syms.sym_table argt);
   print_endline ("arg = " ^ sbe syms.sym_table a);
   *)
-  let tn t = cpp_typename syms t in
+  let tn t = cpp_typename syms bsym_table t in
   let rt t = reduce_type (tsub t) in
   let rtn t = tn (rt t) in
 

@@ -142,8 +142,8 @@ let gen_type_name syms bsym_table (index,typ) =
     sbt syms.sym_table typ
   );
   *)
-  let cn t = cpp_type_classname syms t in
-  let tn t = cpp_typename syms t in
+  let cn t = cpp_type_classname syms bsym_table t in
+  let tn t = cpp_typename syms bsym_table t in
   let descr =
     "\n//TYPE " ^ string_of_bid index ^ ": " ^ sbt syms.sym_table typ ^ "\n"
   in
@@ -176,7 +176,7 @@ let gen_type_name syms bsym_table (index,typ) =
       | BTYP_tuple ls -> ls
       | x -> [x]
     in
-    let ctn t = `Ct_base (cpp_typename syms t) in
+    let ctn t = `Ct_base (cpp_typename syms bsym_table t) in
     let t = `Ct_fun (ctn c,map ctn ds) in
     let cdt = `Cdt_value t in
     "typedef " ^ string_of_cdecl_type name cdt ^ ";\n"
@@ -309,8 +309,8 @@ let gen_type syms bsym_table (index,typ) =
     sbt syms.sym_table typ
   );
   *)
-  let tn t = cpp_typename syms t in
-  let cn t = cpp_type_classname syms t in
+  let tn t = cpp_typename syms bsym_table t in
+  let cn t = cpp_type_classname syms bsym_table t in
   let descr =
     "\n//TYPE " ^ string_of_bid index ^ ": " ^
     sbt syms.sym_table typ ^
@@ -474,7 +474,7 @@ let gen_type_names syms bsym_table ts =
   iter
   (fun (i,t) ->
     try
-      let name = cpp_typename syms t in
+      let name = cpp_typename syms bsym_table t in
       if mem name !handled then
         () (* print_endline ("WOOPS ALREADY HANDLED " ^ name) *)
       else (
@@ -494,7 +494,7 @@ let gen_types syms bsym_table ts =
   let s = Buffer.create 100 in
   iter
   (fun ((i,t) as t') ->
-    let name = cpp_typename syms t in
+    let name = cpp_typename syms bsym_table t in
     if mem name !handled then
       () (* print_endline ("WOOPS ALREADY HANDLED " ^ name) *)
     else (

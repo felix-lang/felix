@@ -165,7 +165,7 @@ let tix syms t =
   with Not_found ->
     failwith ("Cannot find type " ^sbt syms.sym_table t ^" in registry")
 
-let rec cpp_type_classname syms t =
+let rec cpp_type_classname syms bsym_table t =
   let tix t = tix syms t in
   let t = fold syms.counter syms.sym_table t in
   try match unfold syms.sym_table t with
@@ -176,7 +176,7 @@ let rec cpp_type_classname syms t =
   | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
   | BTYP_tuple [] -> "unit"
 
-  | BTYP_pointer t' -> cpp_type_classname syms t' ^ "*"
+  | BTYP_pointer t' -> cpp_type_classname syms bsym_table t' ^ "*"
  
   | BTYP_function (_,BTYP_void) -> "_pt" ^ cid_of_bid (tix t)
   | BTYP_function _ -> "_ft" ^ cid_of_bid (tix t)
@@ -188,36 +188,32 @@ let rec cpp_type_classname syms t =
   | BTYP_sum _ -> "_st" ^ cid_of_bid (tix t)
   | BTYP_unitsum k -> "_us" ^ string_of_int k
 
-
   | BTYP_inst (i,ts) ->
     let cal_prefix = function
-      | SYMDEF_struct _  -> "_s"
-      | SYMDEF_union _   -> "_u"
-      | SYMDEF_abs _  -> "_a"
-      | SYMDEF_newtype _ -> "_abstr_"
+      | BBDCL_struct _  -> "_s"
+      | BBDCL_union _   -> "_u"
+      | BBDCL_abs _  -> "_a"
+      | BBDCL_newtype _ -> "_abstr_"
       | _ -> "_unk_"
     in
     if ts = [] then
       match
-        try
-          match Flx_sym_table.find syms.sym_table i with
-          { Flx_sym.id=id; symdef=symdef } -> Some (id, symdef)
-        with Not_found -> None
+        try Some (Flx_bsym_table.find bsym_table i) with Not_found -> None
       with
-      | Some (id,SYMDEF_cstruct _) -> id
-      | Some (_,SYMDEF_abs (_,CS_str "char",_)) -> "char" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str "int",_)) -> "int" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str "short",_)) -> "short" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str "long",_)) -> "long" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str "float",_)) -> "float" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str "double",_)) -> "double" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str_template "char",_)) -> "char" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str_template "int",_)) -> "int" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str_template "short",_)) -> "short" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str_template "long",_)) -> "long" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str_template "float",_)) -> "float" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str_template "double",_)) -> "double" (* hack .. *)
-      | Some (_,data)  ->
+      | Some (id,_,_,BBDCL_cstruct _) -> id
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str "char",_)) -> "char" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str "int",_)) -> "int" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str "short",_)) -> "short" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str "long",_)) -> "long" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str "float",_)) -> "float" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str "double",_)) -> "double" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "char",_)) -> "char" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "int",_)) -> "int" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "short",_)) -> "short" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "long",_)) -> "long" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "float",_)) -> "float" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "double",_)) -> "double" (* hack .. *)
+      | Some (_,_,_,data)  ->
         let prefix = cal_prefix data in
         prefix ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
       | None ->
@@ -239,11 +235,11 @@ let rec cpp_type_classname syms t =
       " to be in registry"
     )
 
-let rec cpp_typename syms t =
+let rec cpp_typename syms bsym_table t =
   match unfold syms.sym_table t with
-  | BTYP_function _ -> cpp_type_classname syms t ^ "*"
-  | BTYP_cfunction _ -> cpp_type_classname syms t ^ "*"
-  | BTYP_pointer t -> cpp_typename syms t ^ "*"
-  | _ -> cpp_type_classname syms t
+  | BTYP_function _ -> cpp_type_classname syms bsym_table t ^ "*"
+  | BTYP_cfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
+  | BTYP_pointer t -> cpp_typename syms bsym_table t ^ "*"
+  | _ -> cpp_type_classname syms bsym_table t
 
-let cpp_ltypename syms t = cpp_typename syms t 
+let cpp_ltypename syms bsym_table t = cpp_typename syms bsym_table t
