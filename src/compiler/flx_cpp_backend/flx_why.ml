@@ -9,7 +9,7 @@ open Flx_lookup
 let sr  = Flx_srcref.make_dummy "[flx_why] generated"
 
 (* Hackery to find logic functions in the library *)
-let find_function syms env name =
+let find_function syms bsym_table env name =
   let entries =
     try Some (lookup_name_in_env syms env sr name)
     with _ -> None
@@ -27,13 +27,13 @@ let find_function syms env name =
   let entries =
     filter (fun {base_sym=i} ->
       match
-        try Some (Flx_sym_table.find syms.sym_table i)
+        try Some (Flx_bsym_table.find bsym_table i)
         with Not_found -> None
       with
-      | Some { Flx_sym.symdef=SYMDEF_fun (_,args,res,ct,_,_) } ->
+      | Some (_,_,_,BBDCL_fun (_,_,args,res,ct,_,_)) ->
         begin match name,args,res with
-        | "lnot",[TYP_name (_,"bool",[])],TYP_name (_,"bool",[]) -> true
-        | _,[TYP_name (_,"bool",[]); TYP_name (_,"bool",[])],TYP_name (_,"bool",[]) -> true
+        | "lnot", [BTYP_unitsum 2], BTYP_unitsum 2 -> true
+        | _, [BTYP_unitsum 2; BTYP_unitsum 2], BTYP_unitsum 2 -> true
         | _ -> false
         end
       | _ -> false
@@ -50,9 +50,9 @@ let find_function syms env name =
       print_endline ("WARNING: flx_why found too many '" ^ name ^ "'");
       dummy_bid
 
-let find_logics syms root =
+let find_logics syms bsym_table root =
   let env = build_env syms (Some root) in
-  let ff x = find_function syms env x in
+  let ff x = find_function syms bsym_table env x in
   [
     ff "land", "and";
     ff "lor", "or";
@@ -64,8 +64,6 @@ let find_logics syms root =
 let mn s = Flx_name.cid_of_flxid s
 
 let getname syms bsym_table i =
-  try match Flx_sym_table.find syms.sym_table i with { Flx_sym.id=id } -> mn id
-  with Not_found ->
   try match Flx_bsym_table.find bsym_table i with id,_,_,_ -> mn id
   with Not_found -> "index_" ^ Flx_name.cid_of_bid i
 
@@ -260,7 +258,7 @@ let calps ps =
 let unitt = BTYP_tuple []
 
 let emit_whycode filename syms bsym_table root =
-  let logics = find_logics syms root in
+  let logics = find_logics syms bsym_table root in
   let f = open_out filename in
   output_string f "(****** HACKS *******)\n";
 (*  output_string f "type 'a lvalue  (* Felix lvalues *) \n"; *)
