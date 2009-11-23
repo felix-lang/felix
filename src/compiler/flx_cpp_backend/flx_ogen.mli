@@ -2,7 +2,6 @@
 
 val gen_offset_tables:
   Flx_mtypes2.sym_state_t ->
-  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   Flx_child.t ->
   string ->
@@ -14,7 +13,6 @@ val find_thread_vars_with_type:
 
 val find_references:
   Flx_mtypes2.sym_state_t ->
-  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   Flx_child.t ->
   Flx_types.bid_t ->

@@ -85,7 +85,8 @@ prevent gross bloat.
 
 let idt t = t
 
-let rec rpl syms sym_table argmap x = match map_tbexpr ident (rpl syms sym_table argmap) idt x with
+let rec rpl syms argmap x =
+  match map_tbexpr ident (rpl syms argmap) idt x with
   (* No need to check ts or type here *)
   | (BEXPR_name (i,_),_) as x ->
     (try
@@ -97,11 +98,11 @@ let rec rpl syms sym_table argmap x = match map_tbexpr ident (rpl syms sym_table
       with Not_found -> x)
   | x -> x
 
-let subarg syms sym_table bsym_table argmap exe =
-  map_bexe idt (rpl syms sym_table argmap) idt idt idt exe
+let subarg syms bsym_table argmap exe =
+  map_bexe idt (rpl syms argmap) idt idt idt exe
 
 (* NOTE: result is in reversed order *)
-let gen_body syms sym_table (uses,child_map,bsym_table) id
+let gen_body syms (uses,child_map,bsym_table) id
   varmap ps relabel revariable exes argument
   sr caller callee vs callee_vs_len inline_method props
 =
@@ -180,7 +181,7 @@ let gen_body syms sym_table (uses,child_map,bsym_table) id
   in
 
   let caller_vars = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) vs in
-  let ge e = remap_expr syms sym_table bsym_table varmap revariable caller_vars callee_vs_len e in
+  let ge e = remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e in
   let relab s = try Hashtbl.find relabel s with Not_found -> s in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let end_label_uses = ref 0 in
@@ -460,7 +461,7 @@ let gen_body syms sym_table (uses,child_map,bsym_table) id
     let sba = if Hashtbl.length argmap = 0 then
       fun x -> b := x :: !b
     else
-      fun x -> b := subarg syms sym_table bsym_table argmap x :: !b
+      fun x -> b := subarg syms bsym_table argmap x :: !b
     in
     iter
     (fun exe -> iter sba (remap exe))
@@ -487,7 +488,7 @@ let gen_body syms sym_table (uses,child_map,bsym_table) id
         let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
         match entry with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-          let exes = map (subarg syms sym_table bsym_table argmap) exes in
+          let exes = map (subarg syms bsym_table argmap) exes in
           recal_exes_usage uses sr i ps exes;
           Flx_bsym_table.add bsym_table i
           (id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes))
@@ -496,7 +497,7 @@ let gen_body syms sym_table (uses,child_map,bsym_table) id
           (*
           print_endline ("MODIFY " ^ si i);
           *)
-          let exes = map (subarg syms sym_table bsym_table argmap) exes in
+          let exes = map (subarg syms bsym_table argmap) exes in
           recal_exes_usage uses sr i ps exes;
           Flx_bsym_table.add bsym_table i
           (id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes))

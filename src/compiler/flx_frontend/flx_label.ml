@@ -80,7 +80,7 @@ let get_label_kind label_map usage_map proc label =
   get_label_kind_from_index usage_map lix
 
 
-let cal_usage syms sym_table bsym_table label_map caller exes usage =
+let cal_usage syms bsym_table label_map caller exes usage =
   iter
   (function
     | BEXE_goto (sr,label)
@@ -105,16 +105,16 @@ let cal_usage syms sym_table bsym_table label_map caller exes usage =
   )
   exes
 
-let update_label_usage syms sym_table bsym_table label_map usage index (_,_,_,entry) =
+let update_label_usage syms bsym_table label_map usage index (_,_,_,entry) =
   match entry with
   | BBDCL_function (_,_,_,_,exes)
   | BBDCL_procedure (_,_,_,exes) ->
-    cal_usage syms sym_table bsym_table label_map index exes usage
+    cal_usage syms bsym_table label_map index exes usage
   | _ -> ()
 
-let create_label_usage syms sym_table bsym_table label_map =
+let create_label_usage syms bsym_table label_map =
   let usage = Hashtbl.create 97 in
   Flx_bsym_table.iter
-    (update_label_usage syms sym_table bsym_table label_map usage)
+    (update_label_usage syms bsym_table label_map usage)
     bsym_table;
   usage

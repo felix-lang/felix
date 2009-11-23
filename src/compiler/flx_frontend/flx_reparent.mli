@@ -10,7 +10,6 @@ val vsplice : 'a list -> int -> 'a list -> 'a list
 
 val reparent1 :
   sym_state_t ->
-  Flx_sym_table.t ->
   usage_table_t * Flx_child.t * Flx_bsym_table.t ->
   (string, string) Hashtbl.t ->     (* relabel *)
   (bid_t, btypecode_t) Hashtbl.t -> (* varmap *)
@@ -25,7 +24,6 @@ val reparent1 :
 
 val reparent_children :
   sym_state_t ->
-  Flx_sym_table.t ->
   usage_table_t * Flx_child.t * Flx_bsym_table.t ->
   (string * bid_t) list ->          (* caller vs *)
   int ->                            (* callee_vs_len *)
@@ -39,7 +37,6 @@ val reparent_children :
 
 val specialise_symbol:
   sym_state_t ->
-  Flx_sym_table.t ->
   usage_table_t * Flx_child.t * Flx_bsym_table.t ->
   (string * bid_t) list ->          (* caller vs *)
   int ->                            (* callee_vs_len *)
@@ -53,7 +50,6 @@ val specialise_symbol:
 
 val remap_expr :
   sym_state_t ->
-  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   (bid_t, btypecode_t) Hashtbl.t ->
   (bid_t, bid_t) Hashtbl.t ->

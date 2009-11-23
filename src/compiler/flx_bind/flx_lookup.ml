@@ -372,7 +372,7 @@ and inner_bind_type syms sym_table bsym_table env sr rs t : btypecode_t =
   print_endline ("Bound type= " ^ sbt bsym_table bt);
   *)
   let bt =
-    try beta_reduce syms sym_table bsym_table sr bt
+    try beta_reduce syms bsym_table sr bt
     with Not_found -> failwith ("Beta reduce failed with Not_found " ^ sbt bsym_table bt)
   in
     (*
@@ -408,7 +408,7 @@ and inner_bind_expression syms sym_table bsym_table env rs e  =
        raise x
 
   in
-    let t' = beta_reduce syms sym_table bsym_table sr t' in
+    let t' = beta_reduce syms bsym_table sr t' in
     e',t'
 
 and expand_typeset t =
@@ -749,7 +749,7 @@ and bind_type'
         print_endline ("Bound matching is " ^ sbt bsym_table p' ^ " => " ^ sbt bsym_table t');
       *)
       pts := ({pattern=p'; pattern_vars=varset; assignments=eqns},t') :: !pts;
-      let u = maybe_unification syms.counter sym_table [p', t] in
+      let u = maybe_unification syms.counter [p', t] in
       match u with
       | None ->  ()
         (* CRAP! The below argument is correct BUT ..
@@ -795,8 +795,8 @@ and bind_type'
 
   | TYP_proj (i,t) ->
     let t = bt t in
-    ignore (try unfold sym_table t with _ -> failwith "TYP_proj unfold screwd");
-    begin match unfold sym_table t with
+    ignore (try unfold t with _ -> failwith "TYP_proj unfold screwd");
+    begin match unfold t with
     | BTYP_tuple ls ->
       if i < 1 or i> List.length ls
       then
@@ -818,7 +818,7 @@ and bind_type'
 
   | TYP_dom t ->
     let t = bt t in
-    begin match unfold sym_table t with
+    begin match unfold t with
     | BTYP_function (a,b) -> a
     | BTYP_cfunction (a,b) -> a
     | _ ->
@@ -830,7 +830,7 @@ and bind_type'
     end
   | TYP_cod t ->
     let t = bt t in
-    begin match unfold sym_table t with
+    begin match unfold t with
     | BTYP_function (a,b) -> b
     | BTYP_cfunction (a,b) -> b
     | _ ->
@@ -843,8 +843,8 @@ and bind_type'
 
   | TYP_case_arg (i,t) ->
     let t = bt t in
-    ignore (try unfold sym_table t with _ -> failwith "TYP_case_arg unfold screwd");
-    begin match unfold sym_table t with
+    ignore (try unfold t with _ -> failwith "TYP_case_arg unfold screwd");
+    begin match unfold t with
     | BTYP_unitsum k ->
       if i < 0 or i >= k
       then
@@ -1066,7 +1066,7 @@ and bind_type'
      (*
      print_endline ("meta typing argument " ^ sbt bsym_table t2);
      *)
-     let sign = metatype sym_table bsym_table sr t2 in
+     let sign = metatype bsym_table sr t2 in
      (*
      print_endline ("Arg type " ^ sbt bsym_table t2 ^ " meta type " ^ sbt bsym_table sign);
      *)
@@ -1107,7 +1107,7 @@ and bind_type'
      in
      (*
      print_endline ("type Application is " ^ sbt bsym_table t);
-     let t = beta_reduce syms sym_table sr t in
+     let t = beta_reduce syms sr t in
      *)
      (*
      print_endline ("after beta reduction is " ^ sbt bsym_table t);
@@ -1120,7 +1120,7 @@ and bind_type'
     let t2 = bt t2 in
     let t = BTYP_apply (t1,t2) in
     (*
-    let t = beta_reduce syms sym_table sr t in
+    let t = beta_reduce syms sr t in
     *)
     t
 
@@ -1444,7 +1444,7 @@ and bind_type_index syms sym_table (rs:recstop) sr index ts mkenv
         print_endline ("Unravelled and bound is " ^ sbt bsym_table t);
         *)
         (*
-        let t = beta_reduce syms sym_table sr t in
+        let t = beta_reduce syms sr t in
         *)
         (*
         print_endline ("Beta reduced: " ^ sbt bsym_table t);
@@ -1584,7 +1584,7 @@ and type_of_index' rs syms sym_table (index:bid_t) : btypecode_t =
       (*
       print_endline ("Type of index after inner "^ si index ^ " is " ^ sbt bsym_table t);
       *)
-      let _ = try unfold sym_table t with _ ->
+      let _ = try unfold t with _ ->
         print_endline "type_of_index produced free fixpoint";
         failwith ("[type_of_index] free fixpoint constructed for " ^ sbt bsym_table t)
       in
@@ -1592,7 +1592,7 @@ and type_of_index' rs syms sym_table (index:bid_t) : btypecode_t =
         match hfind "lookup" sym_table index with { Flx_sym.sr=sr }-> sr
         with Not_found -> dummy_sr
       in
-      let t = beta_reduce syms sym_table bsym_table sr t in
+      let t = beta_reduce syms bsym_table sr t in
       (match t with (* HACK .. *)
       | BTYP_fix _ -> ()
       | _ -> Hashtbl.add syms.ticache index t
@@ -1607,7 +1607,7 @@ and type_of_index_with_ts' rs syms sym_table bsym_table sr (index:bid_t) ts =
   let t = type_of_index' rs syms sym_table index in
   let varmap = make_varmap sym_table bsym_table sr index ts in
   let t = varmap_subst varmap t in
-  beta_reduce syms sym_table bsym_table sr t
+  beta_reduce syms bsym_table sr t
 
 (* This routine should ONLY 'fail' if the return type
   is indeterminate. This cannot usually happen.
@@ -1645,7 +1645,7 @@ and cal_ret_type syms sym_table (rs:recstop) index args =
     print_endline ("Calculate return type of " ^ id);
     *)
     let rt = bind_type' syms sym_table env rs sr rt args mkenv in
-    let rt = beta_reduce syms sym_table bsym_table sr rt in
+    let rt = beta_reduce syms bsym_table sr rt in
     let ret_type = ref rt in
     (*
     begin match rt with
@@ -1771,7 +1771,7 @@ and inner_type_of_index_with_ts
  assert (List.length ts = List.length vs + List.length pvs);
  let varmap = make_varmap sym_table bsym_table sr index ts in
  let t = varmap_subst varmap t in
- let t = beta_reduce syms sym_table bsym_table sr t in
+ let t = beta_reduce syms bsym_table sr t in
  (*
  print_endline ("type_of_index=" ^ sbt bsym_table t);
  *)
@@ -1814,7 +1814,7 @@ and inner_type_of_index
   let bt t:btypecode_t =
     let t' =
       bind_type' syms sym_table env rs sr t [] mkenv in
-    let t' = beta_reduce syms sym_table bsym_table sr t' in
+    let t' = beta_reduce syms bsym_table sr t' in
     t'
   in
   match entry with
@@ -1830,7 +1830,7 @@ and inner_type_of_index
   | SYMDEF_type_alias t ->
     begin
       let t = bt t in
-      let mt = metatype sym_table bsym_table sr t in
+      let mt = metatype bsym_table sr t in
       (*
       print_endline ("Type of type alias is meta_type: " ^ sbt bsym_table mt);
       *)
@@ -1955,10 +1955,10 @@ and cal_apply syms sym_table bsym_table sr rs ((be1,t1) as tbe1) ((be2,t2) as tb
 
 and cal_apply' syms sym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest,reorder =
-    match unfold sym_table t1 with
+    match unfold t1 with
     | BTYP_function (argt,rest)
     | BTYP_cfunction (argt,rest) ->
-      if type_match syms.counter sym_table argt t2
+      if type_match syms.counter argt t2
       then rest, None
       else
       let reorder: tbexpr_t list option =
@@ -2199,7 +2199,7 @@ print_endline (id ^ ": lookup_qn_with_sig: struct");
         *)
         begin match t with
         | BTYP_function (a,_) ->
-          if not (type_match syms.counter sym_table a sign) then
+          if not (type_match syms.counter a sign) then
             clierr sr
             (
               "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
@@ -2241,7 +2241,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
         begin match t with
         | BTYP_function (a,b) ->
           let sign = try List.hd signs with _ -> assert false in
-          if not (type_match syms.counter sym_table a sign) then
+          if not (type_match syms.counter a sign) then
           clierr srn
           (
             "[lookup_qn_with_sig] Expected variable "^id ^
@@ -2299,7 +2299,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
   *)
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
-    begin match unfold sym_table t with
+    begin match unfold t with
     | BTYP_unitsum k ->
       if v<0 or v>= k
       then clierr sra "Case index out of range of sum"
@@ -2481,7 +2481,7 @@ and lookup_type_qn_with_sig'
         *)
         begin match t with
         | BTYP_function (a,_) ->
-          if not (type_match syms.counter sym_table a sign) then
+          if not (type_match syms.counter a sign) then
             clierr sr
             (
               "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
@@ -2537,7 +2537,7 @@ and lookup_type_qn_with_sig'
 
   | `AST_typed_case (sr,v,t) ->
     let t = bt sr t in
-    begin match unfold sym_table t with
+    begin match unfold t with
     | BTYP_unitsum k ->
       if v<0 or v>= k
       then clierr sra "Case index out of range of sum"
@@ -2768,7 +2768,7 @@ and handle_type
         ignore begin
           match t with
           | BTYP_fix _ -> raise (Free_fixpoint t)
-          | _ -> try unfold sym_table t with
+          | _ -> try unfold t with
           | _ -> raise (Free_fixpoint t)
         end
         ;
@@ -2840,7 +2840,7 @@ and handle_function
         ignore begin
           match t with
           | BTYP_fix _ -> raise (Free_fixpoint t)
-          | _ -> try unfold sym_table t with
+          | _ -> try unfold t with
           | _ -> raise (Free_fixpoint t)
         end
         ;
@@ -2862,7 +2862,7 @@ and handle_function
         ignore begin
           match t with
           | BTYP_fix _ -> raise (Free_fixpoint t)
-          | _ -> try unfold sym_table t with
+          | _ -> try unfold t with
           | _ -> raise (Free_fixpoint t)
         end
         ;
@@ -2895,11 +2895,11 @@ and handle_variable syms sym_table
     let ts = adjust_ts sym_table bsym_table sr index ts in
     let vs = find_vs sym_table index in
     let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
-    let t = beta_reduce syms sym_table bsym_table sr (tsubst bvs ts t) in
+    let t = beta_reduce syms bsym_table sr (tsubst bvs ts t) in
     begin match t with
     | BTYP_cfunction (d,c)
     | BTYP_function (d,c) ->
-      if not (type_match syms.counter sym_table d t2) then
+      if not (type_match syms.counter d t2) then
       clierr sr
       (
         "[handle_variable(1)] Expected variable "^id ^
@@ -3407,7 +3407,7 @@ and bind_expression' syms sym_table bsym_table env (rs:recstop) e args : tbexpr_
   let bt sr t =
     (* we're really wanting to call bind type and propagate depth ? *)
     let t = bind_type' syms sym_table env { rs with depth=rs.depth +1 } sr t [] mkenv in
-    let t = beta_reduce syms sym_table bsym_table sr t in
+    let t = beta_reduce syms bsym_table sr t in
     t
   in
   let ti sr i ts =
@@ -3435,7 +3435,7 @@ and bind_expression' syms sym_table bsym_table env (rs:recstop) e args : tbexpr_
   print_env env;
   print_endline "==";
   *)
-  let rt t = Flx_maps.reduce_type (beta_reduce syms sym_table bsym_table sr t) in
+  let rt t = Flx_maps.reduce_type (beta_reduce syms bsym_table sr t) in
   let sr = src_of_expr e in
   let cal_method_apply sra fn e2 meth_ts =
     (*
@@ -3687,7 +3687,7 @@ and bind_expression' syms sym_table bsym_table env (rs:recstop) e args : tbexpr_
   | EXPR_coercion (sr,(x,t)) ->
     let (e',t') as x' = be x in
     let t'' = bt sr t in
-    if type_eq syms.counter sym_table t' t'' then x'
+    if type_eq syms.counter t' t'' then x'
     else
     let t' = Flx_maps.reduce_type t' in (* src *)
     let t'' = Flx_maps.reduce_type t'' in (* dst *)
@@ -3728,7 +3728,7 @@ and bind_expression' syms sym_table bsym_table env (rs:recstop) e args : tbexpr_
           match list_assoc_index ls' s with
           | Some j ->
             let tt = List.assoc s ls' in
-            if type_eq syms.counter sym_table t tt then
+            if type_eq syms.counter t tt then
               s,(BEXPR_get_n (j,x'),t)
             else clierr sr (
               "Source Record field '" ^ s ^ "' has type:\n" ^
@@ -3759,7 +3759,7 @@ and bind_expression' syms sym_table bsym_table env (rs:recstop) e args : tbexpr_
           match list_assoc_index rhs s with
           | Some j ->
             let tt = List.assoc s rhs in
-            if not (type_eq syms.counter sym_table t tt) then
+            if not (type_eq syms.counter t tt) then
             clierr sr (
               "Source Variant field '" ^ s ^ "' has type:\n" ^
               sbt bsym_table t ^ "\n" ^
@@ -3792,7 +3792,7 @@ and bind_expression' syms sym_table bsym_table env (rs:recstop) e args : tbexpr_
 
   | EXPR_get_n (sr,(n,e')) ->
     let expr,typ = be e' in
-    let ctyp = match unfold sym_table typ with
+    let ctyp = match unfold typ with
     | BTYP_array (t,BTYP_unitsum len)  ->
       if n<0 or n>len-1
       then clierr sr
@@ -3879,8 +3879,8 @@ and bind_expression' syms sym_table bsym_table env (rs:recstop) e args : tbexpr_
 
   | EXPR_typed_case (sr,v,t) ->
     let t = bt sr t in
-    ignore (try unfold sym_table t with _ -> failwith "AST_typed_case unfold screwd");
-    begin match unfold sym_table t with
+    ignore (try unfold t with _ -> failwith "AST_typed_case unfold screwd");
+    begin match unfold t with
     | BTYP_unitsum k ->
       if v<0 or v>= k
       then clierr sr "Case index out of range of sum"
@@ -4224,7 +4224,7 @@ and bind_expression' syms sym_table bsym_table env (rs:recstop) e args : tbexpr_
 
   | EXPR_deref (sr,e) ->
     let e,t = be e in
-    begin match unfold sym_table t with
+    begin match unfold t with
     | BTYP_pointer t'
       -> BEXPR_deref (e,t),t'
     | _ -> clierr sr "[bind_expression'] Dereference non pointer"
@@ -4313,7 +4313,7 @@ and bind_expression' syms sym_table bsym_table env (rs:recstop) e args : tbexpr_
             in
           let ct = bind_type' syms sym_table env' rsground sr ct bvs mkenv in
           let ct = tsubst vs' ts' ct in
-            if type_eq syms.counter sym_table ct t then
+            if type_eq syms.counter ct t then
               BEXPR_get_n (j,a),t
             else clierr sr ("Component " ^ name ^
               " struct component type " ^ sbt bsym_table ct ^
@@ -4704,8 +4704,8 @@ and bind_expression' syms sym_table bsym_table env (rs:recstop) e args : tbexpr_
 
   | EXPR_case_arg (sr,(v,e)) ->
      let (_,t) as e' = be e in
-    ignore (try unfold sym_table t with _ -> failwith "AST_case_arg unfold screwd");
-     begin match unfold sym_table t with
+    ignore (try unfold t with _ -> failwith "AST_case_arg unfold screwd");
+     begin match unfold t with
      | BTYP_unitsum n ->
        if v < 0 or v >= n
        then clierr sr "Invalid sum index"
@@ -4931,7 +4931,7 @@ and check_instances syms sym_table call_sr calledname classname es ts' mkenv =
       *)
       let matches =
         if List.length inst_ts <> List.length ts' then false else
-        match maybe_specialisation syms.counter sym_table (List.combine inst_ts ts') with
+        match maybe_specialisation syms.counter (List.combine inst_ts ts') with
         | None -> false
         | Some mgu ->
           (*
@@ -4956,7 +4956,7 @@ and check_instances syms sym_table call_sr calledname classname es ts' mkenv =
           (*
           print_endline ("Constraint = " ^ sbt bsym_table cons);
           *)
-          let cons = Flx_maps.reduce_type (beta_reduce syms sym_table bsym_table sr cons) in
+          let cons = Flx_maps.reduce_type (beta_reduce syms bsym_table sr cons) in
           match cons with
           | BTYP_tuple [] -> true
           | BTYP_void -> false
@@ -5308,7 +5308,6 @@ and bind_dir
   let ts' = List.map (fun t ->
     beta_reduce
       syms
-      sym_table
       bsym_table
       dummy_sr
       (bind_type' syms sym_table (cheat_env::env) rsground dummy_sr t [] mkenv)

@@ -15,22 +15,22 @@ open Flx_maps
 
 exception BTfound of btypecode_t
 
-let rec metatype sym_table bsym_table sr term =
+let rec metatype bsym_table sr term =
   (*
   print_endline ("Find Metatype  of: " ^
-    string_of_btypecode sym_table term);
+    string_of_btypecode bsym_table term);
   *)
-  let t = metatype' sym_table bsym_table sr term in
+  let t = metatype' bsym_table sr term in
   (*
-  print_endline ("Metatype  of: " ^ string_of_btypecode sym_table term ^
+  print_endline ("Metatype  of: " ^ string_of_btypecode bsym_table term ^
     " is " ^ sbt bsym_table t);
   print_endline "Done";
   *)
   t
 
-and metatype' sym_table bsym_table sr term =
+and metatype' bsym_table sr term =
   let st t = string_of_btypecode bsym_table t in
-  let mt t = metatype' sym_table bsym_table sr t in
+  let mt t = metatype' bsym_table sr t in
   match term with
 
   | BTYP_typefun (a,b,c) ->
@@ -40,7 +40,7 @@ and metatype' sym_table bsym_table sr term =
       | [x] -> x
       | _ -> BTYP_tuple ps
     in
-      let rt = metatype sym_table bsym_table sr c in
+      let rt = metatype bsym_table sr c in
       if b<>rt
       then
         clierr sr
@@ -99,8 +99,8 @@ and metatype' sym_table bsym_table sr term =
 
   | BTYP_type i -> BTYP_type (i+1)
   | BTYP_inst (index,ts) ->
-    let { Flx_sym.id=id; symdef=entry } =
-      try Flx_sym_table.find sym_table index with Not_found ->
+    let id, _, _, bbdcl =
+      try Flx_bsym_table.find bsym_table index with Not_found ->
         failwith ("[metatype'] can't find type instance index " ^
           string_of_bid index)
     in
@@ -113,20 +113,14 @@ and metatype' sym_table bsym_table sr term =
       bind type routine due to module factoring .. we could pass
       in the bind-type routine as an argument .. yuck ..
     *)
-    begin match entry with
-    | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
-      BTYP_function (BTYP_type 0,BTYP_type 0)
-
-    | SYMDEF_const_ctor (_,t,_,_) ->
-      BTYP_type 0
-
-    | SYMDEF_abs _ -> BTYP_type 0
-
+    begin match bbdcl with
+    | BBDCL_nonconst_ctor _ -> BTYP_function (BTYP_type 0, BTYP_type 0)
+    | BBDCL_const _ -> BTYP_type 0
+    | BBDCL_abs _ -> BTYP_type 0
     | _ ->
         clierr sr ("Unexpected argument to metatype: " ^
           sbt bsym_table term)
     end
-
 
   | _ ->
     print_endline ("Questionable meta typing of term: " ^
@@ -238,13 +232,13 @@ and mk_prim_type_inst i args =
   print_endline "MK_PRIM_TYPE";
   BTYP_inst (i,args)
 
-and beta_reduce syms sym_table bsym_table sr t1 =
+and beta_reduce syms bsym_table sr t1 =
   (*
   print_endline ("---------- Beta reduce " ^ sbt bsym_table t1);
   *)
   let t2 =
   try
-  beta_reduce' syms sym_table bsym_table sr [] t1
+  beta_reduce' syms bsym_table sr [] t1
   with
     | Not_found ->
         failwith ("Beta reduce failed with Not_found in " ^
@@ -258,7 +252,7 @@ and beta_reduce syms sym_table bsym_table sr t1 =
   *)
   t2
 
-and type_list_index syms sym_table ls t =
+and type_list_index syms bsym_table ls t =
   (*
   print_endline ("Comparing : " ^ sbt bsym_table t ^ " with ..");
   *)
@@ -269,7 +263,7 @@ and type_list_index syms sym_table ls t =
     print_endline ("Candidate : " ^ sbt bsym_table hd);
     *)
     if
-      begin try type_eq syms.counter sym_table hd t
+      begin try type_eq syms.counter hd t
       with x ->
         print_endline ("Exception: " ^ Printexc.to_string x);
         false
@@ -278,7 +272,7 @@ and type_list_index syms sym_table ls t =
     else aux tl (n+1)
   in aux ls 0
 
-and beta_reduce' syms sym_table bsym_table sr termlist t =
+and beta_reduce' syms bsym_table sr termlist t =
   (*
   print_endline ("BETA REDUCE " ^ sbt bsym_table t ^ "\ntrail length = " ^
     si (length termlist));
@@ -290,7 +284,7 @@ and beta_reduce' syms sym_table bsym_table sr termlist t =
     sbt bsym_table t ^ "\ntrail length = " ^ si (length termlist))
   end;
 
-  match type_list_index syms sym_table termlist t with
+  match type_list_index syms bsym_table termlist t with
   | Some j ->
         (*
         print_endline "+++Trail:";
@@ -309,9 +303,9 @@ and beta_reduce' syms sym_table bsym_table sr termlist t =
 
   | None ->
 
-  let br t' = beta_reduce' syms sym_table bsym_table sr (t::termlist) t' in
+  let br t' = beta_reduce' syms bsym_table sr (t::termlist) t' in
   let st t = string_of_btypecode bsym_table t in
-  let mt t = metatype sym_table bsym_table sr t in
+  let mt t = metatype bsym_table sr t in
   match t with
   | BTYP_fix _ -> t
   | BTYP_var (i,_) -> t
@@ -319,21 +313,12 @@ and beta_reduce' syms sym_table bsym_table sr termlist t =
   | BTYP_typefun (p,r,b) -> t
   (*
     let b = fixup syms p b in
-    let b' = beta_reduce' syms sym_table sr (t::termlist) b in
+    let b' = beta_reduce' syms bsym_table sr (t::termlist) b in
     let t = BTYP_typefun (p, br r, b') in
     t
   *)
 
-  | BTYP_inst (i,ts) ->
-    let ts = map br ts in
-    begin try match Flx_sym_table.find sym_table i with
-    | { Flx_sym.id=id; symdef=SYMDEF_type_alias _ } ->
-      failwith ("Beta reduce found a type instance of " ^ id ^
-        " to be an alias, which it can't handle")
-    | _ -> BTYP_inst (i,ts)
-    with Not_found -> BTYP_inst (i,ts) (* could be reparented class *)
-    end
-
+  | BTYP_inst (i,ts) -> BTYP_inst (i, map br ts)
   | BTYP_tuple ls -> BTYP_tuple (map br ls)
   | BTYP_array (i,t) -> BTYP_array (i, br t)
   | BTYP_sum ls -> BTYP_sum (map br ls)
@@ -466,7 +451,7 @@ and beta_reduce' syms sym_table bsym_table sr termlist t =
     print_endline ("Unfolded = " ^
       sbt bsym_table (unfold sym_table t1));
     *)
-    begin match unfold sym_table t1 with
+    begin match unfold t1 with
     | BTYP_typefun (ps,r,body) ->
       let params' =
         match ps with
@@ -490,7 +475,7 @@ and beta_reduce' syms sym_table bsym_table sr termlist t =
       (*
       print_endline ("Body after subs     = " ^ sbt bsym_table t');
       *)
-      let t' = beta_reduce' syms sym_table bsym_table sr (t::termlist) t' in
+      let t' = beta_reduce' syms bsym_table sr (t::termlist) t' in
       (*
       print_endline ("Body after reduction = " ^ sbt bsym_table t');
       *)
@@ -523,7 +508,7 @@ and beta_reduce' syms sym_table bsym_table sr termlist t =
           pattern_vars=dvars;
         }, t'
       in
-      match maybe_unification syms.counter sym_table [p,tt] with
+      match maybe_unification syms.counter [p,tt] with
       | Some _ -> new_matches := x :: !new_matches
       | None ->
         (*
@@ -539,7 +524,7 @@ and beta_reduce' syms sym_table bsym_table sr termlist t =
       failwith "[beta-reduce] typematch failure"
     | ({pattern=p';pattern_vars=dvars;assignments=eqns},t') :: _ ->
       try
-        let mgu = unification syms.counter sym_table [p', tt] dvars in
+        let mgu = unification syms.counter [p', tt] dvars in
         (*
         print_endline "Typematch success";
         *)

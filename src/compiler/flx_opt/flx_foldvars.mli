@@ -8,7 +8,6 @@ open Flx_call
 
 val fold_vars:
   sym_state_t ->
-  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   Flx_child.t ->
   usage_table_t ->

@@ -10,7 +10,7 @@ open Flx_maps
 
 let id x = x
 
-let remove_useless_reductions syms sym_table bsym_table reductions =
+let remove_useless_reductions syms bsym_table reductions =
   List.filter
   (fun (id,bvs,bps,e1,_) ->
     let psi = map (fun {pindex=i} -> i) bps in
@@ -39,11 +39,11 @@ let remove_useless_reductions syms sym_table bsym_table reductions =
   )
   reductions
 
-let ematch syms sym_table bsym_table changed (name,bvs,bps,e1,e2) tvars evars e =
+let ematch syms bsym_table changed (name,bvs,bps,e1,e2) tvars evars e =
   (*
   print_endline ("Matching " ^ sbe bsym_table e ^ " with " ^ sbe bsym_table e1);
   *)
-  match Flx_unify.expr_maybe_matches syms.counter sym_table tvars evars e1 e with
+  match Flx_unify.expr_maybe_matches syms.counter tvars evars e1 e with
   | Some (tmgu,emgu) ->
     changed := true;
       (*
@@ -63,15 +63,15 @@ let ematch syms sym_table bsym_table changed (name,bvs,bps,e1,e2) tvars evars e 
 
   | None -> e
 
-let rec reduce_exe syms sym_table bsym_table reductions count exe =
+let rec reduce_exe syms bsym_table reductions count exe =
   if count = 0 then exe else
   let changed = ref false in
   let exe = fold_left
     (fun exe (name,bvs,bps,e1,e2 as red,tvars,evars) ->
       (*
-      print_endline ("Check reduction rule " ^ name ^ " on " ^ string_of_bexe sym_table bsym_table 0 exe);
+      print_endline ("Check reduction rule " ^ name ^ " on " ^ string_of_bexe bsym_table 0 exe);
       *)
-      let em e = ematch syms sym_table bsym_table changed red tvars evars e in
+      let em e = ematch syms bsym_table changed red tvars evars e in
       (* apply reduction top down AND bottom up *)
       let rec em' e = let e = em e in em (map_tbexpr id em' id e) in
       map_bexe id em' id id id exe
@@ -79,10 +79,10 @@ let rec reduce_exe syms sym_table bsym_table reductions count exe =
     exe
     reductions
   in
-  if !changed then reduce_exe syms sym_table bsym_table reductions (count - 1) exe
+  if !changed then reduce_exe syms bsym_table reductions (count - 1) exe
   else exe
 
-let reduce_exes syms sym_table bsym_table reductions exes =
+let reduce_exes syms bsym_table reductions exes =
   let xreds = map
   (fun ((name,bvs,bps,e1,e2) as red) ->
     let tvars = map (fun (tvid, tvidx) -> tvidx) bvs in
@@ -92,4 +92,4 @@ let reduce_exes syms sym_table bsym_table reductions exes =
   reductions
   in
 
-  map (reduce_exe syms sym_table bsym_table xreds 10) exes
+  map (reduce_exe syms bsym_table xreds 10) exes

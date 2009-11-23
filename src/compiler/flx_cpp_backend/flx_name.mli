@@ -15,14 +15,12 @@ val cpp_instance_name :
 
 val cpp_type_classname :
   sym_state_t ->
-  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   btypecode_t ->
   string
 
 val cpp_typename :
   sym_state_t ->
-  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   btypecode_t ->
   string
@@ -30,7 +28,6 @@ val cpp_typename :
 
 val cpp_ltypename :
   sym_state_t ->
-  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   btypecode_t ->
   string

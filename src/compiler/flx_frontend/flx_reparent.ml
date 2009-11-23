@@ -45,11 +45,11 @@ let vsplice caller_vars callee_vs_len ts =
 *)
 let ident x = x
 
-let remap_expr syms sym_table bsym_table varmap revariable caller_vars callee_vs_len e =
+let remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e =
   (*
   print_endline ("Remapping expression " ^ sbe sym_table bsym_table e);
   *)
-  let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms sym_table bsym_table i ts in
+  let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let tmap t = match t with
   | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
@@ -105,14 +105,14 @@ let remap_expr syms sym_table bsym_table varmap revariable caller_vars callee_vs
     *)
     a
 
-let remap_exe syms sym_table bsym_table relabel varmap revariable caller_vars callee_vs_len exe =
+let remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_len exe =
   (*
   print_endline ("remap_exe " ^ string_of_bexe sym_table bsym_table 0 exe);
   *)
-  let ge e = remap_expr syms sym_table bsym_table varmap revariable caller_vars callee_vs_len e in
+  let ge e = remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let relab s = try Hashtbl.find relabel s with Not_found -> s in
-  let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms sym_table bsym_table i ts in
+  let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts in
 
   let tmap t = match t with
   | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
@@ -178,10 +178,10 @@ let remap_exe syms sym_table bsym_table relabel varmap revariable caller_vars ca
   exe
 
 
-let remap_exes syms sym_table bsym_table relabel varmap revariable caller_vars callee_vs_len exes =
-  map (remap_exe syms sym_table bsym_table relabel varmap revariable caller_vars callee_vs_len) exes
+let remap_exes syms bsym_table relabel varmap revariable caller_vars callee_vs_len exes =
+  map (remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_len) exes
 
-let remap_reqs syms sym_table bsym_table varmap revariable caller_vars callee_vs_len reqs : breqs_t =
+let remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len reqs : breqs_t =
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let tmap t = match t with
   | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
@@ -223,7 +223,7 @@ let allow_rescan flag props =
   | false -> props
   | true -> filter (function | `Inlining_complete | `Inlining_started -> false | _ -> true ) props
 
-let reparent1 (syms:sym_state_t) sym_table (uses,child_map,bsym_table)
+let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
   relabel varmap revariable
   caller_vs callee_vs_len index parent k rescan_flag
 =
@@ -253,9 +253,9 @@ let reparent1 (syms:sym_state_t) sym_table (uses,child_map,bsym_table)
      ps
    in
 
-  let rexes xs = remap_exes syms sym_table bsym_table relabel varmap revariable caller_vars callee_vs_len xs in
-  let rexpr e = remap_expr syms sym_table bsym_table varmap revariable caller_vars callee_vs_len e in
-  let rreqs rqs = remap_reqs syms sym_table bsym_table varmap revariable caller_vars callee_vs_len rqs in
+  let rexes xs = remap_exes syms bsym_table relabel varmap revariable caller_vars callee_vs_len xs in
+  let rexpr e = remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e in
+  let rreqs rqs = remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len rqs in
   let id,old_parent,sr,entry = Flx_bsym_table.find bsym_table index in
   if syms.compiler_options.print_flag then
   print_endline
@@ -407,7 +407,7 @@ let reparent1 (syms:sym_state_t) sym_table (uses,child_map,bsym_table)
    routine, but it doesn't reparent the routine itself
 *)
 
-let reparent_children syms sym_table (uses,child_map,bsym_table)
+let reparent_children syms (uses,child_map,bsym_table)
   caller_vs callee_vs_len index (parent:bid_t option) relabel varmap rescan_flag extras
 =
   let pp p = match p with None -> "NONE" | Some i -> string_of_bid i in
@@ -441,7 +441,7 @@ let reparent_children syms sym_table (uses,child_map,bsym_table)
         else Some (Hashtbl.find revariable p)
     in
     let k = Hashtbl.find revariable i in
-    reparent1 syms sym_table (uses,child_map,bsym_table) relabel varmap revariable
+    reparent1 syms (uses,child_map,bsym_table) relabel varmap revariable
     caller_vs callee_vs_len i new_parent k rescan_flag
   )
   closure
@@ -488,17 +488,17 @@ let reparent_children syms sym_table (uses,child_map,bsym_table)
 *)
 
 
-let specialise_symbol syms sym_table (uses,child_map,bsym_table)
+let specialise_symbol syms (uses,child_map,bsym_table)
   caller_vs callee_vs_len index ts parent relabel varmap rescan_flag
 =
   try Hashtbl.find syms.transient_specialisation_cache (index,ts)
   with Not_found ->
     let k = fresh_bid syms.counter in
     let revariable =
-       reparent_children syms sym_table (uses,child_map,bsym_table)
+       reparent_children syms (uses,child_map,bsym_table)
        caller_vs callee_vs_len index (Some k) relabel varmap rescan_flag []
     in
-    reparent1 (syms:sym_state_t) sym_table (uses,child_map,bsym_table )
+    reparent1 (syms:sym_state_t) (uses,child_map,bsym_table )
       relabel varmap revariable
       caller_vs callee_vs_len index parent k rescan_flag
     ;

@@ -169,7 +169,7 @@ let optimize_stmt' state bsym_table child_map stmt =
   let bids, bexes = bind_stmt' state bsym_table stmt in
 
   (* Optimize the bsyms and bexes. *)
-  Flx_opt.optimize state.syms state.sym_table bsym_table child_map state.init_index bids bexes
+  Flx_opt.optimize state.syms bsym_table child_map state.init_index bids bexes
 
 
 let optimize_stmt state =
@@ -206,7 +206,7 @@ let lower_stmt' state bsym_table child_map lower_state stmt =
   in
 
   (* Then, lower the bsyms and bexes. *)
-  Flx_lower.lower lower_state state.sym_table bsym_table child_map state.init_index bids bexes
+  Flx_lower.lower lower_state bsym_table child_map state.init_index bids bexes
 
 
 let lower_stmt state =
@@ -255,7 +255,6 @@ let compile_stmt state =
   (* Make the state needed for code generation. *)
   let codegen_state = Flx_codegen.make_codegen_state
     state.syms
-    state.sym_table
     !Options.optimize
   in
 

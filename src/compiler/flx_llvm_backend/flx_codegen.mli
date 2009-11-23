@@ -2,7 +2,6 @@ type codegen_state_t
 
 val make_codegen_state:
   Flx_mtypes2.sym_state_t ->
-  Flx_sym_table.t ->
   int ->                      (** Optimization level. *)
   codegen_state_t
 

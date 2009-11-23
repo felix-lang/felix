@@ -5,7 +5,6 @@ open Flx_mtypes2
 open Flx_ast
 
 val metatype:
-  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   Flx_srcref.t ->
   btypecode_t ->
@@ -13,7 +12,6 @@ val metatype:
 
 val beta_reduce:
   sym_state_t ->
-  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   Flx_srcref.t ->
   btypecode_t ->

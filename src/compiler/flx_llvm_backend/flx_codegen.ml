@@ -1,7 +1,6 @@
 type codegen_state_t =
   {
     syms: Flx_mtypes2.sym_state_t;
-    sym_table: Flx_sym_table.t;
     context: Llvm.llcontext;
     the_module: Llvm.llmodule;
     the_fpm: [`Function] Llvm.PassManager.t;
@@ -30,7 +29,7 @@ type closure_kind_t =
   | Stack_closure of Flx_types.bid_t * Llvm.llvalue * Llvm.llbuilder
 
 
-let make_codegen_state syms sym_table optimization_level =
+let make_codegen_state syms optimization_level =
   let context = Llvm.create_context () in
   let the_module = Llvm.create_module context "__root__" in
 
@@ -67,7 +66,6 @@ let make_codegen_state syms sym_table optimization_level =
 
   {
     syms = syms;
-    sym_table = sym_table;
     context = context;
     the_module = the_module;
     the_fpm = the_fpm;

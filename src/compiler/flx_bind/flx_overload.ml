@@ -62,7 +62,7 @@ let is_subset tss1 tss2 : bool =
  * in the first list must be in the second list. The order must agree
  * as well, since typematches are ordered.
  *)
-let rec scancases syms sym_table tss1 tss2 = match (tss1, tss2) with
+let rec scancases syms tss1 tss2 = match (tss1, tss2) with
   | [],_ -> true
   | _,[] -> false
   | (p1,v1)::t1 as c1, (p2,v2)::t2  ->
@@ -72,42 +72,42 @@ let rec scancases syms sym_table tss1 tss2 = match (tss1, tss2) with
       if BidSet.is_empty (p1.pattern_vars)
       && BidSet.is_empty (p2.pattern_vars)
       then
-        if type_eq syms.counter sym_table p1.pattern p2.pattern
-        && type_eq syms.counter sym_table v1 v2
-        then scancases syms sym_table t1 t2 (* advance both *)
-        else scancases syms sym_table c1 t2 (* skip rhs case *)
+        if type_eq syms.counter p1.pattern p2.pattern
+        && type_eq syms.counter v1 v2
+        then scancases syms t1 t2 (* advance both *)
+        else scancases syms c1 t2 (* skip rhs case *)
       (* special case of wildcard, somewhat hacked *)
       else match p1.pattern,p2.pattern with
       | BTYP_var _, BTYP_var _ ->
-         if type_eq syms.counter sym_table v1 v2
-         then scancases syms sym_table t1 t2 (* advance both *)
-         else scancases syms sym_table c1 t2 (* skip rhs case *)
-      | BTYP_var _,_ -> scancases syms sym_table c1 t2 (* skip rhs case *)
+         if type_eq syms.counter v1 v2
+         then scancases syms t1 t2 (* advance both *)
+         else scancases syms c1 t2 (* skip rhs case *)
+      | BTYP_var _,_ -> scancases syms c1 t2 (* skip rhs case *)
       | _ -> false
    else false
 
-let typematch_implies syms sym_table a b = match a, b with
+let typematch_implies syms a b = match a, b with
   | BTYP_type_match (v1,tss1), BTYP_type_match (v2,tss2) ->
-     type_eq syms.counter sym_table v1 v2 &&
+     type_eq syms.counter v1 v2 &&
      if is_typeset tss1 && is_typeset tss2 
      then is_subset tss1 tss2
-     else scancases syms sym_table tss1 tss2
+     else scancases syms tss1 tss2
   | _ -> false
 
-let factor_implies syms sym_table ls b =
+let factor_implies syms ls b =
   try 
     List.iter (fun a ->
-      if type_eq syms.counter sym_table a b then raise Not_found
-      else if typematch_implies syms sym_table a b then raise Not_found
+      if type_eq syms.counter a b then raise Not_found
+      else if typematch_implies syms a b then raise Not_found
     ) 
     ls;
     false
   with Not_found -> true
 
-let terms_imply syms sym_table ls1 ls2 =
+let terms_imply syms ls1 ls2 =
   try
     List.iter (fun b ->
-      if not (factor_implies syms sym_table ls1 b) then raise Not_found
+      if not (factor_implies syms ls1 b) then raise Not_found
     )  
     ls2;
     true
@@ -124,8 +124,8 @@ let filter_out_units ls =
 
 let split_conjuncts ls = filter_out_units (split_conjuncts' ls)
 
-let constraint_implies syms sym_table a b =
-  let r = terms_imply syms sym_table (split_conjuncts a) (split_conjuncts b) in
+let constraint_implies syms a b =
+  let r = terms_imply syms (split_conjuncts a) (split_conjuncts b) in
   r
 
 type overload_result =
@@ -497,7 +497,7 @@ let consider syms sym_table bsym_table env bt be luqn2 name
     *)
 
     let curry_domains = List.map
-      (fun t -> reduce_type (beta_reduce syms sym_table bsym_table sr t))
+      (fun t -> reduce_type (beta_reduce syms bsym_table sr t))
       curry_domains
     in
 
@@ -536,7 +536,7 @@ let consider syms sym_table bsym_table env bt be luqn2 name
        already by the instance match .. hmm ..
     *)
     let mgu =
-      try Some (unification syms.counter sym_table eqns !dvars)
+      try Some (unification syms.counter eqns !dvars)
       with Not_found -> None
     in
     match mgu with
@@ -631,7 +631,7 @@ let consider syms sym_table bsym_table env bt be luqn2 name
            in
            let et = spec_bt sr et in
            let et = list_subst syms.counter !mgu et in
-           let et = beta_reduce syms sym_table bsym_table sr et in
+           let et = beta_reduce syms bsym_table sr et in
            (*
            print_endline ("After substitution of mgu, Reduced type is:\n  " ^
              sbt sym_table et)
@@ -745,10 +745,10 @@ let consider syms sym_table bsym_table env bt be luqn2 name
         | BTYP_type_match (arg,[{pattern=pat},BTYP_tuple[]]) ->
           let arg = spec arg in
           let arg = list_subst syms.counter !mgu arg in
-          let arg = beta_reduce syms sym_table bsym_table sr arg in
+          let arg = beta_reduce syms bsym_table sr arg in
           let pat = spec pat in
           let pat = list_subst syms.counter !mgu pat in
-          let pat = beta_reduce syms sym_table bsym_table sr pat in
+          let pat = beta_reduce syms bsym_table sr pat in
           extra_eqns := (arg, pat)::!extra_eqns
         | _ -> ()
         in
@@ -766,7 +766,7 @@ let consider syms sym_table bsym_table env bt be luqn2 name
         );
         *)
         let maybe_extra_mgu =
-          try Some (unification syms.counter sym_table !extra_eqns !dvars)
+          try Some (unification syms.counter !extra_eqns !dvars)
           with Not_found -> None
         in
         match maybe_extra_mgu with
@@ -874,7 +874,7 @@ let consider syms sym_table bsym_table env bt be luqn2 name
         (*
         print_endline ("Substituted type constraint " ^ sbt sym_table type_constraint);
         *)
-        let reduced_constraint = beta_reduce syms sym_table bsym_table sr type_constraint in
+        let reduced_constraint = beta_reduce syms bsym_table sr type_constraint in
         (*
         print_endline ("Reduced type constraint " ^ sbt sym_table reduced_constraint);
         *)
@@ -892,7 +892,7 @@ let consider syms sym_table bsym_table env bt be luqn2 name
           (*
           print_endline "About to check constraint implication";
           *)
-          let implied = constraint_implies syms sym_table env_traint reduced_constraint in
+          let implied = constraint_implies syms env_traint reduced_constraint in
           if implied then 
             let parent_ts = List.map (fun (n,i,_) -> BTYP_var ((i),BTYP_type 0)) parent_vs in
             Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
@@ -1012,7 +1012,7 @@ let overload
          (*
          print_endline (" .. comparing with " ^ sbt sym_table typ);
          *)
-         begin match compare_sigs syms.counter sym_table typ c with
+         begin match compare_sigs syms.counter typ c with
          | `Less ->
            (*
            print_endline "Candidate is more general, discard it, retain whole list";

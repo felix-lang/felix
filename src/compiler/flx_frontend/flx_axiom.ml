@@ -19,7 +19,7 @@ open Flx_typeclass
 let string_of_bvs bvs =
   catmap "," (fun (s,i)->s^"<"^si i^">") bvs
 
-let verify syms sym_table bsym_table csr e =
+let verify syms bsym_table csr e =
   let xx = ref [] in
   iter
   ( fun (id, axsr, parent, axiom_kind, bvs, (bpl,precond), x) ->
@@ -37,7 +37,7 @@ let verify syms sym_table bsym_table csr e =
     in
     let tvars = map (fun (_,i) -> i) bvs in
     let evars = map (fun {pindex=i} -> i) bpl in
-    let result = expr_maybe_matches syms.counter sym_table tvars evars param e in
+    let result = expr_maybe_matches syms.counter tvars evars param e in
     match result with
     | None -> ()
     | Some (tmgu, emgu) ->
@@ -80,7 +80,7 @@ let verify syms sym_table bsym_table csr e =
               match insts with | None -> false | Some insts ->
               try
                 iter (fun (instidx,(inst_bvs, inst_traint, inst_ts)) ->
-                  match tcinst_chk syms sym_table bsym_table true i ts sr (inst_bvs, inst_traint, inst_ts, instidx) with
+                  match tcinst_chk syms bsym_table true i ts sr (inst_bvs, inst_traint, inst_ts, instidx) with
                   | None -> ()
                   | Some _ -> raise Not_found
                 )
@@ -127,30 +127,30 @@ let verify syms sym_table bsym_table csr e =
   ;
   !xx
 
-let fixup_exes syms sym_table bsym_table bexes =
+let fixup_exes syms bsym_table bexes =
   let rec aux inx outx = match inx with
   | [] -> rev outx
   | BEXE_axiom_check (sr,e) :: t ->
     (*
     print_endline ("Axiom check case "  ^ sbe sym_table e);
     *)
-    aux t ((verify syms sym_table bsym_table sr e) @ outx)
+    aux t ((verify syms bsym_table sr e) @ outx)
 
   | h :: t -> aux t (h::outx)
   in
   aux bexes []
 
-let axiom_check syms sym_table bsym_table =
+let axiom_check syms bsym_table =
   Flx_bsym_table.iter
   (fun i (id,sr,parent,entry) ->
     match entry with
     | BBDCL_function (ps,bvs,bpar,bty,bexes) ->
-      let bexes = fixup_exes syms sym_table bsym_table bexes in
+      let bexes = fixup_exes syms bsym_table bexes in
       let entry = BBDCL_function (ps,bvs,bpar,bty,bexes) in
       Flx_bsym_table.add bsym_table i (id,sr,parent,entry)
 
     | BBDCL_procedure (ps,bvs,bpar,bexes) ->
-      let bexes = fixup_exes syms sym_table bsym_table bexes in
+      let bexes = fixup_exes syms bsym_table bexes in
       let entry = BBDCL_procedure (ps,bvs,bpar,bexes) in
       Flx_bsym_table.add bsym_table i (id,sr,parent,entry)
 

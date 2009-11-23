@@ -134,7 +134,7 @@ let gen_ref name typ =
 or struct declaration which names the type.
 *)
 
-let gen_type_name syms sym_table bsym_table (index,typ) =
+let gen_type_name syms bsym_table (index,typ) =
   (*
   print_endline (
     "GENERATING TYPE NAME " ^
@@ -142,12 +142,12 @@ let gen_type_name syms sym_table bsym_table (index,typ) =
     sbt bsym_table typ
   );
   *)
-  let cn t = cpp_type_classname syms sym_table bsym_table t in
-  let tn t = cpp_typename syms sym_table bsym_table t in
+  let cn t = cpp_type_classname syms bsym_table t in
+  let tn t = cpp_typename syms bsym_table t in
   let descr =
     "\n//TYPE " ^ string_of_bid index ^ ": " ^ sbt bsym_table typ ^ "\n"
   in
-  let t = unfold sym_table typ in
+  let t = unfold typ in
   match t with
   | BTYP_fix i -> ""
   | BTYP_var (i,mt) -> failwith "[gen_type_name] Can't gen name of type variable"
@@ -176,7 +176,7 @@ let gen_type_name syms sym_table bsym_table (index,typ) =
       | BTYP_tuple ls -> ls
       | x -> [x]
     in
-    let ctn t = `Ct_base (cpp_typename syms sym_table bsym_table t) in
+    let ctn t = `Ct_base (cpp_typename syms bsym_table t) in
     let t = `Ct_fun (ctn c,map ctn ds) in
     let cdt = `Cdt_value t in
     "typedef " ^ string_of_cdecl_type name cdt ^ ";\n"
@@ -292,7 +292,7 @@ let gen_type_name syms sym_table bsym_table (index,typ) =
 
   | _ -> failwith ("Unexpected metatype "^ sbt bsym_table t ^ " in gen_type_name")
 
-let mk_listwise_ctor syms sym_table i name typ cts ctss =
+let mk_listwise_ctor syms i name typ cts ctss =
   if length cts = 1 then
   let ctn,ctt = hd ctss in
     "  " ^ name ^ "("^ ctt ^ " const & _a): " ^
@@ -301,7 +301,7 @@ let mk_listwise_ctor syms sym_table i name typ cts ctss =
 
 
 (* This routine generates complete types when needed *)
-let gen_type syms sym_table bsym_table (index,typ) =
+let gen_type syms bsym_table (index,typ) =
   (*
   print_endline (
     "GENERATING TYPE " ^
@@ -309,14 +309,14 @@ let gen_type syms sym_table bsym_table (index,typ) =
     sbt bsym_table typ
   );
   *)
-  let tn t = cpp_typename syms sym_table bsym_table t in
-  let cn t = cpp_type_classname syms sym_table bsym_table t in
+  let tn t = cpp_typename syms bsym_table t in
+  let cn t = cpp_type_classname syms bsym_table t in
   let descr =
     "\n//TYPE " ^ string_of_bid index ^ ": " ^
     sbt bsym_table typ ^
     "\n"
   in
-  let t = unfold sym_table typ in
+  let t = unfold typ in
   match t with
   | BTYP_var _ -> failwith "[gen_type] can't gen type variable"
   | BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
@@ -424,7 +424,7 @@ let gen_type syms sym_table bsym_table (index,typ) =
       let cts = map (fun (name,typ) -> name, tsubst vs ts typ) cts in
       let ctss = map (fun (name,typ) -> name, tn typ) cts in
       let name = cn typ in
-      let listwise_ctor = mk_listwise_ctor syms sym_table i name typ cts ctss in
+      let listwise_ctor = mk_listwise_ctor syms i name typ cts ctss in
       let descr =
         "\n//GENERIC STRUCT " ^ string_of_bid i ^ " INSTANCE " ^
         string_of_bid index ^ ": " ^
@@ -467,19 +467,19 @@ So we have to check the name at this point, because this special
 trick is based on the representation.
 *)
 
-let gen_type_names syms sym_table bsym_table ts =
+let gen_type_names syms bsym_table ts =
   (* print_endline "GENERATING TYPE NAMES"; *)
   let s = Buffer.create 100 in
   let handled = ref [] in
   iter
   (fun (i,t) ->
     try
-      let name = cpp_typename syms sym_table bsym_table t in
+      let name = cpp_typename syms bsym_table t in
       if mem name !handled then
         () (* print_endline ("WOOPS ALREADY HANDLED " ^ name) *)
       else (
         handled := name :: !handled;
-        Buffer.add_string s (gen_type_name syms sym_table bsym_table (i,t))
+        Buffer.add_string s (gen_type_name syms bsym_table (i,t))
       )
     with Not_found ->
       failwith ("Can't gen type name " ^ string_of_bid i ^ "=" ^
@@ -488,18 +488,18 @@ let gen_type_names syms sym_table bsym_table ts =
   ts;
   Buffer.contents s
 
-let gen_types syms sym_table bsym_table ts =
+let gen_types syms bsym_table ts =
   (* print_endline "GENERATING TYPES"; *)
   let handled = ref [] in
   let s = Buffer.create 100 in
   iter
   (fun ((i,t) as t') ->
-    let name = cpp_typename syms sym_table bsym_table t in
+    let name = cpp_typename syms bsym_table t in
     if mem name !handled then
       () (* print_endline ("WOOPS ALREADY HANDLED " ^ name) *)
     else (
       handled := name :: !handled;
-      Buffer.add_string s (gen_type syms sym_table bsym_table t')
+      Buffer.add_string s (gen_type syms bsym_table t')
     )
   )
   ts;

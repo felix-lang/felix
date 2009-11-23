@@ -39,7 +39,6 @@ type label_usage_t = (Flx_types.bid_t, label_kind_t) Hashtbl.t
 (** Construct a map that identifies whether the label is local or remote. *)
 val create_label_usage:
   Flx_mtypes2.sym_state_t ->  (** The symbol state. *)
-  Flx_sym_table.t ->          (** The symbol table. *)
   Flx_bsym_table.t ->         (** The bound symbol table. *)
   label_map_t ->              (** The label map. *)
   label_usage_t
@@ -47,7 +46,6 @@ val create_label_usage:
 (** Add a new symbol to the label map. *)
 val update_label_usage:
   Flx_mtypes2.sym_state_t ->  (** The symbol state. *)
-  Flx_sym_table.t ->          (** The symbol table. *)
   Flx_bsym_table.t ->         (** The bound symbol table. *)
   label_map_t ->              (** The label map. *)
   label_usage_t ->            (** The label usage map to update. *)

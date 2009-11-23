@@ -104,7 +104,7 @@ Output:
 
 *)
 
-let passign syms sym_table bsym_table (pinits:aentry_t list) ts' sr =
+let passign syms bsym_table (pinits:aentry_t list) ts' sr =
   let parameters = ref [] in
   (* strip trivial assignments like x = x *)
   let pinits =

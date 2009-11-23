@@ -31,7 +31,7 @@ let get_ps bsym_table f =
   | _,_,_,BBDCL_procedure (_,_,(ps,_),_) -> ps
   | _ -> assert false
 
-let unpack syms sym_table bsym_table f ps a : tbexpr_t list =
+let unpack syms bsym_table f ps a : tbexpr_t list =
   match ps with
   | [] -> []   (* arg should be unit *)
   | [_] -> [a] (* one param, one arg *)
@@ -64,17 +64,17 @@ let unpack syms sym_table bsym_table f ps a : tbexpr_t list =
     print_endline ("Argument " ^ sbe bsym_table a);
     assert false (* argument isn't a tuple type .. but there are multiple parameters!  *)
 
-let merge_args syms sym_table bsym_table f c a b =
+let merge_args syms bsym_table f c a b =
   let psf = get_ps bsym_table f in
   let psc = get_ps bsym_table c in
-  let args = unpack syms sym_table bsym_table f psf a @ unpack syms sym_table bsym_table c psc b in
+  let args = unpack syms bsym_table f psf a @ unpack syms bsym_table c psc b in
   match args with
   | [x] -> x
   | _ -> BEXPR_tuple args,BTYP_tuple (map snd args)
 
-let append_args syms sym_table bsym_table f a b =
+let append_args syms bsym_table f a b =
   let psf = get_ps bsym_table f in
-  let args = unpack syms sym_table bsym_table f psf a @ b in
+  let args = unpack syms bsym_table f psf a @ b in
   match args with
   | [x] -> x
   | _ -> BEXPR_tuple args,BTYP_tuple (map snd args)

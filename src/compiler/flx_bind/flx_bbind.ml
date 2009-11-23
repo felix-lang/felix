@@ -242,7 +242,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
         then BTYP_cfunction (d,brt')
         else BTYP_function (d,brt')
       in
-      let t = fold syms.counter sym_table ft in
+      let t = fold syms.counter ft in
       Hashtbl.add syms.ticache symbol_index t
     end;
 
@@ -307,11 +307,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
 
     (* Cache the type of the match. *)
     if not (Hashtbl.mem syms.ticache symbol_index) then begin
-      let t = fold
-        syms.counter
-        sym_table
-        (BTYP_function (BTYP_tuple [], flx_bbool))
-      in
+      let t = fold syms.counter (BTYP_function (BTYP_tuple [], flx_bbool)) in
       Hashtbl.add syms.ticache symbol_index t
     end;
 
@@ -448,11 +444,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
 
     (* Cache the type of the function. *)
     if not (Hashtbl.mem syms.ticache symbol_index) then begin
-      let t = fold
-        syms.counter
-        sym_table
-        (BTYP_function (typeoflist ts, bret))
-      in
+      let t = fold syms.counter (BTYP_function (typeoflist ts, bret)) in
       Hashtbl.add syms.ticache symbol_index t
     end;
 
@@ -553,9 +545,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
 
     (* Cache the type of the callback. *)
     if not (Hashtbl.mem syms.ticache symbol_index) then begin
-      let t = fold syms.counter sym_table
-        (BTYP_cfunction (typeoflist ts_cf, bret))
-      in
+      let t = fold syms.counter (BTYP_cfunction (typeoflist ts_cf, bret)) in
       Hashtbl.add syms.ticache symbol_index t
     end;
 

@@ -165,10 +165,10 @@ let tix syms bsym_table t =
   with Not_found ->
     failwith ("Cannot find type " ^sbt bsym_table t ^" in registry")
 
-let rec cpp_type_classname syms sym_table bsym_table t =
+let rec cpp_type_classname syms bsym_table t =
   let tix t = tix syms bsym_table t in
-  let t = fold syms.counter sym_table t in
-  try match unfold sym_table t with
+  let t = fold syms.counter t in
+  try match unfold t with
   | BTYP_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
         string_of_bid i ^ ":"^ sbt bsym_table mt)
@@ -176,7 +176,7 @@ let rec cpp_type_classname syms sym_table bsym_table t =
   | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
   | BTYP_tuple [] -> "unit"
 
-  | BTYP_pointer t' -> cpp_type_classname syms sym_table bsym_table t' ^ "*"
+  | BTYP_pointer t' -> cpp_type_classname syms bsym_table t' ^ "*"
  
   | BTYP_function (_,BTYP_void) -> "_pt" ^ cid_of_bid (tix t)
   | BTYP_function _ -> "_ft" ^ cid_of_bid (tix t)
@@ -235,11 +235,11 @@ let rec cpp_type_classname syms sym_table bsym_table t =
       " to be in registry"
     )
 
-let rec cpp_typename syms sym_table bsym_table t =
-  match unfold sym_table t with
-  | BTYP_function _ -> cpp_type_classname syms sym_table bsym_table t ^ "*"
-  | BTYP_cfunction _ -> cpp_type_classname syms sym_table bsym_table t ^ "*"
-  | BTYP_pointer t -> cpp_typename syms sym_table bsym_table t ^ "*"
-  | _ -> cpp_type_classname syms sym_table bsym_table t
+let rec cpp_typename syms bsym_table t =
+  match unfold t with
+  | BTYP_function _ -> cpp_type_classname syms bsym_table t ^ "*"
+  | BTYP_cfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
+  | BTYP_pointer t -> cpp_typename syms bsym_table t ^ "*"
+  | _ -> cpp_type_classname syms bsym_table t
 
-let cpp_ltypename syms sym_table bsym_table t = cpp_typename syms sym_table bsym_table t
+let cpp_ltypename syms bsym_table t = cpp_typename syms bsym_table t

@@ -65,7 +65,7 @@ let is_native_literal e = match e with
   | Flx_ast.AST_float ("double",_) -> true
   | _ -> false
 
-let get_var_frame syms sym_table bsym_table this index ts : string =
+let get_var_frame syms bsym_table this index ts : string =
   match
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[get_var_frame(1)] Can't find index " ^ string_of_bid index)
@@ -86,7 +86,7 @@ let get_var_frame syms sym_table bsym_table this index ts : string =
 
   | _ -> failwith ("[get_var_frame] Expected name "^id^" to be variable or value")
 
-let get_var_ref syms sym_table bsym_table this index ts : string =
+let get_var_ref syms bsym_table this index ts : string =
   match
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
@@ -118,7 +118,7 @@ let get_var_ref syms sym_table bsym_table this index ts : string =
 
   | _ -> failwith ("[get_var_ref(3)] Expected name "^id^" to be variable, value or temporary")
 
-let get_ref_ref syms sym_table bsym_table this index ts : string =
+let get_ref_ref syms bsym_table this index ts : string =
   match
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
@@ -158,14 +158,14 @@ let nth_type ts i =
   with Not_found ->
     failwith ("Can't find component " ^ si i ^ " of type!")
 
-let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr_t =
+let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr_t =
   (*
-  print_endline ("Generating expression " ^ string_of_bound_expression_with_type sym_table bsym_table (e,t));
+  print_endline ("Generating expression " ^ string_of_bound_expression_with_type bsym_table (e,t));
   print_endline ("Location " ^ Flx_srcref.short_string_of_src sr);
   *)
-  let ge' e = gen_expr' syms sym_table bsym_table this e vs ts sr in
-  let ge e = gen_expr syms sym_table bsym_table this e vs ts sr in
-  let ge'' sr e = gen_expr' syms sym_table bsym_table this e vs ts sr in
+  let ge' e = gen_expr' syms bsym_table this e vs ts sr in
+  let ge e = gen_expr syms bsym_table this e vs ts sr in
+  let ge'' sr e = gen_expr' syms bsym_table this e vs ts sr in
   if length ts <> length vs then
   failwith
   (
@@ -174,11 +174,11 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
     ", got ts=" ^
     si (length ts)
   );
-  let tsub t = reduce_type (beta_reduce syms sym_table bsym_table sr (tsubst vs ts t)) in
-  let tn t = cpp_typename syms sym_table bsym_table (tsub t) in
+  let tsub t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
+  let tn t = cpp_typename syms bsym_table (tsub t) in
 
   (* NOTE this function does not do a reduce_type *)
-  let raw_typename t = cpp_typename syms sym_table bsym_table (beta_reduce syms sym_table bsym_table sr (tsubst vs ts t)) in
+  let raw_typename t = cpp_typename syms bsym_table (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
   let gen_case_index e =
     let _,t = e in
     begin match t with
@@ -196,7 +196,7 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
       in
       begin match entry with
       | BBDCL_union (bvs,cts) ->
-        let tsub' t = reduce_type (beta_reduce syms sym_table bsym_table sr (tsubst bvs ts t)) in
+        let tsub' t = reduce_type (beta_reduce syms bsym_table sr (tsubst bvs ts t)) in
         let cts = map (fun (_,_,t) -> tsub' t) cts in
         if all_voids cts then ge' e
         else ce_dot (ge' e) "variant"
@@ -218,7 +218,7 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
   in
   let our_display = get_display_list bsym_table this in
   let our_level = length our_display in
-  let rt t = reduce_type (beta_reduce syms sym_table bsym_table sr (tsubst vs ts t)) in
+  let rt t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
   let t = rt t in
   match t with
   | BTYP_tuple [] ->
@@ -281,7 +281,7 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
     end
 
   | BEXPR_match_case (n,((e',t') as e)) ->
-    let t' = reduce_type (beta_reduce syms sym_table bsym_table sr  t') in
+    let t' = reduce_type (beta_reduce syms bsym_table sr  t') in
     let x = gen_case_index e in
     ce_infix "==" x (ce_atom (si n))
 
@@ -345,7 +345,7 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
   | BEXPR_new e ->
     let ref_type = tn t in
     let _,t' = e in
-    let pname = shape_of syms sym_table bsym_table tn t' in
+    let pname = shape_of syms bsym_table tn t' in
     let typ = tn t' in
     let frame_ptr =
       "new(*PTF gcp,"^pname^",true) " ^
@@ -363,7 +363,7 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
     ce_atom ("("^t ^ ")(" ^ cstring_of_literal v ^ ")")
 
   | BEXPR_case (v,t') ->
-    begin match unfold sym_table t' with
+    begin match unfold t' with
     | BTYP_unitsum n ->
       if v < 0 or v >= n
       then
@@ -413,7 +413,7 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
     let ts = map tsub ts' in
     begin match entry with
       | BBDCL_val (_,BTYP_function (BTYP_void,_))  ->
-          let ptr = (get_var_ref syms sym_table bsym_table this index ts) in
+          let ptr = (get_var_ref syms bsym_table this index ts) in
           ce_call (ce_arrow (ce_atom ptr) "apply") []
 
       | BBDCL_var (_,t)
@@ -421,7 +421,7 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
       | BBDCL_ref (_,t)
       | BBDCL_tmp (_,t)
         ->
-          ce_atom (get_var_ref syms sym_table bsym_table this index ts)
+          ce_atom (get_var_ref syms bsym_table this index ts)
 
       | BBDCL_const (props,_,_,ct,_) ->
         if mem `Virtual props then
@@ -573,10 +573,10 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
           mem `Pure props && not (mem `Heap_closure props)
         )
         then
-          "NULL","&"^get_var_ref syms sym_table bsym_table this index ts ^"-NULL"
+          "NULL","&"^get_var_ref syms bsym_table this index ts ^"-NULL"
         else
-          get_var_frame syms sym_table bsym_table this index ts,
-          "&" ^ get_var_ref syms sym_table bsym_table this index ts
+          get_var_frame syms bsym_table this index ts,
+          "&" ^ get_var_ref syms bsym_table this index ts
     in
     let reference = ref_type ^
       "(" ^ frame_ptr ^ ", " ^ var_ptr ^ ")"
@@ -588,7 +588,7 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
     begin match t with
       | BTYP_tuple [] -> ce_atom "0"
       | _ ->
-        let v = get_var_ref syms sym_table bsym_table this index ts in
+        let v = get_var_ref syms bsym_table this index ts in
         ce_prefix "&" (ce_atom v)
     end
 
@@ -717,7 +717,7 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
 
       | CS_virtual ->
         let ts = map tsub ts in
-        let index', ts' = Flx_typeclass.fixup_typeclass_instance syms sym_table bsym_table index ts in
+        let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
         if index <> index' then
           clierr sr ("Virtual call of " ^ string_of_bid index ^ " dispatches to
             " ^ string_of_bid index')
@@ -752,9 +752,9 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
       | CS_str s -> ce_expr prec s
       | CS_str_template s ->
         let ts = map tsub ts in
-        let retyp = reduce_type (beta_reduce syms sym_table bsym_table sr  (tsubst vs ts retyp)) in
+        let retyp = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts retyp)) in
         let retyp = tn retyp in
-        gen_prim_call syms sym_table bsym_table tsub ge'' s ts (arg,argt) retyp sr sr2 prec
+        gen_prim_call syms bsym_table tsub ge'' s ts (arg,argt) retyp sr sr2 prec
       end
 
     | BBDCL_callback (props,vs,ps_cf,ps_c,_,retyp,_,_) ->
@@ -764,9 +764,9 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
       ;
       let ts = map tsub ts in
       let s = id ^ "($a)" in
-      let retyp = reduce_type (beta_reduce syms sym_table bsym_table sr  (tsubst vs ts retyp)) in
+      let retyp = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts retyp)) in
       let retyp = tn retyp in
-      gen_prim_call syms sym_table bsym_table tsub ge'' s ts (arg,argt) retyp sr sr2 "atom"
+      gen_prim_call syms bsym_table tsub ge'' s ts (arg,argt) retyp sr sr2 "atom"
 
     (* but can't be a Felix function *)
     | _ ->
@@ -806,9 +806,9 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
          but units for sums .. hmm .. inconsistent!
       *)
       let ts = map tsub ts in
-      let ct = reduce_type (beta_reduce syms sym_table bsym_table sr  (tsubst vs ts ct)) in
+      let ct = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts ct)) in
       let _,t = a in
-      let t = reduce_type (beta_reduce syms sym_table bsym_table sr  (tsubst vs ts t)) in
+      let t = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts t)) in
       begin match ct with
       | BTYP_tuple [] ->
         ce_atom ( "_uctor_(" ^ si cidx ^ ", NULL)")
@@ -823,7 +823,7 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
 
       | _ ->
         let ctt = tn ct in
-        let ptrmap = shape_of syms sym_table bsym_table tn ct in
+        let ptrmap = shape_of syms bsym_table tn ct in
         let txt =
            "_uctor_(" ^ si cidx ^ ", new(*PTF gcp,"^ ptrmap^",true)"^
            ctt ^"("^ ge a ^"))"
@@ -835,7 +835,7 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
 
   | BEXPR_apply_direct (index,ts,a) ->
     let ts = map tsub ts in
-    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms sym_table bsym_table index ts in
+    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
     if index <> index' then
       clierr sr ("Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
         string_of_bid index')
@@ -903,7 +903,7 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
 
   | BEXPR_apply_stack (index,ts,a) ->
     let ts = map tsub ts in
-    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms sym_table bsym_table index ts in
+    let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
     if index <> index' then
       clierr sr ("Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
         string_of_bid index')
@@ -969,7 +969,7 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
               xs ps
 
             | _,tt ->
-              let tt = reduce_type (beta_reduce syms sym_table bsym_table sr  (tsubst vs ts tt)) in
+              let tt = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts tt)) in
               (* NASTY, EVALUATES EXPR MANY TIMES .. *)
               let n = ref 0 in
               fold_left
@@ -1111,10 +1111,10 @@ let rec gen_expr' syms (sym_table:Flx_sym_table.t) (bsym_table:Flx_bsym_table.t)
     | _ -> assert false
     end
 
-and gen_expr syms sym_table bsym_table this e vs ts sr =
+and gen_expr syms bsym_table this e vs ts sr =
   let e = Flx_maps.reduce_tbexpr e in
   let s =
-    try gen_expr' syms sym_table bsym_table this e vs ts sr
+    try gen_expr' syms bsym_table this e vs ts sr
     with Unknown_prec p -> clierr sr
     ("[gen_expr] Unknown precedence name '"^p^"' in " ^ sbe bsym_table e)
   in
