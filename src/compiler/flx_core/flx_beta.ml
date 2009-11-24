@@ -15,12 +15,12 @@ open Flx_maps
 
 exception BTfound of btypecode_t
 
-let rec metatype bsym_table sr term =
+let rec metatype sym_table bsym_table sr term =
   (*
   print_endline ("Find Metatype  of: " ^
     string_of_btypecode bsym_table term);
   *)
-  let t = metatype' bsym_table sr term in
+  let t = metatype' sym_table bsym_table sr term in
   (*
   print_endline ("Metatype  of: " ^ string_of_btypecode bsym_table term ^
     " is " ^ sbt bsym_table t);
@@ -28,9 +28,9 @@ let rec metatype bsym_table sr term =
   *)
   t
 
-and metatype' bsym_table sr term =
+and metatype' sym_table bsym_table sr term =
   let st t = string_of_btypecode bsym_table t in
-  let mt t = metatype' bsym_table sr t in
+  let mt t = metatype' sym_table bsym_table sr t in
   match term with
 
   | BTYP_typefun (a,b,c) ->
@@ -40,7 +40,7 @@ and metatype' bsym_table sr term =
       | [x] -> x
       | _ -> BTYP_tuple ps
     in
-      let rt = metatype bsym_table sr c in
+      let rt = metatype sym_table bsym_table sr c in
       if b<>rt
       then
         clierr sr
@@ -99,8 +99,8 @@ and metatype' bsym_table sr term =
 
   | BTYP_type i -> BTYP_type (i+1)
   | BTYP_inst (index,ts) ->
-    let id, _, _, bbdcl =
-      try Flx_bsym_table.find bsym_table index with Not_found ->
+    let { Flx_sym.id=id; symdef=entry } =
+      try Flx_sym_table.find sym_table index with Not_found ->
         failwith ("[metatype'] can't find type instance index " ^
           string_of_bid index)
     in
@@ -113,10 +113,15 @@ and metatype' bsym_table sr term =
       bind type routine due to module factoring .. we could pass
       in the bind-type routine as an argument .. yuck ..
     *)
-    begin match bbdcl with
-    | BBDCL_nonconst_ctor _ -> BTYP_function (BTYP_type 0, BTYP_type 0)
-    | BBDCL_const _ -> BTYP_type 0
-    | BBDCL_abs _ -> BTYP_type 0
+    begin match entry with
+    | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
+      BTYP_function (BTYP_type 0,BTYP_type 0)
+
+    | SYMDEF_const_ctor (_,t,_,_) ->
+      BTYP_type 0
+
+    | SYMDEF_abs _ -> BTYP_type 0
+
     | _ ->
         clierr sr ("Unexpected argument to metatype: " ^
           sbt bsym_table term)
@@ -305,7 +310,6 @@ and beta_reduce' syms bsym_table sr termlist t =
 
   let br t' = beta_reduce' syms bsym_table sr (t::termlist) t' in
   let st t = string_of_btypecode bsym_table t in
-  let mt t = metatype bsym_table sr t in
   match t with
   | BTYP_fix _ -> t
   | BTYP_var (i,_) -> t
