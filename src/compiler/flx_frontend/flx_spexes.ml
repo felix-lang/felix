@@ -27,14 +27,14 @@ type submode_t = [`Eager | `Lazy]
   won't cause the test to return a false positive
 *)
 
-let recal_exes_usage syms uses sr i ps exes =
+let recal_exes_usage uses sr i ps exes =
   (*
-  print_endline ("Recal usage of "^ si i^", this code:\n" ^ catmap "\n" (sbx syms.sym_table) exes);
+  print_endline ("Recal usage of "^ si i^", this code:\n" ^ catmap "\n" (sbx sym_table) exes);
   *)
   (* delete old entry *)
   (try Hashtbl.remove uses i with Not_found -> ());
-  iter (Flx_call.cal_param_usage syms uses sr i) ps;
-  iter (Flx_call.cal_exe_usage syms uses i) exes
+  iter (Flx_call.cal_param_usage uses sr i) ps;
+  iter (Flx_call.cal_exe_usage uses i) exes
 
 let is_tailed ps exes =
   try iter
@@ -85,13 +85,14 @@ prevent gross bloat.
 
 let idt t = t
 
-let rec rpl syms argmap x = match map_tbexpr ident (rpl syms argmap) idt x with
+let rec rpl syms argmap x =
+  match map_tbexpr ident (rpl syms argmap) idt x with
   (* No need to check ts or type here *)
   | (BEXPR_name (i,_),_) as x ->
     (try
       let x' = Hashtbl.find argmap i in
       (*
-      print_endline ("Replacing variable " ^ si i ^ " with " ^ sbe syms.sym_table x');
+      print_endline ("Replacing variable " ^ si i ^ " with " ^ sbe sym_table x');
       *)
       x'
       with Not_found -> x)
@@ -158,15 +159,15 @@ let gen_body syms (uses,child_map,bsym_table) id
   begin begin match inline_method with
   | `Eager ->
       print_endline ("Eager INLINING " ^ id ^ "<" ^
-        string_of_bid callee ^ ">(" ^ sbe syms.sym_table bsym_table argument ^
+        string_of_bid callee ^ ">(" ^ sbe bsym_table argument ^
         ") into " ^ string_of_bid caller ^ " .. INPUT:");
   | `Lazy ->
       print_endline ("Lazy INLINING " ^ id ^ "<" ^ string_of_bid callee ^ ">(" ^
-        sbe syms.sym_table bsym_table argument ^") into " ^
+        sbe bsym_table argument ^") into " ^
         string_of_bid caller ^ " .. INPUT:");
   end
   ;
-  iter (fun x -> print_endline (string_of_bexe syms.sym_table bsym_table 0 x)) exes;
+  iter (fun x -> print_endline (string_of_bexe bsym_table 0 x)) exes;
   end
   ;
   let paramtype  =
@@ -300,7 +301,7 @@ let gen_body syms (uses,child_map,bsym_table) id
         let argt = match argument with
         | _,BTYP_function (BTYP_void,t)
         | _,BTYP_function (BTYP_tuple [],t) -> t
-        | _,t -> failwith ("Expected argument to be function void->t, got " ^ sbt syms.sym_table t)
+        | _,t -> failwith ("Expected argument to be function void->t, got " ^ sbt bsym_table t)
         in
         let un = BEXPR_tuple [], BTYP_tuple [] in
         let apl = BEXPR_apply (argument, un), argt in
@@ -450,7 +451,7 @@ let gen_body syms (uses,child_map,bsym_table) id
     (fun i e ->
       try
       let id,_,_,_ = Hashtbl.find bsym_table i in
-      print_endline (id ^ "<"^ si i ^ "> --> " ^ sbe syms.sym_table e)
+      print_endline (id ^ "<"^ si i ^ "> --> " ^ sbe sym_table e)
       with Not_found -> print_endline ("Can't find index .." ^ si i)
     )
     argmap
@@ -468,7 +469,7 @@ let gen_body syms (uses,child_map,bsym_table) id
     ;
     (*
     print_endline "Lazy evaluation, output=";
-    iter (fun x -> print_endline (string_of_bexe syms.sym_table 0 x)) (rev !b);
+    iter (fun x -> print_endline (string_of_bexe sym_table 0 x)) (rev !b);
     *)
     (* substitute in kids too *)
     if Hashtbl.length argmap > 0 then begin
@@ -484,12 +485,12 @@ let gen_body syms (uses,child_map,bsym_table) id
         BidSet.empty
       in
       BidSet.iter (fun i ->
-        let id,parent,sr,entry = Hashtbl.find bsym_table i in
+        let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
         match entry with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
           let exes = map (subarg syms bsym_table argmap) exes in
-          recal_exes_usage syms uses sr i ps exes;
-          Hashtbl.replace bsym_table i
+          recal_exes_usage uses sr i ps exes;
+          Flx_bsym_table.add bsym_table i
           (id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes))
 
         | BBDCL_procedure (props,vs,(ps,traint),exes) ->
@@ -497,8 +498,8 @@ let gen_body syms (uses,child_map,bsym_table) id
           print_endline ("MODIFY " ^ si i);
           *)
           let exes = map (subarg syms bsym_table argmap) exes in
-          recal_exes_usage syms uses sr i ps exes;
-          Hashtbl.replace bsym_table i
+          recal_exes_usage uses sr i ps exes;
+          Flx_bsym_table.add bsym_table i
           (id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes))
 
         | _ -> ()
@@ -518,7 +519,7 @@ let gen_body syms (uses,child_map,bsym_table) id
     ;
     (*
     print_endline ("INLINING " ^ id ^ " into " ^ si caller ^ " .. OUTPUT:");
-    iter (fun x -> print_endline (string_of_bexe syms.sym_table 0 x)) (rev !b);
+    iter (fun x -> print_endline (string_of_bexe sym_table 0 x)) (rev !b);
     print_endline ("END OUTPUT for " ^ id);
     *)
     !b

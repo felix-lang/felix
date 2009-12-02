@@ -15,8 +15,8 @@ val add_child: t -> bid_t -> bid_t -> unit
 
 val remove_child: t -> bid_t -> bid_t -> unit
 
-val is_ancestor: bsym_table_t -> bid_t -> bid_t -> bool
+val is_ancestor: Flx_bsym_table.t -> bid_t -> bid_t -> bool
 
 val descendants: t -> bid_t -> BidSet.t
 
-val cal_children: bsym_table_t -> t
+val cal_children: Flx_bsym_table.t -> t

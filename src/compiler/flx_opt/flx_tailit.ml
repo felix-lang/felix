@@ -18,27 +18,27 @@ open Flx_child
 open Flx_call
 
 let hfind msg h k =
-  try Hashtbl.find h k
+  try Flx_bsym_table.find h k
   with Not_found ->
-    print_endline ("flx_inline Hashtbl.find failed " ^ msg);
+    print_endline ("flx_inline Flx_bsym_table.find failed " ^ msg);
     raise Not_found
 
 
 let isvariable bsym_table i =
-  let id,_,_,entry = Hashtbl.find bsym_table i in match entry with
+  let id,_,_,entry = Flx_bsym_table.find bsym_table i in match entry with
   | BBDCL_var _ | BBDCL_val _ ->
   (* print_endline ("Var/Val " ^ id ^ "<" ^ si i ^">"); *) true
   | _ -> false
 
 let isfun bsym_table i =
-  let id,_,_,entry = Hashtbl.find bsym_table i in match entry with
+  let id,_,_,entry = Flx_bsym_table.find bsym_table i in match entry with
   | BBDCL_function _ | BBDCL_procedure _ ->
   (*print_endline ("Fun/proc " ^ id ^ "<" ^ si i ^">"); *) true
   | _ -> false
 
 let add_xclosure syms cls e =
   (*
-  print_endline ("chk cls for " ^ sbe syms.sym_table bsym_table e);
+  print_endline ("chk cls for " ^ sbe bsym_table e);
   *)
   match e with
   | BEXPR_closure (i,ts),t -> cls := BidSet.add i !cls
@@ -66,7 +66,7 @@ let exes_get_xclosures syms exes =
   !cls
 
 let function_find_xclosure syms cls bsym_table i =
-  let _,_,_,entry = Hashtbl.find bsym_table i in
+  let _,_,_,entry = Flx_bsym_table.find bsym_table i in
   let exes =
     match entry with
     | BBDCL_procedure (_,_,_,exes)
@@ -75,7 +75,7 @@ let function_find_xclosure syms cls bsym_table i =
   in
   (*
   print_endline ("ROUTINE " ^ si i);
-  iter (fun exe -> print_endline (string_of_bexe syms.sym_table 0 exe)) exes;
+  iter (fun exe -> print_endline (string_of_bexe 0 exe)) exes;
   *)
   exes_find_xclosure syms cls exes
 
@@ -116,7 +116,7 @@ let check_proj_wrap_exe syms bsym_table n i x =
   with BadUse ->
     (*
     print_endline ("Bad use of " ^ si i ^ ".(" ^ si n ^") in " ^
-      string_of_bexe syms.sym_table bsym_table 0 x
+      string_of_bexe bsym_table 0 x
     );
     *)
     raise BadUse
@@ -137,7 +137,7 @@ let check_proj_wrap_entry syms bsym_table n i k =
 
 let check_proj_wrap_closure syms bsym_table descend usage n i e =
   (*
-  print_endline ("Check use  of " ^ si i ^ ".(" ^ si n ^") in expr=" ^ sbe syms.sym_table bsym_table e);
+  print_endline ("Check use  of " ^ si i ^ ".(" ^ si n ^") in expr=" ^ sbe bsym_table e);
   *)
   check_proj_wrap_expr n i e;
   (*
@@ -149,7 +149,7 @@ let check_proj_wrap_closure syms bsym_table descend usage n i e =
 let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
   (*
   print_endline ("======= Tailing " ^ id ^ "<" ^ si this ^ "> exes=====");
-  iter (fun x -> print_endline (string_of_bexe syms.sym_table 0 x)) exes;
+  iter (fun x -> print_endline (string_of_bexe 0 x)) exes;
   print_endline "======== END BODY ========";
   *)
 
@@ -227,7 +227,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
       begin match e with
       | BEXPR_tuple ls,_ ->
         (*
-        print_endline ("TUPLE ASSGN " ^ sbe syms.sym_table bsym_table e);
+        print_endline ("TUPLE ASSGN " ^ sbe bsym_table e);
         *)
         assert (length ls = length ps);
         let pinits =
@@ -243,7 +243,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
         result :=  BEXE_goto (sr,start_label) :: !result;
         (*
           print_endline "Tail opt code is:";
-          iter (fun x -> print_endline (string_of_bexe syms.sym_table 0 x) ) (rev !result);
+          iter (fun x -> print_endline (string_of_bexe 0 x) ) (rev !result);
         *)
         !result
 
@@ -262,7 +262,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
         let param_decode =
           map
           (fun {pindex=ix; ptyp=prjt} ->
-            let prj = reduce_tbexpr bsym_table (BEXPR_get_n (!n,p),prjt) in
+            let prj = reduce_tbexpr (BEXPR_get_n (!n,p),prjt) in
             incr n;
             BEXE_init (sr,ix,prj)
           )
@@ -300,7 +300,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
       if syms.compiler_options.print_flag then begin
         print_endline "CALCULATED ACTUAL PARALLEL ASSIGNMENTS!";
         iter (fun x ->
-          print_endline (string_of_bexe syms.sym_table bsym_table 0 x)
+          print_endline (string_of_bexe bsym_table 0 x)
         )
         (rev exes)
         ;
@@ -329,7 +329,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
       if syms.compiler_options.print_flag then
       begin
         print_endline ("flx_tailit found possible parallel assignment opportunity in:");
-        print_endline (string_of_bexe syms.sym_table bsym_table 0 h);
+        print_endline (string_of_bexe bsym_table 0 h);
       end;
 
       (* the descendants of the variables parents! *)
@@ -364,7 +364,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
         if syms.compiler_options.print_flag then begin
           let rec p n ls = if n > 0 then match ls with
             | h :: t ->
-               print_endline (string_of_bexe syms.sym_table bsym_table 0 h);
+               print_endline (string_of_bexe bsym_table 0 h);
                p (n-1) t
             | [] -> assert false
           in
@@ -373,9 +373,9 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
           let rec pr xs = match xs with
           | (k,p,t) :: tl ->
              print_endline (
-               "var " ^ string_of_bid k ^ " : " ^ sbt syms.sym_table t ^
+               "var " ^ string_of_bid k ^ " : " ^ sbt bsym_table t ^
                " = var " ^ string_of_bid i ^ ".(" ^ string_of_int p ^ ") = " ^
-               sbe syms.sym_table bsym_table (nth ls p)
+               sbe bsym_table (nth ls p)
              );
              pr tl
           | [] -> ()
@@ -467,11 +467,11 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
 
     | (BEXE_call(sr,(BEXPR_closure (i,ts),_),a)) as x :: tail  ->
       (*
-      print_endline ("Untailed call " ^ si i ^ "["^catmap "," (sbt syms.sym_table) ts^"]");
+      print_endline ("Untailed call " ^ si i ^ "["^catmap "," (sbt bsym_table) ts^"]");
       print_endline ("This = " ^ si this);
-      print_endline ("ts'=" ^"["^catmap "," (sbt syms.sym_table) ts'^"]");
+      print_endline ("ts'=" ^"["^catmap "," (sbt bsym_table) ts'^"]");
       print_endline "TAIL=";
-      iter (fun x -> print_endline (string_of_bexe syms.sym_table 0 x)) tail;
+      iter (fun x -> print_endline (string_of_bexe 0 x)) tail;
       print_endline "-- end of tail --";
       *)
       aux tail (x::res)
@@ -494,12 +494,12 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
       let ls = map unproj ls in
       (*
       print_endline "DETECTED PARALLEL ASSIGN WITH LHS EXPR";
-      print_endline (string_of_bexe syms.sym_table bsym_table 0 h);
+      print_endline (string_of_bexe bsym_table 0 h);
       *)
       let i = !(syms.counter) in incr (syms.counter);
       let n = length ls in
       let pbase = !(syms.counter) in syms.counter := !(syms.counter) + n;
-      let me e = match expr_maybe_matches syms.counter syms.sym_table [] [] x e with
+      let me e = match expr_maybe_matches syms.counter [] [] x e with
         | Some ([],[]) -> true
         | None -> false
         | _ -> assert false
@@ -520,9 +520,9 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
         let j = ref 0 in
         iter2 (fun x x' ->
           print_endline ("Recoded " ^
-            sbe syms.sym_table bsym_table x ^
-            "\nas var " ^ si (!j+pbase) ^ "=" ^
-            sbe syms.sym_table bsym_table x' ^
+            sbe bsym_table x ^
+            "\nas var " ^ string_of_bid (List.nth is !j) ^ "=" ^
+            sbe bsym_table x' ^
             "\n"
           );
           incr j
@@ -539,7 +539,8 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
           let d = expr_uses syms descend uses vset e in
           (*
           print_endline ("var " ^ si (k+pbase) ^ " = " ^
-            sbe syms.sym_table bsym_table e ^ " USES " ^ string_of_intset d);
+          print_endline ("var " ^ string_of_bid k ^ " = " ^
+            sbe bsym_table e ^ " USES " ^ string_of_bidset d);
           *)
           k+pbase, (name,t,e,d)
         )
@@ -551,7 +552,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
         begin
           print_endline "PARALLEL ASSIGNMENTS (before unsub) =";
           iter (fun x ->
-            print_endline (string_of_bexe syms.sym_table bsym_table 0 x)
+            print_endline (string_of_bexe bsym_table 0 x)
           )
           (rev exes)
           ;
@@ -574,7 +575,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
         begin
           print_endline "PARALLEL ASSIGNMENTS (after unsub) = ";
           iter (fun x ->
-            print_endline (string_of_bexe syms.sym_table bsym_table 0 x)
+            print_endline (string_of_bexe bsym_table 0 x)
           )
           (rev exes)
           ;
@@ -599,7 +600,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
           in
           Hashtbl.replace child_map this (parameter::kids);
           let id = "_trp_" ^ string_of_bid parameter in
-          Hashtbl.add bsym_table parameter (id,Some this,sr,entry);
+          Flx_bsym_table.add bsym_table parameter (id,Some this,sr,entry);
         )
       !parameters
       ;
@@ -611,6 +612,6 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
       in
         (*
         print_endline ("Tailed exes = ");
-        iter (fun exe -> print_endline (string_of_bexe syms.sym_table 0 exe)) exes;
+        iter (fun exe -> print_endline (string_of_bexe 0 exe)) exes;
         *)
         exes

@@ -3,6 +3,7 @@ open Flx_types
 
 type t = {
   syms: Flx_mtypes2.sym_state_t;
+  sym_table: Flx_sym_table.t;
   pub_name_map: (string, Flx_types.entry_set_t) Hashtbl.t;
   priv_name_map: (string, Flx_types.entry_set_t) Hashtbl.t;
 }
@@ -22,7 +23,7 @@ let mkentry syms (vs:ivs_list_t) i =
   (*
   print_endline ("Make entry " ^ string_of_bid ^ ", " ^ "vs =" ^
     Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs ^
-    ", ts=" ^ Flx_util.catmap "," (Flx_print.sbt syms.Flx_mtypes2.sym_table) ts
+    ", ts=" ^ Flx_util.catmap "," (Flx_print.sbt sym_table) ts
   );
   *)
   { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts }
@@ -81,14 +82,14 @@ let dump_name_to_int_map level name name_map =
 let strp = function | Some x -> string_of_int x | None -> "none"
 
 
-let full_add_unique syms sr (vs:ivs_list_t) table key value =
+let full_add_unique syms sym_table sr (vs:ivs_list_t) table key value =
   try
     let entry = Hashtbl.find table key in
     match entry with
     | NonFunctionEntry (idx)
     | FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.Flx_mtypes2.sym_table (Flx_typing.sye idx) with
-       | { Flx_types.sr=sr2 } ->
+       (match Flx_sym_table.find sym_table (Flx_typing.sye idx) with
+       | { Flx_sym.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
          Flx_print.string_of_bid (Flx_typing.sye idx) ^ ">")
@@ -98,14 +99,14 @@ let full_add_unique syms sr (vs:ivs_list_t) table key value =
     Hashtbl.add table key (NonFunctionEntry (mkentry syms vs value))
 
 
-let full_add_typevar syms sr table key value =
+let full_add_typevar syms sym_table sr table key value =
   try
     let entry = Hashtbl.find table key in
     match entry with
     | NonFunctionEntry (idx)
     | FunctionEntry (idx :: _ ) ->
-       (match Hashtbl.find syms.Flx_mtypes2.sym_table (Flx_typing.sye idx)  with
-       | { Flx_types.sr=sr2 } ->
+       (match Flx_sym_table.find sym_table (Flx_typing.sye idx)  with
+       | { Flx_sym.sr=sr2 } ->
          Flx_exceptions.clierr2 sr sr2
          ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
          Flx_print.string_of_bid (Flx_typing.sye idx) ^ ">")
@@ -116,13 +117,13 @@ let full_add_typevar syms sr table key value =
       (NonFunctionEntry (mkentry syms dfltvs value))
 
 
-let full_add_function syms sr (vs:ivs_list_t) table key value =
+let full_add_function syms sym_table sr (vs:ivs_list_t) table key value =
   try
     match Hashtbl.find table key with
     | NonFunctionEntry entry ->
       begin
-        match Hashtbl.find syms.Flx_mtypes2.sym_table (Flx_typing.sye entry) with
-        { Flx_types.id=id; sr=sr2 } ->
+        match Flx_sym_table.find sym_table (Flx_typing.sye entry) with
+        { Flx_sym.id=id; sr=sr2 } ->
         Flx_exceptions.clierr2 sr sr2
         (
           "[build_tables] Cannot overload " ^
@@ -174,6 +175,7 @@ let rec build_tables
   ?(pub_name_map=Hashtbl.create 97)
   ?(priv_name_map=Hashtbl.create 97)
   syms
+  sym_table
   name
   inherit_ivs
   level
@@ -212,6 +214,7 @@ let rec build_tables
   List.iter (fun dcl ->
     ignore(build_table_for_dcl
       syms
+      sym_table
       name
       inherit_ivs
       level
@@ -229,6 +232,7 @@ let rec build_tables
 (** Add the symbols from one declaration. *)
 and build_table_for_dcl
   syms
+  sym_table
   name
   inherit_ivs
   level
@@ -242,7 +246,6 @@ and build_table_for_dcl
   let print_flag = syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
 
   (* Make some shorthand functions *)
-  let sym_table = syms.Flx_mtypes2.sym_table in
   let counter = syms.Flx_mtypes2.counter in
   let spc = Flx_util.spaces level in
   let make_ivs = make_ivs ~print:print_flag level counter in
@@ -288,7 +291,9 @@ and build_table_for_dcl
   in
   *)
 
-  let add_unique table id idx = full_add_unique syms
+  let add_unique table id idx = full_add_unique
+    syms
+    sym_table
     sr
     (merge_ivs ivs inherit_ivs)
     table
@@ -297,6 +302,7 @@ and build_table_for_dcl
   in
   let add_function table id idx = full_add_function
     syms
+    sym_table
     sr
     (merge_ivs ivs inherit_ivs)
     table
@@ -315,8 +321,8 @@ and build_table_for_dcl
     id
     symdef
   =
-    Hashtbl.add sym_table index {
-      Flx_types.id = id;
+    Flx_sym_table.add sym_table index {
+      Flx_sym.id = id;
       sr = sr;
       parent = parent;
       vs = ivs;
@@ -349,7 +355,7 @@ and build_table_for_dcl
         ~pubtab:null_tab
         ~privtab:null_tab
         index tvid (SYMDEF_typevar mt);
-      full_add_typevar syms sr table tvid index;
+      full_add_typevar syms sym_table sr table tvid index;
     end (fst ivs)
   in
   let add_tvars table = add_tvars' (Some symbol_index) table ivs in
@@ -374,10 +380,11 @@ and build_table_for_dcl
         n name (SYMDEF_parameter (k, typ));
 
       (* Possibly add the parameter to the public symbol table. *)
-      if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
+      if access = `Public then
+        full_add_unique syms sym_table sr dfltvs pubtab name n;
 
       (* Add the parameter to the private symbol table. *)
-      full_add_unique syms sr dfltvs privtab name n;
+      full_add_unique syms sym_table sr dfltvs privtab name n;
 
       ips := (k, name, typ, dflt) :: !ips
     end ps;
@@ -403,10 +410,11 @@ and build_table_for_dcl
         n name (SYMDEF_parameter (`PVal, typ));
 
       (* Register the symbol if it's public. *)
-      if access = `Public then full_add_unique syms sr dfltvs pubtab name n;
+      if access = `Public then
+        full_add_unique syms sym_table sr dfltvs pubtab name n;
 
       (* Always register it in the private symbol table. *)
-      full_add_unique syms sr dfltvs privtab name n;
+      full_add_unique syms sym_table sr dfltvs privtab name n;
 
       ips := (`PVal, name, typ, None) :: !ips
     end ps;
@@ -467,6 +475,7 @@ and build_table_for_dcl
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           syms
+          sym_table
           id
           dfltvs
           (level + 1)
@@ -548,6 +557,7 @@ and build_table_for_dcl
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           syms
+          sym_table
           id
           dfltvs
           (level + 1)
@@ -586,6 +596,7 @@ and build_table_for_dcl
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           syms
+          sym_table
           id
           (merge_ivs inherit_ivs ivs)
           (level + 1)
@@ -642,6 +653,7 @@ and build_table_for_dcl
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           syms
+          sym_table
           id
           (merge_ivs inherit_ivs ivs)
           (level + 1)
@@ -663,13 +675,6 @@ and build_table_for_dcl
       in
       let nts = List.map (fun (s,i,t)-> BTYP_var (i,BTYP_type 0)) (fst ivs) in
       (* fudge the private view to remove the vs *)
-      let show { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } =
-        Flx_print.string_of_bid i ^ " |-> " ^
-          "vs= " ^ Flx_util.catmap
-            ","
-            (fun (s,i) -> s ^ "<" ^ Flx_print.string_of_bid i ^ ">")
-          vs ^ "ts =" ^ Flx_util.catmap  "," (Flx_print.sbt sym_table) ts
-      in
       let fixup ({ Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
         let e' = {
           Flx_types.base_sym=i;
@@ -715,6 +720,7 @@ and build_table_for_dcl
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           syms
+          sym_table
           id
           dfltvs
           (level + 1)
@@ -1074,9 +1080,10 @@ and build_table_for_dcl
   symbol_index
 
 
-let make syms =
+let make syms sym_table =
   {
     syms = syms;
+    sym_table = sym_table;
     pub_name_map = Hashtbl.create 97;
     priv_name_map = Hashtbl.create 97;
   }
@@ -1093,8 +1100,11 @@ let add_dcl ?parent state dcl =
   let level, pubmap, privmap =
     match parent with
     | Some index ->
-        let symbol = Hashtbl.find state.syms.Flx_mtypes2.sym_table index in
-        1, symbol.pubmap, symbol.privmap
+        let symbol = Flx_sym_table.find
+          state.sym_table
+          index
+        in
+        1, symbol.Flx_sym.pubmap, symbol.Flx_sym.privmap
     | None ->
         0, state.pub_name_map, state.priv_name_map
   in
@@ -1103,6 +1113,7 @@ let add_dcl ?parent state dcl =
   let symbol_index =
     build_table_for_dcl
       state.syms
+      state.sym_table
       "root"
       Flx_ast.dfltvs
       level
@@ -1123,6 +1134,7 @@ let add_asms state asms =
       ~pub_name_map:state.pub_name_map
       ~priv_name_map:state.priv_name_map
       state.syms
+      state.sym_table
       "root"
       dfltvs
       0

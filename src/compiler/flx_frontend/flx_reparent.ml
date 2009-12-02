@@ -47,7 +47,7 @@ let ident x = x
 
 let remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e =
   (*
-  print_endline ("Remapping expression " ^ sbe syms.sym_table bsym_table e);
+  print_endline ("Remapping expression " ^ sbe sym_table bsym_table e);
   *)
   let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
@@ -59,7 +59,7 @@ let remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e =
     let t' = varmap_subst varmap t in
     let rec s t = tmap (map_btype s t) in
     let t' = s t' in
-    (* print_endline ("Remap type " ^ sbt syms.sym_table t ^ " to " ^ sbt syms.sym_table * t'); *)
+    (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
   let fixup i ts =
@@ -101,13 +101,13 @@ let remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e =
   in
     let a = aux e in
     (*
-    print_endline ("replace " ^ sbe syms.sym_table e ^ "-->" ^ sbe syms.sym_table a);
+    print_endline ("replace " ^ sbe sym_table e ^ "-->" ^ sbe sym_table a);
     *)
     a
 
 let remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_len exe =
   (*
-  print_endline ("remap_exe " ^ string_of_bexe syms.sym_table bsym_table 0 exe);
+  print_endline ("remap_exe " ^ string_of_bexe sym_table bsym_table 0 exe);
   *)
   let ge e = remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
@@ -122,7 +122,7 @@ let remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_le
     let t' = varmap_subst varmap t in
     let rec s t = tmap (map_btype s t) in
     let t' = s t' in
-    (* print_endline ("Remap type " ^ sbt syms.sym_table t ^ " to " ^ sbt syms.sym_table * t'); *)
+    (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
   let exe =
@@ -173,7 +173,7 @@ let remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_le
   | x -> map_bexe revar ge ident relab relab x
   in
   (*
-  print_endline ("remapped_exe " ^ string_of_bexe syms.sym_table bsym_table 0 exe);
+  print_endline ("remapped_exe " ^ string_of_bexe sym_table bsym_table 0 exe);
   *)
   exe
 
@@ -191,7 +191,7 @@ let remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len reqs 
     let t' = varmap_subst varmap t in
     let rec s t = tmap (map_btype s t) in
     let t' = s t' in
-    (* print_endline ("Remap type " ^ sbt syms.sym_table t ^ " to " ^ sbt syms.sym_table * t'); *)
+    (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
   let fixup (i, ts) =
@@ -245,7 +245,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
     let t' = varmap_subst varmap t in
     let rec s t = tmap (map_btype s t) in
     let t' = s t' in
-    (* print_endline ("Remap type " ^ sbt syms.sym_table t ^ " to " ^ sbt syms.sym_table * t'); *)
+    (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
   let remap_ps ps = map (fun {pid=id; pindex=i; ptyp=t; pkind=k} ->
@@ -256,7 +256,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
   let rexes xs = remap_exes syms bsym_table relabel varmap revariable caller_vars callee_vs_len xs in
   let rexpr e = remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e in
   let rreqs rqs = remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len rqs in
-  let id,old_parent,sr,entry = Hashtbl.find bsym_table index in
+  let id,old_parent,sr,entry = Flx_bsym_table.find bsym_table index in
   if syms.compiler_options.print_flag then
   print_endline
   (
@@ -281,10 +281,10 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
     let ps = remap_ps ps in
     let props = allow_rescan rescan_flag props in
     let props = filter (fun p -> p <> `Virtual) props in
-    Hashtbl.add bsym_table k (id,parent,sr,BBDCL_procedure (props,splice vs,(ps,traint),exes));
+    Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_procedure (props,splice vs,(ps,traint),exes));
     (*
     print_endline "NEW PROCEDURE (clone):";
-    print_function syms.sym_table bsym_table k;
+    print_function sym_table bsym_table k;
     *)
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
@@ -300,10 +300,10 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
     let ps = remap_ps ps in
     let exes = rexes exes in
     let ret = auxt ret in
-    Hashtbl.add bsym_table k (id,parent,sr,BBDCL_function (props,splice vs,(ps,traint),ret,exes));
+    Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_function (props,splice vs,(ps,traint),ret,exes));
     (*
     print_endline "NEW FUNCTION (clone):";
-    print_function syms.sym_table bsym_table k;
+    print_function sym_table bsym_table k;
     *)
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
@@ -319,24 +319,24 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
       catmap "," (fun (s,i) -> s^"<"^si i^">") vs);
     print_endline ("         variable new: id<"^si k^"> vs=" ^
       catmap "," (fun (s,i) -> s^"<"^si i^">") (splice vs));
-     print_endline ("Type old " ^ sbt syms.sym_table t ^ " -> type new " ^ sbt
-     syms.sym_table (auxt t));
+     print_endline ("Type old " ^ sbt sym_table t ^ " -> type new " ^ sbt
+     sym_table (auxt t));
     *)
-    Hashtbl.add bsym_table k (id,parent,sr,BBDCL_var (splice vs,auxt t))
+    Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_var (splice vs,auxt t))
 
   | BBDCL_val (vs,t) ->
-    Hashtbl.add bsym_table k (id,parent,sr,BBDCL_val (splice vs,auxt t))
+    Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_val (splice vs,auxt t))
 
   | BBDCL_ref (vs,t) ->
-    Hashtbl.add bsym_table k (id,parent,sr,BBDCL_ref (splice vs,auxt t))
+    Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_ref (splice vs,auxt t))
 
   | BBDCL_tmp (vs,t) ->
-    Hashtbl.add bsym_table k (id,parent,sr,BBDCL_tmp (splice vs,auxt t))
+    Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_tmp (splice vs,auxt t))
 
   | BBDCL_abs (vs,quals,ct,breqs) ->
     let vs = splice vs in
     let breqs = rreqs breqs in
-    Hashtbl.add bsym_table k (id,parent,sr,BBDCL_abs (vs,quals,ct,breqs));
+    Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_abs (vs,quals,ct,breqs));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
@@ -346,7 +346,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
     let vs = splice vs in
     let breqs = rreqs breqs in
     let t = auxt t in
-    Hashtbl.add bsym_table k (id,parent,sr,BBDCL_const (props,vs,t,ct,breqs));
+    Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_const (props,vs,t,ct,breqs));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
@@ -356,7 +356,7 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
     let params = map auxt params in
     let vs = splice vs in
     let breqs = rreqs breqs in
-    Hashtbl.add bsym_table k (id,parent,sr,BBDCL_proc (props,vs,params,ct,breqs));
+    Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_proc (props,vs,params,ct,breqs));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     (*
@@ -371,10 +371,10 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
     let vs = splice vs in
     let ret = auxt ret in
     let breqs = rreqs breqs in
-    Hashtbl.add bsym_table k (id,parent,sr,BBDCL_fun (props,vs,params,ret,ct,breqs,prec));
+    Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_fun (props,vs,params,ret,ct,breqs,prec));
     (*
     print_endline "NEW FUNCTION (clone):";
-    print_function syms.sym_table bsym_table k;
+    print_function sym_table bsym_table k;
     *)
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
@@ -387,17 +387,17 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
   | BBDCL_insert (vs,ct,ik,breqs) ->
     let breqs = rreqs breqs in
     let vs = splice vs in
-    Hashtbl.add bsym_table k (id,parent,sr,BBDCL_insert (vs,ct,ik,breqs));
+    Flx_bsym_table.add bsym_table k (id,parent,sr,BBDCL_insert (vs,ct,ik,breqs));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
 
   (*
   |  _ ->
-    Hashtbl.add bsym_table k (id,parent,sr,entry)
+    Flx_bsym_table.add bsym_table k (id,parent,sr,entry)
   *)
 
-  | _ -> syserr sr ("[reparent1] Unexpected: bbdcl " ^ string_of_bbdcl syms.sym_table bsym_table entry index)
+  | _ -> syserr sr ("[reparent1] Unexpected: bbdcl " ^ string_of_bbdcl bsym_table entry index)
 
 (* make a copy all the descendants of i, changing any
   parent which is i to the given new parent
@@ -431,7 +431,7 @@ let reparent_children syms (uses,child_map,bsym_table)
   BidSet.iter
   (fun i ->
     let old_parent =
-      match Hashtbl.find bsym_table i with id,oldp,_,_ -> oldp
+      match Flx_bsym_table.find bsym_table i with id,oldp,_,_ -> oldp
     in
     let new_parent: bid_t option =
       match old_parent with

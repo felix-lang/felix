@@ -289,7 +289,7 @@ let var_list_occurs ls t =
   that right requires unification .. :)
 *)
 
-let rec unification counter sym_table
+let rec unification counter
   (eqns: (btypecode_t * btypecode_t) list)
   (dvars: BidSet.t)
 : (bid_t * btypecode_t) list =
@@ -519,34 +519,34 @@ let find_vars_eqns eqns =
   ;
   !lhs_vars,!rhs_vars
 
-let maybe_unification counter sym_table eqns =
+let maybe_unification counter eqns =
   let l,r = find_vars_eqns eqns in
   let dvars = BidSet.union l r in
-  try Some (unification counter sym_table eqns dvars)
+  try Some (unification counter eqns dvars)
   with Not_found -> None
 
-let maybe_matches counter sym_table eqns =
+let maybe_matches counter eqns =
   let l,r = find_vars_eqns eqns in
   let dvars = BidSet.union l r in
-  try Some (unification counter sym_table eqns dvars)
+  try Some (unification counter eqns dvars)
   with Not_found -> None
 
-let maybe_specialisation counter sym_table eqns =
+let maybe_specialisation counter eqns =
   let l,_ = find_vars_eqns eqns in
-  try Some (unification counter sym_table eqns l)
+  try Some (unification counter eqns l)
   with Not_found -> None
 
-let unifies counter sym_table t1 t2 =
+let unifies counter t1 t2 =
   let eqns = [t1,t2] in
-  match maybe_unification counter sym_table eqns with
+  match maybe_unification counter eqns with
   | None -> false
   | Some _ -> true
 
-let ge counter sym_table a b =
+let ge counter a b =
   (*
   print_endline ("Compare terms " ^ sbt sym_table a ^ " >? " ^ sbt sym_table b);
   *)
-  match maybe_specialisation counter sym_table [a,b] with
+  match maybe_specialisation counter [a,b] with
   | None -> false
   | Some mgu ->
     (*
@@ -556,8 +556,8 @@ let ge counter sym_table a b =
     *)
     true
 
-let compare_sigs counter sym_table a b =
-  match ge counter sym_table a b, ge counter sym_table b a with
+let compare_sigs counter a b =
+  match ge counter a b, ge counter b a with
   | true, true -> `Equal
   | false, false -> `Incomparable
   | true, false -> `Greater
@@ -589,7 +589,7 @@ let compare_sigs counter sym_table a b =
    and the declared type the LHS.
 *)
 
-let do_unify syms a b =
+let do_unify syms sym_table bsym_table a b =
   let eqns =
     [
       varmap_subst syms.varmap a,
@@ -602,12 +602,12 @@ let do_unify syms a b =
     (*
     print_endline "Calling unification";
     *)
-    let mgu = unification syms.counter syms.sym_table eqns dvars in
+    let mgu = unification syms.counter eqns dvars in
     (*
     print_endline "mgu=";
     List.iter
     (fun (i, t) ->
-      print_endline (string_of_int i ^ " -> " ^ string_of_btypecode syms.sym_table t)
+      print_endline (string_of_int i ^ " -> " ^ string_of_btypecode sym_table t)
     )
     mgu;
     *)
@@ -638,24 +638,24 @@ let do_unify syms a b =
       end else begin
         match
           begin
-            try Hashtbl.find syms.sym_table i with Not_found -> failwith
+            try Flx_sym_table.find sym_table i with Not_found -> failwith
               ("BUG, flx_unify can't find symbol " ^ string_of_bid i)
           end
         with
-        | { symdef=SYMDEF_function _ } ->
+        | { Flx_sym.symdef=SYMDEF_function _ } ->
           (*
-          print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode syms.sym_table t);
+          print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode sym_table t);
           *)
           Hashtbl.add syms.varmap i t
 
         (* if it's a declared type variable, leave it alone *)
-        | {symdef=SYMDEF_typevar _ } -> ()
+        | { Flx_sym.symdef=SYMDEF_typevar _ } -> ()
 
         | _ ->
           failwith
           (
             "[do_unify] attempt to add non-function return unknown type variable "^
-            string_of_bid i^", type "^sbt syms.sym_table t^" to hashtble"
+            string_of_bid i^", type "^sbt bsym_table t^" to hashtble"
           )
       end
     end mgu;
@@ -666,10 +666,10 @@ let rec memq trail (a,b) = match trail with
   | [] -> false
   | (i,j)::t -> i == a && j == b || memq t (a,b)
 
-let rec type_eq' counter sym_table ltrail ldepth rtrail rdepth trail t1 t2 =
+let rec type_eq' counter ltrail ldepth rtrail rdepth trail t1 t2 =
   (* print_endline (sbt sym_table t1 ^ " =? " ^ sbt sym_table t2); *)
   if memq trail (t1,t2) then true
-  else let te a b = type_eq' counter sym_table
+  else let te a b = type_eq' counter
     ((ldepth,t1)::ltrail) (ldepth+1)
     ((rdepth,t2)::rtrail) (rdepth+1)
     ((t1,t2)::trail)
@@ -792,7 +792,7 @@ let rec type_eq' counter sym_table ltrail ldepth rtrail rdepth trail t1 t2 =
       try
       let a = List.assoc (ldepth+i) ltrail in
       let b = List.assoc (rdepth+j) rtrail in
-      type_eq' counter sym_table ltrail ldepth rtrail rdepth trail a b
+      type_eq' counter ltrail ldepth rtrail rdepth trail a b
       with Not_found -> false
     end
 
@@ -802,7 +802,7 @@ let rec type_eq' counter sym_table ltrail ldepth rtrail rdepth trail t1 t2 =
     *)
     begin try
     let a = List.assoc (ldepth+i) ltrail in
-    type_eq' counter sym_table ltrail ldepth rtrail rdepth trail a t
+    type_eq' counter ltrail ldepth rtrail rdepth trail a t
     with Not_found -> false
     end
 
@@ -812,7 +812,7 @@ let rec type_eq' counter sym_table ltrail ldepth rtrail rdepth trail t1 t2 =
     *)
     begin try
     let b = List.assoc (rdepth+j) rtrail in
-    type_eq' counter sym_table ltrail ldepth rtrail rdepth trail t b
+    type_eq' counter ltrail ldepth rtrail rdepth trail t b
     with Not_found -> false
     end
 
@@ -840,11 +840,11 @@ let rec type_eq' counter sym_table ltrail ldepth rtrail rdepth trail t1 t2 =
     *)
     false
 
-let type_eq counter sym_table t1 t2 = (* print_endline "TYPE EQ";  *)
-  type_eq' counter sym_table [] 0 [] 0 [] t1 t2
+let type_eq counter t1 t2 = (* print_endline "TYPE EQ";  *)
+  type_eq' counter [] 0 [] 0 [] t1 t2
 
-let type_match counter sym_table t1 t2 = (* print_endline "TYPE MATCH"; *)
-  type_eq' counter sym_table [] 0 [] 0 [] t1 t2
+let type_match counter t1 t2 = (* print_endline "TYPE MATCH"; *)
+  type_eq' counter [] 0 [] 0 [] t1 t2
 
 (* NOTE: only works on explicit fixpoint operators,
   i.e. it won't work on typedefs: no name lookup,
@@ -852,7 +852,7 @@ let type_match counter sym_table t1 t2 = (* print_endline "TYPE MATCH"; *)
   another view: only works on non-generative types.
 *)
 
-let unfold sym_table t =
+let unfold t =
   let rec aux depth t' =
   let uf t = aux (depth+1) t in
   match t' with
@@ -887,7 +887,7 @@ let unfold sym_table t =
 exception Found of btypecode_t
 
 (* this undoes an unfold: it won't minimise an arbitrary type *)
-let fold counter sym_table t =
+let fold counter t =
   let rec aux trail depth t' =
     let ax t = aux ((depth,t')::trail) (depth+1) t in
     match t' with
@@ -913,7 +913,7 @@ let fold counter sym_table t =
       let k = depth + i in
       begin try
         let t'' = List.assoc k trail in
-        if type_eq counter sym_table t'' t then raise (Found t'')
+        if type_eq counter t'' t then raise (Found t'')
       with Not_found -> ()
       end
 
@@ -934,7 +934,8 @@ let fold counter sym_table t =
 (* produces a unique minimal representation of a type
 by folding at every node *)
 
-let minimise counter sym_table t = match map_btype (fold counter sym_table) t with x -> fold counter sym_table x
+let minimise counter t =
+  fold counter (map_btype (fold counter) t)
 
 let var_occurs t =
   let rec aux' excl t = let aux t = aux' excl t in
@@ -981,7 +982,7 @@ let expr_term_subst e1 i e2 =
   | e -> e
   in s e1
 
-let rec expr_unification counter sym_table
+let rec expr_unification counter
   (eqns: (tbexpr_t * tbexpr_t) list)
   (tdvars: BidSet.t)
   (edvars: BidSet.t)
@@ -1128,13 +1129,13 @@ let rec expr_unification counter sym_table
       loop ()
     in
       loop ();
-      let tmgu = unification counter sym_table !teqns tdvars in
+      let tmgu = unification counter !teqns tdvars in
       tmgu,
       !mgu
 
 let setoflist ls = List.fold_left (fun s i -> BidSet.add i s) BidSet.empty ls
 
-let expr_maybe_matches counter (sym_table:sym_table_t)
+let expr_maybe_matches counter
   (tvars:bid_t list) (evars:bid_t list)
   (le:tbexpr_t)
   (re:tbexpr_t)
@@ -1148,5 +1149,5 @@ let expr_maybe_matches counter (sym_table:sym_table_t)
   (*
   print_endline ("Expr unify: le = " ^ sbe sym_table le ^  "\nre = " ^ sbe sym_table re);
   *)
-  try Some (expr_unification counter sym_table eqns tvars evars)
+  try Some (expr_unification counter eqns tvars evars)
   with Not_found -> None

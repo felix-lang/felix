@@ -1,6 +1,6 @@
 val gen_expr:
   Flx_mtypes2.sym_state_t ->
-  Flx_types.bsym_table_t ->
+  Flx_bsym_table.t ->
   Flx_types.bid_t ->
   Flx_types.tbexpr_t ->
   Flx_types.bvs_t ->
@@ -10,7 +10,7 @@ val gen_expr:
 
 val gen_expr':
   Flx_mtypes2.sym_state_t ->
-  Flx_types.bsym_table_t ->
+  Flx_bsym_table.t ->
   Flx_types.bid_t ->
   Flx_types.tbexpr_t ->
   Flx_types.bvs_t ->
@@ -21,7 +21,7 @@ val gen_expr':
 (* for use in an expression *)
 val get_var_ref:
   Flx_mtypes2.sym_state_t ->
-  Flx_types.bsym_table_t ->
+  Flx_bsym_table.t ->
   Flx_types.bid_t ->
   Flx_types.bid_t ->
   Flx_types.btypecode_t list ->
@@ -30,7 +30,7 @@ val get_var_ref:
 (* for definition/initialisation *)
 val get_ref_ref:
   Flx_mtypes2.sym_state_t ->
-  Flx_types.bsym_table_t ->
+  Flx_bsym_table.t ->
   Flx_types.bid_t ->
   Flx_types.bid_t ->
   Flx_types.btypecode_t list ->

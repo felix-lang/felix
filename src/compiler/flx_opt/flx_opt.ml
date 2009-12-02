@@ -36,7 +36,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     print_endline "INPUT TO OPTIMISATION PASS";
     print_endline "---------------------------";
     print_endline "";
-    Flx_print.print_symbols syms.Flx_mtypes2.sym_table bsym_table
+    Flx_print.print_symbols bsym_table
   end;
 
   (* Remove unused reductions. *)
@@ -72,11 +72,11 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     print_endline "POST PHASE 1 FUNCTION SET";
     print_endline "---------------------------";
     print_endline "";
-    Flx_print.print_symbols syms.Flx_mtypes2.sym_table bsym_table
+    Flx_print.print_symbols bsym_table
   end;
 
   (* Clean up the inlining symbol properties. *)
-  Hashtbl.iter begin fun i _ ->
+  Flx_bsym_table.iter begin fun i _ ->
     Flx_prop.rem_prop bsym_table `Inlining_started i;
     Flx_prop.rem_prop bsym_table `Inlining_complete i;
   end bsym_table;
@@ -115,7 +115,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     print_endline "POST MONOMORPHISATION FUNCTION SET";
     print_endline "---------------------------";
     print_endline "";
-    Flx_print.print_symbols syms.Flx_mtypes2.sym_table bsym_table
+    Flx_print.print_symbols bsym_table
   end;
 
   (* Remove any newly unused reductions. *)
@@ -141,7 +141,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
 
   (*
   print_endline "INLINING DONE: RESULT:";
-  print_symbols syms.sym_table bsym_table;
+  print_symbols bsym_table;
   *)
 
   (* Remove unused symbols. *)
@@ -188,12 +188,7 @@ let stack_calls syms bsym_table =
     bsym_table
     syms.Flx_mtypes2.counter
   in
-  let label_usage = Flx_label.create_label_usage
-    syms
-    bsym_table
-    label_map
-  in
-
+  let label_usage = Flx_label.create_label_usage syms bsym_table label_map in
   let child_map = Flx_child.cal_children bsym_table in
   Flx_stack_calls.make_stack_calls
     syms
@@ -252,7 +247,7 @@ let optimize_bsym_table syms bsym_table root_proc =
 let optimize syms bsym_table child_map root_proc bids bexes =
   (* Add the symbols to the child map. *)
   List.iter begin fun bid ->
-    let (_,parent,_,_) = Hashtbl.find bsym_table bid in
+    let (_,parent,_,_) = Flx_bsym_table.find bsym_table bid in
     match parent with
     | Some parent -> Flx_child.add_child child_map parent bid
     | None -> ()

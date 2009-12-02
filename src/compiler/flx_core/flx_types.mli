@@ -36,6 +36,8 @@ type dir_t =
   | DIR_inject_module of qualified_name_t
   | DIR_use of id_t * qualified_name_t
 
+type sdir_t = Flx_srcref.t * dir_t
+
 type dcl_t =
   (* data structures *)
   | DCL_axiom of         params_t * axiom_method_t
@@ -85,7 +87,7 @@ and asm_t =
   | Exe of sexe_t
   | Dcl of sdcl_t
   | Iface of siface_t
-  | Dir of dir_t
+  | Dir of sdir_t
 
 type bound_iface_t = Flx_srcref.t * iface_t * bid_t option
 
@@ -145,7 +147,7 @@ and entry_set_t =
   | NonFunctionEntry of entry_kind_t
 
 and module_rep_t =
-  | Simple_module of bid_t * typecode_t list * name_map_t * dir_t list
+  | Simple_module of bid_t * typecode_t list * name_map_t * sdir_t list
 
 and name_map_t = (string, entry_set_t) Hashtbl.t
 
@@ -297,25 +299,10 @@ type symbol_definition_t =
   | SYMDEF_inherit_fun of qualified_name_t
   | SYMDEF_instance of qualified_name_t
 
-type sym_t = {
-  id:string;
-  sr:Flx_srcref.t;
-  parent:bid_t option;
-  vs:ivs_list_t;
-  pubmap:name_map_t;
-  privmap:name_map_t;
-  dirs:dir_t list;
-  symdef:symbol_definition_t;
-}
-
-type sym_table_t = (bid_t, sym_t) Hashtbl.t
-
-type bsym_t = string * bid_t option * Flx_srcref.t * bbdcl_t
-type bsym_table_t = (bid_t, bsym_t) Hashtbl.t
-
 type type_registry_t = (btypecode_t, bid_t) Hashtbl.t
 
 val src_of_bexe : bexe_t -> Flx_srcref.t
 
 val ts_of_bexpr : bexpr_t -> btypecode_t list
 val ts_of_bbdcl : bbdcl_t -> btypecode_t list
+val bvs_of_bbdcl : bbdcl_t -> bvs_t

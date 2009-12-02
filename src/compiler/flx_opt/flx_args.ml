@@ -20,9 +20,9 @@ open Flx_spexes
 open Flx_foldvars
 
 let hfind msg h k =
-  try Hashtbl.find h k
+  try Flx_bsym_table.find h k
   with Not_found ->
-    print_endline ("flx_inline Hashtbl.find failed " ^ msg);
+    print_endline ("flx_inline Flx_bsym_table.find failed " ^ msg);
     raise Not_found
 
 let get_ps bsym_table f =
@@ -58,10 +58,10 @@ let unpack syms bsym_table f ps a : tbexpr_t list =
 
   | x,t ->
     print_endline ("Function " ^ string_of_bid f);
-    print_endline ("Unexpected non tuple arg type " ^ sbt syms.sym_table t);
+    print_endline ("Unexpected non tuple arg type " ^ sbt bsym_table t);
     print_endline ("Parameters = " ^
       catmap ", " (fun {pid=s;pindex=i} -> s ^ "<" ^ string_of_bid i ^ ">") ps);
-    print_endline ("Argument " ^ sbe syms.sym_table bsym_table a);
+    print_endline ("Argument " ^ sbe bsym_table a);
     assert false (* argument isn't a tuple type .. but there are multiple parameters!  *)
 
 let merge_args syms bsym_table f c a b =

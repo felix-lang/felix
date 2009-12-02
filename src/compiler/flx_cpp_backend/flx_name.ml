@@ -81,7 +81,7 @@ let cid_of_bid bid =
 (* basic name mangler *)
 let cpp_name bsym_table index =
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index
+    try Flx_bsym_table.find bsym_table index
     with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_bid index)
   in
   (match entry with
@@ -99,15 +99,10 @@ let cpp_instance_name' syms bsym_table index ts =
   let inst =
     try Hashtbl.find syms.instances (index,ts)
     with Not_found ->
-    let id =
-      try
-        let id,parent,sr,entry = Hashtbl.find bsym_table index in id
-      with Not_found ->
-      try
-        match Hashtbl.find syms.sym_table index with
-        {id=id} -> id ^ "[unbound]"
-      with Not_found ->
-      "unknown"
+    let id,_,_,_ =
+      try Flx_bsym_table.find bsym_table index with Not_found ->
+        failwith ("[cpp_instance_name'] Can't find <" ^
+          string_of_bid index ^ ">")
     in
     let has_variables =
       List.fold_left
@@ -119,7 +114,7 @@ let cpp_instance_name' syms bsym_table index ts =
     (
       "[cpp_instance_name] unable to find instance " ^ id ^
       "<" ^ string_of_bid index ^ ">[" ^
-      catmap ", " (string_of_btypecode syms.sym_table) ts ^ "]"
+      catmap ", " (string_of_btypecode bsym_table) ts ^ "]"
       ^ (if has_variables then " .. a subscript contains a type variable" else "")
     )
   in
@@ -143,7 +138,7 @@ let cpp_instance_name syms bsym_table index ts =
   let long_name = cpp_instance_name' syms bsym_table index ts in
   if syms.compiler_options.mangle_names then long_name else
   let id,parent,sr,entry =
-    try Hashtbl.find bsym_table index
+    try Flx_bsym_table.find bsym_table index
     with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_bid index)
   in
   let id' = cid_of_flxid id in
@@ -160,7 +155,7 @@ let cpp_instance_name syms bsym_table index ts =
   end
   else long_name
 
-let tix syms t =
+let tix syms bsym_table t =
   let t =
     match t with
     | BTYP_function (BTYP_void,cod) -> BTYP_function (BTYP_tuple [],cod)
@@ -168,20 +163,20 @@ let tix syms t =
   in
   try Hashtbl.find syms.registry t
   with Not_found ->
-    failwith ("Cannot find type " ^sbt syms.sym_table t ^" in registry")
+    failwith ("Cannot find type " ^sbt bsym_table t ^" in registry")
 
-let rec cpp_type_classname syms t =
-  let tix t = tix syms t in
-  let t = fold syms.counter syms.sym_table t in
-  try match unfold syms.sym_table t with
+let rec cpp_type_classname syms bsym_table t =
+  let tix t = tix syms bsym_table t in
+  let t = fold syms.counter t in
+  try match unfold t with
   | BTYP_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
-        string_of_bid i ^ ":"^ sbt syms.sym_table mt)
+        string_of_bid i ^ ":"^ sbt bsym_table mt)
   | BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"
   | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
   | BTYP_tuple [] -> "unit"
 
-  | BTYP_pointer t' -> cpp_type_classname syms t' ^ "*"
+  | BTYP_pointer t' -> cpp_type_classname syms bsym_table t' ^ "*"
  
   | BTYP_function (_,BTYP_void) -> "_pt" ^ cid_of_bid (tix t)
   | BTYP_function _ -> "_ft" ^ cid_of_bid (tix t)
@@ -193,36 +188,32 @@ let rec cpp_type_classname syms t =
   | BTYP_sum _ -> "_st" ^ cid_of_bid (tix t)
   | BTYP_unitsum k -> "_us" ^ string_of_int k
 
-
   | BTYP_inst (i,ts) ->
     let cal_prefix = function
-      | SYMDEF_struct _  -> "_s"
-      | SYMDEF_union _   -> "_u"
-      | SYMDEF_abs _  -> "_a"
-      | SYMDEF_newtype _ -> "_abstr_"
+      | BBDCL_struct _  -> "_s"
+      | BBDCL_union _   -> "_u"
+      | BBDCL_abs _  -> "_a"
+      | BBDCL_newtype _ -> "_abstr_"
       | _ -> "_unk_"
     in
     if ts = [] then
       match
-        try
-          match Hashtbl.find syms.sym_table i with
-          { id=id; symdef=symdef } -> Some (id,symdef )
-        with Not_found -> None
+        try Some (Flx_bsym_table.find bsym_table i) with Not_found -> None
       with
-      | Some (id,SYMDEF_cstruct _) -> id
-      | Some (_,SYMDEF_abs (_,CS_str "char",_)) -> "char" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str "int",_)) -> "int" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str "short",_)) -> "short" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str "long",_)) -> "long" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str "float",_)) -> "float" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str "double",_)) -> "double" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str_template "char",_)) -> "char" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str_template "int",_)) -> "int" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str_template "short",_)) -> "short" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str_template "long",_)) -> "long" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str_template "float",_)) -> "float" (* hack .. *)
-      | Some (_,SYMDEF_abs (_,CS_str_template "double",_)) -> "double" (* hack .. *)
-      | Some (_,data)  ->
+      | Some (id,_,_,BBDCL_cstruct _) -> id
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str "char",_)) -> "char" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str "int",_)) -> "int" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str "short",_)) -> "short" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str "long",_)) -> "long" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str "float",_)) -> "float" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str "double",_)) -> "double" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "char",_)) -> "char" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "int",_)) -> "int" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "short",_)) -> "short" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "long",_)) -> "long" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "float",_)) -> "float" (* hack .. *)
+      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "double",_)) -> "double" (* hack .. *)
+      | Some (_,_,_,data)  ->
         let prefix = cal_prefix data in
         prefix ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
       | None ->
@@ -234,21 +225,21 @@ let rec cpp_type_classname syms t =
     failwith
     (
       "[cpp_type_classname] Unexpected " ^
-      string_of_btypecode syms.sym_table t
+      string_of_btypecode bsym_table t
     )
   with Not_found ->
     failwith
     (
       "[cpp_type_classname] Expected type "^
-      string_of_btypecode syms.sym_table t ^
+      string_of_btypecode bsym_table t ^
       " to be in registry"
     )
 
-let rec cpp_typename syms t =
-  match unfold syms.sym_table t with
-  | BTYP_function _ -> cpp_type_classname syms t ^ "*"
-  | BTYP_cfunction _ -> cpp_type_classname syms t ^ "*"
-  | BTYP_pointer t -> cpp_typename syms t ^ "*"
-  | _ -> cpp_type_classname syms t
+let rec cpp_typename syms bsym_table t =
+  match unfold t with
+  | BTYP_function _ -> cpp_type_classname syms bsym_table t ^ "*"
+  | BTYP_cfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
+  | BTYP_pointer t -> cpp_typename syms bsym_table t ^ "*"
+  | _ -> cpp_type_classname syms bsym_table t
 
-let cpp_ltypename syms t = cpp_typename syms t 
+let cpp_ltypename syms bsym_table t = cpp_typename syms bsym_table t

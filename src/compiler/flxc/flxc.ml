@@ -4,6 +4,7 @@
 
 type state_t = {
   syms: Flx_mtypes2.sym_state_t;
+  sym_table: Flx_sym_table.t;
   macro_state: Flx_macro.macro_state_t;
   desugar_state: Flx_desugar.desugar_state_t;
   symtab: Flx_symtab.t;
@@ -17,31 +18,37 @@ type state_t = {
 let create_state options =
   (* Construct the state needed for compilation *)
   let syms = Flx_mtypes2.make_syms options in
-  let symtab = Flx_symtab.make syms in
+  let sym_table = Flx_sym_table.create () in
+  let symtab = Flx_symtab.make syms sym_table in
 
   (* Declare the module to work within *)
   let module_index, _ = Flx_symtab.add_dcl symtab (
     Flx_srcref.dummy_sr, "", None, `Public, Flx_ast.dfltvs,
     Flx_types.DCL_module [])
   in
-  let module_symbol = Hashtbl.find syms.Flx_mtypes2.sym_table module_index in
+  let module_symbol = Flx_sym_table.find
+    sym_table
+    module_index
+  in
 
   (* Find the module's _init_ function *)
   let init_index =
-    match Hashtbl.find module_symbol.Flx_types.pubmap "_init_" with
+    match Hashtbl.find module_symbol.Flx_sym.pubmap "_init_" with
     | Flx_types.FunctionEntry [ { Flx_types.base_sym=base_sym } ] -> base_sym
     | _ -> assert false
   in
 
   {
     syms = syms;
+    sym_table = sym_table;
     macro_state = Flx_macro.make_macro_state "<input>";
     desugar_state = Flx_desugar.make_desugar_state "<input>" syms;
     symtab = symtab;
     bind_state = Flx_bind.make_bind_state
       ~parent:module_index
-      ~env:(Flx_lookup.build_env syms (Some init_index))
-      syms;
+      ~env:(Flx_lookup.build_env syms sym_table (Some init_index))
+      syms
+      sym_table;
     module_index = module_index;
     init_index = init_index;
   }
@@ -63,37 +70,39 @@ let desugar_stmt state stmt () =
 
 (* Convenience function to make bsym_table from our state. *)
 let make_bind_state state =
-  let bsym_table = Hashtbl.create 97 in
+  let bsym_table = Flx_bsym_table.create () in
 
-  let module_symbol = Hashtbl.find
-    state.syms.Flx_mtypes2.sym_table
+  let module_symbol = Flx_sym_table.find
+    state.sym_table
     state.module_index
   in
-  let init_symbol = Hashtbl.find
-    state.syms.Flx_mtypes2.sym_table
+  let init_symbol = Flx_sym_table.find
+    state.sym_table
     state.init_index
   in
 
   (* Bind the module and init function. *)
   ignore (Flx_bbind.bbind_symbol
     state.syms
+    state.sym_table
     bsym_table
     state.module_index
     module_symbol);
   ignore (Flx_bbind.bbind_symbol
     state.syms
+    state.sym_table
     bsym_table
     state.init_index
     init_symbol);
 
   (* Add the module and init function to the child map *)
   let child_map = Flx_child.make () in
-  begin match module_symbol.Flx_types.parent with
+  begin match module_symbol.Flx_sym.parent with
   | Some parent -> Flx_child.add_child child_map parent state.module_index;
   | None -> ()
   end;
 
-  begin match init_symbol.Flx_types.parent with
+  begin match init_symbol.Flx_sym.parent with
   | Some parent -> Flx_child.add_child child_map parent state.init_index;
   | None -> ()
   end;
@@ -121,11 +130,14 @@ let bind_stmt' state bsym_table stmt =
 (* Helper function to print to bsyms. *)
 let print_bids state bsym_table bids =
   List.iter begin fun bid ->
-    match Flx_hashtbl.find bsym_table bid with
+    let symbol =
+      try Some (Flx_bsym_table.find bsym_table bid)
+      with Not_found -> None
+    in
+    match symbol with
     | None -> ()
     | Some (_,_,_,bbdcl) ->
         print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
-          state.syms.Flx_mtypes2.sym_table
           bsym_table
           bbdcl
           bid)
@@ -136,7 +148,6 @@ let print_bids state bsym_table bids =
 let print_bexes state bsym_table bexes =
   List.iter begin fun bexe ->
     print_endline ("... BOUND EXE:     " ^ Flx_print.string_of_bexe
-      state.syms.Flx_mtypes2.sym_table
       bsym_table
       0
       bexe)

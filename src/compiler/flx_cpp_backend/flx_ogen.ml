@@ -12,7 +12,7 @@ open Flx_maps
 
 let find_thread_vars_with_type bsym_table =
   let vars = ref [] in
-  Hashtbl.iter
+  Flx_bsym_table.iter
   (fun k (id,parent,sr,entry) ->
     match parent,entry with
     | None,BBDCL_var (_,t)
@@ -39,7 +39,7 @@ let find_references syms bsym_table child_map index ts =
   (fun idx ->
     try
       let id,_,_,bbdfn =
-        Hashtbl.find bsym_table idx
+        Flx_bsym_table.find bsym_table idx
       in
       match bbdfn with
       | BBDCL_var (vs,t)
@@ -78,8 +78,8 @@ let comma_sub s =
 (* this code handles pointers in types *)
 let rec get_offsets' syms bsym_table typ : string list =
   let typ = reduce_type typ in
-  let tname = cpp_typename syms typ in
-  let t' = unfold syms.sym_table typ in
+  let tname = cpp_typename syms bsym_table typ in
+  let t' = unfold typ in
   match t' with
 
   | BTYP_pointer t -> ["0"]
@@ -96,7 +96,7 @@ let rec get_offsets' syms bsym_table typ : string list =
 
   | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table i
+      try Flx_bsym_table.find bsym_table i
       with Not_found -> failwith
         ("get_offsets'] can't find index " ^ string_of_bid i)
     in
@@ -136,9 +136,9 @@ let rec get_offsets' syms bsym_table typ : string list =
     let toffsets = get_offsets' syms bsym_table t in
     if toffsets = [] then [] else
     if k> 100 then
-      failwith ("[get_offsets] Too many elements in array for shape, type " ^ sbt syms.sym_table t')
+      failwith ("[get_offsets] Too many elements in array for shape, type " ^ sbt bsym_table t')
     else begin
-      let eltype = cpp_typename syms t in
+      let eltype = cpp_typename syms bsym_table t in
       fold_left
       (fun result i ->
         let ss = "+" ^ si i ^ "*sizeof("^eltype^")" in
@@ -245,7 +245,7 @@ let gen_fun_offsets s syms (child_map,bsym_table) index vs ps ret ts instance pr
   let vars =  (find_references syms bsym_table child_map index ts) in
   let vars = filter (fun (i, _) -> is_instantiated syms i ts) vars in
   let name = cpp_instance_name syms bsym_table index ts in
-  let display = Flx_display.get_display_list syms bsym_table index in
+  let display = Flx_display.get_display_list bsym_table index in
   let offsets =
     (if mem `Requires_ptf props then
     ["FLX_EAT_PTF(offsetof(" ^ name ^ ",ptf)comma)"]
@@ -316,16 +316,16 @@ let gen_thread_frame_offsets s syms bsym_table last_ptr_map =
 
 let id x = ()
 
-let scan_bexpr syms allocable_types e : unit =
+let scan_bexpr syms bsym_table allocable_types e : unit =
   let rec aux e = match e with
   | BEXPR_new ((_,t) as x),_ ->
     let t = reduce_type t in
     (*
-    print_endline ("FOUND A NEW " ^ sbt syms.sym_table t);
+    print_endline ("FOUND A NEW " ^ sbt bsym_table t);
     *)
     let index =
       try Hashtbl.find syms.registry t
-      with Not_found -> failwith ("Can't find type in registry " ^ sbt syms.sym_table t)
+      with Not_found -> failwith ("Can't find type in registry " ^ sbt bsym_table t)
     in
     Hashtbl.replace allocable_types t index;
 
@@ -333,15 +333,15 @@ let scan_bexpr syms allocable_types e : unit =
   in
   iter_tbexpr id aux id e
 
-let scan_exe syms allocable_types exe : unit =
-  iter_bexe id (scan_bexpr syms allocable_types) id id id exe
+let scan_exe syms bsym_table allocable_types exe : unit =
+  iter_bexe id (scan_bexpr syms bsym_table allocable_types) id id id exe
 
-let scan_exes syms allocable_types exes : unit =
-  iter (scan_exe syms allocable_types) exes
+let scan_exes syms bsym_table allocable_types exes : unit =
+  iter (scan_exe syms bsym_table allocable_types) exes
 
 let gen_offset_tables syms bsym_table child_map module_name =
   let allocable_types = Hashtbl.create 97 in
-  let scan exes = scan_exes syms allocable_types exes in
+  let scan exes = scan_exes syms bsym_table allocable_types exes in
   let last_ptr_map = ref "NULL" in
   let primitive_shapes = Hashtbl.create 97 in
   let s = Buffer.create 20000 in
@@ -350,12 +350,12 @@ let gen_offset_tables syms bsym_table child_map module_name =
   Hashtbl.iter
   (fun (index,ts) instance ->
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table index
+      try Flx_bsym_table.find bsym_table index
       with Not_found ->
         failwith ("[gen_offset_tables] can't find index " ^ string_of_bid index)
     in
     (*
-    print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt syms.sym_table) ts ^"]");
+    print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt bsym_table) ts ^"]");
     *)
     match entry with
     | BBDCL_function (props,vs,ps, ret,exes) ->
@@ -392,7 +392,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
   *)
   Hashtbl.iter
   (fun btyp index ->
-    match unfold syms.sym_table btyp with
+    match unfold btyp with
     | BTYP_sum args ->
       iter
       (fun t -> let t = reduce_type t in
@@ -423,10 +423,10 @@ let gen_offset_tables syms bsym_table child_map module_name =
 
     | BTYP_inst (i,ts) ->
       (*
-      print_endline ("Thinking about instance type --> " ^ string_of_btypecode syms.sym_table btyp);
+      print_endline ("Thinking about instance type --> " ^ string_of_btypecode sym_table btyp);
       *)
       let id,parent,sr,entry =
-        try Hashtbl.find bsym_table i
+        try Flx_bsym_table.find bsym_table i
         with Not_found ->
           failwith ("[gen_offset_tables:BTYP_inst] can't find index " ^
             string_of_bid i)
@@ -435,17 +435,17 @@ let gen_offset_tables syms bsym_table child_map module_name =
       | BBDCL_abs (vs,bquals,_,_) ->
         (*
         print_endline ("abstract type "^id^".. quals:");
-        print_endline (string_of_bquals syms.sym_table bquals);
+        print_endline (string_of_bquals sym_table bquals);
         *)
         let handle_qual bqual = match bqual with
         | `Bound_needs_shape t ->
           (*
-          print_endline ("Needs shape (uninstantiated) " ^ sbt syms.sym_table t);
+          print_endline ("Needs shape (uninstantiated) " ^ sbt bsym_table t);
           *)
           let varmap = mk_varmap vs ts in
           let t = varmap_subst varmap t in
           (*
-          print_endline ("Needs shape (instantiated) " ^ sbt syms.sym_table t);
+          print_endline ("Needs shape (instantiated) " ^ sbt bsym_table t);
           *)
           begin try
             let index = Hashtbl.find syms.registry t in
@@ -495,16 +495,16 @@ let gen_offset_tables syms bsym_table child_map module_name =
   Hashtbl.iter
   (fun btyp index ->
     (*
-    print_endline ("allocable type --> " ^ string_of_btypecode syms.sym_table btyp);
+    print_endline ("allocable type --> " ^ string_of_btypecode sym_table btyp);
     *)
-    match unfold syms.sym_table btyp with
+    match unfold btyp with
     | BTYP_function _ -> ()
 
     | BTYP_tuple args ->
-      let name = cpp_type_classname syms btyp in
+      let name = cpp_type_classname syms bsym_table btyp in
       let offsets = get_offsets syms bsym_table btyp in
       let n = length offsets in
-      let classname = cpp_type_classname syms btyp in
+      let classname = cpp_type_classname syms bsym_table btyp in
       bcat s ("\n//OFFSETS for tuple type " ^ string_of_bid index ^ "\n");
       gen_offset_data s n name offsets false [] None last_ptr_map
 
@@ -517,13 +517,13 @@ let gen_offset_tables syms bsym_table child_map module_name =
         try int_of_unitsum i
         with Not_found -> failwith "Array index must be unitsum"
       in
-      let name = cpp_typename syms btyp in
-      let tname = cpp_typename syms t in
+      let name = cpp_typename syms bsym_table btyp in
+      let tname = cpp_typename syms bsym_table t in
       let offsets = get_offsets syms bsym_table t in
       let is_pod =
         match t with
         | BTYP_inst (k,ts) ->
-          let id,sr,parent,entry = Hashtbl.find bsym_table k in
+          let id,sr,parent,entry = Flx_bsym_table.find bsym_table k in
           begin match entry with
           | BBDCL_abs (_,quals,_,_) -> mem `Pod quals
           | _ -> false
@@ -572,9 +572,9 @@ let gen_offset_tables syms bsym_table child_map module_name =
       bcat s "};\n"
 
     | BTYP_inst (i,ts) ->
-      let name = cpp_typename syms btyp in
+      let name = cpp_typename syms bsym_table btyp in
       let id,parent,sr,entry =
-        try Hashtbl.find bsym_table i
+        try Flx_bsym_table.find bsym_table i
         with Not_found ->
           failwith (
             "[gen_offset_tables:BTYP_inst:allocable_types] can't find index " ^
@@ -641,7 +641,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
         failwith
         (
           "[ogen]: can't handle struct offsets yet: type " ^
-          sbt syms.sym_table btyp
+          sbt bsym_table btyp
         )
         (*
         bcat s ("\n//OFFSETS for struct type " ^ name ^ " instance\n");
@@ -651,23 +651,23 @@ let gen_offset_tables syms bsym_table child_map module_name =
         failwith
         (
           "[ogen]: can't handle instances of this kind yet: type " ^
-          sbt syms.sym_table btyp
+          sbt bsym_table btyp
         )
     end
 
    | BTYP_unitsum _ ->
-     let name = cpp_typename syms btyp in
+     let name = cpp_typename syms bsym_table btyp in
      bcat s ("static gc_shape_t &"^ name ^"_ptr_map = flx::rtl::_int_ptr_map;\n");
 
    | BTYP_sum _ ->
-     let name = cpp_typename syms btyp in
+     let name = cpp_typename syms bsym_table btyp in
      bcat s ("static gc_shape_t &"^ name ^"_ptr_map = flx::rtl::_uctor_ptr_map;\n");
 
    | _ ->
      failwith
      (
        "[ogen]: Unknown kind of allocable type " ^
-       sbt syms.sym_table btyp
+       sbt bsym_table btyp
      )
   )
   allocable_types

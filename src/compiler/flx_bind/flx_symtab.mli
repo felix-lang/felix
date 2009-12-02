@@ -12,7 +12,7 @@ type t
 
 
 (** Create the state needed for the symbol table. *)
-val make: Flx_mtypes2.sym_state_t -> t
+val make: Flx_mtypes2.sym_state_t -> Flx_sym_table.t -> t
 
 
 (** Add interface to the symbol table. *)

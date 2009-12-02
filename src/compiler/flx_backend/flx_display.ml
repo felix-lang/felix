@@ -1,7 +1,6 @@
 open Flx_ast
 open Flx_types
 open Flx_util
-open List
 open Flx_mtypes2
 
 (* This routine calculates the display a routine with
@@ -21,42 +20,29 @@ open Flx_mtypes2
   Hmmm .. should check ..
 *)
 
-let cal_display syms bsym_table parent : (bid_t *int) list =
+let cal_display bsym_table parent : (bid_t *int) list =
   let rec aux parent display =
     match parent with
-    | None -> rev display
+    | None -> List.rev display
     | Some parent ->
-    match
-      try Some (Hashtbl.find bsym_table parent)
-      with Not_found ->  None
-    with
-    | Some (_,parent',sr,BBDCL_procedure (_,vs,_,_))
-    | Some (_,parent',sr,BBDCL_function (_,vs,_,_,_))
-      -> aux parent' ((parent,length vs)::display)
+        let bsym =
+          try Flx_bsym_table.find bsym_table parent with Not_found ->
+            failwith ("[cal_display] Can't find index(2) " ^
+              Flx_print.string_of_bid parent)
+        in
+        match bsym with
+        | _, parent', sr, BBDCL_procedure (_, vs, _, _)
+        | _, parent', sr, BBDCL_function (_, vs, _, _, _) ->
+            aux parent' ((parent, List.length vs)::display)
 
-    (* typeclasses have to be treated 'as if' top level *)
-    (* MAY NEED REVISION! *)
-    | Some (_,parent',sr,BBDCL_typeclass _ ) -> rev display
-    | None ->
-      begin
-        try
-          match Hashtbl.find syms.sym_table parent with
-          (* instances have to be top level *)
-          | {id=id; symdef=SYMDEF_instance _} -> rev display
-          | {id=id; symdef=SYMDEF_typeclass } -> rev display
+        (* typeclasses have to be treated 'as if' top level *)
+        (* MAY NEED REVISION! *)
+        | _, _, _, BBDCL_typeclass _ -> List.rev display
+        | _, _, _, BBDCL_instance _ -> List.rev display
 
-          | {id=id} ->
-            failwith ("[cal_display] Can't find index(1) " ^ id ^ "<" ^
-              Flx_print.string_of_bid parent ^ ">")
-
-        with Not_found ->
-          failwith ("[cal_display] Can't find index(2) " ^
-            Flx_print.string_of_bid parent)
-      end
-
-    | _ -> assert false
+        | _ -> assert false
   in aux parent []
 
 (* inner most at head of list *)
-let get_display_list syms bsym_table index : (bid_t * int) list =
-  tl (cal_display syms bsym_table (Some index))
+let get_display_list bsym_table index : (bid_t * int) list =
+  List.tl (cal_display bsym_table (Some index))

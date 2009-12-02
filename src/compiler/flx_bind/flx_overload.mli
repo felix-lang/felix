@@ -12,7 +12,10 @@ type overload_result =
  btypecode_t list (* ts *)
 
 val overload:
-  sym_state_t -> env_t ->
+  sym_state_t ->
+  Flx_sym_table.t ->
+  Flx_bsym_table.t ->
+  env_t ->
   recstop ->
   (recstop -> Flx_srcref.t -> bid_t -> typecode_t -> btypecode_t) -> (* bind type *)
   (bid_t -> expr_t -> tbexpr_t) -> (* bind expression in context of i *)

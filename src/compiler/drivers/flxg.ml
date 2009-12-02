@@ -195,7 +195,8 @@ try
     string_of_bid root);
 
   (* Bind the assemblies. *)
-  let bind_state = Flx_bind.make_bind_state syms in
+  let sym_table = Flx_sym_table.create () in
+  let bind_state = Flx_bind.make_bind_state syms sym_table in
   let bsym_table = Flx_bind.bind_asms bind_state asms in
 
   let child_map = Flx_child.cal_children bsym_table in
@@ -206,21 +207,21 @@ try
   Flx_axiom.axiom_check syms bsym_table;
 
   (* generate why file *)
-  Flx_why.emit_whycode why_file_name.out_filename syms bsym_table root;
+  Flx_why.emit_whycode why_file_name.out_filename syms sym_table bsym_table root;
 
   let binding_time = tim() in
 
   print_debug "//CHECKING ROOT";
   let root_proc =
     match
-      try Hashtbl.find syms.sym_table root
+      try Flx_sym_table.find sym_table root
       with Not_found ->
         failwith
         (
           "Can't find root module " ^ string_of_bid root ^
           " in symbol table?"
         )
-    with {id=id; sr=sr; parent=parent;vs=vs;pubmap=name_map;symdef=entry} ->
+    with { Flx_sym.id=id; pubmap=name_map;symdef=entry} ->
     begin match entry with
       | SYMDEF_module -> ()
       | _ -> failwith "Expected to find top level module ''"
@@ -243,11 +244,7 @@ try
   in
 
   (* Optimize the bound values *)
-  let bsym_table, _ = Flx_opt.optimize_bsym_table
-    syms
-    bsym_table
-    root_proc
-  in
+  let bsym_table, _ = Flx_opt.optimize_bsym_table syms bsym_table root_proc in
 
   let opt_time = tim() in
   print_debug ("//Optimisation complete time " ^ string_of_float opt_time);
@@ -274,7 +271,7 @@ try
 
   (* FUDGE the init procedure to make interfacing a bit simpler *)
   let topclass_props =
-    let id,parent,sr,entry = Hashtbl.find bsym_table root_proc in
+    let id,parent,sr,entry = Flx_bsym_table.find bsym_table root_proc in
     match entry with
     | BBDCL_procedure (props,vs,p,exes) -> props
     | _ -> syserr sr "Expected root to be procedure"
@@ -312,7 +309,7 @@ try
     List.iter
     (fun (i,ts)->
       match
-        try Hashtbl.find bsym_table i with Not_found ->
+        try Flx_bsym_table.find bsym_table i with Not_found ->
           failwith ("[package] can't find index " ^ string_of_bid i)
       with (id,parent,sr,entry) ->
       match entry with
@@ -327,7 +324,7 @@ try
             | CS_str s -> Flx_cexpr.ce_expr "atom" s
             | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename syms t in
+              let tn t = cpp_typename syms bsym_table t in
               let ts = List.map tn ts in
               Flx_csubst.csubst sr sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in
@@ -377,7 +374,7 @@ try
     List.iter
     (fun (i,ts)->
       match
-        try Hashtbl.find bsym_table i with Not_found ->
+        try Flx_bsym_table.find bsym_table i with Not_found ->
           failwith ("[user header] can't find index " ^ string_of_bid i)
       with (id,parent,sr,entry) ->
       match entry with
@@ -392,7 +389,7 @@ try
             | CS_str s -> Flx_cexpr.ce_expr "atom" s
             | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename syms t in
+              let tn t = cpp_typename syms bsym_table t in
               let ts = List.map tn ts in
               Flx_csubst.csubst sr sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in
@@ -494,7 +491,7 @@ try
     List.iter
     (fun (i,ts) ->
       match
-        try Hashtbl.find bsym_table i with Not_found ->
+        try Flx_bsym_table.find bsym_table i with Not_found ->
           failwith ("[user body] can't find index " ^ string_of_bid i)
       with (id,parent,sr,entry) ->
       match entry with
@@ -509,7 +506,7 @@ try
             | CS_str s -> Flx_cexpr.ce_expr "atom" s
             | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename syms t in
+              let tn t = cpp_typename syms bsym_table t in
               let ts = List.map tn ts in
               Flx_csubst.csubst sr sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in

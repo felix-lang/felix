@@ -20,7 +20,7 @@ type goto_kind_t =
   | `Unreachable
 ]
 
-let get_labels bsym_table counter exes =
+let get_labels counter exes =
   let labels = Hashtbl.create 97 in
   List.iter
     (fun exe -> match exe with
@@ -35,15 +35,15 @@ let get_labels bsym_table counter exes =
   ;
   labels
 
-let update_label_map bsym_table counter label_map index (_,_,_,entry) =
+let update_label_map counter label_map index (_,_,_,entry) =
   (*
   print_endline ("Routine " ^ id ^ "<"^ si index ^">");
   *)
   match entry with
   | BBDCL_function (_,_,_,_,exes) ->
-    Hashtbl.add label_map index (get_labels bsym_table counter exes)
+    Hashtbl.add label_map index (get_labels counter exes)
   | BBDCL_procedure (_,_,_,exes) ->
-    Hashtbl.add label_map index (get_labels bsym_table counter exes)
+    Hashtbl.add label_map index (get_labels counter exes)
   | _ -> ()
 
 let create_label_map bsym_table counter =
@@ -51,14 +51,14 @@ let create_label_map bsym_table counter =
   print_endline "Creating label map";
   *)
   let label_map = Hashtbl.create 97 in
-  Hashtbl.iter (update_label_map bsym_table counter label_map) bsym_table;
+  Flx_bsym_table.iter (update_label_map counter label_map) bsym_table;
   label_map
 
 let rec find_label bsym_table label_map caller label =
   let labels = Hashtbl.find label_map caller in
   try `Local (Hashtbl.find labels label)
   with Not_found ->
-  let id,parent,sr,entry = Hashtbl.find bsym_table caller in
+  let id,parent,sr,entry = Flx_bsym_table.find bsym_table caller in
   match entry with
   | BBDCL_function _ -> `Unreachable
   | BBDCL_procedure _ ->
@@ -89,7 +89,7 @@ let cal_usage syms bsym_table label_map caller exes usage =
       | `Unreachable ->
         syserr sr ("[flx_label] Caller " ^ string_of_bid caller ^
           " Jump to unreachable label " ^ label ^ "\n" ^
-          (catmap "\n" (string_of_bexe syms.sym_table bsym_table 2) exes))
+          (catmap "\n" (string_of_bexe bsym_table 2) exes))
       | `Local lix ->
         begin match get_label_kind_from_index usage lix with
         | `Unused -> Hashtbl.replace usage lix `Near
@@ -114,5 +114,7 @@ let update_label_usage syms bsym_table label_map usage index (_,_,_,entry) =
 
 let create_label_usage syms bsym_table label_map =
   let usage = Hashtbl.create 97 in
-  Hashtbl.iter (update_label_usage syms bsym_table label_map usage) bsym_table;
+  Flx_bsym_table.iter
+    (update_label_usage syms bsym_table label_map usage)
+    bsym_table;
   usage

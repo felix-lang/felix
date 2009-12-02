@@ -6,9 +6,9 @@ open List
 open Flx_util
 
 let hfind msg h k =
-  try Hashtbl.find h k
+  try Flx_bsym_table.find h k
   with Not_found ->
-    print_endline ("flx_child Hashtbl.find failed " ^ msg);
+    print_endline ("flx_child Flx_bsym_table.find failed " ^ msg);
     raise Not_found
 
 type t = (bid_t, bid_t list) Hashtbl.t
@@ -34,7 +34,7 @@ let is_ancestor bsym_table child anc =
     (*
     let _,parent,_,_ = hfind ("is_ancestor " ^ si child) bsym_table child in
     *)
-    let _,parent,_,_ = Hashtbl.find bsym_table child in
+    let _,parent,_,_ = Flx_bsym_table.find bsym_table child in
     match parent with
     | None -> false
     | Some x ->
@@ -72,7 +72,7 @@ let rec descendants child_map index =
 
 let cal_children bsym_table =
   let child_map = make () in
-  Hashtbl.iter begin fun i (id,parent,sr,entry) ->
+  Flx_bsym_table.iter begin fun i (id,parent,sr,entry) ->
     match parent with
     | Some parent -> add_child child_map parent i
     | None -> ()

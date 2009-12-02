@@ -139,15 +139,15 @@ let gen_type_name syms bsym_table (index,typ) =
   print_endline (
     "GENERATING TYPE NAME " ^
     string_of_bid index ^ ": " ^
-    sbt syms.sym_table typ
+    sbt bsym_table typ
   );
   *)
-  let cn t = cpp_type_classname syms t in
-  let tn t = cpp_typename syms t in
+  let cn t = cpp_type_classname syms bsym_table t in
+  let tn t = cpp_typename syms bsym_table t in
   let descr =
-    "\n//TYPE " ^ string_of_bid index ^ ": " ^ sbt syms.sym_table typ ^ "\n"
+    "\n//TYPE " ^ string_of_bid index ^ ": " ^ sbt bsym_table typ ^ "\n"
   in
-  let t = unfold syms.sym_table typ in
+  let t = unfold typ in
   match t with
   | BTYP_fix i -> ""
   | BTYP_var (i,mt) -> failwith "[gen_type_name] Can't gen name of type variable"
@@ -176,7 +176,7 @@ let gen_type_name syms bsym_table (index,typ) =
       | BTYP_tuple ls -> ls
       | x -> [x]
     in
-    let ctn t = `Ct_base (cpp_typename syms t) in
+    let ctn t = `Ct_base (cpp_typename syms bsym_table t) in
     let t = `Ct_fun (ctn c,map ctn ds) in
     let cdt = `Cdt_value t in
     "typedef " ^ string_of_cdecl_type name cdt ^ ";\n"
@@ -199,7 +199,7 @@ let gen_type_name syms bsym_table (index,typ) =
 
   | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table i
+      try Flx_bsym_table.find bsym_table i
       with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_bid i)
     in
     begin match entry with
@@ -209,7 +209,7 @@ let gen_type_name syms bsym_table (index,typ) =
         "\n//"^(if complete then "" else "INCOMPLETE ")^
         "PRIMITIVE " ^ string_of_bid i ^" INSTANCE " ^
         string_of_bid index ^ ": " ^
-        sbt syms.sym_table typ ^
+        sbt bsym_table typ ^
         "\n"
       in
       let instance_name = cn typ in
@@ -241,7 +241,7 @@ let gen_type_name syms bsym_table (index,typ) =
       let descr =
         "\n//CSTRUCT " ^ string_of_bid i ^ " INSTANCE " ^
         string_of_bid index ^ ": " ^
-        sbt syms.sym_table typ ^
+        sbt bsym_table typ ^
         "\n"
       in
       let instance_name = cn typ in
@@ -253,7 +253,7 @@ let gen_type_name syms bsym_table (index,typ) =
       let descr =
         "\n//STRUCT " ^ string_of_bid i ^ " INSTANCE " ^
         string_of_bid index ^ ": " ^
-        sbt syms.sym_table typ ^
+        sbt bsym_table typ ^
         "\n"
       in
       let name = cn typ in
@@ -263,7 +263,7 @@ let gen_type_name syms bsym_table (index,typ) =
       let descr =
         "\n//UNION " ^ string_of_bid i ^ " INSTANCE " ^
         string_of_bid index ^ ": " ^
-        sbt syms.sym_table typ ^
+        sbt bsym_table typ ^
         "\n"
       in
       let name = cn typ in
@@ -283,14 +283,14 @@ let gen_type_name syms bsym_table (index,typ) =
       (
         "[gen_type_name] Expected definition " ^ string_of_bid i ^
         " to be generic primitive, got " ^
-        string_of_bbdcl syms.sym_table bsym_table entry i ^
+        string_of_bbdcl bsym_table entry i ^
         " instance types [" ^
         catmap ", " tn ts ^
         "]"
       )
     end
 
-  | _ -> failwith ("Unexpected metatype "^ sbt syms.sym_table t ^ " in gen_type_name")
+  | _ -> failwith ("Unexpected metatype "^ sbt bsym_table t ^ " in gen_type_name")
 
 let mk_listwise_ctor syms i name typ cts ctss =
   if length cts = 1 then
@@ -306,17 +306,17 @@ let gen_type syms bsym_table (index,typ) =
   print_endline (
     "GENERATING TYPE " ^
     string_of_bid index ^ ": " ^
-    sbt syms.sym_table typ
+    sbt bsym_table typ
   );
   *)
-  let tn t = cpp_typename syms t in
-  let cn t = cpp_type_classname syms t in
+  let tn t = cpp_typename syms bsym_table t in
+  let cn t = cpp_type_classname syms bsym_table t in
   let descr =
     "\n//TYPE " ^ string_of_bid index ^ ": " ^
-    sbt syms.sym_table typ ^
+    sbt bsym_table typ ^
     "\n"
   in
-  let t = unfold syms.sym_table typ in
+  let t = unfold typ in
   match t with
   | BTYP_var _ -> failwith "[gen_type] can't gen type variable"
   | BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
@@ -399,7 +399,7 @@ let gen_type syms bsym_table (index,typ) =
 
   | BTYP_inst (i,ts) ->
     let id,parent,sr,entry =
-      try Hashtbl.find bsym_table i
+      try Flx_bsym_table.find bsym_table i
       with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_bid i)
     in
     begin match entry with
@@ -408,7 +408,7 @@ let gen_type syms bsym_table (index,typ) =
       let descr =
         "\n//NEWTYPE " ^ string_of_bid i ^ " INSTANCE " ^
         string_of_bid index ^ ": " ^
-        sbt syms.sym_table typ ^
+        sbt bsym_table typ ^
         "\n"
       in
       let instance_name = cn typ in
@@ -428,7 +428,7 @@ let gen_type syms bsym_table (index,typ) =
       let descr =
         "\n//GENERIC STRUCT " ^ string_of_bid i ^ " INSTANCE " ^
         string_of_bid index ^ ": " ^
-        sbt syms.sym_table typ ^
+        sbt bsym_table typ ^
         "\n"
       in
       descr ^ "struct " ^ name ^ " {\n"
@@ -450,14 +450,14 @@ let gen_type syms bsym_table (index,typ) =
       (
         "[gen_type] Expected definition " ^ string_of_bid i ^
         " to be generic primitive, got " ^
-        string_of_bbdcl syms.sym_table bsym_table entry i ^
+        string_of_bbdcl bsym_table entry i ^
         " instance types [" ^
         catmap ", " tn ts ^
         "]"
       )
     end
 
-  | _ -> failwith ("[gen_type] Unexpected metatype " ^ sbt syms.sym_table t)
+  | _ -> failwith ("[gen_type] Unexpected metatype " ^ sbt bsym_table t)
 
 (* NOTE: distinct types can have the same name if they have the
 same simple representation, two types t1,t2 both represented by "int".
@@ -474,7 +474,7 @@ let gen_type_names syms bsym_table ts =
   iter
   (fun (i,t) ->
     try
-      let name = cpp_typename syms t in
+      let name = cpp_typename syms bsym_table t in
       if mem name !handled then
         () (* print_endline ("WOOPS ALREADY HANDLED " ^ name) *)
       else (
@@ -483,7 +483,7 @@ let gen_type_names syms bsym_table ts =
       )
     with Not_found ->
       failwith ("Can't gen type name " ^ string_of_bid i ^ "=" ^
-        sbt syms.sym_table t)
+        sbt bsym_table t)
   )
   ts;
   Buffer.contents s
@@ -494,7 +494,7 @@ let gen_types syms bsym_table ts =
   let s = Buffer.create 100 in
   iter
   (fun ((i,t) as t') ->
-    let name = cpp_typename syms t in
+    let name = cpp_typename syms bsym_table t in
     if mem name !handled then
       () (* print_endline ("WOOPS ALREADY HANDLED " ^ name) *)
     else (

@@ -16,7 +16,7 @@ type codegen_state_t =
   }
 and call_t =
   codegen_state_t ->
-  Flx_types.bsym_table_t ->
+  Flx_bsym_table.t ->
   Llvm.llbuilder ->
   Flx_srcref.t ->
   Flx_types.tbexpr_t list ->
@@ -106,7 +106,11 @@ let name_of_index state bsym_table bid ts =
   let rec aux bid ts =
     (* Recursively prepend the name of the parent to *)
     let name, ts =
-      match Flx_hashtbl.find bsym_table bid with
+      let symbol =
+        try Some (Flx_bsym_table.find bsym_table bid)
+        with Not_found -> None
+      in
+      match symbol with
       | None -> "index_" ^ Flx_print.string_of_bid bid, []
       | Some (id, None, _, bbdcl) -> id, (Flx_types.ts_of_bbdcl bbdcl)
       | Some (id, Some parent, _, bbdcl) ->
@@ -272,12 +276,12 @@ let create_entry_block_alloca state builder btype name =
 
 
 (* Generate call for an expression *)
-let rec codegen_expr state (bsym_table:Flx_types.bsym_table_t) builder sr tbexpr =
+let rec codegen_expr state bsym_table builder sr tbexpr =
   print_endline ("codegen_expr: " ^ Flx_print.string_of_bound_expression
-    state.syms.Flx_mtypes2.sym_table bsym_table tbexpr);
+    bsym_table tbexpr);
 
   (* See if there are any simple reductions we can apply to the expression. *)
-  let bexpr, btype = Flx_maps.reduce_tbexpr bsym_table tbexpr in
+  let bexpr, btype = Flx_maps.reduce_tbexpr tbexpr in
 
   match bexpr with
   | Flx_types.BEXPR_deref e ->
@@ -504,7 +508,7 @@ and codegen_apply_stack state bsym_table builder sr bid e =
   let es = List.map (codegen_deref state bsym_table builder sr) es in
 
   (* Now, add all of the closures it needs. *)
-  let display = Flx_display.get_display_list state.syms bsym_table bid in
+  let display = Flx_display.get_display_list bsym_table bid in
   let es = List.fold_left
     (fun es (bid,_) -> Hashtbl.find state.closure_bindings bid :: es)
     es display
@@ -585,10 +589,10 @@ let codegen_subscript state bsym_table builder sr lhs rhs =
 (* Generate code for a bound statement. *)
 let codegen_bexe state bsym_table builder bexe =
   print_endline ("codegen_bexe: " ^ Flx_print.string_of_bexe
-    state.syms.Flx_mtypes2.sym_table bsym_table 0 bexe);
+    bsym_table 0 bexe);
 
   (* See if there are any simple reductions we can apply to the exe. *)
-  let bexe = Flx_maps.reduce_bexe bsym_table bexe in
+  let bexe = Flx_maps.reduce_bexe bexe in
 
   match bexe with
   | Flx_types.BEXE_label (sr, label) ->
@@ -800,7 +804,7 @@ let codegen_bexe state bsym_table builder bexe =
 (* Convenience function to find all the values in a function. *)
 let find_value_indicies state bsym_table child_map bid =
   List.filter begin fun bid ->
-    try match Hashtbl.find bsym_table bid with _,_,_,entry ->
+    try match Flx_bsym_table.find bsym_table bid with _,_,_,entry ->
       match entry with
       | Flx_types.BBDCL_var _
       | Flx_types.BBDCL_ref _
@@ -814,7 +818,7 @@ let find_value_indicies state bsym_table child_map bid =
 let find_closure_type state bsym_table child_map bid =
   let ts =
     List.fold_left begin fun ts bid ->
-      try match Hashtbl.find bsym_table bid with _,_,_,entry ->
+      try match Flx_bsym_table.find bsym_table bid with _,_,_,entry ->
         match entry with
         | Flx_types.BBDCL_var (_,btype)
         | Flx_types.BBDCL_ref (_,btype)
@@ -862,7 +866,7 @@ let codegen_proto state bsym_table child_map bid name parameters ret_type =
 
   (* Next we'll handle the parent closure types. First, find the parent
    * closures. *)
-  let display = Flx_display.get_display_list state.syms bsym_table bid in
+  let display = Flx_display.get_display_list bsym_table bid in
 
   (* Then grab the closure types and add them to our paramter type list. *)
   let ts = List.fold_left
@@ -1028,7 +1032,7 @@ let rec codegen_function
         child_map
         closure
         i
-        (Hashtbl.find bsym_table i))
+        (Flx_bsym_table.find bsym_table i))
     end (Flx_child.find_children child_map bid);
 
     (* Create local bindings for the closures. *)
@@ -1232,7 +1236,7 @@ and codegen_symbol
       | Some p -> Flx_print.string_of_bid p
       | None -> "None") ^
     " " ^
-    (Flx_print.string_of_bbdcl state.syms.Flx_mtypes2.sym_table bsym_table bbdcl index));
+    (Flx_print.string_of_bbdcl bsym_table bbdcl index));
 
   match bbdcl with
   | Flx_types.BBDCL_function (props, _, (ps, _), ret_type, es) ->
@@ -1327,7 +1331,11 @@ let codegen state bsym_table child_map bids bexes =
   List.iter begin fun bid ->
     (* Try to find the bsym corresponding with the bid. It's okay if it doesn't
      * exist as it may have been optimized away. *)
-    match Flx_hashtbl.find bsym_table bid with
+    let symbol =
+      try Some (Flx_bsym_table.find bsym_table bid)
+      with Not_found -> None
+    in
+    match symbol with
     | None -> ()
     | Some ((_,parent,_,_) as bsym) ->
         (* Only codegen top-level symbols, since that'll be handled by the code

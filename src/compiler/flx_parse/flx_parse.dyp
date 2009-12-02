@@ -1294,7 +1294,9 @@ dyprod:
    | opt_private NAME opt_prio ":" NAME EQUAL dyalts ";" 
      {
        if $5 <> "string" then raise Giveup;
+       (*
        print_endline ("STRING RULE " ^ $2);
+       *)
        `Scheme_rule ($1, $2, $3, `String, $7)
      }
 
