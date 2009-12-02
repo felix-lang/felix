@@ -207,12 +207,3 @@ let version_data: version_data_t =
 let set_version () =
   Flx_version.version_data := version_data
 ;;
-
-@head(2,'The front end')
-@push_head()
-@include_file ('flx_pdoc.ipk')
-@include_file ('flx_tcdoc.ipk')
-@pop_head()
-
-@head(2,'Tools')
-@include_file ('flx_docgen.ipk')
