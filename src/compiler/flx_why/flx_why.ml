@@ -1,3 +1,6 @@
+(** Flx_why: This module converts a bound Felix program into the Why
+ * verification language. See this for more: http://why.lri.fr/. *)
+
 open Flx_util
 open Flx_ast
 open Flx_types
@@ -61,11 +64,88 @@ let find_logics syms sym_table bsym_table root =
     ff "lnot", "not"
   ]
 
-let mn s = Flx_name.cid_of_flxid s
+(** Converts a felix name into a why name. *)
+let whyid_of_flxid =
+  let why_keywords = [
+    "absurd"; "and; array"; "as"; "assert";
+    "axiom"; "begin"; "bool"; "do"; "done";
+    "else"; "end"; "exception"; "exists"; "external";
+    "false"; "for"; "forall"; "fun"; "function";
+    "goal"; "if"; "in"; "int"; "invariant";
+    "let"; "logic"; "not"; "of";
+    "or"; "parameter"; "predicate"; "prop"; "raise";
+    "raises"; "reads"; "real"; "rec"; "ref";
+    "returns"; "then"; "true"; "try"; "type";
+    "unit"; "variant"; "void"; "while"; "with";
+    "writes"] in
 
+  (* special names in thread frame *)
+  let fixups = [
+    "argc","_argc";
+    "argv","_argv";
+    "flx_stdin","_flx_stdin";
+    "flx_stdout","_flx_stdout";
+    "flx_stderr","_flx_stderr";
+    "gc","_gc";
+  ] @ List.map (fun k -> k, "_" ^ k) why_keywords in
+
+  (* Now define the actual function. *)
+  fun s ->
+  let n = String.length s in
+  let id = Buffer.create (n+10) in
+  (* if the value is prefixed with a number, prepend an underscore *)
+  if n > 1 && s.[0] >= '0' && s.[0] <= '9' then Buffer.add_char id '_';
+  for i=0 to n - 1 do
+    (* from http://www.w3.org/TR/html4/sgml/entities.html *)
+    match s.[i] with
+    | ' '  -> Buffer.add_string id "__sp_"
+    | '!'  -> Buffer.add_string id "__excl_"
+    | '"'  -> Buffer.add_string id "__quot_"
+    | '#'  -> Buffer.add_string id "__num_"
+    | '$'  -> Buffer.add_string id "__dollar_"
+    | '%'  -> Buffer.add_string id "__percnt_"
+    | '&'  -> Buffer.add_string id "__amp_"
+    | '\'' -> Buffer.add_string id "__apos_"
+    | '('  -> Buffer.add_string id "__lpar_"
+    | ')'  -> Buffer.add_string id "__rpar_"
+    | '*'  -> Buffer.add_string id "__ast_"
+    | '+'  -> Buffer.add_string id "__plus_"
+    | ','  -> Buffer.add_string id "__comma_"
+    | '-'  -> Buffer.add_string id "__hyphen_"
+    | '.'  -> Buffer.add_string id "__period_"
+    | '/'  -> Buffer.add_string id "__sol_"
+    | ':'  -> Buffer.add_string id "__colon_"
+    | ';'  -> Buffer.add_string id "__semi_"
+    | '<'  -> Buffer.add_string id "__lt_"
+    | '='  -> Buffer.add_string id "__equals_"
+    | '>'  -> Buffer.add_string id "__gt_"
+    | '?'  -> Buffer.add_string id "__quest_"
+    | '@'  -> Buffer.add_string id "__commat_"
+    | '['  -> Buffer.add_string id "__lsqb_"
+    | '\\' -> Buffer.add_string id "__bsol_"
+    | ']'  -> Buffer.add_string id "__rsqb_"
+    | '^'  -> Buffer.add_string id "__caret_"
+    (* | '_'  -> Buffer.add_string id "__lowbar_" *)
+    | '`'  -> Buffer.add_string id "__grave_"
+    | '{'  -> Buffer.add_string id "__lcub_"
+    | '|'  -> Buffer.add_string id "__verbar_"
+    | '}'  -> Buffer.add_string id "__rcub_"
+    | '~'  -> Buffer.add_string id "__tilde_"
+    | x    -> Buffer.add_char id x
+  done;
+  let name = Buffer.contents id in
+  try List.assoc name fixups with Not_found -> name
+
+(** Convert a bid into a why identifier. *)
+let whyid_of_bid i = string_of_int i
+
+(** Look up the name of a felix symbol. *)
 let getname syms bsym_table i =
-  try match Flx_bsym_table.find bsym_table i with id,_,_,_ -> mn id
-  with Not_found -> "index_" ^ Flx_name.cid_of_bid i
+  try
+    let id,_,_,_ = Flx_bsym_table.find bsym_table i in
+    whyid_of_flxid id
+  with Not_found ->
+    "index_" ^ whyid_of_bid i
 
 let flx_bool = BTYP_unitsum 2
 
@@ -77,7 +157,7 @@ let rec why_expr syms bsym_table (e: tbexpr_t) =
   match e with
   | BEXPR_apply ((BEXPR_closure (i,ts),_),b),_ ->
     let id = getname syms bsym_table i in
-    id ^ "_" ^ Flx_name.cid_of_bid i ^ "(" ^
+    id ^ "_" ^ whyid_of_bid i ^ "(" ^
     (
       match b with
       | BEXPR_tuple [],_ -> "void"
@@ -93,12 +173,12 @@ let rec why_expr syms bsym_table (e: tbexpr_t) =
   (* this probably isn't right, ignoring ts *)
   | BEXPR_closure (i,ts),_ ->
     let id = getname syms bsym_table i in
-    id ^ "_" ^ Flx_name.cid_of_bid i
+    id ^ "_" ^ whyid_of_bid i
 
   (* this probably isn't right, ignoring ts *)
   | BEXPR_name (i,ts),_ ->
     let id = getname syms bsym_table i in
-    id ^ "_" ^ Flx_name.cid_of_bid i
+    id ^ "_" ^ whyid_of_bid i
 
   | BEXPR_tuple ls,_ ->
     "(" ^ catmap ", " ee ls ^ ")"
@@ -185,7 +265,7 @@ let rec cal_type syms bsym_table t =
     begin try
       let id,sr,parent,entry = Flx_bsym_table.find bsym_table index
       in "'" ^ id
-    with Not_found -> "'T" ^ Flx_name.cid_of_bid index
+    with Not_found -> "'T" ^ whyid_of_bid index
     end
 
   | _ -> "dunno"
@@ -202,7 +282,7 @@ let emit_axiom syms bsym_table logics f (k:axiom_kind_t) (name,sr,parent,kind,bv
   output_string f (ykind ^ " " ^ name ^ ":\n");
   iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} ->
     output_string f
-    ("  forall " ^ pid ^ "_" ^ Flx_name.cid_of_bid pindex ^ ": " ^
+    ("  forall " ^ pid ^ "_" ^ whyid_of_bid pindex ^ ": " ^
       cal_type syms bsym_table ptyp ^ ".\n")
   )
   (fst bps)
@@ -238,7 +318,7 @@ let emit_reduction syms bsym_table logics f (name,bvs,bps,el,er) =
 let emit_function syms bsym_table f index id sr bvs ps ret =
   let srt = Flx_srcref.short_string_of_src sr in
   output_string f ("(* function " ^ id ^ ", at "^srt^" *)\n");
-  let name = mn id ^ "_" ^ Flx_print.string_of_bid index in
+  let name = whyid_of_flxid id ^ "_" ^ Flx_print.string_of_bid index in
   let dom = match ps with
     | [] -> "unit"
     | _ -> catmap ", " (cal_type syms bsym_table) ps
