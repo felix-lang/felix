@@ -95,9 +95,7 @@ def build_flx_why(phase):
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
             build_flx_misc(phase),
-            build_flx_core(phase),
-            build_flx_bind(phase)],
-        external_libs=['nums'])
+            build_flx_core(phase)])
 
 def build_flx_frontend(phase):
     path = Path('src/compiler/flx_frontend')
