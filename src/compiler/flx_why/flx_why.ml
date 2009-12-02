@@ -7,44 +7,53 @@ open Flx_types
 open Flx_mtypes2
 open List
 open Flx_maps
-open Flx_lookup
 
 let sr  = Flx_srcref.make_dummy "[flx_why] generated"
 
+
+(** Searches the bound symbol table for all the symbols with the given name. *)
+let find_name bsym_table child_map root name =
+  let rec search_root bsyms root =
+    let rec search_children bsyms = function
+      | [] ->
+          (* We didn't find it, so search up the parents. *)
+          let bsym =
+            try Some (Flx_bsym_table.find bsym_table root) with Not_found ->
+              None
+          in
+          begin match bsym with
+          | Some (_, Some parent, _, _) ->
+              search_root bsyms parent
+          | Some (_, None, _, _) | None -> bsyms
+          end
+      | child :: children ->
+          let (id,_,_,_) as bsym = Flx_bsym_table.find bsym_table child in
+          search_children
+            (if id = name then (child, bsym) :: bsyms else bsyms)
+            children
+    in
+    search_children bsyms (Flx_child.find_children child_map root)
+  in
+  search_root [] root
+
+
 (* Hackery to find logic functions in the library *)
-let find_function syms sym_table bsym_table env name =
-  let entries =
-    try Some (lookup_name_in_env syms sym_table env sr name)
-    with _ -> None
-  in
-  let entries = match entries with
-    | Some (FunctionEntry ls) -> ls
-    | Some (NonFunctionEntry _ ) ->
-      print_endline ("[flx_why] Expected '" ^ name ^ "' to be function");
-      []
-    | None ->
-      if syms.compiler_options.print_flag then
-      print_endline ("[flx_why] Can't find logic function '" ^ name ^ "' ");
-      []
-  in
-  let entries =
-    filter (fun {base_sym=i} ->
-      match
-        try Some (Flx_bsym_table.find bsym_table i)
-        with Not_found -> None
-      with
-      | Some (_,_,_,BBDCL_fun (_,_,args,res,ct,_,_)) ->
+let find_function syms bsym_table child_map root name =
+  let bsyms = find_name bsym_table child_map root name in
+  let bsyms =
+    List.filter begin fun (_,symbol) ->
+      match symbol with
+      | name,_,_,BBDCL_fun (_,_,args,res,ct,_,_) ->
         begin match name,args,res with
         | "lnot", [BTYP_unitsum 2], BTYP_unitsum 2 -> true
         | _, [BTYP_unitsum 2; BTYP_unitsum 2], BTYP_unitsum 2 -> true
         | _ -> false
         end
       | _ -> false
-    )
-    entries
+    end bsyms
   in
-  match entries with
-  | [{base_sym=i}] -> i
+  match bsyms with
+  | [i, _] -> i
   | [] ->
       if syms.compiler_options.print_flag then
       print_endline ("WARNING: flx_why cannot find '" ^ name ^ "'");
@@ -53,9 +62,8 @@ let find_function syms sym_table bsym_table env name =
       print_endline ("WARNING: flx_why found too many '" ^ name ^ "'");
       dummy_bid
 
-let find_logics syms sym_table bsym_table root =
-  let env = build_env syms sym_table (Some root) in
-  let ff x = find_function syms sym_table bsym_table env x in
+let find_logics syms bsym_table child_map root =
+  let ff x = find_function syms bsym_table child_map root x in
   [
     ff "land", "and";
     ff "lor", "or";
@@ -337,8 +345,8 @@ let calps ps =
 
 let unitt = BTYP_tuple []
 
-let emit_whycode filename syms sym_table bsym_table root =
-  let logics = find_logics syms sym_table bsym_table root in
+let emit_whycode filename syms bsym_table child_map root =
+  let logics = find_logics syms bsym_table child_map root in
   let f = open_out filename in
   output_string f "(****** HACKS *******)\n";
 (*  output_string f "type 'a lvalue  (* Felix lvalues *) \n"; *)

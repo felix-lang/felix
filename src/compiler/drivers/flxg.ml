@@ -207,7 +207,12 @@ try
   Flx_axiom.axiom_check syms bsym_table;
 
   (* generate why file *)
-  Flx_why.emit_whycode why_file_name.out_filename syms sym_table bsym_table root;
+  Flx_why.emit_whycode
+    why_file_name.out_filename
+    syms
+    bsym_table
+    child_map
+    root;
 
   let binding_time = tim() in
 
