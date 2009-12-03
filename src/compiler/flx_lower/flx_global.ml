@@ -5,10 +5,7 @@ open Flx_print
 open Flx_set
 open Flx_mtypes2
 open Flx_typing
-open Flx_mbind
 open Flx_unify
-open Flx_treg
-open Flx_generic
 open Flx_maps
 open Flx_exceptions
 open Flx_use

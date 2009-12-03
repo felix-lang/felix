@@ -103,9 +103,7 @@ def build_flx_frontend(phase):
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
             build_flx_misc(phase),
-            build_flx_core(phase),
-            build_flx_desugar(phase),
-            build_flx_bind(phase)])
+            build_flx_core(phase)])
 
 def build_flx_opt(phase):
     path = Path('src/compiler/flx_opt')
@@ -114,8 +112,6 @@ def build_flx_opt(phase):
         libs=[
             build_flx_misc(phase),
             build_flx_core(phase),
-            build_flx_desugar(phase),
-            build_flx_bind(phase),
             build_flx_frontend(phase)])
 
 def build_flx_lower(phase):
@@ -125,8 +121,6 @@ def build_flx_lower(phase):
         libs=[
             build_flx_misc(phase),
             build_flx_core(phase),
-            build_flx_desugar(phase),
-            build_flx_bind(phase),
             build_flx_frontend(phase)])
 
 def build_flx_backend(phase):
@@ -146,7 +140,6 @@ def build_flx_cpp_backend(phase):
         libs=[
             build_flx_misc(phase),
             build_flx_core(phase),
-            build_flx_bind(phase),
             build_flx_frontend(phase),
             build_flx_backend(phase)],
         external_libs=['nums'])
@@ -171,11 +164,11 @@ def build_flx_drivers(ctx, phase):
             path / 'flx_flxopt.ml{,i}'),
         libs=[
             build_flx_misc(phase),
-            build_flx_core(phase),
-            build_flx_cpp_backend(phase)])
+            build_flx_core(phase)])
 
-    libs = [
-        lib,
+    external_libs = ['nums', 'unix', 'str']
+
+    flxp_libs = [
         call('buildsystem.ocs.build_lib', phase),
         call('buildsystem.sex.build', phase),
         call('buildsystem.dypgen.build_lib', phase),
@@ -184,39 +177,38 @@ def build_flx_drivers(ctx, phase):
         build_flx_version(phase),
         build_flx_version_hook(phase),
         build_flx_lex(phase),
-        build_flx_parse(phase),
-        build_flx_desugar(phase),
-        build_flx_bind(phase),
+        build_flx_parse(phase)]
+    flxp = phase.ocaml.build_exe('bin/flxp',
+        [path / 'flxp.ml'], libs=flxp_libs + [lib], external_libs=external_libs)
+
+    flxm_libs = flxp_libs + [build_flx_desugar(phase)]
+    flxm = phase.ocaml.build_exe('bin/flxm',
+        [path / 'flxm.ml'], libs=flxm_libs + [lib], external_libs=external_libs)
+
+    flxd_libs = flxm_libs
+    flxd = phase.ocaml.build_exe('bin/flxd',
+        [path / 'flxd.ml'], libs=flxd_libs + [lib], external_libs=external_libs)
+
+    flxb_libs = flxd_libs + [build_flx_bind(phase)]
+    flxb = phase.ocaml.build_exe('bin/flxb',
+        [path / 'flxb.ml'], libs=flxb_libs + [lib], external_libs=external_libs)
+
+    flxg_libs = flxb_libs + [
         build_flx_why(phase),
         build_flx_frontend(phase),
         build_flx_opt(phase),
         build_flx_lower(phase),
         build_flx_backend(phase),
         build_flx_cpp_backend(phase)]
-
-    external_libs = ['nums', 'unix', 'str']
-
-    flxp = phase.ocaml.build_exe('bin/flxp',
-        [path / 'flxp.ml'], libs=libs + [lib], external_libs=external_libs)
-
-    flxm = phase.ocaml.build_exe('bin/flxm',
-        [path / 'flxm.ml'], libs=libs + [lib], external_libs=external_libs)
-
-    flxd = phase.ocaml.build_exe('bin/flxd',
-        [path / 'flxd.ml'], libs=libs + [lib], external_libs=external_libs)
-
-    flxb = phase.ocaml.build_exe('bin/flxb',
-        [path / 'flxb.ml'], libs=libs + [lib], external_libs=external_libs)
-
     flxg = phase.ocaml.build_exe('bin/flxg',
-        [path / 'flxg.ml'], libs=libs + [lib], external_libs=external_libs)
+        [path / 'flxg.ml'], libs=flxg_libs + [lib], external_libs=external_libs)
 
     # Don't compile flxc if llvm isn't installed
     if phase.llvm_config:
         flxc = phase.ocaml.build_exe('bin/flxc',
             Path('src/compiler/flxc/*.ml{,i}').glob(),
             includes=[phase.llvm_config.ocaml_libdir()],
-            libs=libs + [build_flx_llvm_backend(phase)],
+            libs=flxg_libs + [build_flx_llvm_backend(phase)],
             external_libs=external_libs + [
                 'llvm',
                 'llvm_analysis',

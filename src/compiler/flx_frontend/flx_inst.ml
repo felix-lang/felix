@@ -5,7 +5,6 @@ open Flx_set
 open Flx_mtypes2
 open Flx_print
 open Flx_typing
-open Flx_mbind
 open List
 open Flx_unify
 open Flx_treg

@@ -9,10 +9,6 @@ let terminate rrp exc =
   | Exit n ->
     exit (if return_parity then n else (if n=0 then 1 else 0))
 
-  | Flx_cexpr.Unknown_prec s ->
-    flush stdout; print_endline ("Unknown Precedence name '"^s^"'");
-    exit (if return_parity then 1 else 0)
-
   | Flx_string.Error s | LexError s ->
     flush stdout; print_endline "LEX ERROR";
     print_endline s;
