@@ -117,7 +117,38 @@ let bind_asm state strabs_bsym_table handle_bound init asm =
   (* Return the folded value. *)
   !init
 
-let bind_asms state asms =
+let find_module_init sym_table root =
+  (* Look up the root procedure index. *)
+  let { Flx_sym.pubmap=name_map; symdef=symdef } =
+    try Flx_sym_table.find sym_table root
+    with Not_found ->
+      failwith ("Can't find root module " ^ Flx_print.string_of_bid root ^
+        " in symbol table?")
+  in
+  begin match symdef with
+    | Flx_types.SYMDEF_module -> ()
+    | _ -> failwith "Expected to find top level module ''"
+  end;
+  let entry =
+    try Hashtbl.find name_map "_init_"
+    with Not_found ->
+      failwith "Can't find name _init_ in top level module's name map"
+  in
+  let index =
+    match entry with
+    | Flx_types.FunctionEntry [x] ->
+        Flx_typing.sye x
+    | Flx_types.FunctionEntry [] ->
+        failwith "Couldn't find '_init_'"
+    | Flx_types.FunctionEntry _ ->
+        failwith "Too many top level procedures called '_init_'"
+    | Flx_types.NonFunctionEntry _ ->
+        failwith "_init_ found but not procedure"
+  in
+
+  index
+
+let bind_asms state asms root =
   (* Add the symbols to the symtab. *)
   let exes, ifaces = Flx_symtab.add_asms state.symtab asms in
 
@@ -137,4 +168,4 @@ let bind_asms state asms =
   (* Clear the type cache. *)
   Hashtbl.clear state.syms.Flx_mtypes2.ticache;
 
-  bsym_table
+  bsym_table, (find_module_init state.sym_table root)

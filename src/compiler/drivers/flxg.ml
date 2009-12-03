@@ -197,7 +197,10 @@ try
   (* Bind the assemblies. *)
   let sym_table = Flx_sym_table.create () in
   let bind_state = Flx_bind.make_bind_state syms sym_table in
-  let bsym_table = Flx_bind.bind_asms bind_state asms in
+  let bsym_table, root_proc = Flx_bind.bind_asms bind_state asms root in
+
+  print_debug ("//root module's init procedure has index " ^
+    Flx_print.string_of_bid root_proc);
 
   let child_map = Flx_child.cal_children bsym_table in
   Flx_typeclass.typeclass_instance_check syms bsym_table child_map;
@@ -212,41 +215,11 @@ try
     syms
     bsym_table
     child_map
-    root;
+    root_proc;
 
   let binding_time = tim() in
 
   print_debug "//CHECKING ROOT";
-  let root_proc =
-    match
-      try Flx_sym_table.find sym_table root
-      with Not_found ->
-        failwith
-        (
-          "Can't find root module " ^ string_of_bid root ^
-          " in symbol table?"
-        )
-    with { Flx_sym.id=id; pubmap=name_map;symdef=entry} ->
-    begin match entry with
-      | SYMDEF_module -> ()
-      | _ -> failwith "Expected to find top level module ''"
-    end
-    ;
-    let entry =
-      try Hashtbl.find name_map "_init_"
-      with Not_found ->
-        failwith "Can't find name _init_ in top level module's name map"
-    in
-    let index = match entry with
-      | FunctionEntry [x] -> sye x
-      | FunctionEntry [] -> failwith "Couldn't find '_init_'"
-      | FunctionEntry _ -> failwith "Too many top level procedures called '_init_'"
-      | NonFunctionEntry _ -> failwith "_init_ found but not procedure"
-    in
-    print_debug ("//root module's init procedure has index " ^
-      string_of_bid index);
-    index
-  in
 
   (* Optimize the bound values *)
   let bsym_table, _ = Flx_opt.optimize_bsym_table syms bsym_table root_proc in

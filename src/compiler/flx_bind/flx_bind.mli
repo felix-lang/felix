@@ -25,4 +25,6 @@ val bind_asm:
 val bind_asms:
   bind_state_t ->         (** The state needed for binding. *)
   Flx_types.asm_t list -> (** All the assemblies to bind. *)
-  Flx_bsym_table.t        (** The output bound symbol table. *)
+  Flx_types.bid_t ->      (** The module index. *)
+  Flx_bsym_table.t *      (** The output bound symbol table. *)
+  Flx_types.bid_t         (** The module _init_ function index. *)
