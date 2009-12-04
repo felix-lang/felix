@@ -4,6 +4,9 @@ type t = (Flx_types.bid_t, Flx_bsym.t) Hashtbl.t
 (** Construct a bound symbol table. *)
 let create () = Hashtbl.create 97
 
+(** Copies the bound symbol table. *)
+let copy = Hashtbl.copy
+
 (** Adds the bound symbol with the index to the symbol table. *)
 let add = Hashtbl.replace
 

@@ -4,6 +4,9 @@ type t
 (** Construct a bound symbol table. *)
 val create : unit -> t
 
+(** Copies the bound symbol table. *)
+val copy : t -> t
+
 (** Adds the bound symbol with the index to the symbol table. *)
 val add : t -> Flx_types.bid_t -> Flx_bsym.t -> unit
 
