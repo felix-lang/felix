@@ -1,138 +1,13 @@
-(* Meta typing and beta reduction *)
+(** Beta reduction *)
 
 open Flx_util
-open Flx_ast
 open Flx_types
-open Flx_set
 open Flx_mtypes2
 
 open Flx_print
-open Flx_exceptions
 open Flx_typing
-open List
 open Flx_unify
 open Flx_maps
-
-exception BTfound of btypecode_t
-
-let rec metatype sym_table bsym_table sr term =
-  (*
-  print_endline ("Find Metatype  of: " ^
-    string_of_btypecode bsym_table term);
-  *)
-  let t = metatype' sym_table bsym_table sr term in
-  (*
-  print_endline ("Metatype  of: " ^ string_of_btypecode bsym_table term ^
-    " is " ^ sbt bsym_table t);
-  print_endline "Done";
-  *)
-  t
-
-and metatype' sym_table bsym_table sr term =
-  let st t = string_of_btypecode bsym_table t in
-  let mt t = metatype' sym_table bsym_table sr t in
-  match term with
-
-  | BTYP_typefun (a,b,c) ->
-    let ps = List.map snd a in
-    let argt =
-      match ps with
-      | [x] -> x
-      | _ -> BTYP_tuple ps
-    in
-      let rt = metatype sym_table bsym_table sr c in
-      if b<>rt
-      then
-        clierr sr
-        (
-          "In abstraction\n" ^
-          st term ^
-          "\nFunction body metatype \n"^
-          st rt^
-          "\ndoesn't agree with declared type \n" ^
-          st b
-        )
-      else BTYP_function (argt,b)
-
-  | BTYP_type_tuple ts ->
-    BTYP_tuple (map mt ts)
-
-  | BTYP_apply (a,b) ->
-    begin
-      let ta = mt a
-      and tb = mt b
-      in match ta with
-      | BTYP_function (x,y) ->
-        if x = tb then y
-        else
-          clierr sr (
-            "Metatype error: function argument wrong metatype, expected:\n" ^
-            sbt bsym_table x ^
-            "\nbut got:\n" ^
-            sbt bsym_table tb
-          )
-
-      | _ -> clierr sr
-        (
-          "Metatype error: function required for LHS of application:\n"^
-          sbt bsym_table term ^
-          ", got metatype:\n" ^
-          sbt bsym_table ta
-        )
-    end
-  | BTYP_var (i,mt) ->
-    (*
-    print_endline ("Type variable " ^ si i^ " has encoded meta type " ^
-      sbt bsym_table mt);
-    (
-      try
-        let symdef = Flx_sym_table.find sym_table i in begin match symdef with
-        | {symdef=SYMDEF_typevar mt} ->
-            print_endline ("Table shows metatype is " ^ string_of_typecode mt);
-        | _ -> print_endline "Type variable isn't a type variable?"
-        end
-      with Not_found ->
-        print_endline "Cannot find type variable in symbol table"
-    );
-    *)
-    mt
-
-  | BTYP_type i -> BTYP_type (i+1)
-  | BTYP_inst (index,ts) ->
-    let { Flx_sym.id=id; symdef=entry } =
-      try Flx_sym_table.find sym_table index with Not_found ->
-        failwith ("[metatype'] can't find type instance index " ^
-          string_of_bid index)
-    in
-    (*
-    print_endline ("Yup .. instance id=" ^ id);
-    *)
-
-    (* this is hacked: we should really bind the types and take
-      the metatype of them but we don't have access to the
-      bind type routine due to module factoring .. we could pass
-      in the bind-type routine as an argument .. yuck ..
-    *)
-    begin match entry with
-    | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
-      BTYP_function (BTYP_type 0,BTYP_type 0)
-
-    | SYMDEF_const_ctor (_,t,_,_) ->
-      BTYP_type 0
-
-    | SYMDEF_abs _ -> BTYP_type 0
-
-    | _ ->
-        clierr sr ("Unexpected argument to metatype: " ^
-          sbt bsym_table term)
-    end
-
-  | _ ->
-    print_endline ("Questionable meta typing of term: " ^
-      sbt bsym_table term);
-    BTYP_type 0 (* THIS ISN'T RIGHT *)
-
-
 
 (* fixpoint reduction: reduce
    Fix f. Lam x. e ==> Lam x. Fix z. e [f x -> z]
@@ -180,7 +55,7 @@ and metatype' sym_table bsym_table sr term =
 
 *)
 
-and fixup syms ps body =
+let rec fixup syms ps body =
  let param = match ps with
    | [] -> assert false
    | [i,mt] -> BTYP_var (i,mt)
@@ -282,11 +157,11 @@ and beta_reduce' syms bsym_table sr termlist t =
   print_endline ("BETA REDUCE " ^ sbt bsym_table t ^ "\ntrail length = " ^
     si (length termlist));
   *)
-  if length termlist > 20
+  if List.length termlist > 20
   then begin
     print_endline ("Trail=" ^ catmap "\n" (sbt bsym_table) termlist);
     failwith  ("Trail overflow, infinite expansion: BETA REDUCE " ^
-    sbt bsym_table t ^ "\ntrail length = " ^ si (length termlist))
+    sbt bsym_table t ^ "\ntrail length = " ^ si (List.length termlist))
   end;
 
   match type_list_index syms bsym_table termlist t with
@@ -322,17 +197,17 @@ and beta_reduce' syms bsym_table sr termlist t =
     t
   *)
 
-  | BTYP_inst (i,ts) -> BTYP_inst (i, map br ts)
-  | BTYP_tuple ls -> BTYP_tuple (map br ls)
+  | BTYP_inst (i,ts) -> BTYP_inst (i, List.map br ts)
+  | BTYP_tuple ls -> BTYP_tuple (List.map br ls)
   | BTYP_array (i,t) -> BTYP_array (i, br t)
-  | BTYP_sum ls -> BTYP_sum (map br ls)
+  | BTYP_sum ls -> BTYP_sum (List.map br ls)
   | BTYP_record ts ->
-     let ss,ls = split ts in
-     BTYP_record (combine ss (map br ls))
+     let ss,ls = List.split ts in
+     BTYP_record (List.combine ss (List.map br ls))
 
   | BTYP_variant ts ->
-     let ss,ls = split ts in
-     BTYP_variant (combine ss (map br ls))
+     let ss,ls = List.split ts in
+     BTYP_variant (List.combine ss (List.map br ls))
 
   (* Intersection type reduction rule: if any term is 0,
      the result is 0, otherwise the result is the intersection
@@ -342,19 +217,19 @@ and beta_reduce' syms bsym_table sr termlist t =
      (at least two)
   *)
   | BTYP_intersect ls ->
-    let ls = map br ls in
-    if mem BTYP_void ls then BTYP_void
-    else let ls = filter (fun i -> i <> BTYP_tuple []) ls in
+    let ls = List.map br ls in
+    if List.mem BTYP_void ls then BTYP_void
+    else let ls = List.filter (fun i -> i <> BTYP_tuple []) ls in
     begin match ls with
     | [] -> BTYP_tuple []
     | [t] -> t
     | ls -> BTYP_intersect ls
     end
 
-  | BTYP_typeset ls -> BTYP_typeset (map br ls)
+  | BTYP_typeset ls -> BTYP_typeset (List.map br ls)
 
   | BTYP_typesetunion ls ->
-    let ls = rev_map br ls in
+    let ls = List.rev_map br ls in
     (* split into explicit typesets and other terms
       at the moment, there shouldn't be any 'other'
       terms (since there are no typeset variables ..
@@ -401,15 +276,15 @@ and beta_reduce' syms bsym_table sr termlist t =
      Bottom line: the rule below is a hack.
   *)
   | BTYP_typesetintersection ls ->
-    let ls = map br ls in
-    if mem (BTYP_typeset []) ls then BTYP_typeset []
+    let ls = List.map br ls in
+    if List.mem (BTYP_typeset []) ls then BTYP_typeset []
     else begin match ls with
     | [t] -> t
     | ls -> BTYP_typesetintersection ls
     end
 
 
-  | BTYP_type_tuple ls -> BTYP_type_tuple (map br ls)
+  | BTYP_type_tuple ls -> BTYP_type_tuple (List.map br ls)
   | BTYP_function (a,b) -> BTYP_function (br a, br b)
   | BTYP_cfunction (a,b) -> BTYP_cfunction (br a, br b)
   | BTYP_pointer a -> BTYP_pointer (br a)
@@ -437,7 +312,7 @@ and beta_reduce' syms bsym_table sr termlist t =
         ;
         print_endline "++++End";
         *)
-        let whole = nth termlist (-2-j) in
+        let whole = List.nth termlist (-2-j) in
         (*
         print_endline ("Recfun = " ^ sbt bsym_table whole);
         *)
@@ -499,7 +374,7 @@ and beta_reduce' syms bsym_table sr termlist t =
     *)
     let tt = br tt in
     let new_matches = ref [] in
-    iter (fun ({pattern=p; pattern_vars=dvars; assignments=eqns}, t') ->
+    List.iter (fun ({pattern=p; pattern_vars=dvars; assignments=eqns}, t') ->
       (*
       print_endline (spc ^"Tring to unify argument with " ^
         sbt bsym_table p');
@@ -508,7 +383,7 @@ and beta_reduce' syms bsym_table sr termlist t =
       let x =
         {
           pattern=p;
-          assignments= map (fun (j,t) -> j, br t) eqns;
+          assignments=List.map (fun (j,t) -> j, br t) eqns;
           pattern_vars=dvars;
         }, t'
       in
@@ -522,7 +397,7 @@ and beta_reduce' syms bsym_table sr termlist t =
     )
     pts
     ;
-    let pts = rev !new_matches in
+    let pts = List.rev !new_matches in
     match pts with
     | [] ->
       failwith "[beta-reduce] typematch failure"

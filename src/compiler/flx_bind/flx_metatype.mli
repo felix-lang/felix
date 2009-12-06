@@ -1,7 +1,6 @@
-(* Beta reduction *)
-
-val beta_reduce:
-  Flx_mtypes2.sym_state_t ->
+(** Meta typing. *)
+val metatype:
+  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   Flx_srcref.t ->
   Flx_types.btypecode_t ->

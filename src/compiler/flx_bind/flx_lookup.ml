@@ -1066,7 +1066,7 @@ and bind_type'
      (*
      print_endline ("meta typing argument " ^ sbt bsym_table t2);
      *)
-     let sign = metatype sym_table bsym_table sr t2 in
+     let sign = Flx_metatype.metatype sym_table bsym_table sr t2 in
      (*
      print_endline ("Arg type " ^ sbt bsym_table t2 ^ " meta type " ^ sbt bsym_table sign);
      *)
@@ -1830,7 +1830,7 @@ and inner_type_of_index
   | SYMDEF_type_alias t ->
     begin
       let t = bt t in
-      let mt = metatype sym_table bsym_table sr t in
+      let mt = Flx_metatype.metatype sym_table bsym_table sr t in
       (*
       print_endline ("Type of type alias is meta_type: " ^ sbt bsym_table mt);
       *)
