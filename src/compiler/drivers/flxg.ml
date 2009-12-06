@@ -195,10 +195,10 @@ try
     string_of_bid root);
 
   (* Bind the assemblies. *)
-  let sym_table = Flx_sym_table.create () in
-  let bind_state = Flx_bind.make_bind_state syms sym_table in
-  let bsym_table, root_proc = Flx_bind.bind_asms bind_state asms root in
+  let bind_state = Flx_bind.make_bind_state syms in
+  let bsym_table = Flx_bind.bind_asms bind_state asms in
 
+  let root_proc = Flx_bind.find_root_module_init_function bind_state root in
   print_debug ("//root module's init procedure has index " ^
     Flx_print.string_of_bid root_proc);
 

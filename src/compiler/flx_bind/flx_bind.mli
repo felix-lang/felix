@@ -4,13 +4,16 @@ type bound_t =
   | Bound_exe of Flx_types.bexe_t
   | Bound_symbol of (Flx_types.bid_t * Flx_bsym.t)
 
+(** Constructs the bind state needed for a batch compiler. *)
 val make_bind_state:
-  ?parent:Flx_types.bid_t ->  (** The module index for all the symbols of the
-                                  assemblies. *)
-  ?env:Flx_types.env_t ->     (** Optionally specify the environment. *)
   Flx_mtypes2.sym_state_t ->  (** The symbol state *)
-  Flx_sym_table.t ->          (** The symbol table *)
   bind_state_t
+
+(** Constructs the bind state needed for an interactive toplevel compiler. *)
+val make_toplevel_bind_state:
+  Flx_mtypes2.sym_state_t ->  (** The symbol state *)
+  bind_state_t *
+  Flx_bsym_table.t
 
 (** Bind an individual assembly into a series of symbols. *)
 val bind_asm:
@@ -25,6 +28,10 @@ val bind_asm:
 val bind_asms:
   bind_state_t ->         (** The state needed for binding. *)
   Flx_types.asm_t list -> (** All the assemblies to bind. *)
-  Flx_types.bid_t ->      (** The module index. *)
-  Flx_bsym_table.t *      (** The bound symbol table. *)
-  Flx_types.bid_t         (** The module _init_ function index. *)
+  Flx_bsym_table.t        (** The output bound symbol table. *)
+
+(** Find the root module's init function index. *)
+val find_root_module_init_function:
+  bind_state_t ->     (** The state needed for binding. *)
+  Flx_types.bid_t ->  (** The root module index. *)
+  Flx_types.bid_t     (** The root module index function. *)

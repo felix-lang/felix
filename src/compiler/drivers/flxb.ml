@@ -80,10 +80,8 @@ try
   print_endline "//BINDING EXECUTABLE CODE";
   print_endline "//-----------------------";
 
-  let sym_table = Flx_sym_table.create () in
-  let bind_state = Flx_bind.make_bind_state syms sym_table in
-
-  let bsym_table, _ = Flx_bind.bind_asms bind_state asms root in
+  let bind_state = Flx_bind.make_bind_state syms in
+  let bsym_table = Flx_bind.bind_asms bind_state asms in
   print_endline "//Binding complete";
 
   Flx_print.print_bsym_table bsym_table

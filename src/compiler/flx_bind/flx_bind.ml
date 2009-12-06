@@ -11,21 +11,77 @@ type bound_t =
   | Bound_exe of Flx_types.bexe_t
   | Bound_symbol of (Flx_types.bid_t * Flx_bsym.t)
 
-let make_bind_state ?parent ?env syms sym_table =
+(** Constructs the bind state needed for a batch compiler. *)
+let make_bind_state syms =
+  let sym_table = Flx_sym_table.create () in
   {
     syms = syms;
     sym_table = sym_table;
     symtab = Flx_symtab.make syms sym_table;
-    parent = parent;
+    parent = None;
     strabs_state = Flx_strabs.make_strabs_state ();
     bexe_state = Flx_bexe.make_bexe_state
-      ?parent
-      ?env
       syms
       sym_table
       []
       Flx_types.BTYP_void;
   }
+
+(** Constructs the bind state needed for an interactive toplevel compiler. *)
+let make_toplevel_bind_state syms =
+  let sym_table = Flx_sym_table.create () in
+  let symtab = Flx_symtab.make syms sym_table in
+  let bsym_table = Flx_bsym_table.create () in
+
+  (* Declare the root module to work within *)
+  let module_index, _ = Flx_symtab.add_dcl symtab (
+    Flx_srcref.dummy_sr, "", None, `Public, Flx_ast.dfltvs,
+    Flx_types.DCL_module [])
+  in
+  let module_symbol = Flx_sym_table.find
+    sym_table
+    module_index
+  in
+
+  (* Find the module's _init_ function *)
+  let init_index =
+    match Hashtbl.find module_symbol.Flx_sym.pubmap "_init_" with
+    | Flx_types.FunctionEntry [ { Flx_types.base_sym=base_sym } ] -> base_sym
+    | _ -> assert false
+  in
+  let init_symbol = Flx_sym_table.find
+    sym_table
+    init_index
+  in
+
+  (* Bind the module and init function. *)
+  ignore (Flx_bbind.bbind_symbol
+    syms
+    sym_table
+    bsym_table
+    module_index
+    module_symbol);
+  ignore (Flx_bbind.bbind_symbol
+    syms
+    sym_table
+    bsym_table
+    init_index
+    init_symbol);
+
+  {
+    syms = syms;
+    sym_table = sym_table;
+    symtab = symtab;
+    parent = Some module_index;
+    strabs_state = Flx_strabs.make_strabs_state ();
+    bexe_state = Flx_bexe.make_bexe_state
+      ~parent:module_index
+      ~env:(Flx_lookup.build_env syms sym_table (Some init_index))
+      syms
+      sym_table
+      []
+      Flx_types.BTYP_void;
+  }, bsym_table
 
 let bind_asm state bsym_table handle_bound init asm =
   (* We need to save the symbol index counter so we can bind all of the symbols
@@ -114,10 +170,33 @@ let bind_asm state bsym_table handle_bound init asm =
   (* Return the folded value. *)
   !init
 
-let find_module_init sym_table root =
+let bind_asms state asms =
+  (* Add the symbols to the symtab. *)
+  let exes, ifaces = Flx_symtab.add_asms state.symtab asms in
+
+  (* Create us a bound symbol table. *)
+  let bsym_table = Flx_bsym_table.create () in
+
+  (* Now, bind all the symbols. *)
+  Flx_bbind.bbind state.syms state.sym_table bsym_table;
+
+  (* Downgrade abstract types. *)
+  Flx_strabs.strabs state.strabs_state bsym_table;
+
+  (* Bind the interfaces. *)
+  state.syms.Flx_mtypes2.bifaces <- List.map
+    (Flx_bbind.bind_interface state.syms state.sym_table bsym_table) ifaces;
+
+  (* Clear the type cache. *)
+  Hashtbl.clear state.syms.Flx_mtypes2.ticache;
+
+  bsym_table
+
+(** Find the root module's init function index. *)
+let find_root_module_init_function state root =
   (* Look up the root procedure index. *)
   let { Flx_sym.pubmap=name_map; symdef=symdef } =
-    try Flx_sym_table.find sym_table root
+    try Flx_sym_table.find state.sym_table root
     with Not_found ->
       failwith ("Can't find root module " ^ Flx_print.string_of_bid root ^
         " in symbol table?")
@@ -144,25 +223,3 @@ let find_module_init sym_table root =
   in
 
   index
-
-let bind_asms state asms root =
-  (* Add the symbols to the symtab. *)
-  let exes, ifaces = Flx_symtab.add_asms state.symtab asms in
-
-  (* Create us a bound symbol table. *)
-  let bsym_table = Flx_bsym_table.create () in
-
-  (* Now, bind all the symbols. *)
-  Flx_bbind.bbind state.syms state.sym_table bsym_table;
-
-  (* Downgrade abstract types. *)
-  Flx_strabs.strabs state.strabs_state bsym_table;
-
-  (* Bind the interfaces. *)
-  state.syms.Flx_mtypes2.bifaces <- List.map
-    (Flx_bbind.bind_interface state.syms state.sym_table bsym_table) ifaces;
-
-  (* Clear the type cache. *)
-  Hashtbl.clear state.syms.Flx_mtypes2.ticache;
-
-  bsym_table, (find_module_init state.sym_table root)

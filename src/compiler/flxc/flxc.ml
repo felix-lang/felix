@@ -4,12 +4,10 @@
 
 type state_t = {
   syms: Flx_mtypes2.sym_state_t;
-  sym_table: Flx_sym_table.t;
+  bsym_table: Flx_bsym_table.t;
   macro_state: Flx_macro.macro_state_t;
   desugar_state: Flx_desugar.desugar_state_t;
-  symtab: Flx_symtab.t;
   bind_state: Flx_bind.bind_state_t;
-  module_index: Flx_types.bid_t;
   init_index: Flx_types.bid_t;
 }
 
@@ -18,38 +16,24 @@ type state_t = {
 let create_state options =
   (* Construct the state needed for compilation *)
   let syms = Flx_mtypes2.make_syms options in
-  let sym_table = Flx_sym_table.create () in
-  let symtab = Flx_symtab.make syms sym_table in
 
   (* Declare the module to work within *)
-  let module_index, _ = Flx_symtab.add_dcl symtab (
-    Flx_srcref.dummy_sr, "", None, `Public, Flx_ast.dfltvs,
-    Flx_types.DCL_module [])
-  in
-  let module_symbol = Flx_sym_table.find
-    sym_table
-    module_index
-  in
+  let module_index = !(syms.Flx_mtypes2.counter) in
+
+  let bind_state, bsym_table = Flx_bind.make_toplevel_bind_state syms in
 
   (* Find the module's _init_ function *)
-  let init_index =
-    match Hashtbl.find module_symbol.Flx_sym.pubmap "_init_" with
-    | Flx_types.FunctionEntry [ { Flx_types.base_sym=base_sym } ] -> base_sym
-    | _ -> assert false
+  let init_index = Flx_bind.find_root_module_init_function
+    bind_state
+    module_index
   in
 
   {
     syms = syms;
-    sym_table = sym_table;
+    bsym_table = bsym_table;
     macro_state = Flx_macro.make_macro_state "<input>";
     desugar_state = Flx_desugar.make_desugar_state "<input>" syms;
-    symtab = symtab;
-    bind_state = Flx_bind.make_bind_state
-      ~parent:module_index
-      ~env:(Flx_lookup.build_env syms sym_table (Some init_index))
-      syms
-      sym_table;
-    module_index = module_index;
+    bind_state = bind_state;
     init_index = init_index;
   }
 
@@ -67,47 +51,6 @@ let desugar_stmt state stmt () =
   Flx_desugar.desugar_statement state.desugar_state begin fun () asm ->
     print_endline ("... DESUGARED: " ^ (Flx_print.string_of_asm 0 asm));
   end () stmt
-
-(* Convenience function to make bsym_table from our state. *)
-let make_bind_state state =
-  let bsym_table = Flx_bsym_table.create () in
-
-  let module_symbol = Flx_sym_table.find
-    state.sym_table
-    state.module_index
-  in
-  let init_symbol = Flx_sym_table.find
-    state.sym_table
-    state.init_index
-  in
-
-  (* Bind the module and init function. *)
-  ignore (Flx_bbind.bbind_symbol
-    state.syms
-    state.sym_table
-    bsym_table
-    state.module_index
-    module_symbol);
-  ignore (Flx_bbind.bbind_symbol
-    state.syms
-    state.sym_table
-    bsym_table
-    state.init_index
-    init_symbol);
-
-  (* Add the module and init function to the child map *)
-  let child_map = Flx_child.make () in
-  begin match module_symbol.Flx_sym.parent with
-  | Some parent -> Flx_child.add_child child_map parent state.module_index;
-  | None -> ()
-  end;
-
-  begin match init_symbol.Flx_sym.parent with
-  | Some parent -> Flx_child.add_child child_map parent state.init_index;
-  | None -> ()
-  end;
-
-  bsym_table, child_map
 
 
 (* Helper function to simplify binding a statement. *)
@@ -154,13 +97,10 @@ let print_bexes state bsym_table bexes =
   end bexes
 
 
-let bind_stmt state =
-  let bsym_table, _ = make_bind_state state in
-
-  fun stmt () ->
-    let bids, bexes = bind_stmt' state bsym_table stmt in
-    print_bids state bsym_table bids;
-    print_bexes state bsym_table bexes
+let bind_stmt state stmt () =
+    let bids, bexes = bind_stmt' state state.bsym_table stmt in
+    print_bids state state.bsym_table bids;
+    print_bexes state state.bsym_table bexes
 
 
 (* Helper function to simplify optimizing values. *)
@@ -174,11 +114,11 @@ let optimize_stmt' state bsym_table child_map stmt =
 
 let optimize_stmt state =
   (* Create a child map of the symbols. *)
-  let bsym_table, child_map = make_bind_state state in
+  let child_map = Flx_child.cal_children state.bsym_table in
 
   (* Make references of the bsym_table and child map since we'll be replacing these
    * values as we optimize. *)
-  let bsym_table = ref bsym_table in
+  let bsym_table = ref state.bsym_table in
   let child_map = ref child_map in
 
   (* Return a function that processes a statement at a time. *)
@@ -211,11 +151,11 @@ let lower_stmt' state bsym_table child_map lower_state stmt =
 
 let lower_stmt state =
   (* Create a child map of the symbols. *)
-  let bsym_table, child_map = make_bind_state state in
+  let child_map = Flx_child.cal_children state.bsym_table in
 
   (* Make references of the bsym_table and child map since we'll be replacing these
    * values as we optimize. *)
-  let bsym_table = ref bsym_table in
+  let bsym_table = ref state.bsym_table in
   let child_map = ref child_map in
 
   (* Create the stat needed for lowering symbols. *)
@@ -239,11 +179,11 @@ let lower_stmt state =
 
 let compile_stmt state =
   (* Create a child map of the symbols. *)
-  let bsym_table, child_map = make_bind_state state in
+  let child_map = Flx_child.cal_children state.bsym_table in
 
   (* Make references of the bsym_table and child map since we'll be replacing these
    * values as we optimize. *)
-  let bsym_table = ref bsym_table in
+  let bsym_table = ref state.bsym_table in
   let child_map = ref child_map in
 
   (* Create the stat needed for lowering symbols. *)
