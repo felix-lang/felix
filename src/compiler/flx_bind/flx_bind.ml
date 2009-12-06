@@ -3,7 +3,6 @@ type bind_state_t = {
   sym_table: Flx_sym_table.t;
   symtab: Flx_symtab.t;
   parent: Flx_types.bid_t option;
-  bbind_bsym_table: Flx_bsym_table.t;
   strabs_state: Flx_strabs.strabs_state_t;
   bexe_state: Flx_bexe.bexe_state_t;
 }
@@ -18,7 +17,6 @@ let make_bind_state ?parent ?env syms sym_table =
     sym_table = sym_table;
     symtab = Flx_symtab.make syms sym_table;
     parent = parent;
-    bbind_bsym_table = Flx_bsym_table.create ();
     strabs_state = Flx_strabs.make_strabs_state ();
     bexe_state = Flx_bexe.make_bexe_state
       ?parent
@@ -29,7 +27,7 @@ let make_bind_state ?parent ?env syms sym_table =
       Flx_types.BTYP_void;
   }
 
-let bind_asm state strabs_bsym_table handle_bound init asm =
+let bind_asm state bsym_table handle_bound init asm =
   (* We need to save the symbol index counter so we can bind all of the symbols
    * that we just added. *)
   let initial_index = !(state.syms.Flx_mtypes2.counter) in
@@ -48,7 +46,7 @@ let bind_asm state strabs_bsym_table handle_bound init asm =
         let biface = Flx_bbind.bind_interface
           state.syms
           state.sym_table
-          state.bbind_bsym_table
+          bsym_table
           (sr, iface, state.parent)
         in
         state.syms.Flx_mtypes2.bifaces <-
@@ -71,7 +69,7 @@ let bind_asm state strabs_bsym_table handle_bound init asm =
         ignore (Flx_bbind.bbind_symbol
           state.syms
           state.sym_table
-          state.bbind_bsym_table
+          bsym_table
           i
           s)
     end
@@ -83,19 +81,18 @@ let bind_asm state strabs_bsym_table handle_bound init asm =
   Flx_mtypes2.iter_bids begin fun i ->
     (* First, find the symbol to bind. *)
     let symbol =
-      try Some (Flx_bsym_table.find state.bbind_bsym_table i)
+      try Some (Flx_bsym_table.find bsym_table i)
       with Not_found -> None
     in
     begin match symbol with
     | None -> ()
     | Some s ->
         (* Finally, downgrade abstract types. *)
-        ignore (Flx_strabs.strabs_symbol
+        Flx_strabs.strabs_symbol
             state.strabs_state
-            state.bbind_bsym_table
-            strabs_bsym_table
+            bsym_table
             i
-            s)
+            s
     end
   end state.syms.Flx_mtypes2.counter initial_index;
 
@@ -103,7 +100,7 @@ let bind_asm state strabs_bsym_table handle_bound init asm =
   Flx_mtypes2.iter_bids begin fun i ->
     (* First, find the symbol to bind. *)
     let symbol =
-      try Some (Flx_bsym_table.find strabs_bsym_table i)
+      try Some (Flx_bsym_table.find bsym_table i)
       with Not_found -> None
     in
     begin match symbol with
@@ -152,14 +149,14 @@ let bind_asms state asms root =
   (* Add the symbols to the symtab. *)
   let exes, ifaces = Flx_symtab.add_asms state.symtab asms in
 
+  (* Create us a bound symbol table. *)
+  let bsym_table = Flx_bsym_table.create () in
+
   (* Now, bind all the symbols. *)
-  Flx_bbind.bbind state.syms state.sym_table state.bbind_bsym_table;
+  Flx_bbind.bbind state.syms state.sym_table bsym_table;
 
   (* Downgrade abstract types. *)
-  let bsym_table = Flx_strabs.strabs
-    state.strabs_state
-    state.bbind_bsym_table
-  in
+  Flx_strabs.strabs state.strabs_state bsym_table;
 
   (* Bind the interfaces. *)
   state.syms.Flx_mtypes2.bifaces <- List.map
