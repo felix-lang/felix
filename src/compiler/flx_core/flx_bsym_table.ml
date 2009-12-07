@@ -18,23 +18,19 @@ let find = Hashtbl.find
 
 (** Searches the bound symbol table for the given symbol's id. *)
 let find_id bsym_table bid =
-  let id,_,_,_ = find bsym_table bid in
-  id
+  (find bsym_table bid).Flx_bsym.id
 
 (** Searches the bound symbol table for the given symbol's source reference. *)
 let find_sr bsym_table bid =
-  let _,_,sr,_ = find bsym_table bid in
-  sr
+  (find bsym_table bid).Flx_bsym.sr
 
 (** Searches the bound symbol table for the given symbol's parent. *)
 let find_parent bsym_table bid =
-  let _,parent,_,_ = find bsym_table bid in
-  parent
+  (find bsym_table bid).Flx_bsym.parent
 
 (** Searches the bound symbol table for the given symbol's bbdcl. *)
 let find_bbdcl bsym_table bid =
-  let _,_,_,bbdcl = find bsym_table bid in
-  bbdcl
+  (find bsym_table bid).Flx_bsym.bbdcl
 
 let find_bvs bsym_table bid =
   Flx_bsym.get_bvs (find bsym_table bid)
@@ -63,15 +59,15 @@ let is_function bsym_table bid =
 
 (** Update all the bound function and procedure's bound exes. *)
 let update_bexes f bsym_table =
-  iter begin fun i (id,parent,sr,bbdcl) ->
-    match bbdcl with
+  iter begin fun i bsym ->
+    match bsym.Flx_bsym.bbdcl with
     | Flx_types.BBDCL_function (ps, bvs, bpar, bty, bexes) ->
         let bbdcl = Flx_types.BBDCL_function (ps, bvs, bpar, bty, f bexes) in
-        add bsym_table i (id,parent,sr,bbdcl)
+        add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl }
 
     | Flx_types.BBDCL_procedure (ps, bvs, bpar, bexes) ->
         let bbdcl = Flx_types.BBDCL_procedure (ps, bvs, bpar, f bexes) in
-        add bsym_table i (id,parent,sr,bbdcl)
+        add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl }
 
     | _ -> ()
   end bsym_table

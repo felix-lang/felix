@@ -35,11 +35,11 @@ let get_labels counter exes =
   ;
   labels
 
-let update_label_map counter label_map index (_,_,_,entry) =
+let update_label_map counter label_map index bsym =
   (*
   print_endline ("Routine " ^ id ^ "<"^ si index ^">");
   *)
-  match entry with
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (_,_,_,_,exes) ->
     Hashtbl.add label_map index (get_labels counter exes)
   | BBDCL_procedure (_,_,_,exes) ->
@@ -58,11 +58,12 @@ let rec find_label bsym_table label_map caller label =
   let labels = Hashtbl.find label_map caller in
   try `Local (Hashtbl.find labels label)
   with Not_found ->
-  let id,parent,sr,entry = Flx_bsym_table.find bsym_table caller in
-  match entry with
+  let bsym = Flx_bsym_table.find bsym_table caller in
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_function _ -> `Unreachable
   | BBDCL_procedure _ ->
-    begin match parent with None -> `Unreachable
+    begin match bsym.Flx_bsym.parent with
+    | None -> `Unreachable
     | Some parent ->
       begin match find_label bsym_table label_map parent label with
       | `Local i -> `Nonlocal (i,parent)
@@ -105,8 +106,8 @@ let cal_usage syms bsym_table label_map caller exes usage =
   )
   exes
 
-let update_label_usage syms bsym_table label_map usage index (_,_,_,entry) =
-  match entry with
+let update_label_usage syms bsym_table label_map usage index bsym =
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (_,_,_,_,exes)
   | BBDCL_procedure (_,_,_,exes) ->
     cal_usage syms bsym_table label_map index exes usage

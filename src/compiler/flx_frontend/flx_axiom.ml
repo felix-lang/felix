@@ -46,8 +46,8 @@ let verify syms bsym_table csr e =
       | None -> true
       | Some i ->
         try
-          let tcid,_,sr,entry = Flx_bsym_table.find bsym_table i in
-          match entry with
+          let tc_bsym = Flx_bsym_table.find bsym_table i in
+          match tc_bsym.Flx_bsym.bbdcl with
           | BBDCL_typeclass (_,tcbvs) ->
             begin
               (*
@@ -83,7 +83,7 @@ let verify syms bsym_table csr e =
                       true
                       i
                       ts
-                      sr
+                      tc_bsym.Flx_bsym.sr
                       (inst_bvs, inst_traint, inst_ts, instidx)
                   with
                   | None -> ()

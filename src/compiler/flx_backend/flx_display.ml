@@ -25,15 +25,15 @@ let cal_display bsym_table parent : (bid_t *int) list =
     match parent with
     | None -> List.rev display
     | Some parent ->
-        let _,parent',_,bbdcl =
+        let bsym =
           try Flx_bsym_table.find bsym_table parent with Not_found ->
             failwith ("[cal_display] Can't find index(2) " ^
               Flx_print.string_of_bid parent)
         in
-        match bbdcl with
+        match bsym.Flx_bsym.bbdcl with
         | BBDCL_procedure (_, vs, _, _)
         | BBDCL_function (_, vs, _, _, _) ->
-            aux parent' ((parent, List.length vs)::display)
+            aux bsym.Flx_bsym.parent ((parent, List.length vs)::display)
 
         (* typeclasses have to be treated 'as if' top level *)
         (* MAY NEED REVISION! *)

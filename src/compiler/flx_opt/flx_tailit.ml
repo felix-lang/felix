@@ -577,8 +577,11 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
         in
         Hashtbl.replace child_map this (parameter::kids);
         let id = "_trp_" ^ string_of_bid parameter in
-        let entry = BBDCL_tmp (vs,paramtype) in
-        Flx_bsym_table.add bsym_table parameter (id,Some this,sr,entry);
+        Flx_bsym_table.add bsym_table parameter {
+          Flx_bsym.id=id;
+          sr=sr;
+          parent=Some this;
+          bbdcl=BBDCL_tmp (vs, paramtype) }
       end !parameters;
 
       (* return with posssible label at start *)

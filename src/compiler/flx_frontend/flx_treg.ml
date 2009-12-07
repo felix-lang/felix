@@ -129,12 +129,11 @@ let rec register_type_r ui syms bsym_table exclude sr t =
   | BTYP_inst (i,ts)->
     iter rr ts;
 
-    let id, parent, sr,entry =
+    let bsym =
       try Flx_bsym_table.find bsym_table i with Not_found ->
         failwith ("[register_type_r] Can't find index " ^ string_of_bid i)
     in
-    begin match entry with
-
+    begin match bsym.Flx_bsym.bbdcl with
     | BBDCL_newtype (_,r) ->
       rr r;
       rnr t
@@ -175,7 +174,7 @@ let rec register_type_r ui syms bsym_table exclude sr t =
       clierr sr
       (
         "[register_type_r] expected type declaration, got " ^
-        string_of_bbdcl bsym_table entry i
+        string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl i
       )
     end
 

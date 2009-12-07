@@ -37,8 +37,10 @@ let rec uses_type h k sr t =
   | _ -> iter_btype ut t
 
 let faulty_req bsym_table i =
-  let id, _, sr, _ = Flx_bsym_table.find bsym_table i in
-  clierr sr (id ^ " is used but has unsatisfied requirement")
+  let bsym = Flx_bsym_table.find bsym_table i in
+  clierr
+    bsym.Flx_bsym.sr
+    (bsym.Flx_bsym.id ^ " is used but has unsatisfied requirement")
 
 let rec process_expr h k sr e =
   let ue e = process_expr h k sr e in
@@ -77,35 +79,36 @@ let cal_req_usage bsym_table uses sr parent reqs =
   in
   List.iter ur reqs
 
-let call_data_for_symbol bsym_table uses k (_,_,sr,entry) =
-  let ut t = uses_type uses k sr t in
+let call_data_for_symbol bsym_table uses k bsym =
+  let ut t = uses_type uses k bsym.Flx_bsym.sr t in
 
-  match entry with
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_typeclass _ -> ()
 
   | BBDCL_procedure (_,_,(ps,_),exes)
   | BBDCL_function (_,_,(ps,_),_,exes) ->
-      List.iter (cal_param_usage uses sr k) ps;
+      List.iter (cal_param_usage uses bsym.Flx_bsym.sr k) ps;
       List.iter (cal_exe_usage uses k) exes
 
   | BBDCL_newtype (_,t) -> ut t
   | BBDCL_abs (_,_,_,reqs) ->
-      cal_req_usage bsym_table uses sr k reqs
+      cal_req_usage bsym_table uses bsym.Flx_bsym.sr k reqs
   | BBDCL_const (_,_,t,_,reqs) ->
-      cal_req_usage bsym_table uses sr k reqs
+      cal_req_usage bsym_table uses bsym.Flx_bsym.sr k reqs
   | BBDCL_proc (_,_,ps,_, reqs) ->
-      cal_req_usage bsym_table uses sr k reqs;
+      cal_req_usage bsym_table uses bsym.Flx_bsym.sr k reqs;
       List.iter ut ps
   | BBDCL_fun (_,_,ps,ret,_, reqs,_) ->
-      cal_req_usage bsym_table uses sr k reqs;
+      cal_req_usage bsym_table uses bsym.Flx_bsym.sr k reqs;
       List.iter ut ps;
       ut ret
-  | BBDCL_insert (_,_,_,reqs)  -> cal_req_usage bsym_table uses sr k reqs
+  | BBDCL_insert (_,_,_,reqs) ->
+      cal_req_usage bsym_table uses bsym.Flx_bsym.sr k reqs
   | BBDCL_instance (_,_,cons,i,ts) ->
       (* we dont add the type constraint, since it
       is only used for instance selection
       *)
-      add uses k i sr;
+      add uses k i bsym.Flx_bsym.sr;
       List.iter ut ts
 
   | BBDCL_nonconst_ctor (_,_,unt,_,ct, evs, etraint) ->
@@ -126,7 +129,7 @@ let call_data_for_symbol bsym_table uses k (_,_,sr,entry) =
       List.iter ut ps_cf;
       List.iter ut ps_c;
       ut ret;
-      cal_req_usage bsym_table uses sr k reqs
+      cal_req_usage bsym_table uses bsym.Flx_bsym.sr k reqs
 
 let call_data bsym_table =
   let uses = Hashtbl.create 97 in
@@ -228,11 +231,11 @@ let call_report syms bsym_table (uses,usedby) f k =
   let catmap = Flx_util.catmap in
   let w s = output_string f s in
   let isr = is_recursive uses k in
-  let id,_,sr,entry = Flx_bsym_table.find bsym_table k in
+  let bsym = Flx_bsym_table.find bsym_table k in
   w (string_of_bid k ^ ": ");
   w (if isr then "recursive " else "");
   w
-    begin match entry with
+    begin match bsym.Flx_bsym.bbdcl with
     | BBDCL_function _ -> "fun "
     | BBDCL_procedure _ -> "proc "
     | BBDCL_var _ -> "var "
@@ -240,16 +243,16 @@ let call_report syms bsym_table (uses,usedby) f k =
     | _ -> assert false
     end
   ;
-  w (id ^ " uses: ");
+  w (bsym.Flx_bsym.id ^ " uses: ");
   let u = try Hashtbl.find uses k with Not_found -> [] in
   let x = ref [] in
   List.iter begin fun (i,_) ->
     if not (List.mem i !x) then
-    try match Flx_bsym_table.find bsym_table i with
-      | _,_,_,BBDCL_procedure _
-      | _,_,_,BBDCL_function _
-      | _,_,_,BBDCL_var _
-      | _,_,_,BBDCL_val _ -> x := i::!x
+    try match Flx_bsym_table.find_bbdcl bsym_table i with
+      | BBDCL_procedure _
+      | BBDCL_function _
+      | BBDCL_var _
+      | BBDCL_val _ -> x := i::!x
       | _ -> ()
     with Not_found -> ()
   end
@@ -266,8 +269,8 @@ let call_report syms bsym_table (uses,usedby) f k =
 
 let print_call_report' syms bsym_table usage f =
   let x = ref [] in
-  Flx_bsym_table.iter begin fun k (_,_,_,bbdcl) ->
-    match bbdcl with
+  Flx_bsym_table.iter begin fun k bsym ->
+    match bsym.Flx_bsym.bbdcl with
     | BBDCL_procedure _
     | BBDCL_function _
     | BBDCL_var _

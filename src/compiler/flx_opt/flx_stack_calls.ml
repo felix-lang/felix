@@ -52,11 +52,11 @@ let hfind msg h k =
 *)
 let rec is_pure syms bsym_table child_map i =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
-  let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
+  let bsym = Flx_bsym_table.find bsym_table i in
   (*
   print_endline ("Checking purity of " ^ id ^ "<" ^ si i ^ ">");
   *)
-  match entry with
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_var _
   | BBDCL_ref _
   | BBDCL_val _
@@ -85,7 +85,7 @@ let rec is_pure syms bsym_table child_map i =
 
   | BBDCL_procedure (_,_,_,exes)   (* ALLOWED NOW *)
   | BBDCL_function (_,_,_,_,exes) ->
-    match parent with
+    match bsym.Flx_bsym.parent with
     | Some _ ->
       (*
       print_endline (id ^ " is parented so Not pure");
@@ -310,8 +310,8 @@ let type_has_ptr cache syms bsym_table children t =
 
 let can_stack_func syms bsym_table child_map fn_cache ptr_cache i =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
-  let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
-  match entry with
+  let bsym = Flx_bsym_table.find bsym_table i in
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (_,_,_,ret,_) ->
     let has_vars = has_var_children bsym_table children in
     let has_funs = has_fun_children bsym_table children in
@@ -345,7 +345,7 @@ let can_stack_func syms bsym_table child_map fn_cache ptr_cache i =
   | BBDCL_cstruct _
   | BBDCL_struct _
     -> false (* hack *)
-  | _ -> failwith ("Unexpected non-function " ^ id)
+  | _ -> failwith ("Unexpected non-function " ^ bsym.Flx_bsym.id)
 
 exception Unstackable
 
@@ -361,11 +361,11 @@ let rec can_stack_proc
   recstop
 =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
-  let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
+  let bsym = Flx_bsym_table.find bsym_table i in
   (*
   print_endline ("Stackability Checking procedure " ^ id);
   *)
-  match entry with
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_procedure (_,_,_,exes) ->
     (* if a procedure has procedural children they can do anything naughty
      * a recursive check would be more aggressive
@@ -471,7 +471,9 @@ let rec can_stack_proc
        in
        if lkind = `Far then
        begin
-         print_endline (id ^ " has non-local label");
+         (*
+         print_endline (bsym.Flx_bsym.id ^ " has non-local label");
+         *)
          raise Unstackable
        end
 
@@ -535,8 +537,8 @@ and check_stackable_proc
   recstop
 =
   if mem i recstop then true else
-  let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
-  match entry with
+  let bsym = Flx_bsym_table.find bsym_table i in
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_callback _ -> false (* not sure if this is right .. *)
   | BBDCL_proc (_,_,_,ct,_) -> ct <> CS_virtual
   | BBDCL_procedure (props,vs,p,exes) ->
@@ -551,16 +553,16 @@ and check_stackable_proc
       let props =
         if is_pure syms bsym_table child_map i then `Pure :: props else props
       in
-      let entry : bbdcl_t = BBDCL_procedure (props,vs,p,exes) in
-      Flx_bsym_table.add bsym_table i (id,parent,sr,entry);
+      Flx_bsym_table.add bsym_table i { bsym with
+        Flx_bsym.bbdcl=BBDCL_procedure (props,vs,p,exes) };
       true
     end
     else begin
-      let entry : bbdcl_t = BBDCL_procedure (`Unstackable :: props,vs,p,exes) in
-      Flx_bsym_table.add bsym_table i (id,parent,sr,entry);
+      Flx_bsym_table.add bsym_table i { bsym with
+        Flx_bsym.bbdcl=BBDCL_procedure (`Unstackable :: props,vs,p,exes) };
       false
     end
-  | _ -> failwith ("Unexpected non-procedure " ^ id)
+  | _ -> failwith ("Unexpected non-procedure " ^ bsym.Flx_bsym.id)
     (*
     assert false
     *)
@@ -583,8 +585,7 @@ let rec enstack_applies syms bsym_table child_map fn_cache ptr_cache x =
      | BEXPR_apply_direct (i,ts,b),t
     ) as x ->
       begin
-        let _,_,_,entry = Flx_bsym_table.find bsym_table i in
-        match entry with
+        match Flx_bsym_table.find_bbdcl bsym_table i with
         | BBDCL_function (props,_,_,_,_) ->
           if mem `Stackable props
           then BEXPR_apply_stack (i,ts,b),t
@@ -602,8 +603,8 @@ let rec enstack_applies syms bsym_table child_map fn_cache ptr_cache x =
   | x -> x
 
 let mark_stackable syms bsym_table child_map fn_cache ptr_cache label_map label_usage =
-  Flx_bsym_table.iter begin fun i (id,parent,sr,bbdcl) ->
-    match bbdcl with
+  Flx_bsym_table.iter begin fun i bsym ->
+    match bsym.Flx_bsym.bbdcl with
     | BBDCL_function (props,vs,p,ret,exes) ->
       let props: property_t list ref = ref props in
       if can_stack_func syms bsym_table child_map fn_cache ptr_cache i then
@@ -626,8 +627,8 @@ let mark_stackable syms bsym_table child_map fn_cache ptr_cache label_map label_
       *)
       ;
       let props : property_t list = !props in
-      let entry : bbdcl_t = BBDCL_function (props,vs,p,ret,exes) in
-      Flx_bsym_table.add bsym_table i (id,parent,sr,entry)
+      Flx_bsym_table.add bsym_table i { bsym with
+        Flx_bsym.bbdcl=BBDCL_function (props,vs,p,ret,exes) }
 
     | BBDCL_procedure (props,vs,p,exes) ->
       if mem `Stackable props or mem `Unstackable props then () else
@@ -652,27 +653,30 @@ let enstack_calls syms bsym_table child_map fn_cache ptr_cache self exes =
       fun exe -> let exe = match exe with
       | BEXE_call (sr,(BEXPR_closure (i,ts),_),a)
       | BEXE_call_direct (sr,i,ts,a) ->
-        let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
-        begin match entry with
+        let bsym = Flx_bsym_table.find bsym_table i in
+        begin match bsym.Flx_bsym.bbdcl with
         | BBDCL_procedure (props,vs,p,exes) ->
           if mem `Stackable props then
           begin
-            if not (mem `Stack_closure props) then
-              Flx_bsym_table.add bsym_table i (id,parent,sr,BBDCL_procedure (`Stack_closure::props,vs,p,exes))
-            ;
-            BEXE_call_stack (sr,i,ts,a)
+            if not (mem `Stack_closure props) then begin
+              let bbdcl = BBDCL_procedure (`Stack_closure::props,vs,p,exes) in
+              Flx_bsym_table.add bsym_table i { bsym with
+                Flx_bsym.bbdcl=bbdcl }
+            end;
+
+            BEXE_call_stack (bsym.Flx_bsym.sr,i,ts,a)
           end
           else
-          BEXE_call_direct (sr,i,ts,a)
+          BEXE_call_direct (bsym.Flx_bsym.sr,i,ts,a)
 
-        | BBDCL_proc _ -> BEXE_call_prim (sr,i,ts,a)
+        | BBDCL_proc _ -> BEXE_call_prim (bsym.Flx_bsym.sr,i,ts,a)
 
         (* seems to work at the moment *)
-        | BBDCL_callback _ -> BEXE_call_direct (sr,i,ts,a)
+        | BBDCL_callback _ -> BEXE_call_direct (bsym.Flx_bsym.sr,i,ts,a)
 
         | _ ->
-            syserr sr ("Call to non-procedure " ^ id ^ "<" ^ string_of_bid i ^
-              ">")
+            syserr sr ("Call to non-procedure " ^ bsym.Flx_bsym.id ^ "<" ^
+              string_of_bid i ^ ">")
         end
 
       | x -> x
@@ -702,8 +706,8 @@ let make_stack_calls
     label_map
     label_usage;
 
-  Flx_bsym_table.iter begin fun i (id,parent,sr,bbdcl) ->
-    match bbdcl with
+  Flx_bsym_table.iter begin fun i bsym ->
+    match bsym.Flx_bsym.bbdcl with
     | BBDCL_procedure (props,vs,p,exes) ->
       let exes = enstack_calls
         syms
@@ -715,13 +719,11 @@ let make_stack_calls
         exes
       in
       let exes = Flx_cflow.final_tailcall_opt exes in
-      let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
-      begin match entry with
+      let bsym = Flx_bsym_table.find bsym_table i in
+      begin match bsym.Flx_bsym.bbdcl with
       | BBDCL_procedure (props,vs,p,_) ->
-        Flx_bsym_table.add
-          bsym_table
-          i
-          (id,parent,sr,BBDCL_procedure (props,vs,p,exes))
+          Flx_bsym_table.add bsym_table i { bsym with
+            Flx_bsym.bbdcl=BBDCL_procedure (props,vs,p,exes) }
       | _ -> assert false
       end
 
@@ -735,13 +737,11 @@ let make_stack_calls
         i
         exes
       in
-      let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
-      begin match entry with
+      let bsym = Flx_bsym_table.find bsym_table i in
+      begin match bsym.Flx_bsym.bbdcl with
       | BBDCL_function (props,vs,p,ret,_) ->
-        Flx_bsym_table.add
-          bsym_table
-          i
-          (id,parent,sr,BBDCL_function (props,vs,p,ret,exes))
+          Flx_bsym_table.add bsym_table i { bsym with
+            Flx_bsym.bbdcl=BBDCL_function (props,vs,p,ret,exes) }
       | _ -> assert false
       end
 

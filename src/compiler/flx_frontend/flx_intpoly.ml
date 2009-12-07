@@ -85,8 +85,8 @@ let check_abstract_exe syms rls (exe:bexe_t) =
 
 let cal_polyvars syms bsym_table child_map =
   let absvars = Hashtbl.create 97 in
-  Flx_bsym_table.iter (fun i (name,parent,sr,bbdfn) ->
-  match bbdfn with
+  Flx_bsym_table.iter (fun i bsym ->
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     if mem `Virtual props then () else
     let j = ref 0 in

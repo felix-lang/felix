@@ -83,12 +83,12 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
     (*
     print_endline "apply direct";
     *)
-    let id,parent,sr2,bbdcl =
-      try Flx_bsym_table.find bsym_table index
-      with _ -> failwith ("[process_expr(apply instance)] Can't find index " ^
-        string_of_bid index)
+    let bsym =
+      try Flx_bsym_table.find bsym_table index with Not_found ->
+        failwith ("[process_expr(apply instance)] Can't find index " ^
+          string_of_bid index)
     in
-    begin match bbdcl with
+    begin match bsym.Flx_bsym.bbdcl with
     (* function type not needed for direct call *)
     | BBDCL_fun _
     | BBDCL_callback _
@@ -256,7 +256,7 @@ and process_function syms bsym_table hvarmap ref_insts1 index sr argtypes ret ex
 and process_inst syms bsym_table instps ref_insts1 i ts inst =
   let uis i ts = add_inst syms bsym_table ref_insts1 (i,ts) in
   let ui i = uis i ts in
-  let id,parent,sr,entry =
+  let bsym =
     try Flx_bsym_table.find bsym_table i
     with Not_found -> failwith ("[process_inst] Can't find index " ^
       string_of_bid i)
@@ -265,21 +265,22 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     iter (
       fun (i, ts)->
       if i = dummy_bid then
-        clierr sr ("Entity " ^ id ^ " has uninstantiable requirements");
+        clierr bsym.Flx_bsym.sr ("Entity " ^ bsym.Flx_bsym.id ^
+          " has uninstantiable requirements");
       uis i (map vs ts)
     )
     reqs
   in
   let ue hvarmap e =
-    process_expr syms bsym_table ref_insts1 hvarmap sr e
+    process_expr syms bsym_table ref_insts1 hvarmap bsym.Flx_bsym.sr e
   in
-  let rtr t = register_type_r uis syms bsym_table [] sr t in
+  let rtr t = register_type_r uis syms bsym_table [] bsym.Flx_bsym.sr t in
   let rtnr t = register_type_nr syms bsym_table (reduce_type t) in
   if syms.compiler_options.print_flag then
-  print_endline ("//Instance " ^ string_of_bid inst ^ "=" ^ id ^ "<" ^
-    string_of_bid i ^ ">[" ^
+  print_endline ("//Instance " ^ string_of_bid inst ^ "=" ^ bsym.Flx_bsym.id ^
+    "<" ^ string_of_bid i ^ ">[" ^
     catmap "," (string_of_btypecode bsym_table) ts ^ "]");
-  match entry with
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let argtypes = map (fun {ptyp=t}->t) ps in
     assert (length vs = length ts);
@@ -307,7 +308,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
       hvarmap
       ref_insts1
       i
-      sr
+      bsym.Flx_bsym.sr
       argtypes
       ret
       exes
@@ -331,7 +332,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
       hvarmap
       ref_insts1
       i
-      sr
+      bsym.Flx_bsym.sr
       argtypes
       BTYP_void
       exes
@@ -373,10 +374,10 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     with Not_found -> si i) ^ " type " ^ sbt bsym_table t));
     *)
     if length vs <> length ts
-    then syserr sr
+    then syserr bsym.Flx_bsym.sr
     (
-      "ts/vs mismatch instantiating variable " ^ id ^ "<" ^ string_of_bid i ^
-      ">, inst " ^ string_of_bid inst ^ ": vs = [" ^
+      "ts/vs mismatch instantiating variable " ^ bsym.Flx_bsym.id ^ "<" ^
+      string_of_bid i ^ ">, inst " ^ string_of_bid inst ^ ": vs = [" ^
       catmap ";" (fun (s,i)-> s ^ "<" ^ string_of_bid i ^ ">") vs ^ "], " ^
       "ts = [" ^
       catmap ";" (fun t->sbt bsym_table t) ts ^ "]"
@@ -427,7 +428,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     print_endline ("Handling requirements of fun " ^ id);
     *)
     if length vs <> length ts then
-      print_endline ("For fun " ^ id ^ " vs=" ^ string_of_bvs vs ^
+      print_endline ("For fun " ^ bsym.Flx_bsym.id ^ " vs=" ^ string_of_bvs vs ^
       ", but ts=" ^ catmap "," (sbt bsym_table) ts)
     ;
     assert (length vs = length ts);
@@ -441,7 +442,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
       hvarmap
       ref_insts1
       i
-      sr
+      bsym.Flx_bsym.sr
       argtypes
       ret
       []
@@ -485,7 +486,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
       hvarmap
       ref_insts1
       i
-      sr
+      bsym.Flx_bsym.sr
       argtypes
       BTYP_void
       []
@@ -565,16 +566,16 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
   (function
     | BIFACE_export_python_fun (_,x,_)
     | BIFACE_export_fun (_,x,_) ->
-      let _,_,sr,entry = Flx_bsym_table.find bsym_table x in
-      begin match entry with
+      let bsym = Flx_bsym_table.find bsym_table x in
+      begin match bsym.Flx_bsym.bbdcl with
       | BBDCL_procedure (props,_,(ps,_),_)
       | BBDCL_function (props,_,(ps,_),_,_) ->
         begin match ps with
         | [] -> ()
-        | [{ptyp=t}] -> register_type_r ui syms bsym_table [] sr t
+        | [{ptyp=t}] -> register_type_r ui syms bsym_table [] bsym.Flx_bsym.sr t
         | _ ->
           let t = BTYP_tuple (map (fun {ptyp=t} -> t) ps) in
-          register_type_r ui syms bsym_table [] sr t;
+          register_type_r ui syms bsym_table [] bsym.Flx_bsym.sr t;
           register_type_nr syms bsym_table t;
         end
       | _ -> assert false

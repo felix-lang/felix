@@ -55,8 +55,8 @@ let exe_uses_gc bsym_table exe =
 
   (* this test is used to trap use of gc by primitives *)
   | BEXE_call_prim (sr,i,ts,a) ->
-    let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
-    begin match entry with
+    let bsym = Flx_bsym_table.find bsym_table i in
+    begin match bsym.Flx_bsym.bbdcl with
     | BBDCL_callback (props,vs,ps,_,_,BTYP_void,rqs,_)
     | BBDCL_proc (props,vs,ps,_,rqs) ->
       (*
@@ -67,8 +67,8 @@ let exe_uses_gc bsym_table exe =
       else
       iter_bexe ignore (expr_uses_gc bsym_table) ignore ignore ignore exe
     | _ ->
-      print_endline ("Call primitive to non-primitive " ^ id ^ "<" ^
-        string_of_bid i ^ ">");
+      print_endline ("Call primitive to non-primitive " ^ bsym.Flx_bsym.id ^
+        "<" ^ string_of_bid i ^ ">");
       assert false
     end
 
@@ -103,8 +103,8 @@ let exes_use_yield exes =
     true
 
 (* ALSO calculates if a function uses a yield *)
-let set_gc_use bsym_table index ((id, parent, sr, entry) as symbol) =
-  match entry with
+let set_gc_use bsym_table index bsym =
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props, vs, ps, rt, exes) ->
     let uses_gc = exes_use_gc bsym_table exes in
     let uses_yield = exes_use_yield exes in
@@ -117,23 +117,21 @@ let set_gc_use bsym_table index ((id, parent, sr, entry) as symbol) =
       else props
     in
     if uses_gc or uses_yield then begin
-      let symbol =
-        id, parent, sr, BBDCL_function (`Uses_gc :: props,vs,ps,rt,exes)
-      in
-      Flx_bsym_table.add bsym_table index symbol;
-      symbol
-    end else symbol
+      let bsym = { bsym with
+        Flx_bsym.bbdcl=BBDCL_function (`Uses_gc :: props,vs,ps,rt,exes) } in
+      Flx_bsym_table.add bsym_table index bsym;
+      bsym
+    end else bsym
 
   | BBDCL_procedure (props, vs, ps, exes) ->
     if exes_use_gc bsym_table exes then begin
-      let symbol =
-        id, parent, sr, BBDCL_procedure (`Uses_gc :: props,vs,ps,exes)
-      in
-      Flx_bsym_table.add bsym_table index symbol;
-      symbol
-    end else symbol
+      let bsym = { bsym with
+        Flx_bsym.bbdcl=BBDCL_procedure (`Uses_gc :: props,vs,ps,exes) } in
+      Flx_bsym_table.add bsym_table index bsym;
+      bsym
+    end else bsym
 
-  | _ -> symbol
+  | _ -> bsym
 
 let throw_on_global bsym_table i =
   if Flx_bsym_table.is_global_var bsym_table i then raise Not_found
@@ -150,37 +148,35 @@ let exes_use_global bsym_table exes =
     false
   with Not_found -> true
 
-let set_local_globals bsym_table index ((id,parent,sr,entry) as symbol) =
-  match entry with
+let set_local_globals bsym_table index bsym =
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props,vs,ps,rt,exes) ->
     if exes_use_global bsym_table exes then begin
-      let symbol =
-        (id,parent,sr, BBDCL_function (`Uses_global_var :: props,vs,ps,rt,exes))
-      in
-      Flx_bsym_table.add bsym_table index symbol;
-      symbol
-    end else symbol
+      let bbdcl = BBDCL_function (`Uses_global_var :: props,vs,ps,rt,exes) in
+      let bsym = { bsym with Flx_bsym.bbdcl=bbdcl } in
+      Flx_bsym_table.add bsym_table index bsym;
+      bsym
+    end else bsym
 
   | BBDCL_procedure (props,vs,ps,exes) ->
     if exes_use_global bsym_table exes then begin
-      let symbol =
-        (id,parent,sr, BBDCL_procedure (`Uses_global_var :: props,vs,ps,exes))
-      in
-      Flx_bsym_table.add bsym_table index symbol;
-      symbol
-    end else symbol
+      let bbdcl = BBDCL_procedure (`Uses_global_var :: props,vs,ps,exes) in
+      let bsym = { bsym with Flx_bsym.bbdcl=bbdcl } in
+      Flx_bsym_table.add bsym_table index bsym;
+      bsym
+    end else bsym
 
-  | _ -> symbol
+  | _ -> bsym
 
 type ptf_required = | Required | Not_required | Unknown
 
-let rec set_ptf_usage bsym_table usage excludes i (id, parent, sr, entry) =
+let rec set_ptf_usage bsym_table usage excludes i bsym =
   (* cal reqs for functions we call and fold together *)
   let cal_reqs calls i : ptf_required * property_t =
     let result1 =
       List.fold_left begin fun u (j,_) ->
-        let symbol = Flx_bsym_table.find bsym_table j in
-        let r = set_ptf_usage bsym_table usage (i::excludes) j symbol in
+        let bsym = Flx_bsym_table.find bsym_table j in
+        let r = set_ptf_usage bsym_table usage (i::excludes) j bsym in
           (*
           print_endline ("Call of " ^ si i^ " to " ^ si j ^ " PTF of j " ^ (
             match r with
@@ -211,7 +207,7 @@ let rec set_ptf_usage bsym_table usage excludes i (id, parent, sr, entry) =
   (* main routine *)
   let calls = try Hashtbl.find usage i with Not_found -> [] in
 
-  match entry with
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props,vs,ps,rt,exes) ->
     (*
     print_endline ("Function " ^ id ^ "<"^si i^"> properties " ^ string_of_properties props);
@@ -222,16 +218,16 @@ let rec set_ptf_usage bsym_table usage excludes i (id, parent, sr, entry) =
       List.mem `Uses_global_var props or
       List.mem `Uses_gc props or
       List.mem `Heap_closure props then begin
-        Flx_bsym_table.add bsym_table i (id,parent,sr,
-          BBDCL_function (`Requires_ptf :: props,vs,ps,rt,exes));
-          Required
+        let bbdcl = BBDCL_function (`Requires_ptf :: props,vs,ps,rt,exes) in
+        Flx_bsym_table.add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl };
+        Required
     end else begin
       let result1, result2 = cal_reqs calls i in
       (*
       print_endline ("Function " ^ id ^ " ADDING properties " ^ string_of_properties [result2]);
       *)
-      Flx_bsym_table.add bsym_table i (id,parent,sr,
-        BBDCL_function (result2 :: props,vs,ps,rt,exes));
+      let bbdcl = BBDCL_function (result2 :: props,vs,ps,rt,exes) in
+      Flx_bsym_table.add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl };
       result1
    end
 
@@ -242,13 +238,13 @@ let rec set_ptf_usage bsym_table usage excludes i (id, parent, sr, entry) =
       List.mem `Uses_global_var props or
       List.mem `Uses_gc props or
       List.mem `Heap_closure props then begin
-        Flx_bsym_table.add bsym_table i (id,parent,sr,
-          BBDCL_procedure (`Requires_ptf :: props,vs,ps,exes));
-          Required
+        let bbdcl = BBDCL_procedure (`Requires_ptf :: props,vs,ps,exes) in
+        Flx_bsym_table.add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl };
+        Required
     end else begin
       let result1, result2 = cal_reqs calls i in
-      Flx_bsym_table.add bsym_table i (id,parent,sr,
-        BBDCL_procedure (result2 :: props,vs,ps,exes));
+      let bbdcl = BBDCL_procedure (result2 :: props,vs,ps,exes) in
+      Flx_bsym_table.add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl };
       result1
    end
 
@@ -259,9 +255,9 @@ let rec set_ptf_usage bsym_table usage excludes i (id, parent, sr, entry) =
       List.mem `Uses_global_var props or
       List.mem `Uses_gc props or
       List.mem `Heap_closure props then begin
-        Flx_bsym_table.add bsym_table i (id,parent,sr,
-          BBDCL_proc (`Requires_ptf :: props,vs,ps,ct,reqs));
-          Required
+        let bbdcl = BBDCL_proc (`Requires_ptf :: props,vs,ps,ct,reqs) in
+        Flx_bsym_table.add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl };
+        Required
     end else Not_required
 
   | BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
@@ -274,9 +270,9 @@ let rec set_ptf_usage bsym_table usage excludes i (id, parent, sr, entry) =
       List.mem `Uses_global_var props or
       List.mem `Uses_gc props or
       List.mem `Heap_closure props then begin
-        Flx_bsym_table.add bsym_table i (id,parent,sr,
-          BBDCL_fun (`Requires_ptf :: props,vs,ps,ret,ct,reqs,prec));
-          Required
+        let bbdcl = BBDCL_fun (`Requires_ptf :: props,vs,ps,ret,ct,reqs,prec) in
+        Flx_bsym_table.add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl };
+        Required
     end else Not_required
 
   | _ -> Not_required

@@ -11,11 +11,11 @@ open Flx_exceptions
 open Flx_use
 
 let add_prop bsym_table p i =
-  let id,parent,sr,bbdcl = Flx_bsym_table.find bsym_table i in
+  let bsym = Flx_bsym_table.find bsym_table i in
   let update_bsym bbdcl =
-    Flx_bsym_table.add bsym_table i (id,parent,sr,bbdcl)
+    Flx_bsym_table.add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl }
   in
-  match bbdcl with
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props,vs,ps,ret,exes) ->
     update_bsym (BBDCL_function (p :: props,vs,ps,ret,exes))
 
@@ -36,11 +36,11 @@ let add_prop bsym_table p i =
   | _ -> ()
 
 let rem_prop bsym_table p i =
-  let id,parent,sr,bbdcl = Flx_bsym_table.find bsym_table i in
+  let bsym = Flx_bsym_table.find bsym_table i in
   let update_bsym bbdcl =
-    Flx_bsym_table.add bsym_table i (id,parent,sr,bbdcl)
+    Flx_bsym_table.add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl }
   in
-  match bbdcl with
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props,vs,ps,ret,exes) ->
     let props = List.filter (fun k -> p <> k) props in
     update_bsym (BBDCL_function (props,vs,ps,ret,exes))

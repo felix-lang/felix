@@ -1,5 +1,10 @@
 (** The bound symbol type. *)
-type t = string * Flx_types.bid_t option * Flx_srcref.t * Flx_types.bbdcl_t
+type t = {
+  id: string;
+  sr: Flx_srcref.t;
+  parent: Flx_types.bid_t option;
+  bbdcl: Flx_types.bbdcl_t;
+}
 
 (** Return if the bound symbol is an identity function. *)
 val is_identity: t -> bool

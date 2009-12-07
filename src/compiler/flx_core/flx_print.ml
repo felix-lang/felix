@@ -510,8 +510,8 @@ and qualified_name_of_index sym_table index =
 
 and get_name_parent bsym_table index =
   try
-    let id,parent,_,_ = Flx_bsym_table.find bsym_table index in
-    id, parent
+    let bsym = Flx_bsym_table.find bsym_table index in
+    bsym.Flx_bsym.id, bsym.Flx_bsym.parent
   with Not_found -> "index_" ^ string_of_bid index,None
 
 
@@ -2398,9 +2398,9 @@ and string_of_bbdcl bsym_table (bbdcl:bbdcl_t) index : string =
 
 
 let full_string_of_entry_kind bsym_table {base_sym=i; spec_vs=vs; sub_ts=ts} =
-  let _,_,sr,bbdcl = Flx_bsym_table.find bsym_table i in
-  string_of_bbdcl bsym_table bbdcl i ^
-  "\n  defined at " ^ Flx_srcref.short_string_of_src sr ^ "\n  with view" ^
+  let bsym = Flx_bsym_table.find bsym_table i in
+  string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl i ^
+  "\n  defined at " ^ Flx_srcref.short_string_of_src bsym.Flx_bsym.sr ^ "\n  with view" ^
   " vs=" ^ catmap "," (fun (s,_)->s) vs ^
   " ts=" ^ catmap "," (sbt bsym_table) ts
 
@@ -2488,64 +2488,64 @@ let print_function_body bsym_table id i (bvs:bvs_t) ps exes parent =
   exes
 
 let print_function bsym_table i =
-  let id,parent,_,bbdcl = Flx_bsym_table.find bsym_table i in
-  match bbdcl with
+  let bsym = Flx_bsym_table.find bsym_table i in
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (_,bvs,ps,_,exes)
   | BBDCL_procedure (_,bvs,ps,exes) ->
       print_function_body
         bsym_table
-        id
+        bsym.Flx_bsym.id
         i
         bvs
         ps
         exes
-        parent
+        bsym.Flx_bsym.parent
   | _ -> ()
 
 let print_functions bsym_table bsym_table =
-  Flx_bsym_table.iter begin fun i (id,parent,_,bbdcl) ->
-    match bbdcl with
+  Flx_bsym_table.iter begin fun i bsym ->
+    match bsym.Flx_bsym.bbdcl with
     | BBDCL_function (_,bvs,ps,_,exes)
     | BBDCL_procedure (_,bvs,ps,exes) ->
         print_function_body
           bsym_table
-          id
+          bsym.Flx_bsym.id
           i
           bvs
           ps
           exes
-          parent
+          bsym.Flx_bsym.parent
     | _ -> ()
   end bsym_table
 
 let print_symbols bsym_table =
-  Flx_bsym_table.iter begin fun i (id,parent,_,bbdcl) ->
-    match bbdcl with
+  Flx_bsym_table.iter begin fun i bsym ->
+    match bsym.Flx_bsym.bbdcl with
     | BBDCL_function (_,bvs,ps,_,exes)
     | BBDCL_procedure (_,bvs,ps,exes) ->
         print_function_body
           bsym_table
-          id
+          bsym.Flx_bsym.id
           i
           bvs
           ps
           exes
-          parent
+          bsym.Flx_bsym.parent
     | BBDCL_var (bvs,t) ->
         Printf.printf "VARIABLE %s <%s> [%s] parent %s type %s"
-          id
+          bsym.Flx_bsym.id
           (string_of_bid i)
           (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)
-          (match parent with
+          (match bsym.Flx_bsym.parent with
           | None -> "NONE"
           | Some k -> string_of_bid k)
           (sbt bsym_table t)
     | BBDCL_val (bvs,t) ->
         Printf.printf "VALUE %s <%s> [%s] parent %s type %s"
-          id
+          bsym.Flx_bsym.id
           (string_of_bid i)
           (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)
-          (match parent with
+          (match bsym.Flx_bsym.parent with
           | None -> "NONE"
           | Some k -> string_of_bid k)
           (sbt bsym_table t)
@@ -2587,7 +2587,7 @@ let string_of_bsym bsym_table bid =
   string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl bid
 
 let print_bsym_table bsym_table =
-  Flx_bsym_table.iter begin fun index (_,_,_,bbdcl) ->
+  Flx_bsym_table.iter begin fun index bsym ->
     print_endline (string_of_bid index ^ " --> " ^
-      string_of_bbdcl bsym_table bbdcl index)
+      string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl index)
   end bsym_table

@@ -412,13 +412,13 @@ let remap_bbdcl offset bbdcl =
 (** Remap symbols from an old bound symbol table to a new one by offsetting the
  * bound index by a constant amount. *)
 let remap offset in_bsym_table out_bsym_table =
-  Flx_bsym_table.iter begin fun bid (name, parent, sr, bbdcl) ->
+  Flx_bsym_table.iter begin fun bid bsym ->
     let bid = remap_bid offset bid in
     let parent =
-      match parent with
+      match bsym.Flx_bsym.parent with
       | None -> None
       | Some parent -> Some (remap_bid offset bid)
     in
-    let bbdcl = remap_bbdcl offset bbdcl in
-    Flx_bsym_table.add out_bsym_table bid (name, parent, sr, bbdcl)
+    let bbdcl = remap_bbdcl offset bsym.Flx_bsym.bbdcl in
+    Flx_bsym_table.add out_bsym_table bid { bsym with Flx_bsym.bbdcl=bbdcl }
   end in_bsym_table

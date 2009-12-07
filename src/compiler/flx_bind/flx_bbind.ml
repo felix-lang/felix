@@ -173,7 +173,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     bind_basic_ps ps, btraint traint
   in
   let add_bsym parent bbdcl =
-    let bsym = (name, parent, sr, bbdcl) in
+    let bsym = { Flx_bsym.id=name; sr=sr; parent=parent; bbdcl=bbdcl } in
     Flx_bsym_table.add bsym_table symbol_index bsym;
     Some bsym
   in

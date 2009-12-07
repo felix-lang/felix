@@ -66,15 +66,15 @@ let is_native_literal e = match e with
   | _ -> false
 
 let get_var_frame syms bsym_table this index ts : string =
-  match
+  let bsym =
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[get_var_frame(1)] Can't find index " ^ string_of_bid index)
-  with (id,parent,sr,entry) ->
-  match entry with
+  in
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_val (vs,t)
   | BBDCL_var (vs,t)
   | BBDCL_ref (vs,t) ->
-    begin match parent with
+    begin match bsym.Flx_bsym.parent with
     | None -> "ptf"
     | Some i ->
       if i <> this
@@ -82,23 +82,23 @@ let get_var_frame syms bsym_table this index ts : string =
       else "this"
     end
   | BBDCL_tmp (vs,t) ->
-     failwith ("[get_var_frame] temporaries aren't framed: " ^ id)
+     failwith ("[get_var_frame] temporaries aren't framed: " ^ bsym.Flx_bsym.id)
 
-  | _ -> failwith ("[get_var_frame] Expected name "^id^" to be variable or value")
+  | _ -> failwith ("[get_var_frame] Expected name " ^ bsym.Flx_bsym.id ^ " to be variable or value")
 
 let get_var_ref syms bsym_table this index ts : string =
-  match
+  let bsym =
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
-  with (id,parent,sr,entry) ->
+  in
   (*
   print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode bsym_table) ts^"]");
   *)
-  match entry with
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_val (vs,t)
   | BBDCL_var (vs,t)
   | BBDCL_ref (vs,t) ->
-    begin match parent with
+    begin match bsym.Flx_bsym.parent with
     | None -> (* print_endline "No parent ...?"; *)
       "PTF " ^ cpp_instance_name syms bsym_table index ts
     | Some i ->
@@ -116,21 +116,21 @@ let get_var_ref syms bsym_table this index ts : string =
   | BBDCL_tmp (vs,t) ->
       cpp_instance_name syms bsym_table index ts
 
-  | _ -> failwith ("[get_var_ref(3)] Expected name "^id^" to be variable, value or temporary")
+  | _ -> failwith ("[get_var_ref(3)] Expected name " ^ bsym.Flx_bsym.id ^ " to be variable, value or temporary")
 
 let get_ref_ref syms bsym_table this index ts : string =
-  match
+  let bsym =
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
-  with (id,parent,sr,entry) ->
+  in
   (*
   print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode bsym_table) ts^"]");
   *)
-  match entry with
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_val (vs,t)
   | BBDCL_var (vs,t)
   | BBDCL_ref (vs,t) ->
-    begin match parent with
+    begin match bsym.Flx_bsym.parent with
     | None -> (* print_endline "No parent ...?"; *)
       "PTF " ^ cpp_instance_name syms bsym_table index ts
     | Some i ->
@@ -148,7 +148,7 @@ let get_ref_ref syms bsym_table this index ts : string =
   | BBDCL_tmp (vs,t) ->
       cpp_instance_name syms bsym_table index ts
 
-  | _ -> failwith ("[get_var_ref(3)] Expected name "^id^" to be variable, value or temporary")
+  | _ -> failwith ("[get_var_ref(3)] Expected name " ^ bsym.Flx_bsym.id ^ " to be variable, value or temporary")
 
 let nth_type ts i =
   try match ts with
@@ -189,18 +189,18 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       else ce_dot (ge' e) "variant"
     | BTYP_inst (i,ts) ->
       let ts = map tsub ts in
-      let id,_,_,entry =
+      let bsym =
         try Flx_bsym_table.find bsym_table i with Not_found ->
           failwith ("[gen_expr: case_index] Can't find index " ^
             string_of_bid i)
       in
-      begin match entry with
+      begin match bsym.Flx_bsym.bbdcl with
       | BBDCL_union (bvs,cts) ->
         let tsub' t = reduce_type (beta_reduce syms bsym_table sr (tsubst bvs ts t)) in
         let cts = map (fun (_,_,t) -> tsub' t) cts in
         if all_voids cts then ge' e
         else ce_dot (ge' e) "variant"
-      | _ -> failwith ("Woops expected union, got " ^ id)
+      | _ -> failwith ("Woops expected union, got " ^ bsym.Flx_bsym.id)
       end
     | _ -> failwith ("Woops expected union or sum, got " ^ sbt bsym_table t)
     end
@@ -211,10 +211,6 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     match t with
     | BTYP_tuple [] -> ""
     | _ -> ge a
-  in
-  let id,parent,_,entry =
-    try Flx_bsym_table.find bsym_table this with Not_found ->
-      failwith ("[gen_expr] Can't find this = " ^ string_of_bid this)
   in
   let our_display = get_display_list bsym_table this in
   let our_level = length our_display in
@@ -405,13 +401,13 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     end
 
   | BEXPR_name (index,ts') ->
-    let id,parent,sr2,entry =
+    let bsym =
       try Flx_bsym_table.find bsym_table index
       with Not_found ->
         syserr sr ("[gen_expr(name)] Can't find <" ^ string_of_bid index ^ ">")
     in
     let ts = map tsub ts' in
-    begin match entry with
+    begin match bsym.Flx_bsym.bbdcl with
       | BBDCL_val (_,BTYP_function (BTYP_void,_))  ->
           let ptr = (get_var_ref syms bsym_table this index ts) in
           ce_call (ce_arrow (ce_atom ptr) "apply") []
@@ -425,11 +421,11 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
 
       | BBDCL_const (props,_,_,ct,_) ->
         if mem `Virtual props then
-          print_endline ("Instantiate virtual const " ^ id)
+          print_endline ("Instantiate virtual const " ^ bsym.Flx_bsym.id)
         ;
         begin match ct with
-        | CS_identity -> syserr sr ("Nonsense Idendity const" ^ id)
-        | CS_virtual -> clierr2 sr sr2 ("Instantiate virtual const " ^ id)
+        | CS_identity -> syserr sr ("Nonsense Idendity const" ^ bsym.Flx_bsym.id)
+        | CS_virtual -> clierr2 sr bsym.Flx_bsym.sr ("Instantiate virtual const " ^ bsym.Flx_bsym.id)
         | CS_str c
         | CS_str_template c when c = "#srcloc" ->
            let f, l1, c1, l2, c2 = Flx_srcref.to_tuple sr in
@@ -442,7 +438,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
            )
 
         | CS_str c when c = "#this" ->
-          begin match parent with
+          begin match bsym.Flx_bsym.parent with
           | None -> clierr sr "Use 'this' outside class"
           | Some p ->
             let name = cpp_instance_name syms bsym_table p ts in
@@ -480,7 +476,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
         | CS_str c -> ce_expr "expr" c
         | CS_str_template c ->
           let ts = map tn ts in
-          csubst sr sr2 c (ce_atom "Error") [] [] "Error" "Error" ts "expr" "Error" ["Error"] ["Error"] ["Error"]
+          csubst sr bsym.Flx_bsym.sr c (ce_atom "Error") [] [] "Error" "Error" ts "expr" "Error" ["Error"] ["Error"] ["Error"]
         end
 
       (* | BBDCL_function (_,_,([s,(_,BTYP_void)],_),_,[BEXE_fun_return e]) -> *)
@@ -496,14 +492,14 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
          syserr sr
          (
            "[gen_expr: name] Open function '" ^
-           id ^ "'<" ^ string_of_bid index ^
+           bsym.Flx_bsym.id ^ "'<" ^ string_of_bid index ^
            "> in expression (closure required)"
          )
       | _ ->
         syserr sr
         (
           "[gen_expr: name] Cannot use this kind of name '"^
-          id^"' in expression"
+          bsym.Flx_bsym.id ^ "' in expression"
         )
     end
 
@@ -511,7 +507,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     (*
     print_endline ("Generating closure of " ^ si index);
     *)
-    let id,parent,sr,entry =
+    let bsym =
       try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(name)] Can't find index " ^ string_of_bid index)
     in
@@ -520,7 +516,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     let ts = adjust_ts syms sym_table index ts' in
     *)
     let ts = map tsub ts' in
-    begin match entry with
+    begin match bsym.Flx_bsym.bbdcl with
     | BBDCL_function (props,_,_,_,_)
     | BBDCL_procedure (props,_,_,_) ->
       let the_display =
@@ -542,17 +538,17 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
 
     | BBDCL_callback _ ->
       print_endline "Mapping closure of callback to C function pointer";
-      ce_atom id
+      ce_atom bsym.Flx_bsym.id
 
     | BBDCL_cstruct _
     | BBDCL_struct _
     | BBDCL_fun _
     | BBDCL_proc _ ->
       failwith ("[gen_expr: closure] Can't wrap primitive proc, fun, or " ^
-        "struct '" ^ id ^ "' yet")
+        "struct '" ^ bsym.Flx_bsym.id ^ "' yet")
     | _ ->
       failwith ("[gen_expr: closure] Cannot use this kind of name '" ^
-      id ^ "' in expression")
+      bsym.Flx_bsym.id ^ "' in expression")
     end
 
   | BEXPR_ref (index,ts') ->
@@ -696,19 +692,19 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     print_endline ("Prim apply, arg=" ^ sbe bsym_table a);
     *)
     let argt = tsub argt in
-    let id,parent,sr2,entry =
+    let bsym =
       try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(apply instance)] Can't find index " ^
           string_of_bid index)
     in
     begin
-    match entry with
+    match bsym.Flx_bsym.bbdcl with
     | BBDCL_fun (props,vs,ps,retyp,ct,_,prec) ->
       if length vs <> length ts then
       failwith
       (
         "[get_expr:apply closure of fun] function " ^
-        id ^ "<" ^ string_of_bid index ^">" ^
+        bsym.Flx_bsym.id ^ "<" ^ string_of_bid index ^">" ^
         ", wrong number of args, expected vs = " ^
         si (length vs) ^
         ", got ts=" ^
@@ -735,20 +731,22 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
               catmap "," (sbt bsym_table) ts ^ "]")
           end entries;
 
-          clierr2 sr sr2 ("Instantiate virtual function(2) " ^ id ^ "<" ^
+          clierr2 sr bsym.Flx_bsym.sr ("Instantiate virtual function(2) " ^
+            bsym.Flx_bsym.id ^ "<" ^
             string_of_bid index ^ ">, no instance for ts="^
             catmap "," (sbt bsym_table) ts)
         end;
         begin
-          let _,_,sr3,entry =
+          let bsym =
             try Flx_bsym_table.find bsym_table index' with Not_found ->
               syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
           in
-          match entry with
+          match bsym.Flx_bsym.bbdcl with
           | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
           | BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
           | _ ->
-              clierr2 sr sr3 ("expected instance to be function " ^ id)
+              clierr2 sr bsym.Flx_bsym.sr ("expected instance to be function " ^
+                bsym.Flx_bsym.id)
         end
 
       | CS_str s -> ce_expr prec s
@@ -766,7 +764,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
           (arg,argt)
           retyp
           sr
-          sr2
+          bsym.Flx_bsym.sr
           prec
       end
 
@@ -776,28 +774,28 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       clierr sr "[gen_prim_call] Wrong number of type arguments"
       ;
       let ts = map tsub ts in
-      let s = id ^ "($a)" in
+      let s = bsym.Flx_bsym.id ^ "($a)" in
       let retyp = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts retyp)) in
       let retyp = tn retyp in
-      gen_prim_call syms bsym_table tsub ge'' s ts (arg,argt) retyp sr sr2 "atom"
+      gen_prim_call syms bsym_table tsub ge'' s ts (arg,argt) retyp sr bsym.Flx_bsym.sr "atom"
 
     (* but can't be a Felix function *)
     | _ ->
       failwith
       (
-        "[gen_expr: apply prim] Expected '"^id^"' to be primitive function instance, got:\n" ^
-        string_of_bbdcl bsym_table entry index
+        "[gen_expr: apply prim] Expected '" ^ bsym.Flx_bsym.id ^ "' to be primitive function instance, got:\n" ^
+        string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl index
       )
     end
 
   | BEXPR_apply_struct (index,ts,a) ->
-    let id,parent,sr2,entry =
+    let bsym =
       try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(apply instance)] Can't find index " ^
           string_of_bid index)
     in
     let ts = map tsub ts in
-    begin match entry with
+    begin match bsym.Flx_bsym.bbdcl with
     | BBDCL_cstruct (vs,_) ->
       let name = tn (BTYP_inst (index,ts)) in
       ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
@@ -855,18 +853,19 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     ;
     if index <> index' then
     begin
-      let _,_,sr3,entry =
+      let bsym =
         try Flx_bsym_table.find bsym_table index' with Not_found ->
           syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
       in
-      match entry with
+      match bsym.Flx_bsym.bbdcl with
       | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
       | BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
       | _ ->
-          clierr2 sr sr3 ("expected instance to be function " ^ id)
+          clierr2 sr bsym.Flx_bsym.sr ("expected instance to be function " ^
+            bsym.Flx_bsym.id)
     end else
 
-    let id,parent,sr2,entry =
+    let bsym =
       try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(apply instance)] Can't find index " ^
           string_of_bid index)
@@ -876,7 +875,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     print_endline ("apply closure of "^ id );
     print_endline ("  .. argument is " ^ string_of_bound_expression sym_table a);
     *)
-    match entry with
+    match bsym.Flx_bsym.bbdcl with
     | BBDCL_function (props,_,_,_,_) ->
       (*
       print_endline ("Generating closure[apply direct] of " ^ si index);
@@ -909,8 +908,8 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     | _ ->
       failwith
       (
-        "[gen_expr: apply_direct] Expected '"^id^"' to be generic function instance, got:\n" ^
-        string_of_bbdcl bsym_table entry index
+        "[gen_expr: apply_direct] Expected '" ^ bsym.Flx_bsym.id ^ "' to be generic function instance, got:\n" ^
+        string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl index
       )
     end
 
@@ -923,18 +922,19 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     ;
     if index <> index' then
     begin
-      let _,_,sr3,entry =
+      let bsym =
         try Flx_bsym_table.find bsym_table index' with Not_found ->
           syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
       in
-      match entry with
+      match bsym.Flx_bsym.bbdcl with
       | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
       | BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
       | _ ->
-          clierr2 sr sr3 ("expected instance to be function " ^ id)
+          clierr2 sr bsym.Flx_bsym.sr ("expected instance to be function " ^
+            bsym.Flx_bsym.id)
     end else
 
-    let id,parent,sr2,entry =
+    let bsym =
       try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(apply instance)] Can't find index " ^
           string_of_bid index)
@@ -944,7 +944,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     print_endline ("apply closure of "^ id );
     print_endline ("  .. argument is " ^ string_of_bound_expression sym_table a);
     *)
-    match entry with
+    match bsym.Flx_bsym.bbdcl with
     | BBDCL_function (props,vs,(ps,traint),retyp,_) ->
       let display = get_display_list bsym_table index in
       let name = cpp_instance_name syms bsym_table index ts in
@@ -1028,8 +1028,8 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     | _ ->
       failwith
       (
-        "[gen_expr: apply_stack] Expected '"^id^"' to be generic function instance, got:\n" ^
-        string_of_bbdcl bsym_table entry index
+        "[gen_expr: apply_stack] Expected '" ^ bsym.Flx_bsym.id ^ "' to be generic function instance, got:\n" ^
+        string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl index
       )
     end
 

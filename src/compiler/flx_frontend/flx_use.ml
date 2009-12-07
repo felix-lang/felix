@@ -93,8 +93,10 @@ and uses_production used bsym_table count_inits p =
   List.iter uses_symbol p
 
 and faulty_req bsym_table i =
-  let id, _, sr, _ = Flx_bsym_table.find bsym_table i in
-  clierr sr (id ^ " is used but has unsatisfied requirement")
+  let bsym = Flx_bsym_table.find bsym_table i in
+  clierr
+    bsym.Flx_bsym.sr
+    (bsym.Flx_bsym.id ^ " is used but has unsatisfied requirement")
 
 and uses used bsym_table count_inits i =
   let ui i = uses used bsym_table count_inits i in
@@ -114,12 +116,12 @@ and uses used bsym_table count_inits i =
   let ue e = uses_tbexpr used bsym_table count_inits e in
   if not (BidSet.mem i !used) then
   begin
-    let symbol =
-      try Some (Flx_bsym_table.find bsym_table i)
+    let bbdcl =
+      try Some (Flx_bsym_table.find_bbdcl bsym_table i)
       with Not_found -> None
     in
-    match symbol with
-    | Some (id,_,_,bbdcl) ->
+    match bbdcl with
+    | Some bbdcl ->
       used := BidSet.add i !used;
       begin match bbdcl with
       | BBDCL_typeclass _ -> ()

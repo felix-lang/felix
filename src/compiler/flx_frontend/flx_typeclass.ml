@@ -33,8 +33,8 @@ let check_instance
   tc
   inst_ts
 =
-  let tc_id, _, tc_sr, tc_entry = Flx_bsym_table.find bsym_table tc in
-  match tc_entry with
+  let tc_bsym = Flx_bsym_table.find bsym_table tc in
+  match tc_bsym.Flx_bsym.bbdcl with
   | BBDCL_typeclass (tc_props, tc_bvs) ->
     (*
     print_endline ("Found " ^ inst_id ^ "<"^si inst ^ ">" ^
@@ -46,7 +46,7 @@ let check_instance
     );
     *)
     if length tc_bvs <> length inst_ts then
-      clierr2 inst_sr tc_sr
+      clierr2 inst_sr tc_bsym.Flx_bsym.sr
       (
         "Instance [" ^
         catmap "," (fun (s,j) -> s ^ "<" ^ string_of_bid j ^ ">") inst_vs
@@ -66,35 +66,35 @@ let check_instance
     print_endline ("Instance kids " ^ catmap "," si inst_kids);
     *)
     let inst_map = fold_left (fun acc i->
-      let id,_,_,entry = Flx_bsym_table.find bsym_table i in
-      match entry with
+      let bsym = Flx_bsym_table.find bsym_table i in
+      match bsym.Flx_bsym.bbdcl with
       | BBDCL_fun (_,bvs,params,ret,_,_,_) ->
         let argt = typeoflist params in
         let qt = bvs,BTYP_function (argt,ret) in
-        (id,(i,qt)) :: acc
+        (bsym.Flx_bsym.id,(i,qt)) :: acc
 
       | BBDCL_proc (_,bvs,params,_,_) ->
         let argt = typeoflist params in
         let qt = bvs,BTYP_function (argt,BTYP_void) in
-        (id,(i,qt)) :: acc
+        (bsym.Flx_bsym.id,(i,qt)) :: acc
 
       | BBDCL_procedure (_,bvs,bps,_) ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
         let qt = bvs,BTYP_function (argt,BTYP_void) in
-        (id,(i,qt)) :: acc
+        (bsym.Flx_bsym.id,(i,qt)) :: acc
 
       | BBDCL_function (_,bvs,bps,ret,_) ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
         let qt = bvs,BTYP_function (argt,ret) in
-        (id,(i,qt)) :: acc
+        (bsym.Flx_bsym.id,(i,qt)) :: acc
 
       | BBDCL_const (_,bvs,ret,_,_) ->
         let qt = bvs,ret in
-        (id,(i,qt)) :: acc
+        (bsym.Flx_bsym.id,(i,qt)) :: acc
 
       | BBDCL_val (bvs,ret) ->
         let qt = bvs,ret in
-        (id,(i,qt)) :: acc
+        (bsym.Flx_bsym.id,(i,qt)) :: acc
       | _ -> acc
       ) [] inst_kids
     in
@@ -210,12 +210,12 @@ let check_instance
     in
     iter
     (fun tck ->
-      let tckid,tckparent,tcksr,tckentry = Flx_bsym_table.find bsym_table tck in
-      match tckentry with
+      let tck_bsym = Flx_bsym_table.find bsym_table tck in
+      match tck_bsym.Flx_bsym.bbdcl with
       | BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
         if ct == CS_virtual then
           let ft = BTYP_function (typeoflist params,ret) in
-          check_binding true tck tcksr tckid bvs ft
+          check_binding true tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
         (*
         clierr tcksr "Typeclass requires virtual function";
         *)
@@ -223,7 +223,7 @@ let check_instance
       | BBDCL_proc (props,bvs,params,ct,breq) ->
         if ct == CS_virtual then
           let ft = BTYP_function (typeoflist params, BTYP_void) in
-          check_binding true tck tcksr tckid bvs ft
+          check_binding true tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
         (*
         clierr tcksr "Typeclass requires virtual procedure";
         *)
@@ -231,15 +231,15 @@ let check_instance
       | BBDCL_function (props,bvs,bps,ret,_) when mem `Virtual props ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
         let ft = BTYP_function (argt,ret) in
-        check_binding false tck tcksr tckid bvs ft
+        check_binding false tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
 
       | BBDCL_procedure (props, bvs, bps,_) when mem `Virtual props ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
         let ft = BTYP_function (argt, BTYP_void) in
-        check_binding false tck tcksr tckid bvs ft
+        check_binding false tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
 
       | BBDCL_const (props,bvs,ret,_,_) when mem `Virtual props ->
-        check_binding false tck tcksr tckid bvs ret
+        check_binding false tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ret
 
 
       | BBDCL_insert _ -> ()
@@ -247,20 +247,21 @@ let check_instance
         (*
         clierr tcksr "Typeclass entry must be virtual function or procedure"
         *)
-        print_endline ("Warning: typeclass "^tc_id ^" entry " ^ tckid ^ " is not virtual");
+        print_endline ("Warning: typeclass " ^ tc_bsym.Flx_bsym.id ^ " entry " ^
+          tck_bsym.Flx_bsym.id ^ " is not virtual");
     )
     tc_kids
 
 
   | _ ->
-    clierr2 inst_sr tc_sr ("Expected " ^ inst_id ^ "<" ^ string_of_bid inst ^
-    ">[" ^ catmap "," (sbt bsym_table) inst_ts ^ "]" ^
-    " to be typeclass instance, but" ^ tc_id ^ "<" ^ string_of_bid tc ^ ">, " ^
-    "is not a typeclass"
+    clierr2 inst_sr tc_bsym.Flx_bsym.sr ("Expected " ^ inst_id ^ "<" ^
+      string_of_bid inst ^ ">[" ^ catmap "," (sbt bsym_table) inst_ts ^ "]" ^
+      " to be typeclass instance, but" ^ tc_bsym.Flx_bsym.id ^ "<" ^
+      string_of_bid tc ^ ">, is not a typeclass"
     )
 
-let typeclass_instance_check_symbol syms bsym_table child_map i (id, _, sr, entry) =
-  match entry with
+let typeclass_instance_check_symbol syms bsym_table child_map i bsym =
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_instance (props, vs, cons, tc, ts) ->
       let iss =
         try Hashtbl.find syms.instances_of_typeclass tc
@@ -273,10 +274,10 @@ let typeclass_instance_check_symbol syms bsym_table child_map i (id, _, sr, entr
         bsym_table
         child_map
         i
-        id
+        bsym.Flx_bsym.id
         vs
         cons
-        sr
+        bsym.Flx_bsym.sr
         props
         tc
         ts
@@ -511,13 +512,13 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
     | candidates ->
       iter
       (fun ((j,ts),(inst_vs,con,inst_ts,k)) ->
-        let id,parent,sr,entry =
-          try Flx_bsym_table.find bsym_table j
-          with Not_found -> failwith
-            ("Woops can't find instance function index " ^ string_of_bid j)
+        let bsym =
+          try Flx_bsym_table.find bsym_table j with Not_found ->
+            failwith ("Woops can't find instance function index " ^
+              string_of_bid j)
         in
         let parent =
-          match parent with
+          match bsym.Flx_bsym.parent with
           | Some k -> k
           | None -> assert false
         in

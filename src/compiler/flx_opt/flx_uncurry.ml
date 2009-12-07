@@ -127,8 +127,8 @@ let uncurry_gen syms bsym_table child_map : int =
   let uncurry_map = Hashtbl.create 97 in
 
   (* make the uncurry map *)
-  Flx_bsym_table.iter begin fun i (id,parent,sr,bbdcl) ->
-    match bbdcl with
+  Flx_bsym_table.iter begin fun i bsym ->
+    match bsym.Flx_bsym.bbdcl with
     | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         begin match exes with
         | [BEXE_fun_return (sr2,(BEXPR_closure (f,ts),_))]
@@ -137,7 +137,7 @@ let uncurry_gen syms bsym_table child_map : int =
           let k = fresh_bid syms.counter in
           Hashtbl.add uncurry_map i (f,k,0);
           if syms.compiler_options.print_flag then
-          print_endline ("Detected curried function " ^ id ^ "<" ^
+          print_endline ("Detected curried function " ^ bsym.Flx_bsym.id ^ "<" ^
             string_of_bid i ^ "> ret child= " ^ string_of_bid f ^ " synth= " ^
             string_of_bid k)
 
@@ -148,8 +148,8 @@ let uncurry_gen syms bsym_table child_map : int =
   end bsym_table;
 
   (* count curried calls to these functions *)
-  Flx_bsym_table.iter begin fun i (id,parent,sr,bbdcl) ->
-    match bbdcl with
+  Flx_bsym_table.iter begin fun i bsym ->
+    match bsym.Flx_bsym.bbdcl with
     | BBDCL_procedure (props,vs,(ps,traint),exes) ->
         find_uncurry_exes syms bsym_table uncurry_map vs exes
 
@@ -228,11 +228,11 @@ let uncurry_gen syms bsym_table child_map : int =
       if syms.compiler_options.print_flag then
       print_endline ("UNCURRY: Orig " ^ string_of_bid i ^ " ret child " ^
         string_of_bid c ^ " synth " ^ string_of_bid k ^ " count=" ^ si n);
-      let idm,parent,sr,bbdcl = Flx_bsym_table.find bsym_table i in
-      let idc,parentc,src,bbdclc = Flx_bsym_table.find bsym_table c in
-      assert (parentc = Some i);
+      let bsymi = Flx_bsym_table.find bsym_table i in
+      let bsymc = Flx_bsym_table.find bsym_table c in
+      assert (bsymc.Flx_bsym.parent = Some i);
       let props, vs, ps, traint, ret, exes =
-        match bbdcl with
+        match bsymi.Flx_bsym.bbdcl with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) -> props, vs, ps, traint, ret, exes
         | _ -> assert false
       in
@@ -261,7 +261,11 @@ let uncurry_gen syms bsym_table child_map : int =
                 "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs ^
                 "] <-- " ^ string_of_bid pi ^ ", parent " ^ string_of_bid k ^
                 " <-- " ^ string_of_bid i);
-            Flx_bsym_table.add bsym_table n (s ^ "_uncurry",Some k,sr,bbdcl);
+            Flx_bsym_table.add bsym_table n {
+              Flx_bsym.id=s ^ "_uncurry";
+              sr=bsymi.Flx_bsym.sr;
+              parent=Some k;
+              bbdcl=bbdcl };
             Flx_child.add_child child_map k n
           )
           ps
@@ -276,23 +280,31 @@ let uncurry_gen syms bsym_table child_map : int =
         let ps = ps @ psc in
         let rec revare e = map_tbexpr revar revare id e in
         let exes = map (fun exe -> map_bexe revar revare id id id exe) exesc in
-        begin match parent with
+        begin match bsymi.Flx_bsym.parent with
         | Some p -> Flx_child.add_child child_map p k
         | None -> ()
         end
         ;
         ps,exes
       in
-      match bbdclc with
+      match bsymc.Flx_bsym.bbdcl with
       | BBDCL_function (propsc,vsc,(psc,traintc),retc,exesc) ->
         let ps,exes = fixup vsc psc exesc in
         let bbdcl = BBDCL_function (propsc,vs,(ps,traintc), retc, exes) in
-        Flx_bsym_table.add bsym_table k (idm^"_uncurry",parent,sr,bbdcl)
+        Flx_bsym_table.add bsym_table k {
+          Flx_bsym.id=bsymi.Flx_bsym.id^"_uncurry";
+          sr=bsymi.Flx_bsym.sr;
+          parent=bsymi.Flx_bsym.parent;
+          bbdcl=bbdcl }
 
       | BBDCL_procedure (propsc,vsc,(psc,traintc),exesc) ->
         let ps,exes = fixup vsc psc exesc in
         let bbdcl = BBDCL_procedure (propsc,vs,(ps,traintc), exes) in
-        Flx_bsym_table.add bsym_table k (idm^"_uncurry",parent,sr,bbdcl)
+        Flx_bsym_table.add bsym_table k {
+          Flx_bsym.id=bsymi.Flx_bsym.id^"_uncurry";
+          sr=bsymi.Flx_bsym.sr;
+          parent=bsymi.Flx_bsym.parent;
+          bbdcl=bbdcl }
 
       | _ -> assert false
     end
@@ -300,17 +312,17 @@ let uncurry_gen syms bsym_table child_map : int =
   uncurry_map
   ;
   (* replace calls *)
-  Flx_bsym_table.iter begin fun i (id,parent,sr,bbdcl)->
-    match bbdcl with
+  Flx_bsym_table.iter begin fun i bsym ->
+    match bsym.Flx_bsym.bbdcl with
     | BBDCL_procedure (props,vs,(ps,traint),exes) ->
         let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
-        Flx_bsym_table.add bsym_table i
-          (id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes))
+        Flx_bsym_table.add bsym_table i { bsym with
+          Flx_bsym.bbdcl=BBDCL_procedure (props,vs,(ps,traint),exes) }
 
     | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
-        Flx_bsym_table.add bsym_table i
-          (id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes))
+        Flx_bsym_table.add bsym_table i { bsym with
+          Flx_bsym.bbdcl=BBDCL_function (props,vs,(ps,traint),ret,exes) }
 
     | _ -> ()
   end bsym_table;

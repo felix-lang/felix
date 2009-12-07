@@ -19,14 +19,13 @@ let find_name bsym_table child_map root name =
               None
           in
           begin match bsym with
-          | Some (_, Some parent, _, _) ->
-              search_root bsyms parent
-          | Some (_, None, _, _) | None -> bsyms
+          | Some { Flx_bsym.parent=Some parent } -> search_root bsyms parent
+          | Some { Flx_bsym.parent=None } | None -> bsyms
           end
       | child :: children ->
-          let (id,_,_,_) as bsym = Flx_bsym_table.find bsym_table child in
+          let bsym = Flx_bsym_table.find bsym_table child in
           search_children
-            (if id = name then (child, bsym) :: bsyms else bsyms)
+            (if bsym.Flx_bsym.id = name then (child, bsym) :: bsyms else bsyms)
             children
     in
     search_children bsyms (Flx_child.find_children child_map root)
@@ -38,10 +37,10 @@ let find_name bsym_table child_map root name =
 let find_function syms bsym_table child_map root name =
   let bsyms = find_name bsym_table child_map root name in
   let bsyms =
-    List.filter begin fun (_,symbol) ->
-      match symbol with
-      | name,_,_,BBDCL_fun (_,_,args,res,ct,_,_) ->
-        begin match name,args,res with
+    List.filter begin fun (_, bsym) ->
+      match bsym.Flx_bsym.bbdcl with
+      | BBDCL_fun (_,_,args,res,ct,_,_) ->
+        begin match bsym.Flx_bsym.id, args, res with
         | "lnot", [BTYP_unitsum 2], BTYP_unitsum 2 -> true
         | _, [BTYP_unitsum 2; BTYP_unitsum 2], BTYP_unitsum 2 -> true
         | _ -> false
@@ -147,8 +146,7 @@ let whyid_of_bid i = string_of_int i
 (** Look up the name of a felix symbol. *)
 let getname syms bsym_table i =
   try
-    let id,_,_,_ = Flx_bsym_table.find bsym_table i in
-    whyid_of_flxid id
+    whyid_of_flxid (Flx_bsym_table.find_id bsym_table i)
   with Not_found ->
     "index_" ^ whyid_of_bid i
 
@@ -258,19 +256,17 @@ let rec cal_type syms bsym_table t =
     "(" ^ ct a ^ ", " ^ ct b ^ ") fn"
 
   | BTYP_inst (index,ts) ->
-    let id,sr,parent,entry = Flx_bsym_table.find bsym_table index in
     (* HACK! *)
     let ts = match ts with
       | [] -> ""
       | [t] -> cal_type syms bsym_table t ^ " "
       | ts -> "(" ^ catmap ", " ct ts ^ ")"
     in
-    ts ^ id
+    ts ^ Flx_bsym_table.find_id bsym_table index
   | BTYP_var (index,_) ->
-    begin try
-      let id,sr,parent,entry = Flx_bsym_table.find bsym_table index
-      in "'" ^ id
-    with Not_found -> "'T" ^ whyid_of_bid index
+    begin
+      try "'" ^ Flx_bsym_table.find_id bsym_table index with Not_found ->
+        "'T" ^ whyid_of_bid index
     end
 
   | _ -> "dunno"
@@ -353,57 +349,85 @@ let emit_whycode filename syms bsym_table child_map root =
   output_string f "\n";
 
   output_string f "(****** ABSTRACT TYPES *******)\n";
-  Flx_bsym_table.iter
-  (fun index (id,parent,sr,entry) -> match entry with
-  | BBDCL_abs (bvs,qual,ct,breqs) ->
-    emit_type syms bsym_table f index id sr bvs
-  | _ -> ()
-  )
-  bsym_table
-  ;
+  Flx_bsym_table.iter begin fun index bsym ->
+    match bsym.Flx_bsym.bbdcl with
+    | BBDCL_abs (bvs,qual,ct,breqs) ->
+        emit_type syms bsym_table f index bsym.Flx_bsym.id bsym.Flx_bsym.sr bvs
+    | _ -> ()
+  end bsym_table;
 
   output_string f "(****** UNIONS *******)\n";
-  Flx_bsym_table.iter
-  (fun index (id,parent,sr,entry) -> match entry with
-  | BBDCL_union (bvs,variants) ->
-    emit_type syms bsym_table f index id sr bvs
-  | _ -> ()
-  )
-  bsym_table
-  ;
+  Flx_bsym_table.iter begin fun index bsym ->
+    match bsym.Flx_bsym.bbdcl with
+    | BBDCL_union (bvs,variants) ->
+        emit_type syms bsym_table f index bsym.Flx_bsym.id bsym.Flx_bsym.sr bvs
+    | _ -> ()
+  end bsym_table;
 
   output_string f "(****** STRUCTS *******)\n";
-  Flx_bsym_table.iter
-  (fun index (id,parent,sr,entry) -> match entry with
-  | BBDCL_cstruct (bvs,variants)
-  | BBDCL_struct (bvs,variants) ->
-    emit_type syms bsym_table f index id sr bvs
-  | _ -> ()
-  )
-  bsym_table
-  ;
+  Flx_bsym_table.iter begin fun index bsym ->
+    match bsym.Flx_bsym.bbdcl with
+    | BBDCL_cstruct (bvs,variants)
+    | BBDCL_struct (bvs,variants) ->
+        emit_type syms bsym_table f index bsym.Flx_bsym.id bsym.Flx_bsym.sr bvs
+    | _ -> ()
+  end bsym_table;
 
   output_string f "(******* FUNCTIONS ******)\n";
-  Flx_bsym_table.iter
-  (fun index (id,parent,sr,entry) -> match entry with
-  | BBDCL_procedure (_,bvs,ps,_) ->
-    let ps = calps ps in
-    emit_function syms bsym_table f index id sr bvs ps unitt
+  Flx_bsym_table.iter begin fun index bsym ->
+    match bsym.Flx_bsym.bbdcl with
+    | BBDCL_procedure (_,bvs,ps,_) ->
+        let ps = calps ps in
+        emit_function
+          syms
+          bsym_table
+          f
+          index
+          bsym.Flx_bsym.id
+          bsym.Flx_bsym.sr
+          bvs
+          ps
+          unitt
 
-  | BBDCL_function (_,bvs,ps,ret,_) ->
-    let ps = calps ps in
-    emit_function syms bsym_table f index id sr bvs ps ret
+    | BBDCL_function (_,bvs,ps,ret,_) ->
+        let ps = calps ps in
+        emit_function
+          syms
+          bsym_table
+          f
+          index
+          bsym.Flx_bsym.id
+          bsym.Flx_bsym.sr
+          bvs
+          ps
+          ret
 
-  | BBDCL_fun (_,bvs,ps,ret,_,_,_) ->
-    emit_function syms bsym_table f index id sr bvs ps ret
+    | BBDCL_fun (_,bvs,ps,ret,_,_,_) ->
+        emit_function
+          syms
+          bsym_table
+          f
+          index
+          bsym.Flx_bsym.id
+          bsym.Flx_bsym.sr
+          bvs
+          ps
+          ret
 
-  | BBDCL_proc (_,bvs,ps,_,_) ->
-    emit_function syms bsym_table f index id sr bvs ps unitt
+    | BBDCL_proc (_,bvs,ps,_,_) ->
+        emit_function
+          syms
+          bsym_table
+          f
+          index
+          bsym.Flx_bsym.id
+          bsym.Flx_bsym.sr
+          bvs
+          ps
+          unitt
 
-  | _ -> ()
-  )
-  bsym_table
-  ;
+    | _ -> ()
+  end bsym_table;
 
   output_string f "(******* AXIOMS ******)\n";
   iter

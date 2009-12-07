@@ -73,17 +73,11 @@ let bind_stmt' state bsym_table stmt =
 (* Helper function to print to bsyms. *)
 let print_bids state bsym_table bids =
   List.iter begin fun bid ->
-    let symbol =
-      try Some (Flx_bsym_table.find bsym_table bid)
-      with Not_found -> None
-    in
-    match symbol with
-    | None -> ()
-    | Some (_,_,_,bbdcl) ->
-        print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
-          bsym_table
-          bbdcl
-          bid)
+    let bsym = Flx_bsym_table.find bsym_table bid in
+    print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
+      bsym_table
+      bsym.Flx_bsym.bbdcl
+      bid)
   end bids
 
 

@@ -482,22 +482,22 @@ let gen_body syms (uses,child_map,bsym_table) id
         BidSet.empty
       in
       BidSet.iter (fun i ->
-        let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
-        match entry with
+        let bsym = Flx_bsym_table.find bsym_table i in
+        match bsym.Flx_bsym.bbdcl with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
           let exes = map (subarg syms bsym_table argmap) exes in
-          recal_exes_usage uses sr i ps exes;
-          Flx_bsym_table.add bsym_table i
-          (id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes))
+          recal_exes_usage uses bsym.Flx_bsym.sr i ps exes;
+          Flx_bsym_table.add bsym_table i { bsym with
+            Flx_bsym.bbdcl=BBDCL_function (props,vs,(ps,traint),ret,exes) }
 
         | BBDCL_procedure (props,vs,(ps,traint),exes) ->
           (*
           print_endline ("MODIFY " ^ si i);
           *)
           let exes = map (subarg syms bsym_table argmap) exes in
-          recal_exes_usage uses sr i ps exes;
-          Flx_bsym_table.add bsym_table i
-          (id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes))
+          recal_exes_usage uses bsym.Flx_bsym.sr i ps exes;
+          Flx_bsym_table.add bsym_table i { bsym with
+            Flx_bsym.bbdcl=BBDCL_procedure (props,vs,(ps,traint),exes) }
 
         | _ -> ()
       )

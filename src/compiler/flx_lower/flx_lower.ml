@@ -49,8 +49,8 @@ let lower_bsym_table state bsym_table root_proc =
      then they need a heap closure -- wrappers require
      one or the other *)
   Flx_types.BidSet.iter begin fun i ->
-    let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
-    match entry with
+    let bsym = Flx_bsym_table.find bsym_table i in
+    match bsym.Flx_bsym.bbdcl with
     | Flx_types.BBDCL_procedure (props,vs,p,exes) ->
         let props = ref props in
 
@@ -72,8 +72,9 @@ let lower_bsym_table state bsym_table root_proc =
         then props := `Requires_ptf :: !props;
 
         (* Update the procedure with the new properties. *)
-        let entry = Flx_types.BBDCL_procedure (!props, vs,p,exes) in
-        Flx_bsym_table.add bsym_table i (id,parent,sr,entry)
+        let bbdcl = Flx_types.BBDCL_procedure (!props, vs,p,exes) in
+        Flx_bsym_table.add bsym_table i { bsym with
+          Flx_bsym.bbdcl=bbdcl }
     | _ -> ()
   end !(state.syms.Flx_mtypes2.roots);
 

@@ -1,42 +1,47 @@
 open Flx_types
 
 (** The bound symbol type. *)
-type t = string * Flx_types.bid_t option * Flx_srcref.t * Flx_types.bbdcl_t
+type t = {
+  id: string;
+  sr: Flx_srcref.t;
+  parent: bid_t option;
+  bbdcl: bbdcl_t;
+}
 
 (** Return if the bound symbol is an identity function. *)
-let is_identity (_,_,_,bbdcl) =
-  match bbdcl with
+let is_identity bsym =
+  match bsym.bbdcl with
   | BBDCL_fun (_,_,_,_,Flx_ast.CS_identity,_,_) -> true
   | _ -> false
 
 (** Return if the bound symbol is a variable. *)
-let is_variable (_,_,_,bbdcl) =
-  match bbdcl with
+let is_variable bsym =
+  match bsym.bbdcl with
   | BBDCL_var _ | BBDCL_val _ -> true
   | _ -> false
 
-let is_global_var (_,parent,_,bbdcl) =
-  match bbdcl with
+let is_global_var bsym =
+  match bsym.bbdcl with
   | BBDCL_var _
-  | BBDCL_val _ when (match parent with None -> true | _ -> false ) -> true
+  | BBDCL_val _ when (match bsym.parent with None -> true | _ -> false ) -> true
   | _ -> false
 
 (** Return if the bound symbol is a function or procedure. *)
-let is_function (_,_,_,bbdcl) =
-  match bbdcl with
+let is_function bsym =
+  match bsym.bbdcl with
   | BBDCL_function _ | BBDCL_procedure _ -> true
   | _ -> false
 
 (** Return if the bound symbol is a generator. *)
-let is_generator (_,_,_,bbdcl) =
-  match bbdcl with
+let is_generator bsym =
+  match bsym.bbdcl with
   | BBDCL_fun (props,_,_,_,_,_,_)
   | BBDCL_function (props,_,_,_,_) when List.mem `Generator props -> true
   | _ -> false
 
 (** Returns the bound type value list of the bound symbol. *)
-let get_bvs (_,_,_,bbdcl) =
-  match bbdcl with
+let get_bvs bsym =
+  match bsym.bbdcl with
   | BBDCL_function (props,bvs,(ps,traint),ret,exes) -> bvs
   | BBDCL_procedure (props,bvs,(ps,traint),exes) -> bvs
   | BBDCL_val (bvs,t) -> bvs

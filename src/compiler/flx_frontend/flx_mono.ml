@@ -18,8 +18,8 @@ open Flx_beta
 open Flx_prop
 
 let cal_parent syms bsym_table i' ts' =
-  let (_,parent,_,_) as bsym = Flx_bsym_table.find bsym_table i' in
-  match parent with
+  let bsym = Flx_bsym_table.find bsym_table i' in
+  match bsym.Flx_bsym.parent with
   | None -> None
   | Some i ->
     let vsc = Flx_bsym.get_bvs bsym in
@@ -191,19 +191,21 @@ let fixup_exes syms bsym_table fi mt exes =
   map (fixup_exe syms bsym_table fi mt) exes
 
 let mono syms bsym_table fi i ts n =
-  let id,parent,sr,bbdcl = Flx_bsym_table.find bsym_table i in
+  let bsym = Flx_bsym_table.find bsym_table i in
   let mt vars t =
     reduce_type
     (beta_reduce
       syms
       bsym_table
-      sr
+      bsym.Flx_bsym.sr
       (fixup_type syms bsym_table fi (list_subst syms.counter vars t)))
   in
   let update_bsym parent bbdcl =
-    Flx_bsym_table.add bsym_table n (id,parent,sr,bbdcl)
+    Flx_bsym_table.add bsym_table n { bsym with
+      Flx_bsym.parent=parent;
+      bbdcl=bbdcl }
   in
-  match bbdcl with
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -290,14 +292,14 @@ let mono syms bsym_table fi i ts n =
     let argtypes = map (mt vars) argtypes in
     let ret = mt vars ret in
     let bbdcl = BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) in
-    update_bsym parent bbdcl
+    update_bsym bsym.Flx_bsym.parent bbdcl
 
 
   | BBDCL_proc (props,vs,argtypes,ct,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let argtypes = map (mt vars) argtypes in
     let bbdcl = BBDCL_proc (props,vs,argtypes,ct,reqs) in
-    update_bsym parent bbdcl
+    update_bsym bsym.Flx_bsym.parent bbdcl
 
   | BBDCL_const (props, vs, t, CS_str "#this", reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in

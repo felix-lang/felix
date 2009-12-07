@@ -253,13 +253,13 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
   let rexes xs = remap_exes syms bsym_table relabel varmap revariable caller_vars callee_vs_len xs in
   let rexpr e = remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e in
   let rreqs rqs = remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len rqs in
-  let id,old_parent,sr,bbdcl = Flx_bsym_table.find bsym_table index in
+  let bsym = Flx_bsym_table.find bsym_table index in
   if syms.compiler_options.print_flag then
   print_endline
   (
-    "COPYING " ^ id ^ " index " ^ string_of_bid index ^ " with old parent " ^
-    sop old_parent ^ " to index " ^ string_of_bid k ^ " with new parent " ^
-    sop parent
+    "COPYING " ^ bsym.Flx_bsym.id ^ " index " ^ string_of_bid index ^
+    " with old parent " ^ sop bsym.Flx_bsym.parent ^ " to index " ^
+    string_of_bid k ^ " with new parent " ^ sop parent
   );
   begin match parent with
   | Some p ->
@@ -272,9 +272,12 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
   end
   ;
   let update_bsym bbdcl =
-    Flx_bsym_table.add bsym_table k (id,parent,sr,bbdcl)
+    Flx_bsym_table.add bsym_table k { bsym with
+      Flx_bsym.parent=parent;
+      bbdcl=bbdcl }
   in
-  match bbdcl with
+
+  match bsym.Flx_bsym.bbdcl with
   | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = rexes exes in
     let ps = remap_ps ps in
@@ -397,8 +400,8 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
   *)
 
   | _ ->
-    syserr sr ("[reparent1] Unexpected: bbdcl " ^
-      string_of_bbdcl bsym_table bbdcl index)
+    syserr bsym.Flx_bsym.sr ("[reparent1] Unexpected: bbdcl " ^
+      string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl index)
 
 (* make a copy all the descendants of i, changing any
   parent which is i to the given new parent
