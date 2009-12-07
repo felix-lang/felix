@@ -68,26 +68,3 @@ let rem_prop bsym_table p i =
     Flx_bsym_table.add bsym_table i (id,parent,sr,entry);
 
   | _ -> ()
-
-let get_vs bsym_table i =
-  let _,_,_,entry = Flx_bsym_table.find bsym_table i in
-  match entry with
-  | BBDCL_function (props,vs,(ps,traint),ret,exes) -> vs
-  | BBDCL_procedure (props,vs,(ps,traint), exes) -> vs
-  | BBDCL_val (vs,t) -> vs
-  | BBDCL_var (vs,t) -> vs
-  | BBDCL_ref (vs,t) -> vs
-  | BBDCL_tmp (vs,t) -> vs
-  | BBDCL_union (vs,ps) -> vs
-  | BBDCL_struct (vs,ps) -> vs
-  | BBDCL_cstruct (vs,ps) -> vs
-  | BBDCL_newtype (vs,t) -> vs
-  | BBDCL_const (_,vs,t,ct,reqs) -> vs
-  | BBDCL_insert (vs,s,ikind,reqs) -> vs
-  | BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) -> vs
-  | BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,prec) -> vs
-  | BBDCL_proc (props,vs,argtypes,ct,reqs) -> vs
-  | BBDCL_abs (vs,tqual,ct,reqs) ->  vs
-  | BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) -> vs
-  | BBDCL_typeclass (props,vs) ->  vs
-  | BBDCL_instance (props,vs,con,tc,ts) -> vs

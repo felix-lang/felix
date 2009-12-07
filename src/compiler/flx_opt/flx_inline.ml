@@ -80,11 +80,6 @@ let mk_label_map syms exes =
 
 let idt t = t
 
-let is_var bsym_table i =
-  match hfind "is_var" bsym_table i with
-  | _,_,_,BBDCL_var _ -> true
-  | _ -> false
-
 (*
 (* APPEARS TO BE UNUSED .. *)
 let is_simple_expr syms bsym_table e =
@@ -303,15 +298,6 @@ let inline_function syms (uses,child_map,bsym_table) caller caller_vs callee ts 
     revariable,!body2 (* forward order *)
 
   | _ -> assert false
-
-let is_generator bsym_table i =
-  let id,parent,sr,entry = hfind "is-generator" bsym_table i in
-  match entry with
-  | BBDCL_fun (props,_,_,_,_,_,_)
-  | BBDCL_function (props,_,_,_,_)
-    when mem `Generator props
-    -> true
-  | _ -> false
 
 (* note u sr e must return exes in reverse order, this
   function however returns exes in forward order
@@ -568,11 +554,9 @@ of the original expression, done by the 'aux' function.
 *)
 
 let inlining_complete bsym_table i =
-  let _,_,_,entry = hfind "inlining-complete" bsym_table i in
-  match entry with
+  match Flx_bsym_table.find_bbdcl bsym_table i with
   | BBDCL_function (props,_,_,_,_)
-  | BBDCL_procedure (props,_,_,_) ->
-    mem `Inlining_complete props
+  | BBDCL_procedure (props,_,_,_) -> mem `Inlining_complete props
   | BBDCL_proc _
   | BBDCL_fun _
     -> true

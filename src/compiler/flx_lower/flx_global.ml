@@ -26,8 +26,7 @@ let throw_on_gc bsym_table e : unit = match e with
   | BEXPR_apply_direct _,_ -> raise Not_found
   | BEXPR_apply( (BEXPR_closure (_,_),_),_),_ -> raise Not_found
   | BEXPR_apply_struct (i,_,_),_ ->
-    let id,sr,parent,entry = Flx_bsym_table.find bsym_table i in
-    begin match entry with
+    begin match Flx_bsym_table.find_bbdcl bsym_table i with
     | BBDCL_nonconst_ctor _ -> raise Not_found
     | _ -> ()
     end
@@ -36,8 +35,7 @@ let throw_on_gc bsym_table e : unit = match e with
     begin match t with
     | BTYP_sum args when not (all_units args) -> raise Not_found
     | BTYP_inst (i,ts) ->
-      let id,parent,sr,entry = try Flx_bsym_table.find bsym_table i with Not_found -> failwith "YIKES3" in
-      begin match entry with
+      begin match Flx_bsym_table.find_bbdcl bsym_table i with
       | BBDCL_union (vs,idts) when not
           (all_voids (List.map (fun (_,_,t)->t) idts)) -> raise Not_found
       | _ -> ()
@@ -137,17 +135,8 @@ let set_gc_use bsym_table index ((id, parent, sr, entry) as symbol) =
 
   | _ -> symbol
 
-let is_global_var bsym_table i =
-  let id,parent,sr,entry =
-    try Flx_bsym_table.find bsym_table i
-    with Not_found -> failwith ("YIKES1: " ^ string_of_bid i) in
-  match entry with
-  | BBDCL_var _
-  | BBDCL_val _ when (match parent with None -> true | _ -> false ) -> true
-  | _ -> false
-
 let throw_on_global bsym_table i =
-  if is_global_var bsym_table i then raise Not_found
+  if Flx_bsym_table.is_global_var bsym_table i then raise Not_found
 
 let expr_uses_global bsym_table e =
   iter_tbexpr (throw_on_global bsym_table) ignore ignore e
@@ -326,7 +315,8 @@ let set_globals bsym_table =
 let find_global_vars bsym_table =
   let global_vars = ref BidSet.empty in
   Flx_bsym_table.iter begin fun i _ ->
-    if is_global_var bsym_table i then global_vars := BidSet.add i !global_vars
+    if Flx_bsym_table.is_global_var bsym_table i
+    then global_vars := BidSet.add i !global_vars
   end bsym_table;
 
   !global_vars

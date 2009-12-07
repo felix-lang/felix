@@ -25,8 +25,7 @@ let find_variable_indices syms bsym_table child_map index =
   let children = find_children child_map index in
   filter
   (fun i ->
-    try match Flx_bsym_table.find bsym_table i with _,_,_,entry ->
-      match entry with
+    try match Flx_bsym_table.find_bbdcl bsym_table i with
       | BBDCL_var _
       | BBDCL_ref _
       | BBDCL_val _ ->

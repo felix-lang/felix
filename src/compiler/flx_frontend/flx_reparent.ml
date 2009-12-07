@@ -425,11 +425,8 @@ let reparent_children syms (uses,child_map,bsym_table)
   print_endline ("Closure is " ^ catmap " " si !cl);
   *)
   let revariable = mk_remap syms.counter revariable in
-  BidSet.iter
-  (fun i ->
-    let old_parent =
-      match Flx_bsym_table.find bsym_table i with id,oldp,_,_ -> oldp
-    in
+  BidSet.iter begin fun i ->
+    let old_parent = Flx_bsym_table.find_parent bsym_table i in
     let new_parent: bid_t option =
       match old_parent with
       | None -> assert false
@@ -440,9 +437,7 @@ let reparent_children syms (uses,child_map,bsym_table)
     let k = Hashtbl.find revariable i in
     reparent1 syms (uses,child_map,bsym_table) relabel varmap revariable
     caller_vs callee_vs_len i new_parent k rescan_flag
-  )
-  closure
-  ;
+  end closure;
   if syms.compiler_options.print_flag then begin
     Hashtbl.iter
     (fun i j ->

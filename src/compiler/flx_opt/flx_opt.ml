@@ -247,8 +247,7 @@ let optimize_bsym_table syms bsym_table root_proc =
 let optimize syms bsym_table child_map root_proc bids bexes =
   (* Add the symbols to the child map. *)
   List.iter begin fun bid ->
-    let (_,parent,_,_) = Flx_bsym_table.find bsym_table bid in
-    match parent with
+    match Flx_bsym_table.find_parent bsym_table bid with
     | Some parent -> Flx_child.add_child child_map parent bid
     | None -> ()
   end bids;

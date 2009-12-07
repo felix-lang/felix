@@ -407,10 +407,8 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
     try Hashtbl.find syms.typeclass_to_instance i
     with Not_found -> (* print_endline ("Symbol " ^ si i ^ " Not instantiated?"); *) []
   in
-  let _, _, sr, _ =
-    try Flx_bsym_table.find bsym_table i with Not_found ->
-      failwith ("fixup_typeclass_instance': Can't find <" ^
-        string_of_bid i ^ ">")
+  let sr = try Flx_bsym_table.find_sr bsym_table i with Not_found ->
+    failwith ("fixup_typeclass_instance': Can't find <" ^ string_of_bid i ^ ">")
   in
   let entries = fold_left (fun acc x -> match tcinst_chk syms bsym_table allow_fail i ts sr x with
      | None -> acc
@@ -574,18 +572,7 @@ let fixup_exe syms bsym_table exe = match exe with
 let fixup_exes syms bsym_table exes = map (fixup_exe syms bsym_table) exes
 
 let fixup_typeclass_instances syms bsym_table =
-  Flx_bsym_table.iter (fun i (id,parent,sr,entry) -> match entry with
-  | BBDCL_function (props,bvs,bps,ret,exes) ->
-    let exes = fixup_exes syms bsym_table exes in
-    let entry = BBDCL_function (props, bvs, bps, ret, exes) in
-    Flx_bsym_table.add bsym_table i (id,parent,sr,entry)
-  | BBDCL_procedure (props, bvs, bps,exes)  ->
-    let exes = fixup_exes syms bsym_table exes in
-    let entry = BBDCL_procedure (props, bvs, bps,exes) in
-    Flx_bsym_table.add bsym_table i (id,parent,sr,entry)
-  | _ -> ()
-  )
-  bsym_table
+  Flx_bsym_table.update_bexes (fixup_exes syms bsym_table) bsym_table
 
 (* this routine doesn't allow constraint reduction failure
   and should only be run at instantiation time

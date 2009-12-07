@@ -21,18 +21,6 @@ let hfind msg h k =
     raise Not_found
 
 
-let isvariable bsym_table i =
-  let id,_,_,entry = Flx_bsym_table.find bsym_table i in match entry with
-  | BBDCL_var _ | BBDCL_val _ ->
-  (* print_endline ("Var/Val " ^ id ^ "<" ^ si i ^">"); *) true
-  | _ -> false
-
-let isfun bsym_table i =
-  let id,_,_,entry = Flx_bsym_table.find bsym_table i in match entry with
-  | BBDCL_function _ | BBDCL_procedure _ ->
-  (*print_endline ("Fun/proc " ^ id ^ "<" ^ si i ^">"); *) true
-  | _ -> false
-
 let add_xclosure syms cls e =
   (*
   print_endline ("chk cls for " ^ sbe bsym_table e);
@@ -156,8 +144,14 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
   let descend = descendants child_map this in
   let children = try Hashtbl.find child_map this with Not_found -> [] in
   let can_loop () =
-    let varlist = filter (isvariable bsym_table) children in
-    let funset = BidSet.filter (isfun bsym_table) descend in
+    let varlist = List.filter
+      (Flx_bsym_table.is_variable bsym_table)
+      children
+    in
+    let funset = BidSet.filter
+      (Flx_bsym_table.is_function bsym_table)
+      descend
+    in
 
     (*
     print_endline ("Procedure has " ^ si (length varlist) ^ " variables");

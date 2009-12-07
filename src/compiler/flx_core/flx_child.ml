@@ -34,8 +34,7 @@ let is_ancestor bsym_table child anc =
     (*
     let _,parent,_,_ = hfind ("is_ancestor " ^ si child) bsym_table child in
     *)
-    let _,parent,_,_ = Flx_bsym_table.find bsym_table child in
-    match parent with
+    match Flx_bsym_table.find_parent bsym_table child with
     | None -> false
     | Some x ->
       if x = anc then true

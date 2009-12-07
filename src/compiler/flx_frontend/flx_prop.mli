@@ -13,8 +13,3 @@ val rem_prop:
   Flx_ast.property_t ->
   Flx_types.bid_t ->
   unit
-
-val get_vs:
-  Flx_bsym_table.t ->
-  Flx_types.bid_t ->
-  Flx_types.bvs_t

@@ -206,7 +206,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap (exe:bexe_t) =
     (*
     print_endline ("[flx_inst] Initialisation " ^ si i ^ " := " ^ sbe sym_table bsym_table e);
     *)
-    let vs' = get_vs bsym_table i in
+    let vs' = Flx_bsym_table.find_bvs bsym_table i in
     (*
     print_endline ("vs=" ^ catmap "," (fun (s,i)-> s^ "<" ^ si i ^ ">") vs');
     print_endline ("Input ts = " ^ catmap "," (sbt bsym_table) ts);
@@ -223,7 +223,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap (exe:bexe_t) =
   | BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
 
   | BEXE_svc (sr,i) ->
-    let vs' = get_vs bsym_table i in
+    let vs' = Flx_bsym_table.find_bvs bsym_table i in
     let ts = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
     uis i ts

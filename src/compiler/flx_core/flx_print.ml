@@ -510,8 +510,8 @@ and qualified_name_of_index sym_table index =
 
 and get_name_parent bsym_table index =
   try
-    match Flx_bsym_table.find bsym_table index with
-    id,parent,_,_ -> id,parent
+    let id,parent,_,_ = Flx_bsym_table.find bsym_table index in
+    id, parent
   with Not_found -> "index_" ^ string_of_bid index,None
 
 

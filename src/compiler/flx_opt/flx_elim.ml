@@ -33,28 +33,7 @@ let eliminate_unused_pass state =
   let maybe_unused = Flx_types.BidSet.diff full_use partial_use in
 
   (* Iterate over every symbol and check if anyone's referencing it. *)
-  Flx_bsym_table.iter begin fun i (id, parent, sr, entry) ->
-    match entry with
-    | Flx_types.BBDCL_procedure (props, bvs, (ps, tr), exes) ->
-      (* Filter out all the unused value creation and assignments in the
-       * procedure. *)
-      let exes = eliminate_init maybe_unused exes in
-
-      (* Update the procedure with the new exes *)
-      let entry = Flx_types.BBDCL_procedure (props,bvs,(ps,tr),exes) in
-      Flx_bsym_table.add state.bsym_table i (id, parent, sr, entry)
-
-    | Flx_types.BBDCL_function (props,bvs,(ps,rt),ret,exes) ->
-      (* Filter out all the unused value creation and assignments in the
-       * function. *)
-      let exes = eliminate_init maybe_unused exes in
-
-      (* Update the function with the new exes *)
-      let entry = Flx_types.BBDCL_function (props,bvs,(ps,rt),ret,exes) in
-      Flx_bsym_table.add state.bsym_table i (id,parent,sr,entry)
-
-    | _ -> ()
-  end state.bsym_table;
+  Flx_bsym_table.update_bexes (eliminate_init maybe_unused) state.bsym_table;
 
   (* Delete all the unused symbols *)
   Flx_types.BidSet.iter begin fun i->

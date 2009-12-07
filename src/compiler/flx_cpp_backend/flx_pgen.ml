@@ -14,8 +14,7 @@ open Flx_maps
 let shape_of syms bsym_table tn t =
   match t with
   | BTYP_inst (i,ts) ->
-    let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
-    begin match entry with
+    begin match Flx_bsym_table.find_bbdcl bsym_table i with
     | BBDCL_union (vs,idts) ->
       let varmap = mk_varmap vs ts in
       let cpts = map (fun (_,_,t) -> varmap_subst varmap t) idts in

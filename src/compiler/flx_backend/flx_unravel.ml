@@ -35,8 +35,7 @@ let unravel syms bsym_table e =
       | BEXPR_apply_direct (i, ts, b), t
       | BEXPR_apply ((BEXPR_closure (i, ts), _), b), t ->
 
-        let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
-        begin match entry with
+        begin match Flx_bsym_table.find_bbdcl bsym_table i with
         | BBDCL_struct _
         | BBDCL_fun _ -> BEXPR_apply_direct (i, ts, aux b),t
         | BBDCL_function _ -> refer (BEXPR_apply_direct (i, ts, aux b),t)

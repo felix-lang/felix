@@ -523,8 +523,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
       let is_pod =
         match t with
         | BTYP_inst (k,ts) ->
-          let id,sr,parent,entry = Flx_bsym_table.find bsym_table k in
-          begin match entry with
+          begin match Flx_bsym_table.find_bbdcl bsym_table k with
           | BBDCL_abs (_,quals,_,_) -> mem `Pod quals
           | _ -> false
           end

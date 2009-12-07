@@ -99,8 +99,8 @@ let cpp_instance_name' syms bsym_table index ts =
   let inst =
     try Hashtbl.find syms.instances (index,ts)
     with Not_found ->
-    let id,_,_,_ =
-      try Flx_bsym_table.find bsym_table index with Not_found ->
+    let id =
+      try Flx_bsym_table.find_id bsym_table index with Not_found ->
         failwith ("[cpp_instance_name'] Can't find <" ^
           string_of_bid index ^ ">")
     in
@@ -137,8 +137,8 @@ let is_export syms id =
 let cpp_instance_name syms bsym_table index ts =
   let long_name = cpp_instance_name' syms bsym_table index ts in
   if syms.compiler_options.mangle_names then long_name else
-  let id,parent,sr,entry =
-    try Flx_bsym_table.find bsym_table index
+  let id =
+    try Flx_bsym_table.find_id bsym_table index
     with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_bid index)
   in
   let id' = cid_of_flxid id in

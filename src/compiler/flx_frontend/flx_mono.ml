@@ -22,7 +22,7 @@ let cal_parent syms bsym_table i' ts' =
   match parent with
   | None -> None
   | Some i ->
-    let vsc = get_vs bsym_table i' in
+    let vsc = Flx_bsym.get_bvs bsym in
     assert (length vsc = length ts');
     if not (Flx_bsym_table.mem bsym_table i) then
     (
@@ -32,7 +32,7 @@ let cal_parent syms bsym_table i' ts' =
       None
     )
     else
-    let vsp = get_vs bsym_table i in
+    let vsp = Flx_bsym_table.find_bvs bsym_table i in
     let n = length vsp in
     assert (n <= length vsc);
     let ts = list_prefix ts' n in
@@ -159,7 +159,7 @@ let fixup_exe syms bsym_table fi mt exe =
     (*
     print_endline ("[init] Deviant case variable " ^ si i);
     *)
-    let vs = get_vs bsym_table i in
+    let vs = Flx_bsym_table.find_bvs bsym_table i in
     let ts = map (fun (s,j) -> mt (BTYP_var (j,BTYP_type 0))) vs in
     let i,ts = fi i ts in
     (*
@@ -171,7 +171,7 @@ let fixup_exe syms bsym_table fi mt exe =
     (*
     print_endline ("[svc] Deviant case variable " ^ si i);
     *)
-    let vs = get_vs bsym_table i in
+    let vs = Flx_bsym_table.find_bvs bsym_table i in
     let ts = map (fun (s,j) -> mt (BTYP_var (j,BTYP_type 0))) vs in
     let i,ts = fi i ts in
     (*
@@ -300,8 +300,7 @@ let mono syms bsym_table fi i ts n =
   | _ -> ()
 
 let chk_mono syms bsym_table i =
-  let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
-  match entry with
+  match Flx_bsym_table.find_bbdcl bsym_table i with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->  true
   | BBDCL_procedure (props,vs,(ps,traint), exes) -> true
   | BBDCL_val (vs,t) -> true

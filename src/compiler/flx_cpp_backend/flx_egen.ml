@@ -264,9 +264,9 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       ce_dot (ge' e) field_name
 
     | BTYP_inst (i,_) ->
-      begin match Flx_bsym_table.find bsym_table i with
-      | _,_,_,BBDCL_cstruct (_,ls)
-      | _,_,_,BBDCL_struct (_,ls) ->
+      begin match Flx_bsym_table.find_bbdcl bsym_table i with
+      | BBDCL_cstruct (_,ls)
+      | BBDCL_struct (_,ls) ->
         let name,_ =
           try nth ls n
           with _ ->
@@ -461,8 +461,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
           | [BTYP_sum ls]
           | [BTYP_tuple ls] -> let n = length ls in ce_atom (si n)
           | [BTYP_inst (i,_)] ->
-            let _,_,_,entry = Flx_bsym_table.find bsym_table i in
-            begin match entry with
+            begin match Flx_bsym_table.find_bbdcl bsym_table i with
               | BBDCL_struct (_,ls) -> let n = length ls in ce_atom (si n)
               | BBDCL_cstruct (_,ls) -> let n = length ls in ce_atom (si n)
               | BBDCL_union (_,ls) -> let n = length ls in ce_atom (si n)

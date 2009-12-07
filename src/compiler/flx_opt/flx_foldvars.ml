@@ -177,10 +177,11 @@ let fold_vars syms bsym_table child_map uses i ps exes =
         print_endline ("Usage (restricted) = " ^ string_of_bidset yuses);
         *)
         let delete_var () =
-          let id,_,_,_ = Flx_bsym_table.find bsym_table j in
-          if syms.compiler_options.print_flag then
+          if syms.compiler_options.print_flag then begin
+            let id = Flx_bsym_table.find_id bsym_table j in
             print_endline ("ELIMINATING VARIABLE " ^ id ^ "<" ^ string_of_bid j
-              ^ "> -> " ^ sbe bsym_table y);
+              ^ "> -> " ^ sbe bsym_table y)
+          end;
 
           (* remove the variable *)
           Flx_bsym_table.remove bsym_table j;
@@ -189,9 +190,9 @@ let fold_vars syms bsym_table child_map uses i ps exes =
           incr count
         in
         let isvar =
-          match Flx_bsym_table.find bsym_table j with
-          | _,_,_,(BBDCL_var _ | BBDCL_tmp _ | BBDCL_ref _ ) -> true
-          | _,_,_,BBDCL_val _ -> false
+          match Flx_bsym_table.find_bbdcl bsym_table j with
+          | BBDCL_var _ | BBDCL_tmp _ | BBDCL_ref _ -> true
+          | BBDCL_val _ -> false
           | _ -> assert false
         in
 

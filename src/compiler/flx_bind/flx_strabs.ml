@@ -17,8 +17,7 @@ type strabs_state_t = unit
 let make_strabs_state () = ()
 
 let check_inst bsym_table i ts =
-  let id,_,_,entry = Flx_bsym_table.find bsym_table i in
-  match entry with
+  match Flx_bsym_table.find_bbdcl bsym_table i with
   | BBDCL_newtype (vs,t) -> tsubst vs ts t
   | _ -> BTYP_inst (i,ts)
 
@@ -33,17 +32,13 @@ let fixtype bsym_table t =
 
 let id x = x
 
-let isident bsym_table i = match Flx_bsym_table.find bsym_table i with
-  | _,_,_,BBDCL_fun (_,_,_,_,CS_identity,_,_) -> true
-  | _ -> false
-
 let fixexpr bsym_table e : tbexpr_t =
   let rec aux e =
     match map_tbexpr id aux (fixtype bsym_table) e with
     | BEXPR_apply ( (BEXPR_closure(i,_),_),a),_
     | BEXPR_apply_direct (i,_,a),_
     | BEXPR_apply_prim (i,_,a),_
-      when isident bsym_table i -> a
+      when Flx_bsym_table.is_identity bsym_table i -> a
     | x -> x
   in aux e
 

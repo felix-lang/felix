@@ -153,11 +153,11 @@ let cal_polyvars syms bsym_table child_map =
       *)
       let varmap = map (fun (i,j) -> i,BTYP_void) pvs in
       let t = 
-          let ps = match Flx_bsym_table.find bsym_table i with
-          | name, parent, sr, bbdfn -> match bbdfn with
-          | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps
-          | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps
-          | _ -> assert false
+          let ps =
+            match Flx_bsym_table.find_bbdcl bsym_table i with
+            | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps
+            | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps
+            | _ -> assert false
           in
           let pts = map (fun {ptyp=t}->t) ps in
           let pt = match pts with | [t]->t | ts -> BTYP_tuple ts in
@@ -178,8 +178,7 @@ let cal_polyvars syms bsym_table child_map =
       *)
       let varmap = map (fun (i,j) -> i,BTYP_void) pvs in
       let ta = 
-        match Flx_bsym_table.find bsym_table i with
-        | name, parent, sr, bbdfn -> match bbdfn with
+        match Flx_bsym_table.find_bbdcl bsym_table i with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ret
         | _ -> assert false
       in
@@ -195,11 +194,11 @@ let cal_polyvars syms bsym_table child_map =
     if pvs = [] then t else begin 
       let varmap = map (fun (i,j) -> i,BTYP_void) pvs in
       let tf = 
-          let ps,ret = match Flx_bsym_table.find bsym_table i with
-          | name, parent, sr, bbdfn -> match bbdfn with
-          | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret
-          | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, BTYP_void
-          | _ -> assert false
+          let ps,ret =
+            match Flx_bsym_table.find_bbdcl bsym_table i with
+            | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret
+            | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, BTYP_void
+            | _ -> assert false
           in
           let pts = map (fun {ptyp=t}->t) ps in
           let pt = match pts with | [t]->t | ts -> BTYP_tuple ts in
@@ -226,41 +225,27 @@ let cal_polyvars syms bsym_table child_map =
   | e -> map_tbexpr ident fixexpr ident e
   in
 
-  let fixexe x = match x with
-  | BEXE_call (sr,(BEXPR_closure (i,ts),t'),e) ->
-    BEXE_call (sr,(BEXPR_closure (i, polyfix syms polyvars i ts), cal_ft i t'), cast_a i (fixexpr e))
-  | BEXE_call_prim (sr,i,ts,e) ->
-    BEXE_call_prim (sr,i, polyfix syms polyvars i ts, cast_a i (fixexpr e))
-  | BEXE_call_direct (sr,i,ts,e) ->
-    BEXE_call_direct (sr,i, polyfix syms polyvars i ts, cast_a i (fixexpr e))
-  | BEXE_call_stack (sr,i,ts,e) ->
-    BEXE_call_stack (sr,i, polyfix syms polyvars i ts, cast_a i (fixexpr e))
-  | BEXE_jump_direct (sr,i,ts,e) ->
-    BEXE_jump_direct (sr,i, polyfix syms polyvars i ts, cast_a i (fixexpr e))
-  | x -> map_bexe ident fixexpr ident ident ident x
-  in
-
-  let fixexes exes = map fixexe exes in
-  Flx_bsym_table.iter (fun i (name,parent,sr,bbdfn) ->
-  match bbdfn with
-  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-    let exes = fixexes exes in
-    let bbdfn = BBDCL_function (props,vs,(ps,traint),ret,exes) in
-    Flx_bsym_table.add bsym_table i (name,parent,sr,bbdfn)
-
-  | BBDCL_procedure (props,vs,(ps,traint), exes) ->
-    let exes = fixexes exes in
-    let bbdfn = BBDCL_procedure (props,vs,(ps,traint), exes) in
-    Flx_bsym_table.add bsym_table i (name,parent,sr,bbdfn)
-  | _ -> ()      
-
-  )
-  bsym_table
-  ;
+  Flx_bsym_table.update_bexes (List.map begin function
+    | BEXE_call (sr,(BEXPR_closure (i,ts),t'),e) ->
+        BEXE_call (sr,
+          (BEXPR_closure (i, polyfix syms polyvars i ts), cal_ft i t'),
+          cast_a i (fixexpr e))
+    | BEXE_call_prim (sr,i,ts,e) ->
+        BEXE_call_prim (sr, i, polyfix syms polyvars i ts, cast_a i (fixexpr e))
+    | BEXE_call_direct (sr,i,ts,e) ->
+        BEXE_call_direct (sr, i, polyfix syms polyvars i ts,
+          cast_a i (fixexpr e))
+    | BEXE_call_stack (sr,i,ts,e) ->
+        BEXE_call_stack (sr, i, polyfix syms polyvars i ts,
+          cast_a i (fixexpr e))
+    | BEXE_jump_direct (sr,i,ts,e) ->
+        BEXE_jump_direct (sr, i, polyfix syms polyvars i ts,
+          cast_a i (fixexpr e))
+    | x -> map_bexe ident fixexpr ident ident ident x
+  end) bsym_table;
 
   let polyfix2 i ts =
-    match Flx_bsym_table.find bsym_table i with
-    | name, parent, sr, bbdfn -> match bbdfn with
+    match Flx_bsym_table.find_bbdcl bsym_table i with
     | BBDCL_function _
     | BBDCL_procedure _ ->
       map (fun t -> match t with | BTYP_pointer _ -> BTYP_pointer BTYP_void | _ -> t) ts
@@ -270,11 +255,11 @@ let cal_polyvars syms bsym_table child_map =
     try
     let counter = ref 0 in 
     let t,vsi = 
-        let ps,vs = match Flx_bsym_table.find bsym_table i with
-        | name, parent, sr, bbdfn -> match bbdfn with
-        | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,vs
-        | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps,vs
-        | _ -> raise Skip
+        let ps,vs =
+          match Flx_bsym_table.find_bbdcl bsym_table i with
+          | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,vs
+          | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps,vs
+          | _ -> raise Skip
         in
         let pts = map (fun {ptyp=t}->t) ps in
         let pt = match pts with | [t]->t | ts -> BTYP_tuple ts in
@@ -295,9 +280,9 @@ let cal_polyvars syms bsym_table child_map =
     try
     let counter = ref 0 in
     let ta,vsi = 
-      match Flx_bsym_table.find bsym_table i with
-      | name, parent, sr, bbdfn -> match bbdfn with
-      | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ret,map (fun (s,i) -> i) vs
+      match Flx_bsym_table.find_bbdcl bsym_table i with
+      | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+          ret,map (fun (s,i) -> i) vs
       | _ -> raise Skip
     in
     let varmap = map2 (fun i t -> i, match t with | BTYP_pointer _ -> incr counter; BTYP_pointer BTYP_void | _ -> t ) vsi ts in
@@ -314,10 +299,10 @@ let cal_polyvars syms bsym_table child_map =
     try
     let counter = ref 0 in
     let tf,vsi = 
-      let ps,ret,vs = match Flx_bsym_table.find bsym_table i with
-      | name, parent, sr, bbdfn -> match bbdfn with
-      | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret,vs
-      | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, BTYP_void,vs
+      let ps,ret,vs =
+        match Flx_bsym_table.find_bbdcl bsym_table i with
+        | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret,vs
+        | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps,BTYP_void,vs
       | _ -> raise Skip 
       in
       let pts = map (fun {ptyp=t}->t) ps in
@@ -350,37 +335,18 @@ let cal_polyvars syms bsym_table child_map =
   | e -> map_tbexpr ident fixexpr2 ident e
   in
 
-  let fixexe2 x = match x with
-  | BEXE_call (sr,(BEXPR_closure (i,ts),t'),e) ->
-    BEXE_call (sr,(BEXPR_closure (i, polyfix2 i ts), cal_ft i t'), cast_a2 i ts (fixexpr2 e))
-  | BEXE_call_prim (sr,i,ts,e) ->
-    BEXE_call_prim (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
-  | BEXE_call_direct (sr,i,ts,e) ->
-    BEXE_call_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
-  | BEXE_call_stack (sr,i,ts,e) ->
-    BEXE_call_stack (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
-  | BEXE_jump_direct (sr,i,ts,e) ->
-    BEXE_jump_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
-  | x -> map_bexe ident fixexpr2 ident ident ident x
-  in
-  let fixexes2 exes = map fixexe2 exes in
-
-
-  Flx_bsym_table.iter (fun i (name,parent,sr,bbdfn) ->
-  match bbdfn with
-  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-    let exes = fixexes2 exes in
-    let bbdfn = BBDCL_function (props,vs,(ps,traint),ret,exes) in
-    Flx_bsym_table.add bsym_table i (name,parent,sr,bbdfn)
-
-  | BBDCL_procedure (props,vs,(ps,traint), exes) ->
-    let exes = fixexes2 exes in
-    let bbdfn = BBDCL_procedure (props,vs,(ps,traint), exes) in
-    Flx_bsym_table.add bsym_table i (name,parent,sr,bbdfn)
-  | _ -> ()      
-
-  )
-  bsym_table
-
-
-
+  Flx_bsym_table.update_bexes (List.map begin function
+    | BEXE_call (sr,(BEXPR_closure (i,ts),t'),e) ->
+        BEXE_call (sr,
+          (BEXPR_closure (i, polyfix2 i ts), cal_ft i t'),
+          cast_a2 i ts (fixexpr2 e))
+    | BEXE_call_prim (sr,i,ts,e) ->
+        BEXE_call_prim (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+    | BEXE_call_direct (sr,i,ts,e) ->
+        BEXE_call_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+    | BEXE_call_stack (sr,i,ts,e) ->
+        BEXE_call_stack (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+    | BEXE_jump_direct (sr,i,ts,e) ->
+        BEXE_jump_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+    | x -> map_bexe ident fixexpr2 ident ident ident x
+  end) bsym_table
