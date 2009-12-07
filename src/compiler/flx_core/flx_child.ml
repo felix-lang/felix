@@ -5,12 +5,6 @@ open Flx_mtypes2
 open List
 open Flx_util
 
-let hfind msg h k =
-  try Flx_bsym_table.find h k
-  with Not_found ->
-    print_endline ("flx_child Flx_bsym_table.find failed " ^ msg);
-    raise Not_found
-
 type t = (bid_t, bid_t list) Hashtbl.t
 
 let make () = Hashtbl.create 97
@@ -31,9 +25,6 @@ let add_child childmap parent child =
 *)
 let is_ancestor bsym_table child anc =
   let rec is_anc child anc =
-    (*
-    let _,parent,_,_ = hfind ("is_ancestor " ^ si child) bsym_table child in
-    *)
     match Flx_bsym_table.find_parent bsym_table child with
     | None -> false
     | Some x ->

@@ -16,13 +16,6 @@ open Flx_reparent
 open Flx_spexes
 open Flx_foldvars
 
-
-let hfind msg h k =
-  try Flx_bsym_table.find h k
-  with Not_found ->
-    print_endline ("flx_inline Flx_bsym_table.find failed " ^ msg);
-    raise Not_found
-
 let string_of_vs vs =
   "[" ^ catmap "," (fun (s,i)->s^"<"^si i^">") vs ^ "]"
 
@@ -116,8 +109,8 @@ let call_lifting syms (uses,child_map,bsym_table) caller caller_vs callee ts a a
   (*
   print_endline "DOING CALL LIFTING";
   *)
-  let id,parent,sr,entry = hfind "call-lift" bsym_table callee in
-  match entry with
+  let id,parent,sr,bbdcl = Flx_bsym_table.find bsym_table callee in
+  match bbdcl with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     (*
     print_endline ("Found procedure "^id^": Inline it!");
@@ -182,11 +175,11 @@ let call_lifting syms (uses,child_map,bsym_table) caller caller_vs callee ts a a
 let inline_tail_apply syms (uses,child_map,bsym_table) caller caller_vs callee ts a =
   (* TEMPORARY .. this should be allowed for unrolling but we do not do that yet *)
   assert (callee <> caller);
-  let id,parent,sr,entry = hfind "inline_tail" bsym_table callee in
-  match entry with
+  let id,parent,sr,bbdcl = Flx_bsym_table.find bsym_table callee in
+  match bbdcl with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-    let id2,_,_,_ = hfind "inline-tail[function]" bsym_table caller in
     (*
+    let id2,_,_,_ = hfind "inline-tail[function]" bsym_table caller in
     print_endline
     (
       "TAIL Inlining function "^id^
@@ -221,8 +214,8 @@ let inline_function syms (uses,child_map,bsym_table) caller caller_vs callee ts 
   (*
   print_endline ("Inline function: init var index " ^ si varindex);
   *)
-  let id,parent,sr,entry = hfind "inline-function" bsym_table callee in
-  match entry with
+  let id,parent,sr,bbdcl = Flx_bsym_table.find bsym_table callee in
+  match bbdcl with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     (*
     print_endline
@@ -620,13 +613,11 @@ is an instance .. so nothing is lost here.. :)
 *)
 
 let virtual_check syms bsym_table sr i ts =
-  let id,parent,callee_sr,entry =
-    hfind ("virtual-check " ^ string_of_bid i) bsym_table i
-  in
+  let id,parent,callee_sr,bbdcl = Flx_bsym_table.find bsym_table i in
   (*
   print_endline ("virtual check Examining call to " ^ id ^ "<" ^ si i ^ ">");
   *)
-  match entry with
+  match bbdcl with
   | BBDCL_fun (props,_,_,_,_,_,_)
   | BBDCL_function (props,_,_,_,_)
   | BBDCL_proc (props,_,_,_,_)
@@ -754,10 +745,8 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
       let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
       if not (mem callee excludes) then begin
         heavily_inline_bbdcl syms (uses,child_map,bsym_table) (callee::excludes) callee;
-        let id,parent,sr,entry = hfind "special-inline[apply]" bsym_table callee in
-        begin match entry with
-
-
+        let id,parent,sr,bbdcl = Flx_bsym_table.find bsym_table callee in
+        begin match bbdcl with
         | BBDCL_fun (props,_,_,_,_,_,_)
 (*        | BBDCL_function (props,_,_,_,_)  *)
           when mem `Generator props
@@ -1045,11 +1034,11 @@ and heavy_inline_calls
       ->
       let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
       heavily_inline_bbdcl syms (uses,child_map,bsym_table) (callee::excludes) callee;
-      let id,parent,callee_sr,entry = hfind "call-direct" bsym_table callee in
+      let id,parent,callee_sr,bbdcl = Flx_bsym_table.find bsym_table callee in
       (*
       print_endline ("CALL DIRECT " ^ id ^ "<"^ si callee^">");
       *)
-      begin match entry with
+      begin match bbdcl with
       | BBDCL_procedure (props,vs,(ps,traint),exes) ->
         if can_inline && inline_check caller callee props exes then
         begin
@@ -1086,8 +1075,8 @@ and heavy_inline_calls
       *)
       let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
       heavily_inline_bbdcl syms (uses,child_map,bsym_table) (callee::excludes) callee;
-      let id,parent,callee_sr,entry = hfind "call-lift" bsym_table callee in
-      begin match entry with
+      let id,parent,callee_sr,bbdcl = Flx_bsym_table.find bsym_table callee in
+      begin match bbdcl with
       | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         if can_inline && inline_check caller callee props exes then
         begin
@@ -1112,15 +1101,13 @@ and heavy_inline_calls
       when not (mem callee excludes)  ->
       let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
       heavily_inline_bbdcl syms (uses,child_map,bsym_table) (callee::excludes) callee;
-      let id,parent,callee_sr,entry = hfind "init" bsym_table callee in
-      begin match entry with
+      let id,parent,callee_sr,bbdcl = Flx_bsym_table.find bsym_table callee in
+      begin match bbdcl with
       | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         if can_inline && inline_check caller callee props exes then
           begin
-            let vid,vparent,vsr,ventry =
-              hfind ("init variable " ^ string_of_bid i) bsym_table i
-            in
-            begin match ventry with
+            let vid,vparent,vsr,vbbdcl = Flx_bsym_table.find bsym_table i in
+            begin match vbbdcl with
             | BBDCL_tmp (vs,t) ->
               (*
               print_endline ("Downgrading temporary .." ^ si i);
@@ -1151,8 +1138,8 @@ and heavy_inline_calls
       when not (mem callee excludes)  ->
       let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
       heavily_inline_bbdcl syms (uses,child_map,bsym_table) (callee::excludes) callee;
-      let id,parent,callee_sr,entry = hfind "hic:fun_ret" bsym_table callee in
-      begin match entry with
+      let id,parent,callee_sr,bbdcl = Flx_bsym_table.find bsym_table callee in
+      begin match bbdcl with
       | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         if can_inline && inline_check caller callee props exes then
         begin
@@ -1207,9 +1194,9 @@ and remove_unused_children syms (uses,child_map,bsym_table) i =
       begin
         try
           (* any parent disowns the child *)
-          match Flx_bsym_table.find bsym_table i with
-          | _,Some parent,_,_ -> remove_child child_map parent i
-          | _ -> ()
+          match Flx_bsym_table.find_parent bsym_table i with
+          | Some parent -> remove_child child_map parent i
+          | None -> ()
         with Not_found -> ()
       end
       ;

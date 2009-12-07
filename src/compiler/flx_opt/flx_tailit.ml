@@ -14,13 +14,6 @@ open Flx_use
 open Flx_child
 open Flx_call
 
-let hfind msg h k =
-  try Flx_bsym_table.find h k
-  with Not_found ->
-    print_endline ("flx_inline Flx_bsym_table.find failed " ^ msg);
-    raise Not_found
-
-
 let add_xclosure syms cls e =
   (*
   print_endline ("chk cls for " ^ sbe bsym_table e);
@@ -51,9 +44,8 @@ let exes_get_xclosures syms exes =
   !cls
 
 let function_find_xclosure syms cls bsym_table i =
-  let _,_,_,entry = Flx_bsym_table.find bsym_table i in
   let exes =
-    match entry with
+    match Flx_bsym_table.find_bbdcl bsym_table i with
     | BBDCL_procedure (_,_,_,exes)
     | BBDCL_function (_,_,_,_,exes) -> exes
     | _ -> []
@@ -110,8 +102,7 @@ let check_proj_wrap_exes syms bsym_table n i xs =
   iter (check_proj_wrap_exe syms bsym_table n i) xs
 
 let check_proj_wrap_entry syms bsym_table n i k =
-  let id,_,_,entry = hfind "check_proj_wrap_entry" bsym_table k in
-  match entry with
+  match Flx_bsym_table.find_bbdcl bsym_table k with
   | BBDCL_function (_,_,_,_,exes)
   | BBDCL_procedure (_,_,_,exes) ->
     (*
@@ -324,10 +315,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
       end;
 
       (* the descendants of the variables parents! *)
-      let parent =
-        match hfind "parallel assign" bsym_table i with
-        | _,parent,_,_ -> parent
-      in
+      let parent = Flx_bsym_table.find_parent bsym_table i in
       let descend = match parent with
         | Some parent -> descendants child_map parent
         | None ->

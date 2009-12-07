@@ -16,13 +16,6 @@ open Flx_spexes
 open Flx_foldvars
 open Flx_args
 
-
-let hfind msg h k =
-  try Flx_bsym_table.find h k
-  with Not_found ->
-    print_endline ("flx_inline Flx_bsym_table.find failed " ^ msg);
-    raise Not_found
-
 let rec vs_is_ts vs ts =  match vs,ts with
   | (_,i)::vt,(BTYP_var (j,BTYP_type 0))::tt when i = j -> vs_is_ts vt tt
   | [],[] -> true

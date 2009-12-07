@@ -14,12 +14,6 @@ open Flx_reparent
 open Flx_spexes
 open Flx_args
 
-let hfind msg h k =
-  try Hashtbl.find h k
-  with Not_found ->
-    print_endline ("flx_inline Hashtbl.find failed " ^ msg);
-    raise Not_found
-
 let ident x = x
 
 (* THIS CODE JUST COUNTS APPLICATIONS *)

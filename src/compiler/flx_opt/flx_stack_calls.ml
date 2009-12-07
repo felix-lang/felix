@@ -17,12 +17,6 @@ let hfind msg h k =
     print_endline ("flx_stack_calls Hashtbl.find failed " ^ msg);
     raise Not_found
 
-let hfind_bsym_table msg h k =
-  try Flx_bsym_table.find h k
-  with Not_found ->
-    print_endline ("flx_stack_calls Flx_bsym_table.find failed " ^ msg);
-    raise Not_found
-
 
 (* first approximation: we can stack functions that have no
   function or procedure children AND no variables: later
@@ -176,47 +170,34 @@ exception Found
 
 let has_var_children bsym_table children =
   try
-    iter
-    (fun i ->
-      let id,parent,sr,entry = hfind_bsym_table "has_var_children" bsym_table i in
-      match entry with
-      | BBDCL_var _  -> raise Found
+    List.iter begin fun i ->
+      match Flx_bsym_table.find_bbdcl bsym_table i with
+      | BBDCL_var _ -> raise Found
       | _ -> ()
-    )
-    children
-    ;
+    end children;
     false
   with Found -> true
 
 let has_fun_children bsym_table children =
   try
-    iter
-    (fun i ->
-      let id,parent,sr,entry = hfind_bsym_table "has_fun_children" bsym_table i in
-      match entry with
+    List.iter begin fun i ->
+      match Flx_bsym_table.find_bbdcl bsym_table i with
       | BBDCL_procedure _
       | BBDCL_function _ -> raise Found
       | _ -> ()
-    )
-    children
-    ;
+    end children;
    false 
   with Found -> true
  
 let has_proc_children bsym_table children =
   try
-    iter
-    (fun i -> 
-      let id,parent,sr,entry = hfind_bsym_table "has_proc_children" bsym_table i in
-      match entry with
+    List.iter begin fun i ->
+      match Flx_bsym_table.find_bbdcl bsym_table i with
       | BBDCL_procedure _ -> raise Found
       | _ -> ()
-    )
-    children
-    ;
+    end children;
    false 
   with Found -> true
-
 
 
 (* NOTE: this won't work for abstracted types like unions
@@ -254,8 +235,7 @@ let type_has_fn cache syms bsym_table children t =
         raise Unsafe
 
       | BTYP_inst (i,ts) ->
-        let id,parent,sr,entry = hfind_bsym_table "type_has_fun: inst" bsym_table i in
-        begin match entry with
+        begin match Flx_bsym_table.find_bbdcl bsym_table i with
         | BBDCL_newtype _ -> () (* FIXME *)
         | BBDCL_abs _ -> ()
         | BBDCL_union (vs,cs)->
@@ -306,8 +286,7 @@ let type_has_ptr cache syms bsym_table children t =
         Hashtbl.replace cache t `Unsafe;
         raise Unsafe
       | BTYP_inst (i,ts) ->
-        let id,parent,sr,entry = hfind_bsym_table "type_has_ptr: inst" bsym_table i in
-        begin match entry with
+        begin match Flx_bsym_table.find_bbdcl bsym_table i with
         | BBDCL_newtype _ -> () (* FIXME *)
         | BBDCL_abs _ -> ()
         | BBDCL_union (vs,cs)->

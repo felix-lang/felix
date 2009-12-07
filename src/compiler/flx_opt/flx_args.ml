@@ -16,16 +16,10 @@ open Flx_reparent
 open Flx_spexes
 open Flx_foldvars
 
-let hfind msg h k =
-  try Flx_bsym_table.find h k
-  with Not_found ->
-    print_endline ("flx_inline Flx_bsym_table.find failed " ^ msg);
-    raise Not_found
-
 let get_ps bsym_table f =
-  match hfind "get_ps" bsym_table f with
-  | _,_,_,BBDCL_function (_,_,(ps,_),_,_)
-  | _,_,_,BBDCL_procedure (_,_,(ps,_),_) -> ps
+  match Flx_bsym_table.find_bbdcl bsym_table f with
+  | BBDCL_function (_,_,(ps,_),_,_)
+  | BBDCL_procedure (_,_,(ps,_),_) -> ps
   | _ -> assert false
 
 let unpack syms bsym_table f ps a : tbexpr_t list =
