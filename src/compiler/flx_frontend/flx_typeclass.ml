@@ -435,11 +435,9 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
      j,ts
 
   | candidates ->
-    let id,parent,sr,entry =
-       try Flx_bsym_table.find bsym_table i
-       with Not_found -> failwith
-        ("Woops can't find virtual function index "  ^ string_of_bid i)
-    in
+    if not (Flx_bsym_table.mem bsym_table i) then
+      failwith ("Woops can't find virtual function index "  ^ string_of_bid i);
+
     (*
     print_endline
     ("Unimplemented: Multiple matching instances for typeclass virtual instance\n"

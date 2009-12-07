@@ -59,15 +59,17 @@ let fixps bsym_table (ps,traint) =
   | Some t -> Some (fixexpr bsym_table t)
   )
 
-let strabs_symbol state bsym_table index (id,parent,sr,entry) =
+let strabs_symbol state bsym_table index (id,parent,sr,bbdcl) =
   let ft t = fixtype bsym_table t in
   let fts ts = map (fixtype bsym_table) ts in
   let fe e = fixexpr bsym_table e in
   let fxs xs = fixbexes bsym_table xs in
   let fp bps = fixps bsym_table bps in
 
-  let h x = Flx_bsym_table.add bsym_table index (id,parent,sr,x) in
-  match entry with
+  let h bbdcl =
+    Flx_bsym_table.add bsym_table index (id,parent,sr,bbdcl)
+  in
+  match bbdcl with
   | BBDCL_function (props, bvs, bps, ret, bexes) ->
     h (BBDCL_function (props, bvs, fp bps, ft ret, fxs bexes))
 

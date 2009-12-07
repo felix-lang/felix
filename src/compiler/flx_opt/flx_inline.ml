@@ -1281,13 +1281,13 @@ and remove_unused_children syms (uses,child_map,bsym_table) i =
   end
 
 and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
-  let specs =
+  let bsym =
     try Some (Flx_bsym_table.find bsym_table i)
     with Not_found -> None
   in
-  match specs with None -> () | Some spec ->
-  match spec with
-  | id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes) ->
+  match bsym with None -> () | Some (id,parent,sr,bbdcl) ->
+  match bbdcl with
+  | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     (*
     print_endline ("HIB: consider procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
     *)
@@ -1362,7 +1362,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       *)
     end
 
-  | id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
       let data = id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes) in

@@ -83,12 +83,12 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
     (*
     print_endline "apply direct";
     *)
-    let id,parent,sr2,entry =
+    let id,parent,sr2,bbdcl =
       try Flx_bsym_table.find bsym_table index
       with _ -> failwith ("[process_expr(apply instance)] Can't find index " ^
         string_of_bid index)
     in
-    begin match entry with
+    begin match bbdcl with
     (* function type not needed for direct call *)
     | BBDCL_fun _
     | BBDCL_callback _

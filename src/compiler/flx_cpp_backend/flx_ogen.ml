@@ -35,10 +35,10 @@ let find_references syms bsym_table child_map index ts =
   iter
   (fun idx ->
     try
-      let id,_,_,bbdfn =
+      let id,_,_,bbdcl =
         Flx_bsym_table.find bsym_table idx
       in
-      match bbdfn with
+      match bbdcl with
       | BBDCL_var (vs,t)
       | BBDCL_ref (vs,t)
       | BBDCL_val (vs,t)
@@ -569,14 +569,14 @@ let gen_offset_tables syms bsym_table child_map module_name =
 
     | BTYP_inst (i,ts) ->
       let name = cpp_typename syms bsym_table btyp in
-      let id,parent,sr,entry =
+      let id,parent,sr,bbdcl =
         try Flx_bsym_table.find bsym_table i
         with Not_found ->
           failwith (
             "[gen_offset_tables:BTYP_inst:allocable_types] can't find index " ^
             string_of_bid i)
       in
-      begin match entry with
+      begin match bbdcl with
       | BBDCL_abs (_,quals,_,_) ->
         let complete = not (mem `Incomplete quals) in
         let pod = mem `Pod quals in

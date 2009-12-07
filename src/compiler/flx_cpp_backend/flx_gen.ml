@@ -36,7 +36,7 @@ let find_variable_indices syms bsym_table child_map index =
   children
 
 let get_variable_typename syms bsym_table i ts =
-  let id,parent,sr,entry =
+  let id,parent,sr,bbdcl =
     try Flx_bsym_table.find bsym_table i with Not_found ->
       failwith ("[get_variable_typename] can't find index " ^ string_of_bid i)
   in
@@ -111,12 +111,12 @@ let is_gc_pointer syms bsym_table sr t =
   | BTYP_function _ -> true
   | BTYP_pointer _ -> true
   | BTYP_inst (i,_) ->
-    let id,sr,parent,entry =
+    let _,_,_,bbdcl =
       try Flx_bsym_table.find bsym_table i with Not_found ->
         clierr sr ("[is_gc_pointer] Can't find nominal type " ^
           string_of_bid i);
     in
-    begin match entry with
+    begin match bbdcl with
     | BBDCL_abs (_,tqs,_,_) -> mem `GC_pointer tqs
     | _ -> false
     end
