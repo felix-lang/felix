@@ -18,7 +18,7 @@ open Flx_beta
 open Flx_prop
 
 let cal_parent syms bsym_table i' ts' =
-  let id,parent,sr,_ = Flx_bsym_table.find bsym_table i' in
+  let (_,parent,_,_) as bsym = Flx_bsym_table.find bsym_table i' in
   match parent with
   | None -> None
   | Some i ->
@@ -191,33 +191,45 @@ let fixup_exes syms bsym_table fi mt exes =
   map (fixup_exe syms bsym_table fi mt) exes
 
 let mono syms bsym_table fi i ts n =
-  let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
-  match entry with
-
+  let id,parent,sr,bbdcl = Flx_bsym_table.find bsym_table i in
+  let mt vars t =
+    reduce_type
+    (beta_reduce
+      syms
+      bsym_table
+      sr
+      (fixup_type syms bsym_table fi (list_subst syms.counter vars t)))
+  in
+  let update_bsym parent bbdcl =
+    Flx_bsym_table.add bsym_table n (id,parent,sr,bbdcl)
+  in
+  match bbdcl with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms bsym_table sr (fixup_type syms bsym_table fi (list_subst syms.counter vars t))) in
-    let ret = mt ret in
+    let ret = mt vars ret in
     (*
     let fi i ts = fi i (map mt ts) in
     *)
     let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
-      {pkind=pk;pid=s;pindex=fst (fi i ts);ptyp=mt t}) ps
+      {pkind=pk;pid=s;pindex=fst (fi i ts);ptyp=mt vars t}) ps
     in
-    let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bsym_table fi mt x) in
-    let exes = fixup_exes syms bsym_table fi mt exes in
-    let entry = BBDCL_function (props,[],(ps,traint),ret,exes) in
+    let traint =
+      match traint with
+      | None -> None
+      | Some x -> Some (fixup_expr syms bsym_table fi (mt vars) x)
+    in
+    let exes = fixup_exes syms bsym_table fi (mt vars) exes in
+    let bbdcl = BBDCL_function (props,[],(ps,traint),ret,exes) in
     let parent = cal_parent syms bsym_table i ts in
-    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
+    update_bsym parent bbdcl
 
   | BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms bsym_table sr (fixup_type syms bsym_table fi (list_subst syms.counter vars t))) in
     let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
       let k = fst (fi i ts) in
-      let u = mt t in
+      let u = mt vars t in
       (*
       print_endline ("Remap parameter " ^ s ^"<"^ si i ^ "> (type " ^
         sbt bsym_table t ^
@@ -225,77 +237,74 @@ let mono syms bsym_table fi i ts n =
       *)
       {pkind=pk;pid=s;pindex=k;ptyp=u}) ps
     in
-    let traint = match traint with | None -> None | Some x -> Some (fixup_expr syms bsym_table fi mt x) in
+    let traint =
+      match traint with
+      | None -> None
+      | Some x -> Some (fixup_expr syms bsym_table fi (mt vars) x)
+    in
     (*
     let fi i ts = fi i (map mt ts) in
     *)
-    let exes = fixup_exes syms bsym_table fi mt exes in
-    let entry = BBDCL_procedure (props,[],(ps,traint), exes) in
+    let exes = fixup_exes syms bsym_table fi (mt vars) exes in
+    let bbdcl = BBDCL_procedure (props,[],(ps,traint), exes) in
     let parent = cal_parent syms bsym_table i ts in
-    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
+    update_bsym parent bbdcl
 
   | BBDCL_val (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms bsym_table sr (fixup_type syms bsym_table fi (list_subst syms.counter vars t))) in
-    let t = mt t in
-    let entry = BBDCL_val ([],t) in
+    let t = mt vars t in
+    let bbdcl = BBDCL_val ([],t) in
     let parent = cal_parent syms bsym_table i ts in
-    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
+    update_bsym parent bbdcl
 
   | BBDCL_var (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms bsym_table sr (fixup_type syms bsym_table fi (list_subst syms.counter vars t))) in
-    let t = mt t in
-    let entry = BBDCL_var ([],t) in
+    let t = mt vars t in
+    let bbdcl = BBDCL_var ([],t) in
     let parent = cal_parent syms bsym_table i ts in
-    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
+    update_bsym parent bbdcl
 
   | BBDCL_ref (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms bsym_table sr (fixup_type syms bsym_table fi (list_subst syms.counter vars t))) in
-    let t = mt t in
-    let entry = BBDCL_ref ([],t) in
+    let t = mt vars t in
+    let bbdcl = BBDCL_ref ([],t) in
     let parent = cal_parent syms bsym_table i ts in
-    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
+    update_bsym parent bbdcl
 
   | BBDCL_tmp (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms bsym_table sr (fixup_type syms bsym_table fi (list_subst syms.counter vars t))) in
-    let t = mt t in
-    let entry = BBDCL_tmp ([],t) in
+    let t = mt vars t in
+    let bbdcl = BBDCL_tmp ([],t) in
     let parent = cal_parent syms bsym_table i ts in
-    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
+    update_bsym parent bbdcl
 
   (* we have tp replace types in interfaces like Vector[int]
     with monomorphic versions if any .. even if we don't
-    monomorphise the entry itself.
+    monomorphise the bbdcl itself.
 
     This is weak .. it's redone for each instance, relies
     on mt being idempotent..
   *)
   | BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms bsym_table sr (fixup_type syms bsym_table fi (list_subst syms.counter vars t))) in
-    let argtypes = map mt argtypes in
-    let ret = mt ret in
-    let entry = BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) in
-    Flx_bsym_table.add bsym_table i (id,parent, sr, entry)
+    let argtypes = map (mt vars) argtypes in
+    let ret = mt vars ret in
+    let bbdcl = BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) in
+    update_bsym parent bbdcl
 
 
   | BBDCL_proc (props,vs,argtypes,ct,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms bsym_table sr (fixup_type syms bsym_table fi (list_subst syms.counter vars t))) in
-    let argtypes = map mt argtypes in
-    let entry = BBDCL_proc (props,vs,argtypes,ct,reqs) in
-    Flx_bsym_table.add bsym_table i (id,parent, sr, entry)
+    let argtypes = map (mt vars) argtypes in
+    let bbdcl = BBDCL_proc (props,vs,argtypes,ct,reqs) in
+    update_bsym parent bbdcl
 
   | BBDCL_const (props, vs, t, CS_str "#this", reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let mt t = reduce_type (beta_reduce syms bsym_table sr (fixup_type syms bsym_table fi (list_subst syms.counter vars t))) in
-    let t = mt t in
-    let entry = BBDCL_const (props, [], t, CS_str "#this", reqs) in
+    let t = mt vars t in
+    let bbdcl = BBDCL_const (props, [], t, CS_str "#this", reqs) in
     let parent = cal_parent syms bsym_table i ts in
-    Flx_bsym_table.add bsym_table n (id,parent,sr,entry)
+    update_bsym parent bbdcl
 
   | _ -> ()
 
