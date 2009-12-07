@@ -14,8 +14,6 @@ open Flx_use
 open Flx_child
 open Flx_beta
 
-let dummy_sr = Flx_srcref.make_dummy "[flx_typeclass] generated"
-
 let vs2ts vs = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) vs
 
 (* drop first n elements of list l *)
