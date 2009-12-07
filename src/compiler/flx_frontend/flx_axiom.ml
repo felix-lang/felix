@@ -18,8 +18,7 @@ let string_of_bvs bvs =
 
 let verify syms bsym_table csr e =
   let xx = ref [] in
-  iter
-  ( fun (id, axsr, parent, axiom_kind, bvs, (bpl,precond), x) ->
+  iter (fun (id, axsr, parent, axiom_kind, bvs, (bpl,precond), x) ->
     match x with | `BEquation _ -> () | `BPredicate x ->
     (*
     print_endline ("Checking for cases of axiom " ^ id);
@@ -76,12 +75,20 @@ let verify syms bsym_table csr e =
               in
               match insts with | None -> false | Some insts ->
               try
-                iter (fun (instidx,(inst_bvs, inst_traint, inst_ts)) ->
-                  match tcinst_chk syms bsym_table true i ts sr (inst_bvs, inst_traint, inst_ts, instidx) with
+                iter begin fun (instidx,(inst_bvs, inst_traint, inst_ts)) ->
+                  match
+                    tcinst_chk
+                      syms
+                      bsym_table
+                      true
+                      i
+                      ts
+                      sr
+                      (inst_bvs, inst_traint, inst_ts, instidx)
+                  with
                   | None -> ()
                   | Some _ -> raise Not_found
-                )
-                insts;
+                end insts;
                 (*
                 print_endline "Couldn't find instance";
                 *)

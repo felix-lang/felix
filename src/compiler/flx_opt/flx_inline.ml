@@ -129,9 +129,23 @@ let call_lifting syms (uses,child_map,bsym_table) caller caller_vs callee ts a a
       caller_vs callee_vs_len callee (Some caller) relabel varmap false []
     in
     (* use the inliner to handle the heavy work *)
-    let body =
-      gen_body syms (uses,child_map,bsym_table) id varmap ps relabel revariable
-      exes a sr caller callee caller_vs callee_vs_len `Lazy props
+    let body = gen_body
+      syms
+      (uses,child_map,bsym_table)
+      id
+      varmap
+      ps
+      relabel
+      revariable
+      exes
+      a
+      sr
+      caller
+      callee
+      caller_vs
+      callee_vs_len
+      `Lazy
+      props
     in
 
     (* replace all function returns with tailed calls *)
@@ -202,9 +216,23 @@ let inline_tail_apply syms (uses,child_map,bsym_table) caller caller_vs callee t
     in
 
     (* use the inliner to handle the heavy work *)
-    let body =
-      gen_body syms (uses,child_map,bsym_table) id varmap ps relabel revariable
-      exes a sr caller callee caller_vs callee_vs_len `Lazy props
+    let body = gen_body
+      syms
+      (uses,child_map,bsym_table)
+      id
+      varmap
+      ps
+      relabel
+      revariable
+      exes
+      a
+      sr
+      caller
+      callee
+      caller_vs
+      callee_vs_len
+      `Lazy
+      props
     in
     revariable,rev body
 
@@ -242,9 +270,23 @@ let inline_function syms (uses,child_map,bsym_table) caller caller_vs callee ts 
     in
 
     (* use the inliner to handle the heavy work *)
-    let body =
-      gen_body syms (uses,child_map,bsym_table) id varmap ps relabel revariable
-      exes a sr caller callee caller_vs callee_vs_len `Lazy props
+    let body = gen_body
+      syms
+      (uses,child_map,bsym_table)
+      id
+      varmap
+      ps
+      relabel
+      revariable
+      exes
+      a
+      sr
+      caller
+      callee
+      caller_vs
+      callee_vs_len
+      `Lazy
+      props
     in
 
     (*
@@ -451,9 +493,23 @@ let heavy_inline_call syms (uses,child_map,bsym_table)
     syms (uses,child_map,bsym_table)
     caller_vs callee_vs_len callee (Some caller) relabel varmap false []
   in
-  let xs = gen_body syms (uses,child_map,bsym_table) id
-    varmap ps relabel revariable exes
-    argument sr caller callee caller_vs callee_vs_len `Lazy props
+  let xs = gen_body
+    syms
+    (uses,child_map,bsym_table)
+    id
+    varmap
+    ps
+    relabel
+    revariable
+    exes
+    argument
+    sr
+    caller
+    callee
+    caller_vs
+    callee_vs_len
+    `Lazy
+    props
   in
     revariable,rev xs (* forward order *)
 
@@ -625,7 +681,11 @@ let virtual_check syms bsym_table sr i ts =
     (*
     print_endline ("Examining call to virtual " ^ id);
     *)
-    let parent = match parent with | Some p -> p | None -> assert false in
+    let parent =
+      match parent with
+      | Some p -> p
+      | None -> assert false
+    in
     let tcvslen =
       try
         let id,_,_,bbdcl = Flx_bsym_table.find bsym_table parent in
@@ -1044,9 +1104,17 @@ and heavy_inline_calls
         begin
           if syms.compiler_options.print_flag then
           print_endline ("inlining direct call: " ^ string_of_bexe bsym_table 0 exe);
-          let revariable,xs =
-            heavy_inline_call syms (uses,child_map,bsym_table)
-            caller caller_vs callee ts argument id sr (props,vs,(ps,traint),exes)
+          let revariable,xs = heavy_inline_call
+            syms
+            (uses,child_map,bsym_table)
+            caller
+            caller_vs
+            callee
+            ts
+            argument
+            id
+            sr
+            (props,vs,(ps,traint),exes)
           in
           let xs = hic revariable callee xs in
           exes' := rev xs @ !exes'

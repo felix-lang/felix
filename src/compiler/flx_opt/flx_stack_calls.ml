@@ -50,7 +50,7 @@ let hfind msg h k =
   it is also stackable, and the C function model can't be used
   for either if a heap closure is formed.
 *)
-let rec is_pure syms (child_map, bsym_table) i =
+let rec is_pure syms bsym_table child_map i =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
   let id,parent,sr,entry = Flx_bsym_table.find bsym_table i in
   (*
@@ -95,7 +95,7 @@ let rec is_pure syms (child_map, bsym_table) i =
     | None ->
     try
       iter (fun kid ->
-        if not (is_pure syms (child_map, bsym_table) kid)
+        if not (is_pure syms bsym_table child_map kid)
         then begin
           (*
           print_endline ("Child " ^ si kid ^ " of " ^ id ^ " is not pure");
@@ -549,7 +549,7 @@ and check_stackable_proc
       *)
       let props = `Stackable :: props in
       let props =
-        if is_pure syms (child_map,bsym_table) i then `Pure :: props else props
+        if is_pure syms bsym_table child_map i then `Pure :: props else props
       in
       let entry : bbdcl_t = BBDCL_procedure (props,vs,p,exes) in
       Flx_bsym_table.add bsym_table i (id,parent,sr,entry);
@@ -602,15 +602,14 @@ let rec enstack_applies syms bsym_table child_map fn_cache ptr_cache x =
   | x -> x
 
 let mark_stackable syms bsym_table child_map fn_cache ptr_cache label_map label_usage =
-  Flx_bsym_table.iter
-  (fun i (id,parent,sr,entry) ->
-    match entry with
+  Flx_bsym_table.iter begin fun i (id,parent,sr,bbdcl) ->
+    match bbdcl with
     | BBDCL_function (props,vs,p,ret,exes) ->
       let props: property_t list ref = ref props in
       if can_stack_func syms bsym_table child_map fn_cache ptr_cache i then
       begin
         props := `Stackable :: !props;
-        if is_pure syms (child_map,bsym_table) i then
+        if is_pure syms bsym_table child_map i then
         begin
           (*
           print_endline ("Function " ^ id ^ "<" ^ si i ^ "> is PURE");
@@ -643,8 +642,7 @@ let mark_stackable syms bsym_table child_map fn_cache ptr_cache label_map label_
         i
         [])
     | _ -> ()
-  )
-  bsym_table
+  end bsym_table
 
 let enstack_calls syms bsym_table child_map fn_cache ptr_cache self exes =
   let ea e = enstack_applies syms bsym_table child_map fn_cache ptr_cache e in
@@ -704,8 +702,8 @@ let make_stack_calls
     label_map
     label_usage;
 
-  Flx_bsym_table.iter
-  (fun i (id,parent,sr,entry) -> match entry with
+  Flx_bsym_table.iter begin fun i (id,parent,sr,bbdcl) ->
+    match bbdcl with
     | BBDCL_procedure (props,vs,p,exes) ->
       let exes = enstack_calls
         syms
@@ -748,5 +746,4 @@ let make_stack_calls
       end
 
     | _ -> ()
-  )
-  bsym_table
+  end bsym_table

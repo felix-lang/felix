@@ -101,8 +101,8 @@ let locals child_map uses i =
 let fold_vars syms bsym_table child_map uses i ps exes =
   let pset = fold_left (fun s {pindex=i}-> BidSet.add i s) BidSet.empty ps in
   let kids = find_children child_map i in
-  let id,_,_,_ = Flx_bsym_table.find bsym_table i in
   (*
+  let id,_,_,_ = Flx_bsym_table.find bsym_table i in
   print_endline ("\nFOLDing " ^ id ^ "<" ^ si i ^">");
   print_endline ("Kids = " ^ catmap ", " si kids);
   *)
@@ -127,8 +127,8 @@ let fold_vars syms bsym_table child_map uses i ps exes =
         | BEXE_assign (_, (BEXPR_name (j,_),_),y)
       ) as x) :: t  when BidSet.mem j locls ->
 
-        let id,_,_,_ = Flx_bsym_table.find bsym_table j in
         (*
+        let id,_,_,_ = Flx_bsym_table.find bsym_table j in
         print_endline ("CONSIDERING VARIABLE " ^ id ^ "<" ^ si j ^ "> -> " ^ sbe bsym_table y);
         *)
         (* does uses include initialisations or not ..?? *)

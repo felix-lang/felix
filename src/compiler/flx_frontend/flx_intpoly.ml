@@ -302,7 +302,7 @@ let cal_polyvars syms bsym_table child_map =
       let ps,ret,vs =
         match Flx_bsym_table.find_bbdcl bsym_table i with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret,vs
-        | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps,BTYP_void,vs
+        | BBDCL_procedure (props,vs,(ps,traint),exes) -> ps,BTYP_void,vs
       | _ -> raise Skip 
       in
       let pts = map (fun {ptyp=t}->t) ps in

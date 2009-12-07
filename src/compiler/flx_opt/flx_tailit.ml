@@ -570,19 +570,17 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
       let exes = aux exes [] in
 
       (* instantiate any parameter temporaries *)
-      iter
-        (fun (paramtype, parameter) ->
-          let entry = BBDCL_tmp (vs,paramtype) in
-          let kids =
-            try Hashtbl.find child_map this
-            with Not_found -> []
-          in
-          Hashtbl.replace child_map this (parameter::kids);
-          let id = "_trp_" ^ string_of_bid parameter in
-          Flx_bsym_table.add bsym_table parameter (id,Some this,sr,entry);
-        )
-      !parameters
-      ;
+      List.iter begin fun (paramtype, parameter) ->
+        let kids =
+          try Hashtbl.find child_map this
+          with Not_found -> []
+        in
+        Hashtbl.replace child_map this (parameter::kids);
+        let id = "_trp_" ^ string_of_bid parameter in
+        let entry = BBDCL_tmp (vs,paramtype) in
+        Flx_bsym_table.add bsym_table parameter (id,Some this,sr,entry);
+      end !parameters;
+
       (* return with posssible label at start *)
       let exes =
         if !jump_done

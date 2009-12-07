@@ -270,7 +270,9 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     )
     reqs
   in
-  let ue hvarmap e = process_expr syms bsym_table ref_insts1 hvarmap sr e in
+  let ue hvarmap e =
+    process_expr syms bsym_table ref_insts1 hvarmap sr e
+  in
   let rtr t = register_type_r uis syms bsym_table [] sr t in
   let rtnr t = register_type_nr syms bsym_table (reduce_type t) in
   if syms.compiler_options.print_flag then
@@ -299,7 +301,17 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
       hvarmap ""
     );
     *)
-    process_function syms bsym_table hvarmap ref_insts1 i sr argtypes ret exes ts
+    process_function
+      syms
+      bsym_table
+      hvarmap
+      ref_insts1
+      i
+      sr
+      argtypes
+      ret
+      exes
+      ts
 
   | BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let argtypes = map (fun {ptyp=t}->t) ps in
@@ -313,7 +325,17 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
       )
       ps
     ;
-    process_function syms bsym_table hvarmap ref_insts1 i sr argtypes BTYP_void exes ts
+    process_function
+      syms
+      bsym_table
+      hvarmap
+      ref_insts1
+      i
+      sr
+      argtypes
+      BTYP_void
+      exes
+      ts
 
   | BBDCL_union (vs,ps) ->
     let argtypes = map (fun (_,_,t)->t) ps in
@@ -413,7 +435,17 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs;
-    process_function syms bsym_table hvarmap ref_insts1 i sr argtypes ret [] ts
+    process_function
+      syms
+      bsym_table
+      hvarmap
+      ref_insts1
+      i
+      sr
+      argtypes
+      ret
+      []
+      ts
 
   | BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,_) ->
     (*
@@ -447,7 +479,17 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs;
-    process_function syms bsym_table hvarmap ref_insts1 i sr argtypes BTYP_void [] ts
+    process_function
+      syms
+      bsym_table
+      hvarmap
+      ref_insts1
+      i
+      sr
+      argtypes
+      BTYP_void
+      []
+      ts
 
   | BBDCL_abs (vs,_,_,reqs)
     ->

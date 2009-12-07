@@ -2397,14 +2397,10 @@ and string_of_bbdcl bsym_table (bbdcl:bbdcl_t) index : string =
     ";"
 
 
-let string_of_dfn bsym_table i =
-  let _, _, sr, bbdcl = Flx_bsym_table.find bsym_table i in
-  string_of_bbdcl bsym_table bbdcl i
-  ^ "\n  defined at " ^ Flx_srcref.short_string_of_src sr
-
 let full_string_of_entry_kind bsym_table {base_sym=i; spec_vs=vs; sub_ts=ts} =
-  string_of_dfn bsym_table i ^
-  "\n  with view" ^
+  let _,_,sr,bbdcl = Flx_bsym_table.find bsym_table i in
+  string_of_bbdcl bsym_table bbdcl i ^
+  "\n  defined at " ^ Flx_srcref.short_string_of_src sr ^ "\n  with view" ^
   " vs=" ^ catmap "," (fun (s,_)->s) vs ^
   " ts=" ^ catmap "," (sbt bsym_table) ts
 
@@ -2492,47 +2488,69 @@ let print_function_body bsym_table id i (bvs:bvs_t) ps exes parent =
   exes
 
 let print_function bsym_table i =
-  match Flx_bsym_table.find bsym_table i with (id,parent,_,entry) ->
-  match entry with
+  let id,parent,_,bbdcl = Flx_bsym_table.find bsym_table i in
+  match bbdcl with
   | BBDCL_function (_,bvs,ps,_,exes)
   | BBDCL_procedure (_,bvs,ps,exes) ->
-    print_function_body bsym_table id i bvs ps exes parent
+      print_function_body
+        bsym_table
+        id
+        i
+        bvs
+        ps
+        exes
+        parent
   | _ -> ()
 
 let print_functions bsym_table bsym_table =
-  Flx_bsym_table.iter
-  (fun i (id,parent,_,entry) -> match entry with
-  | BBDCL_function (_,bvs,ps,_,exes)
-  | BBDCL_procedure (_,bvs,ps,exes) ->
-    print_function_body bsym_table id i bvs ps exes parent
-
-  | _ -> ()
-  )
-  bsym_table
+  Flx_bsym_table.iter begin fun i (id,parent,_,bbdcl) ->
+    match bbdcl with
+    | BBDCL_function (_,bvs,ps,_,exes)
+    | BBDCL_procedure (_,bvs,ps,exes) ->
+        print_function_body
+          bsym_table
+          id
+          i
+          bvs
+          ps
+          exes
+          parent
+    | _ -> ()
+  end bsym_table
 
 let print_symbols bsym_table =
-  Flx_bsym_table.iter
-  (fun i (id,parent,_,entry) -> match entry with
-  | BBDCL_function (_,bvs,ps,_,exes)
-  | BBDCL_procedure (_,bvs,ps,exes) ->
-    print_function_body bsym_table id i bvs ps exes parent
-  | BBDCL_var (bvs,t) ->
-    print_endline ("VARIABLE " ^ id ^ "<" ^ string_of_bid i ^ "> [" ^
-      catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs ^
-      "] parent " ^
-      (match parent with None -> "NONE" | Some k -> string_of_bid k) ^
-      " type " ^ sbt bsym_table t
-    )
-  | BBDCL_val (bvs,t) ->
-    print_endline ("VALUE " ^ id ^ "<" ^ string_of_bid i ^ "> [" ^
-      catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs ^
-      "] parent " ^
-      (match parent with None -> "NONE" | Some k -> string_of_bid k) ^
-      " type " ^ sbt bsym_table t
-    )
-  | _ -> ()
-  )
-  bsym_table
+  Flx_bsym_table.iter begin fun i (id,parent,_,bbdcl) ->
+    match bbdcl with
+    | BBDCL_function (_,bvs,ps,_,exes)
+    | BBDCL_procedure (_,bvs,ps,exes) ->
+        print_function_body
+          bsym_table
+          id
+          i
+          bvs
+          ps
+          exes
+          parent
+    | BBDCL_var (bvs,t) ->
+        Printf.printf "VARIABLE %s <%s> [%s] parent %s type %s"
+          id
+          (string_of_bid i)
+          (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)
+          (match parent with
+          | None -> "NONE"
+          | Some k -> string_of_bid k)
+          (sbt bsym_table t)
+    | BBDCL_val (bvs,t) ->
+        Printf.printf "VALUE %s <%s> [%s] parent %s type %s"
+          id
+          (string_of_bid i)
+          (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)
+          (match parent with
+          | None -> "NONE"
+          | Some k -> string_of_bid k)
+          (sbt bsym_table t)
+    | _ -> ()
+  end bsym_table
 
 let string_of_name_map name_map =
   let s =
@@ -2564,7 +2582,7 @@ let print_sym_table sym_table =
   end sym_table
 
 let print_bsym_table bsym_table =
-  Flx_bsym_table.iter begin fun index (name,parent,sr,entry) ->
+  Flx_bsym_table.iter begin fun index (_,_,_,bbdcl) ->
     print_endline (string_of_bid index ^ " --> " ^
-      string_of_bbdcl bsym_table entry index)
+      string_of_bbdcl bsym_table bbdcl index)
   end bsym_table

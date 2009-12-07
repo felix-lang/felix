@@ -71,12 +71,12 @@ let check_instance
       let id,_,_,entry = Flx_bsym_table.find bsym_table i in
       match entry with
       | BBDCL_fun (_,bvs,params,ret,_,_,_) ->
-        let argt  : btypecode_t= typeoflist params in
+        let argt = typeoflist params in
         let qt = bvs,BTYP_function (argt,ret) in
         (id,(i,qt)) :: acc
 
       | BBDCL_proc (_,bvs,params,_,_) ->
-        let argt  : btypecode_t= typeoflist params in
+        let argt = typeoflist params in
         let qt = bvs,BTYP_function (argt,BTYP_void) in
         (id,(i,qt)) :: acc
 
@@ -270,7 +270,18 @@ let typeclass_instance_check_symbol syms bsym_table child_map i (id, _, sr, entr
       in
       let entry = i, (vs, cons, ts) in
       Hashtbl.replace syms.instances_of_typeclass tc (entry::iss);
-      check_instance syms bsym_table child_map i id vs cons sr props tc ts
+      check_instance
+        syms
+        bsym_table
+        child_map
+        i
+        id
+        vs
+        cons
+        sr
+        props
+        tc
+        ts
   | _ -> ()
 
 let typeclass_instance_check_symbols syms bsym_table child_map bids =
@@ -509,7 +520,11 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
           with Not_found -> failwith
             ("Woops can't find instance function index " ^ string_of_bid j)
         in
-        let parent = match parent with Some k -> k | None -> assert false in
+        let parent =
+          match parent with
+          | Some k -> k
+          | None -> assert false
+        in
         print_endline ("Function " ^ string_of_bid j ^ "[" ^
           catmap "," (sbt bsym_table) ts ^ "]");
         print_endline (" instance parent " ^ string_of_bid parent ^ "[" ^

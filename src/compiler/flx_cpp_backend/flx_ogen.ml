@@ -12,8 +12,7 @@ open Flx_maps
 
 let find_thread_vars_with_type bsym_table =
   let vars = ref [] in
-  Flx_bsym_table.iter
-  (fun k (id,parent,sr,entry) ->
+  Flx_bsym_table.iter begin fun k (id,parent,sr,entry) ->
     match parent,entry with
     | None,BBDCL_var (_,t)
     | None,BBDCL_val (_,t)
@@ -22,9 +21,7 @@ let find_thread_vars_with_type bsym_table =
       -> vars := (k,BTYP_pointer t) :: !vars
 
     | _ -> ()
-  )
-  bsym_table
-  ;
+  end bsym_table;
   !vars
 
 

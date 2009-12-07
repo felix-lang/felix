@@ -92,7 +92,8 @@ let cpp_name bsym_table index =
   | BBDCL_val _ -> "_v"
   | BBDCL_ref _ -> "_v"
   | BBDCL_tmp _ -> "_tmp"
-  | _ -> syserr sr "cpp_name expected func,proc,var,val,class,reglex or regmatch"
+  | _ ->
+      syserr sr "cpp_name expected func,proc,var,val,ref, or tmp"
   ) ^ cid_of_bid index ^ "_" ^ cid_of_flxid id
 
 let cpp_instance_name' syms bsym_table index ts =
@@ -197,27 +198,24 @@ let rec cpp_type_classname syms bsym_table t =
       | _ -> "_unk_"
     in
     if ts = [] then
-      match
-        try Some (Flx_bsym_table.find bsym_table i) with Not_found -> None
-      with
-      | Some (id,_,_,BBDCL_cstruct _) -> id
-      | Some (_,_,_,BBDCL_abs (_,_,CS_str "char",_)) -> "char" (* hack .. *)
-      | Some (_,_,_,BBDCL_abs (_,_,CS_str "int",_)) -> "int" (* hack .. *)
-      | Some (_,_,_,BBDCL_abs (_,_,CS_str "short",_)) -> "short" (* hack .. *)
-      | Some (_,_,_,BBDCL_abs (_,_,CS_str "long",_)) -> "long" (* hack .. *)
-      | Some (_,_,_,BBDCL_abs (_,_,CS_str "float",_)) -> "float" (* hack .. *)
-      | Some (_,_,_,BBDCL_abs (_,_,CS_str "double",_)) -> "double" (* hack .. *)
-      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "char",_)) -> "char" (* hack .. *)
-      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "int",_)) -> "int" (* hack .. *)
-      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "short",_)) -> "short" (* hack .. *)
-      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "long",_)) -> "long" (* hack .. *)
-      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "float",_)) -> "float" (* hack .. *)
-      | Some (_,_,_,BBDCL_abs (_,_,CS_str_template "double",_)) -> "double" (* hack .. *)
-      | Some (_,_,_,data)  ->
-        let prefix = cal_prefix data in
-        prefix ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
-      | None ->
-         "_unk_" ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
+      let id,_,_,bbdcl = Flx_bsym_table.find bsym_table i in
+      match bbdcl with
+      | BBDCL_cstruct _ -> id
+      | BBDCL_abs (_,_,CS_str "char",_) -> "char" (* hack .. *)
+      | BBDCL_abs (_,_,CS_str "int",_) -> "int" (* hack .. *)
+      | BBDCL_abs (_,_,CS_str "short",_) -> "short" (* hack .. *)
+      | BBDCL_abs (_,_,CS_str "long",_) -> "long" (* hack .. *)
+      | BBDCL_abs (_,_,CS_str "float",_) -> "float" (* hack .. *)
+      | BBDCL_abs (_,_,CS_str "double",_) -> "double" (* hack .. *)
+      | BBDCL_abs (_,_,CS_str_template "char",_) -> "char" (* hack .. *)
+      | BBDCL_abs (_,_,CS_str_template "int",_) -> "int" (* hack .. *)
+      | BBDCL_abs (_,_,CS_str_template "short",_) -> "short" (* hack .. *)
+      | BBDCL_abs (_,_,CS_str_template "long",_) -> "long" (* hack .. *)
+      | BBDCL_abs (_,_,CS_str_template "float",_) -> "float" (* hack .. *)
+      | BBDCL_abs (_,_,CS_str_template "double",_) -> "double" (* hack .. *)
+      | bbdcl ->
+          let prefix = cal_prefix bbdcl in
+          prefix ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
     else
       "_poly_" ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
 

@@ -548,8 +548,11 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     | BBDCL_struct _
     | BBDCL_fun _
     | BBDCL_proc _ ->
-      failwith ("[gen_expr: closure] Can't wrap primitive proc, fun, or struct '"^id^"' yet")
-    | _ -> failwith ("[gen_expr: closure] Cannot use this kind of name '"^id^"' in expression")
+      failwith ("[gen_expr: closure] Can't wrap primitive proc, fun, or " ^
+        "struct '" ^ id ^ "' yet")
+    | _ ->
+      failwith ("[gen_expr: closure] Cannot use this kind of name '" ^
+      id ^ "' in expression")
     end
 
   | BEXPR_ref (index,ts') ->
@@ -736,16 +739,16 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
             string_of_bid index ^ ">, no instance for ts="^
             catmap "," (sbt bsym_table) ts)
         end;
-        begin let _,_,sr3,entry =
-          try Flx_bsym_table.find bsym_table index'
-          with Not_found -> syserr sr ("MISSING INSTANCE BBDCL " ^
-            string_of_bid index')
-        in
-        match entry with
-        | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
-        | BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
-        | _ ->
-          clierr2 sr sr3 ("expected instance to be function " ^ id)
+        begin
+          let _,_,sr3,entry =
+            try Flx_bsym_table.find bsym_table index' with Not_found ->
+              syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
+          in
+          match entry with
+          | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
+          | BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
+          | _ ->
+              clierr2 sr sr3 ("expected instance to be function " ^ id)
         end
 
       | CS_str s -> ce_expr prec s
@@ -753,7 +756,18 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
         let ts = map tsub ts in
         let retyp = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts retyp)) in
         let retyp = tn retyp in
-        gen_prim_call syms bsym_table tsub ge'' s ts (arg,argt) retyp sr sr2 prec
+        gen_prim_call
+          syms
+          bsym_table
+          tsub
+          ge''
+          s
+          ts
+          (arg,argt)
+          retyp
+          sr
+          sr2
+          prec
       end
 
     | BBDCL_callback (props,vs,ps_cf,ps_c,_,retyp,_,_) ->
@@ -763,7 +777,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       ;
       let ts = map tsub ts in
       let s = id ^ "($a)" in
-      let retyp = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts retyp)) in
+      let retyp = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts retyp)) in
       let retyp = tn retyp in
       gen_prim_call syms bsym_table tsub ge'' s ts (arg,argt) retyp sr sr2 "atom"
 

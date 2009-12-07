@@ -37,8 +37,8 @@ let eliminate_unused_pass state =
 
   (* Delete all the unused symbols *)
   Flx_types.BidSet.iter begin fun i->
-    let id,_,_,_ = Flx_bsym_table.find state.bsym_table i in
     (*
+    let id,_,_,_ = Flx_bsym_table.find state.bsym_table i in
     print_endline ("Removing unused " ^ id ^ "<" ^ si i ^ ">");
     *)
     Flx_bsym_table.remove state.bsym_table i

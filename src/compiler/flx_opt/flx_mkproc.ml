@@ -147,32 +147,30 @@ let mkproc_gen syms bsym_table child_map =
   in
 
   (* make the funproc map *)
-  Flx_bsym_table.iter
-  (fun i (id,parent,sr,bbdcl) -> match bbdcl with
-  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-    let k = fresh_bid syms.counter in
-    Hashtbl.add mkproc_map i (k,0);
-    if syms.compiler_options.print_flag then
-    print_endline ("Detected function to make into a proc? " ^ id ^ "<" ^
-      string_of_bid i ^ "> synth= " ^ string_of_bid k)
+  Flx_bsym_table.iter begin fun i (id,parent,sr,bbdcl) ->
+    match bbdcl with
+    | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+        let k = fresh_bid syms.counter in
+        Hashtbl.add mkproc_map i (k,0);
+        if syms.compiler_options.print_flag then
+        print_endline ("Detected function to make into a proc? " ^
+          id ^ "<" ^ string_of_bid i ^ "> synth= " ^
+          string_of_bid k)
 
-  | _ -> ()
-  )
-  bsym_table
-  ;
+    | _ -> ()
+  end bsym_table;
 
   (* count direct applications of these functions *)
-  Flx_bsym_table.iter
-  (fun i (id,parent,sr,bbdcl) -> match bbdcl with
-  | BBDCL_procedure (props,vs,(ps,traint),exes) ->
-    find_mkproc_exes mkproc_map exes
+  Flx_bsym_table.iter begin fun i (id,parent,sr,bbdcl) ->
+    match bbdcl with
+    | BBDCL_procedure (props,vs,(ps,traint),exes) ->
+        find_mkproc_exes mkproc_map exes
 
-  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-    find_mkproc_exes mkproc_map exes
-  | _ -> ()
-  )
-  bsym_table
-  ;
+    | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+        find_mkproc_exes mkproc_map exes
+
+    | _ -> ()
+  end bsym_table;
 
   if syms.compiler_options.print_flag then
   Hashtbl.iter
@@ -337,28 +335,27 @@ let mkproc_gen syms bsym_table child_map =
 
   (* replace applications *)
   (* DISABLE MODIFICATIONS DURING INITIAL DEPLOYMENT *)
-  Flx_bsym_table.iter
-  (fun i (id, parent, sr, bbdcl) -> match bbdcl with
-  | BBDCL_procedure (props,vs,(ps,traint),exes) ->
-    let exes = mkproc_exes syms bsym_table sr i mkproc_map vs exes in
-    (*
-    ()
-    *)
-    Flx_bsym_table.add bsym_table i
-      (id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes))
+  Flx_bsym_table.iter begin fun i (id, parent, sr, bbdcl) ->
+    let mkproc_exes = mkproc_exes
+      syms
+      bsym_table
+      sr
+      i
+      mkproc_map
+    in
+    match bbdcl with
+    | BBDCL_procedure (props,vs,(ps,traint),exes) ->
+        let exes = mkproc_exes vs exes in
+        Flx_bsym_table.add bsym_table i
+          (id,parent,sr,BBDCL_procedure (props,vs,(ps,traint),exes))
 
-  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-    let exes = mkproc_exes syms bsym_table sr i mkproc_map vs exes in
-    (*
-    ()
-    *)
-    Flx_bsym_table.add bsym_table i
-      (id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes))
+    | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+        let exes = mkproc_exes vs exes in
+        Flx_bsym_table.add bsym_table i
+          (id,parent,sr,BBDCL_function (props,vs,(ps,traint),ret,exes))
 
-  | _ -> ()
-  )
-  bsym_table
-  ;
+    | _ -> ()
+  end bsym_table;
   !nuprocs
   (*
   0 (* TEMPORARY HACK, to prevent infinite recursion *)

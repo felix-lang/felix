@@ -40,8 +40,8 @@ let get_variable_typename syms bsym_table i ts =
     try Flx_bsym_table.find bsym_table i with Not_found ->
       failwith ("[get_variable_typename] can't find index " ^ string_of_bid i)
   in
-  let rt vs t = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts t)) in
-  match entry with
+  let rt vs t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
+  match bbdcl with
   | BBDCL_var (vs,t)
   | BBDCL_val (vs,t)
   | BBDCL_tmp (vs,t)
@@ -115,15 +115,15 @@ let is_gc_pointer syms bsym_table sr t =
       try Flx_bsym_table.find bsym_table i with Not_found ->
         clierr sr ("[is_gc_pointer] Can't find nominal type " ^
           string_of_bid i);
-   in
-   begin match entry with
-   | BBDCL_abs (_,tqs,_,_) -> mem `GC_pointer tqs
-   | _ -> false
-   end
+    in
+    begin match entry with
+    | BBDCL_abs (_,tqs,_,_) -> mem `GC_pointer tqs
+    | _ -> false
+    end
   | _ -> false
 
 let gen_C_function syms bsym_table child_map props index id sr vs bps ret' ts instance_no =
-  let rt vs t = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts t)) in
+  let rt vs t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
   let requires_ptf = mem `Requires_ptf props in
   (*
   print_endline ("C Function " ^ id ^ " " ^ if requires_ptf then "requires ptf" else "does NOT require ptf");
@@ -605,7 +605,7 @@ let gen_functions syms bsym_table child_map =
           "\n");
       end
       ;
-      let rt vs t = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts t)) in
+      let rt vs t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
       if syms.compiler_options.print_flag then
       print_endline
       (
@@ -797,10 +797,10 @@ let gen_exe filename
       begin match ct with
       | CS_identity -> syserr sr "Identity proc is nonsense"
       | CS_virtual ->
-          clierr2 sr sr2 ("Instantiate virtual procedure(1) " ^ id) ;
+          clierr2 sr sr2 ("Instantiate virtual procedure(1) " ^ id);
       | CS_str s -> ws (ce_expr "expr" s)
       | CS_str_template s ->
-        let ss = gen_prim_call syms bsym_table tsub ge' s ts a "Error" sr sr2 "atom"  in
+        let ss = gen_prim_call syms bsym_table tsub ge' s ts a "Error" sr sr2 "atom" in
         ws ss
       end
 
@@ -1438,7 +1438,7 @@ let gen_exes
 let gen_C_function_body filename syms bsym_table child_map
   label_info counter index ts sr instance_no
 =
-  let rt vs t = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts t)) in
+  let rt vs t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
   let id,parent,sr,entry =
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("gen_C_function_body] can't find " ^ string_of_bid index)
@@ -1752,7 +1752,7 @@ let gen_function_methods filename syms bsym_table child_map
     );
     let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
-    let rt' vs t = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts t)) in
+    let rt' vs t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
     let ret = rt' vs ret' in
     if ret = BTYP_tuple [] then "// elided (returns unit)\n","" else
 
@@ -1869,7 +1869,7 @@ let gen_procedure_methods filename syms bsym_table child_map
       failwith ("[gen_procedure_methods] Can't find index " ^
         string_of_bid index)
   in (* can't fail *)
-  let rt vs t = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts t)) in
+  let rt vs t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
   if syms.compiler_options.print_flag then
   print_endline
   (
@@ -2070,7 +2070,7 @@ let gen_execute_methods filename syms bsym_table child_map label_info counter bf
           qualified_name_of_bindex bsym_table index ^ tss ^ "\n");
       end
       ;
-      let rt vs t = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts t)) in
+      let rt vs t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
       let ps_c = map (rt vs) ps_c in
       let ps_cf = map (rt vs) ps_cf in
       let ret = rt vs ret' in

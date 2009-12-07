@@ -8,9 +8,6 @@ open Flx_mtypes2
 open List
 open Flx_maps
 
-let sr  = Flx_srcref.make_dummy "[flx_why] generated"
-
-
 (** Searches the bound symbol table for all the symbols with the given name. *)
 let find_name bsym_table child_map root name =
   let rec search_root bsyms root =

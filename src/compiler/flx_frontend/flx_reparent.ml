@@ -271,7 +271,6 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
   | None -> ()
   end
   ;
-  let id2 = id ^ "_clone_" ^ string_of_bid index in
   match entry with
   | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = rexes exes in
@@ -394,7 +393,9 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
     Flx_bsym_table.add bsym_table k (id,parent,sr,entry)
   *)
 
-  | _ -> syserr sr ("[reparent1] Unexpected: bbdcl " ^ string_of_bbdcl bsym_table entry index)
+  | _ ->
+    syserr sr ("[reparent1] Unexpected: bbdcl " ^
+      string_of_bbdcl bsym_table entry index)
 
 (* make a copy all the descendants of i, changing any
   parent which is i to the given new parent

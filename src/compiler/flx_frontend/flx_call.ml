@@ -266,18 +266,14 @@ let call_report syms bsym_table (uses,usedby) f k =
 
 let print_call_report' syms bsym_table usage f =
   let x = ref [] in
-  Flx_bsym_table.iter
-  (fun k (id,_,sr,entry) ->
-    match entry with
+  Flx_bsym_table.iter begin fun k (_,_,_,bbdcl) ->
+    match bbdcl with
     | BBDCL_procedure _
     | BBDCL_function _
     | BBDCL_var _
-    | BBDCL_val _
-      -> x := k :: !x
+    | BBDCL_val _ -> x := k :: !x
     | _ -> ()
-  )
-  bsym_table
-  ;
+  end bsym_table;
   List.iter
     (call_report syms bsym_table usage f)
     (List.sort compare (!x))
