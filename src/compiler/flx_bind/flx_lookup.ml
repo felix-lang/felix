@@ -1677,7 +1677,13 @@ and cal_ret_type syms sym_table (rs:recstop) index args =
               e []
             )
         in
-        if do_unify syms sym_table bsym_table !ret_type t (* the argument order is crucial *)
+        if Flx_do_unify.do_unify
+          syms
+          sym_table
+          bsym_table
+          !ret_type
+          t
+          (* the argument order is crucial *)
         then
           ret_type := varmap_subst syms.varmap !ret_type
         else begin
@@ -1717,7 +1723,13 @@ and cal_ret_type syms sym_table (rs:recstop) index args =
     ;
     if !return_counter = 0 then (* it's a procedure .. *)
     begin
-      let mgu = do_unify syms sym_table bsym_table !ret_type BTYP_void in
+      let mgu = Flx_do_unify.do_unify
+        syms
+        sym_table
+        bsym_table
+        !ret_type
+        BTYP_void
+      in
       ret_type := varmap_subst syms.varmap !ret_type
     end
     ;

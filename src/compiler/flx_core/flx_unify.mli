@@ -49,19 +49,6 @@ val compare_sigs:
   btypecode_t ->
   partial_order_result_t
 
-(** check if the two types unify: update the
-variable definitions in sym_state ??? Only
-useful if type variables are global, which is
-the function return type unknown variable case..
-*)
-val do_unify:
-  sym_state_t ->
-  Flx_sym_table.t ->
-  Flx_bsym_table.t ->
-  btypecode_t ->
-  btypecode_t ->
-  bool
-
 (** compare for iso-equality *)
 val type_eq:
   bid_t ref -> (* alpha conversion counter *)

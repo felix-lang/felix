@@ -372,7 +372,12 @@ let rec bind_exe state handle_bexe (sr, exe) init =
   | EXE_proc_return ->
     state.proc_return_count <- state.proc_return_count + 1;
     state.reachable <- false;
-    if do_unify state.syms state.sym_table bsym_table state.ret_type BTYP_void
+    if Flx_do_unify.do_unify
+      state.syms
+      state.sym_table
+      bsym_table
+      state.ret_type
+      BTYP_void
     then
       begin
         state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
@@ -399,7 +404,12 @@ let rec bind_exe state handle_bexe (sr, exe) init =
     state.return_count <- state.return_count + 1;
     let e',t' as e = be e in
     let t' = minimise state.syms.counter t' in
-    ignore (do_unify state.syms state.sym_table bsym_table state.ret_type t');
+    ignore (Flx_do_unify.do_unify
+      state.syms
+      state.sym_table
+      bsym_table
+      state.ret_type
+      t');
     state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
     if type_match state.syms.counter state.ret_type t' then
       handle_bexe (BEXE_fun_return (sr,(e',t'))) init
@@ -416,7 +426,12 @@ let rec bind_exe state handle_bexe (sr, exe) init =
     state.return_count <- state.return_count + 1;
     let e',t' = be e in
     let t' = minimise state.syms.counter t' in
-    ignore (do_unify state.syms state.sym_table bsym_table state.ret_type t');
+    ignore (Flx_do_unify.do_unify
+      state.syms
+      state.sym_table
+      bsym_table
+      state.ret_type
+      t');
     state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
     if type_match state.syms.counter state.ret_type t' then
       handle_bexe (BEXE_yield (sr,(e',t'))) init
@@ -574,7 +589,12 @@ let bind_exes state sr exes =
   *)
   if state.return_count = 0 then
   begin
-    if do_unify state.syms state.sym_table bsym_table state.ret_type BTYP_void
+    if Flx_do_unify.do_unify
+      state.syms
+      state.sym_table
+      bsym_table
+      state.ret_type
+      BTYP_void
     then
       state.ret_type <- varmap_subst state.syms.varmap state.ret_type
     else
