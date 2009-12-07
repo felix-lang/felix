@@ -2502,7 +2502,7 @@ let print_function bsym_table i =
         bsym.Flx_bsym.parent
   | _ -> ()
 
-let print_functions bsym_table bsym_table =
+let print_functions bsym_table =
   Flx_bsym_table.iter begin fun i bsym ->
     match bsym.Flx_bsym.bbdcl with
     | BBDCL_function (_,bvs,ps,_,exes)

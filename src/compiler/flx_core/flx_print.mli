@@ -98,7 +98,6 @@ val print_env: env_t -> unit
 val print_env_short: env_t -> unit
 
 val print_functions:
-  Flx_sym_table.t ->
   Flx_bsym_table.t ->
   unit
 
