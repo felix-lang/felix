@@ -2581,6 +2581,11 @@ let print_sym_table sym_table =
     print_newline ();
   end sym_table
 
+let string_of_bsym bsym_table bid =
+  let bsym = Flx_bsym_table.find bsym_table bid in
+  string_of_bid bid ^ " --> " ^
+  string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl bid
+
 let print_bsym_table bsym_table =
   Flx_bsym_table.iter begin fun index (_,_,_,bbdcl) ->
     print_endline (string_of_bid index ^ " --> " ^

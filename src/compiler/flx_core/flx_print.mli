@@ -88,6 +88,11 @@ val string_of_varlist:
   (int * btypecode_t) list ->
   string
 
+val string_of_bsym:
+  Flx_bsym_table.t ->
+  Flx_types.bid_t ->
+  string
+
 val print_env: env_t -> unit
 
 val print_env_short: env_t -> unit
