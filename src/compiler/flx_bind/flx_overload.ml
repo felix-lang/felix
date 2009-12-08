@@ -237,12 +237,7 @@ let sig_of_symdef symdef sr name i = match symdef with
     ))
 
 let resolve sym_table i =
-  let { Flx_sym.id=id;
-        sr=sr;
-        parent=parent;
-        privmap=table;
-        dirs=dirs;
-        symdef=symdef } =
+  let { Flx_sym.id=id; sr=sr; parent=parent; dirs=dirs; symdef=symdef } =
     get_data sym_table i
   in
   let pvs,vs,{raw_type_constraint=con; raw_typeclass_reqs=rtcr} =

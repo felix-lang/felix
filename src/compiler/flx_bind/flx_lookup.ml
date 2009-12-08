@@ -1452,8 +1452,7 @@ and bind_type_index syms sym_table (rs:recstop) sr index ts mkenv
         t
   in
   match get_data sym_table index with
-  | { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; pubmap=tabl; dirs=dirs;
-      symdef=entry } ->
+  | { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; dirs=dirs; symdef=entry } ->
     (*
     if List.length vs <> List.length ts
     then
@@ -1638,8 +1637,12 @@ and cal_ret_type syms sym_table (rs:recstop) index args =
   print_env_short env;
   *)
   match (get_data sym_table index) with
-  | { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; privmap=name_map;
-      dirs=dirs; symdef=SYMDEF_function ((ps,_),rt,props,exes)
+  | { Flx_sym.id=id;
+      sr=sr;
+      parent=parent;
+      vs=vs; 
+      dirs=dirs;
+      symdef=SYMDEF_function ((ps,_),rt,props,exes)
     } ->
     (*
     print_endline ("Calculate return type of " ^ id);
@@ -1814,8 +1817,12 @@ and inner_type_of_index
   then BTYP_fix (-rs.depth)
   else begin
   match get_data sym_table index with
-  | { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; privmap=table;
-      dirs=dirs; symdef=entry }
+  | { Flx_sym.id=id;
+      sr=sr;
+      parent=parent;
+      vs=vs;
+      dirs=dirs;
+      symdef=entry }
   ->
   let mkenv i = build_env syms sym_table (Some i) in
   let env:env_t = mkenv index in
@@ -2186,9 +2193,7 @@ and lookup_qn_with_sig'
   in
   let handle_nonfunction_index index ts =
     begin match get_data sym_table index with
-    | { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; privmap=table;
-        dirs=dirs; symdef=entry }
-    ->
+    | { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; dirs=dirs; symdef=entry } ->
       begin match entry with
       | SYMDEF_inherit_fun qn ->
           clierr sr "Chasing functional inherit in lookup_qn_with_sig'";
@@ -2474,9 +2479,7 @@ and lookup_type_qn_with_sig'
   let handle_nonfunction_index index ts =
     print_endline ("Found non function? index " ^ string_of_bid index);
     begin match get_data sym_table index with
-    { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; privmap=table;
-      dirs=dirs; symdef=entry }
-    ->
+    { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; dirs=dirs; symdef=entry } ->
       begin match entry with
       | SYMDEF_inherit_fun qn ->
           clierr sr "Chasing functional inherit in lookup_qn_with_sig'";
@@ -2752,7 +2755,6 @@ and handle_type
     sr=sr;
     vs=vs;
     parent=parent;
-    privmap=tabl;
     dirs=dirs;
     symdef=entry
   }
@@ -2824,7 +2826,6 @@ and handle_function
     sr=sr;
     vs=vs;
     parent=parent;
-    privmap=tabl;
     dirs=dirs;
     symdef=entry
   }
@@ -2961,8 +2962,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
   match result with
   | NonFunctionEntry (index) ->
     begin match get_data sym_table (sye index) with
-    { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; pubmap=pubmap;
-      symdef=entry }->
+    { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; symdef=entry }->
     (*
     print_endline ("FOUND " ^ id);
     *)
@@ -3106,8 +3106,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         | [NonFunctionEntry i] when
           (
               match get_data sym_table (sye i) with
-              { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; pubmap=pubmap;
-                symdef=entry }->
+              { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; symdef=entry }->
               (*
               print_endline ("FOUND " ^ id);
               *)
@@ -3183,7 +3182,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
   match result with
   | NonFunctionEntry (index) ->
     begin match get_data sym_table (sye index) with
-    { Flx_sym.id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
+    { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; symdef=entry }->
     (*
     print_endline ("FOUND " ^ id);
     *)
@@ -3330,7 +3329,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
         | [NonFunctionEntry i] when
           (
               match get_data sym_table (sye i) with
-              { Flx_sym.id=id;sr=sr;parent=parent;vs=vs;pubmap=pubmap;symdef=entry}->
+              { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; symdef=entry }->
               (*
               print_endline ("FOUND " ^ id);
               *)
@@ -3480,12 +3479,17 @@ and bind_expression' syms sym_table bsym_table env (rs:recstop) e args : tbexpr_
         | None -> clierr sra "Koenig lookup: No parent for method apply (can't handle global yet)"
         | Some index' ->
           match get_data sym_table index' with
-          { Flx_sym.id=id';sr=sr';parent=parent';vs=vs';pubmap=name_map;dirs=dirs;symdef=entry'}
+          { Flx_sym.id=id';
+            sr=sr';
+            parent=parent';
+            vs=vs';
+            pubmap=name_map;
+            dirs=dirs;
+            symdef=entry' }
           ->
           match entry' with
           | SYMDEF_module
-          | SYMDEF_function _
-            ->
+          | SYMDEF_function _ ->
             koenig_lookup syms sym_table env rs sra id' name_map fn t2 (ts @ meth_ts)
 
           | _ -> clierr sra ("Koenig lookup: parent for method apply not module")
@@ -5215,7 +5219,7 @@ and get_includes syms sym_table rs xs =
       let env = mk_bare_env syms sym_table i in (* should have ts in .. *)
       let qns,sr,vs =
         match hfind "lookup" sym_table i with
-        { Flx_sym.id=id;sr=sr;parent=parent;vs=vs;pubmap=table;dirs=dirs} ->
+        { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; dirs=dirs } ->
         (*
         print_endline (id ^", Raw vs = " ^ catmap "," (fun (n,k,_) -> n ^ "<" ^ si k ^ ">") (fst vs));
         *)
@@ -5413,21 +5417,21 @@ and pub_table_dir
 : name_map_t =
   let invs = List.map (fun (i,n,_)->i,n) (fst invs) in
   match get_data sym_table i with
-  | { Flx_sym.id=id; vs=vs; sr=sr; pubmap=table;symdef=SYMDEF_module} ->
-    if List.length ts = 0 then table else
+  | { Flx_sym.id=id; vs=vs; sr=sr; pubmap=pubmap; symdef=SYMDEF_module } ->
+    if List.length ts = 0 then pubmap else
     begin
       (*
       print_endline ("TABLE " ^ id);
       *)
-      let table = make_view_table syms sym_table table invs ts in
+      let table = make_view_table syms sym_table pubmap invs ts in
       (*
       print_name_table sym_table table;
       *)
       table
     end
 
-  | { Flx_sym.id=id; vs=vs; sr=sr; pubmap=table;symdef=SYMDEF_typeclass} ->
-    let table = make_view_table syms sym_table table invs ts in
+  | { Flx_sym.id=id; vs=vs; sr=sr; pubmap=pubmap; symdef=SYMDEF_typeclass } ->
+    let table = make_view_table syms sym_table pubmap invs ts in
     (* a bit hacky .. add the type class specialisation view
        to its contents as an instance
     *)
