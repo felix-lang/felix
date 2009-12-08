@@ -34,8 +34,7 @@ let rec find_true_parent sym_table child parent =
     match hfind "find_true_parent" sym_table parent with
     | { Flx_sym.id=id; parent=grandparent; symdef=bdcl} ->
       match bdcl with
-      | SYMDEF_module
-        -> find_true_parent sym_table id grandparent
+      | SYMDEF_module -> find_true_parent sym_table id grandparent
       | _ -> Some parent
 
 let bind_req syms sym_table env sr tag =

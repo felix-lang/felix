@@ -1726,7 +1726,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
   | SYMDEF_lemma (ps,e1) ->
     "lemma " ^ name ^ string_of_ivs vs ^ ";"
 
-  | SYMDEF_function (ps,res,props, es) ->
+  | SYMDEF_function (ps,res,props,es) ->
     let ps,traint = ps in
     string_of_properties props ^
     "fun " ^ name ^ string_of_ivs vs ^

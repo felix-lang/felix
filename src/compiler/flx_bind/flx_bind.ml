@@ -38,21 +38,15 @@ let make_toplevel_bind_state syms =
     Flx_srcref.dummy_sr, "", None, `Public, Flx_ast.dfltvs,
     Flx_types.DCL_module [])
   in
-  let module_symbol = Flx_sym_table.find
-    sym_table
-    module_index
-  in
+  let module_sym = Flx_sym_table.find sym_table module_index in
 
   (* Find the module's _init_ function *)
   let init_index =
-    match Hashtbl.find module_symbol.Flx_sym.pubmap "_init_" with
+    match Hashtbl.find module_sym.Flx_sym.pubmap "_init_" with
     | Flx_types.FunctionEntry [ { Flx_types.base_sym=base_sym } ] -> base_sym
     | _ -> assert false
   in
-  let init_symbol = Flx_sym_table.find
-    sym_table
-    init_index
-  in
+  let init_sym = Flx_sym_table.find sym_table init_index in
 
   (* Bind the module and init function. *)
   ignore (Flx_bbind.bbind_symbol
@@ -60,13 +54,13 @@ let make_toplevel_bind_state syms =
     sym_table
     bsym_table
     module_index
-    module_symbol);
+    module_sym);
   ignore (Flx_bbind.bbind_symbol
     syms
     sym_table
     bsym_table
     init_index
-    init_symbol);
+    init_sym);
 
   {
     syms = syms;
@@ -195,9 +189,8 @@ let bind_asms state asms =
 (** Find the root module's init function index. *)
 let find_root_module_init_function state root =
   (* Look up the root procedure index. *)
-  let { Flx_sym.pubmap=name_map; symdef=symdef } =
-    try Flx_sym_table.find state.sym_table root
-    with Not_found ->
+  let { Flx_sym.pubmap=pubmap; symdef=symdef } =
+    try Flx_sym_table.find state.sym_table root with Not_found ->
       failwith ("Can't find root module " ^ Flx_print.string_of_bid root ^
         " in symbol table?")
   in
@@ -206,8 +199,7 @@ let find_root_module_init_function state root =
     | _ -> failwith "Expected to find top level module ''"
   end;
   let entry =
-    try Hashtbl.find name_map "_init_"
-    with Not_found ->
+    try Hashtbl.find pubmap "_init_" with Not_found ->
       failwith "Can't find name _init_ in top level module's name map"
   in
   let index =

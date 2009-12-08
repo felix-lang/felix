@@ -77,8 +77,7 @@ let rec find_vs sym_table i : ivs_list_t =
 let rec find_func_vs sym_table vs j =
   match hfind "find_func_vs" sym_table j with
   | { Flx_sym.parent=parent; vs=vs'; symdef=SYMDEF_module }
-  | { Flx_sym.parent=parent; vs=vs'; symdef=SYMDEF_typeclass }
-    ->
+  | { Flx_sym.parent=parent; vs=vs'; symdef=SYMDEF_typeclass } ->
     begin match parent with
     | None ->
       let vs = merge_ivs vs' vs in

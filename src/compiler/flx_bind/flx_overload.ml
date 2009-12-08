@@ -184,8 +184,7 @@ let sig_of_symdef symdef sr name i = match symdef with
       in
       type_of_list ts_cf,r,None
 
-  | SYMDEF_function (ps,r,_,_)
-    ->
+  | SYMDEF_function (ps,r,_,_) ->
     let p = fst ps in
     begin match p,r with
     (*
