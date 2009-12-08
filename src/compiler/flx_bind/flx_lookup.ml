@@ -3478,21 +3478,22 @@ and bind_expression' syms sym_table bsym_table env (rs:recstop) e args : tbexpr_
         match parent with
         | None -> clierr sra "Koenig lookup: No parent for method apply (can't handle global yet)"
         | Some index' ->
-          match get_data sym_table index' with
-          { Flx_sym.id=id';
-            sr=sr';
-            parent=parent';
-            vs=vs';
-            pubmap=name_map;
-            dirs=dirs;
-            symdef=entry' }
-          ->
-          match entry' with
-          | SYMDEF_module
-          | SYMDEF_function _ ->
-            koenig_lookup syms sym_table env rs sra id' name_map fn t2 (ts @ meth_ts)
-
-          | _ -> clierr sra ("Koenig lookup: parent for method apply not module")
+            let sym = get_data sym_table index' in
+            match sym.Flx_sym.symdef with
+            | SYMDEF_module
+            | SYMDEF_function _ ->
+                koenig_lookup
+                  syms
+                  sym_table
+                  env
+                  rs
+                  sra
+                  sym.Flx_sym.id
+                  sym.Flx_sym.pubmap
+                  fn
+                  t2
+                  (ts @ meth_ts)
+            | _ -> clierr sra ("Koenig lookup: parent for method apply not module")
         end
 
       | _ -> clierr sra ("apply method "^fn^" to nongenerative type")
@@ -5411,57 +5412,63 @@ and make_view_table syms sym_table table vs ts : name_map_t =
   ;
   h
 
-and pub_table_dir
-  syms sym_table env inst_check
-  (invs,i,ts)
-: name_map_t =
+and pub_table_dir syms sym_table env inst_check (invs,i,ts) : name_map_t =
   let invs = List.map (fun (i,n,_)->i,n) (fst invs) in
-  match get_data sym_table i with
-  | { Flx_sym.id=id; vs=vs; sr=sr; pubmap=pubmap; symdef=SYMDEF_module } ->
-    if List.length ts = 0 then pubmap else
+  let sym = get_data sym_table i in
+  match sym.Flx_sym.symdef with
+  | SYMDEF_module ->
+    if List.length ts = 0 then sym.Flx_sym.pubmap else
     begin
       (*
       print_endline ("TABLE " ^ id);
       *)
-      let table = make_view_table syms sym_table pubmap invs ts in
+      let table = make_view_table syms sym_table sym.Flx_sym.pubmap invs ts in
       (*
       print_name_table sym_table table;
       *)
       table
     end
 
-  | { Flx_sym.id=id; vs=vs; sr=sr; pubmap=pubmap; symdef=SYMDEF_typeclass } ->
-    let table = make_view_table syms sym_table pubmap invs ts in
+  | SYMDEF_typeclass ->
+    let table = make_view_table syms sym_table sym.Flx_sym.pubmap invs ts in
     (* a bit hacky .. add the type class specialisation view
        to its contents as an instance
     *)
-    let inst = mkentry syms vs i in
+    let inst = mkentry syms sym.Flx_sym.vs i in
     let inst = review_entry syms sym_table invs ts inst in
-    let inst_name = "_inst_" ^ id in
+    let inst_name = "_inst_" ^ sym.Flx_sym.id in
     Hashtbl.add table inst_name (FunctionEntry [inst]);
-    if inst_check then
-    begin
+    if inst_check then begin
       if syms.compiler_options.print_flag then
-      print_endline ("Added typeclass " ^ string_of_bid i ^
-        " as instance " ^ inst_name ^": "^ string_of_myentry bsym_table inst
-      );
+        print_endline ("Added typeclass " ^ string_of_bid i ^
+          " as instance " ^ inst_name ^": " ^
+          string_of_myentry bsym_table inst);
       let luqn2 qn =
         try
           Some (lookup_qn_in_env2' syms sym_table env rsground qn)
         with _ -> None
       in
-      let res = luqn2 (`AST_name (sr,inst_name,[])) in
+      let res = luqn2 (`AST_name (sym.Flx_sym.sr, inst_name, [])) in
       match res with
-      | None -> clierr sr
-        ("Couldn't find any instances to open for " ^ id ^
-          "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
+      | None ->
+          clierr sym.Flx_sym.sr ("Couldn't find any instances to open for " ^
+            sym.Flx_sym.id ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
         )
-      | Some (es,_) -> check_instances syms sym_table sr "open" id es ts (mk_bare_env syms sym_table)
-    end
-    ;
+      | Some (es,_) ->
+          check_instances
+            syms
+            sym_table
+            sym.Flx_sym.sr
+            "open"
+            sym.Flx_sym.id
+            es
+            ts
+            (mk_bare_env syms sym_table)
+    end;
     table
 
-  | { Flx_sym.sr=sr} -> clierr sr "[map_dir] Expected module"
+  | _ ->
+      clierr sym.Flx_sym.sr "[map_dir] Expected module"
 
 
 and get_pub_tables syms sym_table env rs dirs =
@@ -5472,9 +5479,9 @@ and get_pub_tables syms sym_table env rs dirs =
   tables
 
 and mk_bare_env syms sym_table index =
-  match hfind "lookup" sym_table index with
-  { Flx_sym.id=id;parent=parent;privmap=table} -> (index,id,table,[],TYP_tuple []) ::
-  match parent with
+  let sym = hfind "lookup" sym_table index in
+  (index, sym.Flx_sym.id, sym.Flx_sym.privmap, [], TYP_tuple []) ::
+  match sym.Flx_sym.parent with
   | None -> []
   | Some index -> mk_bare_env syms sym_table index
 
@@ -5610,9 +5617,7 @@ and merge_opens syms sym_table env rs (typeclasses,opens,includes,uses) =
   use_map::tables
 
 and build_env'' syms sym_table rs index : env_t =
-  let { Flx_sym.id=id; parent=parent; vs=vs; privmap=table; dirs=dirs } =
-    hfind "lookup" sym_table index
-  in
+  let sym = hfind "lookup" sym_table index in
   let skip_merges = List.mem index rs.idx_fixlist in
   (*
   if skip_merges then
@@ -5621,14 +5626,16 @@ and build_env'' syms sym_table rs index : env_t =
   *)
 
   let rs = { rs with idx_fixlist = index :: rs.idx_fixlist } in
-  let env = inner_build_env syms sym_table rs parent in
+  let env = inner_build_env syms sym_table rs sym.Flx_sym.parent in
 
   (* build temporary bare innermost environment with a full parent env *)
   let typeclasses, constraints = 
-    let _, { raw_type_constraint=con; raw_typeclass_reqs=rtcr } = vs in
+    let _, { raw_type_constraint=con; raw_typeclass_reqs=rtcr } =
+      sym.Flx_sym.vs
+    in
     rtcr,con
   in
-  let env = (index, id, table, [], constraints) :: env in
+  let env = (index, sym.Flx_sym.id, sym.Flx_sym.privmap, [], constraints) :: env in
 
   (* exit early if we don't need to do any merges *)
   if skip_merges then env else
@@ -5648,7 +5655,7 @@ and build_env'' syms sym_table rs index : env_t =
   (*
   print_endline ("MERGE DIRECTIVES for " ^ id);
   *)
-  let env = merge_directives syms sym_table rs env dirs typeclasses in
+  let env = merge_directives syms sym_table rs env sym.Flx_sym.dirs typeclasses in
   (*
   print_endline "Build_env'' complete";
   *)
@@ -5738,19 +5745,17 @@ and rebind_btype syms sym_table env sr ts t: btypecode_t =
 and check_module sym_table name sr entries ts =
     begin match entries with
     | NonFunctionEntry (index) ->
-      begin match get_data sym_table (sye index) with
-      | { Flx_sym.dirs=dirs;pubmap=table;symdef=SYMDEF_module} ->
-        Simple_module (sye index,ts,table,dirs)
-      | { Flx_sym.dirs=dirs;pubmap=table;symdef=SYMDEF_typeclass} ->
-        Simple_module (sye index,ts,table,dirs)
-      | { Flx_sym.id=id;sr=sr'} ->
-        clierr sr
-        (
-          "Expected '" ^ id ^ "' to be module in: " ^
-          Flx_srcref.short_string_of_src sr ^ ", found: " ^
-          Flx_srcref.short_string_of_src sr'
-        )
-      end
+        let sym = get_data sym_table (sye index) in
+        begin match sym.Flx_sym.symdef with
+        | SYMDEF_module ->
+            Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
+        | SYMDEF_typeclass ->
+            Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
+        | _ ->
+            clierr sr ("Expected '" ^ sym.Flx_sym.id ^ "' to be module in: " ^
+            Flx_srcref.short_string_of_src sr ^ ", found: " ^
+            Flx_srcref.short_string_of_src sym.Flx_sym.sr)
+        end
     | _ ->
       failwith
       (

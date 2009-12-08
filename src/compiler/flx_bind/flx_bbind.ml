@@ -95,17 +95,13 @@ let bind_qual bt qual = match qual with
 
 let bind_quals bt quals = map (bind_qual bt) quals
 
-let bbind_symbol syms sym_table bsym_table symbol_index {
-  Flx_sym.id=name;
-  sr=sr;
-  parent=parent;
-  vs=local_vs;
-  privmap=name_map;
-  dirs=dirs;
-  symdef=bdcl
-} =
+let bbind_symbol syms sym_table bsym_table symbol_index sym =
   let qname = qualified_name_of_index sym_table symbol_index in
-  let true_parent = find_true_parent sym_table name parent in
+  let true_parent = find_true_parent
+    sym_table
+    sym.Flx_sym.id
+    sym.Flx_sym.parent
+  in
 
   (* let env = Flx_lookup.build_env syms sym_table parent in  *)
   let env = Flx_lookup.build_env syms sym_table (Some symbol_index) in
@@ -115,13 +111,15 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
   *)
 
   let bexes exes ret_type index tvars =
-    let bexe_state = Flx_bexe.make_bexe_state ?parent ~env
+    let bexe_state = Flx_bexe.make_bexe_state
+      ?parent:sym.Flx_sym.parent
+      ~env
       syms
       sym_table
       tvars
       ret_type
     in
-    Flx_bexe.bind_exes bexe_state sr exes
+    Flx_bexe.bind_exes bexe_state sym.Flx_sym.sr exes
   in
   (*
   print_endline ("Binding " ^ name ^ "<"^ si symbol_index ^ ">");
@@ -134,7 +132,9 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
   let be e = Flx_lookup.bind_expression syms sym_table bsym_table env e in
   let luqn n = Flx_lookup.lookup_qn_in_env syms sym_table env n in
   let luqn2 n = Flx_lookup.lookup_qn_in_env2 syms sym_table env n in
-  let bt t = Flx_lookup.bind_type syms sym_table bsym_table env sr t in
+  let bt t =
+    Flx_lookup.bind_type syms sym_table bsym_table env sym.Flx_sym.sr t
+  in
 
   (* this is the full vs list *)
   let ivs = find_vs sym_table symbol_index in
@@ -143,9 +143,11 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
   let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in
 
   let bind_type_constraint ivs =
-    let cons = try
-      Flx_tconstraint.build_type_constraints syms bt sr (fst ivs)
-      with _ -> clierr sr "Can't build type constraints, type binding failed"
+    let cons =
+      try
+        Flx_tconstraint.build_type_constraints syms bt sym.Flx_sym.sr (fst ivs)
+      with Not_found ->
+        clierr sym.Flx_sym.sr "Can't build type constraints, type binding failed"
     in
     let {raw_type_constraint=icons} = snd ivs in
     let icons = bt icons in
@@ -154,14 +156,16 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
   in
   let bcons = bind_type_constraint ivs in
   let btraint = function | Some x -> Some (be x) | None -> None in
-  let bind_reqs reqs = bind_reqs bt syms sym_table bsym_table env sr reqs in
+  let bind_reqs reqs =
+    bind_reqs bt syms sym_table bsym_table env sym.Flx_sym.sr reqs
+  in
   let bind_quals quals = bind_quals bt quals in
   (*
   print_endline ("******Binding " ^ name);
   *)
   let bind_basic_ps ps =
     List.map (fun (k,s,t,_) ->
-      let i = find_param name_map s in
+      let i = find_param sym.Flx_sym.privmap s in
       let t = let t = bt t in match k with `PRef -> BTYP_pointer t | _ -> t in
 (*        print_endline ("Param " ^ s ^ " type=" ^ sbt bsym_table t); *)
       {pid=s; pindex=i;pkind=k; ptyp=t}
@@ -172,14 +176,19 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     bind_basic_ps ps, btraint traint
   in
   let add_bsym parent bbdcl =
-    let bsym = { Flx_bsym.id=name; sr=sr; parent=parent; bbdcl=bbdcl } in
+    let bsym = {
+      Flx_bsym.id=sym.Flx_sym.id;
+      sr=sym.Flx_sym.sr;
+      parent=parent;
+      bbdcl=bbdcl }
+    in
     Flx_bsym_table.add bsym_table symbol_index bsym;
     Some bsym
   in
-  begin match bdcl with
+  begin match sym.Flx_sym.symdef with
   (* Pure declarations of functions, modules, and type don't generate anything.
    * Variable dcls do, however. *)
-  | SYMDEF_module
+  | SYMDEF_module _
   | SYMDEF_typevar _
     -> None
 
@@ -187,10 +196,10 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     let bps = bind_basic_ps ps in
     let be1 = be e1 in
     let be2 = be e2 in
-    syms.reductions <- (name,bvs,bps,be1,be2) :: syms.reductions;
+    syms.reductions <- (sym.Flx_sym.id,bvs,bps,be1,be2) :: syms.reductions;
 
     if syms.compiler_options.print_flag then
-      print_endline ("//bound reduction  " ^ name ^ "<" ^
+      print_endline ("//bound reduction  " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs);
 
     None
@@ -201,10 +210,17 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
       | Predicate e -> `BPredicate (be e)
       | Equation (l,r) -> `BEquation (be l, be r)
     in
-    syms.axioms <- (name, sr, parent, Axiom, bvs, bps, be1) :: syms.axioms;
+    syms.axioms <- (
+      sym.Flx_sym.id,
+      sym.Flx_sym.sr,
+      sym.Flx_sym.parent,
+      Axiom,
+      bvs,
+      bps,
+      be1) :: syms.axioms;
 
     if syms.compiler_options.print_flag then
-      print_endline ("//bound axiom " ^ name ^ "<" ^
+      print_endline ("//bound axiom " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs);
 
     None
@@ -215,10 +231,17 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
       | Predicate e -> `BPredicate (be e)
       | Equation (l,r) -> `BEquation (be l, be r)
     in
-    syms.axioms <- (name, sr, parent, Lemma, bvs, bps, be1) :: syms.axioms;
+    syms.axioms <- (
+      sym.Flx_sym.id,
+      sym.Flx_sym.sr,
+      sym.Flx_sym.parent,
+      Lemma,
+      bvs,
+      bps,
+      be1) :: syms.axioms;
 
     if syms.compiler_options.print_flag then
-      print_endline ("//bound lemma " ^ name ^ "<" ^
+      print_endline ("//bound lemma " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs);
 
     None
@@ -261,7 +284,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     add_bsym true_parent bbdcl
 
   | SYMDEF_parameter (k,_) ->
-    begin match parent with
+    begin match sym.Flx_sym.parent with
     | None -> failwith "[bbind_sym] expected parameter to have a parent"
     | Some ip ->
       match hfind "bbind" sym_table ip with
@@ -280,7 +303,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
         Hashtbl.add syms.varmap symbol_index t;
 
         if syms.compiler_options.print_flag then
-          print_endline ("//bound val " ^ name ^ "<" ^
+          print_endline ("//bound val " ^ sym.Flx_sym.id ^ "<" ^
             string_of_bid symbol_index ^ ">" ^
             print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
@@ -296,14 +319,15 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     let name_map = Hashtbl.create 97 in
     let exes =
       [
-      sr,EXE_fun_return (gen_match_check pat (EXPR_index (sr,mvname,mvindex)))
+      sym.Flx_sym.sr, EXE_fun_return (
+        gen_match_check pat (EXPR_index (sym.Flx_sym.sr,mvname,mvindex)))
       ]
     in
     let brt',bbexes = bexes exes flx_bbool symbol_index [] in
 
     if brt' <> flx_bbool then
-      failwith ("expected boolean return from match checker " ^ name ^
-        " in\n" ^ Flx_srcref.short_string_of_src sr);
+      failwith ("expected boolean return from match checker " ^ sym.Flx_sym.id ^
+        " in\n" ^ Flx_srcref.short_string_of_src sym.Flx_sym.sr);
 
     (* Cache the type of the match. *)
     if not (Hashtbl.mem syms.ticache symbol_index) then begin
@@ -312,7 +336,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     end;
 
     if syms.compiler_options.print_flag then
-      print_endline ("//bound match check " ^ name ^ "<" ^
+      print_endline ("//bound match check " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^
         ">" ^ print_bvs bvs ^ ":" ^ sbt bsym_table
         (BTYP_function (BTYP_tuple[],flx_bbool)));
@@ -323,7 +347,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
 
   | SYMDEF_const_ctor (uidx,ut,ctor_idx,vs') ->
     (*
-    print_endline ("Binding const ctor " ^ name);
+    print_endline ("Binding const ctor " ^ sym.Flx_sym.id);
     *)
     let unit_sum =
       match hfind "bbind" sym_table uidx with
@@ -344,14 +368,14 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     in
 
     if syms.compiler_options.print_flag then
-      print_endline ("//bound const " ^ name ^ "<" ^
+      print_endline ("//bound const " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">:" ^ sbt bsym_table t);
 
     add_bsym None (BBDCL_const ([], bvs, t, CS_str ct, []))
 
   | SYMDEF_nonconst_ctor (uidx,ut,ctor_idx,vs',argt) ->
     (*
-    print_endline ("Binding non const ctor " ^ name);
+    print_endline ("Binding non const ctor " ^ sym.Flx_sym.id);
     *)
     let t = Flx_lookup.type_of_index syms sym_table symbol_index in
     let argt = bt argt in
@@ -360,7 +384,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     let evs = map (fun (s,i,__) -> s,i) (fst vs') in
 
     if syms.compiler_options.print_flag then
-      print_endline ("//bound fun " ^ name ^ "<" ^
+      print_endline ("//bound fun " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">:" ^ sbt bsym_table t);
 
     add_bsym None (BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt,evs,btraint))
@@ -369,7 +393,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     let t = Flx_lookup.type_of_index syms sym_table symbol_index in
 
     if syms.compiler_options.print_flag then
-      print_endline ("//bound val " ^ name ^ "<" ^
+      print_endline ("//bound val " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
@@ -379,15 +403,15 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     let t = Flx_lookup.type_of_index syms sym_table symbol_index in
 
     if syms.compiler_options.print_flag then
-      print_endline ("//bound ref " ^ name ^ "<" ^
+      print_endline ("//bound ref " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
     add_bsym true_parent (BBDCL_ref (bvs, t))
 
   | SYMDEF_lazy (rt,e) ->
-    let ps = [("dummy",`AST_void sr)],None in
-    let exes = [sr,EXE_fun_return e] in
+    let ps = [("dummy",`AST_void sym.Flx_sym.sr)],None in
+    let exes = [sym.Flx_sym.sr, EXE_fun_return e] in
     let brt = bt rt in
     let brt',bbexes = bexes exes brt symbol_index bvs in
     let props = [] in
@@ -399,7 +423,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     end;
 
     if syms.compiler_options.print_flag then
-      print_endline ("//bound lazy " ^ name ^ "<" ^
+      print_endline ("//bound lazy " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table brt');
 
@@ -407,12 +431,12 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
 
   | SYMDEF_var (t) ->
     (*
-    print_endline ("Binding variable " ^ name ^"<"^ si i ^">");
+    print_endline ("Binding variable " ^ sym.Flx_sym.id ^"<"^ si i ^">");
     *)
     let t = Flx_lookup.type_of_index syms sym_table symbol_index in
 
     if syms.compiler_options.print_flag then
-      print_endline ("//bound var " ^ name ^ "<" ^
+      print_endline ("//bound var " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
@@ -423,7 +447,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     let reqs = bind_reqs reqs in
 
     if syms.compiler_options.print_flag then
-      print_endline ("//bound const " ^ name ^ "<" ^
+      print_endline ("//bound const " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
@@ -446,7 +470,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
 
     if syms.compiler_options.print_flag then begin
       let atyp = typeoflist ts in
-      print_endline ("//bound fun " ^ name ^ "<" ^
+      print_endline ("//bound fun " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table (BTYP_function (atyp, bret)))
     end;
@@ -487,11 +511,11 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
       let counter = ref 0 in
       map
       (function
-        | TYP_name (_,id,[]) when id = name ->
+        | TYP_name (_,id,[]) when id = sym.Flx_sym.id ->
           if !client_data_pos = -1 then
             client_data_pos := !counter
           ;
-          let address = TYP_name(sr,"address",[]) in
+          let address = TYP_name (sym.Flx_sym.sr, "address", []) in
           bt address
         | t -> incr counter; bt t
       )
@@ -507,7 +531,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
       (
         filter
         (function
-          | TYP_name (_,id,[]) when id = name -> false
+          | TYP_name (_,id,[]) when id = sym.Flx_sym.id -> false
           | t -> true
         )
         ts_orig
@@ -527,7 +551,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
     let ts_cf =
       map
       (function
-        | TYP_name (_,id,[]) when id = name -> tf
+        | TYP_name (_,id,[]) when id = sym.Flx_sym.id -> tf
         | t -> bt t
       )
       ts_orig
@@ -544,7 +568,7 @@ let bbind_symbol syms sym_table bsym_table symbol_index {
 
     if syms.compiler_options.print_flag then begin
       let atyp = typeoflist ts_cf in
-      print_endline ("//bound callback fun " ^ name ^ "<" ^
+      print_endline ("//bound callback fun " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs ^ ":" ^
         sbt bsym_table (BTYP_function (atyp, bret)))
     end;
