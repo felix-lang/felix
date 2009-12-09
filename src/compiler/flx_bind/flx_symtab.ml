@@ -172,8 +172,8 @@ let make_ivs ?(print=false) level counter (vs, con) : ivs_list_t =
 
 
 let rec build_tables
-  ?(pub_name_map=Hashtbl.create 97)
-  ?(priv_name_map=Hashtbl.create 97)
+  ~pub_name_map
+  ~priv_name_map
   syms
   sym_table
   name
@@ -474,6 +474,8 @@ and build_table_for_dcl
       let t = if t = TYP_none then TYP_var symbol_index else t in
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
+          ~pub_name_map:(Hashtbl.create 97)
+          ~priv_name_map:(Hashtbl.create 97)
           syms
           sym_table
           id
@@ -556,6 +558,8 @@ and build_table_for_dcl
       *)
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
+          ~pub_name_map:(Hashtbl.create 97)
+          ~priv_name_map:(Hashtbl.create 97)
           syms
           sym_table
           id
@@ -595,6 +599,8 @@ and build_table_for_dcl
   | DCL_module asms ->
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
+          ~pub_name_map:(Hashtbl.create 97)
+          ~priv_name_map:(Hashtbl.create 97)
           syms
           sym_table
           id
@@ -652,6 +658,8 @@ and build_table_for_dcl
 
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
+          ~pub_name_map:(Hashtbl.create 97)
+          ~priv_name_map:(Hashtbl.create 97)
           syms
           sym_table
           id
@@ -719,6 +727,8 @@ and build_table_for_dcl
   | DCL_instance (qn,asms) ->
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
+          ~pub_name_map:(Hashtbl.create 97)
+          ~priv_name_map:(Hashtbl.create 97)
           syms
           sym_table
           id
