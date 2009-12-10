@@ -9,9 +9,6 @@ type t = {
 }
 
 
-let null_tab = Hashtbl.create 3
-
-
 (* use fresh variables, but preserve names *)
 let mkentry syms (vs:ivs_list_t) i =
   let is = List.map
@@ -309,13 +306,23 @@ and build_table_for_dcl
   let add_symbol
     ?(parent=parent)
     ?(ivs=ivs)
-    ~pubtab
-    ~privtab
+    ?pubtab
+    ?privtab
     ?(dirs=[])
     index
     id
     symdef
   =
+    let pubtab =
+      match pubtab with
+      | Some pubtab -> pubtab
+      | None -> Hashtbl.create 0
+    in
+    let privtab =
+      match privtab with
+      | Some privtab -> privtab
+      | None -> Hashtbl.create 0
+    in
     Flx_sym_table.add sym_table index {
       Flx_sym.id = id;
       sr = sr;
@@ -345,11 +352,7 @@ and build_table_for_dcl
       in
 
       (* Add the type variable to the symbol table. *)
-      add_symbol
-        ~ivs:dfltvs
-        ~pubtab:null_tab
-        ~privtab:null_tab
-        index tvid (SYMDEF_typevar mt);
+      add_symbol ~ivs:dfltvs index tvid (SYMDEF_typevar mt);
       full_add_typevar syms sym_table sr table tvid index;
     end (fst ivs)
   in
@@ -367,12 +370,7 @@ and build_table_for_dcl
           name ^ " (parameter)");
 
       (* Add the paramater to the symbol table. *)
-      add_symbol
-        ~parent
-        ~ivs:dfltvs
-        ~pubtab:null_tab
-        ~privtab:null_tab
-        n name (SYMDEF_parameter (k, typ));
+      add_symbol ~parent ~ivs:dfltvs n name (SYMDEF_parameter (k, typ));
 
       (* Possibly add the parameter to the public symbol table. *)
       if access = `Public then
@@ -397,12 +395,7 @@ and build_table_for_dcl
           name ^ " (parameter)");
 
       (* Add the symbol to the symbol table. *)
-      add_symbol
-        ~parent
-        ~ivs:dfltvs
-        ~pubtab:null_tab
-        ~privtab:null_tab
-        n name (SYMDEF_parameter (`PVal, typ));
+      add_symbol ~parent ~ivs:dfltvs n name (SYMDEF_parameter (`PVal, typ));
 
       (* Register the symbol if it's public. *)
       if access = `Public then
@@ -571,9 +564,11 @@ and build_table_for_dcl
       in
 
       (* Add symbols to sym_table. *)
-      add_symbol ~pubtab ~privtab ~dirs symbol_index id
-        (SYMDEF_function (([],None), TYP_var symbol_index,
-        [`Generated "symtab:match handler" ; `Inline], exes));
+      add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_function (
+          ([],None),
+          TYP_var symbol_index,
+          [`Generated "symtab:match handler" ; `Inline],
+          exes));
 
       (* Possibly add function to public symbol table. *)
       if access = `Public then add_function pub_name_map id symbol_index;
@@ -625,11 +620,7 @@ and build_table_for_dcl
         " -> _init_  (module " ^ id ^ ")");
 
       (* Add the _init_ function to the sym_table. *)
-      add_symbol
-        ~parent:(Some symbol_index)
-        ~pubtab:null_tab
-        ~privtab:null_tab
-        n' "_init_" init_def;
+      add_symbol ~parent:(Some symbol_index) n' "_init_" init_def;
 
       (* Possibly add module to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -710,7 +701,11 @@ and build_table_for_dcl
       end privtab;
 
       (* Add the typeclass to the sym_table. *)
-      add_symbol ~pubtab ~privtab:fudged_privtab ~dirs symbol_index id SYMDEF_typeclass;
+      add_symbol
+        ~pubtab
+        ~privtab:fudged_privtab
+        ~dirs
+        symbol_index id SYMDEF_typeclass;
 
       (* Possibly add the typeclass to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -821,7 +816,7 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | DCL_type_alias (t) ->
+  | DCL_type_alias t ->
       (* Add the type alias to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_type_alias t);
 
@@ -903,8 +898,14 @@ and build_table_for_dcl
       let n_repr = Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter in
 
       (* Add the _repr_ function to the symbol table. *)
-      add_symbol ~pubtab ~privtab n_repr "_repr_"
-        (SYMDEF_fun ([], [piname], t, CS_identity, NREQ_true, "expr"));
+      add_symbol ~pubtab ~privtab n_repr "_repr_" (SYMDEF_fun (
+        [],
+        [piname],
+        t,
+        CS_identity,
+        NREQ_true
+        ,
+        "expr"));
 
       (* Add the _repr_ function to the sym_table. *)
       add_function priv_name_map "_repr_" n_repr;
@@ -913,8 +914,13 @@ and build_table_for_dcl
       let n_make = Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter in
 
       (* Add the _make_ function to the symbol table. *)
-      add_symbol ~pubtab ~privtab n_make ("_make_" ^ id)
-        (SYMDEF_fun ([], [t], piname, CS_identity, NREQ_true, "expr"));
+      add_symbol ~pubtab ~privtab n_make ("_make_" ^ id) (SYMDEF_fun (
+        [],
+        [t],
+        piname,
+        CS_identity,
+        NREQ_true,
+        "expr"));
 
       (* Add the _make_ function to the sym_table. *)
       add_function priv_name_map ("_make_" ^ id) n_make;
