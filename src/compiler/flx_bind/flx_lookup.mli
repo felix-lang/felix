@@ -91,10 +91,6 @@ val make_lookup_state:
   Flx_sym_table.t ->
   lookup_state_t
 
-val lookup_name_in_htab:
-  name_map_t ->
-  string ->
-  entry_set_t option
 
 val build_env:
   lookup_state_t ->
@@ -151,23 +147,6 @@ val bind_type:
   Flx_srcref.t ->
   typecode_t ->
   btypecode_t
-
-val eval_module_expr:
-  lookup_state_t ->
-  env_t ->
-  expr_t ->
-  module_rep_t
-
-val resolve_overload:
-  lookup_state_t ->
-  Flx_bsym_table.t ->
-  env_t ->
-  Flx_srcref.t ->
-  entry_kind_t list ->
-  id_t ->
-  btypecode_t list ->
-  btypecode_t list ->      (* explicit param/arg bindings *)
-  overload_result option
 
 val bind_expression :
   lookup_state_t ->
