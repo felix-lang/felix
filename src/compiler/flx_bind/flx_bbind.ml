@@ -231,6 +231,10 @@ let bbind_symbol state bsym_table symbol_index sym =
       Flx_bsym.id=sym.Flx_sym.id;
       sr=sym.Flx_sym.sr;
       parent=parent;
+      vs=sym.Flx_sym.vs;
+      pubmap=sym.Flx_sym.pubmap;
+      privmap=sym.Flx_sym.privmap;
+      dirs=sym.Flx_sym.dirs;
       bbdcl=bbdcl }
     in
     Flx_bsym_table.add bsym_table symbol_index bsym;

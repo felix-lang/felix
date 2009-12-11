@@ -823,6 +823,10 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
             Flx_bsym.id=urvid;
             sr=sr;
             parent=Some caller;
+            vs=dfltvs;
+            pubmap=Hashtbl.create 0;
+            privmap=Hashtbl.create 0;
+            dirs=[];
             bbdcl=BBDCL_var (caller_vs,t) };
 
           (* set variable to function appliction *)
@@ -965,6 +969,10 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
                       Flx_bsym.id=urvid;
                       sr=sr;
                       parent=Some caller;
+                      vs=dfltvs;
+                      pubmap=Hashtbl.create 0;
+                      privmap=Hashtbl.create 0;
+                      dirs=[];
                       bbdcl=BBDCL_val (caller_vs,t) };
 
                     let rxs = hic revariable callee xs in

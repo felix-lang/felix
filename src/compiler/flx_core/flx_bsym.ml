@@ -5,6 +5,10 @@ type t = {
   id: string;
   sr: Flx_srcref.t;
   parent: bid_t option;
+  vs:Flx_types.ivs_list_t;
+  pubmap:Flx_types.name_map_t;
+  privmap:Flx_types.name_map_t;
+  dirs:Flx_types.sdir_t list;
   bbdcl: bbdcl_t;
 }
 

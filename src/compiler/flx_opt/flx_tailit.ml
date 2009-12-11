@@ -581,6 +581,10 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
           Flx_bsym.id=id;
           sr=sr;
           parent=Some this;
+          vs=dfltvs;
+          pubmap=Hashtbl.create 0;
+          privmap=Hashtbl.create 0;
+          dirs=[];
           bbdcl=BBDCL_tmp (vs, paramtype) }
       end !parameters;
 

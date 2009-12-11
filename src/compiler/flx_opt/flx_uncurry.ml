@@ -265,6 +265,10 @@ let uncurry_gen syms bsym_table child_map : int =
               Flx_bsym.id=s ^ "_uncurry";
               sr=bsymi.Flx_bsym.sr;
               parent=Some k;
+              vs=dfltvs;
+              pubmap=Hashtbl.create 0;
+              privmap=Hashtbl.create 0;
+              dirs=[];
               bbdcl=bbdcl };
             Flx_child.add_child child_map k n
           )
@@ -295,6 +299,10 @@ let uncurry_gen syms bsym_table child_map : int =
           Flx_bsym.id=bsymi.Flx_bsym.id^"_uncurry";
           sr=bsymi.Flx_bsym.sr;
           parent=bsymi.Flx_bsym.parent;
+          vs=dfltvs;
+          pubmap=Hashtbl.create 0;
+          privmap=Hashtbl.create 0;
+          dirs=[];
           bbdcl=bbdcl }
 
       | BBDCL_procedure (propsc,vsc,(psc,traintc),exesc) ->
@@ -304,6 +312,10 @@ let uncurry_gen syms bsym_table child_map : int =
           Flx_bsym.id=bsymi.Flx_bsym.id^"_uncurry";
           sr=bsymi.Flx_bsym.sr;
           parent=bsymi.Flx_bsym.parent;
+          vs=dfltvs;
+          pubmap=Hashtbl.create 0;
+          privmap=Hashtbl.create 0;
+          dirs=[];
           bbdcl=bbdcl }
 
       | _ -> assert false

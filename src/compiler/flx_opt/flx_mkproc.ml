@@ -63,6 +63,10 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
         Flx_bsym.id=vid;
         sr=sr;
         parent=Some this;
+        vs=dfltvs;
+        pubmap=Hashtbl.create 0;
+        privmap=Hashtbl.create 0;
+        dirs=[];
         bbdcl=BBDCL_var (vs,ret) };
 
       (* append a pointer to this variable to the argument *)
@@ -176,22 +180,16 @@ let mkproc_gen syms bsym_table child_map =
   end bsym_table;
 
   if syms.compiler_options.print_flag then
-  Hashtbl.iter
-  (fun i (k,n) ->
+  Hashtbl.iter begin fun i (k,n) ->
     print_endline ("MAYBE MAKE PROC: Orig " ^ string_of_bid i ^ " synth " ^
       string_of_bid k ^ " count=" ^ si n);
-  )
-  mkproc_map
-  ;
+  end mkproc_map;
 
   (* make a list of the ones actually applied directly *)
   let to_mkproc = ref [] in
-  Hashtbl.iter
-  (fun i (_,n) ->
+  Hashtbl.iter begin fun i (_,n) ->
     if n > 0 then to_mkproc := i :: !to_mkproc
-  )
-  mkproc_map
-  ;
+  end mkproc_map;
 
   (* remove any function which is an ancestor of any other:
      keep the children (arbitrary choice)
@@ -206,8 +204,7 @@ let mkproc_gen syms bsym_table child_map =
   let to_mkproc = filter unstackable to_mkproc in
 
   let nu_mkproc_map = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun i j ->
+  Hashtbl.iter begin fun i j ->
     if mem i to_mkproc
     then begin
       Hashtbl.add nu_mkproc_map i j
@@ -220,24 +217,19 @@ let mkproc_gen syms bsym_table child_map =
       print_endline ("Discarding (ancestor) " ^ si i)
       *)
     end
-  )
-  mkproc_map;
+  end mkproc_map;
 
   let mkproc_map = nu_mkproc_map in
 
   if syms.compiler_options.print_flag then
-  Hashtbl.iter
-  (fun i (k,n) ->
+  Hashtbl.iter begin fun i (k,n) ->
     print_endline ("ACTUALLY MKPROC: Orig " ^ string_of_bid i ^ " synth " ^
       string_of_bid k ^ " count=" ^ si n);
-  )
-  mkproc_map
-  ;
+  end mkproc_map;
 
   (* synthesise the new functions *)
   let nuprocs = ref 0 in
-  Hashtbl.iter
-  (fun i (k,n) ->
+  Hashtbl.iter begin fun i (k,n) ->
       incr nuprocs;
       if syms.compiler_options.print_flag then
       print_endline ("MKPROC: Orig " ^ string_of_bid i ^ " synth " ^
@@ -294,6 +286,10 @@ let mkproc_gen syms bsym_table child_map =
               Flx_bsym.id=s ^ "_mkproc";
               sr=bsym.Flx_bsym.sr;
               parent=Some k;
+              vs=dfltvs;
+              pubmap=Hashtbl.create 0;
+              privmap=Hashtbl.create 0;
+              dirs=[];
               bbdcl=bbdcl };
             Flx_child.add_child child_map k n
           )
@@ -330,6 +326,10 @@ let mkproc_gen syms bsym_table child_map =
         Flx_bsym.id=bsym.Flx_bsym.id ^ "_mkproc";
         sr=bsym.Flx_bsym.sr;
         parent=bsym.Flx_bsym.parent;
+        vs=dfltvs;
+        pubmap=Hashtbl.create 0;
+        privmap=Hashtbl.create 0;
+        dirs=[];
         bbdcl=BBDCL_procedure (props,vs,(ps,traint),exes) };
 
       if syms.compiler_options.print_flag then
@@ -337,10 +337,7 @@ let mkproc_gen syms bsym_table child_map =
         print_endline "NEW PROCEDURE BODY ****************";
         iter (fun exe -> print_endline (string_of_bexe bsym_table 2 exe)) exes;
       end;
-
-  )
-  mkproc_map
-  ;
+  end mkproc_map;
 
 
   (* replace applications *)

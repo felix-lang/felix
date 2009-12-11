@@ -37,6 +37,10 @@ let gen_closure state bsym_table i =
         Flx_bsym.id=name;
         sr=bsym.Flx_bsym.sr;
         parent=Some j;
+        vs=dfltvs;
+        pubmap=Hashtbl.create 0;
+        privmap=Hashtbl.create 0;
+        dirs=[];
         bbdcl=BBDCL_val (vs,arg_t) };
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
     in
@@ -63,6 +67,10 @@ let gen_closure state bsym_table i =
         Flx_bsym.id=name;
         sr=bsym.Flx_bsym.sr;
         parent=Some j;
+        vs=dfltvs;
+        pubmap=Hashtbl.create 0;
+        privmap=Hashtbl.create 0;
+        dirs=[];
         bbdcl=BBDCL_val (vs,arg_t) };
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
     in
