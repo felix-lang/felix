@@ -83,50 +83,52 @@ open Flx_types
 open Flx_mtypes2
 open Flx_overload
 
+type lookup_state_t
+
+(** Create the state needed for lookup. *)
+val make_lookup_state:
+  Flx_mtypes2.sym_state_t ->
+  Flx_sym_table.t ->
+  lookup_state_t
+
 val lookup_name_in_htab:
   name_map_t ->
   string ->
   entry_set_t option
 
 val build_env:
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   bid_t option -> (* parent *)
   env_t
 
 val lookup_name_in_env :
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   env_t ->
   Flx_srcref.t ->
   id_t ->
   entry_set_t
 
 val lookup_qn_in_env :
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   env_t ->
   qualified_name_t ->
   entry_kind_t * typecode_t list
 
 val lookup_qn_in_env2:
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   env_t ->
   qualified_name_t ->
   entry_set_t * typecode_t list
 
 val lookup_sn_in_env :
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   suffixed_name_t ->
   bid_t * btypecode_t list
 
 val lookup_code_in_env:
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   env_t ->
   Flx_srcref.t ->
   qualified_name_t ->
@@ -143,8 +145,7 @@ variables is not a type function.
 *)
 
 val bind_type:
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
@@ -152,15 +153,13 @@ val bind_type:
   btypecode_t
 
 val eval_module_expr:
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   env_t ->
   expr_t ->
   module_rep_t
 
 val resolve_overload:
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
@@ -171,16 +170,14 @@ val resolve_overload:
   overload_result option
 
 val bind_expression :
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   expr_t ->
   tbexpr_t
 
 val bind_expression_with_args :
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   expr_t ->
@@ -188,14 +185,12 @@ val bind_expression_with_args :
   tbexpr_t
 
 val type_of_index :
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   bid_t ->
   btypecode_t
 
 val type_of_index_with_ts:
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   Flx_bsym_table.t ->
   Flx_srcref.t ->
   bid_t ->
@@ -203,8 +198,7 @@ val type_of_index_with_ts:
   btypecode_t
 
 val type_of_literal:
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
@@ -212,8 +206,7 @@ val type_of_literal:
   btypecode_t
 
 val lookup_qn_with_sig:
-  sym_state_t ->
-  Flx_sym_table.t ->
+  lookup_state_t ->
   Flx_bsym_table.t ->
   Flx_srcref.t ->
   Flx_srcref.t ->

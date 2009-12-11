@@ -5,6 +5,8 @@ type bind_state_t = {
   parent: Flx_types.bid_t option;
   strabs_state: Flx_strabs.strabs_state_t;
   bexe_state: Flx_bexe.bexe_state_t;
+  lookup_state: Flx_lookup.lookup_state_t;
+  bbind_state: Flx_bbind.bbind_state_t;
 }
 
 type bound_t =
@@ -14,6 +16,8 @@ type bound_t =
 (** Constructs the bind state needed for a batch compiler. *)
 let make_bind_state syms =
   let sym_table = Flx_sym_table.create () in
+  let lookup_state = Flx_lookup.make_lookup_state syms sym_table in
+  let bbind_state = Flx_bbind.make_bbind_state syms sym_table lookup_state in
   {
     syms = syms;
     sym_table = sym_table;
@@ -23,8 +27,11 @@ let make_bind_state syms =
     bexe_state = Flx_bexe.make_bexe_state
       syms
       sym_table
+      lookup_state
       []
       Flx_types.BTYP_void;
+    lookup_state = lookup_state;
+    bbind_state = bbind_state;
   }
 
 (** Constructs the bind state needed for an interactive toplevel compiler. *)
@@ -32,6 +39,12 @@ let make_toplevel_bind_state syms =
   let sym_table = Flx_sym_table.create () in
   let symtab = Flx_symtab.make syms sym_table in
   let bsym_table = Flx_bsym_table.create () in
+  let lookup_state = Flx_lookup.make_lookup_state syms sym_table in
+  let bbind_state:Flx_bbind.bbind_state_t = Flx_bbind.make_bbind_state
+    syms
+    sym_table
+    lookup_state
+  in
 
   (* Declare the root module to work within *)
   let module_index, _ = Flx_symtab.add_dcl symtab (
@@ -50,14 +63,12 @@ let make_toplevel_bind_state syms =
 
   (* Bind the module and init function. *)
   ignore (Flx_bbind.bbind_symbol
-    syms
-    sym_table
+    bbind_state
     bsym_table
     module_index
     module_sym);
   ignore (Flx_bbind.bbind_symbol
-    syms
-    sym_table
+    bbind_state
     bsym_table
     init_index
     init_sym);
@@ -70,11 +81,14 @@ let make_toplevel_bind_state syms =
     strabs_state = Flx_strabs.make_strabs_state ();
     bexe_state = Flx_bexe.make_bexe_state
       ~parent:module_index
-      ~env:(Flx_lookup.build_env syms sym_table (Some init_index))
+      ~env:(Flx_lookup.build_env lookup_state (Some init_index))
       syms
       sym_table
+      lookup_state
       []
       Flx_types.BTYP_void;
+    lookup_state = lookup_state;
+    bbind_state = bbind_state;
   }, bsym_table
 
 let bind_asm state bsym_table handle_bound init asm =
@@ -94,8 +108,7 @@ let bind_asm state bsym_table handle_bound init asm =
         init
     | Flx_types.Iface (sr,iface) ->
         let biface = Flx_bbind.bind_interface
-          state.syms
-          state.sym_table
+          state.bbind_state
           bsym_table
           (sr, iface, state.parent)
         in
@@ -117,8 +130,7 @@ let bind_asm state bsym_table handle_bound init asm =
     | Some s ->
         (* Then, bind the symbol. *)
         ignore (Flx_bbind.bbind_symbol
-          state.syms
-          state.sym_table
+          state.bbind_state
           bsym_table
           i
           s)
@@ -172,14 +184,14 @@ let bind_asms state asms =
   let bsym_table = Flx_bsym_table.create () in
 
   (* Now, bind all the symbols. *)
-  Flx_bbind.bbind state.syms state.sym_table bsym_table;
+  Flx_bbind.bbind state.bbind_state bsym_table;
 
   (* Downgrade abstract types. *)
   Flx_strabs.strabs state.strabs_state bsym_table;
 
   (* Bind the interfaces. *)
   state.syms.Flx_mtypes2.bifaces <- List.map
-    (Flx_bbind.bind_interface state.syms state.sym_table bsym_table) ifaces;
+    (Flx_bbind.bind_interface state.bbind_state bsym_table) ifaces;
 
   (* Clear the type cache. *)
   Hashtbl.clear state.syms.Flx_mtypes2.ticache;

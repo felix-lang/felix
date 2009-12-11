@@ -14,6 +14,42 @@ open Flx_exceptions
 open List
 open Flx_maps
 
+type bexe_state_t = {
+  syms: Flx_mtypes2.sym_state_t;
+  sym_table: Flx_sym_table.t;
+  lookup_state: Flx_lookup.lookup_state_t;
+  env: Flx_types.env_t;
+  id: string;
+  parent: Flx_types.bid_t option;
+  parent_vs: Flx_types.bvs_t;
+  mutable ret_type: Flx_types.btypecode_t;
+  mutable reachable: bool;
+  mutable return_count: int;
+  mutable proc_return_count: int;
+}
+
+let make_bexe_state ?parent ?(env=[]) syms sym_table lookup_state parent_vs ret_type =
+  let id =
+    match parent with
+    | None -> ""
+    | Some index ->
+        let symbol = Flx_sym_table.find sym_table index in
+        symbol.Flx_sym.id
+  in
+  {
+    syms = syms;
+    sym_table = sym_table;
+    lookup_state = lookup_state;
+    env = env;
+    id = id;
+    parent = parent;
+    parent_vs = parent_vs;
+    ret_type = ret_type;
+    reachable = true;
+    return_count = 0;
+    proc_return_count = 0;
+  }
+
 let hfind msg h k =
   try Flx_sym_table.find h k
   with Not_found ->
@@ -33,12 +69,18 @@ let rec check_if_parent syms sym_table child parent =
       | { Flx_sym.parent=Some parent} -> check_if_parent syms sym_table child parent
       | { Flx_sym.parent=None} -> false
 
-let cal_call syms sym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
-  let be i e = bind_expression syms sym_table bsym_table (build_env syms sym_table (Some i)) e in
+let cal_call state sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
+  let be i e =
+    bind_expression
+      state.lookup_state 
+      bsym_table
+      (build_env state.lookup_state (Some i))
+      e
+  in
   match unfold t1 with
   | BTYP_cfunction (t, BTYP_void)
   | BTYP_function (t, BTYP_void) ->
-    if type_match syms.counter t t2
+    if type_match state.syms.counter t t2
     then
       (
         (*
@@ -72,7 +114,7 @@ let cal_call syms sym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
               | BTYP_tuple [] -> []
               | _ -> assert false
             in
-            begin let pnames = match hfind "bexe" sym_table i with
+            begin let pnames = match hfind "bexe" state.sym_table i with
             | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_)} ->
               map (fun (_,name,_,d)->
                 name,
@@ -176,43 +218,21 @@ exception Found of int
 let print_vs vs =
   catmap "," (fun (s,i) -> s ^ "->" ^ string_of_bid i) vs
 
-type bexe_state_t = {
-  syms: Flx_mtypes2.sym_state_t;
-  sym_table: Flx_sym_table.t;
-  env: Flx_types.env_t;
-  id: string;
-  parent: Flx_types.bid_t option;
-  parent_vs: Flx_types.bvs_t;
-  mutable ret_type: Flx_types.btypecode_t;
-  mutable reachable: bool;
-  mutable return_count: int;
-  mutable proc_return_count: int;
-}
-
-let make_bexe_state ?parent ?(env=[]) syms sym_table parent_vs ret_type =
-  let id =
-    match parent with
-    | None -> ""
-    | Some index ->
-        let symbol = Flx_sym_table.find sym_table index in
-        symbol.Flx_sym.id
-  in
-  {
-    syms = syms;
-    sym_table = sym_table;
-    env = env;
-    id = id;
-    parent = parent;
-    parent_vs = parent_vs;
-    ret_type = ret_type;
-    reachable = true;
-    return_count = 0;
-    proc_return_count = 0;
-  }
-
 let rec bind_exe state handle_bexe (sr, exe) init =
-  let be e = bind_expression state.syms state.sym_table bsym_table state.env e in
-  let lun sr n = lookup_name_in_env state.syms state.sym_table state.env sr n in
+  let be e =
+    bind_expression
+      state.lookup_state
+      bsym_table
+      state.env
+      e
+  in
+  let lun sr n =
+    lookup_name_in_env
+      state.lookup_state
+      state.env
+      sr
+      n
+  in
   (*
   print_endline ("EXE="^string_of_exe 1 x);
   *)
@@ -255,14 +275,14 @@ let rec bind_exe state handle_bexe (sr, exe) init =
   | EXE_loop (n,e2) ->
     let be2,t2 = be e2 in
     let tbe1 =
-       lookup_qn_with_sig
-       state.syms
-       state.sym_table
-       bsym_table
-       sr sr
-       state.env
-       (`AST_name(sr,n,[]) : qualified_name_t)
-       [t2]
+      lookup_qn_with_sig
+        state.lookup_state
+        bsym_table
+        sr
+        sr
+        state.env
+        (`AST_name(sr,n,[]) : qualified_name_t)
+        [t2]
     in
     (* reverse order .. *)
     let init = handle_bexe (BEXE_proc_return sr) init in
@@ -295,12 +315,25 @@ let rec bind_exe state handle_bexe (sr, exe) init =
     let (bf,tf) as f  =
       match qualified_name_of_expr f' with
       | Some name ->
-        let srn = src_of_qualified_name name in
-        (*
-        print_endline "Lookup qn with sig .. ";
-        *)
-        lookup_qn_with_sig state.syms state.sym_table bsym_table sr srn state.env name [ta]
-      | None -> bind_expression_with_args state.syms state.sym_table bsym_table state.env f' [a]
+          let srn = src_of_qualified_name name in
+          (*
+          print_endline "Lookup qn with sig .. ";
+          *)
+          lookup_qn_with_sig
+            state.lookup_state
+            bsym_table
+            sr
+            srn
+            state.env
+            name
+            [ta]
+      | None ->
+          bind_expression_with_args
+            state.lookup_state
+            bsym_table
+            state.env
+            f'
+            [a]
     in
     (*
     print_endline ("tf=" ^ sbt state.sym_table tf);
@@ -308,11 +341,11 @@ let rec bind_exe state handle_bexe (sr, exe) init =
     *)
     begin match tf with
     | BTYP_cfunction _ ->
-      handle_bexe (cal_call state.syms state.sym_table sr f a) init
+      handle_bexe (cal_call state sr f a) init
 
     | BTYP_function _ ->
       (* print_endline "Function .. cal apply"; *)
-      handle_bexe (cal_call state.syms state.sym_table sr f a) init
+      handle_bexe (cal_call state sr f a) init
     | _ ->
       let apl name =
         bind_exe state handle_bexe
@@ -472,7 +505,14 @@ let rec bind_exe state handle_bexe (sr, exe) init =
         (fun (s,i) -> BTYP_var (i,BTYP_type 0))
         state.parent_vs
       in
-      let lhst = type_of_index_with_ts state.syms state.sym_table bsym_table sr index parent_ts in
+      let lhst =
+        type_of_index_with_ts
+          state.lookup_state
+          bsym_table
+          sr
+          index
+          parent_ts
+      in
       let rhst = minimise state.syms.counter rhst in
       let lhst = reduce_type lhst in
       if type_match state.syms.counter lhst rhst
@@ -500,7 +540,14 @@ let rec bind_exe state handle_bexe (sr, exe) init =
             (fun (s,i) -> BTYP_var (i,BTYP_type 0))
             state.parent_vs
           in
-          let lhst = type_of_index_with_ts state.syms state.sym_table bsym_table sr index parent_ts in
+          let lhst =
+            type_of_index_with_ts
+              state.lookup_state
+              bsym_table
+              sr
+              index
+              parent_ts
+          in
           let rhst = minimise state.syms.counter rhst in
           let lhst = reduce_type lhst in
           (*
