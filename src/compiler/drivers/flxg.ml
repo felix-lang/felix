@@ -17,22 +17,144 @@ open Flx_ogen
 open Flx_typing
 ;;
 
-Flx_version_hook.set_version ();;
 
-let print_help () = print_options(); exit(0)
-;;
+(* We have to set the felix version first. *)
+Flx_version_hook.set_version ()
 
-let reverse_return_parity = ref false
-;;
 
-let last_time = ref 0.0
-;;
-let tim() =
-  let now = (Unix.times()).Unix.tms_utime in
-  let elapsed = now -. !last_time in
-  last_time := now;
-  elapsed
-;;
+type file_state_t = [`NeverOpened | `Open of out_channel | `Closed ]
+
+type out_file_t = {
+  out_filename : string;
+  mutable out_chan: file_state_t;
+}
+
+
+let mkf f = { out_filename=f; out_chan=`NeverOpened }
+
+
+(* Parse the felix arguments and do some option parsing while we're at it. *)
+let parse_args () =
+  (* Argument parsing *)
+  let argc = Array.length Sys.argv in
+
+  (* Error out if we don't have enough arguments. *)
+  if argc <= 1 then begin
+    print_endline "usage: flxg --key=value ... filename; -h for help";
+    exit 1
+  end;
+
+  (* Now, parse those arguments *)
+  let raw_options = parse_options Sys.argv in
+
+  (* Print help and version out. *)
+  if check_keys raw_options ["h"; "help"] then begin
+    print_options ();
+    exit 0
+  end;
+
+  if check_key raw_options "version" then begin
+    Printf.printf "Felix version %s\n" !version_data.version_string;
+    exit 0
+  end;
+
+  (* Now extract the driver options. *)
+  let compiler_options = get_felix_options raw_options in
+
+  (* Error out if we didn't specify any files. *)
+  if compiler_options.files = [] then begin
+    print_options ();
+    exit 1
+  end;
+
+  if compiler_options.print_flag then
+    Printf.printf "// Include directories = %s\n"
+      (String.concat " " compiler_options.include_dirs);
+
+  (* Make sure the current directory is in the search path. *)
+  let include_dirs =
+    Filename.current_dir_name :: compiler_options.include_dirs
+  in
+  let compiler_options = { compiler_options with
+    include_dirs = include_dirs }
+  in
+
+  compiler_options
+
+
+(** The state needed for flxg compilation. *)
+type flxg_state_t = {
+  syms: Flx_mtypes2.sym_state_t;
+  module_name: string;
+  input_filename: string;
+  header_file: out_file_t;
+  body_file: out_file_t;
+  ctors_file: out_file_t;
+  package_file: out_file_t;
+  rtti_file: out_file_t;
+  report_file: out_file_t;
+  why_file: out_file_t;
+  mutable parse_time: float;
+  mutable desugar_time: float;
+  mutable bind_time: float;
+  mutable opt_time: float;
+  mutable lower_time: float;
+  mutable instantiation_time: float;
+  mutable codegen_time: float;
+}
+
+
+(** Make the state needed for flxg compilation. *)
+let make_flxg_state compiler_options =
+  let filename = List.hd (List.rev compiler_options.files) in
+  let inbase = filename in
+
+  let input_filename = inbase ^ ".flx" in
+  (*
+  and iface_file_name = filebase ^ ".fix"
+  *)
+  let outbase =
+    match compiler_options.output_dir with
+    | None -> filename
+    | Some d -> Filename.concat d (Filename.basename filename)
+  in
+
+  let module_name =
+    let n = String.length inbase in
+    let i = ref (n-1) in
+    while !i <> -1 && inbase.[!i] <> '/' && inbase.[!i] <> '\\' do decr i done;
+    String.sub inbase (!i+1) (n - !i - 1)
+  in
+
+  {
+    syms = make_syms compiler_options;
+    module_name = module_name;
+    input_filename = input_filename;
+    header_file = mkf (outbase ^ ".hpp");
+    body_file = mkf (outbase ^ ".cpp");
+    ctors_file = mkf (outbase ^ "_ctors.cpp");
+    package_file = mkf (outbase ^ ".resh");
+    rtti_file = mkf (outbase ^ ".rtti");
+    report_file = mkf (outbase ^ ".xref");
+    why_file = mkf (outbase ^ ".why");
+    parse_time = 0.0;
+    desugar_time = 0.0;
+    bind_time = 0.0;
+    opt_time = 0.0;
+    lower_time = 0.0;
+    instantiation_time = 0.0;
+    codegen_time = 0.0;
+  }
+
+
+let make_timer () =
+  let last_time = ref 0.0 in
+  fun () ->
+    let now = (Unix.times()).Unix.tms_utime in
+    let elapsed = now -. !last_time in
+    last_time := now;
+    elapsed
+
 
 let format_time tm =
   si (tm.Unix.tm_year + 1900) ^ "/" ^
@@ -42,13 +164,6 @@ let format_time tm =
   si tm.Unix.tm_min ^ ":" ^
   si tm.Unix.tm_sec
 ;;
-
-type file_state_t = [`NeverOpened | `Open of out_channel | `Closed ]
-
-type out_file_t = {
-  out_filename : string;
-  mutable out_chan: file_state_t;
-}
 
 let force_open f =
   match f.out_chan with
@@ -76,9 +191,9 @@ let ws f x =
 
 let wl f x = ws f (x ^ "\n")
 
-let mkf f = { out_filename=f; out_chan=`NeverOpened }
-
 ;;
+
+let reverse_return_parity = ref false;;
 
 try
   (* Time initialisation *)
@@ -88,38 +203,17 @@ try
   let compile_start_gm_string = format_time compile_start_gm ^ " UTC" in
   let compile_start_local_string = format_time compile_start_local ^ " (local)" in
 
+  let compiler_options = parse_args () in
 
-  (* Argument parsing *)
-  let argc = Array.length Sys.argv in
-  if argc <= 1
-  then begin
-    print_endline "usage: flxg --key=value ... filename; -h for help";
-    exit 0
-  end
-  ;
-  let raw_options = parse_options Sys.argv in
-  let compiler_options = get_felix_options raw_options in
-  reverse_return_parity := compiler_options.reverse_return_parity
-  ;
-  let syms = make_syms compiler_options in
-  if check_keys raw_options ["h"; "help"]
-  then print_help ()
-  ;
-  if check_key raw_options "version"
-  then (print_endline ("Felix Version " ^ !version_data.version_string))
-  ;
+  (* Cache the reverse return parity bit so we can exit correctly. *)
+  reverse_return_parity := compiler_options.reverse_return_parity;
+
+  let state = make_flxg_state compiler_options in
+
   let print_debug msg =
     if compiler_options.print_flag
     then print_endline msg
   in
-
-  if compiler_options.print_flag then begin
-    print_string "//Include directories = ";
-    List.iter (fun d -> print_string (d ^ " "))
-    compiler_options.include_dirs;
-    print_endline ""
-  end
-  ;
 
   (* main filename processing *)
   (*
@@ -129,41 +223,11 @@ try
   ;
   *)
   let files = compiler_options.files in
-  if files = [] then print_help ();
-
-  let filename = List.hd (List.rev files) in
-  let inbase = filename in
-
-  let input_file_name = inbase ^ ".flx" in
-  (*
-  and iface_file_name = filebase ^ ".fix"
-  *)
-  let outbase =
-    match compiler_options.output_dir with
-    | None -> filename
-    | Some d -> Filename.concat d (Filename.basename filename)
-  in
-  let why_file_name = mkf (outbase ^ ".why")
-
-  and header_file = mkf (outbase ^ ".hpp")
-  and body_file = mkf (outbase ^ ".cpp")
-  and ctors_file = mkf (outbase ^ "_ctors.cpp")
-  and package_file = mkf (outbase ^ ".resh")
-  and rtti_file = mkf (outbase ^ ".rtti")
-  and report_file = mkf (outbase ^ ".xref")
-
-  and module_name =
-    let n = String.length inbase in
-    let i = ref (n-1) in
-    while !i <> -1 && inbase.[!i] <> '/' && inbase.[!i] <> '\\' do decr i done;
-    String.sub inbase (!i+1) (n - !i - 1)
-  in
-
-  let include_dirs =  Filename.current_dir_name :: compiler_options.include_dirs in
-  let compiler_options = { compiler_options with include_dirs = include_dirs } in
-  let syms = { syms with compiler_options = compiler_options } in
 
   (* PARSE THE IMPLEMENTATION FILE *)
+
+  print_debug "//PARSING";
+  let parse_timer = make_timer () in
 
   let parse_tree =
     List.fold_left (fun tree file ->
@@ -171,7 +235,7 @@ try
         if Filename.check_suffix file ".flx" then file else file ^ ".flx"
       in
       print_debug ("//Parsing Implementation " ^ file_name);
-      let sts = Flx_colns.include_file syms file_name in
+      let sts = Flx_colns.include_file state.syms file_name in
       List.concat [tree; sts]
     )
     []
@@ -179,23 +243,31 @@ try
   in
   print_debug (Flx_print.string_of_compilation_unit parse_tree);
 
-  let parse_time = tim() in
-  print_debug ("//PARSE OK time " ^ string_of_float parse_time);
+  state.parse_time <- state.parse_time +. parse_timer ();
+  print_debug ("//PARSE OK time " ^ string_of_float state.parse_time);
+
+  (* Desugar the implementation file *)
 
   print_debug "//DESUGARING";
+  let desugar_timer = make_timer () in
 
-  let desugar_state = Flx_desugar.make_desugar_state module_name syms in
+  let desugar_state = Flx_desugar.make_desugar_state state.module_name state.syms in
   let asms = Flx_desugar.desugar_compilation_unit desugar_state parse_tree in
-  let desugar_time = tim() in
-  print_debug ("//DESUGAR time " ^ string_of_float desugar_time);
+
+  state.desugar_time <- state.desugar_time +. desugar_timer ();
+  print_debug ("//DESUGAR OK time " ^ string_of_float state.desugar_time);
 
   (* THIS IS A HACK! *)
-  let root = !(syms.counter) in
-  print_debug ("//Top level module '" ^ module_name ^ "' has index " ^
+  let root = !(state.syms.counter) in
+  print_debug ("//Top level module '" ^ state.module_name ^ "' has index " ^
     string_of_bid root);
 
   (* Bind the assemblies. *)
-  let bind_state = Flx_bind.make_bind_state syms in
+
+  print_debug "//BINDING";
+  let bind_timer = make_timer () in
+
+  let bind_state = Flx_bind.make_bind_state state.syms in
   let bsym_table = Flx_bind.bind_asms bind_state asms in
 
   let root_proc = Flx_bind.find_root_module_init_function bind_state root in
@@ -203,46 +275,59 @@ try
     Flx_print.string_of_bid root_proc);
 
   let child_map = Flx_child.cal_children bsym_table in
-  Flx_typeclass.typeclass_instance_check syms bsym_table child_map;
+  Flx_typeclass.typeclass_instance_check state.syms bsym_table child_map;
 
   (* generate axiom checks *)
   if compiler_options.generate_axiom_checks then
-  Flx_axiom.axiom_check syms bsym_table;
+  Flx_axiom.axiom_check state.syms bsym_table;
 
   (* generate why file *)
   Flx_why.emit_whycode
-    why_file_name.out_filename
-    syms
+    state.why_file.out_filename
+    state.syms
     bsym_table
     child_map
     root_proc;
 
-  let binding_time = tim() in
-
-  print_debug "//CHECKING ROOT";
+  state.bind_time <- state.bind_time +. bind_timer ();
+  print_debug ("//BINDING OK time " ^ string_of_float state.bind_time);
 
   (* Optimize the bound values *)
-  let bsym_table, _ = Flx_opt.optimize_bsym_table syms bsym_table root_proc in
 
-  let opt_time = tim() in
-  print_debug ("//Optimisation complete time " ^ string_of_float opt_time);
+  print_debug "//OPTIMIZING";
+  let opt_timer = make_timer () in
+
+  let bsym_table, _ = Flx_opt.optimize_bsym_table state.syms bsym_table root_proc in
+
+  state.opt_time <- state.opt_time +. opt_timer ();
+  print_debug ("//OPTIMIZATION OK time " ^ string_of_float state.opt_time);
 
   (* Lower the bound symbols for the backend. *)
+
+  print_debug "//LOWERING";
+  let lower_timer = make_timer () in
+
   let bsym_table, child_map = Flx_lower.lower_bsym_table
-    (Flx_lower.make_lower_state syms)
+    (Flx_lower.make_lower_state state.syms)
     bsym_table
     root_proc
   in
 
+  state.lower_time <- state.lower_time +. lower_timer ();
+  print_debug ("//LOWERING OK time " ^ string_of_float state.lower_time);
+
   (* Start working on the backend. *)
 
-  let label_map = Flx_label.create_label_map bsym_table syms.counter in
-  let label_usage = Flx_label.create_label_usage syms bsym_table label_map in
+  print_debug "//INSTANTIATING";
+  let instantiation_timer = make_timer () in
+
+  let label_map = Flx_label.create_label_map bsym_table state.syms.counter in
+  let label_usage = Flx_label.create_label_usage state.syms bsym_table label_map in
   let label_info = label_map, label_usage in
 
   (* Make sure we can find the _init_ instance *)
   let top_class =
-    try cpp_instance_name syms bsym_table root_proc [] with Not_found ->
+    try cpp_instance_name state.syms bsym_table root_proc [] with Not_found ->
       failwith ("can't name instance of root _init_ procedure index " ^
         string_of_bid root_proc)
   in
@@ -256,18 +341,21 @@ try
   in
   print_debug ("//root module's init procedure has name " ^ top_class);
 
-  let instantiation_time = tim() in
-
-  print_debug ("//instantiation time " ^ string_of_float instantiation_time);
+  state.instantiation_time <- state.instantiation_time +. instantiation_timer ();
+  print_debug ("//instantiation time " ^ string_of_float state.instantiation_time);
 
   if compiler_options.compile_only
   then exit (if compiler_options.reverse_return_parity then 1 else 0)
   ;
 
-  let psh s = ws header_file s in
-  let psb s = ws body_file s in
-  let psp s = ws package_file s in
-  let psr s = ws rtti_file s in
+  (* Finally, lets do some code generation! *)
+
+  let codegen_timer = make_timer () in
+
+  let psh s = ws state.header_file s in
+  let psb s = ws state.body_file s in
+  let psp s = ws state.package_file s in
+  let psr s = ws state.rtti_file s in
 
   let plh s = psh s; psh "\n" in
   let plb s = psb s; psb "\n" in
@@ -281,7 +369,7 @@ try
     let dfnlist = ref [] in
     Hashtbl.iter
     (fun (i,ts) _ -> dfnlist := (i,ts) :: !dfnlist)
-    syms.instances
+    state.syms.instances
     ;
     let insts = Hashtbl.create 97 in
     List.iter
@@ -302,7 +390,7 @@ try
             | CS_str s -> Flx_cexpr.ce_expr "atom" s
             | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename syms bsym_table t in
+              let tn t = cpp_typename state.syms bsym_table t in
               let ts = List.map tn ts in
               Flx_csubst.csubst bsym.Flx_bsym.sr bsym.Flx_bsym.sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in
@@ -322,15 +410,15 @@ try
 
   print_debug "//GENERATING C++: user headers";
 
-  plh ("#ifndef _FLX_GUARD_" ^ cid_of_flxid module_name);
-  plh ("#define _FLX_GUARD_" ^ cid_of_flxid module_name);
-  plh ("//Input file: " ^ input_file_name);
+  plh ("#ifndef _FLX_GUARD_" ^ cid_of_flxid state.module_name);
+  plh ("#define _FLX_GUARD_" ^ cid_of_flxid state.module_name);
+  plh ("//Input file: " ^ state.input_filename);
   plh ("//Generated by Felix Version " ^ !version_data.version_string);
   plh ("//Timestamp: " ^ compile_start_gm_string);
   plh ("//Timestamp: " ^ compile_start_local_string);
   plh "";
   plh "#ifndef FLX_NO_INCLUDES";
-  plh ("#include \"" ^ module_name ^ ".includes\"");
+  plh ("#include \"" ^ state.module_name ^ ".includes\"");
   plh "#endif";
   plh "//FELIX RUNTIME";
   (* plh "#include \"flx_rtl.hpp\""; *)
@@ -346,7 +434,7 @@ try
     let dfnlist = ref [] in
     Hashtbl.iter
     (fun (i,ts) _ -> dfnlist := (i,ts) :: !dfnlist)
-    syms.instances
+    state.syms.instances
     ;
     let insts = Hashtbl.create 97 in
     List.iter
@@ -367,7 +455,7 @@ try
             | CS_str s -> Flx_cexpr.ce_expr "atom" s
             | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename syms bsym_table t in
+              let tn t = cpp_typename state.syms bsym_table t in
               let ts = List.map tn ts in
               Flx_csubst.csubst bsym.Flx_bsym.sr bsym.Flx_bsym.sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in
@@ -387,13 +475,13 @@ try
   plh "\n//-----------------------------------------";
   List.iter plh [
   "//FELIX SYSTEM";
-  "namespace flxusr { namespace " ^ cid_of_flxid module_name ^ " {";
+  "namespace flxusr { namespace " ^ cid_of_flxid state.module_name ^ " {";
   "struct thread_frame_t;"
   ]
   ;
   print_debug "//GENERATING C++: collect types";
   let types = ref [] in
-  Hashtbl.iter (fun t index -> types := (index, t) :: !types) syms.registry;
+  Hashtbl.iter (fun t index -> types := (index, t) :: !types) state.syms.registry;
 
   let types = List.sort (fun a1 a2 -> compare (fst a1) (fst a2)) !types in
   (*
@@ -406,21 +494,21 @@ try
   print_debug "//GENERATING C++: type class names";
   plh "\n//-----------------------------------------";
   plh "//NAME THE TYPES";
-  plh  (gen_type_names syms bsym_table types);
+  plh  (gen_type_names state.syms bsym_table types);
 
   print_debug "//GENERATING C++: type class definitions";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE THE TYPES";
-  plh  (gen_types syms bsym_table types);
+  plh  (gen_types state.syms bsym_table types);
 
   print_debug "//GENERATING C++: function and procedure classes";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASS NAMES";
-  plh  (gen_function_names syms bsym_table child_map);
+  plh  (gen_function_names state.syms bsym_table child_map);
 
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASSES";
-  plh  (gen_functions syms bsym_table child_map);
+  plh  (gen_functions state.syms bsym_table child_map);
 
   let topvars_with_type = find_thread_vars_with_type bsym_table in
   let topvars = List.map fst topvars_with_type in
@@ -437,22 +525,22 @@ try
   "  );";
   ]
   ;
-  plh (format_vars syms bsym_table topvars []);
+  plh (format_vars state.syms bsym_table topvars []);
   plh "};";
   plh "";
   plh "FLX_DCL_THREAD_FRAME";
   plh "";
-  plh ("}} // namespace flxusr::" ^ cid_of_flxid module_name);
+  plh ("}} // namespace flxusr::" ^ cid_of_flxid state.module_name);
 
   (* BODY *)
   print_debug "//GENERATING C++: GC ptr maps & offsets";
 
-  plb ("//Input file: " ^ input_file_name);
+  plb ("//Input file: " ^ state.input_filename);
   plb ("//Generated by Felix Version " ^ !version_data.version_string);
   plb ("//Timestamp: " ^ compile_start_gm_string);
   plb ("//Timestamp: " ^ compile_start_local_string);
 
-  plb ("#include \"" ^ module_name ^ ".hpp\"");
+  plb ("#include \"" ^ state.module_name ^ ".hpp\"");
   plb "#include <stdio.h>"; (* for diagnostics *)
 
   plb "#define comma ,";
@@ -463,7 +551,7 @@ try
     let dfnlist = ref [] in
     Hashtbl.iter
     (fun (i,ts) _ -> dfnlist := (i,ts) :: !dfnlist)
-    syms.instances
+    state.syms.instances
     ;
     let insts = Hashtbl.create 97 in
     List.iter
@@ -484,7 +572,7 @@ try
             | CS_str s -> Flx_cexpr.ce_expr "atom" s
             | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename syms bsym_table t in
+              let tn t = cpp_typename state.syms bsym_table t in
               let ts = List.map tn ts in
               Flx_csubst.csubst bsym.Flx_bsym.sr bsym.Flx_bsym.sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in
@@ -502,13 +590,13 @@ try
   ;
 
   plb "\n//-----------------------------------------";
-  plb ("namespace flxusr { namespace " ^ cid_of_flxid module_name ^ " {");
+  plb ("namespace flxusr { namespace " ^ cid_of_flxid state.module_name ^ " {");
 
   plb "FLX_DEF_THREAD_FRAME";
   plb "//Thread Frame Constructor";
 
   let sr = Flx_srcref.make_dummy "Thread Frame" in
-  let topfuns = List.filter (fun (_,t) -> is_gc_pointer syms bsym_table sr t) topvars_with_type in
+  let topfuns = List.filter (fun (_,t) -> is_gc_pointer state.syms bsym_table sr t) topvars_with_type in
   let topfuns = List.map fst topfuns in
   let topinits =
     [
@@ -518,7 +606,7 @@ try
     List.map
     (fun index ->
       "  " ^
-      cpp_instance_name syms bsym_table index [] ^
+      cpp_instance_name state.syms bsym_table index [] ^
       "(0)"
     )
     topfuns
@@ -532,12 +620,17 @@ try
   "{}"
   ];
 
-  plr (Flx_ogen.gen_offset_tables syms bsym_table child_map module_name);
-  ensure_closed rtti_file;
-  if was_used rtti_file then begin
+  plr (Flx_ogen.gen_offset_tables
+    state.syms
+    bsym_table
+    child_map
+    state.module_name);
+
+  ensure_closed state.rtti_file;
+  if was_used state.rtti_file then begin
     plb "\n//-----------------------------------------";
     plb "//DEFINE OFFSET tables for GC";
-    plb ("#include \""^module_name^".rtti\"");
+    plb ("#include \"" ^ state.module_name ^ ".rtti\"");
   end;
 
   begin
@@ -565,7 +658,7 @@ try
         labels
       with Not_found -> ()
     )
-    syms.instances
+    state.syms.instances
     ;
     if !header_emitted then plb "#endif";
   end
@@ -575,44 +668,44 @@ try
 
   plb "\n//-----------------------------------------";
   plb "//DEFINE FUNCTION CLASS METHODS";
-  plb ("#include \"" ^module_name ^ "_ctors.cpp\"");
+  plb ("#include \"" ^ state.module_name ^ "_ctors.cpp\"");
   gen_execute_methods
-    body_file.out_filename
-    syms
+    state.body_file.out_filename
+    state.syms
     bsym_table
     child_map
     label_info
-    syms.counter
-    (force_open body_file)
-    (force_open ctors_file);
+    state.syms.counter
+    (force_open state.body_file)
+    (force_open state.ctors_file);
 
   print_debug "//GENERATING C++: interface";
   plb "\n//-----------------------------------------";
-  plb ("}} // namespace flxusr::" ^ cid_of_flxid module_name);
+  plb ("}} // namespace flxusr::" ^ cid_of_flxid state.module_name);
 
   plb "//CREATE STANDARD EXTERNAL INTERFACE";
-  plb ("FLX_FRAME_WRAPPERS(flxusr::" ^ cid_of_flxid module_name ^ ")");
+  plb ("FLX_FRAME_WRAPPERS(flxusr::" ^ cid_of_flxid state.module_name ^ ")");
   (if List.mem `Pure topclass_props then
-    plb ("FLX_C_START_WRAPPER(flxusr::" ^ cid_of_flxid module_name ^ "," ^ top_class ^ ")")
+    plb ("FLX_C_START_WRAPPER(flxusr::" ^ cid_of_flxid state.module_name ^ "," ^ top_class ^ ")")
   else if List.mem `Stackable topclass_props then
-    plb ("FLX_STACK_START_WRAPPER(flxusr::" ^ cid_of_flxid module_name ^ "," ^ top_class ^ ")")
+    plb ("FLX_STACK_START_WRAPPER(flxusr::" ^ cid_of_flxid state.module_name ^ "," ^ top_class ^ ")")
   else
-    plb ("FLX_START_WRAPPER(flxusr::" ^ cid_of_flxid module_name ^ "," ^ top_class ^ ")")
+    plb ("FLX_START_WRAPPER(flxusr::" ^ cid_of_flxid state.module_name ^ "," ^ top_class ^ ")")
   );
   plb "\n//-----------------------------------------";
 
-  plh ("using namespace flxusr::" ^ cid_of_flxid module_name ^ ";");
-  if List.length syms.bifaces > 0 then begin
+  plh ("using namespace flxusr::" ^ cid_of_flxid state.module_name ^ ";");
+  if List.length state.syms.bifaces > 0 then begin
     plh "//DECLARE USER EXPORTS";
-    plh (gen_biface_headers syms bsym_table syms.bifaces);
+    plh (gen_biface_headers state.syms bsym_table state.syms.bifaces);
     plb "//DEFINE EXPORTS";
-    plb (gen_biface_bodies syms bsym_table syms.bifaces);
-    plb (gen_python_module module_name syms bsym_table syms.bifaces);
+    plb (gen_biface_bodies state.syms bsym_table state.syms.bifaces);
+    plb (gen_python_module state.module_name state.syms bsym_table state.syms.bifaces);
   end
   ;
 
   (* rather late: generate variant remapping tables *)
-  if Hashtbl.length syms.variant_map > 0 then begin
+  if Hashtbl.length state.syms.variant_map > 0 then begin
     plr "// VARIANT REMAP ARRAYS";
     Hashtbl.iter
     (fun (srct,dstt) vidx ->
@@ -638,38 +731,39 @@ try
         end
       | _ -> failwith "Remap non variant types??"
     )
-    syms.variant_map
+    state.syms.variant_map
   end
   ;
   plh "//header complete";
   plh "#endif";
   plb "//body complete";
-  ensure_closed header_file;
-  ensure_closed body_file;
-  ensure_closed ctors_file;
+  ensure_closed state.header_file;
+  ensure_closed state.body_file;
+  ensure_closed state.ctors_file;
   plp "flx";
   plp "flx_gc";  (* RF: flx apps now need flx_gc. is this the way to do it? *)
-  ensure_closed package_file;
-  let code_generation_time = tim() in
-  print_debug ("//code generation time " ^ string_of_float code_generation_time);
+  ensure_closed state.package_file;
+
+  state.codegen_time <- state.codegen_time +.  codegen_timer ();
+  print_debug ("//code generation time " ^ string_of_float state.codegen_time);
 
   let total_time =
-    parse_time +.
-    desugar_time +.
-    binding_time +.
-    opt_time +.
-    instantiation_time +.
-    code_generation_time
+    state.parse_time +.
+    state.desugar_time +.
+    state.bind_time +.
+    state.opt_time +.
+    state.instantiation_time +.
+    state.codegen_time
   in
   print_debug ("//Felix compiler time " ^ string_of_float total_time);
   let fname = "flxg_stats.txt" in
   let
     old_parse_time,
     old_desugar_time,
-    old_binding_time,
+    old_bind_time,
     old_opt_time,
     old_instantiation_time,
-    old_code_generation_time,
+    old_codegen_time,
     old_total_time
   =
   let zeroes = 0.0,0.0,0.0,0.0,0.0,0.0,0.0 in
@@ -692,12 +786,12 @@ try
       Printf.fprintf
         f
         "parse=%f\ndesugar=%f\nbind=%f\nopt=%f\ninst=%f\ngen=%f\ntot=%f\n"
-        (old_parse_time +. parse_time)
-        (old_desugar_time +. desugar_time)
-        (old_binding_time +. binding_time)
-        (old_opt_time +. opt_time)
-        (old_instantiation_time +. instantiation_time)
-        (old_code_generation_time +. code_generation_time)
+        (old_parse_time +. state.parse_time)
+        (old_desugar_time +. state.desugar_time)
+        (old_bind_time +. state.bind_time)
+        (old_opt_time +. state.opt_time)
+        (old_instantiation_time +. state.instantiation_time)
+        (old_codegen_time +. state.codegen_time)
         (old_total_time +. total_time)
       ;
       close_out f
