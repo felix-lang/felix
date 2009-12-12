@@ -15,8 +15,8 @@ open Flx_exceptions
 open Flx_flxopt
 open Flx_ogen
 open Flx_typing
-open List
 ;;
+
 Flx_version_hook.set_version ();;
 
 let print_help () = print_options(); exit(0)
@@ -129,9 +129,9 @@ try
   ;
   *)
   let files = compiler_options.files in
-  if length files = 0 then print_help();
+  if files = [] then print_help ();
 
-  let filename = hd (rev files) in
+  let filename = List.hd (List.rev files) in
   let inbase = filename in
 
   let input_file_name = inbase ^ ".flx" in
@@ -166,13 +166,13 @@ try
   (* PARSE THE IMPLEMENTATION FILE *)
 
   let parse_tree =
-    fold_left (fun tree file ->
+    List.fold_left (fun tree file ->
       let file_name =
         if Filename.check_suffix file ".flx" then file else file ^ ".flx"
       in
       print_debug ("//Parsing Implementation " ^ file_name);
       let sts = Flx_colns.include_file syms file_name in
-      concat [tree; sts]
+      List.concat [tree; sts]
     )
     []
     files
