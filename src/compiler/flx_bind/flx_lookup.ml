@@ -5427,51 +5427,51 @@ and pub_table_dir state env inst_check (invs,i,ts) : name_map_t =
 
   | SYMDEF_typeclass ->
     let table = make_view_table state sym.Flx_sym.pubmap invs ts in
-      (* a bit hacky .. add the type class specialisation view
-         to its contents as an instance
-      *)
-      let inst = mkentry state sym.Flx_sym.vs i in
-      let inst = review_entry state invs ts inst in
-      let inst_name = "_inst_" ^ sym.Flx_sym.id in
-      Hashtbl.add table inst_name (FunctionEntry [inst]);
-      if inst_check then begin
-        if state.syms.compiler_options.print_flag then
-          print_endline ("Added typeclass " ^ string_of_bid i ^
-            " as instance " ^ inst_name ^": " ^
-            string_of_myentry bsym_table inst);
-        let luqn2 qn =
-          try
-            Some (lookup_qn_in_env2' state env rsground qn)
-          with _ -> None
-        in
-        let res = luqn2 (`AST_name (sym.Flx_sym.sr, inst_name, [])) in
-        match res with
-        | None ->
-            clierr sym.Flx_sym.sr ("Couldn't find any instances to open for " ^
-              sym.Flx_sym.id ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
-          )
-        | Some (es,_) ->
-            check_instances
-              state
-              sym.Flx_sym.sr
-              "open"
-              sym.Flx_sym.id
-              es
-              ts
-              (mk_bare_env state)
+    (* a bit hacky .. add the type class specialisation view
+       to its contents as an instance
+    *)
+    let inst = mkentry state sym.Flx_sym.vs i in
+    let inst = review_entry state invs ts inst in
+    let inst_name = "_inst_" ^ sym.Flx_sym.id in
+    Hashtbl.add table inst_name (FunctionEntry [inst]);
+    if inst_check then begin
+      if state.syms.compiler_options.print_flag then
+        print_endline ("Added typeclass " ^ string_of_bid i ^
+          " as instance " ^ inst_name ^": " ^
+          string_of_myentry bsym_table inst);
+      let luqn2 qn =
+        try
+          Some (lookup_qn_in_env2' state env rsground qn)
+        with _ -> None
+      in
+      let res = luqn2 (`AST_name (sym.Flx_sym.sr, inst_name, [])) in
+      match res with
+      | None ->
+          clierr sym.Flx_sym.sr ("Couldn't find any instances to open for " ^
+            sym.Flx_sym.id ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
+        )
+      | Some (es,_) ->
+          check_instances
+            state
+            sym.Flx_sym.sr
+            "open"
+            sym.Flx_sym.id
+            es
+            ts
+            (mk_bare_env state)
       end;
       table
 
-    | _ ->
-        clierr sym.Flx_sym.sr "[map_dir] Expected module"
+  | _ ->
+      clierr sym.Flx_sym.sr "[map_dir] Expected module"
 
 
-  and get_pub_tables state env rs dirs =
-    let _,includes,_ = split_dirs rs.open_excludes dirs in
-    let xs = uniq_list (List.map (bind_dir state env rs) includes) in
-    let includes = get_includes state rs xs in
-    let tables = List.map (pub_table_dir state env false) includes in
-    tables
+and get_pub_tables state env rs dirs =
+  let _,includes,_ = split_dirs rs.open_excludes dirs in
+  let xs = uniq_list (List.map (bind_dir state env rs) includes) in
+  let includes = get_includes state rs xs in
+  let tables = List.map (pub_table_dir state env false) includes in
+  tables
 
 and mk_bare_env state index =
   let sym = hfind "lookup" state.sym_table index in
@@ -5737,10 +5737,10 @@ and rebind_btype state env sr ts t: btypecode_t =
     -> clierr sr ("[rebind_type] Unexpected metatype " ^ sbt bsym_table t)
 
 
-and check_module sym_table name sr entries ts =
+and check_module state name sr entries ts =
     begin match entries with
     | NonFunctionEntry (index) ->
-        let sym = get_data sym_table (sye index) in
+        let sym = get_data state.sym_table (sye index) in
         begin match sym.Flx_sym.symdef with
         | SYMDEF_module ->
             Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
@@ -5771,7 +5771,7 @@ and eval_module_expr state env e : module_rep_t =
   match e with
   | EXPR_name (sr,name,ts) ->
     let entries = inner_lookup_name_in_env state env rsground sr name in
-    check_module state.sym_table name sr entries ts
+    check_module state name sr entries ts
 
   | EXPR_lookup (sr,(e,name,ts)) ->
     let result = eval_module_expr state env e in
@@ -5782,7 +5782,7 @@ and eval_module_expr state env e : module_rep_t =
       let result = lookup_name_in_table_dirs htab tables sr name in
         begin match result with
         | Some x ->
-          check_module state.sym_table name sr x (ts' @ ts)
+          check_module state name sr x (ts' @ ts)
 
         | None -> clierr sr
           (
