@@ -1130,7 +1130,7 @@ and string_of_statement level s =
   | STMT_comment (_,s) -> spaces level ^ "// " ^ s
 
   | STMT_open (_,vs,n) ->
-    spaces level ^ "open" ^ string_of_vs vs ^ " " ^ sqn n ^ ";"
+    spaces level ^ "open " ^ string_of_vs vs ^ " " ^ sqn n ^ ";"
 
   | STMT_inject_module (_,n) ->
     spaces level ^ "inherit " ^ sqn n ^ ";"
@@ -2209,7 +2209,7 @@ and string_of_dir level s =
   let sqn n = string_of_qualified_name n in
   match s with
   | DIR_open (vs,qn) ->
-    spaces level ^ "open" ^ string_of_ivs vs ^ sqn qn ^ ";"
+    spaces level ^ "open " ^ string_of_ivs vs ^ sqn qn ^ ";"
 
   | DIR_use (n,qn) ->
     spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
