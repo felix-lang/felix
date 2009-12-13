@@ -202,7 +202,36 @@ let ws f x =
 
 let wl f x = ws f (x ^ "\n")
 
-;;
+
+(** Parse an implementation file *)
+let parse_file state file =
+  let parse_timer = make_timer () in
+
+  let file_name =
+    if Filename.check_suffix file ".flx" then file else file ^ ".flx"
+  in
+  fprintf state.ppf "//Parsing Implementation %s\n" file_name;
+  let stmts = Flx_colns.include_file state.syms file_name in
+
+  state.parse_time <- state.parse_time +. parse_timer ();
+
+  stmts
+
+
+(** Parse the implementation files *)
+let parse_files state files =
+  fprintf state.ppf "//PARSING";
+
+  let stmts =
+    List.fold_left begin fun tree file ->
+      List.concat [tree; parse_file state file]
+    end [] files
+  in
+  fprintf state.ppf "%s\n" (Flx_print.string_of_compilation_unit stmts);
+  fprintf state.ppf "//PARSE OK time %f\n" state.parse_time;
+
+  stmts
+
 
 let reverse_return_parity = ref false;;
 
@@ -215,42 +244,14 @@ try
   let compile_start_local_string = format_time compile_start_local ^ " (local)" in
 
   let ppf, compiler_options = parse_args () in
+  let state = make_flxg_state ppf compiler_options in
 
   (* Cache the reverse return parity bit so we can exit correctly. *)
   reverse_return_parity := compiler_options.reverse_return_parity;
 
-  let state = make_flxg_state ppf compiler_options in
-
-  (* main filename processing *)
-  (*
-  List.iter (fun f ->
-  print_endline ("File " ^ f))
-  compiler_options.files
-  ;
-  *)
-  let files = compiler_options.files in
-
   (* PARSE THE IMPLEMENTATION FILE *)
 
-  fprintf ppf "//PARSING\n";
-  let parse_timer = make_timer () in
-
-  let parse_tree =
-    List.fold_left (fun tree file ->
-      let file_name =
-        if Filename.check_suffix file ".flx" then file else file ^ ".flx"
-      in
-      fprintf ppf "//Parsing Implementation %s\n" file_name;
-      let sts = Flx_colns.include_file state.syms file_name in
-      List.concat [tree; sts]
-    )
-    []
-    files
-  in
-  fprintf ppf "%s\n" (Flx_print.string_of_compilation_unit parse_tree);
-
-  state.parse_time <- state.parse_time +. parse_timer ();
-  fprintf ppf "//PARSE OK time %f\n" state.parse_time;
+  let parse_tree = parse_files state state.syms.compiler_options.files in
 
   (* Desugar the implementation file *)
 
