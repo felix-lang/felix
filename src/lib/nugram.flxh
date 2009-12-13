@@ -1511,7 +1511,7 @@ syntax namespaces {
     """
     `(ast_seq ,_sr (
       (ast_untyped_module ,_sr ,(first _3) ,(second _3) ,_5)
-      (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(first _3)()))))
+      (ast_open ,_sr ,dfltvs (ast_name ,_sr ,(first _3) ()))))
      """;
 }
 
