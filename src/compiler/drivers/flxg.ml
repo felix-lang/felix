@@ -247,6 +247,82 @@ let desugar_stmts state module_name stmts =
   asms
 
 
+(** Bind the assemblies *)
+let bind_asms state asms =
+  fprintf state.ppf "//BINDING\n";
+  let bind_timer = make_timer () in
+
+  (* THIS IS A HACK! *)
+  let root = !(state.syms.counter) in
+  fprintf state.ppf "//Top level module '%s' has index %s\n"
+    state.module_name
+    (string_of_bid root);
+
+  let bind_state = Flx_bind.make_bind_state state.syms in
+  let bsym_table = Flx_bind.bind_asms bind_state asms in
+
+  let root_proc = Flx_bind.find_root_module_init_function bind_state root in
+  fprintf state.ppf "//root module's init procedure has index %s\n"
+    (Flx_print.string_of_bid root_proc);
+
+  let child_map = Flx_child.cal_children bsym_table in
+  Flx_typeclass.typeclass_instance_check state.syms bsym_table child_map;
+
+  state.bind_time <- state.bind_time +. bind_timer ();
+  fprintf state.ppf "//BINDING OK time %f\n" state.bind_time;
+
+  bsym_table, child_map, root_proc
+
+
+(** Generate the why file. *)
+let generate_why_file state bsym_table child_map root_proc =
+  (* generate axiom checks *)
+  if state.syms.compiler_options.generate_axiom_checks then
+  Flx_axiom.axiom_check state.syms bsym_table;
+
+  (* generate why file *)
+  Flx_why.emit_whycode
+    state.why_file.out_filename
+    state.syms
+    bsym_table
+    child_map
+    root_proc
+
+
+(** Optimize the bound symbols. *)
+let optimize_bsyms state bsym_table root_proc =
+  fprintf state.ppf "//OPTIMIZING\n";
+  let opt_timer = make_timer () in
+
+  let bsym_table, _ = Flx_opt.optimize_bsym_table
+    state.syms
+    bsym_table
+    root_proc
+  in
+
+  state.opt_time <- state.opt_time +. opt_timer ();
+  fprintf state.ppf "//OPTIMIZATION OK time %f\n" state.opt_time;
+
+  bsym_table
+
+
+(** Lower the high level constructs into simpler ones. *)
+let lower_bsyms state bsym_table root_proc =
+  fprintf state.ppf "//LOWERING\n";
+  let lower_timer = make_timer () in
+
+  let bsym_table, child_map = Flx_lower.lower_bsym_table
+    (Flx_lower.make_lower_state state.syms)
+    bsym_table
+    root_proc
+  in
+
+  state.lower_time <- state.lower_time +. lower_timer ();
+  fprintf state.ppf "//LOWERING OK time %f\n"state.lower_time;
+
+  bsym_table, child_map
+
+
 let reverse_return_parity = ref false;;
 
 try
@@ -269,65 +345,17 @@ try
   (* Desugar the implementation file *)
   let asms = desugar_stmts state state.module_name stmts in
 
-  (* THIS IS A HACK! *)
-  let root = !(state.syms.counter) in
-  fprintf ppf "//Top level module '%s' has index %s\n"
-    state.module_name
-    (string_of_bid root);
-
   (* Bind the assemblies. *)
+  let bsym_table, child_map, root_proc = bind_asms state asms in
 
-  fprintf ppf "//BINDING\n";
-  let bind_timer = make_timer () in
-
-  let bind_state = Flx_bind.make_bind_state state.syms in
-  let bsym_table = Flx_bind.bind_asms bind_state asms in
-
-  let root_proc = Flx_bind.find_root_module_init_function bind_state root in
-  fprintf ppf "//root module's init procedure has index %s\n"
-    (Flx_print.string_of_bid root_proc);
-
-  let child_map = Flx_child.cal_children bsym_table in
-  Flx_typeclass.typeclass_instance_check state.syms bsym_table child_map;
-
-  (* generate axiom checks *)
-  if compiler_options.generate_axiom_checks then
-  Flx_axiom.axiom_check state.syms bsym_table;
-
-  (* generate why file *)
-  Flx_why.emit_whycode
-    state.why_file.out_filename
-    state.syms
-    bsym_table
-    child_map
-    root_proc;
-
-  state.bind_time <- state.bind_time +. bind_timer ();
-  fprintf ppf "//BINDING OK time %f\n" state.bind_time;
+  (* Generate the why file *)
+  generate_why_file state bsym_table child_map root_proc;
 
   (* Optimize the bound values *)
-
-  fprintf ppf "//OPTIMIZING\n";
-  let opt_timer = make_timer () in
-
-  let bsym_table, _ = Flx_opt.optimize_bsym_table state.syms bsym_table root_proc in
-
-  state.opt_time <- state.opt_time +. opt_timer ();
-  fprintf ppf "//OPTIMIZATION OK time %f\n" state.opt_time;
+  let bsym_table = optimize_bsyms state bsym_table root_proc in
 
   (* Lower the bound symbols for the backend. *)
-
-  fprintf ppf "//LOWERING\n";
-  let lower_timer = make_timer () in
-
-  let bsym_table, child_map = Flx_lower.lower_bsym_table
-    (Flx_lower.make_lower_state state.syms)
-    bsym_table
-    root_proc
-  in
-
-  state.lower_time <- state.lower_time +. lower_timer ();
-  fprintf ppf "//LOWERING OK time %f\n"state.lower_time;
+  let bsym_table, child_map = lower_bsyms state bsym_table root_proc in
 
   (* Start working on the backend. *)
 
