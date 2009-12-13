@@ -765,37 +765,8 @@ let codegen_bsyms state bsym_table child_map root_proc =
   fprintf state.ppf "//code generation time %f\n" state.codegen_time
 
 
-let reverse_return_parity = ref false;;
-
-try
-  let ppf, compiler_options = parse_args () in
-  let state = make_flxg_state ppf compiler_options in
-
-  (* Cache the reverse return parity bit so we can exit correctly. *)
-  reverse_return_parity := compiler_options.reverse_return_parity;
-
-  (* PARSE THE IMPLEMENTATION FILE *)
-  let stmts = parse_files state state.syms.compiler_options.files in
-
-  (* Desugar the implementation file *)
-  let asms = desugar_stmts state state.module_name stmts in
-
-  (* Bind the assemblies. *)
-  let bsym_table, child_map, root_proc = bind_asms state asms in
-
-  (* Generate the why file *)
-  generate_why_file state bsym_table child_map root_proc;
-
-  (* Optimize the bound values *)
-  let bsym_table = optimize_bsyms state bsym_table root_proc in
-
-  (* Lower the bound symbols for the backend. *)
-  let bsym_table, child_map = lower_bsyms state bsym_table root_proc in
-
-  (* Start working on the backend. *)
-  codegen_bsyms state bsym_table child_map root_proc;
-
-  (* We're done! let's calculate some simple profile statistics. *)
+(** Save basic profiling numbers. *)
+let save_profile state =
   let total_time =
     state.parse_time +.
     state.desugar_time +.
@@ -804,7 +775,7 @@ try
     state.instantiation_time +.
     state.codegen_time
   in
-  fprintf ppf "//Felix compiler time %f\n" total_time;
+  fprintf state.ppf "//Felix compiler time %f\n" total_time;
   let fname = "flxg_stats.txt" in
   let
     old_parse_time,
@@ -815,39 +786,77 @@ try
     old_codegen_time,
     old_total_time
   =
-  let zeroes = 0.0,0.0,0.0,0.0,0.0,0.0,0.0 in
-  let f = try Some (open_in fname) with _ -> None in
-  begin match f with
-  | None -> zeroes
-  | Some f ->
-    let x =
-      try
-        let id x1 x2 x3 x4 x5 x6 x7 = x1, x2, x3, x4, x5, x6, x7 in
-        Scanf.fscanf f
-        "parse=%f desugar=%f bind=%f opt=%f inst=%f gen=%f tot=%f"
-        id
-      with _ -> zeroes
-    in close_in f; x
-  end
+    let zeroes = 0.0,0.0,0.0,0.0,0.0,0.0,0.0 in
+    let f = try Some (open_in fname) with _ -> None in
+    begin match f with
+    | None -> zeroes
+    | Some f ->
+      let x =
+        try
+          let id x1 x2 x3 x4 x5 x6 x7 = x1, x2, x3, x4, x5, x6, x7 in
+          Scanf.fscanf f
+          "parse=%f desugar=%f bind=%f opt=%f inst=%f gen=%f tot=%f"
+          id
+        with
+        | Scanf.Scan_failure _
+        | Failure _
+        | End_of_file -> zeroes
+      in close_in f; x
+    end
   in
-    try (* failure to save stats isn't fatal *)
-      let f = open_out fname in
-      Printf.fprintf
-        f
-        "parse=%f\ndesugar=%f\nbind=%f\nopt=%f\ninst=%f\ngen=%f\ntot=%f\n"
-        (old_parse_time +. state.parse_time)
-        (old_desugar_time +. state.desugar_time)
-        (old_bind_time +. state.bind_time)
-        (old_opt_time +. state.opt_time)
-        (old_instantiation_time +. state.instantiation_time)
-        (old_codegen_time +. state.codegen_time)
-        (old_total_time +. total_time)
-      ;
-      close_out f
-    with _ -> ()
-    ;
-  exit (if compiler_options.reverse_return_parity then 1 else 0)
 
-with x ->
-  Flx_terminate.terminate !reverse_return_parity x
+  (* *)
+  (* failure to save stats isn't fatal *)
+  try
+    let f = open_out fname in
+    Printf.fprintf
+      f
+      "parse=%f\ndesugar=%f\nbind=%f\nopt=%f\ninst=%f\ngen=%f\ntot=%f\n"
+      (old_parse_time +. state.parse_time)
+      (old_desugar_time +. state.desugar_time)
+      (old_bind_time +. state.bind_time)
+      (old_opt_time +. state.opt_time)
+      (old_instantiation_time +. state.instantiation_time)
+      (old_codegen_time +. state.codegen_time)
+      (old_total_time +. total_time)
+    ;
+    close_out f
+  with _ -> ()
+
+
+let main () =
+  let ppf, compiler_options = parse_args () in
+  let state = make_flxg_state ppf compiler_options in
+
+  begin try
+    (* PARSE THE IMPLEMENTATION FILE *)
+    let stmts = parse_files state state.syms.compiler_options.files in
+
+    (* Desugar the implementation file *)
+    let asms = desugar_stmts state state.module_name stmts in
+
+    (* Bind the assemblies. *)
+    let bsym_table, child_map, root_proc = bind_asms state asms in
+
+    (* Generate the why file *)
+    generate_why_file state bsym_table child_map root_proc;
+
+    (* Optimize the bound values *)
+    let bsym_table = optimize_bsyms state bsym_table root_proc in
+
+    (* Lower the bound symbols for the backend. *)
+    let bsym_table, child_map = lower_bsyms state bsym_table root_proc in
+
+    (* Start working on the backend. *)
+    codegen_bsyms state bsym_table child_map root_proc;
+  with x ->
+    Flx_terminate.terminate compiler_options.reverse_return_parity x
+  end;
+
+  (* We're done! let's calculate some simple profile statistics. *)
+  save_profile state;
+
+  if compiler_options.reverse_return_parity then 1 else 0
 ;;
+
+exit (main ())
