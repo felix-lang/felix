@@ -1278,26 +1278,15 @@ let make_desugar_state name syms = {
 }
 
 (** Desugar all the statements in a compilation unit. *)
-let desugar_compilation_unit state sts =
-  let sts = match sts with
+let desugar_stmts state stmts =
+  let stmts = match stmts with
     | [] -> [STMT_nop (generated, "empty module")]
-    | _ -> sts
+    | _ -> stmts
   in
-  let sr =
-    Flx_srcref.rsrange
-      (src_of_stmt (List.hd sts))
-      (src_of_stmt (list_last sts))
-  in
-  let sts = Flx_macro.expand_macros state.macro_state sts in
-  (*
-  let sts = STMT_body(sr,"_rqs__top",[],"",[]) :: sts in
-  *)
-  rst
-    state
-    state.name
-    `Public
-    dfltvs
-    (STMT_untyped_module (sr, state.name, dfltvs, sts))
+  let stmts = Flx_macro.expand_macros state.macro_state stmts in
+  let stmts = collate_namespaces state.syms stmts in
+  let asms = List.map (rst state state.name `Public dfltvs) stmts in
+  List.concat asms
 
 (** Desugar a statement. *)
 let desugar_statement state handle_asm init stmt =

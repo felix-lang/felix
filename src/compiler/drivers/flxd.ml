@@ -75,7 +75,7 @@ try
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in
   let desugar_state = Flx_desugar.make_desugar_state module_name syms in
-  let deblocked = Flx_desugar.desugar_compilation_unit desugar_state parse_tree in
+  let deblocked = Flx_desugar.desugar_stmts desugar_state parse_tree in
   if syms.compiler_options.document_typeclass then
     Flx_tcdoc.gen_doc()
   else begin

@@ -250,7 +250,16 @@ let desugar_stmts state module_name stmts =
   let desugar_timer = make_timer () in
 
   let desugar_state = Flx_desugar.make_desugar_state module_name state.syms in
-  let asms = Flx_desugar.desugar_compilation_unit desugar_state stmts in
+  let asms = Flx_desugar.desugar_stmts desugar_state stmts in
+
+  let sr = Flx_srcref.rsrange
+    (src_of_stmt (List.hd stmts))
+    (src_of_stmt (Flx_list.list_last stmts))
+  in
+
+  let asms =
+    [Dcl (sr, module_name, None, `Public, dfltvs, DCL_module asms)]
+  in
 
   state.desugar_time <- state.desugar_time +. desugar_timer ();
   fprintf state.ppf "//DESUGAR OK time %f\n" state.desugar_time;
