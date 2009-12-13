@@ -173,13 +173,14 @@ let assign sr op l r =
   so we have to apply rsts to these bodies..
 *)
 
-let rec rex syms name (e:expr_t) : asm_t list * expr_t =
-  let rex e = rex syms name e in
-  let rsts sts = List.concat (List.map (rst syms name `Private dfltvs)
-    (collate_namespaces syms sts))
+let rec rex state name (e:expr_t) : asm_t list * expr_t =
+  let rex e = rex state name e in
+  let rsts sts = List.concat (List.map
+    (rst state name `Private dfltvs)
+    (collate_namespaces state.syms sts))
   in
   let sr = src_of_expr e in
-  let seq () = fresh_bid syms.counter in
+  let seq () = fresh_bid state.syms.counter in
   match e with
 
   | EXPR_patvar _
@@ -360,8 +361,12 @@ let rec rex syms name (e:expr_t) : asm_t list * expr_t =
     let n = seq() in
     let name' = "_lam_" ^ string_of_bid n in
     let access = `Private in
-    let sts =
-      rst syms name access dfltvs (mkcurry seq sr name' vs pps (ret,None) kind sts [`Generated "lambda"])
+    let sts = rst
+      state
+      name
+      access
+      dfltvs
+      (mkcurry seq sr name' vs pps (ret,None) kind sts [`Generated "lambda"])
     in
     if List.length pps = 0 then syserr sr "[rex] Lambda with no arguments?" else
     let t = type_of_argtypes (List.map (fun(x,y,z,d)->z) (fst (List.hd pps))) in
@@ -643,12 +648,12 @@ and gen_call_init sr name' =
     EXE_call (sname, unitt)
   )
 
-and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
+and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list =
     List.map (fun (s,tp)-> TYP_name (sr,s,[])) (fst parent_vs)
   in
-  let rqname' sr = `AST_name (sr,"_rqs_" ^ name,parent_ts sr) in
+  let rqname' sr = `AST_name (sr, "_rqs_" ^ name, parent_ts sr) in
 
   (* Add a root to child named 'n'.
      All root requirements in the child go to this symbol,
@@ -662,9 +667,9 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     print_endline ("Making bridge for " ^ n ^ " -> " ^ name ^ print_vs _vs);
     *)
     let ts = List.map (fun (s,_)-> TYP_name (sr,s,[])) (fst parent_vs) in
-    let us = NREQ_atom (`AST_name (sr,"_rqs_" ^ name,ts)) in
-    let body = DCL_insert (CS_str "",`Body,us) in
-    Dcl (sr,"_rqs_"^n,None,`Public,dfltvs,body)
+    let us = NREQ_atom (`AST_name (sr, "_rqs_" ^ name, ts)) in
+    let body = DCL_insert (CS_str "", `Body, us) in
+    Dcl (sr, "_rqs_" ^ n, None, `Public, dfltvs, body)
   in
 
   (* rename _root requirements *)
@@ -686,7 +691,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     let props = ref [] in
     let decls = ref [] in
     let mkreq s kind =
-      let n = fresh_bid syms.counter in
+      let n = fresh_bid state.syms.counter in
       let n = "_req_" ^ string_of_bid n in
       let dcl = Dcl (sr,n,ix,access,dfltvs,DCL_insert (s,kind,NREQ_true)) in
       decls := dcl :: !decls;
@@ -727,23 +732,23 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   (* rename _root headers *)
   let map_req n = if n = "_root" then "_rqs_" ^ name else n in
 
-  let rex x = rex syms name x in
-  let rsts name vs access sts = List.concat (List.map (rst syms name access vs)
-    (collate_namespaces syms sts))
+  let rex x = rex state name x in
+  let rsts name vs access sts = List.concat (List.map
+    (rst state name access vs)
+    (collate_namespaces state.syms sts))
   in
-  let seq () = fresh_bid syms.counter in
+  let seq () = fresh_bid state.syms.counter in
   (* add _root headers and bodies as requirements for all
     bindings defined in this entity
   *)
   match st with
   | STMT_seq _ -> assert false
-  | STMT_private (sr,st) ->
-     rst syms name `Private parent_vs st
+  | STMT_private (sr,st) -> rst state name `Private parent_vs st
 
   | STMT_include (sr,inspec) -> assert false
 
     (*
-    let sts = include_file syms inspec true in
+    let sts = include_file state inspec true in
     rsts name parent_vs  access sts
     *)
 
@@ -837,7 +842,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   | STMT_cstruct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,DCL_cstruct (components))]
 
   | STMT_typeclass (sr,name, vs, sts) ->
-    if syms.compiler_options.document_typeclass then
+    if state.syms.compiler_options.document_typeclass then
     begin
       print_endline ("DOCUMENT TYPECLASS " ^ name);
       Flx_tcdoc.record_tc name (vs,sts);
@@ -865,7 +870,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   | STMT_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit_fun qn)]
 
   | STMT_curry (sr,name',vs,pps,ret,kind,sts) ->
-    rst syms name access parent_vs (mkcurry seq sr name' vs pps ret kind sts [])
+    rst state name access parent_vs (mkcurry seq sr name' vs pps ret kind sts [])
 
   (* functions *)
   | STMT_reduce (sr,name,vs,params, rsrc,rdst) ->
@@ -931,7 +936,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
       let st =
         STMT_function (sr,name',vs,(ps,None),(res,None),props,sts)
       in
-      rst syms name access parent_vs st
+      rst state name access parent_vs st
     end
 
   | STMT_fun_decl (sr,name',vs,args,result,code, reqs,prec) ->
@@ -970,7 +975,7 @@ and rst syms name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
 
   (* misc *)
   | STMT_untyped_module (sr,name', vs', sts) ->
-    if syms.compiler_options.document_typeclass then
+    if state.syms.compiler_options.document_typeclass then
     begin
       print_endline ("DOCUMENT MODULE " ^ name');
       Flx_tcdoc.record_module name' (vs',sts);
@@ -1288,7 +1293,7 @@ let desugar_compilation_unit state sts =
   let sts = STMT_body(sr,"_rqs__top",[],"",[]) :: sts in
   *)
   rst
-    state.syms
+    state
     state.name
     `Public
     dfltvs
@@ -1302,7 +1307,7 @@ let desugar_statement state handle_asm init stmt =
     begin fun init stmt ->
       (* For each macro-expanded statement, desugar it into a series of
        * assemblies *)
-      let asms = rst state.syms state.name `Public dfltvs stmt in
+      let asms = rst state state.name `Public dfltvs stmt in
 
       (* Finally, call the fold function over the assemblies *)
       List.fold_left handle_asm init asms
