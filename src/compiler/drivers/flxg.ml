@@ -233,6 +233,20 @@ let parse_files state files =
   stmts
 
 
+(** Desugar the statements *)
+let desugar_stmts state module_name stmts =
+  fprintf state.ppf "//DESUGARING\n";
+  let desugar_timer = make_timer () in
+
+  let desugar_state = Flx_desugar.make_desugar_state module_name state.syms in
+  let asms = Flx_desugar.desugar_compilation_unit desugar_state stmts in
+
+  state.desugar_time <- state.desugar_time +. desugar_timer ();
+  fprintf state.ppf "//DESUGAR OK time %f\n" state.desugar_time;
+
+  asms
+
+
 let reverse_return_parity = ref false;;
 
 try
@@ -250,19 +264,10 @@ try
   reverse_return_parity := compiler_options.reverse_return_parity;
 
   (* PARSE THE IMPLEMENTATION FILE *)
-
-  let parse_tree = parse_files state state.syms.compiler_options.files in
+  let stmts = parse_files state state.syms.compiler_options.files in
 
   (* Desugar the implementation file *)
-
-  fprintf ppf "//DESUGARING\n";
-  let desugar_timer = make_timer () in
-
-  let desugar_state = Flx_desugar.make_desugar_state state.module_name state.syms in
-  let asms = Flx_desugar.desugar_compilation_unit desugar_state parse_tree in
-
-  state.desugar_time <- state.desugar_time +. desugar_timer ();
-  fprintf ppf "//DESUGAR OK time %f\n" state.desugar_time;
+  let asms = desugar_stmts state state.module_name stmts in
 
   (* THIS IS A HACK! *)
   let root = !(state.syms.counter) in
