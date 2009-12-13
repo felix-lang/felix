@@ -1273,7 +1273,7 @@ let make_desugar_state name syms = {
 }
 
 (** Desugar all the statements in a compilation unit. *)
-let desugar_compilation_unit desugar_state sts =
+let desugar_compilation_unit state sts =
   let sts = match sts with
     | [] -> [STMT_nop (generated, "empty module")]
     | _ -> sts
@@ -1283,28 +1283,27 @@ let desugar_compilation_unit desugar_state sts =
       (src_of_stmt (List.hd sts))
       (src_of_stmt (list_last sts))
   in
-  let sts = Flx_macro.expand_macros desugar_state.macro_state sts in
+  let sts = Flx_macro.expand_macros state.macro_state sts in
   (*
   let sts = STMT_body(sr,"_rqs__top",[],"",[]) :: sts in
   *)
   rst
-    desugar_state.syms
-    desugar_state.name
+    state.syms
+    state.name
     `Public
     dfltvs
-    (STMT_untyped_module (sr, desugar_state.name, dfltvs, sts))
+    (STMT_untyped_module (sr, state.name, dfltvs, sts))
 
 (** Desugar a statement. *)
-let desugar_statement desugar_state handle_asm init stmt =
+let desugar_statement state handle_asm init stmt =
   (* First we must expand all the macros in the statement *)
   Flx_macro.expand_macros_in_statement
-    desugar_state.macro_state
+    state.macro_state
     begin fun init stmt ->
       (* For each macro-expanded statement, desugar it into a series of
        * assemblies *)
-      let asms =
-        rst desugar_state.syms desugar_state.name `Public dfltvs stmt
-      in
+      let asms = rst state.syms state.name `Public dfltvs stmt in
+
       (* Finally, call the fold function over the assemblies *)
       List.fold_left handle_asm init asms
     end
