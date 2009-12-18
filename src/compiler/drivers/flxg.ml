@@ -279,7 +279,8 @@ let bind_asms state asms =
     (string_of_bid root);
 
   let bind_state = Flx_bind.make_bind_state state.syms in
-  let bsym_table = Flx_bind.bind_asms bind_state asms in
+  let bsym_table = Flx_bsym_table.create () in
+  Flx_bind.bind_asms bind_state bsym_table asms;
 
   let root_proc = Flx_bind.find_root_module_init_function bind_state root in
   fprintf state.ppf "//root module's init procedure has index %s\n"

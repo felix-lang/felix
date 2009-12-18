@@ -27,8 +27,9 @@ val bind_asm:
 (** Bind all the symbols. *)
 val bind_asms:
   bind_state_t ->         (** The state needed for binding. *)
+  Flx_bsym_table.t ->     (** They bound symbol table. *)
   Flx_types.asm_t list -> (** All the assemblies to bind. *)
-  Flx_bsym_table.t        (** The output bound symbol table. *)
+  unit
 
 (** Find the root module's init function index. *)
 val find_root_module_init_function:

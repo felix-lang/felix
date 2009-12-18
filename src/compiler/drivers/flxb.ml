@@ -81,7 +81,8 @@ try
   print_endline "//-----------------------";
 
   let bind_state = Flx_bind.make_bind_state syms in
-  let bsym_table = Flx_bind.bind_asms bind_state asms in
+  let bsym_table = Flx_bsym_table.create () in
+  Flx_bind.bind_asms bind_state bsym_table asms;
   print_endline "//Binding complete";
 
   Flx_print.print_bsym_table bsym_table

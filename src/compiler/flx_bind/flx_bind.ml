@@ -176,12 +176,9 @@ let bind_asm state bsym_table handle_bound init asm =
   (* Return the folded value. *)
   !init
 
-let bind_asms state asms =
+let bind_asms state bsym_table asms =
   (* Add the symbols to the symtab. *)
   let exes, ifaces = Flx_symtab.add_asms state.symtab asms in
-
-  (* Create us a bound symbol table. *)
-  let bsym_table = Flx_bsym_table.create () in
 
   (* Now, bind all the symbols. *)
   Flx_bbind.bbind state.bbind_state bsym_table;
@@ -194,9 +191,7 @@ let bind_asms state asms =
     (Flx_bbind.bind_interface state.bbind_state bsym_table) ifaces;
 
   (* Clear the type cache. *)
-  Hashtbl.clear state.syms.Flx_mtypes2.ticache;
-
-  bsym_table
+  Hashtbl.clear state.syms.Flx_mtypes2.ticache
 
 (** Find the root module's init function index. *)
 let find_root_module_init_function state root =
