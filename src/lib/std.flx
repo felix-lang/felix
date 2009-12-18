@@ -1,0 +1,59 @@
+header '#include "flx_rtl_config.hpp"';
+
+header iostream = "#include <iostream>";
+header cmath = "#include <cmath>";
+header math_h = "#include <math.h>";
+header ieeefp_h = """
+extern "C" {
+#include <ieeefp.h>
+}
+""";
+
+header """
+#include <cstdio>
+#include <cstddef>
+#include <cassert>
+#include <climits>
+using namespace std;
+""";
+
+header flx_ioutil = '#include "flx_ioutil.hpp"';
+header flx_executil = '#include "flx_executil.hpp"';
+header flx_dynlink = '#include "flx_dynlink.hpp"';
+header flx_i18n = '#include "flx_i18n.hpp"';
+header stdexcept = '#include <stdexcept>';
+
+// note -- this code is templated, we include
+// it in the header file because that's where
+// most C++ compilers need it (ISO requires
+// separate compilation of templates but most
+// compilers as at 2004 don't implement it)
+
+header flx_strutil = '#include "flx_strutil.hpp"';
+
+include "flx_tclass";
+include "flx_ctypes";
+
+body swapper[t] = """
+  void swapper(?1 *a, ?1 *b){
+    ?1 tmp = *a; *a = *b; *b = tmp;
+  }
+""";
+
+proc _swap[t]: &t * &t =
+  "swapper($1,$2);"
+  requires swapper[t];
+
+typedef charp = C_hack::ptr[char];
+typedef charcp = C_hack::cptr[char];
+
+typedef ucharp = C_hack::ptr[utiny];
+typedef ucharcp = C_hack::cptr[utiny];
+publish "Universal type 'x as x'"
+  typedef any = any;
+
+publish "Lvalue hack"
+  //typedef lvalue[t] = lval t;
+  typedef lvalue[t] = t;
+
+include "std/__init__";
