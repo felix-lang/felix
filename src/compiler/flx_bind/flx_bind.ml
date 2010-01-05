@@ -81,7 +81,7 @@ let make_toplevel_bind_state syms =
     strabs_state = Flx_strabs.make_strabs_state ();
     bexe_state = Flx_bexe.make_bexe_state
       ~parent:module_index
-      ~env:(Flx_lookup.build_env lookup_state (Some init_index))
+      ~env:(Flx_lookup.build_env lookup_state bsym_table (Some init_index))
       syms
       sym_table
       lookup_state
@@ -100,7 +100,7 @@ let bind_asm state bsym_table handle_bound init asm =
   let init =
     match asm with
     | Flx_types.Exe exe ->
-        Flx_bexe.bind_exe state.bexe_state begin fun bexe init ->
+        Flx_bexe.bind_exe state.bexe_state bsym_table begin fun bexe init ->
           handle_bound init (Bound_exe bexe)
         end exe init
     | Flx_types.Dcl dcl ->

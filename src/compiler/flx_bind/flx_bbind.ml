@@ -51,10 +51,11 @@ let rec find_true_parent sym_table child parent =
       | SYMDEF_module -> find_true_parent sym_table id grandparent
       | _ -> Some parent
 
-let bind_req state env sr tag =
+let bind_req state bsym_table env sr tag =
   (* HACKY *)
   try Some (Flx_lookup.lookup_code_in_env
     state.lookup_state
+    bsym_table
     env
     sr
     tag)
@@ -88,7 +89,7 @@ let bind_reqs bt state bsym_table env sr reqs : (bid_t * btypecode_t list) list 
     if a = [-2,[]] then b else a
 
   | NREQ_atom tag ->
-    match bind_req state env sr tag with
+    match bind_req state bsym_table env sr tag with
     | None -> [-2,[]]
     | Some (entries, ts) ->
       let ts = map bt ts in
@@ -124,6 +125,7 @@ let bbind_symbol state bsym_table symbol_index sym =
   (* let env = Flx_lookup.build_env state.lookup_state state.sym_table parent in  *)
   let env = Flx_lookup.build_env
     state.lookup_state
+    bsym_table
     (Some symbol_index)
   in
   (*
@@ -141,7 +143,7 @@ let bbind_symbol state bsym_table symbol_index sym =
       tvars
       ret_type
     in
-    Flx_bexe.bind_exes bexe_state sym.Flx_sym.sr exes
+    Flx_bexe.bind_exes bexe_state bsym_table sym.Flx_sym.sr exes
   in
   (*
   print_endline ("Binding " ^ name ^ "<"^ si symbol_index ^ ">");
@@ -161,12 +163,14 @@ let bbind_symbol state bsym_table symbol_index sym =
   let luqn n =
     Flx_lookup.lookup_qn_in_env
       state.lookup_state
+      bsym_table
       env
       n
   in
   let luqn2 n =
     Flx_lookup.lookup_qn_in_env2
       state.lookup_state
+      bsym_table
       env
       n
   in
@@ -344,6 +348,7 @@ let bbind_symbol state bsym_table symbol_index sym =
         let t =
           Flx_lookup.type_of_index
             state.lookup_state
+            bsym_table
             symbol_index
         in
         let bbdcl = match k with
@@ -369,6 +374,7 @@ let bbind_symbol state bsym_table symbol_index sym =
   | SYMDEF_match_check (pat,(mvname,mvindex)) ->
     let t = Flx_lookup.type_of_index
       state.lookup_state
+      bsym_table
       mvindex
     in
     let name_map = Hashtbl.create 97 in
@@ -415,7 +421,11 @@ let bbind_symbol state bsym_table symbol_index sym =
         its
       | _ -> assert false
     in
-    let t = Flx_lookup.type_of_index state.lookup_state symbol_index in
+    let t = Flx_lookup.type_of_index
+      state.lookup_state
+      bsym_table
+      symbol_index
+    in
     let ut = bt ut in
     let ct =
       if unit_sum then si ctor_idx
@@ -432,7 +442,11 @@ let bbind_symbol state bsym_table symbol_index sym =
     (*
     print_endline ("Binding non const ctor " ^ sym.Flx_sym.id);
     *)
-    let t = Flx_lookup.type_of_index state.lookup_state symbol_index in
+    let t = Flx_lookup.type_of_index
+      state.lookup_state
+      bsym_table
+      symbol_index
+    in
     let argt = bt argt in
     let ut = bt ut in
     let btraint = bind_type_constraint vs' in
@@ -445,7 +459,11 @@ let bbind_symbol state bsym_table symbol_index sym =
     add_bsym None (BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt,evs,btraint))
 
   | SYMDEF_val (t) ->
-    let t = Flx_lookup.type_of_index state.lookup_state symbol_index in
+    let t = Flx_lookup.type_of_index
+      state.lookup_state
+      bsym_table
+      symbol_index
+    in
 
     if state.syms.compiler_options.print_flag then
       print_endline ("//bound val " ^ sym.Flx_sym.id ^ "<" ^
@@ -455,7 +473,11 @@ let bbind_symbol state bsym_table symbol_index sym =
     add_bsym true_parent (BBDCL_val (bvs, t))
 
   | SYMDEF_ref (t) ->
-    let t = Flx_lookup.type_of_index state.lookup_state symbol_index in
+    let t = Flx_lookup.type_of_index
+      state.lookup_state
+      bsym_table
+      symbol_index
+    in
 
     if state.syms.compiler_options.print_flag then
       print_endline ("//bound ref " ^ sym.Flx_sym.id ^ "<" ^
@@ -488,7 +510,11 @@ let bbind_symbol state bsym_table symbol_index sym =
     (*
     print_endline ("Binding variable " ^ sym.Flx_sym.id ^"<"^ si i ^">");
     *)
-    let t = Flx_lookup.type_of_index state.lookup_state symbol_index in
+    let t = Flx_lookup.type_of_index
+      state.lookup_state
+      bsym_table
+      symbol_index
+    in
 
     if state.syms.compiler_options.print_flag then
       print_endline ("//bound var " ^ sym.Flx_sym.id ^ "<" ^
@@ -498,7 +524,11 @@ let bbind_symbol state bsym_table symbol_index sym =
     add_bsym true_parent (BBDCL_var (bvs, t))
 
   | SYMDEF_const (props,t,ct,reqs) ->
-    let t = Flx_lookup.type_of_index state.lookup_state symbol_index in
+    let t = Flx_lookup.type_of_index
+      state.lookup_state
+      bsym_table
+      symbol_index
+    in
     let reqs = bind_reqs reqs in
 
     if state.syms.compiler_options.print_flag then
@@ -733,7 +763,7 @@ let bbind state bsym_table =
 
 let bind_interface (state:bbind_state_t) bsym_table = function
   | sr, IFACE_export_fun (sn, cpp_name), parent ->
-      let env = Flx_lookup.build_env state.lookup_state parent in
+      let env = Flx_lookup.build_env state.lookup_state bsym_table parent in
       let index,ts = Flx_lookup.lookup_sn_in_env
         state.lookup_state
         bsym_table
@@ -749,7 +779,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       )
 
   | sr, IFACE_export_python_fun (sn, cpp_name), parent ->
-      let env = Flx_lookup.build_env state.lookup_state parent in
+      let env = Flx_lookup.build_env state.lookup_state bsym_table parent in
       let index,ts =
         Flx_lookup.lookup_sn_in_env
         state.lookup_state
@@ -766,7 +796,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       )
 
   | sr, IFACE_export_type (typ, cpp_name), parent ->
-      let env = Flx_lookup.build_env state.lookup_state parent in
+      let env = Flx_lookup.build_env state.lookup_state bsym_table parent in
       let t = Flx_lookup.bind_type
         state.lookup_state
         bsym_table

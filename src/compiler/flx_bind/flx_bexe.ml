@@ -69,12 +69,12 @@ let rec check_if_parent syms sym_table child parent =
       | { Flx_sym.parent=Some parent} -> check_if_parent syms sym_table child parent
       | { Flx_sym.parent=None} -> false
 
-let cal_call state sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
+let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
   let be i e =
     bind_expression
       state.lookup_state 
       bsym_table
-      (build_env state.lookup_state (Some i))
+      (build_env state.lookup_state bsym_table (Some i))
       e
   in
   match unfold t1 with
@@ -218,7 +218,7 @@ exception Found of int
 let print_vs vs =
   catmap "," (fun (s,i) -> s ^ "->" ^ string_of_bid i) vs
 
-let rec bind_exe state handle_bexe (sr, exe) init =
+let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
   let be e =
     bind_expression
       state.lookup_state
@@ -229,6 +229,7 @@ let rec bind_exe state handle_bexe (sr, exe) init =
   let lun sr n =
     lookup_name_in_env
       state.lookup_state
+      bsym_table
       state.env
       sr
       n
@@ -297,8 +298,8 @@ let rec bind_exe state handle_bexe (sr, exe) init =
     handle_bexe (cal_loop state.syms state.sym_table sr tbe1 (be2,t2) index) init
 
   | EXE_jump (a,b) ->
-    let init = bind_exe state handle_bexe (sr, EXE_call (a, b)) init in
-    let init = bind_exe state handle_bexe (sr, EXE_proc_return) init in
+    let init = bind_exe state bsym_table handle_bexe (sr, EXE_call (a, b)) init in
+    let init = bind_exe state bsym_table handle_bexe (sr, EXE_proc_return) init in
     init
 
   | EXE_call (EXPR_name (_,"axiom_check",[]), e2) ->
@@ -341,14 +342,14 @@ let rec bind_exe state handle_bexe (sr, exe) init =
     *)
     begin match tf with
     | BTYP_cfunction _ ->
-      handle_bexe (cal_call state sr f a) init
+      handle_bexe (cal_call state bsym_table sr f a) init
 
     | BTYP_function _ ->
       (* print_endline "Function .. cal apply"; *)
-      handle_bexe (cal_call state sr f a) init
+      handle_bexe (cal_call state bsym_table sr f a) init
     | _ ->
       let apl name =
-        bind_exe state handle_bexe
+        bind_exe state bsym_table handle_bexe
           (
             sr,
             EXE_call
@@ -597,7 +598,7 @@ let rec bind_exe state handle_bexe (sr, exe) init =
       )
 
 
-let bind_exes state sr exes =
+let bind_exes state bsym_table sr exes =
   (*
   print_endline ("bind_exes.. env depth="^ string_of_int (List.length state.env));
   print_endline "Dumping Source Executables";
@@ -615,7 +616,7 @@ let bind_exes state sr exes =
   *)
 
   let bound_exes = List.fold_left begin fun init exe ->
-    bind_exe state (fun bexe init -> bexe :: init) exe init
+    bind_exe state bsym_table (fun bexe init -> bexe :: init) exe init
   end [] exes in
   let bound_exes = List.rev bound_exes in
   (*

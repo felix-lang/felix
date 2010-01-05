@@ -36,11 +36,13 @@ let make_lookup_state syms sym_table =
   }
 
 
+  (*
 (*
   THIS IS A DUMMY BOUND SYMBOL TABLE
   REQUIRED FOR THE PRINTING OF BOUND EXPRESSIONS
 *)
 let bsym_table = Flx_bsym_table.create ()
+*)
 
 let dummy_sr = Flx_srcref.make_dummy "[flx_lookup] generated"
 
@@ -168,7 +170,7 @@ module EntrySet = Set.Make(
   end
 )
 
-let rec trclose state rs sr fs =
+let rec trclose state bsym_table rs sr fs =
   let inset = ref EntrySet.empty in
   let outset = ref EntrySet.empty in
   let exclude = ref EntrySet.empty in
@@ -189,8 +191,8 @@ let rec trclose state rs sr fs =
 
         match hfind "lookup" state.sym_table (sye x) with
         | { Flx_sym.parent=parent; sr=sr2; symdef=SYMDEF_inherit_fun qn } ->
-          let env = build_env state parent in
-          begin match fst (lookup_qn_in_env2' state env rs qn) with
+          let env = build_env state bsym_table parent in
+          begin match fst (lookup_qn_in_env2' state bsym_table env rs qn) with
           | NonFunctionEntry _ -> clierr2 sr sr2 "Inherit fun doesn't denote function set"
           | FunctionEntry fs' -> append fs'; trclosem ()
           end
@@ -204,7 +206,7 @@ let rec trclose state rs sr fs =
   EntrySet.iter (fun i -> output := i :: !output) !outset;
   !output
 
-and resolve_inherits state rs sr x =
+and resolve_inherits state bsym_table rs sr x =
   match x with
   | NonFunctionEntry z ->
     begin match hfind "lookup" state.sym_table (sye z) with
@@ -212,19 +214,19 @@ and resolve_inherits state rs sr x =
       (*
       print_endline ("Found an inherit symbol qn=" ^ string_of_qualified_name qn);
       *)
-      let env = inner_build_env state rs parent in
+      let env = inner_build_env state bsym_table rs parent in
       (*
       print_endline "Environment built for lookup ..";
       *)
-      fst (lookup_qn_in_env2' state env rs qn)
+      fst (lookup_qn_in_env2' state bsym_table env rs qn)
     | { Flx_sym.sr=sr2; symdef=SYMDEF_inherit_fun qn } ->
       clierr2 sr sr2
       "NonFunction inherit denotes function"
     | _ -> x
     end
-  | FunctionEntry fs -> FunctionEntry (trclose state rs sr fs)
+  | FunctionEntry fs -> FunctionEntry (trclose state bsym_table rs sr fs)
 
-and inner_lookup_name_in_env state (env:env_t) rs sr name : entry_set_t =
+and inner_lookup_name_in_env state bsym_table env rs sr name : entry_set_t =
   (*
   print_endline ("[lookup_name_in_env] " ^ name);
   *)
@@ -241,7 +243,7 @@ and inner_lookup_name_in_env state (env:env_t) rs sr name : entry_set_t =
       (*
       print_endline "[lookup_name_in_env] Got result, resolve inherits";
       *)
-      resolve_inherits state rs sr x
+      resolve_inherits state bsym_table rs sr x
     | None ->
       clierr sr
       (
@@ -257,6 +259,7 @@ and inner_lookup_name_in_env state (env:env_t) rs sr name : entry_set_t =
 *)
 and lookup_qn_in_env2'
   state
+  (bsym_table:Flx_bsym_table.t)
   (env:env_t)
   (rs:recstop)
   (qn: qualified_name_t)
@@ -278,11 +281,11 @@ and lookup_qn_in_env2'
     (*
     print_endline ("Found simple name " ^ name);
     *)
-    inner_lookup_name_in_env state env rs sr name, ts
+    inner_lookup_name_in_env state bsym_table env rs sr name, ts
 
   | `AST_the (sr,qn) ->
     print_endline ("[lookup_qn_in_env2'] AST_the " ^ string_of_qualified_name qn);
-    let es,ts = lookup_qn_in_env2' state env rs qn in
+    let es,ts = lookup_qn_in_env2' state bsym_table env rs qn in
     begin match es with
     | NonFunctionEntry  _
     | FunctionEntry [_] -> es,ts
@@ -294,14 +297,14 @@ and lookup_qn_in_env2'
     (*
     print_endline ("Searching for name " ^ name);
     *)
-    match eval_module_expr state env me with
+    match eval_module_expr state bsym_table env me with
     | Simple_module (impl,ts', htab,dirs) ->
-      let env' = mk_bare_env state impl in
-      let tables = get_pub_tables state env' rs dirs in
+      let env' = mk_bare_env state bsym_table impl in
+      let tables = get_pub_tables state bsym_table env' rs dirs in
       let result = lookup_name_in_table_dirs htab tables sr name in
       match result with
       | Some entry ->
-        resolve_inherits state rs sr entry,
+        resolve_inherits state bsym_table rs sr entry,
         ts' @ ts
       | None ->
         clierr sr
@@ -313,7 +316,7 @@ and lookup_qn_in_env2'
       begin
       try
         let entry = Hashtbl.find htab name in
-        resolve_inherits state rs sr entry,
+        resolve_inherits state bsym_table rs sr entry,
         ts' @ ts
       with Not_found ->
         clierr sr
@@ -324,11 +327,12 @@ and lookup_qn_in_env2'
       *)
 and lookup_qn_in_env'
   (state:lookup_state_t)
+  bsym_table
   (env:env_t) rs
   (qn: qualified_name_t)
   : entry_kind_t * typecode_t list
 =
-  match lookup_qn_in_env2' state env rs qn with
+  match lookup_qn_in_env2' state bsym_table env rs qn with
     | NonFunctionEntry x,ts -> x,ts
     (* experimental, allow singleton function *)
     | FunctionEntry [x],ts -> x,ts
@@ -368,14 +372,14 @@ and lookup_qn_in_env'
    I should test that ..
 
 *)
-and inner_bind_type state bsym_table env sr rs t : btypecode_t =
+and inner_bind_type state (bsym_table:Flx_bsym_table.t) env sr rs t : btypecode_t =
   (*
   print_endline ("[bind_type] " ^ string_of_typecode t);
   *)
-  let mkenv i = build_env state (Some i) in
+  let mkenv i = build_env state bsym_table (Some i) in
   let bt:btypecode_t =
     try
-      bind_type' state env rs sr t [] mkenv
+      bind_type' state bsym_table env rs sr t [] mkenv
 
     with
       | Free_fixpoint b ->
@@ -670,17 +674,20 @@ should start with reset traps.
 (* params is list of string * bound type *)
 
 and bind_type'
-  state env (rs:recstop)
+  state
+  bsym_table
+  env
+  (rs:recstop)
   sr t (params: (string * btypecode_t) list)
   mkenv
 : btypecode_t =
-  let btp t params = bind_type' state env
+  let btp t params = bind_type' state bsym_table env
     {rs with depth = rs.depth+1}
     sr t params mkenv
   in
   let bt t = btp t params in
-  let bi i ts = bind_type_index state rs sr i ts mkenv in
-  let bisub i ts = bind_type_index state {rs with depth= rs.depth+1} sr i ts mkenv in
+  let bi i ts = bind_type_index state bsym_table rs sr i ts mkenv in
+  let bisub i ts = bind_type_index state bsym_table {rs with depth= rs.depth+1} sr i ts mkenv in
   (*
   print_endline ("[bind_type'] " ^ string_of_typecode t);
   print_endline ("expr_fixlist is " ^
@@ -919,7 +926,7 @@ and bind_type'
     BTYP_var (i,BTYP_type 0)
 
   | TYP_as (t,s) ->
-    bind_type' state env
+    bind_type' state bsym_table env
     { rs with as_fixlist = (s,rs.depth)::rs.as_fixlist }
     sr t params mkenv
 
@@ -1022,9 +1029,15 @@ and bind_type'
       print_endline (" ... binding body .. " ^ string_of_typecode body);
       print_endline ("Context " ^ catmap "" (fun (n,t) -> "\n"^ n ^ " -> " ^ sbt bsym_table t) (pnames @ params));
       *)
-      bind_type' state env { rs with depth=rs.depth+1 }
-      sr
-      body (pnames@params) mkenv
+      bind_type'
+        state
+        bsym_table
+        env
+        { rs with depth=rs.depth+1 }
+        sr
+        body
+        (pnames@params)
+        mkenv
     in
       let bparams = (* order as written *)
         List.rev_map (fun (n,t,i) -> (i,t)) data
@@ -1206,7 +1219,7 @@ and bind_type'
     (*
     print_endline ("[bind_type] Matched THE qualified name " ^ string_of_qualified_name qn);
     *)
-    let es,ts = lookup_qn_in_env2' state env rs qn in
+    let es,ts = lookup_qn_in_env2' state bsym_table env rs qn in
     begin match es with
     | FunctionEntry [index] ->
        let ts = List.map bt ts in
@@ -1257,7 +1270,7 @@ and bind_type'
         let body =
           let env = mkenv (sye index) in
           let xparams = List.map (fun (id,idx,mt) -> id, BTYP_var (idx, bmt mt)) ivs in
-          bind_type' state env {rs with depth = rs.depth+1} sr t (xparams @ params) mkenv
+          bind_type' state bsym_table env {rs with depth = rs.depth+1} sr t (xparams @ params) mkenv
         in
         let ret = BTYP_type 0 in
         let params = List.map (fun (id,idx,mt) -> idx, bmt mt) ivs in
@@ -1287,7 +1300,7 @@ and bind_type'
       | None -> assert false
     in
     let sr = src_of_qualified_name x in
-    begin match lookup_qn_in_env' state env rs x with
+    begin match lookup_qn_in_env' state bsym_table env rs x with
     | {base_sym=i; spec_vs=spec_vs; sub_ts=sub_ts},ts ->
       let ts = List.map bt ts in
       (*
@@ -1351,8 +1364,8 @@ and bind_type'
     *)
     t
 
-and cal_assoc_type state sr t =
-  let ct t = cal_assoc_type state sr t in
+and cal_assoc_type state (bsym_table:Flx_bsym_table.t) sr t =
+  let ct t = cal_assoc_type state bsym_table sr t in
   let chk ls =
     match ls with
     | [] -> BTYP_void
@@ -1398,7 +1411,7 @@ and cal_assoc_type state sr t =
 
   | _ -> clierr sr ("Don't know what to make of " ^ sbt bsym_table t)
 
-and bind_type_index state (rs:recstop) sr index ts mkenv
+and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts mkenv
 =
   (*
   print_endline
@@ -1454,7 +1467,7 @@ and bind_type_index state (rs:recstop) sr index ts mkenv
       *)
       let env:env_t = mkenv index in
       let t =
-        bind_type' state env
+        bind_type' state bsym_table env
         { rs with type_alias_fixlist = (index,rs.depth):: rs.type_alias_fixlist }
         sr t params mkenv
       in
@@ -1517,7 +1530,7 @@ and bind_type_index state (rs:recstop) sr index ts mkenv
           | Some parent ->
              print_endline ("and IT's parent is " ^ si parent);
           *)
-            let mkenv i = mk_bare_env state i in
+            let mkenv i = mk_bare_env state bsym_table i in
             mkenv parent
           (*
           | None -> []
@@ -1584,7 +1597,7 @@ and  type_of_literal state bsym_table env sr v : btypecode_t =
   let bt = inner_bind_type state bsym_table env sr rsground t in
   bt
 
-and type_of_index' rs (state:lookup_state_t) (index:bid_t) : btypecode_t =
+and type_of_index' (state:lookup_state_t) bsym_table rs (index:bid_t) : btypecode_t =
     (*
     let () = print_endline ("Top level type of index " ^ si index) in
     *)
@@ -1597,7 +1610,7 @@ and type_of_index' rs (state:lookup_state_t) (index:bid_t) : btypecode_t =
       t
     end
     else
-      let t = inner_type_of_index state rs index in
+      let t = inner_type_of_index state bsym_table rs index in
       (*
       print_endline ("Type of index after inner "^ si index ^ " is " ^ sbt bsym_table t);
       *)
@@ -1617,11 +1630,11 @@ and type_of_index' rs (state:lookup_state_t) (index:bid_t) : btypecode_t =
       t
 
 
-and type_of_index_with_ts' rs state bsym_table sr (index:bid_t) ts =
+and type_of_index_with_ts' state bsym_table rs sr (index:bid_t) ts =
   (*
   print_endline "OUTER TYPE OF INDEX with TS";
   *)
-  let t = type_of_index' rs state index in
+  let t = type_of_index' state bsym_table rs index in
   let varmap = make_varmap state.sym_table bsym_table sr index ts in
   let t = varmap_subst varmap t in
   beta_reduce state.syms bsym_table sr t
@@ -1640,7 +1653,7 @@ and type_of_index_with_ts' rs state bsym_table sr (index:bid_t) ts =
 
 (* cal_ret_type uses the private name map *)
 (* args is string,btype list *)
-and cal_ret_type state (rs:recstop) index args =
+and cal_ret_type state bsym_table (rs:recstop) index args =
   (*
   print_endline ("[cal_ret_type] index " ^ si index);
   print_endline ("expr_fixlist is " ^
@@ -1649,7 +1662,7 @@ and cal_ret_type state (rs:recstop) index args =
     rs.expr_fixlist
   );
   *)
-  let mkenv i = build_env state (Some i) in
+  let mkenv i = build_env state bsym_table (Some i) in
   let env = mkenv index in
   (*
   print_env_short env;
@@ -1665,7 +1678,7 @@ and cal_ret_type state (rs:recstop) index args =
     (*
     print_endline ("Calculate return type of " ^ id);
     *)
-    let rt = bind_type' state env rs sr rt args mkenv in
+    let rt = bind_type' state bsym_table env rs sr rt args mkenv in
     let rt = beta_reduce state.syms bsym_table sr rt in
     let ret_type = ref rt in
     (*
@@ -1774,14 +1787,17 @@ and cal_ret_type state (rs:recstop) index args =
 
 
 and inner_type_of_index_with_ts
-  state sr (rs:recstop)
+  state
+  bsym_table
+  sr
+  (rs:recstop)
   (index:bid_t)
   (ts: btypecode_t list)
 : btypecode_t =
  (*
  print_endline ("Inner type of index with ts .. " ^ si index ^ ", ts=" ^ catmap "," (sbt bsym_table) ts);
  *)
- let t = inner_type_of_index state rs index in
+ let t = inner_type_of_index state bsym_table rs index in
  let pvs,vs,_ = find_split_vs state.sym_table index in
  (*
  print_endline ("#pvs=" ^ si (List.length pvs) ^ ", #vs="^si (List.length vs) ^", #ts="^
@@ -1815,7 +1831,9 @@ and inner_type_of_index_with_ts
 or variable .. so there's no type_alias_fixlist ..
 *)
 and inner_type_of_index
-  state (rs:recstop)
+  state
+  bsym_table
+  (rs:recstop)
   (index:bid_t)
 : btypecode_t =
   (*
@@ -1842,7 +1860,7 @@ and inner_type_of_index
       dirs=dirs;
       symdef=entry }
   ->
-  let mkenv i = build_env state (Some i) in
+  let mkenv i = build_env state bsym_table (Some i) in
   let env:env_t = mkenv index in
   (*
   print_endline ("Setting up env for " ^ si index);
@@ -1850,7 +1868,7 @@ and inner_type_of_index
   *)
   let bt t:btypecode_t =
     let t' =
-      bind_type' state env rs sr t [] mkenv in
+      bind_type' state bsym_table env rs sr t [] mkenv in
     let t' = beta_reduce state.syms bsym_table sr t' in
     t'
   in
@@ -1878,7 +1896,7 @@ and inner_type_of_index
     let pts = List.map (fun(_,_,t,_)->t) ps in
     let rt' =
       try Hashtbl.find state.syms.varmap index with Not_found ->
-      cal_ret_type state { rs with idx_fixlist = index::rs.idx_fixlist}
+      cal_ret_type state bsym_table { rs with idx_fixlist = index::rs.idx_fixlist}
       index []
     in
       (* this really isn't right .. need a better way to
@@ -1979,18 +1997,18 @@ and inner_type_of_index
   end
 
 and cal_apply state bsym_table sr rs ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
-  let mkenv i = build_env state (Some i) in
+  let mkenv i = build_env state bsym_table (Some i) in
   let be i e = bind_expression' state bsym_table (mkenv i) rs e [] in
   (*
   print_endline ("Cal apply of " ^ sbe bsym_table tbe1 ^ " to " ^ sbe bsym_table tbe2);
   *)
-  let ((re,rt) as r) = cal_apply' state be sr tbe1 tbe2 in
+  let ((re,rt) as r) = cal_apply' state bsym_table be sr tbe1 tbe2 in
   (*
   print_endline ("Cal_apply, ret type=" ^ sbt bsym_table rt);
   *)
   r
 
-and cal_apply' state be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
+and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   let rest,reorder =
     match unfold t1 with
     | BTYP_function (argt,rest)
@@ -2140,7 +2158,7 @@ and cal_apply' state be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
   in
   BEXPR_apply ((be1,t1), x2),rest
 
-and koenig_lookup state env rs sra id' name_map fn t2 ts =
+and koenig_lookup state bsym_table env rs sra id' name_map fn t2 ts =
   (*
   print_endline ("Applying Koenig lookup for " ^ fn);
   *)
@@ -2168,7 +2186,7 @@ and koenig_lookup state env rs sra id' name_map fn t2 ts =
       print_endline "Overload resolution OK";
       *)
       BEXPR_closure (index'',ts),
-       type_of_index_with_ts' rs state bsym_table sra index'' ts
+       type_of_index_with_ts' state bsym_table rs sra index'' ts
 
 
     | None ->
@@ -2221,7 +2239,7 @@ and lookup_qn_with_sig'
       | SYMDEF_cstruct _
       | SYMDEF_struct _ ->
         let sign = try List.hd signs with _ -> assert false in
-        let t = type_of_index_with_ts' rs state bsym_table sr index ts in
+        let t = type_of_index_with_ts' state bsym_table rs sr index ts in
         (*
         print_endline ("Struct constructor found, type= " ^ sbt bsym_table t);
         *)
@@ -2370,6 +2388,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
       try
         lookup_name_with_sig
           state
+          bsym_table
           sra srn
           env env rs name ts signs
       with 
@@ -2381,6 +2400,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
             *)
             lookup_name_with_sig
               state
+              bsym_table
               sra srn
               env env rs ("_ctor_" ^ name) ts signs
            with ClientError (_,s2) ->
@@ -2410,7 +2430,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
       let vs = find_vs state.sym_table index in
       let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
       BEXPR_closure (index,ts),
-      inner_type_of_index state rs index
+      inner_type_of_index state bsym_table rs index
 
     | _ ->
       (*
@@ -2421,15 +2441,15 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     end
 
   | `AST_lookup (sr,(qn',name,ts)) ->
-    let m =  eval_module_expr state env qn' in
+    let m =  eval_module_expr state bsym_table env qn' in
     match m with (Simple_module (impl, ts',htab,dirs)) ->
     (* let n = List.length ts in *)
     let ts = List.map (bt sr)( ts' @ ts) in
     (*
     print_endline ("Module " ^ si impl ^ "[" ^ catmap "," (sbt bsym_table) ts' ^"]");
     *)
-    let env' = mk_bare_env state impl in
-    let tables = get_pub_tables state env' rs dirs in
+    let env' = mk_bare_env state bsym_table impl in
+    let tables = get_pub_tables state bsym_table env' rs dirs in
     let result = lookup_name_in_table_dirs htab tables sr name in
     begin match result with
     | None ->
@@ -2455,7 +2475,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
         let ts = adjust_ts state.sym_table sr index ts in
         *)
         BEXPR_closure (index,ts),
-         type_of_index_with_ts' rs state bsym_table sr index ts
+         type_of_index_with_ts' state bsym_table rs sr index ts
 
       | None ->
         clierr sra
@@ -2504,7 +2524,7 @@ and lookup_type_qn_with_sig'
       | SYMDEF_cstruct _
       | SYMDEF_struct _ ->
         let sign = try List.hd signs with _ -> assert false in
-        let t = type_of_index_with_ts' rs state bsym_table sr index ts in
+        let t = type_of_index_with_ts' state bsym_table rs sr index ts in
         (*
         print_endline ("[lookup_type_qn_with_sig] Struct constructor found, type= " ^ sbt bsym_table t);
         *)
@@ -2595,9 +2615,10 @@ and lookup_type_qn_with_sig'
     *)
     let ts = List.map (bt sr) ts in
     lookup_type_name_with_sig
-        state
-        sra srn
-        env env rs name ts signs
+      state
+      bsym_table
+      sra srn
+      env env rs name ts signs
 
   | `AST_index (sr,name,index) as x ->
     (*
@@ -2612,7 +2633,7 @@ and lookup_type_qn_with_sig'
       ->
       let vs = find_vs state.sym_table index in
       let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
-      inner_type_of_index state rs index
+      inner_type_of_index state bsym_table rs index
 
     | _ ->
       (*
@@ -2623,15 +2644,15 @@ and lookup_type_qn_with_sig'
     end
 
   | `AST_lookup (sr,(qn',name,ts)) ->
-    let m =  eval_module_expr state env qn' in
+    let m =  eval_module_expr state bsym_table env qn' in
     match m with (Simple_module (impl, ts',htab,dirs)) ->
     (* let n = List.length ts in *)
     let ts = List.map (bt sr)( ts' @ ts) in
     (*
     print_endline ("Module " ^ si impl ^ "[" ^ catmap "," (sbt bsym_table) ts' ^"]");
     *)
-    let env' = mk_bare_env state impl in
-    let tables = get_pub_tables state env' rs dirs in
+    let env' = mk_bare_env state bsym_table impl in
+    let tables = get_pub_tables state bsym_table env' rs dirs in
     let result = lookup_name_in_table_dirs htab tables sr name in
     begin match result with
     | None ->
@@ -2654,7 +2675,7 @@ and lookup_type_qn_with_sig'
         (*
         let ts = adjust_ts state.sym_table sr index ts in
         *)
-        let t =  type_of_index_with_ts' rs state bsym_table sr index ts in
+        let t = type_of_index_with_ts' state bsym_table rs sr index ts in
         print_endline "WRONG!";
         t
 
@@ -2670,6 +2691,7 @@ and lookup_type_qn_with_sig'
 
 and lookup_name_with_sig
   state
+  bsym_table
   sra srn
   caller_env env
   (rs:recstop)
@@ -2692,8 +2714,11 @@ and lookup_name_with_sig
   | (_,_,table,dirs,_)::tail ->
     match
       lookup_name_in_table_dirs_with_sig
-      (table, dirs)
-      state caller_env env rs
+      state
+      bsym_table
+      table
+      dirs
+      caller_env env rs
       sra srn name ts t2
     with
     | Some result -> (result:>tbexpr_t)
@@ -2701,12 +2726,14 @@ and lookup_name_with_sig
       let tbx=
         lookup_name_with_sig
           state
+          bsym_table
           sra srn
           caller_env tail rs name ts t2
        in (tbx:>tbexpr_t)
 
 and lookup_type_name_with_sig
   state
+  bsym_table
   sra srn
   caller_env env
   (rs:recstop)
@@ -2729,8 +2756,11 @@ and lookup_type_name_with_sig
   | (_,_,table,dirs,_)::tail ->
     match
       lookup_type_name_in_table_dirs_with_sig
-      (table, dirs)
-      state caller_env env rs
+      state
+      bsym_table
+      table
+      dirs
+      caller_env env rs
       sra srn name ts t2
     with
     | Some result -> result
@@ -2738,12 +2768,14 @@ and lookup_type_name_with_sig
       let tbx=
         lookup_type_name_with_sig
           state
+          bsym_table
           sra srn
           caller_env tail rs name ts t2
        in tbx
 
 and handle_type
   state
+  bsym_table
   (rs:recstop)
   sra srn
   name
@@ -2752,9 +2784,9 @@ and handle_type
 : btypecode_t
 =
 
-  let mkenv i = build_env state (Some i) in
+  let mkenv i = build_env state bsym_table (Some i) in
   let bt sr t =
-    bind_type' state (mkenv index) rs sr t [] mkenv
+    bind_type' state bsym_table (mkenv index) rs sr t [] mkenv
   in
 
   match get_data state.sym_table index with
@@ -2809,7 +2841,7 @@ and handle_type
       "[" ^catmap "," (sbt bsym_table) ts^ "]"
     );
     *)
-    bind_type_index state (rs:recstop) sr index ts mkenv
+    bind_type_index state bsym_table (rs:recstop) sr index ts mkenv
 
   | _ ->
     clierr sra
@@ -2820,6 +2852,7 @@ and handle_type
 
 and handle_function
   state
+  bsym_table
   (rs:recstop)
   sra srn
   name
@@ -2849,7 +2882,7 @@ and handle_function
     (*
     print_endline ("Handle function " ^id^"<"^string_of_bid index^">, ts=" ^ catmap "," (sbt bsym_table) ts);
     *)
-    let t = inner_type_of_index_with_ts state sr rs index ts
+    let t = inner_type_of_index_with_ts state bsym_table sr rs index ts
     in
     BEXPR_closure (index,ts),
     (
@@ -2900,14 +2933,14 @@ and handle_function
       string_of_symdef entry name vs
     )
 
-and handle_variable state
+and handle_variable state bsym_table
   env (rs:recstop)
   index id sr ts t t2
 =
   (* HACKED the params argument to [] .. this is WRONG!! *)
-  let mkenv i = build_env state (Some i) in
+  let mkenv i = build_env state bsym_table (Some i) in
   let bt sr t =
-    bind_type' state env rs sr t [] mkenv
+    bind_type' state bsym_table env rs sr t [] mkenv
   in
 
     (* we have to check the variable is the right type *)
@@ -2946,8 +2979,11 @@ and handle_variable state
     | _ ->  Some (BEXPR_name (index,ts),t)
     end
 
-and lookup_name_in_table_dirs_with_sig (table, dirs)
+and lookup_name_in_table_dirs_with_sig
   state
+  bsym_table
+  table
+  dirs
   caller_env env (rs:recstop)
   sra srn name (ts:btypecode_t list) (t2: btypecode_t list)
 : tbexpr_t option
@@ -3014,6 +3050,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
             let tb : tbexpr_t =
               handle_function
               state
+              bsym_table
               rs
               sra srn name ts index
             in
@@ -3032,8 +3069,12 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
       (*
       print_endline "mapping type name to _ctor_type";
       *)
-      lookup_name_in_table_dirs_with_sig (table, dirs)
-      state caller_env env rs sra srn ("_ctor_" ^ name) ts t2
+      lookup_name_in_table_dirs_with_sig
+        state
+        bsym_table
+        table
+        dirs
+        caller_env env rs sra srn ("_ctor_" ^ name) ts t2
 
     | SYMDEF_const_ctor (_,t,_,_)
     | SYMDEF_const (_,t,_,_)
@@ -3043,7 +3084,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
     | SYMDEF_parameter (_,t)
       ->
       let sign = try List.hd t2 with _ -> assert false in
-      handle_variable state env rs (sye index) id srn ts t sign
+      handle_variable state bsym_table env rs (sye index) id srn ts t sign
     | _
       ->
         clierr sra
@@ -3073,6 +3114,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         let ((_,tt) as tb) =
           handle_function
           state
+          bsym_table
           rs
           sra srn name ts index
         in
@@ -3109,21 +3151,25 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
         match opens with
         | [NonFunctionEntry i] when
           (
-              match get_data state.sym_table (sye i) with
-              { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; symdef=entry }->
-              (*
-              print_endline ("FOUND " ^ id);
-              *)
-              match entry with
-              | SYMDEF_abs _
-              | SYMDEF_union _ -> true
-              | _ -> false
+            match get_data state.sym_table (sye i) with
+            { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; symdef=entry }->
+            (*
+            print_endline ("FOUND " ^ id);
+            *)
+            match entry with
+            | SYMDEF_abs _
+            | SYMDEF_union _ -> true
+            | _ -> false
            ) ->
-             (*
-             print_endline "mapping type name to _ctor_type2";
-             *)
-             lookup_name_in_table_dirs_with_sig (table, dirs)
-             state caller_env env rs sra srn ("_ctor_" ^ name) ts t2
+            (*
+            print_endline "mapping type name to _ctor_type2";
+            *)
+            lookup_name_in_table_dirs_with_sig
+              state
+              bsym_table
+              table
+              dirs
+              caller_env env rs sra srn ("_ctor_" ^ name) ts t2
         | _ ->
         let fs =
           match opens with
@@ -3147,6 +3193,7 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
             let tb : tbexpr_t =
               handle_function
               state
+              bsym_table
               rs
               sra srn name ts result
             in
@@ -3157,8 +3204,11 @@ and lookup_name_in_table_dirs_with_sig (table, dirs)
             *)
             None
 
-and lookup_type_name_in_table_dirs_with_sig (table, dirs)
+and lookup_type_name_in_table_dirs_with_sig
   state
+  bsym_table
+  table
+  dirs
   caller_env env (rs:recstop)
   sra srn name (ts:btypecode_t list) (t2: btypecode_t list)
 : btypecode_t option
@@ -3171,9 +3221,9 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
     "] IN TABLE DIRS WITH SIG " ^ catmap "," (sbt bsym_table) t2
   );
   *)
-  let mkenv i = build_env state (Some i) in
+  let mkenv i = build_env state bsym_table (Some i) in
   let bt sr t =
-    bind_type' state env rs sr t [] mkenv
+    bind_type' state bsym_table env rs sr t [] mkenv
   in
 
   let result:entry_set_t =
@@ -3213,6 +3263,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
             let tb : btypecode_t =
               handle_type
               state
+              bsym_table
               rs
               sra srn name ts index
             in
@@ -3296,6 +3347,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
         let tb =
           handle_type
           state
+          bsym_table
           rs
           sra srn name ts index
         in
@@ -3363,6 +3415,7 @@ and lookup_type_name_in_table_dirs_with_sig (table, dirs)
             let tb : btypecode_t =
               handle_type
               state
+              bsym_table
               rs
               sra srn name ts result
             in
@@ -3413,15 +3466,15 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
   ;
   let rs = { rs with expr_fixlist=(e,rs.depth)::rs.expr_fixlist } in
   let be e' = bind_expression' state bsym_table env { rs with depth=rs.depth+1} e' [] in
-  let mkenv i = build_env state (Some i) in
+  let mkenv i = build_env state bsym_table (Some i) in
   let bt sr t =
     (* we're really wanting to call bind type and propagate depth ? *)
-    let t = bind_type' state env { rs with depth=rs.depth +1 } sr t [] mkenv in
+    let t = bind_type' state bsym_table env { rs with depth=rs.depth +1 } sr t [] mkenv in
     let t = beta_reduce state.syms bsym_table sr t in
     t
   in
   let ti sr i ts =
-    inner_type_of_index_with_ts state sr
+    inner_type_of_index_with_ts state bsym_table sr
     { rs with depth = rs.depth + 1}
                                (* CHANGED THIS ------------------*******)
     i ts
@@ -3483,6 +3536,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
             | SYMDEF_function _ ->
                 koenig_lookup
                   state
+                  bsym_table
                   env
                   rs
                   sra
@@ -3655,7 +3709,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
 
 
   | EXPR_callback (sr,qn) ->
-    let es,ts = lookup_qn_in_env2' state env rs qn in
+    let es,ts = lookup_qn_in_env2' state bsym_table env rs qn in
     begin match es with
     | FunctionEntry [index] ->
        print_endline "Callback closure ..";
@@ -3930,7 +3984,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
        be x
     else
     let ts = List.map (bt sr) ts in
-    begin match inner_lookup_name_in_env state env rs sr name with
+    begin match inner_lookup_name_in_env state bsym_table env rs sr name with
     | NonFunctionEntry {base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts}
     ->
       (*
@@ -4071,7 +4125,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
     print_endline ("AST_name " ^ name ^ "[" ^ catmap "," string_of_typecode ts^ "]");
     *)
     let ts = List.map (bt sr) ts in
-    begin match inner_lookup_name_in_env state env rs sr name with
+    begin match inner_lookup_name_in_env state bsym_table env rs sr name with
     | NonFunctionEntry (index) ->
       let index = sye index in
       let ts = adjust_ts state.sym_table bsym_table sr index ts in
@@ -4102,14 +4156,15 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
     let ts = List.map (bt sr) ts in
     let entry =
       match
-          eval_module_expr
-          state
-          env
-          e
+        eval_module_expr
+        state
+        bsym_table
+        env
+        e
       with
       | (Simple_module (impl, ts, htab,dirs)) ->
-        let env' = mk_bare_env state impl in
-        let tables = get_pub_tables state env' rs dirs in
+        let env' = mk_bare_env state bsym_table impl in
+        let tables = get_pub_tables state bsym_table env' rs dirs in
         let result = lookup_name_in_table_dirs htab tables sr name in
         result
 
@@ -4191,7 +4246,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
       | SYMDEF_parameter (`PVar,_)
         ->
         let vtype =
-          inner_type_of_index_with_ts state sr
+          inner_type_of_index_with_ts state bsym_table sr
           { rs with depth = rs.depth+1 }
          index ts
         in
@@ -4315,7 +4370,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
         )
       else begin
         let bvs = List.map (fun (n,i,_) -> n,BTYP_var (i,BTYP_type 0)) (fst vs) in
-        let env' = build_env state (Some i) in
+        let env' = build_env state bsym_table (Some i) in
         let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
         let alst = List.sort (fun (a,_) (b,_) -> compare a b) alst in
         let ialst = List.map2 (fun (k,t) i -> k,(t,i)) alst (nlist na) in
@@ -4325,7 +4380,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
               try List.assoc name ialst
               with Not_found -> clierr sr ("struct component " ^ name ^ " not provided by record")
             in
-          let ct = bind_type' state env' rsground sr ct bvs mkenv in
+          let ct = bind_type' state bsym_table env' rsground sr ct bvs mkenv in
           let ct = tsubst vs' ts' ct in
             if type_eq state.syms.counter ct t then
               BEXPR_get_n (j,a),t
@@ -4468,8 +4523,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
           in
           let ct =
             let bvs = List.map (fun (n,i,_) -> n,BTYP_var (i,BTYP_type 0)) (fst vs) in
-            let env' = build_env state (Some i) in
-            bind_type' state env' rsground sr ct bvs mkenv
+            let env' = build_env state bsym_table (Some i) in
+            bind_type' state bsym_table env' rsground sr ct bvs mkenv
           in
           let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
           let ct = tsubst vs' ts' ct in
@@ -4504,8 +4559,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
             in
             let ct =
               let bvs = List.map (fun (n,i,_) -> n,BTYP_var (i,BTYP_type 0)) (fst vs) in
-              let env' = build_env state (Some i) in
-              bind_type' state env' rsground sr ct bvs mkenv
+              let env' = build_env state bsym_table (Some i) in
+              bind_type' state bsym_table env' rsground sr ct bvs mkenv
             in
             let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
             let ct = tsubst vs' ts' ct in
@@ -4772,8 +4827,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
             (*
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
             *)
-            let env' = build_env state (Some i) in
-            bind_type' state env' rsground sr vt bvs mkenv
+            let env' = build_env state bsym_table (Some i) in
+            bind_type' state bsym_table env' rsground sr vt bvs mkenv
           in
           (*
           print_endline ("Bound polymorphic type = " ^ sbt bsym_table vt);
@@ -4833,8 +4888,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
             (*
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
             *)
-            let env' = build_env state (Some i) in
-            bind_type' state env' rsground sr vt bvs mkenv
+            let env' = build_env state bsym_table (Some i) in
+            bind_type' state bsym_table env' rsground sr vt bvs mkenv
           in
           (*
           print_endline ("Bound polymorphic type = " ^ sbt bsym_table vt);
@@ -4911,7 +4966,7 @@ and grab_name qn = match qn with
 | _ -> failwith "expected qn .."
 
 
-and check_instances state call_sr calledname classname es ts' mkenv =
+and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
   let insts = ref [] in
   match es with
   | NonFunctionEntry _ -> print_endline "EXPECTED INSTANCES TO BE FUNCTION SET"
@@ -4936,7 +4991,7 @@ and check_instances state call_sr calledname classname es ts' mkenv =
       print_endline ("Unbound instance ts = " ^ catmap "," string_of_typecode inst_ts);
       *)
       let instance_env = mkenv i in
-      let bt t = bind_type' state instance_env rsground sr t [] mkenv in
+      let bt t = bind_type' state bsym_table instance_env rsground sr t [] mkenv in
       let inst_ts = List.map bt inst_ts in
       (*
       print_endline ("  instance ts = " ^ catmap "," (fun t -> sbt bsym_table t) inst_ts);
@@ -5050,13 +5105,13 @@ and check_instances state call_sr calledname classname es ts' mkenv =
     *)
 
 
-and instance_check state caller_env called_env mgu sr calledname rtcr tsub =
+and instance_check state bsym_table caller_env called_env mgu sr calledname rtcr tsub =
   (*
   print_endline ("INSTANCE CHECK MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt bsym_table t) mgu);
   print_endline "SEARCH FOR INSTANCE!";
   print_env caller_env;
   *)
-  let luqn2 qn = lookup_qn_in_env2' state caller_env rsground qn in
+  let luqn2 qn = lookup_qn_in_env2' state bsym_table caller_env rsground qn in
   if List.length rtcr > 0 then begin
     (*
     print_endline (calledname ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^
@@ -5086,7 +5141,7 @@ and instance_check state caller_env called_env mgu sr calledname rtcr tsub =
       (*
       print_endline ("With bound, mapped ts = " ^ catmap "," (sbt bsym_table) ts');
       *)
-      check_instances state call_sr calledname classname es ts' (fun i->build_env state (Some i))
+      check_instances state bsym_table call_sr calledname classname es ts' (fun i->build_env state bsym_table (Some i))
     )
     rtcr
   end
@@ -5107,7 +5162,7 @@ and resolve_overload'
     (*
     print_endline ("resolve_overload': Building env for " ^ name ^ "<" ^ si i ^ ">");
     *)
-    inner_build_env state rs (Some i)
+    inner_build_env state bsym_table rs (Some i)
   in
   let bt rs sr i t =
     inner_bind_type state bsym_table (env i) sr rs t
@@ -5115,8 +5170,8 @@ and resolve_overload'
   let be i e =
     inner_bind_expression state bsym_table (env i) rs e
   in
-  let luqn2 i qn = lookup_qn_in_env2' state (env i) rs qn in
-  let fs = trclose state rs sr fs in
+  let luqn2 i qn = lookup_qn_in_env2' state bsym_table (env i) rs qn in
+  let fs = trclose state bsym_table rs sr fs in
   let result : overload_result option =
     overload state.syms state.sym_table bsym_table caller_env rs bt be luqn2 sr fs name sufs ts
   in
@@ -5135,7 +5190,7 @@ and resolve_overload'
     *)
     let vs = List.map (fun (s,i,_)->s,i) (parent_vs @ vs) in
     let tsub t = tsubst vs ts t in
-    instance_check state caller_env (env index) mgu sr name rtcr tsub
+    instance_check state bsym_table caller_env (env index) mgu sr name rtcr tsub
   end
   ;
   result
@@ -5204,8 +5259,8 @@ and split_dirs open_excludes dirs :
   (c) the routine is only called for modules and typeclasses?
 *)
 
-and get_includes state rs xs =
-  let rec get_includes' state includes ((invs,i, ts) as index) =
+and get_includes state bsym_table rs xs =
+  let rec get_includes' includes ((invs,i, ts) as index) =
     if not (List.mem index !includes) then
     begin
       (*
@@ -5214,7 +5269,7 @@ and get_includes state rs xs =
       ;
       *)
       includes := index :: !includes;
-      let env = mk_bare_env state i in (* should have ts in .. *)
+      let env = mk_bare_env state bsym_table i in (* should have ts in .. *)
       let qns,sr,vs =
         match hfind "lookup" state.sym_table i with
         { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; dirs=dirs } ->
@@ -5227,14 +5282,14 @@ and get_includes state rs xs =
       in
       List.iter (fun (_,qn) ->
           let {base_sym=j; spec_vs=vs'; sub_ts=ts'},ts'' =
-            try lookup_qn_in_env' state env rsground qn
+            try lookup_qn_in_env' state bsym_table env rsground qn
             with Not_found -> failwith "QN NOT FOUND"
           in
             (*
             print_endline ("BIND types " ^ catmap "," string_of_typecode ts'');
             *)
-            let mkenv i = mk_bare_env state i in
-            let bt t = bind_type' state env rs sr t [] mkenv in
+            let mkenv i = mk_bare_env state bsym_table i in
+            let bt t = bind_type' state bsym_table env rs sr t [] mkenv in
             let ts'' = List.map bt ts'' in
             (*
             print_endline ("BOUND types " ^ catmap "," (sbt bsym_table) ts'');
@@ -5253,19 +5308,20 @@ and get_includes state rs xs =
             (*
             print_endline ("Inherit after subs(2): " ^ si j ^ "["^catmap "," (sbt bsym_table) ts' ^"]");
             *)
-            get_includes' state includes (invs,j,ts')
+            get_includes' includes (invs,j,ts')
       )
       qns
     end
   in
   let includes = ref [] in
-  List.iter (get_includes' state includes) xs;
+  List.iter (get_includes' includes) xs;
 
   (* list is unique due to check during construction *)
   !includes
 
 and bind_dir
   (state:lookup_state_t)
+  bsym_table
   (env:env_t) rs
   (vs,qn)
 : ivs_list_t * bid_t * btypecode_t list =
@@ -5297,7 +5353,7 @@ and bind_dir
   let cheat_env = (dummy_bid,"cheat",cheat_table,[],TYP_tuple []) in
   let {base_sym=i; spec_vs=spec_vs; sub_ts=ts}, ts' =
     try
-      lookup_qn_in_env' state env
+      lookup_qn_in_env' state bsym_table env
       {rs with open_excludes = (vs,qn)::rs.open_excludes }
       qn
     with Not_found -> failwith "QN NOT FOUND"
@@ -5314,7 +5370,7 @@ and bind_dir
   assert (List.length vs = 0);
   assert (List.length ts = 0);
   *)
-  let mkenv i = mk_bare_env state i in
+  let mkenv i = mk_bare_env state bsym_table i in
   (*
   print_endline ("Binding ts=" ^ catmap "," string_of_typecode ts');
   *)
@@ -5323,7 +5379,7 @@ and bind_dir
       state.syms
       bsym_table
       dummy_sr
-      (bind_type' state (cheat_env::env) rsground dummy_sr t [] mkenv)
+      (bind_type' state bsym_table (cheat_env::env) rsground dummy_sr t [] mkenv)
     ) ts' in
   (*
   print_endline ("Ts bound = " ^ catmap "," (sbt bsym_table) ts');
@@ -5408,7 +5464,7 @@ and make_view_table state table vs ts : name_map_t =
   ;
   h
 
-and pub_table_dir state env inst_check (invs,i,ts) : name_map_t =
+and pub_table_dir state bsym_table env inst_check (invs,i,ts) : name_map_t =
   let invs = List.map (fun (i,n,_)->i,n) (fst invs) in
   let sym = get_data state.sym_table i in
   match sym.Flx_sym.symdef with
@@ -5441,7 +5497,7 @@ and pub_table_dir state env inst_check (invs,i,ts) : name_map_t =
           string_of_myentry bsym_table inst);
       let luqn2 qn =
         try
-          Some (lookup_qn_in_env2' state env rsground qn)
+          Some (lookup_qn_in_env2' state bsym_table env rsground qn)
         with _ -> None
       in
       let res = luqn2 (`AST_name (sym.Flx_sym.sr, inst_name, [])) in
@@ -5453,12 +5509,13 @@ and pub_table_dir state env inst_check (invs,i,ts) : name_map_t =
       | Some (es,_) ->
           check_instances
             state
+            bsym_table
             sym.Flx_sym.sr
             "open"
             sym.Flx_sym.id
             es
             ts
-            (mk_bare_env state)
+            (mk_bare_env state bsym_table)
       end;
       table
 
@@ -5466,21 +5523,21 @@ and pub_table_dir state env inst_check (invs,i,ts) : name_map_t =
       clierr sym.Flx_sym.sr "[map_dir] Expected module"
 
 
-and get_pub_tables state env rs dirs =
+and get_pub_tables state bsym_table env rs dirs =
   let _,includes,_ = split_dirs rs.open_excludes dirs in
-  let xs = uniq_list (List.map (bind_dir state env rs) includes) in
-  let includes = get_includes state rs xs in
-  let tables = List.map (pub_table_dir state env false) includes in
+  let xs = uniq_list (List.map (bind_dir state bsym_table env rs) includes) in
+  let includes = get_includes state bsym_table rs xs in
+  let tables = List.map (pub_table_dir state bsym_table env false) includes in
   tables
 
-and mk_bare_env state index =
+and mk_bare_env state bsym_table index =
   let sym = hfind "lookup" state.sym_table index in
   (index, sym.Flx_sym.id, sym.Flx_sym.privmap, [], TYP_tuple []) ::
   match sym.Flx_sym.parent with
   | None -> []
-  | Some index -> mk_bare_env state index
+  | Some index -> mk_bare_env state bsym_table index
 
-and merge_directives state rs env dirs typeclasses =
+and merge_directives state bsym_table rs env dirs typeclasses =
   let env = ref env in
   let add table =
    env :=
@@ -5498,15 +5555,15 @@ and merge_directives state rs env dirs typeclasses =
       (*
       print_endline ("ADD vs=" ^ catmap "," (fun (s,i,_)->s^ "<"^si i^">") (fst vs) ^ " qn=" ^ string_of_qualified_name qn);
       *)
-      let u = [bind_dir state !env rs (vs,qn)] in
+      let u = [bind_dir state bsym_table !env rs (vs,qn)] in
       (*
       print_endline "dir bound!";
       *)
-      let u = get_includes state rs u in
+      let u = get_includes state bsym_table rs u in
       (*
       print_endline "includes got, doing pub_table_dir";
       *)
-      let tables = List.map (pub_table_dir state !env false) u in
+      let tables = List.map (pub_table_dir state bsym_table !env false) u in
       (*
       print_endline "pub table dir done!";
       *)
@@ -5517,7 +5574,7 @@ and merge_directives state rs env dirs typeclasses =
   (fun (sr,dir) -> match dir with
   | DIR_inject_module qn -> add_qn (dfltvs,qn)
   | DIR_use (n,qn) ->
-    begin let entry,_ = lookup_qn_in_env2' state !env rs qn in
+    begin let entry,_ = lookup_qn_in_env2' state bsym_table !env rs qn in
     match entry with
 
     | NonFunctionEntry _ ->
@@ -5550,14 +5607,14 @@ and merge_directives state rs env dirs typeclasses =
  List.iter add_qn typeclasses;
  !env
 
-and merge_opens state env rs (typeclasses,opens,includes,uses) =
+and merge_opens state bsym_table env rs (typeclasses,opens,includes,uses) =
   (*
   print_endline ("MERGE OPENS ");
   *)
   let use_map = Hashtbl.create 97 in
   List.iter
   (fun (n,qn) ->
-    let entry,_ = lookup_qn_in_env2' state env rs qn in
+    let entry,_ = lookup_qn_in_env2' state bsym_table env rs qn in
     match entry with
 
     | NonFunctionEntry _ ->
@@ -5580,12 +5637,12 @@ and merge_opens state env rs (typeclasses,opens,includes,uses) =
   ;
 
   (* convert qualified names to i,ts format *)
-  let btypeclasses = List.map (bind_dir state env rs) typeclasses in
-  let bopens = List.map (bind_dir state env rs) opens in
+  let btypeclasses = List.map (bind_dir state bsym_table env rs) typeclasses in
+  let bopens = List.map (bind_dir state bsym_table env rs) opens in
 
   (* HERE! *)
 
-  let bincludes= List.map (bind_dir state env rs) includes in
+  let bincludes = List.map (bind_dir state bsym_table env rs) includes in
 
   (*
   (* HACK to check open typeclass *)
@@ -5601,17 +5658,17 @@ and merge_opens state env rs (typeclasses,opens,includes,uses) =
   let u = uniq_cat u bincludes in
 
   (* add on any inherited modules *)
-  let u = get_includes state rs u in
+  let u = get_includes state bsym_table rs u in
 
   (* convert the i,ts list to a list of lookup tables *)
-  let tables = List.map (pub_table_dir state env false) u in
+  let tables = List.map (pub_table_dir state bsym_table env false) u in
 
   (* return the list with the explicitly renamed symbols prefixed
      so they can be used for clash resolution
   *)
   use_map::tables
 
-and build_env'' state rs index : env_t =
+and build_env'' state bsym_table rs index : env_t =
   let sym = hfind "lookup" state.sym_table index in
   let skip_merges = List.mem index rs.idx_fixlist in
   (*
@@ -5621,7 +5678,7 @@ and build_env'' state rs index : env_t =
   *)
 
   let rs = { rs with idx_fixlist = index :: rs.idx_fixlist } in
-  let env = inner_build_env state rs sym.Flx_sym.parent in
+  let env = inner_build_env state bsym_table rs sym.Flx_sym.parent in
 
   (* build temporary bare innermost environment with a full parent env *)
   let typeclasses, constraints = 
@@ -5650,13 +5707,13 @@ and build_env'' state rs index : env_t =
   (*
   print_endline ("MERGE DIRECTIVES for " ^ id);
   *)
-  let env = merge_directives state rs env sym.Flx_sym.dirs typeclasses in
+  let env = merge_directives state bsym_table rs env sym.Flx_sym.dirs typeclasses in
   (*
   print_endline "Build_env'' complete";
   *)
   env
 
-and inner_build_env state rs parent : env_t =
+and inner_build_env state bsym_table rs parent : env_t =
   match parent with
   | None -> []
   | Some i ->
@@ -5665,15 +5722,15 @@ and inner_build_env state rs parent : env_t =
       env
     with
       Not_found ->
-       let env = build_env'' state rs i in
+       let env = build_env'' state bsym_table rs i in
        Hashtbl.add state.env_cache i env;
        env
 
-and build_env state parent : env_t =
+and build_env state bsym_table parent : env_t =
   (*
   print_endline ("Build env " ^ match parent with None -> "None" | Some i -> si i);
   *)
-  inner_build_env state rsground parent
+  inner_build_env state bsym_table rsground parent
 
 
 (*===========================================================*)
@@ -5687,8 +5744,8 @@ and build_env state parent : env_t =
    to factor them out again .. YUK!!
 *)
 
-and rebind_btype state env sr ts t: btypecode_t =
-  let rbt t = rebind_btype state env sr ts t in
+and rebind_btype state bsym_table env sr ts t: btypecode_t =
+  let rbt t = rebind_btype state bsym_table env sr ts t in
   match t with
   | BTYP_inst (i,_) ->
     begin match get_data state.sym_table i with
@@ -5764,21 +5821,21 @@ and check_module state name sr entries ts =
   returns the root name, table index, and environment
 *)
 
-and eval_module_expr state env e : module_rep_t =
+and eval_module_expr state bsym_table env e : module_rep_t =
   (*
   print_endline ("Eval module expr " ^ string_of_expr e);
   *)
   match e with
   | EXPR_name (sr,name,ts) ->
-    let entries = inner_lookup_name_in_env state env rsground sr name in
+    let entries = inner_lookup_name_in_env state bsym_table env rsground sr name in
     check_module state name sr entries ts
 
   | EXPR_lookup (sr,(e,name,ts)) ->
-    let result = eval_module_expr state env e in
+    let result = eval_module_expr state bsym_table env e in
     begin match result with
       | Simple_module (index,ts',htab,dirs) ->
-      let env' = mk_bare_env state index in
-      let tables = get_pub_tables state env' rsground dirs in
+      let env' = mk_bare_env state bsym_table index in
+      let tables = get_pub_tables state bsym_table env' rsground dirs in
       let result = lookup_name_in_table_dirs htab tables sr name in
         begin match result with
         | Some x ->
@@ -5823,23 +5880,24 @@ with
     clierr sra
     ("Recursive dependency resolving name " ^ string_of_qualified_name qn)
 
-let lookup_name_in_env state (env:env_t) sr name : entry_set_t =
- inner_lookup_name_in_env state (env:env_t) rsground sr name
+let lookup_name_in_env state bsym_table (env:env_t) sr name : entry_set_t =
+ inner_lookup_name_in_env state bsym_table (env:env_t) rsground sr name
 
 
 let lookup_qn_in_env2
   state
+  bsym_table
   (env:env_t)
   (qn: qualified_name_t)
   : entry_set_t * typecode_t list
 =
-  lookup_qn_in_env2' state env rsground qn
+  lookup_qn_in_env2' state bsym_table env rsground qn
 
 
 (* this one isn't recursive i hope .. *)
-let lookup_code_in_env state env sr qn =
+let lookup_code_in_env state bsym_table env sr qn =
   let result =
-    try Some (lookup_qn_in_env2' state env rsground qn)
+    try Some (lookup_qn_in_env2' state bsym_table env rsground qn)
     with _ -> None
   in match result with
   | Some (NonFunctionEntry x,ts) ->
@@ -5871,20 +5929,22 @@ let lookup_code_in_env state env sr qn =
 
 let lookup_qn_in_env
   state
+  bsym_table
   (env:env_t)
   (qn: qualified_name_t)
   : entry_kind_t  * typecode_t list
 =
-  lookup_qn_in_env' state env rsground qn
+  lookup_qn_in_env' state bsym_table env rsground qn
 
 
 let lookup_uniq_in_env
   state
+  bsym_table
   (env:env_t)
   (qn: qualified_name_t)
   : entry_kind_t  * typecode_t list
 =
-  match lookup_qn_in_env2' state env rsground qn with
+  match lookup_qn_in_env2' state bsym_table env rsground qn with
     | NonFunctionEntry x,ts -> x,ts
     | FunctionEntry [x],ts -> x,ts
     | _ ->
@@ -5899,11 +5959,12 @@ let lookup_uniq_in_env
 (*
 let lookup_function_in_env
   state
+  bsym_table
   (env:env_t)
   (qn: qualified_name_t)
   : entry_kind_t  * typecode_t list
 =
-  match lookup_qn_in_env2' state env rsground qn with
+  match lookup_qn_in_env2' state bsym_table env rsground qn with
     | FunctionEntry [x],ts -> x,ts
     | _ ->
       let sr = src_of_expr (qn:>expr_t) in
@@ -5928,7 +5989,7 @@ let lookup_sn_in_env
   match sn with
   | #qualified_name_t as x ->
     begin match
-      lookup_qn_in_env' state env rsground x
+      lookup_qn_in_env' state bsym_table env rsground x
     with
     | index,ts -> (sye index), List.map bt ts
     end
@@ -5951,8 +6012,8 @@ let bind_type state bsym_table env sr t : btypecode_t =
 let bind_expression state bsym_table env e  =
   inner_bind_expression state bsym_table env rsground e
 
-let type_of_index state (index:bid_t) : btypecode_t =
- type_of_index' rsground state index
+let type_of_index state bsym_table (index:bid_t) : btypecode_t =
+ type_of_index' state bsym_table rsground index
 
 let type_of_index_with_ts state bsym_table sr (index:bid_t) ts =
- type_of_index_with_ts' rsground state bsym_table sr index ts
+ type_of_index_with_ts' state bsym_table rsground sr index ts

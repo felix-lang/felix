@@ -94,11 +94,13 @@ val make_lookup_state:
 
 val build_env:
   lookup_state_t ->
+  Flx_bsym_table.t ->
   bid_t option -> (* parent *)
   env_t
 
 val lookup_name_in_env :
   lookup_state_t ->
+  Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
   id_t ->
@@ -106,12 +108,14 @@ val lookup_name_in_env :
 
 val lookup_qn_in_env :
   lookup_state_t ->
+  Flx_bsym_table.t ->
   env_t ->
   qualified_name_t ->
   entry_kind_t * typecode_t list
 
 val lookup_qn_in_env2:
   lookup_state_t ->
+  Flx_bsym_table.t ->
   env_t ->
   qualified_name_t ->
   entry_set_t * typecode_t list
@@ -125,6 +129,7 @@ val lookup_sn_in_env :
 
 val lookup_code_in_env:
   lookup_state_t ->
+  Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
   qualified_name_t ->
@@ -165,6 +170,7 @@ val bind_expression_with_args :
 
 val type_of_index :
   lookup_state_t ->
+  Flx_bsym_table.t ->
   bid_t ->
   btypecode_t
 
