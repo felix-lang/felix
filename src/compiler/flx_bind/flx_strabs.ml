@@ -70,6 +70,9 @@ let strabs_symbol state bsym_table index bsym =
     Flx_bsym_table.add bsym_table index { bsym with Flx_bsym.bbdcl=bbdcl }
   in
   match bsym.Flx_bsym.bbdcl with
+  | BBDCL_module ->
+    h BBDCL_module
+
   | BBDCL_function (props, bvs, bps, ret, bexes) ->
     h (BBDCL_function (props, bvs, fp bps, ft ret, fxs bexes))
 

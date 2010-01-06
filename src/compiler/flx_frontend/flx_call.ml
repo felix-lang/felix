@@ -83,6 +83,7 @@ let call_data_for_symbol bsym_table uses k bsym =
   let ut t = uses_type uses k bsym.Flx_bsym.sr t in
 
   match bsym.Flx_bsym.bbdcl with
+  | BBDCL_module -> ()
   | BBDCL_typeclass _ -> ()
 
   | BBDCL_procedure (_,_,(ps,_),exes)

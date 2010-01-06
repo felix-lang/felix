@@ -230,6 +230,7 @@ and btype_qual_t = [
 ]
 
 and bbdcl_t =
+  | BBDCL_module
   | BBDCL_function of   property_t list * bvs_t * bparams_t * btypecode_t * bexe_t list
   | BBDCL_procedure of  property_t list * bvs_t * bparams_t * bexe_t list
   | BBDCL_val of        bvs_t * btypecode_t

@@ -1231,6 +1231,10 @@ and codegen_symbol state bsym_table child_map closure index bsym =
     (Flx_print.string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl index));
 
   match bsym.Flx_bsym.bbdcl with
+  | Flx_types.BBDCL_module ->
+      print_endline "BBDCL_module";
+      assert false
+
   | Flx_types.BBDCL_function (props, _, (ps, _), ret_type, es) ->
       ignore (codegen_function
         state

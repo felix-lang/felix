@@ -2264,6 +2264,9 @@ and string_of_bbdcl bsym_table (bbdcl:bbdcl_t) index : string =
   let se e = string_of_bound_expression bsym_table e in
   let un = BTYP_tuple [] in
   match bbdcl with
+  | BBDCL_module ->
+    "module " ^ name ^ " {}"
+
   | BBDCL_function (props,vs,ps,res,es) ->
     string_of_properties props ^
     "fun " ^ name ^ string_of_bvs vs ^
@@ -2271,7 +2274,6 @@ and string_of_bbdcl bsym_table (bbdcl:bbdcl_t) index : string =
     "{\n" ^
     cat "\n" (map (string_of_bexe bsym_table 1) es) ^
     "}"
-
 
   | BBDCL_procedure (props,vs,ps,es) ->
     string_of_properties props ^

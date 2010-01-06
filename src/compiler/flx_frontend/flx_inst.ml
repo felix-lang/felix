@@ -281,6 +281,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     "<" ^ string_of_bid i ^ ">[" ^
     catmap "," (string_of_btypecode bsym_table) ts ^ "]");
   match bsym.Flx_bsym.bbdcl with
+  | BBDCL_module -> ()
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let argtypes = map (fun {ptyp=t}->t) ps in
     assert (length vs = length ts);

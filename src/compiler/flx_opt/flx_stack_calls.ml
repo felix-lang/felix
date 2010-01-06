@@ -57,6 +57,7 @@ let rec is_pure syms bsym_table child_map i =
   print_endline ("Checking purity of " ^ id ^ "<" ^ si i ^ ">");
   *)
   match bsym.Flx_bsym.bbdcl with
+  | BBDCL_module
   | BBDCL_var _
   | BBDCL_ref _
   | BBDCL_val _

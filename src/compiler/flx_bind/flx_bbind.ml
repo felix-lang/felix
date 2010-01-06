@@ -48,7 +48,6 @@ let rec find_true_parent sym_table child parent =
     match hfind "find_true_parent" sym_table parent with
     | { Flx_sym.id=id; parent=grandparent; symdef=bdcl} ->
       match bdcl with
-      | SYMDEF_module -> find_true_parent sym_table id grandparent
       | _ -> Some parent
 
 let bind_req state bsym_table env sr tag =
@@ -243,9 +242,11 @@ let bbind_symbol state bsym_table symbol_index sym =
   begin match sym.Flx_sym.symdef with
   (* Pure declarations of functions, modules, and type don't generate anything.
    * Variable dcls do, however. *)
-  | SYMDEF_module _
   | SYMDEF_typevar _
     -> None
+
+  | SYMDEF_module ->
+    add_bsym true_parent BBDCL_module 
 
   | SYMDEF_reduce (ps,e1,e2) ->
     let bps = bind_basic_ps ps in
