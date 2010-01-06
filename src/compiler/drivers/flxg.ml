@@ -116,6 +116,13 @@ type flxg_state_t = {
 }
 
 
+let make_module_name inbase =
+  let n = String.length inbase in
+  let i = ref (n-1) in
+  while !i <> -1 && inbase.[!i] <> '/' && inbase.[!i] <> '\\' do decr i done;
+  String.sub inbase (!i+1) (n - !i - 1)
+
+
 (** Make the state needed for flxg compilation. *)
 let make_flxg_state ppf compiler_options =
   let format_time tm =
@@ -147,19 +154,12 @@ let make_flxg_state ppf compiler_options =
     | Some d -> Filename.concat d (Filename.basename filename)
   in
 
-  let module_name =
-    let n = String.length inbase in
-    let i = ref (n-1) in
-    while !i <> -1 && inbase.[!i] <> '/' && inbase.[!i] <> '\\' do decr i done;
-    String.sub inbase (!i+1) (n - !i - 1)
-  in
-
   {
     ppf = ppf;
     compile_start_gm_string = compile_start_gm_string;
     compile_start_local_string = compile_start_local_string;
     syms = make_syms compiler_options;
-    module_name = module_name;
+    module_name = make_module_name inbase;
     input_filename = input_filename;
     header_file = mkf (outbase ^ ".hpp");
     body_file = mkf (outbase ^ ".cpp");
