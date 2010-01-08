@@ -14,6 +14,9 @@ val dummy_bid : bid_t
 
 module BidSet : Set.S with type elt = bid_t
 
+(** Convert a list of bids into a bid set. *)
+val bidset_of_list : bid_t list -> BidSet.t
+
 type plain_ivs_list_t = (id_t * bid_t * typecode_t) list
 type ivs_list_t = plain_ivs_list_t * vs_aux_t
 

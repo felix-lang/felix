@@ -28,6 +28,10 @@ module BidSet = Set.Make (
   end
 )
 
+(** Convert a list of bids into a bid set. *)
+let bidset_of_list ii =
+  List.fold_left (fun ii i -> BidSet.add i ii) BidSet.empty ii
+
 type plain_ivs_list_t = (id_t * bid_t * typecode_t) list
 type ivs_list_t = plain_ivs_list_t * vs_aux_t
 
