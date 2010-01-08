@@ -155,10 +155,6 @@ let rec collate_namespaces syms sts =
    @
    rev stsout
 
- | STMT_include (sr,inspec) :: tail ->
-    let sts = include_file syms inspec in
-    cn (sts @ tail) stsout nslist
-
  | head:: tail ->
    cn tail (head::stsout) nslist
 

@@ -10,12 +10,12 @@ open Flx_typing
 open Flx_typing2
 open Flx_pat
 open Flx_exceptions
-open Flx_colns
 
 type desugar_state_t = {
   name: string;
   macro_state: Flx_macro.macro_state_t;
   syms: Flx_mtypes2.sym_state_t;
+  mutable include_file_cache: string list;
 }
 
 let generated = Flx_srcref.make_dummy "[flx_desugar] generated"
@@ -177,7 +177,7 @@ let rec rex state name (e:expr_t) : asm_t list * expr_t =
   let rex e = rex state name e in
   let rsts sts = List.concat (List.map
     (rst state name `Private dfltvs)
-    (collate_namespaces state.syms sts))
+    (Flx_colns.collate_namespaces state.syms sts))
   in
   let sr = src_of_expr e in
   let seq () = fresh_bid state.syms.counter in
@@ -735,7 +735,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   let rex x = rex state name x in
   let rsts name vs access sts = List.concat (List.map
     (rst state name access vs)
-    (collate_namespaces state.syms sts))
+    (Flx_colns.collate_namespaces state.syms sts))
   in
   let seq () = fresh_bid state.syms.counter in
   (* add _root headers and bodies as requirements for all
@@ -744,14 +744,9 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   match st with
   | STMT_seq _ -> assert false
   | STMT_private (sr,st) -> rst state name `Private parent_vs st
-
-  | STMT_include (sr,inspec) -> assert false
-
-    (*
-    let sts = include_file state inspec true in
-    rsts name parent_vs  access sts
-    *)
-
+  | STMT_include (sr,inspec) ->
+      state.include_file_cache <- inspec :: state.include_file_cache;
+      []
   | STMT_label (sr,s) -> [Exe (sr,EXE_label s)]
   | STMT_proc_return sr -> [Exe (sr,EXE_proc_return)]
   | STMT_halt (sr,s) -> [Exe (sr,EXE_halt s)]
@@ -1275,18 +1270,38 @@ let make_desugar_state name syms = {
   name = name;
   syms = syms;
   macro_state = Flx_macro.make_macro_state name;
+  include_file_cache = [];
 }
 
 (** Desugar all the statements in a compilation unit. *)
-let desugar_stmts state stmts =
+let rec desugar_stmts state stmts =
   let stmts = match stmts with
     | [] -> [STMT_nop (generated, "empty module")]
     | _ -> stmts
   in
   let stmts = Flx_macro.expand_macros state.macro_state stmts in
-  let stmts = collate_namespaces state.syms stmts in
-  let asms = List.map (rst state state.name `Public dfltvs) stmts in
+  let stmts = Flx_colns.collate_namespaces state.syms stmts in
+
+  let asms = List.concat (List.map
+    (rst state state.name `Public dfltvs)
+    stmts)
+  in
+
+  (* Clear the include file cache. *)
+  let include_files = state.include_file_cache in
+  state.include_file_cache <- [];
+
+  (* Bind all the asms in reverse order. *)
+  let asms =
+    List.fold_left begin fun asms file ->
+      let stmts = Flx_colns.include_file state.syms file in
+      desugar_stmts state stmts :: asms
+    end [asms] include_files
+  in
+
+  (* And finally, concatenate all the asms together. *)
   List.concat asms
+ 
 
 (** Desugar a statement. *)
 let desugar_statement state handle_asm init stmt =
