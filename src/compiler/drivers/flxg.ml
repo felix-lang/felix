@@ -252,9 +252,14 @@ let desugar_stmts state module_name stmts =
   let desugar_state = Flx_desugar.make_desugar_state module_name state.syms in
   let asms = Flx_desugar.desugar_stmts desugar_state stmts in
 
-  let sr = Flx_srcref.rsrange
-    (src_of_stmt (List.hd stmts))
-    (src_of_stmt (Flx_list.list_last stmts))
+  let sr =
+    (* If we don't have any statements, create a dummy src ref. *)
+    match stmts with
+    | [] -> Flx_srcref.dummy_sr
+    | _ ->
+      Flx_srcref.rsrange
+        (src_of_stmt (List.hd stmts))
+        (src_of_stmt (Flx_list.list_last stmts))
   in
 
   let asms =
