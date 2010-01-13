@@ -282,11 +282,13 @@ let fixup_argtypes be bid pnames base_domain argt rs =
               end
 
 
-let resolve sym_table base_sym bt be arg_types =
+let resolve sym_table bsym_table base_sym bt be arg_types =
   let { Flx_sym.id=id; sr=sr; parent=parent; dirs=dirs; symdef=symdef } =
     get_data sym_table base_sym
   in
-  let pvs, vs, { raw_type_constraint=con } = find_split_vs sym_table base_sym in
+  let pvs, vs, { raw_type_constraint=con } =
+    find_split_vs sym_table bsym_table base_sym
+  in
   let base_domain, base_result, pnames = sig_of_symdef symdef sr id base_sym in
 
   let arg_types =
@@ -832,7 +834,7 @@ let consider
   let bt sr t = bt sr entry_kind.base_sym t in
 
   let id, sr, base_vs, parent_vs, con, domain, base_result, arg_types =
-    resolve sym_table entry_kind.base_sym bt be arg_types
+    resolve sym_table bsym_table entry_kind.base_sym bt be arg_types
   in
 
   (*

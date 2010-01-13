@@ -183,7 +183,7 @@ let bbind_symbol state bsym_table symbol_index sym =
   in
 
   (* this is the full vs list *)
-  let ivs = find_vs state.sym_table symbol_index in
+  let ivs = find_vs state.sym_table bsym_table symbol_index in
 
   (* bind the type variables *)
   let bvs = map (fun (s,i,tp) -> s,i) (fst ivs) in

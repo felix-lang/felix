@@ -1449,7 +1449,7 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
       (*
       print_endline "Making params .. ";
       *)
-      let vs,_ = find_vs state.sym_table index in
+      let vs,_ = find_vs state.sym_table bsym_table index in
       if List.length vs <> List.length ts then begin
         print_endline ("vs=" ^
           catmap "," (fun (s,i,_)-> s ^ "<" ^ string_of_bid i ^ ">") vs);
@@ -1798,7 +1798,7 @@ and inner_type_of_index_with_ts
  print_endline ("Inner type of index with ts .. " ^ si index ^ ", ts=" ^ catmap "," (sbt bsym_table) ts);
  *)
  let t = inner_type_of_index state bsym_table rs index in
- let pvs,vs,_ = find_split_vs state.sym_table index in
+ let pvs,vs,_ = find_split_vs state.sym_table bsym_table index in
  (*
  print_endline ("#pvs=" ^ si (List.length pvs) ^ ", #vs="^si (List.length vs) ^", #ts="^
  si (List.length ts));
@@ -1806,7 +1806,7 @@ and inner_type_of_index_with_ts
  (*
  let ts = adjust_ts state.sym_table sr index ts in
  print_endline ("#adj ts = " ^ si (List.length ts));
- let vs,_ = find_vs state.sym_table index in
+ let vs,_ = find_vs state.sym_table bsym_table index in
  assert (List.length vs = List.length ts);
  *)
  if (List.length ts != List.length vs + List.length pvs) then begin
@@ -2427,7 +2427,7 @@ print_endline (id ^ ": lookup_qn_with_sig: val/var");
     | SYMDEF_function _
     | SYMDEF_match_check _
       ->
-      let vs = find_vs state.sym_table index in
+      let vs = find_vs state.sym_table bsym_table index in
       let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
       BEXPR_closure (index,ts),
       inner_type_of_index state bsym_table rs index
@@ -2631,7 +2631,7 @@ and lookup_type_qn_with_sig'
     | SYMDEF_function _
     | SYMDEF_match_check _
       ->
-      let vs = find_vs state.sym_table index in
+      let vs = find_vs state.sym_table bsym_table index in
       let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
       inner_type_of_index state bsym_table rs index
 
@@ -2946,7 +2946,7 @@ and handle_variable state bsym_table
     (* we have to check the variable is the right type *)
     let t = bt sr t in
     let ts = adjust_ts state.sym_table bsym_table sr index ts in
-    let vs = find_vs state.sym_table index in
+    let vs = find_vs state.sym_table bsym_table index in
     let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
     let t = beta_reduce state.syms bsym_table sr (tsubst bvs ts t) in
     begin match t with
@@ -5183,7 +5183,7 @@ and resolve_overload'
     print_endline (" .. mgu = " ^ string_of_varlist state.sym_table mgu);
     print_endline ("Resolve ts = " ^ catmap "," (sbt bsym_table) ts);
     *)
-    let parent_vs,vs,{raw_typeclass_reqs=rtcr} = find_split_vs state.sym_table index in
+    let parent_vs,vs,{raw_typeclass_reqs=rtcr} = find_split_vs state.sym_table bsym_table index in
     (*
     print_endline ("Function vs=" ^ catmap "," (fun (s,i,_) -> s^"<"^si i^">") vs);
     print_endline ("Parent vs=" ^ catmap "," (fun (s,i,_) -> s^"<"^si i^">") parent_vs);
