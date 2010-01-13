@@ -78,3 +78,11 @@ let mapi (f:int -> 'a -> 'b) (lst:'a list) : 'b list =
     incr i;
     result
   end lst
+
+let fold_lefti f acc lst =
+  let i = ref 0 in
+  List.fold_left begin fun acc x ->
+    let result = f !i acc x in
+    incr i;
+    result
+  end acc lst

@@ -45,3 +45,6 @@ val iteri: (int -> 'a -> unit) -> 'a list -> unit
  * the list [[f 0 a1; ...; f n an]] with the results returned by f. Not tail
  * recursive. *)
 val mapi: (int -> 'a -> 'b) -> 'a list -> 'b list
+
+(** [fold_lefti f a [b1; ...; bn] is [f 0 a1 (f 1 a2 (... (f n an b) ...))]. *)
+val fold_lefti: (int -> 'a -> 'b -> 'a) -> 'a -> 'b list -> 'a
