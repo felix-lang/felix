@@ -255,286 +255,302 @@ let hack_name qn = match qn with
 | `AST_lookup (sr,(e,name,ts)) -> `AST_lookup (sr,(e,"_inst_"^name,ts))
 | _ -> failwith "expected qn .."
 
+
+let fixup_argtypes be bid pnames base_domain argt rs =
+  match pnames with
+  | None -> argt
+  | Some ps ->
+      match
+        try
+          List.iter (fun (name,_) -> ignore (List.assoc name ps)) rs;
+          true
+        with Not_found -> false
+      with
+      | false -> argt
+      | true ->
+          match base_domain with
+          | TYP_record _ -> argt
+          | TYP_tuple [] -> argt (* lazy *)
+          | _ ->
+              let ps =
+                List.map begin fun (name,e) ->
+                  name,
+                  match e with
+                  | None -> None
+                  | Some e -> Some (be bid e)
+                end ps
+              in
+              begin
+                try
+                  let ats =
+                    List.map begin fun (name,d) ->
+                      try List.assoc name rs
+                      with Not_found ->
+                        match d with (* ok to skip if there is a default *)
+                        | Some (e,t) -> t
+                        | None -> raise Not_found
+                    end ps
+                  in
+                  let t =
+                    match ats with
+                    | [] -> assert false
+                    | [x] -> x
+                    | _ -> BTYP_tuple ats
+                  in
+                  t
+                with Not_found -> argt
+              end
+
+
 (* Note this bt must bind types in the base context *)
-let consider syms sym_table bsym_table env bt be luqn2 name
+let consider
+  syms
+  sym_table
+  bsym_table
+  env
+  bt
+  be
+  luqn2
+  name
   ({base_sym=i;spec_vs=spec_vs; sub_ts=sub_ts} as eeek)
-  input_ts arg_types call_sr env_traint 
+  input_ts
+  arg_types
+  call_sr
+  env_traint 
 : overload_result option =
-    let bt sr t = bt sr i t in
-    let id,sr,p,base_vs,parent_vs,con,rtcr,base_domain,base_result,pnames =
-      resolve sym_table i
-    in
-    let fixup_argtypes argt rs =
-      begin match pnames with
-        | None -> argt
-        | Some ps ->
-        match
-          begin try
-            List.iter (fun (name,_)->ignore (List.assoc name ps)) rs;
-            true
-          with Not_found -> false
-          end
-        with false -> argt
-        | _ ->
-        match base_domain with
-        | TYP_record _ -> argt
-        | TYP_tuple [] -> argt (* lazy *)
-        | _ ->
-        let ps =
-          List.map (fun (name,e) ->
-            name,
-            match e with
-            | None -> None
-            | Some e -> Some (be i e)
-          )
-          ps
-        in
-        begin
-          try
-            let ats = List.map (fun (name,d)->
-              try List.assoc name rs
-              with Not_found ->
-              match d with (* ok to skip if there is a default *)
-              | Some (e,t) -> t
-              | None -> raise Not_found
-            ) ps
-            in
-            let t = match ats with
-              | [] -> assert false
-              | [x] -> x
-              | _ -> BTYP_tuple ats
-            in
-            t
-          with Not_found -> argt
-        end
-      end
-    in
-    let arg_types =
-      match arg_types with
-      | BTYP_record rs as argt :: tail -> fixup_argtypes argt rs :: tail
-      | BTYP_tuple [] as argt :: tail -> fixup_argtypes argt [] :: tail
-      | _ -> arg_types
-    in
+  let bt sr t = bt sr i t in
+  let id,sr,p,base_vs,parent_vs,con,rtcr,base_domain,base_result,pnames =
+    resolve sym_table i
+  in
+  let arg_types =
+    match arg_types with
+    | BTYP_record rs as argt :: tail ->
+        fixup_argtypes be i pnames base_domain argt rs :: tail
+
+    | BTYP_tuple [] as argt :: tail ->
+        fixup_argtypes be i pnames base_domain argt [] :: tail
+
+    | _ ->
+        arg_types
+  in
+  (*
+  if List.length rtcr > 0 then begin
     (*
-    if List.length rtcr > 0 then begin
-      (*
-      print_endline (name ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^
-      catmap "," string_of_qualified_name rtcr);
-      *)
-      List.iter
-      (fun qn -> let es,ts' = luqn2 i (hack_name qn) in
-        print_endline ("With ts = " ^ catmap "," string_of_typecode ts');
-        match es with
-        | NonFunctionEntry _ -> print_endline "EXPECTED INSTANCES TO BE FUNCTION SET"
-        | FunctionEntry es ->
+    print_endline (name ^" TYPECLASS INSTANCES REQUIRED (unbound): " ^
+    catmap "," string_of_qualified_name rtcr);
+    *)
+    List.iter
+    (fun qn -> let es,ts' = luqn2 i (hack_name qn) in
+      print_endline ("With ts = " ^ catmap "," string_of_typecode ts');
+      match es with
+      | NonFunctionEntry _ -> print_endline "EXPECTED INSTANCES TO BE FUNCTION SET"
+      | FunctionEntry es ->
           print_endline ("Candidates " ^ catmap "," string_of_entry_kind es)
-      )
-      rtcr
-    end
-    ;
-    *)
-    (*
-    print_endline (id ^ "|-> " ^string_of_myentry sym_table eeek);
-    begin
-      print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs);
-      print_endline ("base VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") base_vs);
-      print_endline ("sub TS=" ^ catmap "," (sbt sym_table) sub_ts);
-      print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") spec_vs);
-      print_endline ("input TS=" ^ catmap "," (sbt sym_table) input_ts);
-    end
-    ;
-    *)
-    (* these are wrong .. ? or is it just shitty table?
-       or is the mismatch due to unresolved variables?
-    *)
-    if (List.length base_vs != List.length sub_ts) then
-    begin
-      print_endline "WARN: VS != SUB_TS";
-      print_endline (id ^ "|-> " ^ string_of_myentry bsym_table eeek);
-      print_endline ("PARENT VS=" ^
-        catmap "," (fun (s,i,_)->s ^ "<"^ string_of_bid i ^ ">") parent_vs);
-      print_endline ("base VS=" ^
-        catmap "," (fun (s,i,_)->s ^ "<" ^ string_of_bid i ^ ">") base_vs);
-      print_endline ("sub TS=" ^ catmap "," (sbt bsym_table) sub_ts);
-      print_endline ("spec VS=" ^
-        catmap "," (fun (s,i)-> s ^ "<" ^ string_of_bid i ^ ">") spec_vs);
-      print_endline ("input TS=" ^ catmap "," (sbt bsym_table) input_ts);
-    end
-    ;
-    (*
-    if (List.length spec_vs != List.length input_ts) then print_endline "WARN: SPEC_VS != INPUT_TS";
-    *)
+    )
+    rtcr
+  end
+  ;
+  *)
+  (*
+  print_endline (id ^ "|-> " ^string_of_myentry sym_table eeek);
+  begin
+    print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs);
+    print_endline ("base VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") base_vs);
+    print_endline ("sub TS=" ^ catmap "," (sbt sym_table) sub_ts);
+    print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") spec_vs);
+    print_endline ("input TS=" ^ catmap "," (sbt sym_table) input_ts);
+  end
+  ;
+  *)
 
-    (* bind type in base context, then translate it to view context:
-       thus, base type variables are eliminated and specialisation
-       type variables introduced
-    *)
+  (* these are wrong .. ? or is it just shitty table?
+     or is the mismatch due to unresolved variables? *)
+  if (List.length base_vs != List.length sub_ts) then
+  begin
+    print_endline "WARN: VS != SUB_TS";
+    print_endline (id ^ "|-> " ^ string_of_myentry bsym_table eeek);
+    print_endline ("PARENT VS=" ^
+      catmap "," (fun (s,i,_)->s ^ "<"^ string_of_bid i ^ ">") parent_vs);
+    print_endline ("base VS=" ^
+      catmap "," (fun (s,i,_)->s ^ "<" ^ string_of_bid i ^ ">") base_vs);
+    print_endline ("sub TS=" ^ catmap "," (sbt bsym_table) sub_ts);
+    print_endline ("spec VS=" ^
+      catmap "," (fun (s,i)-> s ^ "<" ^ string_of_bid i ^ ">") spec_vs);
+    print_endline ("input TS=" ^ catmap "," (sbt bsym_table) input_ts);
+  end;
+
+  (*
+  if (List.length spec_vs != List.length input_ts) then print_endline "WARN: SPEC_VS != INPUT_TS";
+  *)
+
+  (* bind type in base context, then translate it to view context:
+     thus, base type variables are eliminated and specialisation
+     type variables introduced *)
    let spec t =
-      (*
-      print_endline ("specialise Base type " ^ sbt sym_table t);
-      *)
-      let n = List.length base_vs in
-      let ts = list_prefix sub_ts n in
-      let vs = List.map (fun (i,n,_) -> i,n) base_vs in
-      let t = tsubst vs ts t in
-      (*
-      print_endline ("to View type " ^ sbt sym_table t);
-      *)
-      t
-    in
-    let spec_bt sr t =
-      let t = bt sr t in
-      let t = spec t in
-      t
-    in
-
-    let con = bt sr con in
-    let domain = bt sr base_domain in
-    let spec_domain = spec domain in
-    let spec_result =
-      try spec_bt sr base_result
-      with _ -> clierr sr ("Failed to bind candidate return type! fn='"^name^"', type="^string_of_typecode base_result)
-    in
     (*
-    print_endline ("BASE Return type of function " ^ id^ "<"^si i^">=" ^ sbt sym_table spec_result);
+    print_endline ("specialise Base type " ^ sbt sym_table t);
     *)
-
-    (* unravel function a->b->c->d->..->z into domains a,b,c,..y
-      to match curry argument list
-    *)
-    let curry_domains =
-      try unravel_ret spec_result []
-      with _ -> print_endline "Failed to unravel candidate return type!"; []
-    in
-    let curry_domains = spec_domain :: curry_domains in
-
+    let n = List.length base_vs in
+    let ts = list_prefix sub_ts n in
+    let vs = List.map (fun (i,n,_) -> i,n) base_vs in
+    let t = tsubst vs ts t in
     (*
-    print_endline ("Argument  sigs= " ^  catmap "->" (sbt sym_table) arg_types);
-    print_endline ("Candidate sigs= " ^  catmap "->" (sbt sym_table) curry_domains);
+    print_endline ("to View type " ^ sbt sym_table t);
     *)
-    (*
-    if con <> BTYP_tuple [] then
-      print_endline ("type constraint (for "^name^") = " ^ sbt sym_table con)
-    ;
-    *)
-    (*
-       We need to attempt to find assignments for spec_vs which
-       unify the specialised function signature(s) with arguments.
+    t
+  in
+  let spec_bt sr t =
+    let t = bt sr t in
+    let t = spec t in
+    t
+  in
 
-       To do this we match up:
+  let con = bt sr con in
+  let domain = bt sr base_domain in
+  let spec_domain = spec domain in
+  let spec_result =
+    try spec_bt sr base_result with _ ->
+      clierr sr ("Failed to bind candidate return type! fn='" ^ name ^
+        "', type=" ^ string_of_typecode base_result)
+  in
 
-       (a) spec vs variables with input ts values
-       (b) signatures with arguments
+  (*
+  print_endline ("BASE Return type of function " ^ id^ "<"^si i^">=" ^ sbt sym_table spec_result);
+  *)
 
-       which hopefully produces mgu with all the spec_vs variables
+  (* unravel function a->b->c->d->..->z into domains a,b,c,..y
+     to match curry argument list *)
+  let curry_domains =
+    try unravel_ret spec_result []
+    with _ -> print_endline "Failed to unravel candidate return type!"; []
+  in
+  let curry_domains = spec_domain :: curry_domains in
 
-       If this succeeds, we plug these into the sub_ts to get
-       assignments for base_vs, eliminating the spec vs and
-       base vs variables. The parent variables must not be
-       eliminated since they act like constants (constructors).
+  (*
+  print_endline ("Argument  sigs= " ^  catmap "->" (sbt sym_table) arg_types);
+  print_endline ("Candidate sigs= " ^  catmap "->" (sbt sym_table) curry_domains);
+  *)
+  (*
+  if con <> BTYP_tuple [] then
+    print_endline ("type constraint (for "^name^") = " ^ sbt sym_table con)
+  ;
+  *)
 
-       The resulting ts is then returned, it may contain variables
-       from the calling context.
+  (* We need to attempt to find assignments for spec_vs which
+     unify the specialised function signature(s) with arguments.
 
-       There is a twist: a polymorphic function calling itself.
-       In that case the variables in the calling context
-       can be the same as the base variables of the called
-       function, but they have to be treated like constants.
-       for example here:
+     To do this we match up:
 
-       fun f[t] ... => .... f[g t]
+     (a) spec vs variables with input ts values
+     (b) signatures with arguments
 
-       the 't' in f[g t] has to be treated like a constant.
+     which hopefully produces mgu with all the spec_vs variables
 
-       So the base_vs variables are renamed in the
-       function signature where they're dependent.
+     If this succeeds, we plug these into the sub_ts to get
+     assignments for base_vs, eliminating the spec vs and
+     base vs variables. The parent variables must not be
+     eliminated since they act like constants (constructors).
 
-       The spec vs variables don't need renaming
-       because they're anonymous.
+     The resulting ts is then returned, it may contain variables
+     from the calling context.
 
-       Note that the base_vs variables are eliminated
-       from the signature .. so the renaming is pointless!
+     There is a twist: a polymorphic function calling itself.
+     In that case the variables in the calling context
+     can be the same as the base variables of the called
+     function, but they have to be treated like constants.
+     for example here:
 
+     fun f[t] ... => .... f[g t]
 
-    *)
-    (* Step1: make equations for the ts *)
+     the 't' in f[g t] has to be treated like a constant.
 
-    let n_parent_vs = List.length parent_vs in
-    let n_base_vs = List.length base_vs in
-    let n_spec_vs = List.length spec_vs in
-    let n_sub_ts = List.length sub_ts in
-    let n_input_ts = List.length input_ts in
+     So the base_vs variables are renamed in the
+     function signature where they're dependent.
 
-    (* equations for user specified assignments *)
-    let lhsi = List.map (fun (n,i) -> i) spec_vs in
-    let lhs = List.map (fun (n,i) -> BTYP_var ((i),BTYP_type 0)) spec_vs in
-    let n = min n_spec_vs n_input_ts in
-    let eqns = List.combine (list_prefix lhs n) (list_prefix input_ts n) in
+     The spec vs variables don't need renaming
+     because they're anonymous.
 
-    (* these are used for early substitution *)
-    let eqnsi = List.combine (list_prefix lhsi n) (list_prefix input_ts n) in
+     Note that the base_vs variables are eliminated
+     from the signature .. so the renaming is pointless! *)
 
-    (*
-    print_endline "TS EQUATIONS ARE:";
-    List.iter (fun (t1,t2) -> print_endline (sbt sym_table t1 ^ " = " ^ sbt sym_table t2))
-    eqns
-    ;
-    *)
+  (* Step1: make equations for the ts *)
 
-    (*
-    print_endline ("Curry domains (presub)   = " ^ catmap ", " (sbt sym_table) curry_domains);
-    *)
-    let curry_domains = List.map (fun t -> list_subst syms.counter eqnsi t) curry_domains in
+  let n_parent_vs = List.length parent_vs in
+  let n_base_vs = List.length base_vs in
+  let n_spec_vs = List.length spec_vs in
+  let n_sub_ts = List.length sub_ts in
+  let n_input_ts = List.length input_ts in
 
-    (*
-    print_endline ("Curry domains (postsub)  = " ^ catmap ", " (sbt sym_table) curry_domains);
-    *)
+  (* equations for user specified assignments *)
+  let lhsi = List.map (fun (n,i) -> i) spec_vs in
+  let lhs = List.map (fun (n,i) -> BTYP_var ((i),BTYP_type 0)) spec_vs in
+  let n = min n_spec_vs n_input_ts in
+  let eqns = List.combine (list_prefix lhs n) (list_prefix input_ts n) in
 
-    let curry_domains = List.map
-      (fun t -> reduce_type (beta_reduce syms bsym_table sr t))
-      curry_domains
-    in
+  (* these are used for early substitution *)
+  let eqnsi = List.combine (list_prefix lhsi n) (list_prefix input_ts n) in
 
-    (*
-    print_endline ("Curry domains (postbeta) = " ^ catmap ", " (sbt sym_table) curry_domains);
-    *)
+  (*
+  print_endline "TS EQUATIONS ARE:";
+  List.iter (fun (t1,t2) -> print_endline (sbt sym_table t1 ^ " = " ^ sbt sym_table t2))
+  eqns
+  ;
+  *)
 
-    let n = min (List.length curry_domains) (List.length arg_types) in
-    let eqns = eqns @ List.combine (list_prefix curry_domains n) (list_prefix arg_types n) in
+  (*
+  print_endline ("Curry domains (presub)   = " ^ catmap ", " (sbt sym_table) curry_domains);
+  *)
+  let curry_domains = List.map (fun t -> list_subst syms.counter eqnsi t) curry_domains in
 
-    let dvars = ref BidSet.empty in
-    List.iter (fun (_,i)-> dvars := BidSet.add i !dvars) spec_vs;
+  (*
+  print_endline ("Curry domains (postsub)  = " ^ catmap ", " (sbt sym_table) curry_domains);
+  *)
 
-    (*
-    print_endline "EQUATIONS ARE:";
-    List.iter (fun (t1,t2) -> print_endline (sbt sym_table t1 ^ " = " ^ sbt sym_table t2))
-    eqns
-    ;
-    (* WRONG!! dunno why, but it is! *)
-    print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
-      (BidSet.fold (fun i l-> i::l) !dvars [])
-    );
-    print_endline "...";
-    *)
+  let curry_domains = List.map
+    (fun t -> reduce_type (beta_reduce syms bsym_table sr t))
+    curry_domains
+  in
 
-    (*
-    let mgu = maybe_specialisation syms.counter sym_table eqns in
-    *)
-    (* doesn't work .. fails to solve for some vars
-       which aren't local vs of the fun .. this case:
+  (*
+  print_endline ("Curry domains (postbeta) = " ^ catmap ", " (sbt sym_table) curry_domains);
+  *)
 
-       fun g2[w with Eq[w,w]] (x:int,y:int)=> xeq(x,y);
+  let n = min (List.length curry_domains) (List.length arg_types) in
+  let eqns = eqns @ List.combine (list_prefix curry_domains n) (list_prefix arg_types n) in
 
-       doesn't solve for w checking xeq(x,y) .. not
-       sure why it should tho .. w should be fixed
-       already by the instance match .. hmm ..
-    *)
-    let mgu =
-      try Some (unification syms.counter eqns !dvars)
-      with Not_found -> None
-    in
-    match mgu with
-    | Some mgu ->
+  let dvars = ref BidSet.empty in
+  List.iter (fun (_,i)-> dvars := BidSet.add i !dvars) spec_vs;
+
+  (*
+  print_endline "EQUATIONS ARE:";
+  List.iter (fun (t1,t2) -> print_endline (sbt sym_table t1 ^ " = " ^ sbt sym_table t2))
+  eqns
+  ;
+
+  (* WRONG!! dunno why, but it is! *)
+  print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
+    (BidSet.fold (fun i l-> i::l) !dvars []));
+  print_endline "...";
+  *)
+
+  (*
+  let mgu = maybe_specialisation syms.counter sym_table eqns in
+  *)
+
+  (* doesn't work .. fails to solve for some vars
+     which aren't local vs of the fun .. this case:
+
+     fun g2[w with Eq[w,w]] (x:int,y:int)=> xeq(x,y);
+
+     doesn't solve for w checking xeq(x,y) .. not
+     sure why it should tho .. w should be fixed
+     already by the instance match .. hmm .. *)
+  let mgu =
+    try Some (unification syms.counter eqns !dvars)
+    with Not_found -> None
+  in
+  match mgu with
+  | Some mgu ->
       (*
       print_endline "Specialisation detected";
       print_endline (" .. mgu = " ^ string_of_varlist sym_table mgu);
@@ -566,7 +582,8 @@ let consider syms sym_table bsym_table env bt be luqn2 name
       )
       in
 
-      let th i = match i with
+      let th i =
+        match i with
         | 0 -> "first"
         | 1 -> "second"
         | 2 -> "third"
@@ -574,10 +591,10 @@ let consider syms sym_table bsym_table env bt be luqn2 name
       in
 
       let report_unresolved =
-        List.fold_left (fun acc (s,i,tp,k) -> acc ^
-          "  The " ^th k ^" subscript  " ^ s ^ "[" ^ string_of_bid i ^ "]" ^
-           Flx_print.string_of_maybe_typecode tp ^ "\n"
-        ) "" !unresolved
+        List.fold_left begin fun acc (s,i,tp,k) ->
+          acc ^ "  The " ^th k ^" subscript  " ^ s ^ "[" ^ string_of_bid i ^
+            "]" ^ Flx_print.string_of_maybe_typecode tp ^ "\n"
+        end "" !unresolved
       in
       (*
       if List.length !unresolved > 0 then
@@ -603,7 +620,11 @@ let consider syms sym_table bsym_table env bt be luqn2 name
 *)
       begin
         (* convert mgu from spec vars to base vars *)
-        let basemap = List.map2 (fun (_,i,_) t -> i,list_subst syms.counter !mgu t) base_vs sub_ts in
+        let basemap = List.map2
+          (fun (_,i,_) t -> i,list_subst syms.counter !mgu t)
+          base_vs
+          sub_ts
+        in
         (*
         print_endline ("New basemap: " ^ catmap ","
           (fun (i,t) -> si i ^ "->" ^ sbt sym_table t)
@@ -619,132 +640,133 @@ let consider syms sym_table bsym_table env bt be luqn2 name
         )
         spec_vs;
 
-        List.iter (fun (s,j',tp) ->
-           let et,explicit_vars1,any_vars1, as_vars1, eqns1 =
+        List.iter begin fun (s,j',tp) ->
+          let et,explicit_vars1,any_vars1, as_vars1, eqns1 =
             type_of_tpattern syms tp
-           in
-           let et = spec_bt sr et in
-           let et = list_subst syms.counter !mgu et in
-           let et = beta_reduce syms bsym_table sr et in
-           (*
-           print_endline ("After substitution of mgu, Reduced type is:\n  " ^
-             sbt sym_table et)
-           ;
-           *)
+          in
+          let et = spec_bt sr et in
+          let et = list_subst syms.counter !mgu et in
+          let et = beta_reduce syms bsym_table sr et in
+          (*
+          print_endline ("After substitution of mgu, Reduced type is:\n  " ^
+            sbt sym_table et)
+          ;
+          *)
 
-           (* tp is a metatype .. it could be a pattern-like thing, which is
-           a constraint. But it could also be an actual meta-type! In that
-           case it is a constraint too, but not the right kind of constraint.
-           EG in
+          (* tp is a metatype .. it could be a pattern-like thing, which is
+          a constraint. But it could also be an actual meta-type! In that
+          case it is a constraint too, but not the right kind of constraint.
+          EG in
 
-              j' -> fun (x:TYPE):TYPE=>x : TYPE->TYP
+             j' -> fun (x:TYPE):TYPE=>x : TYPE->TYP
 
-           the TYPE->TYPE is a constraint only in the sense that it
-           is the type of j'. Felix messes these things up.. you can
-           give an explicit TYPE->TYPE which really amounts only
-           to a typing constraint .. and no additional constraint.
+          the TYPE->TYPE is a constraint only in the sense that it
+          is the type of j'. Felix messes these things up.. you can
+          give an explicit TYPE->TYPE which really amounts only
+          to a typing constraint .. and no additional constraint.
 
-           So we have to eliminate these from consideration
+          So we have to eliminate these from consideration
+          *)
 
-           *)
+          (*
+          print_endline ("Analysing "^s^"<"^si j'^">: " ^ string_of_typecode tp);
+          print_endline (si j' ^ (if List.mem_assoc j' basemap then " IS IN BASEMAP" else " IS NOT IN BASEMAP"));
+          *)
 
-           (*
-           print_endline ("Analysing "^s^"<"^si j'^">: " ^ string_of_typecode tp);
-           print_endline (si j' ^ (if List.mem_assoc j' basemap then " IS IN BASEMAP" else " IS NOT IN BASEMAP"));
-           *)
-           (* this check is redundant .. we're SCANNING the base vs! *)
-           match et with
-           | BTYP_type _
-           | BTYP_function _ -> () (* print_endline "ignoring whole metatype" *)
-           | _ ->
-           if List.mem_assoc j' basemap then begin
-             let t1 = List.assoc j' basemap in
-             let t2 = et in
-             (*
-             print_endline ("CONSTRAINT: Adding equation " ^ sbt sym_table t1 ^ " = " ^ sbt sym_table t2);
-             *)
-             extra_eqns := (t1,t2) :: !extra_eqns
-           end
-           ;
+          (* this check is redundant .. we're SCANNING the base vs! *)
+          match et with
+          | BTYP_type _
+          | BTYP_function _ -> () (* print_endline "ignoring whole metatype" *)
+          | _ ->
+          if List.mem_assoc j' basemap then begin
+            let t1 = List.assoc j' basemap in
+            let t2 = et in
+            (*
+            print_endline ("CONSTRAINT: Adding equation " ^ sbt sym_table t1 ^ " = " ^ sbt sym_table t2);
+            *)
+            extra_eqns := (t1,t2) :: !extra_eqns
+          end;
 
-           (* THIS CODE DOES NOT WORK RIGHT YET *)
-           if List.length explicit_vars1 > 0 then
-           print_endline ("Explicit ?variables: " ^
-             catmap ","
+          (* THIS CODE DOES NOT WORK RIGHT YET *)
+          if List.length explicit_vars1 > 0 then
+
+          print_endline ("Explicit ?variables: " ^
+            catmap ","
               (fun (i,s) -> s ^ "<" ^ string_of_bid i ^ ">")
-              explicit_vars1)
-           ;
-           List.iter
-           (fun (i,s) ->
-             let coupled = List.filter (fun (s',_,_) -> s = s') base_vs in
-             match coupled with
-             | [] -> ()
-             | [s',k,pat] ->
+              explicit_vars1);
+
+          List.iter begin fun (i,s) ->
+            let coupled = List.filter (fun (s',_,_) -> s = s') base_vs in
+            match coupled with
+            | [] -> ()
+            | [s',k,pat] ->
                 print_endline (
                   "Coupled " ^ s ^ ": " ^ string_of_bid k ^ "(vs var) <--> " ^
                   string_of_bid i ^" (pat var)" ^
                   " pat=" ^ string_of_typecode pat);
-             let t1 = BTYP_var (i,BTYP_type 0) in
-             let t2 = BTYP_var (k,BTYP_type 0) in
-             print_endline ("Adding equation " ^ sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2);
-             extra_eqns := (t1,t2) :: !extra_eqns;
-             (*
-             dvars := BidSet.add i !dvars;
-             print_endline ("ADDING DEPENDENT VARIABLE " ^ si i);
-             *)
+                let t1 = BTYP_var (i,BTYP_type 0) in
+                let t2 = BTYP_var (k,BTYP_type 0) in
+
+                print_endline ("Adding equation " ^ sbt bsym_table t1 ^ " = " ^
+                  sbt bsym_table t2);
+
+                extra_eqns := (t1,t2) :: !extra_eqns;
+
+                (*
+                dvars := BidSet.add i !dvars;
+                print_endline ("ADDING DEPENDENT VARIABLE " ^ si i);
+                *)
 
              | _ -> assert false (* vs should have distinct names *)
-           )
-           explicit_vars1
-           ;
+          end explicit_vars1;
 
-           if List.length as_vars1 > 0 then begin
-             print_endline ("As variables: " ^
-               catmap ","
-                 (fun (i,s) -> s ^ "<" ^ string_of_bid i ^ ">") as_vars1);
-             print_endline "RECURSIVE?? AS VARS NOT HANDLED YET"
-           end;
+          if List.length as_vars1 > 0 then begin
+            print_endline ("As variables: " ^
+              catmap "," (fun (i,s) -> s ^ "<" ^ string_of_bid i ^ ">")
+              as_vars1);
+            print_endline "RECURSIVE?? AS VARS NOT HANDLED YET"
+          end;
 
-           (*
-           if List.length any_vars1 > 0 then
-           print_endline ("Wildcard variables: " ^
-             catmap "," (fun i -> "<" ^ si i ^ ">") any_vars1)
-           ;
-           *)
+          (*
+          if List.length any_vars1 > 0 then
+          print_endline ("Wildcard variables: " ^
+            catmap "," (fun i -> "<" ^ si i ^ ">") any_vars1)
+          ;
+          *)
 
-           (* add wildcards to dependent variable set ?? *)
-           List.iter (fun i-> dvars := BidSet.add i !dvars) any_vars1;
+          (* add wildcards to dependent variable set ?? *)
+          List.iter (fun i-> dvars := BidSet.add i !dvars) any_vars1;
 
-           (* add 'as' equations from patterns like
-              t as v
-           *)
-           List.iter (fun (i,t) -> let t2 = bt sr t in
-             let t1 = BTYP_var (i,BTYP_type 0) in
-             extra_eqns := (t1,t2) :: !extra_eqns
-           ) eqns1;
+          (* add 'as' equations from patterns like
+             t as v
+          *)
+          List.iter begin fun (i,t) ->
+            let t2 = bt sr t in
+            let t1 = BTYP_var (i,BTYP_type 0) in
+            extra_eqns := (t1,t2) :: !extra_eqns
+          end eqns1;
 
-           (*
-           if List.length eqns1 > 0 then
-           print_endline ("Equations for as terms (unbound): " ^
-             catmap "\n" (fun (i,t) -> si i ^ " -> " ^ string_of_typecode t) eqns1)
-           ;
-           *)
-        )
-        base_vs
-        ;
+          (*
+          if List.length eqns1 > 0 then
+          print_endline ("Equations for as terms (unbound): " ^
+            catmap "\n" (fun (i,t) -> si i ^ " -> " ^ string_of_typecode t) eqns1)
+          ;
+          *)
+        end base_vs;
 
         (* NOW A SUPER HACK! *)
-        let rec xcons con = match con with
-        | BTYP_intersect cons -> List.iter xcons cons
-        | BTYP_type_match (arg,[{pattern=pat},BTYP_tuple[]]) ->
-          let arg = spec arg in
-          let arg = list_subst syms.counter !mgu arg in
-          let arg = beta_reduce syms bsym_table sr arg in
-          let pat = spec pat in
-          let pat = list_subst syms.counter !mgu pat in
-          let pat = beta_reduce syms bsym_table sr pat in
-          extra_eqns := (arg, pat)::!extra_eqns
-        | _ -> ()
+        let rec xcons con =
+          match con with
+          | BTYP_intersect cons -> List.iter xcons cons
+          | BTYP_type_match (arg,[{pattern=pat},BTYP_tuple[]]) ->
+              let arg = spec arg in
+              let arg = list_subst syms.counter !mgu arg in
+              let arg = beta_reduce syms bsym_table sr arg in
+              let pat = spec pat in
+              let pat = list_subst syms.counter !mgu pat in
+              let pat = beta_reduce syms bsym_table sr pat in
+              extra_eqns := (arg, pat)::!extra_eqns
+          | _ -> ()
         in
         xcons con;
 
@@ -759,6 +781,7 @@ let consider syms sym_table bsym_table env bt be luqn2 name
           (BidSet.fold (fun i l-> i::l) !dvars [])
         );
         *)
+
         let maybe_extra_mgu =
           try Some (unification syms.counter !extra_eqns !dvars)
           with Not_found -> None
@@ -766,20 +789,20 @@ let consider syms sym_table bsym_table env bt be luqn2 name
         match maybe_extra_mgu with
         | None -> () (* print_endline "COULDN'T RESOLVE EQUATIONS"  *)
         | Some extra_mgu ->
-           (*
-           print_endline ("Resolved equations with mgu:\n  " ^
+            (*
+            print_endline ("Resolved equations with mgu:\n  " ^
               string_of_varlist sym_table extra_mgu)
-           ;
-           *)
-           let ur = !unresolved in
-           unresolved := [];
-           List.iter (fun ((s,i,_,k) as u) ->
-             (*
-             let j = base + k in
-             *)
-             let j = i in
-             if List.mem_assoc j extra_mgu
-             then begin
+            ;
+            *)
+            let ur = !unresolved in
+            unresolved := [];
+            List.iter begin fun ((s,i,_,k) as u) ->
+              (*
+              let j = base + k in
+              *)
+              let j = i in
+              if List.mem_assoc j extra_mgu
+              then begin
                 let t = List.assoc j extra_mgu in
                 (*
                 print_endline ("CAN NOW RESOLVE " ^
@@ -787,25 +810,20 @@ let consider syms sym_table bsym_table env bt be luqn2 name
                 ;
                 *)
                 mgu := (j,t) :: !mgu
-             end
-             else begin
-               (*
-               print_endline ("STILL CANNOT RESOLVE " ^ th k ^ " vs term " ^ s ^ "<"^si i^">");
-               *)
-               unresolved := u :: !unresolved
-             end
-           )
-           ur
-      end
-      ;
-
+              end
+              else begin
+                (*
+                print_endline ("STILL CANNOT RESOLVE " ^ th k ^ " vs term " ^ s ^ "<"^si i^">");
+                *)
+                unresolved := u :: !unresolved
+              end
+            end ur
+      end;
 
       if List.length !unresolved > 0 then None else begin
         let ok = ref true in
-        List.iter
-        (fun sign ->
-          if sign <> list_subst syms.counter !mgu sign then
-          begin
+        List.iter begin fun sign ->
+          if sign <> list_subst syms.counter !mgu sign then begin
             ok := false;
             (*
             print_endline ("At " ^ Flx_srcref.short_string_of_src call_sr);
@@ -823,9 +841,8 @@ let consider syms sym_table bsym_table env bt be luqn2 name
             )
             *)
           end
-        )
-        arg_types
-        ;
+        end arg_types;
+
         if not (!ok) then None else
         (*
         print_endline ("Matched with mgu = " ^ string_of_varlist sym_table !mgu);
@@ -874,33 +891,37 @@ let consider syms sym_table bsym_table env bt be luqn2 name
         *)
         begin match reduced_constraint with
         | BTYP_void ->
-          (*
-          print_endline "Constraint failure, rejecting candidate";
-          *)
-          None
+            (*
+            print_endline "Constraint failure, rejecting candidate";
+            *)
+            None
         | BTYP_tuple [] ->
-          let parent_ts = List.map (fun (n,i,_) -> BTYP_var ((i),BTYP_type 0)) parent_vs in
-          Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
+            let parent_ts = List.map
+              (fun (n,i,_) -> BTYP_var ((i),BTYP_type 0))
+              parent_vs
+            in
+            Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
 
         | x ->
-          (*
-          print_endline "About to check constraint implication";
-          *)
-          let implied = constraint_implies syms env_traint reduced_constraint in
-          if implied then 
-            let parent_ts = List.map (fun (n,i,_) -> BTYP_var ((i),BTYP_type 0)) parent_vs in
-            Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
-          else begin
-            print_endline "Can't resolve type constraint!";
-            print_endline ("Env traint = " ^ sbt bsym_table env_traint);
-            print_endline ("Fun traint = " ^ sbt bsym_table reduced_constraint);
-            print_endline ("Implication result = " ^ if implied then "true" else "false");
-            clierr sr
-            ("[overload] Cannot resolve type constraint! " ^
-              sbt bsym_table type_constraint ^
-              "\nReduced to " ^ sbt bsym_table x
-            )
-          end
+            (*
+            print_endline "About to check constraint implication";
+            *)
+            let implied = constraint_implies syms env_traint reduced_constraint in
+            if implied then 
+              let parent_ts = List.map
+                (fun (n,i,_) -> BTYP_var ((i),BTYP_type 0))
+                parent_vs in
+              Some (i,domain,spec_result,!mgu,parent_ts @ base_ts)
+            else begin
+              print_endline "Can't resolve type constraint!";
+              print_endline ("Env traint = " ^ sbt bsym_table env_traint);
+              print_endline ("Fun traint = " ^ sbt bsym_table reduced_constraint);
+              print_endline ("Implication result = " ^ if implied then "true" else "false");
+
+              clierr sr ("[overload] Cannot resolve type constraint! " ^
+                sbt bsym_table type_constraint ^
+                "\nReduced to " ^ sbt bsym_table x)
+            end
         end
       end
 
@@ -909,6 +930,7 @@ let consider syms sym_table bsym_table env bt be luqn2 name
       print_endline "No match";
       *)
       None
+
 
 let overload
   syms
