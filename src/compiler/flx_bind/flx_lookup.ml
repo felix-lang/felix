@@ -4265,65 +4265,101 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
 
   | EXPR_ref (_,(EXPR_deref (_,e))) -> be e
   | EXPR_ref (srr,e) ->
-    let has_property i p =
-      match get_data state.sym_table i with { Flx_sym.symdef=entry} ->
-      match entry with
-      | SYMDEF_fun (props,_,_,_,_,_) -> List.mem p props
-      | _ -> false
-    in
-    let e',t' = be e in
-    begin match e' with
-    | BEXPR_deref e -> e
-    | BEXPR_name (index,ts) ->
-      begin match get_data state.sym_table index with
-      { Flx_sym.id=id; sr=sr; symdef=entry} ->
-      begin match entry with
-      | SYMDEF_inherit _ -> clierr srr "Woops, bindexpr yielded inherit"
-      | SYMDEF_inherit_fun _ -> clierr srr "Woops, bindexpr yielded inherit fun"
-      | SYMDEF_ref _
-      | SYMDEF_var _
-      | SYMDEF_parameter (`PVar,_)
-        ->
-        let vtype =
-          inner_type_of_index_with_ts state bsym_table sr
-          { rs with depth = rs.depth+1 }
-         index ts
-        in
-          BEXPR_ref (index,ts), BTYP_pointer vtype
+      (* Helper function to look up a property in a symbol. *)
+      let has_property bid property =
+        (* If the bound symbol has the bid, check if that symbol has the
+         * property. *)
+        match
+          try Some (Flx_bsym_table.find bsym_table bid) with Not_found -> None
+        with
+        | Some bsym ->
+            begin match bsym.Flx_bsym.bbdcl with
+            | Flx_types.BBDCL_function (properties,_,_,_,_)
+            | Flx_types.BBDCL_procedure (properties,_,_,_) ->
+                List.mem property properties
+            | _ -> false
+            end
+        | None ->
+            begin match (get_data state.sym_table bid).Flx_sym.symdef with
+            | SYMDEF_fun (properties,_,_,_,_,_) -> List.mem property properties
+            | _ -> false
+            end
+      in
+      let e',t' = be e in
+      begin match e' with
+      | BEXPR_deref e -> e
+      | BEXPR_name (index,ts) ->
+          (* Look up the type of the name, and make sure it's addressable. *)
+          begin match
+            try Some (Flx_bsym_table.find bsym_table index)
+            with Not_found -> None
+          with
+          | Some bsym ->
+              (* We found a bound symbol, check if it's an addressable symbol.
+               * Otherwise, error out. *)
+              begin match bsym.Flx_bsym.bbdcl with
+              | Flx_types.BBDCL_ref _
+              | Flx_types.BBDCL_var _ ->
+                  let vtype = inner_type_of_index_with_ts
+                    state
+                    bsym_table
+                    bsym.Flx_bsym.sr
+                    { rs with depth = rs.depth + 1 }
+                    index
+                    ts
+                  in
+                  BEXPR_ref (index, ts), BTYP_pointer vtype
 
+              | Flx_types.BBDCL_val _ ->
+                  clierr2 srr bsym.Flx_bsym.sr ("[bind_expression] " ^
+                    "Can't address a value " ^ bsym.Flx_bsym.id)
 
-      | SYMDEF_parameter _ ->
-         clierr2 srr sr
-        (
-          "[bind_expression] " ^
-          "Address value parameter " ^ id
-        )
-      | SYMDEF_const _
-      | SYMDEF_val _ ->
-        clierr2 srr sr
-        (
-          "[bind_expression] " ^
-          "Can't address a value or const " ^ id
-        )
+              | _ ->
+                  clierr2 srr bsym.Flx_bsym.sr ("[bind_expression] " ^
+                    "Address non variable " ^ bsym.Flx_bsym.id)
+              end
+
+          | None ->
+              (* Otherwise, look up the name in the sym_table. *)
+              let sym = get_data state.sym_table index in
+              begin match sym.Flx_sym.symdef with
+              | SYMDEF_inherit _ ->
+                  clierr srr "Woops, bindexpr yielded inherit"
+              | SYMDEF_inherit_fun _ ->
+                  clierr srr "Woops, bindexpr yielded inherit fun"
+              | SYMDEF_ref _
+              | SYMDEF_var _
+              | SYMDEF_parameter (`PVar,_) ->
+                  let vtype = inner_type_of_index_with_ts
+                    state
+                    bsym_table
+                    sym.Flx_sym.sr
+                    { rs with depth = rs.depth + 1 }
+                    index
+                    ts
+                  in
+                  BEXPR_ref (index, ts), BTYP_pointer vtype
+
+              | SYMDEF_parameter _ ->
+                  clierr2 srr sym.Flx_sym.sr ("[bind_expression] Address " ^
+                    "value parameter " ^ sym.Flx_sym.id)
+              | SYMDEF_const _
+              | SYMDEF_val _ ->
+                  clierr2 srr sym.Flx_sym.sr ("[bind_expression] " ^
+                    "Can't address a value or const " ^ sym.Flx_sym.id)
+              | _ ->
+                  clierr2 srr sym.Flx_sym.sr ("[bind_expression] Address non " ^
+                    "variable " ^ sym.Flx_sym.id)
+              end
+          end
+
+      | BEXPR_apply ((BEXPR_closure (i,ts),_),a) when has_property i `Lvalue ->
+          BEXPR_address (e', t'), BTYP_pointer t'
+
       | _ ->
-         clierr2 srr sr
-        (
-          "[bind_expression] " ^
-          "Address non variable " ^ id
-        )
+          clierr srr ("[bind_expression] Address non variable " ^
+            sbe bsym_table (e', t'))
       end
-      end
-    | BEXPR_apply ((BEXPR_closure (i,ts),_),a) when has_property i `Lvalue ->
-      BEXPR_address (e',t'),BTYP_pointer t'
-
-
-    | _ ->
-       clierr srr
-        (
-          "[bind_expression] " ^
-          "Address non variable " ^ sbe bsym_table (e',t')
-        )
-    end
 
   | EXPR_deref (_,EXPR_ref (sr,e)) ->
     let e,t = be e in
