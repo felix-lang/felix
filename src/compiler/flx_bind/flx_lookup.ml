@@ -209,19 +209,30 @@ let rec trclose state bsym_table rs sr fs =
 and resolve_inherits state bsym_table rs sr x =
   match x with
   | NonFunctionEntry z ->
-    begin match hfind "lookup" state.sym_table (sye z) with
-    | { Flx_sym.parent=parent; symdef=SYMDEF_inherit qn } ->
-      (*
-      print_endline ("Found an inherit symbol qn=" ^ string_of_qualified_name qn);
-      *)
-      let env = inner_build_env state bsym_table rs parent in
-      (*
-      print_endline "Environment built for lookup ..";
-      *)
-      fst (lookup_qn_in_env2' state bsym_table env rs qn)
-    | { Flx_sym.sr=sr2; symdef=SYMDEF_inherit_fun qn } ->
-      clierr2 sr sr2
-      "NonFunction inherit denotes function"
+      let bid = sye z in
+
+      (* If we've already bound this symbol, then we've already flatten out the
+       * inherits. so, we'll just return the passed in expression. *)
+      if Flx_bsym_table.mem bsym_table bid then x else
+
+      (* Otherwise, we have to check if this entry is an inherit. If so, look up
+       * the inherit entry in the environment. Otherwise, just return the
+       * expression. *)
+      begin match Flx_sym_table.find state.sym_table bid with
+      | { Flx_sym.parent=parent; symdef=SYMDEF_inherit qn } ->
+          (*
+          print_endline ("Found an inherit symbol qn=" ^
+            string_of_qualified_name qn);
+          *)
+          let env = inner_build_env state bsym_table rs parent in
+          (*
+          print_endline "Environment built for lookup ..";
+          *)
+          fst (lookup_qn_in_env2' state bsym_table env rs qn)
+
+      | { Flx_sym.sr=sr2; symdef=SYMDEF_inherit_fun qn } ->
+          clierr2 sr sr2 "NonFunction inherit denotes function"
+
     | _ -> x
     end
   | FunctionEntry fs -> FunctionEntry (trclose state bsym_table rs sr fs)
@@ -1598,6 +1609,7 @@ and  type_of_literal state bsym_table env sr v : btypecode_t =
   bt
 
 and type_of_index' (state:lookup_state_t) bsym_table rs (index:bid_t) : btypecode_t =
+
     (*
     let () = print_endline ("Top level type of index " ^ si index) in
     *)
@@ -3985,8 +3997,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
     else
     let ts = List.map (bt sr) ts in
     begin match inner_lookup_name_in_env state bsym_table env rs sr name with
-    | NonFunctionEntry {base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts}
-    ->
+    | NonFunctionEntry { base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts } ->
       (*
       let index = sye index in
       let ts = adjust_ts state.sym_table sr index ts in
@@ -4027,14 +4038,42 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
       let ts = List.map (tsubst spec_vs ts) sub_ts in
       let ts = adjust_ts state.sym_table bsym_table sr index ts in
       let t = ti sr index ts in
-      begin match hfind "lookup:ref-check" state.sym_table index with
-      |  { Flx_sym.symdef=SYMDEF_parameter (`PRef,_)}
-      |  { Flx_sym.symdef=SYMDEF_ref _ } ->
-          let t' = match t with BTYP_pointer t' -> t' | _ ->
-            failwith ("[lookup, AST_name] expected ref "^name^" to have pointer type")
-          in
-          BEXPR_deref (BEXPR_name (index,ts),t),t'
-      | _ -> BEXPR_name (index,ts), t
+
+      (* If we have a bound symbol for this index, return it's type. Otherwise,
+       * try to figure out the type of the unbound symbol. *)
+      begin match
+        try Some (Flx_bsym_table.find bsym_table index) with Not_found -> None
+      with
+      | Some bsym ->
+          (* We got a bound symbol, so this should be easy. We now just have to
+           * handle reference types directly, which we'll automatically convert
+           * that into dereferencing the name. *)
+          begin match bsym.Flx_bsym.bbdcl with
+          | BBDCL_ref _ ->
+              (* We've got a reference, so make sure the type is a pointer. *)
+              let t' = match t with BTYP_pointer t' -> t' | _ ->
+                failwith ("[lookup, AST_name] expected ref " ^ name ^
+                  " to have pointer type")
+              in
+              BEXPR_deref (BEXPR_name (index, ts), t), t'
+
+          | _ -> BEXPR_name (index, ts), t
+          end
+      | None ->
+          (* We haven't bound this symbol yet. We need to specially handle
+           * reference types, as I mentioned above. *)
+          begin match hfind "lookup:ref-check" state.sym_table index with
+          | { Flx_sym.symdef=SYMDEF_parameter (`PRef,_) }
+          | { Flx_sym.symdef=SYMDEF_ref _ } ->
+              (* We've got a reference, so make sure the type is a pointer. *)
+              let t' = match t with BTYP_pointer t' -> t' | _ ->
+                failwith ("[lookup, AST_name] expected ref " ^ name ^
+                  " to have pointer type")
+              in
+              BEXPR_deref (BEXPR_name (index, ts), t), t'
+
+          | _ -> BEXPR_name (index,ts), t
+          end
       end
 
     | FunctionEntry [{base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts}]
