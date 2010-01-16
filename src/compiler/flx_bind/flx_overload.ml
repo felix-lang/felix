@@ -341,8 +341,9 @@ let specialize_domain base_vs sub_ts t : Flx_types.btypecode_t =
 let make_equations
   syms
   bsym_table
+  id
   sr
-  spec_vs
+  entry_kind
   input_ts
   arg_types
   spec_domain
@@ -366,9 +367,9 @@ let make_equations
   print_endline ("Candidate sigs= " ^  catmap "->" (sbt sym_table) curry_domains);
   *)
   (* equations for user specified assignments *)
-  let lhsi = List.map (fun (n,i) -> i) spec_vs in
-  let lhs = List.map (fun (n,i) -> BTYP_var ((i),BTYP_type 0)) spec_vs in
-  let n = min (List.length spec_vs) (List.length input_ts) in
+  let lhsi = List.map (fun (n,i) -> i) entry_kind.spec_vs in
+  let lhs = List.map (fun (n,i) -> BTYP_var ((i),BTYP_type 0)) entry_kind.spec_vs in
+  let n = min (List.length entry_kind.spec_vs) (List.length input_ts) in
   let eqns = List.combine (list_prefix lhs n) (list_prefix input_ts n) in
 
   (* these are used for early substitution *)
@@ -409,7 +410,7 @@ let make_equations
   in
 
   let dvars = ref BidSet.empty in
-  List.iter (fun (_,i)-> dvars := BidSet.add i !dvars) spec_vs;
+  List.iter (fun (_,i)-> dvars := BidSet.add i !dvars) entry_kind.spec_vs;
 
   (*
   print_endline "EQUATIONS ARE:";
@@ -429,6 +430,8 @@ let make_equations
 let solve_mgu
   syms
   bsym_table
+  id
+  call_sr
   mgu
   entry_kind
   base_vs
@@ -822,6 +825,7 @@ let consider
   syms
   sym_table
   bsym_table
+  call_sr
   env
   bt
   be
@@ -942,8 +946,9 @@ let consider
   let mgu = make_equations
     syms
     bsym_table
+    id
     sr
-    entry_kind.spec_vs
+    entry_kind
     input_ts
     arg_types
     (specialize_domain base_vs entry_kind.sub_ts domain)
@@ -967,6 +972,8 @@ let consider
       solve_mgu
         syms
         bsym_table
+        id
+        call_sr
         mgu
         entry_kind
         base_vs
@@ -1029,6 +1036,7 @@ let overload
         syms
         sym_table
         bsym_table
+        call_sr
         env
         (bt rs)
         be

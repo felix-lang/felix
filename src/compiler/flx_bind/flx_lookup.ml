@@ -1836,6 +1836,57 @@ and inner_type_of_index_with_ts
  t
 
 
+(* Convert a bound symbol into a bound type. *)
+and btype_of_bsym state bsym_table bt bid bsym =
+  (* Helper function to convert function parameters to a type. *)
+  let type_of_params params =
+    typeoflist (List.map (fun p -> p.ptyp) params)
+  in
+
+  match bsym.Flx_bsym.bbdcl with
+  | BBDCL_module -> assert false
+  | BBDCL_function (_,_,(params,_),return_type,_) ->
+      BTYP_function (type_of_params params, return_type)
+  | BBDCL_procedure (_,_,(params,_),_) ->
+      BTYP_function (type_of_params params, BTYP_void)
+  | BBDCL_val (_,t) -> t
+  | BBDCL_var (_,t) -> t
+  | BBDCL_ref (_,t) -> t
+  | BBDCL_tmp (_,t) -> t
+  | BBDCL_newtype (_,t) -> t
+  | BBDCL_abs _ -> assert false
+  | BBDCL_const (_,_,t,_,_) -> t
+  | BBDCL_fun (_,_,params,return_type,_,_,_) ->
+      BTYP_function (BTYP_tuple params, return_type)
+  | BBDCL_callback (_,_,params,_,_,return_type,_,_) ->
+      BTYP_function (BTYP_tuple params, return_type)
+  | BBDCL_proc (_,_,params,_,_)->
+      BTYP_function (BTYP_tuple params, BTYP_void)
+  | BBDCL_insert _ -> assert false
+  | BBDCL_union (_,ls) ->
+      BTYP_variant (List.map (fun (n,_,t) -> n,t) ls)
+  | BBDCL_struct (_,ls)
+  | BBDCL_cstruct (_,ls) ->
+      (* Lower a struct type into a function that creates the struct. *)
+      let ts = List.map
+        (fun (s,i,_) -> TYP_name (bsym.Flx_bsym.sr,s,[]))
+        (fst bsym.Flx_bsym.vs)
+      in
+      let ts = List.map (bt bsym.Flx_bsym.sr) ts in
+      let ts = adjust_ts
+        state.sym_table
+        bsym_table
+        bsym.Flx_bsym.sr
+        bid
+        ts
+      in
+      let t = typeoflist (List.map snd ls) in
+      BTYP_function (t, BTYP_inst (bid, ts))
+  | BBDCL_typeclass _ -> assert false
+  | BBDCL_instance _ -> assert false
+  | BBDCL_nonconst_ctor _ -> assert false
+
+
 (* this routine is called to find the type of a function
 or variable .. so there's no type_alias_fixlist ..
 *)
@@ -1862,26 +1913,33 @@ and inner_type_of_index
   if List.mem index rs.idx_fixlist
   then BTYP_fix (-rs.depth)
   else begin
-  match get_data state.sym_table index with
-  | { Flx_sym.id=id;
-      sr=sr;
-      parent=parent;
-      vs=vs;
-      dirs=dirs;
-      symdef=entry }
-  ->
+
   let mkenv i = build_env state bsym_table (Some i) in
   let env:env_t = mkenv index in
   (*
   print_endline ("Setting up env for " ^ si index);
   print_env_short env;
   *)
-  let bt t:btypecode_t =
+
+  let bt sr t:btypecode_t =
     let t' =
       bind_type' state bsym_table env rs sr t [] mkenv in
     let t' = beta_reduce state.syms bsym_table sr t' in
     t'
   in
+
+  (* First check if we've already bound this index. If so, return the type of
+   * the symbol. Otherwise, look up the type in the environment. *)
+  match
+    try Some (Flx_bsym_table.find bsym_table index) with Not_found -> None
+  with
+  | Some bsym -> btype_of_bsym state bsym_table bt index bsym
+  | None ->
+
+  let { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; dirs=dirs; symdef=entry } =
+    get_data state.sym_table index
+  in
+
   match entry with
   | SYMDEF_callback _ ->
       print_endline "Inner type of index finds callback";
@@ -1894,7 +1952,7 @@ and inner_type_of_index
         string_of_bid index)
   | SYMDEF_type_alias t ->
     begin
-      let t = bt t in
+      let t = bt sr t in
       let mt = Flx_metatype.metatype state.sym_table bsym_table sr t in
       (*
       print_endline ("Type of type alias is meta_type: " ^ sbt bsym_table mt);
@@ -1933,7 +1991,7 @@ and inner_type_of_index
           "\nTry adding an explicit return type annotation"
         )))
       end else
-        let d = bt (type_of_list pts) in
+        let d = bt sr (type_of_list pts) in
         let t =
           if List.mem `Cfun props
           then BTYP_cfunction (d,rt')
@@ -1944,30 +2002,30 @@ and inner_type_of_index
   | SYMDEF_const (_,t,_,_)
 
   | SYMDEF_val t
-  | SYMDEF_var t -> bt t
-  | SYMDEF_ref t -> BTYP_pointer (bt t)
+  | SYMDEF_var t -> bt sr t
+  | SYMDEF_ref t -> BTYP_pointer (bt sr t)
 
   | SYMDEF_parameter (`PVal,t)
   | SYMDEF_parameter (`PFun,t)
-  | SYMDEF_parameter (`PVar,t) -> bt t
-  | SYMDEF_parameter (`PRef,t) -> BTYP_pointer (bt t)
+  | SYMDEF_parameter (`PVar,t) -> bt sr t
+  | SYMDEF_parameter (`PRef,t) -> BTYP_pointer (bt sr t)
 
   | SYMDEF_const_ctor (_,t,_,_)
     ->
     (*
     print_endline ("Calculating type of variable " ^ id);
     *)
-    bt t
+    bt sr t
 
   | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
-    bt (TYP_function (argt,ut))
+    bt sr (TYP_function (argt,ut))
 
   | SYMDEF_match_check _ ->
     BTYP_function (BTYP_tuple [], flx_bbool)
 
   | SYMDEF_fun (_,pts,rt,_,_,_) ->
     let t = TYP_function (type_of_list pts,rt) in
-    bt t
+    bt sr t
 
   | SYMDEF_union _ ->
     clierr sr ("Union "^id^" doesn't have a type")
@@ -1977,13 +2035,13 @@ and inner_type_of_index
   | SYMDEF_struct (ls) ->
     (* ARGGG WHAT A MESS *)
     let ts = List.map (fun (s,i,_) -> TYP_name (sr,s,[])) (fst vs) in
-    let ts = List.map bt ts in
+    let ts = List.map (bt sr) ts in
     (*
     print_endline "inner_type_of_index: struct";
     *)
     let ts = adjust_ts state.sym_table bsym_table sr index ts in
     let t = type_of_list (List.map snd ls) in
-    let t = BTYP_function (bt t, BTYP_inst (index, ts)) in
+    let t = BTYP_function (bt sr t, BTYP_inst (index, ts)) in
     (*
     print_endline ("Struct as function type is " ^ sbt bsym_table t);
     *)
