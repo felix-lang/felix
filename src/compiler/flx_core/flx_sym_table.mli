@@ -19,3 +19,6 @@ val remove : t -> Flx_types.bid_t -> unit
 
 (** Iterate over all the items in the symbol table. *)
 val iter : (Flx_types.bid_t -> Flx_sym.t -> unit) -> t -> unit
+
+(** Fold over all the items in the symbol table. *)
+val fold : (Flx_types.bid_t -> Flx_sym.t -> 'a -> 'a) -> t -> 'a -> 'a

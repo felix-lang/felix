@@ -41,6 +41,9 @@ let remove = Hashtbl.remove
 (** Iterate over all the items in the bound symbol table. *)
 let iter = Hashtbl.iter
 
+(** Fold over all the items in the bound symbol table. *)
+let fold = Hashtbl.fold
+
 (** Return if the bound symbol index is an identity function. *)
 let is_identity bsym_table bid =
   Flx_bsym.is_identity (find bsym_table bid)

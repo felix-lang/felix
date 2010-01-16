@@ -37,6 +37,9 @@ val remove : t -> Flx_types.bid_t -> unit
 (** Iterate over all the items in the bound symbol table. *)
 val iter : (Flx_types.bid_t -> Flx_bsym.t -> unit) -> t -> unit
 
+(** Fold over all the items in the bound symbol table. *)
+val fold : (Flx_types.bid_t -> Flx_bsym.t -> 'a -> 'a) -> t -> 'a -> 'a
+
 (** Return if the bound symbol index is an identity function. *)
 val is_identity : t -> Flx_types.bid_t -> bool
 

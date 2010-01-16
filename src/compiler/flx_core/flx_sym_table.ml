@@ -18,3 +18,6 @@ let remove = Hashtbl.remove
 
 (** Iterate over all the items in the symbol table. *)
 let iter = Hashtbl.iter
+
+(** Fold over all the items in the bound symbol table. *)
+let fold = Hashtbl.fold
