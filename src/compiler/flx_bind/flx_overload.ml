@@ -349,7 +349,8 @@ let make_equations
   spec_result
 =
   (*
-  print_endline ("BASE Return type of function " ^ id^ "<"^si i^">=" ^ sbt sym_table spec_result);
+  print_endline ("BASE Return type of function " ^ id ^ "<" ^
+    si entry_kind.base_sym ^ ">=" ^ sbt bsym_table spec_result);
   *)
 
   (* unravel function a->b->c->d->..->z into domains a,b,c,..y
@@ -412,7 +413,7 @@ let make_equations
 
   (*
   print_endline "EQUATIONS ARE:";
-  List.iter (fun (t1,t2) -> print_endline (sbt sym_table t1 ^ " = " ^ sbt sym_table t2))
+  List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
   eqns
   ;
 
@@ -442,7 +443,7 @@ let solve_mgu
 =
   (*
   print_endline "Specialisation detected";
-  print_endline (" .. mgu = " ^ string_of_varlist sym_table mgu);
+  print_endline (" .. mgu = " ^ string_of_varlist bsym_table mgu);
   *)
   let mgu = ref mgu in
   (* each universally quantified variable must be fixed
@@ -516,7 +517,7 @@ let solve_mgu
     in
     (*
     print_endline ("New basemap: " ^ catmap ","
-      (fun (i,t) -> si i ^ "->" ^ sbt sym_table t)
+      (fun (i,t) -> si i ^ "->" ^ sbt bsym_table t)
       basemap
     );
     *)
@@ -539,7 +540,7 @@ let solve_mgu
       let et = beta_reduce syms bsym_table sr et in
       (*
       print_endline ("After substitution of mgu, Reduced type is:\n  " ^
-        sbt sym_table et)
+        sbt bsym_table et)
       ;
       *)
 
@@ -723,10 +724,10 @@ let solve_mgu
         print_endline
         (
           "[resolve_overload] Unification of function " ^
-          id ^ "<" ^ si i ^ "> signature " ^
-          sbt sym_table domain ^
-          "\nwith argument type " ^ sbt sym_table sign ^
-          "\nhas mgu " ^ string_of_varlist sym_table !mgu ^
+          id ^ "<" ^ si entry_kind.base_sym ^ "> signature " ^
+          sbt bsym_table domain ^
+          "\nwith argument type " ^ sbt bsym_table sign ^
+          "\nhas mgu " ^ string_of_varlist bsym_table !mgu ^
           "\nwhich specialises a variable of the argument type"
         )
         *)
@@ -856,13 +857,13 @@ let consider
   ;
   *)
   (*
-  print_endline (id ^ "|-> " ^string_of_myentry sym_table entry_kind);
+  print_endline (id ^ "|-> " ^string_of_myentry bsym_table entry_kind);
   begin
     print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") parent_vs);
     print_endline ("base VS=" ^ catmap "," (fun (s,i,_)->s^"<"^si i^">") base_vs);
-    print_endline ("sub TS=" ^ catmap "," (sbt sym_table) sub_ts);
-    print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") spec_vs);
-    print_endline ("input TS=" ^ catmap "," (sbt sym_table) input_ts);
+    print_endline ("sub TS=" ^ catmap "," (sbt bsym_table) entry_kind.sub_ts);
+    print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") entry_kind.spec_vs);
+    print_endline ("input TS=" ^ catmap "," (sbt bsym_table) input_ts);
   end
   ;
   *)
@@ -1004,9 +1005,9 @@ let overload
 =
   (*
   print_endline ("Overload " ^ name);
-  print_endline ("Argument sigs are " ^ catmap ", " (sbt sym_table) sufs);
+  print_endline ("Argument sigs are " ^ catmap ", " (sbt bsym_table) sufs);
   print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
-  print_endline ("Input ts = " ^ catmap ", " (sbt sym_table) ts);
+  print_endline ("Input ts = " ^ catmap ", " (sbt bsym_table) ts);
   *)
   let env_traint = BTYP_intersect (
     filter_out_units  
@@ -1041,13 +1042,13 @@ let overload
     | None -> Fail
   in
   let fun_defs = List.map aux fs in
+
   let candidates =
-    List.filter
-    (fun result -> match result with
+    List.filter begin fun result ->
+      match result with
       | Unique _ -> true
       | Fail -> false
-    )
-    fun_defs
+    end fun_defs
   in
     (*
     print_endline "Got matching candidates .. ";
@@ -1081,7 +1082,7 @@ let overload
   (fun oc r ->
      match r with Unique (j,c,_,_,_) ->
      (*
-     print_endline ("Considering candidate sig " ^ sbt sym_table c);
+     print_endline ("Considering candidate sig " ^ sbt bsym_table c);
      *)
      let rec aux lhs rhs =
        match rhs with
@@ -1093,7 +1094,7 @@ let overload
        | (Unique(i,typ,rtyp,mgu,ts) as x)::t
        ->
          (*
-         print_endline (" .. comparing with " ^ sbt sym_table typ);
+         print_endline (" .. comparing with " ^ sbt bsym_table typ);
          *)
          begin match compare_sigs syms.counter typ c with
          | `Less ->

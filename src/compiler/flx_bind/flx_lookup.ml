@@ -233,8 +233,8 @@ and resolve_inherits state bsym_table rs sr x =
       | { Flx_sym.sr=sr2; symdef=SYMDEF_inherit_fun qn } ->
           clierr2 sr sr2 "NonFunction inherit denotes function"
 
-    | _ -> x
-    end
+      | _ -> x
+      end
   | FunctionEntry fs -> FunctionEntry (trclose state bsym_table rs sr fs)
 
 and inner_lookup_name_in_env state bsym_table env rs sr name : entry_set_t =
@@ -1609,19 +1609,16 @@ and  type_of_literal state bsym_table env sr v : btypecode_t =
   bt
 
 and type_of_index' (state:lookup_state_t) bsym_table rs (index:bid_t) : btypecode_t =
-
     (*
     let () = print_endline ("Top level type of index " ^ si index) in
     *)
-    if Hashtbl.mem state.syms.ticache index
-    then begin
+    try
       let t = Hashtbl.find state.syms.ticache index in
       (*
       let () = print_endline ("Cached .." ^ sbt bsym_table t) in
       *)
       t
-    end
-    else
+    with Not_found ->
       let t = inner_type_of_index state bsym_table rs index in
       (*
       print_endline ("Type of index after inner "^ si index ^ " is " ^ sbt bsym_table t);
@@ -1856,6 +1853,7 @@ and inner_type_of_index
     rs.expr_fixlist
   );
   *)
+
   (* check the cache *)
   try Hashtbl.find state.syms.ticache index
   with Not_found ->
@@ -1935,7 +1933,7 @@ and inner_type_of_index
           "\nTry adding an explicit return type annotation"
         )))
       end else
-        let d =bt (type_of_list pts) in
+        let d = bt (type_of_list pts) in
         let t =
           if List.mem `Cfun props
           then BTYP_cfunction (d,rt')
@@ -1945,9 +1943,9 @@ and inner_type_of_index
 
   | SYMDEF_const (_,t,_,_)
 
-  | SYMDEF_val (t)
-  | SYMDEF_var (t) -> bt t
-  | SYMDEF_ref (t) -> BTYP_pointer (bt t)
+  | SYMDEF_val t
+  | SYMDEF_var t -> bt t
+  | SYMDEF_ref t -> BTYP_pointer (bt t)
 
   | SYMDEF_parameter (`PVal,t)
   | SYMDEF_parameter (`PFun,t)
@@ -1980,12 +1978,12 @@ and inner_type_of_index
     (* ARGGG WHAT A MESS *)
     let ts = List.map (fun (s,i,_) -> TYP_name (sr,s,[])) (fst vs) in
     let ts = List.map bt ts in
-  (*
-  print_endline "inner_type_of_index: struct";
-  *)
+    (*
+    print_endline "inner_type_of_index: struct";
+    *)
     let ts = adjust_ts state.sym_table bsym_table sr index ts in
     let t = type_of_list (List.map snd ls) in
-    let t = BTYP_function(bt t,BTYP_inst (index,ts)) in
+    let t = BTYP_function (bt t, BTYP_inst (index, ts)) in
     (*
     print_endline ("Struct as function type is " ^ sbt bsym_table t);
     *)
@@ -2031,41 +2029,46 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tb
       let reorder: tbexpr_t list option =
         match be1 with
         | BEXPR_closure (i,ts) ->
-          begin match t2 with
-          (* a bit of a hack .. *)
-          | BTYP_record _ | BTYP_tuple [] ->
-            let rs = match t2 with
-              | BTYP_record rs -> rs
-              | BTYP_tuple [] -> []
-              | _ -> assert false
-            in
-            begin let pnames = match hfind "lookup" state.sym_table i with
-            | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_) } ->
-              List.map (fun (_,name,_,d)->
-                name,
-                match d with None -> None | Some e -> Some (be i e)
-              ) (fst ps)
-            | _ -> assert false
-            in
-            let n = List.length rs in
-            let rs= List.sort (fun (a,_) (b,_) -> compare a b) rs in
-            let rs = List.map2 (fun (name,t) j -> name,(j,t)) rs (nlist n) in
-            try Some (List.map
-              (fun (name,d) ->
-                try (match List.assoc name rs with
-                | j,t-> BEXPR_get_n (j,tbe2),t)
-                with Not_found ->
-                match d with
-                | Some d ->d
-                | None -> raise Not_found
-              )
-              pnames
-            )
-            with Not_found -> None
+            begin match t2 with
+            (* a bit of a hack .. *)
+            | BTYP_record _
+            | BTYP_tuple [] ->
+                let rs = match t2 with
+                  | BTYP_record rs -> rs
+                  | BTYP_tuple [] -> []
+                  | _ -> assert false
+                in
+                let pnames =
+                  match hfind "lookup" state.sym_table i with
+                  | { Flx_sym.symdef=SYMDEF_function (ps,_,_,_) } ->
+                      List.map begin fun (_,name,_,d) ->
+                        name,
+                        match d with None -> None | Some e -> Some (be i e)
+                      end (fst ps)
+                  | _ -> assert false
+                in
+                let n = List.length rs in
+                let rs = List.sort (fun (a,_) (b,_) -> compare a b) rs in
+                let rs = List.map2
+                  (fun (name,t) j -> name,(j,t))
+                  rs
+                  (nlist n)
+                in
+  
+                begin try
+                  Some (List.map begin fun (name,d) ->
+                    try
+                      match List.assoc name rs with
+                      | j,t -> BEXPR_get_n (j,tbe2),t
+                    with Not_found ->
+                      match d with
+                      | Some d ->d
+                      | None -> raise Not_found
+                  end pnames)
+                with Not_found -> None
+                end
+            | _ -> None
             end
-
-          | _ -> None
-          end
         | _ -> None
       in
       begin match reorder with
@@ -2255,9 +2258,9 @@ and lookup_qn_with_sig'
         (*
         print_endline ("Struct constructor found, type= " ^ sbt bsym_table t);
         *)
-(*
-print_endline (id ^ ": lookup_qn_with_sig: struct");
-*)
+        (*
+        print_endline (id ^ ": lookup_qn_with_sig: struct");
+        *)
         (*
         let ts = adjust_ts state.sym_table sr index ts in
         *)
@@ -2295,7 +2298,7 @@ print_endline (id ^ ": lookup_qn_with_sig: struct");
       | SYMDEF_ref t
       | SYMDEF_parameter (_,t)
         ->
-print_endline (id ^ ": lookup_qn_with_sig: val/var");
+        print_endline (id ^ ": lookup_qn_with_sig: val/var");
         (*
         let ts = adjust_ts state.sym_table sr index ts in
         *)
@@ -2762,7 +2765,7 @@ and lookup_type_name_with_sig
   | [] ->
     clierr srn
     (
-      "[lookup_name_with_sig] Can't find " ^ name ^
+      "[lookup_type_name_with_sig] Can't find " ^ name ^
       " of " ^ catmap "," (sbt bsym_table) t2
     )
   | (_,_,table,dirs,_)::tail ->
@@ -3009,7 +3012,7 @@ and lookup_name_in_table_dirs_with_sig
   );
   *)
   let result:entry_set_t =
-    match lookup_name_in_htab table name  with
+    match lookup_name_in_htab table name with
     | Some x -> x
     | None -> FunctionEntry []
   in
@@ -4136,10 +4139,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
     (*
     print_endline ("ts=" ^ catmap "," (sbt bsym_table) ts);
     *)
-    let t =
-      try ti sr index ts
-      with _ -> print_endline "type of index with ts failed"; raise Not_found
-    in
+    let t = ti sr index ts in
     (*
     print_endline ("Type is " ^ sbt bsym_table t);
     *)
@@ -5255,7 +5255,7 @@ and resolve_overload'
   | Some (index,sign,ret,mgu,ts) ->
     (*
     print_endline ("RESOLVED OVERLOAD OF " ^ name);
-    print_endline (" .. mgu = " ^ string_of_varlist state.sym_table mgu);
+    print_endline (" .. mgu = " ^ string_of_varlist bsym_table mgu);
     print_endline ("Resolve ts = " ^ catmap "," (sbt bsym_table) ts);
     *)
     let parent_vs,vs,{raw_typeclass_reqs=rtcr} = find_split_vs state.sym_table bsym_table index in
