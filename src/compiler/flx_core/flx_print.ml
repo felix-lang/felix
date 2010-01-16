@@ -2445,22 +2445,14 @@ let string_of_varlist bsym_table varlist =
 
 let print_env e =
   let print_entry k v =
-    print_endline
-    (
-      "  " ^ k ^ " " ^
-      (
-        match v with
-        | (NonFunctionEntry (i)) -> string_of_entry_kind i
-        | _ -> ""
-      )
-    )
+    Printf.printf "  %s : %s\n" k (string_of_entry_set v)
   in
   let print_table htab =
-    print_endline "--"; Hashtbl.iter print_entry htab
-
+    print_endline "--";
+    Hashtbl.iter print_entry htab
   in
   let print_level (index,id,htab,htabs,con) =
-    Printf.printf "%s<%s>" id (string_of_bid index);
+    Printf.printf "%s<%s>\n" id (string_of_bid index);
     print_table htab;
     print_endline "OPENS:";
     List.iter print_table htabs;
@@ -2472,7 +2464,7 @@ let print_env e =
 
 let print_env_short e =
   let print_level (index,id,htab,htabs,con) =
-    Printf.printf "%s<%s>" id (string_of_bid index);
+    Printf.printf "%s<%s>\n" id (string_of_bid index);
   in
   List.iter print_level e
 
@@ -2563,25 +2555,28 @@ let string_of_name_map name_map =
   "{" ^ s ^ "}"
 
 let print_sym_table sym_table =
-  Flx_sym_table.iter begin fun i symbol_data ->
+  let syms = Flx_sym_table.fold (fun k v acc -> (k,v) :: acc) sym_table [] in
+  let syms = List.sort (fun (k1,_) (k2,_) -> compare k1 k2) syms in
+
+  List.iter begin fun (i, sym) ->
     print_endline ("index: " ^ string_of_bid i);
-    print_endline ("id: " ^ symbol_data.Flx_sym.id);
+    print_endline ("id: " ^ sym.Flx_sym.id);
 
-    if Hashtbl.length symbol_data.Flx_sym.pubmap != 0 then
+    if Hashtbl.length sym.Flx_sym.pubmap != 0 then
       print_endline ("pubmap: " ^
-        (string_of_name_map symbol_data.Flx_sym.pubmap));
+        (string_of_name_map sym.Flx_sym.pubmap));
 
-    if Hashtbl.length symbol_data.Flx_sym.privmap != 0 then
+    if Hashtbl.length sym.Flx_sym.privmap != 0 then
       print_endline ("privmap: " ^
-        (string_of_name_map symbol_data.Flx_sym.privmap));
+        (string_of_name_map sym.Flx_sym.privmap));
 
     print_endline ("symdef: " ^ (string_of_symdef
-      symbol_data.Flx_sym.symdef
-      symbol_data.Flx_sym.id
-      symbol_data.Flx_sym.vs));
+      sym.Flx_sym.symdef
+      sym.Flx_sym.id
+      sym.Flx_sym.vs));
 
     print_newline ();
-  end sym_table
+  end syms
 
 let string_of_bsym bsym_table bid =
   let bsym = Flx_bsym_table.find bsym_table bid in
@@ -2589,7 +2584,10 @@ let string_of_bsym bsym_table bid =
   string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl bid
 
 let print_bsym_table bsym_table =
-  Flx_bsym_table.iter begin fun index bsym ->
-    print_endline (string_of_bid index ^ " --> " ^
-      string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl index)
-  end bsym_table
+  let bsyms = Flx_bsym_table.fold (fun k v acc -> (k,v) :: acc) bsym_table [] in
+  let bsyms = List.sort (fun (k1,_) (k2,_) -> compare k1 k2) bsyms in
+
+  List.iter begin fun (bid, bsym) ->
+    print_endline (string_of_bid bid ^ " --> " ^
+      string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl bid)
+  end bsyms
