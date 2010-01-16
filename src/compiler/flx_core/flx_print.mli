@@ -115,8 +115,18 @@ val print_function:
   bid_t ->
   unit
 
+val print_sym:
+  Flx_sym_table.t ->
+  Flx_types.bid_t ->
+  unit
+
 val print_sym_table:
   Flx_sym_table.t ->
+  unit
+
+val print_bsym:
+  Flx_bsym_table.t ->
+  Flx_types.bid_t ->
   unit
 
 val print_bsym_table:

@@ -2555,40 +2555,71 @@ let string_of_name_map name_map =
   in
   "{" ^ s ^ "}"
 
+
+let print_sym sym_table bid =
+  let sym = Flx_sym_table.find sym_table bid in
+
+  print_endline ("index: " ^ string_of_bid bid);
+  print_endline ("id: " ^ sym.Flx_sym.id);
+  print_endline ("parent: " ^ 
+    match sym.Flx_sym.parent with
+    | Some parent -> string_of_bid parent
+    | None -> "");
+
+  if Hashtbl.length sym.Flx_sym.pubmap != 0 then
+    print_endline ("pubmap: " ^
+      (string_of_name_map sym.Flx_sym.pubmap));
+
+  if Hashtbl.length sym.Flx_sym.privmap != 0 then
+    print_endline ("privmap: " ^
+      (string_of_name_map sym.Flx_sym.privmap));
+
+  print_endline ("symdef: " ^ (string_of_symdef
+    sym.Flx_sym.symdef
+    sym.Flx_sym.id
+    sym.Flx_sym.vs))
+
+
 let print_sym_table sym_table =
   let syms = Flx_sym_table.fold (fun k v acc -> (k,v) :: acc) sym_table [] in
   let syms = List.sort (fun (k1,_) (k2,_) -> compare k1 k2) syms in
 
-  List.iter begin fun (i, sym) ->
-    print_endline ("index: " ^ string_of_bid i);
-    print_endline ("id: " ^ sym.Flx_sym.id);
+  List.iter (fun (bid, _) -> print_sym sym_table bid) syms
 
-    if Hashtbl.length sym.Flx_sym.pubmap != 0 then
-      print_endline ("pubmap: " ^
-        (string_of_name_map sym.Flx_sym.pubmap));
-
-    if Hashtbl.length sym.Flx_sym.privmap != 0 then
-      print_endline ("privmap: " ^
-        (string_of_name_map sym.Flx_sym.privmap));
-
-    print_endline ("symdef: " ^ (string_of_symdef
-      sym.Flx_sym.symdef
-      sym.Flx_sym.id
-      sym.Flx_sym.vs));
-
-    print_newline ();
-  end syms
 
 let string_of_bsym bsym_table bid =
   let bsym = Flx_bsym_table.find bsym_table bid in
+
   string_of_bid bid ^ " --> " ^
   string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl bid
+
+
+let print_bsym bsym_table bid =
+  let bsym = Flx_bsym_table.find bsym_table bid in
+
+  print_endline ("index: " ^ string_of_bid bid);
+  print_endline ("id: " ^ bsym.Flx_bsym.id);
+  print_endline ("parent: " ^ 
+    match bsym.Flx_bsym.parent with
+    | Some parent -> string_of_bid parent
+    | None -> "");
+
+  if Hashtbl.length bsym.Flx_bsym.pubmap != 0 then
+    print_endline ("pubmap: " ^
+      (string_of_name_map bsym.Flx_bsym.pubmap));
+
+  if Hashtbl.length bsym.Flx_bsym.privmap != 0 then
+    print_endline ("privmap: " ^
+      (string_of_name_map bsym.Flx_bsym.privmap));
+
+  print_endline ("bbdcl: " ^ (string_of_bbdcl
+    bsym_table 
+    bsym.Flx_bsym.bbdcl
+    bid))
+
 
 let print_bsym_table bsym_table =
   let bsyms = Flx_bsym_table.fold (fun k v acc -> (k,v) :: acc) bsym_table [] in
   let bsyms = List.sort (fun (k1,_) (k2,_) -> compare k1 k2) bsyms in
 
-  List.iter begin fun (bid, bsym) ->
-    print_endline (string_of_bid bid ^ " --> " ^
-      string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl bid)
-  end bsyms
+  List.iter (fun (bid, _) -> print_bsym bsym_table bid) bsyms
