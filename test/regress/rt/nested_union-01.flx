@@ -1,6 +1,6 @@
 //Check types:nested
 
-fun f(x:int)= {
+fun f(x:int) = {
   union x_t = | X of int;
   fun pr(a:x_t): int = {
     return

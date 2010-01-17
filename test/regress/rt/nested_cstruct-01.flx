@@ -1,0 +1,15 @@
+//Check types:nested
+
+fun f(x:int) = {
+  cstruct x_t { x:int; };
+  fun pr(a:x_t): int = {
+    return a.x;
+  }
+  val a = x_t x;
+  return a,the pr;
+}
+
+val v,d = f 1;
+
+print$ d v; endl;
+

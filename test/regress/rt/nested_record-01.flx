@@ -1,0 +1,15 @@
+//Check types:nested
+
+fun f(x:int) = {
+  typedef x_t = struct { x:int; };
+  fun pr(a:x_t): int = {
+    return a.x;
+  }
+  val a = (x=x);
+  return a,the pr;
+}
+
+val v,d = f 1;
+
+print$ d v; endl;
+
