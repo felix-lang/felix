@@ -51,7 +51,7 @@ let fixup_type' syms bsym_table fi t =
   match t with
   | BTYP_inst (i,ts) ->
     let i,ts = fi i ts in
-    BTYP_inst (i,ts)
+    btyp_inst (i,ts)
   | x -> x
 
 let rec fixup_type syms bsym_table fi t =
@@ -62,7 +62,7 @@ let rec fixup_type syms bsym_table fi t =
 
 let fixup_expr' syms bsym_table fi mt (e:bexpr_t) =
   (*
-  print_endline ("FIXUP EXPR(up) " ^ sbe sym_table (e,BTYP_void));
+  print_endline ("FIXUP EXPR(up) " ^ sbe sym_table (e, btyp_void));
   *)
   let x = match e with
   | BEXPR_apply_prim (i',ts,a) ->
@@ -105,7 +105,7 @@ let fixup_expr' syms bsym_table fi mt (e:bexpr_t) =
   | x -> x
   in
   (*
-  print_endline ("FIXed UP EXPR " ^ sbe sym_table (x,BTYP_void));
+  print_endline ("FIXed UP EXPR " ^ sbe sym_table (x, btyp_void));
   *)
   x
 
@@ -160,7 +160,7 @@ let fixup_exe syms bsym_table fi mt exe =
     print_endline ("[init] Deviant case variable " ^ si i);
     *)
     let vs = Flx_bsym_table.find_bvs bsym_table i in
-    let ts = map (fun (s,j) -> mt (BTYP_type_var (j,BTYP_type 0))) vs in
+    let ts = map (fun (s,j) -> mt (btyp_type_var (j, btyp_type 0))) vs in
     let i,ts = fi i ts in
     (*
     print_endline ("[init] Remapped deviant variable to " ^ si i);
@@ -172,7 +172,7 @@ let fixup_exe syms bsym_table fi mt exe =
     print_endline ("[svc] Deviant case variable " ^ si i);
     *)
     let vs = Flx_bsym_table.find_bvs bsym_table i in
-    let ts = map (fun (s,j) -> mt (BTYP_type_var (j,BTYP_type 0))) vs in
+    let ts = map (fun (s,j) -> mt (btyp_type_var (j, btyp_type 0))) vs in
     let i,ts = fi i ts in
     (*
     print_endline ("[svc] Remapped deviant variable to " ^ si i);

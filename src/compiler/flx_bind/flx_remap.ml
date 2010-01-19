@@ -9,59 +9,59 @@ let rec remap_btype offset btype =
   let remap_btype = remap_btype offset in
   match btype with
   | BTYP_inst (bid, ts) ->
-      BTYP_inst (remap_bid bid, List.map remap_btype ts)
+      btyp_inst (remap_bid bid, List.map remap_btype ts)
 
   | BTYP_tuple ts ->
-      BTYP_tuple (List.map remap_btype ts)
+      btyp_tuple (List.map remap_btype ts)
 
   | BTYP_record ts ->
-      BTYP_record (List.map (fun (n,t) -> n, remap_btype t) ts)
+      btyp_record (List.map (fun (n,t) -> n, remap_btype t) ts)
 
   | BTYP_unitsum i ->
-      BTYP_unitsum i
+      btyp_unitsum i
 
   | BTYP_variant ts ->
-      BTYP_variant (List.map (fun (n,t) -> n, remap_btype t) ts)
+      btyp_variant (List.map (fun (n,t) -> n, remap_btype t) ts)
 
   | BTYP_sum ts ->
-      BTYP_sum (List.map remap_btype ts)
+      btyp_sum (List.map remap_btype ts)
 
   | BTYP_function (args, result) ->
-      BTYP_function (remap_btype args, remap_btype result)
+      btyp_function (remap_btype args, remap_btype result)
 
   | BTYP_cfunction (args, result) ->
-      BTYP_cfunction (remap_btype args, remap_btype result)
+      btyp_cfunction (remap_btype args, remap_btype result)
 
   | BTYP_pointer t ->
-      BTYP_pointer (remap_btype t)
+      btyp_pointer (remap_btype t)
 
   | BTYP_array (vt, it) ->
-      BTYP_array (remap_btype vt, remap_btype it)
+      btyp_array (remap_btype vt, remap_btype it)
 
   | BTYP_void ->
-      BTYP_void
+      btyp_void
 
   | BTYP_fix i ->
-      BTYP_fix i
+      btyp_fix i
 
   | BTYP_intersect ts ->
-      BTYP_intersect (List.map remap_btype ts)
+      btyp_intersect (List.map remap_btype ts)
 
   | BTYP_type_var (bid, t) ->
-      BTYP_type_var (remap_bid bid, remap_btype t)
+      btyp_type_var (remap_bid bid, remap_btype t)
 
   | BTYP_type_apply (t1, t2) ->
-      BTYP_type_apply (remap_btype t1, remap_btype t2)
+      btyp_type_apply (remap_btype t1, remap_btype t2)
 
   | BTYP_type_function (args, result, body) ->
       let args = List.map (fun (i, t) -> remap_bid i, remap_btype t) args in
-      BTYP_type_function (args, remap_btype result, remap_btype body)
+      btyp_type_function (args, remap_btype result, remap_btype body)
 
   | BTYP_type i ->
-      BTYP_type i
+      btyp_type i
 
   | BTYP_type_tuple ts ->
-      BTYP_type_tuple (List.map remap_btype ts)
+      btyp_type_tuple (List.map remap_btype ts)
 
   | BTYP_type_match (t, ps) ->
       let ps =
@@ -76,16 +76,16 @@ let rec remap_btype offset btype =
               pat.assignments }, remap_btype t
         end ps
       in
-      BTYP_type_match (remap_btype t, ps)
+      btyp_type_match (remap_btype t, ps)
 
   | BTYP_type_set ts ->
-      BTYP_type_set (List.map remap_btype ts)
+      btyp_type_set (List.map remap_btype ts)
 
   | BTYP_type_set_union ts ->
-      BTYP_type_set_union (List.map remap_btype ts)
+      btyp_type_set_union (List.map remap_btype ts)
 
   | BTYP_type_set_intersection ts ->
-      BTYP_type_set_intersection (List.map remap_btype ts)
+      btyp_type_set_intersection (List.map remap_btype ts)
 
 
 (** Remap bound interfaces by adding an offset to the bound index. *)

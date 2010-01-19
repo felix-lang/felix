@@ -15,7 +15,7 @@ let mkentry syms (vs:ivs_list_t) i =
     (fun _ -> Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter)
     (fst vs)
   in
-  let ts = List.map (fun i -> BTYP_type_var (i, BTYP_type 0)) is in
+  let ts = List.map (fun i -> btyp_type_var (i, btyp_type 0)) is in
   let vs = List.map2 (fun i (n,_,_) -> n,i) is (fst vs) in
   (*
   print_endline ("Make entry " ^ string_of_bid ^ ", " ^ "vs =" ^
@@ -672,7 +672,7 @@ and build_table_for_dcl
         else
           failwith "WEIRD CASE"
       in
-      let nts = List.map (fun (s,i,t)-> BTYP_type_var (i,BTYP_type 0)) (fst ivs) in
+      let nts = List.map (fun (s,i,t)-> btyp_type_var (i,btyp_type 0)) (fst ivs) in
       (* fudge the private view to remove the vs *)
       let fixup ({ Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
         let e' = {

@@ -201,7 +201,7 @@ let bbind_symbol state bsym_table symbol_index sym =
     in
     let {raw_type_constraint=icons} = snd ivs in
     let icons = bt icons in
-    let cons = BTYP_intersect [cons; icons] in
+    let cons = btyp_intersect [cons; icons] in
     cons
   in
   let bcons = bind_type_constraint ivs in
@@ -216,7 +216,7 @@ let bbind_symbol state bsym_table symbol_index sym =
   let bind_basic_ps ps =
     List.map (fun (k,s,t,_) ->
       let i = find_param sym.Flx_sym.privmap s in
-      let t = let t = bt t in match k with `PRef -> BTYP_pointer t | _ -> t in
+      let t = let t = bt t in match k with `PRef -> btyp_pointer t | _ -> t in
 (*        print_endline ("Param " ^ s ^ " type=" ^ sbt state.bsym_table t); *)
       {pid=s; pindex=i;pkind=k; ptyp=t}
     )
@@ -319,8 +319,8 @@ let bbind_symbol state bsym_table symbol_index sym =
       let d = typeoflist ts in
       let ft =
         if mem `Cfun props
-        then BTYP_cfunction (d,brt')
-        else BTYP_function (d,brt')
+        then btyp_cfunction (d,brt')
+        else btyp_function (d,brt')
       in
       let t = fold state.syms.counter ft in
       Hashtbl.add state.syms.ticache symbol_index t
@@ -330,8 +330,8 @@ let bbind_symbol state bsym_table symbol_index sym =
       let atyp = typeoflist ts in
       let t =
         if mem `Cfun props
-        then BTYP_cfunction (atyp,brt')
-        else BTYP_function (atyp,brt')
+        then btyp_cfunction (atyp,brt')
+        else btyp_function (atyp,brt')
       in
       print_endline ("//bound function " ^ qname ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
@@ -360,7 +360,7 @@ let bbind_symbol state bsym_table symbol_index sym =
         | `PVar -> BBDCL_var (bvs,t)
         | `PVal -> BBDCL_val (bvs,t)
         | `PRef -> BBDCL_val (bvs,t)
-        | `PFun -> BBDCL_val (bvs,BTYP_function (BTYP_void,t))
+        | `PFun -> BBDCL_val (bvs, btyp_function (btyp_void,t))
         in
         Hashtbl.add state.syms.varmap symbol_index t;
 
@@ -397,7 +397,10 @@ let bbind_symbol state bsym_table symbol_index sym =
 
     (* Cache the type of the match. *)
     if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
-      let t = fold state.syms.counter (BTYP_function (BTYP_tuple [], flx_bbool)) in
+      let t = fold
+        state.syms.counter
+        (btyp_function (btyp_tuple [], flx_bbool))
+      in
       Hashtbl.add state.syms.ticache symbol_index t
     end;
 
@@ -405,7 +408,7 @@ let bbind_symbol state bsym_table symbol_index sym =
       print_endline ("//bound match check " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^
         ">" ^ print_bvs bvs ^ ":" ^ sbt bsym_table
-        (BTYP_function (BTYP_tuple[],flx_bbool)));
+        (btyp_function (btyp_tuple [], flx_bbool)));
 
     add_bsym true_parent (BBDCL_function
       ([`Inline; `Generated "bbind: match check"], bvs, ([], None),
@@ -554,7 +557,7 @@ let bbind_symbol state bsym_table symbol_index sym =
 
     (* Cache the type of the function. *)
     if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
-      let t = fold state.syms.counter (BTYP_function (typeoflist ts, bret)) in
+      let t = fold state.syms.counter (btyp_function (typeoflist ts, bret)) in
       Hashtbl.add state.syms.ticache symbol_index t
     end;
 
@@ -562,7 +565,7 @@ let bbind_symbol state bsym_table symbol_index sym =
       let atyp = typeoflist ts in
       print_endline ("//bound fun " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt bsym_table (BTYP_function (atyp, bret)))
+        print_bvs bvs ^ ":" ^ sbt bsym_table (btyp_function (atyp, bret)))
     end;
 
     add_bsym true_parent bbdcl
@@ -629,9 +632,9 @@ let bbind_symbol state bsym_table symbol_index sym =
     in
     let tf_args = match ts_f with
       | [x] -> x
-      | lst -> BTYP_tuple lst
+      | lst -> btyp_tuple lst
     in
-    let tf = BTYP_function (tf_args, bret) in
+    let tf = btyp_function (tf_args, bret) in
 
     (* The type of the arguments Felix thinks the raw
        C function has on a call. A closure of this
@@ -652,7 +655,7 @@ let bbind_symbol state bsym_table symbol_index sym =
 
     (* Cache the type of the callback. *)
     if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
-      let t = fold state.syms.counter (BTYP_cfunction (typeoflist ts_cf, bret)) in
+      let t = fold state.syms.counter (btyp_cfunction (typeoflist ts_cf, bret)) in
       Hashtbl.add state.syms.ticache symbol_index t
     end;
 
@@ -660,7 +663,7 @@ let bbind_symbol state bsym_table symbol_index sym =
       let atyp = typeoflist ts_cf in
       print_endline ("//bound callback fun " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs ^ ":" ^
-        sbt bsym_table (BTYP_function (atyp, bret)))
+        sbt bsym_table (btyp_function (atyp, bret)))
     end;
 
     add_bsym true_parent (BBDCL_callback

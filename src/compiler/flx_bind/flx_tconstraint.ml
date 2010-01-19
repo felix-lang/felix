@@ -27,8 +27,7 @@ let build_constraint_element syms bt sr i p1 =
   match p1 with
   | TYP_patany _
   | TYP_type
-  | TYP_function _
-    -> BTYP_tuple []
+  | TYP_function _ -> btyp_tuple []
   | _ ->
 
   (* more general cases *)
@@ -61,8 +60,8 @@ let build_constraint_element syms bt sr i p1 =
     fold_left (fun s (i,_) -> BidSet.add i s)
     varset1 explicit_vars1
   in
-  let un = BTYP_tuple [] in (* the 'true' value of the type system *)
-  let elt = BTYP_type_var (i,BTYP_type 0) in
+  let un = btyp_tuple [] in (* the 'true' value of the type system *)
+  let elt = btyp_type_var (i, btyp_type 0) in
   let p1 = bt p1 in
   let rec fe t = match t with
   | BTYP_type_set ls
@@ -73,19 +72,19 @@ let build_constraint_element syms bt sr i p1 =
   in
   let tyset ls =
     let e = BidSet.empty in
-    let un = BTYP_tuple [] in
+    let un = btyp_tuple [] in
     let lss = rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
     let fresh = fresh_bid syms.counter in
     let dflt =
       {
-        pattern=BTYP_type_var (fresh,BTYP_type 0);
+        pattern = btyp_type_var (fresh, btyp_type 0);
         pattern_vars = BidSet.singleton fresh;
         assignments=[]
       },
-      BTYP_void
+      btyp_void
     in
     let lss = rev (dflt :: lss) in
-    BTYP_type_match (elt, lss)
+    btyp_type_match (elt, lss)
   in
     let tm = tyset (fe p1) in
     (* print_endline ("Bound typematch is " ^ sbt syms.sym_table tm); *)
@@ -96,7 +95,7 @@ let build_type_constraints syms bt sr vs =
     map (fun (s,i,tp) ->
       let tp = build_constraint_element syms bt sr i tp in
       (*
-      if tp <> BTYP_tuple [] then
+      if tp <> btyp_tuple [] then
         print_endline (
         " vs entry " ^ s ^ ", var " ^ si i ^
         " constraint " ^ sbt syms.sym_table tp)
@@ -106,4 +105,4 @@ let build_type_constraints syms bt sr vs =
     )
     vs
   in
-    BTYP_intersect type_constraints
+    btyp_intersect type_constraints

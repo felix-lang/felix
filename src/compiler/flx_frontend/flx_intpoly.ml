@@ -14,7 +14,7 @@ let polyfix syms polyvars i ts =
     try Hashtbl.find polyvars i with Not_found -> [] 
   in
   let ts = Array.of_list ts in
-  iter  (fun (i,j) -> ts.(j) <- BTYP_void) poly
+  iter (fun (i,j) -> ts.(j) <- btyp_void) poly
   ;
   let ts = Array.to_list ts in
   ts
@@ -151,7 +151,7 @@ let cal_polyvars syms bsym_table child_map =
       (*
       print_endline ("Found polyvars for " ^ string_of_bid i);
       *)
-      let varmap = map (fun (i,j) -> i,BTYP_void) pvs in
+      let varmap = map (fun (i,j) -> i, btyp_void) pvs in
       let t = 
           let ps =
             match Flx_bsym_table.find_bbdcl bsym_table i with
@@ -160,7 +160,7 @@ let cal_polyvars syms bsym_table child_map =
             | _ -> assert false
           in
           let pts = map (fun {ptyp=t}->t) ps in
-          let pt = match pts with | [t]->t | ts -> BTYP_tuple ts in
+          let pt = match pts with | [t]->t | ts -> btyp_tuple ts in
           pt
       in
       let t = Flx_unify.list_subst syms.counter varmap t in
@@ -176,7 +176,7 @@ let cal_polyvars syms bsym_table child_map =
       (*
       print_endline ("Found polyvars for " ^ string_of_bid i);
       *)
-      let varmap = map (fun (i,j) -> i,BTYP_void) pvs in
+      let varmap = map (fun (i,j) -> i, btyp_void) pvs in
       let ta = 
         match Flx_bsym_table.find_bbdcl bsym_table i with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ret
@@ -192,17 +192,17 @@ let cal_polyvars syms bsym_table child_map =
   let cal_ft i t =
     let pvs = try Hashtbl.find polyvars i with Not_found -> [] in
     if pvs = [] then t else begin 
-      let varmap = map (fun (i,j) -> i,BTYP_void) pvs in
+      let varmap = map (fun (i,j) -> i, btyp_void) pvs in
       let tf = 
           let ps,ret =
             match Flx_bsym_table.find_bbdcl bsym_table i with
             | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret
-            | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, BTYP_void
+            | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, btyp_void
             | _ -> assert false
           in
           let pts = map (fun {ptyp=t}->t) ps in
-          let pt = match pts with | [t]->t | ts -> BTYP_tuple ts in
-          BTYP_function (pt,ret)
+          let pt = match pts with | [t]->t | ts -> btyp_tuple ts in
+          btyp_function (pt,ret)
       in
       let t' = Flx_unify.list_subst syms.counter varmap tf in
       (*
@@ -248,7 +248,10 @@ let cal_polyvars syms bsym_table child_map =
     match Flx_bsym_table.find_bbdcl bsym_table i with
     | BBDCL_function _
     | BBDCL_procedure _ ->
-      map (fun t -> match t with | BTYP_pointer _ -> BTYP_pointer BTYP_void | _ -> t) ts
+        List.map begin function
+        | BTYP_pointer _ -> btyp_pointer btyp_void
+        | t -> t
+        end ts
     | _ -> ts
   in
   let cast_a2 i ts e =
@@ -262,11 +265,20 @@ let cal_polyvars syms bsym_table child_map =
           | _ -> raise Skip
         in
         let pts = map (fun {ptyp=t}->t) ps in
-        let pt = match pts with | [t]->t | ts -> BTYP_tuple ts in
+        let pt = match pts with | [t]->t | ts -> btyp_tuple ts in
         let vsi = map (fun (s,i) -> i) vs in
         pt,vsi
     in
-    let varmap = map2 (fun i t -> i, match t with | BTYP_pointer _ -> incr counter; BTYP_pointer BTYP_void | _ -> t ) vsi ts in
+    let varmap =
+      List.map2 begin fun i t ->
+        i,
+        match t with
+        | BTYP_pointer _ ->
+            incr counter;
+            btyp_pointer btyp_void
+        | _ -> t
+      end vsi ts
+    in
     if !counter = 0 then e else
     let t = Flx_unify.list_subst syms.counter varmap t in
     (*
@@ -285,7 +297,16 @@ let cal_polyvars syms bsym_table child_map =
           ret,map (fun (s,i) -> i) vs
       | _ -> raise Skip
     in
-    let varmap = map2 (fun i t -> i, match t with | BTYP_pointer _ -> incr counter; BTYP_pointer BTYP_void | _ -> t ) vsi ts in
+    let varmap =
+      List.map2 begin fun i t ->
+        i,
+        match t with
+        | BTYP_pointer _ ->
+            incr counter;
+            btyp_pointer btyp_void
+        | _ -> t
+      end vsi ts
+    in
     if !counter = 0 then e else
     let t' = Flx_unify.list_subst syms.counter varmap ta in
     (*
@@ -302,16 +323,25 @@ let cal_polyvars syms bsym_table child_map =
       let ps,ret,vs =
         match Flx_bsym_table.find_bbdcl bsym_table i with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret,vs
-        | BBDCL_procedure (props,vs,(ps,traint),exes) -> ps,BTYP_void,vs
+        | BBDCL_procedure (props,vs,(ps,traint),exes) -> ps, btyp_void, vs
       | _ -> raise Skip 
       in
       let pts = map (fun {ptyp=t}->t) ps in
-      let pt = match pts with | [t]->t | ts -> BTYP_tuple ts in
-      let tf = BTYP_function (pt,ret) in
+      let pt = match pts with | [t]->t | ts -> btyp_tuple ts in
+      let tf = btyp_function (pt,ret) in
       let vsi = map (fun (s,i) -> i) vs in
       tf,vsi
     in
-    let varmap = map2 (fun i t -> i, match t with | BTYP_pointer _ -> incr counter; BTYP_pointer BTYP_void | _ -> t ) vsi ts in
+    let varmap =
+      List.map2 begin fun i t ->
+        i,
+        match t with
+        | BTYP_pointer _ ->
+            incr counter;
+            btyp_pointer btyp_void
+        | _ -> t
+      end vsi ts
+    in
     if !counter = 0 then t else
     let t' = Flx_unify.list_subst syms.counter varmap tf in
     (*

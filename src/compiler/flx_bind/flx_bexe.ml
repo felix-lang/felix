@@ -147,7 +147,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
         | Some xs ->
           begin match xs with
           | [x]-> x
-          | _ -> BEXPR_tuple xs,BTYP_tuple (map snd xs)
+          | _ -> BEXPR_tuple xs, btyp_tuple (map snd xs)
           end
         | None ->
           clierr sr
@@ -411,7 +411,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       state.sym_table
       bsym_table
       state.ret_type
-      BTYP_void
+      btyp_void
     then
       begin
         state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
@@ -503,7 +503,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       let e',rhst = be e in
       (* a type variable in executable code just has to be of kind TYPE *)
       let parent_ts = map
-        (fun (s,i) -> BTYP_type_var (i,BTYP_type 0))
+        (fun (s,i) -> btyp_type_var (i,btyp_type 0))
         state.parent_vs
       in
       let lhst =
@@ -538,7 +538,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
           let e',rhst = be e in
           (* a type variable in executable code just has to be of kind TYPE *)
           let parent_ts = map
-            (fun (s,i) -> BTYP_type_var (i,BTYP_type 0))
+            (fun (s,i) -> btyp_type_var (i,btyp_type 0))
             state.parent_vs
           in
           let lhst =
@@ -558,7 +558,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
           let lhst =
             let { Flx_sym.symdef=entry; id=id} = hfind "bexe" state.sym_table index in
             match entry with
-            | SYMDEF_ref _ -> BTYP_pointer lhst
+            | SYMDEF_ref _ -> btyp_pointer lhst
             | _ -> lhst
           in
           *)
@@ -642,7 +642,7 @@ let bind_exes state bsym_table sr exes =
       state.sym_table
       bsym_table
       state.ret_type
-      BTYP_void
+      btyp_void
     then
       state.ret_type <- varmap_subst state.syms.varmap state.ret_type
     else

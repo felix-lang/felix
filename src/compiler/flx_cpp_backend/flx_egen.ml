@@ -381,7 +381,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
              " of " ^ si n ^ " cases"
            )
          else let t' = nth ls v in
-         if t' = BTYP_tuple []
+         if t' = btyp_tuple []
          then (* closure of const ctor is just the const value ???? *)
            if is_unitsum t then
              si v
@@ -769,7 +769,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       end
 
     | BBDCL_callback (props,vs,ps_cf,ps_c,_,retyp,_,_) ->
-      assert (retyp <> BTYP_void);
+      assert (retyp <> btyp_void);
       if length vs <> length ts then
       clierr sr "[gen_prim_call] Wrong number of type arguments"
       ;
@@ -797,11 +797,11 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     let ts = map tsub ts in
     begin match bsym.Flx_bsym.bbdcl with
     | BBDCL_cstruct (vs,_) ->
-      let name = tn (BTYP_inst (index,ts)) in
+      let name = tn (btyp_inst (index,ts)) in
       ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
 
     | BBDCL_struct (vs,cts) ->
-      let name = tn (BTYP_inst (index,ts)) in
+      let name = tn (btyp_inst (index,ts)) in
       if length cts > 1 then
         (* argument must be an lvalue *)
         ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
@@ -1080,7 +1080,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     begin match t with
     | BTYP_array (t',BTYP_unitsum n) ->
       let tuple =
-        let t'' = BTYP_tuple (map (fun _ -> t') (nlist n)) in
+        let t'' = btyp_tuple (map (fun _ -> t') (nlist n)) in
         let ctyp = raw_typename t'' in
         ce_atom (
         ctyp ^ "(" ^

@@ -8,36 +8,36 @@ open Flx_util
 open Flx_list
 open Flx_exceptions
 
-let unit_t = BTYP_tuple []
+let unit_t = btyp_tuple []
 
 let rec dual t =
   match map_btype dual t with
   | BTYP_sum ls ->
     begin match ls with
     | [t] -> t
-    | ls -> BTYP_tuple ls
+    | ls -> btyp_tuple ls
     end
 
   | BTYP_tuple ls ->
     begin match ls with
-    | [] -> BTYP_void
+    | [] -> btyp_void
     | [t] -> t
-    | ls -> BTYP_sum ls
+    | ls -> btyp_sum ls
     end
 
-  | BTYP_function (a,b) -> BTYP_function (b,a)
-  | BTYP_cfunction (a,b) -> BTYP_cfunction (b,a)
-  | BTYP_array (a,b) -> BTYP_array (b,a)
+  | BTYP_function (a,b) -> btyp_function (b,a)
+  | BTYP_cfunction (a,b) -> btyp_cfunction (b,a)
+  | BTYP_array (a,b) -> btyp_array (b,a)
 
-  | BTYP_pointer t -> BTYP_pointer (dual t)
+  | BTYP_pointer t -> btyp_pointer (dual t)
   | BTYP_void -> unit_t
   | BTYP_unitsum k ->
     let rec aux ds k = if k = 0 then ds else aux (unit_t::ds) (k-1) in
-    BTYP_tuple (aux [] k)
+    btyp_tuple (aux [] k)
 
-  | BTYP_type_set ts -> BTYP_intersect (List.map dual ts)
-  | BTYP_intersect ts -> BTYP_type_set (List.map dual ts)
-  | BTYP_record ts -> BTYP_variant ts
+  | BTYP_type_set ts -> btyp_intersect (List.map dual ts)
+  | BTYP_intersect ts -> btyp_type_set (List.map dual ts)
+  | BTYP_record ts -> btyp_variant ts
   | t -> t
 
 (* top down check for fix point not under sum or pointer *)
@@ -55,7 +55,7 @@ let rec check_recursion t = match t with
 
 let var_subst t (i, j) =
   let rec s t = match t with
-  | BTYP_type_var (k,t) when i = k -> BTYP_type_var (j,t)
+  | BTYP_type_var (k,t) when i = k -> btyp_type_var (j,t)
   | t -> map_btype s t
   in s t
 
@@ -68,7 +68,7 @@ let rec alpha counter t =
       let remap i = List.assoc i remap_list in
       let cvt t = alpha counter (vars_subst remap_list t) in
       let ps = List.map (fun (i,t) -> remap i,t) ps in
-      BTYP_type_function (ps, cvt r, cvt b)
+      btyp_type_function (ps, cvt r, cvt b)
   | t -> map_btype (alpha counter) t
 
 let term_subst counter t1 i t2 =
@@ -85,7 +85,7 @@ let term_subst counter t1 i t2 =
        { bpat with pattern=s bpat.pattern; assignments=asgs }, s x
       end pts
     in
-    BTYP_type_match (tt,pts)
+    btyp_type_match (tt,pts)
 
   | t -> map_btype s t
   in s t1
@@ -118,7 +118,7 @@ let varmap_subst varmap t =
       r = s r and
       b = s b
     in
-      BTYP_type_function (p,r,b)
+      btyp_type_function (p,r,b)
   | x -> x
   in s t
 
@@ -240,22 +240,22 @@ let fix i t =
   let rec aux n t =
     let aux t = aux (n - 1) t in
     match t with
-    | BTYP_type_var (k,_) -> if k = i then BTYP_fix n else t
-    | BTYP_inst (k,ts) -> BTYP_inst (k, List.map aux ts)
-    | BTYP_tuple ts -> BTYP_tuple (List.map aux ts)
-    | BTYP_sum ts -> BTYP_sum (List.map aux ts)
-    | BTYP_intersect ts -> BTYP_intersect (List.map aux ts)
-    | BTYP_type_set ts -> BTYP_type_set (List.map aux ts)
-    | BTYP_function (a,b) -> BTYP_function (aux a, aux b)
-    | BTYP_cfunction (a,b) -> BTYP_cfunction (aux a, aux b)
-    | BTYP_pointer a -> BTYP_pointer (aux a)
-    | BTYP_array (a,b) -> BTYP_array (aux a, aux b)
+    | BTYP_type_var (k,_) -> if k = i then btyp_fix n else t
+    | BTYP_inst (k,ts) -> btyp_inst (k, List.map aux ts)
+    | BTYP_tuple ts -> btyp_tuple (List.map aux ts)
+    | BTYP_sum ts -> btyp_sum (List.map aux ts)
+    | BTYP_intersect ts -> btyp_intersect (List.map aux ts)
+    | BTYP_type_set ts -> btyp_type_set (List.map aux ts)
+    | BTYP_function (a,b) -> btyp_function (aux a, aux b)
+    | BTYP_cfunction (a,b) -> btyp_cfunction (aux a, aux b)
+    | BTYP_pointer a -> btyp_pointer (aux a)
+    | BTYP_array (a,b) -> btyp_array (aux a, aux b)
 
     | BTYP_record ts ->
-       BTYP_record (List.map (fun (s,t) -> s, aux t) ts)
+       btyp_record (List.map (fun (s,t) -> s, aux t) ts)
 
     | BTYP_variant ts ->
-       BTYP_variant (List.map (fun (s,t) -> s, aux t) ts)
+       btyp_variant (List.map (fun (s,t) -> s, aux t) ts)
 
     | BTYP_unitsum _
     | BTYP_void
@@ -468,7 +468,7 @@ let rec unification counter
       (* structural, not functional, equality of lambdas by alpha equivalence *)
       | BTYP_type_function (p1,r1,b1), BTYP_type_function (p2,r2,b2)
         when List.length p1 = List.length p2 ->
-        let vs = List.map2 (fun (i1,_) (i2,t) -> i1,BTYP_type_var (i2,t))  p1 p2 in
+        let vs = List.map2 (fun (i1,_) (i2,t) -> i1,btyp_type_var (i2,t))  p1 p2 in
         let b1 = list_subst counter vs b1 in
         eqns := (b1, b2):: !eqns;
         s := None
@@ -719,7 +719,7 @@ let rec type_eq' counter ltrail ldepth rtrail rdepth trail t1 t2 =
 
   | BTYP_type_function (p1,r1,b1), BTYP_type_function (p2,r2,b2) ->
     List.length p1 = List.length p2 &&
-    let vs = List.map2 (fun (i1,_) (i2,t) -> i1,BTYP_type_var (i2,t))  p1 p2 in
+    let vs = List.map2 (fun (i1,_) (i2,t) -> i1,btyp_type_var (i2,t))  p1 p2 in
     (*
     print_endline "Comparing type functions";
     print_endline ("b1 =          " ^ sbt sym_table b1);
@@ -757,30 +757,29 @@ let unfold t =
   let rec aux depth t' =
   let uf t = aux (depth+1) t in
   match t' with
-  | BTYP_sum ls -> BTYP_sum (List.map uf ls)
-  | BTYP_tuple ls -> BTYP_tuple (List.map uf ls)
-  | BTYP_record ls -> BTYP_record (List.map (fun (s,t) -> s,uf t) ls)
-  | BTYP_variant ls -> BTYP_variant (List.map (fun (s,t) -> s,uf t) ls)
-  | BTYP_array (a,b) -> BTYP_array (uf a, uf b)
-  | BTYP_function (a,b) -> BTYP_function (uf a, uf b)
-  | BTYP_cfunction (a,b) -> BTYP_cfunction (uf a, uf b)
-  | BTYP_pointer a -> BTYP_pointer (uf a)
+  | BTYP_sum ls -> btyp_sum (List.map uf ls)
+  | BTYP_tuple ls -> btyp_tuple (List.map uf ls)
+  | BTYP_record ls -> btyp_record (List.map (fun (s,t) -> s,uf t) ls)
+  | BTYP_variant ls -> btyp_variant (List.map (fun (s,t) -> s,uf t) ls)
+  | BTYP_array (a,b) -> btyp_array (uf a, uf b)
+  | BTYP_function (a,b) -> btyp_function (uf a, uf b)
+  | BTYP_cfunction (a,b) -> btyp_cfunction (uf a, uf b)
+  | BTYP_pointer a -> btyp_pointer (uf a)
   | BTYP_fix i when (-i) = depth -> t
   | BTYP_fix i when (-i) > depth ->
     failwith ("[unfold] Fix point outside term, depth="^string_of_int i)
 
-  | BTYP_type_apply (a,b) -> BTYP_type_apply(uf a, uf b)
-  | BTYP_inst (i,ts) -> BTYP_inst (i,List.map uf ts)
+  | BTYP_type_apply (a,b) -> btyp_type_apply(uf a, uf b)
+  | BTYP_inst (i,ts) -> btyp_inst (i,List.map uf ts)
   | BTYP_type_function (p,r,b) ->
-     BTYP_type_function (p,r,uf b)
+      btyp_type_function (p,r,uf b)
 
   | BTYP_type_match (a,tts) ->
-     let a = uf a in
-     (* don't unfold recursions in patterns yet because we don't
-        know what they mean
-     *)
-     let tts = List.map (fun (p,x) -> p, uf x) tts in
-    BTYP_type_match (a,tts)
+      let a = uf a in
+      (* don't unfold recursions in patterns yet because we don't know what they
+       * mean *)
+      let tts = List.map (fun (p,x) -> p, uf x) tts in
+      btyp_type_match (a,tts)
 
   | _ -> t'
   in aux 0 t
@@ -803,7 +802,7 @@ let fold counter t =
     | BTYP_function (a,b) -> ax a; ax b
     | BTYP_cfunction (a,b) -> ax a; ax b
 
-    | BTYP_pointer a  -> ax a
+    | BTYP_pointer a -> ax a
 
     | BTYP_void
     | BTYP_unitsum _

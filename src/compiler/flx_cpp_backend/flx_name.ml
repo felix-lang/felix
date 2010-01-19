@@ -159,7 +159,7 @@ let cpp_instance_name syms bsym_table index ts =
 let tix syms bsym_table t =
   let t =
     match t with
-    | BTYP_function (BTYP_void,cod) -> BTYP_function (BTYP_tuple [],cod)
+    | BTYP_function (BTYP_void,cod) -> btyp_function (btyp_tuple [],cod)
     | x -> x
   in
   try Hashtbl.find syms.registry t

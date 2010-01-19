@@ -14,7 +14,7 @@ open Flx_use
 open Flx_child
 open Flx_beta
 
-let vs2ts vs = map (fun (s,i) -> BTYP_type_var (i,BTYP_type 0)) vs
+let vs2ts vs = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs
 
 (* drop first n elements of list l *)
 let rec drop l n =
@@ -70,22 +70,22 @@ let check_instance
       match bsym.Flx_bsym.bbdcl with
       | BBDCL_fun (_,bvs,params,ret,_,_,_) ->
         let argt = typeoflist params in
-        let qt = bvs,BTYP_function (argt,ret) in
+        let qt = bvs, btyp_function (argt,ret) in
         (bsym.Flx_bsym.id,(i,qt)) :: acc
 
       | BBDCL_proc (_,bvs,params,_,_) ->
         let argt = typeoflist params in
-        let qt = bvs,BTYP_function (argt,BTYP_void) in
+        let qt = bvs, btyp_function (argt, btyp_void) in
         (bsym.Flx_bsym.id,(i,qt)) :: acc
 
       | BBDCL_procedure (_,bvs,bps,_) ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
-        let qt = bvs,BTYP_function (argt,BTYP_void) in
+        let qt = bvs, btyp_function (argt, btyp_void) in
         (bsym.Flx_bsym.id,(i,qt)) :: acc
 
       | BBDCL_function (_,bvs,bps,ret,_) ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
-        let qt = bvs,BTYP_function (argt,ret) in
+        let qt = bvs, btyp_function (argt,ret) in
         (bsym.Flx_bsym.id,(i,qt)) :: acc
 
       | BBDCL_const (_,bvs,ret,_,_) ->
@@ -214,7 +214,7 @@ let check_instance
       match tck_bsym.Flx_bsym.bbdcl with
       | BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
         if ct == CS_virtual then
-          let ft = BTYP_function (typeoflist params,ret) in
+          let ft = btyp_function (typeoflist params,ret) in
           check_binding true tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
         (*
         clierr tcksr "Typeclass requires virtual function";
@@ -222,7 +222,7 @@ let check_instance
 
       | BBDCL_proc (props,bvs,params,ct,breq) ->
         if ct == CS_virtual then
-          let ft = BTYP_function (typeoflist params, BTYP_void) in
+          let ft = btyp_function (typeoflist params, btyp_void) in
           check_binding true tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
         (*
         clierr tcksr "Typeclass requires virtual procedure";
@@ -230,12 +230,12 @@ let check_instance
 
       | BBDCL_function (props,bvs,bps,ret,_) when mem `Virtual props ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
-        let ft = BTYP_function (argt,ret) in
+        let ft = btyp_function (argt,ret) in
         check_binding false tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
 
       | BBDCL_procedure (props, bvs, bps,_) when mem `Virtual props ->
         let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
-        let ft = BTYP_function (argt, BTYP_void) in
+        let ft = btyp_function (argt, btyp_void) in
         check_binding false tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
 
       | BBDCL_const (props,bvs,ret,_,_) when mem `Virtual props ->
@@ -346,7 +346,7 @@ let tcinst_chk syms bsym_table allow_fail i ts sr (inst_vs, inst_constraint, ins
      *)
      (* solve for vs' *)
      let vis = List.map (fun _ -> fresh_bid syms.counter) inst_vs in
-     let nuvs = map (fun i -> BTYP_type_var (i,BTYP_type 0)) vis in
+     let nuvs = map (fun i -> btyp_type_var (i, btyp_type 0)) vis in
      let inst_ts' = map (tsubst inst_vs nuvs) inst_ts in
      let vset = fold_left (fun acc i -> BidSet.add i acc) BidSet.empty vis in
 
@@ -459,7 +459,7 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
     *)
     let candidates = fold_left
     (fun oc (((j,ts),(inst_vs,con,inst_ts,k)) as r) ->
-       let c = BTYP_type_tuple inst_ts in
+       let c = btyp_type_tuple inst_ts in
        (*
        print_endline ("Considering candidate sig " ^ sbt bsym_table c);
        *)
@@ -471,7 +471,7 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
            *)
            r::lhs (* return all non-greater elements plus candidate *)
          | (((j,ts),(inst_vs,con,inst_ts,k)) as x)::tail ->
-           let c' = BTYP_type_tuple inst_ts in
+           let c' = btyp_type_tuple inst_ts in
            (*
            print_endline (" .. comparing with " ^ sbt bsym_table c');
            *)

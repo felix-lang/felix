@@ -58,8 +58,8 @@ open Flx_maps
 let rec fixup syms ps body =
  let param = match ps with
    | [] -> assert false
-   | [i,mt] -> BTYP_type_var (i,mt)
-   | x -> BTYP_type_tuple (List.map (fun (i,mt) -> BTYP_type_var (i,mt)) x)
+   | [i,mt] -> btyp_type_var (i,mt)
+   | x -> btyp_type_tuple (List.map (fun (i,mt) -> btyp_type_var (i,mt)) x)
  in
  (*
  print_endline ("Body  = " ^ sbt bsym_table body);
@@ -72,7 +72,7 @@ let rec fixup syms ps body =
      when arg = param
      && i + depth +1  = 0 (* looking inside application, one more level *)
      -> print_endline "SPECIAL REDUCTION";
-     BTYP_fix (i+2) (* elide application AND skip under lambda abstraction *)
+     btyp_fix (i+2) (* elide application AND skip under lambda abstraction *)
 
    | BTYP_type_function (a,b,c) ->
       (* NOTE we have to add 2 to depth here, an extra
@@ -85,7 +85,7 @@ let rec fixup syms ps body =
       print_endline "OOPS >> no alpha conversion?";
       *)
 
-      BTYP_type_function (a, fx b, aux c (depth + 2))
+      btyp_type_function (a, fx b, aux c (depth + 2))
    | x -> x
  in
    (* note depth 1: we seek a fix to an abstraction
@@ -104,13 +104,13 @@ and adjust t =
   let rec adj depth t =
     let fx t = adj (depth + 1) t in
     match map_btype fx t with
-    | BTYP_fix i when i + depth < 0 -> BTYP_fix (i+1)
+    | BTYP_fix i when i + depth < 0 -> btyp_fix (i+1)
     | x -> x
   in adj 0 t
 
 and mk_prim_type_inst i args =
   print_endline "MK_PRIM_TYPE";
-  BTYP_inst (i,args)
+  btyp_inst (i,args)
 
 and beta_reduce syms bsym_table sr t1 =
   (*
@@ -179,7 +179,7 @@ and beta_reduce' syms bsym_table sr termlist t =
     print_endline ("Beta find fixpoint " ^ si (-j-1));
     print_endline ("Repeated term " ^ sbt bsym_table t);
     *)
-    BTYP_fix (-j - 1)
+    btyp_fix (-j - 1)
 
   | None ->
 
@@ -197,17 +197,17 @@ and beta_reduce' syms bsym_table sr termlist t =
     t
   *)
 
-  | BTYP_inst (i,ts) -> BTYP_inst (i, List.map br ts)
-  | BTYP_tuple ls -> BTYP_tuple (List.map br ls)
-  | BTYP_array (i,t) -> BTYP_array (i, br t)
-  | BTYP_sum ls -> BTYP_sum (List.map br ls)
+  | BTYP_inst (i,ts) -> btyp_inst (i, List.map br ts)
+  | BTYP_tuple ls -> btyp_tuple (List.map br ls)
+  | BTYP_array (i,t) -> btyp_array (i, br t)
+  | BTYP_sum ls -> btyp_sum (List.map br ls)
   | BTYP_record ts ->
      let ss,ls = List.split ts in
-     BTYP_record (List.combine ss (List.map br ls))
+     btyp_record (List.combine ss (List.map br ls))
 
   | BTYP_variant ts ->
      let ss,ls = List.split ts in
-     BTYP_variant (List.combine ss (List.map br ls))
+     btyp_variant (List.combine ss (List.map br ls))
 
   (* Intersection type reduction rule: if any term is 0,
      the result is 0, otherwise the result is the intersection
@@ -218,15 +218,15 @@ and beta_reduce' syms bsym_table sr termlist t =
   *)
   | BTYP_intersect ls ->
     let ls = List.map br ls in
-    if List.mem BTYP_void ls then BTYP_void
-    else let ls = List.filter (fun i -> i <> BTYP_tuple []) ls in
+    if List.mem btyp_void ls then btyp_void
+    else let ls = List.filter (fun i -> i <> btyp_tuple []) ls in
     begin match ls with
-    | [] -> BTYP_tuple []
+    | [] -> btyp_tuple []
     | [t] -> t
-    | ls -> BTYP_intersect ls
+    | ls -> btyp_intersect ls
     end
 
-  | BTYP_type_set ls -> BTYP_type_set (List.map br ls)
+  | BTYP_type_set ls -> btyp_type_set (List.map br ls)
 
   | BTYP_type_set_union ls ->
     let ls = List.rev_map br ls in
@@ -237,12 +237,12 @@ and beta_reduce' syms bsym_table sr termlist t =
     let rec aux ts ot ls  = match ls with
     | [] ->
       begin match ot with
-      | [] -> BTYP_type_set ts
+      | [] -> btyp_type_set ts
       | _ ->
         (*
         print_endline "WARNING UNREDUCED TYPESET UNION";
         *)
-        BTYP_type_set_union (BTYP_type_set ts :: ot)
+        btyp_type_set_union (btyp_type_set ts :: ot)
       end
 
     | BTYP_type_set xs :: t -> aux (xs @ ts) ot t
@@ -277,18 +277,18 @@ and beta_reduce' syms bsym_table sr termlist t =
   *)
   | BTYP_type_set_intersection ls ->
     let ls = List.map br ls in
-    if List.mem (BTYP_type_set []) ls then BTYP_type_set []
+    if List.mem (btyp_type_set []) ls then btyp_type_set []
     else begin match ls with
     | [t] -> t
-    | ls -> BTYP_type_set_intersection ls
+    | ls -> btyp_type_set_intersection ls
     end
 
 
-  | BTYP_type_tuple ls -> BTYP_type_tuple (List.map br ls)
-  | BTYP_function (a,b) -> BTYP_function (br a, br b)
-  | BTYP_cfunction (a,b) -> BTYP_cfunction (br a, br b)
-  | BTYP_pointer a -> BTYP_pointer (br a)
-(*  | BTYP_lvalue a -> BTYP_lvalue (br a) *)
+  | BTYP_type_tuple ls -> btyp_type_tuple (List.map br ls)
+  | BTYP_function (a,b) -> btyp_function (br a, br b)
+  | BTYP_cfunction (a,b) -> btyp_cfunction (br a, br b)
+  | BTYP_pointer a -> btyp_pointer (br a)
+(*  | BTYP_lvalue a -> btyp_lvalue (br a) *)
 
   | BTYP_void -> t
   | BTYP_type _ -> t
@@ -365,7 +365,7 @@ and beta_reduce' syms bsym_table sr termlist t =
       (*
       print_endline "Apply nonfunction .. can't reduce";
       *)
-      BTYP_type_apply (t1,t2)
+      btyp_type_apply (t1,t2)
     end
 
   | BTYP_type_match (tt,pts) ->
@@ -413,4 +413,4 @@ and beta_reduce' syms bsym_table sr termlist t =
         print_endline ("type match reduction result=" ^ sbt bsym_table t');
         *)
         adjust t'
-      with Not_found -> BTYP_type_match (tt,pts)
+      with Not_found -> btyp_type_match (tt,pts)

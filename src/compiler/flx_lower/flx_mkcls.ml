@@ -27,9 +27,9 @@ let gen_closure state bsym_table i =
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_proc (props,vs,ps,c,reqs) ->
     let arg_t =
-      match ps with | [t] -> t | ps -> BTYP_tuple ps
+      match ps with | [t] -> t | ps -> btyp_tuple ps
     in
-    let ts = List.map (fun (_,i) -> BTYP_type_var (i,BTYP_type 0)) vs in
+    let ts = List.map (fun (_,i) -> btyp_type_var (i, btyp_type 0)) vs in
     let ps,a =
       let n = fresh_bid state.syms.counter in
       let name = "_a" ^ string_of_bid n in
@@ -56,9 +56,9 @@ let gen_closure state bsym_table i =
     j
 
   | BBDCL_fun (props,vs,ps,ret,c,reqs,_) ->
-    let ts = List.map (fun (_,i) -> BTYP_type_var (i,BTYP_type 0)) vs in
+    let ts = List.map (fun (_,i) -> btyp_type_var (i, btyp_type 0)) vs in
     let arg_t =
-      match ps with | [t] -> t | ps -> BTYP_tuple ps
+      match ps with | [t] -> t | ps -> btyp_tuple ps
     in
     let ps,a =
       let n = fresh_bid state.syms.counter in

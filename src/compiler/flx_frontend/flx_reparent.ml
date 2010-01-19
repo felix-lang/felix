@@ -49,7 +49,7 @@ let remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e =
   let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts in
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let tmap t = match t with
-  | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
+  | BTYP_inst (i,ts) -> btyp_inst (revar i,ts)
   | x -> x
   in
   let auxt t =
@@ -112,7 +112,7 @@ let remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_le
   let ftc i ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts in
 
   let tmap t = match t with
-  | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
+  | BTYP_inst (i,ts) -> btyp_inst (revar i,ts)
   | x -> x
   in
   let auxt t =
@@ -181,7 +181,7 @@ let remap_exes syms bsym_table relabel varmap revariable caller_vars callee_vs_l
 let remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len reqs : breqs_t =
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let tmap t = match t with
-  | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
+  | BTYP_inst (i,ts) -> btyp_inst (revar i,ts)
   | x -> x
   in
   let auxt t =
@@ -231,11 +231,14 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
     | None -> "NONE?"
     | Some i -> string_of_bid i
   in
-  let caller_vars = map (fun (s,i) -> BTYP_type_var (i,BTYP_type 0)) caller_vs in
+  let caller_vars = map
+    (fun (s,i) -> btyp_type_var (i, btyp_type 0))
+    caller_vs
+  in
 
   let revar i = try Hashtbl.find revariable i with Not_found -> i in
   let tmap t = match t with
-  | BTYP_inst (i,ts) -> BTYP_inst (revar i,ts)
+  | BTYP_inst (i,ts) -> btyp_inst (revar i,ts)
   | x -> x
   in
   let auxt t =
@@ -501,7 +504,10 @@ let specialise_symbol syms (uses,child_map,bsym_table)
       relabel varmap revariable
       caller_vs callee_vs_len index parent k rescan_flag
     ;
-    let caller_vars = map (fun (s,i) -> BTYP_type_var (i,BTYP_type 0)) caller_vs in
+    let caller_vars = map
+      (fun (s,i) -> btyp_type_var (i, btyp_type 0))
+      caller_vs
+    in
     let ts' = vsplice caller_vars callee_vs_len ts in
     Hashtbl.add syms.transient_specialisation_cache (index,ts) (k,ts');
     k,ts'

@@ -61,11 +61,11 @@ let merge_args syms bsym_table f c a b =
   let args = unpack syms bsym_table f psf a @ unpack syms bsym_table c psc b in
   match args with
   | [x] -> x
-  | _ -> BEXPR_tuple args,BTYP_tuple (map snd args)
+  | _ -> BEXPR_tuple args, btyp_tuple (map snd args)
 
 let append_args syms bsym_table f a b =
   let psf = get_ps bsym_table f in
   let args = unpack syms bsym_table f psf a @ b in
   match args with
   | [x] -> x
-  | _ -> BEXPR_tuple args,BTYP_tuple (map snd args)
+  | _ -> BEXPR_tuple args, btyp_tuple (map snd args)

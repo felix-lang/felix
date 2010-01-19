@@ -19,7 +19,7 @@ let make_strabs_state () = ()
 let check_inst bsym_table i ts =
   match Flx_bsym_table.find_bbdcl bsym_table i with
   | BBDCL_newtype (vs,t) -> tsubst vs ts t
-  | _ -> BTYP_inst (i,ts)
+  | _ -> btyp_inst (i,ts)
 
 let fixtype bsym_table t =
   let chk i ts = check_inst bsym_table i ts in

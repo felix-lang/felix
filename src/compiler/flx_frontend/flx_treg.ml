@@ -39,13 +39,13 @@ let register_tuple syms bsym_table t =
   | BTYP_tuple [_] -> assert false
 
   | BTYP_tuple ts ->
-    let t = BTYP_tuple (map reduce_type ts) in
+    let t = btyp_tuple (map reduce_type ts) in
     register_type_nr syms bsym_table t
 
   | BTYP_array (t',BTYP_unitsum n) ->
     let t' = reduce_type t' in
     let ts = rev_map (fun _ -> t') (nlist n) in
-    register_type_nr syms bsym_table (BTYP_tuple ts)
+    register_type_nr syms bsym_table (btyp_tuple ts)
 
   | BTYP_record ts ->
     let t = reduce_type t in
@@ -87,14 +87,20 @@ let rec register_type_r ui syms bsym_table exclude sr t =
   | BTYP_type_var (i,mt) ->
     print_endline ("Attempt to register type variable " ^ string_of_bid i ^
       ":" ^ sbt bsym_table mt)
+
   | BTYP_function (ps,ret) ->
     let ps = match ps with
-    | BTYP_void -> BTYP_tuple []
+    | BTYP_void -> btyp_tuple []
     | x -> x
     in
-    rr ps; rr ret; rnr (BTYP_function (ps,ret))
+    rr ps;
+    rr ret;
+    rnr (btyp_function (ps,ret))
 
-  | BTYP_cfunction (ps,ret) -> rr ps; rr ret; rnr t
+  | BTYP_cfunction (ps,ret) ->
+    rr ps;
+    rr ret;
+    rnr t
 
   | BTYP_array (ps,ret) ->
     begin match ret with

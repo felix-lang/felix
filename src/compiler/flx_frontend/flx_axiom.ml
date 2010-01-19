@@ -24,12 +24,12 @@ let verify syms bsym_table csr e =
     print_endline ("Checking for cases of axiom " ^ id);
     *)
     let param = match bpl with
-      | [] -> BEXPR_tuple [],BTYP_tuple []
-      | [{pindex=i;ptyp=t}] -> BEXPR_name (i,[]),t
+      | [] -> BEXPR_tuple [], btyp_tuple []
+      | [{pindex=i;ptyp=t}] -> BEXPR_name (i,[]), t
       | ls ->
-        let xs = map (fun {pindex=i; ptyp=t}->BEXPR_name (i,[]),t) ls in
+        let xs = map (fun { pindex=i; ptyp=t } -> BEXPR_name (i,[]), t) ls in
         let ts = map snd xs in
-        BEXPR_tuple xs,BTYP_tuple ts
+        BEXPR_tuple xs, btyp_tuple ts
     in
     let tvars = map (fun (_,i) -> i) bvs in
     let evars = map (fun {pindex=i} -> i) bpl in

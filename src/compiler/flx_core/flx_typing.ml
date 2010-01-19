@@ -37,12 +37,12 @@ let sye {base_sym=i} = i
 
 let all_voids ls =
     List.fold_left
-    (fun acc t -> acc && (t = BTYP_void))
+    (fun acc t -> acc && (t = btyp_void))
     true ls
 
 let all_units ls =
     List.fold_left
-    (fun acc t -> acc && (t = BTYP_tuple []))
+    (fun acc t -> acc && (t = btyp_tuple []))
     true ls
 
 let is_unitsum (t:btypecode_t) = match t with
@@ -88,7 +88,7 @@ let typeofbps bps =
   (fun {ptyp=t; pkind=k} ->
     match k with
 (*    | `PRef -> BTYP_pointer t *)
-    | `PFun -> BTYP_function (BTYP_tuple [],t)
+    | `PFun -> btyp_function (btyp_tuple [],t)
     | _ ->t
   )
   bps
@@ -97,19 +97,19 @@ let typeofbps_traint (bps,_) = typeofbps bps
 
 (* bound type! *)
 let typeoflist typlist = match typlist with
-  | [] -> BTYP_tuple []
+  | [] -> btyp_tuple []
   | [t] -> t
   | h :: t ->
     try
       List.iter
       (fun t -> if t <> h then raise Not_found)
       t;
-      BTYP_array (h,BTYP_unitsum (List.length typlist))
+      btyp_array (h,btyp_unitsum (List.length typlist))
     with Not_found ->
-      BTYP_tuple typlist
+      btyp_tuple typlist
 
 let flx_bool = TYP_unitsum 2
-let flx_bbool = BTYP_unitsum 2
+let flx_bbool = btyp_unitsum 2
 
 (* Note floats are equal iff they're textually identical,
    we don't make any assumptions about the target machine FP model.

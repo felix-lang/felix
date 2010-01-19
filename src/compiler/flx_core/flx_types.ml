@@ -321,6 +321,96 @@ type symbol_definition_t =
 
 type type_registry_t = (btypecode_t, bid_t) Hashtbl.t
 
+(* -------------------------------------------------------------------------- *)
+
+(** The void type. *)
+let btyp_void = BTYP_void
+
+(** Construct a BTYP_sum type. *)
+let btyp_sum ts =
+  BTYP_sum ts
+
+(** Construct a BTYP_unitsum type. *)
+let btyp_unitsum n =
+  BTYP_unitsum n
+
+(** Construct a BTYP_intersect type. *)
+let btyp_intersect ts =
+  BTYP_intersect ts
+
+let btyp_inst (bid, ts) =
+  BTYP_inst (bid, ts)
+
+(** Construct a BTYP_tuple type. *)
+let btyp_tuple ts =
+  BTYP_tuple ts
+
+(** Construct a BTYP_array type. *)
+let btyp_array (t, n) =
+  BTYP_array (t, n)
+
+(** Construct a BTYP_record type. *)
+let btyp_record ts =
+  BTYP_record ts
+
+(** Construct a BTYP_variant type. *)
+let btyp_variant ts =
+  BTYP_variant ts
+
+(** Construct a BTYP_pointer type. *)
+let btyp_pointer ts =
+  BTYP_pointer ts
+
+(** Construct a BTYP_function type. *)
+let btyp_function (args, ret) =
+  BTYP_function (args, ret)
+
+(** Construct a BTYP_cfunction type. *)
+let btyp_cfunction (args, ret) =
+  BTYP_cfunction (args, ret)
+
+(** Construct a BTYP_fix type. *)
+let btyp_fix i =
+  BTYP_fix i
+
+(** Construct a BTYP_type type. *)
+let btyp_type i =
+  BTYP_type i
+
+(** Construct a BTYP_type_tuple type. *)
+let btyp_type_tuple ts =
+  BTYP_type_tuple ts
+
+(** Construct a BTYP_function type. *)
+let btyp_type_function (args, ret, body) =
+  BTYP_type_function (args, ret, body)
+
+(** Construct a BTYP_type_var type. *)
+let btyp_type_var (bid, t) =
+  BTYP_type_var (bid, t)
+
+(** Construct a BTYP_type_apply type. *)
+let btyp_type_apply (f, a) =
+  BTYP_type_apply (f, a)
+
+(** Construct a BTYP_type_match type. *)
+let btyp_type_match (t, ps) =
+  BTYP_type_match (t, ps)
+
+(** Construct a BTYP_type_set type. *)
+let btyp_type_set ts =
+  BTYP_type_set ts
+
+(** Construct a BTYP_type_set_union type. *)
+let btyp_type_set_union ts =
+  BTYP_type_set_union ts
+
+(** Construct a BTYP_type_set_intersection type. *)
+let btyp_type_set_intersection ts =
+  BTYP_type_set_intersection ts
+
+(* -------------------------------------------------------------------------- *)
+
 let src_of_bexe (e : bexe_t) = match e with
   | BEXE_goto (sr,_)
   | BEXE_assert (sr,_)

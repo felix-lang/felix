@@ -18,7 +18,7 @@ let find_thread_vars_with_type bsym_table =
     | None,BBDCL_val (_,t)
       -> vars := (k,t) :: !vars
     | None,BBDCL_ref (_,t)
-      -> vars := (k,BTYP_pointer t) :: !vars
+      -> vars := (k, btyp_pointer t) :: !vars
 
     | _ -> ()
   end bsym_table;
@@ -76,7 +76,6 @@ let rec get_offsets' syms bsym_table typ : string list =
   let tname = cpp_typename syms bsym_table typ in
   let t' = unfold typ in
   match t' with
-
   | BTYP_pointer t -> ["0"]
     (*
     ["offsetof("^tname^",frame)"]
@@ -126,7 +125,7 @@ let rec get_offsets' syms bsym_table typ : string list =
     | _ -> []
     end
 
-  | BTYP_array (t,BTYP_void ) ->  []
+  | BTYP_array (t,BTYP_void) ->  []
   | BTYP_array (t,BTYP_unitsum k) ->
     let toffsets = get_offsets' syms bsym_table t in
     if toffsets = [] then [] else
@@ -193,19 +192,17 @@ let rec get_offsets' syms bsym_table typ : string list =
 
   | BTYP_sum _
   | BTYP_array _
-(*  | BTYP_lvalue _ *)
   | BTYP_fix _
   | BTYP_void
-  | BTYP_type_var _
 
-  | BTYP_type_apply _
   | BTYP_type  _
+  | BTYP_type_var _
+  | BTYP_type_apply _
   | BTYP_type_function _
   | BTYP_type_tuple _
   | BTYP_type_match _
   | BTYP_type_set_intersection _
-  | BTYP_type_set_union _
-    -> assert false
+  | BTYP_type_set_union _ -> assert false
 
 let get_offsets syms bsym_table typ =
   map (fun s -> s^",") (get_offsets' syms bsym_table typ)
@@ -278,7 +275,7 @@ let gen_fun_offsets s syms (child_map,bsym_table) index vs ps ret ts instance pr
   bcat s
   (
     "\n//OFFSETS for "^
-    (match ret with |BTYP_void -> "procedure " | _ -> "function ") ^
+    (match ret with BTYP_void -> "procedure " | _ -> "function ") ^
     name ^ "\n"
   );
   gen_offset_data s n name offsets true props None last_ptr_map
@@ -367,7 +364,18 @@ let gen_offset_tables syms bsym_table child_map module_name =
       scan exes;
       if mem `Cfun props then () else
       if mem `Heap_closure props then
-        gen_fun_offsets s syms (child_map,bsym_table) index vs ps BTYP_void ts instance props last_ptr_map
+        gen_fun_offsets
+          s
+          syms
+          (child_map,bsym_table)
+          index
+          vs
+          ps
+          btyp_void
+          ts
+          instance
+          props
+          last_ptr_map
       else if mem `Stack_closure props then ()
       else
         print_endline ("Warning: no closure of " ^ bsym.Flx_bsym.id ^"<" ^
@@ -389,8 +397,8 @@ let gen_offset_tables syms bsym_table child_map module_name =
   (fun btyp index ->
     match unfold btyp with
     | BTYP_sum args ->
-      iter
-      (fun t -> let t = reduce_type t in
+      iter begin fun t ->
+        let t = reduce_type t in
         match t with
         | BTYP_tuple []
         | BTYP_void -> ()
@@ -399,12 +407,11 @@ let gen_offset_tables syms bsym_table child_map module_name =
             let index = Hashtbl.find syms.registry t in
             Hashtbl.replace allocable_types t index
           with Not_found -> ()
-      )
-      args
+      end args
 
     | BTYP_variant args ->
-      iter
-      (fun (_,t) -> let t = reduce_type t in
+      iter begin fun (_,t) ->
+        let t = reduce_type t in
         match t with
         | BTYP_tuple []
         | BTYP_void -> ()
@@ -413,8 +420,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
             let index = Hashtbl.find syms.registry t in
             Hashtbl.replace allocable_types t index
           with Not_found -> ()
-      )
-      args
+      end args
 
     | BTYP_inst (i,ts) ->
       (*
@@ -469,8 +475,8 @@ let gen_offset_tables syms bsym_table child_map module_name =
         let varmap = mk_varmap vs ts in
         let args = map (fun (_,_,t)->t) args in
         let args = map (varmap_subst varmap) args in
-        iter
-        (fun t -> let t = reduce_type t in
+        iter begin fun t ->
+          let t = reduce_type t in
           match t with
           | BTYP_tuple []
           | BTYP_void -> ()
@@ -479,8 +485,8 @@ let gen_offset_tables syms bsym_table child_map module_name =
               let index = Hashtbl.find syms.registry t in
               Hashtbl.replace allocable_types t index
             with Not_found -> ()
-        )
-        args
+        end args
+
       | _ -> ()
       end
     | _ -> ()

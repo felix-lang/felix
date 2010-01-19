@@ -24,7 +24,7 @@ let gen_tuple name tn typs =
   "struct " ^ name ^ " {\n" ^
   catmap ""
   (fun (t,i) ->
-    if t = BTYP_tuple []
+    if t = btyp_tuple []
     then "  // elided mem_" ^ si i ^ "(type unit)\n"
     else "  "^tn t^ " mem_" ^ si i ^ ";\n"
   )
@@ -33,13 +33,13 @@ let gen_tuple name tn typs =
   "  " ^ name ^ "(){}\n" (* default constructor *)
   ^
   (
-    if fold_left (fun r t -> r && t = BTYP_tuple []) true typs
+    if fold_left (fun r t -> r && t = btyp_tuple []) true typs
     then ""
     else
     "  " ^ name ^ "(" ^
     fold_left
     (fun s (t,i) ->
-      if t = BTYP_tuple [] then s
+      if t = btyp_tuple [] then s
       else
         s ^
         (if String.length s > 0 then ", " else "") ^
@@ -52,7 +52,7 @@ let gen_tuple name tn typs =
     ^
     fold_left
     (fun s (t,i) ->
-      if t = BTYP_tuple [] then s
+      if t = btyp_tuple [] then s
       else
         s ^
         (if String.length s > 0 then ", " else "") ^
@@ -71,7 +71,7 @@ let gen_record name tn typs =
   "struct " ^ name ^ " {\n" ^
   catmap ""
   (fun (n,t) ->
-    if t = BTYP_tuple []
+    if t = btyp_tuple []
     then "  // elided " ^ n ^ "(type unit)\n"
     else "  "^tn t^ " " ^ n ^ ";\n"
   )
@@ -80,13 +80,13 @@ let gen_record name tn typs =
   "  " ^ name ^ "(){}\n" (* default constructor *)
   ^
   (
-    if fold_left (fun r (n,t) -> r && t = BTYP_tuple []) true typs
+    if fold_left (fun r (n,t) -> r && t = btyp_tuple []) true typs
     then ""
     else
     "  " ^ name ^ "(" ^
     fold_left
     (fun s (n,t) ->
-      if t = BTYP_tuple [] then s
+      if t = btyp_tuple [] then s
       else
         s ^
         (if String.length s > 0 then ", " else "") ^
@@ -99,7 +99,7 @@ let gen_record name tn typs =
     ^
     fold_left
     (fun s (n,t) ->
-      if t = BTYP_tuple [] then s
+      if t = btyp_tuple [] then s
       else
         s ^
         (if String.length s > 0 then ", " else "") ^
@@ -328,7 +328,7 @@ let gen_type syms bsym_table (index,typ) =
     descr ^
     let name = cn typ
     and argtype = tn a
-    and unitproc = a = BTYP_tuple[] or a = BTYP_void
+    and unitproc = a = btyp_tuple [] or a = btyp_void
     in
     "struct " ^ name ^
     ": con_t {\n" ^
@@ -350,7 +350,7 @@ let gen_type syms bsym_table (index,typ) =
     let name = cn typ
     and argtype = tn a
     and rettype = tn r
-    and unitfun = a = BTYP_tuple[] or a = BTYP_void
+    and unitfun = a = btyp_tuple [] or a = btyp_void
     in
     "struct " ^ name ^ " {\n" ^
     "  typedef " ^ rettype ^ " rettype;\n" ^

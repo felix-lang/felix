@@ -27,7 +27,7 @@ and metatype' sym_table bsym_table sr term =
     let argt =
       match ps with
       | [x] -> x
-      | _ -> BTYP_tuple ps
+      | _ -> btyp_tuple ps
     in
       let rt = metatype sym_table bsym_table sr c in
       if b<>rt
@@ -41,10 +41,10 @@ and metatype' sym_table bsym_table sr term =
           "\ndoesn't agree with declared type \n" ^
           st b
         )
-      else BTYP_function (argt,b)
+      else btyp_function (argt,b)
 
   | BTYP_type_tuple ts ->
-    BTYP_tuple (List.map mt ts)
+    btyp_tuple (List.map mt ts)
 
   | BTYP_type_apply (a,b) ->
     begin
@@ -86,7 +86,7 @@ and metatype' sym_table bsym_table sr term =
     *)
     mt
 
-  | BTYP_type i -> BTYP_type (i+1)
+  | BTYP_type i -> btyp_type (i+1)
   | BTYP_inst (index,ts) ->
     let { Flx_sym.id=id; symdef=entry } =
       try Flx_sym_table.find sym_table index with Not_found ->
@@ -104,12 +104,12 @@ and metatype' sym_table bsym_table sr term =
     *)
     begin match entry with
     | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
-      BTYP_function (BTYP_type 0,BTYP_type 0)
+      btyp_function (btyp_type 0,btyp_type 0)
 
     | SYMDEF_const_ctor (_,t,_,_) ->
-      BTYP_type 0
+      btyp_type 0
 
-    | SYMDEF_abs _ -> BTYP_type 0
+    | SYMDEF_abs _ -> btyp_type 0
 
     | _ ->
         clierr sr ("Unexpected argument to metatype: " ^
@@ -119,4 +119,4 @@ and metatype' sym_table bsym_table sr term =
   | _ ->
     print_endline ("Questionable meta typing of term: " ^
       sbt bsym_table term);
-    BTYP_type 0 (* THIS ISN'T RIGHT *)
+    btyp_type 0 (* THIS ISN'T RIGHT *)

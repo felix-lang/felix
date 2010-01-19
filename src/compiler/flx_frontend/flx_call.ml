@@ -125,7 +125,7 @@ let call_data_for_symbol bsym_table uses k bsym =
   | BBDCL_val (_,t)
   | BBDCL_var (_,t)
   | BBDCL_tmp (_,t) -> ut t
-  | BBDCL_ref (_,t) -> ut (BTYP_pointer t)
+  | BBDCL_ref (_,t) -> ut (btyp_pointer t)
   | BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
       List.iter ut ps_cf;
       List.iter ut ps_c;

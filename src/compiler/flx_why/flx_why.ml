@@ -150,10 +150,10 @@ let getname syms bsym_table i =
   with Not_found ->
     "index_" ^ whyid_of_bid i
 
-let flx_bool = BTYP_unitsum 2
+let flx_bool = btyp_unitsum 2
 
 let isbool2 t =
-  reduce_type t = BTYP_array (flx_bool, flx_bool)
+  reduce_type t = btyp_array (flx_bool, flx_bool)
 
 let rec why_expr syms bsym_table (e: tbexpr_t) =
   let ee e = why_expr syms bsym_table e in
@@ -336,7 +336,7 @@ let calps ps =
     ps
   in ps
 
-let unitt = BTYP_tuple []
+let unitt = btyp_tuple []
 
 let emit_whycode filename syms bsym_table child_map root =
   let logics = find_logics syms bsym_table child_map root in

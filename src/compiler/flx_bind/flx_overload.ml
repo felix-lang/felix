@@ -120,7 +120,7 @@ let rec split_conjuncts' t : btypecode_t list =
   | _ -> [t]
 
 let filter_out_units ls = 
-   List.filter (fun x -> x <> BTYP_tuple []) ls
+   List.filter (fun x -> x <> btyp_tuple []) ls
 
 let split_conjuncts ls = filter_out_units (split_conjuncts' ls)
 
@@ -275,7 +275,7 @@ let fixup_argtypes be bid pnames base_domain argt rs =
                     match ats with
                     | [] -> assert false
                     | [x] -> x
-                    | _ -> BTYP_tuple ats
+                    | _ -> btyp_tuple ats
                   in
                   t
                 with Not_found -> argt
@@ -369,7 +369,7 @@ let make_equations
   (* equations for user specified assignments *)
   let lhsi = List.map (fun (n,i) -> i) entry_kind.spec_vs in
   let lhs = List.map
-    (fun (n,i) -> BTYP_type_var ((i), BTYP_type 0))
+    (fun (n,i) -> btyp_type_var ((i), btyp_type 0))
     entry_kind.spec_vs
   in
   let n = min (List.length entry_kind.spec_vs) (List.length input_ts) in
@@ -601,8 +601,8 @@ let solve_mgu
               "Coupled " ^ s ^ ": " ^ string_of_bid k ^ "(vs var) <--> " ^
               string_of_bid i ^" (pat var)" ^
               " pat=" ^ string_of_typecode pat);
-            let t1 = BTYP_type_var (i,BTYP_type 0) in
-            let t2 = BTYP_type_var (k,BTYP_type 0) in
+            let t1 = btyp_type_var (i, btyp_type 0) in
+            let t2 = btyp_type_var (k, btyp_type 0) in
 
             print_endline ("Adding equation " ^ sbt bsym_table t1 ^ " = " ^
               sbt bsym_table t2);
@@ -639,7 +639,7 @@ let solve_mgu
       *)
       List.iter begin fun (i,t) ->
         let t2 = bt sr t in
-        let t1 = BTYP_type_var (i, BTYP_type 0) in
+        let t1 = btyp_type_var (i, btyp_type 0) in
         extra_eqns := (t1,t2) :: !extra_eqns
       end eqns1;
 
@@ -771,9 +771,12 @@ let solve_mgu
       in the corresponding ts values. First we need to build
       a map of the correspondence
     *)
-    let parent_ts = List.map (fun (n,i,_) -> BTYP_type_var ((i),BTYP_type 0)) parent_vs in
+    let parent_ts = List.map
+      (fun (n,i,_) -> btyp_type_var (i, btyp_type 0))
+      parent_vs
+    in
     let type_constraint = build_type_constraints syms (bt sr) sr base_vs in
-    let type_constraint = BTYP_intersect [type_constraint; con] in
+    let type_constraint = btyp_intersect [type_constraint; con] in
     (*
     print_endline ("Raw type constraint " ^ sbt sym_table type_constraint);
     *)
@@ -794,7 +797,7 @@ let solve_mgu
         None
     | BTYP_tuple [] ->
         let parent_ts = List.map
-          (fun (n,i,_) -> BTYP_type_var ((i),BTYP_type 0))
+          (fun (n,i,_) -> btyp_type_var (i, btyp_type 0))
           parent_vs
         in
         Some (entry_kind.base_sym,domain,spec_result,!mgu,parent_ts @ base_ts)
@@ -806,7 +809,7 @@ let solve_mgu
         let implied = constraint_implies syms env_traint reduced_constraint in
         if implied then 
           let parent_ts = List.map
-            (fun (n,i,_) -> BTYP_type_var ((i),BTYP_type 0))
+            (fun (n,i,_) -> btyp_type_var (i, btyp_type 0))
             parent_vs in
           Some (entry_kind.base_sym,domain,spec_result,!mgu,parent_ts @ base_ts)
         else begin
@@ -896,7 +899,7 @@ let consider
 
 
   (*
-  if con <> BTYP_tuple [] then
+  if con <> btyp_tuple [] then
     print_endline ("type constraint (for "^name^") = " ^ sbt sym_table con)
   ;
   *)
@@ -1019,11 +1022,11 @@ let overload
   print_endline ("Candidates are " ^ catmap "," (string_of_entry_kind) fs);
   print_endline ("Input ts = " ^ catmap ", " (sbt bsym_table) ts);
   *)
-  let env_traint = BTYP_intersect (
+  let env_traint = btyp_intersect (
     filter_out_units  
     (List.map
       (fun (ix,id,_,_,con) -> 
-        if List.mem ix rs.constraint_overload_trail then BTYP_tuple [] else
+        if List.mem ix rs.constraint_overload_trail then btyp_tuple [] else
         let rs = { rs with constraint_overload_trail = ix::rs.constraint_overload_trail } in
         let r = bt rs call_sr ix con in
         r

@@ -215,7 +215,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap (exe:bexe_t) =
       hvarmap ""
     );
     *)
-    let ts = map (fun (s,i) -> BTYP_type_var (i,BTYP_type 0)) vs' in
+    let ts = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
     uis i ts; (* this is wrong?: initialisation is not use .. *)
     ue sr e
@@ -224,7 +224,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap (exe:bexe_t) =
 
   | BEXE_svc (sr,i) ->
     let vs' = Flx_bsym_table.find_bvs bsym_table i in
-    let ts = map (fun (s,i) -> BTYP_type_var (i,BTYP_type 0)) vs' in
+    let ts = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
     uis i ts
 
@@ -335,7 +335,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
       i
       bsym.Flx_bsym.sr
       argtypes
-      BTYP_void
+      btyp_void
       exes
       ts
 
@@ -346,7 +346,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
-    rtnr (BTYP_inst (i,ts))
+    rtnr (btyp_inst (i,ts))
 
 
   | BBDCL_cstruct (vs,ps)
@@ -357,11 +357,11 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
-    rtnr (BTYP_inst (i,ts))
+    rtnr (btyp_inst (i,ts))
 
   | BBDCL_newtype (vs,t) ->
     rtnr t;
-    rtnr (BTYP_inst (i,ts))
+    rtnr (btyp_inst (i,ts))
 
   | BBDCL_val (vs,t)
   | BBDCL_var (vs,t)
@@ -489,7 +489,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
       i
       bsym.Flx_bsym.sr
       argtypes
-      BTYP_void
+      btyp_void
       []
       ts
 
@@ -575,7 +575,7 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
         | [] -> ()
         | [{ptyp=t}] -> register_type_r ui syms bsym_table [] bsym.Flx_bsym.sr t
         | _ ->
-          let t = BTYP_tuple (map (fun {ptyp=t} -> t) ps) in
+          let t = btyp_tuple (map (fun {ptyp=t} -> t) ps) in
           register_type_r ui syms bsym_table [] bsym.Flx_bsym.sr t;
           register_type_nr syms bsym_table t;
         end

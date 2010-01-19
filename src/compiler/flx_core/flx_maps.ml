@@ -252,14 +252,14 @@ let all_units' ts =
   with Not_found -> false
 
 let map_btype f = function
-  | BTYP_type_apply (a, b) -> BTYP_type_apply (f a, f b)
+  | BTYP_type_apply (a, b) -> btyp_type_apply (f a, f b)
   | BTYP_type_function (its, a, b) ->
-      BTYP_type_function (List.map (fun (i,t) -> i, f t) its, f a, f b)
-  | BTYP_type_tuple ts -> BTYP_type_tuple (List.map f ts)
+      btyp_type_function (List.map (fun (i,t) -> i, f t) its, f a, f b)
+  | BTYP_type_tuple ts -> btyp_type_tuple (List.map f ts)
   | BTYP_type_match (t,ps) ->
     (* this may be wrong .. hard to know .. *)
     let g (tp,t) = {tp with pattern=f tp.pattern},f t in
-    BTYP_type_match (f t, List.map g ps)
+    btyp_type_match (f t, List.map g ps)
 
   | BTYP_type_set ts ->
     let g acc elt =
@@ -269,40 +269,40 @@ let map_btype f = function
     in
     let ts = List.rev (List.fold_left g [] ts) in
     if List.length ts = 1 then List.hd ts else
-    BTYP_type_set ts
+    btyp_type_set ts
 
-  | BTYP_type_set_union ls -> BTYP_type_set_union (List.map f ls)
-  | BTYP_type_set_intersection ls -> BTYP_type_set_intersection (List.map f ls)
+  | BTYP_type_set_union ls -> btyp_type_set_union (List.map f ls)
+  | BTYP_type_set_intersection ls -> btyp_type_set_intersection (List.map f ls)
 
-  | BTYP_type i -> BTYP_type i
+  | BTYP_type i -> btyp_type i
 
-  | BTYP_inst (i,ts) -> BTYP_inst (i, List.map f ts)
-  | BTYP_tuple ts -> BTYP_tuple (List.map f ts)
-  | BTYP_record ts -> BTYP_record (List.map (fun (s,t) -> s,f t) ts)
-  | BTYP_variant ts -> BTYP_variant (List.map (fun (s,t) -> s,f t) ts)
+  | BTYP_inst (i,ts) -> btyp_inst (i, List.map f ts)
+  | BTYP_tuple ts -> btyp_tuple (List.map f ts)
+  | BTYP_record ts -> btyp_record (List.map (fun (s,t) -> s,f t) ts)
+  | BTYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s,f t) ts)
 
   | BTYP_unitsum k ->
     if k > 0 then
-      let mapped_unit = f (BTYP_tuple []) in
+      let mapped_unit = f (btyp_tuple []) in
       match mapped_unit with
       | BTYP_tuple [] ->
-        BTYP_unitsum k
-      | _ -> BTYP_tuple (list_of_n_things mapped_unit [] k)
-    else BTYP_unitsum k
+        btyp_unitsum k
+      | _ -> btyp_tuple (list_of_n_things mapped_unit [] k)
+    else btyp_unitsum k
 
-  | BTYP_intersect ts -> BTYP_intersect (List.map f ts)
+  | BTYP_intersect ts -> btyp_intersect (List.map f ts)
 
   | BTYP_sum ts ->
     let ts = List.map f ts in
     if all_units' ts then
-      BTYP_unitsum (List.length ts)
+      btyp_unitsum (List.length ts)
     else
-      BTYP_sum ts
+      btyp_sum ts
 
-  | BTYP_function (a,b) -> BTYP_function (f a, f b)
-  | BTYP_cfunction (a,b) -> BTYP_cfunction (f a, f b)
-  | BTYP_pointer t -> BTYP_pointer (f t)
-  | BTYP_array (t1,t2) -> BTYP_array (f t1, f t2)
+  | BTYP_function (a,b) -> btyp_function (f a, f b)
+  | BTYP_cfunction (a,b) -> btyp_cfunction (f a, f b)
+  | BTYP_pointer t -> btyp_pointer (f t)
+  | BTYP_array (t1,t2) -> btyp_array (f t1, f t2)
   | x -> x
 
 let iter_btype f = function
@@ -324,7 +324,7 @@ let iter_btype f = function
   | BTYP_record ts -> List.iter (fun (s,t) -> f t) ts
   | BTYP_variant ts -> List.iter (fun (s,t) -> f t) ts
   | BTYP_unitsum k ->
-    let unitrep = BTYP_tuple [] in
+    let unitrep = btyp_tuple [] in
     for i = 1 to k do f unitrep done
 
   | BTYP_sum ts -> List.iter f ts
@@ -562,25 +562,25 @@ let rec reduce_type t =
   match map_btype reduce_type t with
   | BTYP_record ts ->
     begin match ts with
-    | [] -> BTYP_tuple []
+    | [] -> btyp_tuple []
     | _ ->
      let rcmp (s1,_) (s2,_) = compare s1 s2 in
      let ts = List.sort compare ts in
      let ss,ts = List.split ts in
      let ts = List.combine ss (List.map reduce_type ts) in
-     BTYP_record ts
+     btyp_record ts
     end
   | BTYP_variant ts ->
     begin match ts with
-    | [] -> BTYP_void
+    | [] -> btyp_void
     | _ ->
      let rcmp (s1,_) (s2,_) = compare s1 s2 in
      let ts = List.sort compare ts in
      let ss,ts = List.split ts in
      let ts = List.combine ss (List.map reduce_type ts) in
-     BTYP_variant ts
+     btyp_variant ts
     end
   | BTYP_tuple ts -> typeoflist ts
-  | BTYP_array (t',BTYP_unitsum 0) -> BTYP_tuple []
+  | BTYP_array (t',BTYP_unitsum 0) -> btyp_tuple []
   | BTYP_array (t',BTYP_unitsum 1) -> t'
   | t -> t

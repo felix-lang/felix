@@ -2263,7 +2263,7 @@ and string_of_bbdcl bsym_table (bbdcl:bbdcl_t) index : string =
   let name = qualified_name_of_bindex bsym_table index in
   let sobt t = string_of_btypecode bsym_table t in
   let se e = string_of_bound_expression bsym_table e in
-  let un = BTYP_tuple [] in
+  let un = btyp_tuple [] in
   match bbdcl with
   | BBDCL_module ->
     "module " ^ name ^ " {}"

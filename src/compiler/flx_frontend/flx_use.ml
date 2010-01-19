@@ -156,7 +156,7 @@ and uses used bsym_table count_inits i =
       | BBDCL_var (_,t)
       | BBDCL_tmp (_,t) -> ut t
 
-      | BBDCL_ref (_,t) -> ut (BTYP_pointer t)
+      | BBDCL_ref (_,t) -> ut (btyp_pointer t)
 
       | BBDCL_const (_,_,t,_,reqs) -> ut t; rq reqs
       | BBDCL_fun (_,_,ps, ret, _,reqs,_) -> List.iter ut ps; ut ret; rq reqs

@@ -70,14 +70,14 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
         bbdcl=BBDCL_var (vs,ret) };
 
       (* append a pointer to this variable to the argument *)
-      let ts' = map (fun (s,i) -> BTYP_type_var (i,BTYP_type 0)) vs in
-      let ptr = BEXPR_ref (k,ts'),BTYP_pointer ret in
+      let ts' = map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) vs in
+      let ptr = BEXPR_ref (k,ts'),btyp_pointer ret in
       let (_,at') as a' = append_args syms bsym_table f a [ptr] in
 
       (* create a call instruction to the mapped procedure *)
       let call : bexe_t =
         BEXE_call (sr,
-          (BEXPR_closure (p,ts),BTYP_function (at',BTYP_void)),
+          (BEXPR_closure (p,ts),btyp_function (at',btyp_void)),
           a'
         )
       in
@@ -265,9 +265,14 @@ let mkproc_gen syms bsym_table child_map =
 
         (* make new parameter: note the name is remapped to _k_mkproc below *)
         let vix = fresh_bid syms.counter in
-        let vdcl = BBDCL_var (vs,BTYP_pointer ret) in
+        let vdcl = BBDCL_var (vs,btyp_pointer ret) in
         let vid = "_" ^ string_of_bid vix in
-        let ps = ps @ [{pindex=vix; pkind=`PVal; ptyp=BTYP_pointer ret; pid=vid}] in
+        let ps = ps @ [{
+          pindex=vix;
+          pkind=`PVal;
+          ptyp=btyp_pointer ret;
+          pid=vid }]
+        in
 
         (* clone old parameters, also happens to create our new one *)
         iter
@@ -316,9 +321,9 @@ let mkproc_gen syms bsym_table child_map =
       let vix,ps,exes = fixup vs exes in
 
       (* and actually convert it *)
-      let ts = map (fun (_,i) -> BTYP_type_var (i,BTYP_type 0)) vs in
-      (* let dv = BEXPR_deref (BEXPR_name (vix,ts),BTYP_pointer * ret),BTYP_lvalue ret in *)
-      let dv = BEXPR_deref (BEXPR_name (vix,ts),BTYP_pointer ret),ret in
+      let ts = map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
+      (* let dv = BEXPR_deref (BEXPR_name (vix,ts),btyp_pointer * ret),btyp_lvalue ret in *)
+      let dv = BEXPR_deref (BEXPR_name (vix,ts),btyp_pointer ret),ret in
       let exes = proc_exes syms bsym_table dv exes in
 
       (* save the new procedure *)

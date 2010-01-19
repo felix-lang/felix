@@ -105,7 +105,7 @@ type btpattern_t = {
 }
 
 (** general typing *)
-and btypecode_t =
+and btypecode_t = private
   | BTYP_sum of btypecode_t list
   | BTYP_unitsum of int
   | BTYP_intersect of btypecode_t list (** intersection type *)
@@ -303,6 +303,80 @@ type symbol_definition_t =
   | SYMDEF_instance of qualified_name_t
 
 type type_registry_t = (btypecode_t, bid_t) Hashtbl.t
+
+(* -------------------------------------------------------------------------- *)
+
+(** The void type. *)
+val btyp_void : btypecode_t
+
+(** Construct a BTYP_sum type. *)
+val btyp_sum : btypecode_t list -> btypecode_t
+
+(** Construct a BTYP_unitsum type. *)
+val btyp_unitsum : int -> btypecode_t
+
+(** Construct a BTYP_intersect type. *)
+val btyp_intersect : btypecode_t list -> btypecode_t
+
+(** Construct a BTYP_inst type. *)
+val btyp_inst : bid_t * btypecode_t list -> btypecode_t
+
+(** Construct a BTYP_tuple type. *)
+val btyp_tuple : btypecode_t list -> btypecode_t
+
+(** Construct a BTYP_array type. *)
+val btyp_array : btypecode_t * btypecode_t -> btypecode_t
+
+(** Construct a BTYP_record type. *)
+val btyp_record : (string * btypecode_t) list -> btypecode_t
+
+(** Construct a BTYP_variant type. *)
+val btyp_variant : (string * btypecode_t) list -> btypecode_t
+
+(** Construct a BTYP_pointer type. *)
+val btyp_pointer : btypecode_t -> btypecode_t
+
+(** Construct a BTYP_function type. *)
+val btyp_function : btypecode_t * btypecode_t -> btypecode_t
+
+(** Construct a BTYP_cfunction type. *)
+val btyp_cfunction : btypecode_t * btypecode_t -> btypecode_t
+
+(** Construct a BTYP_fix type. *)
+val btyp_fix : int -> btypecode_t
+
+(** construct a BTYP_type type. *)
+val btyp_type : int -> btypecode_t
+
+(** construct a BTYP_type_tuple type. *)
+val btyp_type_tuple : btypecode_t list -> btypecode_t
+
+(** Construct a BTYP_type_function type. *)
+val btyp_type_function :
+  (bid_t * btypecode_t) list * btypecode_t * btypecode_t ->
+  btypecode_t
+
+(** construct a BTYP_type_var type. *)
+val btyp_type_var : bid_t * btypecode_t -> btypecode_t
+
+(** construct a BTYP_type_apply type. *)
+val btyp_type_apply : btypecode_t * btypecode_t -> btypecode_t
+
+(** construct a BTYP_type_match type. *)
+val btyp_type_match :
+  btypecode_t * (btpattern_t * btypecode_t) list ->
+  btypecode_t
+
+(** construct a BTYP_type_set type. *)
+val btyp_type_set : btypecode_t list -> btypecode_t
+
+(** construct a BTYP_type_set_union type. *)
+val btyp_type_set_union : btypecode_t list -> btypecode_t
+
+(** construct a BTYP_type_set_intersection type. *)
+val btyp_type_set_intersection : btypecode_t list -> btypecode_t
+
+(* -------------------------------------------------------------------------- *)
 
 val src_of_bexe : bexe_t -> Flx_srcref.t
 

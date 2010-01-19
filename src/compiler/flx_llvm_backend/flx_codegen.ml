@@ -1258,7 +1258,7 @@ and codegen_symbol state bsym_table child_map closure index bsym =
         (name_of_index state bsym_table index [])
         props
         ps
-        Flx_types.BTYP_void
+        Flx_types.btyp_void
         es)
 
   | Flx_types.BBDCL_val (_, btype)
@@ -1287,7 +1287,7 @@ and codegen_symbol state bsym_table child_map closure index bsym =
       assert false
 
   | Flx_types.BBDCL_proc (props, vs, ps, code, reqs) ->
-      codegen_fun state index props vs ps Flx_types.BTYP_void code reqs ""
+      codegen_fun state index props vs ps Flx_types.btyp_void code reqs ""
 
   | Flx_types.BBDCL_insert (vs, s, ikind, reqs) ->
       print_endline "BBDCL_insert";
