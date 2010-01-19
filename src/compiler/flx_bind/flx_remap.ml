@@ -47,15 +47,15 @@ let rec remap_btype offset btype =
   | BTYP_intersect ts ->
       BTYP_intersect (List.map remap_btype ts)
 
-  | BTYP_var (bid, t) ->
-      BTYP_var (remap_bid bid, remap_btype t)
+  | BTYP_type_var (bid, t) ->
+      BTYP_type_var (remap_bid bid, remap_btype t)
 
-  | BTYP_apply (t1, t2) ->
-      BTYP_apply (remap_btype t1, remap_btype t2)
+  | BTYP_type_apply (t1, t2) ->
+      BTYP_type_apply (remap_btype t1, remap_btype t2)
 
-  | BTYP_typefun (args, result, body) ->
+  | BTYP_type_function (args, result, body) ->
       let args = List.map (fun (i, t) -> remap_bid i, remap_btype t) args in
-      BTYP_typefun (args, remap_btype result, remap_btype body)
+      BTYP_type_function (args, remap_btype result, remap_btype body)
 
   | BTYP_type i ->
       BTYP_type i
@@ -78,14 +78,14 @@ let rec remap_btype offset btype =
       in
       BTYP_type_match (remap_btype t, ps)
 
-  | BTYP_typeset ts ->
-      BTYP_typeset (List.map remap_btype ts)
+  | BTYP_type_set ts ->
+      BTYP_type_set (List.map remap_btype ts)
 
-  | BTYP_typesetunion ts ->
-      BTYP_typesetunion (List.map remap_btype ts)
+  | BTYP_type_set_union ts ->
+      BTYP_type_set_union (List.map remap_btype ts)
 
-  | BTYP_typesetintersection ts ->
-      BTYP_typesetintersection (List.map remap_btype ts)
+  | BTYP_type_set_intersection ts ->
+      BTYP_type_set_intersection (List.map remap_btype ts)
 
 
 (** Remap bound interfaces by adding an offset to the bound index. *)

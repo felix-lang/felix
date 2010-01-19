@@ -62,11 +62,11 @@ let build_constraint_element syms bt sr i p1 =
     varset1 explicit_vars1
   in
   let un = BTYP_tuple [] in (* the 'true' value of the type system *)
-  let elt = BTYP_var (i,BTYP_type 0) in
+  let elt = BTYP_type_var (i,BTYP_type 0) in
   let p1 = bt p1 in
   let rec fe t = match t with
-  | BTYP_typeset ls
-  | BTYP_typesetunion ls ->
+  | BTYP_type_set ls
+  | BTYP_type_set_union ls ->
      uniq_list (concat (map fe ls))
 
   | t -> [t]
@@ -78,7 +78,7 @@ let build_constraint_element syms bt sr i p1 =
     let fresh = fresh_bid syms.counter in
     let dflt =
       {
-        pattern=BTYP_var (fresh,BTYP_type 0);
+        pattern=BTYP_type_var (fresh,BTYP_type 0);
         pattern_vars = BidSet.singleton fresh;
         assignments=[]
       },

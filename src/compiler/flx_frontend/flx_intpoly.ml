@@ -22,8 +22,8 @@ let polyfix syms polyvars i ts =
 let remove i ls = filter (fun (k,j) -> i <> k) ls
 
 let rec check_abstract_type syms rls (t:btypecode_t) = match t with
-    | BTYP_pointer (BTYP_var _) -> ()
-    | BTYP_var (i,_) ->
+    | BTYP_pointer (BTYP_type_var _) -> ()
+    | BTYP_type_var (i,_) ->
        (*
        print_endline ("Removing type variable " ^ string_of_int i);
        *)

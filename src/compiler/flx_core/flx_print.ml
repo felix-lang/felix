@@ -570,7 +570,7 @@ and sb bsym_table depth fixlist counter prec tc =
            lab
        )
 
-    | BTYP_var (i,mt) -> 0,"<T" ^ string_of_bid i ^
+    | BTYP_type_var (i,mt) -> 0,"<T" ^ string_of_bid i ^
       (match mt with BTYP_type i ->"" | _ -> ":"^sbt 0 mt)^
       ">"
 
@@ -619,7 +619,7 @@ and sb bsym_table depth fixlist counter prec tc =
           5,cat " + " (map (sbt 5) ls)
       end
 
-    | BTYP_typeset ls ->
+    | BTYP_type_set ls ->
       begin match ls with
       | [] -> 9,"UNEXPECTED EMPTY TYPESET = void"
       | _ ->
@@ -633,14 +633,14 @@ and sb bsym_table depth fixlist counter prec tc =
           4,cat " and " (map (sbt 5) ls)
       end
 
-    | BTYP_typesetintersection ls ->
+    | BTYP_type_set_intersection ls ->
       begin match ls with
       | [] -> 9,"/*typesetintersect*/void"
       | _ ->
           4,cat " && " (map (sbt 5) ls)
       end
 
-    | BTYP_typesetunion ls ->
+    | BTYP_type_set_union ls ->
       begin match ls with
       | [] -> 9,"/*typesetunion*/unit"
       | _ ->
@@ -662,7 +662,7 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_pointer t -> 1,"&" ^ sbt 1 t
     | BTYP_void -> 0,"void"
 
-    | BTYP_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
+    | BTYP_type_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
     | BTYP_type i -> 0,"TYPE " ^ si i
     | BTYP_type_tuple ls ->
       begin match ls with
@@ -670,8 +670,7 @@ and sb bsym_table depth fixlist counter prec tc =
       | _ -> 4, cat ", " (map (sbt 4) ls)
       end
 
-
-    | BTYP_typefun (args,ret,body) ->
+    | BTYP_type_function (args,ret,body) ->
        8,
        (
          "fun (" ^ cat ", "
@@ -938,7 +937,9 @@ and string_of_bvs_cons bsym_table vs cons = match vs,cons with
   | bvs, cons ->
       Printf.sprintf "[%s%s]"
         (string_of_bvs' bvs)
-        (if cons = BTYP_tuple[] then "" else " where " ^ sbt bsym_table cons)
+        (match cons with
+        | BTYP_tuple [] -> ""
+        | _ -> " where " ^ sbt bsym_table cons)
 
 and string_of_inst bsym_table = function
   | [] -> ""

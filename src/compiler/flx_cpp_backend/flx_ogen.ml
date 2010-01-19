@@ -188,7 +188,7 @@ let rec get_offsets' syms bsym_table typ : string list =
     -> failwith "[ogen] Type intersection has no representation"
 
   (* this is a lie .. it does, namely a plain C union *)
-  | BTYP_typeset _
+  | BTYP_type_set _
     -> failwith "[ogen] Type set has no representation"
 
   | BTYP_sum _
@@ -196,15 +196,15 @@ let rec get_offsets' syms bsym_table typ : string list =
 (*  | BTYP_lvalue _ *)
   | BTYP_fix _
   | BTYP_void
-  | BTYP_var _
+  | BTYP_type_var _
 
-  | BTYP_apply _
+  | BTYP_type_apply _
   | BTYP_type  _
-  | BTYP_typefun _
+  | BTYP_type_function _
   | BTYP_type_tuple _
   | BTYP_type_match _
-  | BTYP_typesetintersection _
-  | BTYP_typesetunion _
+  | BTYP_type_set_intersection _
+  | BTYP_type_set_union _
     -> assert false
 
 let get_offsets syms bsym_table typ =

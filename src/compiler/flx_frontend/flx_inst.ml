@@ -215,7 +215,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap (exe:bexe_t) =
       hvarmap ""
     );
     *)
-    let ts = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) vs' in
+    let ts = map (fun (s,i) -> BTYP_type_var (i,BTYP_type 0)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
     uis i ts; (* this is wrong?: initialisation is not use .. *)
     ue sr e
@@ -224,7 +224,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap (exe:bexe_t) =
 
   | BEXE_svc (sr,i) ->
     let vs' = Flx_bsym_table.find_bvs bsym_table i in
-    let ts = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) vs' in
+    let ts = map (fun (s,i) -> BTYP_type_var (i,BTYP_type 0)) vs' in
     let ts = map (varmap_subst hvarmap) ts in
     uis i ts
 

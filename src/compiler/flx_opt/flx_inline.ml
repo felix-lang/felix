@@ -835,7 +835,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
 
 
           (* replace application with the variable *)
-          let ts = map (fun (_,i)-> BTYP_var (i,BTYP_type 0)) caller_vs in
+          let ts = map (fun (_,i)-> BTYP_type_var (i,BTYP_type 0)) caller_vs in
           BEXPR_name (urv,ts),t
 
         | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
@@ -856,7 +856,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
 
 
           (* replace application with the variable *)
-          let ts = map (fun (_,i)-> BTYP_var (i,BTYP_type 0)) caller_vs in
+          let ts = map (fun (_,i)-> BTYP_type_var (i,BTYP_type 0)) caller_vs in
           BEXPR_name (urv,ts),t
           *)
 
@@ -977,7 +977,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
 
                     let rxs = hic revariable callee xs in
                     exes' := rev rxs @ !exes';
-                    let ts = map (fun (_,i)-> BTYP_var (i,BTYP_type 0)) caller_vs in
+                    let ts = map (fun (_,i)-> BTYP_type_var (i,BTYP_type 0)) caller_vs in
                     BEXPR_name (urv,ts),t
                 end
                 else

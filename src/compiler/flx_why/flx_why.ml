@@ -263,7 +263,7 @@ let rec cal_type syms bsym_table t =
       | ts -> "(" ^ catmap ", " ct ts ^ ")"
     in
     ts ^ Flx_bsym_table.find_id bsym_table index
-  | BTYP_var (index,_) ->
+  | BTYP_type_var (index,_) ->
     begin
       try "'" ^ Flx_bsym_table.find_id bsym_table index with Not_found ->
         "'T" ^ whyid_of_bid index

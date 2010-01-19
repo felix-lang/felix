@@ -503,7 +503,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       let e',rhst = be e in
       (* a type variable in executable code just has to be of kind TYPE *)
       let parent_ts = map
-        (fun (s,i) -> BTYP_var (i,BTYP_type 0))
+        (fun (s,i) -> BTYP_type_var (i,BTYP_type 0))
         state.parent_vs
       in
       let lhst =
@@ -538,7 +538,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
           let e',rhst = be e in
           (* a type variable in executable code just has to be of kind TYPE *)
           let parent_ts = map
-            (fun (s,i) -> BTYP_var (i,BTYP_type 0))
+            (fun (s,i) -> BTYP_type_var (i,BTYP_type 0))
             state.parent_vs
           in
           let lhst =

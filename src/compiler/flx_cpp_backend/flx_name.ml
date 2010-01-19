@@ -170,7 +170,7 @@ let rec cpp_type_classname syms bsym_table t =
   let tix t = tix syms bsym_table t in
   let t = fold syms.counter t in
   try match unfold t with
-  | BTYP_var (i,mt) ->
+  | BTYP_type_var (i,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
         string_of_bid i ^ ":"^ sbt bsym_table mt)
   | BTYP_fix i -> failwith "[cpp_type_classname] Can't name type fixpoint"

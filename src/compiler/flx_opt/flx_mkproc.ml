@@ -70,7 +70,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
         bbdcl=BBDCL_var (vs,ret) };
 
       (* append a pointer to this variable to the argument *)
-      let ts' = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) vs in
+      let ts' = map (fun (s,i) -> BTYP_type_var (i,BTYP_type 0)) vs in
       let ptr = BEXPR_ref (k,ts'),BTYP_pointer ret in
       let (_,at') as a' = append_args syms bsym_table f a [ptr] in
 
@@ -316,7 +316,7 @@ let mkproc_gen syms bsym_table child_map =
       let vix,ps,exes = fixup vs exes in
 
       (* and actually convert it *)
-      let ts = map (fun (_,i) -> BTYP_var (i,BTYP_type 0)) vs in
+      let ts = map (fun (_,i) -> BTYP_type_var (i,BTYP_type 0)) vs in
       (* let dv = BEXPR_deref (BEXPR_name (vix,ts),BTYP_pointer * ret),BTYP_lvalue ret in *)
       let dv = BEXPR_deref (BEXPR_name (vix,ts),BTYP_pointer ret),ret in
       let exes = proc_exes syms bsym_table dv exes in

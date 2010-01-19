@@ -82,9 +82,9 @@ let rec register_type_r ui syms bsym_table exclude sr t =
   | BTYP_void -> ()
   | BTYP_fix i -> clierr sr ("[register_type_r] Fixpoint "^si i^" encountered")
   (*
-  | BTYP_var (i,mt) -> clierr sr ("Attempt to register type variable " ^ si i ^":"^sbt sym_table mt)
+  | BTYP_type_var (i,mt) -> clierr sr ("Attempt to register type variable " ^ si i ^":"^sbt sym_table mt)
   *)
-  | BTYP_var (i,mt) ->
+  | BTYP_type_var (i,mt) ->
     print_endline ("Attempt to register type variable " ^ string_of_bid i ^
       ":" ^ sbt bsym_table mt)
   | BTYP_function (ps,ret) ->

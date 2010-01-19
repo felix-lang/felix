@@ -121,33 +121,32 @@ type btpattern_t = {
 }
 
 (** general typing *)
-and btypecode_t =
+and btypecode_t = 
+  | BTYP_sum of btypecode_t list
+  | BTYP_unitsum of int
+  | BTYP_intersect of btypecode_t list (** intersection type *)
   | BTYP_inst of bid_t * btypecode_t list
   | BTYP_tuple of btypecode_t list
+  | BTYP_array of btypecode_t * btypecode_t
   | BTYP_record of (string * btypecode_t) list
   | BTYP_variant of (string * btypecode_t) list
-  | BTYP_unitsum of int
-  | BTYP_sum of btypecode_t list
+  | BTYP_pointer of btypecode_t
   | BTYP_function of btypecode_t * btypecode_t
   | BTYP_cfunction of btypecode_t * btypecode_t
-  | BTYP_pointer  of btypecode_t
-(*  | BTYP_lvalue  of btypecode_t *)
-  | BTYP_array of btypecode_t * btypecode_t
   | BTYP_void
   | BTYP_fix of int
-  | BTYP_intersect of btypecode_t list (** intersection type *)
 
-  | BTYP_var of bid_t * btypecode_t
-  | BTYP_apply of btypecode_t * btypecode_t
-  | BTYP_typefun of (bid_t * btypecode_t) list * btypecode_t * btypecode_t
   | BTYP_type of int
   | BTYP_type_tuple of btypecode_t list
+  | BTYP_type_function of (bid_t * btypecode_t) list * btypecode_t * btypecode_t
+  | BTYP_type_var of bid_t * btypecode_t
+  | BTYP_type_apply of btypecode_t * btypecode_t
   | BTYP_type_match of btypecode_t * (btpattern_t * btypecode_t) list
 
   (* type sets *)
-  | BTYP_typeset of btypecode_t list (** open union *)
-  | BTYP_typesetunion of btypecode_t list (** open union *)
-  | BTYP_typesetintersection of btypecode_t list (** open union *)
+  | BTYP_type_set of btypecode_t list (** open union *)
+  | BTYP_type_set_union of btypecode_t list (** open union *)
+  | BTYP_type_set_intersection of btypecode_t list (** open union *)
 
 type entry_kind_t = {
   (* the function *)

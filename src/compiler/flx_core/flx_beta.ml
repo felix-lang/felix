@@ -58,8 +58,8 @@ open Flx_maps
 let rec fixup syms ps body =
  let param = match ps with
    | [] -> assert false
-   | [i,mt] -> BTYP_var (i,mt)
-   | x -> BTYP_type_tuple (List.map (fun (i,mt) -> BTYP_var (i,mt)) x)
+   | [i,mt] -> BTYP_type_var (i,mt)
+   | x -> BTYP_type_tuple (List.map (fun (i,mt) -> BTYP_type_var (i,mt)) x)
  in
  (*
  print_endline ("Body  = " ^ sbt bsym_table body);
@@ -68,13 +68,13 @@ let rec fixup syms ps body =
  let rec aux term depth =
    let fx t = aux t (depth+1) in
    match map_btype fx term with
-   | BTYP_apply (BTYP_fix i, arg)
+   | BTYP_type_apply (BTYP_fix i, arg)
      when arg = param
      && i + depth +1  = 0 (* looking inside application, one more level *)
      -> print_endline "SPECIAL REDUCTION";
      BTYP_fix (i+2) (* elide application AND skip under lambda abstraction *)
 
-   | BTYP_typefun (a,b,c) ->
+   | BTYP_type_function (a,b,c) ->
       (* NOTE we have to add 2 to depth here, an extra
       level for the lambda binder.
       NOTE also: this is NOT a recusive call to fixup!
@@ -85,7 +85,7 @@ let rec fixup syms ps body =
       print_endline "OOPS >> no alpha conversion?";
       *)
 
-      BTYP_typefun (a, fx b, aux c (depth + 2))
+      BTYP_type_function (a, fx b, aux c (depth + 2))
    | x -> x
  in
    (* note depth 1: we seek a fix to an abstraction
@@ -187,13 +187,13 @@ and beta_reduce' syms bsym_table sr termlist t =
   let st t = string_of_btypecode bsym_table t in
   match t with
   | BTYP_fix _ -> t
-  | BTYP_var (i,_) -> t
+  | BTYP_type_var (i,_) -> t
 
-  | BTYP_typefun (p,r,b) -> t
+  | BTYP_type_function (p,r,b) -> t
   (*
     let b = fixup syms p b in
     let b' = beta_reduce' syms bsym_table sr (t::termlist) b in
-    let t = BTYP_typefun (p, br r, b') in
+    let t = BTYP_type_function (p, br r, b') in
     t
   *)
 
@@ -226,9 +226,9 @@ and beta_reduce' syms bsym_table sr termlist t =
     | ls -> BTYP_intersect ls
     end
 
-  | BTYP_typeset ls -> BTYP_typeset (List.map br ls)
+  | BTYP_type_set ls -> BTYP_type_set (List.map br ls)
 
-  | BTYP_typesetunion ls ->
+  | BTYP_type_set_union ls ->
     let ls = List.rev_map br ls in
     (* split into explicit typesets and other terms
       at the moment, there shouldn't be any 'other'
@@ -237,15 +237,15 @@ and beta_reduce' syms bsym_table sr termlist t =
     let rec aux ts ot ls  = match ls with
     | [] ->
       begin match ot with
-      | [] -> BTYP_typeset ts
+      | [] -> BTYP_type_set ts
       | _ ->
         (*
         print_endline "WARNING UNREDUCED TYPESET UNION";
         *)
-        BTYP_typesetunion (BTYP_typeset ts :: ot)
+        BTYP_type_set_union (BTYP_type_set ts :: ot)
       end
 
-    | BTYP_typeset xs :: t -> aux (xs @ ts) ot t
+    | BTYP_type_set xs :: t -> aux (xs @ ts) ot t
     | h :: t -> aux ts (h :: ot) t
     in aux [] [] ls
 
@@ -275,12 +275,12 @@ and beta_reduce' syms bsym_table sr termlist t =
 
      Bottom line: the rule below is a hack.
   *)
-  | BTYP_typesetintersection ls ->
+  | BTYP_type_set_intersection ls ->
     let ls = List.map br ls in
-    if List.mem (BTYP_typeset []) ls then BTYP_typeset []
+    if List.mem (BTYP_type_set []) ls then BTYP_type_set []
     else begin match ls with
     | [t] -> t
-    | ls -> BTYP_typesetintersection ls
+    | ls -> BTYP_type_set_intersection ls
     end
 
 
@@ -294,7 +294,7 @@ and beta_reduce' syms bsym_table sr termlist t =
   | BTYP_type _ -> t
   | BTYP_unitsum _ -> t
 
-  | BTYP_apply (t1,t2) ->
+  | BTYP_type_apply (t1,t2) ->
     let t1 = br t1 in (* eager evaluation *)
     let t2 = br t2 in (* eager evaluation *)
     let t1 =
@@ -317,7 +317,7 @@ and beta_reduce' syms bsym_table sr termlist t =
         print_endline ("Recfun = " ^ sbt bsym_table whole);
         *)
         begin match whole with
-        | BTYP_typefun _ -> ()
+        | BTYP_type_function _ -> ()
         | _ -> assert false
         end;
         whole
@@ -331,7 +331,7 @@ and beta_reduce' syms bsym_table sr termlist t =
       sbt bsym_table (unfold sym_table t1));
     *)
     begin match unfold t1 with
-    | BTYP_typefun (ps,r,body) ->
+    | BTYP_type_function (ps,r,body) ->
       let params' =
         match ps with
         | [] -> []
@@ -365,7 +365,7 @@ and beta_reduce' syms bsym_table sr termlist t =
       (*
       print_endline "Apply nonfunction .. can't reduce";
       *)
-      BTYP_apply (t1,t2)
+      BTYP_type_apply (t1,t2)
     end
 
   | BTYP_type_match (tt,pts) ->

@@ -24,7 +24,7 @@ let is_typeset tss1 =
     p1.assignments = [] &&
     BidSet.cardinal p1.pattern_vars = 1 &&
     match p1.pattern,v1 with 
-    | BTYP_var (i,BTYP_type 0), BTYP_void
+    | BTYP_type_var (i,BTYP_type 0), BTYP_void
       when i = BidSet.choose p1.pattern_vars ->
       begin try 
         List.iter (fun (p,v) -> match p,v with
@@ -78,11 +78,11 @@ let rec scancases syms tss1 tss2 = match (tss1, tss2) with
         else scancases syms c1 t2 (* skip rhs case *)
       (* special case of wildcard, somewhat hacked *)
       else match p1.pattern,p2.pattern with
-      | BTYP_var _, BTYP_var _ ->
+      | BTYP_type_var _, BTYP_type_var _ ->
          if type_eq syms.counter v1 v2
          then scancases syms t1 t2 (* advance both *)
          else scancases syms c1 t2 (* skip rhs case *)
-      | BTYP_var _,_ -> scancases syms c1 t2 (* skip rhs case *)
+      | BTYP_type_var _,_ -> scancases syms c1 t2 (* skip rhs case *)
       | _ -> false
    else false
 
@@ -368,7 +368,10 @@ let make_equations
   *)
   (* equations for user specified assignments *)
   let lhsi = List.map (fun (n,i) -> i) entry_kind.spec_vs in
-  let lhs = List.map (fun (n,i) -> BTYP_var ((i),BTYP_type 0)) entry_kind.spec_vs in
+  let lhs = List.map
+    (fun (n,i) -> BTYP_type_var ((i), BTYP_type 0))
+    entry_kind.spec_vs
+  in
   let n = min (List.length entry_kind.spec_vs) (List.length input_ts) in
   let eqns = List.combine (list_prefix lhs n) (list_prefix input_ts n) in
 
@@ -598,8 +601,8 @@ let solve_mgu
               "Coupled " ^ s ^ ": " ^ string_of_bid k ^ "(vs var) <--> " ^
               string_of_bid i ^" (pat var)" ^
               " pat=" ^ string_of_typecode pat);
-            let t1 = BTYP_var (i,BTYP_type 0) in
-            let t2 = BTYP_var (k,BTYP_type 0) in
+            let t1 = BTYP_type_var (i,BTYP_type 0) in
+            let t2 = BTYP_type_var (k,BTYP_type 0) in
 
             print_endline ("Adding equation " ^ sbt bsym_table t1 ^ " = " ^
               sbt bsym_table t2);
@@ -636,7 +639,7 @@ let solve_mgu
       *)
       List.iter begin fun (i,t) ->
         let t2 = bt sr t in
-        let t1 = BTYP_var (i,BTYP_type 0) in
+        let t1 = BTYP_type_var (i, BTYP_type 0) in
         extra_eqns := (t1,t2) :: !extra_eqns
       end eqns1;
 
@@ -768,7 +771,7 @@ let solve_mgu
       in the corresponding ts values. First we need to build
       a map of the correspondence
     *)
-    let parent_ts = List.map (fun (n,i,_) -> BTYP_var ((i),BTYP_type 0)) parent_vs in
+    let parent_ts = List.map (fun (n,i,_) -> BTYP_type_var ((i),BTYP_type 0)) parent_vs in
     let type_constraint = build_type_constraints syms (bt sr) sr base_vs in
     let type_constraint = BTYP_intersect [type_constraint; con] in
     (*
@@ -791,7 +794,7 @@ let solve_mgu
         None
     | BTYP_tuple [] ->
         let parent_ts = List.map
-          (fun (n,i,_) -> BTYP_var ((i),BTYP_type 0))
+          (fun (n,i,_) -> BTYP_type_var ((i),BTYP_type 0))
           parent_vs
         in
         Some (entry_kind.base_sym,domain,spec_result,!mgu,parent_ts @ base_ts)
@@ -803,7 +806,7 @@ let solve_mgu
         let implied = constraint_implies syms env_traint reduced_constraint in
         if implied then 
           let parent_ts = List.map
-            (fun (n,i,_) -> BTYP_var ((i),BTYP_type 0))
+            (fun (n,i,_) -> BTYP_type_var ((i),BTYP_type 0))
             parent_vs in
           Some (entry_kind.base_sym,domain,spec_result,!mgu,parent_ts @ base_ts)
         else begin

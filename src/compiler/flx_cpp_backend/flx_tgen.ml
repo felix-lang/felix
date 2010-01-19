@@ -150,7 +150,7 @@ let gen_type_name syms bsym_table (index,typ) =
   let t = unfold typ in
   match t with
   | BTYP_fix i -> ""
-  | BTYP_var (i,mt) -> failwith "[gen_type_name] Can't gen name of type variable"
+  | BTYP_type_var (i,mt) -> failwith "[gen_type_name] Can't gen name of type variable"
 
   | BTYP_tuple [] -> "" (* unit *)
 
@@ -318,7 +318,7 @@ let gen_type syms bsym_table (index,typ) =
   in
   let t = unfold typ in
   match t with
-  | BTYP_var _ -> failwith "[gen_type] can't gen type variable"
+  | BTYP_type_var _ -> failwith "[gen_type] can't gen type variable"
   | BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
 
   (* PROCEDURE *)

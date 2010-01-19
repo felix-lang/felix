@@ -129,7 +129,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
   print_endline "======== END BODY ========";
   *)
 
-  let ts' = map (fun (_,i) -> BTYP_var (i,BTYP_type 0)) vs in
+  let ts' = map (fun (_,i) -> BTYP_type_var (i,BTYP_type 0)) vs in
   let pset = fold_left (fun s {pindex=i} -> BidSet.add i s) BidSet.empty ps in
   let parameters = ref [] in
   let descend = descendants child_map this in

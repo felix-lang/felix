@@ -160,7 +160,7 @@ let fixup_exe syms bsym_table fi mt exe =
     print_endline ("[init] Deviant case variable " ^ si i);
     *)
     let vs = Flx_bsym_table.find_bvs bsym_table i in
-    let ts = map (fun (s,j) -> mt (BTYP_var (j,BTYP_type 0))) vs in
+    let ts = map (fun (s,j) -> mt (BTYP_type_var (j,BTYP_type 0))) vs in
     let i,ts = fi i ts in
     (*
     print_endline ("[init] Remapped deviant variable to " ^ si i);
@@ -172,7 +172,7 @@ let fixup_exe syms bsym_table fi mt exe =
     print_endline ("[svc] Deviant case variable " ^ si i);
     *)
     let vs = Flx_bsym_table.find_bvs bsym_table i in
-    let ts = map (fun (s,j) -> mt (BTYP_var (j,BTYP_type 0))) vs in
+    let ts = map (fun (s,j) -> mt (BTYP_type_var (j,BTYP_type 0))) vs in
     let i,ts = fi i ts in
     (*
     print_endline ("[svc] Remapped deviant variable to " ^ si i);

@@ -14,7 +14,7 @@ open Flx_use
 open Flx_child
 open Flx_beta
 
-let vs2ts vs = map (fun (s,i) -> BTYP_var (i,BTYP_type 0)) vs
+let vs2ts vs = map (fun (s,i) -> BTYP_type_var (i,BTYP_type 0)) vs
 
 (* drop first n elements of list l *)
 let rec drop l n =
@@ -346,7 +346,7 @@ let tcinst_chk syms bsym_table allow_fail i ts sr (inst_vs, inst_constraint, ins
      *)
      (* solve for vs' *)
      let vis = List.map (fun _ -> fresh_bid syms.counter) inst_vs in
-     let nuvs = map (fun i -> BTYP_var (i,BTYP_type 0)) vis in
+     let nuvs = map (fun i -> BTYP_type_var (i,BTYP_type 0)) vis in
      let inst_ts' = map (tsubst inst_vs nuvs) inst_ts in
      let vset = fold_left (fun acc i -> BidSet.add i acc) BidSet.empty vis in
 

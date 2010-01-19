@@ -58,7 +58,7 @@ let mkentry state (vs:ivs_list_t) i =
     (*
     print_endline ("[mkentry] Fudging type variable type " ^ si i);
     *)
-    BTYP_var (i, BTYP_type 0)) is
+    BTYP_type_var (i, BTYP_type 0)) is
   in
   let vs = List.map2 (fun i (n,_,_) -> n,i) is (fst vs) in
   {base_sym=i; spec_vs=vs; sub_ts=ts}
@@ -445,8 +445,8 @@ and inner_bind_expression state bsym_table env rs e  =
 and expand_typeset t =
   match t with
   | BTYP_type_tuple ls
-  | BTYP_typeset ls
-  | BTYP_typesetunion ls -> List.fold_left (fun ls t -> expand_typeset t @ ls) [] ls
+  | BTYP_type_set ls
+  | BTYP_type_set_union ls -> List.fold_left (fun ls t -> expand_typeset t @ ls) [] ls
   | x -> [x]
 
 and handle_typeset state sr elt tset =
@@ -488,7 +488,7 @@ and handle_typeset state sr elt tset =
   let fresh = fresh_bid state.syms.counter in
   let dflt =
     {
-      pattern=BTYP_var (fresh,BTYP_type 0);
+      pattern=BTYP_type_var (fresh,BTYP_type 0);
       pattern_vars = BidSet.singleton fresh;
       assignments=[]
     },
@@ -777,7 +777,7 @@ and bind_type'
       (*
       print_endline ("Mapping " ^ s ^ "<"^si i^"> to TYPE");
       *)
-      s,BTYP_var (i,BTYP_type 0)) (explicit_vars @ as_vars)
+      s,BTYP_type_var (i,BTYP_type 0)) (explicit_vars @ as_vars)
       in
       let t' = btp t' (params@args) in
       let t' = list_subst state.syms.Flx_mtypes2.counter eqns t' in
@@ -919,9 +919,9 @@ and bind_type'
 
   | TYP_typeset ts
   | TYP_setunion ts ->
-    BTYP_typeset (expand_typeset (BTYP_typeset (List.map bt ts)))
+    BTYP_type_set (expand_typeset (BTYP_type_set (List.map bt ts)))
 
-  | TYP_setintersection ts -> BTYP_typesetintersection (List.map bt ts)
+  | TYP_setintersection ts -> BTYP_type_set_intersection (List.map bt ts)
 
 
   | TYP_isin (elt,tset) ->
@@ -934,7 +934,7 @@ and bind_type'
     (*
     print_endline ("Fudging metatype of type variable " ^ si i);
     *)
-    BTYP_var (i,BTYP_type 0)
+    BTYP_type_var (i,BTYP_type 0)
 
   | TYP_as (t,s) ->
     bind_type' state bsym_table env
@@ -1033,7 +1033,7 @@ and bind_type'
         (*
         print_endline ("Binding param " ^ n ^ "<" ^ si i ^ "> metatype " ^ sbt bsym_table t);
         *)
-        (n,BTYP_var (i,t))) data
+        (n,BTYP_type_var (i,t))) data
     in
     let bbody =
       (*
@@ -1056,7 +1056,7 @@ and bind_type'
       (*
       print_endline "BINDING typefunction DONE\n";
       *)
-      BTYP_typefun (bparams, bt r, bbody)
+      BTYP_type_function (bparams, bt r, bbody)
 
   | TYP_apply (TYP_name (_,"_flatten",[]),t2) ->
     let t2 = bt t2 in
@@ -1116,7 +1116,7 @@ and bind_type'
        try match qn with
        | `AST_name (sr,name,[]) ->
          let t1 = List.assoc name params in
-         BTYP_apply(t1,t2)
+         BTYP_type_apply(t1,t2)
        | _ -> raise Not_found
        with Not_found ->
 
@@ -1145,7 +1145,7 @@ and bind_type'
        (*
        print_endline ("Result of binding function term is " ^ sbt bsym_table t1);
        *)
-       BTYP_apply (t1,t2)
+       BTYP_type_apply (t1,t2)
      in
      (*
      print_endline ("type Application is " ^ sbt bsym_table t);
@@ -1160,7 +1160,7 @@ and bind_type'
   | TYP_apply (t1,t2) ->
     let t1 = bt t1 in
     let t2 = bt t2 in
-    let t = BTYP_apply (t1,t2) in
+    let t = BTYP_type_apply (t1,t2) in
     (*
     let t = beta_reduce state.syms sr t in
     *)
@@ -1206,7 +1206,7 @@ and bind_type'
         (*
         print_endline ("[Ast_index] fudging type variable " ^ si i);
         *)
-        BTYP_var (i,BTYP_type 0)) (fst vs)
+        BTYP_type_var (i,BTYP_type 0)) (fst vs)
       in
       (*
       print_endline ("Synthetic name "^name ^ "<"^si index^"> is a nominal type, ts=" ^
@@ -1241,7 +1241,7 @@ and bind_type'
        f
 
        (*
-       BTYP_typefun (params, ret, body)
+       BTYP_type_function (params, ret, body)
 
 
        of (int * 't) list * 't * 't
@@ -1250,7 +1250,7 @@ and bind_type'
        failwith "TYPE FUNCTION CLOSURE REQUIRED!"
        *)
        (*
-       BTYP_typefun_closure (sye index, ts)
+       BTYP_type_function_closure (sye index, ts)
        *)
 
     | NonFunctionEntry index  ->
@@ -1280,12 +1280,12 @@ and bind_type'
         in
         let body =
           let env = mkenv (sye index) in
-          let xparams = List.map (fun (id,idx,mt) -> id, BTYP_var (idx, bmt mt)) ivs in
+          let xparams = List.map (fun (id,idx,mt) -> id, BTYP_type_var (idx, bmt mt)) ivs in
           bind_type' state bsym_table env {rs with depth = rs.depth+1} sr t (xparams @ params) mkenv
         in
         let ret = BTYP_type 0 in
         let params = List.map (fun (id,idx,mt) -> idx, bmt mt) ivs in
-        BTYP_typefun (params, ret, body)
+        BTYP_type_function (params, ret, body)
 
       | _ ->
         let ts = List.map bt ts in
@@ -1393,8 +1393,8 @@ and cal_assoc_type state (bsym_table:Flx_bsym_table.t) sr t =
   | BTYP_function (a,b) -> BTYP_function (ct a, ct b)
 
   | BTYP_intersect ls
-  | BTYP_typesetunion ls
-  | BTYP_typeset ls
+  | BTYP_type_set_union ls
+  | BTYP_type_set ls
     ->
     let ls = List.map ct ls in chk ls
 
@@ -1555,7 +1555,7 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
       let mt = cal_assoc_type state sr mt in
       print_endline ("Assoc type is " ^ sbt bsym_table mt);
       *)
-      BTYP_var (index,mt)
+      BTYP_type_var (index,mt)
 
     (* type alias RECURSE *)
     | SYMDEF_type_alias t ->
@@ -1692,7 +1692,7 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
     let ret_type = ref rt in
     (*
     begin match rt with
-    | BTYP_var (i,_) when i = index ->
+    | BTYP_type_var (i,_) when i = index ->
       print_endline "No return type given"
     | _ ->
       print_endline (" .. given type is " ^ sbt bsym_table rt)
@@ -2501,7 +2501,7 @@ and lookup_qn_with_sig'
     | SYMDEF_match_check _
       ->
       let vs = find_vs state.sym_table bsym_table index in
-      let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
+      let ts = List.map (fun (_,i,_) -> BTYP_type_var (i,BTYP_type 0)) (fst vs) in
       BEXPR_closure (index,ts),
       inner_type_of_index state bsym_table rs index
 
@@ -2509,7 +2509,7 @@ and lookup_qn_with_sig'
       (*
       print_endline "Non function ..";
       *)
-      let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
+      let ts = List.map (fun (_,i,_) -> BTYP_type_var (i,BTYP_type 0)) (fst vs) in
       handle_nonfunction_index index ts
     end
 
@@ -2705,14 +2705,14 @@ and lookup_type_qn_with_sig'
     | SYMDEF_match_check _
       ->
       let vs = find_vs state.sym_table bsym_table index in
-      let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
+      let ts = List.map (fun (_,i,_) -> BTYP_type_var (i,BTYP_type 0)) (fst vs) in
       inner_type_of_index state bsym_table rs index
 
     | _ ->
       (*
       print_endline "Non function ..";
       *)
-      let ts = List.map (fun (_,i,_) -> BTYP_var (i,BTYP_type 0)) (fst vs) in
+      let ts = List.map (fun (_,i,_) -> BTYP_type_var (i,BTYP_type 0)) (fst vs) in
       handle_nonfunction_index index ts
     end
 
@@ -3349,12 +3349,12 @@ and lookup_type_name_in_table_dirs_with_sig
       (* match function a -> b -> c -> d with sigs a b c *)
       let rec m f s = match f,s with
       | BTYP_function (d,c),h::t when d = h -> m c t
-      | BTYP_typefun _,_ -> failwith "Can't handle actual lambda form yet"
+      | BTYP_type_function _,_ -> failwith "Can't handle actual lambda form yet"
       | _,[] -> true
       | _ -> false
       in
       if m mt t2
-      then Some (BTYP_var (sye index,mt))
+      then Some (BTYP_type_var (sye index,mt))
       else
       (print_endline
       (
@@ -4502,7 +4502,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
           "Wrong number of components matching record argument to struct"
         )
       else begin
-        let bvs = List.map (fun (n,i,_) -> n,BTYP_var (i,BTYP_type 0)) (fst vs) in
+        let bvs = List.map (fun (n,i,_) -> n,BTYP_type_var (i,BTYP_type 0)) (fst vs) in
         let env' = build_env state bsym_table (Some i) in
         let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
         let alst = List.sort (fun (a,_) (b,_) -> compare a b) alst in
@@ -4655,7 +4655,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
             in scan 0 ls
           in
           let ct =
-            let bvs = List.map (fun (n,i,_) -> n,BTYP_var (i,BTYP_type 0)) (fst vs) in
+            let bvs = List.map (fun (n,i,_) -> n,BTYP_type_var (i,BTYP_type 0)) (fst vs) in
             let env' = build_env state bsym_table (Some i) in
             bind_type' state bsym_table env' rsground sr ct bvs mkenv
           in
@@ -4691,7 +4691,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
               in scan 0 ls
             in
             let ct =
-              let bvs = List.map (fun (n,i,_) -> n,BTYP_var (i,BTYP_type 0)) (fst vs) in
+              let bvs = List.map (fun (n,i,_) -> n,BTYP_type_var (i,BTYP_type 0)) (fst vs) in
               let env' = build_env state bsym_table (Some i) in
               bind_type' state bsym_table env' rsground sr ct bvs mkenv
             in
@@ -4956,7 +4956,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
           print_endline ("Index is " ^ si vidx);
           *)
           let vt =
-            let bvs = List.map (fun (n,i,_) -> n,BTYP_var (i,BTYP_type 0)) (fst vs) in
+            let bvs = List.map (fun (n,i,_) -> n,BTYP_type_var (i,BTYP_type 0)) (fst vs) in
             (*
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
             *)
@@ -5017,7 +5017,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
           print_endline ("Index is " ^ si vidx);
           *)
           let vt =
-            let bvs = List.map (fun (n,i,_) -> n,BTYP_var (i,BTYP_type 0)) (fst vs) in
+            let bvs = List.map (fun (n,i,_) -> n,BTYP_type_var (i,BTYP_type 0)) (fst vs) in
             (*
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
             *)
@@ -5563,9 +5563,9 @@ and review_entry state vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_
          (*
          print_endline ("SYNTHESISE FRESH VIEW VARIABLE "^si i^" for missing ts");
          *)
-         let h' = BTYP_var (i,BTYP_type 0) in
+         let h' = BTYP_type_var (i,BTYP_type 0) in
          (*
-         let h' = let (_,i) = h in BTYP_var (i,BTYP_type 0) in
+         let h' = let (_,i) = h in BTYP_type_var (i,BTYP_type 0) in
          *)
          aux t [] (h::outvs) (h'::outts)
        | _ -> List.rev outvs, List.rev outts
@@ -5887,8 +5887,8 @@ and rebind_btype state bsym_table env sr ts t: btypecode_t =
     | _ -> t
     end
 
-  | BTYP_typesetunion ts -> BTYP_typesetunion (List.map rbt ts)
-  | BTYP_typesetintersection ts -> BTYP_typesetintersection (List.map rbt ts)
+  | BTYP_type_set_union ts -> BTYP_type_set_union (List.map rbt ts)
+  | BTYP_type_set_intersection ts -> BTYP_type_set_intersection (List.map rbt ts)
 
   | BTYP_tuple ts -> BTYP_tuple (List.map rbt ts)
   | BTYP_record ts ->
@@ -5899,7 +5899,7 @@ and rebind_btype state bsym_table env sr ts t: btypecode_t =
       let ss,ts = List.split ts in
       BTYP_variant (List.combine ss (List.map rbt ts))
 
-  | BTYP_typeset ts ->  BTYP_typeset (List.map rbt ts)
+  | BTYP_type_set ts ->  BTYP_type_set (List.map rbt ts)
   | BTYP_intersect ts ->  BTYP_intersect (List.map rbt ts)
 
   | BTYP_sum ts ->
@@ -5918,9 +5918,9 @@ and rebind_btype state bsym_table env sr ts t: btypecode_t =
   | BTYP_void
   | BTYP_fix _ -> t
 
-  | BTYP_var (i,mt) -> clierr sr ("[rebind_type] Unexpected type variable " ^ sbt bsym_table t)
-  | BTYP_apply _
-  | BTYP_typefun _
+  | BTYP_type_var (i,mt) -> clierr sr ("[rebind_type] Unexpected type variable " ^ sbt bsym_table t)
+  | BTYP_type_apply _
+  | BTYP_type_function _
   | BTYP_type _
   | BTYP_type_tuple _
   | BTYP_type_match _

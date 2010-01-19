@@ -218,15 +218,15 @@ let rec lltype_of_btype state btype =
   | Flx_types.BTYP_void -> Llvm.void_type state.context
   | Flx_types.BTYP_fix i -> assert false
   | Flx_types.BTYP_intersect ls -> assert false
-  | Flx_types.BTYP_var (i, mt) -> assert false
-  | Flx_types.BTYP_apply (t1, t2) -> assert false
-  | Flx_types.BTYP_typefun (args, result, body) -> assert false
+  | Flx_types.BTYP_type_var (i, mt) -> assert false
+  | Flx_types.BTYP_type_apply (t1, t2) -> assert false
+  | Flx_types.BTYP_type_function (args, result, body) -> assert false
   | Flx_types.BTYP_type i -> assert false
   | Flx_types.BTYP_type_tuple ls -> assert false
   | Flx_types.BTYP_type_match (t, ps) -> assert false
-  | Flx_types.BTYP_typeset ls -> assert false
-  | Flx_types.BTYP_typesetunion ls -> assert false
-  | Flx_types.BTYP_typesetintersection ls -> assert false
+  | Flx_types.BTYP_type_set ls -> assert false
+  | Flx_types.BTYP_type_set_union ls -> assert false
+  | Flx_types.BTYP_type_set_intersection ls -> assert false
 
 
 (* Convenience function to find the parent of the builder. *)

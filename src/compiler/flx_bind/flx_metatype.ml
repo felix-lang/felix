@@ -22,7 +22,7 @@ and metatype' sym_table bsym_table sr term =
   let mt t = metatype' sym_table bsym_table sr t in
   match term with
 
-  | BTYP_typefun (a,b,c) ->
+  | BTYP_type_function (a,b,c) ->
     let ps = List.map snd a in
     let argt =
       match ps with
@@ -46,7 +46,7 @@ and metatype' sym_table bsym_table sr term =
   | BTYP_type_tuple ts ->
     BTYP_tuple (List.map mt ts)
 
-  | BTYP_apply (a,b) ->
+  | BTYP_type_apply (a,b) ->
     begin
       let ta = mt a
       and tb = mt b
@@ -69,7 +69,7 @@ and metatype' sym_table bsym_table sr term =
           sbt bsym_table ta
         )
     end
-  | BTYP_var (i,mt) ->
+  | BTYP_type_var (i,mt) ->
     (*
     print_endline ("Type variable " ^ si i^ " has encoded meta type " ^
       sbt bsym_table mt);
