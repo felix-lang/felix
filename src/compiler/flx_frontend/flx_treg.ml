@@ -166,7 +166,7 @@ let rec register_type_r ui syms bsym_table exclude sr t =
       *)
 
       (*
-      let argt = typeoflist cts in
+      let argt = btyp_tuple cts in
       rnr argt;                             (* argument tuple *)
       *)
       rnr t;

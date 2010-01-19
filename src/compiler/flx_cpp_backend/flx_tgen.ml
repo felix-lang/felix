@@ -384,9 +384,9 @@ let gen_type syms bsym_table (index,typ) =
     descr ^ gen_ref name t
     *)
 
-  | BTYP_array (v,i) ->
+  | BTYP_array (t,i) ->
     let name = tn typ in
-    let v = tn v in
+    let v = tn t in
     let n = int_of_unitsum i in
     if n < 2 then failwith "[flx_tgen] unexpected array length < 2";
     descr ^
@@ -394,6 +394,20 @@ let gen_type syms bsym_table (index,typ) =
     "  static size_t const len = " ^ si n ^ ";\n" ^
     "  typedef " ^ v ^ " element_type;\n" ^
     "  " ^ v ^ " data[" ^ si n ^ "];\n" ^
+    "  " ^ name ^ "() {}\n" ^ (* default constructor *)
+    "  " ^ name ^ "(" ^
+    List.fold_left begin fun s i ->
+      if t = btyp_tuple [] then s else
+      s ^
+      (if String.length s > 0 then ", " else "") ^
+      tn t ^ " a" ^ string_of_int i
+    end "" (nlist n) ^
+    ") {\n" ^
+    List.fold_left begin fun s i ->
+      if t = btyp_tuple [] then s else
+      s ^ "    data[" ^ string_of_int i ^ "] = a" ^ string_of_int i ^ ";\n"
+    end "" (nlist n) ^
+    "  }\n" ^ 
     "};\n"
 
 

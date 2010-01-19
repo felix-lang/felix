@@ -580,7 +580,6 @@ let rec reduce_type t =
      let ts = List.combine ss (List.map reduce_type ts) in
      btyp_variant ts
     end
-  | BTYP_tuple ts -> typeoflist ts
   | BTYP_array (t',BTYP_unitsum 0) -> btyp_tuple []
   | BTYP_array (t',BTYP_unitsum 1) -> t'
   | t -> t

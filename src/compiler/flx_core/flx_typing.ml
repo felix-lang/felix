@@ -95,19 +95,6 @@ let typeofbps bps =
 
 let typeofbps_traint (bps,_) = typeofbps bps
 
-(* bound type! *)
-let typeoflist typlist = match typlist with
-  | [] -> btyp_tuple []
-  | [t] -> t
-  | h :: t ->
-    try
-      List.iter
-      (fun t -> if t <> h then raise Not_found)
-      t;
-      btyp_array (h,btyp_unitsum (List.length typlist))
-    with Not_found ->
-      btyp_tuple typlist
-
 let flx_bool = TYP_unitsum 2
 let flx_bbool = btyp_unitsum 2
 

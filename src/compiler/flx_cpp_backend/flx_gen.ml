@@ -88,7 +88,7 @@ let find_members syms bsym_table child_map index ts =
   x
 
 let typeof_bparams bps: btypecode_t  =
-  typeoflist (typeofbps bps)
+  btyp_tuple (typeofbps bps)
 
 let get_type bsym_table index =
   let bsym =

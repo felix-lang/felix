@@ -2318,7 +2318,7 @@ and string_of_bbdcl bsym_table (bbdcl:bbdcl_t) index : string =
     string_of_properties props ^
     "fun " ^ name ^ string_of_bvs vs ^
     ": " ^
-    (sobt (typeoflist ps)) ^ " -> " ^
+    (sobt (btyp_tuple ps)) ^ " -> " ^
     (sobt rt) ^
     " = " ^ string_of_code_spec code ^
     (if prec = "" then "" else ":"^prec^" ")^
@@ -2329,7 +2329,7 @@ and string_of_bbdcl bsym_table (bbdcl:bbdcl_t) index : string =
     string_of_properties props ^
     "callback fun " ^ name ^ string_of_bvs vs ^
     ": " ^
-    (sobt (typeoflist ps_cf)) ^ " -> " ^
+    (sobt (btyp_tuple ps_cf)) ^ " -> " ^
     (sobt rt) ^
     " : " ^
     (if prec = "" then "" else ":"^prec^" ")^
@@ -2340,7 +2340,7 @@ and string_of_bbdcl bsym_table (bbdcl:bbdcl_t) index : string =
     string_of_properties props ^
     "proc " ^ name ^ string_of_bvs vs ^
     ": " ^
-     (sobt (typeoflist ps)) ^
+     (sobt (btyp_tuple ps)) ^
      " = " ^ string_of_code_spec code ^
      string_of_breqs bsym_table reqs ^
      ";"

@@ -20,10 +20,6 @@ val type_of_argtypes :
 
 val funparamtype : 'a * 'b * 't * 'd -> 't
 
-val typeoflist:
-  btypecode_t list ->
-  btypecode_t
-
 val typeofbps_traint: bparams_t -> btypecode_t list
 val typeofbps: bparameter_t list-> btypecode_t list
 

@@ -110,7 +110,7 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
       let argt =
         let hdt = List.hd t in
         let xargs,traint = hdt in
-        typeoflist (List.map (fun(x,y,z,d)->z) xargs)
+        typeoflist (List.map (fun (x,y,z,d) -> z) xargs)
       in
       let m = List.length args in
       let body =

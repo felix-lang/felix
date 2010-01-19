@@ -1840,7 +1840,7 @@ and inner_type_of_index_with_ts
 and btype_of_bsym state bsym_table bt bid bsym =
   (* Helper function to convert function parameters to a type. *)
   let type_of_params params =
-    typeoflist (List.map (fun p -> p.ptyp) params)
+    btyp_tuple (List.map (fun p -> p.ptyp) params)
   in
 
   match bsym.Flx_bsym.bbdcl with
@@ -1880,7 +1880,7 @@ and btype_of_bsym state bsym_table bt bid bsym =
         bid
         ts
       in
-      let t = typeoflist (List.map snd ls) in
+      let t = btyp_tuple (List.map snd ls) in
       btyp_function (t, btyp_inst (bid, ts))
   | BBDCL_typeclass _ -> assert false
   | BBDCL_instance _ -> assert false

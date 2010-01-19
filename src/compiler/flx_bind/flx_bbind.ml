@@ -316,7 +316,7 @@ let bbind_symbol state bsym_table symbol_index sym =
 
     (* Cache the type of the function. *)
     if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
-      let d = typeoflist ts in
+      let d = btyp_tuple ts in
       let ft =
         if mem `Cfun props
         then btyp_cfunction (d,brt')
@@ -327,7 +327,7 @@ let bbind_symbol state bsym_table symbol_index sym =
     end;
 
     if state.syms.compiler_options.print_flag then begin
-      let atyp = typeoflist ts in
+      let atyp = btyp_tuple ts in
       let t =
         if mem `Cfun props
         then btyp_cfunction (atyp,brt')
@@ -557,12 +557,12 @@ let bbind_symbol state bsym_table symbol_index sym =
 
     (* Cache the type of the function. *)
     if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
-      let t = fold state.syms.counter (btyp_function (typeoflist ts, bret)) in
+      let t = fold state.syms.counter (btyp_function (btyp_tuple ts, bret)) in
       Hashtbl.add state.syms.ticache symbol_index t
     end;
 
     if state.syms.compiler_options.print_flag then begin
-      let atyp = typeoflist ts in
+      let atyp = btyp_tuple ts in
       print_endline ("//bound fun " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table (btyp_function (atyp, bret)))
@@ -655,12 +655,12 @@ let bbind_symbol state bsym_table symbol_index sym =
 
     (* Cache the type of the callback. *)
     if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
-      let t = fold state.syms.counter (btyp_cfunction (typeoflist ts_cf, bret)) in
+      let t = fold state.syms.counter (btyp_cfunction (btyp_tuple ts_cf, bret)) in
       Hashtbl.add state.syms.ticache symbol_index t
     end;
 
     if state.syms.compiler_options.print_flag then begin
-      let atyp = typeoflist ts_cf in
+      let atyp = btyp_tuple ts_cf in
       print_endline ("//bound callback fun " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs ^ ":" ^
         sbt bsym_table (btyp_function (atyp, bret)))

@@ -342,8 +342,16 @@ let btyp_inst (bid, ts) =
   BTYP_inst (bid, ts)
 
 (** Construct a BTYP_tuple type. *)
-let btyp_tuple ts =
-  BTYP_tuple ts
+let btyp_tuple = function
+  | [] -> BTYP_tuple []
+  | [t] -> t
+  | (head :: tail) as ts ->
+      (* If all the types are the same, reduce the type to a BTYP_array. *)
+      try
+        List.iter (fun t -> if t <> head then raise Not_found) tail;
+        BTYP_array (head, (BTYP_unitsum (List.length ts)))
+      with Not_found ->
+        BTYP_tuple ts
 
 (** Construct a BTYP_array type. *)
 let btyp_array (t, n) =

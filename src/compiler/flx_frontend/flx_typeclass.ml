@@ -69,22 +69,22 @@ let check_instance
       let bsym = Flx_bsym_table.find bsym_table i in
       match bsym.Flx_bsym.bbdcl with
       | BBDCL_fun (_,bvs,params,ret,_,_,_) ->
-        let argt = typeoflist params in
+        let argt = btyp_tuple params in
         let qt = bvs, btyp_function (argt,ret) in
         (bsym.Flx_bsym.id,(i,qt)) :: acc
 
       | BBDCL_proc (_,bvs,params,_,_) ->
-        let argt = typeoflist params in
+        let argt = btyp_tuple params in
         let qt = bvs, btyp_function (argt, btyp_void) in
         (bsym.Flx_bsym.id,(i,qt)) :: acc
 
       | BBDCL_procedure (_,bvs,bps,_) ->
-        let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
+        let argt : btypecode_t = btyp_tuple (typeofbps_traint bps) in
         let qt = bvs, btyp_function (argt, btyp_void) in
         (bsym.Flx_bsym.id,(i,qt)) :: acc
 
       | BBDCL_function (_,bvs,bps,ret,_) ->
-        let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
+        let argt : btypecode_t = btyp_tuple (typeofbps_traint bps) in
         let qt = bvs, btyp_function (argt,ret) in
         (bsym.Flx_bsym.id,(i,qt)) :: acc
 
@@ -214,7 +214,7 @@ let check_instance
       match tck_bsym.Flx_bsym.bbdcl with
       | BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
         if ct == CS_virtual then
-          let ft = btyp_function (typeoflist params,ret) in
+          let ft = btyp_function (btyp_tuple params,ret) in
           check_binding true tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
         (*
         clierr tcksr "Typeclass requires virtual function";
@@ -222,19 +222,19 @@ let check_instance
 
       | BBDCL_proc (props,bvs,params,ct,breq) ->
         if ct == CS_virtual then
-          let ft = btyp_function (typeoflist params, btyp_void) in
+          let ft = btyp_function (btyp_tuple params, btyp_void) in
           check_binding true tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
         (*
         clierr tcksr "Typeclass requires virtual procedure";
         *)
 
       | BBDCL_function (props,bvs,bps,ret,_) when mem `Virtual props ->
-        let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
+        let argt : btypecode_t = btyp_tuple (typeofbps_traint bps) in
         let ft = btyp_function (argt,ret) in
         check_binding false tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
 
       | BBDCL_procedure (props, bvs, bps,_) when mem `Virtual props ->
-        let argt : btypecode_t = typeoflist (typeofbps_traint bps) in
+        let argt : btypecode_t = btyp_tuple (typeofbps_traint bps) in
         let ft = btyp_function (argt, btyp_void) in
         check_binding false tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
 

@@ -1079,47 +1079,34 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     (* just apply the tuple type ctor to the arguments *)
     begin match t with
     | BTYP_array (t',BTYP_unitsum n) ->
-      let tuple =
-        let t'' = btyp_tuple (map (fun _ -> t') (nlist n)) in
-        let ctyp = raw_typename t'' in
-        ce_atom (
-        ctyp ^ "(" ^
-          fold_left
-          (fun s e ->
-            let x = ge_arg e in
-            if String.length x = 0 then s else
-            s ^
-            (if String.length s > 0 then ", " else "") ^
-            x
-          )
-          ""
-          es
-        ^
-        ")"
-        )
-      in
-        (* cast a tuple which is an array type to an array *)
-        let atyp = tn t in
-        ce_call
-          (ce_atom ("reinterpret<" ^ atyp ^">"))
-          [tuple]
-
-    | BTYP_tuple _ ->
-      let ctyp = tn t in
+      let t'' = btyp_tuple (map (fun _ -> t') (nlist n)) in
+      let ctyp = raw_typename t'' in
       ce_atom (
-      ctyp ^ "(" ^
-        fold_left
-        (fun s e ->
+        ctyp ^ "(" ^
+        List.fold_left begin fun s e ->
           let x = ge_arg e in
           if String.length x = 0 then s else
           s ^
           (if String.length s > 0 then ", " else "") ^
           x
-        )
-        ""
-        es
-      ^
-      ")"
+        end "" es
+        ^
+        ")"
+      )
+
+    | BTYP_tuple _ ->
+      let ctyp = tn t in
+      ce_atom (
+        ctyp ^ "(" ^
+        List.fold_left begin fun s e ->
+          let x = ge_arg e in
+          if String.length x = 0 then s else
+          s ^
+          (if String.length s > 0 then ", " else "") ^
+          x
+        end "" es
+        ^
+        ")"
       )
     | _ -> assert false
     end
