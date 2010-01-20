@@ -329,8 +329,8 @@ def _print_posix_support(lang, platform, p):
         switch.extend('-l' + l for l in dlfcn_h.libs)
         switch.extend('-l' + l for l in dlfcn_h.external_libs)
         if switch:
-            p('CCLINK_STATIC+=%r' % ' '.join(switch))
-            p('CCLINK_DYNAMIC_FLX+=%r' % ' '.join(switch))
+            p('CCLINK_STATIC+=" " + %r' % ' '.join(switch))
+            p('CCLINK_DYNAMIC_FLX+=" " + %r' % ' '.join(switch))
     else:
         p('HAVE_DLOPEN', False)
 
