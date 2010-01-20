@@ -153,7 +153,7 @@ let getname syms bsym_table i =
 let flx_bool = btyp_unitsum 2
 
 let isbool2 t =
-  reduce_type t = btyp_array (flx_bool, flx_bool)
+  t = btyp_array (flx_bool, flx_bool)
 
 let rec why_expr syms bsym_table (e: tbexpr_t) =
   let ee e = why_expr syms bsym_table e in

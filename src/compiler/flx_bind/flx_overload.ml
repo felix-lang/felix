@@ -398,7 +398,7 @@ let make_equations
   *)
 
   let curry_domains = List.map
-    (fun t -> reduce_type (beta_reduce syms bsym_table sr t))
+    (fun t -> beta_reduce syms bsym_table sr t)
     curry_domains
   in
 

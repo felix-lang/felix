@@ -174,7 +174,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     ", got ts=" ^
     si (length ts)
   );
-  let tsub t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
+  let tsub t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
   let tn t = cpp_typename syms bsym_table (tsub t) in
 
   (* NOTE this function does not do a reduce_type *)
@@ -196,7 +196,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       in
       begin match bsym.Flx_bsym.bbdcl with
       | BBDCL_union (bvs,cts) ->
-        let tsub' t = reduce_type (beta_reduce syms bsym_table sr (tsubst bvs ts t)) in
+        let tsub' t = beta_reduce syms bsym_table sr (tsubst bvs ts t) in
         let cts = map (fun (_,_,t) -> tsub' t) cts in
         if all_voids cts then ge' e
         else ce_dot (ge' e) "variant"
@@ -214,7 +214,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
   in
   let our_display = get_display_list bsym_table this in
   let our_level = length our_display in
-  let rt t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
+  let rt t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
   let t = rt t in
   match t with
   | BTYP_tuple [] ->
@@ -277,7 +277,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     end
 
   | BEXPR_match_case (n,((e',t') as e)) ->
-    let t' = reduce_type (beta_reduce syms bsym_table sr  t') in
+    let t' = beta_reduce syms bsym_table sr t' in
     let x = gen_case_index e in
     ce_infix "==" x (ce_atom (si n))
 
@@ -752,7 +752,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       | CS_str s -> ce_expr prec s
       | CS_str_template s ->
         let ts = map tsub ts in
-        let retyp = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts retyp)) in
+        let retyp = beta_reduce syms bsym_table sr (tsubst vs ts retyp) in
         let retyp = tn retyp in
         gen_prim_call
           syms
@@ -775,7 +775,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       ;
       let ts = map tsub ts in
       let s = bsym.Flx_bsym.id ^ "($a)" in
-      let retyp = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts retyp)) in
+      let retyp = beta_reduce syms bsym_table sr (tsubst vs ts retyp) in
       let retyp = tn retyp in
       gen_prim_call syms bsym_table tsub ge'' s ts (arg,argt) retyp sr bsym.Flx_bsym.sr "atom"
 
@@ -817,9 +817,9 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
          but units for sums .. hmm .. inconsistent!
       *)
       let ts = map tsub ts in
-      let ct = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts ct)) in
+      let ct = beta_reduce syms bsym_table sr (tsubst vs ts ct) in
       let _,t = a in
-      let t = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts t)) in
+      let t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
       begin match ct with
       | BTYP_tuple [] ->
         ce_atom ( "_uctor_(" ^ si cidx ^ ", NULL)")
@@ -982,7 +982,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
               xs ps
 
             | _,tt ->
-              let tt = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts tt)) in
+              let tt = beta_reduce syms bsym_table sr  (tsubst vs ts tt) in
               (* NASTY, EVALUATES EXPR MANY TIMES .. *)
               let n = ref 0 in
               fold_left

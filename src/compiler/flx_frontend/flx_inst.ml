@@ -29,7 +29,6 @@ let add_inst syms bsym_table ref_insts1 (i,ts) =
     print_endline ("remapped to instance " ^ si i ^ "[" ^
     catmap ", " (sbt bsym_table) ts ^ "]");
     *)
-  let ts = map (fun t -> reduce_type t) ts in
   let x = i, ts in
   let has_variables =
     fold_left
@@ -275,7 +274,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     process_expr syms bsym_table ref_insts1 hvarmap bsym.Flx_bsym.sr e
   in
   let rtr t = register_type_r uis syms bsym_table [] bsym.Flx_bsym.sr t in
-  let rtnr t = register_type_nr syms bsym_table (reduce_type t) in
+  let rtnr t = register_type_nr syms bsym_table t in
   if syms.compiler_options.print_flag then
   print_endline ("//Instance " ^ string_of_bid inst ^ "=" ^ bsym.Flx_bsym.id ^
     "<" ^ string_of_bid i ^ ">[" ^

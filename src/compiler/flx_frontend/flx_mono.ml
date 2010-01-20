@@ -193,12 +193,11 @@ let fixup_exes syms bsym_table fi mt exes =
 let mono syms bsym_table fi i ts n =
   let bsym = Flx_bsym_table.find bsym_table i in
   let mt vars t =
-    reduce_type
-    (beta_reduce
+    beta_reduce
       syms
       bsym_table
       bsym.Flx_bsym.sr
-      (fixup_type syms bsym_table fi (list_subst syms.counter vars t)))
+      (fixup_type syms bsym_table fi (list_subst syms.counter vars t))
   in
   let update_bsym parent bbdcl =
     Flx_bsym_table.add bsym_table n { bsym with
@@ -362,7 +361,6 @@ let monomorphise syms bsym_table =
   ;
 
   let fi polyinst i ts =
-    let ts = map reduce_type ts in
     let i,ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts in
     try Hashtbl.find polyinst (i,ts),[]
     with Not_found ->  i,ts

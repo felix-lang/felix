@@ -418,7 +418,6 @@ let gen_type syms bsym_table (index,typ) =
     in
     begin match bsym.Flx_bsym.bbdcl with
     | BBDCL_newtype (vs,t') ->
-      let t' = reduce_type t' in
       let descr =
         "\n//NEWTYPE " ^ string_of_bid i ^ " INSTANCE " ^
         string_of_bid index ^ ": " ^

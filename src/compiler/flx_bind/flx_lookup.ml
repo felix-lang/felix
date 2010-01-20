@@ -3583,7 +3583,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
   print_env env;
   print_endline "==";
   *)
-  let rt t = Flx_maps.reduce_type (beta_reduce state.syms bsym_table sr t) in
+  let rt t = beta_reduce state.syms bsym_table sr t in
   let sr = src_of_expr e in
   let cal_method_apply sra fn e2 meth_ts =
     (*
@@ -3843,8 +3843,6 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
     let t'' = bt sr t in
     if type_eq state.syms.counter t' t'' then x'
     else
-    let t' = Flx_maps.reduce_type t' in (* src *)
-    let t'' = Flx_maps.reduce_type t'' in (* dst *)
     begin match t',t'' with
     | BTYP_inst (i,[]),BTYP_unitsum n ->
       begin match hfind "lookup" state.sym_table i with
@@ -5184,9 +5182,7 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
           (*
           print_endline ("Constraint = " ^ sbt bsym_table cons);
           *)
-          let cons = Flx_maps.reduce_type
-            (beta_reduce state.syms bsym_table sr cons)
-          in
+          let cons = beta_reduce state.syms bsym_table sr cons in
           match cons with
           | BTYP_tuple [] -> true
           | BTYP_void -> false

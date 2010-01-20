@@ -557,29 +557,3 @@ let reduce_bexe exe =
   | BEXE_call (sr,(BEXPR_closure (i,ts),_),a) ->
     BEXE_call_direct (sr,i,ts,a)
   | x -> x
-
-let rec reduce_type t =
-  match map_btype reduce_type t with
-  | BTYP_record ts ->
-    begin match ts with
-    | [] -> btyp_tuple []
-    | _ ->
-     let rcmp (s1,_) (s2,_) = compare s1 s2 in
-     let ts = List.sort compare ts in
-     let ss,ts = List.split ts in
-     let ts = List.combine ss (List.map reduce_type ts) in
-     btyp_record ts
-    end
-  | BTYP_variant ts ->
-    begin match ts with
-    | [] -> btyp_void
-    | _ ->
-     let rcmp (s1,_) (s2,_) = compare s1 s2 in
-     let ts = List.sort compare ts in
-     let ss,ts = List.split ts in
-     let ts = List.combine ss (List.map reduce_type ts) in
-     btyp_variant ts
-    end
-  | BTYP_array (t',BTYP_unitsum 0) -> btyp_tuple []
-  | BTYP_array (t',BTYP_unitsum 1) -> t'
-  | t -> t

@@ -183,7 +183,7 @@ let codegen_gep state value args name builder =
 
 (* Convert a felix type to an llvm type. *)
 let rec lltype_of_btype state btype =
-  match Flx_maps.reduce_type btype with
+  match btype with
   | Flx_types.BTYP_inst (index, ts) ->
       begin try Hashtbl.find state.type_bindings index with Not_found ->
         failwith ("[lltype_of_btype:BTYP_inst] unable to find index " ^
@@ -375,7 +375,7 @@ let rec codegen_expr state bsym_table builder sr tbexpr =
 
   | Flx_types.BEXPR_case (index, btype) ->
       print_endline "BEXPR_case";
-      begin match Flx_maps.reduce_type btype with
+      begin match btype with
       | Flx_types.BTYP_sum _
       | Flx_types.BTYP_unitsum _
       | Flx_types.BTYP_variant _ ->

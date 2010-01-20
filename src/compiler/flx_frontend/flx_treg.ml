@@ -12,7 +12,6 @@ open Flx_beta
 
 let register_type_nr syms bsym_table t =
   (*
-  let t' = Flx_maps.reduce_type t in
   if t <> t' then print_endline ("UNREDUCED TYPE! " ^ sbt bsym_table t ^ " <> " ^ sbt bsym_table t');
   *)
   match t with
@@ -39,23 +38,19 @@ let register_tuple syms bsym_table t =
   | BTYP_tuple [_] -> assert false
 
   | BTYP_tuple ts ->
-    let t = btyp_tuple (map reduce_type ts) in
     register_type_nr syms bsym_table t
 
   | BTYP_array (t',BTYP_unitsum n) ->
-    let t' = reduce_type t' in
     let ts = rev_map (fun _ -> t') (nlist n) in
     register_type_nr syms bsym_table (btyp_tuple ts)
 
   | BTYP_record ts ->
-    let t = reduce_type t in
     begin match t with
     | BTYP_tuple [] -> ()
     | _ -> register_type_nr syms bsym_table t
     end
 
   | BTYP_variant ts ->
-    let t = reduce_type t in
     begin match t with
     | BTYP_void -> ()
     | _ -> register_type_nr syms bsym_table t
@@ -64,7 +59,7 @@ let register_tuple syms bsym_table t =
   | _ -> assert false
 
 let rec register_type_r ui syms bsym_table exclude sr t =
-  let t = reduce_type (beta_reduce syms bsym_table sr t) in
+  let t = beta_reduce syms bsym_table sr t in
   (*
   let sp = String.make (length exclude * 2) ' ' in
   print_endline (sp ^ "Register type " ^ string_of_btypecode sym_table t);

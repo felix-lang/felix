@@ -40,7 +40,7 @@ let get_variable_typename syms bsym_table i ts =
     try Flx_bsym_table.find bsym_table i with Not_found ->
       failwith ("[get_variable_typename] can't find index " ^ string_of_bid i)
   in
-  let rt vs t = reduce_type (beta_reduce syms bsym_table bsym.Flx_bsym.sr (tsubst vs ts t)) in
+  let rt vs t = beta_reduce syms bsym_table bsym.Flx_bsym.sr (tsubst vs ts t) in
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_var (vs,t)
   | BBDCL_val (vs,t)
@@ -123,7 +123,7 @@ let is_gc_pointer syms bsym_table sr t =
   | _ -> false
 
 let gen_C_function syms bsym_table child_map props index id sr vs bps ret' ts instance_no =
-  let rt vs t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
+  let rt vs t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
   let requires_ptf = mem `Requires_ptf props in
   (*
   print_endline ("C Function " ^ id ^ " " ^ if requires_ptf then "requires ptf" else "does NOT require ptf");
@@ -151,7 +151,7 @@ let gen_C_function syms bsym_table child_map props index id sr vs bps ret' ts in
     si (length ts)
   );
   let argtype = rt vs argtype in
-  let rt' vs t = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts t)) in
+  let rt' vs t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
   let ret = rt' vs ret' in
   if ret = btyp_tuple [] then "// elided (returns unit)\n" else
 
@@ -200,7 +200,7 @@ let gen_C_function syms bsym_table child_map props index id sr vs bps ret' ts in
   ");\n"
 
 let gen_class syms bsym_table child_map props index id sr vs ts instance_no =
-  let rt vs t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
+  let rt vs t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
   let requires_ptf = mem `Requires_ptf props in
   if syms.compiler_options.print_flag then
   print_endline
@@ -318,7 +318,7 @@ let gen_function syms bsym_table child_map props index id sr vs bps ret' ts inst
   (*
   let heapable = not stackable or heapable in
   *)
-  let rt vs t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
+  let rt vs t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
   let requires_ptf = mem `Requires_ptf props in
   let yields = mem `Yields props in
   (*
@@ -346,7 +346,7 @@ let gen_function syms bsym_table child_map props index id sr vs bps ret' ts inst
     si (length ts)
   );
   let argtype = rt vs argtype in
-  let rt' vs t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
+  let rt' vs t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
   let ret = rt' vs ret' in
   if ret = btyp_tuple [] then "// elided (returns unit)\n" else
 
@@ -606,11 +606,7 @@ let gen_functions syms bsym_table child_map =
       end
       ;
       let rt vs t =
-        reduce_type (beta_reduce
-          syms
-          bsym_table
-          bsym.Flx_bsym.sr
-          (tsubst vs ts t))
+        beta_reduce syms bsym_table bsym.Flx_bsym.sr (tsubst vs ts t)
       in
       if syms.compiler_options.print_flag then
       print_endline
@@ -766,7 +762,7 @@ let gen_exe filename
   print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
   print_endline ("ts = " ^ catmap ","  (string_of_btypecode bsym_table) ts);
   *)
-  let tsub t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
+  let tsub t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
   let ge sr e : string = gen_expr syms bsym_table this e vs ts sr in
   let ge' sr e : cexpr_t = gen_expr' syms bsym_table this e vs ts sr in
   let tn t : string = cpp_typename syms bsym_table (tsub t) in
@@ -1156,12 +1152,7 @@ let gen_exe filename
                 (combine xs ps)
 
               | _,tt ->
-                let tt = reduce_type (beta_reduce
-                  syms
-                  bsym_table
-                  sr
-                  (tsubst vs ts tt))
-                in
+                let tt = beta_reduce syms bsym_table sr (tsubst vs ts tt) in
                 (* NASTY, EVALUATES EXPR MANY TIMES .. *)
                 let n = ref 0 in
                 fold_left
@@ -1473,7 +1464,7 @@ let gen_exes
 let gen_C_function_body filename syms bsym_table child_map
   label_info counter index ts sr instance_no
 =
-  let rt vs t = reduce_type (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
+  let rt vs t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
   let bsym =
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("gen_C_function_body] can't find " ^ string_of_bid index)
@@ -1509,7 +1500,7 @@ let gen_C_function_body filename syms bsym_table child_map
 
     let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
-    let rt' vs t = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts t)) in
+    let rt' vs t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
     let ret = rt' vs ret' in
     if ret = btyp_tuple [] then "// elided (returns unit)\n\n" else
 
@@ -1620,7 +1611,7 @@ let gen_C_function_body filename syms bsym_table child_map
 let gen_C_procedure_body filename syms bsym_table child_map
   label_info counter index ts sr instance_no
 =
-  let rt vs t = reduce_type (beta_reduce syms bsym_table sr  (tsubst vs ts t)) in
+  let rt vs t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
   let bsym =
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("gen_C_function_body] can't find " ^ string_of_bid index)
@@ -1763,7 +1754,7 @@ let gen_function_methods filename syms bsym_table child_map
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[gen_function_methods] can't find " ^ string_of_bid index)
   in
-  let rt vs t = reduce_type (beta_reduce syms bsym_table bsym.Flx_bsym.sr (tsubst vs ts t)) in
+  let rt vs t = beta_reduce syms bsym_table bsym.Flx_bsym.sr (tsubst vs ts t) in
   if syms.compiler_options.print_flag then
   print_endline
   (
@@ -1787,7 +1778,7 @@ let gen_function_methods filename syms bsym_table child_map
     );
     let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
-    let rt' vs t = reduce_type (beta_reduce syms bsym_table bsym.Flx_bsym.sr (tsubst vs ts t)) in
+    let rt' vs t = beta_reduce syms bsym_table bsym.Flx_bsym.sr (tsubst vs ts t) in
     let ret = rt' vs ret' in
     if ret = btyp_tuple [] then "// elided (returns unit)\n","" else
 
@@ -1904,7 +1895,7 @@ let gen_procedure_methods filename syms bsym_table child_map
       failwith ("[gen_procedure_methods] Can't find index " ^
         string_of_bid index)
   in (* can't fail *)
-  let rt vs t = reduce_type (beta_reduce syms bsym_table bsym.Flx_bsym.sr (tsubst vs ts t)) in
+  let rt vs t = beta_reduce syms bsym_table bsym.Flx_bsym.sr (tsubst vs ts t) in
   if syms.compiler_options.print_flag then
   print_endline
   (
@@ -2105,7 +2096,7 @@ let gen_execute_methods filename syms bsym_table child_map label_info counter bf
           qualified_name_of_bindex bsym_table index ^ tss ^ "\n");
       end
       ;
-      let rt vs t = reduce_type (beta_reduce syms bsym_table bsym.Flx_bsym.sr (tsubst vs ts t)) in
+      let rt vs t = beta_reduce syms bsym_table bsym.Flx_bsym.sr (tsubst vs ts t) in
       let ps_c = map (rt vs) ps_c in
       let ps_cf = map (rt vs) ps_cf in
       let ret = rt vs ret' in
@@ -2395,15 +2386,12 @@ let gen_biface_body syms bsym_table biface = match biface with
               )
               ps
             ),
-            let t =
-              btyp_tuple
+            btyp_tuple
               (
                 map
                 (fun {ptyp=t} -> t)
                 ps
               )
-            in
-            reduce_type t
           in
           "0" ^ ", " ^ ge sr a
       in

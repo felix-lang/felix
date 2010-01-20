@@ -51,7 +51,7 @@ let find_references syms bsym_table child_map index ts =
           ", got ts=" ^
           si (length ts)
         );
-        let t = reduce_type (tsubst vs ts t) in
+        let t = tsubst vs ts t in
         references := (idx,t) :: !references
       | _ -> ()
     with Not_found -> ()
@@ -72,7 +72,6 @@ let comma_sub s =
 
 (* this code handles pointers in types *)
 let rec get_offsets' syms bsym_table typ : string list =
-  let typ = reduce_type typ in
   let tname = cpp_typename syms bsym_table typ in
   let t' = unfold typ in
   match t' with
@@ -311,7 +310,6 @@ let id x = ()
 let scan_bexpr syms bsym_table allocable_types e : unit =
   let rec aux e = match e with
   | BEXPR_new ((_,t) as x),_ ->
-    let t = reduce_type t in
     (*
     print_endline ("FOUND A NEW " ^ sbt bsym_table t);
     *)
@@ -398,7 +396,6 @@ let gen_offset_tables syms bsym_table child_map module_name =
     match unfold btyp with
     | BTYP_sum args ->
       iter begin fun t ->
-        let t = reduce_type t in
         match t with
         | BTYP_tuple []
         | BTYP_void -> ()
@@ -411,7 +408,6 @@ let gen_offset_tables syms bsym_table child_map module_name =
 
     | BTYP_variant args ->
       iter begin fun (_,t) ->
-        let t = reduce_type t in
         match t with
         | BTYP_tuple []
         | BTYP_void -> ()
@@ -476,7 +472,6 @@ let gen_offset_tables syms bsym_table child_map module_name =
         let args = map (fun (_,_,t)->t) args in
         let args = map (varmap_subst varmap) args in
         iter begin fun t ->
-          let t = reduce_type t in
           match t with
           | BTYP_tuple []
           | BTYP_void -> ()

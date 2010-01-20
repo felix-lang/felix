@@ -61,9 +61,4 @@ val reduce_bexe:
   bexe_t -> (** The bound exe. *)
   bexe_t
 
-(** Simplify the bound type. *)
-val reduce_type:
-  btypecode_t ->  (** The bound type. *)
-  btypecode_t
-
 val scan_expr: expr_t -> Flx_srcref.t list

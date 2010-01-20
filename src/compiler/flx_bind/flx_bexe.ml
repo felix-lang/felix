@@ -515,7 +515,6 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
           parent_ts
       in
       let rhst = minimise state.syms.counter rhst in
-      let lhst = reduce_type lhst in
       if type_match state.syms.counter lhst rhst
       then handle_bexe (BEXE_init (sr,index, (e',rhst))) init
       else clierr sr
@@ -550,7 +549,6 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
               parent_ts
           in
           let rhst = minimise state.syms.counter rhst in
-          let lhst = reduce_type lhst in
           (*
           print_endline ("Checking type match " ^ sbt state.sym_table lhst ^ " ?= " ^ sbt state.sym_table rhst);
           *)
@@ -581,8 +579,6 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
   | EXE_assign (l,r) ->
       let _,lhst as lx = be l in
       let _,rhst as rx = be r in
-      let lhst = reduce_type lhst in
-      let rhst = reduce_type rhst in
       let lhst = minimise state.syms.counter lhst in
       let rhst = minimise state.syms.counter rhst in
       if type_match state.syms.counter lhst rhst

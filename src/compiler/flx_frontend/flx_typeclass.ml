@@ -100,13 +100,17 @@ let check_instance
     in
     let check_binding force tck sr id tck_bvs tctype =
       let sigmatch i inst_funbvs t =
-        let t = reduce_type t in
         let tc_ptv = length tck_bvs - length tc_bvs in
         let inst_ptv = length inst_funbvs - length inst_vs in
         if inst_ptv <> tc_ptv then false else
         let inst_funts = inst_ts @ vs2ts (drop inst_funbvs (length inst_vs)) in
         assert (length tck_bvs = length inst_funts);
-        let tct = reduce_type (beta_reduce syms bsym_table sr (tsubst tck_bvs inst_funts tctype)) in
+        let tct = beta_reduce
+          syms
+          bsym_table
+          sr
+          (tsubst tck_bvs inst_funts tctype)
+        in
         let matches =  tct = t in
         matches
       in
@@ -119,7 +123,6 @@ let check_instance
             "]")
 
       | [_,(i,(inst_funbvs,t))] ->
-        let t = reduce_type t in
         (*
         print_endline ("Typeclass " ^ tc_id ^ "<" ^ si tc ^">" ^ print_bvs tc_bvs);
         print_endline ("Typeclass function " ^ id ^ "<" ^ si tck ^ ">" ^
@@ -152,7 +155,12 @@ let check_instance
 
         assert (length tck_bvs = length inst_funts);
 
-        let tct = reduce_type (beta_reduce syms bsym_table sr (tsubst tck_bvs inst_funts tctype)) in
+        let tct = beta_reduce
+          syms
+          bsym_table
+          sr
+          (tsubst tck_bvs inst_funts tctype)
+        in
         (*
         print_endline ("Typeclass function (instantiated) " ^ id ^ "<" ^ si tck ^ ">" ^
           ":" ^ sbt bsym_table tct
@@ -389,7 +397,7 @@ let tcinst_chk syms bsym_table allow_fail i ts sr (inst_vs, inst_constraint, ins
        print_endline ("instance constraint: " ^ sbt bsym_table inst_constraint);
        *)
        let con = list_subst syms.counter mgu inst_constraint in
-       let con = reduce_type (Flx_beta.beta_reduce syms bsym_table sr con) in
+       let con = Flx_beta.beta_reduce syms bsym_table sr con in
        match con with
        | BTYP_tuple [] ->
          let tail = drop ts (length inst_ts) in

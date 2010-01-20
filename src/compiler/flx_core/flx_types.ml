@@ -355,15 +355,27 @@ let btyp_tuple = function
 
 (** Construct a BTYP_array type. *)
 let btyp_array (t, n) =
-  BTYP_array (t, n)
+  match n with
+  | BTYP_void
+  | BTYP_unitsum 0 -> BTYP_tuple []
+  | BTYP_unitsum 1 -> t
+  | _ -> BTYP_array (t, n)
 
 (** Construct a BTYP_record type. *)
-let btyp_record ts =
-  BTYP_record ts
+let btyp_record = function
+  | [] -> BTYP_tuple []
+  | ts ->
+      (* Make sure all the elements are sorted by name. *)
+      let ts = List.sort compare ts in
+      BTYP_record ts
 
 (** Construct a BTYP_variant type. *)
-let btyp_variant ts =
-  BTYP_variant ts
+let btyp_variant = function
+  | [] -> BTYP_tuple []
+  | ts ->
+      (* Make sure all the elements are sorted by name. *)
+      let ts = List.sort compare ts in
+      BTYP_variant ts
 
 (** Construct a BTYP_pointer type. *)
 let btyp_pointer ts =
