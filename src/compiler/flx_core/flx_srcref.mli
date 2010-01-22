@@ -23,3 +23,5 @@ val short_string_of_src: t -> string
 val long_string_of_src: t -> string
 
 val dummy_sr: t
+
+val print : Format.formatter -> t -> unit

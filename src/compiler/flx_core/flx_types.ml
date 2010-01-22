@@ -1,3 +1,6 @@
+open Format
+open Flx_format
+
 (** Types
  *
  * These files declare the main data structures used by the compiler, and
@@ -21,10 +24,11 @@ type bid_t = int
 let dummy_bid = 0
 
 (** Create a set type for bound symbol indices. *)
-module BidSet = Set.Make (
+module BidSet = Flx_set.Make (
   struct
     type t = bid_t
     let compare = compare
+    let print = pp_print_int
   end
 )
 
@@ -439,3 +443,315 @@ let ts_of_bexpr = function
   | BEXPR_apply_direct (_, ts, _)
   | BEXPR_apply_struct (_, ts, _) -> ts
   | _ -> []
+
+(* -------------------------------------------------------------------------- *)
+
+let print_bid = pp_print_int
+
+(** Prints out a bvs_t to a formatter. *)
+let print_bvs f xs =
+  Flx_list.print begin fun f (name, bid) ->
+    Flx_format.print_tuple2 f
+      Flx_format.print_string name
+      print_bid bid
+  end f xs
+
+let rec print_bexpr f = function
+  | BEXPR_deref e ->
+      Flx_format.print_variant1 f "BEXPR_deref" print_tbexpr e
+  | BEXPR_name (bid, ts) ->
+      Flx_format.print_variant2 f "BEXPR_name" print_bid bid print_btypes ts
+  | BEXPR_ref (bid, ts) ->
+      Flx_format.print_variant2 f "BEXPR_ref" print_bid bid print_btypes ts
+  | BEXPR_likely e ->
+      Flx_format.print_variant1 f "BEXPR_likely" print_tbexpr e
+  | BEXPR_unlikely e ->
+      Flx_format.print_variant1 f "BEXPR_unlikely" print_tbexpr e
+  | BEXPR_address e ->
+      Flx_format.print_variant1 f "BEXPR_address" print_tbexpr e
+  | BEXPR_new e ->
+      Flx_format.print_variant1 f "BEXPR_new" print_tbexpr e
+  | BEXPR_literal l ->
+      Flx_format.print_variant1 f "BEXPR_literal" print_literal l
+  | BEXPR_apply (e1, e2) ->
+      Flx_format.print_variant2 f "BEXPR_apply" print_tbexpr e1 print_tbexpr e2
+  | BEXPR_apply_prim (bid, ts, e) ->
+      Flx_format.print_variant3 f "BEXPR_apply_prim"
+        print_bid bid
+        print_btypes ts
+        print_tbexpr e
+  | BEXPR_apply_direct (bid, ts, e) ->
+      Flx_format.print_variant3 f "BEXPR_apply_direct"
+        print_bid bid
+        print_btypes ts
+        print_tbexpr e
+  | BEXPR_apply_stack (bid, ts, e) ->
+      Flx_format.print_variant3 f "BEXPR_apply_stack"
+        print_bid bid
+        print_btypes ts
+        print_tbexpr e
+  | BEXPR_apply_struct (bid, ts, e) ->
+      Flx_format.print_variant3 f "BEXPR_apply_struct"
+        print_bid bid
+        print_btypes ts
+        print_tbexpr e
+  | BEXPR_tuple es ->
+      Flx_format.print_variant1 f "BEXPR_tuple" (Flx_list.print print_tbexpr) es
+  | BEXPR_record es ->
+      Flx_format.print_variant1 f "BEXPR_record"
+        (Flx_list.print begin fun f (s, e) ->
+          Flx_format.print_tuple2 f print_string s print_tbexpr e
+        end)
+        es
+  | BEXPR_variant (s, e) ->
+      Flx_format.print_variant2 f "BEXPR_variant" print_string s print_tbexpr e
+  | BEXPR_get_n (i, e) ->
+      Flx_format.print_variant2 f "BEXPR_get_n" pp_print_int i print_tbexpr e
+  | BEXPR_closure (bid, ts) ->
+      Flx_format.print_variant2 f "BEXPR_closure" print_bid bid print_btypes ts
+  | BEXPR_case (i, t) ->
+      Flx_format.print_variant2 f "BEXPR_match_case"
+        pp_print_int i
+        print_btype t
+  | BEXPR_match_case (i, e) ->
+      Flx_format.print_variant2 f "BEXPR_match_case"
+        pp_print_int i
+        print_tbexpr e
+  | BEXPR_case_arg (i, e) ->
+      Flx_format.print_variant2 f "BEXPR_case_arg" pp_print_int i print_tbexpr e
+  | BEXPR_case_index e ->
+      Flx_format.print_variant1 f "BEXPR_case_index" print_tbexpr e
+  | BEXPR_expr (s, t) ->
+      Flx_format.print_variant2 f "BEXPR_closure"
+        Flx_format.print_string s
+        print_btype t
+  | BEXPR_range_check (e1, e2, e3) ->
+      Flx_format.print_variant3 f "BEXPR_range_check"
+        print_tbexpr e1
+        print_tbexpr e2
+        print_tbexpr e3
+  | BEXPR_coerce (e, t) ->
+      Flx_format.print_variant2 f "BEXPR_coerce"
+        print_tbexpr e
+        print_btype t
+
+and print_tbexpr f (e, t) =
+  Flx_format.print_tuple2 f print_bexpr e print_btype t
+
+and print_btpattern f pat =
+  Flx_format.print_record3 f
+    "pattern" print_btype pat.pattern
+    "pattern_vars" BidSet.print pat.pattern_vars
+    "assignments" print_bid_btypes pat.assignments
+
+and print_btype f =
+  let print_string_btypes =
+    Flx_list.print begin fun f (s, btype) ->
+      Flx_format.print_tuple2 f Flx_format.print_string s print_btype btype
+    end
+  in
+  function
+  | BTYP_sum ts ->
+      print_variant1 f "BTYP_sum" print_btypes ts
+  | BTYP_unitsum n ->
+      print_variant1 f "BTYP_unitsum" pp_print_int n
+  | BTYP_intersect ts ->
+      print_variant1 f "BTYP_sum" print_btypes ts
+  | BTYP_inst (i, ts) ->
+      print_variant2 f "BTYP_inst" pp_print_int i print_btypes ts
+  | BTYP_tuple ts ->
+      print_variant1 f "BTYP_tuple" print_btypes ts
+  | BTYP_array (t, n) ->
+      print_variant2 f "BTYP_array" print_btype t print_btype n
+  | BTYP_record ls ->
+      print_variant1 f "BTYP_record" print_string_btypes ls
+  | BTYP_variant ls ->
+      print_variant1 f "BTYP_variant" print_string_btypes ls
+  | BTYP_pointer t ->
+      print_variant1 f "BTYP_pointer" print_btype t
+  | BTYP_function (a, r) ->
+      print_variant2 f "BTYP_function" print_btype a print_btype r
+  | BTYP_cfunction (a, r) ->
+      print_variant2 f "BTYP_cfunction" print_btype a print_btype r
+  | BTYP_void ->
+      print_variant0 f "BTYP_void"
+  | BTYP_fix n ->
+      print_variant1 f "BTYP_fix" pp_print_int n
+  | BTYP_type n ->
+      print_variant1 f "BTYP_type" pp_print_int n
+  | BTYP_type_tuple ts ->
+      print_variant1 f "BTYP_type_tuple" print_btypes ts
+  | BTYP_type_function (a, r, b) ->
+      print_variant3 f "BTYP_type_function"
+        print_bid_btypes a
+        print_btype r
+        print_btype b
+  | BTYP_type_var (i, t) ->
+      print_variant2 f "BTYP_type_var" pp_print_int i print_btype t
+  | BTYP_type_apply (t1, t2) ->
+      print_variant2 f "BTYP_type_apply" print_btype t1 print_btype t2
+  | BTYP_type_match (t, ps) ->
+      print_variant2 f "BTYP_type_match"
+        print_btype t
+        (Flx_list.print begin fun f (pat, t) ->
+          Flx_format.print_tuple2 f
+            print_btpattern pat
+            print_btype t
+        end) ps
+  | BTYP_type_set ts ->
+      print_variant1 f "BTYP_type_set" print_btypes ts
+  | BTYP_type_set_union ts ->
+      print_variant1 f "BTYP_type_set_union" print_btypes ts
+  | BTYP_type_set_intersection ts ->
+      print_variant1 f "BTYP_type_set_intersection" print_btypes ts
+
+and print_btypes f ts =
+  Flx_list.print print_btype f ts
+
+and print_bid_btypes btypes =
+  Flx_list.print begin fun f (bid, btype) ->
+    Flx_format.print_tuple2 f
+      Format.pp_print_int bid
+      print_btype btype
+  end btypes
+
+let print_btype_qual f = function
+  | #base_type_qual_t as qual ->
+      print_base_type_qual f qual
+  | `Bound_needs_shape t ->
+      print_variant1 f "`Bound_needs_shape"
+        print_btype t
+
+let print_bparameter f bparameter =
+  Flx_format.print_record4 f
+    "pkind" Flx_ast.print_param_kind bparameter.pkind
+    "pid" Flx_format.print_string bparameter.pid
+    "pindex" print_bid bparameter.pindex
+    "ptyp" print_btype bparameter.ptyp
+
+let print_bparams f (bparameters, tbexpr) =
+  Flx_format.print_tuple2 f
+    (Flx_list.print print_bparameter) bparameters
+    (Flx_format.print_opt print_tbexpr) tbexpr
+
+let print_bexe f = function
+  | BEXE_label (sr, s) ->
+      print_variant2 f "BEXE_label"
+        Flx_srcref.print sr
+        print_string s
+  | BEXE_comment (sr, s) ->
+      print_variant2 f "BEXE_comment"
+        Flx_srcref.print sr
+        print_string s
+  | BEXE_halt (sr, s) ->
+      print_variant2 f "BEXE_halt"
+        Flx_srcref.print sr
+        print_string s
+  | BEXE_trace (sr, v, s) ->
+      print_variant3 f "BEXE_trace"
+        Flx_srcref.print sr
+        print_string v
+        print_string s
+  | BEXE_goto (sr, s) ->
+      print_variant2 f "BEXE_goto"
+        Flx_srcref.print sr
+        print_string s
+  | BEXE_ifgoto (sr, e, s) ->
+      print_variant3 f "BEXE_ifgoto"
+        Flx_srcref.print sr
+        print_tbexpr e
+        print_string s
+  | BEXE_call (sr, p, a) ->
+      print_variant3 f "BEXE_call"
+        Flx_srcref.print sr
+        print_tbexpr p
+        print_tbexpr a
+  | BEXE_call_direct (sr, bid, ts, a) ->
+      print_variant4 f "BEXE_call_direct"
+        Flx_srcref.print sr
+        print_bid bid
+        print_btypes ts
+        print_tbexpr a
+  | BEXE_call_stack (sr, bid, ts, a) ->
+      print_variant4 f "BEXE_call_stack"
+        Flx_srcref.print sr
+        print_bid bid
+        print_btypes ts
+        print_tbexpr a
+  | BEXE_call_prim (sr, bid, ts, a) ->
+      print_variant4 f "BEXE_call_prim"
+        Flx_srcref.print sr
+        print_bid bid
+        print_btypes ts
+        print_tbexpr a
+  | BEXE_jump (sr, p, a) ->
+      print_variant3 f "BEXE_jump"
+        Flx_srcref.print sr
+        print_tbexpr p
+        print_tbexpr a
+  | BEXE_jump_direct (sr, bid, ts, a) ->
+      print_variant4 f "BEXE_jump_direct"
+        Flx_srcref.print sr
+        print_bid bid
+        print_btypes ts
+        print_tbexpr a
+  | BEXE_svc (sr, bid) ->
+      print_variant2 f "BEXE_srv"
+        Flx_srcref.print sr
+        print_bid bid
+  | BEXE_fun_return (sr, e) ->
+      print_variant2 f "BEXE_fun_return"
+        Flx_srcref.print sr
+        print_tbexpr e
+  | BEXE_yield (sr, e) ->
+      print_variant2 f "BEXE_yield"
+        Flx_srcref.print sr
+        print_tbexpr e
+  | BEXE_proc_return sr ->
+      print_variant1 f "BEXE_proc_return"
+        Flx_srcref.print sr
+  | BEXE_nop (sr, s) ->
+      print_variant2 f "BEXE_nop"
+        Flx_srcref.print sr
+        print_string s
+  | BEXE_code (sr, code) ->
+      print_variant2 f "BEXE_code"
+        Flx_srcref.print sr
+        print_code_spec code
+  | BEXE_nonreturn_code (sr, code) ->
+      print_variant2 f "BEXE_nonreturn_code"
+        Flx_srcref.print sr
+        print_code_spec code
+  | BEXE_assign (sr, l, r) ->
+      print_variant3 f "BEXE_assign"
+        Flx_srcref.print sr
+        print_tbexpr l
+        print_tbexpr r
+  | BEXE_init (sr, l, r) ->
+      print_variant3 f "BEXE_jump"
+        Flx_srcref.print sr
+        print_bid l
+        print_tbexpr r
+  | BEXE_begin ->
+      print_variant0 f "BEXE_begin"
+  | BEXE_end ->
+      print_variant0 f "BEXE_end"
+  | BEXE_assert (sr, e) ->
+      print_variant2 f "BEXE_assert"
+        Flx_srcref.print sr
+        print_tbexpr e
+  | BEXE_assert2 (sr1, sr2, e1, e2) ->
+      print_variant4 f "BEXE_assert2"
+        Flx_srcref.print sr1
+        Flx_srcref.print sr2
+        (print_opt print_tbexpr) e1
+        print_tbexpr e2
+  | BEXE_axiom_check (sr, e) ->
+      print_variant2 f "BEXE_axiom_check"
+        Flx_srcref.print sr
+        print_tbexpr e
+
+let print_breqs f breqs =
+  Flx_list.print begin fun f (bid, ts) ->
+    print_tuple2 f print_bid bid print_btypes ts
+  end f breqs

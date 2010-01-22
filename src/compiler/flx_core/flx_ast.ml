@@ -1,3 +1,6 @@
+open Format
+open Flx_format
+
 (** {6 Source Reference}
  *
  * Provides a reference to the original source.  *)
@@ -769,3 +772,74 @@ let dfltvs_aux =
 
 (** Define a default vs_list_t. *)
 let dfltvs = [], dfltvs_aux
+
+(** Prints out a code_spec_t to a formatter. *)
+let print_code_spec f = function
+  | CS_str_template s ->
+      print_variant1 f "CS_str_template" print_string s
+  | CS_str s ->
+      print_variant1 f "CS_str" print_string s
+  | CS_virtual ->
+      print_variant0 f "CS_virtual"
+  | CS_identity ->
+      print_variant0 f "CS_identity"
+
+(** Prints out a base_type_qual_t to a formatter. *)
+let print_base_type_qual f = function
+  | `Incomplete -> print_variant0 f "`Incomplete"
+  | `Pod -> print_variant0 f "`Pod"
+  | `GC_pointer -> print_variant0 f "`GC_pointer"
+
+(** Prints out a literal_t to a formatter. *)
+let print_literal f = function
+  | AST_int (s, i) ->
+      print_variant2 f "AST_int"
+        print_string s
+        print_big_int i
+  | AST_string s ->
+      print_variant1 f "AST_string" print_string s
+  | AST_cstring s ->
+      print_variant1 f "AST_cstring" print_string s
+  | AST_wstring s ->
+      print_variant1 f "AST_wstring" print_string s
+  | AST_ustring s ->
+      print_variant1 f "AST_ustring" print_string s
+  | AST_float (s1, s2) ->
+      print_variant2 f "AST_float"
+        print_string s1
+        print_string s2
+
+(** Prints out a property_t to a formatter. *)
+let print_property f = function
+  | `Recursive -> fprintf f "`Recursive"
+  | `Inline -> fprintf f "`Inline"
+  | `NoInline -> fprintf f "`NoInline"
+  | `Inlining_started -> fprintf f "`Inlining_started"
+  | `Inlining_complete -> fprintf f "`Inlining_complete"
+  | `Generated s -> fprintf f "`Generated %S" s
+  | `Heap_closure -> fprintf f "`Heap_closure"
+  | `Explicit_closure -> fprintf f "`Explicit_closure"
+  | `Stackable -> fprintf f "`Stackable"
+  | `Stack_closure -> fprintf f "`Stack_closure"
+  | `Unstackable -> fprintf f "`Unstackable"
+  | `Pure -> fprintf f "`Pure"
+  | `Uses_global_var -> fprintf f "`Uses_global_var"
+  | `Ctor -> fprintf f "`Ctor"
+  | `Generator -> fprintf f "`Generator"
+  | `Yields -> fprintf f "`Yields"
+  | `Cfun -> fprintf f "`Cfun"
+  | `Lvalue -> fprintf f "`Lvalue"
+  | `Requires_ptf -> fprintf f "`Requires_ptf"
+  | `Not_requires_ptf -> fprintf f "`Not_requires_ptf"
+  | `Uses_gc -> fprintf f "`Uses_gc"
+  | `Virtual -> fprintf f "`Virtual"
+
+(** Prints out a property list to a formatter. *)
+let print_properties = Flx_list.print print_property
+
+(** Prints out a param_kind_t to a formatter. *)
+let print_param_kind f = function
+  | `PVal -> fprintf f "`PVal"
+  | `PVar -> fprintf f "`PVar"
+  | `PFun -> fprintf f "`PFun"
+  | `PRef -> fprintf f "`PRef"

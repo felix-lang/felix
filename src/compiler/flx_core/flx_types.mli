@@ -351,3 +351,38 @@ val btyp_type_set_intersection : btypecode_t list -> btypecode_t
 val src_of_bexe : bexe_t -> Flx_srcref.t
 
 val ts_of_bexpr : bexpr_t -> btypecode_t list
+
+(* -------------------------------------------------------------------------- *)
+
+(** Prints out a bid_t to a formatter. *)
+val print_bid : Format.formatter -> bid_t -> unit
+
+(** Prints a bvs_t to a formatter. *)
+val print_bvs : Format.formatter -> bvs_t -> unit
+
+(** Prints a bparams_t to a formatter. *)
+val print_bparams : Format.formatter -> bparams_t -> unit
+
+(** Prints a btype_qual_t to a formatter. *)
+val print_btype_qual : Format.formatter -> btype_qual_t -> unit
+
+(** Prints a bexpr_t to a formatter. *)
+val print_bexpr : Format.formatter -> bexpr_t -> unit
+
+(** Prints a tbexpr_t to a formatter. *)
+val print_tbexpr : Format.formatter -> tbexpr_t -> unit
+
+(** Prints a btypecode_t to a formatter. *)
+val print_btype : Format.formatter -> btypecode_t -> unit
+
+(** Prints a btypecode_t list to a formatter. *)
+val print_btypes : Format.formatter -> btypecode_t list -> unit
+
+(** Prints a bparameter_t to a formatter. *)
+val print_bparameter : Format.formatter -> bparameter_t -> unit
+
+(** Prints a bexe_t to a formatter. *)
+val print_bexe : Format.formatter -> bexe_t -> unit
+
+(** Prints a breqs_t to a formatter. *)
+val print_breqs : Format.formatter -> breqs_t -> unit

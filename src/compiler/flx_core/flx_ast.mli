@@ -529,3 +529,21 @@ val dfltvs_aux : vs_aux_t
 
 (** Define a default vs_list_t. *)
 val dfltvs : 'a list * vs_aux_t
+
+(** Prints out a code_spec_t to a formatter. *)
+val print_code_spec : Format.formatter -> code_spec_t -> unit
+
+(** Prints out a base_type_qual_t to a formatter. *)
+val print_base_type_qual : Format.formatter -> base_type_qual_t -> unit
+
+(** Prints out a literal_t to a formatter. *)
+val print_literal : Format.formatter -> literal_t -> unit
+
+(** Prints out a property_t to a formatter. *)
+val print_property : Format.formatter -> property_t -> unit
+
+(** Prints out a property list to a formatter. *)
+val print_properties : Format.formatter -> property_t list -> unit
+
+(** Prints out a param_kind_t to a formatter. *)
+val print_param_kind : Format.formatter -> param_kind_t -> unit
