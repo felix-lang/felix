@@ -55,7 +55,7 @@ val qualified_name_of_bindex :
   string
 val string_of_bbdcl :
   Flx_bsym_table.t ->
-  bbdcl_t ->
+  Flx_bbdcl.t ->
   bid_t ->
   string
 

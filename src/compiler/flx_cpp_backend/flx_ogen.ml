@@ -1,9 +1,10 @@
 open Flx_util
 open Flx_list
+open Flx_types
+open Flx_bbdcl
 open Flx_mtypes2
 open Flx_name
 open Flx_unify
-open Flx_types
 open Flx_typing
 open List
 open Flx_print

@@ -7,7 +7,7 @@ type t = {
   pubmap:Flx_types.name_map_t;
   privmap:Flx_types.name_map_t;
   dirs:Flx_types.sdir_t list;
-  bbdcl: Flx_types.bbdcl_t;
+  bbdcl: Flx_bbdcl.t;
 }
 
 (** Return if the bound symbol is an identity function. *)

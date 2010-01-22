@@ -1,4 +1,5 @@
 open Flx_types
+open Flx_bbdcl
 open Flx_ast
 open Flx_mtypes2
 open Flx_exceptions

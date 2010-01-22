@@ -2,6 +2,7 @@ open Flx_util
 open Flx_list
 open Flx_ast
 open Flx_types
+open Flx_bbdcl
 open Flx_print
 open Flx_exceptions
 open Flx_set
@@ -4342,8 +4343,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
         with
         | Some bsym ->
             begin match bsym.Flx_bsym.bbdcl with
-            | Flx_types.BBDCL_function (properties,_,_,_,_)
-            | Flx_types.BBDCL_procedure (properties,_,_,_) ->
+            | BBDCL_function (properties,_,_,_,_)
+            | BBDCL_procedure (properties,_,_,_) ->
                 List.mem property properties
             | _ -> false
             end
@@ -4366,8 +4367,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
               (* We found a bound symbol, check if it's an addressable symbol.
                * Otherwise, error out. *)
               begin match bsym.Flx_bsym.bbdcl with
-              | Flx_types.BBDCL_ref _
-              | Flx_types.BBDCL_var _ ->
+              | BBDCL_ref _
+              | BBDCL_var _ ->
                   let vtype = inner_type_of_index_with_ts
                     state
                     bsym_table
@@ -4378,7 +4379,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
                   in
                   BEXPR_ref (index, ts), btyp_pointer vtype
 
-              | Flx_types.BBDCL_val _ ->
+              | BBDCL_val _ ->
                   clierr2 srr bsym.Flx_bsym.sr ("[bind_expression] " ^
                     "Can't address a value " ^ bsym.Flx_bsym.id)
 

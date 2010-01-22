@@ -1,4 +1,5 @@
 open Flx_types
+open Flx_bbdcl
 
 let rec eassoc x l = match l with
   | [] -> raise Not_found

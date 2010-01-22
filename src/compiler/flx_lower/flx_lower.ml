@@ -51,7 +51,7 @@ let lower_bsym_table state bsym_table root_proc =
   Flx_types.BidSet.iter begin fun i ->
     let bsym = Flx_bsym_table.find bsym_table i in
     match bsym.Flx_bsym.bbdcl with
-    | Flx_types.BBDCL_procedure (props,vs,p,exes) ->
+    | Flx_bbdcl.BBDCL_procedure (props,vs,p,exes) ->
         let props = ref props in
 
         if List.mem `Stackable !props then begin
@@ -72,7 +72,7 @@ let lower_bsym_table state bsym_table root_proc =
         then props := `Requires_ptf :: !props;
 
         (* Update the procedure with the new properties. *)
-        let bbdcl = Flx_types.BBDCL_procedure (!props, vs,p,exes) in
+        let bbdcl = Flx_bbdcl.BBDCL_procedure (!props, vs,p,exes) in
         Flx_bsym_table.add bsym_table i { bsym with
           Flx_bsym.bbdcl=bbdcl }
     | _ -> ()

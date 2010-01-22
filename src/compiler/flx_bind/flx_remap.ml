@@ -1,4 +1,5 @@
 open Flx_types
+open Flx_bbdcl
 
 (** Remaps a bound index by adding an offset to it. *)
 let remap_bid offset bid = bid + offset

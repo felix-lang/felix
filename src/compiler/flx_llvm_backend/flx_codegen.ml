@@ -107,10 +107,10 @@ let name_of_index state bsym_table bid ts =
     (* Recursively prepend the name of the parent to *)
     let name, ts =
       let bsym = Flx_bsym_table.find bsym_table bid in
+      let ts = Flx_bbdcl.get_ts bsym.Flx_bsym.bbdcl in
       match bsym.Flx_bsym.parent with
-      | None -> bsym.Flx_bsym.id, (Flx_types.ts_of_bbdcl bsym.Flx_bsym.bbdcl)
+      | None -> bsym.Flx_bsym.id, ts
       | Some parent ->
-          let ts = Flx_types.ts_of_bbdcl bsym.Flx_bsym.bbdcl in
           let name = aux parent ts in
           let name =
             if String.length name = 0
@@ -806,9 +806,9 @@ let codegen_bexe state bsym_table builder bexe =
 let find_value_indicies state bsym_table child_map bid =
   List.filter begin fun bid ->
     try match Flx_bsym_table.find_bbdcl bsym_table bid with
-    | Flx_types.BBDCL_var _
-    | Flx_types.BBDCL_ref _
-    | Flx_types.BBDCL_val _ -> true
+    | Flx_bbdcl.BBDCL_var _
+    | Flx_bbdcl.BBDCL_ref _
+    | Flx_bbdcl.BBDCL_val _ -> true
     | _ -> false
     with Not_found -> false
   end (Flx_child.find_children child_map bid)
@@ -819,9 +819,9 @@ let find_closure_type state bsym_table child_map bid =
   let ts =
     List.fold_left begin fun ts bid ->
       try match Flx_bsym_table.find_bbdcl bsym_table bid with
-      | Flx_types.BBDCL_var (_,btype)
-      | Flx_types.BBDCL_ref (_,btype)
-      | Flx_types.BBDCL_val (_,btype) -> (lltype_of_btype state btype) :: ts
+      | Flx_bbdcl.BBDCL_var (_,btype)
+      | Flx_bbdcl.BBDCL_ref (_,btype)
+      | Flx_bbdcl.BBDCL_val (_,btype) -> (lltype_of_btype state btype) :: ts
       | _ -> ts
       with Not_found -> ts
     end [] (find_value_indicies state bsym_table child_map bid)
@@ -1231,11 +1231,11 @@ and codegen_symbol state bsym_table child_map closure index bsym =
     (Flx_print.string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl index));
 
   match bsym.Flx_bsym.bbdcl with
-  | Flx_types.BBDCL_module ->
+  | Flx_bbdcl.BBDCL_module ->
       print_endline "BBDCL_module";
       assert false
 
-  | Flx_types.BBDCL_function (props, _, (ps, _), ret_type, es) ->
+  | Flx_bbdcl.BBDCL_function (props, _, (ps, _), ret_type, es) ->
       ignore (codegen_function
         state
         bsym_table
@@ -1248,7 +1248,7 @@ and codegen_symbol state bsym_table child_map closure index bsym =
         ret_type
         es)
 
-  | Flx_types.BBDCL_procedure (props, _, (ps, _), es) ->
+  | Flx_bbdcl.BBDCL_procedure (props, _, (ps, _), es) ->
       ignore (codegen_function
         state
         bsym_table
@@ -1261,61 +1261,61 @@ and codegen_symbol state bsym_table child_map closure index bsym =
         Flx_types.btyp_void
         es)
 
-  | Flx_types.BBDCL_val (_, btype)
-  | Flx_types.BBDCL_var (_, btype)
-  | Flx_types.BBDCL_ref (_, btype)
-  | Flx_types.BBDCL_tmp (_, btype) ->
+  | Flx_bbdcl.BBDCL_val (_, btype)
+  | Flx_bbdcl.BBDCL_var (_, btype)
+  | Flx_bbdcl.BBDCL_ref (_, btype)
+  | Flx_bbdcl.BBDCL_tmp (_, btype) ->
       let name = name_of_index state bsym_table index [] in
       closure := (index, name, btype) :: !closure
 
-  | Flx_types.BBDCL_newtype (vs, ty) ->
+  | Flx_bbdcl.BBDCL_newtype (vs, ty) ->
       print_endline "BBDCL_newtype";
       assert false
 
-  | Flx_types.BBDCL_abs (vs, quals, code, reqs) ->
+  | Flx_bbdcl.BBDCL_abs (vs, quals, code, reqs) ->
       codegen_abs state index vs quals code reqs
 
-  | Flx_types.BBDCL_const (props, vs, ty, code, reqs) ->
+  | Flx_bbdcl.BBDCL_const (props, vs, ty, code, reqs) ->
       print_endline "BBDCL_const";
       assert false
 
-  | Flx_types.BBDCL_fun (props, vs, ps, ret_type, code, reqs, prec) ->
+  | Flx_bbdcl.BBDCL_fun (props, vs, ps, ret_type, code, reqs, prec) ->
       codegen_fun state index props vs ps ret_type code reqs prec
 
-  | Flx_types.BBDCL_callback (props, vs, ps_cf, ps_c, k, rt, reqs, prec) ->
+  | Flx_bbdcl.BBDCL_callback (props, vs, ps_cf, ps_c, k, rt, reqs, prec) ->
       print_endline "BBDCL_callback";
       assert false
 
-  | Flx_types.BBDCL_proc (props, vs, ps, code, reqs) ->
+  | Flx_bbdcl.BBDCL_proc (props, vs, ps, code, reqs) ->
       codegen_fun state index props vs ps Flx_types.btyp_void code reqs ""
 
-  | Flx_types.BBDCL_insert (vs, s, ikind, reqs) ->
+  | Flx_bbdcl.BBDCL_insert (vs, s, ikind, reqs) ->
       print_endline "BBDCL_insert";
       (* FIXME: ignore for now.
       assert false
       *)
 
-  | Flx_types.BBDCL_union (vs, cs) ->
+  | Flx_bbdcl.BBDCL_union (vs, cs) ->
       print_endline "BBDCL_union";
       assert false
 
-  | Flx_types.BBDCL_struct (vs, cs) ->
+  | Flx_bbdcl.BBDCL_struct (vs, cs) ->
       print_endline "BBDCL_struct";
       assert false
 
-  | Flx_types.BBDCL_cstruct (vs, cs) ->
+  | Flx_bbdcl.BBDCL_cstruct (vs, cs) ->
       print_endline "BBDCL_cstruct";
       assert false
 
-  | Flx_types.BBDCL_typeclass (props, vs) ->
+  | Flx_bbdcl.BBDCL_typeclass (props, vs) ->
       print_endline "BBDCL_typeclass";
       assert false
 
-  | Flx_types.BBDCL_instance (props, vs, cons, index, ts) ->
+  | Flx_bbdcl.BBDCL_instance (props, vs, cons, index, ts) ->
       print_endline "BBDCL_instance";
       assert false
 
-  | Flx_types.BBDCL_nonconst_ctor
+  | Flx_bbdcl.BBDCL_nonconst_ctor
     (vs, uidx, ut, ctor_idx, ctor_argt, evs, etraint) ->
       print_endline "BBDCL_nonconst_ctor";
       assert false

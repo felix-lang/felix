@@ -231,36 +231,6 @@ and btype_qual_t = [
   | `Bound_needs_shape of btypecode_t
 ]
 
-and bbdcl_t =
-  | BBDCL_module
-  | BBDCL_function of   property_t list * bvs_t * bparams_t * btypecode_t * bexe_t list
-  | BBDCL_procedure of  property_t list * bvs_t * bparams_t * bexe_t list
-  | BBDCL_val of        bvs_t * btypecode_t
-  | BBDCL_var of        bvs_t * btypecode_t
-  | BBDCL_ref of        bvs_t * btypecode_t
-  | BBDCL_tmp of        bvs_t * btypecode_t
-
-  (* binding structures [prolog] *)
-  | BBDCL_newtype of    bvs_t * btypecode_t
-  | BBDCL_abs of        bvs_t * btype_qual_t list * code_spec_t * breqs_t
-  | BBDCL_const of      property_t list * bvs_t * btypecode_t * code_spec_t * breqs_t
-  | BBDCL_fun of        property_t list * bvs_t * btypecode_t list * btypecode_t * code_spec_t  * breqs_t * prec_t
-  | BBDCL_callback of   property_t list * bvs_t * btypecode_t list * btypecode_t list * int * btypecode_t * breqs_t * prec_t
-  | BBDCL_proc of       property_t list * bvs_t * btypecode_t list * code_spec_t  * breqs_t
-  | BBDCL_insert of     bvs_t * code_spec_t * ikind_t * breqs_t
-
-  | BBDCL_union of      bvs_t * (id_t * int * btypecode_t) list
-  | BBDCL_struct of     bvs_t * (id_t * btypecode_t) list
-  | BBDCL_cstruct of    bvs_t * (id_t * btypecode_t) list
-  | BBDCL_typeclass of  property_t list * bvs_t
-  | BBDCL_instance of   property_t list *
-                        bvs_t *
-                        btypecode_t (* constraint *) *
-                        bid_t *
-                        btypecode_t list
-  | BBDCL_nonconst_ctor of bvs_t * bid_t * btypecode_t * int * btypecode_t *
-                         bvs_t * btypecode_t (* existentials and constraint for GADTs *)
-
 and baxiom_method_t = [`BPredicate of tbexpr_t | `BEquation of tbexpr_t * tbexpr_t]
 and reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
 and axiom_t = id_t * Flx_srcref.t * bid_t option * axiom_kind_t * bvs_t * bparams_t * baxiom_method_t
@@ -381,5 +351,3 @@ val btyp_type_set_intersection : btypecode_t list -> btypecode_t
 val src_of_bexe : bexe_t -> Flx_srcref.t
 
 val ts_of_bexpr : bexpr_t -> btypecode_t list
-val ts_of_bbdcl : bbdcl_t -> btypecode_t list
-val bvs_of_bbdcl : bbdcl_t -> bvs_t

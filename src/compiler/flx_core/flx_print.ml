@@ -1,6 +1,7 @@
 open Flx_util
 open Flx_ast
 open Flx_types
+open Flx_bbdcl
 open Flx_typing
 open List
 
@@ -2259,7 +2260,7 @@ and string_of_bglr_entry sym_table (name,symbol) =
   | `Nonterm [] -> "<Undefined nonterminal>"
   )
 
-and string_of_bbdcl bsym_table (bbdcl:bbdcl_t) index : string =
+and string_of_bbdcl bsym_table bbdcl index : string =
   let name = qualified_name_of_bindex bsym_table index in
   let sobt t = string_of_btypecode bsym_table t in
   let se e = string_of_bound_expression bsym_table e in
