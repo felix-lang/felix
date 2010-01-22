@@ -120,7 +120,7 @@ let name_of_index state bsym_table bid ts =
           name, ts
     in
     (* Check our name cache if we need to mangle the function name. *)
-    match Flx_hashtbl.find state.name_bindings name with
+    match Flx_hashtbl.find_opt state.name_bindings name with
     | None ->
         (* It's not in the cache, so claim the name and return it. *)
         Hashtbl.add state.name_bindings name (bid, ts);

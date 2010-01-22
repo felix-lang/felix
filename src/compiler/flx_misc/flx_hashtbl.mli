@@ -12,4 +12,4 @@ module Make (M:Hashtbl.HashedType) : S with type key = M.t
 module IntHashtbl : S with type key = int
 
 (** Search through the table and optionally return the key. *)
-val find : ('a, 'b) Hashtbl.t -> 'a -> 'b option
+val find_opt : ('a, 'b) Hashtbl.t -> 'a -> 'b option

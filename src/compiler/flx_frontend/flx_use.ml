@@ -217,7 +217,7 @@ let cal_use_closure_for_symbols syms bsym_table bids (count_inits:bool) =
   let ut t = uses_type u bsym_table count_inits t in
 
   List.iter begin fun bid ->
-    match Flx_hashtbl.find syms.typeclass_to_instance bid with
+    match Flx_hashtbl.find_opt syms.typeclass_to_instance bid with
     | Some instances ->
         List.iter begin fun (vs, con, st, j) ->
           add bid;

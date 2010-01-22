@@ -23,7 +23,7 @@ module IntHashtbl = Make (
   end)
 
 (** Search through the table and optionally return the key. *)
-let find table key =
+let find_opt table key =
   try
     Some (Hashtbl.find table key)
   with Not_found ->
