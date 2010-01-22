@@ -1,7 +1,3 @@
-module VarMap : Map.S with type key = string
-
-type varmap_t = string VarMap.t
-
 module TypecodeSet : Set.S with type elt = Flx_ast.typecode_t
 
 type typecodeset_t = TypecodeSet.t

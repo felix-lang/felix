@@ -82,9 +82,6 @@ let iter_bids f counter start_bid =
     f i
   done
 
-module VarMap = StringMap
-type varmap_t = string_string_map_t
-
 module TypecodeSet = Set.Make(
   struct type t = Flx_ast.typecode_t let compare = compare end
 )
