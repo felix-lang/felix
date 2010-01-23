@@ -1,5 +1,9 @@
 //Check types:nested
 
+header """
+struct x_t { int x; };
+""";
+
 fun f(x:int) = {
   cstruct x_t { x:int; };
   fun pr(a:x_t): int = {
