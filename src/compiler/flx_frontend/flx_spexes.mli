@@ -16,7 +16,7 @@ val gen_body :
   bparameter_t list ->              (* parameters *)
   (string, string) Hashtbl.t ->     (* relabel *)
   (bid_t, bid_t) Hashtbl.t ->       (* revariable *)
-  bexe_t list ->                    (* the exes *)
+  Flx_bexe.t list ->                (* the exes *)
   tbexpr_t ->                       (* argument *)
   Flx_srcref.t ->                   (* srcref *)
   bid_t ->                          (* caller *)
@@ -25,12 +25,12 @@ val gen_body :
   int ->                            (* callee vs len *)
   submode_t ->                      (* default arg passing mode *)
   property_t list ->                (* properties *)
-  bexe_t list
+  Flx_bexe.t list
 
 val recal_exes_usage:
   usage_table_t ->
   Flx_srcref.t ->
   bid_t ->
   bparameter_t list ->
-  bexe_t list ->
+  Flx_bexe.t list ->
   unit

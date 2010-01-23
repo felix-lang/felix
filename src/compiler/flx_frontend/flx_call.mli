@@ -31,7 +31,7 @@ val is_recursive_call: usage_table_t -> bid_t -> bid_t -> bool
 val is_recursive: usage_table_t -> bid_t -> bool
 
 val cal_exe_usage:
-  usage_table_t -> bid_t -> bexe_t -> unit
+  usage_table_t -> bid_t -> Flx_bexe.t -> unit
 
 val cal_expr_usage:
   usage_table_t -> bid_t -> Flx_srcref.t -> tbexpr_t -> unit

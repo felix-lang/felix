@@ -16,7 +16,7 @@ val make_bexe_state:
 val bind_exe:
   bexe_state_t ->             (** The state needed to bind the exe. *)
   Flx_bsym_table.t ->
-  (Flx_types.bexe_t -> 'a -> 'a) -> (** Map this function over the bound exes *)
+  (Flx_bexe.t -> 'a -> 'a) -> (** Map this function over the bound exes *)
   Flx_ast.sexe_t ->           (** The executable to bind *)
   'a ->                       (** The init value *)
   'a
@@ -27,4 +27,4 @@ val bind_exes:
   Flx_bsym_table.t ->
   Flx_srcref.t ->             (** The parent's srcref. *)
   Flx_ast.sexe_t list ->      (** The list of executables to bind. *)
-  Flx_types.btypecode_t * Flx_types.bexe_t list
+  Flx_types.btypecode_t * Flx_bexe.t list

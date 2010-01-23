@@ -45,8 +45,8 @@ val string_of_desugared : asm_t list -> string
 val string_of_suffixed_name : suffixed_name_t -> string
 val string_of_qualified_name : qualified_name_t -> string
 val string_of_dcl : int -> id_t -> bid_t option -> vs_list_t -> dcl_t -> string
-val string_of_bexe : Flx_bsym_table.t -> int -> bexe_t -> string
-val sbx: Flx_bsym_table.t -> bexe_t -> string
+val string_of_bexe : Flx_bsym_table.t -> int -> Flx_bexe.t -> string
+val sbx: Flx_bsym_table.t -> Flx_bexe.t -> string
 val string_of_exe : int -> exe_t -> string
 val qualified_name_of_index : Flx_sym_table.t -> bid_t -> string
 val qualified_name_of_bindex :
@@ -107,7 +107,7 @@ val print_symbols:
 
 val print_function_body:
   Flx_bsym_table.t ->
-  string -> bid_t -> bvs_t -> bparams_t -> bexe_t list -> bid_t option ->
+  string -> bid_t -> bvs_t -> bparams_t -> Flx_bexe.t list -> bid_t option ->
   unit
 
 val print_function:

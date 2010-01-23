@@ -41,7 +41,7 @@ val iter_bexe:
   (btypecode_t -> unit) ->
   (string -> unit) ->
   (string -> unit) ->
-  bexe_t -> unit
+  Flx_bexe.t -> unit
 
 val map_bexe:
   (bid_t -> bid_t) ->
@@ -49,7 +49,7 @@ val map_bexe:
   (btypecode_t -> btypecode_t) ->
   (string -> string) ->
   (string -> string) ->
-  bexe_t -> bexe_t
+  Flx_bexe.t -> Flx_bexe.t
 
 (** Simplify the bound expression. *)
 val reduce_tbexpr:
@@ -58,7 +58,7 @@ val reduce_tbexpr:
 
 (** Simplify the bound exe. *)
 val reduce_bexe:
-  bexe_t -> (** The bound exe. *)
-  bexe_t
+  Flx_bexe.t -> (** The bound exe. *)
+  Flx_bexe.t
 
 val scan_expr: expr_t -> Flx_srcref.t list

@@ -2,6 +2,7 @@ open Flx_util
 open Flx_list
 open Flx_ast
 open Flx_types
+open Flx_bexe
 open Flx_bbdcl
 open Flx_print
 open Flx_set
@@ -123,7 +124,7 @@ let check_proj_wrap_closure syms bsym_table descend usage n i e =
   let u = expr_uses_unrestricted syms descend usage e in
   BidSet.iter (check_proj_wrap_entry syms bsym_table n i) u
 
-let tailit syms bsym_table child_map uses id this sr ps vs exes : bexe_t list =
+let tailit syms bsym_table child_map uses id this sr ps vs exes =
   (*
   print_endline ("======= Tailing " ^ id ^ "<" ^ si this ^ "> exes=====");
   iter (fun x -> print_endline (string_of_bexe 0 x)) exes;

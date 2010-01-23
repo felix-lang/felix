@@ -4,13 +4,13 @@ type bind_state_t = {
   symtab: Flx_symtab.t;
   parent: Flx_types.bid_t option;
   strabs_state: Flx_strabs.strabs_state_t;
-  bexe_state: Flx_bexe.bexe_state_t;
+  bexe_state: Flx_bind_bexe.bexe_state_t;
   lookup_state: Flx_lookup.lookup_state_t;
   bbind_state: Flx_bbind.bbind_state_t;
 }
 
 type bound_t =
-  | Bound_exe of Flx_types.bexe_t
+  | Bound_exe of Flx_bexe.t
   | Bound_symbol of (Flx_types.bid_t * Flx_bsym.t)
 
 (** Constructs the bind state needed for a batch compiler. *)
@@ -24,7 +24,7 @@ let make_bind_state syms =
     symtab = Flx_symtab.make syms sym_table;
     parent = None;
     strabs_state = Flx_strabs.make_strabs_state ();
-    bexe_state = Flx_bexe.make_bexe_state
+    bexe_state = Flx_bind_bexe.make_bexe_state
       syms
       sym_table
       lookup_state
@@ -79,7 +79,7 @@ let make_toplevel_bind_state syms =
     symtab = symtab;
     parent = Some module_index;
     strabs_state = Flx_strabs.make_strabs_state ();
-    bexe_state = Flx_bexe.make_bexe_state
+    bexe_state = Flx_bind_bexe.make_bexe_state
       ~parent:module_index
       ~env:(Flx_lookup.build_env lookup_state bsym_table (Some init_index))
       syms
@@ -100,7 +100,7 @@ let bind_asm state bsym_table handle_bound init asm =
   let init =
     match asm with
     | Flx_types.Exe exe ->
-        Flx_bexe.bind_exe state.bexe_state bsym_table begin fun bexe init ->
+        Flx_bind_bexe.bind_exe state.bexe_state bsym_table begin fun bexe init ->
           handle_bound init (Bound_exe bexe)
         end exe init
     | Flx_types.Dcl dcl ->

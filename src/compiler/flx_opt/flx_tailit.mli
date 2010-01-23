@@ -14,10 +14,10 @@ val tailit:
   Flx_srcref.t ->
   bparameter_t list ->
   bvs_t ->
-  bexe_t list ->
-  bexe_t list
+  Flx_bexe.t list ->
+  Flx_bexe.t list
 
 val exes_get_xclosures:
   sym_state_t ->
-  bexe_t list ->
+  Flx_bexe.t list ->
   BidSet.t

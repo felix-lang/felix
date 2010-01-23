@@ -1,6 +1,7 @@
 open Flx_util
 open Flx_ast
 open Flx_types
+open Flx_bexe
 open Flx_bbdcl
 open Flx_print
 open Flx_set
@@ -76,7 +77,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       let (_,at') as a' = append_args syms bsym_table f a [ptr] in
 
       (* create a call instruction to the mapped procedure *)
-      let call : bexe_t =
+      let call =
         BEXE_call (sr,
           (BEXPR_closure (p,ts),btyp_function (at',btyp_void)),
           a'

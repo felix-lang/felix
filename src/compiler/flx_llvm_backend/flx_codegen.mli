@@ -11,7 +11,7 @@ val codegen:
   Flx_bsym_table.t ->       (** The bound symbol table. *)
   Flx_child.t ->            (** The map of parents to children. *)
   Flx_types.bid_t list ->   (** The symbols to generate. *)
-  Flx_types.bexe_t list ->  (** The executables to generate. *)
+  Flx_bexe.t list ->        (** The executables to generate. *)
   Llvm.llvalue option
 
 (** Generate code for the given symbols and exes. *)
@@ -20,5 +20,5 @@ val codegen_and_run:
   Flx_bsym_table.t ->       (** The bound symbol table. *)
   Flx_child.t ->            (** The map of parents to children. *)
   Flx_types.bid_t list ->   (** The symbols to generate. *)
-  Flx_types.bexe_t list ->  (** The executables to generate. *)
+  Flx_bexe.t list ->        (** The executables to generate. *)
   Llvm.llvalue option

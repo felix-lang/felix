@@ -13,8 +13,8 @@ val fold_vars:
   usage_table_t ->
   bid_t ->
   bparameter_t list ->
-  bexe_t list ->
-  bexe_t list
+  Flx_bexe.t list ->
+  Flx_bexe.t list
 
 val add_use:
   usage_table_t -> bid_t -> bid_t -> Flx_srcref.t -> unit

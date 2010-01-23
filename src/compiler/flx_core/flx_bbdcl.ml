@@ -6,8 +6,8 @@ open Flx_format
 (** Bound declarations. *)
 type t =
   | BBDCL_module
-  | BBDCL_function of   property_t list * bvs_t * bparams_t * btypecode_t * bexe_t list
-  | BBDCL_procedure of  property_t list * bvs_t * bparams_t * bexe_t list
+  | BBDCL_function of   property_t list * bvs_t * bparams_t * btypecode_t * Flx_bexe.t list
+  | BBDCL_procedure of  property_t list * bvs_t * bparams_t * Flx_bexe.t list
   | BBDCL_val of        bvs_t * btypecode_t
   | BBDCL_var of        bvs_t * btypecode_t
   | BBDCL_ref of        bvs_t * btypecode_t
@@ -71,13 +71,13 @@ let rec print f = function
         print_bvs bvs
         print_bparams ps
         print_btype res
-        (Flx_list.print print_bexe) es
+        (Flx_list.print Flx_bexe.print) es
   | BBDCL_procedure (props,bvs,ps,es) ->
       print_variant4 f "BBDCL_procedure"
         print_properties props
         print_bvs bvs
         print_bparams ps
-        (Flx_list.print print_bexe) es
+        (Flx_list.print Flx_bexe.print) es
   | BBDCL_val (bvs,t) ->
       print_variant2 f "BBDCL_val" print_bvs bvs print_btype t
   | BBDCL_var (bvs,t) ->

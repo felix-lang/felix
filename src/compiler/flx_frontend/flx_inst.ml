@@ -1,6 +1,7 @@
 open Flx_util
 open Flx_ast
 open Flx_types
+open Flx_bexe
 open Flx_bbdcl
 open Flx_set
 open Flx_mtypes2
@@ -163,7 +164,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   | BEXPR_coerce (e,t) -> ue e; ut t
   end
 
-and process_exe syms bsym_table ref_insts1 ts hvarmap (exe:bexe_t) =
+and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
   let ue sr e = process_expr syms bsym_table ref_insts1 hvarmap sr e in
   let uis i ts = add_inst syms bsym_table ref_insts1 (i,ts) in
   let ui i = uis i ts in

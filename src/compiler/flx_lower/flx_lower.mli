@@ -23,6 +23,6 @@ val lower :
   Flx_child.t ->            (** A lookup table for children. *)
   Flx_types.bid_t ->        (** The root symbol. *)
   Flx_types.bid_t list ->   (** The list of symbols to lower. *)
-  Flx_types.bexe_t list ->  (** The list of exes to lower. *)
+  Flx_bexe.t list ->        (** The list of exes to lower. *)
   Flx_bsym_table.t * Flx_child.t *
-  Flx_types.bid_t list * Flx_types.bexe_t list
+  Flx_types.bid_t list * Flx_bexe.t list

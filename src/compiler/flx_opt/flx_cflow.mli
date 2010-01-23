@@ -4,14 +4,14 @@ open Flx_types
 open Flx_mtypes2
 
 val tailable:
-  bexe_t list ->
+  Flx_bexe.t list ->
   string list ->
-  bexe_t list ->
+  Flx_bexe.t list ->
   bool
 
 val chain_gotos:
   sym_state_t ->
-  bexe_t list -> bexe_t list
+  Flx_bexe.t list -> Flx_bexe.t list
 
 val final_tailcall_opt:
-  bexe_t list -> bexe_t list
+  Flx_bexe.t list -> Flx_bexe.t list

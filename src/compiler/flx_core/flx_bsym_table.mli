@@ -53,4 +53,4 @@ val is_global_var : t -> Flx_types.bid_t -> bool
 val is_function : t -> Flx_types.bid_t -> bool
 
 (** Update all the bound function and procedure's bound exes. *)
-val update_bexes : (Flx_types.bexe_t list -> Flx_types.bexe_t list) -> t -> unit
+val update_bexes : (Flx_bexe.t list -> Flx_bexe.t list) -> t -> unit

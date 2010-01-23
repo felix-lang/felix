@@ -134,7 +134,7 @@ let bbind_symbol state bsym_table symbol_index sym =
   *)
 
   let bexes exes ret_type index tvars =
-    let bexe_state = Flx_bexe.make_bexe_state
+    let bexe_state = Flx_bind_bexe.make_bexe_state
       ?parent:sym.Flx_sym.parent
       ~env
       state.syms
@@ -143,7 +143,7 @@ let bbind_symbol state bsym_table symbol_index sym =
       tvars
       ret_type
     in
-    Flx_bexe.bind_exes bexe_state bsym_table sym.Flx_sym.sr exes
+    Flx_bind_bexe.bind_exes bexe_state bsym_table sym.Flx_sym.sr exes
   in
   (*
   print_endline ("Binding " ^ name ^ "<"^ si symbol_index ^ ">");

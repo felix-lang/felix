@@ -596,7 +596,7 @@ let codegen_bexe state bsym_table builder bexe =
   let bexe = Flx_maps.reduce_bexe bexe in
 
   match bexe with
-  | Flx_types.BEXE_label (sr, label) ->
+  | Flx_bexe.BEXE_label (sr, label) ->
       print_endline "BEXE_label";
 
       (* Find or create the basic block of the label *)
@@ -616,19 +616,19 @@ let codegen_bexe state bsym_table builder bexe =
       (* Set the builder to start generating code on that basic block. *)
       Llvm.position_at_end bb builder
 
-  | Flx_types.BEXE_comment (sr, string) ->
+  | Flx_bexe.BEXE_comment (sr, string) ->
       (* Ignore the comment. *)
       ()
 
-  | Flx_types.BEXE_halt (sr, string) ->
+  | Flx_bexe.BEXE_halt (sr, string) ->
       print_endline "BEXE_halt";
       assert false
 
-  | Flx_types.BEXE_trace (sr, s1, s2) ->
+  | Flx_bexe.BEXE_trace (sr, s1, s2) ->
       print_endline "BEXE_trace";
       assert false
 
-  | Flx_types.BEXE_goto (sr, label) ->
+  | Flx_bexe.BEXE_goto (sr, label) ->
       print_endline "BEXE_goto";
 
       (* Find the basic block of the label. *)
@@ -644,7 +644,7 @@ let codegen_bexe state bsym_table builder bexe =
       (* Branch to that basic block. *)
       ignore (Llvm.build_br bb builder)
 
-  | Flx_types.BEXE_ifgoto (sr, e, label) ->
+  | Flx_bexe.BEXE_ifgoto (sr, e, label) ->
       print_endline "BEXE_ifgoto";
       let e = codegen_expr state bsym_table builder sr e in
 
@@ -669,61 +669,61 @@ let codegen_bexe state bsym_table builder bexe =
       (* Continue with the else branch. *)
       Llvm.position_at_end else_bb builder
 
-  | Flx_types.BEXE_call (sr, p, a) ->
+  | Flx_bexe.BEXE_call (sr, p, a) ->
       let e1 = codegen_expr state bsym_table builder sr p in
       let e2 = codegen_expr state bsym_table builder sr a in
       assert false
 
-  | Flx_types.BEXE_call_direct (sr, bid, _, e)
-  | Flx_types.BEXE_call_prim (sr, bid, _, e) ->
+  | Flx_bexe.BEXE_call_direct (sr, bid, _, e)
+  | Flx_bexe.BEXE_call_prim (sr, bid, _, e) ->
       print_endline "BEXE_call_{direct,prim}";
       ignore (codegen_apply_direct state bsym_table builder sr bid e)
 
-  | Flx_types.BEXE_call_stack (sr, bid, _, e) ->
+  | Flx_bexe.BEXE_call_stack (sr, bid, _, e) ->
       print_endline "BEXE_call_stack";
       ignore (codegen_apply_stack state bsym_table builder sr bid e)
 
-  | Flx_types.BEXE_jump (sr, e1, e2) ->
+  | Flx_bexe.BEXE_jump (sr, e1, e2) ->
       print_endline "BEXE_jump";
       assert false
 
-  | Flx_types.BEXE_jump_direct (sr, index, _, e) ->
+  | Flx_bexe.BEXE_jump_direct (sr, index, _, e) ->
       print_endline "BEXE_jump_direct";
       let e = codegen_expr state bsym_table builder sr e in
       assert false
 
-  | Flx_types.BEXE_svc (sr, index) ->
+  | Flx_bexe.BEXE_svc (sr, index) ->
       print_endline "BEXE_svc";
       assert false
 
-  | Flx_types.BEXE_fun_return (sr, e) ->
+  | Flx_bexe.BEXE_fun_return (sr, e) ->
       print_endline "BEXE_fun_return";
       let e = codegen_deref state bsym_table builder sr e in
 
       ignore (Llvm.build_ret e builder);
 
-  | Flx_types.BEXE_yield (sr, e) ->
+  | Flx_bexe.BEXE_yield (sr, e) ->
       print_endline "BEXE_yield";
       let e = codegen_expr state bsym_table builder sr e in
       assert false
 
-  | Flx_types.BEXE_proc_return sr ->
+  | Flx_bexe.BEXE_proc_return sr ->
       print_endline "BEXE_proc_return";
       ignore (Llvm.build_ret_void builder);
 
-  | Flx_types.BEXE_nop (sr, string) ->
+  | Flx_bexe.BEXE_nop (sr, string) ->
       print_endline "BEXE_nop";
       assert false
 
-  | Flx_types.BEXE_code (sr, code_spec_t) ->
+  | Flx_bexe.BEXE_code (sr, code_spec_t) ->
       print_endline "BEXE_code";
       assert false
 
-  | Flx_types.BEXE_nonreturn_code (sr, code_spec_t) ->
+  | Flx_bexe.BEXE_nonreturn_code (sr, code_spec_t) ->
       print_endline "BEXE_nonreturn_code";
       assert false
 
-  | Flx_types.BEXE_assign (sr, lhs, rhs) ->
+  | Flx_bexe.BEXE_assign (sr, lhs, rhs) ->
       print_endline "BEXE_assign";
 
       (* We can only assign to a name *)
@@ -747,7 +747,7 @@ let codegen_bexe state bsym_table builder bexe =
 
       ignore (Llvm.build_store rhs lhs builder)
 
-  | Flx_types.BEXE_init (sr, index, ((_, btype) as e)) ->
+  | Flx_bexe.BEXE_init (sr, index, ((_, btype) as e)) ->
       print_endline "BEXE_init";
 
       let lhs = Hashtbl.find state.value_bindings index in
@@ -771,20 +771,20 @@ let codegen_bexe state bsym_table builder bexe =
           ignore (Llvm.build_store rhs lhs builder)
       end
 
-  | Flx_types.BEXE_begin ->
+  | Flx_bexe.BEXE_begin ->
       print_endline "BEXE_begin";
       assert false
 
-  | Flx_types.BEXE_end ->
+  | Flx_bexe.BEXE_end ->
       print_endline "BEXE_end";
       assert false
 
-  | Flx_types.BEXE_assert (sr, e) ->
+  | Flx_bexe.BEXE_assert (sr, e) ->
       print_endline "BEXE_assert";
       let e = codegen_expr state bsym_table builder sr e in
       assert false
 
-  | Flx_types.BEXE_assert2 (sr1, sr2, e1, e2) ->
+  | Flx_bexe.BEXE_assert2 (sr1, sr2, e1, e2) ->
       print_endline "BEXE_assert2";
       begin
         match e1 with
@@ -796,7 +796,7 @@ let codegen_bexe state bsym_table builder bexe =
       let e2 = codegen_expr state bsym_table builder sr2 e2 in
       assert false
 
-  | Flx_types.BEXE_axiom_check (sr, e) ->
+  | Flx_bexe.BEXE_axiom_check (sr, e) ->
       print_endline "BEXE_axiom_check";
       let e = codegen_expr state bsym_table builder sr e in
       assert false

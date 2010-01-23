@@ -1,7 +1,7 @@
 type bind_state_t
 
 type bound_t =
-  | Bound_exe of Flx_types.bexe_t
+  | Bound_exe of Flx_bexe.t
   | Bound_symbol of (Flx_types.bid_t * Flx_bsym.t)
 
 (** Constructs the bind state needed for a batch compiler. *)

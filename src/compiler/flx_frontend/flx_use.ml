@@ -1,6 +1,7 @@
 open Flx_util
 open Flx_ast
 open Flx_types
+open Flx_bexe
 open Flx_bbdcl
 open Flx_print
 open Flx_set
@@ -52,7 +53,7 @@ let rec uses_type used bsym_table count_inits (t:btypecode_t) =
 and uses_exes used bsym_table count_inits exes =
   List.iter (uses_exe used bsym_table count_inits) exes
 
-and uses_exe used bsym_table count_inits (exe:bexe_t) =
+and uses_exe used bsym_table count_inits exe =
   (*
   print_endline ("EXE=" ^ string_of_bexe bsym_table 0 exe);
   *)

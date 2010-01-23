@@ -1,6 +1,7 @@
 open Flx_util
 open Flx_ast
 open Flx_types
+open Flx_bexe
 open Flx_bbdcl
 open Flx_set
 open Flx_mtypes2
@@ -46,7 +47,7 @@ let gen_closure state bsym_table i =
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
     in
 
-    let exes : bexe_t list =
+    let exes =
       [
         BEXE_call_prim (bsym.Flx_bsym.sr,i,ts,a);
         BEXE_proc_return bsym.Flx_bsym.sr
@@ -76,7 +77,7 @@ let gen_closure state bsym_table i =
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
     in
     let e = BEXPR_apply_prim (i,ts,a),ret in
-    let exes : bexe_t list = [BEXE_fun_return (bsym.Flx_bsym.sr,e)] in
+    let exes = [BEXE_fun_return (bsym.Flx_bsym.sr,e)] in
     Flx_bsym_table.add bsym_table j { bsym with
       Flx_bsym.bbdcl=BBDCL_function ([],vs,(ps,None),ret,exes) };
     j
@@ -124,7 +125,7 @@ let rec adj_cls state bsym_table all_closures e =
   | x -> x
 
 
-let process_exe state bsym_table all_closures (exe : bexe_t) : bexe_t =
+let process_exe state bsym_table all_closures exe =
   let ue e = adj_cls state bsym_table all_closures e in
   match exe with
   | BEXE_axiom_check _ -> assert false

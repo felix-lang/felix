@@ -2,6 +2,7 @@ open Flx_util
 open Flx_list
 open Flx_ast
 open Flx_types
+open Flx_bexe
 open Flx_bbdcl
 open Flx_mtypes2
 open Flx_print
@@ -747,7 +748,7 @@ let gen_exe filename
   stackable
   exe
 =
-  let sr = Flx_types.src_of_bexe exe in
+  let sr = Flx_bexe.get_srcref exe in
   if length ts <> length vs then
   failwith
   (

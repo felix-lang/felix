@@ -1,6 +1,7 @@
 open Flx_util
 open Flx_ast
 open Flx_types
+open Flx_bexe
 open Flx_bbdcl
 open Flx_print
 open Flx_set
@@ -189,7 +190,7 @@ let gen_body syms (uses,child_map,bsym_table) id
   in
 
 
-  let remap: bexe_t -> bexe_t list =  fun exe ->
+  let remap exe =
   match exe with
   | BEXE_axiom_check _ -> assert false
   | BEXE_call_prim (sr,i,ts,e2)  ->  assert false

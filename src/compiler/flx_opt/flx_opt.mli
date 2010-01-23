@@ -13,6 +13,6 @@ val optimize :
   Flx_child.t ->              (** The map of children. *)
   Flx_types.bid_t ->          (** The root procedure. *)
   Flx_types.bid_t list ->     (** The symbols to optimize. *)
-  Flx_types.bexe_t list ->    (** The symbols to optimize. *)
+  Flx_bexe.t list ->          (** The symbols to optimize. *)
   Flx_bsym_table.t * Flx_child.t *
-  Flx_types.bid_t list * Flx_types.bexe_t list
+  Flx_types.bid_t list * Flx_bexe.t list

@@ -1,4 +1,5 @@
 open Flx_types
+open Flx_bexe
 open List
 open Flx_util
 open Flx_mtypes2
@@ -42,7 +43,7 @@ let rec tailable exes exclude tail =
     | _ -> false
   in aux tail
 
-let rec skip_white tail : bexe_t list =
+let rec skip_white tail =
   match tail with
   | [] -> []
   | h :: t ->
@@ -64,7 +65,7 @@ let rec can_drop s tail : bool =
 
     | _ -> false
 
-let rec retarget exes exe exclude : bexe_t =
+let rec retarget exes exe exclude =
   match exe with
   | BEXE_goto (sr,label) ->
     (*

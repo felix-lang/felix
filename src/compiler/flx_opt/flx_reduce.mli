@@ -10,5 +10,5 @@ val reduce_exes:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
   Flx_types.reduction_t list ->
-  Flx_types.bexe_t list ->
-  Flx_types.bexe_t list
+  Flx_bexe.t list ->
+  Flx_bexe.t list

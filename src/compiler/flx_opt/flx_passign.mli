@@ -16,4 +16,4 @@ val passign:
   btypecode_t list ->             (* ts to use when creating temporaries *)
   Flx_srcref.t ->                 (* source ref *)
   (btypecode_t * bid_t) list *
-  bexe_t list
+  Flx_bexe.t list

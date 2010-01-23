@@ -20,8 +20,8 @@ let rec lvof x =
 
 let eliminate_init maybe_unused exes =
   List.filter begin function
-    | Flx_types.BEXE_init (_, i, _) -> not (Flx_types.BidSet.mem i maybe_unused)
-    | Flx_types.BEXE_assign (_, x, _) -> not (Flx_types.BidSet.mem (lvof x) maybe_unused)
+    | Flx_bexe.BEXE_init (_, i, _) -> not (Flx_types.BidSet.mem i maybe_unused)
+    | Flx_bexe.BEXE_assign (_, x, _) -> not (Flx_types.BidSet.mem (lvof x) maybe_unused)
     | _ -> true
   end exes
 

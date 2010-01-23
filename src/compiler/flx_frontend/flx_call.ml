@@ -1,5 +1,6 @@
 open Flx_ast
 open Flx_types
+open Flx_bexe
 open Flx_bbdcl
 open Flx_set
 open Flx_exceptions
@@ -53,7 +54,7 @@ and cal_exe_usage h k exe =
   (*
   print_endline ("Checking uses in " ^ si k ^ ", exe: " ^ string_of_bexe syms.sym_table 2 exe);
   *)
-  let sr = src_of_bexe exe in
+  let sr = Flx_bexe.get_srcref exe in
   let ue e = process_expr h k sr e in
   let ui i = add h k i sr in
   let ut t = uses_type h k sr t in

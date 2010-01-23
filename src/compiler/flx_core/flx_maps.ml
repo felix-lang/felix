@@ -1,5 +1,6 @@
 open Flx_ast
 open Flx_types
+open Flx_bexe
 open Flx_typing
 
 let ident x = x
@@ -469,7 +470,7 @@ let iter_bexe fi fe ft fl fldef exe =
   | BEXE_end
     -> ()
 
-let map_bexe fi fe ft fl fldef (exe:bexe_t):bexe_t =
+let map_bexe fi fe ft fl fldef exe =
   match exe with
   | BEXE_call_prim (sr,i,ts,e2)  ->
     BEXE_call_prim (sr,fi i,List.map ft ts, fe e2)

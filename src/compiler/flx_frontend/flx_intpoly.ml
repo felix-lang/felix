@@ -1,4 +1,5 @@
 open Flx_types
+open Flx_bexe
 open Flx_bbdcl
 open Flx_maps
 open List
@@ -74,7 +75,7 @@ let rec check_abstract_expr syms rls ((x,t) as e) =
   | BEXPR_coerce (e,t) -> fe e; ft t
 
 
-let check_abstract_exe syms rls (exe:bexe_t) =
+let check_abstract_exe syms rls exe =
  iter_bexe 
    ignore 
    (check_abstract_expr syms rls)
