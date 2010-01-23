@@ -37,3 +37,6 @@ val get_ts : t -> btypecode_t list
 
 (** Extract the bound type variables of a bound declaration. *)
 val get_bvs : t -> bvs_t
+
+(** Prints a bbdcl to a formatter. *)
+val print : Format.formatter -> t -> unit
