@@ -3,9 +3,16 @@ module type S =
     include Set.S
     val map : (elt -> elt) -> t -> t
     val of_list : elt list -> t
+    val print : Format.formatter -> t -> unit
   end;;
 
-module Make (M:Set.OrderedType) : S with type elt = M.t
+module type OrderedTypePrintable =
+  sig
+    include Set.OrderedType
+    val print : Format.formatter -> t -> unit
+  end;;
+
+module Make (M:OrderedTypePrintable) : S with type elt = M.t
 
 module StringSet : S with type elt = string
 

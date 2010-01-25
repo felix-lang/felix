@@ -48,3 +48,10 @@ val mapi: (int -> 'a -> 'b) -> 'a list -> 'b list
 
 (** [fold_lefti f a [b1; ...; bn] is [f 0 a1 (f 1 a2 (... (f n an b) ...))]. *)
 val fold_lefti: (int -> 'a -> 'b -> 'a) -> 'a -> 'b list -> 'a
+
+(** Prints out a list to a formatter. *)
+val print:
+  (Format.formatter -> 'a -> unit) ->
+  Format.formatter ->
+  'a list ->
+  unit

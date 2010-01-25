@@ -1,4 +1,5 @@
 open List
+open Format
 
 let transpose x =
   let dtor ls =
@@ -86,3 +87,17 @@ let fold_lefti f acc lst =
     incr i;
     result
   end acc lst
+
+(** Prints out the list to the formatter. *)
+let print pp_elt ppf = function
+  | [] -> fprintf ppf "[]"
+  | xs ->
+      fprintf ppf "@[<hv1>[";
+      let _ =
+        List.fold_left begin fun first elt ->
+          if not first then fprintf ppf ";@ ";
+          pp_elt ppf elt;
+          false
+        end true xs
+  in
+  fprintf ppf "@]]"
