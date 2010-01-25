@@ -1,13 +1,14 @@
-module IntHashtbl : Hashtbl.S with type key = int
-module StringMap : Map.S with type key = string
+module type S =
+  sig
+    include Set.S
+    val map : (elt -> elt) -> t -> t
+    val of_list : elt list -> t
+  end;;
 
-type string_string_map_t = string StringMap.t
-module StringSet : Set.S with type elt = string
+module Make (M:Set.OrderedType) : S with type elt = M.t
 
-val stringset_map: (string -> string) -> StringSet.t -> StringSet.t
+module StringSet : S with type elt = string
 
-module IntSet : Set.S with type elt = int
-module IntSetSet : Set.S with type elt = IntSet.t
+module IntSet : S with type elt = int
 
-val string_of_intset : IntSet.t -> string
-val intset_of_list : int list -> IntSet.t
+module IntSetSet : S with type elt = IntSet.t

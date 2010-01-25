@@ -1,65 +1,32 @@
-module IntHashtbl = Hashtbl.Make(
-  struct
-    type t = int
-    let equal = fun x y -> x = y
-    let hash = fun x -> x
-  end
-)
-;;
+module type S =
+  sig
+    include Set.S
+    val map : (elt -> elt) -> t -> t
+    val of_list : elt list -> t
+  end;;
 
-module StringMap = Map.Make(
+module Make (M:Set.OrderedType) : S with type elt = M.t =
+  struct
+    include Set.Make(M)
+    let map f set = fold (fun x -> add (f x)) set empty
+    let of_list l = List.fold_right add l empty
+  end;;
+
+module StringSet = Make (
   struct
     type t = string
     let compare = compare
-  end
-)
-;;
+  end)
 
-type string_string_map_t = string StringMap.t
-
-module StringSet = Set.Make (
-  struct
-    type t = string
-    let compare=compare
-  end
-);;
-
-module IntSet = Set.Make (
+module IntSet = Make (
   struct
     type t = int
-    let compare=compare
-  end
-);;
+    let compare = compare
+  end)
 
 (* set of IntSet's *)
-module IntSetSet = Set.Make (
+module IntSetSet = Make (
   struct
     type t = IntSet.t
-    let compare=compare
-  end
-);;
-
-let stringset_map f s =
-  let d = ref StringSet.empty in
-  StringSet.iter
-  (fun x -> d := StringSet.add (f x) !d)
-  s
-  ;
-  !d
-
-let list_of_intset ii =
-  IntSet.fold (fun i lst -> i :: lst) ii []
-
-let string_of_intset ii =
-  "{"^
-  String.concat ","
-  (
-    List.map string_of_int
-    (
-      list_of_intset ii
-    )
-  )
-  ^"}"
-
-let intset_of_list ii =
-  List.fold_left (fun ii i -> IntSet.add i ii) IntSet.empty ii
+    let compare = compare
+  end)
