@@ -144,28 +144,21 @@ type entry_kind_t = {
   sub_ts: btypecode_t list
 }
 
-and entry_set_t =
+type entry_set_t =
   | FunctionEntry of entry_kind_t list
   | NonFunctionEntry of entry_kind_t
 
-and module_rep_t =
-  | Simple_module of bid_t * typecode_t list * name_map_t * sdir_t list
+type name_map_t = (string, entry_set_t) Hashtbl.t
 
-and name_map_t = (string, entry_set_t) Hashtbl.t
+type module_rep_t =
+  | Simple_module of bid_t * typecode_t list * name_map_t * sdir_t list
 
 type biface_t =
   | BIFACE_export_fun of Flx_srcref.t * bid_t * string
   | BIFACE_export_python_fun of Flx_srcref.t * bid_t * string
   | BIFACE_export_type of Flx_srcref.t * btypecode_t * string
 
-type regular_args_t =
-    int list *                  (* alphabet *)
-    int *                       (* state count *)
-    (int, tbexpr_t) Hashtbl.t * (* state->expression map *)
-    (int * int, int) Hashtbl.t  (* transition matrix *)
-
-
-and bexpr_t =
+type bexpr_t =
   | BEXPR_deref of tbexpr_t
   | BEXPR_name of bid_t * btypecode_t list
   | BEXPR_ref of bid_t * btypecode_t list
@@ -194,21 +187,27 @@ and bexpr_t =
 
 and tbexpr_t = bexpr_t * btypecode_t
 
-and bparameter_t = {pkind:param_kind_t; pid:string; pindex:bid_t; ptyp:btypecode_t}
-and breqs_t = (bid_t * btypecode_t list) list
-and bvs_t = (string * bid_t) list
-and bparams_t = bparameter_t list * tbexpr_t option
+type regular_args_t =
+    int list *                  (* alphabet *)
+    int *                       (* state count *)
+    (int, tbexpr_t) Hashtbl.t * (* state->expression map *)
+    (int * int, int) Hashtbl.t  (* transition matrix *)
 
-and btype_qual_t = [
+type bparameter_t = {pkind:param_kind_t; pid:string; pindex:bid_t; ptyp:btypecode_t}
+type breqs_t = (bid_t * btypecode_t list) list
+type bvs_t = (string * bid_t) list
+type bparams_t = bparameter_t list * tbexpr_t option
+
+type btype_qual_t = [
   | base_type_qual_t
   | `Bound_needs_shape of btypecode_t
 ]
 
-and baxiom_method_t = [`BPredicate of tbexpr_t | `BEquation of tbexpr_t * tbexpr_t]
-and reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
-and axiom_t = id_t * Flx_srcref.t * bid_t option * axiom_kind_t * bvs_t * bparams_t * baxiom_method_t
+type baxiom_method_t = [`BPredicate of tbexpr_t | `BEquation of tbexpr_t * tbexpr_t]
+type reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
+type axiom_t = id_t * Flx_srcref.t * bid_t option * axiom_kind_t * bvs_t * bparams_t * baxiom_method_t
 
-and typevarmap_t = (bid_t, btypecode_t) Hashtbl.t
+type typevarmap_t = (bid_t, btypecode_t) Hashtbl.t
 
 type env_t = (bid_t * id_t * name_map_t * name_map_t list * typecode_t) list
     (* env: container index, name, primary symbol map, directives, type
