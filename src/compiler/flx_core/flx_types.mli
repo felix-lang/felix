@@ -193,21 +193,18 @@ type regular_args_t =
     (int, tbexpr_t) Hashtbl.t * (* state->expression map *)
     (int * int, int) Hashtbl.t  (* transition matrix *)
 
-type bparameter_t = {pkind:param_kind_t; pid:string; pindex:bid_t; ptyp:btypecode_t}
 type breqs_t = (bid_t * btypecode_t list) list
 type bvs_t = (string * bid_t) list
-type bparams_t = bparameter_t list * tbexpr_t option
 
 type btype_qual_t = [
   | base_type_qual_t
   | `Bound_needs_shape of btypecode_t
 ]
 
-type baxiom_method_t = [`BPredicate of tbexpr_t | `BEquation of tbexpr_t * tbexpr_t]
-type reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
-type axiom_t = id_t * Flx_srcref.t * bid_t option * axiom_kind_t * bvs_t * bparams_t * baxiom_method_t
-
-type typevarmap_t = (bid_t, btypecode_t) Hashtbl.t
+type baxiom_method_t = [
+  | `BPredicate of tbexpr_t
+  | `BEquation of tbexpr_t * tbexpr_t
+]
 
 type env_t = (bid_t * id_t * name_map_t * name_map_t list * typecode_t) list
     (* env: container index, name, primary symbol map, directives, type
@@ -330,9 +327,6 @@ val print_bid : Format.formatter -> bid_t -> unit
 (** Prints a bvs_t to a formatter. *)
 val print_bvs : Format.formatter -> bvs_t -> unit
 
-(** Prints a bparams_t to a formatter. *)
-val print_bparams : Format.formatter -> bparams_t -> unit
-
 (** Prints a btype_qual_t to a formatter. *)
 val print_btype_qual : Format.formatter -> btype_qual_t -> unit
 
@@ -347,9 +341,6 @@ val print_btype : Format.formatter -> btypecode_t -> unit
 
 (** Prints a btypecode_t list to a formatter. *)
 val print_btypes : Format.formatter -> btypecode_t list -> unit
-
-(** Prints a bparameter_t to a formatter. *)
-val print_bparameter : Format.formatter -> bparameter_t -> unit
 
 (** Prints a breqs_t to a formatter. *)
 val print_breqs : Format.formatter -> breqs_t -> unit

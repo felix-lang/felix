@@ -859,7 +859,7 @@ let codegen_proto state bsym_table child_map bid name parameters ret_type =
    * In order to do this, we'll build up the argument list in reverse, first by
    * creating the parameters for the regular parameters. *)
   let ts = List.map
-    (fun p -> lltype_of_btype state p.Flx_types.ptyp)
+    (fun p -> lltype_of_btype state p.Flx_bparameter.ptyp)
     parameters
   in
 
@@ -902,7 +902,7 @@ let codegen_proto state bsym_table child_map bid name parameters ret_type =
   let _ =
     List.fold_left begin fun i p ->
       Llvm.set_value_name
-        p.Flx_types.pid
+        p.Flx_bparameter.pid
         (Llvm.param the_function i);
       i + 1
     end i parameters
@@ -1078,7 +1078,7 @@ let rec codegen_function
         let rhs = Llvm.param the_function i in
 
         (* Find the local symbol that corresponds with this parameter. *)
-        let lhs = Hashtbl.find state.value_bindings p.Flx_types.pindex in
+        let lhs = Hashtbl.find state.value_bindings p.Flx_bparameter.pindex in
 
         (* Make sure that we're dealing with the right types. *)
         check_type sr (Llvm.type_of lhs) (Llvm.pointer_type (Llvm.type_of rhs));
@@ -1086,7 +1086,7 @@ let rec codegen_function
         (* Store the argument in the alloca. *)
         ignore (Llvm.build_store rhs lhs builder);
 
-        Hashtbl.add state.value_bindings p.Flx_types.pindex lhs;
+        Hashtbl.add state.value_bindings p.Flx_bparameter.pindex lhs;
 
         i + 1
       end i parameters

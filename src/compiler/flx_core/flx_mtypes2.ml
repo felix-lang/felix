@@ -5,6 +5,29 @@ open List
 (* generic entity instances: functions, variables *)
 type instance_registry_t = (bid_t * btypecode_t list, bid_t) Hashtbl.t
 
+type typevarmap_t = (Flx_types.bid_t, Flx_types.btypecode_t) Hashtbl.t
+
+type baxiom_method_t = [
+  | `BPredicate of Flx_types.tbexpr_t
+  | `BEquation of Flx_types.tbexpr_t * Flx_types.tbexpr_t
+]
+
+type axiom_t =
+  Flx_ast.id_t *
+  Flx_srcref.t *
+  Flx_types.bid_t option *
+  Flx_ast.axiom_kind_t *
+  Flx_types.bvs_t *
+  Flx_bparams.t *
+  baxiom_method_t
+
+type reduction_t =
+  Flx_ast.id_t *
+  Flx_types.bvs_t *
+  Flx_bparameter.t list *
+  Flx_types.tbexpr_t *
+  Flx_types.tbexpr_t
+
 type felix_compiler_options_t =
 {
   print_flag: bool;

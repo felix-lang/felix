@@ -2,6 +2,7 @@ open Flx_util
 open Flx_ast
 open Flx_types
 open Flx_bexe
+open Flx_bparameter
 open Flx_bbdcl
 open Flx_print
 open Flx_set
@@ -112,7 +113,7 @@ let gen_body syms (uses,child_map,bsym_table) id
   (*
   let argument = reduce_tbexpr bsym_table argument in
   *)
-  let psis = map (fun {pindex=i} -> i) ps in
+  let psis = Flx_bparameter.get_bids ps in
 
   (* NOTE: this is the inline method for val's ONLY.
     If a parameter is a var, it is inlined eagerly no
@@ -171,7 +172,7 @@ let gen_body syms (uses,child_map,bsym_table) id
   ;
   let paramtype  =
     let pt =
-      let pts = map (fun {ptyp=t} -> t) ps in
+      let pts = Flx_bparameter.get_btypes ps in
       match pts with
       | [x] -> x
       | x -> btyp_tuple x

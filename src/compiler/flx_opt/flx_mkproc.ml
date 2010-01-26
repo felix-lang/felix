@@ -2,6 +2,7 @@ open Flx_util
 open Flx_ast
 open Flx_types
 open Flx_bexe
+open Flx_bparameter
 open Flx_bbdcl
 open Flx_print
 open Flx_set
@@ -251,14 +252,13 @@ let mkproc_gen syms bsym_table child_map =
       end;
 
       let fixup vsc exesc =
-
         (* reparent all the children of i to k *)
-        let extras = map (fun {pindex=i}->i) ps in
+        let bids = Flx_bparameter.get_bids ps in
         let revariable =
           Flx_reparent.reparent_children syms
           (ut,child_map,bsym_table)
           vs (length vs)
-          i (Some k) rl vm true extras
+          i (Some k) rl vm true bids
         in
         let revar i = try Hashtbl.find revariable i with Not_found -> i in
         begin

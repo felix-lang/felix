@@ -82,19 +82,6 @@ module FunInstSet = Set.Make(
   end
 )
 
-
-let typeofbps bps =
-  List.map
-  (fun {ptyp=t; pkind=k} ->
-    match k with
-(*    | `PRef -> BTYP_pointer t *)
-    | `PFun -> btyp_function (btyp_tuple [],t)
-    | _ ->t
-  )
-  bps
-
-let typeofbps_traint (bps,_) = typeofbps bps
-
 let flx_bool = TYP_unitsum 2
 let flx_bbool = btyp_unitsum 2
 

@@ -8,13 +8,13 @@ open Flx_mtypes2
 val get_ps:
   Flx_bsym_table.t ->
   bid_t ->
-  bparameter_t list
+  Flx_bparameter.t list
 
 val unpack:
   sym_state_t ->
   Flx_bsym_table.t ->
   bid_t ->
-  bparameter_t list ->
+  Flx_bparameter.t list ->
   tbexpr_t ->
   tbexpr_t list
 

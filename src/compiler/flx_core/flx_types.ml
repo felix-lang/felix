@@ -213,21 +213,18 @@ type regular_args_t =
     (int, tbexpr_t) Hashtbl.t * (* state->expression map *)
     (int * int, int) Hashtbl.t (* transition matrix *)
 
-type bparameter_t = {pkind:param_kind_t; pid:string; pindex:bid_t; ptyp:btypecode_t}
 type breqs_t = (bid_t * btypecode_t list) list
 type bvs_t = (string * bid_t) list
-type bparams_t = bparameter_t list * tbexpr_t option
 
 type btype_qual_t = [
   | base_type_qual_t
   | `Bound_needs_shape of btypecode_t
 ]
 
-type baxiom_method_t = [`BPredicate of tbexpr_t | `BEquation of tbexpr_t * tbexpr_t]
-type reduction_t = id_t * bvs_t * bparameter_t list * tbexpr_t * tbexpr_t
-type axiom_t = id_t * Flx_srcref.t * bid_t option * axiom_kind_t * bvs_t * bparams_t * baxiom_method_t
-
-type typevarmap_t = (bid_t, btypecode_t) Hashtbl.t
+type baxiom_method_t = [
+  | `BPredicate of tbexpr_t
+  | `BEquation of tbexpr_t * tbexpr_t
+]
 
 type env_t = (bid_t * id_t * name_map_t * name_map_t list * typecode_t) list
     (* env: container index, name, primary symbol map, directives, type
@@ -562,18 +559,6 @@ let print_btype_qual f = function
   | `Bound_needs_shape t ->
       print_variant1 f "`Bound_needs_shape"
         print_btype t
-
-let print_bparameter f bparameter =
-  Flx_format.print_record4 f
-    "pkind" Flx_ast.print_param_kind bparameter.pkind
-    "pid" Flx_format.print_string bparameter.pid
-    "pindex" print_bid bparameter.pindex
-    "ptyp" print_btype bparameter.ptyp
-
-let print_bparams f (bparameters, tbexpr) =
-  Flx_format.print_tuple2 f
-    (Flx_list.print print_bparameter) bparameters
-    (Flx_format.print_opt print_tbexpr) tbexpr
 
 let print_breqs f breqs =
   Flx_list.print begin fun f (bid, ts) ->

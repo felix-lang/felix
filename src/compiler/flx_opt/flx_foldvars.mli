@@ -12,7 +12,7 @@ val fold_vars:
   Flx_child.t ->
   usage_table_t ->
   bid_t ->
-  bparameter_t list ->
+  Flx_bparameter.t list ->
   Flx_bexe.t list ->
   Flx_bexe.t list
 

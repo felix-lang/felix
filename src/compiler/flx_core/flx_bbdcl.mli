@@ -4,8 +4,8 @@ open Flx_types
 (** Bound declarations. *)
 type t =
   | BBDCL_module
-  | BBDCL_function of   property_t list * bvs_t * bparams_t * btypecode_t * Flx_bexe.t list
-  | BBDCL_procedure of  property_t list * bvs_t * bparams_t * Flx_bexe.t list
+  | BBDCL_function of   property_t list * bvs_t * Flx_bparams.t * btypecode_t * Flx_bexe.t list
+  | BBDCL_procedure of  property_t list * bvs_t * Flx_bparams.t * Flx_bexe.t list
   | BBDCL_val of        bvs_t * btypecode_t
   | BBDCL_var of        bvs_t * btypecode_t
   | BBDCL_ref of        bvs_t * btypecode_t

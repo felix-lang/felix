@@ -107,7 +107,12 @@ val print_symbols:
 
 val print_function_body:
   Flx_bsym_table.t ->
-  string -> bid_t -> bvs_t -> bparams_t -> Flx_bexe.t list -> bid_t option ->
+  string ->
+  bid_t ->
+  bvs_t ->
+  Flx_bparams.t ->
+  Flx_bexe.t list ->
+  bid_t option ->
   unit
 
 val print_function:

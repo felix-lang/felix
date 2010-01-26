@@ -1,6 +1,7 @@
 open Flx_ast
 open Flx_types
 open Flx_bexe
+open Flx_bparameter
 open Flx_bbdcl
 open Flx_set
 open Flx_exceptions

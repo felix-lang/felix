@@ -1,6 +1,7 @@
 open Flx_util
 open Flx_ast
 open Flx_types
+open Flx_bparameter
 open Flx_bbdcl
 open Flx_set
 open Flx_mtypes2
@@ -306,7 +307,7 @@ let bbind_symbol state bsym_table symbol_index sym =
 
   | SYMDEF_function (ps,rt,props,exes) ->
     let bps = bindps ps in
-    let ts = typeofbps_traint bps in
+    let ts = Flx_bparams.get_btypes bps in
     let brt = bt rt in
     let brt', bbexes = bexes exes brt symbol_index bvs in
     let bbdcl =

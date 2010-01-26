@@ -2,6 +2,7 @@ open Flx_util
 open Flx_ast
 open Flx_types
 open Flx_bexe
+open Flx_bparameter
 open Flx_bbdcl
 open Flx_print
 open Flx_set
@@ -240,7 +241,7 @@ let uncurry_gen syms bsym_table child_map : int =
       in
       let fixup vsc psc exesc =
         assert (vs = vsc);
-        let extras = map (fun {pindex=i}->i) ps in
+        let extras = Flx_bparameter.get_bids ps in
         let revariable =
           Flx_reparent.reparent_children syms
           (ut,child_map,bsym_table)

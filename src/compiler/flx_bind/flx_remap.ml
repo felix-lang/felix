@@ -1,5 +1,6 @@
 open Flx_types
 open Flx_bexe
+open Flx_bparameter
 open Flx_bbdcl
 
 (** Remaps a bound index by adding an offset to it. *)

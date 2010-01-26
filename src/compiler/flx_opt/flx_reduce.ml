@@ -13,7 +13,7 @@ let id x = x
 let remove_useless_reductions syms bsym_table reductions =
   List.filter
   (fun (id,bvs,bps,e1,_) ->
-    let psi = map (fun {pindex=i} -> i) bps in
+    let psi = Flx_bparameter.get_bids bps in
     let ui i =
       let used = List.mem i psi or Flx_bsym_table.mem bsym_table i in
       if not used then begin
@@ -86,7 +86,7 @@ let reduce_exes syms bsym_table reductions exes =
   let xreds = map
   (fun ((name,bvs,bps,e1,e2) as red) ->
     let tvars = map (fun (tvid, tvidx) -> tvidx) bvs in
-    let evars = map (fun {pindex=eidx} -> eidx) bps in
+    let evars = Flx_bparameter.get_bids bps in
     red,tvars,evars
   )
   reductions

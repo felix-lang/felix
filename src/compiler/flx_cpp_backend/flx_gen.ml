@@ -3,6 +3,7 @@ open Flx_list
 open Flx_ast
 open Flx_types
 open Flx_bexe
+open Flx_bparameter
 open Flx_bbdcl
 open Flx_mtypes2
 open Flx_print
@@ -90,7 +91,7 @@ let find_members syms bsym_table child_map index ts =
   x
 
 let typeof_bparams bps: btypecode_t  =
-  btyp_tuple (typeofbps bps)
+  btyp_tuple (Flx_bparameter.get_btypes bps)
 
 let get_type bsym_table index =
   let bsym =
@@ -131,7 +132,7 @@ let gen_C_function syms bsym_table child_map props index id sr vs bps ret' ts in
   print_endline ("C Function " ^ id ^ " " ^ if requires_ptf then "requires ptf" else "does NOT require ptf");
   *)
   let ps = map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
-  let params = map (fun {pindex=ix} -> ix) bps in
+  let params = Flx_bparameter.get_bids bps in
   if syms.compiler_options.print_flag then
   print_endline
   (
@@ -1511,7 +1512,7 @@ let gen_C_function_body filename syms bsym_table child_map
     (* let argtypename = cpp_typename syms bsym_table argtype in *)
     let rettypename = cpp_typename syms bsym_table ret in
 
-    let params = map (fun {pindex=ix} -> ix) bps in
+    let params = Flx_bparameter.get_bids bps in
     let exe_string,_ =
       try
         gen_exes filename syms bsym_table child_map [] label_info counter index exes vs ts instance_no true
@@ -1650,7 +1651,7 @@ let gen_C_procedure_body filename syms bsym_table child_map
     let funtype = fold syms.counter (btyp_function (argtype, btyp_void)) in
     (* let argtypename = cpp_typename syms bsym_table argtype in *)
 
-    let params = map (fun {pindex=ix} -> ix) bps in
+    let params = Flx_bparameter.get_bids bps in
     let exe_string,_ =
       try
         gen_exes filename syms bsym_table child_map [] label_info counter index exes vs ts instance_no true
@@ -1798,7 +1799,7 @@ let gen_function_methods filename syms bsym_table child_map
       let funs = filter (fun (_,t) -> is_gc_pointer syms bsym_table bsym.Flx_bsym.sr t) vars in
       gen_ctor syms bsym_table name display funs [] [] ts props
     in
-    let params = map (fun {pindex=ix} -> ix) bps in
+    let params = Flx_bparameter.get_bids bps in
     let exe_string,needs_switch =
       try
         gen_exes filename syms bsym_table child_map display label_info counter index exes vs ts instance_no false
@@ -1943,7 +1944,7 @@ let gen_procedure_methods filename syms bsym_table child_map
     let dtor = gen_dtor syms bsym_table name display ts in
     *)
     let ps = map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
-    let params = map (fun {pindex=ix} -> ix) bps in
+    let params = Flx_bparameter.get_bids bps in
     let exe_string,needs_switch =
       (*
       gen_exes filename syms bsym_table child_map display label_info counter index exes vs ts instance_no (stackable && not heapable)
@@ -2334,11 +2335,11 @@ let gen_biface_body syms bsym_table biface = match biface with
         then "_PTFV" ^ (if length ps > 0 then "," else "")
         else ""
       )
-      ^cat ", " (map (fun {pid=id}->id) ps) ^ ");\n"
+      ^cat ", " (Flx_bparameter.get_names ps) ^ ");\n"
       else
       "  return (new(*_PTF gcp,"^class_name^"_ptr_map,true)\n" ^
       "    " ^ class_name ^ "(_PTFV)\n" ^
-      "    ->apply(" ^ cat ", " (map (fun{pid=id}->id) ps) ^ ");\n"
+      "    ->apply(" ^ cat ", " (Flx_bparameter.get_names ps) ^ ");\n"
       )^
       "}\n"
 
@@ -2388,12 +2389,7 @@ let gen_biface_body syms bsym_table biface = match biface with
               )
               ps
             ),
-            btyp_tuple
-              (
-                map
-                (fun {ptyp=t} -> t)
-                ps
-              )
+            btyp_tuple (Flx_bparameter.get_btypes ps)
           in
           "0" ^ ", " ^ ge sr a
       in
@@ -2415,7 +2411,7 @@ let gen_biface_body syms bsym_table biface = match biface with
               else ""
             )
             ^
-            cat ", " (map (fun {pid=id}->id) args) ^ ");\n"
+            cat ", " (Flx_bparameter.get_names args) ^ ");\n"
           )
           else
           (

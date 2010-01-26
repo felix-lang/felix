@@ -40,7 +40,7 @@ val cal_param_usage:
   usage_table_t ->
   Flx_srcref.t ->
   bid_t ->
-  bparameter_t ->
+  Flx_bparameter.t ->
   unit
 
 val use_closure:
