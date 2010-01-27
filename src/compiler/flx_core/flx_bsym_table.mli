@@ -28,6 +28,9 @@ val find_parent : t -> Flx_types.bid_t -> Flx_types.bid_t option
 (** Searches the bound symbol table for the given symbol's bbdcl. *)
 val find_bbdcl : t -> Flx_types.bid_t -> Flx_bbdcl.t
 
+(** Searches the bound symbol table for the given symbol's bparams. *)
+val find_bparams : t -> Flx_types.bid_t -> Flx_bparams.t
+
 (** Searches the bound symbol table for the given symbol's bvs. *)
 val find_bvs : t -> Flx_types.bid_t -> Flx_types.bvs_t
 

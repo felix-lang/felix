@@ -25,5 +25,8 @@ val is_function: t -> bool
 (** Return if the bound symbol is a generator. *)
 val is_generator: t -> bool
 
+(** Returns the bound parameters of the bound symbol. *)
+val get_bparams: t -> Flx_bparams.t
+
 (** Returns the bound type value list of the bound symbol. *)
 val get_bvs: t -> Flx_types.bvs_t

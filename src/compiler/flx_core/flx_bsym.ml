@@ -41,6 +41,10 @@ let is_generator bsym =
   | Flx_bbdcl.BBDCL_function (props,_,_,_,_) when List.mem `Generator props -> true
   | _ -> false
 
+(** Returns the bound parameters of the bound symbol. *)
+let get_bparams bsym =
+  Flx_bbdcl.get_bparams bsym.bbdcl
+
 (** Returns the bound type value list of the bound symbol. *)
 let get_bvs bsym =
   Flx_bbdcl.get_bvs bsym.bbdcl

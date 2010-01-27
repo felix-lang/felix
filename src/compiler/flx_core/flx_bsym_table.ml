@@ -32,6 +32,11 @@ let find_parent bsym_table bid =
 let find_bbdcl bsym_table bid =
   (find bsym_table bid).Flx_bsym.bbdcl
 
+(** Searches the bound symbol table for the given symbol's bparams. *)
+let find_bparams bsym_table bid =
+  Flx_bsym.get_bparams (find bsym_table bid)
+
+(** Searches the bound symbol table for the given symbol's bvs. *)
 let find_bvs bsym_table bid =
   Flx_bsym.get_bvs (find bsym_table bid)
 

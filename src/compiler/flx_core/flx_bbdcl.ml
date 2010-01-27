@@ -32,7 +32,13 @@ type t =
                         bid_t *
                         btypecode_t list
   | BBDCL_nonconst_ctor of bvs_t * bid_t * btypecode_t * int * btypecode_t *
-                         bvs_t * btypecode_t (* existentials and constraint for GADTs *)
+                        bvs_t * btypecode_t (* existentials and constraint for GADTs *)
+
+(** Extract the parameters of a bound declaration. *)
+let get_bparams = function
+  | BBDCL_function (_,_,ps,_,_)
+  | BBDCL_procedure (_,_,ps,_) -> ps
+  | _ -> assert false
 
 (** Extract the types of a bound declaration. *)
 let get_ts = function

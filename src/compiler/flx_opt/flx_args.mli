@@ -5,11 +5,6 @@ open Flx_types
 open Flx_set
 open Flx_mtypes2
 
-val get_ps:
-  Flx_bsym_table.t ->
-  bid_t ->
-  Flx_bparameter.t list
-
 val unpack:
   sym_state_t ->
   Flx_bsym_table.t ->

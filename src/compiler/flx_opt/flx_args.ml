@@ -18,12 +18,6 @@ open Flx_reparent
 open Flx_spexes
 open Flx_foldvars
 
-let get_ps bsym_table f =
-  match Flx_bsym_table.find_bbdcl bsym_table f with
-  | BBDCL_function (_,_,(ps,_),_,_)
-  | BBDCL_procedure (_,_,(ps,_),_) -> ps
-  | _ -> assert false
-
 let unpack syms bsym_table f ps a : tbexpr_t list =
   match ps with
   | [] -> []   (* arg should be unit *)
@@ -58,15 +52,15 @@ let unpack syms bsym_table f ps a : tbexpr_t list =
     assert false (* argument isn't a tuple type .. but there are multiple parameters!  *)
 
 let merge_args syms bsym_table f c a b =
-  let psf = get_ps bsym_table f in
-  let psc = get_ps bsym_table c in
+  let psf = fst (Flx_bsym_table.find_bparams bsym_table f) in
+  let psc = fst (Flx_bsym_table.find_bparams bsym_table c) in
   let args = unpack syms bsym_table f psf a @ unpack syms bsym_table c psc b in
   match args with
   | [x] -> x
   | _ -> BEXPR_tuple args, btyp_tuple (map snd args)
 
 let append_args syms bsym_table f a b =
-  let psf = get_ps bsym_table f in
+  let psf = fst (Flx_bsym_table.find_bparams bsym_table f) in
   let args = unpack syms bsym_table f psf a @ b in
   match args with
   | [x] -> x

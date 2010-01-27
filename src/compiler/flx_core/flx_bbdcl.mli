@@ -30,7 +30,10 @@ type t =
                         bid_t *
                         btypecode_t list
   | BBDCL_nonconst_ctor of bvs_t * bid_t * btypecode_t * int * btypecode_t *
-                         bvs_t * btypecode_t (* existentials and constraint for GADTs *)
+                        bvs_t * btypecode_t (* existentials and constraint for GADTs *)
+
+(** Extract the parameters of a bound declaration. *)
+val get_bparams : t -> Flx_bparams.t
 
 (** Extract the types of a bound declaration. *)
 val get_ts : t -> btypecode_t list
