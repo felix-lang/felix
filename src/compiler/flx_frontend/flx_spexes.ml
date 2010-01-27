@@ -403,10 +403,9 @@ let gen_body syms (uses,child_map,bsym_table) id
     end else if inline_method = `Lazy then begin
     *)
     let argmap = Hashtbl.create 97 in
-    begin match length ps with
-    | 0 -> ()
-    | 1 ->
-      let {pkind=kind; pid=vid; pindex=k; ptyp=ptyp} = hd ps in
+    begin match ps with
+    | [] -> ()
+    | [{pkind=kind; pindex=k}] ->
       let index = revar k in
       handle_arg b argmap index argument kind
     | _ ->

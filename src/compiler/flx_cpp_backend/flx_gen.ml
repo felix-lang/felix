@@ -1556,11 +1556,9 @@ let gen_C_function_body filename syms bsym_table child_map
       name ^ "(" ^
       (
         let s =
-          match length params with
-          | 0 -> ""
-          | 1 ->
-            begin match hd bps with
-            {pkind=k; pindex=i; ptyp=t} ->
+          match bps with
+          | [] -> ""
+          | [{pkind=k; pindex=i; ptyp=t}] ->
             if Hashtbl.mem syms.instances (i, ts)
             && not (argtype = btyp_tuple [] or argtype = btyp_void)
             then
@@ -1573,7 +1571,6 @@ let gen_C_function_body filename syms bsym_table child_map
               cpp_typename syms bsym_table t ^ " " ^
               cpp_instance_name syms bsym_table i ts
             else ""
-            end
           | _ ->
               let counter = ref dummy_bid in
               fold_left
@@ -1697,11 +1694,9 @@ let gen_C_procedure_body filename syms bsym_table child_map
       name ^ "(" ^
       (
         let s =
-          match length params with
-          | 0 -> ""
-          | 1 ->
-            begin match hd bps with
-            {pkind=k; pindex=i; ptyp=t} ->
+          match bps with
+          | [] -> ""
+          | [{pkind=k; pindex=i; ptyp=t}] ->
             if Hashtbl.mem syms.instances (i, ts)
             && not (argtype = btyp_tuple [] or argtype = btyp_void)
             then
@@ -1714,7 +1709,6 @@ let gen_C_procedure_body filename syms bsym_table child_map
               cpp_typename syms bsym_table t ^ " " ^
               cpp_instance_name syms bsym_table i ts
             else ""
-            end
           | _ ->
               let counter = ref 0 in
               fold_left
@@ -1827,18 +1821,17 @@ let gen_function_methods filename syms bsym_table child_map
       ^
       *)
       (
-        match length params with
-        | 0 -> ""
-        | 1 ->
-          let i = hd params in
+        match bps with
+        | [] -> ""
+        | [{pindex=i}] ->
           if Hashtbl.mem syms.instances (i, ts)
           && not (argtype = btyp_tuple [] or argtype = btyp_void)
           then
             "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg;\n"
           else ""
         | _ ->
-          let counter = ref 0 in fold_left
-          (fun s i ->
+          let counter = ref 0 in
+          List.fold_left begin fun s i ->
             let n = !counter in incr counter;
             if Hashtbl.mem syms.instances (i,ts)
             then
@@ -1850,8 +1843,7 @@ let gen_function_methods filename syms bsym_table child_map
               in
               s ^ "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg"^ memexpr ^";\n"
             else s (* elide initialisation of elided variable *)
-          )
-          "" params
+          end "" params
       )^
         (if needs_switch then
         "  FLX_START_SWITCH\n" else ""
@@ -1963,18 +1955,18 @@ let gen_procedure_methods filename syms bsym_table child_map
       | _ -> argtypename ^" const &_arg"
     in
     let unpack_args =
-        (match length bps with
-        | 0 -> ""
-        | 1 ->
-          let {pindex=i} = hd bps in
+      match bps with
+      | [] -> ""
+      | [{pindex=i}] ->
           if Hashtbl.mem syms.instances (i,ts)
           && not (argtype = btyp_tuple [] or argtype = btyp_void)
           then
             "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg;\n"
           else ""
 
-        | _ -> let counter = ref 0 in fold_left
-          (fun s i ->
+      | _ ->
+          let counter = ref 0 in
+          List.fold_left begin fun s i ->
             let n = !counter in incr counter;
             if Hashtbl.mem syms.instances (i,ts)
             then
@@ -1986,9 +1978,7 @@ let gen_procedure_methods filename syms bsym_table child_map
               in
               s ^ "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg" ^ memexpr ^";\n"
             else s (* elide initialisation of elided variables *)
-          )
-          "" params
-          )
+          end "" params
     in
     let stack_call =
         "void " ^name^ "::stack_call(" ^ stack_call_arg_sig ^ "){\n" ^

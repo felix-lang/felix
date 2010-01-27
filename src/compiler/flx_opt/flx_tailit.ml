@@ -195,14 +195,13 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
     and tail applies
   *)
   let cal_tail_call e =
-    match length ps with
-    | 0 ->
+    match ps with
+    | [] ->
       [
         BEXE_goto (sr,start_label);
         BEXE_comment (sr,"tail rec call (0)")
       ]
-    | 1 ->
-      let {pindex=k} = hd ps in
+    | [{pindex=k}] ->
       [
         BEXE_goto (sr,start_label);
         BEXE_init (sr,k,e);
