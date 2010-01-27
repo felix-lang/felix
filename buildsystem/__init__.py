@@ -62,7 +62,7 @@ def build_c_shared_lib(phase, dst, *args, **kwargs):
     lib = phase.c.shared.build_lib(dst + '_dynamic', *args, **kwargs)
 
     if 'windows' in phase.platform:
-        copy_to(phase.ctx.buildroot / 'bin', (lib,))
+        copy_to(phase.ctx, phase.ctx.buildroot / 'bin', (lib,))
 
     return lib
 
@@ -77,6 +77,6 @@ def build_cxx_shared_lib(phase, dst, *args, **kwargs):
     lib = phase.cxx.shared.build_lib(dst + '_dynamic', *args, **kwargs)
 
     if 'windows' in phase.platform:
-        copy_to(phase.ctx.buildroot / 'bin', (lib,))
+        copy_to(phase.ctx, phase.ctx.buildroot / 'bin', (lib,))
 
     return lib
