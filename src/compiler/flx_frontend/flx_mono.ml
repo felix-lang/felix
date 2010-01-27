@@ -63,7 +63,7 @@ let rec fixup_type syms bsym_table fi t =
   let t = map_btype ft t in
   ft' t
 
-let fixup_expr' syms bsym_table fi mt (e:bexpr_t) =
+let fixup_expr' syms bsym_table fi mt e =
   (*
   print_endline ("FIXUP EXPR(up) " ^ sbe sym_table (e, btyp_void));
   *)

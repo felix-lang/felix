@@ -4546,8 +4546,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
         in
         let cts = List.map snd a in
         let t:btypecode_t = match cts with [t]->t | _ -> btyp_tuple cts in
-        let a: bexpr_t = match a with [x,_]->x | _ -> BEXPR_tuple a in
-        let a:tbexpr_t = a,t in
+        let a = match a with [x,_] -> x | _ -> BEXPR_tuple a in
+        let a = a,t in
         cal_apply state bsym_table sr rs f a
       end
 
