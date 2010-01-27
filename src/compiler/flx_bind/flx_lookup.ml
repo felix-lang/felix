@@ -29,6 +29,11 @@ type lookup_state_t = {
   env_cache: (Flx_types.bid_t, Flx_types.env_t) Hashtbl.t;
 }
 
+
+type module_rep_t =
+  | Simple_module of bid_t * typecode_t list * name_map_t * sdir_t list
+
+
 (** Create the state needed for lookup. *)
 let make_lookup_state syms sym_table =
   {

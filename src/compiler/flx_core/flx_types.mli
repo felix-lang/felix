@@ -150,9 +150,6 @@ type entry_set_t =
 
 type name_map_t = (string, entry_set_t) Hashtbl.t
 
-type module_rep_t =
-  | Simple_module of bid_t * typecode_t list * name_map_t * sdir_t list
-
 type biface_t =
   | BIFACE_export_fun of Flx_srcref.t * bid_t * string
   | BIFACE_export_python_fun of Flx_srcref.t * bid_t * string
@@ -187,23 +184,12 @@ type bexpr_t =
 
 and tbexpr_t = bexpr_t * btypecode_t
 
-type regular_args_t =
-    int list *                  (* alphabet *)
-    int *                       (* state count *)
-    (int, tbexpr_t) Hashtbl.t * (* state->expression map *)
-    (int * int, int) Hashtbl.t  (* transition matrix *)
-
 type breqs_t = (bid_t * btypecode_t list) list
 type bvs_t = (string * bid_t) list
 
 type btype_qual_t = [
   | base_type_qual_t
   | `Bound_needs_shape of btypecode_t
-]
-
-type baxiom_method_t = [
-  | `BPredicate of tbexpr_t
-  | `BEquation of tbexpr_t * tbexpr_t
 ]
 
 type env_t = (bid_t * id_t * name_map_t * name_map_t list * typecode_t) list

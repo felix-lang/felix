@@ -6,10 +6,16 @@ type reg_kind_t =
   | `reglex of string * string * string
 ]
 
+type regular_args_t =
+    int list *                            (* alphabet *)
+    int *                                 (* state count *)
+    (int, Flx_types.tbexpr_t) Hashtbl.t * (* state->expression map *)
+    (int * int, int) Hashtbl.t            (* transition matrix *)
+
 val regen:
   Buffer.t ->
   Flx_srcref.t ->
-  Flx_types.regular_args_t ->
+  regular_args_t ->
   reg_kind_t ->
   (Flx_types.tbexpr_t -> string) ->
   unit
