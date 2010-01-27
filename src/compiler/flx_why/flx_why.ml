@@ -331,12 +331,7 @@ let emit_function syms bsym_table f index id sr bvs ps ret =
 
 let calps ps =
   let ps = fst ps in (* elide constraint *)
-  let ps =
-    map
-    (* again a bit of a hack! *)
-    (fun {pkind=pk; pid=name; pindex=pidx; ptyp=t} -> t)
-    ps
-  in ps
+  Flx_bparameter.get_btypes ps
 
 let unitt = btyp_tuple []
 

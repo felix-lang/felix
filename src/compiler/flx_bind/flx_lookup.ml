@@ -1847,7 +1847,7 @@ and inner_type_of_index_with_ts
 and btype_of_bsym state bsym_table bt bid bsym =
   (* Helper function to convert function parameters to a type. *)
   let type_of_params params =
-    btyp_tuple (List.map (fun p -> p.ptyp) params)
+    btyp_tuple (Flx_bparameter.get_btypes params)
   in
 
   match bsym.Flx_bsym.bbdcl with

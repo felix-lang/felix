@@ -285,7 +285,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_module -> ()
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-    let argtypes = map (fun {ptyp=t}->t) ps in
+    let argtypes = Flx_bparameter.get_btypes ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
@@ -318,7 +318,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
       ts
 
   | BBDCL_procedure (props,vs,(ps,traint), exes) ->
-    let argtypes = map (fun {ptyp=t}->t) ps in
+    let argtypes = Flx_bparameter.get_btypes ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
@@ -577,7 +577,7 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
         | [] -> ()
         | [{ptyp=t}] -> register_type_r ui syms bsym_table [] bsym.Flx_bsym.sr t
         | _ ->
-          let t = btyp_tuple (map (fun {ptyp=t} -> t) ps) in
+          let t = btyp_tuple (Flx_bparameter.get_btypes ps) in
           register_type_r ui syms bsym_table [] bsym.Flx_bsym.sr t;
           register_type_nr syms bsym_table t;
         end

@@ -162,7 +162,7 @@ let cal_polyvars syms bsym_table child_map =
             | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps
             | _ -> assert false
           in
-          let pts = map (fun {ptyp=t}->t) ps in
+          let pts = Flx_bparameter.get_btypes ps in
           let pt = match pts with | [t]->t | ts -> btyp_tuple ts in
           pt
       in
@@ -203,7 +203,7 @@ let cal_polyvars syms bsym_table child_map =
             | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, btyp_void
             | _ -> assert false
           in
-          let pts = map (fun {ptyp=t}->t) ps in
+          let pts = Flx_bparameter.get_btypes ps in
           let pt = match pts with | [t]->t | ts -> btyp_tuple ts in
           btyp_function (pt,ret)
       in
@@ -267,7 +267,7 @@ let cal_polyvars syms bsym_table child_map =
           | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps,vs
           | _ -> raise Skip
         in
-        let pts = map (fun {ptyp=t}->t) ps in
+        let pts = Flx_bparameter.get_btypes ps in
         let pt = match pts with | [t]->t | ts -> btyp_tuple ts in
         let vsi = map (fun (s,i) -> i) vs in
         pt,vsi
@@ -329,7 +329,7 @@ let cal_polyvars syms bsym_table child_map =
         | BBDCL_procedure (props,vs,(ps,traint),exes) -> ps, btyp_void, vs
       | _ -> raise Skip 
       in
-      let pts = map (fun {ptyp=t}->t) ps in
+      let pts = Flx_bparameter.get_btypes ps in
       let pt = match pts with | [t]->t | ts -> btyp_tuple ts in
       let tf = btyp_function (pt,ret) in
       let vsi = map (fun (s,i) -> i) vs in
