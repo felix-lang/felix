@@ -1,4 +1,5 @@
 import difflib
+import os
 from itertools import chain
 
 import fbuild
@@ -232,7 +233,7 @@ def check_flx(ctx, felix,
         dst:fbuild.db.DST,
         expect:fbuild.db.OPTIONAL_SRC,
         static,
-        env={}):
+        env=os.environ):
     ctx.logger.check('checking ' + exe)
     try:
         stdout, stderr = felix.run(exe,

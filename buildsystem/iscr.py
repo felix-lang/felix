@@ -1,6 +1,6 @@
 import io
-import os
 import re
+import os
 import time
 from itertools import chain
 
@@ -48,13 +48,10 @@ class Iscr(fbuild.db.PersistentObject):
         cmd.extend(flags)
         cmd.append(src.relpath(buildroot))
 
-        env = os.environ.copy()
-        env['PYTHONPATH'] = Path('.').relpath(buildroot)
-
         stdout, stderr = self.ctx.execute(cmd, 'iscr extracting', src,
             color='green',
             cwd=buildroot,
-            env=env,
+            env=dict(os.environ, PYTHONPATH=Path('.').relpath(buildroot)),
             **kwargs)
 
         srcs = []
