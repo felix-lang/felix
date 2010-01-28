@@ -25,15 +25,16 @@ let polyfix syms polyvars i ts =
 
 let remove i ls = filter (fun (k,j) -> i <> k) ls
 
-let rec check_abstract_type syms rls (t:btypecode_t) = match t with
-    | BTYP_pointer (BTYP_type_var _) -> ()
-    | BTYP_type_var (i,_) ->
-       (*
-       print_endline ("Removing type variable " ^ string_of_int i);
-       *)
-       rls := remove i !rls;
-       if !rls = [] then raise Not_found
-    | t' -> iter_btype (check_abstract_type syms rls) t'
+let rec check_abstract_type syms rls t =
+  match t with
+  | BTYP_pointer (BTYP_type_var _) -> ()
+  | BTYP_type_var (i,_) ->
+      (*
+      print_endline ("Removing type variable " ^ string_of_int i);
+      *)
+      rls := remove i !rls;
+      if !rls = [] then raise Not_found
+  | t' -> iter_btype (check_abstract_type syms rls) t'
 
 (* note this routine doesn't check types in ts lists, because
  * these apply to variables including parameters as qualifiers:

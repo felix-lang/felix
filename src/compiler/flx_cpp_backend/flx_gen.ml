@@ -91,7 +91,7 @@ let find_members syms bsym_table child_map index ts =
   *)
   x
 
-let typeof_bparams bps: btypecode_t  =
+let typeof_bparams bps =
   btyp_tuple (Flx_bparameter.get_btypes bps)
 
 let get_type bsym_table index =

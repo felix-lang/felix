@@ -72,7 +72,7 @@ let bind_req state bsym_table env sr tag =
   and -2,[] is false (impossible to satisfy)
 *)
 
-let bind_reqs bt state bsym_table env sr reqs : (bid_t * btypecode_t list) list =
+let bind_reqs bt state bsym_table env sr reqs =
   let add lst i =
     if
       lst = [-2,[]] or

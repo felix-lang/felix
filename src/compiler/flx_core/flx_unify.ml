@@ -128,10 +128,7 @@ let varmap_subst varmap t =
   vs_i -> ts_i
   where vs_t might be (fred,var j)
 *)
-let mk_varmap
-  (vs:(string * bid_t) list)
-  (ts:btypecode_t list)
-=
+let mk_varmap vs ts =
   if List.length ts <> List.length vs
   then
     failwith
@@ -150,11 +147,7 @@ let mk_varmap
   ;
   varmap
 
-let tsubst
-  (vs:(string * bid_t) list)
-  (ts:btypecode_t list)
-  (t:btypecode_t)
-=
+let tsubst vs ts t =
   varmap_subst (mk_varmap vs ts) t
 
 (* returns the most general unifier (mgu)
@@ -290,10 +283,7 @@ let var_list_occurs ls t =
   that right requires unification .. :)
 *)
 
-let rec unification counter
-  (eqns: (btypecode_t * btypecode_t) list)
-  (dvars: BidSet.t)
-: (bid_t * btypecode_t) list =
+let rec unification counter eqns dvars =
   (*
   print_endline ( "Dvars = { " ^ catmap ", " si (BidSet.elements dvars) ^ "}");
   *)

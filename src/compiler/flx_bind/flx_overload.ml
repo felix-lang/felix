@@ -113,7 +113,7 @@ let terms_imply syms ls1 ls2 =
     true
    with Not_found -> false
 
-let rec split_conjuncts' t : btypecode_t list =
+let rec split_conjuncts' t =
   match t with
   | BTYP_intersect ls ->
     List.concat (List.map split_conjuncts' ls)
@@ -324,7 +324,7 @@ let hack_name qn = match qn with
 | _ -> failwith "expected qn .."
 
 
-let specialize_domain base_vs sub_ts t : Flx_types.btypecode_t =
+let specialize_domain base_vs sub_ts t =
   (*
   print_endline ("specialise Base type " ^ sbt sym_table t);
   *)
@@ -1009,10 +1009,10 @@ let overload
   be
   luqn2
   call_sr
-  (fs: entry_kind_t list)
-  (name: string)
-  (sufs: btypecode_t list)
-  (ts:btypecode_t list)
+  fs
+  name
+  sufs
+  ts
 :
   overload_result option
 =

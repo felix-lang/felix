@@ -36,7 +36,7 @@ changing the data structures.
 
 let nop x = ()
 
-let rec uses_type used bsym_table count_inits (t:btypecode_t) =
+let rec uses_type used bsym_table count_inits t =
   let ut t = uses_type used bsym_table count_inits t in
   match t with
   | BTYP_inst (i,ts)
