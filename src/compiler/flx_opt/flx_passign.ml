@@ -17,7 +17,7 @@ open Flx_call
 
 type aentry_t =
   bid_t *
-  (string * btypecode_t * Flx_bexpr.t * BidSet.t)
+  (string * Flx_btype.t * Flx_bexpr.t * BidSet.t)
 
 
 (* Parallel Assignment algorithm.

@@ -2,6 +2,7 @@ open Flx_util
 open Flx_list
 open Flx_ast
 open Flx_types
+open Flx_btype
 open Flx_bparameter
 open Flx_bexpr
 open Flx_bbdcl
@@ -27,7 +28,7 @@ let hfind msg h k =
 type lookup_state_t = {
   syms: Flx_mtypes2.sym_state_t;
   sym_table: Flx_sym_table.t;
-  env_cache: (Flx_types.bid_t, Flx_types.env_t) Hashtbl.t;
+  env_cache: (Flx_types.bid_t, Flx_mtypes2.env_t) Hashtbl.t;
 }
 
 
@@ -73,7 +74,7 @@ let mkentry state (vs:ivs_list_t) i =
 
 
 exception Found of int
-exception Tfound of btypecode_t
+exception Tfound of Flx_btype.t
 
 type kind_t = Parameter | Other
 

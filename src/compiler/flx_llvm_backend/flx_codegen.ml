@@ -12,7 +12,7 @@ type codegen_state_t =
     closure_type_bindings: (Flx_types.bid_t, Llvm.lltype) Hashtbl.t;
     closure_bindings: (Flx_types.bid_t, Llvm.llvalue) Hashtbl.t;
     name_bindings:
-      (string, Flx_types.bid_t * Flx_types.btypecode_t list) Hashtbl.t;
+      (string, Flx_types.bid_t * Flx_btype.t list) Hashtbl.t;
   }
 and call_t =
   codegen_state_t ->
@@ -184,49 +184,49 @@ let codegen_gep state value args name builder =
 (* Convert a felix type to an llvm type. *)
 let rec lltype_of_btype state btype =
   match btype with
-  | Flx_types.BTYP_inst (index, ts) ->
+  | Flx_btype.BTYP_inst (index, ts) ->
       begin try Hashtbl.find state.type_bindings index with Not_found ->
         failwith ("[lltype_of_btype:BTYP_inst] unable to find index " ^
           Flx_print.string_of_bid index)
       end
 
-  | Flx_types.BTYP_tuple ls ->
+  | Flx_btype.BTYP_tuple ls ->
       let ls = List.map (lltype_of_btype state) ls in
       Llvm.struct_type state.context (Array.of_list ls)
 
-  | Flx_types.BTYP_record ls -> assert false
-  | Flx_types.BTYP_variant ls -> assert false
-  | Flx_types.BTYP_unitsum k -> Llvm.integer_type state.context k
-  | Flx_types.BTYP_sum ls -> assert false
+  | Flx_btype.BTYP_record ls -> assert false
+  | Flx_btype.BTYP_variant ls -> assert false
+  | Flx_btype.BTYP_unitsum k -> Llvm.integer_type state.context k
+  | Flx_btype.BTYP_sum ls -> assert false
 
-  | Flx_types.BTYP_function (args, ret_type) ->
+  | Flx_btype.BTYP_function (args, ret_type) ->
       let args =
         match args with
-        | Flx_types.BTYP_tuple args -> List.map (lltype_of_btype state) args
+        | Flx_btype.BTYP_tuple args -> List.map (lltype_of_btype state) args
         | _ -> [lltype_of_btype state args]
       in
       let ret_type = lltype_of_btype state ret_type in
       Llvm.function_type ret_type (Array.of_list args)
 
-  | Flx_types.BTYP_cfunction (args, result) -> assert false
-  | Flx_types.BTYP_pointer t -> Llvm.pointer_type (lltype_of_btype state t)
-  | Flx_types.BTYP_array (t1, Flx_types.BTYP_unitsum k) ->
+  | Flx_btype.BTYP_cfunction (args, result) -> assert false
+  | Flx_btype.BTYP_pointer t -> Llvm.pointer_type (lltype_of_btype state t)
+  | Flx_btype.BTYP_array (t1, Flx_btype.BTYP_unitsum k) ->
       let t1 = lltype_of_btype state t1 in
       Llvm.array_type t1 k
 
-  | Flx_types.BTYP_array (t1, t2) -> assert false
-  | Flx_types.BTYP_void -> Llvm.void_type state.context
-  | Flx_types.BTYP_fix i -> assert false
-  | Flx_types.BTYP_intersect ls -> assert false
-  | Flx_types.BTYP_type_var (i, mt) -> assert false
-  | Flx_types.BTYP_type_apply (t1, t2) -> assert false
-  | Flx_types.BTYP_type_function (args, result, body) -> assert false
-  | Flx_types.BTYP_type i -> assert false
-  | Flx_types.BTYP_type_tuple ls -> assert false
-  | Flx_types.BTYP_type_match (t, ps) -> assert false
-  | Flx_types.BTYP_type_set ls -> assert false
-  | Flx_types.BTYP_type_set_union ls -> assert false
-  | Flx_types.BTYP_type_set_intersection ls -> assert false
+  | Flx_btype.BTYP_array (t1, t2) -> assert false
+  | Flx_btype.BTYP_void -> Llvm.void_type state.context
+  | Flx_btype.BTYP_fix i -> assert false
+  | Flx_btype.BTYP_intersect ls -> assert false
+  | Flx_btype.BTYP_type_var (i, mt) -> assert false
+  | Flx_btype.BTYP_type_apply (t1, t2) -> assert false
+  | Flx_btype.BTYP_type_function (args, result, body) -> assert false
+  | Flx_btype.BTYP_type i -> assert false
+  | Flx_btype.BTYP_type_tuple ls -> assert false
+  | Flx_btype.BTYP_type_match (t, ps) -> assert false
+  | Flx_btype.BTYP_type_set ls -> assert false
+  | Flx_btype.BTYP_type_set_union ls -> assert false
+  | Flx_btype.BTYP_type_set_intersection ls -> assert false
 
 
 (* Convenience function to find the parent of the builder. *)
@@ -376,10 +376,10 @@ let rec codegen_expr state bsym_table builder sr tbexpr =
   | Flx_bexpr.BEXPR_case (index, btype) ->
       print_endline "BEXPR_case";
       begin match btype with
-      | Flx_types.BTYP_sum _
-      | Flx_types.BTYP_unitsum _
-      | Flx_types.BTYP_variant _ ->
-          if Flx_typing.is_unitsum btype then
+      | Flx_btype.BTYP_sum _
+      | Flx_btype.BTYP_unitsum _
+      | Flx_btype.BTYP_variant _ ->
+          if Flx_btype.is_unitsum btype then
             (* Construct a constant value of the same type as the unitsum. *)
             let t = lltype_of_btype state btype in
             Llvm.const_int t index
@@ -1258,7 +1258,7 @@ and codegen_symbol state bsym_table child_map closure index bsym =
         (name_of_index state bsym_table index [])
         props
         ps
-        Flx_types.btyp_void
+        Flx_btype.btyp_void
         es)
 
   | Flx_bbdcl.BBDCL_val (_, btype)
@@ -1287,7 +1287,7 @@ and codegen_symbol state bsym_table child_map closure index bsym =
       assert false
 
   | Flx_bbdcl.BBDCL_proc (props, vs, ps, code, reqs) ->
-      codegen_fun state index props vs ps Flx_types.btyp_void code reqs ""
+      codegen_fun state index props vs ps Flx_btype.btyp_void code reqs ""
 
   | Flx_bbdcl.BBDCL_insert (vs, s, ikind, reqs) ->
       print_endline "BBDCL_insert";

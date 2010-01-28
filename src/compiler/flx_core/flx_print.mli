@@ -10,8 +10,8 @@ val string_of_bidset : BidSet.t -> string
 
 val string_of_typecode : typecode_t -> string
 val string_of_maybe_typecode : typecode_t -> string
-val string_of_btypecode : Flx_bsym_table.t -> btypecode_t -> string
-val sbt: Flx_bsym_table.t -> btypecode_t -> string
+val string_of_btypecode : Flx_bsym_table.t -> Flx_btype.t -> string
+val sbt: Flx_bsym_table.t -> Flx_btype.t -> string
 val special_string_of_typecode : typecode_t -> string
 val string_of_expr : expr_t -> string
 val string_of_bound_expression :
@@ -65,27 +65,27 @@ val string_of_symdef :
 
 (** [string_of_entry_kind entry-kind] converts the [entry-kind] to a string. *)
 val string_of_entry_kind:
-  entry_kind_t -> string
+  Flx_btype.entry_kind_t -> string
 
 val full_string_of_entry_kind:
-  Flx_bsym_table.t -> entry_kind_t -> string
+  Flx_bsym_table.t -> Flx_btype.entry_kind_t -> string
 
 (** [string_of_entry_set entry-set] converts the [entry-set] to a string. *)
 val string_of_entry_set:
-  entry_set_t -> string
+  Flx_btype.entry_set_t -> string
 
 val full_string_of_entry_set:
-  Flx_bsym_table.t -> entry_set_t -> string
+  Flx_bsym_table.t -> Flx_btype.entry_set_t -> string
 
 val print_name_table:
-  Flx_bsym_table.t -> name_map_t -> unit
+  Flx_bsym_table.t -> Flx_btype.name_map_t -> unit
 
 val string_of_myentry:
-  Flx_bsym_table.t -> entry_kind_t -> string
+  Flx_bsym_table.t -> Flx_btype.entry_kind_t -> string
 
 val string_of_varlist:
   Flx_bsym_table.t ->
-  (int * btypecode_t) list ->
+  (int * Flx_btype.t) list ->
   string
 
 val string_of_bsym:
@@ -93,9 +93,9 @@ val string_of_bsym:
   Flx_types.bid_t ->
   string
 
-val print_env: env_t -> unit
+val print_env: Flx_mtypes2.env_t -> unit
 
-val print_env_short: env_t -> unit
+val print_env_short: Flx_mtypes2.env_t -> unit
 
 val print_functions:
   Flx_bsym_table.t ->
@@ -139,14 +139,14 @@ val print_bsym_table:
   unit
 
 (** [string_of_name_map name-map] converts the [name-map] to a string. *)
-val string_of_name_map: name_map_t -> string
+val string_of_name_map: Flx_btype.name_map_t -> string
 
 val string_of_vs: vs_list_t -> string
 val string_of_ivs: ivs_list_t -> string
 
 val string_of_ast_term: int -> ast_term_t -> string
 val string_of_string: string -> string
-val string_of_bquals: Flx_bsym_table.t -> btype_qual_t list -> string
+val string_of_bquals: Flx_bsym_table.t -> Flx_bbdcl.btype_qual_t list -> string
 val string_of_bvs: bvs_t -> string
 val string_of_code_spec: code_spec_t -> string
 val string_of_raw_reqs: raw_req_expr_t -> string

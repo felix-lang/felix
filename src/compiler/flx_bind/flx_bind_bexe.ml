@@ -2,6 +2,7 @@ open Flx_util
 open Flx_list
 open Flx_ast
 open Flx_types
+open Flx_btype
 open Flx_bexpr
 open Flx_bexe
 open Flx_print
@@ -20,11 +21,11 @@ type bexe_state_t = {
   syms: Flx_mtypes2.sym_state_t;
   sym_table: Flx_sym_table.t;
   lookup_state: Flx_lookup.lookup_state_t;
-  env: Flx_types.env_t;
+  env: Flx_mtypes2.env_t;
   id: string;
   parent: Flx_types.bid_t option;
   parent_vs: Flx_types.bvs_t;
-  mutable ret_type: Flx_types.btypecode_t;
+  mutable ret_type: Flx_btype.t;
   mutable reachable: bool;
   mutable return_count: int;
   mutable proc_return_count: int;

@@ -22,15 +22,15 @@ val fixup_typeclass_instance:
   sym_state_t ->
   Flx_bsym_table.t ->
   bid_t ->
-  btypecode_t list ->
-  bid_t * btypecode_t list
+  Flx_btype.t list ->
+  bid_t * Flx_btype.t list
 
 val maybe_fixup_typeclass_instance:
   sym_state_t ->
   Flx_bsym_table.t ->
   bid_t ->
-  btypecode_t list ->
-  bid_t * btypecode_t list
+  Flx_btype.t list ->
+  bid_t * Flx_btype.t list
 
 val fixup_typeclass_instances:
   sym_state_t ->
@@ -42,7 +42,7 @@ val tcinst_chk:
   Flx_bsym_table.t ->
   bool ->
   bid_t ->
-  btypecode_t list ->
+  Flx_btype.t list ->
   Flx_srcref.t ->
-  bvs_t * btypecode_t * btypecode_t list * bid_t ->
-  (bid_t * btypecode_t list) option
+  bvs_t * Flx_btype.t * Flx_btype.t list * bid_t ->
+  (bid_t * Flx_btype.t list) option

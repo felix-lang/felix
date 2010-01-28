@@ -7,21 +7,21 @@ val map_type:
   (typecode_t -> typecode_t) -> typecode_t -> typecode_t
 
 val map_btype:
-  (btypecode_t -> btypecode_t) -> btypecode_t -> btypecode_t
+  (Flx_btype.t -> Flx_btype.t) -> Flx_btype.t -> Flx_btype.t
 
 val iter_btype:
-  (btypecode_t -> unit) -> btypecode_t -> unit
+  (Flx_btype.t -> unit) -> Flx_btype.t -> unit
 
 val flat_iter_tbexpr:
   (bid_t -> unit) ->
   (Flx_bexpr.t -> unit) ->
-  (btypecode_t -> unit) ->
+  (Flx_btype.t -> unit) ->
   Flx_bexpr.t -> unit
 
 val iter_tbexpr:
   (bid_t -> unit) ->
   (Flx_bexpr.t -> unit) ->
-  (btypecode_t -> unit) ->
+  (Flx_btype.t -> unit) ->
   Flx_bexpr.t -> unit
 
 val map_expr:
@@ -32,13 +32,13 @@ val map_expr:
 val map_tbexpr:
   (bid_t -> bid_t) ->
   (Flx_bexpr.t -> Flx_bexpr.t) ->
-  (btypecode_t -> btypecode_t) ->
+  (Flx_btype.t -> Flx_btype.t) ->
   Flx_bexpr.t -> Flx_bexpr.t
 
 val iter_bexe:
   (bid_t -> unit) ->
   (Flx_bexpr.t -> unit) ->
-  (btypecode_t -> unit) ->
+  (Flx_btype.t -> unit) ->
   (string -> unit) ->
   (string -> unit) ->
   Flx_bexe.t -> unit
@@ -46,7 +46,7 @@ val iter_bexe:
 val map_bexe:
   (bid_t -> bid_t) ->
   (Flx_bexpr.t -> Flx_bexpr.t) ->
-  (btypecode_t -> btypecode_t) ->
+  (Flx_btype.t -> Flx_btype.t) ->
   (string -> string) ->
   (string -> string) ->
   Flx_bexe.t -> Flx_bexe.t

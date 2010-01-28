@@ -1,4 +1,5 @@
 open Flx_types
+open Flx_btype
 open Flx_bexpr
 open Flx_bexe
 open Flx_bparameter

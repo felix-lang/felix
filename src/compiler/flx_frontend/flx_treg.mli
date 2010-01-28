@@ -29,20 +29,20 @@ open Flx_mtypes2
 val register_type_nr:
   sym_state_t ->
   Flx_bsym_table.t ->
-  btypecode_t ->
+  Flx_btype.t ->
   unit
 
 val register_tuple:
   sym_state_t ->
   Flx_bsym_table.t ->
-  btypecode_t ->
+  Flx_btype.t ->
   unit
 
 val register_type_r:
-  (bid_t -> btypecode_t list -> unit) ->
+  (bid_t -> Flx_btype.t list -> unit) ->
   sym_state_t ->
   Flx_bsym_table.t ->
-  btypecode_t list ->
+  Flx_btype.t list ->
   Flx_srcref.t ->
-  btypecode_t ->
+  Flx_btype.t ->
   unit

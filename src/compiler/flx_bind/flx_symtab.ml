@@ -1,11 +1,12 @@
 open Flx_ast
 open Flx_types
+open Flx_btype
 
 type t = {
   syms: Flx_mtypes2.sym_state_t;
   sym_table: Flx_sym_table.t;
-  pub_name_map: (string, Flx_types.entry_set_t) Hashtbl.t;
-  priv_name_map: (string, Flx_types.entry_set_t) Hashtbl.t;
+  pub_name_map: (string, Flx_btype.entry_set_t) Hashtbl.t;
+  priv_name_map: (string, Flx_btype.entry_set_t) Hashtbl.t;
 }
 
 
@@ -23,7 +24,7 @@ let mkentry syms (vs:ivs_list_t) i =
     ", ts=" ^ Flx_util.catmap "," (Flx_print.sbt sym_table) ts
   );
   *)
-  { Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts }
+  { Flx_btype.base_sym=i; spec_vs=vs; sub_ts=ts }
 
 
 let merge_ivs
@@ -674,9 +675,9 @@ and build_table_for_dcl
       in
       let nts = List.map (fun (s,i,t)-> btyp_type_var (i,btyp_type 0)) (fst ivs) in
       (* fudge the private view to remove the vs *)
-      let fixup ({ Flx_types.base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
+      let fixup ({ Flx_btype.base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
         let e' = {
-          Flx_types.base_sym=i;
+          Flx_btype.base_sym=i;
           spec_vs=drop vs;
           sub_ts=nts @ drop ts;
         } in

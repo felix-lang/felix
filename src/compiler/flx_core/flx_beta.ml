@@ -2,6 +2,7 @@
 
 open Flx_util
 open Flx_types
+open Flx_btype
 open Flx_mtypes2
 
 open Flx_print

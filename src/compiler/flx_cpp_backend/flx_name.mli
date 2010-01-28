@@ -10,26 +10,26 @@ val cpp_instance_name :
   sym_state_t ->
   Flx_bsym_table.t ->
   bid_t ->
-  btypecode_t list ->
+  Flx_btype.t list ->
   string
 
 val cpp_type_classname :
   sym_state_t ->
   Flx_bsym_table.t ->
-  btypecode_t ->
+  Flx_btype.t ->
   string
 
 val cpp_typename :
   sym_state_t ->
   Flx_bsym_table.t ->
-  btypecode_t ->
+  Flx_btype.t ->
   string
 
 
 val cpp_ltypename :
   sym_state_t ->
   Flx_bsym_table.t ->
-  btypecode_t ->
+  Flx_btype.t ->
   string
 
 

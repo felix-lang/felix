@@ -10,11 +10,11 @@ type t =
   | BEXE_goto of Flx_srcref.t * string  (* for internal use only *)
   | BEXE_ifgoto of Flx_srcref.t * Flx_bexpr.t * string  (* for internal use only *)
   | BEXE_call of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
-  | BEXE_call_direct of Flx_srcref.t * bid_t * btypecode_t list * Flx_bexpr.t
-  | BEXE_call_stack of Flx_srcref.t * bid_t * btypecode_t list * Flx_bexpr.t
-  | BEXE_call_prim of Flx_srcref.t * bid_t * btypecode_t list * Flx_bexpr.t
+  | BEXE_call_direct of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
+  | BEXE_call_stack of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
+  | BEXE_call_prim of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
   | BEXE_jump of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
-  | BEXE_jump_direct of Flx_srcref.t * bid_t * btypecode_t list * Flx_bexpr.t
+  | BEXE_jump_direct of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
   | BEXE_svc of Flx_srcref.t * bid_t
   | BEXE_fun_return of Flx_srcref.t * Flx_bexpr.t
   | BEXE_yield of Flx_srcref.t * Flx_bexpr.t
@@ -95,19 +95,19 @@ let print f = function
       print_variant4 f "BEXE_call_direct"
         Flx_srcref.print sr
         print_bid bid
-        print_btypes ts
+        (Flx_list.print Flx_btype.print) ts
         Flx_bexpr.print a
   | BEXE_call_stack (sr, bid, ts, a) ->
       print_variant4 f "BEXE_call_stack"
         Flx_srcref.print sr
         print_bid bid
-        print_btypes ts
+        (Flx_list.print Flx_btype.print) ts
         Flx_bexpr.print a
   | BEXE_call_prim (sr, bid, ts, a) ->
       print_variant4 f "BEXE_call_prim"
         Flx_srcref.print sr
         print_bid bid
-        print_btypes ts
+        (Flx_list.print Flx_btype.print) ts
         Flx_bexpr.print a
   | BEXE_jump (sr, p, a) ->
       print_variant3 f "BEXE_jump"
@@ -118,7 +118,7 @@ let print f = function
       print_variant4 f "BEXE_jump_direct"
         Flx_srcref.print sr
         print_bid bid
-        print_btypes ts
+        (Flx_list.print Flx_btype.print) ts
         Flx_bexpr.print a
   | BEXE_svc (sr, bid) ->
       print_variant2 f "BEXE_srv"

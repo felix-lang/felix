@@ -1,5 +1,6 @@
 (* gratuitous change *)
 open Flx_types
+open Flx_btype
 open Flx_bexpr
 open Flx_set
 open Flx_mtypes2
@@ -775,7 +776,7 @@ let unfold t =
   | _ -> t'
   in aux 0 t
 
-exception Found of btypecode_t
+exception Found of Flx_btype.t
 
 (* this undoes an unfold: it won't minimise an arbitrary type *)
 let fold counter t =

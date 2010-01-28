@@ -4,7 +4,7 @@ val gen_expr:
   Flx_types.bid_t ->
   Flx_bexpr.t ->
   Flx_types.bvs_t ->
-  Flx_types.btypecode_t list ->
+  Flx_btype.t list ->
   Flx_srcref.t ->
   string
 
@@ -14,7 +14,7 @@ val gen_expr':
   Flx_types.bid_t ->
   Flx_bexpr.t ->
   Flx_types.bvs_t ->
-  Flx_types.btypecode_t list ->
+  Flx_btype.t list ->
   Flx_srcref.t ->
   Flx_ctypes.cexpr_t
 
@@ -24,7 +24,7 @@ val get_var_ref:
   Flx_bsym_table.t ->
   Flx_types.bid_t ->
   Flx_types.bid_t ->
-  Flx_types.btypecode_t list ->
+  Flx_btype.t list ->
   string
 
 (* for definition/initialisation *)
@@ -33,5 +33,5 @@ val get_ref_ref:
   Flx_bsym_table.t ->
   Flx_types.bid_t ->
   Flx_types.bid_t ->
-  Flx_types.btypecode_t list ->
+  Flx_btype.t list ->
   string

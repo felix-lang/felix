@@ -2,7 +2,7 @@ type t = {
   pid: string;
   pindex: Flx_types.bid_t;
   pkind: Flx_ast.param_kind_t;
-  ptyp: Flx_types.btypecode_t
+  ptyp: Flx_btype.t
 }
 
 (** Returns the names from a list of bparameters. *)
@@ -18,7 +18,7 @@ let get_btypes ps =
   List.map begin fun p ->
     match p.pkind with
     | `PFun ->
-        Flx_types.btyp_function (Flx_types.btyp_tuple [], p.ptyp)
+        Flx_btype.btyp_function (Flx_btype.btyp_tuple [], p.ptyp)
     | _ -> p.ptyp
   end ps
 
@@ -28,4 +28,4 @@ let print f p =
     "pkind" Flx_ast.print_param_kind p.pkind
     "pid" Flx_format.print_string p.pid
     "pindex" Flx_types.print_bid p.pindex
-    "ptyp" Flx_types.print_btype p.ptyp
+    "ptyp" Flx_btype.print p.ptyp

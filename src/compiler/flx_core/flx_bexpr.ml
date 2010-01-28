@@ -1,31 +1,31 @@
 type bexpr_t =
   | BEXPR_deref of t
-  | BEXPR_name of Flx_types.bid_t * Flx_types.btypecode_t list
-  | BEXPR_ref of Flx_types.bid_t * Flx_types.btypecode_t list
+  | BEXPR_name of Flx_types.bid_t * Flx_btype.t list
+  | BEXPR_ref of Flx_types.bid_t * Flx_btype.t list
   | BEXPR_likely of t
   | BEXPR_unlikely of t
   | BEXPR_address of t
   | BEXPR_new of t
   | BEXPR_literal of Flx_ast.literal_t
   | BEXPR_apply of t * t
-  | BEXPR_apply_prim of Flx_types.bid_t * Flx_types.btypecode_t list * t
-  | BEXPR_apply_direct of Flx_types.bid_t * Flx_types.btypecode_t list * t
-  | BEXPR_apply_stack of Flx_types.bid_t * Flx_types.btypecode_t list * t
-  | BEXPR_apply_struct of Flx_types.bid_t * Flx_types.btypecode_t list * t
+  | BEXPR_apply_prim of Flx_types.bid_t * Flx_btype.t list * t
+  | BEXPR_apply_direct of Flx_types.bid_t * Flx_btype.t list * t
+  | BEXPR_apply_stack of Flx_types.bid_t * Flx_btype.t list * t
+  | BEXPR_apply_struct of Flx_types.bid_t * Flx_btype.t list * t
   | BEXPR_tuple of t list
   | BEXPR_record of (string * t) list
   | BEXPR_variant of string * t
   | BEXPR_get_n of int * t (* tuple projection *)
-  | BEXPR_closure of Flx_types.bid_t * Flx_types.btypecode_t list
-  | BEXPR_case of int * Flx_types.btypecode_t
+  | BEXPR_closure of Flx_types.bid_t * Flx_btype.t list
+  | BEXPR_case of int * Flx_btype.t
   | BEXPR_match_case of int * t
   | BEXPR_case_arg of int * t
   | BEXPR_case_index of t
-  | BEXPR_expr of string * Flx_types.btypecode_t
+  | BEXPR_expr of string * Flx_btype.t
   | BEXPR_range_check of t * t * t
-  | BEXPR_coerce of t * Flx_types.btypecode_t
+  | BEXPR_coerce of t * Flx_btype.t
 
-and t = bexpr_t * Flx_types.btypecode_t
+and t = bexpr_t * Flx_btype.t
 
 (* -------------------------------------------------------------------------- *)
 
@@ -117,11 +117,11 @@ let rec print_bexpr f = function
   | BEXPR_name (bid, ts) ->
       Flx_format.print_variant2 f "BEXPR_name"
         Flx_types.print_bid bid
-        Flx_types.print_btypes ts
+        (Flx_list.print Flx_btype.print) ts
   | BEXPR_ref (bid, ts) ->
       Flx_format.print_variant2 f "BEXPR_ref"
         Flx_types.print_bid bid
-        Flx_types.print_btypes ts
+        (Flx_list.print Flx_btype.print) ts
   | BEXPR_likely e ->
       Flx_format.print_variant1 f "BEXPR_likely" print e
   | BEXPR_unlikely e ->
@@ -138,22 +138,22 @@ let rec print_bexpr f = function
   | BEXPR_apply_prim (bid, ts, e) ->
       Flx_format.print_variant3 f "BEXPR_apply_prim"
         Flx_types.print_bid bid
-        Flx_types.print_btypes ts
+        (Flx_list.print Flx_btype.print) ts
         print e
   | BEXPR_apply_direct (bid, ts, e) ->
       Flx_format.print_variant3 f "BEXPR_apply_direct"
         Flx_types.print_bid bid
-        Flx_types.print_btypes ts
+        (Flx_list.print Flx_btype.print) ts
         print e
   | BEXPR_apply_stack (bid, ts, e) ->
       Flx_format.print_variant3 f "BEXPR_apply_stack"
         Flx_types.print_bid bid
-        Flx_types.print_btypes ts
+        (Flx_list.print Flx_btype.print) ts
         print e
   | BEXPR_apply_struct (bid, ts, e) ->
       Flx_format.print_variant3 f "BEXPR_apply_struct"
         Flx_types.print_bid bid
-        Flx_types.print_btypes ts
+        (Flx_list.print Flx_btype.print) ts
         print e
   | BEXPR_tuple es ->
       Flx_format.print_variant1 f "BEXPR_tuple" (Flx_list.print print) es
@@ -174,11 +174,11 @@ let rec print_bexpr f = function
   | BEXPR_closure (bid, ts) ->
       Flx_format.print_variant2 f "BEXPR_closure"
         Flx_types.print_bid bid
-        Flx_types.print_btypes ts
+        (Flx_list.print Flx_btype.print) ts
   | BEXPR_case (i, t) ->
       Flx_format.print_variant2 f "BEXPR_match_case"
         Format.pp_print_int i
-        Flx_types.print_btype t
+        Flx_btype.print t
   | BEXPR_match_case (i, e) ->
       Flx_format.print_variant2 f "BEXPR_match_case"
         Format.pp_print_int i
@@ -192,7 +192,7 @@ let rec print_bexpr f = function
   | BEXPR_expr (s, t) ->
       Flx_format.print_variant2 f "BEXPR_closure"
         Flx_format.print_string s
-        Flx_types.print_btype t
+        Flx_btype.print t
   | BEXPR_range_check (e1, e2, e3) ->
       Flx_format.print_variant3 f "BEXPR_range_check"
         print e1
@@ -201,9 +201,9 @@ let rec print_bexpr f = function
   | BEXPR_coerce (e, t) ->
       Flx_format.print_variant2 f "BEXPR_coerce"
         print e
-        Flx_types.print_btype t
+        Flx_btype.print t
 
 and print f (e, t) =
   Flx_format.print_tuple2 f
     print_bexpr e
-    Flx_types.print_btype t
+    Flx_btype.print t

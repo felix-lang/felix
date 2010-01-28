@@ -2,6 +2,7 @@ open Flx_util
 open Flx_list
 open Flx_ast
 open Flx_types
+open Flx_btype
 open Flx_set
 open Flx_mtypes2
 open Flx_print
@@ -130,10 +131,10 @@ let constraint_implies syms a b =
 
 type overload_result =
  bid_t *  (* index of function *)
- btypecode_t * (* type of function signature *)
- btypecode_t * (* type of function return *)
- (bid_t * btypecode_t) list * (* mgu *)
- btypecode_t list (* ts *)
+ Flx_btype.t * (* type of function signature *)
+ Flx_btype.t * (* type of function return *)
+ (bid_t * Flx_btype.t) list * (* mgu *)
+ Flx_btype.t list (* ts *)
 
 type result =
   | Unique of overload_result

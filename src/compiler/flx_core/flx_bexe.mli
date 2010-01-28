@@ -9,11 +9,11 @@ type t =
   | BEXE_goto of Flx_srcref.t * string  (* for internal use only *)
   | BEXE_ifgoto of Flx_srcref.t * Flx_bexpr.t * string  (* for internal use only *)
   | BEXE_call of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
-  | BEXE_call_direct of Flx_srcref.t * bid_t * btypecode_t list * Flx_bexpr.t
-  | BEXE_call_stack of Flx_srcref.t * bid_t * btypecode_t list * Flx_bexpr.t
-  | BEXE_call_prim of Flx_srcref.t * bid_t * btypecode_t list * Flx_bexpr.t
+  | BEXE_call_direct of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
+  | BEXE_call_stack of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
+  | BEXE_call_prim of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
   | BEXE_jump of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
-  | BEXE_jump_direct of Flx_srcref.t * bid_t * btypecode_t list * Flx_bexpr.t
+  | BEXE_jump_direct of Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t
   | BEXE_svc of Flx_srcref.t * bid_t
   | BEXE_fun_return of Flx_srcref.t * Flx_bexpr.t
   | BEXE_yield of Flx_srcref.t * Flx_bexpr.t

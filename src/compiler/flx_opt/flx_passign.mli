@@ -7,13 +7,13 @@ open Flx_child
 
 type aentry_t =
   bid_t *
-  (string * btypecode_t * Flx_bexpr.t * BidSet.t)
+  (string * Flx_btype.t * Flx_bexpr.t * BidSet.t)
 
 val passign:
   sym_state_t ->
   Flx_bsym_table.t ->
   aentry_t list ->                (* list of assignments to fix *)
-  btypecode_t list ->             (* ts to use when creating temporaries *)
+  Flx_btype.t list ->             (* ts to use when creating temporaries *)
   Flx_srcref.t ->                 (* source ref *)
-  (btypecode_t * bid_t) list *
+  (Flx_btype.t * bid_t) list *
   Flx_bexe.t list

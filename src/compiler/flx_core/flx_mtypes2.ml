@@ -3,14 +3,27 @@ open Flx_types
 open List
 
 (* generic entity instances: functions, variables *)
-type instance_registry_t = (bid_t * btypecode_t list, bid_t) Hashtbl.t
+type instance_registry_t = (
+  Flx_types.bid_t * Flx_btype.t list,
+  Flx_types.bid_t
+) Hashtbl.t
 
-type typevarmap_t = (Flx_types.bid_t, Flx_types.btypecode_t) Hashtbl.t
+type type_registry_t = (Flx_btype.t, Flx_types.bid_t) Hashtbl.t
+
+type typevarmap_t = (Flx_types.bid_t, Flx_btype.t) Hashtbl.t
 
 type baxiom_method_t = [
   | `BPredicate of Flx_bexpr.t
   | `BEquation of Flx_bexpr.t * Flx_bexpr.t
 ]
+
+type env_t = (
+  Flx_types.bid_t *           (** container index *)
+  string *                    (** name *)
+  Flx_btype.name_map_t *      (** primary symbol map *)
+  Flx_btype.name_map_t list * (** directives *)
+  Flx_ast.typecode_t          (** type constraint *)
+) list
 
 type axiom_t =
   Flx_ast.id_t *
@@ -56,21 +69,21 @@ type sym_state_t =
 {
   counter : bid_t ref;
   varmap : typevarmap_t;
-  ticache : (bid_t, btypecode_t) Hashtbl.t;
+  ticache : (bid_t, Flx_btype.t) Hashtbl.t;
   env_cache : (bid_t, env_t) Hashtbl.t;
   registry : type_registry_t;
   compiler_options : felix_compiler_options_t;
   instances : instance_registry_t;
   include_files : string list ref;
   roots : BidSet.t ref;
-  quick_names : (string, (bid_t * btypecode_t list)) Hashtbl.t;
-  mutable bifaces : biface_t list;
+  quick_names : (string, (bid_t * Flx_btype.t list)) Hashtbl.t;
+  mutable bifaces : Flx_btype.biface_t list;
   mutable reductions : reduction_t list;
   mutable axioms: axiom_t list;
-  variant_map: (btypecode_t * btypecode_t, bid_t) Hashtbl.t;
-  typeclass_to_instance: (bid_t, (bvs_t * btypecode_t * btypecode_t list * bid_t) list) Hashtbl.t;
-  instances_of_typeclass: (bid_t, (bid_t * (bvs_t * btypecode_t * btypecode_t list)) list) Hashtbl.t;
-  transient_specialisation_cache: (bid_t * btypecode_t list, bid_t * btypecode_t list) Hashtbl.t;
+  variant_map: (Flx_btype.t * Flx_btype.t, bid_t) Hashtbl.t;
+  typeclass_to_instance: (bid_t, (bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
+  instances_of_typeclass: (bid_t, (bid_t * (bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
+  transient_specialisation_cache: (bid_t * Flx_btype.t list, bid_t * Flx_btype.t list) Hashtbl.t;
 }
 
 let make_syms options =

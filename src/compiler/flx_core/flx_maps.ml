@@ -1,5 +1,6 @@
 open Flx_ast
 open Flx_types
+open Flx_btype
 open Flx_bexpr
 open Flx_bexe
 open Flx_typing
@@ -243,16 +244,6 @@ let scan_expr e =
   iter_expr add e;
   Flx_list.uniq_list !ls
 
-let all_units' ts =
-  try
-    List.iter (function
-      | BTYP_tuple [] -> ()
-      | _ -> raise Not_found
-    )
-    ts;
-    true
-  with Not_found -> false
-
 let map_btype f = function
   | BTYP_type_apply (a, b) -> btyp_type_apply (f a, f b)
   | BTYP_type_function (its, a, b) ->
@@ -296,7 +287,7 @@ let map_btype f = function
 
   | BTYP_sum ts ->
     let ts = List.map f ts in
-    if all_units' ts then
+    if Flx_btype.all_units ts then
       btyp_unitsum (List.length ts)
     else
       btyp_sum ts

@@ -2,7 +2,7 @@ type t = {
   pid: string;
   pindex: Flx_types.bid_t;
   pkind: Flx_ast.param_kind_t;
-  ptyp: Flx_types.btypecode_t
+  ptyp: Flx_btype.t
 }
 
 (** Returns the names from a list of bparameters. *)
@@ -12,7 +12,7 @@ val get_names : t list -> string list
 val get_bids : t list -> Flx_types.bid_t list
 
 (** Returns the bound types from a list of bparameters. *)
-val get_btypes : t list -> Flx_types.btypecode_t list
+val get_btypes : t list -> Flx_btype.t list
 
 (** Prints a bparameter to a formatter. *)
 val print : Format.formatter -> t -> unit

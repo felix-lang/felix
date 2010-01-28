@@ -19,21 +19,21 @@ val adjust_ts:
   Flx_bsym_table.t ->
   Flx_srcref.t ->
   Flx_types.bid_t ->
-  Flx_types.btypecode_t list ->
-  Flx_types.btypecode_t list
+  Flx_btype.t list ->
+  Flx_btype.t list
 
 val make_params:
   Flx_sym_table.t ->
   Flx_bsym_table.t ->
   Flx_srcref.t ->
   Flx_types.bid_t ->
-  Flx_types.btypecode_t list ->
-  (string * Flx_types.btypecode_t) list
+  Flx_btype.t list ->
+  (string * Flx_btype.t) list
 
 val make_varmap:
   Flx_sym_table.t ->
   Flx_bsym_table.t ->
   Flx_srcref.t ->
   Flx_types.bid_t ->
-  Flx_types.btypecode_t list ->
-  (Flx_types.bid_t, Flx_types.btypecode_t) Hashtbl.t
+  Flx_btype.t list ->
+  (Flx_types.bid_t, Flx_btype.t) Hashtbl.t

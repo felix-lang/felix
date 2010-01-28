@@ -2,6 +2,7 @@
 
 open Flx_print
 open Flx_types
+open Flx_btype
 open Flx_exceptions
 
 let rec metatype sym_table bsym_table sr term =

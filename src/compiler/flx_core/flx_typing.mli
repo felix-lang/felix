@@ -1,15 +1,10 @@
 open Flx_ast
-open Flx_types
+open Flx_btype
 
-exception UnificationError of btypecode_t * btypecode_t
+exception UnificationError of Flx_btype.t * Flx_btype.t
 
 val flx_bool : typecode_t
-val flx_bbool : btypecode_t
-
-val is_unitsum: btypecode_t -> bool
-val int_of_unitsum : btypecode_t -> int
-val all_units : btypecode_t list -> bool
-val all_voids : btypecode_t list -> bool
+val flx_bbool : Flx_btype.t
 
 val cmp_literal: literal_t -> literal_t -> bool
 
@@ -21,9 +16,9 @@ val funparamtype : 'a * 'b * 't * 'd -> 't
 
 module FuntypeSet : Set.S with type elt = typecode_t
 
-module FunInstSet : Set.S with type elt = bid_t * btypecode_t list
+module FunInstSet : Set.S with type elt = Flx_types.bid_t * Flx_btype.t list
 
-val sye: entry_kind_t -> bid_t
+val sye: entry_kind_t -> Flx_types.bid_t
 
 val mktypefun:
   Flx_srcref.t ->

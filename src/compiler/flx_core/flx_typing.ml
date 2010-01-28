@@ -33,36 +33,9 @@ let mktypefun sr (name:string) (vs:vs_list_t) (args: (string * typecode_t) list 
   )
 
 
-let sye {base_sym=i} = i
+let sye { Flx_btype.base_sym=i } = i
 
-let all_voids ls =
-    List.fold_left
-    (fun acc t -> acc && (t = btyp_void))
-    true ls
-
-let all_units ls =
-    List.fold_left
-    (fun acc t -> acc && (t = btyp_tuple []))
-    true ls
-
-let is_unitsum (t:btypecode_t) = match t with
-  | BTYP_unitsum _ -> true
-  | BTYP_sum ls ->  all_units ls
-  | _ -> false
-
-
-let int_of_unitsum t = match t with
-  | BTYP_void -> 0
-  | BTYP_tuple [] -> 1
-  | BTYP_unitsum k -> k
-  | BTYP_sum [] ->  0
-  | BTYP_sum ls ->
-    if all_units ls then List.length ls
-    else raise Not_found
-
-  | _ -> raise Not_found
-
-exception UnificationError of btypecode_t * btypecode_t
+exception UnificationError of Flx_btype.t * Flx_btype.t
 
 (* unbound type *)
 let type_of_argtypes ls = match ls with
@@ -72,18 +45,18 @@ let type_of_argtypes ls = match ls with
 let funparamtype (_,_,t,_) = t
 
 module FuntypeSet = Set.Make(
-  struct type t=typecode_t let compare = compare end
+  struct type t = typecode_t let compare = compare end
 )
 
 module FunInstSet = Set.Make(
   struct
-    type t= bid_t * btypecode_t list
+    type t = bid_t * Flx_btype.t list
     let compare = compare
   end
 )
 
 let flx_bool = TYP_unitsum 2
-let flx_bbool = btyp_unitsum 2
+let flx_bbool = Flx_btype.btyp_unitsum 2
 
 (* Note floats are equal iff they're textually identical,
    we don't make any assumptions about the target machine FP model.

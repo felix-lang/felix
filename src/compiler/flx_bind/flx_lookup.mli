@@ -80,6 +80,7 @@
 
 open Flx_ast
 open Flx_types
+open Flx_btype
 open Flx_mtypes2
 open Flx_overload
 
@@ -125,7 +126,7 @@ val lookup_sn_in_env :
   Flx_bsym_table.t ->
   env_t ->
   suffixed_name_t ->
-  bid_t * btypecode_t list
+  bid_t * Flx_btype.t list
 
 val lookup_code_in_env:
   lookup_state_t ->
@@ -151,7 +152,7 @@ val bind_type:
   env_t ->
   Flx_srcref.t ->
   typecode_t ->
-  btypecode_t
+  Flx_btype.t
 
 val bind_expression :
   lookup_state_t ->
@@ -172,15 +173,15 @@ val type_of_index :
   lookup_state_t ->
   Flx_bsym_table.t ->
   bid_t ->
-  btypecode_t
+  Flx_btype.t
 
 val type_of_index_with_ts:
   lookup_state_t ->
   Flx_bsym_table.t ->
   Flx_srcref.t ->
   bid_t ->
-  btypecode_t list ->
-  btypecode_t
+  Flx_btype.t list ->
+  Flx_btype.t
 
 val type_of_literal:
   lookup_state_t ->
@@ -188,7 +189,7 @@ val type_of_literal:
   env_t ->
   Flx_srcref.t ->
   literal_t ->
-  btypecode_t
+  Flx_btype.t
 
 val lookup_qn_with_sig:
   lookup_state_t ->
@@ -197,5 +198,5 @@ val lookup_qn_with_sig:
   Flx_srcref.t ->
   env_t ->
   qualified_name_t ->
-  btypecode_t list ->
+  Flx_btype.t list ->
   Flx_bexpr.t

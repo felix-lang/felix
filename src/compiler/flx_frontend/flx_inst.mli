@@ -2,15 +2,10 @@
  *
  * Name binding pass 2 *)
 
-open Flx_ast
-open Flx_types
-open Flx_typing
-open Flx_mtypes2
-
 val instantiate:
-  sym_state_t ->
+  Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
   bool -> (* instantiate parameters? *)
-  bid_t ->
-  biface_t list ->
+  Flx_types.bid_t ->
+  Flx_btype.biface_t list ->
   unit

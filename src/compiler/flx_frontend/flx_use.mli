@@ -2,16 +2,12 @@
  *
  * Name binding pass 2. *)
 
-open Flx_ast
-open Flx_types
-open Flx_set
-open Flx_mtypes2
-
 val find_roots:
-  sym_state_t ->
+  Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
-  bid_t ->
-  biface_t list -> unit
+  Flx_types.bid_t ->
+  Flx_btype.biface_t list ->
+  unit
 
 (*
 val uses_type:
@@ -19,7 +15,7 @@ val uses_type:
   BidSet.t ref ->
   Flx_bsym_table.t ->
   bool -> (* count inits *)
-  btypecode_t ->
+  Flx_btype.t ->
   unit
 
 val uses_tbexpr:
@@ -41,25 +37,25 @@ val uses:
 
 (* counts initialisation as use *)
 val full_use_closure_for_symbols:
-  sym_state_t ->
+  Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
   Flx_types.bid_t list -> (* The list of symbols to count usage for. *)
-  BidSet.t
+  Flx_types.BidSet.t
 
 (* counts initialisation as use *)
 val full_use_closure:
-  sym_state_t ->
+  Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
-  BidSet.t
+  Flx_types.BidSet.t
 
 (* conditionally count initialisation as use *)
 val cal_use_closure:
-  sym_state_t ->
+  Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
   bool ->
-  BidSet.t
+  Flx_types.BidSet.t
 
 val copy_used:
-  sym_state_t ->
+  Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
   Flx_bsym_table.t

@@ -30,4 +30,4 @@ val bind_interface:
   bbind_state_t ->
   Flx_bsym_table.t ->
   Flx_types.bound_iface_t ->
-  Flx_types.biface_t
+  Flx_btype.biface_t

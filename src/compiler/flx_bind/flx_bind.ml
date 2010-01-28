@@ -29,7 +29,7 @@ let make_bind_state syms =
       sym_table
       lookup_state
       []
-      Flx_types.btyp_void;
+      Flx_btype.btyp_void;
     lookup_state = lookup_state;
     bbind_state = bbind_state;
   }
@@ -56,7 +56,7 @@ let make_toplevel_bind_state syms =
   (* Find the module's _init_ function *)
   let init_index =
     match Hashtbl.find module_sym.Flx_sym.pubmap "_init_" with
-    | Flx_types.FunctionEntry [ { Flx_types.base_sym=base_sym } ] -> base_sym
+    | Flx_btype.FunctionEntry [ { Flx_btype.base_sym=base_sym } ] -> base_sym
     | _ -> assert false
   in
   let init_sym = Flx_sym_table.find sym_table init_index in
@@ -86,7 +86,7 @@ let make_toplevel_bind_state syms =
       sym_table
       lookup_state
       []
-      Flx_types.btyp_void;
+      Flx_btype.btyp_void;
     lookup_state = lookup_state;
     bbind_state = bbind_state;
   }, bsym_table
@@ -211,13 +211,13 @@ let find_root_module_init_function state root =
   in
   let index =
     match entry with
-    | Flx_types.FunctionEntry [x] ->
+    | Flx_btype.FunctionEntry [x] ->
         Flx_typing.sye x
-    | Flx_types.FunctionEntry [] ->
+    | Flx_btype.FunctionEntry [] ->
         failwith "Couldn't find '_init_'"
-    | Flx_types.FunctionEntry _ ->
+    | Flx_btype.FunctionEntry _ ->
         failwith "Too many top level procedures called '_init_'"
-    | Flx_types.NonFunctionEntry _ ->
+    | Flx_btype.NonFunctionEntry _ ->
         failwith "_init_ found but not procedure"
   in
 

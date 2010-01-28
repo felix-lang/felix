@@ -1,6 +1,7 @@
 open Flx_list
 open Flx_ast
 open Flx_types
+open Flx_btype
 open Flx_bexpr
 open Flx_bbdcl
 open Flx_mtypes2
