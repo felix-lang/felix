@@ -2,7 +2,7 @@ val gen_expr:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
   Flx_types.bid_t ->
-  Flx_types.tbexpr_t ->
+  Flx_bexpr.t ->
   Flx_types.bvs_t ->
   Flx_types.btypecode_t list ->
   Flx_srcref.t ->
@@ -12,7 +12,7 @@ val gen_expr':
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
   Flx_types.bid_t ->
-  Flx_types.tbexpr_t ->
+  Flx_bexpr.t ->
   Flx_types.bvs_t ->
   Flx_types.btypecode_t list ->
   Flx_srcref.t ->

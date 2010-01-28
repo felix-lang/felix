@@ -14,15 +14,15 @@ val iter_btype:
 
 val flat_iter_tbexpr:
   (bid_t -> unit) ->
-  (tbexpr_t -> unit) ->
+  (Flx_bexpr.t -> unit) ->
   (btypecode_t -> unit) ->
-  tbexpr_t -> unit
+  Flx_bexpr.t -> unit
 
 val iter_tbexpr:
   (bid_t -> unit) ->
-  (tbexpr_t -> unit) ->
+  (Flx_bexpr.t -> unit) ->
   (btypecode_t -> unit) ->
-  tbexpr_t -> unit
+  Flx_bexpr.t -> unit
 
 val map_expr:
   (expr_t -> expr_t) ->
@@ -31,13 +31,13 @@ val map_expr:
 
 val map_tbexpr:
   (bid_t -> bid_t) ->
-  (tbexpr_t -> tbexpr_t) ->
+  (Flx_bexpr.t -> Flx_bexpr.t) ->
   (btypecode_t -> btypecode_t) ->
-  tbexpr_t -> tbexpr_t
+  Flx_bexpr.t -> Flx_bexpr.t
 
 val iter_bexe:
   (bid_t -> unit) ->
-  (tbexpr_t -> unit) ->
+  (Flx_bexpr.t -> unit) ->
   (btypecode_t -> unit) ->
   (string -> unit) ->
   (string -> unit) ->
@@ -45,7 +45,7 @@ val iter_bexe:
 
 val map_bexe:
   (bid_t -> bid_t) ->
-  (tbexpr_t -> tbexpr_t) ->
+  (Flx_bexpr.t -> Flx_bexpr.t) ->
   (btypecode_t -> btypecode_t) ->
   (string -> string) ->
   (string -> string) ->
@@ -53,8 +53,8 @@ val map_bexe:
 
 (** Simplify the bound expression. *)
 val reduce_tbexpr:
-  tbexpr_t -> (** The bound expression. *)
-  tbexpr_t
+  Flx_bexpr.t -> (** The bound expression. *)
+  Flx_bexpr.t
 
 (** Simplify the bound exe. *)
 val reduce_bexe:

@@ -158,15 +158,15 @@ val bind_expression :
   Flx_bsym_table.t ->
   env_t ->
   expr_t ->
-  tbexpr_t
+  Flx_bexpr.t
 
 val bind_expression_with_args :
   lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   expr_t ->
-  tbexpr_t list ->
-  tbexpr_t
+  Flx_bexpr.t list ->
+  Flx_bexpr.t
 
 val type_of_index :
   lookup_state_t ->
@@ -198,4 +198,4 @@ val lookup_qn_with_sig:
   env_t ->
   qualified_name_t ->
   btypecode_t list ->
-  tbexpr_t
+  Flx_bexpr.t

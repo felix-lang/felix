@@ -13,8 +13,8 @@ let make_elim_state syms bsym_table =
 
 let rec lvof x =
   match x with
-  | Flx_types.BEXPR_name (i, _), _ -> i
-  | Flx_types.BEXPR_get_n (_, e), _ -> lvof e
+  | Flx_bexpr.BEXPR_name (i, _), _ -> i
+  | Flx_bexpr.BEXPR_get_n (_, e), _ -> lvof e
   | _ -> Flx_types.dummy_bid
 
 

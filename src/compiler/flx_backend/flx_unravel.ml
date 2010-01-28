@@ -1,10 +1,11 @@
 open Flx_types
+open Flx_bexpr
 open Flx_bbdcl
 
 let rec eassoc x l = match l with
   | [] -> raise Not_found
   | (a,b) ::t ->
-    if Flx_typing.cmp_tbexpr x a then b else eassoc x t
+    if Flx_bexpr.cmp x a then b else eassoc x t
 
 (* Unravel an expression into 'three address code',
   at the same time eliminating common sub-expressions.

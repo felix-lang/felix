@@ -19,7 +19,7 @@ and call_t =
   Flx_bsym_table.t ->
   Llvm.llbuilder ->
   Flx_srcref.t ->
-  Flx_types.tbexpr_t list ->
+  Flx_bexpr.t list ->
   Llvm.llvalue
 
 (* Used to represent what kind of closure to use to store values. *)
@@ -285,32 +285,32 @@ let rec codegen_expr state bsym_table builder sr tbexpr =
   let bexpr, btype = Flx_maps.reduce_tbexpr tbexpr in
 
   match bexpr with
-  | Flx_types.BEXPR_deref e ->
+  | Flx_bexpr.BEXPR_deref e ->
       print_endline "BEXPR_deref";
       codegen_deref state bsym_table builder sr e
 
-  | Flx_types.BEXPR_name (index, _) ->
+  | Flx_bexpr.BEXPR_name (index, _) ->
       print_endline "BEXPR_name";
       begin try Hashtbl.find state.value_bindings index with Not_found ->
         Flx_exceptions.clierr sr ("Unable to find index " ^
           Flx_print.string_of_bid index)
       end
 
-  | Flx_types.BEXPR_ref (index, btype) ->
+  | Flx_bexpr.BEXPR_ref (index, btype) ->
       print_endline "BEXPR_ref";
       assert false
 
-  | Flx_types.BEXPR_likely e ->
+  | Flx_bexpr.BEXPR_likely e ->
       print_endline "BEXPR_likely";
       (* Do nothing for now *)
       codegen_expr state bsym_table builder sr e
 
-  | Flx_types.BEXPR_unlikely e ->
+  | Flx_bexpr.BEXPR_unlikely e ->
       print_endline "BEXPR_unlikely";
       (* Do nothing for now *)
       codegen_expr state bsym_table builder sr e
 
-  | Flx_types.BEXPR_address e ->
+  | Flx_bexpr.BEXPR_address e ->
       print_endline "BEXPR_address";
 
       let e = codegen_expr state bsym_table builder sr e in
@@ -322,58 +322,58 @@ let rec codegen_expr state bsym_table builder sr tbexpr =
        * So, we shouldn't need to do any work. *)
       e
 
-  | Flx_types.BEXPR_new e ->
+  | Flx_bexpr.BEXPR_new e ->
       print_endline "BEXPR_new";
       let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
-  | Flx_types.BEXPR_literal literal ->
+  | Flx_bexpr.BEXPR_literal literal ->
       print_endline "BEXPR_literal";
       codegen_literal state builder sr literal
 
-  | Flx_types.BEXPR_apply (f, e) ->
+  | Flx_bexpr.BEXPR_apply (f, e) ->
       print_endline "BEXPR_apply";
       assert false
 
-  | Flx_types.BEXPR_apply_direct (bid, _, e)
-  | Flx_types.BEXPR_apply_prim (bid, _, e) ->
+  | Flx_bexpr.BEXPR_apply_direct (bid, _, e)
+  | Flx_bexpr.BEXPR_apply_prim (bid, _, e) ->
       print_endline "BEXPR_apply_{direct,prim}";
       codegen_apply_direct state bsym_table builder sr bid e
 
-  | Flx_types.BEXPR_apply_stack (bid, _, e) ->
+  | Flx_bexpr.BEXPR_apply_stack (bid, _, e) ->
       print_endline "BEXPR_apply_stack";
       codegen_apply_stack state bsym_table builder sr bid e
 
-  | Flx_types.BEXPR_apply_struct (index, _, e) ->
+  | Flx_bexpr.BEXPR_apply_struct (index, _, e) ->
       print_endline "BEXPR_apply_struct";
       assert false
 
-  | Flx_types.BEXPR_tuple es ->
+  | Flx_bexpr.BEXPR_tuple es ->
       print_endline "BEXPR_tuple";
       codegen_struct state bsym_table builder sr es btype
 
-  | Flx_types.BEXPR_record es ->
+  | Flx_bexpr.BEXPR_record es ->
       print_endline "BEXPR_record";
       codegen_struct state bsym_table builder sr (List.map snd es) btype
 
-  | Flx_types.BEXPR_variant (string, e) ->
+  | Flx_bexpr.BEXPR_variant (string, e) ->
       print_endline "BEXPR_variant";
       let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
-  | Flx_types.BEXPR_get_n (n, e) ->
+  | Flx_bexpr.BEXPR_get_n (n, e) ->
       print_endline "BEXPR_get_n";
       let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
-  | Flx_types.BEXPR_closure (bid, ts) ->
+  | Flx_bexpr.BEXPR_closure (bid, ts) ->
       print_endline ("BEXPR_closure: " ^ name_of_index state bsym_table bid ts);
       begin try Hashtbl.find state.value_bindings bid with Not_found ->
         Flx_exceptions.clierr sr ("Unable to find index " ^
           Flx_print.string_of_bid bid)
       end
 
-  | Flx_types.BEXPR_case (index, btype) ->
+  | Flx_bexpr.BEXPR_case (index, btype) ->
       print_endline "BEXPR_case";
       begin match btype with
       | Flx_types.BTYP_sum _
@@ -389,33 +389,33 @@ let rec codegen_expr state bsym_table builder sr tbexpr =
           assert false
       end
 
-  | Flx_types.BEXPR_match_case (int, e) ->
+  | Flx_bexpr.BEXPR_match_case (int, e) ->
       print_endline "BEXPR_match_case";
       let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
-  | Flx_types.BEXPR_case_arg (int, e) ->
+  | Flx_bexpr.BEXPR_case_arg (int, e) ->
       print_endline "BEXPR_case_arg";
       let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
-  | Flx_types.BEXPR_case_index e ->
+  | Flx_bexpr.BEXPR_case_index e ->
       print_endline "BEXPR_case_index";
       let _ = codegen_expr state bsym_table builder sr e in
       assert false
 
-  | Flx_types.BEXPR_expr (string, btype) ->
+  | Flx_bexpr.BEXPR_expr (string, btype) ->
       print_endline "BEXPR_expr";
       assert false
 
-  | Flx_types.BEXPR_range_check (e1, e2, e3) ->
+  | Flx_bexpr.BEXPR_range_check (e1, e2, e3) ->
       print_endline "BEXPR_range_check";
       let _ = codegen_expr state bsym_table builder sr e1 in
       let _ = codegen_expr state bsym_table builder sr e2 in
       let _ = codegen_expr state bsym_table builder sr e3 in
       assert false
 
-  | Flx_types.BEXPR_coerce (tbexpr_t, btype) ->
+  | Flx_bexpr.BEXPR_coerce (tbexpr, btype) ->
       print_endline "BEXPR_coerce";
       assert false
 
@@ -451,7 +451,7 @@ and codegen_deref state bsym_table builder sr ((bexpr,_) as e) =
 
   (* Literal values aren't dereferenced. *)
   match bexpr with
-  | Flx_types.BEXPR_literal _ -> e
+  | Flx_bexpr.BEXPR_literal _ -> e
   | _ ->
       (* Dereference only if we've gotten a pointer *)
       match Llvm.classify_type (Llvm.type_of e) with
@@ -479,7 +479,7 @@ and codegen_apply sr f args name builder =
 and codegen_apply_direct state bsym_table builder sr bid e =
   let es =
     match e with
-    | Flx_types.BEXPR_tuple es, _ -> es
+    | Flx_bexpr.BEXPR_tuple es, _ -> es
     | _ -> [e]
   in
 
@@ -503,7 +503,7 @@ and codegen_apply_stack state bsym_table builder sr bid e =
   (* First get all the arguments. *)
   let es =
     match e with
-    | Flx_types.BEXPR_tuple es, _ -> es
+    | Flx_bexpr.BEXPR_tuple es, _ -> es
     | _ -> [e]
   in
   let es = List.map (codegen_deref state bsym_table builder sr) es in
@@ -729,7 +729,7 @@ let codegen_bexe state bsym_table builder bexe =
       (* We can only assign to a name *)
       let lhs =
         match lhs with
-        | Flx_types.BEXPR_name (index, _), _ ->
+        | Flx_bexpr.BEXPR_name (index, _), _ ->
             begin try Hashtbl.find state.value_bindings index with Not_found ->
               Flx_exceptions.clierr sr ("Unable to find index " ^
                 Flx_print.string_of_bid index)
@@ -747,13 +747,13 @@ let codegen_bexe state bsym_table builder bexe =
 
       ignore (Llvm.build_store rhs lhs builder)
 
-  | Flx_bexe.BEXE_init (sr, index, ((_, btype) as e)) ->
+  | Flx_bexe.BEXE_init (sr, index, e) ->
       print_endline "BEXE_init";
 
       let lhs = Hashtbl.find state.value_bindings index in
 
       begin match e with
-      | Flx_types.BEXPR_tuple es, _ ->
+      | Flx_bexpr.BEXPR_tuple es, _ ->
           (* If the rhs is a tuple, load it directly. *)
           ignore (load_struct state bsym_table builder sr lhs es)
       | _ ->

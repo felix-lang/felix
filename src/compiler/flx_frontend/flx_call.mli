@@ -34,7 +34,7 @@ val cal_exe_usage:
   usage_table_t -> bid_t -> Flx_bexe.t -> unit
 
 val cal_expr_usage:
-  usage_table_t -> bid_t -> Flx_srcref.t -> tbexpr_t -> unit
+  usage_table_t -> bid_t -> Flx_srcref.t -> Flx_bexpr.t -> unit
 
 val cal_param_usage:
   usage_table_t ->
@@ -54,12 +54,12 @@ val expr_uses:
  BidSet.t ->
  usage_table_t ->
  BidSet.t ->
- tbexpr_t ->
+ Flx_bexpr.t ->
  BidSet.t
 
 val expr_uses_unrestricted:
  sym_state_t ->
  BidSet.t ->
  usage_table_t ->
- tbexpr_t ->
+ Flx_bexpr.t ->
  BidSet.t

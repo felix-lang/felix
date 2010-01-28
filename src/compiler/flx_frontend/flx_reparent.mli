@@ -55,5 +55,5 @@ val remap_expr :
   (bid_t, bid_t) Hashtbl.t ->
   btypecode_t list ->
   int ->
-  tbexpr_t ->
-  tbexpr_t
+  Flx_bexpr.t ->
+  Flx_bexpr.t

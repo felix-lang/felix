@@ -18,7 +18,7 @@ val overload:
   env_t ->
   recstop ->
   (recstop -> Flx_srcref.t -> bid_t -> typecode_t -> btypecode_t) -> (* bind type *)
-  (bid_t -> expr_t -> tbexpr_t) -> (* bind expression in context of i *)
+  (bid_t -> expr_t -> Flx_bexpr.t) -> (* bind expression in context of i *)
   (bid_t -> qualified_name_t -> entry_set_t * typecode_t list) ->
   Flx_srcref.t ->
   entry_kind_t list ->

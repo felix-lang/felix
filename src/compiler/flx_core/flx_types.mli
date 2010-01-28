@@ -155,35 +155,6 @@ type biface_t =
   | BIFACE_export_python_fun of Flx_srcref.t * bid_t * string
   | BIFACE_export_type of Flx_srcref.t * btypecode_t * string
 
-type bexpr_t =
-  | BEXPR_deref of tbexpr_t
-  | BEXPR_name of bid_t * btypecode_t list
-  | BEXPR_ref of bid_t * btypecode_t list
-  | BEXPR_likely of tbexpr_t
-  | BEXPR_unlikely of tbexpr_t
-  | BEXPR_address of tbexpr_t
-  | BEXPR_new of tbexpr_t
-  | BEXPR_literal of literal_t
-  | BEXPR_apply of tbexpr_t * tbexpr_t
-  | BEXPR_apply_prim of bid_t * btypecode_t list * tbexpr_t
-  | BEXPR_apply_direct of bid_t * btypecode_t list * tbexpr_t
-  | BEXPR_apply_stack of bid_t * btypecode_t list * tbexpr_t
-  | BEXPR_apply_struct of bid_t * btypecode_t list * tbexpr_t
-  | BEXPR_tuple of tbexpr_t list
-  | BEXPR_record of (string * tbexpr_t) list
-  | BEXPR_variant of string * tbexpr_t
-  | BEXPR_get_n of int * tbexpr_t (* tuple projection *)
-  | BEXPR_closure of bid_t * btypecode_t list
-  | BEXPR_case of int * btypecode_t
-  | BEXPR_match_case of int * tbexpr_t
-  | BEXPR_case_arg of int * tbexpr_t
-  | BEXPR_case_index of tbexpr_t
-  | BEXPR_expr of string * btypecode_t
-  | BEXPR_range_check of tbexpr_t * tbexpr_t * tbexpr_t
-  | BEXPR_coerce of tbexpr_t * btypecode_t
-
-and tbexpr_t = bexpr_t * btypecode_t
-
 type breqs_t = (bid_t * btypecode_t list) list
 type bvs_t = (string * bid_t) list
 
@@ -303,10 +274,6 @@ val btyp_type_set_intersection : btypecode_t list -> btypecode_t
 
 (* -------------------------------------------------------------------------- *)
 
-val ts_of_bexpr : bexpr_t -> btypecode_t list
-
-(* -------------------------------------------------------------------------- *)
-
 (** Prints out a bid_t to a formatter. *)
 val print_bid : Format.formatter -> bid_t -> unit
 
@@ -315,12 +282,6 @@ val print_bvs : Format.formatter -> bvs_t -> unit
 
 (** Prints a btype_qual_t to a formatter. *)
 val print_btype_qual : Format.formatter -> btype_qual_t -> unit
-
-(** Prints a bexpr_t to a formatter. *)
-val print_bexpr : Format.formatter -> bexpr_t -> unit
-
-(** Prints a tbexpr_t to a formatter. *)
-val print_tbexpr : Format.formatter -> tbexpr_t -> unit
 
 (** Prints a btypecode_t to a formatter. *)
 val print_btype : Format.formatter -> btypecode_t -> unit

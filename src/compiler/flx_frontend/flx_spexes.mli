@@ -17,7 +17,7 @@ val gen_body :
   (string, string) Hashtbl.t ->     (* relabel *)
   (bid_t, bid_t) Hashtbl.t ->       (* revariable *)
   Flx_bexe.t list ->                (* the exes *)
-  tbexpr_t ->                       (* argument *)
+  Flx_bexpr.t ->                    (* argument *)
   Flx_srcref.t ->                   (* srcref *)
   bid_t ->                          (* caller *)
   bid_t ->                          (* callee *)

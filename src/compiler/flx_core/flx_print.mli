@@ -16,19 +16,19 @@ val special_string_of_typecode : typecode_t -> string
 val string_of_expr : expr_t -> string
 val string_of_bound_expression :
   Flx_bsym_table.t ->
-  tbexpr_t ->
+  Flx_bexpr.t ->
   string
 val string_of_bound_expression_with_type :
   Flx_bsym_table.t ->
-  tbexpr_t ->
+  Flx_bexpr.t ->
   string
 val sbe:
   Flx_bsym_table.t ->
-  tbexpr_t ->
+  Flx_bexpr.t ->
   string
 val tsbe:
   Flx_bsym_table.t ->
-  tbexpr_t ->
+  Flx_bexpr.t ->
   string
 
 val string_of_properties : property_t list -> string

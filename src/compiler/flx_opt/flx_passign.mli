@@ -7,7 +7,7 @@ open Flx_child
 
 type aentry_t =
   bid_t *
-  (string * btypecode_t * tbexpr_t * BidSet.t)
+  (string * btypecode_t * Flx_bexpr.t * BidSet.t)
 
 val passign:
   sym_state_t ->

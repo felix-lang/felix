@@ -143,23 +143,23 @@ val dual:
   btypecode_t -> btypecode_t
 
 val expr_maybe_matches:
-  bid_t ref -> (* counter for alpha conversion *)
-  bid_t list -> (* type variables *)
-  bid_t list -> (* variables *)
-  tbexpr_t -> (* match term *)
-  tbexpr_t   (* candidate *)
+  bid_t ref ->    (* counter for alpha conversion *)
+  bid_t list ->   (* type variables *)
+  bid_t list ->   (* variables *)
+  Flx_bexpr.t ->  (* match term *)
+  Flx_bexpr.t     (* candidate *)
   ->
   (
-    (bid_t * btypecode_t) list * (* type mgu *)
-    (bid_t * tbexpr_t) list      (* expr mgu *)
+    (bid_t * btypecode_t) list *  (* type mgu *)
+    (bid_t * Flx_bexpr.t) list    (* expr mgu *)
   )
   option
 
 val expr_term_subst:
-  tbexpr_t -> (* candidate *)
-  bid_t ->    (* variable index *)
-  tbexpr_t -> (* variable value *)
-  tbexpr_t    (* candidate with index -> value *)
+  Flx_bexpr.t ->  (* candidate *)
+  bid_t ->        (* variable index *)
+  Flx_bexpr.t ->  (* variable value *)
+  Flx_bexpr.t     (* candidate with index -> value *)
 
 val alpha:
   bid_t ref ->

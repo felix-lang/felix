@@ -175,35 +175,6 @@ type biface_t =
   | BIFACE_export_python_fun of Flx_srcref.t * bid_t * string
   | BIFACE_export_type of Flx_srcref.t * btypecode_t * string
 
-type bexpr_t =
-  | BEXPR_deref of tbexpr_t
-  | BEXPR_name of bid_t * btypecode_t list
-  | BEXPR_ref of bid_t * btypecode_t list
-  | BEXPR_likely of tbexpr_t
-  | BEXPR_unlikely of tbexpr_t
-  | BEXPR_address of tbexpr_t
-  | BEXPR_new of tbexpr_t
-  | BEXPR_literal of literal_t
-  | BEXPR_apply of tbexpr_t * tbexpr_t
-  | BEXPR_apply_prim of bid_t * btypecode_t list * tbexpr_t
-  | BEXPR_apply_direct of bid_t * btypecode_t list * tbexpr_t
-  | BEXPR_apply_stack of bid_t * btypecode_t list * tbexpr_t
-  | BEXPR_apply_struct of bid_t * btypecode_t list * tbexpr_t
-  | BEXPR_tuple of tbexpr_t list
-  | BEXPR_record of (string * tbexpr_t) list
-  | BEXPR_variant of string * tbexpr_t
-  | BEXPR_get_n of int * tbexpr_t (* tuple projection *)
-  | BEXPR_closure of bid_t * btypecode_t list
-  | BEXPR_case of int * btypecode_t
-  | BEXPR_match_case of int * tbexpr_t
-  | BEXPR_case_arg of int * tbexpr_t
-  | BEXPR_case_index of tbexpr_t
-  | BEXPR_expr of string * btypecode_t
-  | BEXPR_range_check of tbexpr_t * tbexpr_t * tbexpr_t
-  | BEXPR_coerce of tbexpr_t * btypecode_t
-
-and tbexpr_t = bexpr_t * btypecode_t
-
 type breqs_t = (bid_t * btypecode_t list) list
 type bvs_t = (string * bid_t) list
 
@@ -359,17 +330,6 @@ let btyp_type_set_intersection ts =
 
 (* -------------------------------------------------------------------------- *)
 
-let ts_of_bexpr = function
-  | BEXPR_name (_, ts)
-  | BEXPR_closure (_, ts)
-  | BEXPR_ref (_, ts)
-  | BEXPR_apply_prim (_, ts, _)
-  | BEXPR_apply_direct (_, ts, _)
-  | BEXPR_apply_struct (_, ts, _) -> ts
-  | _ -> []
-
-(* -------------------------------------------------------------------------- *)
-
 let print_bid = pp_print_int
 
 (** Prints out a bvs_t to a formatter. *)
@@ -380,89 +340,7 @@ let print_bvs f xs =
       print_bid bid
   end f xs
 
-let rec print_bexpr f = function
-  | BEXPR_deref e ->
-      Flx_format.print_variant1 f "BEXPR_deref" print_tbexpr e
-  | BEXPR_name (bid, ts) ->
-      Flx_format.print_variant2 f "BEXPR_name" print_bid bid print_btypes ts
-  | BEXPR_ref (bid, ts) ->
-      Flx_format.print_variant2 f "BEXPR_ref" print_bid bid print_btypes ts
-  | BEXPR_likely e ->
-      Flx_format.print_variant1 f "BEXPR_likely" print_tbexpr e
-  | BEXPR_unlikely e ->
-      Flx_format.print_variant1 f "BEXPR_unlikely" print_tbexpr e
-  | BEXPR_address e ->
-      Flx_format.print_variant1 f "BEXPR_address" print_tbexpr e
-  | BEXPR_new e ->
-      Flx_format.print_variant1 f "BEXPR_new" print_tbexpr e
-  | BEXPR_literal l ->
-      Flx_format.print_variant1 f "BEXPR_literal" print_literal l
-  | BEXPR_apply (e1, e2) ->
-      Flx_format.print_variant2 f "BEXPR_apply" print_tbexpr e1 print_tbexpr e2
-  | BEXPR_apply_prim (bid, ts, e) ->
-      Flx_format.print_variant3 f "BEXPR_apply_prim"
-        print_bid bid
-        print_btypes ts
-        print_tbexpr e
-  | BEXPR_apply_direct (bid, ts, e) ->
-      Flx_format.print_variant3 f "BEXPR_apply_direct"
-        print_bid bid
-        print_btypes ts
-        print_tbexpr e
-  | BEXPR_apply_stack (bid, ts, e) ->
-      Flx_format.print_variant3 f "BEXPR_apply_stack"
-        print_bid bid
-        print_btypes ts
-        print_tbexpr e
-  | BEXPR_apply_struct (bid, ts, e) ->
-      Flx_format.print_variant3 f "BEXPR_apply_struct"
-        print_bid bid
-        print_btypes ts
-        print_tbexpr e
-  | BEXPR_tuple es ->
-      Flx_format.print_variant1 f "BEXPR_tuple" (Flx_list.print print_tbexpr) es
-  | BEXPR_record es ->
-      Flx_format.print_variant1 f "BEXPR_record"
-        (Flx_list.print begin fun f (s, e) ->
-          Flx_format.print_tuple2 f print_string s print_tbexpr e
-        end)
-        es
-  | BEXPR_variant (s, e) ->
-      Flx_format.print_variant2 f "BEXPR_variant" print_string s print_tbexpr e
-  | BEXPR_get_n (i, e) ->
-      Flx_format.print_variant2 f "BEXPR_get_n" pp_print_int i print_tbexpr e
-  | BEXPR_closure (bid, ts) ->
-      Flx_format.print_variant2 f "BEXPR_closure" print_bid bid print_btypes ts
-  | BEXPR_case (i, t) ->
-      Flx_format.print_variant2 f "BEXPR_match_case"
-        pp_print_int i
-        print_btype t
-  | BEXPR_match_case (i, e) ->
-      Flx_format.print_variant2 f "BEXPR_match_case"
-        pp_print_int i
-        print_tbexpr e
-  | BEXPR_case_arg (i, e) ->
-      Flx_format.print_variant2 f "BEXPR_case_arg" pp_print_int i print_tbexpr e
-  | BEXPR_case_index e ->
-      Flx_format.print_variant1 f "BEXPR_case_index" print_tbexpr e
-  | BEXPR_expr (s, t) ->
-      Flx_format.print_variant2 f "BEXPR_closure"
-        Flx_format.print_string s
-        print_btype t
-  | BEXPR_range_check (e1, e2, e3) ->
-      Flx_format.print_variant3 f "BEXPR_range_check"
-        print_tbexpr e1
-        print_tbexpr e2
-        print_tbexpr e3
-  | BEXPR_coerce (e, t) ->
-      Flx_format.print_variant2 f "BEXPR_coerce"
-        print_tbexpr e
-        print_btype t
-
-and print_tbexpr f (e, t) =
-  Flx_format.print_tuple2 f print_bexpr e print_btype t
-
-and print_btpattern f pat =
+let rec print_btpattern f pat =
   Flx_format.print_record3 f
     "pattern" print_btype pat.pattern
     "pattern_vars" BidSet.print pat.pattern_vars

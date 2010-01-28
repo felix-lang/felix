@@ -27,7 +27,7 @@ val uses_tbexpr:
   BidSet.t ref ->
   Flx_bsym_table.t ->
   bool -> (* count inits *)
-  tbexpr_t ->
+  Flx_bexpr.t ->
   unit
 
 val uses:

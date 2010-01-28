@@ -12,7 +12,6 @@ val all_units : btypecode_t list -> bool
 val all_voids : btypecode_t list -> bool
 
 val cmp_literal: literal_t -> literal_t -> bool
-val cmp_tbexpr: tbexpr_t -> tbexpr_t -> bool
 
 val type_of_argtypes :
   typecode_t list ->

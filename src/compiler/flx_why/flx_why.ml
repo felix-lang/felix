@@ -5,6 +5,7 @@ open Flx_util
 open Flx_ast
 open Flx_types
 open Flx_bparameter
+open Flx_bexpr
 open Flx_bbdcl
 open Flx_mtypes2
 open List

@@ -8,10 +8,10 @@ type reg_kind_t =
 ]
 
 type regular_args_t =
-    int list *                            (* alphabet *)
-    int *                                 (* state count *)
-    (int, Flx_types.tbexpr_t) Hashtbl.t * (* state->expression map *)
-    (int * int, int) Hashtbl.t            (* transition matrix *)
+    int list *                      (* alphabet *)
+    int *                           (* state count *)
+    (int, Flx_bexpr.t) Hashtbl.t *  (* state->expression map *)
+    (int * int, int) Hashtbl.t      (* transition matrix *)
 
 let make_dtran nchars nstates matrix =
   (* transition matrix *)

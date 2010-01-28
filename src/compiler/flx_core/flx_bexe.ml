@@ -8,27 +8,27 @@ type t =
   | BEXE_halt of Flx_srcref.t * string  (* for internal use only *)
   | BEXE_trace of Flx_srcref.t * string * string  (* for internal use only *)
   | BEXE_goto of Flx_srcref.t * string  (* for internal use only *)
-  | BEXE_ifgoto of Flx_srcref.t * tbexpr_t * string  (* for internal use only *)
-  | BEXE_call of Flx_srcref.t * tbexpr_t * tbexpr_t
-  | BEXE_call_direct of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
-  | BEXE_call_stack of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
-  | BEXE_call_prim of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
-  | BEXE_jump of Flx_srcref.t * tbexpr_t * tbexpr_t
-  | BEXE_jump_direct of Flx_srcref.t * bid_t * btypecode_t list * tbexpr_t
+  | BEXE_ifgoto of Flx_srcref.t * Flx_bexpr.t * string  (* for internal use only *)
+  | BEXE_call of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
+  | BEXE_call_direct of Flx_srcref.t * bid_t * btypecode_t list * Flx_bexpr.t
+  | BEXE_call_stack of Flx_srcref.t * bid_t * btypecode_t list * Flx_bexpr.t
+  | BEXE_call_prim of Flx_srcref.t * bid_t * btypecode_t list * Flx_bexpr.t
+  | BEXE_jump of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
+  | BEXE_jump_direct of Flx_srcref.t * bid_t * btypecode_t list * Flx_bexpr.t
   | BEXE_svc of Flx_srcref.t * bid_t
-  | BEXE_fun_return of Flx_srcref.t * tbexpr_t
-  | BEXE_yield of Flx_srcref.t * tbexpr_t
+  | BEXE_fun_return of Flx_srcref.t * Flx_bexpr.t
+  | BEXE_yield of Flx_srcref.t * Flx_bexpr.t
   | BEXE_proc_return of Flx_srcref.t
   | BEXE_nop of Flx_srcref.t * string
   | BEXE_code of Flx_srcref.t * code_spec_t
   | BEXE_nonreturn_code of Flx_srcref.t * code_spec_t
-  | BEXE_assign of Flx_srcref.t * tbexpr_t * tbexpr_t
-  | BEXE_init of Flx_srcref.t * bid_t * tbexpr_t
+  | BEXE_assign of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
+  | BEXE_init of Flx_srcref.t * bid_t * Flx_bexpr.t
   | BEXE_begin
   | BEXE_end
-  | BEXE_assert of Flx_srcref.t * tbexpr_t
-  | BEXE_assert2 of Flx_srcref.t * Flx_srcref.t * tbexpr_t option * tbexpr_t
-  | BEXE_axiom_check of Flx_srcref.t * tbexpr_t
+  | BEXE_assert of Flx_srcref.t * Flx_bexpr.t
+  | BEXE_assert2 of Flx_srcref.t * Flx_srcref.t * Flx_bexpr.t option * Flx_bexpr.t
+  | BEXE_axiom_check of Flx_srcref.t * Flx_bexpr.t
 
 let get_srcref = function
   | BEXE_goto (sr,_)
@@ -84,42 +84,42 @@ let print f = function
   | BEXE_ifgoto (sr, e, s) ->
       print_variant3 f "BEXE_ifgoto"
         Flx_srcref.print sr
-        print_tbexpr e
+        Flx_bexpr.print e
         print_string s
   | BEXE_call (sr, p, a) ->
       print_variant3 f "BEXE_call"
         Flx_srcref.print sr
-        print_tbexpr p
-        print_tbexpr a
+        Flx_bexpr.print p
+        Flx_bexpr.print a
   | BEXE_call_direct (sr, bid, ts, a) ->
       print_variant4 f "BEXE_call_direct"
         Flx_srcref.print sr
         print_bid bid
         print_btypes ts
-        print_tbexpr a
+        Flx_bexpr.print a
   | BEXE_call_stack (sr, bid, ts, a) ->
       print_variant4 f "BEXE_call_stack"
         Flx_srcref.print sr
         print_bid bid
         print_btypes ts
-        print_tbexpr a
+        Flx_bexpr.print a
   | BEXE_call_prim (sr, bid, ts, a) ->
       print_variant4 f "BEXE_call_prim"
         Flx_srcref.print sr
         print_bid bid
         print_btypes ts
-        print_tbexpr a
+        Flx_bexpr.print a
   | BEXE_jump (sr, p, a) ->
       print_variant3 f "BEXE_jump"
         Flx_srcref.print sr
-        print_tbexpr p
-        print_tbexpr a
+        Flx_bexpr.print p
+        Flx_bexpr.print a
   | BEXE_jump_direct (sr, bid, ts, a) ->
       print_variant4 f "BEXE_jump_direct"
         Flx_srcref.print sr
         print_bid bid
         print_btypes ts
-        print_tbexpr a
+        Flx_bexpr.print a
   | BEXE_svc (sr, bid) ->
       print_variant2 f "BEXE_srv"
         Flx_srcref.print sr
@@ -127,11 +127,11 @@ let print f = function
   | BEXE_fun_return (sr, e) ->
       print_variant2 f "BEXE_fun_return"
         Flx_srcref.print sr
-        print_tbexpr e
+        Flx_bexpr.print e
   | BEXE_yield (sr, e) ->
       print_variant2 f "BEXE_yield"
         Flx_srcref.print sr
-        print_tbexpr e
+        Flx_bexpr.print e
   | BEXE_proc_return sr ->
       print_variant1 f "BEXE_proc_return"
         Flx_srcref.print sr
@@ -150,13 +150,13 @@ let print f = function
   | BEXE_assign (sr, l, r) ->
       print_variant3 f "BEXE_assign"
         Flx_srcref.print sr
-        print_tbexpr l
-        print_tbexpr r
+        Flx_bexpr.print l
+        Flx_bexpr.print r
   | BEXE_init (sr, l, r) ->
       print_variant3 f "BEXE_jump"
         Flx_srcref.print sr
         print_bid l
-        print_tbexpr r
+        Flx_bexpr.print r
   | BEXE_begin ->
       print_variant0 f "BEXE_begin"
   | BEXE_end ->
@@ -164,14 +164,14 @@ let print f = function
   | BEXE_assert (sr, e) ->
       print_variant2 f "BEXE_assert"
         Flx_srcref.print sr
-        print_tbexpr e
+        Flx_bexpr.print e
   | BEXE_assert2 (sr1, sr2, e1, e2) ->
       print_variant4 f "BEXE_assert2"
         Flx_srcref.print sr1
         Flx_srcref.print sr2
-        (print_opt print_tbexpr) e1
-        print_tbexpr e2
+        (print_opt Flx_bexpr.print) e1
+        Flx_bexpr.print e2
   | BEXE_axiom_check (sr, e) ->
       print_variant2 f "BEXE_axiom_check"
         Flx_srcref.print sr
-        print_tbexpr e
+        Flx_bexpr.print e

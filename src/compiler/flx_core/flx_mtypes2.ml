@@ -8,8 +8,8 @@ type instance_registry_t = (bid_t * btypecode_t list, bid_t) Hashtbl.t
 type typevarmap_t = (Flx_types.bid_t, Flx_types.btypecode_t) Hashtbl.t
 
 type baxiom_method_t = [
-  | `BPredicate of Flx_types.tbexpr_t
-  | `BEquation of Flx_types.tbexpr_t * Flx_types.tbexpr_t
+  | `BPredicate of Flx_bexpr.t
+  | `BEquation of Flx_bexpr.t * Flx_bexpr.t
 ]
 
 type axiom_t =
@@ -25,8 +25,8 @@ type reduction_t =
   Flx_ast.id_t *
   Flx_types.bvs_t *
   Flx_bparameter.t list *
-  Flx_types.tbexpr_t *
-  Flx_types.tbexpr_t
+  Flx_bexpr.t *
+  Flx_bexpr.t
 
 type felix_compiler_options_t =
 {
