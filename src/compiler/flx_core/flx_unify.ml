@@ -883,12 +883,9 @@ let expr_term_subst e1 i e2 =
   in s e1
 
 let rec expr_unification counter
-  (eqns: (tbexpr_t * tbexpr_t) list)
-  (tdvars: BidSet.t)
-  (edvars: BidSet.t)
-:
-  (bid_t * btypecode_t) list *
-  (bid_t * tbexpr_t) list
+  eqns
+  tdvars
+  edvars
 =
   (*
   print_endline ( "Tdvars = { " ^ catmap ", " si (BidSet.elements tdvars) ^ "}");
@@ -1035,14 +1032,7 @@ let rec expr_unification counter
 
 let setoflist ls = List.fold_left (fun s i -> BidSet.add i s) BidSet.empty ls
 
-let expr_maybe_matches counter
-  (tvars:bid_t list) (evars:bid_t list)
-  (le:tbexpr_t)
-  (re:tbexpr_t)
-:
-  ((bid_t * btypecode_t) list *
-  (bid_t * tbexpr_t) list) option
-=
+let expr_maybe_matches counter tvars evars le re =
   let tvars = setoflist tvars in
   let evars = setoflist evars in
   let eqns = [le,re] in

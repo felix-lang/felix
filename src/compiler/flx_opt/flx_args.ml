@@ -18,7 +18,7 @@ open Flx_reparent
 open Flx_spexes
 open Flx_foldvars
 
-let unpack syms bsym_table f ps a : tbexpr_t list =
+let unpack syms bsym_table f ps a =
   match ps with
   | [] -> []   (* arg should be unit *)
   | [_] -> [a] (* one param, one arg *)

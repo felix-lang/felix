@@ -34,7 +34,7 @@ let fixtype bsym_table t =
 
 let id x = x
 
-let fixexpr bsym_table e : tbexpr_t =
+let fixexpr bsym_table e =
   let rec aux e =
     match map_tbexpr id aux (fixtype bsym_table) e with
     | BEXPR_apply ( (BEXPR_closure(i,_),_),a),_

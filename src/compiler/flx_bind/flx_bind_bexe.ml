@@ -104,7 +104,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
       )
     else
     begin
-      let reorder: tbexpr_t list option =
+      let reorder =
         match be1 with
         | BEXPR_closure (i,ts) ->
           begin match t2 with

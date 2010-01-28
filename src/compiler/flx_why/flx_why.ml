@@ -157,7 +157,7 @@ let flx_bool = btyp_unitsum 2
 let isbool2 t =
   t = btyp_array (flx_bool, flx_bool)
 
-let rec why_expr syms bsym_table (e: tbexpr_t) =
+let rec why_expr syms bsym_table e =
   let ee e = why_expr syms bsym_table e in
   match e with
   | BEXPR_apply ((BEXPR_closure (i,ts),_),b),_ ->
@@ -195,7 +195,7 @@ let rec why_expr syms bsym_table (e: tbexpr_t) =
   | _ -> "UNKEXPR"
 
 
-let rec why_prop syms bsym_table logics (e: tbexpr_t) =
+let rec why_prop syms bsym_table logics e =
   let ee e = why_expr syms bsym_table e in
   let ep e = why_prop syms bsym_table logics e in
   match e with

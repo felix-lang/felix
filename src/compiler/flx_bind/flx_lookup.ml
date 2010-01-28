@@ -2071,7 +2071,7 @@ and inner_type_of_index
     )
   end
 
-and cal_apply state bsym_table sr rs ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
+and cal_apply state bsym_table sr rs ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
   let mkenv i = build_env state bsym_table (Some i) in
   let be i e = bind_expression' state bsym_table (mkenv i) rs e [] in
   (*
@@ -2083,7 +2083,7 @@ and cal_apply state bsym_table sr rs ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbe
   *)
   r
 
-and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tbexpr_t =
+and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
   let rest,reorder =
     match unfold t1 with
     | BTYP_function (argt,rest)
@@ -2091,7 +2091,7 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) : tb
       if type_match state.syms.counter argt t2
       then rest, None
       else
-      let reorder: tbexpr_t list option =
+      let reorder =
         match be1 with
         | BEXPR_closure (i,ts) ->
             begin match t2 with
@@ -2290,7 +2290,7 @@ and lookup_qn_with_sig'
   env (rs:recstop)
   (qn:qualified_name_t)
   (signs:btypecode_t list)
-: tbexpr_t =
+=
   (*
   print_endline ("[lookup_qn_with_sig] " ^ string_of_qualified_name qn);
   print_endline ("sigs = " ^ catmap "," (sbt bsym_table) signs);
@@ -2790,7 +2790,7 @@ and lookup_name_with_sig
   (name : string)
   (ts : btypecode_t list)
   (t2:btypecode_t list)
-: tbexpr_t =
+=
   (*
   print_endline ("[lookup_name_with_sig] " ^ name ^
     " of " ^ catmap "," (sbt bsym_table) t2)
@@ -2813,7 +2813,7 @@ and lookup_name_with_sig
       caller_env env rs
       sra srn name ts t2
     with
-    | Some result -> (result:>tbexpr_t)
+    | Some result -> result
     | None ->
       let tbx=
         lookup_name_with_sig
@@ -2821,7 +2821,7 @@ and lookup_name_with_sig
           bsym_table
           sra srn
           caller_env tail rs name ts t2
-       in (tbx:>tbexpr_t)
+       in tbx
 
 and lookup_type_name_with_sig
   state
@@ -2950,7 +2950,6 @@ and handle_function
   name
   ts
   index
-: tbexpr_t
 =
   match get_data state.sym_table index with
   {
@@ -3078,7 +3077,6 @@ and lookup_name_in_table_dirs_with_sig
   dirs
   caller_env env (rs:recstop)
   sra srn name (ts:btypecode_t list) (t2: btypecode_t list)
-: tbexpr_t option
 =
   (*
   print_endline
@@ -3139,7 +3137,7 @@ and lookup_name_in_table_dirs_with_sig
             (*
             print_endline "handle_function (1)";
             *)
-            let tb : tbexpr_t =
+            let tb =
               handle_function
               state
               bsym_table
@@ -3282,7 +3280,7 @@ and lookup_name_in_table_dirs_with_sig
             (*
             print_endline "handle_function (4)";
             *)
-            let tb : tbexpr_t =
+            let tb =
               handle_function
               state
               bsym_table
@@ -3540,10 +3538,10 @@ and handle_map sr (f,ft) (a,at) =
       *)
       failwith "MAP NOT IMPLEMENTED"
 
-and bind_expression_with_args state bsym_table env e args : tbexpr_t =
+and bind_expression_with_args state bsym_table env e args =
   bind_expression' state bsym_table env rsground e args
 
-and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
+and bind_expression' state bsym_table env (rs:recstop) e args =
   let sr = src_of_expr e in
   (*
   print_endline ("[bind_expression'] " ^ string_of_expr e);
@@ -4527,7 +4525,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args : tbexpr_t =
         let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
         let alst = List.sort (fun (a,_) (b,_) -> compare a b) alst in
         let ialst = List.map2 (fun (k,t) i -> k,(t,i)) alst (nlist na) in
-        let a:tbexpr_t list  =
+        let a =
           List.map (fun (name,ct)->
             let (t,j) =
               try List.assoc name ialst
@@ -6162,7 +6160,7 @@ let lookup_sn_in_env
   | `AST_suffix (sr,(qn,suf)) ->
     let bsuf = inner_bind_type state bsym_table env sr rsground suf in
     (* OUCH HACKERY *)
-    let ((be,t) : tbexpr_t) =
+    let (be,t) =
       lookup_qn_with_sig' state bsym_table sr sr env rsground qn [bsuf]
     in match be with
     | BEXPR_name (index,ts) ->

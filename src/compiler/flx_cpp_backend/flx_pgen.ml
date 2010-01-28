@@ -33,11 +33,11 @@ let shape_of syms bsym_table tn t =
 let gen_prim_call
   syms
   bsym_table
-  (tsub:btypecode_t -> btypecode_t)
-  (ge: Flx_srcref.t -> tbexpr_t -> cexpr_t)
-  (ct:string)
-  (ts:btypecode_t list)
-  ((arg,argt as a) : tbexpr_t)
+  tsub
+  ge
+  ct
+  ts
+  (arg,argt as a)
   ret sr sr2 prec
 =
   (*
