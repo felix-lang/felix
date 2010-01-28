@@ -915,7 +915,7 @@ let rec expr_unification counter
          be computed directly from the term.
       *)
       begin match (lhse,rhse) with
-      | (BEXPR_name (i,[]) as ei), (BEXPR_name (j,[]) as ej)->
+      | (BEXPR_name (i,[]) as ei), (BEXPR_name (j,[]) as ej) ->
         (*
         print_endline ("Equated variables " ^ si i ^ " <-> " ^ si j);
         *)
@@ -931,17 +931,17 @@ let rec expr_unification counter
         if not (BidSet.mem i edvars) then raise Not_found;
         s := Some (i,(x,rhst))
 
-      | x,BEXPR_name (i,_) ->
+      | x, BEXPR_name (i,_) ->
         if not (BidSet.mem i edvars) then raise Not_found;
         s := Some (i,(x,lhst))
 
-      | BEXPR_apply (f1,e1),BEXPR_apply(f2,e2) ->
+      | BEXPR_apply (f1,e1), BEXPR_apply (f2,e2) ->
         (*
         print_endline "matched applications";
         *)
         eqns := (f1,f2) :: (e1,e2) :: !eqns
 
-      | BEXPR_closure (i,ts1),BEXPR_closure(j,ts2) when i = j -> ()
+      | BEXPR_closure (i,ts1), BEXPR_closure (j,ts2) when i = j -> ()
 
       | BEXPR_apply_prim _, _
       | BEXPR_apply_direct _, _
@@ -967,18 +967,18 @@ let rec expr_unification counter
 
       *)
 
-      | BEXPR_coerce (e,t),BEXPR_coerce (e',t') ->
+      | BEXPR_coerce (e,t), BEXPR_coerce (e',t') ->
         teqns := (t,t') :: !teqns;
         eqns := (e,e') :: !eqns
 
-      | BEXPR_get_n (n1,e1),BEXPR_get_n (n2,e2) when n1 = n2 ->
+      | BEXPR_get_n (n1,e1), BEXPR_get_n (n2,e2) when n1 = n2 ->
         eqns := (e1,e2) :: !eqns
 
-      | BEXPR_deref e1,BEXPR_deref e2  ->
+      | BEXPR_deref e1, BEXPR_deref e2  ->
         eqns := (e1,e2) :: !eqns
 
       (* CHEAT HERE .. ignore ts .. fix later *)
-      | BEXPR_ref (i1,ts1),BEXPR_ref (i2,ts2) when i1 = i2 -> ()
+      | BEXPR_ref (i1,ts1), BEXPR_ref (i2,ts2) when i1 = i2 -> ()
 
       | (BEXPR_tuple ls1, BEXPR_tuple ls2)
         when List.length ls1 = List.length ls2 ->
