@@ -31,14 +31,14 @@ let add (h:usage_table_t) k j sr =
   )
 
 let rec uses_type h k sr t =
-  let ut t = uses_type h k sr t in
+  let ft t = uses_type h k sr t in
   match t with
   | BTYP_inst (i,ts)
     ->
       add h k i sr;
-      List.iter ut ts
+      List.iter ft ts
 
-  | _ -> Flx_btype.iter ut t
+  | _ -> Flx_btype.iter ~ft t
 
 let faulty_req bsym_table i =
   let bsym = Flx_bsym_table.find bsym_table i in

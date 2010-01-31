@@ -151,11 +151,19 @@ val int_of_unitsum : t -> int
 (* -------------------------------------------------------------------------- *)
 
 (** Recursively iterate over each bound type and call the function on it. *)
-val iter : (t -> unit) -> t -> unit
+val iter :
+  ?fi:(Flx_types.bid_t -> unit) ->
+  ?ft:(t -> unit) ->
+  t ->
+  unit
 
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
-val map : (t -> t) -> t -> t
+val map :
+  ?fi:(Flx_types.bid_t -> bid_t) ->
+  ?ft:(t -> t) ->
+  t ->
+  t
 
 (* -------------------------------------------------------------------------- *)
 

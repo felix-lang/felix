@@ -59,8 +59,8 @@ let remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e =
   in
   let auxt t =
     let t' = varmap_subst varmap t in
-    let rec s t = tmap (Flx_btype.map s t) in
-    let t' = s t' in
+    let rec ft t = tmap (Flx_btype.map ~ft t) in
+    let t' = ft t' in
     (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
@@ -123,8 +123,8 @@ let remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_le
   in
   let auxt t =
     let t' = varmap_subst varmap t in
-    let rec s t = tmap (Flx_btype.map s t) in
-    let t' = s t' in
+    let rec ft t = tmap (Flx_btype.map ~ft t) in
+    let t' = ft t' in
     (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
@@ -192,8 +192,8 @@ let remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len reqs 
   in
   let auxt t =
     let t' = varmap_subst varmap t in
-    let rec s t = tmap (Flx_btype.map s t) in
-    let t' = s t' in
+    let rec ft t = tmap (Flx_btype.map ~ft t) in
+    let t' = ft t' in
     (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
@@ -249,8 +249,8 @@ let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
   in
   let auxt t =
     let t' = varmap_subst varmap t in
-    let rec s t = tmap (Flx_btype.map s t) in
-    let t' = s t' in
+    let rec ft t = tmap (Flx_btype.map ~ft t) in
+    let t' = ft t' in
     (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in

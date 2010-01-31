@@ -38,12 +38,12 @@ changing the data structures.
 let nop x = ()
 
 let rec uses_type used bsym_table count_inits t =
-  let ut t = uses_type used bsym_table count_inits t in
+  let ft t = uses_type used bsym_table count_inits t in
   match t with
   | BTYP_inst (i,ts)
     ->
       uses used bsym_table count_inits i; (* don't care on uses inits? *)
-      List.iter ut ts
+      List.iter ft ts
 
   (*
   | BTYP_type
@@ -51,7 +51,7 @@ let rec uses_type used bsym_table count_inits t =
       failwith "[uses_type] Unexpected metatype"
   *)
 
-  | _ -> Flx_btype.iter ut t
+  | _ -> Flx_btype.iter ~ft t
 
 and uses_exes used bsym_table count_inits exes =
   List.iter (uses_exe used bsym_table count_inits) exes

@@ -254,7 +254,7 @@ let type_has_fn cache syms bsym_table children t =
         end
       | x ->
         try
-          Flx_btype.iter aux x;
+          Flx_btype.iter ~ft:aux x;
           Hashtbl.replace cache t `Safe
         with Unsafe ->
           Hashtbl.replace cache t `Unsafe;
@@ -305,7 +305,7 @@ let type_has_ptr cache syms bsym_table children t =
         end
       | x ->
         try
-          Flx_btype.iter aux x;
+          Flx_btype.iter ~ft:aux x;
           Hashtbl.replace cache t `Safe
         with Unsafe ->
           Hashtbl.replace cache t `Unsafe;
