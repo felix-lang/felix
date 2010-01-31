@@ -154,6 +154,15 @@ let map
 
 (* -------------------------------------------------------------------------- *)
 
+(** Simplify the bound exe. *)
+let reduce exe =
+  match map ~fe:Flx_bexpr.reduce exe with
+  | BEXE_call (sr,(Flx_bexpr.BEXPR_closure (i,ts),_),a) ->
+      BEXE_call_direct (sr,i,ts,a)
+  | x -> x
+
+(* -------------------------------------------------------------------------- *)
+
 (** Prints a bexe to a formatter. *)
 let print f = function
   | BEXE_label (sr, s) ->

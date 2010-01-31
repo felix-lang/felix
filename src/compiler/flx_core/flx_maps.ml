@@ -239,26 +239,3 @@ let scan_expr e =
   let add x = ls := Flx_ast.src_of_expr x :: !ls in
   iter_expr add e;
   Flx_list.uniq_list !ls
-
-let reduce_tbexpr e =
-  let rec aux e =
-    match Flx_bexpr.map ~fe:aux e with
-    | BEXPR_apply((BEXPR_closure (i,ts),_),a),t ->
-      BEXPR_apply_direct (i,ts,a),t
-
-    | BEXPR_get_n (n,((BEXPR_tuple ls),_)),_ ->
-      List.nth ls n
-
-    | BEXPR_deref (BEXPR_ref (i,ts),_),t ->
-      BEXPR_name (i,ts),t
-
-    | BEXPR_deref (BEXPR_address (e,t),_),_ -> (e,t)
-    | BEXPR_address (BEXPR_deref (e,t),_),_ -> (e,t)
-
-    | x -> x
-  in aux e
-
-let reduce_bexe exe =
-  match Flx_bexe.map ~fe:reduce_tbexpr exe with
-  | BEXE_call (sr,(BEXPR_closure (i,ts),_),a) -> BEXE_call_direct (sr,i,ts,a)
-  | x -> x

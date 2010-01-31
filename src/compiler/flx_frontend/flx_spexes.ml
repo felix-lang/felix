@@ -113,7 +113,7 @@ let gen_body syms (uses,child_map,bsym_table) id
     ", callee=" ^ id ^ "<" ^ string_of_bid callee ^ ">"
   );
   (*
-  let argument = reduce_tbexpr bsym_table argument in
+  let argument = Flx_bexpr.reduce bsym_table argument in
   *)
   let psis = Flx_bparameter.get_bids ps in
 
@@ -384,7 +384,7 @@ let gen_body syms (uses,child_map,bsym_table) id
             | _ -> BEXPR_get_n (!n,p),prjt
           in
           (*
-          let prj = reduce_tbexpr bsym_table pj in
+          let prj = Flx_bexpr.reduce bsym_table pj in
           *)
           let prj = pj in
           let index = revar ix in
@@ -436,7 +436,7 @@ let gen_body syms (uses,child_map,bsym_table) id
           | p -> BEXPR_get_n (!n,p),prjt
         in
         (*
-        let prj = reduce_tbexpr bsym_table pj in
+        let prj = Flx_bexpr.reduce bsym_table pj in
         *)
         let prj = pj in
         let index = revar ix in

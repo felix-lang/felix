@@ -217,6 +217,21 @@ let map ?(fi=fun i -> i) ?(ft=fun t -> t) ?(fe= fun e -> e) e =
 
 (* -------------------------------------------------------------------------- *)
 
+(** Simplify the bound expression. *)
+let reduce e =
+  let rec fe e =
+    match map ~fe e with
+    | BEXPR_apply ((BEXPR_closure (i,ts),_),a),t ->
+        BEXPR_apply_direct (i,ts,a),t
+    | BEXPR_get_n (n,((BEXPR_tuple ls),_)),_ -> List.nth ls n
+    | BEXPR_deref (BEXPR_ref (i,ts),_),t -> BEXPR_name (i,ts),t
+    | BEXPR_deref (BEXPR_address (e,t),_),_ -> (e,t)
+    | BEXPR_address (BEXPR_deref (e,t),_),_ -> (e,t)
+    | x -> x
+  in fe e
+
+(* -------------------------------------------------------------------------- *)
+
 let rec print_bexpr f = function
   | BEXPR_deref e ->
       Flx_format.print_variant1 f "BEXPR_deref" print e

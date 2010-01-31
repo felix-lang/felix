@@ -1117,7 +1117,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     end
 
 and gen_expr syms bsym_table this e vs ts sr =
-  let e = Flx_maps.reduce_tbexpr e in
+  let e = Flx_bexpr.reduce e in
   let s =
     try gen_expr' syms bsym_table this e vs ts sr
     with Unknown_prec p -> clierr sr
