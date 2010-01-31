@@ -80,12 +80,9 @@ let rec check_abstract_expr syms rls ((x,t) as e) =
 
 
 let check_abstract_exe syms rls exe =
- iter_bexe 
-   ignore 
-   (check_abstract_expr syms rls)
-   (check_abstract_type syms rls)
-   ignore 
-   ignore 
+ Flx_bexe.iter
+   ~ft:(check_abstract_type syms rls)
+   ~fe:(check_abstract_expr syms rls)
    exe 
 
 
@@ -247,7 +244,7 @@ let cal_polyvars syms bsym_table child_map =
     | BEXE_jump_direct (sr,i,ts,e) ->
         BEXE_jump_direct (sr, i, polyfix syms polyvars i ts,
           cast_a i (fixexpr e))
-    | x -> map_bexe ident fixexpr ident ident ident x
+    | x -> Flx_bexe.map ~fe:fixexpr x
   end) bsym_table;
 
   let polyfix2 i ts =
@@ -384,5 +381,5 @@ let cal_polyvars syms bsym_table child_map =
         BEXE_call_stack (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
     | BEXE_jump_direct (sr,i,ts,e) ->
         BEXE_jump_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
-    | x -> map_bexe ident fixexpr2 ident ident ident x
+    | x -> Flx_bexe.map ~fe:fixexpr2 x
   end) bsym_table

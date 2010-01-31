@@ -29,7 +29,34 @@ type t =
   | BEXE_assert2 of Flx_srcref.t * Flx_srcref.t * Flx_bexpr.t option * Flx_bexpr.t
   | BEXE_axiom_check of Flx_srcref.t * Flx_bexpr.t
 
+(* -------------------------------------------------------------------------- *)
+
 val get_srcref : t -> Flx_srcref.t
+
+(* -------------------------------------------------------------------------- *)
+
+(** Recursively iterate over each bound exe and call the function on it. *)
+val iter :
+  ?fi:(Flx_types.bid_t -> unit) ->
+  ?ft:(Flx_btype.t -> unit) ->
+  ?fe:(Flx_bexpr.t -> unit) ->
+  ?fl:(string -> unit) ->
+  ?fldef:(string -> unit) ->
+  t ->
+  unit
+
+(** Recursively iterate over each bound type and transform it with the
+ * function. *)
+val map :
+  ?fi:(Flx_types.bid_t -> Flx_types.bid_t) ->
+  ?ft:(Flx_btype.t -> Flx_btype.t) ->
+  ?fe:(Flx_bexpr.t -> Flx_bexpr.t) ->
+  ?fl:(string -> string) ->
+  ?fldef:(string -> string) ->
+  t ->
+  t
+
+(* -------------------------------------------------------------------------- *)
 
 (** Prints a bexe to a formatter. *)
 val print : Format.formatter -> t -> unit

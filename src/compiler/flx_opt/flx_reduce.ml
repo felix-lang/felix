@@ -74,7 +74,7 @@ let rec reduce_exe syms bsym_table reductions count exe =
       let em e = ematch syms bsym_table changed red tvars evars e in
       (* apply reduction top down AND bottom up *)
       let rec em' e = let e = em e in em (Flx_bexpr.map ~fe:em' e) in
-      map_bexe id em' id id id exe
+      Flx_bexe.map ~fe:em' exe
     )
     exe
     reductions

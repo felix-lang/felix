@@ -38,7 +38,7 @@ let expr_find_xclosures syms cls e =
   Flx_bexpr.iter ~fe:(add_xclosure syms cls) e
 
 let exe_find_xclosure syms cls exe =
-  iter_bexe ignore (expr_find_xclosures syms cls) ignore ignore ignore exe
+  Flx_bexe.iter ~fe:(expr_find_xclosures syms cls) exe
 
 let exes_find_xclosure syms cls exes =
   iter (exe_find_xclosure syms cls) exes
@@ -94,7 +94,7 @@ let rec check_proj_wrap_expr n i e = match e with
 
 let check_proj_wrap_exe syms bsym_table n i x =
   try
-    iter_bexe ignore (check_proj_wrap_expr n i) ignore ignore ignore x
+    Flx_bexe.iter ~fe:(check_proj_wrap_expr n i) x
   with BadUse ->
     (*
     print_endline ("Bad use of " ^ si i ^ ".(" ^ si n ^") in " ^
@@ -551,7 +551,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
           let _,t' = nth ls k in
           BEXE_assign (sr,(BEXPR_get_n (k,x),t'),undo_expr e)
 
-        | x -> map_bexe ident undo_expr ident ident ident x
+        | x -> Flx_bexe.map ~fe:undo_expr x
         in
         let exes = map undo_st exes in
         if syms.compiler_options.print_flag then

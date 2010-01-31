@@ -327,7 +327,7 @@ let scan_bexpr syms bsym_table allocable_types e : unit =
   Flx_bexpr.iter ~fe:aux e
 
 let scan_exe syms bsym_table allocable_types exe : unit =
-  iter_bexe id (scan_bexpr syms bsym_table allocable_types) id id id exe
+  Flx_bexe.iter ~fe:(scan_bexpr syms bsym_table allocable_types) exe
 
 let scan_exes syms bsym_table allocable_types exes : unit =
   iter (scan_exe syms bsym_table allocable_types) exes

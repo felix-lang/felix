@@ -11,22 +11,6 @@ val map_expr:
   expr_t ->
   expr_t
 
-val iter_bexe:
-  (bid_t -> unit) ->
-  (Flx_bexpr.t -> unit) ->
-  (Flx_btype.t -> unit) ->
-  (string -> unit) ->
-  (string -> unit) ->
-  Flx_bexe.t -> unit
-
-val map_bexe:
-  (bid_t -> bid_t) ->
-  (Flx_bexpr.t -> Flx_bexpr.t) ->
-  (Flx_btype.t -> Flx_btype.t) ->
-  (string -> string) ->
-  (string -> string) ->
-  Flx_bexe.t -> Flx_bexe.t
-
 (** Simplify the bound expression. *)
 val reduce_tbexpr:
   Flx_bexpr.t -> (** The bound expression. *)

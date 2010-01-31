@@ -30,6 +30,8 @@ type t =
   | BEXE_assert2 of Flx_srcref.t * Flx_srcref.t * Flx_bexpr.t option * Flx_bexpr.t
   | BEXE_axiom_check of Flx_srcref.t * Flx_bexpr.t
 
+(* -------------------------------------------------------------------------- *)
+
 let get_srcref = function
   | BEXE_goto (sr,_)
   | BEXE_assert (sr,_)
@@ -57,6 +59,100 @@ let get_srcref = function
   | BEXE_init (sr,_,_) -> sr
   | BEXE_begin
   | BEXE_end -> Flx_srcref.dummy_sr
+
+(* -------------------------------------------------------------------------- *)
+
+(** Recursively iterate over each bound exe and call the function on it. *)
+let iter
+  ?(fi=fun _ -> ())
+  ?(ft=fun _ -> ())
+  ?(fe=fun _ -> ())
+  ?(fl=fun _ -> ())
+  ?(fldef=fun _ -> ())
+  exe
+=
+  match exe with
+  | BEXE_call_prim (sr,i,ts,e2)
+  | BEXE_call_stack (sr,i,ts,e2)
+  | BEXE_call_direct (sr,i,ts,e2)
+  | BEXE_jump_direct (sr,i,ts,e2) ->
+      fi i;
+      List.iter ft ts;
+      fe e2
+  | BEXE_assign (sr,e1,e2)
+  | BEXE_call (sr,e1,e2)
+  | BEXE_jump (sr,e1,e2) ->
+      fe e1;
+      fe e2
+  | BEXE_ifgoto (sr,e,lab) ->
+      fe e;
+      fl lab
+  | BEXE_label (sr,lab) -> fldef lab
+  | BEXE_goto (sr,lab) -> fl lab
+  | BEXE_fun_return (sr,e) -> fe e
+  | BEXE_yield (sr,e) -> fe e
+  | BEXE_axiom_check (_,e) -> fe e
+  | BEXE_assert2 (_,_,e1,e2) ->
+      (match e1 with Some e -> fe e | None->());
+      fe e2
+  | BEXE_assert (_,e) -> fe e
+  | BEXE_init (sr,i,e) -> fi i; fe e
+  | BEXE_svc (sr,i) -> fi i
+  | BEXE_halt _
+  | BEXE_trace _
+  | BEXE_code _
+  | BEXE_nonreturn_code _
+  | BEXE_proc_return _
+  | BEXE_comment _
+  | BEXE_nop _
+  | BEXE_begin
+  | BEXE_end -> ()
+
+(** Recursively iterate over each bound type and transform it with the
+ * function. *)
+let map
+  ?(fi=fun i -> i)
+  ?(ft=fun t -> t)
+  ?(fe=fun e -> e)
+  ?(fl=fun l -> l)
+  ?(fldef=fun l -> l)
+  exe
+=
+  match exe with
+  | BEXE_call_prim (sr,i,ts,e2)  ->
+      BEXE_call_prim (sr, fi i, List.map ft ts, fe e2)
+  | BEXE_call_stack (sr,i,ts,e2) ->
+      BEXE_call_stack (sr, fi i, List.map ft ts, fe e2)
+  | BEXE_call_direct (sr,i,ts,e2) ->
+      BEXE_call_direct (sr, fi i, List.map ft ts,fe e2)
+  | BEXE_jump_direct (sr,i,ts,e2) ->
+      BEXE_jump_direct (sr, fi i, List.map ft ts,fe e2)
+  | BEXE_assign (sr,e1,e2) -> BEXE_assign (sr,fe e1,fe e2)
+  | BEXE_call (sr,e1,e2) -> BEXE_call (sr,fe e1, fe e2)
+  | BEXE_jump (sr,e1,e2) -> BEXE_jump (sr,fe e1, fe e2)
+  | BEXE_ifgoto (sr,e,lab) -> BEXE_ifgoto (sr,fe e,fl lab)
+  | BEXE_label (sr,lab) -> BEXE_label (sr,fldef lab)
+  | BEXE_goto (sr,lab) -> BEXE_goto (sr,fl lab)
+  | BEXE_fun_return (sr,e) -> BEXE_fun_return (sr,fe e)
+  | BEXE_yield (sr,e) -> BEXE_yield (sr,fe e)
+  | BEXE_assert (sr,e) -> BEXE_assert (sr, fe e)
+  | BEXE_assert2 (sr,sr2,e1, e2) ->
+      let e1 = match e1 with Some e1 -> Some (fe e1) | None -> None in
+      BEXE_assert2 (sr, sr2, e1, fe e2)
+  | BEXE_axiom_check (sr,e) -> BEXE_axiom_check (sr, fe e)
+  | BEXE_init (sr,i,e) -> BEXE_init (sr, fi i, fe e)
+  | BEXE_svc (sr,i) -> BEXE_svc (sr, fi i)
+  | BEXE_halt _
+  | BEXE_trace _
+  | BEXE_code _
+  | BEXE_nonreturn_code _
+  | BEXE_proc_return _
+  | BEXE_comment _
+  | BEXE_nop _
+  | BEXE_begin
+  | BEXE_end -> exe
+
+(* -------------------------------------------------------------------------- *)
 
 (** Prints a bexe to a formatter. *)
 let print f = function

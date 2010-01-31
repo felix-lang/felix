@@ -70,7 +70,7 @@ let find_uncurry_exe syms bsym_table uncurry_map vs exe =
   | x -> ()
   end
   ;
-  iter_bexe ignore (find_uncurry_expr syms bsym_table uncurry_map vs) ignore ignore ignore exe
+  Flx_bexe.iter ~fe:(find_uncurry_expr syms bsym_table uncurry_map vs) exe
 
 let find_uncurry_exes syms bsym_table uncurry_map vs exes =
   iter (find_uncurry_exe syms bsym_table uncurry_map vs) exes
@@ -121,7 +121,7 @@ let uncurry_exe syms bsym_table uncurry_map vs exe =
     BEXE_call (sr,(BEXPR_closure (k,ts),t),ab)
   | x -> x
   in
-  map_bexe id (uncurry_expr syms bsym_table uncurry_map vs) id id id exe
+  Flx_bexe.map ~fe:(uncurry_expr syms bsym_table uncurry_map vs) exe
 
 let uncurry_exes syms bsym_table uncurry_map vs exes = map (uncurry_exe syms bsym_table uncurry_map vs) exes
 
@@ -288,7 +288,10 @@ let uncurry_gen syms bsym_table child_map : int =
         let psc = map (fun ({pindex=i} as p) -> {p with pindex = revar i}) psc in
         let ps = ps @ psc in
         let rec revare e = Flx_bexpr.map ~fi:revar ~fe:revare e in
-        let exes = map (fun exe -> map_bexe revar revare id id id exe) exesc in
+        let exes = List.map
+          (fun exe -> Flx_bexe.map ~fi:revar ~fe:revare exe)
+          exesc
+        in
         begin match bsymi.Flx_bsym.parent with
         | Some p -> Flx_child.add_child child_map p k
         | None -> ()

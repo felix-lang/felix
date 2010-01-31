@@ -60,7 +60,7 @@ and cal_exe_usage h k exe =
   let ue e = process_expr h k sr e in
   let ui i = add h k i sr in
   let ut t = uses_type h k sr t in
-  iter_bexe ui ue ut ignore ignore exe
+  Flx_bexe.iter ~fi:ui ~ft:ut ~fe:ue exe
 
 let cal_expr_usage h k sr e =
   process_expr h k sr e

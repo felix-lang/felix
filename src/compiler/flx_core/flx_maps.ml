@@ -240,127 +240,6 @@ let scan_expr e =
   iter_expr add e;
   Flx_list.uniq_list !ls
 
-(* type invariant mapping *)
-
-let iter_bexe fi fe ft fl fldef exe =
-  match exe with
-  | BEXE_call_prim (sr,i,ts,e2)
-  | BEXE_call_stack (sr,i,ts,e2)
-  | BEXE_call_direct (sr,i,ts,e2)
-  | BEXE_jump_direct (sr,i,ts,e2)
-    -> fi i; List.iter ft ts; fe e2
-
-  | BEXE_assign (sr,e1,e2)
-  | BEXE_call (sr,e1,e2)
-  | BEXE_jump (sr,e1,e2)
-    -> fe e1; fe e2
-
-  | BEXE_ifgoto (sr,e,lab)
-    -> fe e; fl lab
-
-  | BEXE_label (sr,lab)
-    -> fldef lab
-
-  | BEXE_goto (sr,lab)
-    -> fl lab
-
-  | BEXE_fun_return (sr,e)
-    -> fe e
-
-  | BEXE_yield (sr,e)
-    -> fe e
-
-  | BEXE_axiom_check (_,e)
-    -> fe e
-
-  | BEXE_assert2 (_,_,e1,e2)
-    -> (match e1 with Some e -> fe e | None->()); fe e2
-
-  | BEXE_assert (_,e)
-    -> fe e
-
-  | BEXE_init (sr,i,e)
-    -> fi i; fe e
-
-  | BEXE_svc (sr,i)
-    -> fi i
-
-  | BEXE_halt _
-  | BEXE_trace _
-  | BEXE_code _
-  | BEXE_nonreturn_code _
-  | BEXE_proc_return _
-  | BEXE_comment _
-  | BEXE_nop _
-  | BEXE_begin
-  | BEXE_end
-    -> ()
-
-let map_bexe fi fe ft fl fldef exe =
-  match exe with
-  | BEXE_call_prim (sr,i,ts,e2)  ->
-    BEXE_call_prim (sr,fi i,List.map ft ts, fe e2)
-
-  | BEXE_call_stack (sr,i,ts,e2) ->
-    BEXE_call_stack (sr,fi i, List.map ft ts, fe e2)
-
-  | BEXE_call_direct (sr,i,ts,e2) ->
-    BEXE_call_direct (sr,fi i,List.map ft ts,fe e2)
-
-  | BEXE_jump_direct (sr,i,ts,e2) ->
-    BEXE_jump_direct (sr,fi i,List.map ft ts,fe e2)
-
-  | BEXE_assign (sr,e1,e2) ->
-    BEXE_assign (sr,fe e1,fe e2)
-
-  | BEXE_call (sr,e1,e2) ->
-    BEXE_call (sr,fe e1, fe e2)
-
-  | BEXE_jump (sr,e1,e2) ->
-    BEXE_jump (sr,fe e1, fe e2)
-
-  | BEXE_ifgoto (sr,e,lab)  ->
-    BEXE_ifgoto (sr,fe e,fl lab)
-
-  | BEXE_label (sr,lab) ->
-    BEXE_label (sr,fldef lab)
-
-  | BEXE_goto (sr,lab) ->
-    BEXE_goto (sr,fl lab)
-
-  | BEXE_fun_return (sr,e) ->
-    BEXE_fun_return (sr,fe e)
-
-  | BEXE_yield (sr,e) ->
-    BEXE_yield (sr,fe e)
-
-  | BEXE_assert (sr,e) ->
-    BEXE_assert (sr, fe e)
-
-  | BEXE_assert2 (sr,sr2,e1, e2) ->
-     let e1 = match e1 with Some e1 -> Some (fe e1) | None -> None in
-    BEXE_assert2 (sr, sr2,e1, fe e2)
-
-  | BEXE_axiom_check (sr,e) ->
-    BEXE_axiom_check (sr, fe e)
-
-  | BEXE_init (sr,i,e) ->
-    BEXE_init (sr,fi i,fe e)
-
-  | BEXE_svc (sr,i) ->
-    BEXE_svc (sr,fi i)
-
-  | BEXE_halt _
-  | BEXE_trace _
-  | BEXE_code _
-  | BEXE_nonreturn_code _
-  | BEXE_proc_return _
-  | BEXE_comment _
-  | BEXE_nop _
-  | BEXE_begin
-  | BEXE_end
-    -> exe
-
 let reduce_tbexpr e =
   let rec aux e =
     match Flx_bexpr.map ~fe:aux e with
@@ -380,7 +259,6 @@ let reduce_tbexpr e =
   in aux e
 
 let reduce_bexe exe =
-  match map_bexe ident reduce_tbexpr ident ident ident exe with
-  | BEXE_call (sr,(BEXPR_closure (i,ts),_),a) ->
-    BEXE_call_direct (sr,i,ts,a)
+  match Flx_bexe.map ~fe:reduce_tbexpr exe with
+  | BEXE_call (sr,(BEXPR_closure (i,ts),_),a) -> BEXE_call_direct (sr,i,ts,a)
   | x -> x

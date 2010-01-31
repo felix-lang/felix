@@ -591,7 +591,7 @@ let fixup_exe syms bsym_table exe = match exe with
     let a  = fixup_expr syms bsym_table a in
     BEXE_call_direct (sr,j,ts,a)
   | x ->
-    map_bexe id (fixup_expr syms bsym_table) id id id x
+    Flx_bexe.map ~fe:(fixup_expr syms bsym_table) x
 
 let fixup_exes syms bsym_table exes = map (fixup_exe syms bsym_table) exes
 

@@ -173,7 +173,7 @@ let remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_le
     BEXE_call_stack (sr,i,ts, ge e2)
     *)
 
-  | x -> map_bexe revar ge ident relab relab x
+  | x -> Flx_bexe.map ~fi:revar ~fe:ge ~fl:relab ~fldef:relab x
   in
   (*
   print_endline ("remapped_exe " ^ string_of_bexe sym_table bsym_table 0 exe);

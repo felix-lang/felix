@@ -686,7 +686,7 @@ let enstack_calls syms bsym_table child_map fn_cache ptr_cache self exes =
 
       | x -> x
       in
-        map_bexe id ea id id id exe
+      Flx_bexe.map ~fe:ea exe
     )
     exes
   in

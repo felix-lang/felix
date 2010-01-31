@@ -39,7 +39,7 @@ let find_mkproc_expr mkproc_map e =
   Flx_bexpr.iter ~fe:aux e
 
 let find_mkproc_exe mkproc_map exe =
-  iter_bexe ignore (find_mkproc_expr mkproc_map) ignore ignore ignore exe
+  Flx_bexe.iter ~fe:(find_mkproc_expr mkproc_map) exe
 
 let find_mkproc_exes mkproc_map exes =
   iter (find_mkproc_exe mkproc_map) exes
@@ -105,7 +105,7 @@ let mkproc_exe syms bsym_table sr this mkproc_map vs exe =
     exes := xs @ !exes;
     e
   in
-  let exe' = map_bexe ident tocall ident ident ident exe in
+  let exe' = Flx_bexe.map ~fe:tocall exe in
   let exes = !exes @ [exe'] in
   if syms.compiler_options.print_flag then
   begin
@@ -310,7 +310,10 @@ let mkproc_gen syms bsym_table child_map =
         let rec revare e = Flx_bexpr.map ~fi:revar ~fe:revare e in
 
         (* remap all the exes to use the new parameters and children *)
-        let exes = map (fun exe -> map_bexe revar revare ident ident ident exe) exes in
+        let exes = List.map
+          (fun exe -> Flx_bexe.map ~fi:revar ~fe:revare exe)
+          exes
+        in
 
         (* add new procedure as child of original function parent *)
         begin match bsym.Flx_bsym.parent with

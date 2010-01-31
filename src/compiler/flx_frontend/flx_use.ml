@@ -76,7 +76,7 @@ and uses_exe used bsym_table count_inits exe =
      then ue lhs;
      ue rhs
   | _ ->
-    iter_bexe ui ue ut nop nop exe
+    Flx_bexe.iter ~fi:ui ~ft:ut ~fe:ue exe
 
 and uses_tbexpr used bsym_table count_inits ((e,t) as x) =
   let ue e = uses_tbexpr used bsym_table count_inits e in

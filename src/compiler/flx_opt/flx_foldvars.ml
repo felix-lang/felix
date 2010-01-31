@@ -249,9 +249,7 @@ let fold_vars syms bsym_table child_map uses i ps exes =
               | x -> x
             in subi j y, 2 (* take init into account *)
         in
-        let elimi exe =
-          map_bexe ident subi ident ident ident exe
-        in
+        let elimi exe = Flx_bexe.map ~fe:subi exe in
         let subs = ref true in
         let elim exes = map
           (fun exe ->

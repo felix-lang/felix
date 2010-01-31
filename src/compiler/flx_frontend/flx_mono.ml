@@ -131,7 +131,7 @@ let fixup_exe syms bsym_table fi mt exe =
   *)
   let fe e = fixup_expr syms bsym_table fi mt e in
   let result =
-  match map_bexe id fe mt id id exe with
+  match Flx_bexe.map ~ft:mt ~fe exe with
   | BEXE_call_direct (sr, i,ts,a) -> assert false
     (*
     let i,ts = fi i ts in

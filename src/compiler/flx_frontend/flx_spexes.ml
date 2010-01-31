@@ -101,7 +101,7 @@ let rec rpl syms argmap x =
   | x -> x
 
 let subarg syms bsym_table argmap exe =
-  map_bexe idt (rpl syms argmap) idt idt idt exe
+  Flx_bexe.map ~fe:(rpl syms argmap) exe
 
 (* NOTE: result is in reversed order *)
 let gen_body syms (uses,child_map,bsym_table) id

@@ -47,7 +47,7 @@ let fixexpr bsym_table e =
   in fe e
 
 let fixbexe bsym_table x =
-  map_bexe id (fixexpr bsym_table) (fixtype bsym_table) id id x
+  Flx_bexe.map ~ft:(fixtype bsym_table) ~fe:(fixexpr bsym_table) x
 
 let fixbexes bsym_table bexes = map (fixbexe bsym_table) bexes
 
