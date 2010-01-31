@@ -8,7 +8,7 @@ class sink_base:
     self.last_source_line = -1
     self.last_inhibit_sref = 1
     self.closed = 0
-    for k in kwds.keys():
+    for k in list(kwds.keys()):
       self.__dict__[k]=kwds[k]
 
   def raw_close(self): pass
@@ -28,13 +28,13 @@ class sink_base:
     for line in lines: self.raw_writeline(line)
 
   def writelines(self,lines):
-    self.write(string.join(lines,''))
+    self.write(''.join(lines))
 
   def get_sink_name(self):
     return self.name
 
   def write(self,text):
-    lines = string.split(text,'\n')
+    lines = text.split('\n')
     for line in lines[:-1]:
       self.raw_writeline(line)
     self.raw_write(lines[-1])

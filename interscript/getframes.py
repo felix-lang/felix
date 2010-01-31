@@ -73,48 +73,48 @@ longoptdict = {
 
 
 def print_help():
-  print 'Usage: python iscr.py [options] <filename>'
-  print 'Short options:'
-  keys = shortoptdict.keys()
+  print('Usage: python iscr.py [options] <filename>')
+  print('Short options:')
+  keys = list(shortoptdict.keys())
   keys.sort()
   for k in keys: print_help1(k)
-  print 'Long options:'
-  keys = longoptdict.keys()
+  print('Long options:')
+  keys = list(longoptdict.keys())
   keys.sort()
   for k in keys: print_help1(k)
 
 def print_help1(k):
-  if longoptdict.has_key(k):
+  if k in longoptdict:
     usek = '--'+ k
     values = longoptdict[k]
-  elif longoptdict.has_key(k+'='):
+  elif k+'=' in longoptdict:
     usek = '--'+ k + '='
     values = longoptdict[k+'=']
-  elif shortoptdict.has_key(k):
+  elif k in shortoptdict:
     usek = '-' + k
     values = shortoptdict[k]
-  elif shortoptdict.has_key(k+'='):
+  elif k+'=' in shortoptdict:
     usek = '-' + k + '='
     values = shortoptdict[k+'=']
   else:
     usek = k
     values = 'Unknown option'
 
-  print '  '+usek,
+  print('  '+usek, end=' ')
   if values is None:
-    print
+    print()
   elif type(values) is type({}):
-    print
-    for value in values.keys():
-      print '   '+str(value)+':',values[value]
+    print()
+    for value in list(values.keys()):
+      print('   '+str(value)+':',values[value])
   else:
-    print values
+    print(values)
 
 #line 125 "interscript/src/interscript_options.ipk"
 class argument_frame:
   def copy(self):
      other = argument_frame()
-     for k in self.__dict__.keys():
+     for k in list(self.__dict__.keys()):
        setattr(other,k,getattr(self,k))
      return other
 
@@ -181,31 +181,31 @@ def getoption_frames(args): # note: has side effects!
         elif opt == 'cache-prefix': frame.cache_prefix = value
         elif opt == 'html-eol':
           if sys.platform == 'Win32':
-            print 'CRLF kludge ignored for Win32'
-            print 'Use on Unix only, to make html files in DOS format'
+            print('CRLF kludge ignored for Win32')
+            print('Use on Unix only, to make html files in DOS format')
           else:
             frame.html_eol = '\r\n'
         elif opt == 'tangler-directory': frame.tangler_directory = value
         elif opt == 'homepage':
-          print 'http://interscript.sf.net'
+          print('http://interscript.sf.net')
         elif opt == 'author':
-          print 'mailto:skaller@users.sf.net <John Skaller>'
+          print('mailto:skaller@users.sf.net <John Skaller>')
         elif opt == 'copyright':
-          print 'Copyright (C)1998 John Skaller, Australia'
+          print('Copyright (C)1998 John Skaller, Australia')
         elif opt == 'licence':
-          print 'Free for any use'
+          print('Free for any use')
         elif opt == 'executable':
-          print sys.executable
+          print(sys.executable)
         elif opt == 'python-version':
-          print sys.version
+          print(sys.version)
         elif opt == 'python':
           try:
             if 'script' in process_options.trace:
-              print 'Executing python:'
-              print value
-            exec value
+              print('Executing python:')
+              print(value)
+            exec(value)
           except:
-            print 'Error in python option'
+            print('Error in python option')
             traceback.print_exc()
         elif opt == 'logfile':
           process_options.logfile = value
@@ -215,14 +215,14 @@ def getoption_frames(args): # note: has side effects!
           process_options.logfile_mode = 'w'
         elif opt in ['help', 'usage']:
           print_help()
-          print
+          print()
         else:
           # FIX: all options should be OK (user options?)
-          print 'Nonstandard option',opt,'value',value,'accepted as user option'
+          print('Nonstandard option',opt,'value',value,'accepted as user option')
           frame.useropt[opt]=value
-        if 'options' in process_options.trace: print 'Option:',opt,value
+        if 'options' in process_options.trace: print('Option:',opt,value)
       except:
-        print 'Warning: Option',opt,'has bad value',value
+        print('Warning: Option',opt,'has bad value',value)
         prefix = ''
         while opt[0]=='-': prefix = prefix + '-'; opt=opt[1:]
         print_help1(opt)

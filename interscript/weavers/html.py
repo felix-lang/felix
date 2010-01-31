@@ -33,7 +33,7 @@ class html_weaver(weaver_base):
   def __init__(self, pass_frame,writer,language='',**kwds):
     weaver_base.__init__(self,pass_frame,language)
     if 'weavers' in self.process.trace:
-      print 'html weaver, writer',writer.get_sink_name()
+      print('html weaver, writer',writer.get_sink_name())
     self.protocol = 'text/html'
     self.persistent_frame['protocol']=self.protocol
     self.sink = writer
@@ -48,7 +48,7 @@ class html_weaver(weaver_base):
     self.keywords = kwds
     self.tags.append('html') # this 'tags' has nothing to do with html tags!
     self.toc = []
-    if kwds.has_key('title'):
+    if 'title' in kwds:
       self.title=kwds['title']
     else:
       title = self.sink.name
@@ -145,7 +145,7 @@ class html_weaver(weaver_base):
         language+'</EM> section to <STRONG>'+\
         filename+'['+str(secno)+']</STRONG></SMALL>')
       dict = self.master.section_index
-      if dict.has_key(filename):
+      if filename in dict:
         nsections = len(dict[filename])
         for i in range(nsections):
           self._write_section_ref(filename, i)
@@ -264,7 +264,7 @@ class html_weaver(weaver_base):
     self.new_heading(level)
     hnumber = self.get_formatted_heading_number('.')+'. '
     hprefix = ''
-    if self.keywords.has_key('heading_prefix'):
+    if 'heading_prefix' in self.keywords:
       hprefix = self.keywords['heading_prefix']
     ahref = '<A HREF="#'+anchor+'">'+hprefix+hnumber+str(text)+'</A>'
 
@@ -415,7 +415,7 @@ class html_weaver(weaver_base):
     ids = self.master.ids
     if not ids:
       ids = self.pass_frame.ids
-    keys = ids.keys()
+    keys = list(ids.keys())
     keys.sort()
     if hlevel>0:
       self.head(hlevel,'Index of Identifiers')
@@ -439,7 +439,7 @@ class html_weaver(weaver_base):
     ids = self.master.classes
     if not ids:
       ids = self.pass_frame.classes
-    keys = ids.keys()
+    keys = list(ids.keys())
     keys.sort()
     if hlevel>0:
       self.head(hlevel,'Index of Classes')
@@ -490,7 +490,7 @@ class html_weaver(weaver_base):
     if hlevel>0:
       self.head(hlevel,h)
     if self.master.fdict:
-      skeys = self.master.fdict.keys()
+      skeys = list(self.master.fdict.keys())
       skeys.sort()
 
       h = 'Unchanged Files'
@@ -572,7 +572,7 @@ class html_weaver(weaver_base):
     for d in data:
       self._write('<TD VALIGN="TOP">')
       if d:
-        lines = string.split(d,'\n')
+        lines = d.split('\n')
         for line in lines[:-1]:
           self.write(line)
           self._write('<BR>')
@@ -606,7 +606,7 @@ class html_weaver(weaver_base):
     self.write_tagged('TITLE', self.title)
 
     w( '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">')
-    if kwds.has_key('author'):
+    if 'author' in kwds:
       author =kwds['author']
       w( '<META NAME="Author" CONTENT="'+author+'">')
     w( '<META NAME="Generator" CONTENT="Interscript">')
@@ -616,20 +616,20 @@ class html_weaver(weaver_base):
     w('<LINK REL=STYLESHEET TYPE="text/css" HREF="user.css" TITLE="User Overrride">')
     w( '</HEAD>')
     w( '<BODY LANG="'+self.language+'">')
-    if kwds.has_key('pagehead'):
+    if 'pagehead' in kwds:
       self._write(kwds['pagehead'])
-    if kwds.has_key('title'):
-      if kwds.has_key('anchor') and kwds['anchor']!='':
+    if 'title' in kwds:
+      if 'anchor' in kwds and kwds['anchor']!='':
         atag = ' ID="'+kwds['anchor']+'" TITLE="'+kwds['anchor']+'" '
       else: atag= ''
       self._writeline('<H1 '+atag+'ALIGN="CENTER">'+self.title+'</H1>')
-    if kwds.has_key('heading_level_offset'):
+    if 'heading_level_offset' in kwds:
       self.heading_level_offset = kwds['heading_level_offset']
 
   def epilog(self):
     kwds = self.keywords
     self._endmode()
-    if kwds.has_key('pagefoot'):
+    if 'pagefoot' in kwds:
       self._write(kwds['pagefoot'])
     self._writeline('</BODY>')
     self._writeline('</HTML>')

@@ -40,9 +40,9 @@ class markup_filter(multiplexor):
            for weaver in self.base:
              weaver.write(data[startpos:midpos])
          for weaver in self.base:
-           exec 'weaver.'+self.startmethod+'()'
+           exec('weaver.'+self.startmethod+'()')
            weaver.write(match.group(1))
-           exec 'weaver.'+self.endmethod+'()'
+           exec('weaver.'+self.endmethod+'()')
          startpos = endpos
          match = self.regexp.search(data,startpos)
        if startpos != len(data):

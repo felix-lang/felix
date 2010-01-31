@@ -22,7 +22,7 @@ class lout_weaver(weaver_base):
         weaver_base.__init__(self, pass_frame, language)
         self.sink = writer
         if 'weavers' in self.process.trace:
-          print 'initialising Lout weaver, writer',writer.get_sink_name()
+          print(('initialising Lout weaver, writer',writer.get_sink_name()))
         self.protocol = 'Lout'
         self.persistent_frame['protocol']=self.protocol
         self.tags = ['lout']
@@ -47,7 +47,7 @@ class lout_weaver(weaver_base):
 
 #line 153 "interscript/src/lout_weaver.ipk"
     def prolog(self,kwds):
-        if kwds.has_key('Include'):
+        if 'Include' in kwds:
             includes = kwds['Include']
             if type(includes) != type([]):
                 includes = [includes]
@@ -56,7 +56,7 @@ class lout_weaver(weaver_base):
                 self._writeline("@Include{%s}" % i)
 
         self.documentClass = 'book'
-        if kwds.has_key('documentclass'):
+        if 'documentclass' in kwds:
             self.documentClass = kwds['documentclass']
 
         self._writeline("@Include{ " + self.documentClass + "}")
@@ -81,10 +81,10 @@ class lout_weaver(weaver_base):
                                        ]
 
         for k in docOptions:
-            if kwds.has_key(k):
+            if k in kwds:
                 self._writeline("    @%s{%s}" % (k, kwds[k]))
 
-        if kwds.has_key("heading_level_offset"):
+        if "heading_level_offset" in kwds:
             self.heading_level_offset = int(kwds["heading_level_offset"])
         else:
             self.heading_level_offset = 0
@@ -137,12 +137,12 @@ class lout_weaver(weaver_base):
     def cvt_code(self, text):
         n = []
         for c in text:
-            if lout_weaver.loutCharMap.has_key(c):
+            if c in lout_weaver.loutCharMap:
                 n.append(lout_weaver.loutCharMap[c])
             else:
                 n.append(c)
 
-        return string.join(n,'')
+        return ''.join(n)
 
     def cvt_text(self, text):
         if self.translating:
@@ -154,36 +154,36 @@ class lout_weaver(weaver_base):
         self.translating = translation
 #line 335 "interscript/src/lout_weaver.ipk"
     def identifier_reference(self, hlevel=2, *args, **kwds):
-        print "identifier_reference(hlevel=%d, %s, %s)" % (hlevel,
-                                                           `args`,
-                                                           `kwds`)
+        print(("identifier_reference(hlevel=%d, %r, %r)" % (hlevel,
+                                                           args,
+                                                           kwds)))
         #RESOLVE
         return
 #line 343 "interscript/src/lout_weaver.ipk"
     def class_reference(self, hlevel=2, *args, **kwds):
-        print "class_reference(hlevel=%d, %s, %s)" % (hlevel,
-                                                           `args`,
-                                                           `kwds`)
+        print(("class_reference(hlevel=%d, %r, %r)" % (hlevel,
+                                                      args,
+                                                      kwds)))
         #RESOLVE
         return
 #line 351 "interscript/src/lout_weaver.ipk"
     def print_contents(self, *args, **kwds):
-        print "print_contents(%s, %s)" % (`args`,
-                                          `kwds`)
+        print(("print_contents(%r, %r)" % (args,
+                                          kwds)))
         #RESOLVE
         return
 #line 358 "interscript/src/lout_weaver.ipk"
     def print_file_list(self, hlevel=2, *args, **kwds):
-        print "print_file_list(hlevel=%d, %s, %s)" % (hlevel,
-                                                      `args`,
-                                                      `kwds`)
+        print(("print_file_list(hlevel=%d, %r, %r)" % (hlevel,
+                                                      args,
+                                                      kwds)))
         #RESOLVE
         return
 #line 366 "interscript/src/lout_weaver.ipk"
     def print_source_list(self, hlevel=2, *args, **kwds):
-        print "print_source_list(hlevel=%d, %s, %s)" % (hlevel,
-                                                        `args`,
-                                                        `kwds`)
+        print(("print_source_list(hlevel=%d, %r, %r)" % (hlevel,
+                                                        args,
+                                                        kwds)))
         #RESOLVE
         return
 #line 399 "interscript/src/lout_weaver.ipk"
@@ -266,7 +266,7 @@ class lout_weaver(weaver_base):
                }
     def write_code_fragment(self,frag,markup=None):
         haveMarkup = 0
-        if markup and lout_weaver.markups.has_key(markup):
+        if markup and markup in lout_weaver.markups:
             self._write(lout_weaver.markups[markup])
             haveMarkup = 1
 
@@ -279,8 +279,8 @@ class lout_weaver(weaver_base):
 
 #line 582 "interscript/src/lout_weaver.ipk"
     def head(self,level, text, **kwds):
-      atext=kwds.get('short_text')
-      anchor=kwds.get('key','')
+        atext=kwds.get('short_text')
+        anchor=kwds.get('key','')
         level = level + self.heading_level_offset
         if level > self.maxSectionLevels:
             level = self.maxSectionLevels
@@ -340,27 +340,27 @@ class lout_weaver(weaver_base):
 #line 728 "interscript/src/lout_weaver.ipk"
     def begin_table(self, *headings, **kwds):
         self._writeline("@Table")
-        if kwds.has_key("caption"):
+        if "caption" in kwds:
             self._writeline("    @Caption{%s}" % self.cvt_text(kwds['caption']))
 
-        if kwds.has_key("tag"):
+        if "tag" in kwds:
             self._writeline("    @Tag{%s}" % kwds['tag'])
 
-        if kwds.has_key("location"):
+        if "location" in kwds:
             self._writeline("    @Location{%s}" % kwds['location'])
 
         self._writeline("{ @Tab")
         # Run through the rule options and do the right thing
 
         for opt in ("above", "below", "side", "between"):
-            if kwds.has_key(opt):
+            if opt in kwds:
                 self._write("%s{%s} " % (opt, kwds[opt]))
         self._writeline()
 
         numCols = len(headings)
         colName = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         if numCols > len(colName):
-            print "lout_weaver.begin_table: Using first %d columns" % len(colName)
+            print("lout_weaver.begin_table: Using first %d columns" % len(colName))
             numCols = len(colName)
 
         self._write("    @Fmta{")
@@ -385,7 +385,7 @@ class lout_weaver(weaver_base):
         colName = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         numCols = len(data)
         if numCols > colName:
-            print "lout_weaver.table_row: Using first %d columns" % len(colName)
+            print("lout_weaver.table_row: Using first %d columns" % len(colName))
             numCols = len(colName)
 
         self._write('    @Rowa ')

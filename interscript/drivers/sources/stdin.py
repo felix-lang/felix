@@ -10,7 +10,7 @@ import string
 
 class stdin_source(source):
   def __init__(self, encoding='utf8',**kwds):
-    apply(source.__init__,(self,encoding), kwds)
+    source.__init__(*(self,encoding), **kwds)
     self.name = 'standard input'
     self.closed = 0
 
@@ -20,5 +20,5 @@ class stdin_source(source):
     line = sys.stdin.readline()
     if len(line)==0: raise eof
     self.lines_read = self.lines_read + 1
-    return string.rstrip(line)
+    return line.rstrip()
 

@@ -43,7 +43,7 @@ class stacking_weaver(multiplexor):
     self.persistent_frame['language']=language
     if 'weavers' in self.process.trace:
       self.process.acquire_object(self,'WEB WEAVER')
-      print 'language=',language
+      print('language=',language)
     self.tags = ['web','html']
     if language: self.tags.append(language)
     self.tr_phrase = lambda x,y=language: tr_phrase(x,y)
@@ -54,11 +54,11 @@ class stacking_weaver(multiplexor):
 
     self.toc_depth = self.keywords.get('toc_depth',99)
     parent_sink = parent_weaver.sink.name
-    self.basedir = string.join(string.split(parent_sink,'/')[:-1],'/')+'/'
+    self.basedir = '/'.join(parent_sink.split('/')[:-1])+'/'
     if self.basedir == '/': self.basedir = ''
     #print 'Base directory for stacking weaver is',self.basedir
-    self.home_file = string.split(parent_sink,'/')[-1]
-    if kwds.has_key('title'):
+    self.home_file = parent_sink.split('/')[-1]
+    if 'title' in kwds:
       self.title = kwds['title']
     elif hasattr(parent_weaver,'title'):
       self.title = parent_weaver.title
@@ -113,7 +113,7 @@ class stacking_weaver(multiplexor):
     w('<TITLE>'+self.title+'</TITLE>')
 
     w( '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">')
-    if self.keywords.has_key('author'):
+    if 'author' in self.keywords:
       author =self.keywords['author']
       self.frames_sink.writeline( '<META NAME="Author" CONTENT="'+author+'">')
     version = self.process.global_frame.version
@@ -186,7 +186,7 @@ class stacking_weaver(multiplexor):
 
 
   def print_table(self,dict,sink):
-    keys = dict.keys()
+    keys = list(dict.keys())
     keys.sort()
     w = sink.writeline
     w('<TABLE COLS="2" BORDER="1" CELLPADDING="2">')
@@ -196,7 +196,7 @@ class stacking_weaver(multiplexor):
       old_df = ''
       for sf,sc,df,dc in refs:
         key = (sf, sc)
-        if self.anchor_file.has_key(key):
+        if key in self.anchor_file:
           child = self.anchor_file[key]
         else:
           child = ''
@@ -225,14 +225,14 @@ class stacking_weaver(multiplexor):
     self.register_anchor(label, href)
 
   def register_anchor(self, label, anchor):
-    if not self.persistent_frame.has_key('anchors'):
+    if 'anchors' not in self.persistent_frame:
       self.persistent_frame['anchors']  = {}
     self.persistent_frame['anchors'][label]=anchor
 
   def get_anchor(self, label):
     href = None
-    if self.persistent_frame.has_key('anchors'):
-      if self.persistent_frame['anchors'].has_key(label):
+    if 'anchors' in self.persistent_frame:
+      if label in self.persistent_frame['anchors']:
         href =self.persistent_frame['anchors'][label]
     return href
 
@@ -259,7 +259,7 @@ class stacking_weaver(multiplexor):
     filename =tangler.sink.get_sink_name()
     language = tangler.get_language()
     dict = self.master.section_index
-    if dict.has_key(filename):
+    if filename in dict:
       nsections = len(dict[filename])
     else: nsections = 0
     w = self._write
@@ -334,14 +334,14 @@ class stacking_weaver(multiplexor):
 
   def __del__(self):
     if 'weavers' in self.process.trace:
-      print "WEB WEAVER DESTRUCTOR COMMENCES"
+      print("WEB WEAVER DESTRUCTOR COMMENCES")
     del self.base
     while self.stack: del self.stack[-1]
     oldsubdoc = self.subdoc_stack.top
     while 0 < oldsubdoc[0]:
       self.pattern = oldsubdoc[1]
       self.childcount = oldsubdoc[2]
-      print 'Resetting pattern to',self.pattern,'count to',self.childcount
+      print('Resetting pattern to',self.pattern,'count to',self.childcount)
       self.subdoc_stack.pop()
       oldsubdoc = self.subdoc_stack.top
 
@@ -361,14 +361,14 @@ class stacking_weaver(multiplexor):
       name, descr, target, count = tables[i]
       s = 'tables['+str(i)+'][3]=self.mk_'+name+'(self.pattern % '+repr(name)+','+repr(target)+')'
       try:
-        exec s
+        exec(s)
       except:
-        print 'Error generating table',name,descr
+        print('Error generating table',name,descr)
         traceback.print_exc()
     self.persistent_frame['contents'] = self.toc
     self.mk_frames(self.home_file, tables)
     if 'weavers' in self.process.trace:
-      print 'Web Weaver finished'
+      print('Web Weaver finished')
     if 'weavers' in self.process.trace:
       self.process.release_object(self)
 
@@ -457,7 +457,7 @@ class stacking_weaver(multiplexor):
 
   def _popw(self):
     if 'weavers' in self.process.trace:
-      print 'Terminating weaver',self.stack[-1].name
+      print('Terminating weaver',self.stack[-1].name)
     del self.stack[-1]
     self.base = [self.stack[-1]]
 
@@ -471,7 +471,7 @@ class stacking_weaver(multiplexor):
       anchor = self.pattern%('%04d'%(self.childcount))
       self.register_anchor(label, anchor)
 
-    #up = string.split(self.base[0].sink.name,'/')[-1]
+    #up = self.base[0].sink.name.split('/')[-1]
     #up_anchor = '<A HREF="'+up+'">'+self.tr_phrase('Up')+'</A>'
     #this = self.pattern%('%04d'%(self.childcount))
     #this = '<A HREF="'+this+'">'+self.tr_phrase('This')+'</A>'
@@ -561,14 +561,14 @@ function toggle(button,id)
 #line 687 "interscript/src/web_weaver.ipk"
   def mk_contents(self,toc_filename,target):
     if 'weavers' in self.process.trace:
-      print 'Generating Table of Contents'
+      print('Generating Table of Contents')
     self.toc_sink = named_file_sink(
       self.pass_frame,
       self.basedir+toc_filename,
       self.master.weaver_prefix,
       eol=self.eol)
     if 'weavers' in self.process.trace:
-      print 'File name',self.toc_sink.name
+      print('File name',self.toc_sink.name)
     self.mk_head(self.toc_sink)
     w = self.toc_sink.writeline
     w( '<BODY lang="'+self.language+'">')
@@ -655,7 +655,7 @@ function toggle(button,id)
     w ('<BODY LANG="'+self.language+'">')
 
     w('<H1>Index of Sections</H1>')
-    keys = dict.keys()
+    keys = list(dict.keys())
     keys.sort()
     w = sink.writeline
     w('<TABLE COLS="1" BORDER="1" CELLPADDING="2">')
@@ -787,7 +787,7 @@ function toggle(button,id)
     w ('<BODY LANG="'+self.language+'">')
 
     w('<H1>Notices</H1>')
-    keys = data.keys()
+    keys = list(data.keys())
     keys.sort()
     for key in keys:
       value = data[key]
@@ -828,7 +828,7 @@ function toggle(button,id)
     w('<H1>Index of Tests</H1>')
     w('<TABLE CLASS="TEST_SUMMARY_TABLE" COLS="4" BORDER="1">')
     w('<TR><TH>No</TH><TH>Description</TH><TH>Kind</TH><TH>Result</TH><TR>')
-    keys = ids.keys()
+    keys = list(ids.keys())
     keys.sort()
     for key in keys:
       descr, label, kind, result = ids[key]
@@ -841,7 +841,7 @@ function toggle(button,id)
 
   def mk_filestatus(self,filename,target):
     if 'weavers' in self.process.trace:
-      print 'Creating file status file:',filename
+      print('Creating file status file:',filename)
     filestatus_output = simple_named_file_sink(
       self.pass_frame,self.basedir+filename, self.master.weaver_prefix,eol='\r\n')
     filestatus_weaver = html_weaver(

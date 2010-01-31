@@ -29,9 +29,9 @@ class master_frame:
 
     if 'frames' in process.trace:
       self.process.acquire_object(self,'MASTER FRAME')
-    for k in argument_frame.__dict__.keys():
+    for k in list(argument_frame.__dict__.keys()):
       if 'options' in self.process.trace:
-        print 'setting MASTER',k,'as',argument_frame.__dict__[k]
+        print('setting MASTER',k,'as',argument_frame.__dict__[k])
       setattr(self,k,argument_frame.__dict__[k])
     self.ids = {}
     self.iflist = []
@@ -58,23 +58,23 @@ class master_frame:
         source_prefix, self.filename+'.cache')
       try:
         if 'cache' in self.process.trace:
-          print 'CACHE NAME=',self.cache_name
+          print('CACHE NAME=',self.cache_name)
         cache = self.platform.open(self.cache_name,'r')
         if 'cache' in self.process.trace:
-          print 'CACHE FILE OPENED'
+          print('CACHE FILE OPENED')
         self.persistent_frames = pickle.load(cache)
         cache.close()
         if 'cache' in self.process.trace:
-          print 'GOT CACHE'
+          print('GOT CACHE')
         self.cache_age = self.platform.getmtime(self.cache_name)
         if 'cache' in self.process.trace:
-          print 'AGE=',self.cache_age
+          print('AGE=',self.cache_age)
           self.dump_cache()
         del cache
       except KeyboardInterrupt: raise
       except:
         if 'cache' in self.process.trace:
-          print 'UNABLE TO LOAD CACHE'
+          print('UNABLE TO LOAD CACHE')
 
     include_files = self.persistent_frames.get('include files',[])
     old_options = self.persistent_frames.get('options',{})
@@ -87,10 +87,10 @@ class master_frame:
       self.src_tree.append([level, kind, filename, filetime, changed, -1])
 
     if 'deps' in self.process.trace:
-      print 'SOURCE FILE CHANGE STATUS DEPENDENCIES'
-      print 'CACHE TIME=',self.cache_age
+      print('SOURCE FILE CHANGE STATUS DEPENDENCIES')
+      print('CACHE TIME=',self.cache_age)
       self.dump_entry(self.src_tree,0)
-      print
+      print()
 
     src_tree_changed = 1
     dummy = 0
@@ -99,23 +99,23 @@ class master_frame:
     del dummy
 
     if 'deps' in self.process.trace:
-      print 'COMPUTED DEPENDENCIES'
-      print 'CACHE TIME=',self.cache_age,
+      print('COMPUTED DEPENDENCIES')
+      print('CACHE TIME=',self.cache_age, end=' ')
       self.dump_entry(self.src_tree,0)
-      print
+      print()
       if src_tree_changed:
-        print 'WORK TO BE DONE'
+        print('WORK TO BE DONE')
         for level, kind, filename, filetime, changed, tobuild in self.src_tree:
-          if changed: print kind,'file',filename,'CHANGED'
+          if changed: print(kind,'file',filename,'CHANGED')
         for level, kind, filename, filetime, changed, tobuild in self.src_tree:
-          if tobuild: print kind,'file',filename,'WILL BE REBUILT'
+          if tobuild: print(kind,'file',filename,'WILL BE REBUILT')
         for level, kind, filename, filetime, changed, tobuild in self.src_tree:
-          if not tobuild: print kind,'file',filename,'WILL BE SKIPPED'
+          if not tobuild: print(kind,'file',filename,'WILL BE SKIPPED')
       else:
-        print 'NO FILES CHANGED'
+        print('NO FILES CHANGED')
         if self.autoweave:
-          print 'WEAVING ENABLED'
-        else: print 'NO WEAVING'
+          print('WEAVING ENABLED')
+        else: print('NO WEAVING')
 
     if src_tree_changed:
       skiplist = []
@@ -127,9 +127,9 @@ class master_frame:
     ign_opt = ['trace','passes']
     cur_opt = current_options.copy()
     old_opt = old_options.copy()
-    for key in cur_opt.keys():
+    for key in list(cur_opt.keys()):
       if key in ign_opt: del cur_opt[key]
-    for key in old_opt.keys():
+    for key in list(old_opt.keys()):
       if key in ign_opt: del old_opt[key]
 
     options_changed = old_opt != cur_opt
@@ -138,36 +138,36 @@ class master_frame:
     old_converged = self.persistent_frames.get('converged',0)
     if 'deps' in self.process.trace:
       if old_converged:
-        print 'PREVIOUS RUN CONVERGED'
+        print('PREVIOUS RUN CONVERGED')
       else:
-        print 'PREVIOUS RUN DID NOT CONVERGE'
+        print('PREVIOUS RUN DID NOT CONVERGE')
       if options_changed:
-        print 'OPTIONS CHANGED'
+        print('OPTIONS CHANGED')
       else:
-        print 'SAME OPTIONS AS BEFORE'
+        print('SAME OPTIONS AS BEFORE')
 
     if (not options_changed) and old_converged and (not src_tree_changed):
-      print 'NO WORK TO DO, returning'
+      print('NO WORK TO DO, returning')
       return
 
     old_skiplist = self.persistent_frames.get('skiplist',[])
     if options_changed:
-      print 'PROCESSING WHOLE FILE (options changed)'
+      print('PROCESSING WHOLE FILE (options changed)')
       skiplist = []
     elif self.autoweave:
-      print 'PROCESSING WHOLE FILE (incremental weaving not supported yet)'
+      print('PROCESSING WHOLE FILE (incremental weaving not supported yet)')
       skiplist = []
     else:
       if old_converged:
-        print 'SKIPPING (newly changed files)'
+        print('SKIPPING (newly changed files)')
         for sig in skiplist:
-          print ' ',sig
+          print(' ',sig)
       else:
         if src_tree_changed:
-          print 'PROCESSING WHOLE FILE (source changed)'
+          print('PROCESSING WHOLE FILE (source changed)')
           skiplist = []
         else:
-          print 'SKIPPING (files skipped last run, which did not converge)'
+          print('SKIPPING (files skipped last run, which did not converge)')
           skiplist = old_skiplist
     self.run_passes(skiplist)
     self.persistent_frames['skiplist']=skiplist
@@ -196,7 +196,7 @@ class master_frame:
         del cache
       except KeyboardInterrupt: raise
       except:
-        print 'Pickle FAILURE saving cache',self.cache_name
+        print('Pickle FAILURE saving cache',self.cache_name)
       if 'cache' in self.process.trace:
         self.dump_cache()
 
@@ -210,20 +210,20 @@ class master_frame:
 
   def get_persistent_frame(self, seq):
     "Get the persistent frame object with given index"
-    if not self.persistent_frames.has_key(seq):
+    if seq not in self.persistent_frames:
       self.persistent_frames[seq]={}
     return self.persistent_frames[seq]
 
   def set_title(self, title, **trlat):
     "Specify the document title"
     self.persistent_frames['title'] = title
-    apply(add_translation,(title,),trlat)
+    add_translation(*(title,), **trlat)
 
   def add_author(self, author, **data):
     "Add an author to the list of document authors"
-    if not self.persistent_frames.has_key('authors'):
+    if 'authors' not in self.persistent_frames:
       self.persistent_frames['authors']={}
-    if not self.persistent_frames['authors'].has_key(author):
+    if author not in self.persistent_frames['authors']:
       self.persistent_frames['authors'][author]={}
     self.persistent_frames['authors'][author].update(data)
 
@@ -249,51 +249,51 @@ class master_frame:
 
   def dump_cache(self):
     "Dump out the persistent store to standard output"
-    print '--- CACHE DUMP ------------------------------',
+    print('--- CACHE DUMP ------------------------------', end=' ')
     self.dump_dict(self.persistent_frames, 0)
-    print
+    print()
 
   def dump_sequence(self,s, level):
     for entry in s[:-1]:
-      print
-      print ' ' * (level * 2),
+      print()
+      print(' ' * (level * 2), end=' ')
       self.dump_entry(entry,level)
-      print ',',
+      print(',', end=' ')
     if len(s)>0:
-      print
-      print ' ' * (level * 2),
+      print()
+      print(' ' * (level * 2), end=' ')
       self.dump_entry(s[-1],level)
 
   def dump_dict(self,d, level):
-    keys = d.keys()
+    keys = list(d.keys())
     keys.sort()
     for key in keys[:-1]:
-      print
-      if level == 0: print
-      print ' '*(level*2)+str(key),':',
+      print()
+      if level == 0: print()
+      print(' '*(level*2)+str(key),':', end=' ')
       v = d[key]
       self.dump_entry(v, level)
-      print ',',
+      print(',', end=' ')
     if len(keys)>0:
-      print
+      print()
       key = keys[-1]
-      print ' '*(level*2)+str(key),':',
+      print(' '*(level*2)+str(key),':', end=' ')
       v = d[key]
       self.dump_entry(v, level)
 
   def dump_entry(self,e,level):
       t = type(e)
-      if t is types.DictType:
-        print '<dict>',
+      if t is dict:
+        print('<dict>', end=' ')
         self.dump_dict(e,level+1)
-      elif t is types.TupleType:
-        print '<tuple>',
+      elif t is tuple:
+        print('<tuple>', end=' ')
         self.dump_sequence(e, level+1)
-      elif t is types.ListType:
-        print '<list>',
+      elif t is list:
+        print('<list>', end=' ')
         self.dump_sequence(e, level+1)
       else:
-        print repr(e),
+        print(repr(e), end=' ')
 
   def process_pass(self, passno, skiplist):
     curpass = pass_frame(self, passno, skiplist)
@@ -311,7 +311,7 @@ class master_frame:
     if self.sequence_limit == -1:
       self.sequence_limit = curpass.sequence
     elif self.sequence_limit != curpass.sequence:
-      print 'WARNING: SEQUENCE COUNTER DISPARITY BETWEEN PASSES'
+      print('WARNING: SEQUENCE COUNTER DISPARITY BETWEEN PASSES')
     fdict = curpass.fdict
     del curpass
     return self.check_convergence(passno, fdict)
@@ -323,10 +323,10 @@ class master_frame:
     stable_file_count = 0
     unstable_file_count = 0
     new_file_count = 0
-    for k in ds.keys():
+    for k in list(ds.keys()):
       file_count = file_count + 1
       #print 'Checking file',file_count,':',k,'Status',ds[k]
-      if not dd.has_key(k):
+      if k not in dd:
         dd[k]=(ds[k],passno)
 
       if ds[k]=='original':
@@ -339,13 +339,13 @@ class master_frame:
         dd[k]=(ds[k],passno)
     converged = file_count == stable_file_count
     if converged:
-      print 'All',file_count,'output files stable on pass',passno+1,' -- breaking'
+      print('All',file_count,'output files stable on pass',passno+1,' -- breaking')
     else:
-      print 'Pass',passno+1,'status: <not converged>'
-      print '  Files    :',file_count
-      print '  New      :',new_file_count
-      print '  Changed  :',unstable_file_count
-      print '  Unchanged:',stable_file_count
+      print('Pass',passno+1,'status: <not converged>')
+      print('  Files    :',file_count)
+      print('  New      :',new_file_count)
+      print('  Changed  :',unstable_file_count)
+      print('  Unchanged:',stable_file_count)
     return converged
 
 

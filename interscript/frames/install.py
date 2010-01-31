@@ -83,20 +83,20 @@ class install_frame:
       }
 
   def print_install(self):
-    print 'INSTALL POINTS'
-    print '----------------------------'
-    for k in self.install_point.keys():
-      print 'Install Point',k
+    print('INSTALL POINTS')
+    print('----------------------------')
+    for k in list(self.install_point.keys()):
+      print('Install Point',k)
       d = self.install_point[k]
-      for t in d.keys():
-        print ' ',t,'-->',d[t]
-      print '----------------------------'
-      print
-    print 'TRUST MAP'
-    print '----------------------------'
-    for k in self.trust_map.keys():
-      print ' ',k,'-->',self.trust_map[k]
-    print '----------------------------'
-    print
+      for t in list(d.keys()):
+        print(' ',t,'-->',d[t])
+      print('----------------------------')
+      print()
+    print('TRUST MAP')
+    print('----------------------------')
+    for k in list(self.trust_map.keys()):
+      print(' ',k,'-->',self.trust_map[k])
+    print('----------------------------')
+    print()
 
 

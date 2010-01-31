@@ -34,12 +34,12 @@ def tr_phrase(native_phrase, language):
   return parse_escapes(tr)
 
 def phrase_list():
-  keys = interscript_phrases.keys()
+  keys = list(interscript_phrases.keys())
   keys.sort()
   return keys
 
 def add_translation(native_phrase, **kwds):
-  if not interscript_phrases.has_key(native_phrase):
+  if native_phrase not in interscript_phrases:
     interscript_phrases[native_phrase]={}
   interscript_phrases[native_phrase].update(kwds)
 

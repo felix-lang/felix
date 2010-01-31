@@ -16,7 +16,7 @@ class plain_text_weaver(weaver_base):
   def __init__(self, pass_frame,writer,language='',**kwds):
     weaver_base.__init__(self, pass_frame, language)
     if 'weavers' in self.process.trace:
-      print 'initialising plain text weaver, writer',writer.get_sink_name()
+      print('initialising plain text weaver, writer',writer.get_sink_name())
     self.protocol = ('text/plain',1)
     self.persistent_frame['protocol']=self.protocol
     self.width = 55
@@ -58,14 +58,14 @@ class plain_text_weaver(weaver_base):
     self.original_filename = filename
 
   def set_anchor(self, label):
-    if not self.persistent_frame.has_key('anchors'):
+    if 'anchors' not in self.persistent_frame:
       self.persistent_frame['anchors']  = {}
     self.persistent_frame['anchors'][label]=self.sink.lines_written+1
 
   def get_anchor(self, label):
     href = None
-    if self.persistent_frame.has_key('anchors'):
-      if self.persistent_frame['anchors'].has_key(label):
+    if 'anchors' in self.persistent_frame:
+      if label in self.persistent_frame['anchors']:
         href =self.persistent_frame['anchors'][label]
     return href
 
@@ -107,7 +107,7 @@ class plain_text_weaver(weaver_base):
     if hlevel>0:
       self.head(hlevel,h)
     if self.master.fdict:
-      skeys = self.master.fdict.keys()
+      skeys = list(self.master.fdict.keys())
       skeys.sort()
 
       h = 'Unchanged Files'
@@ -257,7 +257,7 @@ class plain_text_weaver(weaver_base):
 
   def write(self,line):
     if self.translating:
-      if self.strong: line = string.upper(line)
+      if self.strong: line = line.upper()
       self.buffer = self.buffer + line
     else:
       self._write(line)

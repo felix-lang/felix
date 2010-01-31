@@ -7,18 +7,18 @@ class set:
 
   # set contains element
   def contains(self,e):
-    return self.s.has_key(e)
+    return e in self.s
 
   # we're an improper subset of the rhs
   def le(self,rhs):
-    for e in self.s.keys():
+    for e in list(self.s.keys()):
       if e not in rhs: return 0
     return 1
 
   # the rhs is an improper subset of us
   def ge(self,rhs):
     for e in rhs:
-      if not self.s.has_key(e): return 0
+      if e not in self.s: return 0
     return 1
 
   def eq(self,rhs):
@@ -26,8 +26,8 @@ class set:
 
   def ne(self,rhs):
     for e in rhs:
-      if not self.s.has_key(e): return 1
-    for e in self.s.keys():
+      if e not in self.s: return 1
+    for e in list(self.s.keys()):
       if not e in rhs: return 1
     return 0
 
@@ -44,10 +44,10 @@ class set:
     return max(self.s.keys())
 
   def index(self,e):
-    return self.s.keys().index(e)
+    return list(self.s.keys()).index(e)
 
   def count(self,e):
-    return self.s.has_key(e)
+    return e in self.s
 
   # ensure set contains element; no error if already in set
   def insert(self,e):
@@ -59,7 +59,7 @@ class set:
 
   # remove element if in set
   def excise(self,e):
-    if self.s.has_key(e): del self.s[e]
+    if e in self.s: del self.s[e]
 
   # append all the elements in the sequence
   def append_sequence(self,seq):
@@ -67,7 +67,7 @@ class set:
 
   # get list of elements
   def list(self):
-    return self.s.keys()
+    return list(self.s.keys())
 
   # get tuple of elements
   def tuple(self):
@@ -85,7 +85,7 @@ class set:
 
   # repr is set(e1, e2, e3) etc
   def __repr__(self):
-    keys = self.s.keys()
+    keys = list(self.s.keys())
     p = 'set('
     if keys: p = p + repr(keys[0])
     for key in keys[1:]: p = p + ', ' + repr(key)
@@ -93,7 +93,7 @@ class set:
     return p
 
   # 0 if empty, 1 otherwise
-  def __nonzero__(self):
+  def __bool__(self):
     return len(s)!=0
 
   # lexicographical comparison!
@@ -102,9 +102,9 @@ class set:
   def __cmp__(self,other):
     right = set()
     for e in other: right.insert(e)
-    k1 = self.s.keys()
+    k1 = list(self.s.keys())
     k1.sort()
-    k2 = right.s.keys()
+    k2 = list(right.s.keys())
     k2.sort()
     return cmp(k1,k2)
 
@@ -112,18 +112,18 @@ class set:
     return len(self.s)
 
   def __getitem__(self,index):
-    return self.s.keys()[index]
+    return list(self.s.keys())[index]
 
   def __delitem__(self,index):
-    k = self.s.keys()[index]
+    k = list(self.s.keys())[index]
     del self.s[k]
 
   def __getslice__(self,i,j):
-    return apply(set,tuple(self.s.keys()[i:j]))
+    return set(*tuple(list(self.s.keys())[i:j]))
 
   def __and__(self,right):
     s = set()
-    for e in self.s.keys():
+    for e in list(self.s.keys()):
       if e in right: s.insert(e)
     return s
 
@@ -136,8 +136,8 @@ class set:
   def __xor__(self,right):
     s = set()
     for e in right: s.insert(e)
-    for e in self.s.keys():
-      if s.s.has_key(e): del s.s[e]
+    for e in list(self.s.keys()):
+      if e in s.s: del s.s[e]
       else: s.s[e]=None
     return s
 
@@ -146,7 +146,7 @@ class set:
 
   def __sub__(self,right):
     s = set()
-    for e in self.s.keys():
+    for e in list(self.s.keys()):
       if e not in right: s.insert(e)
     return s
 

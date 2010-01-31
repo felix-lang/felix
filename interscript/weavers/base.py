@@ -29,7 +29,7 @@ class weaver_base:
   def add_tag(self,tag): self.tags.append(tag)
   def enable_if(self,tag):
     if 'weavers' in self.process.trace:
-      print 'Checking for tag',tag,'in',self.tags
+      print('Checking for tag',tag,'in',self.tags)
     if tag in self.tags: self.enable()
     else: self.disable()
   def raw_if(self,tag):

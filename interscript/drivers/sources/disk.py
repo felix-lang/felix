@@ -15,20 +15,20 @@ def loadfile(filename):
    try:
      f = open(filename)
    except:
-     raise source_open_error,filename
+     raise source_open_error(filename)
    data = f.readlines()
    f.close()
    for i in range(len(data)):
-     data[i]=string.rstrip(data[i])
+     data[i]=data[i].rstrip()
    return data
 
 def parse_source_filename(filename, prefix):
-  pathlist = string.split(filename,'/')
+  pathlist = filename.split('/')
   if prefix == '':
     prefix = os.getcwd()
     if prefix[-1] != os.sep:
       prefix = prefix + os.sep
-  directory = prefix + string.join(pathlist[:-1],os.sep)
+  directory = prefix + os.sep.join(pathlist[:-1])
   if directory[-1] != os.sep:
     directory = directory + os.sep
   basename = pathlist[-1]
@@ -37,7 +37,7 @@ def parse_source_filename(filename, prefix):
 
 class named_file_source(file_source):
   def __init__(self,pass_frame,filename, prefix='', encoding='utf8', **kwds):
-    apply(file_source.__init__,(self,encoding), kwds)
+    file_source.__init__(*(self,encoding), **kwds)
     self.iflist_index = len(pass_frame.iflist)
     pass_frame.iflist.append([filename,0])
     self.name = filename
@@ -53,7 +53,7 @@ class named_file_source(file_source):
       self.file = open(self.filename,'r')
       self.closed = 0
     except:
-      raise source_open_error,filename
+      raise source_open_error(filename)
 
   # override this, to get more filename for #line directives
   def get_source_name(self):

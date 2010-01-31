@@ -40,19 +40,19 @@ class pass_frame:
     self.ftp_list = []
 
     if 'weavers' in self.process.trace:
-      print 'Autoweave',self.autoweave
+      print('Autoweave',self.autoweave)
 
     file = self.master.filename
     encoding = self.master.encoding
-    encoding = string.replace(string.lower(encoding),'-','_')
+    encoding = encoding.lower().replace('-','_')
     if 'frames' in self.process.trace:
-      print 'Processing',file,'Pass',passno+1,'Encoding',encoding
+      print('Processing',file,'Pass',passno+1,'Encoding',encoding)
 
 #line 81 "interscript/src/pass_frame.ipk"
 
     basename = file
-    if string.find(file,'.') != -1:
-      basename = string.join(string.split(file,'.')[:-1],'.')
+    if file.find('.') != -1:
+      basename = '.'.join(file.split('.')[:-1])
 
     weaver = auto_weaver(self, basename, self.autoweave, master.title)
     userdict = { }
@@ -60,13 +60,13 @@ class pass_frame:
     try:
       input_file =named_file_source(self,file, self.master.source_prefix, encoding = encoding)
 
-    except source_open_error, filename:
-      print 'Cannot Open File',filename,'for input (ignored)'
+    except source_open_error as filename:
+      print('Cannot Open File',filename,'for input (ignored)')
       raise
-    except KeyboardError:
+    except KeyboardInterrupt:
       raise
     except:
-      print "Program error opening",file
+      print("Program error opening",file)
       traceback.print_exc()
       raise
 
@@ -84,7 +84,7 @@ class pass_frame:
 
     inpt.set_warning_character(python='@')
     if 'input' in self.process.trace:
-      print 'input from',inpt.source.get_source_name()
+      print('input from',inpt.source.get_source_name())
 
     inpt.file_pass()
     # at this point, inpt, weaver, userdict, input_file
@@ -96,7 +96,7 @@ class pass_frame:
 
   def __del__(self):
     if 'frames' in self.process.trace:
-      print 'Processing of',self.master.filename,'Pass',self.passno+1,'complete'
+      print('Processing of',self.master.filename,'Pass',self.passno+1,'complete')
       self.process.release_object(self)
 
   def get_pass_frame(self):

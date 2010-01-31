@@ -1,6 +1,6 @@
 @head(1,'Configure')
 @FLX_CONFIG_CVS_ID='$Id$'
-@print FLX_CONFIG_CVS_ID
+@print(FLX_CONFIG_CVS_ID)
 @flx_version_major = '1'
 @flx_version_minor = '1'
 @flx_version_patch = '4'
@@ -76,7 +76,7 @@ else:
     PTHREAD_MODEL = 'Unknown'
 
 
-print "Pthread model according to linuxy getconf=", PTHREAD_MODEL
+print("Pthread model according to linuxy getconf=", PTHREAD_MODEL)
 
 
 @select(tangler("cpkgs/host/pkgconfig.py"))
@@ -94,7 +94,7 @@ except ImportError:
   except ExecutionError:
     HAVE_PKGCONFIG = 0
 
-  print "Storing pkgconfig configuration"
+  print("Storing pkgconfig configuration")
   f = cwrite("pkgconfig")
   pr(f,"#pkgconfig support")
   pa(f,locals(),"HAVE_PKGCONFIG")
@@ -555,7 +555,7 @@ else:
     tmap["intptr"]=sizes[config.TARGET_CXX.options.SIZEOF_VOIDP*8]
     tmap["uintptr"]="unsigned "+sizes[config.TARGET_CXX.options.SIZEOF_VOIDP*8]
   except:
-    print "NO INTEGER THE SIZE OF A VOID*!"
+    print("NO INTEGER THE SIZE OF A VOID*!")
     sys.exit(1)
 
 tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
@@ -592,7 +592,7 @@ class setup_test:
         self.katfile = self.root + 'categories'
 
         if os.path.exists(self.katfile):
-            f = open(self.katfile)
+            f = open(self.katfile, 'rb')
             try:
                 self.registry_in = pickle.load(f)
             finally:
@@ -645,7 +645,7 @@ class setup_test:
 
         path = name + extension
         if path in self.names_written:
-            print 'file:', path, 'already created!'
+            print('file:', path, 'already created!')
 
             # XXX: NEED TO GENERATE A NEW FILE NAME
             # XXX: what's the proper way to error out an interscript file?
@@ -668,7 +668,7 @@ class setup_test:
             del kwds['categories']
 
         # construct the tangler
-        tangler = apply(self.tangler, (name,) + args, kwds)
+        tangler = self.tangler(name, *args, **kwds)
         for cat in categories: self.kat(tangler,cat)
 
         self.testcount = self.testcount + 1
@@ -694,7 +694,7 @@ class setup_test:
 
 
     def test_args(self, arglist, *args, **kwds):
-        t = apply(self.test, args, kwds)
+        t = self.test(*args, **kwds)
 
         for arguments in arglist:
             self.args(arguments)
@@ -728,7 +728,7 @@ class setup_test:
 
     def emit_katlist(self):
         self.iframe.begin_list("keyed")
-        keys = self.registry_in.keys()
+        keys = list(self.registry_in.keys())
         keys.sort()
         for k in keys:
             v = self.registry_in[k]
@@ -746,7 +746,7 @@ class setup_test:
         if not os.path.exists(dirname):
             os.makedirs(dirname)
 
-        f = open(self.katfile, 'w')
+        f = open(self.katfile, 'wb')
         try:
             pickle.dump(self.registry_out, f)
         finally:

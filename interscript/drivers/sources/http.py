@@ -5,7 +5,7 @@ from interscript.drivers.sources.base import file_source
 from interscript.drivers.sources.base import eof
 import os
 import time
-import httplib
+import http.client
 import string
 
 class http_file_source(file_source):
@@ -15,7 +15,7 @@ class http_file_source(file_source):
     self.remote_filename = remote_filename
     self.host = host
     self.g = g
-    for k in kwds.keys():
+    for k in list(kwds.keys()):
       self.__dict__[k]=kwds[k]
     if not hasattr(self,'local_filename'):
       self.local_filename = self.remote_filename
@@ -32,9 +32,9 @@ class http_file_source(file_source):
     try:
       f = open(self.local_filename)
       f.close()
-      print 'local file',self.local_filename,'exists'
+      print('local file',self.local_filename,'exists')
     except:
-      print 'local file',self.local_filename,'does NOT exist'
+      print('local file',self.local_filename,'does NOT exist')
       self.local_file_exists = 0
 
     if self.local_file_exists:
@@ -51,16 +51,16 @@ class http_file_source(file_source):
 
     if download:
       try:
-        print 'downloading',self.remote_filename
+        print('downloading',self.remote_filename)
         # create HTTP object
-        http = httplib.HTTP()
+        http = http.client.HTTP()
 
         # connect to server
         if hasattr(self,'port'):
           http.connect(self.host+':'+str(self.port))
         else:
           ftp.connect(self.host)
-        print 'connected to',self.host
+        print('connected to',self.host)
 
         # set remote directory
         to_download = self.remote_filename
@@ -78,7 +78,7 @@ class http_file_source(file_source):
           file = http.getfile()
           newlines = file.readlines()
           file.close()
-          print 'download complete'
+          print('download complete')
 
           if self.local_file_exists:
             file = open(self.local_filename,'r')
@@ -86,11 +86,11 @@ class http_file_source(file_source):
             file.close()
 
             if newlines != oldlines:
-              print 'Local file',self.local_filename,'UPDATED from',self.remote_filename
+              print('Local file',self.local_filename,'UPDATED from',self.remote_filename)
             else:
-              print 'Local file',self.local_filename,'unchanged'
+              print('Local file',self.local_filename,'unchanged')
           else:
-            print 'Writing new local file',self.local_filename
+            print('Writing new local file',self.local_filename)
 
           # note that the local file is written even if it isn't changed
           # to update the time stamp
@@ -99,18 +99,18 @@ class http_file_source(file_source):
           file.close()
 
         except:
-          print 'Cannot download',self.remote_filename,
+          print('Cannot download',self.remote_filename, end=' ')
           if hasattr(self,'remote_directory'):
-            print 'from directory',self.remote_directory
-          else: print 'of',self.host
+            print('from directory',self.remote_directory)
+          else: print('of',self.host)
           try:
-            print 'code',errcode,'msg',errmsg
+            print('code',errcode,'msg',errmsg)
           except:
             pass
       except:
         pass # ignore errors from ftp attempt
     else:
-      print 'Skipping http download'
+      print('Skipping http download')
 
     self.file = open(self.local_filename,'r')
 

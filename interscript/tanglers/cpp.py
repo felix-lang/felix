@@ -96,15 +96,15 @@ class cpp_tangler(tangler_base):
       for kind,id,lstart,lend,dummy in tokens:
         if kind is cpp_token.NAME:
           if not (cpp_keyword.iskeyword(id) or id in self.excludeid):
-            if not self.pass_frame.ids.has_key(id): self.pass_frame.ids[id]=[]
+            if id not in self.pass_frame.ids: self.pass_frame.ids[id]=[]
             self.pass_frame.ids[id].append((file,count,dst_file,dst_count))
             if class_name:
               #print 'class',id
-              if not self.pass_frame.classes.has_key(id): self.pass_frame.classes[id]=[]
+              if id not in self.pass_frame.classes: self.pass_frame.classes[id]=[]
               self.pass_frame.classes[id].append((file,count,dst_file,dst_count))
               class_name = 0
             elif function_name:
-              if not self.pass_frame.functions.has_key(id): self.pass_frame.functions[id]=[]
+              if id not in self.pass_frame.functions: self.pass_frame.functions[id]=[]
               self.pass_frame.functions[id].append((file,count,dst_file,dst_count))
               function_name = 0
           elif id == 'class':

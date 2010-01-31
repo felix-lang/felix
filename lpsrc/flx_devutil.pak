@@ -1182,7 +1182,7 @@ for fn in files:
   tgts.append((prefix+fn,target))
   i = string.index(base,'.')
   m = base[:i]
-  mods[string.capitalize(m)]='Flx_cil_' + m
+  mods[m.capitalize()]='Flx_cil_' + m
 
 ms = mods.keys()
 for k in ms:

@@ -80,8 +80,8 @@ tok_name[MULTILINE_STRING_LAST]= 'MULTILINE_STRING_LAST'
 # Note: to quote a backslash in a regex, it must be doubled in a r'aw' string.
 
 def group(*choices): return '(' + string.join(choices, '|') + ')'
-def any(*choices): return apply(group, choices) + '*'
-def maybe(*choices): return apply(group, choices) + '?'
+def any(*choices): return group(*choices) + '*'
+def maybe(*choices): return group(*choices) + '?'
 
 Whitespace = r'[ \f\t]*'
 Comment = r'//[^\r\n]*'
@@ -148,12 +148,12 @@ def tokenise(readline,
   while line:
     t.writeline(line)
     for token in t.tokens:
-      apply(tokeneater,token)
+      tokeneater(*token)
     t.tokens = []
     line = readline()
   t.writeline('')
   for token in t.tokens:
-    apply(tokeneater,token)
+    tokeneater(*token)
   t.tokens = []
 
 namechars, numchars = string.letters + '_', string.digits

@@ -17,11 +17,11 @@ class sgml_wrapper:
 
 # this is a hack: sgmllib needs to be imported here
 # so the class SGMLParser defined in it can be used as a base
-import sgmllib
+import html.parser
 
-class html_filter(sgmllib.SGMLParser):
+class html_filter(html.parser.HTMLParser):
   def __init__(self, input_frame):
-    sgmllib.SGMLParser.__init__(self)
+    html.parser.HTMLParser.__init__(self)
     self.save_data = 0
     self.script_language = ''
     self.input_frame = input_frame
@@ -50,7 +50,7 @@ class html_filter(sgmllib.SGMLParser):
 
   def handle_comment(self,data):
     if 'parsers' in self.process.trace:
-      print 'SGML comment',data
+      print('SGML comment',data)
     if self.script_language != '':
       self.saved_comments = self.saved_comments + data
 
@@ -153,38 +153,38 @@ class html_filter(sgmllib.SGMLParser):
   def end_h6(self): self.weaver.head(6,self._saved())
 
   def unknown_starttag(self,tag,attributes):
-    print 'UNKNOWN START TAG',tag,attributes
+    print('UNKNOWN START TAG',tag,attributes)
 
   def unknown_endtag(self,tag):
-    print 'UNKNOWN END TAG',tag
+    print('UNKNOWN END TAG',tag)
 
   def unknown_charref(self,ref):
-    print 'BAD CHAR REF',ref
+    print('BAD CHAR REF',ref)
 
   def unknown_entityref(self,ref):
-    print 'UNKNOWN ENTITY REF',ref
+    print('UNKNOWN ENTITY REF',ref)
 
   # due to a bug in sgmllib, this routine will
   # never be called
   def report_unbalanced(self,tag):
-    print 'LONELY ENDTAG',tag
+    print('LONELY ENDTAG',tag)
 
   def start_script(self,attributes):
     if 'parsers' in self.process.trace:
-      print 'start of script'
+      print('start of script')
     for param, value in attributes:
-      if string.lower(param) == 'language':
-        self.script_language = string.lower(value)
+      if param.lower() == 'language':
+        self.script_language = value.lower()
         self.saved_comments = ''
 
   def end_script(self):
     if 'parsers' in self.process.trace:
-      print 'end of script'
+      print('end of script')
     if self.script_language == 'python':
       try:
-        exec self.saved_comments in globals(),self.input_frame.userdict
+        exec(self.saved_comments, globals(),self.input_frame.userdict)
       except:
-        print "Error executing python <SCRIPT>"
+        print("Error executing python <SCRIPT>")
         traceback.print_exc()
     else:
-      print 'Sorry',self.script_language,'not available'
+      print('Sorry',self.script_language,'not available')

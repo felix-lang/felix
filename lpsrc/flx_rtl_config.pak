@@ -26,7 +26,7 @@ weaver_directory = 'doc/rtl/flx_rtl/'
 #include <cstddef>
 
 template <std::size_t> struct type_with_alignment;
-@for k, t in config.TARGET_CXX.options.flx_aligns.iteritems():
+@for k, t in config.TARGET_CXX.options.flx_aligns.items():
   tangle('template <> struct type_with_alignment<'+str(k)+'>{ typedef '+t+' type; };')
 
 template <typename T> struct alignment_of;

@@ -5,9 +5,9 @@ from interscript.drivers.sources.base import eof
 import string
 class url_source(file_source):
   def __init__(self,filename,encoding='utf8',**kwds):
-    apply(file_source.__init__,(self,encoding), kwds)
+    file_source.__init__(*(self,encoding), **kwds)
     self.name = filename
-    self.file = urllib.urlopen(filename)
+    self.file = urllib.request.urlopen(filename)
     self.closed = 0
 
 

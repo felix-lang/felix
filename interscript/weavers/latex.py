@@ -31,7 +31,7 @@ class latex_weaver(weaver_base):
     weaver_base.__init__(self, pass_frame, language)
     self.sink = writer
     if 'weavers' in self.process.trace:
-      print 'initialising latex weaver, writer',writer.get_sink_name()
+      print('initialising latex weaver, writer',writer.get_sink_name())
     self.protocol = 'LaTeX2e'
     self.persistent_frame['protocol']=self.protocol
     self.acount = 1
@@ -53,7 +53,7 @@ class latex_weaver(weaver_base):
 #line 68 "interscript/src/latex_weaver.ipk"
   def identifier_reference(self, hlevel=2, *args, **kwds):
     ids = self.master.ids
-    keys = ids.keys()
+    keys = list(ids.keys())
     keys.sort()
     if hlevel >0:
       self.head(hlevel,'Index of Identifiers')
@@ -75,7 +75,7 @@ class latex_weaver(weaver_base):
 #line 91 "interscript/src/latex_weaver.ipk"
   def class_reference(self, hlevel=2, *args, **kwds):
     ids = self.master.classes
-    keys = ids.keys()
+    keys = list(ids.keys())
     keys.sort()
     if hlevel >0:
       self.head(hlevel,'Index of Classes')
@@ -118,7 +118,7 @@ class latex_weaver(weaver_base):
   def prolog(self,kwds):
     # this bit handles lambda translation process
     # to convert interscript generated UTF-8 to unicode
-    if kwds.has_key('llambda'):
+    if 'llambda' in kwds:
       self._writeline('\\ocp\\inutf=inutf8')
       self._writeline('\\inputTranslation\\inutf8')
       self.omega=1
@@ -131,7 +131,7 @@ class latex_weaver(weaver_base):
     #   article report letter
 
     documentclass = 'book'
-    if kwds.has_key('documentclass'):
+    if 'documentclass' in kwds:
       documentclass=kwds['documentclass']
 
     # the options are a python list of words
@@ -151,7 +151,7 @@ class latex_weaver(weaver_base):
     # else uses the default!
 
     docopts = []
-    if kwds.has_key('documentclass_options'):
+    if 'documentclass_options' in kwds:
       docopts =kwds['documentclass']
     docoptstr=''
     if docopts: docoptstr = docopts[0]
@@ -159,17 +159,17 @@ class latex_weaver(weaver_base):
      docoptstr = dosoptstr + ', ' + opt
     self._writeline('\\documentclass['+docoptstr+']{'+documentclass+'}')
 
-    if kwds.has_key('heading_level_offset'):
+    if 'heading_level_offset' in kwds:
       self.heading_level_offset = kwds['heading_level_offset']
 
     # page heading control
     pagestyle = 'headings'
-    if kwds.has_key('pagestyle'):
+    if 'pagestyle' in kwds:
       pagestyle=kwds['pagestyle']
     self._writeline('\\pagestyle{'+pagestyle+'}')
 
     pagenumbering= 'arabic'
-    if kwds.has_key('pagenumbering'):
+    if 'pagenumbering' in kwds:
       pagenumbering=kwds['pagenumbering']
     self._writeline('\\pagenumbering{'+pagenumbering+'}')
 
@@ -179,7 +179,7 @@ class latex_weaver(weaver_base):
       'oddsidemargin','evensidemargin',
       'textwidth']
     for p in page_format_params:
-      if kwds.has_key(p):
+      if p in kwds:
         param=kwds[p]
         self._writeline('\\setlength{\\'+p+'}{'+param+'}')
 
@@ -190,7 +190,7 @@ class latex_weaver(weaver_base):
     # by indentation.
 
     baselinestretch= 1
-    if kwds.has_key('baselinestretch'):
+    if 'baselinestretch' in kwds:
       baselinestretch=kwds['baselinestretch']
     self._writeline('\\renewcommand{\\baselinestretch}{'+str(baselinestretch)+'}')
 
@@ -198,12 +198,12 @@ class latex_weaver(weaver_base):
     self._writeline('\\setlength{\\parindent 0mm}')
 
     self._writeline( '\\begin{document}')
-    if kwds.has_key('title'):
+    if 'title' in kwds:
       title=kwds['title']
     else:
       title = self.sink.pass_frame.master.filename
     self._writeline('\\title{'+cvt_text(title)+'}')
-    if kwds.has_key('author'):
+    if 'author' in kwds:
       author =kwds['author']
       self._writeline('\\author{'+cvt_text(author)+'}')
 
@@ -230,7 +230,7 @@ class latex_weaver(weaver_base):
       self._write(line)
 
   def writeline(self,line=''):
-    line = string.rstrip(line)
+    line = line.rstrip()
     self.write(line);
     if not self.start_of_line: self._writeline()
 

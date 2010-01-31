@@ -2,15 +2,15 @@
 
 @head(1,'Maker')
 @FLX_MAKER_CVS_ID='$Id$'
-@print FLX_MAKER_CVS_ID
+@print(FLX_MAKER_CVS_ID)
 
 @def make_executable(path):
    import stat
    try:
      mode = os.stat(path).st_mode
      os.chmod(path, mode | stat.S_IXUSR)
-   except OSError, e:
-     print e
+   except OSError as e:
+     print(e)
 
 @h = tangler('script/bin2hex.py')
 @select(h)
@@ -22,12 +22,12 @@ data = f.read()
 f.close()
 counter = 0
 for ch in data:
-  print ("%02x" % ord(ch)),
+  print("%02x" % ord(ch), end='')
   counter = counter + 1
   if counter == 8:
-    print
+    print()
     counter = 0
-print
+print()
 
 @select(tangler('script/fcount.py','python'))
 import glob
@@ -51,7 +51,7 @@ try:
 except:
   globspec = "tut/examples/*.hpp"
 
-print "function counter: STATS FILE",filename, "KEY", key, "GLOB",globspec
+print("function counter: STATS FILE",filename, "KEY", key, "GLOB",globspec)
 dict = {}
 try:
   execfile (filename)
@@ -108,16 +108,16 @@ j=0
 for k in keys:
   j = max(j,len(k))
 
-print "Function counts for test programs"
-print "================================="
-print
-print ("%-"+str(i+2)+"s") % "File" + "    ",
+print("Function counts for test programs")
+print("=================================")
+print()
+print(("%-"+str(i+2)+"s") % "File" + "    ", end='')
 for t in keys:
-  print ("%"+str(j+2)+"s") % t,
-print
-print "--------"
+  print(("%"+str(j+2)+"s") % t, end='')
+print()
+print("--------")
 
-skeys = dict.keys()
+skeys = list(dict.keys())
 skeys.sort()
 
 for k in skeys:
@@ -135,7 +135,7 @@ for k in skeys:
       v = str(v)
     v = ("%"+str(j+2)+"s") % v
     x = x+v
-  if not discard: print x
+  if not discard: print(x)
 
 @h = tangler('script/mk_expect','python')
 @select(h)
@@ -143,13 +143,13 @@ import glob
 import sys
 for k in sys.argv[1:]:
   files = glob.glob(k+'/*.output')
-  print '@head(1,"Expected outputs for '+k+'")'
+  print('@head(1,"Expected outputs for '+k+'")')
   for i in files:
     j = i[:-7]+'.expect'
-    print '@head(2,"'+j+'")'
-    print '@select(tangler("'+j+'","data"))'
+    print('@head(2,"'+j+'")')
+    print('@select(tangler("'+j+'","data"))')
     f = open(i,"r")
-    for l in f: print l,
+    for l in f: print(l, end='')
     f.close()
 
 
@@ -208,7 +208,7 @@ def main():
         return tee_cmd(cmd, stdout)
     finally:
         f = open('mk_' + time.strftime('%Y-%m-%d-%H%M') + '.log', 'w')
-        print >> f, stdout.getvalue()
+        print(stdout.getvalue(), file=f)
 
 if __name__ == '__main__':
     sys.exit(main())
@@ -1371,7 +1371,7 @@ EXIT /B 1
 ENDLOCAL
 
 @select(tangler('bin/flx.py','data'))
-#!/usr/bin/env python
+#!/usr/bin/env python3.1
 # flx.py - felix script harness (python version)
 import os
 import os.path
@@ -1445,9 +1445,9 @@ def splitext(p):
   return p,""
 
 def system(cmd):
-  if ECHO==1: print cmd
+  if ECHO==1: print(cmd)
   result = os.system(cmd)
-  if ECHO==1: print "Result code " + str(result)
+  if ECHO==1: print("Result code " + str(result))
   return result
 
 argno=1
@@ -1521,12 +1521,12 @@ while grab == 1 and argno<len(sys.argv):
     INLINE=0
 
   elif arg == "--version":
-    print "version .."
-    print VERSION
+    print("version ..")
+    print(VERSION)
     sys.exit(0)
 
   elif arg == "--where":
-    print FLX_INSTALL_DIR
+    print(FLX_INSTALL_DIR)
     sys.exit(0)
 
   elif arg == "--time":
@@ -1558,7 +1558,7 @@ while grab == 1 and argno<len(sys.argv):
     pkgs= pkgs + " " + arg[6:]
 
   elif prefix(arg,"--"):
-    print "Unknown option '"+ arg+"'"
+    print("Unknown option '"+ arg+"'")
     sys.exit(1)
 
 # the main filename -- subsequent args are args to flx_run
@@ -1568,7 +1568,7 @@ while grab == 1 and argno<len(sys.argv):
 
 #print grab,argno,len(sys.argv)
 if grab == 1 and argno == len(sys.argv):
-  print "usage: flx [options] filename"
+  print("usage: flx [options] filename")
   sys.exit(1)
 
 #print "#--------"
@@ -1594,8 +1594,8 @@ if NOOPTIMISE == 0:
 PKGCONFIG=os.path.join(FLX_INSTALL_DIR,"bin","flx_pkgconfig")
 
 if ECHO == 1:
-  print "#FLX_INSTALL_DIR="+FLX_INSTALL_DIR
-  print "#PKGCONFIG="+PKGCONFIG
+  print("#FLX_INSTALL_DIR="+FLX_INSTALL_DIR)
+  print("#PKGCONFIG="+PKGCONFIG)
 
 CONFIG_DIR = os.path.join(FLX_INSTALL_DIR,'config')
 
@@ -1660,11 +1660,11 @@ def get_stdout(x,outit=None):
   return result,output
 
 def xqt(cmd, default=None):
-  if ECHO == 1: print cmd
+  if ECHO == 1: print(cmd)
   result,output = get_stdout(cmd)
   if not result:
      output=output[0][:-1] # first line excluding newline
-     if ECHO==1:print "output="+output
+     if ECHO==1:print("output="+output)
      return output
   if default is None:
     sys.stderr.write("Error "+repr(result)+" executing command " + cmd+"\n")
@@ -1710,11 +1710,11 @@ def calpackages ():
       PKGCONFIG_SLIBS+" "+DRIVER_PKG+" @"+base+".resh")
 
   if ECHO == 1:
-    print "#RESOURCE FILE="+base+".resh"
-    print "#INCLUDE_DIRS="+INCLUDE_DIRS
-    print "#INCLUDE_FILES="+INCLUDE_FILES
-    print "#DRIVER="+DRIVER
-    print "#LINK_STRING="+LINK_STRING
+    print("#RESOURCE FILE="+base+".resh")
+    print("#INCLUDE_DIRS="+INCLUDE_DIRS)
+    print("#INCLUDE_FILES="+INCLUDE_FILES)
+    print("#DRIVER="+DRIVER)
+    print("#LINK_STRING="+LINK_STRING)
 
 def write_include_file(path):
   includes = INCLUDE_FILES.strip().split()

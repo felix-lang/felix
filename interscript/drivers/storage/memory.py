@@ -10,7 +10,7 @@ class memory(source,sink_base):
     self.name = name
     self.saved = ''
     self.list = []
-    for k in kwds.keys():
+    for k in list(kwds.keys()):
       self.k = kwds[k]
     self.closed = 0
 

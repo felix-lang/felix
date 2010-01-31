@@ -27,13 +27,13 @@ class ftp_file_source(file_source):
     if 'sources' in self.process.trace:
       self.process.acquire_object(self, 'FTP SOURCE '+remote_filename)
 
-    apply(file_source.__init__, (self,encoding), kwds)
+    file_source.__init__(*(self,encoding), **kwds)
 
     self.name = remote_filename
     self.remote_filename = remote_filename
     self.host = host
 
-    for k in kwds.keys():
+    for k in list(kwds.keys()):
       self.__dict__[k]=kwds[k]
     if not hasattr(self,'local_filename'):
       self.local_filename = self.remote_filename
@@ -65,7 +65,7 @@ class ftp_file_source(file_source):
       self.refresh_interval = 28
     if self.refresh_interval < 0: self.refresh_interval = 100000
     pathname = self.platform.mk_dir(self.local_prefix,
-      string.split(self.local_directory+self.local_filename, '/'))
+      (self.local_directory+self.local_filename).split('/'))
     self.local_file_exists = self.platform.file_exists(pathname)
 
     if self.local_file_exists:
@@ -75,7 +75,7 @@ class ftp_file_source(file_source):
       age = (now - self.local_file_modify_time)/ (24 * 60 * 60)
       download = age > self.refresh_interval
     else:
-      print 'Local file does not exist'
+      print('Local file does not exist')
       download = 1
 
     if hasattr(self.global_frame,'download'):
@@ -85,7 +85,7 @@ class ftp_file_source(file_source):
     if download:
       try:
         if 'sources' in self.process.trace:
-          print 'downloading',self.remote_filename
+          print('downloading',self.remote_filename)
         # create FTP object
         ftp = ftplib.FTP()
 
@@ -94,7 +94,7 @@ class ftp_file_source(file_source):
           ftp.connect(self.host,self.port)
         else:
           ftp.connect(self.host)
-        print 'connected to',self.host
+        print('connected to',self.host)
 
         # login to server
         if hasattr(self,'user'):
@@ -105,23 +105,23 @@ class ftp_file_source(file_source):
           else: ftp.login(self.user)
         else: ftp.login()
         if 'sources' in self.process.trace:
-          print 'logged in'
+          print('logged in')
 
         # set remote directory
         if self.remote_directory:
           ftp.cwd(self.remote_directory)
-          print 'changed to remote directory',self.remote_directory
+          print('changed to remote directory',self.remote_directory)
 
         # get file to a temporary
         try:
           tmp_filename = tempfile.mktemp()
           self.file= open(tmp_filename,'w')
-          print 'opened',tmp_filename,'for download'
+          print('opened',tmp_filename,'for download')
           ftp.retrlines('RETR '+self.remote_filename, self.transfer)
           self.file.close()
           ftp.quit()
           if 'sources' in self.process.trace:
-            print 'download complete'
+            print('download complete')
 
           file = open(tmp_filename,'r')
           newlines = file.readlines()
@@ -134,13 +134,13 @@ class ftp_file_source(file_source):
 
             if newlines != oldlines:
               if 'sources' in self.process.trace:
-                print 'Local file',self.local_filename,'UPDATED from',self.remote_filename
+                print('Local file',self.local_filename,'UPDATED from',self.remote_filename)
             else:
               if 'sources' in self.process.trace:
-                print 'Local file',self.local_filename,'unchanged'
+                print('Local file',self.local_filename,'unchanged')
           else:
             if 'sources' in self.process.trace:
-              print 'Writing new local file',self.local_filename
+              print('Writing new local file',self.local_filename)
 
           # note that the local file is written even if it isn't changed
           # to update the time stamp
@@ -150,15 +150,15 @@ class ftp_file_source(file_source):
             file.writelines(newlines)
             del file
           except:
-            print 'Error writing file', self.local_directory+self.local_filename,'in',self.local_prefix
+            print('Error writing file', self.local_directory+self.local_filename,'in',self.local_prefix)
             traceback.print_exc()
             raise
 
         except:
-          print 'ftp error: Cannot download',self.remote_filename,
+          print('ftp error: Cannot download',self.remote_filename, end=' ')
           if hasattr(self,'remote_directory'):
-            print 'from directory',self.remote_directory,
-          print 'of',self.host
+            print('from directory',self.remote_directory, end=' ')
+          print('of',self.host)
           file.close()
           self.os.remove(tmp_filename)
           ftp.quit()
@@ -169,7 +169,7 @@ class ftp_file_source(file_source):
         pass # ignore errors from ftp attempt
     else:
       if 'sources' in self.process.trace:
-        print 'Skipping ftp download ftp://'+self.host+'/'+self.remote_directory+'/'+self.remote_filename
+        print('Skipping ftp download ftp://'+self.host+'/'+self.remote_directory+'/'+self.remote_filename)
     return pathname
   def __del__(self):
     if 'sources' in self.process.trace:

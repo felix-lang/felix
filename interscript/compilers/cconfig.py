@@ -27,19 +27,19 @@ class config:
     self.append_dict(kwds)
 
   def append_dict(self,kwds):
-    if kwds.has_key('libdirs'):
+    if 'libdirs' in kwds:
       self.libdirs[-1:-1]=kwds['libdirs']
-    if kwds.has_key('incdirs'):
+    if 'incdirs' in kwds:
       self.incdirs[-1:-1]=kwds['incdirs']
-    if kwds.has_key('libs'):
+    if 'libs' in kwds:
       self.libs[-1:-1]=kwds['libs']
-    if kwds.has_key('extra'):
+    if 'extra' in kwds:
       self.extra = self.extra + ' ' + kwds['extra']
-    if kwds.has_key('macros'):
+    if 'macros' in kwds:
       macros = kwds['macros']
       for macro in macros:
         self.macros[macro] = macros[macro]
-    if kwds.has_key('switches'):
+    if 'switches' in kwds:
       switches = kwds['switches']
       for switch in switches:
         self.switches[switch] = switches[switch]
@@ -49,10 +49,10 @@ class config:
     for x in self.libdirs: s = s + ' -L' + x
     for x in self.incdirs : s = s + ' -I' + x
     for x in self.libs: s = s + ' -l' + x
-    for x in self.macros.keys():
+    for x in list(self.macros.keys()):
       s = s + ' -D' + x
       if self.macros[x]: s = s + '=' + self.macros[x]
-    for x in self.switches.keys():
+    for x in list(self.switches.keys()):
       s = s + ' -' + x + self.switches[x]
     return s
 

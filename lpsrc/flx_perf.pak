@@ -1303,7 +1303,7 @@ for xl,mk,src in xlators:
     sys.stdout.flush()
     # won't work on Win98, result always 0 for command.com
     result = os.system(cmd)
-    if result <> 0:
+    if result != 0:
       print "COMPILE FAILURE",xl,src,test
     else:
       print "Compile OK",xl,src,test
@@ -1512,7 +1512,7 @@ for line in fin:
   n = int(n)
   elapsed=float(elapsed)
   if pload == kind:
-    print hostname,kind,date,time,xl,tst,n,elapsed
+    print(hostname,kind,date,time,xl,tst,n,elapsed)
     hostd = hostsd.get(hostname,{})
     hostsd[hostname] = hostd
     testd = hostd.get(tst,{})
@@ -1524,17 +1524,17 @@ for line in fin:
     nd.append(elapsed)
 fin.close()
 
-print "DATA"
+print("DATA")
 fi = open("speed/mkjpgs.gpl",'w')
 fi.write("set terminal jpeg\n")
 
-for h,d in hostsd.iteritems():
-  print "host",h
+for h,d in hostsd.items():
+  print("host",h)
   root = 'speed/machine/'+h+'/'
   mkdir(root+"images/")
   mkdir(root+"plotters/")
-  for t,xd in d.iteritems():
-    print "  test",t
+  for t,xd in d.items():
+    print("  test",t)
     mkdir(root+'/'+t)
     # one gnuplot file for each test
     # one summary per test
@@ -1547,7 +1547,7 @@ for h,d in hostsd.iteritems():
       nd = xd[xl]
       # one datafile for each test/xlator
       fxl = open(root+'/'+t+'/'+xl+'.dat','w')
-      print "    xlator",xl
+      print("    xlator",xl)
       ns = nd.keys()
       ns.sort()
       lines = 0
@@ -1561,7 +1561,7 @@ for h,d in hostsd.iteritems():
         edev = 0
         for x in es: edev = edev + (x - average) * (x - average)
         edev = math.sqrt(edev/float(count))
-        print "        n %2d -[%3d]-> (%6.2f,%6.2f,%6.2f) sd=%6.2f" % (n,count,emin,average,emax,edev)
+        print("        n %2d -[%3d]-> (%6.2f,%6.2f,%6.2f) sd=%6.2f" % (n,count,emin,average,emax,edev))
         # one line for each n value
         # skip too low values
         if average >= mintime and count >= mindata:
@@ -1597,10 +1597,10 @@ for h,d in hostsd.iteritems():
 
     prlimit = 10
     i = 0
-    print "Rankings for",t,"on",h
+    print("Rankings for",t,"on",h)
     for m,a in keys:
       xl,count,edev = summary[m,a]
-      print "    %-16s %2d %6.2f [N=%3d, SD=%6.2f]" % (xl,-m,a,count,edev)
+      print("    %-16s %2d %6.2f [N=%3d, SD=%6.2f]" % (xl,-m,a,count,edev))
       i = i + 1
       if i >= prlimit: break
     try: os.mkdir(root+'rankings')
@@ -1777,9 +1777,9 @@ import os
 import sys
 import string
 def xqt(x):
-  print x
+  print(x)
   res=os.system(x)
-  if res <> 0:
+  if res != 0:
     sys.exit(1)
 
 filebase = sys.argv[1]
@@ -1805,7 +1805,7 @@ import os
 import sys
 import string
 def xqt(x):
-  print x
+  print(x)
   os.system(x)
 
 filebase = sys.argv[1]

@@ -3,32 +3,31 @@
 import types
 
 type_protocols = {
-  types.NoneType : [],
-  types.TypeType : ['type','immutable'],
-  types.IntType : ['integer','number','immutable'],
-  types.LongType : ['integer','number','immutable'],
-  types.FloatType : ['number','immutable'],
-  types.StringType : ['string','immutable','filename','url'],
-  types.TupleType : ['sequence','immutable'],
-  types.ListType : ['sequence','mutable'],
-  types.DictType : ['map','mutable'],
+  type(None) : [],
+  type : ['type','immutable'],
+  int : ['integer','number','immutable'],
+  int : ['integer','number','immutable'],
+  float : ['number','immutable'],
+  bytes : ['string','immutable','filename','url'],
+  str: ['string','immutable','filename','url'],
+  tuple : ['sequence','immutable'],
+  list : ['sequence','mutable'],
+  dict : ['map','mutable'],
   types.FunctionType : ['function'],
   types.LambdaType : ['function'],
   types.CodeType : ['code'],
-  types.ClassType : ['class'],
-  types.InstanceType : ['instance'],
+  type : ['class'],
   types.MethodType : ['function'],
   types.BuiltinFunctionType: ['function'],
   types.ModuleType: ['module'],
-  types.FileType: ['file'],
-  types.XRangeType: ['range'],
+  range: ['range'],
   types.TracebackType: ['traceback'],
   types.FrameType: ['frame'],
-  types.SliceType: ['slice'],
-  types.EllipsisType: ['ellipsis']
+  slice: ['slice'],
+  type(Ellipsis): ['ellipsis']
 }
 try:
-  type_protocols[types.ComplexType]='number'
+  type_protocols[complex]='number'
 except NameError:
   pass
 
@@ -37,16 +36,10 @@ class provides_attr:
     self.name = name
 
 def isclass(obj):
-  return type(obj) is types.ClassType
-
-def isinstancetype(obj):
-  return type(obj) is types.InstanceType
+  return type(obj) is type
 
 def classof(obj):
-  if isinstancetype(obj):
-    return obj.__class__
-  else:
-    return None
+  return obj.__class__
 
 def add_obj_proto(object,protocol):
   if hasattr(object,'__protocols__'):
@@ -70,7 +63,7 @@ def add_type_protos(object,protocols):
   for p in protocols: add_type_protos(object,p)
 
 def add_type_proto(typ, protocol):
-  if type_protocols.has_key(typ):
+  if typ in type_protocols:
     type_protocols[typ].append(protocol)
   else:
     type_protocols[typ] = [protocol]
@@ -84,7 +77,7 @@ def has_class_proto(cls,protocol):
 def has_type_proto(object,protocol):
   typ = type(object)
   if typ is protocol: return 1
-  if type_protocols.has_key(typ):
+  if typ in type_protocols:
     if protocol in type_protocols[typ]: return 1
   return 0
 
@@ -99,9 +92,8 @@ def has_protocol(object,protocol):
     for base in cls.__bases__:
       if has_class_proto(base,protocol): return 1
   if has_type_proto(object,protocol): return 1
-  if type(protocol) is types.InstanceType:
-    if protocol.__class__ is provides_attr:
-      if hasattr(object,protocol.name): return 1
+  if protocol.__class__ is provides_attr:
+    if hasattr(object,protocol.name): return 1
   return 0
 
 def has_protocols(object,protocols):

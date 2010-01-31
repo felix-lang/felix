@@ -13,5 +13,5 @@ class llambda_weaver(latex_weaver):
   def __init__(self, pass_frame, writer, language='', **kwds):
     kwds2=kwds.copy()
     kwds2['llambda']=None
-    apply(latex_weaver.__init__, (pass_frame, writer, language), kwds2)
+    latex_weaver.__init__(*(pass_frame, writer, language), **kwds2)
 

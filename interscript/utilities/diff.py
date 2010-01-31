@@ -41,12 +41,12 @@ def diff_strings(o,m,context=0):
   return result
 
 def diff_lines(o,m,context=0):
-  os = string.join(o,'\n')+'\n'
-  om = string.join(m,'\n')+'\n'
+  os = '\n'.join(o)+'\n'
+  om = '\n'.join(m)+'\n'
   result = diff_strings(os,om,context=context)
   del os
   del om
-  data = string.split(result,'\n')[:-1]
+  data = result.split('\n')[:-1]
   if data == []: return []
   cs = data[0][0]
   cm = data[1][0]
@@ -87,7 +87,7 @@ def diff_lines(o,m,context=0):
 
 def patch_file(o,diff,m):
   cmd = 'patch -s -c -o ' + m + ' ' + o + ' -'
-  print cmd
+  print(cmd)
   f = os.popen(cmd,'w')
   f.write(diff)
   result = f.close()

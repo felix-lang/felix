@@ -47,11 +47,11 @@ class platform_frame:
   def create_directory(self,dir):
     if not self.os.path.isdir(dir):
       try: self.os.mkdir(dir)
-      except os.error, data:
+      except os.error as data:
         if data[0]!=self.errno.EEXIST: # File Exists is OK, everything else is fatal
-          raise os.error, (data[0],data+': directory "'+dir+'"')
+          raise os.error(data[0],data+': directory "'+dir+'"')
     if not self.os.path.isdir(dir):
-      raise self.os.error, (self.errno.ENOENT, 'Created a directory '+dir+', but it is not there!')
+      raise self.os.error(self.errno.ENOENT, 'Created a directory '+dir+', but it is not there!')
 
   # given an os specific prefix and a list of component names,
   # make the directory structure in which the last component is contained
@@ -99,10 +99,10 @@ class platform_frame:
       # note this leaks a file if it is opened but not closed :-))
       open(pathname,'r').close()
       return 1
-    except IOError, data:
-      if data[0] == self.errno.ENOENT:
+    except IOError as data:
+      if data.errno == self.errno.ENOENT:
         return 0
-      raise IOError, data
+      raise IOError(data)
 
   # Note: the intention is to apply mk_dir to ensure the file has a
   # parent directory, creating it if necessary, then test if the file
@@ -110,7 +110,7 @@ class platform_frame:
   # to be replaced.
 
   def map_filename(self, prefix, path):
-    return prefix+string.join(string.split(path,'/'),self.os.sep)
+    return prefix+self.os.sep.join(path.split('/'))
 
   def get_working_directory(self): # native filename
     return os.getcwd()

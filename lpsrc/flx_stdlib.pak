@@ -190,10 +190,10 @@ typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
         f3 = cint2fint[config.TARGET_CXX.options.arith_conv[(fint2cint[f1],fint2cint[f2])]]
         comment = ""
         if f1 == f2:
-          if f2 <> f1: comment = "// ERROR"
-        if (f1 == 'uvlong' or f2 == 'uvlong') and f3 <> 'uvlong':
+          if f2 != f1: comment = "// ERROR"
+        if (f1 == 'uvlong' or f2 == 'uvlong') and f3 != 'uvlong':
           comment = "// ERROR, uvlong expected"
-        elif f3 <> f1 and f3 <> f2:
+        elif f3 != f1 and f3 != f2:
           comment = "// SPECIAL PROMOTION"
         elif f1 == 'uint' and f2=='long' or f1=='long' and f2=='uint':
           comment = '// Representation Dependent (long or ulong)'
@@ -211,7 +211,7 @@ typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
 
 @select(tangler('lib/plat/float.flx','data'))
 @for t in floats:
-  tangle("open module " + string.capitalize(t))
+  tangle("open module " + t.capitalize())
   tangle("{")
   tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atof($1.data()))" requires cstdlib;')
   tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')

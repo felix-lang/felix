@@ -47,14 +47,14 @@ class ocaml_comment_tangler(tangler_base):
 #---------------------------------------------------------
 class ocaml_string_tangler(tangler_base):
   def __init__(self,sink,weaver,eol,width):
-    print 'Initialising ocaml string tangler, eol=',eol,'width=',width
+    print('Initialising ocaml string tangler, eol=',eol,'width=',width)
     tangler_base.__init__(self,sink,weaver)
     self.eol=eol
     self.width=width
     self.language = 'ocaml string'
 
   def writeline(self,data,file,count,inhibit_sref=0):
-    data = string.rstrip(data) # remove trailing spaces
+    data = data.rstrip() # remove trailing spaces
     if self.width > 0: data = string.ljust(data, self.width)
     line = '"'
     for ch in data:

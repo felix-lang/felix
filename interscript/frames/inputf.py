@@ -27,11 +27,11 @@ from interscript.parsers.html import sgml_wrapper, html_filter
 try:
   import interscript.utilities.diff
 except:
-  try: raise "dummy" # correct stupid python bug
+  try: raise Exception("dummy") # correct stupid python bug
   except: pass
 
 def compile_parse_tab(res):
-  return map(lambda x: [re.compile(x[0]), x[1]], res)
+  return [[re.compile(x[0]), x[1]] for x in res]
 
 class deduce: pass
 
@@ -81,9 +81,9 @@ class input_frame:
   def post_methods(self):
     # input frame methods
     self.userdict.update(self.process.global_frame.__dict__)
-    method_names = self.__class__.__dict__.keys()
+    method_names = list(self.__class__.__dict__.keys())
     is_begin_or_end_method = lambda x: x[:3]=='end' or x[:5]=='begin'
-    method_names = filter(is_begin_or_end_method, method_names)
+    method_names = list(filter(is_begin_or_end_method, method_names))
     method_names = method_names + [
       'head','heading','push_head','pop_head','set_head',
       'line_break','page_break',
@@ -165,24 +165,24 @@ class input_frame:
 #line 210 "interscript/src/input_frame.ipk"
   def help(self):
     "Command help"
-    print "Command Help"
+    print("Command Help")
     d = self.userdict
-    keys = d.keys()
+    keys = list(d.keys())
     keys.sort()
     for key in keys:
       routine = d[key]
       typ = type(routine)
       doc = getattr(routine,'__doc__','')
       if typ.__name__ in ['module']:
-        print typ.__name__,key
+        print(typ.__name__,key)
       else:
-        print typ.__name__, key + "->",doc
+        print(typ.__name__, key + "->",doc)
 
   def weave_help(self, level):
     "Weave help"
     self.head(level,"Command Help")
     d = self.userdict
-    keys = d.keys()
+    keys = list(d.keys())
     keys.sort()
     for key in keys:
       routine = d[key]
@@ -191,7 +191,7 @@ class input_frame:
       if doc is None: doc = "No documentation"
       self.head(level+1, typ.__name__+ " "+ key)
       if typ is types.MethodType:
-        self.weave_line("Method of class " + routine.im_class.__name__+".")
+        self.weave_line("Method of class " + routine.__self__.__class__.__name__+".")
       self.begin_displayed_code()
       self.weave(doc)
       self.end_displayed_code()
@@ -199,7 +199,7 @@ class input_frame:
 #line 246 "interscript/src/input_frame.ipk"
   def close(self):
     if 'frames' in self.process.trace:
-      print 'closing frame',self.source.name
+      print('closing frame',self.source.name)
     self.userdict.clear()
     del self.userdict
     del self.current_tangler
@@ -216,7 +216,7 @@ class input_frame:
 
         self.echo = 'input' in self.process.trace
         if self.echo:
-          print '%s %6s: %s' % (file,count,line)
+          print('%s %6s: %s' % (file,count,line))
         for r in self.reg_list:
           match = r[0].match(line)
           if match:
@@ -224,28 +224,28 @@ class input_frame:
             break
       except eoi:
         if 'frames' in self.process.trace:
-          print 'EOI detected'
+          print('EOI detected')
         if self.current_tangler:
           self.select(None)
         self.close()
         return
       except KeyboardInterrupt:
-        print '!!!!!!!!! KEYBOARD INTERRUPT !!!!!!!!!'
+        print('!!!!!!!!! KEYBOARD INTERRUPT !!!!!!!!!')
         self.process.update_files = 0
         self.close()
         raise KeyboardInterrupt
-      except process_fault,value:
-        print '!!!!!!!!! PROCESS FAULT ',value,' !!!!!!!!!'
+      except process_fault as value:
+        print('!!!!!!!!! PROCESS FAULT ',value,' !!!!!!!!!')
         self.process.update_files = 0
         self.close()
         raise
-      except SystemExit,value:
-        print '!!!!!!!!! SYSTEM EXIT !!!!!!!!!'
+      except SystemExit as value:
+        print('!!!!!!!!! SYSTEM EXIT !!!!!!!!!')
         self.process.update_files = 0
         self.close()
-        raise SystemExit,value
+        raise SystemExit(value)
       except:
-        print '!!!!!!!!! PROGRAM ERROR !!!!!!!!!'
+        print('!!!!!!!!! PROGRAM ERROR !!!!!!!!!')
         traceback.print_exc()
         self.process.update_files = 0
         self.close()
@@ -262,8 +262,8 @@ class input_frame:
       except KeyboardInterrupt: raise
       except SystemExit: raise
       except:
-        print 'Error running embedded interscript from options'
-        print 'options were', args
+        print('Error running embedded interscript from options')
+        print('options were', args)
         traceback.print_exc()
     finally:
       sys.stdin  = svdin
@@ -293,13 +293,13 @@ class input_frame:
       pass
     our_source_filename = 'interscript/tests/test_'+str(testno)+'.tpk'
     f = open(our_source_filename,'w')
-    f.write(string.join(test_code,'\n')+'\n')
+    f.write('\n'.join(test_code)+'\n')
     f.close()
 
     logfile='interscript/tests/output/test_'+str(testno)+'.log'
 
     kargs =  []
-    for key in kwds.keys():
+    for key in list(kwds.keys()):
       if key not in ['description','source_terminator']:
         kargs.append('--' + key + '=' + repr(kwds[key]))
 
@@ -309,7 +309,7 @@ class input_frame:
       '--new-logfile='+logfile,
       '--title=Test '+str(testno)+': '+description,
       our_source_filename)
-    apply(self.interscript_from_options, newargs)
+    self.interscript_from_options(*newargs)
     self.set_test_result(testno,'inspect')
     self.current_weaver.doc()
     self.current_weaver.writeline('Test output at')
@@ -322,7 +322,7 @@ class input_frame:
 #line 384 "interscript/src/input_frame.ipk"
   def get_attribute(self,name,default=None):
     "Get a variable, default None"
-    if self.userdict.has_key(name):
+    if name in self.userdict:
       return self.userdict[name]
     else:
       return default
@@ -352,10 +352,10 @@ class input_frame:
   def include_file(self,name,encoding=None):
     "Include an interscruot file"
     if 'input' in self.process.trace:
-      print 'input from',name
+      print('input from',name)
     file_signature = (self.depth+1,'interscript',name)
     if file_signature in self.pass_frame.skiplist:
-      print 'SKIPPING INCLUDE FILE',file_signature
+      print('SKIPPING INCLUDE FILE',file_signature)
       i = 0
       t = self.master.src_tree
       n = len(t)
@@ -363,14 +363,14 @@ class input_frame:
         if file_signature == tuple(t[i][0:3]): break
         i = i + 1
       if i == n:
-        print 'COULD NOT FIND SKIP FILE',file_signature,'in',t
+        print('COULD NOT FIND SKIP FILE',file_signature,'in',t)
       else:
         self.pass_frame.include_files.append(file_signature)
         i = i + 1
         lev = file_signature[0]
         while i<n:
           if t[i][0] >= lev: break
-          print 'INSERTING',t[i][2],'into include file list (cheating)'
+          print('INSERTING',t[i][2],'into include file list (cheating)')
           self.pass_frame.include_files.append(tuple(t[i][0:3]))
           i = i + 1
     else:
@@ -590,8 +590,8 @@ class input_frame:
         self.real_filename = self.source.get_source_name()
         self.real_count = self.source.get_lines_read()
         self.original_count = self.real_count + self.line_offset
-        line = string.rstrip(line)
-        self.line = string.expandtabs(line,self.tabwidth)
+        line = line.rstrip()
+        self.line = line.expandtabs(self.tabwidth)
         return (self.original_filename,self.original_count,self.line)
       except KeyboardInterrupt:
         # should inhibit output for process, not globally
@@ -599,11 +599,11 @@ class input_frame:
         raise KeyboardInterrupt
       except eof:
         if 'input' in self.process.trace:
-          print 'readline: EOF'
+          print('readline: EOF')
         self.line = None
         raise eoi
       else:
-        print 'program error in readline:',sys.exc_info()
+        print('program error in readline:',sys.exc_info())
         self.process.update_files = 0
 
 #line 820 "interscript/src/input_frame.ipk"
@@ -611,13 +611,13 @@ class input_frame:
     """Wrap an external file up as an interscript package, the wrapped
     file is written to the current tangler."""
     if not self.current_tangler:
-      raise 'untangle without active tangler'
+      raise Exception('untangle without active tangler')
     f = open(name)
     data = f.readlines()
     f.close()
     self.current_tangler.sink.writeline('@select(output("'+name+'"))')
     for line in data:
-      l = string.rstrip(line)
+      l = line.rstrip()
       if len(l):
         if l[0]=='@': l = '@'+l
       self.inpt.tangler.sink.writeline(l)
@@ -653,7 +653,7 @@ class input_frame:
       match = cont_re.match(line)
       while match:
         if echo:
-          print '%s %6s: %s' % (file2,count2,line)
+          print('%s %6s: %s' % (file2,count2,line))
         body = match.group(1)
         if not body: body = ''
         saved = saved+'\n'+body
@@ -692,7 +692,7 @@ class input_frame:
 
   def collect_upto(self,terminal, keep=0):
     "Collect text up to marker line"
-    return string.join(self.collect_lines_upto(terminal,keep), '\n')+'\n'
+    return '\n'.join(self.collect_lines_upto(terminal,keep))+'\n'
 
 #line 944 "interscript/src/input_frame.ipk"
   def python(self, terminal, keep=0):
@@ -717,8 +717,8 @@ class input_frame:
       for section in comparison:
         left = section[0][1:]
         right = section[1][1:]
-        left = string.join(left,'\n')
-        right = string.join(right,'\n')
+        left = '\n'.join(left)
+        right = '\n'.join(right)
         our_weaver.table_row([left, right])
       our_weaver.end_table()
     else:
@@ -798,7 +798,7 @@ class input_frame:
       our_source_filebase = tempfile.mktemp()
       our_source_filename = our_source_filebase + '_test.py'
       f = open(our_source_filename,'w')
-      f.write(string.join(test_code,'\n')+'\n')
+      f.write('\n'.join(test_code)+'\n')
       f.close()
       description = 'python <<temporary>>'
     our_weaver.writeline('Actual output follows.')
@@ -898,12 +898,12 @@ class input_frame:
         self.master.tangler_prefix)
     elif has_protocol(device, 'sink'):
       sink = device
-    else: raise TypeError,'tangler device argument must be string or sink'
+    else: raise TypeError('tangler device argument must be string or sink')
 
     if language is None: language = 'data'
     if language is deduce:
       try:
-        splitup = string.split(sink.name,'.')
+        splitup = sink.name.split('.')
         if len(splitup)>1:
           extension = splitup[-1]
           #language = extension_table [extension]
@@ -911,9 +911,9 @@ class input_frame:
         else: language = 'data'
       except KeyError: language = 'data'
       except IndexError: language = 'data'
-    language = string.lower(language)
-    language = string.replace(language,'++','pp') # C++ hack
-    language = string.replace(language,'-','_') # obj-C etc
+    language = language.lower()
+    language = language.replace('++','pp') # C++ hack
+    language = language.replace('-','_') # obj-C etc
 
     try:
       import imp
@@ -926,17 +926,17 @@ class input_frame:
       try:
         tmod = imp.load_module(language,file,pathname,description)
       except:
-        print "imp.load_module failed for '"+pathname+"'"
+        print("imp.load_module failed for '"+pathname+"'")
         raise exceptions.UserWarning("Can't load tangler")
       try:
         class_name = language + "_tangler"
         tglr = getattr(tmod,class_name)
       except:
-        print "tangler class '"+class_name+"' not found in module "
+        print("tangler class '"+class_name+"' not found in module ")
         raise exceptions.UserWarning("Can't load tangler")
       t = tglr(sink,self.current_weaver,self.inhibit_sref)
     except:
-      print 'Unable to load',language,'tangler for "'+device+'": using data'
+      print('Unable to load',language,'tangler for "'+device+'": using data')
       t=data_tangler(sink,self.current_weaver)
     return t
 
@@ -958,9 +958,9 @@ class input_frame:
     "Select the nominated object as the current tangler or weaver"
     for arg in args:
       self.select1(arg)
-    if kwds.has_key('tangler'):
+    if 'tangler' in kwds:
       self.select_tangler(kwds['tangler'])
-    if kwds.has_key('weaver'):
+    if 'weaver' in kwds:
       self.set_weaver(kwds['weaver'])
 
   def select1(self, arg):
@@ -1046,12 +1046,12 @@ class input_frame:
       file = self.original_filename
       self.current_tangler.writeline(s,file,line,inhibit_sref)
     else:
-      print "tangle: No tangler for",s
+      print("tangle: No tangler for",s)
 
   def tangle(self,s, inhibit_sref=None):
     "Tangle lines of code"
     if inhibit_sref == None: inhibit_sref = self.inhibit_sref
-    lines = string.split(s,'\n')
+    lines = s.split('\n')
     for line in lines:
       self._tangle_line(line,inhibit_sref)
 
@@ -1060,20 +1060,20 @@ class input_frame:
       snk = self.current_tangler.sink
       snk.writeline(s)
     else:
-      print "tangle: No tangler for",s
+      print("tangle: No tangler for",s)
 
 #line 1413 "interscript/src/input_frame.ipk"
   def print_contents(self,*args, **kwds):
     "Print table of contents"
     self.select(None)
     weaver = self.get_weaver()
-    apply(weaver.print_contents, args, kwds)
+    weaver.print_contents(*args, **kwds)
 
   def print_file_list(self,*args,**kwds):
     "Print complete list of all files"
     self.select(None)
     weaver = self.get_weaver()
-    apply(weaver.print_file_list, args, kwds)
+    weaver.print_file_list(*args, **kwds)
 
   def print_file_status(self,*args,**kwds):
     """Weave status information. Warning: this information
@@ -1083,19 +1083,19 @@ class input_frame:
     simple file sink, which is included in convergence checks."""
     self.select(None)
     weaver = self.get_weaver()
-    apply(weaver.print_file_status, args, kwds)
+    weaver.print_file_status(*args, **kwds)
 
   def print_source_list(self, *args, **kwds):
     "Weave the interscript source tree"
     self.select(None)
     weaver = self.get_weaver()
-    apply(weaver.print_source_list, args, kwds)
+    weaver.print_source_list(*args, **kwds)
 
   def print_include_list(self, *args, **kwds):
     "Weave the include file list"
     self.select(None)
     weaver = self.get_weaver()
-    apply(weaver.print_include_list, args, kwds)
+    weaver.print_include_list(*args, **kwds)
 
   def macro(self,name):
     self.select(None)
@@ -1106,20 +1106,20 @@ class input_frame:
     "Weave the identifier cross reference table"
     self.select(None)
     weaver = self.get_weaver()
-    apply(weaver.identifier_reference, args, kwds)
+    weaver.identifier_reference(*args, **kwds)
 
   def print_class_reference(self, *args, **kwds):
     "Weave the class cross reference table"
     self.select(None)
     weaver = self.get_weaver()
-    apply(weaver.class_reference, args, kwds)
+    weaver.class_reference(*args, **kwds)
 
 #line 1467 "interscript/src/input_frame.ipk"
   def capture_output(self,command):
     "Capture the output from executing the shell command"
     commands = self.global_frame.commands
     status, output = commands.getstatusoutput(command)
-    data = string.split(output,'\n')
+    data = output.split('\n')
     return (status,data)
 
   def print_output(self,command,description=None):
@@ -1131,7 +1131,7 @@ class input_frame:
     weaver.test_output_head(cmd, status)
     for i in range(len(data)):
       line = data[i]
-      l = string.rstrip(line)
+      l = line.rstrip()
       weaver.echotangle(i+1,l)
     weaver.test_output_foot(cmd, status)
     return (status, data)
@@ -1160,12 +1160,12 @@ class input_frame:
     level = level + self.head_offset
     self.last_head = level
     if 'headings' in self.process.trace:
-      print ('  '*(level-1))+'"'+text+'"'
+      print(('  '*(level-1))+'"'+text+'"')
     self.pass_frame.toc.append((level,text, kwds))
     if self.current_tangler: self.code_foot()
     self.tangler_set(None)
-    apply(add_translation,(text,),kwds.get('translations',{}))
-    apply(self.current_weaver.head,(level,text),kwds)
+    add_translation(*(text,), **kwds.get('translations',{}))
+    self.current_weaver.head(*(level,text), **kwds)
 
   # like heading, but to be used in code as well:
   # doesn't switch to document mode, doesn't do
@@ -1178,9 +1178,9 @@ class input_frame:
     level = level + self.head_offset
     self.last_head = level
     if 'headings' in self.process.trace:
-      print ('  '*(level-1))+'"'+text+'"'
+      print(('  '*(level-1))+'"'+text+'"')
     self.pass_frame.toc.append((level,text, kwds))
-    apply(self.current_weaver.head,(level,text),kwds)
+    self.current_weaver.head(*(level,text), **kwds)
 
   def push_head(self, amt=1):
     "Push the heading level onto the heading level stack"
@@ -1225,7 +1225,7 @@ class input_frame:
 #line 1585 "interscript/src/input_frame.ipk"
   def begin_table(self, *headings, **kwds):
     "Begin a table"
-    apply(self.get_weaver().begin_table, headings, kwds)
+    self.get_weaver().begin_table(*headings, **kwds)
 
   def table_row(self, *data):
     "Weave a table row"
@@ -1266,7 +1266,7 @@ class input_frame:
 
   def item(self,*args, **kwds):
     "Start a new list item"
-    apply(self.current_weaver.item, args, kwds)
+    self.current_weaver.item(*args, **kwds)
 
   def begin_numbered_list(self, start=1):
     "Start a new numbered list item"
@@ -1389,7 +1389,7 @@ class input_frame:
     f.close()
     weaver = self.get_weaver()
     for line in data:
-      l = string.rstrip(line)
+      l = line.rstrip()
       weaver.writeline(l)
     self.end_displayed_code()
 

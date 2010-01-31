@@ -16,7 +16,7 @@ class python_module:
     config = self.config.copy()
     config.append_dict(kwds)
 
-    base = string.join(string.split(filename,'.')[:-1],'.')
+    base = '.'.join(filename.split('.')[:-1])
     obj = base+'.o'
     cc ='g++ -g -O2 -fhandle-exceptions -fpic -fPIC -pedantic '
     inc = '-I' + sys.prefix + '/include/python1.5 '
@@ -24,10 +24,10 @@ class python_module:
       inc = inc + '-I' + sys.exec_prefix + '/include/python1.5 '
     cstr = str(config)+' '
     arg = cc + cstr +  inc + '-c '+filename + ' -o '+ obj
-    print 'system',repr(arg)
+    print('system',repr(arg))
     result = os.system(arg)
     if result != 0:
-      raise 'Compiler Error'
+      raise Exception('Compiler Error')
     return obj
 
   def link(self,modname, filenames, **kwds):
@@ -38,13 +38,13 @@ class python_module:
     cstr = str(config) + ' '
     lib = '-L' + sys.exec_prefix + '/lib/python1.5 '
     dll = modname +'.so'
-    files = string.join(filenames) + ' '
+    files = ' '.join(filenames) + ' '
     arg = cc + cstr + lib + files + '-o '+dll
 
-    print 'system',repr(arg)
+    print('system',repr(arg))
     result = os.system(arg)
     if result != 0:
-      raise 'Linker Error'
+      raise Exception('Linker Error')
     return dll
 
 class application:
@@ -59,7 +59,7 @@ class application:
     config = self.config.copy()
     config.append_dict(kwds)
 
-    base = string.join(string.split(filename,'.')[:-1],'.')
+    base = '.'.join(filename.split('.')[:-1])
     obj = base+'.o'
     cc ='g++ -g -O2 -fhandle-exceptions -fpic -fPIC -pedantic '
     inc = '-I' + sys.prefix + '/include/python1.5 '
@@ -67,10 +67,10 @@ class application:
       inc = inc + '-I' + sys.exec_prefix + '/include/python1.5 '
     cstr = str(config)+' '
     arg = cc + cstr +  inc + '-c '+filename + ' -o '+ obj
-    print 'system',repr(arg)
+    print('system',repr(arg))
     result = os.system(arg)
     if result != 0:
-      raise 'Compiler Error'
+      raise Exception('Compiler Error')
     return obj
 
   def link(self,appname, filenames, **kwds):
@@ -80,12 +80,12 @@ class application:
     cc ='g++ '
     cstr = str(config) + ' '
     lib = '-L' + sys.exec_prefix + '/lib/python1.5 '
-    files = string.join(filenames) + ' '
+    files = ' '.join(filenames) + ' '
     arg = cc + cstr + lib + files + '-o '+appname
 
-    print 'system',repr(arg)
+    print('system',repr(arg))
     result = os.system(arg)
     if result != 0:
-      raise 'Linker Error'
+      raise Exception('Linker Error')
     return appname
 

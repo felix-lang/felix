@@ -4,7 +4,7 @@ class raw_weaver(weaver_base):
   def __init__(self, pass_frame, writer ,**kwds):
     weaver_base.__init__(self, pass_frame)
     if 'weavers' in self.process.trace:
-      print 'initialising raw weaver, writer',writer.get_sink_name()
+      print('initialising raw weaver, writer',writer.get_sink_name())
     self.protocol = 'raw'
     self.persistent_frame['protocol']=self.raw
     self.tags = ['raw']

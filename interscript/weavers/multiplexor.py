@@ -17,8 +17,8 @@ class multiplexor:
   def __del__(self):
     if 'weavers' in self.process.trace:
       self.process.release_object(self)
-  def __nonzero__(self):
-    return 1
+  def __bool__(self):
+    return True
 
   def callit(self,*args, **kwds):
     self._callit(self.temp,args,kwds)
@@ -27,7 +27,7 @@ class multiplexor:
     for b in self.base:
       if hasattr(b,at):
         try:
-          apply(getattr(b,at),args,kwds)
+          getattr(b,at)(*args, **kwds)
         except KeyboardInterrupt:
           raise KeyboardInterrupt
         except:
@@ -35,11 +35,11 @@ class multiplexor:
           name = 'No name attribute'
           if hasattr(b,'protocol'): protocol = b.protocol
           if hasattr(b,'name'): name = b.name
-          print 'Error in call!'
-          print '  Method',at
-          print '  Args  ',args
-          print '  Kwds  ',kwds
-          print '  of    ',b.protocol,'weaver',b.name,'ignored'
+          print('Error in call!')
+          print('  Method',at)
+          print('  Args  ',args)
+          print('  Kwds  ',kwds)
+          print('  of    ',b.protocol,'weaver',b.name,'ignored')
           traceback.print_exc()
       elif self.debug_missing_methods:
         protocol = 'No protocol attribute'
@@ -50,7 +50,7 @@ class multiplexor:
           sink = b.sink
           if hasattr(sink,'name'):
             sinkname = sink.name
-        print 'Warning: missing method',at,'of weaver type',protocol,'for',sinkname,'ignored'
+        print('Warning: missing method',at,'of weaver type',protocol,'for',sinkname,'ignored')
 
   def __getattr__(self,x):
     self.temp = x

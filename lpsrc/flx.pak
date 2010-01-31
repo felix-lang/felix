@@ -154,14 +154,14 @@ be used to create the configuration creator script.
     import config.flx_data
  except:
     xt,xv,tb = sys.exc_info()
-    print "ERROR IN config/flx_data.py"
+    print("ERROR IN config/flx_data.py")
     traceback.print_exception(xt,xv,tb)
-    print "You must either"
-    print "(a) edit config/__init__.py and fix the error, or,"
-    print "(b) i) delete it, and,"
-    print "    ii) run 'python script/make_config.py'"
-    print "       again to reset it:"
-    print "       this is done automatically by 'make boot'"
+    print("You must either")
+    print("(a) edit config/__init__.py and fix the error, or,")
+    print("(b) i) delete it, and,")
+    print("    ii) run 'python script/make_config.py'")
+    print("       again to reset it:")
+    print("       this is done automatically by 'make boot'")
     sys.exit(1)
 
 
@@ -191,7 +191,7 @@ def get_buildno():
 @gmtime = time.gmtime(now)
 @short_time = time.strftime("%a %d %b %Y",gmtime)
 @buildno = get_buildno()
-@print "BUILDNO",buildno
+@print("BUILDNO",buildno)
 open Flx_version
 let version_data: version_data_t =
 {

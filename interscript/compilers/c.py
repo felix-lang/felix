@@ -16,7 +16,7 @@ class python_module:
     config = self.config.copy()
     config.append_dict(kwds)
 
-    base = string.join(string.split(filename,'.')[:-1],'.')
+    base = '.'.join(filename.split('.')[:-1])
     obj = base+'.o'
     cc = 'gcc -g -O2 -fpic -fPIC -pedantic '
     inc = '-I' + sys.prefix + '/include/python1.5 '
@@ -24,7 +24,7 @@ class python_module:
       inc = inc + '-I' + sys.exec_prefix + '/include/python1.5 '
     cstr = str(config)+' '
     arg = cc + cstr +  inc + '-c '+filename + ' -o '+ obj
-    print 'system',repr(arg)
+    print('system',repr(arg))
     os.system(arg)
     return obj
 
@@ -36,10 +36,10 @@ class python_module:
     cc ='gcc -shared -Xlinker -export-dynamic '
     cstr = str(config) + ' '
     lib = '-L' + sys.exec_prefix + '/lib/python1.5 '
-    files = string.join(filenames) + ' '
+    files = ' '.join(filenames) + ' '
     arg = cc + cstr + lib + files + '-o ' + dll
 
-    print 'system',repr(arg)
+    print('system',repr(arg))
     os.system(arg)
     return dll
 
@@ -55,7 +55,7 @@ class application:
     config = self.config.copy()
     config.append_dict(kwds)
 
-    base = string.join(string.split(filename,'.')[:-1],'.')
+    base = '.'.join(filename.split('.')[:-1])
     obj = base+'.o'
     cc ='gcc -g -O2 -fpic -fPIC -pedantic '
     inc = '-I' + sys.prefix + '/include/python1.5 '
@@ -63,7 +63,7 @@ class application:
       inc = inc + '-I' + sys.exec_prefix + '/include/python1.5 '
     cstr = str(config)+' '
     arg = cc + cstr +  inc + '-c '+filename + ' -o '+ obj
-    print 'system',repr(arg)
+    print('system',repr(arg))
     os.system(arg)
     return obj
 
@@ -74,10 +74,10 @@ class application:
     cc ='gcc '
     cstr = str(config) + ' '
     lib = '-L' + sys.exec_prefix + '/lib/python1.5 '
-    files = string.join(filenames) + ' '
+    files = ' '.join(filenames) + ' '
     arg = cc + cstr + lib + files + '-o ' + appname
 
-    print 'system',repr(arg)
+    print('system',repr(arg))
     os.system(arg)
     return appname
 

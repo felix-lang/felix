@@ -940,7 +940,7 @@ Felix grammar summary.
      tangle('.br')
   f.close()
  except:
-  print 'run "make grammar" first'
+  print('run "make grammar" first')
 .br
 @tangle(manfoot)
 

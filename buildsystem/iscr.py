@@ -1,5 +1,6 @@
 import io
 import re
+import sys
 import time
 from itertools import chain
 
@@ -32,15 +33,13 @@ class Iscr(fbuild.db.PersistentObject):
         src = Path(src)
 
         cmd = [
+            sys.executable,
             self.exe.relpath(buildroot),
             '--cache-prefix=lpsrc-cache',
             '--trace=sources',
             '--trace=changes',
             '--nocache',
         ]
-
-        if 'windows' in fbuild.builders.platform.platform(self.ctx):
-            cmd.insert(0, 'c:\python26\python.exe')
 
         if break_on_error:
             cmd.append('--break-on-error')

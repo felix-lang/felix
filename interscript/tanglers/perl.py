@@ -41,7 +41,7 @@ class perl_tangler(tangler_base):
     tail = self.flow_parse(line)
     while tail:
       if 'tanglers' in self.process.trace:
-        print 'Unbalanced > in perl POD text'
+        print('Unbalanced > in perl POD text')
       self.weaver.write('>')
       tail = self.flow_parse(tail)
 
@@ -182,7 +182,7 @@ class perl_tangler(tangler_base):
     # pod_par means: 0 - begin of para, 1 - flowing text, 2 - literal text
     assert self.mode == 'pod'
     if not pod:
-      line = string.rstrip(data)
+      line = data.rstrip()
       if line:
         if not self.pod_par:
           self.pod_par = (line[0] in ' \t')+1
@@ -237,10 +237,10 @@ class perl_tangler(tangler_base):
     elif cmd == 'item':
       if not hasattr(self,'pod_mode'):
         if 'tanglers' in self.process.trace:
-          print 'POD: item before over'
+          print('POD: item before over')
         self.pod_mode = 'list'
       key = pod.group(2)
-      key = string.strip(key)
+      key = key..strip()
       if self.pod_mode == 'item':
         self.end_list_item()
       else:

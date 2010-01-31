@@ -28,9 +28,9 @@ tok_name[MULTILINE_STRING_LAST]= 'MULTILINE_STRING_LAST'
 #     Imagnumber is new.  Expfloat is corrected to reject '0e4'.
 # Note: to quote a backslash in a regex, it must be doubled in a r'aw' string.
 
-def group(*choices): return '(' + string.join(choices, '|') + ')'
-def any(*choices): return apply(group, choices) + '*'
-def maybe(*choices): return apply(group, choices) + '?'
+def group(*choices): return '(' + '|'.join(choices) + ')'
+def any(*choices): return group(*choices) + '*'
+def maybe(*choices): return group(*choices) + '?'
 
 Whitespace = r'[ \f\t]*'
 Comment = r'#[^\r\n]*'
@@ -70,8 +70,8 @@ ContStr = group("[rR]?'" + any(r'\\.', r"[^\n'\\]") + group("'", r'\\\r?\n'),
 PseudoExtras = group(r'\\\r?\n', Comment, Triple)
 PseudoToken = Whitespace + group(PseudoExtras, Number, Funny, ContStr, Name)
 
-tokenprog, pseudoprog, single3prog, double3prog = map(
-    re.compile, (Token, PseudoToken, Single3, Double3))
+tokenprog, pseudoprog, single3prog, double3prog = list(map(
+    re.compile, (Token, PseudoToken, Single3, Double3)))
 endprogs = {"'": re.compile(Single), '"': re.compile(Double),
             "'''": single3prog, '"""': double3prog,
             "r'''": single3prog, 'r"""': double3prog,
@@ -96,7 +96,6 @@ opdict = {
   '=':EQUAL,
   '.':DOT,
   '%':PERCENT,
-  '`':BACKQUOTE,
   '{':LBRACE,
   '}':RBRACE,
   '==':EQEQUAL,
@@ -113,9 +112,11 @@ opdict = {
 
 tabsize = 8
 TokenError = 'TokenError'
-def printtoken(type, token, (srow, scol), (erow, ecol), line): # for testing
-    print "%d,%d-%d,%d:\t%s\t%s" % \
-        (srow, scol, erow, ecol, tok_name[type], repr(token))
+def printtoken(type, token, xxx_todo_changeme, xxx_todo_changeme1, line): # for testing
+    (srow, scol) = xxx_todo_changeme
+    (erow, ecol) = xxx_todo_changeme1
+    print("%d,%d-%d,%d:\t%s\t%s" % \
+        (srow, scol, erow, ecol, tok_name[type], repr(token)))
 
 #line 180 "interscript/src/python_tokeniser.ipk"
 def tokenise(readline,
@@ -126,16 +127,16 @@ def tokenise(readline,
   while line:
     t.writeline(line)
     for token in t.tokens:
-      apply(tokeneater,token)
+      tokeneater(*token)
     t.tokens = []
     line = readline()
   t.writeline('')
   for token in t.tokens:
-    apply(tokeneater,token)
+    tokeneater(*token)
   t.tokens = []
 
 #line 200 "interscript/src/python_tokeniser.ipk"
-namechars, numchars = string.letters + '_', string.digits
+namechars, numchars = string.ascii_letters + '_', string.digits
 
 class python_tokeniser:
   def __init__(self, squashop=0, report_comments=0, split_multiline_strings=0):
@@ -172,7 +173,7 @@ class python_tokeniser:
     return self.get_tokens()
 
   def write(self,data):
-    lines = string.split(data,'\n')
+    lines = data.split('\n')
     if lines:
       lines[0]=lines[0]+self.buffer
       self.buffer = ''
@@ -188,7 +189,7 @@ class python_tokeniser:
 
     if self.contstr:                                   # continued string
         if not line:
-            raise TokenError, ("EOF in multi-line string", self.strstart)
+            raise TokenError("EOF in multi-line string", self.strstart)
         endmatch = self.endprog.match(line)
         if endmatch:
             pos = end = endmatch.end(0)
@@ -241,7 +242,7 @@ class python_tokeniser:
 
     else:                                              # continued statement
         if not line:
-            raise TokenError, ("EOF in multi-line statement", (lnum, 0))
+            raise TokenError("EOF in multi-line statement", (lnum, 0))
         self.continued = 0
 
     while pos < max:

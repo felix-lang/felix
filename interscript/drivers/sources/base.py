@@ -11,7 +11,7 @@ class source:
   def __init__(self, encoding, **kwds):
     self.lines_read = 0
     self.mode = 'r'
-    for k in kwds.keys():
+    for k in list(kwds.keys()):
       self.__dict__[k]=kwds[k]
     self.closed = 1
     self.set_encoding(encoding)
@@ -23,10 +23,10 @@ class source:
       encoding_module = 'interscript.encoding.'+encoding
       conversion_routine = encoding + '_to_utf8'
       try:
-        exec 'import '+encoding_module
-        exec 'self.encoding_routine = '+encoding_module+'.'+conversion_routine
+        exec('import '+encoding_module)
+        exec('self.encoding_routine = '+encoding_module+'.'+conversion_routine)
       except:
-        print 'UNABLE TO LOAD ENCODING "'+encoding+'", reading as UTF8'
+        print('UNABLE TO LOAD ENCODING "'+encoding+'", reading as UTF8')
 
   def get_encoding(self): return self.encoding_name
 
@@ -49,7 +49,7 @@ class source:
     return self.raw_readline()+'\n'
 
   def read(self, sizehint=None):
-    return string.join(self.raw_readlines())+'\n'
+    return ' '.join(self.raw_readlines())+'\n'
 
   def readlines(self, sizehint=None):
     x = []
@@ -78,7 +78,7 @@ class source:
 
 class file_source(source):
   def __init__(self, encoding, *args, **kwds):
-    apply(source.__init__, (self,encoding)+args, kwds)
+    source.__init__(*(self,encoding)+args, **kwds)
 
   def _close(self):
     self.file.close()
@@ -88,7 +88,7 @@ class file_source(source):
     line = self.file.readline()
     if len(line)==0: raise eof
     self.lines_read = self.lines_read + 1
-    return string.rstrip(line)
+    return line.rstrip()
 
   def get_filename(self):
     return self.name

@@ -29,7 +29,7 @@ py_op_tokens = [
   token.VBAR, token.AMPER,
   token.LESS, token.GREATER, token.EQUAL,
   token.DOT, token.PERCENT,
-  token.BACKQUOTE, token.EQEQUAL,
+  token.EQEQUAL,
   token.NOTEQUAL, token.LESSEQUAL, token.GREATEREQUAL,
   token.TILDE, token.CIRCUMFLEX,
   token.LEFTSHIFT,  token.RIGHTSHIFT, token.DOUBLESTAR]
@@ -170,7 +170,7 @@ def tangle_function(
   else:
     code = code + ' ' * (indent+4) + 'pass\n'
 
-  for line in string.split(code,'\n')[:-1]:
+  for line in code.split('\n')[:-1]:
     sink.writeline(line)
   return code
 
@@ -302,10 +302,10 @@ class py_tangler(tangler_base):
 
       try:
         tokens = self.tokeniser.tokenize(data+'\n')
-      except TokenError, e:
-        print 'Tokeniser error',e
-        print 'in file',file,'line',line
-        print 'data['+data+']'
+      except TokenError as e:
+        print('Tokeniser error',e)
+        print('in file',file,'line',line)
+        print('data['+data+']')
 
 
       # pretty printing
@@ -345,15 +345,15 @@ class py_tangler(tangler_base):
           level = level - 1
         if kind is token.NAME:
           if not (keyword.iskeyword(id) or id in self.excludeid):
-            if not self.pass_frame.ids.has_key(id): self.pass_frame.ids[id]=[]
+            if id not in self.pass_frame.ids: self.pass_frame.ids[id]=[]
             self.pass_frame.ids[id].append((file,count,dst_file,dst_count))
             if class_name:
               #print 'class',id
-              if not self.pass_frame.classes.has_key(id): self.pass_frame.classes[id]=[]
+              if id not in self.pass_frame.classes: self.pass_frame.classes[id]=[]
               self.pass_frame.classes[id].append((file,count,dst_file,dst_count))
               class_name = 0
             elif function_name:
-              if not self.pass_frame.functions.has_key(id): self.pass_frame.functions[id]=[]
+              if id not in self.pass_frame.functions: self.pass_frame.functions[id]=[]
               self.pass_frame.functions[id].append((file,count,dst_file,dst_count))
               function_name = 0
           elif id == 'class':

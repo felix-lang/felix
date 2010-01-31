@@ -14,7 +14,7 @@ charmap=0
 mapping={}
 
 for l in lines:
-    s=string.split(l)
+    s=l.split()
     if not len(s):
         continue
     if s[0]=="<code_set_name>":
@@ -32,23 +32,23 @@ for l in lines:
     if charmap and len(s)>3:
         mapping[s[1]]=s[2]
 
-print "from interscript.encoding import wstring"
-print "#Aliases for "+code_set_name
+print("from interscript.encoding import wstring")
+print("#Aliases for "+code_set_name)
 for a in aliases:
-    print "wstring.install_alias("+`a`+","+`code_set_name`+")"
+    print("wstring.install_alias("+repr(a)+","+repr(code_set_name)+")")
 
-print "#Mapping\nwstring.install_encoding_map("+`code_set_name`+",{\n"
-for char8,ucs in mapping.items():
+print("#Mapping\nwstring.install_encoding_map("+repr(code_set_name)+",{\n")
+for char8,ucs in list(mapping.items()):
     if string.find(char8,escape_char+'x')==0:
-        print "0x"+char8[2:]+':',
+        print("0x"+char8[2:]+':', end=' ')
     else:
-        print "#Unsupported entry %s %s" % (char8,ucs)
+        print("#Unsupported entry %s %s" % (char8,ucs))
         continue
     if string.find(ucs,'<U')==0:
-        print "0x"+ucs[2:-1]+','
+        print("0x"+ucs[2:-1]+',')
     else:
-        print "-1, #Unsupported entry %s %s" % (char8,ucs)
+        print("-1, #Unsupported entry %s %s" % (char8,ucs))
 
-print '})'
+print('})')
 
 
