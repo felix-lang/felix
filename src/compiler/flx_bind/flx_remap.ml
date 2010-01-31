@@ -10,87 +10,10 @@ let remap_bid offset bid = bid + offset
 
 (** Remaps bound types by adding an offset to the bound index. *)
 let rec remap_btype offset btype =
-  let remap_bid = remap_bid offset in
-  let remap_btype = remap_btype offset in
-  match btype with
-  | BTYP_inst (bid, ts) ->
-      btyp_inst (remap_bid bid, List.map remap_btype ts)
-
-  | BTYP_tuple ts ->
-      btyp_tuple (List.map remap_btype ts)
-
-  | BTYP_record ts ->
-      btyp_record (List.map (fun (n,t) -> n, remap_btype t) ts)
-
-  | BTYP_unitsum i ->
-      btyp_unitsum i
-
-  | BTYP_variant ts ->
-      btyp_variant (List.map (fun (n,t) -> n, remap_btype t) ts)
-
-  | BTYP_sum ts ->
-      btyp_sum (List.map remap_btype ts)
-
-  | BTYP_function (args, result) ->
-      btyp_function (remap_btype args, remap_btype result)
-
-  | BTYP_cfunction (args, result) ->
-      btyp_cfunction (remap_btype args, remap_btype result)
-
-  | BTYP_pointer t ->
-      btyp_pointer (remap_btype t)
-
-  | BTYP_array (vt, it) ->
-      btyp_array (remap_btype vt, remap_btype it)
-
-  | BTYP_void ->
-      btyp_void
-
-  | BTYP_fix i ->
-      btyp_fix i
-
-  | BTYP_intersect ts ->
-      btyp_intersect (List.map remap_btype ts)
-
-  | BTYP_type_var (bid, t) ->
-      btyp_type_var (remap_bid bid, remap_btype t)
-
-  | BTYP_type_apply (t1, t2) ->
-      btyp_type_apply (remap_btype t1, remap_btype t2)
-
-  | BTYP_type_function (args, result, body) ->
-      let args = List.map (fun (i, t) -> remap_bid i, remap_btype t) args in
-      btyp_type_function (args, remap_btype result, remap_btype body)
-
-  | BTYP_type i ->
-      btyp_type i
-
-  | BTYP_type_tuple ts ->
-      btyp_type_tuple (List.map remap_btype ts)
-
-  | BTYP_type_match (t, ps) ->
-      let ps =
-        List.map begin fun (pat, t) ->
-          { pattern = remap_btype pat.pattern;
-            pattern_vars = BidSet.fold
-              (fun i bs -> BidSet.add (remap_bid i) bs)
-              pat.pattern_vars
-              BidSet.empty;
-            assignments = List.map
-              (fun (i, t) -> i, remap_btype t)
-              pat.assignments }, remap_btype t
-        end ps
-      in
-      btyp_type_match (remap_btype t, ps)
-
-  | BTYP_type_set ts ->
-      btyp_type_set (List.map remap_btype ts)
-
-  | BTYP_type_set_union ts ->
-      btyp_type_set_union (List.map remap_btype ts)
-
-  | BTYP_type_set_intersection ts ->
-      btyp_type_set_intersection (List.map remap_btype ts)
+  Flx_btype.map
+    ~fi:(remap_bid offset)
+    ~ft:(remap_btype offset)
+    btype
 
 
 (** Remap bound interfaces by adding an offset to the bound index. *)
@@ -107,185 +30,21 @@ let remap_biface offset biface =
 
 
 (** Remap bound types by adding an offset to the bound index. *)
-let rec remap_tbexpr offset (bexpr, btype) =
-  let remap_bid = remap_bid offset in
-  let remap_btype = remap_btype offset in
-  let remap_tbexpr = remap_tbexpr offset in
-  begin match bexpr with
-  | BEXPR_deref e ->
-      BEXPR_deref (remap_tbexpr e)
-
-  | BEXPR_name (i, ts) ->
-      BEXPR_name (remap_bid i, List.map remap_btype ts)
-
-  | BEXPR_ref (i, ts) ->
-      BEXPR_ref (remap_bid i, List.map remap_btype ts)
-
-  | BEXPR_likely e ->
-      BEXPR_likely (remap_tbexpr e)
-
-  | BEXPR_unlikely e ->
-      BEXPR_unlikely (remap_tbexpr e)
-
-  | BEXPR_address e ->
-      BEXPR_address (remap_tbexpr e)
-
-  | BEXPR_new e ->
-      BEXPR_new (remap_tbexpr e)
-
-  | BEXPR_literal l ->
-      BEXPR_literal l
-
-  | BEXPR_apply (fn, args) ->
-      BEXPR_apply (remap_tbexpr fn, remap_tbexpr args)
-
-  | BEXPR_apply_prim (i, ts, args) ->
-      let ts = List.map remap_btype ts in
-      let args = remap_tbexpr args in
-      BEXPR_apply_prim (remap_bid i, ts, args)
-
-  | BEXPR_apply_direct (i, ts, args) ->
-      let ts = List.map remap_btype ts in
-      let args = remap_tbexpr args in
-      BEXPR_apply_direct (remap_bid i, ts, args)
-
-  | BEXPR_apply_stack (i, ts, args) ->
-      let ts = List.map remap_btype ts in
-      let args = remap_tbexpr args in
-      BEXPR_apply_stack (remap_bid i, ts, args)
-
-  | BEXPR_apply_struct (i, ts, args) ->
-      let ts = List.map remap_btype ts in
-      let args = remap_tbexpr args in
-      BEXPR_apply_struct (remap_bid i, ts, args)
-
-  | BEXPR_tuple es ->
-      BEXPR_tuple (List.map remap_tbexpr es)
-
-  | BEXPR_record es ->
-      BEXPR_record (List.map (fun (n,e) -> n, remap_tbexpr e) es)
-
-  | BEXPR_variant (n, e) ->
-      BEXPR_variant (n, remap_tbexpr e)
-
-  | BEXPR_get_n (n, e) ->
-      BEXPR_get_n (n, remap_tbexpr e)
-
-  | BEXPR_closure (i, ts) ->
-      BEXPR_closure (remap_bid i, List.map remap_btype ts)
-
-  | BEXPR_case (i, t) ->
-      BEXPR_case (i, remap_btype t)
-
-  | BEXPR_match_case (i, e) ->
-      BEXPR_match_case (i, remap_tbexpr e)
-
-  | BEXPR_case_arg (i, e) ->
-      BEXPR_case_arg (i, remap_tbexpr e)
-
-  | BEXPR_case_index e ->
-      BEXPR_case_index (remap_tbexpr e)
-
-  | BEXPR_expr (n, t) ->
-      BEXPR_expr (n, remap_btype t)
-
-  | BEXPR_range_check (e1, e2, e3) ->
-      BEXPR_range_check (remap_tbexpr e1, remap_tbexpr e2, remap_tbexpr e3)
-
-  | BEXPR_coerce (e, t) ->
-      BEXPR_coerce (remap_tbexpr e, remap_btype t)
-
-  end, remap_btype btype
+let rec remap_tbexpr offset bexpr =
+  Flx_bexpr.map
+    ~fi:(remap_bid offset)
+    ~ft:(remap_btype offset)
+    ~fe:(remap_tbexpr offset)
+    bexpr
 
 
 (** Remap bound exes by adding an offset to the bound index. *)
 let remap_bexe offset bexe =
-  let remap_bid = remap_bid offset in
-  let remap_btype = remap_btype offset in
-  let remap_tbexpr = remap_tbexpr offset in
-  match bexe with
-  | BEXE_label (sr, s) ->
-      BEXE_label (sr, s)
-
-  | BEXE_comment (sr, s) ->
-      BEXE_comment (sr, s)
-
-  | BEXE_halt (sr, s) ->
-      BEXE_halt (sr, s)
-
-  | BEXE_trace (sr, s1, s2) ->
-      BEXE_trace (sr, s1, s2)
-
-  | BEXE_goto (sr, s) ->
-      BEXE_goto (sr, s)
-
-  | BEXE_ifgoto (sr, e, s) ->
-      BEXE_ifgoto (sr, remap_tbexpr e, s)
-
-  | BEXE_call (sr, p, a) ->
-      BEXE_call (sr, remap_tbexpr p, remap_tbexpr a)
-
-  | BEXE_call_direct (sr, i, ts, a) ->
-      let ts = List.map remap_btype ts in
-      BEXE_call_direct (sr, remap_bid i, ts, remap_tbexpr a)
-
-  | BEXE_call_stack (sr, i, ts, a) ->
-      let ts = List.map remap_btype ts in
-      BEXE_call_stack (sr, remap_bid i, ts, remap_tbexpr a)
-
-  | BEXE_call_prim (sr, i, ts, a) ->
-      let ts = List.map remap_btype ts in
-      BEXE_call_prim (sr, remap_bid i, ts, remap_tbexpr a)
-
-  | BEXE_jump (sr, p, a) ->
-      BEXE_jump (sr, remap_tbexpr p, remap_tbexpr a)
-
-  | BEXE_jump_direct (sr, i, ts, a) ->
-      let ts = List.map remap_btype ts in
-      BEXE_jump_direct (sr, remap_bid i, ts, remap_tbexpr a)
-
-  | BEXE_svc (sr, v) ->
-      BEXE_svc (sr, remap_bid v)
-
-  | BEXE_fun_return (sr, e) ->
-      BEXE_fun_return (sr, remap_tbexpr e)
-
-  | BEXE_yield (sr, e) ->
-      BEXE_yield (sr, remap_tbexpr e)
-
-  | BEXE_proc_return sr ->
-      BEXE_proc_return sr
-
-  | BEXE_nop (sr, s) ->
-      BEXE_nop (sr, s)
-
-  | BEXE_code (sr, code) ->
-      BEXE_code (sr, code)
-
-  | BEXE_nonreturn_code (sr, code) ->
-      BEXE_nonreturn_code (sr, code)
-
-  | BEXE_assign (sr, l, r) ->
-      BEXE_assign (sr, remap_tbexpr l, remap_tbexpr r)
-
-  | BEXE_init (sr, l, r) ->
-      BEXE_init (sr, remap_bid l, remap_tbexpr r)
-
-  | BEXE_begin ->
-      BEXE_begin
-
-  | BEXE_end ->
-      BEXE_end
-
-  | BEXE_assert (sr, e) ->
-      BEXE_assert (sr, remap_tbexpr e)
-
-  | BEXE_assert2 (sr1, sr2, e1, e2) ->
-      let e1 = match e1 with None -> None | Some e1 -> Some (remap_tbexpr e1) in
-      BEXE_assert2 (sr1, sr2, e1, remap_tbexpr e2)
-
-  | BEXE_axiom_check (sr, e) ->
-      BEXE_axiom_check (sr, remap_tbexpr e)
+  Flx_bexe.map
+    ~fi:(remap_bid offset)
+    ~ft:(remap_btype offset)
+    ~fe:(remap_tbexpr offset)
+    bexe
 
 
 (** Remaps bound declarations by adding an offset to the bound index. *)
