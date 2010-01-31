@@ -27,7 +27,7 @@ let check_inst bsym_table i ts =
 
 let fixtype bsym_table t =
   let chk i ts = check_inst bsym_table i ts in
-  let rec aux t = match map_btype aux t with
+  let rec aux t = match Flx_btype.map aux t with
   | BTYP_inst (i,ts) ->
     let ts = map aux ts in
     chk i ts

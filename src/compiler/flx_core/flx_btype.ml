@@ -210,6 +210,90 @@ let int_of_unitsum t = match t with
 
 (* -------------------------------------------------------------------------- *)
 
+(** Recursively iterate over each bound type and call the function on it. *)
+let iter f = function
+  | BTYP_sum ts -> List.iter f ts
+  | BTYP_unitsum k ->
+      let unitrep = BTYP_tuple [] in
+      for i = 1 to k do f unitrep done
+  | BTYP_intersect ts -> List.iter f ts
+  | BTYP_inst (i,ts) -> List.iter f ts
+  | BTYP_tuple ts -> List.iter f ts
+  | BTYP_array (t1,t2)->  f t1; f t2
+  | BTYP_record ts -> List.iter (fun (s,t) -> f t) ts
+  | BTYP_variant ts -> List.iter (fun (s,t) -> f t) ts
+  | BTYP_pointer t-> f t
+  | BTYP_function (a,b) -> f a; f b
+  | BTYP_cfunction (a,b) -> f a; f b
+  | BTYP_void -> ()
+  | BTYP_fix _ -> ()
+  | BTYP_type _ -> ()
+  | BTYP_type_tuple ts -> List.iter f ts
+  | BTYP_type_function (its, a, b) ->
+      List.iter (fun (i,t) -> f t) its; f a; f b
+  | BTYP_type_var (i,t) -> f t
+  | BTYP_type_apply (a,b) -> f a; f b
+  | BTYP_type_match (t,ps) ->
+      let g (tp,t) = f tp.pattern; f t in
+      f t;
+      List.iter g ps
+  | BTYP_type_set ts -> List.iter f ts
+  | BTYP_type_set_union ts -> List.iter f ts
+  | BTYP_type_set_intersection ts -> List.iter f ts
+
+
+(** Recursively iterate over each bound type and transform it with the
+ * function. *)
+let map f = function
+  | BTYP_sum ts ->
+      let ts = List.map f ts in
+      if all_units ts then
+        BTYP_unitsum (List.length ts)
+      else
+        BTYP_sum ts
+  | BTYP_unitsum k ->
+      if k > 0 then
+        let mapped_unit = f (BTYP_tuple []) in
+        match mapped_unit with
+        | BTYP_tuple [] -> BTYP_unitsum k
+        | _ -> BTYP_tuple (Flx_list.repeat mapped_unit k)
+      else BTYP_unitsum k
+  | BTYP_intersect ts -> BTYP_intersect (List.map f ts)
+  | BTYP_inst (i,ts) -> BTYP_inst (i, List.map f ts)
+  | BTYP_tuple ts -> BTYP_tuple (List.map f ts)
+  | BTYP_array (t1,t2) -> BTYP_array (f t1, f t2)
+  | BTYP_record ts -> BTYP_record (List.map (fun (s,t) -> s,f t) ts)
+  | BTYP_variant ts -> BTYP_variant (List.map (fun (s,t) -> s,f t) ts)
+  | BTYP_pointer t -> BTYP_pointer (f t)
+  | BTYP_function (a,b) -> BTYP_function (f a, f b)
+  | BTYP_cfunction (a,b) -> BTYP_cfunction (f a, f b)
+  | BTYP_void as x -> x
+  | BTYP_fix _ as x -> x
+  | BTYP_type _ as x -> x
+  | BTYP_type_tuple ts -> BTYP_type_tuple (List.map f ts)
+  | BTYP_type_function (its, a, b) ->
+      BTYP_type_function (List.map (fun (i,t) -> i, f t) its, f a, f b)
+  | BTYP_type_var (i,t) -> BTYP_type_var (i, f t)
+  | BTYP_type_apply (a, b) -> BTYP_type_apply (f a, f b)
+  | BTYP_type_match (t,ps) ->
+      (* this may be wrong .. hard to know .. *)
+      let g (tp,t) = {tp with pattern=f tp.pattern},f t in
+      BTYP_type_match (f t, List.map g ps)
+  | BTYP_type_set ts ->
+      let g acc elt =
+        (* SHOULD USE UNIFICATIION! *)
+        let elt = f elt in
+        if List.mem elt acc then acc else elt::acc
+      in
+      let ts = List.rev (List.fold_left g [] ts) in
+      if List.length ts = 1 then List.hd ts else
+      BTYP_type_set ts
+  | BTYP_type_set_union ls -> BTYP_type_set_union (List.map f ls)
+  | BTYP_type_set_intersection ls ->
+      BTYP_type_set_intersection (List.map f ls)
+
+(* -------------------------------------------------------------------------- *)
+
 let rec print_btpattern f pat =
   Flx_format.print_record3 f
     "pattern" print pat.pattern

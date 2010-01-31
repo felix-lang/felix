@@ -51,7 +51,7 @@ let rec uses_type used bsym_table count_inits t =
       failwith "[uses_type] Unexpected metatype"
   *)
 
-  | _ -> iter_btype ut t
+  | _ -> Flx_btype.iter ut t
 
 and uses_exes used bsym_table count_inits exes =
   List.iter (uses_exe used bsym_table count_inits) exes

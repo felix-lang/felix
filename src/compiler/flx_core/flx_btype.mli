@@ -150,5 +150,14 @@ val int_of_unitsum : t -> int
 
 (* -------------------------------------------------------------------------- *)
 
+(** Recursively iterate over each bound type and call the function on it. *)
+val iter : (t -> unit) -> t -> unit
+
+(** Recursively iterate over each bound type and transform it with the
+ * function. *)
+val map : (t -> t) -> t -> t
+
+(* -------------------------------------------------------------------------- *)
+
 (** Prints a btype to a formatter. *)
 val print : Format.formatter -> t -> unit

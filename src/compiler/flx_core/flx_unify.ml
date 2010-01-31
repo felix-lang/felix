@@ -13,7 +13,7 @@ open Flx_exceptions
 let unit_t = btyp_tuple []
 
 let rec dual t =
-  match map_btype dual t with
+  match Flx_btype.map dual t with
   | BTYP_sum ls ->
     begin match ls with
     | [t] -> t
@@ -53,12 +53,12 @@ let rec check_recursion t = match t with
    | BTYP_fix i
      -> raise Bad_recursion
 
-   | x -> iter_btype check_recursion x
+   | x -> Flx_btype.iter check_recursion x
 
 let var_subst t (i, j) =
   let rec s t = match t with
   | BTYP_type_var (k,t) when i = k -> btyp_type_var (j,t)
-  | t -> map_btype s t
+  | t -> Flx_btype.map s t
   in s t
 
 let vars_subst ls t = List.fold_left var_subst t ls
@@ -71,7 +71,7 @@ let rec alpha counter t =
       let cvt t = alpha counter (vars_subst remap_list t) in
       let ps = List.map (fun (i,t) -> remap i,t) ps in
       btyp_type_function (ps, cvt r, cvt b)
-  | t -> map_btype (alpha counter) t
+  | t -> Flx_btype.map (alpha counter) t
 
 let term_subst counter t1 i t2 =
   let rec s t =
@@ -89,7 +89,7 @@ let term_subst counter t1 i t2 =
     in
     btyp_type_match (tt,pts)
 
-  | t -> map_btype s t
+  | t -> Flx_btype.map s t
   in s t1
 
 let list_subst counter x t =
@@ -100,7 +100,7 @@ let list_subst counter x t =
   x
 
 let varmap0_subst varmap t =
-  let rec s t = match map_btype s t with
+  let rec s t = match Flx_btype.map s t with
   | BTYP_type_var (i,_) as x ->
     if Hashtbl.mem varmap i
     then Hashtbl.find varmap i
@@ -109,7 +109,7 @@ let varmap0_subst varmap t =
   in s t
 
 let varmap_subst varmap t =
-  let rec s t = match map_btype s t with
+  let rec s t = match Flx_btype.map s t with
   | BTYP_type_var (i,_) as x ->
     if Hashtbl.mem varmap i
     then Hashtbl.find varmap i
@@ -216,7 +216,7 @@ let tsubst vs ts t =
 let var_i_occurs i t =
   let rec aux t:unit = match t with
     | BTYP_type_var (j,_) when i = j -> raise Not_found
-    | _ -> iter_btype aux t
+    | _ -> Flx_btype.iter aux t
  in
    try
      aux t;
@@ -228,7 +228,7 @@ let rec vars_in t =
   let add_var i = vs := BidSet.add i !vs in
   let rec aux t = match t with
     | BTYP_type_var (i,_) -> add_var i
-    | _ -> iter_btype aux t
+    | _ -> Flx_btype.iter aux t
   in aux t; !vs
 
 let fix i t =
@@ -827,7 +827,7 @@ let fold counter t =
 by folding at every node *)
 
 let minimise counter t =
-  fold counter (map_btype (fold counter) t)
+  fold counter (Flx_btype.map (fold counter) t)
 
 let var_occurs t =
   let rec aux' excl t = let aux t = aux' excl t in

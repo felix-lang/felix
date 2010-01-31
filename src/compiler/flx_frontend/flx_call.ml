@@ -38,7 +38,7 @@ let rec uses_type h k sr t =
       add h k i sr;
       List.iter ut ts
 
-  | _ -> iter_btype ut t
+  | _ -> Flx_btype.iter ut t
 
 let faulty_req bsym_table i =
   let bsym = Flx_bsym_table.find bsym_table i in

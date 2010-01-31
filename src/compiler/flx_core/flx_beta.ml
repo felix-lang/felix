@@ -68,7 +68,7 @@ let rec fixup syms ps body =
  *)
  let rec aux term depth =
    let fx t = aux t (depth+1) in
-   match map_btype fx term with
+   match Flx_btype.map fx term with
    | BTYP_type_apply (BTYP_fix i, arg)
      when arg = param
      && i + depth +1  = 0 (* looking inside application, one more level *)
@@ -104,7 +104,7 @@ let rec fixup syms ps body =
 and adjust t =
   let rec adj depth t =
     let fx t = adj (depth + 1) t in
-    match map_btype fx t with
+    match Flx_btype.map fx t with
     | BTYP_fix i when i + depth < 0 -> btyp_fix (i+1)
     | x -> x
   in adj 0 t

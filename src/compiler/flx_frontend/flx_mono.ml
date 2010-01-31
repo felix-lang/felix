@@ -62,7 +62,7 @@ let fixup_type' syms bsym_table fi t =
 let rec fixup_type syms bsym_table fi t =
   let ft t = fixup_type syms bsym_table fi t in
   let ft' t = fixup_type' syms bsym_table fi t in
-  let t = map_btype ft t in
+  let t = Flx_btype.map ft t in
   ft' t
 
 let fixup_expr' syms bsym_table fi mt e =
