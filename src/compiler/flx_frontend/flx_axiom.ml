@@ -119,7 +119,7 @@ let verify syms bsym_table csr e =
       print_endline ("tmgu= " ^ catmap ", " (fun (i,t) -> si i ^ "->" ^ sbt sym_table t) tmgu);
       *)
       let ident x = x in
-      let rec aux x = map_tbexpr ident aux tsub x in
+      let rec aux x = Flx_bexpr.map ~ft:tsub ~fe:aux x in
       let cond = aux (xsub x) in
       let precond = match precond with
       | Some x -> Some (aux (xsub x))

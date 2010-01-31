@@ -792,7 +792,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
   (*
   print_endline (" ... Special inline subexpr: " ^ sbe bsym_table e);
   *)
-  match map_tbexpr id aux id e with
+  match Flx_bexpr.map ~fe:aux e with
   | BEXPR_get_n (n,(BEXPR_tuple ls,_)),_ -> nth ls n
 
   | BEXPR_closure (callee,_),_ as x ->

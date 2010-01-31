@@ -49,7 +49,7 @@ let throw_on_gc bsym_table e : unit = match e with
   | _ -> ()
 
 let expr_uses_gc bsym_table e =
-  iter_tbexpr ignore (throw_on_gc bsym_table) ignore e
+  Flx_bexpr.iter ~fe:(throw_on_gc bsym_table) e
 
 let exe_uses_gc bsym_table exe =
   match exe with
@@ -141,7 +141,7 @@ let throw_on_global bsym_table i =
   if Flx_bsym_table.is_global_var bsym_table i then raise Not_found
 
 let expr_uses_global bsym_table e =
-  iter_tbexpr (throw_on_global bsym_table) ignore ignore e
+  Flx_bexpr.iter ~fi:(throw_on_global bsym_table) e
 
 let exe_uses_global bsym_table exe =
   iter_bexe (throw_on_global bsym_table) (expr_uses_global bsym_table) ignore ignore ignore exe

@@ -111,6 +111,112 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
 
   | _ -> false
 
+(* -------------------------------------------------------------------------- *)
+
+(* this routine applies arguments HOFs to SUB components only, not to the actual
+ * argument. It isn't recursive, so the argument HOF can be. *)
+let flat_iter
+  ?(fi=fun _ -> ())
+  ?(ft=fun _ -> ())
+  ?(fe=fun _ -> ())
+  ((x,t) as e) =
+  match x with
+  | BEXPR_deref e -> fe e
+  | BEXPR_ref (i,ts) ->
+      fi i;
+      List.iter ft ts
+  | BEXPR_likely e -> fe e
+  | BEXPR_unlikely e -> fe e
+  | BEXPR_address e -> fe e
+  | BEXPR_new e -> fe e
+  | BEXPR_apply (e1,e2) ->
+      fe e1;
+      fe e2
+  | BEXPR_apply_prim (i,ts,e2) ->
+      fi i;
+      List.iter ft ts;
+      fe e2
+  | BEXPR_apply_direct (i,ts,e2) ->
+      fi i;
+      List.iter ft ts;
+      fe e2
+  | BEXPR_apply_struct (i,ts,e2) ->
+      fi i;
+      List.iter ft ts;
+      fe e2
+  | BEXPR_apply_stack (i,ts,e2) ->
+      fi i;
+      List.iter ft ts;
+      fe e2
+  | BEXPR_tuple es -> List.iter fe es
+  | BEXPR_record es -> List.iter (fun (s,e) -> fe e) es
+  | BEXPR_variant (s,e) -> fe e
+  | BEXPR_get_n (i,e) -> fe e
+  | BEXPR_closure (i,ts) ->
+      fi i;
+      List.iter ft ts
+  | BEXPR_name (i,ts) ->
+      fi i;
+      List.iter ft ts
+  | BEXPR_case (i,t') -> ft t'
+  | BEXPR_match_case (i,e) -> fe e
+  | BEXPR_case_arg (i,e) -> fe e
+  | BEXPR_case_index e -> fe e
+  | BEXPR_literal x -> ft t
+  | BEXPR_expr (s,t1) -> ft t1
+  | BEXPR_range_check (e1,e2,e3) ->
+      fe e1;
+      fe e2;
+      fe e3
+  | BEXPR_coerce (e,t) ->
+      fe e;
+      ft t
+
+(* this is a self-recursing version of the above routine: the argument to this
+ * routine must NOT recursively apply itself! *)
+let rec iter ?fi ?(ft=fun _ -> ()) ?(fe=fun _ -> ()) ((x,t) as e) =
+  fe e;
+  ft t;
+  let fe e = iter ?fi ~ft ~fe e in
+  flat_iter ?fi ~ft ~fe e
+
+
+let map ?(fi=fun i -> i) ?(ft=fun t -> t) ?(fe= fun e -> e) e =
+  match e with
+  | BEXPR_deref e,t -> BEXPR_deref (fe e), ft t
+  | BEXPR_ref (i,ts),t -> BEXPR_ref (fi i, List.map ft ts), ft t
+  | BEXPR_new e,t -> BEXPR_new (fe e), ft t
+  | BEXPR_address e,t -> BEXPR_address (fe e), ft t
+  | BEXPR_likely e,t -> BEXPR_likely (fe e), ft t
+  | BEXPR_unlikely e,t -> BEXPR_unlikely (fe e), ft t
+  | BEXPR_apply (e1,e2),t -> BEXPR_apply (fe e1, fe e2), ft t
+  | BEXPR_apply_prim (i,ts,e2),t ->
+      BEXPR_apply_prim (fi i, List.map ft ts, fe e2),ft t
+  | BEXPR_apply_direct (i,ts,e2),t ->
+      BEXPR_apply_direct (fi i, List.map ft ts, fe e2),ft t
+  | BEXPR_apply_struct (i,ts,e2),t ->
+      BEXPR_apply_struct (fi i, List.map ft ts, fe e2),ft t
+  | BEXPR_apply_stack (i,ts,e2),t ->
+      BEXPR_apply_stack (fi i, List.map ft ts, fe e2),ft t
+  | BEXPR_tuple  es,t -> BEXPR_tuple (List.map fe es),ft t
+  | BEXPR_record es,t ->
+      BEXPR_record (List.map (fun (s,e) -> s, fe e) es),ft t
+  | BEXPR_variant (s,e),t -> BEXPR_variant (s, fe e),ft t
+  | BEXPR_get_n (i,e),t -> BEXPR_get_n (i, fe e),ft t
+  | BEXPR_closure (i,ts),t -> BEXPR_closure (fi i, List.map ft ts),ft t
+  | BEXPR_name (i,ts),t -> BEXPR_name (fi i, List.map ft ts), ft t
+  | BEXPR_case (i,t'),t -> BEXPR_case (i, ft t'),ft t
+  | BEXPR_match_case (i,e),t -> BEXPR_match_case (i, fe e),ft t
+  | BEXPR_case_arg (i,e),t -> BEXPR_case_arg (i, fe e),ft t
+  | BEXPR_case_index e,t -> BEXPR_case_index (fe e),ft t
+  | BEXPR_literal x,t -> BEXPR_literal x, ft t
+  | BEXPR_expr (s,t1),t2 -> BEXPR_expr (s, ft t1), ft t2
+  | BEXPR_range_check (e1,e2,e3),t ->
+      BEXPR_range_check (fe e1,fe e2, fe e3), ft t
+  | BEXPR_coerce (e,t'),t -> BEXPR_coerce (fe e, ft t'), ft t
+
+(* -------------------------------------------------------------------------- *)
+
 let rec print_bexpr f = function
   | BEXPR_deref e ->
       Flx_format.print_variant1 f "BEXPR_deref" print e

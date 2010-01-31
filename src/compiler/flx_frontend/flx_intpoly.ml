@@ -228,7 +228,7 @@ let cal_polyvars syms bsym_table child_map =
     cast_r i (BEXPR_apply_struct (i, polyfix syms polyvars i ts, cast_a i (fixexpr  e2)),t)
   | BEXPR_apply_stack (i,ts,e2),t ->
     cast_r i (BEXPR_apply_stack (i, polyfix syms polyvars i ts, cast_a i (fixexpr e2)),t)
-  | e -> map_tbexpr ident fixexpr ident e
+  | e -> Flx_bexpr.map ~fe:fixexpr e
   in
 
   Flx_bsym_table.update_bexes (List.map begin function
@@ -368,7 +368,7 @@ let cal_polyvars syms bsym_table child_map =
     cast_r2 i ts (BEXPR_apply_struct (i, polyfix2 i ts, cast_a2 i ts (fixexpr2  e2)),t)
   | BEXPR_apply_stack (i,ts,e2),t ->
     cast_r2 i ts (BEXPR_apply_stack (i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e2)),t)
-  | e -> map_tbexpr ident fixexpr2 ident e
+  | e -> Flx_bexpr.map ~fe:fixexpr2 e
   in
 
   Flx_bsym_table.update_bexes (List.map begin function

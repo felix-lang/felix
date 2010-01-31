@@ -36,5 +36,34 @@ val get_ts : t -> Flx_btype.t list
  * expression. *)
 val cmp : t -> t -> bool
 
+(* -------------------------------------------------------------------------- *)
+
+(** Iterate over one level a bound expression. *)
+val flat_iter :
+  ?fi:(Flx_types.bid_t -> unit) ->  (** Apply this to each bid. *)
+  ?ft:(Flx_btype.t -> unit) ->      (** Apply this to each bound type. *)
+  ?fe:(t -> unit) ->                (** Apply this to each bound expression. *)
+  t -> unit
+
+(** Recursively iterate over a bound expression. *)
+val iter :
+  ?fi:(Flx_types.bid_t -> unit) ->  (** Apply this to each bid. *)
+  ?ft:(Flx_btype.t -> unit) ->      (** Apply this to each bound type. *)
+  ?fe:(t -> unit) ->                (** Apply this to each bound expression. *)
+  t ->
+  unit
+
+(** Recursively map functions over a bound expression. *)
+val map :
+  ?fi:(Flx_types.bid_t -> Flx_types.bid_t) -> (** Apply this to each bid. *)
+  ?ft:(Flx_btype.t -> Flx_btype.t) ->         (** Apply this to each bound
+                                                  type. *)
+  ?fe:(t -> t) ->                             (** Apply this to each bound
+                                                  expression. *)
+  t ->
+  t
+
+(* -------------------------------------------------------------------------- *)
+
 (** Prints a bexpr to a formatter. *)
 val print : Format.formatter -> t -> unit

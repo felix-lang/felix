@@ -37,14 +37,14 @@ let fixtype bsym_table t =
 let id x = x
 
 let fixexpr bsym_table e =
-  let rec aux e =
-    match map_tbexpr id aux (fixtype bsym_table) e with
+  let rec fe e =
+    match Flx_bexpr.map ~ft:(fixtype bsym_table) ~fe e with
     | BEXPR_apply ( (BEXPR_closure(i,_),_),a),_
     | BEXPR_apply_direct (i,_,a),_
     | BEXPR_apply_prim (i,_,a),_
       when Flx_bsym_table.is_identity bsym_table i -> a
     | x -> x
-  in aux e
+  in fe e
 
 let fixbexe bsym_table x =
   map_bexe id (fixexpr bsym_table) (fixtype bsym_table) id id x

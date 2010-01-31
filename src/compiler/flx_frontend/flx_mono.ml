@@ -122,7 +122,7 @@ let rec fixup_expr syms bsym_table fi mt e =
   *)
   let fe e = fixup_expr syms bsym_table fi mt e in
   let fe' (e,t) = fixup_expr' syms bsym_table fi mt e,t in
-  let e = map_tbexpr id fe mt e in
+  let e = Flx_bexpr.map ~ft:mt ~fe e in
   fe' e
 
 let fixup_exe syms bsym_table fi mt exe =

@@ -50,7 +50,7 @@ let rec process_expr h k sr e =
   let ue e = process_expr h k sr e in
   let ui i = add h k i sr in
   let ut t = uses_type h k sr t in
-  iter_tbexpr ui ignore ut e
+  Flx_bexpr.iter ~fi:ui ~ft:ut e
 
 and cal_exe_usage h k exe =
   (*
@@ -293,7 +293,7 @@ let print_call_report syms bsym_table f =
 let expr_uses_unrestricted syms descend usage e =
   let u = ref BidSet.empty in
   let add u i = u := BidSet.add i !u in
-  iter_tbexpr (add u) ignore ignore e;
+  Flx_bexpr.iter ~fi:(add u) e;
 
 
   (*

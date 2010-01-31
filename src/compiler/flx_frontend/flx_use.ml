@@ -88,7 +88,7 @@ and uses_tbexpr used bsym_table count_inits ((e,t) as x) =
   ut t;
   *)
   (* use a MAP now *)
-  iter_tbexpr ui ignore ut x;
+  Flx_bexpr.iter ~fi:ui ~ft:ut x;
 
 and uses_production used bsym_table count_inits p =
   let uses_symbol (_,nt) = match nt with

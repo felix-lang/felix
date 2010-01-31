@@ -88,7 +88,7 @@ prevent gross bloat.
 let idt t = t
 
 let rec rpl syms argmap x =
-  match map_tbexpr ident (rpl syms argmap) idt x with
+  match Flx_bexpr.map ~fe:(rpl syms argmap) x with
   (* No need to check ts or type here *)
   | (BEXPR_name (i,_),_) as x ->
     (try

@@ -869,9 +869,10 @@ let ident x = x
   Also won't substitute into LHS of things like direct_apply.
 *)
 let expr_term_subst e1 i e2 =
-  let rec s e = match map_tbexpr ident s ident e with
-  | BEXPR_name (j,_),_ when i = j -> e2
-  | e -> e
+  let rec s e =
+    match Flx_bexpr.map ~fe:s e with
+    | BEXPR_name (j,_),_ when i = j -> e2
+    | e -> e
   in s e1
 
 let rec expr_unification counter

@@ -36,7 +36,7 @@ let find_mkproc_expr mkproc_map e =
 
   | x -> ()
   in
-  iter_tbexpr ignore aux ignore e
+  Flx_bexpr.iter ~fe:aux e
 
 let find_mkproc_exe mkproc_map exe =
   iter_bexe ignore (find_mkproc_expr mkproc_map) ignore ignore ignore exe
@@ -47,7 +47,7 @@ let find_mkproc_exes mkproc_map exes =
 (* THIS CODE REPLACES APPLICATIONS WITH CALLS *)
 let mkproc_expr syms bsym_table sr this mkproc_map vs e =
   let exes = ref [] in
-  let rec aux e = match map_tbexpr ident aux ident e with
+  let rec aux e = match Flx_bexpr.map ~fe:aux e with
   | BEXPR_apply
     (
       (BEXPR_closure (f,ts),_),
@@ -307,7 +307,7 @@ let mkproc_gen syms bsym_table child_map =
 
         (* rename parameter list *)
         let ps = map (fun ({pid=s; pindex=i} as p) -> {p with pid=s^"_mkproc"; pindex = revar i}) ps in
-        let rec revare e = map_tbexpr revar revare ident e in
+        let rec revare e = Flx_bexpr.map ~fi:revar ~fe:revare e in
 
         (* remap all the exes to use the new parameters and children *)
         let exes = map (fun exe -> map_bexe revar revare ident ident ident exe) exes in

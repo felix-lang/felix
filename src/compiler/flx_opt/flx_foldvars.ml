@@ -232,7 +232,7 @@ let fold_vars syms bsym_table child_map uses i ps exes =
             print_endline ("Y uses = " ^ string_of_bidset yuses);
             *)
             let rec subi j ys e =
-              match map_tbexpr ident (subi j ys) ident e with
+              match Flx_bexpr.map ~fe:(subi j ys) e with
               | BEXPR_get_n (k, (BEXPR_name(i,_),_) ),_
                 when j = i ->
                 if syms.compiler_options.print_flag then
@@ -244,7 +244,7 @@ let fold_vars syms bsym_table child_map uses i ps exes =
             in subi j ys, length ys + 1
           | _ ->
             let rec subi j y e =
-              match map_tbexpr ident (subi j y) ident e with
+              match Flx_bexpr.map ~fe:(subi j y) e with
               | BEXPR_name (i,_),_ when j = i -> incr rplcnt; y
               | x -> x
             in subi j y, 2 (* take init into account *)

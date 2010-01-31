@@ -71,41 +71,42 @@ let remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e =
       j, vsplice caller_vars callee_vs_len ts
     with Not_found -> i,ts
   in
-  let rec aux e = match map_tbexpr ident aux auxt e with
-  | BEXPR_name (i,ts),t ->
-    let i,ts = fixup i ts in
-    BEXPR_name (i,ts), auxt t
+  let rec aux e =
+    match Flx_bexpr.map ~ft:auxt ~fe:aux e with
+    | BEXPR_name (i,ts),t ->
+        let i,ts = fixup i ts in
+        BEXPR_name (i,ts), auxt t
 
-  | BEXPR_ref (i,ts) as x,t ->
-    let i,ts = fixup i ts in
-    BEXPR_ref (i,ts), auxt t
+    | BEXPR_ref (i,ts) as x,t ->
+        let i,ts = fixup i ts in
+        BEXPR_ref (i,ts), auxt t
 
-  | BEXPR_closure (i,ts),t ->
-    let i,ts = fixup i ts in
-    BEXPR_closure (i,ts), auxt t
+    | BEXPR_closure (i,ts),t ->
+        let i,ts = fixup i ts in
+        BEXPR_closure (i,ts), auxt t
 
-  | BEXPR_apply_direct (i,ts,e),t ->
-    let i,ts = fixup i ts in
+    | BEXPR_apply_direct (i,ts,e),t ->
+        let i,ts = fixup i ts in
 
-    (* attempt to fixup typeclass virtual *)
-    let i,ts = ftc i ts in
-    BEXPR_apply_direct (i,ts,aux e), auxt t
+        (* attempt to fixup typeclass virtual *)
+        let i,ts = ftc i ts in
+        BEXPR_apply_direct (i,ts,aux e), auxt t
 
-  | BEXPR_apply_stack (i,ts,e),t ->
-    let i,ts = fixup i ts in
-    BEXPR_apply_stack (i,ts,aux e), auxt t
+    | BEXPR_apply_stack (i,ts,e),t ->
+        let i,ts = fixup i ts in
+        BEXPR_apply_stack (i,ts,aux e), auxt t
 
-  | BEXPR_apply_prim (i,ts,e),t ->
-    let i,ts = fixup i ts in
-    BEXPR_apply_prim (i,ts,aux e), auxt t
+    | BEXPR_apply_prim (i,ts,e),t ->
+        let i,ts = fixup i ts in
+        BEXPR_apply_prim (i,ts,aux e), auxt t
 
-  | x,t -> x, auxt t
+    | x,t -> x, auxt t
   in
-    let a = aux e in
-    (*
-    print_endline ("replace " ^ sbe sym_table e ^ "-->" ^ sbe sym_table a);
-    *)
-    a
+  let a = aux e in
+  (*
+  print_endline ("replace " ^ sbe sym_table e ^ "-->" ^ sbe sym_table a);
+  *)
+  a
 
 let remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_len exe =
   (*

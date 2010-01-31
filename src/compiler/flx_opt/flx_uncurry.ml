@@ -47,7 +47,7 @@ let find_uncurry_expr syms bsym_table uncurry_map vs e =
     Hashtbl.replace uncurry_map f (c,k,n+1)
 
   | x -> ()
-  in iter_tbexpr ignore aux ignore e
+  in Flx_bexpr.iter ~fe:aux e
 
 let find_uncurry_exe syms bsym_table uncurry_map vs exe =
   begin match exe with
@@ -76,7 +76,7 @@ let find_uncurry_exes syms bsym_table uncurry_map vs exes =
   iter (find_uncurry_exe syms bsym_table uncurry_map vs) exes
 
 let uncurry_expr syms bsym_table uncurry_map vs e =
-  let rec aux e = match map_tbexpr id aux id e with
+  let rec aux e = match Flx_bexpr.map ~fe:aux e with
   | BEXPR_apply
     (
       (
@@ -287,7 +287,7 @@ let uncurry_gen syms bsym_table child_map : int =
         let ps = map (fun ({pid=s; pindex=i} as p) -> {p with pid=s^"_uncurry"; pindex = revar i}) ps in
         let psc = map (fun ({pindex=i} as p) -> {p with pindex = revar i}) psc in
         let ps = ps @ psc in
-        let rec revare e = map_tbexpr revar revare id e in
+        let rec revare e = Flx_bexpr.map ~fi:revar ~fe:revare e in
         let exes = map (fun exe -> map_bexe revar revare id id id exe) exesc in
         begin match bsymi.Flx_bsym.parent with
         | Some p -> Flx_child.add_child child_map p k

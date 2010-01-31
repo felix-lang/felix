@@ -584,7 +584,7 @@ let tident t = t
 *)
 let rec enstack_applies syms bsym_table child_map fn_cache ptr_cache x =
   let ea e = enstack_applies syms bsym_table child_map fn_cache ptr_cache e in
-  match map_tbexpr ident ea tident x with
+  match Flx_bexpr.map ~fe:ea x with
   | (
        BEXPR_apply ((BEXPR_closure(i,ts),_),b),t
      | BEXPR_apply_direct (i,ts,b),t

@@ -35,7 +35,7 @@ let ident x = x
 *)
 
 let expr_find_xclosures syms cls e =
-  iter_tbexpr ignore (add_xclosure syms cls) ignore e
+  Flx_bexpr.iter ~fe:(add_xclosure syms cls) e
 
 let exe_find_xclosure syms cls exe =
   iter_bexe ignore (expr_find_xclosures syms cls) ignore ignore ignore exe
@@ -90,7 +90,7 @@ let rec check_proj_wrap_expr n i e = match e with
   | BEXPR_get_n (n', (BEXPR_name (i',_),_)),_
      when i = i' && n = n' ->  ()
 
-  | x -> flat_iter_tbexpr ignore (check_proj_wrap_expr n i) ignore x
+  | x -> Flx_bexpr.flat_iter ~fe:(check_proj_wrap_expr n i) x
 
 let check_proj_wrap_exe syms bsym_table n i x =
   try
@@ -470,7 +470,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
 
     | (BEXE_assign (sr,x,(BEXPR_tuple ls,t)) as h) :: tail
       ->
-      let rec unproj e = match map_tbexpr ident unproj ident e with
+      let rec unproj e = match Flx_bexpr.map ~fe:unproj e with
       | BEXPR_get_n (k,(BEXPR_tuple ls,_)),_ -> nth ls k
       | x -> x
       in
@@ -487,7 +487,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
         | None -> false
         | _ -> assert false
       in
-      let rec repl e = match map_tbexpr ident repl ident e with
+      let rec repl e = match Flx_bexpr.map ~fe:repl e with
         | x when me x -> BEXPR_name (i,[]),t
         | BEXPR_get_n (k,(BEXPR_name (j,[]),t)),t' when i = j->
           BEXPR_name (pbase+k,[]),t'
@@ -540,7 +540,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
           (rev exes)
           ;
         end;
-        let rec undo_expr e = match map_tbexpr ident undo_expr ident e with
+        let rec undo_expr e = match Flx_bexpr.map ~fe:undo_expr e with
         | BEXPR_name (j,[]),t when i = j  -> x
         | BEXPR_name (j,[]),t when j >= pbase && j < pbase + n-> BEXPR_get_n (j-pbase,x),t
         | x -> x

@@ -551,7 +551,7 @@ let fixup_expr syms bsym_table e =
   (*
   print_endline ("Check expr " ^ sbe sym_table e);
   *)
-  let rec aux e =  match map_tbexpr id aux id e with
+  let rec aux e =  match Flx_bexpr.map ~fe:aux e with
   | BEXPR_apply_direct (i,ts,a),t ->
     let a = aux a in
     let j,ts = (* print_endline ("Check apply direct " ^ si i);  *)
