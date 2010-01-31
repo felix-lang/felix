@@ -100,7 +100,7 @@ class platform_frame:
       open(pathname,'r').close()
       return 1
     except IOError as data:
-      if data[0] == self.errno.ENOENT:
+      if data.errno == self.errno.ENOENT:
         return 0
       raise IOError(data)
 
