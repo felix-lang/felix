@@ -41,6 +41,14 @@ let nlist n =
   for i = 1 to n do lst := (n-i) :: !lst done;
   !lst
 
+(** repeat the element n times. *)
+let repeat x i =
+  let rec aux i xs =
+    if i = 0 then xs
+    else aux (i - 1) (x::xs)
+  in
+  aux i []
+
 let list_prefix lst n =
   let rec aux ol nl n =
     if n>0 then aux (tl ol) (hd ol :: nl) (n-1)

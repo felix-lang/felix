@@ -16,6 +16,9 @@ val list_omap: ('a -> 'b) -> 'a list -> 'b list
 (** list of n integers 0 to n-1 *)
 val nlist: int -> int list
 
+(** repeat the element n times. *)
+val repeat: 'a -> int -> 'a list
+
 (** first n elements of a list *)
 val list_prefix: 'a list -> int -> 'a list
 

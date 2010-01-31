@@ -7,10 +7,6 @@ open Flx_typing
 
 let ident x = x
 
-let rec list_of_n_things thing lst n =
-  if n = 0 then lst
-  else list_of_n_things thing (thing::lst) (n-1)
-
 let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_name (sr,name,ts) -> TYP_name (sr, name, List.map f ts)
   | TYP_lookup (sr,(e,name,ts)) -> TYP_lookup (sr, (e, name, List.map f ts))
@@ -31,7 +27,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
       match mapped_unit with
       | TYP_tuple [] ->
         TYP_unitsum k
-      | _ -> TYP_tuple ( list_of_n_things mapped_unit [] k)
+      | _ -> TYP_tuple (Flx_list.repeat mapped_unit k)
     else TYP_unitsum k
 
   (* here we don't need to go to a unitsum, since
@@ -280,7 +276,7 @@ let map_btype f = function
       match mapped_unit with
       | BTYP_tuple [] ->
         btyp_unitsum k
-      | _ -> btyp_tuple (list_of_n_things mapped_unit [] k)
+      | _ -> btyp_tuple (Flx_list.repeat mapped_unit k)
     else btyp_unitsum k
 
   | BTYP_intersect ts -> btyp_intersect (List.map f ts)
