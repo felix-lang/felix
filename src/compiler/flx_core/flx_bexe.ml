@@ -32,6 +32,7 @@ type t =
 
 (* -------------------------------------------------------------------------- *)
 
+(** Extract the source of the bound executable. *)
 let get_srcref = function
   | BEXE_goto (sr,_)
   | BEXE_assert (sr,_)
