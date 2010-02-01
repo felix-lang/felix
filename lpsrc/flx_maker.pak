@@ -1379,7 +1379,7 @@ import sys
 import stat
 import string
 
-@tangle("INSTALL_ROOT='%s/lib/felix/felix-%s'" % (config.PREFIX, config.flx_version))
+@tangle("INSTALL_ROOT=os.path.join(%r, '/lib/felix/felix-%s')" % (config.PREFIX, config.flx_version))
 FLX_INSTALL_DIR = os.getenv("FLX_INSTALL_DIR", INSTALL_ROOT)
 @tangle("CYGWIN="+str(config.CYGWIN))
 @tangle("WIN32="+str(config.WIN32))
