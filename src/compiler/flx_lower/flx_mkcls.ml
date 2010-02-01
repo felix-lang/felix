@@ -47,7 +47,7 @@ let gen_closure state bsym_table i =
         privmap=Hashtbl.create 0;
         dirs=[];
         bbdcl=BBDCL_val (vs,arg_t) };
-      [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
+      [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(bexpr_name arg_t (n,ts))
     in
 
     let exes =
@@ -77,9 +77,9 @@ let gen_closure state bsym_table i =
         privmap=Hashtbl.create 0;
         dirs=[];
         bbdcl=BBDCL_val (vs,arg_t) };
-      [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(BEXPR_name (n,ts),arg_t)
+      [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(bexpr_name arg_t (n,ts))
     in
-    let e = BEXPR_apply_prim (i,ts,a),ret in
+    let e = bexpr_apply_prim ret (i,ts,a) in
     let exes = [BEXE_fun_return (bsym.Flx_bsym.sr,e)] in
     Flx_bsym_table.add bsym_table j { bsym with
       Flx_bsym.bbdcl=BBDCL_function ([],vs,(ps,None),ret,exes) };
@@ -88,7 +88,7 @@ let gen_closure state bsym_table i =
   | _ -> assert false
 
 
-let mkcls state bsym_table all_closures i ts =
+let mkcls state bsym_table all_closures i ts t =
   let j =
     try Hashtbl.find state.wrappers i
     with Not_found ->
@@ -97,16 +97,16 @@ let mkcls state bsym_table all_closures i ts =
       j
   in
     all_closures := BidSet.add j !all_closures;
-    BEXPR_closure (j,ts)
+    bexpr_closure t (j,ts)
 
-let check_prim state bsym_table all_closures i ts =
+let check_prim state bsym_table all_closures i ts t =
   match Flx_bsym_table.find_bbdcl bsym_table i with
   | BBDCL_proc _
   | BBDCL_fun _ ->
-    mkcls state bsym_table all_closures i ts
+    mkcls state bsym_table all_closures i ts t
   | _ ->
     all_closures := BidSet.add i !all_closures;
-    BEXPR_closure (i,ts)
+    bexpr_closure t (i,ts)
 
 let idt t = t
 
@@ -116,7 +116,7 @@ let rec adj_cls state bsym_table all_closures e =
   let adj e = adj_cls state bsym_table all_closures e in
   match Flx_bexpr.map ~fe:adj e with
   | BEXPR_closure (i,ts),t ->
-    check_prim state bsym_table all_closures i ts,t
+    check_prim state bsym_table all_closures i ts t
 
   (* Direct calls to non-stacked functions require heap
      but not a clone ..

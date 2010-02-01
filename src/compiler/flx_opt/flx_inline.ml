@@ -389,7 +389,9 @@ let expand_exe syms bsym_table u exe =
     | BEXE_call (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e1),t),e2) ->
       let e1,xs1 = u sr e1 in
       let e2,xs2 = u sr e2 in
-      BEXE_call (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e1),t),e2) :: xs2 @ xs1
+      BEXE_call (sr,
+        (bexpr_apply t ((bexpr_closure t' (i,ts)),e1)),
+        e2) :: xs2 @ xs1
 
     | BEXE_call (sr,e1,e2) ->
       let e1,xs1 = u sr e1 in
@@ -408,7 +410,8 @@ let expand_exe syms bsym_table u exe =
     *)
     | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e),t)) ->
       let e,xs = u sr e in
-      BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e),t)) :: xs
+      BEXE_fun_return (sr,
+        (bexpr_apply t ((bexpr_closure t' (i,ts)),e))) :: xs
 
     | BEXE_fun_return (sr,e) ->
       let e,xs = u sr e in
@@ -439,7 +442,8 @@ let expand_exe syms bsym_table u exe =
       *)
       ->
       let e,xs = u sr e in
-      BEXE_init (sr,i,(BEXPR_apply((BEXPR_closure (j,ts),t'),e),t)) :: xs
+      BEXE_init (sr, i,
+        (bexpr_apply t ((bexpr_closure t' (j,ts)),e))) :: xs
 
     | BEXE_init (sr,i,e) ->
       let e,xs = u sr e in
@@ -840,7 +844,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
 
           (* replace application with the variable *)
           let ts = map (fun (_,i)-> btyp_type_var (i,btyp_type 0)) caller_vs in
-          BEXPR_name (urv,ts),t
+          bexpr_name t (urv,ts)
 
         | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
           (* TEMPORARY FIX! *)
@@ -982,7 +986,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
                     let rxs = hic revariable callee xs in
                     exes' := rev rxs @ !exes';
                     let ts = map (fun (_,i)-> btyp_type_var (i,btyp_type 0)) caller_vs in
-                    BEXPR_name (urv,ts),t
+                    bexpr_name t (urv,ts)
                 end
                 else
                 begin

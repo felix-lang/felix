@@ -309,7 +309,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     end
 
   | BEXPR_deref ((BEXPR_ref (index,ts)),BTYP_pointer t) ->
-    ge' (BEXPR_name (index,ts),t)
+    ge' (bexpr_name t (index,ts))
 
   | BEXPR_address e -> ce_prefix "&" (ge' e)
 
@@ -632,7 +632,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       begin match srcx with
       | BEXPR_variant (s,argt) ->
         print_endline "Coerce known variant!";
-        ge' (BEXPR_variant (s,argt),t)
+        ge' (bexpr_variant t (s,argt))
       | _ ->
         let i =
           begin try
@@ -747,8 +747,8 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
               syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
           in
           match bsym.Flx_bsym.bbdcl with
-          | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
-          | BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
+          | BBDCL_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
+          | BBDCL_function _ -> ge' (bexpr_apply_direct t (index',ts',a))
           | _ ->
               clierr2 sr bsym.Flx_bsym.sr ("expected instance to be function " ^
                 bsym.Flx_bsym.id)
@@ -863,8 +863,8 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
           syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
       in
       match bsym.Flx_bsym.bbdcl with
-      | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
-      | BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
+      | BBDCL_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
+      | BBDCL_function _ -> ge' (bexpr_apply_direct t (index',ts',a))
       | _ ->
           clierr2 sr bsym.Flx_bsym.sr ("expected instance to be function " ^
             bsym.Flx_bsym.id)
@@ -932,8 +932,8 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
           syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
       in
       match bsym.Flx_bsym.bbdcl with
-      | BBDCL_fun _ -> ge' (BEXPR_apply_prim (index',ts',a),t)
-      | BBDCL_function _ -> ge' (BEXPR_apply_direct (index',ts',a),t)
+      | BBDCL_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
+      | BBDCL_function _ -> ge' (bexpr_apply_direct t (index',ts',a))
       | _ ->
           clierr2 sr bsym.Flx_bsym.sr ("expected instance to be function " ^
             bsym.Flx_bsym.id)
@@ -997,7 +997,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
                 print_endline ("tt=" ^ sbt bsym_table tt);
                 *)
                 let t = nth_type tt i in
-                let a' = BEXPR_get_n (i,a),t in
+                let a' = bexpr_get_n t (i,a) in
                 let x = ge_arg a' in
                 incr n;
                 if String.length x = 0 then s else

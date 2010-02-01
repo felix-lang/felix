@@ -21,12 +21,12 @@ let unravel syms bsym_table e =
       sube := (e, name) :: !sube;
       name
   in
-  let refer ((_, t) as e) = BEXPR_expr (get e, t), t in
+  let refer ((_, t) as e) = bexpr_expr t (get e, t) in
   let e' =
     let rec aux e =
       match e with
       | BEXPR_apply ((BEXPR_name _,_) as f, b), t ->
-        refer (BEXPR_apply (f, aux b), t)
+        refer (bexpr_apply t (f, aux b))
 
       (*
       (* no unravelling of primitives *)
@@ -39,14 +39,14 @@ let unravel syms bsym_table e =
 
         begin match Flx_bsym_table.find_bbdcl bsym_table i with
         | BBDCL_struct _
-        | BBDCL_fun _ -> BEXPR_apply_direct (i, ts, aux b),t
-        | BBDCL_function _ -> refer (BEXPR_apply_direct (i, ts, aux b),t)
+        | BBDCL_fun _ -> bexpr_apply_direct t (i, ts, aux b)
+        | BBDCL_function _ -> refer (bexpr_apply_direct t (i, ts, aux b))
 
         | _ -> assert false
         end
 
-      | BEXPR_apply (f, b), t -> refer (BEXPR_apply (aux f, aux b), t)
-      | BEXPR_tuple ls, t -> (BEXPR_tuple (List.map aux ls), t)
+      | BEXPR_apply (f, b), t -> refer (bexpr_apply t (aux f, aux b))
+      | BEXPR_tuple ls, t -> (bexpr_tuple t (List.map aux ls))
       | (BEXPR_name _, t) as x -> x
       | (BEXPR_literal (Flx_ast.AST_int _ )), t as x -> x
       | (BEXPR_literal (Flx_ast.AST_float _ )), t as x -> x

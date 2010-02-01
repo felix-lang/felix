@@ -207,7 +207,7 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
       parameters := (ty,k) :: !parameters;
       tmplist := k :: !tmplist;
       let h' = k,(name2,ty,e,BidSet.empty) in
-      let e' = BEXPR_name (k,ts'),ty in
+      let e' = bexpr_name ty (k,ts') in
       let t' = i,(name,ty,e',BidSet.empty) in
       aux3 (h' :: h, ta, t' :: t)
   in

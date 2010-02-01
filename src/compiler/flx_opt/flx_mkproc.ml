@@ -76,13 +76,13 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
 
       (* append a pointer to this variable to the argument *)
       let ts' = map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) vs in
-      let ptr = BEXPR_ref (k,ts'),btyp_pointer ret in
+      let ptr = bexpr_ref (btyp_pointer ret) (k,ts') in
       let (_,at') as a' = append_args syms bsym_table f a [ptr] in
 
       (* create a call instruction to the mapped procedure *)
       let call =
         BEXE_call (sr,
-          (BEXPR_closure (p,ts),btyp_function (at',btyp_void)),
+          (bexpr_closure (btyp_function (at',btyp_void)) (p,ts)),
           a'
         )
       in
@@ -91,7 +91,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       exes := call :: !exes;
 
       (* replace the original expression with the variable *)
-      BEXPR_name (k,ts'),ret
+      bexpr_name ret (k,ts')
     in e
   | x -> x
   in
@@ -330,7 +330,7 @@ let mkproc_gen syms bsym_table child_map =
       (* and actually convert it *)
       let ts = map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
       (* let dv = BEXPR_deref (BEXPR_name (vix,ts),btyp_pointer * ret),btyp_lvalue ret in *)
-      let dv = BEXPR_deref (BEXPR_name (vix,ts),btyp_pointer ret),ret in
+      let dv = bexpr_deref ret (bexpr_name (btyp_pointer ret) (vix,ts)) in
       let exes = proc_exes syms bsym_table dv exes in
 
       (* save the new procedure *)

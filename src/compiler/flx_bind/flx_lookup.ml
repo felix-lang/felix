@@ -2126,7 +2126,7 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
                   Some (List.map begin fun (name,d) ->
                     try
                       match List.assoc name rs with
-                      | j,t -> BEXPR_get_n (j,tbe2),t
+                      | j,t -> bexpr_get_n t (j,tbe2)
                     with Not_found ->
                       match d with
                       | Some d ->d
@@ -2236,9 +2236,9 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
   | Some xs ->
     match xs with
     | [x]-> x
-    | _ -> BEXPR_tuple xs,btyp_tuple (List.map snd xs)
+    | _ -> bexpr_tuple (btyp_tuple (List.map snd xs)) xs
   in
-  BEXPR_apply ((be1,t1), x2),rest
+  bexpr_apply rest ((be1,t1), x2)
 
 and koenig_lookup state bsym_table env rs sra id' name_map fn t2 ts =
   (*
@@ -2267,9 +2267,9 @@ and koenig_lookup state bsym_table env rs sra id' name_map fn t2 ts =
       (*
       print_endline "Overload resolution OK";
       *)
-      BEXPR_closure (index'',ts),
-       type_of_index_with_ts' state bsym_table rs sra index'' ts
-
+      bexpr_closure
+        (type_of_index_with_ts' state bsym_table rs sra index'' ts)
+        (index'',ts)
 
     | None ->
         (*
@@ -2344,8 +2344,7 @@ and lookup_qn_with_sig'
         | _ -> assert false
         end
         ;
-        BEXPR_closure (index,ts),
-        t
+        bexpr_closure t (index,ts)
 
       | SYMDEF_union _
       | SYMDEF_type_alias _ ->
@@ -2386,8 +2385,7 @@ and lookup_qn_with_sig'
             sbt bsym_table t
           )
           else
-            BEXPR_name (index, ts),
-            t
+            bexpr_name t (index, ts)
 
         | _ ->
           clierr srn
@@ -2439,14 +2437,14 @@ and lookup_qn_with_sig'
       then clierr sra "Case index out of range of sum"
       else
         let ct = btyp_function (unit_t,t) in
-        BEXPR_case (v,t),ct
+        bexpr_case ct (v,t)
 
     | BTYP_sum ls ->
       if v<0 or v >= List.length ls
       then clierr sra "Case index out of range of sum"
       else let vt = List.nth ls v in
       let ct = btyp_function (vt,t) in
-      BEXPR_case (v,t), ct
+      bexpr_case ct (v,t)
 
     | _ ->
       clierr sr
@@ -2514,8 +2512,9 @@ and lookup_qn_with_sig'
         (fun (_,i,_) -> btyp_type_var (i,btyp_type 0))
         (fst vs)
       in
-      BEXPR_closure (index,ts),
-      inner_type_of_index state bsym_table rs index
+      bexpr_closure
+        (inner_type_of_index state bsym_table rs index)
+        (index,ts)
 
     | _ ->
       (*
@@ -2562,8 +2561,9 @@ and lookup_qn_with_sig'
         (*
         let ts = adjust_ts state.sym_table sr index ts in
         *)
-        BEXPR_closure (index,ts),
-         type_of_index_with_ts' state bsym_table rs sr index ts
+        bexpr_closure
+          (type_of_index_with_ts' state bsym_table rs sr index ts)
+          (index,ts)
 
       | None ->
         clierr sra
@@ -2974,11 +2974,8 @@ and handle_function
     (*
     print_endline ("Handle function " ^id^"<"^string_of_bid index^">, ts=" ^ catmap "," (sbt bsym_table) ts);
     *)
-    let t = inner_type_of_index_with_ts state bsym_table sr rs index ts
-    in
-    BEXPR_closure (index,ts),
-    (
-      match t with
+    let t =
+      match inner_type_of_index_with_ts state bsym_table sr rs index ts with
       | BTYP_cfunction (s,d) as t -> t
       | BTYP_function (s,d) as t -> t
       | t ->
@@ -2994,14 +2991,13 @@ and handle_function
           "[handle_function]: closure operator expected '"^name^"' to have function type, got '"^
           sbt bsym_table t ^ "'"
         )
-    )
+    in
+    bexpr_closure t (index,ts)
   | SYMDEF_type_alias (TYP_typefun _) ->
     (* THIS IS A HACK .. WE KNOW THE TYPE IS NOT NEEDED BY THE CALLER .. *)
     (* let t = inner_type_of_index_with_ts state sr rs index ts in *)
-    let t = btyp_function (btyp_type 0,btyp_type 0) in
-    BEXPR_closure (index,ts),
-    (
-      match t with
+    let t =
+      match btyp_function (btyp_type 0,btyp_type 0) with
       | BTYP_function (s,d) as t -> t
       | t ->
         ignore begin
@@ -3016,7 +3012,8 @@ and handle_function
           "[handle_function]: closure operator expected '"^name^"' to have function type, got '"^
           sbt bsym_table t ^ "'"
         )
-    )
+    in
+    bexpr_closure t (index,ts)
 
   | _ ->
     clierr sra
@@ -3059,7 +3056,7 @@ and handle_variable state bsym_table
         *)
         Some
         (
-          BEXPR_name (index, ts),t
+          bexpr_name t (index, ts)
           (* should equal t ..
           type_of_index_with_ts state sr index ts
           *)
@@ -3068,7 +3065,7 @@ and handle_variable state bsym_table
     (* anything other than function type, dont check the sig,
        just return it..
     *)
-    | _ ->  Some (BEXPR_name (index,ts),t)
+    | _ ->  Some (bexpr_name t (index,ts))
     end
 
 and lookup_name_in_table_dirs_with_sig
@@ -3116,7 +3113,7 @@ and lookup_name_in_table_dirs_with_sig
         print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
         print_endline ("Record Argument type is " ^ catmap "," (sbt bsym_table) t2);
         *)
-        Some (BEXPR_closure (sye index,ts),btyp_inst (sye index,ts))
+        Some (bexpr_closure (btyp_inst (sye index,ts)) (sye index,ts))
         (*
         failwith "NOT IMPLEMENTED YET"
         *)
@@ -3603,7 +3600,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       let es = List.sort rcmp es in
       let field_name = String.sub fn 4 (String.length fn -4) in
       begin match list_index (List.map fst es) field_name with
-      | Some n -> BEXPR_get_n (n,x2),List.assoc field_name es
+      | Some n -> bexpr_get_n (List.assoc field_name es) (n,x2)
       | None -> clierr sr
          (
            "Field " ^ field_name ^
@@ -3804,8 +3801,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     | FunctionEntry [index] ->
        print_endline "Callback closure ..";
        let ts = List.map (bt sr) ts in
-       BEXPR_closure (sye index, ts),
-       ti sr (sye index) ts
+       bexpr_closure (ti sr (sye index) ts) (sye index, ts)
     | NonFunctionEntry  _
     | _ -> clierr sr
       "'callback' expression denotes non-singleton function set"
@@ -3813,7 +3809,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
 
   | EXPR_expr (sr,s,t) ->
     let t = bt sr t in
-    BEXPR_expr (s,t),t
+    bexpr_expr t (s,t)
 
   | EXPR_andlist (sri,ls) ->
     begin let mksum a b = apl2 sri "land" [a;b] in
@@ -3859,15 +3855,18 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
             with _ -> clierr sr "Integer is too large for unitsum"
           in
           if m >=0 && m < n then
-            BEXPR_case (m,t''),t''
+            bexpr_case t'' (m,t'')
           else
             clierr sr "Integer is out of range for unitsum"
         | _ ->
           let inttype = t' in
-          let zero = BEXPR_literal (AST_int ("int",Big_int.zero_big_int)),t' in
-          let xn = BEXPR_literal (AST_int ("int",Big_int.big_int_of_int n)),t' in
-          BEXPR_range_check (zero,x',xn), btyp_unitsum n
-
+          let zero =
+            bexpr_literal t' (AST_int ("int",Big_int.zero_big_int))
+          in
+          let xn =
+            bexpr_literal t' (AST_int ("int",Big_int.big_int_of_int n))
+          in
+          bexpr_range_check (btyp_unitsum n) (zero,x',xn)
         end
       | _ ->
         clierr sr ("Attempt to to coerce type:\n"^
@@ -3878,7 +3877,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     | BTYP_record ls',BTYP_record ls'' ->
       begin
       try
-      BEXPR_record
+      bexpr_record t''
       (
         List.map
         (fun (s,t)->
@@ -3886,7 +3885,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           | Some j ->
             let tt = List.assoc s ls' in
             if type_eq state.syms.counter t tt then
-              s,(BEXPR_get_n (j,x'),t)
+              s,(bexpr_get_n t (j,x'))
             else clierr sr (
               "Source Record field '" ^ s ^ "' has type:\n" ^
               sbt bsym_table tt ^ "\n" ^
@@ -3897,8 +3896,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           | None -> raise Not_found
         )
         ls''
-      ),
-      t''
+      )
       with Not_found ->
         clierr sr
          (
@@ -3929,7 +3927,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         lhs
         ;
         print_endline ("Coercion of variant to type " ^ sbt bsym_table t'');
-        BEXPR_coerce (x',t''),t''
+        bexpr_coerce t'' (x',t'')
       with Not_found ->
         clierr sr
          (
@@ -3982,7 +3980,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         sbt bsym_table typ
       )
     in
-      BEXPR_get_n (n, (expr,typ)), ctyp
+      bexpr_get_n ctyp (n, (expr,typ))
 
   | EXPR_get_named_variable (sr,(name,e')) ->
     let e'',t'' as x2 = be e' in
@@ -3993,7 +3991,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       let es = List.sort rcmp es in
       let field_name = name in
       begin match list_index (List.map fst es) field_name with
-      | Some n -> BEXPR_get_n (n,x2),List.assoc field_name es
+      | Some n -> bexpr_get_n (List.assoc field_name es) (n,x2)
       | None -> clierr sr
          (
            "Field " ^ field_name ^
@@ -4021,18 +4019,16 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     let int_t = bt sr (TYP_name (sr,"int",[])) in
     begin match e' with
     | BEXPR_case (i,_) ->
-      BEXPR_literal (AST_int ("int",Big_int.big_int_of_int i))
-    | _ -> BEXPR_case_index e
+      bexpr_literal int_t (AST_int ("int",Big_int.big_int_of_int i))
+    | _ -> bexpr_case_index int_t e
     end
-    ,
-    int_t
 
   | EXPR_case_tag (sr,v) ->
      clierr sr "plain case tag not allowed in expression (only in pattern)"
 
   | EXPR_variant (sr,(s,e)) ->
     let (_,t) as e = be e in
-    BEXPR_variant (s,e), btyp_variant [s,t]
+    bexpr_variant (btyp_variant [s,t]) (s,e)
 
   | EXPR_typed_case (sr,v,t) ->
     let t = bt sr t in
@@ -4042,7 +4038,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       if v<0 or v>= k
       then clierr sr "Case index out of range of sum"
       else
-        BEXPR_case (v,t),t  (* const ctor *)
+        bexpr_case t (v,t)  (* const ctor *)
 
     | BTYP_sum ls ->
       if v<0 or v>= List.length ls
@@ -4053,7 +4049,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         | BTYP_tuple [] -> t        (* const ctor *)
         | _ -> btyp_function (vt,t) (* non-const ctor *)
       in
-      BEXPR_case (v,t), ct
+      bexpr_case ct (v,t)
     | _ ->
       clierr sr
       (
@@ -4131,9 +4127,9 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
                 failwith ("[lookup, AST_name] expected ref " ^ name ^
                   " to have pointer type")
               in
-              BEXPR_deref (BEXPR_name (index, ts), t), t'
+              bexpr_deref t' (bexpr_name t (index, ts))
 
-          | _ -> BEXPR_name (index, ts), t
+          | _ -> bexpr_name t (index, ts)
           end
       | None ->
           (* We haven't bound this symbol yet. We need to specially handle
@@ -4146,9 +4142,9 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
                 failwith ("[lookup, AST_name] expected ref " ^ name ^
                   " to have pointer type")
               in
-              BEXPR_deref (BEXPR_name (index, ts), t), t'
+              bexpr_deref t' (bexpr_name t (index, ts))
 
-          | _ -> BEXPR_name (index,ts), t
+          | _ -> bexpr_name t (index,ts)
           end
       end
 
@@ -4175,7 +4171,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       let ts = List.map (tsubst spec_vs ts) sub_ts in
       let ts = adjust_ts state.sym_table bsym_table sr index ts in
       let t = ti sr index ts in
-      BEXPR_closure (index,ts), t
+      bexpr_closure t (index,ts)
 
 
     | FunctionEntry fs ->
@@ -4196,8 +4192,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
            (*
            print_endline "OK, overload resolved!!";
            *)
-           BEXPR_closure (index,ts),
-            ti sr index ts
+           bexpr_closure (ti sr index ts) (index,ts)
 
          | None -> clierr sr "Cannot resolve overload .."
         end
@@ -4223,12 +4218,12 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     (*
     print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to closure");
     *)
-      BEXPR_closure (index,ts),t
+      bexpr_closure t (index,ts)
     | _ ->
     (*
     print_endline ("Indexed name: Binding " ^ name ^ "<"^si index^">"^ " to variable");
     *)
-      BEXPR_name (index,ts),t
+      bexpr_name t (index,ts)
     end
 
   | EXPR_the(_,`AST_name (sr,name,ts)) ->
@@ -4241,16 +4236,12 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     | NonFunctionEntry (index) ->
       let index = sye index in
       let ts = adjust_ts state.sym_table bsym_table sr index ts in
-      BEXPR_name (index,ts),
-      let t = ti sr index ts in
-      t
+      bexpr_name (ti sr index ts) (index,ts)
 
     | FunctionEntry [index] ->
       let index = sye index in
       let ts = adjust_ts state.sym_table bsym_table sr index ts in
-      BEXPR_closure (index,ts),
-      let t = ti sr index ts in
-      t
+      bexpr_closure (ti sr index ts) (index,ts)
 
     | FunctionEntry _ ->
       clierr sr
@@ -4290,8 +4281,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           | { Flx_sym.sr=srn; symdef=SYMDEF_inherit qn} -> be (expr_of_qualified_name qn)
           | _ ->
             let ts = adjust_ts state.sym_table bsym_table sr i ts in
-            BEXPR_name (i,ts),
-            ti sr i ts
+            bexpr_name (ti sr i ts) (i,ts)
           end
 
         | FunctionEntry fs ->
@@ -4312,8 +4302,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
                (*
                print_endline "OK, overload resolved!!";
                *)
-               BEXPR_closure (index,ts),
-               ti sr index ts
+               bexpr_closure (ti sr index ts) (index,ts)
 
             | None ->
               clierr sr "Overload resolution failed .. "
@@ -4333,8 +4322,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     let srn = src_of_qualified_name f in
     lookup_qn_with_sig' state bsym_table sr srn env rs f [sign]
 
-  | EXPR_likely (srr,e) ->  let (_,t) as x = be e in BEXPR_likely x,t
-  | EXPR_unlikely (srr,e) ->  let (_,t) as x = be e in BEXPR_unlikely x,t
+  | EXPR_likely (srr,e) ->  let (_,t) as x = be e in bexpr_likely t x
+  | EXPR_unlikely (srr,e) ->  let (_,t) as x = be e in bexpr_unlikely t x
 
   | EXPR_ref (_,(EXPR_deref (_,e))) -> be e
   | EXPR_ref (srr,e) ->
@@ -4381,7 +4370,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
                     index
                     ts
                   in
-                  BEXPR_ref (index, ts), btyp_pointer vtype
+                  bexpr_ref (btyp_pointer vtype) (index, ts)
 
               | BBDCL_val _ ->
                   clierr2 srr bsym.Flx_bsym.sr ("[bind_expression] " ^
@@ -4411,7 +4400,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
                     index
                     ts
                   in
-                  BEXPR_ref (index, ts), btyp_pointer vtype
+                  bexpr_ref (btyp_pointer vtype) (index, ts)
 
               | SYMDEF_parameter _ ->
                   clierr2 srr sym.Flx_sym.sr ("[bind_expression] Address " ^
@@ -4427,7 +4416,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           end
 
       | BEXPR_apply ((BEXPR_closure (i,ts),_),a) when has_property i `Lvalue ->
-          BEXPR_address (e', t'), btyp_pointer t'
+          bexpr_address (btyp_pointer t') (e', t')
 
       | _ ->
           clierr srr ("[bind_expression] Address non variable " ^
@@ -4442,18 +4431,17 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_deref (sr,e) ->
     let e,t = be e in
     begin match unfold t with
-    | BTYP_pointer t'
-      -> BEXPR_deref (e,t),t'
+    | BTYP_pointer t' -> bexpr_deref t' (e,t)
     | _ -> clierr sr "[bind_expression'] Dereference non pointer"
     end
 
   | EXPR_new (srr,e) ->
      let e,t as x = be e in
-     BEXPR_new x, btyp_pointer t
+     bexpr_new (btyp_pointer t) x
 
   | EXPR_literal (sr,v) ->
     let t = type_of_literal state bsym_table env sr v in
-    BEXPR_literal v, t
+    bexpr_literal t v
 
   | EXPR_map (sr,f,a) ->
     handle_map sr (be f) (be a)
@@ -4534,7 +4522,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           let ct = bind_type' state bsym_table env' rsground sr ct bvs mkenv in
           let ct = tsubst vs' ts' ct in
             if type_eq state.syms.counter ct t then
-              BEXPR_get_n (j,a),t
+              bexpr_get_n t (j,a)
             else clierr sr ("Component " ^ name ^
               " struct component type " ^ sbt bsym_table ct ^
               "\ndoesn't match record type " ^ sbt bsym_table t
@@ -4543,9 +4531,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           fls
         in
         let cts = List.map snd a in
-        let t = match cts with [t]->t | _ -> btyp_tuple cts in
-        let a = match a with [x,_] -> x | _ -> BEXPR_tuple a in
-        let a = a,t in
+        let t = match cts with [t] -> t | _ -> btyp_tuple cts in
+        let a = match a with [x,_] -> x,t | _ -> bexpr_tuple t a in
         cal_apply state bsym_table sr rs f a
       end
 
@@ -4587,7 +4574,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       (List.tl bts)
       ;
       let t = btyp_array (t, btyp_unitsum n) in
-      BEXPR_tuple bets,t
+      bexpr_tuple t bets
     end else if n = 1 then List.hd bets
     else syserr sr "Empty array?"
 
@@ -4596,13 +4583,13 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
 
   | EXPR_record (sr,ls) ->
     begin match ls with
-    | [] -> BEXPR_tuple [], btyp_tuple []
+    | [] -> bexpr_tuple (btyp_tuple []) []
     | _ ->
     let ss,es = List.split ls in
     let es = List.map be es in
     let ts = List.map snd es in
     let t = btyp_record (List.combine ss ts) in
-    BEXPR_record (List.combine ss es),t
+    bexpr_record t (List.combine ss es)
     end
 
   | EXPR_tuple (_,es) ->
@@ -4617,13 +4604,13 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         (List.tl bts)
         ;
         let t = btyp_array (t, btyp_unitsum n) in
-        BEXPR_tuple bets,t
+        bexpr_tuple t bets
       with Not_found ->
-        BEXPR_tuple bets, btyp_tuple bts
+        bexpr_tuple (btyp_tuple bts) bets
     else if n = 1 then
       List.hd bets
     else
-    BEXPR_tuple [], btyp_tuple []
+    bexpr_tuple (btyp_tuple []) []
 
 
   | EXPR_dot (sr,(e,e2)) ->
@@ -4682,7 +4669,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           in
           let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
           let ct = tsubst vs' ts' ct in
-          BEXPR_get_n (cidx,te),ct
+          bexpr_get_n ct (cidx,te)
           with Not_found ->
             let get_name = "get_" ^ name in
             begin try cal_method_apply sr get_name e ts 
@@ -4722,7 +4709,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
             let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
             let ct = tsubst vs' ts' ct in
             (* propagate lvalueness to struct component *)
-            BEXPR_get_n (cidx,te),ct
+            bexpr_get_n ct (cidx,te)
           with
           | Not_found ->
             (*
@@ -4770,7 +4757,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         let es = List.sort rcmp es in
         let field_name = name in
         begin match list_index (List.map fst es) field_name with
-        | Some n -> BEXPR_get_n (n,te),(List.assoc field_name es)
+        | Some n -> bexpr_get_n (List.assoc field_name es) (n,te)
         | None ->
           try be (EXPR_apply (sr,(e2,e)))
           with exn ->
@@ -4830,7 +4817,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   end
 
   | EXPR_match_case (sr,(v,e)) ->
-     BEXPR_match_case (v,be e),flx_bbool
+     bexpr_match_case flx_bbool (v,be e)
 
   | EXPR_match_ctor (sr,(qn,e)) ->
     begin match qn with
@@ -4863,7 +4850,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           (*
           print_endline ("Index is " ^ si vidx);
           *)
-          BEXPR_match_case (vidx,ue),flx_bbool
+          bexpr_match_case flx_bbool (vidx,ue)
 
         (* this handles the case of a C type we want to model
         as a union by provding _match_ctor_name style function
@@ -4907,7 +4894,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           (*
           print_endline ("Index is " ^ si vidx);
           *)
-          BEXPR_match_case (vidx,ue),flx_bbool
+          bexpr_match_case flx_bbool (vidx,ue)
 
         (* this handles the case of a C type we want to model
         as a union by provding _match_ctor_name style function
@@ -4936,14 +4923,14 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
        if v < 0 or v >= n
        then clierr sr "Invalid sum index"
        else
-         BEXPR_case_arg (v, e'),unit_t
+         bexpr_case_arg unit_t (v, e')
 
      | BTYP_sum ls ->
        let n = List.length ls in
        if v<0 or v>=n
        then clierr sr "Invalid sum index"
        else let t = List.nth ls v in
-       BEXPR_case_arg (v, e'),t
+       bexpr_case_arg t (v, e')
 
      | _ -> clierr sr ("Expected sum type, got " ^ sbt bsym_table t)
      end
@@ -4998,7 +4985,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           (*
           print_endline ("Instantiated type = " ^ sbt bsym_table vt);
           *)
-          BEXPR_case_arg (vidx,ue),vt
+          bexpr_case_arg vt (vidx,ue)
 
         (* this handles the case of a C type we want to model
         as a union by provding _ctor_arg style function
@@ -5062,7 +5049,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           (*
           print_endline ("Instantiated type = " ^ sbt bsym_table vt);
           *)
-          BEXPR_case_arg (vidx,ue),vt
+          bexpr_case_arg vt (vidx,ue)
 
         (* this handles the case of a C type we want to model
         as a union by provding _match_ctor_name style function

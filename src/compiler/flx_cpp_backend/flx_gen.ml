@@ -1167,7 +1167,7 @@ let gen_exe filename
                   print_endline ("tt=" ^ sbt bsym_table tt);
                   *)
                   let t = nth_type tt i in
-                  let a' = BEXPR_get_n (i,a),t in
+                  let a' = bexpr_get_n t (i,a) in
                   let x =
                     if Hashtbl.mem syms.instances (j,ts)
                     && not (t = btyp_tuple [])
@@ -2373,15 +2373,15 @@ let gen_biface_body syms bsym_table biface = match biface with
         | _ ->
           let a =
             let counter = ref 0 in
-            BEXPR_tuple
-            (
-              map
-              (fun {ptyp=t; pid=name; pindex=idx} ->
-                BEXPR_expr (name,t),t
+            bexpr_tuple
+              (btyp_tuple (Flx_bparameter.get_btypes ps))
+              (
+                map
+                (fun {ptyp=t; pid=name; pindex=idx} ->
+                  bexpr_expr t (name,t)
+                )
+                ps
               )
-              ps
-            ),
-            btyp_tuple (Flx_bparameter.get_btypes ps)
           in
           "0" ^ ", " ^ ge sr a
       in

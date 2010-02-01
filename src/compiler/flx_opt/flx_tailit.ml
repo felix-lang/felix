@@ -243,12 +243,12 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
             parameters := (t,pix) :: !parameters;
             pix
         in
-        let p = BEXPR_name (pix,ts'),t in
+        let p = bexpr_name t (pix,ts') in
         let n = ref 0 in
         let param_decode =
           map
           (fun {pindex=ix; ptyp=prjt} ->
-            let prj = Flx_bexpr.reduce (BEXPR_get_n (!n,p),prjt) in
+            let prj = Flx_bexpr.reduce (bexpr_get_n prjt (!n,p)) in
             incr n;
             BEXE_init (sr,ix,prj)
           )
@@ -303,7 +303,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
       BEXE_assign
       (
         sr,
-        (BEXPR_get_n (j,(BEXPR_name (i,ts'),t)),t'),
+        (bexpr_get_n t' (j,(bexpr_name t (i,ts')))),
         x
       )
     )
@@ -488,9 +488,9 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
         | _ -> assert false
       in
       let rec repl e = match Flx_bexpr.map ~fe:repl e with
-        | x when me x -> BEXPR_name (i,[]),t
+        | x when me x -> bexpr_name t (i,[])
         | BEXPR_get_n (k,(BEXPR_name (j,[]),t)),t' when i = j->
-          BEXPR_name (pbase+k,[]),t'
+          bexpr_name t' (pbase+k,[])
         | x -> x
       in
       let check = me x in
@@ -542,14 +542,14 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
         end;
         let rec undo_expr e = match Flx_bexpr.map ~fe:undo_expr e with
         | BEXPR_name (j,[]),t when i = j  -> x
-        | BEXPR_name (j,[]),t when j >= pbase && j < pbase + n-> BEXPR_get_n (j-pbase,x),t
+        | BEXPR_name (j,[]),t when j >= pbase && j < pbase + n-> bexpr_get_n t (j-pbase,x)
         | x -> x
         in
         let undo_st st = match st with
         | BEXE_init (sr,j,e) when j >= pbase && j < pbase + n ->
           let k = j - pbase in
           let _,t' = nth ls k in
-          BEXE_assign (sr,(BEXPR_get_n (k,x),t'),undo_expr e)
+          BEXE_assign (sr,(bexpr_get_n t' (k,x)),undo_expr e)
 
         | x -> Flx_bexe.map ~fe:undo_expr x
         in

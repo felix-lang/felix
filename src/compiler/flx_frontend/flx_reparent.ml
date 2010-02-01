@@ -75,30 +75,30 @@ let remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e =
     match Flx_bexpr.map ~ft:auxt ~fe:aux e with
     | BEXPR_name (i,ts),t ->
         let i,ts = fixup i ts in
-        BEXPR_name (i,ts), auxt t
+        bexpr_name (auxt t) (i,ts)
 
     | BEXPR_ref (i,ts) as x,t ->
         let i,ts = fixup i ts in
-        BEXPR_ref (i,ts), auxt t
+        bexpr_ref (auxt t) (i,ts)
 
     | BEXPR_closure (i,ts),t ->
         let i,ts = fixup i ts in
-        BEXPR_closure (i,ts), auxt t
+        bexpr_closure (auxt t) (i,ts)
 
     | BEXPR_apply_direct (i,ts,e),t ->
         let i,ts = fixup i ts in
 
         (* attempt to fixup typeclass virtual *)
         let i,ts = ftc i ts in
-        BEXPR_apply_direct (i,ts,aux e), auxt t
+        bexpr_apply_direct (auxt t) (i,ts,aux e)
 
     | BEXPR_apply_stack (i,ts,e),t ->
         let i,ts = fixup i ts in
-        BEXPR_apply_stack (i,ts,aux e), auxt t
+        bexpr_apply_stack (auxt t) (i,ts,aux e)
 
     | BEXPR_apply_prim (i,ts,e),t ->
         let i,ts = fixup i ts in
-        BEXPR_apply_prim (i,ts,aux e), auxt t
+        bexpr_apply_prim (auxt t) (i,ts,aux e)
 
     | x,t -> x, auxt t
   in

@@ -593,16 +593,14 @@ let rec enstack_applies syms bsym_table child_map fn_cache ptr_cache x =
         match Flx_bsym_table.find_bbdcl bsym_table i with
         | BBDCL_function (props,_,_,_,_) ->
           if mem `Stackable props
-          then BEXPR_apply_stack (i,ts,b),t
-          else BEXPR_apply_direct (i,ts,b),t
+          then bexpr_apply_stack t (i,ts,b)
+          else bexpr_apply_direct t (i,ts,b)
         | BBDCL_fun _
-        | BBDCL_callback _ ->
-          BEXPR_apply_prim(i,ts,b),t
+        | BBDCL_callback _ -> bexpr_apply_prim t (i,ts,b)
 
         | BBDCL_cstruct _
         | BBDCL_struct _
-        | BBDCL_nonconst_ctor  _ ->
-          BEXPR_apply_struct(i,ts,b),t
+        | BBDCL_nonconst_ctor  _ -> bexpr_apply_struct t (i,ts,b)
         | _ -> x
       end
   | x -> x

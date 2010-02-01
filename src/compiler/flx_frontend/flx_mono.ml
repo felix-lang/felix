@@ -65,7 +65,7 @@ let rec fixup_type syms bsym_table fi t =
   let t = Flx_btype.map ~ft t in
   ft' t
 
-let fixup_expr' syms bsym_table fi mt e =
+let fixup_expr' syms bsym_table fi mt (e,t) =
   (*
   print_endline ("FIXUP EXPR(up) " ^ sbe sym_table (e, btyp_void));
   *)
@@ -73,25 +73,25 @@ let fixup_expr' syms bsym_table fi mt e =
   | BEXPR_apply_prim (i',ts,a) ->
     let i,ts = fi i' ts in
     if i = i' then
-      BEXPR_apply_prim (i,ts,a)
+      bexpr_apply_prim t (i,ts,a)
     else
-      BEXPR_apply_direct (i,ts,a)
+      bexpr_apply_direct t (i,ts,a)
 
   | BEXPR_apply_direct (i,ts,a) ->
     let i,ts = fi i ts in
-    BEXPR_apply_direct (i,ts,a)
+    bexpr_apply_direct t (i,ts,a)
 
   | BEXPR_apply_struct (i,ts,a) ->
     let i,ts = fi i ts in
-    BEXPR_apply_struct (i,ts,a)
+    bexpr_apply_struct t (i,ts,a)
 
   | BEXPR_apply_stack (i,ts,a) ->
     let i,ts = fi i ts in
-    BEXPR_apply_stack (i,ts,a)
+    bexpr_apply_stack t (i,ts,a)
 
   | BEXPR_ref (i,ts)  ->
     let i,ts = fi i ts in
-    BEXPR_ref (i,ts)
+    bexpr_ref t (i,ts)
 
   | BEXPR_name (i',ts') ->
     let i,ts = fi i' ts' in
@@ -101,13 +101,13 @@ let fixup_expr' syms bsym_table fi mt e =
       " mapped to " ^ si i ^ "[" ^ catmap "," (sbt bsym_table) ts ^"]"
     );
     *)
-    BEXPR_name (i,ts)
+    bexpr_name t (i,ts)
 
   | BEXPR_closure (i,ts) ->
     let i,ts = fi i ts in
-    BEXPR_closure (i,ts)
+    bexpr_closure t (i,ts)
 
-  | x -> x
+  | x -> x, t
   in
   (*
   print_endline ("FIXed UP EXPR " ^ sbe sym_table (x, btyp_void));
@@ -121,7 +121,7 @@ let rec fixup_expr syms bsym_table fi mt e =
   print_endline ("FIXUP EXPR(down) " ^ sbe sym_table e);
   *)
   let fe e = fixup_expr syms bsym_table fi mt e in
-  let fe' (e,t) = fixup_expr' syms bsym_table fi mt e,t in
+  let fe' e = fixup_expr' syms bsym_table fi mt e in
   let e = Flx_bexpr.map ~ft:mt ~fe e in
   fe' e
 

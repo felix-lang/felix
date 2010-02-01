@@ -305,8 +305,8 @@ let gen_body syms (uses,child_map,bsym_table) id
         | _,BTYP_function (BTYP_tuple [],t) -> t
         | _,t -> failwith ("Expected argument to be function void->t, got " ^ sbt bsym_table t)
         in
-        let un = BEXPR_tuple [], btyp_tuple [] in
-        let apl = BEXPR_apply (argument, un), argt in
+        let un = bexpr_tuple (btyp_tuple []) [] in
+        let apl = bexpr_apply argt (argument, un) in
         Hashtbl.add argmap index apl
 
       | `PVal ->
@@ -433,7 +433,7 @@ let gen_body syms (uses,child_map,bsym_table) id
                   "[gen_body2] Woops, prj "^si (!n) ^" tuple wrong length? " ^ si (length ts)
                 )
             end
-          | p -> BEXPR_get_n (!n,p),prjt
+          | p -> bexpr_get_n prjt (!n,p)
         in
         (*
         let prj = Flx_bexpr.reduce bsym_table pj in

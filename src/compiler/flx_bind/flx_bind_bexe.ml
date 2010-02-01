@@ -131,7 +131,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
             try Some (map
               (fun (name,d) ->
                 try (match assoc name rs with
-                | j,t-> BEXPR_get_n (j,tbe2),t)
+                | j,t-> bexpr_get_n t (j,tbe2))
                 with Not_found ->
                 match d with
                 | Some d ->d
@@ -150,7 +150,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
         | Some xs ->
           begin match xs with
           | [x]-> x
-          | _ -> BEXPR_tuple xs, btyp_tuple (map snd xs)
+          | _ -> bexpr_tuple (btyp_tuple (map snd xs)) xs
           end
         | None ->
           clierr sr
