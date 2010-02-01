@@ -96,6 +96,13 @@ let fold_lefti f acc lst =
     result
   end acc lst
 
+(** [range f N] is [f 0; f 1; ...; f N]. *)
+let range f i =
+  let rec aux i xs =
+    if i < 0 then xs else aux (i - 1) (f i :: xs)
+  in
+  aux (i - 1) []
+
 (** Prints out the list to the formatter. *)
 let print pp_elt ppf = function
   | [] -> fprintf ppf "[]"
