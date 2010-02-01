@@ -46,7 +46,7 @@ let gen_closure state bsym_table i =
         pubmap=Hashtbl.create 0;
         privmap=Hashtbl.create 0;
         dirs=[];
-        bbdcl=BBDCL_val (vs,arg_t) };
+        bbdcl=bbdcl_val (vs,arg_t) };
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(bexpr_name arg_t (n,ts))
     in
 
@@ -57,7 +57,7 @@ let gen_closure state bsym_table i =
       ]
     in
     Flx_bsym_table.add bsym_table j { bsym with
-      Flx_bsym.bbdcl=BBDCL_procedure ([],vs,(ps,None),exes) };
+      Flx_bsym.bbdcl=bbdcl_procedure ([],vs,(ps,None),exes) };
     j
 
   | BBDCL_fun (props,vs,ps,ret,c,reqs,_) ->
@@ -76,13 +76,13 @@ let gen_closure state bsym_table i =
         pubmap=Hashtbl.create 0;
         privmap=Hashtbl.create 0;
         dirs=[];
-        bbdcl=BBDCL_val (vs,arg_t) };
+        bbdcl=bbdcl_val (vs,arg_t) };
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(bexpr_name arg_t (n,ts))
     in
     let e = bexpr_apply_prim ret (i,ts,a) in
     let exes = [bexe_fun_return (bsym.Flx_bsym.sr,e)] in
     Flx_bsym_table.add bsym_table j { bsym with
-      Flx_bsym.bbdcl=BBDCL_function ([],vs,(ps,None),ret,exes) };
+      Flx_bsym.bbdcl=bbdcl_function ([],vs,(ps,None),ret,exes) };
     j
 
   | _ -> assert false
@@ -185,12 +185,12 @@ let process_entry state bsym_table all_closures i =
   | BBDCL_function (props,vs,ps,ret,exes) ->
     let exes = process_exes state bsym_table all_closures exes in
     Flx_bsym_table.add bsym_table i { bsym with
-      Flx_bsym.bbdcl=BBDCL_function (props,vs,ps,ret,exes) }
+      Flx_bsym.bbdcl=bbdcl_function (props,vs,ps,ret,exes) }
 
   | BBDCL_procedure (props,vs,ps,exes) ->
     let exes = process_exes state bsym_table all_closures exes in
     Flx_bsym_table.add bsym_table i { bsym with
-      Flx_bsym.bbdcl=BBDCL_procedure (props,vs,ps,exes) }
+      Flx_bsym.bbdcl=bbdcl_procedure (props,vs,ps,exes) }
 
   | _ -> ()
 

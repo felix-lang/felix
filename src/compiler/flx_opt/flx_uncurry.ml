@@ -256,8 +256,8 @@ let uncurry_gen syms bsym_table child_map : int =
           (fun {pkind=pk; ptyp=t; pid=s; pindex=pi} ->
             let n = revar pi in
             let bbdcl = match pk with
-            | `PVal -> BBDCL_val (vs,t)
-            | `PVar -> BBDCL_var (vs,t)
+            | `PVal -> bbdcl_val (vs,t)
+            | `PVar -> bbdcl_var (vs,t)
             | _ -> failwith "Unimplemented curried fun param not var or val"
             in
             if syms.compiler_options.print_flag then
@@ -302,7 +302,7 @@ let uncurry_gen syms bsym_table child_map : int =
       match bsymc.Flx_bsym.bbdcl with
       | BBDCL_function (propsc,vsc,(psc,traintc),retc,exesc) ->
         let ps,exes = fixup vsc psc exesc in
-        let bbdcl = BBDCL_function (propsc,vs,(ps,traintc), retc, exes) in
+        let bbdcl = bbdcl_function (propsc,vs,(ps,traintc), retc, exes) in
         Flx_bsym_table.add bsym_table k {
           Flx_bsym.id=bsymi.Flx_bsym.id^"_uncurry";
           sr=bsymi.Flx_bsym.sr;
@@ -315,7 +315,7 @@ let uncurry_gen syms bsym_table child_map : int =
 
       | BBDCL_procedure (propsc,vsc,(psc,traintc),exesc) ->
         let ps,exes = fixup vsc psc exesc in
-        let bbdcl = BBDCL_procedure (propsc,vs,(ps,traintc), exes) in
+        let bbdcl = bbdcl_procedure (propsc,vs,(ps,traintc), exes) in
         Flx_bsym_table.add bsym_table k {
           Flx_bsym.id=bsymi.Flx_bsym.id^"_uncurry";
           sr=bsymi.Flx_bsym.sr;
@@ -337,12 +337,12 @@ let uncurry_gen syms bsym_table child_map : int =
     | BBDCL_procedure (props,vs,(ps,traint),exes) ->
         let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
         Flx_bsym_table.add bsym_table i { bsym with
-          Flx_bsym.bbdcl=BBDCL_procedure (props,vs,(ps,traint),exes) }
+          Flx_bsym.bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) }
 
     | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
         Flx_bsym_table.add bsym_table i { bsym with
-          Flx_bsym.bbdcl=BBDCL_function (props,vs,(ps,traint),ret,exes) }
+          Flx_bsym.bbdcl=bbdcl_function (props,vs,(ps,traint),ret,exes) }
 
     | _ -> ()
   end bsym_table;

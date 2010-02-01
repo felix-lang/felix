@@ -68,35 +68,35 @@ let remap_bbdcl offset bbdcl =
   in
   match bbdcl with
   | BBDCL_module ->
-      BBDCL_module
+      bbdcl_module ()
 
   | BBDCL_function (props, vs, ps, res, es) ->
       let vs = remap_bvs vs in
       let ps = remap_bparams ps in
       let res = remap_btype res in
       let es = List.map remap_bexe es in
-      BBDCL_function (props, vs, ps, res, es)
+      bbdcl_function (props, vs, ps, res, es)
 
   | BBDCL_procedure (props, vs, ps, es) ->
       let vs = remap_bvs vs in
       let ps = remap_bparams ps in
       let es = List.map remap_bexe es in
-      BBDCL_procedure (props, vs, ps, es)
+      bbdcl_procedure (props, vs, ps, es)
 
   | BBDCL_val (vs, ty) ->
-      BBDCL_val (remap_bvs vs, remap_btype ty)
+      bbdcl_val (remap_bvs vs, remap_btype ty)
 
   | BBDCL_var (vs, ty) ->
-      BBDCL_var (remap_bvs vs, remap_btype ty)
+      bbdcl_var (remap_bvs vs, remap_btype ty)
 
   | BBDCL_ref (vs, ty) ->
-      BBDCL_ref (remap_bvs vs, remap_btype ty)
+      bbdcl_ref (remap_bvs vs, remap_btype ty)
 
   | BBDCL_tmp (vs, ty) ->
-      BBDCL_tmp (remap_bvs vs, remap_btype ty)
+      bbdcl_tmp (remap_bvs vs, remap_btype ty)
 
   | BBDCL_newtype (vs, ty) ->
-      BBDCL_newtype (remap_bvs vs, remap_btype ty)
+      bbdcl_newtype (remap_bvs vs, remap_btype ty)
 
   | BBDCL_abs (vs, quals, code, reqs) ->
       let vs = remap_bvs vs in
@@ -107,20 +107,20 @@ let remap_bbdcl offset bbdcl =
         end quals
       in
       let reqs = remap_breqs reqs in
-      BBDCL_abs (vs, quals, code, reqs)
+      bbdcl_abs (vs, quals, code, reqs)
 
   | BBDCL_const (props, vs, ty, code, reqs) ->
       let vs = remap_bvs vs in
       let ty = remap_btype ty in
       let reqs = remap_breqs reqs in
-      BBDCL_const (props, vs, ty, code, reqs)
+      bbdcl_const (props, vs, ty, code, reqs)
 
   | BBDCL_fun (props, vs, ps, rt, code, reqs, prec) ->
       let vs = remap_bvs vs in
       let ps = List.map remap_btype ps in
       let rt = remap_btype rt in
       let reqs = remap_breqs reqs in
-      BBDCL_fun (props, vs, ps, rt, code, reqs, prec)
+      bbdcl_fun (props, vs, ps, rt, code, reqs, prec)
 
   | BBDCL_callback (props, vs, ps_cf, ps_c, k, rt, reqs, prec) ->
       let vs = remap_bvs vs in
@@ -128,43 +128,43 @@ let remap_bbdcl offset bbdcl =
       let ps_c = List.map remap_btype ps_c in
       let rt = remap_btype rt in
       let reqs = remap_breqs reqs in
-      BBDCL_callback (props, vs, ps_cf, ps_c, k, rt, reqs, prec)
+      bbdcl_callback (props, vs, ps_cf, ps_c, k, rt, reqs, prec)
 
   | BBDCL_proc (props, vs, ps, code, reqs) ->
       let vs = remap_bvs vs in
       let ps = List.map remap_btype ps in
       let reqs = remap_breqs reqs in
-      BBDCL_proc (props, vs, ps, code, reqs)
+      bbdcl_proc (props, vs, ps, code, reqs)
 
   | BBDCL_insert (vs, code, ikind, reqs) ->
       let vs = remap_bvs vs in
       let reqs = remap_breqs reqs in
-      BBDCL_insert (vs, code, ikind, reqs)
+      bbdcl_insert (vs, code, ikind, reqs)
 
   | BBDCL_union (vs, cs) ->
       let vs = remap_bvs vs in
       let cs = List.map (fun (n,v,t) -> n,v,remap_btype t) cs in
-      BBDCL_union (vs, cs)
+      bbdcl_union (vs, cs)
 
   | BBDCL_struct (vs, cs) ->
       let vs = remap_bvs vs in
       let cs = List.map (fun (n,t) -> n,remap_btype t) cs in
-      BBDCL_struct (vs, cs)
+      bbdcl_struct (vs, cs)
 
   | BBDCL_cstruct (vs, cs) ->
       let vs = remap_bvs vs in
       let cs = List.map (fun (n,t) -> n,remap_btype t) cs in
-      BBDCL_cstruct (vs, cs)
+      bbdcl_cstruct (vs, cs)
 
   | BBDCL_typeclass (props, vs) ->
-      BBDCL_typeclass (props, remap_bvs vs)
+      bbdcl_typeclass (props, remap_bvs vs)
 
   | BBDCL_instance (props, vs, cons, bid, ts) ->
       let vs = remap_bvs vs in
       let cons = remap_btype cons in
       let bid = remap_bid bid in
       let ts = List.map remap_btype ts in
-      BBDCL_instance (props, vs, cons, bid, ts)
+      bbdcl_instance (props, vs, cons, bid, ts)
 
   | BBDCL_nonconst_ctor (vs, uidx, ut, ctor_idx, ctor_argt, evs, etraint) ->
       let vs = remap_bvs vs in
@@ -173,7 +173,7 @@ let remap_bbdcl offset bbdcl =
       let ctor_argt = remap_btype ctor_argt in
       let evs = remap_bvs evs in
       let etraint = remap_btype etraint in
-      BBDCL_nonconst_ctor (vs, uidx, ut, ctor_idx, ctor_argt, evs, etraint)
+      bbdcl_nonconst_ctor (vs, uidx, ut, ctor_idx, ctor_argt, evs, etraint)
 
 
 (** Remap symbols from an old bound symbol table to a new one by offsetting the

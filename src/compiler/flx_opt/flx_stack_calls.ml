@@ -559,12 +559,12 @@ and check_stackable_proc
         if is_pure syms bsym_table child_map i then `Pure :: props else props
       in
       Flx_bsym_table.add bsym_table i { bsym with
-        Flx_bsym.bbdcl=BBDCL_procedure (props,vs,p,exes) };
+        Flx_bsym.bbdcl=bbdcl_procedure (props,vs,p,exes) };
       true
     end
     else begin
       Flx_bsym_table.add bsym_table i { bsym with
-        Flx_bsym.bbdcl=BBDCL_procedure (`Unstackable :: props,vs,p,exes) };
+        Flx_bsym.bbdcl=bbdcl_procedure (`Unstackable :: props,vs,p,exes) };
       false
     end
   | _ -> failwith ("Unexpected non-procedure " ^ bsym.Flx_bsym.id)
@@ -631,7 +631,7 @@ let mark_stackable syms bsym_table child_map fn_cache ptr_cache label_map label_
       ;
       let props : property_t list = !props in
       Flx_bsym_table.add bsym_table i { bsym with
-        Flx_bsym.bbdcl=BBDCL_function (props,vs,p,ret,exes) }
+        Flx_bsym.bbdcl=bbdcl_function (props,vs,p,ret,exes) }
 
     | BBDCL_procedure (props,vs,p,exes) ->
       if mem `Stackable props or mem `Unstackable props then () else
@@ -662,7 +662,7 @@ let enstack_calls syms bsym_table child_map fn_cache ptr_cache self exes =
           if mem `Stackable props then
           begin
             if not (mem `Stack_closure props) then begin
-              let bbdcl = BBDCL_procedure (`Stack_closure::props,vs,p,exes) in
+              let bbdcl = bbdcl_procedure (`Stack_closure::props,vs,p,exes) in
               Flx_bsym_table.add bsym_table i { bsym with
                 Flx_bsym.bbdcl=bbdcl }
             end;
@@ -726,7 +726,7 @@ let make_stack_calls
       begin match bsym.Flx_bsym.bbdcl with
       | BBDCL_procedure (props,vs,p,_) ->
           Flx_bsym_table.add bsym_table i { bsym with
-            Flx_bsym.bbdcl=BBDCL_procedure (props,vs,p,exes) }
+            Flx_bsym.bbdcl=bbdcl_procedure (props,vs,p,exes) }
       | _ -> assert false
       end
 
@@ -744,7 +744,7 @@ let make_stack_calls
       begin match bsym.Flx_bsym.bbdcl with
       | BBDCL_function (props,vs,p,ret,_) ->
           Flx_bsym_table.add bsym_table i { bsym with
-            Flx_bsym.bbdcl=BBDCL_function (props,vs,p,ret,exes) }
+            Flx_bsym.bbdcl=bbdcl_function (props,vs,p,ret,exes) }
       | _ -> assert false
       end
 

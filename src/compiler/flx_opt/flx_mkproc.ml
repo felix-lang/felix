@@ -72,7 +72,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
         pubmap=Hashtbl.create 0;
         privmap=Hashtbl.create 0;
         dirs=[];
-        bbdcl=BBDCL_var (vs,ret) };
+        bbdcl=bbdcl_var (vs,ret) };
 
       (* append a pointer to this variable to the argument *)
       let ts' = map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) vs in
@@ -269,7 +269,7 @@ let mkproc_gen syms bsym_table child_map =
 
         (* make new parameter: note the name is remapped to _k_mkproc below *)
         let vix = fresh_bid syms.counter in
-        let vdcl = BBDCL_var (vs,btyp_pointer ret) in
+        let vdcl = bbdcl_var (vs,btyp_pointer ret) in
         let vid = "_" ^ string_of_bid vix in
         let ps = ps @ [{
           pindex=vix;
@@ -283,8 +283,8 @@ let mkproc_gen syms bsym_table child_map =
           (fun {pkind=pk; ptyp=t; pid=s; pindex=pi} ->
             let n = revar pi in
             let bbdcl = match pk with
-            | `PVal -> BBDCL_val (vs,t)
-            | `PVar -> BBDCL_var (vs,t)
+            | `PVal -> bbdcl_val (vs,t)
+            | `PVar -> bbdcl_var (vs,t)
             | _ -> failwith "Unimplemented mkproc fun param not var or val (fixme!)"
             in
             if syms.compiler_options.print_flag then
@@ -342,7 +342,7 @@ let mkproc_gen syms bsym_table child_map =
         pubmap=Hashtbl.create 0;
         privmap=Hashtbl.create 0;
         dirs=[];
-        bbdcl=BBDCL_procedure (props,vs,(ps,traint),exes) };
+        bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) };
 
       if syms.compiler_options.print_flag then
       begin
@@ -366,12 +366,12 @@ let mkproc_gen syms bsym_table child_map =
     | BBDCL_procedure (props,vs,(ps,traint),exes) ->
         let exes = mkproc_exes vs exes in
         Flx_bsym_table.add bsym_table i { bsym with
-          Flx_bsym.bbdcl=BBDCL_procedure (props,vs,(ps,traint),exes) }
+          Flx_bsym.bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) }
 
     | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         let exes = mkproc_exes vs exes in
         Flx_bsym_table.add bsym_table i { bsym with
-          Flx_bsym.bbdcl=BBDCL_function (props,vs,(ps,traint),ret,exes) }
+          Flx_bsym.bbdcl=bbdcl_function (props,vs,(ps,traint),ret,exes) }
 
     | _ -> ()
   end bsym_table;

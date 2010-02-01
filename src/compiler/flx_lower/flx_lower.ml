@@ -72,7 +72,7 @@ let lower_bsym_table state bsym_table root_proc =
         then props := `Requires_ptf :: !props;
 
         (* Update the procedure with the new properties. *)
-        let bbdcl = Flx_bbdcl.BBDCL_procedure (!props, vs,p,exes) in
+        let bbdcl = Flx_bbdcl.bbdcl_procedure (!props, vs,p,exes) in
         Flx_bsym_table.add bsym_table i { bsym with
           Flx_bsym.bbdcl=bbdcl }
     | _ -> ()

@@ -249,7 +249,7 @@ let bbind_symbol state bsym_table symbol_index sym =
     -> None
 
   | SYMDEF_module ->
-    add_bsym true_parent BBDCL_module 
+    add_bsym true_parent (bbdcl_module ())
 
   | SYMDEF_reduce (ps,e1,e2) ->
     let bps = bind_basic_ps ps in
@@ -313,8 +313,8 @@ let bbind_symbol state bsym_table symbol_index sym =
     let brt', bbexes = bexes exes brt symbol_index bvs in
     let bbdcl =
       match brt' with
-      | BTYP_void -> BBDCL_procedure (props,bvs,bps,bbexes)
-      | _ -> BBDCL_function (props,bvs,bps,brt',bbexes)
+      | BTYP_void -> bbdcl_procedure (props,bvs,bps,bbexes)
+      | _ -> bbdcl_function (props,bvs,bps,brt',bbexes)
     in
 
     (* Cache the type of the function. *)
@@ -360,10 +360,10 @@ let bbind_symbol state bsym_table symbol_index sym =
             symbol_index
         in
         let bbdcl = match k with
-        | `PVar -> BBDCL_var (bvs,t)
-        | `PVal -> BBDCL_val (bvs,t)
-        | `PRef -> BBDCL_val (bvs,t)
-        | `PFun -> BBDCL_val (bvs, btyp_function (btyp_void,t))
+        | `PVar -> bbdcl_var (bvs,t)
+        | `PVal -> bbdcl_val (bvs,t)
+        | `PRef -> bbdcl_val (bvs,t)
+        | `PFun -> bbdcl_val (bvs, btyp_function (btyp_void,t))
         in
         Hashtbl.add state.syms.varmap symbol_index t;
 
@@ -413,7 +413,7 @@ let bbind_symbol state bsym_table symbol_index sym =
         ">" ^ print_bvs bvs ^ ":" ^ sbt bsym_table
         (btyp_function (btyp_tuple [], flx_bbool)));
 
-    add_bsym true_parent (BBDCL_function
+    add_bsym true_parent (bbdcl_function
       ([`Inline; `Generated "bbind: match check"], bvs, ([], None),
       flx_bbool, bbexes))
 
@@ -447,7 +447,7 @@ let bbind_symbol state bsym_table symbol_index sym =
       print_endline ("//bound const " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">:" ^ sbt bsym_table t);
 
-    add_bsym None (BBDCL_const ([], bvs, t, CS_str ct, []))
+    add_bsym None (bbdcl_const ([], bvs, t, CS_str ct, []))
 
   | SYMDEF_nonconst_ctor (uidx,ut,ctor_idx,vs',argt) ->
     (*
@@ -467,7 +467,7 @@ let bbind_symbol state bsym_table symbol_index sym =
       print_endline ("//bound fun " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">:" ^ sbt bsym_table t);
 
-    add_bsym None (BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt,evs,btraint))
+    add_bsym None (bbdcl_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt,evs,btraint))
 
   | SYMDEF_val (t) ->
     let t = Flx_lookup.type_of_index
@@ -481,7 +481,7 @@ let bbind_symbol state bsym_table symbol_index sym =
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
-    add_bsym true_parent (BBDCL_val (bvs, t))
+    add_bsym true_parent (bbdcl_val (bvs, t))
 
   | SYMDEF_ref (t) ->
     let t = Flx_lookup.type_of_index
@@ -495,7 +495,7 @@ let bbind_symbol state bsym_table symbol_index sym =
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
-    add_bsym true_parent (BBDCL_ref (bvs, t))
+    add_bsym true_parent (bbdcl_ref (bvs, t))
 
   | SYMDEF_lazy (rt,e) ->
     let ps = [("dummy",`AST_void sym.Flx_sym.sr)],None in
@@ -515,7 +515,7 @@ let bbind_symbol state bsym_table symbol_index sym =
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table brt');
 
-    add_bsym true_parent (BBDCL_function (props,bvs,([],None),brt',bbexes))
+    add_bsym true_parent (bbdcl_function (props,bvs,([],None),brt',bbexes))
 
   | SYMDEF_var (t) ->
     (*
@@ -532,7 +532,7 @@ let bbind_symbol state bsym_table symbol_index sym =
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
-    add_bsym true_parent (BBDCL_var (bvs, t))
+    add_bsym true_parent (bbdcl_var (bvs, t))
 
   | SYMDEF_const (props,t,ct,reqs) ->
     let t = Flx_lookup.type_of_index
@@ -547,15 +547,15 @@ let bbind_symbol state bsym_table symbol_index sym =
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
-    add_bsym true_parent (BBDCL_const (props,bvs,t,ct,reqs))
+    add_bsym true_parent (bbdcl_const (props,bvs,t,ct,reqs))
 
   | SYMDEF_fun (props,ts,ret,ct,reqs,prec) ->
     let ts = map bt ts in
     let bret = bt ret in
     let reqs = bind_reqs reqs in
     let bbdcl = match bret with
-      | BTYP_void -> BBDCL_proc (props,bvs,ts,ct,reqs)
-      | _ -> BBDCL_fun (props,bvs,ts,bret,ct,reqs,prec)
+      | BTYP_void -> bbdcl_proc (props,bvs,ts,ct,reqs)
+      | _ -> bbdcl_fun (props,bvs,ts,bret,ct,reqs,prec)
     in
 
     (* Cache the type of the function. *)
@@ -669,7 +669,7 @@ let bbind_symbol state bsym_table symbol_index sym =
         sbt bsym_table (btyp_function (atyp, bret)))
     end;
 
-    add_bsym true_parent (BBDCL_callback
+    add_bsym true_parent (bbdcl_callback
       (props,bvs,ts_cf,ts_c,!client_data_pos,bret,reqs,prec))
 
   | SYMDEF_union (cs) ->
@@ -677,22 +677,22 @@ let bbind_symbol state bsym_table symbol_index sym =
     print_endline ("//Binding union " ^ si i ^ " --> " ^ name);
     *)
     let cs' = List.map (fun (n,v,vs',t) -> n, v,bt t) cs in
-    add_bsym None (BBDCL_union (bvs, cs'))
+    add_bsym None (bbdcl_union (bvs, cs'))
 
   | SYMDEF_struct (cs) ->
     (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
     *)
     let cs' = List.map (fun (n,t) -> n, bt t) cs in
-    add_bsym None (BBDCL_struct (bvs, cs'))
+    add_bsym None (bbdcl_struct (bvs, cs'))
 
   | SYMDEF_cstruct (cs) ->
     (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
     *)
     let cs' = List.map (fun (n,t) -> n, bt t) cs in
-    add_bsym None (BBDCL_cstruct (bvs, cs'))
+    add_bsym None (bbdcl_cstruct (bvs, cs'))
 
   | SYMDEF_typeclass ->
-    add_bsym true_parent (BBDCL_typeclass ([], bvs))
+    add_bsym true_parent (bbdcl_typeclass ([], bvs))
 
   | SYMDEF_instance qn ->
     (*
@@ -707,7 +707,7 @@ let bbind_symbol state bsym_table symbol_index sym =
     (*
     print_endline "DOne ..";
     *)
-    add_bsym true_parent (BBDCL_instance ([], bvs, bcons, k, ts))
+    add_bsym true_parent (bbdcl_instance ([], bvs, bcons, k, ts))
 
   | SYMDEF_type_alias _ -> None
   | SYMDEF_inherit _ -> None
@@ -719,17 +719,17 @@ let bbind_symbol state bsym_table symbol_index sym =
     *)
     let reqs = bind_reqs reqs in
     let bquals = bind_quals quals in
-    add_bsym None (BBDCL_abs (bvs, bquals, ct, reqs))
+    add_bsym None (bbdcl_abs (bvs, bquals, ct, reqs))
 
   | SYMDEF_newtype t ->
     let t = bt t in
-    add_bsym None (BBDCL_newtype (bvs, t))
+    add_bsym None (bbdcl_newtype (bvs, t))
 
   | SYMDEF_insert (ct,ikind,reqs) ->
     (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name);
     *)
     let reqs = bind_reqs reqs in
-    add_bsym true_parent (BBDCL_insert (bvs, ct, ikind, reqs))
+    add_bsym true_parent (bbdcl_insert (bvs, ct, ikind, reqs))
   end
   (*
   ;

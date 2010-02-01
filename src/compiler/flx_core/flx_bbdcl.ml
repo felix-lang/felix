@@ -41,6 +41,70 @@ type t =
   | BBDCL_nonconst_ctor of bvs_t * bid_t * Flx_btype.t * int * Flx_btype.t *
                         bvs_t * Flx_btype.t (* existentials and constraint for GADTs *)
 
+(* -------------------------------------------------------------------------- *)
+
+let bbdcl_module () =
+  BBDCL_module
+
+let bbdcl_function (prop, bvs, ps, res, es) =
+  BBDCL_function (prop, bvs, ps, res, es)
+
+let bbdcl_procedure (prop, bvs, ps, es) =
+  BBDCL_procedure (prop, bvs, ps, es)
+
+let bbdcl_val (bvs, t) =
+  BBDCL_val (bvs, t)
+
+let bbdcl_var (bvs, t) =
+  BBDCL_var (bvs, t)
+
+let bbdcl_ref (bvs, t) =
+  BBDCL_ref (bvs, t)
+
+let bbdcl_tmp (bvs, t) =
+  BBDCL_tmp (bvs, t)
+
+let bbdcl_newtype (bvs, t) =
+  BBDCL_newtype (bvs, t)
+
+let bbdcl_abs (bvs, quals, code, breqs) =
+  BBDCL_abs (bvs, quals, code, breqs)
+
+let bbdcl_const (prop, bvs, t, code, breqs) =
+  BBDCL_const (prop, bvs, t, code, breqs)
+
+let bbdcl_fun (prop, bvs, ps, rt, code, breqs, prec) =
+  BBDCL_fun (prop, bvs, ps, rt, code, breqs, prec)
+
+let bbdcl_callback (prop, bvs, ps_cf, ps_c, k, rt, breqs, prec) =
+  BBDCL_callback (prop, bvs, ps_cf, ps_c, k, rt, breqs, prec)
+
+let bbdcl_proc (prop, bvs, ts, code, breqs) =
+  BBDCL_proc (prop, bvs, ts, code, breqs)
+
+let bbdcl_insert (bvs, code, ikind, breqs) =
+  BBDCL_insert (bvs, code, ikind, breqs)
+
+let bbdcl_union (bvs, cs) =
+  BBDCL_union (bvs, cs)
+
+let bbdcl_struct (bvs, cs) =
+  BBDCL_struct (bvs, cs)
+
+let bbdcl_cstruct (bvs, cs) =
+  BBDCL_cstruct (bvs, cs)
+
+let bbdcl_typeclass (prop, bvs) =
+  BBDCL_typeclass (prop, bvs)
+
+let bbdcl_instance (prop, bvs, cons, bid, ts) =
+  BBDCL_instance (prop, bvs, cons, bid, ts)
+
+let bbdcl_nonconst_ctor (bvs, uidx, ut, ctor_idx, ctor_argt, evs, etraint) =
+  BBDCL_nonconst_ctor (bvs, uidx, ut, ctor_idx, ctor_argt, evs, etraint)
+
+(* -------------------------------------------------------------------------- *)
+
 (** Extract the parameters of a bound declaration. *)
 let get_bparams = function
   | BBDCL_function (_,_,ps,_,_)

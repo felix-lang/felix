@@ -835,7 +835,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
             pubmap=Hashtbl.create 0;
             privmap=Hashtbl.create 0;
             dirs=[];
-            bbdcl=BBDCL_var (caller_vs,t) };
+            bbdcl=bbdcl_var (caller_vs,t) };
 
           (* set variable to function appliction *)
           let cll = bexe_init (sr,urv,e) in
@@ -981,7 +981,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
                       pubmap=Hashtbl.create 0;
                       privmap=Hashtbl.create 0;
                       dirs=[];
-                      bbdcl=BBDCL_val (caller_vs,t) };
+                      bbdcl=bbdcl_val (caller_vs,t) };
 
                     let rxs = hic revariable callee xs in
                     exes' := rev rxs @ !exes';
@@ -1203,7 +1203,7 @@ and heavy_inline_calls
               *)
               (* should this be a VAR or a VAL? *)
               Flx_bsym_table.add bsym_table i { bsymv with
-                Flx_bsym.bbdcl=BBDCL_var (vs,t) }
+                Flx_bsym.bbdcl=bbdcl_var (vs,t) }
             | _ -> ()
             end;
             if syms.compiler_options.print_flag then
@@ -1316,7 +1316,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
       Flx_bsym_table.add bsym_table i { bsym with
-        Flx_bsym.bbdcl=BBDCL_procedure (props,vs,(ps,traint),exes) };
+        Flx_bsym.bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) };
 
       (* inline into all children first *)
       let children = find_children child_map i in
@@ -1375,7 +1375,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
       Flx_bsym_table.add bsym_table i { bsym with
-        Flx_bsym.bbdcl=BBDCL_procedure (props,vs,(ps,traint),exes) };
+        Flx_bsym.bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) };
       recal_exes_usage uses bsym.Flx_bsym.sr i ps exes;
       remove_unused_children syms (uses,child_map,bsym_table) i;
       (*
@@ -1388,7 +1388,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
       Flx_bsym_table.add bsym_table i { bsym with
-        Flx_bsym.bbdcl=BBDCL_function (props,vs,(ps,traint),ret,exes) };
+        Flx_bsym.bbdcl=bbdcl_function (props,vs,(ps,traint),ret,exes) };
 
       (* inline into all children first *)
       let children = find_children child_map i in
@@ -1447,7 +1447,7 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
       Flx_bsym_table.add bsym_table i { bsym with
-        Flx_bsym.bbdcl=BBDCL_function (props,vs,(ps,traint),ret,exes) };
+        Flx_bsym.bbdcl=bbdcl_function (props,vs,(ps,traint),ret,exes) };
       recal_exes_usage uses bsym.Flx_bsym.sr i ps exes;
       remove_unused_children syms (uses,child_map,bsym_table) i;
       (*

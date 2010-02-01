@@ -589,7 +589,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
           pubmap=Hashtbl.create 0;
           privmap=Hashtbl.create 0;
           dirs=[];
-          bbdcl=BBDCL_tmp (vs, paramtype) }
+          bbdcl=bbdcl_tmp (vs, paramtype) }
       end !parameters;
 
       (* return with posssible label at start *)

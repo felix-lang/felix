@@ -75,72 +75,72 @@ let strabs_symbol state bsym_table index bsym =
   in
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_module ->
-    h BBDCL_module
+    h (bbdcl_module ())
 
   | BBDCL_function (props, bvs, bps, ret, bexes) ->
-    h (BBDCL_function (props, bvs, fp bps, ft ret, fxs bexes))
+    h (bbdcl_function (props, bvs, fp bps, ft ret, fxs bexes))
 
   | BBDCL_procedure (props, bvs, bps, bexes) ->
-    h (BBDCL_procedure (props, bvs, fp bps, fxs bexes))
+    h (bbdcl_procedure (props, bvs, fp bps, fxs bexes))
 
   | BBDCL_val (bvs, t) ->
-    h (BBDCL_val (bvs, ft t))
+    h (bbdcl_val (bvs, ft t))
 
   | BBDCL_var (bvs, t) ->
-    h (BBDCL_var (bvs, ft t))
+    h (bbdcl_var (bvs, ft t))
 
   | BBDCL_ref (bvs, t) ->
-    h (BBDCL_ref (bvs, ft t))
+    h (bbdcl_ref (bvs, ft t))
 
   | BBDCL_tmp (bvs, t) ->
-    h (BBDCL_tmp (bvs, ft t))
+    h (bbdcl_tmp (bvs, ft t))
 
   | BBDCL_newtype (bvs, t) ->
     (* Can't downgrade this newtype yet. *)
     ()
 
   | BBDCL_abs (bvs, btqs, c, breqs) ->
-    h (BBDCL_abs (bvs, btqs, c, breqs))
+    h (bbdcl_abs (bvs, btqs, c, breqs))
 
   | BBDCL_const (props, bvs, t, c, breqs) ->
-    h (BBDCL_const (props,  bvs, ft t, c, breqs))
+    h (bbdcl_const (props,  bvs, ft t, c, breqs))
 
   | BBDCL_fun (props, bvs, ts, t, c, breqs, prec) ->
     if c = CS_identity then
       (* Ignore identity functions. *)
       ()
     else
-      h (BBDCL_fun (props, bvs, fts ts, ft t, c, breqs, prec))
+      h (bbdcl_fun (props, bvs, fts ts, ft t, c, breqs, prec))
 
   | BBDCL_callback (props, bvs, ts1, ts2, j, t, breqs, prec) ->
-    h (BBDCL_callback (props, bvs, fts ts1, fts ts2, j, ft t, breqs, prec))
+    h (bbdcl_callback (props, bvs, fts ts1, fts ts2, j, ft t, breqs, prec))
 
   | BBDCL_proc (props, bvs, ts, c, breqs) ->
-    h (BBDCL_proc (props, bvs, fts ts, c, breqs))
+    h (bbdcl_proc (props, bvs, fts ts, c, breqs))
 
   | BBDCL_insert (bvs, c, ikind, breqs) ->
-    h (BBDCL_insert (bvs, c, ikind, breqs))
+    h (bbdcl_insert (bvs, c, ikind, breqs))
 
   | BBDCL_union (bvs, cts) ->
     let cts = map (fun (s,j,t) -> s,j,ft t) cts in
-    h (BBDCL_union (bvs, cts))
+    h (bbdcl_union (bvs, cts))
 
   | BBDCL_struct (bvs, cts) ->
     let cts = map (fun (s,t) -> s,ft t) cts in
-    h (BBDCL_struct (bvs, cts))
+    h (bbdcl_struct (bvs, cts))
 
   | BBDCL_cstruct (bvs, cts) ->
     let cts = map (fun (s,t) -> s,ft t) cts in
-    h (BBDCL_cstruct (bvs, cts))
+    h (bbdcl_cstruct (bvs, cts))
 
   | BBDCL_typeclass (props, bvs) ->
-    h (BBDCL_typeclass (props, bvs))
+    h (bbdcl_typeclass (props, bvs))
 
   | BBDCL_instance (props, bvs, t, j, ts) ->
-    h (BBDCL_instance (props, bvs, ft t, j, fts ts))
+    h (bbdcl_instance (props, bvs, ft t, j, fts ts))
 
   | BBDCL_nonconst_ctor (bvs, j, t1, k,t2, evs, etraint) ->
-    h (BBDCL_nonconst_ctor (bvs, j, ft t1, k, ft t2, evs, ft etraint))
+    h (bbdcl_nonconst_ctor (bvs, j, ft t1, k, ft t2, evs, ft etraint))
 
 let strabs state bsym_table =
   (* Copy the bsym_table since we're going to directly modify it. *)

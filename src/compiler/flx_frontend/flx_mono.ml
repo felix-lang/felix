@@ -226,7 +226,7 @@ let mono syms bsym_table fi i ts n =
       | Some x -> Some (fixup_expr syms bsym_table fi (mt vars) x)
     in
     let exes = fixup_exes syms bsym_table fi (mt vars) exes in
-    let bbdcl = BBDCL_function (props,[],(ps,traint),ret,exes) in
+    let bbdcl = bbdcl_function (props,[],(ps,traint),ret,exes) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 
@@ -252,35 +252,35 @@ let mono syms bsym_table fi i ts n =
     let fi i ts = fi i (map mt ts) in
     *)
     let exes = fixup_exes syms bsym_table fi (mt vars) exes in
-    let bbdcl = BBDCL_procedure (props,[],(ps,traint), exes) in
+    let bbdcl = bbdcl_procedure (props,[],(ps,traint), exes) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 
   | BBDCL_val (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = BBDCL_val ([],t) in
+    let bbdcl = bbdcl_val ([],t) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 
   | BBDCL_var (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = BBDCL_var ([],t) in
+    let bbdcl = bbdcl_var ([],t) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 
   | BBDCL_ref (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = BBDCL_ref ([],t) in
+    let bbdcl = bbdcl_ref ([],t) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 
   | BBDCL_tmp (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = BBDCL_tmp ([],t) in
+    let bbdcl = bbdcl_tmp ([],t) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 
@@ -295,20 +295,20 @@ let mono syms bsym_table fi i ts n =
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let argtypes = map (mt vars) argtypes in
     let ret = mt vars ret in
-    let bbdcl = BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) in
+    let bbdcl = bbdcl_fun (props,vs,argtypes,ret,ct,reqs,prec) in
     update_bsym bsym.Flx_bsym.parent bbdcl
 
 
   | BBDCL_proc (props,vs,argtypes,ct,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let argtypes = map (mt vars) argtypes in
-    let bbdcl = BBDCL_proc (props,vs,argtypes,ct,reqs) in
+    let bbdcl = bbdcl_proc (props,vs,argtypes,ct,reqs) in
     update_bsym bsym.Flx_bsym.parent bbdcl
 
   | BBDCL_const (props, vs, t, CS_str "#this", reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = BBDCL_const (props, [], t, CS_str "#this", reqs) in
+    let bbdcl = bbdcl_const (props, [], t, CS_str "#this", reqs) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 
