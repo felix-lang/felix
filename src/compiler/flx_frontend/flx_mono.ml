@@ -135,28 +135,28 @@ let fixup_exe syms bsym_table fi mt exe =
   | BEXE_call_direct (sr, i,ts,a) -> assert false
     (*
     let i,ts = fi i ts in
-    BEXE_call_direct (sr,i,ts,a)
+    bexe_call_direct (sr,i,ts,a)
     *)
 
   | BEXE_jump_direct (sr, i,ts,a) -> assert false
     (*
     let i,ts = fi i ts in
-    BEXE_jump_direct (sr,i,ts,a)
+    bexe_jump_direct (sr,i,ts,a)
     *)
 
   | BEXE_call_prim (sr, i',ts,a) -> assert false
     (*
     let i,ts = fi i' ts in
     if i = i' then
-      BEXE_call_prim (sr,i,ts,a)
+      bexe_call_prim (sr,i,ts,a)
     else
-      BEXE_call_direct (sr,i,ts,a)
+      bexe_call_direct (sr,i,ts,a)
     *)
 
   | BEXE_call_stack (sr, i,ts,a) -> assert false
     (*
     let i,ts = fi i ts in
-    BEXE_call_stack (sr,i,ts,a)
+    bexe_call_stack (sr,i,ts,a)
     *)
 
   (* this is deviant case: implied ts is vs of parent! *)
@@ -170,7 +170,7 @@ let fixup_exe syms bsym_table fi mt exe =
     (*
     print_endline ("[init] Remapped deviant variable to " ^ si i);
     *)
-    BEXE_init (sr,i,e)
+    bexe_init (sr,i,e)
 
   | BEXE_svc (sr,i) ->
     (*
@@ -182,7 +182,7 @@ let fixup_exe syms bsym_table fi mt exe =
     (*
     print_endline ("[svc] Remapped deviant variable to " ^ si i);
     *)
-    BEXE_svc (sr,i)
+    bexe_svc (sr,i)
 
   | x -> x
   in

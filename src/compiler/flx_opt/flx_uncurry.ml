@@ -118,7 +118,7 @@ let uncurry_exe syms bsym_table uncurry_map vs exe =
     let c,k,n = Hashtbl.find uncurry_map f in
     Hashtbl.replace uncurry_map f (c,k,n+1);
     let ab = merge_args syms bsym_table f c a b in
-    BEXE_call (sr,(bexpr_closure t (k,ts)),ab)
+    bexe_call (sr,(bexpr_closure t (k,ts)),ab)
   | x -> x
   in
   Flx_bexe.map ~fe:(uncurry_expr syms bsym_table uncurry_map vs) exe

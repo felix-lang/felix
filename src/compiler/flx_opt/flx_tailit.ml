@@ -200,14 +200,14 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
     match ps with
     | [] ->
       [
-        BEXE_goto (sr,start_label);
-        BEXE_comment (sr,"tail rec call (0)")
+        bexe_goto (sr,start_label);
+        bexe_comment (sr,"tail rec call (0)")
       ]
     | [{pindex=k}] ->
       [
-        BEXE_goto (sr,start_label);
-        BEXE_init (sr,k,e);
-        BEXE_comment (sr,"tail rec call (1)")
+        bexe_goto (sr,start_label);
+        bexe_init (sr,k,e);
+        bexe_comment (sr,"tail rec call (1)")
       ]
     | _ ->
       begin match e with
@@ -226,7 +226,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
         let tmps,exes = Flx_passign.passign syms bsym_table pinits ts' sr in
         parameters := tmps @ !parameters;
         let result = ref exes in
-        result :=  BEXE_goto (sr,start_label) :: !result;
+        result := bexe_goto (sr,start_label) :: !result;
         (*
           print_endline "Tail opt code is:";
           iter (fun x -> print_endline (string_of_bexe 0 x) ) (rev !result);
@@ -250,19 +250,19 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
           (fun {pindex=ix; ptyp=prjt} ->
             let prj = Flx_bexpr.reduce (bexpr_get_n prjt (!n,p)) in
             incr n;
-            BEXE_init (sr,ix,prj)
+            bexe_init (sr,ix,prj)
           )
           ps
         in
         [
-          BEXE_goto (sr,start_label);
+          bexe_goto (sr,start_label);
         ]
         @
         param_decode
         @
         [
-          BEXE_init (sr,pix,e);
-          BEXE_comment (sr,"tail rec call (2)")
+          bexe_init (sr,pix,e);
+          bexe_comment (sr,"tail rec call (2)")
         ]
       end
   in
@@ -300,7 +300,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
   let asgn2 i t ls =
     map2
     (fun (e,t' as x) j ->
-      BEXE_assign
+      bexe_assign
       (
         sr,
         (bexpr_get_n t' (j,(bexpr_name t (i,ts')))),
@@ -549,7 +549,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
         | BEXE_init (sr,j,e) when j >= pbase && j < pbase + n ->
           let k = j - pbase in
           let _,t' = nth ls k in
-          BEXE_assign (sr,(bexpr_get_n t' (k,x)),undo_expr e)
+          bexe_assign (sr,(bexpr_get_n t' (k,x)),undo_expr e)
 
         | x -> Flx_bexe.map ~fe:undo_expr x
         in
@@ -595,7 +595,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
       (* return with posssible label at start *)
       let exes =
         if !jump_done
-        then BEXE_label (sr,start_label) :: exes
+        then bexe_label (sr,start_label) :: exes
         else exes
       in
         (*

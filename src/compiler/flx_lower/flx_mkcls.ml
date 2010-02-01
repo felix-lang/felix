@@ -52,8 +52,8 @@ let gen_closure state bsym_table i =
 
     let exes =
       [
-        BEXE_call_prim (bsym.Flx_bsym.sr,i,ts,a);
-        BEXE_proc_return bsym.Flx_bsym.sr
+        bexe_call_prim (bsym.Flx_bsym.sr,i,ts,a);
+        bexe_proc_return bsym.Flx_bsym.sr
       ]
     in
     Flx_bsym_table.add bsym_table j { bsym with
@@ -80,7 +80,7 @@ let gen_closure state bsym_table i =
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(bexpr_name arg_t (n,ts))
     in
     let e = bexpr_apply_prim ret (i,ts,a) in
-    let exes = [BEXE_fun_return (bsym.Flx_bsym.sr,e)] in
+    let exes = [bexe_fun_return (bsym.Flx_bsym.sr,e)] in
     Flx_bsym_table.add bsym_table j { bsym with
       Flx_bsym.bbdcl=BBDCL_function ([],vs,(ps,None),ret,exes) };
     j
@@ -132,33 +132,33 @@ let process_exe state bsym_table all_closures exe =
   let ue e = adj_cls state bsym_table all_closures e in
   match exe with
   | BEXE_axiom_check _ -> assert false
-  | BEXE_call_prim (sr,i,ts,e2)  -> BEXE_call_prim (sr,i,ts, ue e2)
+  | BEXE_call_prim (sr,i,ts,e2) -> bexe_call_prim (sr,i,ts, ue e2)
 
-  | BEXE_call_direct (sr,i,ts,e2)  ->
+  | BEXE_call_direct (sr,i,ts,e2) ->
     all_closures := BidSet.add i !all_closures;
-    BEXE_call_direct (sr,i,ts, ue e2)
+    bexe_call_direct (sr,i,ts, ue e2)
 
   | BEXE_jump_direct (sr,i,ts,e2)  ->
     all_closures := BidSet.add i !all_closures;
-    BEXE_jump_direct (sr,i,ts, ue e2)
+    bexe_jump_direct (sr,i,ts, ue e2)
 
   | BEXE_call_stack (sr,i,ts,e2)  ->
     (* stack calls do use closures -- but not heap allocated ones *)
-    BEXE_call_stack (sr,i,ts, ue e2)
+    bexe_call_stack (sr,i,ts, ue e2)
 
-  | BEXE_call (sr,e1,e2)  -> BEXE_call (sr,ue e1, ue e2)
-  | BEXE_jump (sr,e1,e2)  -> BEXE_jump (sr,ue e1, ue e2)
+  | BEXE_call (sr,e1,e2) -> bexe_call (sr,ue e1, ue e2)
+  | BEXE_jump (sr,e1,e2) -> bexe_jump (sr,ue e1, ue e2)
 
-  | BEXE_ifgoto (sr,e,l) -> BEXE_ifgoto (sr, ue e,l)
-  | BEXE_fun_return (sr,e) -> BEXE_fun_return (sr,ue e)
-  | BEXE_yield (sr,e) -> BEXE_yield (sr,ue e)
+  | BEXE_ifgoto (sr,e,l) -> bexe_ifgoto (sr, ue e,l)
+  | BEXE_fun_return (sr,e) -> bexe_fun_return (sr,ue e)
+  | BEXE_yield (sr,e) -> bexe_yield (sr,ue e)
 
-  | BEXE_init (sr,i,e) -> BEXE_init (sr,i,ue e)
-  | BEXE_assign (sr,e1,e2) -> BEXE_assign (sr, ue e1, ue e2)
-  | BEXE_assert (sr,e) -> BEXE_assert (sr, ue e)
+  | BEXE_init (sr,i,e) -> bexe_init (sr,i,ue e)
+  | BEXE_assign (sr,e1,e2) -> bexe_assign (sr, ue e1, ue e2)
+  | BEXE_assert (sr,e) -> bexe_assert (sr, ue e)
   | BEXE_assert2 (sr,sr2,e1,e2) ->
     let e1 = match e1 with Some e -> Some (ue e) | None -> None in
-    BEXE_assert2 (sr, sr2,e1,ue e2)
+    bexe_assert2 (sr, sr2,e1,ue e2)
 
   | BEXE_svc (sr,i) -> exe
 

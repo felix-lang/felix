@@ -81,7 +81,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
 
       (* create a call instruction to the mapped procedure *)
       let call =
-        BEXE_call (sr,
+        bexe_call (sr,
           (bexpr_closure (btyp_function (at',btyp_void)) (p,ts)),
           a'
         )
@@ -123,7 +123,7 @@ let mkproc_exes syms bsym_table sr this mkproc_map vs exes =
 
 let proc_exe k exe = match exe with
   | BEXE_fun_return (sr,e)
-     -> [BEXE_assign (sr,k,e); BEXE_proc_return sr]
+     -> [bexe_assign (sr,k,e); bexe_proc_return sr]
 
   | BEXE_yield (sr,e)
      ->
@@ -132,7 +132,7 @@ let proc_exe k exe = match exe with
      *)
      (* failwith "Can't handle yield in procedure made from generator yet! :))"; *)
      (* Argg, who know, it might work lol *)
-     [BEXE_assign (sr,k,e); BEXE_proc_return sr]
+     [bexe_assign (sr,k,e); bexe_proc_return sr]
 
   | x -> [x]
 

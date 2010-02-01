@@ -156,7 +156,7 @@ let call_lifting syms (uses,child_map,bsym_table) caller caller_vs callee ts a a
     let body2 = ref [] in
     let n = fresh_bid syms.counter in
     let end_label = "_end_call_lift_" ^ string_of_bid n in
-    body2 := BEXE_label (bsym.Flx_bsym.sr,end_label) :: !body2;
+    body2 := bexe_label (bsym.Flx_bsym.sr,end_label) :: !body2;
     iter
       (function
       | BEXE_fun_return (sr,e) ->
@@ -166,13 +166,13 @@ let call_lifting syms (uses,child_map,bsym_table) caller caller_vs callee ts a a
           (*
           match e with
           | BEXPR_closure (i,ts),_ ->
-            BEXE_call_direct (sr,i,ts,argument)
+            bexe_call_direct (sr,i,ts,argument)
           | _ ->
           *)
-            BEXE_call (sr,e,argument)
+            bexe_call (sr,e,argument)
           )
         in
-        body2 := BEXE_goto (sr,end_label) :: !body2;
+        body2 := bexe_goto (sr,end_label) :: !body2;
         body2 := call_instr :: !body2;
       | BEXE_yield _ ->
         syserr bsym.Flx_bsym.sr "Attempt to inline generator containing a yield"
@@ -307,11 +307,11 @@ let inline_function syms (uses,child_map,bsym_table) caller caller_vs callee ts 
       | BEXE_fun_return (sr,((_,t') as e)) ->
         t := Some t';
         if not (!body2 == []) then begin
-          body2 := BEXE_goto (sr,end_label) :: !body2;
+          body2 := bexe_goto (sr,end_label) :: !body2;
           end_label_used := true
         end
         ;
-        let call_instr = BEXE_init (sr,varindex,e) in
+        let call_instr = bexe_init (sr,varindex,e) in
         (*
         print_endline ("Replacing return with init: " ^ string_of_bexe bsym_table 0 call_instr);
         *)
@@ -326,7 +326,7 @@ let inline_function syms (uses,child_map,bsym_table) caller caller_vs callee ts 
     ;
     (* Ugghhh *)
     if !end_label_used then
-      body2 := !body2 @ [BEXE_label (bsym.Flx_bsym.sr,end_label)]
+      body2 := !body2 @ [bexe_label (bsym.Flx_bsym.sr,end_label)]
     ;
     (*
     print_endline (
@@ -351,7 +351,7 @@ let expand_exe syms bsym_table u exe =
     | BEXE_call_prim (sr,i,ts,e2) -> assert false
       (*
       let e,xs = u sr e2 in
-      BEXE_call_prim (sr,i,ts,e) :: xs
+      bexe_call_prim (sr,i,ts,e) :: xs
       *)
 
     | BEXE_call_stack (sr,i,ts,e2) -> assert false
@@ -359,23 +359,23 @@ let expand_exe syms bsym_table u exe =
     | BEXE_call_direct (sr,i,ts,e2) -> assert false
       (*
       let e,xs = u sr e2 in
-      BEXE_call_direct (sr,i,ts,e) :: xs
+      bexe_call_direct (sr,i,ts,e) :: xs
       *)
 
     | BEXE_jump_direct (sr,i,ts,e2) -> assert false
       (*
       let e,xs = u sr e2 in
-      BEXE_jump_direct (sr,i,ts,e) :: xs
+      bexe_jump_direct (sr,i,ts,e) :: xs
       *)
 
     | BEXE_assign (sr,e1,e2) ->
       let e1,xs1 = u sr e1 in
       let e2,xs2 = u sr e2 in
-      BEXE_assign (sr,e1,e2) :: xs2 @ xs1
+      bexe_assign (sr,e1,e2) :: xs2 @ xs1
 
     | BEXE_assert (sr,e) ->
       let e,xs = u sr e in
-      BEXE_assert (sr,e) :: xs
+      bexe_assert (sr,e) :: xs
 
     | BEXE_assert2 (sr,sr2,e1,e2) ->
       let e1,xs1 =
@@ -383,26 +383,26 @@ let expand_exe syms bsym_table u exe =
         | None -> None,[]
       in
       let e2,xs2 = u sr e2 in
-      BEXE_assert2 (sr,sr2,e1,e2) :: xs2 @ xs1
+      bexe_assert2 (sr,sr2,e1,e2) :: xs2 @ xs1
 
     (* preserve call lift pattern ??*)
     | BEXE_call (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e1),t),e2) ->
       let e1,xs1 = u sr e1 in
       let e2,xs2 = u sr e2 in
-      BEXE_call (sr,
+      bexe_call (sr,
         (bexpr_apply t ((bexpr_closure t' (i,ts)),e1)),
         e2) :: xs2 @ xs1
 
     | BEXE_call (sr,e1,e2) ->
       let e1,xs1 = u sr e1 in
       let e2,xs2 = u sr e2 in
-      BEXE_call (sr,e1,e2) :: xs2 @ xs1
+      bexe_call (sr,e1,e2) :: xs2 @ xs1
 
     | BEXE_jump (sr,e1,e2) -> assert false
 
     | BEXE_ifgoto (sr,e,lab) ->
       let e,xs = u sr e in
-      BEXE_ifgoto (sr,e,lab) :: xs
+      bexe_ifgoto (sr,e,lab) :: xs
 
     (* preserve tail call pattern -- used by both
        tail-rec eliminator
@@ -410,16 +410,16 @@ let expand_exe syms bsym_table u exe =
     *)
     | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e),t)) ->
       let e,xs = u sr e in
-      BEXE_fun_return (sr,
+      bexe_fun_return (sr,
         (bexpr_apply t ((bexpr_closure t' (i,ts)),e))) :: xs
 
     | BEXE_fun_return (sr,e) ->
       let e,xs = u sr e in
-      BEXE_fun_return (sr,e) :: xs
+      bexe_fun_return (sr,e) :: xs
 
     | BEXE_yield (sr,e) ->
       let e,xs = u sr e in
-      BEXE_yield (sr,e) :: xs
+      bexe_yield (sr,e) :: xs
 
     (* This case has to be handled specially, in case we already
        have a simplified form, and the unravelling introduces
@@ -442,12 +442,12 @@ let expand_exe syms bsym_table u exe =
       *)
       ->
       let e,xs = u sr e in
-      BEXE_init (sr, i,
+      bexe_init (sr, i,
         (bexpr_apply t ((bexpr_closure t' (j,ts)),e))) :: xs
 
     | BEXE_init (sr,i,e) ->
       let e,xs = u sr e in
-      BEXE_init (sr,i,e) :: xs
+      bexe_init (sr,i,e) :: xs
 
     | BEXE_svc _
     | BEXE_label _
@@ -838,7 +838,7 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
             bbdcl=BBDCL_var (caller_vs,t) };
 
           (* set variable to function appliction *)
-          let cll = BEXE_init (sr,urv,e) in
+          let cll = bexe_init (sr,urv,e) in
           exes' := cll :: !exes';
 
 

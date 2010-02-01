@@ -589,7 +589,7 @@ let fixup_exe syms bsym_table exe = match exe with
     if j <> i then print_endline "instantiate virtual ..";
     *)
     let a  = fixup_expr syms bsym_table a in
-    BEXE_call_direct (sr,j,ts,a)
+    bexe_call_direct (sr,j,ts,a)
   | x ->
     Flx_bexe.map ~fe:(fixup_expr syms bsym_table) x
 

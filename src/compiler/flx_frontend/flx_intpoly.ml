@@ -230,19 +230,19 @@ let cal_polyvars syms bsym_table child_map =
 
   Flx_bsym_table.update_bexes (List.map begin function
     | BEXE_call (sr,(BEXPR_closure (i,ts),t'),e) ->
-        BEXE_call (sr,
+        bexe_call (sr,
           (bexpr_closure (cal_ft i t') (i, polyfix syms polyvars i ts)),
           cast_a i (fixexpr e))
     | BEXE_call_prim (sr,i,ts,e) ->
-        BEXE_call_prim (sr, i, polyfix syms polyvars i ts, cast_a i (fixexpr e))
+        bexe_call_prim (sr, i, polyfix syms polyvars i ts, cast_a i (fixexpr e))
     | BEXE_call_direct (sr,i,ts,e) ->
-        BEXE_call_direct (sr, i, polyfix syms polyvars i ts,
+        bexe_call_direct (sr, i, polyfix syms polyvars i ts,
           cast_a i (fixexpr e))
     | BEXE_call_stack (sr,i,ts,e) ->
-        BEXE_call_stack (sr, i, polyfix syms polyvars i ts,
+        bexe_call_stack (sr, i, polyfix syms polyvars i ts,
           cast_a i (fixexpr e))
     | BEXE_jump_direct (sr,i,ts,e) ->
-        BEXE_jump_direct (sr, i, polyfix syms polyvars i ts,
+        bexe_jump_direct (sr, i, polyfix syms polyvars i ts,
           cast_a i (fixexpr e))
     | x -> Flx_bexe.map ~fe:fixexpr x
   end) bsym_table;
@@ -370,16 +370,16 @@ let cal_polyvars syms bsym_table child_map =
 
   Flx_bsym_table.update_bexes (List.map begin function
     | BEXE_call (sr,(BEXPR_closure (i,ts),t'),e) ->
-        BEXE_call (sr,
+        bexe_call (sr,
           (bexpr_closure (cal_ft i t') (i, polyfix2 i ts)),
           cast_a2 i ts (fixexpr2 e))
     | BEXE_call_prim (sr,i,ts,e) ->
-        BEXE_call_prim (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+        bexe_call_prim (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
     | BEXE_call_direct (sr,i,ts,e) ->
-        BEXE_call_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+        bexe_call_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
     | BEXE_call_stack (sr,i,ts,e) ->
-        BEXE_call_stack (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+        bexe_call_stack (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
     | BEXE_jump_direct (sr,i,ts,e) ->
-        BEXE_jump_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+        bexe_jump_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
     | x -> Flx_bexe.map ~fe:fixexpr2 x
   end) bsym_table

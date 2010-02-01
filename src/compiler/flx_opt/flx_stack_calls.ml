@@ -667,15 +667,15 @@ let enstack_calls syms bsym_table child_map fn_cache ptr_cache self exes =
                 Flx_bsym.bbdcl=bbdcl }
             end;
 
-            BEXE_call_stack (bsym.Flx_bsym.sr,i,ts,a)
+            bexe_call_stack (bsym.Flx_bsym.sr,i,ts,a)
           end
           else
-          BEXE_call_direct (bsym.Flx_bsym.sr,i,ts,a)
+          bexe_call_direct (bsym.Flx_bsym.sr,i,ts,a)
 
-        | BBDCL_proc _ -> BEXE_call_prim (bsym.Flx_bsym.sr,i,ts,a)
+        | BBDCL_proc _ -> bexe_call_prim (bsym.Flx_bsym.sr,i,ts,a)
 
         (* seems to work at the moment *)
-        | BBDCL_callback _ -> BEXE_call_direct (bsym.Flx_bsym.sr,i,ts,a)
+        | BBDCL_callback _ -> bexe_call_direct (bsym.Flx_bsym.sr,i,ts,a)
 
         | _ ->
             syserr sr ("Call to non-procedure " ^ bsym.Flx_bsym.id ^ "<" ^
