@@ -2,7 +2,7 @@
 namespace flx { namespace rtl { namespace i18n {
   std::string utf8(unsigned long i)
   {
-    char s[6];
+    char s[7];
     if (i < 0x80UL )
     {
       s[0]= i;
