@@ -10,7 +10,7 @@ module Csv {
     fun eq(a:state_t, b:state_t)=> caseno a == caseno b;
 
     var state = skip;
-    var j:int=n; forall j in *i upto n-1 do
+    var j:int; forall j in *i upto n-1 do
       ch := s.[j];
       if ch == char "," do 
         match state with 
