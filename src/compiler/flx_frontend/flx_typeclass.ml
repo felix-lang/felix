@@ -559,7 +559,7 @@ let fixup_expr syms bsym_table e =
     (*
     if j <> i then print_endline ("[direct] instantiate virtual as " ^ si j);
     *)
-    BEXPR_apply_direct (j,ts,a),t
+    bexpr_apply_direct t (j,ts,a)
 
   | BEXPR_apply_prim (i,ts,a),t ->
     let a = aux a in
@@ -572,12 +572,12 @@ let fixup_expr syms bsym_table e =
       )
     ;
     *)
-    BEXPR_apply_direct (j,ts,a),t
+    bexpr_apply_direct t (j,ts,a)
 
   | BEXPR_name (i,ts),t ->
     let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"); *)
       fixup_typeclass_instance' syms bsym_table true i ts in
-    BEXPR_name (j,ts),t
+    bexpr_name t (j,ts)
 
   | x -> x
   in aux e
@@ -589,7 +589,7 @@ let fixup_exe syms bsym_table exe = match exe with
     if j <> i then print_endline "instantiate virtual ..";
     *)
     let a  = fixup_expr syms bsym_table a in
-    BEXE_call_direct (sr,j,ts,a)
+    bexe_call_direct (sr,j,ts,a)
   | x ->
     Flx_bexe.map ~fe:(fixup_expr syms bsym_table) x
 

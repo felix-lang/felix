@@ -70,11 +70,11 @@ let update_bexes f bsym_table =
   iter begin fun i bsym ->
     match bsym.Flx_bsym.bbdcl with
     | Flx_bbdcl.BBDCL_function (ps, bvs, bpar, bty, bexes) ->
-        let bbdcl = Flx_bbdcl.BBDCL_function (ps, bvs, bpar, bty, f bexes) in
+        let bbdcl = Flx_bbdcl.bbdcl_function (ps, bvs, bpar, bty, f bexes) in
         add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl }
 
     | Flx_bbdcl.BBDCL_procedure (ps, bvs, bpar, bexes) ->
-        let bbdcl = Flx_bbdcl.BBDCL_procedure (ps, bvs, bpar, f bexes) in
+        let bbdcl = Flx_bbdcl.bbdcl_procedure (ps, bvs, bpar, f bexes) in
         add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl }
 
     | _ -> ()

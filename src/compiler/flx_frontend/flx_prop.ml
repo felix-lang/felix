@@ -17,21 +17,21 @@ let add_prop bsym_table p i =
   in
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props,vs,ps,ret,exes) ->
-    update_bsym (BBDCL_function (p :: props,vs,ps,ret,exes))
+    update_bsym (bbdcl_function (p :: props,vs,ps,ret,exes))
 
   (* because of type classes .. *)
   | BBDCL_const (props,vs,ret,ct,reqs) ->
-    update_bsym (BBDCL_const (p :: props,vs,ret,ct,reqs))
+    update_bsym (bbdcl_const (p :: props,vs,ret,ct,reqs))
 
   | BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
-    update_bsym (BBDCL_fun (p :: props,vs,ps,ret,ct,reqs,prec))
+    update_bsym (bbdcl_fun (p :: props,vs,ps,ret,ct,reqs,prec))
 
   | BBDCL_procedure (props,vs,ps,exes) ->
-    update_bsym (BBDCL_procedure (p :: props,vs,ps,exes))
+    update_bsym (bbdcl_procedure (p :: props,vs,ps,exes))
 
   (* because of type classes .. *)
   | BBDCL_proc (props,vs,ps,ct,reqs) ->
-    update_bsym (BBDCL_proc (p :: props,vs,ps,ct,reqs))
+    update_bsym (bbdcl_proc (p :: props,vs,ps,ct,reqs))
 
   | _ -> ()
 
@@ -43,24 +43,24 @@ let rem_prop bsym_table p i =
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props,vs,ps,ret,exes) ->
     let props = List.filter (fun k -> p <> k) props in
-    update_bsym (BBDCL_function (props,vs,ps,ret,exes))
+    update_bsym (bbdcl_function (props,vs,ps,ret,exes))
 
   (* because of type classes .. *)
   | BBDCL_const (props,vs,ret,ct,reqs) ->
     let props = List.filter (fun k -> p <> k) props in
-    update_bsym (BBDCL_const (props,vs,ret,ct,reqs))
+    update_bsym (bbdcl_const (props,vs,ret,ct,reqs))
 
   | BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
     let props = List.filter (fun k -> p <> k) props in
-    update_bsym (BBDCL_fun (props,vs,ps,ret,ct,reqs,prec))
+    update_bsym (bbdcl_fun (props,vs,ps,ret,ct,reqs,prec))
 
   | BBDCL_procedure (props,vs,ps,exes) ->
     let props = List.filter (fun k -> p <> k) props in
-    update_bsym (BBDCL_procedure (props,vs,ps,exes))
+    update_bsym (bbdcl_procedure (props,vs,ps,exes))
 
   (* because of type classes .. *)
   | BBDCL_proc (props,vs,ps,ct,reqs) ->
     let props = List.filter (fun k -> p <> k) props in
-    update_bsym (BBDCL_proc (props,vs,ps,ct,reqs))
+    update_bsym (bbdcl_proc (props,vs,ps,ct,reqs))
 
   | _ -> ()

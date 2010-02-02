@@ -72,17 +72,17 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
         pubmap=Hashtbl.create 0;
         privmap=Hashtbl.create 0;
         dirs=[];
-        bbdcl=BBDCL_var (vs,ret) };
+        bbdcl=bbdcl_var (vs,ret) };
 
       (* append a pointer to this variable to the argument *)
       let ts' = map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) vs in
-      let ptr = BEXPR_ref (k,ts'),btyp_pointer ret in
+      let ptr = bexpr_ref (btyp_pointer ret) (k,ts') in
       let (_,at') as a' = append_args syms bsym_table f a [ptr] in
 
       (* create a call instruction to the mapped procedure *)
       let call =
-        BEXE_call (sr,
-          (BEXPR_closure (p,ts),btyp_function (at',btyp_void)),
+        bexe_call (sr,
+          (bexpr_closure (btyp_function (at',btyp_void)) (p,ts)),
           a'
         )
       in
@@ -91,7 +91,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       exes := call :: !exes;
 
       (* replace the original expression with the variable *)
-      BEXPR_name (k,ts'),ret
+      bexpr_name ret (k,ts')
     in e
   | x -> x
   in
@@ -123,7 +123,7 @@ let mkproc_exes syms bsym_table sr this mkproc_map vs exes =
 
 let proc_exe k exe = match exe with
   | BEXE_fun_return (sr,e)
-     -> [BEXE_assign (sr,k,e); BEXE_proc_return sr]
+     -> [bexe_assign (sr,k,e); bexe_proc_return sr]
 
   | BEXE_yield (sr,e)
      ->
@@ -132,7 +132,7 @@ let proc_exe k exe = match exe with
      *)
      (* failwith "Can't handle yield in procedure made from generator yet! :))"; *)
      (* Argg, who know, it might work lol *)
-     [BEXE_assign (sr,k,e); BEXE_proc_return sr]
+     [bexe_assign (sr,k,e); bexe_proc_return sr]
 
   | x -> [x]
 
@@ -269,7 +269,7 @@ let mkproc_gen syms bsym_table child_map =
 
         (* make new parameter: note the name is remapped to _k_mkproc below *)
         let vix = fresh_bid syms.counter in
-        let vdcl = BBDCL_var (vs,btyp_pointer ret) in
+        let vdcl = bbdcl_var (vs,btyp_pointer ret) in
         let vid = "_" ^ string_of_bid vix in
         let ps = ps @ [{
           pindex=vix;
@@ -283,8 +283,8 @@ let mkproc_gen syms bsym_table child_map =
           (fun {pkind=pk; ptyp=t; pid=s; pindex=pi} ->
             let n = revar pi in
             let bbdcl = match pk with
-            | `PVal -> BBDCL_val (vs,t)
-            | `PVar -> BBDCL_var (vs,t)
+            | `PVal -> bbdcl_val (vs,t)
+            | `PVar -> bbdcl_var (vs,t)
             | _ -> failwith "Unimplemented mkproc fun param not var or val (fixme!)"
             in
             if syms.compiler_options.print_flag then
@@ -330,7 +330,7 @@ let mkproc_gen syms bsym_table child_map =
       (* and actually convert it *)
       let ts = map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
       (* let dv = BEXPR_deref (BEXPR_name (vix,ts),btyp_pointer * ret),btyp_lvalue ret in *)
-      let dv = BEXPR_deref (BEXPR_name (vix,ts),btyp_pointer ret),ret in
+      let dv = bexpr_deref ret (bexpr_name (btyp_pointer ret) (vix,ts)) in
       let exes = proc_exes syms bsym_table dv exes in
 
       (* save the new procedure *)
@@ -342,7 +342,7 @@ let mkproc_gen syms bsym_table child_map =
         pubmap=Hashtbl.create 0;
         privmap=Hashtbl.create 0;
         dirs=[];
-        bbdcl=BBDCL_procedure (props,vs,(ps,traint),exes) };
+        bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) };
 
       if syms.compiler_options.print_flag then
       begin
@@ -366,12 +366,12 @@ let mkproc_gen syms bsym_table child_map =
     | BBDCL_procedure (props,vs,(ps,traint),exes) ->
         let exes = mkproc_exes vs exes in
         Flx_bsym_table.add bsym_table i { bsym with
-          Flx_bsym.bbdcl=BBDCL_procedure (props,vs,(ps,traint),exes) }
+          Flx_bsym.bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) }
 
     | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         let exes = mkproc_exes vs exes in
         Flx_bsym_table.add bsym_table i { bsym with
-          Flx_bsym.bbdcl=BBDCL_function (props,vs,(ps,traint),ret,exes) }
+          Flx_bsym.bbdcl=bbdcl_function (props,vs,(ps,traint),ret,exes) }
 
     | _ -> ()
   end bsym_table;

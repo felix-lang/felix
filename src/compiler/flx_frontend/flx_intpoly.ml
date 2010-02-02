@@ -170,7 +170,7 @@ let cal_polyvars syms bsym_table child_map =
       (*
       print_endline ("COERCION arg(output) " ^ sbt syms.sym_table t);
       *)
-      BEXPR_coerce (e,t),t
+      bexpr_coerce t (e,t)
     end
   in
   let cast_r i ((x,t) as e) =
@@ -189,7 +189,7 @@ let cal_polyvars syms bsym_table child_map =
       (*
       print_endline ("COERCION result(input) " ^ sbt syms.sym_table t');
       *)
-      BEXPR_coerce ((x,t'),t),t
+      bexpr_coerce t ((x,t'),t)
     end
   in
   let cal_ft i t =
@@ -216,33 +216,33 @@ let cal_polyvars syms bsym_table child_map =
   in
   let rec fixexpr e = match e with
   | BEXPR_apply ((BEXPR_closure (i,ts),t'),e2),t ->
-    cast_r i (BEXPR_apply ((BEXPR_closure (i, polyfix syms polyvars i ts),cal_ft i t'), cast_a i (fixexpr e2)),t)
+    cast_r i (bexpr_apply t ((bexpr_closure (cal_ft i t') (i, polyfix syms polyvars i ts)), cast_a i (fixexpr e2)))
   | BEXPR_apply_prim (i,ts,e2),t ->
-    cast_r i (BEXPR_apply_prim (i, polyfix syms polyvars i ts, cast_a i (fixexpr e2)),t)
+    cast_r i (bexpr_apply_prim t (i, polyfix syms polyvars i ts, cast_a i (fixexpr e2)))
   | BEXPR_apply_direct (i,ts,e2),t ->
-    cast_r i (BEXPR_apply_direct (i, polyfix syms polyvars i ts, cast_a i (fixexpr  e2)),t)
+    cast_r i (bexpr_apply_direct t (i, polyfix syms polyvars i ts, cast_a i (fixexpr  e2)))
   | BEXPR_apply_struct (i,ts,e2),t ->
-    cast_r i (BEXPR_apply_struct (i, polyfix syms polyvars i ts, cast_a i (fixexpr  e2)),t)
+    cast_r i (bexpr_apply_struct t (i, polyfix syms polyvars i ts, cast_a i (fixexpr  e2)))
   | BEXPR_apply_stack (i,ts,e2),t ->
-    cast_r i (BEXPR_apply_stack (i, polyfix syms polyvars i ts, cast_a i (fixexpr e2)),t)
+    cast_r i (bexpr_apply_stack t (i, polyfix syms polyvars i ts, cast_a i (fixexpr e2)))
   | e -> Flx_bexpr.map ~fe:fixexpr e
   in
 
   Flx_bsym_table.update_bexes (List.map begin function
     | BEXE_call (sr,(BEXPR_closure (i,ts),t'),e) ->
-        BEXE_call (sr,
-          (BEXPR_closure (i, polyfix syms polyvars i ts), cal_ft i t'),
+        bexe_call (sr,
+          (bexpr_closure (cal_ft i t') (i, polyfix syms polyvars i ts)),
           cast_a i (fixexpr e))
     | BEXE_call_prim (sr,i,ts,e) ->
-        BEXE_call_prim (sr, i, polyfix syms polyvars i ts, cast_a i (fixexpr e))
+        bexe_call_prim (sr, i, polyfix syms polyvars i ts, cast_a i (fixexpr e))
     | BEXE_call_direct (sr,i,ts,e) ->
-        BEXE_call_direct (sr, i, polyfix syms polyvars i ts,
+        bexe_call_direct (sr, i, polyfix syms polyvars i ts,
           cast_a i (fixexpr e))
     | BEXE_call_stack (sr,i,ts,e) ->
-        BEXE_call_stack (sr, i, polyfix syms polyvars i ts,
+        bexe_call_stack (sr, i, polyfix syms polyvars i ts,
           cast_a i (fixexpr e))
     | BEXE_jump_direct (sr,i,ts,e) ->
-        BEXE_jump_direct (sr, i, polyfix syms polyvars i ts,
+        bexe_jump_direct (sr, i, polyfix syms polyvars i ts,
           cast_a i (fixexpr e))
     | x -> Flx_bexe.map ~fe:fixexpr x
   end) bsym_table;
@@ -287,7 +287,7 @@ let cal_polyvars syms bsym_table child_map =
     (*
     print_endline ("COERCION2 arg(output) " ^ sbt syms.sym_table t);
     *)
-    BEXPR_coerce (e,t),t
+    bexpr_coerce t (e,t)
     with Skip -> e
   in
 
@@ -315,7 +315,7 @@ let cal_polyvars syms bsym_table child_map =
     (*
     print_endline ("COERCION2 result(input) " ^ sbt syms.sym_table t');
     *)
-    BEXPR_coerce ((x,t'),t),t
+    bexpr_coerce t ((x,t'),t)
     with Skip -> e
   in
 
@@ -356,30 +356,30 @@ let cal_polyvars syms bsym_table child_map =
 
   let rec fixexpr2 e = match e with
   | BEXPR_apply ((BEXPR_closure (i,ts),t'),e2),t ->
-    cast_r2 i ts (BEXPR_apply ((BEXPR_closure (i, polyfix2 i ts),cal_ft2 i ts t'), cast_a2 i ts (fixexpr2 e2)),t)
+    cast_r2 i ts (bexpr_apply t ((bexpr_closure (cal_ft2 i ts t') (i, polyfix2 i ts)), cast_a2 i ts (fixexpr2 e2)))
   | BEXPR_apply_prim (i,ts,e2),t ->
-    cast_r2 i ts (BEXPR_apply_prim (i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e2)),t)
+    cast_r2 i ts (bexpr_apply_prim t (i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e2)))
   | BEXPR_apply_direct (i,ts,e2),t ->
-    cast_r2 i ts (BEXPR_apply_direct (i, polyfix2 i ts, cast_a2 i ts (fixexpr2  e2)),t)
+    cast_r2 i ts (bexpr_apply_direct t (i, polyfix2 i ts, cast_a2 i ts (fixexpr2  e2)))
   | BEXPR_apply_struct (i,ts,e2),t ->
-    cast_r2 i ts (BEXPR_apply_struct (i, polyfix2 i ts, cast_a2 i ts (fixexpr2  e2)),t)
+    cast_r2 i ts (bexpr_apply_struct t (i, polyfix2 i ts, cast_a2 i ts (fixexpr2  e2)))
   | BEXPR_apply_stack (i,ts,e2),t ->
-    cast_r2 i ts (BEXPR_apply_stack (i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e2)),t)
+    cast_r2 i ts (bexpr_apply_stack t (i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e2)))
   | e -> Flx_bexpr.map ~fe:fixexpr2 e
   in
 
   Flx_bsym_table.update_bexes (List.map begin function
     | BEXE_call (sr,(BEXPR_closure (i,ts),t'),e) ->
-        BEXE_call (sr,
-          (BEXPR_closure (i, polyfix2 i ts), cal_ft i t'),
+        bexe_call (sr,
+          (bexpr_closure (cal_ft i t') (i, polyfix2 i ts)),
           cast_a2 i ts (fixexpr2 e))
     | BEXE_call_prim (sr,i,ts,e) ->
-        BEXE_call_prim (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+        bexe_call_prim (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
     | BEXE_call_direct (sr,i,ts,e) ->
-        BEXE_call_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+        bexe_call_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
     | BEXE_call_stack (sr,i,ts,e) ->
-        BEXE_call_stack (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+        bexe_call_stack (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
     | BEXE_jump_direct (sr,i,ts,e) ->
-        BEXE_jump_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
+        bexe_jump_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
     | x -> Flx_bexe.map ~fe:fixexpr2 x
   end) bsym_table

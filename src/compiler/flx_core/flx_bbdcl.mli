@@ -9,7 +9,7 @@ type btype_qual_t = [
 type breqs_t = (Flx_types.bid_t * Flx_btype.t list) list
 
 (** Bound declarations. *)
-type t =
+type t = private
   | BBDCL_module
   | BBDCL_function of   property_t list * bvs_t * Flx_bparams.t * Flx_btype.t * Flx_bexe.t list
   | BBDCL_procedure of  property_t list * bvs_t * Flx_bparams.t * Flx_bexe.t list
@@ -38,6 +38,31 @@ type t =
                         Flx_btype.t list
   | BBDCL_nonconst_ctor of bvs_t * bid_t * Flx_btype.t * int * Flx_btype.t *
                         bvs_t * Flx_btype.t (* existentials and constraint for GADTs *)
+
+(* -------------------------------------------------------------------------- *)
+
+val bbdcl_module : unit -> t
+val bbdcl_function : property_t list * bvs_t * Flx_bparams.t * Flx_btype.t * Flx_bexe.t list -> t
+val bbdcl_procedure : property_t list * bvs_t * Flx_bparams.t * Flx_bexe.t list -> t
+val bbdcl_val : bvs_t * Flx_btype.t -> t
+val bbdcl_var : bvs_t * Flx_btype.t -> t
+val bbdcl_ref : bvs_t * Flx_btype.t -> t
+val bbdcl_tmp : bvs_t * Flx_btype.t -> t
+val bbdcl_newtype : bvs_t * Flx_btype.t -> t
+val bbdcl_abs : bvs_t * btype_qual_t list * code_spec_t * breqs_t -> t
+val bbdcl_const : property_t list * bvs_t * Flx_btype.t * code_spec_t * breqs_t -> t
+val bbdcl_fun : property_t list * bvs_t * Flx_btype.t list * Flx_btype.t * code_spec_t  * breqs_t * prec_t -> t
+val bbdcl_callback : property_t list * bvs_t * Flx_btype.t list * Flx_btype.t list * int * Flx_btype.t * breqs_t * prec_t -> t
+val bbdcl_proc : property_t list * bvs_t * Flx_btype.t list * code_spec_t  * breqs_t -> t
+val bbdcl_insert : bvs_t * code_spec_t * ikind_t * breqs_t -> t
+val bbdcl_union : bvs_t * (id_t * int * Flx_btype.t) list -> t
+val bbdcl_struct : bvs_t * (id_t * Flx_btype.t) list -> t
+val bbdcl_cstruct : bvs_t * (id_t * Flx_btype.t) list -> t
+val bbdcl_typeclass : property_t list * bvs_t -> t
+val bbdcl_instance : property_t list * bvs_t * Flx_btype.t * bid_t * Flx_btype.t list -> t
+val bbdcl_nonconst_ctor : bvs_t * bid_t * Flx_btype.t * int * Flx_btype.t * bvs_t * Flx_btype.t -> t
+
+(* -------------------------------------------------------------------------- *)
 
 (** Extract the parameters of a bound declaration. *)
 val get_bparams : t -> Flx_bparams.t

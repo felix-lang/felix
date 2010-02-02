@@ -38,12 +38,11 @@ let unpack syms bsym_table f ps a =
 
   | x,BTYP_tuple ts ->
     assert (length ts = length ps);
-    let xs = map (fun i -> BEXPR_get_n (i,a)) (nlist (length ts)) in
-    combine xs ts
+    Flx_list.mapi (fun i t -> bexpr_get_n t (i,a)) ts
 
   | x,BTYP_array (t,BTYP_unitsum k) ->
     assert (k = length ps);
-    map (fun i -> BEXPR_get_n (i,a),t) (nlist k)
+    Flx_list.range (fun i -> bexpr_get_n t (i,a)) k
 
   | x,t ->
     print_endline ("Function " ^ string_of_bid f);
@@ -59,11 +58,11 @@ let merge_args syms bsym_table f c a b =
   let args = unpack syms bsym_table f psf a @ unpack syms bsym_table c psc b in
   match args with
   | [x] -> x
-  | _ -> BEXPR_tuple args, btyp_tuple (map snd args)
+  | _ -> bexpr_tuple (btyp_tuple (map snd args)) args
 
 let append_args syms bsym_table f a b =
   let psf = fst (Flx_bsym_table.find_bparams bsym_table f) in
   let args = unpack syms bsym_table f psf a @ b in
   match args with
   | [x] -> x
-  | _ -> BEXPR_tuple args, btyp_tuple (map snd args)
+  | _ -> bexpr_tuple (btyp_tuple (map snd args)) args

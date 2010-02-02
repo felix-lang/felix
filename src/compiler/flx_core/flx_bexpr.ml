@@ -29,6 +29,58 @@ and t = bexpr_t * Flx_btype.t
 
 (* -------------------------------------------------------------------------- *)
 
+let bexpr_deref t e : t = BEXPR_deref e, t
+
+let bexpr_name t (bid, ts) = BEXPR_name (bid, ts), t
+
+let bexpr_ref t (bid, ts) = BEXPR_ref (bid, ts), t
+
+let bexpr_likely t e = BEXPR_likely e, t
+
+let bexpr_unlikely t e = BEXPR_unlikely e, t
+
+let bexpr_address t e = BEXPR_address e, t
+
+let bexpr_new t e = BEXPR_new e, t
+
+let bexpr_literal t l = BEXPR_literal l, t
+
+let bexpr_apply t (e1, e2) = BEXPR_apply (e1, e2), t
+
+let bexpr_apply_prim t (bid, ts, e) = BEXPR_apply_prim (bid, ts, e), t
+
+let bexpr_apply_direct t (bid, ts, e) = BEXPR_apply_direct (bid, ts, e), t
+
+let bexpr_apply_stack t (bid, ts, e) = BEXPR_apply_stack (bid, ts, e), t
+
+let bexpr_apply_struct t (bid, ts, e) = BEXPR_apply_struct (bid, ts, e), t
+
+let bexpr_tuple t es = BEXPR_tuple es, t
+
+let bexpr_record t es = BEXPR_record es, t
+
+let bexpr_variant t (n, e) = BEXPR_variant (n, e), t
+
+let bexpr_get_n t (n, e) = BEXPR_get_n (n, e), t
+
+let bexpr_closure t (bid, ts) = BEXPR_closure (bid, ts), t
+
+let bexpr_case t (i, e) = BEXPR_case (i, e), t
+
+let bexpr_match_case t (i, e) = BEXPR_match_case (i, e), t
+
+let bexpr_case_arg t (i, e) = BEXPR_case_arg (i, e), t
+
+let bexpr_case_index t e = BEXPR_case_index e, t
+
+let bexpr_expr t (s, e) = BEXPR_expr (s, e), t
+
+let bexpr_range_check t (e1, e2, e3) = BEXPR_range_check (e1, e2, e3), t
+
+let bexpr_coerce t (e1, e2) = BEXPR_coerce (e1, e2), t
+
+(* -------------------------------------------------------------------------- *)
+
 (** Extract the type arguments of a bound expression. *)
 let get_ts (e,_) =
   match e with

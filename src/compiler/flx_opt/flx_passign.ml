@@ -207,7 +207,7 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
       parameters := (ty,k) :: !parameters;
       tmplist := k :: !tmplist;
       let h' = k,(name2,ty,e,BidSet.empty) in
-      let e' = BEXPR_name (k,ts'),ty in
+      let e' = bexpr_name ty (k,ts') in
       let t' = i,(name,ty,e',BidSet.empty) in
       aux3 (h' :: h, ta, t' :: t)
   in
@@ -221,16 +221,16 @@ let passign syms bsym_table (pinits:aentry_t list) ts' sr =
   m;
   *)
   let result = ref [] in
-  result :=  BEXE_comment (sr,"parallel assignment") :: !result;
+  result :=  bexe_comment (sr,"parallel assignment") :: !result;
   iter
   (fun (i,(name,ty,e,_)) ->
     if mem i !tmplist then
-      result := BEXE_begin :: !result;
-    result := BEXE_init (sr,i,e) :: !result;
+      result := bexe_begin () :: !result;
+    result := bexe_init (sr,i,e) :: !result;
   )
   m;
   while length !tmplist > 0 do
-    result := BEXE_end :: !result;
+    result := bexe_end () :: !result;
     tmplist := tl !tmplist
   done;
   !parameters, !result

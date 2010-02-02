@@ -65,7 +65,7 @@ let rec fixup_type syms bsym_table fi t =
   let t = Flx_btype.map ~ft t in
   ft' t
 
-let fixup_expr' syms bsym_table fi mt e =
+let fixup_expr' syms bsym_table fi mt (e,t) =
   (*
   print_endline ("FIXUP EXPR(up) " ^ sbe sym_table (e, btyp_void));
   *)
@@ -73,25 +73,25 @@ let fixup_expr' syms bsym_table fi mt e =
   | BEXPR_apply_prim (i',ts,a) ->
     let i,ts = fi i' ts in
     if i = i' then
-      BEXPR_apply_prim (i,ts,a)
+      bexpr_apply_prim t (i,ts,a)
     else
-      BEXPR_apply_direct (i,ts,a)
+      bexpr_apply_direct t (i,ts,a)
 
   | BEXPR_apply_direct (i,ts,a) ->
     let i,ts = fi i ts in
-    BEXPR_apply_direct (i,ts,a)
+    bexpr_apply_direct t (i,ts,a)
 
   | BEXPR_apply_struct (i,ts,a) ->
     let i,ts = fi i ts in
-    BEXPR_apply_struct (i,ts,a)
+    bexpr_apply_struct t (i,ts,a)
 
   | BEXPR_apply_stack (i,ts,a) ->
     let i,ts = fi i ts in
-    BEXPR_apply_stack (i,ts,a)
+    bexpr_apply_stack t (i,ts,a)
 
   | BEXPR_ref (i,ts)  ->
     let i,ts = fi i ts in
-    BEXPR_ref (i,ts)
+    bexpr_ref t (i,ts)
 
   | BEXPR_name (i',ts') ->
     let i,ts = fi i' ts' in
@@ -101,13 +101,13 @@ let fixup_expr' syms bsym_table fi mt e =
       " mapped to " ^ si i ^ "[" ^ catmap "," (sbt bsym_table) ts ^"]"
     );
     *)
-    BEXPR_name (i,ts)
+    bexpr_name t (i,ts)
 
   | BEXPR_closure (i,ts) ->
     let i,ts = fi i ts in
-    BEXPR_closure (i,ts)
+    bexpr_closure t (i,ts)
 
-  | x -> x
+  | x -> x, t
   in
   (*
   print_endline ("FIXed UP EXPR " ^ sbe sym_table (x, btyp_void));
@@ -121,7 +121,7 @@ let rec fixup_expr syms bsym_table fi mt e =
   print_endline ("FIXUP EXPR(down) " ^ sbe sym_table e);
   *)
   let fe e = fixup_expr syms bsym_table fi mt e in
-  let fe' (e,t) = fixup_expr' syms bsym_table fi mt e,t in
+  let fe' e = fixup_expr' syms bsym_table fi mt e in
   let e = Flx_bexpr.map ~ft:mt ~fe e in
   fe' e
 
@@ -135,28 +135,28 @@ let fixup_exe syms bsym_table fi mt exe =
   | BEXE_call_direct (sr, i,ts,a) -> assert false
     (*
     let i,ts = fi i ts in
-    BEXE_call_direct (sr,i,ts,a)
+    bexe_call_direct (sr,i,ts,a)
     *)
 
   | BEXE_jump_direct (sr, i,ts,a) -> assert false
     (*
     let i,ts = fi i ts in
-    BEXE_jump_direct (sr,i,ts,a)
+    bexe_jump_direct (sr,i,ts,a)
     *)
 
   | BEXE_call_prim (sr, i',ts,a) -> assert false
     (*
     let i,ts = fi i' ts in
     if i = i' then
-      BEXE_call_prim (sr,i,ts,a)
+      bexe_call_prim (sr,i,ts,a)
     else
-      BEXE_call_direct (sr,i,ts,a)
+      bexe_call_direct (sr,i,ts,a)
     *)
 
   | BEXE_call_stack (sr, i,ts,a) -> assert false
     (*
     let i,ts = fi i ts in
-    BEXE_call_stack (sr,i,ts,a)
+    bexe_call_stack (sr,i,ts,a)
     *)
 
   (* this is deviant case: implied ts is vs of parent! *)
@@ -170,7 +170,7 @@ let fixup_exe syms bsym_table fi mt exe =
     (*
     print_endline ("[init] Remapped deviant variable to " ^ si i);
     *)
-    BEXE_init (sr,i,e)
+    bexe_init (sr,i,e)
 
   | BEXE_svc (sr,i) ->
     (*
@@ -182,7 +182,7 @@ let fixup_exe syms bsym_table fi mt exe =
     (*
     print_endline ("[svc] Remapped deviant variable to " ^ si i);
     *)
-    BEXE_svc (sr,i)
+    bexe_svc (sr,i)
 
   | x -> x
   in
@@ -226,7 +226,7 @@ let mono syms bsym_table fi i ts n =
       | Some x -> Some (fixup_expr syms bsym_table fi (mt vars) x)
     in
     let exes = fixup_exes syms bsym_table fi (mt vars) exes in
-    let bbdcl = BBDCL_function (props,[],(ps,traint),ret,exes) in
+    let bbdcl = bbdcl_function (props,[],(ps,traint),ret,exes) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 
@@ -252,35 +252,35 @@ let mono syms bsym_table fi i ts n =
     let fi i ts = fi i (map mt ts) in
     *)
     let exes = fixup_exes syms bsym_table fi (mt vars) exes in
-    let bbdcl = BBDCL_procedure (props,[],(ps,traint), exes) in
+    let bbdcl = bbdcl_procedure (props,[],(ps,traint), exes) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 
   | BBDCL_val (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = BBDCL_val ([],t) in
+    let bbdcl = bbdcl_val ([],t) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 
   | BBDCL_var (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = BBDCL_var ([],t) in
+    let bbdcl = bbdcl_var ([],t) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 
   | BBDCL_ref (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = BBDCL_ref ([],t) in
+    let bbdcl = bbdcl_ref ([],t) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 
   | BBDCL_tmp (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = BBDCL_tmp ([],t) in
+    let bbdcl = bbdcl_tmp ([],t) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 
@@ -295,20 +295,20 @@ let mono syms bsym_table fi i ts n =
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let argtypes = map (mt vars) argtypes in
     let ret = mt vars ret in
-    let bbdcl = BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) in
+    let bbdcl = bbdcl_fun (props,vs,argtypes,ret,ct,reqs,prec) in
     update_bsym bsym.Flx_bsym.parent bbdcl
 
 
   | BBDCL_proc (props,vs,argtypes,ct,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let argtypes = map (mt vars) argtypes in
-    let bbdcl = BBDCL_proc (props,vs,argtypes,ct,reqs) in
+    let bbdcl = bbdcl_proc (props,vs,argtypes,ct,reqs) in
     update_bsym bsym.Flx_bsym.parent bbdcl
 
   | BBDCL_const (props, vs, t, CS_str "#this", reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = BBDCL_const (props, [], t, CS_str "#this", reqs) in
+    let bbdcl = bbdcl_const (props, [], t, CS_str "#this", reqs) in
     let parent = cal_parent syms bsym_table i ts in
     update_bsym parent bbdcl
 

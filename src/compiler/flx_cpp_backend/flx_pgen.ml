@@ -98,12 +98,10 @@ let gen_prim_call
 
   (* the argument isnt a tuple, but the type is *)
   | (_,BTYP_tuple typs) as x ->
-    let n = length typs in
     let typs = map rt typs in
-    let es =
-      map2
-      (fun i t -> BEXPR_get_n (i,x),t)
-      (nlist n) typs
+    let es = Flx_list.mapi
+      (fun i t -> bexpr_get_n t (i,x))
+      typs
     in
     let ess = map (ge sr) es in
     let ets = map tn typs in
@@ -113,11 +111,7 @@ let gen_prim_call
   | (_,(BTYP_array(t,BTYP_unitsum n) as ta)) as x ->
     let t = rt t in
     let typs = map (fun _ -> rt t) (nlist n) in
-    let es =
-      map
-      (fun i -> BEXPR_get_n (i,x),t)
-      (nlist n)
-    in
+    let es = Flx_list.range (fun i -> bexpr_get_n t (i,x)) n in
     let ess = map (ge sr) es in
     let ets = map tn typs in
     csubst sr sr2 ct carg ess ets tt ret ts prec ashape (map sh typs) ["error"] gshapes

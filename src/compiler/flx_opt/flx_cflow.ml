@@ -79,7 +79,7 @@ let rec retarget exes exe exclude =
          (*
          print_endline ("[goto] Retargetting " ^ label ^ " to tail");
          *)
-        BEXE_proc_return sr
+        bexe_proc_return sr
       | h :: t ->
         match h with
         | BEXE_proc_return _ ->
@@ -91,13 +91,13 @@ let rec retarget exes exe exclude =
           (*
           print_endline ("[goto] Retargetting " ^ label ^ " to " ^ s);
           *)
-          if mem s exclude then BEXE_halt (sr,"infinite loop")
+          if mem s exclude then bexe_halt (sr,"infinite loop")
           else retarget exes h (s::exclude)
         | BEXE_label (_,s) ->
           (*
           print_endline ("[goto] Retargetting " ^ label ^ " to " ^ s);
           *)
-          retarget exes (BEXE_goto (sr,s)) exclude
+          retarget exes (bexe_goto (sr,s)) exclude
 
         | _ -> exe
     end
@@ -117,13 +117,13 @@ let rec retarget exes exe exclude =
           (*
           print_endline ("[ifgoto] Retargetting " ^ label ^ " to " ^ s);
           *)
-          if mem s exclude then BEXE_halt (sr,"infinite loop")
-          else retarget exes (BEXE_ifgoto (sr,e,s)) (s::exclude)
+          if mem s exclude then bexe_halt (sr,"infinite loop")
+          else retarget exes (bexe_ifgoto (sr,e,s)) (s::exclude)
         | BEXE_label (_,s) ->
           (*
           print_endline ("[ifgoto] Retargetting " ^ label ^ " to " ^ s);
           *)
-          retarget exes (BEXE_ifgoto (sr,e,s)) (s::exclude)
+          retarget exes (bexe_ifgoto (sr,e,s)) (s::exclude)
         | _ -> exe
     end
 
@@ -166,9 +166,9 @@ let final_tailcall_opt exes =
     | [] -> rev out
     | BEXE_call_direct (sr,i,ts,a) :: tail
       when tailable exes [] tail
-      -> aux tail (BEXE_jump_direct (sr,i,ts,a) :: out)
+      -> aux tail (bexe_jump_direct (sr,i,ts,a) :: out)
     | BEXE_call (sr,a,b) :: tail
       when tailable exes [] tail
-      -> aux tail (BEXE_jump (sr,a,b) :: out)
+      -> aux tail (bexe_jump (sr,a,b) :: out)
     | head :: tail -> aux tail (head :: out)
   in aux exes []

@@ -1,7 +1,7 @@
 open Flx_ast
 open Flx_types
 
-type t =
+type t = private
   | BEXE_label of Flx_srcref.t * string
   | BEXE_comment of Flx_srcref.t * string (* for documenting generated code *)
   | BEXE_halt of Flx_srcref.t * string  (* for internal use only *)
@@ -31,6 +31,36 @@ type t =
 
 (* -------------------------------------------------------------------------- *)
 
+val bexe_label : Flx_srcref.t * string -> t
+val bexe_comment : Flx_srcref.t * string -> t
+val bexe_halt : Flx_srcref.t * string -> t
+val bexe_trace : Flx_srcref.t * string * string -> t
+val bexe_goto : Flx_srcref.t * string -> t
+val bexe_ifgoto : Flx_srcref.t * Flx_bexpr.t * string -> t
+val bexe_call : Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t -> t
+val bexe_call_direct : Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t -> t
+val bexe_call_stack : Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t -> t
+val bexe_call_prim : Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t -> t
+val bexe_jump : Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t -> t
+val bexe_jump_direct : Flx_srcref.t * bid_t * Flx_btype.t list * Flx_bexpr.t -> t
+val bexe_svc : Flx_srcref.t * bid_t -> t
+val bexe_fun_return : Flx_srcref.t * Flx_bexpr.t -> t
+val bexe_yield : Flx_srcref.t * Flx_bexpr.t -> t
+val bexe_proc_return : Flx_srcref.t -> t
+val bexe_nop : Flx_srcref.t * string -> t
+val bexe_code : Flx_srcref.t * code_spec_t -> t
+val bexe_nonreturn_code : Flx_srcref.t * code_spec_t -> t
+val bexe_assign : Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t -> t
+val bexe_init : Flx_srcref.t * bid_t * Flx_bexpr.t -> t
+val bexe_begin : unit -> t
+val bexe_end : unit -> t
+val bexe_assert : Flx_srcref.t * Flx_bexpr.t -> t
+val bexe_assert2 : Flx_srcref.t * Flx_srcref.t * Flx_bexpr.t option * Flx_bexpr.t -> t
+val bexe_axiom_check : Flx_srcref.t * Flx_bexpr.t -> t
+
+(* -------------------------------------------------------------------------- *)
+
+(** Extract the source of the bound executable. *)
 val get_srcref : t -> Flx_srcref.t
 
 (* -------------------------------------------------------------------------- *)

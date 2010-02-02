@@ -32,6 +32,36 @@ type t =
 
 (* -------------------------------------------------------------------------- *)
 
+let bexe_label (sr,s) = BEXE_label (sr,s)
+let bexe_comment (sr,s) = BEXE_comment (sr,s)
+let bexe_halt (sr,s) = BEXE_halt (sr,s)
+let bexe_trace (sr,s1,s2) = BEXE_trace (sr,s1,s2)
+let bexe_goto (sr,s) = BEXE_goto (sr,s)
+let bexe_ifgoto (sr,e,s) = BEXE_ifgoto (sr,e,s)
+let bexe_call (sr,e1,e2) = BEXE_call (sr,e1,e2)
+let bexe_call_direct (sr,bid,ts,e) = BEXE_call_direct (sr,bid,ts,e)
+let bexe_call_stack (sr,bid,ts,e) = BEXE_call_stack (sr,bid,ts,e)
+let bexe_call_prim (sr,bid,ts,e) = BEXE_call_prim (sr,bid,ts,e)
+let bexe_jump (sr,e1,e2) = BEXE_jump (sr,e1,e2)
+let bexe_jump_direct (sr,bid,ts,e) = BEXE_jump_direct (sr,bid,ts,e)
+let bexe_svc (sr,bid) = BEXE_svc (sr,bid)
+let bexe_fun_return (sr,e) = BEXE_fun_return (sr,e)
+let bexe_yield (sr,e) = BEXE_yield (sr,e)
+let bexe_proc_return sr = BEXE_proc_return sr
+let bexe_nop (sr,s) = BEXE_nop (sr,s)
+let bexe_code (sr,code) = BEXE_code (sr,code)
+let bexe_nonreturn_code (sr,code) = BEXE_nonreturn_code (sr,code)
+let bexe_assign (sr,e1,e2) = BEXE_assign (sr,e1,e2)
+let bexe_init (sr,bid,e) = BEXE_init (sr,bid,e)
+let bexe_begin () = BEXE_begin
+let bexe_end () = BEXE_end
+let bexe_assert (sr,e) = BEXE_assert (sr,e)
+let bexe_assert2 (sr1,sr2,e1,e2) = BEXE_assert2 (sr1,sr2,e1,e2)
+let bexe_axiom_check (sr,e) = BEXE_axiom_check (sr,e)
+
+(* -------------------------------------------------------------------------- *)
+
+(** Extract the source of the bound executable. *)
 let get_srcref = function
   | BEXE_goto (sr,_)
   | BEXE_assert (sr,_)

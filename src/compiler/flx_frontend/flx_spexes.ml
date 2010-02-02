@@ -234,38 +234,38 @@ let gen_body syms (uses,child_map,bsym_table) id
       with Not_found -> i,ts
     in
     let i,ts = fixup i ts in
-    [BEXE_jump_direct (sr,i,ts, ge e2)]
+    [bexe_jump_direct (sr,i,ts, ge e2)]
 
   | BEXE_call_stack (sr,i,ts,e2)  -> assert false
-  | BEXE_call (sr,e1,e2)  -> [BEXE_call (sr,ge e1, ge e2)]
+  | BEXE_call (sr,e1,e2)  -> [bexe_call (sr,ge e1, ge e2)]
   | BEXE_jump (sr,e1,e2)  -> assert false
-  | BEXE_assert (sr,e) -> [BEXE_assert (sr, ge e)]
+  | BEXE_assert (sr,e) -> [bexe_assert (sr, ge e)]
   | BEXE_assert2 (sr,sr2,e1,e2) ->
     let e1 = match e1 with Some e1 -> Some (ge e1) | None -> None in
-    [BEXE_assert2 (sr, sr2, e1,ge e2)]
+    [bexe_assert2 (sr, sr2, e1,ge e2)]
 
-  | BEXE_ifgoto (sr,e,lab) -> [BEXE_ifgoto (sr,ge e, relab lab)]
-  | BEXE_fun_return (sr,e) -> [BEXE_fun_return (sr, ge e)]
-  | BEXE_yield (sr,e) -> [BEXE_yield (sr, ge e)]
-  | BEXE_assign (sr,e1,e2) -> [BEXE_assign (sr, ge e1, ge e2)]
-  | BEXE_init (sr,i,e) -> [BEXE_init (sr,revar i, ge e)]
-  | BEXE_svc (sr,i)  -> [BEXE_svc (sr, revar i)]
+  | BEXE_ifgoto (sr,e,lab) -> [bexe_ifgoto (sr,ge e, relab lab)]
+  | BEXE_fun_return (sr,e) -> [bexe_fun_return (sr, ge e)]
+  | BEXE_yield (sr,e) -> [bexe_yield (sr, ge e)]
+  | BEXE_assign (sr,e1,e2) -> [bexe_assign (sr, ge e1, ge e2)]
+  | BEXE_init (sr,i,e) -> [bexe_init (sr,revar i, ge e)]
+  | BEXE_svc (sr,i)  -> [bexe_svc (sr, revar i)]
 
   | BEXE_code (sr,s)  as x -> [x]
   | BEXE_nonreturn_code (sr,s)  as x -> [x]
-  | BEXE_goto (sr,lab) -> [BEXE_goto (sr, relab lab)]
+  | BEXE_goto (sr,lab) -> [bexe_goto (sr, relab lab)]
 
 
   (* INLINING THING *)
   | BEXE_proc_return sr as x ->
     incr end_label_uses;
-    [BEXE_goto (sr,end_label)]
+    [bexe_goto (sr,end_label)]
 
   | BEXE_comment (sr,s) as x -> [x]
   | BEXE_nop (sr,s) as x -> [x]
   | BEXE_halt (sr,s) as x -> [x]
   | BEXE_trace (sr,v,s) as x -> [x]
-  | BEXE_label (sr,lab) -> [BEXE_label (sr, relab lab)]
+  | BEXE_label (sr,lab) -> [bexe_label (sr, relab lab)]
   | BEXE_begin as x -> [x]
   | BEXE_end as x -> [x]
   in
@@ -288,14 +288,14 @@ let gen_body syms (uses,child_map,bsym_table) id
       ref
       (
         if source = "" && id <> "_init_" then
-          [BEXE_comment (sr,(kind ^ "inline call to " ^ id ^ "<" ^
+          [bexe_comment (sr,(kind ^ "inline call to " ^ id ^ "<" ^
             string_of_bid callee ^ ">" ^ source))]
         else []
       )
     in
     let handle_arg prolog argmap index argument kind =      
       let eagerly () =
-         let x = BEXE_init (sr,index,argument) in
+         let x = bexe_init (sr,index,argument) in
          prolog := x :: !prolog
       in
       match kind with
@@ -305,8 +305,8 @@ let gen_body syms (uses,child_map,bsym_table) id
         | _,BTYP_function (BTYP_tuple [],t) -> t
         | _,t -> failwith ("Expected argument to be function void->t, got " ^ sbt bsym_table t)
         in
-        let un = BEXPR_tuple [], btyp_tuple [] in
-        let apl = BEXPR_apply (argument, un), argt in
+        let un = bexpr_tuple (btyp_tuple []) [] in
+        let apl = bexpr_apply argt (argument, un) in
         Hashtbl.add argmap index apl
 
       | `PVal ->
@@ -433,7 +433,7 @@ let gen_body syms (uses,child_map,bsym_table) id
                   "[gen_body2] Woops, prj "^si (!n) ^" tuple wrong length? " ^ si (length ts)
                 )
             end
-          | p -> BEXPR_get_n (!n,p),prjt
+          | p -> bexpr_get_n prjt (!n,p)
         in
         (*
         let prj = Flx_bexpr.reduce bsym_table pj in
@@ -492,7 +492,7 @@ let gen_body syms (uses,child_map,bsym_table) id
           let exes = map (subarg syms bsym_table argmap) exes in
           recal_exes_usage uses bsym.Flx_bsym.sr i ps exes;
           Flx_bsym_table.add bsym_table i { bsym with
-            Flx_bsym.bbdcl=BBDCL_function (props,vs,(ps,traint),ret,exes) }
+            Flx_bsym.bbdcl=bbdcl_function (props,vs,(ps,traint),ret,exes) }
 
         | BBDCL_procedure (props,vs,(ps,traint),exes) ->
           (*
@@ -501,7 +501,7 @@ let gen_body syms (uses,child_map,bsym_table) id
           let exes = map (subarg syms bsym_table argmap) exes in
           recal_exes_usage uses bsym.Flx_bsym.sr i ps exes;
           Flx_bsym_table.add bsym_table i { bsym with
-            Flx_bsym.bbdcl=BBDCL_procedure (props,vs,(ps,traint),exes) }
+            Flx_bsym.bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) }
 
         | _ -> ()
       )
@@ -516,7 +516,7 @@ let gen_body syms (uses,child_map,bsym_table) id
       (b := tl !b; decr end_label_uses)
     ;
     if !end_label_uses > 0 then
-      b := (BEXE_label (sr,end_label)) :: !b
+      b := (bexe_label (sr,end_label)) :: !b
     ;
     (*
     print_endline ("INLINING " ^ id ^ " into " ^ si caller ^ " .. OUTPUT:");
