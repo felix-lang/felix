@@ -319,7 +319,7 @@ def _print_c99_support(lang, p):
 
 def _print_posix_support(lang, platform, p):
     # print out information about the posix libraries
-    dlfcn_h = call('fbuild.config.c.posix.dlfcn_h', lang.static)
+    dlfcn_h = call('fbuild.config.c.posix.dlfcn_h', lang.static, lang.shared)
     if dlfcn_h.dlopen:
         p('HAVE_DLOPEN', True)
         p('SUPPORT_DYNAMIC_LOADING', True)

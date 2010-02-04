@@ -40,7 +40,10 @@ def build_runtime(phase):
         call('buildsystem.flx_gc.build_runtime', phase),
     ]
 
-    dlfcn_h = call('fbuild.config.c.posix.dlfcn_h', phase.cxx.static)
+    dlfcn_h = call('fbuild.config.c.posix.dlfcn_h',
+        phase.cxx.static,
+        phase.cxx.shared)
+
     if dlfcn_h.dlopen:
         external_libs = dlfcn_h.external_libs
     else:
