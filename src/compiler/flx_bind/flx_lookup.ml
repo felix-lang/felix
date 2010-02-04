@@ -4424,9 +4424,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       end
 
   | EXPR_deref (_,EXPR_ref (sr,e)) ->
-    let e,t = be e in
-(*    let t = lvalify t in *)
-    e,t
+    be e
 
   | EXPR_deref (sr,e) ->
     let e,t = be e in
