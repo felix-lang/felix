@@ -35,13 +35,13 @@ let bexpr_name t (bid, ts) = BEXPR_name (bid, ts), t
 
 let bexpr_ref t (bid, ts) = BEXPR_ref (bid, ts), t
 
-let bexpr_likely t e = BEXPR_likely e, t
+let bexpr_likely ((_,t) as e) = BEXPR_likely e, t
 
-let bexpr_unlikely t e = BEXPR_unlikely e, t
+let bexpr_unlikely ((_,t) as e) = BEXPR_unlikely e, t
 
-let bexpr_address t e = BEXPR_address e, t
+let bexpr_address ((_,t) as e) = BEXPR_address e, (Flx_btype.btyp_pointer t)
 
-let bexpr_new t e = BEXPR_new e, t
+let bexpr_new ((_,t) as e) = BEXPR_new e, (Flx_btype.btyp_pointer t)
 
 let bexpr_literal t l = BEXPR_literal l, t
 
@@ -73,11 +73,11 @@ let bexpr_case_arg t (i, e) = BEXPR_case_arg (i, e), t
 
 let bexpr_case_index t e = BEXPR_case_index e, t
 
-let bexpr_expr t (s, e) = BEXPR_expr (s, e), t
+let bexpr_expr (s, t) = BEXPR_expr (s, t), t
 
 let bexpr_range_check t (e1, e2, e3) = BEXPR_range_check (e1, e2, e3), t
 
-let bexpr_coerce t (e1, e2) = BEXPR_coerce (e1, e2), t
+let bexpr_coerce (e, t) = BEXPR_coerce (e, t), t
 
 (* -------------------------------------------------------------------------- *)
 

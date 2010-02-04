@@ -2378,7 +2378,7 @@ let gen_biface_body syms bsym_table biface = match biface with
               (
                 map
                 (fun {ptyp=t; pid=name; pindex=idx} ->
-                  bexpr_expr t (name,t)
+                  bexpr_expr (name,t)
                 )
                 ps
               )

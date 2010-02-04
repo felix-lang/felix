@@ -170,7 +170,7 @@ let cal_polyvars syms bsym_table child_map =
       (*
       print_endline ("COERCION arg(output) " ^ sbt syms.sym_table t);
       *)
-      bexpr_coerce t (e,t)
+      bexpr_coerce (e,t)
     end
   in
   let cast_r i ((x,t) as e) =
@@ -189,7 +189,7 @@ let cal_polyvars syms bsym_table child_map =
       (*
       print_endline ("COERCION result(input) " ^ sbt syms.sym_table t');
       *)
-      bexpr_coerce t ((x,t'),t)
+      bexpr_coerce ((x,t'),t)
     end
   in
   let cal_ft i t =
@@ -287,7 +287,7 @@ let cal_polyvars syms bsym_table child_map =
     (*
     print_endline ("COERCION2 arg(output) " ^ sbt syms.sym_table t);
     *)
-    bexpr_coerce t (e,t)
+    bexpr_coerce (e,t)
     with Skip -> e
   in
 
@@ -315,7 +315,7 @@ let cal_polyvars syms bsym_table child_map =
     (*
     print_endline ("COERCION2 result(input) " ^ sbt syms.sym_table t');
     *)
-    bexpr_coerce t ((x,t'),t)
+    bexpr_coerce ((x,t'),t)
     with Skip -> e
   in
 

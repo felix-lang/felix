@@ -3809,7 +3809,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
 
   | EXPR_expr (sr,s,t) ->
     let t = bt sr t in
-    bexpr_expr t (s,t)
+    bexpr_expr (s,t)
 
   | EXPR_andlist (sri,ls) ->
     begin let mksum a b = apl2 sri "land" [a;b] in
@@ -3927,7 +3927,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         lhs
         ;
         print_endline ("Coercion of variant to type " ^ sbt bsym_table t'');
-        bexpr_coerce t'' (x',t'')
+        bexpr_coerce (x',t'')
       with Not_found ->
         clierr sr
          (
@@ -4322,8 +4322,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     let srn = src_of_qualified_name f in
     lookup_qn_with_sig' state bsym_table sr srn env rs f [sign]
 
-  | EXPR_likely (srr,e) ->  let (_,t) as x = be e in bexpr_likely t x
-  | EXPR_unlikely (srr,e) ->  let (_,t) as x = be e in bexpr_unlikely t x
+  | EXPR_likely (srr,e) -> bexpr_likely (be e)
+  | EXPR_unlikely (srr,e) -> bexpr_unlikely (be e)
 
   | EXPR_ref (_,(EXPR_deref (_,e))) -> be e
   | EXPR_ref (srr,e) ->
@@ -4347,10 +4347,10 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
             | _ -> false
             end
       in
-      let e',t' = be e in
-      begin match e' with
-      | BEXPR_deref e -> e
-      | BEXPR_name (index,ts) ->
+      let e = be e in
+      begin match e with
+      | BEXPR_deref e,_ -> e
+      | BEXPR_name (index,ts),_ ->
           (* Look up the type of the name, and make sure it's addressable. *)
           begin match
             try Some (Flx_bsym_table.find bsym_table index)
@@ -4415,12 +4415,12 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
               end
           end
 
-      | BEXPR_apply ((BEXPR_closure (i,ts),_),a) when has_property i `Lvalue ->
-          bexpr_address (btyp_pointer t') (e', t')
+      | BEXPR_apply ((BEXPR_closure (i,ts),_),a),_ when has_property i `Lvalue ->
+          bexpr_address e
 
       | _ ->
           clierr srr ("[bind_expression] Address non variable " ^
-            sbe bsym_table (e', t'))
+            sbe bsym_table e)
       end
 
   | EXPR_deref (_,EXPR_ref (sr,e)) ->
@@ -4434,8 +4434,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     end
 
   | EXPR_new (srr,e) ->
-     let e,t as x = be e in
-     bexpr_new (btyp_pointer t) x
+    bexpr_new (be e)
 
   | EXPR_literal (sr,v) ->
     let t = type_of_literal state bsym_table env sr v in

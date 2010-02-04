@@ -21,7 +21,7 @@ let unravel syms bsym_table e =
       sube := (e, name) :: !sube;
       name
   in
-  let refer ((_, t) as e) = bexpr_expr t (get e, t) in
+  let refer ((_, t) as e) = bexpr_expr (get e, t) in
   let e' =
     let rec aux e =
       match e with

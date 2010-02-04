@@ -39,16 +39,16 @@ val bexpr_name : Flx_btype.t -> Flx_types.bid_t * Flx_btype.t list -> t
 val bexpr_ref : Flx_btype.t -> Flx_types.bid_t * Flx_btype.t list -> t
 
 (** Construct a BEXPR_likely expression. *)
-val bexpr_likely : Flx_btype.t -> t -> t
+val bexpr_likely : t -> t
 
 (** Construct a BEXPR_unlikely expression. *)
-val bexpr_unlikely : Flx_btype.t -> t -> t
+val bexpr_unlikely : t -> t
 
 (** Construct a BEXPR_address expression. *)
-val bexpr_address : Flx_btype.t -> t -> t
+val bexpr_address : t -> t
 
 (** Construct a BEXPR_new expression. *)
-val bexpr_new : Flx_btype.t -> t -> t
+val bexpr_new : t -> t
 
 (** Construct a BEXPR_literal expression. *)
 val bexpr_literal : Flx_btype.t -> Flx_ast.literal_t -> t
@@ -96,13 +96,13 @@ val bexpr_case_arg : Flx_btype.t -> int * t -> t
 val bexpr_case_index : Flx_btype.t -> t -> t
 
 (** Construct a BEXPR_expr expression. *)
-val bexpr_expr : Flx_btype.t -> string * Flx_btype.t -> t
+val bexpr_expr : string * Flx_btype.t -> t
 
 (** Construct a BEXPR_range_check expression. *)
 val bexpr_range_check : Flx_btype.t -> t * t * t -> t
 
 (** Construct a BEXPR_coerceexpression. *)
-val bexpr_coerce : Flx_btype.t -> t * Flx_btype.t -> t
+val bexpr_coerce : t * Flx_btype.t -> t
 
 (* -------------------------------------------------------------------------- *)
 
