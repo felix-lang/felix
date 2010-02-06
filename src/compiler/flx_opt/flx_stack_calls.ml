@@ -90,7 +90,8 @@ let rec is_pure syms bsym_table child_map i =
 
   | BBDCL_procedure (_,_,_,exes)   (* ALLOWED NOW *)
   | BBDCL_function (_,_,_,_,exes) ->
-    match bsym.Flx_bsym.parent with
+    let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
+    match bsym_parent with
     | Some _ ->
       (*
       print_endline (id ^ " is parented so Not pure");

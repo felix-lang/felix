@@ -62,9 +62,9 @@ let rec descendants child_map index =
 
 let cal_children bsym_table =
   let child_map = make () in
-  Flx_bsym_table.iter begin fun i bsym ->
-    match bsym.Flx_bsym.parent with
-    | Some parent -> add_child child_map parent i
+  Flx_bsym_table.iter begin fun bid bsym ->
+    match Flx_bsym_table.find_parent bsym_table bid with
+    | Some parent -> add_child child_map parent bid
     | None -> ()
   end bsym_table;
   child_map

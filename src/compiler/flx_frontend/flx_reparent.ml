@@ -284,11 +284,12 @@ let reparent1
   let rexpr e = remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e in
   let rreqs rqs = remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len rqs in
   let bsym = Flx_bsym_table.find bsym_table index in
+  let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
   if syms.compiler_options.print_flag then
   print_endline
   (
     "COPYING " ^ bsym.Flx_bsym.id ^ " index " ^ string_of_bid index ^
-    " with old parent " ^ sop bsym.Flx_bsym.parent ^ " to index " ^
+    " with old parent " ^ sop bsym_parent ^ " to index " ^
     string_of_bid k ^ " with new parent " ^ sop parent
   );
   begin match parent with

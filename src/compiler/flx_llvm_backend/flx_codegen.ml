@@ -105,8 +105,9 @@ let name_of_index state bsym_table bid ts =
     (* Recursively prepend the name of the parent to *)
     let name, ts =
       let bsym = Flx_bsym_table.find bsym_table bid in
+      let bsym_parent = Flx_bsym_table.find_parent bsym_table bid in
       let ts = Flx_bbdcl.get_ts bsym.Flx_bsym.bbdcl in
-      match bsym.Flx_bsym.parent with
+      match bsym_parent with
       | None -> bsym.Flx_bsym.id, ts
       | Some parent ->
           let name = aux parent ts in
@@ -1222,8 +1223,9 @@ and codegen_abs state index vs quals code reqs =
 
 
 and codegen_symbol state bsym_table child_map closure index bsym =
+  let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
   print_endline ("codegen_symbol: " ^
-    "parent=" ^ (match bsym.Flx_bsym.parent with
+    "parent=" ^ (match bsym_parent with
       | Some p -> Flx_print.string_of_bid p
       | None -> "None") ^
     " " ^
@@ -1326,9 +1328,10 @@ let codegen state bsym_table child_map bids bexes =
   List.iter begin fun bid ->
     (* Try to find the bsym corresponding with the bid. *)
     let bsym = Flx_bsym_table.find bsym_table bid in
+    let bsym_parent = Flx_bsym_table.find_parent bsym_table bid in
     (* Only codegen top-level symbols, since that'll be handled by the code
      * generator. *)
-    match bsym.Flx_bsym.parent with
+    match bsym_parent with
     | Some parent -> ()
     | None -> codegen_symbol state bsym_table child_map global_closure bid bsym
   end bids;

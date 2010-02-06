@@ -75,11 +75,12 @@ let get_var_frame syms bsym_table this index ts : string =
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[get_var_frame(1)] Can't find index " ^ string_of_bid index)
   in
+  let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_val (vs,t)
   | BBDCL_var (vs,t)
   | BBDCL_ref (vs,t) ->
-    begin match bsym.Flx_bsym.parent with
+    begin match bsym_parent with
     | None -> "ptf"
     | Some i ->
       if i <> this
@@ -96,6 +97,7 @@ let get_var_ref syms bsym_table this index ts : string =
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
   in
+  let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
   (*
   print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode bsym_table) ts^"]");
   *)
@@ -103,7 +105,7 @@ let get_var_ref syms bsym_table this index ts : string =
   | BBDCL_val (vs,t)
   | BBDCL_var (vs,t)
   | BBDCL_ref (vs,t) ->
-    begin match bsym.Flx_bsym.parent with
+    begin match bsym_parent with
     | None -> (* print_endline "No parent ...?"; *)
       "PTF " ^ cpp_instance_name syms bsym_table index ts
     | Some i ->
@@ -128,6 +130,7 @@ let get_ref_ref syms bsym_table this index ts : string =
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
   in
+  let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
   (*
   print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode bsym_table) ts^"]");
   *)
@@ -135,7 +138,7 @@ let get_ref_ref syms bsym_table this index ts : string =
   | BBDCL_val (vs,t)
   | BBDCL_var (vs,t)
   | BBDCL_ref (vs,t) ->
-    begin match bsym.Flx_bsym.parent with
+    begin match bsym_parent with
     | None -> (* print_endline "No parent ...?"; *)
       "PTF " ^ cpp_instance_name syms bsym_table index ts
     | Some i ->
@@ -411,6 +414,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       with Not_found ->
         syserr sr ("[gen_expr(name)] Can't find <" ^ string_of_bid index ^ ">")
     in
+    let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
     let ts = map tsub ts' in
     begin match bsym.Flx_bsym.bbdcl with
       | BBDCL_val (_,BTYP_function (BTYP_void,_))  ->
@@ -443,7 +447,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
            )
 
         | CS_str c when c = "#this" ->
-          begin match bsym.Flx_bsym.parent with
+          begin match bsym_parent with
           | None -> clierr sr "Use 'this' outside class"
           | Some p ->
             let name = cpp_instance_name syms bsym_table p ts in

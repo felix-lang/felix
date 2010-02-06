@@ -220,7 +220,9 @@ let uncurry_gen syms bsym_table child_map : int =
         string_of_bid c ^ " synth " ^ string_of_bid k ^ " count=" ^ si n);
       let bsymi = Flx_bsym_table.find bsym_table i in
       let bsymc = Flx_bsym_table.find bsym_table c in
-      assert (bsymc.Flx_bsym.parent = Some i);
+      let bsymi_parent = Flx_bsym_table.find_parent bsym_table i in
+      let bsymc_parent = Flx_bsym_table.find_parent bsym_table c in
+      assert (bsymc_parent = Some i);
       let props, vs, ps, traint, ret, exes =
         match bsymi.Flx_bsym.bbdcl with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) -> props, vs, ps, traint, ret, exes
@@ -277,7 +279,7 @@ let uncurry_gen syms bsym_table child_map : int =
           (fun exe -> Flx_bexe.map ~fi:revar ~fe:revare exe)
           exesc
         in
-        begin match bsymi.Flx_bsym.parent with
+        begin match bsymi_parent with
         | Some p -> Flx_child.add_child child_map p k
         | None -> ()
         end

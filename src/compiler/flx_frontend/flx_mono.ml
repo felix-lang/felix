@@ -24,7 +24,8 @@ open Flx_prop
 
 let cal_parent syms bsym_table i' ts' =
   let bsym = Flx_bsym_table.find bsym_table i' in
-  match bsym.Flx_bsym.parent with
+  let bsym_parent = Flx_bsym_table.find_parent bsym_table i' in
+  match bsym_parent with
   | None -> None
   | Some i ->
     let vsc = Flx_bsym.get_bvs bsym in
@@ -296,14 +297,16 @@ let mono syms bsym_table fi i ts n =
     let argtypes = map (mt vars) argtypes in
     let ret = mt vars ret in
     let bbdcl = bbdcl_fun (props,vs,argtypes,ret,ct,reqs,prec) in
-    update_bsym bsym.Flx_bsym.parent bbdcl
+    let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
+    update_bsym bsym_parent bbdcl
 
 
   | BBDCL_proc (props,vs,argtypes,ct,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let argtypes = map (mt vars) argtypes in
     let bbdcl = bbdcl_proc (props,vs,argtypes,ct,reqs) in
-    update_bsym bsym.Flx_bsym.parent bbdcl
+    let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
+    update_bsym bsym_parent bbdcl
 
   | BBDCL_const (props, vs, t, CS_str "#this", reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in

@@ -34,7 +34,8 @@ let cal_display bsym_table parent : (bid_t *int) list =
         match bsym.Flx_bsym.bbdcl with
         | BBDCL_procedure (_, vs, _, _)
         | BBDCL_function (_, vs, _, _, _) ->
-            aux bsym.Flx_bsym.parent ((parent, List.length vs)::display)
+            let bsym_parent = Flx_bsym_table.find_parent bsym_table parent in
+            aux bsym_parent ((parent, List.length vs)::display)
 
         (* typeclasses have to be treated 'as if' top level *)
         (* MAY NEED REVISION! *)

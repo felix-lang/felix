@@ -690,7 +690,7 @@ let virtual_check syms bsym_table sr i ts =
     print_endline ("Examining call to virtual " ^ id);
     *)
     let parent =
-      match bsym.Flx_bsym.parent with
+      match Flx_bsym_table.find_parent bsym_table i with
       | Some p -> p
       | None -> assert false
     in

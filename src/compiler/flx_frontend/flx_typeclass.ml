@@ -530,7 +530,7 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
               string_of_bid j)
         in
         let parent =
-          match bsym.Flx_bsym.parent with
+          match Flx_bsym_table.find_parent bsym_table j with
           | Some k -> k
           | None -> assert false
         in

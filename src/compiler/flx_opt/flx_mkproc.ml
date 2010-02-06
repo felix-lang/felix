@@ -241,6 +241,7 @@ let mkproc_gen syms bsym_table child_map =
         string_of_bid k ^ " count=" ^ si n);
 
       let bsym = Flx_bsym_table.find bsym_table i in
+      let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
       let props, vs, ps, traint, ret, exes =
         match bsym.Flx_bsym.bbdcl with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) -> props, vs, ps, traint, ret, exes
@@ -316,7 +317,7 @@ let mkproc_gen syms bsym_table child_map =
         in
 
         (* add new procedure as child of original function parent *)
-        begin match bsym.Flx_bsym.parent with
+        begin match bsym_parent with
         | Some p -> Flx_child.add_child child_map p k
         | None -> ()
         end

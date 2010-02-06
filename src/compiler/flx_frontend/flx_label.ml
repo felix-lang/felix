@@ -64,7 +64,7 @@ let rec find_label bsym_table label_map caller label =
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_function _ -> `Unreachable
   | BBDCL_procedure _ ->
-    begin match bsym.Flx_bsym.parent with
+    begin match Flx_bsym_table.find_parent bsym_table caller with
     | None -> `Unreachable
     | Some parent ->
       begin match find_label bsym_table label_map parent label with
