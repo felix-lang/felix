@@ -120,7 +120,10 @@ let bind_asm state bsym_table handle_bound init asm =
 
   (* Now bind in order all of the symbols we added. *)
   Flx_mtypes2.iter_bids begin fun i ->
-    (* First, find the symbol to bind. *)
+    (* Skip this bid if we've already bound it. *)
+    if Flx_bsym_table.mem bsym_table i then () else
+
+    (* Next, find the symbol to bind. *)
     let symbol =
       try Some (Flx_sym_table.find state.sym_table i)
       with Not_found -> None
