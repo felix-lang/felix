@@ -10,6 +10,12 @@ let copy = Hashtbl.copy
 (** Adds the bound symbol with the index to the symbol table. *)
 let add = Hashtbl.replace
 
+(** Updates a bound symbol in place while preserving the child-parent
+ * relationships. *)
+let update bsym_table bid bsym =
+  assert (Hashtbl.mem bsym_table bid);
+  Hashtbl.replace bsym_table bid bsym
+
 (** Returns if the bound index is in the bound symbol table. *)
 let mem = Hashtbl.mem
 
@@ -67,15 +73,15 @@ let is_function bsym_table bid =
 
 (** Update all the bound function and procedure's bound exes. *)
 let update_bexes f bsym_table =
-  iter begin fun i bsym ->
+  iter begin fun bid bsym ->
     match bsym.Flx_bsym.bbdcl with
     | Flx_bbdcl.BBDCL_function (ps, bvs, bpar, bty, bexes) ->
         let bbdcl = Flx_bbdcl.bbdcl_function (ps, bvs, bpar, bty, f bexes) in
-        add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl }
+        update bsym_table bid { bsym with Flx_bsym.bbdcl=bbdcl }
 
     | Flx_bbdcl.BBDCL_procedure (ps, bvs, bpar, bexes) ->
         let bbdcl = Flx_bbdcl.bbdcl_procedure (ps, bvs, bpar, f bexes) in
-        add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl }
+        update bsym_table bid { bsym with Flx_bsym.bbdcl=bbdcl }
 
     | _ -> ()
   end bsym_table

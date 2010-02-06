@@ -7,6 +7,13 @@ val create : unit -> t
 (** Copies the bound symbol table. *)
 val copy : t -> t
 
+(** Updates a bound symbol in place while preserving the child-parent
+ * relationships. *)
+val update : t -> Flx_types.bid_t -> Flx_bsym.t -> unit
+
+(** Update all the bound function and procedure's bound exes. *)
+val update_bexes : (Flx_bexe.t list -> Flx_bexe.t list) -> t -> unit
+
 (** Adds the bound symbol with the index to the symbol table. *)
 val add : t -> Flx_types.bid_t -> Flx_bsym.t -> unit
 
@@ -54,6 +61,3 @@ val is_global_var : t -> Flx_types.bid_t -> bool
 
 (** Return if the bound symbol index is an identity function. *)
 val is_function : t -> Flx_types.bid_t -> bool
-
-(** Update all the bound function and procedure's bound exes. *)
-val update_bexes : (Flx_bexe.t list -> Flx_bexe.t list) -> t -> unit

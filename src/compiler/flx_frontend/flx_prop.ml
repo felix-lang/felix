@@ -13,7 +13,7 @@ open Flx_use
 let add_prop bsym_table p i =
   let bsym = Flx_bsym_table.find bsym_table i in
   let update_bsym bbdcl =
-    Flx_bsym_table.add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl }
+    Flx_bsym_table.update bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl }
   in
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props,vs,ps,ret,exes) ->
@@ -38,7 +38,7 @@ let add_prop bsym_table p i =
 let rem_prop bsym_table p i =
   let bsym = Flx_bsym_table.find bsym_table i in
   let update_bsym bbdcl =
-    Flx_bsym_table.add bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl }
+    Flx_bsym_table.update bsym_table i { bsym with Flx_bsym.bbdcl=bbdcl }
   in
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props,vs,ps,ret,exes) ->

@@ -71,7 +71,7 @@ let strabs_symbol state bsym_table index bsym =
   let fp bps = fixps bsym_table bps in
 
   let h bbdcl =
-    Flx_bsym_table.add bsym_table index { bsym with Flx_bsym.bbdcl=bbdcl }
+    Flx_bsym_table.update bsym_table index { bsym with Flx_bsym.bbdcl=bbdcl }
   in
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_module ->

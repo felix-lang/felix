@@ -365,12 +365,12 @@ let mkproc_gen syms bsym_table child_map =
     match bsym.Flx_bsym.bbdcl with
     | BBDCL_procedure (props,vs,(ps,traint),exes) ->
         let exes = mkproc_exes vs exes in
-        Flx_bsym_table.add bsym_table i { bsym with
+        Flx_bsym_table.update bsym_table i { bsym with
           Flx_bsym.bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) }
 
     | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         let exes = mkproc_exes vs exes in
-        Flx_bsym_table.add bsym_table i { bsym with
+        Flx_bsym_table.update bsym_table i { bsym with
           Flx_bsym.bbdcl=bbdcl_function (props,vs,(ps,traint),ret,exes) }
 
     | _ -> ()

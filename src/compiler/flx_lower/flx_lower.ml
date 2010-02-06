@@ -73,7 +73,7 @@ let lower_bsym_table state bsym_table root_proc =
 
         (* Update the procedure with the new properties. *)
         let bbdcl = Flx_bbdcl.bbdcl_procedure (!props, vs,p,exes) in
-        Flx_bsym_table.add bsym_table i { bsym with
+        Flx_bsym_table.update bsym_table i { bsym with
           Flx_bsym.bbdcl=bbdcl }
     | _ -> ()
   end !(state.syms.Flx_mtypes2.roots);
