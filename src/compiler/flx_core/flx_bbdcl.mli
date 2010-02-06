@@ -38,6 +38,9 @@ type t = private
                         Flx_btype.t list
   | BBDCL_nonconst_ctor of bvs_t * bid_t * Flx_btype.t * int * Flx_btype.t *
                         bvs_t * Flx_btype.t (* existentials and constraint for GADTs *)
+  | BBDCL_axiom
+  | BBDCL_lemma
+  | BBDCL_reduce
 
 (* -------------------------------------------------------------------------- *)
 
@@ -61,6 +64,9 @@ val bbdcl_cstruct : bvs_t * (id_t * Flx_btype.t) list -> t
 val bbdcl_typeclass : property_t list * bvs_t -> t
 val bbdcl_instance : property_t list * bvs_t * Flx_btype.t * bid_t * Flx_btype.t list -> t
 val bbdcl_nonconst_ctor : bvs_t * bid_t * Flx_btype.t * int * Flx_btype.t * bvs_t * Flx_btype.t -> t
+val bbdcl_axiom : unit -> t
+val bbdcl_reduce : unit -> t
+val bbdcl_lemma : unit -> t
 
 (* -------------------------------------------------------------------------- *)
 

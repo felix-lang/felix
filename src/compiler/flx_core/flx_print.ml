@@ -2404,6 +2404,10 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     " of " ^ sobt ctor_argt ^
     ";"
 
+  | BBDCL_axiom -> "axiom ...;"
+  | BBDCL_lemma -> "lemma ...;"
+  | BBDCL_reduce -> "reduce ...;"
+
 
 let full_string_of_entry_kind bsym_table {base_sym=i; spec_vs=vs; sub_ts=ts} =
   let bsym = Flx_bsym_table.find bsym_table i in

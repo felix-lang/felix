@@ -175,6 +175,10 @@ let remap_bbdcl offset bbdcl =
       let etraint = remap_btype etraint in
       bbdcl_nonconst_ctor (vs, uidx, ut, ctor_idx, ctor_argt, evs, etraint)
 
+  | BBDCL_axiom -> bbdcl_axiom ()
+  | BBDCL_lemma -> bbdcl_lemma ()
+  | BBDCL_reduce -> bbdcl_reduce ()
+
 
 (** Remap symbols from an old bound symbol table to a new one by offsetting the
  * bound index by a constant amount. *)

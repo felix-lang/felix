@@ -132,6 +132,9 @@ and uses used bsym_table count_inits i =
       | BBDCL_module -> ()
 
       | BBDCL_typeclass _ -> ()
+      | BBDCL_axiom -> ()
+      | BBDCL_lemma -> ()
+      | BBDCL_reduce -> ()
 
       | BBDCL_instance (_,_,con,i,ts) ->
         ut con;

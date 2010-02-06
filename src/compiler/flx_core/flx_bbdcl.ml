@@ -40,6 +40,9 @@ type t =
                         Flx_btype.t list
   | BBDCL_nonconst_ctor of bvs_t * bid_t * Flx_btype.t * int * Flx_btype.t *
                         bvs_t * Flx_btype.t (* existentials and constraint for GADTs *)
+  | BBDCL_axiom
+  | BBDCL_lemma
+  | BBDCL_reduce
 
 (* -------------------------------------------------------------------------- *)
 
@@ -103,6 +106,15 @@ let bbdcl_instance (prop, bvs, cons, bid, ts) =
 let bbdcl_nonconst_ctor (bvs, uidx, ut, ctor_idx, ctor_argt, evs, etraint) =
   BBDCL_nonconst_ctor (bvs, uidx, ut, ctor_idx, ctor_argt, evs, etraint)
 
+let bbdcl_axiom () =
+  BBDCL_axiom
+
+let bbdcl_reduce () =
+  BBDCL_reduce
+
+let bbdcl_lemma () =
+  BBDCL_lemma
+
 (* -------------------------------------------------------------------------- *)
 
 (** Extract the parameters of a bound declaration. *)
@@ -138,6 +150,9 @@ let get_bvs = function
   | BBDCL_typeclass (_, bvs) -> bvs
   | BBDCL_instance (_, bvs, _, _, _) -> bvs
   | BBDCL_nonconst_ctor (bvs, _, _, _, _, _, _) -> bvs
+  | BBDCL_axiom -> []
+  | BBDCL_lemma -> []
+  | BBDCL_reduce -> []
 
 let print_btype_qual f = function
   | #base_type_qual_t as qual ->
@@ -273,3 +288,6 @@ let rec print f = function
         Flx_btype.print ctor_argt
         print_bvs evs
         Flx_btype.print etraint
+  | BBDCL_axiom -> print_variant0 f "BBDCL_axiom"
+  | BBDCL_lemma -> print_variant0 f "BBDCL_lemma"
+  | BBDCL_reduce -> print_variant0 f "BBDCL_reduce"

@@ -140,6 +140,15 @@ let strabs_symbol state bsym_table index bsym =
   | BBDCL_nonconst_ctor (bvs, j, t1, k,t2, evs, etraint) ->
     h (bbdcl_nonconst_ctor (bvs, j, ft t1, k, ft t2, evs, ft etraint))
 
+  | BBDCL_axiom ->
+    h (bbdcl_axiom ())
+
+  | BBDCL_lemma ->
+    h (bbdcl_lemma ())
+
+  | BBDCL_reduce ->
+    h (bbdcl_reduce ())
+
 let strabs state bsym_table =
   (* Copy the bsym_table since we're going to directly modify it. *)
   let bsym_table' = Flx_bsym_table.copy bsym_table in

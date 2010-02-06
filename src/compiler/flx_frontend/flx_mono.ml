@@ -340,6 +340,9 @@ let chk_mono syms bsym_table i =
   | BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) -> false
   | BBDCL_typeclass (props,vs) ->  false
   | BBDCL_instance (props,vs,con,tc,ts) ->  false
+  | BBDCL_axiom -> false
+  | BBDCL_lemma -> false
+  | BBDCL_reduce -> false
 
 (* monomorphic instances are already equal to their indices ..
   replace some polymorphic instances with monomorphic ones

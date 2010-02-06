@@ -77,7 +77,9 @@ let rec is_pure syms bsym_table child_map i =
   | BBDCL_const _
   | BBDCL_typeclass _
   | BBDCL_instance _
-    ->
+  | BBDCL_axiom _
+  | BBDCL_lemma _
+  | BBDCL_reduce _ ->
     (*
     print_endline (id ^ " is intrinsically pure");
     *)

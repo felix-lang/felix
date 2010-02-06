@@ -262,7 +262,7 @@ let bbind_symbol state bsym_table symbol_index sym =
       print_endline ("//bound reduction  " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs);
 
-    None
+    add_bsym true_parent (bbdcl_reduce ())
 
   | SYMDEF_axiom (ps,e1) ->
     let bps = bindps ps in
@@ -283,7 +283,7 @@ let bbind_symbol state bsym_table symbol_index sym =
       print_endline ("//bound axiom " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs);
 
-    None
+    add_bsym true_parent (bbdcl_axiom ())
 
   | SYMDEF_lemma (ps,e1) ->
     let bps = bindps ps in
@@ -304,7 +304,7 @@ let bbind_symbol state bsym_table symbol_index sym =
       print_endline ("//bound lemma " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs);
 
-    None
+    add_bsym true_parent (bbdcl_lemma ())
 
   | SYMDEF_function (ps,rt,props,exes) ->
     let bps = bindps ps in

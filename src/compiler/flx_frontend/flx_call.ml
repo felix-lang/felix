@@ -89,6 +89,9 @@ let call_data_for_symbol bsym_table uses k bsym =
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_module -> ()
   | BBDCL_typeclass _ -> ()
+  | BBDCL_axiom -> ()
+  | BBDCL_lemma -> ()
+  | BBDCL_reduce -> ()
 
   | BBDCL_procedure (_,_,(ps,_),exes)
   | BBDCL_function (_,_,(ps,_),_,exes) ->

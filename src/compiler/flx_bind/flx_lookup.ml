@@ -1894,6 +1894,9 @@ and btype_of_bsym state bsym_table bt bid bsym =
   | BBDCL_typeclass _ -> assert false
   | BBDCL_instance _ -> assert false
   | BBDCL_nonconst_ctor _ -> assert false
+  | BBDCL_axiom -> assert false
+  | BBDCL_lemma -> assert false
+  | BBDCL_reduce -> assert false
 
 
 (* this routine is called to find the type of a function

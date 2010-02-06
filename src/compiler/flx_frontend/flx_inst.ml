@@ -514,8 +514,11 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     let ctor_argt = varmap_subst hvarmap ctor_argt in
     rtr ctor_argt
 
-   | BBDCL_typeclass _ -> ()
-   | BBDCL_instance (props,vs,con,tc,ts) -> ()
+  | BBDCL_typeclass _ -> ()
+  | BBDCL_instance (props,vs,con,tc,ts) -> ()
+  | BBDCL_axiom -> ()
+  | BBDCL_lemma -> ()
+  | BBDCL_reduce -> ()
 
 (*
   This routine creates the instance tables.

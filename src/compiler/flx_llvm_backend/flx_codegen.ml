@@ -1321,6 +1321,20 @@ and codegen_symbol state bsym_table child_map closure index bsym =
       print_endline "BBDCL_nonconst_ctor";
       assert false
 
+  | Flx_bbdcl.BBDCL_axiom ->
+      print_endline "BBDCL_axiom";
+      assert false
+
+  | Flx_bbdcl.BBDCL_lemma ->
+      print_endline "BBDCL_lemma";
+      assert false
+
+  | Flx_bbdcl.BBDCL_reduce ->
+      print_endline "BBDCL_reduce";
+      assert false
+
+
+
 let codegen state bsym_table child_map bids bexes =
   (* First we'll generate the symbols. *)
   let global_closure = ref [] in

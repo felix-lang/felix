@@ -255,6 +255,9 @@ let check_instance
 
 
       | BBDCL_insert _ -> ()
+      | BBDCL_axiom -> ()
+      | BBDCL_lemma -> ()
+      | BBDCL_reduce -> ()
       | _ ->
         (*
         clierr tcksr "Typeclass entry must be virtual function or procedure"
