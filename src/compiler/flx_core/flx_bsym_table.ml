@@ -64,8 +64,11 @@ let is_variable bsym_table bid =
   Flx_bsym.is_variable (find bsym_table bid)
 
 (** Return if the bound symbol index is a global val or var. *)
-let is_global_var bsym_table bid =
-  Flx_bsym.is_global_var (find bsym_table bid)
+let is_global_var (bsym_table:t) bid =
+  match Hashtbl.find bsym_table bid with
+  | { Flx_bsym.bbdcl=Flx_bbdcl.BBDCL_var _; parent=None }
+  | { Flx_bsym.bbdcl=Flx_bbdcl.BBDCL_val _; parent=None } -> true
+  | _ -> false
 
 (** Return if the bound symbol index is an identity function. *)
 let is_function bsym_table bid =

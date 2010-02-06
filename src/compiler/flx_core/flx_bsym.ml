@@ -22,12 +22,6 @@ let is_variable bsym =
   | Flx_bbdcl.BBDCL_var _ | Flx_bbdcl.BBDCL_val _ -> true
   | _ -> false
 
-let is_global_var bsym =
-  match bsym.bbdcl with
-  | Flx_bbdcl.BBDCL_var _
-  | Flx_bbdcl.BBDCL_val _ when (match bsym.parent with None -> true | _ -> false) -> true
-  | _ -> false
-
 (** Return if the bound symbol is a function or procedure. *)
 let is_function bsym =
   match bsym.bbdcl with

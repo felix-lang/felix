@@ -16,9 +16,6 @@ val is_identity: t -> bool
 (** Return if the bound symbol is a val or var. *)
 val is_variable: t -> bool
 
-(** Return if the bound symbol is a global val or var. *)
-val is_global_var: t -> bool
-
 (** Return if the bound symbol is a function or procedure. *)
 val is_function: t -> bool
 
