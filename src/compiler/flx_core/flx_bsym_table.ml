@@ -16,6 +16,11 @@ let update bsym_table bid bsym =
   assert (Hashtbl.mem bsym_table bid);
   Hashtbl.replace bsym_table bid bsym
 
+(** Update a bound symbol's bbdcl in place. *)
+let update_bbdcl bsym_table bid bbdcl =
+  let bsym = Hashtbl.find bsym_table bid in
+  Hashtbl.replace bsym_table bid { bsym with Flx_bsym.bbdcl=bbdcl }
+
 (** Returns if the bound index is in the bound symbol table. *)
 let mem = Hashtbl.mem
 

@@ -11,6 +11,9 @@ val copy : t -> t
  * relationships. *)
 val update : t -> Flx_types.bid_t -> Flx_bsym.t -> unit
 
+(** Update a bound symbol's bbdcl in place. *)
+val update_bbdcl : t -> Flx_types.bid_t -> Flx_bbdcl.t -> unit
+
 (** Update all the bound function and procedure's bound exes. *)
 val update_bexes : (Flx_bexe.t list -> Flx_bexe.t list) -> t -> unit
 

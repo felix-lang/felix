@@ -336,13 +336,13 @@ let uncurry_gen syms bsym_table child_map : int =
     match bsym.Flx_bsym.bbdcl with
     | BBDCL_procedure (props,vs,(ps,traint),exes) ->
         let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
-        Flx_bsym_table.update bsym_table i { bsym with
-          Flx_bsym.bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) }
+        let bbdcl = bbdcl_procedure (props,vs,(ps,traint),exes) in
+        Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
     | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
-        Flx_bsym_table.update bsym_table i { bsym with
-          Flx_bsym.bbdcl=bbdcl_function (props,vs,(ps,traint),ret,exes) }
+        let bbdcl = bbdcl_function (props,vs,(ps,traint),ret,exes) in
+        Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
     | _ -> ()
   end bsym_table;

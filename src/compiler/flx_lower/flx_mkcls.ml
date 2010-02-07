@@ -184,13 +184,13 @@ let process_entry state bsym_table all_closures i =
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props,vs,ps,ret,exes) ->
     let exes = process_exes state bsym_table all_closures exes in
-    Flx_bsym_table.update bsym_table i { bsym with
-      Flx_bsym.bbdcl=bbdcl_function (props,vs,ps,ret,exes) }
+    let bbdcl = bbdcl_function (props,vs,ps,ret,exes) in
+    Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
   | BBDCL_procedure (props,vs,ps,exes) ->
     let exes = process_exes state bsym_table all_closures exes in
-    Flx_bsym_table.update bsym_table i { bsym with
-      Flx_bsym.bbdcl=bbdcl_procedure (props,vs,ps,exes) }
+    let bbdcl = bbdcl_procedure (props,vs,ps,exes) in
+    Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
   | _ -> ()
 

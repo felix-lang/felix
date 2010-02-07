@@ -491,8 +491,8 @@ let gen_body syms (uses,child_map,bsym_table) id
         | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
           let exes = map (subarg syms bsym_table argmap) exes in
           recal_exes_usage uses bsym.Flx_bsym.sr i ps exes;
-          Flx_bsym_table.update bsym_table i { bsym with
-            Flx_bsym.bbdcl=bbdcl_function (props,vs,(ps,traint),ret,exes) }
+          let bbdcl = bbdcl_function (props,vs,(ps,traint),ret,exes) in
+          Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
         | BBDCL_procedure (props,vs,(ps,traint),exes) ->
           (*
@@ -500,8 +500,8 @@ let gen_body syms (uses,child_map,bsym_table) id
           *)
           let exes = map (subarg syms bsym_table argmap) exes in
           recal_exes_usage uses bsym.Flx_bsym.sr i ps exes;
-          Flx_bsym_table.update bsym_table i { bsym with
-            Flx_bsym.bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) }
+          let bbdcl = bbdcl_procedure (props,vs,(ps,traint),exes) in
+          Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
         | _ -> ()
       )

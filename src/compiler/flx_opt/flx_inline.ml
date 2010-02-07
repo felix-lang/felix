@@ -1202,8 +1202,7 @@ and heavy_inline_calls
               print_endline ("Downgrading temporary .." ^ si i);
               *)
               (* should this be a VAR or a VAL? *)
-              Flx_bsym_table.update bsym_table i { bsymv with
-                Flx_bsym.bbdcl=bbdcl_var (vs,t) }
+              Flx_bsym_table.update_bbdcl bsym_table i (bbdcl_var (vs,t))
             | _ -> ()
             end;
             if syms.compiler_options.print_flag then
@@ -1315,8 +1314,8 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
     *)
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
-      Flx_bsym_table.update bsym_table i { bsym with
-        Flx_bsym.bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) };
+      let bbdcl = bbdcl_procedure (props,vs,(ps,traint),exes) in
+      Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
 
       (* inline into all children first *)
       let children = find_children child_map i in
@@ -1374,8 +1373,8 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       let exes = check_reductions syms bsym_table exes in
       let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
-      Flx_bsym_table.update bsym_table i { bsym with
-        Flx_bsym.bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) };
+      let bbdcl = bbdcl_procedure (props,vs,(ps,traint),exes) in
+      Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       recal_exes_usage uses bsym.Flx_bsym.sr i ps exes;
       remove_unused_children syms (uses,child_map,bsym_table) i;
       (*
@@ -1387,8 +1386,8 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in
-      Flx_bsym_table.update bsym_table i { bsym with
-        Flx_bsym.bbdcl=bbdcl_function (props,vs,(ps,traint),ret,exes) };
+      let bbdcl = bbdcl_function (props,vs,(ps,traint),ret,exes) in
+      Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
 
       (* inline into all children first *)
       let children = find_children child_map i in
@@ -1446,8 +1445,8 @@ and heavily_inline_bbdcl syms (uses,child_map,bsym_table) excludes i =
       let exes = check_reductions syms bsym_table exes in
       let exes = Flx_cflow.chain_gotos syms exes in
       let props = `Inlining_complete :: props in
-      Flx_bsym_table.update bsym_table i { bsym with
-        Flx_bsym.bbdcl=bbdcl_function (props,vs,(ps,traint),ret,exes) };
+      let bbdcl = bbdcl_function (props,vs,(ps,traint),ret,exes) in
+      Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       recal_exes_usage uses bsym.Flx_bsym.sr i ps exes;
       remove_unused_children syms (uses,child_map,bsym_table) i;
       (*
