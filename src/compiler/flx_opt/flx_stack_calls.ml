@@ -721,8 +721,7 @@ let make_stack_calls
         exes
       in
       let exes = Flx_cflow.final_tailcall_opt exes in
-      let bsym = Flx_bsym_table.find bsym_table i in
-      begin match bsym.Flx_bsym.bbdcl with
+      begin match Flx_bsym_table.find_bbdcl bsym_table i with
       | BBDCL_procedure (props,vs,p,_) ->
           let bbdcl = bbdcl_procedure (props,vs,p,exes) in
           Flx_bsym_table.update_bbdcl bsym_table i bbdcl
@@ -739,8 +738,7 @@ let make_stack_calls
         i
         exes
       in
-      let bsym = Flx_bsym_table.find bsym_table i in
-      begin match bsym.Flx_bsym.bbdcl with
+      begin match Flx_bsym_table.find_bbdcl bsym_table i with
       | BBDCL_function (props,vs,p,ret,_) ->
           let bbdcl = bbdcl_function (props,vs,p,ret,exes) in
           Flx_bsym_table.update_bbdcl bsym_table i bbdcl
