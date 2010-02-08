@@ -174,3 +174,33 @@ val print_record4 :
   string -> (Format.formatter -> 'c -> unit) -> 'c ->
   string -> (Format.formatter -> 'd -> unit) -> 'd ->
   unit
+
+val print_record5 :
+  Format.formatter ->
+  string -> (Format.formatter -> 'a -> unit) -> 'a ->
+  string -> (Format.formatter -> 'b -> unit) -> 'b ->
+  string -> (Format.formatter -> 'c -> unit) -> 'c ->
+  string -> (Format.formatter -> 'd -> unit) -> 'd ->
+  string -> (Format.formatter -> 'e -> unit) -> 'e ->
+  unit
+
+val print_record6 :
+  Format.formatter ->
+  string -> (Format.formatter -> 'a -> unit) -> 'a ->
+  string -> (Format.formatter -> 'b -> unit) -> 'b ->
+  string -> (Format.formatter -> 'c -> unit) -> 'c ->
+  string -> (Format.formatter -> 'd -> unit) -> 'd ->
+  string -> (Format.formatter -> 'e -> unit) -> 'e ->
+  string -> (Format.formatter -> 'f -> unit) -> 'f ->
+  unit
+
+val print_record7 :
+  Format.formatter ->
+  string -> (Format.formatter -> 'a -> unit) -> 'a ->
+  string -> (Format.formatter -> 'b -> unit) -> 'b ->
+  string -> (Format.formatter -> 'c -> unit) -> 'c ->
+  string -> (Format.formatter -> 'd -> unit) -> 'd ->
+  string -> (Format.formatter -> 'e -> unit) -> 'e ->
+  string -> (Format.formatter -> 'f -> unit) -> 'f ->
+  string -> (Format.formatter -> 'g -> unit) -> 'g ->
+  unit
