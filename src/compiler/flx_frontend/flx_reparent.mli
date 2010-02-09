@@ -8,20 +8,6 @@ open Flx_call
 
 val vsplice : 'a list -> int -> 'a list -> 'a list
 
-val reparent1 :
-  sym_state_t ->
-  usage_table_t * Flx_child.t * Flx_bsym_table.t ->
-  (string, string) Hashtbl.t ->     (* relabel *)
-  (bid_t, Flx_btype.t) Hashtbl.t -> (* varmap *)
-  (bid_t, bid_t) Hashtbl.t ->       (* revariable *)
-  (string * bid_t) list ->          (* caller vs *)
-  int ->                            (* callee vs length *)
-  bid_t ->                          (* routine index *)
-  bid_t option ->                   (* parent *)
-  bid_t ->                          (* new index, perhaps the caller! *)
-  bool ->                           (* allow rescan of cloned stuff? *)
-  unit
-
 val reparent_children :
   sym_state_t ->
   usage_table_t * Flx_child.t * Flx_bsym_table.t ->

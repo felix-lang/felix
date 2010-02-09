@@ -226,9 +226,18 @@ let allow_rescan flag props =
   | false -> props
   | true -> filter (function | `Inlining_complete | `Inlining_started -> false | _ -> true ) props
 
-let reparent1 (syms:sym_state_t) (uses,child_map,bsym_table)
-  relabel varmap revariable
-  caller_vs callee_vs_len index parent k rescan_flag
+let reparent1
+  (syms:sym_state_t)
+  (uses,child_map,bsym_table)
+  relabel
+  varmap
+  revariable
+  caller_vs
+  callee_vs_len
+  index         (** Routine index. *)
+  parent        (** The parent symbol. *)
+  k             (** New index, perhaps the caller. *)
+  rescan_flag   (** Allow rescan of cloned stuff? *)
 =
   let splice vs = (* replace callee type variables with callers *)
     vsplice caller_vs callee_vs_len vs
