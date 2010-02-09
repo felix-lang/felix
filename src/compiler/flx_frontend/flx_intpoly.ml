@@ -214,18 +214,34 @@ let cal_polyvars syms bsym_table child_map =
       t'
     end
   in
-  let rec fixexpr e = match e with
-  | BEXPR_apply ((BEXPR_closure (i,ts),t'),e2),t ->
-    cast_r i (bexpr_apply t ((bexpr_closure (cal_ft i t') (i, polyfix syms polyvars i ts)), cast_a i (fixexpr e2)))
-  | BEXPR_apply_prim (i,ts,e2),t ->
-    cast_r i (bexpr_apply_prim t (i, polyfix syms polyvars i ts, cast_a i (fixexpr e2)))
-  | BEXPR_apply_direct (i,ts,e2),t ->
-    cast_r i (bexpr_apply_direct t (i, polyfix syms polyvars i ts, cast_a i (fixexpr  e2)))
-  | BEXPR_apply_struct (i,ts,e2),t ->
-    cast_r i (bexpr_apply_struct t (i, polyfix syms polyvars i ts, cast_a i (fixexpr  e2)))
-  | BEXPR_apply_stack (i,ts,e2),t ->
-    cast_r i (bexpr_apply_stack t (i, polyfix syms polyvars i ts, cast_a i (fixexpr e2)))
-  | e -> Flx_bexpr.map ~fe:fixexpr e
+  let rec fixexpr e =
+    match e with
+    | BEXPR_apply ((BEXPR_closure (i,ts),t'),e2),t ->
+        cast_r i (bexpr_apply t (
+          (bexpr_closure (cal_ft i t') (i, polyfix syms polyvars i ts)),
+          cast_a i (fixexpr e2)))
+    | BEXPR_apply_prim (i,ts,e2),t ->
+        cast_r i (bexpr_apply_prim t (
+          i,
+          polyfix syms polyvars i ts,
+          cast_a i (fixexpr e2)))
+    | BEXPR_apply_direct (i,ts,e2),t ->
+        cast_r i (bexpr_apply_direct t (
+          i,
+          polyfix syms polyvars i ts,
+          cast_a i (fixexpr  e2)))
+    | BEXPR_apply_struct (i,ts,e2),t ->
+        cast_r i (bexpr_apply_struct t (
+          i,
+          polyfix syms polyvars i ts,
+          cast_a i (fixexpr  e2)))
+    | BEXPR_apply_stack (i,ts,e2),t ->
+        cast_r i (bexpr_apply_stack t (
+          i,
+          polyfix syms polyvars i ts,
+          cast_a i (fixexpr e2)))
+    | e ->
+        Flx_bexpr.map ~fe:fixexpr e
   in
 
   Flx_bsym_table.update_bexes (List.map begin function
@@ -259,8 +275,8 @@ let cal_polyvars syms bsym_table child_map =
   in
   let cast_a2 i ts e =
     try
-    let counter = ref 0 in 
-    let t,vsi = 
+      let counter = ref 0 in 
+      let t,vsi = 
         let ps,vs =
           match Flx_bsym_table.find_bbdcl bsym_table i with
           | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,vs
@@ -271,101 +287,117 @@ let cal_polyvars syms bsym_table child_map =
         let pt = match pts with | [t]->t | ts -> btyp_tuple ts in
         let vsi = map (fun (s,i) -> i) vs in
         pt,vsi
-    in
-    let varmap =
-      List.map2 begin fun i t ->
-        i,
-        match t with
-        | BTYP_pointer _ ->
-            incr counter;
-            btyp_pointer btyp_void
-        | _ -> t
-      end vsi ts
-    in
-    if !counter = 0 then e else
-    let t = Flx_unify.list_subst syms.counter varmap t in
-    (*
-    print_endline ("COERCION2 arg(output) " ^ sbt syms.sym_table t);
-    *)
-    bexpr_coerce (e,t)
+      in
+      let varmap =
+        List.map2 begin fun i t ->
+          i,
+          match t with
+          | BTYP_pointer _ ->
+              incr counter;
+              btyp_pointer btyp_void
+          | _ -> t
+        end vsi ts
+      in
+      if !counter = 0 then e else
+      let t = Flx_unify.list_subst syms.counter varmap t in
+      (*
+      print_endline ("COERCION2 arg(output) " ^ sbt syms.sym_table t);
+      *)
+      bexpr_coerce (e,t)
     with Skip -> e
   in
 
   let cast_r2 i ts ((x,t) as e) =
     try
-    let counter = ref 0 in
-    let ta,vsi = 
-      match Flx_bsym_table.find_bbdcl bsym_table i with
-      | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-          ret,map (fun (s,i) -> i) vs
-      | _ -> raise Skip
-    in
-    let varmap =
-      List.map2 begin fun i t ->
-        i,
-        match t with
-        | BTYP_pointer _ ->
-            incr counter;
-            btyp_pointer btyp_void
-        | _ -> t
-      end vsi ts
-    in
-    if !counter = 0 then e else
-    let t' = Flx_unify.list_subst syms.counter varmap ta in
-    (*
-    print_endline ("COERCION2 result(input) " ^ sbt syms.sym_table t');
-    *)
-    bexpr_coerce ((x,t'),t)
+      let counter = ref 0 in
+      let ta,vsi = 
+        match Flx_bsym_table.find_bbdcl bsym_table i with
+        | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+            ret,map (fun (s,i) -> i) vs
+        | _ -> raise Skip
+      in
+      let varmap =
+        List.map2 begin fun i t ->
+          i,
+          match t with
+          | BTYP_pointer _ ->
+              incr counter;
+              btyp_pointer btyp_void
+          | _ -> t
+        end vsi ts
+      in
+      if !counter = 0 then e else
+      let t' = Flx_unify.list_subst syms.counter varmap ta in
+      (*
+      print_endline ("COERCION2 result(input) " ^ sbt syms.sym_table t');
+      *)
+      bexpr_coerce ((x,t'),t)
     with Skip -> e
   in
 
   let cal_ft2 i ts t =
     try
-    let counter = ref 0 in
-    let tf,vsi = 
-      let ps,ret,vs =
-        match Flx_bsym_table.find_bbdcl bsym_table i with
-        | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret,vs
-        | BBDCL_procedure (props,vs,(ps,traint),exes) -> ps, btyp_void, vs
-      | _ -> raise Skip 
+      let counter = ref 0 in
+      let tf,vsi = 
+        let ps,ret,vs =
+          match Flx_bsym_table.find_bbdcl bsym_table i with
+          | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret,vs
+          | BBDCL_procedure (props,vs,(ps,traint),exes) -> ps, btyp_void, vs
+        | _ -> raise Skip 
+        in
+        let pts = Flx_bparameter.get_btypes ps in
+        let pt = match pts with | [t]->t | ts -> btyp_tuple ts in
+        let tf = btyp_function (pt,ret) in
+        let vsi = map (fun (s,i) -> i) vs in
+        tf,vsi
       in
-      let pts = Flx_bparameter.get_btypes ps in
-      let pt = match pts with | [t]->t | ts -> btyp_tuple ts in
-      let tf = btyp_function (pt,ret) in
-      let vsi = map (fun (s,i) -> i) vs in
-      tf,vsi
-    in
-    let varmap =
-      List.map2 begin fun i t ->
-        i,
-        match t with
-        | BTYP_pointer _ ->
-            incr counter;
-            btyp_pointer btyp_void
-        | _ -> t
-      end vsi ts
-    in
-    if !counter = 0 then t else
-    let t' = Flx_unify.list_subst syms.counter varmap tf in
-    (*
-    print_endline ("fun2 type " ^ sbt syms.sym_table t');
-    *)
-    t'
+      let varmap =
+        List.map2 begin fun i t ->
+          i,
+          match t with
+          | BTYP_pointer _ ->
+              incr counter;
+              btyp_pointer btyp_void
+          | _ -> t
+        end vsi ts
+      in
+      if !counter = 0 then t else
+      let t' = Flx_unify.list_subst syms.counter varmap tf in
+      (*
+      print_endline ("fun2 type " ^ sbt syms.sym_table t');
+      *)
+      t'
     with Skip -> t
   in
 
-  let rec fixexpr2 e = match e with
-  | BEXPR_apply ((BEXPR_closure (i,ts),t'),e2),t ->
-    cast_r2 i ts (bexpr_apply t ((bexpr_closure (cal_ft2 i ts t') (i, polyfix2 i ts)), cast_a2 i ts (fixexpr2 e2)))
-  | BEXPR_apply_prim (i,ts,e2),t ->
-    cast_r2 i ts (bexpr_apply_prim t (i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e2)))
-  | BEXPR_apply_direct (i,ts,e2),t ->
-    cast_r2 i ts (bexpr_apply_direct t (i, polyfix2 i ts, cast_a2 i ts (fixexpr2  e2)))
-  | BEXPR_apply_struct (i,ts,e2),t ->
-    cast_r2 i ts (bexpr_apply_struct t (i, polyfix2 i ts, cast_a2 i ts (fixexpr2  e2)))
-  | BEXPR_apply_stack (i,ts,e2),t ->
-    cast_r2 i ts (bexpr_apply_stack t (i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e2)))
-  | e -> Flx_bexpr.map ~fe:fixexpr2 e
+  let rec fixexpr2 e =
+    match e with
+    | BEXPR_apply ((BEXPR_closure (i,ts),t'),e2),t ->
+        cast_r2 i ts (bexpr_apply t (
+          (bexpr_closure (cal_ft2 i ts t') (i, polyfix2 i ts)),
+          cast_a2 i ts (fixexpr2 e2)))
+    | BEXPR_apply_prim (i,ts,e2),t ->
+        cast_r2 i ts (bexpr_apply_prim t (
+          i,
+          polyfix2 i ts,
+          cast_a2 i ts (fixexpr2 e2)))
+    | BEXPR_apply_direct (i,ts,e2),t ->
+        cast_r2 i ts (bexpr_apply_direct t (
+          i,
+          polyfix2 i ts,
+          cast_a2 i ts (fixexpr2  e2)))
+    | BEXPR_apply_struct (i,ts,e2),t ->
+        cast_r2 i ts (bexpr_apply_struct t (
+          i,
+          polyfix2 i ts,
+          cast_a2 i ts (fixexpr2  e2)))
+    | BEXPR_apply_stack (i,ts,e2),t ->
+        cast_r2 i ts (bexpr_apply_stack t (
+          i,
+          polyfix2 i ts,
+          cast_a2 i ts (fixexpr2 e2)))
+    | e ->
+        Flx_bexpr.map ~fe:fixexpr2 e
   in
 
   Flx_bsym_table.update_bexes (List.map begin function
