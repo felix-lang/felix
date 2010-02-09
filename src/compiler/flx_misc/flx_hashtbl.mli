@@ -26,3 +26,11 @@ module IntHashtbl : S with type key = int
 
 (** Search through the table and optionally return the key. *)
 val find_opt : ('a, 'b) Hashtbl.t -> 'a -> 'b option
+
+(** Print a hash table. *)
+val print :
+  (Format.formatter -> 'a -> unit) ->
+  (Format.formatter -> 'b -> unit) ->
+  Format.formatter ->
+  ('a, 'b) Hashtbl.t ->
+  unit

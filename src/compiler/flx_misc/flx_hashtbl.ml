@@ -53,3 +53,14 @@ let find_opt table key =
     Some (Hashtbl.find table key)
   with Not_found ->
     None
+
+let print pp_key pp_value f table =
+  Format.fprintf f "@[<hv0>@[<hv2>{.@ ";
+  let _ =
+    Hashtbl.fold begin fun key value first ->
+      if not first then Format.fprintf f ";@ ";
+      Format.fprintf f "%a@ =@ %a" pp_key key pp_value value;
+      false
+    end table true
+  in
+  Format.fprintf f "@]@ .}@]"
