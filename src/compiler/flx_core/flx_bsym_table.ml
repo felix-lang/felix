@@ -7,6 +7,9 @@ let create () = Hashtbl.create 97
 (** Copies the bound symbol table. *)
 let copy = Hashtbl.copy
 
+(** Returns how many items are in the bound symbol table. *)
+let length = Hashtbl.length
+
 (** Adds the bound symbol with the index to the symbol table. *)
 let add = Hashtbl.replace
 

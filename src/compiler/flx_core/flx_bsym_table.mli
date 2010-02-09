@@ -7,6 +7,9 @@ val create : unit -> t
 (** Copies the bound symbol table. *)
 val copy : t -> t
 
+(** Returns how many items are in the bound symbol table. *)
+val length : t -> int
+
 (** Updates a bound symbol in place while preserving the child-parent
  * relationships. *)
 val update : t -> Flx_types.bid_t -> Flx_bsym.t -> unit
