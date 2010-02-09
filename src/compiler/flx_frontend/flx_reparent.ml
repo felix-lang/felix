@@ -42,12 +42,15 @@ let vsplice caller_vars callee_vs_len ts =
   caller_vars @ aux ts callee_vs_len
 
 
-(* varmap is the *typevariable* remapper,
- revariable remaps indices
-*)
-let ident x = x
-
-let remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e =
+let remap_expr
+  syms
+  bsym_table
+  varmap        (** varmap is the type variable remapper *)
+  revariable    (** revariable remaps indices. *)
+  caller_vars
+  callee_vs_len
+  e
+=
   (*
   print_endline ("Remapping expression " ^ sbe sym_table bsym_table e);
   *)
@@ -108,7 +111,16 @@ let remap_expr syms bsym_table varmap revariable caller_vars callee_vs_len e =
   *)
   a
 
-let remap_exe syms bsym_table relabel varmap revariable caller_vars callee_vs_len exe =
+let remap_exe
+  syms
+  bsym_table
+  relabel
+  varmap        (** varmap is the type variable remapper *)
+  revariable    (** revariable remaps indices. *)
+  caller_vars
+  callee_vs_len
+  exe
+=
   (*
   print_endline ("remap_exe " ^ string_of_bexe sym_table bsym_table 0 exe);
   *)
@@ -461,7 +473,7 @@ let reparent_children syms (uses,child_map,bsym_table)
     in
     let k = Hashtbl.find revariable i in
     reparent1 syms (uses,child_map,bsym_table) relabel varmap revariable
-    caller_vs callee_vs_len i new_parent k rescan_flag
+      caller_vs callee_vs_len i new_parent k rescan_flag
   end closure;
   if syms.compiler_options.print_flag then begin
     Hashtbl.iter

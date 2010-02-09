@@ -26,8 +26,6 @@ let rec vs_is_ts vs ts =  match vs,ts with
   | [],[] -> true
   | _ -> false
 
-let id x = x
-
 let find_uncurry_expr syms bsym_table uncurry_map vs e =
   let aux e = match e with
   | BEXPR_apply
@@ -146,10 +144,10 @@ let uncurry_gen syms bsym_table child_map : int =
             string_of_bid i ^ "> ret child= " ^ string_of_bid f ^ " synth= " ^
             string_of_bid k)
 
-    | _ -> ()
-    end
+        | _ -> ()
+        end
 
-  | _ -> ()
+    | _ -> ()
   end bsym_table;
 
   (* count curried calls to these functions *)
@@ -164,23 +162,17 @@ let uncurry_gen syms bsym_table child_map : int =
   end bsym_table;
 
   if syms.compiler_options.print_flag then
-  Hashtbl.iter
-  (fun i (c,k,n) ->
-     print_endline ("MAYBE UNCURRY: Orig " ^ string_of_bid i ^ " ret child " ^
-      string_of_bid c ^ " synth " ^ string_of_bid k ^ " count=" ^
-      string_of_int n);
-  )
-  uncurry_map
-  ;
+    Hashtbl.iter begin fun i (c,k,n) ->
+      print_endline ("MAYBE UNCURRY: Orig " ^ string_of_bid i ^ " ret child " ^
+        string_of_bid c ^ " synth " ^ string_of_bid k ^ " count=" ^
+        string_of_int n);
+    end uncurry_map;
 
   (* make a list of the ones actually called in curried form *)
   let to_uncurry = ref [] in
-  Hashtbl.iter
-  (fun i (_,_,n) ->
+  Hashtbl.iter begin fun i (_,_,n) ->
     if n > 0 then to_uncurry := i :: !to_uncurry
-  )
-  uncurry_map
-  ;
+  end uncurry_map;
 
   (* remove any function which is an ancestor of any other:
      keep the children (arbitrary choice)
@@ -194,8 +186,7 @@ let uncurry_gen syms bsym_table child_map : int =
   let to_uncurry = filter isnot_asc (!to_uncurry) in
 
   let nu_uncurry_map = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun i j ->
+  Hashtbl.iter begin fun i j ->
     if mem i to_uncurry
     then begin
       Hashtbl.add nu_uncurry_map i j
@@ -208,26 +199,20 @@ let uncurry_gen syms bsym_table child_map : int =
       print_endline ("Discarding (ancestor) " ^ si i)
       *)
     end
-  )
-  uncurry_map;
+  end uncurry_map;
 
   let uncurry_map = nu_uncurry_map in
 
   if syms.compiler_options.print_flag then
-  Hashtbl.iter
-  (fun i (c,k,n) ->
-    print_endline ("ACTUALLY UNCURRY: Orig " ^ string_of_bid i ^
-      " ret child " ^ string_of_bid c ^ " synth " ^ string_of_bid k ^
-      " count=" ^ si n);
-  )
-  uncurry_map
-  ;
-
+    Hashtbl.iter begin fun i (c,k,n) ->
+      print_endline ("ACTUALLY UNCURRY: Orig " ^ string_of_bid i ^
+        " ret child " ^ string_of_bid c ^ " synth " ^ string_of_bid k ^
+        " count=" ^ si n);
+    end uncurry_map;
 
   (* synthesise the new functions *)
   let nufuns = ref 0 in
-  Hashtbl.iter
-  (fun i (c,k,n) ->
+  Hashtbl.iter begin fun i (c,k,n) ->
     begin
       incr nufuns;
       if syms.compiler_options.print_flag then
@@ -328,9 +313,8 @@ let uncurry_gen syms bsym_table child_map : int =
 
       | _ -> assert false
     end
-  )
-  uncurry_map
-  ;
+  end uncurry_map;
+
   (* replace calls *)
   Flx_bsym_table.iter begin fun i bsym ->
     match bsym.Flx_bsym.bbdcl with
