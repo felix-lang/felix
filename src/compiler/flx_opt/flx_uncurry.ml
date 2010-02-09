@@ -123,29 +123,21 @@ let uncurry_exe syms bsym_table uncurry_map vs exe =
 
 let uncurry_exes syms bsym_table uncurry_map vs exes = map (uncurry_exe syms bsym_table uncurry_map vs) exes
 
-let uncurry_gen syms bsym_table child_map : int =
-  let ut = Hashtbl.create 97 in (* dummy usage table *)
-  let vm = Hashtbl.create 97 in (* dummy varmap *)
-  let rl = Hashtbl.create 97 in (* dummy relabel *)
+(** make the uncurry map *)
+let make_uncurry_map syms bsym_table child_map =
   let uncurry_map = Hashtbl.create 97 in
 
-  (* make the uncurry map *)
   Flx_bsym_table.iter begin fun i bsym ->
     match bsym.Flx_bsym.bbdcl with
-    | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-        begin match exes with
-        | [BEXE_fun_return (sr2,(BEXPR_closure (f,ts),_))]
-          when is_child child_map i f && vs_is_ts vs ts
-        ->
-          let k = fresh_bid syms.counter in
-          Hashtbl.add uncurry_map i (f,k,0);
-          if syms.compiler_options.print_flag then
-          print_endline ("Detected curried function " ^ bsym.Flx_bsym.id ^ "<" ^
-            string_of_bid i ^ "> ret child= " ^ string_of_bid f ^ " synth= " ^
-            string_of_bid k)
-
-        | _ -> ()
-        end
+    | BBDCL_function (_,vs,_,_,[BEXE_fun_return (_,(BEXPR_closure (f,ts),_))])
+      when is_child child_map i f && vs_is_ts vs ts
+    ->
+      let k = fresh_bid syms.counter in
+      Hashtbl.add uncurry_map i (f,k,0);
+      if syms.compiler_options.print_flag then
+      print_endline ("Detected curried function " ^ bsym.Flx_bsym.id ^ "<" ^
+        string_of_bid i ^ "> ret child= " ^ string_of_bid f ^ " synth= " ^
+        string_of_bid k)
 
     | _ -> ()
   end bsym_table;
@@ -153,10 +145,8 @@ let uncurry_gen syms bsym_table child_map : int =
   (* count curried calls to these functions *)
   Flx_bsym_table.iter begin fun i bsym ->
     match bsym.Flx_bsym.bbdcl with
-    | BBDCL_procedure (props,vs,(ps,traint),exes) ->
-        find_uncurry_exes syms bsym_table uncurry_map vs exes
-
-    | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+    | BBDCL_procedure (_,vs,_,exes)
+    | BBDCL_function (_,vs,_,_,exes) ->
         find_uncurry_exes syms bsym_table uncurry_map vs exes
     | _ -> ()
   end bsym_table;
@@ -201,8 +191,6 @@ let uncurry_gen syms bsym_table child_map : int =
     end
   end uncurry_map;
 
-  let uncurry_map = nu_uncurry_map in
-
   if syms.compiler_options.print_flag then
     Hashtbl.iter begin fun i (c,k,n) ->
       print_endline ("ACTUALLY UNCURRY: Orig " ^ string_of_bid i ^
@@ -210,127 +198,198 @@ let uncurry_gen syms bsym_table child_map : int =
         " count=" ^ si n);
     end uncurry_map;
 
-  (* synthesise the new functions *)
-  let nufuns = ref 0 in
-  Hashtbl.iter begin fun i (c,k,n) ->
-    begin
-      incr nufuns;
-      if syms.compiler_options.print_flag then
-      print_endline ("UNCURRY: Orig " ^ string_of_bid i ^ " ret child " ^
-        string_of_bid c ^ " synth " ^ string_of_bid k ^ " count=" ^ si n);
-      let bsymi = Flx_bsym_table.find bsym_table i in
-      let bsymc = Flx_bsym_table.find bsym_table c in
-      let bsymi_parent = Flx_bsym_table.find_parent bsym_table i in
-      let bsymc_parent = Flx_bsym_table.find_parent bsym_table c in
-      assert (bsymc_parent = Some i);
-      let props, vs, ps, traint, ret, exes =
-        match bsymi.Flx_bsym.bbdcl with
-        | BBDCL_function (props,vs,(ps,traint),ret,exes) -> props, vs, ps, traint, ret, exes
-        | _ -> assert false
-      in
-      let fixup vsc psc exesc =
-        assert (vs = vsc);
-        let extras = Flx_bparameter.get_bids ps in
-        let revariable =
-          Flx_reparent.reparent_children syms
-          (ut,child_map,bsym_table)
-          vs (length vsc)
-          c (Some k) rl vm true extras
-        in
-        let revar i = try Hashtbl.find revariable i with Not_found -> i in
+  nu_uncurry_map
 
-        iter
-          (fun {pkind=pk; ptyp=t; pid=s; pindex=pi} ->
-            let n = revar pi in
-            let bbdcl = match pk with
-            | `PVal -> bbdcl_val (vs,t)
-            | `PVar -> bbdcl_var (vs,t)
-            | _ -> failwith "Unimplemented curried fun param not var or val"
-            in
-            if syms.compiler_options.print_flag then
-              print_endline ("New param " ^ s ^ "_uncurry<" ^ string_of_bid n ^
-                ">[" ^ catmap
-                "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs ^
-                "] <-- " ^ string_of_bid pi ^ ", parent " ^ string_of_bid k ^
-                " <-- " ^ string_of_bid i);
-            Flx_bsym_table.add bsym_table n {
-              Flx_bsym.id=s ^ "_uncurry";
-              sr=bsymi.Flx_bsym.sr;
-              parent=Some k;
-              vs=dfltvs;
-              pubmap=Hashtbl.create 0;
-              privmap=Hashtbl.create 0;
-              dirs=[];
-              bbdcl=bbdcl };
-            Flx_child.add_child child_map k n
-          )
-          ps
-        ;
 
-        begin
-          iter (fun ({pid=s; pindex=i} as p) -> assert (i <> revar i)) (ps @ psc);
-        end;
+let fixup_function
+  syms
+  bsym_table
+  child_map
+  ut vm rl
+  i c k
+  vsc psc exesc
+=
+  let bsymi = Flx_bsym_table.find bsym_table i in
+  let bsymi_parent = Flx_bsym_table.find_parent bsym_table i in
 
-        let ps = map (fun ({pid=s; pindex=i} as p) -> {p with pid=s^"_uncurry"; pindex = revar i}) ps in
-        let psc = map (fun ({pindex=i} as p) -> {p with pindex = revar i}) psc in
-        let ps = ps @ psc in
-        let rec revare e = Flx_bexpr.map ~fi:revar ~fe:revare e in
-        let exes = List.map
-          (fun exe -> Flx_bexe.map ~fi:revar ~fe:revare exe)
-          exesc
-        in
-        begin match bsymi_parent with
-        | Some p -> Flx_child.add_child child_map p k
-        | None -> ()
-        end
-        ;
-        ps,exes
-      in
-      match bsymc.Flx_bsym.bbdcl with
-      | BBDCL_function (propsc,vsc,(psc,traintc),retc,exesc) ->
-        let ps,exes = fixup vsc psc exesc in
-        let bbdcl = bbdcl_function (propsc,vs,(ps,traintc), retc, exes) in
-        Flx_bsym_table.add bsym_table k {
-          Flx_bsym.id=bsymi.Flx_bsym.id^"_uncurry";
-          sr=bsymi.Flx_bsym.sr;
-          parent=bsymi.Flx_bsym.parent;
-          vs=dfltvs;
-          pubmap=Hashtbl.create 0;
-          privmap=Hashtbl.create 0;
-          dirs=[];
-          bbdcl=bbdcl }
+  let vs, ps =
+    match bsymi.Flx_bsym.bbdcl with
+    | BBDCL_function (_,vs,(ps,_),_,_) -> vs, ps
+    | _ -> assert false
+  in
 
-      | BBDCL_procedure (propsc,vsc,(psc,traintc),exesc) ->
-        let ps,exes = fixup vsc psc exesc in
-        let bbdcl = bbdcl_procedure (propsc,vs,(ps,traintc), exes) in
-        Flx_bsym_table.add bsym_table k {
-          Flx_bsym.id=bsymi.Flx_bsym.id^"_uncurry";
-          sr=bsymi.Flx_bsym.sr;
-          parent=bsymi.Flx_bsym.parent;
-          vs=dfltvs;
-          pubmap=Hashtbl.create 0;
-          privmap=Hashtbl.create 0;
-          dirs=[];
-          bbdcl=bbdcl }
+  (* Make sure our variables are the same. *)
+  assert (vs = vsc);
 
-      | _ -> assert false
-    end
-  end uncurry_map;
+  (* Create a table that will help with us remapping the parameters. *)
+  let revariable = Flx_reparent.reparent_children
+    syms
+    (ut,child_map,bsym_table)
+    vs
+    (length vsc)
+    c
+    (Some k)
+    rl
+    vm
+    true
+    (Flx_bparameter.get_bids ps)
+  in
 
-  (* replace calls *)
-  Flx_bsym_table.iter begin fun i bsym ->
+  (* Helper function to look up a reparented index. *)
+  let revar i =
+    try Hashtbl.find revariable i with Not_found -> i
+  in
+
+  (* Create new bound symbols for the parameters. *)
+  List.iter begin fun { pkind=pk; ptyp=t; pid=s; pindex=pi } ->
+    let n = revar pi in
+    let bbdcl = match pk with
+    | `PVal -> bbdcl_val (vs,t)
+    | `PVar -> bbdcl_var (vs,t)
+    | _ -> failwith "Unimplemented curried fun param not var or val"
+    in
+
+    if syms.compiler_options.print_flag then
+      print_endline ("New param " ^ s ^ "_uncurry<" ^ string_of_bid n ^
+        ">[" ^ catmap
+        "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs ^
+        "] <-- " ^ string_of_bid pi ^ ", parent " ^ string_of_bid k ^
+        " <-- " ^ string_of_bid i);
+
+    Flx_bsym_table.add bsym_table n {
+      Flx_bsym.id=s ^ "_uncurry";
+      parent=Some k;
+      sr=bsymi.Flx_bsym.sr;
+      vs=dfltvs;
+      pubmap=Hashtbl.create 0;
+      privmap=Hashtbl.create 0;
+      dirs=[];
+      bbdcl=bbdcl };
+    Flx_child.add_child child_map k n
+  end ps;
+
+  (* Make sure the parameter indices don't equal the remapped index. *)
+  assert (List.for_all (fun ({ pindex=i }) -> (i <> revar i)) ps);
+  assert (List.for_all (fun ({ pindex=i }) -> (i <> revar i)) psc);
+
+  (* Update the parent's parameter indices. *)
+  let ps =
+    List.map begin fun ({ pid=s; pindex=i } as p) ->
+      { p with pid=s ^ "_uncurry"; pindex=revar i }
+    end ps
+  in
+
+  (* Update the child's parameter list. *)
+  let psc = List.map
+    (fun ({ pindex=i} as p) -> {p with pindex=revar i })
+    psc
+  in
+
+  (* Finally, merge the parent and child parameters. *)
+  let ps = ps @ psc in
+
+  (* Update the child's expressions and executables. *)
+  let rec revare e = Flx_bexpr.map ~fi:revar ~fe:revare e in
+  let exes = List.map
+    (fun exe -> Flx_bexe.map ~fi:revar ~fe:revare exe)
+    exesc
+  in
+
+  (* If our parent symbol has a parent, then update the child map. *)
+  begin match bsymi_parent with
+  | Some p -> Flx_child.add_child child_map p k
+  | None -> ()
+  end;
+
+  bsymi.Flx_bsym.id ^ "_uncurry", bsymi.Flx_bsym.sr, bsymi_parent, vs, ps, exes
+
+
+let synthesize_function syms bsym_table child_map ut vm rl i (c, k, n) =
+  if syms.compiler_options.print_flag then
+    print_endline ("UNCURRY: Orig " ^ string_of_bid i ^ " ret child " ^
+      string_of_bid c ^ " synth " ^ string_of_bid k ^ " count=" ^ si n);
+
+  (* As a safety check, make sure that the child has the parent as the
+   * parent. *)
+  assert (Flx_bsym_table.find_parent bsym_table c = Some i);
+
+  let fixup_function = fixup_function
+    syms
+    bsym_table
+    child_map
+    ut vm rl
+    i c k
+  in
+
+  (* Add the new function or procedure. *)
+  match Flx_bsym_table.find_bbdcl bsym_table c with
+  | BBDCL_function (propsc,vsc,(psc,traintc),retc,exesc) ->
+    let id,sr,parent,vs,ps,exes = fixup_function vsc psc exesc in
+    let bbdcl = bbdcl_function (propsc,vs,(ps,traintc),retc,exes) in
+    let bsym = {
+      Flx_bsym.id=id;
+      sr=sr;
+      parent=parent;
+      vs=dfltvs;
+      pubmap=Hashtbl.create 0;
+      privmap=Hashtbl.create 0;
+      dirs=[];
+      bbdcl=bbdcl }
+    in
+    Flx_bsym_table.add bsym_table k bsym
+
+  | BBDCL_procedure (propsc,vsc,(psc,traintc),exesc) ->
+    let id,sr,parent,vs,ps,exes = fixup_function vsc psc exesc in
+    let bbdcl = bbdcl_procedure (propsc,vs,(ps,traintc),exes) in
+    let bsym = {
+      Flx_bsym.id=id;
+      sr=sr;
+      parent=parent;
+      vs=dfltvs;
+      pubmap=Hashtbl.create 0;
+      privmap=Hashtbl.create 0;
+      dirs=[];
+      bbdcl=bbdcl }
+    in
+    Flx_bsym_table.add bsym_table k bsym
+
+  | _ -> assert false
+
+
+(** synthesise the new functions *)
+let synthesize_functions syms bsym_table child_map uncurry_map =
+  let ut = Hashtbl.create 97 in (* dummy usage table *)
+  let vm = Hashtbl.create 97 in (* dummy varmap *)
+  let rl = Hashtbl.create 97 in (* dummy relabel *)
+
+  Hashtbl.iter
+    (synthesize_function syms bsym_table child_map ut vm rl)
+    uncurry_map
+
+
+(** replace calls *)
+let replace_calls syms bsym_table uncurry_map =
+  Flx_bsym_table.iter begin fun bid bsym ->
     match bsym.Flx_bsym.bbdcl with
-    | BBDCL_procedure (props,vs,(ps,traint),exes) ->
+    | BBDCL_procedure (props,vs,ps,exes) ->
         let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
-        let bbdcl = bbdcl_procedure (props,vs,(ps,traint),exes) in
-        Flx_bsym_table.update_bbdcl bsym_table i bbdcl
+        let bbdcl = bbdcl_procedure (props,vs,ps,exes) in
+        Flx_bsym_table.update_bbdcl bsym_table bid bbdcl
 
-    | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+    | BBDCL_function (props,vs,ps,ret,exes) ->
         let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
-        let bbdcl = bbdcl_function (props,vs,(ps,traint),ret,exes) in
-        Flx_bsym_table.update_bbdcl bsym_table i bbdcl
+        let bbdcl = bbdcl_function (props,vs,ps,ret,exes) in
+        Flx_bsym_table.update_bbdcl bsym_table bid bbdcl
 
     | _ -> ()
-  end bsym_table;
+  end bsym_table
 
-  !nufuns
+
+let uncurry_gen syms bsym_table child_map : int =
+  let uncurry_map = make_uncurry_map syms bsym_table child_map in
+
+  synthesize_functions syms bsym_table child_map uncurry_map;
+  replace_calls syms bsym_table uncurry_map;
+
+  (* Return how many new functions we've created. *)
+  Hashtbl.length uncurry_map
