@@ -48,3 +48,14 @@ let get_bparams bsym =
 (** Returns the bound type value list of the bound symbol. *)
 let get_bvs bsym =
   Flx_bbdcl.get_bvs bsym.bbdcl
+
+(** Prints a bound symbol to a formatter. *)
+let print f bsym =
+  Flx_format.print_record7 f
+    "id" Flx_format.print_string bsym.id
+    "sr" Flx_srcref.print bsym.sr
+    "vs" Format.pp_print_string "..."
+    "pubmap" Flx_btype.print_name_map bsym.pubmap
+    "privmap" Flx_btype.print_name_map bsym.privmap
+    "dirs" Format.pp_print_string "..."
+    "bbdcl" Flx_bbdcl.print bsym.bbdcl
