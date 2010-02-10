@@ -18,8 +18,29 @@ let print_debug state msg =
   then print_endline msg
 
 
+let remove_module_parents bsym_table =
+  (* Remove module parents. *)
+  Flx_bsym_table.iter begin fun bid bsym ->
+    match Flx_bsym_table.find_parent bsym_table bid with
+    | Some parent ->
+        begin
+          try
+            match Flx_bsym_table.find_bbdcl bsym_table parent with
+            | Flx_bbdcl.BBDCL_module ->
+                Flx_bsym_table.remove bsym_table bid;
+                Flx_bsym_table.add_root bsym_table bid bsym
+            | _ -> ()
+          with Not_found -> ()
+        end
+    | None -> ()
+  end bsym_table
+
+
 (* Prep the bsym_table for the backend by lowering and simplifying symbols. *)
 let lower_bsym_table state bsym_table root_proc =
+  (* We have to remove module parents before we can do code generation. *)
+  remove_module_parents bsym_table;
+
   (* Wrap closures. *)
   print_debug state "//Generating primitive wrapper closures";
   Flx_mkcls.make_closures state.closure_state bsym_table;
