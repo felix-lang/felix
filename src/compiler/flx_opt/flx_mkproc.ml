@@ -64,10 +64,9 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       (* create a new variable *)
       let k = fresh_bid syms.counter in
       let vid = "_mkp_" ^ string_of_bid k in
-      Flx_bsym_table.add bsym_table k {
+      Flx_bsym_table.add_child bsym_table this k {
         Flx_bsym.id=vid;
         sr=sr;
-        parent=Some this;
         vs=dfltvs;
         pubmap=Hashtbl.create 0;
         privmap=Hashtbl.create 0;
@@ -292,10 +291,10 @@ let mkproc_gen syms bsym_table child_map =
             print_endline ("New param " ^ s ^ " " ^ string_of_bid n ^ " <-- " ^
               string_of_bid pi ^ ", parent " ^ string_of_bid k ^ " <-- " ^
               string_of_bid i);
-            Flx_bsym_table.add bsym_table n {
+            Flx_bsym_table.remove bsym_table n;
+            Flx_bsym_table.add_child bsym_table k n {
               Flx_bsym.id=s ^ "_mkproc";
               sr=bsym.Flx_bsym.sr;
-              parent=Some k;
               vs=dfltvs;
               pubmap=Hashtbl.create 0;
               privmap=Hashtbl.create 0;
@@ -335,10 +334,9 @@ let mkproc_gen syms bsym_table child_map =
       let exes = proc_exes syms bsym_table dv exes in
 
       (* save the new procedure *)
-      Flx_bsym_table.add bsym_table k {
+      Flx_bsym_table.add bsym_table bsym_parent k {
         Flx_bsym.id=bsym.Flx_bsym.id ^ "_mkproc";
         sr=bsym.Flx_bsym.sr;
-        parent=bsym.Flx_bsym.parent;
         vs=dfltvs;
         pubmap=Hashtbl.create 0;
         privmap=Hashtbl.create 0;

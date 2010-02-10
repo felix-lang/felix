@@ -300,7 +300,8 @@ let copy_used syms bsym_table =
     if syms.compiler_options.print_flag then
       print_endline ("Copying " ^ si i);
     *)
-    Flx_bsym_table.add h i (Flx_bsym_table.find bsym_table i)
+    let parent = Flx_bsym_table.find_parent bsym_table i in
+    Flx_bsym_table.add h parent i (Flx_bsym_table.find bsym_table i)
   end u;
 
   h

@@ -827,10 +827,9 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
           let urvid = "_genout_urv" ^ string_of_bid urv in
           add_child child_map caller urv;
           add_use uses caller urv sr;
-          Flx_bsym_table.add bsym_table urv {
+          Flx_bsym_table.add_child bsym_table caller urv {
             Flx_bsym.id=urvid;
             sr=sr;
-            parent=Some caller;
             vs=dfltvs;
             pubmap=Hashtbl.create 0;
             privmap=Hashtbl.create 0;
@@ -973,10 +972,9 @@ let rec special_inline syms (uses,child_map,bsym_table) caller_vs caller hic exc
                     let urvid = "_urv" ^ string_of_bid urv in
                     add_child child_map caller urv;
                     add_use uses caller urv sr;
-                    Flx_bsym_table.add bsym_table urv {
+                    Flx_bsym_table.add_child bsym_table caller urv {
                       Flx_bsym.id=urvid;
                       sr=sr;
-                      parent=Some caller;
                       vs=dfltvs;
                       pubmap=Hashtbl.create 0;
                       privmap=Hashtbl.create 0;

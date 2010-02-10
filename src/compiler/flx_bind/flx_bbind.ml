@@ -232,14 +232,13 @@ let bbind_symbol state bsym_table symbol_index sym =
     let bsym = {
       Flx_bsym.id=sym.Flx_sym.id;
       sr=sym.Flx_sym.sr;
-      parent=parent;
       vs=sym.Flx_sym.vs;
       pubmap=sym.Flx_sym.pubmap;
       privmap=sym.Flx_sym.privmap;
       dirs=sym.Flx_sym.dirs;
       bbdcl=bbdcl }
     in
-    Flx_bsym_table.add bsym_table symbol_index bsym;
+    Flx_bsym_table.add bsym_table parent symbol_index bsym;
     Some bsym
   in
   begin match sym.Flx_sym.symdef with

@@ -581,10 +581,9 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
         in
         Hashtbl.replace child_map this (parameter::kids);
         let id = "_trp_" ^ string_of_bid parameter in
-        Flx_bsym_table.add bsym_table parameter {
+        Flx_bsym_table.add_child bsym_table this parameter {
           Flx_bsym.id=id;
           sr=sr;
-          parent=Some this;
           vs=dfltvs;
           pubmap=Hashtbl.create 0;
           privmap=Hashtbl.create 0;

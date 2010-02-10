@@ -18,13 +18,13 @@ let find_name bsym_table child_map root name =
     let rec search_children bsyms = function
       | [] ->
           (* We didn't find it, so search up the parents. *)
-          let bsym =
-            try Some (Flx_bsym_table.find bsym_table root) with Not_found ->
-              None
+          let parent =
+            try Some (Flx_bsym_table.find_parent bsym_table root)
+            with Not_found -> None
           in
-          begin match bsym with
-          | Some { Flx_bsym.parent=Some parent } -> search_root bsyms parent
-          | Some { Flx_bsym.parent=None } | None -> bsyms
+          begin match parent with
+          | Some (Some parent) -> search_root bsyms parent
+          | _ -> bsyms
           end
       | child :: children ->
           let bsym = Flx_bsym_table.find bsym_table child in

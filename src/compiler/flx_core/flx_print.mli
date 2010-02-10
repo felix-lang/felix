@@ -112,7 +112,6 @@ val print_function_body:
   bvs_t ->
   Flx_bparams.t ->
   Flx_bexe.t list ->
-  bid_t option ->
   unit
 
 val print_function:

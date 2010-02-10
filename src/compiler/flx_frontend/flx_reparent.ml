@@ -303,9 +303,9 @@ let reparent1
   end
   ;
   let update_bsym bbdcl =
-    Flx_bsym_table.add bsym_table k { bsym with
-      Flx_bsym.parent=parent;
-      bbdcl=bbdcl }
+    Flx_bsym_table.remove bsym_table k;
+    Flx_bsym_table.add bsym_table parent k { bsym with
+      Flx_bsym.bbdcl=bbdcl }
   in
 
   match bsym.Flx_bsym.bbdcl with

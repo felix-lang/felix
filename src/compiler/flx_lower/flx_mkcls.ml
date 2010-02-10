@@ -29,6 +29,7 @@ let make_closure_state syms =
 let gen_closure state bsym_table i =
   let j = fresh_bid state.syms.counter in
   let bsym = Flx_bsym_table.find bsym_table i in
+  let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_proc (props,vs,ps,c,reqs) ->
     let arg_t =
@@ -38,10 +39,9 @@ let gen_closure state bsym_table i =
     let ps,a =
       let n = fresh_bid state.syms.counter in
       let name = "_a" ^ string_of_bid n in
-      Flx_bsym_table.add bsym_table n {
+      Flx_bsym_table.add_child bsym_table j n {
         Flx_bsym.id=name;
         sr=bsym.Flx_bsym.sr;
-        parent=Some j;
         vs=dfltvs;
         pubmap=Hashtbl.create 0;
         privmap=Hashtbl.create 0;
@@ -56,7 +56,7 @@ let gen_closure state bsym_table i =
         bexe_proc_return bsym.Flx_bsym.sr
       ]
     in
-    Flx_bsym_table.add bsym_table j { bsym with
+    Flx_bsym_table.add bsym_table bsym_parent j { bsym with
       Flx_bsym.bbdcl=bbdcl_procedure ([],vs,(ps,None),exes) };
     j
 
@@ -68,10 +68,9 @@ let gen_closure state bsym_table i =
     let ps,a =
       let n = fresh_bid state.syms.counter in
       let name = "_a" ^ string_of_bid n in
-      Flx_bsym_table.add bsym_table n {
+      Flx_bsym_table.add_child bsym_table j n {
         Flx_bsym.id=name;
         sr=bsym.Flx_bsym.sr;
-        parent=Some j;
         vs=dfltvs;
         pubmap=Hashtbl.create 0;
         privmap=Hashtbl.create 0;
@@ -81,7 +80,7 @@ let gen_closure state bsym_table i =
     in
     let e = bexpr_apply_prim ret (i,ts,a) in
     let exes = [bexe_fun_return (bsym.Flx_bsym.sr,e)] in
-    Flx_bsym_table.add bsym_table j { bsym with
+    Flx_bsym_table.add bsym_table bsym_parent j { bsym with
       Flx_bsym.bbdcl=bbdcl_function ([],vs,(ps,None),ret,exes) };
     j
 

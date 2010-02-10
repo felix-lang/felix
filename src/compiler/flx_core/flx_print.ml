@@ -2478,14 +2478,11 @@ let print_env_short e =
   in
   List.iter print_level e
 
-let print_function_body bsym_table id i (bvs:bvs_t) ps exes parent =
+let print_function_body bsym_table id i (bvs:bvs_t) ps exes =
   print_endline "";
   print_endline ("BODY OF " ^ id ^ "<" ^ string_of_bid i ^ "> [" ^
   catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs ^
-  "] parent " ^
-    (match parent with None -> "NONE" | Some k -> string_of_bid k)
-    ^
-    "(" ^ string_of_bparameters bsym_table ps ^ ")"
+  "] (" ^ string_of_bparameters bsym_table ps ^ ")"
   );
   iter
   (fun exe -> print_endline (string_of_bexe bsym_table 1 exe))
@@ -2503,7 +2500,6 @@ let print_function bsym_table i =
         bvs
         ps
         exes
-        bsym.Flx_bsym.parent
   | _ -> ()
 
 let print_functions bsym_table =
@@ -2518,7 +2514,6 @@ let print_functions bsym_table =
           bvs
           ps
           exes
-          bsym.Flx_bsym.parent
     | _ -> ()
   end bsym_table
 
@@ -2534,24 +2529,17 @@ let print_symbols bsym_table =
           bvs
           ps
           exes
-          bsym.Flx_bsym.parent
     | BBDCL_var (bvs,t) ->
-        Printf.printf "VARIABLE %s <%s> [%s] parent %s type %s"
+        Printf.printf "VARIABLE %s <%s> [%s] type %s"
           bsym.Flx_bsym.id
           (string_of_bid i)
           (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)
-          (match bsym.Flx_bsym.parent with
-          | None -> "NONE"
-          | Some k -> string_of_bid k)
           (sbt bsym_table t)
     | BBDCL_val (bvs,t) ->
-        Printf.printf "VALUE %s <%s> [%s] parent %s type %s"
+        Printf.printf "VALUE %s <%s> [%s] type %s"
           bsym.Flx_bsym.id
           (string_of_bid i)
           (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)
-          (match bsym.Flx_bsym.parent with
-          | None -> "NONE"
-          | Some k -> string_of_bid k)
           (sbt bsym_table t)
     | _ -> ()
   end bsym_table
@@ -2598,7 +2586,6 @@ let print_sym_table sym_table =
 
 let string_of_bsym bsym_table bid =
   let bsym = Flx_bsym_table.find bsym_table bid in
-  let bsym_parent = Flx_bsym_table.find_parent bsym_table bid in
 
   string_of_bid bid ^ " --> " ^
   string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl bid
