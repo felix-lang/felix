@@ -48,8 +48,8 @@ class platform_frame:
     if not self.os.path.isdir(dir):
       try: self.os.mkdir(dir)
       except os.error as data:
-        if data[0]!=self.errno.EEXIST: # File Exists is OK, everything else is fatal
-          raise os.error(data[0],data+': directory "'+dir+'"')
+        if data.errno != self.errno.EEXIST: # File Exists is OK, everything else is fatal
+          raise os.error(data.errno,data+': directory "'+dir+'"')
     if not self.os.path.isdir(dir):
       raise self.os.error(self.errno.ENOENT, 'Created a directory '+dir+', but it is not there!')
 
