@@ -116,7 +116,11 @@ let bind_qual bt qual = match qual with
 
 let bind_quals bt quals = map (bind_qual bt) quals
 
-let bbind_symbol state bsym_table symbol_index sym =
+let rec bbind_symbol state bsym_table symbol_index sym =
+  if Flx_bsym_table.mem bsym_table symbol_index
+  then Some (Flx_bsym_table.find bsym_table symbol_index)
+  else
+
   let qname = qualified_name_of_index state.sym_table symbol_index in
   let true_parent = find_true_parent
     state.sym_table
@@ -238,7 +242,15 @@ let bbind_symbol state bsym_table symbol_index sym =
       dirs=sym.Flx_sym.dirs;
       bbdcl=bbdcl }
     in
-    Flx_bsym_table.add bsym_table parent symbol_index bsym;
+    begin match parent with
+    | None ->
+        Flx_bsym_table.add_root bsym_table symbol_index bsym
+    | Some parent ->
+        let parent_sym = Flx_sym_table.find state.sym_table parent in
+        ignore (bbind_symbol state bsym_table parent parent_sym);
+
+        Flx_bsym_table.add_child bsym_table parent symbol_index bsym
+    end;
     Some bsym
   in
   begin match sym.Flx_sym.symdef with
