@@ -46,9 +46,7 @@ class process_frame:
         print('Weird error opening specified logfile',f)
         traceback.print_exc()
 
-    reference_date = time.time()
-    local_time = time.localtime(reference_date)
-    local_time_string = time.strftime("%a %d %b, %Y %H:%M:%S (%Z)",local_time)
+    local_time_string = time.strftime("%a %d %b, %Y %H:%M:%S (UTC%z)")
     start_time = time.clock()
     if m: print('<CDATA>')
     print()
