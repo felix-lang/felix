@@ -382,6 +382,30 @@ and print_btypes f ts =
 and print_bid_btypes btypes =
   Flx_list.print begin fun f (bid, btype) ->
     Flx_format.print_tuple2 f
-      Format.pp_print_int bid
+      Flx_types.print_bid bid
       print btype
   end btypes
+
+let print_string_bids xs =
+  Flx_list.print begin fun f (name, bid) ->
+    Flx_format.print_tuple2 f
+      Flx_format.print_string name
+      Flx_types.print_bid bid
+  end xs
+
+let print_entry_kind f entry_kind =
+  Flx_format.print_record3 f
+    "base_sym" Flx_types.print_bid entry_kind.base_sym
+    "spec_vs" print_string_bids entry_kind.spec_vs
+    "sub_ts" print_btypes entry_kind.sub_ts
+
+let print_entry_set f = function
+  | FunctionEntry es ->
+      Flx_format.print_variant1 f "FunctionEntry"
+        (Flx_list.print print_entry_kind) es
+  | NonFunctionEntry e ->
+      Flx_format.print_variant1 f "NonFunctionEntry"
+        print_entry_kind e
+
+(** Prints a name_map_t to a formatter. *)
+let print_name_map = Flx_hashtbl.print Flx_format.print_string print_entry_set
