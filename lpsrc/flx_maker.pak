@@ -268,16 +268,6 @@ include "SDL/SDL_video";
 John (Max) Skaller skaller at users dot sourceforge dot net
 Peter Jolly helped do the Cygwin build
 
-The version of frontc C parser was taken from
-work by:
-
-George C. Necula    necula at cs dot berkeley dot edu
-Scott McPeak        smcpeak at cs dot berkeley dot edu
-Wes Weimer          weimer at cs dot berkeley dot edu
-
-which was in turned modified from the original parser
-written by Hugues Cassé
-
 @head(1,'LICENCE')
 @select(tangler('LICENCE'))
 @tangle('Version ' + config.flx_version + ' of Felix')
