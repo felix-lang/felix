@@ -1,13 +1,40 @@
 (** The bound symbol type. *)
 type t = {
-  id: string;
-  sr: Flx_srcref.t;
+  id:string;
+  sr:Flx_srcref.t;
   vs:Flx_types.ivs_list_t;
   pubmap:Flx_btype.name_map_t;
   privmap:Flx_btype.name_map_t;
   dirs:Flx_types.sdir_t list;
-  bbdcl: Flx_bbdcl.t;
+  bbdcl:Flx_bbdcl.t;
 }
+
+let create
+  ?(sr=Flx_srcref.dummy_sr)
+  ?(vs=Flx_ast.dfltvs)
+  ?(pubmap=Hashtbl.create 0)
+  ?(privmap=Hashtbl.create 0)
+  ?(dirs=[])
+  id bbdcl
+=
+  { id=id;
+    sr=sr;
+    vs=vs;
+    pubmap=pubmap;
+    privmap=privmap;
+    dirs=dirs;
+    bbdcl=bbdcl }
+
+let of_sym sym bbdcl =
+  { id=sym.Flx_sym.id;
+    sr=sym.Flx_sym.sr;
+    vs=sym.Flx_sym.vs;
+    pubmap=sym.Flx_sym.pubmap;
+    privmap=sym.Flx_sym.privmap;
+    dirs=sym.Flx_sym.dirs;
+    bbdcl=bbdcl }
+
+let replace_bbdcl bsym bbdcl = { bsym with bbdcl=bbdcl }
 
 (** Return if the bound symbol is an identity function. *)
 let is_identity bsym =

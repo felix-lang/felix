@@ -256,14 +256,8 @@ let fixup_function
         "] <-- " ^ string_of_bid pi ^ ", parent " ^ string_of_bid k ^
         " <-- " ^ string_of_bid i);
 
-    Flx_bsym_table.add_child bsym_table k n {
-      Flx_bsym.id=s ^ "_uncurry";
-      sr=bsymi.Flx_bsym.sr;
-      vs=dfltvs;
-      pubmap=Hashtbl.create 0;
-      privmap=Hashtbl.create 0;
-      dirs=[];
-      bbdcl=bbdcl };
+    Flx_bsym_table.add_child bsym_table k n
+      (Flx_bsym.create ~sr:bsymi.Flx_bsym.sr (s ^ "_uncurry") bbdcl);
     Flx_child.add_child child_map k n
   end ps;
 
@@ -324,25 +318,13 @@ let synthesize_function syms bsym_table child_map ut vm rl i (c, k, n) =
   match Flx_bsym_table.find_bbdcl bsym_table c with
   | BBDCL_function (propsc,vsc,(psc,traintc),retc,exesc) ->
     let id,sr,parent,vs,ps,exes = fixup_function vsc psc exesc in
-    Flx_bsym_table.add bsym_table parent k {
-      Flx_bsym.id=id;
-      sr=sr;
-      vs=dfltvs;
-      pubmap=Hashtbl.create 0;
-      privmap=Hashtbl.create 0;
-      dirs=[];
-      bbdcl=bbdcl_function (propsc,vs,(ps,traintc),retc,exes) }
+    let bbdcl = bbdcl_function (propsc,vs,(ps,traintc),retc,exes) in
+    Flx_bsym_table.add bsym_table parent k (Flx_bsym.create ~sr id bbdcl)
 
   | BBDCL_procedure (propsc,vsc,(psc,traintc),exesc) ->
     let id,sr,parent,vs,ps,exes = fixup_function vsc psc exesc in
-    Flx_bsym_table.add bsym_table parent k {
-      Flx_bsym.id=id;
-      sr=sr;
-      vs=dfltvs;
-      pubmap=Hashtbl.create 0;
-      privmap=Hashtbl.create 0;
-      dirs=[];
-      bbdcl=bbdcl_procedure (propsc,vs,(ps,traintc),exes) }
+    let bbdcl = bbdcl_procedure (propsc,vs,(ps,traintc),exes) in
+    Flx_bsym_table.add bsym_table parent k (Flx_bsym.create ~sr id bbdcl)
 
   | _ -> assert false
 

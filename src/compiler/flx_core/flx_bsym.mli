@@ -1,13 +1,30 @@
 (** The bound symbol type. *)
-type t = {
-  id: string;
-  sr: Flx_srcref.t;
+type t = private {
+  id:string;
+  sr:Flx_srcref.t;
   vs:Flx_types.ivs_list_t;
   pubmap:Flx_btype.name_map_t;
   privmap:Flx_btype.name_map_t;
   dirs:Flx_types.sdir_t list;
-  bbdcl: Flx_bbdcl.t;
+  bbdcl:Flx_bbdcl.t;
 }
+
+(** Constructs a bound symbol value. *)
+val create:
+  ?sr:Flx_srcref.t ->
+  ?vs:Flx_types.ivs_list_t ->
+  ?pubmap:Flx_btype.name_map_t ->
+  ?privmap:Flx_btype.name_map_t ->
+  ?dirs:Flx_types.sdir_t list ->
+  string -> Flx_bbdcl.t ->
+  t
+
+(** Constructs a bound symbol based off the unbound symbol. *)
+val of_sym: Flx_sym.t -> Flx_bbdcl.t -> t
+
+(** Returns a copy of the bound symbol with the bbdcl set to the passed in
+ * bbdcl.*)
+val replace_bbdcl: t -> Flx_bbdcl.t -> t
 
 (** Return if the bound symbol is an identity function. *)
 val is_identity: t -> bool

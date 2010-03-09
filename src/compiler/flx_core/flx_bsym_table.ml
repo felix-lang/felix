@@ -44,7 +44,7 @@ let update bsym_table bid bsym =
 (** Update a bound symbol's bbdcl in place. *)
 let update_bbdcl bsym_table bid bbdcl =
   let parent, bsym = Hashtbl.find bsym_table bid in
-  Hashtbl.replace bsym_table bid (parent, { bsym with Flx_bsym.bbdcl=bbdcl })
+  Hashtbl.replace bsym_table bid (parent, Flx_bsym.replace_bbdcl bsym bbdcl)
 
 (** Returns if the bound index is in the bound symbol table. *)
 let mem = Hashtbl.mem
@@ -115,11 +115,11 @@ let update_bexes f bsym_table =
     match bsym.Flx_bsym.bbdcl with
     | Flx_bbdcl.BBDCL_function (ps, bvs, bpar, bty, bexes) ->
         let bbdcl = Flx_bbdcl.bbdcl_function (ps, bvs, bpar, bty, f bexes) in
-        update bsym_table bid { bsym with Flx_bsym.bbdcl=bbdcl }
+        update bsym_table bid (Flx_bsym.replace_bbdcl bsym bbdcl)
 
     | Flx_bbdcl.BBDCL_procedure (ps, bvs, bpar, bexes) ->
         let bbdcl = Flx_bbdcl.bbdcl_procedure (ps, bvs, bpar, f bexes) in
-        update bsym_table bid { bsym with Flx_bsym.bbdcl=bbdcl }
+        update bsym_table bid (Flx_bsym.replace_bbdcl bsym bbdcl)
 
     | _ -> ()
   end bsym_table

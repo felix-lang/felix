@@ -233,15 +233,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     bind_basic_ps ps, btraint traint
   in
   let add_bsym parent bbdcl =
-    let bsym = {
-      Flx_bsym.id=sym.Flx_sym.id;
-      sr=sym.Flx_sym.sr;
-      vs=sym.Flx_sym.vs;
-      pubmap=sym.Flx_sym.pubmap;
-      privmap=sym.Flx_sym.privmap;
-      dirs=sym.Flx_sym.dirs;
-      bbdcl=bbdcl }
-    in
+    let bsym = Flx_bsym.of_sym sym bbdcl in
     begin match parent with
     | None ->
         Flx_bsym_table.add_root bsym_table symbol_index bsym

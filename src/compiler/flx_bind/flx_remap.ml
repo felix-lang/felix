@@ -189,9 +189,8 @@ let remap offset in_bsym_table out_bsym_table =
     (* Skip this bid if we've already processed it. *)
     if Flx_bsym_table.mem out_bsym_table bid then () else
 
-    let bsym = { bsym with
-      Flx_bsym.bbdcl=remap_bbdcl offset bsym.Flx_bsym.bbdcl }
-    in
+    let bbdcl = remap_bbdcl offset bsym.Flx_bsym.bbdcl in
+    let bsym = Flx_bsym.replace_bbdcl bsym bbdcl in
 
     match Flx_bsym_table.find_parent in_bsym_table bid with
     | None -> Flx_bsym_table.add_root out_bsym_table bid bsym

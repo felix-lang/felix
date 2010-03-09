@@ -207,8 +207,7 @@ let mono syms bsym_table fi i ts n =
   in
   let update_bsym parent bbdcl =
     Flx_bsym_table.remove bsym_table n;
-    Flx_bsym_table.add bsym_table parent n { bsym with
-      Flx_bsym.bbdcl=bbdcl }
+    Flx_bsym_table.add bsym_table parent n (Flx_bsym.replace_bbdcl bsym bbdcl)
   in
   match bsym.Flx_bsym.bbdcl with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->

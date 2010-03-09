@@ -64,14 +64,8 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       (* create a new variable *)
       let k = fresh_bid syms.counter in
       let vid = "_mkp_" ^ string_of_bid k in
-      Flx_bsym_table.add_child bsym_table this k {
-        Flx_bsym.id=vid;
-        sr=sr;
-        vs=dfltvs;
-        pubmap=Hashtbl.create 0;
-        privmap=Hashtbl.create 0;
-        dirs=[];
-        bbdcl=bbdcl_var (vs,ret) };
+      let bsym = Flx_bsym.create ~sr vid (bbdcl_var (vs,ret)) in
+      Flx_bsym_table.add_child bsym_table this k bsym;
 
       (* append a pointer to this variable to the argument *)
       let ts' = map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) vs in
@@ -292,14 +286,8 @@ let mkproc_gen syms bsym_table child_map =
               string_of_bid pi ^ ", parent " ^ string_of_bid k ^ " <-- " ^
               string_of_bid i);
             Flx_bsym_table.remove bsym_table n;
-            Flx_bsym_table.add_child bsym_table k n {
-              Flx_bsym.id=s ^ "_mkproc";
-              sr=bsym.Flx_bsym.sr;
-              vs=dfltvs;
-              pubmap=Hashtbl.create 0;
-              privmap=Hashtbl.create 0;
-              dirs=[];
-              bbdcl=bbdcl };
+            Flx_bsym_table.add_child bsym_table k n
+              (Flx_bsym.create ~sr:bsym.Flx_bsym.sr (s ^ "_mkproc") bbdcl);
             Flx_child.add_child child_map k n
           )
           ps
@@ -334,14 +322,12 @@ let mkproc_gen syms bsym_table child_map =
       let exes = proc_exes syms bsym_table dv exes in
 
       (* save the new procedure *)
-      Flx_bsym_table.add bsym_table bsym_parent k {
-        Flx_bsym.id=bsym.Flx_bsym.id ^ "_mkproc";
-        sr=bsym.Flx_bsym.sr;
-        vs=dfltvs;
-        pubmap=Hashtbl.create 0;
-        privmap=Hashtbl.create 0;
-        dirs=[];
-        bbdcl=bbdcl_procedure (props,vs,(ps,traint),exes) };
+      let bsym = Flx_bsym.create
+        ~sr:bsym.Flx_bsym.sr
+        (bsym.Flx_bsym.id ^ "_mkproc")
+        (bbdcl_procedure (props,vs,(ps,traint),exes))
+      in
+      Flx_bsym_table.add bsym_table bsym_parent k bsym;
 
       if syms.compiler_options.print_flag then
       begin
