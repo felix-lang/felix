@@ -128,14 +128,14 @@ let make_uncurry_map syms bsym_table child_map =
   let uncurry_map = Hashtbl.create 97 in
 
   Flx_bsym_table.iter begin fun i bsym ->
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_function (_,vs,_,_,[BEXE_fun_return (_,(BEXPR_closure (f,ts),_))])
       when is_child child_map i f && vs_is_ts vs ts
     ->
       let k = fresh_bid syms.counter in
       Hashtbl.add uncurry_map i (f,k,0);
       if syms.compiler_options.print_flag then
-      print_endline ("Detected curried function " ^ bsym.Flx_bsym.id ^ "<" ^
+      print_endline ("Detected curried function " ^ Flx_bsym.id bsym ^ "<" ^
         string_of_bid i ^ "> ret child= " ^ string_of_bid f ^ " synth= " ^
         string_of_bid k)
 
@@ -144,7 +144,7 @@ let make_uncurry_map syms bsym_table child_map =
 
   (* count curried calls to these functions *)
   Flx_bsym_table.iter begin fun i bsym ->
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_procedure (_,vs,_,exes)
     | BBDCL_function (_,vs,_,_,exes) ->
         find_uncurry_exes syms bsym_table uncurry_map vs exes
@@ -213,7 +213,7 @@ let fixup_function
   let bsymi_parent = Flx_bsym_table.find_parent bsym_table i in
 
   let vs, ps =
-    match bsymi.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsymi with
     | BBDCL_function (_,vs,(ps,_),_,_) -> vs, ps
     | _ -> assert false
   in
@@ -257,7 +257,7 @@ let fixup_function
         " <-- " ^ string_of_bid i);
 
     Flx_bsym_table.add_child bsym_table k n
-      (Flx_bsym.create ~sr:bsymi.Flx_bsym.sr (s ^ "_uncurry") bbdcl);
+      (Flx_bsym.create ~sr:(Flx_bsym.sr bsymi) (s ^ "_uncurry") bbdcl);
     Flx_child.add_child child_map k n
   end ps;
 
@@ -294,7 +294,7 @@ let fixup_function
   | None -> ()
   end;
 
-  bsymi.Flx_bsym.id ^ "_uncurry", bsymi.Flx_bsym.sr, bsymi_parent, vs, ps, exes
+  (Flx_bsym.id bsymi) ^ "_uncurry", (Flx_bsym.sr bsymi), bsymi_parent, vs, ps, exes
 
 
 let synthesize_function syms bsym_table child_map ut vm rl i (c, k, n) =
@@ -343,7 +343,7 @@ let synthesize_functions syms bsym_table child_map uncurry_map =
 (** replace calls *)
 let replace_calls syms bsym_table uncurry_map =
   Flx_bsym_table.iter begin fun bid bsym ->
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_procedure (props,vs,ps,exes) ->
         let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
         let bbdcl = bbdcl_procedure (props,vs,ps,exes) in

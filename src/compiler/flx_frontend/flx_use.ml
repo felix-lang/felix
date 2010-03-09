@@ -100,8 +100,8 @@ and uses_production used bsym_table count_inits p =
 and faulty_req bsym_table i =
   let bsym = Flx_bsym_table.find bsym_table i in
   clierr
-    bsym.Flx_bsym.sr
-    (bsym.Flx_bsym.id ^ " is used but has unsatisfied requirement")
+    (Flx_bsym.sr bsym)
+    (Flx_bsym.id bsym ^ " is used but has unsatisfied requirement")
 
 and uses used bsym_table count_inits i =
   let ui i = uses used bsym_table count_inits i in

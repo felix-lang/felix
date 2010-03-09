@@ -76,7 +76,7 @@ let print_bids state bsym_table bids =
     let bsym = Flx_bsym_table.find bsym_table bid in
     print_endline ("... BOUND SYMBOL:     " ^ Flx_print.string_of_bbdcl
       bsym_table
-      bsym.Flx_bsym.bbdcl
+      (Flx_bsym.bbdcl bsym)
       bid)
   end bids
 

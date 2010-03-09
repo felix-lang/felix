@@ -31,7 +31,7 @@ let cal_display bsym_table parent : (bid_t *int) list =
             failwith ("[cal_display] Can't find index(2) " ^
               Flx_print.string_of_bid parent)
         in
-        match bsym.Flx_bsym.bbdcl with
+        match Flx_bsym.bbdcl bsym with
         | BBDCL_procedure (_, vs, _, _)
         | BBDCL_function (_, vs, _, _, _) ->
             let bsym_parent = Flx_bsym_table.find_parent bsym_table parent in

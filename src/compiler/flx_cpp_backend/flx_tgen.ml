@@ -204,7 +204,7 @@ let gen_type_name syms bsym_table (index,typ) =
       try Flx_bsym_table.find bsym_table i
       with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_bid i)
     in
-    begin match bsym.Flx_bsym.bbdcl with
+    begin match Flx_bsym.bbdcl bsym with
     | BBDCL_abs (vs,quals,ct,_) ->
       let complete = not (mem `Incomplete quals) in
       let descr =
@@ -218,11 +218,11 @@ let gen_type_name syms bsym_table (index,typ) =
       let tss = map tn ts in
       let instance =
         match ct with
-        | CS_virtual -> clierr bsym.Flx_bsym.sr "Instantiate virtual type!"
-        | CS_identity -> syserr bsym.Flx_bsym.sr "Idendity type is nonsense!"
+        | CS_virtual -> clierr (Flx_bsym.sr bsym) "Instantiate virtual type!"
+        | CS_identity -> syserr (Flx_bsym.sr bsym) "Idendity type is nonsense!"
         | CS_str c -> c
         | CS_str_template c ->
-        try sc "expr" (csubst bsym.Flx_bsym.sr bsym.Flx_bsym.sr c (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" tss "atom" "Error" ["Error"] ["Error"] ["Error"])
+        try sc "expr" (csubst (Flx_bsym.sr bsym) (Flx_bsym.sr bsym) c (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" tss "atom" "Error" ["Error"] ["Error"] ["Error"])
         with Not_found -> failwith "[gen_type_name] Unexpected error in csubst"
       in
 
@@ -247,7 +247,7 @@ let gen_type_name syms bsym_table (index,typ) =
         "\n"
       in
       let instance_name = cn typ in
-      let instance = bsym.Flx_bsym.id ^ "<" ^ catmap "," cn ts ^"> " in
+      let instance = Flx_bsym.id bsym ^ "<" ^ catmap "," cn ts ^"> " in
       descr ^
       "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
 
@@ -285,7 +285,7 @@ let gen_type_name syms bsym_table (index,typ) =
       (
         "[gen_type_name] Expected definition " ^ string_of_bid i ^
         " to be generic primitive, got " ^
-        string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl i ^
+        string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) i ^
         " instance types [" ^
         catmap ", " tn ts ^
         "]"
@@ -418,7 +418,7 @@ let gen_type syms bsym_table (index,typ) =
       try Flx_bsym_table.find bsym_table i
       with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_bid i)
     in
-    begin match bsym.Flx_bsym.bbdcl with
+    begin match Flx_bsym.bbdcl bsym with
     | BBDCL_newtype (vs,t') ->
       let descr =
         "\n//NEWTYPE " ^ string_of_bid i ^ " INSTANCE " ^
@@ -465,7 +465,7 @@ let gen_type syms bsym_table (index,typ) =
       (
         "[gen_type] Expected definition " ^ string_of_bid i ^
         " to be generic primitive, got " ^
-        string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl i ^
+        string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) i ^
         " instance types [" ^
         catmap ", " tn ts ^
         "]"

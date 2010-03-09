@@ -60,7 +60,7 @@ let exe_uses_gc bsym_table exe =
   (* this test is used to trap use of gc by primitives *)
   | BEXE_call_prim (sr,i,ts,a) ->
     let bsym = Flx_bsym_table.find bsym_table i in
-    begin match bsym.Flx_bsym.bbdcl with
+    begin match Flx_bsym.bbdcl bsym with
     | BBDCL_callback (props,vs,ps,_,_,BTYP_void,rqs,_)
     | BBDCL_proc (props,vs,ps,_,rqs) ->
       (*
@@ -71,7 +71,7 @@ let exe_uses_gc bsym_table exe =
       else
       Flx_bexe.iter ~fe:(expr_uses_gc bsym_table) exe
     | _ ->
-      print_endline ("Call primitive to non-primitive " ^ bsym.Flx_bsym.id ^
+      print_endline ("Call primitive to non-primitive " ^ Flx_bsym.id bsym ^
         "<" ^ string_of_bid i ^ ">");
       assert false
     end
@@ -108,7 +108,7 @@ let exes_use_yield exes =
 
 (* ALSO calculates if a function uses a yield *)
 let set_gc_use bsym_table index bsym =
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_function (props, vs, ps, rt, exes) ->
     let uses_gc = exes_use_gc bsym_table exes in
     let uses_yield = exes_use_yield exes in
@@ -152,7 +152,7 @@ let exes_use_global bsym_table exes =
   with Not_found -> true
 
 let set_local_globals bsym_table index bsym =
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_function (props,vs,ps,rt,exes) ->
     if exes_use_global bsym_table exes then begin
       let bbdcl = bbdcl_function (`Uses_global_var :: props,vs,ps,rt,exes) in
@@ -206,7 +206,7 @@ let rec set_ptf_usage bsym_table usage excludes i bsym =
   (* main routine *)
   let calls = try Hashtbl.find usage i with Not_found -> [] in
 
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_function (props,vs,ps,rt,exes) ->
     (*
     print_endline ("Function " ^ id ^ "<"^si i^"> properties " ^ string_of_properties props);

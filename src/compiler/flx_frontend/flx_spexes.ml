@@ -487,10 +487,10 @@ let gen_body syms (uses,child_map,bsym_table) id
       in
       BidSet.iter (fun i ->
         let bsym = Flx_bsym_table.find bsym_table i in
-        match bsym.Flx_bsym.bbdcl with
+        match Flx_bsym.bbdcl bsym with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
           let exes = map (subarg syms bsym_table argmap) exes in
-          recal_exes_usage uses bsym.Flx_bsym.sr i ps exes;
+          recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
           let bbdcl = bbdcl_function (props,vs,(ps,traint),ret,exes) in
           Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
@@ -499,7 +499,7 @@ let gen_body syms (uses,child_map,bsym_table) id
           print_endline ("MODIFY " ^ si i);
           *)
           let exes = map (subarg syms bsym_table argmap) exes in
-          recal_exes_usage uses bsym.Flx_bsym.sr i ps exes;
+          recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
           let bbdcl = bbdcl_procedure (props,vs,(ps,traint),exes) in
           Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 

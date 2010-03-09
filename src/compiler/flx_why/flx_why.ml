@@ -29,7 +29,7 @@ let find_name bsym_table child_map root name =
       | child :: children ->
           let bsym = Flx_bsym_table.find bsym_table child in
           search_children
-            (if bsym.Flx_bsym.id = name then (child, bsym) :: bsyms else bsyms)
+            (if Flx_bsym.id bsym = name then (child, bsym) :: bsyms else bsyms)
             children
     in
     search_children bsyms (Flx_child.find_children child_map root)
@@ -42,9 +42,9 @@ let find_function syms bsym_table child_map root name =
   let bsyms = find_name bsym_table child_map root name in
   let bsyms =
     List.filter begin fun (_, bsym) ->
-      match bsym.Flx_bsym.bbdcl with
+      match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (_,_,args,res,ct,_,_) ->
-        begin match bsym.Flx_bsym.id, args, res with
+        begin match Flx_bsym.id bsym, args, res with
         | "lnot", [BTYP_unitsum 2], BTYP_unitsum 2 -> true
         | _, [BTYP_unitsum 2; BTYP_unitsum 2], BTYP_unitsum 2 -> true
         | _ -> false
@@ -349,32 +349,32 @@ let emit_whycode filename syms bsym_table child_map root =
 
   output_string f "(****** ABSTRACT TYPES *******)\n";
   Flx_bsym_table.iter begin fun index bsym ->
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_abs (bvs,qual,ct,breqs) ->
-        emit_type syms bsym_table f index bsym.Flx_bsym.id bsym.Flx_bsym.sr bvs
+        emit_type syms bsym_table f index (Flx_bsym.id bsym) (Flx_bsym.sr bsym) bvs
     | _ -> ()
   end bsym_table;
 
   output_string f "(****** UNIONS *******)\n";
   Flx_bsym_table.iter begin fun index bsym ->
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_union (bvs,variants) ->
-        emit_type syms bsym_table f index bsym.Flx_bsym.id bsym.Flx_bsym.sr bvs
+        emit_type syms bsym_table f index (Flx_bsym.id bsym) (Flx_bsym.sr bsym) bvs
     | _ -> ()
   end bsym_table;
 
   output_string f "(****** STRUCTS *******)\n";
   Flx_bsym_table.iter begin fun index bsym ->
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_cstruct (bvs,variants)
     | BBDCL_struct (bvs,variants) ->
-        emit_type syms bsym_table f index bsym.Flx_bsym.id bsym.Flx_bsym.sr bvs
+        emit_type syms bsym_table f index (Flx_bsym.id bsym) (Flx_bsym.sr bsym) bvs
     | _ -> ()
   end bsym_table;
 
   output_string f "(******* FUNCTIONS ******)\n";
   Flx_bsym_table.iter begin fun index bsym ->
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_procedure (_,bvs,ps,_) ->
         let ps = calps ps in
         emit_function
@@ -382,8 +382,8 @@ let emit_whycode filename syms bsym_table child_map root =
           bsym_table
           f
           index
-          bsym.Flx_bsym.id
-          bsym.Flx_bsym.sr
+          (Flx_bsym.id bsym)
+          (Flx_bsym.sr bsym)
           bvs
           ps
           unitt
@@ -395,8 +395,8 @@ let emit_whycode filename syms bsym_table child_map root =
           bsym_table
           f
           index
-          bsym.Flx_bsym.id
-          bsym.Flx_bsym.sr
+          (Flx_bsym.id bsym)
+          (Flx_bsym.sr bsym)
           bvs
           ps
           ret
@@ -407,8 +407,8 @@ let emit_whycode filename syms bsym_table child_map root =
           bsym_table
           f
           index
-          bsym.Flx_bsym.id
-          bsym.Flx_bsym.sr
+          (Flx_bsym.id bsym)
+          (Flx_bsym.sr bsym)
           bvs
           ps
           ret
@@ -419,8 +419,8 @@ let emit_whycode filename syms bsym_table child_map root =
           bsym_table
           f
           index
-          bsym.Flx_bsym.id
-          bsym.Flx_bsym.sr
+          (Flx_bsym.id bsym)
+          (Flx_bsym.sr bsym)
           bvs
           ps
           unitt

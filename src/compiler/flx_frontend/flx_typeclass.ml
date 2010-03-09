@@ -38,7 +38,7 @@ let check_instance
   inst_ts
 =
   let tc_bsym = Flx_bsym_table.find bsym_table tc in
-  match tc_bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl tc_bsym with
   | BBDCL_typeclass (tc_props, tc_bvs) ->
     (*
     print_endline ("Found " ^ inst_id ^ "<"^si inst ^ ">" ^
@@ -50,7 +50,7 @@ let check_instance
     );
     *)
     if length tc_bvs <> length inst_ts then
-      clierr2 inst_sr tc_bsym.Flx_bsym.sr
+      clierr2 inst_sr (Flx_bsym.sr tc_bsym)
       (
         "Instance [" ^
         catmap "," (fun (s,j) -> s ^ "<" ^ string_of_bid j ^ ">") inst_vs
@@ -71,34 +71,34 @@ let check_instance
     *)
     let inst_map = fold_left (fun acc i->
       let bsym = Flx_bsym_table.find bsym_table i in
-      match bsym.Flx_bsym.bbdcl with
+      match Flx_bsym.bbdcl bsym with
       | BBDCL_fun (_,bvs,params,ret,_,_,_) ->
         let argt = btyp_tuple params in
         let qt = bvs, btyp_function (argt,ret) in
-        (bsym.Flx_bsym.id,(i,qt)) :: acc
+        (Flx_bsym.id bsym,(i,qt)) :: acc
 
       | BBDCL_proc (_,bvs,params,_,_) ->
         let argt = btyp_tuple params in
         let qt = bvs, btyp_function (argt, btyp_void) in
-        (bsym.Flx_bsym.id,(i,qt)) :: acc
+        (Flx_bsym.id bsym,(i,qt)) :: acc
 
       | BBDCL_procedure (_,bvs,bps,_) ->
         let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
         let qt = bvs, btyp_function (argt, btyp_void) in
-        (bsym.Flx_bsym.id,(i,qt)) :: acc
+        (Flx_bsym.id bsym,(i,qt)) :: acc
 
       | BBDCL_function (_,bvs,bps,ret,_) ->
         let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
         let qt = bvs, btyp_function (argt,ret) in
-        (bsym.Flx_bsym.id,(i,qt)) :: acc
+        (Flx_bsym.id bsym,(i,qt)) :: acc
 
       | BBDCL_const (_,bvs,ret,_,_) ->
         let qt = bvs,ret in
-        (bsym.Flx_bsym.id,(i,qt)) :: acc
+        (Flx_bsym.id bsym,(i,qt)) :: acc
 
       | BBDCL_val (bvs,ret) ->
         let qt = bvs,ret in
-        (bsym.Flx_bsym.id,(i,qt)) :: acc
+        (Flx_bsym.id bsym,(i,qt)) :: acc
       | _ -> acc
       ) [] inst_kids
     in
@@ -223,11 +223,11 @@ let check_instance
     iter
     (fun tck ->
       let tck_bsym = Flx_bsym_table.find bsym_table tck in
-      match tck_bsym.Flx_bsym.bbdcl with
+      match Flx_bsym.bbdcl tck_bsym with
       | BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
         if ct == CS_virtual then
           let ft = btyp_function (btyp_tuple params,ret) in
-          check_binding true tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
+          check_binding true tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
         (*
         clierr tcksr "Typeclass requires virtual function";
         *)
@@ -235,7 +235,7 @@ let check_instance
       | BBDCL_proc (props,bvs,params,ct,breq) ->
         if ct == CS_virtual then
           let ft = btyp_function (btyp_tuple params, btyp_void) in
-          check_binding true tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
+          check_binding true tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
         (*
         clierr tcksr "Typeclass requires virtual procedure";
         *)
@@ -243,15 +243,15 @@ let check_instance
       | BBDCL_function (props,bvs,bps,ret,_) when mem `Virtual props ->
         let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
         let ft = btyp_function (argt,ret) in
-        check_binding false tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
+        check_binding false tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
 
       | BBDCL_procedure (props, bvs, bps,_) when mem `Virtual props ->
         let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
         let ft = btyp_function (argt, btyp_void) in
-        check_binding false tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ft
+        check_binding false tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
 
       | BBDCL_const (props,bvs,ret,_,_) when mem `Virtual props ->
-        check_binding false tck tck_bsym.Flx_bsym.sr tck_bsym.Flx_bsym.id bvs ret
+        check_binding false tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ret
 
 
       | BBDCL_insert _ -> ()
@@ -262,21 +262,21 @@ let check_instance
         (*
         clierr tcksr "Typeclass entry must be virtual function or procedure"
         *)
-        print_endline ("Warning: typeclass " ^ tc_bsym.Flx_bsym.id ^ " entry " ^
-          tck_bsym.Flx_bsym.id ^ " is not virtual");
+        print_endline ("Warning: typeclass " ^ Flx_bsym.id tc_bsym ^ " entry " ^
+          Flx_bsym.id tck_bsym ^ " is not virtual");
     )
     tc_kids
 
 
   | _ ->
-    clierr2 inst_sr tc_bsym.Flx_bsym.sr ("Expected " ^ inst_id ^ "<" ^
+    clierr2 inst_sr (Flx_bsym.sr tc_bsym) ("Expected " ^ inst_id ^ "<" ^
       string_of_bid inst ^ ">[" ^ catmap "," (sbt bsym_table) inst_ts ^ "]" ^
-      " to be typeclass instance, but" ^ tc_bsym.Flx_bsym.id ^ "<" ^
+      " to be typeclass instance, but" ^ Flx_bsym.id tc_bsym ^ "<" ^
       string_of_bid tc ^ ">, is not a typeclass"
     )
 
 let typeclass_instance_check_symbol syms bsym_table child_map i bsym =
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_instance (props, vs, cons, tc, ts) ->
       let iss =
         try Hashtbl.find syms.instances_of_typeclass tc
@@ -289,10 +289,10 @@ let typeclass_instance_check_symbol syms bsym_table child_map i bsym =
         bsym_table
         child_map
         i
-        bsym.Flx_bsym.id
+        (Flx_bsym.id bsym)
         vs
         cons
-        bsym.Flx_bsym.sr
+        (Flx_bsym.sr bsym)
         props
         tc
         ts

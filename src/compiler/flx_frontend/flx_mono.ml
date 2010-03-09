@@ -202,14 +202,14 @@ let mono syms bsym_table fi i ts n =
     beta_reduce
       syms
       bsym_table
-      bsym.Flx_bsym.sr
+      (Flx_bsym.sr bsym)
       (fixup_type syms bsym_table fi (list_subst syms.counter vars t))
   in
   let update_bsym parent bbdcl =
     Flx_bsym_table.remove bsym_table n;
     Flx_bsym_table.add bsym_table parent n (Flx_bsym.replace_bbdcl bsym bbdcl)
   in
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in

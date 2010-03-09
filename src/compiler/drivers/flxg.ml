@@ -370,9 +370,9 @@ let codegen_bsyms state bsym_table child_map root_proc =
   (* FUDGE the init procedure to make interfacing a bit simpler *)
   let topclass_props =
     let bsym = Flx_bsym_table.find bsym_table root_proc in
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_procedure (props,vs,p,exes) -> props
-    | _ -> syserr bsym.Flx_bsym.sr "Expected root to be procedure"
+    | _ -> syserr (Flx_bsym.sr bsym) "Expected root to be procedure"
   in
   fprintf state.ppf "//root module's init procedure has name %s\n" top_class;
 
@@ -412,7 +412,7 @@ let codegen_bsyms state bsym_table child_map root_proc =
         try Flx_bsym_table.find bsym_table i with Not_found ->
           failwith ("[package] can't find index " ^ string_of_bid i)
       in
-      match bsym.Flx_bsym.bbdcl with
+      match Flx_bsym.bbdcl bsym with
       | BBDCL_insert (_,s,`Package,_) ->
         begin match s with
         | CS_identity | CS_str "" | CS_str_template "" -> ()
@@ -420,13 +420,13 @@ let codegen_bsyms state bsym_table child_map root_proc =
           let s =
             match s with
             | CS_identity -> assert false (* covered above *)
-            | CS_virtual -> clierr bsym.Flx_bsym.sr "Instantiate virtual insertion!"
+            | CS_virtual -> clierr (Flx_bsym.sr bsym) "Instantiate virtual insertion!"
             | CS_str s -> Flx_cexpr.ce_expr "atom" s
             | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
               let tn t = cpp_typename state.syms bsym_table t in
               let ts = List.map tn ts in
-              Flx_csubst.csubst bsym.Flx_bsym.sr bsym.Flx_bsym.sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
+              Flx_csubst.csubst (Flx_bsym.sr bsym) (Flx_bsym.sr bsym) s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in
           let s = Flx_cexpr.sc "expr" s in
           if not (Hashtbl.mem insts s) then
@@ -477,7 +477,7 @@ let codegen_bsyms state bsym_table child_map root_proc =
         try Flx_bsym_table.find bsym_table i with Not_found ->
           failwith ("[user header] can't find index " ^ string_of_bid i)
       in
-      match bsym.Flx_bsym.bbdcl with
+      match Flx_bsym.bbdcl bsym with
       | BBDCL_insert (_,s,`Header,_) ->
         begin match s with
         | CS_identity | CS_str "" | CS_str_template "" -> ()
@@ -485,13 +485,13 @@ let codegen_bsyms state bsym_table child_map root_proc =
           let s =
             match s with
             | CS_identity -> assert false
-            | CS_virtual -> clierr bsym.Flx_bsym.sr "Instantiate virtual insertion!"
+            | CS_virtual -> clierr (Flx_bsym.sr bsym) "Instantiate virtual insertion!"
             | CS_str s -> Flx_cexpr.ce_expr "atom" s
             | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
               let tn t = cpp_typename state.syms bsym_table t in
               let ts = List.map tn ts in
-              Flx_csubst.csubst bsym.Flx_bsym.sr bsym.Flx_bsym.sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
+              Flx_csubst.csubst (Flx_bsym.sr bsym) (Flx_bsym.sr bsym) s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in
           let s = Flx_cexpr.sc "expr" s in
           if not (Hashtbl.mem insts s) then
@@ -594,7 +594,7 @@ let codegen_bsyms state bsym_table child_map root_proc =
         try Flx_bsym_table.find bsym_table i with Not_found ->
           failwith ("[user body] can't find index " ^ string_of_bid i)
       in
-      match bsym.Flx_bsym.bbdcl with
+      match Flx_bsym.bbdcl bsym with
       | BBDCL_insert (_,s,`Body,_) ->
         begin match s with
         | CS_identity | CS_str "" | CS_str_template "" -> ()
@@ -602,13 +602,13 @@ let codegen_bsyms state bsym_table child_map root_proc =
           let s =
             match s with
             | CS_identity -> assert false
-            | CS_virtual -> clierr bsym.Flx_bsym.sr "Instantiate virtual insertion!"
+            | CS_virtual -> clierr (Flx_bsym.sr bsym) "Instantiate virtual insertion!"
             | CS_str s -> Flx_cexpr.ce_expr "atom" s
             | CS_str_template s ->
               (* do we need tsubst vs ts t? *)
               let tn t = cpp_typename state.syms bsym_table t in
               let ts = List.map tn ts in
-              Flx_csubst.csubst bsym.Flx_bsym.sr bsym.Flx_bsym.sr s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
+              Flx_csubst.csubst (Flx_bsym.sr bsym) (Flx_bsym.sr bsym) s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
           in
           let s = Flx_cexpr.sc "expr" s in
           if not (Hashtbl.mem insts s) then

@@ -106,15 +106,15 @@ let name_of_index state bsym_table bid ts =
     let name, ts =
       let bsym = Flx_bsym_table.find bsym_table bid in
       let bsym_parent = Flx_bsym_table.find_parent bsym_table bid in
-      let ts = Flx_bbdcl.get_ts bsym.Flx_bsym.bbdcl in
+      let ts = Flx_bbdcl.get_ts (Flx_bsym.bbdcl bsym) in
       match bsym_parent with
-      | None -> bsym.Flx_bsym.id, ts
+      | None -> Flx_bsym.id bsym, ts
       | Some parent ->
           let name = aux parent ts in
           let name =
             if String.length name = 0
-            then bsym.Flx_bsym.id
-            else name ^ "." ^ bsym.Flx_bsym.id
+            then Flx_bsym.id bsym
+            else name ^ "." ^ Flx_bsym.id bsym
           in
           name, ts
     in
@@ -1229,9 +1229,9 @@ and codegen_symbol state bsym_table child_map closure index bsym =
       | Some p -> Flx_print.string_of_bid p
       | None -> "None") ^
     " " ^
-    (Flx_print.string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl index));
+    (Flx_print.string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index));
 
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | Flx_bbdcl.BBDCL_module ->
       print_endline "BBDCL_module";
       assert false
@@ -1241,7 +1241,7 @@ and codegen_symbol state bsym_table child_map closure index bsym =
         state
         bsym_table
         child_map
-        bsym.Flx_bsym.sr
+        (Flx_bsym.sr bsym)
         index
         (name_of_index state bsym_table index [])
         props
@@ -1254,7 +1254,7 @@ and codegen_symbol state bsym_table child_map closure index bsym =
         state
         bsym_table
         child_map
-        bsym.Flx_bsym.sr
+        (Flx_bsym.sr bsym)
         index
         (name_of_index state bsym_table index [])
         props

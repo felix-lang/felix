@@ -516,7 +516,7 @@ and qualified_name_of_index sym_table index =
 and get_name_parent bsym_table index =
   try
     let bsym = Flx_bsym_table.find bsym_table index in
-    bsym.Flx_bsym.id, (Flx_bsym_table.find_parent bsym_table index)
+    Flx_bsym.id bsym, (Flx_bsym_table.find_parent bsym_table index)
   with Not_found -> "index_" ^ string_of_bid index,None
 
 
@@ -2411,8 +2411,8 @@ and string_of_bbdcl bsym_table bbdcl index : string =
 
 let full_string_of_entry_kind bsym_table {base_sym=i; spec_vs=vs; sub_ts=ts} =
   let bsym = Flx_bsym_table.find bsym_table i in
-  string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl i ^
-  "\n  defined at " ^ Flx_srcref.short_string_of_src bsym.Flx_bsym.sr ^ "\n  with view" ^
+  string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) i ^
+  "\n  defined at " ^ Flx_srcref.short_string_of_src (Flx_bsym.sr bsym) ^ "\n  with view" ^
   " vs=" ^ catmap "," (fun (s,_)->s) vs ^
   " ts=" ^ catmap "," (sbt bsym_table) ts
 
@@ -2490,12 +2490,12 @@ let print_function_body bsym_table id i (bvs:bvs_t) ps exes =
 
 let print_function bsym_table i =
   let bsym = Flx_bsym_table.find bsym_table i in
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_function (_,bvs,ps,_,exes)
   | BBDCL_procedure (_,bvs,ps,exes) ->
       print_function_body
         bsym_table
-        bsym.Flx_bsym.id
+        (Flx_bsym.id bsym)
         i
         bvs
         ps
@@ -2504,12 +2504,12 @@ let print_function bsym_table i =
 
 let print_functions bsym_table =
   Flx_bsym_table.iter begin fun i bsym ->
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_function (_,bvs,ps,_,exes)
     | BBDCL_procedure (_,bvs,ps,exes) ->
         print_function_body
           bsym_table
-          bsym.Flx_bsym.id
+          (Flx_bsym.id bsym)
           i
           bvs
           ps
@@ -2519,25 +2519,25 @@ let print_functions bsym_table =
 
 let print_symbols bsym_table =
   Flx_bsym_table.iter begin fun i bsym ->
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_function (_,bvs,ps,_,exes)
     | BBDCL_procedure (_,bvs,ps,exes) ->
         print_function_body
           bsym_table
-          bsym.Flx_bsym.id
+          (Flx_bsym.id bsym)
           i
           bvs
           ps
           exes
     | BBDCL_var (bvs,t) ->
         Printf.printf "VARIABLE %s <%s> [%s] type %s"
-          bsym.Flx_bsym.id
+          (Flx_bsym.id bsym)
           (string_of_bid i)
           (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)
           (sbt bsym_table t)
     | BBDCL_val (bvs,t) ->
         Printf.printf "VALUE %s <%s> [%s] type %s"
-          bsym.Flx_bsym.id
+          (Flx_bsym.id bsym)
           (string_of_bid i)
           (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)
           (sbt bsym_table t)
@@ -2588,7 +2588,7 @@ let string_of_bsym bsym_table bid =
   let bsym = Flx_bsym_table.find bsym_table bid in
 
   string_of_bid bid ^ " --> " ^
-  string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl bid
+  string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) bid
 
 
 let print_bsym bsym_table bid =
@@ -2596,23 +2596,23 @@ let print_bsym bsym_table bid =
   let bsym_parent = Flx_bsym_table.find_parent bsym_table bid in
 
   print_endline ("index: " ^ string_of_bid bid);
-  print_endline ("id: " ^ bsym.Flx_bsym.id);
+  print_endline ("id: " ^ Flx_bsym.id bsym);
   print_endline ("parent: " ^ 
     match bsym_parent with
     | Some parent -> string_of_bid parent
     | None -> "");
 
-  if Hashtbl.length bsym.Flx_bsym.pubmap != 0 then
+  if Hashtbl.length (Flx_bsym.pubmap bsym) != 0 then
     print_endline ("pubmap: " ^
-      (string_of_name_map bsym.Flx_bsym.pubmap));
+      (string_of_name_map (Flx_bsym.pubmap bsym)));
 
-  if Hashtbl.length bsym.Flx_bsym.privmap != 0 then
+  if Hashtbl.length (Flx_bsym.privmap bsym) != 0 then
     print_endline ("privmap: " ^
-      (string_of_name_map bsym.Flx_bsym.privmap));
+      (string_of_name_map (Flx_bsym.privmap bsym)));
 
   print_endline ("bbdcl: " ^ (string_of_bbdcl
     bsym_table 
-    bsym.Flx_bsym.bbdcl
+    (Flx_bsym.bbdcl bsym)
     bid))
 
 

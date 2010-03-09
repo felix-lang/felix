@@ -17,7 +17,7 @@ let find_thread_vars_with_type bsym_table =
   let vars = ref [] in
   Flx_bsym_table.iter begin fun k bsym ->
     let bsym_parent = Flx_bsym_table.find_parent bsym_table k in
-    match bsym_parent, bsym.Flx_bsym.bbdcl with
+    match bsym_parent, Flx_bsym.bbdcl bsym with
     | None,BBDCL_var (_,t)
     | None,BBDCL_val (_,t)
       -> vars := (k,t) :: !vars
@@ -40,7 +40,7 @@ let find_references syms bsym_table child_map index ts =
   (fun idx ->
     try
       let bsym = Flx_bsym_table.find bsym_table idx in
-      match bsym.Flx_bsym.bbdcl with
+      match Flx_bsym.bbdcl bsym with
       | BBDCL_var (vs,t)
       | BBDCL_ref (vs,t)
       | BBDCL_val (vs,t)
@@ -49,7 +49,7 @@ let find_references syms bsym_table child_map index ts =
         failwith
         (
           "[find_references] entry " ^ string_of_bid index ^
-          ", child " ^ bsym.Flx_bsym.id ^ "<" ^ string_of_bid idx ^ ">" ^
+          ", child " ^ Flx_bsym.id bsym ^ "<" ^ string_of_bid idx ^ ">" ^
           ", wrong number of args, expected vs = " ^
           si (length vs) ^
           ", got ts=" ^
@@ -97,7 +97,7 @@ let rec get_offsets' syms bsym_table typ : string list =
       with Not_found -> failwith
         ("get_offsets'] can't find index " ^ string_of_bid i)
     in
-    begin match bsym.Flx_bsym.bbdcl with
+    begin match Flx_bsym.bbdcl bsym with
     | BBDCL_union (vs,idts) ->
       let varmap = mk_varmap vs ts in
       let cpts = map (fun (_,_,t) -> varmap_subst varmap t) idts in
@@ -351,7 +351,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
     (*
     print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt bsym_table) ts ^"]");
     *)
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_function (props,vs,ps, ret,exes) ->
       scan exes;
       if mem `Cfun props then () else
@@ -380,7 +380,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
           last_ptr_map
       else if mem `Stack_closure props then ()
       else
-        print_endline ("Warning: no closure of " ^ bsym.Flx_bsym.id ^"<" ^
+        print_endline ("Warning: no closure of " ^ Flx_bsym.id bsym ^"<" ^
           string_of_bid index ^ "> is used, but not stackable?")
     | _ -> ()
   )
@@ -432,7 +432,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
           failwith ("[gen_offset_tables:BTYP_inst] can't find index " ^
             string_of_bid i)
       in
-      begin match bsym.Flx_bsym.bbdcl with
+      begin match Flx_bsym.bbdcl bsym with
       | BBDCL_abs (vs,bquals,_,_) ->
         (*
         print_endline ("abstract type "^id^".. quals:");
@@ -579,7 +579,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
             "[gen_offset_tables:BTYP_inst:allocable_types] can't find index " ^
             string_of_bid i)
       in
-      begin match bsym.Flx_bsym.bbdcl with
+      begin match Flx_bsym.bbdcl bsym with
       | BBDCL_abs (_,quals,_,_) ->
         let complete = not (mem `Incomplete quals) in
         let pod = mem `Pod quals in
@@ -610,8 +610,8 @@ let gen_offset_tables syms bsym_table child_map module_name =
             bcat s ("//Use "^name^"_ptr_map\n");
           end
         else
-          clierr bsym.Flx_bsym.sr
-          ("[ogen] attempt to allocate an incomplete type: '" ^ bsym.Flx_bsym.id ^"'")
+          clierr (Flx_bsym.sr bsym)
+          ("[ogen] attempt to allocate an incomplete type: '" ^ Flx_bsym.id bsym ^"'")
 
       | BBDCL_union _ -> () (* handled by universal _uctor_ *)
       | BBDCL_cstruct (vs,cps) ->

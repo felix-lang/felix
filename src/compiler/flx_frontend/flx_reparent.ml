@@ -288,7 +288,7 @@ let reparent1
   if syms.compiler_options.print_flag then
   print_endline
   (
-    "COPYING " ^ bsym.Flx_bsym.id ^ " index " ^ string_of_bid index ^
+    "COPYING " ^ Flx_bsym.id bsym ^ " index " ^ string_of_bid index ^
     " with old parent " ^ sop bsym_parent ^ " to index " ^
     string_of_bid k ^ " with new parent " ^ sop parent
   );
@@ -307,7 +307,7 @@ let reparent1
     Flx_bsym_table.add bsym_table parent k (Flx_bsym.replace_bbdcl bsym bbdcl)
   in
 
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_procedure (props,vs,(ps,traint),exes) ->
     let exes = rexes exes in
     let ps = remap_ps ps in
@@ -430,8 +430,8 @@ let reparent1
   *)
 
   | _ ->
-    syserr bsym.Flx_bsym.sr ("[reparent1] Unexpected: bbdcl " ^
-      string_of_bbdcl bsym_table bsym.Flx_bsym.bbdcl index)
+    syserr (Flx_bsym.sr bsym) ("[reparent1] Unexpected: bbdcl " ^
+      string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index)
 
 (* make a copy all the descendants of i, changing any
   parent which is i to the given new parent

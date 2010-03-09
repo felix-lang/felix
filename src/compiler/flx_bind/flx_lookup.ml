@@ -1852,7 +1852,7 @@ and btype_of_bsym state bsym_table bt bid bsym =
     btyp_tuple (Flx_bparameter.get_btypes params)
   in
 
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_module -> assert false
   | BBDCL_function (_,_,(params,_),return_type,_) ->
       btyp_function (type_of_params params, return_type)
@@ -1878,14 +1878,14 @@ and btype_of_bsym state bsym_table bt bid bsym =
   | BBDCL_cstruct (_,ls) ->
       (* Lower a struct type into a function that creates the struct. *)
       let ts = List.map
-        (fun (s,i,_) -> TYP_name (bsym.Flx_bsym.sr,s,[]))
-        (fst bsym.Flx_bsym.vs)
+        (fun (s,i,_) -> TYP_name (Flx_bsym.sr bsym,s,[]))
+        (fst (Flx_bsym.vs bsym))
       in
-      let ts = List.map (bt bsym.Flx_bsym.sr) ts in
+      let ts = List.map (bt (Flx_bsym.sr bsym)) ts in
       let ts = adjust_ts
         state.sym_table
         bsym_table
-        bsym.Flx_bsym.sr
+        (Flx_bsym.sr bsym)
         bid
         ts
       in
@@ -4123,7 +4123,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           (* We got a bound symbol, so this should be easy. We now just have to
            * handle reference types directly, which we'll automatically convert
            * that into dereferencing the name. *)
-          begin match bsym.Flx_bsym.bbdcl with
+          begin match Flx_bsym.bbdcl bsym with
           | BBDCL_ref _ ->
               (* We've got a reference, so make sure the type is a pointer. *)
               let t' = match t with BTYP_pointer t' -> t' | _ ->
@@ -4338,7 +4338,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           try Some (Flx_bsym_table.find bsym_table bid) with Not_found -> None
         with
         | Some bsym ->
-            begin match bsym.Flx_bsym.bbdcl with
+            begin match Flx_bsym.bbdcl bsym with
             | BBDCL_function (properties,_,_,_,_)
             | BBDCL_procedure (properties,_,_,_) ->
                 List.mem property properties
@@ -4362,13 +4362,13 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           | Some bsym ->
               (* We found a bound symbol, check if it's an addressable symbol.
                * Otherwise, error out. *)
-              begin match bsym.Flx_bsym.bbdcl with
+              begin match Flx_bsym.bbdcl bsym with
               | BBDCL_ref _
               | BBDCL_var _ ->
                   let vtype = inner_type_of_index_with_ts
                     state
                     bsym_table
-                    bsym.Flx_bsym.sr
+                    (Flx_bsym.sr bsym)
                     { rs with depth = rs.depth + 1 }
                     index
                     ts
@@ -4376,12 +4376,12 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
                   bexpr_ref (btyp_pointer vtype) (index, ts)
 
               | BBDCL_val _ ->
-                  clierr2 srr bsym.Flx_bsym.sr ("[bind_expression] " ^
-                    "Can't address a value " ^ bsym.Flx_bsym.id)
+                  clierr2 srr (Flx_bsym.sr bsym) ("[bind_expression] " ^
+                    "Can't address a value " ^ Flx_bsym.id bsym)
 
               | _ ->
-                  clierr2 srr bsym.Flx_bsym.sr ("[bind_expression] " ^
-                    "Address non variable " ^ bsym.Flx_bsym.id)
+                  clierr2 srr (Flx_bsym.sr bsym) ("[bind_expression] " ^
+                    "Address non variable " ^ Flx_bsym.id bsym)
               end
 
           | None ->

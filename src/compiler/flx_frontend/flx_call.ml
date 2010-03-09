@@ -43,8 +43,8 @@ let rec uses_type h k sr t =
 let faulty_req bsym_table i =
   let bsym = Flx_bsym_table.find bsym_table i in
   clierr
-    bsym.Flx_bsym.sr
-    (bsym.Flx_bsym.id ^ " is used but has unsatisfied requirement")
+    (Flx_bsym.sr bsym)
+    (Flx_bsym.id bsym ^ " is used but has unsatisfied requirement")
 
 let rec process_expr h k sr e =
   let ue e = process_expr h k sr e in
@@ -84,9 +84,9 @@ let cal_req_usage bsym_table uses sr parent reqs =
   List.iter ur reqs
 
 let call_data_for_symbol bsym_table uses k bsym =
-  let ut t = uses_type uses k bsym.Flx_bsym.sr t in
+  let ut t = uses_type uses k (Flx_bsym.sr bsym) t in
 
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_module -> ()
   | BBDCL_typeclass _ -> ()
   | BBDCL_axiom -> ()
@@ -95,28 +95,28 @@ let call_data_for_symbol bsym_table uses k bsym =
 
   | BBDCL_procedure (_,_,(ps,_),exes)
   | BBDCL_function (_,_,(ps,_),_,exes) ->
-      List.iter (cal_param_usage uses bsym.Flx_bsym.sr k) ps;
+      List.iter (cal_param_usage uses (Flx_bsym.sr bsym) k) ps;
       List.iter (cal_exe_usage uses k) exes
 
   | BBDCL_newtype (_,t) -> ut t
   | BBDCL_abs (_,_,_,reqs) ->
-      cal_req_usage bsym_table uses bsym.Flx_bsym.sr k reqs
+      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) k reqs
   | BBDCL_const (_,_,t,_,reqs) ->
-      cal_req_usage bsym_table uses bsym.Flx_bsym.sr k reqs
+      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) k reqs
   | BBDCL_proc (_,_,ps,_, reqs) ->
-      cal_req_usage bsym_table uses bsym.Flx_bsym.sr k reqs;
+      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) k reqs;
       List.iter ut ps
   | BBDCL_fun (_,_,ps,ret,_, reqs,_) ->
-      cal_req_usage bsym_table uses bsym.Flx_bsym.sr k reqs;
+      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) k reqs;
       List.iter ut ps;
       ut ret
   | BBDCL_insert (_,_,_,reqs) ->
-      cal_req_usage bsym_table uses bsym.Flx_bsym.sr k reqs
+      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) k reqs
   | BBDCL_instance (_,_,cons,i,ts) ->
       (* we dont add the type constraint, since it
       is only used for instance selection
       *)
-      add uses k i bsym.Flx_bsym.sr;
+      add uses k i (Flx_bsym.sr bsym);
       List.iter ut ts
 
   | BBDCL_nonconst_ctor (_,_,unt,_,ct, evs, etraint) ->
@@ -137,7 +137,7 @@ let call_data_for_symbol bsym_table uses k bsym =
       List.iter ut ps_cf;
       List.iter ut ps_c;
       ut ret;
-      cal_req_usage bsym_table uses bsym.Flx_bsym.sr k reqs
+      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) k reqs
 
 let call_data bsym_table =
   let uses = Hashtbl.create 97 in
@@ -243,7 +243,7 @@ let call_report syms bsym_table (uses,usedby) f k =
   w (string_of_bid k ^ ": ");
   w (if isr then "recursive " else "");
   w
-    begin match bsym.Flx_bsym.bbdcl with
+    begin match Flx_bsym.bbdcl bsym with
     | BBDCL_function _ -> "fun "
     | BBDCL_procedure _ -> "proc "
     | BBDCL_var _ -> "var "
@@ -251,7 +251,7 @@ let call_report syms bsym_table (uses,usedby) f k =
     | _ -> assert false
     end
   ;
-  w (bsym.Flx_bsym.id ^ " uses: ");
+  w (Flx_bsym.id bsym ^ " uses: ");
   let u = try Hashtbl.find uses k with Not_found -> [] in
   let x = ref [] in
   List.iter begin fun (i,_) ->
@@ -278,7 +278,7 @@ let call_report syms bsym_table (uses,usedby) f k =
 let print_call_report' syms bsym_table usage f =
   let x = ref [] in
   Flx_bsym_table.iter begin fun k bsym ->
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_procedure _
     | BBDCL_function _
     | BBDCL_var _

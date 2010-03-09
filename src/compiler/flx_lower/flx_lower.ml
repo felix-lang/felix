@@ -71,7 +71,7 @@ let lower_bsym_table state bsym_table root_proc =
      one or the other *)
   Flx_types.BidSet.iter begin fun i ->
     let bsym = Flx_bsym_table.find bsym_table i in
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | Flx_bbdcl.BBDCL_procedure (props,vs,p,exes) ->
         let props = ref props in
 

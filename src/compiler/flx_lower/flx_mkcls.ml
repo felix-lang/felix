@@ -30,7 +30,7 @@ let gen_closure state bsym_table i =
   let j = fresh_bid state.syms.counter in
   let bsym = Flx_bsym_table.find bsym_table i in
   let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_proc (props,vs,ps,c,reqs) ->
     let arg_t =
       match ps with | [t] -> t | ps -> btyp_tuple ps
@@ -40,14 +40,14 @@ let gen_closure state bsym_table i =
       let n = fresh_bid state.syms.counter in
       let name = "_a" ^ string_of_bid n in
       Flx_bsym_table.add_child bsym_table j n
-        (Flx_bsym.create ~sr:bsym.Flx_bsym.sr name (bbdcl_val (vs,arg_t)));
+        (Flx_bsym.create ~sr:(Flx_bsym.sr bsym) name (bbdcl_val (vs,arg_t)));
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(bexpr_name arg_t (n,ts))
     in
 
     let exes =
       [
-        bexe_call_prim (bsym.Flx_bsym.sr,i,ts,a);
-        bexe_proc_return bsym.Flx_bsym.sr
+        bexe_call_prim (Flx_bsym.sr bsym,i,ts,a);
+        bexe_proc_return (Flx_bsym.sr bsym)
       ]
     in
     Flx_bsym_table.add bsym_table bsym_parent j
@@ -63,11 +63,11 @@ let gen_closure state bsym_table i =
       let n = fresh_bid state.syms.counter in
       let name = "_a" ^ string_of_bid n in
       Flx_bsym_table.add_child bsym_table j n
-        (Flx_bsym.create ~sr:bsym.Flx_bsym.sr name (bbdcl_val (vs,arg_t)));
+        (Flx_bsym.create ~sr:(Flx_bsym.sr bsym) name (bbdcl_val (vs,arg_t)));
       [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(bexpr_name arg_t (n,ts))
     in
     let e = bexpr_apply_prim ret (i,ts,a) in
-    let exes = [bexe_fun_return (bsym.Flx_bsym.sr,e)] in
+    let exes = [bexe_fun_return (Flx_bsym.sr bsym,e)] in
     Flx_bsym_table.add bsym_table bsym_parent j
       (Flx_bsym.replace_bbdcl bsym (bbdcl_function ([],vs,(ps,None),ret,exes)));
     j
@@ -168,7 +168,7 @@ let process_exes state bsym_table all_closures exes =
 let process_entry state bsym_table all_closures i =
   let ue e = adj_cls state bsym_table all_closures e in
   let bsym = Flx_bsym_table.find bsym_table i in
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_function (props,vs,ps,ret,exes) ->
     let exes = process_exes state bsym_table all_closures exes in
     let bbdcl = bbdcl_function (props,vs,ps,ret,exes) in

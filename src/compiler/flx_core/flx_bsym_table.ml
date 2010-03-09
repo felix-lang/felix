@@ -55,12 +55,10 @@ let find bsym_table bid =
   bsym
 
 (** Searches the bound symbol table for the given symbol's id. *)
-let find_id bsym_table bid =
-  (find bsym_table bid).Flx_bsym.id
+let find_id bsym_table bid = Flx_bsym.id (find bsym_table bid)
 
 (** Searches the bound symbol table for the given symbol's source reference. *)
-let find_sr bsym_table bid =
-  (find bsym_table bid).Flx_bsym.sr
+let find_sr bsym_table bid = Flx_bsym.sr (find bsym_table bid)
 
 (** Searches the bound symbol table for the given symbol's parent. *)
 let find_parent bsym_table bid =
@@ -68,8 +66,7 @@ let find_parent bsym_table bid =
   parent
 
 (** Searches the bound symbol table for the given symbol's bbdcl. *)
-let find_bbdcl bsym_table bid =
-  (find bsym_table bid).Flx_bsym.bbdcl
+let find_bbdcl bsym_table bid = Flx_bsym.bbdcl (find bsym_table bid)
 
 (** Searches the bound symbol table for the given symbol's bparams. *)
 let find_bparams bsym_table bid =
@@ -100,9 +97,10 @@ let is_variable bsym_table bid =
 
 (** Return if the bound symbol index is a global val or var. *)
 let is_global_var (bsym_table:t) bid =
-  match Hashtbl.find bsym_table bid with
-  | None, { Flx_bsym.bbdcl=Flx_bbdcl.BBDCL_var _ }
-  | None, { Flx_bsym.bbdcl=Flx_bbdcl.BBDCL_val _ } -> true
+  let parent, bsym = Hashtbl.find bsym_table bid in
+  match parent, Flx_bsym.bbdcl bsym with
+  | None, Flx_bbdcl.BBDCL_var _
+  | None, Flx_bbdcl.BBDCL_val _ -> true
   | _ -> false
 
 (** Return if the bound symbol index is an identity function. *)
@@ -112,7 +110,7 @@ let is_function bsym_table bid =
 (** Update all the bound function and procedure's bound exes. *)
 let update_bexes f bsym_table =
   iter begin fun bid bsym ->
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | Flx_bbdcl.BBDCL_function (ps, bvs, bpar, bty, bexes) ->
         let bbdcl = Flx_bbdcl.bbdcl_function (ps, bvs, bpar, bty, f bexes) in
         update bsym_table bid (Flx_bsym.replace_bbdcl bsym bbdcl)

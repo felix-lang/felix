@@ -60,7 +60,7 @@ let rec is_pure syms bsym_table child_map i =
   (*
   print_endline ("Checking purity of " ^ id ^ "<" ^ si i ^ ">");
   *)
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_module
   | BBDCL_var _
   | BBDCL_ref _
@@ -319,7 +319,7 @@ let type_has_ptr cache syms bsym_table children t =
 let can_stack_func syms bsym_table child_map fn_cache ptr_cache i =
   let children = try Hashtbl.find child_map i with Not_found -> [] in
   let bsym = Flx_bsym_table.find bsym_table i in
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_function (_,_,_,ret,_) ->
     let has_vars = has_var_children bsym_table children in
     let has_funs = has_fun_children bsym_table children in
@@ -353,7 +353,7 @@ let can_stack_func syms bsym_table child_map fn_cache ptr_cache i =
   | BBDCL_cstruct _
   | BBDCL_struct _
     -> false (* hack *)
-  | _ -> failwith ("Unexpected non-function " ^ bsym.Flx_bsym.id)
+  | _ -> failwith ("Unexpected non-function " ^ Flx_bsym.id bsym)
 
 exception Unstackable
 
@@ -373,7 +373,7 @@ let rec can_stack_proc
   (*
   print_endline ("Stackability Checking procedure " ^ id);
   *)
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_procedure (_,_,_,exes) ->
     (* if a procedure has procedural children they can do anything naughty
      * a recursive check would be more aggressive
@@ -480,7 +480,7 @@ let rec can_stack_proc
        if lkind = `Far then
        begin
          (*
-         print_endline (bsym.Flx_bsym.id ^ " has non-local label");
+         print_endline (Flx_bsym.id bsym ^ " has non-local label");
          *)
          raise Unstackable
        end
@@ -546,7 +546,7 @@ and check_stackable_proc
 =
   if mem i recstop then true else
   let bsym = Flx_bsym_table.find bsym_table i in
-  match bsym.Flx_bsym.bbdcl with
+  match Flx_bsym.bbdcl bsym with
   | BBDCL_callback _ -> false (* not sure if this is right .. *)
   | BBDCL_proc (_,_,_,ct,_) -> ct <> CS_virtual
   | BBDCL_procedure (props,vs,p,exes) ->
@@ -570,7 +570,7 @@ and check_stackable_proc
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       false
     end
-  | _ -> failwith ("Unexpected non-procedure " ^ bsym.Flx_bsym.id)
+  | _ -> failwith ("Unexpected non-procedure " ^ Flx_bsym.id bsym)
     (*
     assert false
     *)
@@ -610,7 +610,7 @@ let rec enstack_applies syms bsym_table child_map fn_cache ptr_cache x =
 
 let mark_stackable syms bsym_table child_map fn_cache ptr_cache label_map label_usage =
   Flx_bsym_table.iter begin fun i bsym ->
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_function (props,vs,p,ret,exes) ->
       let props: property_t list ref = ref props in
       if can_stack_func syms bsym_table child_map fn_cache ptr_cache i then
@@ -660,7 +660,7 @@ let enstack_calls syms bsym_table child_map fn_cache ptr_cache self exes =
       | BEXE_call (sr,(BEXPR_closure (i,ts),_),a)
       | BEXE_call_direct (sr,i,ts,a) ->
         let bsym = Flx_bsym_table.find bsym_table i in
-        begin match bsym.Flx_bsym.bbdcl with
+        begin match Flx_bsym.bbdcl bsym with
         | BBDCL_procedure (props,vs,p,exes) ->
           if mem `Stackable props then
           begin
@@ -669,18 +669,18 @@ let enstack_calls syms bsym_table child_map fn_cache ptr_cache self exes =
               Flx_bsym_table.update_bbdcl bsym_table i bbdcl
             end;
 
-            bexe_call_stack (bsym.Flx_bsym.sr,i,ts,a)
+            bexe_call_stack (Flx_bsym.sr bsym,i,ts,a)
           end
           else
-          bexe_call_direct (bsym.Flx_bsym.sr,i,ts,a)
+          bexe_call_direct (Flx_bsym.sr bsym,i,ts,a)
 
-        | BBDCL_proc _ -> bexe_call_prim (bsym.Flx_bsym.sr,i,ts,a)
+        | BBDCL_proc _ -> bexe_call_prim (Flx_bsym.sr bsym,i,ts,a)
 
         (* seems to work at the moment *)
-        | BBDCL_callback _ -> bexe_call_direct (bsym.Flx_bsym.sr,i,ts,a)
+        | BBDCL_callback _ -> bexe_call_direct (Flx_bsym.sr bsym,i,ts,a)
 
         | _ ->
-            syserr sr ("Call to non-procedure " ^ bsym.Flx_bsym.id ^ "<" ^
+            syserr sr ("Call to non-procedure " ^ Flx_bsym.id bsym ^ "<" ^
               string_of_bid i ^ ">")
         end
 
@@ -712,7 +712,7 @@ let make_stack_calls
     label_usage;
 
   Flx_bsym_table.iter begin fun i bsym ->
-    match bsym.Flx_bsym.bbdcl with
+    match Flx_bsym.bbdcl bsym with
     | BBDCL_procedure (props,vs,p,exes) ->
       let exes = enstack_calls
         syms

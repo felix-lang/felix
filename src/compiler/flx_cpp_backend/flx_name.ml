@@ -86,7 +86,7 @@ let cpp_name bsym_table index =
     try Flx_bsym_table.find bsym_table index
     with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_bid index)
   in
-  (match bsym.Flx_bsym.bbdcl with
+  (match Flx_bsym.bbdcl bsym with
   | BBDCL_function _ -> "_f"
   | BBDCL_callback _ -> "_cf"
   | BBDCL_procedure _  -> "_p"
@@ -95,8 +95,8 @@ let cpp_name bsym_table index =
   | BBDCL_ref _ -> "_v"
   | BBDCL_tmp _ -> "_tmp"
   | _ ->
-      syserr bsym.Flx_bsym.sr "cpp_name expected func,proc,var,val,ref, or tmp"
-  ) ^ cid_of_bid index ^ "_" ^ cid_of_flxid bsym.Flx_bsym.id
+      syserr (Flx_bsym.sr bsym) "cpp_name expected func,proc,var,val,ref, or tmp"
+  ) ^ cid_of_bid index ^ "_" ^ cid_of_flxid (Flx_bsym.id bsym)
 
 let cpp_instance_name' syms bsym_table index ts =
   let inst =
@@ -201,8 +201,8 @@ let rec cpp_type_classname syms bsym_table t =
     in
     if ts = [] then
       let bsym = Flx_bsym_table.find bsym_table i in
-      match bsym.Flx_bsym.bbdcl with
-      | BBDCL_cstruct _ -> bsym.Flx_bsym.id
+      match Flx_bsym.bbdcl bsym with
+      | BBDCL_cstruct _ -> Flx_bsym.id bsym
       | BBDCL_abs (_,_,CS_str "char",_) -> "char" (* hack .. *)
       | BBDCL_abs (_,_,CS_str "int",_) -> "int" (* hack .. *)
       | BBDCL_abs (_,_,CS_str "short",_) -> "short" (* hack .. *)
