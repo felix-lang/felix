@@ -39,9 +39,6 @@ let replace_bbdcl bsym bbdcl = { bsym with bbdcl=bbdcl }
 let id bsym = bsym.id
 let sr bsym = bsym.sr
 let vs bsym = bsym.vs
-let pubmap bsym = bsym.pubmap
-let privmap bsym = bsym.privmap
-let dirs bsym = bsym.dirs
 let bbdcl bsym = bsym.bbdcl
 
 (** Return if the bound symbol is an identity function. *)

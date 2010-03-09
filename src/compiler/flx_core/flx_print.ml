@@ -2602,14 +2602,6 @@ let print_bsym bsym_table bid =
     | Some parent -> string_of_bid parent
     | None -> "");
 
-  if Hashtbl.length (Flx_bsym.pubmap bsym) != 0 then
-    print_endline ("pubmap: " ^
-      (string_of_name_map (Flx_bsym.pubmap bsym)));
-
-  if Hashtbl.length (Flx_bsym.privmap bsym) != 0 then
-    print_endline ("privmap: " ^
-      (string_of_name_map (Flx_bsym.privmap bsym)));
-
   print_endline ("bbdcl: " ^ (string_of_bbdcl
     bsym_table 
     (Flx_bsym.bbdcl bsym)

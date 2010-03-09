@@ -21,9 +21,6 @@ val replace_bbdcl: t -> Flx_bbdcl.t -> t
 val id: t -> string
 val sr: t -> Flx_srcref.t
 val vs: t -> Flx_types.ivs_list_t
-val pubmap: t -> Flx_btype.name_map_t
-val privmap: t -> Flx_btype.name_map_t
-val dirs: t -> Flx_types.sdir_t list
 val bbdcl: t -> Flx_bbdcl.t
 
 (** Return if the bound symbol is an identity function. *)
