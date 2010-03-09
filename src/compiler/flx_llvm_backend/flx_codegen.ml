@@ -34,10 +34,8 @@ let make_codegen_state syms optimization_level =
   let the_module = Llvm.create_module context "__root__" in
 
   (* Set up the llvm optimizer and execution engine *)
-  let the_module_provider = Llvm.ModuleProvider.create the_module in
-  let the_ee =
-    Llvm_executionengine.ExecutionEngine.create the_module_provider in
-  let the_fpm = Llvm.PassManager.create_function the_module_provider in
+  let the_ee = Llvm_executionengine.ExecutionEngine.create the_module in
+  let the_fpm = Llvm.PassManager.create_function the_module in
 
   (* Set up the optimizer pipeline.  Start with registering info about how the
    * target lays out data structures. *)
@@ -50,7 +48,7 @@ let make_codegen_state syms optimization_level =
     Llvm_scalar_opts.add_memory_to_register_promotion the_fpm;
 
     (* Do simple "peephole" optimizations and bit-twiddling optzn. *)
-    Llvm_scalar_opts.add_instruction_combining the_fpm;
+    Llvm_scalar_opts.add_instruction_combination the_fpm;
 
     (* reassociate expressions. *)
     Llvm_scalar_opts.add_reassociation the_fpm;
@@ -151,6 +149,7 @@ let name_of_typekind = function
   | Llvm.TypeKind.Opaque -> "opaque"
   | Llvm.TypeKind.Vector -> "vector"
   | Llvm.TypeKind.Metadata -> "metadata"
+  | Llvm.TypeKind.Union -> "union"
 
 
 (* Convenience function to check we're dealing with the right types. *)
