@@ -12,16 +12,24 @@ type t = {
 let create
   ?(sr=Flx_srcref.dummy_sr)
   ?(vs=Flx_ast.dfltvs)
-  ?(pubmap=Hashtbl.create 0)
-  ?(privmap=Hashtbl.create 0)
+  ?pubmap
+  ?privmap
   ?(dirs=[])
   id bbdcl
 =
   { id=id;
     sr=sr;
     vs=vs;
-    pubmap=pubmap;
-    privmap=privmap;
+    pubmap=
+      begin match pubmap with
+      | Some pubmap -> Hashtbl.copy pubmap
+      | None -> Hashtbl.create 0
+      end;
+    privmap=
+      begin match privmap with
+      | Some privmap -> Hashtbl.copy privmap
+      | None -> Hashtbl.create 0
+      end;
     dirs=dirs;
     bbdcl=bbdcl }
 
