@@ -10,7 +10,9 @@ val vsplice : 'a list -> int -> 'a list -> 'a list
 
 val reparent_children :
   sym_state_t ->
-  usage_table_t * Flx_child.t * Flx_bsym_table.t ->
+  usage_table_t ->
+  Flx_child.t ->
+  Flx_bsym_table.t ->
   (string * bid_t) list ->          (* caller vs *)
   int ->                            (* callee_vs_len *)
   bid_t ->                          (* routine index *)
@@ -23,7 +25,9 @@ val reparent_children :
 
 val specialise_symbol:
   sym_state_t ->
-  usage_table_t * Flx_child.t * Flx_bsym_table.t ->
+  usage_table_t ->
+  Flx_child.t ->
+  Flx_bsym_table.t ->
   (string * bid_t) list ->          (* caller vs *)
   int ->                            (* callee_vs_len *)
   bid_t ->                          (* routine index *)

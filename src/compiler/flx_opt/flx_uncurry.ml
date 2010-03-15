@@ -224,7 +224,7 @@ let fixup_function
   (* Create a table that will help with us remapping the parameters. *)
   let revariable = Flx_reparent.reparent_children
     syms
-    (ut,child_map,bsym_table)
+    ut child_map bsym_table
     vs
     (length vsc)
     c

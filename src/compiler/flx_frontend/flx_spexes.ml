@@ -104,7 +104,7 @@ let subarg syms bsym_table argmap exe =
   Flx_bexe.map ~fe:(rpl syms argmap) exe
 
 (* NOTE: result is in reversed order *)
-let gen_body syms (uses,child_map,bsym_table) id
+let gen_body syms uses child_map bsym_table id
   varmap ps relabel revariable exes argument
   sr caller callee vs callee_vs_len inline_method props
 =

@@ -240,7 +240,9 @@ let allow_rescan flag props =
 
 let reparent1
   (syms:sym_state_t)
-  (uses,child_map,bsym_table)
+  uses
+  child_map
+  bsym_table
   relabel
   varmap
   revariable
@@ -441,7 +443,7 @@ let reparent1
    routine, but it doesn't reparent the routine itself
 *)
 
-let reparent_children syms (uses,child_map,bsym_table)
+let reparent_children syms uses child_map bsym_table
   caller_vs callee_vs_len index (parent:bid_t option) relabel varmap rescan_flag extras
 =
   let pp p = match p with None -> "NONE" | Some i -> string_of_bid i in
@@ -472,7 +474,7 @@ let reparent_children syms (uses,child_map,bsym_table)
         else Some (Hashtbl.find revariable p)
     in
     let k = Hashtbl.find revariable i in
-    reparent1 syms (uses,child_map,bsym_table) relabel varmap revariable
+    reparent1 syms uses child_map bsym_table relabel varmap revariable
       caller_vs callee_vs_len i new_parent k rescan_flag
   end closure;
   if syms.compiler_options.print_flag then begin
@@ -517,17 +519,17 @@ let reparent_children syms (uses,child_map,bsym_table)
 *)
 
 
-let specialise_symbol syms (uses,child_map,bsym_table)
+let specialise_symbol syms uses child_map bsym_table
   caller_vs callee_vs_len index ts parent relabel varmap rescan_flag
 =
   try Hashtbl.find syms.transient_specialisation_cache (index,ts)
   with Not_found ->
     let k = fresh_bid syms.counter in
     let revariable =
-       reparent_children syms (uses,child_map,bsym_table)
+       reparent_children syms uses child_map bsym_table
        caller_vs callee_vs_len index (Some k) relabel varmap rescan_flag []
     in
-    reparent1 (syms:sym_state_t) (uses,child_map,bsym_table )
+    reparent1 (syms:sym_state_t) uses child_map bsym_table
       relabel varmap revariable
       caller_vs callee_vs_len index parent k rescan_flag
     ;

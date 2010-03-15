@@ -252,7 +252,7 @@ let mkproc_gen syms bsym_table child_map =
         let bids = Flx_bparameter.get_bids ps in
         let revariable =
           Flx_reparent.reparent_children syms
-          (ut,child_map,bsym_table)
+          ut child_map bsym_table
           vs (length vs)
           i (Some k) rl vm true bids
         in
