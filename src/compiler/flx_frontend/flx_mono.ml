@@ -115,8 +115,6 @@ let fixup_expr' syms bsym_table fi mt (e,t) =
   *)
   x
 
-let id x = x
-
 let rec fixup_expr syms bsym_table fi mt e =
   (*
   print_endline ("FIXUP EXPR(down) " ^ sbe sym_table e);
@@ -196,18 +194,13 @@ let fixup_exe syms bsym_table fi mt exe =
 let fixup_exes syms bsym_table fi mt exes =
   map (fixup_exe syms bsym_table fi mt) exes
 
-let mono syms bsym_table fi i ts n =
-  let bsym = Flx_bsym_table.find bsym_table i in
+let mono syms bsym_table fi ts bsym =
   let mt vars t =
     beta_reduce
       syms
       bsym_table
       (Flx_bsym.sr bsym)
       (fixup_type syms bsym_table fi (list_subst syms.counter vars t))
-  in
-  let update_bsym parent bbdcl =
-    Flx_bsym_table.remove bsym_table n;
-    Flx_bsym_table.add bsym_table parent n (Flx_bsym.replace_bbdcl bsym bbdcl)
   in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
@@ -226,9 +219,7 @@ let mono syms bsym_table fi i ts n =
       | Some x -> Some (fixup_expr syms bsym_table fi (mt vars) x)
     in
     let exes = fixup_exes syms bsym_table fi (mt vars) exes in
-    let bbdcl = bbdcl_function (props,[],(ps,traint),ret,exes) in
-    let parent = cal_parent syms bsym_table i ts in
-    update_bsym parent bbdcl
+    Some (bbdcl_function (props,[],(ps,traint),ret,exes))
 
   | BBDCL_procedure (props,vs,(ps,traint), exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
@@ -252,37 +243,27 @@ let mono syms bsym_table fi i ts n =
     let fi i ts = fi i (map mt ts) in
     *)
     let exes = fixup_exes syms bsym_table fi (mt vars) exes in
-    let bbdcl = bbdcl_procedure (props,[],(ps,traint), exes) in
-    let parent = cal_parent syms bsym_table i ts in
-    update_bsym parent bbdcl
+    Some (bbdcl_procedure (props,[],(ps,traint), exes))
 
   | BBDCL_val (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = bbdcl_val ([],t) in
-    let parent = cal_parent syms bsym_table i ts in
-    update_bsym parent bbdcl
+    Some (bbdcl_val ([],t))
 
   | BBDCL_var (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = bbdcl_var ([],t) in
-    let parent = cal_parent syms bsym_table i ts in
-    update_bsym parent bbdcl
+    Some (bbdcl_var ([],t))
 
   | BBDCL_ref (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = bbdcl_ref ([],t) in
-    let parent = cal_parent syms bsym_table i ts in
-    update_bsym parent bbdcl
+    Some (bbdcl_ref ([],t))
 
   | BBDCL_tmp (vs,t) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = bbdcl_tmp ([],t) in
-    let parent = cal_parent syms bsym_table i ts in
-    update_bsym parent bbdcl
+    Some (bbdcl_tmp ([],t))
 
   (* we have tp replace types in interfaces like Vector[int]
     with monomorphic versions if any .. even if we don't
@@ -295,26 +276,19 @@ let mono syms bsym_table fi i ts n =
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let argtypes = map (mt vars) argtypes in
     let ret = mt vars ret in
-    let bbdcl = bbdcl_fun (props,vs,argtypes,ret,ct,reqs,prec) in
-    let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
-    update_bsym bsym_parent bbdcl
-
+    Some (bbdcl_fun (props,vs,argtypes,ret,ct,reqs,prec))
 
   | BBDCL_proc (props,vs,argtypes,ct,reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let argtypes = map (mt vars) argtypes in
-    let bbdcl = bbdcl_proc (props,vs,argtypes,ct,reqs) in
-    let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
-    update_bsym bsym_parent bbdcl
+    Some (bbdcl_proc (props,vs,argtypes,ct,reqs))
 
   | BBDCL_const (props, vs, t, CS_str "#this", reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    let bbdcl = bbdcl_const (props, [], t, CS_str "#this", reqs) in
-    let parent = cal_parent syms bsym_table i ts in
-    update_bsym parent bbdcl
+    Some (bbdcl_const (props, [], t, CS_str "#this", reqs))
 
-  | _ -> ()
+  | _ -> None
 
 let chk_mono syms bsym_table i =
   match Flx_bsym_table.find_bbdcl bsym_table i with
@@ -402,7 +376,22 @@ let monomorphise syms bsym_table =
       );
     end;
 
-    mono syms bsym_table fi i ts n;
+    (* Find the symbol we're going to be monomorphosize. *)
+    let bsym = Flx_bsym_table.find bsym_table i in
+
+    match mono syms bsym_table fi ts bsym with
+    | None -> ()
+    | Some bbdcl ->
+        (* Look up the new parent. *)
+        let parent = cal_parent syms bsym_table i ts in
+
+        (* We remove the symbol first as it may have a new parent. *)
+        Flx_bsym_table.remove bsym_table n;
+
+        (* And re-insert it. *)
+        let bsym = Flx_bsym.replace_bbdcl bsym bbdcl in
+        Flx_bsym_table.add bsym_table parent n bsym
+
   end syms.instances;
 
   Hashtbl.iter (fun (i,ts) n ->
