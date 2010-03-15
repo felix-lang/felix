@@ -391,8 +391,7 @@ let monomorphise syms bsym_table =
   ;
   let fi i ts = fi polyinst2 i ts in
 
-  Hashtbl.iter
-  (fun (i,ts) n ->
+  Hashtbl.iter begin fun (i,ts) n ->
     if syms.compiler_options.print_flag then begin
       if (n <> i) then print_endline (
          "[monomorphise] Adding instance " ^ string_of_bid n ^ " = " ^
@@ -403,11 +402,8 @@ let monomorphise syms bsym_table =
       );
     end;
 
-
     mono syms bsym_table fi i ts n;
-  )
-  syms.instances
-  ;
+  end syms.instances;
 
   Hashtbl.iter (fun (i,ts) n ->
     Hashtbl.remove syms.instances (i,ts);

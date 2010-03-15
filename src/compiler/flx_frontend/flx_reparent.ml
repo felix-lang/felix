@@ -32,7 +32,7 @@ let vsplice caller_vars callee_vs_len ts =
     ", len vs/ts= " ^
     si (length ts) ^
     ", length caller_vars = " ^
-    si (length caller_vars) 
+    si (length caller_vars)
   )
   ;
   let rec aux lst n =  (* elide first n elements *)
@@ -446,8 +446,8 @@ let reparent1
 let reparent_children syms uses child_map bsym_table
   caller_vs callee_vs_len index (parent:bid_t option) relabel varmap rescan_flag extras
 =
-  let pp p = match p with None -> "NONE" | Some i -> string_of_bid i in
   (*
+  let pp p = match p with None -> "NONE" | Some i -> string_of_bid i in
   print_endline
   (
     "Renesting children of callee " ^ si index ^
@@ -456,6 +456,7 @@ let reparent_children syms uses child_map bsym_table
      "\n  -- Callee vs len = " ^ si (callee_vs_len)
   );
   *)
+
   let closure = descendants child_map index in
   assert (not (BidSet.mem index closure));
   let revariable = fold_left (fun acc i -> BidSet.add i acc) closure extras in
@@ -529,14 +530,17 @@ let specialise_symbol syms uses child_map bsym_table
        reparent_children syms uses child_map bsym_table
        caller_vs callee_vs_len index (Some k) relabel varmap rescan_flag []
     in
+
+    (* Finally, reparent the symbol. *)
     reparent1 (syms:sym_state_t) uses child_map bsym_table
       relabel varmap revariable
-      caller_vs callee_vs_len index parent k rescan_flag
-    ;
+      caller_vs callee_vs_len index parent k rescan_flag;
+
     let caller_vars = map
       (fun (s,i) -> btyp_type_var (i, btyp_type 0))
       caller_vs
     in
+
     let ts' = vsplice caller_vars callee_vs_len ts in
     Hashtbl.add syms.transient_specialisation_cache (index,ts) (k,ts');
     k,ts'
