@@ -29,9 +29,7 @@ let add_root bsym_table bid bsym =
 
 (** Adds the bound symbol with the index to the symbol table. *)
 let add_child bsym_table parent bid bsym =
-  (*
   assert (Hashtbl.mem bsym_table parent);
-  *)
   assert (not (Hashtbl.mem bsym_table bid));
   Hashtbl.replace bsym_table bid (Some parent, bsym)
 
@@ -78,6 +76,12 @@ let find_bvs bsym_table bid =
 
 (** Remove a binding from the bound symbol table. *)
 let remove = Hashtbl.remove
+
+(** Set's a symbol's parent. *)
+let set_parent bsym_table bid parent =
+  (* Find our bsym *)
+  let bsym = find bsym_table bid in
+  Hashtbl.replace bsym_table bid (parent, bsym)
 
 (** Iterate over all the items in the bound symbol table. *)
 let iter f bsym_table =

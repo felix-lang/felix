@@ -62,6 +62,9 @@ val find_bvs : t -> Flx_types.bid_t -> Flx_types.bvs_t
 (** Remove a binding from the bound symbol table. *)
 val remove : t -> Flx_types.bid_t -> unit
 
+(** Set's a symbol's parent. *)
+val set_parent : t -> Flx_types.bid_t -> Flx_types.bid_t option -> unit
+
 (** Iterate over all the items in the bound symbol table. *)
 val iter : (Flx_types.bid_t -> Flx_bsym.t -> unit) -> t -> unit
 
