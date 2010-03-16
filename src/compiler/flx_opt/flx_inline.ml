@@ -15,7 +15,6 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 open Flx_use
-open Flx_child
 open Flx_reparent
 open Flx_spexes
 open Flx_foldvars
@@ -109,7 +108,7 @@ let is_simple_expr syms bsym_table e =
 
 *)
 
-let call_lifting syms uses child_map bsym_table caller caller_vs callee ts a argument =
+let call_lifting syms uses bsym_table caller caller_vs callee ts a argument =
   (*
   print_endline "DOING CALL LIFTING";
   *)
@@ -129,13 +128,13 @@ let call_lifting syms uses child_map bsym_table caller caller_vs callee ts a arg
     let callee_vs_len = length vs in
 
     let revariable = reparent_children
-      syms uses child_map bsym_table
+      syms uses bsym_table
       caller_vs callee_vs_len callee (Some caller) relabel varmap false []
     in
     (* use the inliner to handle the heavy work *)
     let body = gen_body
       syms
-      uses child_map bsym_table
+      uses bsym_table
       (Flx_bsym.id bsym)
       varmap
       ps
@@ -190,7 +189,7 @@ let call_lifting syms uses child_map bsym_table caller caller_vs callee ts a arg
 
   | _ -> assert false
 
-let inline_tail_apply syms uses child_map bsym_table caller caller_vs callee ts a =
+let inline_tail_apply syms uses bsym_table caller caller_vs callee ts a =
   (* TEMPORARY .. this should be allowed for unrolling but we do not do that yet *)
   assert (callee <> caller);
   let bsym = Flx_bsym_table.find bsym_table callee in
@@ -215,14 +214,14 @@ let inline_tail_apply syms uses child_map bsym_table caller caller_vs callee ts 
     let callee_vs_len = length vs in
 
     let revariable = reparent_children
-      syms uses child_map bsym_table
+      syms uses bsym_table
       caller_vs callee_vs_len callee (Some caller) relabel varmap false []
     in
 
     (* use the inliner to handle the heavy work *)
     let body = gen_body
       syms
-      uses child_map bsym_table
+      uses bsym_table
       (Flx_bsym.id bsym)
       varmap
       ps
@@ -242,7 +241,7 @@ let inline_tail_apply syms uses child_map bsym_table caller caller_vs callee ts 
 
   | _ -> assert false
 
-let inline_function syms uses child_map bsym_table caller caller_vs callee ts a varindex =
+let inline_function syms uses bsym_table caller caller_vs callee ts a varindex =
   (*
   print_endline ("Inline function: init var index " ^ si varindex);
   *)
@@ -269,14 +268,14 @@ let inline_function syms uses child_map bsym_table caller caller_vs callee ts a 
     let callee_vs_len = length vs in
 
     let revariable = reparent_children
-      syms uses child_map bsym_table
+      syms uses bsym_table
       caller_vs callee_vs_len callee (Some caller) relabel varmap false []
     in
 
     (* use the inliner to handle the heavy work *)
     let body = gen_body
       syms
-      uses child_map bsym_table
+      uses bsym_table
       (Flx_bsym.id bsym)
       varmap
       ps
@@ -468,7 +467,7 @@ let expand_exe syms bsym_table u exe =
 
 let check_reductions syms bsym_table exes = Flx_reduce.reduce_exes syms bsym_table syms.reductions exes
 
-let heavy_inline_call syms uses child_map bsym_table
+let heavy_inline_call syms uses bsym_table
   caller caller_vs callee ts argument id sr (props, vs, (ps,traint), exes)
 =
   (*
@@ -498,12 +497,12 @@ let heavy_inline_call syms uses child_map bsym_table
       raise (Failure x)
   in
   let revariable = reparent_children
-    syms uses child_map bsym_table
+    syms uses bsym_table
     caller_vs callee_vs_len callee (Some caller) relabel varmap false []
   in
   let xs = gen_body
     syms
-    uses child_map bsym_table
+    uses bsym_table
     id
     varmap
     ps
@@ -521,7 +520,7 @@ let heavy_inline_call syms uses child_map bsym_table
   in
     revariable,rev xs (* forward order *)
 
-let make_specialisation syms uses child_map bsym_table
+let make_specialisation syms uses bsym_table
   caller caller_vs callee ts id sr parent props vs exes rescan_flag
 =
   (*
@@ -552,7 +551,7 @@ let make_specialisation syms uses child_map bsym_table
   in
   let k,ts' =
     specialise_symbol
-      syms uses child_map bsym_table
+      syms uses bsym_table
       caller_vs callee_vs_len callee ts parent relabel varmap rescan_flag
    in
    (*
@@ -786,7 +785,7 @@ let virtual_check syms bsym_table sr i ts =
 
   | _ -> (* print_endline (id ^ " -- Not virtual") *) true,i,ts
 
-let rec special_inline syms uses child_map bsym_table caller_vs caller hic excludes sr e =
+let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
   (*
   print_endline ("Special inline " ^ sbe bsym_table e);
   *)
@@ -800,7 +799,7 @@ let rec special_inline syms uses child_map bsym_table caller_vs caller hic exclu
   | BEXPR_get_n (n,(BEXPR_tuple ls,_)),_ -> nth ls n
 
   | BEXPR_closure (callee,_),_ as x ->
-      heavily_inline_bbdcl syms uses child_map bsym_table (callee::excludes) callee;
+      heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       x
 
   | ((BEXPR_apply_prim (callee,ts,a),t) as e)
@@ -811,7 +810,7 @@ let rec special_inline syms uses child_map bsym_table caller_vs caller hic exclu
     ->
       let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
       if not (mem callee excludes) then begin
-        heavily_inline_bbdcl syms uses child_map bsym_table (callee::excludes) callee;
+        heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
         let bsym = Flx_bsym_table.find bsym_table callee in
         begin match Flx_bsym.bbdcl bsym with
         | BBDCL_fun (props,_,_,_,_,_,_)
@@ -825,7 +824,6 @@ let rec special_inline syms uses child_map bsym_table caller_vs caller hic exclu
           (* create a new variable *)
           let urv = fresh_bid syms.counter in
           let urvid = "_genout_urv" ^ string_of_bid urv in
-          add_child child_map caller urv;
           add_use uses caller urv sr;
           Flx_bsym_table.add_child bsym_table caller urv
             (Flx_bsym.create ~sr urvid (bbdcl_var (caller_vs,t)));
@@ -846,7 +844,7 @@ let rec special_inline syms uses child_map bsym_table caller_vs caller hic exclu
           (* create a new variable *)
           let urv = !(syms.counter) in incr (syms.counter);
           let urvid = "_urv" ^ si urv in
-          add_child child_map caller urv;
+          add_child caller urv;
           add_use uses caller urv sr;
           let entry = BBDCL_val (caller_vs,t) in
           Flx_bsym_table.update bsym_table urv (urvid,Some caller,sr,entry);
@@ -866,7 +864,7 @@ let rec special_inline syms uses child_map bsym_table caller_vs caller hic exclu
           (*
           print_endline ("Consider inlining " ^ id ^ "<" ^ si callee ^ "> into " ^ si caller);
           print_endline ("  Child? " ^
-            if is_child child_map caller callee then "YES" else "NO")
+            if Flx_bsym_table.is_child bsym_table caller callee then "YES" else "NO")
           ;
           print_endline ("  Recursive? " ^
             if Flx_call.is_recursive_call uses callee callee then "YES" else "NO")
@@ -901,7 +899,7 @@ let rec special_inline syms uses child_map bsym_table caller_vs caller hic exclu
 
                 (* inline a recursive call to a recursive child *)
                 Flx_call.is_recursive_call uses caller callee &&
-                is_child child_map caller callee
+                Flx_bsym_table.is_child bsym_table caller callee
              )
           in
           (*
@@ -913,7 +911,7 @@ let rec special_inline syms uses child_map bsym_table caller_vs caller hic exclu
           then
               begin
                 (*
-                heavily_inline_bbdcl syms uses child_map bsym_table (callee::excludes) callee;
+                heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
                 *)
                 if not (inlining_complete bsym_table callee) then print_endline "Inlining isn't complete in callee ..??";
 
@@ -926,7 +924,7 @@ let rec special_inline syms uses child_map bsym_table caller_vs caller hic exclu
                   let urv = fresh_bid syms.counter in
                   (* inline the code, replacing returns with variable inits *)
                   let revariable,xs =
-                     inline_function syms uses child_map bsym_table caller caller_vs callee ts a urv
+                     inline_function syms uses bsym_table caller caller_vs callee ts a urv
                   in
                   match rev xs with
                   (* SPECIAL CASE DETECTOR: if the inlined function
@@ -964,7 +962,6 @@ let rec special_inline syms uses child_map bsym_table caller_vs caller hic exclu
 
                   | rxs ->
                     let urvid = "_urv" ^ string_of_bid urv in
-                    add_child child_map caller urv;
                     add_use uses caller urv sr;
                     Flx_bsym_table.add_child bsym_table caller urv
                       (Flx_bsym.create ~sr urvid (bbdcl_val (caller_vs,t)));
@@ -1001,7 +998,6 @@ let rec special_inline syms uses child_map bsym_table caller_vs caller hic exclu
 and heavy_inline_calls
   syms
   bsym_table
-  child_map
   uses
   caller_vs
   caller
@@ -1020,7 +1016,7 @@ and heavy_inline_calls
     (
       (* only inline a recursive call to a child *)
       not (Flx_call.is_recursive_call uses caller callee) ||
-      is_child child_map caller callee
+      Flx_bsym_table.is_child bsym_table caller callee
     )
   in
   let specialise_check caller callee ts props exes = false
@@ -1044,7 +1040,6 @@ and heavy_inline_calls
     heavy_inline_calls
       syms
       bsym_table
-      child_map
       uses
       caller_vs
       caller
@@ -1057,7 +1052,7 @@ and heavy_inline_calls
     (that is, inside out).
   *)
 
-  let sinl sr e = special_inline syms uses child_map bsym_table caller_vs caller hic (caller::excludes) sr e in
+  let sinl sr e = special_inline syms uses bsym_table caller_vs caller hic (caller::excludes) sr e in
 
   let ee exe = expand_exe syms bsym_table sinl exe in
   let exes' = ref [] in (* reverse order *)
@@ -1100,7 +1095,7 @@ and heavy_inline_calls
       when not (mem callee excludes)
       ->
       let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
-      heavily_inline_bbdcl syms uses child_map bsym_table (callee::excludes) callee;
+      heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       (*
       print_endline ("CALL DIRECT " ^ id ^ "<"^ si callee^">");
@@ -1113,7 +1108,7 @@ and heavy_inline_calls
           print_endline ("inlining direct call: " ^ string_of_bexe bsym_table 0 exe);
           let revariable,xs = heavy_inline_call
             syms
-            uses child_map bsym_table
+            uses bsym_table
             caller
             caller_vs
             callee
@@ -1149,7 +1144,7 @@ and heavy_inline_calls
       print_endline ("Callee is " ^ si callee ^ " with ts = " ^ catmap "," (sbt bsym_table) ts);
       *)
       let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
-      heavily_inline_bbdcl syms uses child_map bsym_table (callee::excludes) callee;
+      heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
@@ -1158,7 +1153,7 @@ and heavy_inline_calls
           if syms.compiler_options.print_flag then
           print_endline ("Inline call lift: " ^ string_of_bexe bsym_table 0 exe);
           let revariable,xs =
-            call_lifting syms uses child_map bsym_table caller caller_vs callee ts a argument
+            call_lifting syms uses bsym_table caller caller_vs callee ts a argument
           in
           let xs = hic revariable callee xs in
           exes' := rev xs @ !exes'
@@ -1175,7 +1170,7 @@ and heavy_inline_calls
     | BEXE_init (sr,i,(BEXPR_apply ((BEXPR_closure(callee,ts),_),a),_))
       when not (mem callee excludes)  ->
       let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
-      heavily_inline_bbdcl syms uses child_map bsym_table (callee::excludes) callee;
+      heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
@@ -1194,7 +1189,7 @@ and heavy_inline_calls
             if syms.compiler_options.print_flag then
             print_endline ("Inline init: " ^ string_of_bexe bsym_table 0 exe);
             let revariable,xs =
-              inline_function syms uses child_map bsym_table caller caller_vs callee ts a i
+              inline_function syms uses bsym_table caller caller_vs callee ts a i
             in
             let xs = hic revariable callee xs in
             exes' := rev xs @ !exes'
@@ -1212,7 +1207,7 @@ and heavy_inline_calls
     | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure(callee,ts),_),a),_))
       when not (mem callee excludes)  ->
       let can_inline,callee,ts = virtual_check syms bsym_table sr callee ts in
-      heavily_inline_bbdcl syms uses child_map bsym_table (callee::excludes) callee;
+      heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
       let bsym = Flx_bsym_table.find bsym_table callee in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
@@ -1223,7 +1218,7 @@ and heavy_inline_calls
             if syms.compiler_options.print_flag then
             print_endline ("Inline tail apply : " ^ string_of_bexe bsym_table 0 exe);
             let revariable,xs =
-              inline_tail_apply syms uses child_map bsym_table caller caller_vs callee ts a
+              inline_tail_apply syms uses bsym_table caller caller_vs callee ts a
             in
             let xs = hic revariable callee xs in
             exes' := rev xs @ !exes'
@@ -1242,8 +1237,8 @@ and heavy_inline_calls
   ;
   rev !exes'
 
-and remove_unused_children syms uses child_map bsym_table i =
-  let desc = descendants child_map i in
+and remove_unused_children syms uses bsym_table i =
+  let desc = Flx_bsym_table.find_descendants bsym_table i in
   if desc <> BidSet.empty then begin
     (* all the descendants of a routine, excluding self *)
     (*
@@ -1266,19 +1261,8 @@ and remove_unused_children syms uses child_map bsym_table i =
     (* remove the item *)
     BidSet.iter
     (fun i ->
-      begin
-        try
-          (* any parent disowns the child *)
-          match Flx_bsym_table.find_parent bsym_table i with
-          | Some parent -> remove_child child_map parent i
-          | None -> ()
-        with Not_found -> ()
-      end
-      ;
-
       (* remove from symbol table, child map, and usage map *)
       Flx_bsym_table.remove bsym_table i;
-      Hashtbl.remove child_map i;
       Hashtbl.remove uses i;
       if syms.compiler_options.print_flag then
         print_endline ("REMOVED CHILD SYMBOL " ^
@@ -1287,7 +1271,7 @@ and remove_unused_children syms uses child_map bsym_table i =
     unused_descendants
   end
 
-and heavily_inline_bbdcl syms uses child_map bsym_table excludes i =
+and heavily_inline_bbdcl syms uses bsym_table excludes i =
   let bsym =
     try Some (Flx_bsym_table.find bsym_table i)
     with Not_found -> None
@@ -1304,12 +1288,12 @@ and heavily_inline_bbdcl syms uses child_map bsym_table excludes i =
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
 
       (* inline into all children first *)
-      let children = find_children child_map i in
-      iter (fun i-> heavily_inline_bbdcl syms uses child_map bsym_table excludes i) children;
+      let children = Flx_bsym_table.find_children bsym_table i in
+      BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) children;
 
       let exes = check_reductions syms bsym_table exes in
       let xcls = Flx_tailit.exes_get_xclosures syms exes in
-      BidSet.iter (fun i-> heavily_inline_bbdcl syms uses child_map bsym_table excludes i) xcls;
+      BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) xcls;
 
       if syms.compiler_options.print_flag then
       print_endline ("HIB: Examining procedure " ^ Flx_bsym.id bsym ^ "<" ^
@@ -1318,7 +1302,7 @@ and heavily_inline_bbdcl syms uses child_map bsym_table excludes i =
       print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe bsym_table 0) exes);
       *)
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      let exes = fold_vars syms bsym_table child_map uses i ps exes in
+      let exes = fold_vars syms bsym_table uses i ps exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       (*
       print_endline (id ^ " Before inlining calls:\n" ^ catmap "\n" (string_of_bexe bsym_table 0) exes);
@@ -1326,7 +1310,6 @@ and heavily_inline_bbdcl syms uses child_map bsym_table excludes i =
       let exes = heavy_inline_calls
         syms
         bsym_table
-        child_map
         uses
         vs
         i
@@ -1340,7 +1323,6 @@ and heavily_inline_bbdcl syms uses child_map bsym_table excludes i =
       let exes = Flx_tailit.tailit
         syms
         bsym_table
-        child_map
         uses
         (Flx_bsym.id bsym)
         i
@@ -1354,7 +1336,7 @@ and heavily_inline_bbdcl syms uses child_map bsym_table excludes i =
       *)
       let exes = check_reductions syms bsym_table exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      let exes = fold_vars syms bsym_table child_map uses i ps exes in
+      let exes = fold_vars syms bsym_table uses i ps exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = check_reductions syms bsym_table exes in
       let exes = Flx_cflow.chain_gotos syms exes in
@@ -1362,7 +1344,7 @@ and heavily_inline_bbdcl syms uses child_map bsym_table excludes i =
       let bbdcl = bbdcl_procedure (props,vs,(ps,traint),exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      remove_unused_children syms uses child_map bsym_table i;
+      remove_unused_children syms uses bsym_table i;
       (*
       print_endline ("DONE Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
       print_endline ("OPTIMISED PROCEDURE BODY: " ^ id ^ " :\n" ^ catmap "\n" (string_of_bexe 2) exes);
@@ -1376,12 +1358,12 @@ and heavily_inline_bbdcl syms uses child_map bsym_table excludes i =
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
 
       (* inline into all children first *)
-      let children = find_children child_map i in
-      iter (fun i-> heavily_inline_bbdcl syms uses child_map bsym_table excludes i) children;
+      let children = Flx_bsym_table.find_children bsym_table i in
+      BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) children;
 
       let exes = check_reductions syms bsym_table exes in
       let xcls = Flx_tailit.exes_get_xclosures syms exes in
-      BidSet.iter (fun i-> heavily_inline_bbdcl syms uses child_map bsym_table excludes i) xcls;
+      BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) xcls;
 
       if syms.compiler_options.print_flag then
       print_endline ("HIB:Examining function " ^ Flx_bsym.id bsym ^ "<" ^
@@ -1390,12 +1372,11 @@ and heavily_inline_bbdcl syms uses child_map bsym_table excludes i =
       print_endline (id ^ " Input:\n" ^ catmap "\n" (string_of_bexe bsym_table 0) exes);
       *)
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      let exes = fold_vars syms bsym_table child_map uses i ps exes in
+      let exes = fold_vars syms bsym_table uses i ps exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = heavy_inline_calls
         syms
         bsym_table
-        child_map
         uses
         vs
         i
@@ -1412,7 +1393,6 @@ and heavily_inline_bbdcl syms uses child_map bsym_table excludes i =
       let exes = Flx_tailit.tailit
         syms
         bsym_table
-        child_map
         uses
         (Flx_bsym.id bsym)
         i
@@ -1426,7 +1406,7 @@ and heavily_inline_bbdcl syms uses child_map bsym_table excludes i =
       *)
       let exes = check_reductions syms bsym_table exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      let exes = fold_vars syms bsym_table child_map uses i ps exes in
+      let exes = fold_vars syms bsym_table uses i ps exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = check_reductions syms bsym_table exes in
       let exes = Flx_cflow.chain_gotos syms exes in
@@ -1434,7 +1414,7 @@ and heavily_inline_bbdcl syms uses child_map bsym_table excludes i =
       let bbdcl = bbdcl_function (props,vs,(ps,traint),ret,exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      remove_unused_children syms uses child_map bsym_table i;
+      remove_unused_children syms uses bsym_table i;
       (*
       print_endline ("DONE Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
       print_endline ("OPTIMISED FUNCTION BODY: " ^ id ^ " :\n" ^ catmap "\n" (string_of_bexe 2) exes);
@@ -1442,14 +1422,14 @@ and heavily_inline_bbdcl syms uses child_map bsym_table excludes i =
     end
   | _ -> ()
 
-let heavy_inlining syms bsym_table child_map =
+let heavy_inlining syms bsym_table =
   let used = ref (!(syms.roots)) in
   let (uses,usedby) = Flx_call.call_data bsym_table in
 
   while not (BidSet.is_empty !used) do
     let i = BidSet.choose !used in
     used := BidSet.remove i !used;
-    heavily_inline_bbdcl syms uses child_map bsym_table [i] i
+    heavily_inline_bbdcl syms uses bsym_table [i] i
   done;
 
   (* This code is here to attempt to optimise closures (and clones?)
@@ -1457,7 +1437,7 @@ let heavy_inlining syms bsym_table child_map =
   *)
   Flx_bsym_table.iter
     (fun i _ ->
-      try heavily_inline_bbdcl syms uses child_map bsym_table [i] i
+      try heavily_inline_bbdcl syms uses bsym_table [i] i
       with exn ->  ()
       (*
         print_endline ("*** ERROR OPTIMISING [ignored?] " ^ si i);

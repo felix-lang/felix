@@ -15,7 +15,6 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 open Flx_use
-open Flx_child
 open Flx_reparent
 open Flx_call
 
@@ -104,7 +103,7 @@ let subarg syms bsym_table argmap exe =
   Flx_bexe.map ~fe:(rpl syms argmap) exe
 
 (* NOTE: result is in reversed order *)
-let gen_body syms uses child_map bsym_table id
+let gen_body syms uses bsym_table id
   varmap ps relabel revariable exes argument
   sr caller callee vs callee_vs_len inline_method props
 =
@@ -348,11 +347,6 @@ let gen_body syms uses child_map bsym_table id
           if length ps > 1
           then begin
             let entry = BBDCL_var (vs,paramtype) in
-            let kids =
-              try Hashtbl.find child_map caller
-              with Not_found -> []
-            in
-            Hashtbl.replace child_map caller (parameter::kids);
             Hashtbl.add bsym_table parameter (param_id,Some caller,sr,entry);
             BEXE_init (sr,parameter,argument)
           end
@@ -474,7 +468,7 @@ let gen_body syms uses child_map bsym_table id
     *)
     (* substitute in kids too *)
     if Hashtbl.length argmap > 0 then begin
-      let closure = descendants child_map callee in
+      let closure = Flx_bsym_table.find_descendants bsym_table callee in
       (*
          let cl = ref [] in BidSet.iter (fun i -> cl := i :: !cl) closure;
          print_endline ("Closure is " ^ catmap " " si !cl);

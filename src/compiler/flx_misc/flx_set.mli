@@ -2,6 +2,7 @@ module type S =
   sig
     include Set.S
     val map : (elt -> elt) -> t -> t
+    val iteri : (int -> elt -> unit) -> t -> unit
     val of_list : elt list -> t
     val print : Format.formatter -> t -> unit
   end;;

@@ -15,7 +15,6 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 open Flx_use
-open Flx_child
 
 let mk_remap counter d =
   let m = Hashtbl.create 97 in
@@ -241,7 +240,6 @@ let allow_rescan flag props =
 let reparent1
   (syms:sym_state_t)
   uses
-  child_map
   bsym_table
   relabel
   varmap
@@ -294,16 +292,6 @@ let reparent1
     " with old parent " ^ sop bsym_parent ^ " to index " ^
     string_of_bid k ^ " with new parent " ^ sop parent
   );
-  begin match parent with
-  | Some p ->
-    let old_kids = try Hashtbl.find child_map p with Not_found -> [] in
-    (*
-    print_endline ("ADDING " ^ si k ^ " as child of " ^ si p);
-    *)
-    Hashtbl.replace child_map p (k::old_kids)
-  | None -> ()
-  end
-  ;
   let update_bsym bbdcl =
     Flx_bsym_table.remove bsym_table k;
     Flx_bsym_table.add bsym_table parent k (Flx_bsym.replace_bbdcl bsym bbdcl)
@@ -443,7 +431,7 @@ let reparent1
    routine, but it doesn't reparent the routine itself
 *)
 
-let reparent_children syms uses child_map bsym_table
+let reparent_children syms uses bsym_table
   caller_vs callee_vs_len index (parent:bid_t option) relabel varmap rescan_flag extras
 =
   (*
@@ -457,7 +445,7 @@ let reparent_children syms uses child_map bsym_table
   );
   *)
 
-  let closure = descendants child_map index in
+  let closure = Flx_bsym_table.find_descendants bsym_table index in
   assert (not (BidSet.mem index closure));
   let revariable = fold_left (fun acc i -> BidSet.add i acc) closure extras in
   (*
@@ -465,6 +453,7 @@ let reparent_children syms uses child_map bsym_table
   print_endline ("Closure is " ^ catmap " " si !cl);
   *)
   let revariable = mk_remap syms.counter revariable in
+
   BidSet.iter begin fun i ->
     let old_parent = Flx_bsym_table.find_parent bsym_table i in
     let new_parent: bid_t option =
@@ -475,7 +464,7 @@ let reparent_children syms uses child_map bsym_table
         else Some (Hashtbl.find revariable p)
     in
     let k = Hashtbl.find revariable i in
-    reparent1 syms uses child_map bsym_table relabel varmap revariable
+    reparent1 syms uses bsym_table relabel varmap revariable
       caller_vs callee_vs_len i new_parent k rescan_flag
   end closure;
   if syms.compiler_options.print_flag then begin
@@ -520,7 +509,7 @@ let reparent_children syms uses child_map bsym_table
 *)
 
 
-let specialise_symbol syms uses child_map bsym_table
+let specialise_symbol syms uses bsym_table
   caller_vs callee_vs_len index ts parent relabel varmap rescan_flag
 =
   try Hashtbl.find syms.transient_specialisation_cache (index,ts)
@@ -533,12 +522,12 @@ let specialise_symbol syms uses child_map bsym_table
       (Flx_bsym_table.find bsym_table index);
 
     let revariable =
-       reparent_children syms uses child_map bsym_table
+       reparent_children syms uses bsym_table
        caller_vs callee_vs_len index (Some k) relabel varmap rescan_flag []
     in
 
     (* Finally, reparent the symbol. *)
-    reparent1 (syms:sym_state_t) uses child_map bsym_table
+    reparent1 (syms:sym_state_t) uses bsym_table
       relabel varmap revariable
       caller_vs callee_vs_len index parent k rescan_flag;
 

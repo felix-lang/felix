@@ -803,35 +803,35 @@ let codegen_bexe state bsym_table builder bexe =
 
 
 (* Convenience function to find all the values in a function. *)
-let find_value_indicies state bsym_table child_map bid =
-  List.filter begin fun bid ->
+let find_value_indicies state bsym_table bid =
+  Flx_types.BidSet.filter begin fun bid ->
     try match Flx_bsym_table.find_bbdcl bsym_table bid with
     | Flx_bbdcl.BBDCL_var _
     | Flx_bbdcl.BBDCL_ref _
     | Flx_bbdcl.BBDCL_val _ -> true
     | _ -> false
     with Not_found -> false
-  end (Flx_child.find_children child_map bid)
+  end (Flx_bsym_table.find_children bsym_table bid)
 
 
 (* Convenience function to create the closure type of a function. *)
-let find_closure_type state bsym_table child_map bid =
+let find_closure_type state bsym_table bid =
   let ts =
-    List.fold_left begin fun ts bid ->
+    Flx_types.BidSet.fold begin fun bid ts ->
       try match Flx_bsym_table.find_bbdcl bsym_table bid with
       | Flx_bbdcl.BBDCL_var (_,btype)
       | Flx_bbdcl.BBDCL_ref (_,btype)
       | Flx_bbdcl.BBDCL_val (_,btype) -> (lltype_of_btype state btype) :: ts
       | _ -> ts
       with Not_found -> ts
-    end [] (find_value_indicies state bsym_table child_map bid)
+    end (find_value_indicies state bsym_table bid) []
   in
   Llvm.struct_type state.context (Array.of_list ts)
 
 
-let codegen_proto state bsym_table child_map bid name parameters ret_type =
+let codegen_proto state bsym_table bid name parameters ret_type =
   (* Register the function's closure type. *)
-  let closure_type = find_closure_type state bsym_table child_map bid in
+  let closure_type = find_closure_type state bsym_table bid in
   Hashtbl.add
     state.closure_type_bindings
     bid
@@ -983,7 +983,6 @@ let codegen_closure state closure closure_kind =
 let rec codegen_function
   state
   bsym_table
-  child_map
   sr
   bid
   name
@@ -996,7 +995,6 @@ let rec codegen_function
   let the_function, display = codegen_proto
     state
     bsym_table
-    child_map
     bid
     name
     parameters
@@ -1024,15 +1022,14 @@ let rec codegen_function
     let closure = ref [] in
 
     (* Generate the symbols for the children. *)
-    List.iter begin fun i ->
+    Flx_types.BidSet.iter begin fun i ->
       ignore (codegen_symbol
         state
         bsym_table
-        child_map
         closure
         i
         (Flx_bsym_table.find bsym_table i))
-    end (Flx_child.find_children child_map bid);
+    end (Flx_bsym_table.find_children bsym_table bid);
 
     (* Create local bindings for the closures. *)
     let i =
@@ -1044,7 +1041,7 @@ let rec codegen_function
         Hashtbl.add state.closure_bindings bid closure;
 
         (* Now step through all the items in the closure and bind them locally. *)
-        let children = find_value_indicies state bsym_table child_map bid in
+        let children = find_value_indicies state bsym_table bid in
 
         Flx_list.iteri begin fun i bid ->
           let gep = codegen_gep
@@ -1056,7 +1053,7 @@ let rec codegen_function
           in
 
           Hashtbl.add state.value_bindings bid gep
-        end (List.rev children);
+        end (List.rev (Flx_types.BidSet.elements children));
 
         i + 1
       end display 0
@@ -1222,7 +1219,7 @@ and codegen_abs state index vs quals code reqs =
   Hashtbl.add state.type_bindings index t
 
 
-and codegen_symbol state bsym_table child_map closure index bsym =
+and codegen_symbol state bsym_table closure index bsym =
   let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
   print_endline ("codegen_symbol: " ^
     "parent=" ^ (match bsym_parent with
@@ -1240,7 +1237,6 @@ and codegen_symbol state bsym_table child_map closure index bsym =
       ignore (codegen_function
         state
         bsym_table
-        child_map
         (Flx_bsym.sr bsym)
         index
         (name_of_index state bsym_table index [])
@@ -1253,7 +1249,6 @@ and codegen_symbol state bsym_table child_map closure index bsym =
       ignore (codegen_function
         state
         bsym_table
-        child_map
         (Flx_bsym.sr bsym)
         index
         (name_of_index state bsym_table index [])
@@ -1335,7 +1330,7 @@ and codegen_symbol state bsym_table child_map closure index bsym =
 
 
 
-let codegen state bsym_table child_map bids bexes =
+let codegen state bsym_table bids bexes =
   (* First we'll generate the symbols. *)
   let global_closure = ref [] in
 
@@ -1347,7 +1342,7 @@ let codegen state bsym_table child_map bids bexes =
      * generator. *)
     match bsym_parent with
     | Some parent -> ()
-    | None -> codegen_symbol state bsym_table child_map global_closure bid bsym
+    | None -> codegen_symbol state bsym_table global_closure bid bsym
   end bids;
 
   (* Define all the global values. *)
@@ -1387,8 +1382,8 @@ let codegen state bsym_table child_map bids bexes =
 
   Some the_function
 
-let codegen_and_run state bsym_table child_map bids bexes =
-  let the_function = codegen state bsym_table child_map bids bexes in
+let codegen_and_run state bsym_table bids bexes =
+  let the_function = codegen state bsym_table bids bexes in
 
   (* Run the function. *)
   begin match the_function with

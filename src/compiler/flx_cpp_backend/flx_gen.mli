@@ -3,20 +3,17 @@
 val gen_function_names:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
-  Flx_child.t ->
   string
 
 val gen_functions:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
-  Flx_child.t ->
   string
 
 val gen_execute_methods:
   string ->
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
-  Flx_child.t ->
   Flx_label.label_map_t * Flx_label.label_usage_t ->
   Flx_types.bid_t ref ->
   out_channel ->
@@ -26,7 +23,6 @@ val gen_execute_methods:
 val find_members:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
-  Flx_child.t ->
   Flx_types.bid_t ->
   Flx_btype.t list ->
   string

@@ -7,12 +7,10 @@ let print_debug syms msg =
 (* Convert curried functions to uncurried functions so they can ba applied
  * directly instead of requiring closures. *)
 let uncurry_functions syms bsym_table clean_bsym_table =
-  let child_map = Flx_child.cal_children bsym_table in
   let bsym_table = ref bsym_table in
-  let child_map = ref child_map in
   let counter = ref 0 in
 
-  while Flx_uncurry.uncurry_gen syms !bsym_table !child_map > 0 do
+  while Flx_uncurry.uncurry_gen syms !bsym_table > 0 do
     incr counter;
     if !counter > 10 then failwith "uncurry exceeded 10 passes";
 
@@ -20,9 +18,7 @@ let uncurry_functions syms bsym_table clean_bsym_table =
     bsym_table :=
       if clean_bsym_table
       then Flx_use.copy_used syms !bsym_table
-      else !bsym_table;
-
-    child_map := Flx_child.cal_children !bsym_table;
+      else !bsym_table
   done;
 
   !bsym_table
@@ -55,8 +51,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
   in
 
   (* Perform the inlining. *)
-  let child_map = Flx_child.cal_children bsym_table in
-  Flx_inline.heavy_inlining syms bsym_table child_map;
+  Flx_inline.heavy_inlining syms bsym_table;
 
   (* Clean up the symbol table. *)
   let bsym_table =
@@ -81,8 +76,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     Flx_prop.rem_prop bsym_table `Inlining_complete i;
   end bsym_table;
 
-  let child_map = Flx_child.cal_children bsym_table in
-  Flx_intpoly.cal_polyvars syms bsym_table child_map;
+  Flx_intpoly.cal_polyvars syms bsym_table;
 
   Flx_inst.instantiate
     syms
@@ -106,8 +100,6 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     then Flx_use.copy_used syms bsym_table
     else bsym_table
   in
-
-  let child_map = Flx_child.cal_children bsym_table in
 
   if syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag then begin
     print_endline "";
@@ -136,8 +128,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     else bsym_table
   in
 
-  let child_map = Flx_child.cal_children bsym_table in
-  Flx_inline.heavy_inlining syms bsym_table child_map;
+  Flx_inline.heavy_inlining syms bsym_table;
 
   (*
   print_endline "INLINING DONE: RESULT:";
@@ -145,7 +136,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
   *)
 
   (* Remove unused symbols. *)
-  bsym_table, child_map
+  bsym_table
 
 
 let mkproc syms bsym_table clean_bsym_table =
@@ -156,13 +147,10 @@ let mkproc syms bsym_table clean_bsym_table =
     else bsym_table
   in
 
-  let child_map = Flx_child.cal_children bsym_table in
-
   (* XXX: What does mkproc do? *)
   let bsym_table = ref bsym_table in
-  let child_map = ref child_map in
   let counter = ref 0 in
-  while Flx_mkproc.mkproc_gen syms !bsym_table !child_map > 0 do
+  while Flx_mkproc.mkproc_gen syms !bsym_table > 0 do
     incr counter;
     if !counter > 10 then failwith "mkproc exceeded 10 passes";
 
@@ -170,9 +158,7 @@ let mkproc syms bsym_table clean_bsym_table =
     bsym_table :=
       if clean_bsym_table
       then Flx_use.copy_used syms !bsym_table
-      else !bsym_table;
-
-    child_map := Flx_child.cal_children !bsym_table;
+      else !bsym_table
   done;
 
   !bsym_table
@@ -189,15 +175,13 @@ let stack_calls syms bsym_table =
     syms.Flx_mtypes2.counter
   in
   let label_usage = Flx_label.create_label_usage syms bsym_table label_map in
-  let child_map = Flx_child.cal_children bsym_table in
   Flx_stack_calls.make_stack_calls
     syms
     bsym_table
-    child_map
     label_map
     label_usage;
 
-  bsym_table, child_map
+  bsym_table
 
 
 (* Do some platform independent optimizations of the code. *)
@@ -218,12 +202,12 @@ let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
   let bsym_table = uncurry_functions syms bsym_table clean_bsym_table in
 
   (* Inline functions. *)
-  let bsym_table, _ =
+  let bsym_table =
     let compiler_options = syms.Flx_mtypes2.compiler_options in
 
     (* Exit early if we don't want to do any inlining. *)
     if compiler_options.Flx_mtypes2.max_inline_length <= 0
-    then bsym_table, (Flx_child.make ())
+    then bsym_table
     else inline_functions syms bsym_table root_proc clean_bsym_table
   in
 
@@ -235,37 +219,29 @@ let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
   Flx_elim.eliminate_unused elim_state;
 
   (* Convert functions into stack calls. *)
-  let bsym_table, child_map = stack_calls syms bsym_table in
+  let bsym_table = stack_calls syms bsym_table in
 
-  bsym_table, child_map
+  bsym_table
 
 
 let optimize_bsym_table syms bsym_table root_proc =
   optimize_bsym_table' syms bsym_table root_proc true
 
 
-let optimize syms bsym_table child_map root_proc bids bexes =
-  (* Add the symbols to the child map. *)
-  List.iter begin fun bid ->
-    match Flx_bsym_table.find_parent bsym_table bid with
-    | Some parent -> Flx_child.add_child child_map parent bid
-    | None -> ()
-  end bids;
-
+let optimize syms bsym_table root_proc bids bexes =
   (* Check the typeclasses. *)
   let bids = Flx_typeclass.typeclass_instance_check_symbols
     syms
     bsym_table
-    child_map
     bids
   in
 
   (* Optimize the symbols. *)
-  let bsym_table, child_map = optimize_bsym_table'
+  let bsym_table = optimize_bsym_table'
     syms
     bsym_table
     root_proc
     false
   in
 
-  bsym_table, child_map, bids, bexes
+  bsym_table, bids, bexes

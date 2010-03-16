@@ -15,7 +15,6 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 open Flx_use
-open Flx_child
 open Flx_reparent
 open Flx_spexes
 open Flx_foldvars

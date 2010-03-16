@@ -33,6 +33,15 @@ let find_parent bsym_table bid = (find_elt bsym_table bid).parent
 (** Searches the bound symbol table for the given symbol's children. *)
 let find_children bsym_table bid = (find_elt bsym_table bid).children
 
+(** Finds all the descendants of the given symbol. *)
+let rec find_descendants bsym_table bid =
+  let children = find_children bsym_table bid in
+  let d = ref children in
+  Flx_types.BidSet.iter begin fun bid ->
+    d := Flx_types.BidSet.union !d (find_descendants bsym_table bid)
+  end children;
+  !d
+
 (** Searches the bound symbol table for the given symbol's id. *)
 let find_id bsym_table bid = Flx_bsym.id (find bsym_table bid)
 
@@ -149,6 +158,21 @@ let iter f bsym_table =
 (** Fold over all the items in the bound symbol table. *)
 let fold f bsym_table init =
   Hashtbl.fold (fun bid elt init -> f bid elt.bsym init) bsym_table.table init
+
+(** Returns whether or not one symbol is a child of another. *)
+let is_child bsym_table parent child =
+  Flx_types.BidSet.mem child (find_children bsym_table parent)
+
+(** Returns whether or not one symbol is an ancestor of another. *)
+let is_ancestor bsym_table child anc =
+  let rec is_anc child anc =
+    match find_parent bsym_table child with
+    | None -> false
+    | Some x ->
+      if x = anc then true
+      else is_anc x anc
+  in
+  is_anc child anc
 
 (** Return if the bound symbol index is an identity function. *)
 let is_identity bsym_table bid =

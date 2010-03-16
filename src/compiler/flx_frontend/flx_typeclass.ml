@@ -15,7 +15,6 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 open Flx_use
-open Flx_child
 open Flx_beta
 
 let vs2ts vs = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs
@@ -27,7 +26,6 @@ let rec drop l n =
 let check_instance
   syms
   bsym_table
-  child_map
   inst
   inst_id
   inst_vs
@@ -63,44 +61,51 @@ let check_instance
       )
     ;
 
-    let tc_kids = try Hashtbl.find child_map tc with Not_found -> [] in
-    let inst_kids = try Hashtbl.find child_map inst with Not_found -> [] in
+    let tc_kids =
+      try Flx_bsym_table.find_children bsym_table tc
+      with Not_found -> Flx_types.BidSet.empty
+    in
+    let inst_kids =
+      try Flx_bsym_table.find_children bsym_table inst
+      with Not_found -> Flx_types.BidSet.empty
+    in
     (*
     print_endline ("Typeclass kids " ^ catmap "," si tc_kids);
     print_endline ("Instance kids " ^ catmap "," si inst_kids);
     *)
-    let inst_map = fold_left (fun acc i->
-      let bsym = Flx_bsym_table.find bsym_table i in
-      match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (_,bvs,params,ret,_,_,_) ->
-        let argt = btyp_tuple params in
-        let qt = bvs, btyp_function (argt,ret) in
-        (Flx_bsym.id bsym,(i,qt)) :: acc
+    let inst_map =
+      Flx_types.BidSet.fold begin fun i acc ->
+        let bsym = Flx_bsym_table.find bsym_table i in
+        match Flx_bsym.bbdcl bsym with
+        | BBDCL_fun (_,bvs,params,ret,_,_,_) ->
+            let argt = btyp_tuple params in
+            let qt = bvs, btyp_function (argt,ret) in
+            (Flx_bsym.id bsym,(i,qt)) :: acc
 
-      | BBDCL_proc (_,bvs,params,_,_) ->
-        let argt = btyp_tuple params in
-        let qt = bvs, btyp_function (argt, btyp_void) in
-        (Flx_bsym.id bsym,(i,qt)) :: acc
+        | BBDCL_proc (_,bvs,params,_,_) ->
+            let argt = btyp_tuple params in
+            let qt = bvs, btyp_function (argt, btyp_void) in
+            (Flx_bsym.id bsym,(i,qt)) :: acc
 
-      | BBDCL_procedure (_,bvs,bps,_) ->
-        let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
-        let qt = bvs, btyp_function (argt, btyp_void) in
-        (Flx_bsym.id bsym,(i,qt)) :: acc
+        | BBDCL_procedure (_,bvs,bps,_) ->
+            let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
+            let qt = bvs, btyp_function (argt, btyp_void) in
+            (Flx_bsym.id bsym,(i,qt)) :: acc
 
-      | BBDCL_function (_,bvs,bps,ret,_) ->
-        let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
-        let qt = bvs, btyp_function (argt,ret) in
-        (Flx_bsym.id bsym,(i,qt)) :: acc
+        | BBDCL_function (_,bvs,bps,ret,_) ->
+            let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
+            let qt = bvs, btyp_function (argt,ret) in
+            (Flx_bsym.id bsym,(i,qt)) :: acc
 
-      | BBDCL_const (_,bvs,ret,_,_) ->
-        let qt = bvs,ret in
-        (Flx_bsym.id bsym,(i,qt)) :: acc
+        | BBDCL_const (_,bvs,ret,_,_) ->
+            let qt = bvs,ret in
+            (Flx_bsym.id bsym,(i,qt)) :: acc
 
-      | BBDCL_val (bvs,ret) ->
-        let qt = bvs,ret in
-        (Flx_bsym.id bsym,(i,qt)) :: acc
-      | _ -> acc
-      ) [] inst_kids
+        | BBDCL_val (bvs,ret) ->
+            let qt = bvs,ret in
+            (Flx_bsym.id bsym,(i,qt)) :: acc
+        | _ -> acc
+      end inst_kids []
     in
     let check_binding force tck sr id tck_bvs tctype =
       let sigmatch i inst_funbvs t =
@@ -220,8 +225,8 @@ let check_instance
       | _ ->
         clierr sr ("Felix can't handle overloads in typeclass instances yet, " ^ id ^ " is overloaded")
     in
-    iter
-    (fun tck ->
+
+    Flx_types.BidSet.iter begin fun tck ->
       let tck_bsym = Flx_bsym_table.find bsym_table tck in
       match Flx_bsym.bbdcl tck_bsym with
       | BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
@@ -264,9 +269,7 @@ let check_instance
         *)
         print_endline ("Warning: typeclass " ^ Flx_bsym.id tc_bsym ^ " entry " ^
           Flx_bsym.id tck_bsym ^ " is not virtual");
-    )
-    tc_kids
-
+    end tc_kids
 
   | _ ->
     clierr2 inst_sr (Flx_bsym.sr tc_bsym) ("Expected " ^ inst_id ^ "<" ^
@@ -275,7 +278,7 @@ let check_instance
       string_of_bid tc ^ ">, is not a typeclass"
     )
 
-let typeclass_instance_check_symbol syms bsym_table child_map i bsym =
+let typeclass_instance_check_symbol syms bsym_table i bsym =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_instance (props, vs, cons, tc, ts) ->
       let iss =
@@ -287,7 +290,6 @@ let typeclass_instance_check_symbol syms bsym_table child_map i bsym =
       check_instance
         syms
         bsym_table
-        child_map
         i
         (Flx_bsym.id bsym)
         vs
@@ -298,19 +300,19 @@ let typeclass_instance_check_symbol syms bsym_table child_map i bsym =
         ts
   | _ -> ()
 
-let typeclass_instance_check_symbols syms bsym_table child_map bids =
+let typeclass_instance_check_symbols syms bsym_table bids =
   (* Check each symbol. *)
   List.iter begin fun bid ->
     let bsym = Flx_bsym_table.find bsym_table bid in
-    typeclass_instance_check_symbol syms bsym_table child_map bid bsym
+    typeclass_instance_check_symbol syms bsym_table bid bsym
   end bids;
 
   (* We don't insert new symbols into the list, so return it directly. *)
   bids
 
-let typeclass_instance_check syms bsym_table child_map =
+let typeclass_instance_check syms bsym_table =
   Flx_bsym_table.iter
-    (typeclass_instance_check_symbol syms bsym_table child_map)
+    (typeclass_instance_check_symbol syms bsym_table)
     bsym_table
 
 (* Notes.

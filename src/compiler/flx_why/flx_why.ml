@@ -13,33 +13,30 @@ open List
 open Flx_maps
 
 (** Searches the bound symbol table for all the symbols with the given name. *)
-let find_name bsym_table child_map root name =
+let find_name bsym_table root name =
   let rec search_root bsyms root =
-    let rec search_children bsyms = function
-      | [] ->
-          (* We didn't find it, so search up the parents. *)
-          let parent =
-            try Some (Flx_bsym_table.find_parent bsym_table root)
-            with Not_found -> None
-          in
-          begin match parent with
-          | Some (Some parent) -> search_root bsyms parent
-          | _ -> bsyms
-          end
-      | child :: children ->
-          let bsym = Flx_bsym_table.find bsym_table child in
-          search_children
-            (if Flx_bsym.id bsym = name then (child, bsym) :: bsyms else bsyms)
-            children
+    let bsyms =
+      Flx_types.BidSet.fold begin fun child bsyms ->
+        let bsym = Flx_bsym_table.find bsym_table child in
+        if Flx_bsym.id bsym = name then (child, bsym) :: bsyms else bsyms
+      end (Flx_bsym_table.find_children bsym_table root) bsyms
     in
-    search_children bsyms (Flx_child.find_children child_map root)
+
+    (* We didn't find it, so search up the parents. *)
+    let parent =
+      try Some (Flx_bsym_table.find_parent bsym_table root)
+      with Not_found -> None
+    in
+    match parent with
+    | Some (Some parent) -> search_root bsyms parent
+    | _ -> bsyms
   in
   search_root [] root
 
 
 (* Hackery to find logic functions in the library *)
-let find_function syms bsym_table child_map root name =
-  let bsyms = find_name bsym_table child_map root name in
+let find_function syms bsym_table root name =
+  let bsyms = find_name bsym_table root name in
   let bsyms =
     List.filter begin fun (_, bsym) ->
       match Flx_bsym.bbdcl bsym with
@@ -62,8 +59,8 @@ let find_function syms bsym_table child_map root name =
       print_endline ("WARNING: flx_why found too many '" ^ name ^ "'");
       dummy_bid
 
-let find_logics syms bsym_table child_map root =
-  let ff x = find_function syms bsym_table child_map root x in
+let find_logics syms bsym_table root =
+  let ff x = find_function syms bsym_table root x in
   [
     ff "land", "and";
     ff "lor", "or";
@@ -337,8 +334,8 @@ let calps ps =
 
 let unitt = btyp_tuple []
 
-let emit_whycode filename syms bsym_table child_map root =
-  let logics = find_logics syms bsym_table child_map root in
+let emit_whycode filename syms bsym_table root =
+  let logics = find_logics syms bsym_table root in
   let f = open_out filename in
   output_string f "(****** HACKS *******)\n";
 (*  output_string f "type 'a lvalue  (* Felix lvalues *) \n"; *)

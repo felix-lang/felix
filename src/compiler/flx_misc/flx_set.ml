@@ -2,6 +2,7 @@ module type S =
   sig
     include Set.S
     val map : (elt -> elt) -> t -> t
+    val iteri : (int -> elt -> unit) -> t -> unit
     val of_list : elt list -> t
     val print : Format.formatter -> t -> unit
   end;;
@@ -16,6 +17,7 @@ module Make (M:OrderedTypePrintable) : S with type elt = M.t =
   struct
     include Set.Make(M)
     let map f set = fold (fun x -> add (f x)) set empty
+    let iteri f set = ignore (fold (fun x i -> f i x; i + 1) set 0)
     let of_list l = List.fold_right add l empty
     let print f s =
       Format.fprintf f "@[<hv0>@[<hv2>{.@ ";

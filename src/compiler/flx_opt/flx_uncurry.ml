@@ -15,7 +15,6 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 open Flx_use
-open Flx_child
 open Flx_reparent
 open Flx_spexes
 open Flx_foldvars
@@ -124,13 +123,13 @@ let uncurry_exe syms bsym_table uncurry_map vs exe =
 let uncurry_exes syms bsym_table uncurry_map vs exes = map (uncurry_exe syms bsym_table uncurry_map vs) exes
 
 (** make the uncurry map *)
-let make_uncurry_map syms bsym_table child_map =
+let make_uncurry_map syms bsym_table =
   let uncurry_map = Hashtbl.create 97 in
 
   Flx_bsym_table.iter begin fun i bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_function (_,vs,_,_,[BEXE_fun_return (_,(BEXPR_closure (f,ts),_))])
-      when is_child child_map i f && vs_is_ts vs ts
+      when Flx_bsym_table.is_child bsym_table i f && vs_is_ts vs ts
     ->
       let k = fresh_bid syms.counter in
       Hashtbl.add uncurry_map i (f,k,0);
@@ -169,7 +168,7 @@ let make_uncurry_map syms bsym_table child_map =
   *)
   let isnot_asc adult =
     fold_left
-    (fun acc child -> acc && not (Flx_child.is_ancestor bsym_table child adult))
+    (fun acc child -> acc && not (Flx_bsym_table.is_ancestor bsym_table child adult))
     true !to_uncurry
   in
 
@@ -204,7 +203,6 @@ let make_uncurry_map syms bsym_table child_map =
 let fixup_function
   syms
   bsym_table
-  child_map
   ut vm rl
   i c k
   bsymi bsymi_parent
@@ -222,7 +220,7 @@ let fixup_function
   (* Create a table that will help with us remapping the parameters. *)
   let revariable = Flx_reparent.reparent_children
     syms
-    ut child_map bsym_table
+    ut bsym_table
     vs
     (length vsc)
     c
@@ -255,8 +253,7 @@ let fixup_function
         " <-- " ^ string_of_bid i);
 
     Flx_bsym_table.add_child bsym_table k n
-      (Flx_bsym.create ~sr:(Flx_bsym.sr bsymi) (s ^ "_uncurry") bbdcl);
-    Flx_child.add_child child_map k n
+      (Flx_bsym.create ~sr:(Flx_bsym.sr bsymi) (s ^ "_uncurry") bbdcl)
   end ps;
 
   (* Make sure the parameter indices don't equal the remapped index. *)
@@ -286,16 +283,10 @@ let fixup_function
     exesc
   in
 
-  (* If our parent symbol has a parent, then update the child map. *)
-  begin match bsymi_parent with
-  | Some p -> Flx_child.add_child child_map p k
-  | None -> ()
-  end;
-
   vs, ps, exes
 
 
-let synthesize_function syms bsym_table child_map ut vm rl i (c, k, n) =
+let synthesize_function syms bsym_table ut vm rl i (c, k, n) =
   if syms.compiler_options.print_flag then
     print_endline ("UNCURRY: Orig " ^ string_of_bid i ^ " ret child " ^
       string_of_bid c ^ " synth " ^ string_of_bid k ^ " count=" ^ si n);
@@ -317,7 +308,6 @@ let synthesize_function syms bsym_table child_map ut vm rl i (c, k, n) =
   let fixup_function = fixup_function
     syms
     bsym_table
-    child_map
     ut vm rl
     i c k
     bsymi bsymi_parent
@@ -341,13 +331,13 @@ let synthesize_function syms bsym_table child_map ut vm rl i (c, k, n) =
 
 
 (** synthesise the new functions *)
-let synthesize_functions syms bsym_table child_map uncurry_map =
+let synthesize_functions syms bsym_table uncurry_map =
   let ut = Hashtbl.create 97 in (* dummy usage table *)
   let vm = Hashtbl.create 97 in (* dummy varmap *)
   let rl = Hashtbl.create 97 in (* dummy relabel *)
 
   Hashtbl.iter
-    (synthesize_function syms bsym_table child_map ut vm rl)
+    (synthesize_function syms bsym_table ut vm rl)
     uncurry_map
 
 
@@ -369,10 +359,10 @@ let replace_calls syms bsym_table uncurry_map =
   end bsym_table
 
 
-let uncurry_gen syms bsym_table child_map : int =
-  let uncurry_map = make_uncurry_map syms bsym_table child_map in
+let uncurry_gen syms bsym_table =
+  let uncurry_map = make_uncurry_map syms bsym_table in
 
-  synthesize_functions syms bsym_table child_map uncurry_map;
+  synthesize_functions syms bsym_table uncurry_map;
   replace_calls syms bsym_table uncurry_map;
 
   (* Return how many new functions we've created. *)

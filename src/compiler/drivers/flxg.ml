@@ -293,17 +293,16 @@ let bind_asms state asms =
   fprintf state.ppf "//root module's init procedure has index %s\n"
     (Flx_print.string_of_bid root_proc);
 
-  let child_map = Flx_child.cal_children bsym_table in
-  Flx_typeclass.typeclass_instance_check state.syms bsym_table child_map;
+  Flx_typeclass.typeclass_instance_check state.syms bsym_table;
 
   state.bind_time <- state.bind_time +. bind_timer ();
   fprintf state.ppf "//BINDING OK time %f\n" state.bind_time;
 
-  bsym_table, child_map, root_proc
+  bsym_table, root_proc
 
 
 (** Generate the why file. *)
-let generate_why_file state bsym_table child_map root_proc =
+let generate_why_file state bsym_table root_proc =
   (* generate axiom checks *)
   if state.syms.compiler_options.generate_axiom_checks then
   Flx_axiom.axiom_check state.syms bsym_table;
@@ -313,7 +312,6 @@ let generate_why_file state bsym_table child_map root_proc =
     state.why_file.out_filename
     state.syms
     bsym_table
-    child_map
     root_proc
 
 
@@ -322,7 +320,7 @@ let optimize_bsyms state bsym_table root_proc =
   fprintf state.ppf "//OPTIMIZING\n";
   let opt_timer = make_timer () in
 
-  let bsym_table, _ = Flx_opt.optimize_bsym_table
+  let bsym_table = Flx_opt.optimize_bsym_table
     state.syms
     bsym_table
     root_proc
@@ -339,7 +337,7 @@ let lower_bsyms state bsym_table root_proc =
   fprintf state.ppf "//LOWERING\n";
   let lower_timer = make_timer () in
 
-  let bsym_table, child_map = Flx_lower.lower_bsym_table
+  let bsym_table = Flx_lower.lower_bsym_table
     (Flx_lower.make_lower_state state.syms)
     bsym_table
     root_proc
@@ -348,11 +346,11 @@ let lower_bsyms state bsym_table root_proc =
   state.lower_time <- state.lower_time +. lower_timer ();
   fprintf state.ppf "//LOWERING OK time %f\n"state.lower_time;
 
-  bsym_table, child_map
+  bsym_table
 
 
 (** Generate the C++ code. *)
-let codegen_bsyms state bsym_table child_map root_proc =
+let codegen_bsyms state bsym_table root_proc =
   fprintf state.ppf "//INSTANTIATING\n";
   let instantiation_timer = make_timer () in
 
@@ -538,11 +536,11 @@ let codegen_bsyms state bsym_table child_map root_proc =
   fprintf state.ppf "//GENERATING C++: function and procedure classes\n";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASS NAMES";
-  plh  (gen_function_names state.syms bsym_table child_map);
+  plh  (gen_function_names state.syms bsym_table);
 
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASSES";
-  plh  (gen_functions state.syms bsym_table child_map);
+  plh  (gen_functions state.syms bsym_table);
 
   let topvars_with_type = find_thread_vars_with_type bsym_table in
   let topvars = List.map fst topvars_with_type in
@@ -657,7 +655,6 @@ let codegen_bsyms state bsym_table child_map root_proc =
   plr (Flx_ogen.gen_offset_tables
     state.syms
     bsym_table
-    child_map
     state.module_name);
 
   ensure_closed state.rtti_file;
@@ -707,7 +704,6 @@ let codegen_bsyms state bsym_table child_map root_proc =
     state.body_file.out_filename
     state.syms
     bsym_table
-    child_map
     label_info
     state.syms.counter
     (force_open state.body_file)
@@ -853,19 +849,19 @@ let main () =
     let asms = desugar_stmts state state.module_name stmts in
 
     (* Bind the assemblies. *)
-    let bsym_table, child_map, root_proc = bind_asms state asms in
+    let bsym_table, root_proc = bind_asms state asms in
 
     (* Generate the why file *)
-    generate_why_file state bsym_table child_map root_proc;
+    generate_why_file state bsym_table root_proc;
 
     (* Optimize the bound values *)
     let bsym_table = optimize_bsyms state bsym_table root_proc in
 
     (* Lower the bound symbols for the backend. *)
-    let bsym_table, child_map = lower_bsyms state bsym_table root_proc in
+    let bsym_table = lower_bsyms state bsym_table root_proc in
 
     (* Start working on the backend. *)
-    codegen_bsyms state bsym_table child_map root_proc;
+    codegen_bsyms state bsym_table root_proc;
   with x ->
     Flx_terminate.terminate compiler_options.reverse_return_parity x
   end;

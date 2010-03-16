@@ -57,8 +57,7 @@ let lower_bsym_table state bsym_table root_proc =
   (* Instantiate type classes. *)
   print_debug state "//instantiating";
 
-  let child_map = Flx_child.cal_children bsym_table in
-  Flx_intpoly.cal_polyvars state.syms bsym_table child_map;
+  Flx_intpoly.cal_polyvars state.syms bsym_table;
   Flx_inst.instantiate
     state.syms
     bsym_table
@@ -98,12 +97,12 @@ let lower_bsym_table state bsym_table root_proc =
     | _ -> ()
   end !(state.syms.Flx_mtypes2.roots);
 
-  bsym_table, child_map
+  bsym_table
 
 
 (* Prep the bexes and symbols for the backend by lowering and simplifying
  * symbols. *)
-let lower state bsym_table child_map root_proc bids bexes =
+let lower state bsym_table root_proc bids bexes =
   (* Wrap closures. *)
   print_debug state "//Generating primitive wrapper closures";
   let bids = Flx_mkcls.make_closure state.closure_state bsym_table bids in
@@ -126,8 +125,7 @@ let lower state bsym_table child_map root_proc bids bexes =
   (* Instantiate type classes. *)
   print_debug state "//instantiating";
 
-  let child_map = Flx_child.cal_children bsym_table in
-  Flx_intpoly.cal_polyvars state.syms bsym_table child_map;
+  Flx_intpoly.cal_polyvars state.syms bsym_table;
   Flx_inst.instantiate
     state.syms
     bsym_table
@@ -135,4 +133,4 @@ let lower state bsym_table child_map root_proc bids bexes =
     root_proc
     state.syms.Flx_mtypes2.bifaces;
 
-  bsym_table, child_map, bids, bexes
+  bsym_table, bids, bexes

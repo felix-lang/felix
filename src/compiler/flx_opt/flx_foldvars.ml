@@ -14,7 +14,6 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 open Flx_use
-open Flx_child
 open Flx_reparent
 open Flx_spexes
 
@@ -51,12 +50,8 @@ let add_use uses i j sr =
    minus just the union of everything used by the
    child functions.
 *)
-let locals child_map uses i =
-  let kids = List.fold_left
-    (fun ii i -> BidSet.add i ii)
-    BidSet.empty
-    (find_children child_map i)
-  in
+let locals bsym_table uses i =
+  let kids = Flx_bsym_table.find_children bsym_table i in
   (*
   print_endline ("Kid of " ^ si i ^ " = " ^ string_of_bidset kids);
   *)
@@ -73,11 +68,11 @@ let locals child_map uses i =
   print_endline ("Used kids are " ^ si i ^ " = " ^ string_of_bidset used_kids);
   *)
   (*
-  let desc = descendants child_map i in
+  let desc = Flx_bsym_table.descendants bsym_table i in
   *)
   let desc =
     BidSet.fold
-    (fun j s -> let u = descendants child_map j in BidSet.union u s)
+    (fun j s -> let u = Flx_bsym_table.find_descendants bsym_table j in BidSet.union u s)
     used_kids
     BidSet.empty
   in
@@ -102,19 +97,19 @@ let locals child_map uses i =
   BidSet.diff kids u
 
 
-let fold_vars syms bsym_table child_map uses i ps exes =
+let fold_vars syms bsym_table uses i ps exes =
   let pset = fold_left (fun s {pindex=i}-> BidSet.add i s) BidSet.empty ps in
-  let kids = find_children child_map i in
+  let kids = Flx_bsym_table.find_children bsym_table i in
   (*
   let id,_,_,_ = Flx_bsym_table.find bsym_table i in
   print_endline ("\nFOLDing " ^ id ^ "<" ^ si i ^">");
   print_endline ("Kids = " ^ catmap ", " si kids);
   *)
-  let descend = descendants child_map i in
+  let descend = Flx_bsym_table.find_descendants bsym_table i in
   (*
   print_endline ("Descendants are " ^ string_of_bidset descend);
   *)
-  let locls = locals child_map uses i in
+  let locls = locals bsym_table uses i in
   (*
   print_endline ("Locals of " ^ si i ^ " are " ^ string_of_bidset locls);
   print_endline "INPUT Code is";
@@ -189,7 +184,6 @@ let fold_vars syms bsym_table child_map uses i ps exes =
 
           (* remove the variable *)
           Flx_bsym_table.remove bsym_table j;
-          remove_child child_map i j;
           remove_uses uses i j;
           incr count
         in

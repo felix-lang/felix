@@ -86,7 +86,7 @@ let check_abstract_exe syms rls exe =
    exe 
 
 
-let cal_polyvars syms bsym_table child_map =
+let cal_polyvars syms bsym_table =
   let absvars = Hashtbl.create 97 in
   Flx_bsym_table.iter (fun i bsym ->
   match Flx_bsym.bbdcl bsym with
@@ -141,13 +141,13 @@ let cal_polyvars syms bsym_table child_map =
     let pvs' = try Hashtbl.find polyvars i with Not_found -> [] in
     Hashtbl.replace polyvars  i (pvs @ pvs')
   in
-  Hashtbl.iter (fun i pvs ->
-     merge i pvs;
-     let kids = Flx_child.find_children child_map i in
-     iter (fun j -> merge j pvs) kids
-  )
-  absvars
-  ;
+
+  Hashtbl.iter begin fun i pvs ->
+    merge i pvs;
+    let kids = Flx_bsym_table.find_children bsym_table i in
+    Flx_types.BidSet.iter (fun j -> merge j pvs) kids
+  end absvars;
+
   let cast_a i e =
     let pvs = try Hashtbl.find polyvars i with Not_found -> [] in
     if pvs = [] then e else begin 

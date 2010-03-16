@@ -14,7 +14,6 @@ open List
 open Flx_maps
 open Flx_exceptions
 open Flx_use
-open Flx_child
 open Flx_spexes
 open Flx_args
 
@@ -130,7 +129,7 @@ let proc_exe k exe = match exe with
 
 let proc_exes syms bsym_table k exes = concat (map (proc_exe k) exes)
 
-let mkproc_gen syms bsym_table child_map =
+let mkproc_gen syms bsym_table =
   let ut = Hashtbl.create 97 in (* dummy usage table *)
   let vm = Hashtbl.create 97 in (* dummy varmap *)
   let rl = Hashtbl.create 97 in (* dummy relabel *)
@@ -140,7 +139,6 @@ let mkproc_gen syms bsym_table child_map =
     let csf = Flx_stack_calls.can_stack_func
       syms
       bsym_table
-      child_map
       (Hashtbl.create 97)
       (Hashtbl.create 97)
       i in
@@ -193,7 +191,7 @@ let mkproc_gen syms bsym_table child_map =
   *)
   let isnot_asc adult =
     fold_left
-    (fun acc child -> acc && not (Flx_child.is_ancestor bsym_table child adult))
+    (fun acc child -> acc && not (Flx_bsym_table.is_ancestor bsym_table child adult))
     true !to_mkproc
   in
 
@@ -259,7 +257,7 @@ let mkproc_gen syms bsym_table child_map =
         let bids = Flx_bparameter.get_bids ps in
         let revariable =
           Flx_reparent.reparent_children syms
-          ut child_map bsym_table
+          ut bsym_table
           vs (length vs)
           i (Some k) rl vm true bids
         in
@@ -294,8 +292,7 @@ let mkproc_gen syms bsym_table child_map =
               string_of_bid i);
             Flx_bsym_table.remove bsym_table n;
             Flx_bsym_table.add_child bsym_table k n
-              (Flx_bsym.replace_bbdcl bsym bbdcl);
-            Flx_child.add_child child_map k n
+              (Flx_bsym.replace_bbdcl bsym bbdcl)
           )
           ps
         ;
@@ -310,12 +307,6 @@ let mkproc_gen syms bsym_table child_map =
           exes
         in
 
-        (* add new procedure as child of original function parent *)
-        begin match bsym_parent with
-        | Some p -> Flx_child.add_child child_map p k
-        | None -> ()
-        end
-        ;
         vix,ps,exes
       in
 

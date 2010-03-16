@@ -5,7 +5,6 @@
 val make_stack_calls:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
-  Flx_child.t ->
   Flx_label.label_map_t ->
   Flx_label.label_usage_t ->
   unit
@@ -13,7 +12,6 @@ val make_stack_calls:
 val can_stack_func:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
-  Flx_child.t ->
   (Flx_btype.t, [`Recurse | `Safe | `Unsafe]) Hashtbl.t ->
   (Flx_btype.t, [`Recurse | `Safe | `Unsafe]) Hashtbl.t ->
   Flx_types.bid_t ->

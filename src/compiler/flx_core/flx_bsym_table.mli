@@ -44,6 +44,9 @@ val find_parent : t -> Flx_types.bid_t -> Flx_types.bid_t option
 (** Searches the bound symbol table for the given symbol's children. *)
 val find_children : t -> Flx_types.bid_t -> Flx_types.BidSet.t
 
+(** Finds all the descendants of the given symbol. *)
+val find_descendants: t -> Flx_types.bid_t -> Flx_types.BidSet.t
+
 (** Searches the bound symbol table for the given symbol's id. *)
 val find_id : t -> Flx_types.bid_t -> string
 
@@ -73,6 +76,12 @@ val iter : (Flx_types.bid_t -> Flx_bsym.t -> unit) -> t -> unit
 
 (** Fold over all the items in the bound symbol table. *)
 val fold : (Flx_types.bid_t -> Flx_bsym.t -> 'a -> 'a) -> t -> 'a -> 'a
+
+(** Returns whether or not one symbol is a child of another. *)
+val is_child: t -> Flx_types.bid_t -> Flx_types.bid_t -> bool
+
+(** Returns whether or not one symbol is an ancestor of another. *)
+val is_ancestor: t -> Flx_types.bid_t -> Flx_types.bid_t -> bool
 
 (** Return if the bound symbol index is an identity function. *)
 val is_identity : t -> Flx_types.bid_t -> bool

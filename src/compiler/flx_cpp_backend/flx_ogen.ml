@@ -29,15 +29,15 @@ let find_thread_vars_with_type bsym_table =
   !vars
 
 
-let find_references syms bsym_table child_map index ts =
+let find_references syms bsym_table index ts =
   let children =
     try
-      Hashtbl.find child_map index
-    with Not_found -> []
+      Flx_bsym_table.find_children bsym_table index
+    with Not_found -> Flx_types.BidSet.empty
   in
   let references = ref [] in
-  iter
-  (fun idx ->
+
+  Flx_types.BidSet.iter begin fun idx ->
     try
       let bsym = Flx_bsym_table.find bsym_table idx in
       match Flx_bsym.bbdcl bsym with
@@ -59,10 +59,9 @@ let find_references syms bsym_table child_map index ts =
         references := (idx,t) :: !references
       | _ -> ()
     with Not_found -> ()
-  )
-  children
-  ;
-  rev (!references)
+  end children;
+
+  !references
 
 let comma_sub s =
   let rec aux l r =
@@ -236,8 +235,8 @@ let gen_offset_data s n name offsets isfun props flags last_ptr_map =
 
 let is_instantiated syms i ts = Hashtbl.mem syms.instances (i,ts)
 
-let gen_fun_offsets s syms (child_map,bsym_table) index vs ps ret ts instance props last_ptr_map : unit =
-  let vars =  (find_references syms bsym_table child_map index ts) in
+let gen_fun_offsets s syms bsym_table index vs ps ret ts instance props last_ptr_map : unit =
+  let vars =  (find_references syms bsym_table index ts) in
   let vars = filter (fun (i, _) -> is_instantiated syms i ts) vars in
   let name = cpp_instance_name syms bsym_table index ts in
   let display = Flx_display.get_display_list bsym_table index in
@@ -333,7 +332,7 @@ let scan_exe syms bsym_table allocable_types exe : unit =
 let scan_exes syms bsym_table allocable_types exes : unit =
   iter (scan_exe syms bsym_table allocable_types) exes
 
-let gen_offset_tables syms bsym_table child_map module_name =
+let gen_offset_tables syms bsym_table module_name =
   let allocable_types = Hashtbl.create 97 in
   let scan exes = scan_exes syms bsym_table allocable_types exes in
   let last_ptr_map = ref "NULL" in
@@ -356,7 +355,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
       scan exes;
       if mem `Cfun props then () else
       if mem `Heap_closure props then
-        gen_fun_offsets s syms (child_map,bsym_table) index vs ps ret ts instance props last_ptr_map
+        gen_fun_offsets s syms bsym_table index vs ps ret ts instance props last_ptr_map
       (*
       else
         print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
@@ -369,7 +368,7 @@ let gen_offset_tables syms bsym_table child_map module_name =
         gen_fun_offsets
           s
           syms
-          (child_map,bsym_table)
+          bsym_table
           index
           vs
           ps

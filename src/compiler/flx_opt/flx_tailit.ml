@@ -16,7 +16,6 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 open Flx_use
-open Flx_child
 open Flx_call
 
 let add_xclosure syms cls e =
@@ -127,7 +126,7 @@ let check_proj_wrap_closure syms bsym_table descend usage n i e =
   let u = expr_uses_unrestricted syms descend usage e in
   BidSet.iter (check_proj_wrap_entry syms bsym_table n i) u
 
-let tailit syms bsym_table child_map uses id this sr ps vs exes =
+let tailit syms bsym_table uses id this sr ps vs exes =
   (*
   print_endline ("======= Tailing " ^ id ^ "<" ^ si this ^ "> exes=====");
   iter (fun x -> print_endline (string_of_bexe 0 x)) exes;
@@ -137,10 +136,13 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
   let ts' = map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
   let pset = fold_left (fun s {pindex=i} -> BidSet.add i s) BidSet.empty ps in
   let parameters = ref [] in
-  let descend = descendants child_map this in
-  let children = try Hashtbl.find child_map this with Not_found -> [] in
+  let descend = Flx_bsym_table.find_descendants bsym_table this in
+  let children =
+    try Flx_bsym_table.find_children bsym_table this
+    with Not_found -> Flx_types.BidSet.empty
+  in
   let can_loop () =
-    let varlist = List.filter
+    let varlist = Flx_types.BidSet.filter
       (Flx_bsym_table.is_variable bsym_table)
       children
     in
@@ -169,8 +171,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
       BidSet.iter
       (fun i ->
         let usage = Hashtbl.find uses i in
-        iter
-        (fun j ->
+        BidSet.iter begin fun j ->
           let usesj =   mem_assoc j usage in
           (*
           if usesj then
@@ -178,8 +179,7 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
           ;
           *)
           if usesj then raise Not_found;
-        )
-        varlist
+        end varlist
       )
       kidcls
       ;
@@ -321,10 +321,10 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
       (* the descendants of the variables parents! *)
       let parent = Flx_bsym_table.find_parent bsym_table i in
       let descend = match parent with
-        | Some parent -> descendants child_map parent
+        | Some parent -> Flx_bsym_table.find_descendants bsym_table parent
         | None ->
           let d = ref BidSet.empty in
-          Hashtbl.iter (fun i _ -> d := BidSet.add i !d) child_map;
+          Flx_bsym_table.iter (fun i _ -> d := BidSet.add i !d) bsym_table;
           !d
       in
 
@@ -575,11 +575,6 @@ let tailit syms bsym_table child_map uses id this sr ps vs exes =
 
       (* instantiate any parameter temporaries *)
       List.iter begin fun (paramtype, parameter) ->
-        let kids =
-          try Hashtbl.find child_map this
-          with Not_found -> []
-        in
-        Hashtbl.replace child_map this (parameter::kids);
         let id = "_trp_" ^ string_of_bid parameter in
         Flx_bsym_table.add_child bsym_table this parameter
           (Flx_bsym.create ~sr id (bbdcl_tmp (vs, paramtype)))

@@ -98,87 +98,70 @@ let bind_stmt state stmt () =
 
 
 (* Helper function to simplify optimizing values. *)
-let optimize_stmt' state bsym_table child_map stmt =
+let optimize_stmt' state bsym_table stmt =
   (* Bind the bsyms and bexes. *)
   let bids, bexes = bind_stmt' state bsym_table stmt in
 
   (* Optimize the bsyms and bexes. *)
-  Flx_opt.optimize state.syms bsym_table child_map state.init_index bids bexes
+  Flx_opt.optimize state.syms bsym_table state.init_index bids bexes
 
 
 let optimize_stmt state =
-  (* Create a child map of the symbols. *)
-  let child_map = Flx_child.cal_children state.bsym_table in
-
-  (* Make references of the bsym_table and child map since we'll be replacing these
-   * values as we optimize. *)
+  (* Make references of the bsym_table since we'll be replacing these as we
+   * optimize. *)
   let bsym_table = ref state.bsym_table in
-  let child_map = ref child_map in
 
   (* Return a function that processes a statement at a time. *)
   fun stmt () ->
-    let bsym_table', child_map', bids, bexes = optimize_stmt'
+    let bsym_table', bids, bexes = optimize_stmt'
       state
       !bsym_table
-      !child_map
       stmt
     in
     bsym_table := bsym_table';
-    child_map := child_map';
 
     print_bids state !bsym_table bids;
     print_bexes state !bsym_table bexes
 
 
-let lower_stmt' state bsym_table child_map lower_state stmt =
+let lower_stmt' state bsym_table lower_state stmt =
   (* Optimize the bsyms and bexes. *)
-  let bsym_table, child_map, bids, bexes = optimize_stmt'
+  let bsym_table, bids, bexes = optimize_stmt'
     state
     bsym_table
-    child_map
     stmt
   in
 
   (* Then, lower the bsyms and bexes. *)
-  Flx_lower.lower lower_state bsym_table child_map state.init_index bids bexes
+  Flx_lower.lower lower_state bsym_table state.init_index bids bexes
 
 
 let lower_stmt state =
-  (* Create a child map of the symbols. *)
-  let child_map = Flx_child.cal_children state.bsym_table in
-
-  (* Make references of the bsym_table and child map since we'll be replacing these
-   * values as we optimize. *)
+  (* Make references of the bsym_table since we'll be replacing this as we
+   * optimize. *)
   let bsym_table = ref state.bsym_table in
-  let child_map = ref child_map in
 
   (* Create the stat needed for lowering symbols. *)
   let lower_state = Flx_lower.make_lower_state state.syms in
 
   (* Return a function that processes a statement at a time. *)
   fun stmt () ->
-    let bsym_table', child_map', bids, bexes = lower_stmt'
+    let bsym_table', bids, bexes = lower_stmt'
       state
       !bsym_table
-      !child_map
       lower_state
       stmt
     in
     bsym_table := bsym_table';
-    child_map := child_map';
 
     print_bids state !bsym_table bids;
     print_bexes state !bsym_table bexes
 
 
 let compile_stmt state =
-  (* Create a child map of the symbols. *)
-  let child_map = Flx_child.cal_children state.bsym_table in
-
-  (* Make references of the bsym_table and child map since we'll be replacing these
-   * values as we optimize. *)
+  (* Make references of the bsym_table since we'll be replacing this as we
+   * optimize. *)
   let bsym_table = ref state.bsym_table in
-  let child_map = ref child_map in
 
   (* Create the stat needed for lowering symbols. *)
   let lower_state = Flx_lower.make_lower_state state.syms in
@@ -194,15 +177,13 @@ let compile_stmt state =
 
   (* Return a function that processes a statement at a time. *)
   fun stmt () ->
-    let bsym_table', child_map', bids, bexes = lower_stmt'
+    let bsym_table', bids, bexes = lower_stmt'
       state
       !bsym_table
-      !child_map
       lower_state
       stmt
     in
     bsym_table := bsym_table';
-    child_map := child_map';
 
     (* Generate code for the exes and bsyms. *)
     let f =
@@ -211,7 +192,7 @@ let compile_stmt state =
       else Flx_codegen.codegen
     in
 
-    ignore (f codegen_state !bsym_table !child_map bids bexes)
+    ignore (f codegen_state !bsym_table bids bexes)
 
 
 (* Parse all the imports *)
