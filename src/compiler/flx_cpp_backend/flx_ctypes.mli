@@ -61,3 +61,5 @@ type cdecl_type_t =
   | `Cdt_vref of ctype_t
   | `Cdt_cvref of ctype_t
 ]
+
+val print_cexpr : Format.formatter -> cexpr_t -> unit
