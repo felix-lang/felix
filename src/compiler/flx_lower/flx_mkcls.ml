@@ -26,54 +26,79 @@ let make_closure_state syms =
     wrappers = Hashtbl.create 97;
   }
 
-let gen_closure state bsym_table i =
-  let j = fresh_bid state.syms.counter in
-  let bsym = Flx_bsym_table.find bsym_table i in
-  let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
-  match Flx_bsym.bbdcl bsym with
-  | BBDCL_proc (props,vs,ps,c,reqs) ->
-    let arg_t =
-      match ps with | [t] -> t | ps -> btyp_tuple ps
+(** This generates closures for calling external functions. It does this by
+ * generating a new function that contains part of the closed values. *)
+let gen_closure state bsym_table bid =
+  let bsym = Flx_bsym_table.find bsym_table bid in
+  let bsym_parent = Flx_bsym_table.find_parent bsym_table bid in
+
+  (* Make a bid for our closure wrapper function. *)
+  let closure_bid = fresh_bid state.syms.counter in
+
+  (* Add the closure wrapper to symbol table. We'll replace it later with the
+   * real values. *)
+  Flx_bsym_table.add bsym_table bsym_parent closure_bid bsym;
+
+  let make_wrapped_call vs ps =
+    (* Make the type of the closed value. *)
+    let closed_type = match ps with [t] -> t | ts -> btyp_tuple ts in
+
+    (* Make the closed value that's hidden inside our wrapper function. *)
+    let closed_bid = fresh_bid state.syms.counter in
+    let closed_name = "_a" ^ string_of_bid closed_bid in
+    let closed_val = bbdcl_val (vs,closed_type) in
+
+    Flx_bsym_table.add bsym_table (Some closure_bid) closed_bid
+      (Flx_bsym.create ~sr:(Flx_bsym.sr bsym) closed_name closed_val);
+
+    (* Make the parameters for the wrapper function. *)
+    let ps =
+      [{ pkind=`PVal;
+         pid=closed_name;
+         pindex=closed_bid;
+         ptyp=closed_type } ]
     in
+
+    (* Make the type variables of the inner call. *)
     let ts = List.map (fun (_,i) -> btyp_type_var (i, btyp_type 0)) vs in
-    let ps,a =
-      let n = fresh_bid state.syms.counter in
-      let name = "_a" ^ string_of_bid n in
-      Flx_bsym_table.add_child bsym_table j n
-        (Flx_bsym.create ~sr:(Flx_bsym.sr bsym) name (bbdcl_val (vs,arg_t)));
-      [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(bexpr_name arg_t (n,ts))
-    in
 
-    let exes =
-      [
-        bexe_call_prim (Flx_bsym.sr bsym,i,ts,a);
-        bexe_proc_return (Flx_bsym.sr bsym)
-      ]
-    in
-    Flx_bsym_table.add bsym_table bsym_parent j
-      (Flx_bsym.replace_bbdcl bsym (bbdcl_procedure ([],vs,(ps,None),exes)));
-    j
+    (* Make the argument that we'll pass to our wrapped function. *)
+    let arg = bexpr_name closed_type (closed_bid, ts) in
 
-  | BBDCL_fun (props,vs,ps,ret,c,reqs,_) ->
-    let ts = List.map (fun (_,i) -> btyp_type_var (i, btyp_type 0)) vs in
-    let arg_t =
-      match ps with | [t] -> t | ps -> btyp_tuple ps
-    in
-    let ps,a =
-      let n = fresh_bid state.syms.counter in
-      let name = "_a" ^ string_of_bid n in
-      Flx_bsym_table.add_child bsym_table j n
-        (Flx_bsym.create ~sr:(Flx_bsym.sr bsym) name (bbdcl_val (vs,arg_t)));
-      [{pkind=`PVal; pid=name; pindex=n; ptyp=arg_t}],(bexpr_name arg_t (n,ts))
-    in
-    let e = bexpr_apply_prim ret (i,ts,a) in
-    let exes = [bexe_fun_return (Flx_bsym.sr bsym,e)] in
-    Flx_bsym_table.add bsym_table bsym_parent j
-      (Flx_bsym.replace_bbdcl bsym (bbdcl_function ([],vs,(ps,None),ret,exes)));
-    j
+    (* Return a couple parameters *)
+    ts, ps, arg
+  in
 
-  | _ -> assert false
+  let bbdcl =
+    match Flx_bsym.bbdcl bsym with
+    | BBDCL_proc (_,vs,ps,_,_) ->
+        let ts, ps, arg = make_wrapped_call vs ps in
 
+        (* Generate a call to the wrapped procedure. *)
+        let exes =
+          [ bexe_call_prim (Flx_bsym.sr bsym, bid, ts, arg);
+            bexe_proc_return (Flx_bsym.sr bsym) ]
+        in
+
+        bbdcl_procedure ([],vs,(ps,None),exes)
+
+    | BBDCL_fun (_,vs,ps,ret,_,_,_) ->
+        let ts, ps, arg = make_wrapped_call vs ps in
+
+        (* Generate a call to the wrapped function. *)
+        let e = bexpr_apply_prim ret (bid, ts, arg) in
+        let exes = [bexe_fun_return (Flx_bsym.sr bsym, e)] in
+
+        bbdcl_function ([],vs,(ps,None),ret,exes)
+
+    | _ -> assert false
+  in
+
+  (* Finally, replace our wrapper temp bbdcl with our new bbdcl. *)
+  Flx_bsym_table.update_bbdcl bsym_table closure_bid bbdcl;
+
+  (* Return the wrapper. *)
+  closure_bid
 
 let mkcls state bsym_table all_closures i ts t =
   let j =

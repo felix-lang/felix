@@ -15,7 +15,6 @@ open Flx_maps
 open Flx_exceptions
 open Flx_use
 open Flx_child
-open Flx_reparent
 open Flx_spexes
 open Flx_args
 
@@ -241,6 +240,14 @@ let mkproc_gen syms bsym_table child_map =
         | _ -> assert false
       in
 
+      (* Save a dummy procedure that we'll update later. *)
+      let bsym = Flx_bsym.create
+        ~sr:(Flx_bsym.sr bsym)
+        (Flx_bsym.id bsym ^ "_mkproc")
+        (Flx_bsym.bbdcl bsym)
+      in
+      Flx_bsym_table.add bsym_table bsym_parent k bsym;
+
       if syms.compiler_options.print_flag then
       begin
         print_endline "OLD FUNCTION BODY ****************";
@@ -287,7 +294,7 @@ let mkproc_gen syms bsym_table child_map =
               string_of_bid i);
             Flx_bsym_table.remove bsym_table n;
             Flx_bsym_table.add_child bsym_table k n
-              (Flx_bsym.create ~sr:(Flx_bsym.sr bsym) (s ^ "_mkproc") bbdcl);
+              (Flx_bsym.replace_bbdcl bsym bbdcl);
             Flx_child.add_child child_map k n
           )
           ps
@@ -322,12 +329,8 @@ let mkproc_gen syms bsym_table child_map =
       let exes = proc_exes syms bsym_table dv exes in
 
       (* save the new procedure *)
-      let bsym = Flx_bsym.create
-        ~sr:(Flx_bsym.sr bsym)
-        (Flx_bsym.id bsym ^ "_mkproc")
-        (bbdcl_procedure (props,vs,(ps,traint),exes))
-      in
-      Flx_bsym_table.add bsym_table bsym_parent k bsym;
+      let bbdcl = bbdcl_procedure (props,vs,(ps,traint),exes) in
+      Flx_bsym_table.update_bbdcl bsym_table k bbdcl;
 
       if syms.compiler_options.print_flag then
       begin

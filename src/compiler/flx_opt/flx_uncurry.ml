@@ -207,11 +207,9 @@ let fixup_function
   child_map
   ut vm rl
   i c k
+  bsymi bsymi_parent
   vsc psc exesc
 =
-  let bsymi = Flx_bsym_table.find bsym_table i in
-  let bsymi_parent = Flx_bsym_table.find_parent bsym_table i in
-
   let vs, ps =
     match Flx_bsym.bbdcl bsymi with
     | BBDCL_function (_,vs,(ps,_),_,_) -> vs, ps
@@ -294,7 +292,7 @@ let fixup_function
   | None -> ()
   end;
 
-  (Flx_bsym.id bsymi) ^ "_uncurry", (Flx_bsym.sr bsymi), bsymi_parent, vs, ps, exes
+  vs, ps, exes
 
 
 let synthesize_function syms bsym_table child_map ut vm rl i (c, k, n) =
@@ -306,27 +304,40 @@ let synthesize_function syms bsym_table child_map ut vm rl i (c, k, n) =
    * parent. *)
   assert (Flx_bsym_table.find_parent bsym_table c = Some i);
 
+  let bsymi = Flx_bsym_table.find bsym_table i in
+  let bsymi_parent = Flx_bsym_table.find_parent bsym_table i in
+
+  (* Add a placeholder symbol that will be updated later. *)
+  Flx_bsym_table.add bsym_table bsymi_parent k
+    (Flx_bsym.create
+      ~sr:(Flx_bsym.sr bsymi)
+      (Flx_bsym.id bsymi ^ "_uncurry")
+      (Flx_bsym.bbdcl bsymi));
+
   let fixup_function = fixup_function
     syms
     bsym_table
     child_map
     ut vm rl
     i c k
+    bsymi bsymi_parent
   in
 
   (* Add the new function or procedure. *)
-  match Flx_bsym_table.find_bbdcl bsym_table c with
-  | BBDCL_function (propsc,vsc,(psc,traintc),retc,exesc) ->
-    let id,sr,parent,vs,ps,exes = fixup_function vsc psc exesc in
-    let bbdcl = bbdcl_function (propsc,vs,(ps,traintc),retc,exes) in
-    Flx_bsym_table.add bsym_table parent k (Flx_bsym.create ~sr id bbdcl)
+  let bbdcl =
+    match Flx_bsym_table.find_bbdcl bsym_table c with
+    | BBDCL_function (propsc,vsc,(psc,traintc),retc,exesc) ->
+        let vs,ps,exes = fixup_function vsc psc exesc in
+        bbdcl_function (propsc,vs,(ps,traintc),retc,exes)
 
-  | BBDCL_procedure (propsc,vsc,(psc,traintc),exesc) ->
-    let id,sr,parent,vs,ps,exes = fixup_function vsc psc exesc in
-    let bbdcl = bbdcl_procedure (propsc,vs,(ps,traintc),exes) in
-    Flx_bsym_table.add bsym_table parent k (Flx_bsym.create ~sr id bbdcl)
+    | BBDCL_procedure (propsc,vsc,(psc,traintc),exesc) ->
+        let vs,ps,exes = fixup_function vsc psc exesc in
+        bbdcl_procedure (propsc,vs,(ps,traintc),exes)
 
-  | _ -> assert false
+    | _ -> assert false
+  in
+
+  Flx_bsym_table.update_bbdcl bsym_table k bbdcl
 
 
 (** synthesise the new functions *)

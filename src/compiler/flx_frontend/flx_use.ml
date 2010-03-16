@@ -291,17 +291,39 @@ let copy_used syms bsym_table =
   if syms.compiler_options.print_flag then
     print_endline "COPY USED";
 
-  let h = Flx_bsym_table.create () in
-  let u = full_use_closure syms bsym_table in
+  (* Calculate the used symbols. *)
+  let bidset = full_use_closure syms bsym_table in
+
+  (* Return a new bsym_table that has only the used symbols. *)
+  let new_bsym_table = Flx_bsym_table.create () in
 
   (* Iterate through the used symbols and copy them to the new table. *)
-  BidSet.iter begin fun i ->
-    (*
-    if syms.compiler_options.print_flag then
-      print_endline ("Copying " ^ si i);
-    *)
-    let parent = Flx_bsym_table.find_parent bsym_table i in
-    Flx_bsym_table.add h parent i (Flx_bsym_table.find bsym_table i)
-  end u;
+  let rec aux bid =
+    (* Exit early if we've already added the bid. *)
+    if Flx_bsym_table.mem new_bsym_table bid then () else begin
 
-  h
+      (* Try to add the parent if it's in the use list. *)
+      let parent =
+        match Flx_bsym_table.find_parent bsym_table bid with
+        | None -> None
+        | Some parent ->
+            (* Only add the parent if we're in the use list. Otherwiser, just
+             * turn the symbol into a root. *)
+            if Flx_types.BidSet.mem parent bidset then begin
+              aux parent;
+              Some parent
+
+            end else None
+      in
+
+      (* Finally, add the symbol to the root. *)
+      Flx_bsym_table.add new_bsym_table parent bid
+        (Flx_bsym_table.find bsym_table bid)
+    end
+  in
+
+  (* Add all the symbols to the new symbol bsym_table. *)
+  Flx_types.BidSet.iter aux bidset;
+
+  (* Return the new symbol bsym_table. *)
+  new_bsym_table

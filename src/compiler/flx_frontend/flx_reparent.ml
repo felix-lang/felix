@@ -526,6 +526,12 @@ let specialise_symbol syms uses child_map bsym_table
   try Hashtbl.find syms.transient_specialisation_cache (index,ts)
   with Not_found ->
     let k = fresh_bid syms.counter in
+
+    (* First we must insert the symbol into the bsym_table before we can
+     * continue. We'll update it again after we've processed the children. *)
+    Flx_bsym_table.add bsym_table parent k
+      (Flx_bsym_table.find bsym_table index);
+
     let revariable =
        reparent_children syms uses child_map bsym_table
        caller_vs callee_vs_len index (Some k) relabel varmap rescan_flag []

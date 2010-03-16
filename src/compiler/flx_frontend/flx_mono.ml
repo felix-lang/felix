@@ -22,36 +22,46 @@ open Flx_spexes
 open Flx_beta
 open Flx_prop
 
-let cal_parent syms bsym_table i' ts' =
-  let bsym = Flx_bsym_table.find bsym_table i' in
-  let bsym_parent = Flx_bsym_table.find_parent bsym_table i' in
-  match bsym_parent with
+let cal_parent syms bsym_table bid ts' =
+  let bsym = Flx_bsym_table.find bsym_table bid in
+  match Flx_bsym_table.find_parent bsym_table bid with
   | None -> None
-  | Some i ->
+  | Some parent ->
     let vsc = Flx_bsym.get_bvs bsym in
     assert (length vsc = length ts');
-    if not (Flx_bsym_table.mem bsym_table i) then
+
+    (* Make sure the parent exists. *)
+    if not (Flx_bsym_table.mem bsym_table parent) then
     (
       (*
-      print_endline ("WHA?? Parent " ^ si i ^ " of " ^ si i' ^ " does not exist??");
+      print_endline ("WHA?? Parent " ^ si i ^ " of " ^ si bid ^ " does not exist??");
       *)
       None
     )
     else
-    let vsp = Flx_bsym_table.find_bvs bsym_table i in
+
+    (* Make sure the parent has at least the same number of types as us. *)
+    let vsp = Flx_bsym_table.find_bvs bsym_table parent in
     let n = length vsp in
     assert (n <= length vsc);
-    let ts = list_prefix ts' n in
-    let k =
-      (* Try to find the instance, but if it's not there, just use the
-       * parent. *)
-      try (Hashtbl.find syms.instances (i,ts)) with Not_found -> i
+
+    (* Grab the first n number of type variables. *)
+    let new_ts = list_prefix ts' n in
+
+    (* Try to find the instance, but if it's not there, just use the parent. *)
+    let new_parent =
+      try (Hashtbl.find syms.instances (parent, new_ts))
+      with Not_found -> parent
     in
-      if ts = [] then assert (i=k);
-      (*
-      print_endline ("Parent of " ^ si i' ^ " was " ^ si i ^ " is now " ^ si k);
-      *)
-      Some k
+
+    (* If we don't have any type variables, we really shouldn't have found an
+     * instance. *)
+    if new_ts = [] then assert (parent=new_parent);
+
+    (*
+    print_endline ("Parent of " ^ si bid ^ " was " ^ si i ^ " is now " ^ si k);
+    *)
+    Some new_parent
 
 let fixup_type' syms bsym_table fi t =
   match t with
@@ -347,7 +357,7 @@ let monomorphise syms bsym_table =
   let fi polyinst i ts =
     let i,ts = Flx_typeclass.maybe_fixup_typeclass_instance syms bsym_table i ts in
     try Hashtbl.find polyinst (i,ts),[]
-    with Not_found ->  i,ts
+    with Not_found -> i,ts
   in
 
   (* make a new table where the ts are ALSO converted to monomorphised
@@ -355,48 +365,43 @@ let monomorphise syms bsym_table =
      of the class (eg constructor)
   *)
   let polyinst2 = Hashtbl.create 97 in
-  Hashtbl.iter
-  (fun (i,ts) n ->
+  Hashtbl.iter begin fun (i,ts) n ->
     Hashtbl.replace polyinst2 (i,ts) n;
     let ts = map (fixup_type syms bsym_table (fi polyinst)) ts in
     Hashtbl.replace polyinst2 (i,ts) n;
-  )
-  polyinst
-  ;
+  end polyinst;
+
   let fi i ts = fi polyinst2 i ts in
 
+  (* We need to monomorphise the symbols in two passes, since we have an
+   * unordered list of symbols and we can't insert children into parents are not
+   * in the symbol table yet. First, add all the monomorphic symbols to the
+   * symbol table without the parent being set. *)
   Hashtbl.iter begin fun (i,ts) n ->
-    if syms.compiler_options.print_flag then begin
-      if (n <> i) then print_endline (
-         "[monomorphise] Adding instance " ^ string_of_bid n ^ " = " ^
-         string_of_bid i ^ "["^catmap "," (sbt bsym_table) ts^"]"
-      ) else print_endline (
-         "[monomorphise] Process instance " ^ string_of_bid n ^ " = " ^
-         string_of_bid i ^ "["^catmap "," (sbt bsym_table) ts^"]"
-      );
-    end;
-
-    (* Find the symbol we're going to be monomorphosize. *)
     let bsym = Flx_bsym_table.find bsym_table i in
 
     match mono syms bsym_table fi ts bsym with
     | None -> ()
     | Some bbdcl ->
-        (* Look up the new parent. *)
-        let parent = cal_parent syms bsym_table i ts in
-
-        (* We remove the symbol first as it may have a new parent. *)
-        Flx_bsym_table.remove bsym_table n;
-
-        (* And re-insert it. *)
-        let bsym = Flx_bsym.replace_bbdcl bsym bbdcl in
-        Flx_bsym_table.add bsym_table parent n bsym
-
+        (* If the symbol already exists in the symbol table, just update the
+         * symbol. *)
+        if Flx_bsym_table.mem bsym_table n
+        then Flx_bsym_table.update_bbdcl bsym_table n bbdcl
+        else
+          let bsym = Flx_bsym.replace_bbdcl bsym bbdcl in
+          Flx_bsym_table.add bsym_table None n bsym
   end syms.instances;
 
-  Hashtbl.iter (fun (i,ts) n ->
+  (* Then, update all the symbols with their new parents. *)
+  Hashtbl.iter begin fun (i,ts) n ->
+    if Flx_bsym_table.mem bsym_table n then begin
+      let parent = cal_parent syms bsym_table i ts in
+      Flx_bsym_table.set_parent bsym_table n parent
+    end
+  end syms.instances;
+
+  (* Finally, clean up the instances. *)
+  Hashtbl.iter begin fun (i,ts) n ->
     Hashtbl.remove syms.instances (i,ts);
     Hashtbl.add syms.instances (n,[]) n;
-  )
-  polyinst
-  ;
+  end polyinst
