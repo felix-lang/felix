@@ -4,9 +4,6 @@ type t
 (** Construct a bound symbol table. *)
 val create : unit -> t
 
-(** Copies the bound symbol table. *)
-val copy : t -> t
-
 (** Returns how many items are in the bound symbol table. *)
 val length : t -> int
 
@@ -41,14 +38,17 @@ val mem : t -> Flx_types.bid_t -> bool
 (** Searches the bound symbol table for the given symbol. *)
 val find : t -> Flx_types.bid_t -> Flx_bsym.t
 
+(** Searches the bound symbol table for the given symbol's parent. *)
+val find_parent : t -> Flx_types.bid_t -> Flx_types.bid_t option
+
+(** Searches the bound symbol table for the given symbol's children. *)
+val find_children : t -> Flx_types.bid_t -> Flx_types.BidSet.t
+
 (** Searches the bound symbol table for the given symbol's id. *)
 val find_id : t -> Flx_types.bid_t -> string
 
 (** Searches the bound symbol table for the given symbol's source reference. *)
 val find_sr : t -> Flx_types.bid_t -> Flx_srcref.t
-
-(** Searches the bound symbol table for the given symbol's parent. *)
-val find_parent : t -> Flx_types.bid_t -> Flx_types.bid_t option
 
 (** Searches the bound symbol table for the given symbol's bbdcl. *)
 val find_bbdcl : t -> Flx_types.bid_t -> Flx_bbdcl.t
@@ -61,6 +61,9 @@ val find_bvs : t -> Flx_types.bid_t -> Flx_types.bvs_t
 
 (** Remove a binding from the bound symbol table. *)
 val remove : t -> Flx_types.bid_t -> unit
+
+(** Copies the bound symbol table. *)
+val copy : t -> t
 
 (** Set's a symbol's parent. *)
 val set_parent : t -> Flx_types.bid_t -> Flx_types.bid_t option -> unit
