@@ -113,7 +113,7 @@ let remaps = [
   "$1&$2",("$1:band & $2:bor","band");
   "$1|$2",("$1:bor | $2:bxor","bor");
   "$1^$2",("$1:bxor ^ $2:and","bxor");
-  "$1&&$2",("$1:and &&  $2:or","and");
+  "$1&&$2",("$1:and && $2:or","and");
   "$1||$2",("$1:or || $2:cond","or");
 
   "$1+=$2",("$1:cond += $2:assign","assign");
@@ -127,12 +127,12 @@ let remaps = [
   "$1|=$2",("$1:cond |= $2:assign","assign");
   "$1^=$2",("$1:cond ^= $2:assign","assign");
 
-  "$1<$2",("$1:rel < $2:shift","rel");
-  "$1>$2",("$1:rel > $2:shift","rel");
-  "$1>=$2",("$1:rel >= $2:shift","rel");
-  "$1<=$2",("$1:rel <= $2:shift","rel");
-  "$1==$2",("$1:eq == $2:rel","eq");
-  "$1!=$2",("$1:eq != $2:rel","eq");
+  "$1<$2",("($1:rel < $2:shift)","rel");
+  "$1>$2",("($1:rel > $2:shift)","rel");
+  "$1>=$2",("($1:rel >= $2:shift)","rel");
+  "$1<=$2",("($1:rel <= $2:shift)","rel");
+  "$1==$2",("($1:eq == $2:rel)","eq");
+  "$1!=$2",("($1:eq != $2:rel)","eq");
 
   "$1($2)",("$1:postfix($2:assign)","postfix");
   "$1[$2]",("$1:postfix[$2:expr]","postfix");
