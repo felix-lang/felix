@@ -73,7 +73,7 @@ val iter :
   t ->
   unit
 
-(** Recursively iterate over each bound type and transform it with the
+(** Recursively iterate over each bound exe and transform it with the
  * function. *)
 val map :
   ?f_bid:(Flx_types.bid_t -> Flx_types.bid_t) ->

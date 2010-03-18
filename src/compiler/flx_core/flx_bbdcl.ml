@@ -243,7 +243,7 @@ let rec print f = function
         print_code_spec code
         pp_print_string ikind
         print_breqs reqs
-  | BBDCL_union (bvs, cs) ->
+  | BBDCL_union (bvs,cs) ->
       print_variant2 f "BBDCL_union"
         print_bvs bvs
         (Flx_list.print begin fun f (n,i,t) ->
@@ -252,7 +252,7 @@ let rec print f = function
             pp_print_int i
             Flx_btype.print t
         end) cs
-  | BBDCL_struct (bvs, cs) ->
+  | BBDCL_struct (bvs,cs) ->
       print_variant2 f "BBDCL_struct"
         print_bvs bvs
         (Flx_list.print begin fun f (n,t) ->
@@ -260,8 +260,8 @@ let rec print f = function
             print_string n
             Flx_btype.print t
         end) cs
-  | BBDCL_cstruct (bvs, cs) ->
-      print_variant2 f "BBDCL_struct"
+  | BBDCL_cstruct (bvs,cs) ->
+      print_variant2 f "BBDCL_cstruct"
         print_bvs bvs
         (Flx_list.print begin fun f (n,t) ->
           print_tuple2 f
