@@ -61,8 +61,8 @@ let remap_expr
   in
   let auxt t =
     let t' = varmap_subst varmap t in
-    let rec ft t = tmap (Flx_btype.map ~ft t) in
-    let t' = ft t' in
+    let rec f_btype t = tmap (Flx_btype.map ~f_btype t) in
+    let t' = f_btype t' in
     (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
@@ -74,7 +74,7 @@ let remap_expr
     with Not_found -> i,ts
   in
   let rec aux e =
-    match Flx_bexpr.map ~ft:auxt ~fe:aux e with
+    match Flx_bexpr.map ~f_btype:auxt ~f_bexpr:aux e with
     | BEXPR_name (i,ts),t ->
         let i,ts = fixup i ts in
         bexpr_name (auxt t) (i,ts)
@@ -134,15 +134,15 @@ let remap_exe
   in
   let auxt t =
     let t' = varmap_subst varmap t in
-    let rec ft t = tmap (Flx_btype.map ~ft t) in
-    let t' = ft t' in
+    let rec f_btype t = tmap (Flx_btype.map ~f_btype t) in
+    let t' = f_btype t' in
     (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
   let exe =
   match exe with
   | BEXE_axiom_check _ -> assert false
-  | BEXE_call_prim (sr,i,ts,e2)  ->  assert false
+  | BEXE_call_prim (sr,i,ts,e2) -> assert false
     (*
     let fixup i ts =
       let ts = map auxt ts in
@@ -155,7 +155,7 @@ let remap_exe
     BEXE_call_prim (sr,i,ts, ge e2)
     *)
 
-  | BEXE_call_direct (sr,i,ts,e2)  ->  assert false
+  | BEXE_call_direct (sr,i,ts,e2) -> assert false
     (*
     let fixup i ts =
       let ts = map auxt ts in
@@ -171,7 +171,7 @@ let remap_exe
     BEXE_call_direct (sr,i,ts, ge e2)
     *)
 
-  | BEXE_call_stack (sr,i,ts,e2)  ->  assert false
+  | BEXE_call_stack (sr,i,ts,e2) -> assert false
     (*
     let fixup i ts =
       let ts = map auxt ts in
@@ -183,8 +183,11 @@ let remap_exe
     let i,ts = fixup i ts in
     BEXE_call_stack (sr,i,ts, ge e2)
     *)
+  | BEXE_label (sr,lab) -> bexe_label (sr,relab lab)
+  | BEXE_goto (sr,lab) -> bexe_goto (sr,relab lab)
+  | BEXE_ifgoto (sr,e,lab) -> bexe_ifgoto (sr,ge e,relab lab)
 
-  | x -> Flx_bexe.map ~fi:revar ~fe:ge ~fl:relab ~fldef:relab x
+  | x -> Flx_bexe.map ~f_bid:revar ~f_bexpr:ge x
   in
   (*
   print_endline ("remapped_exe " ^ string_of_bexe sym_table bsym_table 0 exe);
@@ -203,8 +206,8 @@ let remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len reqs 
   in
   let auxt t =
     let t' = varmap_subst varmap t in
-    let rec ft t = tmap (Flx_btype.map ~ft t) in
-    let t' = ft t' in
+    let rec f_btype t = tmap (Flx_btype.map ~f_btype t) in
+    let t' = f_btype t' in
     (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in
@@ -270,8 +273,8 @@ let reparent1
   in
   let auxt t =
     let t' = varmap_subst varmap t in
-    let rec ft t = tmap (Flx_btype.map ~ft t) in
-    let t' = ft t' in
+    let rec f_btype t = tmap (Flx_btype.map ~f_btype t) in
+    let t' = f_btype t' in
     (* print_endline ("Remap type " ^ sbt sym_table t ^ " to " ^ sbt sym_table * t'); *)
     t'
   in

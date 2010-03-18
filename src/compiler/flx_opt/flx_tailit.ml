@@ -34,10 +34,10 @@ let ident x = x
 *)
 
 let expr_find_xclosures syms cls e =
-  Flx_bexpr.iter ~fe:(add_xclosure syms cls) e
+  Flx_bexpr.iter ~f_bexpr:(add_xclosure syms cls) e
 
 let exe_find_xclosure syms cls exe =
-  Flx_bexe.iter ~fe:(expr_find_xclosures syms cls) exe
+  Flx_bexe.iter ~f_bexpr:(expr_find_xclosures syms cls) exe
 
 let exes_find_xclosure syms cls exes =
   iter (exe_find_xclosure syms cls) exes
@@ -89,11 +89,11 @@ let rec check_proj_wrap_expr n i e = match e with
   | BEXPR_get_n (n', (BEXPR_name (i',_),_)),_
      when i = i' && n = n' ->  ()
 
-  | x -> Flx_bexpr.flat_iter ~fe:(check_proj_wrap_expr n i) x
+  | x -> Flx_bexpr.flat_iter ~f_bexpr:(check_proj_wrap_expr n i) x
 
 let check_proj_wrap_exe syms bsym_table n i x =
   try
-    Flx_bexe.iter ~fe:(check_proj_wrap_expr n i) x
+    Flx_bexe.iter ~f_bexpr:(check_proj_wrap_expr n i) x
   with BadUse ->
     (*
     print_endline ("Bad use of " ^ si i ^ ".(" ^ si n ^") in " ^
@@ -470,7 +470,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
 
     | (BEXE_assign (sr,x,(BEXPR_tuple ls,t)) as h) :: tail
       ->
-      let rec unproj e = match Flx_bexpr.map ~fe:unproj e with
+      let rec unproj e = match Flx_bexpr.map ~f_bexpr:unproj e with
       | BEXPR_get_n (k,(BEXPR_tuple ls,_)),_ -> nth ls k
       | x -> x
       in
@@ -487,7 +487,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         | None -> false
         | _ -> assert false
       in
-      let rec repl e = match Flx_bexpr.map ~fe:repl e with
+      let rec repl e = match Flx_bexpr.map ~f_bexpr:repl e with
         | x when me x -> bexpr_name t (i,[])
         | BEXPR_get_n (k,(BEXPR_name (j,[]),t)),t' when i = j->
           bexpr_name t' (pbase+k,[])
@@ -540,7 +540,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
           (rev exes)
           ;
         end;
-        let rec undo_expr e = match Flx_bexpr.map ~fe:undo_expr e with
+        let rec undo_expr e = match Flx_bexpr.map ~f_bexpr:undo_expr e with
         | BEXPR_name (j,[]),t when i = j  -> x
         | BEXPR_name (j,[]),t when j >= pbase && j < pbase + n-> bexpr_get_n t (j-pbase,x)
         | x -> x
@@ -551,7 +551,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
           let _,t' = nth ls k in
           bexe_assign (sr,(bexpr_get_n t' (k,x)),undo_expr e)
 
-        | x -> Flx_bexe.map ~fe:undo_expr x
+        | x -> Flx_bexe.map ~f_bexpr:undo_expr x
         in
         let exes = map undo_st exes in
         if syms.compiler_options.print_flag then

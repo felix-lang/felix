@@ -25,7 +25,7 @@ let remove_useless_reductions syms bsym_table reductions =
     in
     begin
       try
-        Flx_bexpr.iter ~fi:ui e1;
+        Flx_bexpr.iter ~f_bid:ui e1;
         if syms.compiler_options.print_flag then
         print_endline ("Keep " ^ id (* ^ " matching " ^ sbe bsym_table e1 *));
 
@@ -52,7 +52,7 @@ let ematch syms bsym_table changed (name,bvs,bps,e1,e2) tvars evars e =
       print_endline ("TMGU=" ^catmap ", " (fun (i,t')-> si i ^ " --> " ^ sbt bsym_table t') tmgu);
       *)
     let e = fold_left (fun e (i,e') -> Flx_unify.expr_term_subst e i e') e2 emgu in
-    let rec s e = Flx_bexpr.map ~ft:(list_subst syms.counter tmgu) ~fe:s e in
+    let rec s e = Flx_bexpr.map ~f_btype:(list_subst syms.counter tmgu) ~f_bexpr:s e in
     let e' = s e in
     (*
     print_endline ("RESULT OF SUBSTITUTION into RHS: " ^ sbe bsym_table e2 ^ " is " ^ sbe bsym_table e);
@@ -73,8 +73,8 @@ let rec reduce_exe syms bsym_table reductions count exe =
       *)
       let em e = ematch syms bsym_table changed red tvars evars e in
       (* apply reduction top down AND bottom up *)
-      let rec em' e = let e = em e in em (Flx_bexpr.map ~fe:em' e) in
-      Flx_bexe.map ~fe:em' exe
+      let rec em' e = let e = em e in em (Flx_bexpr.map ~f_bexpr:em' e) in
+      Flx_bexe.map ~f_bexpr:em' exe
     )
     exe
     reductions

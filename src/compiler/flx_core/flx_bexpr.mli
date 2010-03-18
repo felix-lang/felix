@@ -117,26 +117,29 @@ val cmp : t -> t -> bool
 
 (** Iterate over one level a bound expression. *)
 val flat_iter :
-  ?fi:(Flx_types.bid_t -> unit) ->  (** Apply this to each bid. *)
-  ?ft:(Flx_btype.t -> unit) ->      (** Apply this to each bound type. *)
-  ?fe:(t -> unit) ->                (** Apply this to each bound expression. *)
-  t -> unit
+  ?f_bid:(Flx_types.bid_t -> unit) -> (** Apply this to each bid. *)
+  ?f_btype:(Flx_btype.t -> unit) ->   (** Apply this to each bound type. *)
+  ?f_bexpr:(t -> unit) ->             (** Apply this to each bound
+                                        * expression. *)
+  t ->
+  unit
 
 (** Recursively iterate over a bound expression. *)
 val iter :
-  ?fi:(Flx_types.bid_t -> unit) ->  (** Apply this to each bid. *)
-  ?ft:(Flx_btype.t -> unit) ->      (** Apply this to each bound type. *)
-  ?fe:(t -> unit) ->                (** Apply this to each bound expression. *)
+  ?f_bid:(Flx_types.bid_t -> unit) -> (** Apply this to each bid. *)
+  ?f_btype:(Flx_btype.t -> unit) ->   (** Apply this to each bound type. *)
+  ?f_bexpr:(t -> unit) ->             (** Apply this to each bound
+                                        * expression. *)
   t ->
   unit
 
 (** Recursively map functions over a bound expression. *)
 val map :
-  ?fi:(Flx_types.bid_t -> Flx_types.bid_t) -> (** Apply this to each bid. *)
-  ?ft:(Flx_btype.t -> Flx_btype.t) ->         (** Apply this to each bound
-                                                  type. *)
-  ?fe:(t -> t) ->                             (** Apply this to each bound
-                                                  expression. *)
+  ?f_bid:(Flx_types.bid_t -> Flx_types.bid_t) ->  (** Apply this to each bid. *)
+  ?f_btype:(Flx_btype.t -> Flx_btype.t) ->        (** Apply this to each bound
+                                                    * type. *)
+  ?f_bexpr:(t -> t) ->                            (** Apply this to each bound
+                                                    * expression. *)
   t ->
   t
 

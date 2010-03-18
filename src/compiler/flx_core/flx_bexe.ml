@@ -94,11 +94,9 @@ let get_srcref = function
 
 (** Recursively iterate over each bound exe and call the function on it. *)
 let iter
-  ?(fi=fun _ -> ())
-  ?(ft=fun _ -> ())
-  ?(fe=fun _ -> ())
-  ?(fl=fun _ -> ())
-  ?(fldef=fun _ -> ())
+  ?(f_bid=fun _ -> ())
+  ?(f_btype=fun _ -> ())
+  ?(f_bexpr=fun _ -> ())
   exe
 =
   match exe with
@@ -106,28 +104,27 @@ let iter
   | BEXE_call_stack (sr,i,ts,e2)
   | BEXE_call_direct (sr,i,ts,e2)
   | BEXE_jump_direct (sr,i,ts,e2) ->
-      fi i;
-      List.iter ft ts;
-      fe e2
+      f_bid i;
+      List.iter f_btype ts;
+      f_bexpr e2
   | BEXE_assign (sr,e1,e2)
   | BEXE_call (sr,e1,e2)
   | BEXE_jump (sr,e1,e2) ->
-      fe e1;
-      fe e2
+      f_bexpr e1;
+      f_bexpr e2
   | BEXE_ifgoto (sr,e,lab) ->
-      fe e;
-      fl lab
-  | BEXE_label (sr,lab) -> fldef lab
-  | BEXE_goto (sr,lab) -> fl lab
-  | BEXE_fun_return (sr,e) -> fe e
-  | BEXE_yield (sr,e) -> fe e
-  | BEXE_axiom_check (_,e) -> fe e
+      f_bexpr e
+  | BEXE_label (sr,lab)
+  | BEXE_goto (sr,lab) -> ()
+  | BEXE_fun_return (sr,e) -> f_bexpr e
+  | BEXE_yield (sr,e) -> f_bexpr e
+  | BEXE_axiom_check (_,e) -> f_bexpr e
   | BEXE_assert2 (_,_,e1,e2) ->
-      (match e1 with Some e -> fe e | None->());
-      fe e2
-  | BEXE_assert (_,e) -> fe e
-  | BEXE_init (sr,i,e) -> fi i; fe e
-  | BEXE_svc (sr,i) -> fi i
+      (match e1 with Some e -> f_bexpr e | None->());
+      f_bexpr e2
+  | BEXE_assert (_,e) -> f_bexpr e
+  | BEXE_init (sr,i,e) -> f_bid i; f_bexpr e
+  | BEXE_svc (sr,i) -> f_bid i
   | BEXE_halt _
   | BEXE_trace _
   | BEXE_code _
@@ -141,37 +138,35 @@ let iter
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
 let map
-  ?(fi=fun i -> i)
-  ?(ft=fun t -> t)
-  ?(fe=fun e -> e)
-  ?(fl=fun l -> l)
-  ?(fldef=fun l -> l)
+  ?(f_bid=fun i -> i)
+  ?(f_btype=fun t -> t)
+  ?(f_bexpr=fun e -> e)
   exe
 =
   match exe with
   | BEXE_call_prim (sr,i,ts,e2)  ->
-      BEXE_call_prim (sr, fi i, List.map ft ts, fe e2)
+      BEXE_call_prim (sr,f_bid i,List.map f_btype ts,f_bexpr e2)
   | BEXE_call_stack (sr,i,ts,e2) ->
-      BEXE_call_stack (sr, fi i, List.map ft ts, fe e2)
+      BEXE_call_stack (sr,f_bid i,List.map f_btype ts,f_bexpr e2)
   | BEXE_call_direct (sr,i,ts,e2) ->
-      BEXE_call_direct (sr, fi i, List.map ft ts,fe e2)
+      BEXE_call_direct (sr,f_bid i,List.map f_btype ts,f_bexpr e2)
   | BEXE_jump_direct (sr,i,ts,e2) ->
-      BEXE_jump_direct (sr, fi i, List.map ft ts,fe e2)
-  | BEXE_assign (sr,e1,e2) -> BEXE_assign (sr,fe e1,fe e2)
-  | BEXE_call (sr,e1,e2) -> BEXE_call (sr,fe e1, fe e2)
-  | BEXE_jump (sr,e1,e2) -> BEXE_jump (sr,fe e1, fe e2)
-  | BEXE_ifgoto (sr,e,lab) -> BEXE_ifgoto (sr,fe e,fl lab)
-  | BEXE_label (sr,lab) -> BEXE_label (sr,fldef lab)
-  | BEXE_goto (sr,lab) -> BEXE_goto (sr,fl lab)
-  | BEXE_fun_return (sr,e) -> BEXE_fun_return (sr,fe e)
-  | BEXE_yield (sr,e) -> BEXE_yield (sr,fe e)
-  | BEXE_assert (sr,e) -> BEXE_assert (sr, fe e)
-  | BEXE_assert2 (sr,sr2,e1, e2) ->
-      let e1 = match e1 with Some e1 -> Some (fe e1) | None -> None in
-      BEXE_assert2 (sr, sr2, e1, fe e2)
-  | BEXE_axiom_check (sr,e) -> BEXE_axiom_check (sr, fe e)
-  | BEXE_init (sr,i,e) -> BEXE_init (sr, fi i, fe e)
-  | BEXE_svc (sr,i) -> BEXE_svc (sr, fi i)
+      BEXE_jump_direct (sr,f_bid i,List.map f_btype ts,f_bexpr e2)
+  | BEXE_assign (sr,e1,e2) -> BEXE_assign (sr,f_bexpr e1,f_bexpr e2)
+  | BEXE_call (sr,e1,e2) -> BEXE_call (sr,f_bexpr e1,f_bexpr e2)
+  | BEXE_jump (sr,e1,e2) -> BEXE_jump (sr,f_bexpr e1,f_bexpr e2)
+  | BEXE_ifgoto (sr,e,lab) -> BEXE_ifgoto (sr,f_bexpr e,lab)
+  | BEXE_label (sr,lab) -> exe
+  | BEXE_goto (sr,lab) -> exe
+  | BEXE_fun_return (sr,e) -> BEXE_fun_return (sr,f_bexpr e)
+  | BEXE_yield (sr,e) -> BEXE_yield (sr,f_bexpr e)
+  | BEXE_assert (sr,e) -> BEXE_assert (sr,f_bexpr e)
+  | BEXE_assert2 (sr,sr2,e1,e2) ->
+      let e1 = match e1 with Some e1 -> Some (f_bexpr e1) | None -> None in
+      BEXE_assert2 (sr,sr2,e1,f_bexpr e2)
+  | BEXE_axiom_check (sr,e) -> BEXE_axiom_check (sr,f_bexpr e)
+  | BEXE_init (sr,i,e) -> BEXE_init (sr,f_bid i,f_bexpr e)
+  | BEXE_svc (sr,i) -> BEXE_svc (sr,f_bid i)
   | BEXE_halt _
   | BEXE_trace _
   | BEXE_code _
@@ -186,7 +181,7 @@ let map
 
 (** Simplify the bound exe. *)
 let reduce exe =
-  match map ~fe:Flx_bexpr.reduce exe with
+  match map ~f_bexpr:Flx_bexpr.reduce exe with
   | BEXE_call (sr,(Flx_bexpr.BEXPR_closure (i,ts),_),a) ->
       BEXE_call_direct (sr,i,ts,a)
   | x -> x

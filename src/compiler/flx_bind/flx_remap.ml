@@ -11,8 +11,8 @@ let remap_bid offset bid = bid + offset
 (** Remaps bound types by adding an offset to the bound index. *)
 let rec remap_btype offset btype =
   Flx_btype.map
-    ~fi:(remap_bid offset)
-    ~ft:(remap_btype offset)
+    ~f_bid:(remap_bid offset)
+    ~f_btype:(remap_btype offset)
     btype
 
 
@@ -32,18 +32,18 @@ let remap_biface offset biface =
 (** Remap bound types by adding an offset to the bound index. *)
 let rec remap_tbexpr offset bexpr =
   Flx_bexpr.map
-    ~fi:(remap_bid offset)
-    ~ft:(remap_btype offset)
-    ~fe:(remap_tbexpr offset)
+    ~f_bid:(remap_bid offset)
+    ~f_btype:(remap_btype offset)
+    ~f_bexpr:(remap_tbexpr offset)
     bexpr
 
 
 (** Remap bound exes by adding an offset to the bound index. *)
 let remap_bexe offset bexe =
   Flx_bexe.map
-    ~fi:(remap_bid offset)
-    ~ft:(remap_btype offset)
-    ~fe:(remap_tbexpr offset)
+    ~f_bid:(remap_bid offset)
+    ~f_btype:(remap_btype offset)
+    ~f_bexpr:(remap_tbexpr offset)
     bexe
 
 

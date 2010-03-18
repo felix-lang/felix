@@ -87,7 +87,7 @@ prevent gross bloat.
 let idt t = t
 
 let rec rpl syms argmap x =
-  match Flx_bexpr.map ~fe:(rpl syms argmap) x with
+  match Flx_bexpr.map ~f_bexpr:(rpl syms argmap) x with
   (* No need to check ts or type here *)
   | (BEXPR_name (i,_),_) as x ->
     (try
@@ -100,7 +100,7 @@ let rec rpl syms argmap x =
   | x -> x
 
 let subarg syms bsym_table argmap exe =
-  Flx_bexe.map ~fe:(rpl syms argmap) exe
+  Flx_bexe.map ~f_bexpr:(rpl syms argmap) exe
 
 (* NOTE: result is in reversed order *)
 let gen_body syms uses bsym_table id

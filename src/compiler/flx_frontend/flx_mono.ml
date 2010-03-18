@@ -70,10 +70,10 @@ let fixup_type' syms bsym_table fi t =
   | x -> x
 
 let rec fixup_type syms bsym_table fi t =
-  let ft t = fixup_type syms bsym_table fi t in
-  let ft' t = fixup_type' syms bsym_table fi t in
-  let t = Flx_btype.map ~ft t in
-  ft' t
+  let f_btype t = fixup_type syms bsym_table fi t in
+  let f_btype' t = fixup_type' syms bsym_table fi t in
+  let t = Flx_btype.map ~f_btype t in
+  f_btype' t
 
 let fixup_expr' syms bsym_table fi mt (e,t) =
   (*
@@ -128,18 +128,18 @@ let rec fixup_expr syms bsym_table fi mt e =
   (*
   print_endline ("FIXUP EXPR(down) " ^ sbe sym_table e);
   *)
-  let fe e = fixup_expr syms bsym_table fi mt e in
-  let fe' e = fixup_expr' syms bsym_table fi mt e in
-  let e = Flx_bexpr.map ~ft:mt ~fe e in
-  fe' e
+  let f_bexpr e = fixup_expr syms bsym_table fi mt e in
+  let f_bexpr' e = fixup_expr' syms bsym_table fi mt e in
+  let e = Flx_bexpr.map ~f_btype:mt ~f_bexpr e in
+  f_bexpr' e
 
 let fixup_exe syms bsym_table fi mt exe =
   (*
   print_endline ("FIXUP EXE[In] =" ^ string_of_bexe sym_table 0 exe);
   *)
-  let fe e = fixup_expr syms bsym_table fi mt e in
+  let f_bexpr e = fixup_expr syms bsym_table fi mt e in
   let result =
-  match Flx_bexe.map ~ft:mt ~fe exe with
+  match Flx_bexe.map ~f_btype:mt ~f_bexpr exe with
   | BEXE_call_direct (sr, i,ts,a) -> assert false
     (*
     let i,ts = fi i ts in

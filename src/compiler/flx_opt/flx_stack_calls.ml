@@ -259,7 +259,7 @@ let type_has_fn cache syms bsym_table children t =
         end
       | x ->
         try
-          Flx_btype.iter ~ft:aux x;
+          Flx_btype.iter ~f_btype:aux x;
           Hashtbl.replace cache t `Safe
         with Unsafe ->
           Hashtbl.replace cache t `Unsafe;
@@ -310,7 +310,7 @@ let type_has_ptr cache syms bsym_table children t =
         end
       | x ->
         try
-          Flx_btype.iter ~ft:aux x;
+          Flx_btype.iter ~f_btype:aux x;
           Hashtbl.replace cache t `Safe
         with Unsafe ->
           Hashtbl.replace cache t `Unsafe;
@@ -592,7 +592,7 @@ let tident t = t
 *)
 let rec enstack_applies syms bsym_table fn_cache ptr_cache x =
   let ea e = enstack_applies syms bsym_table fn_cache ptr_cache e in
-  match Flx_bexpr.map ~fe:ea x with
+  match Flx_bexpr.map ~f_bexpr:ea x with
   | (
        BEXPR_apply ((BEXPR_closure(i,ts),_),b),t
      | BEXPR_apply_direct (i,ts,b),t
@@ -690,7 +690,7 @@ let enstack_calls syms bsym_table fn_cache ptr_cache self exes =
 
       | x -> x
       in
-      Flx_bexe.map ~fe:ea exe
+      Flx_bexe.map ~f_bexpr:ea exe
     )
     exes
   in

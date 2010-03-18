@@ -35,7 +35,7 @@ let rec check_abstract_type syms rls t =
       *)
       rls := remove i !rls;
       if !rls = [] then raise Not_found
-  | t' -> Flx_btype.iter ~ft:(check_abstract_type syms rls) t'
+  | t' -> Flx_btype.iter ~f_btype:(check_abstract_type syms rls) t'
 
 (* note this routine doesn't check types in ts lists, because
  * these apply to variables including parameters as qualifiers:
@@ -81,8 +81,8 @@ let rec check_abstract_expr syms rls ((x,t) as e) =
 
 let check_abstract_exe syms rls exe =
  Flx_bexe.iter
-   ~ft:(check_abstract_type syms rls)
-   ~fe:(check_abstract_expr syms rls)
+   ~f_btype:(check_abstract_type syms rls)
+   ~f_bexpr:(check_abstract_expr syms rls)
    exe 
 
 
@@ -241,7 +241,7 @@ let cal_polyvars syms bsym_table =
           polyfix syms polyvars i ts,
           cast_a i (fixexpr e2)))
     | e ->
-        Flx_bexpr.map ~fe:fixexpr e
+        Flx_bexpr.map ~f_bexpr:fixexpr e
   in
 
   Flx_bsym_table.update_bexes (List.map begin function
@@ -260,7 +260,7 @@ let cal_polyvars syms bsym_table =
     | BEXE_jump_direct (sr,i,ts,e) ->
         bexe_jump_direct (sr, i, polyfix syms polyvars i ts,
           cast_a i (fixexpr e))
-    | x -> Flx_bexe.map ~fe:fixexpr x
+    | x -> Flx_bexe.map ~f_bexpr:fixexpr x
   end) bsym_table;
 
   let polyfix2 i ts =
@@ -397,7 +397,7 @@ let cal_polyvars syms bsym_table =
           polyfix2 i ts,
           cast_a2 i ts (fixexpr2 e2)))
     | e ->
-        Flx_bexpr.map ~fe:fixexpr2 e
+        Flx_bexpr.map ~f_bexpr:fixexpr2 e
   in
 
   Flx_bsym_table.update_bexes (List.map begin function
@@ -413,5 +413,5 @@ let cal_polyvars syms bsym_table =
         bexe_call_stack (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
     | BEXE_jump_direct (sr,i,ts,e) ->
         bexe_jump_direct (sr,i, polyfix2 i ts, cast_a2 i ts (fixexpr2 e))
-    | x -> Flx_bexe.map ~fe:fixexpr2 x
+    | x -> Flx_bexe.map ~f_bexpr:fixexpr2 x
   end) bsym_table

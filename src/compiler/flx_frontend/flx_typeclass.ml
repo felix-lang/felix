@@ -556,38 +556,43 @@ let fixup_expr syms bsym_table e =
   (*
   print_endline ("Check expr " ^ sbe sym_table e);
   *)
-  let rec aux e =  match Flx_bexpr.map ~fe:aux e with
-  | BEXPR_apply_direct (i,ts,a),t ->
-    let a = aux a in
-    let j,ts = (* print_endline ("Check apply direct " ^ si i);  *)
-      fixup_typeclass_instance' syms bsym_table true i ts in
-    (*
-    if j <> i then print_endline ("[direct] instantiate virtual as " ^ si j);
-    *)
-    bexpr_apply_direct t (j,ts,a)
+  let rec f_bexpr e =
+    match Flx_bexpr.map ~f_bexpr e with
+    | BEXPR_apply_direct (i,ts,a),t ->
+        let a = f_bexpr a in
+        let j,ts = (* print_endline ("Check apply direct " ^ si i);  *)
+          fixup_typeclass_instance' syms bsym_table true i ts
+        in
+        (*
+        if j <> i then print_endline ("[direct] instantiate virtual as " ^ si j);
+        *)
+        bexpr_apply_direct t (j,ts,a)
 
-  | BEXPR_apply_prim (i,ts,a),t ->
-    let a = aux a in
-    let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"); *)
-      fixup_typeclass_instance' syms bsym_table true i ts in
-    (*
-    if j <> i then
-      print_endline ("[prim] instantiate virtual as " ^
-        si j ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
-      )
-    ;
-    *)
-    bexpr_apply_direct t (j,ts,a)
+    | BEXPR_apply_prim (i,ts,a),t ->
+        let a = f_bexpr a in
+        let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"); *)
+          fixup_typeclass_instance' syms bsym_table true i ts
+        in
+        (*
+        if j <> i then
+        print_endline ("[prim] instantiate virtual as " ^
+          si j ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
+        )
+        ;
+        *)
+        bexpr_apply_direct t (j,ts,a)
 
-  | BEXPR_name (i,ts),t ->
-    let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"); *)
-      fixup_typeclass_instance' syms bsym_table true i ts in
-    bexpr_name t (j,ts)
+    | BEXPR_name (i,ts),t ->
+        let j,ts = (* print_endline ("Check apply prim " ^ si i^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"); *)
+        fixup_typeclass_instance' syms bsym_table true i ts in
+        bexpr_name t (j,ts)
 
-  | x -> x
-  in aux e
+    | x -> x
+  in
+  f_bexpr e
 
-let fixup_exe syms bsym_table exe = match exe with
+let fixup_exe syms bsym_table exe =
+  match exe with
   | BEXE_call_direct (sr,i,ts,a) ->
     let j,ts = fixup_typeclass_instance' syms bsym_table true i ts in
     (*
@@ -596,7 +601,7 @@ let fixup_exe syms bsym_table exe = match exe with
     let a  = fixup_expr syms bsym_table a in
     bexe_call_direct (sr,j,ts,a)
   | x ->
-    Flx_bexe.map ~fe:(fixup_expr syms bsym_table) x
+    Flx_bexe.map ~f_bexpr:(fixup_expr syms bsym_table) x
 
 let fixup_exes syms bsym_table exes = map (fixup_exe syms bsym_table) exes
 

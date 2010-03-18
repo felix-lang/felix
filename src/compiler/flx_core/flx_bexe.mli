@@ -67,22 +67,18 @@ val get_srcref : t -> Flx_srcref.t
 
 (** Recursively iterate over each bound exe and call the function on it. *)
 val iter :
-  ?fi:(Flx_types.bid_t -> unit) ->
-  ?ft:(Flx_btype.t -> unit) ->
-  ?fe:(Flx_bexpr.t -> unit) ->
-  ?fl:(string -> unit) ->
-  ?fldef:(string -> unit) ->
+  ?f_bid:(Flx_types.bid_t -> unit) ->
+  ?f_btype:(Flx_btype.t -> unit) ->
+  ?f_bexpr:(Flx_bexpr.t -> unit) ->
   t ->
   unit
 
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
 val map :
-  ?fi:(Flx_types.bid_t -> Flx_types.bid_t) ->
-  ?ft:(Flx_btype.t -> Flx_btype.t) ->
-  ?fe:(Flx_bexpr.t -> Flx_bexpr.t) ->
-  ?fl:(string -> string) ->
-  ?fldef:(string -> string) ->
+  ?f_bid:(Flx_types.bid_t -> Flx_types.bid_t) ->
+  ?f_btype:(Flx_btype.t -> Flx_btype.t) ->
+  ?f_bexpr:(Flx_bexpr.t -> Flx_bexpr.t) ->
   t ->
   t
 

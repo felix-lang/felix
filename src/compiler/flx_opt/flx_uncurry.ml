@@ -44,7 +44,7 @@ let find_uncurry_expr syms bsym_table uncurry_map vs e =
     Hashtbl.replace uncurry_map f (c,k,n+1)
 
   | x -> ()
-  in Flx_bexpr.iter ~fe:aux e
+  in Flx_bexpr.iter ~f_bexpr:aux e
 
 let find_uncurry_exe syms bsym_table uncurry_map vs exe =
   begin match exe with
@@ -67,13 +67,13 @@ let find_uncurry_exe syms bsym_table uncurry_map vs exe =
   | x -> ()
   end
   ;
-  Flx_bexe.iter ~fe:(find_uncurry_expr syms bsym_table uncurry_map vs) exe
+  Flx_bexe.iter ~f_bexpr:(find_uncurry_expr syms bsym_table uncurry_map vs) exe
 
 let find_uncurry_exes syms bsym_table uncurry_map vs exes =
   iter (find_uncurry_exe syms bsym_table uncurry_map vs) exes
 
 let uncurry_expr syms bsym_table uncurry_map vs e =
-  let rec aux e = match Flx_bexpr.map ~fe:aux e with
+  let rec aux e = match Flx_bexpr.map ~f_bexpr:aux e with
   | BEXPR_apply
     (
       (
@@ -118,7 +118,7 @@ let uncurry_exe syms bsym_table uncurry_map vs exe =
     bexe_call (sr,(bexpr_closure t (k,ts)),ab)
   | x -> x
   in
-  Flx_bexe.map ~fe:(uncurry_expr syms bsym_table uncurry_map vs) exe
+  Flx_bexe.map ~f_bexpr:(uncurry_expr syms bsym_table uncurry_map vs) exe
 
 let uncurry_exes syms bsym_table uncurry_map vs exes = map (uncurry_exe syms bsym_table uncurry_map vs) exes
 
@@ -277,9 +277,9 @@ let fixup_function
   let ps = ps @ psc in
 
   (* Update the child's expressions and executables. *)
-  let rec revare e = Flx_bexpr.map ~fi:revar ~fe:revare e in
+  let rec revare e = Flx_bexpr.map ~f_bid:revar ~f_bexpr:revare e in
   let exes = List.map
-    (fun exe -> Flx_bexe.map ~fi:revar ~fe:revare exe)
+    (fun exe -> Flx_bexe.map ~f_bid:revar ~f_bexpr:revare exe)
     exesc
   in
 

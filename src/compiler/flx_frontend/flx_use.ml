@@ -38,12 +38,12 @@ changing the data structures.
 let nop x = ()
 
 let rec uses_type used bsym_table count_inits t =
-  let ft t = uses_type used bsym_table count_inits t in
+  let f_btype t = uses_type used bsym_table count_inits t in
   match t with
   | BTYP_inst (i,ts)
     ->
       uses used bsym_table count_inits i; (* don't care on uses inits? *)
-      List.iter ft ts
+      List.iter f_btype ts
 
   (*
   | BTYP_type
@@ -51,7 +51,7 @@ let rec uses_type used bsym_table count_inits t =
       failwith "[uses_type] Unexpected metatype"
   *)
 
-  | _ -> Flx_btype.iter ~ft t
+  | _ -> Flx_btype.iter ~f_btype t
 
 and uses_exes used bsym_table count_inits exes =
   List.iter (uses_exe used bsym_table count_inits) exes
@@ -76,7 +76,7 @@ and uses_exe used bsym_table count_inits exe =
      then ue lhs;
      ue rhs
   | _ ->
-    Flx_bexe.iter ~fi:ui ~ft:ut ~fe:ue exe
+    Flx_bexe.iter ~f_bid:ui ~f_btype:ut ~f_bexpr:ue exe
 
 and uses_tbexpr used bsym_table count_inits ((e,t) as x) =
   let ue e = uses_tbexpr used bsym_table count_inits e in
@@ -88,7 +88,7 @@ and uses_tbexpr used bsym_table count_inits ((e,t) as x) =
   ut t;
   *)
   (* use a MAP now *)
-  Flx_bexpr.iter ~fi:ui ~ft:ut x;
+  Flx_bexpr.iter ~f_bid:ui ~f_btype:ut x;
 
 and uses_production used bsym_table count_inits p =
   let uses_symbol (_,nt) = match nt with

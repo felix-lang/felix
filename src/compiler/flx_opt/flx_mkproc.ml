@@ -34,10 +34,10 @@ let find_mkproc_expr mkproc_map e =
 
   | x -> ()
   in
-  Flx_bexpr.iter ~fe:aux e
+  Flx_bexpr.iter ~f_bexpr:aux e
 
 let find_mkproc_exe mkproc_map exe =
-  Flx_bexe.iter ~fe:(find_mkproc_expr mkproc_map) exe
+  Flx_bexe.iter ~f_bexpr:(find_mkproc_expr mkproc_map) exe
 
 let find_mkproc_exes mkproc_map exes =
   iter (find_mkproc_exe mkproc_map) exes
@@ -45,7 +45,7 @@ let find_mkproc_exes mkproc_map exes =
 (* THIS CODE REPLACES APPLICATIONS WITH CALLS *)
 let mkproc_expr syms bsym_table sr this mkproc_map vs e =
   let exes = ref [] in
-  let rec aux e = match Flx_bexpr.map ~fe:aux e with
+  let rec aux e = match Flx_bexpr.map ~f_bexpr:aux e with
   | BEXPR_apply
     (
       (BEXPR_closure (f,ts),_),
@@ -96,7 +96,7 @@ let mkproc_exe syms bsym_table sr this mkproc_map vs exe =
     exes := xs @ !exes;
     e
   in
-  let exe' = Flx_bexe.map ~fe:tocall exe in
+  let exe' = Flx_bexe.map ~f_bexpr:tocall exe in
   let exes = !exes @ [exe'] in
   if syms.compiler_options.print_flag then
   begin
@@ -299,11 +299,11 @@ let mkproc_gen syms bsym_table =
 
         (* rename parameter list *)
         let ps = map (fun ({pid=s; pindex=i} as p) -> {p with pid=s^"_mkproc"; pindex = revar i}) ps in
-        let rec revare e = Flx_bexpr.map ~fi:revar ~fe:revare e in
+        let rec revare e = Flx_bexpr.map ~f_bid:revar ~f_bexpr:revare e in
 
         (* remap all the exes to use the new parameters and children *)
         let exes = List.map
-          (fun exe -> Flx_bexe.map ~fi:revar ~fe:revare exe)
+          (fun exe -> Flx_bexe.map ~f_bid:revar ~f_bexpr:revare exe)
           exes
         in
 

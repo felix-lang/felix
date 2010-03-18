@@ -31,14 +31,14 @@ let add (h:usage_table_t) k j sr =
   )
 
 let rec uses_type h k sr t =
-  let ft t = uses_type h k sr t in
+  let f_btype t = uses_type h k sr t in
   match t with
   | BTYP_inst (i,ts)
     ->
       add h k i sr;
-      List.iter ft ts
+      List.iter f_btype ts
 
-  | _ -> Flx_btype.iter ~ft t
+  | _ -> Flx_btype.iter ~f_btype t
 
 let faulty_req bsym_table i =
   let bsym = Flx_bsym_table.find bsym_table i in
@@ -50,7 +50,7 @@ let rec process_expr h k sr e =
   let ue e = process_expr h k sr e in
   let ui i = add h k i sr in
   let ut t = uses_type h k sr t in
-  Flx_bexpr.iter ~fi:ui ~ft:ut e
+  Flx_bexpr.iter ~f_bid:ui ~f_btype:ut e
 
 and cal_exe_usage h k exe =
   (*
@@ -60,7 +60,7 @@ and cal_exe_usage h k exe =
   let ue e = process_expr h k sr e in
   let ui i = add h k i sr in
   let ut t = uses_type h k sr t in
-  Flx_bexe.iter ~fi:ui ~ft:ut ~fe:ue exe
+  Flx_bexe.iter ~f_bid:ui ~f_btype:ut ~f_bexpr:ue exe
 
 let cal_expr_usage h k sr e =
   process_expr h k sr e
@@ -296,7 +296,7 @@ let print_call_report syms bsym_table f =
 let expr_uses_unrestricted syms descend usage e =
   let u = ref BidSet.empty in
   let add u i = u := BidSet.add i !u in
-  Flx_bexpr.iter ~fi:(add u) e;
+  Flx_bexpr.iter ~f_bid:(add u) e;
 
 
   (*

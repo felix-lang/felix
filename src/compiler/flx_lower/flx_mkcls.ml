@@ -126,7 +126,7 @@ let ident x = x
 
 let rec adj_cls state bsym_table all_closures e =
   let adj e = adj_cls state bsym_table all_closures e in
-  match Flx_bexpr.map ~fe:adj e with
+  match Flx_bexpr.map ~f_bexpr:adj e with
   | BEXPR_closure (i,ts),t ->
     check_prim state bsym_table all_closures i ts t
 

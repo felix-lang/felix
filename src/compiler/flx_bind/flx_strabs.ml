@@ -27,27 +27,28 @@ let check_inst bsym_table i ts =
 
 let fixtype bsym_table t =
   let chk i ts = check_inst bsym_table i ts in
-  let rec aux t = match Flx_btype.map ~ft:aux t with
-  | BTYP_inst (i,ts) ->
-    let ts = map aux ts in
-    chk i ts
-  | x -> x
-  in aux t
-
-let id x = x
+  let rec f_btype t =
+    match Flx_btype.map ~f_btype t with
+    | BTYP_inst (i,ts) ->
+        let ts = map f_btype ts in
+        chk i ts
+    | x -> x
+  in
+  f_btype t
 
 let fixexpr bsym_table e =
-  let rec fe e =
-    match Flx_bexpr.map ~ft:(fixtype bsym_table) ~fe e with
+  let rec f_bexpr e =
+    match Flx_bexpr.map ~f_btype:(fixtype bsym_table) ~f_bexpr e with
     | BEXPR_apply ( (BEXPR_closure(i,_),_),a),_
     | BEXPR_apply_direct (i,_,a),_
     | BEXPR_apply_prim (i,_,a),_
       when Flx_bsym_table.is_identity bsym_table i -> a
     | x -> x
-  in fe e
+  in
+  f_bexpr e
 
 let fixbexe bsym_table x =
-  Flx_bexe.map ~ft:(fixtype bsym_table) ~fe:(fixexpr bsym_table) x
+  Flx_bexe.map ~f_btype:(fixtype bsym_table) ~f_bexpr:(fixexpr bsym_table) x
 
 let fixbexes bsym_table bexes = map (fixbexe bsym_table) bexes
 

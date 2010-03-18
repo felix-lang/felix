@@ -48,7 +48,7 @@ let throw_on_gc bsym_table e : unit = match e with
   | _ -> ()
 
 let expr_uses_gc bsym_table e =
-  Flx_bexpr.iter ~fe:(throw_on_gc bsym_table) e
+  Flx_bexpr.iter ~f_bexpr:(throw_on_gc bsym_table) e
 
 let exe_uses_gc bsym_table exe =
   match exe with
@@ -68,7 +68,7 @@ let exe_uses_gc bsym_table exe =
       if List.mem `Uses_gc props
       then begin (* print_endline "Flagged as using gc"; *) raise Not_found end
       else
-      Flx_bexe.iter ~fe:(expr_uses_gc bsym_table) exe
+      Flx_bexe.iter ~f_bexpr:(expr_uses_gc bsym_table) exe
     | _ ->
       print_endline ("Call primitive to non-primitive " ^ Flx_bsym.id bsym ^
         "<" ^ string_of_bid i ^ ">");
@@ -76,7 +76,7 @@ let exe_uses_gc bsym_table exe =
     end
 
   | _ ->
-    Flx_bexe.iter ~fe:(expr_uses_gc bsym_table) exe
+    Flx_bexe.iter ~f_bexpr:(expr_uses_gc bsym_table) exe
 
 let exes_use_gc bsym_table exes =
   try
@@ -136,12 +136,12 @@ let throw_on_global bsym_table i =
   if Flx_bsym_table.is_global_var bsym_table i then raise Not_found
 
 let expr_uses_global bsym_table e =
-  Flx_bexpr.iter ~fi:(throw_on_global bsym_table) e
+  Flx_bexpr.iter ~f_bid:(throw_on_global bsym_table) e
 
 let exe_uses_global bsym_table exe =
   Flx_bexe.iter
-    ~fi:(throw_on_global bsym_table)
-    ~fe:(expr_uses_global bsym_table)
+    ~f_bid:(throw_on_global bsym_table)
+    ~f_bexpr:(expr_uses_global bsym_table)
     exe
 
 let exes_use_global bsym_table exes =
