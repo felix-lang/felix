@@ -154,6 +154,202 @@ let get_bvs = function
   | BBDCL_lemma -> []
   | BBDCL_reduce -> []
 
+(* -------------------------------------------------------------------------- *)
+
+let iter
+  ?(f_bid=fun _ -> ())
+  ?(f_btype=fun _ -> ())
+  ?(f_bexpr=fun _ -> ())
+  ?(f_bexe=fun _ -> ())
+  bbdcl
+=
+  let f_btype = Flx_btype.iter ~f_bid ~f_btype in
+  let f_bexpr = Flx_bexpr.iter ~f_bid ~f_btype ~f_bexpr in
+  let f_bexe = Flx_bexe.iter ~f_bid ~f_btype ~f_bexpr in
+  let f_bvs = List.iter (fun (s,i) -> f_bid i) in
+  let f_ps (ps,e) =
+    List.iter begin fun p ->
+      f_bid p.Flx_bparameter.pindex;
+      f_btype p.Flx_bparameter.ptyp
+    end ps;
+    match e with Some e -> f_bexpr e | None -> ();
+  in
+  let f_breqs =
+    List.iter begin fun (bid,ts) ->
+      f_bid bid;
+      List.iter f_btype ts
+    end
+  in
+  let f_btype_qual = function
+    | #base_type_qual_t -> ()
+    | `Bound_needs_shape t -> f_btype t
+  in
+  match bbdcl with
+  | BBDCL_module -> ()
+  | BBDCL_function (props,bvs,ps,res,es) ->
+      f_bvs bvs;
+      f_ps ps;
+      f_btype res;
+      List.iter f_bexe es
+  | BBDCL_procedure (props,bvs,ps,es) ->
+      f_bvs bvs;
+      f_ps ps;
+      List.iter f_bexe es
+  | BBDCL_val (bvs,t)
+  | BBDCL_var (bvs,t)
+  | BBDCL_ref (bvs,t)
+  | BBDCL_tmp (bvs,t)
+  | BBDCL_newtype (bvs,t) ->
+      f_bvs bvs;
+      f_btype t
+  | BBDCL_abs (bvs,quals,code,breqs) ->
+      f_bvs bvs;
+      List.iter f_btype_qual quals;
+      f_breqs breqs
+  | BBDCL_const (props,bvs,t,code,breqs) ->
+      f_bvs bvs;
+      f_btype t;
+      f_breqs breqs
+  | BBDCL_fun (props,bvs,ps,rt,code,breqs,prec) ->
+      f_bvs bvs;
+      List.iter f_btype ps;
+      f_btype rt;
+      f_breqs breqs
+  | BBDCL_callback (props,bvs,ps_cf,ps_c,k,rt,breqs,prec) ->
+      f_bvs bvs;
+      List.iter f_btype ps_cf;
+      List.iter f_btype ps_c;
+      f_btype rt;
+      f_breqs breqs
+  | BBDCL_proc (props,bvs,ps,code,breqs) ->
+      f_bvs bvs;
+      List.iter f_btype ps;
+      f_breqs breqs
+  | BBDCL_insert (bvs,code,ikind,breqs) ->
+      f_bvs bvs;
+      f_breqs breqs
+  | BBDCL_union (bvs,cs) ->
+      f_bvs bvs;
+      List.iter (fun (n,i,t) -> f_btype t) cs
+  | BBDCL_struct (bvs,cs)
+  | BBDCL_cstruct (bvs,cs) ->
+      f_bvs bvs;
+      List.iter (fun (n,t) -> f_btype t) cs
+  | BBDCL_typeclass (props,bvs) ->
+      f_bvs bvs
+  | BBDCL_instance (props,bvs,cons,bid,ts) ->
+      f_bvs bvs;
+      f_btype cons;
+      f_bid bid;
+      List.iter f_btype ts
+  | BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,ctor_argt,evs,etraint) ->
+      f_bvs bvs;
+      f_bid uidx;
+      f_btype ut;
+      f_bid ctor_idx;
+      f_btype ctor_argt;
+      f_bvs evs;
+      f_btype etraint
+  | BBDCL_axiom -> ()
+  | BBDCL_lemma -> ()
+  | BBDCL_reduce -> ()
+
+let map
+  ?(f_bid=fun i -> i)
+  ?(f_btype=fun t -> t)
+  ?(f_bexpr=fun e -> e)
+  ?(f_bexe=fun e -> e)
+  bbdcl
+=
+  let f_btype = Flx_btype.map ~f_bid ~f_btype in
+  let f_bexpr = Flx_bexpr.map ~f_bid ~f_btype ~f_bexpr in
+  let f_bexe bexe = Flx_bexe.map ~f_bid ~f_btype ~f_bexpr bexe in
+  let f_bvs = List.map (fun (s,i) -> s,f_bid i) in
+  let f_ps (ps,e) =
+    List.map begin fun p ->
+      { p with
+        Flx_bparameter.pindex=f_bid p.Flx_bparameter.pindex;
+        ptyp=f_btype p.Flx_bparameter.ptyp }
+    end ps,
+    match e with Some e -> Some (f_bexpr e) | None -> None
+  in
+  let f_breqs =
+    List.map begin fun (bid,ts) ->
+      f_bid bid, List.map f_btype ts
+    end
+  in
+  let f_btype_qual = function
+    | #base_type_qual_t as qual -> qual
+    | `Bound_needs_shape t -> `Bound_needs_shape (f_btype t)
+  in
+  match bbdcl with
+  | BBDCL_module -> bbdcl
+  | BBDCL_function (props,bvs,ps,res,es) ->
+      BBDCL_function (props,f_bvs bvs,f_ps ps,f_btype res,List.map f_bexe es)
+  | BBDCL_procedure (props,bvs,ps,es) ->
+      BBDCL_procedure (props,f_bvs bvs,f_ps ps,List.map f_bexe es)
+  | BBDCL_val (bvs,t) -> bbdcl_val (f_bvs bvs,f_btype t)
+  | BBDCL_var (bvs,t) -> bbdcl_var (f_bvs bvs,f_btype t)
+  | BBDCL_ref (bvs,t) -> bbdcl_ref (f_bvs bvs,f_btype t)
+  | BBDCL_tmp (bvs,t) -> bbdcl_tmp (f_bvs bvs,f_btype t)
+  | BBDCL_newtype (bvs,t) -> BBDCL_newtype (f_bvs bvs,f_btype t)
+  | BBDCL_abs (bvs,quals,code,breqs) ->
+      BBDCL_abs (f_bvs bvs,List.map f_btype_qual quals,code,f_breqs breqs)
+  | BBDCL_const (props,bvs,t,code,breqs) ->
+      BBDCL_const (props,f_bvs bvs,f_btype t,code,f_breqs breqs)
+  | BBDCL_fun (props,bvs,ps,rt,code,breqs,prec) ->
+      BBDCL_fun (
+        props,
+        f_bvs bvs,
+        List.map f_btype ps,
+        f_btype rt,
+        code,
+        f_breqs breqs,
+        prec)
+  | BBDCL_callback (props,bvs,ps_cf,ps_c,k,rt,breqs,prec) ->
+      BBDCL_callback (
+        props,
+        f_bvs bvs,
+        List.map f_btype ps_cf,
+        List.map f_btype ps_c,
+        k,
+        f_btype rt,
+        f_breqs breqs,
+        prec)
+  | BBDCL_proc (props,bvs,ps,code,breqs) ->
+      BBDCL_proc (props,f_bvs bvs,List.map f_btype ps,code,f_breqs breqs)
+  | BBDCL_insert (bvs,code,ikind,breqs) ->
+      BBDCL_insert (f_bvs bvs,code,ikind,f_breqs breqs)
+  | BBDCL_union (bvs,cs) ->
+      BBDCL_union (f_bvs bvs,List.map (fun (n,i,t) -> n,i,f_btype t) cs)
+  | BBDCL_struct (bvs,cs) ->
+      BBDCL_struct (f_bvs bvs,List.map (fun (n,t) -> n,f_btype t) cs)
+  | BBDCL_cstruct (bvs,cs) ->
+      BBDCL_cstruct (f_bvs bvs,List.map (fun (n,t) -> n,f_btype t) cs)
+  | BBDCL_typeclass (props,bvs) ->
+      BBDCL_typeclass (props,f_bvs bvs)
+  | BBDCL_instance (props,bvs,cons,bid,ts) ->
+      BBDCL_instance (
+        props,
+        f_bvs bvs,
+        f_btype cons,
+        f_bid bid,
+        List.map f_btype ts)
+  | BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,ctor_argt,evs,etraint) ->
+      BBDCL_nonconst_ctor (
+        f_bvs bvs,
+        f_bid uidx,
+        f_btype ut,
+        f_bid ctor_idx,
+        f_btype ctor_argt,
+        f_bvs evs,
+        f_btype etraint)
+  | BBDCL_axiom -> bbdcl
+  | BBDCL_lemma -> bbdcl
+  | BBDCL_reduce -> bbdcl
+
+(* -------------------------------------------------------------------------- *)
+
 let print_btype_qual f = function
   | #base_type_qual_t as qual ->
       print_base_type_qual f qual

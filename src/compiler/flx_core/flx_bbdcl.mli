@@ -79,5 +79,29 @@ val get_ts : t -> Flx_btype.t list
 (** Extract the bound type variables of a bound declaration. *)
 val get_bvs : t -> bvs_t
 
+(* -------------------------------------------------------------------------- *)
+
+(** Recursively iterate over each bound declaration and call the function on
+ * it. *)
+val iter :
+  ?f_bid:(Flx_types.bid_t -> unit) ->
+  ?f_btype:(Flx_btype.t -> unit) ->
+  ?f_bexpr:(Flx_bexpr.t -> unit) ->
+  ?f_bexe:(Flx_bexpr.t -> unit) ->
+  t ->
+  unit
+
+(** Recursively iterate over each bound declaration and transform it with the
+ * function. *)
+val map :
+  ?f_bid:(Flx_types.bid_t -> Flx_types.bid_t) ->
+  ?f_btype:(Flx_btype.t -> Flx_btype.t) ->
+  ?f_bexpr:(Flx_bexpr.t -> Flx_bexpr.t) ->
+  ?f_bexe:(Flx_bexpr.t -> Flx_bexpr.t) ->
+  t ->
+  t
+
+(* -------------------------------------------------------------------------- *)
+
 (** Prints a bbdcl to a formatter. *)
 val print : Format.formatter -> t -> unit
