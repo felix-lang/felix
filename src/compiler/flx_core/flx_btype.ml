@@ -235,10 +235,14 @@ let iter
   | BTYP_type _ -> ()
   | BTYP_type_tuple ts -> List.iter f_btype ts
   | BTYP_type_function (its, a, b) ->
-      List.iter (fun (i,t) -> f_bid i; f_btype t) its;
+      (* The first argument of [its] is an index, not a bid. *)
+      List.iter (fun (_,t) -> f_btype t) its;
       f_btype a;
       f_btype b
-  | BTYP_type_var (i,t) -> f_bid i; f_btype t
+  | BTYP_type_var (_,t) ->
+      (* The first argument of [BTYP_type_var] is just a unique integer, not a
+       * bid. *)
+      f_btype t
   | BTYP_type_apply (a,b) -> f_btype a; f_btype b
   | BTYP_type_match (t,ps) ->
       f_btype t;
