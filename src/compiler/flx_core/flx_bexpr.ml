@@ -360,7 +360,7 @@ let rec print_bexpr f = function
         Flx_types.print_bid bid
         (Flx_list.print Flx_btype.print) ts
   | BEXPR_case (i, t) ->
-      Flx_format.print_variant2 f "BEXPR_match_case"
+      Flx_format.print_variant2 f "BEXPR_case"
         Format.pp_print_int i
         Flx_btype.print t
   | BEXPR_match_case (i, e) ->
@@ -374,7 +374,7 @@ let rec print_bexpr f = function
   | BEXPR_case_index e ->
       Flx_format.print_variant1 f "BEXPR_case_index" print e
   | BEXPR_expr (s, t) ->
-      Flx_format.print_variant2 f "BEXPR_closure"
+      Flx_format.print_variant2 f "BEXPR_expr"
         Flx_format.print_string s
         Flx_btype.print t
   | BEXPR_range_check (e1, e2, e3) ->
