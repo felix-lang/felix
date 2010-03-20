@@ -1853,6 +1853,7 @@ and btype_of_bsym state bsym_table bt bid bsym =
   in
 
   match Flx_bsym.bbdcl bsym with
+  | BBDCL_invalid -> assert false
   | BBDCL_module -> assert false
   | BBDCL_function (_,_,(params,_),return_type,_) ->
       btyp_function (type_of_params params, return_type)

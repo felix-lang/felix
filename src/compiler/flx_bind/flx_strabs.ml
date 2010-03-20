@@ -73,6 +73,9 @@ let strabs_symbol state bsym_table index bsym =
 
   let h bbdcl = Flx_bsym_table.update_bbdcl bsym_table index bbdcl in
   match Flx_bsym.bbdcl bsym with
+  | BBDCL_invalid ->
+    assert false
+
   | BBDCL_module ->
     h (bbdcl_module ())
 

@@ -301,6 +301,7 @@ let mono syms bsym_table fi ts bsym =
 
 let chk_mono syms bsym_table i =
   match Flx_bsym_table.find_bbdcl bsym_table i with
+  | BBDCL_invalid -> assert false
   | BBDCL_module -> false
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->  true
   | BBDCL_procedure (props,vs,(ps,traint), exes) -> true

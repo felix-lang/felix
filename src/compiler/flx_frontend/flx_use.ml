@@ -129,6 +129,7 @@ and uses used bsym_table count_inits i =
     | Some bbdcl ->
       used := BidSet.add i !used;
       begin match bbdcl with
+      | BBDCL_invalid -> assert false
       | BBDCL_module -> ()
 
       | BBDCL_typeclass _ -> ()

@@ -12,6 +12,7 @@ type breqs_t = (Flx_types.bid_t * Flx_btype.t list) list
 
 (** Bound declarations. *)
 type t =
+  | BBDCL_invalid
   | BBDCL_module
   | BBDCL_function of   property_t list * bvs_t * Flx_bparams.t * Flx_btype.t * Flx_bexe.t list
   | BBDCL_procedure of  property_t list * bvs_t * Flx_bparams.t * Flx_bexe.t list
@@ -45,6 +46,9 @@ type t =
   | BBDCL_reduce
 
 (* -------------------------------------------------------------------------- *)
+
+let bbdcl_invalid () =
+  BBDCL_invalid
 
 let bbdcl_module () =
   BBDCL_module
@@ -119,17 +123,20 @@ let bbdcl_lemma () =
 
 (** Extract the parameters of a bound declaration. *)
 let get_bparams = function
+  | BBDCL_invalid -> assert false
   | BBDCL_function (_,_,ps,_,_)
   | BBDCL_procedure (_,_,ps,_) -> ps
   | _ -> assert false
 
 (** Extract the types of a bound declaration. *)
 let get_ts = function
+  | BBDCL_invalid -> assert false
   | BBDCL_instance (_, _, _, _, ts) -> ts
   | _ -> []
 
 (** Extract the bound type variables of a bound declaration. *)
 let get_bvs = function
+  | BBDCL_invalid -> assert false
   | BBDCL_module -> []
   | BBDCL_function (_, bvs, _, _, _) -> bvs
   | BBDCL_procedure (_, bvs, _, _) -> bvs
@@ -185,6 +192,7 @@ let iter
     | `Bound_needs_shape t -> f_btype t
   in
   match bbdcl with
+  | BBDCL_invalid -> assert false
   | BBDCL_module -> ()
   | BBDCL_function (props,bvs,ps,res,es) ->
       f_bvs bvs;
@@ -283,6 +291,7 @@ let map
     | `Bound_needs_shape t -> `Bound_needs_shape (f_btype t)
   in
   match bbdcl with
+  | BBDCL_invalid -> assert false
   | BBDCL_module -> bbdcl
   | BBDCL_function (props,bvs,ps,res,es) ->
       BBDCL_function (props,f_bvs bvs,f_ps ps,f_btype res,List.map f_bexe es)
@@ -364,6 +373,7 @@ let print_breqs f breqs =
 
 (** Convert the bound declaration to a string. *)
 let rec print f = function
+  | BBDCL_invalid -> print_variant0 f "BBDCL_invalid"
   | BBDCL_module -> print_variant0 f "BBDCL_module"
   | BBDCL_function (props,bvs,ps,res,es) ->
       print_variant5 f "BBDCL_function"

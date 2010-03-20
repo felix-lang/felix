@@ -1229,6 +1229,10 @@ and codegen_symbol state bsym_table closure index bsym =
     (Flx_print.string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index));
 
   match Flx_bsym.bbdcl bsym with
+  | Flx_bbdcl.BBDCL_invalid ->
+      print_endline "BBDCL_invalid";
+      assert false
+
   | Flx_bbdcl.BBDCL_module ->
       print_endline "BBDCL_module";
       assert false

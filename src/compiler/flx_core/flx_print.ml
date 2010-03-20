@@ -2270,6 +2270,8 @@ and string_of_bbdcl bsym_table bbdcl index : string =
   let se e = string_of_bound_expression bsym_table e in
   let un = btyp_tuple [] in
   match bbdcl with
+  | BBDCL_invalid -> assert false
+
   | BBDCL_module ->
     "module " ^ name ^ " {}"
 

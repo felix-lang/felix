@@ -64,6 +64,7 @@ let rec is_pure syms bsym_table i =
   print_endline ("Checking purity of " ^ id ^ "<" ^ si i ^ ">");
   *)
   match Flx_bsym.bbdcl bsym with
+  | BBDCL_invalid -> assert false
   | BBDCL_module
   | BBDCL_var _
   | BBDCL_ref _
