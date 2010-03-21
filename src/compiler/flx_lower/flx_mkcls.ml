@@ -28,7 +28,7 @@ let make_closure_state syms =
 
 (** This generates closures for calling external functions. It does this by
  * generating a new function that contains part of the closed values. *)
-let gen_closure state bsym_table bid =
+let gen_closure state bsym_table bid t =
   let bsym = Flx_bsym_table.find bsym_table bid in
   let bsym_parent = Flx_bsym_table.find_parent bsym_table bid in
 
@@ -37,7 +37,10 @@ let gen_closure state bsym_table bid =
 
   (* Add the closure wrapper to symbol table. We'll replace it later with the
    * real values. *)
-  Flx_bsym_table.add bsym_table bsym_parent closure_bid bsym;
+  Flx_bsym_table.add bsym_table bsym_parent closure_bid (Flx_bsym.create
+    ~sr:(Flx_bsym.sr bsym)
+    ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym)
+    (bbdcl_invalid ()));
 
   let make_wrapped_call vs ps =
     (* Make the type of the closed value. *)
@@ -91,6 +94,16 @@ let gen_closure state bsym_table bid =
 
         bbdcl_function ([],vs,(ps,None),ret,exes)
 
+    | BBDCL_struct (vs,ps)
+    | BBDCL_cstruct (vs,ps) ->
+        let ts, params, arg = make_wrapped_call vs (List.map snd ps) in
+
+        (* Generate a call to the wrapped function. *)
+        let e = bexpr_apply_struct t (bid, ts, arg) in
+        let exes = [bexe_fun_return (Flx_bsym.sr bsym, e)] in
+
+        bbdcl_function ([],vs,(params,None),btyp_inst (bid,[]),exes)
+
     | _ -> assert false
   in
 
@@ -104,7 +117,7 @@ let mkcls state bsym_table all_closures i ts t =
   let j =
     try Hashtbl.find state.wrappers i
     with Not_found ->
-      let j = gen_closure state bsym_table i in
+      let j = gen_closure state bsym_table i t in
       Hashtbl.add state.wrappers i j;
       j
   in
@@ -114,11 +127,14 @@ let mkcls state bsym_table all_closures i ts t =
 let check_prim state bsym_table all_closures i ts t =
   match Flx_bsym_table.find_bbdcl bsym_table i with
   | BBDCL_proc _
-  | BBDCL_fun _ ->
-    mkcls state bsym_table all_closures i ts t
-  | _ ->
-    all_closures := BidSet.add i !all_closures;
-    bexpr_closure t (i,ts)
+  | BBDCL_fun _
+  | BBDCL_struct _
+  | BBDCL_cstruct _ ->
+      mkcls state bsym_table all_closures i ts t
+
+  | x ->
+      all_closures := BidSet.add i !all_closures;
+      bexpr_closure t (i,ts)
 
 let idt t = t
 
