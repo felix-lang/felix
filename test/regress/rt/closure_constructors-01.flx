@@ -2,9 +2,7 @@
 // closure formation test
 
 // primitive function
-fun appl(x:int, f:int * int -> int):int = {
-  return f (x,x);
-}
+fun appl (x:int, f:int * int -> int):int => f (x,x);
 
 print "closure of add primitive ";
 print (appl (2, add of (int*int))); endl;
@@ -14,9 +12,3 @@ typedef Y = 1 + int;
 fun exec2(y2:int->Y,a:int):Y= { return  y2 a; }
 proc yprint(y:Y) { print "union Y"; }
 yprint (exec2(case 1 of Y, 1)); endl;
-
-// named variant type constructor as function
-union U = | A | B of int;
-fun exec3(y2:int->U,a:int):U= { return  y2 a; }
-proc xprint(y:U) { print "union U"; }
-xprint (exec3(B of (int), 1)); endl;

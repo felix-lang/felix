@@ -104,6 +104,15 @@ let gen_closure state bsym_table bid t =
 
         bbdcl_function ([],vs,(params,None),btyp_inst (bid,[]),exes)
 
+    | BBDCL_nonconst_ctor (vs,_,ret,_,p,_,_) as foo ->
+        let ts, params, arg = make_wrapped_call vs [p] in
+
+        (* Generate a call to the wrapped function. *)
+        let e = bexpr_apply_struct t (bid, ts, arg) in
+        let exes = [bexe_fun_return (Flx_bsym.sr bsym, e)] in
+
+        bbdcl_function ([],vs,(params,None),ret,exes)
+
     | _ -> assert false
   in
 
@@ -129,7 +138,8 @@ let check_prim state bsym_table all_closures i ts t =
   | BBDCL_proc _
   | BBDCL_fun _
   | BBDCL_struct _
-  | BBDCL_cstruct _ ->
+  | BBDCL_cstruct _
+  | BBDCL_nonconst_ctor _ ->
       mkcls state bsym_table all_closures i ts t
 
   | x ->
