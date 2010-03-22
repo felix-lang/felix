@@ -20,11 +20,43 @@ type closure_state_t = {
   wrappers : (Flx_types.bid_t, Flx_types.bid_t) Hashtbl.t;
 }
 
+
 let make_closure_state syms =
   {
     syms = syms;
     wrappers = Hashtbl.create 97;
   }
+
+
+let make_inner_function state bsym_table closure_bid sr vs ps =
+  (* Make the type of the closed value. *)
+  let closed_type = match ps with [t] -> t | ts -> btyp_tuple ts in
+
+  (* Make the closed value that's hidden inside our wrapper function. *)
+  let closed_bid = fresh_bid state.syms.counter in
+  let closed_name = "_a" ^ string_of_bid closed_bid in
+  let closed_val = bbdcl_val (vs,closed_type) in
+
+  Flx_bsym_table.add bsym_table (Some closure_bid) closed_bid
+    (Flx_bsym.create ~sr closed_name closed_val);
+
+  (* Make the type variables of the inner call. *)
+  let ts = List.map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
+
+  (* Make the parameters for the wrapper function. *)
+  let param =
+    { pkind=`PVal;
+      pid=closed_name;
+      pindex=closed_bid;
+      ptyp=closed_type }
+  in
+
+  (* Make the argument that we'll pass to our wrapped function. *)
+  let arg = bexpr_name closed_type (closed_bid, ts) in
+
+  (* Return a couple parameters *)
+  ts, param, arg
+
 
 (** This generates closures for calling external functions. It does this by
  * generating a new function that contains part of the closed values. *)
@@ -42,40 +74,17 @@ let gen_closure state bsym_table bid t =
     ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym)
     (bbdcl_invalid ()));
 
-  let make_wrapped_call vs ps =
-    (* Make the type of the closed value. *)
-    let closed_type = match ps with [t] -> t | ts -> btyp_tuple ts in
-
-    (* Make the closed value that's hidden inside our wrapper function. *)
-    let closed_bid = fresh_bid state.syms.counter in
-    let closed_name = "_a" ^ string_of_bid closed_bid in
-    let closed_val = bbdcl_val (vs,closed_type) in
-
-    Flx_bsym_table.add bsym_table (Some closure_bid) closed_bid
-      (Flx_bsym.create ~sr:(Flx_bsym.sr bsym) closed_name closed_val);
-
-    (* Make the parameters for the wrapper function. *)
-    let ps =
-      [{ pkind=`PVal;
-         pid=closed_name;
-         pindex=closed_bid;
-         ptyp=closed_type } ]
-    in
-
-    (* Make the type variables of the inner call. *)
-    let ts = List.map (fun (_,i) -> btyp_type_var (i, btyp_type 0)) vs in
-
-    (* Make the argument that we'll pass to our wrapped function. *)
-    let arg = bexpr_name closed_type (closed_bid, ts) in
-
-    (* Return a couple parameters *)
-    ts, ps, arg
+  let make_inner_function = make_inner_function
+    state
+    bsym_table
+    closure_bid
+    (Flx_bsym.sr bsym)
   in
 
   let bbdcl =
     match Flx_bsym.bbdcl bsym with
     | BBDCL_proc (_,vs,ps,_,_) ->
-        let ts, ps, arg = make_wrapped_call vs ps in
+        let ts, param, arg = make_inner_function vs ps in
 
         (* Generate a call to the wrapped procedure. *)
         let exes =
@@ -83,35 +92,35 @@ let gen_closure state bsym_table bid t =
             bexe_proc_return (Flx_bsym.sr bsym) ]
         in
 
-        bbdcl_procedure ([],vs,(ps,None),exes)
+        bbdcl_procedure ([],vs,([param],None),exes)
 
     | BBDCL_fun (_,vs,ps,ret,_,_,_) ->
-        let ts, ps, arg = make_wrapped_call vs ps in
+        let ts, param, arg = make_inner_function vs ps in
 
         (* Generate a call to the wrapped function. *)
         let e = bexpr_apply_prim ret (bid, ts, arg) in
         let exes = [bexe_fun_return (Flx_bsym.sr bsym, e)] in
 
-        bbdcl_function ([],vs,(ps,None),ret,exes)
+        bbdcl_function ([],vs,([param],None),ret,exes)
 
     | BBDCL_struct (vs,ps)
     | BBDCL_cstruct (vs,ps) ->
-        let ts, params, arg = make_wrapped_call vs (List.map snd ps) in
+        let ts, param, arg = make_inner_function vs (List.map snd ps) in
 
         (* Generate a call to the wrapped function. *)
         let e = bexpr_apply_struct t (bid, ts, arg) in
         let exes = [bexe_fun_return (Flx_bsym.sr bsym, e)] in
 
-        bbdcl_function ([],vs,(params,None),btyp_inst (bid,[]),exes)
+        bbdcl_function ([],vs,([param],None),btyp_inst (bid,[]),exes)
 
     | BBDCL_nonconst_ctor (vs,_,ret,_,p,_,_) as foo ->
-        let ts, params, arg = make_wrapped_call vs [p] in
+        let ts, param, arg = make_inner_function vs [p] in
 
         (* Generate a call to the wrapped function. *)
-        let e = bexpr_apply_struct t (bid, ts, arg) in
+        let e = bexpr_apply_struct ret (bid, ts, arg) in
         let exes = [bexe_fun_return (Flx_bsym.sr bsym, e)] in
 
-        bbdcl_function ([],vs,(params,None),ret,exes)
+        bbdcl_function ([],vs,([param],None),ret,exes)
 
     | _ -> assert false
   in
@@ -146,22 +155,17 @@ let check_prim state bsym_table all_closures i ts t =
       all_closures := BidSet.add i !all_closures;
       bexpr_closure t (i,ts)
 
-let idt t = t
-
-let ident x = x
 
 let rec adj_cls state bsym_table all_closures e =
   let adj e = adj_cls state bsym_table all_closures e in
   match Flx_bexpr.map ~f_bexpr:adj e with
   | BEXPR_closure (i,ts),t ->
-    check_prim state bsym_table all_closures i ts t
+      check_prim state bsym_table all_closures i ts t
 
-  (* Direct calls to non-stacked functions require heap
-     but not a clone ..
-  *)
   | BEXPR_apply_direct (i,ts,a),t as x ->
-    all_closures := BidSet.add i !all_closures;
-    x
+      (* Direct calls to non-stacked functions require heap but not a clone. *)
+      all_closures := BidSet.add i !all_closures;
+      x
 
   | x -> x
 
