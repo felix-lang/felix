@@ -21,7 +21,7 @@ let length bsym_table = Hashtbl.length bsym_table.table
 (** Returns if the bound index is in the bound symbol table. *)
 let mem bsym_table = Hashtbl.mem bsym_table.table
 
-(** Helper function to find an elt in the bsym_table. *)
+(** Helper function to find an elt in the table. *)
 let find_elt bsym_table = Hashtbl.find bsym_table.table
 
 (** Searches the bound symbol table for the given symbol. *)
@@ -57,10 +57,10 @@ let find_bparams bsym_table bid = Flx_bsym.get_bparams (find bsym_table bid)
 (** Searches the bound symbol table for the given symbol's bvs. *)
 let find_bvs bsym_table bid = Flx_bsym.get_bvs (find bsym_table bid)
 
-(** Helper function to replace an elt in the bsym_table. *)
+(** Helper function to replace an elt in the table. *)
 let replace_elt bsym_table = Hashtbl.replace bsym_table.table
 
-(** Helper to add a bid to the bsym_table roots or it's parent's children. *)
+(** Helper to add a bid to the table roots or it's parent's children. *)
 let add_bid_to_parent bsym_table parent bid =
   match parent with
   | None ->
@@ -70,7 +70,7 @@ let add_bid_to_parent bsym_table parent bid =
       let children = Flx_types.BidSet.add bid elt.children in
       replace_elt bsym_table parent { elt with children=children }
 
-(** Helper to remove a bid from the bsym_table roots or it's parent's children. *)
+(** Helper to remove a bid from the table roots or it's parent's children. *)
 let remove_bid_from_parent bsym_table parent bid =
   match parent with
   | None ->
