@@ -13,78 +13,62 @@ open Flx_mtypes2
 
 (* NOTE: THIS CODE LARGELY DUPLICATES CODE IN flx_use.ml *)
 
-type usage_table_t =  (bid_t, (bid_t * Flx_srcref.t) list) Hashtbl.t
-type usage_t =  usage_table_t * usage_table_t
+type usage_table_t = (bid_t, (bid_t * Flx_srcref.t) list) Hashtbl.t
+type usage_t = usage_table_t * usage_table_t
 
-let add (h:usage_table_t) k j sr =
+let add uses sr parent bid =
   (*
   print_endline ("Adding use of " ^ si j ^ " in " ^ si k);
   *)
-  Hashtbl.replace h k
+  Hashtbl.replace uses parent
   (
-    (j,sr)
+    (bid,sr)
     ::
     (
-      try Hashtbl.find h k
+      try Hashtbl.find uses parent
       with Not_found -> []
     )
   )
 
-let rec uses_type h k sr t =
-  let f_btype t = uses_type h k sr t in
+let rec uses_type uses sr parent t =
+  let f_btype t = uses_type uses sr parent t in
+
+  (* We only care about type instances. *)
   match t with
-  | BTYP_inst (i,ts)
-    ->
-      add h k i sr;
+  | BTYP_inst (i,ts) ->
+      add uses sr parent i;
       List.iter f_btype ts
 
   | _ -> Flx_btype.iter ~f_btype t
 
-let faulty_req bsym_table i =
-  let bsym = Flx_bsym_table.find bsym_table i in
-  clierr
-    (Flx_bsym.sr bsym)
-    (Flx_bsym.id bsym ^ " is used but has unsatisfied requirement")
-
-let rec process_expr h k sr e =
-  let ue e = process_expr h k sr e in
-  let ui i = add h k i sr in
-  let ut t = uses_type h k sr t in
+let rec cal_expr_usage uses sr parent e =
+  let ui i = add uses sr parent i in
+  let ut t = uses_type uses sr parent t in
   Flx_bexpr.iter ~f_bid:ui ~f_btype:ut e
 
-and cal_exe_usage h k exe =
-  (*
-  print_endline ("Checking uses in " ^ si k ^ ", exe: " ^ string_of_bexe syms.sym_table 2 exe);
-  *)
+and cal_exe_usage uses parent exe =
   let sr = Flx_bexe.get_srcref exe in
-  let ue e = process_expr h k sr e in
-  let ui i = add h k i sr in
-  let ut t = uses_type h k sr t in
+  let ue e = cal_expr_usage uses sr parent e in
+  let ui i = add uses sr parent i in
+  let ut t = uses_type uses sr parent t in
+
+  (* We don't use cal_expr_usage on purpose, since that's it's really just a
+   * helper to recurse through the expr tree. *)
   Flx_bexe.iter ~f_bid:ui ~f_btype:ut ~f_bexpr:ue exe
 
-let cal_expr_usage h k sr e =
-  process_expr h k sr e
-
-let uses_production h k sr p =
-  let uses_symbol (_,nt) = match nt with
-  | `Nonterm jj -> List.iter (fun i -> add h k i sr) jj
-  | `Term _ -> () (* HACK! This is a union constructor name  we need to 'use' the union type!! *)
-  in
-  List.iter uses_symbol p
-
 let cal_param_usage uses sr parent {pindex=child;ptyp=t} =
-  uses_type uses parent sr t;
-  add uses parent child sr
+  uses_type uses sr parent t;
+  add uses sr parent child
 
 let cal_req_usage bsym_table uses sr parent reqs =
   let ur (j,ts) =
     if j = dummy_bid then faulty_req bsym_table parent
-    else add uses parent j sr
+    else add uses sr parent j
   in
   List.iter ur reqs
 
-let call_data_for_symbol bsym_table uses k bsym =
-  let ut t = uses_type uses k (Flx_bsym.sr bsym) t in
+let cal_bsym_usage bsym_table uses parent bsym =
+  let ut t = uses_type uses (Flx_bsym.sr bsym) parent t in
 
   match Flx_bsym.bbdcl bsym with
   | BBDCL_invalid -> assert false
@@ -96,28 +80,28 @@ let call_data_for_symbol bsym_table uses k bsym =
 
   | BBDCL_procedure (_,_,(ps,_),exes)
   | BBDCL_function (_,_,(ps,_),_,exes) ->
-      List.iter (cal_param_usage uses (Flx_bsym.sr bsym) k) ps;
-      List.iter (cal_exe_usage uses k) exes
+      List.iter (cal_param_usage uses (Flx_bsym.sr bsym) parent) ps;
+      List.iter (cal_exe_usage uses parent) exes
 
   | BBDCL_newtype (_,t) -> ut t
   | BBDCL_abs (_,_,_,reqs) ->
-      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) k reqs
+      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) parent reqs
   | BBDCL_const (_,_,t,_,reqs) ->
-      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) k reqs
+      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) parent reqs
   | BBDCL_proc (_,_,ps,_, reqs) ->
-      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) k reqs;
+      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) parent reqs;
       List.iter ut ps
   | BBDCL_fun (_,_,ps,ret,_, reqs,_) ->
-      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) k reqs;
+      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) parent reqs;
       List.iter ut ps;
       ut ret
   | BBDCL_insert (_,_,_,reqs) ->
-      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) k reqs
+      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) parent reqs
   | BBDCL_instance (_,_,cons,i,ts) ->
       (* we dont add the type constraint, since it
       is only used for instance selection
       *)
-      add uses k i (Flx_bsym.sr bsym);
+      add uses (Flx_bsym.sr bsym) parent i;
       List.iter ut ts
 
   | BBDCL_nonconst_ctor (_,_,unt,_,ct, evs, etraint) ->
@@ -138,40 +122,40 @@ let call_data_for_symbol bsym_table uses k bsym =
       List.iter ut ps_cf;
       List.iter ut ps_c;
       ut ret;
-      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) k reqs
+      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) parent reqs
 
 let call_data bsym_table =
   let uses = Hashtbl.create 97 in
 
   (* Figure out all the calls of the symbol table. *)
-  Flx_bsym_table.iter (call_data_for_symbol bsym_table uses) bsym_table;
+  Flx_bsym_table.iter (cal_bsym_usage bsym_table uses) bsym_table;
 
   (* invert uses table to get usedby table *)
   let usedby = Hashtbl.create 97 in
-  Hashtbl.iter begin fun k ls ->
-    List.iter (fun (i,sr) -> add usedby i k sr) ls
+  Hashtbl.iter begin fun bid ls ->
+    List.iter (fun (parent,sr) -> add usedby sr parent bid) ls
   end uses;
 
   uses, usedby
 
 (* closure of i, excluding i unless it is recursive! *)
-let cls h i =
+let cls uses i =
   let c = ref BidSet.empty in
   let rec add j =
     if not (BidSet.mem j !c) then begin
       c := BidSet.add j !c;
-      let x = try Hashtbl.find h j with Not_found -> [] in
+      let x = try Hashtbl.find uses j with Not_found -> [] in
       List.iter (fun (j,_) -> add j) x
     end
   in
-  let x = try Hashtbl.find h i with Not_found -> [] in
+  let x = try Hashtbl.find uses i with Not_found -> [] in
   List.iter (fun (j,_) -> add j) x;
   !c
 
-let is_recursive_call h caller callee = BidSet.mem caller (cls h callee)
-let is_recursive h i = is_recursive_call h i i
+let is_recursive_call uses caller callee = BidSet.mem caller (cls uses callee)
+let is_recursive uses i = is_recursive_call uses i i
 
-let use_closure h i = cls h i
+let use_closure uses i = cls uses i
 
 (* this calculates the use closure of i, eliminating recursive
   calls to the base function by restricting references
@@ -220,20 +204,18 @@ let use_closure h i = cls h i
 
 *)
 
-let child_use_closure k h i =
+let child_use_closure k uses i =
   let c = ref BidSet.empty in
   let rec add j =
-    if not (BidSet.mem j !c) && BidSet.mem j k then
-    begin
+    if not (BidSet.mem j !c) && BidSet.mem j k then begin
       c := BidSet.add j !c;
-      let x = try Hashtbl.find h j with Not_found -> [] in
+      let x = try Hashtbl.find uses j with Not_found -> [] in
       List.iter (fun (j,_) -> add j) x
     end
   in
-    let x = try Hashtbl.find h i with Not_found -> [] in
-    List.iter (fun (j,_) ->  add j) x
-    ;
-    !c
+  let x = try Hashtbl.find uses i with Not_found -> [] in
+  List.iter (fun (j,_) -> add j) x;
+  !c
 
 let call_report syms bsym_table (uses,usedby) f k =
   let si = string_of_int in
