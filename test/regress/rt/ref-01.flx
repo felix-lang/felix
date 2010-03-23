@@ -33,7 +33,6 @@ call g$ b, b;
 
 noinline proc r(x:int, ref y:int)
 {
-  var z = case 1 of (int + long);
   print$ y; endl;
   y++;
   print $y; endl;
@@ -41,7 +40,6 @@ noinline proc r(x:int, ref y:int)
 
 inline proc s(x:int, ref y:int)
 {
-  var z = case 1 of (int + long);
   print$ y; endl;
   y++;
   print $y; endl;
