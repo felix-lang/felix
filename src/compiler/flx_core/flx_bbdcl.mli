@@ -89,7 +89,7 @@ val iter :
   ?f_bid:(Flx_types.bid_t -> unit) ->
   ?f_btype:(Flx_btype.t -> unit) ->
   ?f_bexpr:(Flx_bexpr.t -> unit) ->
-  ?f_bexe:(Flx_bexpr.t -> unit) ->
+  ?f_bexe:(Flx_bexe.t -> unit) ->
   t ->
   unit
 
@@ -99,7 +99,7 @@ val map :
   ?f_bid:(Flx_types.bid_t -> Flx_types.bid_t) ->
   ?f_btype:(Flx_btype.t -> Flx_btype.t) ->
   ?f_bexpr:(Flx_bexpr.t -> Flx_bexpr.t) ->
-  ?f_bexe:(Flx_bexpr.t -> Flx_bexpr.t) ->
+  ?f_bexe:(Flx_bexe.t -> Flx_bexe.t) ->
   t ->
   t
 
