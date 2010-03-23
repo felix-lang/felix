@@ -9,32 +9,6 @@ val find_roots:
   Flx_btype.biface_t list ->
   unit
 
-(*
-val uses_type:
-  sym_state_t ->
-  BidSet.t ref ->
-  Flx_bsym_table.t ->
-  bool -> (* count inits *)
-  Flx_btype.t ->
-  unit
-
-val uses_tbexpr:
-  sym_state_t ->
-  BidSet.t ref ->
-  Flx_bsym_table.t ->
-  bool -> (* count inits *)
-  Flx_bexpr.t ->
-  unit
-
-val uses:
-  sym_state_t ->
-  BidSet.t ref ->
-  Flx_bsym_table.t ->
-  bool -> (* true to count initialisations as uses *)
-  int ->
-  unit
-*)
-
 (* counts initialisation as use *)
 val full_use_closure_for_symbols:
   Flx_mtypes2.sym_state_t ->
