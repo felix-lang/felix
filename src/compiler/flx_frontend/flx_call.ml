@@ -41,88 +41,34 @@ let rec uses_type uses sr parent t =
 
   | _ -> Flx_btype.iter ~f_btype t
 
-let rec cal_expr_usage uses sr parent e =
-  let ui i = add uses sr parent i in
-  let ut t = uses_type uses sr parent t in
-  Flx_bexpr.iter ~f_bid:ui ~f_btype:ut e
+let rec cal_expr_usage uses sr parent bexpr =
+  Flx_bexpr.iter
+    ~f_bid:(add uses sr parent)
+    ~f_btype:(uses_type uses sr parent)
+    bexpr
 
-and cal_exe_usage uses parent exe =
-  let sr = Flx_bexe.get_srcref exe in
-  let ue e = cal_expr_usage uses sr parent e in
-  let ui i = add uses sr parent i in
-  let ut t = uses_type uses sr parent t in
+and cal_exe_usage uses parent bexe =
+  let sr = Flx_bexe.get_srcref bexe in
 
-  (* We don't use cal_expr_usage on purpose, since that's it's really just a
-   * helper to recurse through the expr tree. *)
-  Flx_bexe.iter ~f_bid:ui ~f_btype:ut ~f_bexpr:ue exe
+  Flx_bexe.iter
+    ~f_bid:(add uses sr parent)
+    ~f_btype:(uses_type uses sr parent)
+    ~f_bexpr:(cal_expr_usage uses sr parent)
+    bexe
 
 let cal_param_usage uses sr parent {pindex=child;ptyp=t} =
   uses_type uses sr parent t;
   add uses sr parent child
 
-let cal_req_usage bsym_table uses sr parent reqs =
-  let ur (j,ts) =
-    if j = dummy_bid then faulty_req bsym_table parent
-    else add uses sr parent j
-  in
-  List.iter ur reqs
-
 let cal_bsym_usage bsym_table uses parent bsym =
-  let ut t = uses_type uses (Flx_bsym.sr bsym) parent t in
+  let sr = Flx_bsym.sr bsym in
 
-  match Flx_bsym.bbdcl bsym with
-  | BBDCL_invalid -> assert false
-  | BBDCL_module -> ()
-  | BBDCL_typeclass _ -> ()
-  | BBDCL_axiom -> ()
-  | BBDCL_lemma -> ()
-  | BBDCL_reduce -> ()
-
-  | BBDCL_procedure (_,_,(ps,_),exes)
-  | BBDCL_function (_,_,(ps,_),_,exes) ->
-      List.iter (cal_param_usage uses (Flx_bsym.sr bsym) parent) ps;
-      List.iter (cal_exe_usage uses parent) exes
-
-  | BBDCL_newtype (_,t) -> ut t
-  | BBDCL_abs (_,_,_,reqs) ->
-      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) parent reqs
-  | BBDCL_const (_,_,t,_,reqs) ->
-      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) parent reqs
-  | BBDCL_proc (_,_,ps,_, reqs) ->
-      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) parent reqs;
-      List.iter ut ps
-  | BBDCL_fun (_,_,ps,ret,_, reqs,_) ->
-      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) parent reqs;
-      List.iter ut ps;
-      ut ret
-  | BBDCL_insert (_,_,_,reqs) ->
-      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) parent reqs
-  | BBDCL_instance (_,_,cons,i,ts) ->
-      (* we dont add the type constraint, since it
-      is only used for instance selection
-      *)
-      add uses (Flx_bsym.sr bsym) parent i;
-      List.iter ut ts
-
-  | BBDCL_nonconst_ctor (_,_,unt,_,ct, evs, etraint) ->
-      ut unt;
-      ut ct
-
-  | BBDCL_union _  -> ()
-
-  | BBDCL_cstruct (_,ps)
-  | BBDCL_struct (_,ps) ->
-      List.iter ut (List.map snd ps)
-
-  | BBDCL_val (_,t)
-  | BBDCL_var (_,t)
-  | BBDCL_tmp (_,t) -> ut t
-  | BBDCL_ref (_,t) -> ut (btyp_pointer t)
-  | BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
-      List.iter ut ps_cf;
-      List.iter ut ps_c;
-      ut ret;
-      cal_req_usage bsym_table uses (Flx_bsym.sr bsym) parent reqs
+  Flx_bbdcl.iter
+    ~f_bid:(add uses sr parent)
+    ~f_btype:(uses_type uses sr parent)
+    ~f_bexpr:(cal_expr_usage uses sr parent)
+    ~f_bexe:(cal_exe_usage uses parent)
+    (Flx_bsym.bbdcl bsym)
 
 let call_data bsym_table =
   let uses = Hashtbl.create 97 in
