@@ -664,11 +664,8 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
           t' is the function type of the constructor,
           t'' is the type of the argument
        *)
-       let
-         arg_typename = tn t''
-       and
-         union_typename = tn t
-       in
+       let arg_typename = tn t'' in
+       let union_typename = tn t in
        let aval =
          "new (*PTF gcp, "^arg_typename^"_ptr_map,true) " ^
          arg_typename ^ "(" ^ ge_arg (a,t'') ^ ")"
