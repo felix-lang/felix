@@ -46,9 +46,6 @@ let rec uses_btype used bsym_table count_inits t =
 
   | _ -> Flx_btype.iter ~f_btype t
 
-and uses_bexes used bsym_table count_inits exes =
-  List.iter (uses_bexe used bsym_table count_inits) exes
-
 and uses_bexe used bsym_table count_inits exe =
   let f_bexpr e = uses_bexpr used bsym_table count_inits e in
 
@@ -78,35 +75,7 @@ and uses_bexpr used bsym_table count_inits ((e,t) as x) =
     ~f_btype:(uses_btype used bsym_table count_inits)
     x
 
-and uses_production used bsym_table count_inits p =
-  let uses_symbol (_,nt) = match nt with
-  | `Nonterm ii -> List.iter (uses used bsym_table count_inits) ii
-  | `Term i -> () (* HACK! This is a union constructor name  we need to 'use' the union type!! *)
-  in
-  List.iter uses_symbol p
-
-and faulty_req bsym_table i =
-  let bsym = Flx_bsym_table.find bsym_table i in
-  clierr
-    (Flx_bsym.sr bsym)
-    (Flx_bsym.id bsym ^ " is used but has unsatisfied requirement")
-
 and uses used bsym_table count_inits i =
-  let ui i = uses used bsym_table count_inits i in
-  let ut t = uses_btype used bsym_table count_inits t in
-  let rq reqs =
-    let ur (j,ts) =
-      if j = dummy_bid then
-        faulty_req bsym_table i
-      else begin
-        ui j;
-        List.iter ut ts
-      end
-    in
-    List.iter ur reqs
-  in
-  let ux x = uses_bexes used bsym_table count_inits x in
-  let ue e = uses_bexpr used bsym_table count_inits e in
   if not (BidSet.mem i !used) then begin
     let bbdcl =
       try Some (Flx_bsym_table.find_bbdcl bsym_table i)
@@ -114,63 +83,14 @@ and uses used bsym_table count_inits i =
     in
     match bbdcl with
     | Some bbdcl ->
-      used := BidSet.add i !used;
-      begin match bbdcl with
-      | BBDCL_invalid -> assert false
-      | BBDCL_module -> ()
-
-      | BBDCL_typeclass _ -> ()
-      | BBDCL_axiom -> ()
-      | BBDCL_lemma -> ()
-      | BBDCL_reduce -> ()
-
-      | BBDCL_instance (_,_,con,i,ts) ->
-        ut con;
-        List.iter ut ts
-
-      | BBDCL_function (props,_,(ps,traint),ret,exes) ->
-        List.iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
-        ut ret;
-        ux exes
-
-      | BBDCL_procedure (props,_,(ps,traint), exes) ->
-        List.iter (fun {pindex=i;ptyp=t} -> ui i; ut t) ps;
-        ux exes
-
-      | BBDCL_union (_,ps)
-        -> ()
-
-        (* types of variant arguments are only used if constructed
-          .. OR ..  matched against ??
-        *)
-
-      | BBDCL_cstruct (_,ps)
-      | BBDCL_struct (_,ps) ->
-        List.iter ut (List.map snd ps)
-
-      | BBDCL_val (_,t)
-      | BBDCL_var (_,t)
-      | BBDCL_tmp (_,t) -> ut t
-
-      | BBDCL_ref (_,t) -> ut (btyp_pointer t)
-
-      | BBDCL_const (_,_,t,_,reqs) -> ut t; rq reqs
-      | BBDCL_fun (_,_,ps, ret, _,reqs,_) -> List.iter ut ps; ut ret; rq reqs
-
-      | BBDCL_callback (_,_,ps_cf, ps_c, _, ret, reqs,_) ->
-        List.iter ut ps_cf;
-        List.iter ut ps_c;
-        ut ret; rq reqs
-
-      | BBDCL_proc (_,_,ps, _, reqs)  -> List.iter ut ps; rq reqs
-
-      | BBDCL_newtype (_,t) -> ut t
-      | BBDCL_abs (_,_,_,reqs) -> rq reqs
-      | BBDCL_insert (_,s,ikind,reqs)  -> rq reqs
-      | BBDCL_nonconst_ctor (_,_,unt,_,ct,evs, etraint) ->
-        ut unt; ut ct
-
-      end
+        used := BidSet.add i !used;
+        Flx_bbdcl.iter
+          ~f_bid:(uses used bsym_table count_inits)
+          ~f_btype:(uses_btype used bsym_table count_inits)
+          ~f_bexpr:(uses_bexpr used bsym_table count_inits)
+          ~f_bexe:(uses_bexe used bsym_table count_inits)
+          bbdcl
+      
     | None ->
         failwith ("[Flx_use.uses] Cannot find bound defn for <" ^
           string_of_bid i ^ ">")
