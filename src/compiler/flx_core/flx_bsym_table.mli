@@ -47,6 +47,12 @@ val find_children : t -> Flx_types.bid_t -> Flx_types.BidSet.t
 (** Finds all the descendants of the given symbol. *)
 val find_descendants: t -> Flx_types.bid_t -> Flx_types.BidSet.t
 
+(** Searches the bound symbol table for all the users of this symbol. *)
+val find_users : t -> Flx_types.bid_t -> Flx_types.BidSet.t
+
+(** Searches the bound symbol table for all the uses of this symbol. *)
+val find_uses : t-> Flx_types.bid_t -> Flx_types.BidSet.t
+
 (** Searches the bound symbol table for the given symbol's id. *)
 val find_id : t -> Flx_types.bid_t -> string
 

@@ -2,6 +2,7 @@ type elt = {
   bsym: Flx_bsym.t;               (** The symbol. *)
   parent: Flx_types.bid_t option; (** The parent of the symbol. *)
   children: Flx_types.BidSet.t;   (** All of this symbol's children. *)
+  users: Flx_types.BidSet.t;      (** All the users of this symbol. *)
 }
 
 (** The type of the bound symbol table. *)
@@ -41,6 +42,20 @@ let rec find_descendants bsym_table bid =
     d := Flx_types.BidSet.union !d (find_descendants bsym_table bid)
   end children;
   !d
+
+(** Searches the bound symbol table for all the users of this symbol. *)
+let find_users bsym_table bid = (find_elt bsym_table bid).users
+
+(** Searches the bound symbol table for all the uses of this symbol. *)
+let find_uses bsym_table bid =
+  let elt = find_elt bsym_table bid in
+  let uses = ref Flx_types.BidSet.empty in
+
+  Flx_bbdcl.iter_uses begin fun bid ->
+    uses := Flx_types.BidSet.add bid !uses
+  end (Flx_bsym.bbdcl elt.bsym);
+
+  !uses
 
 (** Searches the bound symbol table for the given symbol's id. *)
 let find_id bsym_table bid = Flx_bsym.id (find bsym_table bid)
@@ -83,6 +98,34 @@ let remove_bid_from_parent bsym_table parent bid =
       with Not_found ->
         ()
 
+(** Helper to add a bid to the use list of another symbol. *)
+let add_use_to_bsym bsym_table user use =
+  assert (user != use);
+  assert (mem bsym_table use);
+
+  let elt = find_elt bsym_table use in
+  let users = Flx_types.BidSet.add user elt.users in
+  replace_elt bsym_table use { elt with users=users }
+
+(* Find all the bids that this bsym uses, and let them know that we're using
+ * them. *)
+let add_use_to_bsyms bsym_table bid bbdcl =
+  Flx_bbdcl.iter_uses (add_use_to_bsym bsym_table bid) bbdcl
+
+(** Helper to remove a bid from the use list of another symbol. *)
+let remove_use_from_bsym bsym_table user use =
+  assert (user != use);
+  assert (mem bsym_table use);
+
+  let elt = find_elt bsym_table use in
+  let users = Flx_types.BidSet.remove user elt.users in
+  replace_elt bsym_table use { elt with users=users }
+
+(* Find all the bids that this bsym uses, and let them know that we're no longer
+ * using them. *)
+let remove_use_from_bsyms bsym_table bid bbdcl =
+  Flx_bbdcl.iter_uses (remove_use_from_bsym bsym_table bid) bbdcl
+
 (** Adds the bound symbol with the index to the symbol table. *)
 let add bsym_table parent bid bsym =
   assert (match parent with None -> true | Some p -> mem bsym_table p);
@@ -91,10 +134,14 @@ let add bsym_table parent bid bsym =
   (* Add this child to the parent's child list, or to the root list.*)
   add_bid_to_parent bsym_table parent bid;
 
+  (* Add this child to the use list of all the symbols it uses. *)
+  add_use_to_bsyms bsym_table bid (Flx_bsym.bbdcl bsym);
+
   (* Then, add the child. *)
   replace_elt bsym_table bid {
     parent=parent;
     children=Flx_types.BidSet.empty;
+    users=Flx_types.BidSet.empty;
     bsym=bsym }
 
 (** Adds a root bound symbol with the index to the symbol table. *)
@@ -107,6 +154,17 @@ let add_child bsym_table parent bid bsym = add bsym_table (Some parent) bid bsym
  * relationships. *)
 let update bsym_table bid bsym =
   let elt = find_elt bsym_table bid in
+  let old_bbdcl = Flx_bsym.bbdcl elt.bsym in
+  let new_bbdcl = Flx_bsym.bbdcl bsym in
+
+  if old_bbdcl != new_bbdcl then begin
+    (* Since the bsym has a different bbdcl, we need to remove ourselves from
+     * all the user lists then re-add ourselves to the new use lists. *)
+
+    remove_use_from_bsyms bsym_table bid old_bbdcl;
+    add_use_to_bsyms bsym_table bid new_bbdcl;
+  end;
+
   replace_elt bsym_table bid { elt with bsym=bsym }
 
 (** Update a bound symbol's bbdcl in place. *)
@@ -120,8 +178,14 @@ let rec remove bsym_table bid =
   if not (mem bsym_table bid) then () else begin
     let elt = find_elt bsym_table bid in
 
+    (* Make sure no one is using this symbol. *)
+    assert (Flx_types.BidSet.is_empty elt.users);
+
     (* Remove ourselves from our parent. *)
     remove_bid_from_parent bsym_table elt.parent bid;
+
+    (* Remove ourselves from the use lists. *)
+    remove_use_from_bsyms bsym_table bid (Flx_bsym.bbdcl elt.bsym);
 
     (* And then remove the actual symbol from the symbol table. *)
     Hashtbl.remove bsym_table.table bid;

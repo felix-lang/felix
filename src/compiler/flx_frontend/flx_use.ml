@@ -213,9 +213,15 @@ let copy_used syms bsym_table =
             end else None
       in
 
+      let bsym = Flx_bsym_table.find bsym_table bid in
+
+      (* Try to add the uses if it's in the use list. *)
+      Flx_bsym.iter_uses begin fun use ->
+        if Flx_types.BidSet.mem use bidset then aux use
+      end bsym;
+
       (* Finally, add the symbol to the root. *)
-      Flx_bsym_table.add new_bsym_table parent bid
-        (Flx_bsym_table.find bsym_table bid)
+      Flx_bsym_table.add new_bsym_table parent bid bsym
     end
   in
 
