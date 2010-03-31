@@ -53,7 +53,7 @@ let rec check_recursion t = match t with
    | BTYP_fix i
      -> raise Bad_recursion
 
-   | x -> Flx_btype.iter ~f_btype:check_recursion x
+   | x -> Flx_btype.flat_iter ~f_btype:check_recursion x
 
 let var_subst t (i, j) =
   let rec f_btype t =
@@ -226,7 +226,7 @@ let var_i_occurs i t =
   let rec f_btype t =
     match t with
     | BTYP_type_var (j,_) when i = j -> raise Not_found
-    | _ -> Flx_btype.iter ~f_btype t
+    | _ -> Flx_btype.flat_iter ~f_btype t
  in
    try
      f_btype t;
@@ -239,7 +239,7 @@ let rec vars_in t =
   let rec f_btype t =
     match t with
     | BTYP_type_var (i,_) -> add_var i
-    | _ -> Flx_btype.iter ~f_btype t
+    | _ -> Flx_btype.flat_iter ~f_btype t
   in
   f_btype t;
   !vs

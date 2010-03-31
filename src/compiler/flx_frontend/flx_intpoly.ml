@@ -35,7 +35,7 @@ let rec check_abstract_type syms rls t =
       *)
       rls := remove i !rls;
       if !rls = [] then raise Not_found
-  | t' -> Flx_btype.iter ~f_btype:(check_abstract_type syms rls) t'
+  | t' -> Flx_btype.flat_iter ~f_btype:(check_abstract_type syms rls) t'
 
 (* note this routine doesn't check types in ts lists, because
  * these apply to variables including parameters as qualifiers:

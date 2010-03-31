@@ -150,8 +150,8 @@ val int_of_unitsum : t -> int
 
 (* -------------------------------------------------------------------------- *)
 
-(** Recursively iterate over each bound type and call the function on it. *)
-val iter :
+(** Iterate over each bound type and call the function on it. *)
+val flat_iter :
   ?f_bid:(Flx_types.bid_t -> unit) ->
   ?f_btype:(t -> unit) ->
   t ->

@@ -39,7 +39,7 @@ let rec uses_type uses sr parent t =
       add uses sr parent i;
       List.iter f_btype ts
 
-  | _ -> Flx_btype.iter ~f_btype t
+  | _ -> Flx_btype.flat_iter ~f_btype t
 
 let rec cal_expr_usage uses sr parent bexpr =
   Flx_bexpr.iter

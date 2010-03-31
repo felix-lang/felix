@@ -44,7 +44,7 @@ let rec uses_btype used bsym_table count_inits t =
       uses used bsym_table count_inits i;
       List.iter f_btype ts
 
-  | _ -> Flx_btype.iter ~f_btype t
+  | _ -> Flx_btype.flat_iter ~f_btype t
 
 and uses_bexe used bsym_table count_inits exe =
   let f_bexpr e = uses_bexpr used bsym_table count_inits e in

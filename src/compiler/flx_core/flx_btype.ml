@@ -210,8 +210,8 @@ let int_of_unitsum t = match t with
 
 (* -------------------------------------------------------------------------- *)
 
-(** Recursively iterate over each bound type and call the function on it. *)
-let iter
+(** Iterate over each bound type and call the function on it. *)
+let flat_iter
   ?(f_bid=fun _ -> ())
   ?(f_btype=fun _ -> ())
   btype
