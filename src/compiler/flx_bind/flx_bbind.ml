@@ -115,9 +115,7 @@ let bind_qual bt qual = match qual with
 let bind_quals bt quals = map (bind_qual bt) quals
 
 let rec bbind_symbol state bsym_table symbol_index sym =
-  if Flx_bsym_table.mem bsym_table symbol_index
-  then Some (Flx_bsym_table.find bsym_table symbol_index)
-  else
+  if Flx_bsym_table.mem bsym_table symbol_index then () else
 
   let qname = qualified_name_of_index state.sym_table symbol_index in
   let true_parent = find_true_parent
@@ -248,16 +246,15 @@ let rec bbind_symbol state bsym_table symbol_index sym =
         Flx_bsym_table.add_root bsym_table symbol_index bsym
     | Some parent ->
         let parent_sym = Flx_sym_table.find state.sym_table parent in
-        ignore (bbind_symbol state bsym_table parent parent_sym);
+        bbind_symbol state bsym_table parent parent_sym;
 
         Flx_bsym_table.add_child bsym_table parent symbol_index bsym
-    end;
-    Some bsym
+    end
   in
   begin match sym.Flx_sym.symdef with
   (* Pure declarations of functions, modules, and type don't generate anything.
    * Variable dcls do, however. *)
-  | SYMDEF_typevar _ -> None
+  | SYMDEF_typevar _ -> ()
 
   | SYMDEF_module ->
     add_bsym true_parent (bbdcl_module ())
@@ -684,9 +681,9 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     *)
     add_bsym true_parent (bbdcl_instance ([], bvs, bcons, k, ts))
 
-  | SYMDEF_type_alias _ -> None
-  | SYMDEF_inherit _ -> None
-  | SYMDEF_inherit_fun _ -> None
+  | SYMDEF_type_alias _ -> ()
+  | SYMDEF_inherit _ -> ()
+  | SYMDEF_inherit_fun _ -> ()
 
   | SYMDEF_abs (quals,ct,reqs)->
     (*
@@ -735,7 +732,7 @@ let bbind state bsym_table =
               failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
           end;
           *)
-          ignore (bbind_symbol state bsym_table i entry)
+          bbind_symbol state bsym_table i entry
         with Not_found ->
           try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
             failwith ("Binding error, cannot find in table: " ^ id ^ " index " ^

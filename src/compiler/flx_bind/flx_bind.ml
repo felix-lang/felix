@@ -62,16 +62,8 @@ let make_toplevel_bind_state syms =
   let init_sym = Flx_sym_table.find sym_table init_index in
 
   (* Bind the module and init function. *)
-  ignore (Flx_bbind.bbind_symbol
-    bbind_state
-    bsym_table
-    module_index
-    module_sym);
-  ignore (Flx_bbind.bbind_symbol
-    bbind_state
-    bsym_table
-    init_index
-    init_sym);
+  Flx_bbind.bbind_symbol bbind_state bsym_table module_index module_sym;
+  Flx_bbind.bbind_symbol bbind_state bsym_table init_index   init_sym;
 
   {
     syms = syms;

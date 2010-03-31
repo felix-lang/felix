@@ -17,7 +17,7 @@ val bbind_symbol:
   Flx_bsym_table.t ->
   Flx_types.bid_t ->
   Flx_sym.t ->
-  Flx_bsym.t option
+  unit
 
 (* Bind all the symbols in the symtab. *)
 val bbind:
