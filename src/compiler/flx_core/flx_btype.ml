@@ -256,6 +256,17 @@ let flat_iter
   | BTYP_type_set_intersection ts -> List.iter f_btype ts
 
 
+(** Recursively iterate over each bound type and call the function on it. *)
+let rec iter
+  ?(f_bid=fun _ -> ())
+  ?(f_btype=fun _ -> ())
+  btype
+=
+  f_btype btype;
+  let f_btype btype = iter ~f_bid ~f_btype btype in
+  flat_iter ~f_bid ~f_btype btype
+
+
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
 let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function

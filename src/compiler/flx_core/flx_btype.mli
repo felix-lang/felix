@@ -157,6 +157,13 @@ val flat_iter :
   t ->
   unit
 
+(** Recursively iterate over each bound type and call the function on it. *)
+val iter :
+  ?f_bid:(Flx_types.bid_t -> unit) ->
+  ?f_btype:(t -> unit) ->
+  t ->
+  unit
+
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
 val map :
