@@ -112,10 +112,9 @@ let fresh_bid counter =
   incr counter;
   bid
 
-let iter_bids f counter start_bid =
-  let bid = !counter in
-  for i = start_bid to bid do
-    f i
+let iter_bids f start_bid end_bid =
+  for bid = start_bid to end_bid do
+    f bid
   done
 
 module TypecodeSet = Set.Make(

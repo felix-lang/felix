@@ -91,7 +91,7 @@ val fresh_bid: Flx_types.bid_t ref -> Flx_types.bid_t
 
 val iter_bids:
   (Flx_types.bid_t -> unit) ->
-  Flx_types.bid_t ref ->
+  Flx_types.bid_t ->
   Flx_types.bid_t ->
   unit
 

@@ -138,7 +138,7 @@ let bind_asm state bsym_table handle_bound init asm =
           i
           s)
     end
-  end state.syms.Flx_mtypes2.counter initial_index;
+  end initial_index !(state.syms.Flx_mtypes2.counter);
 
   (* Now that we've bound all the symbols, we can downgrade the types. *)
   let init = ref init in
@@ -159,7 +159,7 @@ let bind_asm state bsym_table handle_bound init asm =
             i
             s
     end
-  end state.syms.Flx_mtypes2.counter initial_index;
+  end initial_index !(state.syms.Flx_mtypes2.counter);
 
   (* Finally, pass on the bound symbols to the client. *)
   Flx_mtypes2.iter_bids begin fun i ->
@@ -174,7 +174,7 @@ let bind_asm state bsym_table handle_bound init asm =
         (* ... and finally pass the symbol to the client *)
         init := handle_bound !init (Bound_symbol (i, s));
     end
-  end state.syms.Flx_mtypes2.counter initial_index;
+  end initial_index !(state.syms.Flx_mtypes2.counter);
 
   (* Return the folded value. *)
   !init

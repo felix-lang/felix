@@ -745,7 +745,7 @@ let bbind state bsym_table =
         end
       | None -> ()
     end
-  end state.syms.counter dummy_bid
+  end dummy_bid !(state.syms.counter)
 
 let bind_interface (state:bbind_state_t) bsym_table = function
   | sr, IFACE_export_fun (sn, cpp_name), parent ->
