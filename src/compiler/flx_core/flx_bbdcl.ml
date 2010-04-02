@@ -346,7 +346,49 @@ let iter_uses f bbdcl =
   let f_btype = Flx_btype.flat_iter ~f_bid:f in
   let f_bexpr = Flx_bexpr.iter ~f_bid:f ~f_btype in
   let f_bexe = Flx_bexe.iter ~f_bid:f ~f_btype ~f_bexpr in
-  iter ~f_bid:f ~f_btype ~f_bexpr ~f_bexe bbdcl
+  let f_ps (ps,traint) =
+    List.iter begin fun p ->
+      f_btype p.Flx_bparameter.ptyp
+    end ps;
+    match traint with Some e -> f_bexpr e | None -> ()
+  in
+  let f_breqs =
+    List.iter begin fun (bid,ts) ->
+      List.iter f_btype ts
+    end
+  in
+  let f_btype_qual = function
+    | #base_type_qual_t -> ()
+    | `Bound_needs_shape t -> f_btype t
+  in
+  match bbdcl with
+  | BBDCL_function (_,_,ps,res,_) ->
+      f_ps ps;
+      f_btype res
+  | BBDCL_procedure (_,_,ps,_) ->
+      f_ps ps
+  | BBDCL_abs (_,quals,_,breqs) ->
+      List.iter f_btype_qual quals;
+      f_breqs breqs
+  | BBDCL_const (_,_,t,_,breqs) ->
+      f_btype t;
+      f_breqs breqs
+  | BBDCL_fun (_,_,ps,rt,_,breqs,_) ->
+      List.iter f_btype ps;
+      f_btype rt;
+      f_breqs breqs
+  | BBDCL_callback (_,_,ps_cf,ps_c,_,rt,breqs,_) ->
+      List.iter f_btype ps_cf;
+      List.iter f_btype ps_c;
+      f_btype rt;
+      f_breqs breqs
+  | BBDCL_proc (_,_,ps,_,breqs) ->
+      List.iter f_btype ps;
+      f_breqs breqs
+  | BBDCL_insert (_,_,_,breqs) ->
+      f_breqs breqs
+  | _ ->
+      iter ~f_bid:f ~f_btype ~f_bexpr ~f_bexe bbdcl
 
 (* -------------------------------------------------------------------------- *)
 
