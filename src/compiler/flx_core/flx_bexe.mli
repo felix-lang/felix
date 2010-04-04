@@ -65,6 +65,11 @@ val get_srcref : t -> Flx_srcref.t
 
 (* -------------------------------------------------------------------------- *)
 
+(** Returns whether or not this executable is terminating. *)
+val is_terminating : t -> bool
+
+(* -------------------------------------------------------------------------- *)
+
 (** Recursively iterate over each bound exe and call the function on it. *)
 val iter :
   ?f_bid:(Flx_types.bid_t -> unit) ->

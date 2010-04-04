@@ -92,6 +92,16 @@ let get_srcref = function
 
 (* -------------------------------------------------------------------------- *)
 
+(** Returns whether or not this executable is terminating. *)
+let is_terminating = function
+  | BEXE_halt _ 
+  | BEXE_fun_return _
+  | BEXE_proc_return _
+  | BEXE_nonreturn_code _ -> true
+  | _ -> false
+
+(* -------------------------------------------------------------------------- *)
+
 (** Recursively iterate over each bound exe and call the function on it. *)
 let iter
   ?(f_bid=fun _ -> ())
