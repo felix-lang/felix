@@ -163,6 +163,13 @@ let get_bvs = function
 
 (* -------------------------------------------------------------------------- *)
 
+(** Return whether or not the bound declaration is valid. *)
+let is_valid = function
+  | BBDCL_invalid -> false
+  | _ -> true
+
+(* -------------------------------------------------------------------------- *)
+
 let iter
   ?(f_bid=fun _ -> ())
   ?(f_btype=fun _ -> ())

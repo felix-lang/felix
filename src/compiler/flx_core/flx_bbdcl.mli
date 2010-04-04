@@ -83,6 +83,11 @@ val get_bvs : t -> bvs_t
 
 (* -------------------------------------------------------------------------- *)
 
+(** Return whether or not the bound declaration is valid. *)
+val is_valid : t -> bool
+
+(* -------------------------------------------------------------------------- *)
+
 (** Recursively iterate over each bound declaration and call the function on
  * it. *)
 val iter :
