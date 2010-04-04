@@ -208,3 +208,19 @@ let update_bexes f bsym_table =
 
     | _ -> ()
   end bsym_table
+
+(** Assert that the bound symbol table is well formed. *)
+let validate bsym_table =
+  iter begin fun bid bsym ->
+    let bbdcl = Flx_bsym.bbdcl bsym in
+
+    (* Make sure we don't have any invalid bbdcls *)
+    assert (Flx_bbdcl.is_valid bbdcl);
+
+    (* Make sure the referenced bid is in the bsym_table. *)
+    let f_bid bid = assert (mem bsym_table bid) in
+    let f_btype = Flx_btype.iter ~f_bid in
+    let f_bexpr = Flx_bexpr.iter ~f_bid ~f_btype in
+    let f_bexe = Flx_bexe.iter ~f_bid ~f_btype ~f_bexpr in
+    Flx_bbdcl.iter ~f_bid ~f_btype ~f_bexpr ~f_bexe bbdcl
+  end bsym_table

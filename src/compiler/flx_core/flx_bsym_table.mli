@@ -94,3 +94,6 @@ val is_global_var : t -> Flx_types.bid_t -> bool
 
 (** Return if the bound symbol index is an identity function. *)
 val is_function : t -> Flx_types.bid_t -> bool
+
+(** Assert that the bound symbol table is well formed. *)
+val validate : t -> unit
