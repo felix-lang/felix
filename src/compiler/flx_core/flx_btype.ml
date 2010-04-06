@@ -248,7 +248,6 @@ let iter
       f_btype t;
       List.iter begin fun (tp, t) ->
         f_btype tp.pattern;
-        BidSet.iter f_bid tp.pattern_vars;
         List.iter (fun (i, t) -> f_bid i; f_btype t) tp.assignments;
         f_btype t
       end ps
@@ -293,8 +292,8 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_type_match (t,ps) ->
       let ps =
         List.map begin fun (tp, t) ->
-          { pattern = f_btype tp.pattern;
-            pattern_vars = BidSet.map f_bid tp.pattern_vars;
+          { tp with
+            pattern = f_btype tp.pattern;
             assignments = List.map
               (fun (i, t) -> f_bid i, f_btype t)
               tp.assignments },
