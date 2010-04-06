@@ -82,6 +82,9 @@ let get_bparams bsym =
 let get_bvs bsym =
   Flx_bbdcl.get_bvs bsym.bbdcl
 
+(** Calls the function over every bid inside the bound symbol. *)
+let iter_uses f bsym = Flx_bbdcl.iter_uses f bsym.bbdcl
+
 (** Prints a bound symbol to a formatter. *)
 let print f bsym =
   Flx_format.print_record7 f

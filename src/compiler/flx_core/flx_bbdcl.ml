@@ -341,6 +341,15 @@ let map
 
 (* -------------------------------------------------------------------------- *)
 
+(** Calls the function over every bid inside the bound symbol. *)
+let iter_uses f bbdcl =
+  let f_btype = Flx_btype.iter ~f_bid:f in
+  let f_bexpr = Flx_bexpr.iter ~f_bid:f ~f_btype in
+  let f_bexe = Flx_bexe.iter ~f_bid:f ~f_btype ~f_bexpr in
+  iter ~f_bid:f ~f_btype ~f_bexpr ~f_bexe bbdcl
+
+(* -------------------------------------------------------------------------- *)
+
 let print_btype_qual f = function
   | #base_type_qual_t as qual ->
       print_base_type_qual f qual
