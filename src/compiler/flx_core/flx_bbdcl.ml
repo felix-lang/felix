@@ -192,7 +192,7 @@ let iter
     | `Bound_needs_shape t -> f_btype t
   in
   match bbdcl with
-  | BBDCL_invalid -> assert false
+  | BBDCL_invalid -> ()
   | BBDCL_module -> ()
   | BBDCL_function (_,_,ps,res,es) ->
       f_ps ps;
@@ -273,7 +273,7 @@ let map
     | `Bound_needs_shape t -> `Bound_needs_shape (f_btype t)
   in
   match bbdcl with
-  | BBDCL_invalid -> assert false
+  | BBDCL_invalid -> bbdcl
   | BBDCL_module -> bbdcl
   | BBDCL_function (props,bvs,ps,res,es) ->
       BBDCL_function (props,bvs,f_ps ps,f_btype res,List.map f_bexe es)
