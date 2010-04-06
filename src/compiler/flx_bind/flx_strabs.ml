@@ -53,11 +53,7 @@ let fixbexe bsym_table x =
 let fixbexes bsym_table bexes = map (fixbexe bsym_table) bexes
 
 let fixps bsym_table (ps,traint) =
-  map
-  (fun {pkind=i;pid=s; pindex=j; ptyp=t} ->
-    {pkind=i; pid=s; pindex=j; ptyp=fixtype bsym_table t}
-  )
-  ps,
+  List.map (fun p -> { p with ptyp=fixtype bsym_table p.ptyp }) ps,
   (
   match traint with
   | None -> None

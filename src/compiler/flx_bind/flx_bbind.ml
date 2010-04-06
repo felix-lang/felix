@@ -48,9 +48,7 @@ let rec find_true_parent sym_table child parent =
   match parent with
   | None -> None
   | Some parent ->
-    match hfind "find_true_parent" sym_table parent with
-    | { Flx_sym.id=id; parent=grandparent; symdef=bdcl} ->
-      match bdcl with
+      match hfind "find_true_parent" sym_table parent with
       | _ -> Some parent
 
 let bind_req state bsym_table env sr tag =
@@ -188,6 +186,13 @@ let rec bbind_symbol state bsym_table symbol_index sym =
       sym.Flx_sym.sr
       t
   in
+  let type_of_index bid =
+    (* Bind the type. *)
+    Flx_lookup.type_of_index
+      state.lookup_state
+      bsym_table
+      bid
+  in
 
   (* this is the full vs list *)
   let ivs = find_vs state.sym_table bsym_table symbol_index in
@@ -223,9 +228,13 @@ let rec bbind_symbol state bsym_table symbol_index sym =
   let bind_basic_ps ps =
     List.map (fun (k,s,t,_) ->
       let i = find_param sym.Flx_sym.privmap s in
-      let t = let t = bt t in match k with `PRef -> btyp_pointer t | _ -> t in
-(*        print_endline ("Param " ^ s ^ " type=" ^ sbt state.bsym_table t); *)
-      {pid=s; pindex=i;pkind=k; ptyp=t}
+      let t =
+        let t = bt t in
+        match k with
+        | `PRef -> btyp_pointer t
+        | _ -> t
+      in
+      { pid=s; pindex=i; pkind=k; ptyp=t }
     )
     ps
   in
@@ -248,8 +257,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
   begin match sym.Flx_sym.symdef with
   (* Pure declarations of functions, modules, and type don't generate anything.
    * Variable dcls do, however. *)
-  | SYMDEF_typevar _
-    -> None
+  | SYMDEF_typevar _ -> None
 
   | SYMDEF_module ->
     add_bsym true_parent (bbdcl_module ())
@@ -313,11 +321,11 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     let bps = bindps ps in
     let ts = Flx_bparams.get_btypes bps in
     let brt = bt rt in
-    let brt', bbexes = bexes exes brt symbol_index bvs in
+    let brt, bbexes = bexes exes brt symbol_index bvs in
     let bbdcl =
-      match brt' with
+      match brt with
       | BTYP_void -> bbdcl_procedure (props,bvs,bps,bbexes)
-      | _ -> bbdcl_function (props,bvs,bps,brt',bbexes)
+      | _ -> bbdcl_function (props,bvs,bps,brt,bbexes)
     in
 
     (* Cache the type of the function. *)
@@ -325,8 +333,8 @@ let rec bbind_symbol state bsym_table symbol_index sym =
       let d = btyp_tuple ts in
       let ft =
         if mem `Cfun props
-        then btyp_cfunction (d,brt')
-        else btyp_function (d,brt')
+        then btyp_cfunction (d,brt)
+        else btyp_function (d,brt)
       in
       let t = fold state.syms.counter ft in
       Hashtbl.add state.syms.ticache symbol_index t
@@ -336,8 +344,8 @@ let rec bbind_symbol state bsym_table symbol_index sym =
       let atyp = btyp_tuple ts in
       let t =
         if mem `Cfun props
-        then btyp_cfunction (atyp,brt')
-        else btyp_function (atyp,brt')
+        then btyp_cfunction (atyp,brt)
+        else btyp_function (atyp,brt)
       in
       print_endline ("//bound function " ^ qname ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
@@ -356,12 +364,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
       | { Flx_sym.symdef=SYMDEF_lemma _}
       | { Flx_sym.symdef=SYMDEF_function _}
         ->
-        let t =
-          Flx_lookup.type_of_index
-            state.lookup_state
-            bsym_table
-            symbol_index
-        in
+        let t = type_of_index symbol_index in
         let bbdcl = match k with
         | `PVar -> bbdcl_var (bvs,t)
         | `PVal -> bbdcl_val (bvs,t)
@@ -383,11 +386,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     end
 
   | SYMDEF_match_check (pat,(mvname,mvindex)) ->
-    let t = Flx_lookup.type_of_index
-      state.lookup_state
-      bsym_table
-      mvindex
-    in
+    let t = type_of_index mvindex in
     let name_map = Hashtbl.create 97 in
     let exes =
       [
@@ -395,9 +394,9 @@ let rec bbind_symbol state bsym_table symbol_index sym =
         gen_match_check pat (EXPR_index (sym.Flx_sym.sr,mvname,mvindex)))
       ]
     in
-    let brt',bbexes = bexes exes flx_bbool symbol_index [] in
+    let brt,bbexes = bexes exes flx_bbool symbol_index [] in
 
-    if brt' <> flx_bbool then
+    if brt <> flx_bbool then
       failwith ("expected boolean return from match checker " ^ sym.Flx_sym.id ^
         " in\n" ^ Flx_srcref.short_string_of_src sym.Flx_sym.sr);
 
@@ -435,11 +434,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
         its
       | _ -> assert false
     in
-    let t = Flx_lookup.type_of_index
-      state.lookup_state
-      bsym_table
-      symbol_index
-    in
+    let t = type_of_index symbol_index in
     let ut = bt ut in
     let ct =
       if unit_sum then si ctor_idx
@@ -456,11 +451,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     (*
     print_endline ("Binding non const ctor " ^ sym.Flx_sym.id);
     *)
-    let t = Flx_lookup.type_of_index
-      state.lookup_state
-      bsym_table
-      symbol_index
-    in
+    let t = type_of_index symbol_index in
     let argt = bt argt in
     let ut = bt ut in
     let btraint = bind_type_constraint vs' in
@@ -472,12 +463,8 @@ let rec bbind_symbol state bsym_table symbol_index sym =
 
     add_bsym None (bbdcl_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt,evs,btraint))
 
-  | SYMDEF_val (t) ->
-    let t = Flx_lookup.type_of_index
-      state.lookup_state
-      bsym_table
-      symbol_index
-    in
+  | SYMDEF_val t ->
+    let t = type_of_index symbol_index in
 
     if state.syms.compiler_options.print_flag then
       print_endline ("//bound val " ^ sym.Flx_sym.id ^ "<" ^
@@ -486,12 +473,18 @@ let rec bbind_symbol state bsym_table symbol_index sym =
 
     add_bsym true_parent (bbdcl_val (bvs, t))
 
-  | SYMDEF_ref (t) ->
-    let t = Flx_lookup.type_of_index
-      state.lookup_state
-      bsym_table
-      symbol_index
-    in
+  | SYMDEF_var t ->
+    let t = type_of_index symbol_index in
+
+    if state.syms.compiler_options.print_flag then
+      print_endline ("//bound var " ^ sym.Flx_sym.id ^ "<" ^
+        string_of_bid symbol_index ^ ">" ^
+        print_bvs bvs ^ ":" ^ sbt bsym_table t);
+
+    add_bsym true_parent (bbdcl_var (bvs, t))
+
+  | SYMDEF_ref t ->
+    let t = type_of_index symbol_index in
 
     if state.syms.compiler_options.print_flag then
       print_endline ("//bound ref " ^ sym.Flx_sym.id ^ "<" ^
@@ -504,45 +497,24 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     let ps = [("dummy",`AST_void sym.Flx_sym.sr)],None in
     let exes = [sym.Flx_sym.sr, EXE_fun_return e] in
     let brt = bt rt in
-    let brt',bbexes = bexes exes brt symbol_index bvs in
+    let brt,bbexes = bexes exes brt symbol_index bvs in
     let props = [] in
 
     (* Cache the type of the lazy expression. *)
     if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
       (* HACK! *)
-      Hashtbl.add state.syms.ticache symbol_index brt'
+      Hashtbl.add state.syms.ticache symbol_index brt
     end;
 
     if state.syms.compiler_options.print_flag then
       print_endline ("//bound lazy " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt bsym_table brt');
+        print_bvs bvs ^ ":" ^ sbt bsym_table brt);
 
-    add_bsym true_parent (bbdcl_function (props,bvs,([],None),brt',bbexes))
-
-  | SYMDEF_var (t) ->
-    (*
-    print_endline ("Binding variable " ^ sym.Flx_sym.id ^"<"^ si i ^">");
-    *)
-    let t = Flx_lookup.type_of_index
-      state.lookup_state
-      bsym_table
-      symbol_index
-    in
-
-    if state.syms.compiler_options.print_flag then
-      print_endline ("//bound var " ^ sym.Flx_sym.id ^ "<" ^
-        string_of_bid symbol_index ^ ">" ^
-        print_bvs bvs ^ ":" ^ sbt bsym_table t);
-
-    add_bsym true_parent (bbdcl_var (bvs, t))
+    add_bsym true_parent (bbdcl_function (props,bvs,([],None),brt,bbexes))
 
   | SYMDEF_const (props,t,ct,reqs) ->
-    let t = Flx_lookup.type_of_index
-      state.lookup_state
-      bsym_table
-      symbol_index
-    in
+    let t = type_of_index symbol_index in
     let reqs = bind_reqs reqs in
 
     if state.syms.compiler_options.print_flag then
@@ -682,13 +654,13 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     let cs' = List.map (fun (n,v,vs',t) -> n, v,bt t) cs in
     add_bsym None (bbdcl_union (bvs, cs'))
 
-  | SYMDEF_struct (cs) ->
+  | SYMDEF_struct cs ->
     (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
     *)
     let cs' = List.map (fun (n,t) -> n, bt t) cs in
     add_bsym None (bbdcl_struct (bvs, cs'))
 
-  | SYMDEF_cstruct (cs) ->
+  | SYMDEF_cstruct cs ->
     (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
     *)
     let cs' = List.map (fun (n,t) -> n, bt t) cs in
