@@ -19,6 +19,9 @@ type bbind_state_t = {
   syms: Flx_mtypes2.sym_state_t;
   sym_table: Flx_sym_table.t;
   lookup_state: Flx_lookup.lookup_state_t;
+
+  (* Used to cache which symbols we've already processed. *)
+  visited: (Flx_types.bid_t, unit) Hashtbl.t;
 }
 
 (** The state needed for binding. *)
@@ -27,6 +30,7 @@ let make_bbind_state syms sym_table lookup_state =
     syms = syms;
     sym_table = sym_table;
     lookup_state = lookup_state;
+    visited = Hashtbl.create 97;
   }
 
 let hfind msg h k =
@@ -115,7 +119,10 @@ let bind_qual bt qual = match qual with
 let bind_quals bt quals = map (bind_qual bt) quals
 
 let rec bbind_symbol state bsym_table symbol_index sym =
-  if Flx_bsym_table.mem bsym_table symbol_index then () else
+  (* If we've already processed this bid, exit early. We do this so we can avoid
+   * any infinite loops in the symbols. *)
+  if Hashtbl.mem state.visited symbol_index then () else begin
+  Hashtbl.add state.visited symbol_index ();
 
   let qname = qualified_name_of_index state.sym_table symbol_index in
   let true_parent = find_true_parent
@@ -135,6 +142,14 @@ let rec bbind_symbol state bsym_table symbol_index sym =
   print_env_short env;
   *)
 
+  let bind_type_uses btype =
+    (* Iterate through the now bound type and make sure to bind any referenced
+     * bbdcls before continuing on. *)
+    Flx_btype.iter ~f_bid:begin fun bid ->
+      let sym = Flx_sym_table.find state.sym_table bid in
+      bbind_symbol state bsym_table bid sym
+    end btype
+  in
   let bexes exes ret_type index tvars =
     let bexe_state = Flx_bind_bexe.make_bexe_state
       ?parent:sym.Flx_sym.parent
@@ -145,7 +160,14 @@ let rec bbind_symbol state bsym_table symbol_index sym =
       tvars
       ret_type
     in
-    Flx_bind_bexe.bind_exes bexe_state bsym_table sym.Flx_sym.sr exes
+    let brt, bbexes = Flx_bind_bexe.bind_exes
+      bexe_state
+      bsym_table
+      sym.Flx_sym.sr
+      exes
+    in
+    bind_type_uses brt;
+    brt, bbexes
   in
   (*
   print_endline ("Binding " ^ name ^ "<"^ si symbol_index ^ ">");
@@ -176,7 +198,16 @@ let rec bbind_symbol state bsym_table symbol_index sym =
       env
       n
   in
-  let bt t =
+  let wrap_btype_uses f btype =
+    let btype = f btype in
+
+    bind_type_uses btype;
+
+    (* Finally, return the type we bound previously. *)
+    btype
+  in
+  let bt' t =
+    (* Bind the type. *)
     Flx_lookup.bind_type
       state.lookup_state
       bsym_table
@@ -184,12 +215,10 @@ let rec bbind_symbol state bsym_table symbol_index sym =
       sym.Flx_sym.sr
       t
   in
-  let type_of_index bid =
-    (* Bind the type. *)
-    Flx_lookup.type_of_index
-      state.lookup_state
-      bsym_table
-      bid
+  let bt = wrap_btype_uses bt' in
+  let type_of_index = wrap_btype_uses (Flx_lookup.type_of_index
+    state.lookup_state
+    bsym_table)
   in
 
   (* this is the full vs list *)
@@ -317,7 +346,9 @@ let rec bbind_symbol state bsym_table symbol_index sym =
   | SYMDEF_function (ps,rt,props,exes) ->
     let bps = bindps ps in
     let ts = Flx_bparams.get_btypes bps in
-    let brt = bt rt in
+
+    (* We don't need to bind the intermediary type. *)
+    let brt = bt' rt in
     let brt, bbexes = bexes exes brt symbol_index bvs in
     let bbdcl =
       match brt with
@@ -493,7 +524,9 @@ let rec bbind_symbol state bsym_table symbol_index sym =
   | SYMDEF_lazy (rt,e) ->
     let ps = [("dummy",`AST_void sym.Flx_sym.sr)],None in
     let exes = [sym.Flx_sym.sr, EXE_fun_return e] in
-    let brt = bt rt in
+
+    (* We don't need to bind the intermediary type. *)
+    let brt = bt' rt in
     let brt,bbexes = bexes exes brt symbol_index bvs in
     let props = [] in
 
@@ -672,6 +705,11 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     *)
     let (k:entry_kind_t),(ts: typecode_t list) = luqn qn in
     let k = sye k in
+
+    (* Make sure the typeclass is in the symbol table first. *)
+    let typeclass_sym = Flx_sym_table.find state.sym_table k in
+    bbind_symbol state bsym_table k typeclass_sym;
+
     (*
     print_endline ("binding ts = " ^ catmap "," string_of_typecode ts);
     *)
@@ -708,6 +746,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
   print_endline ("BINDING " ^ name ^ "<" ^ si i ^ "> COMPLETE");
   flush stdout
   *)
+  end
 
 let bbind state bsym_table =
   (* loop through all counter values [HACK]
