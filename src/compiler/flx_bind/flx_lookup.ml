@@ -1602,7 +1602,7 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
   end
 
 
-and base_typename_of_literal v = match v with
+and base_typename_of_literal = function
   | AST_int (t,_) -> t
   | AST_float (t,_) -> t
   | AST_string _ -> "string"
@@ -1610,52 +1610,55 @@ and base_typename_of_literal v = match v with
   | AST_wstring _ -> "wstring"
   | AST_ustring _ -> "string"
 
-and  type_of_literal state bsym_table env sr v =
+and type_of_literal state bsym_table env sr v =
   let _,_,root,_,_ = List.hd (List.rev env) in
   let name = base_typename_of_literal v in
   let t = TYP_name (sr,name,[]) in
   let bt = inner_bind_type state bsym_table env sr rsground t in
   bt
 
-and type_of_index' (state:lookup_state_t) bsym_table rs (index:bid_t) =
-    (*
-    let () = print_endline ("Top level type of index " ^ si index) in
-    *)
-    try
-      let t = Hashtbl.find state.syms.ticache index in
-      (*
-      let () = print_endline ("Cached .." ^ sbt bsym_table t) in
-      *)
-      t
-    with Not_found ->
-      let t = inner_type_of_index state bsym_table rs index in
-      (*
-      print_endline ("Type of index after inner "^ si index ^ " is " ^ sbt bsym_table t);
-      *)
-      let _ = try unfold t with _ ->
-        print_endline "type_of_index produced free fixpoint";
-        failwith ("[type_of_index] free fixpoint constructed for " ^ sbt bsym_table t)
-      in
-      let sr = try
-        match hfind "lookup" state.sym_table index with { Flx_sym.sr=sr }-> sr
-        with Not_found -> dummy_sr
-      in
-      let t = beta_reduce state.syms bsym_table sr t in
-      (match t with (* HACK .. *)
-      | BTYP_fix _ -> ()
-      | _ -> Hashtbl.add state.syms.ticache index t
-      );
-      t
+(* -------------------------------------------------------------------------- *)
 
+(** Wrapper around inner_type_of_index that tries to cache the calculated type
+ * for this index. *)
+and type_of_index' state bsym_table rs bid =
+  try
+    Hashtbl.find state.syms.ticache bid
+  with Not_found ->
+    let t = inner_type_of_index state bsym_table rs bid in
 
-and type_of_index_with_ts' state bsym_table rs sr (index:bid_t) ts =
-  (*
-  print_endline "OUTER TYPE OF INDEX with TS";
-  *)
-  let t = type_of_index' state bsym_table rs index in
-  let varmap = make_varmap state.sym_table bsym_table sr index ts in
+    (* Unfold any fixpoints. *)
+    let t = unfold t in
+
+    (* Beta reduce the type. *)
+    let sr =
+      try (hfind "lookup" state.sym_table bid).Flx_sym.sr
+      with Not_found -> dummy_sr
+    in
+    let t = beta_reduce state.syms bsym_table sr t in
+
+    (* Finally, cache the type. *)
+    Hashtbl.add state.syms.ticache bid t;
+
+    t
+
+(** Wrapper around inner_type_of_index that tries to cache the calculated type
+ * for this index, and then substitutes any type variables. *)
+and type_of_index_with_ts' state bsym_table rs sr bid ts =
+  let t = type_of_index' state bsym_table rs bid in
+
+  (* Make sure that we got the right number of type variables. *)
+  let pvs,vs,_ = find_split_vs state.sym_table bsym_table bid in
+  assert (List.length ts = List.length vs + List.length pvs);
+
+  (* Do any type substitutions. *)
+  let varmap = make_varmap state.sym_table bsym_table sr bid ts in
   let t = varmap_subst varmap t in
+
+  (* Beta reduce and return the type. *)
   beta_reduce state.syms bsym_table sr t
+
+(* -------------------------------------------------------------------------- *)
 
 (* This routine should ONLY 'fail' if the return type
   is indeterminate. This cannot usually happen.
@@ -1672,19 +1675,8 @@ and type_of_index_with_ts' state bsym_table rs sr (index:bid_t) ts =
 (* cal_ret_type uses the private name map *)
 (* args is string,btype list *)
 and cal_ret_type state bsym_table (rs:recstop) index args =
-  (*
-  print_endline ("[cal_ret_type] index " ^ si index);
-  print_endline ("expr_fixlist is " ^
-    catmap ","
-    (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]")
-    rs.expr_fixlist
-  );
-  *)
   let mkenv i = build_env state bsym_table (Some i) in
   let env = mkenv index in
-  (*
-  print_env_short env;
-  *)
   match (get_data state.sym_table index) with
   | { Flx_sym.id=id;
       sr=sr;
@@ -1693,29 +1685,14 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
       dirs=dirs;
       symdef=SYMDEF_function ((ps,_),rt,props,exes)
     } ->
-    (*
-    print_endline ("Calculate return type of " ^ id);
-    *)
     let rt = bind_type' state bsym_table env rs sr rt args mkenv in
     let rt = beta_reduce state.syms bsym_table sr rt in
     let ret_type = ref rt in
-    (*
-    begin match rt with
-    | BTYP_type_var (i,_) when i = index ->
-      print_endline "No return type given"
-    | _ ->
-      print_endline (" .. given type is " ^ sbt bsym_table rt)
-    end
-    ;
-    *)
     let return_counter = ref 0 in
     List.iter
     (fun exe -> match exe with
     | (sr,EXE_fun_return e) ->
       incr return_counter;
-      (*
-      print_endline ("  .. Handling return of " ^ string_of_expr e);
-      *)
       begin try
         let t =
           (* this is bad code .. we lose detection
@@ -1803,49 +1780,29 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
 
   | _ -> assert false
 
+(* -------------------------------------------------------------------------- *)
 
-and inner_type_of_index_with_ts
-  state
-  bsym_table
-  sr
-  rs
-  index
-  ts
-=
- (*
- print_endline ("Inner type of index with ts .. " ^ si index ^ ", ts=" ^ catmap "," (sbt bsym_table) ts);
- *)
- let t = inner_type_of_index state bsym_table rs index in
- let pvs,vs,_ = find_split_vs state.sym_table bsym_table index in
- (*
- print_endline ("#pvs=" ^ si (List.length pvs) ^ ", #vs="^si (List.length vs) ^", #ts="^
- si (List.length ts));
- *)
- (*
- let ts = adjust_ts state.sym_table sr index ts in
- print_endline ("#adj ts = " ^ si (List.length ts));
- let vs,_ = find_vs state.sym_table bsym_table index in
- assert (List.length vs = List.length ts);
- *)
- if (List.length ts != List.length vs + List.length pvs) then begin
-   print_endline ("#pvs=" ^ si (List.length pvs) ^
-     ", #vs="^si (List.length vs) ^", #ts="^
-     si (List.length ts)
-   );
-   print_endline ("#ts != #vs + #pvs")
- end
- ;
- assert (List.length ts = List.length vs + List.length pvs);
- let varmap = make_varmap state.sym_table bsym_table sr index ts in
- let t = varmap_subst varmap t in
- let t = beta_reduce state.syms bsym_table sr t in
- (*
- print_endline ("type_of_index=" ^ sbt bsym_table t);
- *)
- t
+(** Wrapper around inner_type_of_index that substitutes any type variables. *)
+and inner_type_of_index_with_ts state bsym_table sr rs bid ts =
+  try
+    type_of_index_with_ts' state bsym_table rs sr bid ts
+  with Free_fixpoint t ->
+    (* We don't care if the type is a free fixpoint, but that means we have to
+     * do all the type substitutions ourselves. *)
 
+    (* Make sure that we got the right number of type variables. *)
+    let pvs,vs,_ = find_split_vs state.sym_table bsym_table bid in
+    assert (List.length ts = List.length vs + List.length pvs);
 
-(* Convert a bound symbol into a bound type. *)
+    (* Do any type substitutions. *)
+    let varmap = make_varmap state.sym_table bsym_table sr bid ts in
+    let t = varmap_subst varmap t in
+
+    beta_reduce state.syms bsym_table sr t
+
+(* -------------------------------------------------------------------------- *)
+
+(** Convert a bound symbol into a bound type. *)
 and btype_of_bsym state bsym_table bt bid bsym =
   (* Helper function to convert function parameters to a type. *)
   let type_of_params params =
@@ -1899,46 +1856,24 @@ and btype_of_bsym state bsym_table bt bid bsym =
   | BBDCL_lemma -> assert false
   | BBDCL_reduce -> assert false
 
+(* -------------------------------------------------------------------------- *)
 
-(* this routine is called to find the type of a function
-or variable .. so there's no type_alias_fixlist ..
-*)
-and inner_type_of_index
-  state
-  bsym_table
-  rs
-  index
-=
-  (*
-  print_endline ("[inner_type_of_index] " ^ si index);
-  print_endline ("expr_fixlist is " ^
-    catmap ","
-    (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]")
-    rs.expr_fixlist
-  );
-  *)
+(** This routine is called to find the type of a function or variable.
+ * .. so there's no type_alias_fixlist .. *)
+and inner_type_of_index state bsym_table rs index =
+  (* Check if we've already cached this index. *)
+  try Hashtbl.find state.syms.ticache index with Not_found ->
 
-  (* check the cache *)
-  try Hashtbl.find state.syms.ticache index
-  with Not_found ->
-
-  (* check index recursion *)
-  if List.mem index rs.idx_fixlist
-  then btyp_fix (-rs.depth)
-  else begin
+  (* Check index recursion. If so, return a fix type. *)
+  if List.mem index rs.idx_fixlist then btyp_fix (-rs.depth) else
 
   let mkenv i = build_env state bsym_table (Some i) in
-  let env:env_t = mkenv index in
-  (*
-  print_endline ("Setting up env for " ^ si index);
-  print_env_short env;
-  *)
+  let env = mkenv index in
 
+  (* Helper function that binds and beta reduces a type. *)
   let bt sr t =
-    let t' =
-      bind_type' state bsym_table env rs sr t [] mkenv in
-    let t' = beta_reduce state.syms bsym_table sr t' in
-    t'
+    let t = bind_type' state bsym_table env rs sr t [] mkenv in
+    beta_reduce state.syms bsym_table sr t
   in
 
   (* First check if we've already bound this index. If so, return the type of
@@ -1949,11 +1884,8 @@ and inner_type_of_index
   | Some bsym -> btype_of_bsym state bsym_table bt index bsym
   | None ->
 
-  let { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; dirs=dirs; symdef=entry } =
-    get_data state.sym_table index
-  in
-
-  match entry with
+  let sym = get_data state.sym_table index in
+  match sym.Flx_sym.symdef with
   | SYMDEF_callback _ ->
       print_endline "Inner type of index finds callback";
       assert false
@@ -1964,118 +1896,94 @@ and inner_type_of_index
       failwith ("Woops inner_type_of_index found inherit fun!! " ^
         string_of_bid index)
   | SYMDEF_type_alias t ->
-    begin
-      let t = bt sr t in
-      let mt = Flx_metatype.metatype state.sym_table bsym_table sr t in
-      (*
-      print_endline ("Type of type alias is meta_type: " ^ sbt bsym_table mt);
-      *)
-      mt
-    end
+      let t = bt sym.Flx_sym.sr t in
+      Flx_metatype.metatype state.sym_table bsym_table sym.Flx_sym.sr t
 
-  | SYMDEF_function ((ps,_), rt,props,_) ->
-    let pts = List.map (fun(_,_,t,_)->t) ps in
-    let rt' =
-      try Hashtbl.find state.syms.varmap index with Not_found ->
-      cal_ret_type state bsym_table { rs with idx_fixlist = index::rs.idx_fixlist}
-      index []
-    in
-      (* this really isn't right .. need a better way to
-        handle indeterminate result .. hmm ..
-      *)
-      if var_i_occurs index rt' then begin
-        (*
-        print_endline (
-          "[type_of_index'] " ^
-          "function "^id^"<"^string_of_int index^
-          ">: Can't resolve return type, got : " ^
-          sbt bsym_table rt' ^
-          "\nPossibly each returned expression depends on the return type" ^
-          "\nTry adding an explicit return type annotation"
-        );
-        *)
-        raise (Unresolved_return (sr,
-        (
-          "[type_of_index'] " ^
-          "function " ^ id ^ "<" ^ string_of_bid index ^
-          ">: Can't resolve return type, got : " ^
-          sbt bsym_table rt' ^
-          "\nPossibly each returned expression depends on the return type" ^
-          "\nTry adding an explicit return type annotation"
-        )))
-      end else
-        let d = bt sr (type_of_list pts) in
-        let t =
-          if List.mem `Cfun props
-          then btyp_cfunction (d,rt')
-          else btyp_function (d, rt')
-        in
-        t
+  | SYMDEF_function ((ps,_),rt,props,_) ->
+      let pts = List.map (fun (_,_,t,_) -> t) ps in
+
+      (* Calculate the return type. *)
+      let rt =
+        (* First, check if we've already calculated it. *)
+        try Hashtbl.find state.syms.varmap index with Not_found ->
+          (* Nope! So let's and calculate it. Add ourselves to the fix list and
+           * recurse. *)
+          let rs = { rs with idx_fixlist = index::rs.idx_fixlist } in
+          cal_ret_type state bsym_table rs index []
+      in
+
+      (* this really isn't right .. need a better way to handle indeterminate
+       * result .. hmm .. *)
+      if var_i_occurs index rt then begin
+        raise (Unresolved_return (sym.Flx_sym.sr,
+          (
+            "[type_of_index'] " ^
+            "function " ^ sym.Flx_sym.id ^ "<" ^ string_of_bid index ^
+            ">: Can't resolve return type, got : " ^
+            sbt bsym_table rt ^
+            "\nPossibly each returned expression depends on the return type" ^
+            "\nTry adding an explicit return type annotation"
+          )))
+      end;
+
+      let d = bt sym.Flx_sym.sr (type_of_list pts) in
+
+      if List.mem `Cfun props
+      then btyp_cfunction (d, rt)
+      else btyp_function (d, rt)
 
   | SYMDEF_const (_,t,_,_)
-
   | SYMDEF_val t
-  | SYMDEF_var t -> bt sr t
-  | SYMDEF_ref t -> btyp_pointer (bt sr t)
+  | SYMDEF_var t -> bt sym.Flx_sym.sr t
+  | SYMDEF_ref t -> btyp_pointer (bt sym.Flx_sym.sr t)
 
   | SYMDEF_parameter (`PVal,t)
   | SYMDEF_parameter (`PFun,t)
-  | SYMDEF_parameter (`PVar,t) -> bt sr t
-  | SYMDEF_parameter (`PRef,t) -> btyp_pointer (bt sr t)
+  | SYMDEF_parameter (`PVar,t) -> bt sym.Flx_sym.sr t
+  | SYMDEF_parameter (`PRef,t) -> btyp_pointer (bt sym.Flx_sym.sr t)
 
-  | SYMDEF_const_ctor (_,t,_,_)
-    ->
-    (*
-    print_endline ("Calculating type of variable " ^ id);
-    *)
-    bt sr t
-
+  | SYMDEF_const_ctor (_,t,_,_) -> bt sym.Flx_sym.sr t
   | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
-    bt sr (TYP_function (argt,ut))
+      bt sym.Flx_sym.sr (TYP_function (argt,ut))
 
-  | SYMDEF_match_check _ ->
-    btyp_function (btyp_tuple [], flx_bbool)
+  | SYMDEF_match_check _ -> btyp_function (btyp_tuple [], flx_bbool)
 
   | SYMDEF_fun (_,pts,rt,_,_,_) ->
-    let t = TYP_function (type_of_list pts,rt) in
-    bt sr t
+      bt sym.Flx_sym.sr (TYP_function (type_of_list pts,rt))
 
   | SYMDEF_union _ ->
-    clierr sr ("Union "^id^" doesn't have a type")
+      clierr sym.Flx_sym.sr ("Union " ^ sym.Flx_sym.id ^ " doesn't have a type")
 
   (* struct as function *)
-  | SYMDEF_cstruct (ls)
-  | SYMDEF_struct (ls) ->
-    (* ARGGG WHAT A MESS *)
-    let ts = List.map (fun (s,i,_) -> TYP_name (sr,s,[])) (fst vs) in
-    let ts = List.map (bt sr) ts in
-    (*
-    print_endline "inner_type_of_index: struct";
-    *)
-    let ts = adjust_ts state.sym_table bsym_table sr index ts in
-    let t = type_of_list (List.map snd ls) in
-    let t = btyp_function (bt sr t, btyp_inst (index, ts)) in
-    (*
-    print_endline ("Struct as function type is " ^ sbt bsym_table t);
-    *)
-    t
+  | SYMDEF_cstruct ls
+  | SYMDEF_struct ls ->
+      (* ARGGG WHAT A MESS *)
+      let ts = List.map
+        (fun (s,i,_) -> TYP_name (sym.Flx_sym.sr,s,[]))
+        (fst sym.Flx_sym.vs)
+      in
+      let ts = List.map (bt sym.Flx_sym.sr) ts in
+    
+      let ts = adjust_ts state.sym_table bsym_table sym.Flx_sym.sr index ts in
+      let t = type_of_list (List.map snd ls) in
+      btyp_function (bt sym.Flx_sym.sr t, btyp_inst (index, ts))
 
   | SYMDEF_abs _ ->
-    clierr sr
-    (
-      "[type_of_index] Expected declaration of typed entity for index " ^
-      string_of_bid index ^ "\ngot abstract type " ^ id  ^ " instead.\n" ^
-      "Perhaps a constructor named " ^ "_ctor_" ^ id ^ " is missing " ^
-      " or out of scope."
-    )
+      clierr sym.Flx_sym.sr
+      (
+        "[type_of_index] Expected declaration of typed entity for index " ^
+        string_of_bid index ^ "\ngot abstract type " ^ sym.Flx_sym.id  ^
+        " instead.\n" ^
+        "Perhaps a constructor named " ^ "_ctor_" ^ sym.Flx_sym.id ^
+        " is missing or out of scope?"
+      )
 
   | _ ->
-    clierr sr
-    (
-      "[type_of_index] Expected declaration of typed entity for index "^
-      string_of_bid index ^ ", got " ^ id
-    )
-  end
+      clierr sym.Flx_sym.sr
+      (
+        "[type_of_index] Expected declaration of typed entity for index "^
+        string_of_bid index ^ ", got " ^ sym.Flx_sym.id
+      )
 
 and cal_apply state bsym_table sr rs ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
   let mkenv i = build_env state bsym_table (Some i) in
@@ -2871,206 +2779,105 @@ and lookup_type_name_with_sig
           caller_env tail rs name ts t2
        in tbx
 
-and handle_type
-  state
-  bsym_table
-  (rs:recstop)
-  sra srn
-  name
-  ts
-  index
-=
+(* -------------------------------------------------------------------------- *)
 
-  let mkenv i = build_env state bsym_table (Some i) in
-  let bt sr t =
-    bind_type' state bsym_table (mkenv index) rs sr t [] mkenv
-  in
-
-  match get_data state.sym_table index with
-  {
-    Flx_sym.id=id;
-    sr=sr;
-    vs=vs;
-    parent=parent;
-    dirs=dirs;
-    symdef=entry
-  }
-  ->
-  match entry with
+and handle_type state bsym_table rs sra srn name ts index =
+  let sym = get_data state.sym_table index in
+  match sym.Flx_sym.symdef with
   | SYMDEF_match_check _
   | SYMDEF_function _
   | SYMDEF_fun _
   | SYMDEF_struct _
   | SYMDEF_cstruct _
   | SYMDEF_nonconst_ctor _
-  | SYMDEF_callback _
-    ->
-    print_endline ("Handle function " ^ id ^ "<" ^ string_of_bid index ^
-      ">, ts=" ^ catmap "," (sbt bsym_table) ts);
-    btyp_inst (index,ts)
-    (*
-    let t = inner_type_of_index_with_ts state sr rs index ts
-    in
-    (
-      match t with
-      | BTYP_cfunction (s,d) as t -> t
-      | BTYP_function (s,d) as t -> t
-      | t ->
-        ignore begin
-          match t with
-          | BTYP_fix _ -> raise (Free_fixpoint t)
-          | _ -> try unfold t with
-          | _ -> raise (Free_fixpoint t)
-        end
-        ;
-        clierr sra
-        (
-          "[handle_function]: closure operator expected '"^name^"' to have function type, got '"^
-          sbt bsym_table t ^ "'"
-        )
-    )
-    *)
-
+  | SYMDEF_callback _ -> btyp_inst (index,ts)
   | SYMDEF_type_alias _ ->
-    (*
-    print_endline ("Binding type alias " ^ name ^ "<" ^
-      string_of_bid index ^ ">" ^
-      "[" ^catmap "," (sbt bsym_table) ts^ "]"
-    );
-    *)
-    bind_type_index state bsym_table (rs:recstop) sr index ts mkenv
-
+      let mkenv i = build_env state bsym_table (Some i) in
+      bind_type_index state bsym_table rs sym.Flx_sym.sr index ts mkenv
   | _ ->
-    clierr sra
-    (
-      "[handle_type] Expected "^name^" to be function, got: " ^
-      string_of_symdef entry name vs
-    )
+      clierr sra ("[handle_type] Expected " ^ name ^ " to be function, got: " ^
+        string_of_symdef sym.Flx_sym.symdef name sym.Flx_sym.vs)
 
-and handle_function
-  state
-  bsym_table
-  (rs:recstop)
-  sra srn
-  name
-  ts
-  index
-=
-  match get_data state.sym_table index with
-  {
-    Flx_sym.id=id;
-    sr=sr;
-    vs=vs;
-    parent=parent;
-    dirs=dirs;
-    symdef=entry
-  }
-  ->
-  match entry with
+and handle_function state bsym_table rs sra srn name ts index =
+  let sym = get_data state.sym_table index in
+  match sym.Flx_sym.symdef with
   | SYMDEF_match_check _
   | SYMDEF_function _
   | SYMDEF_fun _
   | SYMDEF_struct _
   | SYMDEF_cstruct _
   | SYMDEF_nonconst_ctor _
-  | SYMDEF_callback _
-    ->
-    (*
-    print_endline ("Handle function " ^id^"<"^string_of_bid index^">, ts=" ^ catmap "," (sbt bsym_table) ts);
-    *)
-    let t =
-      match inner_type_of_index_with_ts state bsym_table sr rs index ts with
-      | BTYP_cfunction (s,d) as t -> t
-      | BTYP_function (s,d) as t -> t
-      | t ->
-        ignore begin
-          match t with
-          | BTYP_fix _ -> raise (Free_fixpoint t)
-          | _ -> try unfold t with
-          | _ -> raise (Free_fixpoint t)
-        end
-        ;
-        clierr sra
-        (
-          "[handle_function]: closure operator expected '"^name^"' to have function type, got '"^
-          sbt bsym_table t ^ "'"
-        )
-    in
-    bexpr_closure t (index,ts)
+  | SYMDEF_callback _ ->
+      let t = inner_type_of_index_with_ts
+        state
+        bsym_table
+        sym.Flx_sym.sr
+        rs
+        index
+        ts
+      in
+
+      (* Make sure we got a function type back. *)
+      begin match t with
+      | BTYP_cfunction _ | BTYP_function _ -> ()
+      | BTYP_fix _ -> raise (Free_fixpoint t)
+      | _ ->
+          ignore (try unfold t with | _ -> raise (Free_fixpoint t));
+          clierr sra
+          (
+            "[handle_function]: closure operator expected '" ^ name ^
+            "' to have function type, got '" ^
+            sbt bsym_table t ^ "'"
+          )
+      end;
+
+      bexpr_closure t (index,ts)
+
   | SYMDEF_type_alias (TYP_typefun _) ->
-    (* THIS IS A HACK .. WE KNOW THE TYPE IS NOT NEEDED BY THE CALLER .. *)
-    (* let t = inner_type_of_index_with_ts state sr rs index ts in *)
-    let t =
-      match btyp_function (btyp_type 0,btyp_type 0) with
-      | BTYP_function (s,d) as t -> t
-      | t ->
-        ignore begin
-          match t with
-          | BTYP_fix _ -> raise (Free_fixpoint t)
-          | _ -> try unfold t with
-          | _ -> raise (Free_fixpoint t)
-        end
-        ;
-        clierr sra
-        (
-          "[handle_function]: closure operator expected '"^name^"' to have function type, got '"^
-          sbt bsym_table t ^ "'"
-        )
-    in
-    bexpr_closure t (index,ts)
+      (* THIS IS A HACK .. WE KNOW THE TYPE IS NOT NEEDED BY THE CALLER .. *)
+      let t = btyp_function (btyp_type 0, btyp_type 0) in
+      bexpr_closure t (index,ts)
 
   | _ ->
-    clierr sra
-    (
-      "[handle_function] Expected "^name^" to be function, got: " ^
-      string_of_symdef entry name vs
-    )
+      clierr sra
+      (
+        "[handle_function] Expected " ^ name ^ " to be function, got: " ^
+        string_of_symdef sym.Flx_sym.symdef name sym.Flx_sym.vs
+      )
 
-and handle_variable state bsym_table
-  env (rs:recstop)
-  index id sr ts t t2
-=
+and handle_variable state bsym_table env rs index id sr ts t t2 =
   (* HACKED the params argument to [] .. this is WRONG!! *)
   let mkenv i = build_env state bsym_table (Some i) in
-  let bt sr t =
-    bind_type' state bsym_table env rs sr t [] mkenv
-  in
 
-    (* we have to check the variable is the right type *)
-    let t = bt sr t in
-    let ts = adjust_ts state.sym_table bsym_table sr index ts in
-    let vs = find_vs state.sym_table bsym_table index in
-    let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
-    let t = beta_reduce state.syms bsym_table sr (tsubst bvs ts t) in
-    begin match t with
-    | BTYP_cfunction (d,c)
-    | BTYP_function (d,c) ->
-      if not (type_match state.syms.counter d t2) then
-      clierr sr
-      (
-        "[handle_variable(1)] Expected variable "^id ^
-        "<" ^ string_of_bid index ^ "> to have function type with signature " ^
-        sbt bsym_table t2 ^
-        ", got function type:\n" ^
-        sbt bsym_table t
-      )
+  (* we have to check the variable is the right type *)
+  let t = bind_type' state bsym_table env rs sr t [] mkenv in
+  let ts = adjust_ts state.sym_table bsym_table sr index ts in
+  let vs = find_vs state.sym_table bsym_table index in
+  let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
+  let t = beta_reduce state.syms bsym_table sr (tsubst bvs ts t) in
+
+  match t with
+  | BTYP_cfunction (d,c)
+  | BTYP_function (d,c) ->
+      if type_match state.syms.counter d t2 then
+        Some (bexpr_name t (index, ts))
       else
-        (*
-        let ts = adjust_ts state.sym_table sr index ts in
-        *)
-        Some
+        clierr sr
         (
-          bexpr_name t (index, ts)
-          (* should equal t ..
-          type_of_index_with_ts state sr index ts
-          *)
+          "[handle_variable(1)] Expected variable " ^ id ^
+          "<" ^ string_of_bid index ^
+          "> to have function type with signature " ^
+          sbt bsym_table t2 ^
+          ", got function type:\n" ^
+          sbt bsym_table t
         )
 
     (* anything other than function type, dont check the sig,
        just return it..
     *)
-    | _ ->  Some (bexpr_name t (index,ts))
-    end
+  | _ -> Some (bexpr_name t (index, ts))
+
+(* -------------------------------------------------------------------------- *)
 
 and lookup_name_in_table_dirs_with_sig
   state
@@ -6162,8 +5969,8 @@ let bind_type state bsym_table env sr t =
 let bind_expression state bsym_table env e  =
   inner_bind_expression state bsym_table env rsground e
 
-let type_of_index state bsym_table index =
- type_of_index' state bsym_table rsground index
+let type_of_index state bsym_table bid =
+ type_of_index' state bsym_table rsground bid
 
-let type_of_index_with_ts state bsym_table sr (index:bid_t) ts =
- type_of_index_with_ts' state bsym_table rsground sr index ts
+let type_of_index_with_ts state bsym_table sr bid ts =
+ type_of_index_with_ts' state bsym_table rsground sr bid ts

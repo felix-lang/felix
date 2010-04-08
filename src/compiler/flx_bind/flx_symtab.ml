@@ -590,7 +590,9 @@ and build_table_for_dcl
 
       (* fudge the private view to remove the vs *)
       let fixup e =
-        { e with Flx_btype.spec_vs=drop vs; sub_ts=nts @ drop ts; }
+        { e with
+          Flx_btype.spec_vs=drop e.Flx_btype.spec_vs;
+          sub_ts=nts @ drop e.Flx_btype.sub_ts }
       in
 
       Hashtbl.iter begin fun s es ->
