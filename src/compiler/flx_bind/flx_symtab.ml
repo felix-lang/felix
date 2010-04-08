@@ -359,55 +359,36 @@ and build_table_for_dcl
   in
   let add_tvars table = add_tvars' (Some symbol_index) table ivs in
 
+  let add_parameter pubtab privtab parent (k, name, typ, dflt) =
+    let n = Flx_mtypes2.fresh_bid counter in
+
+    if print_flag then
+      print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
+        name ^ " (parameter)");
+
+    (* Add the paramater to the symbol table. *)
+    add_symbol ~parent ~ivs:dfltvs n name (SYMDEF_parameter (k, typ));
+
+    (* Possibly add the parameter to the public symbol table. *)
+    if access = `Public then
+      full_add_unique syms sym_table sr dfltvs pubtab name n;
+
+    (* Add the parameter to the private symbol table. *)
+    full_add_unique syms sym_table sr dfltvs privtab name n;
+
+    (k, name, typ, dflt)
+  in
+
   (* Add parameters to the symbol table. *)
-  let add_parameters pubtab privtab parent ps =
-    let ips = ref [] in
-
-    List.iter begin fun (k, name, typ, dflt) ->
-      let n = Flx_mtypes2.fresh_bid counter in
-
-      if print_flag then
-        print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
-          name ^ " (parameter)");
-
-      (* Add the paramater to the symbol table. *)
-      add_symbol ~parent ~ivs:dfltvs n name (SYMDEF_parameter (k, typ));
-
-      (* Possibly add the parameter to the public symbol table. *)
-      if access = `Public then
-        full_add_unique syms sym_table sr dfltvs pubtab name n;
-
-      (* Add the parameter to the private symbol table. *)
-      full_add_unique syms sym_table sr dfltvs privtab name n;
-
-      ips := (k, name, typ, dflt) :: !ips
-    end ps;
-    List.rev !ips
+  let add_parameters pubtab privtab parent =
+    List.map (add_parameter pubtab privtab parent)
   in
 
   (* Add simple parameters to the symbol table. *)
-  let add_simple_parameters pubtab privtab parent ps =
-    let ips = ref [] in
-    List.iter begin fun (name, typ) ->
-      let n = Flx_mtypes2.fresh_bid counter in
-
-      if print_flag then
-        print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
-          name ^ " (parameter)");
-
-      (* Add the symbol to the symbol table. *)
-      add_symbol ~parent ~ivs:dfltvs n name (SYMDEF_parameter (`PVal, typ));
-
-      (* Register the symbol if it's public. *)
-      if access = `Public then
-        full_add_unique syms sym_table sr dfltvs pubtab name n;
-
-      (* Always register it in the private symbol table. *)
-      full_add_unique syms sym_table sr dfltvs privtab name n;
-
-      ips := (`PVal, name, typ, None) :: !ips
-    end ps;
-    List.rev !ips
+  let add_simple_parameters pubtab privtab parent =
+    List.map begin fun (name, typ) ->
+      add_parameter pubtab privtab parent (`PVal, name, typ, None)
+    end
   in
 
   (* dummy-ish temporary symbol tables could contain type vars for looking
