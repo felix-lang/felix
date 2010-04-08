@@ -18,12 +18,6 @@ let mkentry syms (vs:ivs_list_t) i =
   in
   let ts = List.map (fun i -> btyp_type_var (i, btyp_type 0)) is in
   let vs = List.map2 (fun i (n,_,_) -> n,i) is (fst vs) in
-  (*
-  print_endline ("Make entry " ^ string_of_bid ^ ", " ^ "vs =" ^
-    Flx_util.catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs ^
-    ", ts=" ^ Flx_util.catmap "," (Flx_print.sbt sym_table) ts
-  );
-  *)
   { Flx_btype.base_sym=i; spec_vs=vs; sub_ts=ts }
 
 
@@ -181,10 +175,6 @@ let rec build_tables
   root
   asms
 =
-  (*
-  print_endline ("//Building tables for " ^ name);
-  *)
-
   (* Split up the assemblies into their repsective types. split_asms returns
    * reversed lists, so we must undo that. *)
   let dcls, exes, ifaces, export_dirs = split_asms asms in
@@ -255,34 +245,12 @@ and build_table_for_dcl
    * use that, otherwise use the next number in the counter. *)
   let symbol_index =
     match seq with
-    | Some n ->
-        (* print_endline ("SPECIAL " ^ id ^ string_of_int n); *)
-        n
-    | None ->
-        Flx_mtypes2.fresh_bid counter
+    | Some n -> n
+    | None -> Flx_mtypes2.fresh_bid counter
   in
 
   (* Update the type variable list to include the index. *)
   let ivs = make_ivs vs in
-
-  (*
-  begin
-    match vs with (_,{raw_typeclass_reqs=rtcr})->
-      match rtcr  with
-      | _::_ ->
-          print_endline (id^": TYPECLASS REQUIREMENTS " ^
-          Flx_util.catmap "," string_of_qualified_name rtcr);
-      | [] -> ();
-  end;
-  let rec addtc tcin dirsout = match tcin with
-  | [] -> List.rev dirsout
-  | h::t ->
-      addtc t (DIR_typeclass_req h :: dirsout);
-        in
-        let typeclass_dirs =
-          match vs with (_,{raw_typeclass_reqs=rtcr})-> addtc rtcr []
-  in
-  *)
 
   let add_unique table id idx = full_add_unique
     syms
@@ -340,13 +308,6 @@ and build_table_for_dcl
     List.iter begin fun (tvid, index, tpat) ->
       let mt = match tpat with
       | TYP_patany _ -> TYP_type (* default/unspecified *)
-      (*
-      | #suffixed_name_t as name ->
-          print_endline ("Decoding type variable " ^ string_of_int i ^ " kind");
-          print_endline ("Hacking suffixed kind name " ^ string_of_suffixed_name name ^ " to TYPE");
-          TYP_type (* HACK *)
-          *)
-
       | TYP_none -> TYP_type
       | TYP_ellipsis -> Flx_exceptions.clierr sr "Ellipsis ... as metatype"
       | _ -> tpat
@@ -442,10 +403,6 @@ and build_table_for_dcl
        * _ctor_. *)
       let id = if is_ctor then "_ctor_" ^ name else id in
 
-      (*
-      if is_class && not is_ctor then
-        print_endline ("TABLING METHOD " ^ id ^ " OF CLASS " ^ name);
-      *)
       let t = if t = TYP_none then TYP_var symbol_index else t in
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
@@ -496,23 +453,9 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_match_handler (pat,(mvname,match_var_index),asms) ->
-      (*
-      print_endline ("Parent is " ^ match parent with Some i -> string_of_int i);
-      print_endline ("Match handler, " ^ string_of_int symbol_index ^ ", mvname = " ^ mvname);
-      *)
       assert (List.length (fst ivs) = 0);
       let vars = Hashtbl.create 97 in
       Flx_mbind.get_pattern_vars vars pat [];
-      (*
-      print_endline ("PATTERN IS " ^ string_of_pattern pat ^ ", VARIABLE=" ^ mvname);
-      print_endline "VARIABLES ARE";
-      Hashtbl.iter begin fun vname (sr,extractor) ->
-        let component =
-          Flx_mbind.gen_extractor extractor (`AST_index (sr,mvname,match_var_index))
-        in
-        print_endline ("  " ^ vname ^ " := " ^ string_of_expr component);
-      end vars;
-      *)
 
       let new_asms = ref asms in
       Hashtbl.iter begin fun vname (sr,extractor) ->
@@ -528,9 +471,6 @@ and build_table_for_dcl
         new_asms := dcl :: instr :: !new_asms;
       end vars;
 
-      (*
-      print_endline ("asms are" ^ string_of_desugared !new_asms);
-      *)
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
@@ -623,12 +563,6 @@ and build_table_for_dcl
       add_tvars privtab
 
   | DCL_typeclass asms ->
-      (*
-      let symdef = SYMDEF_typeclass in
-      let tvars = map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst ivs) in
-      let stype = `AST_name(sr,id,tvars) in
-      *)
-
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
@@ -644,9 +578,7 @@ and build_table_for_dcl
       in
       let fudged_privtab = Hashtbl.create 97 in
       let vsl = List.length (fst inherit_ivs) + List.length (fst ivs) in
-      (*
-      print_endline ("Strip " ^ string_of_int vsl ^ " vs");
-      *)
+
       let drop vs =
         let keep = List.length vs - vsl in
         if keep >= 0 then
@@ -655,26 +587,15 @@ and build_table_for_dcl
           failwith "WEIRD CASE"
       in
       let nts = List.map (fun (s,i,t)-> btyp_type_var (i,btyp_type 0)) (fst ivs) in
-      (* fudge the private view to remove the vs *)
-      let fixup ({ Flx_btype.base_sym=i; spec_vs=vs; sub_ts=ts } as e) =
-        let e' = {
-          Flx_btype.base_sym=i;
-          spec_vs=drop vs;
-          sub_ts=nts @ drop ts;
-        } in
 
-        (*
-        print_endline (show e ^ " ===> " ^ show e');
-        *)
-        e'
+      (* fudge the private view to remove the vs *)
+      let fixup e =
+        { e with Flx_btype.spec_vs=drop vs; sub_ts=nts @ drop ts; }
       in
 
       Hashtbl.iter begin fun s es ->
-        (*
-        print_endline ("Entry " ^ s );
-        *)
         let nues =
-        if s = "root" then es else
+          if s = "root" then es else
           match es with
           | NonFunctionEntry e -> NonFunctionEntry (fixup e)
           | FunctionEntry es -> FunctionEntry (List.map fixup es)
@@ -755,9 +676,6 @@ and build_table_for_dcl
 
       (* Add the variable to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_var t);
-      (*
-      add_symbol symbol_index id (SYMDEF_var (TYP_lvalue t)
-      *)
 
       (* Possibly add the variable to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -1045,20 +963,16 @@ and build_table_for_dcl
       (* Add type variables to the private symbol table. *)
       add_tvars privtab
 
-  | DCL_cstruct (sts)
-  | DCL_struct (sts) ->
-      (*
-      print_endline ("Got a struct " ^ id);
-      print_endline ("Members=" ^ Flx_util.catmap "; " (fun (id,t)->id ^ ":" ^ string_of_typecode t) sts);
-      *)
+  | DCL_cstruct sts
+  | DCL_struct sts ->
       let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst ivs) in
       let stype = `AST_name(sr, id, tvars) in
 
       (* Add symbols to sym_table *)
       add_symbol ~pubtab ~privtab symbol_index id (
         match dcl with
-        | DCL_struct _ -> SYMDEF_struct (sts)
-        | DCL_cstruct _ -> SYMDEF_cstruct (sts)
+        | DCL_struct _ -> SYMDEF_struct sts
+        | DCL_cstruct _ -> SYMDEF_cstruct sts
         | _ -> assert false
       );
 
