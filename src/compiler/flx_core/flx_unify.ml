@@ -771,9 +771,7 @@ let unfold t =
   | BTYP_cfunction (a,b) -> btyp_cfunction (uf a, uf b)
   | BTYP_pointer a -> btyp_pointer (uf a)
   | BTYP_fix i when (-i) = depth -> t
-  | BTYP_fix i when (-i) > depth ->
-    failwith ("[unfold] Fix point outside term, depth="^string_of_int i)
-
+  | BTYP_fix i when (-i) > depth -> raise (Free_fixpoint t')
   | BTYP_type_apply (a,b) -> btyp_type_apply(uf a, uf b)
   | BTYP_inst (i,ts) -> btyp_inst (i,List.map uf ts)
   | BTYP_type_function (p,r,b) ->
