@@ -165,10 +165,7 @@ let mkproc_gen syms bsym_table =
   (* count direct applications of these functions *)
   Flx_bsym_table.iter begin fun i bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_procedure (props,vs,(ps,traint),exes) ->
-        find_mkproc_exes mkproc_map exes
-
-    | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+    | BBDCL_function (_,_,_,_,exes) ->
         find_mkproc_exes mkproc_map exes
 
     | _ -> ()
@@ -320,7 +317,7 @@ let mkproc_gen syms bsym_table =
       let exes = proc_exes syms bsym_table dv exes in
 
       (* save the new procedure *)
-      let bbdcl = bbdcl_procedure (props,vs,(ps,traint),exes) in
+      let bbdcl = bbdcl_function (props,vs,(ps,traint),btyp_void (),exes) in
       Flx_bsym_table.update_bbdcl bsym_table k bbdcl;
 
       if syms.compiler_options.print_flag then
@@ -342,11 +339,6 @@ let mkproc_gen syms bsym_table =
       mkproc_map
     in
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_procedure (props,vs,(ps,traint),exes) ->
-        let exes = mkproc_exes vs exes in
-        let bbdcl = bbdcl_procedure (props,vs,(ps,traint),exes) in
-        Flx_bsym_table.update_bbdcl bsym_table i bbdcl
-
     | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
         let exes = mkproc_exes vs exes in
         let bbdcl = bbdcl_function (props,vs,(ps,traint),ret,exes) in

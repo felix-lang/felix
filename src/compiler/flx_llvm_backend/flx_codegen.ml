@@ -1248,18 +1248,6 @@ and codegen_symbol state bsym_table closure index bsym =
         ret_type
         es)
 
-  | Flx_bbdcl.BBDCL_procedure (props, _, (ps, _), es) ->
-      ignore (codegen_function
-        state
-        bsym_table
-        (Flx_bsym.sr bsym)
-        index
-        (name_of_index state bsym_table index [])
-        props
-        ps
-        (Flx_btype.btyp_void ())
-        es)
-
   | Flx_bbdcl.BBDCL_val (_, btype,_) ->
       let name = name_of_index state bsym_table index [] in
       closure := (index, name, btype) :: !closure

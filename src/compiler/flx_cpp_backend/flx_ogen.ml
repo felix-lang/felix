@@ -347,17 +347,7 @@ let gen_offset_tables syms bsym_table module_name =
     print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt bsym_table) ts ^"]");
     *)
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,vs,ps, ret,exes) ->
-      scan exes;
-      if mem `Cfun props then () else
-      if mem `Heap_closure props then
-        gen_fun_offsets s syms bsym_table index vs ps ret ts instance props last_ptr_map
-      (*
-      else
-        print_endline ("Warning: no closure of " ^ id ^ "<"^si index ^"> is used")
-      *)
-
-    | BBDCL_procedure (props,vs,ps,exes) ->
+    | BBDCL_function (props,vs,ps,ret,exes) ->
       scan exes;
       if mem `Cfun props then () else
       if mem `Heap_closure props then
@@ -368,15 +358,12 @@ let gen_offset_tables syms bsym_table module_name =
           index
           vs
           ps
-          (btyp_void ())
+          ret
           ts
           instance
           props
           last_ptr_map
-      else if mem `Stack_closure props then ()
-      else
-        print_endline ("Warning: no closure of " ^ Flx_bsym.id bsym ^"<" ^
-          string_of_bid index ^ "> is used, but not stackable?")
+
     | _ -> ()
   )
   syms.instances

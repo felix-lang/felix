@@ -611,8 +611,7 @@ of the original expression, done by the 'aux' function.
 
 let inlining_complete bsym_table i =
   match Flx_bsym_table.find_bbdcl bsym_table i with
-  | BBDCL_function (props,_,_,_,_)
-  | BBDCL_procedure (props,_,_,_) -> mem `Inlining_complete props
+  | BBDCL_function (props,_,_,_,_) -> mem `Inlining_complete props
   | BBDCL_proc _
   | BBDCL_fun _
     -> true
@@ -683,8 +682,7 @@ let virtual_check syms bsym_table sr i ts =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,_,_,_,_,_,_)
   | BBDCL_function (props,_,_,_,_)
-  | BBDCL_proc (props,_,_,_,_)
-  | BBDCL_procedure (props,_,_,_) when mem `Virtual props ->
+  | BBDCL_proc (props,_,_,_,_) when mem `Virtual props ->
     (*
     print_endline ("Examining call to virtual " ^ id);
     *)
@@ -1101,7 +1099,7 @@ and heavy_inline_calls
       print_endline ("CALL DIRECT " ^ id ^ "<"^ si callee^">");
       *)
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_procedure (props,vs,(ps,traint),exes) ->
+      | BBDCL_function (props,vs,(ps,traint),BTYP_void,exes) ->
         if can_inline && inline_check caller callee props exes then
         begin
           if syms.compiler_options.print_flag then
@@ -1279,79 +1277,6 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
   in
   match bsym with None -> () | Some bsym ->
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_procedure (props,vs,(ps,traint),exes) ->
-    (*
-    print_endline ("HIB: consider procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
-    *)
-    if not (mem `Inlining_started props) then begin
-      let props = `Inlining_started :: props in
-      let bbdcl = bbdcl_procedure (props,vs,(ps,traint),exes) in
-      Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
-
-      (* inline into all children first *)
-      let children = Flx_bsym_table.find_children bsym_table i in
-      BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) children;
-
-      let exes = check_reductions syms bsym_table exes in
-      let xcls = Flx_tailit.exes_get_xclosures syms exes in
-      BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) xcls;
-
-      if syms.compiler_options.print_flag then
-      print_endline ("HIB: Examining procedure " ^ Flx_bsym.id bsym ^ "<" ^
-        string_of_bid i ^ "> for inlinable calls");
-      (*
-      print_endline ("Input:\n" ^ catmap "\n" (string_of_bexe bsym_table 0) exes);
-      *)
-      recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      let exes = fold_vars syms bsym_table uses i ps exes in
-      recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      (*
-      print_endline (id ^ " Before inlining calls:\n" ^ catmap "\n" (string_of_bexe bsym_table 0) exes);
-      *)
-      let exes = heavy_inline_calls
-        syms
-        bsym_table
-        uses
-        vs
-        i
-        excludes
-        exes
-      in
-      (*
-      print_endline (id ^ " After inlining calls:\n" ^ catmap "\n" (string_of_bexe bsym_table 0) exes);
-      *)
-      recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      let exes = Flx_tailit.tailit
-        syms
-        bsym_table
-        uses
-        (Flx_bsym.id bsym)
-        i
-        (Flx_bsym.sr bsym)
-        ps
-        vs
-        exes
-      in
-      (*
-      print_endline (id ^ " After tailing:\n" ^ catmap "\n" (string_of_bexe bsym_table 0) exes);
-      *)
-      let exes = check_reductions syms bsym_table exes in
-      recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      let exes = fold_vars syms bsym_table uses i ps exes in
-      recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      let exes = check_reductions syms bsym_table exes in
-      let exes = Flx_cflow.chain_gotos syms exes in
-      let props = `Inlining_complete :: props in
-      let bbdcl = bbdcl_procedure (props,vs,(ps,traint),exes) in
-      Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
-      recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-      remove_unused_children syms uses bsym_table i;
-      (*
-      print_endline ("DONE Examining procedure " ^ id ^ "<"^ si i ^ "> for inlinable calls");
-      print_endline ("OPTIMISED PROCEDURE BODY: " ^ id ^ " :\n" ^ catmap "\n" (string_of_bexe 2) exes);
-      *)
-    end
-
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
     if not (mem `Inlining_started props) then begin
       let props = `Inlining_started :: props in

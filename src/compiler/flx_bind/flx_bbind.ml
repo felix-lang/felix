@@ -350,11 +350,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     (* We don't need to bind the intermediary type. *)
     let brt = bt' rt in
     let brt, bbexes = bexes exes brt symbol_index bvs in
-    let bbdcl =
-      match brt with
-      | BTYP_void -> bbdcl_procedure (props,bvs,bps,bbexes)
-      | _ -> bbdcl_function (props,bvs,bps,brt,bbexes)
-    in
+    let bbdcl = bbdcl_function (props,bvs,bps,brt,bbexes) in
 
     (* Cache the type of the function. *)
     if not (Hashtbl.mem state.syms.ticache symbol_index) then begin

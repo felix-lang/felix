@@ -87,9 +87,9 @@ let cpp_name bsym_table index =
     with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_bid index)
   in
   (match Flx_bsym.bbdcl bsym with
-  | BBDCL_function _ -> "_f"
+  | BBDCL_function (_,_,_,BTYP_void,_) -> "_p"
+  | BBDCL_function (_,_,_,_,_) -> "_f"
   | BBDCL_callback _ -> "_cf"
-  | BBDCL_procedure _  -> "_p"
   | BBDCL_val (_,_,(`Val | `Var | `Ref)) -> "_v"
   | BBDCL_val (_,_,`Tmp) -> "_tmp"
   | _ ->

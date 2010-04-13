@@ -88,53 +88,21 @@ let check_abstract_exe syms rls exe =
 
 let cal_polyvars syms bsym_table =
   let absvars = Hashtbl.create 97 in
-  Flx_bsym_table.iter (fun i bsym ->
-  match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-    if mem `Virtual props then () else
-    let j = ref 0 in
-    let tvars = ref (map (fun (_,i) -> incr j; i,!j-1) vs) in
-    if !tvars <> [] then
-    begin try 
-  (*
-  print_endline ("Checking abstract " ^ name ^ "<"^si i^">");
-  *)
-      iter (check_abstract_exe syms tvars) exes;
-      if !tvars <> [] then begin
-        (*
-        print_endline ("Fun  " ^ name ^ "<" ^ string_of_bid i ^
-          "> polyvars = " ^ catmap "," (fun (i,j)-> string_of_bid i) !tvars);
-        *)
-        Hashtbl.add absvars i (!tvars)
-      end
-    with Not_found -> ()
-    end
+  Flx_bsym_table.iter begin fun i bsym ->
+    match Flx_bsym.bbdcl bsym with
+    | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+        if mem `Virtual props then () else
+        let j = ref 0 in
+        let tvars = ref (map (fun (_,i) -> incr j; i,!j-1) vs) in
+        if !tvars <> [] then
+          begin try 
+            iter (check_abstract_exe syms tvars) exes;
+            if !tvars <> [] then Hashtbl.add absvars i (!tvars)
+          with Not_found -> ()
+          end
+    | _ -> ()      
+  end bsym_table;
 
-  | BBDCL_procedure (props,vs,(ps,traint), exes) ->
-    if mem `Virtual props then () else
-    let j = ref 0 in
-    let tvars = ref (map (fun (_,i) -> incr j; i,!j-1) vs) in
-    if !tvars <> [] then
-    begin try 
-  (*
-  print_endline ("Checking abstract " ^ name ^ "<"^si i^">");
-  *)
-      iter (check_abstract_exe syms tvars) exes;
-      if !tvars <> [] then begin
-        (*
-        print_endline ("Proc " ^ name ^ "<" ^ string_of_bid i ^
-          "> polyvars = " ^ catmap "," (fun (i,j) -> string_of_bid i) !tvars);
-        *)
-        Hashtbl.add absvars i (!tvars)
-      end
-    with Not_found -> ()
-    end
-
-  | _ -> ()      
-
-  )
-  bsym_table
-  ;
   (* Now, add in all the children *)
   let polyvars = Hashtbl.create 97 in
   let merge i pvs = 
@@ -159,7 +127,6 @@ let cal_polyvars syms bsym_table =
           let ps =
             match Flx_bsym_table.find_bbdcl bsym_table i with
             | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps
-            | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps
             | _ -> assert false
           in
           let pts = Flx_bparameter.get_btypes ps in
@@ -200,7 +167,6 @@ let cal_polyvars syms bsym_table =
           let ps,ret =
             match Flx_bsym_table.find_bbdcl bsym_table i with
             | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret
-            | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps, btyp_void ()
             | _ -> assert false
           in
           let pts = Flx_bparameter.get_btypes ps in
@@ -265,8 +231,7 @@ let cal_polyvars syms bsym_table =
 
   let polyfix2 i ts =
     match Flx_bsym_table.find_bbdcl bsym_table i with
-    | BBDCL_function _
-    | BBDCL_procedure _ ->
+    | BBDCL_function _ ->
         List.map begin function
         | BTYP_pointer _ -> btyp_pointer (btyp_void ())
         | t -> t
@@ -280,7 +245,6 @@ let cal_polyvars syms bsym_table =
         let ps,vs =
           match Flx_bsym_table.find_bbdcl bsym_table i with
           | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,vs
-          | BBDCL_procedure (props,vs,(ps,traint), exes) -> ps,vs
           | _ -> raise Skip
         in
         let pts = Flx_bparameter.get_btypes ps in
@@ -342,7 +306,6 @@ let cal_polyvars syms bsym_table =
         let ps,ret,vs =
           match Flx_bsym_table.find_bbdcl bsym_table i with
           | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret,vs
-          | BBDCL_procedure (props,vs,(ps,traint),exes) -> ps, btyp_void (), vs
         | _ -> raise Skip 
         in
         let pts = Flx_bparameter.get_btypes ps in

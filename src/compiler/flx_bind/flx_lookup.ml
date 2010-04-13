@@ -1620,8 +1620,6 @@ and btype_of_bsym state bsym_table bt bid bsym =
   | BBDCL_module -> assert false
   | BBDCL_function (_,_,(params,_),return_type,_) ->
       btyp_function (type_of_params params, return_type)
-  | BBDCL_procedure (_,_,(params,_),_) ->
-      btyp_function (type_of_params params, btyp_void ())
   | BBDCL_val (_,t,_) -> t
   | BBDCL_newtype (_,t) -> t
   | BBDCL_abs _ -> assert false
@@ -3953,8 +3951,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         with
         | Some bsym ->
             begin match Flx_bsym.bbdcl bsym with
-            | BBDCL_function (properties,_,_,_,_)
-            | BBDCL_procedure (properties,_,_,_) ->
+            | BBDCL_function (properties,_,_,_,_) ->
                 List.mem property properties
             | _ -> false
             end

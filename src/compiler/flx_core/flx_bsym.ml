@@ -64,7 +64,7 @@ let is_variable bsym =
 (** Return if the bound symbol is a function or procedure. *)
 let is_function bsym =
   match bsym.bbdcl with
-  | Flx_bbdcl.BBDCL_function _ | Flx_bbdcl.BBDCL_procedure _ -> true
+  | Flx_bbdcl.BBDCL_function _ -> true
   | _ -> false
 
 (** Return if the bound symbol is a generator. *)

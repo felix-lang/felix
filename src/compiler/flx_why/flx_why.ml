@@ -372,19 +372,6 @@ let emit_whycode filename syms bsym_table root =
   output_string f "(******* FUNCTIONS ******)\n";
   Flx_bsym_table.iter begin fun index bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_procedure (_,bvs,ps,_) ->
-        let ps = calps ps in
-        emit_function
-          syms
-          bsym_table
-          f
-          index
-          (Flx_bsym.id bsym)
-          (Flx_bsym.sr bsym)
-          bvs
-          ps
-          unitt
-
     | BBDCL_function (_,bvs,ps,ret,_) ->
         let ps = calps ps in
         emit_function
@@ -396,7 +383,7 @@ let emit_whycode filename syms bsym_table root =
           (Flx_bsym.sr bsym)
           bvs
           ps
-          ret
+          (match ret with BTYP_void -> unitt | _ -> ret)
 
     | BBDCL_fun (_,bvs,ps,ret,_,_,_) ->
         emit_function

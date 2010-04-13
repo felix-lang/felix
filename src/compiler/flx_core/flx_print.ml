@@ -2273,17 +2273,12 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     "module " ^ name ^ " {}"
 
   | BBDCL_function (props,vs,ps,res,es) ->
+    let is_proc = Flx_btype.is_void res in
     string_of_properties props ^
-    "fun " ^ name ^ string_of_bvs vs ^
-    "("^ (string_of_bparameters bsym_table ps)^"): "^(sobt res) ^
-    "{\n" ^
-    cat "\n" (map (string_of_bexe bsym_table 1) es) ^
-    "}"
-
-  | BBDCL_procedure (props,vs,ps,es) ->
-    string_of_properties props ^
-    "proc " ^ name ^ string_of_bvs vs ^
-    "("^ (string_of_bparameters bsym_table ps)^")" ^
+    (if is_proc then "proc " else "fun ") ^
+    name ^ string_of_bvs vs ^
+    "(" ^ (string_of_bparameters bsym_table ps) ^ ")" ^
+    (if is_proc then "" else ": " ^ sobt res) ^
     "{\n" ^
     cat "\n" (map (string_of_bexe bsym_table 1) es) ^
     "}"
@@ -2486,9 +2481,8 @@ let print_function_body bsym_table id i (bvs:bvs_t) ps exes =
 let print_function bsym_table i =
   let bsym = Flx_bsym_table.find bsym_table i in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (_,bvs,ps,_,exes)
-  | BBDCL_procedure (_,bvs,ps,exes) ->
-      print_function_body
+  | BBDCL_function (_,bvs,ps,_,exes) ->
+      print_function_body 
         bsym_table
         (Flx_bsym.id bsym)
         i
@@ -2500,8 +2494,7 @@ let print_function bsym_table i =
 let print_functions bsym_table =
   Flx_bsym_table.iter begin fun i bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (_,bvs,ps,_,exes)
-    | BBDCL_procedure (_,bvs,ps,exes) ->
+    | BBDCL_function (_,bvs,ps,_,exes) ->
         print_function_body
           bsym_table
           (Flx_bsym.id bsym)
@@ -2515,8 +2508,7 @@ let print_functions bsym_table =
 let print_symbols bsym_table =
   Flx_bsym_table.iter begin fun i bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (_,bvs,ps,_,exes)
-    | BBDCL_procedure (_,bvs,ps,exes) ->
+    | BBDCL_function (_,bvs,ps,_,exes) ->
         print_function_body
           bsym_table
           (Flx_bsym.id bsym)

@@ -92,7 +92,7 @@ let gen_closure state bsym_table bid t =
             bexe_proc_return (Flx_bsym.sr bsym) ]
         in
 
-        bbdcl_procedure ([],vs,([param],None),exes)
+        bbdcl_function ([],vs,([param],None),btyp_void (),exes)
 
     | BBDCL_fun (_,vs,ps,ret,_,_,_) ->
         let ts, param, arg = make_inner_function vs ps in
@@ -227,11 +227,6 @@ let process_entry state bsym_table all_closures i =
   | BBDCL_function (props,vs,ps,ret,exes) ->
     let exes = process_exes state bsym_table all_closures exes in
     let bbdcl = bbdcl_function (props,vs,ps,ret,exes) in
-    Flx_bsym_table.update_bbdcl bsym_table i bbdcl
-
-  | BBDCL_procedure (props,vs,ps,exes) ->
-    let exes = process_exes state bsym_table all_closures exes in
-    let bbdcl = bbdcl_procedure (props,vs,ps,exes) in
     Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
   | _ -> ()

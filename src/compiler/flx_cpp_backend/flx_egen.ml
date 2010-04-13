@@ -477,7 +477,6 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       | BBDCL_cstruct _
       | BBDCL_struct _
       | BBDCL_function _
-      | BBDCL_procedure _
       | BBDCL_fun _
       | BBDCL_proc _ ->
          syserr sr
@@ -508,8 +507,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     *)
     let ts = map tsub ts' in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,_,_,_,_)
-    | BBDCL_procedure (props,_,_,_) ->
+    | BBDCL_function (props,_,_,_,_) ->
       let the_display =
         let d' =
           map begin fun (i,vslen) ->
@@ -555,7 +553,6 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
         if Some this = parent &&
         (
           let props = match entry with
-            | BBDCL_procedure (props,_,_,_)
             | BBDCL_function (props,_,_,_,_) -> props
             | _ -> assert false
           in

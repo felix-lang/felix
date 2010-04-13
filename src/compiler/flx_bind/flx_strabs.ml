@@ -78,9 +78,6 @@ let strabs_symbol state bsym_table index bsym =
   | BBDCL_function (props, bvs, bps, ret, bexes) ->
     h (bbdcl_function (props, bvs, fp bps, ft ret, fxs bexes))
 
-  | BBDCL_procedure (props, bvs, bps, bexes) ->
-    h (bbdcl_procedure (props, bvs, fp bps, fxs bexes))
-
   | BBDCL_val (bvs, t, kind) ->
     h (bbdcl_val (bvs, ft t, kind))
 

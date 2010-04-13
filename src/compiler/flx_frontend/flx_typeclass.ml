@@ -87,11 +87,6 @@ let check_instance
             let qt = bvs, btyp_function (argt, btyp_void ()) in
             (Flx_bsym.id bsym,(i,qt)) :: acc
 
-        | BBDCL_procedure (_,bvs,bps,_) ->
-            let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
-            let qt = bvs, btyp_function (argt, btyp_void ()) in
-            (Flx_bsym.id bsym,(i,qt)) :: acc
-
         | BBDCL_function (_,bvs,bps,ret,_) ->
             let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
             let qt = bvs, btyp_function (argt,ret) in
@@ -248,11 +243,6 @@ let check_instance
       | BBDCL_function (props,bvs,bps,ret,_) when mem `Virtual props ->
         let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
         let ft = btyp_function (argt,ret) in
-        check_binding false tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
-
-      | BBDCL_procedure (props, bvs, bps,_) when mem `Virtual props ->
-        let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
-        let ft = btyp_function (argt, btyp_void ()) in
         check_binding false tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
 
       | BBDCL_const (props,bvs,ret,_,_) when mem `Virtual props ->

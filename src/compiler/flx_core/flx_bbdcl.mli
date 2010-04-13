@@ -16,7 +16,6 @@ type t = private
   | BBDCL_invalid
   | BBDCL_module
   | BBDCL_function of   property_t list * bvs_t * Flx_bparams.t * Flx_btype.t * Flx_bexe.t list
-  | BBDCL_procedure of  property_t list * bvs_t * Flx_bparams.t * Flx_bexe.t list
   | BBDCL_val of        bvs_t * Flx_btype.t * value_kind_t
 
   (* binding structures [prolog] *)
@@ -48,7 +47,6 @@ type t = private
 val bbdcl_invalid : unit -> t
 val bbdcl_module : unit -> t
 val bbdcl_function : property_t list * bvs_t * Flx_bparams.t * Flx_btype.t * Flx_bexe.t list -> t
-val bbdcl_procedure : property_t list * bvs_t * Flx_bparams.t * Flx_bexe.t list -> t
 val bbdcl_val : bvs_t * Flx_btype.t * value_kind_t -> t
 val bbdcl_newtype : bvs_t * Flx_btype.t -> t
 val bbdcl_abs : bvs_t * btype_qual_t list * code_spec_t * breqs_t -> t

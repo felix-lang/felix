@@ -230,30 +230,6 @@ let mono syms bsym_table fi ts bsym =
     let exes = fixup_exes syms bsym_table fi (mt vars) exes in
     Some (bbdcl_function (props,[],(ps,traint),ret,exes))
 
-  | BBDCL_procedure (props,vs,(ps,traint), exes) ->
-    let props = filter (fun p -> p <> `Virtual) props in
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
-      let k = fst (fi i ts) in
-      let u = mt vars t in
-      (*
-      print_endline ("Remap parameter " ^ s ^"<"^ si i ^ "> (type " ^
-        sbt bsym_table t ^
-      ")to " ^ si k ^ " type " ^ sbt bsym_table u);
-      *)
-      {pkind=pk;pid=s;pindex=k;ptyp=u}) ps
-    in
-    let traint =
-      match traint with
-      | None -> None
-      | Some x -> Some (fixup_expr syms bsym_table fi (mt vars) x)
-    in
-    (*
-    let fi i ts = fi i (map mt ts) in
-    *)
-    let exes = fixup_exes syms bsym_table fi (mt vars) exes in
-    Some (bbdcl_procedure (props,[],(ps,traint), exes))
-
   | BBDCL_val (vs,t,kind) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
@@ -288,8 +264,7 @@ let chk_mono syms bsym_table i =
   match Flx_bsym_table.find_bbdcl bsym_table i with
   | BBDCL_invalid -> assert false
   | BBDCL_module -> false
-  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->  true
-  | BBDCL_procedure (props,vs,(ps,traint), exes) -> true
+  | BBDCL_function (props,vs,(ps,traint),ret,exes) -> true
   | BBDCL_val _ -> true
   | BBDCL_const (_,_,_,CS_str "#this",_) -> true
   | BBDCL_union (vs,ps) -> false

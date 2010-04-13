@@ -479,29 +479,19 @@ let gen_body syms uses bsym_table id
         closure
         BidSet.empty
       in
-      BidSet.iter (fun i ->
+      BidSet.iter begin fun i ->
         let bsym = Flx_bsym_table.find bsym_table i in
         match Flx_bsym.bbdcl bsym with
         | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
-          let exes = map (subarg syms bsym_table argmap) exes in
-          recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-          let bbdcl = bbdcl_function (props,vs,(ps,traint),ret,exes) in
-          Flx_bsym_table.update_bbdcl bsym_table i bbdcl
-
-        | BBDCL_procedure (props,vs,(ps,traint),exes) ->
-          (*
-          print_endline ("MODIFY " ^ si i);
-          *)
-          let exes = map (subarg syms bsym_table argmap) exes in
-          recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-          let bbdcl = bbdcl_procedure (props,vs,(ps,traint),exes) in
-          Flx_bsym_table.update_bbdcl bsym_table i bbdcl
+            let exes = map (subarg syms bsym_table argmap) exes in
+            recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
+            let bbdcl = bbdcl_function (props,vs,(ps,traint),ret,exes) in
+            Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
         | _ -> ()
-      )
-      kids
-    end
-    ;
+      end kids
+    end;
+
     let trail_jump = match !b with
       | BEXE_goto (_,lab)::_ when lab = end_label -> true
       | _ -> false

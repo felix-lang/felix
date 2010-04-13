@@ -144,7 +144,6 @@ let make_uncurry_map syms bsym_table =
   (* count curried calls to these functions *)
   Flx_bsym_table.iter begin fun i bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_procedure (_,vs,_,exes)
     | BBDCL_function (_,vs,_,_,exes) ->
         find_uncurry_exes syms bsym_table uncurry_map vs exes
     | _ -> ()
@@ -320,10 +319,6 @@ let synthesize_function syms bsym_table ut vm rl i (c, k, n) =
         let vs,ps,exes = fixup_function vsc psc exesc in
         bbdcl_function (propsc,vs,(ps,traintc),retc,exes)
 
-    | BBDCL_procedure (propsc,vsc,(psc,traintc),exesc) ->
-        let vs,ps,exes = fixup_function vsc psc exesc in
-        bbdcl_procedure (propsc,vs,(ps,traintc),exes)
-
     | _ -> assert false
   in
 
@@ -345,11 +340,6 @@ let synthesize_functions syms bsym_table uncurry_map =
 let replace_calls syms bsym_table uncurry_map =
   Flx_bsym_table.iter begin fun bid bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_procedure (props,vs,ps,exes) ->
-        let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
-        let bbdcl = bbdcl_procedure (props,vs,ps,exes) in
-        Flx_bsym_table.update_bbdcl bsym_table bid bbdcl
-
     | BBDCL_function (props,vs,ps,ret,exes) ->
         let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
         let bbdcl = bbdcl_function (props,vs,ps,ret,exes) in

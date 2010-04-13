@@ -109,26 +109,20 @@ let exes_use_yield exes =
 let set_gc_use bsym_table index bsym =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_function (props, vs, ps, rt, exes) ->
-    let uses_gc = exes_use_gc bsym_table exes in
-    let uses_yield = exes_use_yield exes in
-    let props = if uses_gc
-      then `Uses_gc :: props
-      else props
-    in
-    let props = if uses_yield
-      then `Heap_closure :: `Yields :: `Generator :: props
-      else props
-    in
-    if uses_gc or uses_yield then begin
-      let bbdcl = bbdcl_function (`Uses_gc :: props,vs,ps,rt,exes) in
+      let props = if exes_use_gc bsym_table exes
+        then `Uses_gc :: props
+        else props
+      in
+      let props =
+        match rt with
+        | BTYP_void -> props
+        | _ ->
+            if exes_use_yield exes
+              then `Heap_closure :: `Yields :: `Generator :: props
+              else props
+      in
+      let bbdcl = bbdcl_function (props,vs,ps,rt,exes) in
       Flx_bsym_table.update_bbdcl bsym_table index bbdcl
-    end
-
-  | BBDCL_procedure (props, vs, ps, exes) ->
-    if exes_use_gc bsym_table exes then begin
-      let bbdcl = bbdcl_procedure (`Uses_gc :: props,vs,ps,exes) in
-      Flx_bsym_table.update_bbdcl bsym_table index bbdcl
-    end
 
   | _ -> ()
 
@@ -153,17 +147,10 @@ let exes_use_global bsym_table exes =
 let set_local_globals bsym_table index bsym =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_function (props,vs,ps,rt,exes) ->
-    if exes_use_global bsym_table exes then begin
-      let bbdcl = bbdcl_function (`Uses_global_var :: props,vs,ps,rt,exes) in
-      Flx_bsym_table.update_bbdcl bsym_table index bbdcl
-    end
-
-  | BBDCL_procedure (props,vs,ps,exes) ->
-    if exes_use_global bsym_table exes then begin
-      let bbdcl = bbdcl_procedure (`Uses_global_var :: props,vs,ps,exes) in
-      Flx_bsym_table.update_bbdcl bsym_table index bbdcl
-    end
-
+      if exes_use_global bsym_table exes then begin
+        let bbdcl = bbdcl_function (`Uses_global_var :: props,vs,ps,rt,exes) in
+        Flx_bsym_table.update_bbdcl bsym_table index bbdcl
+      end
   | _ -> ()
 
 type ptf_required = | Required | Not_required | Unknown
@@ -225,23 +212,6 @@ let rec set_ptf_usage bsym_table usage excludes i bsym =
       print_endline ("Function " ^ id ^ " ADDING properties " ^ string_of_properties [result2]);
       *)
       let bbdcl = bbdcl_function (result2 :: props,vs,ps,rt,exes) in
-      Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
-      result1
-   end
-
-  | BBDCL_procedure (props,vs,ps,exes) ->
-    if List.mem `Requires_ptf props then Required
-    else if List.mem `Not_requires_ptf props then Not_required
-    else if
-      List.mem `Uses_global_var props or
-      List.mem `Uses_gc props or
-      List.mem `Heap_closure props then begin
-        let bbdcl = bbdcl_procedure (`Requires_ptf :: props,vs,ps,exes) in
-        Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
-        Required
-    end else begin
-      let result1, result2 = cal_reqs calls i in
-      let bbdcl = bbdcl_procedure (result2 :: props,vs,ps,exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       result1
    end

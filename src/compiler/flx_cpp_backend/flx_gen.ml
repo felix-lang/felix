@@ -93,8 +93,6 @@ let get_type bsym_table index =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_function (props,vs,(ps,_),ret,_) ->
       btyp_function (typeof_bparams ps,ret)
-  | BBDCL_procedure (props,vs,(ps,_),_) ->
-      btyp_function (typeof_bparams ps, btyp_void ())
   | _ -> failwith "Only function and procedure types handles by get_type"
 
 
@@ -526,7 +524,7 @@ let gen_function_names syms bsym_table =
         failwith ("[gen_functions] can't find index " ^ string_of_bid index)
     in
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,vs,(ps,traint), ret, _) ->
+    | BBDCL_function (props,vs,(ps,traint), _, _) ->
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
       end else begin
         let name = cpp_instance_name syms bsym_table index ts in
@@ -534,13 +532,6 @@ let gen_function_names syms bsym_table =
       end
 
     | BBDCL_callback (props,vs,ps_cf,ps_c,_,ret',_,_) ->  ()
-
-    | BBDCL_procedure (props,vs,(ps,traint),_) ->
-      if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
-      end else begin
-        let name = cpp_instance_name syms bsym_table index ts in
-        bcat s ("struct " ^ name ^ ";\n");
-      end
 
     | _ -> () (* bcat s ("//SKIPPING " ^ id ^ "\n") *)
   )
@@ -571,20 +562,44 @@ let gen_functions syms bsym_table =
         failwith ("[gen_functions] can't find index " ^ string_of_bid index)
     in
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,vs,(ps,traint), ret, _) ->
+    | BBDCL_function (props,vs,(ps,traint),ret,_) ->
+      let is_proc = Flx_btype.is_void ret in
+      let name = if is_proc then "FUNCTION" else "PROCEDURE" in
       bcat s ("\n//------------------------------\n");
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
-        bcat s ("//PURE C FUNCTION <" ^ string_of_bid index ^ ">: " ^
+        bcat s ("//PURE C " ^ name ^ " <" ^ string_of_bid index ^ ">: " ^
           qualified_name_of_bindex bsym_table index ^ tss ^
           "\n");
         bcat s
-        (gen_C_function syms bsym_table props index (Flx_bsym.id bsym) (Flx_bsym.sr bsym) vs ps ret ts i)
+        (gen_C_function
+          syms
+          bsym_table
+          props
+          index
+          (Flx_bsym.id bsym)
+          (Flx_bsym.sr bsym)
+          vs
+          ps
+          ret
+          ts
+          i)
       end else begin
-        bcat s ("//FUNCTION <" ^ string_of_bid index ^ ">: " ^
+        bcat s ("//" ^ name ^ " <" ^ string_of_bid index ^ ">: " ^
           qualified_name_of_bindex bsym_table index ^ tss ^
           "\n");
         bcat s
-        (gen_function syms bsym_table props index (Flx_bsym.id bsym) (Flx_bsym.sr bsym) vs ps ret ts i)
+        (gen_function
+          syms
+          bsym_table
+          props
+          index
+          (Flx_bsym.id bsym)
+          (Flx_bsym.sr bsym)
+          vs
+          ps
+          ret
+          ts
+          i)
       end
 
     | BBDCL_callback (props,vs,ps_cf,ps_c,_,ret',_,_) ->
@@ -649,46 +664,6 @@ let gen_functions syms bsym_table =
         ) ^
         ");\n"
       in bcat s sss
-
-    | BBDCL_procedure (props,vs,(ps,traint),_) ->
-      bcat s ("\n//------------------------------\n");
-      (*
-      print_endline ("Procedure " ^ qualified_name_of_bindex bsym_table index);
-      print_endline ("properties: " ^ string_of_properties props);
-      *)
-      if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin
-        bcat s ("//PURE C PROC <" ^ string_of_bid index ^ ">: " ^
-        qualified_name_of_bindex bsym_table index ^ tss ^ "\n");
-        bcat s
-        (gen_C_function
-          syms
-          bsym_table
-          props
-          index
-          (Flx_bsym.id bsym)
-          (Flx_bsym.sr bsym)
-          vs
-          ps
-          (btyp_void ())
-          ts
-          i)
-      end else begin
-        bcat s ("//PROC <" ^ string_of_bid index ^ ">: " ^
-        qualified_name_of_bindex bsym_table index ^ tss ^ "\n");
-        bcat s
-        (gen_function
-          syms
-          bsym_table
-          props
-          index
-          (Flx_bsym.id bsym)
-          (Flx_bsym.sr bsym)
-          vs
-          ps
-          (btyp_void ())
-          ts
-          i)
-      end
 
     | _ -> () (* bcat s ("//SKIPPING " ^ id ^ "\n") *)
   )
@@ -762,8 +737,8 @@ let gen_exe filename
   in
   let our_display = get_display_list bsym_table this in
   let kind = match Flx_bsym.bbdcl bsym with
+    | BBDCL_function (_,_,_,BTYP_void,_) -> Procedure
     | BBDCL_function (_,_,_,_,_) -> Function
-    | BBDCL_procedure (_,_,_,_) -> Procedure
     | _ -> failwith "Expected executable code to be in function or procedure"
   in let our_level = length our_display in
 
@@ -838,7 +813,7 @@ let gen_exe filename
       sub_end
 
 
-    | BBDCL_procedure (props,vs,ps,bexes) ->
+    | BBDCL_function (props,vs,ps,BTYP_void,bexes) ->
       if bexes = []
       then
       "      //call to empty procedure " ^ Flx_bsym.id bsym ^ " elided\n"
@@ -1100,7 +1075,7 @@ let gen_exe filename
         | _ -> assert false
       in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_procedure (props,vs,(ps,traint),_) ->
+      | BBDCL_function (props,vs,(ps,traint),BTYP_void,_) ->
         assert (mem `Stack_closure props);
         let a = match a with (a,t) -> a, tsub t in
         let ts = map tsub ts in
@@ -1598,7 +1573,7 @@ let gen_C_procedure_body filename syms bsym_table
     )
   );
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_procedure (props,vs,(bps,traint),exes) ->
+  | BBDCL_function (props,vs,(bps,traint),BTYP_void,exes) ->
     let requires_ptf = mem `Requires_ptf props in
     if length ts <> length vs then
     failwith
@@ -1667,7 +1642,9 @@ let gen_C_procedure_body filename syms bsym_table
             then
               let t = rt vs t in
               let t = match k with
-(*                | `PRef -> btyp_pointer t *)
+                (*
+                | `PRef -> btyp_pointer t
+                *)
                 | `PFun -> btyp_function (btyp_void (),t)
                 | _ -> t
               in
@@ -1868,7 +1845,7 @@ let gen_procedure_methods filename syms bsym_table
     )
   );
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_procedure (props,vs,(bps,traint),exes) ->
+  | BBDCL_function (props,vs,(bps,traint),BTYP_void,exes) ->
     if length ts <> length vs then
     failwith
     (
@@ -2025,7 +2002,22 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
       failwith ("[gen_execute_methods] Can't find index " ^ string_of_bid index)
   in
   begin match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (props,vs,(ps,traint), ret, _) ->
+  | BBDCL_function (props,vs,(ps,traint),BTYP_void,_) ->
+    bcat s ("//------------------------------\n");
+    if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
+      bcat s (
+        gen_C_procedure_body filename syms bsym_table
+        label_info counter index ts (Flx_bsym.sr bsym) instance_no
+      )
+    else
+      let call,ctor =
+        gen_procedure_methods filename syms bsym_table
+        label_info counter index ts instance_no
+      in
+      bcat s call;
+      bcat s2 ctor
+
+  | BBDCL_function (props,vs,(ps,traint),ret,_) ->
     bcat s ("//------------------------------\n");
     if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
       bcat s (
@@ -2157,21 +2149,6 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
         "  }\n"
       in bcat s sss
 
-  | BBDCL_procedure (props,vs,(ps,traint),_) ->
-    bcat s ("//------------------------------\n");
-    if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
-      bcat s (
-        gen_C_procedure_body filename syms bsym_table
-        label_info counter index ts (Flx_bsym.sr bsym) instance_no
-      )
-    else
-      let call,ctor =
-        gen_procedure_methods filename syms bsym_table
-        label_info counter index ts instance_no
-      in
-      bcat s call;
-      bcat s2 ctor
-
   | _ -> ()
   end
   ;
@@ -2192,7 +2169,7 @@ let gen_biface_header syms bsym_table biface = match biface with
         failwith ("[gen_biface_header] Can't find index " ^ string_of_bid index)
     in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,vs,(ps,traint), ret, _) ->
+    | BBDCL_function (props,vs,(ps,traint),ret,_) ->
       let display = get_display_list bsym_table index in
       if length display <> 0
       then clierr sr "Can't export nested function";
@@ -2207,33 +2184,16 @@ let gen_biface_header syms bsym_table biface = match biface with
         else "FLX_FPAR_DECL\n" ^ cat ",\n  " arglist
         )
       in
-      let rettypename = cpp_typename syms bsym_table ret in
+      let name, rettypename =
+        match ret with
+        | BTYP_void -> "PROCEDURE", "con_t * "
+        | _ -> "FUNCTION", cpp_typename syms bsym_table ret
+      in
 
-      "//EXPORT FUNCTION " ^ cpp_instance_name syms bsym_table index [] ^
+      "//EXPORT " ^ name ^ " " ^ cpp_instance_name syms bsym_table index [] ^
       " as " ^ export_name ^ "\n" ^
-      "extern \"C\" FLX_EXPORT " ^ rettypename ^" " ^
+      "extern \"C\" FLX_EXPORT " ^ rettypename ^ " " ^
       export_name ^ "(\n" ^ arglist ^ "\n);\n"
-
-    | BBDCL_procedure (props,vs,(ps,traint), _) ->
-      let display = get_display_list bsym_table index in
-      if length display <> 0
-      then clierr sr "Can't export nested proc";
-
-      let arglist =
-        map
-        (fun {ptyp=t} -> cpp_typename syms bsym_table t)
-        ps
-      in
-      let arglist = "  " ^
-        (if length ps = 0 then "FLX_FPAR_DECL_ONLY"
-        else "FLX_FPAR_DECL\n" ^ cat ",\n  " arglist
-        )
-      in
-
-      "//EXPORT PROCEDURE " ^ cpp_instance_name syms bsym_table index [] ^
-      " as " ^ export_name ^ "\n" ^
-      "extern \"C\" FLX_EXPORT con_t * "  ^ export_name ^
-      "(\n" ^ arglist ^ "\n);\n"
 
     | _ -> failwith "Not implemented: export non-function/procedure"
     end
@@ -2253,53 +2213,7 @@ let gen_biface_body syms bsym_table biface = match biface with
         failwith ("[gen_biface_body] Can't find index " ^ string_of_bid index)
     in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,vs,(ps,traint), ret, _) ->
-      if length vs <> 0
-      then clierr (Flx_bsym.sr bsym) ("Can't export generic function " ^ Flx_bsym.id bsym)
-      ;
-      let display = get_display_list bsym_table index in
-      if length display <> 0
-      then clierr sr "Can't export nested function";
-      let arglist =
-        map
-        (fun {ptyp=t; pid=name} -> cpp_typename syms bsym_table t ^ " " ^ name)
-        ps
-      in
-      let arglist = "  " ^
-        (if length ps = 0 then "FLX_FPAR_DECL_ONLY"
-        else "FLX_FPAR_DECL\n  " ^ cat ",\n  " arglist
-        )
-      in
-      (*
-      if mem `Stackable props then print_endline ("Stackable " ^ export_name);
-      if mem `Stack_closure props then print_endline ("Stack_closure" ^ export_name);
-      *)
-      let is_C_fun = mem `Pure props && not (mem `Heap_closure props) in
-      let requires_ptf = mem `Requires_ptf props in
-
-      let rettypename = cpp_typename syms bsym_table ret in
-      let class_name = cpp_instance_name syms bsym_table index [] in
-
-      "//EXPORT FUNCTION " ^ class_name ^
-      " as " ^ export_name ^ "\n" ^
-      rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n){\n" ^
-      (if is_C_fun then
-      "  return " ^ class_name ^ "(" ^
-      (
-        if requires_ptf
-        then "_PTFV" ^ (if length ps > 0 then "," else "")
-        else ""
-      )
-      ^cat ", " (Flx_bparameter.get_names ps) ^ ");\n"
-      else
-      "  return (new(*_PTF gcp,"^class_name^"_ptr_map,true)\n" ^
-      "    " ^ class_name ^ "(_PTFV)\n" ^
-      "    ->apply(" ^ cat ", " (Flx_bparameter.get_names ps) ^ ");\n"
-      )^
-      "}\n"
-
-    | BBDCL_procedure (props,vs,(ps,traint),_) ->
-      let stackable = mem `Stack_closure props in
+    | BBDCL_function (props,vs,(ps,traint),BTYP_void,_) ->
       if length vs <> 0
       then clierr (Flx_bsym.sr bsym) ("Can't export generic procedure " ^ Flx_bsym.id bsym)
       ;
@@ -2353,7 +2267,7 @@ let gen_biface_body syms bsym_table biface = match biface with
       " as " ^ export_name ^ "\n" ^
       "con_t *" ^ export_name ^ "(\n" ^ strparams ^ "\n){\n" ^
       (
-        if stackable then
+        if mem `Stack_closure props then
         (
           if mem `Pure props && not (mem `Heap_closure props) then
           (
@@ -2382,6 +2296,51 @@ let gen_biface_body syms bsym_table biface = match biface with
         "\n      ->call(" ^ strargs ^ ");\n"
       )
       ^
+      "}\n"
+
+    | BBDCL_function (props,vs,(ps,traint),ret,_) ->
+      if length vs <> 0
+      then clierr (Flx_bsym.sr bsym) ("Can't export generic function " ^ Flx_bsym.id bsym)
+      ;
+      let display = get_display_list bsym_table index in
+      if length display <> 0
+      then clierr sr "Can't export nested function";
+      let arglist =
+        map
+        (fun {ptyp=t; pid=name} -> cpp_typename syms bsym_table t ^ " " ^ name)
+        ps
+      in
+      let arglist = "  " ^
+        (if length ps = 0 then "FLX_FPAR_DECL_ONLY"
+        else "FLX_FPAR_DECL\n  " ^ cat ",\n  " arglist
+        )
+      in
+      (*
+      if mem `Stackable props then print_endline ("Stackable " ^ export_name);
+      if mem `Stack_closure props then print_endline ("Stack_closure" ^ export_name);
+      *)
+      let is_C_fun = mem `Pure props && not (mem `Heap_closure props) in
+      let requires_ptf = mem `Requires_ptf props in
+
+      let rettypename = cpp_typename syms bsym_table ret in
+      let class_name = cpp_instance_name syms bsym_table index [] in
+
+      "//EXPORT FUNCTION " ^ class_name ^
+      " as " ^ export_name ^ "\n" ^
+      rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n){\n" ^
+      (if is_C_fun then
+      "  return " ^ class_name ^ "(" ^
+      (
+        if requires_ptf
+        then "_PTFV" ^ (if length ps > 0 then "," else "")
+        else ""
+      )
+      ^cat ", " (Flx_bparameter.get_names ps) ^ ");\n"
+      else
+      "  return (new(*_PTF gcp,"^class_name^"_ptr_map,true)\n" ^
+      "    " ^ class_name ^ "(_PTFV)\n" ^
+      "    ->apply(" ^ cat ", " (Flx_bparameter.get_names ps) ^ ");\n"
+      )^
       "}\n"
 
     | _ -> failwith "Not implemented: export non-function/procedure"

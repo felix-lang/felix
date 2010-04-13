@@ -18,7 +18,6 @@ type t =
   | BBDCL_invalid
   | BBDCL_module
   | BBDCL_function of   property_t list * bvs_t * Flx_bparams.t * Flx_btype.t * Flx_bexe.t list
-  | BBDCL_procedure of  property_t list * bvs_t * Flx_bparams.t * Flx_bexe.t list
   | BBDCL_val of        bvs_t * Flx_btype.t * value_kind_t
 
   (* binding structures [prolog] *)
@@ -55,9 +54,6 @@ let bbdcl_module () =
 
 let bbdcl_function (prop, bvs, ps, res, es) =
   BBDCL_function (prop, bvs, ps, res, es)
-
-let bbdcl_procedure (prop, bvs, ps, es) =
-  BBDCL_procedure (prop, bvs, ps, es)
 
 let bbdcl_val (bvs, t, kind) =
   BBDCL_val (bvs, t, kind)
@@ -115,8 +111,7 @@ let bbdcl_lemma () =
 (** Extract the parameters of a bound declaration. *)
 let get_bparams = function
   | BBDCL_invalid -> assert false
-  | BBDCL_function (_,_,ps,_,_)
-  | BBDCL_procedure (_,_,ps,_) -> ps
+  | BBDCL_function (_,_,ps,_,_) -> ps
   | _ -> assert false
 
 (** Extract the types of a bound declaration. *)
@@ -130,7 +125,6 @@ let get_bvs = function
   | BBDCL_invalid -> assert false
   | BBDCL_module -> []
   | BBDCL_function (_, bvs, _, _, _) -> bvs
-  | BBDCL_procedure (_, bvs, _, _) -> bvs
   | BBDCL_val (bvs, _, _) -> bvs
   | BBDCL_newtype (bvs, _) -> bvs
   | BBDCL_abs (bvs, _, _, _) -> bvs
@@ -192,9 +186,6 @@ let iter
   | BBDCL_function (_,_,ps,res,es) ->
       f_ps ps;
       f_btype res;
-      List.iter f_bexe es
-  | BBDCL_procedure (_,_,ps,es) ->
-      f_ps ps;
       List.iter f_bexe es
   | BBDCL_val (_,t,`Ref) -> f_btype (Flx_btype.btyp_pointer t)
   | BBDCL_val (_,t,_) -> f_btype t
@@ -267,8 +258,6 @@ let map
   | BBDCL_module -> bbdcl
   | BBDCL_function (props,bvs,ps,res,es) ->
       BBDCL_function (props,bvs,f_ps ps,f_btype res,List.map f_bexe es)
-  | BBDCL_procedure (props,bvs,ps,es) ->
-      BBDCL_procedure (props,bvs,f_ps ps,List.map f_bexe es)
   | BBDCL_val (bvs,t,`Ref) ->
       bbdcl_val (bvs,f_btype (Flx_btype.btyp_pointer t),`Ref)
   | BBDCL_val (bvs,t,kind) -> bbdcl_val (bvs,f_btype t,kind)
@@ -353,8 +342,6 @@ let iter_uses f bbdcl =
   | BBDCL_function (_,_,ps,res,_) ->
       f_ps ps;
       f_btype res
-  | BBDCL_procedure (_,_,ps,_) ->
-      f_ps ps
   | BBDCL_abs (_,quals,_,breqs) ->
       List.iter f_btype_qual quals;
       f_breqs breqs
@@ -402,12 +389,6 @@ let rec print f = function
         print_bvs bvs
         Flx_bparams.print ps
         Flx_btype.print res
-        (Flx_list.print Flx_bexe.print) es
-  | BBDCL_procedure (props,bvs,ps,es) ->
-      print_variant4 f "BBDCL_procedure"
-        print_properties props
-        print_bvs bvs
-        Flx_bparams.print ps
         (Flx_list.print Flx_bexe.print) es
   | BBDCL_val (bvs,t,kind) ->
       let print_kind f = function

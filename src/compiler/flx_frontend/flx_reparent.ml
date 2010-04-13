@@ -301,24 +301,6 @@ let reparent1
   in
 
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_procedure (props,vs,(ps,traint),exes) ->
-    let exes = rexes exes in
-    let ps = remap_ps ps in
-    let props = allow_rescan rescan_flag props in
-    let props = filter (fun p -> p <> `Virtual) props in
-    update_bsym (bbdcl_procedure (props,splice vs,(ps,traint),exes));
-    (*
-    print_endline "NEW PROCEDURE (clone):";
-    print_function sym_table bsym_table k;
-    *)
-    let calls = try Hashtbl.find uses index with Not_found -> [] in
-    let calls = map (fun (j,sr) -> revar j,sr) calls in
-    (*
-    print_endline ("Cal new usage of proc " ^ si k ^ ": " ^
-      catmap "," (fun (j,_) -> si j) calls);
-    *)
-    Hashtbl.add uses k calls
-
   | BBDCL_function (props, vs, (ps,traint), ret, exes) ->
     let props = allow_rescan rescan_flag props in
     let props = filter (fun p -> p <> `Virtual) props in
@@ -326,16 +308,8 @@ let reparent1
     let exes = rexes exes in
     let ret = auxt ret in
     update_bsym (bbdcl_function (props,splice vs,(ps,traint),ret,exes));
-    (*
-    print_endline "NEW FUNCTION (clone):";
-    print_function sym_table bsym_table k;
-    *)
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
-    (*
-    print_endline ("Cal new usage of fun " ^ si k ^ ": " ^
-      catmap "," (fun (j,_) -> si j) calls);
-    *)
     Hashtbl.add uses k calls
 
   | BBDCL_val (vs,t,kind) ->
