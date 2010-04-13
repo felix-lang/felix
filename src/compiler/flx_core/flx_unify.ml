@@ -760,31 +760,31 @@ let type_match counter t1 t2 = (* print_endline "TYPE MATCH"; *)
 
 let unfold t =
   let rec aux depth t' =
-  let uf t = aux (depth+1) t in
-  match t' with
-  | BTYP_sum ls -> btyp_sum (List.map uf ls)
-  | BTYP_tuple ls -> btyp_tuple (List.map uf ls)
-  | BTYP_record ls -> btyp_record (List.map (fun (s,t) -> s,uf t) ls)
-  | BTYP_variant ls -> btyp_variant (List.map (fun (s,t) -> s,uf t) ls)
-  | BTYP_array (a,b) -> btyp_array (uf a, uf b)
-  | BTYP_function (a,b) -> btyp_function (uf a, uf b)
-  | BTYP_cfunction (a,b) -> btyp_cfunction (uf a, uf b)
-  | BTYP_pointer a -> btyp_pointer (uf a)
-  | BTYP_fix i when (-i) = depth -> t
-  | BTYP_fix i when (-i) > depth -> raise (Free_fixpoint t')
-  | BTYP_type_apply (a,b) -> btyp_type_apply(uf a, uf b)
-  | BTYP_inst (i,ts) -> btyp_inst (i,List.map uf ts)
-  | BTYP_type_function (p,r,b) ->
-      btyp_type_function (p,r,uf b)
-
-  | BTYP_type_match (a,tts) ->
-      let a = uf a in
-      (* don't unfold recursions in patterns yet because we don't know what they
-       * mean *)
-      let tts = List.map (fun (p,x) -> p, uf x) tts in
-      btyp_type_match (a,tts)
-
-  | _ -> t'
+    let uf t = aux (depth + 1) t in
+    match t' with
+    | BTYP_sum ls -> btyp_sum (List.map uf ls)
+    | BTYP_tuple ls -> btyp_tuple (List.map uf ls)
+    | BTYP_record ls -> btyp_record (List.map (fun (s,t) -> s,uf t) ls)
+    | BTYP_variant ls -> btyp_variant (List.map (fun (s,t) -> s,uf t) ls)
+    | BTYP_array (a,b) -> btyp_array (uf a,uf b)
+    | BTYP_function (a,b) -> btyp_function (uf a,uf b)
+    | BTYP_cfunction (a,b) -> btyp_cfunction (uf a,uf b)
+    | BTYP_pointer a -> btyp_pointer (uf a)
+    | BTYP_fix i when (-i) = depth -> t
+    | BTYP_fix i when (-i) > depth -> raise (Free_fixpoint t')
+    | BTYP_type_apply (a,b) -> btyp_type_apply (uf a,uf b)
+    | BTYP_inst (i,ts) -> btyp_inst (i,List.map uf ts)
+    | BTYP_type_function (p,r,b) ->
+        btyp_type_function (p,r,uf b)
+  
+    | BTYP_type_match (a,tts) ->
+        let a = uf a in
+        (* don't unfold recursions in patterns yet because we don't know what
+         * they mean *)
+        let tts = List.map (fun (p,x) -> p,uf x) tts in
+        btyp_type_match (a,tts)
+  
+    | _ -> t'
   in aux 0 t
 
 exception Found of Flx_btype.t

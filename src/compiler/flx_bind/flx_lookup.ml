@@ -708,26 +708,7 @@ and bind_type'
   let bt t = btp t params in
   let bi i ts = bind_type_index state bsym_table rs sr i ts mkenv in
   let bisub i ts = bind_type_index state bsym_table {rs with depth= rs.depth+1} sr i ts mkenv in
-  (*
-  print_endline ("[bind_type'] " ^ string_of_typecode t);
-  print_endline ("expr_fixlist is " ^
-    catmap ","
-    (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]")
-    expr_fixlist
-  );
-
-  if List.length params <> 0 then
-  begin
-    print_endline ("  [" ^
-    catmap ", "
-    (fun (s,t) -> s ^ " -> " ^ sbt bsym_table t)
-    params
-    ^ "]"
-    )
-  end
-  else print_endline  ""
-  ;
-  *)
+  
   let t =
   match t with
   | TYP_patvar _ -> failwith "Not implemented patvar in typecode"
@@ -737,129 +718,98 @@ and bind_type'
   | TYP_record ts -> btyp_record (List.map (fun (s,t) -> s,bt t) ts)
   | TYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s,bt t) ts)
 
-  (* We first attempt to perform the match
-    at binding time as an optimisation, if that
-    fails, we generate a delayed matching construction.
-    The latter will be needed when the argument is a type
-    variable.
-  *)
+  (* We first attempt to perform the match at binding time as an optimisation,
+   * if that fails, we generate a delayed matching construction. The latter
+   * will be needed when the argument is a type variable. *)
   | TYP_type_match (t,ps) ->
-    let t = bt t in
-    (*
-    print_endline ("Typematch " ^ sbt bsym_table t);
-    print_endline ("Context " ^ catmap "" (fun (n,t) -> "\n"^ n ^ " -> " ^ sbt bsym_table t) params);
-    *)
-    let pts = ref [] in
-    let finished = ref false in
-    List.iter
-    (fun (p',t') ->
-      (*
-      print_endline ("Considering case " ^ string_of_tpattern p' ^ " -> " ^ string_of_typecode t');
-      *)
-      let p',explicit_vars,any_vars, as_vars, eqns =
-        type_of_tpattern state.syms p'
-      in
-      let p' = bt p' in
-      let eqns = List.map (fun (j,t) -> j, bt t) eqns in
-      let varset =
-        let x =
-          List.fold_left (fun s (i,_) -> BidSet.add i s)
-          BidSet.empty explicit_vars
+      let t = bt t in
+      let pts = ref [] in
+      let finished = ref false in
+      List.iter begin fun (p',t') ->
+        let p',explicit_vars,any_vars, as_vars, eqns =
+          type_of_tpattern state.syms p'
         in
+        let p' = bt p' in
+        let eqns = List.map (fun (j,t) -> j, bt t) eqns in
+        let varset =
+          let x = List.fold_left
+            (fun s (i,_) -> BidSet.add i s)
+            BidSet.empty explicit_vars
+          in
           List.fold_left (fun s i -> BidSet.add i s)
           x any_vars
-      in
-      (* HACK! GACK! we have to assume a variable in a pattern is
-        is a TYPE variable .. type patterns don't include coercion
-        terms at the moment, so there isn't any way to even
-        specify the metatype
+        in
 
-        In some contexts the kinding can be infered, for example:
+        (* HACK! GACK! we have to assume a variable in a pattern is is a TYPE
+         * variable .. type patterns don't include coercion terms at the moment,
+         * so there isn't any way to even specify the metatype In some contexts
+         * the kinding can be infered, for example:
+         *
+         * int * ?x
+         *
+         * clearly x has to be a type .. but a lone type variable would require
+         * the argument typing to be known ... no notation for that yet either
+         * *)
+        let args = List.map (fun (i,s) ->
+        s, btyp_type_var (i,btyp_type 0)) (explicit_vars @ as_vars)
+        in
+        let t' = btp t' (params@args) in
+        let t' = list_subst state.syms.Flx_mtypes2.counter eqns t' in
+        pts := ({pattern=p'; pattern_vars=varset; assignments=eqns},t') :: !pts;
+        let u = maybe_unification state.syms.Flx_mtypes2.counter [p', t] in
+        match u with
+        | None ->  ()
+            (* CRAP! The below argument is correct BUT ..  our unification
+             * algorithm isn't strong enough ...  so just let this thru and hope
+             * it is reduced later on instantiation
+             *)
+            (* If the initially bound, context free pattern can never unify with
+             * the argument, we have a choice: chuck an error, or just eliminate
+             * the match case -- I'm going to chuck an error for now, because I
+             * don't see why one would ever code such a case, except as a
+             * mistake. *)
+            (*
+            clierr sr
+              ("[bind_type'] type match argument\n" ^
+              sbt bsym_table t ^
+              "\nwill never unify with pattern\n" ^
+              sbt bsym_table p'
+              )
+            *)
+        | Some mgu ->
+            if !finished then
+              print_endline "[bind_type] Warning: useless match case ignored"
+            else
+              let mguvars = List.fold_left
+                (fun s (i,_) -> BidSet.add i s)
+                BidSet.empty mgu
+              in
+              if varset = mguvars then finished := true
+      end ps;
+      let pts = List.rev !pts in
 
-        int * ?x
+      btyp_type_match (t,pts)
 
-        clearly x has to be a type .. but a lone type variable
-        would require the argument typing to be known ... no
-        notation for that yet either
-      *)
-      let args = List.map (fun (i,s) ->
-      (*
-      print_endline ("Mapping " ^ s ^ "<"^si i^"> to TYPE");
-      *)
-      s, btyp_type_var (i,btyp_type 0)) (explicit_vars @ as_vars)
-      in
-      let t' = btp t' (params@args) in
-      let t' = list_subst state.syms.Flx_mtypes2.counter eqns t' in
-      (*
-        print_endline ("Bound matching is " ^ sbt bsym_table p' ^ " => " ^ sbt bsym_table t');
-      *)
-      pts := ({pattern=p'; pattern_vars=varset; assignments=eqns},t') :: !pts;
-      let u = maybe_unification state.syms.Flx_mtypes2.counter [p', t] in
-      match u with
-      | None ->  ()
-        (* CRAP! The below argument is correct BUT ..
-        our unification algorithm isn't strong enough ...
-        so just let this thru and hope it is reduced
-        later on instantiation
-        *)
-        (* If the initially bound, context free pattern can never
-        unify with the argument, we have a choice: chuck an error,
-        or just eliminate the match case -- I'm going to chuck
-        an error for now, because I don't see why one would
-        ever code such a case, except as a mistake.
-        *)
-        (*
-        clierr sr
-          ("[bind_type'] type match argument\n" ^
-          sbt bsym_table t ^
-          "\nwill never unify with pattern\n" ^
-          sbt bsym_table p'
-          )
-        *)
-      | Some mgu ->
-        if !finished then
-          print_endline "[bind_type] Warning: useless match case ignored"
-        else
-          let mguvars = List.fold_left (fun s (i,_) -> BidSet.add i s) BidSet.empty mgu in
-          if varset = mguvars then finished := true
-    )
-    ps
-    ;
-    let pts = List.rev !pts in
-
-    let tm = btyp_type_match (t,pts) in
-    (*
-    print_endline ("Bound typematch is " ^ sbt bsym_table tm);
-    *)
-    tm
-
-
-  | TYP_dual t ->
-    let t = bt t in
-    dual t
-
+  | TYP_dual t -> dual (bt t)
   | TYP_proj (i,t) ->
-    let t = bt t in
-    ignore (try unfold t with _ -> failwith "TYP_proj unfold screwd");
-    begin match unfold t with
-    | BTYP_tuple ls ->
-      if i < 1 or i> List.length ls
-      then
-       clierr sr
-        (
-          "product type projection index " ^
-          string_of_int i ^
-          " out of range 1 to " ^
-          string_of_int (List.length ls)
-        )
-      else List.nth ls (i-1)
+      let t = bt t in
+      ignore (try unfold t with _ -> failwith "TYP_proj unfold screwd");
+      begin match unfold t with
+      | BTYP_tuple ls ->
+          if i < 1 or i> List.length ls
+          then
+            clierr sr
+            (
+              "product type projection index " ^
+              string_of_int i ^
+              " out of range 1 to " ^
+              string_of_int (List.length ls)
+            )
+          else List.nth ls (i-1)
 
-    | _ ->
-      clierr sr
-      (
-        "\ntype projection requires product type"
-      )
-    end
+      | _ ->
+          clierr sr "\ntype projection requires product type"
+      end
 
   | TYP_dom t ->
     let t = bt t in
@@ -933,169 +883,119 @@ and bind_type'
   | TYP_setintersection ts -> btyp_type_set_intersection (List.map bt ts)
 
 
-  | TYP_isin (elt,tset) ->
-    let elt = bt elt in
-    let tset = bt tset in
-    handle_typeset state sr elt tset
+  | TYP_isin (elt,typeset) ->
+      let elt = bt elt in
+      let typeset = bt typeset in
+      handle_typeset state sr elt typeset
 
-  (* HACK .. assume variable is type TYPE *)
   | TYP_var i ->
-    (*
-    print_endline ("Fudging metatype of type variable " ^ si i);
-    *)
-    btyp_type_var (i, btyp_type 0)
+      (* HACK .. assume variable is type TYPE *)
+      btyp_type_var (i, btyp_type 0)
 
   | TYP_as (t,s) ->
-    bind_type' state bsym_table env
-    { rs with as_fixlist = (s,rs.depth)::rs.as_fixlist }
-    sr t params mkenv
-
-  | TYP_typeof e ->
-    (*
-    print_endline ("Evaluating typeof(" ^ string_of_expr e ^ ")");
-    *)
-    let t =
-      if List.mem_assq e rs.expr_fixlist
-      then begin
-        (*
-        print_endline "Typeof is recursive";
-        *)
-        let outer_depth = List.assq e rs.expr_fixlist in
-        let fixdepth = outer_depth -rs.depth in
-        (*
-        print_endline ("OUTER DEPTH IS " ^ string_of_int outer_depth);
-        print_endline ("CURRENT DEPTH " ^ string_of_int rs.depth);
-        print_endline ("FIXPOINT IS " ^ string_of_int fixdepth);
-        *)
-        btyp_fix fixdepth
-      end
-      else begin
-        snd (bind_expression' state bsym_table env rs e [])
-      end
-    in
-      (*
-      print_endline ("typeof --> " ^ sbt bsym_table t);
-      *)
-      t
-
-  | TYP_array (t1,t2)->
-    let index = match bt t2 with
-    | BTYP_tuple [] -> btyp_unitsum 1
-    | x -> x
-    in
-    btyp_array (bt t1, index)
-
-  | TYP_tuple ts ->
-    let ts' = List.map bt ts in
-    btyp_tuple ts'
-
-  | TYP_unitsum k ->
-    (match k with
-    | 0 -> btyp_void
-    | 1 -> btyp_tuple []
-    | _ -> btyp_unitsum k
-    )
-
-  | TYP_sum ts ->
-    let ts' = List.map bt ts  in
-    if all_units ts' then
-      btyp_unitsum (List.length ts)
-    else
-      btyp_sum ts'
-
-  | TYP_function (d,c) ->
-    let
-      d' = bt d  and
-      c' = bt c
-    in
-      btyp_function (bt d, bt c)
-
-  | TYP_cfunction (d,c) ->
-    let
-      d' = bt d  and
-      c' = bt c
-    in
-      btyp_cfunction (bt d, bt c)
-
-  | TYP_pointer t ->
-     let t' = bt t in
-     btyp_pointer t'
-
-  | TYP_void _ ->
-    btyp_void
-
-  | TYP_typefun (ps,r,body) ->
-    (*
-    print_endline ("BINDING TYPE FUNCTION " ^ string_of_typecode t);
-    *)
-    let data =
-      List.rev_map
-      (fun (name,mt) ->
-        name,
-        bt mt,
-        fresh_bid state.syms.counter
-      )
-      ps
-    in
-    let pnames =  (* reverse order .. *)
-      List.map (fun (n, t, i) ->
-        (*
-        print_endline ("Binding param " ^ n ^ "<" ^ si i ^ "> metatype " ^ sbt bsym_table t);
-        *)
-        (n, btyp_type_var (i,t))) data
-    in
-    let bbody =
-      (*
-      print_endline (" ... binding body .. " ^ string_of_typecode body);
-      print_endline ("Context " ^ catmap "" (fun (n,t) -> "\n"^ n ^ " -> " ^ sbt bsym_table t) (pnames @ params));
-      *)
       bind_type'
         state
         bsym_table
         env
-        { rs with depth=rs.depth+1 }
+        { rs with as_fixlist = (s,rs.depth)::rs.as_fixlist }
         sr
-        body
-        (pnames@params)
+        t
+        params
         mkenv
-    in
-      let bparams = (* order as written *)
-        List.rev_map (fun (n,t,i) -> (i,t)) data
+
+  | TYP_typeof e ->
+      if List.mem_assq e rs.expr_fixlist
+      then begin
+        (* Typeof is recursive *)
+        let outer_depth = List.assq e rs.expr_fixlist in
+        let fixdepth = outer_depth -rs.depth in
+        btyp_fix fixdepth
+      end else begin
+        snd (bind_expression' state bsym_table env rs e [])
+      end
+
+  | TYP_array (t1,t2)->
+      let t2 =
+        match bt t2 with
+        | BTYP_tuple [] -> btyp_unitsum 1
+        | x -> x
       in
-      (*
-      print_endline "BINDING type function DONE\n";
-      *)
+      btyp_array (bt t1, t2)
+
+  | TYP_tuple ts -> btyp_tuple (List.map bt ts)
+  | TYP_unitsum k ->
+      begin match k with
+      | 0 -> btyp_void
+      | 1 -> btyp_tuple []
+      | _ -> btyp_unitsum k
+      end
+
+  | TYP_sum ts ->
+      let ts' = List.map bt ts in
+      if Flx_btype.all_units ts' then
+        btyp_unitsum (List.length ts)
+      else
+        btyp_sum ts'
+
+  | TYP_function (d,c) -> btyp_function (bt d, bt c)
+  | TYP_cfunction (d,c) -> btyp_cfunction (bt d, bt c)
+  | TYP_pointer t -> btyp_pointer (bt t)
+  | TYP_void _ -> btyp_void
+
+  | TYP_typefun (ps,r,body) ->
+      let data = List.rev_map
+        (fun (name, mt) -> name, bt mt, fresh_bid state.syms.counter)
+        ps
+      in
+      (* reverse order .. *)
+      let pnames = List.map
+        (fun (n, t, i) -> (n, btyp_type_var (i, t)))
+        data
+      in
+      let bbody =
+        bind_type'
+          state
+          bsym_table
+          env
+          { rs with depth=rs.depth + 1 }
+          sr
+          body
+          (pnames@params)
+          mkenv
+      in
+      (* order as written *)
+      let bparams = List.rev_map (fun (n, t, i) -> (i, t)) data in
+      
       btyp_type_function (bparams, bt r, bbody)
 
   | TYP_apply (TYP_name (_,"_flatten",[]),t2) ->
-    let t2 = bt t2 in
-    begin match t2 with
-    | BTYP_unitsum a -> t2
-    | BTYP_sum (BTYP_sum a :: t) -> btyp_sum (List.fold_left (fun acc b ->
-      match b with
-      | BTYP_sum b -> acc @ b
-      | BTYP_void -> acc
-      | _ -> clierr sr "Sum of sums required"
-      ) a t)
+      let make_ts a t =
+        List.fold_left begin fun acc b ->
+          match b with
+          | BTYP_unitsum b -> acc + b
+          | BTYP_tuple [] -> acc + 1
+          | BTYP_void -> acc
+          | _ -> clierr sr "Sum of unitsums required"
+        end a t
+      in
+      let t2 = bt t2 in
+      begin match t2 with
+      | BTYP_unitsum a -> t2
+      | BTYP_sum (BTYP_sum a :: t) ->
+          let ts =
+            List.fold_left begin fun acc b ->
+              match b with
+              | BTYP_sum b -> acc @ b
+              | BTYP_void -> acc
+              | _ -> clierr sr "Sum of sums required"
+            end a t
+          in
+          btyp_sum ts
+      | BTYP_sum (BTYP_unitsum a :: t) -> btyp_unitsum (make_ts a t)
+      | BTYP_sum (BTYP_tuple [] :: t) -> btyp_unitsum (make_ts 1 t)
 
-    | BTYP_sum (BTYP_unitsum a :: t) -> btyp_unitsum (List.fold_left (fun acc b ->
-      match b with
-      | BTYP_unitsum b -> acc + b
-      | BTYP_tuple [] -> acc + 1
-      | BTYP_void -> acc
-      | _ -> clierr sr "Sum of unitsums required"
-      ) a t)
-
-    | BTYP_sum (BTYP_tuple []  :: t) -> btyp_unitsum (List.fold_left (fun acc b ->
-      match b with
-      | BTYP_unitsum b -> acc + b
-      | BTYP_tuple [] -> acc + 1
-      | BTYP_void -> acc
-      | _ -> clierr sr "Sum of unitsums required"
-      ) 1 t)
-
-    | _ -> clierr sr ("Cannot flatten type " ^ sbt bsym_table t2)
-    end
+      | _ -> clierr sr ("Cannot flatten type " ^ sbt bsym_table t2)
+      end
 
   | TYP_apply (TYP_void _ as qn, t2)
   | TYP_apply (TYP_name _ as qn, t2)
@@ -1105,249 +1005,157 @@ and bind_type'
   | TYP_apply (TYP_the _ as qn, t2)
   | TYP_apply (TYP_index _ as qn, t2)
   | TYP_apply (TYP_callback _ as qn, t2) ->
-     let qn =
-       match qualified_name_of_typecode qn with
-       | Some qn -> qn
-       | None -> assert false
-     in
-     (*
-     print_endline ("Bind application as type " ^ string_of_typecode t);
-     *)
-     let t2 = bt t2 in
-     (*
-     print_endline ("meta typing argument " ^ sbt bsym_table t2);
-     *)
-     let sign = Flx_metatype.metatype state.sym_table bsym_table sr t2 in
-     (*
-     print_endline ("Arg type " ^ sbt bsym_table t2 ^ " meta type " ^ sbt bsym_table sign);
-     *)
-     let t =
-       try match qn with
-       | `AST_name (sr,name,[]) ->
-         let t1 = List.assoc name params in
-         btyp_type_apply (t1,t2)
-       | _ -> raise Not_found
-       with Not_found ->
-
-       (* Note: parameters etc cannot be found with a qualified name,
-       unless it is a simple name .. which is already handled by
-       the previous case .. so we can drop them .. ?
-       *)
-
-       (* PROBLEM: we don't know if the term is a type alias
-         or type constructor. The former don't overload ..
-         the latter do .. lookup_type_qn_with_sig is probably
-         the wrong routine .. if it finds a constructor, it
-         seems to return the type of the constructor instead
-         of the actual constructor ..
-       *)
-       (*
-       print_endline ("Lookup type qn " ^ string_of_qualified_name qn ^ " with sig " ^ sbt bsym_table sign);
-       *)
-       let t1 = lookup_type_qn_with_sig' state bsym_table sr sr env
-         {rs with depth=rs.depth+1 } qn [sign]
+      let qn =
+        match qualified_name_of_typecode qn with
+        | Some qn -> qn
+        | None -> assert false
        in
-       (*
-       print_endline ("DONE: Lookup type qn " ^ string_of_qualified_name qn ^ " with sig " ^ sbt bsym_table sign);
-       let t1 = bisub j ts in
-       *)
-       (*
-       print_endline ("Result of binding function term is " ^ sbt bsym_table t1);
-       *)
-       btyp_type_apply (t1,t2)
-     in
-     (*
-     print_endline ("type Application is " ^ sbt bsym_table t);
-     let t = beta_reduce state.syms sr t in
-     *)
-     (*
-     print_endline ("after beta reduction is " ^ sbt bsym_table t);
-     *)
-     t
+      let t2 = bt t2 in
+      let sign = Flx_metatype.metatype state.sym_table bsym_table sr t2 in
+     
+      begin try
+        match qn with
+        | `AST_name (sr,name,[]) ->
+            btyp_type_apply (List.assoc name params, t2)
+        | _ -> raise Not_found
+      with Not_found ->
+        (* Note: parameters etc cannot be found with a qualified name, unless
+         * it is a simple name .. which is already handled by the previous
+         * case .. so we can drop them .. ? *)
 
+        (* PROBLEM: we don't know if the term is a type alias or type
+         * constructor. The former don't overload ..  the latter do ..
+         * lookup_type_qn_with_sig is probably the wrong routine .. if it
+         * finds a constructor, it seems to return the type of the constructor
+         * instead of the actual constructor .. *)
+        let t1 = lookup_type_qn_with_sig'
+          state
+          bsym_table
+          sr
+          sr
+          env
+          {rs with depth=rs.depth + 1 }
+          qn
+          [sign]
+        in
+        btyp_type_apply (t1,t2)
+      end
 
-  | TYP_apply (t1,t2) ->
-    let t1 = bt t1 in
-    let t2 = bt t2 in
-    let t = btyp_type_apply (t1,t2) in
-    (*
-    let t = beta_reduce state.syms sr t in
-    *)
-    t
-
-  | TYP_type_tuple ts ->
-    btyp_type_tuple (List.map bt ts)
-
+  | TYP_apply (t1,t2) -> btyp_type_apply (bt t1, bt t2)
+  | TYP_type_tuple ts -> btyp_type_tuple (List.map bt ts)
   | TYP_type -> btyp_type 0
 
   | TYP_name (sr,s,[]) when List.mem_assoc s rs.as_fixlist ->
-    btyp_fix ((List.assoc s rs.as_fixlist)-rs.depth)
+      btyp_fix ((List.assoc s rs.as_fixlist) - rs.depth)
 
   | TYP_name (sr,s,[]) when List.mem_assoc s params ->
-    (*
-    print_endline "Found in assoc list .. ";
-    *)
-    List.assoc s params
+      List.assoc s params
 
   | TYP_index (sr,name,index) as x ->
-    (*
-    print_endline ("[bind type] AST_index " ^ string_of_qualified_name x);
-    *)
-    let { Flx_sym.vs=vs; symdef=entry } =
-      try hfind "lookup" state.sym_table index
-      with Not_found ->
-        syserr sr ("Synthetic name "^name ^ " not in symbol table!")
-    in
-    begin match entry with
-    | SYMDEF_struct _
-    | SYMDEF_cstruct _
-    | SYMDEF_union _
-    | SYMDEF_abs _
-      ->
-      (*
-      if List.length (fst vs) <> 0 then begin
-        print_endline ("Synthetic name "^name ^ " is a nominal type!");
-        print_endline ("Using ts = [] .. probably wrong since type is polymorphic!");
-      end
-      ;
-      *)
-      let ts = List.map (fun (s,i,_) ->
-        (*
-        print_endline ("[Ast_index] fudging type variable " ^ si i);
-        *)
-        btyp_type_var (i, btyp_type 0)) (fst vs)
+      let sym = 
+        try hfind "lookup" state.sym_table index
+        with Not_found ->
+          syserr sr ("Synthetic name "^name ^ " not in symbol table!")
       in
-      (*
-      print_endline ("Synthetic name "^name ^ "<"^si index^"> is a nominal type, ts=" ^
-      catmap "," (sbt bsym_table) ts
-      );
-      *)
-      btyp_inst (index,ts)
+      begin match sym.Flx_sym.symdef with
+      | SYMDEF_struct _
+      | SYMDEF_cstruct _
+      | SYMDEF_union _
+      | SYMDEF_abs _ ->
+          let ts = List.map
+            (fun (s,i,_) -> btyp_type_var (i, btyp_type 0))
+            (fst sym.Flx_sym.vs)
+          in
+          btyp_inst (index,ts)
+      | SYMDEF_typevar _ ->
+          print_endline ("Synthetic name "^name ^ " is a typevar!");
+          syserr sr ("Synthetic name "^name ^ " is a typevar!")
 
-    | SYMDEF_typevar _ ->
-      print_endline ("Synthetic name "^name ^ " is a typevar!");
-      syserr sr ("Synthetic name "^name ^ " is a typevar!")
-
-    | _
-      ->
-        print_endline ("Synthetic name "^name ^ " is not a nominal type!");
-        syserr sr ("Synthetic name "^name ^ " is not a nominal type!")
-    end
+      | _ ->
+          print_endline ("Synthetic name "^name ^ " is not a nominal type!");
+          syserr sr ("Synthetic name "^name ^ " is not a nominal type!")
+      end
 
   (* QUALIFIED OR UNQUALIFIED NAME *)
   | TYP_the (sr,qn) ->
-    (*
-    print_endline ("[bind_type] Matched THE qualified name " ^ string_of_qualified_name qn);
-    *)
-    let es,ts = lookup_qn_in_env2' state bsym_table env rs qn in
-    begin match es with
-    | FunctionEntry [index] ->
-       let ts = List.map bt ts in
-       let f =  bi (sye index) ts in
-       (*
-       print_endline ("f = " ^ sbt bsym_table f);
-       *)
-       f
+      let es,ts = lookup_qn_in_env2' state bsym_table env rs qn in
+      begin match es with
+      | FunctionEntry [index] -> bi (sye index) (List.map bt ts)
+      | NonFunctionEntry index  ->
+          let sym = hfind "lookup" state.sym_table (sye index) in
+          begin match sym.Flx_sym.symdef with
+          | SYMDEF_type_alias t ->
+              (* This is HACKY but probably right most of the time: we're
+               * defining "the t" where t is parameterised type as a type
+               * function accepting all the parameters and returning a type ..
+               * if the result were actually a functor this would be wrong ..
+               * you'd need to say "the (the t)" to bind the domain of the
+               * returned functor .. *)
 
-       (*
-       btyp_type_function (params, ret, body)
-
-
-       of (int * 't) list * 't * 't
-       *)
-       (*
-       failwith "TYPE FUNCTION CLOSURE REQUIRED!"
-       *)
-       (*
-       btyp_type_function_closure (sye index, ts)
-       *)
-
-    | NonFunctionEntry index  ->
-      let { Flx_sym.id=id;
-            vs=vs;
-            sr=sr;
-            symdef=entry } =
-        hfind "lookup" state.sym_table (sye index)
-      in
-      (*
-      print_endline ("NON FUNCTION ENTRY " ^ id);
-      *)
-      begin match entry with
-      | SYMDEF_type_alias t ->
-        (* This is HACKY but probably right most of the time: we're defining
-           "the t" where t is parameterised type as a type function accepting
-           all the parameters and returning a type .. if the result were
-           actually a functor this would be wrong .. you'd need to say
-           "the (the t)" to bind the domain of the returned functor ..
-        *)
-        (* NOTE THIS STUFF IGNORES THE VIEW AT THE MOMENT *)
-        let ivs,traint = vs in
-        let bmt mt =
-          match mt with
-          | TYP_patany _ -> btyp_type 0 (* default *)
-          | _ -> (try bt mt with _ -> clierr sr "metatyp binding FAILED")
-        in
-        let body =
-          let env = mkenv (sye index) in
-          let xparams = List.map
-            (fun (id,idx,mt) -> id, btyp_type_var (idx, bmt mt))
-            ivs
-          in
-          bind_type' state bsym_table env {rs with depth = rs.depth+1} sr t (xparams @ params) mkenv
-        in
-        let ret = btyp_type 0 in
-        let params = List.map (fun (id,idx,mt) -> idx, bmt mt) ivs in
-        btyp_type_function (params, ret, body)
-
-      | _ ->
-        let ts = List.map bt ts in
-        bi (sye index) ts
+              (* NOTE THIS STUFF IGNORES THE VIEW AT THE MOMENT *)
+              let ivs,traint = sym.Flx_sym.vs in
+              let bmt mt =
+                match mt with
+                | TYP_patany _ -> btyp_type 0 (* default *)
+                | _ -> (try bt mt with _ -> clierr sr "metatyp binding FAILED")
+              in
+              let body =
+                let env = mkenv (sye index) in
+                let xparams = List.map
+                  (fun (id,idx,mt) -> id, btyp_type_var (idx, bmt mt))
+                  ivs
+                in
+                bind_type'
+                  state
+                  bsym_table
+                  env
+                  { rs with depth = rs.depth + 1 }
+                  sr
+                  t
+                  (xparams @ params)
+                  mkenv
+              in
+              let ret = btyp_type 0 in
+              let params = List.map (fun (id, idx, mt) -> idx, bmt mt) ivs in
+              btyp_type_function (params, ret, body)
+          | _ ->
+              let ts = List.map bt ts in
+              bi (sye index) ts
+          end
+      | _ -> clierr sr "'the' expression denotes non-singleton function set"
       end
-
-    | _ -> clierr sr
-      "'the' expression denotes non-singleton function set"
-    end
 
   | TYP_name _
   | TYP_case_tag _
   | TYP_typed_case _
   | TYP_lookup _
   | TYP_callback _ as x ->
-    (*
-    print_endline ("[bind_type] Matched qualified name " ^ string_of_qualified_name x);
-    *)
-    if env = [] then print_endline "WOOPS EMPTY ENVIRONMENT!";
-    let x =
-      match qualified_name_of_typecode x with
-      | Some q -> q
-      | None -> assert false
-    in
-    let sr = src_of_qualified_name x in
-    begin match lookup_qn_in_env' state bsym_table env rs x with
-    | {base_sym=i; spec_vs=spec_vs; sub_ts=sub_ts},ts ->
+      let x =
+        match qualified_name_of_typecode x with
+        | Some q -> q
+        | None -> assert false
+      in
+      let sr = src_of_qualified_name x in
+      let entry_kind, ts = lookup_qn_in_env' state bsym_table env rs x in
       let ts = List.map bt ts in
-      (*
-      print_endline ("Qualified name lookup finds index " ^ si i);
-      print_endline ("spec_vs=" ^ catmap "," (fun (s,j)->s^"<"^si j^">") spec_vs);
-      print_endline ("spec_ts=" ^ catmap "," (sbt bsym_table) sub_ts);
-      print_endline ("input_ts=" ^ catmap "," (sbt bsym_table) ts);
-      begin match hfind "lookup" state.sym_table i with
-        | { Flx_sym.id=id;vs=vs;symdef=SYMDEF_typevar _} ->
-          print_endline (id ^ " is a typevariable, vs=" ^
-            catmap "," (fun (s,j,_)->s^"<"^si j^">") (fst vs)
-          )
-        | { Flx_sym.id=id} -> print_endline (id ^ " is not a type variable")
-      end;
-      *)
-      let baset = bi i sub_ts in
+      let baset = bi
+        entry_kind.Flx_btype.base_sym
+        entry_kind.Flx_btype.sub_ts
+      in
       (* SHOULD BE CLIENT ERROR not assertion *)
-      if List.length ts != List.length spec_vs then begin
-        print_endline ("Qualified name lookup finds index " ^ string_of_bid i);
+      if List.length ts != List.length entry_kind.Flx_btype.spec_vs then begin
+        print_endline ("Qualified name lookup finds index " ^
+          string_of_bid entry_kind.Flx_btype.base_sym);
         print_endline ("spec_vs=" ^
-          catmap "," (fun (s,j)-> s ^ "<" ^ string_of_bid j ^ ">") spec_vs);
-        print_endline ("spec_ts=" ^ catmap "," (sbt bsym_table) sub_ts);
+          catmap ","
+            (fun (s,j)-> s ^ "<" ^ string_of_bid j ^ ">")
+            entry_kind.Flx_btype.spec_vs);
+        print_endline ("spec_ts=" ^
+          catmap "," (sbt bsym_table) entry_kind.Flx_btype.sub_ts);
         print_endline ("input_ts=" ^ catmap "," (sbt bsym_table) ts);
-        begin match hfind "lookup" state.sym_table i with
+        begin match
+          hfind "lookup" state.sym_table entry_kind.Flx_btype.base_sym
+        with
           | { Flx_sym.id=id; vs=vs; symdef=SYMDEF_typevar _ } ->
             print_endline (id ^ " is a typevariable, vs=" ^
               catmap ","
@@ -1356,36 +1164,36 @@ and bind_type'
             )
           | { Flx_sym.id=id } -> print_endline (id ^ " is not a type variable")
         end;
-        clierr sr
-        ("Wrong number of type variables, expected " ^ si (List.length spec_vs) ^
-        ", but got " ^ si (List.length ts))
-      end
-      ;
-      assert (List.length ts = List.length spec_vs);
-      let t = tsubst spec_vs ts baset in
-      t
 
-    end
+        clierr sr
+          ("Wrong number of type variables, expected " ^
+          si (List.length entry_kind.Flx_btype.spec_vs) ^ ", but got " ^
+          si (List.length ts))
+      end;
+
+      assert (List.length ts = List.length entry_kind.Flx_btype.spec_vs);
+      tsubst entry_kind.Flx_btype.spec_vs ts baset
 
   | TYP_suffix (sr,(qn,t)) ->
-    let sign = bt t in
-    let result =
-      lookup_qn_with_sig' state bsym_table sr sr env rs qn [sign]
-    in
-    begin match result with
-    | BEXPR_closure (i,ts),_ ->
-      bi i ts
-    | _  -> clierr sr
-      (
-        "[typecode_of_expr] Type expected, got: " ^
-        sbe bsym_table result
-      )
+      let sign = bt t in
+      let result =
+        lookup_qn_with_sig' state bsym_table sr sr env rs qn [sign]
+      in
+      begin match result with
+      | BEXPR_closure (i,ts),_ -> bi i ts
+      | _  ->
+          clierr sr
+          (
+            "[typecode_of_expr] Type expected, got: " ^
+            sbe bsym_table result
+          )
     end
   in
-    (*
-    print_endline ("Bound type is " ^ sbt bsym_table t);
-    *)
-    t
+
+  (*
+  print_endline ("Bound type is " ^ sbt bsym_table t);
+  *)
+  t
 
 and cal_assoc_type state (bsym_table:Flx_bsym_table.t) sr t =
   let ct t = cal_assoc_type state bsym_table sr t in
@@ -1658,6 +1466,24 @@ and type_of_index_with_ts' state bsym_table rs sr bid ts =
   (* Beta reduce and return the type. *)
   beta_reduce state.syms bsym_table sr t
 
+(** Wrapper around inner_type_of_index that substitutes any type variables. *)
+and inner_type_of_index_with_ts state bsym_table rs sr bid ts =
+  try
+    type_of_index_with_ts' state bsym_table rs sr bid ts
+  with Free_fixpoint t ->
+    (* We don't care if the type is a free fixpoint, but that means we have to
+     * do all the type substitutions ourselves. *)
+
+    (* Make sure that we got the right number of type variables. *)
+    let pvs,vs,_ = find_split_vs state.sym_table bsym_table bid in
+    assert (List.length ts = List.length vs + List.length pvs);
+
+    (* Do any type substitutions. *)
+    let varmap = make_varmap state.sym_table bsym_table sr bid ts in
+    let t = varmap_subst varmap t in
+
+    beta_reduce state.syms bsym_table sr t
+
 (* -------------------------------------------------------------------------- *)
 
 (* This routine should ONLY 'fail' if the return type
@@ -1779,26 +1605,6 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
     !ret_type
 
   | _ -> assert false
-
-(* -------------------------------------------------------------------------- *)
-
-(** Wrapper around inner_type_of_index that substitutes any type variables. *)
-and inner_type_of_index_with_ts state bsym_table sr rs bid ts =
-  try
-    type_of_index_with_ts' state bsym_table rs sr bid ts
-  with Free_fixpoint t ->
-    (* We don't care if the type is a free fixpoint, but that means we have to
-     * do all the type substitutions ourselves. *)
-
-    (* Make sure that we got the right number of type variables. *)
-    let pvs,vs,_ = find_split_vs state.sym_table bsym_table bid in
-    assert (List.length ts = List.length vs + List.length pvs);
-
-    (* Do any type substitutions. *)
-    let varmap = make_varmap state.sym_table bsym_table sr bid ts in
-    let t = varmap_subst varmap t in
-
-    beta_reduce state.syms bsym_table sr t
 
 (* -------------------------------------------------------------------------- *)
 
@@ -2811,8 +2617,8 @@ and handle_function state bsym_table rs sra srn name ts index =
       let t = inner_type_of_index_with_ts
         state
         bsym_table
-        sym.Flx_sym.sr
         rs
+        sym.Flx_sym.sr
         index
         ts
       in
@@ -3372,10 +3178,13 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     t
   in
   let ti sr i ts =
-    inner_type_of_index_with_ts state bsym_table sr
-    { rs with depth = rs.depth + 1}
-                               (* CHANGED THIS ------------------*******)
-    i ts
+    inner_type_of_index_with_ts
+      state
+      bsym_table
+      { rs with depth = rs.depth + 1 }
+      sr
+      i
+      ts
   in
 
   (* model infix operator as function call *)
@@ -4176,8 +3985,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
                   let vtype = inner_type_of_index_with_ts
                     state
                     bsym_table
-                    (Flx_bsym.sr bsym)
                     { rs with depth = rs.depth + 1 }
+                    (Flx_bsym.sr bsym)
                     index
                     ts
                   in
@@ -4206,8 +4015,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
                   let vtype = inner_type_of_index_with_ts
                     state
                     bsym_table
-                    sym.Flx_sym.sr
                     { rs with depth = rs.depth + 1 }
+                    sym.Flx_sym.sr
                     index
                     ts
                   in
