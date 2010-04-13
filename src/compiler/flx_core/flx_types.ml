@@ -61,6 +61,9 @@ type dir_t =
 
 type sdir_t = Flx_srcref.t * dir_t
 
+(** Used to represent all the different value types. *)
+type value_kind_t = [ `Val | `Var | `Ref | `Lazy of expr_t ]
+
 type dcl_t =
   (* data structures *)
   | DCL_axiom of         params_t * axiom_method_t
@@ -75,10 +78,7 @@ type dcl_t =
   | DCL_match_handler of pattern_t * (string * bid_t) * asm_t list
 
   (* variables *)
-  | DCL_val of           typecode_t
-  | DCL_var of           typecode_t
-  | DCL_lazy of          typecode_t * expr_t
-  | DCL_ref of           typecode_t
+  | DCL_value of         typecode_t * value_kind_t
   | DCL_type_alias of    typecode_t
   | DCL_inherit of       qualified_name_t
   | DCL_inherit_fun of   qualified_name_t

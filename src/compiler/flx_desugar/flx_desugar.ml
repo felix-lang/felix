@@ -435,7 +435,13 @@ let rec rex state name (e:expr_t) : asm_t list * expr_t =
     *)
     let evl =
       [
-        Dcl (expr_src,match_var_name,Some match_var_index,`Private,dfltvs,DCL_val (TYP_typeof x));
+        Dcl (
+          expr_src,
+          match_var_name,
+          Some match_var_index,
+          `Private,
+          dfltvs,
+          DCL_value (TYP_typeof x, `Val));
         Exe (expr_src,EXE_iinit ((match_var_name,match_var_index),x))
       ]
     in
@@ -773,11 +779,17 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,None,access,vs,DCL_var t); Exe (sr,EXE_init (name,x))]
+      d @ [
+        Dcl (sr,name,None,access,vs,DCL_value (t, `Var));
+        Exe (sr,EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,None,access,vs,DCL_var (TYP_typeof x)); Exe (sr,EXE_init (name,x))]
-    | Some t,None -> [Dcl (sr,name,None,access,vs,DCL_var t)]
+      d @ [
+        Dcl (
+          sr,name,None,access,vs,DCL_value (TYP_typeof x, `Var));
+        Exe (sr,EXE_init (name,x))]
+    | Some t,None ->
+        [Dcl (sr,name,None,access,vs,DCL_value (t, `Var))]
     | None,None -> failwith "Expected variable to have type or initialiser"
     end
 
@@ -785,11 +797,17 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,None,access,vs,DCL_val t); Exe (sr,EXE_init (name,x))]
+      d @ [
+        Dcl (sr,name,None,access,vs,DCL_value (t, `Val));
+        Exe (sr,EXE_init (name,x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,None,access,vs,DCL_val (TYP_typeof x)); Exe (sr,EXE_init (name,x))]
-    | Some t, None -> [Dcl (sr,name,None,access,vs,DCL_val t)] (* allowed in interfaces *)
+      d @ [
+        Dcl (sr,name,None,access,vs,DCL_value (TYP_typeof x, `Val));
+        Exe (sr,EXE_init (name,x))]
+    | Some t, None ->
+        (* allowed in interfaces *)
+        [Dcl (sr,name,None,access,vs,DCL_value (t, `Val))]
     | None,None -> failwith "Expected value to have type or initialiser"
     end
 
@@ -797,11 +815,13 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,None,access,vs,DCL_ref t); Exe (sr,EXE_init (name,EXPR_ref (sr,x)))]
+      d @ [
+        Dcl (sr,name,None,access,vs,DCL_value (t, `Ref));
+        Exe (sr,EXE_init (name,EXPR_ref (sr,x)))]
     | None, Some e ->
       let d,x = rex e in
       d @ [
-        Dcl (sr,name,None,access,vs,DCL_ref (TYP_typeof x));
+        Dcl (sr,name,None,access,vs,DCL_value (TYP_typeof x, `Ref));
         Exe (sr,EXE_init (name,EXPR_ref (sr,x)))]
     | _,None -> failwith "Expected ref to have initialiser"
     end
@@ -811,10 +831,10 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     begin match typ,expr with
     | Some t, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,None,access,vs,DCL_lazy (t,x))]
+      d @ [Dcl (sr,name,None,access,vs,DCL_value (t,`Lazy x))]
     | None, Some e ->
       let d,x = rex e in
-      d @ [Dcl (sr,name,None,access,vs,DCL_lazy (TYP_typeof x,x))]
+      d @ [Dcl (sr,name,None,access,vs,DCL_value (TYP_typeof x,`Lazy x))]
     | _,None -> failwith "Expected lazy value to have initialiser"
     end
 
@@ -1118,7 +1138,13 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     *)
     let evl =
       [
-        Dcl (expr_src,match_var_name,Some match_index,`Private,dfltvs,DCL_val (TYP_typeof x));
+        Dcl (
+          expr_src,
+          match_var_name,
+          Some match_index,
+          `Private,
+          dfltvs,
+          DCL_value (TYP_typeof x, `Val));
         Exe (expr_src,EXE_iinit ((match_var_name,match_index),x))
       ]
     in

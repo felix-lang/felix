@@ -2178,24 +2178,19 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     "(" ^ string_of_pattern pat ^ ")" ^
     string_of_asm_compound level sts
 
-  | DCL_val (ty) ->
+  | DCL_value (ty, kind) ->
+    let make_suffix () =
+      name ^ seq ^ string_of_vs vs ^ ": " ^ st ty ^ ";"
+    in
     sl ^
-    "val " ^ name^seq ^ string_of_vs vs ^ ": " ^ st ty ^ ";"
-
-  | DCL_ref (ty) ->
-    sl ^
-    "ref " ^ name^seq ^ string_of_vs vs ^ ": " ^ st ty ^ ";"
-
-  | DCL_var (ty) ->
-    sl ^
-    "var " ^ name^seq ^ string_of_vs vs ^ ": " ^ st ty ^ ";"
-
-  | DCL_lazy (ty,e) ->
-    sl ^
-    "fun " ^ name^seq ^ string_of_vs vs ^
-    ": " ^ st ty ^
-    "= " ^ se e ^
-    ";"
+    begin match kind with
+    | `Val -> "val " ^ make_suffix ()
+    | `Var -> "var " ^ make_suffix ()
+    | `Ref -> "ref " ^ make_suffix ()
+    | `Lazy e ->
+        "fun " ^ name ^ seq ^ string_of_vs vs ^ ": " ^ st ty ^ " = " ^ se e ^
+        ";"
+    end
 
 and string_of_access = function
   | `Private -> "private "

@@ -466,7 +466,7 @@ and build_table_for_dcl
         in
         let dcl =
           Dcl (sr, vname, None,`Private, dfltvs,
-            DCL_val (TYP_typeof (component)))
+            DCL_value (TYP_typeof (component), `Val))
         and instr = Exe (sr, EXE_init (vname, component)) in
         new_asms := dcl :: instr :: !new_asms;
       end vars;
@@ -658,61 +658,24 @@ and build_table_for_dcl
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | DCL_val t ->
+  | DCL_value (t, kind) ->
       let t = match t with | TYP_none -> TYP_var symbol_index | _ -> t in
 
+      let symdef =
+        match kind with
+        | `Val -> SYMDEF_val t
+        | `Var -> SYMDEF_var t
+        | `Ref -> SYMDEF_ref t
+        | `Lazy e -> SYMDEF_lazy (t, e)
+      in
+
       (* Add the value to the dnfs. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_val t);
+      add_symbol ~pubtab ~privtab symbol_index id symdef;
 
       (* Possibly add the value to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add the value to the private symbol table. *)
-      add_unique priv_name_map id symbol_index;
-
-      (* Add the type variables to the private symbol table. *)
-      add_tvars privtab
-
-  | DCL_var t ->
-      let t = if t = TYP_none then TYP_var symbol_index else t in
-
-      (* Add the variable to the sym_table. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_var t);
-
-      (* Possibly add the variable to the public symbol table. *)
-      if access = `Public then add_unique pub_name_map id symbol_index;
-
-      (* Add the variable to the private symbol table. *)
-      add_unique priv_name_map id symbol_index;
-
-      (* Add the type variables to the private symbol table. *)
-      add_tvars privtab
-
-  | DCL_lazy (t,e) ->
-      let t = if t = TYP_none then TYP_var symbol_index else t in
-
-      (* Add the lazy value to the sym_table. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_lazy (t,e));
-
-      (* Possibly add the lazy value to teh public symbol table. *)
-      if access = `Public then add_unique pub_name_map id symbol_index;
-
-      (* Add the lazy value to the private symbol table. *)
-      add_unique priv_name_map id symbol_index;
-
-      (* Add the type variables to the private symbol table. *)
-      add_tvars privtab
-
-  | DCL_ref t ->
-      let t = match t with | TYP_none -> TYP_var symbol_index | _ -> t in
-
-      (* Add the reference value to the dnfs. *)
-      add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_ref t);
-
-      (* Possibly add the reference value to the private symbol table. *)
-      if access = `Public then add_unique pub_name_map id symbol_index;
-
-      (* Add the reference value to the public symbol table. *)
       add_unique priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
