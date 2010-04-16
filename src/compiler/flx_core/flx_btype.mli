@@ -13,6 +13,7 @@ type btpattern_t = {
 
 (** general typing *)
 and t = private
+  | BTYP_none
   | BTYP_sum of t list
   | BTYP_unitsum of int
   | BTYP_intersect of t list (** intersection type *)
@@ -63,6 +64,9 @@ type biface_t =
   | BIFACE_export_type of Flx_srcref.t * t * string
 
 (* -------------------------------------------------------------------------- *)
+
+(** The unknown type. Used when we don't know the type yet. *)
+val btyp_none : unit -> t
 
 (** The void type. *)
 val btyp_void : unit -> t

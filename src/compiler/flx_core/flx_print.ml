@@ -549,6 +549,8 @@ and sb bsym_table depth fixlist counter prec tc =
   let sbt prec t = sb bsym_table (depth+1) fixlist counter prec t in
   let iprec, term =
     match tc with
+    | BTYP_none -> assert false
+
     | BTYP_type_match (t,ps) ->
       0,
       (

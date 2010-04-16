@@ -14,6 +14,8 @@ let unit_t = btyp_tuple []
 
 let rec dual t =
   match Flx_btype.map ~f_btype:dual t with
+  | BTYP_none -> assert false
+
   | BTYP_sum ls ->
     begin match ls with
     | [t] -> t
@@ -248,6 +250,7 @@ let fix i t =
   let rec aux n t =
     let aux t = aux (n - 1) t in
     match t with
+    | BTYP_none -> assert false
     | BTYP_type_var (k,_) -> if k = i then btyp_fix n else t
     | BTYP_inst (k,ts) -> btyp_inst (k, List.map aux ts)
     | BTYP_tuple ts -> btyp_tuple (List.map aux ts)
@@ -794,6 +797,7 @@ let fold counter t =
   let rec aux trail depth t' =
     let ax t = aux ((depth,t')::trail) (depth+1) t in
     match t' with
+    | BTYP_none -> assert false
     | BTYP_intersect ls
     | BTYP_sum ls
     | BTYP_inst (_,ls)

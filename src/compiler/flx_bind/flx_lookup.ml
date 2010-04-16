@@ -5514,6 +5514,7 @@ and build_env state bsym_table parent : env_t =
 and rebind_btype state bsym_table env sr ts t =
   let rbt t = rebind_btype state bsym_table env sr ts t in
   match t with
+  | BTYP_none -> assert false
   | BTYP_inst (i,_) ->
     begin match get_data state.sym_table i with
     | { Flx_sym.symdef=SYMDEF_type_alias t'} ->

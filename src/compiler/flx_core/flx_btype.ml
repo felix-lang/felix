@@ -15,6 +15,7 @@ type btpattern_t = {
 
 (** general typing *)
 and t = 
+  | BTYP_none
   | BTYP_sum of t list
   | BTYP_unitsum of int
   | BTYP_intersect of t list (** intersection type *)
@@ -65,6 +66,10 @@ type biface_t =
   | BIFACE_export_type of Flx_srcref.t * t * string
 
 (* -------------------------------------------------------------------------- *)
+
+(** The none type. Used when we don't know the type yet. *)
+let btyp_none () =
+  BTYP_none
 
 (** The void type. *)
 let btyp_void () =
@@ -218,6 +223,7 @@ let flat_iter
   btype
 =
   match btype with
+  | BTYP_none -> ()
   | BTYP_sum ts -> List.iter f_btype ts
   | BTYP_unitsum k ->
       let unitrep = BTYP_tuple [] in
@@ -271,6 +277,7 @@ let rec iter
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
 let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
+  | BTYP_none as x -> x
   | BTYP_sum ts ->
       let ts = List.map f_btype ts in
       if all_units ts then
@@ -342,6 +349,8 @@ and print f =
     end
   in
   function
+  | BTYP_none ->
+      print_variant0 f "BTYP_none"
   | BTYP_sum ts ->
       print_variant1 f "BTYP_sum" print_btypes ts
   | BTYP_unitsum n ->

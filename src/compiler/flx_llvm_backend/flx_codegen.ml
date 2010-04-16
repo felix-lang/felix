@@ -184,6 +184,8 @@ let codegen_gep state value args name builder =
 (* Convert a felix type to an llvm type. *)
 let rec lltype_of_btype state btype =
   match btype with
+  | Flx_btype.BTYP_none -> assert false
+
   | Flx_btype.BTYP_inst (index, ts) ->
       begin try Hashtbl.find state.type_bindings index with Not_found ->
         failwith ("[lltype_of_btype:BTYP_inst] unable to find index " ^
