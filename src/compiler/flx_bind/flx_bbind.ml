@@ -397,7 +397,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
         | `PVar -> bbdcl_var (bvs,t)
         | `PVal -> bbdcl_val (bvs,t)
         | `PRef -> bbdcl_val (bvs,t)
-        | `PFun -> bbdcl_val (bvs, btyp_function (btyp_void,t))
+        | `PFun -> bbdcl_val (bvs, btyp_function (btyp_void (),t))
         in
         Hashtbl.add state.syms.varmap symbol_index t;
 

@@ -414,7 +414,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       state.sym_table
       bsym_table
       state.ret_type
-      btyp_void
+      (btyp_void ())
     then
       begin
         state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
@@ -641,7 +641,7 @@ let bind_exes state bsym_table sr exes =
       state.sym_table
       bsym_table
       state.ret_type
-      btyp_void
+      (btyp_void ())
     then
       state.ret_type <- varmap_subst state.syms.varmap state.ret_type
     else

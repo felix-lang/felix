@@ -219,7 +219,8 @@ and beta_reduce' syms bsym_table sr termlist t =
   *)
   | BTYP_intersect ls ->
     let ls = List.map br ls in
-    if List.mem btyp_void ls then btyp_void
+    let void_t = btyp_void () in
+    if List.mem void_t ls then void_t
     else let ls = List.filter (fun i -> i <> btyp_tuple []) ls in
     begin match ls with
     | [] -> btyp_tuple []

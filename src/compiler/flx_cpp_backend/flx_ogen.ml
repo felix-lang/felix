@@ -372,7 +372,7 @@ let gen_offset_tables syms bsym_table module_name =
           index
           vs
           ps
-          btyp_void
+          (btyp_void ())
           ts
           instance
           props

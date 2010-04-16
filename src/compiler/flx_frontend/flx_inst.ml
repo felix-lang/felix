@@ -340,7 +340,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
       i
       (Flx_bsym.sr bsym)
       argtypes
-      btyp_void
+      (btyp_void ())
       exes
       ts
 
@@ -494,7 +494,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
       i
       (Flx_bsym.sr bsym)
       argtypes
-      btyp_void
+      (btyp_void ())
       []
       ts
 

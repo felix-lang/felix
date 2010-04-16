@@ -82,7 +82,7 @@ let build_constraint_element syms bt sr i p1 =
         pattern_vars = BidSet.singleton fresh;
         assignments=[]
       },
-      btyp_void
+      btyp_void ()
     in
     let lss = rev (dflt :: lss) in
     btyp_type_match (elt, lss)

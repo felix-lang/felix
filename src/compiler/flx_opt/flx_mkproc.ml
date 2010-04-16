@@ -73,7 +73,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       (* create a call instruction to the mapped procedure *)
       let call =
         bexe_call (sr,
-          (bexpr_closure (btyp_function (at',btyp_void)) (p,ts)),
+          (bexpr_closure (btyp_function (at',btyp_void ())) (p,ts)),
           a'
         )
       in

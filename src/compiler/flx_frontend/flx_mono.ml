@@ -77,7 +77,7 @@ let rec fixup_type syms bsym_table fi t =
 
 let fixup_expr' syms bsym_table fi mt (e,t) =
   (*
-  print_endline ("FIXUP EXPR(up) " ^ sbe sym_table (e, btyp_void));
+  print_endline ("FIXUP EXPR(up) " ^ sbe sym_table (e, btyp_void ()));
   *)
   let x = match e with
   | BEXPR_apply_prim (i',ts,a) ->
@@ -120,7 +120,7 @@ let fixup_expr' syms bsym_table fi mt (e,t) =
   | x -> x, t
   in
   (*
-  print_endline ("FIXed UP EXPR " ^ sbe sym_table (x, btyp_void));
+  print_endline ("FIXed UP EXPR " ^ sbe sym_table (x, btyp_void ()));
   *)
   x
 

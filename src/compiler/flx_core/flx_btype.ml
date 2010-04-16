@@ -67,7 +67,8 @@ type biface_t =
 (* -------------------------------------------------------------------------- *)
 
 (** The void type. *)
-let btyp_void = BTYP_void
+let btyp_void () =
+  BTYP_void
 
 (** Construct a BTYP_sum type. *)
 let btyp_sum ts =

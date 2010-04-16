@@ -22,7 +22,7 @@ let rec dual t =
 
   | BTYP_tuple ls ->
     begin match ls with
-    | [] -> btyp_void
+    | [] -> btyp_void ()
     | [t] -> t
     | ls -> btyp_sum ls
     end

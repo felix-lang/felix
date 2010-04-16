@@ -100,7 +100,7 @@ let get_type bsym_table index =
   | BBDCL_function (props,vs,(ps,_),ret,_) ->
       btyp_function (typeof_bparams ps,ret)
   | BBDCL_procedure (props,vs,(ps,_),_) ->
-      btyp_function (typeof_bparams ps, btyp_void)
+      btyp_function (typeof_bparams ps, btyp_void ())
   | _ -> failwith "Only function and procedure types handles by get_type"
 
 
@@ -173,7 +173,7 @@ let gen_C_function syms bsym_table props index id sr vs bps ret' ts instance_no 
       | 1 ->
         let ix = hd params in
         if Hashtbl.mem syms.instances (ix, ts)
-        && not (argtype = btyp_tuple [] or argtype = btyp_void)
+        && not (argtype = btyp_tuple [] or argtype = btyp_void ())
         then cpp_typename syms bsym_table argtype else ""
       | _ ->
         let counter = ref 0 in
@@ -450,7 +450,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
     (*
     "  //call\n" ^
     *)
-    (if argtype = btyp_tuple [] or argtype = btyp_void
+    (if argtype = btyp_tuple [] or argtype = btyp_void ()
     then
       (if stackable then "  void stack_call();\n" else "") ^
       (if heapable then "  con_t *call(con_t*);\n" else "")
@@ -504,7 +504,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
     *)
     "  "^rettypename^
     " apply(" ^
-    (if argtype = btyp_tuple [] or argtype = btyp_void then ""
+    (if argtype = btyp_tuple [] or argtype = btyp_void () then ""
     else argtypename^" const &")^
     ");\n"  ^
     "};\n"
@@ -596,7 +596,7 @@ let gen_functions syms bsym_table =
     | BBDCL_callback (props,vs,ps_cf,ps_c,_,ret',_,_) ->
       let instance_no = i in
       bcat s ("\n//------------------------------\n");
-      if ret' = btyp_void then begin
+      if ret' = btyp_void () then begin
         bcat s ("//CALLBACK C PROC <" ^ string_of_bid index ^ ">: " ^
           qualified_name_of_bindex bsym_table index ^ tss ^
           "\n");
@@ -675,7 +675,7 @@ let gen_functions syms bsym_table =
           (Flx_bsym.sr bsym)
           vs
           ps
-          btyp_void
+          (btyp_void ())
           ts
           i)
       end else begin
@@ -691,7 +691,7 @@ let gen_functions syms bsym_table =
           (Flx_bsym.sr bsym)
           vs
           ps
-          btyp_void
+          (btyp_void ())
           ts
           i)
       end
@@ -830,7 +830,7 @@ let gen_exe filename
 
     | BBDCL_callback (props,vs,ps_cf,ps_c,_,ret,_,_) ->
       assert (not is_jump);
-      assert (ret = btyp_void);
+      assert (ret = btyp_void ());
 
       if length vs <> length ts then
       clierr sr "[gen_prim_call] Wrong number of type arguments"
@@ -1551,12 +1551,12 @@ let gen_C_function_body filename syms bsym_table
           | [] -> ""
           | [{pkind=k; pindex=i; ptyp=t}] ->
             if Hashtbl.mem syms.instances (i, ts)
-            && not (argtype = btyp_tuple [] or argtype = btyp_void)
+            && not (argtype = btyp_tuple [] or argtype = btyp_void ())
             then
               let t = rt vs t in
               let t = match k with
 (*                | `PRef -> btyp_pointer t *)
-                | `PFun -> btyp_function (btyp_void,t)
+                | `PFun -> btyp_function (btyp_void (),t)
                 | _ -> t
               in
               cpp_typename syms bsym_table t ^ " " ^
@@ -1569,7 +1569,7 @@ let gen_C_function_body filename syms bsym_table
                 let t = rt vs t in
                 let t = match k with
 (*                  | `PRef -> btyp_pointer t *)
-                  | `PFun -> btyp_function (btyp_void,t)
+                  | `PFun -> btyp_function (btyp_void (),t)
                   | _ -> t
                 in
                 let n = fresh_bid counter in
@@ -1636,7 +1636,7 @@ let gen_C_procedure_body filename syms bsym_table
     let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
 
-    let funtype = fold syms.counter (btyp_function (argtype, btyp_void)) in
+    let funtype = fold syms.counter (btyp_function (argtype, btyp_void ())) in
     (* let argtypename = cpp_typename syms bsym_table argtype in *)
 
     let params = Flx_bparameter.get_bids bps in
@@ -1687,12 +1687,12 @@ let gen_C_procedure_body filename syms bsym_table
           | [] -> ""
           | [{pkind=k; pindex=i; ptyp=t}] ->
             if Hashtbl.mem syms.instances (i, ts)
-            && not (argtype = btyp_tuple [] or argtype = btyp_void)
+            && not (argtype = btyp_tuple [] or argtype = btyp_void ())
             then
               let t = rt vs t in
               let t = match k with
 (*                | `PRef -> btyp_pointer t *)
-                | `PFun -> btyp_function (btyp_void,t)
+                | `PFun -> btyp_function (btyp_void (),t)
                 | _ -> t
               in
               cpp_typename syms bsym_table t ^ " " ^
@@ -1704,7 +1704,7 @@ let gen_C_procedure_body filename syms bsym_table
               (fun s {pkind=k; pindex=i; ptyp=t} ->
                 let t = rt vs t in
                 let t = match k with
-                  | `PFun -> btyp_function (btyp_void,t)
+                  | `PFun -> btyp_function (btyp_void (),t)
                   | _ -> t
                 in
                 let n = !counter in incr counter;
@@ -1798,7 +1798,7 @@ let gen_function_methods filename syms bsym_table
     let apply =
       rettypename^ " " ^name^
       "::apply("^
-      (if argtype = btyp_tuple [] or argtype = btyp_void
+      (if argtype = btyp_tuple [] or argtype = btyp_void ()
       then ""
       else argtypename ^" const &_arg ")^
       "){\n" ^
@@ -1814,7 +1814,7 @@ let gen_function_methods filename syms bsym_table
         | [] -> ""
         | [{pindex=i}] ->
           if Hashtbl.mem syms.instances (i, ts)
-          && not (argtype = btyp_tuple [] or argtype = btyp_void)
+          && not (argtype = btyp_tuple [] or argtype = btyp_void ())
           then
             "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg;\n"
           else ""
@@ -1908,7 +1908,7 @@ let gen_procedure_methods filename syms bsym_table
     *)
     let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
-    let funtype = fold syms.counter (btyp_function (argtype, btyp_void)) in
+    let funtype = fold syms.counter (btyp_function (argtype, btyp_void ())) in
 
     let argtypename = cpp_typename syms bsym_table argtype in
     let name = cpp_instance_name syms bsym_table index ts in
@@ -1948,7 +1948,7 @@ let gen_procedure_methods filename syms bsym_table
       | [] -> ""
       | [{pindex=i}] ->
           if Hashtbl.mem syms.instances (i,ts)
-          && not (argtype = btyp_tuple [] or argtype = btyp_void)
+          && not (argtype = btyp_tuple [] or argtype = btyp_void ())
           then
             "  " ^ cpp_instance_name syms bsym_table i ts ^ " = _arg;\n"
           else ""
@@ -2070,7 +2070,7 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
         "[" ^ catmap "," (string_of_btypecode bsym_table) ts^ "]"
       in
       bcat s ("\n//------------------------------\n");
-      if ret' = btyp_void then begin
+      if ret' = btyp_void () then begin
         bcat s ("//CALLBACK C PROCEDURE <" ^ string_of_bid index ^ ">: " ^
           qualified_name_of_bindex bsym_table index ^ tss ^ "\n");
       end else begin
@@ -2168,7 +2168,7 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
           (* cast *)
           "  " ^ flx_fun_type_name ^ " callback = ("^flx_fun_type_name^")_a" ^ si client_data_pos ^ ";\n" ^
           (
-            if ret = btyp_void then begin
+            if ret = btyp_void () then begin
               "  con_t *p = callback->call(0" ^
               (if String.length flx_fun_arg > 0 then "," ^ flx_fun_arg else "") ^
               ");\n" ^

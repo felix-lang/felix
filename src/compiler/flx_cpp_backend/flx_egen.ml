@@ -775,7 +775,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       end
 
     | BBDCL_callback (props,vs,ps_cf,ps_c,_,retyp,_,_) ->
-      assert (retyp <> btyp_void);
+      assert (retyp <> btyp_void ());
       if length vs <> length ts then
       clierr sr "[gen_prim_call] Wrong number of type arguments"
       ;

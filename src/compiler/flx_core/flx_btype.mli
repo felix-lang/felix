@@ -65,7 +65,7 @@ type biface_t =
 (* -------------------------------------------------------------------------- *)
 
 (** The void type. *)
-val btyp_void : t
+val btyp_void : unit -> t
 
 (** Construct a BTYP_sum type. *)
 val btyp_sum : t list -> t

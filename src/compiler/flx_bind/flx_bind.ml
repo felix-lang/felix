@@ -29,7 +29,7 @@ let make_bind_state syms =
       sym_table
       lookup_state
       []
-      Flx_btype.btyp_void;
+      (Flx_btype.btyp_void ());
     lookup_state = lookup_state;
     bbind_state = bbind_state;
   }
@@ -78,7 +78,7 @@ let make_toplevel_bind_state syms =
       sym_table
       lookup_state
       []
-      Flx_btype.btyp_void;
+      (Flx_btype.btyp_void ());
     lookup_state = lookup_state;
     bbind_state = bbind_state;
   }, bsym_table

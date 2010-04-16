@@ -501,7 +501,7 @@ and handle_typeset state sr elt tset =
       pattern_vars = BidSet.singleton fresh;
       assignments=[]
     },
-    btyp_void
+    btyp_void ()
   in
   let lss = List.rev (dflt :: lss) in
   btyp_type_match (elt, lss)
@@ -925,7 +925,7 @@ and bind_type'
   | TYP_tuple ts -> btyp_tuple (List.map bt ts)
   | TYP_unitsum k ->
       begin match k with
-      | 0 -> btyp_void
+      | 0 -> btyp_void ()
       | 1 -> btyp_tuple []
       | _ -> btyp_unitsum k
       end
@@ -940,7 +940,7 @@ and bind_type'
   | TYP_function (d,c) -> btyp_function (bt d, bt c)
   | TYP_cfunction (d,c) -> btyp_cfunction (bt d, bt c)
   | TYP_pointer t -> btyp_pointer (bt t)
-  | TYP_void _ -> btyp_void
+  | TYP_void _ -> btyp_void ()
 
   | TYP_typefun (ps,r,body) ->
       let data = List.rev_map
@@ -1199,7 +1199,7 @@ and cal_assoc_type state (bsym_table:Flx_bsym_table.t) sr t =
   let ct t = cal_assoc_type state bsym_table sr t in
   let chk ls =
     match ls with
-    | [] -> btyp_void
+    | [] -> btyp_void ()
     | h::t ->
       List.fold_left (fun acc t ->
         if acc <> t then
@@ -1583,7 +1583,7 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
         state.sym_table
         bsym_table
         !ret_type
-        btyp_void
+        (btyp_void ())
       in
       ret_type := varmap_subst state.syms.varmap !ret_type
     end
@@ -1621,7 +1621,7 @@ and btype_of_bsym state bsym_table bt bid bsym =
   | BBDCL_function (_,_,(params,_),return_type,_) ->
       btyp_function (type_of_params params, return_type)
   | BBDCL_procedure (_,_,(params,_),_) ->
-      btyp_function (type_of_params params, btyp_void)
+      btyp_function (type_of_params params, btyp_void ())
   | BBDCL_val (_,t) -> t
   | BBDCL_var (_,t) -> t
   | BBDCL_ref (_,t) -> t
@@ -1634,7 +1634,7 @@ and btype_of_bsym state bsym_table bt bid bsym =
   | BBDCL_callback (_,_,params,_,_,return_type,_,_) ->
       btyp_function (btyp_tuple params, return_type)
   | BBDCL_proc (_,_,params,_,_)->
-      btyp_function (btyp_tuple params, btyp_void)
+      btyp_function (btyp_tuple params, btyp_void ())
   | BBDCL_insert _ -> assert false
   | BBDCL_union (_,ls) ->
       btyp_variant (List.map (fun (n,_,t) -> n,t) ls)
@@ -1913,7 +1913,7 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
   *)
 
   let rest = varmap_subst state.syms.varmap rest in
-  if rest = btyp_void then
+  if rest = btyp_void () then
     clierr sr
     (
       "[cal_apply] Function " ^
