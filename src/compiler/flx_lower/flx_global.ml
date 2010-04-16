@@ -211,9 +211,6 @@ let rec set_ptf_usage bsym_table usage excludes i bsym =
    end
 
   | BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
-    (*
-    print_endline ("Fun " ^ id ^ "<"^si i^"> properties " ^ string_of_properties props);
-    *)
     if List.mem `Requires_ptf props then Required
     else if List.mem `Not_requires_ptf props then Not_required
     else if

@@ -340,16 +340,8 @@ let reparent1
     let ret = auxt ret in
     let breqs = rreqs breqs in
     update_bsym (bbdcl_fun (props,vs,params,ret,ct,breqs,prec));
-    (*
-    print_endline "NEW FUNCTION (clone):";
-    print_function sym_table bsym_table k;
-    *)
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
-    (*
-    print_endline ("Cal new usage of fun " ^ si k ^ ": " ^
-      catmap "," (fun (j,_) -> si j) calls);
-    *)
     Hashtbl.add uses k calls
 
   | BBDCL_insert (vs,ct,ik,breqs) ->

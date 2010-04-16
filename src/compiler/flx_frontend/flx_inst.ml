@@ -388,13 +388,6 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
 
 
   | BBDCL_fun (props,vs,argtypes,ret,_,reqs,_) ->
-    (*
-    print_endline ("Handling requirements of fun " ^ id);
-    *)
-    if length vs <> length ts then
-      print_endline ("For fun " ^ Flx_bsym.id bsym ^ " vs=" ^ string_of_bvs vs ^
-      ", but ts=" ^ catmap "," (sbt bsym_table) ts)
-    ;
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
@@ -433,8 +426,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     let tss = map (varmap_subst hvarmap) argtypes_c in
     iter rtr tss
 
-  | BBDCL_abs (vs,_,_,reqs)
-    ->
+  | BBDCL_abs (vs,_,_,reqs) ->
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
