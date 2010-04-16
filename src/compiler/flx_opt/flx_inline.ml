@@ -1294,9 +1294,7 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       if syms.compiler_options.print_flag then
       print_endline ("HIB:Examining function " ^ Flx_bsym.id bsym ^ "<" ^
         string_of_bid i ^ "> for inlinable calls");
-      (*
-      print_endline (id ^ " Input:\n" ^ catmap "\n" (string_of_bexe bsym_table 0) exes);
-      *)
+      
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = fold_vars syms bsym_table uses i ps exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
@@ -1309,12 +1307,7 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
         excludes
         exes
       in
-      (*
-      print_endline (id ^ " After inlining calls:\n" ^ catmap "\n" (string_of_bexe bsym_table 0) exes);
-      *)
-      (*
-      print_endline ("Tailing " ^ si i);
-      *)
+      
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = Flx_tailit.tailit
         syms
@@ -1327,9 +1320,6 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
         vs
         exes
       in
-      (*
-      print_endline (id^ " After tailing(2):\n" ^ catmap "\n" (string_of_bexe bsym_table 0) exes);
-      *)
       let exes = check_reductions syms bsym_table exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = fold_vars syms bsym_table uses i ps exes in
@@ -1341,10 +1331,6 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       remove_unused_children syms uses bsym_table i;
-      (*
-      print_endline ("DONE Examining function " ^ id ^"<" ^ si i ^ "> for inlinable calls");
-      print_endline ("OPTIMISED FUNCTION BODY: " ^ id ^ " :\n" ^ catmap "\n" (string_of_bexe 2) exes);
-      *)
     end
   | _ -> ()
 

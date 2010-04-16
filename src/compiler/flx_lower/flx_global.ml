@@ -194,9 +194,6 @@ let rec set_ptf_usage bsym_table usage excludes i bsym =
 
   match Flx_bsym.bbdcl bsym with
   | BBDCL_function (props,vs,ps,rt,exes) ->
-    (*
-    print_endline ("Function " ^ id ^ "<"^si i^"> properties " ^ string_of_properties props);
-    *)
     if List.mem `Requires_ptf props then Required
     else if List.mem `Not_requires_ptf props then Not_required
     else if
@@ -208,9 +205,6 @@ let rec set_ptf_usage bsym_table usage excludes i bsym =
         Required
     end else begin
       let result1, result2 = cal_reqs calls i in
-      (*
-      print_endline ("Function " ^ id ^ " ADDING properties " ^ string_of_properties [result2]);
-      *)
       let bbdcl = bbdcl_function (result2 :: props,vs,ps,rt,exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       result1

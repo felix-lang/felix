@@ -49,7 +49,7 @@ let rem_prop bsym_table p i =
 
   (* because of type classes .. *)
   | BBDCL_proc (props,vs,ps,ct,reqs) ->
-    let props = List.filter (fun k -> p <> k) props in
-    update_bsym (bbdcl_proc (props,vs,ps,ct,reqs))
+      let props = List.filter (fun k -> p <> k) props in
+      update_bsym (bbdcl_proc (props,vs,ps,ct,reqs))
 
   | _ -> ()

@@ -216,9 +216,6 @@ let mono syms bsym_table fi ts bsym =
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let ret = mt vars ret in
-    (*
-    let fi i ts = fi i (map mt ts) in
-    *)
     let ps = map (fun {pkind=pk; pid=s;pindex=i; ptyp=t} ->
       {pkind=pk;pid=s;pindex=fst (fi i ts);ptyp=mt vars t}) ps
     in

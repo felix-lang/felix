@@ -293,22 +293,13 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
-    if instps || mem `Cfun props then
+    if instps || mem `Cfun props then begin
       iter (fun {pindex=i; ptyp=t} ->
         ui i;
         rtr (varmap_subst hvarmap t)
       )
       ps
-    ;
-    (*
-    print_endline ("Instantiating function " ^ id);
-    print_endline ("vs=" ^ catmap "," (fun (s,i)-> s^ "<" ^ si i ^ ">") vs);
-    print_endline ("Input ts = " ^ catmap "," (sbt bsym_table) ts);
-    print_endline ("Varmap = " ^ Hashtbl.fold
-      (fun i k acc -> acc ^ "\n"^si i ^ " |-> " ^ sbt bsym_table k )
-      hvarmap ""
-    );
-    *)
+    end;
     process_function
       syms
       bsym_table
