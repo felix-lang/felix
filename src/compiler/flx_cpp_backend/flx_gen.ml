@@ -771,7 +771,7 @@ let gen_exe filename
     in
     begin
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_proc (props,vs,_,ct,_) ->
+    | BBDCL_fun (props,vs,_,BTYP_void,ct,_,_) ->
       assert (not is_jump);
 
       if length vs <> length ts then

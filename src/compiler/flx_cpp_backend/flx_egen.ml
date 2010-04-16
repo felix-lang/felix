@@ -477,8 +477,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       | BBDCL_cstruct _
       | BBDCL_struct _
       | BBDCL_function _
-      | BBDCL_fun _
-      | BBDCL_proc _ ->
+      | BBDCL_fun _ ->
          syserr sr
          (
            "[gen_expr: name] Open function '" ^
@@ -531,8 +530,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
 
     | BBDCL_cstruct _
     | BBDCL_struct _
-    | BBDCL_fun _
-    | BBDCL_proc _ ->
+    | BBDCL_fun _ ->
       failwith ("[gen_expr: closure] Can't wrap primitive proc, fun, or " ^
         "struct '" ^ Flx_bsym.id bsym ^ "' yet")
     | _ ->

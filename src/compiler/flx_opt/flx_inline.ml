@@ -612,9 +612,7 @@ of the original expression, done by the 'aux' function.
 let inlining_complete bsym_table i =
   match Flx_bsym_table.find_bbdcl bsym_table i with
   | BBDCL_function (props,_,_,_,_) -> mem `Inlining_complete props
-  | BBDCL_proc _
-  | BBDCL_fun _
-    -> true
+  | BBDCL_fun _ -> true
 
   | _ -> assert false
 
@@ -681,11 +679,7 @@ let virtual_check syms bsym_table sr i ts =
   *)
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,_,_,_,_,_,_)
-  | BBDCL_function (props,_,_,_,_)
-  | BBDCL_proc (props,_,_,_,_) when mem `Virtual props ->
-    (*
-    print_endline ("Examining call to virtual " ^ id);
-    *)
+  | BBDCL_function (props,_,_,_,_) when mem `Virtual props ->
     let parent =
       match Flx_bsym_table.find_parent bsym_table i with
       | Some p -> p

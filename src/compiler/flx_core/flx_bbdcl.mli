@@ -24,7 +24,6 @@ type t = private
   | BBDCL_const of      property_t list * bvs_t * Flx_btype.t * code_spec_t * breqs_t
   | BBDCL_fun of        property_t list * bvs_t * Flx_btype.t list * Flx_btype.t * code_spec_t  * breqs_t * prec_t
   | BBDCL_callback of   property_t list * bvs_t * Flx_btype.t list * Flx_btype.t list * int * Flx_btype.t * breqs_t * prec_t
-  | BBDCL_proc of       property_t list * bvs_t * Flx_btype.t list * code_spec_t  * breqs_t
   | BBDCL_insert of     bvs_t * code_spec_t * ikind_t * breqs_t
 
   | BBDCL_union of      bvs_t * (id_t * int * Flx_btype.t) list
@@ -53,7 +52,6 @@ val bbdcl_abs : bvs_t * btype_qual_t list * code_spec_t * breqs_t -> t
 val bbdcl_const : property_t list * bvs_t * Flx_btype.t * code_spec_t * breqs_t -> t
 val bbdcl_fun : property_t list * bvs_t * Flx_btype.t list * Flx_btype.t * code_spec_t  * breqs_t * prec_t -> t
 val bbdcl_callback : property_t list * bvs_t * Flx_btype.t list * Flx_btype.t list * int * Flx_btype.t * breqs_t * prec_t -> t
-val bbdcl_proc : property_t list * bvs_t * Flx_btype.t list * code_spec_t  * breqs_t -> t
 val bbdcl_insert : bvs_t * code_spec_t * ikind_t * breqs_t -> t
 val bbdcl_union : bvs_t * (id_t * int * Flx_btype.t) list -> t
 val bbdcl_struct : bvs_t * (id_t * Flx_btype.t) list -> t

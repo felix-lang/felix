@@ -2310,11 +2310,13 @@ and string_of_bbdcl bsym_table bbdcl index : string =
      ";"
 
   | BBDCL_fun (props,vs,ps,rt,code,reqs,prec) ->
+    let is_proc = Flx_btype.is_void rt in
     string_of_properties props ^
-    "fun " ^ name ^ string_of_bvs vs ^
+    (if is_proc then "proc " else "fun ") ^
+    name ^ string_of_bvs vs ^
     ": " ^
-    (sobt (btyp_tuple ps)) ^ " -> " ^
-    (sobt rt) ^
+    (sobt (btyp_tuple ps)) ^
+    (if is_proc then " " else " -> " ^ sobt rt) ^
     " = " ^ string_of_code_spec code ^
     (if prec = "" then "" else ":"^prec^" ")^
      string_of_breqs bsym_table reqs ^
@@ -2330,15 +2332,6 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     (if prec = "" then "" else ":"^prec^" ")^
      string_of_breqs bsym_table reqs ^
     ";"
-
-  | BBDCL_proc (props,vs, ps,code,reqs) ->
-    string_of_properties props ^
-    "proc " ^ name ^ string_of_bvs vs ^
-    ": " ^
-     (sobt (btyp_tuple ps)) ^
-     " = " ^ string_of_code_spec code ^
-     string_of_breqs bsym_table reqs ^
-     ";"
 
   | BBDCL_insert (vs,s,ikind,reqs) ->
      (match ikind with

@@ -26,7 +26,6 @@ type t =
   | BBDCL_const of      property_t list * bvs_t * Flx_btype.t * code_spec_t * breqs_t
   | BBDCL_fun of        property_t list * bvs_t * Flx_btype.t list * Flx_btype.t * code_spec_t  * breqs_t * prec_t
   | BBDCL_callback of   property_t list * bvs_t * Flx_btype.t list * Flx_btype.t list * int * Flx_btype.t * breqs_t * prec_t
-  | BBDCL_proc of       property_t list * bvs_t * Flx_btype.t list * code_spec_t  * breqs_t
   | BBDCL_insert of     bvs_t * code_spec_t * ikind_t * breqs_t
 
   | BBDCL_union of      bvs_t * (id_t * int * Flx_btype.t) list
@@ -72,9 +71,6 @@ let bbdcl_fun (prop, bvs, ps, rt, code, breqs, prec) =
 
 let bbdcl_callback (prop, bvs, ps_cf, ps_c, k, rt, breqs, prec) =
   BBDCL_callback (prop, bvs, ps_cf, ps_c, k, rt, breqs, prec)
-
-let bbdcl_proc (prop, bvs, ts, code, breqs) =
-  BBDCL_proc (prop, bvs, ts, code, breqs)
 
 let bbdcl_insert (bvs, code, ikind, breqs) =
   BBDCL_insert (bvs, code, ikind, breqs)
@@ -131,7 +127,6 @@ let get_bvs = function
   | BBDCL_const (_, bvs, _, _, _) -> bvs
   | BBDCL_fun (_, bvs, _, _, _, _, _) -> bvs
   | BBDCL_callback (_, bvs, _, _, _, _, _, _) -> bvs
-  | BBDCL_proc (_, bvs, _, _, _) -> bvs
   | BBDCL_insert (bvs, _, _, _) -> bvs
   | BBDCL_union (bvs, _) -> bvs
   | BBDCL_struct (bvs, _) -> bvs
@@ -204,9 +199,6 @@ let iter
       List.iter f_btype ps_cf;
       List.iter f_btype ps_c;
       f_btype rt;
-      f_breqs breqs
-  | BBDCL_proc (_,_,ps,_,breqs) ->
-      List.iter f_btype ps;
       f_breqs breqs
   | BBDCL_insert (_,_,_,breqs) ->
       f_breqs breqs
@@ -285,8 +277,6 @@ let map
         f_btype rt,
         f_breqs breqs,
         prec)
-  | BBDCL_proc (props,bvs,ps,code,breqs) ->
-      BBDCL_proc (props,bvs,List.map f_btype ps,code,f_breqs breqs)
   | BBDCL_insert (bvs,code,ikind,breqs) ->
       BBDCL_insert (bvs,code,ikind,f_breqs breqs)
   | BBDCL_union (bvs,cs) ->
@@ -356,9 +346,6 @@ let iter_uses f bbdcl =
       List.iter f_btype ps_cf;
       List.iter f_btype ps_c;
       f_btype rt;
-      f_breqs breqs
-  | BBDCL_proc (_,_,ps,_,breqs) ->
-      List.iter f_btype ps;
       f_breqs breqs
   | BBDCL_insert (_,_,_,breqs) ->
       f_breqs breqs
@@ -435,13 +422,6 @@ let rec print f = function
         Flx_btype.print rt
         print_breqs reqs
         print_string prec
-  | BBDCL_proc (props,bvs,ps,code,reqs) ->
-      print_variant5 f "BBDCL_proc"
-        print_properties props
-        print_bvs bvs
-        (Flx_list.print Flx_btype.print) ps
-        print_code_spec code
-        print_breqs reqs
   | BBDCL_insert (bvs,code,ikind,reqs) ->
       let ikind =
         match ikind with

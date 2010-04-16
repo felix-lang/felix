@@ -101,9 +101,6 @@ let strabs_symbol state bsym_table index bsym =
   | BBDCL_callback (props, bvs, ts1, ts2, j, t, breqs, prec) ->
     h (bbdcl_callback (props, bvs, fts ts1, fts ts2, j, ft t, breqs, prec))
 
-  | BBDCL_proc (props, bvs, ts, c, breqs) ->
-    h (bbdcl_proc (props, bvs, fts ts, c, breqs))
-
   | BBDCL_insert (bvs, c, ikind, breqs) ->
     h (bbdcl_insert (bvs, c, ikind, breqs))
 

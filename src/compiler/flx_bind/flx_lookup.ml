@@ -1628,8 +1628,6 @@ and btype_of_bsym state bsym_table bt bid bsym =
       btyp_function (btyp_tuple params, return_type)
   | BBDCL_callback (_,_,params,_,_,return_type,_,_) ->
       btyp_function (btyp_tuple params, return_type)
-  | BBDCL_proc (_,_,params,_,_)->
-      btyp_function (btyp_tuple params, btyp_void ())
   | BBDCL_insert _ -> assert false
   | BBDCL_union (_,ls) ->
       btyp_variant (List.map (fun (n,_,t) -> n,t) ls)

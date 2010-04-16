@@ -24,10 +24,6 @@ let add_prop bsym_table p i =
   | BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
       update_bsym (bbdcl_fun (p :: props,vs,ps,ret,ct,reqs,prec))
 
-  (* because of type classes .. *)
-  | BBDCL_proc (props,vs,ps,ct,reqs) ->
-      update_bsym (bbdcl_proc (p :: props,vs,ps,ct,reqs))
-
   | _ -> ()
 
 let rem_prop bsym_table p i =
@@ -46,10 +42,5 @@ let rem_prop bsym_table p i =
   | BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
       let props = List.filter (fun k -> p <> k) props in
       update_bsym (bbdcl_fun (props,vs,ps,ret,ct,reqs,prec))
-
-  (* because of type classes .. *)
-  | BBDCL_proc (props,vs,ps,ct,reqs) ->
-      let props = List.filter (fun k -> p <> k) props in
-      update_bsym (bbdcl_proc (props,vs,ps,ct,reqs))
 
   | _ -> ()

@@ -245,11 +245,6 @@ let mono syms bsym_table fi ts bsym =
     let ret = mt vars ret in
     Some (bbdcl_fun (props,vs,argtypes,ret,ct,reqs,prec))
 
-  | BBDCL_proc (props,vs,argtypes,ct,reqs) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let argtypes = map (mt vars) argtypes in
-    Some (bbdcl_proc (props,vs,argtypes,ct,reqs))
-
   | BBDCL_const (props, vs, t, CS_str "#this", reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
@@ -272,7 +267,6 @@ let chk_mono syms bsym_table i =
   | BBDCL_insert (vs,s,ikind,reqs) ->  false
   | BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) -> false
   | BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,prec) -> false
-  | BBDCL_proc (props,vs,argtypes,ct,reqs) -> false
   | BBDCL_abs (vs,tqual,ct,reqs) ->  false
   | BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) -> false
   | BBDCL_typeclass (props,vs) ->  false

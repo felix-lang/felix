@@ -433,29 +433,6 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     let tss = map (varmap_subst hvarmap) argtypes_c in
     iter rtr tss
 
-  | BBDCL_proc (props,vs,argtypes,_,reqs) ->
-    (*
-    print_endline ("[flx_inst] Handling requirements of proc " ^ id);
-    print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs);
-    print_endline ("ts = " ^ catmap "," (sbt bsym_table) ts);
-    *)
-    assert (length vs = length ts);
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let hvarmap = hashtable_of_list vars in
-    let vs t = varmap_subst hvarmap t in
-    do_reqs vs reqs;
-    process_function
-      syms
-      bsym_table
-      hvarmap
-      ref_insts1
-      i
-      (Flx_bsym.sr bsym)
-      argtypes
-      (btyp_void ())
-      []
-      ts
-
   | BBDCL_abs (vs,_,_,reqs)
     ->
     assert (length vs = length ts);

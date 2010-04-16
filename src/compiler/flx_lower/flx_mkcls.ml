@@ -83,23 +83,19 @@ let gen_closure state bsym_table bid t =
 
   let bbdcl =
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_proc (_,vs,ps,_,_) ->
-        let ts, param, arg = make_inner_function vs ps in
-
-        (* Generate a call to the wrapped procedure. *)
-        let exes =
-          [ bexe_call_prim (Flx_bsym.sr bsym, bid, ts, arg);
-            bexe_proc_return (Flx_bsym.sr bsym) ]
-        in
-
-        bbdcl_function ([],vs,([param],None),btyp_void (),exes)
-
     | BBDCL_fun (_,vs,ps,ret,_,_,_) ->
         let ts, param, arg = make_inner_function vs ps in
 
         (* Generate a call to the wrapped function. *)
-        let e = bexpr_apply_prim ret (bid, ts, arg) in
-        let exes = [bexe_fun_return (Flx_bsym.sr bsym, e)] in
+        let exes =
+          match ret with
+          | BTYP_void ->
+              [ bexe_call_prim (Flx_bsym.sr bsym, bid, ts, arg);
+                bexe_proc_return (Flx_bsym.sr bsym) ]
+          | _ ->
+              let e = bexpr_apply_prim ret (bid, ts, arg) in
+              [ bexe_fun_return (Flx_bsym.sr bsym, e) ]
+        in
 
         bbdcl_function ([],vs,([param],None),ret,exes)
 
@@ -144,7 +140,6 @@ let mkcls state bsym_table all_closures i ts t =
 
 let check_prim state bsym_table all_closures i ts t =
   match Flx_bsym_table.find_bbdcl bsym_table i with
-  | BBDCL_proc _
   | BBDCL_fun _
   | BBDCL_struct _
   | BBDCL_cstruct _

@@ -1270,9 +1270,6 @@ and codegen_symbol state bsym_table closure index bsym =
       print_endline "BBDCL_callback";
       assert false
 
-  | Flx_bbdcl.BBDCL_proc (props, vs, ps, code, reqs) ->
-      codegen_fun state index props vs ps (Flx_btype.btyp_void ()) code reqs ""
-
   | Flx_bbdcl.BBDCL_insert (vs, s, ikind, reqs) ->
       print_endline "BBDCL_insert";
       (* FIXME: ignore for now.

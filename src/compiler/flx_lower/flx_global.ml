@@ -61,7 +61,7 @@ let exe_uses_gc bsym_table exe =
     let bsym = Flx_bsym_table.find bsym_table i in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_callback (props,vs,ps,_,_,BTYP_void,rqs,_)
-    | BBDCL_proc (props,vs,ps,_,rqs) ->
+    | BBDCL_fun (props,vs,ps,BTYP_void,_,rqs,_) ->
       (*
       print_endline "Checking primitive for gc use[2]";
       *)
@@ -209,18 +209,6 @@ let rec set_ptf_usage bsym_table usage excludes i bsym =
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       result1
    end
-
-  | BBDCL_proc (props,vs,ps,ct,reqs) ->
-    if List.mem `Requires_ptf props then Required
-    else if List.mem `Not_requires_ptf props then Not_required
-    else if
-      List.mem `Uses_global_var props or
-      List.mem `Uses_gc props or
-      List.mem `Heap_closure props then begin
-        let bbdcl = bbdcl_proc (`Requires_ptf :: props,vs,ps,ct,reqs) in
-        Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
-        Required
-    end else Not_required
 
   | BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
     (*

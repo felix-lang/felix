@@ -118,12 +118,6 @@ let remap_bbdcl offset bbdcl =
       let reqs = remap_breqs reqs in
       bbdcl_callback (props, vs, ps_cf, ps_c, k, rt, reqs, prec)
 
-  | BBDCL_proc (props, vs, ps, code, reqs) ->
-      let vs = remap_bvs vs in
-      let ps = List.map remap_btype ps in
-      let reqs = remap_breqs reqs in
-      bbdcl_proc (props, vs, ps, code, reqs)
-
   | BBDCL_insert (vs, code, ikind, reqs) ->
       let vs = remap_bvs vs in
       let reqs = remap_breqs reqs in

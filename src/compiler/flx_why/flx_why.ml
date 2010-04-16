@@ -395,19 +395,7 @@ let emit_whycode filename syms bsym_table root =
           (Flx_bsym.sr bsym)
           bvs
           ps
-          ret
-
-    | BBDCL_proc (_,bvs,ps,_,_) ->
-        emit_function
-          syms
-          bsym_table
-          f
-          index
-          (Flx_bsym.id bsym)
-          (Flx_bsym.sr bsym)
-          bvs
-          ps
-          unitt
+          (match ret with BTYP_void -> unitt | _ -> ret)
 
     | _ -> ()
   end bsym_table;

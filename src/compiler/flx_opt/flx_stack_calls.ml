@@ -87,9 +87,7 @@ let rec is_pure syms bsym_table i =
     true
 
   (* not sure if this is the right place for this check .. *)
-  | BBDCL_fun (_,_,_,_,ct,_,_)
-  | BBDCL_proc (_,_,_,ct,_) ->
-    ct <> CS_virtual
+  | BBDCL_fun (_,_,_,_,ct,_,_) -> ct <> CS_virtual
 
   | BBDCL_function (_,_,_,_,exes) ->
     let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
@@ -549,7 +547,7 @@ and check_stackable_proc
   let bsym = Flx_bsym_table.find bsym_table i in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_callback _ -> false (* not sure if this is right .. *)
-  | BBDCL_proc (_,_,_,ct,_) -> ct <> CS_virtual
+  | BBDCL_fun (_,_,_,Flx_btype.BTYP_void,ct,_,_) -> ct <> CS_virtual
   | BBDCL_function (props,vs,p,BTYP_void,exes) ->
     if mem `Stackable props then true
     else if mem `Unstackable props then false
@@ -662,7 +660,8 @@ let enstack_calls syms bsym_table fn_cache ptr_cache self exes =
             end else
               bexe_call_direct (Flx_bsym.sr bsym,i,ts,a)
 
-        | BBDCL_proc _ -> bexe_call_prim (Flx_bsym.sr bsym,i,ts,a)
+        | BBDCL_fun (_,_,_,Flx_btype.BTYP_void,_,_,_) ->
+            bexe_call_prim (Flx_bsym.sr bsym,i,ts,a)
 
         (* seems to work at the moment *)
         | BBDCL_callback _ -> bexe_call_direct (Flx_bsym.sr bsym,i,ts,a)
