@@ -140,6 +140,12 @@ val btyp_type_set_intersection : t list -> t
 
 (* -------------------------------------------------------------------------- *)
 
+(** Returns if the bound type is void. *)
+val is_void : t -> bool
+
+(** Returns if the bound type is unit. *)
+val is_unit : t -> bool
+
 (** Returns if the bound type list is all void types. *)
 val all_voids : t list -> bool
 

@@ -180,21 +180,21 @@ let btyp_type_set_intersection ts =
 
 (* -------------------------------------------------------------------------- *)
 
+(** Returns if the bound type is void. *)
+let is_void = function
+  | BTYP_void -> true
+  | _ -> false
+
+(** Returns if the bound type is unit. *)
+let is_unit = function
+  | BTYP_tuple [] -> true
+  | _ -> false
+
 (** Returns if the bound type list is all void types. *)
-let all_voids ts =
-  try
-    List.iter (function BTYP_void -> () | _ -> raise Not_found) ts;
-    true
-  with Not_found ->
-    false
+let all_voids = List.for_all is_void
 
 (** Returns if the bound type list is all unit types. *)
-let all_units ts =
-  try
-    List.iter (function BTYP_tuple [] -> () | _ -> raise Not_found) ts;
-    true
-  with Not_found ->
-    false
+let all_units = List.for_all is_unit
 
 (** Returns if the bound type is or is equivalent to a BTYP_unitsum. *)
 let is_unitsum t = match t with
