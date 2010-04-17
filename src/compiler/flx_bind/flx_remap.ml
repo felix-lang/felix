@@ -103,12 +103,12 @@ let remap_bbdcl offset bbdcl =
       let reqs = remap_breqs reqs in
       bbdcl_const (props, vs, ty, code, reqs)
 
-  | BBDCL_fun (props, vs, ps, rt, code, reqs, prec) ->
+  | BBDCL_external_fun (props, vs, ps, rt, code, reqs, prec) ->
       let vs = remap_bvs vs in
       let ps = List.map remap_btype ps in
       let rt = remap_btype rt in
       let reqs = remap_breqs reqs in
-      bbdcl_fun (props, vs, ps, rt, code, reqs, prec)
+      bbdcl_external_fun (props, vs, ps, rt, code, reqs, prec)
 
   | BBDCL_callback (props, vs, ps_cf, ps_c, k, rt, reqs, prec) ->
       let vs = remap_bvs vs in

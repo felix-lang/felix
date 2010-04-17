@@ -87,7 +87,7 @@ let rec is_pure syms bsym_table i =
     true
 
   (* not sure if this is the right place for this check .. *)
-  | BBDCL_fun (_,_,_,_,ct,_,_) -> ct <> CS_virtual
+  | BBDCL_external_fun (_,_,_,_,ct,_,_) -> ct <> CS_virtual
 
   | BBDCL_function (_,_,_,_,exes) ->
     let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
@@ -347,7 +347,7 @@ let can_stack_func syms bsym_table fn_cache ptr_cache i =
     can_stack
 
   | BBDCL_nonconst_ctor _
-  | BBDCL_fun _
+  | BBDCL_external_fun _
   | BBDCL_callback _
   | BBDCL_cstruct _
   | BBDCL_struct _
@@ -547,7 +547,7 @@ and check_stackable_proc
   let bsym = Flx_bsym_table.find bsym_table i in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_callback _ -> false (* not sure if this is right .. *)
-  | BBDCL_fun (_,_,_,Flx_btype.BTYP_void,ct,_,_) -> ct <> CS_virtual
+  | BBDCL_external_fun (_,_,_,Flx_btype.BTYP_void,ct,_,_) -> ct <> CS_virtual
   | BBDCL_function (props,vs,p,BTYP_void,exes) ->
     if mem `Stackable props then true
     else if mem `Unstackable props then false
@@ -597,7 +597,7 @@ let rec enstack_applies syms bsym_table fn_cache ptr_cache x =
           if mem `Stackable props
           then bexpr_apply_stack t (i,ts,b)
           else bexpr_apply_direct t (i,ts,b)
-        | BBDCL_fun _
+        | BBDCL_external_fun _
         | BBDCL_callback _ -> bexpr_apply_prim t (i,ts,b)
 
         | BBDCL_cstruct _
@@ -660,7 +660,7 @@ let enstack_calls syms bsym_table fn_cache ptr_cache self exes =
             end else
               bexe_call_direct (Flx_bsym.sr bsym,i,ts,a)
 
-        | BBDCL_fun (_,_,_,Flx_btype.BTYP_void,_,_,_) ->
+        | BBDCL_external_fun (_,_,_,Flx_btype.BTYP_void,_,_,_) ->
             bexe_call_prim (Flx_bsym.sr bsym,i,ts,a)
 
         (* seems to work at the moment *)

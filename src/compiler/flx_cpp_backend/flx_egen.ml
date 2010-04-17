@@ -477,7 +477,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       | BBDCL_cstruct _
       | BBDCL_struct _
       | BBDCL_function _
-      | BBDCL_fun _ ->
+      | BBDCL_external_fun _ ->
          syserr sr
          (
            "[gen_expr: name] Open function '" ^
@@ -530,7 +530,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
 
     | BBDCL_cstruct _
     | BBDCL_struct _
-    | BBDCL_fun _ ->
+    | BBDCL_external_fun _ ->
       failwith ("[gen_expr: closure] Can't wrap primitive proc, fun, or " ^
         "struct '" ^ Flx_bsym.id bsym ^ "' yet")
     | _ ->
@@ -682,7 +682,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     in
     begin
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,ps,retyp,ct,_,prec) ->
+    | BBDCL_external_fun (props,vs,ps,retyp,ct,_,prec) ->
       if length vs <> length ts then
       failwith
       (
@@ -725,7 +725,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
               syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
           in
           match Flx_bsym.bbdcl bsym with
-          | BBDCL_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
+          | BBDCL_external_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
           | BBDCL_function _ -> ge' (bexpr_apply_direct t (index',ts',a))
           | _ ->
               clierr2 sr (Flx_bsym.sr bsym) ("expected instance to be function " ^
@@ -841,7 +841,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
           syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
       in
       match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
+      | BBDCL_external_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
       | BBDCL_function _ -> ge' (bexpr_apply_direct t (index',ts',a))
       | _ ->
           clierr2 sr (Flx_bsym.sr bsym) ("expected instance to be function " ^
@@ -883,7 +883,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
         "\n      ->apply(" ^ ge_arg a ^ ")"
         )
 
-    | BBDCL_fun _ -> assert false
+    | BBDCL_external_fun _ -> assert false
     (*
       ge' (BEXPR_apply_prim (index,ts,a),t)
     *)
@@ -910,7 +910,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
           syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
       in
       match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
+      | BBDCL_external_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
       | BBDCL_function _ -> ge' (bexpr_apply_direct t (index',ts',a))
       | _ ->
           clierr2 sr (Flx_bsym.sr bsym) ("expected instance to be function " ^

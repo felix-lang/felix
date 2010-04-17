@@ -239,11 +239,11 @@ let mono syms bsym_table fi ts bsym =
     This is weak .. it's redone for each instance, relies
     on mt being idempotent..
   *)
-  | BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) ->
+  | BBDCL_external_fun (props,vs,argtypes,ret,ct,reqs,prec) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let argtypes = map (mt vars) argtypes in
     let ret = mt vars ret in
-    Some (bbdcl_fun (props,vs,argtypes,ret,ct,reqs,prec))
+    Some (bbdcl_external_fun (props,vs,argtypes,ret,ct,reqs,prec))
 
   | BBDCL_const (props, vs, t, CS_str "#this", reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -265,7 +265,7 @@ let chk_mono syms bsym_table i =
   | BBDCL_newtype (vs,t) -> false
   | BBDCL_const (props,vs,t,ct,reqs) -> false
   | BBDCL_insert (vs,s,ikind,reqs) ->  false
-  | BBDCL_fun (props,vs,argtypes,ret,ct,reqs,prec) -> false
+  | BBDCL_external_fun (props,vs,argtypes,ret,ct,reqs,prec) -> false
   | BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,prec) -> false
   | BBDCL_abs (vs,tqual,ct,reqs) ->  false
   | BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) -> false

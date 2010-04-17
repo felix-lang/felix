@@ -52,7 +52,7 @@ let bbdcl bsym = bsym.bbdcl
 (** Return if the bound symbol is an identity function. *)
 let is_identity bsym =
   match bsym.bbdcl with
-  | Flx_bbdcl.BBDCL_fun (_,_,_,_,Flx_ast.CS_identity,_,_) -> true
+  | Flx_bbdcl.BBDCL_external_fun (_,_,_,_,Flx_ast.CS_identity,_,_) -> true
   | _ -> false
 
 (** Return if the bound symbol is a variable. *)
@@ -70,8 +70,9 @@ let is_function bsym =
 (** Return if the bound symbol is a generator. *)
 let is_generator bsym =
   match bsym.bbdcl with
-  | Flx_bbdcl.BBDCL_fun (props,_,_,_,_,_,_)
-  | Flx_bbdcl.BBDCL_function (props,_,_,_,_) when List.mem `Generator props -> true
+  | Flx_bbdcl.BBDCL_function (props,_,_,_,_)
+  | Flx_bbdcl.BBDCL_external_fun (props,_,_,_,_,_,_)
+    when List.mem `Generator props -> true
   | _ -> false
 
 (** Returns the bound parameters of the bound symbol. *)

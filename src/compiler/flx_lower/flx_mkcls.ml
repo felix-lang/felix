@@ -83,7 +83,7 @@ let gen_closure state bsym_table bid t =
 
   let bbdcl =
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (_,vs,ps,ret,_,_,_) ->
+    | BBDCL_external_fun (_,vs,ps,ret,_,_,_) ->
         let ts, param, arg = make_inner_function vs ps in
 
         (* Generate a call to the wrapped function. *)
@@ -140,7 +140,7 @@ let mkcls state bsym_table all_closures i ts t =
 
 let check_prim state bsym_table all_closures i ts t =
   match Flx_bsym_table.find_bbdcl bsym_table i with
-  | BBDCL_fun _
+  | BBDCL_external_fun _
   | BBDCL_struct _
   | BBDCL_cstruct _
   | BBDCL_nonconst_ctor _ ->

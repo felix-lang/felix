@@ -97,7 +97,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
       failwith "Use of mangled procedure in expression! (should have been lifted out)"
 
     (* function type not needed for direct call *)
-    | BBDCL_fun _
+    | BBDCL_external_fun _
     | BBDCL_callback _
     | BBDCL_function _
     | BBDCL_nonconst_ctor _
@@ -387,7 +387,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     do_reqs vs reqs
 
 
-  | BBDCL_fun (props,vs,argtypes,ret,_,reqs,_) ->
+  | BBDCL_external_fun (props,vs,argtypes,ret,_,reqs,_) ->
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in

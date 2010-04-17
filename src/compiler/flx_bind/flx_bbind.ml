@@ -554,7 +554,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     let ts = map bt ts in
     let bret = bt ret in
     let reqs = bind_reqs reqs in
-    let bbdcl = bbdcl_fun (props,bvs,ts,bret,ct,reqs,prec) in
+    let bbdcl = bbdcl_external_fun (props,bvs,ts,bret,ct,reqs,prec) in
 
     (* Cache the type of the function. *)
     if not (Hashtbl.mem state.syms.ticache symbol_index) then begin

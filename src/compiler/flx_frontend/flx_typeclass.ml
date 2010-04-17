@@ -77,7 +77,7 @@ let check_instance
       Flx_types.BidSet.fold begin fun i acc ->
         let bsym = Flx_bsym_table.find bsym_table i in
         match Flx_bsym.bbdcl bsym with
-        | BBDCL_fun (_,bvs,params,ret,_,_,_) ->
+        | BBDCL_external_fun (_,bvs,params,ret,_,_,_) ->
             let argt = btyp_tuple params in
             let qt = bvs, btyp_function (argt,ret) in
             (Flx_bsym.id bsym,(i,qt)) :: acc
@@ -219,7 +219,7 @@ let check_instance
     Flx_types.BidSet.iter begin fun tck ->
       let tck_bsym = Flx_bsym_table.find bsym_table tck in
       match Flx_bsym.bbdcl tck_bsym with
-      | BBDCL_fun (props,bvs,params,ret,ct,breq,prec) ->
+      | BBDCL_external_fun (props,bvs,params,ret,ct,breq,prec) ->
         if ct == CS_virtual then
           let ft = btyp_function (btyp_tuple params,ret) in
           check_binding true tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft

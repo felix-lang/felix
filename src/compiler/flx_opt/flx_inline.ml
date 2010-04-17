@@ -612,7 +612,7 @@ of the original expression, done by the 'aux' function.
 let inlining_complete bsym_table i =
   match Flx_bsym_table.find_bbdcl bsym_table i with
   | BBDCL_function (props,_,_,_,_) -> mem `Inlining_complete props
-  | BBDCL_fun _ -> true
+  | BBDCL_external_fun _ -> true
 
   | _ -> assert false
 
@@ -678,7 +678,7 @@ let virtual_check syms bsym_table sr i ts =
   print_endline ("virtual check Examining call to " ^ id ^ "<" ^ si i ^ ">");
   *)
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,_,_,_,_,_,_)
+  | BBDCL_external_fun (props,_,_,_,_,_,_)
   | BBDCL_function (props,_,_,_,_) when mem `Virtual props ->
     let parent =
       match Flx_bsym_table.find_parent bsym_table i with
@@ -805,7 +805,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
         heavily_inline_bbdcl syms uses bsym_table (callee::excludes) callee;
         let bsym = Flx_bsym_table.find bsym_table callee in
         begin match Flx_bsym.bbdcl bsym with
-        | BBDCL_fun (props,_,_,_,_,_,_)
+        | BBDCL_external_fun (props,_,_,_,_,_,_)
 (*        | BBDCL_function (props,_,_,_,_)  *)
           when mem `Generator props
           ->

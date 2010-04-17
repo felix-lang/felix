@@ -2309,7 +2309,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
      string_of_breqs bsym_table reqs ^
      ";"
 
-  | BBDCL_fun (props,vs,ps,rt,code,reqs,prec) ->
+  | BBDCL_external_fun (props,vs,ps,rt,code,reqs,prec) ->
     let is_proc = Flx_btype.is_void rt in
     string_of_properties props ^
     (if is_proc then "proc " else "fun ") ^

@@ -91,12 +91,12 @@ let strabs_symbol state bsym_table index bsym =
   | BBDCL_const (props, bvs, t, c, breqs) ->
     h (bbdcl_const (props,  bvs, ft t, c, breqs))
 
-  | BBDCL_fun (props, bvs, ts, t, c, breqs, prec) ->
+  | BBDCL_external_fun (props, bvs, ts, t, c, breqs, prec) ->
     if c = CS_identity then
       (* Ignore identity functions. *)
       ()
     else
-      h (bbdcl_fun (props, bvs, fts ts, ft t, c, breqs, prec))
+      h (bbdcl_external_fun (props, bvs, fts ts, ft t, c, breqs, prec))
 
   | BBDCL_callback (props, bvs, ts1, ts2, j, t, breqs, prec) ->
     h (bbdcl_callback (props, bvs, fts ts1, fts ts2, j, ft t, breqs, prec))

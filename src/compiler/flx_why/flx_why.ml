@@ -40,7 +40,7 @@ let find_function syms bsym_table root name =
   let bsyms =
     List.filter begin fun (_, bsym) ->
       match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (_,_,args,res,ct,_,_) ->
+      | BBDCL_external_fun (_,_,args,res,ct,_,_) ->
         begin match Flx_bsym.id bsym, args, res with
         | "lnot", [BTYP_unitsum 2], BTYP_unitsum 2 -> true
         | _, [BTYP_unitsum 2; BTYP_unitsum 2], BTYP_unitsum 2 -> true
@@ -385,7 +385,7 @@ let emit_whycode filename syms bsym_table root =
           ps
           (match ret with BTYP_void -> unitt | _ -> ret)
 
-    | BBDCL_fun (_,bvs,ps,ret,_,_,_) ->
+    | BBDCL_external_fun (_,bvs,ps,ret,_,_,_) ->
         emit_function
           syms
           bsym_table

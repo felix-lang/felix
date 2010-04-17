@@ -21,8 +21,8 @@ let add_prop bsym_table p i =
   | BBDCL_const (props,vs,ret,ct,reqs) ->
       update_bsym (bbdcl_const (p :: props,vs,ret,ct,reqs))
 
-  | BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
-      update_bsym (bbdcl_fun (p :: props,vs,ps,ret,ct,reqs,prec))
+  | BBDCL_external_fun (props,vs,ps,ret,ct,reqs,prec) ->
+      update_bsym (bbdcl_external_fun (p :: props,vs,ps,ret,ct,reqs,prec))
 
   | _ -> ()
 
@@ -39,8 +39,8 @@ let rem_prop bsym_table p i =
       let props = List.filter (fun k -> p <> k) props in
       update_bsym (bbdcl_const (props,vs,ret,ct,reqs))
 
-  | BBDCL_fun (props,vs,ps,ret,ct,reqs,prec) ->
+  | BBDCL_external_fun (props,vs,ps,ret,ct,reqs,prec) ->
       let props = List.filter (fun k -> p <> k) props in
-      update_bsym (bbdcl_fun (props,vs,ps,ret,ct,reqs,prec))
+      update_bsym (bbdcl_external_fun (props,vs,ps,ret,ct,reqs,prec))
 
   | _ -> ()
