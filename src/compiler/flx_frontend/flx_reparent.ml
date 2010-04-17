@@ -301,13 +301,13 @@ let reparent1
   in
 
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (props, vs, (ps,traint), ret, exes) ->
+  | BBDCL_fun (props, vs, (ps,traint), ret, exes) ->
     let props = allow_rescan rescan_flag props in
     let props = filter (fun p -> p <> `Virtual) props in
     let ps = remap_ps ps in
     let exes = rexes exes in
     let ret = auxt ret in
-    update_bsym (bbdcl_function (props,splice vs,(ps,traint),ret,exes));
+    update_bsym (bbdcl_fun (props,splice vs,(ps,traint),ret,exes));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls

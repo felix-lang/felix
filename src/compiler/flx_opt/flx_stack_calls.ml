@@ -89,7 +89,7 @@ let rec is_pure syms bsym_table i =
   (* not sure if this is the right place for this check .. *)
   | BBDCL_external_fun (_,_,_,_,ct,_,_) -> ct <> CS_virtual
 
-  | BBDCL_function (_,_,_,_,exes) ->
+  | BBDCL_fun (_,_,_,_,exes) ->
     let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
     match bsym_parent with
     | Some _ ->
@@ -187,7 +187,7 @@ let has_fun_children bsym_table children =
   try
     BidSet.iter begin fun i ->
       match Flx_bsym_table.find_bbdcl bsym_table i with
-      | BBDCL_function _ -> raise Found
+      | BBDCL_fun _ -> raise Found
       | _ -> ()
     end children;
    false 
@@ -197,7 +197,7 @@ let has_proc_children bsym_table children =
   try
     BidSet.iter begin fun i ->
       match Flx_bsym_table.find_bbdcl bsym_table i with
-      | BBDCL_function (_,_,_,BTYP_void,_) -> raise Found
+      | BBDCL_fun (_,_,_,BTYP_void,_) -> raise Found
       | _ -> ()
     end children;
    false 
@@ -319,7 +319,7 @@ let can_stack_func syms bsym_table fn_cache ptr_cache i =
   in
   let bsym = Flx_bsym_table.find bsym_table i in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (_,_,_,ret,_) ->
+  | BBDCL_fun (_,_,_,ret,_) ->
     let has_vars = has_var_children bsym_table children in
     let has_funs = has_fun_children bsym_table children in
     let returns_fun = type_has_fn fn_cache syms bsym_table children ret in
@@ -375,7 +375,7 @@ let rec can_stack_proc
   print_endline ("Stackability Checking procedure " ^ id);
   *)
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (_,_,_,BTYP_void,exes) ->
+  | BBDCL_fun (_,_,_,BTYP_void,exes) ->
     (* if a procedure has procedural children they can do anything naughty
      * a recursive check would be more aggressive
     *)
@@ -548,7 +548,7 @@ and check_stackable_proc
   match Flx_bsym.bbdcl bsym with
   | BBDCL_callback _ -> false (* not sure if this is right .. *)
   | BBDCL_external_fun (_,_,_,Flx_btype.BTYP_void,ct,_,_) -> ct <> CS_virtual
-  | BBDCL_function (props,vs,p,BTYP_void,exes) ->
+  | BBDCL_fun (props,vs,p,BTYP_void,exes) ->
     if mem `Stackable props then true
     else if mem `Unstackable props then false
     else if can_stack_proc syms bsym_table fn_cache ptr_cache label_map label_usage i recstop
@@ -560,12 +560,12 @@ and check_stackable_proc
       let props =
         if is_pure syms bsym_table i then `Pure :: props else props
       in
-      let bbdcl = bbdcl_function (props,vs,p,btyp_void (),exes) in
+      let bbdcl = bbdcl_fun (props,vs,p,btyp_void (),exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       true
     end
     else begin
-      let bbdcl = bbdcl_function (`Unstackable :: props,vs,p,btyp_void (),exes) in
+      let bbdcl = bbdcl_fun (`Unstackable :: props,vs,p,btyp_void (),exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       false
     end
@@ -593,7 +593,7 @@ let rec enstack_applies syms bsym_table fn_cache ptr_cache x =
     ) as x ->
       begin
         match Flx_bsym_table.find_bbdcl bsym_table i with
-        | BBDCL_function (props,_,_,_,_) ->
+        | BBDCL_fun (props,_,_,_,_) ->
           if mem `Stackable props
           then bexpr_apply_stack t (i,ts,b)
           else bexpr_apply_direct t (i,ts,b)
@@ -610,7 +610,7 @@ let rec enstack_applies syms bsym_table fn_cache ptr_cache x =
 let mark_stackable syms bsym_table fn_cache ptr_cache label_map label_usage =
   Flx_bsym_table.iter begin fun i bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,vs,p,BTYP_void,exes) ->
+    | BBDCL_fun (props,vs,p,BTYP_void,exes) ->
         if mem `Stackable props or mem `Unstackable props then () else
         ignore(check_stackable_proc
           syms
@@ -622,7 +622,7 @@ let mark_stackable syms bsym_table fn_cache ptr_cache label_map label_usage =
           i
           [])
 
-    | BBDCL_function (props,vs,p,ret,exes) ->
+    | BBDCL_fun (props,vs,p,ret,exes) ->
         let props: property_t list ref = ref props in
         if can_stack_func syms bsym_table fn_cache ptr_cache i then
         begin
@@ -633,7 +633,7 @@ let mark_stackable syms bsym_table fn_cache ptr_cache label_map label_usage =
           end
         end;
         let props : property_t list = !props in
-        let bbdcl = bbdcl_function (props,vs,p,ret,exes) in
+        let bbdcl = bbdcl_fun (props,vs,p,ret,exes) in
         Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
     | _ -> ()
@@ -648,11 +648,11 @@ let enstack_calls syms bsym_table fn_cache ptr_cache self exes =
     | BEXE_call_direct (sr,i,ts,a) ->
         let bsym = Flx_bsym_table.find bsym_table i in
         begin match Flx_bsym.bbdcl bsym with
-        | BBDCL_function (props,vs,p,BTYP_void,exes) ->
+        | BBDCL_fun (props,vs,p,BTYP_void,exes) ->
             if mem `Stackable props then begin
               if not (mem `Stack_closure props) then begin
                 let props = `Stack_closure :: props in
-                let bbdcl = bbdcl_function (props,vs,p,btyp_void (),exes) in
+                let bbdcl = bbdcl_fun (props,vs,p,btyp_void (),exes) in
                 Flx_bsym_table.update_bbdcl bsym_table i bbdcl
               end;
 
@@ -695,7 +695,7 @@ let make_stack_calls
 
   Flx_bsym_table.iter begin fun i bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,vs,p,ret,exes) ->
+    | BBDCL_fun (props,vs,p,ret,exes) ->
         let exes = enstack_calls
           syms
           bsym_table
@@ -706,8 +706,8 @@ let make_stack_calls
         in
         let exes = Flx_cflow.final_tailcall_opt exes in
         begin match Flx_bsym_table.find_bbdcl bsym_table i with
-        | BBDCL_function (props,vs,p,ret,_) ->
-            let bbdcl = bbdcl_function (props,vs,p,ret,exes) in
+        | BBDCL_fun (props,vs,p,ret,_) ->
+            let bbdcl = bbdcl_fun (props,vs,p,ret,exes) in
             Flx_bsym_table.update_bbdcl bsym_table i bbdcl
         | _ -> assert false
         end

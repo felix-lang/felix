@@ -336,8 +336,7 @@ let gen_offset_tables syms bsym_table module_name =
   let s = Buffer.create 20000 in
 
   (* print_endline "Function and procedure offsets"; *)
-  Hashtbl.iter
-  (fun (index,ts) instance ->
+  Hashtbl.iter begin fun (index,ts) instance ->
     let bsym =
       try Flx_bsym_table.find bsym_table index
       with Not_found ->
@@ -347,29 +346,26 @@ let gen_offset_tables syms bsym_table module_name =
     print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt bsym_table) ts ^"]");
     *)
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,vs,ps,ret,exes) ->
-      scan exes;
-      if mem `Cfun props then () else
-      if mem `Heap_closure props then
-        gen_fun_offsets
-          s
-          syms
-          bsym_table
-          index
-          vs
-          ps
-          ret
-          ts
-          instance
-          props
-          last_ptr_map
-
+    | BBDCL_fun (props,vs,ps,ret,exes) ->
+        scan exes;
+        if mem `Cfun props then () else
+        if mem `Heap_closure props then
+          gen_fun_offsets
+            s
+            syms
+            bsym_table
+            index
+            vs
+            ps
+            ret
+            ts
+            instance
+            props
+            last_ptr_map
     | _ -> ()
-  )
-  syms.instances
-  ;
-  gen_thread_frame_offsets s syms bsym_table last_ptr_map
-  ;
+  end syms.instances;
+
+  gen_thread_frame_offsets s syms bsym_table last_ptr_map;
 
   (* We're not finished: we need offsets dynamically allocated types too *)
 

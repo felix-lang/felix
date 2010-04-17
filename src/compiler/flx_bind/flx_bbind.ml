@@ -350,7 +350,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     (* We don't need to bind the intermediary type. *)
     let brt = bt' rt in
     let brt, bbexes = bexes exes brt symbol_index bvs in
-    let bbdcl = bbdcl_function (props,bvs,bps,brt,bbexes) in
+    let bbdcl = bbdcl_fun (props,bvs,bps,brt,bbexes) in
 
     (* Cache the type of the function. *)
     if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
@@ -439,7 +439,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
         ">" ^ print_bvs bvs ^ ":" ^ sbt bsym_table
         (btyp_function (btyp_tuple [], flx_bbool)));
 
-    add_bsym true_parent (bbdcl_function
+    add_bsym true_parent (bbdcl_fun
       ([`Inline; `Generated "bbind: match check"], bvs, ([], None),
       flx_bbool, bbexes))
 
@@ -537,7 +537,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table brt);
 
-    add_bsym true_parent (bbdcl_function (props,bvs,([],None),brt,bbexes))
+    add_bsym true_parent (bbdcl_fun (props,bvs,([],None),brt,bbexes))
 
   | SYMDEF_const (props,t,ct,reqs) ->
     let t = type_of_index symbol_index in

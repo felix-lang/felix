@@ -1236,7 +1236,7 @@ and codegen_symbol state bsym_table closure index bsym =
       print_endline "BBDCL_module";
       assert false
 
-  | Flx_bbdcl.BBDCL_function (props, _, (ps, _), ret_type, es) ->
+  | Flx_bbdcl.BBDCL_fun (props, _, (ps, _), ret_type, es) ->
       ignore (codegen_function
         state
         bsym_table

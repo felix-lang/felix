@@ -93,13 +93,13 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
           string_of_bid index)
     in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (_,_,_,BTYP_void,_) ->
+    | BBDCL_fun (_,_,_,BTYP_void,_) ->
       failwith "Use of mangled procedure in expression! (should have been lifted out)"
 
     (* function type not needed for direct call *)
     | BBDCL_external_fun _
     | BBDCL_callback _
-    | BBDCL_function _
+    | BBDCL_fun _
     | BBDCL_nonconst_ctor _
       ->
       let ts = map vs ts in
@@ -288,7 +288,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_invalid -> assert false
   | BBDCL_module -> ()
-  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
     let argtypes = Flx_bparameter.get_btypes ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -504,7 +504,7 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
     | BIFACE_export_fun (_,x,_) ->
       let bsym = Flx_bsym_table.find bsym_table x in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_function (props,_,(ps,_),_,_) ->
+      | BBDCL_fun (props,_,(ps,_),_,_) ->
         begin match ps with
         | [] -> ()
         | [{ptyp=t}] -> register_type_r ui syms bsym_table [] (Flx_bsym.sr bsym) t

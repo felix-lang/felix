@@ -14,8 +14,8 @@ let add_prop bsym_table p i =
   let bsym = Flx_bsym_table.find bsym_table i in
   let update_bsym bbdcl = Flx_bsym_table.update_bbdcl bsym_table i bbdcl in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (props,vs,ps,ret,exes) ->
-      update_bsym (bbdcl_function (p :: props,vs,ps,ret,exes))
+  | BBDCL_fun (props,vs,ps,ret,exes) ->
+      update_bsym (bbdcl_fun (p :: props,vs,ps,ret,exes))
 
   (* because of type classes .. *)
   | BBDCL_const (props,vs,ret,ct,reqs) ->
@@ -30,9 +30,9 @@ let rem_prop bsym_table p i =
   let bsym = Flx_bsym_table.find bsym_table i in
   let update_bsym bbdcl = Flx_bsym_table.update_bbdcl bsym_table i bbdcl in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (props,vs,ps,ret,exes) ->
+  | BBDCL_fun (props,vs,ps,ret,exes) ->
       let props = List.filter (fun k -> p <> k) props in
-      update_bsym (bbdcl_function (props,vs,ps,ret,exes))
+      update_bsym (bbdcl_fun (props,vs,ps,ret,exes))
 
   (* because of type classes .. *)
   | BBDCL_const (props,vs,ret,ct,reqs) ->

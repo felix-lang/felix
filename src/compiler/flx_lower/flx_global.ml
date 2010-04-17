@@ -108,7 +108,7 @@ let exes_use_yield exes =
 (* ALSO calculates if a function uses a yield *)
 let set_gc_use bsym_table index bsym =
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (props, vs, ps, rt, exes) ->
+  | BBDCL_fun (props, vs, ps, rt, exes) ->
       let props = if exes_use_gc bsym_table exes
         then `Uses_gc :: props
         else props
@@ -121,7 +121,7 @@ let set_gc_use bsym_table index bsym =
               then `Heap_closure :: `Yields :: `Generator :: props
               else props
       in
-      let bbdcl = bbdcl_function (props,vs,ps,rt,exes) in
+      let bbdcl = bbdcl_fun (props,vs,ps,rt,exes) in
       Flx_bsym_table.update_bbdcl bsym_table index bbdcl
 
   | _ -> ()
@@ -146,9 +146,9 @@ let exes_use_global bsym_table exes =
 
 let set_local_globals bsym_table index bsym =
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (props,vs,ps,rt,exes) ->
+  | BBDCL_fun (props,vs,ps,rt,exes) ->
       if exes_use_global bsym_table exes then begin
-        let bbdcl = bbdcl_function (`Uses_global_var :: props,vs,ps,rt,exes) in
+        let bbdcl = bbdcl_fun (`Uses_global_var :: props,vs,ps,rt,exes) in
         Flx_bsym_table.update_bbdcl bsym_table index bbdcl
       end
   | _ -> ()
@@ -193,19 +193,19 @@ let rec set_ptf_usage bsym_table usage excludes i bsym =
   let calls = try Hashtbl.find usage i with Not_found -> [] in
 
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (props,vs,ps,rt,exes) ->
+  | BBDCL_fun (props,vs,ps,rt,exes) ->
     if List.mem `Requires_ptf props then Required
     else if List.mem `Not_requires_ptf props then Not_required
     else if
       List.mem `Uses_global_var props or
       List.mem `Uses_gc props or
       List.mem `Heap_closure props then begin
-        let bbdcl = bbdcl_function (`Requires_ptf :: props,vs,ps,rt,exes) in
+        let bbdcl = bbdcl_fun (`Requires_ptf :: props,vs,ps,rt,exes) in
         Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
         Required
     end else begin
       let result1, result2 = cal_reqs calls i in
-      let bbdcl = bbdcl_function (result2 :: props,vs,ps,rt,exes) in
+      let bbdcl = bbdcl_fun (result2 :: props,vs,ps,rt,exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
       result1
    end

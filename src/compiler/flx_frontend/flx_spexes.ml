@@ -482,10 +482,10 @@ let gen_body syms uses bsym_table id
       BidSet.iter begin fun i ->
         let bsym = Flx_bsym_table.find bsym_table i in
         match Flx_bsym.bbdcl bsym with
-        | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+        | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
             let exes = map (subarg syms bsym_table argmap) exes in
             recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
-            let bbdcl = bbdcl_function (props,vs,(ps,traint),ret,exes) in
+            let bbdcl = bbdcl_fun (props,vs,(ps,traint),ret,exes) in
             Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
         | _ -> ()

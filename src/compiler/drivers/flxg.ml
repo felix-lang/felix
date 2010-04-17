@@ -369,7 +369,7 @@ let codegen_bsyms state bsym_table root_proc =
   let topclass_props =
     let bsym = Flx_bsym_table.find bsym_table root_proc in
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,vs,p,BTYP_void,exes) -> props
+    | BBDCL_fun (props,vs,p,BTYP_void,exes) -> props
     | _ -> syserr (Flx_bsym.sr bsym) "Expected root to be procedure"
   in
   fprintf state.ppf "//root module's init procedure has name %s\n" top_class;

@@ -32,7 +32,7 @@ let cal_display bsym_table parent : (bid_t *int) list =
               Flx_print.string_of_bid parent)
         in
         match Flx_bsym.bbdcl bsym with
-        | BBDCL_function (_, vs, _, _, _) ->
+        | BBDCL_fun (_, vs, _, _, _) ->
             let bsym_parent = Flx_bsym_table.find_parent bsym_table parent in
             aux bsym_parent ((parent, List.length vs)::display)
 

@@ -82,7 +82,7 @@ let check_instance
             let qt = bvs, btyp_function (argt,ret) in
             (Flx_bsym.id bsym,(i,qt)) :: acc
 
-        | BBDCL_function (_,bvs,bps,ret,_) ->
+        | BBDCL_fun (_,bvs,bps,ret,_) ->
             let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
             let qt = bvs, btyp_function (argt,ret) in
             (Flx_bsym.id bsym,(i,qt)) :: acc
@@ -227,7 +227,7 @@ let check_instance
         clierr tcksr "Typeclass requires virtual function";
         *)
 
-      | BBDCL_function (props,bvs,bps,ret,_) when mem `Virtual props ->
+      | BBDCL_fun (props,bvs,bps,ret,_) when mem `Virtual props ->
         let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
         let ft = btyp_function (argt,ret) in
         check_binding false tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft

@@ -128,15 +128,14 @@ let make_uncurry_map syms bsym_table =
 
   Flx_bsym_table.iter begin fun i bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (_,vs,_,_,[BEXE_fun_return (_,(BEXPR_closure (f,ts),_))])
-      when Flx_bsym_table.is_child bsym_table i f && vs_is_ts vs ts
-    ->
-      let k = fresh_bid syms.counter in
-      Hashtbl.add uncurry_map i (f,k,0);
-      if syms.compiler_options.print_flag then
-      print_endline ("Detected curried function " ^ Flx_bsym.id bsym ^ "<" ^
-        string_of_bid i ^ "> ret child= " ^ string_of_bid f ^ " synth= " ^
-        string_of_bid k)
+    | BBDCL_fun (_,vs,_,_,[BEXE_fun_return (_,(BEXPR_closure (f,ts),_))])
+      when Flx_bsym_table.is_child bsym_table i f && vs_is_ts vs ts ->
+        let k = fresh_bid syms.counter in
+        Hashtbl.add uncurry_map i (f,k,0);
+        if syms.compiler_options.print_flag then
+        print_endline ("Detected curried function " ^ Flx_bsym.id bsym ^ "<" ^
+          string_of_bid i ^ "> ret child= " ^ string_of_bid f ^ " synth= " ^
+          string_of_bid k)
 
     | _ -> ()
   end bsym_table;
@@ -144,7 +143,7 @@ let make_uncurry_map syms bsym_table =
   (* count curried calls to these functions *)
   Flx_bsym_table.iter begin fun i bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (_,vs,_,_,exes) ->
+    | BBDCL_fun (_,vs,_,_,exes) ->
         find_uncurry_exes syms bsym_table uncurry_map vs exes
     | _ -> ()
   end bsym_table;
@@ -209,7 +208,7 @@ let fixup_function
 =
   let vs, ps =
     match Flx_bsym.bbdcl bsymi with
-    | BBDCL_function (_,vs,(ps,_),_,_) -> vs, ps
+    | BBDCL_fun (_,vs,(ps,_),_,_) -> vs, ps
     | _ -> assert false
   in
 
@@ -315,9 +314,9 @@ let synthesize_function syms bsym_table ut vm rl i (c, k, n) =
   (* Add the new function or procedure. *)
   let bbdcl =
     match Flx_bsym_table.find_bbdcl bsym_table c with
-    | BBDCL_function (propsc,vsc,(psc,traintc),retc,exesc) ->
+    | BBDCL_fun (propsc,vsc,(psc,traintc),retc,exesc) ->
         let vs,ps,exes = fixup_function vsc psc exesc in
-        bbdcl_function (propsc,vs,(ps,traintc),retc,exes)
+        bbdcl_fun (propsc,vs,(ps,traintc),retc,exes)
 
     | _ -> assert false
   in
@@ -340,9 +339,9 @@ let synthesize_functions syms bsym_table uncurry_map =
 let replace_calls syms bsym_table uncurry_map =
   Flx_bsym_table.iter begin fun bid bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,vs,ps,ret,exes) ->
+    | BBDCL_fun (props,vs,ps,ret,exes) ->
         let exes = uncurry_exes syms bsym_table uncurry_map vs exes in
-        let bbdcl = bbdcl_function (props,vs,ps,ret,exes) in
+        let bbdcl = bbdcl_fun (props,vs,ps,ret,exes) in
         Flx_bsym_table.update_bbdcl bsym_table bid bbdcl
 
     | _ -> ()

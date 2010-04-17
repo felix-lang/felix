@@ -90,7 +90,7 @@ let cal_polyvars syms bsym_table =
   let absvars = Hashtbl.create 97 in
   Flx_bsym_table.iter begin fun i bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+    | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
         if mem `Virtual props then () else
         let j = ref 0 in
         let tvars = ref (map (fun (_,i) -> incr j; i,!j-1) vs) in
@@ -126,7 +126,7 @@ let cal_polyvars syms bsym_table =
       let t = 
           let ps =
             match Flx_bsym_table.find_bbdcl bsym_table i with
-            | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps
+            | BBDCL_fun (props,vs,(ps,traint),ret,exes) -> ps
             | _ -> assert false
           in
           let pts = Flx_bparameter.get_btypes ps in
@@ -149,7 +149,7 @@ let cal_polyvars syms bsym_table =
       let varmap = map (fun (i,j) -> i, btyp_void ()) pvs in
       let ta = 
         match Flx_bsym_table.find_bbdcl bsym_table i with
-        | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ret
+        | BBDCL_fun (props,vs,(ps,traint),ret,exes) -> ret
         | _ -> assert false
       in
       let t' = Flx_unify.list_subst syms.counter varmap ta in
@@ -166,7 +166,7 @@ let cal_polyvars syms bsym_table =
       let tf = 
           let ps,ret =
             match Flx_bsym_table.find_bbdcl bsym_table i with
-            | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret
+            | BBDCL_fun (props,vs,(ps,traint),ret,exes) -> ps,ret
             | _ -> assert false
           in
           let pts = Flx_bparameter.get_btypes ps in
@@ -231,7 +231,7 @@ let cal_polyvars syms bsym_table =
 
   let polyfix2 i ts =
     match Flx_bsym_table.find_bbdcl bsym_table i with
-    | BBDCL_function _ ->
+    | BBDCL_fun _ ->
         List.map begin function
         | BTYP_pointer _ -> btyp_pointer (btyp_void ())
         | t -> t
@@ -244,7 +244,7 @@ let cal_polyvars syms bsym_table =
       let t,vsi = 
         let ps,vs =
           match Flx_bsym_table.find_bbdcl bsym_table i with
-          | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,vs
+          | BBDCL_fun (props,vs,(ps,traint),ret,exes) -> ps,vs
           | _ -> raise Skip
         in
         let pts = Flx_bparameter.get_btypes ps in
@@ -276,7 +276,7 @@ let cal_polyvars syms bsym_table =
       let counter = ref 0 in
       let ta,vsi = 
         match Flx_bsym_table.find_bbdcl bsym_table i with
-        | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+        | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
             ret,map (fun (s,i) -> i) vs
         | _ -> raise Skip
       in
@@ -305,7 +305,7 @@ let cal_polyvars syms bsym_table =
       let tf,vsi = 
         let ps,ret,vs =
           match Flx_bsym_table.find_bbdcl bsym_table i with
-          | BBDCL_function (props,vs,(ps,traint),ret,exes) -> ps,ret,vs
+          | BBDCL_fun (props,vs,(ps,traint),ret,exes) -> ps,ret,vs
         | _ -> raise Skip 
         in
         let pts = Flx_bparameter.get_btypes ps in

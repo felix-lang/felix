@@ -470,13 +470,13 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
           csubst sr (Flx_bsym.sr bsym) c (ce_atom "Error") [] [] "Error" "Error" ts "expr" "Error" ["Error"] ["Error"] ["Error"]
         end
 
-      (* | BBDCL_function (_,_,([s,(_,BTYP_void)],_),_,[BEXE_fun_return e]) -> *)
-      | BBDCL_function (_,_,([],_),_,[BEXE_fun_return (_,e)]) ->
+      (* | BBDCL_fun (_,_,([s,(_,BTYP_void)],_),_,[BEXE_fun_return e]) -> *)
+      | BBDCL_fun (_,_,([],_),_,[BEXE_fun_return (_,e)]) ->
         ge' e
 
       | BBDCL_cstruct _
       | BBDCL_struct _
-      | BBDCL_function _
+      | BBDCL_fun _
       | BBDCL_external_fun _ ->
          syserr sr
          (
@@ -506,7 +506,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     *)
     let ts = map tsub ts' in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,_,_,_,_) ->
+    | BBDCL_fun (props,_,_,_,_) ->
       let the_display =
         let d' =
           map begin fun (i,vslen) ->
@@ -551,7 +551,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
         if Some this = parent &&
         (
           let props = match entry with
-            | BBDCL_function (props,_,_,_,_) -> props
+            | BBDCL_fun (props,_,_,_,_) -> props
             | _ -> assert false
           in
           mem `Pure props && not (mem `Heap_closure props)
@@ -725,8 +725,8 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
               syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
           in
           match Flx_bsym.bbdcl bsym with
+          | BBDCL_fun _ -> ge' (bexpr_apply_direct t (index',ts',a))
           | BBDCL_external_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
-          | BBDCL_function _ -> ge' (bexpr_apply_direct t (index',ts',a))
           | _ ->
               clierr2 sr (Flx_bsym.sr bsym) ("expected instance to be function " ^
                 Flx_bsym.id bsym)
@@ -841,8 +841,8 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
           syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
       in
       match Flx_bsym.bbdcl bsym with
+      | BBDCL_fun _ -> ge' (bexpr_apply_direct t (index',ts',a))
       | BBDCL_external_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
-      | BBDCL_function _ -> ge' (bexpr_apply_direct t (index',ts',a))
       | _ ->
           clierr2 sr (Flx_bsym.sr bsym) ("expected instance to be function " ^
             Flx_bsym.id bsym)
@@ -859,7 +859,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     print_endline ("  .. argument is " ^ string_of_bound_expression sym_table a);
     *)
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,_,_,_,_) ->
+    | BBDCL_fun (props,_,_,_,_) ->
       (*
       print_endline ("Generating closure[apply direct] of " ^ si index);
       *)
@@ -910,8 +910,8 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
           syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
       in
       match Flx_bsym.bbdcl bsym with
+      | BBDCL_fun _ -> ge' (bexpr_apply_direct t (index',ts',a))
       | BBDCL_external_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
-      | BBDCL_function _ -> ge' (bexpr_apply_direct t (index',ts',a))
       | _ ->
           clierr2 sr (Flx_bsym.sr bsym) ("expected instance to be function " ^
             Flx_bsym.id bsym)
@@ -928,7 +928,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     print_endline ("  .. argument is " ^ string_of_bound_expression sym_table a);
     *)
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_function (props,vs,(ps,traint),retyp,_) ->
+    | BBDCL_fun (props,vs,(ps,traint),retyp,_) ->
       let display = get_display_list bsym_table index in
       let name = cpp_instance_name syms bsym_table index ts in
 

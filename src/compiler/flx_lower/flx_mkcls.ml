@@ -97,7 +97,7 @@ let gen_closure state bsym_table bid t =
               [ bexe_fun_return (Flx_bsym.sr bsym, e) ]
         in
 
-        bbdcl_function ([],vs,([param],None),ret,exes)
+        bbdcl_fun ([],vs,([param],None),ret,exes)
 
     | BBDCL_struct (vs,ps)
     | BBDCL_cstruct (vs,ps) ->
@@ -107,7 +107,7 @@ let gen_closure state bsym_table bid t =
         let e = bexpr_apply_struct t (bid, ts, arg) in
         let exes = [bexe_fun_return (Flx_bsym.sr bsym, e)] in
 
-        bbdcl_function ([],vs,([param],None),btyp_inst (bid,[]),exes)
+        bbdcl_fun ([],vs,([param],None),btyp_inst (bid,[]),exes)
 
     | BBDCL_nonconst_ctor (vs,_,ret,_,p,_,_) as foo ->
         let ts, param, arg = make_inner_function vs [p] in
@@ -116,7 +116,7 @@ let gen_closure state bsym_table bid t =
         let e = bexpr_apply_struct ret (bid, ts, arg) in
         let exes = [bexe_fun_return (Flx_bsym.sr bsym, e)] in
 
-        bbdcl_function ([],vs,([param],None),ret,exes)
+        bbdcl_fun ([],vs,([param],None),ret,exes)
 
     | _ -> assert false
   in
@@ -219,9 +219,9 @@ let process_entry state bsym_table all_closures i =
   let ue e = adj_cls state bsym_table all_closures e in
   let bsym = Flx_bsym_table.find bsym_table i in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (props,vs,ps,ret,exes) ->
+  | BBDCL_fun (props,vs,ps,ret,exes) ->
     let exes = process_exes state bsym_table all_closures exes in
-    let bbdcl = bbdcl_function (props,vs,ps,ret,exes) in
+    let bbdcl = bbdcl_fun (props,vs,ps,ret,exes) in
     Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
   | _ -> ()

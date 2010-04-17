@@ -212,7 +212,7 @@ let mono syms bsym_table fi ts bsym =
       (fixup_type syms bsym_table fi (list_subst syms.counter vars t))
   in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (props,vs,(ps,traint),ret,exes) ->
+  | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let ret = mt vars ret in
@@ -225,7 +225,7 @@ let mono syms bsym_table fi ts bsym =
       | Some x -> Some (fixup_expr syms bsym_table fi (mt vars) x)
     in
     let exes = fixup_exes syms bsym_table fi (mt vars) exes in
-    Some (bbdcl_function (props,[],(ps,traint),ret,exes))
+    Some (bbdcl_fun (props,[],(ps,traint),ret,exes))
 
   | BBDCL_val (vs,t,kind) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
@@ -256,7 +256,7 @@ let chk_mono syms bsym_table i =
   match Flx_bsym_table.find_bbdcl bsym_table i with
   | BBDCL_invalid -> assert false
   | BBDCL_module -> false
-  | BBDCL_function (props,vs,(ps,traint),ret,exes) -> true
+  | BBDCL_fun (props,vs,(ps,traint),ret,exes) -> true
   | BBDCL_val _ -> true
   | BBDCL_const (_,_,_,CS_str "#this",_) -> true
   | BBDCL_union (vs,ps) -> false

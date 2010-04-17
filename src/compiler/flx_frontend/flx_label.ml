@@ -39,7 +39,7 @@ let get_labels counter exes =
 
 let update_label_map counter label_map index bsym =
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (_,_,_,_,exes) ->
+  | BBDCL_fun (_,_,_,_,exes) ->
       Hashtbl.add label_map index (get_labels counter exes)
   | _ -> ()
 
@@ -57,7 +57,7 @@ let rec find_label bsym_table label_map caller label =
   with Not_found ->
   let bsym = Flx_bsym_table.find bsym_table caller in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (_,_,_,Flx_btype.BTYP_void,_) ->
+  | BBDCL_fun (_,_,_,Flx_btype.BTYP_void,_) ->
       begin match Flx_bsym_table.find_parent bsym_table caller with
       | None -> `Unreachable
       | Some parent ->
@@ -66,7 +66,7 @@ let rec find_label bsym_table label_map caller label =
           | x -> x
           end
       end
-  | BBDCL_function (_,_,_,_,_) -> `Unreachable
+  | BBDCL_fun (_,_,_,_,_) -> `Unreachable
   | _ -> assert false
 
 let get_label_kind_from_index usage lix =
@@ -105,7 +105,7 @@ let cal_usage syms bsym_table label_map caller exes usage =
 
 let update_label_usage syms bsym_table label_map usage index bsym =
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_function (_,_,_,_,exes) ->
+  | BBDCL_fun (_,_,_,_,exes) ->
       cal_usage syms bsym_table label_map index exes usage
   | _ -> ()
 

@@ -71,7 +71,7 @@ let lower_bsym_table state bsym_table root_proc =
   Flx_types.BidSet.iter begin fun i ->
     let bsym = Flx_bsym_table.find bsym_table i in
     match Flx_bsym.bbdcl bsym with
-    | Flx_bbdcl.BBDCL_function (props,vs,p,Flx_btype.BTYP_void,exes) ->
+    | Flx_bbdcl.BBDCL_fun (props,vs,p,Flx_btype.BTYP_void,exes) ->
         let props = ref props in
 
         if List.mem `Stackable !props then begin
@@ -93,7 +93,7 @@ let lower_bsym_table state bsym_table root_proc =
 
         (* Update the procedure with the new properties. *)
         Flx_bsym_table.update_bbdcl bsym_table i
-          (Flx_bbdcl.bbdcl_function (
+          (Flx_bbdcl.bbdcl_fun (
             !props,
             vs,
             p,

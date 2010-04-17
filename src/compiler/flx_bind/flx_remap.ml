@@ -73,12 +73,12 @@ let remap_bbdcl offset bbdcl =
   | BBDCL_module ->
       bbdcl_module ()
 
-  | BBDCL_function (props, vs, ps, res, es) ->
+  | BBDCL_fun (props, vs, ps, res, es) ->
       let vs = remap_bvs vs in
       let ps = remap_bparams ps in
       let res = remap_btype res in
       let es = List.map remap_bexe es in
-      bbdcl_function (props, vs, ps, res, es)
+      bbdcl_fun (props, vs, ps, res, es)
 
   | BBDCL_val (vs, ty, kind) ->
       bbdcl_val (remap_bvs vs, remap_btype ty, kind)
