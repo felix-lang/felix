@@ -1623,7 +1623,7 @@ and btype_of_bsym state bsym_table bt bid bsym =
   | BBDCL_val (_,t,_) -> t
   | BBDCL_newtype (_,t) -> t
   | BBDCL_abs _ -> assert false
-  | BBDCL_const (_,_,t,_,_) -> t
+  | BBDCL_external_const (_,_,t,_,_) -> t
   | BBDCL_external_fun (_,_,params,return_type,_,_,_) ->
       btyp_function (btyp_tuple params, return_type)
   | BBDCL_callback (_,_,params,_,_,return_type,_,_) ->

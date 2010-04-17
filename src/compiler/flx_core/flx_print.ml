@@ -2301,7 +2301,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     "type " ^ name ^  string_of_bvs vs ^
     " = " ^ string_of_code_spec code ^ ";"
 
-  | BBDCL_const (props, vs,ty,code,reqs) ->
+  | BBDCL_external_const (props, vs,ty,code,reqs) ->
     string_of_properties props ^
      "const " ^ name ^ string_of_bvs vs ^
      ": " ^ sobt ty ^

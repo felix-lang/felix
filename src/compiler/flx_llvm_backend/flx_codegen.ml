@@ -1259,8 +1259,8 @@ and codegen_symbol state bsym_table closure index bsym =
   | Flx_bbdcl.BBDCL_abs (vs, quals, code, reqs) ->
       codegen_abs state index vs quals code reqs
 
-  | Flx_bbdcl.BBDCL_const (props, vs, ty, code, reqs) ->
-      print_endline "BBDCL_const";
+  | Flx_bbdcl.BBDCL_external_const (props, vs, ty, code, reqs) ->
+      print_endline "BBDCL_external_const";
       assert false
 
   | Flx_bbdcl.BBDCL_external_fun (props, vs, ps, ret_type, code, reqs, prec) ->

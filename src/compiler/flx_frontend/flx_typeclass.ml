@@ -87,7 +87,7 @@ let check_instance
             let qt = bvs, btyp_function (argt,ret) in
             (Flx_bsym.id bsym,(i,qt)) :: acc
 
-        | BBDCL_const (_,bvs,ret,_,_) ->
+        | BBDCL_external_const (_,bvs,ret,_,_) ->
             let qt = bvs,ret in
             (Flx_bsym.id bsym,(i,qt)) :: acc
 
@@ -232,7 +232,7 @@ let check_instance
         let ft = btyp_function (argt,ret) in
         check_binding false tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
 
-      | BBDCL_const (props,bvs,ret,_,_) when mem `Virtual props ->
+      | BBDCL_external_const (props,bvs,ret,_,_) when mem `Virtual props ->
         check_binding false tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ret
 
 

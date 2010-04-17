@@ -410,7 +410,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
       | BBDCL_val (_,t,_) ->
           ce_atom (get_var_ref syms bsym_table this index ts)
 
-      | BBDCL_const (props,_,_,ct,_) ->
+      | BBDCL_external_const (props,_,_,ct,_) ->
         if mem `Virtual props then
           print_endline ("Instantiate virtual const " ^ Flx_bsym.id bsym)
         ;

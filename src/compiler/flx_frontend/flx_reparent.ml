@@ -323,12 +323,12 @@ let reparent1
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
 
-  | BBDCL_const (props,vs,t,ct,breqs) ->
+  | BBDCL_external_const (props,vs,t,ct,breqs) ->
     let props = filter (fun p -> p <> `Virtual) props in
     let vs = splice vs in
     let breqs = rreqs breqs in
     let t = auxt t in
-    update_bsym (bbdcl_const (props,vs,t,ct,breqs));
+    update_bsym (bbdcl_external_const (props,vs,t,ct,breqs));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls

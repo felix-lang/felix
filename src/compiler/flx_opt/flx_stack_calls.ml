@@ -75,7 +75,7 @@ let rec is_pure syms bsym_table i =
   | BBDCL_union _
   | BBDCL_abs _
   | BBDCL_newtype _
-  | BBDCL_const _
+  | BBDCL_external_const _
   | BBDCL_typeclass _
   | BBDCL_instance _
   | BBDCL_axiom _

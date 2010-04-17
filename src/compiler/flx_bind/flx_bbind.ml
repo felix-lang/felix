@@ -469,7 +469,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
       print_endline ("//bound const " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">:" ^ sbt bsym_table t);
 
-    add_bsym None (bbdcl_const ([], bvs, t, CS_str ct, []))
+    add_bsym None (bbdcl_external_const ([], bvs, t, CS_str ct, []))
 
   | SYMDEF_nonconst_ctor (uidx,ut,ctor_idx,vs',argt) ->
     (*
@@ -548,7 +548,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
-    add_bsym true_parent (bbdcl_const (props,bvs,t,ct,reqs))
+    add_bsym true_parent (bbdcl_external_const (props,bvs,t,ct,reqs))
 
   | SYMDEF_fun (props,ts,ret,ct,reqs,prec) ->
     let ts = map bt ts in

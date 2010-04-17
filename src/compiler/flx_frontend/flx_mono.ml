@@ -245,10 +245,10 @@ let mono syms bsym_table fi ts bsym =
     let ret = mt vars ret in
     Some (bbdcl_external_fun (props,vs,argtypes,ret,ct,reqs,prec))
 
-  | BBDCL_const (props, vs, t, CS_str "#this", reqs) ->
+  | BBDCL_external_const (props, vs, t, CS_str "#this", reqs) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    Some (bbdcl_const (props, [], t, CS_str "#this", reqs))
+    Some (bbdcl_external_const (props, [], t, CS_str "#this", reqs))
 
   | _ -> None
 
@@ -258,12 +258,12 @@ let chk_mono syms bsym_table i =
   | BBDCL_module -> false
   | BBDCL_fun (props,vs,(ps,traint),ret,exes) -> true
   | BBDCL_val _ -> true
-  | BBDCL_const (_,_,_,CS_str "#this",_) -> true
+  | BBDCL_external_const (_,_,_,CS_str "#this",_) -> true
+  | BBDCL_external_const _ -> false
   | BBDCL_union (vs,ps) -> false
   | BBDCL_cstruct (vs,ps) -> false
   | BBDCL_struct (vs,ps) -> false
   | BBDCL_newtype (vs,t) -> false
-  | BBDCL_const (props,vs,t,ct,reqs) -> false
   | BBDCL_insert (vs,s,ikind,reqs) ->  false
   | BBDCL_external_fun (props,vs,argtypes,ret,ct,reqs,prec) -> false
   | BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,prec) -> false
