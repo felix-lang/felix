@@ -338,25 +338,8 @@ let reparent1
     *)
     Hashtbl.add uses k calls
 
-  | BBDCL_var (vs,t) ->
-    (*
-    print_endline ("Reparent variable old: id<"^si index^"> vs=" ^
-      catmap "," (fun (s,i) -> s^"<"^si i^">") vs);
-    print_endline ("         variable new: id<"^si k^"> vs=" ^
-      catmap "," (fun (s,i) -> s^"<"^si i^">") (splice vs));
-     print_endline ("Type old " ^ sbt sym_table t ^ " -> type new " ^ sbt
-     sym_table (auxt t));
-    *)
-    update_bsym (bbdcl_var (splice vs,auxt t))
-
-  | BBDCL_val (vs,t) ->
-    update_bsym (bbdcl_val (splice vs,auxt t))
-
-  | BBDCL_ref (vs,t) ->
-    update_bsym (bbdcl_ref (splice vs,auxt t))
-
-  | BBDCL_tmp (vs,t) ->
-    update_bsym (bbdcl_tmp (splice vs,auxt t))
+  | BBDCL_val (vs,t,kind) ->
+    update_bsym (bbdcl_val (splice vs,auxt t,kind))
 
   | BBDCL_abs (vs,quals,ct,breqs) ->
     let vs = splice vs in

@@ -394,10 +394,10 @@ let rec bbind_symbol state bsym_table symbol_index sym =
         ->
         let t = type_of_index symbol_index in
         let bbdcl = match k with
-        | `PVar -> bbdcl_var (bvs,t)
-        | `PVal -> bbdcl_val (bvs,t)
-        | `PRef -> bbdcl_val (bvs,t)
-        | `PFun -> bbdcl_val (bvs, btyp_function (btyp_void (),t))
+        | `PVal -> bbdcl_val (bvs,t,`Val)
+        | `PVar -> bbdcl_val (bvs,t,`Var)
+        | `PRef -> bbdcl_val (bvs,t,`Ref)
+        | `PFun -> bbdcl_val (bvs, btyp_function (btyp_void (),t),`Val)
         in
         Hashtbl.add state.syms.varmap symbol_index t;
 
@@ -499,7 +499,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
-    add_bsym true_parent (bbdcl_val (bvs, t))
+    add_bsym true_parent (bbdcl_val (bvs, t, `Val))
 
   | SYMDEF_var t ->
     let t = type_of_index symbol_index in
@@ -509,7 +509,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
-    add_bsym true_parent (bbdcl_var (bvs, t))
+    add_bsym true_parent (bbdcl_val (bvs, t, `Var))
 
   | SYMDEF_ref t ->
     let t = type_of_index symbol_index in
@@ -519,7 +519,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
 
-    add_bsym true_parent (bbdcl_ref (bvs, t))
+    add_bsym true_parent (bbdcl_val (bvs, t, `Ref))
 
   | SYMDEF_lazy (rt,e) ->
     let ps = [("dummy",`AST_void sym.Flx_sym.sr)],None in

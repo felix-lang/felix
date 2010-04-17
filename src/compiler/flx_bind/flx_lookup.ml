@@ -1622,10 +1622,7 @@ and btype_of_bsym state bsym_table bt bid bsym =
       btyp_function (type_of_params params, return_type)
   | BBDCL_procedure (_,_,(params,_),_) ->
       btyp_function (type_of_params params, btyp_void ())
-  | BBDCL_val (_,t) -> t
-  | BBDCL_var (_,t) -> t
-  | BBDCL_ref (_,t) -> t
-  | BBDCL_tmp (_,t) -> t
+  | BBDCL_val (_,t,_) -> t
   | BBDCL_newtype (_,t) -> t
   | BBDCL_abs _ -> assert false
   | BBDCL_const (_,_,t,_,_) -> t
@@ -3741,7 +3738,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
            * handle reference types directly, which we'll automatically convert
            * that into dereferencing the name. *)
           begin match Flx_bsym.bbdcl bsym with
-          | BBDCL_ref _ ->
+          | BBDCL_val (_,_,`Ref) ->
               (* We've got a reference, so make sure the type is a pointer. *)
               let t' = match t with BTYP_pointer t' -> t' | _ ->
                 failwith ("[lookup, AST_name] expected ref " ^ name ^
@@ -3980,8 +3977,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
               (* We found a bound symbol, check if it's an addressable symbol.
                * Otherwise, error out. *)
               begin match Flx_bsym.bbdcl bsym with
-              | BBDCL_ref _
-              | BBDCL_var _ ->
+              | BBDCL_val (_,_,(`Var | `Ref)) ->
                   let vtype = inner_type_of_index_with_ts
                     state
                     bsym_table
@@ -3992,7 +3988,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
                   in
                   bexpr_ref (btyp_pointer vtype) (index, ts)
 
-              | BBDCL_val _ ->
+              | BBDCL_val (_,_,(`Val | `Tmp)) ->
                   clierr2 srr (Flx_bsym.sr bsym) ("[bind_expression] " ^
                     "Can't address a value " ^ Flx_bsym.id bsym)
 

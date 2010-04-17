@@ -189,8 +189,8 @@ let fold_vars syms bsym_table uses i ps exes =
         in
         let isvar =
           match Flx_bsym_table.find_bbdcl bsym_table j with
-          | BBDCL_var _ | BBDCL_tmp _ | BBDCL_ref _ -> true
-          | BBDCL_val _ -> false
+          | BBDCL_val (_,_,(`Var | `Ref | `Tmp)) -> true
+          | BBDCL_val (_,_,`Val) -> false
           | _ -> assert false
         in
 

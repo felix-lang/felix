@@ -10,16 +10,16 @@ type btype_qual_t = [
 
 type breqs_t = (Flx_types.bid_t * Flx_btype.t list) list
 
+(** Used to represent all the different value types. *)
+type value_kind_t = [`Val | `Var | `Ref | `Tmp]
+
 (** Bound declarations. *)
 type t =
   | BBDCL_invalid
   | BBDCL_module
   | BBDCL_function of   property_t list * bvs_t * Flx_bparams.t * Flx_btype.t * Flx_bexe.t list
   | BBDCL_procedure of  property_t list * bvs_t * Flx_bparams.t * Flx_bexe.t list
-  | BBDCL_val of        bvs_t * Flx_btype.t
-  | BBDCL_var of        bvs_t * Flx_btype.t
-  | BBDCL_ref of        bvs_t * Flx_btype.t
-  | BBDCL_tmp of        bvs_t * Flx_btype.t
+  | BBDCL_val of        bvs_t * Flx_btype.t * value_kind_t
 
   (* binding structures [prolog] *)
   | BBDCL_newtype of    bvs_t * Flx_btype.t
@@ -59,17 +59,8 @@ let bbdcl_function (prop, bvs, ps, res, es) =
 let bbdcl_procedure (prop, bvs, ps, es) =
   BBDCL_procedure (prop, bvs, ps, es)
 
-let bbdcl_val (bvs, t) =
-  BBDCL_val (bvs, t)
-
-let bbdcl_var (bvs, t) =
-  BBDCL_var (bvs, t)
-
-let bbdcl_ref (bvs, t) =
-  BBDCL_ref (bvs, t)
-
-let bbdcl_tmp (bvs, t) =
-  BBDCL_tmp (bvs, t)
+let bbdcl_val (bvs, t, kind) =
+  BBDCL_val (bvs, t, kind)
 
 let bbdcl_newtype (bvs, t) =
   BBDCL_newtype (bvs, t)
@@ -140,10 +131,7 @@ let get_bvs = function
   | BBDCL_module -> []
   | BBDCL_function (_, bvs, _, _, _) -> bvs
   | BBDCL_procedure (_, bvs, _, _) -> bvs
-  | BBDCL_val (bvs, _) -> bvs
-  | BBDCL_var (bvs, _) -> bvs
-  | BBDCL_ref (bvs, _) -> bvs
-  | BBDCL_tmp (bvs, _) -> bvs
+  | BBDCL_val (bvs, _, _) -> bvs
   | BBDCL_newtype (bvs, _) -> bvs
   | BBDCL_abs (bvs, _, _, _) -> bvs
   | BBDCL_const (_, bvs, _, _, _) -> bvs
@@ -208,14 +196,9 @@ let iter
   | BBDCL_procedure (_,_,ps,es) ->
       f_ps ps;
       List.iter f_bexe es
-  | BBDCL_val (_,t)
-  | BBDCL_var (_,t) ->
-      f_btype t
-  | BBDCL_ref (_,t) ->
-      f_btype (Flx_btype.btyp_pointer t)
-  | BBDCL_tmp (_,t)
-  | BBDCL_newtype (_,t) ->
-      f_btype t
+  | BBDCL_val (_,t,`Ref) -> f_btype (Flx_btype.btyp_pointer t)
+  | BBDCL_val (_,t,_) -> f_btype t
+  | BBDCL_newtype (_,t) -> f_btype t
   | BBDCL_abs (_,quals,_,breqs) ->
       List.iter f_btype_qual quals;
       f_breqs breqs
@@ -286,11 +269,9 @@ let map
       BBDCL_function (props,bvs,f_ps ps,f_btype res,List.map f_bexe es)
   | BBDCL_procedure (props,bvs,ps,es) ->
       BBDCL_procedure (props,bvs,f_ps ps,List.map f_bexe es)
-  | BBDCL_val (bvs,t) -> bbdcl_val (bvs,f_btype t)
-  | BBDCL_var (bvs,t) -> bbdcl_var (bvs,f_btype t)
-  | BBDCL_ref (bvs,t) ->
-      bbdcl_ref (bvs,f_btype (Flx_btype.btyp_pointer t))
-  | BBDCL_tmp (bvs,t) -> bbdcl_tmp (bvs,f_btype t)
+  | BBDCL_val (bvs,t,`Ref) ->
+      bbdcl_val (bvs,f_btype (Flx_btype.btyp_pointer t),`Ref)
+  | BBDCL_val (bvs,t,kind) -> bbdcl_val (bvs,f_btype t,kind)
   | BBDCL_newtype (bvs,t) -> BBDCL_newtype (bvs,f_btype t)
   | BBDCL_abs (bvs,quals,code,breqs) ->
       BBDCL_abs (bvs,List.map f_btype_qual quals,code,f_breqs breqs)
@@ -428,14 +409,17 @@ let rec print f = function
         print_bvs bvs
         Flx_bparams.print ps
         (Flx_list.print Flx_bexe.print) es
-  | BBDCL_val (bvs,t) ->
-      print_variant2 f "BBDCL_val" print_bvs bvs Flx_btype.print t
-  | BBDCL_var (bvs,t) ->
-      print_variant2 f "BBDCL_var" print_bvs bvs Flx_btype.print t
-  | BBDCL_ref (bvs,t) ->
-      print_variant2 f "BBDCL_ref" print_bvs bvs Flx_btype.print t
-  | BBDCL_tmp (bvs,t) ->
-      print_variant2 f "BBDCL_tmp" print_bvs bvs Flx_btype.print t
+  | BBDCL_val (bvs,t,kind) ->
+      let print_kind f = function
+        | `Val -> print_variant0 f "`Val"
+        | `Var -> print_variant0 f "`Var"
+        | `Ref -> print_variant0 f "`Ref"
+        | `Tmp -> print_variant0 f "`Tmp"
+      in
+      print_variant3 f "BBDCL_val"
+        print_bvs bvs
+        Flx_btype.print t
+        print_kind kind
   | BBDCL_newtype (bvs,t) ->
       print_variant2 f "BBDCL_newtype" print_bvs bvs Flx_btype.print t
   | BBDCL_abs (bvs,quals,code,reqs) ->

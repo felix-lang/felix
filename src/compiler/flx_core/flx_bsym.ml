@@ -58,7 +58,7 @@ let is_identity bsym =
 (** Return if the bound symbol is a variable. *)
 let is_variable bsym =
   match bsym.bbdcl with
-  | Flx_bbdcl.BBDCL_var _ | Flx_bbdcl.BBDCL_val _ -> true
+  | Flx_bbdcl.BBDCL_val _ -> true
   | _ -> false
 
 (** Return if the bound symbol is a function or procedure. *)

@@ -240,8 +240,8 @@ let fixup_function
   List.iter begin fun { pkind=pk; ptyp=t; pid=s; pindex=pi } ->
     let n = revar pi in
     let bbdcl = match pk with
-    | `PVal -> bbdcl_val (vs,t)
-    | `PVar -> bbdcl_var (vs,t)
+    | `PVal -> bbdcl_val (vs,t,`Val)
+    | `PVar -> bbdcl_val (vs,t,`Var)
     | _ -> failwith "Unimplemented curried fun param not var or val"
     in
 

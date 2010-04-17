@@ -101,7 +101,7 @@ let check_instance
             let qt = bvs,ret in
             (Flx_bsym.id bsym,(i,qt)) :: acc
 
-        | BBDCL_val (bvs,ret) ->
+        | BBDCL_val (bvs,ret,`Val) ->
             let qt = bvs,ret in
             (Flx_bsym.id bsym,(i,qt)) :: acc
         | _ -> acc

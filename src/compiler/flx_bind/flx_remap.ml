@@ -86,17 +86,8 @@ let remap_bbdcl offset bbdcl =
       let es = List.map remap_bexe es in
       bbdcl_procedure (props, vs, ps, es)
 
-  | BBDCL_val (vs, ty) ->
-      bbdcl_val (remap_bvs vs, remap_btype ty)
-
-  | BBDCL_var (vs, ty) ->
-      bbdcl_var (remap_bvs vs, remap_btype ty)
-
-  | BBDCL_ref (vs, ty) ->
-      bbdcl_ref (remap_bvs vs, remap_btype ty)
-
-  | BBDCL_tmp (vs, ty) ->
-      bbdcl_tmp (remap_bvs vs, remap_btype ty)
+  | BBDCL_val (vs, ty, kind) ->
+      bbdcl_val (remap_bvs vs, remap_btype ty, kind)
 
   | BBDCL_newtype (vs, ty) ->
       bbdcl_newtype (remap_bvs vs, remap_btype ty)

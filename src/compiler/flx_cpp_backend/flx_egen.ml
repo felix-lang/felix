@@ -77,17 +77,15 @@ let get_var_frame syms bsym_table this index ts : string =
   in
   let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_val (vs,t)
-  | BBDCL_var (vs,t)
-  | BBDCL_ref (vs,t) ->
-    begin match bsym_parent with
-    | None -> "ptf"
-    | Some i ->
-      if i <> this
-      then "ptr" ^ cpp_instance_name syms bsym_table i ts
-      else "this"
-    end
-  | BBDCL_tmp (vs,t) ->
+  | BBDCL_val (vs,t,(`Val | `Var | `Ref)) ->
+      begin match bsym_parent with
+      | None -> "ptf"
+      | Some i ->
+          if i <> this
+          then "ptr" ^ cpp_instance_name syms bsym_table i ts
+          else "this"
+      end
+  | BBDCL_val (vs,t,`Tmp) ->
      failwith ("[get_var_frame] temporaries aren't framed: " ^ Flx_bsym.id bsym)
 
   | _ -> failwith ("[get_var_frame] Expected name " ^ Flx_bsym.id bsym ^ " to be variable or value")
@@ -102,25 +100,18 @@ let get_var_ref syms bsym_table this index ts : string =
   print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode bsym_table) ts^"]");
   *)
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_val (vs,t)
-  | BBDCL_var (vs,t)
-  | BBDCL_ref (vs,t) ->
-    begin match bsym_parent with
-    | None -> (* print_endline "No parent ...?"; *)
-      "PTF " ^ cpp_instance_name syms bsym_table index ts
-    | Some i ->
-      (*
-      print_endline ("Parent " ^ si i);
-      *)
-      (
-        if i <> this
-        then "ptr" ^ cpp_instance_name syms bsym_table i ts ^ "->"
-        else ""
-      ) ^
-      cpp_instance_name syms bsym_table index ts
-    end
+  | BBDCL_val (vs,t,(`Val | `Var | `Ref)) ->
+      begin match bsym_parent with
+      | None -> "PTF " ^ cpp_instance_name syms bsym_table index ts
+      | Some i ->
+          (
+            if i <> this
+            then "ptr" ^ cpp_instance_name syms bsym_table i ts ^ "->"
+            else ""
+          ) ^ cpp_instance_name syms bsym_table index ts
+      end
 
-  | BBDCL_tmp (vs,t) ->
+  | BBDCL_val (vs,t,`Tmp) ->
       cpp_instance_name syms bsym_table index ts
 
   | _ -> failwith ("[get_var_ref(3)] Expected name " ^ Flx_bsym.id bsym ^ " to be variable, value or temporary")
@@ -135,25 +126,20 @@ let get_ref_ref syms bsym_table this index ts : string =
   print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode bsym_table) ts^"]");
   *)
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_val (vs,t)
-  | BBDCL_var (vs,t)
-  | BBDCL_ref (vs,t) ->
-    begin match bsym_parent with
-    | None -> (* print_endline "No parent ...?"; *)
-      "PTF " ^ cpp_instance_name syms bsym_table index ts
-    | Some i ->
-      (*
-      print_endline ("Parent " ^ si i);
-      *)
-      (
-        if i <> this
-        then "ptr" ^ cpp_instance_name syms bsym_table i ts ^ "->"
-        else ""
-      ) ^
-      cpp_instance_name syms bsym_table index ts
-    end
+  | BBDCL_val (vs,t,(`Val | `Var | `Ref)) ->
+      begin match bsym_parent with
+      | None ->
+          "PTF " ^ cpp_instance_name syms bsym_table index ts
+      | Some i ->
+          (
+            if i <> this
+            then "ptr" ^ cpp_instance_name syms bsym_table i ts ^ "->"
+            else ""
+          ) ^
+          cpp_instance_name syms bsym_table index ts
+      end
 
-  | BBDCL_tmp (vs,t) ->
+  | BBDCL_val (vs,t,`Tmp) ->
       cpp_instance_name syms bsym_table index ts
 
   | _ -> failwith ("[get_var_ref(3)] Expected name " ^ Flx_bsym.id bsym ^ " to be variable, value or temporary")
@@ -417,15 +403,11 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
     let ts = map tsub ts' in
     begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_val (_,BTYP_function (BTYP_void,_))  ->
+      | BBDCL_val (_,BTYP_function (BTYP_void,_),`Val)  ->
           let ptr = (get_var_ref syms bsym_table this index ts) in
           ce_call (ce_arrow (ce_atom ptr) "apply") []
 
-      | BBDCL_var (_,t)
-      | BBDCL_val (_,t)
-      | BBDCL_ref (_,t)
-      | BBDCL_tmp (_,t)
-        ->
+      | BBDCL_val (_,t,_) ->
           ce_atom (get_var_ref syms bsym_table this index ts)
 
       | BBDCL_const (props,_,_,ct,_) ->

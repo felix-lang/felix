@@ -808,9 +808,7 @@ let codegen_bexe state bsym_table builder bexe =
 let find_value_indicies state bsym_table bid =
   Flx_types.BidSet.filter begin fun bid ->
     try match Flx_bsym_table.find_bbdcl bsym_table bid with
-    | Flx_bbdcl.BBDCL_var _
-    | Flx_bbdcl.BBDCL_ref _
-    | Flx_bbdcl.BBDCL_val _ -> true
+    | Flx_bbdcl.BBDCL_val (_,_,(`Val | `Var | `Ref)) -> true
     | _ -> false
     with Not_found -> false
   end (Flx_bsym_table.find_children bsym_table bid)
@@ -821,9 +819,8 @@ let find_closure_type state bsym_table bid =
   let ts =
     Flx_types.BidSet.fold begin fun bid ts ->
       try match Flx_bsym_table.find_bbdcl bsym_table bid with
-      | Flx_bbdcl.BBDCL_var (_,btype)
-      | Flx_bbdcl.BBDCL_ref (_,btype)
-      | Flx_bbdcl.BBDCL_val (_,btype) -> (lltype_of_btype state btype) :: ts
+      | Flx_bbdcl.BBDCL_val (_,btype,(`Val | `Var | `Ref)) ->
+          (lltype_of_btype state btype) :: ts
       | _ -> ts
       with Not_found -> ts
     end (find_value_indicies state bsym_table bid) []
@@ -1263,10 +1260,7 @@ and codegen_symbol state bsym_table closure index bsym =
         (Flx_btype.btyp_void ())
         es)
 
-  | Flx_bbdcl.BBDCL_val (_, btype)
-  | Flx_bbdcl.BBDCL_var (_, btype)
-  | Flx_bbdcl.BBDCL_ref (_, btype)
-  | Flx_bbdcl.BBDCL_tmp (_, btype) ->
+  | Flx_bbdcl.BBDCL_val (_, btype,_) ->
       let name = name_of_index state bsym_table index [] in
       closure := (index, name, btype) :: !closure
 

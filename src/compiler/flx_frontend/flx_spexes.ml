@@ -346,7 +346,7 @@ let gen_body syms uses bsym_table id
         let x =
           if length ps > 1
           then begin
-            let entry = BBDCL_var (vs,paramtype) in
+            let entry = BBDCL_val (vs,paramtype,`Var) in
             Hashtbl.add bsym_table parameter (param_id,Some caller,sr,entry);
             BEXE_init (sr,parameter,argument)
           end

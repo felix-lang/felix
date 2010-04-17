@@ -2288,17 +2288,13 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     cat "\n" (map (string_of_bexe bsym_table 1) es) ^
     "}"
 
-  | BBDCL_val (vs,ty) ->
-    "val " ^ name ^ string_of_bvs vs ^ ": " ^ sobt ty ^ ";"
-
-  | BBDCL_var (vs,ty) ->
-    "var " ^ name ^ string_of_bvs vs ^ ": " ^ sobt ty ^ ";"
-
-  | BBDCL_ref (vs,ty) ->
-    "ref " ^ name ^ string_of_bvs vs ^ ": " ^ sobt ty ^ ";"
-
-  | BBDCL_tmp (vs,ty) ->
-    "tmp " ^ name ^ string_of_bvs vs ^ ": " ^ sobt ty ^ ";"
+  | BBDCL_val (vs,ty,kind) ->
+    begin match kind with
+    | `Val -> "val "
+    | `Var -> "var "
+    | `Ref -> "ref "
+    | `Tmp -> "<tmp> "
+    end ^ name ^ string_of_bvs vs ^ ": " ^ sobt ty ^ ";"
 
   (* binding structures [prolog] *)
   | BBDCL_newtype (vs,t) ->
@@ -2528,14 +2524,16 @@ let print_symbols bsym_table =
           bvs
           ps
           exes
-    | BBDCL_var (bvs,t) ->
-        Printf.printf "VARIABLE %s <%s> [%s] type %s"
-          (Flx_bsym.id bsym)
-          (string_of_bid i)
-          (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)
-          (sbt bsym_table t)
-    | BBDCL_val (bvs,t) ->
-        Printf.printf "VALUE %s <%s> [%s] type %s"
+    | BBDCL_val (bvs,t,kind) ->
+        let kind =
+          match kind with
+          | `Val -> "VALUE"
+          | `Var -> "VARIABLE"
+          | `Ref -> "REFERENCE"
+          | `Tmp -> "TEMPORARY"
+        in
+        Printf.printf "%s %s <%s> [%s] type %s"
+          kind
           (Flx_bsym.id bsym)
           (string_of_bid i)
           (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)

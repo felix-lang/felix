@@ -90,10 +90,8 @@ let cpp_name bsym_table index =
   | BBDCL_function _ -> "_f"
   | BBDCL_callback _ -> "_cf"
   | BBDCL_procedure _  -> "_p"
-  | BBDCL_var _ -> "_v"
-  | BBDCL_val _ -> "_v"
-  | BBDCL_ref _ -> "_v"
-  | BBDCL_tmp _ -> "_tmp"
+  | BBDCL_val (_,_,(`Val | `Var | `Ref)) -> "_v"
+  | BBDCL_val (_,_,`Tmp) -> "_tmp"
   | _ ->
       syserr (Flx_bsym.sr bsym) "cpp_name expected func,proc,var,val,ref, or tmp"
   ) ^ cid_of_bid index ^ "_" ^ cid_of_flxid (Flx_bsym.id bsym)

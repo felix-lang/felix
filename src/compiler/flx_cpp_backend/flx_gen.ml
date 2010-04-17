@@ -29,9 +29,7 @@ let find_variable_indices syms bsym_table index =
   let children = Flx_bsym_table.find_children bsym_table index in
   Flx_types.BidSet.fold begin fun bid bids ->
     try match Flx_bsym_table.find_bbdcl bsym_table bid with
-      | BBDCL_var _
-      | BBDCL_ref _
-      | BBDCL_val _ -> bid :: bids
+      | BBDCL_val (_,_,(`Val | `Var | `Ref)) -> bid :: bids
       | _ -> bids
     with Not_found -> bids
   end children []
@@ -43,25 +41,21 @@ let get_variable_typename syms bsym_table i ts =
   in
   let rt vs t = beta_reduce syms bsym_table (Flx_bsym.sr bsym) (tsubst vs ts t) in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_var (vs,t)
-  | BBDCL_val (vs,t)
-  | BBDCL_tmp (vs,t)
-  | BBDCL_ref (vs,t)
-  ->
-    if length ts <> length vs then
-    failwith
-    (
-      "[get_variable_typename} wrong number of args, expected vs = " ^
-      si (length vs) ^
-      ", got ts=" ^
-      si (length ts)
-    );
-    let t = rt vs t in
-    let n = cpp_typename syms bsym_table t in
-    n
+  | BBDCL_val (vs,t,_) ->
+      if length ts <> length vs then begin
+        failwith
+        (
+          "[get_variable_typename} wrong number of args, expected vs = " ^
+          si (length vs) ^
+          ", got ts=" ^
+          si (length ts)
+        )
+      end;
+      let t = rt vs t in
+      cpp_typename syms bsym_table t
 
   | _ ->
-    failwith "[get_variable_typename] Expected variable"
+      failwith "[get_variable_typename] Expected variable"
 
 let format_vars syms bsym_table vars ts =
   catmap  ""
@@ -712,9 +706,7 @@ let is_closure_var bsym_table index =
       try Hashtbl.find bsym_table index
       with Not_found -> failwith ("[var_type] ]Can't get index " ^ si index)
     in match entry with
-    | BBDCL_var (_,t)
-    | BBDCL_ref (_,t)  (* ?? *)
-    | BBDCL_val (_,t) -> t
+    | BBDCL_val (_,t,(`Val | `Var | `Ref)) -> t
     | _ -> failwith ("[var_type] expected "^id^" to be variable")
   in
   match var_type bsym_table index with
@@ -1289,8 +1281,7 @@ let gen_exe filename
       in
       let t =
         match Flx_bsym.bbdcl bsym with
-        | BBDCL_var (_,t) -> t
-        | BBDCL_val (_,t) -> t
+        | BBDCL_val (_,t,(`Val | `Var)) -> t
         | _ -> syserr (Flx_bsym.sr bsym) "Expected read argument to be variable"
       in
       let n = fresh_bid counter in
@@ -1348,27 +1339,18 @@ let gen_exe filename
             failwith ("[gen_expr(init) can't find index " ^ string_of_bid v)
         in
         begin match Flx_bsym.bbdcl bsym with
-          | BBDCL_tmp _ ->
-          (if with_comments then "      //"^src_str^"\n" else "") ^
-          "      "^
-          get_variable_typename syms bsym_table v [] ^
-          " " ^
-          get_ref_ref syms bsym_table this v ts^
-          " = " ^
-          ge sr e ^
-          ";\n"
-          | BBDCL_val _
-          | BBDCL_ref _
-          | BBDCL_var _ ->
-          (*
-          print_endline ("INIT of " ^ si v ^ " inside " ^ si this);
-          *)
-          (if with_comments then "      //"^src_str^"\n" else "") ^
-          "      "^
-          get_ref_ref syms bsym_table this v ts^
-          " = " ^
-          ge sr e ^
-          ";\n"
+        | BBDCL_val (_,_,kind) ->
+            (if with_comments then "      //"^src_str^"\n" else "") ^
+            "      " ^
+            begin match kind with
+            | `Tmp -> get_variable_typename syms bsym_table v [] ^ " "
+            | _ -> ""
+            end ^
+            get_ref_ref syms bsym_table this v ts ^
+            " " ^
+            " = " ^
+            ge sr e ^
+            ";\n"
           | _ -> assert false
         end
       end
@@ -1525,13 +1507,10 @@ let gen_C_function_body filename syms bsym_table
                 string_of_bid bid);
           in
           match Flx_bsym.bbdcl bsym with
-          | BBDCL_val (vs,t)
-          | BBDCL_var (vs,t)
-            when not (mem bid params) ->
-            (bid, rt vs t) :: lst
-          | BBDCL_ref (vs,t)
-            when not (mem bid params) ->
-            (bid, btyp_pointer (rt vs t)) :: lst
+          | BBDCL_val (vs,t,(`Val | `Var)) when not (List.mem bid params) ->
+              (bid, rt vs t) :: lst
+          | BBDCL_val (vs,t,`Ref) when not (List.mem bid params) ->
+              (bid, btyp_pointer (rt vs t)) :: lst
           | _ -> lst
         end kids []
       in
@@ -1661,13 +1640,10 @@ let gen_C_procedure_body filename syms bsym_table
                 string_of_bid bid);
           in
           match Flx_bsym.bbdcl bsym with
-          | BBDCL_var (vs,t)
-          | BBDCL_val (vs,t)
-            when not (mem bid params) ->
-            (bid, rt vs t) :: lst
-          | BBDCL_ref (vs,t)
-            when not (mem bid params) ->
-            (bid, btyp_pointer (rt vs t)) :: lst
+          | BBDCL_val (vs,t,(`Val | `Var)) when not (mem bid params) ->
+              (bid, rt vs t) :: lst
+          | BBDCL_val (vs,t,`Ref) when not (mem bid params) ->
+              (bid, btyp_pointer (rt vs t)) :: lst
           | _ -> lst
         end kids []
       in

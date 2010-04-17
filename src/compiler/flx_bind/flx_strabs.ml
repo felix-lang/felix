@@ -81,17 +81,8 @@ let strabs_symbol state bsym_table index bsym =
   | BBDCL_procedure (props, bvs, bps, bexes) ->
     h (bbdcl_procedure (props, bvs, fp bps, fxs bexes))
 
-  | BBDCL_val (bvs, t) ->
-    h (bbdcl_val (bvs, ft t))
-
-  | BBDCL_var (bvs, t) ->
-    h (bbdcl_var (bvs, ft t))
-
-  | BBDCL_ref (bvs, t) ->
-    h (bbdcl_ref (bvs, ft t))
-
-  | BBDCL_tmp (bvs, t) ->
-    h (bbdcl_tmp (bvs, ft t))
+  | BBDCL_val (bvs, t, kind) ->
+    h (bbdcl_val (bvs, ft t, kind))
 
   | BBDCL_newtype (bvs, t) ->
     (* Can't downgrade this newtype yet. *)

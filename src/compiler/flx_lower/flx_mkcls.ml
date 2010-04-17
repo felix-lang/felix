@@ -35,7 +35,7 @@ let make_inner_function state bsym_table closure_bid sr vs ps =
   (* Make the closed value that's hidden inside our wrapper function. *)
   let closed_bid = fresh_bid state.syms.counter in
   let closed_name = "_a" ^ string_of_bid closed_bid in
-  let closed_val = bbdcl_val (vs,closed_type) in
+  let closed_val = bbdcl_val (vs,closed_type,`Val) in
 
   Flx_bsym_table.add bsym_table (Some closure_bid) closed_bid
     (Flx_bsym.create ~sr closed_name closed_val);

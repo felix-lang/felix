@@ -66,10 +66,7 @@ let rec is_pure syms bsym_table i =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_invalid -> assert false
   | BBDCL_module
-  | BBDCL_var _
-  | BBDCL_ref _
   | BBDCL_val _
-  | BBDCL_tmp _
   | BBDCL_nonconst_ctor _
   | BBDCL_callback _
   | BBDCL_insert _
@@ -183,7 +180,7 @@ let has_var_children bsym_table children =
   try
     BidSet.iter begin fun i ->
       match Flx_bsym_table.find_bbdcl bsym_table i with
-      | BBDCL_var _ -> raise Found
+      | BBDCL_val (_,_,`Var) -> raise Found
       | _ -> ()
     end children;
     false

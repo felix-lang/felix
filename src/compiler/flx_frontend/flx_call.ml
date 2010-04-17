@@ -175,8 +175,8 @@ let call_report syms bsym_table (uses,usedby) f k =
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_function _ -> "fun "
     | BBDCL_procedure _ -> "proc "
-    | BBDCL_var _ -> "var "
-    | BBDCL_val _ -> "val "
+    | BBDCL_val (_,_,`Val) -> "val "
+    | BBDCL_val (_,_,`Var) -> "var "
     | _ -> assert false
     end
   ;
@@ -188,8 +188,7 @@ let call_report syms bsym_table (uses,usedby) f k =
     try match Flx_bsym_table.find_bbdcl bsym_table i with
       | BBDCL_procedure _
       | BBDCL_function _
-      | BBDCL_var _
-      | BBDCL_val _ -> x := i::!x
+      | BBDCL_val (_,_,(`Val | `Var)) -> x := i::!x
       | _ -> ()
     with Not_found -> ()
   end
@@ -210,8 +209,7 @@ let print_call_report' syms bsym_table usage f =
     match Flx_bsym.bbdcl bsym with
     | BBDCL_procedure _
     | BBDCL_function _
-    | BBDCL_var _
-    | BBDCL_val _ -> x := k :: !x
+    | BBDCL_val (_,_,(`Val | `Var)) -> x := k :: !x
     | _ -> ()
   end bsym_table;
   List.iter

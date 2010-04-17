@@ -826,7 +826,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
           let urvid = "_genout_urv" ^ string_of_bid urv in
           add_use uses caller urv sr;
           Flx_bsym_table.add_child bsym_table caller urv
-            (Flx_bsym.create ~sr urvid (bbdcl_var (caller_vs,t)));
+            (Flx_bsym.create ~sr urvid (bbdcl_val (caller_vs,t,`Var)));
 
           (* set variable to function appliction *)
           let cll = bexe_init (sr,urv,e) in
@@ -964,7 +964,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
                     let urvid = "_urv" ^ string_of_bid urv in
                     add_use uses caller urv sr;
                     Flx_bsym_table.add_child bsym_table caller urv
-                      (Flx_bsym.create ~sr urvid (bbdcl_val (caller_vs,t)));
+                      (Flx_bsym.create ~sr urvid (bbdcl_val (caller_vs,t,`Val)));
 
                     let rxs = hic revariable callee xs in
                     exes' := rev rxs @ !exes';
@@ -1178,12 +1178,13 @@ and heavy_inline_calls
           begin
             let bsymv = Flx_bsym_table.find bsym_table i in
             begin match Flx_bsym.bbdcl bsymv with
-            | BBDCL_tmp (vs,t) ->
-              (*
-              print_endline ("Downgrading temporary .." ^ si i);
-              *)
-              (* should this be a VAR or a VAL? *)
-              Flx_bsym_table.update_bbdcl bsym_table i (bbdcl_var (vs,t))
+            | BBDCL_val (vs,t,`Tmp) ->
+                (* Downgrading temporary *)
+                (* should this be a VAR or a VAL? *)
+                Flx_bsym_table.update_bbdcl
+                  bsym_table
+                  i
+                  (bbdcl_val (vs,t,`Var))
             | _ -> ()
             end;
             if syms.compiler_options.print_flag then

@@ -18,12 +18,8 @@ let find_thread_vars_with_type bsym_table =
   Flx_bsym_table.iter begin fun k bsym ->
     let bsym_parent = Flx_bsym_table.find_parent bsym_table k in
     match bsym_parent, Flx_bsym.bbdcl bsym with
-    | None,BBDCL_var (_,t)
-    | None,BBDCL_val (_,t)
-      -> vars := (k,t) :: !vars
-    | None,BBDCL_ref (_,t)
-      -> vars := (k, btyp_pointer t) :: !vars
-
+    | None,BBDCL_val (_,t,(`Val | `Var)) -> vars := (k,t) :: !vars
+    | None,BBDCL_val (_,t,`Ref) -> vars := (k, btyp_pointer t) :: !vars
     | _ -> ()
   end bsym_table;
   !vars
@@ -41,22 +37,20 @@ let find_references syms bsym_table index ts =
     try
       let bsym = Flx_bsym_table.find bsym_table idx in
       match Flx_bsym.bbdcl bsym with
-      | BBDCL_var (vs,t)
-      | BBDCL_ref (vs,t)
-      | BBDCL_val (vs,t)
-        ->
-        if length ts <> length vs then
-        failwith
-        (
-          "[find_references] entry " ^ string_of_bid index ^
-          ", child " ^ Flx_bsym.id bsym ^ "<" ^ string_of_bid idx ^ ">" ^
-          ", wrong number of args, expected vs = " ^
-          si (length vs) ^
-          ", got ts=" ^
-          si (length ts)
-        );
-        let t = tsubst vs ts t in
-        references := (idx,t) :: !references
+      | BBDCL_val (vs,t,(`Val | `Var | `Ref)) ->
+          if length ts <> length vs then begin
+            failwith
+            (
+              "[find_references] entry " ^ string_of_bid index ^
+              ", child " ^ Flx_bsym.id bsym ^ "<" ^ string_of_bid idx ^ ">" ^
+              ", wrong number of args, expected vs = " ^
+              si (length vs) ^
+              ", got ts=" ^
+              si (length ts)
+            )
+          end;
+          let t = tsubst vs ts t in
+          references := (idx,t) :: !references
       | _ -> ()
     with Not_found -> ()
   end children;

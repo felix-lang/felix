@@ -8,16 +8,16 @@ type btype_qual_t = [
 
 type breqs_t = (Flx_types.bid_t * Flx_btype.t list) list
 
+(** Used to represent all the different value types. *)
+type value_kind_t = [`Val | `Var | `Ref | `Tmp]
+
 (** Bound declarations. *)
 type t = private
   | BBDCL_invalid
   | BBDCL_module
   | BBDCL_function of   property_t list * bvs_t * Flx_bparams.t * Flx_btype.t * Flx_bexe.t list
   | BBDCL_procedure of  property_t list * bvs_t * Flx_bparams.t * Flx_bexe.t list
-  | BBDCL_val of        bvs_t * Flx_btype.t
-  | BBDCL_var of        bvs_t * Flx_btype.t
-  | BBDCL_ref of        bvs_t * Flx_btype.t
-  | BBDCL_tmp of        bvs_t * Flx_btype.t
+  | BBDCL_val of        bvs_t * Flx_btype.t * value_kind_t
 
   (* binding structures [prolog] *)
   | BBDCL_newtype of    bvs_t * Flx_btype.t
@@ -49,10 +49,7 @@ val bbdcl_invalid : unit -> t
 val bbdcl_module : unit -> t
 val bbdcl_function : property_t list * bvs_t * Flx_bparams.t * Flx_btype.t * Flx_bexe.t list -> t
 val bbdcl_procedure : property_t list * bvs_t * Flx_bparams.t * Flx_bexe.t list -> t
-val bbdcl_val : bvs_t * Flx_btype.t -> t
-val bbdcl_var : bvs_t * Flx_btype.t -> t
-val bbdcl_ref : bvs_t * Flx_btype.t -> t
-val bbdcl_tmp : bvs_t * Flx_btype.t -> t
+val bbdcl_val : bvs_t * Flx_btype.t * value_kind_t -> t
 val bbdcl_newtype : bvs_t * Flx_btype.t -> t
 val bbdcl_abs : bvs_t * btype_qual_t list * code_spec_t * breqs_t -> t
 val bbdcl_const : property_t list * bvs_t * Flx_btype.t * code_spec_t * breqs_t -> t

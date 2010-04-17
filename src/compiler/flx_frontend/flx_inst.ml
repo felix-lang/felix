@@ -368,17 +368,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     rtnr t;
     rtnr (btyp_inst (i,ts))
 
-  | BBDCL_val (vs,t)
-  | BBDCL_var (vs,t)
-  | BBDCL_ref (vs,t)
-  | BBDCL_tmp (vs,t)
-    ->
-
-    (*
-    (print_endline ("Registering variable " ^ 
-    (try match Hashtbl.find sym_table i with {id=id} ->  id
-    with Not_found -> si i) ^ " type " ^ sbt bsym_table t));
-    *)
+  | BBDCL_val (vs,t,_) ->
     if length vs <> length ts
     then syserr (Flx_bsym.sr bsym)
     (

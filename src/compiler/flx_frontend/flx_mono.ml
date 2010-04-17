@@ -254,25 +254,10 @@ let mono syms bsym_table fi ts bsym =
     let exes = fixup_exes syms bsym_table fi (mt vars) exes in
     Some (bbdcl_procedure (props,[],(ps,traint), exes))
 
-  | BBDCL_val (vs,t) ->
+  | BBDCL_val (vs,t,kind) ->
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let t = mt vars t in
-    Some (bbdcl_val ([],t))
-
-  | BBDCL_var (vs,t) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let t = mt vars t in
-    Some (bbdcl_var ([],t))
-
-  | BBDCL_ref (vs,t) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let t = mt vars t in
-    Some (bbdcl_ref ([],t))
-
-  | BBDCL_tmp (vs,t) ->
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let t = mt vars t in
-    Some (bbdcl_tmp ([],t))
+    Some (bbdcl_val ([],t,kind))
 
   (* we have tp replace types in interfaces like Vector[int]
     with monomorphic versions if any .. even if we don't
@@ -305,10 +290,7 @@ let chk_mono syms bsym_table i =
   | BBDCL_module -> false
   | BBDCL_function (props,vs,(ps,traint),ret,exes) ->  true
   | BBDCL_procedure (props,vs,(ps,traint), exes) -> true
-  | BBDCL_val (vs,t) -> true
-  | BBDCL_var (vs,t) -> true
-  | BBDCL_ref (vs,t) -> true
-  | BBDCL_tmp (vs,t) -> true
+  | BBDCL_val _ -> true
   | BBDCL_const (_,_,_,CS_str "#this",_) -> true
   | BBDCL_union (vs,ps) -> false
   | BBDCL_cstruct (vs,ps) -> false
