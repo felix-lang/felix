@@ -137,7 +137,7 @@ let lookup_name_in_table_dirs table dirs sr name : entry_set_t option =
           print_endline "HERE 3";
           *)
           Some (FunctionEntry (merge_functions opens name))
-    
+
       | (NonFunctionEntry (i)) as some ::_ ->
           if
             List.fold_left begin fun t -> function
@@ -708,7 +708,7 @@ and bind_type'
   let bt t = btp t params in
   let bi i ts = bind_type_index state bsym_table rs sr i ts mkenv in
   let bisub i ts = bind_type_index state bsym_table {rs with depth= rs.depth+1} sr i ts mkenv in
-  
+
   let t =
   match t with
   | TYP_patvar _ -> failwith "Not implemented patvar in typecode"
@@ -965,7 +965,7 @@ and bind_type'
       in
       (* order as written *)
       let bparams = List.rev_map (fun (n, t, i) -> (i, t)) data in
-      
+
       btyp_type_function (bparams, bt r, bbody)
 
   | TYP_apply (TYP_name (_,"_flatten",[]),t2) ->
@@ -1012,7 +1012,7 @@ and bind_type'
        in
       let t2 = bt t2 in
       let sign = Flx_metatype.metatype state.sym_table bsym_table sr t2 in
-     
+
       begin try
         match qn with
         | `AST_name (sr,name,[]) ->
@@ -1052,7 +1052,7 @@ and bind_type'
       List.assoc s params
 
   | TYP_index (sr,name,index) as x ->
-      let sym = 
+      let sym =
         try hfind "lookup" state.sym_table index
         with Not_found ->
           syserr sr ("Synthetic name "^name ^ " not in symbol table!")
@@ -1507,7 +1507,7 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
   | { Flx_sym.id=id;
       sr=sr;
       parent=parent;
-      vs=vs; 
+      vs=vs;
       dirs=dirs;
       symdef=SYMDEF_function ((ps,_),rt,props,exes)
     } ->
@@ -1760,7 +1760,7 @@ and inner_type_of_index state bsym_table rs index =
         (fst sym.Flx_sym.vs)
       in
       let ts = List.map (bt sym.Flx_sym.sr) ts in
-    
+
       let ts = adjust_ts state.sym_table bsym_table sym.Flx_sym.sr index ts in
       let t = type_of_list (List.map snd ls) in
       btyp_function (bt sym.Flx_sym.sr t, btyp_inst (index, ts))
@@ -1830,7 +1830,7 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
                   rs
                   (nlist n)
                 in
-  
+
                 begin try
                   Some (List.map begin fun (name,d) ->
                     try
@@ -2173,16 +2173,16 @@ and lookup_qn_with_sig'
     (*
     print_endline ("Lookup simple name " ^ name);
     *)
-    begin 
+    begin
       try
         lookup_name_with_sig
           state
           bsym_table
           sra srn
           env env rs name ts signs
-      with 
+      with
       | OverloadKindError (sr,s) ->
-        begin 
+        begin
           try
             (*
             print_endline "Trying _ctor_ hack";
@@ -3250,7 +3250,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     in
       cal_apply state bsym_table sra rs tbe1 (be2, t2)
     end
-  in  
+  in
   match e with
   | EXPR_patvar _
   | EXPR_patany _
@@ -4278,7 +4278,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           bexpr_get_n ct (cidx,te)
           with Not_found ->
             let get_name = "get_" ^ name in
-            begin try cal_method_apply sr get_name e ts 
+            begin try cal_method_apply sr get_name e ts
             with exn1 -> try be (EXPR_apply (sr,(e2,e)))
             with exn2 ->
             clierr sr (
@@ -4322,7 +4322,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
             print_endline ("Synth get method .. (1) " ^ name);
             *)
             let get_name = "get_" ^ name in
-            begin try cal_method_apply sr get_name e ts 
+            begin try cal_method_apply sr get_name e ts
             with _ -> try be (EXPR_apply (sr,(e2,e)))
             with exn ->
             clierr sr (
@@ -5437,7 +5437,7 @@ and build_env'' state bsym_table rs index : env_t =
   let env = inner_build_env state bsym_table rs sym.Flx_sym.parent in
 
   (* build temporary bare innermost environment with a full parent env *)
-  let typeclasses, constraints = 
+  let typeclasses, constraints =
     let _, { raw_type_constraint=con; raw_typeclass_reqs=rtcr } =
       sym.Flx_sym.vs
     in
