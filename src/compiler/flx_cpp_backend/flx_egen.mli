@@ -2,20 +2,20 @@ val gen_expr:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
   Flx_types.bid_t ->
-  Flx_bexpr.t ->
   Flx_types.bvs_t ->
   Flx_btype.t list ->
   Flx_srcref.t ->
+  Flx_bexpr.t ->
   string
 
 val gen_expr':
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->
   Flx_types.bid_t ->
-  Flx_bexpr.t ->
   Flx_types.bvs_t ->
   Flx_btype.t list ->
   Flx_srcref.t ->
+  Flx_bexpr.t ->
   Flx_ctypes.cexpr_t
 
 (* for use in an expression *)

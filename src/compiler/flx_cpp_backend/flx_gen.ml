@@ -728,9 +728,9 @@ let gen_exe filename
   print_endline ("ts = " ^ catmap ","  (string_of_btypecode bsym_table) ts);
   *)
   let tsub t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
-  let ge sr e : string = gen_expr syms bsym_table this e vs ts sr in
-  let ge' sr e : cexpr_t = gen_expr' syms bsym_table this e vs ts sr in
-  let tn t : string = cpp_typename syms bsym_table (tsub t) in
+  let ge = gen_expr syms bsym_table this vs ts in
+  let ge' = gen_expr' syms bsym_table this vs ts in
+  let tn t = cpp_typename syms bsym_table (tsub t) in
   let bsym =
     try Flx_bsym_table.find bsym_table this with _ ->
       failwith ("[gen_exe] Can't find this " ^ string_of_bid this)
@@ -2243,7 +2243,7 @@ let gen_biface_body syms bsym_table biface = match biface with
       in
       let class_name = cpp_instance_name syms bsym_table index [] in
       let strargs =
-        let ge sr e : string = gen_expr syms bsym_table index e [] [] sr in
+        let ge = gen_expr syms bsym_table index [] [] in
         match ps with
         | [] -> "0"
         | [{ptyp=t; pid=name; pindex=idx}] -> "0" ^ ", " ^ name

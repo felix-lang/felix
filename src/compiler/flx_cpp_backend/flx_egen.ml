@@ -152,27 +152,37 @@ let nth_type ts i =
   with Not_found ->
     failwith ("Can't find component " ^ si i ^ " of type!")
 
-let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr_t =
-  (*
-  print_endline ("Generating expression " ^ string_of_bound_expression_with_type bsym_table (e,t));
-  print_endline ("Location " ^ Flx_srcref.short_string_of_src sr);
-  *)
-  let ge' e = gen_expr' syms bsym_table this e vs ts sr in
-  let ge e = gen_expr syms bsym_table this e vs ts sr in
-  let ge'' sr e = gen_expr' syms bsym_table this e vs ts sr in
-  if length ts <> length vs then
-  failwith
-  (
-    "[gen_expr} wrong number of args, expected vs = " ^
-    si (length vs) ^
-    ", got ts=" ^
-    si (length ts)
-  );
-  let tsub t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
+let rec gen_expr'
+  syms
+  bsym_table
+  this
+  this_vs
+  this_ts
+  sr
+  (e,t)
+=
+  if length this_ts <> length this_vs then begin
+    failwith
+    (
+      "[gen_expr} wrong number of args, expected vs = " ^
+      si (length this_vs) ^
+      ", got ts=" ^
+      si (length this_ts)
+    )
+  end;
+
+  let ge = gen_expr syms bsym_table this this_vs this_ts sr in
+  let ge' = gen_expr' syms bsym_table this this_vs this_ts sr in
+  let tsub t = beta_reduce syms bsym_table sr (tsubst this_vs this_ts t) in
   let tn t = cpp_typename syms bsym_table (tsub t) in
 
   (* NOTE this function does not do a reduce_type *)
-  let raw_typename t = cpp_typename syms bsym_table (beta_reduce syms bsym_table sr (tsubst vs ts t)) in
+  let raw_typename t =
+    cpp_typename
+    syms
+    bsym_table
+    (beta_reduce syms bsym_table sr (tsubst this_vs this_ts t))
+  in
   let gen_case_index e =
     let _,t = e in
     begin match t with
@@ -208,7 +218,7 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
   in
   let our_display = get_display_list bsym_table this in
   let our_level = length our_display in
-  let rt t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
+  let rt t = beta_reduce syms bsym_table sr (tsubst this_vs this_ts t) in
   let t = rt t in
   match t with
   | BTYP_tuple [] ->
@@ -669,107 +679,18 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
        )
       *)
 
-
-  | BEXPR_apply_prim (index,ts,(arg,argt as a)) ->
-    (*
-    print_endline ("Prim apply, arg=" ^ sbe bsym_table a);
-    *)
-    let argt = tsub argt in
-    let bsym =
-      try Flx_bsym_table.find bsym_table index with _ ->
-        failwith ("[gen_expr(apply instance)] Can't find index " ^
-          string_of_bid index)
-    in
-    begin
-    match Flx_bsym.bbdcl bsym with
-    | BBDCL_external_fun (props,vs,ps,retyp,ct,_,prec) ->
-      if length vs <> length ts then
-      failwith
-      (
-        "[get_expr:apply closure of fun] function " ^
-        Flx_bsym.id bsym ^ "<" ^ string_of_bid index ^">" ^
-        ", wrong number of args, expected vs = " ^
-        si (length vs) ^
-        ", got ts=" ^
-        si (length ts)
-      );
-      begin match ct with
-      | CS_identity -> ge' a
-
-      | CS_virtual ->
-        let ts = map tsub ts in
-        let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
-        if index <> index' then
-          clierr sr ("Virtual call of " ^ string_of_bid index ^ " dispatches to
-            " ^ string_of_bid index')
-        ;
-        if index = index' then
-        begin
-          let entries =
-            try Hashtbl.find syms.typeclass_to_instance index
-            with Not_found -> (* print_endline ("Symbol " ^ si index ^ " Not instantiated?"); *) []
-          in
-          iter begin fun (bvs,t,ts,j) ->
-            print_endline ("Candidate Instance " ^ string_of_bid j ^ "[" ^
-              catmap "," (sbt bsym_table) ts ^ "]")
-          end entries;
-
-          clierr2 sr (Flx_bsym.sr bsym) ("Instantiate virtual function(2) " ^
-            Flx_bsym.id bsym ^ "<" ^
-            string_of_bid index ^ ">, no instance for ts="^
-            catmap "," (sbt bsym_table) ts)
-        end;
-        begin
-          let bsym =
-            try Flx_bsym_table.find bsym_table index' with Not_found ->
-              syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
-          in
-          match Flx_bsym.bbdcl bsym with
-          | BBDCL_fun _ -> ge' (bexpr_apply_direct t (index',ts',a))
-          | BBDCL_external_fun _ -> ge' (bexpr_apply_prim t (index',ts',a))
-          | _ ->
-              clierr2 sr (Flx_bsym.sr bsym) ("expected instance to be function " ^
-                Flx_bsym.id bsym)
-        end
-
-      | CS_str s -> ce_expr prec s
-      | CS_str_template s ->
-        let ts = map tsub ts in
-        let retyp = beta_reduce syms bsym_table sr (tsubst vs ts retyp) in
-        let retyp = tn retyp in
-        gen_prim_call
-          syms
-          bsym_table
-          tsub
-          ge''
-          s
-          ts
-          (arg,argt)
-          retyp
-          sr
-          (Flx_bsym.sr bsym)
-          prec
-      end
-
-    | BBDCL_callback (props,vs,ps_cf,ps_c,_,retyp,_,_) ->
-      assert (retyp <> btyp_void ());
-      if length vs <> length ts then
-      clierr sr "[gen_prim_call] Wrong number of type arguments"
-      ;
-      let ts = map tsub ts in
-      let s = Flx_bsym.id bsym ^ "($a)" in
-      let retyp = beta_reduce syms bsym_table sr (tsubst vs ts retyp) in
-      let retyp = tn retyp in
-      gen_prim_call syms bsym_table tsub ge'' s ts (arg,argt) retyp sr (Flx_bsym.sr bsym) "atom"
-
-    (* but can't be a Felix function *)
-    | _ ->
-      failwith
-      (
-        "[gen_expr: apply prim] Expected '" ^ Flx_bsym.id bsym ^ "' to be primitive function instance, got:\n" ^
-        string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index
-      )
-    end
+  | BEXPR_apply_prim (index,ts,arg) ->
+    gen_apply_prim
+      syms
+      bsym_table
+      this
+      sr
+      this_vs
+      this_ts
+      t
+      index
+      ts
+      arg
 
   | BEXPR_apply_struct (index,ts,a) ->
     let bsym =
@@ -1022,7 +943,9 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
   (* application of C function pointer, type
      f: a --> b
   *)
-(*  | BEXPR_apply ( (_,BTYP_lvalue(BTYP_cfunction _)) as f,a) *)
+  (*
+  | BEXPR_apply ( (_,BTYP_lvalue(BTYP_cfunction _)) as f,a)
+  *)
   | BEXPR_apply ( (_,BTYP_cfunction _) as f,a) ->
     ce_atom (
     (ge f) ^"(" ^ ge_arg a ^ ")"
@@ -1094,10 +1017,139 @@ let rec gen_expr' syms (bsym_table:Flx_bsym_table.t) this (e,t) vs ts sr : cexpr
     | _ -> assert false
     end
 
-and gen_expr syms bsym_table this e vs ts sr =
+(** Code generate for the BEXPR_apply_prim variant. *)
+and gen_apply_prim
+  syms
+  bsym_table
+  this
+  sr
+  this_vs
+  this_ts
+  t
+  index
+  ts
+  ((arg,argt) as a)
+=
+  let gen_expr' = gen_expr' syms bsym_table this this_vs this_ts in
+  let beta_reduce vs ts t =
+    beta_reduce syms bsym_table sr (tsubst vs ts t)
+  in
+  let cpp_typename t = cpp_typename
+    syms
+    bsym_table
+    (beta_reduce this_vs this_ts t)
+  in
+  let bsym =
+    try Flx_bsym_table.find bsym_table index with Not_found ->
+      failwith ("[gen_expr(apply instance)] Can't find index " ^
+        string_of_bid index)
+  in
+  match Flx_bsym.bbdcl bsym with
+  | BBDCL_external_fun (_,vs,_,retyp,code,_,prec) ->
+      if length vs <> length ts then
+      failwith
+      (
+        "[get_expr:apply closure of fun] function " ^
+        Flx_bsym.id bsym ^ "<" ^ string_of_bid index ^ ">" ^
+        ", wrong number of args, expected vs = " ^
+        si (length vs) ^
+        ", got ts=" ^
+        si (length ts)
+      );
+      begin match code with
+      | CS_identity -> gen_expr' sr a
+
+      | CS_virtual ->
+          let ts = List.map (beta_reduce this_vs this_ts) ts in
+          let index', ts' = Flx_typeclass.fixup_typeclass_instance
+            syms
+            bsym_table
+            index
+            ts
+          in
+
+          if index <> index' then begin
+            clierr sr ("Virtual call of " ^ string_of_bid index ^
+              " dispatches to " ^ string_of_bid index')
+          end;
+
+          if index = index' then begin
+            let entries =
+              try Hashtbl.find syms.typeclass_to_instance index
+              with Not_found -> []
+            in
+
+            clierr2 sr (Flx_bsym.sr bsym) ("Instantiate virtual function(2) " ^
+              Flx_bsym.id bsym ^ "<" ^
+              string_of_bid index ^ ">, no instance for ts="^
+              catmap "," (sbt bsym_table) ts)
+          end;
+
+          let bsym =
+            try Flx_bsym_table.find bsym_table index' with Not_found ->
+              syserr sr ("MISSING INSTANCE BBDCL " ^ string_of_bid index')
+          in
+          begin match Flx_bsym.bbdcl bsym with
+          | BBDCL_fun _ ->
+              gen_expr' sr (bexpr_apply_direct t (index',ts',a))
+          | BBDCL_external_fun _ ->
+              gen_expr' sr (bexpr_apply_prim t (index',ts',a))
+          | _ ->
+              clierr2 sr (Flx_bsym.sr bsym)
+                ("expected instance to be function " ^ Flx_bsym.id bsym)
+          end
+
+    | CS_str s -> ce_expr prec s
+    | CS_str_template s ->
+        let retyp = cpp_typename (beta_reduce vs ts retyp) in
+        gen_prim_call
+          syms
+          bsym_table
+          (beta_reduce this_vs this_ts)
+          gen_expr'
+          s
+          (List.map (beta_reduce this_vs this_ts) ts)
+          (arg, argt)
+          retyp
+          sr
+          (Flx_bsym.sr bsym)
+          prec
+      end
+
+  | BBDCL_callback (_,vs,_,_,_,retyp,_,_) ->
+      assert (retyp <> btyp_void ());
+      if length vs <> length ts then begin
+        clierr sr "[gen_prim_call] Wrong number of type arguments"
+      end;
+
+      let s = Flx_bsym.id bsym ^ "($a)" in
+      let retyp = cpp_typename (beta_reduce vs ts retyp) in
+      gen_prim_call
+        syms
+        bsym_table
+        (beta_reduce this_vs this_ts)
+        gen_expr'
+        s
+        (List.map (beta_reduce this_vs this_ts) ts)
+        (arg, beta_reduce this_vs this_ts argt)
+        retyp
+        sr
+        (Flx_bsym.sr bsym)
+        "atom"
+
+  (* but can't be a Felix function *)
+  | _ ->
+      failwith
+      (
+        "[gen_expr: apply prim] Expected '" ^ Flx_bsym.id bsym ^
+        "' to be primitive function instance, got:\n" ^
+        string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index
+      )
+
+and gen_expr syms bsym_table this vs ts sr e =
   let e = Flx_bexpr.reduce e in
   let s =
-    try gen_expr' syms bsym_table this e vs ts sr
+    try gen_expr' syms bsym_table this vs ts sr e
     with Unknown_prec p -> clierr sr
     ("[gen_expr] Unknown precedence name '"^p^"' in " ^ sbe bsym_table e)
   in
