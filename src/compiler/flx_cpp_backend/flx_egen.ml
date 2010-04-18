@@ -534,7 +534,7 @@ let rec gen_expr'
         "(FLX_NEWP("^name^")" ^ Flx_gen_display.strd the_display props ^")"
         )
 
-    | BBDCL_callback _ ->
+    | BBDCL_external_fun (_,_,_,_,_,_,`Callback _) ->
       print_endline "Mapping closure of callback to C function pointer";
       ce_atom (Flx_bsym.id bsym)
 
@@ -1045,7 +1045,7 @@ and gen_apply_prim
         string_of_bid index)
   in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_external_fun (_,vs,_,retyp,code,_,prec) ->
+  | BBDCL_external_fun (_,vs,_,retyp,_,prec,kind) ->
       if length vs <> length ts then
       failwith
       (
@@ -1056,10 +1056,9 @@ and gen_apply_prim
         ", got ts=" ^
         si (length ts)
       );
-      begin match code with
-      | CS_identity -> gen_expr' sr a
-
-      | CS_virtual ->
+      begin match kind with
+      | `Code CS_identity -> gen_expr' sr a
+      | `Code CS_virtual ->
           let ts = List.map (beta_reduce this_vs this_ts) ts in
           let index', ts' = Flx_typeclass.fixup_typeclass_instance
             syms
@@ -1098,44 +1097,35 @@ and gen_apply_prim
               clierr2 sr (Flx_bsym.sr bsym)
                 ("expected instance to be function " ^ Flx_bsym.id bsym)
           end
-
-    | CS_str s -> ce_expr prec s
-    | CS_str_template s ->
-        let retyp = cpp_typename (beta_reduce vs ts retyp) in
-        gen_prim_call
-          syms
-          bsym_table
-          (beta_reduce this_vs this_ts)
-          gen_expr'
-          s
-          (List.map (beta_reduce this_vs this_ts) ts)
-          (arg, argt)
-          retyp
-          sr
-          (Flx_bsym.sr bsym)
-          prec
+      | `Code (CS_str s) -> ce_expr prec s
+      | `Code (CS_str_template s) ->
+          gen_prim_call
+            syms
+            bsym_table
+            (beta_reduce this_vs this_ts)
+            gen_expr'
+            s
+            (List.map (beta_reduce this_vs this_ts) ts)
+            (arg, beta_reduce this_vs this_ts argt)
+            (cpp_typename (beta_reduce vs ts retyp))
+            sr
+            (Flx_bsym.sr bsym)
+            prec
+      | `Callback (_,_) ->
+          assert (retyp <> btyp_void ());
+          gen_prim_call
+            syms
+            bsym_table
+            (beta_reduce this_vs this_ts)
+            gen_expr'
+            (Flx_bsym.id bsym ^ "($a)")
+            (List.map (beta_reduce this_vs this_ts) ts)
+            (arg, beta_reduce this_vs this_ts argt)
+            (cpp_typename (beta_reduce vs ts retyp))
+            sr
+            (Flx_bsym.sr bsym)
+            "atom"
       end
-
-  | BBDCL_callback (_,vs,_,_,_,retyp,_,_) ->
-      assert (retyp <> btyp_void ());
-      if length vs <> length ts then begin
-        clierr sr "[gen_prim_call] Wrong number of type arguments"
-      end;
-
-      let s = Flx_bsym.id bsym ^ "($a)" in
-      let retyp = cpp_typename (beta_reduce vs ts retyp) in
-      gen_prim_call
-        syms
-        bsym_table
-        (beta_reduce this_vs this_ts)
-        gen_expr'
-        s
-        (List.map (beta_reduce this_vs this_ts) ts)
-        (arg, beta_reduce this_vs this_ts argt)
-        retyp
-        sr
-        (Flx_bsym.sr bsym)
-        "atom"
 
   (* but can't be a Felix function *)
   | _ ->

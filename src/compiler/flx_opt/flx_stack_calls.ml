@@ -68,7 +68,6 @@ let rec is_pure syms bsym_table i =
   | BBDCL_module
   | BBDCL_val _
   | BBDCL_nonconst_ctor _
-  | BBDCL_callback _
   | BBDCL_insert _
   | BBDCL_cstruct _
   | BBDCL_struct _
@@ -87,7 +86,11 @@ let rec is_pure syms bsym_table i =
     true
 
   (* not sure if this is the right place for this check .. *)
-  | BBDCL_external_fun (_,_,_,_,ct,_,_) -> ct <> CS_virtual
+  | BBDCL_external_fun (_,_,_,_,_,_,kind) ->
+      begin match kind with
+      | `Code CS_virtual -> false
+      | _ -> true
+      end
 
   | BBDCL_fun (_,_,_,_,exes) ->
     let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
@@ -348,7 +351,6 @@ let can_stack_func syms bsym_table fn_cache ptr_cache i =
 
   | BBDCL_nonconst_ctor _
   | BBDCL_external_fun _
-  | BBDCL_callback _
   | BBDCL_cstruct _
   | BBDCL_struct _
     -> false (* hack *)
@@ -546,8 +548,13 @@ and check_stackable_proc
   if mem i recstop then true else
   let bsym = Flx_bsym_table.find bsym_table i in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_callback _ -> false (* not sure if this is right .. *)
-  | BBDCL_external_fun (_,_,_,Flx_btype.BTYP_void,ct,_,_) -> ct <> CS_virtual
+  | BBDCL_external_fun (_,_,_,_,_,_,kind) ->
+    begin match kind with
+    | `Code ct -> ct <> CS_virtual
+    | `Callback _ ->
+        (* not sure if this is right .. *)
+        false
+    end
   | BBDCL_fun (props,vs,p,BTYP_void,exes) ->
     if mem `Stackable props then true
     else if mem `Unstackable props then false
@@ -597,8 +604,7 @@ let rec enstack_applies syms bsym_table fn_cache ptr_cache x =
           if mem `Stackable props
           then bexpr_apply_stack t (i,ts,b)
           else bexpr_apply_direct t (i,ts,b)
-        | BBDCL_external_fun _
-        | BBDCL_callback _ -> bexpr_apply_prim t (i,ts,b)
+        | BBDCL_external_fun _ -> bexpr_apply_prim t (i,ts,b)
 
         | BBDCL_cstruct _
         | BBDCL_struct _
@@ -660,11 +666,12 @@ let enstack_calls syms bsym_table fn_cache ptr_cache self exes =
             end else
               bexe_call_direct (Flx_bsym.sr bsym,i,ts,a)
 
+        (* seems to work at the moment *)
+        | BBDCL_external_fun (_,_,_,_,_,_,`Callback _) ->
+            bexe_call_direct (Flx_bsym.sr bsym,i,ts,a)
+
         | BBDCL_external_fun (_,_,_,Flx_btype.BTYP_void,_,_,_) ->
             bexe_call_prim (Flx_bsym.sr bsym,i,ts,a)
-
-        (* seems to work at the moment *)
-        | BBDCL_callback _ -> bexe_call_direct (Flx_bsym.sr bsym,i,ts,a)
 
         | _ ->
             syserr sr ("Call to non-procedure " ^ Flx_bsym.id bsym ^ "<" ^

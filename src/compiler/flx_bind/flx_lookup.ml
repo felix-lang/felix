@@ -1626,8 +1626,6 @@ and btype_of_bsym state bsym_table bt bid bsym =
   | BBDCL_external_const (_,_,t,_,_) -> t
   | BBDCL_external_fun (_,_,params,return_type,_,_,_) ->
       btyp_function (btyp_tuple params, return_type)
-  | BBDCL_callback (_,_,params,_,_,return_type,_,_) ->
-      btyp_function (btyp_tuple params, return_type)
   | BBDCL_insert _ -> assert false
   | BBDCL_union (_,ls) ->
       btyp_variant (List.map (fun (n,_,t) -> n,t) ls)

@@ -219,13 +219,9 @@ let check_instance
     Flx_types.BidSet.iter begin fun tck ->
       let tck_bsym = Flx_bsym_table.find bsym_table tck in
       match Flx_bsym.bbdcl tck_bsym with
-      | BBDCL_external_fun (props,bvs,params,ret,ct,breq,prec) ->
-        if ct == CS_virtual then
-          let ft = btyp_function (btyp_tuple params,ret) in
-          check_binding true tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
-        (*
-        clierr tcksr "Typeclass requires virtual function";
-        *)
+      | BBDCL_external_fun (_,bvs,params,ret,_,_,`Code CS_virtual) ->
+        let ft = btyp_function (btyp_tuple params,ret) in
+        check_binding true tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
 
       | BBDCL_fun (props,bvs,bps,ret,_) when mem `Virtual props ->
         let argt = btyp_tuple (Flx_bparams.get_btypes bps) in

@@ -53,30 +53,27 @@ let expr_uses_gc bsym_table e =
 let exe_uses_gc bsym_table exe =
   match exe with
   | BEXE_jump_direct _
-  | BEXE_call_direct _
-    -> raise Not_found
+  | BEXE_call_direct _ -> raise Not_found
 
   (* this test is used to trap use of gc by primitives *)
   | BEXE_call_prim (sr,i,ts,a) ->
-    let bsym = Flx_bsym_table.find bsym_table i in
-    begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_callback (props,vs,ps,_,_,BTYP_void,rqs,_)
-    | BBDCL_external_fun (props,vs,ps,BTYP_void,_,rqs,_) ->
-      (*
-      print_endline "Checking primitive for gc use[2]";
-      *)
-      if List.mem `Uses_gc props
-      then begin (* print_endline "Flagged as using gc"; *) raise Not_found end
-      else
-      Flx_bexe.iter ~f_bexpr:(expr_uses_gc bsym_table) exe
-    | _ ->
-      print_endline ("Call primitive to non-primitive " ^ Flx_bsym.id bsym ^
-        "<" ^ string_of_bid i ^ ">");
-      assert false
-    end
+      let bsym = Flx_bsym_table.find bsym_table i in
+      begin match Flx_bsym.bbdcl bsym with
+      | BBDCL_external_fun (props,vs,ps,BTYP_void,_,_,_) ->
+          if List.mem `Uses_gc props then begin
+            (* Flagged as using gc *)
+            raise Not_found
+          end;
+
+          Flx_bexe.iter ~f_bexpr:(expr_uses_gc bsym_table) exe
+      | _ ->
+          print_endline ("Call primitive to non-primitive " ^ Flx_bsym.id bsym ^
+            "<" ^ string_of_bid i ^ ">");
+          assert false
+      end
 
   | _ ->
-    Flx_bexe.iter ~f_bexpr:(expr_uses_gc bsym_table) exe
+      Flx_bexe.iter ~f_bexpr:(expr_uses_gc bsym_table) exe
 
 let exes_use_gc bsym_table exes =
   try

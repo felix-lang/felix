@@ -531,8 +531,6 @@ let gen_function_names syms bsym_table =
         bcat s ("struct " ^ name ^ ";\n");
       end
 
-    | BBDCL_callback (props,vs,ps_cf,ps_c,_,ret',_,_) ->  ()
-
     | _ -> () (* bcat s ("//SKIPPING " ^ id ^ "\n") *)
   )
   (sort compare !xxsym_table)
@@ -602,7 +600,7 @@ let gen_functions syms bsym_table =
           i)
       end
 
-    | BBDCL_callback (props,vs,ps_cf,ps_c,_,ret',_,_) ->
+    | BBDCL_external_fun (_,vs,ps_cf,ret',_,_,`Callback (ps_c,_)) ->
       let instance_no = i in
       bcat s ("\n//------------------------------\n");
       if ret' = btyp_void () then begin
@@ -771,7 +769,7 @@ let gen_exe filename
     in
     begin
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_external_fun (props,vs,_,BTYP_void,ct,_,_) ->
+    | BBDCL_external_fun (_,vs,_,BTYP_void,_,_,`Code code) ->
       assert (not is_jump);
 
       if length vs <> length ts then
@@ -785,7 +783,7 @@ let gen_exe filename
         "      " ^ s ^ "\n" ^
         sub_end
       in
-      begin match ct with
+      begin match code with
       | CS_identity -> syserr sr "Identity proc is nonsense"
       | CS_virtual ->
           clierr2 sr (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
@@ -795,7 +793,7 @@ let gen_exe filename
         ws ss
       end
 
-    | BBDCL_callback (props,vs,ps_cf,ps_c,_,ret,_,_) ->
+    | BBDCL_external_fun (_,vs,ps_cf,ret,_,_,`Callback _) ->
       assert (not is_jump);
       assert (ret = btyp_void ());
 
@@ -2032,7 +2030,7 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
       bcat s2 ctor;
       bcat s apply
 
-  | BBDCL_callback (props,vs,ps_cf,ps_c,client_data_pos,ret',_,_) ->
+  | BBDCL_external_fun (_,vs,ps_cf,ret',_,_,`Callback (ps_c,client_data_pos)) ->
       let tss =
         if length ts = 0 then "" else
         "[" ^ catmap "," (string_of_btypecode bsym_table) ts^ "]"

@@ -2309,28 +2309,21 @@ and string_of_bbdcl bsym_table bbdcl index : string =
      string_of_breqs bsym_table reqs ^
      ";"
 
-  | BBDCL_external_fun (props,vs,ps,rt,code,reqs,prec) ->
+  | BBDCL_external_fun (props,vs,ps,rt,reqs,prec,kind) ->
     let is_proc = Flx_btype.is_void rt in
     string_of_properties props ^
+    (match kind with | `Callback _ -> "callback " | _ -> "") ^
     (if is_proc then "proc " else "fun ") ^
     name ^ string_of_bvs vs ^
     ": " ^
     (sobt (btyp_tuple ps)) ^
     (if is_proc then " " else " -> " ^ sobt rt) ^
-    " = " ^ string_of_code_spec code ^
-    (if prec = "" then "" else ":"^prec^" ")^
-     string_of_breqs bsym_table reqs ^
-    ";"
-
-  | BBDCL_callback (props,vs,ps_cf,ps_c,k,rt,reqs,prec) ->
-    string_of_properties props ^
-    "callback fun " ^ name ^ string_of_bvs vs ^
-    ": " ^
-    (sobt (btyp_tuple ps_cf)) ^ " -> " ^
-    (sobt rt) ^
-    " : " ^
-    (if prec = "" then "" else ":"^prec^" ")^
-     string_of_breqs bsym_table reqs ^
+    begin match kind with
+    | `Code code -> " = " ^ string_of_code_spec code
+    | _ -> ""
+    end ^
+    (if prec = "" then "" else ":" ^ prec ^ " ") ^
+    string_of_breqs bsym_table reqs ^
     ";"
 
   | BBDCL_insert (vs,s,ikind,reqs) ->

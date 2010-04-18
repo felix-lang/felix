@@ -553,8 +553,6 @@ let rec bbind_symbol state bsym_table symbol_index sym =
   | SYMDEF_fun (props,ts,ret,ct,reqs,prec) ->
     let ts = map bt ts in
     let bret = bt ret in
-    let reqs = bind_reqs reqs in
-    let bbdcl = bbdcl_external_fun (props,bvs,ts,bret,ct,reqs,prec) in
 
     (* Cache the type of the function. *)
     if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
@@ -569,7 +567,14 @@ let rec bbind_symbol state bsym_table symbol_index sym =
         print_bvs bvs ^ ":" ^ sbt bsym_table (btyp_function (atyp, bret)))
     end;
 
-    add_bsym true_parent bbdcl
+    add_bsym true_parent (bbdcl_external_fun (
+      props,
+      bvs,
+      ts,
+      bret,
+      (bind_reqs reqs),
+      prec,
+      `Code ct))
 
   | SYMDEF_callback (props,ts_orig,ret,reqs) ->
     let bret = bt ret in
@@ -652,7 +657,6 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     in
 
     let prec = "postfix" in
-    let reqs = bind_reqs reqs in
 
     (* Cache the type of the callback. *)
     if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
@@ -667,8 +671,14 @@ let rec bbind_symbol state bsym_table symbol_index sym =
         sbt bsym_table (btyp_function (atyp, bret)))
     end;
 
-    add_bsym true_parent (bbdcl_callback
-      (props,bvs,ts_cf,ts_c,!client_data_pos,bret,reqs,prec))
+    add_bsym true_parent (bbdcl_external_fun (
+      props,
+      bvs,
+      ts_cf,
+      bret,
+      (bind_reqs reqs),
+      prec,
+      `Callback (ts_c,!client_data_pos)))
 
   | SYMDEF_union (cs) ->
     (*

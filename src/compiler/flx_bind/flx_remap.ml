@@ -103,20 +103,17 @@ let remap_bbdcl offset bbdcl =
       let reqs = remap_breqs reqs in
       bbdcl_external_const (props, vs, ty, code, reqs)
 
-  | BBDCL_external_fun (props, vs, ps, rt, code, reqs, prec) ->
+  | BBDCL_external_fun (props, vs, ps, rt, reqs, prec, kind) ->
       let vs = remap_bvs vs in
       let ps = List.map remap_btype ps in
       let rt = remap_btype rt in
       let reqs = remap_breqs reqs in
-      bbdcl_external_fun (props, vs, ps, rt, code, reqs, prec)
-
-  | BBDCL_callback (props, vs, ps_cf, ps_c, k, rt, reqs, prec) ->
-      let vs = remap_bvs vs in
-      let ps_cf = List.map remap_btype ps_cf in
-      let ps_c = List.map remap_btype ps_c in
-      let rt = remap_btype rt in
-      let reqs = remap_breqs reqs in
-      bbdcl_callback (props, vs, ps_cf, ps_c, k, rt, reqs, prec)
+      let kind =
+        match kind with
+        | `Code _ -> kind
+        | `Callback (ps_c,k) -> `Callback (List.map remap_btype ps_c,k)
+      in
+      bbdcl_external_fun (props, vs, ps, rt, reqs, prec, kind)
 
   | BBDCL_insert (vs, code, ikind, reqs) ->
       let vs = remap_bvs vs in

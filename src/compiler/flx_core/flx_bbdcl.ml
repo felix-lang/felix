@@ -13,6 +13,12 @@ type breqs_t = (Flx_types.bid_t * Flx_btype.t list) list
 (** Used to represent all the different value types. *)
 type value_kind_t = [`Val | `Var | `Ref | `Tmp]
 
+(** Used to represent all the different external function types. *)
+type external_fun_kind_t = [
+  | `Code of code_spec_t
+  | `Callback of Flx_btype.t list * int
+]
+
 (** Bound declarations. *)
 type t =
   | BBDCL_invalid
@@ -30,8 +36,7 @@ type t =
                         breqs_t
   | BBDCL_external_fun of
                         property_t list * bvs_t * Flx_btype.t list *
-                        Flx_btype.t * code_spec_t  * breqs_t * prec_t
-  | BBDCL_callback of   property_t list * bvs_t * Flx_btype.t list * Flx_btype.t list * int * Flx_btype.t * breqs_t * prec_t
+                        Flx_btype.t * breqs_t * prec_t * external_fun_kind_t
   | BBDCL_insert of     bvs_t * code_spec_t * ikind_t * breqs_t
 
   | BBDCL_union of      bvs_t * (id_t * int * Flx_btype.t) list
@@ -72,11 +77,8 @@ let bbdcl_external_type (bvs, quals, code, breqs) =
 let bbdcl_external_const (prop, bvs, t, code, breqs) =
   BBDCL_external_const (prop, bvs, t, code, breqs)
 
-let bbdcl_external_fun (prop, bvs, ps, rt, code, breqs, prec) =
-  BBDCL_external_fun (prop, bvs, ps, rt, code, breqs, prec)
-
-let bbdcl_callback (prop, bvs, ps_cf, ps_c, k, rt, breqs, prec) =
-  BBDCL_callback (prop, bvs, ps_cf, ps_c, k, rt, breqs, prec)
+let bbdcl_external_fun (prop, bvs, ps, rt, breqs, prec, kind) =
+  BBDCL_external_fun (prop, bvs, ps, rt, breqs, prec, kind)
 
 let bbdcl_insert (bvs, code, ikind, breqs) =
   BBDCL_insert (bvs, code, ikind, breqs)
@@ -132,7 +134,6 @@ let get_bvs = function
   | BBDCL_external_type (bvs, _, _, _) -> bvs
   | BBDCL_external_const (_, bvs, _, _, _) -> bvs
   | BBDCL_external_fun (_, bvs, _, _, _, _, _) -> bvs
-  | BBDCL_callback (_, bvs, _, _, _, _, _, _) -> bvs
   | BBDCL_insert (bvs, _, _, _) -> bvs
   | BBDCL_union (bvs, _) -> bvs
   | BBDCL_struct (bvs, _) -> bvs
@@ -197,14 +198,13 @@ let iter
   | BBDCL_external_const (_,_,t,_,breqs) ->
       f_btype t;
       f_breqs breqs
-  | BBDCL_external_fun (_,_,ps,rt,_,breqs,_) ->
+  | BBDCL_external_fun (_,_,ps,rt,breqs,_,kind) ->
       List.iter f_btype ps;
       f_btype rt;
-      f_breqs breqs
-  | BBDCL_callback (_,_,ps_cf,ps_c,_,rt,breqs,_) ->
-      List.iter f_btype ps_cf;
-      List.iter f_btype ps_c;
-      f_btype rt;
+      begin match kind with
+      | `Callback (ps_c,_) -> List.iter f_btype ps_c
+      | _ -> ()
+      end;
       f_breqs breqs
   | BBDCL_insert (_,_,_,breqs) ->
       f_breqs breqs
@@ -264,25 +264,18 @@ let map
       BBDCL_external_type (bvs,List.map f_btype_qual quals,code,f_breqs breqs)
   | BBDCL_external_const (props,bvs,t,code,breqs) ->
       BBDCL_external_const (props,bvs,f_btype t,code,f_breqs breqs)
-  | BBDCL_external_fun (props,bvs,ps,rt,code,breqs,prec) ->
+  | BBDCL_external_fun (props,bvs,ps,rt,breqs,prec,kind) ->
       BBDCL_external_fun (
         props,
         bvs,
         List.map f_btype ps,
         f_btype rt,
-        code,
         f_breqs breqs,
-        prec)
-  | BBDCL_callback (props,bvs,ps_cf,ps_c,k,rt,breqs,prec) ->
-      BBDCL_callback (
-        props,
-        bvs,
-        List.map f_btype ps_cf,
-        List.map f_btype ps_c,
-        k,
-        f_btype rt,
-        f_breqs breqs,
-        prec)
+        prec,
+        begin match kind with
+        | `Callback (ps_c,k) -> `Callback (List.map f_btype ps_c,k)
+        | _ -> kind
+        end)
   | BBDCL_insert (bvs,code,ikind,breqs) ->
       BBDCL_insert (bvs,code,ikind,f_breqs breqs)
   | BBDCL_union (bvs,cs) ->
@@ -344,15 +337,14 @@ let iter_uses f bbdcl =
   | BBDCL_external_const (_,_,t,_,breqs) ->
       f_btype t;
       f_breqs breqs
-  | BBDCL_external_fun (_,_,ps,rt,_,breqs,_) ->
+  | BBDCL_external_fun (_,_,ps,rt,breqs,_,kind) ->
       List.iter f_btype ps;
       f_btype rt;
-      f_breqs breqs
-  | BBDCL_callback (_,_,ps_cf,ps_c,_,rt,breqs,_) ->
-      List.iter f_btype ps_cf;
-      List.iter f_btype ps_c;
-      f_btype rt;
-      f_breqs breqs
+      f_breqs breqs;
+      begin match kind with
+      | `Callback (ps_c,_) -> List.iter f_btype ps_c
+      | _ -> ()
+      end
   | BBDCL_insert (_,_,_,breqs) ->
       f_breqs breqs
   | _ ->
@@ -409,25 +401,23 @@ let rec print f = function
         Flx_btype.print t
         print_code_spec code
         print_breqs reqs
-  | BBDCL_external_fun (props,bvs,ps,rt,code,reqs,prec) ->
+  | BBDCL_external_fun (props,bvs,ps,rt,reqs,prec,kind) ->
+      let print_kind f = function
+        | `Code code ->
+            print_variant1 f "`Code" print_code_spec code
+        | `Callback (ps_c,k) ->
+            print_variant2 f "`Callback"
+              (Flx_list.print Flx_btype.print) ps_c
+              pp_print_int k
+      in
       print_variant7 f "BBDCL_external_fun"
         print_properties props
         print_bvs bvs
         (Flx_list.print Flx_btype.print) ps
         Flx_btype.print rt
-        print_code_spec code
         print_breqs reqs
         print_string prec
-  | BBDCL_callback (props,bvs,ps_cf,ps_c,k,rt,reqs,prec) ->
-      print_variant8 f "BBDCL_callback"
-        print_properties props
-        print_bvs bvs
-        (Flx_list.print Flx_btype.print) ps_cf
-        (Flx_list.print Flx_btype.print) ps_c
-        pp_print_int k
-        Flx_btype.print rt
-        print_breqs reqs
-        print_string prec
+        print_kind kind
   | BBDCL_insert (bvs,code,ikind,reqs) ->
       let ikind =
         match ikind with

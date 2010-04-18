@@ -52,7 +52,11 @@ let bbdcl bsym = bsym.bbdcl
 (** Return if the bound symbol is an identity function. *)
 let is_identity bsym =
   match bsym.bbdcl with
-  | Flx_bbdcl.BBDCL_external_fun (_,_,_,_,Flx_ast.CS_identity,_,_) -> true
+  | Flx_bbdcl.BBDCL_external_fun (_,_,_,_,_,_,kind) ->
+      begin match kind with
+      | `Code Flx_ast.CS_identity -> true
+      | _ -> false
+      end
   | _ -> false
 
 (** Return if the bound symbol is a variable. *)

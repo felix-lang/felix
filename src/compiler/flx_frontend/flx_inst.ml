@@ -98,7 +98,6 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
 
     (* function type not needed for direct call *)
     | BBDCL_external_fun _
-    | BBDCL_callback _
     | BBDCL_fun _
     | BBDCL_nonconst_ctor _
       ->
@@ -386,45 +385,39 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs
 
-
-  | BBDCL_external_fun (props,vs,argtypes,ret,_,reqs,_) ->
-    assert (length vs = length ts);
-    let vars = map2 (fun (s,i) t -> i,t) vs ts in
-    let hvarmap = hashtable_of_list vars in
-    let vs t = varmap_subst hvarmap t in
-    do_reqs vs reqs;
-    process_function
-      syms
-      bsym_table
-      hvarmap
-      ref_insts1
-      i
-      (Flx_bsym.sr bsym)
-      argtypes
-      ret
-      []
-      ts
-
-  | BBDCL_callback (props,vs,argtypes_cf,argtypes_c,k,ret,reqs,_) ->
-    (*
-    print_endline ("Handling requirements of callback " ^ id);
-    *)
+  | BBDCL_external_fun (_,vs,argtypes,ret,reqs,_,kind) ->
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs;
 
-    let ret = varmap_subst hvarmap ret in
-    rtr ret;
+    begin match kind with
+    | `Callback (argtypes_c,_) ->
+        let ret = varmap_subst hvarmap ret in
+        rtr ret;
 
-    (* prolly not necessary .. *)
-    let tss = map (varmap_subst hvarmap) argtypes_cf in
-    iter rtr tss;
+        (* prolly not necessary .. *)
+        let tss = map (varmap_subst hvarmap) argtypes in
+        List.iter rtr tss;
 
-    (* just to register 'address' .. lol *)
-    let tss = map (varmap_subst hvarmap) argtypes_c in
-    iter rtr tss
+        (* just to register 'address' .. lol *)
+        let tss = map (varmap_subst hvarmap) argtypes_c in
+        List.iter rtr tss
+
+    | _ ->
+        process_function
+          syms
+          bsym_table
+          hvarmap
+          ref_insts1
+          i
+          (Flx_bsym.sr bsym)
+          argtypes
+          ret
+          []
+          ts
+    end
 
   | BBDCL_external_type (vs,_,_,reqs) ->
     assert (length vs = length ts);

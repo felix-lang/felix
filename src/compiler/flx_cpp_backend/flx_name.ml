@@ -89,7 +89,7 @@ let cpp_name bsym_table index =
   (match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (_,_,_,BTYP_void,_) -> "_p"
   | BBDCL_fun (_,_,_,_,_) -> "_f"
-  | BBDCL_callback _ -> "_cf"
+  | BBDCL_external_fun (_,_,_,_,_,_,`Callback _) -> "_cf"
   | BBDCL_val (_,_,(`Val | `Var | `Ref)) -> "_v"
   | BBDCL_val (_,_,`Tmp) -> "_tmp"
   | _ ->

@@ -1263,12 +1263,13 @@ and codegen_symbol state bsym_table closure index bsym =
       print_endline "BBDCL_external_const";
       assert false
 
-  | Flx_bbdcl.BBDCL_external_fun (props, vs, ps, ret_type, code, reqs, prec) ->
-      codegen_fun state index props vs ps ret_type code reqs prec
-
-  | Flx_bbdcl.BBDCL_callback (props, vs, ps_cf, ps_c, k, rt, reqs, prec) ->
-      print_endline "BBDCL_callback";
-      assert false
+  | Flx_bbdcl.BBDCL_external_fun (props, vs, ps, ret_type, reqs, prec, kind) ->
+      begin match kind with
+      | `Code code ->
+          codegen_fun state index props vs ps ret_type code reqs prec
+      | `Callback _ ->
+          assert false
+      end
 
   | Flx_bbdcl.BBDCL_insert (vs, s, ikind, reqs) ->
       print_endline "BBDCL_insert";
