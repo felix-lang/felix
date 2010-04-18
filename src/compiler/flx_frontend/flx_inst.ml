@@ -374,7 +374,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     do_reqs vs reqs
 
   (* shortcut -- header and body can only require other header and body *)
-  | BBDCL_insert (vs,s,ikind,reqs)
+  | BBDCL_external_code (vs,s,ikind,reqs)
     ->
     (*
     print_endline ("Handling requirements of header/body " ^ s);

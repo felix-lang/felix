@@ -739,7 +739,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name);
     *)
     let reqs = bind_reqs reqs in
-    add_bsym true_parent (bbdcl_insert (bvs, ct, ikind, reqs))
+    add_bsym true_parent (bbdcl_external_code (bvs, ct, ikind, reqs))
   end
   (*
   ;

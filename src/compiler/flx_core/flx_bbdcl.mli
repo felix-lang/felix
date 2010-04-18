@@ -36,7 +36,8 @@ type t = private
   | BBDCL_external_fun of
                         property_t list * bvs_t * Flx_btype.t list *
                         Flx_btype.t * breqs_t * prec_t * external_fun_kind_t
-  | BBDCL_insert of     bvs_t * code_spec_t * ikind_t * breqs_t
+  | BBDCL_external_code of
+                        bvs_t * code_spec_t * ikind_t * breqs_t
 
   | BBDCL_union of      bvs_t * (id_t * int * Flx_btype.t) list
   | BBDCL_struct of     bvs_t * (id_t * Flx_btype.t) list
@@ -70,7 +71,7 @@ val bbdcl_external_fun :
   property_t list * bvs_t * Flx_btype.t list * Flx_btype.t * breqs_t * prec_t *
     external_fun_kind_t ->
   t
-val bbdcl_insert : bvs_t * code_spec_t * ikind_t * breqs_t -> t
+val bbdcl_external_code : bvs_t * code_spec_t * ikind_t * breqs_t -> t
 val bbdcl_union : bvs_t * (id_t * int * Flx_btype.t) list -> t
 val bbdcl_struct : bvs_t * (id_t * Flx_btype.t) list -> t
 val bbdcl_cstruct : bvs_t * (id_t * Flx_btype.t) list -> t

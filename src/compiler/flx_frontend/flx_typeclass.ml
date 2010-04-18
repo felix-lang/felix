@@ -231,8 +231,7 @@ let check_instance
       | BBDCL_external_const (props,bvs,ret,_,_) when mem `Virtual props ->
         check_binding false tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ret
 
-
-      | BBDCL_insert _ -> ()
+      | BBDCL_external_code _ -> ()
       | BBDCL_axiom -> ()
       | BBDCL_lemma -> ()
       | BBDCL_reduce -> ()

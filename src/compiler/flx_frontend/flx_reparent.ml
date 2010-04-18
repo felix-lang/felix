@@ -344,10 +344,10 @@ let reparent1
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
 
-  | BBDCL_insert (vs,ct,ik,breqs) ->
+  | BBDCL_external_code (vs,ct,ik,breqs) ->
     let breqs = rreqs breqs in
     let vs = splice vs in
-    update_bsym (bbdcl_insert (vs,ct,ik,breqs));
+    update_bsym (bbdcl_external_code (vs,ct,ik,breqs));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls

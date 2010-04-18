@@ -101,8 +101,8 @@ let strabs_symbol state bsym_table index bsym =
       in
       h (bbdcl_external_fun (props, bvs, fts ts, ft t, breqs, prec, kind))
 
-  | BBDCL_insert (bvs, c, ikind, breqs) ->
-      h (bbdcl_insert (bvs, c, ikind, breqs))
+  | BBDCL_external_code (bvs, c, ikind, breqs) ->
+      h (bbdcl_external_code (bvs, c, ikind, breqs))
 
   | BBDCL_union (bvs, cts) ->
       let cts = map (fun (s,j,t) -> s,j,ft t) cts in

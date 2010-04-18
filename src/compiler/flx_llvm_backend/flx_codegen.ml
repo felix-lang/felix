@@ -1271,8 +1271,8 @@ and codegen_symbol state bsym_table closure index bsym =
           assert false
       end
 
-  | Flx_bbdcl.BBDCL_insert (vs, s, ikind, reqs) ->
-      print_endline "BBDCL_insert";
+  | Flx_bbdcl.BBDCL_external_code (vs, s, ikind, reqs) ->
+      print_endline "BBDCL_external_code";
       (* FIXME: ignore for now.
       assert false
       *)

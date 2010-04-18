@@ -411,7 +411,7 @@ let codegen_bsyms state bsym_table root_proc =
           failwith ("[package] can't find index " ^ string_of_bid i)
       in
       match Flx_bsym.bbdcl bsym with
-      | BBDCL_insert (_,s,`Package,_) ->
+      | BBDCL_external_code (_,s,`Package,_) ->
         begin match s with
         | CS_identity | CS_str "" | CS_str_template "" -> ()
         | _ ->
@@ -476,7 +476,7 @@ let codegen_bsyms state bsym_table root_proc =
           failwith ("[user header] can't find index " ^ string_of_bid i)
       in
       match Flx_bsym.bbdcl bsym with
-      | BBDCL_insert (_,s,`Header,_) ->
+      | BBDCL_external_code (_,s,`Header,_) ->
         begin match s with
         | CS_identity | CS_str "" | CS_str_template "" -> ()
         | _ ->
@@ -593,7 +593,7 @@ let codegen_bsyms state bsym_table root_proc =
           failwith ("[user body] can't find index " ^ string_of_bid i)
       in
       match Flx_bsym.bbdcl bsym with
-      | BBDCL_insert (_,s,`Body,_) ->
+      | BBDCL_external_code (_,s,`Body,_) ->
         begin match s with
         | CS_identity | CS_str "" | CS_str_template "" -> ()
         | _ ->

@@ -68,7 +68,7 @@ let rec is_pure syms bsym_table i =
   | BBDCL_module
   | BBDCL_val _
   | BBDCL_nonconst_ctor _
-  | BBDCL_insert _
+  | BBDCL_external_code _
   | BBDCL_cstruct _
   | BBDCL_struct _
   | BBDCL_union _

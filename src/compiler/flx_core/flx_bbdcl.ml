@@ -37,7 +37,8 @@ type t =
   | BBDCL_external_fun of
                         property_t list * bvs_t * Flx_btype.t list *
                         Flx_btype.t * breqs_t * prec_t * external_fun_kind_t
-  | BBDCL_insert of     bvs_t * code_spec_t * ikind_t * breqs_t
+  | BBDCL_external_code of
+                        bvs_t * code_spec_t * ikind_t * breqs_t
 
   | BBDCL_union of      bvs_t * (id_t * int * Flx_btype.t) list
   | BBDCL_struct of     bvs_t * (id_t * Flx_btype.t) list
@@ -80,8 +81,8 @@ let bbdcl_external_const (prop, bvs, t, code, breqs) =
 let bbdcl_external_fun (prop, bvs, ps, rt, breqs, prec, kind) =
   BBDCL_external_fun (prop, bvs, ps, rt, breqs, prec, kind)
 
-let bbdcl_insert (bvs, code, ikind, breqs) =
-  BBDCL_insert (bvs, code, ikind, breqs)
+let bbdcl_external_code (bvs, code, ikind, breqs) =
+  BBDCL_external_code (bvs, code, ikind, breqs)
 
 let bbdcl_union (bvs, cs) =
   BBDCL_union (bvs, cs)
@@ -134,7 +135,7 @@ let get_bvs = function
   | BBDCL_external_type (bvs, _, _, _) -> bvs
   | BBDCL_external_const (_, bvs, _, _, _) -> bvs
   | BBDCL_external_fun (_, bvs, _, _, _, _, _) -> bvs
-  | BBDCL_insert (bvs, _, _, _) -> bvs
+  | BBDCL_external_code (bvs, _, _, _) -> bvs
   | BBDCL_union (bvs, _) -> bvs
   | BBDCL_struct (bvs, _) -> bvs
   | BBDCL_cstruct (bvs, _) -> bvs
@@ -206,7 +207,7 @@ let iter
       | _ -> ()
       end;
       f_breqs breqs
-  | BBDCL_insert (_,_,_,breqs) ->
+  | BBDCL_external_code (_,_,_,breqs) ->
       f_breqs breqs
   | BBDCL_union (_,cs) ->
       List.iter (fun (_,_,t) -> f_btype t) cs
@@ -276,8 +277,8 @@ let map
         | `Callback (ps_c,k) -> `Callback (List.map f_btype ps_c,k)
         | _ -> kind
         end)
-  | BBDCL_insert (bvs,code,ikind,breqs) ->
-      BBDCL_insert (bvs,code,ikind,f_breqs breqs)
+  | BBDCL_external_code (bvs,code,ikind,breqs) ->
+      BBDCL_external_code (bvs,code,ikind,f_breqs breqs)
   | BBDCL_union (bvs,cs) ->
       BBDCL_union (bvs,List.map (fun (n,i,t) -> n,i,f_btype t) cs)
   | BBDCL_struct (bvs,cs) ->
@@ -345,7 +346,7 @@ let iter_uses f bbdcl =
       | `Callback (ps_c,_) -> List.iter f_btype ps_c
       | _ -> ()
       end
-  | BBDCL_insert (_,_,_,breqs) ->
+  | BBDCL_external_code (_,_,_,breqs) ->
       f_breqs breqs
   | _ ->
       iter ~f_bid:f ~f_btype ~f_bexpr ~f_bexe bbdcl
@@ -418,14 +419,14 @@ let rec print f = function
         print_breqs reqs
         print_string prec
         print_kind kind
-  | BBDCL_insert (bvs,code,ikind,reqs) ->
+  | BBDCL_external_code (bvs,code,ikind,reqs) ->
       let ikind =
         match ikind with
         | `Header -> "header"
         | `Body -> "body"
         | `Package -> "package"
       in
-      print_variant4 f "BBDCL_insert"
+      print_variant4 f "BBDCL_external_code"
         print_bvs bvs
         print_code_spec code
         pp_print_string ikind

@@ -115,10 +115,10 @@ let remap_bbdcl offset bbdcl =
       in
       bbdcl_external_fun (props, vs, ps, rt, reqs, prec, kind)
 
-  | BBDCL_insert (vs, code, ikind, reqs) ->
+  | BBDCL_external_code (vs, code, ikind, reqs) ->
       let vs = remap_bvs vs in
       let reqs = remap_breqs reqs in
-      bbdcl_insert (vs, code, ikind, reqs)
+      bbdcl_external_code (vs, code, ikind, reqs)
 
   | BBDCL_union (vs, cs) ->
       let vs = remap_bvs vs in

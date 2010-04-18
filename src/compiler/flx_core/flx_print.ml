@@ -2326,7 +2326,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     string_of_breqs bsym_table reqs ^
     ";"
 
-  | BBDCL_insert (vs,s,ikind,reqs) ->
+  | BBDCL_external_code (vs,s,ikind,reqs) ->
      (match ikind with
      | `Header -> "header "
      | `Body -> "body "
