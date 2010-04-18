@@ -193,7 +193,7 @@ let rec cpp_type_classname syms bsym_table t =
     let cal_prefix = function
       | BBDCL_struct _  -> "_s"
       | BBDCL_union _   -> "_u"
-      | BBDCL_abs _  -> "_a"
+      | BBDCL_external_type _  -> "_a"
       | BBDCL_newtype _ -> "_abstr_"
       | _ -> "_unk_"
     in
@@ -201,18 +201,18 @@ let rec cpp_type_classname syms bsym_table t =
       let bsym = Flx_bsym_table.find bsym_table i in
       match Flx_bsym.bbdcl bsym with
       | BBDCL_cstruct _ -> Flx_bsym.id bsym
-      | BBDCL_abs (_,_,CS_str "char",_) -> "char" (* hack .. *)
-      | BBDCL_abs (_,_,CS_str "int",_) -> "int" (* hack .. *)
-      | BBDCL_abs (_,_,CS_str "short",_) -> "short" (* hack .. *)
-      | BBDCL_abs (_,_,CS_str "long",_) -> "long" (* hack .. *)
-      | BBDCL_abs (_,_,CS_str "float",_) -> "float" (* hack .. *)
-      | BBDCL_abs (_,_,CS_str "double",_) -> "double" (* hack .. *)
-      | BBDCL_abs (_,_,CS_str_template "char",_) -> "char" (* hack .. *)
-      | BBDCL_abs (_,_,CS_str_template "int",_) -> "int" (* hack .. *)
-      | BBDCL_abs (_,_,CS_str_template "short",_) -> "short" (* hack .. *)
-      | BBDCL_abs (_,_,CS_str_template "long",_) -> "long" (* hack .. *)
-      | BBDCL_abs (_,_,CS_str_template "float",_) -> "float" (* hack .. *)
-      | BBDCL_abs (_,_,CS_str_template "double",_) -> "double" (* hack .. *)
+      | BBDCL_external_type (_,_,CS_str "char",_) -> "char" (* hack .. *)
+      | BBDCL_external_type (_,_,CS_str "int",_) -> "int" (* hack .. *)
+      | BBDCL_external_type (_,_,CS_str "short",_) -> "short" (* hack .. *)
+      | BBDCL_external_type (_,_,CS_str "long",_) -> "long" (* hack .. *)
+      | BBDCL_external_type (_,_,CS_str "float",_) -> "float" (* hack .. *)
+      | BBDCL_external_type (_,_,CS_str "double",_) -> "double" (* hack .. *)
+      | BBDCL_external_type (_,_,CS_str_template "char",_) -> "char" (* hack .. *)
+      | BBDCL_external_type (_,_,CS_str_template "int",_) -> "int" (* hack .. *)
+      | BBDCL_external_type (_,_,CS_str_template "short",_) -> "short" (* hack .. *)
+      | BBDCL_external_type (_,_,CS_str_template "long",_) -> "long" (* hack .. *)
+      | BBDCL_external_type (_,_,CS_str_template "float",_) -> "float" (* hack .. *)
+      | BBDCL_external_type (_,_,CS_str_template "double",_) -> "double" (* hack .. *)
       | bbdcl ->
           let prefix = cal_prefix bbdcl in
           prefix ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)

@@ -73,7 +73,7 @@ let rec is_pure syms bsym_table i =
   | BBDCL_cstruct _
   | BBDCL_struct _
   | BBDCL_union _
-  | BBDCL_abs _
+  | BBDCL_external_type _
   | BBDCL_newtype _
   | BBDCL_external_const _
   | BBDCL_typeclass _
@@ -241,7 +241,7 @@ let type_has_fn cache syms bsym_table children t =
       | BTYP_inst (i,ts) ->
         begin match Flx_bsym_table.find_bbdcl bsym_table i with
         | BBDCL_newtype _ -> () (* FIXME *)
-        | BBDCL_abs _ -> ()
+        | BBDCL_external_type _ -> ()
         | BBDCL_union (vs,cs)->
           check_components vs ts (map (fun (_,_,t)->t) cs)
 
@@ -292,7 +292,7 @@ let type_has_ptr cache syms bsym_table children t =
       | BTYP_inst (i,ts) ->
         begin match Flx_bsym_table.find_bbdcl bsym_table i with
         | BBDCL_newtype _ -> () (* FIXME *)
-        | BBDCL_abs _ -> ()
+        | BBDCL_external_type _ -> ()
         | BBDCL_union (vs,cs)->
           check_components vs ts (map (fun (_,_,t)->t) cs)
 

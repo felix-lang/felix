@@ -426,7 +426,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     let tss = map (varmap_subst hvarmap) argtypes_c in
     iter rtr tss
 
-  | BBDCL_abs (vs,_,_,reqs) ->
+  | BBDCL_external_type (vs,_,_,reqs) ->
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in

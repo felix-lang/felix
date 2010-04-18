@@ -117,7 +117,7 @@ let rec get_offsets' syms bsym_table typ : string list =
       ;
       !lst
 
-    | BBDCL_abs (vs,type_quals,_,_)
+    | BBDCL_external_type (_,type_quals,_,_)
        when mem `GC_pointer type_quals -> ["0"]
 
     | _ -> []
@@ -411,7 +411,7 @@ let gen_offset_tables syms bsym_table module_name =
             string_of_bid i)
       in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_abs (vs,bquals,_,_) ->
+      | BBDCL_external_type (vs,bquals,_,_) ->
         (*
         print_endline ("abstract type "^id^".. quals:");
         print_endline (string_of_bquals sym_table bquals);
@@ -502,7 +502,7 @@ let gen_offset_tables syms bsym_table module_name =
         match t with
         | BTYP_inst (k,ts) ->
           begin match Flx_bsym_table.find_bbdcl bsym_table k with
-          | BBDCL_abs (_,quals,_,_) -> mem `Pod quals
+          | BBDCL_external_type (_,quals,_,_) -> mem `Pod quals
           | _ -> false
           end
         | _ -> false
@@ -558,7 +558,7 @@ let gen_offset_tables syms bsym_table module_name =
             string_of_bid i)
       in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_abs (_,quals,_,_) ->
+      | BBDCL_external_type (_,quals,_,_) ->
         let complete = not (mem `Incomplete quals) in
         let pod = mem `Pod quals in
         if complete then

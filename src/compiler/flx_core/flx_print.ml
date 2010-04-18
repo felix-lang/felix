@@ -2296,7 +2296,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     "type " ^ name ^  string_of_bvs vs ^
     " = new " ^ sobt t ^ ";"
 
-  | BBDCL_abs (vs,quals,code,reqs) ->
+  | BBDCL_external_type (vs,quals,code,reqs) ->
     (match quals with [] ->"" | _ -> string_of_bquals bsym_table quals ^ " ") ^
     "type " ^ name ^  string_of_bvs vs ^
     " = " ^ string_of_code_spec code ^ ";"

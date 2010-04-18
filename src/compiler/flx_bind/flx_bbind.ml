@@ -717,12 +717,9 @@ let rec bbind_symbol state bsym_table symbol_index sym =
   | SYMDEF_inherit_fun _ -> ()
 
   | SYMDEF_abs (quals,ct,reqs)->
-    (*
-    print_endline ("//Binding abstract type " ^ si i ^ " --> " ^ name);
-    *)
     let reqs = bind_reqs reqs in
     let bquals = bind_quals quals in
-    add_bsym None (bbdcl_abs (bvs, bquals, ct, reqs))
+    add_bsym None (bbdcl_external_type (bvs, bquals, ct, reqs))
 
   | SYMDEF_newtype t ->
     let t = bt t in

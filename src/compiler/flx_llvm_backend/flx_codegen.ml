@@ -1256,7 +1256,7 @@ and codegen_symbol state bsym_table closure index bsym =
       print_endline "BBDCL_newtype";
       assert false
 
-  | Flx_bbdcl.BBDCL_abs (vs, quals, code, reqs) ->
+  | Flx_bbdcl.BBDCL_external_type (vs, quals, code, reqs) ->
       codegen_abs state index vs quals code reqs
 
   | Flx_bbdcl.BBDCL_external_const (props, vs, ty, code, reqs) ->

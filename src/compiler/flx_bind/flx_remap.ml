@@ -86,7 +86,7 @@ let remap_bbdcl offset bbdcl =
   | BBDCL_newtype (vs, ty) ->
       bbdcl_newtype (remap_bvs vs, remap_btype ty)
 
-  | BBDCL_abs (vs, quals, code, reqs) ->
+  | BBDCL_external_type (vs, quals, code, reqs) ->
       let vs = remap_bvs vs in
       let quals =
         List.map begin function
@@ -95,7 +95,7 @@ let remap_bbdcl offset bbdcl =
         end quals
       in
       let reqs = remap_breqs reqs in
-      bbdcl_abs (vs, quals, code, reqs)
+      bbdcl_external_type (vs, quals, code, reqs)
 
   | BBDCL_external_const (props, vs, ty, code, reqs) ->
       let vs = remap_bvs vs in

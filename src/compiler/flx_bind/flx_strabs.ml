@@ -85,8 +85,8 @@ let strabs_symbol state bsym_table index bsym =
     (* Can't downgrade this newtype yet. *)
     ()
 
-  | BBDCL_abs (bvs, btqs, c, breqs) ->
-    h (bbdcl_abs (bvs, btqs, c, breqs))
+  | BBDCL_external_type (bvs, btqs, c, breqs) ->
+    h (bbdcl_external_type (bvs, btqs, c, breqs))
 
   | BBDCL_external_const (props, bvs, t, c, breqs) ->
     h (bbdcl_external_const (props,  bvs, ft t, c, breqs))

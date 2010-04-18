@@ -171,7 +171,7 @@ let rec register_type_r ui syms bsym_table exclude sr t =
       rnr (BTYP_function (argt,t))         (* constructor as function *)
       *)
 
-    | BBDCL_abs _ -> ui i ts; rnr t  (* instantiate the type too *)
+    | BBDCL_external_type _ -> ui i ts; rnr t  (* instantiate the type too *)
 
     | _ ->
       clierr sr

@@ -21,7 +21,8 @@ type t = private
 
   (* binding structures [prolog] *)
   | BBDCL_newtype of    bvs_t * Flx_btype.t
-  | BBDCL_abs of        bvs_t * btype_qual_t list * code_spec_t * breqs_t
+  | BBDCL_external_type of
+                        bvs_t * btype_qual_t list * code_spec_t * breqs_t
   | BBDCL_external_const of
                         property_t list * bvs_t * Flx_btype.t * code_spec_t *
                         breqs_t
@@ -55,7 +56,7 @@ val bbdcl_fun :
   t
 val bbdcl_val : bvs_t * Flx_btype.t * value_kind_t -> t
 val bbdcl_newtype : bvs_t * Flx_btype.t -> t
-val bbdcl_abs : bvs_t * btype_qual_t list * code_spec_t * breqs_t -> t
+val bbdcl_external_type : bvs_t * btype_qual_t list * code_spec_t * breqs_t -> t
 val bbdcl_external_const :
   property_t list * bvs_t * Flx_btype.t * code_spec_t * breqs_t ->
   t

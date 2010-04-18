@@ -205,7 +205,7 @@ let gen_type_name syms bsym_table (index,typ) =
       with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_bid i)
     in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_abs (vs,quals,ct,_) ->
+    | BBDCL_external_type (vs,quals,ct,_) ->
       let complete = not (mem `Incomplete quals) in
       let descr =
         "\n//"^(if complete then "" else "INCOMPLETE ")^
@@ -431,9 +431,8 @@ let gen_type syms bsym_table (index,typ) =
       descr ^
       "typedef " ^ instance ^ " " ^ instance_name ^ ";\n"
 
-    | BBDCL_abs (vs,quals,ct,_) -> ""
-
-    | BBDCL_cstruct (vs,cts) -> ""
+    | BBDCL_external_type _ -> ""
+    | BBDCL_cstruct _ -> ""
 
     | BBDCL_struct (vs,cts) ->
       let cts = map (fun (name,typ) -> name, tsubst vs ts typ) cts in

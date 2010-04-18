@@ -347,7 +347,7 @@ let emit_whycode filename syms bsym_table root =
   output_string f "(****** ABSTRACT TYPES *******)\n";
   Flx_bsym_table.iter begin fun index bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_abs (bvs,qual,ct,breqs) ->
+    | BBDCL_external_type (bvs,qual,ct,breqs) ->
         emit_type syms bsym_table f index (Flx_bsym.id bsym) (Flx_bsym.sr bsym) bvs
     | _ -> ()
   end bsym_table;
