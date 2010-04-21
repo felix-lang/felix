@@ -89,33 +89,25 @@ and metatype' sym_table bsym_table sr term =
 
   | BTYP_type i -> btyp_type (i+1)
   | BTYP_inst (index,ts) ->
-    let { Flx_sym.id=id; symdef=entry } =
-      try Flx_sym_table.find sym_table index with Not_found ->
-        failwith ("[metatype'] can't find type instance index " ^
-          string_of_bid index)
-    in
-    (*
-    print_endline ("Yup .. instance id=" ^ id);
-    *)
+      let sym =
+        try Flx_sym_table.find sym_table index with Not_found ->
+          failwith ("[metatype'] can't find type instance index " ^
+            string_of_bid index)
+      in
 
-    (* this is hacked: we should really bind the types and take
-      the metatype of them but we don't have access to the
-      bind type routine due to module factoring .. we could pass
-      in the bind-type routine as an argument .. yuck ..
-    *)
-    begin match entry with
-    | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
-      btyp_function (btyp_type 0,btyp_type 0)
-
-    | SYMDEF_const_ctor (_,t,_,_) ->
-      btyp_type 0
-
-    | SYMDEF_abs _ -> btyp_type 0
-
-    | _ ->
-        clierr sr ("Unexpected argument to metatype: " ^
-          sbt bsym_table term)
-    end
+      (* this is hacked: we should really bind the types and take the metatype
+       * of them but we don't have access to the bind type routine due to module
+       * factoring. we could pass in the bind-type routine as an argument.
+       * yuck.  *)
+      begin match sym.Flx_sym.symdef with
+      | SYMDEF_nonconst_ctor (_,ut,_,_,argt) ->
+          btyp_function (btyp_type 0,btyp_type 0)
+      | SYMDEF_const_ctor (_,t,_,_) -> btyp_type 0
+      | SYMDEF_abs _ -> btyp_type 0
+      | _ ->
+          clierr sr ("Unexpected argument to metatype: " ^
+            sbt bsym_table term)
+      end
 
   | _ ->
     print_endline ("Questionable meta typing of term: " ^

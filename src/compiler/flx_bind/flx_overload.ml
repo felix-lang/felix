@@ -1096,89 +1096,77 @@ let overload
 
   *)
 
-  let candidates = List.fold_left
-  (fun oc r ->
-     match r with Unique (j,c,_,_,_) ->
-     (*
-     print_endline ("Considering candidate sig " ^ sbt bsym_table c);
-     *)
-     let rec aux lhs rhs =
-       match rhs with
-       | [] ->
-         (*
-         print_endline "return elements plus candidate";
-         *)
-         r::lhs (* return all non-greater elements plus candidate *)
-       | (Unique(i,typ,rtyp,mgu,ts) as x)::t
-       ->
-         (*
-         print_endline (" .. comparing with " ^ sbt bsym_table typ);
-         *)
-         begin match compare_sigs syms.counter typ c with
-         | `Less ->
-           (*
-           print_endline "Candidate is more general, discard it, retain whole list";
-           *)
-           lhs @ rhs (* keep whole list, discard c *)
-         | `Equal ->
-           (* same function .. *)
-           if i = j then aux lhs t else
-           let { Flx_sym.sr=sr } =
-             try Flx_sym_table.find sym_table i with Not_found ->
-               failwith "ovrload BUGGED"
-           in
-           let { Flx_sym.sr=sr2 } =
-             try Flx_sym_table.find sym_table j with Not_found ->
-               failwith "overload Bugged"
-           in
-           clierrn [call_sr; sr2; sr]
-           (
-             "[resolve_overload] Ambiguous call: Not expecting equal signatures" ^
-             "\n(1) fun " ^ string_of_bid i ^ ":" ^ sbt bsym_table typ ^
-             "\n(2) fun " ^ string_of_bid j ^ ":" ^ sbt bsym_table c
-           )
+  let candidates =
+    List.fold_left begin fun oc r ->
+      match r with
+      | Unique (j,c,_,_,_) ->
+          let rec aux lhs rhs =
+            match rhs with
+            | [] -> 
+                (* return all non-greater elements plus candidate *)
+                r::lhs
 
-         | `Greater ->
-           (*
-           print_endline "Candidate is less general: discard this element";
-           *)
-           aux lhs t (* discard greater element *)
-         | `Incomparable ->
-           (*
-           print_endline "Candidate is comparable, retail element";
-           *)
-           aux (x::lhs) t (* keep element *)
-       end
-       | Fail::_ -> assert false
-     in aux [] oc
-     | Fail -> assert false
-  )
-  []
-  candidates in
+            | (Unique (i,typ,rtyp,mgu,ts) as x) :: t ->
+                begin match compare_sigs syms.counter typ c with
+                | `Less ->
+                    (* Candidate is more general, discard it, retain whole
+                     * list *)
+                    lhs @ rhs (* keep whole list, discard c *)
+                | `Equal ->
+                    (* same function .. *)
+                    if i = j then aux lhs t else
+                    let sym1 =
+                      try Flx_sym_table.find sym_table i with Not_found ->
+                        failwith "ovrload BUGGED"
+                    in
+                    let sym2 =
+                      try Flx_sym_table.find sym_table j with Not_found ->
+                        failwith "overload Bugged"
+                    in
+                    clierrn [call_sr; sym2.Flx_sym.sr; sym1.Flx_sym.sr]
+                    (
+                      "[resolve_overload] Ambiguous call: Not expecting " ^
+                      "equal signatures" ^
+                      "\n(1) fun " ^ string_of_bid i ^ ":" ^
+                      sbt bsym_table typ ^
+                      "\n(2) fun " ^ string_of_bid j ^ ":" ^
+                      sbt bsym_table c
+                    )
+
+                | `Greater ->
+                    (* Candidate is less general: discard this element *)
+                    aux lhs t (* discard greater element *)
+                | `Incomparable ->
+                    (* Candidate is comparable, retail element *)
+                    aux (x::lhs) t (* keep element *)
+                end
+            | Fail :: _ -> assert false
+          in
+          aux [] oc
+      | Fail -> assert false
+    end
+    []
+    candidates
+  in
   match candidates with
-  | [Unique (i,t,rtyp,mgu,ts)] ->
-    (*
-    print_endline ("[overload] Got unique result " ^ si i);
-    *)
-    Some (i,t,rtyp,mgu,ts)
-
+  | [Unique (i,t,rtyp,mgu,ts)] -> Some (i,t,rtyp,mgu,ts)
   | [] -> None
   | _ ->
-    clierr call_sr
-    (
-      "Too many candidates match in overloading " ^ name ^
-      " with argument types " ^ catmap "," (sbt bsym_table) sufs ^
-      "\nOf the matching candidates, the following are most specialised ones are incomparable\n" ^
-      catmap "\n" (function
-        | Unique (i,t,_,_,_) ->
-          qualified_name_of_index sym_table i ^ "<" ^ string_of_bid i ^
-          "> sig " ^ sbt bsym_table t
-        | Fail -> assert false
+      clierr call_sr
+      (
+        "Too many candidates match in overloading " ^ name ^
+        " with argument types " ^ catmap "," (sbt bsym_table) sufs ^
+        "\nOf the matching candidates, the following are most specialised " ^
+        "ones are incomparable\n" ^
+        catmap "\n" begin function
+          | Unique (i,t,_,_,_) ->
+              qualified_name_of_index sym_table i ^ "<" ^ string_of_bid i ^
+              "> sig " ^ sbt bsym_table t
+          | Fail -> assert false
+        end candidates ^
+        "\nPerhaps you need to define a function more specialised than all " ^
+        "these?"
       )
-      candidates
-      ^
-      "\nPerhaps you need to define a function more specialised than all these?"
-    )
 
 (* FINAL NOTE: THIS STILL WON'T BE ENOUGH: THE SEARCH ALGORITHM
 NEEDS TO BE MODIFIED TO FIND **ALL** FUNCTIONS .. alternatively,
