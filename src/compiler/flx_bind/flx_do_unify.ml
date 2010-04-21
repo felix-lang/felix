@@ -65,26 +65,22 @@ let do_unify syms sym_table bsym_table a b =
           failwith ("[do_unify] binding for type variable " ^
             Flx_print.string_of_bid i ^ " is inconsistent\n")
       end else begin
-        match
-          begin
-            try Flx_sym_table.find sym_table i with Not_found ->
-              failwith ("BUG, flx_unify can't find symbol " ^
-                Flx_print.string_of_bid i)
-          end
-        with
-        | { Flx_sym.symdef=Flx_types.SYMDEF_function _ } ->
-          (*
-          print_endline ("Adding variable " ^ string_of_int i ^ " type " ^ string_of_btypecode sym_table t);
-          *)
-          Hashtbl.add syms.Flx_mtypes2.varmap i t
+        let sym =
+          try Flx_sym_table.find sym_table i with Not_found ->
+            failwith ("BUG, flx_unify can't find symbol " ^
+              Flx_print.string_of_bid i)
+        in
+        match sym.Flx_sym.symdef with
+        | Flx_types.SYMDEF_function _ ->
+            Hashtbl.add syms.Flx_mtypes2.varmap i t
 
         (* if it's a declared type variable, leave it alone *)
-        | { Flx_sym.symdef=Flx_types.SYMDEF_typevar _ } -> ()
+        | Flx_types.SYMDEF_typevar _ -> ()
 
         | _ ->
-          failwith ("[do_unify] attempt to add non-function return unknown " ^
-            "type variable " ^ Flx_print.string_of_bid i ^ ", type " ^
-            Flx_print.sbt bsym_table t ^ " to hashtble")
+            failwith ("[do_unify] attempt to add non-function return unknown " ^
+              "type variable " ^ Flx_print.string_of_bid i ^ ", type " ^
+              Flx_print.sbt bsym_table t ^ " to hashtble")
       end
     end mgu;
     true

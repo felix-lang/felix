@@ -80,13 +80,12 @@ let full_add_unique syms sym_table sr (vs:ivs_list_t) table key value =
     match entry with
     | NonFunctionEntry (idx)
     | FunctionEntry (idx :: _ ) ->
-       (match Flx_sym_table.find sym_table (Flx_typing.sye idx) with
-       | { Flx_sym.sr=sr2 } ->
-         Flx_exceptions.clierr2 sr sr2
-         ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
-         Flx_print.string_of_bid (Flx_typing.sye idx) ^ ">")
-       )
-     | FunctionEntry [] -> assert false
+        let sym = Flx_sym_table.find sym_table (Flx_typing.sye idx) in
+        Flx_exceptions.clierr2 sr sym.Flx_sym.sr (
+          "[build_tables] Duplicate non-function " ^ key ^ "<" ^
+          Flx_print.string_of_bid (Flx_typing.sye idx) ^ ">")
+
+    | FunctionEntry [] -> assert false
   with Not_found ->
     Hashtbl.add table key (NonFunctionEntry (mkentry syms vs value))
 
@@ -97,37 +96,31 @@ let full_add_typevar syms sym_table sr table key value =
     match entry with
     | NonFunctionEntry (idx)
     | FunctionEntry (idx :: _ ) ->
-       (match Flx_sym_table.find sym_table (Flx_typing.sye idx)  with
-       | { Flx_sym.sr=sr2 } ->
-         Flx_exceptions.clierr2 sr sr2
-         ("[build_tables] Duplicate non-function " ^ key ^ "<" ^
+        let sym = Flx_sym_table.find sym_table (Flx_typing.sye idx) in
+        Flx_exceptions.clierr2 sr sym.Flx_sym.sr (
+         "[build_tables] Duplicate non-function " ^ key ^ "<" ^
          Flx_print.string_of_bid (Flx_typing.sye idx) ^ ">")
-       )
-     | FunctionEntry [] -> assert false
+
+    | FunctionEntry [] -> assert false
   with Not_found ->
-    Hashtbl.add table key
-      (NonFunctionEntry (mkentry syms dfltvs value))
+    Hashtbl.add table key (NonFunctionEntry (mkentry syms dfltvs value))
 
 
 let full_add_function syms sym_table sr (vs:ivs_list_t) table key value =
   try
     match Hashtbl.find table key with
     | NonFunctionEntry entry ->
-      begin
-        match Flx_sym_table.find sym_table (Flx_typing.sye entry) with
-        { Flx_sym.id=id; sr=sr2 } ->
-        Flx_exceptions.clierr2 sr sr2
-        (
+        let sym = Flx_sym_table.find sym_table (Flx_typing.sye entry) in
+        Flx_exceptions.clierr2 sr sym.Flx_sym.sr (
           "[build_tables] Cannot overload " ^
           key ^ "<" ^ Flx_print.string_of_bid value ^ ">" ^
           " with non-function " ^
-          id ^ "<" ^ Flx_print.string_of_bid (Flx_typing.sye entry) ^ ">"
-        )
-      end
+          sym.Flx_sym.id ^ "<" ^
+          Flx_print.string_of_bid (Flx_typing.sye entry) ^ ">")
 
     | FunctionEntry fs ->
-      Hashtbl.remove table key;
-      Hashtbl.add table key (FunctionEntry (mkentry syms vs value :: fs))
+        Hashtbl.remove table key;
+        Hashtbl.add table key (FunctionEntry (mkentry syms vs value :: fs))
   with Not_found ->
     Hashtbl.add table key (FunctionEntry [mkentry syms vs value])
 
@@ -977,11 +970,8 @@ let add_dcl ?parent state dcl =
   let level, pubmap, privmap =
     match parent with
     | Some index ->
-        let symbol = Flx_sym_table.find
-          state.sym_table
-          index
-        in
-        1, symbol.Flx_sym.pubmap, symbol.Flx_sym.privmap
+        let sym = Flx_sym_table.find state.sym_table index in
+        1, sym.Flx_sym.pubmap, sym.Flx_sym.privmap
     | None ->
         0, state.pub_name_map, state.priv_name_map
   in

@@ -284,13 +284,16 @@ let fixup_argtypes be bid pnames base_domain argt rs =
 
 
 let resolve sym_table bsym_table base_sym bt be arg_types =
-  let { Flx_sym.id=id; sr=sr; parent=parent; dirs=dirs; symdef=symdef } =
-    get_data sym_table base_sym
-  in
+  let sym = Flx_sym_table.find sym_table base_sym in
   let pvs, vs, { raw_type_constraint=con } =
     find_split_vs sym_table bsym_table base_sym
   in
-  let base_domain, base_result, pnames = sig_of_symdef symdef sr id base_sym in
+  let base_domain, base_result, pnames = sig_of_symdef
+    sym.Flx_sym.symdef
+    sym.Flx_sym.sr
+    sym.Flx_sym.id
+    base_sym
+  in
 
   let arg_types =
     match arg_types with
@@ -307,11 +310,11 @@ let resolve sym_table bsym_table base_sym bt be arg_types =
   (* bind type in base context, then translate it to view context:
    * thus, base type variables are eliminated and specialisation
    * type variables introduced *)
-  let con = bt sr con in
-  let domain = bt sr base_domain in
-  let base_result = bt sr base_result in
+  let con = bt sym.Flx_sym.sr con in
+  let domain = bt sym.Flx_sym.sr base_domain in
+  let base_result = bt sym.Flx_sym.sr base_result in
 
-  id, sr, vs, pvs, con, domain, base_result, arg_types
+  sym.Flx_sym.id, sym.Flx_sym.sr, vs, pvs, con, domain, base_result, arg_types
 
 
 let rec unravel_ret tin dts =
