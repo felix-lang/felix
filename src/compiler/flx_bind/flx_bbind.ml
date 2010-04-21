@@ -271,13 +271,12 @@ let rec bbind_symbol state bsym_table symbol_index sym =
   let add_bsym parent bbdcl =
     let bsym = Flx_bsym.of_sym sym bbdcl in
     begin match parent with
-    | None ->
-        Flx_bsym_table.add_root bsym_table symbol_index bsym
+    | None -> Flx_bsym_table.add bsym_table symbol_index None bsym
     | Some parent ->
         let parent_sym = Flx_sym_table.find state.sym_table parent in
         bbind_symbol state bsym_table parent parent_sym;
 
-        Flx_bsym_table.add_child bsym_table parent symbol_index bsym
+        Flx_bsym_table.add bsym_table symbol_index (Some parent) bsym
     end
   in
   begin match sym.Flx_sym.symdef with

@@ -172,10 +172,10 @@ let remap offset in_bsym_table out_bsym_table =
     let bsym = Flx_bsym.replace_bbdcl bsym bbdcl in
 
     match parent with
-    | None -> Flx_bsym_table.add_root out_bsym_table bid bsym
+    | None -> Flx_bsym_table.add out_bsym_table bid None bsym
     | Some parent ->
         aux parent (Some bid) (Flx_bsym_table.find in_bsym_table parent);
-        Flx_bsym_table.add_child out_bsym_table parent bid bsym
+        Flx_bsym_table.add out_bsym_table bid (Some parent) bsym
   in
 
   (* And call this function on every bound symbol. *)

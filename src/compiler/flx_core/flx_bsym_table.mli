@@ -10,18 +10,6 @@ val length : t -> int
 (** Adds the bound symbol with the index to the symbol table. *)
 val add : t -> Flx_types.bid_t -> Flx_types.bid_t option -> Flx_bsym.t -> unit
 
-(** Adds a root bound symbol with the index to the symbol table. *)
-val add_root : t -> Flx_types.bid_t -> Flx_bsym.t -> unit
-
-(** Adds the bound symbol as a child to the parent with the index to the symbol
- * table. *)
-val add_child :
-  t ->
-  Flx_types.bid_t ->  (** The parent symbol index. *)
-  Flx_types.bid_t ->  (** The child symbol index. *)
-  Flx_bsym.t ->
-  unit
-
 (** Updates a bound symbol in place while preserving the child-parent
  * relationships. *)
 val update : t -> Flx_types.bid_t -> Flx_bsym.t -> unit

@@ -63,7 +63,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       let k = fresh_bid syms.counter in
       let vid = "_mkp_" ^ string_of_bid k in
       let bsym = Flx_bsym.create ~sr vid (bbdcl_val (vs,ret,`Var)) in
-      Flx_bsym_table.add_child bsym_table this k bsym;
+      Flx_bsym_table.add bsym_table k (Some this) bsym;
 
       (* append a pointer to this variable to the argument *)
       let ts' = map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) vs in

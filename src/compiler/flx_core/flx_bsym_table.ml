@@ -149,12 +149,6 @@ let add bsym_table bid parent bsym =
     users=Flx_types.BidSet.empty;
     bsym=bsym }
 
-(** Adds a root bound symbol with the index to the symbol table. *)
-let add_root bsym_table bid bsym = add bsym_table bid None bsym
-
-(** Adds the bound symbol with the index to the symbol table. *)
-let add_child bsym_table parent bid bsym = add bsym_table bid (Some parent) bsym
-
 (** Updates a bound symbol in place while preserving the child-parent
  * relationships. *)
 let update bsym_table bid bsym =

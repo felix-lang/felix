@@ -28,7 +28,7 @@ let remove_module_parents bsym_table =
             match Flx_bsym_table.find_bbdcl bsym_table parent with
             | Flx_bbdcl.BBDCL_module ->
                 Flx_bsym_table.remove bsym_table bid;
-                Flx_bsym_table.add_root bsym_table bid bsym
+                Flx_bsym_table.add bsym_table bid None bsym
             | _ -> ()
           with Not_found -> ()
         end

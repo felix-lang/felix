@@ -952,7 +952,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
                   | rxs ->
                     let urvid = "_urv" ^ string_of_bid urv in
                     add_use uses caller urv sr;
-                    Flx_bsym_table.add_child bsym_table caller urv
+                    Flx_bsym_table.add bsym_table urv (Some caller)
                       (Flx_bsym.create ~sr urvid (bbdcl_val (caller_vs,t,`Val)));
 
                     let rxs = hic revariable callee xs in
