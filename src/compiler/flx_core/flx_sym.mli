@@ -2,7 +2,6 @@
 type t = {
   id:string;
   sr:Flx_srcref.t;
-  parent:Flx_types.bid_t option;
   vs:Flx_types.ivs_list_t;
   pubmap:Flx_btype.name_map_t;
   privmap:Flx_btype.name_map_t;

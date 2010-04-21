@@ -198,13 +198,19 @@ let rec trclose state bsym_table rs sr fs =
         (* say we're handling this one *)
         exclude := EntrySet.add x !exclude;
 
-        match hfind "lookup" state.sym_table (sye x) with
-        | { Flx_sym.parent=parent; sr=sr2; symdef=SYMDEF_inherit_fun qn } ->
-          let env = build_env state bsym_table parent in
-          begin match fst (lookup_qn_in_env2' state bsym_table env rs qn) with
-          | NonFunctionEntry _ -> clierr2 sr sr2 "Inherit fun doesn't denote function set"
-          | FunctionEntry fs' -> append fs'; trclosem ()
-          end
+        let parent, sym = Flx_sym_table.find_with_parent
+          state.sym_table
+          (sye x)
+        in
+        match sym.Flx_sym.symdef with
+        | SYMDEF_inherit_fun qn ->
+            let env = build_env state bsym_table parent in
+            begin match fst (lookup_qn_in_env2' state bsym_table env rs qn) with
+            | NonFunctionEntry _ ->
+                clierr2 sr sym.Flx_sym.sr
+                  "Inherit fun doesn't denote function set"
+            | FunctionEntry fs' -> append fs'; trclosem ()
+            end
 
         | _ -> outset := EntrySet.add x !outset; trclosem ()
       end
@@ -1304,8 +1310,9 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
         *)
         t
   in
+  let parent = Flx_sym_table.find_parent state.sym_table index in
   match get_data state.sym_table index with
-  | { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; dirs=dirs; symdef=entry } ->
+  | { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
     (*
     if List.length vs <> List.length ts
     then
@@ -1497,10 +1504,10 @@ and inner_type_of_index_with_ts state bsym_table rs sr bid ts =
 and cal_ret_type state bsym_table (rs:recstop) index args =
   let mkenv i = build_env state bsym_table (Some i) in
   let env = mkenv index in
+  let parent = Flx_sym_table.find_parent state.sym_table index in
   match (get_data state.sym_table index) with
   | { Flx_sym.id=id;
       sr=sr;
-      parent=parent;
       vs=vs;
       dirs=dirs;
       symdef=SYMDEF_function ((ps,_),rt,props,exes)
@@ -2013,7 +2020,7 @@ and lookup_qn_with_sig'
   in
   let handle_nonfunction_index index ts =
     begin match get_data state.sym_table index with
-    | { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; dirs=dirs; symdef=entry } ->
+    | { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
       begin match entry with
       | SYMDEF_inherit_fun qn ->
           clierr sr "Chasing functional inherit in lookup_qn_with_sig'";
@@ -2304,7 +2311,7 @@ and lookup_type_qn_with_sig'
   let handle_nonfunction_index index ts =
     print_endline ("Found non function? index " ^ string_of_bid index);
     begin match get_data state.sym_table index with
-    { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; dirs=dirs; symdef=entry } ->
+    { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
       begin match entry with
       | SYMDEF_inherit_fun qn ->
           clierr sr "Chasing functional inherit in lookup_qn_with_sig'";
@@ -2694,7 +2701,7 @@ and lookup_name_in_table_dirs_with_sig
   match result with
   | NonFunctionEntry (index) ->
     begin match get_data state.sym_table (sye index) with
-    { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; symdef=entry }->
+    { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
     (*
     print_endline ("FOUND " ^ id);
     *)
@@ -2842,7 +2849,7 @@ and lookup_name_in_table_dirs_with_sig
         | [NonFunctionEntry i] when
           (
             match get_data state.sym_table (sye i) with
-            { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; symdef=entry }->
+            { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
             (*
             print_endline ("FOUND " ^ id);
             *)
@@ -2923,7 +2930,7 @@ and lookup_type_name_in_table_dirs_with_sig
   match result with
   | NonFunctionEntry (index) ->
     begin match get_data state.sym_table (sye index) with
-    { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; symdef=entry }->
+    { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
     (*
     print_endline ("FOUND " ^ id);
     *)
@@ -3070,7 +3077,7 @@ and lookup_type_name_in_table_dirs_with_sig
         | [NonFunctionEntry i] when
           (
               match get_data state.sym_table (sye i) with
-              { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; symdef=entry }->
+              { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
               (*
               print_endline ("FOUND " ^ id);
               *)
@@ -3217,8 +3224,9 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     let tbe1 =
       match t2 with
       | BTYP_inst (index,ts) ->
+        let parent = Flx_sym_table.find_parent state.sym_table index in
         begin match get_data state.sym_table index with
-        { Flx_sym.id=id; parent=parent;sr=sr;symdef=entry} ->
+        { Flx_sym.id=id; sr=sr; symdef=entry } ->
         match parent with
         | None -> clierr sra "Koenig lookup: No parent for method apply (can't handle global yet)"
         | Some index' ->
@@ -4727,7 +4735,7 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
     List.iter
     (fun {base_sym=i; spec_vs=spec_vs; sub_ts=sub_ts} ->
     match hfind "lookup" state.sym_table i  with
-    { Flx_sym.id=id;sr=sr;parent=parent;vs=vs;symdef=entry} ->
+    { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry } ->
     match entry with
     | SYMDEF_instance qn' ->
       (*
@@ -5022,7 +5030,7 @@ and get_includes state bsym_table rs xs =
       let env = mk_bare_env state bsym_table i in (* should have ts in .. *)
       let qns,sr,vs =
         match hfind "lookup" state.sym_table i with
-        { Flx_sym.id=id; sr=sr; parent=parent; vs=vs; dirs=dirs } ->
+        { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs } ->
         (*
         print_endline (id ^", Raw vs = " ^ catmap "," (fun (n,k,_) -> n ^ "<" ^ si k ^ ">") (fst vs));
         *)
@@ -5086,10 +5094,9 @@ and bind_dir
    let entry = NonFunctionEntry {base_sym=i; spec_vs=[]; sub_ts=[]} in
     Hashtbl.add cheat_table n entry;
     if not (Flx_sym_table.mem state.sym_table i) then
-      Flx_sym_table.add state.sym_table i {
+      Flx_sym_table.add state.sym_table i None {
         Flx_sym.id=n;
         sr=dummy_sr;
-        parent=None;
         vs=dfltvs;
         pubmap=nullmap;
         privmap=nullmap;
@@ -5281,9 +5288,9 @@ and get_pub_tables state bsym_table env rs dirs =
   tables
 
 and mk_bare_env state bsym_table index =
-  let sym = hfind "lookup" state.sym_table index in
+  let parent, sym = Flx_sym_table.find_with_parent state.sym_table index in
   (index, sym.Flx_sym.id, sym.Flx_sym.privmap, [], TYP_tuple []) ::
-  match sym.Flx_sym.parent with
+  match parent with
   | None -> []
   | Some index -> mk_bare_env state bsym_table index
 
@@ -5419,18 +5426,13 @@ and merge_opens state bsym_table env rs (typeclasses,opens,includes,uses) =
   use_map::tables
 
 and build_env'' state bsym_table rs index : env_t =
-  let sym = hfind "lookup" state.sym_table index in
+  let parent, sym = Flx_sym_table.find_with_parent state.sym_table index in
   let skip_merges = List.mem index rs.idx_fixlist in
-  (*
-  if skip_merges then
-    print_endline ("WARNING: RECURSION: Build_env'' " ^ id ^":" ^ si index ^ " parent="^(match parent with None -> "None" | Some i -> si i))
-  ;
-  *)
 
   let rs = { rs with idx_fixlist = index :: rs.idx_fixlist } in
-  let env = inner_build_env state bsym_table rs sym.Flx_sym.parent in
+  let env = inner_build_env state bsym_table rs parent in
 
-  (* build temporary bare innermost environment with a full parent env *)
+  (* Build temporary bare innermost environment with a full parent env. *)
   let typeclasses, constraints =
     let _, { raw_type_constraint=con; raw_typeclass_reqs=rtcr } =
       sym.Flx_sym.vs

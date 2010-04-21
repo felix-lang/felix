@@ -285,10 +285,9 @@ and build_table_for_dcl
       | Some privtab -> privtab
       | None -> Hashtbl.create 0
     in
-    Flx_sym_table.add sym_table index {
+    Flx_sym_table.add sym_table index parent {
       Flx_sym.id = id;
       sr = sr;
-      parent = parent;
       vs = ivs;
       pubmap = pubtab;
       privmap = privtab;

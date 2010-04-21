@@ -5,7 +5,7 @@ type t
 val create : unit -> t
 
 (** Adds the symbol with the bound index to the symbol table. *)
-val add : t -> Flx_types.bid_t -> Flx_sym.t -> unit
+val add : t -> Flx_types.bid_t -> Flx_types.bid_t option -> Flx_sym.t -> unit
 
 (** Returns if the bound index is in the symbol table. *)
 val mem : t -> Flx_types.bid_t -> bool
