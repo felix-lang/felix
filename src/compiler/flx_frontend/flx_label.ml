@@ -48,7 +48,9 @@ let create_label_map bsym_table counter =
   print_endline "Creating label map";
   *)
   let label_map = Hashtbl.create 97 in
-  Flx_bsym_table.iter (update_label_map counter label_map) bsym_table;
+  Flx_bsym_table.iter begin fun bid _ bsym ->
+    update_label_map counter label_map bid bsym
+  end bsym_table;
   label_map
 
 let rec find_label bsym_table label_map caller label =
@@ -111,7 +113,9 @@ let update_label_usage syms bsym_table label_map usage index bsym =
 
 let create_label_usage syms bsym_table label_map =
   let usage = Hashtbl.create 97 in
-  Flx_bsym_table.iter
-    (update_label_usage syms bsym_table label_map usage)
-    bsym_table;
+
+  Flx_bsym_table.iter begin fun bid _ bsym ->
+    update_label_usage syms bsym_table label_map usage bid bsym
+  end bsym_table;
+
   usage

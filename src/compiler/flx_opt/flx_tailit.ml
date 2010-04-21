@@ -318,7 +318,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         | Some parent -> Flx_bsym_table.find_descendants bsym_table parent
         | None ->
           let d = ref BidSet.empty in
-          Flx_bsym_table.iter (fun i _ -> d := BidSet.add i !d) bsym_table;
+          Flx_bsym_table.iter (fun i _ _ -> d := BidSet.add i !d) bsym_table;
           !d
       in
 

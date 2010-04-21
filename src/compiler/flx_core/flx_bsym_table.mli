@@ -78,10 +78,17 @@ val copy : t -> t
 val set_parent : t -> Flx_types.bid_t -> Flx_types.bid_t option -> unit
 
 (** Iterate over all the items in the bound symbol table. *)
-val iter : (Flx_types.bid_t -> Flx_bsym.t -> unit) -> t -> unit
+val iter :
+  (Flx_types.bid_t -> Flx_types.bid_t option -> Flx_bsym.t -> unit) ->
+  t ->
+  unit
 
 (** Fold over all the items in the bound symbol table. *)
-val fold : (Flx_types.bid_t -> Flx_bsym.t -> 'a -> 'a) -> t -> 'a -> 'a
+val fold :
+  (Flx_types.bid_t -> Flx_types.bid_t option -> Flx_bsym.t -> 'a -> 'a) ->
+  t ->
+  'a ->
+  'a
 
 (** Returns whether or not one symbol is a child of another. *)
 val is_child: t -> Flx_types.bid_t -> Flx_types.bid_t -> bool

@@ -614,7 +614,7 @@ let rec enstack_applies syms bsym_table fn_cache ptr_cache x =
   | x -> x
 
 let mark_stackable syms bsym_table fn_cache ptr_cache label_map label_usage =
-  Flx_bsym_table.iter begin fun i bsym ->
+  Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,p,BTYP_void,exes) ->
         if mem `Stackable props or mem `Unstackable props then () else
@@ -700,7 +700,7 @@ let make_stack_calls
     label_map
     label_usage;
 
-  Flx_bsym_table.iter begin fun i bsym ->
+  Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,p,ret,exes) ->
         let exes = enstack_calls

@@ -88,7 +88,7 @@ let check_abstract_exe syms rls exe =
 
 let cal_polyvars syms bsym_table =
   let absvars = Hashtbl.create 97 in
-  Flx_bsym_table.iter begin fun i bsym ->
+  Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
         if mem `Virtual props then () else

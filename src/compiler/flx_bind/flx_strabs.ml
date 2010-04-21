@@ -138,6 +138,6 @@ let strabs state bsym_table =
   (* Copy the bsym_table since we're going to directly modify it. *)
   let bsym_table' = Flx_bsym_table.copy bsym_table in
 
-  Flx_bsym_table.iter begin fun index symbol ->
-    strabs_symbol state bsym_table index symbol
-  end bsym_table'
+  Flx_bsym_table.iter
+    (fun bid _ sym -> strabs_symbol state bsym_table bid sym)
+    bsym_table'

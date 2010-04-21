@@ -1341,17 +1341,15 @@ let heavy_inlining syms bsym_table =
   (* This code is here to attempt to optimise closures (and clones?)
      which aren't handled by the above loop.
   *)
-  Flx_bsym_table.iter
-    (fun i _ ->
-      try heavily_inline_bbdcl syms uses bsym_table [i] i
-      with exn ->  ()
-      (*
-        print_endline ("*** ERROR OPTIMISING [ignored?] " ^ si i);
-        print_endline (Printexc.to_string exn);
-        raise exn
-      *)
-    )
-  bsym_table
+  Flx_bsym_table.iter begin fun bid _ _ ->
+    try heavily_inline_bbdcl syms uses bsym_table [bid] bid
+    with exn -> ()
+    (*
+      print_endline ("*** ERROR OPTIMISING [ignored?] " ^ si i);
+      print_endline (Printexc.to_string exn);
+      raise exn
+    *)
+  end bsym_table
 
 
 (* NOTES: this algorithm ONLY WORKS if inlining is attempted

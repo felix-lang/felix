@@ -217,11 +217,14 @@ let set_parent bsym_table bid parent =
 
 (** Iterate over all the items in the bound symbol table. *)
 let iter f bsym_table =
-  Hashtbl.iter (fun bid elt -> f bid elt.bsym) bsym_table.table
+  Hashtbl.iter (fun bid elt -> f bid elt.parent elt.bsym) bsym_table.table
 
 (** Fold over all the items in the bound symbol table. *)
 let fold f bsym_table init =
-  Hashtbl.fold (fun bid elt init -> f bid elt.bsym init) bsym_table.table init
+  Hashtbl.fold
+    (fun bid elt init -> f bid elt.parent elt.bsym init)
+    bsym_table.table
+    init
 
 (** Returns whether or not one symbol is a child of another. *)
 let is_child bsym_table parent child =
@@ -259,7 +262,7 @@ let is_function bsym_table bid =
 
 (** Update all the bound function and procedure's bound exes. *)
 let update_bexes f bsym_table =
-  iter begin fun bid bsym ->
+  iter begin fun bid _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | Flx_bbdcl.BBDCL_fun (ps, bvs, bpar, rt, bexes) ->
         let bbdcl = Flx_bbdcl.bbdcl_fun (ps, bvs, bpar, rt, f bexes) in
@@ -270,7 +273,7 @@ let update_bexes f bsym_table =
 
 (** Assert that the bound symbol table is well formed. *)
 let validate bsym_table =
-  iter begin fun bid bsym ->
+  iter begin fun bid _ bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
 
     (* Make sure we don't have any invalid bbdcls *)

@@ -126,7 +126,7 @@ let uncurry_exes syms bsym_table uncurry_map vs exes = map (uncurry_exe syms bsy
 let make_uncurry_map syms bsym_table =
   let uncurry_map = Hashtbl.create 97 in
 
-  Flx_bsym_table.iter begin fun i bsym ->
+  Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (_,vs,_,_,[BEXE_fun_return (_,(BEXPR_closure (f,ts),_))])
       when Flx_bsym_table.is_child bsym_table i f && vs_is_ts vs ts ->
@@ -141,7 +141,7 @@ let make_uncurry_map syms bsym_table =
   end bsym_table;
 
   (* count curried calls to these functions *)
-  Flx_bsym_table.iter begin fun i bsym ->
+  Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (_,vs,_,_,exes) ->
         find_uncurry_exes syms bsym_table uncurry_map vs exes
@@ -337,7 +337,7 @@ let synthesize_functions syms bsym_table uncurry_map =
 
 (** replace calls *)
 let replace_calls syms bsym_table uncurry_map =
-  Flx_bsym_table.iter begin fun bid bsym ->
+  Flx_bsym_table.iter begin fun bid _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,ps,ret,exes) ->
         let exes = uncurry_exes syms bsym_table uncurry_map vs exes in

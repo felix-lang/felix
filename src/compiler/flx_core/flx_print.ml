@@ -2478,7 +2478,7 @@ let print_function bsym_table i =
   | _ -> ()
 
 let print_functions bsym_table =
-  Flx_bsym_table.iter begin fun i bsym ->
+  Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (_,bvs,ps,_,exes) ->
         print_function_body
@@ -2492,7 +2492,7 @@ let print_functions bsym_table =
   end bsym_table
 
 let print_symbols bsym_table =
-  Flx_bsym_table.iter begin fun i bsym ->
+  Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (_,bvs,ps,_,exes) ->
         print_function_body
@@ -2584,7 +2584,11 @@ let print_bsym bsym_table bid =
 
 
 let print_bsym_table bsym_table =
-  let bsyms = Flx_bsym_table.fold (fun k v acc -> (k,v) :: acc) bsym_table [] in
+  let bsyms = Flx_bsym_table.fold
+    (fun k _ v acc -> (k,v) :: acc)
+    bsym_table
+    []
+  in
   let bsyms = List.sort (fun (k1,_) (k2,_) -> compare k1 k2) bsyms in
 
   List.iter (fun (bid, _) -> print_bsym bsym_table bid) bsyms

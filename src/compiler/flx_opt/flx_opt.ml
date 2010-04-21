@@ -71,9 +71,9 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
   end;
 
   (* Clean up the inlining symbol properties. *)
-  Flx_bsym_table.iter begin fun i _ ->
+  Flx_bsym_table.iter begin fun i _ _ ->
     Flx_prop.rem_prop bsym_table `Inlining_started i;
-    Flx_prop.rem_prop bsym_table `Inlining_complete i;
+    Flx_prop.rem_prop bsym_table `Inlining_complete i
   end bsym_table;
 
   Flx_intpoly.cal_polyvars syms bsym_table;

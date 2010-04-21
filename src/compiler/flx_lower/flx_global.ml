@@ -245,19 +245,26 @@ let set_globals_for_symbols bsym_table uses bids =
   bids
 
 let set_globals bsym_table =
-  Flx_bsym_table.iter (set_local_globals bsym_table) bsym_table;
-  Flx_bsym_table.iter (set_gc_use        bsym_table) bsym_table;
+  Flx_bsym_table.iter begin fun bid _ bsym ->
+    set_local_globals bsym_table bid bsym
+  end bsym_table;
+
+  Flx_bsym_table.iter begin fun bid _ bsym ->
+    set_gc_use bsym_table bid bsym
+  end bsym_table;
 
   let uses, _ = Flx_call.call_data bsym_table in
 
   (* Iterate through each symbol and mark if the function needs a frame. *)
-  Flx_bsym_table.iter (set_globals_for_symbol bsym_table uses) bsym_table
+  Flx_bsym_table.iter begin fun bid _ bsym ->
+    set_globals_for_symbol bsym_table uses bid bsym
+  end bsym_table
 
 let find_global_vars bsym_table =
   let global_vars = ref BidSet.empty in
-  Flx_bsym_table.iter begin fun i _ ->
-    if Flx_bsym_table.is_global_var bsym_table i
-    then global_vars := BidSet.add i !global_vars
+  Flx_bsym_table.iter begin fun bid _ _ ->
+    if Flx_bsym_table.is_global_var bsym_table bid
+    then global_vars := BidSet.add bid !global_vars
   end bsym_table;
 
   !global_vars

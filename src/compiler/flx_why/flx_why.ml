@@ -345,7 +345,7 @@ let emit_whycode filename syms bsym_table root =
   output_string f "\n";
 
   output_string f "(****** ABSTRACT TYPES *******)\n";
-  Flx_bsym_table.iter begin fun index bsym ->
+  Flx_bsym_table.iter begin fun index _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_external_type (bvs,qual,ct,breqs) ->
         emit_type syms bsym_table f index (Flx_bsym.id bsym) (Flx_bsym.sr bsym) bvs
@@ -353,7 +353,7 @@ let emit_whycode filename syms bsym_table root =
   end bsym_table;
 
   output_string f "(****** UNIONS *******)\n";
-  Flx_bsym_table.iter begin fun index bsym ->
+  Flx_bsym_table.iter begin fun index _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_union (bvs,variants) ->
         emit_type syms bsym_table f index (Flx_bsym.id bsym) (Flx_bsym.sr bsym) bvs
@@ -361,7 +361,7 @@ let emit_whycode filename syms bsym_table root =
   end bsym_table;
 
   output_string f "(****** STRUCTS *******)\n";
-  Flx_bsym_table.iter begin fun index bsym ->
+  Flx_bsym_table.iter begin fun index _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_cstruct (bvs,variants)
     | BBDCL_struct (bvs,variants) ->
@@ -370,7 +370,7 @@ let emit_whycode filename syms bsym_table root =
   end bsym_table;
 
   output_string f "(******* FUNCTIONS ******)\n";
-  Flx_bsym_table.iter begin fun index bsym ->
+  Flx_bsym_table.iter begin fun index _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (_,bvs,ps,ret,_) ->
         let ps = calps ps in

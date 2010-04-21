@@ -149,7 +149,7 @@ let mkproc_gen syms bsym_table =
   in
 
   (* make the funproc map *)
-  Flx_bsym_table.iter begin fun i bsym ->
+  Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
         let k = fresh_bid syms.counter in
@@ -163,7 +163,7 @@ let mkproc_gen syms bsym_table =
   end bsym_table;
 
   (* count direct applications of these functions *)
-  Flx_bsym_table.iter begin fun i bsym ->
+  Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (_,_,_,_,exes) ->
         find_mkproc_exes mkproc_map exes
@@ -331,7 +331,7 @@ let mkproc_gen syms bsym_table =
 
   (* replace applications *)
   (* DISABLE MODIFICATIONS DURING INITIAL DEPLOYMENT *)
-  Flx_bsym_table.iter begin fun i bsym ->
+  Flx_bsym_table.iter begin fun i _ bsym ->
     let mkproc_exes = mkproc_exes
       syms
       bsym_table

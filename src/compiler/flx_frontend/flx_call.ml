@@ -60,7 +60,7 @@ let cal_param_usage uses sr parent {pindex=child;ptyp=t} =
   uses_type uses sr parent t;
   add uses sr parent child
 
-let cal_bsym_usage bsym_table uses parent bsym =
+let cal_bsym_usage bsym_table uses parent _ bsym =
   let sr = Flx_bsym.sr bsym in
 
   Flx_bbdcl.iter
@@ -204,7 +204,7 @@ let call_report syms bsym_table (uses,usedby) f k =
 
 let print_call_report' syms bsym_table usage f =
   let x = ref [] in
-  Flx_bsym_table.iter begin fun k bsym ->
+  Flx_bsym_table.iter begin fun k _ bsym ->
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun _
     | BBDCL_val (_,_,(`Val | `Var)) -> x := k :: !x

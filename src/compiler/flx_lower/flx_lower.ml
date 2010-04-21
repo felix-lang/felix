@@ -20,8 +20,8 @@ let print_debug state msg =
 
 let remove_module_parents bsym_table =
   (* Remove module parents. *)
-  Flx_bsym_table.iter begin fun bid bsym ->
-    match Flx_bsym_table.find_parent bsym_table bid with
+  Flx_bsym_table.iter begin fun bid parent bsym ->
+    match parent with
     | Some parent ->
         begin
           try

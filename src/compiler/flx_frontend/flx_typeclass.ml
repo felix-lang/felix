@@ -283,9 +283,9 @@ let typeclass_instance_check_symbols syms bsym_table bids =
   bids
 
 let typeclass_instance_check syms bsym_table =
-  Flx_bsym_table.iter
-    (typeclass_instance_check_symbol syms bsym_table)
-    bsym_table
+  Flx_bsym_table.iter begin fun bid _ bsym ->
+    typeclass_instance_check_symbol syms bsym_table bid bsym
+  end bsym_table
 
 (* Notes.
 
