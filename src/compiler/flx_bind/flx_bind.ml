@@ -51,7 +51,18 @@ let make_toplevel_bind_state syms =
     Flx_srcref.dummy_sr, "", None, `Public, Flx_ast.dfltvs,
     Flx_types.DCL_module [])
   in
-  let module_sym = Flx_sym_table.find sym_table module_index in
+  let module_parent, module_sym = Flx_sym_table.find_with_parent
+    sym_table
+    module_index
+  in
+
+  (* Bind the module. *)
+  Flx_bbind.bbind_symbol
+    bbind_state
+    bsym_table
+    module_index
+    module_parent
+    module_sym;
 
   (* Find the module's _init_ function *)
   let init_index =
@@ -59,11 +70,18 @@ let make_toplevel_bind_state syms =
     | Flx_btype.FunctionEntry [ { Flx_btype.base_sym=base_sym } ] -> base_sym
     | _ -> assert false
   in
-  let init_sym = Flx_sym_table.find sym_table init_index in
+  let init_parent, init_sym = Flx_sym_table.find_with_parent
+    sym_table
+    init_index
+  in
 
-  (* Bind the module and init function. *)
-  Flx_bbind.bbind_symbol bbind_state bsym_table module_index module_sym;
-  Flx_bbind.bbind_symbol bbind_state bsym_table init_index   init_sym;
+  (* Bind the init function. *)
+  Flx_bbind.bbind_symbol
+    bbind_state
+    bsym_table
+    init_index
+    init_parent
+    init_sym;
 
   {
     syms = syms;
@@ -117,16 +135,17 @@ let bind_asm state bsym_table handle_bound init asm =
 
     (* Next, find the symbol to bind. *)
     match
-      try Some (Flx_sym_table.find state.sym_table bid)
+      try Some (Flx_sym_table.find_with_parent state.sym_table bid)
       with Not_found -> None
     with
     | None -> ()
-    | Some sym ->
+    | Some (parent, sym) ->
         (* Then, bind the symbol. *)
         ignore (Flx_bbind.bbind_symbol
           state.bbind_state
           bsym_table
           bid
+          parent
           sym)
   end initial_index !(state.syms.Flx_mtypes2.counter);
 

@@ -118,7 +118,7 @@ let bind_qual bt qual = match qual with
 
 let bind_quals bt quals = map (bind_qual bt) quals
 
-let rec bbind_symbol state bsym_table symbol_index sym =
+let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
   (* If we've already processed this bid, exit early. We do this so we can avoid
    * any infinite loops in the symbols. *)
   if Hashtbl.mem state.visited symbol_index then () else begin
@@ -128,7 +128,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
   let true_parent = find_true_parent
     state.sym_table
     sym.Flx_sym.id
-    sym.Flx_sym.parent
+    sym_parent
   in
 
   (* let env = Flx_lookup.build_env state.lookup_state state.sym_table parent in  *)
@@ -146,13 +146,13 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     (* Iterate through the now bound type and make sure to bind any referenced
      * bbdcls before continuing on. *)
     Flx_btype.iter ~f_bid:begin fun bid ->
-      let sym = Flx_sym_table.find state.sym_table bid in
-      bbind_symbol state bsym_table bid sym
+      let parent, sym = Flx_sym_table.find_with_parent state.sym_table bid in
+      bbind_symbol state bsym_table bid parent sym
     end btype
   in
   let bexes exes ret_type index tvars =
     let bexe_state = Flx_bind_bexe.make_bexe_state
-      ?parent:sym.Flx_sym.parent
+      ?parent:sym_parent
       ~env
       state.syms
       state.sym_table
@@ -273,8 +273,11 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     begin match parent with
     | None -> Flx_bsym_table.add bsym_table symbol_index None bsym
     | Some parent ->
-        let parent_sym = Flx_sym_table.find state.sym_table parent in
-        bbind_symbol state bsym_table parent parent_sym;
+        let parent', sym' = Flx_sym_table.find_with_parent
+          state.sym_table
+          parent
+        in
+        bbind_symbol state bsym_table parent parent' sym';
 
         Flx_bsym_table.add bsym_table symbol_index (Some parent) bsym
     end
@@ -309,7 +312,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     state.syms.axioms <- (
       sym.Flx_sym.id,
       sym.Flx_sym.sr,
-      sym.Flx_sym.parent,
+      sym_parent,
       Axiom,
       bvs,
       bps,
@@ -330,7 +333,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     state.syms.axioms <- (
       sym.Flx_sym.id,
       sym.Flx_sym.sr,
-      sym.Flx_sym.parent,
+      sym_parent,
       Lemma,
       bvs,
       bps,
@@ -378,7 +381,7 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     add_bsym true_parent bbdcl
 
   | SYMDEF_parameter (k,_) ->
-    begin match sym.Flx_sym.parent with
+    begin match sym_parent with
     | None -> failwith "[bbind_sym] expected parameter to have a parent"
     | Some ip ->
       match hfind "bbind" state.sym_table ip with
@@ -709,8 +712,11 @@ let rec bbind_symbol state bsym_table symbol_index sym =
     let k = sye k in
 
     (* Make sure the typeclass is in the symbol table first. *)
-    let typeclass_sym = Flx_sym_table.find state.sym_table k in
-    bbind_symbol state bsym_table k typeclass_sym;
+    let typeclass_parent, typeclass_sym = Flx_sym_table.find_with_parent
+      state.sym_table
+      k
+    in
+    bbind_symbol state bsym_table k typeclass_parent typeclass_sym;
 
     (*
     print_endline ("binding ts = " ^ catmap "," string_of_typecode ts);
@@ -748,38 +754,23 @@ let rec bbind_symbol state bsym_table symbol_index sym =
   end
 
 let bbind state bsym_table =
-  (* loop through all counter values [HACK]
-    to get the indices in sequence, AND,
-    to ensure any instantiations will be bound,
-    (since they're always using the current value
-    of state.counter for an index
-  *)
+  (* loop through all counter values [HACK] to get the indices in sequence, AND,
+   * to ensure any instantiations will be bound, (since they're always using the
+   * current value of state.counter for an index *)
   Flx_mtypes2.iter_bids begin fun i ->
-    begin
-      let entry =
-        try Some (Flx_sym_table.find state.sym_table i)
-        with Not_found -> None
-      in match entry with
-      | Some entry ->
-        begin try
-          (*
-          begin
-            try match hfind "bbind" state.sym_table !i with { Flx_sym.id=id} ->
-              print_endline (" Trying to bind " ^ id ^ " index " ^ si !i)
-            with Not_found ->
-              failwith ("Binding error UNKNOWN SYMBOL, index " ^ si !i)
-          end;
-          *)
-          bbind_symbol state bsym_table i entry
+    match
+      try Some (Flx_sym_table.find_with_parent state.sym_table i)
+      with Not_found -> None
+    with
+    | None -> ()
+    | Some (parent, symdef) ->
+        try bbind_symbol state bsym_table i parent symdef
         with Not_found ->
           try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
             failwith ("Binding error, cannot find in table: " ^ id ^ " index " ^
               string_of_bid i)
           with Not_found ->
             failwith ("Binding error UNKNOWN SYMBOL, index " ^ string_of_bid i)
-        end
-      | None -> ()
-    end
   end dummy_bid !(state.syms.counter)
 
 let bind_interface (state:bbind_state_t) bsym_table = function

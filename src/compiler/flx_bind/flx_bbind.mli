@@ -14,9 +14,10 @@ val make_bbind_state:
 (* Bind a single symbol. *)
 val bbind_symbol:
   bbind_state_t ->
-  Flx_bsym_table.t ->
-  Flx_types.bid_t ->
-  Flx_sym.t ->
+  Flx_bsym_table.t ->       (** The bound symbol table that we'll bind into. *)
+  Flx_types.bid_t ->        (** The symbol's index. *)
+  Flx_types.bid_t option -> (** The symbol's parent. *)
+  Flx_sym.t ->              (** The symbol. *)
   unit
 
 (* Bind all the symbols in the symtab. *)
