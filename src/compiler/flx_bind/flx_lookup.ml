@@ -227,20 +227,14 @@ and resolve_inherits state bsym_table rs sr x =
       (* Otherwise, we have to check if this entry is an inherit. If so, look up
        * the inherit entry in the environment. Otherwise, just return the
        * expression. *)
-      begin match Flx_sym_table.find state.sym_table bid with
-      | { Flx_sym.parent=parent; symdef=SYMDEF_inherit qn } ->
-          (*
-          print_endline ("Found an inherit symbol qn=" ^
-            string_of_qualified_name qn);
-          *)
+      let parent, sym = Flx_sym_table.find_with_parent state.sym_table bid in
+      begin match sym.Flx_sym.symdef with
+      | SYMDEF_inherit qn ->
           let env = inner_build_env state bsym_table rs parent in
-          (*
-          print_endline "Environment built for lookup ..";
-          *)
           fst (lookup_qn_in_env2' state bsym_table env rs qn)
 
-      | { Flx_sym.sr=sr2; symdef=SYMDEF_inherit_fun qn } ->
-          clierr2 sr sr2 "NonFunction inherit denotes function"
+      | SYMDEF_inherit_fun qn ->
+          clierr2 sr sym.Flx_sym.sr "NonFunction inherit denotes function"
 
       | _ -> x
       end

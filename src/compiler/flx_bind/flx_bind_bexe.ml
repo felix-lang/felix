@@ -68,9 +68,10 @@ let bsym_table = Flx_bsym_table.create ()
 let rec check_if_parent syms sym_table child parent =
   if child = parent then true
   else
-      match hfind "bexe" sym_table child with
-      | { Flx_sym.parent=Some parent} -> check_if_parent syms sym_table child parent
-      | { Flx_sym.parent=None} -> false
+    let parent = Flx_sym_table.find_parent sym_table child in
+    match parent with
+    | Some parent -> check_if_parent syms sym_table child parent
+    | None -> false
 
 let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
   let be i e =

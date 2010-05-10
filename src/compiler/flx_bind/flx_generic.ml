@@ -9,12 +9,6 @@ open Flx_exceptions
 open Flx_print
 open Flx_ast
 
-let hfind msg h k =
-  try Flx_sym_table.find h k
-  with Not_found ->
-    print_endline ("flx_generic Flx_sym_table.find failed " ^ msg);
-    raise Not_found
-
 (* Adjustment of type argument lists works much
 like the activation record display, so well call
 it the type display: it is just a list of all
@@ -69,49 +63,53 @@ let merge_ivs (vs1,con1) (vs2,con2) :ivs_list_t =
   vs1 @ vs2, merge_con con1 con2
 
 (* finds the complete vs list *)
-let rec find_vs sym_table bsym_table i : ivs_list_t =
-  let { Flx_sym.parent=parent; vs=vs } = hfind "find_vs" sym_table i in
+let rec find_vs sym_table bsym_table bid =
+  let parent, sym = Flx_sym_table.find_with_parent sym_table bid in
   match parent with
-  | Some i -> merge_ivs (find_vs sym_table bsym_table i) vs
-  | None -> vs
+  | Some parent ->
+      merge_ivs (find_vs sym_table bsym_table parent) sym.Flx_sym.vs
+  | None -> sym.Flx_sym.vs
 
-let rec find_func_vs sym_table bsym_table vs j =
-  match hfind "find_func_vs" sym_table j with
-  | { Flx_sym.parent=parent; vs=vs'; symdef=SYMDEF_module }
-  | { Flx_sym.parent=parent; vs=vs'; symdef=SYMDEF_typeclass } ->
-    begin match parent with
-    | None ->
-      let vs = merge_ivs vs' vs in
-      [],fst vs, snd vs
-    | Some j -> find_func_vs sym_table bsym_table (merge_ivs vs' vs) j
-    end
+let rec find_func_vs sym_table bsym_table vs bid =
+  let parent, sym = Flx_sym_table.find_with_parent sym_table bid in
+  match sym.Flx_sym.symdef with
+  | SYMDEF_module
+  | SYMDEF_typeclass ->
+      begin match parent with
+      | None ->
+          let vs = merge_ivs sym.Flx_sym.vs vs in
+          [], fst vs, snd vs
+      | Some parent ->
+          find_func_vs sym_table bsym_table (merge_ivs sym.Flx_sym.vs vs) parent
+      end
 
   | _ ->
-    let (vs',con) = find_vs sym_table bsym_table j in
-    (* NOTE: the constraints of the parent are dropped
-     * because they're automatically satisfied:
-     * No merge is done on the constraints.
-     * Hope this doesn't screw something up.
-     * It will for sure if this routine is ALSO used
-     * to get the calling context constraints.
-     *
-     * This line originally read:
-     * vs',fst vs,merge_con con (snd vs)
-     *
-     *)
-    vs',fst vs,snd vs
+      let (vs',con) = find_vs sym_table bsym_table bid in
+      (* NOTE: the constraints of the parent are dropped
+       * because they're automatically satisfied:
+       * No merge is done on the constraints.
+       * Hope this doesn't screw something up.
+       * It will for sure if this routine is ALSO used
+       * to get the calling context constraints.
+       *
+       * This line originally read:
+       * vs',fst vs,merge_con con (snd vs)
+       *
+       *)
+      vs', fst vs, snd vs
 
 (* finds the triple pvs,vs,con where vs is the entity
    vs INCLUDING module vs. pvs is the vs of
    the ultimately containing function and its ancestors.
 *)
-let find_split_vs sym_table bsym_table i =
-  match hfind "find_split_vs" sym_table i with
-  | { Flx_sym.symdef=SYMDEF_typevar _ } -> [], [], Flx_ast.dfltvs_aux
-  | { Flx_sym.parent=parent; vs=vs } ->
-  match parent with
-  | None -> [],fst vs, snd vs
-  | Some j -> find_func_vs sym_table bsym_table vs j
+let find_split_vs sym_table bsym_table bid =
+  let parent, sym = Flx_sym_table.find_with_parent sym_table bid in
+  match sym.Flx_sym.symdef with
+  | SYMDEF_typevar _ -> [],[],Flx_ast.dfltvs_aux
+  | _ ->
+      match parent with
+      | None -> [], fst sym.Flx_sym.vs, snd sym.Flx_sym.vs
+      | Some parent -> find_func_vs sym_table bsym_table sym.Flx_sym.vs parent
 
 let print_ivs vs =
   catmap ", " (fun (s,i,_) -> s ^ "<" ^ string_of_bid i ^ ">") vs
@@ -122,10 +120,10 @@ let adjust_ts sym_table bsym_table sr index ts =
   let m = length vs in
   let n = length ts in
   if n>m then begin
-    match hfind "adjust_ts" sym_table index with { Flx_sym.id=id } ->
+    let sym = Flx_sym_table.find sym_table index in
     clierr sr
     (
-      "For "^ id ^ "<" ^ string_of_bid index ^
+      "For " ^ sym.Flx_sym.id ^ "<" ^ string_of_bid index ^
       "> Too many type subscripts, expected " ^
       si m ^ " got " ^ si n ^
       "=[" ^ catmap "," (sbt bsym_table) ts ^ "]" ^
@@ -134,10 +132,10 @@ let adjust_ts sym_table bsym_table sr index ts =
     )
   end;
   if n<m then begin
-    match hfind "adjust_ts" sym_table index with { Flx_sym.id=id } ->
+    let sym = Flx_sym_table.find sym_table index in
     clierr sr
     (
-      "For " ^ id ^ "<" ^ string_of_bid index ^
+      "For " ^ sym.Flx_sym.id ^ "<" ^ string_of_bid index ^
       "> [adjust_ts] Not enough type subscripts, expected " ^
       si m ^ " got " ^ si n ^
       "\nparent vs=" ^ print_ivs pvs ^

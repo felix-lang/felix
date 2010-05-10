@@ -487,27 +487,25 @@ and st prec tc : string =
 and string_of_typecode tc = st 99 tc
 
 and qualified_name_of_index_with_vs sym_table index =
-  match Flx_sym_table.find sym_table index with
-  | { Flx_sym.id=id; vs=vs; parent=parent } ->
-    match parent with
-    | Some index' ->
-      qualified_name_of_index_with_vs sym_table index' ^
-      id ^
-      string_of_ivs vs ^
+  let parent, sym = Flx_sym_table.find_with_parent sym_table index in
+  match parent with
+  | Some parent ->
+      qualified_name_of_index_with_vs sym_table parent ^
+      sym.Flx_sym.id ^
+      string_of_ivs sym.Flx_sym.vs ^
       "::"
-    | None -> ""
-      (* If this entity has no parent, its the root module,
-        and we don't bother to print its name as a prefix
-      *)
+  | None ->
+      (* If this entity has no parent, its the root module, and we don't bother
+       * to print its name as a prefix *)
+      ""
 
 and qualified_name_of_index' sym_table index =
-  match Flx_sym_table.find sym_table index with
-  | { Flx_sym.id=id; parent=parent } ->
-    begin match parent with
-    | Some index' -> qualified_name_of_index_with_vs sym_table index'
-    | None -> ""
-    end ^
-    id
+  let parent, sym = Flx_sym_table.find_with_parent sym_table index in
+  begin match parent with
+  | Some parent -> qualified_name_of_index_with_vs sym_table parent
+  | None -> ""
+  end ^
+  sym.Flx_sym.id
 
 and qualified_name_of_index sym_table index =
   try qualified_name_of_index' sym_table index ^ "<" ^ string_of_bid index ^ ">"
@@ -2528,12 +2526,12 @@ let string_of_name_map name_map =
 
 
 let print_sym sym_table bid =
-  let sym = Flx_sym_table.find sym_table bid in
+  let parent, sym = Flx_sym_table.find_with_parent sym_table bid in
 
   print_endline ("index: " ^ string_of_bid bid);
   print_endline ("id: " ^ sym.Flx_sym.id);
   print_endline ("parent: " ^ 
-    match sym.Flx_sym.parent with
+    match parent with
     | Some parent -> string_of_bid parent
     | None -> "");
 
