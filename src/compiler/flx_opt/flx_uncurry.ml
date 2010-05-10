@@ -250,7 +250,7 @@ let fixup_function
         "] <-- " ^ string_of_bid pi ^ ", parent " ^ string_of_bid k ^
         " <-- " ^ string_of_bid i);
 
-    Flx_bsym_table.add_child bsym_table k n
+    Flx_bsym_table.add bsym_table n (Some k)
       (Flx_bsym.create ~sr:(Flx_bsym.sr bsymi) (s ^ "_uncurry") bbdcl)
   end ps;
 
@@ -296,7 +296,7 @@ let synthesize_function syms bsym_table ut vm rl i (c, k, n) =
   let bsymi_parent, bsymi = Flx_bsym_table.find_with_parent bsym_table i in
 
   (* Add a placeholder symbol that will be updated later. *)
-  Flx_bsym_table.add bsym_table bsymi_parent k
+  Flx_bsym_table.add bsym_table k bsymi_parent
     (Flx_bsym.create
       ~sr:(Flx_bsym.sr bsymi)
       (Flx_bsym.id bsymi ^ "_uncurry")

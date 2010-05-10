@@ -8,7 +8,7 @@ val create : unit -> t
 val length : t -> int
 
 (** Adds the bound symbol with the index to the symbol table. *)
-val add : t -> Flx_types.bid_t option -> Flx_types.bid_t -> Flx_bsym.t -> unit
+val add : t -> Flx_types.bid_t -> Flx_types.bid_t option -> Flx_bsym.t -> unit
 
 (** Adds a root bound symbol with the index to the symbol table. *)
 val add_root : t -> Flx_types.bid_t -> Flx_bsym.t -> unit

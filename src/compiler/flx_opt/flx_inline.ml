@@ -814,7 +814,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
           let urv = fresh_bid syms.counter in
           let urvid = "_genout_urv" ^ string_of_bid urv in
           add_use uses caller urv sr;
-          Flx_bsym_table.add_child bsym_table caller urv
+          Flx_bsym_table.add bsym_table urv (Some caller)
             (Flx_bsym.create ~sr urvid (bbdcl_val (caller_vs,t,`Var)));
 
           (* set variable to function appliction *)

@@ -336,7 +336,7 @@ let monomorphise syms bsym_table =
         then Flx_bsym_table.update_bbdcl bsym_table n bbdcl
         else
           let bsym = Flx_bsym.replace_bbdcl bsym bbdcl in
-          Flx_bsym_table.add bsym_table None n bsym
+          Flx_bsym_table.add bsym_table n None bsym
   end syms.instances;
 
   (* Then, update all the symbols with their new parents. *)

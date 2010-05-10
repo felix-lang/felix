@@ -241,7 +241,7 @@ let mkproc_gen syms bsym_table =
         (Flx_bsym.id bsym ^ "_mkproc")
         (Flx_bsym.bbdcl bsym)
       in
-      Flx_bsym_table.add bsym_table bsym_parent k bsym;
+      Flx_bsym_table.add bsym_table k bsym_parent bsym;
 
       if syms.compiler_options.print_flag then
       begin
@@ -288,7 +288,7 @@ let mkproc_gen syms bsym_table =
               string_of_bid pi ^ ", parent " ^ string_of_bid k ^ " <-- " ^
               string_of_bid i);
             Flx_bsym_table.remove bsym_table n;
-            Flx_bsym_table.add_child bsym_table k n
+            Flx_bsym_table.add bsym_table n (Some k)
               (Flx_bsym.replace_bbdcl bsym bbdcl)
           )
           ps

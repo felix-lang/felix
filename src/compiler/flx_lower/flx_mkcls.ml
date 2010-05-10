@@ -37,7 +37,7 @@ let make_inner_function state bsym_table closure_bid sr vs ps =
   let closed_name = "_a" ^ string_of_bid closed_bid in
   let closed_val = bbdcl_val (vs,closed_type,`Val) in
 
-  Flx_bsym_table.add bsym_table (Some closure_bid) closed_bid
+  Flx_bsym_table.add bsym_table closed_bid (Some closure_bid)
     (Flx_bsym.create ~sr closed_name closed_val);
 
   (* Make the type variables of the inner call. *)
@@ -68,7 +68,7 @@ let gen_closure state bsym_table bid t =
 
   (* Add the closure wrapper to symbol table. We'll replace it later with the
    * real values. *)
-  Flx_bsym_table.add bsym_table bsym_parent closure_bid (Flx_bsym.create
+  Flx_bsym_table.add bsym_table closure_bid bsym_parent (Flx_bsym.create
     ~sr:(Flx_bsym.sr bsym)
     ("_a" ^ string_of_int closure_bid ^ "_" ^ Flx_bsym.id bsym)
     (bbdcl_invalid ()));

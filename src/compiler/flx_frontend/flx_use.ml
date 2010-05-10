@@ -221,7 +221,7 @@ let copy_used syms bsym_table =
       end bsym;
 
       (* Finally, add the symbol to the root. *)
-      Flx_bsym_table.add new_bsym_table parent bid bsym
+      Flx_bsym_table.add new_bsym_table bid parent bsym
     end
   in
 

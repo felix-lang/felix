@@ -570,7 +570,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       (* instantiate any parameter temporaries *)
       List.iter begin fun (paramtype, parameter) ->
         let id = "_trp_" ^ string_of_bid parameter in
-        Flx_bsym_table.add_child bsym_table this parameter
+        Flx_bsym_table.add bsym_table parameter (Some this)
           (Flx_bsym.create ~sr id (bbdcl_val (vs, paramtype, `Tmp)))
       end !parameters;
 

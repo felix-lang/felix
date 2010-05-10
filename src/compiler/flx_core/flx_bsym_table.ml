@@ -132,7 +132,7 @@ let remove_use_from_bsyms bsym_table bid bbdcl =
   Flx_bbdcl.iter_uses (remove_use_from_bsym bsym_table bid) bbdcl
 
 (** Adds the bound symbol with the index to the symbol table. *)
-let add bsym_table parent bid bsym =
+let add bsym_table bid parent bsym =
   assert (match parent with None -> true | Some p -> mem bsym_table p);
   assert (not (mem bsym_table bid));
 
@@ -150,10 +150,10 @@ let add bsym_table parent bid bsym =
     bsym=bsym }
 
 (** Adds a root bound symbol with the index to the symbol table. *)
-let add_root bsym_table bid bsym = add bsym_table None bid bsym
+let add_root bsym_table bid bsym = add bsym_table bid None bsym
 
 (** Adds the bound symbol with the index to the symbol table. *)
-let add_child bsym_table parent bid bsym = add bsym_table (Some parent) bid bsym
+let add_child bsym_table parent bid bsym = add bsym_table bid (Some parent) bsym
 
 (** Updates a bound symbol in place while preserving the child-parent
  * relationships. *)

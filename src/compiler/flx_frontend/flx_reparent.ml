@@ -297,7 +297,7 @@ let reparent1
   );
   let update_bsym bbdcl =
     Flx_bsym_table.remove bsym_table k;
-    Flx_bsym_table.add bsym_table parent k (Flx_bsym.replace_bbdcl bsym bbdcl)
+    Flx_bsym_table.add bsym_table k parent (Flx_bsym.replace_bbdcl bsym bbdcl)
   in
 
   match Flx_bsym.bbdcl bsym with
@@ -456,7 +456,7 @@ let specialise_symbol syms uses bsym_table
 
     (* First we must insert the symbol into the bsym_table before we can
      * continue. We'll update it again after we've processed the children. *)
-    Flx_bsym_table.add bsym_table parent k
+    Flx_bsym_table.add bsym_table k parent
       (Flx_bsym_table.find bsym_table index);
 
     let revariable =
