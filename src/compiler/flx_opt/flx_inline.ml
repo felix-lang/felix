@@ -673,10 +673,7 @@ is an instance .. so nothing is lost here.. :)
 *)
 
 let virtual_check syms bsym_table sr i ts =
-  let bsym = Flx_bsym_table.find bsym_table i in
-  (*
-  print_endline ("virtual check Examining call to " ^ id ^ "<" ^ si i ^ ">");
-  *)
+  let parent, bsym = Flx_bsym_table.find_with_parent bsym_table i in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_external_fun (props,_,_,_,_,_,_)
   | BBDCL_fun (props,_,_,_,_) when mem `Virtual props ->

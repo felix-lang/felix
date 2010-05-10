@@ -293,8 +293,7 @@ let synthesize_function syms bsym_table ut vm rl i (c, k, n) =
    * parent. *)
   assert (Flx_bsym_table.find_parent bsym_table c = Some i);
 
-  let bsymi = Flx_bsym_table.find bsym_table i in
-  let bsymi_parent = Flx_bsym_table.find_parent bsym_table i in
+  let bsymi_parent, bsymi = Flx_bsym_table.find_with_parent bsym_table i in
 
   (* Add a placeholder symbol that will be updated later. *)
   Flx_bsym_table.add bsym_table bsymi_parent k

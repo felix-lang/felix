@@ -59,10 +59,9 @@ let rec is_pure syms bsym_table i =
     try Flx_bsym_table.find_children bsym_table i
     with Not_found -> BidSet.empty
   in
-  let bsym = Flx_bsym_table.find bsym_table i in
-  (*
-  print_endline ("Checking purity of " ^ id ^ "<" ^ si i ^ ">");
-  *)
+  let bsym_parent, bsym = Flx_bsym_table.find_with_parent bsym_table i in
+
+  (* Checking purity *)
   match Flx_bsym.bbdcl bsym with
   | BBDCL_invalid -> assert false
   | BBDCL_module

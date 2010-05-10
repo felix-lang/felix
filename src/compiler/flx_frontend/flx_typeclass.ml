@@ -499,15 +499,15 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
        j,ts
 
     | candidates ->
-      iter
-      (fun ((j,ts),(inst_vs,con,inst_ts,k)) ->
-        let bsym =
-          try Flx_bsym_table.find bsym_table j with Not_found ->
+      List.iter begin fun ((j,ts),(inst_vs,con,inst_ts,k)) ->
+        let parent, bsym =
+          try Flx_bsym_table.find_with_parent bsym_table j
+          with Not_found ->
             failwith ("Woops can't find instance function index " ^
               string_of_bid j)
         in
         let parent =
-          match Flx_bsym_table.find_parent bsym_table j with
+          match parent with
           | Some k -> k
           | None -> assert false
         in
@@ -517,9 +517,8 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
           catmap "," (sbt bsym_table) inst_ts ^ "]");
         print_endline (" instance vs= " ^
           catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") inst_vs);
-      )
-      candidates
-      ;
+      end candidates;
+
       clierr sr "No most specialised instance!"
 
 let id x = x

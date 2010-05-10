@@ -26,14 +26,14 @@ let cal_display bsym_table parent : (bid_t *int) list =
     match parent with
     | None -> List.rev display
     | Some parent ->
-        let bsym =
-          try Flx_bsym_table.find bsym_table parent with Not_found ->
+        let bsym_parent, bsym =
+          try Flx_bsym_table.find_with_parent bsym_table parent
+          with Not_found ->
             failwith ("[cal_display] Can't find index(2) " ^
               Flx_print.string_of_bid parent)
         in
         match Flx_bsym.bbdcl bsym with
         | BBDCL_fun (_, vs, _, _, _) ->
-            let bsym_parent = Flx_bsym_table.find_parent bsym_table parent in
             aux bsym_parent ((parent, List.length vs)::display)
 
         (* typeclasses have to be treated 'as if' top level *)

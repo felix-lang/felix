@@ -227,8 +227,7 @@ let mkproc_gen syms bsym_table =
       print_endline ("MKPROC: Orig " ^ string_of_bid i ^ " synth " ^
         string_of_bid k ^ " count=" ^ si n);
 
-      let bsym = Flx_bsym_table.find bsym_table i in
-      let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
+      let bsym_parent, bsym = Flx_bsym_table.find_with_parent bsym_table i in
       let props, vs, ps, traint, ret, exes =
         match Flx_bsym.bbdcl bsym with
         | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->

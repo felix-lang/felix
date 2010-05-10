@@ -61,8 +61,7 @@ let make_inner_function state bsym_table closure_bid sr vs ps =
 (** This generates closures for calling external functions. It does this by
  * generating a new function that contains part of the closed values. *)
 let gen_closure state bsym_table bid t =
-  let bsym = Flx_bsym_table.find bsym_table bid in
-  let bsym_parent = Flx_bsym_table.find_parent bsym_table bid in
+  let bsym_parent, bsym = Flx_bsym_table.find_with_parent bsym_table bid in
 
   (* Make a bid for our closure wrapper function. *)
   let closure_bid = fresh_bid state.syms.counter in

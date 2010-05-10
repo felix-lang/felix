@@ -22,8 +22,8 @@ open Flx_beta
 open Flx_prop
 
 let cal_parent syms bsym_table bid ts' =
-  let bsym = Flx_bsym_table.find bsym_table bid in
-  match Flx_bsym_table.find_parent bsym_table bid with
+  let bsym_parent, bsym = Flx_bsym_table.find_with_parent bsym_table bid in
+  match bsym_parent with
   | None -> None
   | Some parent ->
     let vsc = Flx_bsym.get_bvs bsym in

@@ -515,10 +515,9 @@ and qualified_name_of_index sym_table index =
 
 and get_name_parent bsym_table index =
   try
-    let bsym = Flx_bsym_table.find bsym_table index in
-    Flx_bsym.id bsym, (Flx_bsym_table.find_parent bsym_table index)
-  with Not_found -> "index_" ^ string_of_bid index,None
-
+    let parent, bsym = Flx_bsym_table.find_with_parent bsym_table index in
+    Flx_bsym.id bsym, parent
+  with Not_found -> "index_" ^ string_of_bid index, None
 
 and qualified_name_of_bindex bsym_table index =
   let name,parent = get_name_parent bsym_table index in
@@ -2567,13 +2566,12 @@ let string_of_bsym bsym_table bid =
 
 
 let print_bsym bsym_table bid =
-  let bsym = Flx_bsym_table.find bsym_table bid in
-  let bsym_parent = Flx_bsym_table.find_parent bsym_table bid in
+  let parent, bsym = Flx_bsym_table.find_with_parent bsym_table bid in
 
   print_endline ("index: " ^ string_of_bid bid);
   print_endline ("id: " ^ Flx_bsym.id bsym);
   print_endline ("parent: " ^ 
-    match bsym_parent with
+    match parent with
     | Some parent -> string_of_bid parent
     | None -> "");
 

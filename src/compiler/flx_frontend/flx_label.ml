@@ -57,10 +57,10 @@ let rec find_label bsym_table label_map caller label =
   let labels = Hashtbl.find label_map caller in
   try `Local (Hashtbl.find labels label)
   with Not_found ->
-  let bsym = Flx_bsym_table.find bsym_table caller in
+  let bsym_parent, bsym = Flx_bsym_table.find_with_parent bsym_table caller in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (_,_,_,Flx_btype.BTYP_void,_) ->
-      begin match Flx_bsym_table.find_parent bsym_table caller with
+      begin match bsym_parent with
       | None -> `Unreachable
       | Some parent ->
           begin match find_label bsym_table label_map parent label with

@@ -38,6 +38,12 @@ val mem : t -> Flx_types.bid_t -> bool
 (** Searches the bound symbol table for the given symbol. *)
 val find : t -> Flx_types.bid_t -> Flx_bsym.t
 
+(** Searches the bound symbol table for the given symbol. *)
+val find_with_parent :
+  t ->
+  Flx_types.bid_t ->
+  Flx_types.bid_t option *  Flx_bsym.t
+
 (** Searches the bound symbol table for the given symbol's parent. *)
 val find_parent : t -> Flx_types.bid_t -> Flx_types.bid_t option
 

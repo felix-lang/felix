@@ -111,25 +111,23 @@ let bind_asm state bsym_table handle_bound init asm =
   in
 
   (* Now bind in order all of the symbols we added. *)
-  Flx_mtypes2.iter_bids begin fun i ->
+  Flx_mtypes2.iter_bids begin fun bid ->
     (* Skip this bid if we've already bound it. *)
-    if Flx_bsym_table.mem bsym_table i then () else
+    if Flx_bsym_table.mem bsym_table bid then () else
 
     (* Next, find the symbol to bind. *)
-    let symbol =
-      try Some (Flx_sym_table.find state.sym_table i)
+    match
+      try Some (Flx_sym_table.find state.sym_table bid)
       with Not_found -> None
-    in
-    begin match symbol with
+    with
     | None -> ()
-    | Some s ->
+    | Some sym ->
         (* Then, bind the symbol. *)
         ignore (Flx_bbind.bbind_symbol
           state.bbind_state
           bsym_table
-          i
-          s)
-    end
+          bid
+          sym)
   end initial_index !(state.syms.Flx_mtypes2.counter);
 
   (* Now that we've bound all the symbols, we can downgrade the types. *)

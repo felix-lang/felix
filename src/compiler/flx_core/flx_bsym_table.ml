@@ -28,6 +28,11 @@ let find_elt bsym_table = Hashtbl.find bsym_table.table
 (** Searches the bound symbol table for the given symbol. *)
 let find bsym_table bid = (find_elt bsym_table bid).bsym
 
+(** Searches the bound symbol table for the given symbol. *)
+let find_with_parent bsym_table bid =
+  let elt = find_elt bsym_table bid in
+  elt.parent, elt.bsym
+
 (** Searches the bound symbol table for the given symbol's parent. *)
 let find_parent bsym_table bid = (find_elt bsym_table bid).parent
 

@@ -71,11 +71,11 @@ let is_native_literal e = match e with
   | _ -> false
 
 let get_var_frame syms bsym_table this index ts : string =
-  let bsym =
-    try Flx_bsym_table.find bsym_table index with Not_found ->
+  let bsym_parent, bsym =
+    try Flx_bsym_table.find_with_parent bsym_table index
+    with Not_found ->
       failwith ("[get_var_frame(1)] Can't find index " ^ string_of_bid index)
   in
-  let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_val (vs,t,(`Val | `Var | `Ref)) ->
       begin match bsym_parent with
@@ -91,14 +91,11 @@ let get_var_frame syms bsym_table this index ts : string =
   | _ -> failwith ("[get_var_frame] Expected name " ^ Flx_bsym.id bsym ^ " to be variable or value")
 
 let get_var_ref syms bsym_table this index ts : string =
-  let bsym =
-    try Flx_bsym_table.find bsym_table index with Not_found ->
+  let bsym_parent, bsym =
+    try Flx_bsym_table.find_with_parent bsym_table index
+    with Not_found ->
       failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
   in
-  let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
-  (*
-  print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode bsym_table) ts^"]");
-  *)
   match Flx_bsym.bbdcl bsym with
   | BBDCL_val (vs,t,(`Val | `Var | `Ref)) ->
       begin match bsym_parent with
@@ -117,14 +114,11 @@ let get_var_ref syms bsym_table this index ts : string =
   | _ -> failwith ("[get_var_ref(3)] Expected name " ^ Flx_bsym.id bsym ^ " to be variable, value or temporary")
 
 let get_ref_ref syms bsym_table this index ts : string =
-  let bsym =
-    try Flx_bsym_table.find bsym_table index with Not_found ->
+  let bsym_parent, bsym =
+    try Flx_bsym_table.find_with_parent bsym_table index
+    with Not_found ->
       failwith ("[get_var_ref] Can't find index " ^ string_of_bid index)
   in
-  let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
-  (*
-  print_endline ("get var ref for " ^ id ^ "<" ^ si index ^ ">["^catmap "," (string_of_btypecode bsym_table) ts^"]");
-  *)
   match Flx_bsym.bbdcl bsym with
   | BBDCL_val (vs,t,(`Val | `Var | `Ref)) ->
       begin match bsym_parent with
@@ -405,12 +399,11 @@ let rec gen_expr'
     end
 
   | BEXPR_name (index,ts') ->
-    let bsym =
-      try Flx_bsym_table.find bsym_table index
+    let bsym_parent, bsym =
+      try Flx_bsym_table.find_with_parent bsym_table index
       with Not_found ->
         syserr sr ("[gen_expr(name)] Can't find <" ^ string_of_bid index ^ ">")
     in
-    let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
     let ts = map tsub ts' in
     begin match Flx_bsym.bbdcl bsym with
       | BBDCL_val (_,BTYP_function (BTYP_void,_),`Val)  ->
