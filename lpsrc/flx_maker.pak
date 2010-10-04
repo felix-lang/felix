@@ -1706,6 +1706,498 @@ else
   fi
 fi
 
+@select(tangler('tools/flx.flx','data'))
+#!/usr/bin/env flx 
+
+include "std/env.flx";
+include "std/system.flx";
+
+@tangle("; var INSTALL_ROOT=os.path.join(%r, '/lib/felix/felix-%s')" % (config.PREFIX, config.flx_version))
+; FLX_INSTALL_DIR = Env::getenv("FLX_INSTALL_DIR", INSTALL_ROOT)
+@tangle("; var CYGWIN="+str(config.CYGWIN))
+@tangle("; var WIN32="+str(config.WIN32))
+@tangle("; var MACOSX="+str(config.MACOSX))
+@tangle("; var HAVE_GNU="+str(config.HAVE_GNU))
+@tangle("; var HAVE_MSVC="+str(config.HAVE_MSVC))
+@if config.TARGET_CXX.options.HAVE_PIC:
+  tangle('; var CCOBJ_DLLIB="'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+' '+config.TARGET_CXX.options.PIC+'"')
+ else:
+  tangle('; var CCOBJ_DLLIB="'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+'"')
+@tangle('; var CCLINK_DLLIB="'+config.TARGET_CXX.options.CCLINK_DYNAMIC_FLX+'"')
+@tangle('; var CCOBJ_STATIC_LIB="'+config.TARGET_CXX.options.CCOBJ_STATIC_FLX+'"')
+@tangle('; var CCLINK_STATIC="'+config.TARGET_CXX.options.CCLINK_STATIC+'"')
+@tangle('; var VERSION="'+config.flx_version+'"')
+@tangle('; var EXT_LIB="'+config.TARGET_CXX.options.EXT_LIB+'"')
+@tangle('; var EXT_STATIC_OBJ="'+config.TARGET_CXX.options.EXT_STATIC_OBJ+'"')
+@tangle('; var EXT_SHARED_OBJ="'+config.TARGET_CXX.options.EXT_SHARED_OBJ+'"')
+@tangle('; var EXT_EXE="'+config.TARGET_CXX.options.EXT_EXE+'"')
+@tangle('; var EXT_SHLIB="'+config.TARGET_CXX.options.EXT_SHLIB+'"')
+@tangle('; var SPEC_OBJ_FILENAME="'+config.TARGET_CXX.options.SPEC_OBJ_FILENAME+'"')
+@tangle('; var SPEC_EXE_FILENAME="'+config.TARGET_CXX.options.SPEC_EXE_FILENAME+'"')
+@tangle('; var OPTIMISE="'+config.TARGET_CXX.options.OPTIMISE+' "')
+@tangle('; var DEBUG_FLAGS="'+config.TARGET_CXX.options.DEBUG_FLAGS+' "')
+
+# check for test mode: this argument must come first
+
+; var TESTMODE=0
+; var RECOMPILE=0
+; var DEBUG=0
+; var DEBUG_COMPILER=0
+; var INLINE=100
+; var ECHO=0
+; var TIME=0
+; var NOOPTIMISE=0
+; var TIMECMD="time -p"
+
+@if config.DEFAULT_LINK_MODEL=="dynamic":
+   tangle("; var STATIC=0")
+ else:
+   tangle("; var STATIC=1")
+
+; var RUNIT=1
+; var CCFLAGS=""
+; var FELIX=1
+; var LINKER_SWITCHES=""
+; var MACROS=""
+; var grab=1
+; var cpps=""
+; var cppos=""
+; var INCLUDE_DIRS=""
+; var INCLUDE_FILES=""
+; var NOSTDLIB=0
+; var STDOUT=""
+; var STDIMPORT="--import=nugram.flxh --import=flx.flxh"
+; var IMPORTS=""
+; var OUTPUT_DIR=""
+;
+
+
+fun splitext(p:string)=>
+  if p.[-5 to -1] == ".flx" then p.[to -5],".flx"
+  elif p.[-5 to -1] == ".cpp" then p.[to -5],".cpp"
+  else p,""
+  endif
+;
+
+gen system(cmd:string):int= {
+  if ECHO==1 do print(cmd); done
+  var result = System::system(cmd);
+  if ECHO==1 do print("Result code " + str(result)); done
+  return result;
+}
+
+var argno=1;
+fun prefix(arg:string,key:string)=>
+  arg.[to len key]==key
+;
+
+var compile_exts = list ('cpp','cxx');
+var linkexts =  list ('o','obj','lib','dll','a','so');
+
+whilst grab == 1 and argno<len System::argv do
+  arg = System::argv.[argno];
+  //println$ "ARGNO="+str(argno)+", arg='"+arg+"'";
+  path,ext = splitext(arg);
+  dir,base = os.path.split(path);
+  //println$ "path="+path+", ext="+ext+",dir="+dir+",base="+base;
+  //println$ "cpps="+cpps;
+  //println$ "cppos="+cppos;
+  //println$ "arg='"+arg+"'";
+  if ext != "flx" and ext != "" do
+    if ext in compile_exts do
+      cpps = cpps + " " + arg
+      cppos = cppos + " " + path + "." + EXT_OBJ
+    else
+     cppos = cppos + " " + arg;
+    done
+
+  elif arg == "--nostdimport" do
+    STDIMPORT="";
+
+  elif prefix(arg,"--import=") do
+   IMPORTS=IMPORTS + " " + arg.[9 to];
+
+  elif prefix(arg,"--test=") do
+    TESTMODE=1
+    FLX_INSTALL_DIR=arg.[7 to];
+
+  elif arg=="--test" do
+    TESTMODE=1;
+    FLX_INSTALL_DIR=".";
+
+  elif prefix(arg,"--stdout=") do
+    STDOUT=arg[9 to];
+
+  elif arg=="--force" do
+    RECOMPILE=1;
+
+  elif arg=="--debug" do
+    DEBUG=1;
+
+  elif arg=="--debug-compiler" do
+    DEBUG_COMPILER=1;
+
+  elif arg=="--nooptimise" do
+    NOOPTIMISE=1;
+
+  elif arg=="--nostdlib" do
+    NOSTDLIB=1;
+
+  elif arg == "--echo" do
+    ECHO=1;
+
+  elif arg == "--static" do
+    STATIC=1;
+
+  elif prefix(arg,"--inline=") do
+    INLINE=int(arg.[to 9]);
+
+  elif arg == "--inline" do
+    INLINE=100;
+
+  elif arg == "--noinline" do
+    INLINE=0;
+
+  elif arg == "--version" do
+    print("version ..")
+    println(VERSION);
+    System::exit(0);
+
+  elif arg == "--where" do
+    print(FLX_INSTALL_DIR);
+    System::exit(0);
+
+  elif arg == "--time" do
+    TIME=1;
+
+  elif prefix(arg,"--output_dir=") do
+    OUTPUT_DIR=arg;
+
+  elif arg == "--help" do
+    System::system("man -M "+FLX_INSTALL_DIR+Filename::sep+"man"+" flx");
+    System::exit(0);
+
+  elif arg == "-c" do
+    RUNIT=0;
+
+  elif prefix(arg,"-I") do
+    INCLUDE_DIRS=INCLUDE_DIRS + " " + arg;
+
+  elif arg== "--nofelix" do
+    FELIX=0;
+
+  elif prefix(arg,"-l") or prefix(arg,"-L") do
+   LINKER_SWITCHES=LINKER_SWITCHES + " " + arg;
+
+  elif prefix(arg,"-D") do
+   MACROS=MACROS + " " + arg;
+
+  elif prefix(arg,"--pkg=") do
+    pkgs= pkgs + " " + arg.[6 to];
+
+  elif prefix(arg,"--") do
+    print("Unknown option '"+ arg+"'");
+    System::exit(1);
+
+# the main filename -- subsequent args are args to flx_run
+  else
+    grab=0;
+  done
+  argno = argno + 1;
+done
+
+#print grab,argno,len(sys.argv)
+if grab == 1 and argno == len(sys.argv) do
+  println("usage: flx [options] filename");
+  Syste::exit(1);
+done
+
+//println "#--------"
+//println "DONE, option index = "+str(argno);
+//println "path="+path+", ext="+ext+",dir="+dir+",base="+base;
+//println "cpps="+cpps;
+//println "cppos="+cppos;
+
+if NOOPTIMISE == 0 do
+  CCFLAGS=CCFLAGS+" " + OPTIMISE;
+done
+
+@if config.HAVE_MSVC:
+  tangle('DLINK_STRING="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl ";')
+  tangle('SLINK_STRING="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl ";')
+ elif config.CYGWIN or config.WIN32:
+  tangle('DLINK_STRING="-L"+{FLX_INSTALL_DIR+"/bin ";')
+  tangle('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl ";')
+ else:
+  tangle('DLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl ";')
+  tangle('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl ";')
+
+
+PKGCONFIG=Filename::join$ list(FLX_INSTALL_DIR,"bin","flx_pkgconfig");
+
+if ECHO == 1 do
+  println("#FLX_INSTALL_DIR="+FLX_INSTALL_DIR);
+  println("#PKGCONFIG="+PKGCONFIG);
+
+CONFIG_DIR = Filename::join1(FLX_INSTALL_DIR,'config');
+
+// find external header files
+PKGCONFIG_CFLAGS=PKGCONFIG+ " --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=cflags ";
+
+// external header files
+PKGCONFIG_INCLUDES=PKGCONFIG+ " --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=includes ";
+
+// find external dynload libraries
+PKGCONFIG_DLIBS=PKGCONFIG+" -r --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=provides_dlib --field=requires_dlibs ";
+
+// find external static libraries
+PKGCONFIG_SLIBS=PKGCONFIG+" -r --keeprightmost --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=provides_slib --field=requires_slibs "
+
+//find driver package required
+PKGCONFIG_DRIVER=PKGCONFIG+" --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=flx_requires_driver "
+
+// make a list of any *.cpp files (or other g++ options ..)
+
+if STATIC == 0:
+  EXT_OBJ=EXT_SHARED_OBJ
+else:
+  EXT_OBJ=EXT_STATIC_OBJ
+
+// Strip trailing .flx or .so
+// users should type 'flx file' without extension,
+// but #! interpreter always passes extension ..
+
+if path.endswith('.flx'):
+  base = path[:-4]
+elif path.endswith('.so'):
+  base = path[:-3]
+else:
+  base = path
+
+// Find absolute pathname
+
+if path == "":
+  sys.stderr.write("No such felix program: "+path+"\n")
+  System::exit(1)
+
+def get_stdout(x,outit=None):
+  // We're screwed if popen doesn't work ..
+
+  if os.name == "nt": // popen doesn't work on Windows
+    result = os.system(x + " >tmp.out")
+    fout = open("tmp.out")
+    output = fout.readlines()
+    if outit:
+      for line in output: outit(line)
+    fout.close()
+  else:
+    fout = os.popen(x+" 2>&1 ","r")
+    output = []
+    try:
+      for line in fout:
+        output.append(line)
+        if outit: outit(line)
+    finally:
+      result = fout.close()
+  return result,output
+
+def xqt(cmd, default=None):
+  if ECHO == 1: print(cmd)
+  result,output = get_stdout(cmd)
+  if not result:
+     output=output[0][:-1] // first line excluding newline
+     if ECHO==1:print("output="+output)
+     return output
+  if default is None:
+    sys.stderr.write("Error "+repr(result)+" executing command " + cmd+"\n")
+    if not hasattr(os, 'WEXITSTATUS'):
+      System::exit(1)
+    else:
+      System::exit(os.WEXITSTATUS(result))
+  else:
+    return default
+
+def calpackages ():
+  // find all include directories
+  global INCLUDE_DIRS, INCLUDE_FILES, LINK_STRING, DRIVER
+
+  // find all include directories
+  x = xqt(PKGCONFIG_CFLAGS+ " @"+base+".resh")
+  INCLUDE_DIRS=INCLUDE_DIRS +" " + x
+
+  // find all include files
+  x = xqt(PKGCONFIG_INCLUDES+ " @"+base+".resh")
+  INCLUDE_FILES=INCLUDE_FILES +" " + x
+
+  // find the driver package
+  DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" @"+base+".resh")
+  if DRIVER_PKG == "":
+    DRIVER_PKG="flx_run"
+
+  // find the driver entity
+  if STATIC == 0:
+    // dynamic linkage: the driver executable
+    DRIVER=os.path.join(FLX_INSTALL_DIR,"bin",DRIVER_PKG+EXT_EXE)
+  else:
+    // static linkage: the driver object file
+    DRIVER=os.path.join(FLX_INSTALL_DIR,"lib","rtl",DRIVER_PKG+EXT_STATIC_OBJ)
+
+  if STATIC == 0:
+    // dynamic linkage: all the libraries required by the application
+    LINK_STRING=DLINK_STRING+LINKER_SWITCHES+xqt(
+      PKGCONFIG_DLIBS+" @"+base+".resh")
+  else:
+    // static linkage: all the libraries required by the application and driver
+    LINK_STRING=SLINK_STRING+LINKER_SWITCHES+xqt(
+      PKGCONFIG_SLIBS+" "+DRIVER_PKG+" @"+base+".resh")
+
+  if ECHO == 1:
+    print("//RESOURCE FILE="+base+".resh")
+    print("//INCLUDE_DIRS="+INCLUDE_DIRS)
+    print("//INCLUDE_FILES="+INCLUDE_FILES)
+    print("//DRIVER="+DRIVER)
+    print("//LINK_STRING="+LINK_STRING)
+
+def write_include_file(path):
+  includes = INCLUDE_FILES.strip().split()
+  f = open(path+".includes","w")
+  for i in includes:
+    f.write("//include " + i + "\n")
+  f.close()
+
+// grab program arguments
+grab=1
+args=' '.join(sys.argv[argno:])
+
+INCLUDE_DIR="-I"+os.path.join(FLX_INSTALL_DIR,"lib","rtl") + " -I"+os.path.join(FLX_INSTALL_DIR,"config","target")
+FLXLIB="-I"+os.path.join(FLX_INSTALL_DIR,"lib")
+STDLIB="std"
+if NOSTDLIB == 1:
+  FLXLIB=""
+  STDLIB=""
+
+if WIN32:
+  FLXG=os.path.join(FLX_INSTALL_DIR, 'bin', 'flxg')
+  FLXRUN=''
+else:
+  FLXG="env PATH="+FLX_INSTALL_DIR+"/bin:$PATH "+FLX_INSTALL_DIR+"/bin/flxg"
+  // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
+  if MACOSX == 1:
+    FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH "
+  else:
+    FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH "
+
+DEBUGSWITCH=""
+if DEBUG_COMPILER == 1: DEBUGSWITCH=" --debug"
+
+STATIC_ENV=""
+if DEBUG_COMPILER == 1: STATIC_ENV="env FLX_DEBUG=1 "
+
+def filetime(f):
+  try:
+    t = os.stat(f)[stat.ST_MTIME]
+  except EnvironmentError:
+    t = 0
+  return t
+
+if RECOMPILE == 0 and RUNIT == 1:
+  // not (--force or -c)
+  if STATIC == 0:
+    if (filetime(base+EXT_SHLIB) > filetime (base+".flx")):
+      calpackages()
+      cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ base+EXT_SHLIB+" "+args
+      System::exit(system(cmd))
+  else:
+    if (filetime(base+EXT_EXE) > filetime(base+".flx")):
+      cmd=STATIC_ENV+" "+base+" "+args
+      System::exit(system(cmd))
+
+// Need Felix and c++ compile, then run it
+
+if DEBUG_COMPILER == 1:
+  VERBOSE="-v"
+else:
+  VERBOSE="-q"
+
+if DEBUG:
+  CCFLAGS=CCFLAGS+DEBUG_FLAGS
+
+FLXFLAGS="--inline="+str(INLINE) + ' ' + str(OUTPUT_DIR)
+
+result = 0
+
+if STATIC == 0:
+  if FELIX == 1:
+    FCMD=' '.join([
+      FLXG,
+      VERBOSE, FLXFLAGS, FLXLIB,
+      INCLUDE_DIRS, STDIMPORT, IMPORTS,
+      STDLIB, base])
+    result=system(FCMD)
+    if result != 0: System::exit(0!=result)
+    calpackages()
+    write_include_file(base)
+    CCMD=' '.join([
+      CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
+      INCLUDE_DIR, INCLUDE_DIRS, MACROS,
+      cpps, base+".cpp",
+      SPEC_OBJ_FILENAME+base+EXT_OBJ])
+    LCMD=' '.join([
+      CCLINK_DLLIB, CCFLAGS,
+      cppos, base+EXT_OBJ,
+      SPEC_EXE_FILENAME+base+EXT_SHLIB,
+      LINK_STRING])
+    result = system(CCMD)
+    if result == 0:
+      result = system(LCMD)
+      if result == 0:
+        if RUNIT == 1:
+          if TIME == 1:
+            cmd=' '.join([
+              TIMECMD,
+              FLXRUN+DRIVER+DEBUGSWITCH,
+              base+EXT_SHLIB, args])
+          else:
+            cmd=' '.join([
+              FLXRUN+DRIVER+DEBUGSWITCH,
+              base+EXT_SHLIB, args])
+          if STDOUT != "": cmd=cmd+" > " +STDOUT
+          System::exit(0!=system(cmd))
+else:
+  if FELIX == 1:
+    FCMD=' '.join([
+      FLXG, VERBOSE, FLXFLAGS,
+      FLXLIB, INCLUDE_DIRS, STDIMPORT,
+      IMPORTS, STDLIB, base])
+    result=system(FCMD)
+  if result == 0:
+    calpackages()
+    write_include_file(base)
+    CCMD=' '.join([
+      CCOBJ_STATIC_LIB,
+      CCFLAGS, "-DTARGET_BUILD",
+      "-DFLX_STATIC_LINK", INCLUDE_DIR, INCLUDE_DIRS,
+      MACROS, cpps, base+".cpp",
+      SPEC_OBJ_FILENAME+base+EXT_OBJ])
+    LCMD=' '.join([
+      CCLINK_STATIC, SPEC_EXE_FILENAME+base+EXT_EXE,
+      base+EXT_OBJ, DRIVER, cppos, LINK_STRING])
+    result=system(CCMD)
+    if result == 0:
+      result=system(LCMD)
+      if result == 0:
+        // rm -f "$base.cpp"
+        if RUNIT == 1:
+          if TIME == 1:
+            cmd=' '.join([
+              TIMECMD, STATIC_ENV, base, args])
+          else:
+            cmd=' '.join([
+              STATIC_ENV, base,args])
+          if STDOUT != "": cmd=cmd + " > "+STDOUT
+          System::exit(0!=system(cmd))
+System::exit(0!=result)
+
 @select(tangler('bin/flx-postinstall-check','data'))
 #!/usr/bin/env bash
 FLX=flx
