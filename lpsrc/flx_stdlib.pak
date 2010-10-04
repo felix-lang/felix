@@ -271,4 +271,33 @@ module Filename
    tangle('  const sep : charp = c"\\"\\\\\\\\\\"";')
  else:
    tangle('  const sep : charp = c"\\"'+os.sep+'\\"";')
+
+  // these seem more generic
+
+  // Note carefully that split1("x")=> "","x" whereas
+  // split1("/x")=>"/","x"
+  // join1 handles this correctly
+  // Note also we do NOT return "." unless it is explicitly given
+  // since relative filenames are NOT necessarily relative to the
+  // current directory (for example C #include names)
+
+  fun split1(s:string)=> match find_last_of(s,sep) with
+    | Some ?pos => 
+      if pos==0 then sep else s.[to pos] endif,
+      s.[pos+1 to]
+    | None => "",s
+    endmatch
+  ;
+
+  fun join1(p:string, b:string)=> 
+    match len p, len b with
+    | 0,0 => ""
+    | 0,_ => b
+    | _,0  => p
+    | _,_ => if p==sep then p+b else p+sep+b endif
+    endmatch
+  ; 
+
+  // todo: multi-component split/join
 }
+
