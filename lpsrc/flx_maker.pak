@@ -29,130 +29,6 @@ for ch in data:
     counter = 0
 print()
 
-@select(tangler('script/fcount.py','python'))
-import glob
-import os
-import sys
-if '' not in sys.path: sys.path = ['']+sys.path
-from fbuild.flxbuild.flxutil import xqt
-
-try:
-  filename = sys.argv[1]
-except:
-  filename = "fcounts.stats"
-
-try:
-  key = sys.argv[2]
-except:
-  key = "std"
-
-try:
-  globspec = sys.argv[3]
-except:
-  globspec = "tut/examples/*.hpp"
-
-print("function counter: STATS FILE",filename, "KEY", key, "GLOB",globspec)
-dict = {}
-try:
-  execfile (filename)
-except:pass
-
-files = glob.glob(globspec)
-
-for file in files:
-  cmd = 'egrep "//PROC|//FUNCTION" ' + file + ' | wc -l'
-  output = xqt(cmd)[0][:-1]
-  x = int(output)
-  try:
-    d= dict[file]
-  except:
-    dict[file]={}
-    d = dict[file]
-  d[key]=x
-
-f = open(filename,"w")
-f.write("dict="+repr(dict))
-f.close()
-
-@h = tangler('script/pfcount.py','python')
-@select(h)
-import glob
-import os
-import sys
-try:
-  filename = sys.argv[1]
-except:
-  filename = "fcounts.stats"
-
-only_nonopt = 0
-try:
-  x = sys.argv[2]
-except:
-  only_nonopt = 1
-
-dict = {}
-try:
-  execfile (filename)
-except:pass
-
-keys = {}
-i = 0
-for k in dict.keys():
-  i = max(i,len(k))
-  d = dict[k]
-  for key in d.keys():
-    keys[key]=None
-
-keys = keys.keys()
-j=0
-for k in keys:
-  j = max(j,len(k))
-
-print("Function counts for test programs")
-print("=================================")
-print()
-print(("%-"+str(i+2)+"s") % "File" + "    ", end='')
-for t in keys:
-  print(("%"+str(j+2)+"s") % t, end='')
-print()
-print("--------")
-
-skeys = list(dict.keys())
-skeys.sort()
-
-for k in skeys:
-  d = dict[k]
-  x= ("%-"+str(i+2)+"s") % k + "..  "
-  discard = 0
-  for t in keys:
-    v = pkgdict.get(t,-1)
-    if v == -1:
-      v = ""
-    elif (v == 1 or v == 0) and t == "inline" and only_nonopt:
-      discard = 1
-      break
-    else:
-      v = str(v)
-    v = ("%"+str(j+2)+"s") % v
-    x = x+v
-  if not discard: print(x)
-
-@h = tangler('script/mk_expect','python')
-@select(h)
-import glob
-import sys
-for k in sys.argv[1:]:
-  files = glob.glob(k+'/*.output')
-  print('@head(1,"Expected outputs for '+k+'")')
-  for i in files:
-    j = i[:-7]+'.expect'
-    print('@head(2,"'+j+'")')
-    print('@select(tangler("'+j+'","data"))')
-    f = open(i,"r")
-    for l in f: print(l, end='')
-    f.close()
-
-
 @h = tangler('spkgs/tutorial.py')
 @select(h)
 pkg_requires = [
@@ -600,6 +476,8 @@ DIV.DIFF_SECTION_HEAD EM, DIV.DIFF_SECTION_FOOT EM {
 // dummy: to be replaced by the user (but needed for some browsers)
 
 @head(1,'Run script')
+@# ------------- RUN SCRIPT flx.bat FOR WINDOWS COMMAND LINE
+
 @select(tangler('bin/flx.bat','data'))
 @@echo off
 SETLOCAL
@@ -679,6 +557,7 @@ EXIT /B 1
 :FINISHED
 ENDLOCAL
 
+@# ------------- UNIVERSAL RUN SCRIPT flx.py REQUIRES PYTHON
 @select(tangler('bin/flx.py','data'))
 #!/usr/bin/env python3.1
 # flx.py - felix script harness (python version)
@@ -1166,6 +1045,7 @@ else:
           sys.exit(0!=system(cmd))
 sys.exit(0!=result)
 
+@# ------------- UNIX RUN SCRIPT flx REQUIRES bash
 @select(tangler('bin/flx','data'))
 #!/usr/bin/env bash
 # flx - felix script harness
@@ -1707,6 +1587,15 @@ else
   fi
 fi
 
+@# ------------- UNIVERSAL RUN SCRIPT flx.flx
+@# ------------- This script should be compiled to binary using one of the other
+@# ------------- run scripts, or even do it the hard way, the result is a binary
+@# ------------- executable with no dependencies which was generated from platform
+@# ------------- independent code. Obviously the install directory is bound in,
+@# ------------- but it can easily be overridden on the command line by again writing
+@# ------------- a native shell script to drive it (but now leaving the binary to
+@# ------------- do most of the command line argument processing etc
+
 @select(tangler('tools/flx.flx','data'))
 
 dbug := true; // switch off for production
@@ -1784,8 +1673,8 @@ var pkgs="";
 var CONFIG_DIR = "";
 
 fun splitext(p:string)=>
-  if p.[-5 to -1] == ".flx" then p.[to -5],".flx"
-  elif p.[-5 to -1] == ".cpp" then p.[to -5],".cpp"
+  if p.[-4 to] == ".flx" then p.[to -5],"flx"
+  elif p.[-4 to] == ".cpp" then p.[to -5],"cpp"
   else p,""
   endif
 ;
@@ -1812,9 +1701,6 @@ whilst grab == 1 and argno<System::argc do
   var path,ext = splitext(arg);
   var dir,base = Filename::split1(path);
   dbug?? println$ "path="+path+", ext="+ext+",dir="+dir+",base="+base;
-  dbug?? println$ "cpps="+cpps;
-  dbug?? println$ "cppos="+cppos;
-  dbug?? println$ "arg='"+arg+"'";
   if ext != "flx" and ext != "" do
     if List::mem eq of (string * string) compile_exts ext do
       cpps = cpps + " " + arg;
@@ -1824,95 +1710,123 @@ whilst grab == 1 and argno<System::argc do
     done
 
   elif arg == "--nostdimport" do
+    dbug?? println "No standard library import";
     STDIMPORT="";
 
   elif prefix(arg,"--import=") do
+   dbug?? println "Add import";
    IMPORTS=IMPORTS + " " + arg.[9 to];
 
   elif prefix(arg,"--test=") do
+    dbug?? println "Set test directory";
     TESTMODE=1;
     FLX_INSTALL_DIR=arg.[7 to];
 
   elif arg=="--test" do
+    dbug?? println "Set test directory";
     TESTMODE=1;
     FLX_INSTALL_DIR=".";
 
   elif prefix(arg,"--stdout=") do
+    dbug?? println "Redirect standard output";
     STDOUT=arg.[9 to];
 
   elif arg=="--force" do
+    dbug?? println "Force recompilation";
     RECOMPILE=1;
 
   elif arg=="--debug" do
+    dbug?? println "Enable debugging";
     DEBUG=1;
 
   elif arg=="--debug-compiler" do
+    dbug?? println "Enable compiler debugging";
     DEBUG_COMPILER=1;
 
   elif arg=="--nooptimise" do
+    dbug?? println "Disable optimisation";
     NOOPTIMISE=1;
 
   elif arg=="--nostdlib" do
+    dbug?? println "Do not load standard library";
     NOSTDLIB=1;
 
   elif arg == "--echo" do
+    dbug?? println "Echo commands sent to system";
     ECHO=1;
 
   elif arg == "--static" do
+    dbug?? println "Compile a statically linked program";
     STATIC=1;
 
   elif prefix(arg,"--inline=") do
+    dbug?? println "Set inline aggressiveness";
     INLINE=int(arg.[to 9]);
 
   elif arg == "--inline" do
+    dbug?? println "Set inline aggressiveness";
     INLINE=100;
 
   elif arg == "--noinline" do
+    dbug?? println "Disable inlining (NOT RECOMMENDED)";
     INLINE=0;
 
   elif arg == "--version" do
+    dbug?? println "Print Felix version and exit";
     print("version ..");
     println(VERSION);
     System::exit(0);
 
   elif arg == "--where" do
-    print(FLX_INSTALL_DIR);
+    dbug?? println "Print location of install directory and exit";
+    println(FLX_INSTALL_DIR);
     System::exit(0);
 
   elif arg == "--time" do
+    dbug?? println "Time program execution and print after running";
     TIME=1;
 
   elif prefix(arg,"--output_dir=") do
+    dbug?? println "Set the directory for compiler generated C++ files";
     OUTPUT_DIR=arg;
 
   elif arg == "--help" do
+    dbug?? println "Display top level manual page using 'man' program";
     unused := system("man -M "+FLX_INSTALL_DIR+Filename::sep+"man"+" flx");
     System::exit(0);
 
   elif arg == "-c" do
+    dbug?? println "Compile program but do not run it";
     RUNIT=0;
 
   elif prefix(arg,"-I") do
+    dbug?? println "Set include directories for both Felix and C/C++";
     INCLUDE_DIRS=INCLUDE_DIRS + " " + arg;
 
   elif arg== "--nofelix" do
+    dbug?? println "Do not translate Felix code, just compile generated C++ (used to debug at C++ level)";
     FELIX=0;
 
   elif prefix(arg,"-l") or prefix(arg,"-L") do
-   LINKER_SWITCHES=LINKER_SWITCHES + " " + arg;
+    dbug?? println "Set extra switched for linker";
+    LINKER_SWITCHES=LINKER_SWITCHES + " " + arg;
 
   elif prefix(arg,"-D") do
-   MACROS=MACROS + " " + arg;
+    dbug?? println "Set extra macros for C++ compilation";
+    MACROS=MACROS + " " + arg;
 
   elif prefix(arg,"--pkg=") do
+    dbug?? println "Add pkgconfig package to link";
     pkgs= pkgs + " " + arg.[6 to];
 
   elif prefix(arg,"--") do
-    print("Unknown option '"+ arg+"'");
+    dbug?? println "Unknown -- style option, abort";
+    println("Unknown option '"+ arg+"'");
     System::exit(1);
 
 // the main filename -- subsequent args are args to flx_run
   else
+    dbug?? println "Assume we have the filename now";
     grab=0;
   done
   argno = argno + 1;
@@ -1931,16 +1845,22 @@ dbug?? println$ "cpps="+cpps;
 dbug?? println$ "cppos="+cppos;
 
 if NOOPTIMISE == 0 do
+  dbug?? println "Set C++ compiler optimisation switches";
   CCFLAGS=CCFLAGS+" " + OPTIMISE;
+else
+  dbug?? println "What, no optimisation?";
 done
 
 @if config.HAVE_MSVC:
+  tangle('dbug?? println "Set MSVC linker options";');
   tv('DLINK_STRING="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl "')
   tangle('SLINK_STRING="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl "')
  elif config.CYGWIN or config.WIN32:
+  tangle('dbug?? println "Set Cygwin linker options";');
   tv('DLINK_STRING="-L"+{FLX_INSTALL_DIR+"/bin "')
   tv('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
  else:
+  tangle('dbug?? println "Set Unix linker options";');
   tv('DLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
   tv('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
 
