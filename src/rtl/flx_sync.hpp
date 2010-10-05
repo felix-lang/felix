@@ -16,16 +16,16 @@ RTL_EXTERN char const * get_fpc_desc(fpc_t);
 
 struct RTL_EXTERN sync_state_t {
   bool debug_driver;
-  flx::gc::generic::gc_profile_t *gcp;
-  std::list<flx::rtl::fthread_t*> *active;
-  flx::rtl::fthread_t *ft;
-  flx::rtl::_uctor_ *request;
+  ::flx::gc::generic::gc_profile_t *gcp;
+  ::std::list<flx::rtl::fthread_t*> *active;
+  ::flx::rtl::fthread_t *ft;
+  ::flx::rtl::_uctor_ *request;
   fpc_t pc;
   fstate_t fs;
   sync_state_t (
     bool debug_driver_,
-    flx::gc::generic::gc_profile_t *gcp_,
-    std::list<flx::rtl::fthread_t*> *active_
+    ::flx::gc::generic::gc_profile_t *gcp_,
+    ::std::list<flx::rtl::fthread_t*> *active_
   );
   void frun();
 };

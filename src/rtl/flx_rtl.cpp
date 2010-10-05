@@ -38,7 +38,7 @@ static std::size_t slist_node_offsets[2]={
     offsetof(slist_node_t,data)
 };
 
-flx::gc::generic::gc_shape_t slist_node_ptr_map = {
+::flx::gc::generic::gc_shape_t slist_node_ptr_map = {
   NULL,
   "slist_node_t",
   1,sizeof(slist_node_t),
@@ -75,7 +75,7 @@ static std::size_t slist_offsets[1]={
     offsetof(slist_t,head)
 };
 
-flx::gc::generic::gc_shape_t slist_ptr_map = {
+::flx::gc::generic::gc_shape_t slist_ptr_map = {
   &slist_node_ptr_map,
   "slist_t",
   1,sizeof(slist_t),
@@ -138,7 +138,7 @@ static std::size_t _fthread_offsets[1]={
     offsetof(fthread_t,cc)
 };
 
-flx::gc::generic::gc_shape_t _fthread_ptr_map = {
+::flx::gc::generic::gc_shape_t _fthread_ptr_map = {
   &slist_ptr_map,
   "fthread_t",
   1,sizeof(fthread_t),
@@ -189,7 +189,7 @@ static std::size_t schannel_offsets[2]={
     offsetof(schannel_t,waiting_to_write)
 };
 
-flx::gc::generic::gc_shape_t schannel_ptr_map = {
+::flx::gc::generic::gc_shape_t schannel_ptr_map = {
   &_fthread_ptr_map,
   "schannel_t",
   1,sizeof(schannel_t),
@@ -208,7 +208,7 @@ static std::size_t _uctor_offsets[1]= {
   offsetof(_uctor_,data)
 };
 
-flx::gc::generic::gc_shape_t _uctor_ptr_map = {
+::flx::gc::generic::gc_shape_t _uctor_ptr_map = {
   &schannel_ptr_map,
   "_uctor_",
   1,
@@ -223,7 +223,7 @@ flx::gc::generic::gc_shape_t _uctor_ptr_map = {
 // int implementation
 // ********************************************************
 
-flx::gc::generic::gc_shape_t _int_ptr_map = {
+::flx::gc::generic::gc_shape_t _int_ptr_map = {
   &_uctor_ptr_map,
   "int",
   1,
@@ -241,7 +241,7 @@ flx::gc::generic::gc_shape_t _int_ptr_map = {
 //OFFSETS for address
 static std::size_t _address_offsets[1]={ 0 };
 
-flx::gc::generic::gc_shape_t _address_ptr_map = {
+::flx::gc::generic::gc_shape_t _address_ptr_map = {
   &_int_ptr_map,
   "address",
   1,
@@ -257,7 +257,7 @@ flx::gc::generic::gc_shape_t _address_ptr_map = {
 // unit implementation
 // ********************************************************
 
-flx::gc::generic::gc_shape_t unit_ptr_map = {
+::flx::gc::generic::gc_shape_t unit_ptr_map = {
   &_address_ptr_map,
   "unit",
   1,

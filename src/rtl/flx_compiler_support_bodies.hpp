@@ -9,10 +9,10 @@
 
 
 #define FLX_EXEC_FAILURE(f,op,what) \
-  throw flx::rtl::flx_exec_failure_t (f,op,what)
+  throw ::flx::rtl::flx_exec_failure_t (f,op,what)
 
 #define FLX_HALT(f,sl,sc,el,ec,s) \
-  throw flx::rtl::flx_halt_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__,s)
+  throw ::flx::rtl::flx_halt_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__,s)
 
 // note call should be trace(&v,...) however that requires
 // compiler support to make a trace record for each tracepoint
@@ -20,25 +20,25 @@
 
 #ifdef FLX_ENABLE_TRACE
 #define FLX_TRACE(v,f,sl,sc,el,ec,s) \
-  flx::rtl::flx_trace (NULL,flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__,s)
+  ::flx::rtl::flx_trace (NULL,flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__,s)
 #else
 #define FLX_TRACE(v,f,sl,sc,el,ec,s)
 #endif
 
 #define FLX_MATCH_FAILURE(f,sl,sc,el,ec) \
-  throw flx::rtl::flx_match_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
+  throw ::flx::rtl::flx_match_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
 
 #define FLX_ASSERT_FAILURE(f,sl,sc,el,ec) \
-  throw flx::rtl::flx_assert_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
+  throw ::flx::rtl::flx_assert_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
 
 #define FLX_ASSERT2_FAILURE(f,sl,sc,el,ec,f2,sl2,sc2,el2,ec2) \
-  throw flx::rtl::flx_assert2_failure_t (\
+  throw ::flx::rtl::flx_assert2_failure_t (\
     flx_range_srcref_t(f,sl,sc,el,ec),\
     flx_range_srcref_t(f2,sl2,sc2,el2,sc2),\
     __FILE__,__LINE__)
 
 #define FLX_RANGE_FAILURE(f,sl,sc,el,ec) \
-  throw flx::rtl::flx_range_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
+  throw ::flx::rtl::flx_range_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
 
 // for generated code in body file
 #define INIT_PC pc=0;

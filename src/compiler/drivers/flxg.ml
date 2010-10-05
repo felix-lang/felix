@@ -454,9 +454,9 @@ let codegen_bsyms state bsym_table root_proc =
   plh "#endif";
   plh "//FELIX RUNTIME";
   (* plh "#include \"flx_rtl.hpp\""; *)
-  plh "using namespace flx::rtl;";
+  plh "using namespace ::flx::rtl;";
   (* plh "#include \"flx_gc.hpp\""; *)
-  plh "using namespace flx::gc::generic;";
+  plh "using namespace ::flx::gc::generic;";
   plh "";
 
   plh "\n//-----------------------------------------";
@@ -714,17 +714,17 @@ let codegen_bsyms state bsym_table root_proc =
   plb ("}} // namespace flxusr::" ^ cid_of_flxid state.module_name);
 
   plb "//CREATE STANDARD EXTERNAL INTERFACE";
-  plb ("FLX_FRAME_WRAPPERS(flxusr::" ^ cid_of_flxid state.module_name ^ ")");
+  plb ("FLX_FRAME_WRAPPERS(::flxusr::" ^ cid_of_flxid state.module_name ^ ")");
   (if List.mem `Pure topclass_props then
-    plb ("FLX_C_START_WRAPPER(flxusr::" ^ cid_of_flxid state.module_name ^ "," ^ top_class ^ ")")
+    plb ("FLX_C_START_WRAPPER(::flxusr::" ^ cid_of_flxid state.module_name ^ "," ^ top_class ^ ")")
   else if List.mem `Stackable topclass_props then
-    plb ("FLX_STACK_START_WRAPPER(flxusr::" ^ cid_of_flxid state.module_name ^ "," ^ top_class ^ ")")
+    plb ("FLX_STACK_START_WRAPPER(::flxusr::" ^ cid_of_flxid state.module_name ^ "," ^ top_class ^ ")")
   else
-    plb ("FLX_START_WRAPPER(flxusr::" ^ cid_of_flxid state.module_name ^ "," ^ top_class ^ ")")
+    plb ("FLX_START_WRAPPER(::flxusr::" ^ cid_of_flxid state.module_name ^ "," ^ top_class ^ ")")
   );
   plb "\n//-----------------------------------------";
 
-  plh ("using namespace flxusr::" ^ cid_of_flxid state.module_name ^ ";");
+  plh ("using namespace ::flxusr::" ^ cid_of_flxid state.module_name ^ ";");
   if List.length state.syms.bifaces > 0 then begin
     plh "//DECLARE USER EXPORTS";
     plh (gen_biface_headers state.syms bsym_table state.syms.bifaces);

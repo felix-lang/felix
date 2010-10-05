@@ -4,8 +4,8 @@
 #include "flx_exceptions.hpp"
 
 namespace flx { namespace rtl {
-int RTL_EXTERN std_exception_handler (std::exception *e);
-int RTL_EXTERN flx_exception_handler (flx::rtl::flx_exception_t *e);
+int RTL_EXTERN std_exception_handler (::std::exception *e);
+int RTL_EXTERN flx_exception_handler (::flx::rtl::flx_exception_t *e);
 }}
 
 #endif

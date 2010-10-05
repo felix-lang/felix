@@ -27,8 +27,8 @@ using namespace std;
   // work with .dylib, they really shouldn't shouldn't.
   // #define FLX_LIB_EXTENSION ".dylib"
   #define FLX_LIB_EXTENSION ".so"
-  #define FLX_DLSYM(x, y) flx::rtl::getmachosym(x,"_"#y)
-  #define FLX_SDLSYM(x, y) flx::rtl::getmachosym(x,(string("_")+string(y)).data())
+  #define FLX_DLSYM(x, y) ::flx::rtl::getmachosym(x,"_"#y)
+  #define FLX_SDLSYM(x, y) ::flx::rtl::getmachosym(x,(string("_")+string(y)).data())
 #else
   // UNIX, recent OSX
   typedef void *LIBHANDLE;
@@ -54,7 +54,7 @@ using namespace std;
 #ifndef FLX_STATIC_LINK
   #define SDLSYM(x,y) FLX_SDLSYM(x,y)
 #else
-  #define SDLSYM(x,y) (throw flx::rtl::link_failure_t("<static link>",y,"dlsym with static link requires name not string")
+  #define SDLSYM(x,y) (throw ::flx::rtl::link_failure_t("<static link>",y,"dlsym with static link requires name not string")
 #endif
 
 // Utilities to make dynamic linkage and
@@ -109,7 +109,7 @@ flx_load_module(const std::string& filename);
 
 typedef thread_frame_t *(*thread_frame_creator_t)
 (
-  flx::gc::generic::gc_profile_t*
+  ::flx::gc::generic::gc_profile_t*
 );
 
 /// library initialisation routine.
@@ -170,11 +170,11 @@ struct RTL_EXTERN flx_libinit_t
   con_t *start_proc;
   con_t *main_proc;
   flx_dynlink_t *lib;
-  flx::gc::generic::gc_profile_t *gcp;
+  ::flx::gc::generic::gc_profile_t *gcp;
   void create
   (
     flx_dynlink_t *lib_a,
-    flx::gc::generic::gc_profile_t *gcp_a,
+    ::flx::gc::generic::gc_profile_t *gcp_a,
     main_t main_sym,
     int argc,
     char **argv,

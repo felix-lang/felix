@@ -3,16 +3,16 @@
 #include "flx_dynlink.hpp"
 #include "flx_exceptions.hpp"
 #include "flx_eh.hpp"
-using namespace flx::rtl;
+using namespace ::flx::rtl;
 
 
-int flx::rtl::std_exception_handler (std::exception *e)
+int ::flx::rtl::std_exception_handler (std::exception *e)
 {
   fprintf(stderr,"C++ STANDARD EXCEPTION %s\n",e->what());
   return 4;
 }
 
-int flx::rtl::flx_exception_handler (flx_exception_t *e)
+int ::flx::rtl::flx_exception_handler (flx_exception_t *e)
 {
   if (flx_halt_t *x = dynamic_cast<flx_halt_t*>(e))
   {

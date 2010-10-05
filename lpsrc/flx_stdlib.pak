@@ -17,10 +17,10 @@ iscr_source = ['lpsrc/flx_stdlib.pak']
 @head(2,"Code")
 Support table.
 @begin_table("filebase","language","namespace","function")
-@table_row("rtl/flx_i18n","C++","flx::rtl::i18n","utf8 codec support")
-@table_row("rtl/flx_strutil","C++","flx::rtl::strutil","Python style substring support")
-@table_row("rtl/flx_ioutil","C++","flx::rtl::ioutil","Standard IO support")
-@table_row("rtl/flx_executil","C++","flx::rtl::executil","Fibre suport")
+@table_row("rtl/flx_i18n","C++","::flx::rtl::i18n","utf8 codec support")
+@table_row("rtl/flx_strutil","C++","::flx::rtl::strutil","Python style substring support")
+@table_row("rtl/flx_ioutil","C++","::flx::rtl::ioutil","Standard IO support")
+@table_row("rtl/flx_executil","C++","::flx::rtl::executil","Fibre suport")
 @table_row("lib/stl","Felix","","STL support")
 @end_table()
 
@@ -28,7 +28,7 @@ Support table.
 
 @def gen_nan(t):
   if config.TARGET_CXX.options.HAVE_CXX_ISNAN_IN_CMATH:
-    tangle('  fun isnan: '+t+' -> bool = "std::isnan($1)" is postfix requires cmath;')
+    tangle('  fun isnan: '+t+' -> bool = "::std::isnan($1)" is postfix requires cmath;')
   elif config.TARGET_CXX.options.HAVE_C99_ISNAN_IN_MATH:
     tangle('  fun isnan: '+t+' -> bool = "isnan($1)" is postfix requires math_h;')
   elif config.TARGET_CXX.options.HAVE_BSD_ISNAN_IN_MATH:
@@ -39,7 +39,7 @@ Support table.
     tangle('  fun isnan: '+t+' -> bool = "!($1==$1)" is unary;')
 
   if config.TARGET_CXX.options.HAVE_CXX_ISINF_IN_CMATH:
-    tangle('  fun isinf: '+t+' -> bool = "std::isinf($1)" is postfix requires cmath;')
+    tangle('  fun isinf: '+t+' -> bool = "::std::isinf($1)" is postfix requires cmath;')
   elif config.TARGET_CXX.options.HAVE_C99_ISINF_IN_MATH:
     tangle('  fun isinf: '+t+' -> bool = "isinf($1)" is postfix requires math_h;')
   elif config.TARGET_CXX.options.HAVE_BSD_ISINF_IN_MATH:
@@ -50,7 +50,7 @@ Support table.
     tangle('  fun isinf: '+t+' -> bool = "($1==$1 && $1+$1+1.0==$1)" is unary;')
 
   if config.TARGET_CXX.options.HAVE_CXX_ISFINITE_IN_CMATH:
-    tangle('  fun isfinite: '+t+' -> bool = "std::isfinite($1)" is postfix requires cmath;')
+    tangle('  fun isfinite: '+t+' -> bool = "::std::isfinite($1)" is postfix requires cmath;')
   elif config.TARGET_CXX.options.HAVE_C99_ISFINITE_IN_MATH:
     tangle('  fun isfinite: '+t+' -> bool = "isfinite($1)" is postfix requires math_h;')
   elif config.TARGET_CXX.options.HAVE_BSD_FINITE_IN_MATH:
@@ -213,7 +213,7 @@ typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
 @for t in floats:
   tangle("open module " + t.capitalize())
   tangle("{")
-  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(std::atof($1.data()))" requires cstdlib;')
+  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(::std::atof($1.data()))" requires cstdlib;')
   tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
   gen_nan(t)
   tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
@@ -247,13 +247,13 @@ module System
   const argc:int = "PTF argc";
   const _argv:&charp= "PTF argv";
 
-  fun argv:int -> string = 'std::string($1<0||$1>=PTF argc??"":PTF argv[$1])';
+  fun argv:int -> string = '::std::string($1<0||$1>=PTF argc??"":PTF argv[$1])';
   fun args () => List::map (the argv) (List::range argc);
-@tangle('  const felix_version : string = \'std::string("'+config.flx_version+'")\';')
-  fun system: string -> int = "std::system($1.data())"
+@tangle('  const felix_version : string = \'::std::string("'+config.flx_version+'")\';')
+  fun system: string -> int = "::std::system($1.data())"
     requires cstdlib;
-  proc exit: int = "std::exit($1);";
-  proc abort: 1 = "std::abort($1);";
+  proc exit: int = "::std::exit($1);";
+  proc abort: 1 = "::std::abort($1);";
   type ptf_t = "thread_frame_t*";
   const ptf:ptf_t = "FLX_POINTER_TO_THEAD_FRAME";
 }

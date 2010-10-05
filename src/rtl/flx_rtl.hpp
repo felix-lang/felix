@@ -35,13 +35,13 @@ struct RTL_EXTERN unit {};   // unit
 // we provide a shape for C 'int' type as well
 // ********************************************************
 
-RTL_EXTERN extern flx::gc::generic::gc_shape_t _fthread_ptr_map;
-RTL_EXTERN extern flx::gc::generic::gc_shape_t schannel_ptr_map;
-RTL_EXTERN extern flx::gc::generic::gc_shape_t _uctor_ptr_map;
-RTL_EXTERN extern flx::gc::generic::gc_shape_t _int_ptr_map;
-RTL_EXTERN extern flx::gc::generic::gc_shape_t _address_ptr_map;
-RTL_EXTERN extern flx::gc::generic::gc_shape_t unit_ptr_map;
-RTL_EXTERN extern flx::gc::generic::gc_shape_t slist_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _fthread_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t schannel_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _uctor_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _int_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t _address_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t unit_ptr_map;
+RTL_EXTERN extern ::flx::gc::generic::gc_shape_t slist_ptr_map;
 
 // ********************************************************
 /// CONTINUATION.
