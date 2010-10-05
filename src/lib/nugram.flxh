@@ -1160,6 +1160,8 @@ syntax executable {
   sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,_2 (ast_ref ,_1))";
   sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,_1 (ast_ref ,_2))";
 
+  // utstatement is some attempt to get "unterminated statements"
+
   utstatement := "yield" sexpr =># "`(ast_yield ,_sr ,_2)";
   utstatement := "return" sexpr =># "`(ast_fun_return ,_sr ,_2)";
   tstatement := "return" ";" =># "`(ast_proc_return ,_sr)";
@@ -1186,6 +1188,9 @@ syntax executable {
     "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
   tstatement := "if" sexpr "do" sstatements "done" =>#
     "`(ast_ifdo ,_sr ,_2 ,_4 ())";
+
+  tstatement := sexpr "??" tstatement =>#
+    "`(ast_ifdo ,_sr ,_1 (,_3) ())";
 
   selif_clause := "elif" sexpr "do" sstatements =># "`(,_2 ,_4)";
   selif_clause := "elif" sexpr "return" ";"? =># "`(,_2 ((ast_proc_return ,_sr)))";
