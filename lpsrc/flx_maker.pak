@@ -1671,6 +1671,8 @@ var LINK_STRING = "";
 var pkgs="";
 
 var CONFIG_DIR = "";
+var FLXG = "";
+var FLXRUN = "";
 
 fun splitext(p:string)=>
   if p.[-4 to] == ".flx" then p.[to -5],"flx"
@@ -1866,6 +1868,7 @@ done
 
 
 var PKGCONFIG=Filename::join$ List::list(FLX_INSTALL_DIR,"bin","flx_pkgconfig");
+dbug?? println$ "Felix package manager program is "+PKGCONFIG;
 
 if ECHO == 1 do
   println("#FLX_INSTALL_DIR="+FLX_INSTALL_DIR);
@@ -1873,6 +1876,7 @@ if ECHO == 1 do
 done
 
 CONFIG_DIR = Filename::join(FLX_INSTALL_DIR,'config');
+dbug?? println$ "Felix package manager config directory is "+PKGCONFIG;
 
 // find external header files
 var PKGCONFIG_CFLAGS=PKGCONFIG+ " --path+="+Filename::join(FLX_INSTALL_DIR,"config") + " --field=cflags ";
@@ -1907,6 +1911,7 @@ base =
   else path
   endif
 ;
+dbug?? println$ "User program base is " + base;
 
 // Find absolute pathname
 
@@ -1998,42 +2003,59 @@ proc calpackages () {
   done
 }
 
-/* ------------
-def write_include_file(path):
-  includes = INCLUDE_FILES.strip().split()
-  f = open(path+".includes","w")
-  for i in includes:
-    f.write("//include " + i + "\n")
-  f.close()
+proc write_include_file(path:string) {
+  includes := split (strip INCLUDE_FILES,char " ");
+  var f = Text_file::fopen_output(path+".includes");
+  List::iter  
+    (proc (i:string) { Text_file::writeln$ f, "//include " + i; })
+    includes
+  ;
+  Text_file::fclose f;
+}
+
 
 // grab program arguments
-grab=1
-args=' '.Filename::join(sys.argv[argno:])
+grab=1;
+fun pop (x:List::list[string], n:int) => 
+  if n == 0 then x 
+  else match x with | Cons(_,?t) => pop(t,n-1) | Empty[string] => List::Empty[string] endmatch
+  endif
+;
 
-INCLUDE_DIR="-I"+Filename::join(FLX_INSTALL_DIR,"lib","rtl") + " -I"+Filename::join(FLX_INSTALL_DIR,"config","target")
-FLXLIB="-I"+Filename::join(FLX_INSTALL_DIR,"lib")
-STDLIB="std"
-if NOSTDLIB == 1:
-  FLXLIB=""
-  STDLIB=""
+var tail = pop (System::args(), argno); 
+var args= List::cat " " tail;
+dbug?? println$ "Target program args = "+args;
 
-if WIN32:
-  FLXG=Filename::join(FLX_INSTALL_DIR, 'bin', 'flxg')
-  FLXRUN=''
-else:
-  FLXG="env PATH="+FLX_INSTALL_DIR+"/bin:$PATH "+FLX_INSTALL_DIR+"/bin/flxg"
+var INCLUDE_DIR="-I"+Filename::join(FLX_INSTALL_DIR,"lib","rtl") + " -I"+Filename::join(FLX_INSTALL_DIR,"config","target");
+dbug?? println$ "C++ Include directory for Felix library " + INCLUDE_DIR;
+
+var FLXLIB="-I"+Filename::join(FLX_INSTALL_DIR,"lib");
+var STDLIB="std";
+if NOSTDLIB == 1 do
+  FLXLIB="";
+  STDLIB="";
+done
+
+if WIN32 do
+  FLXG=Filename::join(FLX_INSTALL_DIR, 'bin', 'flxg');
+  FLXRUN='';
+else
+  FLXG="env PATH="+FLX_INSTALL_DIR+"/bin:$PATH "+FLX_INSTALL_DIR+"/bin/flxg";
   // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
-  if MACOSX == 1:
-    FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH "
-  else:
-    FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH "
+  if MACOSX do
+    FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH ";
+  else
+    FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH ";
+  done
+done
 
-DEBUGSWITCH=""
-if DEBUG_COMPILER == 1: DEBUGSWITCH=" --debug"
+var DEBUGSWITCH="";
+DEBUG_COMPILER == 1?? DEBUGSWITCH=" --debug";
 
-STATIC_ENV=""
-if DEBUG_COMPILER == 1: STATIC_ENV="env FLX_DEBUG=1 "
+var STATIC_ENV=""
+DEBUG_COMPILER == 1?? STATIC_ENV="env FLX_DEBUG=1 ";
 
+/* ------
 def filetime(f):
   try:
     t = os.stat(f)[stat.ST_MTIME]
