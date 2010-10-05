@@ -1,20 +1,20 @@
 module Text_file
 {
   requires flx_ioutil;
-  fun load: string -> string = "flx::rtl::ioutil::load_file($1)";
-  fun load: text_file -> string = "flx::rtl::ioutil::load_file($1)";
+  fun load: string -> string = "::flx::rtl::ioutil::load_file($1)";
+  fun load: text_file -> string = "::flx::rtl::ioutil::load_file($1)";
 
   pod type text_file = "FILE*"; // its a macro?
 
-  gen fopen_input: string -> text_file = 'std::fopen($1.data(),"rt")';
-  gen fopen_output: string -> text_file = 'std::fopen($1.data(),"wt")';
-  proc fclose: text_file = '(void)std::fclose($1);';
-  gen readln: text_file -> string ="flx::rtl::ioutil::readln($1)";
-  proc writeln : text_file * string ="flx::rtl::ioutil::writeln($1,$2);";
-  proc write : text_file * string ="flx::rtl::ioutil::write($1,$2);";
-  proc write : text_file * utiny ="std::fwrite($2,sizeof(unsigned char),1,$1)";
+  gen fopen_input: string -> text_file = '::std::fopen($1.data(),"rt")';
+  gen fopen_output: string -> text_file = '::std::fopen($1.data(),"wt")';
+  proc fclose: text_file = '(void)::std::fclose($1);';
+  gen readln: text_file -> string ="::flx::rtl::ioutil::readln($1)";
+  proc writeln : text_file * string ="::flx::rtl::ioutil::writeln($1,$2);";
+  proc write : text_file * string ="::flx::rtl::ioutil::write($1,$2);";
+  proc write : text_file * utiny ="::std::fwrite($2,sizeof(unsigned char),1,$1)";
   gen valid : text_file -> bool = "$1!=(FILE*)0";
-  gen feof : text_file -> bool = "std::feof($1)";
+  gen feof : text_file -> bool = "::std::feof($1)";
   const stdin: text_file = "PTF flx_stdin";
   const stdout: text_file = "PTF flx_stdout";
   const stderr: text_file = "PTF flx_stderr";

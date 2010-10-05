@@ -2052,113 +2052,162 @@ done
 var DEBUGSWITCH="";
 DEBUG_COMPILER == 1?? DEBUGSWITCH=" --debug";
 
-var STATIC_ENV=""
+var STATIC_ENV="";
 DEBUG_COMPILER == 1?? STATIC_ENV="env FLX_DEBUG=1 ";
 
-/* ------
-def filetime(f):
-  try:
-    t = os.stat(f)[stat.ST_MTIME]
-  except EnvironmentError:
-    t = 0
-  return t
+body """
+long macosx_ftime(string s) {
+  struct stat sb;
+  int e = stat(s.data(),&sb);
+  if(e == 0) return 0l;
+  return sb.st_mtime;
+}
+""" requires header "#include <sys/stat.h>";
 
-if RECOMPILE == 0 and RUNIT == 1:
+body """
+long posix_ftime(string s) {
+  struct stat sb;
+  int e = stat(s.data(),&sb);
+  if(e == 0) return 0l;
+  return sb.st_mtime;
+}
+""" requires header "#include <sys/stat.h>";
+
+
+fun macosx_ftime: string -> long = "macosx_ftime($1)";
+fun posix_ftime: string -> long = "posix_ftime($1)";
+
+fun filetime(f:string)=>if MACOSX then macosx_ftime(f) else posix_ftime(f) endif;
+
+var cmd = "";
+dbug?? println$ "RECOMPILE="+str RECOMPILE;
+dbug?? println$ "RUNIT="+str RUNIT;
+
+if RECOMPILE == 0 and RUNIT == 1 do
   // not (--force or -c)
-  if STATIC == 0:
-    if (filetime(base+EXT_SHLIB) > filetime (base+".flx")):
-      calpackages()
-      cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ base+EXT_SHLIB+" "+args
-      System::exit(system(cmd))
-  else:
-    if (filetime(base+EXT_EXE) > filetime(base+".flx")):
-      cmd=STATIC_ENV+" "+base+" "+args
-      System::exit(system(cmd))
+  dbug?? println "Checking to see if the binary is uptodate";
+  if STATIC == 0 do
+    if (filetime(base+EXT_SHLIB) > filetime (base+".flx")) do
+      dbug?? println$ "Running dynamically linked binary";
+      calpackages();
+      cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ base+EXT_SHLIB+" "+args;
+      dbug?? println$ "Uptodate shared lib: Running command " + cmd;
+      System::exit(system(cmd));
+    else
+      dbug?? println$ "Dynamically linked binary out of date or non-existant";
+    done
+  else
+    if (filetime(base+EXT_EXE) > filetime(base+".flx")) do
+      dbug?? println$ "Running statically linked binary";
+      cmd=STATIC_ENV+" "+base+" "+args;
+      dbug?? println$ "Uptodate executable: Running command " + cmd;
+      System::exit(system(cmd));
+    else
+      dbug?? println$ "Statically linked binary out of date or non-existant";
+    done
+  done
+done
 
+/* --------
 // Need Felix and c++ compile, then run it
 
-if DEBUG_COMPILER == 1:
-  VERBOSE="-v"
-else:
-  VERBOSE="-q"
+var VERBOSE = "";
+if DEBUG_COMPILER == 1 do
+  VERBOSE="-v";
+else
+  VERBOSE="-q";
+done
 
-if DEBUG:
-  CCFLAGS=CCFLAGS+DEBUG_FLAGS
+if DEBUG do
+  CCFLAGS=CCFLAGS+DEBUG_FLAGS;
+done
 
-FLXFLAGS="--inline="+str(INLINE) + ' ' + str(OUTPUT_DIR)
+var FLXFLAGS="--inline="+str(INLINE) + ' ' + str(OUTPUT_DIR);
 
-result = 0
+var result = 0;
 
-if STATIC == 0:
-  if FELIX == 1:
+if STATIC == 0 do
+  if FELIX == 1 do
     FCMD=' '.Filename::join([
       FLXG,
       VERBOSE, FLXFLAGS, FLXLIB,
       INCLUDE_DIRS, STDIMPORT, IMPORTS,
-      STDLIB, base])
-    result=system(FCMD)
-    if result != 0: exit(0!=result)
-    calpackages()
-    write_include_file(base)
+      STDLIB, base]);
+    result=system(FCMD);
+    if result != 0 do exit(0!=result); done
+    calpackages();
+    write_include_file(base);
     CCMD=' '.Filename::join([
       CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
       INCLUDE_DIR, INCLUDE_DIRS, MACROS,
       cpps, base+".cpp",
-      SPEC_OBJ_FILENAME+base+EXT_OBJ])
+      SPEC_OBJ_FILENAME+base+EXT_OBJ]);
     LCMD=' '.Filename::join([
       CCLINK_DLLIB, CCFLAGS,
       cppos, base+EXT_OBJ,
       SPEC_EXE_FILENAME+base+EXT_SHLIB,
-      LINK_STRING])
-    result = system(CCMD)
-    if result == 0:
-      result = system(LCMD)
-      if result == 0:
-        if RUNIT == 1:
-          if TIME == 1:
+      LINK_STRING]);
+    result = system(CCMD);
+    if result == 0 do
+      result = system(LCMD);
+      if result == 0 do
+        if RUNIT == 1 do
+          if TIME == 1 do
             cmd=' '.Filename::join([
               TIMECMD,
               FLXRUN+DRIVER+DEBUGSWITCH,
-              base+EXT_SHLIB, args])
-          else:
+              base+EXT_SHLIB, args]);
+          else
             cmd=' '.Filename::join([
               FLXRUN+DRIVER+DEBUGSWITCH,
-              base+EXT_SHLIB, args])
-          if STDOUT != "": cmd=cmd+" > " +STDOUT
-          exit(0!=system(cmd))
-else:
-  if FELIX == 1:
+              base+EXT_SHLIB, args]);
+          done
+          if STDOUT != "" do cmd=cmd+" > " +STDOUT; done
+          exit(0!=system(cmd));
+          done
+        done
+      done
+    done
+else
+  if FELIX == 1 do
     FCMD=' '.Filename::join([
       FLXG, VERBOSE, FLXFLAGS,
       FLXLIB, INCLUDE_DIRS, STDIMPORT,
-      IMPORTS, STDLIB, base])
-    result=system(FCMD)
-  if result == 0:
-    calpackages()
-    write_include_file(base)
+      IMPORTS, STDLIB, base]);
+    result=system(FCMD);
+  done
+  if result == 0 do
+    calpackages();
+    write_include_file(base);
     CCMD=' '.Filename::join([
       CCOBJ_STATIC_LIB,
       CCFLAGS, "-DTARGET_BUILD",
       "-DFLX_STATIC_LINK", INCLUDE_DIR, INCLUDE_DIRS,
       MACROS, cpps, base+".cpp",
-      SPEC_OBJ_FILENAME+base+EXT_OBJ])
+      SPEC_OBJ_FILENAME+base+EXT_OBJ]);
     LCMD=' '.Filename::join([
       CCLINK_STATIC, SPEC_EXE_FILENAME+base+EXT_EXE,
-      base+EXT_OBJ, DRIVER, cppos, LINK_STRING])
-    result=system(CCMD)
-    if result == 0:
-      result=system(LCMD)
-      if result == 0:
+      base+EXT_OBJ, DRIVER, cppos, LINK_STRING]);
+    result=system(CCMD);
+    if result == 0 do
+      result=system(LCMD);
+      if result == 0 do
         // rm -f "$base.cpp"
-        if RUNIT == 1:
-          if TIME == 1:
+        if RUNIT == 1 do
+          if TIME == 1 do
             cmd=' '.Filename::join([
               TIMECMD, STATIC_ENV, base, args])
-          else:
+          else
             cmd=' '.Filename::join([
               STATIC_ENV, base,args])
-          if STDOUT != "": cmd=cmd + " > "+STDOUT
-          exit(0!=system(cmd))
+          done
+          if STDOUT != "" do cmd=cmd + " > "+STDOUT done
+          exit(0!=system(cmd));
+        done
+      done
+    done
+  done
+done
 exit(0!=result)
  -------- */
 
