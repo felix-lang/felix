@@ -29,6 +29,8 @@ open module Int
 {
   fun _ctor_int: string -> int = "static_cast<int>(::std::atoi($1.data()))" requires cstdlib;
   fun _ctor_int[T in reals]: T -> int = "static_cast<int>($1)";
+  // special hack
+  fun _ctor_int(x:bool)=> match x with | true => 1 | false => 0 endmatch;
   proc fprint: ostream * int = "*$1<<$2;" requires iostream;
 }
 

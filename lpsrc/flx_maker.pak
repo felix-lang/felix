@@ -1675,8 +1675,8 @@ var FLXG = "";
 var FLXRUN = "";
 
 fun splitext(p:string)=>
-  if p.[-4 to] == ".flx" then p.[to -5],"flx"
-  elif p.[-4 to] == ".cpp" then p.[to -5],"cpp"
+  if p.[-4 to] == ".flx" then p.[to -4],"flx"
+  elif p.[-4 to] == ".cpp" then p.[to -4],"cpp"
   else p,""
   endif
 ;
@@ -1842,7 +1842,7 @@ done
 
 dbug?? println "#--------";
 dbug?? println$ "DONE, option index = "+str(argno);
-dbug?? println$ "path="+path+", ext="+ext+",dir="+dir+",base="+base;
+dbug?? println$ "path="+path+": dir="+dir+",base="+base", ext="+ext;
 dbug?? println$ "cpps="+cpps;
 dbug?? println$ "cppos="+cppos;
 
@@ -1877,22 +1877,6 @@ done
 
 CONFIG_DIR = Filename::join(FLX_INSTALL_DIR,'config');
 dbug?? println$ "Felix package manager config directory is "+PKGCONFIG;
-
-// find external header files
-var PKGCONFIG_CFLAGS=PKGCONFIG+ " --path+="+Filename::join(FLX_INSTALL_DIR,"config") + " --field=cflags ";
-
-// external header files
-var PKGCONFIG_INCLUDES=PKGCONFIG+ " --path+="+Filename::join(FLX_INSTALL_DIR,"config") + " --field=includes ";
-
-// find external dynload libraries
-var PKGCONFIG_DLIBS=PKGCONFIG+" -r --path+="+Filename::join(FLX_INSTALL_DIR,"config") + " --field=provides_dlib --field=requires_dlibs ";
-
-// find external static libraries
-var PKGCONFIG_SLIBS=PKGCONFIG+" -r --keeprightmost --path+="+Filename::join(FLX_INSTALL_DIR,"config") + " --field=provides_slib --field=requires_slibs ";
-
-//find driver package required
-var PKGCONFIG_DRIVER=PKGCONFIG+" --path+="+Filename::join(FLX_INSTALL_DIR,"config") + " --field=flx_requires_driver ";
-
 // make a list of any *.cpp files (or other g++ options ..)
 
 var EXT_OBJ = 
@@ -1901,17 +1885,24 @@ var EXT_OBJ =
   endif
 ;
 
-// Strip trailing .flx or .so
-// users should type 'flx file' without extension,
-// but #! interpreter always passes extension ..
-
-base = 
-  if path.[-4 to] == '.flx' then path.[to -4]
-  elif path.[-3 to] == '.so' then path.[to -3]
-  else path
+// this hack forces a directory name, because executing "prog"
+// can fail if the currect directory is not on the PATH, 
+// or worse, the wrong program can execute. The PATH is not
+// searched if the filename includes a / somewhere so force one in.
+// similarly for dynamic loaders looking for shared libraries
+//
+// It would probably be better to convert any relative filename
+// to an absolute one, however this only makes sense on Unix 
+// since Windows has multiple "drives" it is much harder to
+// do the conversion.
+dir = 
+  if dir != "" then dir 
+  else "."
   endif
 ;
-dbug?? println$ "User program base is " + base;
+
+var filebase = Filename::join(dir,base);
+dbug?? println$ "User program base is " + filebase;
 
 // Find absolute pathname
 
@@ -1961,18 +1952,33 @@ gen xqt(cmd:string) = {
 }
 
 proc calpackages () {
-  // find all include directories
+
+  // find external header files
+  var PKGCONFIG_CFLAGS=PKGCONFIG+ " --path+="+Filename::join(FLX_INSTALL_DIR,"config") + " --field=cflags ";
+
+  // external header files
+  var PKGCONFIG_INCLUDES=PKGCONFIG+ " --path+="+Filename::join(FLX_INSTALL_DIR,"config") + " --field=includes ";
+
+  // find external dynload libraries
+  var PKGCONFIG_DLIBS=PKGCONFIG+" -r --path+="+Filename::join(FLX_INSTALL_DIR,"config") + " --field=provides_dlib --field=requires_dlibs ";
+
+  // find external static libraries
+  var PKGCONFIG_SLIBS=PKGCONFIG+" -r --keeprightmost --path+="+Filename::join(FLX_INSTALL_DIR,"config") + " --field=provides_slib --field=requires_slibs ";
+
+  //find driver package required
+  var PKGCONFIG_DRIVER=PKGCONFIG+" --path+="+Filename::join(FLX_INSTALL_DIR,"config") + " --field=flx_requires_driver ";
+
 
   // find all include directories
-  var x = xqt(PKGCONFIG_CFLAGS+ " @"+base+".resh");
+  var x = xqt(PKGCONFIG_CFLAGS+ " @"+filebase+".resh");
   INCLUDE_DIRS=INCLUDE_DIRS +" " + x;
 
   // find all include files
-  x = xqt(PKGCONFIG_INCLUDES+ " @"+base+".resh");
+  x = xqt(PKGCONFIG_INCLUDES+ " @"+filebase+".resh");
   INCLUDE_FILES=INCLUDE_FILES +" " + x;
 
   // find the driver package
-  DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" @"+base+".resh");
+  DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" @"+filebase+".resh");
   DRIVER_PKG == "" ??  DRIVER_PKG="flx_run";
 
   // find the driver entity
@@ -1987,15 +1993,15 @@ proc calpackages () {
   if STATIC == 0 do
     // dynamic linkage: all the libraries required by the application
     LINK_STRING=DLINK_STRING+LINKER_SWITCHES+xqt(
-      PKGCONFIG_DLIBS+" @"+base+".resh");
+      PKGCONFIG_DLIBS+" @"+filebase+".resh");
   else
     // static linkage: all the libraries required by the application and driver
     LINK_STRING=SLINK_STRING+LINKER_SWITCHES+xqt(
-      PKGCONFIG_SLIBS+" "+DRIVER_PKG+" @"+base+".resh");
+      PKGCONFIG_SLIBS+" "+DRIVER_PKG+" @"+filebase+".resh");
   done
 
   if ECHO == 1 do
-    println("//RESOURCE FILE="+base+".resh");
+    println("//RESOURCE FILE="+filebase+".resh");
     println("//INCLUDE_DIRS="+INCLUDE_DIRS);
     println("//INCLUDE_FILES="+INCLUDE_FILES);
     println("//DRIVER="+DRIVER);
@@ -2007,7 +2013,7 @@ proc write_include_file(path:string) {
   includes := split (strip INCLUDE_FILES,char " ");
   var f = Text_file::fopen_output(path+".includes");
   List::iter  
-    (proc (i:string) { Text_file::writeln$ f, "//include " + i; })
+    (proc (i:string) { Text_file::writeln$ f, "#include " + i; })
     includes
   ;
   Text_file::fclose f;
@@ -2059,7 +2065,7 @@ body """
 long macosx_ftime(string s) {
   struct stat sb;
   int e = stat(s.data(),&sb);
-  if(e == 0) return 0l;
+  if(e != 0) return 0l;
   return sb.st_mtime;
 }
 """ requires header "#include <sys/stat.h>";
@@ -2068,7 +2074,7 @@ body """
 long posix_ftime(string s) {
   struct stat sb;
   int e = stat(s.data(),&sb);
-  if(e == 0) return 0l;
+  if(e != 0) return 0l;
   return sb.st_mtime;
 }
 """ requires header "#include <sys/stat.h>";
@@ -2087,19 +2093,19 @@ if RECOMPILE == 0 and RUNIT == 1 do
   // not (--force or -c)
   dbug?? println "Checking to see if the binary is uptodate";
   if STATIC == 0 do
-    if (filetime(base+EXT_SHLIB) > filetime (base+".flx")) do
+    if (filetime(filebase+EXT_SHLIB) > filetime (filebase+".flx")) do
       dbug?? println$ "Running dynamically linked binary";
       calpackages();
-      cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ base+EXT_SHLIB+" "+args;
+      cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ filebase+EXT_SHLIB+" "+args;
       dbug?? println$ "Uptodate shared lib: Running command " + cmd;
       System::exit(system(cmd));
     else
       dbug?? println$ "Dynamically linked binary out of date or non-existant";
     done
   else
-    if (filetime(base+EXT_EXE) > filetime(base+".flx")) do
+    if (filetime(filebase+EXT_EXE) > filetime(filebase+".flx")) do
       dbug?? println$ "Running statically linked binary";
-      cmd=STATIC_ENV+" "+base+" "+args;
+      cmd=STATIC_ENV+" "+filebase+" "+args;
       dbug?? println$ "Uptodate executable: Running command " + cmd;
       System::exit(system(cmd));
     else
@@ -2108,108 +2114,129 @@ if RECOMPILE == 0 and RUNIT == 1 do
   done
 done
 
-/* --------
 // Need Felix and c++ compile, then run it
 
 var VERBOSE = "";
 if DEBUG_COMPILER == 1 do
   VERBOSE="-v";
+  dbug?? println "Compiler debugging on";
 else
   VERBOSE="-q";
+  dbug?? println "Compiler debugging off";
 done
 
-if DEBUG do
+if DEBUG==1 do
   CCFLAGS=CCFLAGS+DEBUG_FLAGS;
 done
 
 var FLXFLAGS="--inline="+str(INLINE) + ' ' + str(OUTPUT_DIR);
 
 var result = 0;
+var FCMD="";
+var LCMD="";
+var CCMD="";
+
+if FELIX == 1 do
+  FCMD=List::cat ' ' (List::list (
+    FLXG,
+    VERBOSE, FLXFLAGS, FLXLIB,
+    INCLUDE_DIRS, STDIMPORT, IMPORTS,
+    STDLIB, filebase));
+  dbug?? println$ "Felix command="+FCMD;
+  result=system(FCMD);
+  if result != 0 do 
+   dbug?? println "Felix compilation failed";
+    System::exit(int(0!=result)); 
+  done
+  dbug?? println "Felix compilation succeeded";
+  calpackages();
+  write_include_file(filebase);
+else
+  dbug?? println "Felix compilation skipped by switch";
+done
 
 if STATIC == 0 do
-  if FELIX == 1 do
-    FCMD=' '.Filename::join([
-      FLXG,
-      VERBOSE, FLXFLAGS, FLXLIB,
-      INCLUDE_DIRS, STDIMPORT, IMPORTS,
-      STDLIB, base]);
-    result=system(FCMD);
-    if result != 0 do exit(0!=result); done
-    calpackages();
-    write_include_file(base);
-    CCMD=' '.Filename::join([
-      CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
-      INCLUDE_DIR, INCLUDE_DIRS, MACROS,
-      cpps, base+".cpp",
-      SPEC_OBJ_FILENAME+base+EXT_OBJ]);
-    LCMD=' '.Filename::join([
-      CCLINK_DLLIB, CCFLAGS,
-      cppos, base+EXT_OBJ,
-      SPEC_EXE_FILENAME+base+EXT_SHLIB,
-      LINK_STRING]);
-    result = system(CCMD);
-    if result == 0 do
-      result = system(LCMD);
-      if result == 0 do
-        if RUNIT == 1 do
-          if TIME == 1 do
-            cmd=' '.Filename::join([
-              TIMECMD,
-              FLXRUN+DRIVER+DEBUGSWITCH,
-              base+EXT_SHLIB, args]);
-          else
-            cmd=' '.Filename::join([
-              FLXRUN+DRIVER+DEBUGSWITCH,
-              base+EXT_SHLIB, args]);
-          done
-          if STDOUT != "" do cmd=cmd+" > " +STDOUT; done
-          exit(0!=system(cmd));
-          done
-        done
-      done
-    done
-else
-  if FELIX == 1 do
-    FCMD=' '.Filename::join([
-      FLXG, VERBOSE, FLXFLAGS,
-      FLXLIB, INCLUDE_DIRS, STDIMPORT,
-      IMPORTS, STDLIB, base]);
-    result=system(FCMD);
-  done
+  dbug?? println "Dynamic linkage";
+  CCMD=List::cat ' ' (List::list (
+    CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
+    INCLUDE_DIR, INCLUDE_DIRS, MACROS,
+    cpps, filebase+".cpp",
+    SPEC_OBJ_FILENAME+filebase+EXT_OBJ));
+  LCMD=List::cat ' ' (List::list (
+    CCLINK_DLLIB, CCFLAGS,
+    cppos, filebase+EXT_OBJ,
+    SPEC_EXE_FILENAME+filebase+EXT_SHLIB,
+    LINK_STRING));
+  dbug?? println$ "C++ command="+CCMD;
+  result = system(CCMD);
   if result == 0 do
-    calpackages();
-    write_include_file(base);
-    CCMD=' '.Filename::join([
-      CCOBJ_STATIC_LIB,
-      CCFLAGS, "-DTARGET_BUILD",
-      "-DFLX_STATIC_LINK", INCLUDE_DIR, INCLUDE_DIRS,
-      MACROS, cpps, base+".cpp",
-      SPEC_OBJ_FILENAME+base+EXT_OBJ]);
-    LCMD=' '.Filename::join([
-      CCLINK_STATIC, SPEC_EXE_FILENAME+base+EXT_EXE,
-      base+EXT_OBJ, DRIVER, cppos, LINK_STRING]);
-    result=system(CCMD);
+    dbug?? println$ "Link command="+LCMD;
+    result = system(LCMD);
     if result == 0 do
-      result=system(LCMD);
-      if result == 0 do
-        // rm -f "$base.cpp"
-        if RUNIT == 1 do
-          if TIME == 1 do
-            cmd=' '.Filename::join([
-              TIMECMD, STATIC_ENV, base, args])
-          else
-            cmd=' '.Filename::join([
-              STATIC_ENV, base,args])
-          done
-          if STDOUT != "" do cmd=cmd + " > "+STDOUT done
-          exit(0!=system(cmd));
+      if RUNIT == 1 do
+        if TIME == 1 do
+          cmd=List::cat ' ' (List::list (
+            TIMECMD,
+            FLXRUN+DRIVER+DEBUGSWITCH,
+            filebase+EXT_SHLIB, args));
+        else
+          cmd=List::cat ' ' (List::list (
+            FLXRUN+DRIVER+DEBUGSWITCH,
+            filebase+EXT_SHLIB, args));
         done
+        if STDOUT != "" do cmd=cmd+" > " +STDOUT; done
+        dbug?? println$ "Run command="+cmd;
+        System::exit(int(0!=system(cmd)));
+      else
+        dbug?? println "Not running program selected by switch";
       done
+    else
+      dbug?? println "Dynamic linkage failed";
     done
+  else
+    dbug?? println "C++ compilation failed";
+  done
+else
+  dbug?? println "Static linkage";
+  CCMD=List::cat ' ' (List::list (
+    CCOBJ_STATIC_LIB,
+    CCFLAGS, "-DTARGET_BUILD",
+    "-DFLX_STATIC_LINK", INCLUDE_DIR, INCLUDE_DIRS,
+    MACROS, cpps, filebase+".cpp",
+    SPEC_OBJ_FILENAME+filebase+EXT_OBJ));
+  LCMD=List::cat ' ' (List::list (
+    CCLINK_STATIC, SPEC_EXE_FILENAME+filebase+EXT_EXE,
+    filebase+EXT_OBJ, DRIVER, cppos, LINK_STRING));
+  dbug?? println$ "C++ command="+CCMD;
+  result=system(CCMD);
+  if result == 0 do
+    dbug?? println$ "Link command="+LCMD;
+    result=system(LCMD);
+    if result == 0 do
+      // rm -f "$base.cpp"
+      if RUNIT == 1 do
+        if TIME == 1 do
+          cmd= List::cat ' ' (List::list (
+            TIMECMD, STATIC_ENV, filebase, args));
+        else
+          cmd=List::cat ' ' (List::list (
+            STATIC_ENV, filebase,args));
+        done
+        if STDOUT != "" do cmd=cmd + " > "+STDOUT; done
+        dbug?? println$ "Run command="+cmd;
+        System::exit(int(0!=system(cmd)));
+      else
+        dbug?? println "Not running program selected by switch";
+      done
+    else
+      dbug?? println "Static Linkage failed";
+    done
+  else
+    dbug?? println "C++ compilation failed";
   done
 done
-exit(0!=result)
- -------- */
+
+System::exit(int(0!=result));
 
 @select(tangler('bin/flx-postinstall-check','data'))
 #!/usr/bin/env bash
