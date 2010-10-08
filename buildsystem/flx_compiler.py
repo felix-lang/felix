@@ -21,7 +21,7 @@ def build_flx_core(phase):
         external_libs=['nums'])
 
 def build_flx_version(phase):
-    path = phase.ctx.buildroot / 'src/compiler/flx_version'
+    path = Path ('src/compiler/flx_version')
     return phase.ocaml.build_lib(path / 'flx_version',
         srcs=Path.glob(path / '*.ml{,i}'))
 
