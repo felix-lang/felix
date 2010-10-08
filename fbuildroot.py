@@ -386,6 +386,7 @@ def build(ctx):
         call('buildsystem.' + module + '.build_flx', target)
 
     flx_pkgconfig = call('buildsystem.flx.build_flx_pkgconfig', target)
+    flx= call('buildsystem.flx.build_flx', target)
 
     # --------------------------------------------------------------------------
     # build the secondary libraries
@@ -402,7 +403,7 @@ def build(ctx):
     # now, try building a file
 
     target.felix = call('fbuild.builders.felix.Felix', ctx,
-        exe=ctx.buildroot / 'bin/flx.py',
+        exe=ctx.buildroot / 'bin/flx', # changed by JMS to now use the Felix version
         debug=ctx.options.debug,
         flags=['--test=' + ctx.buildroot])
 

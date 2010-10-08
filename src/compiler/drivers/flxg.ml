@@ -449,14 +449,23 @@ let codegen_bsyms state bsym_table root_proc =
   plh ("//Timestamp: " ^ state.compile_start_gm_string);
   plh ("//Timestamp: " ^ state.compile_start_local_string);
   plh "";
+
+  (* THE PRESENCE OF THESE LINES IS A BUG .. defeats the FLX_NO_INCLUDES switch
+   * but we need this temporarily, at least until we fix flx.flx compilation
+   * in the build system to generate dependencies in the flx.includes file
+   *
+   * Also we need to fix the compiler and all libraries to use explicit
+   * qualification everywhere which will make the code a bit of a mess..
+   *)
+  plh "//FELIX RUNTIME";
+  plh "#include \"flx_rtl.hpp\"";  
+  plh "using namespace ::flx::rtl;"; 
+  plh "#include \"flx_gc.hpp\"";
+  plh "using namespace ::flx::gc::generic;"; 
+
   plh "#ifndef FLX_NO_INCLUDES";
   plh ("#include \"" ^ state.module_name ^ ".includes\"");
   plh "#endif";
-  plh "//FELIX RUNTIME";
-  (* plh "#include \"flx_rtl.hpp\""; *)
-  plh "using namespace ::flx::rtl;";
-  (* plh "#include \"flx_gc.hpp\""; *)
-  plh "using namespace ::flx::gc::generic;";
   plh "";
 
   plh "\n//-----------------------------------------";

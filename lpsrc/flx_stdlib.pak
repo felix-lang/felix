@@ -269,9 +269,9 @@ module Filename
    # Felix then reduces it to \\           !!!
    # and finally C reduces it to plain \   !!!
    # don't remove the !!! because \ at eol is continuation .. argg
-   tangle('  const sep : charp = c"\\"\\\\\\\\\\"";')
+   tangle('  val sep  = "\\\\\\\\"')
  else:
-   tangle('  const sep : charp = c"\\"'+os.sep+'\\"";')
+   tangle('  val sep = "'+os.sep+'";')
 @#
   // these seem more generic
 
@@ -285,7 +285,7 @@ module Filename
   // since split pulls components off from the RHS we have to
   // fold them back from the left
 
-  fun split1(s:string)=> match find_last_of(s,sep) with
+  fun split1(s:string)=> match find_last_of(s,char sep) with
     | Some ?pos => 
       if pos==0 then str sep else s.[to pos] endif,
       s.[pos+1 to]

@@ -106,6 +106,7 @@ dot=(b"\x47\x49\x46\x38\x39\x61\x09\x00"
 mkgif("plus",plus)
 mkgif("minus",plus)
 mkgif("dot",dot)
+//
 
 @head(1,'Run script')
 @# ------------- RUN SCRIPT flx.bat FOR WINDOWS COMMAND LINE
@@ -488,6 +489,7 @@ def xqt(cmd, default=None):
      if ECHO==1:print("output="+output)
      return output
   if default is None:
+    print("Cmd FAILED")
     sys.stderr.write("Error "+repr(result)+" executing command " + cmd+"\n")
     if not hasattr(os, 'WEXITSTATUS'):
       sys.exit(1)
@@ -677,8 +679,8 @@ else:
           sys.exit(0!=system(cmd))
 sys.exit(0!=result)
 
-@# ------------- UNIX RUN SCRIPT flx REQUIRES bash
-@select(tangler('bin/flx','data'))
+@# ------------- UNIX RUN SCRIPT flx.sh REQUIRES bash
+@select(tangler('bin/flx.sh','data'))
 #!/usr/bin/env bash
 # flx - felix script harness
 @tangle("INSTALL_ROOT="+config.PREFIX+"/lib/felix/felix-"+config.flx_version)
@@ -1228,9 +1230,9 @@ fi
 @# ------------- a native shell script to drive it (but now leaving the binary to
 @# ------------- do most of the command line argument processing etc
 
-@select(tangler('tools/flx.flx','data'))
+@select(tangler('src/flx/flx.flx','data'))
 
-dbug := true; // switch off for production
+dbug := false; // switch off for production
 
 False := false;
 True := true;
@@ -1238,7 +1240,8 @@ True := true;
 
 @def tv(x): ts("var "+x)
 
-@tv("INSTALL_ROOT=Filename::join(%r, '/lib/felix/felix-%s')" % (config.PREFIX, config.flx_version))
+@tv("INSTALL_ROOT_TOPDIR=Filename::join(%r, 'lib/felix')" % (config.PREFIX))
+@tv("INSTALL_ROOT=Filename::join(INSTALL_ROOT_TOPDIR, 'felix-%s')" % (config.flx_version))
 var FLX_INSTALL_DIR = Env::getenv("FLX_INSTALL_DIR", INSTALL_ROOT);
 @tv("CYGWIN="+str(config.CYGWIN))
 @tv("WIN32="+str(config.WIN32))
@@ -1328,6 +1331,7 @@ fun prefix(arg:string,key:string)=>
 var compile_exts = List::list ('cpp','cxx');
 var linkexts =  List::list ('o','obj','lib','dll','a','so');
 var arg = "";
+var result = 0;
 
 whilst grab == 1 and argno<System::argc do
   arg = System::argv argno;
@@ -1336,6 +1340,8 @@ whilst grab == 1 and argno<System::argc do
   var dir,base = Filename::split1(path);
   dbug?? println$ "path="+path+", ext="+ext+",dir="+dir+",base="+base;
   if ext != "flx" and ext != "" do
+    // add to list of things to link, and also things to compile
+    // if the extension is appropriate
     if List::mem eq of (string * string) compile_exts ext do
       cpps = cpps + " " + arg;
       cppos = cppos + " " + path + "." + EXT_OBJ;
@@ -1345,6 +1351,9 @@ whilst grab == 1 and argno<System::argc do
 
   elif arg == "--nostdimport" do
     dbug?? println "No standard library import";
+    // Note: currently, Felix compiler generates code that REQUIRES
+    // the standard library, eg the driver passes a gc_profile_t record
+    // and the compiler generates _uctor_ objects, etc etc
     STDIMPORT="";
 
   elif prefix(arg,"--import=") do
@@ -1361,16 +1370,44 @@ whilst grab == 1 and argno<System::argc do
     TESTMODE=1;
     FLX_INSTALL_DIR=".";
 
+  elif arg=="--install" do
+    dbug?? println "Intall Felix";
+    println "Install Felix: ONLY ON UNIX (you may need to be superuser)";
+    println "Always installs the --test directory to the configured install target";
+    println "Because that is hard coded into this program";
+    println "Note: does NOT install this program 'flx' into your PATH!";
+    println$ "FROM: " + FLX_INSTALL_DIR;
+    println$ "TO  : " + INSTALL_ROOT;
+    if FLX_INSTALL_DIR == INSTALL_ROOT do
+      println "Can't install, src and dst are the same";
+      System::exit(1);
+    else
+      result=System::system("mkdir -pv "+INSTALL_ROOT_TOPDIR);
+      if result != 0 do
+        println$ "Cannot create directory " + INSTALL_ROOT_TOPDIR;
+        System::exit 1;
+      done
+      result=System::system("cp -r "+FLX_INSTALL_DIR+" "+INSTALL_ROOT);
+      if result == 0 do println "Install succeeded"
+      else println$ "Install failed, code = " + str(result);
+      done
+      System::exit(result);
+    done
+
   elif prefix(arg,"--stdout=") do
     dbug?? println "Redirect standard output";
+    // of the Felix program only: used for saving the output
+    // to a file so the test harness can compare it with an .expect file
     STDOUT=arg.[9 to];
 
   elif arg=="--force" do
     dbug?? println "Force recompilation";
+    // of the felix code, runs Felix unless --nofelix is set
+    // the C++ compiler is run unless the felix compile failed
     RECOMPILE=1;
 
   elif arg=="--debug" do
-    dbug?? println "Enable debugging";
+    dbug?? println "Enable runtime debugging";
     DEBUG=1;
 
   elif arg=="--debug-compiler" do
@@ -1508,7 +1545,7 @@ if ECHO == 1 do
 done
 
 CONFIG_DIR = Filename::join(FLX_INSTALL_DIR,'config');
-dbug?? println$ "Felix package manager config directory is "+PKGCONFIG;
+dbug?? println$ "Felix package manager config directory is "+CONFIG_DIR;
 // make a list of any *.cpp files (or other g++ options ..)
 
 var EXT_OBJ = 
@@ -1549,6 +1586,7 @@ gen get_stdout(x:string) = {
   if os.name == "nt": // popen doesn't work on Windows
 */
     result := system(x + " >tmp.out");
+    Stdout::flush();
     output := Text_file::load "tmp.out";
 /*
   else:
@@ -1565,7 +1603,7 @@ gen get_stdout(x:string) = {
 }
 
 gen xqt(cmd:string) = {
-  ECHO == 1 ?? print(cmd);
+  ECHO == 1 or dbug ?? println("cmd="+cmd);
   var result,output = get_stdout(cmd);
   if result == 0 do
     n := 
@@ -1575,8 +1613,9 @@ gen xqt(cmd:string) = {
       endmatch
     ; 
     output = output.[to n]; // first line excluding newline
-    ECHO==1 ?? println("output="+output);
+    ECHO==1 or dbug ?? println("output='"+output+"'");
   else
+    dbug ?? println ("COMMAND FAILED");
     fprint$ cerr, ("Error "+repr(result)+" executing command " + cmd + "/n");
     System::exit result;
   done
@@ -1763,7 +1802,6 @@ done
 
 var FLXFLAGS="--inline="+str(INLINE) + ' ' + str(OUTPUT_DIR);
 
-var result = 0;
 var FCMD="";
 var LCMD="";
 var CCMD="";
@@ -2064,7 +2102,7 @@ post-install:
 
 @head(1,'Finish up')
 Just cleaning up script now.
-@make_executable(os.path.join('bin', 'flx'))
+@make_executable(os.path.join('bin', 'flx.sh'))
 @make_executable(os.path.join('bin', 'flx.py'))
 
 

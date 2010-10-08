@@ -36,8 +36,8 @@ class Builder(fbuild.db.PersistentObject):
         buildroot = buildroot or self.ctx.buildroot
 
         src = Path(src)
-        # first, copy the src file into the buildroot
         src_buildroot = src.addroot(buildroot)
+
         dst = src.addroot(buildroot)
 
         if preparse:
@@ -154,8 +154,45 @@ class Builder(fbuild.db.PersistentObject):
             cxx_cflags=[],
             cxx_libs=[],
             cxx_lflags=[]):
+            
         obj = self.compile(src, includes=includes, flags=flags)
 
+        # run flx_pkgconfig to generate the include files, normally done
+        # by flx command line harness but we're probably building it here
+
+        flx_pkgconfig = Path("bin/flx_pkgconfig")
+        flx_pkgconfig = flx_pkgconfig.addroot(self.ctx.buildroot)
+        config = Path("config")
+        config = config.addroot(self.ctx.buildroot)
+        cmd = [flx_pkgconfig, "--path+="+config, "--field=includes", "@"+src[:-4]+".resh"]
+        stdout, stderr =self.ctx.execute(cmd)
+        output = stdout.decode()[:-1] # strip trailing newline
+        includes = output.split(' ')
+        files = ["#include "+i+"\n" for i in includes]
+        fn = src[:-4]+".includes"
+        f = open(fn,"w")
+        for file in files: f.write(file)
+        f.close()
+
+        return function(obj, dst,
+            async=async,
+            includes=cxx_includes,
+            libs=cxx_libs,
+            cflags=cxx_cflags,
+            lflags=cxx_lflags,
+        )
+
+    def _build_flx_pkgconfig_link(self, function, src, dst=None, *,
+            async=True,
+            includes=[],
+            flags=[],
+            cxx_includes=[],
+            cxx_cflags=[],
+            cxx_libs=[],
+            cxx_lflags=[]):
+            
+        obj = self.compile(src, includes=includes, flags=flags)
+        
         return function(obj, dst,
             async=async,
             includes=cxx_includes,
@@ -169,6 +206,9 @@ class Builder(fbuild.db.PersistentObject):
 
     def build_exe(self, *args, **kwargs):
         return self._build_link(self.link_exe, *args, **kwargs)
+
+    def build_flx_pkgconfig_exe(self, *args, **kwargs):
+        return self._build_flx_pkgconfig_link(self.link_exe, *args, **kwargs)
 
 # ------------------------------------------------------------------------------
 
@@ -184,11 +224,21 @@ def build(ctx, flxg, cxx, drivers):
     )
 
 def build_flx_pkgconfig(phase):
-    return phase.flx.build_exe(
+    return phase.flx.build_flx_pkgconfig_exe(
         dst='bin/flx_pkgconfig',
         src='src/flx_pkgconfig/flx_pkgconfig.flx',
         includes=[phase.ctx.buildroot / 'lib'],
         cxx_includes=['src/flx_pkgconfig', phase.ctx.buildroot / 'lib/rtl'],
+        cxx_libs=[call('buildsystem.flx_rtl.build_runtime', phase).static],
+    )
+
+
+def build_flx(phase):
+    return phase.flx.build_exe(
+        dst='bin/flx',
+        src=Path('src/flx/flx.flx').addroot(phase.ctx.buildroot),
+        includes=[phase.ctx.buildroot / 'lib'],
+        cxx_includes=['tools', phase.ctx.buildroot / 'lib/rtl'],
         cxx_libs=[call('buildsystem.flx_rtl.build_runtime', phase).static],
     )
 
