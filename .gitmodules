@@ -1,9 +1,9 @@
 [submodule "fbuild"]
 	path = fbuild
-	url = http://git.felix-lang.org/r/fbuild.git
+	url = git://github.com/erickt/fbuild.git
 [submodule "src/compiler/dypgen"]
 	path = src/compiler/dypgen
-	url = http://git.felix-lang.org/r/dypgen.git
+	url = git://github.com/erickt/dypgen.git
 [submodule "src/compiler/ocs"]
 	path = src/compiler/ocs
-	url = http://git.felix-lang.org/r/ocs.git
+	url = git://github.com/erickt/ocs.git
