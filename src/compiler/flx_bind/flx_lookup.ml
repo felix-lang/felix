@@ -1618,7 +1618,9 @@ and btype_of_bsym state bsym_table bt bid bsym =
 
   match Flx_bsym.bbdcl bsym with
   | BBDCL_invalid -> assert false
-  | BBDCL_module -> assert false
+  | BBDCL_module -> failwith
+     ("Attempt to construe module name " ^ Flx_bsym.id bsym ^ " as a type")
+
   | BBDCL_fun (_,_,(params,_),return_type,_) ->
       btyp_function (type_of_params params, return_type)
   | BBDCL_val (_,t,_) -> t

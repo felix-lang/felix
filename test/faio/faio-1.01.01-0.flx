@@ -13,8 +13,8 @@ var port = 0;  // you choose
 
 // check errors. how is that done?
 mk_listener(&listener, &port, 1);
-// print "Got port: "; print port; endl;
-// print "accepting\n";
+//println$ "Got port: "; print port; endl;
+//println$ "listeneing on socket " + str listener;
 
 print "spawning connector\n";
 // not printing in thread to make output deterministic.
@@ -26,25 +26,30 @@ spawn_fthread
     // print "Connector dude\n";  // get rid of, hard to test
     var c: socket_t;
     connect(&c, c"127.0.0.1", port); // connect to localhost
+    //println$ "fthread's socket is " + str c;
     var st: string;
 
-    get_line(c, &st);
+    get_line(c, &st,"fthread");
     print "connector got "; print st; endl;
     write_string(c, "thanks\n");         // newline important
 
     ioclose(c);  // finished with this
+    //println$ "fthread closed " + str c;
   };
 };
 
 var s: socket_t;
 accept(listener, &s);
+//println$ "Mainline accepted connection on socket " + str s;
 ioclose(listener);  // not needed anymore
 
 print "got connection\n";
 write_string(s, "server says hi\n");     // newline important here
 
 var st: string;
-get_line(s, &st);
+get_line(s, &st,"mainline");
 
 print "server got "; print st; endl;
 ioclose(s);
+//println$ "mainline closed socket " + str s;
+
