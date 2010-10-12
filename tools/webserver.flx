@@ -223,13 +223,15 @@ proc handler (s:socket_t) ()
     Faio_posix::shutdown(s, 1); // disallow further sends.
     cat(s, DEVNULL);
 
-    fprint$ cerr,"closing socket "+str s+"\n";
+    fprint$ cerr,"fthread closing socket "+str s+"\n";
     ioclose(s);
+    fprint$ cerr,"fthread "+str s+" terminating!\n";
 
 };
 
 forever {
   var s: socket_t;
+  dbg$ "Waiting for connection\n";
   accept(listener, &s);  // blocking
   dbg$ "got connection "+str s + "\n";  // error check here
 
@@ -239,4 +241,5 @@ forever {
  //collect(); // this hangs everything, no idea why!
 };
 
+println "WEB SERVER FINNISHED?";
 iclose(listener);

@@ -239,24 +239,14 @@ open[T in basic_types] Show[T];
 open Show[bool];
 @doc()
 
-@h = tangler("lib/std/system.flx")
+@h = tangler("lib/std/version.flx")
 @select(h)
 publish "System Interface"
-module System
+module Version
 {
-  const argc:int = "PTF argc";
-  const _argv:&charp= "PTF argv";
-
-  fun argv:int -> string = '::std::string($1<0||$1>=PTF argc??"":PTF argv[$1])';
-  fun args () => List::map (the argv) (List::range argc);
 @tangle('  const felix_version : string = \'::std::string("'+config.flx_version+'")\';')
-  fun system: string -> int = "::std::system($1.data())"
-    requires cstdlib;
-  proc exit: int = "::std::exit($1);";
-  proc abort: 1 = "::std::abort($1);";
-  type ptf_t = "thread_frame_t*";
-  const ptf:ptf_t = "FLX_POINTER_TO_THEAD_FRAME";
 }
+
 
 @h = tangler("lib/plat/filename.flx")
 @select(h)

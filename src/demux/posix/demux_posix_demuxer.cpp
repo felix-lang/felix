@@ -71,7 +71,7 @@ posix_demuxer::socket_send(int s, sel_param* pb)
   fprintf(stderr,"posix_demuxer:socket_send\n", nbytes);
   nbytes = send(s, pb->buffer + pb->bytes_written,
     pb->buffer_size - pb->bytes_written, 0);
-  fprintf(stderr,"posix_demuxer:socket_send wrote %d bytes\n", nbytes);
+  fprintf(stderr,"posix_demuxer:socket_send wrote %ld bytes\n", (long) nbytes);
 
   /*
   fprintf(stderr,"posix_demuxer SEND: s=%d, pb=%p buf+%d, req=%d, got %d\n",
@@ -84,7 +84,9 @@ posix_demuxer::socket_send(int s, sel_param* pb)
   // that the connection closed?
   if(-1 == nbytes)
   {
+    fprintf(stderr,"posix_demuxer: socket send failed, connection closed by client?\n");
     perror("send");
+    fprintf(stderr,"Should have printed the error code above ..\n");
     return true;          // I guess the connection closed
   }
   else
