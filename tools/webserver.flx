@@ -1,6 +1,8 @@
 if POSIX do
 include "flx_faio_posix";  // aio_ropen
 //open Faio_posix;
+include "std/posix/signal";
+Posix_Signal::ignore_signal(Posix_Signal::SIGPIPE);
 done
 
 include "flx_socket";
@@ -192,15 +194,18 @@ var p = webby_port;
 var listener: socket_t;
 mk_listener(&listener, &p, 10);
 
-proc handler (s:socket_t) ()
+var clock = Faio::mk_alarm_clock();
+
+noinline proc handler (var k:socket_t) ()
 {
-     dbg$ "Spawned fthread running for socket "+str s+"\n";
+     dbg$ "Spawned fthread running for socket "+str k+"\n";
     // should spawn fthread here to allow for more io overlap
 
     var line: string;
-    get_line(s, &line, str(s));  // should be the GET line.
+    get_line(k, &line, str(k));  // should be the GET line.
+    //cat(s, DEVNULL);
 
-    print$ "got line from socket "+str s+": "; print line; endl;
+    print$ "got line from socket "+str k+": "; print line; endl;
 
     // now I need to parse the GET line, get a file name out of its url
     // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
@@ -213,19 +218,20 @@ proc handler (s:socket_t) ()
         print "base="; print base; endl;
         print "file="; print file; endl;
 
-        serve_file(file, s);
+        serve_file(file, k);
       }
     endmatch;
 
     // we've only read the GET line, so let's flush out the rest of
     // the http request so we don't get connection reset errors when
     // we close the socket. shutting down stops cat blocking (?)
-    Faio_posix::shutdown(s, 1); // disallow further sends.
-    cat(s, DEVNULL);
+    //Faio_posix::shutdown(s, 1); // disallow further sends.
+    //cat(s, DEVNULL);
 
-    fprint$ cerr,"fthread closing socket "+str s+"\n";
-    ioclose(s);
-    fprint$ cerr,"fthread "+str s+" terminating!\n";
+    fprint$ cerr,"fthread closing socket "+str k+"\n";
+    Faio::sleep(clock,0.1); // give OS time to empty its buffers
+    ioclose(k);
+    fprint$ cerr,"fthread "+str k+" terminating!\n";
 
 };
 
@@ -237,7 +243,8 @@ forever {
 
   // hmm - spawning an fthread is blocking the web server. don't know why
   print$ "spawning fthread to handle connection "+str s+"\n";
-  spawn_fthread  (handler s);
+  var h = handler s;
+  spawn_fthread  h;
  //collect(); // this hangs everything, no idea why!
 };
 

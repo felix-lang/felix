@@ -21,13 +21,13 @@ void flx_driver_request_base:: start_async_op(finote_t *fn_a)
 
 void flx_driver_request_base:: notify_finished()
 {
-  fprintf(stderr, "faio_req=%p, Notify %p\n", this,fn);
+  //fprintf(stderr, "faio_req=%p, Notify %p\n", this,fn);
   assert(fn!=0);
   finote_t *fin = fn;
   fn=0;
   fin->signal();
   delete fin;
-  fprintf(stderr, "faio_req=%p, FINISHED\n",this);
+  //fprintf(stderr, "faio_req=%p, FINISHED\n",this);
 }
 
 }}

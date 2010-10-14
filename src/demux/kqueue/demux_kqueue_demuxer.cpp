@@ -58,7 +58,7 @@ kqueue_demuxer::~kqueue_demuxer()
 int
 kqueue_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
 {
- fprintf(stderr,"Add socket wakeup\n");
+ //fprintf(stderr,"Add socket wakeup\n");
   // we only know these flags
   if((flags & ~(PDEMUX_READ | PDEMUX_WRITE))) return -1;
 
@@ -69,13 +69,13 @@ kqueue_demuxer::add_socket_wakeup(socket_wakeup* sv, int flags)
   if(flags & PDEMUX_READ)
   {
     if(add_kqueue_filter(sv, EVFILT_READ) == -1) return -1;
-    fprintf (stderr,"Added read filter\n");
+    //fprintf (stderr,"Added read filter\n");
   }
 
   if(flags & PDEMUX_WRITE)
   {
     if(add_kqueue_filter(sv, EVFILT_WRITE) == -1) return -1;
-    fprintf(stderr,"Added write filter\n");
+    //fprintf(stderr,"Added write filter\n");
   }
 
   return 0;
@@ -134,7 +134,7 @@ kqueue_demuxer::remove_kqueue_filter(int s, short filter)
     perror("kevent remove_socket_wakeup");
     return -1;
   }
-  fprintf(stderr,"Removed kqueue filter\n");
+  //fprintf(stderr,"Removed kqueue filter\n");
   return 0;
 }
 
@@ -198,7 +198,7 @@ kqueue_demuxer::get_evts(bool poll)
   }
 
   // fprintf(stderr,"kqueue wakeup!\n");
-  fprintf(stderr,"Kqueue got %d events\n",nevts);
+  //fprintf(stderr,"Kqueue got %d events\n",nevts);
   socket_wakeup*  sv = (socket_wakeup*)ev.udata;
 
   // The filters are not bit fields, hence they must come in serially.
@@ -227,7 +227,6 @@ kqueue_demuxer::get_evts(bool poll)
         (int)ev.data, ev.fflags);
     }
     // fprintf(stderr,"EVFILT_READ: got %i bytes coming\n", (int)ev.data);
-    fprintf(stderr,"EVFILT_READ: got %i bytes coming\n", (int)ev.data);
     // remove_reading_fd(s);      // now useing EV_ONESHOT
 // remove other outstanding here...?
     sv->wakeup_flags = PDEMUX_READ;   // Tell 'em what they've won.
@@ -236,7 +235,6 @@ kqueue_demuxer::get_evts(bool poll)
   else if(ev.filter == EVFILT_WRITE)
   {
     // fprintf(stderr,"EVFILT_WRITE: can write (?) %i bytes\n", (int)ev.data);
-    fprintf(stderr,"EVFILT_WRITE: can write (?) %i bytes\n", (int)ev.data);
 
     // using oneshot mode now.
     // remove_writing_fd(s);

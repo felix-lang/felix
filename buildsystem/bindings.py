@@ -11,13 +11,17 @@ import buildsystem
 # ------------------------------------------------------------------------------
 
 def build_flx(phase):
+    # Note, *.flx bindings are copied even if the underlying C libs
+    # and/or header files don't exist, so the code will Felix compile
+    # After all the client may add these things later.. and they may
+    # be on the target machine even they're not on the host
     dsts = []
 
     if fbuild.config.c.gsl.gsl_gsl_blas_h(phase.cxx.shared).header:
         dsts.extend(buildsystem.copy_fpc_to_config(phase.ctx,
             Path('src/gsl/*.fpc').glob()))
 
-        dsts.extend(buildsystem.copy_flxs_to_lib(phase.ctx,
+    dsts.extend(buildsystem.copy_to(phase.ctx,Path (phase.ctx.buildroot)/"lib/gsl",
             Path('src/gsl/*.flx').glob()))
 
     if 'macosx' in phase.platform:
@@ -86,21 +90,22 @@ def build_flx(phase):
 
         dsts.extend(buildsystem.copy_fpc_to_config(phase.ctx, [sdl_fpc]))
 
-        dsts.extend(buildsystem.copy_to(phase.ctx,
+    dsts.extend(buildsystem.copy_to(phase.ctx,
             phase.ctx.buildroot / 'lib/SDL', Path('src/sdl/*.flx').glob()))
 
     if fbuild.config.c.mpi.mpi_h(phase.cxx.shared).header:
         dsts.extend(buildsystem.copy_fpc_to_config(phase.ctx,
             Path('src/mpi/*.fpc').glob()))
 
-        dsts.extend(buildsystem.copy_flxs_to_lib(phase.ctx,
-            Path('src/mpi/*.flx').glob()))
+    dsts.extend(buildsystem.copy_to(phase.ctx,
+            Path(phase.ctx.buildroot) / 'lib/mpi', Path('src/mpi/*.flx').glob()))
 
     if fbuild.config.c.pari.pari_h(phase.cxx.shared).header:
         dsts.extend(buildsystem.copy_fpc_to_config(phase.ctx,
             Path('src/pari/*.fpc').glob()))
 
-        dsts.extend(buildsystem.copy_flxs_to_lib(phase.ctx,
+    dsts.extend(buildsystem.copy_to(phase.ctx,
+            Path(phase.ctx.buildroot) / "lib/mpi",
             Path('src/pari/*.flx').glob()))
 
     return dsts

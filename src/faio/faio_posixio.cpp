@@ -100,17 +100,17 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
   {
     // just check that our above assumption hasn't been violated.
     assert(wakeup_flags == PDEMUX_READ);
-    fprintf(stderr,"posix faio wakeup PDEMUX_READ, reading..\n");
+    //fprintf(stderr,"posix faio wakeup PDEMUX_READ, reading..\n");
     connection_closed = posix_demuxer::socket_recv(s, &pb);
-    fprintf(stderr,"posix faio wakeup PDEMUX_READ, connection closed = %d\n", connection_closed);
+    //fprintf(stderr,"posix faio wakeup PDEMUX_READ, connection closed = %d\n", connection_closed);
   }
   else
   {
     // never hurts to be paranoid.
     assert(wakeup_flags == PDEMUX_WRITE);
-    fprintf(stderr,"posix faio wakeup PDEMUX_WRITE, writing..\n");
+    //fprintf(stderr,"posix faio wakeup PDEMUX_WRITE, writing..\n");
     connection_closed = posix_demuxer::socket_send(s, &pb);
-    fprintf(stderr,"posix faio wakeup PDEMUX_WRITE, connection closed = %d\n", connection_closed);
+    //fprintf(stderr,"posix faio wakeup PDEMUX_WRITE, connection closed = %d\n", connection_closed);
   }
 
   // fprintf(stderr,"posthandle wakeup, this: %p, read: %i, len: %i, done %i\n",

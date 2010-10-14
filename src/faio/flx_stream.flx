@@ -270,6 +270,7 @@ module Flx_stream {
 
       read(strm, &len, ac, &eof);
 
+      /*
       if len == 0 do
         fprintln$ cerr,"Got nothing from IByteStream "+id;
         if eof do fprintln$ cerr,"Eof on IBytestream "+id;
@@ -282,15 +283,18 @@ module Flx_stream {
           //fprintln$ cerr,"Got char " + str c + " from an IByteStream "+id;
         done
       done
+      */
 
       if eof or c == char '\n' do
-        fprintln$ cerr,"Got end of line (or file) from an IByteStream "+id;
+        //fprintln$ cerr,"Got end of line (or file) from an IByteStream "+id;
         finished = true;
       else
         st += c;
       done
     done
     *s = st;  // pass back result
+    //println$ "Got: " + st;
+
   }
 
   proc get_line[istr with IByteStream[istr]]

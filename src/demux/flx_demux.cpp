@@ -12,9 +12,9 @@ pthread_thread(void* udat)
 
     while(1)
     {
-        fprintf(stderr, "ETHREAD ABOUT TO WAIT\n");
+        //fprintf(stderr, "ETHREAD ABOUT TO WAIT\n");
         d->wait();          // this does it
-        fprintf(stderr, "ETHREAD CHECKING QUIT FLAG\n");
+        //fprintf(stderr, "ETHREAD CHECKING QUIT FLAG\n");
         demux_quit_flag* f = d->get_quit_flag();
         if(f)
         {

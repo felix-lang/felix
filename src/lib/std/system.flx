@@ -8,7 +8,7 @@ module System
   fun args () => List::map (the argv) (List::range argc);
   fun system: string -> int = "::std::system($1.data())"
     requires cstdlib;
-  proc exit: int = '{ fprintf(stderr,"Flx exit\n"); ::std::exit($1);}';
+  proc exit: int = '::std::exit($1);';
   proc abort: 1 = "::std::abort($1);";
   type ptf_t = "thread_frame_t*";
   const ptf:ptf_t = "FLX_POINTER_TO_THEAD_FRAME";
