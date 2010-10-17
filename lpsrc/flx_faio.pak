@@ -18,66 +18,6 @@ Version: $Id$
    tangle('includes: \'"faio_posixio.hpp"\'')
 Requires: demux
 
-@select(tangler('spkgs/faio.py'))
-import os
-
-import config
-
-FAIORTL_INTERFACES = [
-  'config/target/flx_faio_config.hpp',
-  'src/faio/faio_asyncio.hpp',
-  'src/faio/faio_job.hpp',
-  'src/faio/faio_timer.hpp',
-  'src/faio/faio_posixio.hpp',
-  'src/faio/faio_winio.hpp',
-]
-
-FAIO_CPPS = [
-  "src/faio/faio_timer",
-  "src/faio/faio_job",
-  "src/faio/faio_asyncio",
-]
-
-POSIX_FAIO_CPPS = [
-  "src/faio/faio_posixio",
-]
-
-WINDOWS_FAIO_CPPS = [
-  "src/faio/faio_winio",
-]
-
-root = config.src_dir
-EXTRA_TEST_GLOBS = [('test', 'faio', 'faio-*.flx')]
-
-if config.WIN32:
-  FAIO_CPPS = FAIO_CPPS + WINDOWS_FAIO_CPPS
-  EXTRA_TEST_GLOBS.append(('test', 'faio', 'win-*.flx'))
-
-if config.POSIX:
-  FAIO_CPPS = FAIO_CPPS + POSIX_FAIO_CPPS
-  EXTRA_TEST_GLOBS.append(('test', 'faio', 'posix-*.flx'))
-
-cpp_cpps = FAIO_CPPS
-build_macro = "FAIO"
-
-rtl_interfaces = FAIORTL_INTERFACES
-felix_rtl = [
-  'src/faio/flx_faio.flx',
-  'src/faio/flx_faio_posix.flx',
-  'src/faio/flx_faio_win32.flx',
-  'src/faio/flx_socket.flx',
-  'src/faio/flx_stream.flx',
-]
-
-pkg_requires = ['demux','flx_pthread', 'flx_rtl'] # flx_rtl for rtl_config.
-lib_requires = ['libdemux','libflx_pthread'] # however lib not required
-unit_tests = EXTRA_TEST_GLOBS
-demos = [('demos', 'faio', '*.flx')]
-iscr_source = ["lpsrc/flx_faio.pak"]
-weaver_directory = 'doc/rtl/flx_faio/'
-tmpdir = ['faio']
-xfiles = [os.path.join('src', 'faio', '*')]
-
 @h=tangler('config/target/flx_faio_config.hpp')
 @select(h)
 #ifndef __FLX_FAIO_CONFIG_H__

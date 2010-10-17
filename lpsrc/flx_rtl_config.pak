@@ -2,12 +2,6 @@
 
 @head(1,"Configuration management")
 
-@select(tangler('spkgs/flx_rtl_config.py'))
-
-iscr_source = ['lpsrc/flx_rtl_config.pak']
-weaver_directory = 'doc/rtl/flx_rtl/'
-@doc()
-
 @select(tangler("config/target/flx_meta.hpp"))
 #ifndef __FLX_META_H__
 #define __FLX_META_H__

@@ -2,16 +2,6 @@
 
 @head(1,"Address space management")
 
-@select(tangler('spkgs/mmap.py'))
-import config
-
-if config.TARGET_CXX.options.HAVE_MMAP:
-  root = config.src_dir
-  unit_tests = [('test', 'mmap', 'mmap-*.flx')]
-
-iscr_source = ['lpsrc/flx_mmap.pak']
-weaver_directory = 'doc/mmap/'
-
 @select(tangler('config/mmap.fpc', 'data'))
 Name: mmap
 

@@ -29,30 +29,6 @@ for ch in data:
     counter = 0
 print()
 
-@h = tangler('spkgs/tutorial.py')
-@select(h)
-pkg_requires = [
-  'flx_tutorial',
-  'flx_tut_macro',
-  'flx_tut_bind',
-  'flx_tut_migrate'
-  ]
-
-iscr_source = [
-  'lpsrc/flx_tutorial',
-  'lpsrc/flx_tut_macro',
-  'lpsrc/flx_tut_bind',
-  'lpsrc/flx_tut_migrate',
-  ]
-
-@select(tangler('spkgs/flx_maker.py'))
-iscr_source = ['lpsrc/flx_maker.pak']
-
-weaver_directory = 'doc/flx/flx_maker/'
-
-@select(tangler('spkgs/__init__.py'))
-@doc()
-
 @head(1,'AUTHORS')
 @select(tangler('AUTHORS'))
 John (Max) Skaller skaller at users dot sourceforge dot net
@@ -276,7 +252,7 @@ whilst grab == 1 and argno<System::argc do
         println$ "Cannot create directory " + INSTALL_ROOT_TOPDIR;
         System::exit 1;
       done
-      result=system("cp -r "+FLX_INSTALL_DIR+" "+INSTALL_ROOT);
+      result=system("cp -ra "+FLX_INSTALL_DIR+" "+INSTALL_ROOT);
       if result == 0 do println "Install succeeded"
       else println$ "Install failed, code = " + str(result);
       done

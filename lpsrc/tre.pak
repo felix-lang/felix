@@ -1,47 +1,6 @@
 @import config
 
 @head(1,'tre')
-@select(tangler('spkgs/tre.py'))
-import os
-
-import config
-
-iscr_source = ['lpsrc/tre.pak']
-weaver_directory = 'doc/rtl/tre/'
-
-xfiles = [os.path.join('src', 'tre', '*')]
-
-rtl_interfaces = [
-  'config/target/flx_target_tre_config.h',
-  'src/tre/tre-regex.h',
-  'src/tre/tre-config.h',
-]
-
-felix_rtl = [
-  'src/tre/tre.flx',
-]
-
-cc_ccs = [
-  'src/tre/regcomp',
-  'src/tre/regerror',
-  'src/tre/regexec',
-  'src/tre/tre-ast',
-  'src/tre/tre-compile',
-  'src/tre/tre-match-approx',
-  'src/tre/tre-match-backtrack',
-  'src/tre/tre-match-parallel',
-  'src/tre/tre-mem',
-  'src/tre/tre-parse',
-  'src/tre/tre-stack',
-  'src/tre/xmalloc',
-]
-
-include_path = ['src/tre']
-build_macro = "TRE"
-
-root = config.src_dir
-unit_tests = [('test', 'tre', 'tre-*.flx')]
-
 @h = tangler('config/tre.fpc')
 @select(h)
 

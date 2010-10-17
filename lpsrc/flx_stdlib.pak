@@ -3,17 +3,6 @@
 
 @head(1,'Felix Standard Library')
 
-@select(tangler('spkgs/flx_stdlib.py'))
-import config
-
-root = config.src_dir
-unit_tests = [('test', 'stdlib', 'slrt-*.flx')]
-pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','flx_gc','flx_pthread','demux','faio']
-pkg_provides = ['flx_stdlib']
-
-iscr_source = ['lpsrc/flx_stdlib.pak']
-@doc()
-
 @head(2,"Code")
 Support table.
 @begin_table("filebase","language","namespace","function")

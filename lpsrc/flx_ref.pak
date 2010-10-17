@@ -1,10 +1,5 @@
 @import config.flx_data as flx_data
 
-@h = tangler('spkgs/flx_ref.py')
-@select(h)
-iscr_source = ['lpsrc/flx_ref.pak']
-weaver_directory = 'doc/refman/'
-
 @set_title("Felix Reference")
 @head(1,"Conformance Model")
 This document purports to be a descripton of required behaviour

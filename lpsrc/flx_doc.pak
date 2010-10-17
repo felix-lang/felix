@@ -159,9 +159,3 @@ Felix Build system source code listing (interscript):
 @cite_url("flx/flx_maker/en_flx_maker_top.html")
 @p()
 
-
-@select(tangler('spkgs/doc.py'))
-iscr_source = ["lpsrc/flx_doc.pak"]
-weaver_directory = 'doc/'
-
-

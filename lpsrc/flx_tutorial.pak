@@ -4460,21 +4460,3 @@ divide by zero somewhere
 Tests by category keyword.
 @env.emit_katlist()
 
-@env.head(1,"Package Metadata")
-This contains the Felix build system description of
-the tutorial package.
-@select(tangler('spkgs/flx_tutorial.py'))
-import glob
-
-@tangle('TESTS = glob.glob("%s*.flx")' % env.native_root)
-
-unit_tests = TESTS
-pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
-iscr_source = [ 'lpsrc/flx_tutorial.pak' ]
-
-weaver_directory = 'doc/tutorial/introduction/'
-tmpdir = ['tut']
-
-@doc()
-
-
