@@ -252,7 +252,7 @@ whilst grab == 1 and argno<System::argc do
         println$ "Cannot create directory " + INSTALL_ROOT_TOPDIR;
         System::exit 1;
       done
-      result=system("cp -ra "+FLX_INSTALL_DIR+" "+INSTALL_ROOT);
+      result=system("cp -Rp "+FLX_INSTALL_DIR+" "+INSTALL_ROOT);
       if result == 0 do println "Install succeeded"
       else println$ "Install failed, code = " + str(result);
       done
