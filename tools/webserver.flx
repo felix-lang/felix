@@ -24,6 +24,22 @@ macro fun dbg(x) = { fprint (cerr,x); };
 // read new sockets off it ..
 open TerminalIByteStream[socket_t];
 
+var arg = "";
+var argno = 1;
+fun prefix(arg:string,key:string)=>
+  arg.[to len key]==key
+;
+var LIBROOT = "";
+whilst argno<System::argc do
+  arg = System::argv argno;
+  println$ "ARG=" + arg;
+  if prefix(arg,"--root=") do
+    LIBROOT=arg.[7 to]+"/lib";
+  done
+  ++argno;
+done
+println$ "LIBROOT="+LIBROOT;
+
 fun getline_to_url (get:string) =>
   if not startswith get "GET " then
     ""
@@ -262,18 +278,31 @@ proc write_felix(k:socket_t, t:string)
   ;
 
   var b = "";
+  var last_id = "";
   proc cp() { b += ch; }
+  proc ws() {
+    if last_id == "include" do // hackery
+      var n = b; 
+      whilst n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
+      whilst n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
+      if n.[-4 to] != ".flx" do n+= ".flx"; done // hack, fixme
+      write_string(k,'<a href="/'+n+'" >' + b + '</a>') ;
+    else 
+     write_string(k,'<span class=fstring>'+b+"</span>"); 
+    done
+  }
   proc w() { 
     //println$ "Token["+str s+"]="+b; 
     match s with 
-    | dq => { write_string(k,'<span class=fstring>'+b+"</span>"); }
-    | sq => { write_string(k,'<span class=fstring>'+b+"</span>"); }
-    | sq3 => { write_string(k,'<span class=fstring>'+b+"</span>"); }
-    | dq3 => { write_string(k,'<span class=fstring>'+b+"</span>"); }
+    | dq => { ws; }
+    | sq => { ws; }
+    | sq3 => { ws; }
+    | dq3 => { ws; }
     | ccomment=> { write_string(k,'<span class=comment>'+b+"</span>"); }
     | cppcomment=> { write_string(k,'<span class=comment>'+b+"</span>"); }
     | id => 
       { 
+        last_id = b;
         if inarray(b,big_keywords) do write_string(k,'<span class=big_keyword>'+b+"</span>"); 
         elif inarray(b,small_keywords) do write_string(k,'<span class=small_keyword>'+b+"</span>"); 
         else write_string(k,b); done
@@ -318,11 +347,11 @@ thisch:> // same char, reconsider it
       elif issq ch do s = sq; goto contin;
       elif isdq ch do s = dq; goto contin;
       elif ch == char "/" do
-        if ahead(1) == char "/" do cp(); next(); s = cppcomment; goto contin
-        elif ahead(1) == char "*" do cp(); next(); s = ccomment; goto contin
+        if ahead(1) == char "/" do cp; next; s = cppcomment; goto contin
+        elif ahead(1) == char "*" do cp; next; s = ccomment; goto contin
         else goto lastch
         done 
-      else cp(); w(); goto nextt;
+      else cp; w; goto nextt;
       done
     }
 
@@ -360,7 +389,7 @@ thisch:> // same char, reconsider it
    // triple quoted strings
   | sq3 =>
     {
-      if issq3() do cp(); next(); cp(); next(); cp(); w(); goto nextt; 
+      if issq3() do cp; next; cp; next; cp; w; goto nextt; 
       elif ch== char "<" do b+="&lt;"; goto nextch;
       elif ch== char ">" do b+="&gt;"; goto nextch;
       elif ch== char "&" do b+="&amp;"; goto nextch;
@@ -369,7 +398,7 @@ thisch:> // same char, reconsider it
     }
   | dq3 =>
     {
-      if isdq3() do cp(); next(); cp(); next(); cp(); w(); goto nextt;
+      if isdq3() do cp; next; cp; next; cp; w; goto nextt;
       elif ch== char "<" do b+="&lt;"; goto nextch;
       elif ch== char ">" do b+="&gt;"; goto nextch;
       elif ch== char "&" do b+="&amp;"; goto nextch;
@@ -386,7 +415,7 @@ thisch:> // same char, reconsider it
   | ccomment => // doesn't handle nested comments yet
     {
       if ch == char "*" and ahead(1) == char "/" do 
-        cp(); 
+        cp; 
         goto lastch;
       else goto contin;
       done
@@ -402,15 +431,17 @@ fin:>
 
 proc serve_felix(s:socket_t, fname:string)
 {
-    val flx = Text_file::load(fname);
+    var flx = Text_file::load(fname);
+    if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
+    if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
     println$ "Loaded felix file " + fname;
     //println$ "Contents=" + flx;
     write_string(s, html_header);
     write_string(s, flx_head);
     write_string(s,"<pre>");
     write_felix(s, flx);
-    write_string(s,"</pre>");
-    write_string(s,"</body></html>");
+    write_string(s,"</pre>\n");
+    write_string(s,"</body></html>\n");
 }
 
 proc serve_file(infname: string, s: socket_t)
@@ -493,7 +524,7 @@ noinline proc handler (var k:socket_t) ()
   //cat(s, DEVNULL);
 
   fprint$ cerr,"fthread closing socket "+str k+"\n";
-  Faio::sleep(clock,0.1); // give OS time to empty its buffers
+  Faio::sleep(clock,1.0); // give OS time to empty its buffers
   ioclose(k);
   fprint$ cerr,"fthread "+str k+" terminating!\n";
 };

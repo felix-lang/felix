@@ -432,6 +432,9 @@ dbug?? println$ "path="+path+": dir="+dir+",base="+base", ext="+ext;
 dbug?? println$ "cpps="+cpps;
 dbug?? println$ "cppos="+cppos;
 
+var USER_ARGS = ""; whilst argno < System::argc do USER_ARGS+=" " + System::argv argno; ++argno; done
+println$ "USER_ARGS=" + USER_ARGS;
+
 if NOOPTIMISE == 0 do
   dbug?? println "Set C++ compiler optimisation switches";
   CCFLAGS=CCFLAGS+" " + OPTIMISE;
@@ -607,17 +610,7 @@ proc write_include_file(path:string) {
   Text_file::fclose f;
 }
 
-
-// grab program arguments
-grab=1;
-fun pop (x:List::list[string], n:int) => 
-  if n == 0 then x 
-  else match x with | Cons(_,?t) => pop(t,n-1) | Empty[string] => List::Empty[string] endmatch
-  endif
-;
-
-var tail = pop (System::args(), argno); 
-var args= List::cat " " tail;
+val args = USER_ARGS;
 dbug?? println$ "Target program args = "+args;
 
 var INCLUDE_DIR="-I"+Filename::join(FLX_INSTALL_DIR,"lib","rtl") + " -I"+Filename::join(FLX_INSTALL_DIR,"config","target");
