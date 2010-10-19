@@ -263,7 +263,7 @@ module Flx_stream {
     var st: string="";
     var finished = false;
 
-    fprintln$ cerr,"Get line from IByteStream "+id;
+    //fprintln$ cerr,"Get line from IByteStream "+id;
     whilst not finished do
       var len = 1;
       var eof: bool;

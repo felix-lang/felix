@@ -94,7 +94,7 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
   else if(wakeup_flags & PDEMUX_EOF)
   {
     connection_closed = true;
-    fprintf(stderr,"posix faio wakeup PDEMUX_EOF, connection closed = %d\n", connection_closed);
+    //fprintf(stderr,"posix faio wakeup PDEMUX_EOF, connection closed = %d\n", connection_closed);
     //pb.bytes_written=0;
   }
 
@@ -112,8 +112,8 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
     assert(wakeup_flags == PDEMUX_WRITE);
     //fprintf(stderr,"posix faio wakeup PDEMUX_WRITE, writing..\n");
     connection_closed = posix_demuxer::socket_send(s, &pb);
-    if(connection_closed)
-      fprintf(stderr,"posix faio wakeup PDEMUX_WRITE, connection closed = %d\n", connection_closed);
+    //if(connection_closed)
+    //  fprintf(stderr,"posix faio wakeup PDEMUX_WRITE, connection closed = %d\n", connection_closed);
   }
 
   // fprintf(stderr,"posthandle wakeup, this: %p, read: %i, len: %i, done %i\n",

@@ -733,7 +733,9 @@ if FELIX == 1 do
   write_include_file(filebase);
 else
   dbug?? println "Felix compilation skipped by switch";
+  calpackages(); // need to do this here to set linker switches
 done
+
 
 if STATIC == 0 do
   dbug?? println "Dynamic linkage";
