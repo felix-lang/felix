@@ -88,11 +88,13 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
   {
     connection_closed = true;
     //pb.bytes_written=0;
+    fprintf(stderr,"posix faio wakeup PDEMUX_ERROR, connection closed = %d\n", connection_closed);
   }
 
   else if(wakeup_flags & PDEMUX_EOF)
   {
     connection_closed = true;
+    fprintf(stderr,"posix faio wakeup PDEMUX_EOF, connection closed = %d\n", connection_closed);
     //pb.bytes_written=0;
   }
 
@@ -110,7 +112,8 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
     assert(wakeup_flags == PDEMUX_WRITE);
     //fprintf(stderr,"posix faio wakeup PDEMUX_WRITE, writing..\n");
     connection_closed = posix_demuxer::socket_send(s, &pb);
-    //fprintf(stderr,"posix faio wakeup PDEMUX_WRITE, connection closed = %d\n", connection_closed);
+    if(connection_closed)
+      fprintf(stderr,"posix faio wakeup PDEMUX_WRITE, connection closed = %d\n", connection_closed);
   }
 
   // fprintf(stderr,"posthandle wakeup, this: %p, read: %i, len: %i, done %i\n",
@@ -121,6 +124,10 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
   if(connection_closed || pb.bytes_written == pb.buffer_size)
   {
     // fprintf(stderr,"schedding %p, drv: %p, f: %p\n", this, drv, f);
+    // if the connection closed, this notify should tell the caller
+    // not to keep trying to write, but it doesn't .. why not?
+    // who called it anyhow?
+    // I think the writing code ignores error returns ..
     request->notify_finished();
     return;
   }

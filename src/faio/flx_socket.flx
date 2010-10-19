@@ -77,7 +77,11 @@ module Flx_socket {
   {
     if POSIX do
     proc write(s: socket_t, len: &int, buf: address, eof: &bool)
-      { Faio_posix::async_write(s, len, buf, eof); }
+      {
+        //println$ "faio/flx_socket.flx: Flx_stream::OByteStream[socket_t]: write(s,"+str (*len)+",buf,"+str(*eof)+") calling async_write ..";
+        Faio_posix::async_write(s, len, buf, eof); 
+        //println$ "faio/flx_socket.flx: Flx_stream::OByteStream[socket_t]: write(s,"+str (*len)+",buf,"+str(*eof)+") called async_write ..";
+      }
     else
     proc write(s: socket_t, len: &int, buf: address, eof: &bool)
       { Faio_win32::WSASend(s, len, buf, eof); }

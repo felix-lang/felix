@@ -23,6 +23,7 @@ print "spawning connector\n";
 spawn_fthread
 {
   {
+    var eof = false;
     // print "Connector dude\n";  // get rid of, hard to test
     var c: socket_t;
     connect(&c, c"127.0.0.1", port); // connect to localhost
@@ -31,7 +32,7 @@ spawn_fthread
 
     get_line(c, &st,"fthread");
     print "connector got "; print st; endl;
-    write_string(c, "thanks\n");         // newline important
+    write_string(c, "thanks\n", &eof);         // newline important
 
     ioclose(c);  // finished with this
     //println$ "fthread closed " + str c;
@@ -43,8 +44,9 @@ accept(listener, &s);
 //println$ "Mainline accepted connection on socket " + str s;
 ioclose(listener);  // not needed anymore
 
+var eof = false;
 print "got connection\n";
-write_string(s, "server says hi\n");     // newline important here
+write_string(s, "server says hi\n", &eof);     // newline important here
 
 var st: string;
 get_line(s, &st,"mainline");

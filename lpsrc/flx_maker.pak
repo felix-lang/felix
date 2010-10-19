@@ -433,7 +433,7 @@ dbug?? println$ "cpps="+cpps;
 dbug?? println$ "cppos="+cppos;
 
 var USER_ARGS = ""; whilst argno < System::argc do USER_ARGS+=" " + System::argv argno; ++argno; done
-println$ "USER_ARGS=" + USER_ARGS;
+//println$ "USER_ARGS=" + USER_ARGS;
 
 if NOOPTIMISE == 0 do
   dbug?? println "Set C++ compiler optimisation switches";

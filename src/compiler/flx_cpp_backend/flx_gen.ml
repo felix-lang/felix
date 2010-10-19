@@ -996,7 +996,8 @@ let gen_exe filename
 
         | Function ->
           begin match label_kind with
-          | `Far -> assert false
+          | `Far -> failwith ("[gen_exe] In function " ^ Flx_bsym.id bsym ^ 
+              ": Non-local going to label " ^s)
           | `Near ->
             "    " ^ cid_of_flxid s ^ ":;\n"
           | `Unused -> ""

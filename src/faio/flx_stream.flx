@@ -302,11 +302,10 @@ module Flx_stream {
 
 
   proc write_string[ostr with OByteStream[ostr]]
-  (sk: ostr, var s: string)
+  (sk: ostr, var s: string, eof: &bool)
   {
     var slen = len s;
     var a = C_hack::cast[address]$ cstr s;
-    var eof: bool;
-    write(sk, &slen, a, &eof);
+    write(sk, &slen, a, eof);
   }
 } // module Flx_stream

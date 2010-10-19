@@ -113,12 +113,12 @@ Content-Type: text/html\r
 PAGE NOT FOUND:
 """;
 
-proc write_http_header(s:socket_t, suffix:string)
+proc write_http_header(s:socket_t, suffix:string, eof: &bool)
 {
   // mime type mapping from suffix. make better here.
-  if("gif" == suffix) then { write_string(s, gif_header); }
-  elif("css" == suffix) then { write_string(s, css_header); }
-  else { write_string(s, html_header); } endif;
+  if("gif" == suffix) then { write_string(s, gif_header, eof); }
+  elif("css" == suffix) then { write_string(s, css_header, eof); }
+  else { write_string(s, html_header, eof); } endif;
 }
 
 if WIN32 do
@@ -143,7 +143,7 @@ if WIN32 do
     done
   }
 elif POSIX do
-  proc posix_send_file(s:socket_t,fname:string,suffix:string)
+  proc posix_send_file(s:socket_t,fname:string,suffix:string, eof: &bool)
   {
     // this fn sets the O_NONBLOCK flag which is completely unnecessary
     // as read goes via the preading worker fifo. don't know if
@@ -153,14 +153,14 @@ elif POSIX do
     if Faio_posix::invalid fd do
     {
       print ("BUGGER, posix open of "+fname+" failed\n");
-      write_string(s, notfound_header);
-      write_string(s, fname+"\r\n\n");
+      write_string(s, notfound_header, eof);
+      write_string(s, fname+"\r\n\n", eof);
     } 
     else 
     {
       print ("got fd "+str fd +" for read file of "+fname+"\n");
 
-      write_http_header(s,suffix);
+      write_http_header(s,suffix, eof);
       var from_strm: Faio_posix::fd_t = fd;
       var to_strm: socket_t = s;
       Flx_stream::cat(from_strm, to_strm);
@@ -202,8 +202,10 @@ flx_head := """
 <style type="text/css">
 span.fstring {color:darkblue; font-style:italic; }
 span.comment {font-family:arial; color:blue; font-style:italic; }
-span.big_keyword {color:red; }
-span.small_keyword {color:darkred; }
+span.big_keyword {color:#FF1010; }
+span.small_keyword {color:#802040; }
+span.qualifier {color:#A02020; }
+span.hack {color:#00FF00; }
 </style>
 </head>
 <body>
@@ -212,8 +214,11 @@ span.small_keyword {color:darkred; }
 val big_keywords = 
   "module",
   "fun",
+  "gen",
   "proc",
   "type",
+  "union",
+  "struct",
   "typedef",
   "var",
   "val",
@@ -225,7 +230,9 @@ val big_keywords =
   "include",
   "open",
   "spawn_fthread",
-  "spawn_pthread"
+  "spawn_pthread",
+  "reduce", "axiom", 
+  "open", "inherit"
 ;
 val small_keywords =
   "if", "then", "else", "elif", "endif", "do", "done",
@@ -233,12 +240,24 @@ val small_keywords =
   "match","endmatch","with","requires"
 ;
 
+val qualifiers = 
+  "virtual", "inline", "noinline", "private", "incomplete"
+;
+val hack = "C_hack","C_hack"; // to make it an array we need 2 components
+
 fun inarray[N](s:string, a:array[string,N])=>
   mem (fun (x:string) => s == x) a
 ;
  
-proc write_felix(k:socket_t, t:string)
+proc write_felix(k:socket_t, t:string, eof_flag: &bool)
 {
+  proc write_string(k:socket_t, t:string) 
+  { 
+   if not *eof_flag do Flx_stream::write_string(k,t,eof_flag); 
+   else goto giveup;
+   done
+  }
+
   union state_t = 
     | sot // start of token
     | id // processing identifier
@@ -305,6 +324,8 @@ proc write_felix(k:socket_t, t:string)
         last_id = b;
         if inarray(b,big_keywords) do write_string(k,'<span class=big_keyword>'+b+"</span>"); 
         elif inarray(b,small_keywords) do write_string(k,'<span class=small_keyword>'+b+"</span>"); 
+        elif inarray(b,qualifiers) do write_string(k,'<span class=qualifier>'+b+"</span>"); 
+        elif inarray(b,hack) do write_string(k,'<span class=hack>'+b+"</span>"); 
         else write_string(k,b); done
       }
     | _ => { write_string(k,b);  }
@@ -427,25 +448,36 @@ thisch:> // same char, reconsider it
 fin:>
    println "outof data";
    w(); // whatever is left over gets written
+giveup:>
 }
 
 proc serve_felix(s:socket_t, fname:string)
 {
-    var flx = Text_file::load(fname);
-    if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
-    if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
-    println$ "Loaded felix file " + fname;
-    //println$ "Contents=" + flx;
-    write_string(s, html_header);
-    write_string(s, flx_head);
-    write_string(s,"<pre>");
-    write_felix(s, flx);
-    write_string(s,"</pre>\n");
-    write_string(s,"</body></html>\n");
+  var eof_flag = false;
+  proc write_string(k:socket_t, t:string) 
+  { 
+   if not eof_flag do Flx_stream::write_string(k,t,&eof_flag); 
+   else goto giveup;
+   done
+  }
+
+  var flx = Text_file::load(fname);
+  if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
+  if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
+  println$ "Loaded felix file " + fname;
+  //println$ "Contents=" + flx;
+  write_string(s, html_header);
+  write_string(s, flx_head);
+  write_string(s,"<pre>");
+  write_felix(s, flx, &eof_flag);
+  write_string(s,"</pre>\n");
+  write_string(s,"</body></html>\n");
+giveup:>
 }
 
 proc serve_file(infname: string, s: socket_t)
 {
+  var eof_flag = false;
   // if empty string, serve index.html
   // not quite right - needs to handle directories too, so
   // not only foo.com/ -> index.html, but foo.com/images/ -> images/index.html
@@ -472,7 +504,7 @@ proc serve_file(infname: string, s: socket_t)
   
   else
     if WIN32 do win32_send_file(s,fname, suffix);
-    elif POSIX do posix_send_file(s,fname, suffix);
+    elif POSIX do posix_send_file(s,fname, suffix,&eof_flag);
     done
   done
 }
@@ -524,7 +556,7 @@ noinline proc handler (var k:socket_t) ()
   //cat(s, DEVNULL);
 
   fprint$ cerr,"fthread closing socket "+str k+"\n";
-  Faio::sleep(clock,1.0); // give OS time to empty its buffers
+  Faio::sleep(clock,0.1); // give OS time to empty its buffers
   ioclose(k);
   fprint$ cerr,"fthread "+str k+" terminating!\n";
 };
