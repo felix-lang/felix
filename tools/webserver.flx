@@ -1,8 +1,9 @@
-#if POSIX
+if POSIX do
 include "flx_faio_posix";  // aio_ropen
 //open Faio_posix;
-#endif
-
+include "std/posix/signal";
+Posix_Signal::ignore_signal(Posix_Signal::SIGPIPE);
+done
 
 include "flx_socket";
 open Flx_socket;
@@ -22,6 +23,22 @@ macro fun dbg(x) = { fprint (cerr,x); };
 // In fact, it is a socket server, with accept() a way to
 // read new sockets off it ..
 open TerminalIByteStream[socket_t];
+
+var arg = "";
+var argno = 1;
+fun prefix(arg:string,key:string)=>
+  arg.[to len key]==key
+;
+var LIBROOT = "";
+whilst argno<System::argc do
+  arg = System::argv argno;
+  println$ "ARG=" + arg;
+  if prefix(arg,"--root=") do
+    LIBROOT=arg.[7 to]+"/lib";
+  done
+  ++argno;
+done
+println$ "LIBROOT="+LIBROOT;
 
 fun getline_to_url (get:string) =>
   if not startswith get "GET " then
@@ -96,15 +113,607 @@ Content-Type: text/html\r
 PAGE NOT FOUND:
 """;
 
+proc write_http_header(s:socket_t, suffix:string, eof: &bool)
+{
+  // mime type mapping from suffix. make better here.
+  if("gif" == suffix) then { write_string(s, gif_header, eof); }
+  elif("css" == suffix) then { write_string(s, css_header, eof); }
+  else { write_string(s, html_header, eof); } endif;
+}
+
+if WIN32 do
+  proc win32_send_file(s:socket_t,fname:string,suffix:string)
+  {
+    // quick 'n' dirty unix -> dos style pathnames
+    val wname = map (fun (a:char) => if a == char '/' then char '\\' else a endif) fname;
+    print "mapped "; print fname; print " -> "; print wname; endl;
+    var wf: WFILE <- Faio_win32::OpenFile(wname);
+    if wf == Faio_win32::INVALID_HANDLE_VALUE do
+    {
+      print "BUGGER: OpenFile failed: "; print (GetLastError()); endl;
+    } 
+    else 
+    {
+      print "opened "; print wname; endl;
+      write_http_header(s,suffix);
+      print "Transmitting file!\n";
+      TransmitFile(s, wf);
+      CloseFile(wf);
+    }
+    done
+  }
+elif POSIX do
+  proc posix_send_file(s:socket_t,fname:string,suffix:string, eof: &bool)
+  {
+    // this fn sets the O_NONBLOCK flag which is completely unnecessary
+    // as read goes via the preading worker fifo. don't know if
+    // O_NONBLOCK even works on actual files.
+    var fd = Faio_posix::ropen(fname);
+
+    if Faio_posix::invalid fd do
+    {
+      print ("BUGGER, posix open of "+fname+" failed\n");
+      write_string(s, notfound_header, eof);
+      write_string(s, fname+"\r\n\n", eof);
+    } 
+    else 
+    {
+      print ("got fd "+str fd +" for read file of "+fname+"\n");
+
+      write_http_header(s,suffix, eof);
+      var from_strm: Faio_posix::fd_t = fd;
+      var to_strm: socket_t = s;
+      Flx_stream::cat(from_strm, to_strm);
+
+      dbg$ ("close read fd " + str(from_strm)+"file "+fname+"\n");
+      iclose(from_strm); // this'll know how to close a unix fd
+    } 
+    done
+
+    // var contents = Text_file::load(fname);
+    // print "loaded: "; print contents; endl;
+    // print "contents len="; print (len contents); endl;
+    // write_string(s, html_header + contents);
+  }
+done
+
+// define some basic character sets
+val letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_";
+val digits = "0123456789";
+val alphanum = letters + digits;
+val numeric = digits + ".eEdD_"; // crud hack
+
+// some character classification functions
+fun isidstart(x:char) => match find$ letters,x with | Some _ => true | None _ => false endmatch;
+fun isidcont(x:char) => match find$ alphanum,x with | Some _ => true | None _ => false endmatch;
+fun isdigit(x:char) => match find$ digits,x with | Some _ => true | None _ => false endmatch;
+fun isnumeric(x:char) => match find$ numeric,x with | Some _ => true | None _ => false endmatch;
+fun isalphanum(x:char) => isidstart x or isdigit x;
+
+fun issq(x:char) => x == char "'";
+fun isdq(x:char) => x == char '"';
+fun isslosh(x:char) => x == char '\\';
+fun isnull(x:char) => x == char "";
+fun iseol(x:char) => x == char "\n"; // will be CR on Windoze ;(
+
+flx_head := """
+<html>
+<head>
+<style type="text/css">
+span.fstring {color:darkblue; font-style:italic; }
+span.comment {font-family:arial; color:blue; font-style:italic; }
+span.big_keyword {color:#FF1010; }
+span.small_keyword {color:#802040; }
+span.qualifier {color:#A02020; }
+span.hack {color:#00FF00; }
+span.preproc {color:#00FF00; }
+</style>
+</head>
+<body>
+""";
+
+fun inarray[N](s:string, a:array[string,N])=>
+  mem (fun (x:string) => s == x) a
+;
+ 
+// C++ and C
+val cpp_big_keywords = 
+  "class",
+  "struct",
+  "union",
+  "namespace",
+  "typedef",
+  "enum"
+;
+
+val cpp_small_keywords =
+  "if", "while", "until","do","for","return","goto","std"
+;
+
+val cpp_qualifiers = 
+  "virtual", "inline", "static", 
+  "int","long","unsigned","float","double","char","short","signed","void","size_t",
+  "const","volatile"
+;
+
+val cpp_preproc = 
+  "define","if","endif","else","include","ifdef","ifndef"
+;
+
+proc write_cpp(k:socket_t, t:string, eof_flag: &bool)
+{
+  proc write_string(k:socket_t, t:string) 
+  { 
+   if not *eof_flag do Flx_stream::write_string(k,t,eof_flag); 
+   else goto giveup;
+   done
+  }
+
+  union state_t = 
+    | sot // start of token
+    | id // processing identifier
+    | num // in a number
+    | sq // processing single quote string
+    | dq // processing double quote string
+    | ccomment // a C style comment
+    | cppcomment // a C++ style comment
+  ;
+  fun str(s:state_t) => match s with
+  | sot => "sot"
+  | id => "id"
+  | num => "num"
+  | sq => "sq"
+  | dq => "dq"
+  | ccomment=> "ccomment"
+  | cppcomment => "cppcomment"
+  endmatch;
+  
+  var i = 0; var s:state_t;
+  var ch = t.[i];
+  proc next() { ch = t.[i]; ++i; }
+  fun ahead (j:int)=> t.[i+j-1]; 
+
+  var b = "";
+  var last_id = "";
+  var last_op = "";
+  proc cp() { b += ch; }
+  proc ws() {
+    if last_id == "include" do // hackery
+      var n = b; 
+      whilst n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
+      whilst n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
+      write_string(k,'<a href="/rtl/'+n+'" >' + b + '</a>') ;
+    else 
+     write_string(k,'<span class=fstring>'+b+"</span>"); 
+    done
+  }
+  proc w() { 
+    //println$ "Token["+str s+"]="+b; 
+    match s with 
+    | dq => { ws; }
+    | sq => { ws; }
+    | ccomment=> { write_string(k,'<span class=comment>'+b+"</span>"); }
+    | cppcomment=> { write_string(k,'<span class=comment>'+b+"</span>"); }
+    | id => 
+      { 
+        last_id = b;
+        if inarray(b,cpp_big_keywords) do write_string(k,'<span class=big_keyword>'+b+"</span>"); 
+        elif inarray(b,cpp_small_keywords) do write_string(k,'<span class=small_keyword>'+b+"</span>"); 
+        elif inarray(b,cpp_qualifiers) do write_string(k,'<span class=qualifier>'+b+"</span>"); 
+        elif last_op == "#" and inarray(b,cpp_preproc) do write_string(k,'<span class=preproc>'+b+"</span>"); last_op="";
+        else write_string(k,b); done
+      }
+    | _ => 
+      { 
+        last_op=b; 
+        if b == "<" do b = "&lt;";
+        elif b == ">" do b = "&gt;";
+        elif b == "&" do b = "&amp;";
+        done;
+        write_string(k,b);  
+      }
+    endmatch;
+    b = "";  
+  }
+
+
+  goto nextt;
+
+contin:> // copy char and continue
+  cp();
+  goto nextch;
+   
+overrun:> // one past last char of token
+  w();
+  s = sot;
+  goto thisch;
+
+lastch:> // last char of token
+  cp();
+  w();
+
+nextt:>  // new token on next char
+  s = sot;
+
+nextch:> // next char
+  next();
+
+thisch:> // same char, reconsider it
+  //println$ "Considering char " + str(ord(ch));
+  if isnull ch goto fin; // out of data
+  match s with 
+  | sot =>
+    { 
+      if isidstart ch do s = id; goto contin;
+      elif isdigit ch do s = num; goto contin;
+      elif issq ch do s = sq; goto contin;
+      elif isdq ch do s = dq; goto contin;
+      elif ch == char "/" do
+        if ahead(1) == char "/" do cp; next; s = cppcomment; goto contin
+        elif ahead(1) == char "*" do cp; next; s = ccomment; goto contin
+        else goto lastch
+        done 
+      else cp; w; goto nextt;
+      done
+    }
+
+  | id => 
+    {
+      if isalphanum ch do goto contin;
+      else goto overrun;
+      done
+    }
+  | num => 
+    {
+      if isnumeric ch do goto contin;
+      else goto overrun; 
+      done
+    } 
+  // single quoted strings
+  | sq =>
+    {
+      if issq ch do goto lastch; 
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
+  | dq =>
+    {
+      if isdq ch do goto lastch;
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
+  // comments
+  | cppcomment =>
+    {
+      if iseol ch do goto lastch;
+      else goto contin;
+      done
+    }
+  | ccomment => // doesn't handle nested comments yet
+    {
+      if ch == char "*" and ahead(1) == char "/" do 
+        cp; 
+        goto lastch;
+      else goto contin;
+      done
+    }
+  endmatch
+  ; // execute selected function
+  println$ "Unexpected drop thru";
+
+fin:>
+   println "outof data";
+   w(); // whatever is left over gets written
+giveup:>
+}
+
+proc serve_cpp(s:socket_t, fname:string)
+{
+  var eof_flag = false;
+  proc write_string(k:socket_t, t:string) 
+  { 
+   if not eof_flag do Flx_stream::write_string(k,t,&eof_flag); 
+   else goto giveup;
+   done
+  }
+
+  var flx = Text_file::load(fname);
+  if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
+  if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
+  println$ "Loaded C/C++file " + fname;
+  //println$ "Contents=" + flx;
+  write_string(s, html_header);
+  write_string(s, flx_head);
+  write_string(s,"<pre>");
+  write_cpp(s, flx, &eof_flag);
+  write_string(s,"</pre>\n");
+  write_string(s,"</body></html>\n");
+giveup:>
+}
+
+// Felix
+val big_keywords = 
+  "module",
+  "fun",
+  "gen",
+  "proc",
+  "type",
+  "union",
+  "struct",
+  "typedef",
+  "var",
+  "val",
+  "typeclass",
+  "const",
+  "instance",
+  "header",
+  "body",
+  "include",
+  "open",
+  "spawn_fthread",
+  "spawn_pthread",
+  "reduce", "axiom", 
+  "open", "inherit"
+;
+val small_keywords =
+  "if", "then", "else", "elif", "endif", "do", "done",
+  "in", "forall", "while", "whilst","to", "upto","downto",
+  "match","endmatch","with","requires","return","goto"
+;
+
+val qualifiers = 
+  "virtual", "inline", "noinline", "private", "incomplete"
+;
+val hack = "C_hack","C_hack"; // to make it an array we need 2 components
+
+
+proc write_felix(k:socket_t, t:string, eof_flag: &bool)
+{
+  proc write_string(k:socket_t, t:string) 
+  { 
+   if not *eof_flag do Flx_stream::write_string(k,t,eof_flag); 
+   else goto giveup;
+   done
+  }
+
+  union state_t = 
+    | sot // start of token
+    | id // processing identifier
+    | num // in a number
+    | sq // processing single quote string
+    | dq // processing double quote string
+    | sq3 // processing single quote string
+    | dq3 // processing double quote string
+    | ccomment // a C style comment
+    | cppcomment // a C++ style comment
+  ;
+  fun str(s:state_t) => match s with
+  | sot => "sot"
+  | id => "id"
+  | num => "num"
+  | sq => "sq"
+  | dq => "dq"
+  | sq3 => "sq3"
+  | dq3 => "dq3"
+  | ccomment=> "ccomment"
+  | cppcomment => "cppcomment"
+  endmatch;
+  
+  var i = 0; var s:state_t;
+  var ch = t.[i];
+  proc next() { ch = t.[i]; ++i; }
+  fun ahead (j:int)=> t.[i+j-1]; 
+  fun issq3() => 
+    ch == char "'" and 
+    ahead(1) == char "'" and
+    ahead(2) == char "'" 
+  ;
+  fun isdq3() => 
+    ch == char '"'  and
+    ahead(1) == char '"' and
+    ahead(2) == char '"' 
+  ;
+
+  var b = "";
+  var last_id = "";
+  proc cp() { b += ch; }
+  proc ws() {
+    if last_id == "include" do // hackery
+      var n = b; 
+      whilst n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
+      whilst n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
+      if n.[-4 to] != ".flx" do n+= ".flx"; done // hack, fixme
+      write_string(k,'<a href="/'+n+'" >' + b + '</a>') ;
+    else 
+     write_string(k,'<span class=fstring>'+b+"</span>"); 
+    done
+  }
+  proc w() { 
+    //println$ "Token["+str s+"]="+b; 
+    match s with 
+    | dq => { ws; }
+    | sq => { ws; }
+    | sq3 => { ws; }
+    | dq3 => { ws; }
+    | ccomment=> { write_string(k,'<span class=comment>'+b+"</span>"); }
+    | cppcomment=> { write_string(k,'<span class=comment>'+b+"</span>"); }
+    | id => 
+      { 
+        last_id = b;
+        if inarray(b,big_keywords) do write_string(k,'<span class=big_keyword>'+b+"</span>"); 
+        elif inarray(b,small_keywords) do write_string(k,'<span class=small_keyword>'+b+"</span>"); 
+        elif inarray(b,qualifiers) do write_string(k,'<span class=qualifier>'+b+"</span>"); 
+        elif inarray(b,hack) do write_string(k,'<span class=hack>'+b+"</span>"); 
+        else write_string(k,b); done
+      }
+    | _ =>
+      { 
+        last_op=b; 
+        if b == "<" do b = "&lt;";
+        elif b == ">" do b = "&gt;";
+        elif b == "&" do b = "&amp;";
+        done;
+        write_string(k,b);  
+      }
+    endmatch;
+    b = "";  
+  }
+
+
+  goto nextt;
+
+contin:> // copy char and continue
+  cp();
+  goto nextch;
+   
+overrun:> // one past last char of token
+  w();
+  s = sot;
+  goto thisch;
+
+lastch:> // last char of token
+  cp();
+  w();
+
+nextt:>  // new token on next char
+  s = sot;
+
+nextch:> // next char
+  next();
+
+thisch:> // same char, reconsider it
+  //println$ "Considering char " + str(ord(ch));
+  if isnull ch goto fin; // out of data
+  match s with 
+  | sot =>
+    { 
+      if isidstart ch do s = id; goto contin;
+      elif isdigit ch do s = num; goto contin;
+      elif issq3() do cp; next; cp; next; s = sq3; goto contin;
+      elif isdq3() do cp; next; cp; next; s = dq3; goto contin;
+      elif issq ch do s = sq; goto contin;
+      elif isdq ch do s = dq; goto contin;
+      elif ch == char "/" do
+        if ahead(1) == char "/" do cp; next; s = cppcomment; goto contin
+        elif ahead(1) == char "*" do cp; next; s = ccomment; goto contin
+        else goto lastch
+        done 
+      else cp; w; goto nextt;
+      done
+    }
+
+  | id => 
+    {
+      if isalphanum ch do goto contin;
+      else goto overrun;
+      done
+    }
+  | num => 
+    {
+      if isnumeric ch do goto contin;
+      else goto overrun; 
+      done
+    } 
+  // single quoted strings
+  | sq =>
+    {
+      if issq ch do goto lastch; 
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
+  | dq =>
+    {
+      if isdq ch do goto lastch;
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
+   // triple quoted strings
+  | sq3 =>
+    {
+      if issq3() do cp; next; cp; next; cp; w; goto nextt; 
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
+  | dq3 =>
+    {
+      if isdq3() do cp; next; cp; next; cp; w; goto nextt;
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
+   // comments
+  | cppcomment =>
+    {
+      if iseol ch do goto lastch;
+      else goto contin;
+      done
+    }
+  | ccomment => // doesn't handle nested comments yet
+    {
+      if ch == char "*" and ahead(1) == char "/" do 
+        cp; 
+        goto lastch;
+      else goto contin;
+      done
+    }
+  endmatch
+  ; // execute selected function
+  println$ "Unexpected drop thru";
+
+fin:>
+   println "outof data";
+   w(); // whatever is left over gets written
+giveup:>
+}
+
+proc serve_felix(s:socket_t, fname:string)
+{
+  var eof_flag = false;
+  proc write_string(k:socket_t, t:string) 
+  { 
+   if not eof_flag do Flx_stream::write_string(k,t,&eof_flag); 
+   else goto giveup;
+   done
+  }
+
+  var flx = Text_file::load(fname);
+  if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
+  if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
+  println$ "Loaded felix file " + fname;
+  //println$ "Contents=" + flx;
+  write_string(s, html_header);
+  write_string(s, flx_head);
+  write_string(s,"<pre>");
+  write_felix(s, flx, &eof_flag);
+  write_string(s,"</pre>\n");
+  write_string(s,"</body></html>\n");
+giveup:>
+}
 
 proc serve_file(infname: string, s: socket_t)
 {
-  var fname: string;
-
+  var eof_flag = false;
   // if empty string, serve index.html
   // not quite right - needs to handle directories too, so
   // not only foo.com/ -> index.html, but foo.com/images/ -> images/index.html
-  if "" == infname then { fname = "index.html"; }else{ fname = infname;}endif;
+  var fname = if "" == infname then "index.html" else infname endif;
 
   // set mime type depending on extension...
   // serve a "not found page" for that case (check for recursion)
@@ -123,65 +732,16 @@ proc serve_file(infname: string, s: socket_t)
 
   print "suffix is "; print suffix; endl;
 
-#if WIN32
-  // quick 'n' dirty unix -> dos style pathnames
-  val wname = map (fun (a:char) => if a == char '/' then char '\\' else a endif) fname;
-  print "mapped "; print fname; print " -> "; print wname; endl;
-  // send header
-  // TransmitFile
-  var wf: WFILE <- Faio_win32::OpenFile(wname);
-
-  if wf == Faio_win32::INVALID_HANDLE_VALUE then
-  {
-    print "BUGGER: OpenFile failed: "; print (GetLastError()); endl;
-  } else {
-    print "opened "; print wname; endl;
-
-    // mime type mapping from suffix. make better here.
-    if("gif" == suffix) then { write_string(s, gif_header); }
-    elif("css" == suffix) then { write_string(s, css_header); }
-    else { write_string(s, html_header); } endif;
-
-    print "Transmitting file!\n";
-    TransmitFile(s, wf);
-
-    // send footer
-    CloseFile(wf);
-  } endif;
-#elif POSIX
-  // this fn sets the O_NONBLOCK flag which is completely unnecessary
-  // as read goes via the preading worker fifo. don't know if
-  // O_NONBLOCK even works on actual files.
-  var fd = Faio_posix::ropen(fname);
-
-  if Faio_posix::invalid fd then
-  {
-    print "BUGGER, posix open failed\n";
-    write_string(s, notfound_header);
-    write_string(s, fname+"\r\n\n");
-  } else {
-    print "got fd="; print$ str fd; endl;
-
-    // mime type mapping from suffix. make better here.
-    // factor out
-    if("gif" == suffix) then { write_string(s, gif_header); }
-    elif("css" == suffix) then { write_string(s, css_header); }
-    else { write_string(s, html_header); } endif;
-
-    var from_strm: Faio_posix::fd_t = fd;
-    var to_strm: socket_t = s;
-    Flx_stream::cat(from_strm, to_strm);
-
-    dbg q"close file $from_strm\n";
-    iclose(from_strm); // this'll know how to close a unix fd
-  } endif;
-
-  // var contents = Text_file::load(fname);
-  // print "loaded: "; print contents; endl;
-  // print "contents len="; print (len contents); endl;
-  // write_string(s, html_header + contents);
-
-#endif
+  if suffix == "flx" do serve_felix(s:socket_t, fname:string);
+  elif suffix == "cpp" or suffix == "hpp" 
+    or suffix == "cxx" or suffix == "h" or suffix == "c"
+    do serve_cpp(s:socket_t, fname:string);
+  
+  else
+    if WIN32 do win32_send_file(s,fname, suffix);
+    elif POSIX do posix_send_file(s,fname, suffix,&eof_flag);
+    done
+  done
 }
 
 val webby_port = 1234;
@@ -193,47 +753,61 @@ var p = webby_port;
 var listener: socket_t;
 mk_listener(&listener, &p, 10);
 
-forever {
-  var s: socket_t;
-  accept(listener, &s);  // blocking
-  dbg q"got connection $s\n";  // error check here
+var clock = Faio::mk_alarm_clock();
 
-  // hmm - spawning an fthread is blocking the web server. don't know why
-  print "spawning fthread to handle connection\n";
-  spawn_fthread {
-    // should spawn fthread here to allow for more io overlap
+// noinline is necessary to stop the closure being
+// inlined into the loop, preventing the socket variable k
+// being duplicated as it must be [a bug in Felix]
+noinline proc handler (var k:socket_t) ()
+{
+   dbg$ "Spawned fthread running for socket "+str k+"\n";
+  // should spawn fthread here to allow for more io overlap
 
-    var line: string;
-    get_line(s, &line);  // should be the GET line.
+  var line: string;
+  get_line(k, &line, str(k));  // should be the GET line.
+  //cat(s, DEVNULL);
 
-    print "got line: "; print line; endl;
+  print$ "got line from socket "+str k+": "; print line; endl;
 
-    // now I need to parse the GET line, get a file name out of its url
-    // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
-    match parse_get_line line with
-    | None[string*string] => {
-        print "BAD get line: "; print line; endl;
-      }
-    | Some (?base, ?file) => {
-        print "well formed get...\n";
-        print "base="; print base; endl;
-        print "file="; print file; endl;
+  // now I need to parse the GET line, get a file name out of its url
+  // (e.g. unqualfied -> index.html and name/flx.jpg -> flx.jpg
+  match parse_get_line line with
+  | None[string*string] => {
+      print "BAD get line: "; print line; endl;
+    }
+  | Some (?base, ?file) => {
+      print "well formed get...\n";
+      print "base="; print base; endl;
+      print "file="; print file; endl;
 
-        serve_file(file, s);
-      }
-    endmatch;
+      serve_file(file, k);
+    }
+  endmatch;
 
-    // we've only read the GET line, so let's flush out the rest of
-    // the http request so we don't get connection reset errors when
-    // we close the socket. shutting down stops cat blocking (?)
-    Faio_posix::shutdown(s, 1); // disallow further sends.
-    cat(s, DEVNULL);
+  // we've only read the GET line, so let's flush out the rest of
+  // the http request so we don't get connection reset errors when
+  // we close the socket. shutting down stops cat blocking (?)
+  //Faio_posix::shutdown(s, 1); // disallow further sends.
+  //cat(s, DEVNULL);
 
-    fprint$ cerr,q"closing socket $s\n";
-    ioclose(s);
-
-  };
-  collect();
+  fprint$ cerr,"fthread closing socket "+str k+"\n";
+  Faio::sleep(clock,0.1); // give OS time to empty its buffers
+  ioclose(k);
+  fprint$ cerr,"fthread "+str k+" terminating!\n";
 };
 
+forever {
+  var s: socket_t;
+  dbg$ "Waiting for connection\n";
+  accept(listener, &s);  // blocking
+  dbg$ "got connection "+str s + "\n";  // error check here
+
+  // hmm - spawning an fthread is blocking the web server. don't know why
+  print$ "spawning fthread to handle connection "+str s+"\n";
+  var h = handler s;
+  spawn_fthread  h;
+ //collect(); // this hangs everything, no idea why!
+};
+
+println "WEB SERVER FINNISHED?";
 iclose(listener);

@@ -3,6 +3,7 @@ open module Stdout
   // NOTE: this module works on C++ standard streams
   // NOT on the streams passed in the thread frame
   // almost certainly this is a bug .. :)
+  // fprint is defined in each types module
   requires iostream;
   type ostream = "std::ostream*";
   const cout: ostream = "&std::cout";
@@ -14,5 +15,6 @@ open module Stdout
 
   proc print  [T with Str[T]] (x:T) { fprint (cout, str x); };
   proc println[T with Str[T]] (x:T) { fprint (cout, str x); endl cout; };
+  proc fprintln[T with Str[T]] (s:ostream, x:T) { fprint (s, str x); endl s; };
 }
 

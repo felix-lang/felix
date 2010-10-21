@@ -522,7 +522,6 @@ let gen_offset_tables syms bsym_table module_name =
       if not is_pod then begin
         bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
         bcat s ("  (("^ tname ^ "*)p)->~" ^ tname ^ "();\n");
-        bcat s ("  p = (void*)((char*)p + sizeof("^tname^"));\n");
         bcat s ("}\n")
       end
       ;
@@ -530,7 +529,7 @@ let gen_offset_tables syms bsym_table module_name =
       bcat s ("  " ^ old_ptr_map ^ ",\n");
       bcat s ("  \"" ^ name ^ "\",\n");
       bcat s ("  " ^ si k ^ ",\n");
-      bcat s ("  sizeof("^name^"),\n");
+      bcat s ("  sizeof("^tname^"),\n"); (* NOTE: size of ONE element!! *)
       bcat s
       (
         if not is_pod then ("  "^name^"_finaliser,\n")

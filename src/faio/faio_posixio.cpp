@@ -53,6 +53,11 @@ socketio_request::start_async_op_impl()
   // fprintf(stderr, "adding wakeup: len %i, done %i\n",
   //   sv.pb.buffer_size, sv.pb.bytes_written);
 
+  if(sv.s == -1) {
+    fprintf(stderr, "Attempt to start_async_op on socket -1\n");
+    exit(1);
+  }
+
   // wake thread if call failed
   bool failed = (pd->add_socket_wakeup(&sv, sv.sio_flags) == -1);
   if (failed)
@@ -83,11 +88,13 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
   {
     connection_closed = true;
     //pb.bytes_written=0;
+    fprintf(stderr,"posix faio wakeup PDEMUX_ERROR, connection closed = %d\n", connection_closed);
   }
 
   else if(wakeup_flags & PDEMUX_EOF)
   {
     connection_closed = true;
+    //fprintf(stderr,"posix faio wakeup PDEMUX_EOF, connection closed = %d\n", connection_closed);
     //pb.bytes_written=0;
   }
 
@@ -95,13 +102,18 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
   {
     // just check that our above assumption hasn't been violated.
     assert(wakeup_flags == PDEMUX_READ);
+    //fprintf(stderr,"posix faio wakeup PDEMUX_READ, reading..\n");
     connection_closed = posix_demuxer::socket_recv(s, &pb);
+    //fprintf(stderr,"posix faio wakeup PDEMUX_READ, connection closed = %d\n", connection_closed);
   }
   else
   {
     // never hurts to be paranoid.
     assert(wakeup_flags == PDEMUX_WRITE);
+    //fprintf(stderr,"posix faio wakeup PDEMUX_WRITE, writing..\n");
     connection_closed = posix_demuxer::socket_send(s, &pb);
+    //if(connection_closed)
+    //  fprintf(stderr,"posix faio wakeup PDEMUX_WRITE, connection closed = %d\n", connection_closed);
   }
 
   // fprintf(stderr,"posthandle wakeup, this: %p, read: %i, len: %i, done %i\n",
@@ -112,6 +124,10 @@ socketio_wakeup::wakeup(posix_demuxer& demux)
   if(connection_closed || pb.bytes_written == pb.buffer_size)
   {
     // fprintf(stderr,"schedding %p, drv: %p, f: %p\n", this, drv, f);
+    // if the connection closed, this notify should tell the caller
+    // not to keep trying to write, but it doesn't .. why not?
+    // who called it anyhow?
+    // I think the writing code ignores error returns ..
     request->notify_finished();
     return;
   }

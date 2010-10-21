@@ -67,7 +67,7 @@ unsigned long gc_profile_t::actually_collect() {
 
 void *gc_profile_t::allocate(
   flx::gc::generic::gc_shape_t *shape,
-  unsigned long amt,
+  unsigned long count,
   bool allow_gc
 )
 {
@@ -78,20 +78,27 @@ void *gc_profile_t::allocate(
   {
     maybe_collect();
     try {
-      return collector -> allocate(shape,amt);
+      return collector -> allocate(shape,count);
     }
     catch (flx::rtl::flx_out_of_memory_t&) {
       actually_collect();
-      return collector -> allocate(shape,amt);
+      return collector -> allocate(shape,count);
     }
   }
   else
-    return collector -> allocate(shape,amt);
+    return collector -> allocate(shape,count);
 }
 
 }}} // end namespaces
 
 // in global namespace now ..
+//
+// NOTE: Felix arrays are two dimensional. The shape.amt field is the size of
+// one element. The shape.count field is the number of elements for a static
+// array type. The dynamic length is for varrays, it is stored in a judy array
+// associated with the array address. If there is nothing in the judy array,
+// the dynamic length is one. C++ operator new allocates arrays of dynamic length 1. 
+//
 void *operator new(
   std::size_t amt,
   flx::gc::generic::gc_profile_t &gcp,
@@ -99,13 +106,13 @@ void *operator new(
   bool allow_gc
 )
 {
-  if (amt != shape.amt)
+  if (amt != shape.amt * shape.count)
   {
     fprintf(stderr,"Shape size error: allocator size = %ld\n",amt);
-    fprintf(stderr,"Shape %s size = %ld\n",shape.cname,shape.amt);
+    fprintf(stderr,"Shape %s element size = %ld, element count = %;d\n",shape.cname,shape.amt,shape.count);
     abort();
   }
-  void *p = gcp.allocate(&shape,1,allow_gc);
+  void *p = gcp.allocate(&shape,1,allow_gc); // dynamic array count = 1
   return p;
 }
 

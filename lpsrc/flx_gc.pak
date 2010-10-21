@@ -40,31 +40,6 @@ around the malloc/free interface. It is provided primarily
 to allow instrumentation of allocations, although it is possible
 to supply a user written allocator.
 
-@h = tangler('spkgs/flx_gc.py')
-@select(h)
-import os
-
-cpp_cpps = [
-  'src/gc/flx_gc',
-  'src/gc/flx_collector',
-  'src/gc/flx_ts_collector'
-  ]
-
-rtl_interfaces = [
-  'src/gc/flx_gc.hpp',
-  'src/gc/flx_collector.hpp',
-  'src/gc/flx_gc_private.hpp',
-  'src/gc/flx_ts_collector.hpp'
-]
-
-provides_lib = "libflx_gc"
-pkg_requires = ['flx_judy', 'flx_exceptions', 'flx_pthread']
-lib_requires = ['libflx_judy', 'libflx_exceptions', 'libflx_pthread']
-iscr_source = ['lpsrc/flx_gc.pak']
-build_macro = "FLX_GC"
-weaver_directory = 'doc/rtl/flx_gc/'
-xfiles = [os.path.join('src', 'gc', '*')]
-
 @h = tangler('config/flx_gc.fpc')
 @select(h)
 Name: flx_gc

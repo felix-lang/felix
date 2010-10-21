@@ -17,34 +17,6 @@ Version: $Id$
  else:
    pass
 
-@h = tangler('spkgs/flx_glob.py')
-@select(h)
-import os
-import glob
-
-import config
-
-iscr_source = ["lpsrc/flx_glob.pak"]
-weaver_directory = 'doc/rtl/flx_glob/'
-xfiles = [os.path.join('src', 'unixem', '*')]
-
-rtl_interfaces = ['config/target/flx_glob_config.hpp', 'src/unixem/flx_glob.hpp']
-felix_rtl = ['src/unixem/glob.flx']
-
-cpp_cpps = []
-if config.WIN32:
-  cpp_cpps.extend([
-    'src/unixem/flx_glob',
-    'src/unixem/unixem_util',
-  ])
-
-lib_requires = ['libflx_gc']
-pkg_requires = ['flx_rtl'] # flx_rtl provides flx_rtl_config.hpp
-build_macro = "GLOB"
-
-root = config.src_dir
-unit_tests = [('test', 'glob', 'glob-*.flx')]
-
 @h=tangler('config/target/flx_glob_config.hpp')
 @select(h)
 #ifndef __FLX_GLOB_CONFIG_H__

@@ -22,6 +22,7 @@ posix_demuxer::~posix_demuxer()
 bool
 posix_demuxer::socket_recv(int s, sel_param* pb)
 {
+  //fprintf(stderr,"posix_demuxer:socket_recv\n");
   // why do I have the zero buffer size?
   assert(pb->buffer_size > pb->bytes_written || 0 == pb->buffer_size);
   ssize_t     nbytes;
@@ -30,20 +31,24 @@ posix_demuxer::socket_recv(int s, sel_param* pb)
   nbytes = recv(s, pb->buffer + pb->bytes_written,
         pb->buffer_size - pb->bytes_written, 0);
 
+  //fprintf(stderr,"posix_demuxer:socket_recv got %d bytes\n", nbytes);
   /*
   fprintf(stderr,"posix_demuxer RECV: s=%d, pb=%p, buf+%d, req=%d, got %d\n",
     s,pb, int(pb->bytes_written), int(pb->buffer_size - pb->bytes_written), int(nbytes)
   );
   */
-  if(nbytes <= 0)
+  if(nbytes <= 0) // so what happens if the client wants to send 0 bytes?
   {
     if(nbytes == 0)
     {
+      pb->eof_detected = true;
       return true;        // connection closed
     }
     else
     {
       perror("recv");       // can get reset connection here
+      pb->eof_detected = true;
+      pb->error_detected = true;
       return true;        // so say closed, yeah?
     }
   }
@@ -66,8 +71,10 @@ posix_demuxer::socket_send(int s, sel_param* pb)
 
   ssize_t     nbytes;
 
+  //fprintf(stderr,"posix_demuxer:socket_send\n", nbytes);
   nbytes = send(s, pb->buffer + pb->bytes_written,
     pb->buffer_size - pb->bytes_written, 0);
+  //fprintf(stderr,"posix_demuxer:socket_send wrote %ld bytes\n", (long) nbytes);
 
   /*
   fprintf(stderr,"posix_demuxer SEND: s=%d, pb=%p buf+%d, req=%d, got %d\n",
@@ -78,9 +85,22 @@ posix_demuxer::socket_send(int s, sel_param* pb)
 
   // what's the story with zero? Is that allowed or does it signal
   // that the connection closed?
+  // JS: According to the man page, it can happen on an async socket
+  // but for us this could be if the notification event lied
+  // OR a socket connection got closed in between the notification
+  // and this call: we can tell by looking at errno but that utterly
+  // sucks .. oh well, unix is a pretty bad OS in some ways
+  // OR .. it could happen if the client decided to send 0 bytes!
+
   if(-1 == nbytes)
   {
+    fprintf(stderr,"posix_demuxer: socket send failed, connection closed by client?\n");
     perror("send");
+    fprintf(stderr,"Should have printed the error code above ..\n");
+    pb->eof_detected = true;
+    pb->error_detected = true; // really, trying to write on a connection merely closed
+                               // by the client is NOT an error, since there's no other way
+                               // to tell than try to do a write
     return true;          // I guess the connection closed
   }
   else

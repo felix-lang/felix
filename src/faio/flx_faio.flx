@@ -26,9 +26,14 @@ module Faio {
 
   proc calc_eof(pb: sel_param_ptr, len: &int, eof: &bool)
   {
+      //println "Calc_eof ..";
       var bytes_done = pb.bytes_done;
+      //println$ "Bytes done = "+ str bytes_done;
+      //println$ "Req len= "+ str (*len);
       *eof = (bytes_done != *len);
+      //println$ "Eof = " + str (*eof);
       *len = bytes_done;
+      //println$ "Reset len to bytes done ..";
   }
 
   type sleep_request = 'flx::faio::sleep_request' requires faio_timer_h;

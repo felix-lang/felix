@@ -347,6 +347,7 @@ wsasocketio_control_block::start_overlapped()
       }
 
       fprintf(stderr,"WSARecv/Send returned SOCKET_ERR: %li\n", err);
+      ppb->eof_detected=true;
       return true;    // assume it's bad and we won't get a wakeup
     }
     break;

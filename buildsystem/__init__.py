@@ -30,6 +30,9 @@ def copy_flxs_to_lib(ctx, flxs):
 def copy_flxs_to_libstd(ctx, flxs):
     return copy_to(ctx, ctx.buildroot / 'lib/std', tuple(flxs))
 
+def copy_flxs_to_libstd_posix(ctx, flxs):
+    return copy_to(ctx, ctx.buildroot / 'lib/std/posix', tuple(flxs))
+
 def copy_flxs_to_libstl(ctx, flxs):
     return copy_to(ctx, ctx.buildroot / 'lib/stl', tuple(flxs))
 

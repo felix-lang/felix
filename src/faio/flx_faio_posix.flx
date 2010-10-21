@@ -103,9 +103,13 @@ fun get_pb: socketio_request -> sel_param_ptr = '&$1.sv.pb';
 // read & write differ only by a flag
 proc async_rw(fd: socket_t, len: &int, buf: address, eof: &bool, read_flag: bool)
 {
+    //println$ "faio/flx_faoi_posix.flx: async_rw (s,"+str (*len)+",buf,"+str(*eof)+", "+str read_flag+") calling mk_socketio_req ..";
     var asyncb = mk_socketio_request(sys_demux,fd, buf, *len, read_flag);
     faio_req$ &asyncb;
+    //println$ "faio/flx_faoi_posix.flx: async_rw ("+ str fd+", "+str (*len)+",buf,"+str(*eof)+", "+str read_flag+") calculating eof ..";
+
     calc_eof(asyncb.pb, len, eof);
+    //println$ "faio/flx_faoi_posix.flx: async_rw (s,"+str (*len)+",buf,"+str(*eof)+", "+str read_flag+") called mk_socketio_req ..";
 }
 
 proc async_read(fd: socket_t, len: &int, buf: address,
@@ -116,7 +120,9 @@ proc async_read(fd: socket_t, len: &int, buf: address,
 
 proc async_write(fd: socket_t, len: &int, buf: address, eof: &bool)
 {
+    //println$ "faio/flx_faoi_posix.flx: async_write(s,"+str (*len)+",buf,"+str(*eof)+" calling async_rw ..";
     async_rw(fd, len, buf, eof, false);     // write
+    //println$ "faio/flx_faoi_posix.flx: async_write(s,"+str (*len)+",buf,"+str(*eof)+" call async_rw ..";
 }
 
 type flxfileio_request = "flx::faio::flxfileio_request";

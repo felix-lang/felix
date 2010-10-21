@@ -255,35 +255,57 @@ module Flx_stream {
   }
 
   // highly inefficient!
-  proc get_line[istr with IByteStream[istr]]
-  (strm: istr, s: &string)
+  noinline proc get_line[istr with IByteStream[istr]]
+  (strm: istr, s: &string, id:string)
   {
     var c: char;
     val ac = C_hack::cast[address]$ C_hack::addr c;
-    var st: string;
+    var st: string="";
     var finished = false;
 
+    //fprintln$ cerr,"Get line from IByteStream "+id;
     whilst not finished do
       var len = 1;
       var eof: bool;
 
       read(strm, &len, ac, &eof);
 
+      /*
+      if len == 0 do
+        fprintln$ cerr,"Got nothing from IByteStream "+id;
+        if eof do fprintln$ cerr,"Eof on IBytestream "+id;
+        else fprintln$ cerr,"So not eof but also got nothing? "+id
+        done
+      else
+        if eof do
+          fprintln$ cerr,"What, eof on stream and read char " + str c + " IByteStream=" + id;
+        else
+          //fprintln$ cerr,"Got char " + str c + " from an IByteStream "+id;
+        done
+      done
+      */
+
       if eof or c == char '\n' do
+        //fprintln$ cerr,"Got end of line (or file) from an IByteStream "+id;
         finished = true;
       else
         st += c;
-      done;
-    done;
+      done
+    done
     *s = st;  // pass back result
+    //println$ "Got: " + st;
+
   }
 
+  proc get_line[istr with IByteStream[istr]]
+  (strm: istr, s: &string) { get_line(strm, s, "UNKNOWN"); }
+
+
   proc write_string[ostr with OByteStream[ostr]]
-  (sk: ostr, var s: string)
+  (sk: ostr, var s: string, eof: &bool)
   {
     var slen = len s;
     var a = C_hack::cast[address]$ cstr s;
-    var eof: bool;
-    write(sk, &slen, a, &eof);
+    write(sk, &slen, a, eof);
   }
 } // module Flx_stream

@@ -6,10 +6,22 @@ namespace flx { namespace demux {
 
 struct sel_param {
   char*   buffer;           // set on input
-  long    buffer_size;        // set on input
-  long    bytes_written;        // set on input and output
+  long    buffer_size;      // set on input
+  long    bytes_written;    // set on input and output
+  bool    eof_detected;     // NEW: a proper eof flag
+                            // maybe implemented in Posix, 
+                            // not done in Windows yet (since I don't have a Windows development box)
 
-  bool    finished() { return bytes_written == buffer_size; }
+  bool    error_detected;   // NEW: a proper error flag
+                            // maybe implemented on Posix
+                            // not done in Windows yet (since I don't have a Windows development box)
+                            // NOTE: there's no indication of what the error is
+                            // because that is platform dependent
+                            // A normal EOF condition is NOT an error
+                            // However most errors will be associated with an eof!
+
+  sel_param() : buffer(0), buffer_size(0), bytes_written(0), eof_detected(false), error_detected(false)  {}
+  bool    finished() { return error_detected || eof_detected || (bytes_written == buffer_size); }
 };
 
 // rename ...

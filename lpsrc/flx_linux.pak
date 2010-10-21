@@ -2,19 +2,6 @@
 
 @head(1,'Felix Library: Linux support')
 
-@select(tangler('spkgs/plat_linux.py'))
-import config
-
-if config.LINUX:
-  pkg_provides = ['plat_linux']
-  cpp_cpps = ['src/plat/linux/plat_linux']
-  provides_lib = "libplat_linux"
-
-iscr_source = ['lpsrc/flx_linux.pak']
-build_macro = "LINUX"
-rtl_interfaces = [ 'src/plat/linux/plat_linux.hpp' ]
-
-
 @select(tangler('config/target/plat_linux.fpc', 'data'))
 Description: Linux specific
 @if config.LINUX:

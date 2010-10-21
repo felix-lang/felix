@@ -4,16 +4,6 @@
 
 @env = setup_test(get_input_frame(), 'tut/macros/mac-')
 
-@select(tangler('spkgs/flx_tut_macro.py'))
-import glob
-
-@tangle('TESTS = glob.glob("%s*.flx")' % env.native_root)
-
-unit_tests = TESTS
-pkg_requires = ['flx_compiler','flx_drivers','flx_rtl','faio']
-iscr_source = [ 'lpsrc/flx_tut_macro.pak' ]
-weaver_directory = 'doc/tutorial/macros/'
-
 @env.head(1,'The Syntax Macro Processor')
 @env.head(2,'Expression Macro Facility')
 Felix provides an powerful and dangerous

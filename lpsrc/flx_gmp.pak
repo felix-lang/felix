@@ -19,18 +19,6 @@ except ImportError:
   pa(f, locals(), "HAVE_GMPXX")
   f.close()
 
-@h = tangler('spkgs/gmpxx.py')
-@select(h)
-import config
-from cpkgs.target.gmpxx import HAVE_GMPXX
-
-if HAVE_GMPXX:
-  root = config.src_dir
-  unit_tests = [('test', 'gmp', 'gmp-*.flx')]
-
-iscr_source = ['lpsrc/flx_gmp.pak']
-weaver_directory = 'doc/gmp/'
-
 @h = tangler('config/gmpxx.fpc')
 @select(h)
 requires_slibs: -lgmp

@@ -223,13 +223,17 @@ void *flx_collector_t::create_empty_array(
 void flx_collector_t::impl_finalise(void *fp)
 {
   assert(fp!=NULL);
-  gc_shape_t *shape = get_shape(fp);
+  //fprintf(stderr, "Finaliser for %p\n", fp);
+  gc_shape_t *shape = get_shape(fp); // inefficient, since we already know the shape!
+  //fprintf(stderr, "Got shape %p=%s\n", shape,shape->cname);
   void (*finaliser)(collector_t*, void*) = shape->finaliser;
+  //fprintf(stderr, "Got finaliser %p\n", finaliser);
   if (finaliser)
   {
     unsigned char *cp = (unsigned char*)fp;
     unsigned long n_used = get_count(fp) * shape->count;
     unsigned long eltsize = shape->amt;
+    //fprintf(stderr, "Finalising at %p for type %s %ld objects each size %ld\n", cp, shape->cname, n_used, eltsize);
     for(unsigned long j = 0; j<n_used; ++j)
     {
       (*finaliser)(this,(void*)cp);
@@ -244,6 +248,7 @@ void flx_collector_t::unlink(void *fp)
   assert(fp!=NULL);
 
   // call the finaliser if there is one
+  //fprintf(stderr,"Calling finaliser\n");
   impl_finalise(fp);
 
   allocation_count--;
@@ -251,12 +256,15 @@ void flx_collector_t::unlink(void *fp)
   unsigned long n_objects = get_count(fp);
   unsigned long nobj = shape -> count * n_objects;
   std::size_t size = shape->amt * nobj;
+  //fprintf(stderr, "Uncounting %ld bytes\n", long(size));
   allocation_amt -= size;
 
   // unlink the frame from the collectors list
+  //fprintf(stderr,"Removing address from Judy lists\n");
   JudyLDel(&j_shape, (Word_t)fp, &je);
   JudyLDel(&j_nused, (Word_t)fp, &je);
   JudyLDel(&j_nalloc, (Word_t)fp, &je);
+  //fprintf(stderr,"Finished unlinking\n");
 }
 
 void flx_collector_t::post_delete(void *fp)
@@ -350,14 +358,19 @@ unsigned long flx_collector_t::sweep()
       if(debug)
         fprintf(stderr,"Garbage %p=%s\n",current,((gc_shape_t*)(*pshape & ~1UL))->cname);
       ++ sweeped;
+      //fprintf(stderr,"Unlinking ..\n");
       unlink(current);
+      //fprintf(stderr,"Posting delete ..\n");
       post_delete(current);
+      //fprintf(stderr,"Reaping done\n");
     }
     else
       if(debug)
         fprintf(stderr,"Reachable %p=%s\n",current,((gc_shape_t*)(*pshape & ~1UL))->cname);
 
+    //fprintf(stderr,"Calling Judy for next object\n");
     pshape = (Word_t*)JudyLNext(j_shape,(Word_t*)(void*)&current,&je);
+    //fprintf(stderr,"Judy got next object %p\n",pshape);
   }
 
   parity = !parity;
