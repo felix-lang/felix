@@ -69,7 +69,7 @@ class Iscr(fbuild.db.PersistentObject):
                 if m:
                     dsts.append(Path(m.group(1)))
 
-        fbuild.db.add_external_dependencies_to_call(self.ctx, srcs=srcs)
+        self.ctx.db.add_external_dependencies_to_call(srcs=srcs)
 
         return dsts
 
