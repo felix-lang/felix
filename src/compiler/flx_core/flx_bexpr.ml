@@ -24,6 +24,7 @@ type bexpr_t =
   | BEXPR_expr of string * Flx_btype.t
   | BEXPR_range_check of t * t * t
   | BEXPR_coerce of t * Flx_btype.t
+  | BEXPR_compose of t * t
 
 and t = bexpr_t * Flx_btype.t
 
@@ -78,6 +79,8 @@ let bexpr_expr (s, t) = BEXPR_expr (s, t), t
 let bexpr_range_check t (e1, e2, e3) = BEXPR_range_check (e1, e2, e3), t
 
 let bexpr_coerce (e, t) = BEXPR_coerce (e, t), t
+
+let bexpr_compose t (e1, e2) = BEXPR_compose (e1, e2), t
 
 (* -------------------------------------------------------------------------- *)
 
@@ -184,6 +187,9 @@ let flat_iter
   | BEXPR_apply (e1,e2) ->
       f_bexpr e1;
       f_bexpr e2
+  | BEXPR_compose (e1,e2) ->
+      f_bexpr e1;
+      f_bexpr e2
   | BEXPR_apply_prim (i,ts,e2) ->
       f_bid i;
       List.iter f_btype ts;
@@ -252,6 +258,7 @@ let map
   | BEXPR_likely e,t -> BEXPR_likely (f_bexpr e), f_btype t
   | BEXPR_unlikely e,t -> BEXPR_unlikely (f_bexpr e), f_btype t
   | BEXPR_apply (e1,e2),t -> BEXPR_apply (f_bexpr e1, f_bexpr e2), f_btype t
+  | BEXPR_compose (e1,e2),t -> BEXPR_compose (f_bexpr e1, f_bexpr e2), f_btype t
   | BEXPR_apply_prim (i,ts,e2),t ->
       BEXPR_apply_prim (f_bid i, List.map f_btype ts, f_bexpr e2),f_btype t
   | BEXPR_apply_direct (i,ts,e2),t ->
@@ -290,6 +297,8 @@ let reduce e =
     | BEXPR_deref (BEXPR_ref (i,ts),_),t -> BEXPR_name (i,ts),t
     | BEXPR_deref (BEXPR_address (e,t),_),_ -> (e,t)
     | BEXPR_address (BEXPR_deref (e,t),_),_ -> (e,t)
+    | BEXPR_apply ((BEXPR_compose( (_,Flx_btype.BTYP_function (_,b) as f), f2),_),e),t ->
+        BEXPR_apply(f2,(BEXPR_apply(f,e),b)),t
     | x -> x
   in f_bexpr e
 
@@ -319,6 +328,8 @@ let rec print_bexpr f = function
         Flx_ast.print_literal l
   | BEXPR_apply (e1, e2) ->
       Flx_format.print_variant2 f "BEXPR_apply" print e1 print e2
+  | BEXPR_compose (e1, e2) ->
+      Flx_format.print_variant2 f "BEXPR_compose" print e1 print e2
   | BEXPR_apply_prim (bid, ts, e) ->
       Flx_format.print_variant3 f "BEXPR_apply_prim"
         Flx_types.print_bid bid

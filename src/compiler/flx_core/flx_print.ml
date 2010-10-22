@@ -1867,6 +1867,11 @@ and string_of_bound_expression' bsym_table se e =
     se arg ^
     ")"
 
+  | BEXPR_compose (fn1, fn2) -> "(" ^
+    se fn1 ^ " . " ^
+    se fn2 ^
+    ")"
+
   | BEXPR_apply_prim (i,ts, arg) -> "(" ^
     sid i ^ string_of_inst bsym_table ts ^ " " ^
     se arg ^

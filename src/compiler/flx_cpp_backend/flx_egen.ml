@@ -146,6 +146,30 @@ let nth_type ts i =
   with Not_found ->
     failwith ("Can't find component " ^ si i ^ " of type!")
 
+(* dumb routine to know if we need parens around a type name when used
+ * as a cast: if it's an identifier, no we don't, otherwise we have
+ * to use an old style cast
+ *)
+
+let idchars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
+
+let isid x = 
+  let isid_char ch = 
+    try
+      for i = 0 to String.length idchars - 1 do
+        if ch = idchars.[i] then raise Not_found
+      done;
+      false
+    with Not_found -> true
+  in
+  try 
+    for i = 0 to String.length x - 1 do
+      if not (isid_char x.[i]) then raise Not_found;
+    done;
+    true
+  with _ -> false
+;;
+
 let rec gen_expr'
   syms
   bsym_table
@@ -345,7 +369,9 @@ let rec gen_expr'
       "new(*PTF gcp,"^pname^",true) " ^
       typ ^ "("^ge e ^")"
     in
-    let reference = ref_type ^ "(" ^ frame_ptr ^ ")" in
+    let reference =
+      "(" ^ ref_type ^ ")(" ^ frame_ptr ^ ")" 
+    in
     ce_atom reference
 
 
@@ -634,6 +660,12 @@ let rec gen_expr'
     | BTYP_variant _ -> coerce_variant ()
     | _ -> ce_atom ("reinterpret<"^tn dstt^","^tn srct^">("^ge srce^")")
     end
+
+
+  | BEXPR_compose _ -> failwith "Flx_egen:Can't handle closure of composition yet"
+
+  | BEXPR_apply ((BEXPR_compose (f1, f2),_), e) ->
+      failwith ("flx_egen: application of composition should have been reduced away")
 
   | BEXPR_apply
      (

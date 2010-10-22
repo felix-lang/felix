@@ -735,7 +735,7 @@ proc write_fdoc(k:socket_t, t:string, eof_flag: &bool)
   | cmd => "cmd"
   endmatch;
   
-  var i = 0; var s:state_t;
+  var i = 0; var s:state_t=doc;
   var ch = t.[i];
   proc next() { ch = t.[i]; ++i; }
   fun ahead (j:int)=> t.[i+j-1]; 
@@ -778,6 +778,9 @@ nextc:>
       else
         if b == "felix" do s = felix;
         elif prefix(b,"h1") do write_string(k,"<h1>"+b.[3 to]+"</h1>\n"); s=doc;
+        elif prefix(b,"h2") do write_string(k,"<h2>"+b.[3 to]+"</h2>\n"); s=doc;
+        elif prefix(b,"h3") do write_string(k,"<h3>"+b.[3 to]+"</h3>\n"); s=doc;
+        elif prefix(b,"h4") do write_string(k,"<h4>"+b.[3 to]+"</h4>\n"); s=doc;
         else s = doc;
         done
       done

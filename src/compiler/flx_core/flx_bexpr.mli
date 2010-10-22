@@ -24,6 +24,7 @@ type bexpr_t = private
   | BEXPR_expr of string * Flx_btype.t
   | BEXPR_range_check of t * t * t
   | BEXPR_coerce of t * Flx_btype.t
+  | BEXPR_compose of t * t
 
 and t = bexpr_t * Flx_btype.t
 
@@ -101,8 +102,11 @@ val bexpr_expr : string * Flx_btype.t -> t
 (** Construct a BEXPR_range_check expression. *)
 val bexpr_range_check : Flx_btype.t -> t * t * t -> t
 
-(** Construct a BEXPR_coerceexpression. *)
+(** Construct a BEXPR_coerce expression. *)
 val bexpr_coerce : t * Flx_btype.t -> t
+
+(** Construct a BEXPR_compose expression *)
+val bexpr_compose : Flx_btype.t -> t * t -> t
 
 (* -------------------------------------------------------------------------- *)
 

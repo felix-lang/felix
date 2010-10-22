@@ -115,9 +115,22 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
       ui index ts; ue a
     end
 
+  | BEXPR_apply ((BEXPR_compose (f1, f2),_), e) ->
+    failwith "Application of composition, should have been reduced away"
+
   | BEXPR_apply (e1,e2) ->
     (*
     print_endline "Simple apply";
+    *)
+    ue e1; ue e2
+
+  (* Note: not clear this will work, without the same special casing as apply
+   * above
+   * Also note: this is a closure not directly applied.
+   *)
+  | BEXPR_compose (e1,e2) ->
+    (*
+    print_endline "Simple compose";
     *)
     ue e1; ue e2
 

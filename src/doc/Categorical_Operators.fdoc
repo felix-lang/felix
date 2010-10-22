@@ -1,0 +1,109 @@
+@h1 Categorical Operators
+Most functional programming languages are applicative, meaning that
+they work by applying functions to values: <em>application</em> is the
+primary operation.
+
+In a <em>categorical</em> language, however, <em>composition</em> is
+the primary operation. 
+
+Felix provides both modes of operation. The application operator
+in Felix is just whitespace:
+@felix
+sin x
+@
+is the application of the sin function to x. Unlike C and C++, 
+parentheses
+@felix
+sin (x+1)
+@
+are required only for grouping. Felix also provides the application
+operator <code>$</code> which is application with a low precedence:
+@felix
+f $ g $ h x
+@
+means to apply h to x, then g to the result, then f to that result.
+It is often used to make a procedure look like a command:
+@felix
+println$ a+b;
+@
+It is worth noting here that there is a special hack for calling
+procedures with unit argument. Instead of writing
+@felix
+myproc ();
+@
+you can elide the parentheses and write:
+@felix
+myproc;
+@
+Note that this is never ambiguous because interpreting
+it as a procedure value would lead to a type error,
+as Felix does not permit values to be silently ignored.
+
+Felix also has the operator <code>.</code> which can be used for
+serial composition of functions. We can write
+@felix
+(h . g . f) x
+@
+for the application above: note this is reverse notation. The reason is that
+a value <code>x</code> can be lifted to a function returning a value when
+applied to the unit value, which is written:
+@felix
+{x}
+@
+and now we can see that
+@felix
+{x} . h . g . f
+@
+is a pure functional composition which an be applied to the unit value
+to get a result:
+@felix
+({x} . h . g . f) ()
+@
+The parentheses are needed here because application has a higher
+precedence than the composition operator.
+
+Note that composition of procedure is easy:
+@felix
+{p1; p2 x; p3; }
+@p
+is a procedure which when applied will execute <code>p1</code> then
+apply <code>p2</code> to <code>x</code>, then call <code>p3</code>.
+Now note that using the elision rule, you can now shorten:
+@felix
+{p1; p2 x; p3; } ();
+@p
+to just:
+@felix
+{p1; p2 x; p3; };
+@p
+This gives the impression of a block as in C, except that you
+now understand why the terminating semicolon is required.
+
+If the last statement of an anonymous construction is a return:
+@felix
+{p1; p2 x; return y; }
+@
+then it is interpreted as a function returning the type of <code>y</code>
+instead. A further shortcut allows you to elide the return statement:
+@felix
+{p1; p2 x; y }
+@
+where you should note carefully that the trailing semicolon is missing.
+In fact we now see that
+@felix
+{x}
+@
+is just a special case of this rule.
+
+Now we go back to the notation:
+@felix
+{x}.f 
+@
+which is the closure of f over x. Since composition requires its arguments
+to be functions, if the left argument is not of function type it is lifted
+automagically, so that:
+@felix
+x.f
+@
+can be written instead.
+which is equivalent to

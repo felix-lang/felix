@@ -4255,7 +4255,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     | EXPR_name (_,name,ts) ->
       begin match ttt with
 
-      (* LHS IS A NOMINAL TYPE *)
+      (* LHS HAS A NOMINAL TYPE *)
       | BTYP_inst (i,ts') ->
         begin match hfind "lookup" state.sym_table i with
 
@@ -4338,7 +4338,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
 
            end
 
-        (* LHS PRIMITIVE TYPE *)
+        (* LHS HAS A PRIMITIVE TYPE *)
         | { Flx_sym.id=id; symdef=SYMDEF_abs _ } ->
             (*
             print_endline ("Synth get method .. (4) " ^ name);
@@ -4346,12 +4346,13 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           let get_name = "get_" ^ name in
           begin try cal_method_apply sr get_name e ts
           with exn1 -> try be (EXPR_apply (sr,(e2,e)))
-          with exn2 ->
-          clierr sr (
+          with exn2 -> 
+          clierr sr 
+          (
             "AST_dot: Abstract type "^id^"="^sbt bsym_table ttt ^
             "\napply " ^ name ^
             " failed with " ^ Printexc.to_string exn2
-            )
+          )
           end
 
         | _ ->
@@ -4361,7 +4362,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
 
         end
 
-      (* LHS RECORD *)
+      (* LHS HAS A RECORD TYPE *)
       | BTYP_record es ->
         let rcmp (s1,_) (s2,_) = compare s1 s2 in
         let es = List.sort rcmp es in
@@ -4385,11 +4386,29 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       | BTYP_function (d,c) ->
         begin try be (EXPR_apply (sr,(e2,e)))
         with exn ->
-        clierr sr (
-        "AST_dot, arg "^ string_of_expr e2^
-        " is simple name, and attempt to apply it failed with " ^
-        Printexc.to_string exn
-        )
+        try 
+          let r,rt = be e2 in
+          match rt with
+          | BTYP_function (a,b) ->
+            if c = a then bexpr_compose (btyp_function (d,b)) (te,(r,rt))
+            else
+             clierr sr (
+               "AST_dot " ^ string_of_expr e ^ " . " ^ string_of_expr e2^
+               "codomain of LHS function should match domain of RHS function"
+             )
+ 
+          | _ -> 
+            clierr sr (
+            "AST_dot, LHS function, RHS arg "^ string_of_expr e2^
+            " is simple name, should have been a function but got " ^
+            Printexc.to_string exn
+            )
+        with exn2 ->
+          clierr sr (
+          "AST_dot, LHS function, RHS arg "^ string_of_expr e2^
+          " is simple name, and attempt to bind it failed with " ^
+          Printexc.to_string exn2
+          )
         end
 
       (* LHS TUPLE TYPE *)
@@ -4409,7 +4428,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         with exn ->
         clierr sr (
         "AST_dot, arg "^ string_of_expr e2^
-        " is not simple name, and attempt to apply it failed with " ^
+        " is simple name, and attempt to apply it failed with " ^
         Printexc.to_string exn
         )
         end

@@ -1,0 +1,134 @@
+@h1 Salient Features of Felix
+Felix provides a unique integration of some key features required for rapid and robust software development.
+
+@h2 Ease of use
+Felix is as easy to use as a scripting language such like Python. Just type up your program
+@felix
+println$ "Hello World";
+@
+and run it:
+<pre>
+flx hello
+</pre>
+Felix uses an advanced resource management system to find all the relevant resources
+and link them together. It compiles the program and any required libraries and
+generates platform independent ISO Standard C++ code, then uses your platforms
+native C++ compiler to compile that down to high performance machine binaries.
+
+There's no need to worry about make files, include files, compiler switches,
+libraries or linker switches: Felix does it all for you.
+
+@h2 High Performance
+Felix often achieves the highest performance of any programming language and
+is rarely far behind others. It can even outperform hand written C. It does
+this by focussing on high level optimisations, and generating code which your
+C++ compiler is good at optimising further. 
+
+Much of the performance is achieved by whole program analysis: we believe
+linkers are obsolete and certainly compiling a whole Felix program can
+be much faster than building C++ code. Rereading header files for each
+object is not required. Felix also generates precisely that code which
+is required and elides unused entities such as functions.
+
+In the event Felix is not generating fast enough code, you can
+always embed hand written C directly into your programs. Therefore,
+Felix can always be at least as fast as C.
+
+@h2 Type Safety
+Unlike most scripting language, Felix has a strong static typing system
+based on ML. It provides a rich set of functional programming features
+and a strong system of information hiding. At the same time duplication
+is avoided, for example you do not need to, nor can you, declare function
+prototypes.
+
+@h2 Memory Safety
+Felix uses a garbage collector to automate memory management.
+Felix managed pointers can be mixed freely with user managed
+pointers, however C objects must not contain Felix managed
+pointers unless those pointers are registered as roots,
+or at least know to be rooted in some other way (weak pointers),
+and the registration relinquished when the object is deleted.
+The compromise is essential to allow interoperability with C.
+
+@h2 Binding to C libraries
+Felix has can bind easily to existing C libraries without glue logic.
+Glue is required to map types. For example here is a binding:
+@felix
+type INT = "int"; // bind the type
+fun add: INT * INT -> INT = "$1+$2"; // define addition
+ctor INT:int = "$1"; // make an INT from a felix int
+ctor int:INT = "$1"; // make a felix int from an INT
+
+var x= INT(1);
+x = x + x; // Felix operator + calls the add function
+x = x + INT(2); // OK
+// x = x + 3; // error, can't mix int and INT
+println$ int x;
+@
+Although there is some work creating such bindings the result
+is a strongly type safe mapping to C. Where C would use a mere
+typedef for INT, the Felix version is an abstract type.
+
+Only C++ provides a more seamless binding to C (since C is
+basically a subset syntactically). Felix uses the C/C++
+object model and execution machinery so it links directly
+to your favourite C libraries.
+
+@h2 Proper polymorphism
+Felix allows overloading much like the system in C++ except
+that it only permits a function to be selected with 
+an exact match, however unlike C++ we don't consider overloading
+polymorphism, it is just convenient naming. 
+
+Felix has a strong first order system of polymorphism.
+It includes both strictly parametric polymorphism
+and also Haskell style typeclasses, but with multiple
+types.
+
+In addition, it supports a limited kind of non-class
+constraints, primarily to allow things like:
+@felix
+typedef integer = typeset(short, int, long);
+fun add[v:integer,w:integer]: v * w -> long = "(long)($1+$2)";
+@
+This constrains calls to the function to a pair of a values
+from a finite set of types. Overload ambiguities can be
+resolved using constraints.
+
+Although Felix usually expands polymophic functions on instantiation,
+if instances differ only in the types of pointers, it generates
+a single function using <code>void*</code> and wraps calls in
+casts, thus avoiding code bloat, and preparing the way for
+higher order polymorphism.
+
+@h2 Extensible grammar
+Whilst some languages provide operator overloading and
+some even allow you to define new operators, Felix
+allows you to add entirely new grammar productions.
+Indeed the whole Felix grammar is dynamically loaded
+by the compiler.
+
+The grammar specification roughly follows BNF style with
+a namespace management system. The user actions are written
+in Scheme and generate S-expression terms which represent
+the program.
+
+@h2 Cooperative multi-tasking
+Ugly callback driven code is replaced in Felix by lightweight
+threads (sometimes called fibres) which communicate using
+channels. It also provides a complete system of asynchronous I/O
+which allows these fibres to block whilst not blocking the
+underling pre-emptive thread. Context switching only requires
+a few machine instructions (basically swapping a pointer).
+A desktop computer can easily support a million fibres.
+
+Asynchronous I/O is platform independent and allows networking
+using sockets using platform specific event notification
+services: on Linux using epoll, Solaris using I/O completion
+ports, BSD Unix and Mac OSX using kqueue, Windows using I/O
+completion ports, and generic Unix using select.
+
+Felix also supports pre-emptive threads. The garbage collector
+is fully thread safe (although it has to stop the world to
+do a collection).
+

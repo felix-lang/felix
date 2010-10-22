@@ -55,6 +55,7 @@ let rec check_abstract_expr syms rls ((x,t) as e) =
   | BEXPR_address e -> fe e
 
   | BEXPR_apply (e1,e2) -> fe e1; fe e2
+  | BEXPR_compose (e1,e2) -> fe e1; fe e2
 
   | BEXPR_apply_prim (i,ts,e2) -> fi i; fe e2
   | BEXPR_apply_direct (i,ts,e2) -> fi i; fe e2
