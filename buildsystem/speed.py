@@ -149,7 +149,7 @@ def run_test(ctx, path, dst, srcs:fbuild.db.SRCS, expect:fbuild.db.OPTIONAL_SRC,
         # If we failed to compile, just move on
         return None, None
 
-    fbuild.db.add_external_dependencies_to_call(ctx, dsts=[exe])
+    ctx.db.add_external_dependencies_to_call(dsts=[exe])
 
     # Run the executable and measure the wall clock time
     ctx.logger.check('running ' + exe)
