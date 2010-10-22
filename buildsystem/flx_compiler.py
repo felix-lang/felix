@@ -35,9 +35,7 @@ def build_flx_lex(phase):
     path = Path('src/compiler/flx_lex')
     dypgen = call('buildsystem.dypgen.build_exe', phase)
     return phase.ocaml.build_lib(path/'flx_lex',
-        srcs=Path.globall(
-            path / '*.ml{,i}'
-            ),
+        srcs=Path.globall(path / '*.ml{,i}'),
         libs=[
             call('buildsystem.dypgen.build_lib', phase),
             call('buildsystem.ocs.build_lib', phase),
@@ -136,7 +134,7 @@ def build_flx_cpp_backend(phase):
     return phase.ocaml.build_lib(path / 'flx_cpp_backend',
         srcs=Path.globall(
             path / '*.ml{,i}',
-            phase.ctx.buildroot / path / '*.ml{,i}'),
+            phase.ctx.buildroot / path / 'flx_backend_config.ml{,i}'),
         libs=[
             build_flx_misc(phase),
             build_flx_core(phase),
