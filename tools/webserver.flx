@@ -208,6 +208,11 @@ span.qualifier {color:#A02020; }
 span.hack {color:#00FF00; }
 span.preproc {color:#00FF00; }
 pre.flxbg {background-color:#80FF80; }
+pre.inclusion {background-color:#D070D0; }
+.obsolete { background-color:#FFEFEF; font-size: small}
+.future { background-color:#FF8080; font-size: small}
+.implementation_detail { background-color:#E0E0E0; font-size: small; }
+.caveat { background-color:#FF8080; }
 </style>
 </head>
 <body>
@@ -465,7 +470,7 @@ val big_keywords =
 val small_keywords =
   "if", "then", "else", "elif", "endif", "do", "done",
   "in", "forall", "while", "whilst","to", "upto","downto",
-  "match","endmatch","with","requires","return","goto"
+  "typematch","match","endmatch","with","requires","return","goto"
 ;
 
 val qualifiers = 
@@ -777,6 +782,22 @@ nextc:>
       if char "\n" != ch do cp; goto nextc;
       else
         if b == "felix" do s = felix;
+        elif prefix (b,"felix") do {
+          fname := strip(b.[5 to]);
+          var flx = Text_file::load(fname);
+          if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
+          if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
+          println$ "Loaded felix file " + fname;
+          write_string(k,"<pre class=inclusion>\n"+fname+"</pre>\n");
+          write_string(k,"<pre class=flxbg>"); 
+          write_felix(k,flx,eof_flag);
+          write_string(k,"</pre>"); 
+        };
+        s=doc;
+        elif b=="obsolete" do write_string(k,"<p class=obsolete> <em>Obsolete</em> "); s=doc;
+        elif b=="caveat" do write_string(k,"<p class=caveat> <em>Caveat: </em> "); s=doc;
+        elif b=="impl" do write_string(k,"<p class=implementation_detail> <em>Implementation Detail: </em>"); s=doc;
+        elif b=="future" do write_string(k,"<p class=future> <em>In future: </em>"); s=doc;
         elif prefix(b,"h1") do write_string(k,"<h1>"+b.[3 to]+"</h1>\n"); s=doc;
         elif prefix(b,"h2") do write_string(k,"<h2>"+b.[3 to]+"</h2>\n"); s=doc;
         elif prefix(b,"h3") do write_string(k,"<h3>"+b.[3 to]+"</h3>\n"); s=doc;

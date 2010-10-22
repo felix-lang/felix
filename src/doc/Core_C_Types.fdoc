@@ -1,0 +1,33 @@
+@h1 Core C Types
+Felix lifts a basic set of types from C. This is best understood
+by examining the standard library.
+@felix plat/ctypedefs.flx
+The <code>type</code> statement is used to lift a type from
+C into Felix. The Felix type is given on the left, and the
+C type is quoted on the right. The form of name is restricted
+to names which can textually precede a variable name in C,
+thus function type cannot be named using this simple mechanism.
+
+The qualifier <code>pod</code> tells the Felix compiler the
+type is a Plain Old Datatype, the effect of which is that
+the compiler knows objects of that type have trivial destructors.
+For non-pod types, the garbage collector runs a finaliser which
+calls the type's destructor.
+
+@obsolete
+The qualifier <code>_gc_pointer</code> tells the Felix compiler
+that the type is a pointer to a Felix allocated object, and thus
+the object should be scanned by the collector for other pointers.
+
+The <code>gtypedef</code> statement is used to create an alias
+for a type. Note that unlike C the new name is on the LHS and
+the old name on the RHS separate by an <code>=</code> sign:
+much easier to read.
+
+Here, the typedefs provide platform independent names for
+platform dependent types: this particular code is generated
+by the Felix build system during configuration, which is why
+it lives in the <code>plat</code> directory.
+
+See also <a href=Type_Sets.fdoc>Type Sets</a> for a way to
+classify these types conveniently.

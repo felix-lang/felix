@@ -1,0 +1,32 @@
+@h1 Type Sets
+Felix has a special set of operators in the type language for constructing
+finite sets of types which can be used in type constraints.
+
+The best example is straight from the standard library:
+@felix std/ctypesets.flx
+
+Typesets can be combined with the set union operator <code>||</code>,
+and the set intersection operator <code>&&</code>.
+
+@obsolete
+Inside a typeset you can also put another typeset, this is treated
+as if the list of its members were written. You can also
+use the union and intersection operators with a single type
+which is silently upgraded to a singleton set.
+
+@future
+Typesets are intended to contain arbitrary patterns.
+For a proper understanding of the role of typesets you need to
+first understand <a href=Type_Constraints.fdoc>Type Constraints</a>
+and <a href=Type_Matching.fdoc>Type Matching</a>.
+
+Basically a typeset <code>X</code> exists purely to be able to 
+write <code>u in X</code> as a shorthand for a typematch;
+that is, the noun exists only to permit the convenient expression
+of a predicate.
+
+In the library code above you can see a typematch expression. 
+A type match is a compile time type check which returns
+a type. Thus you can write <code>complex[float]</code>
+as a synonym for <code>fcomplex</code>.
+

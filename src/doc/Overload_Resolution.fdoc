@@ -1,0 +1,119 @@
+@h1 Overload Resolution
+Felix overload resolution is similar to C++, however there are
+some key differences.
+
+During lookup, all functions of the given name are made
+candidates: there is no hiding (initially).
+
+The actual signatures exposed are modified by any specialisations
+as can be used in opens and inherits of type classes and modules,
+or explicitly when calling the function.
+For example:
+@felix
+module X[u,v] { fun f(x:u, y:v)=> x,y; }
+open[w] X[w,w];
+// effectively makes X::f[w](x:w,y:w) visible
+fun g[r] (x:r)=> f[r*r]((x,x),(x,x)); // specialised w->r*r
+@
+Felix then examines the first argument of the call and attempts to
+find a substitution of the type variables of the candidate which
+make the resulting type  a generalisation of the the first argument.
+If no such substitution is found, the candidate is removed from
+the set of candidates.
+
+If the function returns a function and the call is nested in another
+application as in this example:
+@felix
+fun f(x:int) (y:int) => x + y;
+println$ f 1 2;
+@
+then Felix further refines the set of candidates by examining the
+argument of the enclosing application. To understand this recall
+that the above is really:
+@felix
+fun f(x:int)=> (fun (y:int)=> x + y);
+println$ ( (f 1) 2 )
+@
+The function above is said to have arity two, which means its
+type:
+@felix
+int -> int -> int
+@
+contains two arrows. Note also that if a function accepts a tuple:
+@felix
+fun f(x:int, y:int)=> x + y;
+println$ f (1,2);
+@
+the tuple is really one argument, although we sometimes say it
+has two.
+
+At this point, not all type variables need to have been bound to
+concrete types.
+
+Next, type constraints are considered. Felix checks
+if a constraint is satisfied by the calculated substitution,
+and if not rejects the candidate. For example
+@felix
+typedef integer = typesetof(int, long);
+typedef real = typesetof(float, double);
+fun f[u:integer] (x:u)=> x,x;
+fun f[v: float] (x:v)=> x,x;
+println$ f 1;
+println$ f 2.0;
+@
+Felix also allows equational type constraints, and these
+can fix type variables. Note that type variables from
+the enclosing context are considered constants.
+The type equations are solved by specialisation,
+that is, unification directed by pre-determining
+which variables are dependent and which independent.
+
+Any candidate for which all the type variables cannot
+be fixed is then discarded. For example:
+@felix
+fun f[v,u] (x:u) (y:v) => x,y;
+var a = f[int] (1); //ok
+// var b = f 1; // fails
+var c = f 1 2; // ok
+@
+In the example, the second call fails because type variable v
+is not fixed. Not carefully the original signature reverses
+the order of the type variables and argument so that it is
+possible to fix one explicitly whilst allowing the second
+one to be fixed by overload resolution. The syntax allows
+you to elide trailing bindings but you can't skip leading ones.
+
+A call then fails if the resulting set does not
+contain exactly one member. Note that reduction of types
+must occur before overloading, in particular type functions
+must be applied. If the result fails to reduce to a 
+type, the candidate cannot be selected.
+
+Note that type class constraints are not considered here.
+Interestingly, the only impact is that this delays some
+errors to instantiation time. It has no impact on 
+either overload resolution nor on the implementation
+of the function. However typeclass constraints do have
+to be bound (the typeclass has to be visible).
+
+Having thus refined the candidates, Felix then proceeds to
+consider polymorphism. If one of the polymorphic types is
+more specialised than another, it is selected and the
+candidate with the more general type is discarded. 
+For example:
+@felix
+fun f[u,v](x:u, y:v) =>x,y;
+fun f[k] (x:k, y:k) => x,y;
+fun f(x:int, y:int) => x,y;
+println$ f(1,2.0);
+println$ f(1.0,2.0);
+println$ f(1,2);
+@
+will select the first, second, and third functions
+respectively.
+
+You should also note that overloading applies to anything
+which names something function like, including functions,
+procedures, generators, constructor functions, union
+component constructors, and even type functions.
+

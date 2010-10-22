@@ -1,0 +1,42 @@
+@h1 Type Matching
+Felix type system contains a <code>typematch</code> expression similar to the 
+run time <code>match</code> expression. In combination with type functions
+and meta-typing, the Felix type system is a powerful super set of the
+typed lambda calculus.
+
+A simple example from the standard library defined in <a href=/std/int.flx>std/int.flx</a>
+is the rule for integral promotion:
+@felix
+typedef fun integral_promotion: TYPE -> TYPE =
+  | tiny => int
+  | utiny => int
+  | short => int
+  | ushort => int
+  | int => int
+  | uint => uint
+  | long => long
+  | ulong => ulong
+  | vlong => vlong
+  | uvlong => uvlong
+;
+@
+
+Here we are defining a type function <code>integral_promotion</code>
+which maps types to types. The set of all types has the meta type
+<code>TYPE</code>.
+
+An more sophisticated example:
+@felix plat/arithmax.flx
+This code defines a type function <code>arithmax</code> which given to 
+integral types, calculates the type to which both will be promoted
+according to ISO C rules, in order to perform an arithmetic operation
+such as addition.
+
+It is somewhat unfortunate that the result of just one of these
+combinations is platform dependent, so that this file had to be
+generated.
+
+Note that the definition of type functions uses exactly the same
+syntax as ordinary functions, in fact the parser uses the same
+productions. However not all the executable constructions make
+sense in type functions.
