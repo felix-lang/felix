@@ -1,0 +1,223 @@
+@h1 The Type Calculus
+In most type systems, type terms consist of constants, type constructors,
+and type variables with quantifiers.
+
+Felix has a much richer type system which is a typed lambda
+calculus enriched with type matches: the typing of types is
+called meta-typing. The resulting calculus is believed to be equivalent
+to Jay's pattern calculus.
+
+In addition, introduction of type sets provides a convenient way to
+express predicates with a large number of alternatives.
+
+The syntax for type expressions is similar to that used for
+executable expressions, indeed, most of the grammar productions
+are the shared.
+
+@h2 Type functions: Lambda abstraction
+A type function can be defined in Felix with a typedef:
+@felix
+typedef fun pair(t:TYPE):TYPE=>t * t;
+@
+Now we can write:
+@felix
+var x: pair int = 1,2;
+@
+Of course anonymous type functions are also possible,
+the above definition could have been written:
+@felix
+typedef pair = fun(t:TYPE):TYPE=>t * t;
+@
+Note that indexed types are related, for example:
+@felix
+typedef pair[t] = t * t; // meta-type of t is TYPE
+@
+but the treatment is different. The type variables of
+indexed types can be instantiated by overload resolution:
+@felix
+fun f[t](x:pair[t])=>x,x;
+var y = f(1,2); // pair[int]
+@
+whilst type functions must have been beta-reduced out of
+existence before overload resolution can be applied.
+
+Type functions can be overloaded just like any other functions,
+and they can have multiple arguments.
+
+The syntax for application is the same as for ordinary functions,
+however applications are evaluated at compile time early in
+the compilation processes. Evaluation is by beta-reduction,
+and is generally lazy; that is, using normal order.
+
+Note that type tuples (products) do exist too: a value
+@felix
+int, int : TYPE * TYPE
+@
+is a pair of types with meta-type the product of the 
+<code>TYPE</code> category with itself.
+
+@h2 Type Recursion
+The type system supports recursion of course. For example we
+can define a list by:
+@felix
+typedef list[t] = 1 + t * list[t];
+@
+It is also possible to describe a list without giving it an alias:
+@felix
+1 + int * T as T;
+@
+The <code>as</code> operator introduces a local alias which permits
+the recursion, it is the argument of the usual rec binder in reverse
+polish form. The notation is stolen from Ocaml. A prefix binder
+such as <code>rec T. 1 + int * T</code> would have been more conventional.
+
+The actual standard library definition uses a nominal type instead:
+@felix
+union list[T] = | Empty | Cons of T * list[T];
+@
+
+@h2 Type Matches
+Type functions would not be that interesting were it not
+for type matches. A type match looks like this:
+@felix
+typedef fun integral_promotion (t: TYPE):TYPE =
+  typematch t with
+  | tiny => int
+  | utiny => int
+  | short => int
+  endmatch
+;
+@
+which is the same as a runtime match except the keyword <code>typematch</code>
+is used. As with ordinary functions you can use the shorthand:
+@felix
+typedef fun integral_promotion: TYPE -> TYPE =
+  | tiny => int
+  | utiny => int
+  | short => int
+;
+@
+for a function.
+
+The argument of the match can be any type expression. It is reduced
+before the branches are considered. The LHS of each branch can be any type
+pattern, which is a type expression with labelled holes, just like an
+ordinary match:
+@felix
+  typedef fun dom(t:TYPE):TYPE =>
+    typematch t with
+    | ?a -> _ => a
+    endmatch
+  ;
+@
+This type function extracts the domain of a function type. 
+
+The type calculus has the need for logic. We cheat like C, and use
+the type 0 for false and 1 for true. Note that 0, 1, 2, etc are 
+types! The unit type is called 1. We also have a void type 0.
+The type 3 is just 1 + 1 + 1, which is a standard sum type.
+
+So given that we have some logic operators such as:
+@felix
+  typedef fun type_land(x:TYPE, y:TYPE):TYPE =>
+    typematch (x,  y) with
+    | 0, _ => 0
+    | _,0 => 0
+    | _,_ => 1
+    endmatch
+  ;
+@
+which defines a conjunction for types. We can even define equality:
+@felix
+  typedef fun eq(x:TYPE, y:TYPE):TYPE=>
+    typematch x with
+    | y => typematch y with | x => 1 | _ => 0 endmatch
+    | _ => 0
+    endmatch
+  ;
+@
+where you will note the nested match. The standard library 
+contains these definitions, here is the complete module:
+
+@felix std/typing.flx
+
+It is important to understand how type matches are resolved:
+the algorithm is not as obvious as it may seem. The basic
+idea is simple enough: we evaluate the match argument,
+then try to match the pattern of the first branch.
+If this succeeds, we're finished and we return the value
+of the first branch.
+
+If the first branch fails to match, you would think we would just
+proceed to the second branch but this is NOT the case. Instead,
+we have to decide if the first pattern could match in the future.
+This might happen if a type variable is subsequently instantiated.
+A pattern <code>int</code> does not match a type variable <code>t</code>,
+however it does after <code>t</code> is replaced by <code>int</code>.
+A counter example is: the pattern <code>int</code> does not match
+the argument <code>t * t</code> and it can never do so, for any
+substitution for <code>t</code>.
+
+So, if we are certain that the pattern of the first branch can never match,
+the whole type match is replaced by itself minus the first branch, and
+reduction is retried.
+
+The algorithm for determining if there ever can be a match is of course
+just unification, whereas the actual matching is specialisation. The point
+here is that the argument may be specialised by subsequent reductions,
+so we make the result independent of the order of evaluation.
+
+It is important to note that patterns are also an extension to the type
+system and patterns can themselves also be reduced! (Simply treat
+the pattern variables as constants). The resulting calculus is 
+extremely powerful.
+
+@h2 Type Sets
+It is very inconvenient to have to write predicates using type matches.
+For example you could write:
+@felix
+typedef fun isintegral: TYPE->TYPE=
+  | tiny => 1
+  | utiny => 1
+  | short => 1
+  | ushort => 1
+  | int => 1
+  | uint => 1
+  | long => 1
+  | ulong => 1
+  | vlong => 1
+  | uvlong => 1
+  | _ => 0
+;
+@
+but it would be much easier to say:
+@felix
+fun(t:TYPE):TYPE => t isin typesetof(
+  tiny,utiny,short,ushort,int,uint,
+  long,ulong,vlong,uvlong)
+;
+@
+So Felix introduces the notion of a typeset as a short hand for a
+more long winded type match. Typesets can be named and combined:
+@felix std/ctypesets.flx
+
+Note that because typesets are used with the membership
+operator to form a predicate which defines by a match
+on members returning 0 or 1, typesets can contain arbitrary
+patterns, not just constants. For example the set of all
+function types can be written:
+@felix
+typedef functions = typesetof(_ -> _);
+@
+@caveat
+Unfortunately there's no way to get type variables in there.
+the notation needs to be fixed so that for example one can
+write <code>typedef operators[t] = typesetof(t->t);</code>
+but you can't do it at present AFAIK.
+
+
+
+
+
+
+
