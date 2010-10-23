@@ -159,7 +159,7 @@ var INCLUDE_DIRS="";
 var INCLUDE_FILES="";
 var NOSTDLIB=0;
 var STDOUT="";
-var STDIMPORT="--import=nugram.flxh --import=flx.flxh";
+var STDIMPORT="--import=nugram.flxh --import=plat/flx.flxh";
 var IMPORTS="";
 var OUTPUT_DIR="";
 
@@ -865,7 +865,7 @@ SHIFT
 GOTO DOARGS
 )
 
-"%FID%\BIN\FLXG" -I"%FID%\LIB" --import nugram.flxh --import:flx.flxh std %1 >"%1.LOG"
+"%FID%\BIN\FLXG" -I"%FID%\LIB" --import nugram.flxh --import:plat\\flx.flxh std %1 >"%1.LOG"
 if ERRORLEVEL 1 GOTO ERROR
 if %STATIC% EQU 0 (
 %FID%\BIN\FLX_PKGCONFIG --path:%FID%\CONFIG --field:cflags @%1.resh >%1_cflags.txt
@@ -967,7 +967,7 @@ INCLUDE_DIRS=""
 INCLUDE_FILES=""
 NOSTDLIB=0
 STDOUT=""
-STDIMPORT="--import=nugram.flxh --import=flx.flxh"
+STDIMPORT="--import=nugram.flxh --import=plat/flx.flxh"
 IMPORTS=""
 OUTPUT_DIR=""
 
@@ -1444,7 +1444,7 @@ cppos=""
 INCLUDE_DIRS=""
 NOSTDLIB=0
 STDOUT=""
-STDIMPORT="--import=nugram.flxh --import=flx.flxh"
+STDIMPORT="--import=nugram.flxh --import=plat/flx.flxh"
 IMPORTS=""
 OUTPUT_DIR=""
 

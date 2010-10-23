@@ -51,8 +51,9 @@ Support table.
 
 
 
-@h=tangler('lib/flx.flxh','data')
+@h=tangler('lib/plat/flx.flxh','data')
 @select(h)
+// GENERATED DURING CONFIGURATION
 open syntax felix;
 
 @plats = ["WIN32","POSIX","LINUX","MACOSX","CYGWIN","SOLARIS","BSD"]
@@ -63,8 +64,9 @@ open syntax felix;
   else:
     tangle("macro val " + i + " = false;")
 
-@ctypes=tangler('lib/flx_ctypes.flx','data')
+@ctypes=tangler('lib/plat/flx_ctypes.flx','data')
 @select(ctypes)
+// GENERATED DURING CONFIGURATION
 header cctype_hxx = '#include <cctype>';
 header string_hxx = '#include <string>';
 header complex_hxx = '#include <complex>';
@@ -152,6 +154,7 @@ header cstring = "#include <cstring>";
   if SIZEOF_LONGLONG == size: return 'uvlong'
 
 @select(tangler("lib/plat/ctypedefs.flx",'data'))
+// GENERATED DURING CONFIGURATION
 @for t in all:
   gen_type(t)
 
@@ -169,6 +172,7 @@ _gc_pointer type gcptr[t]= "?1*";
   tangle('typedef ' + t + ' = ' + equiv + ';')
 
 @select(tangler('lib/plat/arithmax.flx','data'))
+// GENERATED DURING CONFIGURATION
 // arithmetic conversion rule
 typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
   typematch integral_promotion l, integral_promotion r with
@@ -199,6 +203,7 @@ typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
 
 
 @select(tangler('lib/plat/float.flx','data'))
+// GENERATED DURING CONFIGURATION
 @for t in floats:
   tangle("open module " + t.capitalize())
   tangle("{")
@@ -230,6 +235,7 @@ open Show[bool];
 
 @h = tangler("lib/std/version.flx")
 @select(h)
+// GENERATED DURING BUILD (for version number)
 publish "System Interface"
 module Version
 {
@@ -239,6 +245,7 @@ module Version
 
 @h = tangler("lib/plat/filename.flx")
 @select(h)
+// GENERATED DURING CONFIGURATION
 include "std/list.flx";
 module Filename
 {

@@ -31,8 +31,7 @@ header stdexcept = '#include <stdexcept>';
 
 header flx_strutil = '#include "flx_strutil.hpp"';
 
-include "flx_tclass";
-include "flx_ctypes";
+include "plat/flx_ctypes";
 
 body swapper[t] = """
   void swapper(?1 *a, ?1 *b){

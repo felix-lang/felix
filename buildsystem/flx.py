@@ -64,7 +64,7 @@ class Builder(fbuild.db.PersistentObject):
         imports = list(imports)
         syntaxes = list(syntaxes)
         if include_std:
-            imports.insert(0, 'flx.flxh')
+            imports.insert(0, 'plat/flx.flxh')
             imports.insert(0, 'nugram.flxh')
             syntaxes.insert(0, 'nugram.flxh')
 

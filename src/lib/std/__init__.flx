@@ -1,3 +1,6 @@
+// type classes
+include "std/flx_tclass.flx";
+
 // base scalar types 
 include "std/address";
 include "std/bool";
