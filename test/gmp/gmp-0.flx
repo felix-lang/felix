@@ -1,6 +1,6 @@
 //Check gmp
 
-include "flx_gmp";
+include "gnu/gmp/flx_gmp";
 open Gmp;
 
 syntax gmp_syntax {

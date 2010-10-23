@@ -19,13 +19,13 @@ def build_flx(phase):
 
     if fbuild.config.c.gsl.gsl_gsl_blas_h(phase.cxx.shared).header:
         dsts.extend(buildsystem.copy_fpc_to_config(phase.ctx,
-            Path('src/gsl/*.fpc').glob()))
+            Path('src/lib/gnu/gsl/*.fpc').glob()))
 
     dsts.extend(buildsystem.copy_to(phase.ctx,Path (phase.ctx.buildroot)/"lib/gnu/gsl",
-            Path('src/gnu/gsl/*.flx').glob()))
+            Path('src/lib/gnu/gsl/*.flx').glob()))
 
     dsts.extend(buildsystem.copy_to(phase.ctx,Path (phase.ctx.buildroot)/"lib/gnu/gmp",
-            Path('src/gnu/gmp/*.flx').glob()))
+            Path('src/lib/gnu/gmp/*.flx').glob()))
 
     if 'macosx' in phase.platform:
         gl_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
