@@ -1278,7 +1278,7 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       let children = Flx_bsym_table.find_children bsym_table i in
       BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) children;
 
-      let exes = check_reductions syms bsym_table exes in
+      let exes = check_reductions syms bsym_table exes in (* typeclass reduce statements *)
       let xcls = Flx_tailit.exes_get_xclosures syms exes in
       BidSet.iter (fun i-> heavily_inline_bbdcl syms uses bsym_table excludes i) xcls;
 
@@ -1286,6 +1286,7 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       print_endline ("HIB:Examining function " ^ Flx_bsym.id bsym ^ "<" ^
         string_of_bid i ^ "> for inlinable calls");
       
+      let exes = map Flx_bexe.reduce exes in (* term reduction *)
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = fold_vars syms bsym_table uses i ps exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
@@ -1311,7 +1312,8 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
         vs
         exes
       in
-      let exes = check_reductions syms bsym_table exes in
+      let exes = check_reductions syms bsym_table exes in (* typeclass reduce statements *)
+      let exes = map Flx_bexe.reduce exes in (* term reduction *)
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = fold_vars syms bsym_table uses i ps exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;

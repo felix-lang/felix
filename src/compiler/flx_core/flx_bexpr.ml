@@ -288,23 +288,31 @@ let map
 (* -------------------------------------------------------------------------- *)
 
 (** Simplify the bound expression. *)
-let reduce e =
+let rec reduce e =
   let rec f_bexpr e =
-    match map ~f_bexpr e with
+    match map ~f_bexpr:f_bexpr e with
+    (*
     | BEXPR_apply ((BEXPR_closure (i,ts),_),a),t ->
         BEXPR_apply_direct (i,ts,a),t
+    *)
     | BEXPR_get_n (n,((BEXPR_tuple ls),_)),_ -> List.nth ls n
     | BEXPR_deref (BEXPR_ref (i,ts),_),t -> BEXPR_name (i,ts),t
     | BEXPR_deref (BEXPR_address (e,t),_),_ -> (e,t)
     | BEXPR_address (BEXPR_deref (e,t),_),_ -> (e,t)
-    | BEXPR_apply ((BEXPR_compose( (_,Flx_btype.BTYP_function (_,b) as f), f2),_),e),t ->
-        BEXPR_apply(f2,(BEXPR_apply(f,e),b)),t
+    | BEXPR_apply 
+      (
+       (BEXPR_compose( (_,Flx_btype.BTYP_function (_,b) as f1), f2),_),
+       e
+      ),t ->
+        print_endline "Eliminating composition";
+        BEXPR_apply(f2,(BEXPR_apply(f1,e),b)),t
+    | BEXPR_apply((BEXPR_compose _,_),_),_ -> print_endline "Bugged composition"; assert false
     | x -> x
   in f_bexpr e
 
 (* -------------------------------------------------------------------------- *)
 
-let rec print_bexpr f = function
+and print_bexpr f = function
   | BEXPR_deref e ->
       Flx_format.print_variant1 f "BEXPR_deref" print e
   | BEXPR_name (bid, ts) ->

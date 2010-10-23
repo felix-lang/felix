@@ -192,8 +192,10 @@ let map
 (** Simplify the bound exe. *)
 let reduce exe =
   match map ~f_bexpr:Flx_bexpr.reduce exe with
+  (*
   | BEXE_call (sr,(Flx_bexpr.BEXPR_closure (i,ts),_),a) ->
       BEXE_call_direct (sr,i,ts,a)
+  *)
   | x -> x
 
 (* -------------------------------------------------------------------------- *)

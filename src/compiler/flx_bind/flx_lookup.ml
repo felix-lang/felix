@@ -2203,8 +2203,10 @@ and lookup_qn_with_sig'
              )
         end
       | Free_fixpoint _ as x -> raise x
-      | x -> print_endline (
+      | x -> 
+        (* print_endline (
         "Other exn = " ^ Printexc.to_string x);
+        *)
         raise x;
     end
 
@@ -4384,13 +4386,19 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
 
       (* LHS FUNCTION TYPE *)
       | BTYP_function (d,c) ->
-        begin try be (EXPR_apply (sr,(e2,e)))
+        (* print_endline ("AST_dot: LHS function, RHS name= " ^ name ); *)
+        let bound = begin try be (EXPR_apply (sr,(e2,e)))
         with exn ->
+        (* print_endline "Reverse application failed, checking for composition"; *)
         try 
           let r,rt = be e2 in
           match rt with
           | BTYP_function (a,b) ->
-            if c = a then bexpr_compose (btyp_function (d,b)) (te,(r,rt))
+            print_endline "RHS is a function";
+            if c = a then (
+              (* print_endline "Composed!";  *)
+              bexpr_compose (btyp_function (d,b)) (te,(r,rt))
+            )
             else
              clierr sr (
                "AST_dot " ^ string_of_expr e ^ " . " ^ string_of_expr e2^
@@ -4410,6 +4418,9 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           Printexc.to_string exn2
           )
         end
+        in
+        (* print_endline "AST_dot, RHS simple name, is done"; *)
+        bound
 
       (* LHS TUPLE TYPE *)
       | BTYP_tuple _ ->
@@ -4436,13 +4447,49 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
 
     (* RHS NOT A SIMPLE NAME: reverse application *)
     | _ ->
-      try be (EXPR_apply (sr,(e2,e)))
+      begin try be (EXPR_apply (sr,(e2,e)))
       with exn ->
+      (* print_endline "Reverse application failed, checking for composition"; *)
+      match ttt with
+      | BTYP_function (d,c) -> (* LHS *)
+        (* print_endline ("AST_dot: LHS function, RHS function expr= " ^ * string_of_expr e2); *)
+        begin try 
+          let r,rt = be e2 in
+          match rt with
+          | BTYP_function (a,b) -> (* RHS *)
+            (* print_endline "RHS is a function"; *)
+            if c = a then (
+              (* print_endline "Composed!";  *)
+              bexpr_compose (btyp_function (d,b)) (te,(r,rt))
+            )
+            else
+             clierr sr (
+               "AST_dot " ^ string_of_expr e ^ " . " ^ string_of_expr e2^
+               "codomain of LHS function should match domain of RHS function"
+             )
+ 
+          | _ -> 
+            clierr sr (
+            "AST_dot, LHS function, RHS arg "^ string_of_expr e2^
+            " is expr, could have been a function but got " ^
+            sbt bsym_table rt ^
+            " and reverse application also failed."
+            )
+        with exn2 ->
+          clierr sr (
+          "AST_dot, LHS function, RHS arg "^ string_of_expr e2^
+          " is expression, and attempt to bind it failed with " ^
+          Printexc.to_string exn2
+          )
+        end
+
+      | _ -> (* LHS not function *)
       clierr sr (
         "AST_dot, arg "^ string_of_expr e2^
         " is not simple name, and attempt to apply it failed with " ^
         Printexc.to_string exn
         )
+      end
   end
 
   | EXPR_match_case (sr,(v,e)) ->
