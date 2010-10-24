@@ -58,6 +58,57 @@ let make_inner_function state bsym_table closure_bid sr vs ps =
   ts, param, arg
 
 
+let gen_composite_closure_entry state bsym_table sr (f1,t1) (f2,t2) =
+  let vs = [] in (* HACK, temporary, WRONG *)
+  let ts = [] in (* HACK, temporary, WRONG *)
+  let a1t,r1t,a2t,r2t = match t1, t2 with
+  | BTYP_function (a1t,r1t), BTYP_function (a2t,r2t) -> a1t,r1t,a2t,r2t
+  | _ -> assert false
+  in
+  (* Make a bid for our closure wrapper function. *)
+  let closure_bid = fresh_bid state.syms.counter in
+
+  (* Make the wrapper function parameter variable. *)
+  let p_bid = fresh_bid state.syms.counter in
+  let p_name = "_a" ^ string_of_bid p_bid in
+  let p_val = bbdcl_val (vs,a1t,`Val) in
+
+  (* Make the parameters for the wrapper function. *)
+  let param =
+    { pkind=`PVal;
+      pid=p_name;
+      pindex=p_bid;
+      ptyp=a1t}
+  in
+
+  (* Make the argument that we'll pass to our wrapped function. *)
+  let arg = bexpr_name a1t (p_bid, []) in
+
+  (* the instructions of the function *)
+  let exes =
+    let e1 = bexpr_apply r1t ((f1,t1), arg) in
+    let e2 = bexpr_apply r2t ((f2,t2), e1) in
+    [ bexe_fun_return (sr, e2) ]
+  in
+
+  (* the function record *)
+  let bbdcl = bbdcl_fun ([],vs,([param],None),r2t,exes) in
+
+  (* the complete symbol *)
+  let bsym = Flx_bsym.create ~sr:sr ("_a" ^ string_of_int closure_bid ) (bbdcl) in
+
+  (* now add it to the table *)
+  Flx_bsym_table.add bsym_table closure_bid None bsym;
+
+  (* add the parameter afterwards so its parent exists *)
+  Flx_bsym_table.add bsym_table p_bid (Some closure_bid)
+    (Flx_bsym.create ~sr p_name p_val)
+  ;
+
+(* return the index of the wrapper generated *)
+  closure_bid,ts
+ 
+
 (** This generates closures for calling external functions. It does this by
  * generating a new function that contains part of the closed values. *)
 let gen_closure state bsym_table bid t =
@@ -150,8 +201,8 @@ let check_prim state bsym_table all_closures i ts t =
       bexpr_closure t (i,ts)
 
 
-let rec adj_cls state bsym_table all_closures e =
-  let adj e = adj_cls state bsym_table all_closures e in
+let rec adj_cls state bsym_table all_closures sr e =
+  let adj e = adj_cls state bsym_table all_closures sr e in
   match Flx_bexpr.map ~f_bexpr:adj e with
   | BEXPR_closure (i,ts),t ->
       check_prim state bsym_table all_closures i ts t
@@ -161,40 +212,45 @@ let rec adj_cls state bsym_table all_closures e =
       all_closures := BidSet.add i !all_closures;
       x
 
+  | BEXPR_compose (f1,f2),t ->
+    let i,ts = gen_composite_closure_entry state bsym_table sr f1 f2 in
+    all_closures := BidSet.add i !all_closures;
+    Flx_bexpr.bexpr_closure t (i,ts)
+
   | x -> x
 
 
 let process_exe state bsym_table all_closures exe =
-  let ue e = adj_cls state bsym_table all_closures e in
+  let ue sr e = adj_cls state bsym_table all_closures sr e in
   match exe with
   | BEXE_axiom_check _ -> assert false
-  | BEXE_call_prim (sr,i,ts,e2) -> bexe_call_prim (sr,i,ts, ue e2)
+  | BEXE_call_prim (sr,i,ts,e2) -> bexe_call_prim (sr,i,ts, ue sr e2)
 
   | BEXE_call_direct (sr,i,ts,e2) ->
     all_closures := BidSet.add i !all_closures;
-    bexe_call_direct (sr,i,ts, ue e2)
+    bexe_call_direct (sr,i,ts, ue sr e2)
 
   | BEXE_jump_direct (sr,i,ts,e2)  ->
     all_closures := BidSet.add i !all_closures;
-    bexe_jump_direct (sr,i,ts, ue e2)
+    bexe_jump_direct (sr,i,ts, ue sr e2)
 
   | BEXE_call_stack (sr,i,ts,e2)  ->
     (* stack calls do use closures -- but not heap allocated ones *)
-    bexe_call_stack (sr,i,ts, ue e2)
+    bexe_call_stack (sr,i,ts, ue sr e2)
 
-  | BEXE_call (sr,e1,e2) -> bexe_call (sr,ue e1, ue e2)
-  | BEXE_jump (sr,e1,e2) -> bexe_jump (sr,ue e1, ue e2)
+  | BEXE_call (sr,e1,e2) -> bexe_call (sr,ue sr e1, ue sr e2)
+  | BEXE_jump (sr,e1,e2) -> bexe_jump (sr,ue sr e1, ue sr e2)
 
-  | BEXE_ifgoto (sr,e,l) -> bexe_ifgoto (sr, ue e,l)
-  | BEXE_fun_return (sr,e) -> bexe_fun_return (sr,ue e)
-  | BEXE_yield (sr,e) -> bexe_yield (sr,ue e)
+  | BEXE_ifgoto (sr,e,l) -> bexe_ifgoto (sr, ue sr e,l)
+  | BEXE_fun_return (sr,e) -> bexe_fun_return (sr,ue sr e)
+  | BEXE_yield (sr,e) -> bexe_yield (sr,ue sr e)
 
-  | BEXE_init (sr,i,e) -> bexe_init (sr,i,ue e)
-  | BEXE_assign (sr,e1,e2) -> bexe_assign (sr, ue e1, ue e2)
-  | BEXE_assert (sr,e) -> bexe_assert (sr, ue e)
+  | BEXE_init (sr,i,e) -> bexe_init (sr,i,ue sr e)
+  | BEXE_assign (sr,e1,e2) -> bexe_assign (sr, ue sr e1, ue sr e2)
+  | BEXE_assert (sr,e) -> bexe_assert (sr, ue sr e)
   | BEXE_assert2 (sr,sr2,e1,e2) ->
-    let e1 = match e1 with Some e -> Some (ue e) | None -> None in
-    bexe_assert2 (sr, sr2,e1,ue e2)
+    let e1 = match e1 with Some e -> Some (ue sr e) | None -> None in
+    bexe_assert2 (sr, sr2,e1,ue sr e2)
 
   | BEXE_svc (sr,i) -> exe
 

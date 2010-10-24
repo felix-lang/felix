@@ -963,6 +963,7 @@ let rec gen_expr'
     end
 
   | BEXPR_apply ((BEXPR_closure (index,ts),_),a) ->
+    print_endline "Compiler bug in flx_egen, application of closure found, should have been factored out!";
     assert false (* should have been factored out *)
 
   (* application of C function pointer, type

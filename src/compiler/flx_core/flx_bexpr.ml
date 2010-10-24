@@ -304,7 +304,7 @@ let rec reduce e =
        (BEXPR_compose( (_,Flx_btype.BTYP_function (_,b) as f1), f2),_),
        e
       ),t ->
-        print_endline "Eliminating composition";
+        (* print_endline "Eliminating composition"; *)
         BEXPR_apply(f2,(BEXPR_apply(f1,e),b)),t
     | BEXPR_apply((BEXPR_compose _,_),_),_ -> print_endline "Bugged composition"; assert false
     | x -> x

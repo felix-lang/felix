@@ -4394,7 +4394,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           let r,rt = be e2 in
           match rt with
           | BTYP_function (a,b) ->
-            print_endline "RHS is a function";
+            (* print_endline "RHS is a function"; *)
             if c = a then (
               (* print_endline "Composed!";  *)
               bexpr_compose (btyp_function (d,b)) (te,(r,rt))

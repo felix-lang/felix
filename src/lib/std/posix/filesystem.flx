@@ -1,0 +1,65 @@
+module FileSystem 
+{
+  requires header "#include <sys/stat.h>";
+  type stat_t = "struct stat";
+  proc stat: string * &stat_t * &int = "*$3=stat($1.data(),$2);";
+  body _mktim_fun = """
+    unsigned long _mktim(struct timespec x){ 
+     return x.sec * 1000L + x.nsec /1000L; 
+    }
+  """;
+  fun mtime: &stat_t -> uvlong = "_mktim($1->st_mtime)"; // milliseconds
+  fun filetime(f:string):uvlong = // milliseconds
+  {
+    var b: stat_t;
+    var err:int;
+    stat(f,&b,&err);
+    return if err == 0 then mtime (&b) else uvlong 0 endif;
+  }
+
+  requires header '#include <dirent.h>';
+  type dirent_t = "struct dirent*";
+  type DIR_t = "DIR*";
+  proc opendir: string * &DIR_t = "*$2=opendir($1.data());";
+  fun isNULL: DIR_t -> bool = "$1==0";
+  fun isNULL: dirent_t -> bool = "$1==0";
+  proc readdir: DIR_t * dirent_t * &dirent_t * &int = "*$4=readdir_r($1, $2, $3);";
+  proc closedir: DIR_t = "closedir($1);";
+  fun filename: dirent_t -> string = "std::string($1->d_name,$1->d_namlen)";
+  fun filesin(dname:string): opt[List::list[string]] = {
+    var d:DIR_t;
+    var e: dirent_t = C_hack::cast[dirent_t]$ C_hack::malloc 5000;
+    var eret = e;
+    var err:int = 0;
+    var files = List::Empty[string];
+    opendir(dname,&d);
+    if isNULL d do 
+      //println "Error opening dir"; 
+      C_hack::free$ C_hack::cast[address] e; 
+      return None[List::list[string]];
+    else
+    //println$ "Opened dir " + dname;
+next:>
+      readdir(d,e,&eret, &err);
+      if err != 0 do 
+        //println "Error reading dir"; flush;
+        closedir d; 
+        C_hack::free$ C_hack::cast[address] e; 
+        return None[List::list[string]];
+      elif isNULL eret do 
+        //println "End of dir"; 
+        C_hack::free$ C_hack::cast[address] e; 
+        closedir d; 
+        return Some files;
+      else 
+        //println "Think we got a file?";
+        assert err == 0;
+        //println$ "Found a file " + filename e; 
+        files += filename e; 
+        goto next;
+      done
+    done
+  }
+
+}
+
