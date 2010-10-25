@@ -50,6 +50,9 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     else bsym_table
   in
 
+  (* lets see if this works, make closure before inlining *)
+  Flx_mkcls.premake_closures syms bsym_table;
+
   (* Perform the inlining. *)
   Flx_inline.heavy_inlining syms bsym_table;
 
@@ -148,6 +151,9 @@ let mkproc syms bsym_table clean_bsym_table =
   in
 
   (* XXX: What does mkproc do? *)
+  (* see below, it turns functions into procedures, by assigning
+   * the return value to where an extra argument points
+   *)
   let bsym_table = ref bsym_table in
   let counter = ref 0 in
   while Flx_mkproc.mkproc_gen syms !bsym_table > 0 do
@@ -212,6 +218,11 @@ let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
   in
 
   (* XXX: Not sure what this does. *)
+  (* JS: it turns some functions into procedures, eg if
+   * you have y = f (x); then you could do instead f' (&y,x);
+   * As procedures .. you can spawn fthreads etc and expect
+   * it to work, you can't do that with functions.
+   * *)
   let bsym_table = mkproc syms bsym_table clean_bsym_table in
 
   (* Eliminate dead code. *)

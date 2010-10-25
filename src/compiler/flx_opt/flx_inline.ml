@@ -1319,6 +1319,7 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = check_reductions syms bsym_table exes in
       let exes = Flx_cflow.chain_gotos syms exes in
+      let exes = map Flx_bexe.reduce exes in
       let props = `Inlining_complete :: props in
       let bbdcl = bbdcl_fun (props,vs,(ps,traint),ret,exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;

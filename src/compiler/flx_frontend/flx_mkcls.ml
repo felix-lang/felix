@@ -201,6 +201,7 @@ let check_prim state bsym_table all_closures i ts t =
       bexpr_closure t (i,ts)
 
 
+(* processes closures *)
 let rec adj_cls state bsym_table all_closures sr e =
   let adj e = adj_cls state bsym_table all_closures sr e in
   match Flx_bexpr.map ~f_bexpr:adj e with
@@ -212,6 +213,13 @@ let rec adj_cls state bsym_table all_closures sr e =
       all_closures := BidSet.add i !all_closures;
       x
 
+  | x -> x
+
+(* processes explicit lambda terms *)
+let rec adj_lambda state bsym_table all_closures sr e =
+  let adj e = adj_lambda state bsym_table all_closures sr e in
+  match Flx_bexpr.map ~f_bexpr:adj e with
+
   | BEXPR_compose (f1,f2),t ->
     let i,ts = gen_composite_closure_entry state bsym_table sr f1 f2 in
     all_closures := BidSet.add i !all_closures;
@@ -220,8 +228,8 @@ let rec adj_cls state bsym_table all_closures sr e =
   | x -> x
 
 
-let process_exe state bsym_table all_closures exe =
-  let ue sr e = adj_cls state bsym_table all_closures sr e in
+let process_exe ue state bsym_table all_closures exe =
+  let ue sr e = ue state bsym_table all_closures sr e in
   match exe with
   | BEXE_axiom_check _ -> assert false
   | BEXE_call_prim (sr,i,ts,e2) -> bexe_call_prim (sr,i,ts, ue sr e2)
@@ -267,15 +275,14 @@ let process_exe state bsym_table all_closures exe =
   | BEXE_end
     -> exe
 
-let process_exes state bsym_table all_closures exes =
-  List.map (process_exe state bsym_table all_closures) exes
+let process_exes ue state bsym_table all_closures exes =
+  List.map (process_exe ue state bsym_table all_closures) exes
 
-let process_entry state bsym_table all_closures i =
-  let ue e = adj_cls state bsym_table all_closures e in
+let process_entry ue state bsym_table all_closures i =
   let bsym = Flx_bsym_table.find bsym_table i in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,ps,ret,exes) ->
-    let exes = process_exes state bsym_table all_closures exes in
+    let exes = process_exes ue state bsym_table all_closures exes in
     let bbdcl = bbdcl_fun (props,vs,ps,ret,exes) in
     Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 
@@ -294,47 +301,30 @@ let process_entry state bsym_table all_closures i =
 let set_closure bsym_table i = add_prop bsym_table `Heap_closure i
 
 let make_closure state bsym_table bsyms =
+  let ue = adj_cls in
   let all_closures = ref BidSet.empty in
   let used = full_use_closure_for_symbols state.syms bsym_table bsyms in
-  BidSet.iter (process_entry state bsym_table all_closures) used;
+  BidSet.iter (process_entry ue state bsym_table all_closures) used;
   BidSet.iter (set_closure bsym_table) !all_closures;
 
   bsyms
 
 let make_closures state bsym_table =
-  (*
-  let used = ref BidSet.empty in
-  let uses i = Flx_use.uses state.syms used bsym_table true i in
-  BidSet.iter uses !(state.syms.roots);
-  *)
-
+  let ue = adj_cls in
   let all_closures = ref BidSet.empty in
   let used = full_use_closure state.syms bsym_table in
-  BidSet.iter (process_entry state bsym_table all_closures) used;
-
-  (*
-  (* this is a hack! *)
-  Hashtbl.iter
-  ( fun i entries ->
-    iter (fun (vs,con,ts,j) ->
-    set_closure bsym_table i;
-    process_entry state.syms bsym_table all_closures j;
-
-    (*
-    set_closure bsym_table j;
-    *)
-    )
-    entries
-  )
-  state.syms.typeclass_to_instance
-  ;
-  *)
-
-  (*
-  BidSet.iter (set_closure bsym_table `Heap_closure) (BidSet.union !all_closures !(syms.roots));
-  *)
-
-  (* Now root proc might not need a closure .. since it can be
-     executed all at once
-  *)
+  BidSet.iter (process_entry ue state bsym_table all_closures) used;
   BidSet.iter (set_closure bsym_table) !all_closures
+
+(* this make a set of closures, but doesn't mark heap usage.
+ * It is used before inlining to get rid of any lambdas such
+ * as composition in the code .. 
+ * expensive, since we do this for functions that never get called
+ *)
+let premake_closures (syms:Flx_mtypes2.sym_state_t) bsym_table =
+  let ue = adj_lambda in
+  let state = make_closure_state syms in
+  let all_closures = ref BidSet.empty in
+  let used = full_use_closure state.syms bsym_table in
+  BidSet.iter (process_entry ue state bsym_table all_closures) used
+
