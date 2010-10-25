@@ -283,7 +283,8 @@ let gen_body syms uses bsym_table id
       if x <> "" then " (Generated "^x^")" else ""
     in
     (* add a comment for non-generated functions .. *)
-    let b =
+    let b = ref [] 
+    (*
       ref
       (
         if source = "" && id <> "_init_" then
@@ -291,6 +292,7 @@ let gen_body syms uses bsym_table id
             string_of_bid callee ^ ">" ^ source))]
         else []
       )
+    *)
     in
     let handle_arg prolog argmap index argument kind =      
       let eagerly () =
