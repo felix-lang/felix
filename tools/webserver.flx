@@ -925,7 +925,7 @@ noinline proc handler (var k:socket_t) ()
   //cat(s, DEVNULL);
 
   fprint$ cerr,"fthread closing socket "+str k+"\n";
-  Faio::sleep(clock,0.1); // give OS time to empty its buffers
+  Faio::sleep(clock,10.0); // give OS time to empty its buffers
   Flx_socket::shutdown(k,3);
   ioclose(k);
   fprint$ cerr,"fthread "+str k+" terminating!\n";
