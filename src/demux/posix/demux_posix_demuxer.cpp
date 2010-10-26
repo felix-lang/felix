@@ -74,7 +74,11 @@ posix_demuxer::socket_send(int s, sel_param* pb)
   //fprintf(stderr,"posix_demuxer:socket_send\n", nbytes);
   nbytes = send(s, pb->buffer + pb->bytes_written,
     pb->buffer_size - pb->bytes_written, 0);
-  //fprintf(stderr,"posix_demuxer:socket_send wrote %ld bytes\n", (long) nbytes);
+  fprintf(stderr,"posix_demuxer:socket_send wrote %ld bytes from offset %ld out of %ld to be written\n", 
+       (long) nbytes,
+       (long) pb->bytes_written,
+       (long) pb->buffer_size - pb->bytes_written
+  );
 
   /*
   fprintf(stderr,"posix_demuxer SEND: s=%d, pb=%p buf+%d, req=%d, got %d\n",
