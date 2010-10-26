@@ -1,5 +1,6 @@
 // Felix
-val big_keywords = 
+module Flx2Html {
+private val big_keywords = 
   "module",
   "fun",
   "gen",
@@ -22,25 +23,24 @@ val big_keywords =
   "reduce", "axiom", 
   "open", "inherit"
 ;
-val small_keywords =
+private val small_keywords =
   "if", "then", "else", "elif", "endif", "do", "done",
   "in", "forall", "while", "whilst","to", "upto","downto",
   "typematch","match","endmatch","with","requires","return","goto"
 ;
 
-val qualifiers = 
+private val qualifiers = 
   "virtual", "inline", "noinline", "private", "incomplete"
 ;
-val hack = "C_hack","C_hack"; // to make it an array we need 2 components
+private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
 
 
-proc write_felix(k:socket_t, t:string, eof_flag: &bool)
+fun xlat_felix(t:string)=
 {
-  proc write_string(k:socket_t, t:string) 
+  var out = "";
+  proc write_string(t:string) 
   { 
-   if not *eof_flag do Flx_stream::write_string(k,t,eof_flag); 
-   else goto giveup;
-   done
+   out += t;
   }
 
   union state_t = 
@@ -91,9 +91,9 @@ proc write_felix(k:socket_t, t:string, eof_flag: &bool)
       whilst n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
       whilst n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
       if n.[-4 to] != ".flx" do n+= ".flx"; done // hack, fixme
-      write_string(k,'<a href="/'+n+'" >' + b + '</a>') ;
+      write_string('<a href="/'+n+'" >' + b + '</a>') ;
     else 
-     write_string(k,'<span class=fstring>'+b+"</span>"); 
+     write_string('<span class=fstring>'+b+"</span>"); 
     done
   }
   proc w() { 
@@ -103,16 +103,16 @@ proc write_felix(k:socket_t, t:string, eof_flag: &bool)
     | sq => { ws; }
     | sq3 => { ws; }
     | dq3 => { ws; }
-    | ccomment=> { write_string(k,'<span class=comment>'+b+"</span>"); }
-    | cppcomment=> { write_string(k,'<span class=comment>'+b+"</span>"); }
+    | ccomment=> { write_string('<span class=comment>'+b+"</span>"); }
+    | cppcomment=> { write_string('<span class=comment>'+b+"</span>"); }
     | id => 
       { 
         last_id = b;
-        if inarray(b,big_keywords) do write_string(k,'<span class=big_keyword>'+b+"</span>"); 
-        elif inarray(b,small_keywords) do write_string(k,'<span class=small_keyword>'+b+"</span>"); 
-        elif inarray(b,qualifiers) do write_string(k,'<span class=qualifier>'+b+"</span>"); 
-        elif inarray(b,hack) do write_string(k,'<span class=hack>'+b+"</span>"); 
-        else write_string(k,b); done
+        if inarray(b,big_keywords) do write_string('<span class=big_keyword>'+b+"</span>"); 
+        elif inarray(b,small_keywords) do write_string('<span class=small_keyword>'+b+"</span>"); 
+        elif inarray(b,qualifiers) do write_string('<span class=qualifier>'+b+"</span>"); 
+        elif inarray(b,hack) do write_string('<span class=hack>'+b+"</span>"); 
+        else write_string(b); done
       }
     | _ =>
       { 
@@ -121,7 +121,7 @@ proc write_felix(k:socket_t, t:string, eof_flag: &bool)
         elif b == ">" do b = "&gt;";
         elif b == "&" do b = "&amp;";
         done;
-        write_string(k,b);  
+        write_string(b);  
       }
     endmatch;
     b = "";  
@@ -242,30 +242,6 @@ thisch:> // same char, reconsider it
 fin:>
    println "outof data";
    w(); // whatever is left over gets written
-giveup:>
+   return out;
 }
-
-proc serve_felix(s:socket_t, fname:string)
-{
-  var eof_flag = false;
-  proc write_string(k:socket_t, t:string) 
-  { 
-   if not eof_flag do Flx_stream::write_string(k,t,&eof_flag); 
-   else goto giveup;
-   done
-  }
-
-  var flx = Text_file::load(fname);
-  if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
-  if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
-  println$ "Loaded felix file " + fname;
-  //println$ "Contents=" + flx;
-  write_string(s, html_header);
-  write_string(s, flx_head);
-  write_string(s,"<pre>");
-  write_felix(s, flx, &eof_flag);
-  write_string(s,"</pre>\n");
-  write_string(s,"</body></html>\n\r");
-giveup:>
 }
-

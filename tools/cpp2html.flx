@@ -1,4 +1,4 @@
- 
+module Cpp2Html { 
 // C++ and C
 val cpp_big_keywords = 
   "class",
@@ -23,13 +23,12 @@ val cpp_preproc =
   "define","if","endif","else","include","ifdef","ifndef"
 ;
 
-proc write_cpp(k:socket_t, t:string, eof_flag: &bool)
+fun xlat_cpp(t:string)=
 {
-  proc write_string(k:socket_t, t:string) 
+  var out = "";
+  proc write_string(t:string) 
   { 
-   if not *eof_flag do Flx_stream::write_string(k,t,eof_flag); 
-   else goto giveup;
-   done
+    out += t;
   }
 
   union state_t = 
@@ -65,9 +64,9 @@ proc write_cpp(k:socket_t, t:string, eof_flag: &bool)
       var n = b; 
       whilst n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
       whilst n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
-      write_string(k,'<a href="/rtl/'+n+'" >' + b + '</a>') ;
+      write_string('<a href="/rtl/'+n+'" >' + b + '</a>') ;
     else 
-     write_string(k,'<span class=fstring>'+b+"</span>"); 
+     write_string('<span class=fstring>'+b+"</span>"); 
     done
   }
   proc w() { 
@@ -75,16 +74,16 @@ proc write_cpp(k:socket_t, t:string, eof_flag: &bool)
     match s with 
     | dq => { ws; }
     | sq => { ws; }
-    | ccomment=> { write_string(k,'<span class=comment>'+b+"</span>"); }
-    | cppcomment=> { write_string(k,'<span class=comment>'+b+"</span>"); }
+    | ccomment=> { write_string('<span class=comment>'+b+"</span>"); }
+    | cppcomment=> { write_string('<span class=comment>'+b+"</span>"); }
     | id => 
       { 
         last_id = b;
-        if inarray(b,cpp_big_keywords) do write_string(k,'<span class=big_keyword>'+b+"</span>"); 
-        elif inarray(b,cpp_small_keywords) do write_string(k,'<span class=small_keyword>'+b+"</span>"); 
-        elif inarray(b,cpp_qualifiers) do write_string(k,'<span class=qualifier>'+b+"</span>"); 
-        elif last_op == "#" and inarray(b,cpp_preproc) do write_string(k,'<span class=preproc>'+b+"</span>"); last_op="";
-        else write_string(k,b); done
+        if inarray(b,cpp_big_keywords) do write_string('<span class=big_keyword>'+b+"</span>"); 
+        elif inarray(b,cpp_small_keywords) do write_string('<span class=small_keyword>'+b+"</span>"); 
+        elif inarray(b,cpp_qualifiers) do write_string('<span class=qualifier>'+b+"</span>"); 
+        elif last_op == "#" and inarray(b,cpp_preproc) do write_string('<span class=preproc>'+b+"</span>"); last_op="";
+        else write_string(b); done
       }
     | _ => 
       { 
@@ -93,7 +92,7 @@ proc write_cpp(k:socket_t, t:string, eof_flag: &bool)
         elif b == ">" do b = "&gt;";
         elif b == "&" do b = "&amp;";
         done;
-        write_string(k,b);  
+        write_string(b);  
       }
     endmatch;
     b = "";  
@@ -193,6 +192,7 @@ thisch:> // same char, reconsider it
 fin:>
    println "outof data";
    w(); // whatever is left over gets written
-giveup:>
+   return out;
+}
 }
 

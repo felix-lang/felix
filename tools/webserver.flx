@@ -80,106 +80,40 @@ fun parse_get_line (get:string): opt[string*string] =>
 // TODO: fill in that length field, stream back the requested jpeg,
 // get port from argv.
 
-val html_header = """HTTP/0.9 200 OK\r
-Date: Tue, 25 Apr 2006 00:16:12 GMT\r
-Server: felix web server\r
-Last-Modified: Wed, 01 Feb 2006 18:51:37 GMT\r
-Connection: close\r
-Content-Type: text/html\r
-\r
-""";
-
-val gif_header = """HTTP/0.9 200 OK\r
+fun make_gif(contents:string)=> """HTTP/0.9 200 OK\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
 Connection: close\r
 Content-Type: image/gif\r
+Content-Length: """+str(len(contents))+"""\r
 \r
-""";
+"""+contents;
 
-val css_header = """HTTP/0.9 200 OK\r
+fun make_css(contents:string)=> """HTTP/0.9 200 OK\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
 Connection: close\r
 Content-Type: text/css\r
+Content-Length: """+str (len (contents))+"""\r
 \r
-""";
+"""+contents;
 
 
-val notfound_header = """HTTP/0.9 404 Not Found\r
+fun make_notfound(contents:string)=> """HTTP/0.9 404 Not Found\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
 Connection: close\r
 Content-Type: text/html\r
+Content-Length: """+str(len(contents)+19)+"""\r
 \r
-PAGE NOT FOUND:\r
+PAGE NOT FOUND: """+contents+"""\r
 """;
 
-proc write_http_header(s:socket_t, suffix:string, eof: &bool)
-{
-  // mime type mapping from suffix. make better here.
-  if("gif" == suffix) then { write_string(s, gif_header, eof); }
-  elif("css" == suffix) then { write_string(s, css_header, eof); }
-  else { write_string(s, html_header, eof); } endif;
-}
-
-if WIN32 do
-  proc win32_send_file(s:socket_t,fname:string,suffix:string)
-  {
-    // quick 'n' dirty unix -> dos style pathnames
-    val wname = map (fun (a:char) => if a == char '/' then char '\\' else a endif) fname;
-    print "mapped "; print fname; print " -> "; print wname; endl;
-    var wf: WFILE <- Faio_win32::OpenFile(wname);
-    if wf == Faio_win32::INVALID_HANDLE_VALUE do
-    {
-      print "BUGGER: OpenFile failed: "; print (GetLastError()); endl;
-    } 
-    else 
-    {
-      print "opened "; print wname; endl;
-      write_http_header(s,suffix);
-      print "Transmitting file!\n";
-      TransmitFile(s, wf);
-      CloseFile(wf);
-    }
-    done
-  }
-elif POSIX do
-  proc posix_send_file(s:socket_t,fname:string,suffix:string, eof: &bool)
-  {
-if false do
-    // this fn sets the O_NONBLOCK flag which is completely unnecessary
-    // as read goes via the preading worker fifo. don't know if
-    // O_NONBLOCK even works on actual files.
-    var fd = Faio_posix::ropen(fname);
-
-    if Faio_posix::invalid fd do
-    {
-      print ("BUGGER, posix open of "+fname+" failed\n");
-      write_string(s, notfound_header, eof);
-      write_string(s, fname+"\r\n\n", eof);
-    } 
-    else 
-    {
-      print ("got fd "+str fd +" for read file of "+fname+"\n");
-
-      write_http_header(s,suffix, eof);
-      var from_strm: Faio_posix::fd_t = fd;
-      var to_strm: socket_t = s;
-      Flx_stream::cat(from_strm, to_strm);
-
-      dbg$ ("close read fd " + str(from_strm)+" file "+fname+"\n");
-      iclose(from_strm); // this'll know how to close a unix fd
-    } 
-    done
-else
-    var contents = Text_file::load(fname);
-    //print "loaded: "; print contents; endl;
-    print "contents len="; print (len contents); endl;
-val html_header = """HTTP/0.9 200 OK\r
+fun make_html(contents:string)=>
+"""HTTP/0.9 200 OK\r
 Date: Tue, 25 Apr 2006 00:16:12 GMT\r
 Server: felix web server\r
 Last-Modified: Wed, 01 Feb 2006 18:51:37 GMT\r
@@ -187,65 +121,87 @@ Connection: close\r
 Content-Type: text/html\r
 Content-Length: """ + str (len (contents)) +"""\r
 \r
-""";
+"""+contents;
 
-    write_string(s, html_header + contents, eof);
-done
-  }
-done
 
 fun inarray[N](s:string, a:array[string,N])=>
   mem (fun (x:string) => s == x) a
 ;
-proc serve_cpp(s:socket_t, fname:string)
+
+proc serve_felix(k:socket_t, fname:string)
 {
   var eof_flag = false;
-  proc write_string(k:socket_t, t:string) 
-  { 
-   if not eof_flag do Flx_stream::write_string(k,t,&eof_flag); 
-   else goto giveup;
-   done
-  }
-
   var flx = Text_file::load(fname);
   if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
   if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
-  println$ "Loaded C/C++file " + fname;
-  //println$ "Contents=" + flx;
-  write_string(s, html_header);
-  write_string(s, flx_head);
-  write_string(s,"<pre>");
-  write_cpp(s, flx, &eof_flag);
-  write_string(s,"</pre>\n");
-  write_string(s,"</body></html>\n\r");
-giveup:>
+  println$ "Loaded felix file " + fname+", len="+str (len flx);
+
+  val data = make_html(
+    "<head>"+Css4Html::flx_head+"</head>"+
+    "<body><html><pre>"+
+    Flx2Html::xlat_felix flx+
+    "</pre></html></body>\n\r"
+  );
+  write_string(k,data,&eof_flag);
 }
 
-proc write_text(k:socket_t, t:string, eof_flag: &bool)
-{
-  write_string(k,t,eof_flag);
-}
-
-proc serve_fdoc(s:socket_t, fname:string)
+proc serve_cpp(k:socket_t, fname:string)
 {
   var eof_flag = false;
-  proc write_string(k:socket_t, t:string) 
-  { 
-   if not eof_flag do Flx_stream::write_string(k,t,&eof_flag); 
-   else goto giveup;
-   done
-  }
+  var flx = Text_file::load(fname);
+  if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
+  if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
+  println$ "Loaded C/C++file " + fname+", len="+str(len flx);
 
+  val data = make_html(
+    "<head>"+Css4Html::flx_head+"</head>"+
+    "<body><html><pre>"+
+    Cpp2Html::xlat_cpp flx+
+    "</pre></html></body>\n\r"
+  );
+  write_string(k,data,&eof_flag);
+
+}
+
+proc serve_text(k:socket_t, fname:string)
+{
+  var eof_flag = false;
+  var txt = Text_file::load(fname);
+  println$ "Loaded raw file " + fname+", len="+str(len txt);
+  val data = make_html(
+    "<head></head>"+
+    "<body><html><pre>"+
+    txt+
+    "</pre></html></body>\n\r"
+  );
+  write_string(k,data,&eof_flag);
+}
+
+proc serve_fdoc(k:socket_t, fname:string)
+{
+  var eof_flag = false;
   var txt = Text_file::load(fname);
   if txt == "" do txt = Text_file::load(LIBROOT+"/doc/"+fname); done
   if txt == "" do txt = "NO FILE "+fname+" FOUND IN " + LIBROOT+"/doc/"; done
-  println$ "Loaded felix doc file " + fname;
+  println$ "Loaded felix doc file " + fname+", len="+str(len txt);
   //println$ "Contents=" + flx;
-  write_string(s, html_header);
-  write_string(s, flx_head);
-  write_fdoc(s, txt, &eof_flag);
-  write_string(s,"</body></html>\n\r");
-giveup:>
+  val data = make_html(
+    "<head>"+Css4Html::flx_head+"</head>"+
+    "<body><html>"+
+    Fdoc2Html::xlat_fdoc txt+
+    "</html></body>\n\r"
+  );
+  write_string(k,data,&eof_flag);
+}
+
+proc serve_raw(k:socket_t, fname:string, suffix:string)
+{
+  var eof_flag = false;
+  var txt = Text_file::load(fname);
+  println$ "Loaded raw file " + fname+", len="+str(len txt);
+  //println$ "Contents=" + flx;
+  val data = make_html(txt);
+  write_string(k,data,&eof_flag);
 }
 
 proc serve_file(infname: string, s: socket_t)
@@ -273,16 +229,16 @@ proc serve_file(infname: string, s: socket_t)
 
   print "suffix is "; print suffix; endl;
 
-  if suffix == "flx" do serve_felix(s:socket_t, fname:string);
+  if suffix == "flx" do 
+    serve_felix(s, fname);
   elif suffix == "cpp" or suffix == "hpp" 
-    or suffix == "cxx" or suffix == "h" or suffix == "c"
-    do serve_cpp(s:socket_t, fname:string);
+    or suffix == "cxx" or suffix == "h" or suffix == "c" do 
+    serve_cpp(s, fname);
   
-  elif suffix == "fdoc" do serve_fdoc(s:socket_t, fname:string);
+  elif suffix == "fdoc" do 
+    serve_fdoc(s, fname);
   else
-    if WIN32 do win32_send_file(s,fname, suffix);
-    elif POSIX do posix_send_file(s,fname, suffix,&eof_flag);
-    done
+    serve_raw(s,fname, suffix);
   done
 }
 
@@ -333,7 +289,7 @@ noinline proc handler (var k:socket_t) ()
   //cat(s, DEVNULL);
 
   fprint$ cerr,"fthread socket "+str k+" close delay ..\n";
-  Faio::sleep(clock,10.0); // give OS time to empty its buffers
+  Faio::sleep(clock,1.0); // give OS time to empty its buffers
   fprint$ cerr,"fthread socket "+str k+" shutdown now\n";
   Flx_socket::shutdown(k,3);
   ioclose(k);
