@@ -110,7 +110,7 @@ Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
 Connection: close\r
 Content-Type: text/html\r
 \r
-PAGE NOT FOUND:
+PAGE NOT FOUND:\r
 """;
 
 proc write_http_header(s:socket_t, suffix:string, eof: &bool)
@@ -145,6 +145,7 @@ if WIN32 do
 elif POSIX do
   proc posix_send_file(s:socket_t,fname:string,suffix:string, eof: &bool)
   {
+if false do
     // this fn sets the O_NONBLOCK flag which is completely unnecessary
     // as read goes via the preading worker fifo. don't know if
     // O_NONBLOCK even works on actual files.
@@ -165,15 +166,26 @@ elif POSIX do
       var to_strm: socket_t = s;
       Flx_stream::cat(from_strm, to_strm);
 
-      dbg$ ("close read fd " + str(from_strm)+"file "+fname+"\n");
+      dbg$ ("close read fd " + str(from_strm)+" file "+fname+"\n");
       iclose(from_strm); // this'll know how to close a unix fd
     } 
     done
+else
+    var contents = Text_file::load(fname);
+    //print "loaded: "; print contents; endl;
+    print "contents len="; print (len contents); endl;
+val html_header = """HTTP/0.9 200 OK\r
+Date: Tue, 25 Apr 2006 00:16:12 GMT\r
+Server: felix web server\r
+Last-Modified: Wed, 01 Feb 2006 18:51:37 GMT\r
+Connection: close\r
+Content-Type: text/html\r
+Content-Length: """ + str (len (contents)) +"""\r
+\r
+""";
 
-    // var contents = Text_file::load(fname);
-    // print "loaded: "; print contents; endl;
-    // print "contents len="; print (len contents); endl;
-    // write_string(s, html_header + contents);
+    write_string(s, html_header + contents, eof);
+done
   }
 done
 
@@ -439,7 +451,7 @@ proc serve_cpp(s:socket_t, fname:string)
   write_string(s,"<pre>");
   write_cpp(s, flx, &eof_flag);
   write_string(s,"</pre>\n");
-  write_string(s,"</body></html>\n");
+  write_string(s,"</body></html>\n\r");
 giveup:>
 }
 
@@ -710,7 +722,7 @@ proc serve_felix(s:socket_t, fname:string)
   write_string(s,"<pre>");
   write_felix(s, flx, &eof_flag);
   write_string(s,"</pre>\n");
-  write_string(s,"</body></html>\n");
+  write_string(s,"</body></html>\n\r");
 giveup:>
 }
 
@@ -836,7 +848,7 @@ proc serve_fdoc(s:socket_t, fname:string)
   write_string(s, html_header);
   write_string(s, flx_head);
   write_fdoc(s, txt, &eof_flag);
-  write_string(s,"</body></html>\n");
+  write_string(s,"</body></html>\n\r");
 giveup:>
 }
 
@@ -924,8 +936,9 @@ noinline proc handler (var k:socket_t) ()
   //Faio_posix::shutdown(s, 1); // disallow further sends.
   //cat(s, DEVNULL);
 
-  fprint$ cerr,"fthread closing socket "+str k+"\n";
+  fprint$ cerr,"fthread socket "+str k+" close delay ..\n";
   Faio::sleep(clock,10.0); // give OS time to empty its buffers
+  fprint$ cerr,"fthread socket "+str k+" shutdown now\n";
   Flx_socket::shutdown(k,3);
   ioclose(k);
   fprint$ cerr,"fthread "+str k+" terminating!\n";

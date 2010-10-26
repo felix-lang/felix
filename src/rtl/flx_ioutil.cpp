@@ -5,14 +5,18 @@
 namespace flx { namespace rtl { namespace ioutil {
   using namespace std;
 
+/* small buffer for testing, should be much large in production version */
+#define BUFSIZ 512
   string load_file (FILE *fi)
   {
     if (fi)
     {
       string x = "";
-      char buffer[512];
-      while (fgets(buffer,512,fi))
-        x = x + string(buffer);
+      char buffer[BUFSIZ];
+more:
+      int n = fread(buffer,1,BUFSIZ,fi);
+      if(n>0) x = x + string(buffer,n);
+      if (n == BUFSIZ)goto more;
       fclose(fi);
       return x;
     }
@@ -22,13 +26,15 @@ namespace flx { namespace rtl { namespace ioutil {
   string load_file (string f)
   {
     char const *fname = f.data();
-    FILE *fi = fopen(fname,"rt");
+    FILE *fi = fopen(fname,"rb"); // note: binary mode!
     if (fi)
     {
       string x = "";
-      char buffer[512];
-      while (fgets(buffer,512,fi))
-        x = x + string(buffer);
+      char buffer[BUFSIZ];
+more:
+      int n = fread(buffer,1,BUFSIZ,fi);
+      if(n>0) x = x + string(buffer,n);
+      if(n == BUFSIZ)goto more;
       fclose(fi);
       return x;
     }
@@ -42,8 +48,8 @@ namespace flx { namespace rtl { namespace ioutil {
     if(fi)
     {
       string x = "";
-      char buffer[513];
-      buffer[512]='\0';
+      char buffer[BUFSIZ+1];
+      buffer[BUFSIZ]='\0';
       int n;
       while
       (
@@ -52,7 +58,7 @@ namespace flx { namespace rtl { namespace ioutil {
           x[n-1]=='\n'
         )
         &&
-        fgets(buffer,512,fi)
+        fgets(buffer,BUFSIZ,fi)
       )
         x = x + string(buffer);
       return x;
