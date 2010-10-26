@@ -62,8 +62,8 @@ try
 
   (* PARSE THE IMPLEMENTATION FILE *)
   print_endline ("//Parsing Implementation " ^ input_file_name);
-  let parse_tree =
-    Flx_colns.include_file syms input_file_name
+  let found_path,parse_tree =
+    Flx_colns.include_file syms (Filename.dirname input_file_name) input_file_name
   in
   print_endline (Flx_print.string_of_compilation_unit parse_tree);
   print_endline "//PARSE OK";
@@ -75,7 +75,7 @@ try
   let compiler_options = { compiler_options with include_dirs = include_dirs } in
   let syms = { syms with compiler_options = compiler_options } in
   let desugar_state = Flx_desugar.make_desugar_state module_name syms in
-  let deblocked = Flx_desugar.desugar_stmts desugar_state parse_tree in
+  let deblocked = Flx_desugar.desugar_stmts desugar_state found_path parse_tree in
   if syms.compiler_options.document_typeclass then
     Flx_tcdoc.gen_doc()
   else begin

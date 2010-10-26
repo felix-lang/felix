@@ -9,6 +9,7 @@ val make_desugar_state:
 (** Desugar all the statements in a compilation unit. *)
 val desugar_stmts:
   desugar_state_t ->          (** The state needed for desugaring. *)
+  string ->                   (** directory containg the file *)
   Flx_ast.statement_t list -> (** The compilation unit. *)
   Flx_types.asm_t list
 

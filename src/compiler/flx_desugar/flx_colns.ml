@@ -19,7 +19,7 @@ type nsrec = {
   fudges:string list ref
 }
 
-let include_file syms inspec =
+let include_file syms curpath inspec =
   let force = syms.compiler_options.force_recompile in
   let this_version = !Flx_version.version_data in
   let basename =
@@ -33,18 +33,30 @@ let include_file syms inspec =
 
   in
   let include_dirs = syms.compiler_options.include_dirs in
-  let tf = Flx_filesys.find_file ~include_dirs (basename ^ ".flx") in
+  let tf =
+     if if String.length inspec > 2 then String.sub inspec 0 2 = "./" else false then
+       Flx_filesys.find_file ~include_dirs:[curpath] (basename ^ ".flx")
+     else
+       Flx_filesys.find_file ~include_dirs (basename ^ ".flx") 
+  in
   let pf =
     try
-      Flx_filesys.find_file
-        ~include_dirs:(match syms.compiler_options.cache_dir with
-        | None -> include_dirs
-        | Some d -> d::include_dirs
-        )
-        (basename ^ ".par")
+     if if String.length inspec > 2 then String.sub inspec 0 2 = "./" else false then
+        Flx_filesys.find_file ~include_dirs:[curpath] (basename ^ ".par")
+      else
+        Flx_filesys.find_file
+          ~include_dirs:(match syms.compiler_options.cache_dir with
+          | None -> include_dirs
+          | Some d -> d::include_dirs
+          )
+          (basename ^ ".par")
     with Flx_filesys.Missing_path _ ->
       (* It's okay if the .par file doesn't exist. *)
       ""
+  in
+  let include_name =
+    Filename.chop_extension
+    (if tf <> "" then tf else pf)
   in
   let tf_mt = Flx_filesys.filetime tf in
   let pf_mt = Flx_filesys.filetime pf in
@@ -96,10 +108,6 @@ let include_file syms inspec =
 
       (* -- parsed file is newer or text doesn't exist ------- *)
     else
-    let include_name =
-      Filename.chop_extension
-      (if tf <> "" then tf else pf)
-    in
       if mem include_name !(syms.include_files) then [] else
       begin (* file not already included *)
         syms.include_files := include_name :: !(syms.include_files)
@@ -131,7 +139,7 @@ let include_file syms inspec =
         end
       end (* process inclusion first time *)
   in
-    sts
+    (Filename.dirname include_name), sts
 
 (* very inefficient .. fixme! *)
 let rev_concat lss = rev (concat lss)

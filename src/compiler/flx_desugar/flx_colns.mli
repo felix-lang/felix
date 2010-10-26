@@ -13,5 +13,8 @@ val collate_namespaces:
 
 val include_file:
   sym_state_t ->
-  string ->
-  statement_t list
+  string -> (* directory containing including file,
+             * replaces leading . in request name 
+             *)
+  string -> (* request name *)
+  string * (statement_t list) (* return path where found and parsed asms *)

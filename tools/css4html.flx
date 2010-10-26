@@ -1,0 +1,23 @@
+
+flx_head := """
+<html>
+<head>
+<style type="text/css">
+span.fstring {color:darkblue; font-style:italic; }
+span.comment {font-family:arial; color:blue; font-style:italic; }
+span.big_keyword {color:#FF1010; }
+span.small_keyword {color:#802040; }
+span.qualifier {color:#A02020; }
+span.hack {color:#00FF00; }
+span.preproc {color:#00FF00; }
+pre.flxbg {background-color:#80FF80; }
+pre.inclusion {background-color:#D070D0; }
+.obsolete { background-color:#FFEFEF; font-size: small}
+.future { background-color:#FF8080; font-size: small}
+.implementation_detail { background-color:#E0E0E0; font-size: small; }
+.caveat { background-color:#FF8080; }
+</style>
+</head>
+<body>
+""";
+

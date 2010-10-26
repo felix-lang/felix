@@ -1,0 +1,271 @@
+// Felix
+val big_keywords = 
+  "module",
+  "fun",
+  "gen",
+  "proc",
+  "type",
+  "union",
+  "struct",
+  "typedef",
+  "var",
+  "val",
+  "typeclass",
+  "const",
+  "instance",
+  "header",
+  "body",
+  "include",
+  "open",
+  "spawn_fthread",
+  "spawn_pthread",
+  "reduce", "axiom", 
+  "open", "inherit"
+;
+val small_keywords =
+  "if", "then", "else", "elif", "endif", "do", "done",
+  "in", "forall", "while", "whilst","to", "upto","downto",
+  "typematch","match","endmatch","with","requires","return","goto"
+;
+
+val qualifiers = 
+  "virtual", "inline", "noinline", "private", "incomplete"
+;
+val hack = "C_hack","C_hack"; // to make it an array we need 2 components
+
+
+proc write_felix(k:socket_t, t:string, eof_flag: &bool)
+{
+  proc write_string(k:socket_t, t:string) 
+  { 
+   if not *eof_flag do Flx_stream::write_string(k,t,eof_flag); 
+   else goto giveup;
+   done
+  }
+
+  union state_t = 
+    | sot // start of token
+    | id // processing identifier
+    | num // in a number
+    | sq // processing single quote string
+    | dq // processing double quote string
+    | sq3 // processing single quote string
+    | dq3 // processing double quote string
+    | ccomment // a C style comment
+    | cppcomment // a C++ style comment
+  ;
+  fun str(s:state_t) => match s with
+  | sot => "sot"
+  | id => "id"
+  | num => "num"
+  | sq => "sq"
+  | dq => "dq"
+  | sq3 => "sq3"
+  | dq3 => "dq3"
+  | ccomment=> "ccomment"
+  | cppcomment => "cppcomment"
+  endmatch;
+  
+  var i = 0; var s:state_t;
+  var ch = t.[i];
+  proc next() { ch = t.[i]; ++i; }
+  fun ahead (j:int)=> t.[i+j-1]; 
+  fun issq3() => 
+    ch == char "'" and 
+    ahead(1) == char "'" and
+    ahead(2) == char "'" 
+  ;
+  fun isdq3() => 
+    ch == char '"'  and
+    ahead(1) == char '"' and
+    ahead(2) == char '"' 
+  ;
+
+  var b = "";
+  var last_id = "";
+  var last_op = "";
+  proc cp() { b += ch; }
+  proc ws() {
+    if last_id == "include" do // hackery
+      var n = b; 
+      whilst n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
+      whilst n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
+      if n.[-4 to] != ".flx" do n+= ".flx"; done // hack, fixme
+      write_string(k,'<a href="/'+n+'" >' + b + '</a>') ;
+    else 
+     write_string(k,'<span class=fstring>'+b+"</span>"); 
+    done
+  }
+  proc w() { 
+    //println$ "Token["+str s+"]="+b; 
+    match s with 
+    | dq => { ws; }
+    | sq => { ws; }
+    | sq3 => { ws; }
+    | dq3 => { ws; }
+    | ccomment=> { write_string(k,'<span class=comment>'+b+"</span>"); }
+    | cppcomment=> { write_string(k,'<span class=comment>'+b+"</span>"); }
+    | id => 
+      { 
+        last_id = b;
+        if inarray(b,big_keywords) do write_string(k,'<span class=big_keyword>'+b+"</span>"); 
+        elif inarray(b,small_keywords) do write_string(k,'<span class=small_keyword>'+b+"</span>"); 
+        elif inarray(b,qualifiers) do write_string(k,'<span class=qualifier>'+b+"</span>"); 
+        elif inarray(b,hack) do write_string(k,'<span class=hack>'+b+"</span>"); 
+        else write_string(k,b); done
+      }
+    | _ =>
+      { 
+        last_op=b; 
+        if b == "<" do b = "&lt;";
+        elif b == ">" do b = "&gt;";
+        elif b == "&" do b = "&amp;";
+        done;
+        write_string(k,b);  
+      }
+    endmatch;
+    b = "";  
+  }
+
+
+  goto nextt;
+
+contin:> // copy char and continue
+  cp();
+  goto nextch;
+   
+overrun:> // one past last char of token
+  w();
+  s = sot;
+  goto thisch;
+
+lastch:> // last char of token
+  cp();
+  w();
+
+nextt:>  // new token on next char
+  s = sot;
+
+nextch:> // next char
+  next();
+
+thisch:> // same char, reconsider it
+  //println$ "Considering char " + str(ord(ch));
+  if isnull ch goto fin; // out of data
+  match s with 
+  | sot =>
+    { 
+      if isidstart ch do s = id; goto contin;
+      elif isdigit ch do s = num; goto contin;
+      elif issq3() do cp; next; cp; next; s = sq3; goto contin;
+      elif isdq3() do cp; next; cp; next; s = dq3; goto contin;
+      elif issq ch do s = sq; goto contin;
+      elif isdq ch do s = dq; goto contin;
+      elif ch == char "/" do
+        if ahead(1) == char "/" do cp; next; s = cppcomment; goto contin
+        elif ahead(1) == char "*" do cp; next; s = ccomment; goto contin
+        else goto lastch
+        done 
+      else cp; w; goto nextt;
+      done
+    }
+
+  | id => 
+    {
+      if isalphanum ch do goto contin;
+      else goto overrun;
+      done
+    }
+  | num => 
+    {
+      if isnumeric ch do goto contin;
+      else goto overrun; 
+      done
+    } 
+  // single quoted strings
+  | sq =>
+    {
+      if issq ch do goto lastch; 
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
+  | dq =>
+    {
+      if isdq ch do goto lastch;
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
+   // triple quoted strings
+  | sq3 =>
+    {
+      if issq3() do cp; next; cp; next; cp; w; goto nextt; 
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
+  | dq3 =>
+    {
+      if isdq3() do cp; next; cp; next; cp; w; goto nextt;
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
+   // comments
+  | cppcomment =>
+    {
+      if iseol ch do goto lastch;
+      else goto contin;
+      done
+    }
+  | ccomment => // doesn't handle nested comments yet
+    {
+      if ch == char "*" and ahead(1) == char "/" do 
+        cp; 
+        goto lastch;
+      else goto contin;
+      done
+    }
+  endmatch
+  ; // execute selected function
+  println$ "Unexpected drop thru";
+
+fin:>
+   println "outof data";
+   w(); // whatever is left over gets written
+giveup:>
+}
+
+proc serve_felix(s:socket_t, fname:string)
+{
+  var eof_flag = false;
+  proc write_string(k:socket_t, t:string) 
+  { 
+   if not eof_flag do Flx_stream::write_string(k,t,&eof_flag); 
+   else goto giveup;
+   done
+  }
+
+  var flx = Text_file::load(fname);
+  if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
+  if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
+  println$ "Loaded felix file " + fname;
+  //println$ "Contents=" + flx;
+  write_string(s, html_header);
+  write_string(s, flx_head);
+  write_string(s,"<pre>");
+  write_felix(s, flx, &eof_flag);
+  write_string(s,"</pre>\n");
+  write_string(s,"</body></html>\n\r");
+giveup:>
+}
+

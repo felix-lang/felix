@@ -1300,7 +1300,7 @@ let make_desugar_state name syms = {
 }
 
 (** Desugar all the statements in a compilation unit. *)
-let rec desugar_stmts state stmts =
+let rec desugar_stmts state curpath stmts =
   let stmts = match stmts with
     | [] -> [STMT_nop (generated, "empty module")]
     | _ -> stmts
@@ -1320,8 +1320,8 @@ let rec desugar_stmts state stmts =
   (* Bind all the asms in reverse order. *)
   let asms =
     List.fold_left begin fun asms file ->
-      let stmts = Flx_colns.include_file state.syms file in
-      desugar_stmts state stmts :: asms
+      let curpath, stmts = Flx_colns.include_file state.syms curpath file in
+      desugar_stmts state curpath stmts :: asms
     end [asms] include_files
   in
 

@@ -70,7 +70,8 @@ try
   let syms = { syms with
     Flx_mtypes2.compiler_options = compiler_options } in
   let desugar_state = Flx_desugar.make_desugar_state module_name syms in
-  let asms = Flx_desugar.desugar_stmts desugar_state parse_tree in
+  let asms = Flx_desugar.desugar_stmts desugar_state (Filename.dirname
+  input_file_name) parse_tree in
 
   let root = !(syms.Flx_mtypes2.counter) in
   print_endline ("//Top level module '" ^ module_name ^ "' has index " ^

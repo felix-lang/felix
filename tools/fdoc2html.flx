@@ -1,0 +1,99 @@
+// felix document
+proc write_fdoc(k:socket_t, t:string, eof_flag: &bool)
+{
+  proc write_string(k:socket_t, t:string) 
+  { 
+   if not *eof_flag do Flx_stream::write_string(k,t,eof_flag); 
+   else goto giveup;
+   done
+  }
+
+  union state_t = 
+    | cmd // processing command
+    | doc // processing document
+    | felix // processing felix code
+  ;
+  fun str(s:state_t) => match s with
+  | doc => "doc"
+  | felix => "felix"
+  | cmd => "cmd"
+  endmatch;
+  
+  var i = 0; var s:state_t=doc;
+  var ch = t.[i];
+  proc next() { ch = t.[i]; ++i; }
+  fun ahead (j:int)=> t.[i+j-1]; 
+
+  var b = "";
+  proc cp() { b += ch; }
+
+nextc:>
+  next();
+  if isnull ch goto fin; // out of data
+  match s with 
+  | doc =>
+    { 
+      if char "@" == ch do 
+        if b != "" do write_text(k,b,eof_flag); done
+        s = cmd; b="";
+      elif char "\n" == ch and char "\n" == ahead(1) do b+="\n<p>\n";
+      else cp; 
+      done
+      goto nextc;
+    }
+  | felix =>
+    { 
+      if char "@" == ch do 
+        if b != "" do 
+          write_string(k,"<pre class=flxbg>"); 
+          write_felix(k,b,eof_flag); 
+          write_string(k,"</pre>"); 
+          b= ""; 
+        done
+        s = cmd;
+      else cp; 
+      done
+      goto nextc;
+    }
+
+  | cmd => 
+    {
+      if char "\n" != ch do cp; goto nextc;
+      else
+        if b == "felix" do s = felix;
+        elif prefix (b,"felix") do {
+          fname := strip(b.[5 to]);
+          var flx = Text_file::load(fname);
+          if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
+          if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
+          println$ "Loaded felix file " + fname;
+          write_string(k,"<pre class=inclusion>\n"+fname+"</pre>\n");
+          write_string(k,"<pre class=flxbg>"); 
+          write_felix(k,flx,eof_flag);
+          write_string(k,"</pre>"); 
+        };
+        s=doc;
+        elif b=="obsolete" do write_string(k,"<p class=obsolete> <em>Obsolete</em> "); s=doc;
+        elif b=="caveat" do write_string(k,"<p class=caveat> <em>Caveat: </em> "); s=doc;
+        elif b=="impl" do write_string(k,"<p class=implementation_detail> <em>Implementation Detail: </em>"); s=doc;
+        elif b=="future" do write_string(k,"<p class=future> <em>In future: </em>"); s=doc;
+        elif prefix(b,"h1") do write_string(k,"<h1>"+b.[3 to]+"</h1>\n"); s=doc;
+        elif prefix(b,"h2") do write_string(k,"<h2>"+b.[3 to]+"</h2>\n"); s=doc;
+        elif prefix(b,"h3") do write_string(k,"<h3>"+b.[3 to]+"</h3>\n"); s=doc;
+        elif prefix(b,"h4") do write_string(k,"<h4>"+b.[3 to]+"</h4>\n"); s=doc;
+        else s = doc;
+        done
+      done
+      b = "";
+      goto nextc;
+    }
+  endmatch
+  ; // execute selected function
+  println$ "Unexpected drop thru";
+
+fin:>
+   println "outof data";
+   if b != "" do write_text(k,b,eof_flag); done
+giveup:>
+}
+

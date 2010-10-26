@@ -224,53 +224,18 @@ let parse_file state file =
     if Filename.check_suffix file ".flx" then file else file ^ ".flx"
   in
   fprintf state.ppf "//Parsing Implementation %s\n" file_name;
-  let stmts = Flx_colns.include_file state.syms file_name in
+  let file_path,stmts = Flx_colns.include_file state.syms (Filename.dirname file_name) file_name in
 
   state.parse_time <- state.parse_time +. parse_timer ();
 
   stmts
 
 
-(** Parse the implementation files *)
-let parse_files state files =
-  fprintf state.ppf "//PARSING";
-
-  let stmts =
-    List.fold_left begin fun tree file ->
-      List.concat [tree; parse_file state file]
-    end [] files
-  in
-  fprintf state.ppf "%s\n" (Flx_print.string_of_compilation_unit stmts);
-  fprintf state.ppf "//PARSE OK time %f\n" state.parse_time;
-
-  stmts
-
-
 (** Desugar the statements *)
-let desugar_stmts state module_name stmts =
-  fprintf state.ppf "//DESUGARING\n";
-  let desugar_timer = make_timer () in
-
-  let desugar_state = Flx_desugar.make_desugar_state module_name state.syms in
-  let asms = Flx_desugar.desugar_stmts desugar_state stmts in
-
-  let sr =
-    (* If we don't have any statements, create a dummy src ref. *)
-    match stmts with
-    | [] -> Flx_srcref.dummy_sr
-    | _ ->
-      Flx_srcref.rsrange
-        (src_of_stmt (List.hd stmts))
-        (src_of_stmt (Flx_list.list_last stmts))
-  in
-
+let make_module module_name asms =
   let asms =
-    [Dcl (sr, module_name, None, `Public, dfltvs, DCL_module asms)]
+    [Dcl (Flx_srcref.dummy_sr, module_name, None, `Public, dfltvs, DCL_module asms)]
   in
-
-  state.desugar_time <- state.desugar_time +. desugar_timer ();
-  fprintf state.ppf "//DESUGAR OK time %f\n" state.desugar_time;
-
   asms
 
 
@@ -849,14 +814,30 @@ let save_profile state =
 let main () =
   let ppf, compiler_options = parse_args () in
   let state = make_flxg_state ppf compiler_options in
+  let module_name = 
+     try make_module_name (List.hd state.syms.compiler_options.files)
+     with _ -> "empty_module"
+  in
 
   begin try
-    (* PARSE THE IMPLEMENTATION FILE *)
-    let stmts = parse_files state state.syms.compiler_options.files in
-
-    (* Desugar the implementation file *)
-    let asms = desugar_stmts state state.module_name stmts in
-
+    (* PARSE THE IMPLEMENTATION FILES *)
+    let asms = List.concat (List.rev ( 
+      (List.fold_left
+        (fun out file ->
+          let stmts = parse_file state file in
+          let desugar_state = Flx_desugar.make_desugar_state module_name state.syms in
+          let asms = Flx_desugar.desugar_stmts 
+            desugar_state 
+            (Filename.dirname file) 
+            stmts 
+          in
+          asms :: out
+        )
+        []
+        state.syms.compiler_options.files
+      )))
+    in
+    let asms = make_module module_name asms in
     (* Bind the assemblies. *)
     let bsym_table, root_proc = bind_asms state asms in
 
