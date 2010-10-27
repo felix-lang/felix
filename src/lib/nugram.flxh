@@ -266,6 +266,7 @@ syntax expressions {
   x[scomparison_pri]:= x[>scomparison_pri] != x[>scomparison_pri] =># "(infix 'ne)";
   x[scomparison_pri]:= x[>scomparison_pri] >= x[>scomparison_pri] =># "(infix 'ge)";
   x[scomparison_pri]:= x[>scomparison_pri] > x[>scomparison_pri] =># "(infix 'gt)";
+  x[scomparison_pri]:= x[>scomparison_pri] "in" x[>scomparison_pri] =># "(infix 'mem)";
 
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as (,_1 ,_3))";
 

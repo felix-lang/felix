@@ -1,5 +1,5 @@
 publish "List manipulation"
-module List
+open module List
 {
   union list[T] = | Empty | Cons of T * list[T];
 
@@ -258,6 +258,8 @@ module List
   fun mem[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : bool =>
     mem (fun (x:T) => eq(x, e)) xs
   ;
+
+  fun mem[T with Eq[T]] (x:T, a:list[T]) => mem[T,T] eq of (T * T) a x;
 
   fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T] =>
     match xs with

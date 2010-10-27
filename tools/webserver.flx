@@ -29,21 +29,41 @@ include "./css4html";
 // read new sockets off it ..
 open TerminalIByteStream[socket_t];
 
+requires header '#include <stdlib.h>';
+fun strtod: string -> double = "strtod($1.data(),0)";
+gen daemon: int * int -> int  = "daemon($1,$2)";
+
+// command line argument processing
 var arg = "";
 var argno = 1;
 fun prefix(arg:string,key:string)=>
   arg.[to len key]==key
 ;
 var LIBROOT = "";
+var DELAY = 0.1;
+var DAEMON = false;
+
 whilst argno<System::argc do
   arg = System::argv argno;
   println$ "ARG=" + arg;
   if prefix(arg,"--root=") do
     LIBROOT=arg.[7 to]+"/lib";
+  elif prefix(arg,"--close-delay=") do
+    DELAY=strtod arg.[14 to];
+  elif arg == "--daemon" do
+    DAEMON = true;
   done
   ++argno;
 done
 println$ "LIBROOT="+LIBROOT;
+println$ "DELAY="+str DELAY;
+if DAEMON do
+ println$ "Daemonising";
+ if daemon(1,0) != 0 do
+   println$ "Failed to launch as daemon!";
+   System::exit 1;
+ done
+done
 
 fun getline_to_url (get:string) =>
   if not startswith get "GET " then
@@ -56,6 +76,7 @@ fun getline_to_url (get:string) =>
   endif
 ;
 
+// strip off the leading http:// then split on the next /
 fun split_url (inurl:string): opt[string*string] = {
   val url =
     if startswith inurl "http://" then
@@ -73,13 +94,12 @@ fun split_url (inurl:string): opt[string*string] = {
   ;
 }
 
+// parse balance of HTTP GET request (after gthe GET keyword)
 fun parse_get_line (get:string): opt[string*string] =>
   split_url$ getline_to_url get
 ;
 
-// TODO: fill in that length field, stream back the requested jpeg,
-// get port from argv.
-
+// functions to make responses
 fun make_gif(contents:string)=> """HTTP/0.9 200 OK\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
@@ -124,6 +144,7 @@ Content-Length: """ + str (len (contents)) +"""\r
 """+contents;
 
 
+// utility to check if a string s is in an array a
 fun inarray[N](s:string, a:array[string,N])=>
   mem (fun (x:string) => s == x) a
 ;
@@ -311,3 +332,4 @@ forever {
 
 println "WEB SERVER FINNISHED?";
 iclose(listener);
+
