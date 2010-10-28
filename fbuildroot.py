@@ -7,6 +7,8 @@ from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
+import os # for my hack
+import glob
 # ------------------------------------------------------------------------------
 
 def pre_options(parser):
@@ -380,6 +382,18 @@ def build(ctx):
 
     target.flx = call('buildsystem.flx.build', ctx,
         compilers.flxg, target.cxx.static, drivers)
+
+    # copy documentation into target
+    # Hack. Erick fixme! Only works on unix
+    print("Copying docs")
+    try:
+      os.mkdir(ctx.buildroot+"/doc")
+    except:
+      pass
+    for file in glob.glob("src/doc/*.fdoc"):
+      cmd = "cp " + file +" "+ctx.buildroot+"/doc"
+      print(cmd)
+      os.system(cmd)
 
     # copy files into the library
     for module in 'flx_stdlib', 'flx_pthread', 'demux', 'faio', 'judy':

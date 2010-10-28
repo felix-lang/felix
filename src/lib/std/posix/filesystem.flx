@@ -1,5 +1,6 @@
 module FileSystem 
 {
+  // stat
   requires header "#include <sys/stat.h>";
   type stat_t = "struct stat";
   proc stat: string * &stat_t * &int = "*$3=stat($1.data(),$2);";
@@ -17,6 +18,63 @@ module FileSystem
     return if err == 0 then mtime (&b) else uvlong 0 endif;
   }
 
+  ctypes mode_t;
+  const S_IFIFO : mode_t;
+  const S_IFCHR : mode_t;
+  const S_IFDIR : mode_t;
+  const S_IFBLK : mode_t;
+  const S_IFREG : mode_t;
+  const S_IFLNK : mode_t;
+  const S_IFSOCK: mode_t;
+  const S_IFWHT : mode_t;
+  fun eq: mode_t * mode_t -> bool = "$1==$2";
+
+  fun raw_mode: &stat_t -> mode_t = "$1->st_mode & S_IFMT";
+  union file_type_t = 
+    | PIPE 
+    | STREAM 
+    | DIRECTORY 
+    | BLOCK 
+    | REGULAR 
+    | SYMLINK 
+    | SOCKET 
+    | WHITEOUT 
+    | INDETERMINATE
+    | NONEXISTANT
+    | NOPERMISSION
+  ;
+
+  fun mode (s:&stat_t): file_type_t =>
+    let ?m = raw_mode s in
+    if m == S_IFIFO then PIPE
+    elif m == S_IFCHR then STREAM
+    elif m == S_IFDIR then DIRECTORY
+    elif m == S_IFBLK then BLOCK
+    elif m == S_IFREG then REGULAR
+    elif m == S_IFLNK then SYMLINK
+    elif m == S_IFSOCK then SOCKET
+    elif m == S_IFWHT then WHITEOUT 
+    else INDETERMINATE
+    endif
+  ;
+  requires header "#include <errno.h>";
+  const EACCES: int;
+  const ENOENT: int;
+  fun filetype(f:string):file_type_t = 
+  {
+    var b:stat_t;
+    var err:int;
+    stat(f,&b,&err);
+    return 
+      if err == EACCES then NOPERMISSION
+      elif err == ENOENT then NONEXISTANT  
+      elif err == 0 then  mode (&b)
+      else INDETERMINATE
+      endif
+    ;
+  }
+
+  // directory
   requires header '#include <dirent.h>';
   type dirent_t = "struct dirent*";
   type DIR_t = "DIR*";
@@ -61,5 +119,12 @@ next:>
     done
   }
 
+  // current directory
+  private fun getcwd: &char * size -> &char = "getcwd($1,$2)";
+  fun getcwd():string = {
+    var b: array[char,1024]; 
+    var p = getcwd(C_hack::cast[&char] &b,1024);
+    return if C_hack::isNULL p then "" else string p endif; 
+  }
 }
 

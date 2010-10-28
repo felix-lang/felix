@@ -2,6 +2,7 @@ if POSIX do
 include "flx_faio_posix";  // aio_ropen
 //open Faio_posix;
 include "std/posix/signal";
+include "std/posix/filesystem";
 Posix_Signal::ignore_signal(Posix_Signal::SIGPIPE);
 done
 
@@ -50,20 +51,12 @@ whilst argno<System::argc do
     LIBROOT=arg.[7 to]+"/lib";
   elif prefix(arg,"--close-delay=") do
     DELAY=strtod arg.[14 to];
-  elif arg == "--daemon" do
-    DAEMON = true;
   done
   ++argno;
 done
+
 println$ "LIBROOT="+LIBROOT;
 println$ "DELAY="+str DELAY;
-if DAEMON do
- println$ "Daemonising";
- if daemon(1,0) != 0 do
-   println$ "Failed to launch as daemon!";
-   System::exit 1;
- done
-done
 
 fun getline_to_url (get:string) =>
   if not startswith get "GET " then
@@ -121,7 +114,7 @@ Content-Length: """+str (len (contents))+"""\r
 """+contents;
 
 
-fun make_notfound(contents:string)=> """HTTP/0.9 404 Not Found\r
+fun make_not_found(contents:string)=> """HTTP/0.9 404 Not Found\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
@@ -148,6 +141,13 @@ Content-Length: """ + str (len (contents)) +"""\r
 fun inarray[N](s:string, a:array[string,N])=>
   mem (fun (x:string) => s == x) a
 ;
+
+proc serve_not_found(k:socket_t, fname:string)
+{
+   var eof_flag = false;
+   val data = make_not_found(fname);
+   write_string(k,data,&eof_flag);
+}
 
 proc serve_felix(k:socket_t, fname:string)
 {
@@ -225,7 +225,28 @@ proc serve_raw(k:socket_t, fname:string, suffix:string)
   write_string(k,data,&eof_flag);
 }
 
-proc serve_file(infname: string, s: socket_t)
+proc serve_directory(k:socket_t, fname:string)
+{
+  fun rf(f:string)=>"<a href=" /*+fname + "/"*/+f+">"+f+"</a>";
+  var eof_flag = false;
+  val top = "A DIRECTORY " + fname + "\r\n";
+  val flist = 
+    match FileSystem::filesin fname with
+    | Some ?files =>
+       "<pre>"+ 
+       (fold_left (fun (acc: string) (f:string) => 
+          match f with | "." => acc | ".." => acc | _ => acc + rf f + "\r\n" endmatch) 
+        "" files
+       ) +
+       "</pre>"
+    | None => "ERROR ACCESSING DIRECTORY"
+    endmatch
+  ;
+  val page = make_html(top + flist);
+  write_string(k,page,&eof_flag);
+}
+
+proc serve_data_file(s: socket_t, infname: string)
 {
   var eof_flag = false;
   // if empty string, serve index.html
@@ -261,6 +282,15 @@ proc serve_file(infname: string, s: socket_t)
   else
     serve_raw(s,fname, suffix);
   done
+}
+
+proc serve_file(k:socket_t, fname:string)
+{
+  match FileSystem::filetype fname with
+  | FileSystem::REGULAR => { serve_data_file(k,fname); }
+  | FileSystem::DIRECTORY => { serve_directory (k,fname); }
+  | _ => { serve_not_found(k,fname); }
+  endmatch; 
 }
 
 val webby_port = 1234;
@@ -299,7 +329,7 @@ noinline proc handler (var k:socket_t) ()
       print "base="; print base; endl;
       print "file="; print file; endl;
 
-      serve_file(file, k);
+      serve_file(k,file);
     }
   endmatch;
 
