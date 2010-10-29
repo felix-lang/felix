@@ -17,6 +17,7 @@ module FileSystem
     stat(f,&b,&err);
     return if err == 0 then mtime (&b) else uvlong 0 endif;
   }
+  fun fileexists(f:string):bool=> filetime f != uvlong 0;
 
   ctypes mode_t;
   const S_IFIFO : mode_t;
@@ -126,5 +127,18 @@ next:>
     var p = getcwd(C_hack::cast[&char] (&b),size 1024);
     return if C_hack::isNULL p then "" else string p endif; 
   }
+
+  // find in path
+  fun find_in_path(x:string, path:list[string]):opt[string]=>
+    match path with
+    | Empty[string] => None[string]
+    | Cons (?d,?t) => 
+      let ?p =  Filename::join(d,x) in
+      match fileexists p with
+      | true => Some p
+      | false => find_in_path (x,t)
+      endmatch
+    endmatch
+  ;
 }
 

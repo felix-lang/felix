@@ -20,6 +20,7 @@ open module String
   proc pluseq: &string * string = "$1->append($2);";
   proc pluseq: &string * charcp = "$1->append($2);";
   proc pluseq: &string * charp = "$1->append($2);";
+  proc pluseq: &string * &char = "$1->append($2);";
   proc pluseq: &string * char = "*$1 += $2;";
 
   // we need to cast to an int so that c++ won't complain
@@ -27,6 +28,7 @@ open module String
 
   fun add: string * string -> string = "$1+$2";
   fun add: string * charp -> string = "$1+$2";
+  fun add: string * &char -> string = "$1+$2";
   fun add: charp * string -> string = "$1+$2";
   fun add: string * char -> string = "$1+$2";
   fun add: char * string -> string = "$1+$2";
@@ -40,6 +42,7 @@ open module String
   fun _ctor_char (x:string) => x.[0];
   fun _ctor_string (c:char) => ""+c;
   gen _ctor_string: charp -> string = "::std::string($1)";
+  gen _ctor_string: &char -> string = "::std::string($1)";
   gen _ctor_string: charp * int -> string = "::std::string($1,$2)";
   gen _ctor_string: charcp -> string = "::std::string($1)";
   gen _ctor_string: charcp * int -> string = "::std::string($1,$2)";
@@ -87,7 +90,9 @@ open module String
   fun stl_find: string * string -> int = "$1.find($2)";
   fun stl_find: string * string * int -> int = "$1.find($2,$3)";
   fun stl_find: string * charp -> int = "$1.find($2)";
+  fun stl_find: string * &char -> int = "$1.find($2)";
   fun stl_find: string * charp * int -> int = "$1.find($2,$3)";
+  fun stl_find: string * &char * int -> int = "$1.find($2,$3)";
   fun stl_find: string * char -> int = "$1.find($2)";
   fun stl_find: string * char * int -> int = "$1.find($2,$3)";
 
@@ -340,7 +345,7 @@ instance Str[string] {
   fun str (s:string) : string => s;
 }
 
-instance[T in charp||charcp] Str[T] {
+instance[T in charp||charcp || &char] Str[T] {
   fun str: T -> string = '::flx::rtl::strutil::atostr($1)' requires flx_strutil;
 }
 
