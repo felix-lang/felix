@@ -44,4 +44,6 @@ include "std/varray";
 include "std/avl";
 include "std/lexer";
 
+// Version
+include "std/version";
 

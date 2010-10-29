@@ -1,0 +1,21 @@
+Felix is an advanced high performance statically typed scripting language.
+
+Features:
+
+* generates highly optimised ISO C++
+* advanced resource manager organises compilation and linkage
+* often runs faster than C
+* glueless binding to C and C++ libraries
+* lightweight threads with channels
+* asynchronous network I/O
+* thread safe garbage collection
+* overloading
+* parametric polymorphism
+* polymorphism with constraints
+* multitype Haskell style type classes
+* type classes with real semantic specification
+* semantics can be checked by theorem provers
+* bindings to Gnu GMP and GSL included
+* user definabled and inline extensible grammar
+
+
