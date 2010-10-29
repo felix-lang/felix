@@ -123,7 +123,7 @@ next:>
   private fun getcwd: &char * size -> &char = "getcwd($1,$2)";
   fun getcwd():string = {
     var b: array[char,1024]; 
-    var p = getcwd(C_hack::cast[&char] &b,1024);
+    var p = getcwd(C_hack::cast[&char] (&b),size 1024);
     return if C_hack::isNULL p then "" else string p endif; 
   }
 }
