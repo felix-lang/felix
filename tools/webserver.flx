@@ -137,11 +137,6 @@ Content-Length: """ + str (len (contents)) +"""\r
 """+contents;
 
 
-// utility to check if a string s is in an array a
-fun inarray[N](s:string, a:array[string,N])=>
-  mem (fun (x:string) => s == x) a
-;
-
 proc serve_not_found(k:socket_t, fname:string)
 {
    var eof_flag = false;

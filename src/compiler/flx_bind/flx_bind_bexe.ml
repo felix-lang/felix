@@ -239,7 +239,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       n
   in
   (*
-  print_endline ("EXE="^string_of_exe 1 x);
+  print_endline ("EXE="^string_of_exe 1 exe);
   *)
   if not state.reachable then
   begin
@@ -504,7 +504,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       )
 
   | EXE_iinit ((s,index),e) ->
-      let e',rhst = be e in
+      let e',rhst = be e in 
       (* a type variable in executable code just has to be of kind TYPE *)
       let parent_ts = map
         (fun (s,i) -> btyp_type_var (i,btyp_type 0))

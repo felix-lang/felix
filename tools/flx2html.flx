@@ -108,10 +108,10 @@ fun xlat_felix(t:string)=
     | id => 
       { 
         last_id = b;
-        if inarray(b,big_keywords) do write_string('<span class=big_keyword>'+b+"</span>"); 
-        elif inarray(b,small_keywords) do write_string('<span class=small_keyword>'+b+"</span>"); 
-        elif inarray(b,qualifiers) do write_string('<span class=qualifier>'+b+"</span>"); 
-        elif inarray(b,hack) do write_string('<span class=hack>'+b+"</span>"); 
+        if b in big_keywords do write_string('<span class=big_keyword>'+b+"</span>"); 
+        elif b in small_keywords do write_string('<span class=small_keyword>'+b+"</span>"); 
+        elif b in qualifiers do write_string('<span class=qualifier>'+b+"</span>"); 
+        elif b in hack do write_string('<span class=hack>'+b+"</span>"); 
         else write_string(b); done
       }
     | _ =>

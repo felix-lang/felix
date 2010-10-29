@@ -427,7 +427,7 @@ and inner_bind_expression state bsym_table env rs e  =
      let x = bind_expression' state bsym_table env rs e [] in
      (*
      print_endline ("Bound expression " ^
-       string_of_bound_expression_with_type state.sym_table x
+       string_of_bound_expression_with_type bsym_table x
      );
      *)
      x
@@ -447,8 +447,15 @@ and inner_bind_expression state bsym_table env rs e  =
        print_endline ("Failure binding expression " ^ string_of_expr e);
        raise x
 
+     | Not_found ->
+       print_endline ("inner_bind_expression raised Not_found [BUG] e="^
+       string_of_expr e);
+       failwith "bind_expression' raised Not_found [BUG]"
   in
-    let t' = beta_reduce state.syms bsym_table sr t' in
+    let t' = 
+      try beta_reduce state.syms bsym_table sr t' 
+      with Not_found -> failwith "beta_reduce raised Not_found [BUG]"
+    in
     e',t'
 
 and expand_typeset t =
@@ -1992,7 +1999,7 @@ and koenig_lookup state bsym_table env rs sra id' name_map fn t2 ts =
         clierr sra
         (
           "[flx_ebind] Koenig lookup: Can't find match for " ^ fn ^
-          "\ncandidates are: " ^ full_string_of_entry_set bsym_table entries
+          "\ncandidates are: " ^ full_string_of_entry_set state.sym_table bsym_table entries
         )
     end
   | NonFunctionEntry _ -> clierr sra "Koenig lookup expected function"
@@ -2269,7 +2276,6 @@ and lookup_qn_with_sig'
       with
       | Some (index,t,ret,mgu,ts) ->
         (*
-        print_endline ("Resolved overload for " ^ name);
         print_endline ("ts = [" ^ catmap ", " (sbt bsym_table) ts ^ "]");
         *)
         (*
@@ -2280,13 +2286,15 @@ and lookup_qn_with_sig'
           (index,ts)
 
       | None ->
+        try
         clierr sra
         (
           "[lookup_qn_with_sig] (Simple module) Unable to resolve overload of " ^
           string_of_qualified_name qn ^
           " of (" ^ catmap "," (sbt bsym_table) signs ^")\n" ^
-          "candidates are: " ^ full_string_of_entry_set bsym_table entries
+          "candidates are: " ^ full_string_of_entry_set state.sym_table bsym_table entries
         )
+        with Not_found -> failwith "Error generating error in lookup_qn_with_sig'"
     end
 
 and lookup_type_qn_with_sig'
@@ -2493,7 +2501,7 @@ and lookup_type_qn_with_sig'
           "[lookup_type_qn_with_sig] (Simple module) Unable to resolve overload of " ^
           string_of_qualified_name qn ^
           " of (" ^ catmap "," (sbt bsym_table) signs ^")\n" ^
-          "candidates are: " ^ full_string_of_entry_set bsym_table entries
+          "candidates are: " ^ full_string_of_entry_set state.sym_table bsym_table entries
         )
     end
 
@@ -3149,7 +3157,9 @@ and handle_map sr (f,ft) (a,at) =
       failwith "MAP NOT IMPLEMENTED"
 
 and bind_expression_with_args state bsym_table env e args =
-  bind_expression' state bsym_table env rsground e args
+  try
+    bind_expression' state bsym_table env rsground e args
+  with Not_found -> failwith "bind expression with args raised Not_found [BUG]"
 
 and bind_expression' state bsym_table env (rs:recstop) e args =
   let sr = src_of_expr e in
@@ -4072,11 +4082,16 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       | Some name ->
         let sigs = List.map snd args in
         let srn = src_of_qualified_name name in
-        (*
-        print_endline "Lookup qn with sig .. ";
-        *)
-        lookup_qn_with_sig' state bsym_table sr srn env rs name (ta::sigs)
-      | None -> bind_expression' state bsym_table env rs f' (a :: args)
+        begin try
+          let r = lookup_qn_with_sig' state bsym_table sr srn env rs name (ta::sigs) in
+          r
+        with Not_found -> failwith "Lookup_qn_with_sig' threw Not_found"
+        end
+      | None ->
+          begin try 
+          bind_expression' state bsym_table env rs f' (a :: args)
+          with Not_found -> failwith "bind_expression' XXX threw Not_found"
+          end
     in
     (*
     print_endline ("tf=" ^ sbt bsym_table tf);
@@ -4085,8 +4100,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     begin match tf with
     | BTYP_cfunction _ -> cal_apply state bsym_table sr rs f a
     | BTYP_function _ ->
-      (* print_endline "Function .. cal apply"; *)
-      cal_apply state bsym_table sr rs f a
+      let r = cal_apply state bsym_table sr rs f a in
+      r
 
     (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)
     | BTYP_inst (i,ts') when
@@ -5827,13 +5842,21 @@ let lookup_sn_in_env
     | _ -> failwith "Expected expression to be index"
 
 let bind_type state bsym_table env sr t =
+  try
   inner_bind_type state bsym_table env sr rsground t
+  with Not_found -> failwith "bind type raised Not_found [BUG]"
 
 let bind_expression state bsym_table env e  =
+  try
   inner_bind_expression state bsym_table env rsground e
+  with Not_found -> failwith "xxxx bind expression raised Not_found [BUG]"
 
 let type_of_index state bsym_table bid =
- type_of_index' state bsym_table rsground bid
+  try
+  type_of_index' state bsym_table rsground bid
+  with Not_found -> failwith "type of index raised Not_found [BUG]"
 
 let type_of_index_with_ts state bsym_table sr bid ts =
- type_of_index_with_ts' state bsym_table rsground sr bid ts
+  try
+  type_of_index_with_ts' state bsym_table rsground sr bid ts
+  with Not_found -> failwith "type of index with ts raised Not_found [BUG]"

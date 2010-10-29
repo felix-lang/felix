@@ -109,7 +109,7 @@ void *operator new(
   if (amt != shape.amt * shape.count)
   {
     fprintf(stderr,"Shape size error: allocator size = %ld\n",amt);
-    fprintf(stderr,"Shape %s element size = %ld, element count = %;d\n",shape.cname,shape.amt,shape.count);
+    fprintf(stderr,"Shape %s element size = %ld, element count = %d\n",shape.cname,shape.amt,shape.count);
     abort();
   }
   void *p = gcp.allocate(&shape,1,allow_gc); // dynamic array count = 1

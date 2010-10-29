@@ -2387,10 +2387,14 @@ and string_of_bbdcl bsym_table bbdcl index : string =
   | BBDCL_reduce -> "reduce ...;"
 
 
-let full_string_of_entry_kind bsym_table {base_sym=i; spec_vs=vs; sub_ts=ts} =
-  let bsym = Flx_bsym_table.find bsym_table i in
-  string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) i ^
-  "\n  defined at " ^ Flx_srcref.short_string_of_src (Flx_bsym.sr bsym) ^ "\n  with view" ^
+let full_string_of_entry_kind sym_table bsym_table {base_sym=i; spec_vs=vs; sub_ts=ts} =
+  let sym = 
+      try Flx_sym_table.find sym_table i 
+      with Not_found -> failwith ("full_string_of_entry_kind: Help, can't find index " ^ string_of_int
+      i ^ " in sym table")
+  in
+  string_of_symdef sym.Flx_sym.symdef sym.Flx_sym.id sym.Flx_sym.vs ^
+  "\n  defined at " ^ Flx_srcref.short_string_of_src sym.Flx_sym.sr ^ "\n  with view" ^
   " vs=" ^ catmap "," (fun (s,_)->s) vs ^
   " ts=" ^ catmap "," (sbt bsym_table) ts
 
@@ -2404,11 +2408,11 @@ let string_of_entry_set = function
       catmap "," string_of_entry_kind ls ^
     "}"
 
-let full_string_of_entry_set sym_table = function
-  | NonFunctionEntry x -> full_string_of_entry_kind sym_table x
+let full_string_of_entry_set sym_table bsym_table = function
+  | NonFunctionEntry x -> full_string_of_entry_kind sym_table bsym_table x
   | FunctionEntry ls -> if length ls = 0 then "{}" else
     "{\n" ^
-      catmap "\n" (full_string_of_entry_kind sym_table) ls ^
+      catmap "\n" (full_string_of_entry_kind sym_table bsym_table) ls ^
     "\n}"
 
 let string_of_myentry bsym_table {base_sym=i; spec_vs=vs; sub_ts=ts} =

@@ -119,6 +119,9 @@ let bind_qual bt qual = match qual with
 let bind_quals bt quals = map (bind_qual bt) quals
 
 let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
+  (*
+  print_endline ("Binding symbol index=" ^ string_of_int symbol_index);
+  *)
   (* If we've already processed this bid, exit early. We do this so we can avoid
    * any infinite loops in the symbols. *)
   if Hashtbl.mem state.visited symbol_index then () else begin
@@ -137,8 +140,9 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     bsym_table
     (Some symbol_index)
   in
+  
   (*
-  print_endline "ENVIRONMENT:";
+  print_endline "got ENVIRONMENT:";
   print_env_short env;
   *)
 
@@ -249,9 +253,6 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     bind_reqs bt state bsym_table env sym.Flx_sym.sr reqs
   in
   let bind_quals quals = bind_quals bt quals in
-  (*
-  print_endline ("******Binding " ^ name);
-  *)
   let bind_basic_ps ps =
     List.map (fun (k,s,t,_) ->
       let i = find_param sym.Flx_sym.privmap s in
@@ -282,6 +283,10 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
         Flx_bsym_table.add bsym_table symbol_index (Some parent) bsym
     end
   in
+  (*
+  print_endline ("******Binding " ^ qname ^ "="^ string_of_symdef
+  sym.Flx_sym.symdef qname ivs);
+  *)
   begin match sym.Flx_sym.symdef with
   (* Pure declarations of functions, modules, and type don't generate anything.
    * Variable dcls do, however. *)
@@ -767,10 +772,10 @@ let bbind state bsym_table =
         try bbind_symbol state bsym_table i parent symdef
         with Not_found ->
           try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
-            failwith ("Binding error, cannot find in table: " ^ id ^ " index " ^
+            failwith ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
               string_of_bid i)
           with Not_found ->
-            failwith ("Binding error UNKNOWN SYMBOL, index " ^ string_of_bid i)
+            failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
   end dummy_bid !(state.syms.counter)
 
 let bind_interface (state:bbind_state_t) bsym_table = function

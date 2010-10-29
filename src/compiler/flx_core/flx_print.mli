@@ -68,14 +68,14 @@ val string_of_entry_kind:
   Flx_btype.entry_kind_t -> string
 
 val full_string_of_entry_kind:
-  Flx_bsym_table.t -> Flx_btype.entry_kind_t -> string
+  Flx_sym_table.t -> Flx_bsym_table.t ->Flx_btype.entry_kind_t -> string
 
 (** [string_of_entry_set entry-set] converts the [entry-set] to a string. *)
 val string_of_entry_set:
   Flx_btype.entry_set_t -> string
 
 val full_string_of_entry_set:
-  Flx_bsym_table.t -> Flx_btype.entry_set_t -> string
+  Flx_sym_table.t -> Flx_bsym_table.t->Flx_btype.entry_set_t -> string
 
 val print_name_table:
   Flx_bsym_table.t -> Flx_btype.name_map_t -> unit
