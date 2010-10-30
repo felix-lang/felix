@@ -1,0 +1,71 @@
+@h2 The command line harness (bin/flx)
+<p> When checking if a flx file needs recompilation, fails to account for include files. 
+Workaround: use --force switch. Fix: we could recursively scan files for inclusions,
+which would require parsing and path searching. A better technique would be to
+have the compiler generate a dependency file. An alternative under serious consideration
+is to get rid of include files altogether and use the package manager exclusively
+to locate resources. The main difficulty with this is that it would require
+the compiler (flxg) to invoke the package manager. It is also not appropriate if
+a client splits up a program into several files, note in this case the include 
+statement must use a name prefixed by ".".
+
+
+@h2 The Webserver (tools/webserver)
+<p>Appears to fail to send tail of files properly, apparently due to a bug
+in Posix socket specification which allows a compliant OS to 
+junk the output buffers when an asynchronous socket is closed.
+Linux is known to do this. Workaround: I put a delay, which can be set
+by --delay=99.99 command line switch, for delay in seconds. Default is
+0.1 or 100ms. The delay does not block the server pthread but it does
+cost resources since the fibre and socket remain allocated after they
+should be gone. Also exposes the server to a DNS attack.
+
+<p> Doesn't handle quotes embedded in strings correctly
+
+<p> At present not all include files are found, including C++ headers
+because they don't have an extension, and file relative includes,
+because the names are indistinguishable from path relative includes,
+and the including filename is lost at the point the client issues a
+GET request. This can only be fixed by calculating all inclusions
+properly when the including file is served, since it is only at this
+time that we know the including file's path.
+
+@h2 The package manager (bin/flx_pkgconfig)
+No known issues.
+
+@h2 The Felix Library (Felix)
+@h3 Filename
+<p>Filename split functions do not handle slosh quoted separators
+<p> Filename module doesn't provide a way to strip double separators eg // on Unix
+<p> No functions for splitting Windows drive letters or network drive names
+@h3 Posix
+@h2 The run time support libraries (C++)
+
+@h2 The compiler (bin/flxg)
+<p>Can't handle closures of anonymous sums.
+<p>The grammar file (lib/nugram.flxh) cannot be split up into parts
+because it is too early during parsing to use the include statement.
+It is not that the grammar production for the include statement is
+not yet defined, although that is the case at the moment, it could
+easily be built in to the initial grammar; rather, the problem is that
+the parser is using Ocaml lexbufs directly: these are quite brain-dead
+and cannot be stacked so that inclusions would work properly. 
+In particular since the old parsing technology was replaced by Dypgen,
+there are no #includes which would be managed at a low level, nor the
+#line directives which would allow a preprocessor to do the job.
+The grammar works but the file is way too big to present in documentation
+as is.
+<p>A large number of client errors are not reported properly. In particular
+most type errors are not properly reported because source references
+are not propagated. In fact it seems we have lost all our source references
+in expressions, and we never had them for types: only executable statements
+preserve source references. Managing source references is extremely difficult
+and very laborious. Code transformation involving both reductions and
+synthesis bring into question every time what source reference to use.
+
+<p> The compiler needlessly binds symbols that are never used.
+This is done partly to ensure a whole file is properly type checked.
+Nevertheless the overhead of rebinding the whole library every time
+could be onerous. The optimiser does strip out unused entities.
+
+
