@@ -1,0 +1,52 @@
+include "plat/filename.flx";
+
+module Filename {
+  val sep = Plat_Filename::sep;
+  // these seem more generic
+
+  // split1 returns a pair consisting of a directory name and basename
+  // with the separator between them lost except in the special case
+  // "/x" where the "/" is kept as the directory name
+
+  // split and join are inverses, however join1
+  // not associative: join("x", join("","y")) = "x/y"
+  // whereas join(join("x",""),"y") = "x//y"
+  // since split pulls components off from the RHS we have to
+  // fold them back from the left
+
+  fun split1(s:string)=> match find_last_of(s,char sep) with
+    | Some ?pos => 
+      if pos==0 then str sep else s.[to pos] endif,
+      s.[pos+1 to]
+    | None => "",s
+    endmatch
+  ;
+
+  fun split(s:string, acc:List::list[string]):List::list[string]=>
+    let ?d,?b = split1 s in
+    if d == "" then List::Cons(b,acc) 
+    elif d == "/" then List::Cons(d, List::Cons(b,acc))
+    else split (d, List::Cons (b, acc)) 
+    endif
+  ;
+
+  fun split(s:string)=> split (s, List::Empty[string]);
+
+  fun join(p:string, b:string)=> 
+    if p == "" then b
+    elif p==str sep then p+b 
+    else p+sep+b 
+    endif
+  ; 
+  
+  fun basename(s:string)=> match split1(s) with | _,?b => b endmatch;
+  fun dirname(s:string)=> match split1(s) with | ?d,_ => d endmatch;
+
+  fun join(a:string, b:string, c:string)=> join(join(a,b),c);
+
+  fun join(x:string) (y:string) => join(x,y);
+
+  fun join(ps: List::list[string])=> List::fold_left join of (string) "" ps;
+
+}
+
