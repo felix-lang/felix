@@ -84,7 +84,7 @@ module FileSystem
   fun isNULL: dirent_t -> bool = "$1==0";
   proc readdir: DIR_t * dirent_t * &dirent_t * &int = "*$4=readdir_r($1, $2, $3);";
   proc closedir: DIR_t = "closedir($1);";
-  fun filename: dirent_t -> string = "std::string($1->d_name,$1->d_namlen)";
+  fun filename: dirent_t -> string = "std::string($1->d_name)";
   fun filesin(dname:string): opt[List::list[string]] = {
     var d:DIR_t;
     var e: dirent_t = C_hack::cast[dirent_t]$ C_hack::malloc 5000;

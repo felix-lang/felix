@@ -390,6 +390,24 @@ def build(ctx):
       os.mkdir(ctx.buildroot+"/doc")
     except:
       pass
+
+    # copy website index
+    cmd = "cp index.html "+ctx.buildroot;
+    print(cmd)
+    os.system(cmd)
+
+    # copy website
+    cmd = "cp -R web "+ctx.buildroot;
+    print(cmd)
+    os.system(cmd)
+
+    # copy the entire src directory so the user can browse it
+    # not actually used in the build process
+    cmd = "cp -R src "+ctx.buildroot;
+    print(cmd)
+    os.system(cmd)
+
+    # copy docs
     for file in glob.glob("src/doc/*.fdoc"):
       cmd = "cp " + file +" "+ctx.buildroot+"/doc"
       print(cmd)
