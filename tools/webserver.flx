@@ -34,6 +34,7 @@ open TerminalIByteStream[socket_t];
 
 requires header '#include <stdlib.h>';
 fun strtod: string -> double = "strtod($1.data(),0)";
+fun atoi: string -> int = "atoi($1.data(),0)";
 gen daemon: int * int -> int  = "daemon($1,$2)";
 
 // command line argument processing
@@ -44,6 +45,7 @@ fun prefix(arg:string,key:string)=>
 ;
 var INSTALL_ROOT = "";
 var DELAY = 0.1;
+var PORT=1234;
 
 whilst argno<System::argc do
   arg = System::argv argno;
@@ -52,6 +54,8 @@ whilst argno<System::argc do
     INSTALL_ROOT=arg.[7 to];
   elif prefix(arg,"--close-delay=") do
     DELAY=strtod arg.[14 to];
+  elif prefix(arg,"--port=") do
+    PORT=atoi arg.[7 to];
   done
   ++argno;
 done
@@ -65,6 +69,7 @@ println$ "FLX_PATH="+FLX_PATH;
 println$ "C_PATH="+C_PATH;
 println$ "FDOC_PATH="+FDOC_PATH;
 println$ "DELAY="+str DELAY;
+println$ "PORT="+str PORT;
 
 fun getline_to_url (get:string) =>
   if not startswith get "GET " then
@@ -397,7 +402,7 @@ proc serve_file(s: socket_t, infname: string)
     endmatch;
   done
 }
-val webby_port = 1234;
+val webby_port = PORT;
 
 print "FLX WEB!!! listening on port "; print webby_port; endl;
 
