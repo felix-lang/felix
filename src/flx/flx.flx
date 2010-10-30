@@ -120,7 +120,7 @@ whilst grab == 1 and argno<System::argc do
       done
       result=system("rm -rf "+INSTALL_ROOT);
       result=system("mkdir -pv "+INSTALL_ROOT);
-      result=system("cp -Rpv "+FLX_INSTALL_DIR+" "+INSTALL_ROOT);
+      result=system("cp -Rpv "+FLX_INSTALL_DIR+"/* "+INSTALL_ROOT);
       if result == 0 do println "Install succeeded"
       else println$ "Install failed, code = " + str(result);
       done

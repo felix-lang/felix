@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <sys/types.h>
 
 int main(int argc, char * const argv[]) {
   int child;
