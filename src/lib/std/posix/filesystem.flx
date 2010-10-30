@@ -38,7 +38,6 @@ module FileSystem
     | REGULAR 
     | SYMLINK 
     | SOCKET 
-    | WHITEOUT 
     | INDETERMINATE
     | NONEXISTANT
     | NOPERMISSION
@@ -53,7 +52,6 @@ module FileSystem
     elif m == S_IFREG then REGULAR
     elif m == S_IFLNK then SYMLINK
     elif m == S_IFSOCK then SOCKET
-    elif m == S_IFWHT then WHITEOUT 
     else INDETERMINATE
     endif
   ;
