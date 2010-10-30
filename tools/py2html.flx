@@ -1,35 +1,26 @@
-module Cpp2Html { 
-// C++ and C
-val cpp_big_keywords = 
+// Python 
+module Py2Html {
+private val big_keywords = 
+  "def",
   "class",
-  "struct",
-  "union",
-  "namespace",
-  "typedef",
-  "enum",
-  "template"
+  "import"
+;
+private val small_keywords =
+  "if", "while", "for", "return", "in", "from","else","elsif","except","try",
+  "not","with","raise"
 ;
 
-val cpp_small_keywords =
-  "if", "while", "until","do","for","return","goto","std"
+private val qualifiers = 
+  "None", "True", "False", "pass","self"
 ;
 
-val cpp_qualifiers = 
-  "virtual", "inline", "static", "public","private","protected",
-  "int","long","unsigned","float","double","char","short","signed","void","size_t",
-  "const","volatile","typename"
-;
 
-val cpp_preproc = 
-  "define","if","endif","else","include","ifdef","ifndef"
-;
-
-fun xlat_cpp(t:string)=
+fun xlat_py(t:string)=
 {
   var out = "";
   proc write_string(t:string) 
   { 
-    out += t;
+   out += t;
   }
 
   union state_t = 
@@ -38,8 +29,8 @@ fun xlat_cpp(t:string)=
     | num // in a number
     | sq // processing single quote string
     | dq // processing double quote string
-    | angle // processing <filename> string
-    | ccomment // a C style comment
+    | sq3 // processing single quote string
+    | dq3 // processing double quote string
     | cppcomment // a C++ style comment
   ;
   fun str(s:state_t) => match s with
@@ -48,8 +39,8 @@ fun xlat_cpp(t:string)=
   | num => "num"
   | sq => "sq"
   | dq => "dq"
-  | angle => "angle"
-  | ccomment=> "ccomment"
+  | sq3 => "sq3"
+  | dq3 => "dq3"
   | cppcomment => "cppcomment"
   endmatch;
   
@@ -57,42 +48,41 @@ fun xlat_cpp(t:string)=
   var ch = t.[i];
   proc next() { ch = t.[i]; ++i; }
   fun ahead (j:int)=> t.[i+j-1]; 
+  fun issq3() => 
+    ch == char "'" and 
+    ahead(1) == char "'" and
+    ahead(2) == char "'" 
+  ;
+  fun isdq3() => 
+    ch == char '"'  and
+    ahead(1) == char '"' and
+    ahead(2) == char '"' 
+  ;
 
   var b = "";
   var last_id = "";
   var last_op = "";
   proc cp() { b += ch; }
   proc ws() {
-    if last_id == "include" do // hackery
-      var n = b; 
-      whilst n.[0] == char '<' or n.[0] == char '"' do n = n.[1 to]; done
-      whilst n.[-1] == char '>' or n.[-1] == char '"' do n = n.[to -1]; done
-      var x = b;
-      if x.[0] == char "<" do x = "&lt;" + x.[1 to]; done
-      if x.[-1] == char ">" do x = x.[to -1] + "&gt;"; done
-      write_string('<a href="/'+n+'" >' + x + '</a>') ;
-    else 
      write_string('<span class=fstring>'+b+"</span>"); 
-    done
   }
   proc w() { 
     //println$ "Token["+str s+"]="+b; 
     match s with 
     | dq => { ws; }
     | sq => { ws; }
-    | ccomment=> { write_string('<span class=comment>'+b+"</span>"); }
+    | sq3 => { ws; }
+    | dq3 => { ws; }
     | cppcomment=> { write_string('<span class=comment>'+b+"</span>"); }
     | id => 
       { 
         last_id = b;
-        if b in cpp_big_keywords do write_string('<span class=big_keyword>'+b+"</span>"); 
-        elif b in cpp_small_keywords do write_string('<span class=small_keyword>'+b+"</span>"); 
-        elif b in cpp_qualifiers do write_string('<span class=qualifier>'+b+"</span>"); 
-        elif last_op == "#" and b in cpp_preproc do write_string('<span class=preproc>'+b+"</span>"); last_op="";
+        if b in big_keywords do write_string('<span class=big_keyword>'+b+"</span>"); 
+        elif b in small_keywords do write_string('<span class=small_keyword>'+b+"</span>"); 
+        elif b in qualifiers do write_string('<span class=qualifier>'+b+"</span>"); 
         else write_string(b); done
       }
-    | angle => { ws; }
-    | _ => 
+    | _ =>
       { 
         last_op=b; 
         if b == "<" do b = "&lt;";
@@ -135,15 +125,11 @@ thisch:> // same char, reconsider it
     { 
       if isidstart ch do s = id; goto contin;
       elif isdigit ch do s = num; goto contin;
+      elif issq3() do cp; next; cp; next; s = sq3; goto contin;
+      elif isdq3() do cp; next; cp; next; s = dq3; goto contin;
       elif issq ch do s = sq; goto contin;
       elif isdq ch do s = dq; goto contin;
-      elif ch == char "/" do
-        if ahead(1) == char "/" do cp; next; s = cppcomment; goto contin
-        elif ahead(1) == char "*" do cp; next; s = ccomment; goto contin
-        else goto lastch
-        done 
-      elif ch == char "<" and last_id == "include" do 
-        s = angle; println "Angle"; goto contin;
+      elif ch == char "#" do s = cppcomment; goto contin;
       else cp; w; goto nextt;
       done
     }
@@ -179,27 +165,29 @@ thisch:> // same char, reconsider it
       else goto contin;
       done
     }
-
-  // <bracket> form
-  | angle =>
+   // triple quoted strings
+  | sq3 =>
     {
-      if ch == char ">" do goto lastch;
+      if issq3() do cp; next; cp; next; cp; w; goto nextt; 
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
       else goto contin;
       done
     }
-
-  // comments
+  | dq3 =>
+    {
+      if isdq3() do cp; next; cp; next; cp; w; goto nextt;
+      elif ch== char "<" do b+="&lt;"; goto nextch;
+      elif ch== char ">" do b+="&gt;"; goto nextch;
+      elif ch== char "&" do b+="&amp;"; goto nextch;
+      else goto contin;
+      done
+    }
+   // comments
   | cppcomment =>
     {
       if iseol ch do goto lastch;
-      else goto contin;
-      done
-    }
-  | ccomment => // doesn't handle nested comments yet
-    {
-      if ch == char "*" and ahead(1) == char "/" do 
-        cp; 
-        goto lastch;
       else goto contin;
       done
     }
@@ -213,4 +201,3 @@ fin:>
    return out;
 }
 }
-

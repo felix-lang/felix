@@ -20,6 +20,8 @@ macro fun dbg(x) = { fprint (cerr,x); };
 include "./cpp2html";
 include "./flx2html";
 include "./fdoc2html";
+include "./py2html";
+include "./ocaml2html";
 include "./charclass";
 include "./css4html";
 
@@ -142,6 +144,17 @@ Content-Length: """ + str (len (contents)) +"""\r
 \r
 """+contents;
 
+fun get_file(fname:string, path:list[string]):opt[string]=
+{
+  if FileSystem::fileexists fname do return Some fname
+  else
+    var f = Filename::join(INSTALL_ROOT,fname);
+    if FileSystem::fileexists f do return Some f;
+    else return FileSystem::find_in_path (fname, path);
+    done
+  done
+}
+
 
 proc serve_not_found(k:socket_t, fname:string)
 {
@@ -152,15 +165,12 @@ proc serve_not_found(k:socket_t, fname:string)
 
 fun get_flx(fname:string):string=
 {
-  var flx = Text_file::load(fname);
-  if flx == "" do 
-    flx =
-      match FileSystem::find_in_path(fname,FLX_PATH) with
-      | Some ?name => Text_file::load(name)
-      | None => "NO FILE "+fname+" FOUND IN " + str FLX_PATH
-      endmatch
-    ;
-  done;
+  var flx =
+    match get_file(fname,FLX_PATH) with
+    | Some ?name => Text_file::load(name)
+    | None => "NO FILE "+fname+" FOUND IN " + str FLX_PATH
+    endmatch
+  ;
   println$ "Loaded felix file " + fname+", len="+str (len flx);
   return flx;
 }
@@ -178,17 +188,64 @@ proc serve_felix(k:socket_t, fname:string)
   write_string(k,data,&eof_flag);
 }
 
+fun get_py(fname:string):string=
+{
+  var flx =
+    match get_file(fname,FLX_PATH) with
+    | Some ?name => Text_file::load(name)
+    | None => "NO FILE "+fname+" FOUND IN " + str FLX_PATH
+    endmatch
+  ;
+  println$ "Loaded Python file " + fname+", len="+str (len flx);
+  return flx;
+}
+
+proc serve_py(k:socket_t, fname:string)
+{
+  var eof_flag = false;
+  var flx = get_flx(fname);
+  val data = make_html(
+    "<head>"+Css4Html::flx_head+"</head>"+
+    "<body><html><pre>"+
+    Py2Html::xlat_py flx+
+    "</pre></html></body>\n\r"
+  );
+  write_string(k,data,&eof_flag);
+}
+
+fun get_ocaml(fname:string):string=
+{
+  var flx =
+    match get_file(fname,FLX_PATH) with
+    | Some ?name => Text_file::load(name)
+    | None => "NO FILE "+fname+" FOUND IN " + str FLX_PATH
+    endmatch
+  ;
+  println$ "Loaded Ocaml file " + fname+", len="+str (len flx);
+  return flx;
+}
+
+proc serve_ocaml(k:socket_t, fname:string)
+{
+  var eof_flag = false;
+  var flx = get_flx(fname);
+  val data = make_html(
+    "<head>"+Css4Html::flx_head+"</head>"+
+    "<body><html><pre>"+
+    Ocaml2Html::xlat_ocaml flx+
+    "</pre></html></body>\n\r"
+  );
+  write_string(k,data,&eof_flag);
+}
+
 fun get_cpp(fname:string):string=
 {
-  var flx = Text_file::load(fname);
-  if flx == "" do 
-    flx =
-      match FileSystem::find_in_path(fname,C_PATH) with
-      | Some ?name => Text_file::load(name)
-      | None => "NO FILE "+fname+" FOUND IN " + str C_PATH
-      endmatch
-    ;
-  done;
+  var flx = 
+    match get_file(fname,C_PATH) with
+    | Some ?name => Text_file::load(name)
+    | None => "NO FILE "+fname+" FOUND IN " + str C_PATH
+    endmatch
+  ;
   println$ "Loaded C file " + fname+", len="+str (len flx);
   return flx;
 }
@@ -207,6 +264,12 @@ proc serve_cpp(k:socket_t, fname:string)
 
 }
 
+val text_suffices = (
+  "txt","py","ml","mli",
+  "fpc","tex","pl","dyp",
+  "why","resh"
+);
+
 proc serve_text(k:socket_t, fname:string)
 {
   var eof_flag = false;
@@ -223,15 +286,12 @@ proc serve_text(k:socket_t, fname:string)
 
 fun get_fdoc(fname:string):string=
 {
-  var flx = Text_file::load(fname);
-  if flx == "" do 
-    flx =
-      match FileSystem::find_in_path(fname,FDOC_PATH) with
-      | Some ?name => Text_file::load(name)
-      | None => "NO FILE "+fname+" FOUND IN " + str FDOC_PATH
-      endmatch
-    ;
-  done;
+  var flx =
+    match get_file(fname,FDOC_PATH) with
+    | Some ?name => Text_file::load(name)
+    | None => "NO FILE "+fname+" FOUND IN " + str FDOC_PATH
+    endmatch
+  ;
   println$ "Loaded fdoc file " + fname+", len="+str (len flx);
   return flx;
 }
@@ -285,6 +345,7 @@ proc serve_directory(k:socket_t, fname:string)
   write_string(k,page,&eof_flag);
 }
 
+
 proc serve_file(s: socket_t, infname: string)
 {
   var eof_flag = false;
@@ -310,21 +371,30 @@ proc serve_file(s: socket_t, infname: string)
 
   print "suffix is "; print suffix; endl;
 
-  if suffix == "flx" do 
+  if suffix in list ("flx","flxh") do 
     serve_felix(s, fname);
-  elif suffix == "cpp" or suffix == "hpp" 
-    or suffix == "cxx" or suffix == "h" or suffix == "c" do 
+  elif suffix in list ("py") do 
+    serve_py(s, fname);
+  elif suffix in list ("ml","mli") do 
+    serve_ocaml(s, fname);
+  elif suffix in list("cpp","hpp","h","c","cxx","rtti","includes") do 
     serve_cpp(s, fname);
-  
   elif suffix == "fdoc" do 
     serve_fdoc(s, fname);
+  elif suffix in text_suffices do
+    serve_text(s,fname)
   else
-    // no path searching, use filename as given on GET line
-    match FileSystem::filetype fname with
-    | FileSystem::REGULAR => { serve_raw(s,fname,suffix); }
-    | FileSystem::DIRECTORY => { serve_directory (s,fname); }
-    | _ => { serve_not_found(s,fname); }
-    endmatch; 
+    match get_file(fname, Empty[string]) with
+    | None => { serve_not_found(s,fname); }
+    | Some ?f =>
+      {
+        match FileSystem::filetype f with
+        | FileSystem::REGULAR => { serve_raw(s,f,suffix); }
+        | FileSystem::DIRECTORY => { serve_directory (s,f); }
+        | _ => { serve_not_found(s,f); }
+        endmatch;
+      }
+    endmatch;
   done
 }
 val webby_port = 1234;
