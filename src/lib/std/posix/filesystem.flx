@@ -27,7 +27,6 @@ module FileSystem
   const S_IFREG : mode_t;
   const S_IFLNK : mode_t;
   const S_IFSOCK: mode_t;
-  const S_IFWHT : mode_t;
   fun eq: mode_t * mode_t -> bool = "$1==$2";
 
   fun raw_mode: &stat_t -> mode_t = "$1->st_mode & S_IFMT";
