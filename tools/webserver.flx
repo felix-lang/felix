@@ -40,22 +40,28 @@ var argno = 1;
 fun prefix(arg:string,key:string)=>
   arg.[to len key]==key
 ;
-var LIBROOT = "";
+var INSTALL_ROOT = "";
 var DELAY = 0.1;
-var DAEMON = false;
 
 whilst argno<System::argc do
   arg = System::argv argno;
   println$ "ARG=" + arg;
   if prefix(arg,"--root=") do
-    LIBROOT=arg.[7 to]+"/lib";
+    INSTALL_ROOT=arg.[7 to];
   elif prefix(arg,"--close-delay=") do
     DELAY=strtod arg.[14 to];
   done
   ++argno;
 done
 
-println$ "LIBROOT="+LIBROOT;
+var FLX_PATH=list(INSTALL_ROOT+"/lib");
+var FDOC_PATH=list(INSTALL_ROOT+"/doc");
+var C_PATH=list(INSTALL_ROOT+"/lib/rtl","/usr/local/inclue","/usr/include");
+
+println$ "INSTALL_ROOT="+INSTALL_ROOT;
+println$ "FLX_PATH="+FLX_PATH;
+println$ "C_PATH="+C_PATH;
+println$ "FDOC_PATH="+FDOC_PATH;
 println$ "DELAY="+str DELAY;
 
 fun getline_to_url (get:string) =>
@@ -144,14 +150,25 @@ proc serve_not_found(k:socket_t, fname:string)
    write_string(k,data,&eof_flag);
 }
 
+fun get_flx(fname:string):string=
+{
+  var flx = Text_file::load(fname);
+  if flx == "" do 
+    flx =
+      match FileSystem::find_in_path(fname,FLX_PATH) with
+      | Some ?name => Text_file::load(name)
+      | None => "NO FILE "+fname+" FOUND IN " + str FLX_PATH
+      endmatch
+    ;
+  done;
+  println$ "Loaded felix file " + fname+", len="+str (len flx);
+  return flx;
+}
+
 proc serve_felix(k:socket_t, fname:string)
 {
   var eof_flag = false;
-  var flx = Text_file::load(fname);
-  if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
-  if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
-  println$ "Loaded felix file " + fname+", len="+str (len flx);
-
+  var flx = get_flx(fname);
   val data = make_html(
     "<head>"+Css4Html::flx_head+"</head>"+
     "<body><html><pre>"+
@@ -161,14 +178,25 @@ proc serve_felix(k:socket_t, fname:string)
   write_string(k,data,&eof_flag);
 }
 
+fun get_cpp(fname:string):string=
+{
+  var flx = Text_file::load(fname);
+  if flx == "" do 
+    flx =
+      match FileSystem::find_in_path(fname,C_PATH) with
+      | Some ?name => Text_file::load(name)
+      | None => "NO FILE "+fname+" FOUND IN " + str C_PATH
+      endmatch
+    ;
+  done;
+  println$ "Loaded C file " + fname+", len="+str (len flx);
+  return flx;
+}
+
 proc serve_cpp(k:socket_t, fname:string)
 {
   var eof_flag = false;
-  var flx = Text_file::load(fname);
-  if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
-  if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
-  println$ "Loaded C/C++file " + fname+", len="+str(len flx);
-
+  var flx = get_cpp(fname);
   val data = make_html(
     "<head>"+Css4Html::flx_head+"</head>"+
     "<body><html><pre>"+
@@ -193,13 +221,25 @@ proc serve_text(k:socket_t, fname:string)
   write_string(k,data,&eof_flag);
 }
 
+fun get_fdoc(fname:string):string=
+{
+  var flx = Text_file::load(fname);
+  if flx == "" do 
+    flx =
+      match FileSystem::find_in_path(fname,FDOC_PATH) with
+      | Some ?name => Text_file::load(name)
+      | None => "NO FILE "+fname+" FOUND IN " + str FDOC_PATH
+      endmatch
+    ;
+  done;
+  println$ "Loaded fdoc file " + fname+", len="+str (len flx);
+  return flx;
+}
+
 proc serve_fdoc(k:socket_t, fname:string)
 {
   var eof_flag = false;
-  var txt = Text_file::load(fname);
-  if txt == "" do txt = Text_file::load(LIBROOT+"/doc/"+fname); done
-  if txt == "" do txt = "NO FILE "+fname+" FOUND IN " + LIBROOT+"/doc/"; done
-  println$ "Loaded felix doc file " + fname+", len="+str(len txt);
+  var txt = get_fdoc(fname);
   //println$ "Contents=" + flx;
   val data = make_html(
     "<head>"+Css4Html::flx_head+"</head>"+
@@ -222,7 +262,8 @@ proc serve_raw(k:socket_t, fname:string, suffix:string)
 
 proc serve_directory(k:socket_t, fname:string)
 {
-  fun rf(f:string)=>"<a href=" /*+fname + "/"*/+f+">"+f+"</a>";
+  var dirname = Filename::basename fname;
+  fun rf(f:string)=>'<a href="./'+ dirname + '/' +f+'">'+f+'</a>';
   var eof_flag = false;
   val top = "A DIRECTORY " + fname + "\r\n";
   val flist = 
@@ -230,7 +271,10 @@ proc serve_directory(k:socket_t, fname:string)
     | Some ?files =>
        "<pre>"+ 
        (fold_left (fun (acc: string) (f:string) => 
-          match f with | "." => acc | ".." => acc | _ => acc + rf f + "\r\n" endmatch) 
+          match f with 
+          | "." => acc 
+          | ".." => acc + '<a href=".."><em>up</em></a>\r\n' 
+          | _ => acc + rf f + "\r\n" endmatch) 
         "" files
        ) +
        "</pre>"
@@ -241,7 +285,7 @@ proc serve_directory(k:socket_t, fname:string)
   write_string(k,page,&eof_flag);
 }
 
-proc serve_data_file(s: socket_t, infname: string)
+proc serve_file(s: socket_t, infname: string)
 {
   var eof_flag = false;
   // if empty string, serve index.html
@@ -275,19 +319,14 @@ proc serve_data_file(s: socket_t, infname: string)
   elif suffix == "fdoc" do 
     serve_fdoc(s, fname);
   else
-    serve_raw(s,fname, suffix);
+    // no path searching, use filename as given on GET line
+    match FileSystem::filetype fname with
+    | FileSystem::REGULAR => { serve_raw(s,fname,suffix); }
+    | FileSystem::DIRECTORY => { serve_directory (s,fname); }
+    | _ => { serve_not_found(s,fname); }
+    endmatch; 
   done
 }
-
-proc serve_file(k:socket_t, fname:string)
-{
-  match FileSystem::filetype fname with
-  | FileSystem::REGULAR => { serve_data_file(k,fname); }
-  | FileSystem::DIRECTORY => { serve_directory (k,fname); }
-  | _ => { serve_not_found(k,fname); }
-  endmatch; 
-}
-
 val webby_port = 1234;
 
 print "FLX WEB!!! listening on port "; print webby_port; endl;

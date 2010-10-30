@@ -91,7 +91,11 @@ fun xlat_felix(t:string)=
       whilst n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
       whilst n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
       if n.[-4 to] != ".flx" do n+= ".flx"; done // hack, fixme
-      write_string('<a href="/'+n+'" >' + b + '</a>') ;
+      if n.[0] == char "." do
+        write_string('<a href="'+n+'" >' + b + '</a>') ;
+      else
+        write_string('<a href="/'+n+'" >' + b + '</a>') ;
+      done
     else 
      write_string('<span class=fstring>'+b+"</span>"); 
     done

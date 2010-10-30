@@ -64,7 +64,7 @@ fun xlat_cpp(t:string)=
       var n = b; 
       whilst n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
       whilst n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
-      write_string('<a href="/rtl/'+n+'" >' + b + '</a>') ;
+      write_string('<a href="/'+n+'" >' + b + '</a>') ;
     else 
      write_string('<span class=fstring>'+b+"</span>"); 
     done

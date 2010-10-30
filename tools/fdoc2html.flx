@@ -63,10 +63,7 @@ nextc:>
         if b == "felix" do s = felix;
         elif prefix (b,"felix") do {
           fname := strip(b.[5 to]);
-          var flx = Text_file::load(fname);
-          if flx == "" do flx = Text_file::load(LIBROOT+"/"+fname); done
-          if flx == "" do flx = "NO FILE "+fname+" FOUND IN " + LIBROOT; done
-          println$ "Loaded felix file " + fname;
+          var flx = get_flx(fname);
           write_string("<pre class=inclusion>\n"+fname+"</pre>\n");
           write_string("<pre class=flxbg>"); 
           write_string(Flx2Html::xlat_felix flx);

@@ -6,10 +6,10 @@ module FileSystem
   proc stat: string * &stat_t * &int = "*$3=stat($1.data(),$2);";
   body _mktim_fun = """
     unsigned long _mktim(struct timespec x){ 
-     return x.sec * 1000L + x.nsec /1000L; 
+     return x.tv_sec * 1000L + x.tv_nsec /1000L; // milliseconds
     }
   """;
-  fun mtime: &stat_t -> uvlong = "_mktim($1->st_mtime)"; // milliseconds
+  fun mtime: &stat_t -> uvlong = "(unsigned long)($1->st_mtime * 1000ul)";
   fun filetime(f:string):uvlong = // milliseconds
   {
     var b: stat_t;

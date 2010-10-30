@@ -31,6 +31,7 @@ include "std/categ";
 include "std/cstdio";
 include "std/textio";
 include "std/stdout";
+include "std/filename";
 
 // base data types
 include "std/pointer";
