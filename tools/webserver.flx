@@ -62,7 +62,15 @@ done
 
 var FLX_PATH=list(INSTALL_ROOT+"/lib");
 var FDOC_PATH=list(INSTALL_ROOT+"/doc");
-var C_PATH=list(INSTALL_ROOT+"/lib/rtl","/usr/local/include","/usr/include");
+var C_PATH=list(
+  INSTALL_ROOT+"/lib/rtl",
+  "/usr/local/include",
+  "/usr/include",
+  "/usr/include/c++/4.2.1", // a hack until cmd line option or env can extend/set the path
+  "/usr/include/c++/4.2.1/x86_64-apple-darwin10", // oh yeah, a worse hack!
+  "/usr/include/c++/4.4.3", // a hack until cmd line option or env can extend/set the path
+  "/usr/include/c++/4.4.3/x86_64-linux-gnu" // a hack until cmd line option or env can extend/set the path
+);
 
 println$ "INSTALL_ROOT="+INSTALL_ROOT;
 println$ "FLX_PATH="+FLX_PATH;
@@ -162,6 +170,7 @@ Content-Length: """ + str (len (contents)) +"""\r
 
 fun get_file(fname:string, path:list[string]):opt[string]=
 {
+  if fname.[0] == char "$" do fname = fname.[1 to]; done
   if FileSystem::fileexists fname do return Some fname
   else
     var f = Filename::join(INSTALL_ROOT,fname);
@@ -382,16 +391,25 @@ proc serve_file(s: socket_t, infname: string)
   // serve a "not found page" for that case (check for recursion)
   print "serve file: "; print fname; endl;
 
-  // this isn't right, don't want the contents parsed as text, want them
-  // sent faithfully over the wire. of course doesn't work for jpegs and other
-  // binary formats.
+  // figure out the filetype
+  // we first check if the filename has a suffix like ?cpp
+  // which is a trick done by us to force the filetype
+  // to be "c++" for C++ standard include file names 
+  // which have no suffix. If we find that, we strip it
+  // out of the filename too. Otherwise we just find
+  // the suffix.
 
-  val suffix =
-    match rfind (fname, ".") with
-    | None[int] => ""
-    | Some ?pos => fname.[pos + 1 to]
-    endmatch
-  ;
+  var suffix = "";
+  match rfind (fname, "?") with
+  | Some ?pos => { suffix = fname.[pos + 1 to]; fname=fname.[0 to pos]; }
+  | None[int] =>
+    {
+      match rfind (fname, ".") with
+      | None[int] => {}
+      | Some ?pos => { suffix = fname.[pos + 1 to]; }
+      endmatch; 
+    }
+  endmatch;
 
   print "suffix is "; print suffix; endl;
 
