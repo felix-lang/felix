@@ -34,7 +34,7 @@ open TerminalIByteStream[socket_t];
 
 requires header '#include <stdlib.h>';
 fun strtod: string -> double = "strtod($1.data(),0)";
-fun atoi: string -> int = "atoi($1.data(),0)";
+fun atoi: string -> int = "atoi($1.data())";
 gen daemon: int * int -> int  = "daemon($1,$2)";
 
 // command line argument processing
@@ -335,10 +335,13 @@ proc serve_directory(k:socket_t, fname:string)
     match FileSystem::filesin fname with
     | Some ?files =>
        "<pre>"+ 
+       '<a href=""><em>home</em></a>\r\n'+
+       '<a href="/"><em>filesystem root</em></a>\r\n'+
+       '<a href=".."><em>parent</em></a>\r\n'+
        (fold_left (fun (acc: string) (f:string) => 
           match f with 
           | "." => acc 
-          | ".." => acc + '<a href=".."><em>up</em></a>\r\n' 
+          | ".." => acc
           | _ => acc + rf f + "\r\n" endmatch) 
         "" files
        ) +
