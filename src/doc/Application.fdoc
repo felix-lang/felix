@@ -1,0 +1,155 @@
+@h1 Applications
+Felix has a strong function subsystem in which application is a key operation.
+@h2 operator whitespace
+The standard application is shown in this example:
+@felix
+fun f(x:int)=>x +x;
+println$ f 1;
+@
+Here, the function <code>f</code> is applied to the integer <code>1</code>
+by "operator whitespace" or juxtaposition. This is a relative high precedence
+left associating operator.
+
+@h2 operator dollar
+In addition, the dollar <code>$</code> operator is shown, which is a low precedence
+left associating application operator, it is stolen from Haskell.
+
+@h2 operator dot 
+It is also possible to use the left associating very high precedence
+operator dot <code>.</code> for reverse application, for example
+the above print could be written:
+@felix
+1 . f . println;
+@
+This is reminiscent of object oriented programming, however there
+is no method dispatch here, it just looks cool. Operator dot has
+a higher precedence than operator whitespace, so that
+@felix
+println 1 . f;
+@
+is another way to write the print statement.
+
+There is a small white lie in the above description:
+in fact operator dot <code>.</code> is, in the first instance,
+used for functional composition. However if a composition would
+lead to a type error, reverse application is tried instead.
+Therefore these are equivalent:
+@felix
+1 . f . println; 
+1 . (f . println);
+{1} . f . println ();
+{1} . f . println;
+@
+The first example uses the cheat: since 1 is an integer and not a function,
+f is applied to 1, then the cheat is repeated: since 1 . f is
+also an integer and not a function, println is applied to it.
+
+@h2 Lift functor
+In the third line we use a lift of the value 1 to a function
+returning 1 when applied to unit. The lift functor is written
+with the outfix unary operator brackets: <code>{<em>expr</em>}</code>.
+In this way we have three functions which are first composed, then
+applied to the unit value <code>()</code> to obtain the final result.
+
+@h2 Shortcut call on unit: Using a procedure name as a statement
+The last line shows another shortcut: when a procedure is written
+as a statement without an application, it would be a type error,
+since it has a functional value, whereas executable statements
+must have type <code>void</code> meaning no value. So the
+compiler guesses and converts the expression to an application to
+the unit value <code>()</code> and tries that. This means 
+procedures with unit argument type can be called by just 
+writing their names:
+@felix
+proc say_hello() { println "hello world"; }
+hello;
+@
+This give the language a clean uncluttered look and
+the feeling that such procedures are verbs.
+
+Warning: this shortcut is purely syntactic, it is not
+type based. So this doesn't work:
+@felix
+proc f (x: int) () = { println x; }
+f 1; // type error
+@
+
+@h2 Apply function: applying a non-function value to a value
+There are two other type based cheats for whitespace applications.
+If you write:
+@felix
+println$ "Hello " "World";
+@
+there is an application of a string to a string. Since a string
+isn't a function, Felix tries instead the application:
+@felix
+apply("Hello ", "World")
+@
+which we might define like:
+@felix
+fun apply(x:string, y:string)=>x + y;
+@
+This function would be useful for cases like this:
+@felix
+val s := 
+   "Here is a string "
+   "which is too long to put "
+   "on one line."
+;
+@
+In fact, not only is exactly this application defined
+in the standard library, but the compiler also constant 
+folds by this rule (so the concatenation is done at compile
+time).
+
+Be careful not to overuse this feature as it makes debugging
+type errors difficult when there are multiple possible interpretations.
+
+@h2 Constructor functions: Applying a type to a value
+There is another trick with applications, show here:
+@felix
+fun f(x:char)=> x == char "x";
+@
+Here, we appear to be applying the type <code>char</code> 
+to the string value "x". The compiler replaces this with
+a call to a constructor function:
+@felix
+ctor char(s:string)=>s.[0]; // first char
+@
+Note constructor function don't have a return type,
+because they return the type specified by their name.
+The above function is in the standard library and is
+particularly useful because Felix has no character literals.
+
+Constructor function give Felix a bit of the look and
+feel of C++.
+
+The type name used in a contructor function must be
+an identifier. If you want to construct, say, a pointer
+to a char which has type <code>&char</code> you must
+first give it a name:
+@felix
+typedef charptr = &char;
+ctor charptr: string = "$1.data()";
+var x = "A C++ string";
+var px: &char = charptr x;
+@
+In this example the constructor is defined in C++ instead of
+Felix.
+
+Note that because you can use an alias for a type, it is possible
+to do this:
+@felix
+typedef cartesian = dcomplex;
+typedef polar = dcomplex;
+ctor cartesian(x:double, y:double) => dcomplex(x,y);
+ctor polar(r:double, theta: double) => 
+  dcomplex(r * sin theta, r * cos theta)
+;
+@
+Now we have no doubt which way we're making a complex number,
+either with cartesian or polar coordinates.
+
+
+
+

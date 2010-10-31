@@ -62,7 +62,7 @@ done
 
 var FLX_PATH=list(INSTALL_ROOT+"/lib");
 var FDOC_PATH=list(INSTALL_ROOT+"/doc");
-var C_PATH=list(INSTALL_ROOT+"/lib/rtl","/usr/local/inclue","/usr/include");
+var C_PATH=list(INSTALL_ROOT+"/lib/rtl","/usr/local/include","/usr/include");
 
 println$ "INSTALL_ROOT="+INSTALL_ROOT;
 println$ "FLX_PATH="+FLX_PATH;
