@@ -346,16 +346,16 @@ proc serve_raw(k:socket_t, fname:string, suffix:string)
 proc serve_directory(k:socket_t, fname:string)
 {
   var dirname = Filename::basename fname;
-  fun rf(f:string)=>'<a href="./'+ dirname + '/' +f+'">  '+f+'</a>';
+  fun rf(f:string)=>'  <a href="./'+ dirname + '/' +f+'">  '+f+'</a>';
   var eof_flag = false;
   val top = "A DIRECTORY " + fname + "\r\n";
   val flist = 
     match FileSystem::filesin fname with
     | Some ?files =>
        "<pre>"+ 
-       '<a href=""><em>  home</em></a>\r\n'+
-       '<a href="//"><em>  filesystem root</em></a>\r\n'+
-       '<a href=".."><em>  parent</em></a>\r\n\r\n'+
+       '  <a href=""><em>home</em></a>\r\n'+
+       '  <a href="//"><em>filesystem root</em></a>\r\n'+
+       '  <a href=".."><em>parent</em></a>\r\n\r\n'+
        (fold_left (fun (acc: string) (f:string) => 
           match f with 
           | "." => acc 
