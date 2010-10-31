@@ -346,7 +346,7 @@ proc serve_raw(k:socket_t, fname:string, suffix:string)
 proc serve_directory(k:socket_t, fname:string)
 {
   var dirname = Filename::basename fname;
-  fun rf(f:string)=>'  <a href="./'+ dirname + '/' +f+'">  '+f+'</a>';
+  fun rf(f:string)=>'  <a href="./'+ dirname + '/' +f+'">'+f+'</a>';
   var eof_flag = false;
   val top = "A DIRECTORY " + fname + "\r\n";
   val flist = 
