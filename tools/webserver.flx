@@ -414,7 +414,7 @@ proc serve_file(s: socket_t, infname: string)
     | None => { serve_not_found(s,fname); }
     | Some ?f =>
       {
-        if prefix(fname,"/etc") do serve_forbidden(fname)
+        if prefix(fname,"/etc") do serve_forbidden(s,fname)
         else
         match FileSystem::filetype f with
         | FileSystem::REGULAR => { serve_raw(s,f,suffix); }
