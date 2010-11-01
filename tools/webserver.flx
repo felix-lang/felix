@@ -35,7 +35,6 @@ open TerminalIByteStream[socket_t];
 requires header '#include <stdlib.h>';
 fun strtod: string -> double = "strtod($1.data(),0)";
 fun atoi: string -> int = "atoi($1.data())";
-gen daemon: int * int -> int  = "daemon($1,$2)";
 
 // command line argument processing
 var arg = "";
@@ -46,19 +45,6 @@ fun prefix(arg:string,key:string)=>
 var INSTALL_ROOT = "";
 var DELAY = 0.1;
 var PORT=1234;
-
-whilst argno<System::argc do
-  arg = System::argv argno;
-  println$ "ARG=" + arg;
-  if prefix(arg,"--root=") do
-    INSTALL_ROOT=arg.[7 to];
-  elif prefix(arg,"--close-delay=") do
-    DELAY=strtod arg.[14 to];
-  elif prefix(arg,"--port=") do
-    PORT=atoi arg.[7 to];
-  done
-  ++argno;
-done
 
 var FLX_PATH=list(INSTALL_ROOT+"/lib");
 var FDOC_PATH=list(INSTALL_ROOT+"/doc");
@@ -72,6 +58,21 @@ var C_PATH=list(
   "/usr/include/c++/4.4.3/x86_64-linux-gnu" // a hack until cmd line option or env can extend/set the path
 );
 
+
+whilst argno<System::argc do
+  arg = System::argv argno;
+  println$ "ARG=" + arg;
+  if prefix(arg,"--root=") do
+    INSTALL_ROOT=arg.[7 to];
+  elif prefix(arg,"--close-delay=") do
+    DELAY=strtod arg.[14 to];
+  elif prefix(arg,"--port=") do
+    PORT=atoi arg.[7 to];
+  elif prefix(arg,"--cpath=") do
+    C_PATH+=arg.[8 to];
+  done
+  ++argno;
+done
 println$ "INSTALL_ROOT="+INSTALL_ROOT;
 println$ "FLX_PATH="+FLX_PATH;
 println$ "C_PATH="+C_PATH;
@@ -141,7 +142,7 @@ Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
 Connection: close\r
 Content-Type: text/html\r
-Content-Length: """+str(len(contents)+19)+"""\r
+Content-Length: """+str(len(contents)+18)+"""\r
 \r
 PAGE NOT FOUND: """+contents+"""\r
 """;
@@ -270,30 +271,30 @@ proc serve_ocaml(k:socket_t, fname:string)
   write_string(k,data,&eof_flag);
 }
 
-fun get_cpp(fname:string):string=
-{
-  var flx = 
-    match get_file(fname,C_PATH) with
-    | Some ?name => Text_file::load(name)
-    | None => "NO FILE "+fname+" FOUND IN " + str C_PATH
-    endmatch
-  ;
-  println$ "Loaded C file " + fname+", len="+str (len flx);
-  return flx;
-}
-
 proc serve_cpp(k:socket_t, fname:string)
 {
   var eof_flag = false;
-  var flx = get_cpp(fname);
-  val data = make_html(
-    "<head>"+Css4Html::flx_head+"</head>"+
-    "<body><html><pre>"+
-    Cpp2Html::xlat_cpp flx+
-    "</pre></html></body>\n\r"
-  );
-  write_string(k,data,&eof_flag);
+  var text: string;
+  var rname: string;
 
+  match get_file(fname,C_PATH) with
+  | Some ?path =>
+    {
+      val text=Text_file::load path;
+      val dirname = Filename::dirname path;
+      val data = make_html(
+        "<head>"+Css4Html::flx_head+"</head>"+
+        "<body><html><pre>"+
+        Cpp2Html::xlat_cpp (text,dirname)+
+        "</pre></html></body>\n\r"
+      );
+      write_string(k,data,&eof_flag);
+    }
+  | None =>
+    {
+      serve_not_found (k,fname);
+    }
+  endmatch;
 }
 
 val text_suffices = (

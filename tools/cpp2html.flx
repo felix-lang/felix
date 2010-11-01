@@ -24,7 +24,7 @@ val cpp_preproc =
   "define","if","endif","else","include","ifdef","ifndef"
 ;
 
-fun xlat_cpp(t:string)=
+fun xlat_cpp(t:string, dir:string)=
 {
   var out = "";
   proc write_string(t:string) 
@@ -70,7 +70,7 @@ fun xlat_cpp(t:string)=
       var x = b;
       if x.[0] == char "<" do x = "&lt;" + x.[1 to]; done
       if x.[-1] == char ">" do x = x.[to -1] + "&gt;"; done
-      match get_file(n,C_PATH) with
+      match get_file(n,Cons(dir,C_PATH)) with
       | Some ?f => 
         {  
           // the $ is so we know we have resolved the filename
