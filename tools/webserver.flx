@@ -46,10 +46,10 @@ var INSTALL_ROOT = "";
 var DELAY = 0.1;
 var PORT=1234;
 
-var FLX_PATH=list(INSTALL_ROOT+"/lib");
-var FDOC_PATH=list(INSTALL_ROOT+"/doc");
+var FLX_PATH=Empty[string];
+var FDOC_PATH=Empty[string];
+
 var C_PATH=list(
-  INSTALL_ROOT+"/lib/rtl",
   "/usr/local/include",
   "/usr/include",
   "/usr/include/c++/4.2.1", // a hack until cmd line option or env can extend/set the path
@@ -73,6 +73,11 @@ whilst argno<System::argc do
   done
   ++argno;
 done
+
+C_PATH+= INSTALL_ROOT+"/lib/rtl";
+FLX_PATH+=INSTALL_ROOT+"/lib";
+FDOC_PATH+=INSTALL_ROOT+"/doc";
+
 println$ "INSTALL_ROOT="+INSTALL_ROOT;
 println$ "FLX_PATH="+FLX_PATH;
 println$ "C_PATH="+C_PATH;
