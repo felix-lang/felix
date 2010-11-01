@@ -46,7 +46,7 @@ nextc:>
       if char "@" == ch do 
         if b != "" do 
           write_string("<pre class=flxbg>"); 
-          write_string(Flx2Html::xlat_felix b); 
+          write_string(Flx2Html::xlat_felix (b,"")); // no parent!
           write_string("</pre>"); 
           b= ""; 
         done
@@ -66,7 +66,7 @@ nextc:>
           var flx = get_flx(fname);
           write_string("<pre class=inclusion>\n"+fname+"</pre>\n");
           write_string("<pre class=flxbg>"); 
-          write_string(Flx2Html::xlat_felix flx);
+          write_string(Flx2Html::xlat_felix (flx,""));
           write_string("</pre>"); 
         };
         s=doc;

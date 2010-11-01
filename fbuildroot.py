@@ -407,6 +407,12 @@ def build(ctx):
     print(cmd)
     os.system(cmd)
 
+    # copy the tools
+    cmd = "cp -R tools "+ctx.buildroot;
+    print(cmd)
+    os.system(cmd)
+
+
     # copy docs
     for file in glob.glob("src/doc/*.fdoc"):
       cmd = "cp " + file +" "+ctx.buildroot+"/doc"

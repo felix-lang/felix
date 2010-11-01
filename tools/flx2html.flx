@@ -36,7 +36,7 @@ private val qualifiers =
 private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
 
 
-fun xlat_felix(t:string)=
+fun xlat_felix(t:string, dir:string)=
 {
   var out = "";
   proc write_string(t:string) 
@@ -85,8 +85,27 @@ fun xlat_felix(t:string)=
   var b = "";
   var last_id = "";
   var last_op = "";
+  var last_key = "";
+
   proc cp() { b += ch; }
+  fun fixup(x:string):string={
+println$ "To fixup="+x;
+    var out2 = "";
+    var i:int;
+    forall i in 0 upto len x-1 do
+      var ch = x.[i];
+      if ch == char "<" do out2+="&lt;";
+      elif ch == char ">" do out2+="&gt;";
+      elif ch == char "&" do out2+="&amp;";
+      else out2+=ch;
+      done
+    done
+println$ "Fixedup=" + out2;
+    return out2;
+  }
+
   proc ws() {
+println$ "Write a string="+b;
     if last_id == "include" do // hackery
       var n = b; 
       whilst n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
@@ -96,8 +115,24 @@ fun xlat_felix(t:string)=
       | Some ?f => { write_string('<a href="/$'+f+'" >' + b + '</a>') ; }
       | None => {  write_string('<span class=fstring>'+b+"</span>"); }
       endmatch;
+    elif last_key in ("header","body") do
+      n = b; 
+println$ "header/body string="+b;
+      var quote = '"""';
+      if prefix(b,quote) do n = b.[3 to -3]; goto unstring; done
+      quote = "'''"; 
+      if prefix(b,quote) do n = b.[3 to -3]; goto unstring; done
+      quote = "'"; 
+      if prefix(b,quote) do n = b.[1 to -1]; goto unstring; done
+      quote = '"'; 
+      if prefix(b,quote) do n = b.[1 to -1]; goto unstring; done
+      // shouldn't happen ..
+unstring:>
+println$ "header/body unstring="+n;
+      val c = Cpp2Html::xlat_cpp (n,dir);
+      write_string(quote+'<span class=embedded_c>' + c + '</span>'+quote); 
     else 
-     write_string('<span class=fstring>'+b+"</span>"); 
+     write_string('<span class=fstring>'+fixup b+"</span>"); 
     done
   }
   proc w() { 
@@ -112,8 +147,8 @@ fun xlat_felix(t:string)=
     | id => 
       { 
         last_id = b;
-        if b in big_keywords do write_string('<span class=big_keyword>'+b+"</span>"); 
-        elif b in small_keywords do write_string('<span class=small_keyword>'+b+"</span>"); 
+        if b in big_keywords do last_key=b; write_string('<span class=big_keyword>'+b+"</span>"); 
+        elif b in small_keywords do last_key=b; write_string('<span class=small_keyword>'+b+"</span>"); 
         elif b in qualifiers do write_string('<span class=qualifier>'+b+"</span>"); 
         elif b in hack do write_string('<span class=hack>'+b+"</span>"); 
         else write_string(b); done
@@ -121,6 +156,7 @@ fun xlat_felix(t:string)=
     | _ =>
       { 
         last_op=b; 
+        if b == ";" do last_key = ""; done
         if b == "<" do b = "&lt;";
         elif b == ">" do b = "&gt;";
         elif b == "&" do b = "&amp;";
@@ -189,40 +225,24 @@ thisch:> // same char, reconsider it
   // single quoted strings
   | sq =>
     {
-      if issq ch do goto lastch; 
-      elif ch== char "<" do b+="&lt;"; goto nextch;
-      elif ch== char ">" do b+="&gt;"; goto nextch;
-      elif ch== char "&" do b+="&amp;"; goto nextch;
-      else goto contin;
-      done
+      if issq ch do goto lastch; done
+      goto contin;
     }
   | dq =>
     {
-      if isdq ch do goto lastch;
-      elif ch== char "<" do b+="&lt;"; goto nextch;
-      elif ch== char ">" do b+="&gt;"; goto nextch;
-      elif ch== char "&" do b+="&amp;"; goto nextch;
-      else goto contin;
-      done
+      if isdq ch do goto lastch; done
+      goto contin;
     }
    // triple quoted strings
   | sq3 =>
     {
-      if issq3() do cp; next; cp; next; cp; w; goto nextt; 
-      elif ch== char "<" do b+="&lt;"; goto nextch;
-      elif ch== char ">" do b+="&gt;"; goto nextch;
-      elif ch== char "&" do b+="&amp;"; goto nextch;
-      else goto contin;
-      done
+      if issq3() do cp; next; cp; next; cp; w; goto nextt; done
+      goto contin;
     }
   | dq3 =>
     {
-      if isdq3() do cp; next; cp; next; cp; w; goto nextt;
-      elif ch== char "<" do b+="&lt;"; goto nextch;
-      elif ch== char ">" do b+="&gt;"; goto nextch;
-      elif ch== char "&" do b+="&amp;"; goto nextch;
-      else goto contin;
-      done
+      if isdq3() do cp; next; cp; next; cp; w; goto nextt; done
+      goto contin;
     }
    // comments
   | cppcomment =>
@@ -244,8 +264,9 @@ thisch:> // same char, reconsider it
   println$ "Unexpected drop thru";
 
 fin:>
-   println "outof data";
+   println "outof data, final write ..";
    w(); // whatever is left over gets written
+println "flx2html fininshed";
    return out;
 }
 }

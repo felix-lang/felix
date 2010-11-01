@@ -216,14 +216,26 @@ fun get_flx(fname:string):string=
 proc serve_felix(k:socket_t, fname:string)
 {
   var eof_flag = false;
-  var flx = get_flx(fname);
-  val data = make_html(
-    "<head>"+Css4Html::flx_head+"</head>"+
-    "<body><html><pre>"+
-    Flx2Html::xlat_felix flx+
-    "</pre></html></body>\n\r"
-  );
-  write_string(k,data,&eof_flag);
+
+  match get_file(fname,C_PATH) with
+  | Some ?path =>
+    {
+      val text=Text_file::load path;
+      val dirname = Filename::dirname path;
+      val data = make_html(
+        "<head>"+Css4Html::flx_head+"</head>"+
+        "<body><html><pre>"+
+        Flx2Html::xlat_felix (text,dirname)+
+        "</pre></html></body>\n\r"
+      );
+      write_string(k,data,&eof_flag);
+    }
+  | None =>
+    {
+      serve_not_found (k,fname);
+    }
+  endmatch;
+
 }
 
 fun get_py(fname:string):string=
@@ -280,7 +292,6 @@ proc serve_cpp(k:socket_t, fname:string)
 {
   var eof_flag = false;
   var text: string;
-  var rname: string;
 
   match get_file(fname,C_PATH) with
   | Some ?path =>
@@ -305,14 +316,14 @@ proc serve_cpp(k:socket_t, fname:string)
 val text_suffices = (
   "txt","py","ml","mli",
   "fpc","tex","pl","dyp",
-  "why","resh"
+  "why","resh","pak","ipk"
 );
 
 proc serve_text(k:socket_t, fname:string)
 {
   var eof_flag = false;
   var txt = Text_file::load(fname);
-  println$ "Loaded raw file " + fname+", len="+str(len txt);
+  println$ "Loaded text file " + fname+", len="+str(len txt);
   val data = make_html(
     "<head></head>"+
     "<body><html><pre>"+
@@ -361,7 +372,7 @@ proc serve_raw(k:socket_t, fname:string, suffix:string)
 proc serve_directory(k:socket_t, fname:string)
 {
   var dirname = Filename::basename fname;
-  fun rf(f:string)=>'  <a href="./'+ dirname + '/' +f+'">'+f+'</a>';
+  fun rf(f:string)=>'  <a href="/$'+ fname + '/' +f+'">'+f+'</a>';
   var eof_flag = false;
   val top = "A DIRECTORY " + fname + "\r\n";
   val flist = 
@@ -392,6 +403,8 @@ proc serve_file(s: socket_t, infname: string)
   // not quite right - needs to handle directories too, so
   // not only foo.com/ -> index.html, but foo.com/images/ -> images/index.html
   var fname = if "" == infname then "index.html" else infname endif;
+
+  fname = if fname.[0] == char "$" then fname.[1 to] else fname endif;
 
   // set mime type depending on extension...
   // serve a "not found page" for that case (check for recursion)

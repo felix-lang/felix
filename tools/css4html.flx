@@ -7,8 +7,9 @@ span.big_keyword {color:#FF1010; }
 span.small_keyword {color:#802040; }
 span.qualifier {color:#A02020; }
 span.ctor {color:#406020; }
-span.hack {color:#00FF00; }
-span.preproc {color:#00FF00; }
+span.hack {color:#66DD00; }
+span.preproc {color:#005500; }
+span.embedded_c{background-color:#DDDDDD; }
 pre.flxbg {background-color:#80FF80; }
 pre.inclusion {background-color:#D070D0; }
 .obsolete { background-color:#FFEFEF; font-size: small}

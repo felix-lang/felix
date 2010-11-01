@@ -219,8 +219,9 @@ thisch:> // same char, reconsider it
   println$ "Unexpected drop thru";
 
 fin:>
-   println "outof data";
+   println "cpp outof data";
    w(); // whatever is left over gets written
+println "cpp finished";
    return out;
 }
 }
