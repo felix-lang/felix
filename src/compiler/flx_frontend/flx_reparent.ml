@@ -1,3 +1,34 @@
+(* 
+This module is responsible for reparenting children. When a function f is
+inlined into g, f's children must become children of g, otherwise the
+code body of f inlined into g will not work when it need to access a child.
+
+To do this reparenting we clone the children of f and assign them the new
+parent g. However this is not enough. We must also change the names
+of all variables and labels (alpha conversion) so they don't clash
+with those of g, which may also happen to include more than one
+inlined copy of f. In particular, the child itself must be
+renamed.. and of course references to it in the inlined body
+of f have to be adjusted as well.
+
+That too is not enough. When f is inlined, its parameters are
+eliminated, either by substitution (lazy evaluation, pass-by-name),
+or by creating variable and assigning the argument to it. Either
+way, the child has to undergo the same process of eliminating
+references to f's parameters.
+
+But that too is not enough. If f is polymorphic, its type variables
+will have been replaced, which means specialising every type variable
+in the child as well.
+
+The process is expensive and difficult, at least in part because
+every expression and subexpression in Felix carries its type with it.
+It is not enough to simply beta-reduce (substitute) because doing
+so may leave a non-normal form: we must normalise too.
+
+Finally, because some things are duplicated, for example in caches,
+we must either ensure the caches are, or will eventually, be updated.
+*)
 open Flx_util
 open Flx_ast
 open Flx_types

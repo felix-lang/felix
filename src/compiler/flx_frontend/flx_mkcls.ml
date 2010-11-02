@@ -1,3 +1,21 @@
+(*
+This module is responsible for generating functional wrappers for 
+constructions which are used as function values requiring
+a closure, but which are not functions. For example union constructors
+are not functions, but Felix allows them to be used as fuctions
+because they take arguments. They can be converted to functions
+on demand by simply wrapping them inside a function. In effect
+this is lambda lifting done late.
+
+Certain other terms represent functions but are not in the right
+form to make a closure, in particular the series composition 
+operator is intended to represent a function but needs a wrapper
+to effect this.
+
+This module generates wrappers as required and replaces cases of
+closures of non-function entities with closures over the generated
+wrappers.
+*)
 open Flx_util
 open Flx_ast
 open Flx_types

@@ -1,3 +1,40 @@
+(*
+This module is responsible for keeping track of candidates for
+intensional polymorphism. Basically, if there are two instances
+of a function for which the type variables always occur under
+a pointer, then the type can be extinguished since pointers to
+different types are the same size.
+
+The backend code generator will use a void* for such a pointer,
+and wrap inputs and outputs from the function using casts
+at the call point.
+
+The effect is that the routine is run-time polymorphic with
+respect to these type variables, and in particular it
+prevents code bloat to use such intensional polymorphism.
+No performance is lost.
+
+I will note that many function programming language use
+intensional polymophism heavily: most values are stored on
+the heap and represented by pointers. This greatly simplifies
+code generation, reduces the size of the generated code,
+and the code is very fast if it is simply performing structural
+operations such as copying. The downsize is the cost of dereferncing
+and a massive load placed on the garbage collector. Many language
+provide a way to use some types extensionally to avoid the
+performance overhead.
+
+Felix works the other way. Pointers are specific types, and
+polymorphism is generally extensional. The *real* reason
+many functional languages use intensional polymorphism
+is that it is necessary for separate compilation. Since
+Felix is a whole program analyser this constraint does
+not apply. Consequently Felix is generally much faster
+than other functional programming languages, and it
+supports intensional polymorphism too, the main difference
+is that the user must explicitly enable this by using pointers
+in routines intended to be runtime polymorphic.
+*)
 open Flx_types
 open Flx_btype
 open Flx_bexe

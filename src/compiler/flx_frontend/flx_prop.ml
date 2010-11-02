@@ -1,3 +1,6 @@
+(*
+Just some routines to manage property lists.
+*)
 open Flx_util
 open Flx_ast
 open Flx_bbdcl

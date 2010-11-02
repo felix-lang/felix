@@ -1,3 +1,27 @@
+(*
+This module is primarily responsible for generating checks that
+test if typeclass axioms hold for instances.
+
+Axiom checks are written by the user in a form, which is effectively
+a database: the user writes just
+
+axiom_check (1,2);
+
+for example, and every axiom which can accept two integers is
+then evaluated to see if it is true. Note that an axiom check
+is an ordinary executable statement, and in particular it can
+be put inside a loop to dynamically generate may test cases.
+
+This module gathers all the axioms, and attempt to specialise
+each one to each test case:  this is just ordinary overloading,
+except that many matches are permitted. Code to evaluate
+all the matches is generated along with a diagnostic which
+will explain which axiom failed on what case, if that occurs.
+
+In passing I mention that axiom_checks found a bug in my floating
+point axiom set by proving to me that floating point addition
+and multiplication are not associative.
+*)
 open Flx_util
 open Flx_ast
 open Flx_types

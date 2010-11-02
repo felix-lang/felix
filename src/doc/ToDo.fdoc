@@ -1,0 +1,54 @@
+@h1 Dependency Checkers
+@h2 Felix
+For Felix, given a file and a path, we make a list of all the Felix
+files that files depends on and their signatures, and emit that list somewhere.
+
+We also need to reparse any file if either the *.par file is out of date
+or non-existant, or, the syntax definition changed.
+
+I propose that the Felix compiler flxg generates the list, since
+it performs the required recursive include file analysis already.
+Say, in filename.fdep. The command line tool then only needs
+to compare the time stamps of the *.par and *.flx files to determine
+if recompilation is required.
+
+Tecnically there are three other triggers: the syntax definition has
+changed, the felix compiler itself has changed, or, certain command
+line switches or environment variables affecting compilation output
+have changed: the search path is one of these, flags which change
+the verbosity of comments in the generated C++ are another.
+
+@h1 C 
+For C, we need to know if we have to recompile C code.
+This is necessary if the Felix generated C is changed,
+which is so if the generator ran. It is also true is
+any of the dependent external files have changed,
+for example any Felix runtime support library such
+as faio or demux.
+
+In addition, if the path changed, or, if any command
+line switches such as macro values have changed.
+
+@h1 Linkage
+This primarily applies to static linkage, but it can
+also impact dynamic linkage on Unix systems because
+the linkage of objects files together to make shared
+libraries or programs requires binding to a symbolic
+link to a shared library, and, in some satisfaction of
+external references is checked.
+
+In addition, link switches including library paths may
+have changed. Unfortunately linkage dependencies are
+hard to calculate. However we can use flx_pkgconfig
+to attempt to find all the libraries required.
+
+@h2 Felix run time libraries
+This is a special case. If the C++ source code for
+any of the Felix run time libraries such as faio
+has changed, these libraries need to be rebuilt.
+
+For some of these libraries, it can be done directly
+by Felix, for example we can even do the primary
+build of faio from Felix, provided the tool doing
+the rebuilding isn't dependent on Faio. Even if it is,
+we only need a bootstrap version of the tool.

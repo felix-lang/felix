@@ -1,3 +1,23 @@
+(*
+This module is responsible for monomorphising code based on
+instantiations. It basically clones functions and substitutes
+away the type variables.
+
+In fact this process is a simplified version of what the 
+inliner does. However, except for some special cases
+such as runtime polymorphic functions and some tricky
+typeclass instantiations, the resulting program should
+be entirely monomorphic. Note that the backend can
+instantiate code anyhow, so monomorphisation of
+is never actually required.
+
+However, monomorphised code can admit optimisations
+that were not available earlier. In particular, it is
+only with monomorphisation that typeclass virtuals
+are replaced by instances, and so the resulting calls
+may now admit inlining. Therefore, we monomorphise the
+code and run the optimiser again.
+*)
 open Flx_util
 open Flx_list
 open Flx_ast

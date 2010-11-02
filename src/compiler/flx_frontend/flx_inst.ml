@@ -1,3 +1,16 @@
+(*
+This module is the instantiator. It is responsible for building
+a list of all polymorphic entities in the program, and for each
+one listing the bindings of the type variables to concrete
+type which are actually used in the program.
+
+A recursive descent from the non-polymorphic roots of the program
+tracks type variable substitutions along the call graph,
+this ensures all polymorphic entities are fully monomorphised.
+
+This code does not actually monomorphise the program, it just
+generates a list of all the instantiations.
+*)
 open Flx_util
 open Flx_ast
 open Flx_types
