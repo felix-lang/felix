@@ -27,7 +27,8 @@ private val big_keywords =
 private val small_keywords =
   "if", "then", "else", "elif", "endif", "do", "done",
   "in", "forall", "while", "whilst","to", "upto","downto",
-  "typematch","match","endmatch","with","requires","return","goto"
+  "typematch","match","endmatch","with","requires","return","goto",
+  "package"
 ;
 
 private val qualifiers = 
@@ -89,7 +90,6 @@ fun xlat_felix(t:string, dir:string)=
 
   proc cp() { b += ch; }
   fun fixup(x:string):string={
-println$ "To fixup="+x;
     var out2 = "";
     var i:int;
     forall i in 0 upto len x-1 do
@@ -100,12 +100,10 @@ println$ "To fixup="+x;
       else out2+=ch;
       done
     done
-println$ "Fixedup=" + out2;
     return out2;
   }
 
   proc ws() {
-println$ "Write a string="+b;
     if last_id == "include" do // hackery
       var n = b; 
       whilst n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
@@ -113,11 +111,10 @@ println$ "Write a string="+b;
       if n.[-4 to] != ".flx" do n+= ".flx"; done // hack, fixme
       match get_file(n,FLX_PATH) with
       | Some ?f => { write_string('<a href="/$'+f+'" >' + b + '</a>') ; }
-      | None => {  write_string('<span class=fstring>'+b+"</span>"); }
+      | None => {  write_string('<span class=fstring>'+fixup b+"</span>"); }
       endmatch;
     elif last_key in ("header","body") do
       n = b; 
-println$ "header/body string="+b;
       var quote = '"""';
       if prefix(b,quote) do n = b.[3 to -3]; goto unstring; done
       quote = "'''"; 
@@ -128,9 +125,22 @@ println$ "header/body string="+b;
       if prefix(b,quote) do n = b.[1 to -1]; goto unstring; done
       // shouldn't happen ..
 unstring:>
-println$ "header/body unstring="+n;
       val c = Cpp2Html::xlat_cpp (n,dir);
       write_string(quote+'<span class=embedded_c>' + c + '</span>'+quote); 
+    elif last_key == "package" do
+       println$ "Package: " + b;
+       n = b;
+      whilst n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
+      whilst n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
+      n+=".fpc";
+println$ "Package file basename is " + n;
+      match get_file(n,FLX_PKGCONFIG_PATH) with
+      | Some ?f => { write_string('<a href="/$'+f+'" >' + fixup b + '</a>') ; }
+      | None => { 
+          println$ "Can't find "+n+" in path " + str FLX_PKGCONFIG_PATH;   
+          write_string('<span class=fstring>'+fixup b+"</span>"); 
+        }
+      endmatch;
     else 
      write_string('<span class=fstring>'+fixup b+"</span>"); 
     done
@@ -266,7 +276,6 @@ thisch:> // same char, reconsider it
 fin:>
    println "outof data, final write ..";
    w(); // whatever is left over gets written
-println "flx2html fininshed";
    return out;
 }
 }

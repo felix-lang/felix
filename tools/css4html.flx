@@ -10,6 +10,7 @@ span.ctor {color:#406020; }
 span.hack {color:#66DD00; }
 span.preproc {color:#005500; }
 span.embedded_c{background-color:#DDDDDD; }
+span.fpc_fieldname {color:#DD0000; }
 pre.flxbg {background-color:#80FF80; }
 pre.inclusion {background-color:#D070D0; }
 .obsolete { background-color:#FFEFEF; font-size: small}

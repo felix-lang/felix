@@ -68,4 +68,12 @@ This is done partly to ensure a whole file is properly type checked.
 Nevertheless the overhead of rebinding the whole library every time
 could be onerous. The optimiser does strip out unused entities.
 
-
+<p>Statement matches doen't work. I get a
+<pre>
+[rex] Unexpected ctor_arg Some(handle_pkg_mv_1786<1786>)
+</pre>
+Error. The code is similar to expression matches. It should be fixed.
+In flx_desugar/flx_desugar.ml. A statement match is exactly the same
+as an expression match except you don't need the {} around the 
+match handlers. In other words the handlers are statements rather
+than expressions.

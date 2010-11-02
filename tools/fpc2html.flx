@@ -1,0 +1,46 @@
+module Fpc2Html 
+{
+fun xlat_fpc(t:string, dir:string)=
+{
+  var out = "";
+  val lines = split(t,"\n");
+  iter handle_line lines;
+  return out;
+
+  proc handle_line(s:string) {
+    match split(s,":") with
+    | Cons(?fn,Cons(?fv,Empty[string]))  =>
+      { 
+        out+= "<span class=fpc_fieldname>"+fn+": </span>";
+        if fn in ("Requires","flx_requires_driver") do
+          var pkgs=split$ fv.strip, " ";
+          iter handle_pkg pkgs;
+          out+="\n";
+        elif fn == "includes" do
+          var includes=split$ fv.strip, " ";
+          iter handle_include includes;
+          out+="\n";
+        else out+= fv+"\n"; 
+        done;
+      }
+    | ?x => { println$ "No split"; out+=s + "\n"; }
+    endmatch;
+  }
+  proc handle_pkg(s:string) {
+    match get_file(s+".fpc",FLX_PKGCONFIG_PATH) with
+    | Some ?path => { out += '<a href="/$' + path + '">' + s + '</a> '; }
+    | None => { out += s + " "; }
+    endmatch;
+  }
+  proc handle_include(s:string) {
+    var n = s;
+    whilst n.[0] in (char '"', char '<', char "'") do n=n.[1 to]; done
+    whilst n.[-1] in (char '"',char '>',char "'") do n=n.[to -1]; done
+    match get_file(n,C_PATH) with
+    | Some ?path => { out += '<a href="/$' + path + '?cpp">' + s + '</a> '; }
+    | None => { out += s + " "; }
+    endmatch;
+  }
+}
+}
+

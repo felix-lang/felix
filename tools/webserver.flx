@@ -20,6 +20,7 @@ macro fun dbg(x) = { fprint (cerr,x); };
 include "./cpp2html";
 include "./flx2html";
 include "./fdoc2html";
+include "./fpc2html";
 include "./py2html";
 include "./ocaml2html";
 include "./charclass";
@@ -58,6 +59,7 @@ var C_PATH=list(
   "/usr/include/c++/4.4.3/x86_64-linux-gnu" // a hack until cmd line option or env can extend/set the path
 );
 
+var FLX_PKGCONFIG_PATH=Empty[string];
 
 whilst argno<System::argc do
   arg = System::argv argno;
@@ -77,6 +79,7 @@ done
 C_PATH+= INSTALL_ROOT+"/lib/rtl";
 FLX_PATH+=INSTALL_ROOT+"/lib";
 FDOC_PATH+=INSTALL_ROOT+"/doc";
+FLX_PKGCONFIG_PATH+=INSTALL_ROOT+"/config";
 
 println$ "INSTALL_ROOT="+INSTALL_ROOT;
 println$ "FLX_PATH="+FLX_PATH;
@@ -238,6 +241,32 @@ proc serve_felix(k:socket_t, fname:string)
 
 }
 
+proc serve_fpc(k:socket_t, fname:string)
+{
+  var eof_flag = false;
+
+println$ "Serving fpc";
+  match get_file(fname,FLX_PKGCONFIG_PATH) with
+  | Some ?path =>
+    {
+      val text=Text_file::load path;
+      val dirname = Filename::dirname path;
+      val data = make_html(
+        "<head>"+Css4Html::flx_head+"</head>"+
+        "<body><html><pre>"+
+        Fpc2Html::xlat_fpc (text,dirname)+
+        "</pre></html></body>\n\r"
+      );
+      write_string(k,data,&eof_flag);
+    }
+  | None =>
+    {
+      serve_not_found (k,fname);
+    }
+  endmatch;
+
+}
+
 fun get_py(fname:string):string=
 {
   var flx =
@@ -315,7 +344,7 @@ proc serve_cpp(k:socket_t, fname:string)
 
 val text_suffices = (
   "txt","py","ml","mli",
-  "fpc","tex","pl","dyp",
+  "tex","pl","dyp",
   "why","resh","pak","ipk"
 );
 
@@ -440,6 +469,8 @@ proc serve_file(s: socket_t, infname: string)
     serve_ocaml(s, fname);
   elif suffix in list("cpp","hpp","h","c","cxx","rtti","includes") do 
     serve_cpp(s, fname);
+  elif suffix == "fpc" do 
+    serve_fpc(s, fname);
   elif suffix == "fdoc" do 
     serve_fdoc(s, fname);
   elif suffix in text_suffices do
