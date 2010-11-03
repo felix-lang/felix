@@ -547,33 +547,33 @@ noinline proc handler (var k:socket_t) ()
 
   gen hack_recv: socket_t * &char * int * int -> int = "recv($1,$2,$3,$4)";
 
-  var buf:char ^2;
+  var buf:char ^1025;
   var counter = 0;
   var extra = 0;
   shutdown(k,1); // shutdown read
 retry:>
-  var b = hack_recv(k,C_hack::cast[&char] (&buf),1,0);
+  var b = hack_recv(k,C_hack::cast[&char] (&buf),1024,0);
   //println$ "Error code " + str b + " from read after shutdown";
-  if b == 1 do
-    ++ extra;
+  if b > 0 do
+    extra += b;
     if extra > 2000 do
       println$ "Read too many extraneous bytes from OS buffer";
       goto force_close;
      done;
-   //println$ "Read extraneous byte, trying again, char=" + string (buf.[0]);
    goto retry;
   elif b == -1 do
-     ++counter;
-     if counter > 200 do
-       println "Timeout waiting for write buffers to be flushed";
-       goto force_close;
-     done;
-     Faio::sleep(clock,0.1); // 100 ms
-     goto retry;
-   done;
+    ++counter;
+    if counter > 200 do
+      println "Timeout waiting for write buffers to be flushed";
+      goto force_close;
+    done;
+    Faio::sleep(clock,0.1); // 100 ms
+    goto retry;
+  done;
+  assert b==0;
 
 force_close:> 
-  Flx_socket::shutdown(k,3);
+  Flx_socket::shutdown(k,2);
   ioclose(k);
   fprint$ cerr,"fthread "+str k+" terminating!\n";
 };
