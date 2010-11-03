@@ -197,7 +197,7 @@ and xexpr_t sr x =
  | Lst [Id "ast_letin";  sr; Lst [p; e1; e2]] -> EXPR_letin (xsr sr,(xp p, ex e1, ex e2))
 
  | Lst [Id "ast_get_n";  sr;  Lst [Int i; e]] -> EXPR_get_n(xsr sr,(ii i, ex e))
- (* was used for classes I think
+ (* extractor for record components, can't occur in user code
  | Lst [Id "ast_get_named_variable";  Lst [Str s;e]]-> EXPR_get_named_variable (sr, (ss s, ex e))
  *)
  | Lst [Id "ast_as";  sr; Lst [e; Str s]] -> EXPR_as (xsr sr,(ex e, ss s))

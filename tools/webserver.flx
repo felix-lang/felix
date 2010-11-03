@@ -542,6 +542,28 @@ noinline proc handler (var k:socket_t) ()
   fprint$ cerr,"fthread socket "+str k+" close delay ..\n";
   Faio::sleep(clock,DELAY); // give OS time to empty its buffers
   fprint$ cerr,"fthread socket "+str k+" shutdown now\n";
+
+// try this:
+
+  gen hack_recv: socket_t * &char * int * int -> int = "recv($1,$2,$3,$4)";
+
+  var buf:char ^2;
+  var counter = 0;
+  shutdown(k,1); // shutdown read
+retry:>
+  var b = hack_recv(k,C_hack::cast[&char] (&buf),0,0);
+  println$ "Error code " + str b + " from read after shutdown";
+  if b == -1 do
+     ++counter;
+     if counter > 200 do
+       println "Timeout waiting for write buffers to be flushed";
+       goto force_close;
+     done;
+     Faio::sleep(clock,0.1); // 100 ms
+     goto retry;
+   done;
+
+force_close:> 
   Flx_socket::shutdown(k,3);
   ioclose(k);
   fprint$ cerr,"fthread "+str k+" terminating!\n";

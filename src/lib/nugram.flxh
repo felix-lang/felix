@@ -1267,12 +1267,12 @@ syntax executable {
         ( ast_macro_name "redo_label" "" )
         ( ast_label ,_sr "redo_label" )
         ( ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (le ((ast_name ,_sr ,_2 ()),_6)))
+          (ast_apply ,_sr (,(noi 'le) ((ast_name ,_sr ,_2 ()),_6)))
           "break_label"
         ))
         _8
         `(( ast_label ,_sr "continue_label" )
-        (ast_call ,_sr pre_incr (ast_ref ,_sr (ast_name ,_sr ,_2())))
+        (ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_2())))
         ( ast_goto ,_sr "redo_label" )
         ( ast_label ,_sr "break_label" ))
        ))
@@ -1287,12 +1287,12 @@ syntax executable {
         ( ast_macro_name "redo_label" "" )
         ( ast_label ,_sr "redo_label" )
         ( ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (ge ((ast_name ,_sr ,_2 ()) ,_6)))
+          (ast_apply ,_sr (,(noi 'ge) ((ast_name ,_sr ,_2 ()) ,_6)))
           "break_label"
         ))
         _8
         `(( ast_label ,_sr "continue_label" )
-        ( ast_call ,_sr pre_decr (ast_ref ,_sr (ast_name ,_sr ,_2 ())))
+        ( ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_2 ())))
         ( ast_goto ,_sr "redo_label" )
         ( ast_label ,_sr "break_label" ))
        ))

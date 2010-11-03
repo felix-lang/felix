@@ -187,7 +187,6 @@ let rec rex state name (e:expr_t) : asm_t list * expr_t =
   | EXPR_patany _
   | EXPR_match_ctor _
   | EXPR_match_case _
-  | EXPR_ctor_arg _
   | EXPR_case_arg _
   | EXPR_void _
   | EXPR_arrow _
@@ -208,6 +207,15 @@ let rec rex state name (e:expr_t) : asm_t list * expr_t =
   | EXPR_user_expr _
     ->
     clierr sr ("[rex] Unexpected " ^ string_of_expr e)
+
+
+  (* This term works like: EXPR_ctor_arg (sr, (Some, Some 1)) -> 1, that is,
+   * it returns the argument of the given constructor in the expression,
+   * which expression must be precisely that constructor applied to an argument
+   *)
+  | EXPR_ctor_arg (sr,(qn,e)) -> 
+    let l1,x1 = rex e in 
+    l1,EXPR_ctor_arg (sr,(qn,x1))
 
   | EXPR_type_match _ -> [],e
 
@@ -1188,10 +1196,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
           )
       vars;
       let body = 
-        print_endline "begin rsts on sythesised body";
-        let b = rsts name parent_vs access [block sr !new_sts] in
-        print_endline "end rsts on sythesised body";
-        b
+        rsts name parent_vs access [block sr !new_sts]
       in
       matches := !matches @
         [
