@@ -557,10 +557,10 @@ retry:>
   if b == 1 do
     ++ extra;
     if extra > 2000 do
-      println$ "Read too many extraneous bytes from OS buffer, char=" + string (buf.[0]);
+      println$ "Read too many extraneous bytes from OS buffer";
       goto force_close;
      done;
-   println "Read extraneous byte, trying again";
+   println$ "Read extraneous byte, trying again, char=" + string (buf.[0]);
    goto retry;
   elif b == -1 do
      ++counter;
