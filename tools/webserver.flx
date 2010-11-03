@@ -553,14 +553,14 @@ noinline proc handler (var k:socket_t) ()
   shutdown(k,1); // shutdown read
 retry:>
   var b = hack_recv(k,C_hack::cast[&char] (&buf),1,0);
-  println$ "Error code " + str b + " from read after shutdown";
+  //println$ "Error code " + str b + " from read after shutdown";
   if b == 1 do
     ++ extra;
     if extra > 2000 do
       println$ "Read too many extraneous bytes from OS buffer";
       goto force_close;
      done;
-   println$ "Read extraneous byte, trying again, char=" + string (buf.[0]);
+   //println$ "Read extraneous byte, trying again, char=" + string (buf.[0]);
    goto retry;
   elif b == -1 do
      ++counter;
