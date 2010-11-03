@@ -56,7 +56,8 @@ var C_PATH=list(
   "/usr/include/c++/4.2.1", // a hack until cmd line option or env can extend/set the path
   "/usr/include/c++/4.2.1/x86_64-apple-darwin10", // oh yeah, a worse hack!
   "/usr/include/c++/4.4.3", // a hack until cmd line option or env can extend/set the path
-  "/usr/include/c++/4.4.3/x86_64-linux-gnu" // a hack until cmd line option or env can extend/set the path
+  "/usr/include/c++/4.4.3/x86_64-linux-gnu", // a hack until cmd line option or env can extend/set the path
+  "/usr/lib/gcc/x86_64-linux-gnu/4.4.3/include"
 );
 
 var FLX_PKGCONFIG_PATH=Empty[string];

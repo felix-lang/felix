@@ -101,43 +101,39 @@ and xexpr_t sr x =
   let ii i = int_of_string i in
   let ss s = s in
   let xq m qn = qne ex m qn in
-  let xp x = xpattern_t sr x in
+  let xp x = xpattern_t x in
   let xps x =  xparams_t sr x in
   let xvs x = xvs_list_t sr x in
   let xs x = xstatement_t sr x in
   let xsts x =  lst "statement" xs x in
   let xterm x = xast_term_t sr x in
   match x with
- | Str s -> EXPR_literal (sr, (AST_string s))
- | Lst [] -> EXPR_tuple (sr,[])
- | Lst [x] -> ex x
- | Lst [Id "ast_vsprintf";  Str s] -> EXPR_vsprintf (sr,ss s)
- | Lst [Id "ast_noexpand";  e] -> EXPR_noexpand (sr,ex e)
- | Lst [Id "ast_name"; sr; Id s ; Lst ts] ->
-   EXPR_name (xsr sr,s,map ti ts)
+  | Str s -> print_endline "Deprecated Scheme string as Felix string"; EXPR_literal (sr, (AST_string s))
+  | Lst [] -> EXPR_tuple (sr,[])
+  | Lst [x] -> ex x
+  (* this term comes from the hard coded parser! *)
+  | Lst [Id "ast_vsprintf";  Str s] -> EXPR_vsprintf (sr,ss s)
+  | Lst [Id "ast_noexpand"; sr; e] -> EXPR_noexpand (xsr sr,ex e)
+  | Lst [Id "ast_name"; sr; Id s ; Lst ts] -> EXPR_name (xsr sr,s,map ti ts)
+  | Lst [Id "ast_name"; sr; Str s ; Lst ts] -> EXPR_name (xsr sr,ss s,map ti ts)
+  | Lst [Id "ast_the";  sr; e] -> EXPR_the (xsr sr, xq "ast_the" e) 
+  (* can't occur in user code
+  | Lst [Id "ast_index";  Str s ; Int i] -> EXPR_index (sr,ss s,ii i)
+  *)
 
- | Lst [Id "ast_name"; sr; Str s ; Lst ts] ->
-   EXPR_name (xsr sr,ss s,map ti ts)
-
- | Lst [Id "ast_the";  e] -> EXPR_the (sr, xq "ast_the" e)
-
- | Lst [Id "ast_index";  Str s ; Int i] -> EXPR_index (sr,ss s,ii i)
-
- | Lst [Id "ast_case_tag";  Int i] -> EXPR_case_tag (sr,ii i)
-
- | Lst [Id "ast_typed_case";  Int i; t] -> EXPR_typed_case (sr,ii i,ti t)
- | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> EXPR_lookup (sr,(ex e, ss s,map ti ts))
- | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> EXPR_apply(xsr sr,(ex e1, ex e2))
-
- | Lst [Id "ast_tuple";  sr; Lst es] -> EXPR_tuple (xsr sr,map ex es)
- | Lst [Id "ast_record";  Lst rs] ->
+  | Lst [Id "ast_case_tag";  sr; Int i] -> EXPR_case_tag (xsr sr,ii i)
+  | Lst [Id "ast_typed_case";  Int i; t] -> EXPR_typed_case (sr,ii i,ti t)
+  | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> EXPR_lookup (sr,(ex e, ss s,map ti ts))
+  | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> EXPR_apply(xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
+  | Lst [Id "ast_tuple";  sr; Lst es] -> EXPR_tuple (xsr sr,map (xexpr_t (xsr sr)) es)
+  | Lst [Id "ast_record";  sr; Lst rs] ->
    let rs =
      map (function
-     | Lst [Str s; e] -> ss s, ex e
+     | Lst [Str s; e] -> ss s, xexpr_t (xsr sr) e
      | x -> err x "Error in AST_record"
      )
      rs
-   in EXPR_record (sr,rs)
+   in EXPR_record (xsr sr,rs)
 
  | Lst [Id "ast_record_type"; Lst rs] ->
    let rs =
@@ -160,93 +156,85 @@ and xexpr_t sr x =
    in EXPR_variant_type (sr,rs)
 
 
- | Lst [Id "ast_arrayof";  Lst es] -> EXPR_arrayof (sr, map ex es)
- | Lst [Id "ast_coercion";  Lst [e; t]] ->  EXPR_coercion (sr,(ex e, ti t))
+ | Lst [Id "ast_arrayof";  sr; Lst es] -> EXPR_arrayof (xsr sr, map ex es)
+ | Lst [Id "ast_coercion";  sr; Lst [e; t]] ->  EXPR_coercion (xsr sr,(ex e, ti t))
 
  | Lst [Id "ast_suffix";  Lst [qn;t]] -> EXPR_suffix (sr,(xq "ast_suffix" qn,ti t))
 
- | Lst [Id "ast_patvar";  Str s] -> EXPR_patvar (sr, ss s)
- | Id "ast_patany" -> EXPR_patany sr
- | Id "ast_void" -> EXPR_void sr
- | Id "ast_ellipsis" -> EXPR_ellipsis sr
+ | Lst [Id "ast_patvar";  sr; Str s] -> EXPR_patvar (xsr sr, ss s)
+ | Lst [Id "ast_patany"; sr] -> EXPR_patany (xsr sr)
+ | Lst [Id "ast_void"; sr] -> EXPR_void (xsr sr)
+ | Lst [Id "ast_ellipsis"; sr] -> EXPR_ellipsis (xsr sr)
 
- | Lst [Id "ast_product"; sr; Lst es] -> EXPR_product (xsr sr, map ex es)
- | Lst [Id "ast_sum";  sr; Lst es] -> EXPR_sum (xsr sr,map ex es)
+ | Lst [Id "ast_product"; sr; Lst es] -> EXPR_product (xsr sr, map (xexpr_t (xsr sr)) es)
+ | Lst [Id "ast_sum";  sr; Lst es] -> EXPR_sum (xsr sr,map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_intersect"; Lst es] -> EXPR_intersect (sr, map ex es)
  | Lst [Id "ast_isin"; Lst [a; b]] -> EXPR_isin (sr, (ex a, ex b))
  | Lst [Id "ast_setintersection"; sr; Lst es] -> EXPR_setintersection (xsr sr, map ex es)
- | Lst [Id "ast_setunion"; sr; Lst es] -> EXPR_setunion (xsr sr, map ex es)
- | Lst [Id "ast_orlist"; sr; Lst es] -> EXPR_orlist (xsr sr, map ex es)
- | Lst [Id "ast_andlist"; sr; Lst es] -> EXPR_andlist (xsr sr, map ex es)
+ | Lst [Id "ast_setunion"; sr; Lst es] -> EXPR_setunion (xsr sr, map (xexpr_t (xsr sr)) es)
+ | Lst [Id "ast_orlist"; sr; Lst es] -> EXPR_orlist (xsr sr, map (xexpr_t (xsr sr)) es)
+ | Lst [Id "ast_andlist"; sr; Lst es] -> EXPR_andlist (xsr sr, map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_arrow";  Lst [e1; e2]] -> EXPR_arrow (sr,(ex e1, ex e2))
  | Lst [Id "ast_longarrow";  Lst [e1; e2]] -> EXPR_longarrow (sr,(ex e1, ex e2))
  | Lst [Id "ast_superscript";  Lst [e1; e2]] -> EXPR_superscript (sr,(ex e1, ex e2))
-
  | Lst [Id "ast_literal";  sr; lit] -> EXPR_literal (xsr sr, xliteral_t sr lit)
+ | Lst [Id "ast_deref"; sr; e] -> EXPR_deref (xsr sr,ex e)
+ | Lst [Id "ast_ref"; sr; e] -> EXPR_ref (xsr sr,ex e)
+ | Lst [Id "ast_new"; sr; e] -> EXPR_new (xsr sr,ex e)
+ | Lst [Id "ast_likely"; sr; e] -> EXPR_likely (xsr sr,ex e)
+ | Lst [Id "ast_unlikely"; sr; e] -> EXPR_unlikely (xsr sr,ex e)
+ | Lst [Id "ast_callback";  sr; qn] -> EXPR_callback (xsr sr,xq "ast_callback" qn)
+ | Lst [Id "ast_dot"; sr; Lst [e1; e2]] -> EXPR_dot (xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
+ | Lst [Id "ast_lambda";  sr; Lst [vs; Lst pss; t; sts]] -> EXPR_lambda  (xsr sr, (xvs vs, map xps pss, ti t, xsts sts))
 
- | Lst [Id "ast_deref"; e] -> EXPR_deref (sr,ex e)
- | Lst [Id "ast_ref"; e] -> EXPR_ref (sr,ex e)
- | Lst [Id "ast_new"; e] -> EXPR_new (sr,ex e)
- | Lst [Id "ast_likely"; e] -> EXPR_likely (sr,ex e)
- | Lst [Id "ast_unlikely"; e] -> EXPR_unlikely (sr,ex e)
-(* | Lst [Id "ast_lvalue"; e] -> EXPR_lvalue (sr,ex e) *)
- | Lst [Id "ast_callback";  qn] -> EXPR_callback (sr,xq "ast_callback" qn)
-
- | Lst [Id "ast_dot"; sr; Lst [e1; e2]] -> EXPR_dot (xsr sr,(ex e1, ex e2))
-
- | Lst [Id "ast_lambda";  Lst [vs; Lst pss; t; sts]] ->
-   EXPR_lambda  (sr,(xvs vs, map xps pss, ti t, xsts sts))
-
+ (* can't occur in user code
  | Lst [Id "ast_match_ctor";  Lst [qn; e]] -> EXPR_match_ctor(sr,(xq "ast_match_ctor" qn,ex e))
  | Lst [Id "ast_match_case";  Lst [Int i; e]]-> EXPR_match_case (sr,(ii i, ex e))
-
  | Lst [Id "ast_ctor_arg";  Lst [qn; e]] -> EXPR_ctor_arg (sr,(xq "ast_ctor_arg" qn, ex e))
-
  | Lst [Id "ast_case_arg"; Lst [Int i; e]] -> EXPR_case_arg (sr,(ii i, ex e))
+ *)
+ | Lst [Id "ast_case_index";  sr; e] -> EXPR_case_index (xsr sr, ex e)
+ | Lst [Id "ast_letin";  sr; Lst [p; e1; e2]] -> EXPR_letin (xsr sr,(xp p, ex e1, ex e2))
 
- | Lst [Id "ast_case_index";  e] -> EXPR_case_index (sr, ex e)
- | Lst [Id "ast_letin";  Lst [p; e1; e2]] -> EXPR_letin (sr,(xp p, ex e1, ex e2))
-
- | Lst [Id "ast_get_n";  Lst [Int i; e]] -> EXPR_get_n(sr,(ii i, ex e))
+ | Lst [Id "ast_get_n";  sr;  Lst [Int i; e]] -> EXPR_get_n(xsr sr,(ii i, ex e))
+ (* was used for classes I think
  | Lst [Id "ast_get_named_variable";  Lst [Str s;e]]-> EXPR_get_named_variable (sr, (ss s, ex e))
-
- | Lst [Id "ast_as";  Lst [e; Str s]] -> EXPR_as (sr,(ex e, ss s))
- | Lst [Id "ast_match";  Lst [e; Lst pes]]->
+ *)
+ | Lst [Id "ast_as";  sr; Lst [e; Str s]] -> EXPR_as (xsr sr,(ex e, ss s))
+ | Lst [Id "ast_match";  sr; Lst [e; Lst pes]]->
    let pes = map (function
      | Lst [p;e] -> xp p, ex e
      | x -> err x "ast_match syntax"
      )
      pes
    in
-   EXPR_match (sr, (ex e,pes))
+   EXPR_match (xsr sr, (ex e,pes))
 
+ (* handled in flx_typing2 now 
  | Lst [Id "ast_typeof";  e] -> EXPR_typeof (sr, ex e)
+ *)
 
- | Lst [Id "ast_cond";  Lst [e1;e2;e3]] -> EXPR_cond (sr,(ex e1, ex e2, ex e3))
+ | Lst [Id "ast_cond"; sr;  Lst [e1;e2;e3]] -> EXPR_cond (xsr sr,(ex e1, ex e2, ex e3))
+ | Lst [Id "ast_expr"; sr; Str s; t] -> EXPR_expr (xsr sr, ss s, ti t)
 
- | Lst [Id "ast_expr"; Str s; t] -> EXPR_expr (sr, ss s, ti t)
-
- | Lst [Id "ast_type_match";  Lst [t; Lst ts]] ->
+ | Lst [Id "ast_type_match";  sr; Lst [t; Lst ts]] ->
    let ts =
      map (function
        | Lst [t1; t2] -> ti t1, ti t2
        | x -> err x "ast_typematch typerrror"
      )
      ts
-   in EXPR_type_match (sr,(ti t, ts))
+   in EXPR_type_match (xsr sr,(ti t, ts))
 
  | Lst [Id "ast_macro_ctor";  Lst [Str s; e]] -> EXPR_macro_ctor (sr,(ss s, ex e))
+ | Lst [Id "ast_macro_statements"; sts] -> EXPR_macro_statements (sr, xsts sts)
+ | Lst [Id "ast_user_expr"; sr; Str s; term] -> EXPR_user_expr (xsr sr, s, xterm term)
 
- | Lst [Id "ast_macro_statements"; sts] ->
-  EXPR_macro_statements (sr, xsts sts)
+  | Lst ls -> (* print_endline ("Unexpected literal tuple"); *) EXPR_tuple (sr, map ex ls)
 
- | Lst [Id "ast_user_expr"; sr; Str s; term] ->
-   EXPR_user_expr (xsr sr, s, xterm term)
-
-  | Lst ls -> EXPR_tuple (sr, map ex ls)
-
-  | Id y -> EXPR_name (sr,y,[])
+  | Id y -> print_endline ("Unexpected ID=" ^ y); EXPR_name (sr,y,[])
   | Int i ->
+    (* to be removed, big int: just use strings *)
     let j = Big_int.big_int_of_string i in
     EXPR_literal (sr, AST_int ("int",j))
 
@@ -262,47 +250,46 @@ and xfloat_pat x =
   | Id "Float_minus_inf" -> Float_minus_inf
   | x -> err x "Float_pat syntax error"
 
-and xpattern_t sr x =
-  let xp x = xpattern_t sr x in
-  let ex x = xexpr_t sr x in
-  let ti x = type_of_sex sr x in
+and xpattern_t x =
+  let xp x = xpattern_t x in
+  let ti sr x = type_of_sex sr x in
   let bi i = Big_int.big_int_of_string i in
   let ss s = s in
-  let xq m qn = qne ex m qn in
+  let xq sr m qn = qne (xexpr_t (xsr sr)) m qn in
   match x with
-  | Id "pat_nan" -> PAT_nan sr
-  | Id "pat_none" -> PAT_none sr
+  | Lst [Id "pat_nan"; sr] -> PAT_nan (xsr sr)
+  | Lst [Id "pat_none"; sr] -> PAT_none (xsr sr)
 
   (* constants *)
-  | Lst [Id "pat_int"; Str s; Int i] -> PAT_int (sr,ss s, bi i)
-  | Lst [Id "pat_string"; Str s] -> PAT_string (sr,ss s)
+  | Lst [Id "pat_int"; sr; Str s; Int i] -> PAT_int (xsr sr,ss s, bi i)
+  | Lst [Id "pat_string"; sr; Str s] -> PAT_string (xsr sr,ss s)
 
   (* ranges *)
-  | Lst [Id "pat_int_range"; Str s1; Int i1; Str s2; Int i2] ->
-    PAT_int_range (sr,ss s1, bi i1, ss s2, bi i2)
+  | Lst [Id "pat_int_range"; sr; Str s1; Int i1; Str s2; Int i2] ->
+    PAT_int_range (xsr sr,ss s1, bi i1, ss s2, bi i2)
 
-  | Lst [Id "pat_string_range"; Str s1; Str s2] ->
-    PAT_string_range (sr,ss s1, ss s2)
-  | Lst [Id "pat_float_range"; p1; p2] ->
-    PAT_float_range (sr, xfloat_pat p1, xfloat_pat p2)
+  | Lst [Id "pat_string_range"; sr; Str s1; Str s2] ->
+    PAT_string_range (xsr sr,ss s1, ss s2)
+  | Lst [Id "pat_float_range"; sr; p1; p2] ->
+    PAT_float_range (xsr sr, xfloat_pat p1, xfloat_pat p2)
 
   (* other *)
-  | Lst [Id "pat_coercion"; p; t] ->
-   PAT_coercion (sr, xp p, ti t)
+  | Lst [Id "pat_coercion"; sr; p; t] ->
+   PAT_coercion (xsr sr, xp p, ti (xsr sr) t)
 
-  | Lst [Id "pat_name"; Id x] -> PAT_name (sr, x)
-  | Lst [Id "pat_name"; Str x] -> PAT_name (sr, ss x)
+  | Lst [Id "pat_name"; sr; Id x] -> PAT_name (xsr sr, x)
+  | Lst [Id "pat_name"; sr; Str x] -> PAT_name (xsr sr, ss x)
   | Lst [Id "pat_tuple"; sr; Lst ps] -> PAT_tuple (xsr sr, map xp ps)
 
-  | Id "pat_any" -> PAT_any sr
-  | Lst [Id "pat_const_ctor"; qn] -> PAT_const_ctor (sr, xq "pat_const_ctor" qn)
-  | Lst [Id "pat_nonconst_ctor"; qn; p] -> PAT_nonconst_ctor (sr, xq "pat_nonconst_ctor" qn, xp p)
+  | Lst [Id "pat_any"; sr] -> PAT_any (xsr sr)
+  | Lst [Id "pat_const_ctor"; sr; qn] -> PAT_const_ctor (xsr sr, xq sr "pat_const_ctor" qn)
+  | Lst [Id "pat_nonconst_ctor"; sr; qn; p] -> PAT_nonconst_ctor (xsr sr, xq sr "pat_nonconst_ctor" qn, xp p)
 
-  | Lst [Id "pat_as"; p; Id s] -> PAT_as (sr, xp p, s)
-  | Lst [Id "pat_as"; p; Str s] -> PAT_as (sr, xp p, ss s)
-  | Lst [Id "pat_when"; p; e] -> PAT_when (sr, xp p, ex e)
+  | Lst [Id "pat_as"; sr; p; Id s] -> PAT_as (xsr sr, xp p, s)
+  | Lst [Id "pat_as"; sr; p; Str s] -> PAT_as (xsr sr, xp p, ss s)
+  | Lst [Id "pat_when"; sr; p; e] -> PAT_when (xsr sr, xp p, xexpr_t (xsr sr) e)
 
-  | Lst [Id "pat_record"; Lst ips] ->
+  | Lst [Id "pat_record"; sr; Lst ips] ->
     let ips = map (function
       | Lst [Id id; p] -> id,xp p
       | Lst [Str id; p] -> ss id,xp p
@@ -310,7 +297,7 @@ and xpattern_t sr x =
       )
       ips
     in
-    PAT_record (sr, ips)
+    PAT_record (xsr sr, ips)
   | x ->
     err x "pattern"
 
@@ -541,6 +528,7 @@ and xstatement_t sr x : statement_t =
   let xpvs x = xplain_vs_list_t sr x in
   let xs x = xstatement_t sr x in
   let ex x = xexpr_t sr x in
+  let ex' sr x = xexpr_t (xsr sr) x in
   let xq m qn = qne ex m qn in
   let ss s = s in
   let xvs x = xvs_list_t sr x in
@@ -548,6 +536,7 @@ and xstatement_t sr x : statement_t =
   let xps x =  xparams_t sr x in
   let xret x =  xret_t sr x in
   let xsts x =  lst "statement" xs x in
+  let xsts' sr x =  lst "statement" (xstatement_t (xsr sr)) x in
   let xprops x =  lst "property" (xproperty_t sr) x in
   let xfk x = xfunkind_t sr x in
   let ti x = type_of_sex sr x in
@@ -561,7 +550,7 @@ and xstatement_t sr x : statement_t =
   let xc x = xcode_spec_t sr x in
   let xrr x = xraw_req_expr_t sr x in
   let xucmp x = xunion_component sr x in
-  let xp x = xpattern_t sr x in
+  let xp x = xpattern_t x in
   let lnot sr x = EXPR_apply (sr,(EXPR_name (sr,"lnot",[]),x)) in
   match x with
   | Lst [] -> STMT_nop(sr,"null")
@@ -572,7 +561,7 @@ and xstatement_t sr x : statement_t =
   | Lst [Id "ast_comment"; sr; Str s] -> STMT_comment(xsr sr, ss s)
   | Lst [Id "ast_private"; x] -> STMT_private (sr, xs x)
   | Lst [Id "ast_reduce"; sr; Str s; vs; spl; e1; e2] ->
-    STMT_reduce (xsr sr,ss s,xvs vs, xpvs spl, ex e1, ex e2)
+    STMT_reduce (xsr sr,ss s,xvs vs, xpvs spl, ex' sr e1, ex' sr e2)
   | Lst [Id "ast_axiom"; sr; Str s; vs; ps; axm] ->
     STMT_axiom (xsr sr,ss s,xvs vs, xps ps,xam axm)
   | Lst [Id "ast_lemma"; sr; Str s; vs; ps; axm] ->
@@ -580,41 +569,25 @@ and xstatement_t sr x : statement_t =
   | Lst [Id "ast_function"; Str s; vs; ps; ret; props; sts] ->
     STMT_function(sr,ss s,xvs vs, xps ps,xret ret, xprops props, xsts sts)
   | Lst [Id "ast_curry"; sr; Str s; vs; Lst pss; ret; fk; sts] ->
-    STMT_curry(xsr sr,ss s,xvs vs, map xps pss,xret ret, xfk fk, xsts sts)
+    STMT_curry(xsr sr,ss s,xvs vs, map xps pss,xret ret, xfk fk, xsts' sr sts)
 
   | Lst [Id "ast_macro_name"; Str n; Str m] -> STMT_macro_name (sr,n,m)
-  | Lst [Id "ast_macro_names"; Str n; ms] ->
-    STMT_macro_names (sr,n,lst "ast_macro_names" xid ms)
-  | Lst [Id "ast_expr_macro"; Str n; mps; e] ->
-    STMT_expr_macro (sr,n, xmps mps, ex e)
-  | Lst [Id "ast_stmt_macro"; Str n; mps; stmts] ->
-    STMT_stmt_macro (sr,n, xmps mps, xsts stmts)
-  | Lst [Id "ast_macro_block"; sts] ->
-    STMT_macro_block (sr, xsts sts)
-  | Lst [Id "ast_macro_val"; ids; v] ->
-    STMT_macro_val (sr, lst "ast_macro_val" xid ids, ex v)
-  | Lst [Id "ast_macro_vals"; Str n; es] ->
-    STMT_macro_vals (sr, n, lst "macro_vals" ex es)
-  | Lst [Id "ast_macro_var"; ids; v] ->
-    STMT_macro_var (sr, lst "ast_macro_var" xid ids, ex v)
-  | Lst [Id "ast_macro_assign"; ids; v] ->
-    STMT_macro_assign (sr, lst "ast_macro_assign" xid ids, ex v)
-  | Lst [Id "ast_macro_forget"; ids] ->
-    STMT_macro_forget (sr, lst "ast_macro_forget" xid ids)
-  | Lst [Id "ast_macro_label"; Str n] ->
-    STMT_macro_label (sr, n)
-  | Lst [Id "ast_macro_goto"; Str n] ->
-    STMT_macro_goto (sr, n)
-  | Lst [Id "ast_macro_ifgoto"; e; Str n] ->
-    STMT_macro_ifgoto (sr, ex e, n)
-  | Id "ast_macro_proc_return" ->
-    STMT_macro_proc_return (sr)
-  | Lst [Id "ast_macro_ifor"; Str n; ids; sts] ->
-    STMT_macro_ifor (sr,n,  lst "ast_macro_ifor" xid ids, xsts sts)
-  | Lst [Id "ast_macro_vfor";ids; e; sts] ->
-    STMT_macro_vfor (sr,lst "ast_macro_vfor" xid ids, ex e, xsts sts)
-  | Lst [Id "ast_seq"; sr; sts] ->
-    STMT_seq (xsr sr,xsts sts)
+  | Lst [Id "ast_macro_names"; Str n; ms] -> STMT_macro_names (sr,n,lst "ast_macro_names" xid ms)
+  | Lst [Id "ast_expr_macro"; Str n; mps; e] -> STMT_expr_macro (sr,n, xmps mps, ex e)
+  | Lst [Id "ast_stmt_macro"; Str n; mps; stmts] -> STMT_stmt_macro (sr,n, xmps mps, xsts stmts)
+  | Lst [Id "ast_macro_block"; sts] -> STMT_macro_block (sr, xsts sts)
+  | Lst [Id "ast_macro_val"; ids; v] -> STMT_macro_val (sr, lst "ast_macro_val" xid ids, ex v)
+  | Lst [Id "ast_macro_vals"; Str n; es] -> STMT_macro_vals (sr, n, lst "macro_vals" ex es)
+  | Lst [Id "ast_macro_var"; ids; v] -> STMT_macro_var (sr, lst "ast_macro_var" xid ids, ex v)
+  | Lst [Id "ast_macro_assign"; ids; v] -> STMT_macro_assign (sr, lst "ast_macro_assign" xid ids, ex v)
+  | Lst [Id "ast_macro_forget"; ids] -> STMT_macro_forget (sr, lst "ast_macro_forget" xid ids)
+  | Lst [Id "ast_macro_label"; Str n] -> STMT_macro_label (sr, n)
+  | Lst [Id "ast_macro_goto"; Str n] -> STMT_macro_goto (sr, n)
+  | Lst [Id "ast_macro_ifgoto"; e; Str n] -> STMT_macro_ifgoto (sr, ex e, n)
+  | Id "ast_macro_proc_return" -> STMT_macro_proc_return (sr)
+  | Lst [Id "ast_macro_ifor"; Str n; ids; sts] -> STMT_macro_ifor (sr,n,  lst "ast_macro_ifor" xid ids, xsts sts)
+  | Lst [Id "ast_macro_vfor";ids; e; sts] -> STMT_macro_vfor (sr,lst "ast_macro_vfor" xid ids, ex e, xsts sts)
+  | Lst [Id "ast_seq"; sr; sts] -> STMT_seq (xsr sr,xsts' sr sts)
 
   | Lst [Id "ast_union"; sr; Str n; vs; ucmp] ->
     let ucmp = lst "union component" xucmp ucmp in
@@ -665,22 +638,24 @@ and xstatement_t sr x : statement_t =
     STMT_inherit_fun (xsr sr,n, xvs vs, xq "ast_inherit_fun" qn)
 
   | Lst [Id "ast_val_decl"; sr; Str n; vs; ot; oe] ->
-    STMT_val_decl (xsr sr,ss n, xvs vs, opt "val_decl" ti ot, opt "val_decl" ex oe)
+    STMT_val_decl (xsr sr,ss n, xvs vs, opt "val_decl" ti ot, 
+      opt "val_decl" (ex' sr) oe)
 
   | Lst [Id "ast_lazy_decl"; Str n; vs; ot; oe] ->
     STMT_lazy_decl (sr,ss n, xvs vs, opt "lazy_decl" ti ot, opt "lazy_decl" ex oe)
 
   | Lst [Id "ast_var_decl"; sr; Str n; vs; ot; oe] ->
-    STMT_var_decl (xsr sr,ss n, xvs vs, opt "var_decl" ti ot, opt "var_decl" ex oe)
+    STMT_var_decl (xsr sr,ss n, xvs vs, opt "var_decl" ti ot, 
+    opt "var_decl" (ex' sr) oe)
 
   | Lst [Id "ast_ref_decl"; Str n; vs; ot; oe] ->
     STMT_ref_decl (sr,ss n, xvs vs, opt "ref_decl" ti ot, opt "ref_decl" ex oe)
 
   | Lst [Id "ast_untyped_module"; sr; Str n; vs; sts] ->
-    STMT_untyped_module (xsr sr, ss n, xvs vs, xsts sts)
+    STMT_untyped_module (xsr sr, ss n, xvs vs, xsts' sr sts)
 
   | Lst [Id "ast_typeclass"; sr; Str n; vs; sts] ->
-    STMT_typeclass(xsr sr, n, xvs vs, xsts sts)
+    STMT_typeclass(xsr sr, n, xvs vs, xsts' sr sts)
 
   | Lst [Id "ast_instance"; sr; vs; qn; sts] ->
     (*
@@ -693,44 +668,44 @@ and xstatement_t sr x : statement_t =
     end
     ;
     *)
-    STMT_instance(xsr sr, xvs vs, xq "ast_instance" qn, xsts sts)
+    STMT_instance(xsr sr, xvs vs, xq "ast_instance" qn, xsts' sr sts)
 
   | Lst [Id "ast_label"; sr; Str n] -> STMT_label(xsr sr,n)
 
   | Lst [Id "ast_goto"; sr; Str n] -> STMT_goto(xsr sr,n)
-  | Lst [Id "ast_ifgoto"; sr; e; Str n] -> STMT_ifgoto(xsr sr,ex e,n)
+  | Lst [Id "ast_ifgoto"; sr; e; Str n] -> STMT_ifgoto(xsr sr,ex' sr e,n)
   | Lst [Id "ast_likely_ifgoto"; sr; e; Str n] ->
-    STMT_ifgoto(xsr sr,EXPR_likely (xsr sr,ex e),n)
+    STMT_ifgoto(xsr sr,EXPR_likely (xsr sr,ex' sr e),n)
 
   | Lst [Id "ast_unlikely_ifgoto"; sr; e; Str n] ->
-    STMT_ifgoto(xsr sr,EXPR_unlikely (xsr sr,ex e),n)
+    STMT_ifgoto(xsr sr,EXPR_unlikely (xsr sr,ex' sr e),n)
 
   | Lst [Id "ast_ifnotgoto"; sr; e; Str n] ->
-    STMT_ifgoto(xsr sr,lnot (xsr sr) (ex e),n)
+    STMT_ifgoto(xsr sr,lnot (xsr sr) (ex' sr e),n)
 
   | Lst [Id "ast_likely_ifnotgoto"; sr; e; Str n] ->
-    STMT_ifgoto(xsr sr,EXPR_likely (xsr sr,lnot (xsr sr) (ex e)),n)
+    STMT_ifgoto(xsr sr,EXPR_likely (xsr sr,lnot (xsr sr) (ex' sr e)),n)
 
   | Lst [Id "ast_unlikely_ifnotgoto"; sr; e; Str n] ->
-    STMT_ifgoto(xsr sr,EXPR_unlikely(xsr sr,lnot (xsr sr) (ex e)),n)
+    STMT_ifgoto(xsr sr,EXPR_unlikely(xsr sr,lnot (xsr sr) (ex' sr e)),n)
 
-  | Lst [Id "ast_ifreturn"; sr; e] -> STMT_ifreturn(xsr sr,ex e)
-  | Lst [Id "ast_ifdo"; sr; e; sts1; sts2] -> STMT_ifdo(xsr sr,ex e, xsts sts1, xsts sts2)
-  | Lst [Id "ast_call"; sr; f; a] -> STMT_call(xsr sr,ex f,ex a)
-  | Lst [Id "ast_assign"; sr; Id v; tlv; a] -> STMT_assign(xsr sr,v,xtlv tlv,ex a)
-  | Lst [Id "ast_cassign"; sr; e1; e2] -> STMT_cassign(xsr sr,ex e1, ex e2)
-  | Lst [Id "ast_jump"; sr; e1; e2] -> STMT_jump(xsr sr,ex e1, ex e2)
-  | Lst [Id "ast_loop"; sr; Str n; e2] -> STMT_loop(xsr sr,n, ex e2)
+  | Lst [Id "ast_ifreturn"; sr; e] -> STMT_ifreturn(xsr sr,ex' sr e)
+  | Lst [Id "ast_ifdo"; sr; e; sts1; sts2] -> STMT_ifdo(xsr sr,ex' sr e, xsts' sr sts1, xsts' sr sts2)
+  | Lst [Id "ast_call"; sr; f; a] -> STMT_call(xsr sr,ex' sr f,ex' sr a)
+  | Lst [Id "ast_assign"; sr; Id v; tlv; a] -> STMT_assign(xsr sr,v,xtlv tlv,ex' sr a)
+  | Lst [Id "ast_cassign"; sr; e1; e2] -> STMT_cassign(xsr sr,ex' sr e1, ex' sr e2)
+  | Lst [Id "ast_jump"; sr; e1; e2] -> STMT_jump(xsr sr,ex' sr e1, ex' sr e2)
+  | Lst [Id "ast_loop"; sr; Str n; e2] -> STMT_loop(xsr sr,n, ex' sr e2)
   | Lst [Id "ast_svc"; sr; Str n] -> STMT_svc(xsr sr,n)
-  | Lst [Id "ast_fun_return"; sr; e] -> STMT_fun_return(xsr sr,ex e)
+  | Lst [Id "ast_fun_return"; sr; e] -> STMT_fun_return(xsr sr,ex' sr e)
 
-  | Lst [Id "ast_yield"; sr; e] -> STMT_yield(xsr sr,ex e)
+  | Lst [Id "ast_yield"; sr; e] -> STMT_yield(xsr sr,ex' sr e)
   | Lst [Id "ast_proc_return"; sr]  -> STMT_proc_return(xsr sr)
   | Lst [Id "ast_halt"; sr; Str s] -> STMT_halt(xsr sr, ss s)
   | Lst [Id "ast_trace"; sr; Str n; Str s] -> STMT_trace(xsr sr, ss n, ss s)
   | Lst [Id "ast_nop"; sr; Str s] -> STMT_nop(xsr sr,ss s)
-  | Lst [Id "ast_assert"; sr; e] -> STMT_assert(xsr sr,ex e)
-  | Lst [Id "ast_init"; sr; Str n; e] -> STMT_init(xsr sr,n,ex e)
+  | Lst [Id "ast_assert"; sr; e] -> STMT_assert(xsr sr,ex' sr e)
+  | Lst [Id "ast_init"; sr; Str n; e] -> STMT_init(xsr sr,n,ex' sr e)
   | Lst [Id "ast_newtype"; sr; Str n; vs; t] -> STMT_newtype(xsr sr,n,xvs vs, ti t)
   | Lst [Id "ast_abs_decl"; sr; Str n; vs; tqs; ct; req] ->
     STMT_abs_decl (xsr sr,n,xvs vs, xtqs tqs, xc ct, xrr req)
@@ -781,13 +756,13 @@ and xstatement_t sr x : statement_t =
     STMT_export_type (xsr sr, ti t, ss s)
 
   
-  | Lst [Id "ast_stmt_match";  Lst [e; Lst pss]]->
+  | Lst [Id "ast_stmt_match";  Lst [sr; e; Lst pss]]->
     let pss = map (function
-      | Lst [p;stmts] -> xp p, xsts stmts
+      | Lst [p;stmts] -> xp p, xsts' sr stmts
       | x -> err x "ast_stmt_match syntax"
       )
      pss
    in
-   STMT_stmt_match (sr, (ex e,pss))
+   STMT_stmt_match (xsr sr, (ex' sr e,pss))
 
   | x -> err x "statement"

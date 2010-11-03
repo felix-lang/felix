@@ -15,11 +15,15 @@ SCHEME """
 """;
 
 SCHEME """
-(define (mkname x)`(ast_name ,_sr ,x ()))
+(define (nos x)`(ast_name ,_sr ,x ()))
 """;
 
 SCHEME """
-(define (typesoftvarlist x) (map mkname (map first (first x))))
+(define (noi x)`(ast_name ,_sr ,(symbol->string x) ()))
+""";
+
+SCHEME """
+(define (typesoftvarlist x) (map nos (map first (first x))))
 """;
 
 SCHEME """
@@ -40,11 +44,11 @@ SCHEME """
 """;
 
 SCHEME """
-  (define (lazy stmts) `(ast_lambda (,dfltvs ,dfltargs typ_none ,stmts)))
+  (define (lazy stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs ,(noi 'typ_none) ,stmts)))
 """;
 
 SCHEME """
-  (define (lazy_proc stmts) `(ast_lambda (,dfltvs ,dfltargs ast_void ,stmts)))
+  (define (lazy_proc stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs (ast_void ,_sr) ,stmts)))
 """;
 
 SCHEME """
@@ -125,7 +129,7 @@ SCHEME """
           ((eq? 'NoConstraint c) ct )
           ((eq? 'Eq (first c)) ;; type constraint
             `(ast_intersect
-              ((ast_type_match ((ast_name ,_sr ,v ()) ((,(second c) ()))))
+              ((ast_type_match ,_sr ((ast_name ,_sr ,v ()) ((,(second c) ()))))
               ,ct)
             )
           )
@@ -205,10 +209,10 @@ SCHEME """
 """;
 
 SCHEME """
-  (define (infix op) `(ast_apply ,_sr (,op (,_1 ,_3))))
+  (define (infix op) `(ast_apply ,_sr (,(noi op) (,_1 ,_3))))
 """;
 SCHEME """
-  (define (prefix op) `(ast_apply ,_sr (,op ,_2)))
+  (define (prefix op) `(ast_apply ,_sr (,(noi op) ,_2)))
 """;
 
 
@@ -249,10 +253,10 @@ syntax expressions {
   sexpr := x[let_pri] =># "_1";
   stypeexpr:= x[sor_condition_pri] =># "_1";
 
-  x[let_pri] := "let" spattern = x[let_pri] "in" x[let_pri] =># "`(ast_letin (,_2 ,_4 ,_6))";
+  x[let_pri] := "let" spattern = x[let_pri] "in" x[let_pri] =># "`(ast_letin ,_sr (,_2 ,_4 ,_6))";
 
   x[sdollar_apply_pri] := x[stuple_pri] "unless" x[let_pri] "then" x[sdollar_apply_pri] =>#
-    "`(ast_cond ((ast_apply ,_sr (lnot ,_3)) ,_1 ,_5))";
+    "`(ast_cond ,_sr ((ast_apply ,_sr (lnot ,_3)) ,_1 ,_5))";
   x[sdollar_apply_pri] := x[stuple_pri] "$" x[sdollar_apply_pri] =># "`(ast_apply ,_sr (,_1 ,_3))";
 
   x[stuple_pri] := x[>stuple_pri] ( , x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
@@ -268,13 +272,13 @@ syntax expressions {
   x[scomparison_pri]:= x[>scomparison_pri] > x[>scomparison_pri] =># "(infix 'gt)";
   x[scomparison_pri]:= x[>scomparison_pri] "in" x[>scomparison_pri] =># "(infix 'mem)";
 
-  x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as (,_1 ,_3))";
+  x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
 
   x[ssetunion_pri] := x[>ssetunion_pri] ( "||" x[>ssetunion_pri])+ =># "(chain 'ast_setunion _1 _2)" note "setunion";
   x[ssetintersection_pri] := x[>ssetintersection_pri] ("&&" x[>ssetintersection_pri])+ =># "(chain 'ast_setintersection _1 _2)" note "setintersection";
   x[sarrow_pri] := x[scase_literal_pri] "->" x[sarrow_pri] =># "`(ast_arrow (,_1 ,_3))";
   x[sarrow_pri] := x[scase_literal_pri] "-->" x[sarrow_pri] =># "`(ast_longarrow (,_1 ,_3))";
-  x[scase_literal_pri] := "case" sinteger =># "`(ast_case_tag ,_2))";
+  x[scase_literal_pri] := "case" sinteger =># "`(ast_case_tag ,_sr ,_2))";
   x[scase_literal_pri] := "case" sinteger "of" x[ssum_pri] =># "`(ast_typed_case ,_2 ,_4)";
   x[scase_literal_pri] := "case" sname "of" x[ssum_pri] =># "`(ast_variant (,_2 ,_4))";
 
@@ -300,26 +304,26 @@ syntax expressions {
   x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri] =># "(infix 'pow)";
   x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
 
-  x[srefr_pri] := "&" x[srefr_pri] =># "`(ast_ref ,_2)";
+  x[srefr_pri] := "&" x[srefr_pri] =># "`(ast_ref ,_sr ,_2)";
   x[srefr_pri] := star x[srefr_pri] =># "(prefix 'deref)";
-  x[srefr_pri] := "_deref" x[srefr_pri] =># "`(ast_deref ,_2)";
-  x[srefr_pri] := "new" x[srefr_pri] =># "`(ast_new ,_2)";
+  x[srefr_pri] := "_deref" x[srefr_pri] =># "`(ast_deref ,_sr ,_2)";
+  x[srefr_pri] := "new" x[srefr_pri] =># "`(ast_new ,_sr ,_2)";
   x[srefr_pri] := anon_value =># "_1";
 
   anon_value := "struct" lbrace sstruct_mem_decl* rbrace =># "`(ast_record_type ,_3)";
   anon_value := lpar sstruct_mem_decl+ rpar =># "`(ast_record_type ,_2)";
   sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(,_1 ,_3)";
 
-  anon_value := "struct" lbrace sstruct_assign* rbrace =># "`(ast_record ,_3)";
-  anon_value := lpar sstruct_assign+ rpar =># "`(ast_record ,_2)";
+  anon_value := "struct" lbrace sstruct_assign* rbrace =># "`(ast_record ,_sr ,_3)";
+  anon_value := lpar sstruct_assign+ rpar =># "`(ast_record ,_sr ,_2)";
   sstruct_assign := sname = sexpr ";" =># "`(,_1 ,_3)";
 
   anon_value := "union" lbrace stype_sum_item0* rbrace =># "`(ast_variant_type ,_3)";
   stype_sum_item := sname sopt_value stvarlist "of" sexpr =># "`(,_1 ,_2 ,_3 ,_5)";
-  stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 ast_void)";
+  stype_sum_item := sname sopt_value stvarlist =># "`(,_1 ,_2 ,_3 (ast_void ,_sr))";
 
   stype_sum_item0 := sname "of" sexpr =># "`(,_1 none ,_3)";
-  stype_sum_item0 := sname =># "`(,_1 none ast_void)";
+  stype_sum_item0 := sname =># "`(,_1 none (ast_void ,_sr))";
 
   stype_sum_item1 := stype_sum_item ";" =># "_1";
 
@@ -328,22 +332,24 @@ syntax expressions {
   stype_sum_items2 := stype_sum_item2* =># "_1";
 
   x[sapplication_pri] := x[sapplication_pri] x[scoercion_pri] =># "`(ast_apply ,_sr (,_1 ,_2))" note "apply";
-  x[sapplication_pri] := "caseno" x[scoercion_pri] =># "`(ast_case_index ,_2)";
-  x[sapplication_pri] := "likely" x[scoercion_pri] =># "`(ast_likely ,_2)";
-  x[sapplication_pri] := "unlikely" x[scoercion_pri] =># "`(ast_unlikely ,_2)";
 
-  x[scoercion_pri] := x[scoercion_pri] ":" x[sfactor_pri] =># "`(ast_coercion (,_1 ,_3))";
+  // these three aren't special syntax so why not hack application syntax down the track?
+  x[sapplication_pri] := "caseno" x[scoercion_pri] =># "`(ast_case_index ,_sr ,_2)";
+  x[sapplication_pri] := "likely" x[scoercion_pri] =># "`(ast_likely ,_sr ,_2)";
+  x[sapplication_pri] := "unlikely" x[scoercion_pri] =># "`(ast_unlikely ,_sr ,_2)";
+
+  x[scoercion_pri] := x[scoercion_pri] ":" x[sfactor_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
   x[scoercion_pri] := ssuffixed_name =># "_1";
 
   x[sfactor_pri] := shash_name =># "_1";
-  x[sfactor_pri] := x[sfactor_pri] "." lsqb sexpr rsqb =># "`(ast_apply ,_sr (subscript (,_1 ,_4)))";
-  x[sfactor_pri] := x[sfactor_pri] "." lsqb sexpr k"to" sexpr rsqb =># "`(ast_apply ,_sr (substring (,_1 ,_4 ,_6)))";
-  x[sfactor_pri] := x[sfactor_pri] "." lsqb sexpr k"to" rsqb =># "`(ast_apply ,_sr (copyfrom (,_1 ,_4)))";
-  x[sfactor_pri] := x[sfactor_pri] "." lsqb k"to" sexpr rsqb =># "`(ast_apply ,_sr (copyto (,_1 ,_5)))";
+  x[sfactor_pri] := x[sfactor_pri] "." lsqb sexpr rsqb =># "`(ast_apply ,_sr (,(noi 'subscript) (,_1 ,_4)))";
+  x[sfactor_pri] := x[sfactor_pri] "." lsqb sexpr k"to" sexpr rsqb =># "`(ast_apply ,_sr (,(noi 'substring) (,_1 ,_4 ,_6)))";
+  x[sfactor_pri] := x[sfactor_pri] "." lsqb sexpr k"to" rsqb =># "`(ast_apply ,_sr (,(noi 'copyfrom) (,_1 ,_4)))";
+  x[sfactor_pri] := x[sfactor_pri] "." lsqb k"to" sexpr rsqb =># "`(ast_apply ,_sr (,(noi 'copyto) (,_1 ,_5)))";
   x[sfactor_pri] := x[sfactor_pri] "." shash_name =># "`(ast_dot ,_sr (,_1 ,_3))))";
   // note the next production MUST be after the previous one so it overrides the
   // interpretation of a.(0) as an AST_dot
-  x[sfactor_pri] := x[sfactor_pri] "." lpar sinteger rpar =># "`(ast_get_n (,_4 ,_1))";
+  x[sfactor_pri] := x[sfactor_pri] "." lpar sinteger rpar =># "`(ast_get_n ,_sr (,_4 ,_1))";
 
   // these are weirdos
   sbasic_name_comma_list:= sname (, sname)* =># "(cons _1 (map second _2))";
@@ -354,9 +360,9 @@ syntax expressions {
   shash_name := sthe_name =># "_1";
 
   sthe_name :=
-    | "the" squalified_name =># "`(ast_the ,_2)"
-    | "noexpand" squalified_name =># "`(ast_noexpand ,_2)"
-    | quest sname =># "`(ast_patvar ,_2)"
+    | "the" squalified_name =># "`(ast_the ,_sr ,_2)"
+    | "noexpand" squalified_name =># "`(ast_noexpand ,_sr ,_2)"
+    | quest sname =># "`(ast_patvar ,_sr ,_2)"
     | squalified_name =># "_1"
   ;
   sthe_name := satom =># "_1";
@@ -372,18 +378,18 @@ syntax expressions {
   ssimple_name_parts := sname lsqb sexpr rsqb =># "`(,_1 ,(mkl _3))";
 
   satom := lpar rassign (, rassign )* rpar =>#
-    "`(ast_record ,(cons _2 (map second _3)))"
+    "`(ast_record ,_sr ,(cons _2 (map second _3)))"
   ;
   rassign := sname = x[sor_condition_pri] =># "`(,_1 ,_3)";
 
   satom := sliteral =># "_1";
-  satom := _ =># "'ast_patany";
-  satom := "..." =># "'ast_ellipsis";
+  satom := _ =># "`(ast_patany ,_sr)";
+  satom := "..." =># "`(ast_ellipsis ,_sr)";
   satom := "false" =># "'(ast_typed_case  0 2)";
   satom := "true" =># "'(ast_typed_case  1 2)";
 
-  satom := "callback" lsqb sexpr rsqb =># "`(ast_callback ,_3)";
-  satom := "[|" sexpr "|]" =># "`(ast_arrayof ,(mkl _2))";
+  satom := "callback" lsqb sexpr rsqb =># "`(ast_callback ,_sr ,_3)";
+  satom := "[|" sexpr "|]" =># "`(ast_arrayof ,_sr ,(mkl _2))";
   satom := lbrace sexpr rbrace =># "(lazy `((ast_fun_return ,_sr ,_2)))";
 
   satom := scompound =># "(lazy _1)";
@@ -393,7 +399,7 @@ syntax expressions {
   satom := sconditional =># "_1";
 
   sconditional := "if" sexpr "then" sexpr selse_part "endif" =>#
-    "`(ast_cond (,_2 ,_4 ,_5))";
+    "`(ast_cond ,_sr (,_2 ,_4 ,_5))";
 
     selif := "elif" sexpr "then" sexpr =># "`(,_2 ,_4)";
 
@@ -405,7 +411,7 @@ syntax expressions {
         """
           (let ((f (lambda (result condthn)
             (let ((cond (first condthn)) (thn (second condthn)))
-              `(ast_cond (,cond ,thn ,result))))))
+              `(ast_cond ,_sr (,cond ,thn ,result))))))
           (fold_left f _3 _1))
         """;
 }
@@ -415,51 +421,51 @@ syntax patterns {
   satom := pattern_match =># "_1";
 
   sexecutable := "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
-    "`(ast_stmt_match (,_2 ,_4))";
+    "`(ast_stmt_match (,_sr ,_2 ,_4))";
 
   stmt_matching  := vbar spattern "=>" tstatement+ =># "`(,_2 ,_4)";
 
   pattern_match := "match" sexpr "with" smatching+ "endmatch" =>#
-    "`(ast_match (,_2 ,_4))";
+    "`(ast_match ,_sr (,_2 ,_4))";
 
   smatching  := vbar spattern "=>" sexpr =># "`(,_2 ,_4)";
-  smatching  := vbar "=>" sexpr =># "`(pat_none ,_4)";
+  smatching  := vbar "=>" sexpr =># "`(pat_none ,_sr ,_4)";
 
-  spattern := sas_pattern "when" sexpr =># "`(pat_when ,_1 ,_3)";
+  spattern := sas_pattern "when" sexpr =># "`(pat_when ,_sr ,_1 ,_3)";
   spattern := sas_pattern =># "_1";
 
-  sas_pattern := stuple_pattern "as" sname =># "`(pat_as ,_1 ,_3)";
+  sas_pattern := stuple_pattern "as" sname =># "`(pat_as ,_sr ,_1 ,_3)";
   sas_pattern := stuple_pattern =># "_1";
 
   stuple_pattern := scoercive_pattern (, scoercive_pattern )* =># "(chain 'pat_tuple _1 _2)";
 
-  scoercive_pattern := satomic_pattern "|>" x[sarrow_pri] =># "`(pat_coercion ,_1 ,_3)";
+  scoercive_pattern := satomic_pattern "|>" x[sarrow_pri] =># "`(pat_coercion ,_sr ,_1 ,_3)";
   scoercive_pattern := satomic_pattern =># "_1";
 
-  satomic_pattern := "true" =># "'(pat_const_ctor (ast_case_tag 1))";
-  satomic_pattern := "false" =># "'(pat_const_ctor (ast_case_tag 0))";
-  satomic_pattern := sstring =># "`(pat_string ,_1)";
-  satomic_pattern := quest sname =># "`(pat_as pat_any ,_2)";
-  satomic_pattern := _ =># "'pat_any";
+  satomic_pattern := "true" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 1))";
+  satomic_pattern := "false" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 0))";
+  satomic_pattern := sstring =># "`(pat_string ,_sr ,_1)";
+  satomic_pattern := quest sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+  satomic_pattern := _ =># "`(pat_any ,_sr)";
   satomic_pattern := lpar spattern rpar =># "_2";
-  satomic_pattern := "struct" lbrace spat_assign+ rbrace =># "`(pat_record ,_3)";
+  satomic_pattern := "struct" lbrace spat_assign+ rbrace =># "`(pat_record ,_sr ,_3)";
 
   spat_assign := sname = spattern ";" =># "`(,_1 ,_3)";
 
-  satomic_pattern := sctor_name satomic_pattern =># "`(pat_nonconst_ctor ,_1 ,_2)";
-  satomic_pattern := sctor_name =># "`(pat_const_ctor ,_1)";
+  satomic_pattern := sctor_name satomic_pattern =># "`(pat_nonconst_ctor ,_sr ,_1 ,_2)";
+  satomic_pattern := sctor_name =># "`(pat_const_ctor ,_sr ,_1)";
 
   sctor_name := squalified_name =># "_1";
-  sctor_name := "case" sinteger =># "`(ast_case_tag ,_2)";
+  sctor_name := "case" sinteger =># "`(ast_case_tag ,_sr ,_2)";
 
-  satomic_pattern := sstring ".." sstring =># "`(pat_string_range ,_1 ,_3)";
-  satomic_pattern := sintegral =># "`(pat_int ,(first _1) ,(second _1))";
+  satomic_pattern := sstring ".." sstring =># "`(pat_string_range ,_sr ,_1 ,_3)";
+  satomic_pattern := sintegral =># "`(pat_int ,_sr ,(first _1) ,(second _1))";
   satomic_pattern := sintegral ".." sintegral=>#
-    "`(pat_int_range ,(first _1) ,(second _1) ,(first _3) ,(second _3))";
+    "`(pat_int_range ,_sr ,(first _1) ,(second _1) ,(first _3) ,(second _3))";
 
-  satomic_pattern := "NaN" =># "'pat_nan";
+  satomic_pattern := "NaN" =># "`(pat_nan ,_sr)";
   satomic_pattern := sfloating ".." sfloating =>#
-    "`(pat_float_range ,_1 ,_3)";
+    "`(pat_float_range ,_sr ,_1 ,_3)";
 
   sfloating:= sfloat =># "`(Float_plus ,(first _1) ,(second _1))";
   sfloating:= "-" sfloat =># "`(Float_minus ,(first _2) ,(second _2))";
@@ -476,22 +482,22 @@ syntax functions {
 
   x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type = scompound =>#
     """
-    `(ast_lambda (,_3 ,_4 ,(first _5) ,_7))
+    `(ast_lambda ,_sr (,_3 ,_4 ,(first _5) ,_7))
     """;
 
   x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=>" sexpr =>#
     """
-    `(ast_lambda (,_3 ,_4 ,(first _5) ((ast_fun_return ,_sr ,_7))))
+    `(ast_lambda ,_sr (,_3 ,_4 ,(first _5) ((ast_fun_return ,_sr ,_7))))
     """;
 
   x[slambda_pri] := sadjectives "proc" stvarlist slambda_fun_args scompound =>#
     """
-    `(ast_lambda (,_3 ,_4 ast_void ,_5))
+    `(ast_lambda ,_sr (,_3 ,_4 (ast_void ,_sr) ,_5))
     """;
 
   x[slambda_pri] := sadjectives "proc" stvarlist scompound =>#
     """
-    `(ast_lambda (,_3 ((() none)) ast_void ,_4))
+    `(ast_lambda ,_sr (,_3 ((() none)) (ast_void ,_sr) ,_4))
     """;
 
   sadjective := k"inline" =># "'InlineFunction";
@@ -508,12 +514,12 @@ syntax functions {
 
   fun_return_type := ":" stypeexpr "expect" sexpr =># "`(,_2 (some ,_4))";
   fun_return_type := ":" stypeexpr =># "`(,_2 none)";
-  fun_return_type := "expect" sexpr =># "`(typ_none (some ,_2))";
-  fun_return_type := sepsilon =># "'(typ_none none)";
+  fun_return_type := "expect" sexpr =># "`(,(noi 'typ_none) (some ,_2))";
+  fun_return_type := sepsilon =># "`(,(noi 'typ_none) none)";
 
   sparameter := sparam_qual sname ":" x[sarrow_pri] = x[sor_condition_pri] =># "`(,_1 ,_2 ,_4 (some ,_6))";
   sparameter := sparam_qual sname ":" x[sarrow_pri] =># "`(,_1 ,_2 ,_4 none)";
-  sparameter := sparam_qual sname =># "`(,_1 ,_2 typ_none none)";
+  sparameter := sparam_qual sname =># "`(,_1 ,_2 ,(noi 'typ_none) none)";
 
   sparameter_comma_list := sepsilon =># "()";
   sparameter_comma_list := sparameter (, sparameter)* =># "(cons _1 (map second _2))";
@@ -526,7 +532,7 @@ syntax functions {
 
   sfun_arg :=  lpar sparameter_comma_list "when" sexpr rpar =># "`(,_2 (some ,_4))";
   sfun_arg :=  lpar sparameter_comma_list rpar =># "`(,_2 none)";
-  sfun_arg :=  sname =># "`(((PVal ,_1 typ_none none)) none)";
+  sfun_arg :=  sname =># "`(((PVal ,_1 ,(noi 'typ_none) none)) none)";
 
   sfun_kind := "cfun" =># "'CFunction";
   sfun_kind := "gen" =># "'Generator";
@@ -560,7 +566,7 @@ syntax functions {
           (
             (argt (caadr t))
             (ret (cadadr t))
-            (body `((ast_fun_return ,_sr (ast_match (_a ,_6)))))
+            (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,_6)))))
           )
           `(ast_curry ,_sr ,(first _3) ,(second _3)
             (
@@ -596,7 +602,7 @@ syntax functions {
       (
         (name "__constructor__")
         (vs _2)
-        (ret 'ast_void)
+        (ret `(ast_void ,_sr))
         (traint _4)
         (body _6)
         (inits _5)
@@ -637,12 +643,12 @@ syntax functions {
 
   sprocedure_definition := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound =>#
     """
-      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 (ast_void ,_5) ,(cal_funkind _1 _2) ,_6)
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,_5) ,(cal_funkind _1 _2) ,_6)
     """;
 
   sprocedure_definition := sadjectives sproc_kind sdeclname sfun_arg* "=>" tstatement =>#
     """
-      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 (ast_void none) ,(cal_funkind _1 _2) (,_6))
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) none) ,(cal_funkind _1 _2) (,_6))
     """;
 }
 
@@ -708,12 +714,12 @@ syntax statements {
     "(tvfixup _2 _3)";
 
   stypeparameter:= sname ":" x[sarrow_pri] =># "`(,_1 ,_3)";
-  stypeparameter:= sname =># "`(,_1 typ_none)";
+  stypeparameter:= sname =># "`(,_1 ,(noi 'typ_none))";
   stypeparameter_comma_list := sepsilon =># "()";
   stypeparameter_comma_list := stypeparameter , stypeparameter_comma_list =># "(cons _1 _3)";
   stypeparameter_comma_list := stypeparameter =># "`(,_1)";
 
-  stypefun_arg := sname =># "`((,_1 typ_none))";
+  stypefun_arg := sname =># "`((,_1 ,(noi 'typ_none)))";
   stypefun_arg := lpar stypeparameter_comma_list rpar =># "_2";
   stypefun_args := stypefun_arg+  =># "_1";
 
@@ -992,7 +998,7 @@ syntax cbind {
 
   sabstract_type := "callback" "proc" sname ":" stypeexpr srequires_clause ";" =>#
     """
-    `(ast_callback_decl ,_sr ,_3 ,(mkl2 _5) ast_void ,_6)
+    `(ast_callback_decl ,_sr ,_3 ,(mkl2 _5) (ast_void ,_sr) ,_6)
     """;
 
   sabstract_type := "callback" "fun" sname ":" stypeexpr srequires_clause ";" =>#
@@ -1005,7 +1011,7 @@ syntax cbind {
           (cod (second ft))
           (args (mkl2 dom))
         )
-      `(ast_callback_decl  ,_sr,_3 ,args ,cod ,_6)
+      `(ast_callback_decl ,_sr ,_3 ,args ,cod ,_6)
       )
       'ERROR
     )
@@ -1024,8 +1030,8 @@ syntax cbind {
   sinline_cpp:= "noreturn" "code" scode_spec ";" =># "`(ast_noreturn_code ,_sr ,_3)";
 
   sexpr_code_prefix := "code" lsqb stypeexpr rsqb =># "_3";
-  satom := sexpr_code_prefix sstring =># "`(ast_expr ,_2 ,_1)";
-  satom := sexpr_code_prefix sname =># "`(ast_expr ,_2 ,_1)";
+  satom := sexpr_code_prefix sstring =># "`(ast_expr ,_sr ,_2 ,_1)";
+  satom := sexpr_code_prefix sname =># "`(ast_expr ,_sr ,_2 ,_1)";
 
   // note: also needed by typeclasses atm for virtual consts
   sconst_def := sadjectives "const" sdeclname ":" stypeexpr = scode_spec srequires_clause ";" =>#
@@ -1076,7 +1082,7 @@ syntax cbind {
       )
       (let (
         (argt t)
-        (ret 'ast_void))
+        (ret `(ast_void ,_sr)))
         `(ast_fun_decl ,_sr ,name ,vs ,(mkl2 argt) ,ret ,ct ,reqs "")
         )))
     """;
@@ -1153,13 +1159,13 @@ syntax executable {
 
   sassignexpr := "def" slexpr = sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
 
-  sassignexpr := sexpr sswapop sexpr =># "`(ast_call ,_sr ,_2 ((ast_ref ,_1) (ast_ref ,_3)))";
+  sassignexpr := sexpr sswapop sexpr =># "`(ast_call ,_sr ,(noi _2) ((ast_ref ,_sr ,_1) (ast_ref ,_sr ,_3)))";
 
   sassignexpr := sexpr sassignop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
   sassignexpr := sexpr srmwop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
 
-  sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,_2 (ast_ref ,_1))";
-  sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,_1 (ast_ref ,_2))";
+  sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,(noi _2) (ast_ref ,_sr ,_1))";
+  sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,(noi _1) (ast_ref ,_sr ,_2))";
 
   // utstatement is some attempt to get "unterminated statements"
 
@@ -1266,7 +1272,7 @@ syntax executable {
         ))
         _8
         `(( ast_label ,_sr "continue_label" )
-        (ast_call ,_sr pre_incr (ast_ref (ast_name ,_sr ,_2())))
+        (ast_call ,_sr pre_incr (ast_ref ,_sr (ast_name ,_sr ,_2())))
         ( ast_goto ,_sr "redo_label" )
         ( ast_label ,_sr "break_label" ))
        ))
@@ -1286,7 +1292,7 @@ syntax executable {
         ))
         _8
         `(( ast_label ,_sr "continue_label" )
-        ( ast_call ,_sr pre_decr (ast_ref (ast_name ,_sr ,_2 ())))
+        ( ast_call ,_sr pre_decr (ast_ref ,_sr (ast_name ,_sr ,_2 ())))
         ( ast_goto ,_sr "redo_label" )
         ( ast_label ,_sr "break_label" ))
        ))
@@ -1372,7 +1378,7 @@ syntax type_decls {
       (let (
         (argt (caadr _5))
         (ret (cadadr _5))
-        (body `(ast_type_match (_a ,_7))))
+        (body `(ast_type_match ,_sr (,(noi '_a) ,_7))))
         (let ((args `(((_a ,argt)))))
       `(mktypefun ,_sr ,(first _3) ,(second _3) ,args ,ret ,body)
       ))
@@ -1383,7 +1389,7 @@ syntax type_decls {
   stype_matching := vbar sexpr "=>" sexpr =># "`(,_2 ,_4)";
 
   stypematch := "typematch" sexpr "with" stype_matching+ "endmatch" =>#
-    "`(ast_type_match (,_2 ,_4))";
+    "`(ast_type_match ,_sr (,_2 ,_4))";
 
   sstruct_decl := "struct" sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
     """
@@ -1437,7 +1443,7 @@ syntax type_decls {
 
   sopt_value := = sinteger =># "`(some ,_2)";
   sopt_value := sepsilon =># "'none";
-  senum_item := sname sopt_value =># "`(,_1 ,_2 ,dfltvs ast_void)";
+  senum_item := sname sopt_value =># "`(,_1 ,_2 ,dfltvs (ast_void ,_sr))";
   senum_items := senum_item , senum_items =># "(cons _1 _3)";
   senum_items := senum_item =># "`(,_1)";
   senum_items := sepsilon =># "()";

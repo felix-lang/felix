@@ -1187,7 +1187,12 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
             new_sts := dcl :: !new_sts;
           )
       vars;
-      let body = rsts name parent_vs access [block sr !new_sts] in
+      let body = 
+        print_endline "begin rsts on sythesised body";
+        let b = rsts name parent_vs access [block sr !new_sts] in
+        print_endline "end rsts on sythesised body";
+        b
+      in
       matches := !matches @
         [
           Dcl (patsrc,match_checker_id,Some n1,`Private,dfltvs,
