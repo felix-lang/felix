@@ -124,12 +124,14 @@ fun parse_get_line (get:string): opt[string*string] =>
 ;
 
 // functions to make responses
-fun make_gif(contents:string)=> """HTTP/0.9 200 OK\r
+fun make_image(suffix:string, contents:string)=> 
+let ?kind = if suffix == "jpg" then "jpeg" else suffix endif in
+"""HTTP/0.9 200 OK\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
 Connection: close\r
-Content-Type: image/gif\r
+Content-Type: image/"""+kind+"""\r
 Content-Length: """+str(len(contents))+"""\r
 \r
 """+contents;
@@ -399,6 +401,17 @@ proc serve_raw(k:socket_t, fname:string, suffix:string)
   write_string(k,data,&eof_flag);
 }
 
+proc serve_image(k:socket_t, fname:string, suffix:string)
+{
+  var eof_flag = false;
+  var txt = Text_file::load(fname);
+  println$ "Loaded raw file " + fname+", len="+str(len txt);
+  //println$ "Contents=" + flx;
+  val data = make_image(suffix,txt);
+  write_string(k,data,&eof_flag);
+}
+
+
 proc serve_directory(k:socket_t, fname:string)
 {
   var dirname = Filename::basename fname;
@@ -476,6 +489,8 @@ proc serve_file(s: socket_t, infname: string)
     serve_fdoc(s, fname);
   elif suffix in text_suffices do
     serve_text(s,fname)
+  elif suffix in ("gif","png","jpg") do
+    serve_image(s,suffix,fname);
   else
     match get_file(fname, Empty[string]) with
     | None => { serve_not_found(s,fname); }
@@ -544,6 +559,7 @@ noinline proc handler (var k:socket_t) ()
   fprint$ cerr,"fthread socket "+str k+" shutdown now\n";
 
 // try this:
+// Advised by: koettermarkus@gmx.de, MANY THANKS!
 
   gen hack_recv: socket_t * &char * int * int -> int = "recv($1,$2,$3,$4)";
 

@@ -1,0 +1,24 @@
+Installing Felix.
+
+1. First build it with
+
+fbuild/fbuild-light -O --prefix=/usr/local --buildroot=build
+
+2. Install with
+
+sudo flx --test=build/release-optimized --install
+sudo cp build/release-optimized/bin/flx /usr/local/bin
+
+Installation goes to directory /usr/local/lib/felix/felix-$version.
+
+Default --prefix==/usr/local.
+Default --buildroot=build.
+For more build options say build/fbuild-light --help.
+
+Note Felix does not currently install the binay for the command line
+processor "flx". Each version of Felix has a completely separate
+install directory. You may choose not to copy "flx" but instead
+put it on your PATH.
+
+
+
