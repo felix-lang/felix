@@ -1,7 +1,5 @@
 include "plat/config";
 
-// check for test mode: this argument must come first
-
 dbug := false; // switch off for production
 var RECOMPILE=0;
 var DEBUG=0;
