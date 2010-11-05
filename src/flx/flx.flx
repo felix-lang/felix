@@ -1,5 +1,31 @@
 include "plat/config";
 
+// Changed to just copy values out of the library
+// Change to use structs
+var INSTALL_ROOT_TOPDIR=Config::INSTALL_ROOT_TOPDIR;
+var INSTALL_ROOT=Config::INSTALL_ROOT;
+var FLX_INSTALL_DIR=Config::FLX_INSTALL_DIR;
+var CYGWIN=Config::CYGWIN;
+var WIN32=Config::WIN32;
+var MACOSX=Config::MACOSX;
+var HAVE_GNU=Config::HAVE_GNU;
+var HAVE_MSVC=Config::HAVE_MSVC;
+var CCOBJ_DLLIB=Config::CCOBJ_DLLIB;
+var CCLINK_DLLIB=Config::CCLINK_DLLIB;
+var CCOBJ_STATIC_LIB=Config::CCOBJ_STATIC_LIB;
+var CCLINK_STATIC=Config::CCLINK_STATIC;
+var VERSION=Config::VERSION;
+var EXT_LIB=Config::EXT_LIB;
+var EXT_STATIC_OBJ=Config::EXT_STATIC_OBJ;
+var EXT_SHARED_OBJ=Config::EXT_SHARED_OBJ;
+var EXT_EXE=Config::EXT_EXE;
+var EXT_SHLIB=Config::EXT_SHLIB;
+var SPEC_OBJ_FILENAME=Config::SPEC_OBJ_FILENAME;
+var SPEC_EXE_FILENAME=Config::SPEC_EXE_FILENAME;
+var OPTIMISE=Config::OPTIMISE;
+var DEBUG_FLAGS=Config::DEBUG_FLAGS;
+var DEFAULT_LINK_STATIC=Config::DEFAULT_LINK_STATIC;
+
 dbug := false; // switch off for production
 var RECOMPILE=0;
 var DEBUG=0;
@@ -319,7 +345,7 @@ if ECHO == 1 do
   println("#PKGCONFIG="+PKGCONFIG);
 done
 
-DLINK_STRING, SLINK_STRING = link_strings(FLX_INSTALL_DIR);
+DLINK_STRING, SLINK_STRING = Config::link_strings(FLX_INSTALL_DIR);
 
 CONFIG_DIR = Filename::join(FLX_INSTALL_DIR,'config');
 dbug?? println$ "Felix package manager config directory is "+CONFIG_DIR;

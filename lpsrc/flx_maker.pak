@@ -97,6 +97,7 @@ mkgif("dot",dot)
 
 @select(tangler('lib/plat/config.flx','data'))
 //GENERATED during config
+module Config {
 False := false;
 True := true;
 @def ts(x): tangle(x+";")
@@ -151,7 +152,7 @@ fun link_strings(FLX_INSTALL_DIR:string): string * string =
 @#
   return DLINK_STRING,SLINK_STRING;
 }
-
+}
 
 @head(1,'Run script')
 @# ------------- RUN SCRIPT flx.bat FOR WINDOWS COMMAND LINE

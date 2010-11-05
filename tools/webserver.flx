@@ -5,6 +5,7 @@ include "std/posix/signal";
 include "std/posix/filesystem";
 Posix_Signal::ignore_signal(Posix_Signal::SIGPIPE);
 done
+include "plat/config";
 
 include "flx_socket";
 open Flx_socket;
@@ -43,7 +44,8 @@ var argno = 1;
 fun prefix(arg:string,key:string)=>
   arg.[to len key]==key
 ;
-var INSTALL_ROOT = "";
+var INSTALL_ROOT = Config::FLX_INSTALL_DIR;
+ 
 var DELAY = 0.1;
 var PORT=1234;
 
@@ -490,7 +492,7 @@ proc serve_file(s: socket_t, infname: string)
   elif suffix in text_suffices do
     serve_text(s,fname)
   elif suffix in ("gif","png","jpg") do
-    serve_image(s,suffix,fname);
+    serve_image(s,fname,suffix);
   else
     match get_file(fname, Empty[string]) with
     | None => { serve_not_found(s,fname); }

@@ -23,7 +23,7 @@ fun xlat_fpc(t:string, dir:string)=
         else out+= fv+"\n"; 
         done;
       }
-    | ?x => { println$ "No split"; out+=s + "\n"; }
+    | ?x => { out+=s + "\n"; }
     endmatch;
   }
   proc handle_pkg(s:string) {
