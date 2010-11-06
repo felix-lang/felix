@@ -407,9 +407,19 @@ proc serve_image(k:socket_t, fname:string, suffix:string)
 {
   var eof_flag = false;
   var txt = Text_file::load(fname);
-  println$ "Loaded raw file " + fname+", len="+str(len txt);
+  println$ "Loaded image file " + fname+", len="+str(len txt);
   //println$ "Contents=" + flx;
   val data = make_image(suffix,txt);
+  write_string(k,data,&eof_flag);
+}
+
+proc serve_css(k:socket_t, fname:string, suffix:string)
+{
+  var eof_flag = false;
+  var txt = Text_file::load(fname);
+  println$ "Loaded css file " + fname+", len="+str(len txt);
+  //println$ "Contents=" + flx;
+  val data = make_css(txt);
   write_string(k,data,&eof_flag);
 }
 
@@ -493,6 +503,8 @@ proc serve_file(s: socket_t, infname: string)
     serve_text(s,fname)
   elif suffix in ("gif","png","jpg") do
     serve_image(s,fname,suffix);
+  elif suffix == "css" do
+    serve_css(s,fname,suffix);
   else
     match get_file(fname, Empty[string]) with
     | None => { serve_not_found(s,fname); }

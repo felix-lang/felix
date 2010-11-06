@@ -1,10 +1,77 @@
 @h1 Overload Resolution
 Felix overload resolution is similar to C++, however there are
-some key differences.
+some key differences. The most important differences to note are
+that in Felix, overloading requires an exact match, and hiding
+of functions depends on equal signatues not just the name,
+so functions which would not be visible in C++ due to name
+hiding will be visible in Felix.
 
-During lookup, all functions of the given name are made
-candidates: there is no hiding (initially).
+There is another difference from C++ that should be mentioned here.
+Felix does not permit what C++ calls dependent names. In a polymorphic
+functions, overload resolution is carried out polymorphically and
+immediately, it is not deferred until instantiation. In particular
+you should observe the following error:
+@felix
+fun g(x:int, y:int)=> x + y;
+// fun f[t] (x:t, y:t) => g (x,y); ERROR
+@
+very carefully because this would work in C++ provided
+a template for <code>f</code> was instantiated with int</code>
+arguments.
 
+
+Deferred resolution is available, however, by using type classes,
+however this is not overloading of definitions, but overloading
+of instances.
+
+@h2 Hiding by signature
+During lookup, Felix hides functions by signature not plain name.
+A function named f with signature t will only hide a function with
+the same name and signature.
+
+@felix
+fun f(x:int)=>x;
+fun f(x:double)=>x;
+fun g()= {
+  fun f(x:int)=>2 * x;
+  var a = f 1; // closest copy
+  var b = f 1.0; // closest copy
+  return a,b;
+}
+println$ g();
+@
+
+Note the type constraints are not considered when deciding if
+one function hides another. Technically they should be but 
+determining if constraints are equal is difficult. Since
+overloading is primarily an ease of use feature with no
+operational semantics we don't consider this restriction
+particularly significant.
+
+
+@h2 Hiding of functions in opened modules and typeclasses
+The open feature removes the need to explicitly qualify names
+in many cases. Names exposed by open are hidden by the same
+name defined in the same scope as the open. For example in
+@felix
+module X { var x=1; }
+open X;
+var x = 2;
+println$ str x;
+@
+there is no duplicate definition or ambiguity. There is
+an ambiguity introduced by two opens though:
+@felix
+module X { var x=1; }
+module Y { var x=2; }
+open X; open Y;
+println$ str X::x + ", " + str Y::x;
+@
+so explicit qualification is required to resolve it.
+Note this is an ambiguity introduced not a duplicate definition.
+
+
+@h2 Specialisation of definitions
 The actual signatures exposed are modified by any specialisations
 as can be used in opens and inherits of type classes and modules,
 or explicitly when calling the function.
@@ -15,12 +82,17 @@ open[w] X[w,w];
 // effectively makes X::f[w](x:w,y:w) visible
 fun g[r] (x:r)=> f[r*r]((x,x),(x,x)); // specialised w->r*r
 @
-Felix then examines the first argument of the call and attempts to
+
+@h2 Specialisation of signatures
+Felix then examines the argument of the call and attempts to
 find a substitution of the type variables of the candidate which
 make the resulting type  a generalisation of the the first argument.
 If no such substitution is found, the candidate is removed from
-the set of candidates.
+the set of candidates. Note that a call like <code>f (1,2)</code>
+only involves a single argument, namely the tuple <code>(1,2)</code>
+although sometimes we incorrectly say there are two arguments.
 
+@h2 Resolution using return type
 If the function returns a function and the call is nested in another
 application as in this example:
 @felix
@@ -50,6 +122,7 @@ has two.
 At this point, not all type variables need to have been bound to
 concrete types.
 
+@h2 Resolution by type constraints
 Next, type constraints are considered. Felix checks
 if a constraint is satisfied by the calculated substitution,
 and if not rejects the candidate. For example
@@ -68,6 +141,7 @@ The type equations are solved by specialisation,
 that is, unification directed by pre-determining
 which variables are dependent and which independent.
 
+@h2 Fixing of all type variables
 Any candidate for which all the type variables cannot
 be fixed is then discarded. For example:
 @felix
@@ -83,19 +157,10 @@ possible to fix one explicitly whilst allowing the second
 one to be fixed by overload resolution. The syntax allows
 you to elide trailing bindings but you can't skip leading ones.
 
-A call then fails if the resulting set does not
-contain exactly one member. Note that reduction of types
-must occur before overloading, in particular type functions
-must be applied. If the result fails to reduce to a 
-type, the candidate cannot be selected.
+Note that equational type constraints can be used to fix
+type variables. 
 
-Note that type class constraints are not considered here.
-Interestingly, the only impact is that this delays some
-errors to instantiation time. It has no impact on 
-either overload resolution nor on the implementation
-of the function. However typeclass constraints do have
-to be bound (the typeclass has to be visible).
-
+@h2 Ordering by specialisation
 Having thus refined the candidates, Felix then proceeds to
 consider polymorphism. If one of the polymorphic types is
 more specialised than another, it is selected and the
@@ -112,8 +177,58 @@ println$ f(1,2);
 will select the first, second, and third functions
 respectively.
 
+Note that type constraints are ignored. Technically this
+is not correct: the should be ordered too, but as above
+overloading is already complicated and it is only syntactic
+sugar.
+
 You should also note that overloading applies to anything
 which names something function like, including functions,
 procedures, generators, constructor functions, union
 component constructors, and even type functions.
+
+@h2 Named arguments
+It is also possible to use named arguments in Felix:
+
+@felix
+fun pp(x:int, y:int=10)=> x + y;
+fun pp(xx:int, yy:int)=> 2 * (xx + yy);
+println$ pp(x=1, y=2);
+println$ pp(xx=1, yy=2);
+println$ pp(x=1);
+// pp(1) will not work!
+// pp(1,2) will be ambiguous
+// pp(1,y=2) is not allowed
+@
+If you use this feature, the argument names used in a call help to refine the
+set of candidates for overload resolution. If you use named arguments,
+all the arguments must be named or defaulted, you can't mix named and
+unnamed arguments in a call.
+
+@h2 Default Arguments
+Functions can also have default arguments, if this is the
+case the call must use the named argument feature to use
+a default value. Any arguments not named in a call must have
+defaults.
+
+The default is bound in the definition context.
+
+There is no priority between calls matching with named arguments:
+if two signatures match, with or without defaults, then the call
+is ambiguous.
+
+
+@h2 Final resolution
+A call then fails if the resulting set does not
+contain exactly one member. Note that reduction of types
+must occur before overloading, in particular type functions
+must be applied. If the result fails to reduce to a 
+type, the candidate cannot be selected.
+
+Note that type class constraints are not considered here.
+Interestingly, the only impact is that this delays some
+errors to instantiation time. It has no impact on 
+either overload resolution nor on the implementation
+of the function. However typeclass constraints do have
+to be bound (the typeclass has to be visible).
 

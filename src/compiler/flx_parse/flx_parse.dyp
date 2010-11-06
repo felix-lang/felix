@@ -25,6 +25,7 @@ open Flx_string
 let dypgen_choose_token = `all
 *)
 
+
 type action_t = [`Scheme of string | `None]
 type symbol_t = [`Atom of token | `Group of dyalt_t list]
 and dyalt_t = symbol_t list * Flx_srcref.t * action_t * anote_t
@@ -643,6 +644,11 @@ let dyp_merge_Obj_statement_star ol =
  | h::t ->
    match List.fold_left ssmerge h t with
    | ntt,gd,ld -> [ntt],gd,ld
+
+let dyphack (ls : ( 'a * string) list) : 'a =
+  match ls with
+  | [x,_] -> x
+  | _ -> failwith "Dypgen parser failed"
 
 }
 
@@ -1718,11 +1724,6 @@ epsilon: | { () }
 %%
 
 {
-let dyphack (ls : ( 'a * string) list) : 'a =
-  match ls with
-  | [x,_] -> x
-  | _ -> failwith "Dypgen parser failed"
-
 let parse_lexbuf (handle_stmt, init, old_local_data) lexbuf =
   let show_error () =
     let b = (Dyp.std_lexbuf lexbuf) in
@@ -1792,7 +1793,8 @@ let make_parser_state handle_stmt init = handle_stmt, init, local_data
 let parser_data (handle_stmt, init, local_data) = init
 
 let parse_channel ?(name="<channel>") parser_state channel =
-  let lexbuf = Dyp.from_channel (pp ()) channel in
+  let parser_pilot = pp () in
+  let lexbuf = Dyp.from_channel parser_pilot channel in
   Dyp.set_fname lexbuf name;
   parse_lexbuf parser_state lexbuf
 
@@ -1801,11 +1803,13 @@ let parse_file ?(include_dirs=[]) parser_state name =
   Flx_filesys.with_file_in name (parse_channel ~name parser_state)
 
 let parse_string ?(name="<string>") parser_state str =
-  let lexbuf = Dyp.from_string (pp ()) str in
+  let parser_pilot = pp() in
+  let lexbuf = Dyp.from_string parser_pilot str in
   Dyp.set_fname lexbuf name;
   parse_lexbuf parser_state lexbuf
 
 let parse_function ?(name="<function>") parser_state f =
-  let lexbuf = Dyp.from_function (pp ()) f in
+  let parser_pilot = pp () in
+  let lexbuf = Dyp.from_function parser_pilot f in
   parse_lexbuf parser_state lexbuf
 }

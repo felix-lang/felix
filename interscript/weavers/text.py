@@ -1,4 +1,3 @@
-#line 11 "interscript/src/text_weaver.ipk"
 from interscript.weavers.base import weaver_base
 import string
 
@@ -23,7 +22,6 @@ class plain_text_weaver(weaver_base):
     self.c = 0
     self.buffer = ''
     self.strong = 0
-    self.string = string
     self.code = 0
     self.sink = writer
     self.name = 'plain text weaver v1 for '+self.sink.name
@@ -250,7 +248,7 @@ class plain_text_weaver(weaver_base):
       self._write((' '*self.margin)+word)
 
   def _flush(self):
-    words = self.string.split(self.buffer)
+    words = self.buffer.split()
     for w in words:
       self._write_word(w)
     self.buffer = ''

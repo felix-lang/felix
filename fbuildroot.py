@@ -454,6 +454,43 @@ def build(ctx):
         if not ctx.options.skip_tests:
             run_tests(target)
 
+    #if "doc" in ctx.args:
+    if 1 == 1: # I don't know how to get an extra arg into the build ..
+      # WARNING: this has the side effect of making a "tut" directory
+      # in the source (current) directory. It should go into the
+      # build directory instead, but I don't know how to make it do that.
+      # 
+      # The result of this process should be the old interscript documentation
+      # in the build directory doc/iscr
+
+      try:
+        os.mkdir(ctx.buildroot+"/doc/iscr")
+      except:
+        pass
+
+      flags = [
+        "--weaver=web",
+        "--language=en",
+        "--weaver-directory=doc/iscr/",
+        "--passes=2",
+        ]
+
+      iscr("lpsrc/flx_tutorial.pak",flags=flags)
+      iscr("lpsrc/flx_tut_macro.pak",flags=flags)
+      iscr("lpsrc/flx_tut_bind.pak",flags=flags)
+      iscr("lpsrc/flx_tut_migrate.pak",flags=flags)
+
+      # copy stuff for interscript generated docs
+      cmd = "cp "+ctx.buildroot+"/misc/*.gif " + ctx.buildroot+"/doc/iscr"
+      print(cmd)
+      os.system(cmd)
+
+      cmd = "cp misc/*.css " + ctx.buildroot+"/doc/iscr"
+      print(cmd)
+      os.system(cmd)
+
+
+
 # ------------------------------------------------------------------------------
 
 def run_tests(target):
@@ -509,3 +546,4 @@ def run_tests(target):
         target.ctx.logger.log('\nThe following tests failed:')
         for src in failed_srcs:
             target.ctx.logger.log('  %s' % src, color='yellow')
+

@@ -138,15 +138,12 @@ var FLX_INSTALL_DIR = Env::getenv("FLX_INSTALL_DIR", INSTALL_ROOT);
 fun link_strings(FLX_INSTALL_DIR:string): string * string =
 {
 @if config.HAVE_MSVC:
-  tangle('dbug?? println "Set MSVC linker options";');
   tv('DLINK_STRING="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl "')
   tangle('SLINK_STRING="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl "')
  elif config.CYGWIN or config.WIN32:
-  tangle('dbug?? println "Set Cygwin linker options";');
   tv('DLINK_STRING="-L"+{FLX_INSTALL_DIR+"/bin "')
   tv('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
  else:
-  tangle('dbug?? println "Set Unix linker options";');
   tv('DLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
   tv('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
 @#
