@@ -29,7 +29,8 @@ def auto_weaver(pass_frame,basename,autoweave,title=None):
         except ImportError:
           print('Cannot import module '+modname)
           raise
-        try: exec('mk = ' + ctorname)
+        try:
+          mk = eval(ctorname)
         except AttributeError:
           print('Cannot find weaver constructor '+ctorname)
           raise
