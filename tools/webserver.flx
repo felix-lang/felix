@@ -502,8 +502,12 @@ proc serve_file(s: socket_t, infname: string)
   elif suffix in text_suffices do
     serve_text(s,fname)
   elif suffix in ("gif","png","jpg") do
+    // path lookup for images
+    fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
     serve_image(s,fname,suffix);
   elif suffix == "css" do
+    // path lookup for css files
+    fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
     serve_css(s,fname,suffix);
   else
     match get_file(fname, Empty[string]) with
