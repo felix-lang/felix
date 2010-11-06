@@ -445,15 +445,6 @@ def build(ctx):
         debug=ctx.options.debug,
         flags=['--test=' + ctx.buildroot])
 
-    # --------------------------------------------------------------------------
-    # run the felix tests and other commands
-
-    if 'speed' in ctx.args:
-        call('buildsystem.speed.run_tests', target)
-    else:
-        if not ctx.options.skip_tests:
-            run_tests(target)
-
     #if "doc" in ctx.args:
     if 1 == 1: # I don't know how to get an extra arg into the build ..
       # WARNING: this has the side effect of making a "tut" directory
@@ -488,6 +479,15 @@ def build(ctx):
       cmd = "cp misc/*.css " + ctx.buildroot+"/doc/iscr"
       print(cmd)
       os.system(cmd)
+
+    # --------------------------------------------------------------------------
+    # run the felix tests and other commands
+
+    if 'speed' in ctx.args:
+        call('buildsystem.speed.run_tests', target)
+    else:
+        if not ctx.options.skip_tests:
+            run_tests(target)
 
 
 
