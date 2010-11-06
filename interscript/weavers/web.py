@@ -65,7 +65,7 @@ class stacking_weaver(multiplexor):
     else:
       self.title = self.home_file
     self.pattern = pattern
-    if string.find(pattern,'%') == -1:
+    if pattern.find('%') == -1:
       self.pattern = self.pattern+'_%s.html'
     # break list
     self.break_list = [0]
