@@ -26,6 +26,8 @@ module C_hack
   """
   proc ignore[t]:t = "(void)$t;";
 
+  fun _ctor_address[T]: &T -> address = "(void*)$1";
+
   fun cast[dst,src]: src->dst = '(?1)($1)';
   fun static_cast[dst,src]: src->dst = 'static_cast<?1>($1)';
   fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)';

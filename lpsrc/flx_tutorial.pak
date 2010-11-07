@@ -205,14 +205,6 @@ Felix bool is a C++ int, and not a C++ bool.
 Bools can also be used in a conditional expression,
 note that an endif keyword and both branches are always
 required.
-@p()
-See also
-@line_break()
-@cite_url("../../moduledoc/Bool.html")
-@line_break()
-@cite_url("../../gramdoc/logic.html")
-@line_break()
-@cite_url("../../gramdoc/conditional.html")
 
 @select(env.test('.flx'))
 @kat('bool')
@@ -269,41 +261,6 @@ for long long, both letters must be either lower or upper case).
 @table_row("vlong","signed long long","ll, v")
 @table_row("uvlong","unsigned long long","ull, llu, uv, vu")
 @end_table()
-For abstract semantics see also:
-@line_break()
-@cite_url("../../typeclassdoc/Integer.html")
-@line_break()
-@cite_url("../../typeclassdoc/Unsigned_integer.html")
-@line_break()
-For constructors and auxilliary functions see also:
-@line_break()
-@cite_url("../../moduledoc/Tiny.html")
-@line_break()
-@cite_url("../../moduledoc/Short.html")
-@line_break()
-@cite_url("../../moduledoc/Int.html")
-@line_break()
-@cite_url("../../moduledoc/Long.html")
-@line_break()
-@cite_url("../../moduledoc/Vlong.html")
-@line_break()
-@cite_url("../../moduledoc/Utiny.html")
-@line_break()
-@cite_url("../../moduledoc/Ushort.html")
-@line_break()
-@cite_url("../../moduledoc/Uint.html")
-@line_break()
-@cite_url("../../moduledoc/Ulong.html")
-@line_break()
-@cite_url("../../moduledoc/Uvlong.html")
-@line_break()
-@p()
-Some of the grammar is specified here:
-@line_break()
-@cite_url("../../gramdoc/arithmetic.html")
-@line_break()
-@cite_url("../../gramdoc/exponentials.html")
-@line_break()
 
 The following aliases are also provided, in this
 case the C name may not be used:
@@ -434,9 +391,7 @@ between digits, or a digit and the prefix or suffix.
 @env.head(3,"Mixed Mode Integers")
 Felix by default only supports arithmetic on integers
 of exactly the same type. To enable mixed mode arithmetic
-you can open the MixedInt module, specified here:
-@line_break()
-@cite_url("../../moduledoc/MixedInt.html")
+you can open the MixedInt module.
 
 @select(env.test('.flx'))
 @kat("type constraints")
@@ -460,18 +415,6 @@ Felix provides 3 floating point types.
 @table_row("double","double")
 @table_row("ldouble","long double")
 @end_table()
-For abstract semantics see also:
-@line_break()
-@cite_url("../../typeclassdoc/FloatDring.html")
-@line_break()
-For constructors and auxilliary functions see also:
-@line_break()
-@cite_url("../../moduledoc/Float.html")
-@line_break()
-@cite_url("../../moduledoc/Double.html")
-@line_break()
-@cite_url("../../moduledoc/Ldouble.html")
-@line_break()
 
 @select(env.test('.flx'))
 // floats obey C99 rules, except we allow underscores
@@ -496,20 +439,6 @@ Felix provides 3 complex types corresponding to the three floating types.
 @table_row("dcomplex","std::complex<double>")
 @table_row("lcomplex","std::complex<long double>")
 @end_table()
-For abstract semantics see also:
-@line_break()
-@cite_url("../../typeclassdoc/Complex.html")
-@line_break()
-For constructors and auxilliary functions see also:
-@line_break()
-@cite_url("../../moduledoc/Fcomplex.html")
-@line_break()
-@cite_url("../../moduledoc/Dcomplex.html")
-@line_break()
-@cite_url("../../moduledoc/Lcomplex.html")
-@line_break()
-@cite_url("../../moduledoc/Imagination.html")
-@line_break()
 
 @select(env.test('.flx'))
 proc pr (z:dcomplex) { println (fmt[dcomplex,double](z,fixed(0,3))); }
@@ -734,8 +663,7 @@ overload matching must be exact.
 @head(2,"Operators")
 Felix provides many of the operators found
 in C. Here is are some examples with equivalent
-function calls. The complete expression grammar is given here:
-@cite_url('../../gramdoc/dssl_expressions.html')
+function calls.
 Note that Felix does not have builtin expression syntax:
 the grammar, including expressions, is defined in the library.
 
@@ -1431,94 +1359,7 @@ thread may proceed until it is fully negotiated.
 Most modern languages support packaging of related
 specifications into some kind of module, and Felix
 is no exception. Much of the standard library is
-exhibited as modules. Documentation of the standard
-modules is available here:
-
-@cite_url("../../moduledoc/index.html")
-@p()
-Basic module use is quite simple:
-
-@select(env.test('.flx'))
-@kat('modules')
-val top = 1;
-module A {
-  val a = top + 1;
-  module B {
-    val b = a + 1;
-  }
-}
-
-print top; endl;
-print root::top; endl;
-print A::a; endl;
-print A::B::b; endl;
-@doc()
-
-@select(env.expect())
-1
-1
-2
-3
-@doc()
-
-This example illustrates the simple use of modules,
-including module nesting, and use of qualified names
-to access module components.
-@p()
-You can put anything except export declarations in
-modules that you can put at the top level, and for a
-very simple reason: the top level is, in fact,
-a module itself.
-@p()
-When a qualified name is used, the qualifier specifies
-the module in which the next name must be found.
-Qualification inhibits upscope overloading.
-@p()
-Note the name 'root' is used to name the top-level
-module, in lieu of the actual module name, which is
-derived from the basename of the filename.
-@p()
-Finally, it is vital to understand that Felix
-scopes act like sets of names. Names are always defined
-in parallel, and visible to all definitions in the scope,
-so that all definitions are mutually recursive.
-For this reason, forward declarations are never needed.
-The following example is quite legal:
-
-@begin_displayed_code()
-  x = 1;
-  y = x;
-  var y:int;
-  var x:int;
-@end_displayed_code()
-
-This is much like the 'rewriting rule' for C++ class member
-functions. Note, however, that executable code
-is still sequential! Thus, the order of value and variable
-definition does matter: initialisations are executed
-in order of writing.
-
-
-@env.head(2,"C formatting")
-This is how you do printf-style string formatting.
-
-@select(env.test('.flx'))
-@kat("formatting:printf style")
-print$ f"% 1.2d 0x%x %% %g %ld\n" (22,99u,9.7,88l);
-@doc()
-
-@select(env.expect())
- 22 0x63 % 9.7 88
-@doc()
-
-You should note that a C format string is a first-class
-statically typed function literal! Formatting errors are always
-caught by the compiler. However, the format strings cannot
-be dynamically constructed.
-@p()
-Felix also provides dynamic string based formatting,
-see
-@cite_url("../../moduledoc/String.html")
+exhibited as modules. 
 
 @doc()
 
@@ -4333,9 +4174,7 @@ for_each {i=0;} {i<argc} {++i;}
 @end_displayed_code()
 
 @env.head(1,"Typeclasses")
-Felix has typeclasses similar to Haskell. Documentation on the
-standard library typeclasses is available here:
-@cite_url("../../typeclassdoc/index.html")
+Felix has typeclasses similar to Haskell.
 
 @select(env.test('.flx'))
 @kat("typeclasses")
