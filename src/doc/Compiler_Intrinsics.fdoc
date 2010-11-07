@@ -1,0 +1,19 @@
+@h1 Intrinsics
+The Felix compiler provides a number of intrinsics which we document here.
+@h2 memcount
+In the module <code>Typing</code> we have the following definition:
+@felix
+  const memcount[t] : int = "#memcount";
+@
+This is used in the <code>Array</code> module:
+@felix
+  fun len[T, N] (x:array[T, N]): int => Typing::memcount[N];
+@
+to find the length of an array.
+
+The psuedo C code <code>#memcount</code> is replace by an integer literal
+repesenting the number of constructors in a union or sum type.
+
+@h2 Tuple folders
+[See desugar module to write this up]
+

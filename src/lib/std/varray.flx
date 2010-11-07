@@ -9,6 +9,10 @@ open module Varray
     requires property "needs_gc"
   ;
 
+  // raw memory initialisation
+  private proc _init[T]: &T * T = "new((void*)$1) ?1($2);";
+ 
+
   // Note: the test on size > 0ul is required because
   // 0ul - 1ul is MAX_ULONG which causes a rather
   // too many loop iterations ..
@@ -19,7 +23,7 @@ open module Varray
     var i : ulong;
 
     if size > 0ul do forall i in 0ul upto size - 1ul do
-      o.[i] = default;
+      _init(&o.[i], default);
     done done
     set_used (o,size);
     return o;
@@ -31,11 +35,17 @@ open module Varray
     var i : ulong;
 
     if size > 0ul do forall i in 0ul upto size - 1ul do
-      o.[i] = f i;
+      _init(&o.[i], f i);
     done done
     set_used (o,size);
     return o;
   }
+
+  // funny, the N isn't explicitly used.
+  publish "Construct a varray from an array"
+  fun _ctor_varray[t,N] (x:array[t,N]):varray[t] => 
+     varray[t] (ulong(Array::len x), (fun (i:ulong)=>x.[int(i)]))
+  ;
 
   private proc set_used[t]: varray[t] * ulong =
     "PTF gcp->collector->set_used($1,$2);"
