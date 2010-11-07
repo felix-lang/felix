@@ -1,4 +1,13 @@
-Installing Felix.
+Installing Felix
+================
+
+Requirements
+------------
+* OCaml
+* Python >= 3.0
+
+Compilation
+-----------
 
 1. First build it with
 
@@ -19,6 +28,3 @@ Note Felix does not currently install the binay for the command line
 processor "flx". Each version of Felix has a completely separate
 install directory. You may choose not to copy "flx" but instead
 put it on your PATH.
-
-
-
