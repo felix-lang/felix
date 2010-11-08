@@ -423,11 +423,87 @@ proc serve_css(k:socket_t, fname:string, suffix:string)
   write_string(k,data,&eof_flag);
 }
 
+fun mk_dir_lines (fname:string, dirs: list[string]) : string =
+{
+  fun rf(f:string)=>'  <a href="/$'+ fname + '/' +f+'">'+f+'</a>';
+  return 
+    fold_left (fun (acc: string) (f:string) => 
+      match f with 
+      | "." => acc 
+      | ".." => acc
+      | _ => acc + rf f + "\r\n" 
+      endmatch
+    ) 
+    "" 
+    dirs
+  ;
+}
+
+  
+fun mk_reg_lines (fname:string, files: list[string]) : string =
+{
+  var eof = false;
+  var s = "";
+  var old_base = "";
+  var base = "";
+  var extn = "";
+  var entry = "";
+  var exts = Empty[string];
+  var rest = files;
+
+  proc hd() { chd; }
+  proc chd() { exts=list(extn); old_base=base; }
+  proc cft() {
+println$ "Cft for key " + old_base + " exts=" + str exts;
+    fun rf(x:string)=>
+      '  <a href="/$'+ fname + '/' +old_base+x+'">'+
+      if x == "" then "(none)" else x endif +
+      '</a>'
+    ;
+    def var extn, var rest = match exts with | Cons(?h,?t)=> h,t endmatch;
+    s+= '  <a href="/$'+ fname + '/' +old_base+extn +'">'+old_base+extn+'</a>';
+    List::iter (proc (x:string){ s+=" "+rf x; }) rest;
+  }
+  proc ft() { cft; s+="\r\n"; }
+  proc twixt() { s+="\r\n"; }
+  proc cbrk () { cft; twixt; chd; }
+  proc nxt() { 
+    match rest with 
+    | Cons(?h,?t) => 
+      entry = h; rest = t;
+      base,extn =
+        match rfind (entry, ".") with
+        | None[int] => entry, "" 
+        | Some ?pos => entry.[to pos], entry.[pos to]
+        endmatch
+      ;
+    | Empty => eof = true;   
+    endmatch;
+  }
+
+  //special case for empty list
+  if len files == 0 do return ""; done
+
+  nxt;                    //prime the system
+  hd;                     // head off
+
+again:>
+  nxt;
+  if eof goto fin;        //check for eof
+  if base == old_base do  //check for control break
+    exts += extn;         // nope, same key
+  else 
+    cbrk;                 // key changed
+  done
+  goto again;
+fin:>
+  ft;                     // foot off
+  return s;
+}
 
 proc serve_directory(k:socket_t, fname:string)
 {
   var dirname = Filename::basename fname;
-  fun rf(f:string)=>'  <a href="/$'+ fname + '/' +f+'">'+f+'</a>';
   var eof_flag = false;
   val top = "A DIRECTORY " + fname + "\r\n";
   val flist = 
@@ -444,21 +520,12 @@ proc serve_directory(k:socket_t, fname:string)
       in
       let ?dirs,?regs = fold_left aux (Empty[string], Empty[string]) files in
       let ?dirs,?regs = sort dirs, sort regs in
+      let ?dir_lines = mk_dir_lines (fname,dirs) in
+      let ?reg_lines = mk_reg_lines (fname,regs) in
         "<pre>"+ 
         '  <a href="/"><em>home</em></a>\r\n'+
-        ' Directories: \r\n' +
-        (fold_left (fun (acc: string) (f:string) => 
-          match f with 
-          | "." => acc 
-          | ".." => acc
-          | _ => acc + rf f + "\r\n" endmatch) 
-           "" dirs
-        ) +
-        ' Files: \r\n' +
-        (fold_left (fun (acc: string) (f:string) => 
-           acc + rf f + "\r\n" ) 
-           "" regs 
-        ) +
+        if dir_lines.len != 0 then ' Directories: \r\n' + dir_lines else "" endif +
+        if reg_lines.len != 0 then ' Files: \r\n' + reg_lines else "" endif +
         "</pre>"
     | None => "ERROR ACCESSING DIRECTORY"
     endmatch

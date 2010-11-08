@@ -5,6 +5,7 @@ private val big_keywords =
   "fun",
   "gen",
   "proc",
+  "ctor",
   "type",
   "union",
   "struct",

@@ -74,6 +74,7 @@ nextc:>
         elif b=="caveat" do write_string("<p class=caveat> <em>Caveat: </em> "); s=doc;
         elif b=="impl" do write_string("<p class=implementation_detail> <em>Implementation Detail: </em>"); s=doc;
         elif b=="future" do write_string("<p class=future> <em>In future: </em>"); s=doc;
+        elif b=="bug" do write_string("<p class=bug> <em>In future: </em>"); s=doc;
         elif prefix(b,"h1") do write_string("<h1>"+b.[3 to]+"</h1>\n"); s=doc;
         elif prefix(b,"h2") do write_string("<h2>"+b.[3 to]+"</h2>\n"); s=doc;
         elif prefix(b,"h3") do write_string("<h3>"+b.[3 to]+"</h3>\n"); s=doc;

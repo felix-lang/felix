@@ -12,7 +12,7 @@ left associating operator.
 
 @h2 operator dollar
 In addition, the dollar <code>$</code> operator is shown, which is a low precedence
-left associating application operator, it is stolen from Haskell.
+right associating application operator, it is stolen from Haskell.
 
 @h2 operator dot 
 It is also possible to use the left associating very high precedence
@@ -106,7 +106,7 @@ Be careful not to overuse this feature as it makes debugging
 type errors difficult when there are multiple possible interpretations.
 
 @h2 Constructor functions: Applying a type to a value
-There is another trick with applications, show here:
+There is another trick with applications, shown here:
 @felix
 fun f(x:char)=> x == char "x";
 @
