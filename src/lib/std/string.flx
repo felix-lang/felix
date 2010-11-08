@@ -1,10 +1,13 @@
 type string = "::std::string";
-type ustring = "basic_string<uint32_t>" requires string_hxx;
+type ustring = "::std::basic_string<uint32_t>" requires string_hxx;
 
 typedef strings = typesetof (string,ustring);
 
 instance[t in strings] Eq[t] {
   fun eq: t * t -> bool = "$1==$2";
+}
+instance[t in strings] Tord[t] {
+  fun lt: t * t -> bool = "$1<$2";
 }
 
 open Eq[string];

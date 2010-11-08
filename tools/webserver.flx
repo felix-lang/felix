@@ -433,16 +433,33 @@ proc serve_directory(k:socket_t, fname:string)
   val flist = 
     match FileSystem::filesin fname with
     | Some ?files =>
-       "<pre>"+ 
-       '  <a href="/"><em>home</em></a>\r\n'+
-       (fold_left (fun (acc: string) (f:string) => 
+      let ?aux = 
+          fun (ls2:list[string] * list[string]) (f:string) =>
+          match ls2 with | ?ds,?rs => match FileSystem::filetype (Filename::join (fname,f)) with
+            | DIRECTORY => Cons (f,ds), rs
+            | REGULAR => ds, Cons (f,rs)
+            | _ => ls2
+            endmatch
+          endmatch
+      in
+      let ?dirs,?regs = fold_left aux (Empty[string], Empty[string]) files in
+      let ?dirs,?regs = sort dirs, sort regs in
+        "<pre>"+ 
+        '  <a href="/"><em>home</em></a>\r\n'+
+        ' Directories: \r\n' +
+        (fold_left (fun (acc: string) (f:string) => 
           match f with 
           | "." => acc 
           | ".." => acc
           | _ => acc + rf f + "\r\n" endmatch) 
-        "" files
-       ) +
-       "</pre>"
+           "" dirs
+        ) +
+        ' Files: \r\n' +
+        (fold_left (fun (acc: string) (f:string) => 
+           acc + rf f + "\r\n" ) 
+           "" regs 
+        ) +
+        "</pre>"
     | None => "ERROR ACCESSING DIRECTORY"
     endmatch
   ;

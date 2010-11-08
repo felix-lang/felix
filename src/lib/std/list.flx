@@ -310,6 +310,22 @@ open module List
     ;
     return aux (x,Empty[T]);
   }
+
+ fun sort[T] (lt:T*T->bool) (x:list[T])=
+ {
+   val n = len x;
+   var a = varray[T]$ ulong n;
+   iter (proc (e:T) { a+=e; }) x;
+   Varray::sort lt a;
+   var r = Empty[T];
+   var i:int;
+   forall i in n - 1 downto 0 do r = Cons(a.[i], r); done
+   return r;
+ }
+
+ fun sort[T with Tord[T]](x:list[T])=> sort lt x;
+    
+
 }
 
 instance[T with Show[T]] Str[List::list[T]] {

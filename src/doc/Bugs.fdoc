@@ -42,7 +42,10 @@ No known issues.
 @h2 The run time support libraries (C++)
 
 @h2 The compiler (bin/flxg)
+@h3 Closures of anon sums
 <p>Can't handle closures of anonymous sums.
+
+@h3 Split nugram.flxh
 <p>The grammar file (lib/nugram.flxh) cannot be split up into parts
 because it is too early during parsing to use the include statement.
 It is not that the grammar production for the include statement is
@@ -55,6 +58,8 @@ there are no #includes which would be managed at a low level, nor the
 #line directives which would allow a preprocessor to do the job.
 The grammar works but the file is way too big to present in documentation
 as is.
+
+@h3 Error reporting
 <p>A large number of client errors are not reported properly. In particular
 most type errors are not properly reported because source references
 are not propagated. In fact it seems we have lost all our source references
@@ -63,11 +68,13 @@ preserve source references. Managing source references is extremely difficult
 and very laborious. Code transformation involving both reductions and
 synthesis bring into question every time what source reference to use.
 
+@h3 Inefficient binding
 <p> The compiler needlessly binds symbols that are never used.
 This is done partly to ensure a whole file is properly type checked.
 Nevertheless the overhead of rebinding the whole library every time
 could be onerous. The optimiser does strip out unused entities.
 
+@h3 grammar for ctor 
 <p> The grammar for constructor is indadequate, I need to do this:
 @felix
 ctor[T,N] varray[T]: array[T,N] => ..
@@ -80,4 +87,42 @@ fun[T with X[T]] f(x:t)=> ...
 which is used, for example, for <code>open</code> because it has to be.
 The way C++ does this is the best, with an explicit schema quantifier
 (namely the <code>template</code> prefix).
+
+@h3 Operator dot failure
+<p>I expected this to work:
+@felix
+ fun sort[T] (lt:T*T->bool) (x:list[T])=
+ {
+   val n = len x;
+@
+but it gives:
+<pre>
+~/felix>flx --test=build/release-optimized/ tl
+Failure binding expression (x.len)
+SYSTEM FAILURE
+[lookup] operator . Expected LHS nominal type to be (c)struct or abstract primitive, got list[<T4795>]
+</pre>
+Not clear why the AST_dot code doesn't handle this properly, looks like,
+in fact, that code isn't being called. Check out also the Koenig lookup code.
+The lookup routines have some duplication of handling depending on the
+exact context in which something is found.
+<p>I have to note another case that failed: 
+@felix
+(&x).address
+@
+I expected this to apply address to the argument, and then notice address is a type
+so then look for a constructor. Actually address is defined in global scope,
+whereas the constructor, which is just a cast, is defined in C_hack,
+however this would only account for a failure is Koenig lookup was being
+applied, which isn't clear. This case also points to the need to write 
+something like:
+@felix
+(&x).C_hack::address
+@
+in the general case, although in this case it isn't clear that would
+work since the actual type address is found in global scope, not C_hack.
+Anyhow, worth examining all the ways operator dot can work, make
+lots of test cases, and document what it actually does (or should do).
+
+
 
