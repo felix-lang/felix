@@ -1,6 +1,6 @@
 //Check sockets
-include "flx_stream";
-include "flx_socket";
+include "std/io/flx_stream";
+include "std/io/flx_socket";
 open Flx_stream;
 open Flx_socket;
 open Flx_stream::TerminalIOByteStream[Flx_socket::socket_t];

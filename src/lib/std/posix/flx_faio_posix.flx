@@ -1,8 +1,8 @@
 // contains posix async socket io & copipes, all wrapped up streams
 
 include "pthread";
-include "flx_faio";
-include "flx_demux";
+include "std/io/flx_faio"; //mutual recursion? Really!
+include "std/io/flx_demux";
 
 module Faio_posix  {
 header faio_posixio_hpp = '#include "faio_posixio.hpp"';

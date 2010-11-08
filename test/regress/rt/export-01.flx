@@ -1,6 +1,6 @@
 //Check export
 
-include "flx_faio";
+include "std/io/flx_faio";
 
 var clock = Faio::mk_alarm_clock();
 

@@ -1,4 +1,4 @@
-include "flx_faio_posix";
+include "std/posix/flx_faio_posix";
 open Faio_posix;
 
 header "typedef struct { char dat[8]; } tstbuf;";

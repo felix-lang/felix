@@ -1,4 +1,4 @@
-include "flx_faio";
+include "std/io/flx_faio";
 include "pthread";
 open Pthread;
 

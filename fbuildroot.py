@@ -383,14 +383,6 @@ def build(ctx):
     target.flx = call('buildsystem.flx.build', ctx,
         compilers.flxg, target.cxx.static, drivers)
 
-    # copy documentation into target
-    # Hack. Erick fixme! Only works on unix
-    print("Copying docs")
-    try:
-      os.mkdir(ctx.buildroot+"/doc")
-    except:
-      pass
-
     # copy website index
     cmd = "cp index.html "+ctx.buildroot;
     print(cmd)
@@ -414,12 +406,15 @@ def build(ctx):
 
 
     # copy docs
-    for file in glob.glob("src/doc/*.fdoc"):
-      cmd = "cp " + file +" "+ctx.buildroot+"/doc"
-      print(cmd)
-      os.system(cmd)
+    cmd = "cp -R src/doc "+ctx.buildroot
+    print(cmd)
+    os.system(cmd)
 
     # copy files into the library
+    cmd = "cp -R src/lib "+ctx.buildroot;
+    print(cmd)
+    os.system(cmd)
+
     for module in 'flx_stdlib', 'flx_pthread', 'demux', 'faio', 'judy':
         call('buildsystem.' + module + '.build_flx', target)
 

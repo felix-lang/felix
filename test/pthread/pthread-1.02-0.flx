@@ -1,5 +1,5 @@
 include "pthread";
-include "flx_faio";
+include "std/io/flx_faio";
 open String;
 
 print "Garbage collector world stop test"; endl;

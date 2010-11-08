@@ -1,10 +1,10 @@
-include "flx_faio";
-include "flx_stream";
+include "std/io/flx_faio";
+include "std/io/flx_stream";
 
 if POSIX do
-  include "flx_faio_posix";
+  include "std/posix/flx_faio_posix";
 elif WIN32 do
-  include "flx_faio_win32";
+  include "std/win32/flx_faio_win32";
 else
   include "ERROR: flx_socket requires POSIX or WIN32";
 done;
