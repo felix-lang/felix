@@ -461,6 +461,7 @@ def build(ctx):
         "--passes=2",
         ]
 
+      print("Generating tutorial docs")
       iscr("lpsrc/flx_tutorial.pak",flags=flags)
       iscr("lpsrc/flx_tut_macro.pak",flags=flags)
       iscr("lpsrc/flx_tut_bind.pak",flags=flags)

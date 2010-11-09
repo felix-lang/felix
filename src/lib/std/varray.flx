@@ -17,7 +17,7 @@ open module Varray
   // 0ul - 1ul is MAX_ULONG which causes a rather
   // too many loop iterations ..
 
-  publish "Construct a varray with a default value"
+  publish "Construct a full varray with a default value"
   gen _ctor_varray[t] (size:ulong, default:t) = {
     var o = varray[t] size;
     var i : ulong;
@@ -29,22 +29,32 @@ open module Varray
     return o;
   }
 
-  publish "Construct a varray with a default value computed by a function"
-  gen _ctor_varray[t] (size:ulong, f:ulong->t) = {
+  publish "Construct a partially filled varray with a default value computed by a function"
+  gen _ctor_varray[t] (size:ulong, used:ulong, f:ulong->t) = {
     var o = varray[t] size;
     var i : ulong;
 
-    if size > 0ul do forall i in 0ul upto size - 1ul do
+    if size > 0ul do forall i in 0ul upto min(used,size) - 1ul do
       _init(&o.[i], f i);
     done done
-    set_used (o,size);
+    set_used (o,used);
     return o;
   }
 
+  publish "Construct a full varray from an array"
   // funny, the N isn't explicitly used.
-  publish "Construct a varray from an array"
   fun _ctor_varray[t,N] (x:array[t,N]):varray[t] => 
-     varray[t] (ulong(Array::len x), (fun (i:ulong)=>x.[int(i)]))
+     _ctor_varray[t] (ulong(Array::len x), ulong(Array::len x), (fun (i:ulong)=>x.[int(i)]))
+  ;
+
+  publish "Construct a partially full varray from a varray"
+  fun _ctor_varray[t] (x:varray[t], maxlen:ulong) =>
+    _ctor_varray[t] (maxlen, len x, (fun (i:ulong)=> x.[i]))
+  ;
+
+  publish "Construct a full varray from a varray (copy constructor)"
+  fun _ctor_varray[t] (x:varray[t]) =>
+    _ctor_varray[t] (len x, len x, (fun (i:ulong)=> x.[i]))
   ;
 
   private proc set_used[t]: varray[t] * ulong =

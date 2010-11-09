@@ -1,0 +1,61 @@
+publish "Unbounded Variable length arrays"
+
+open module Darray
+{
+  private struct darray_ctl[T]
+  {
+    a: varray[T];
+    resize: ulong * ulong --> ulong;
+  }
+
+  // this is the default array resize function
+  // if we run out of space, allocate what we have + 50%
+  // if we need less than half the allocated space, return the requested size + 50%
+  // otherwise return the existing allocated space
+  cfun dflt_resize(old_max:ulong, requested:ulong):ulong=
+  {
+    // GOTCHA: don't forget that division has a higher precedence than multiplication!
+    if requested < old_max / 2ul do return (3ul * requested) / 2ul; done 
+    if requested > old_max do return (requested * 3ul) / 2ul;  done
+    return old_max;
+  }
+
+  // I need to figure out how to hide this representation
+  typedef darray[T] = &darray_ctl[T];
+
+  proc do_resize[T] (pd: darray[T], new_size: ulong)
+  {
+    var old = pd.a;
+    fun get(i:ulong)=>old.[i];
+    pd.a = varray[T] (new_size, (len old), (fun(i:ulong)=>old.[i]));
+  }
+
+  // make an empty darray, give it 20 slots for no particular reason
+  gen _ctor_darray[T] () => new darray_ctl( _ctor_varray[T] 20ul , dflt_resize);
+
+  // make a darray from a varray
+  gen _ctor_darray[T] (a:varray[T]) => new darray_ctl( _ctor_varray[T] a, dflt_resize);
+
+  // basic array stuff, same interface as array
+  fun subscript[t,ii in ints] (a:darray[t],  n:ii) => a.a.[n];
+  fun len[t] (a:darray[t])=> len a.a;
+
+  // basic array stuff, same interface as varray
+  proc pop[t](a:darray[t]) {
+    pop a.a;
+    newsize := a.resize (maxlen a.a,len a.a);
+    if newsize != maxlen a.a do do_resize (a,newsize); done 
+  }
+
+  proc pluseq[t] (a:&darray[t],v:t) {
+    newsize := a.resize (maxlen a.a, len a.a + 1ul);
+    if newsize != maxlen a.a do do_resize(*a,newsize); done
+    var z = a.a; z += v; // hack to workaround compiler error Address non variable
+  }
+  
+}
+
+instance[T with Show[T]] Str[Darray::darray[T]] {
+  fun str (x:darray[T])=> str x.a;
+}
+

@@ -1,0 +1,49 @@
+@h1 The C++ Code Generator: Some notes
+Here are some random notes on how the code generator works.
+
+@h2 Constructors
+Felix generates constructors for tuples, but not for arrays or structs.
+However Felix knows arrays and structs are layout compatible with
+tuples with the same sequence of element types, so construction of structs and arrays is done
+by first constructing the related tuple, and then casting the result
+to the target type, using the cheat template <code>reinterpret</code> found in
+<a href=rtl/flx_meta.hpp>flx_meta.hpp</a>. This template can convert rvalues
+to lvalues, defying the ban in C++ on doing this. The ban is plain stupid, because
+rvalues can be bound by const references, proving they're addressable.
+
+Omitting array and struct constructors reduces code bloat, since tuples
+are unique, and their constructors serve perfectly well for all 
+layout compatible arrays and structs.
+
+Note there is special hackery in the compiler to ensure that the tuple
+type for arrays are generated if required: Felix arrays are just tuples with elements
+of the same type, and the type calculus normally replaces any such tuples
+with the corresponding array term.
+
+Constructors are only generated if they're used.
+
+@h2 Naming magic
+Here is a rough guide to how Felix names things.
+All synthesised names start with underscore to avoid clashes with
+user C code. All user names are mangled to replace characters illegal
+in C. For example the single quote used as a prime is replace by <code>_quote_</code>.
+
+<code>_poly_9999t_8888</code> means an instance index 8888 of polymorphic type 9999.
+
+<code>_tt9999</code> is a tuple type index 9999.
+
+<code>_a9999t</code> is an array type index 9999.
+
+<code>_i9999_v8888_xxxx</code> is instance 9999 of variable named <code>xxxx</code>
+with index 8888.
+
+<code>PTF</code> This macro is a string representing access to the thread
+frame via the Pointer to Thread Frame. The thread frame is the top
+level object containing all the global variables. It also contains
+pointers to the garbage collector, standard input, output and error
+files, and some other housekeeping data. 
+
+It is called the Thread Frame because it represents a Felix process.
+When Felix is embedded, construction of multiple Thread Frames allows
+multiple independent Felix processes to run concurrently.
+

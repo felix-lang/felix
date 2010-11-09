@@ -176,6 +176,13 @@ let gen_type_name syms bsym_table (index,typ) =
     let name = cn typ in
     let ds = match d with
       | BTYP_tuple ls -> ls
+      | BTYP_array (t,n) -> (* not sure if this is enough or even right .. *) 
+        begin match n with
+        | BTYP_unitsum n ->
+          let rec aux ls n = if n = 0 then ls else aux (t::ls) (n-1) in 
+          aux [] n
+        | _ -> failwith "flx_tgen unexpected array indexed by non-unit sum"
+        end
       | x -> [x]
     in
     let ctn t = `Ct_base (cpp_typename syms bsym_table t) in

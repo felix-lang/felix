@@ -66,7 +66,10 @@ let comma_sub s =
   in
   aux "" s
 
-(* this code handles pointers in types *)
+(* this code handles pointers in types 
+ * it returns a list of strings which are C expressions for the
+ * offsets of each pointer in the type.
+ *)
 let rec get_offsets' syms bsym_table typ : string list =
   let tname = cpp_typename syms bsym_table typ in
   let t' = unfold typ in
@@ -276,6 +279,7 @@ let gen_fun_offsets s syms bsym_table index vs ps ret ts instance props last_ptr
     name ^ "\n"
   );
   gen_offset_data s n name offsets true props None last_ptr_map
+
 let gen_thread_frame_offsets s syms bsym_table last_ptr_map =
   let vars = find_thread_vars_with_type bsym_table in
   let ts = [] in
@@ -613,15 +617,12 @@ let gen_offset_tables syms bsym_table module_name =
         bcat s "};\n"
 
       | BBDCL_struct (vs,cps) ->
-        failwith
-        (
-          "[ogen]: can't handle struct offsets yet: type " ^
-          sbt bsym_table btyp
-        )
-        (*
+
         bcat s ("\n//OFFSETS for struct type " ^ name ^ " instance\n");
-        bcat s ("//CANT HANDLE YET!\n");
-        *)
+        let offsets = get_offsets syms bsym_table btyp in
+        let n = length offsets in
+        gen_offset_data s n name offsets false [] None last_ptr_map
+
       | _ ->
         failwith
         (

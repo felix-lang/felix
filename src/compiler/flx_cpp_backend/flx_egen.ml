@@ -234,6 +234,47 @@ let rec gen_expr'
     | BTYP_tuple [] -> ""
     | _ -> ge a
   in
+  let ge_carg ps ts vs a =
+    match a with
+    | BEXPR_tuple xs,_ ->
+      (*
+      print_endline ("Arg to C function is tuple " ^ sbe bsym_table a);
+      *)
+      fold_left2
+      (fun s ((x,t) as xt) {pindex=ix} ->
+        let x =
+          if Hashtbl.mem syms.instances (ix,ts)
+          then ge_arg xt
+          else ""
+        in
+        if String.length x = 0 then s else
+        s ^
+        (if String.length s > 0 then ", " else "") ^ (* append a comma if needed *)
+        x
+      )
+      ""
+      xs ps
+
+    | _,tt ->
+      let tt = beta_reduce syms bsym_table sr  (tsubst vs ts tt) in
+      (* NASTY, EVALUATES EXPR MANY TIMES .. *)
+      let n = ref 0 in
+      fold_left
+      (fun s i ->
+        (*
+        print_endline ( "ps = " ^ catmap "," (fun (id,(p,t)) -> id) ps);
+        print_endline ("tt=" ^ sbt bsym_table tt);
+        *)
+        let t = nth_type tt i in
+        let a' = bexpr_get_n t (i,a) in
+        let x = ge_arg a' in
+        incr n;
+        if String.length x = 0 then s else
+        s ^ (if String.length s > 0 then ", " else "") ^ x
+      )
+      ""
+      (nlist (length ps))
+  in
   let our_display = get_display_list bsym_table this in
   let our_level = length our_display in
   let rt t = beta_reduce syms bsym_table sr (tsubst this_vs this_ts t) in
@@ -890,46 +931,7 @@ let rec gen_expr'
             else ""
 
           | _ ->
-            begin match a with
-            | BEXPR_tuple xs,_ ->
-              (*
-              print_endline ("Arg to C function is tuple " ^ sbe bsym_table a);
-              *)
-              fold_left2
-              (fun s ((x,t) as xt) {pindex=ix} ->
-                let x =
-                  if Hashtbl.mem syms.instances (ix,ts)
-                  then ge_arg xt
-                  else ""
-                in
-                if String.length x = 0 then s else
-                s ^
-                (if String.length s > 0 then ", " else "") ^ (* append a comma if needed *)
-                x
-              )
-              ""
-              xs ps
-
-            | _,tt ->
-              let tt = beta_reduce syms bsym_table sr  (tsubst vs ts tt) in
-              (* NASTY, EVALUATES EXPR MANY TIMES .. *)
-              let n = ref 0 in
-              fold_left
-              (fun s i ->
-                (*
-                print_endline ( "ps = " ^ catmap "," (fun (id,(p,t)) -> id) ps);
-                print_endline ("tt=" ^ sbt bsym_table tt);
-                *)
-                let t = nth_type tt i in
-                let a' = bexpr_get_n t (i,a) in
-                let x = ge_arg a' in
-                incr n;
-                if String.length x = 0 then s else
-                s ^ (if String.length s > 0 then ", " else "") ^ x
-              )
-              ""
-              (nlist (length ps))
-            end
+            ge_carg ps ts vs a
         in
         let s =
           if mem `Requires_ptf props then
@@ -972,10 +974,32 @@ let rec gen_expr'
   (*
   | BEXPR_apply ( (_,BTYP_lvalue(BTYP_cfunction _)) as f,a)
   *)
-  | BEXPR_apply ( (_,BTYP_cfunction _) as f,a) ->
-    ce_atom (
-    (ge f) ^"(" ^ ge_arg a ^ ")"
-    )
+  | BEXPR_apply ( (_,BTYP_cfunction (d,_)) as f,a) ->
+    begin match d with
+    | BTYP_tuple ts ->
+      begin match a with
+      | BEXPR_tuple xs,_ ->
+        let s = String.concat ", " (List.map (fun x -> ge x) xs) in
+        ce_atom ( (ge f) ^"(" ^ s ^ ")")
+      | _ ->
+       failwith "[flx_egen][tuple] can't split up arg to C function yet"
+      end
+    | BTYP_array (t,BTYP_unitsum n) ->
+      let ts = 
+       let rec aux ts n = if n = 0 then ts else aux (t::ts) (n-1) in
+       aux [] n
+      in
+      begin match a with
+      | BEXPR_tuple xs,_ ->
+        let s = String.concat ", " (List.map (fun x -> ge x) xs) in
+        ce_atom ( (ge f) ^"(" ^ s ^ ")")
+      | _ ->
+        failwith "[flx_egen][array] can't split up arg to C function yet"
+      end
+
+    | _ ->
+      ce_atom ( (ge f) ^"(" ^ ge_arg a ^ ")")
+    end
 
   (* General application*)
   | BEXPR_apply (f,a) ->

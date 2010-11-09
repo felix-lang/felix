@@ -4003,7 +4003,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
 
               | _ ->
                   clierr2 srr (Flx_bsym.sr bsym) ("[bind_expression] " ^
-                    "Address non variable " ^ Flx_bsym.id bsym)
+                  "[1]Address non variable " ^ Flx_bsym.id bsym)
               end
 
           | None ->
@@ -4028,14 +4028,14 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
                   bexpr_ref (btyp_pointer vtype) (index, ts)
 
               | SYMDEF_parameter _ ->
-                  clierr2 srr sym.Flx_sym.sr ("[bind_expression] Address " ^
+                  clierr2 srr sym.Flx_sym.sr ("[bind_expression] [2]Address " ^
                     "value parameter " ^ sym.Flx_sym.id)
               | SYMDEF_const _
               | SYMDEF_val _ ->
                   clierr2 srr sym.Flx_sym.sr ("[bind_expression] " ^
                     "Can't address a value or const " ^ sym.Flx_sym.id)
               | _ ->
-                  clierr2 srr sym.Flx_sym.sr ("[bind_expression] Address non " ^
+                  clierr2 srr sym.Flx_sym.sr ("[bind_expression] [3]Address non " ^
                     "variable " ^ sym.Flx_sym.id)
               end
           end
@@ -4044,7 +4044,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           bexpr_address e
 
       | _ ->
-          clierr srr ("[bind_expression] Address non variable " ^
+          clierr srr ("[bind_expression] [4]Address non variable " ^
             sbe bsym_table e)
       end
 

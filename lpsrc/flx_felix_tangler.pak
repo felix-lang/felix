@@ -2,7 +2,7 @@
 @head(1,"Interscript syntax colouring for Felix")
 @head(1,"Tokeniser")
 Start with the Python one.
-@h = tangler("misc/interscript/tokenisers/felix_keyword.py")
+@h = tangler("interscript/tokenisers/felix_keyword.py")
 @select(h)
 #! /usr/bin/python2.4
 
@@ -18,7 +18,7 @@ kwlist = [
 
 def iskeyword(x): return x in kwlist
 
-@h = tangler("misc/interscript/tokenisers/felix_token.py")
+@h = tangler("interscript/tokenisers/felix_token.py")
 @select(h)
 #! /usr/bin/python2.4
 
@@ -50,7 +50,7 @@ for _name, _value in globals().items():
         tok_name[_value] = _name
 
 
-@h = tangler("misc/interscript/tokenisers/felix.py")
+@h = tangler("interscript/tokenisers/felix.py")
 @select(h)
 import string, re
 from interscript.tokenisers.felix_token import *
@@ -137,8 +137,8 @@ opdict = {
 
 tabsize = 8
 def printtoken(type, token, (srow, scol), (erow, ecol), line): # for testing
-    print "%d,%d-%d,%d:\t%s\t%s" % \
-        (srow, scol, erow, ecol, tok_name[type], repr(token))
+    print ("%d,%d-%d,%d:\t%s\t%s" % \
+        (srow, scol, erow, ecol, tok_name[type], repr(token)))
 
 def tokenise(readline,
   tokeneater=printtoken,
@@ -338,7 +338,7 @@ class felix_tokeniser:
           self.tokeneater(DEDENT, '', (self.lnum, 0), (self.lnum, 0), '')
       self.tokeneater(ENDMARKER, '', (self.lnum, 0), (self.lnum, 0), '')
 
-@h = tangler("misc/interscript/tanglers/flx.py")
+@h = tangler("interscript/tanglers/flx.py")
 @select(h)
 #---------------------------------------------------------
 # felix tangler: write to a file, insert source line numbers

@@ -199,20 +199,64 @@ let rec cpp_type_classname syms bsym_table t =
     in
     if ts = [] then
       let bsym = Flx_bsym_table.find bsym_table i in
+      let fname = Flx_bsym.id bsym in
       match Flx_bsym.bbdcl bsym with
-      | BBDCL_cstruct _ -> Flx_bsym.id bsym
+      | BBDCL_cstruct _ -> fname
+      (*
       | BBDCL_external_type (_,_,CS_str "char",_) -> "char" (* hack .. *)
       | BBDCL_external_type (_,_,CS_str "int",_) -> "int" (* hack .. *)
       | BBDCL_external_type (_,_,CS_str "short",_) -> "short" (* hack .. *)
       | BBDCL_external_type (_,_,CS_str "long",_) -> "long" (* hack .. *)
+
       | BBDCL_external_type (_,_,CS_str "float",_) -> "float" (* hack .. *)
       | BBDCL_external_type (_,_,CS_str "double",_) -> "double" (* hack .. *)
+
       | BBDCL_external_type (_,_,CS_str_template "char",_) -> "char" (* hack .. *)
       | BBDCL_external_type (_,_,CS_str_template "int",_) -> "int" (* hack .. *)
       | BBDCL_external_type (_,_,CS_str_template "short",_) -> "short" (* hack .. *)
       | BBDCL_external_type (_,_,CS_str_template "long",_) -> "long" (* hack .. *)
       | BBDCL_external_type (_,_,CS_str_template "float",_) -> "float" (* hack .. *)
       | BBDCL_external_type (_,_,CS_str_template "double",_) -> "double" (* hack .. *)
+      *)
+
+      (* this is more general than the above: if the felix name and the C name
+       * are the same, just use the cname, don't synthesise a special name.
+       * In this case the type generator will emit a commented out typedef
+       * of the name to itself. There is an implied invariant here: the
+       * felix and C names are identifiers. We hope this doesn't lead to any
+       * name clashes.
+       *
+       * TODO: we could make some more nice special cases, such as C names
+       * looking like "X*" and call them _p_X, or even _p<X> .. 
+       *
+       * We should note: Felix uses "function style casts" in some places,
+       * and these require the typename be an identifier. Also other places
+       * in the code generator require identifiers, for example the RTTI
+       * generator mangles the C name with prefixes and suffices to get
+       * unique names for the type records.
+       *
+       * Also, the hackery above which we just replaced will not support
+       * names like "unsigned int". In fact C++ doesn't allow this name
+       * in a functional style cast either. We would love to just use
+       * the Felix names in C too, and provide standard typedefs,
+       * but I fear names like "uint" or "unsigned_int" may clash with user
+       * code.
+       *
+       * However this problem can now be "solved" in the library instead
+       * of the compiler, by emitting a C typedef such as
+       * "typedef unsigned int uint;" and then in Felix saying
+       * type uint="uint"; and now the code generator will use "uint"
+       * as the name for unsigned integers.
+       *
+       * The comparison in the type generator "cname = felix name" is a
+       * real hack: we would like to use instead a particular name generated
+       * here in some cases, instead of the name the generator makes, but
+       * we have no way to propagate a flag saying "use this name".
+       *)
+      | BBDCL_external_type (_,_,CS_str cname,_) 
+      | BBDCL_external_type (_,_,CS_str_template cname,_) 
+         when cname = fname -> cname
+
       | bbdcl ->
           let prefix = cal_prefix bbdcl in
           prefix ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
