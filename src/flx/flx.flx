@@ -52,6 +52,7 @@ var STDOUT="";
 var STDIMPORT="--import=nugram.flxh --import=plat/flx.flxh";
 var IMPORTS="";
 var OUTPUT_DIR="";
+var CACHE_DIR="";
 
 var DRIVER_PKG = "";
 var DRIVER = "";
@@ -253,6 +254,7 @@ whilst grab == 1 and argno<System::argc do
     println$ "cppos              = "+str cppos;
     println$ "TIME               = "+str TIME;
     println$ "OUTPUT_DIR         = "+str OUTPUT_DIR;
+    println$ "CACHE_DIR          = "+str CACHE_DIR;
     println$ "RUNIT              = "+str RUNIT;
     println$ "INCLUDE_DIRS       = "+str INCLUDE_DIRS;
     println$ "FELIX              = "+str FELIX;
@@ -271,11 +273,55 @@ whilst grab == 1 and argno<System::argc do
 
   elif prefix(arg,"--output_dir=") do
     dbug?? println "Set the directory for compiler generated C++ files";
-    OUTPUT_DIR=arg;
+    OUTPUT_DIR=arg.[13 to];
+
+  elif prefix(arg,"--cache_dir=") do
+    dbug?? println "Set the directory for compiler generated *.par files";
+    CACHE_DIR=arg.[12 to];
+
+  elif arg == "--man" do
+    dbug?? println "Display top level manual page using 'man' program";
+    C_hack::ignore(system( "man -M "+FLX_INSTALL_DIR+Filename::sep+"man"+" flx"));
+    System::exit(0);
 
   elif arg == "--help" do
     dbug?? println "Display top level manual page using 'man' program";
-    C_hack::ignore(system( "man -M "+FLX_INSTALL_DIR+Filename::sep+"man"+" flx"));
+    println "Usage: flx [options] filename[.flx] [args ..]";
+    println "options:";
+    println "--test               : use felix installation in current directory";
+    println "--test=dir           : use felix installation in dir";
+    println "--where              : print location of felix installation";
+    println "-c                   : compile only, do not run";
+    println "--static             : make standalone statically linked executable";
+    println "--nofelix            : do not run felix translator, leave C++ outputs alone";
+    println "--options            : show option set";
+    println "--config             : show configuration";
+    println "--version            : show felix version";
+    println "--force              : force run Felix compiler";
+    println "--cache_dir=dir      : extant directory cache output from parser (*.par files)";
+    println "--output_dir=dir     : extant directory to hold C++ output from translator";
+    println "--man                : show man page";
+    println "--help               : show this help";
+    println "--noinline           : force inlining off, may break things!";
+    println "--inline             : aggressive inlining"; 
+    println "--inline=999         : set inline cap to 999 'instructions'"; 
+    println "--echo               : print shell commands before running them";
+    println "--time               : print target program run time after it finishes";
+    println "--nostdlib           : don't load the standard library";
+    println "--nooptimise         : disable C++ compiler optimisation";
+    println "--debug              : put debug symbols in generated binaries";
+    println "--debug-compiler     : make felix compiler print progress diagnostics";
+    println "--stdout=file        : run program with standard output redirected to file";
+    println "--install            : install --test directory to configured location";
+    println "--import=file        : add an import which is prefixed to all files being translated";
+    println "--nostdimport        : don't import the standard imports nugram.flxh and flx.flxh";
+    println "-Idir                : add dir to search path for both felix and C++ includes";                      
+    println "-Ldir                : add dir to linker search path"; 
+    println "-llib                : add dir lib to linker command";
+    println "-Dmac                : add macro def to C++ compiler command";
+    println "*.cpp *.cxx *.o *.obj *.lib *.dll *.a *.so";
+    println "                     : add files to C++ compilation or linker steps";
+    println "* *.flx              : Felix program name, terminates options and starts runtime arguments";
     System::exit(0);
 
   elif arg == "-c" do
@@ -375,6 +421,8 @@ dir =
 
 var filebase = Filename::join(dir,base);
 dbug?? println$ "User program base is " + filebase;
+var cpp_filebase = if OUTPUT_DIR=="" then filebase else Filename::join(OUTPUT_DIR,base) endif;
+dbug?? println$ "C++ file base is " + cpp_filebase;
 
 // Find absolute pathname
 
@@ -444,15 +492,15 @@ proc calpackages () {
 
 
   // find all include directories
-  var x = xqt(PKGCONFIG_CFLAGS+ " @"+filebase+".resh");
+  var x = xqt(PKGCONFIG_CFLAGS+ " @"+cpp_filebase+".resh");
   INCLUDE_DIRS=INCLUDE_DIRS +" " + x;
 
   // find all include files
-  x = xqt(PKGCONFIG_INCLUDES+ " @"+filebase+".resh");
+  x = xqt(PKGCONFIG_INCLUDES+ " @"+cpp_filebase+".resh");
   INCLUDE_FILES=INCLUDE_FILES +" " + x;
 
   // find the driver package
-  DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" @"+filebase+".resh");
+  DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" @"+cpp_filebase+".resh");
   DRIVER_PKG == "" ??  DRIVER_PKG="flx_run";
 
   // find the driver entity
@@ -467,15 +515,15 @@ proc calpackages () {
   if STATIC == 0 do
     // dynamic linkage: all the libraries required by the application
     LINK_STRING=DLINK_STRING+LINKER_SWITCHES+xqt(
-      PKGCONFIG_DLIBS+" @"+filebase+".resh");
+      PKGCONFIG_DLIBS+" @"+cpp_filebase+".resh");
   else
     // static linkage: all the libraries required by the application and driver
     LINK_STRING=SLINK_STRING+LINKER_SWITCHES+xqt(
-      PKGCONFIG_SLIBS+" "+DRIVER_PKG+" @"+filebase+".resh");
+      PKGCONFIG_SLIBS+" "+DRIVER_PKG+" @"+cpp_filebase+".resh");
   done
 
   if ECHO == 1 do
-    println("//RESOURCE FILE="+filebase+".resh");
+    println("//RESOURCE FILE="+cpp_filebase+".resh");
     println("//INCLUDE_DIRS="+INCLUDE_DIRS);
     println("//INCLUDE_FILES="+INCLUDE_FILES);
     println("//DRIVER="+DRIVER);
@@ -593,7 +641,8 @@ if DEBUG==1 do
   CCFLAGS=CCFLAGS+DEBUG_FLAGS;
 done
 
-var FLXFLAGS="--inline="+str(INLINE) + ' ' + str(OUTPUT_DIR);
+var FLXFLAGS="--inline="+str(INLINE) + ' --output_dir=' + str(OUTPUT_DIR);
+if CACHE_DIR != "" do FLXFLAGS += " --cache_dir=" + CACHE_DIR; done
 
 var FCMD="";
 var LCMD="";
@@ -613,7 +662,7 @@ if FELIX == 1 do
   done
   dbug?? println "Felix compilation succeeded";
   calpackages();
-  write_include_file(filebase);
+  write_include_file(cpp_filebase);
 else
   dbug?? println "Felix compilation skipped by switch";
   calpackages(); // need to do this here to set linker switches
@@ -625,11 +674,11 @@ if STATIC == 0 do
   CCMD=List::cat ' ' (List::list (
     CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
     INCLUDE_DIR, INCLUDE_DIRS, MACROS,
-    cpps, filebase+".cpp",
-    SPEC_OBJ_FILENAME+filebase+EXT_OBJ));
+    cpps, cpp_filebase+".cpp",
+    SPEC_OBJ_FILENAME+cpp_filebase+EXT_OBJ));
   LCMD=List::cat ' ' (List::list (
     CCLINK_DLLIB, CCFLAGS,
-    cppos, filebase+EXT_OBJ,
+    cppos, cpp_filebase+EXT_OBJ,
     SPEC_EXE_FILENAME+filebase+EXT_SHLIB,
     LINK_STRING));
   dbug?? println$ "C++ command="+CCMD;
@@ -667,11 +716,11 @@ else
     CCOBJ_STATIC_LIB,
     CCFLAGS, "-DTARGET_BUILD",
     "-DFLX_STATIC_LINK", INCLUDE_DIR, INCLUDE_DIRS,
-    MACROS, cpps, filebase+".cpp",
-    SPEC_OBJ_FILENAME+filebase+EXT_OBJ));
+    MACROS, cpps, cpp_filebase+".cpp",
+    SPEC_OBJ_FILENAME+cpp_filebase+EXT_OBJ));
   LCMD=List::cat ' ' (List::list (
     CCLINK_STATIC, SPEC_EXE_FILENAME+filebase+EXT_EXE,
-    filebase+EXT_OBJ, DRIVER, cppos, LINK_STRING));
+    cpp_filebase+EXT_OBJ, DRIVER, cppos, LINK_STRING));
   dbug?? println$ "C++ command="+CCMD;
   result=system(CCMD);
   if result == 0 do
