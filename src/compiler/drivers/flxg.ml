@@ -108,6 +108,7 @@ type flxg_state_t = {
   rtti_file: out_file_t;
   report_file: out_file_t;
   why_file: out_file_t;
+  dep_file_name: string;
   mutable parse_time: float;
   mutable desugar_time: float;
   mutable bind_time: float;
@@ -165,11 +166,12 @@ let make_flxg_state ppf compiler_options =
     input_filename = input_filename;
     header_file = mkf (outbase ^ ".hpp");
     body_file = mkf (outbase ^ ".cpp");
-    ctors_file = mkf (outbase ^ "_ctors.cpp");
+    ctors_file = mkf (outbase ^ ".ctors_cpp");
     package_file = mkf (outbase ^ ".resh");
     rtti_file = mkf (outbase ^ ".rtti");
     report_file = mkf (outbase ^ ".xref");
     why_file = mkf (outbase ^ ".why");
+    dep_file_name = outbase ^ ".dep";
     parse_time = 0.0;
     desugar_time = 0.0;
     bind_time = 0.0;
@@ -279,6 +281,23 @@ let generate_why_file state bsym_table root_proc =
     bsym_table
     root_proc
 
+let generate_dep_file state =
+(* NOTE: as is this can't work, because it lists the *.flx filename without the
+ * flx, but it doesn't say where the *.par files are.. we need to list both,
+ * since the *.par files might be in a --cache_dir directory.
+ *
+ * Still there's another way to use the information here: 
+ * We just check the time stamps relative to the main program *.par file
+ * and/or generated program, whatever flx does now with the main program
+ * filename. I.e. we just take the time stamp of the main program as the 
+ * largest of all the time stamps. If a file is deleted its stamp is 0,
+ * which will only cause a problem if there's a dangling reference,
+ * otherwise the including file had to be changed to stop this, and its
+ * time stamp will be bigger.
+ *)
+  let chan = open_out state.dep_file_name in
+  output_string chan (String.concat "\n" (!(state.syms.include_files)) ^ "\n");
+  close_out chan
 
 (** Optimize the bound symbols. *)
 let optimize_bsyms state bsym_table root_proc =
@@ -673,7 +692,7 @@ let codegen_bsyms state bsym_table root_proc =
 
   plb "\n//-----------------------------------------";
   plb "//DEFINE FUNCTION CLASS METHODS";
-  plb ("#include \"" ^ state.module_name ^ "_ctors.cpp\"");
+  plb ("#include \"" ^ state.module_name ^ ".ctors_cpp\"");
   gen_execute_methods
     state.body_file.out_filename
     state.syms
@@ -837,6 +856,14 @@ let main () =
         state.syms.compiler_options.files
       )))
     in
+    
+    generate_dep_file state;
+
+(*
+print_endline "DEBUG: include files are:";
+List.iter print_endline !(state.syms.include_files);
+*)
+
     let asms = make_module module_name asms in
     (* Bind the assemblies. *)
     let bsym_table, root_proc = bind_asms state asms in

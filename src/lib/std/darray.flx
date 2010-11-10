@@ -27,7 +27,7 @@ open module Darray
   {
     var old = pd.a;
     fun get(i:ulong)=>old.[i];
-    pd.a = varray[T] (new_size, (len old), (fun(i:ulong)=>old.[i]));
+    pd.a = _ctor_varray[T] (new_size, (Varray::len old), (fun(i:ulong)=>old.[i]));
   }
 
   // make an empty darray, give it 20 slots for no particular reason
@@ -38,17 +38,17 @@ open module Darray
 
   // basic array stuff, same interface as array
   fun subscript[t,ii in ints] (a:darray[t],  n:ii) => a.a.[n];
-  fun len[t] (a:darray[t])=> len a.a;
+  fun len[t] (a:darray[t])=> Varray::len a.a;
 
   // basic array stuff, same interface as varray
   proc pop[t](a:darray[t]) {
     pop a.a;
-    newsize := a.resize (maxlen a.a,len a.a);
+    newsize := a.resize (maxlen a.a, Varray::len a.a);
     if newsize != maxlen a.a do do_resize (a,newsize); done 
   }
 
   proc pluseq[t] (a:&darray[t],v:t) {
-    newsize := a.resize (maxlen a.a, len a.a + 1ul);
+    newsize := a.resize (maxlen a.a, Varray::len a.a + 1ul);
     if newsize != maxlen a.a do do_resize(*a,newsize); done
     var z = a.a; z += v; // hack to workaround compiler error Address non variable
   }
