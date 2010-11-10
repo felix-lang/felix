@@ -9,7 +9,7 @@ from fbuild.path import Path
 
 # ------------------------------------------------------------------------------
 
-def run_tests(target):
+def run_tests(target, felix):
     # See if java's on the system.
     try:
         java = fbuild.builders.java.Builder(target.ctx)
@@ -39,7 +39,8 @@ def run_tests(target):
             if not path.isdir():
                 continue
 
-            for result in run_language_tests(path, expect, target, java, scala):
+            for result in run_language_tests(path, expect, target, felix, java,
+                    scala):
                 # adjust the widths to the maximum column size
                 for i in range(len(widths)):
                     widths[i] = max(len(result[i]), widths[i])
@@ -64,7 +65,7 @@ def run_tests(target):
 
 # ------------------------------------------------------------------------------
 
-def run_language_tests(path, expect, target, java, scala):
+def run_language_tests(path, expect, target, felix, java, scala):
     dst = path / 'test'
 
     subtests = []
@@ -81,7 +82,7 @@ def run_language_tests(path, expect, target, java, scala):
                 expect=expect if expect.exists() else None,
                 c=target.c.static,
                 cxx=target.cxx.static,
-                felix=target.felix,
+                felix=felix,
                 java=java,
                 ocaml=target.ocaml,
                 scala=scala)
@@ -104,7 +105,8 @@ def run_language_tests(path, expect, target, java, scala):
         yield path, internal_time, wall_time
 
     for subtest in subtests:
-        for result in run_language_tests(subtest, expect, target, java, scala):
+        for result in run_language_tests(subtest, expect, target, felix, java,
+                scala):
             yield result
 
 # ------------------------------------------------------------------------------

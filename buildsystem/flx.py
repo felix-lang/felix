@@ -146,6 +146,37 @@ class Builder(fbuild.db.PersistentObject):
 
     # --------------------------------------------------------------------------
 
+    @fbuild.db.cachemethod
+    def _run_flx_pkgconfig(self, src:fbuild.db.SRC) -> fbuild.db.DSTS:
+        """
+        Run flx_pkgconfig to generate the include files, normally done by flx
+        command line harness but we're probably building it here.
+        """
+
+        flx_pkgconfig = self.ctx.buildroot / 'bin/flx_pkgconfig'
+        resh = src.replaceext('.resh')
+        includes = src.replaceext('.includes')
+
+        cmd = [
+            flx_pkgconfig,
+            '--path+=' + self.ctx.buildroot / 'config',
+            '--field=includes',
+            '@' + resh]
+
+        stdout, stderr = self.ctx.execute(
+            cmd,
+            flx_pkgconfig,
+            '%s -> %s %s' % (src, resh, includes),
+            color='yellow',
+            stdout_quieter=1)
+
+        with open(includes, 'w') as f:
+            for include in stdout.decode().strip().split(' '):
+                print('#include %s' % include, file=f)
+
+        return resh, includes
+
+
     def _build_link(self, function, src, dst=None, *,
             async=True,
             includes=[],
@@ -154,25 +185,8 @@ class Builder(fbuild.db.PersistentObject):
             cxx_cflags=[],
             cxx_libs=[],
             cxx_lflags=[]):
-            
         obj = self.compile(src, includes=includes, flags=flags)
-
-        # run flx_pkgconfig to generate the include files, normally done
-        # by flx command line harness but we're probably building it here
-
-        flx_pkgconfig = Path("bin/flx_pkgconfig")
-        flx_pkgconfig = flx_pkgconfig.addroot(self.ctx.buildroot)
-        config = Path("config")
-        config = config.addroot(self.ctx.buildroot)
-        cmd = [flx_pkgconfig, "--path+="+config, "--field=includes", "@"+src[:-4]+".resh"]
-        stdout, stderr =self.ctx.execute(cmd)
-        output = stdout.decode()[:-1] # strip trailing newline
-        includes = output.split(' ')
-        files = ["#include "+i+"\n" for i in includes]
-        fn = src[:-4]+".includes"
-        f = open(fn,"w")
-        for file in files: f.write(file)
-        f.close()
+        self._run_flx_pkgconfig(obj)
 
         return function(obj, dst,
             async=async,
@@ -190,9 +204,8 @@ class Builder(fbuild.db.PersistentObject):
             cxx_cflags=[],
             cxx_libs=[],
             cxx_lflags=[]):
-            
         obj = self.compile(src, includes=includes, flags=flags)
-        
+
         return function(obj, dst,
             async=async,
             includes=cxx_includes,
@@ -223,8 +236,8 @@ def build(ctx, flxg, cxx, drivers):
         drivers.flx_arun_lib,
     )
 
-def build_flx_pkgconfig(phase):
-    return phase.flx.build_flx_pkgconfig_exe(
+def build_flx_pkgconfig(phase, flx_builder):
+    return flx_builder.build_flx_pkgconfig_exe(
         dst='bin/flx_pkgconfig',
         src='src/flx_pkgconfig/flx_pkgconfig.flx',
         includes=[phase.ctx.buildroot / 'lib'],
@@ -233,24 +246,24 @@ def build_flx_pkgconfig(phase):
     )
 
 
-def build_flx(phase):
-    return phase.flx.build_exe(
+def build_flx(phase, flx_builder):
+    return flx_builder.build_exe(
         dst='bin/flx',
-        src=Path('src/flx/flx.flx').addroot(phase.ctx.buildroot),
+        src='src/flx/flx.flx',
         includes=[phase.ctx.buildroot / 'lib'],
-        cxx_includes=['tools', phase.ctx.buildroot / 'lib/rtl'],
+        cxx_includes=['src/flx', phase.ctx.buildroot / 'lib/rtl'],
         cxx_libs=[call('buildsystem.flx_rtl.build_runtime', phase).static],
     )
 
 # ------------------------------------------------------------------------------
 
-def test_flx(phase, src, *args, **kwargs):
+def test_flx(phase, felix, src, *args, **kwargs):
     src = Path(src)
 
     passed = True
     for static in False, True:
         try:
-            exe = phase.felix.compile(src, static=static)
+            exe = felix.compile(src, static=static)
         except fbuild.ExecutionError as e:
             phase.ctx.logger.log(e, verbose=1)
             if e.stdout:
@@ -267,7 +280,7 @@ def test_flx(phase, src, *args, **kwargs):
 
         expect = src.replaceext('.expect')
 
-        passed &= check_flx(phase.ctx, phase.felix, *args,
+        passed &= check_flx(phase.ctx, felix, *args,
             exe=exe,
             dst=dst,
             expect=expect if expect.exists() else None,
