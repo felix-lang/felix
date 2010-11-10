@@ -142,6 +142,9 @@ val string_of_name_map: Flx_btype.name_map_t -> string
 
 val string_of_vs: vs_list_t -> string
 val string_of_ivs: ivs_list_t -> string
+val string_of_plain_ivs: plain_ivs_list_t -> string
+
+val string_of_ts: Flx_bsym_table.t -> Flx_btype.t list -> string
 
 val string_of_ast_term: int -> ast_term_t -> string
 val string_of_string: string -> string

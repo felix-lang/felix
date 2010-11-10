@@ -1,4 +1,4 @@
-(** The type of the symbol table. *)
+(** The type of the (raw, unbound) symbol table. *)
 type t
 
 (** Construct a symbol table. *)
@@ -14,16 +14,19 @@ val mem : t -> Flx_types.bid_t -> bool
  * index is not in the symbol table. *)
 val find : t -> Flx_types.bid_t -> Flx_sym.t
 
+(** find string name by index, raises Not_found if missing  *)
+val find_id : t -> Flx_types.bid_t -> string
+
 (** Searches the bound symbol table for the given symbol. *)
 val find_with_parent :
   t ->
   Flx_types.bid_t ->
   Flx_types.bid_t option * Flx_sym.t
 
-(** Searches the bound symbol table for the given symbol's parent. *)
+(** Searches the symbol table for the given symbol's parent. *)
 val find_parent : t -> Flx_types.bid_t -> Flx_types.bid_t option
 
-(** Remove a binding from the bound symbol table. *)
+(** Remove an entry from the symbol table. *)
 val remove : t -> Flx_types.bid_t -> unit
 
 (** Iterate over all the items in the symbol table. *)

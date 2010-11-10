@@ -1465,7 +1465,15 @@ and type_of_index_with_ts' state bsym_table rs sr bid ts =
 
   (* Make sure that we got the right number of type variables. *)
   let pvs,vs,_ = find_split_vs state.sym_table bsym_table bid in
-  assert (List.length ts = List.length vs + List.length pvs);
+  if (List.length ts != List.length vs + List.length pvs) then
+    clierr sr (
+       "type_of_index_with_ts' failed with ts/vs mismatch " ^
+       Flx_bsym_table.find_id bsym_table bid ^ "<" ^ si bid ^ ">" ^
+       "\n parent vs = " ^ string_of_plain_ivs pvs ^ 
+       ", vs= " ^ string_of_plain_ivs vs ^
+       ", ts= " ^ string_of_ts bsym_table ts
+    )
+  else
 
   (* Do any type substitutions. *)
   let varmap = make_varmap state.sym_table bsym_table sr bid ts in
@@ -1484,7 +1492,9 @@ and inner_type_of_index_with_ts state bsym_table rs sr bid ts =
 
     (* Make sure that we got the right number of type variables. *)
     let pvs,vs,_ = find_split_vs state.sym_table bsym_table bid in
-    assert (List.length ts = List.length vs + List.length pvs);
+    if (List.length ts != List.length vs + List.length pvs) then
+       clierr sr "ts/vs mismatch in inner_type_of_index_with_ts"
+    else
 
     (* Do any type substitutions. *)
     let varmap = make_varmap state.sym_table bsym_table sr bid ts in
@@ -2040,10 +2050,29 @@ and lookup_qn_with_sig'
       | SYMDEF_cstruct _
       | SYMDEF_struct _ ->
         let sign = try List.hd signs with _ -> assert false in
-        let t = type_of_index_with_ts' state bsym_table rs sr index ts in
-        (*
-        print_endline ("Struct constructor found, type= " ^ sbt bsym_table t);
+        print_endline ("Lookup qn with sig' found a struct "^ id ^
+        ", looking for constructor"); 
+        (* this doesn't work, we need to do overload resolution to
+           fix type variables
+        let t = type_of_index_with_ts' state bsym_table rs sra index ts in
         *)
+        let hack_vs,_ = vs in
+        let hvs = List.map (fun (id,index,kind) -> id,index) hack_vs in
+        let hts = List.map (fun (_,index) -> Flx_btype.btyp_type_var (index,Flx_btype.btyp_type 0)) hvs in
+        let hacked_entry = { base_sym=index; spec_vs=hvs; sub_ts=hts } in
+        let ro = resolve_overload' state bsym_table env rs sra [hacked_entry] id signs ts in
+        let _,t =
+          match ro with
+          | Some (index,t,ret,mgu,ts) ->
+            handle_function
+              state
+              bsym_table
+              rs
+              sra srn id ts index
+          | None ->
+              clierr sra ("Struct "^id^" constructor arguments don't match member types")
+        in
+        print_endline ("Struct constructor found, type= " ^ sbt bsym_table t);
         (*
         print_endline (id ^ ": lookup_qn_with_sig: struct");
         *)
@@ -2066,6 +2095,7 @@ and lookup_qn_with_sig'
         bexpr_closure t (index,ts)
 
       | SYMDEF_union _
+      | SYMDEF_abs _
       | SYMDEF_type_alias _ ->
         (*
         print_endline "mapping type name to _ctor_type [2]";
@@ -2117,11 +2147,20 @@ and lookup_qn_with_sig'
           )
         end
       | _ ->
+        (* This is WRONG, because it could be a type, in which
+         * case we should try to find a constructor or it:
+         * this works for simple name lookup, and the use of
+         * a module name qualifier shouldn't make any difference!
+         *
+         * Well, the error is probably that the caller isn't
+         * handling it, rather than this routine 
+         *)
         clierr sr
         (
           "[lookup_qn_with_sig] Named Non function entry "^id^
           " must be function type: requires struct," ^
-          "or value or variable of function type"
+          "or value or variable of function type or primitve type or " ^
+          "type alias with user defined constructor"
         )
       end
     end
@@ -2249,6 +2288,7 @@ and lookup_qn_with_sig'
     end
 
   | `AST_lookup (sr,(qn',name,ts)) ->
+
     let m =  eval_module_expr state bsym_table env qn' in
     match m with (Simple_module (impl, ts',htab,dirs)) ->
     (* let n = List.length ts in *)

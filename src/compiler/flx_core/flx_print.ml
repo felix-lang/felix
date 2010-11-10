@@ -909,6 +909,11 @@ and string_of_tclass_reqs = function
 and string_of_tcon {raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} =
   string_of_tconstraint tcon ^ string_of_tclass_reqs rtcr
 
+and string_of_plain_ivs ivs =
+  catmap ", "
+  (fun (name,ix,tpat) -> name ^ string_of_maybe_typecode tpat)
+  ivs
+
 and string_of_ivs (ivs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
   match ivs,tcon,rtcr with
   | [],TYP_tuple [],[] -> ""
@@ -944,6 +949,8 @@ and string_of_bvs_cons bsym_table vs cons = match vs,cons with
         (match cons with
         | BTYP_tuple [] -> ""
         | _ -> " where " ^ sbt bsym_table cons)
+
+and string_of_ts bsym_table ts = String.concat "," (List.map (string_of_btypecode bsym_table) ts)
 
 and string_of_inst bsym_table = function
   | [] -> ""
