@@ -204,9 +204,8 @@ class Builder(fbuild.db.PersistentObject):
             cxx_cflags=[],
             cxx_libs=[],
             cxx_lflags=[]):
-            
         obj = self.compile(src, includes=includes, flags=flags)
-        
+
         return function(obj, dst,
             async=async,
             includes=cxx_includes,
@@ -237,8 +236,8 @@ def build(ctx, flxg, cxx, drivers):
         drivers.flx_arun_lib,
     )
 
-def build_flx_pkgconfig(phase):
-    return phase.flx.build_flx_pkgconfig_exe(
+def build_flx_pkgconfig(phase, flx_builder):
+    return flx_builder.build_flx_pkgconfig_exe(
         dst='bin/flx_pkgconfig',
         src='src/flx_pkgconfig/flx_pkgconfig.flx',
         includes=[phase.ctx.buildroot / 'lib'],
@@ -247,24 +246,24 @@ def build_flx_pkgconfig(phase):
     )
 
 
-def build_flx(phase):
-    return phase.flx.build_exe(
+def build_flx(phase, flx_builder):
+    return flx_builder.build_exe(
         dst='bin/flx',
-        src=Path('src/flx/flx.flx').addroot(phase.ctx.buildroot),
+        src='src/flx/flx.flx',
         includes=[phase.ctx.buildroot / 'lib'],
-        cxx_includes=['tools', phase.ctx.buildroot / 'lib/rtl'],
+        cxx_includes=['src/flx', phase.ctx.buildroot / 'lib/rtl'],
         cxx_libs=[call('buildsystem.flx_rtl.build_runtime', phase).static],
     )
 
 # ------------------------------------------------------------------------------
 
-def test_flx(phase, src, *args, **kwargs):
+def test_flx(phase, felix, src, *args, **kwargs):
     src = Path(src)
 
     passed = True
     for static in False, True:
         try:
-            exe = phase.felix.compile(src, static=static)
+            exe = felix.compile(src, static=static)
         except fbuild.ExecutionError as e:
             phase.ctx.logger.log(e, verbose=1)
             if e.stdout:
@@ -281,7 +280,7 @@ def test_flx(phase, src, *args, **kwargs):
 
         expect = src.replaceext('.expect')
 
-        passed &= check_flx(phase.ctx, phase.felix, *args,
+        passed &= check_flx(phase.ctx, felix, *args,
             exe=exe,
             dst=dst,
             expect=expect if expect.exists() else None,

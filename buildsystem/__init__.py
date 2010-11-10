@@ -21,6 +21,28 @@ def copy_to(ctx, dstdir, srcs:fbuild.db.SRCS) -> fbuild.db.DSTS:
 
     return dsts
 
+@fbuild.db.caches
+def copy_dir_to(ctx, dstdir, srcdir, *, pattern=None) -> fbuild.db.DSTS:
+    srcdir = Path(srcdir)
+
+    srcs = []
+    dsts = []
+
+    for src in srcdir.find(pattern=pattern, include_dirs=False):
+        dst = src.addroot(dstdir)
+        dst.parent.makedirs()
+
+        srcs.append(src)
+        dsts.append(dst)
+
+        ctx.logger.check(' * copy', '%s -> %s' % (src, dst), color='yellow')
+        src.copy(dst)
+
+    ctx.db.add_external_dependencies_to_call(srcs=srcs)
+
+    return dsts
+
+
 def copy_hpps_to_rtl(ctx, *hpps):
     return copy_to(ctx, ctx.buildroot / 'lib/rtl', tuple(hpps))
 

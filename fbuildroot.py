@@ -7,8 +7,8 @@ from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
-import os # for my hack
-import glob
+import buildsystem
+
 # ------------------------------------------------------------------------------
 
 def pre_options(parser):
@@ -356,8 +356,12 @@ def prefix(ctx):
 def src_dir(ctx):
     return Path(__file__).parent
 
-def build(ctx):
-    # configure the phases
+# ------------------------------------------------------------------------------
+
+@fbuild.target.register()
+def configure(ctx):
+    """Configure Felix."""
+
     build = config_build(ctx)
     host = config_host(ctx, build)
     target = config_target(ctx, host)
@@ -375,128 +379,134 @@ def build(ctx):
     # overwrite or add *.fpc files to the config directory
     call('buildsystem.post_config.copy_user_fpcs', ctx)
 
+    return Record(build=build, host=host, target=target), iscr
+
+# ------------------------------------------------------------------------------
+
+def build(ctx):
+    """Compile Felix."""
+
+    # configure the phases
+    phases, iscr = configure(ctx)
+
     # --------------------------------------------------------------------------
 
-    compilers = call('buildsystem.flx_compiler.build_flx_drivers', ctx, host)
-    drivers = call('buildsystem.flx_drivers.build', target)
+    compilers = call('buildsystem.flx_compiler.build_flx_drivers', ctx,
+        phases.host)
 
-    target.flx = call('buildsystem.flx.build', ctx,
-        compilers.flxg, target.cxx.static, drivers)
+    drivers = call('buildsystem.flx_drivers.build', phases.target)
 
-    # copy website index
-    cmd = "cp index.html "+ctx.buildroot;
-    print(cmd)
-    os.system(cmd)
-
-    # copy website
-    cmd = "cp -R web "+ctx.buildroot;
-    print(cmd)
-    os.system(cmd)
-
-    # copy the entire src directory so the user can browse it
-    # not actually used in the build process
-    cmd = "cp -R src "+ctx.buildroot;
-    print(cmd)
-    os.system(cmd)
-
-    # copy the tools
-    cmd = "cp -R tools "+ctx.buildroot;
-    print(cmd)
-    os.system(cmd)
-
-
-    # copy docs
-    cmd = "cp -R src/doc "+ctx.buildroot
-    print(cmd)
-    os.system(cmd)
+    flx_builder = call('buildsystem.flx.build', ctx,
+        compilers.flxg, phases.target.cxx.static, drivers)
 
     # copy files into the library
-    cmd = "cp -R src/lib "+ctx.buildroot;
-    print(cmd)
-    os.system(cmd)
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, Path('src/lib'))
 
     for module in 'flx_stdlib', 'flx_pthread', 'demux', 'faio', 'judy':
-        call('buildsystem.' + module + '.build_flx', target)
+        call('buildsystem.' + module + '.build_flx', phases.target)
 
-    flx_pkgconfig = call('buildsystem.flx.build_flx_pkgconfig', target)
-    flx= call('buildsystem.flx.build_flx', target)
+    flx_pkgconfig = call('buildsystem.flx.build_flx_pkgconfig',
+        phases.target, flx_builder)
+    flx = call('buildsystem.flx.build_flx', phases.target, flx_builder)
 
     # --------------------------------------------------------------------------
     # build the secondary libraries
 
-    call('buildsystem.flx_glob.build_runtime', target)
-    call('buildsystem.tre.build_runtime', target)
+    call('buildsystem.flx_glob.build_runtime', phases.target)
+    call('buildsystem.tre.build_runtime', phases.target)
 
     for module in 'flx_glob', 'tre':
-        call('buildsystem.' + module + '.build_flx', target)
+        call('buildsystem.' + module + '.build_flx', phases.target)
 
-    call('buildsystem.bindings.build_flx', target)
+    call('buildsystem.bindings.build_flx', phases.target)
 
     # --------------------------------------------------------------------------
     # now, try building a file
 
-    target.felix = call('fbuild.builders.felix.Felix', ctx,
-        exe=ctx.buildroot / 'bin/flx', # changed by JMS to now use the Felix version
+    felix = call('fbuild.builders.felix.Felix', ctx,
+        exe=ctx.buildroot / 'bin/flx',
         debug=ctx.options.debug,
         flags=['--test=' + ctx.buildroot])
 
-    #if "doc" in ctx.args:
-    if 1 == 1: # I don't know how to get an extra arg into the build ..
-      # WARNING: this has the side effect of making a "tut" directory
-      # in the source (current) directory. It should go into the
-      # build directory instead, but I don't know how to make it do that.
-      # 
-      # The result of this process should be the old interscript documentation
-      # in the build directory doc/iscr
-
-      try:
-        os.mkdir(ctx.buildroot+"/doc/iscr")
-      except:
-        pass
-
-      flags = [
-        "--weaver=web",
-        "--language=en",
-        "--weaver-directory=doc/iscr/",
-        "--passes=2",
-        ]
-
-      print("Generating tutorial docs")
-      iscr("lpsrc/flx_tutorial.pak",flags=flags)
-      iscr("lpsrc/flx_tut_macro.pak",flags=flags)
-      iscr("lpsrc/flx_tut_bind.pak",flags=flags)
-      iscr("lpsrc/flx_tut_migrate.pak",flags=flags)
-
-      # copy stuff for interscript generated docs
-      cmd = "cp "+ctx.buildroot+"/misc/*.gif " + ctx.buildroot+"/doc/iscr"
-      print(cmd)
-      os.system(cmd)
-
-      cmd = "cp misc/*.css " + ctx.buildroot+"/doc/iscr"
-      print(cmd)
-      os.system(cmd)
-
     # --------------------------------------------------------------------------
-    # run the felix tests and other commands
 
-    if 'speed' in ctx.args:
-        call('buildsystem.speed.run_tests', target)
-    else:
-        if not ctx.options.skip_tests:
-            run_tests(target)
-
-
+    return phases, felix
 
 # ------------------------------------------------------------------------------
 
-def run_tests(target):
+@fbuild.target.register()
+def doc(ctx):
+    """Build the Felix documentation."""
+
+    phases, iscr = configure(ctx)
+
+    # copy documentation into target
+    ctx.logger.log('building documentation', color='cyan')
+
+    # copy website index
+    buildsystem.copy_to(ctx, ctx.buildroot, ['index.html'])
+
+    # copy website
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'web')
+
+    # copy the entire src directory so the user can browse it not actually used
+    # in the build process
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src',
+        pattern='*.{ml,mli,c,cc,cpp,h,hpp,flx,flxh}')
+
+    # copy the tools
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tools')
+
+    # copy docs
+    buildsystem.copy_to(ctx,
+        ctx.buildroot / 'doc',
+        Path('src/doc/*.fdoc').glob())
+
+    # WARNING: this has the side effect of making a "tut" directory
+    # in the source (current) directory. It should go into the
+    # build directory instead, but I don't know how to make it do that.
+    # 
+    # The result of this process should be the old interscript documentation
+    # in the build directory doc/iscr
+    (ctx.buildroot / '/doc/iscr').makedirs()
+
+    flags = [
+        '--weaver=web',
+        '--language=en',
+        '--weaver-directory=doc/iscr/',
+        '--passes=2']
+
+    ctx.logger.log('generating tutorial docs', color='cyan')
+    iscr('lpsrc/flx_tutorial.pak', flags=flags)
+    iscr('lpsrc/flx_tut_macro.pak', flags=flags)
+    iscr('lpsrc/flx_tut_bind.pak', flags=flags)
+    iscr('lpsrc/flx_tut_migrate.pak', flags=flags)
+
+    # copy stuff for interscript generated docs
+    buildsystem.copy_to(ctx,
+        ctx.buildroot / 'doc/iscr',
+        (ctx.buildroot / 'misc.*.gif').glob())
+
+    buildsystem.copy_to(ctx,
+        ctx.buildroot / 'doc/iscr',
+        Path('misc/*.css').glob())
+
+# ------------------------------------------------------------------------------
+
+@fbuild.target.register()
+def test(ctx):
+    """Run the felix tests and other commands."""
+
+    # Make sure we're built.
+    phases, felix = build(ctx)
+
     from buildsystem.flx import test_flx
 
     failed_srcs = []
 
     def test(src):
         try:
-            passed = test_flx(target, src)
+            passed = test_flx(phases.target, felix, src)
         except fbuild.ConfigFailed as e:
             ctx.logger.log(str(e))
             passed = False
@@ -504,19 +514,19 @@ def run_tests(target):
 
     # Run the dynamic loading tests first
     try:
-        lib1 = target.felix.compile('test/regress/drt/lib1.flx', static=False)
-        lib2 = target.felix.compile('test/regress/drt/lib2.flx', static=False)
+        lib1 = felix.compile('test/regress/drt/lib1.flx', static=False)
+        lib2 = felix.compile('test/regress/drt/lib2.flx', static=False)
     except fbuild.ExecutionError as e:
-        target.ctx.logger.log(e, verbose=1)
+        ctx.logger.log(e, verbose=1)
     else:
-        if not test_flx(target, 'test/regress/drt/main1.flx',
+        if not test_flx(phases.target, felix, 'test/regress/drt/main1.flx',
                 env={'lib1': lib1, 'lib2': lib2}):
             failed_srcs.append('test/regress/drt/main1.flx')
 
     srcs = Path.globall(
         'test/*/*.flx',
         'test/*/*/*.flx',
-        target.ctx.buildroot / 'tut/*/*.flx',
+        ctx.buildroot / 'tut/*/*.flx',
         exclude=[
             'test/drivers/*.flx',
             'test/faio/posix-*.flx',
@@ -528,18 +538,41 @@ def run_tests(target):
             'test/test-data/*.flx',
         ])
 
-    if 'posix' in target.platform:
+    if 'posix' in phases.target.platform:
         srcs.extend(Path.glob('test/faio/posix-*.flx'))
 
-    if 'windows' in target.platform:
+    if 'windows' in phases.target.platform:
         srcs.extend(Path.glob('test/faio/win-*.flx'))
 
-    for src, passed in target.ctx.scheduler.map(test, sorted(srcs, reverse=True)):
+    for src, passed in phases.target.ctx.scheduler.map(
+            test,
+            sorted(srcs, reverse=True)):
         if not passed:
             failed_srcs.append(src)
 
     if failed_srcs:
-        target.ctx.logger.log('\nThe following tests failed:')
+        ctx.logger.log('\nThe following tests failed:')
         for src in failed_srcs:
-            target.ctx.logger.log('  %s' % src, color='yellow')
+            ctx.logger.log('  %s' % src, color='yellow')
 
+# ------------------------------------------------------------------------------
+
+@fbuild.target.register()
+def speed(ctx):
+    """Run the Felix performance tests."""
+
+    # Make sure we're built.
+    phases, felix = build(ctx)
+
+    call('buildsystem.speed.run_tests', phases.target, felix)
+
+# ------------------------------------------------------------------------------
+
+@fbuild.target.register()
+def install(ctx):
+    """Install Felix."""
+
+    # Make sure we're built.
+    phases, flx = build(ctx)
+
+    ctx.logger.log('Installing does not work yet.', color='red')
