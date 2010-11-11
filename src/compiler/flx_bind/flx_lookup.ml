@@ -3526,7 +3526,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         begin match e' with
         | BEXPR_literal (AST_int (kind,big)) ->
           let m =
-            try Big_int.int_of_big_int big
+            try int_of_string big
             with _ -> clierr sr "Integer is too large for unitsum"
           in
           if m >=0 && m < n then
@@ -3536,10 +3536,10 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         | _ ->
           let inttype = t' in
           let zero =
-            bexpr_literal t' (AST_int ("int",Big_int.zero_big_int))
+            bexpr_literal t' (AST_int ("int","0"))
           in
           let xn =
-            bexpr_literal t' (AST_int ("int",Big_int.big_int_of_int n))
+            bexpr_literal t' (AST_int ("int",string_of_int n))
           in
           bexpr_range_check (btyp_unitsum n) (zero,x',xn)
         end
@@ -3694,7 +3694,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     let int_t = bt sr (TYP_name (sr,"int",[])) in
     begin match e' with
     | BEXPR_case (i,_) ->
-      bexpr_literal int_t (AST_int ("int",Big_int.big_int_of_int i))
+      bexpr_literal int_t (AST_int ("int",string_of_int i))
     | _ -> bexpr_case_index int_t e
     end
 

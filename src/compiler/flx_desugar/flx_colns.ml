@@ -19,6 +19,16 @@ type nsrec = {
   fudges:string list ref
 }
 
+(* This routine does all the nasty work of trying to figure out
+where a file is, and if there is a viable cached parse of it.
+It loads the cache if possible, otherwise parses the file,
+then saves the parse tree if possible.
+
+The output is a pair consisting of the directory in which the
+felix file was found (not the *.par file, which might be elsewhere)
+and a list of STMT_* statements (raw straight from the parser).
+*)
+
 let include_file syms curpath inspec =
   let force = syms.compiler_options.force_recompile in
   let this_version = !Flx_version.version_data in

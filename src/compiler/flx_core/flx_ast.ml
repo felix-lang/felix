@@ -142,7 +142,7 @@ and vs_list_t = plain_vs_list_t * vs_aux_t
 
 (** Literals recognized by the lexer. *)
 and literal_t =
-  | AST_int of string * Big_int.big_int
+  | AST_int of string * string (* first string is kind, second is value *) 
   | AST_string of string
   | AST_cstring of string
   | AST_wstring of string
@@ -251,11 +251,11 @@ and pattern_t =
   | PAT_none of Flx_srcref.t
 
   (* constants *)
-  | PAT_int of Flx_srcref.t * string * Big_int.big_int
+  | PAT_int of Flx_srcref.t * string * string
   | PAT_string of Flx_srcref.t * string
 
   (* ranges *)
-  | PAT_int_range of Flx_srcref.t * string * Big_int.big_int * string * Big_int.big_int
+  | PAT_int_range of Flx_srcref.t * string * string * string * string
   | PAT_string_range of Flx_srcref.t * string * string
   | PAT_float_range of Flx_srcref.t * float_pat * float_pat
 
@@ -795,7 +795,7 @@ let print_literal f = function
   | AST_int (s, i) ->
       print_variant2 f "AST_int"
         print_string s
-        print_big_int i
+        print_string i
   | AST_string s ->
       print_variant1 f "AST_string" print_string s
   | AST_cstring s ->

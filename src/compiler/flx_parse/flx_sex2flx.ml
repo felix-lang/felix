@@ -37,15 +37,10 @@ let xsr x : Flx_srcref.t =
   | x -> err x "Invalid source reference"
 
 let rec xliteral_t sr x =
-  let bi i =
-    (*
-    print_endline ("Integer to convert is '" ^ i ^ "'");
-    *)
-    Big_int.big_int_of_string i in
   let ss s = s in
   match x with
-  | Lst [Id "ast_int"; Str s; Str i] -> AST_int (ss s, bi (ss i))
-  | Lst [Id "ast_int"; Str s; Int i] -> AST_int (ss s, bi i)
+  | Lst [Id "ast_int"; Str s; Str i] -> AST_int (ss s, (ss i))
+  | Lst [Id "ast_int"; Str s; Int i] -> AST_int (ss s, i)
   | Lst [Id "ast_string"; Str s] -> AST_string (ss s)
   | Lst [Id "ast_cstring"; Str s] -> AST_cstring (ss s)
   | Lst [Id "ast_wstring"; Str s] -> AST_wstring (ss s)
@@ -234,9 +229,7 @@ and xexpr_t sr x =
 
   | Id y -> print_endline ("Unexpected ID=" ^ y); EXPR_name (sr,y,[])
   | Int i ->
-    (* to be removed, big int: just use strings *)
-    let j = Big_int.big_int_of_string i in
-    EXPR_literal (sr, AST_int ("int",j))
+    EXPR_literal (sr, AST_int ("int",i))
 
   | x ->
     err x "expression"
@@ -253,7 +246,6 @@ and xfloat_pat x =
 and xpattern_t x =
   let xp x = xpattern_t x in
   let ti sr x = type_of_sex sr x in
-  let bi i = Big_int.big_int_of_string i in
   let ss s = s in
   let xq sr m qn = qne (xexpr_t (xsr sr)) m qn in
   match x with
@@ -261,12 +253,12 @@ and xpattern_t x =
   | Lst [Id "pat_none"; sr] -> PAT_none (xsr sr)
 
   (* constants *)
-  | Lst [Id "pat_int"; sr; Str s; Int i] -> PAT_int (xsr sr,ss s, bi i)
+  | Lst [Id "pat_int"; sr; Str s; Int i] -> PAT_int (xsr sr,ss s, ss i)
   | Lst [Id "pat_string"; sr; Str s] -> PAT_string (xsr sr,ss s)
 
   (* ranges *)
   | Lst [Id "pat_int_range"; sr; Str s1; Int i1; Str s2; Int i2] ->
-    PAT_int_range (xsr sr,ss s1, bi i1, ss s2, bi i2)
+    PAT_int_range (xsr sr,ss s1, ss i1, ss s2, ss i2)
 
   | Lst [Id "pat_string_range"; sr; Str s1; Str s2] ->
     PAT_string_range (xsr sr,ss s1, ss s2)

@@ -145,7 +145,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       )
     else
     let v = ref
-      begin try Big_int.int_of_big_int v
+      begin try int_of_string v
       with _ -> clierr sr "Integer used as type out of range"
       end
     in

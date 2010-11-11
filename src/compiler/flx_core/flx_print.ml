@@ -51,7 +51,7 @@ let string_of_bidset bidset =
     (String.concat ";" (List.map string_of_bid bidlist))
 
 let string_of_literal e = match e with
-  | AST_int (s,i) -> (Big_int.string_of_big_int i)^suffix_of_type s
+  | AST_int (s,i) -> i^suffix_of_type s
   | AST_float (t,v) -> v ^ suffix_of_type t
   | AST_string s -> string_of_string s
   | AST_cstring s -> "c"^string_of_string s
@@ -810,11 +810,11 @@ and string_of_pattern p =
   | PAT_coercion (_,p,t) -> "(" ^ string_of_pattern p ^ ":" ^ string_of_typecode t ^ ")"
   | PAT_none _ -> "<none>"
   | PAT_nan _ -> "NaN"
-  | PAT_int (_,t,i) -> Big_int.string_of_big_int i ^ suffix_of_type t
+  | PAT_int (_,t,i) -> i ^ suffix_of_type t
   | PAT_int_range (_,t1,i1,t2,i2) ->
-    Big_int.string_of_big_int i1 ^ suffix_of_type t1 ^
+    i1 ^ suffix_of_type t1 ^
     " .. " ^
-    Big_int.string_of_big_int i2 ^ suffix_of_type t2
+    i2 ^ suffix_of_type t2
 
   | PAT_string (_,s) -> string_of_string s
   | PAT_string_range (_,s1, s2) ->

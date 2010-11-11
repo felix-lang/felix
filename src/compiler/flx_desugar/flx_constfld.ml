@@ -11,13 +11,31 @@ let truth sr r =
   let r = if r then 1 else 0 in
   EXPR_typed_case (sr,r,flx_bool)
 
+let sbi x = string_of_big_int x
+let bis x = big_int_of_string x
+
+let minus x = sbi (minus_big_int (bis x))
+let abs x = sbi (abs_big_int (bis x))
+let add x y = sbi (add_big_int (bis x) (bis y))
+let sub x y = sbi (sub_big_int (bis x) (bis y))
+let mult x y = sbi (mult_big_int (bis x) (bis y))
+let div x y = sbi (div_big_int (bis x) (bis y))
+let modu x y = sbi (mod_big_int (bis x) (bis y))
+let pow x y = sbi (power_big_int_positive_big_int (bis x) (bis y))
+
+let lt x y = (lt_big_int (bis x) (bis y))
+let le x y = (le_big_int (bis x) (bis y))
+let eq x y = (eq_big_int (bis x) (bis y))
+let ge x y = (ge_big_int (bis x) (bis y))
+let gt x y = (gt_big_int (bis x) (bis y))
+
 let const_fold' e sr name arg =
   match name, arg with
   (* integers *)
   (* -x *)
   | "neg", EXPR_literal (_,AST_int ("int",x))
     ->
-    EXPR_literal (sr,AST_int ("int", (minus_big_int x)))
+    EXPR_literal (sr,AST_int ("int", (minus x)))
 
   (* +x *)
   | "pos", EXPR_literal (_,AST_int ("int",x))
@@ -27,7 +45,7 @@ let const_fold' e sr name arg =
   (* abs x *)
   | "abs", EXPR_literal (_,AST_int ("int",x))
     ->
-    EXPR_literal (sr,AST_int ("int", (abs_big_int x)))
+    EXPR_literal (sr,AST_int ("int", (abs x)))
 
   (* x+y *)
   | "add", EXPR_tuple ( _, [
@@ -35,7 +53,7 @@ let const_fold' e sr name arg =
            EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    EXPR_literal (sr,AST_int ("int",(add_big_int x y)))
+    EXPR_literal (sr,AST_int ("int",(add x y)))
 
   (* x-y *)
   | "sub", EXPR_tuple ( _, [
@@ -43,7 +61,7 @@ let const_fold' e sr name arg =
            EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    EXPR_literal (sr,AST_int ("int",(sub_big_int x y)))
+    EXPR_literal (sr,AST_int ("int",(sub x y)))
 
   (* x*y *)
   | "mul", EXPR_tuple ( _, [
@@ -51,7 +69,7 @@ let const_fold' e sr name arg =
            EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    EXPR_literal (sr,AST_int ("int",(mult_big_int x y)))
+    EXPR_literal (sr,AST_int ("int",(mult x y)))
 
   (* x/y *)
   | "div", EXPR_tuple ( _, [
@@ -60,7 +78,7 @@ let const_fold' e sr name arg =
           ])
     ->
     let r =
-      try div_big_int x y
+      try div x y
       with Division_by_zero ->
         clierr sr "[constfld] Division by zero"
     in
@@ -74,7 +92,7 @@ let const_fold' e sr name arg =
           ])
     ->
     let r =
-      try mod_big_int x y
+      try modu x y
       with Division_by_zero ->
         clierr sr "[constfld] Division by zero"
     in
@@ -86,7 +104,7 @@ let const_fold' e sr name arg =
            EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    EXPR_literal (sr,AST_int ("int",(power_big_int_positive_big_int x y)))
+    EXPR_literal (sr,AST_int ("int",(pow x y)))
 
   (* x < y *)
   | "lt", EXPR_tuple ( _, [
@@ -94,7 +112,7 @@ let const_fold' e sr name arg =
            EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    truth sr (lt_big_int x y)
+    truth sr (lt x y)
 
   (* x > y *)
   | "gt", EXPR_tuple ( _, [
@@ -102,7 +120,7 @@ let const_fold' e sr name arg =
            EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    truth sr (gt_big_int x y)
+    truth sr (gt x y)
 
   (* x <= y *)
   | "le", EXPR_tuple ( _, [
@@ -110,7 +128,7 @@ let const_fold' e sr name arg =
            EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    truth sr (le_big_int x y)
+    truth sr (le x y)
 
   (* x >= y *)
   | "ge", EXPR_tuple ( _, [
@@ -118,7 +136,7 @@ let const_fold' e sr name arg =
            EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    truth sr (ge_big_int x y)
+    truth sr (ge x y)
 
   (* x == y *)
   | "eq", EXPR_tuple ( _, [
@@ -126,7 +144,7 @@ let const_fold' e sr name arg =
            EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    truth sr (eq_big_int x y)
+    truth sr (eq x y)
 
   (* x != y *)
   | "ne", EXPR_tuple ( _, [
@@ -134,7 +152,7 @@ let const_fold' e sr name arg =
            EXPR_literal (_,AST_int ("int",y))
           ])
     ->
-    truth sr (not (eq_big_int x y))
+    truth sr (not (eq x y))
 
   (* strings *)
   (* x+y *)
@@ -153,7 +171,7 @@ let const_fold' e sr name arg =
     ->
     let y =
       try
-        int_of_big_int y
+        int_of_string y
       with _ -> clierr sr "String repeat count too large"
     in
     if String.length x = 1 then

@@ -52,7 +52,7 @@ let csuffix_of_type s = match s with
   | _ -> failwith ("[csuffix_of_type]: Unexpected Type " ^ s)
 
 let cstring_of_literal e = match e with
-  | Flx_ast.AST_int (s,i) -> (Big_int.string_of_big_int i)^csuffix_of_type s
+  | Flx_ast.AST_int (s,i) -> i^csuffix_of_type s
   | Flx_ast.AST_float (s,x) -> x ^ csuffix_of_type s
   | Flx_ast.AST_string s -> string_of_string s
   | Flx_ast.AST_cstring s -> string_of_string s
