@@ -75,6 +75,7 @@ class Iscr(fbuild.db.PersistentObject):
 
 # ------------------------------------------------------------------------------
 
+import os # hack
 @fbuild.db.caches
 def config_iscr_config(ctx, build, host, target) -> fbuild.db.DST:
     # allow us to import the buildroot
@@ -83,6 +84,12 @@ def config_iscr_config(ctx, build, host, target) -> fbuild.db.DST:
 
     dst = ctx.buildroot/'config/__init__.py'
 
+    # JS temporary hack, failed because config dir didn't exist
+    # at the time of trying to write the __init__.py file
+    try:
+      os.mkdir(ctx.buildroot/'config')
+    except:
+      pass
     with open(dst, 'w') as f:
         _print_config(ctx, f, build, host, target)
 

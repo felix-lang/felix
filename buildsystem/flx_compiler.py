@@ -133,8 +133,7 @@ def build_flx_cpp_backend(phase):
     path = Path('src/compiler/flx_cpp_backend')
     return phase.ocaml.build_lib(path / 'flx_cpp_backend',
         srcs=Path.globall(
-            path / '*.ml{,i}',
-            phase.ctx.buildroot / path / 'flx_backend_config.ml{,i}'),
+            path / '*.ml{,i}',),
         libs=[
             build_flx_misc(phase),
             build_flx_core(phase),

@@ -1,34 +1,6 @@
 @import config
-@from config.flx_data import flx_keywords, flx_syms, cpp_keywords
-@set_title('Felix ' + config.flx_version)
 
-@head(1,'The Felix Compiler')
-
-@select(tangler('src/compiler/flx_cpp_backend/flx_backend_config.ml'))
-let cpp_keywords = [
-@for k in cpp_keywords:
-  tangle('  "%s";' % k)
-@#
-]
-
-@head(1,'Configuration loader')
-There is a separate package "flx_config.pak" which should
-be used to create the configuration creator script.
-@import traceback
-@try:
-    import config.flx_data
- except:
-    xt,xv,tb = sys.exc_info()
-    print("ERROR IN config/flx_data.py")
-    traceback.print_exception(xt,xv,tb)
-    print("You must either")
-    print("(a) edit config/__init__.py and fix the error, or,")
-    print("(b) i) delete it, and,")
-    print("    ii) run 'python script/make_config.py'")
-    print("       again to reset it:")
-    print("       this is done automatically by 'make boot'")
-    sys.exit(1)
-
+@head(1,'Version data hardcoded into Ocaml progs')
 
 @h=tangler('src/compiler/flx_version_hook/flx_version_hook.ml')
 @select(h)

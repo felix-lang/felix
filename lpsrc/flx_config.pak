@@ -10,20 +10,6 @@
 @debian_revision = '1'
 @rpm_revision = '1'
 
-
-@head(2,'CVS log')
-@select(tangler('config/xlators_local.py','python'))
-# reconfigure translator definitions for your
-# local system here
-selected_xlators = [
-  'ocamlopt',
-  'gccopt',
-  'gnat',
-  'gjc',
-  'felix'
-]
-
-
 @select(tangler('version.py'))
 @tangle("flx_version = '"+flx_version+"'")
 @tangle("flx_version_major = '"+flx_version_major+"'")
@@ -675,3 +661,4 @@ class setup_test:
             pickle.dump(self.registry_out, f)
         finally:
             f.close()
+
