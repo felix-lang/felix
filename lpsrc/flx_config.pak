@@ -3,7 +3,7 @@
 @print(FLX_CONFIG_CVS_ID)
 @flx_version_major = '1'
 @flx_version_minor = '1'
-@flx_version_patch = '5'
+@flx_version_patch = '6'
 @flx_version_release = ''
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch+flx_version_release
 @godi_revision = '0'
@@ -23,82 +23,6 @@ selected_xlators = [
   'felix'
 ]
 
-@select(tangler("cpkgs/__init__.py"))
-@select(tangler("cpkgs/build/__init__.py"))
-@select(tangler("cpkgs/host/__init__.py"))
-@select(tangler("cpkgs/target/__init__.py"))
-@select(tangler("cpkgs/target/libgc.py"))
-import config
-
-#    'Boehm-Demers-Weiser Conservative Garbage Collector',
-#    'http://www.hpl.hp.com/personal/Hans_Boehm/gc/'
-HAVE_LIBGC = config.TARGET_CXX.check_header_exists("gc.h")
-
-@select(tangler("cpkgs/target/windowsh.py"))
-import config
-
-#    "Microsoft Windows core CAPI",
-#    "http://microsoft.com"
-HAVE_WINDOWS_H = config.TARGET_CXX.check_header_exists("windows.h")
-
-@select(tangler("cpkgs/target/opengl.py"))
-import os
-
-import config
-
-#    'Open GL Graphics Rendering Toolkit',
-#    "http://www.opengl.org"
-if config.MACOSX:
-  HAVE_OPENGL = config.TARGET_CXX.check_header_exists("OpenGL"+os.sep+"gl.h")
-else:
-  HAVE_OPENGL = config.TARGET_CXX.check_header_exists("GL"+os.sep+"gl.h")
-
-
-@select(tangler("cpkgs/target/pthread.py"))
-from fbuild.flxbuild.flxutil import xqt, ExecutionError
-
-# try to use Linux getconf to find the pthread version
-# Ubuntu/Breezy returns "NPTL 2.3.5"
-# IEEE Std 1003.1-2001 for getconf uses the variable: _POSIX_THREADS
-# if the system does not support Pthreads, getconf returns 0
-# if the system supports Pthreads, getconf returns nonzero
-# on RedHat Linux, "getconf _POSIX_THREADS" returns 1
-# on Darwin (Mac OS X), "getconf _POSIX_THREADS" returns 200112
-try:
-  output = xqt('getconf', '_POSIX_THREADS')
-except ExecutionError, TypeError:
-  # getconf failed
-  PTHREAD_MODEL = 'Unknown'
-else:
-  if int(output[0].strip()) != 0:
-    PTHREAD_MODEL = 'POSIX'
-  else:
-    PTHREAD_MODEL = 'Unknown'
-
-
-print("Pthread model according to linuxy getconf=", PTHREAD_MODEL)
-
-
-@select(tangler("cpkgs/host/pkgconfig.py"))
-from fbuild.flxbuild.flxutil import ExecutionError
-# see if we have pkg-config
-try:
-  from config.pkgconfig_config import *
-except ImportError:
-  from fbuild.flxbuild.flxutil import xqt
-  from fbuild.flxbuild.config_support import cwrite, pr, pa
-
-  try:
-    xqt("pkg-config --version")
-    HAVE_PKGCONFIG = 1
-  except ExecutionError:
-    HAVE_PKGCONFIG = 0
-
-  print("Storing pkgconfig configuration")
-  f = cwrite("pkgconfig")
-  pr(f,"#pkgconfig support")
-  pa(f,locals(),"HAVE_PKGCONFIG")
-  f.close()
 
 @select(tangler('version.py'))
 @tangle("flx_version = '"+flx_version+"'")
