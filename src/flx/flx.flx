@@ -595,7 +595,30 @@ long posix_ftime(string s) {
 fun macosx_ftime: string -> long = "macosx_ftime($1)";
 fun posix_ftime: string -> long = "posix_ftime($1)";
 
+val past_time = -1l;
+val future_time = long(ulong(-1)/2ul); // a hacky way to get a big number
+
 fun filetime(f:string)=>if MACOSX then macosx_ftime(f) else posix_ftime(f) endif;
+fun dfiletime(f:string, dflt:long )=
+{
+  val x = filetime (f);
+  dbug??println$ "Time of file " + f + " is " + str x;
+  return if x == 0l then dflt else x endif;
+}
+
+fun maxf (x: long) (f:string) => max (x, if f == "" then x else dfiletime (f+".flx",future_time) endif);
+fun cal_files_time (fs: list[string])=> fold_left maxf 0L fs;
+fun cal_time_from_dep (df: string):long=
+{
+  val deptext = Text_file::load df;
+  val lines = split (deptext, "\n"); 
+  dbug?? println$ "Deps=" + str(lines);
+  val deptime = cal_files_time lines;
+  dbug?? println$ "Deptime=" + str(deptime);
+  return deptime;
+}
+
+fun cal_dep_time(f:string)=>cal_time_from_dep(f+".dep");
 
 var cmd = "";
 dbug?? println$ "RECOMPILE="+str RECOMPILE;
@@ -604,8 +627,9 @@ dbug?? println$ "RUNIT="+str RUNIT;
 if RECOMPILE == 0 and RUNIT == 1 do
   // not (--force or -c)
   dbug?? println "Checking to see if the binary is uptodate";
+  dbug?? println$ "Binary time = " + str (dfiletime(filebase+EXT_SHLIB,past_time));
   if STATIC == 0 do
-    if (filetime(filebase+EXT_SHLIB) > filetime (filebase+".flx")) do
+    if (dfiletime(filebase+EXT_SHLIB,past_time) > cal_dep_time (filebase)) do
       dbug?? println$ "Running dynamically linked binary";
       calpackages();
       cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ filebase+EXT_SHLIB+" "+args;
@@ -615,7 +639,7 @@ if RECOMPILE == 0 and RUNIT == 1 do
       dbug?? println$ "Dynamically linked binary out of date or non-existant";
     done
   else
-    if (filetime(filebase+EXT_EXE) > filetime(filebase+".flx")) do
+    if (dfiletime(filebase+EXT_EXE,past_time) > cal_dep_time(filebase)) do
       dbug?? println$ "Running statically linked binary";
       cmd=STATIC_ENV+" "+filebase+" "+args;
       dbug?? println$ "Uptodate executable: Running command " + cmd;
@@ -627,6 +651,7 @@ if RECOMPILE == 0 and RUNIT == 1 do
 done
 
 // Need Felix and c++ compile, then run it
+dbug??println$ "RECOMPILING!!";
 
 var VERBOSE = "";
 if DEBUG_COMPILER == 1 do

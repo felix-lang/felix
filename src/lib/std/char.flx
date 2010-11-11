@@ -23,7 +23,7 @@ open module Uchar
 }
 
 instance[T in chars] Str[T] {
-  fun str: T -> string = "flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  fun str: T -> string = "::flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
 }
 
 instance[T in chars] Repr[T] {

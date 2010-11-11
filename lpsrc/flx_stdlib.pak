@@ -1,5 +1,4 @@
 @import config
-@#from config.flx_data import rmap, tmap
 @python("//")
 rmap = {}
 
