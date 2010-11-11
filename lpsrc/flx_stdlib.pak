@@ -1,18 +1,144 @@
 @import config
-@from config.flx_data import rmap, tmap
+@#from config.flx_data import rmap, tmap
+@python("//")
+rmap = {}
+
+tmap = {
+  # addressing
+  "byte"      : "unsigned char",
+  "size"      : "size_t",
+  "cvaddress" : "void const volatile*",
+  "vaddress"  : "void volatile*",
+  "caddress"  : "void const*",
+  "address"   : "void *",
+  "offset"    : "ptrdiff_t",
+  "ptrdiff"   : "ptrdiff_t",
+
+  #characters
+  "char"    : "char",
+  "wchar"   : "wchar_t",
+
+  #signed integers
+  "tiny"    : "signed char",
+  "short"   : "short",
+  "int"     : "int",
+  "long"    : "long",
+
+  #unsigned integers
+  "utiny"   : "unsigned char",
+  "ushort"  : "unsigned short",
+  "uint"    : "unsigned int",
+  "ulong"   : "unsigned long",
+
+  #floating
+  "float"   : "float",
+  "double"  : "double",
+  "ldouble"  : "long double"
+ }
+
+#if config.TARGET_CXX.options.HAVE_COMPLEX:
+if False:
+  tmap["imaginary"]="float _Imaginary"
+  tmap["dimaginary"]="double _Imaginary"
+  tmap["limaginary"]="long double _Imaginary"
+  tmap["fcomplex" ]="float _Complex"
+  tmap["dcomplex"]="double _Complex"
+  tmap["lcomplex"]="long double _Complex"
+
+  rmap["imaginary" ]="c99_complex_h"
+  rmap["dimaginary" ]="c99_complex_h"
+  rmap["limaginary" ]="c99_complex_h"
+  rmap["fcomplex" ]="c99_complex_h"
+  rmap["dcomplex"]="c99_complex_h"
+  rmap["lcomplex"]="c99_complex_h"
+else:
+  tmap["imaginary"]="float"
+  tmap["dimaginary"]="double"
+  tmap["limaginary"]="long double"
+  tmap["fcomplex" ]="std::complex<float>"
+  tmap["dcomplex"]="std::complex<double>"
+
+  rmap["fcomplex" ]="complex_hxx"
+  rmap["dcomplex"]="complex_hxx"
+  rmap["lcomplex"]="complex_hxx"
+
+if config.TARGET_CXX.options.HAVE_LONGDOUBLE:
+  tmap["ldouble"]="long double"
+  tmap["lcomplex"]="std::complex<long double>"
+else:
+  tmap["ldouble"]="double"
+  tmap["lcomplex"]="std::complex<double>"
+
+if config.TARGET_CXX.options.HAVE_LONGLONG:
+  tmap["vlong"]="long long"
+  tmap["uvlong"]="unsigned long long"
+else:
+  tmap["vlong"]="long"
+  tmap["uvlong"]="unsigned long"
+
+if config.TARGET_CXX.options.HAVE_STDINT:
+  tmap["int8"]="int8_t"
+  tmap["uint8"]="uint8_t"
+  tmap["int16"]="int16_t"
+  tmap["uint16"]="uint16_t"
+  tmap["int32"]="int32_t"
+  tmap["uint32"]="uint32_t"
+  tmap["int64"]="int64_t"
+  tmap["uint64"]="uint64_t"
+  tmap["intptr"]="intptr_t"
+  tmap["uintptr"]="uintptr_t"
+  tmap["intmax"]="intmax_t"
+  tmap["uintmax"]="uintmax_t"
+
+  # requirements
+  rmap["int8"]="c99_stdint_h"
+  rmap["uint8"]="c99_stdint_h"
+  rmap["int16"]="c99_stdint_h"
+  rmap["uint16"]="c99_stdint_h"
+  rmap["int32"]="c99_stdint_h"
+  rmap["uint32"]="c99_stdint_h"
+  rmap["int64"]="c99_stdint_h"
+  rmap["uint64"]="c99_stdint_h"
+  rmap["intptr"]="c99_stdint_h"
+  rmap["uintptr"]="c99_stdint_h"
+  rmap["intmax"]="c99_stdint_h"
+  rmap["uintmax"]="c99_stdint_h"
+else:
+  tmap["int8"]="signed char"
+  tmap["uint8"]="unsigned char"
+  sizes = {
+    config.TARGET_CXX.options.SIZEOF_SHORT*8 : "short",
+    config.TARGET_CXX.options.SIZEOF_INT*8: "int",
+    config.TARGET_CXX.options.SIZEOF_LONG*8 : "long",
+  }
+  tmap["intmax"]="long"
+  tmap["uintmax"]="unsigned long"
+  if config.TARGET_CXX.options.HAVE_LONGLONG:
+    sizes[config.TARGET_CXX.options.SIZEOF_LONGLONG*8]="long long"
+    tmap["intmax"]="long long"
+    tmap["uintmax"]="unsigned long long"
+  for size in [16,32,64]:
+    try:
+      t = sizes[size]
+    except KeyError:
+      tmap["int"+str(size)]="emul_int"+str(size)
+      tmap["uint"+str(size)]="emul_uint"+str(size)
+    else:
+      tmap["int"+str(size)]=t
+      tmap["uint"+str(size)]="unsigned " + t
+  try:
+    tmap["intptr"]=sizes[config.TARGET_CXX.options.SIZEOF_VOIDP*8]
+    tmap["uintptr"]="unsigned "+sizes[config.TARGET_CXX.options.SIZEOF_VOIDP*8]
+  except:
+    print("NO INTEGER THE SIZE OF A VOID*!")
+    sys.exit(1)
+
+tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
+//
 
 @head(1,'Felix Standard Library')
 
 @head(2,"Code")
-Support table.
-@begin_table("filebase","language","namespace","function")
-@table_row("rtl/flx_i18n","C++","::flx::rtl::i18n","utf8 codec support")
-@table_row("rtl/flx_strutil","C++","::flx::rtl::strutil","Python style substring support")
-@table_row("rtl/flx_ioutil","C++","::flx::rtl::ioutil","Standard IO support")
-@table_row("rtl/flx_executil","C++","::flx::rtl::executil","Fibre suport")
-@table_row("lib/stl","Felix","","STL support")
-@end_table()
-
 @fc = {'float':'f', 'double':'','ldouble':'l'}
 
 @def gen_nan(t):
