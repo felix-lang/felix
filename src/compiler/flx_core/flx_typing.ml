@@ -65,7 +65,9 @@ let flx_bbool = Flx_btype.btyp_unitsum 2
 *)
 
 let cmp_literal (l:literal_t) (l':literal_t) = match l, l' with
-  | AST_int (a,b), AST_int (a',b') -> a = a' && b = b'
+  | AST_int (a,b), AST_int (a',b') -> a = a' && 
+   Big_int.eq_big_int (Big_int.big_int_of_string b) (Big_int.big_int_of_string b')
+
   | AST_float (a,b), AST_float (a',b') -> a = a' && b = b'
   | AST_string s, AST_string s' -> s = s'
   | AST_cstring s, AST_cstring s' -> s = s'
