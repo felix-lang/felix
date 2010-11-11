@@ -37,15 +37,14 @@ let xsr x : Flx_srcref.t =
   | x -> err x "Invalid source reference"
 
 let rec xliteral_t sr x =
-  let ss s = s in
   match x with
-  | Lst [Id "ast_int"; Str s; Str i] -> AST_int (ss s, (ss i))
-  | Lst [Id "ast_int"; Str s; Int i] -> AST_int (ss s, i)
-  | Lst [Id "ast_string"; Str s] -> AST_string (ss s)
-  | Lst [Id "ast_cstring"; Str s] -> AST_cstring (ss s)
-  | Lst [Id "ast_wstring"; Str s] -> AST_wstring (ss s)
-  | Lst [Id "ast_ustring"; Str s] -> AST_ustring (ss s)
-  | Lst [Id "ast_float"; Str s1; Str s2] -> AST_float (ss s1, ss s2)
+  | Lst [Id "ast_int"; Str s; Int i] -> AST_int (s, i)
+  | Lst [Id "ast_int"; Str s; Str i] -> AST_int (s, i)
+  | Lst [Id "ast_string"; Str s] -> AST_string (s)
+  | Lst [Id "ast_cstring"; Str s] -> AST_cstring (s)
+  | Lst [Id "ast_wstring"; Str s] -> AST_wstring (s)
+  | Lst [Id "ast_ustring"; Str s] -> AST_ustring (s)
+  | Lst [Id "ast_float"; Str s1; Str s2] -> AST_float (s1, s2)
   | x -> err x "invalid literal"
 
 
@@ -94,7 +93,6 @@ and xexpr_t sr x =
   let ex x = xexpr_t sr x in
   let ti x = type_of_sex sr x in
   let ii i = int_of_string i in
-  let ss s = s in
   let xq m qn = qne ex m qn in
   let xp x = xpattern_t x in
   let xps x =  xparams_t sr x in
@@ -107,24 +105,24 @@ and xexpr_t sr x =
   | Lst [] -> EXPR_tuple (sr,[])
   | Lst [x] -> ex x
   (* this term comes from the hard coded parser! *)
-  | Lst [Id "ast_vsprintf";  Str s] -> EXPR_vsprintf (sr,ss s)
+  | Lst [Id "ast_vsprintf";  Str s] -> EXPR_vsprintf (sr,s)
   | Lst [Id "ast_noexpand"; sr; e] -> EXPR_noexpand (xsr sr,ex e)
   | Lst [Id "ast_name"; sr; Id s ; Lst ts] -> EXPR_name (xsr sr,s,map ti ts)
-  | Lst [Id "ast_name"; sr; Str s ; Lst ts] -> EXPR_name (xsr sr,ss s,map ti ts)
+  | Lst [Id "ast_name"; sr; Str s ; Lst ts] -> EXPR_name (xsr sr,s,map ti ts)
   | Lst [Id "ast_the";  sr; e] -> EXPR_the (xsr sr, xq "ast_the" e) 
   (* can't occur in user code
-  | Lst [Id "ast_index";  Str s ; Int i] -> EXPR_index (sr,ss s,ii i)
+  | Lst [Id "ast_index";  Str s ; Int i] -> EXPR_index (sr,s,ii i)
   *)
 
   | Lst [Id "ast_case_tag";  sr; Int i] -> EXPR_case_tag (xsr sr,ii i)
   | Lst [Id "ast_typed_case";  Int i; t] -> EXPR_typed_case (sr,ii i,ti t)
-  | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> EXPR_lookup (sr,(ex e, ss s,map ti ts))
+  | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> EXPR_lookup (sr,(ex e, s,map ti ts))
   | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> EXPR_apply(xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
   | Lst [Id "ast_tuple";  sr; Lst es] -> EXPR_tuple (xsr sr,map (xexpr_t (xsr sr)) es)
   | Lst [Id "ast_record";  sr; Lst rs] ->
    let rs =
      map (function
-     | Lst [Str s; e] -> ss s, xexpr_t (xsr sr) e
+     | Lst [Str s; e] -> s, xexpr_t (xsr sr) e
      | x -> err x "Error in AST_record"
      )
      rs
@@ -133,18 +131,18 @@ and xexpr_t sr x =
  | Lst [Id "ast_record_type"; Lst rs] ->
    let rs =
      map (function
-     | Lst [Str s; e] -> ss s, ti e
+     | Lst [Str s; e] -> s, ti e
      | x -> err x "Error in AST_record_type"
      )
      rs
    in EXPR_record_type (sr,rs)
 
- | Lst [Id "ast_variant";  Lst [Str s;e]] -> EXPR_variant (sr,(ss s, ex e))
+ | Lst [Id "ast_variant";  Lst [Str s;e]] -> EXPR_variant (sr,(s, ex e))
 
  | Lst [Id "ast_variant_type"; Lst rs] ->
    let rs =
      map (function
-     | Lst [Str s; e] -> ss s, ti e
+     | Lst [Str s; e] -> s, ti e
      | x -> err x "Error in AST_variant_type"
      )
      rs
@@ -156,7 +154,7 @@ and xexpr_t sr x =
 
  | Lst [Id "ast_suffix";  Lst [qn;t]] -> EXPR_suffix (sr,(xq "ast_suffix" qn,ti t))
 
- | Lst [Id "ast_patvar";  sr; Str s] -> EXPR_patvar (xsr sr, ss s)
+ | Lst [Id "ast_patvar";  sr; Str s] -> EXPR_patvar (xsr sr, s)
  | Lst [Id "ast_patany"; sr] -> EXPR_patany (xsr sr)
  | Lst [Id "ast_void"; sr] -> EXPR_void (xsr sr)
  | Lst [Id "ast_ellipsis"; sr] -> EXPR_ellipsis (xsr sr)
@@ -193,9 +191,9 @@ and xexpr_t sr x =
 
  | Lst [Id "ast_get_n";  sr;  Lst [Int i; e]] -> EXPR_get_n(xsr sr,(ii i, ex e))
  (* extractor for record components, can't occur in user code
- | Lst [Id "ast_get_named_variable";  Lst [Str s;e]]-> EXPR_get_named_variable (sr, (ss s, ex e))
+ | Lst [Id "ast_get_named_variable";  Lst [Str s;e]]-> EXPR_get_named_variable (sr, (s, ex e))
  *)
- | Lst [Id "ast_as";  sr; Lst [e; Str s]] -> EXPR_as (xsr sr,(ex e, ss s))
+ | Lst [Id "ast_as";  sr; Lst [e; Str s]] -> EXPR_as (xsr sr,(ex e, s))
  | Lst [Id "ast_match";  sr; Lst [e; Lst pes]]->
    let pes = map (function
      | Lst [p;e] -> xp p, ex e
@@ -210,7 +208,7 @@ and xexpr_t sr x =
  *)
 
  | Lst [Id "ast_cond"; sr;  Lst [e1;e2;e3]] -> EXPR_cond (xsr sr,(ex e1, ex e2, ex e3))
- | Lst [Id "ast_expr"; sr; Str s; t] -> EXPR_expr (xsr sr, ss s, ti t)
+ | Lst [Id "ast_expr"; sr; Str s; t] -> EXPR_expr (xsr sr, s, ti t)
 
  | Lst [Id "ast_type_match";  sr; Lst [t; Lst ts]] ->
    let ts =
@@ -221,7 +219,7 @@ and xexpr_t sr x =
      ts
    in EXPR_type_match (xsr sr,(ti t, ts))
 
- | Lst [Id "ast_macro_ctor";  Lst [Str s; e]] -> EXPR_macro_ctor (sr,(ss s, ex e))
+ | Lst [Id "ast_macro_ctor";  Lst [Str s; e]] -> EXPR_macro_ctor (sr,(s, ex e))
  | Lst [Id "ast_macro_statements"; sts] -> EXPR_macro_statements (sr, xsts sts)
  | Lst [Id "ast_user_expr"; sr; Str s; term] -> EXPR_user_expr (xsr sr, s, xterm term)
 
@@ -235,10 +233,9 @@ and xexpr_t sr x =
     err x "expression"
 
 and xfloat_pat x =
-  let ss s = s in
   match x with
-  | Lst [Id "Float_plus"; Str ty; Str vl] -> Float_plus (ss ty, ss vl)
-  | Lst [Id "Float_minus"; Str ty; Str vl] -> Float_minus (ss ty, ss vl)
+  | Lst [Id "Float_plus"; Str ty; Str vl] -> Float_plus (ty, vl)
+  | Lst [Id "Float_minus"; Str ty; Str vl] -> Float_minus (ty, vl)
   | Id "Float_inf" -> Float_inf
   | Id "Float_minus_inf" -> Float_minus_inf
   | x -> err x "Float_pat syntax error"
@@ -246,22 +243,21 @@ and xfloat_pat x =
 and xpattern_t x =
   let xp x = xpattern_t x in
   let ti sr x = type_of_sex sr x in
-  let ss s = s in
   let xq sr m qn = qne (xexpr_t (xsr sr)) m qn in
   match x with
   | Lst [Id "pat_nan"; sr] -> PAT_nan (xsr sr)
   | Lst [Id "pat_none"; sr] -> PAT_none (xsr sr)
 
   (* constants *)
-  | Lst [Id "pat_int"; sr; Str s; Int i] -> PAT_int (xsr sr,ss s, ss i)
-  | Lst [Id "pat_string"; sr; Str s] -> PAT_string (xsr sr,ss s)
+  | Lst [Id "pat_int"; sr; Str s; Int i] -> PAT_int (xsr sr,s, i)
+  | Lst [Id "pat_string"; sr; Str s] -> PAT_string (xsr sr,s)
 
   (* ranges *)
   | Lst [Id "pat_int_range"; sr; Str s1; Int i1; Str s2; Int i2] ->
-    PAT_int_range (xsr sr,ss s1, ss i1, ss s2, ss i2)
+    PAT_int_range (xsr sr,s1, i1, s2, i2)
 
   | Lst [Id "pat_string_range"; sr; Str s1; Str s2] ->
-    PAT_string_range (xsr sr,ss s1, ss s2)
+    PAT_string_range (xsr sr,s1, s2)
   | Lst [Id "pat_float_range"; sr; p1; p2] ->
     PAT_float_range (xsr sr, xfloat_pat p1, xfloat_pat p2)
 
@@ -270,7 +266,7 @@ and xpattern_t x =
    PAT_coercion (xsr sr, xp p, ti (xsr sr) t)
 
   | Lst [Id "pat_name"; sr; Id x] -> PAT_name (xsr sr, x)
-  | Lst [Id "pat_name"; sr; Str x] -> PAT_name (xsr sr, ss x)
+  | Lst [Id "pat_name"; sr; Str x] -> PAT_name (xsr sr, x)
   | Lst [Id "pat_tuple"; sr; Lst ps] -> PAT_tuple (xsr sr, map xp ps)
 
   | Lst [Id "pat_any"; sr] -> PAT_any (xsr sr)
@@ -278,13 +274,13 @@ and xpattern_t x =
   | Lst [Id "pat_nonconst_ctor"; sr; qn; p] -> PAT_nonconst_ctor (xsr sr, xq sr "pat_nonconst_ctor" qn, xp p)
 
   | Lst [Id "pat_as"; sr; p; Id s] -> PAT_as (xsr sr, xp p, s)
-  | Lst [Id "pat_as"; sr; p; Str s] -> PAT_as (xsr sr, xp p, ss s)
+  | Lst [Id "pat_as"; sr; p; Str s] -> PAT_as (xsr sr, xp p, s)
   | Lst [Id "pat_when"; sr; p; e] -> PAT_when (xsr sr, xp p, xexpr_t (xsr sr) e)
 
   | Lst [Id "pat_record"; sr; Lst ips] ->
     let ips = map (function
       | Lst [Id id; p] -> id,xp p
-      | Lst [Str id; p] -> ss id,xp p
+      | Lst [Str id; p] -> id,xp p
       | x -> err x "pat_record syntax"
       )
       ips
@@ -330,11 +326,10 @@ and xvs_aux_t sr x : vs_aux_t =
 and xplain_vs_list_t sr x : plain_vs_list_t =
   let ex x = xexpr_t sr x in
   let ti x = type_of_sex sr x in
-  let ss s = s in
   match x with
   | Lst its -> map (function
     | Lst [Id s; t] -> s,ti t
-    | Lst [Str s; t] -> ss s,ti t
+    | Lst [Str s; t] -> s,ti t
     | x -> err x "xplain_vs_list"
     ) its
   | x -> err x "xplain_vs_list"
@@ -365,10 +360,9 @@ and xparameter_t sr x : parameter_t =
   let ex x = xexpr_t sr x in
   let ti x = type_of_sex sr x in
   let xpk x = xparam_kind_t sr x in
-  let ss s = s in
   match x with
   | Lst [pk; Id s; t; e] -> xpk pk, s, ti t,opt "dflt_arg" ex e
-  | Lst [pk; Str s; t; e] -> xpk pk,ss s, ti t,opt "dflt_arg" ex e
+  | Lst [pk; Str s; t; e] -> xpk pk,s, ti t,opt "dflt_arg" ex e
   | x -> err x "parameter_t"
 
 and xparams_t sr x : params_t =
@@ -386,14 +380,13 @@ and xret_t sr x : typecode_t * expr_t option =
   | x -> err x "return encoding"
 
 and xproperty_t sr x : property_t =
-  let ss s = s in
   match x with
   | Id "Recursive" -> `Recursive
   | Id "Inline" -> `Inline
   | Id "NoInline" -> `NoInline
   | Id "Inlining_started" -> `Inlining_started
   | Id "Inlining_complete" -> `Inlining_complete
-  | Lst [Id "Generated"; Str s] -> `Generated (ss s)
+  | Lst [Id "Generated"; Str s] -> `Generated (s)
 
   | Id "Heap_closure" -> `Heap_closure        (* a heaped closure is formed *)
   | Id "Explicit_closure" -> `Explicit_closure    (* explicit closure expression *)
@@ -441,10 +434,9 @@ and xmacro_parameter_t sr x : macro_parameter_t =
   | x -> err x "macro_parameter_t"
 
 and xcode_spec_t sr x : code_spec_t =
-  let ss s = s in
   match x with
-  | Lst [Id "StrTemplate"; Str s] -> CS_str_template (ss s)
-  | Lst [Id "Str"; Str s] -> CS_str (ss s)
+  | Lst [Id "StrTemplate"; Str s] -> CS_str_template (s)
+  | Lst [Id "Str"; Str s] -> CS_str (s)
   | Id "Virtual" -> CS_virtual
   | Id "Identity" -> CS_identity
   | x -> err x "c_t"
@@ -484,12 +476,11 @@ and xrequirement_t sr x : requirement_t =
   let ex x = xexpr_t sr x in
   let xq m qn = qne ex m qn in
   let xct x = xcode_spec_t sr x in
-  let ss s = s in
   match x with
   | Lst [Id "Body_req"; ct] -> Body_req (xct ct)
   | Lst [Id "Header_req"; ct] -> Header_req (xct ct)
   | Lst [Id "Named_req"; qn] -> Named_req (xq "Named_req" qn)
-  | Lst [Id "Property_req"; Str s] -> Property_req (ss s)
+  | Lst [Id "Property_req"; Str s] -> Property_req (s)
   | Lst [Id "Package_req"; ct] -> Package_req (xct ct)
   | x -> err x "requirement_t"
 
@@ -522,7 +513,6 @@ and xstatement_t sr x : statement_t =
   let ex x = xexpr_t sr x in
   let ex' sr x = xexpr_t (xsr sr) x in
   let xq m qn = qne ex m qn in
-  let ss s = s in
   let xvs x = xvs_list_t sr x in
   let xam x =  xaxiom_method_t sr x in
   let xps x =  xparams_t sr x in
@@ -546,22 +536,22 @@ and xstatement_t sr x : statement_t =
   let lnot sr x = EXPR_apply (sr,(EXPR_name (sr,"lnot",[]),x)) in
   match x with
   | Lst [] -> STMT_nop(sr,"null")
-  | Lst [Id "ast_include"; sr; Str s] -> STMT_include (xsr sr, ss s)
+  | Lst [Id "ast_include"; sr; Str s] -> STMT_include (xsr sr, s)
   | Lst [Id "ast_open"; sr; vs; qn] -> STMT_open (xsr sr, xvs vs, xq "ast_open" qn)
   | Lst [Id "ast_inject_module"; sr; qn] -> STMT_inject_module (xsr sr, xq "ast_inject_module" qn)
-  | Lst [Id "ast_use"; sr; Str s; qn] -> STMT_use (xsr sr, ss s, xq "ast_use" qn)
-  | Lst [Id "ast_comment"; sr; Str s] -> STMT_comment(xsr sr, ss s)
+  | Lst [Id "ast_use"; sr; Str s; qn] -> STMT_use (xsr sr, s, xq "ast_use" qn)
+  | Lst [Id "ast_comment"; sr; Str s] -> STMT_comment(xsr sr, s)
   | Lst [Id "ast_private"; x] -> STMT_private (sr, xs x)
   | Lst [Id "ast_reduce"; sr; Str s; vs; spl; e1; e2] ->
-    STMT_reduce (xsr sr,ss s,xvs vs, xpvs spl, ex' sr e1, ex' sr e2)
+    STMT_reduce (xsr sr,s,xvs vs, xpvs spl, ex' sr e1, ex' sr e2)
   | Lst [Id "ast_axiom"; sr; Str s; vs; ps; axm] ->
-    STMT_axiom (xsr sr,ss s,xvs vs, xps ps,xam axm)
+    STMT_axiom (xsr sr,s,xvs vs, xps ps,xam axm)
   | Lst [Id "ast_lemma"; sr; Str s; vs; ps; axm] ->
-    STMT_lemma(xsr sr,ss s,xvs vs, xps ps,xam axm)
+    STMT_lemma(xsr sr,s,xvs vs, xps ps,xam axm)
   | Lst [Id "ast_function"; Str s; vs; ps; ret; props; sts] ->
-    STMT_function(sr,ss s,xvs vs, xps ps,xret ret, xprops props, xsts sts)
+    STMT_function(sr,s,xvs vs, xps ps,xret ret, xprops props, xsts sts)
   | Lst [Id "ast_curry"; sr; Str s; vs; Lst pss; ret; fk; sts] ->
-    STMT_curry(xsr sr,ss s,xvs vs, map xps pss,xret ret, xfk fk, xsts' sr sts)
+    STMT_curry(xsr sr,s,xvs vs, map xps pss,xret ret, xfk fk, xsts' sr sts)
 
   | Lst [Id "ast_macro_name"; Str n; Str m] -> STMT_macro_name (sr,n,m)
   | Lst [Id "ast_macro_names"; Str n; ms] -> STMT_macro_names (sr,n,lst "ast_macro_names" xid ms)
@@ -630,21 +620,21 @@ and xstatement_t sr x : statement_t =
     STMT_inherit_fun (xsr sr,n, xvs vs, xq "ast_inherit_fun" qn)
 
   | Lst [Id "ast_val_decl"; sr; Str n; vs; ot; oe] ->
-    STMT_val_decl (xsr sr,ss n, xvs vs, opt "val_decl" ti ot, 
+    STMT_val_decl (xsr sr,n, xvs vs, opt "val_decl" ti ot, 
       opt "val_decl" (ex' sr) oe)
 
   | Lst [Id "ast_lazy_decl"; Str n; vs; ot; oe] ->
-    STMT_lazy_decl (sr,ss n, xvs vs, opt "lazy_decl" ti ot, opt "lazy_decl" ex oe)
+    STMT_lazy_decl (sr,n, xvs vs, opt "lazy_decl" ti ot, opt "lazy_decl" ex oe)
 
   | Lst [Id "ast_var_decl"; sr; Str n; vs; ot; oe] ->
-    STMT_var_decl (xsr sr,ss n, xvs vs, opt "var_decl" ti ot, 
+    STMT_var_decl (xsr sr,n, xvs vs, opt "var_decl" ti ot, 
     opt "var_decl" (ex' sr) oe)
 
   | Lst [Id "ast_ref_decl"; Str n; vs; ot; oe] ->
-    STMT_ref_decl (sr,ss n, xvs vs, opt "ref_decl" ti ot, opt "ref_decl" ex oe)
+    STMT_ref_decl (sr,n, xvs vs, opt "ref_decl" ti ot, opt "ref_decl" ex oe)
 
   | Lst [Id "ast_untyped_module"; sr; Str n; vs; sts] ->
-    STMT_untyped_module (xsr sr, ss n, xvs vs, xsts' sr sts)
+    STMT_untyped_module (xsr sr, n, xvs vs, xsts' sr sts)
 
   | Lst [Id "ast_typeclass"; sr; Str n; vs; sts] ->
     STMT_typeclass(xsr sr, n, xvs vs, xsts' sr sts)
@@ -693,9 +683,9 @@ and xstatement_t sr x : statement_t =
 
   | Lst [Id "ast_yield"; sr; e] -> STMT_yield(xsr sr,ex' sr e)
   | Lst [Id "ast_proc_return"; sr]  -> STMT_proc_return(xsr sr)
-  | Lst [Id "ast_halt"; sr; Str s] -> STMT_halt(xsr sr, ss s)
-  | Lst [Id "ast_trace"; sr; Str n; Str s] -> STMT_trace(xsr sr, ss n, ss s)
-  | Lst [Id "ast_nop"; sr; Str s] -> STMT_nop(xsr sr,ss s)
+  | Lst [Id "ast_halt"; sr; Str s] -> STMT_halt(xsr sr, s)
+  | Lst [Id "ast_trace"; sr; Str n; Str s] -> STMT_trace(xsr sr, n, s)
+  | Lst [Id "ast_nop"; sr; Str s] -> STMT_nop(xsr sr,s)
   | Lst [Id "ast_assert"; sr; e] -> STMT_assert(xsr sr,ex' sr e)
   | Lst [Id "ast_init"; sr; Str n; e] -> STMT_init(xsr sr,n,ex' sr e)
   | Lst [Id "ast_newtype"; sr; Str n; vs; t] -> STMT_newtype(xsr sr,n,xvs vs, ti t)
@@ -714,7 +704,7 @@ and xstatement_t sr x : statement_t =
     STMT_const_decl (xsr sr, n, xvs vs, ti t, xc ct, xrr req)
 
   | Lst [Id "ast_fun_decl"; sr; Str n; vs; Lst ps; t; ct; req; Str prec] ->
-    STMT_fun_decl (xsr sr, n, xvs vs, map ti ps, ti t, xc ct, xrr req, ss prec)
+    STMT_fun_decl (xsr sr, n, xvs vs, map ti ps, ti t, xc ct, xrr req, prec)
 
   | Lst [Id "ast_callback_decl"; sr; Str n; Lst ps; t; req] ->
     STMT_callback_decl (xsr sr, n, map ti ps, ti t, xrr req)
@@ -735,17 +725,17 @@ and xstatement_t sr x : statement_t =
     | Some x -> x
     | None -> err x "suffixed_name_t"
     in
-    STMT_export_fun  (xsr sr, xsn sn, ss s)
+    STMT_export_fun  (xsr sr, xsn sn, s)
 
   | Lst [Id "ast_export_python_fun"; sr; sn; Str s] ->
     let xsn x = match suffixed_name_of_expr (ex x) with
     | Some x -> x
     | None -> err x "suffixed_name_t"
     in
-    STMT_export_python_fun  (xsr sr, xsn sn, ss s)
+    STMT_export_python_fun  (xsr sr, xsn sn, s)
 
   | Lst [Id "ast_export_type"; sr; t; Str s] ->
-    STMT_export_type (xsr sr, ti t, ss s)
+    STMT_export_type (xsr sr, ti t, s)
 
   
   | Lst [Id "ast_stmt_match";  Lst [sr; e; Lst pss]]->
