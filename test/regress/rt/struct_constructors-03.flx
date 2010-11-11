@@ -1,4 +1,4 @@
-// polymorphic struct constructors, using qualification
+// polymorphic struct constructors, without qualification
 
 open module A {
   type a[t] = "?1";
@@ -11,8 +11,8 @@ open module B {
   fun f[t](x:b[t])=>f (x.m);
 }
 
-var x = A::a(1.1);
-var y = B::b(x);
+var x = a(1.1);
+var y = b(x);
 println$ f y;
 
  
