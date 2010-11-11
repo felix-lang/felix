@@ -1,3 +1,4 @@
+import os
 from itertools import chain
 
 import fbuild
@@ -29,7 +30,7 @@ def copy_dir_to(ctx, dstdir, srcdir, *, pattern=None) -> fbuild.db.DSTS:
     dsts = []
 
     for src in srcdir.find(pattern=pattern, include_dirs=False):
-        dst = src.addroot(dstdir)
+        dst = src.removeroot(srcdir.parent + os.sep).addroot(dstdir)
         dst.parent.makedirs()
 
         srcs.append(src)
