@@ -400,7 +400,7 @@ def build(ctx):
         compilers.flxg, phases.target.cxx.static, drivers)
 
     # copy files into the library
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, Path('src/lib'))
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/lib')
 
     for module in 'flx_stdlib', 'flx_pthread', 'demux', 'faio', 'judy':
         call('buildsystem.' + module + '.build_flx', phases.target)
@@ -430,7 +430,7 @@ def build(ctx):
 
     # --------------------------------------------------------------------------
 
-    return phases, felix
+    return phases, iscr, felix
 
 # ------------------------------------------------------------------------------
 
@@ -438,7 +438,7 @@ def build(ctx):
 def doc(ctx):
     """Build the Felix documentation."""
 
-    phases, iscr = configure(ctx)
+    phases, iscr, felix = build(ctx)
 
     # copy documentation into target
     ctx.logger.log('building documentation', color='cyan')
@@ -498,7 +498,7 @@ def test(ctx):
     """Run the felix tests and other commands."""
 
     # Make sure we're built.
-    phases, felix = build(ctx)
+    phases, iscr, felix = build(ctx)
 
     from buildsystem.flx import test_flx
 
@@ -562,7 +562,7 @@ def speed(ctx):
     """Run the Felix performance tests."""
 
     # Make sure we're built.
-    phases, felix = build(ctx)
+    phases, iscr, felix = build(ctx)
 
     call('buildsystem.speed.run_tests', phases.target, felix)
 
@@ -573,6 +573,6 @@ def install(ctx):
     """Install Felix."""
 
     # Make sure we're built.
-    phases, flx = build(ctx)
+    phases, iscr, felix = build(ctx)
 
     ctx.logger.log('Installing does not work yet.', color='red')
