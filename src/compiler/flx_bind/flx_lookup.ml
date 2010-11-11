@@ -2050,8 +2050,10 @@ and lookup_qn_with_sig'
       | SYMDEF_cstruct _
       | SYMDEF_struct _ ->
         let sign = try List.hd signs with _ -> assert false in
+        (*
         print_endline ("Lookup qn with sig' found a struct "^ id ^
         ", looking for constructor"); 
+        *)
         (* this doesn't work, we need to do overload resolution to
            fix type variables
         let t = type_of_index_with_ts' state bsym_table rs sra index ts in
@@ -2061,18 +2063,23 @@ and lookup_qn_with_sig'
         let hts = List.map (fun (_,index) -> Flx_btype.btyp_type_var (index,Flx_btype.btyp_type 0)) hvs in
         let hacked_entry = { base_sym=index; spec_vs=hvs; sub_ts=hts } in
         let ro = resolve_overload' state bsym_table env rs sra [hacked_entry] id signs ts in
-        let _,t =
+        let (_,t),bts =
           match ro with
           | Some (index,t,ret,mgu,ts) ->
             handle_function
               state
               bsym_table
               rs
-              sra srn id ts index
+              sra srn id ts index, 
+            ts
           | None ->
               clierr sra ("Struct "^id^" constructor arguments don't match member types")
         in
+        assert (List.length hvs = List.length bts);
+        (*
         print_endline ("Struct constructor found, type= " ^ sbt bsym_table t);
+        print_endline ("Vs len= " ^ si (List.length hvs) ^ " ts len= " ^ si (List.length bts));
+        *)
         (*
         print_endline (id ^ ": lookup_qn_with_sig: struct");
         *)
@@ -2092,7 +2099,8 @@ and lookup_qn_with_sig'
         | _ -> assert false
         end
         ;
-        bexpr_closure t (index,ts)
+        (* actally the 'handle_function' call above already returns this .. *)
+        bexpr_closure t (index,bts)
 
       | SYMDEF_union _
       | SYMDEF_abs _
