@@ -175,21 +175,9 @@ def build_flx_drivers(ctx, phase):
         build_flx_version_hook(phase),
         build_flx_lex(phase),
         build_flx_parse(phase)]
-    flxp = phase.ocaml.build_exe('bin/flxp',
-        [path / 'flxp.ml'], libs=flxp_libs + [lib], external_libs=external_libs)
-
     flxm_libs = flxp_libs + [build_flx_desugar(phase)]
-    flxm = phase.ocaml.build_exe('bin/flxm',
-        [path / 'flxm.ml'], libs=flxm_libs + [lib], external_libs=external_libs)
-
     flxd_libs = flxm_libs
-    flxd = phase.ocaml.build_exe('bin/flxd',
-        [path / 'flxd.ml'], libs=flxd_libs + [lib], external_libs=external_libs)
-
     flxb_libs = flxd_libs + [build_flx_bind(phase)]
-    flxb = phase.ocaml.build_exe('bin/flxb',
-        [path / 'flxb.ml'], libs=flxb_libs + [lib], external_libs=external_libs)
-
     flxg_libs = flxb_libs + [
         build_flx_why(phase),
         build_flx_frontend(phase),
@@ -217,10 +205,6 @@ def build_flx_drivers(ctx, phase):
         flxc = None
 
     return Record(
-        flxp=flxp,
-        flxm=flxm,
-        flxd=flxd,
-        flxb=flxb,
         flxg=flxg,
         flxc=flxc,
     )

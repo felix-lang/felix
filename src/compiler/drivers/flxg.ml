@@ -838,8 +838,80 @@ let main () =
      with _ -> "empty_module"
   in
 
+  let outputs = ref [] in
   begin try
     (* PARSE THE IMPLEMENTATION FILES *)
+    let processed = ref [] in
+    let unprocessed = ref (List.rev state.syms.compiler_options.files) in
+(* print_endline ("Initial files are " ^ String.concat "," (!unprocessed)); *)
+
+    (* This algorithm is bugged! When desugaring finds a nested module,
+       it generated a call to the modules initialisation function.
+       So if we paste an include file into the parse tree somewhere,
+       it usually contains a module, and that module's initialisation
+       will be called: since includes go at the top of the file,
+       it will be done before assigning to any of ihe current files vars.
+
+       But now, there's no top level module until AFTER desugaring is done.
+       so none of the top lev el modules get initialised ..
+ 
+       ONLY .. I checked out flx.flx and found the initialisation of
+       a critical module is being done .. at the END. no idea why!
+    *)
+    let strip_extension s =
+      let n = String.length s in
+      if n>4 then 
+        if String.sub s (n-4) 4 = ".flx" 
+        then String.sub s 0 (n-4)
+        else s
+      else s
+    in
+ 
+    while List.length (!unprocessed) > 0 do
+      let candidate = List.hd (!unprocessed) in
+      let candidate = strip_extension candidate in
+      unprocessed := List.tl (!unprocessed);
+      if not (List.mem candidate (!processed)) then
+      begin
+        processed := candidate :: !processed;
+        let stmts = parse_file state candidate in
+        let desugar_state = Flx_desugar.make_desugar_state module_name state.syms in
+        let include_files, asms =  
+          Flx_desugar.desugar_stmts desugar_state (Filename.dirname candidate ) stmts 
+        in
+        List.iter (fun s -> 
+          if not (List.mem s (!processed)) && not (List.mem s (!unprocessed)) 
+          then begin
+(*            print_endline ("Add Include file: " ^ s); *)
+            unprocessed := s :: (!unprocessed)
+          end
+        ) 
+        (List.rev include_files)
+        ;
+        (* the list is order of writing?
+           We reverse it.
+           The loop reverses it.
+           reversed yet a third time when the result
+           is pushed onto the output stack .. so we're back to
+           order of writing.
+        *)
+
+        outputs := (candidate,asms) :: (!outputs)
+     end
+    done;
+
+    (* Now, just concatenate the results, later we'll generate the
+       symbol tables inside the loop and store off the *.sym files
+    *)
+ 
+    let outputs = (!outputs) in
+(*    List.iter (fun (s,a) -> 
+      print_endline ("Processed file "^s^" output len=" ^ si (List.length a))) (outputs);
+*)
+    let _,asmss = List.split (outputs) in
+    let asms = List.concat asmss in
+
+    (*
     let asms = List.concat (List.rev ( 
       (List.fold_left
         (fun out file ->
@@ -856,7 +928,8 @@ let main () =
         state.syms.compiler_options.files
       )))
     in
-    
+    *)
+ 
     generate_dep_file state;
 
 (*

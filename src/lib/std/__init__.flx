@@ -1,5 +1,8 @@
+include "plat/filename";
+include "plat/config";
+
 // type classes
-include "std/flx_tclass.flx";
+include "std/flx_tclass";
 
 // base scalar types 
 include "std/address";
@@ -22,7 +25,6 @@ include "std/typing";
 include "std/system";
 include "std/dynlink";
 include "std/env";
-include "plat/filename";
 include "std/cstdlib";
 include "std/control";
 include "std/categ";

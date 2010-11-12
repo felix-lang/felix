@@ -175,10 +175,7 @@ let assign sr op l r =
 
 let rec rex state name (e:expr_t) : asm_t list * expr_t =
   let rex e = rex state name e in
-  let rsts sts = List.concat (List.map
-    (rst state name `Private dfltvs)
-    (Flx_colns.collate_namespaces state.syms sts))
-  in
+  let rsts sts = List.concat (List.map (rst state name `Private dfltvs) sts) in
   let sr = src_of_expr e in
   let seq () = fresh_bid state.syms.counter in
   match e with
@@ -748,8 +745,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
 
   let rex x = rex state name x in
   let rsts name vs access sts = List.concat (List.map
-    (rst state name access vs)
-    (Flx_colns.collate_namespaces state.syms sts))
+    (rst state name access vs) sts)
   in
   let seq () = fresh_bid state.syms.counter in
   (* add _root headers and bodies as requirements for all
@@ -1316,7 +1312,6 @@ let rec desugar_stmts state curpath stmts =
     | _ -> stmts
   in
   let stmts = Flx_macro.expand_macros state.macro_state stmts in
-  let stmts = Flx_colns.collate_namespaces state.syms stmts in
 
   let asms = List.concat (List.map
     (rst state state.name `Public dfltvs)
@@ -1327,6 +1322,14 @@ let rec desugar_stmts state curpath stmts =
   let include_files = state.include_file_cache in
   state.include_file_cache <- [];
 
+  include_files, asms
+
+(* We're changing the implementation model now, to not recursively
+   desugar include files. Instead, just return the desugared statements
+   and a list of include files.
+*)
+
+(*
   (* Bind all the asms in reverse order. *)
   let asms =
     List.fold_left begin fun asms file ->
@@ -1337,6 +1340,7 @@ let rec desugar_stmts state curpath stmts =
 
   (* And finally, concatenate all the asms together. *)
   List.concat asms
+*)
  
 
 (** Desugar a statement. *)

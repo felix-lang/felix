@@ -12,12 +12,6 @@ open Flx_exceptions
 open Flx_util
 open Flx_version
 
-type nsrec = {
-  name:string;
-  sr:Flx_srcref.t;
-  vs:vs_list_t;
-  fudges:string list ref
-}
 
 (* This routine does all the nasty work of trying to figure out
 where a file is, and if there is a viable cached parse of it.
@@ -150,31 +144,4 @@ let include_file syms curpath inspec =
       end (* process inclusion first time *)
   in
     (Filename.dirname include_name), sts
-
-(* very inefficient .. fixme! *)
-let rev_concat lss = rev (concat lss)
-
-let map_vs sr (vs,_) = map (fun (s,_)->TYP_name (sr,s,[])) vs
-
-let rec collate_namespaces syms sts =
- let counter = syms.counter in
- let rec cn stsin stsout nslist = match stsin with
- | [] ->
-   rev_map (* faster, order doesn't matter here *)
-   (fun (_,{name=name; sr=sr; vs=vs; fudges=fudges}) ->
-     let sts =
-       rev_map
-       (fun fudge -> STMT_inject_module (sr,`AST_name (sr,fudge,map_vs sr vs)))
-       !fudges
-     in
-     STMT_untyped_module (sr,name,vs,sts)
-   )
-   nslist
-   @
-   rev stsout
-
- | head:: tail ->
-   cn tail (head::stsout) nslist
-
- in cn sts [] []
 
