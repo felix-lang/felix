@@ -62,8 +62,13 @@ let include_file syms curpath inspec =
     Filename.chop_extension
     (if tf <> "" then tf else pf)
   in
-  let tf_mt = Flx_filesys.filetime tf in
-  let pf_mt = Flx_filesys.filetime pf in
+  (* if the source file doesn't exist, its creation time is the heat death
+     of the universe. If the dependent file doesn't exist, its creation
+     time is the big bang, meaning it has existed for eternity and is therefore
+     out of date
+  *)
+  let tf_mt = Flx_filesys.virtual_filetime Flx_filesys.big_crunch tf in
+  let pf_mt = Flx_filesys.virtual_filetime Flx_filesys.big_bang pf in
   let cbt = this_version.build_time_float in
   let saveit sts =
       let pf =
@@ -101,7 +106,7 @@ let include_file syms curpath inspec =
   in
   let sts =
       (* -- no file ----------------------------------------- *)
-    if tf_mt = 0.0 && pf_mt = 0.0 then
+    if tf_mt = Flx_filesys.big_crunch && pf_mt = Flx_filesys.big_bang then
         failwith
         (
           "No .flx or .par file for name " ^

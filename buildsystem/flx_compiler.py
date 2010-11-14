@@ -5,10 +5,16 @@ from fbuild.record import Record
 
 # ------------------------------------------------------------------------------
 
+def build_flx_version(phase):
+    path = Path ('src/compiler/flx_version')
+    return phase.ocaml.build_lib(path / 'flx_version',
+        srcs=Path.glob(path / '*.ml{,i}'))
+
 def build_flx_misc(phase):
     path = Path('src/compiler/flx_misc')
     return phase.ocaml.build_lib(path / 'flx_misc',
         srcs=Path.glob(path / '*.ml{,i}'),
+        libs=[build_flx_version(phase)],
         external_libs=['nums', 'str', 'unix'])
 
 def build_flx_core(phase):
@@ -19,12 +25,6 @@ def build_flx_core(phase):
             build_flx_misc(phase),
             call('buildsystem.ocs.build_lib', phase)],
         external_libs=['nums'])
-
-def build_flx_version(phase):
-    path = Path ('src/compiler/flx_version')
-    return phase.ocaml.build_lib(path / 'flx_version',
-        srcs=Path.glob(path / '*.ml{,i}'))
-
 def build_flx_version_hook(phase):
     path = phase.ctx.buildroot / 'src/compiler/flx_version_hook'
     return phase.ocaml.build_lib(path / 'flx_version_hook',
@@ -169,12 +169,12 @@ def build_flx_drivers(ctx, phase):
         call('buildsystem.ocs.build_lib', phase),
         call('buildsystem.sex.build', phase),
         call('buildsystem.dypgen.build_lib', phase),
+        build_flx_version(phase),
         build_flx_misc(phase),
         build_flx_core(phase),
-        build_flx_version(phase),
-        build_flx_version_hook(phase),
         build_flx_lex(phase),
-        build_flx_parse(phase)]
+        build_flx_parse(phase),
+        ]
     flxm_libs = flxp_libs + [build_flx_desugar(phase)]
     flxd_libs = flxm_libs
     flxb_libs = flxd_libs + [build_flx_bind(phase)]
@@ -184,7 +184,9 @@ def build_flx_drivers(ctx, phase):
         build_flx_opt(phase),
         build_flx_lower(phase),
         build_flx_backend(phase),
-        build_flx_cpp_backend(phase)]
+        build_flx_cpp_backend(phase),
+        build_flx_version_hook(phase),
+        ]
     flxg = phase.ocaml.build_exe('bin/flxg',
         [path / 'flxg.ml'], libs=flxg_libs + [lib], external_libs=external_libs)
 

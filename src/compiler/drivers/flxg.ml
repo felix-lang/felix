@@ -225,8 +225,18 @@ let parse_file state file =
   let file_name =
     if Filename.check_suffix file ".flx" then file else file ^ ".flx"
   in
+  let local_prefix = Filename.chop_suffix (Filename.basename file_name) ".flx" in
+  let include_dirs = state.syms.compiler_options.include_dirs in
   fprintf state.ppf "//Parsing Implementation %s\n" file_name;
-  let file_path,stmts = Flx_colns.include_file state.syms (Filename.dirname file_name) file_name in
+  if state.syms.compiler_options.print_flag then print_endline ("Parsing " ^ file_name);
+  let parser_state = List.fold_left
+    (Flx_parse.parse_file ~include_dirs)
+    (Flx_parse.make_parser_state (fun stmt stmts -> stmt :: stmts) [])
+    (state.syms.compiler_options.auto_imports @ [file_name])
+  in
+  let stmts = List.rev (Flx_parse.parser_data parser_state) in
+  let macro_state = Flx_macro.make_macro_state local_prefix in
+  let stmts = Flx_macro.expand_macros macro_state stmts in
 
   state.parse_time <- state.parse_time +. parse_timer ();
 
@@ -829,20 +839,32 @@ let save_profile state =
     close_out f
   with _ -> ()
 
+(* Desugar takes a parse tree, which is an Ocaml list of STMT_* s
+   and produces a list of include file names and
+   a list of assmebly instructions. The only state used is a fresh
+   id generator. 
+*)
 
-let main () =
-  let ppf, compiler_options = parse_args () in
-  let state = make_flxg_state ppf compiler_options in
-  let module_name = 
-     try make_module_name (List.hd state.syms.compiler_options.files)
-     with _ -> "empty_module"
-  in
+(* make_assembly parses and desugars the transitive closure of the specified
+   input file with respect to includes,  and returns a list of pairs
+   mapping files to assembly lists. 
 
-  let outputs = ref [] in
-  begin try
+   The name specified is only used by the macroprocessor to create unique
+   names. (?)
+*)
+
+let make_assembly 
+  state 
+  (exclusions:string list)  
+  (module_name:string) 
+  (input:string) 
+  : ((string*string)* Flx_types.asm_t list) list
+=
+    let fresh_bid () = Flx_mtypes2.fresh_bid state.syms.counter in
+    let outputs = ref [] in
     (* PARSE THE IMPLEMENTATION FILES *)
-    let processed = ref [] in
-    let unprocessed = ref (List.rev state.syms.compiler_options.files) in
+    let processed = ref exclusions in
+    let unprocessed = ref [input] in
 (* print_endline ("Initial files are " ^ String.concat "," (!unprocessed)); *)
 
     (* This algorithm is bugged! When desugaring finds a nested module,
@@ -851,12 +873,6 @@ let main () =
        it usually contains a module, and that module's initialisation
        will be called: since includes go at the top of the file,
        it will be done before assigning to any of ihe current files vars.
-
-       But now, there's no top level module until AFTER desugaring is done.
-       so none of the top lev el modules get initialised ..
- 
-       ONLY .. I checked out flx.flx and found the initialisation of
-       a critical module is being done .. at the END. no idea why!
     *)
     let strip_extension s =
       let n = String.length s in
@@ -866,7 +882,7 @@ let main () =
         else s
       else s
     in
- 
+    let outdir= state.syms.compiler_options.cache_dir in
     while List.length (!unprocessed) > 0 do
       let candidate = List.hd (!unprocessed) in
       let candidate = strip_extension candidate in
@@ -874,12 +890,52 @@ let main () =
       if not (List.mem candidate (!processed)) then
       begin
         processed := candidate :: !processed;
-        let stmts = parse_file state candidate in
-        let desugar_state = Flx_desugar.make_desugar_state module_name state.syms in
+        let filedir, stmts = 
+          let filedir = Flx_filesys.find_include_dir 
+            ~include_dirs:state.syms.compiler_options.include_dirs
+            (candidate ^ ".flx")
+          in
+          let flx_name = Flx_filesys.join filedir (candidate ^ ".flx") in
+(* print_endline ("Filename is " ^ flx_name); *)
+          let flx_time = Flx_filesys.virtual_filetime Flx_filesys.big_crunch flx_name in
+          let in_par_name = Flx_filesys.join filedir candidate  ^ ".par2" in
+          let out_par_name = 
+             match outdir with 
+             | Some d -> Some (Flx_filesys.join d candidate ^ ".par2")
+             | None -> None
+          in
+          let stmts = Flx_filesys.cached_computation "parse" in_par_name
+            ~outfile:out_par_name
+            ~min_time:flx_time
+            (fun () -> parse_file state flx_name)
+          in
+          filedir, stmts
+        in
         let include_files, asms =  
+          let desugar_state = Flx_desugar.make_desugar_state module_name fresh_bid in
           Flx_desugar.desugar_stmts desugar_state (Filename.dirname candidate ) stmts 
         in
         List.iter (fun s -> 
+          (* Grr.. design fault here. If the filename is ./fred.flx then we're
+           * and it is included by a/b.flx then we're talking about a/fred.flx
+           * Unfortunately, include files are being searched for, so what do
+           * we put? We want to *stop* the search in this case and use:
+           * filedir "/" dirname including_file "/" included_file[2:] ".flx"
+           *)
+          let s = 
+            let n = String.length s in
+            if n > 1 then
+              if try String.sub s 0 2 = "./" with _ -> failwith "FUCKED UP STRING SUB 1"
+              then begin 
+                let dirpart = Filename.dirname candidate in
+                let dirpart = if dirpart = "." then "" else dirpart in
+                let dir = Flx_filesys.join filedir dirpart  in
+                let basepart = String.sub s 2 (n-2) in
+                let fullname = Flx_filesys.join dir basepart in
+                fullname
+              end else s
+            else s
+          in
           if not (List.mem s (!processed)) && not (List.mem s (!unprocessed)) 
           then begin
 (*            print_endline ("Add Include file: " ^ s); *)
@@ -896,40 +952,55 @@ let main () =
            order of writing.
         *)
 
-        outputs := (candidate,asms) :: (!outputs)
+        outputs := ((candidate,filedir),asms) :: (!outputs)
      end
     done;
+    !outputs
 
-    (* Now, just concatenate the results, later we'll generate the
-       symbol tables inside the loop and store off the *.sym files
-    *)
- 
-    let outputs = (!outputs) in
-(*    List.iter (fun (s,a) -> 
-      print_endline ("Processed file "^s^" output len=" ^ si (List.length a))) (outputs);
-*)
-    let _,asmss = List.split (outputs) in
-    let asms = List.concat asmss in
+let main () =
+  let ppf, compiler_options = parse_args () in
+  let state = make_flxg_state ppf compiler_options in
+  let module_name = 
+     try make_module_name (List.hd state.syms.compiler_options.files)
+     with _ -> "empty_module"
+  in
 
-    (*
-    let asms = List.concat (List.rev ( 
-      (List.fold_left
-        (fun out file ->
-          let stmts = parse_file state file in
-          let desugar_state = Flx_desugar.make_desugar_state module_name state.syms in
-          let asms = Flx_desugar.desugar_stmts 
-            desugar_state 
-            (Filename.dirname file) 
-            stmts 
-          in
-          asms :: out
-        )
-        []
-        state.syms.compiler_options.files
-      )))
+  let pub_name_map = Hashtbl.create 97 in
+  let priv_name_map = Hashtbl.create 97 in
+  let sym_table = Hashtbl.create 97 in
+  let inherit_ivs = [] in
+  let level = 0 in
+  let parent = Some 0 in
+  let root = 0 in
+
+  let outputs = ref [] in
+  let inroots = List.rev state.syms.compiler_options.files in (* reverse order of command line *)
+  (* print_endline ("Inputs=" ^ String.concat ", " inroots); *)
+  begin try
+    if List.length inroots = 0 then
+      raise (Failure "No input files on comamnd line")
+    ;
+    let main_prog = List.hd inroots in
+    let libs = List.rev (List.tl inroots) in
+    (* print_endline ("Libraries=" ^ String.concat ", " libs); *)
+    (* print_endline ("Main program =" ^ main_prog); *)
+
+    let rec aux exclusions ls = match ls with 
+    | [] -> ()
+    | h :: t -> 
+       (* print_endline ("Processing library " ^ h); *)
+       let assembly = make_assembly state exclusions h h in
+       outputs := assembly @ (!outputs);
+       let exclusions = fst (List.split (fst (List.split assembly))) @ exclusions in
+       aux exclusions t
     in
-    *)
+    aux [] libs;
  
+    (* print_endline ("Making symbol tables for main program " ^ main_prog); *)
+    let exclusions = fst (List.split (fst (List.split (!outputs)))) in
+    let assembly =  make_assembly state exclusions module_name main_prog in
+    outputs := (!outputs) @ assembly;
+
     generate_dep_file state;
 
 (*
@@ -937,6 +1008,7 @@ print_endline "DEBUG: include files are:";
 List.iter print_endline !(state.syms.include_files);
 *)
 
+    let asms = List.concat (snd (List.split (!outputs))) in
     let asms = make_module module_name asms in
     (* Bind the assemblies. *)
     let bsym_table, root_proc = bind_asms state asms in

@@ -3,10 +3,18 @@ exception Missing_path of string
 
 (** Look up the file's modification time. *)
 let filetime f =
-  if f = "" then 0.0
+  if f = "" then None
   else
-    try (Unix.stat f).Unix.st_mtime
-    with | _ -> 0.0
+    try Some ((Unix.stat f).Unix.st_mtime)
+    with | _ -> None
+
+let big_bang = neg_infinity
+let big_crunch = infinity
+
+let virtual_filetime dflt f =
+  match filetime f with
+  | Some t -> t
+  | None -> dflt
 
 (* Note: empty list of components is not allowed *)
 let fcat fs =
@@ -45,7 +53,7 @@ let split_unix f =
   if is_dir_sep f 0 then dir_sep :: fs else fs
 
 (** Convert a unix path into a native path. *)
-let unix2native f = fcat (split_unix f)
+let unix2native f = if f = "" then "" else fcat (split_unix f)
 
 (** Check if the native path is an absolute path. *)
 let is_abs =
@@ -84,6 +92,32 @@ let find_path ?(include_dirs=[]) path =
     raise (Missing_path path)
   with Found_path path -> path
 
+(** Look in file system for file, returns the directory in which it is contained,
+   if found directly that will be "". This is the same as find_path, except that
+   it returns the containing directly rather than the full pathname. Useful
+   for finding siblings of a file. 
+*)
+let find_include_dir ?(include_dirs=[]) path =
+  let path = unix2native path in
+  try
+    (* Check first if the path can be found directly. *)
+    if Sys.file_exists path then raise (Found_path "");
+
+    (* Nope, so search through the include dirs for the path. *)
+    List.iter begin fun d ->
+      let fullpath = Filename.concat d path in
+      if Sys.file_exists fullpath then raise (Found_path d)
+    end include_dirs;
+
+    (* We still didn't find it? Then error out. *)
+    raise (Missing_path path)
+  with Found_path path -> path
+
+(** Workaround bug in Ocaml Filename.concat *)
+let join dir file =
+  let file = unix2native file in
+  if dir = "" then file else Filename.concat dir file
+
 (** Look in the filesystem for the path. Raises Missing_path if not found or is
  * not a file. *)
 let find_file ?(include_dirs=[]) path =
@@ -109,3 +143,115 @@ let with_file_in path f =
 let with_file_out path f =
   let file = open_out path in
   Flx_util.finally (fun () -> close_out file) f file
+
+(** Throws an I/O of some kind if the output can't be written
+The kind string identifies the type of data being written, and is used
+for lightweight type checking. This function writes out compiler
+version information so that marshal_in can reject a file if 
+the compiler has been upgraded since the last write.
+*)
+
+let marshal_out (kind:string) (filename:string) (data:'a) =
+  let this_version = !Flx_version.version_data in
+  let time_now = Unix.time () in
+  let file = open_out filename in
+  Marshal.to_channel file this_version [];
+  Marshal.to_channel file kind [];
+  Marshal.to_channel file time_now [];
+  Marshal.to_channel file data [];
+  close_out file
+
+(** Read back marshalled data, checking the data is the right
+kind, and checking the version of the compiler that wrote it
+is identical to this one. We can also optionally give a minimum
+write time for the file: this allows us to optionally thwart
+touching games or problems with time-stamps when copying files.
+*)
+
+let marshal_in (kind:string) (filename:string) ?(min_time=big_bang) : 'a option =
+  let this_version= !Flx_version.version_data in
+  let file = open_in filename in
+(* print_endline "Opened cache"; *)
+  let result = 
+    let that_version = Marshal.from_channel file in
+    if this_version <> that_version then None else begin
+(* print_endline "Version matches"; *)
+    let that_kind = Marshal.from_channel file in
+(* print_endline "Kind matches"; *)
+    if kind <> that_kind then None else begin
+    let that_time = Marshal.from_channel file in
+    if that_time < min_time then None else begin
+(* print_endline "It is up to date, grab the data"; *)
+    let data = Marshal.from_channel file in
+    Some data
+    end end end (* Caml sucks sometimes *)
+  in
+  close_in file;
+  result
+
+(** load the file cached result of a computation, or,
+  perform the computation and store the result.
+  Throws whatever the computation throws if it is invoked.
+*)
+
+let rec mkdirs h =
+  let d = Filename.dirname h in
+  let b = Filename.basename h in
+  if d = "." then begin
+    try Unix.mkdir b 0o777 with _ -> ()
+  end else begin
+    mkdirs d;
+    try Unix.mkdir b 0o777 with _ -> ()
+  end
+
+let cached_computation 
+  (result_kind:string) 
+  (filename:string)
+  ~(outfile: string option)
+  ?(min_time:float=big_bang)
+  (f: unit -> 'a) 
+  : 'a
+=
+  (* try to read the output file first *)
+  let cached_data = 
+    match outfile with
+    | Some f -> 
+      begin
+        try marshal_in result_kind f ~min_time
+        with _ -> None
+      end
+    | None -> None
+  in
+  (* if that fails or it isn't specified read the input file *)
+  let cached_data = 
+    match cached_data with
+    | None -> 
+      begin 
+        try marshal_in result_kind filename ~min_time 
+        with _ -> None 
+      end
+    | x -> x
+  in
+  (* if that fails generate the data *)
+  match cached_data with
+  | Some data -> data
+  | None ->
+    let data = f () in
+    (* write to the output file if specified otherwise the input file *)
+    let outname = 
+      match outfile with 
+      | Some f -> f 
+      | None -> filename
+    in
+    (* it's faster to just try writing and make directories then
+     * retry if there's a failure
+     *)
+    begin try 
+      marshal_out result_kind outname data
+    with _ ->
+      mkdirs (Filename.dirname outname);
+      marshal_out result_kind outname data
+    end
+    ;
+    data
+ 

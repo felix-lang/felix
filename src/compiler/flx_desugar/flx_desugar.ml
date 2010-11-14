@@ -14,7 +14,7 @@ open Flx_exceptions
 type desugar_state_t = {
   name: string;
   macro_state: Flx_macro.macro_state_t;
-  syms: Flx_mtypes2.sym_state_t;
+  fresh_bid: unit -> bid_t;
   mutable include_file_cache: string list;
 }
 
@@ -177,7 +177,7 @@ let rec rex state name (e:expr_t) : asm_t list * expr_t =
   let rex e = rex state name e in
   let rsts sts = List.concat (List.map (rst state name `Private dfltvs) sts) in
   let sr = src_of_expr e in
-  let seq () = fresh_bid state.syms.counter in
+  let seq () = state.fresh_bid () in
   match e with
 
   | EXPR_patvar _
@@ -702,7 +702,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     let props = ref [] in
     let decls = ref [] in
     let mkreq s kind =
-      let n = fresh_bid state.syms.counter in
+      let n = state.fresh_bid () in
       let n = "_req_" ^ string_of_bid n in
       let dcl = Dcl (sr,n,ix,access,dfltvs,DCL_insert (s,kind,NREQ_true)) in
       decls := dcl :: !decls;
@@ -747,7 +747,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   let rsts name vs access sts = List.concat (List.map
     (rst state name access vs) sts)
   in
-  let seq () = fresh_bid state.syms.counter in
+  let seq () = state.fresh_bid () in
   (* add _root headers and bodies as requirements for all
     bindings defined in this entity
   *)
@@ -861,12 +861,6 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   | STMT_cstruct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,DCL_cstruct (components))]
 
   | STMT_typeclass (sr,name, vs, sts) ->
-    if state.syms.compiler_options.document_typeclass then
-    begin
-      print_endline ("DOCUMENT TYPECLASS " ^ name);
-      Flx_tcdoc.record_tc name (vs,sts);
-    end
-    ;
     let asms = rsts name (merge_vs parent_vs vs) `Public sts in
     let asms = bridge name sr :: asms in
     [ Dcl (sr,name,None,access,vs, DCL_typeclass asms) ]
@@ -994,12 +988,6 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
 
   (* misc *)
   | STMT_untyped_module (sr,name', vs', sts) ->
-    if state.syms.compiler_options.document_typeclass then
-    begin
-      print_endline ("DOCUMENT MODULE " ^ name');
-      Flx_tcdoc.record_module name' (vs',sts);
-    end
-    ;
     let asms = rsts name' (merge_vs parent_vs vs') `Public sts in
     let asms = bridge name' sr :: asms in
     let mdcl =
@@ -1298,9 +1286,9 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     -> assert false
 
 (** Construct a desugar state value needed for desugaring. *)
-let make_desugar_state name syms = {
+let make_desugar_state name fresh_bid = {
   name = name;
-  syms = syms;
+  fresh_bid = fresh_bid;
   macro_state = Flx_macro.make_macro_state name;
   include_file_cache = [];
 }

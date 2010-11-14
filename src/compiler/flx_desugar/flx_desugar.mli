@@ -3,7 +3,7 @@ type desugar_state_t
 (** Construct a desugar state value needed for desugaring. *)
 val make_desugar_state:
   string ->                   (** A unique prefix for new values. *)
-  Flx_mtypes2.sym_state_t ->  (** A symbol table. *)
+  (unit -> Flx_types.bid_t) ->          (** Fresh bid generator *)
   desugar_state_t
 
 (** Desugar all the statements in a compilation unit. *)
