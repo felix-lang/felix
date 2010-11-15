@@ -468,7 +468,7 @@ def doc(ctx):
     # 
     # The result of this process should be the old interscript documentation
     # in the build directory doc/iscr
-    (ctx.buildroot / '/doc/iscr').makedirs()
+    (ctx.buildroot / 'doc/iscr').makedirs()
 
     flags = [
         '--weaver=web',
