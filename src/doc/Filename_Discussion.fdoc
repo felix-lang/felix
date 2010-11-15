@@ -1,0 +1,37 @@
+@h1 File names
+Unix hierarchical file system leads to considerable confusion. Even the shell
+and shell tools don't understand it!
+
+We take the view that this system is inconsistent. Instead, we consider the
+idea that there is a single set of files, and the separator character "/" is
+just a convenient convention.
+
+With this view you cannot copy a directory such as <code>/a/d</code>, only the set of files whose
+names match a particular pattern such as <code>/a/d/*</code>. Instead of a target there is
+a rule to create new filenames from old, such as a regexp search and replace which in Perl
+might look like <code>/a/d/(@*)->/a/e/\1</code> where <code>@</code> means any character
+but <code>/</code>. There is no ambiguity here, only an issue
+if a target also names a source file. A similar pattern can be used for renaming,
+and may lead to the same ambiguity. Copying a directory as opposed to its entries requires
+deleting target files first, again with an ambiguity if there is an overlap.
+
+The proper way to remove these ambiguities is to specify parallel semantics; that is,
+to copy or move to temporaries first, then to the targets: these semantics can be 
+optimised to avoid the temporaries.
+
+An important point with these semantics is that there is never any need to create
+directories because they don't exist.
+
+We also get the ability to write patterns like <code>/a(/@*)*/@*.exe</code>
+which finds all files with extension <code>.exe</code> in directory <code>a</code>
+or any subdirectory thereof.
+
+Again, in this view, a "directory" is just any prefix string, its contents just
+a simple pattern match. This is highly consistent. Consider the split up of a filename
+into the directory and basename, <code>a/b.c</code> has dirname <code>a/</code> and
+basename <code>b.c</code>: the concatenation operation is just ordinary string
+concatenation, no need for inserting "/" characters!
+
+@h2 What Felix implements
+Nothing yet, this is just a discussion paper :)
+

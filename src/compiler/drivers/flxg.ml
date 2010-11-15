@@ -853,12 +853,14 @@ let save_profile state =
    names. (?)
 *)
 
+type include_entry_t = Search of string | NoSearch of string
+
 let make_assembly 
   state 
-  (exclusions:string list)  
+  (exclusions:include_entry_t list)  
   (module_name:string) 
-  (input:string) 
-  : ((string*string)* Flx_types.asm_t list) list
+  (input:include_entry_t) 
+  : ((include_entry_t * string)* Flx_types.asm_t list) list
 =
     let fresh_bid () = Flx_mtypes2.fresh_bid state.syms.counter in
     let outputs = ref [] in
@@ -885,23 +887,26 @@ let make_assembly
     let outdir= state.syms.compiler_options.cache_dir in
     while List.length (!unprocessed) > 0 do
       let candidate = List.hd (!unprocessed) in
-      let candidate = strip_extension candidate in
+(*      let candidate = strip_extension candidate in *)
       unprocessed := List.tl (!unprocessed);
       if not (List.mem candidate (!processed)) then
       begin
         processed := candidate :: !processed;
-        let filedir, stmts = 
-          let filedir = Flx_filesys.find_include_dir 
-            ~include_dirs:state.syms.compiler_options.include_dirs
-            (candidate ^ ".flx")
+        let filename,filedir, stmts = 
+          let filedir,filename = match candidate with
+            | Search s ->
+              Flx_filesys.find_include_dir 
+               ~include_dirs:state.syms.compiler_options.include_dirs
+              (s ^ ".flx"),s
+            | NoSearch s -> "",s
           in
-          let flx_name = Flx_filesys.join filedir (candidate ^ ".flx") in
+          let flx_name = Flx_filesys.join filedir (filename ^ ".flx") in
 (* print_endline ("Filename is " ^ flx_name); *)
           let flx_time = Flx_filesys.virtual_filetime Flx_filesys.big_crunch flx_name in
-          let in_par_name = Flx_filesys.join filedir candidate  ^ ".par2" in
+          let in_par_name = Flx_filesys.join filedir filename ^ ".par2" in
           let out_par_name = 
              match outdir with 
-             | Some d -> Some (Flx_filesys.join d candidate ^ ".par2")
+             | Some d -> Some (Flx_filesys.join d filename ^ ".par2")
              | None -> None
           in
           let stmts = Flx_filesys.cached_computation "parse" in_par_name
@@ -909,11 +914,11 @@ let make_assembly
             ~min_time:flx_time
             (fun () -> parse_file state flx_name)
           in
-          filedir, stmts
+          filename,filedir, stmts
         in
         let include_files, asms =  
           let desugar_state = Flx_desugar.make_desugar_state module_name fresh_bid in
-          Flx_desugar.desugar_stmts desugar_state (Filename.dirname candidate ) stmts 
+          Flx_desugar.desugar_stmts desugar_state (Filename.dirname filename) stmts 
         in
         List.iter (fun s -> 
           (* Grr.. design fault here. If the filename is ./fred.flx then we're
@@ -925,16 +930,16 @@ let make_assembly
           let s = 
             let n = String.length s in
             if n > 1 then
-              if try String.sub s 0 2 = "./" with _ -> failwith "FUCKED UP STRING SUB 1"
+              if String.sub s 0 2 = "./" 
               then begin 
-                let dirpart = Filename.dirname candidate in
+                let dirpart = Filename.dirname filename in
                 let dirpart = if dirpart = "." then "" else dirpart in
                 let dir = Flx_filesys.join filedir dirpart  in
                 let basepart = String.sub s 2 (n-2) in
                 let fullname = Flx_filesys.join dir basepart in
-                fullname
-              end else s
-            else s
+                NoSearch fullname
+              end else Search s
+            else Search s
           in
           if not (List.mem s (!processed)) && not (List.mem s (!unprocessed)) 
           then begin
@@ -989,7 +994,7 @@ let main () =
     | [] -> ()
     | h :: t -> 
        (* print_endline ("Processing library " ^ h); *)
-       let assembly = make_assembly state exclusions h h in
+       let assembly = make_assembly state exclusions h (Search h) in
        outputs := assembly @ (!outputs);
        let exclusions = fst (List.split (fst (List.split assembly))) @ exclusions in
        aux exclusions t
@@ -998,7 +1003,7 @@ let main () =
  
     (* print_endline ("Making symbol tables for main program " ^ main_prog); *)
     let exclusions = fst (List.split (fst (List.split (!outputs)))) in
-    let assembly =  make_assembly state exclusions module_name main_prog in
+    let assembly =  make_assembly state exclusions module_name (NoSearch main_prog) in
     outputs := (!outputs) @ assembly;
 
     generate_dep_file state;

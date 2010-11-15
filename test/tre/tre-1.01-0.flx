@@ -1,4 +1,4 @@
-include "tre.flx";
+include "tre";
 
 open Tre;
 open C_hack;

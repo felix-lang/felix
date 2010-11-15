@@ -1,4 +1,4 @@
-include "plat/filename.flx";
+include "plat/filename";
 
 module Filename {
   val sep = Plat_Filename::sep;
