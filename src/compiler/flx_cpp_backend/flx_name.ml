@@ -115,7 +115,7 @@ let cpp_instance_name' syms bsym_table index ts =
     (
       "[cpp_instance_name] unable to find instance " ^ id ^
       "<" ^ string_of_bid index ^ ">[" ^
-      catmap ", " (string_of_btypecode bsym_table) ts ^ "]"
+      catmap ", " (sbt bsym_table) ts ^ "]"
       ^ (if has_variables then " .. a subscript contains a type variable" else "")
     )
   in
@@ -267,13 +267,13 @@ let rec cpp_type_classname syms bsym_table t =
     failwith
     (
       "[cpp_type_classname] Unexpected " ^
-      string_of_btypecode bsym_table t
+      sbt bsym_table t
     )
   with Not_found ->
     failwith
     (
       "[cpp_type_classname] Expected type "^
-      string_of_btypecode bsym_table t ^
+      sbt bsym_table t ^
       " to be in registry"
     )
 

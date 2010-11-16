@@ -6,7 +6,37 @@ type t = {
   sym_table: Flx_sym_table.t;
   pub_name_map: (string, Flx_btype.entry_set_t) Hashtbl.t;
   priv_name_map: (string, Flx_btype.entry_set_t) Hashtbl.t;
+  mutable init_exes: sexe_t list;
+  mutable exports: bound_iface_t list;
+  mutable directives: sdir_t list;
 }
+
+let get_init_exes x = x.init_exes
+let get_exports x = x.exports
+let get_directives x = x.directives
+
+let summary x =
+  Flx_sym_table.summary x.sym_table ^ ", " ^ 
+  string_of_int (Hashtbl.length x.pub_name_map) ^ " public names, " ^ 
+  string_of_int (Hashtbl.length x.priv_name_map) ^ " private names, " ^
+  string_of_int (List.length x.init_exes) ^ " initialisation instructions, " ^
+  string_of_int (List.length x.exports) ^ " exports, " ^
+  string_of_int (List.length x.directives) ^ " compiler directives "
+
+let detail x = 
+  let dsp v = match v with
+  | NonFunctionEntry i -> string_of_int i.Flx_btype.base_sym
+  | FunctionEntry ls -> "{" ^ String.concat "," (List.map (fun k -> string_of_int k.Flx_btype.base_sym) ls) ^ "}"
+  in
+
+  Flx_sym_table.detail x.sym_table ^"\n" ^
+  "public names = " ^ Hashtbl.fold (fun k v acc -> acc ^"\n  "^k^": "^dsp v) x.pub_name_map "" ^ 
+  "\nprivate names = " ^ Hashtbl.fold (fun k v acc -> acc ^"\n  "^k^": "^dsp v) x.priv_name_map ""  ^ 
+  "\ninitialisation instructions: \n" ^ String.concat "\n" 
+      (List.map (fun (sr,exe)->Flx_print.string_of_exe 2 exe) x.init_exes) ^
+  "\n"^string_of_int (List.length x.exports) ^ " exports, " ^
+  "\n"^string_of_int (List.length x.directives) ^ " compiler directives "
+
 
 
 (* use fresh variables, but preserve names *)
@@ -959,6 +989,9 @@ let make sym_table =
     sym_table = sym_table;
     pub_name_map = Hashtbl.create 97;
     priv_name_map = Hashtbl.create 97;
+    init_exes = [];
+    exports = [];
+    directives = [];
   }
 
 let add_dcl ?parent print_flag counter_ref symbol_table dcl =
@@ -1003,7 +1036,7 @@ let add_asms
   (root:bid_t) 
   asms
 =
-  let _, _, exes, interfaces, _ =
+  let _, _, exes, interfaces, dirs =
     build_tables
       ~pub_name_map:symbol_table.pub_name_map
       ~priv_name_map:symbol_table.priv_name_map
@@ -1017,5 +1050,8 @@ let add_asms
       root (* !counter_ref *)
       asms
   in
-  exes, interfaces
+  symbol_table.init_exes <- exes;
+  symbol_table.exports <- interfaces;
+  symbol_table.directives <- dirs
+
 

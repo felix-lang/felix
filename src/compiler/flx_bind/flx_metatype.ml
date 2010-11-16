@@ -19,7 +19,7 @@ let rec metatype sym_table bsym_table sr term =
   t
 
 and metatype' sym_table bsym_table sr term =
-  let st t = string_of_btypecode bsym_table t in
+  let st t = sbt bsym_table t in
   let mt t = metatype' sym_table bsym_table sr t in
   match term with
 

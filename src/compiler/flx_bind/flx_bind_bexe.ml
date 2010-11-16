@@ -215,7 +215,7 @@ let cal_loop syms sym_table sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
   | _ ->
     clierr sr ("[cal_loop] loop to non procedure, "^
     sbe bsym_table (p,pt)
-    ^"\ntype=" ^ string_of_btypecode bsym_table pt)
+    ^"\ntype=" ^ sbt bsym_table pt)
 
 exception Found of int
 
@@ -274,7 +274,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       clierr (src_of_expr e)
       (
         "[bind_exes:ifgoto] Conditional requires bool argument, got " ^
-        string_of_btypecode bsym_table t
+        sbt bsym_table t
       )
 
   | EXE_loop (n,e2) ->
@@ -455,9 +455,9 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       (
         "[bind_exe: fun_return ] return of  " ^
         sbe bsym_table e ^ ":\n" ^
-        "fun return type:\n" ^ string_of_btypecode bsym_table state.ret_type ^
+        "fun return type:\n" ^ sbt bsym_table state.ret_type ^
         "\nmust have same type as return expression:\n"^
-        string_of_btypecode bsym_table t'
+        sbt bsym_table t'
       )
 
   | EXE_yield e ->
@@ -478,9 +478,9 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       (
         "In " ^ string_of_exe 0 exe ^ "\n" ^
         "Wrong return type,\nexpected : " ^
-        string_of_btypecode bsym_table state.ret_type ^
+        sbt bsym_table state.ret_type ^
         "\nbut we got " ^
-        string_of_btypecode bsym_table t'
+        sbt bsym_table t'
       )
 
   | EXE_nop s ->
@@ -500,7 +500,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       else clierr sr
       (
         "assert requires bool argument, got " ^
-        string_of_btypecode bsym_table t
+        sbt bsym_table t
       )
 
   | EXE_iinit ((s,index),e) ->
@@ -524,9 +524,9 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       else clierr sr
       (
         "[bind_exe: iinit] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
-        string_of_btypecode bsym_table lhst^
+        sbt bsym_table lhst^
         "\n of initialisation must have same type as RHS:\n"^
-        string_of_btypecode bsym_table rhst^
+        sbt bsym_table rhst^
         "\nunfolded LHS = " ^ sbt bsym_table (unfold lhst) ^
         "\nenvironment type variables are " ^
         print_vs state.parent_vs
@@ -569,9 +569,9 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
           else clierr sr
           (
             "[bind_exe: init] LHS[" ^ s ^ "<" ^ string_of_bid index ^ ">]:\n" ^
-            string_of_btypecode bsym_table lhst^
+            sbt bsym_table lhst^
             "\n of initialisation must have same type as RHS:\n"^
-            string_of_btypecode bsym_table rhst^
+            sbt bsym_table rhst^
             "\nunfolded LHS = " ^ sbt bsym_table (unfold lhst) ^
             (if length state.parent_vs > 0 then
             "\nenvironment type variables are " ^
@@ -592,9 +592,9 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
         "[bind_exe: assign ] Assignment "^
           sbe bsym_table lx^"="^
           sbe bsym_table rx^";\n"^
-        "LHS type: " ^ string_of_btypecode bsym_table lhst^
+        "LHS type: " ^ sbt bsym_table lhst^
         "\nmust have same type as\n"^
-        "RHS type: " ^ string_of_btypecode bsym_table rhst
+        "RHS type: " ^ sbt bsym_table rhst
       )
 
 

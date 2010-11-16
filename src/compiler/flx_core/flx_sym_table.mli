@@ -1,6 +1,10 @@
 (** The type of the (raw, unbound) symbol table. *)
 type t
 
+(** quick debugging info *)
+val summary: t -> string
+val detail: t -> string
+
 (** Construct a symbol table. *)
 val create : unit -> t
 

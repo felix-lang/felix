@@ -196,7 +196,9 @@ let bind_asms bind_state bsym_table asms =
   (* Add the symbols to the symtab. *)
   let print_flag = bind_state.syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
   let counter_ref = bind_state.syms.Flx_mtypes2.counter in
-  let exes, ifaces = Flx_symtab.add_asms print_flag counter_ref bind_state.symtab "root" 0 None 0 asms in
+  Flx_symtab.add_asms print_flag counter_ref bind_state.symtab "root" 0 None 0 asms;
+  let exes = Flx_symtab.get_init_exes bind_state.symtab in
+  let ifaces = Flx_symtab.get_exports bind_state.symtab in
 
   (* Now, bind all the symbols. *)
   Flx_bbind.bbind bind_state.bbind_state bsym_table;

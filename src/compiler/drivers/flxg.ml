@@ -932,7 +932,7 @@ let make_assembly
 (*
 print_endline ("Loading symbol tables for " ^ filename);
 *)
-        let symtab,exes,ifaces = Flx_filesys.cached_computation "symtab" in_tab_name
+        let symtab= Flx_filesys.cached_computation "symtab" in_tab_name
           ~outfile:out_tab_name
           ~min_time:flx_time
           (fun () -> 
@@ -944,22 +944,23 @@ print_endline ("Attempting to make symbol tables for " ^ filename);
            * Unfortunately also captures the top level state object.
            *)
           let symtab = Flx_symtab.make symbol_table in
-          let exes, ifaces =  (* WARNING: LOSES DIRECTIVES AND EXPORTS, MUST FIX *)
-            Flx_symtab.add_asms 
-              print_flag counter_ref 
-              symtab   (* the indicies *)
-              filename (* containing module name *)
-              1        (* nesting level *)
-              None     (* parent module, to be root *)
-              root     (* root module index *)
-              asms     (* Stuff to add *)
-           in
+          Flx_symtab.add_asms 
+            print_flag counter_ref 
+            symtab   (* the indicies *)
+            filename (* containing module name *)
+            1        (* nesting level, a hack! *)
+            None     (* parent module, to be root *)
+            root     (* root module index, 0 *)
+            asms     (* Stuff to add *)
+           ;
 (*
 print_endline ("Made symbol tables for " ^ filename);
 *)
-           symtab,exes,ifaces
+           symtab
            )
         in 
+print_endline ("Table for " ^ filename ^ " " ^ Flx_symtab.detail symtab );
+
         List.iter (fun s -> 
           (* Grr.. design fault here. If the filename is ./fred.flx then we're
            * and it is included by a/b.flx then we're talking about a/fred.flx

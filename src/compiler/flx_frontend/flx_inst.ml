@@ -74,7 +74,7 @@ let add_inst syms bsym_table ref_insts1 (i,ts) =
 let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
   (*
   print_endline ("Process expr " ^ sbe sym_table be ^ " .. raw type " ^ sbt bsym_table t);
-  print_endline (" .. instantiated type " ^ string_of_btypecode sym_table (varmap_subst hvarmap t));
+  print_endline (" .. instantiated type " ^ sbt sym_table (varmap_subst hvarmap t));
   *)
   let ue e = process_expr syms bsym_table ref_insts1 hvarmap sr e in
   let ui i ts = add_inst syms bsym_table ref_insts1 (i,ts) in
@@ -309,7 +309,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   if syms.compiler_options.print_flag then
   print_endline ("//Instance " ^ string_of_bid inst ^ "=" ^ Flx_bsym.id bsym ^
     "<" ^ string_of_bid i ^ ">[" ^
-    catmap "," (string_of_btypecode bsym_table) ts ^ "]");
+    catmap "," (sbt bsym_table) ts ^ "]");
   match Flx_bsym.bbdcl bsym with
   | BBDCL_invalid -> assert false
   | BBDCL_module -> ()

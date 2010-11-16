@@ -10,9 +10,15 @@
 
 type t
 
+val summary: t -> string (* debugging info *)
+val detail : t -> string (* debugging info *)
 
 (** Create the state needed for the symbol table. *)
 val make:  Flx_sym_table.t -> t
+
+val get_init_exes : t -> Flx_ast.sexe_t list
+val get_exports : t -> Flx_types.bound_iface_t list
+val get_directives : t -> Flx_types.sdir_t list
 
 (*
 (** Add interface to the symbol table. *)
@@ -44,8 +50,4 @@ val add_asms:
   Flx_types.bid_t option ->       (** parent *)
   Flx_types.bid_t ->              (** index of root module *)
   Flx_types.asm_t list ->         (** assemblies *)
-  (
-    Flx_ast.sexe_t list *         (** executables *)
-    Flx_types.bound_iface_t list  (** interfaces *)
-  )
-
+  unit

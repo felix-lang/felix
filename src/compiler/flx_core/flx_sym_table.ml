@@ -6,6 +6,19 @@ type elt = {
 (** The type of the symbol table. *)
 type t = (Flx_types.bid_t, elt) Hashtbl.t
 
+(** debugging info *)
+let summary x = 
+  string_of_int (Hashtbl.length x) ^ " symbols"
+
+let detail x = 
+  let pd e = 
+    (match e with | None -> " of root" | Some p -> " of parent " ^ string_of_int p) 
+  in
+  "symbols " ^ Hashtbl.fold (fun k v acc -> acc ^"\n"^
+    "  "^string_of_int k^" -> "^v.sym.Flx_sym.id^pd v.parent) x "" ^ 
+  "\n"
+
+
 (** Construct a symbol table. *)
 let create () = Hashtbl.create 97
 

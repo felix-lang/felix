@@ -185,7 +185,7 @@ and beta_reduce' syms bsym_table sr termlist t =
   | None ->
 
   let br t' = beta_reduce' syms bsym_table sr (t::termlist) t' in
-  let st t = string_of_btypecode bsym_table t in
+  let st t = sbt bsym_table t in
   match t with
   | BTYP_none -> assert false
   | BTYP_fix _ -> t

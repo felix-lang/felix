@@ -29,7 +29,7 @@ let register_type_nr syms bsym_table t =
       let n = fresh_bid syms.counter in
       if syms.compiler_options.print_flag then
       print_endline ("//Register type " ^ string_of_bid n ^ ": " ^
-        string_of_btypecode bsym_table t);
+        sbt bsym_table t);
       Hashtbl.add syms.registry t n
     end
 
@@ -64,7 +64,7 @@ let rec register_type_r ui syms bsym_table exclude sr t =
   let t = beta_reduce syms bsym_table sr t in
   (*
   let sp = String.make (length exclude * 2) ' ' in
-  print_endline (sp ^ "Register type " ^ string_of_btypecode sym_table t);
+  print_endline (sp ^ "Register type " ^ sbt sym_table t);
   if (mem t exclude) then print_endline (sp ^ "Excluded ..");
   *)
   if not (Hashtbl.mem syms.registry t) then
@@ -73,7 +73,7 @@ let rec register_type_r ui syms bsym_table exclude sr t =
   let rnr t = register_type_nr syms bsym_table t in
   let t' = unfold t in
   (*
-  print_endline (sp ^ "Unfolded type " ^ string_of_btypecode sym_table t');
+  print_endline (sp ^ "Unfolded type " ^ sbt sym_table t');
   *)
   match t' with
   | BTYP_void -> ()
@@ -186,6 +186,6 @@ let rec register_type_r ui syms bsym_table exclude sr t =
     clierr sr
     (
       "Unexpected kind in register type: " ^
-      string_of_btypecode sym_table t
+      sbt sym_table t
     )
     *)

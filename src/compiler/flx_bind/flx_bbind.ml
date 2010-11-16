@@ -825,7 +825,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       clierr sr
       (
         "Can't export generic- or meta- type " ^
-        string_of_btypecode bsym_table t
+        sbt bsym_table t
       )
       else
         BIFACE_export_type (sr, t, cpp_name)

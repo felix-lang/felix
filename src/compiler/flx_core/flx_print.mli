@@ -10,7 +10,7 @@ val string_of_bidset : BidSet.t -> string
 
 val string_of_typecode : typecode_t -> string
 val string_of_maybe_typecode : typecode_t -> string
-val string_of_btypecode : Flx_bsym_table.t -> Flx_btype.t -> string
+val string_of_btypecode : Flx_bsym_table.t option -> Flx_btype.t -> string
 val sbt: Flx_bsym_table.t -> Flx_btype.t -> string
 val special_string_of_typecode : typecode_t -> string
 val string_of_expr : expr_t -> string

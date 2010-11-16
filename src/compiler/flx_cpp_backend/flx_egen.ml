@@ -458,7 +458,7 @@ let rec gen_expr'
               "Can't handle closure of case " ^
               si v ^
               " of " ^
-              string_of_btypecode bsym_table t
+              sbt bsym_table t
            )
        in ce_atom s
 
@@ -737,11 +737,11 @@ let rec gen_expr'
        (
          "Trapped application, case " ^
          si v ^
-         " of " ^ string_of_btypecode bsym_table t ^
-         "\ntype " ^ string_of_btypecode bsym_table t' ^
+         " of " ^ sbt bsym_table t ^
+         "\ntype " ^ sbt bsym_table t' ^
          "\nargument=" ^
          string_of_bound_expression sym_table (a,t'') ^
-         "\ntype " ^ string_of_btypecode bsym_table t''
+         "\ntype " ^ sbt bsym_table t''
        )
       *)
 

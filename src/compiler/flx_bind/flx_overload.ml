@@ -949,7 +949,7 @@ let consider
     try specialize_domain base_vs entry_kind.sub_ts base_result
     with Not_found ->
       clierr sr ("Failed to bind candidate return type! fn='" ^ name ^
-        "', type=" ^ string_of_btypecode bsym_table base_result)
+        "', type=" ^ sbt bsym_table base_result)
   in
 
   (* Step1: make equations for the ts *)

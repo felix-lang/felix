@@ -579,7 +579,7 @@ and sb bsym_table depth fixlist counter prec tc =
       ">"
 
     | BTYP_inst (i,ts) ->
-      0,qualified_name_of_bindex bsym_table i ^
+      0, (match bsym_table with | Some tab -> qualified_name_of_bindex tab i | None -> "<Prim " ^ si i^">") ^
       (if List.length ts = 0 then "" else
       "[" ^cat ", " (map (sbt 9) ts) ^ "]"
       )
@@ -707,7 +707,8 @@ and string_of_btypecode bsym_table tc =
   done;
   term ^ !bad
 
-and sbt a b = string_of_btypecode a b
+and sbt a b = string_of_btypecode (Some a) b
+and qsbt a b = string_of_btypecode None b
 
 and string_of_basic_parameters (ps: simple_parameter_t list) =
   cat
@@ -757,7 +758,7 @@ and string_of_basic_bparameters bsym_table ps : string =
       (string_of_param_kind kind)
       x
       (string_of_bid i)
-      (string_of_btypecode bsym_table y)
+      (string_of_btypecode (Some bsym_table) y)
   end ps
 
 and string_of_bparameters bsym_table ps : string =
@@ -877,7 +878,7 @@ and special_string_of_typecode ty =  (* used for constructors *)
 and special_string_of_btypecode bsym_table ty =  (* used for constructors *)
   match ty with
   | BTYP_tuple [] -> ""
-  | _ -> " of " ^ string_of_btypecode bsym_table ty
+  | _ -> " of " ^ string_of_btypecode (Some bsym_table) ty
 
 and string_of_macro_parameter_type = function
   | Expr -> "fun"
@@ -950,11 +951,11 @@ and string_of_bvs_cons bsym_table vs cons = match vs,cons with
         | BTYP_tuple [] -> ""
         | _ -> " where " ^ sbt bsym_table cons)
 
-and string_of_ts bsym_table ts = String.concat "," (List.map (string_of_btypecode bsym_table) ts)
+and string_of_ts bsym_table ts = String.concat "," (List.map (string_of_btypecode (Some bsym_table)) ts)
 
 and string_of_inst bsym_table = function
   | [] -> ""
-  | ts -> Printf.sprintf "[%s]" (catmap ", " (string_of_btypecode bsym_table) ts)
+  | ts -> Printf.sprintf "[%s]" (catmap ", " (string_of_btypecode (Some bsym_table)) ts)
 
 and sl x = string_of_lvalue x
 and string_of_lvalue (x,t) =
@@ -1056,7 +1057,7 @@ and string_of_qual = function
 
 and string_of_bqual bsym_table = function
 | #base_type_qual_t as x -> string_of_base_qual x
-| `Bound_needs_shape t -> "needs_shape(" ^ string_of_btypecode bsym_table t ^ ")"
+| `Bound_needs_shape t -> "needs_shape(" ^ string_of_btypecode (Some bsym_table) t ^ ")"
 
 and string_of_quals qs = catmap " " string_of_qual qs
 and string_of_bquals bsym_table qs = catmap " " (string_of_bqual bsym_table) qs
@@ -1907,7 +1908,7 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_variant (s,e) -> "case " ^ s ^ " of (" ^ se e ^ ")"
 
   | BEXPR_case (v,t) ->
-    "case " ^ si v ^ " of " ^ string_of_btypecode bsym_table t
+    "case " ^ si v ^ " of " ^ string_of_btypecode (Some bsym_table) t
 
   | BEXPR_match_case (v,e) ->
     "(match case " ^ si v ^ ")(" ^ se e ^ ")"
@@ -1919,12 +1920,12 @@ and string_of_bound_expression' bsym_table se e =
     "caseno (" ^ se e ^ ")"
 
   | BEXPR_expr (s,t) ->
-    "code ["^string_of_btypecode bsym_table t^"]" ^ "'" ^ s ^ "'"
+    "code ["^string_of_btypecode (Some bsym_table) t^"]" ^ "'" ^ s ^ "'"
 
   | BEXPR_range_check (e1,e2,e3) ->
     "range_check(" ^ se e1 ^"," ^ se e2 ^"," ^se e3 ^ ")"
 
-  | BEXPR_coerce (e,t) -> se e ^ " : " ^ string_of_btypecode bsym_table t
+  | BEXPR_coerce (e,t) -> se e ^ " : " ^ string_of_btypecode (Some bsym_table) t
 
 and string_of_biface bsym_table level s =
   let spc = spaces level in
@@ -1940,7 +1941,7 @@ and string_of_biface bsym_table level s =
     " as \"" ^ cpp_name ^ "\";"
 
   | BIFACE_export_type (_,btyp,cpp_name) ->
-    spc ^ "export type (" ^ string_of_btypecode bsym_table btyp ^
+    spc ^ "export type (" ^ string_of_btypecode (Some bsym_table) btyp ^
     ") as \"" ^ cpp_name ^ "\";"
 
 and sbx bsym_table s =  string_of_bexe bsym_table 0 s
@@ -2272,7 +2273,7 @@ and string_of_bglr_entry sym_table (name,symbol) =
 
 and string_of_bbdcl bsym_table bbdcl index : string =
   let name = qualified_name_of_bindex bsym_table index in
-  let sobt t = string_of_btypecode bsym_table t in
+  let sobt t = string_of_btypecode (Some bsym_table) t in
   let se e = string_of_bound_expression bsym_table e in
   let un = btyp_tuple [] in
   match bbdcl with

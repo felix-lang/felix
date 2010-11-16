@@ -131,7 +131,7 @@ let gen_C_function syms bsym_table props index id sr vs bps ret' ts instance_no 
     id ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode bsym_table) ts ^ "]"
+      else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
     )
   );
   let argtype = typeof_bparams bps in
@@ -203,7 +203,7 @@ let gen_class syms bsym_table props index id sr vs ts instance_no =
     id ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode bsym_table) ts ^ "]"
+      else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
     )
   );
   if length ts <> length vs then
@@ -326,7 +326,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
     id ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode bsym_table) ts ^ "]"
+      else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
     )
   );
   let argtype = typeof_bparams bps in
@@ -517,7 +517,7 @@ let gen_function_names syms bsym_table =
   (fun (i,(index,ts)) ->
     let tss =
       if length ts = 0 then "" else
-      "[" ^ catmap "," (string_of_btypecode bsym_table) ts^ "]"
+      "[" ^ catmap "," (sbt bsym_table) ts^ "]"
     in
     let bsym =
       try Flx_bsym_table.find bsym_table index with Not_found ->
@@ -553,7 +553,7 @@ let gen_functions syms bsym_table =
   (fun ((i:bid_t),(index,ts)) ->
     let tss =
       if length ts = 0 then "" else
-      "[" ^ catmap "," (string_of_btypecode bsym_table) ts^ "]"
+      "[" ^ catmap "," (sbt bsym_table) ts^ "]"
     in
     let bsym =
       try Flx_bsym_table.find bsym_table index with Not_found ->
@@ -624,7 +624,7 @@ let gen_functions syms bsym_table =
         Flx_bsym.id bsym ^ "<" ^ string_of_bid index ^ ">" ^
         (
           if length ts = 0 then ""
-          else "[" ^ catmap "," (string_of_btypecode bsym_table) ts ^ "]"
+          else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
         )
       );
       if length ts <> length vs then
@@ -723,7 +723,7 @@ let gen_exe filename
   (*
   print_endline ("generating exe " ^ string_of_bexe bsym_table 0 exe);
   print_endline ("vs = " ^ catmap "," (fun (s,i) -> s ^ "->" ^ si i) vs);
-  print_endline ("ts = " ^ catmap ","  (string_of_btypecode bsym_table) ts);
+  print_endline ("ts = " ^ catmap ","  (sbt bsym_table) ts);
   *)
   let tsub t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
   let ge = gen_expr syms bsym_table this vs ts in
@@ -1429,7 +1429,7 @@ let gen_C_function_body filename syms bsym_table
     Flx_bsym.id bsym ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode bsym_table) ts ^ "]"
+      else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
     )
   );
   match Flx_bsym.bbdcl bsym with
@@ -1568,7 +1568,7 @@ let gen_C_procedure_body filename syms bsym_table
     Flx_bsym.id bsym ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode bsym_table) ts ^ "]"
+      else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
     )
   );
   match Flx_bsym.bbdcl bsym with
@@ -1701,7 +1701,7 @@ let gen_function_methods filename syms bsym_table
     Flx_bsym.id bsym ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode bsym_table) ts ^ "]"
+      else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
     )
   );
   match Flx_bsym.bbdcl bsym with
@@ -1840,7 +1840,7 @@ let gen_procedure_methods filename syms bsym_table
     Flx_bsym.id bsym ^ "<" ^ string_of_bid index ^ ">" ^
     (
       if length ts = 0 then ""
-      else "[" ^ catmap "," (string_of_btypecode bsym_table) ts ^ "]"
+      else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
     )
   );
   match Flx_bsym.bbdcl bsym with
@@ -1965,7 +1965,7 @@ let gen_procedure_methods filename syms bsym_table
           Flx_bsym.id bsym ^ "<" ^ string_of_bid index ^ ">" ^
           (
             if length ts = 0 then ""
-            else "[" ^ catmap "," (string_of_btypecode bsym_table) ts ^ "]"
+            else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
           )
       in
       let ctor =
@@ -2034,7 +2034,7 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
   | BBDCL_external_fun (_,vs,ps_cf,ret',_,_,`Callback (ps_c,client_data_pos)) ->
       let tss =
         if length ts = 0 then "" else
-        "[" ^ catmap "," (string_of_btypecode bsym_table) ts^ "]"
+        "[" ^ catmap "," (sbt bsym_table) ts^ "]"
       in
       bcat s ("\n//------------------------------\n");
       if ret' = btyp_void () then begin
@@ -2057,7 +2057,7 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
         Flx_bsym.id bsym ^ "<" ^ string_of_bid index ^ ">" ^
         (
           if length ts = 0 then ""
-          else "[" ^ catmap "," (string_of_btypecode bsym_table) ts ^ "]"
+          else "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
         )
       );
       if length ts <> length vs then
