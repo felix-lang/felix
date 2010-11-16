@@ -3,7 +3,6 @@ open Flx_types
 open Flx_btype
 
 type t = {
-  syms: Flx_mtypes2.sym_state_t;
   sym_table: Flx_sym_table.t;
   pub_name_map: (string, Flx_btype.entry_set_t) Hashtbl.t;
   priv_name_map: (string, Flx_btype.entry_set_t) Hashtbl.t;
@@ -11,9 +10,9 @@ type t = {
 
 
 (* use fresh variables, but preserve names *)
-let mkentry syms (vs:ivs_list_t) i =
+let mkentry counter_ref (vs:ivs_list_t) i =
   let is = List.map
-    (fun _ -> Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter)
+    (fun _ -> Flx_mtypes2.fresh_bid counter_ref)
     (fst vs)
   in
   let ts = List.map (fun i -> btyp_type_var (i, btyp_type 0)) is in
@@ -74,7 +73,7 @@ let dump_name_to_int_map level name name_map =
 let strp = function | Some x -> string_of_int x | None -> "none"
 
 
-let full_add_unique syms sym_table sr (vs:ivs_list_t) table key value =
+let full_add_unique counter_ref sym_table sr (vs:ivs_list_t) table key value =
   try
     let entry = Hashtbl.find table key in
     match entry with
@@ -87,10 +86,10 @@ let full_add_unique syms sym_table sr (vs:ivs_list_t) table key value =
 
     | FunctionEntry [] -> assert false
   with Not_found ->
-    Hashtbl.add table key (NonFunctionEntry (mkentry syms vs value))
+    Hashtbl.add table key (NonFunctionEntry (mkentry counter_ref vs value))
 
 
-let full_add_typevar syms sym_table sr table key value =
+let full_add_typevar counter_ref sym_table sr table key value =
   try
     let entry = Hashtbl.find table key in
     match entry with
@@ -103,10 +102,10 @@ let full_add_typevar syms sym_table sr table key value =
 
     | FunctionEntry [] -> assert false
   with Not_found ->
-    Hashtbl.add table key (NonFunctionEntry (mkentry syms dfltvs value))
+    Hashtbl.add table key (NonFunctionEntry (mkentry counter_ref dfltvs value))
 
 
-let full_add_function syms sym_table sr (vs:ivs_list_t) table key value =
+let full_add_function counter_ref sym_table sr (vs:ivs_list_t) table key value =
   try
     match Hashtbl.find table key with
     | NonFunctionEntry entry ->
@@ -120,16 +119,16 @@ let full_add_function syms sym_table sr (vs:ivs_list_t) table key value =
 
     | FunctionEntry fs ->
         Hashtbl.remove table key;
-        Hashtbl.add table key (FunctionEntry (mkentry syms vs value :: fs))
+        Hashtbl.add table key (FunctionEntry (mkentry counter_ref vs value :: fs))
   with Not_found ->
-    Hashtbl.add table key (FunctionEntry [mkentry syms vs value])
+    Hashtbl.add table key (FunctionEntry [mkentry counter_ref vs value])
 
 
 (* make_ivs inserts unique indexes into vs_lists, thus creating an ivs_list. *)
-let make_ivs ?(print=false) level counter (vs, con) : ivs_list_t =
+let make_ivs ?(print=false) level counter_ref (vs, con) : ivs_list_t =
   let ivs =
     List.map begin fun (tid, tpat) ->
-      let n = Flx_mtypes2.fresh_bid counter in
+      let n = Flx_mtypes2.fresh_bid counter_ref in
       if print then
         print_endline ("//  " ^ Flx_util.spaces level ^
           Flx_print.string_of_bid n ^ " -> " ^ tid ^ " (type variable)");
@@ -159,7 +158,8 @@ let make_ivs ?(print=false) level counter (vs, con) : ivs_list_t =
 let rec build_tables
   ~pub_name_map
   ~priv_name_map
-  syms
+  print_flag
+  counter_ref
   sym_table
   name
   inherit_ivs
@@ -189,12 +189,13 @@ let rec build_tables
       failwith ("Can't name non-toplevel module 'root'")
     else
       Hashtbl.add priv_name_map "root"
-        (NonFunctionEntry (mkentry syms dfltvs root));
+        (NonFunctionEntry (mkentry counter_ref dfltvs root));
 
   (* Step through each dcl and add the found assemblies to the symbol tables. *)
   List.iter (fun dcl ->
     ignore(build_table_for_dcl
-      syms
+      print_flag
+      counter_ref
       sym_table
       name
       inherit_ivs
@@ -212,7 +213,8 @@ let rec build_tables
 
 (** Add the symbols from one declaration. *)
 and build_table_for_dcl
-  syms
+  print_flag
+  counter_ref
   sym_table
   name
   inherit_ivs
@@ -224,12 +226,10 @@ and build_table_for_dcl
   interfaces
   (sr, id, seq, access, vs, dcl)
 =
-  let print_flag = syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
 
   (* Make some shorthand functions *)
-  let counter = syms.Flx_mtypes2.counter in
   let spc = Flx_util.spaces level in
-  let make_ivs = make_ivs ~print:print_flag level counter in
+  let make_ivs = make_ivs ~print:print_flag level counter_ref in
 
   if print_flag then
     print_endline (Flx_print.string_of_dcl level id seq vs dcl);
@@ -239,14 +239,14 @@ and build_table_for_dcl
   let symbol_index =
     match seq with
     | Some n -> n
-    | None -> Flx_mtypes2.fresh_bid counter
+    | None -> Flx_mtypes2.fresh_bid counter_ref
   in
 
   (* Update the type variable list to include the index. *)
   let ivs = make_ivs vs in
 
   let add_unique table id idx = full_add_unique
-    syms
+    counter_ref
     sym_table
     sr
     (merge_ivs ivs inherit_ivs)
@@ -255,7 +255,7 @@ and build_table_for_dcl
     idx
   in
   let add_function table id idx = full_add_function
-    syms
+    counter_ref
     sym_table
     sr
     (merge_ivs ivs inherit_ivs)
@@ -307,13 +307,13 @@ and build_table_for_dcl
 
       (* Add the type variable to the symbol table. *)
       add_symbol ~ivs:dfltvs index tvid (SYMDEF_typevar mt);
-      full_add_typevar syms sym_table sr table tvid index;
+      full_add_typevar counter_ref sym_table sr table tvid index;
     end (fst ivs)
   in
   let add_tvars table = add_tvars' (Some symbol_index) table ivs in
 
   let add_parameter pubtab privtab parent (k, name, typ, dflt) =
-    let n = Flx_mtypes2.fresh_bid counter in
+    let n = Flx_mtypes2.fresh_bid counter_ref in
 
     if print_flag then
       print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n ^ " -> " ^
@@ -324,10 +324,10 @@ and build_table_for_dcl
 
     (* Possibly add the parameter to the public symbol table. *)
     if access = `Public then
-      full_add_unique syms sym_table sr dfltvs pubtab name n;
+      full_add_unique counter_ref sym_table sr dfltvs pubtab name n;
 
     (* Add the parameter to the private symbol table. *)
-    full_add_unique syms sym_table sr dfltvs privtab name n;
+    full_add_unique counter_ref sym_table sr dfltvs privtab name n;
 
     (k, name, typ, dflt)
   in
@@ -400,7 +400,8 @@ and build_table_for_dcl
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
           ~priv_name_map:(Hashtbl.create 97)
-          syms
+          print_flag
+          counter_ref
           sym_table
           id
           dfltvs
@@ -467,7 +468,8 @@ and build_table_for_dcl
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
           ~priv_name_map:(Hashtbl.create 97)
-          syms
+          print_flag
+          counter_ref
           sym_table
           id
           dfltvs
@@ -510,7 +512,8 @@ and build_table_for_dcl
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
           ~priv_name_map:(Hashtbl.create 97)
-          syms
+          print_flag
+          counter_ref
           sym_table
           id
           (merge_ivs inherit_ivs ivs)
@@ -527,7 +530,7 @@ and build_table_for_dcl
       let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
 
       (* Get a unique index for the _init_ function. *)
-      let n' = Flx_mtypes2.fresh_bid counter in
+      let n' = Flx_mtypes2.fresh_bid counter_ref in
 
       if print_flag then
         print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n' ^
@@ -559,7 +562,8 @@ and build_table_for_dcl
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
           ~priv_name_map:(Hashtbl.create 97)
-          syms
+          print_flag
+          counter_ref
           sym_table
           id
           (merge_ivs inherit_ivs ivs)
@@ -621,7 +625,8 @@ and build_table_for_dcl
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
           ~priv_name_map:(Hashtbl.create 97)
-          syms
+          print_flag
+          counter_ref
           sym_table
           id
           dfltvs
@@ -752,7 +757,7 @@ and build_table_for_dcl
       let piname = TYP_name (sr,id,[]) in
 
       (* XXX: What's the _repr_ function for? *)
-      let n_repr = Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter in
+      let n_repr = Flx_mtypes2.fresh_bid counter_ref in
 
       (* Add the _repr_ function to the symbol table. *)
       add_symbol ~pubtab ~privtab n_repr "_repr_" (SYMDEF_fun (
@@ -768,7 +773,7 @@ and build_table_for_dcl
       add_function priv_name_map "_repr_" n_repr;
 
       (* XXX: What's the _make_ function for? *)
-      let n_make = Flx_mtypes2.fresh_bid syms.Flx_mtypes2.counter in
+      let n_make = Flx_mtypes2.fresh_bid counter_ref in
 
       (* Add the _make_ function to the symbol table. *)
       add_symbol ~pubtab ~privtab n_make ("_make_" ^ id) (SYMDEF_fun (
@@ -880,8 +885,8 @@ and build_table_for_dcl
         end true its
       in
       List.iter begin fun (component_name, ctor_idx, vs, t) ->
-        let dfn_idx = Flx_mtypes2.fresh_bid counter in (* constructor *)
-        let match_idx = Flx_mtypes2.fresh_bid counter in (* matcher *)
+        let dfn_idx = Flx_mtypes2.fresh_bid counter_ref in (* constructor *)
+        let match_idx = Flx_mtypes2.fresh_bid counter_ref in (* matcher *)
 
         (* existential type variables *)
         let evs = make_ivs vs in
@@ -949,42 +954,36 @@ and build_table_for_dcl
   symbol_index
 
 
-let make syms sym_table =
+let make sym_table =
   {
-    syms = syms;
     sym_table = sym_table;
     pub_name_map = Hashtbl.create 97;
     priv_name_map = Hashtbl.create 97;
   }
 
-
-(* Add the interface to the symbol table. *)
-let add_iface _ (sr, iface) =
-  (* We don't currently use the symbol table. *)
-  (sr, iface, None)
-
-
-(* Add the declaration to symbol table. *)
-let add_dcl ?parent state dcl =
+let add_dcl ?parent print_flag counter_ref symbol_table dcl =
   let level, pubmap, privmap =
     match parent with
     | Some index ->
-        let sym = Flx_sym_table.find state.sym_table index in
+        let sym = Flx_sym_table.find symbol_table.sym_table index in
         1, sym.Flx_sym.pubmap, sym.Flx_sym.privmap
     | None ->
-        0, state.pub_name_map, state.priv_name_map
+        0, symbol_table.pub_name_map, symbol_table.priv_name_map
   in
+
+  let root = !counter_ref in
 
   let interfaces = ref [] in
   let symbol_index =
     build_table_for_dcl
-      state.syms
-      state.sym_table
+      print_flag
+      counter_ref
+      symbol_table.sym_table
       "root"
       Flx_ast.dfltvs
       level
       parent
-      !(state.syms.Flx_mtypes2.counter)
+      root
       pubmap
       privmap
       interfaces
@@ -994,18 +993,28 @@ let add_dcl ?parent state dcl =
 
 
 (* Add the assemblies to the symbol table. *)
-let add_asms state asms =
+let add_asms 
+  (print_flag:bool) 
+  (counter_ref:bid_t ref) 
+  (symbol_table:t) (name:string)
+  (level:int) 
+  (parent:bid_t option) 
+  (root:bid_t) 
+  asms
+=
   let _, _, exes, interfaces, _ =
     build_tables
-      ~pub_name_map:state.pub_name_map
-      ~priv_name_map:state.priv_name_map
-      state.syms
-      state.sym_table
-      "root"
+      ~pub_name_map:symbol_table.pub_name_map
+      ~priv_name_map:symbol_table.priv_name_map
+      print_flag
+      counter_ref
+      symbol_table.sym_table
+      name (* "root" *)
       dfltvs
-      0
-      None
-      !(state.syms.Flx_mtypes2.counter)
+      level (*0*)
+      parent (*None*)
+      root (* !counter_ref *)
       asms
   in
   exes, interfaces
+

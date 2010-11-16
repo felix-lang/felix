@@ -862,7 +862,10 @@ let make_assembly
   (input:include_entry_t) 
   : ((include_entry_t * string)* Flx_types.asm_t list) list
 =
-    let fresh_bid () = Flx_mtypes2.fresh_bid state.syms.counter in
+    let root = 0 in
+    let counter_ref = state.syms.counter in
+    let fresh_bid () = Flx_mtypes2.fresh_bid counter_ref in
+    let print_flag = state.syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
     let outputs = ref [] in
     (* PARSE THE IMPLEMENTATION FILES *)
     let processed = ref exclusions in
@@ -891,18 +894,18 @@ let make_assembly
       unprocessed := List.tl (!unprocessed);
       if not (List.mem candidate (!processed)) then
       begin
+        let filedir,filename = match candidate with
+          | Search s ->
+            Flx_filesys.find_include_dir 
+             ~include_dirs:state.syms.compiler_options.include_dirs
+            (s ^ ".flx"),s
+          | NoSearch s -> "",s
+        in
+        let flx_name = Flx_filesys.join filedir (filename ^ ".flx") in
+        let flx_time = Flx_filesys.virtual_filetime Flx_filesys.big_crunch flx_name in
         processed := candidate :: !processed;
-        let filename,filedir, stmts = 
-          let filedir,filename = match candidate with
-            | Search s ->
-              Flx_filesys.find_include_dir 
-               ~include_dirs:state.syms.compiler_options.include_dirs
-              (s ^ ".flx"),s
-            | NoSearch s -> "",s
-          in
-          let flx_name = Flx_filesys.join filedir (filename ^ ".flx") in
+        let stmts = 
 (* print_endline ("Filename is " ^ flx_name); *)
-          let flx_time = Flx_filesys.virtual_filetime Flx_filesys.big_crunch flx_name in
           let in_par_name = Flx_filesys.join filedir filename ^ ".par2" in
           let out_par_name = 
              match outdir with 
@@ -914,12 +917,49 @@ let make_assembly
             ~min_time:flx_time
             (fun () -> parse_file state flx_name)
           in
-          filename,filedir, stmts
+          stmts
         in
         let include_files, asms =  
           let desugar_state = Flx_desugar.make_desugar_state module_name fresh_bid in
           Flx_desugar.desugar_stmts desugar_state (Filename.dirname filename) stmts 
         in
+        let in_tab_name = Flx_filesys.join filedir filename ^ ".symtab" in
+        let out_tab_name = 
+             match outdir with 
+           | Some d -> Some (Flx_filesys.join d filename ^ ".symtab")
+           | None -> None
+        in
+(*
+print_endline ("Loading symbol tables for " ^ filename);
+*)
+        let symtab,exes,ifaces = Flx_filesys.cached_computation "symtab" in_tab_name
+          ~outfile:out_tab_name
+          ~min_time:flx_time
+          (fun () -> 
+(*
+print_endline ("Attempting to make symbol tables for " ^ filename);
+*)
+          let symbol_table = Flx_sym_table.create () in
+          (* A symtab is a symbol table together with public and private name mappings.
+           * Unfortunately also captures the top level state object.
+           *)
+          let symtab = Flx_symtab.make symbol_table in
+          let exes, ifaces =  (* WARNING: LOSES DIRECTIVES AND EXPORTS, MUST FIX *)
+            Flx_symtab.add_asms 
+              print_flag counter_ref 
+              symtab   (* the indicies *)
+              filename (* containing module name *)
+              1        (* nesting level *)
+              None     (* parent module, to be root *)
+              root     (* root module index *)
+              asms     (* Stuff to add *)
+           in
+(*
+print_endline ("Made symbol tables for " ^ filename);
+*)
+           symtab,exes,ifaces
+           )
+        in 
         List.iter (fun s -> 
           (* Grr.. design fault here. If the filename is ./fred.flx then we're
            * and it is included by a/b.flx then we're talking about a/fred.flx

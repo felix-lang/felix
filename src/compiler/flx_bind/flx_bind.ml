@@ -21,7 +21,7 @@ let make_bind_state syms =
   {
     syms = syms;
     sym_table = sym_table;
-    symtab = Flx_symtab.make syms sym_table;
+    symtab = Flx_symtab.make sym_table;
     parent = None;
     strabs_state = Flx_strabs.make_strabs_state ();
     bexe_state = Flx_bind_bexe.make_bexe_state
@@ -36,8 +36,10 @@ let make_bind_state syms =
 
 (** Constructs the bind state needed for an interactive toplevel compiler. *)
 let make_toplevel_bind_state syms =
+  let print_flag = syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
+  let counter_ref = syms.Flx_mtypes2.counter in
   let sym_table = Flx_sym_table.create () in
-  let symtab = Flx_symtab.make syms sym_table in
+  let symtab = Flx_symtab.make sym_table in
   let bsym_table = Flx_bsym_table.create () in
   let lookup_state = Flx_lookup.make_lookup_state syms sym_table in
   let bbind_state:Flx_bbind.bbind_state_t = Flx_bbind.make_bbind_state
@@ -47,7 +49,7 @@ let make_toplevel_bind_state syms =
   in
 
   (* Declare the root module to work within *)
-  let module_index, _ = Flx_symtab.add_dcl symtab (
+  let module_index, _ = Flx_symtab.add_dcl print_flag counter_ref symtab (
     Flx_srcref.dummy_sr, "", None, `Public, Flx_ast.dfltvs,
     Flx_types.DCL_module [])
   in
@@ -102,6 +104,8 @@ let make_toplevel_bind_state syms =
   }, bsym_table
 
 let bind_asm state bsym_table handle_bound init asm =
+  let print_flag = state.syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
+  let counter_ref = state.syms.Flx_mtypes2.counter in
   (* We need to save the symbol index counter so we can bind all of the symbols
    * that we just added. *)
   let initial_index = !(state.syms.Flx_mtypes2.counter) in
@@ -114,7 +118,7 @@ let bind_asm state bsym_table handle_bound init asm =
           handle_bound init (Bound_exe bexe)
         end exe init
     | Flx_types.Dcl dcl ->
-        ignore(Flx_symtab.add_dcl ?parent:state.parent state.symtab dcl);
+        ignore(Flx_symtab.add_dcl ?parent:state.parent print_flag counter_ref state.symtab dcl);
         init
     | Flx_types.Iface (sr,iface) ->
         let biface = Flx_bbind.bind_interface
@@ -188,28 +192,30 @@ let bind_asm state bsym_table handle_bound init asm =
   (* Return the folded value. *)
   !init
 
-let bind_asms state bsym_table asms =
+let bind_asms bind_state bsym_table asms =
   (* Add the symbols to the symtab. *)
-  let exes, ifaces = Flx_symtab.add_asms state.symtab asms in
+  let print_flag = bind_state.syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
+  let counter_ref = bind_state.syms.Flx_mtypes2.counter in
+  let exes, ifaces = Flx_symtab.add_asms print_flag counter_ref bind_state.symtab "root" 0 None 0 asms in
 
   (* Now, bind all the symbols. *)
-  Flx_bbind.bbind state.bbind_state bsym_table;
+  Flx_bbind.bbind bind_state.bbind_state bsym_table;
 
   (* Downgrade abstract types. *)
-  Flx_strabs.strabs state.strabs_state bsym_table;
+  Flx_strabs.strabs bind_state.strabs_state bsym_table;
 
   (* Bind the interfaces. *)
-  state.syms.Flx_mtypes2.bifaces <- List.map
-    (Flx_bbind.bind_interface state.bbind_state bsym_table) ifaces;
+  bind_state.syms.Flx_mtypes2.bifaces <- List.map
+    (Flx_bbind.bind_interface bind_state.bbind_state bsym_table) ifaces;
 
   (* Clear the type cache. *)
-  Hashtbl.clear state.syms.Flx_mtypes2.ticache
+  Hashtbl.clear bind_state.syms.Flx_mtypes2.ticache
 
 (** Find the root module's init function index. *)
-let find_root_module_init_function state root =
+let find_root_module_init_function bind_state root =
   (* Look up the root procedure index. *)
   let { Flx_sym.pubmap=pubmap; symdef=symdef } =
-    try Flx_sym_table.find state.sym_table root with Not_found ->
+    try Flx_sym_table.find bind_state.sym_table root with Not_found ->
       failwith ("Can't find root module " ^ Flx_print.string_of_bid root ^
         " in symbol table?")
   in

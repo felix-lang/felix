@@ -1,0 +1,96 @@
+@h1 Desugaring
+When the Felix compiler has parsed a file it returns a list of <code>STMT_*</code> statements.
+These are macro processed to eliminate macros, then the result is desugared.
+
+Desugaring does several important jobs.
+
+@h2 Categorisation of statements.
+There are four categories of statements:
+@h3 Dcl: Declarations
+Function and module statements are declarations. They're not executable
+even if they contain executable code. Variables are special, a variable
+declaration may have an initialiser which is executable. For this case
+desugaring generates two records.
+
+Dcl records contain a name, a source reference, and a DCL_* term describing
+the declaration.
+
+@h3 Exe: Executable code
+Executable statements are wrapped in an Exe term. This includes the
+assignment used to initialise any variable. Note, all variables are
+initialised by C++ assignments: Felix never uses a constuctor.
+Therefore any primitive type must support a default constructor and
+an assignment operator. If you wish to model one without these features
+you must use pointer instead.
+
+@h3 Iface: Exported types and functions
+The Iface terms hold the data of <code>export</code> statements.
+Exports are used to create C wrappers of Felix functions with a 
+specified C linkage name. This is used to allow libraries
+to be generated with known symbol names. Types can also be exported,
+which causes a C typedef of the Felix type name to the specified C
+name. If an exported function or type uses a Felix type, that type
+too must be exported, recursively.
+
+The type export requirements stops when the Felix name is, or is a
+typedef of, a known C type name such as <code>int</code> 
+or <code>size_t</code>. Felix automatically emits all the required
+types in header files, but most of the types emitted will have 
+synthesised names the user cannot guess at and which may not be
+the same from compilation to compilation. Exporting types ensures
+a consistent knowable type name in the same way as exporting 
+functions.
+
+@h3 Dir: Compiler Directives
+Felix contains a number of compiler directives. The most
+important is probably the <code>open</code> directive, which tells
+the compiler to expose the contents of a module so that unqualified
+lookup can be used.
+
+@h2 Desugaring matches
+Felix desugars matches into an if/then/else chain modelled
+with goto statements.
+
+For which a particular pattern, a checker is 
+and extractor is implemented for each pattern, and a handler is generated
+from the user code. The checkers are special constructions which later
+resolve to functions returning <code>bool</code>. Extractor drill down
+into expressions to extract values of subexpressions. Much of the
+conversion process, however, involves wrapping things up
+into appropriately scoped functions.
+
+Certain other constructions are transformed into matches.
+For example Felix does not provide any if/then/else instuction
+terms: 
+@felix
+if c then a else b endif
+@
+is transformed into
+@felix
+match c with | true => a | false => b endmatch
+@
+first, and then translated into goto spaghetti.
+
+@h2 Intrinsics
+Certain compiler instrinsics are modelled using function
+application. The desugaring process checks for special
+names in function calls and replaces the expression with
+compiler magic.
+
+@h2 Lambda lifting
+Felix does not allow anonymous functions in function expressions.
+Instead, the function expression is converted to a declaration
+of a function with a synthesised name, the declaration emitted,
+and then function body in the expression replaced by a reference
+to the declared function.
+
+This process is called <em>lambda lifting</em> for historical reasons,
+where function abstractions in the lambda calculus were represented
+by lambda terms (theoreticians have a penchant for stealing from
+the Greeks).
+
+@h2 Type construction
+In the Felix AST there are no type terms: types are represented by
+ordinary expressions. Desugaring recognizes where a type is required
+and translates expression terms into more specialised type terms.
+
