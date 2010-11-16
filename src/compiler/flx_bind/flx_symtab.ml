@@ -996,7 +996,8 @@ let add_dcl ?parent print_flag counter_ref symbol_table dcl =
 let add_asms 
   (print_flag:bool) 
   (counter_ref:bid_t ref) 
-  (symbol_table:t) (name:string)
+  (symbol_table:t)
+  (name:string)
   (level:int) 
   (parent:bid_t option) 
   (root:bid_t) 
