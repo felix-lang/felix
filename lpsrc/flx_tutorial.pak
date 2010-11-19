@@ -861,7 +861,7 @@ there is no while statement in Felix!
 
 @env.head(3,'Assignments')
 It is sometimes useful to simultaneously assign variables
-from the components of a tuple, which can done as shown below.
+from the components of a tuple, which can be done as shown below.
 @p()
 We may also wish to initialise multiple values, also shown below.
 @p()
@@ -870,7 +870,7 @@ existing variable, create a new value binding for the second component,
 and a new variable for the third. This can be done with the 'def'
 keyword as illustrated.
 @p()
-The patterns of vals and vars on the left hand side of of such
+The patterns of vals and vars on the left hand side of such
 a statement is called an lvalue pattern. (Also sometime known
 as a tie).
 
@@ -1199,7 +1199,7 @@ that always represents the closure of the procedure
 at the point of writing.
 
 @env.head(2,'Fibres')
-Felix procedures are can also be used as threads.
+Felix procedures can also be used as threads.
 To do this, use the spawn_fthread library procedure
 to create a new thread of control which is scheduled
 for execution.
