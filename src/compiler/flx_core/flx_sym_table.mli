@@ -8,8 +8,11 @@ val detail: t -> string
 (** Construct a symbol table. *)
 val create : unit -> t
 
-(** Adds the symbol with the bound index to the symbol table. *)
+(** Adds the symbol with the index to the symbol table. *)
 val add : t -> Flx_types.bid_t -> Flx_types.bid_t option -> Flx_sym.t -> unit
+
+(** As above but throws if the index is already in the table *)
+val unique_add : t -> Flx_types.bid_t -> Flx_types.bid_t option -> Flx_sym.t -> unit
 
 (** Returns if the bound index is in the symbol table. *)
 val mem : t -> Flx_types.bid_t -> bool

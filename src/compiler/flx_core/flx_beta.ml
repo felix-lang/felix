@@ -56,7 +56,7 @@ open Flx_maps
 
 *)
 
-let rec fixup syms ps body =
+let rec fixup counter ps body =
  let param = match ps with
    | [] -> assert false
    | [i,mt] -> btyp_type_var (i,mt)
@@ -113,13 +113,13 @@ and mk_prim_type_inst i args =
   print_endline "MK_PRIM_TYPE";
   btyp_inst (i,args)
 
-and beta_reduce syms bsym_table sr t1 =
+and beta_reduce counter bsym_table sr t1 =
   (*
   print_endline ("---------- Beta reduce " ^ sbt bsym_table t1);
   *)
   let t2 =
   try
-  beta_reduce' syms bsym_table sr [] t1
+  beta_reduce' counter bsym_table sr [] t1
   with
     | Not_found ->
         failwith ("Beta reduce failed with Not_found in " ^
@@ -133,7 +133,7 @@ and beta_reduce syms bsym_table sr t1 =
   *)
   t2
 
-and type_list_index syms bsym_table ls t =
+and type_list_index counter bsym_table ls t =
   (*
   print_endline ("Comparing : " ^ sbt bsym_table t ^ " with ..");
   *)
@@ -144,7 +144,7 @@ and type_list_index syms bsym_table ls t =
     print_endline ("Candidate : " ^ sbt bsym_table hd);
     *)
     if
-      begin try type_eq syms.counter hd t
+      begin try type_eq counter hd t
       with x ->
         print_endline ("Exception: " ^ Printexc.to_string x);
         false
@@ -153,7 +153,7 @@ and type_list_index syms bsym_table ls t =
     else aux tl (n+1)
   in aux ls 0
 
-and beta_reduce' syms bsym_table sr termlist t =
+and beta_reduce' counter bsym_table sr termlist t =
   (*
   print_endline ("BETA REDUCE " ^ sbt bsym_table t ^ "\ntrail length = " ^
     si (length termlist));
@@ -165,7 +165,7 @@ and beta_reduce' syms bsym_table sr termlist t =
     sbt bsym_table t ^ "\ntrail length = " ^ si (List.length termlist))
   end;
 
-  match type_list_index syms bsym_table termlist t with
+  match type_list_index counter bsym_table termlist t with
   | Some j ->
         (*
         print_endline "+++Trail:";
@@ -184,7 +184,7 @@ and beta_reduce' syms bsym_table sr termlist t =
 
   | None ->
 
-  let br t' = beta_reduce' syms bsym_table sr (t::termlist) t' in
+  let br t' = beta_reduce' counter bsym_table sr (t::termlist) t' in
   let st t = sbt bsym_table t in
   match t with
   | BTYP_none -> assert false
@@ -193,8 +193,8 @@ and beta_reduce' syms bsym_table sr termlist t =
 
   | BTYP_type_function (p,r,b) -> t
   (*
-    let b = fixup syms p b in
-    let b' = beta_reduce' syms bsym_table sr (t::termlist) b in
+    let b = fixup counter p b in
+    let b' = beta_reduce' counter bsym_table sr (t::termlist) b in
     let t = BTYP_type_function (p, br r, b') in
     t
   *)
@@ -353,11 +353,11 @@ and beta_reduce' syms bsym_table sr termlist t =
       print_endline ("Parameters= " ^ catmap ","
         (fun (i,t) -> "T"^si i ^ "=>" ^ sbt bsym_table t) params');
       *)
-      let t' = list_subst syms.counter params' body in
+      let t' = list_subst counter params' body in
       (*
       print_endline ("Body after subs     = " ^ sbt bsym_table t');
       *)
-      let t' = beta_reduce' syms bsym_table sr (t::termlist) t' in
+      let t' = beta_reduce' counter bsym_table sr (t::termlist) t' in
       (*
       print_endline ("Body after reduction = " ^ sbt bsym_table t');
       *)
@@ -390,7 +390,7 @@ and beta_reduce' syms bsym_table sr termlist t =
           pattern_vars=dvars;
         }, t'
       in
-      match maybe_unification syms.counter [p,tt] with
+      match maybe_unification counter [p,tt] with
       | Some _ -> new_matches := x :: !new_matches
       | None ->
         (*
@@ -406,11 +406,11 @@ and beta_reduce' syms bsym_table sr termlist t =
       failwith "[beta-reduce] typematch failure"
     | ({pattern=p';pattern_vars=dvars;assignments=eqns},t') :: _ ->
       try
-        let mgu = unification syms.counter [p', tt] dvars in
+        let mgu = unification counter [p', tt] dvars in
         (*
         print_endline "Typematch success";
         *)
-        let t' = list_subst syms.counter (mgu @ eqns) t' in
+        let t' = list_subst counter (mgu @ eqns) t' in
         let t' = br t' in
         (*
         print_endline ("type match reduction result=" ^ sbt bsym_table t');

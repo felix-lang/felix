@@ -26,20 +26,31 @@ let hfind msg h k =
 
 
 type lookup_state_t = {
-  syms: Flx_mtypes2.sym_state_t;
+  counter : bid_t ref;
+  print_flag: bool;
+  ticache : (bid_t, Flx_btype.t) Hashtbl.t;
+  varmap: Flx_mtypes2.typevarmap_t; 
+    (* used by unification to fix the return types of functions
+     * MUST be a reference to the global one because that's used
+     * in the front and back ends extensively..
+     *)
   sym_table: Flx_sym_table.t;
   env_cache: (Flx_types.bid_t, Flx_mtypes2.env_t) Hashtbl.t;
 }
 
+let get_varmap state = state.varmap
 
 type module_rep_t =
   | Simple_module of bid_t * typecode_t list * name_map_t * sdir_t list
 
 
 (** Create the state needed for lookup. *)
-let make_lookup_state syms sym_table =
+let make_lookup_state print_flag counter varmap ticache sym_table =
   {
-    syms = syms;
+    counter = counter;
+    print_flag = print_flag;
+    ticache = ticache; 
+    varmap = varmap;
     sym_table = sym_table;
     env_cache = Hashtbl.create 97;
   }
@@ -60,7 +71,7 @@ let unit_t = btyp_tuple []
 (* use fresh variables, but preserve names *)
 let mkentry state (vs:ivs_list_t) i =
   let is = List.map
-    (fun _ -> fresh_bid state.syms.Flx_mtypes2.counter)
+    (fun _ -> fresh_bid state.counter)
     (fst vs)
   in
   let ts = List.map (fun i ->
@@ -412,7 +423,7 @@ and inner_bind_type state (bsym_table:Flx_bsym_table.t) env sr rs t =
   print_endline ("Bound type= " ^ sbt bsym_table bt);
   *)
   let bt =
-    try beta_reduce state.syms bsym_table sr bt
+    try beta_reduce state.counter bsym_table sr bt
     with Not_found -> failwith ("Beta reduce failed with Not_found " ^ sbt bsym_table bt)
   in
     (*
@@ -453,7 +464,7 @@ and inner_bind_expression state bsym_table env rs e  =
        failwith "bind_expression' raised Not_found [BUG]"
   in
     let t' = 
-      try beta_reduce state.syms bsym_table sr t' 
+      try beta_reduce state.counter bsym_table sr t' 
       with Not_found -> failwith "beta_reduce raised Not_found [BUG]"
     in
     e',t'
@@ -501,7 +512,7 @@ and handle_typeset state sr elt tset =
   let e = BidSet.empty in
   let un = btyp_tuple [] in
   let lss = List.rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
-  let fresh = fresh_bid state.syms.counter in
+  let fresh = fresh_bid state.counter in
   let dflt =
     {
       pattern = btyp_type_var (fresh,btyp_type 0);
@@ -734,7 +745,7 @@ and bind_type'
       let finished = ref false in
       List.iter begin fun (p',t') ->
         let p',explicit_vars,any_vars, as_vars, eqns =
-          type_of_tpattern state.syms p'
+          type_of_tpattern state.counter p'
         in
         let p' = bt p' in
         let eqns = List.map (fun (j,t) -> j, bt t) eqns in
@@ -761,9 +772,9 @@ and bind_type'
         s, btyp_type_var (i,btyp_type 0)) (explicit_vars @ as_vars)
         in
         let t' = btp t' (params@args) in
-        let t' = list_subst state.syms.Flx_mtypes2.counter eqns t' in
+        let t' = list_subst state.counter eqns t' in
         pts := ({pattern=p'; pattern_vars=varset; assignments=eqns},t') :: !pts;
-        let u = maybe_unification state.syms.Flx_mtypes2.counter [p', t] in
+        let u = maybe_unification state.counter [p', t] in
         match u with
         | None ->  ()
             (* CRAP! The below argument is correct BUT ..  our unification
@@ -951,7 +962,7 @@ and bind_type'
 
   | TYP_typefun (ps,r,body) ->
       let data = List.rev_map
-        (fun (name, mt) -> name, bt mt, fresh_bid state.syms.counter)
+        (fun (name, mt) -> name, bt mt, fresh_bid state.counter)
         ps
       in
       (* reverse order .. *)
@@ -1310,7 +1321,7 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
         print_endline ("Unravelled and bound is " ^ sbt bsym_table t);
         *)
         (*
-        let t = beta_reduce state.syms sr t in
+        let t = beta_reduce state.counter sr t in
         *)
         (*
         print_endline ("Beta reduced: " ^ sbt bsym_table t);
@@ -1439,7 +1450,7 @@ and type_of_literal state bsym_table env sr v =
  * for this index. *)
 and type_of_index' state bsym_table rs bid =
   try
-    Hashtbl.find state.syms.ticache bid
+    Hashtbl.find state.ticache bid
   with Not_found ->
     let t = inner_type_of_index state bsym_table rs bid in
 
@@ -1451,10 +1462,10 @@ and type_of_index' state bsym_table rs bid =
       try (hfind "lookup" state.sym_table bid).Flx_sym.sr
       with Not_found -> dummy_sr
     in
-    let t = beta_reduce state.syms bsym_table sr t in
+    let t = beta_reduce state.counter bsym_table sr t in
 
     (* Finally, cache the type. *)
-    Hashtbl.add state.syms.ticache bid t;
+    Hashtbl.add state.ticache bid t;
 
     t
 
@@ -1480,7 +1491,7 @@ and type_of_index_with_ts' state bsym_table rs sr bid ts =
   let t = varmap_subst varmap t in
 
   (* Beta reduce and return the type. *)
-  beta_reduce state.syms bsym_table sr t
+  beta_reduce state.counter bsym_table sr t
 
 (** Wrapper around inner_type_of_index that substitutes any type variables. *)
 and inner_type_of_index_with_ts state bsym_table rs sr bid ts =
@@ -1500,7 +1511,7 @@ and inner_type_of_index_with_ts state bsym_table rs sr bid ts =
     let varmap = make_varmap state.sym_table bsym_table sr bid ts in
     let t = varmap_subst varmap t in
 
-    beta_reduce state.syms bsym_table sr t
+    beta_reduce state.counter bsym_table sr t
 
 (* -------------------------------------------------------------------------- *)
 
@@ -1530,7 +1541,7 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
       symdef=SYMDEF_function ((ps,_),rt,props,exes)
     } ->
     let rt = bind_type' state bsym_table env rs sr rt args mkenv in
-    let rt = beta_reduce state.syms bsym_table sr rt in
+    let rt = beta_reduce state.counter bsym_table sr rt in
     let ret_type = ref rt in
     let return_counter = ref 0 in
     List.iter
@@ -1551,14 +1562,15 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
             )
         in
         if Flx_do_unify.do_unify
-          state.syms
+          state.counter
+          state.varmap
           state.sym_table
           bsym_table
           !ret_type
           t
           (* the argument order is crucial *)
         then
-          ret_type := varmap_subst state.syms.varmap !ret_type
+          ret_type := varmap_subst state.varmap !ret_type
         else begin
           (*
           print_endline
@@ -1597,27 +1609,28 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
     if !return_counter = 0 then (* it's a procedure .. *)
     begin
       let mgu = Flx_do_unify.do_unify
-        state.syms
+        state.counter
+        state.varmap
         state.sym_table
         bsym_table
         !ret_type
         (btyp_void ())
       in
-      ret_type := varmap_subst state.syms.varmap !ret_type
+      ret_type := varmap_subst state.varmap !ret_type
     end
     ;
     (* not sure if this is needed or not ..
       if a type variable is computed during evaluation,
       but the evaluation fails .. substitute now
-    ret_type := varmap_subst state.syms.varmap !ret_type
+    ret_type := varmap_subst state.varmap !ret_type
     ;
     *)
     (*
     let ss = ref "" in
     Hashtbl.iter
     (fun i t -> ss:=!ss ^si i^ " --> " ^sbt bsym_table t^ "\n")
-    state.syms.varmap;
-    print_endline ("state.syms.varmap=" ^ !ss);
+    state.varmap;
+    print_endline ("state.varmap=" ^ !ss);
     print_endline ("  .. ret type index " ^ si index ^ " = " ^ sbt bsym_table !ret_type);
     *)
     !ret_type
@@ -1679,7 +1692,7 @@ and btype_of_bsym state bsym_table bt bid bsym =
  * .. so there's no type_alias_fixlist .. *)
 and inner_type_of_index state bsym_table rs index =
   (* Check if we've already cached this index. *)
-  try Hashtbl.find state.syms.ticache index with Not_found ->
+  try Hashtbl.find state.ticache index with Not_found ->
 
   (* Check index recursion. If so, return a fix type. *)
   if List.mem index rs.idx_fixlist then btyp_fix (-rs.depth) else
@@ -1690,7 +1703,7 @@ and inner_type_of_index state bsym_table rs index =
   (* Helper function that binds and beta reduces a type. *)
   let bt sr t =
     let t = bind_type' state bsym_table env rs sr t [] mkenv in
-    beta_reduce state.syms bsym_table sr t
+    beta_reduce state.counter bsym_table sr t
   in
 
   (* First check if we've already bound this index. If so, return the type of
@@ -1722,7 +1735,7 @@ and inner_type_of_index state bsym_table rs index =
       (* Calculate the return type. *)
       let rt =
         (* First, check if we've already calculated it. *)
-        try Hashtbl.find state.syms.varmap index with Not_found ->
+        try Hashtbl.find state.varmap index with Not_found ->
           (* Nope! So let's and calculate it. Add ourselves to the fix list and
            * recurse. *)
           let rs = { rs with idx_fixlist = index::rs.idx_fixlist } in
@@ -1819,7 +1832,7 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
     match unfold t1 with
     | BTYP_function (argt,rest)
     | BTYP_cfunction (argt,rest) ->
-      if type_match state.syms.counter argt t2
+      if type_match state.counter argt t2
       then rest, None
       else
       let reorder =
@@ -1923,7 +1936,7 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
   );
   *)
 
-  let rest = varmap_subst state.syms.varmap rest in
+  let rest = varmap_subst state.varmap rest in
   if rest = btyp_void () then
     clierr sr
     (
@@ -2088,7 +2101,7 @@ and lookup_qn_with_sig'
         *)
         begin match t with
         | BTYP_function (a,_) ->
-          if not (type_match state.syms.counter a sign) then
+          if not (type_match state.counter a sign) then
             clierr sr
             (
               "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
@@ -2131,7 +2144,7 @@ and lookup_qn_with_sig'
         begin match t with
         | BTYP_function (a,b) ->
           let sign = try List.hd signs with _ -> assert false in
-          if not (type_match state.syms.counter a sign) then
+          if not (type_match state.counter a sign) then
           clierr srn
           (
             "[lookup_qn_with_sig] Expected variable "^id ^
@@ -2388,7 +2401,7 @@ and lookup_type_qn_with_sig'
         *)
         begin match t with
         | BTYP_function (a,_) ->
-          if not (type_match state.syms.counter a sign) then
+          if not (type_match state.counter a sign) then
             clierr sr
             (
               "[lookup_qn_with_sig] Struct constructor for "^id^" has wrong signature, got:\n" ^
@@ -2712,12 +2725,12 @@ and handle_variable state bsym_table env rs index id sr ts t t2 =
   let ts = adjust_ts state.sym_table bsym_table sr index ts in
   let vs = find_vs state.sym_table bsym_table index in
   let bvs = List.map (fun (s,i,tp) -> s,i) (fst vs) in
-  let t = beta_reduce state.syms bsym_table sr (tsubst bvs ts t) in
+  let t = beta_reduce state.counter bsym_table sr (tsubst bvs ts t) in
 
   match t with
   | BTYP_cfunction (d,c)
   | BTYP_function (d,c) ->
-      if type_match state.syms.counter d t2 then
+      if type_match state.counter d t2 then
         Some (bexpr_name t (index, ts))
       else
         clierr sr
@@ -3228,7 +3241,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   let bt sr t =
     (* we're really wanting to call bind type and propagate depth ? *)
     let t = bind_type' state bsym_table env { rs with depth=rs.depth +1 } sr t [] mkenv in
-    let t = beta_reduce state.syms bsym_table sr t in
+    let t = beta_reduce state.counter bsym_table sr t in
     t
   in
   let ti sr i ts =
@@ -3259,7 +3272,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   print_env env;
   print_endline "==";
   *)
-  let rt t = beta_reduce state.syms bsym_table sr t in
+  let rt t = beta_reduce state.counter bsym_table sr t in
   let sr = src_of_expr e in
   let cal_method_apply sra fn e2 meth_ts =
     (*
@@ -3517,7 +3530,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_coercion (sr,(x,t)) ->
     let (e',t') as x' = be x in
     let t'' = bt sr t in
-    if type_eq state.syms.counter t' t'' then x'
+    if type_eq state.counter t' t'' then x'
     else
     begin match t',t'' with
     | BTYP_inst (i,[]),BTYP_unitsum n ->
@@ -3559,7 +3572,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           match list_assoc_index ls' s with
           | Some j ->
             let tt = List.assoc s ls' in
-            if type_eq state.syms.counter t tt then
+            if type_eq state.counter t tt then
               s,(bexpr_get_n t (j,x'))
             else clierr sr (
               "Source Record field '" ^ s ^ "' has type:\n" ^
@@ -3589,7 +3602,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
           match list_assoc_index rhs s with
           | Some j ->
             let tt = List.assoc s rhs in
-            if not (type_eq state.syms.counter t tt) then
+            if not (type_eq state.counter t tt) then
             clierr sr (
               "Source Variant field '" ^ s ^ "' has type:\n" ^
               sbt bsym_table t ^ "\n" ^
@@ -4196,7 +4209,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
             in
           let ct = bind_type' state bsym_table env' rsground sr ct bvs mkenv in
           let ct = tsubst vs' ts' ct in
-            if type_eq state.syms.counter ct t then
+            if type_eq state.counter ct t then
               bexpr_get_n t (j,a)
             else clierr sr ("Component " ^ name ^
               " struct component type " ^ sbt bsym_table ct ^
@@ -4888,7 +4901,7 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
       *)
       let matches =
         if List.length inst_ts <> List.length ts' then false else
-        match maybe_specialisation state.syms.counter (List.combine inst_ts ts') with
+        match maybe_specialisation state.counter (List.combine inst_ts ts') with
         | None -> false
         | Some mgu ->
           (*
@@ -4896,7 +4909,7 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
           print_endline ("check base vs (constraint) = " ^ print_ivs_with_index vs);
           *)
           let cons = try
-            Flx_tconstraint.build_type_constraints state.syms bt sr (fst vs)
+            Flx_tconstraint.build_type_constraints state.counter bt sr (fst vs)
             with _ -> clierr sr "Can't build type constraints, type binding failed"
           in
           let {raw_type_constraint=icons} = snd vs in
@@ -4909,11 +4922,11 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
           (*
           print_endline ("Constraint = " ^ sbt bsym_table cons);
           *)
-          let cons = list_subst state.syms.counter mgu cons in
+          let cons = list_subst state.counter mgu cons in
           (*
           print_endline ("Constraint = " ^ sbt bsym_table cons);
           *)
-          let cons = beta_reduce state.syms bsym_table sr cons in
+          let cons = beta_reduce state.counter bsym_table sr cons in
           match cons with
           | BTYP_tuple [] -> true
           | BTYP_void -> false
@@ -5062,7 +5075,7 @@ and resolve_overload'
   let luqn2 i qn = lookup_qn_in_env2' state bsym_table (env i) rs qn in
   let fs = trclose state bsym_table rs sr fs in
   let result : overload_result option =
-    overload state.syms state.sym_table bsym_table caller_env rs bt be luqn2 sr fs name sufs ts
+    overload state.counter state.sym_table bsym_table caller_env rs bt be luqn2 sr fs name sufs ts
   in
   begin match result with
   | None -> ()
@@ -5264,7 +5277,7 @@ and bind_dir
   *)
   let ts' = List.map (fun t ->
     beta_reduce
-      state.syms
+      state.counter
       bsym_table
       dummy_sr
       (bind_type' state bsym_table (cheat_env::env) rsground dummy_sr t [] mkenv)
@@ -5312,7 +5325,7 @@ and review_entry state vs ts {base_sym=i; spec_vs=vs'; sub_ts=ts'} : entry_kind_
        match invs,ints with
        | h::t,h'::t' -> aux t t' (h::outvs) (h'::outts)
        | h::t,[] ->
-         let i = fresh_bid state.syms.counter in
+         let i = fresh_bid state.counter in
          let (name,_) = h in
          vs := (name,i)::!vs;
          (*
@@ -5379,7 +5392,7 @@ and pub_table_dir state bsym_table env inst_check (invs,i,ts) : name_map_t =
     let inst_name = "_inst_" ^ sym.Flx_sym.id in
     Hashtbl.add table inst_name (FunctionEntry [inst]);
     if inst_check then begin
-      if state.syms.compiler_options.print_flag then
+      if state.print_flag then
         print_endline ("Added typeclass " ^ string_of_bid i ^
           " as instance " ^ inst_name ^": " ^
           string_of_myentry bsym_table inst);

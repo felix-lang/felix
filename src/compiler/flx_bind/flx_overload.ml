@@ -63,7 +63,7 @@ let is_subset tss1 tss2 : bool =
  * in the first list must be in the second list. The order must agree
  * as well, since typematches are ordered.
  *)
-let rec scancases syms tss1 tss2 = match (tss1, tss2) with
+let rec scancases counter tss1 tss2 = match (tss1, tss2) with
   | [],_ -> true
   | _,[] -> false
   | (p1,v1)::t1 as c1, (p2,v2)::t2  ->
@@ -73,42 +73,42 @@ let rec scancases syms tss1 tss2 = match (tss1, tss2) with
       if BidSet.is_empty (p1.pattern_vars)
       && BidSet.is_empty (p2.pattern_vars)
       then
-        if type_eq syms.counter p1.pattern p2.pattern
-        && type_eq syms.counter v1 v2
-        then scancases syms t1 t2 (* advance both *)
-        else scancases syms c1 t2 (* skip rhs case *)
+        if type_eq counter p1.pattern p2.pattern
+        && type_eq counter v1 v2
+        then scancases counter t1 t2 (* advance both *)
+        else scancases counter c1 t2 (* skip rhs case *)
       (* special case of wildcard, somewhat hacked *)
       else match p1.pattern,p2.pattern with
       | BTYP_type_var _, BTYP_type_var _ ->
-         if type_eq syms.counter v1 v2
-         then scancases syms t1 t2 (* advance both *)
-         else scancases syms c1 t2 (* skip rhs case *)
-      | BTYP_type_var _,_ -> scancases syms c1 t2 (* skip rhs case *)
+         if type_eq counter v1 v2
+         then scancases counter t1 t2 (* advance both *)
+         else scancases counter c1 t2 (* skip rhs case *)
+      | BTYP_type_var _,_ -> scancases counter c1 t2 (* skip rhs case *)
       | _ -> false
    else false
 
-let typematch_implies syms a b = match a, b with
+let typematch_implies counter a b = match a, b with
   | BTYP_type_match (v1,tss1), BTYP_type_match (v2,tss2) ->
-     type_eq syms.counter v1 v2 &&
+     type_eq counter v1 v2 &&
      if is_typeset tss1 && is_typeset tss2 
      then is_subset tss1 tss2
-     else scancases syms tss1 tss2
+     else scancases counter tss1 tss2
   | _ -> false
 
-let factor_implies syms ls b =
+let factor_implies counter ls b =
   try 
     List.iter (fun a ->
-      if type_eq syms.counter a b then raise Not_found
-      else if typematch_implies syms a b then raise Not_found
+      if type_eq counter a b then raise Not_found
+      else if typematch_implies counter a b then raise Not_found
     ) 
     ls;
     false
   with Not_found -> true
 
-let terms_imply syms ls1 ls2 =
+let terms_imply counter ls1 ls2 =
   try
     List.iter (fun b ->
-      if not (factor_implies syms ls1 b) then raise Not_found
+      if not (factor_implies counter ls1 b) then raise Not_found
     )  
     ls2;
     true
@@ -125,8 +125,8 @@ let filter_out_units ls =
 
 let split_conjuncts ls = filter_out_units (split_conjuncts' ls)
 
-let constraint_implies syms a b =
-  let r = terms_imply syms (split_conjuncts a) (split_conjuncts b) in
+let constraint_implies counter a b =
+  let r = terms_imply counter (split_conjuncts a) (split_conjuncts b) in
   r
 
 type overload_result =
@@ -343,7 +343,7 @@ let specialize_domain base_vs sub_ts t =
 
 
 let make_equations
-  syms
+  counter
   bsym_table
   id
   sr
@@ -393,7 +393,7 @@ let make_equations
   print_endline ("Curry domains (presub)   = " ^ catmap ", " (sbt sym_table) curry_domains);
   *)
   let curry_domains = List.map
-    (fun t -> list_subst syms.counter eqnsi t)
+    (fun t -> list_subst counter eqnsi t)
     curry_domains
   in
 
@@ -402,7 +402,7 @@ let make_equations
   *)
 
   let curry_domains = List.map
-    (fun t -> beta_reduce syms bsym_table sr t)
+    (fun t -> beta_reduce counter bsym_table sr t)
     curry_domains
   in
 
@@ -431,11 +431,11 @@ let make_equations
   print_endline "...";
   *)
 
-  try Some (unification syms.counter eqns !dvars) with Not_found -> None
+  try Some (unification counter eqns !dvars) with Not_found -> None
 
 
 let solve_mgu
-  syms
+  counter
   bsym_table
   id
   call_sr
@@ -521,7 +521,7 @@ let solve_mgu
   begin
     (* convert mgu from spec vars to base vars *)
     let basemap = List.map2
-      (fun (_,i,_) t -> i,list_subst syms.counter !mgu t)
+      (fun (_,i,_) t -> i,list_subst counter !mgu t)
       base_vs
       entry_kind.sub_ts
     in
@@ -542,12 +542,12 @@ let solve_mgu
 
     List.iter begin fun (s,j',tp) ->
       let et,explicit_vars1,any_vars1, as_vars1, eqns1 =
-        type_of_tpattern syms tp
+        type_of_tpattern counter tp
       in
       let et = bt sr et in
       let et = specialize_domain base_vs entry_kind.sub_ts et in
-      let et = list_subst syms.counter !mgu et in
-      let et = beta_reduce syms bsym_table sr et in
+      let et = list_subst counter !mgu et in
+      let et = beta_reduce counter bsym_table sr et in
       (*
       print_endline ("After substitution of mgu, Reduced type is:\n  " ^
         sbt bsym_table et)
@@ -661,11 +661,11 @@ let solve_mgu
       | BTYP_intersect cons -> List.iter xcons cons
       | BTYP_type_match (arg,[{pattern=pat},BTYP_tuple[]]) ->
           let arg = specialize_domain base_vs entry_kind.sub_ts arg in
-          let arg = list_subst syms.counter !mgu arg in
-          let arg = beta_reduce syms bsym_table sr arg in
+          let arg = list_subst counter !mgu arg in
+          let arg = beta_reduce counter bsym_table sr arg in
           let pat = specialize_domain base_vs entry_kind.sub_ts pat in
-          let pat = list_subst syms.counter !mgu pat in
-          let pat = beta_reduce syms bsym_table sr pat in
+          let pat = list_subst counter !mgu pat in
+          let pat = beta_reduce counter bsym_table sr pat in
           extra_eqns := (arg, pat)::!extra_eqns
       | _ -> ()
     in
@@ -684,7 +684,7 @@ let solve_mgu
     *)
 
     let maybe_extra_mgu =
-      try Some (unification syms.counter !extra_eqns !dvars)
+      try Some (unification counter !extra_eqns !dvars)
       with Not_found -> None
     in
     match maybe_extra_mgu with
@@ -724,7 +724,7 @@ let solve_mgu
   if List.length !unresolved > 0 then None else begin
     let ok = ref true in
     List.iter begin fun sign ->
-      if sign <> list_subst syms.counter !mgu sign then begin
+      if sign <> list_subst counter !mgu sign then begin
         ok := false;
         (*
         print_endline ("At " ^ Flx_srcref.short_string_of_src call_sr);
@@ -758,7 +758,7 @@ let solve_mgu
       substituting away the view vs
     *)
 
-    let base_ts = List.map (list_subst syms.counter !mgu) entry_kind.sub_ts in
+    let base_ts = List.map (list_subst counter !mgu) entry_kind.sub_ts in
 
     (*
     print_endline ("Matched candidate " ^ si i ^ "\n" ^
@@ -779,7 +779,7 @@ let solve_mgu
       (fun (n,i,_) -> btyp_type_var (i, btyp_type 0))
       parent_vs
     in
-    let type_constraint = build_type_constraints syms (bt sr) sr base_vs in
+    let type_constraint = build_type_constraints counter (bt sr) sr base_vs in
     let type_constraint = btyp_intersect [type_constraint; con] in
     (*
     print_endline ("Raw type constraint " ^ sbt sym_table type_constraint);
@@ -789,7 +789,7 @@ let solve_mgu
     (*
     print_endline ("Substituted type constraint " ^ sbt sym_table type_constraint);
     *)
-    let reduced_constraint = beta_reduce syms bsym_table sr type_constraint in
+    let reduced_constraint = beta_reduce counter bsym_table sr type_constraint in
     (*
     print_endline ("Reduced type constraint " ^ sbt sym_table reduced_constraint);
     *)
@@ -810,7 +810,7 @@ let solve_mgu
         (*
         print_endline "About to check constraint implication";
         *)
-        let implied = constraint_implies syms env_traint reduced_constraint in
+        let implied = constraint_implies counter env_traint reduced_constraint in
         if implied then 
           let parent_ts = List.map
             (fun (n,i,_) -> btyp_type_var (i, btyp_type 0))
@@ -832,7 +832,7 @@ let solve_mgu
 
 (* Note this bt must bind types in the base context *)
 let consider
-  syms
+  counter
   sym_table
   bsym_table
   call_sr
@@ -954,7 +954,7 @@ let consider
 
   (* Step1: make equations for the ts *)
   let mgu = make_equations
-    syms
+    counter
     bsym_table
     id
     sr
@@ -966,7 +966,7 @@ let consider
   in
 
   (*
-  let mgu = maybe_specialisation syms.counter sym_table eqns in
+  let mgu = maybe_specialisation counter sym_table eqns in
   *)
 
   (* doesn't work .. fails to solve for some vars
@@ -980,7 +980,7 @@ let consider
   match mgu with
   | Some mgu ->
       solve_mgu
-        syms
+        counter
         bsym_table
         id
         call_sr
@@ -1004,7 +1004,7 @@ let consider
 
 
 let overload
-  syms
+  counter
   sym_table
   bsym_table
   env
@@ -1043,7 +1043,7 @@ let overload
   let aux i =
     match
       consider
-        syms
+        counter
         sym_table
         bsym_table
         call_sr
@@ -1107,7 +1107,7 @@ let overload
                 r::lhs
 
             | (Unique (i,typ,rtyp,mgu,ts) as x) :: t ->
-                begin match compare_sigs syms.counter typ c with
+                begin match compare_sigs counter typ c with
                 | `Less ->
                     (* Candidate is more general, discard it, retain whole
                      * list *)

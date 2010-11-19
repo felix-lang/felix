@@ -40,7 +40,7 @@ let add_inst syms bsym_table ref_insts1 (i,ts) =
     print_endline ("Attempt to register instance " ^ si i ^ "[" ^
     catmap ", " (sbt bsym_table) ts ^ "]");
     *)
-  let ts = map (fun t -> beta_reduce syms bsym_table dummy_sr t) ts in
+  let ts = map (fun t -> beta_reduce syms.Flx_mtypes2.counter bsym_table dummy_sr t) ts in
 
   let i,ts = Flx_typeclass.fixup_typeclass_instance syms bsym_table i ts in
     (*

@@ -22,17 +22,17 @@
    way around. So the expression type has to be the RHS
    and the declared type the LHS.
 *)
-let do_unify syms sym_table bsym_table a b =
+let do_unify counter varmap sym_table bsym_table a b =
   let eqns =
     [
-      Flx_unify.varmap_subst syms.Flx_mtypes2.varmap a,
-      Flx_unify.varmap_subst syms.Flx_mtypes2.varmap b
+      Flx_unify.varmap_subst varmap a,
+      Flx_unify.varmap_subst varmap b
     ]
   in
   (*
   print_endline "Calling unification";
   *)
-  match Flx_unify.maybe_unification syms.Flx_mtypes2.counter eqns with
+  match Flx_unify.maybe_unification counter eqns with
   | None -> false
   | Some mgu ->
     (*
@@ -55,12 +55,12 @@ let do_unify syms sym_table bsym_table a b =
     index as the function whose return type is unknown.
     *)
     List.iter begin fun (i, t) ->
-      if Hashtbl.mem syms.Flx_mtypes2.varmap i
+      if Hashtbl.mem varmap i
       then begin
         (*
         print_endline "Var already in varmap ..";
         *)
-        let t' = Hashtbl.find syms.Flx_mtypes2.varmap i in
+        let t' = Hashtbl.find varmap i in
         if t' <> t then
           failwith ("[do_unify] binding for type variable " ^
             Flx_print.string_of_bid i ^ " is inconsistent\n")
@@ -72,7 +72,7 @@ let do_unify syms sym_table bsym_table a b =
         in
         match sym.Flx_sym.symdef with
         | Flx_types.SYMDEF_function _ ->
-            Hashtbl.add syms.Flx_mtypes2.varmap i t
+            Hashtbl.add varmap i t
 
         (* if it's a declared type variable, leave it alone *)
         | Flx_types.SYMDEF_typevar _ -> ()
@@ -84,3 +84,4 @@ let do_unify syms sym_table bsym_table a b =
       end
     end mgu;
     true
+  

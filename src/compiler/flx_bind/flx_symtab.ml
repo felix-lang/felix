@@ -34,9 +34,10 @@ let detail x =
   "\nprivate names = " ^ Hashtbl.fold (fun k v acc -> acc ^"\n  "^k^": "^dsp v) x.priv_name_map ""  ^ 
   "\ninitialisation instructions: \n" ^ String.concat "\n" 
       (List.map (fun (sr,exe)->Flx_print.string_of_exe 2 exe) x.init_exes) ^
-  "\n"^string_of_int (List.length x.exports) ^ " exports, " ^
-  "\n"^string_of_int (List.length x.directives) ^ " compiler directives "
-
+  "\ncompiler directives:\n"^ String.concat "\n" (List.map (fun (_,s) -> Flx_print.string_of_dir 2 s) x.directives) ^
+  "\nexports:\n"^ String.concat "\n" (List.map 
+      (fun (_,s,b) -> Flx_print.string_of_iface 2 s ^ 
+        (match b with | None ->"" | Some i -> " <-- " ^ string_of_int i)) x.exports) 
 
 
 (* use fresh variables, but preserve names *)
@@ -184,6 +185,9 @@ let make_ivs ?(print=false) level counter_ref (vs, con) : ivs_list_t =
   registration of all the children and their parent is complete
 *)
 
+let add_root_entry counter_ref name_map root =
+  Hashtbl.add name_map "root"
+    (NonFunctionEntry (mkentry counter_ref dfltvs root))
 
 let rec build_tables
   ~pub_name_map
@@ -200,9 +204,9 @@ let rec build_tables
 =
   (* Split up the assemblies into their repsective types. split_asms returns
    * reversed lists, so we must undo that. *)
-  let dcls, exes, ifaces, export_dirs = split_asms asms in
-  let dcls, exes, ifaces, export_dirs =
-    List.rev dcls, List.rev exes, List.rev ifaces, List.rev export_dirs
+  let dcls, exes, ifaces, dirs = split_asms asms in
+  let dcls, exes, ifaces, dirs =
+    List.rev dcls, List.rev exes, List.rev ifaces, List.rev dirs
   in
 
   (* Add the parent to each interface *)
@@ -217,11 +221,39 @@ let rec build_tables
   else
     if name = "root" then
       failwith ("Can't name non-toplevel module 'root'")
-    else
-      Hashtbl.add priv_name_map "root"
-        (NonFunctionEntry (mkentry counter_ref dfltvs root));
+    else 
+      add_root_entry counter_ref priv_name_map root
+  ;
+  let inner_interfaces = 
+    add_dcls
+      print_flag
+      counter_ref
+      sym_table
+      name
+      inherit_ivs
+      level
+      parent
+      root
+      pub_name_map
+      priv_name_map
+      dcls
+  in
+  pub_name_map, priv_name_map, exes, (!interfaces) @ inner_interfaces, dirs
 
-  (* Step through each dcl and add the found assemblies to the symbol tables. *)
+and add_dcls 
+  print_flag 
+  counter_ref 
+  sym_table 
+  name 
+  inherit_ivs 
+  level 
+  parent 
+  root 
+  pub_name_map 
+  priv_name_map 
+  dcls
+=
+  let interfaces_ref = ref [] in
   List.iter (fun dcl ->
     ignore(build_table_for_dcl
       print_flag
@@ -234,11 +266,11 @@ let rec build_tables
       root
       pub_name_map
       priv_name_map
-      interfaces
+      interfaces_ref
       dcl)
   ) dcls;
+  !interfaces_ref
 
-  pub_name_map, priv_name_map, exes, !interfaces, export_dirs
 
 
 (** Add the symbols from one declaration. *)
@@ -1050,8 +1082,101 @@ let add_asms
       root (* !counter_ref *)
       asms
   in
-  symbol_table.init_exes <- exes;
-  symbol_table.exports <- interfaces;
-  symbol_table.directives <- dirs
+  symbol_table.init_exes <- symbol_table.init_exes @ exes;
+  symbol_table.exports <- symbol_table.exports @ interfaces;
+  symbol_table.directives <- symbol_table.directives @ dirs
+
+(* Note: these partial tables do NOT contain the root entry,
+   and so shouldn't be bound: merge them, then add the root entry
+*)
+let top_partial_symtab_create_from_asms
+  (print_flag:bool) 
+  (counter_ref:bid_t ref) 
+  (name:string)
+  asms
+=
+  let sym_table = Flx_sym_table.create () in
+  let pub_name_map = Hashtbl.create 97 in
+  let priv_name_map = Hashtbl.create 97 in
+
+  (* Split up the assemblies into their repsective types. split_asms returns
+   * reversed lists, so we must undo that. *)
+  let dcls, exes, ifaces, dirs = split_asms asms in
+  let dcls, exes, ifaces, dirs =
+    List.rev dcls, List.rev exes, List.rev ifaces, List.rev dirs
+  in
+
+  (* Add the parent to each interface *)
+  let ifaces = List.map (fun (i,j)-> i, j, None) ifaces in
+  let interfaces = ref ifaces in
+
+  let inner_interfaces = 
+    add_dcls
+      print_flag
+      counter_ref
+      sym_table
+      name
+      dfltvs
+      0 (* level *)
+      None (* parent *)
+      0 (* root *)
+      pub_name_map
+      priv_name_map
+      dcls
+  in
+  {
+    pub_name_map = pub_name_map;
+    priv_name_map = priv_name_map;
+    init_exes = exes;
+    exports = !interfaces @inner_interfaces;
+    directives = dirs;
+    sym_table = sym_table;
+  }
+
+let merge_entry_set htab k v =
+  if Hashtbl.mem htab k then begin
+    match Hashtbl.find htab k, v with
+    | FunctionEntry ls1, FunctionEntry ls2 ->
+      (* this isn't right! we should check for duplicates, but this is very hard 
+       * it isn't just a matter of checking for uniqueness of the symbol indices,
+       * since we could have multiple views of the same symbol. In the end, we
+       * will just let overload resolution find the problem..
+       *)
+      Hashtbl.replace htab k (FunctionEntry (ls1 @ ls2))
+
+    | NonFunctionEntry _, FunctionEntry _
+    | FunctionEntry _, NonFunctionEntry _ ->
+      failwith ("Duplicate and inconsistent entries for " ^ k ^ " on table merge")
+ 
+    | NonFunctionEntry _, NonFunctionEntry _ -> 
+      failwith ("Duplicate non-function entries for " ^ k ^ " on table merge")
+  end
+  else Hashtbl.add htab k v
+
+let merge_top_partial_tables tables =
+  let sym_table = Flx_sym_table.create () in
+  let pub_name_map = Hashtbl.create 97 in
+  let priv_name_map = Hashtbl.create 97 in
+  let init_exes_ref = ref [] in
+  let exports_ref = ref [] in
+  let directives_ref = ref [] in
+  List.iter (fun x -> 
+     Flx_sym_table.iter (Flx_sym_table.unique_add sym_table) x.sym_table;
+     Hashtbl.iter (fun k v -> merge_entry_set pub_name_map k v) x.pub_name_map;
+     Hashtbl.iter (fun k v -> merge_entry_set priv_name_map k v) x.priv_name_map;
+     exports_ref := !exports_ref @ x.exports;
+     directives_ref := !directives_ref @ x.directives;
+     init_exes_ref := !init_exes_ref @ x.init_exes;
+  )
+  tables
+  ;
+  {
+    pub_name_map = pub_name_map;
+    priv_name_map = priv_name_map;
+    init_exes = !init_exes_ref;
+    exports = !exports_ref;
+    directives = !directives_ref;
+    sym_table = sym_table;
+  }
 
 

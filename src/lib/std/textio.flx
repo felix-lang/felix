@@ -1,23 +1,67 @@
 module Text_file
 {
   requires flx_ioutil;
+
+  // This module provides simple I/O for text, primarily intended for
+  // naive use, debugging etc. This is because there is no error
+  // handling. This simplifies usage at the expense of correctness,
+  // and so these routine should not be used in production code.
+
+  // load file from filename
+  // note: loaded in binary mode not text mode!
   fun load: string -> string = "::flx::rtl::ioutil::load_file($1)";
-  fun load: text_file -> string = "::flx::rtl::ioutil::load_file($1)";
 
-  pod type text_file = "FILE*"; // its a macro?
+  // type of a file: the C standard kind
+  pod type input_text_file = "FILE*"; 
+  pod type output_text_file = "FILE*";
 
-  gen fopen_input: string -> text_file = '::std::fopen($1.data(),"rt")';
-  gen fopen_output: string -> text_file = '::std::fopen($1.data(),"wt")';
-  proc fclose: text_file = '(void)::std::fclose($1);';
-  gen readln: text_file -> string ="::flx::rtl::ioutil::readln($1)";
-  proc writeln : text_file * string ="::flx::rtl::ioutil::writeln($1,$2);";
-  proc write : text_file * string ="::flx::rtl::ioutil::write($1,$2);";
-  proc write : text_file * utiny ="::std::fwrite($2,sizeof(unsigned char),1,$1)";
-  gen valid : text_file -> bool = "$1!=(FILE*)0";
-  gen feof : text_file -> bool = "::std::feof($1)";
-  const stdin: text_file = "PTF flx_stdin";
-  const stdout: text_file = "PTF flx_stdout";
-  const stderr: text_file = "PTF flx_stderr";
+  // open for reading or writing
+  gen fopen_input: string -> input_text_file = '::std::fopen($1.data(),"rt")';
+  gen fopen_output: string -> output_text_file = '::std::fopen($1.data(),"wt")';
+
+  // check if the file was opened correctly
+  gen valid : input_text_file -> bool = "$1!=(FILE*)0";
+  gen valid : output_text_file -> bool = "$1!=(FILE*)0";
+ 
+  // close
+  proc fclose: input_text_file = '(void)::std::fclose($1);';
+  proc fclose: output_text_file = '(void)::std::fclose($1);';
+
+  // load the rest of an open file
+  gen load: input_text_file -> string = "::flx::rtl::ioutil::load_file($1)";
+
+  // read one line with the trailing end-line mark stripped
+  gen readln: input_text_file -> string ="::flx::rtl::ioutil::readln($1)";
+
+  // write one line adding the trailing end line mark
+  proc writeln : output_text_file * string ="::flx::rtl::ioutil::writeln($1,$2);";
+
+  // write a string
+  proc write : output_text_file * string ="::flx::rtl::ioutil::write($1,$2);";
+
+  // write a byte 
+  proc write : output_text_file * utiny ="::std::fwrite($2,1,1,$1);";
+
+  // write a char 
+  proc write : output_text_file * char ="::std::fwrite($2,1,1,$1);";
+
+  // check for end of file
+  gen feof : input_text_file -> bool = "::std::feof($1)";
+
+  // flush the buffers
+  proc fflush: output_text_file = "::std::fflush($1);";
+
+  // standard files: Felix mapped
+  // can be redirected by flx_run
+  const stdin: input_text_file = "PTF flx_stdin";
+  const stdout: output_text_file = "PTF flx_stdout";
+  const stderr: output_text_file = "PTF flx_stderr";
+
+  // standard files: C mapped
+  // can only be redirected by shell
+  const cstdin: input_text_file = "::std::stdin";
+  const cstdout: output_text_file = "::std::stdout";
+  const cstderr: output_text_file = "::std::stderr";
 }
 
 

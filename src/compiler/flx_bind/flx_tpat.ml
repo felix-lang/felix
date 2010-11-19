@@ -53,7 +53,7 @@ let type_of_tpattern syms p :
     t,!explicit_vars, !any_vars, !as_vars, !eqns
 
 *)
-let type_of_tpattern syms p =
+let type_of_tpattern counter p =
   let explicit_vars = ref [] in
   let any_vars = ref [] in
   let as_vars = ref [] in
@@ -61,12 +61,12 @@ let type_of_tpattern syms p =
 
   let rec tp p = match map_type tp p with
     | TYP_patvar (dummy_sr, n) ->
-      let j = fresh_bid syms.counter in
+      let j = fresh_bid counter in
       explicit_vars := (j,n) :: !explicit_vars;
       TYP_var j
 
     | TYP_patany _ ->
-      let j = fresh_bid syms.counter in
+      let j = fresh_bid counter in
       any_vars := j :: !any_vars;
       TYP_var j
 
@@ -80,7 +80,7 @@ let type_of_tpattern syms p =
     *)
     | TYP_as (t,n) ->
       let t = tp t in
-      let j = fresh_bid syms.counter in
+      let j = fresh_bid counter in
       as_vars := (j,n) :: !as_vars;
       eqns := (j,t) :: !eqns;
       t

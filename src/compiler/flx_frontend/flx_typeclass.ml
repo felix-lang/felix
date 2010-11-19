@@ -24,7 +24,7 @@ let rec drop l n =
   if n = 0 then l else drop (tl l) (n-1)
 
 let check_instance
-  syms
+  (syms:Flx_mtypes2.sym_state_t)
   bsym_table
   inst
   inst_id
@@ -105,7 +105,7 @@ let check_instance
         let inst_funts = inst_ts @ vs2ts (drop inst_funbvs (length inst_vs)) in
         assert (length tck_bvs = length inst_funts);
         let tct = beta_reduce
-          syms
+          syms.Flx_mtypes2.counter
           bsym_table
           sr
           (tsubst tck_bvs inst_funts tctype)
@@ -155,7 +155,7 @@ let check_instance
         assert (length tck_bvs = length inst_funts);
 
         let tct = beta_reduce
-          syms
+          syms.Flx_mtypes2.counter
           bsym_table
           sr
           (tsubst tck_bvs inst_funts tctype)
@@ -378,7 +378,7 @@ let tcinst_chk syms bsym_table allow_fail i ts sr (inst_vs, inst_constraint, ins
        print_endline ("instance constraint: " ^ sbt bsym_table inst_constraint);
        *)
        let con = list_subst syms.counter mgu inst_constraint in
-       let con = Flx_beta.beta_reduce syms bsym_table sr con in
+       let con = Flx_beta.beta_reduce syms.Flx_mtypes2.counter bsym_table sr con in
        match con with
        | BTYP_tuple [] ->
          let tail = drop ts (length inst_ts) in

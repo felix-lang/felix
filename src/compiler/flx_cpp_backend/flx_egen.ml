@@ -191,7 +191,7 @@ let rec gen_expr'
 
   let ge = gen_expr syms bsym_table this this_vs this_ts sr in
   let ge' = gen_expr' syms bsym_table this this_vs this_ts sr in
-  let tsub t = beta_reduce syms bsym_table sr (tsubst this_vs this_ts t) in
+  let tsub t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
   let tn t = cpp_typename syms bsym_table (tsub t) in
 
   (* NOTE this function does not do a reduce_type *)
@@ -199,7 +199,7 @@ let rec gen_expr'
     cpp_typename
     syms
     bsym_table
-    (beta_reduce syms bsym_table sr (tsubst this_vs this_ts t))
+    (beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t))
   in
   let gen_case_index e =
     let _,t = e in
@@ -218,7 +218,7 @@ let rec gen_expr'
       in
       begin match Flx_bsym.bbdcl bsym with
       | BBDCL_union (bvs,cts) ->
-        let tsub' t = beta_reduce syms bsym_table sr (tsubst bvs ts t) in
+        let tsub' t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst bvs ts t) in
         let cts = map (fun (_,_,t) -> tsub' t) cts in
         if all_voids cts then ge' e
         else ce_dot (ge' e) "variant"
@@ -256,7 +256,7 @@ let rec gen_expr'
       xs ps
 
     | _,tt ->
-      let tt = beta_reduce syms bsym_table sr  (tsubst vs ts tt) in
+      let tt = beta_reduce syms.Flx_mtypes2.counter bsym_table sr  (tsubst vs ts tt) in
       (* NASTY, EVALUATES EXPR MANY TIMES .. *)
       let n = ref 0 in
       fold_left
@@ -277,7 +277,7 @@ let rec gen_expr'
   in
   let our_display = get_display_list bsym_table this in
   let our_level = length our_display in
-  let rt t = beta_reduce syms bsym_table sr (tsubst this_vs this_ts t) in
+  let rt t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t) in
   let t = rt t in
   match t with
   | BTYP_tuple [] ->
@@ -340,7 +340,7 @@ let rec gen_expr'
     end
 
   | BEXPR_match_case (n,((e',t') as e)) ->
-    let t' = beta_reduce syms bsym_table sr t' in
+    let t' = beta_reduce syms.Flx_mtypes2.counter bsym_table sr t' in
     let x = gen_case_index e in
     ce_infix "==" x (ce_atom (si n))
 
@@ -787,9 +787,9 @@ let rec gen_expr'
          but units for sums .. hmm .. inconsistent!
       *)
       let ts = map tsub ts in
-      let ct = beta_reduce syms bsym_table sr (tsubst vs ts ct) in
+      let ct = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts ct) in
       let _,t = a in
-      let t = beta_reduce syms bsym_table sr (tsubst vs ts t) in
+      let t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
       begin match ct with
       | BTYP_tuple [] ->
         ce_atom ( "_uctor_(" ^ si cidx ^ ", NULL)")
@@ -1082,7 +1082,7 @@ and gen_apply_prim
 =
   let gen_expr' = gen_expr' syms bsym_table this this_vs this_ts in
   let beta_reduce vs ts t =
-    beta_reduce syms bsym_table sr (tsubst vs ts t)
+    beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t)
   in
   let cpp_typename t = cpp_typename
     syms

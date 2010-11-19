@@ -88,7 +88,10 @@ type lookup_state_t
 
 (** Create the state needed for lookup. *)
 val make_lookup_state:
-  Flx_mtypes2.sym_state_t ->
+  bool -> (* print flag *)
+  Flx_types.bid_t ref -> (* fresh bid counter ref *)
+  Flx_mtypes2.typevarmap_t-> (* reference to global varmap! *)
+  (bid_t, Flx_btype.t) Hashtbl.t -> (* reference to global type cache *)
   Flx_sym_table.t ->
   lookup_state_t
 
@@ -200,3 +203,6 @@ val lookup_qn_with_sig:
   qualified_name_t ->
   Flx_btype.t list ->
   Flx_bexpr.t
+
+val get_varmap: lookup_state_t -> typevarmap_t
+

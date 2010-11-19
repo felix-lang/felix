@@ -61,7 +61,7 @@ let register_tuple syms bsym_table t =
   | _ -> assert false
 
 let rec register_type_r ui syms bsym_table exclude sr t =
-  let t = beta_reduce syms bsym_table sr t in
+  let t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr t in
   (*
   let sp = String.make (length exclude * 2) ' ' in
   print_endline (sp ^ "Register type " ^ sbt sym_table t);

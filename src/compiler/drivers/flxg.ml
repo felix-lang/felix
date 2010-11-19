@@ -855,12 +855,15 @@ let save_profile state =
 
 type include_entry_t = Search of string | NoSearch of string
 
+(* make_assembly does NOT modify anything at all in the symbol state
+ * except for the fresh bid counter
+ *)
 let make_assembly 
   state 
   (exclusions:include_entry_t list)  
   (module_name:string) 
   (input:include_entry_t) 
-  : ((include_entry_t * string)* Flx_types.asm_t list) list
+  : ((include_entry_t * string)* (Flx_types.asm_t list * Flx_symtab.t)) list
 =
     let root = 0 in
     let counter_ref = state.syms.counter in
@@ -939,28 +942,20 @@ print_endline ("Loading symbol tables for " ^ filename);
 (*
 print_endline ("Attempting to make symbol tables for " ^ filename);
 *)
-          let symbol_table = Flx_sym_table.create () in
-          (* A symtab is a symbol table together with public and private name mappings.
-           * Unfortunately also captures the top level state object.
-           *)
-          let symtab = Flx_symtab.make symbol_table in
-          Flx_symtab.add_asms 
+          let symtab = Flx_symtab.top_partial_symtab_create_from_asms
             print_flag counter_ref 
-            symtab   (* the indicies *)
             filename (* containing module name *)
-            1        (* nesting level, a hack! *)
-            None     (* parent module, to be root *)
-            root     (* root module index, 0 *)
             asms     (* Stuff to add *)
-           ;
+           in
 (*
 print_endline ("Made symbol tables for " ^ filename);
 *)
            symtab
            )
         in 
+(*
 print_endline ("Table for " ^ filename ^ " " ^ Flx_symtab.detail symtab );
-
+*)
         List.iter (fun s -> 
           (* Grr.. design fault here. If the filename is ./fred.flx then we're
            * and it is included by a/b.flx then we're talking about a/fred.flx
@@ -998,7 +993,7 @@ print_endline ("Table for " ^ filename ^ " " ^ Flx_symtab.detail symtab );
            order of writing.
         *)
 
-        outputs := ((candidate,filedir),asms) :: (!outputs)
+        outputs := ((candidate,filedir),(asms,symtab)) :: (!outputs)
      end
     done;
     !outputs
@@ -1021,6 +1016,7 @@ let main () =
 
   let outputs = ref [] in
   let inroots = List.rev state.syms.compiler_options.files in (* reverse order of command line *)
+  let outdir= state.syms.compiler_options.cache_dir in
   (* print_endline ("Inputs=" ^ String.concat ", " inroots); *)
   begin try
     if List.length inroots = 0 then
@@ -1034,19 +1030,66 @@ let main () =
     let rec aux exclusions ls = match ls with 
     | [] -> ()
     | h :: t -> 
-       (* print_endline ("Processing library " ^ h); *)
-       let assembly = make_assembly state exclusions h (Search h) in
-       outputs := assembly @ (!outputs);
-       let exclusions = fst (List.split (fst (List.split assembly))) @ exclusions in
-       aux exclusions t
+      (* print_endline ("Processing library " ^ h); *)
+      let lib_filedir,lib_filename = 
+          Flx_filesys.find_include_dir 
+           ~include_dirs:state.syms.compiler_options.include_dirs
+          (h ^ ".flx"),h
+      in
+      let lib_name = Flx_filesys.join lib_filedir (lib_filename ^ ".flx") in
+
+      (* this is wrong, should be he max of the included file times, but until
+       * we load the cached value we don't know what files are included.
+       * To fix this we could use a separate dep file, or simply validate
+       * the file after it is loaded. Of course to do that I have to put
+       * the include file list into the cache!
+       *)
+      let lib_time = Flx_filesys.virtual_filetime Flx_filesys.big_crunch lib_name in
+      let in_libtab_name = Flx_filesys.join lib_filedir lib_filename ^ ".libtab" in
+      let out_libtab_name = 
+        match outdir with 
+        | Some d -> Some (Flx_filesys.join d lib_filename ^ ".libtab")
+        | None -> None
+      in
+      let assembly, table, saved_counter =
+        Flx_filesys.cached_computation "libtab" in_libtab_name
+          ~outfile:out_libtab_name
+          ~min_time:lib_time 
+          (fun () -> 
+            let assembly = make_assembly state exclusions h (Search h) in
+            let assembly, tables = List.fold_left  
+              (fun (a,t) ((c,d),(m,s))-> ((c,d),m)::a, (s::t) ) 
+              ([],[]) 
+              (List.rev assembly) 
+            in
+            let table = Flx_symtab.merge_top_partial_tables tables in
+(*
+print_endline ("Merged tables for library " ^ h);
+print_endline (Flx_symtab.detail table);
+*)
+            assembly, table, !(state.syms.counter)
+         )
+      in
+      state.syms.counter := max !(state.syms.counter)  saved_counter;
+      outputs := assembly @ (!outputs);
+      let exclusions = fst (List.split (fst (List.split assembly))) @ exclusions in
+      aux exclusions t
     in
     aux [] libs;
  
     (* print_endline ("Making symbol tables for main program " ^ main_prog); *)
     let exclusions = fst (List.split (fst (List.split (!outputs)))) in
     let assembly =  make_assembly state exclusions module_name (NoSearch main_prog) in
+    let assembly, tables = List.fold_left  
+      (fun (a,t) ((c,d),(m,s))-> ((c,d),m)::a, (s::t) ) 
+      ([],[]) 
+      (List.rev assembly) 
+    in
     outputs := (!outputs) @ assembly;
 
+(* this won't work since the include files aren't stored in the global state
+ * object any more
+ *)
     generate_dep_file state;
 
 (*
@@ -1056,6 +1099,10 @@ List.iter print_endline !(state.syms.include_files);
 
     let asms = List.concat (snd (List.split (!outputs))) in
     let asms = make_module module_name asms in
+(*
+print_endline "Binding asms: ";
+List.iter (fun a -> print_endline (Flx_print.string_of_asm 2 a)) asms;
+*)
     (* Bind the assemblies. *)
     let bsym_table, root_proc = bind_asms state asms in
 

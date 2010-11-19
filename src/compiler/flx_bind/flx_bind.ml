@@ -16,7 +16,14 @@ type bound_t =
 (** Constructs the bind state needed for a batch compiler. *)
 let make_bind_state syms =
   let sym_table = Flx_sym_table.create () in
-  let lookup_state = Flx_lookup.make_lookup_state syms sym_table in
+  let lookup_state = 
+    Flx_lookup.make_lookup_state 
+      syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag 
+      syms.Flx_mtypes2.counter 
+      syms.Flx_mtypes2.varmap
+      syms.Flx_mtypes2.ticache
+      sym_table 
+  in
   let bbind_state = Flx_bbind.make_bbind_state syms sym_table lookup_state in
   {
     syms = syms;
@@ -25,7 +32,7 @@ let make_bind_state syms =
     parent = None;
     strabs_state = Flx_strabs.make_strabs_state ();
     bexe_state = Flx_bind_bexe.make_bexe_state
-      syms
+      syms.Flx_mtypes2.counter
       sym_table
       lookup_state
       []
@@ -41,7 +48,14 @@ let make_toplevel_bind_state syms =
   let sym_table = Flx_sym_table.create () in
   let symtab = Flx_symtab.make sym_table in
   let bsym_table = Flx_bsym_table.create () in
-  let lookup_state = Flx_lookup.make_lookup_state syms sym_table in
+  let lookup_state = 
+    Flx_lookup.make_lookup_state 
+      syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag 
+      syms.Flx_mtypes2.counter 
+      syms.Flx_mtypes2.varmap
+      syms.Flx_mtypes2.ticache
+      sym_table 
+  in
   let bbind_state:Flx_bbind.bbind_state_t = Flx_bbind.make_bbind_state
     syms
     sym_table
@@ -94,7 +108,7 @@ let make_toplevel_bind_state syms =
     bexe_state = Flx_bind_bexe.make_bexe_state
       ~parent:module_index
       ~env:(Flx_lookup.build_env lookup_state bsym_table (Some init_index))
-      syms
+      syms.Flx_mtypes2.counter
       sym_table
       lookup_state
       []

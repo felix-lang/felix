@@ -23,7 +23,7 @@ open Flx_list
    metatype p, without other constraints!)
 *)
 
-let build_constraint_element syms bt sr i p1 =
+let build_constraint_element counter bt sr i p1 =
   (* special case, no constraint, represent by just 'true' (unit type) *)
   match p1 with
   | TYP_patany _
@@ -35,7 +35,7 @@ let build_constraint_element syms bt sr i p1 =
   (*
   print_endline ("Build constraint " ^ string_of_typecode p1);
   *)
-  let p1,explicit_vars1,any_vars1, as_vars1, eqns1 = type_of_tpattern syms p1 in
+  let p1,explicit_vars1,any_vars1, as_vars1, eqns1 = type_of_tpattern counter p1 in
 
   (* check the pattern doesn't introduce any named variables *)
   (* later we may allow them as additional 'vs' variables .. but
@@ -75,7 +75,7 @@ let build_constraint_element syms bt sr i p1 =
     let e = BidSet.empty in
     let un = btyp_tuple [] in
     let lss = rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
-    let fresh = fresh_bid syms.counter in
+    let fresh = fresh_bid counter in
     let dflt =
       {
         pattern = btyp_type_var (fresh, btyp_type 0);
@@ -88,18 +88,18 @@ let build_constraint_element syms bt sr i p1 =
     btyp_type_match (elt, lss)
   in
     let tm = tyset (fe p1) in
-    (* print_endline ("Bound typematch is " ^ sbt syms.sym_table tm); *)
+    (* print_endline ("Bound typematch is " ^ sbt counter.sym_table tm); *)
     tm
 
-let build_type_constraints syms bt sr vs =
+let build_type_constraints counter bt sr vs =
   let type_constraints =
     map (fun (s,i,tp) ->
-      let tp = build_constraint_element syms bt sr i tp in
+      let tp = build_constraint_element counter bt sr i tp in
       (*
       if tp <> btyp_tuple [] then
         print_endline (
         " vs entry " ^ s ^ ", var " ^ si i ^
-        " constraint " ^ sbt syms.sym_table tp)
+        " constraint " ^ sbt counter.sym_table tp)
       ;
       *)
       tp

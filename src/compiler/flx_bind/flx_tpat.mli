@@ -13,7 +13,7 @@ val type_of_tpattern:
 *)
 
 val type_of_tpattern:
-  sym_state_t -> typecode_t ->
+  Flx_types.bid_t ref -> typecode_t ->
   typecode_t *
   (bid_t * string) list *     (* variables for '?' terms *)
   bid_t list *                (* variables for 'any' terms *)

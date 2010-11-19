@@ -155,3 +155,6 @@ val string_of_raw_reqs: raw_req_expr_t -> string
 val string_of_ikind: ikind_t -> string
 
 val string_of_quals: type_qual_t list -> string
+
+val string_of_dir: int -> dir_t -> string
+val string_of_iface: int -> iface_t -> string

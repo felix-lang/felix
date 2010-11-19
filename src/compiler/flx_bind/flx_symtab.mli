@@ -51,3 +51,15 @@ val add_asms:
   Flx_types.bid_t ->              (** index of root module *)
   Flx_types.asm_t list ->         (** assemblies *)
   unit
+
+val top_partial_symtab_create_from_asms:
+  bool ->                         (** print flag *)
+  Flx_types.bid_t ref ->          (** counter *)
+  string ->                       (** containing module name *)
+  Flx_types.asm_t list ->         (** assemblies *)
+  t                               (** new table *)
+
+val merge_top_partial_tables:
+ t list -> t
+
+

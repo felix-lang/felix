@@ -18,7 +18,7 @@ open List
 open Flx_maps
 
 type bexe_state_t = {
-  syms: Flx_mtypes2.sym_state_t;
+  counter: Flx_types.bid_t ref;
   sym_table: Flx_sym_table.t;
   lookup_state: Flx_lookup.lookup_state_t;
   env: Flx_mtypes2.env_t;
@@ -31,7 +31,10 @@ type bexe_state_t = {
   mutable proc_return_count: int;
 }
 
-let make_bexe_state ?parent ?(env=[]) syms sym_table lookup_state parent_vs ret_type =
+let do_unify state bsym_table a b =
+  Flx_do_unify.do_unify state.counter (Flx_lookup.get_varmap state.lookup_state)  state.sym_table bsym_table a b
+
+let make_bexe_state ?parent ?(env=[]) counter sym_table lookup_state parent_vs ret_type =
   let id =
     match parent with
     | None -> ""
@@ -40,7 +43,7 @@ let make_bexe_state ?parent ?(env=[]) syms sym_table lookup_state parent_vs ret_
         symbol.Flx_sym.id
   in
   {
-    syms = syms;
+    counter = counter;
     sym_table = sym_table;
     lookup_state = lookup_state;
     env = env;
@@ -65,12 +68,12 @@ let hfind msg h k =
 *)
 let bsym_table = Flx_bsym_table.create ()
 
-let rec check_if_parent syms sym_table child parent =
+let rec check_if_parent sym_table child parent =
   if child = parent then true
   else
     let parent = Flx_sym_table.find_parent sym_table child in
     match parent with
-    | Some parent -> check_if_parent syms sym_table child parent
+    | Some parent -> check_if_parent sym_table child parent
     | None -> false
 
 let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
@@ -84,7 +87,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
   match unfold t1 with
   | BTYP_cfunction (t, BTYP_void)
   | BTYP_function (t, BTYP_void) ->
-    if type_match state.syms.counter t t2
+    if type_match state.counter t t2
     then
       (
         (*
@@ -175,14 +178,14 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
     sbe bsym_table tbe1
     ^"\ntype=" ^ sbt bsym_table t1)
 
-let cal_loop syms sym_table sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
+let cal_loop sym_table sr ((p,pt) as tbe1) ((_,argt) as tbe2) this =
   match unfold pt with
   | BTYP_function (t, BTYP_void) ->
     if t = argt
     then
       match p with
       | BEXPR_closure (i,ts) ->
-        if check_if_parent syms sym_table i this
+        if check_if_parent sym_table i this
         then
           bexe_call (sr,(p,pt),tbe2)
           (*
@@ -299,7 +302,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
     in
 
     (* note cal_loop actually generates a call .. *)
-    handle_bexe (cal_loop state.syms state.sym_table sr tbe1 (be2,t2) index) init
+    handle_bexe (cal_loop state.sym_table sr tbe1 (be2,t2) index) init
 
   | EXE_jump (a,b) ->
     let init = bind_exe state bsym_table handle_bexe (sr, EXE_call (a, b)) init in
@@ -410,15 +413,10 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
   | EXE_proc_return ->
     state.proc_return_count <- state.proc_return_count + 1;
     state.reachable <- false;
-    if Flx_do_unify.do_unify
-      state.syms
-      state.sym_table
-      bsym_table
-      state.ret_type
-      (btyp_void ())
+    if do_unify state bsym_table state.ret_type (btyp_void ())
     then
       begin
-        state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
+        state.ret_type <- varmap_subst (Flx_lookup.get_varmap state.lookup_state) state.ret_type;
         handle_bexe (bexe_proc_return sr) init
       end
     else
@@ -441,15 +439,10 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
     state.reachable <- false;
     state.return_count <- state.return_count + 1;
     let e',t' as e = be e in
-    let t' = minimise state.syms.counter t' in
-    ignore (Flx_do_unify.do_unify
-      state.syms
-      state.sym_table
-      bsym_table
-      state.ret_type
-      t');
-    state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
-    if type_match state.syms.counter state.ret_type t' then
+    let t' = minimise state.counter t' in
+    ignore (do_unify state bsym_table state.ret_type t');
+    state.ret_type <- varmap_subst (Flx_lookup.get_varmap state.lookup_state) state.ret_type;
+    if type_match state.counter state.ret_type t' then
       handle_bexe (bexe_fun_return (sr,(e',t'))) init
     else clierr sr
       (
@@ -463,15 +456,10 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
   | EXE_yield e ->
     state.return_count <- state.return_count + 1;
     let e',t' = be e in
-    let t' = minimise state.syms.counter t' in
-    ignore (Flx_do_unify.do_unify
-      state.syms
-      state.sym_table
-      bsym_table
-      state.ret_type
-      t');
-    state.ret_type <- varmap_subst state.syms.varmap state.ret_type;
-    if type_match state.syms.counter state.ret_type t' then
+    let t' = minimise state.counter t' in
+    ignore (do_unify state bsym_table state.ret_type t');
+    state.ret_type <- varmap_subst (Flx_lookup.get_varmap state.lookup_state) state.ret_type;
+    if type_match state.counter state.ret_type t' then
       handle_bexe (bexe_yield (sr,(e',t'))) init
     else
       clierr sr
@@ -518,8 +506,8 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
           index
           parent_ts
       in
-      let rhst = minimise state.syms.counter rhst in
-      if type_match state.syms.counter lhst rhst
+      let rhst = minimise state.counter rhst in
+      if type_match state.counter lhst rhst
       then handle_bexe (bexe_init (sr,index,(e',rhst))) init
       else clierr sr
       (
@@ -552,7 +540,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
               index
               parent_ts
           in
-          let rhst = minimise state.syms.counter rhst in
+          let rhst = minimise state.counter rhst in
           (*
           print_endline ("Checking type match " ^ sbt state.sym_table lhst ^ " ?= " ^ sbt state.sym_table rhst);
           *)
@@ -564,7 +552,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
             | _ -> lhst
           in
           *)
-          if type_match state.syms.counter lhst rhst
+          if type_match state.counter lhst rhst
           then handle_bexe (bexe_init (sr,index,(e',rhst))) init
           else clierr sr
           (
@@ -583,9 +571,9 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
   | EXE_assign (l,r) ->
       let _,lhst as lx = be l in
       let _,rhst as rx = be r in
-      let lhst = minimise state.syms.counter lhst in
-      let rhst = minimise state.syms.counter rhst in
-      if type_match state.syms.counter lhst rhst
+      let lhst = minimise state.counter lhst in
+      let rhst = minimise state.counter rhst in
+      if type_match state.counter lhst rhst
       then handle_bexe (bexe_assign (sr,lx,rx)) init
       else clierr sr
       (
@@ -637,14 +625,9 @@ let bind_exes state bsym_table sr exes =
   *)
   if state.return_count = 0 then
   begin
-    if Flx_do_unify.do_unify
-      state.syms
-      state.sym_table
-      bsym_table
-      state.ret_type
-      (btyp_void ())
+    if do_unify state bsym_table state.ret_type (btyp_void ())
     then
-      state.ret_type <- varmap_subst state.syms.varmap state.ret_type
+      state.ret_type <- varmap_subst (get_varmap state.lookup_state) state.ret_type
     else
       clierr sr
       (
@@ -657,8 +640,8 @@ let bind_exes state bsym_table sr exes =
   | BTYP_void ->
     if
       not state.reachable &&
-      state.proc_return_count = 0 &&
-      state.syms.compiler_options.print_flag
+      state.proc_return_count = 0 (* &&
+      state.syms.compiler_options.print_flag *) (* temporarily we lost the print flag *)
     then print_endline
     (
       "WARNING: procedure " ^ state.id ^

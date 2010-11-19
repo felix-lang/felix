@@ -12,7 +12,7 @@ type overload_result =
  Flx_btype.t list (* ts *)
 
 val overload:
-  sym_state_t ->
+  Flx_types.bid_t ref ->
   Flx_sym_table.t ->
   Flx_bsym_table.t ->
   env_t ->

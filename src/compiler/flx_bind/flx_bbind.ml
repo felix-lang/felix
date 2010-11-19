@@ -158,7 +158,7 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     let bexe_state = Flx_bind_bexe.make_bexe_state
       ?parent:sym_parent
       ~env
-      state.syms
+      state.syms.counter
       state.sym_table
       state.lookup_state
       tvars
@@ -235,7 +235,7 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     let cons =
       try
         Flx_tconstraint.build_type_constraints
-          state.syms
+          state.syms.counter
           bt
           sym.Flx_sym.sr
           (fst ivs)
@@ -666,6 +666,10 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     let prec = "postfix" in
 
     (* Cache the type of the callback. *)
+    (* JS: HUMM .. why is the counter passed to fold? *)
+    (* Ans: because folding requires alpha conversion which requires
+     * fresh names for type variables
+     *)
     if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
       let t = fold state.syms.counter (btyp_cfunction (btyp_tuple ts_cf, bret)) in
       Hashtbl.add state.syms.ticache symbol_index t

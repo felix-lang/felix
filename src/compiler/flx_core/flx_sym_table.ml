@@ -26,6 +26,12 @@ let create () = Hashtbl.create 97
 let add sym_table bid parent sym =
   Hashtbl.replace sym_table bid { parent=parent; sym=sym }
 
+let unique_add sym_table bid parent sym =
+  if Hashtbl.mem sym_table bid
+  then failwith ("Attempt to add existant index " ^ string_of_int bid ^
+   " to symbol table")
+  else Hashtbl.add sym_table bid { parent=parent; sym=sym }
+
 (** Returns if the index is in the symbol table. *)
 let mem = Hashtbl.mem
 
