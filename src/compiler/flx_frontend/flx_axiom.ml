@@ -155,7 +155,7 @@ let verify syms bsym_table csr e =
       *)
       xx := ax :: comment :: !xx
   )
-  syms.axioms
+  !(syms.axioms)
   ;
   !xx
 

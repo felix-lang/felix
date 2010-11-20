@@ -208,29 +208,36 @@ let cached_computation
   (result_kind:string) 
   (filename:string)
   ~(outfile: string option)
+  ?(force_calc:bool=false)
+  ?(nowrite:bool=false)
   ?(min_time:float=big_bang)
   (f: unit -> 'a) 
   : 'a
 =
-  (* try to read the output file first *)
   let cached_data = 
-    match outfile with
-    | Some f -> 
-      begin
-        try marshal_in result_kind f ~min_time
-        with _ -> None
-      end
-    | None -> None
-  in
-  (* if that fails or it isn't specified read the input file *)
-  let cached_data = 
-    match cached_data with
-    | None -> 
-      begin 
-        try marshal_in result_kind filename ~min_time 
-        with _ -> None 
-      end
-    | x -> x
+    if not force_calc then
+    (* try to read the output file first *)
+      let cached_data = 
+        match outfile with
+        | Some f -> 
+          begin
+            try marshal_in result_kind f ~min_time
+            with _ -> None
+          end
+        | None -> None
+      in
+      (* if that fails or it isn't specified read the input file *)
+      let cached_data = 
+        match cached_data with
+        | None -> 
+          begin 
+            try marshal_in result_kind filename ~min_time 
+            with _ -> None 
+          end
+        | x -> x
+      in
+      cached_data
+    else None
   in
   (* if that fails generate the data *)
   match cached_data with
@@ -246,12 +253,13 @@ let cached_computation
     (* it's faster to just try writing and make directories then
      * retry if there's a failure
      *)
-    begin try 
-      marshal_out result_kind outname data
-    with _ ->
-      mkdirs (Filename.dirname outname);
-      marshal_out result_kind outname data
-    end
+    if not nowrite then
+      begin try 
+        marshal_out result_kind outname data
+      with _ ->
+        mkdirs (Filename.dirname outname);
+        marshal_out result_kind outname data
+      end
     ;
     data
  

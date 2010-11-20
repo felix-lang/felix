@@ -403,19 +403,19 @@ let emit_whycode filename syms bsym_table root =
   output_string f "(******* AXIOMS ******)\n";
   iter
   (emit_axiom syms bsym_table logics f Axiom)
-  syms.axioms
+  !(syms.axioms)
   ;
 
   output_string f "(******* REDUCTIONS ******)\n";
   iter
   (emit_reduction syms bsym_table logics f)
-  syms.reductions
+  !(syms.reductions)
   ;
 
   output_string f "(******* LEMMAS (goals) ******)\n";
   iter
   (emit_axiom syms bsym_table logics f Lemma)
-  syms.axioms
+  !(syms.axioms)
   ;
   close_out f
   ;

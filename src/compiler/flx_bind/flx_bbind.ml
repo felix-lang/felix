@@ -16,8 +16,15 @@ open Flx_generic
 open Flx_tpat
 
 type bbind_state_t = {
-  syms: Flx_mtypes2.sym_state_t;
+  counter: bid_t ref;
+  print_flag: bool;
   sym_table: Flx_sym_table.t;
+  ticache : (bid_t, Flx_btype.t) Hashtbl.t;
+  varmap : typevarmap_t;
+  typeclass_to_instance: (bid_t, (bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
+  instances_of_typeclass: (bid_t, (bid_t * (bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
+  reductions: reduction_t list ref;
+  axioms: axiom_t list ref;
   lookup_state: Flx_lookup.lookup_state_t;
 
   (* Used to cache which symbols we've already processed. *)
@@ -25,10 +32,28 @@ type bbind_state_t = {
 }
 
 (** The state needed for binding. *)
-let make_bbind_state syms sym_table lookup_state =
+let make_bbind_state 
+  ~counter 
+  ~print_flag 
+  ~ticache 
+  ~varmap 
+  ~typeclass_to_instance 
+  ~instances_of_typeclass 
+  ~sym_table 
+  ~axioms 
+  ~reductions
+  ~lookup_state 
+=
   {
-    syms = syms;
+    print_flag = print_flag;
+    counter = counter;
     sym_table = sym_table;
+    ticache=ticache;
+    varmap=varmap;
+    typeclass_to_instance=typeclass_to_instance;
+    instances_of_typeclass=instances_of_typeclass;
+    axioms = axioms;
+    reductions = reductions;
     lookup_state = lookup_state;
     visited = Hashtbl.create 97;
   }
@@ -158,7 +183,7 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     let bexe_state = Flx_bind_bexe.make_bexe_state
       ?parent:sym_parent
       ~env
-      state.syms.counter
+      state.counter
       state.sym_table
       state.lookup_state
       tvars
@@ -235,7 +260,7 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     let cons =
       try
         Flx_tconstraint.build_type_constraints
-          state.syms.counter
+          state.counter
           bt
           sym.Flx_sym.sr
           (fst ivs)
@@ -299,10 +324,10 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     let bps = bind_basic_ps ps in
     let be1 = be e1 in
     let be2 = be e2 in
-    state.syms.reductions <-
-      (sym.Flx_sym.id,bvs,bps,be1,be2) :: state.syms.reductions;
+    state.reductions := 
+      (sym.Flx_sym.id,bvs,bps,be1,be2) :: !(state.reductions);
 
-    if state.syms.compiler_options.print_flag then
+    if state.print_flag then
       print_endline ("//bound reduction  " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs);
 
@@ -314,16 +339,16 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
       | Predicate e -> `BPredicate (be e)
       | Equation (l,r) -> `BEquation (be l, be r)
     in
-    state.syms.axioms <- (
+    state.axioms :=  (
       sym.Flx_sym.id,
       sym.Flx_sym.sr,
       sym_parent,
       Axiom,
       bvs,
       bps,
-      be1) :: state.syms.axioms;
+      be1) :: !(state.axioms);
 
-    if state.syms.compiler_options.print_flag then
+    if state.print_flag then
       print_endline ("//bound axiom " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs);
 
@@ -335,16 +360,16 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
       | Predicate e -> `BPredicate (be e)
       | Equation (l,r) -> `BEquation (be l, be r)
     in
-    state.syms.axioms <- (
+    state.axioms := (
       sym.Flx_sym.id,
       sym.Flx_sym.sr,
       sym_parent,
       Lemma,
       bvs,
       bps,
-      be1) :: state.syms.axioms;
+      be1) :: !(state.axioms);
 
-    if state.syms.compiler_options.print_flag then
+    if state.print_flag then
       print_endline ("//bound lemma " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs);
 
@@ -360,18 +385,18 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     let bbdcl = bbdcl_fun (props,bvs,bps,brt,bbexes) in
 
     (* Cache the type of the function. *)
-    if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
+    if not (Hashtbl.mem state.ticache symbol_index) then begin
       let d = btyp_tuple ts in
       let ft =
         if mem `Cfun props
         then btyp_cfunction (d,brt)
         else btyp_function (d,brt)
       in
-      let t = fold state.syms.counter ft in
-      Hashtbl.add state.syms.ticache symbol_index t
+      let t = fold state.counter ft in
+      Hashtbl.add state.ticache symbol_index t
     end;
 
-    if state.syms.compiler_options.print_flag then begin
+    if state.print_flag then begin
       let atyp = btyp_tuple ts in
       let t =
         if mem `Cfun props
@@ -402,9 +427,9 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
         | `PRef -> bbdcl_val (bvs,t,`Ref)
         | `PFun -> bbdcl_val (bvs, btyp_function (btyp_void (),t),`Val)
         in
-        Hashtbl.add state.syms.varmap symbol_index t;
+        Hashtbl.add state.varmap symbol_index t;
 
-        if state.syms.compiler_options.print_flag then
+        if state.print_flag then
           print_endline ("//bound val " ^ sym.Flx_sym.id ^ "<" ^
             string_of_bid symbol_index ^ ">" ^
             print_bvs bvs ^ ":" ^ sbt bsym_table t);
@@ -432,15 +457,15 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
         " in\n" ^ Flx_srcref.short_string_of_src sym.Flx_sym.sr);
 
     (* Cache the type of the match. *)
-    if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
+    if not (Hashtbl.mem state.ticache symbol_index) then begin
       let t = fold
-        state.syms.counter
+        state.counter
         (btyp_function (btyp_tuple [], flx_bbool))
       in
-      Hashtbl.add state.syms.ticache symbol_index t
+      Hashtbl.add state.ticache symbol_index t
     end;
 
-    if state.syms.compiler_options.print_flag then
+    if state.print_flag then
       print_endline ("//bound match check " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^
         ">" ^ print_bvs bvs ^ ":" ^ sbt bsym_table
@@ -472,7 +497,7 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
       else "_uctor_(" ^ si ctor_idx ^ ",0)"
     in
 
-    if state.syms.compiler_options.print_flag then
+    if state.print_flag then
       print_endline ("//bound const " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">:" ^ sbt bsym_table t);
 
@@ -488,7 +513,7 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     let btraint = bind_type_constraint vs' in
     let evs = map (fun (s,i,__) -> s,i) (fst vs') in
 
-    if state.syms.compiler_options.print_flag then
+    if state.print_flag then
       print_endline ("//bound fun " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">:" ^ sbt bsym_table t);
 
@@ -497,7 +522,7 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
   | SYMDEF_val t ->
     let t = type_of_index symbol_index in
 
-    if state.syms.compiler_options.print_flag then
+    if state.print_flag then
       print_endline ("//bound val " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
@@ -507,7 +532,7 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
   | SYMDEF_var t ->
     let t = type_of_index symbol_index in
 
-    if state.syms.compiler_options.print_flag then
+    if state.print_flag then
       print_endline ("//bound var " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
@@ -517,7 +542,7 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
   | SYMDEF_ref t ->
     let t = type_of_index symbol_index in
 
-    if state.syms.compiler_options.print_flag then
+    if state.print_flag then
       print_endline ("//bound ref " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
@@ -534,12 +559,12 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     let props = [] in
 
     (* Cache the type of the lazy expression. *)
-    if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
+    if not (Hashtbl.mem state.ticache symbol_index) then begin
       (* HACK! *)
-      Hashtbl.add state.syms.ticache symbol_index brt
+      Hashtbl.add state.ticache symbol_index brt
     end;
 
-    if state.syms.compiler_options.print_flag then
+    if state.print_flag then
       print_endline ("//bound lazy " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table brt);
@@ -550,7 +575,7 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     let t = type_of_index symbol_index in
     let reqs = bind_reqs reqs in
 
-    if state.syms.compiler_options.print_flag then
+    if state.print_flag then
       print_endline ("//bound const " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table t);
@@ -562,12 +587,12 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     let bret = bt ret in
 
     (* Cache the type of the function. *)
-    if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
-      let t = fold state.syms.counter (btyp_function (btyp_tuple ts, bret)) in
-      Hashtbl.add state.syms.ticache symbol_index t
+    if not (Hashtbl.mem state.ticache symbol_index) then begin
+      let t = fold state.counter (btyp_function (btyp_tuple ts, bret)) in
+      Hashtbl.add state.ticache symbol_index t
     end;
 
-    if state.syms.compiler_options.print_flag then begin
+    if state.print_flag then begin
       let atyp = btyp_tuple ts in
       print_endline ("//bound fun " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
@@ -670,12 +695,12 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     (* Ans: because folding requires alpha conversion which requires
      * fresh names for type variables
      *)
-    if not (Hashtbl.mem state.syms.ticache symbol_index) then begin
-      let t = fold state.syms.counter (btyp_cfunction (btyp_tuple ts_cf, bret)) in
-      Hashtbl.add state.syms.ticache symbol_index t
+    if not (Hashtbl.mem state.ticache symbol_index) then begin
+      let t = fold state.counter (btyp_cfunction (btyp_tuple ts_cf, bret)) in
+      Hashtbl.add state.ticache symbol_index t
     end;
 
-    if state.syms.compiler_options.print_flag then begin
+    if state.print_flag then begin
       let atyp = btyp_tuple ts_cf in
       print_endline ("//bound callback fun " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^ print_bvs bvs ^ ":" ^
@@ -780,7 +805,7 @@ let bbind state bsym_table =
               string_of_bid i)
           with Not_found ->
             failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
-  end dummy_bid !(state.syms.counter)
+  end dummy_bid !(state.counter)
 
 let bind_interface (state:bbind_state_t) bsym_table = function
   | sr, IFACE_export_fun (sn, cpp_name), parent ->

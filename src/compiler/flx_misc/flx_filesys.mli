@@ -116,6 +116,8 @@ val cached_computation:
   string ->                         (** kind label *)
   string ->                         (** input filename of the cached data *)
   outfile:string option ->          (** output filename for cached data *)
+  ?force_calc:bool ->               (** ignore input cache, force calculation *)
+  ?nowrite:bool ->                  (** don't write output *)
   ?min_time: float ->               (** minimum time the cache must have to be considered up to date *)
   (unit -> 'a) ->                   (** function to calculate the result if the cache is invalid *)
   'a                                (** the result *)

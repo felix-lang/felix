@@ -937,6 +937,7 @@ print_endline ("Loading symbol tables for " ^ filename);
 *)
         let symtab= Flx_filesys.cached_computation "symtab" in_tab_name
           ~outfile:out_tab_name
+          ~force_calc:true
           ~min_time:flx_time
           (fun () -> 
 (*
@@ -1006,14 +1007,6 @@ let main () =
      with _ -> "empty_module"
   in
 
-  let pub_name_map = Hashtbl.create 97 in
-  let priv_name_map = Hashtbl.create 97 in
-  let sym_table = Hashtbl.create 97 in
-  let inherit_ivs = [] in
-  let level = 0 in
-  let parent = Some 0 in
-  let root = 0 in
-
   let outputs = ref [] in
   let inroots = List.rev state.syms.compiler_options.files in (* reverse order of command line *)
   let outdir= state.syms.compiler_options.cache_dir in
@@ -1054,6 +1047,7 @@ let main () =
       let assembly, table, saved_counter =
         Flx_filesys.cached_computation "libtab" in_libtab_name
           ~outfile:out_libtab_name
+          ~force_calc:true
           ~min_time:lib_time 
           (fun () -> 
             let assembly = make_assembly state exclusions h (Search h) in
@@ -1072,12 +1066,46 @@ print_endline (Flx_symtab.detail table);
       in
       state.syms.counter := max !(state.syms.counter)  saved_counter;
       outputs := assembly @ (!outputs);
+print_endline "Trial binding";
+      let asms = snd (List.split assembly) in
+      let asms = List.concat (List.rev asms) in
+      let asms = make_module module_name asms in
+(*
+print_endline "Binding asms: ";
+List.iter (fun a -> print_endline (Flx_print.string_of_asm 2 a)) asms;
+*)
+    (* Bind the assemblies. *)
+      let bsym_table, root_proc = bind_asms state asms in
+print_endline "Trial binding done";
+      let clr s h = print_endline ("Table " ^ s ^ " len=" ^ string_of_int (Hashtbl.length h)); Hashtbl.clear h in
+      let clrl s h = print_endline ("Table " ^ s ^ " len=" ^ string_of_int (List.length (!h))); h:=[] in
+      (* while this is a hack, we have to clear the state out *)
+(*
+      clr "env_cache" state.syms.env_cache;
+*)
+      clr "varmap" state.syms.varmap;
+      clr "ticache" state.syms.ticache;
+(*
+      clr "registry" state.syms.registry;
+      clr "instances" state.syms.instances;
+      clr "quick_names" state.syms.quick_names;
+      clr "variant_map" state.syms.variant_map;
+*)
+      clr "typeclass_to_instance" state.syms.typeclass_to_instance;
+      clr "instances_of_typeclass" state.syms.instances_of_typeclass;
+(*
+      clr "transient_specialisation_cache" state.syms.transient_specialisation_cache;
+*)
+
+      clrl "axioms" state.syms.axioms;
+      clrl "reductions" state.syms.reductions;
+
       let exclusions = fst (List.split (fst (List.split assembly))) @ exclusions in
       aux exclusions t
     in
     aux [] libs;
  
-    (* print_endline ("Making symbol tables for main program " ^ main_prog); *)
+    print_endline ("Making symbol tables for main program " ^ main_prog);
     let exclusions = fst (List.split (fst (List.split (!outputs)))) in
     let assembly =  make_assembly state exclusions module_name (NoSearch main_prog) in
     let assembly, tables = List.fold_left  

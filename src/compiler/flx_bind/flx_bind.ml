@@ -24,7 +24,18 @@ let make_bind_state syms =
       syms.Flx_mtypes2.ticache
       sym_table 
   in
-  let bbind_state = Flx_bbind.make_bbind_state syms sym_table lookup_state in
+  let bbind_state = Flx_bbind.make_bbind_state 
+   ~print_flag:syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag
+   ~counter:syms.Flx_mtypes2.counter
+   ~sym_table 
+   ~lookup_state: lookup_state
+   ~ticache: syms.Flx_mtypes2.ticache  
+   ~varmap: syms.Flx_mtypes2.varmap
+   ~typeclass_to_instance: syms.Flx_mtypes2.typeclass_to_instance
+   ~instances_of_typeclass: syms.Flx_mtypes2.instances_of_typeclass
+   ~axioms: syms.Flx_mtypes2.axioms
+   ~reductions: syms.Flx_mtypes2.reductions
+ in
   {
     syms = syms;
     sym_table = sym_table;
@@ -57,9 +68,16 @@ let make_toplevel_bind_state syms =
       sym_table 
   in
   let bbind_state:Flx_bbind.bbind_state_t = Flx_bbind.make_bbind_state
-    syms
-    sym_table
-    lookup_state
+   ~print_flag:syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag
+   ~counter:syms.Flx_mtypes2.counter
+   ~sym_table 
+   ~lookup_state: lookup_state
+   ~ticache: syms.Flx_mtypes2.ticache  
+   ~varmap: syms.Flx_mtypes2.varmap
+   ~typeclass_to_instance: syms.Flx_mtypes2.typeclass_to_instance
+   ~instances_of_typeclass: syms.Flx_mtypes2.instances_of_typeclass
+   ~axioms: syms.Flx_mtypes2.axioms
+   ~reductions: syms.Flx_mtypes2.reductions
   in
 
   (* Declare the root module to work within *)
@@ -222,10 +240,13 @@ let bind_asms bind_state bsym_table asms =
 
   (* Bind the interfaces. *)
   bind_state.syms.Flx_mtypes2.bifaces <- List.map
-    (Flx_bbind.bind_interface bind_state.bbind_state bsym_table) ifaces;
+    (Flx_bbind.bind_interface bind_state.bbind_state bsym_table) ifaces
 
   (* Clear the type cache. *)
+  (* WHY WHY? *)
+(* 
   Hashtbl.clear bind_state.syms.Flx_mtypes2.ticache
+*)
 
 (** Find the root module's init function index. *)
 let find_root_module_init_function bind_state root =

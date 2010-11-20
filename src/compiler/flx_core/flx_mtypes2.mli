@@ -77,8 +77,8 @@ type sym_state_t =
   roots : Flx_types.BidSet.t ref;
   quick_names : (string, (Flx_types.bid_t * Flx_btype.t list)) Hashtbl.t;
   mutable bifaces : Flx_btype.biface_t list;
-  mutable reductions : reduction_t list;
-  mutable axioms : axiom_t list;
+  reductions : reduction_t list ref;
+  axioms : axiom_t list ref;
   variant_map: (Flx_btype.t * Flx_btype.t, Flx_types.bid_t) Hashtbl.t;
   typeclass_to_instance: (Flx_types.bid_t, (Flx_types.bvs_t * Flx_btype.t * Flx_btype.t list * Flx_types.bid_t) list) Hashtbl.t;
   instances_of_typeclass: (Flx_types.bid_t, (Flx_types.bid_t * (Flx_types.bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;

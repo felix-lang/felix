@@ -36,10 +36,10 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
   end;
 
   (* Remove unused reductions. *)
-  syms.Flx_mtypes2.reductions <- Flx_reduce.remove_useless_reductions
+  syms.Flx_mtypes2.reductions := Flx_reduce.remove_useless_reductions
     syms
     bsym_table
-    syms.Flx_mtypes2.reductions;
+    !(syms.Flx_mtypes2.reductions);
 
   Flx_typeclass.fixup_typeclass_instances syms bsym_table;
 
@@ -115,10 +115,10 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
 
   (* Remove any newly unused reductions. *)
   print_debug syms "//Removing useless reductions";
-  syms.Flx_mtypes2.reductions <- Flx_reduce.remove_useless_reductions
+  syms.Flx_mtypes2.reductions := Flx_reduce.remove_useless_reductions
     syms
     bsym_table
-    syms.Flx_mtypes2.reductions;
+    !(syms.Flx_mtypes2.reductions);
 
   (* Do another inlining pass. *)
   print_debug syms "//INLINING";

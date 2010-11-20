@@ -78,8 +78,8 @@ type sym_state_t =
   roots : BidSet.t ref;
   quick_names : (string, (bid_t * Flx_btype.t list)) Hashtbl.t;
   mutable bifaces : Flx_btype.biface_t list;
-  mutable reductions : reduction_t list;
-  mutable axioms: axiom_t list;
+  reductions : reduction_t list ref;
+  axioms: axiom_t list ref;
   variant_map: (Flx_btype.t * Flx_btype.t, bid_t) Hashtbl.t;
   typeclass_to_instance: (bid_t, (bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
   instances_of_typeclass: (bid_t, (bid_t * (bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
@@ -99,8 +99,8 @@ let make_syms options =
     roots = ref BidSet.empty;
     quick_names = Hashtbl.create 97;
     bifaces = [];
-    reductions = [];
-    axioms = [];
+    reductions = ref [];
+    axioms = ref [];
     variant_map = Hashtbl.create 97;
     typeclass_to_instance = Hashtbl.create 97;
     instances_of_typeclass = Hashtbl.create 97;
