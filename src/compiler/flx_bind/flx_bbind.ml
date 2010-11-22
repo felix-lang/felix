@@ -152,6 +152,12 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
   if Hashtbl.mem state.visited symbol_index then () else begin
   Hashtbl.add state.visited symbol_index ();
 
+  (* even if not in visited, could be already there *)
+  if not (Flx_bsym_table.mem bsym_table symbol_index) then
+  
+  (* warning .. naked "then" requires following "let", watch out for Ocaml's
+   * screwed up syntax, don't put a print .. ; in here!
+   *)
   let qname = qualified_name_of_index state.sym_table symbol_index in
   let true_parent = find_true_parent
     state.sym_table
