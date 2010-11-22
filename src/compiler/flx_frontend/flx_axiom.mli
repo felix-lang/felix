@@ -11,4 +11,5 @@ open Flx_mtypes2
 val axiom_check:
   sym_state_t ->
   Flx_bsym_table.t ->
+  bool ->   (* true to generate axiom checks false to just remove the checks *)
   unit

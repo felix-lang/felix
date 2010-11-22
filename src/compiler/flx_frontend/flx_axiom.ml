@@ -159,18 +159,20 @@ let verify syms bsym_table csr e =
   ;
   !xx
 
-let fixup_exes syms bsym_table bexes =
+let fixup_exes syms bsym_table gen bexes =
   let rec aux inx outx = match inx with
   | [] -> rev outx
   | BEXE_axiom_check (sr,e) :: t ->
     (*
     print_endline ("Axiom check case "  ^ sbe sym_table e);
     *)
-    aux t ((verify syms bsym_table sr e) @ outx)
+    if gen then
+      aux t ((verify syms bsym_table sr e) @ outx)
+    else aux t outx
 
   | h :: t -> aux t (h::outx)
   in
   aux bexes []
 
-let axiom_check syms bsym_table =
-  Flx_bsym_table.update_bexes (fixup_exes syms bsym_table) bsym_table
+let axiom_check syms bsym_table gen =
+  Flx_bsym_table.update_bexes (fixup_exes syms bsym_table gen) bsym_table

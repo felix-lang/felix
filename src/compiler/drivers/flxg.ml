@@ -270,10 +270,6 @@ print_endline "Binding asms done";
 
 (** Generate the why file. *)
 let generate_why_file state bsym_table root_proc =
-  (* generate axiom checks *)
-  if state.syms.compiler_options.generate_axiom_checks then
-  Flx_axiom.axiom_check state.syms bsym_table;
-
   (* generate why file *)
   Flx_why.emit_whycode
     state.why_file.out_filename
@@ -1169,8 +1165,13 @@ print_endline "init proc bound";
 
     Flx_typeclass.typeclass_instance_check state.syms bsym_table;
 
+  (* generate axiom checks *)
+  (* or not: the routine must be run to strip axiom checks out of the code *)
+  Flx_axiom.axiom_check state.syms bsym_table
+    state.syms.compiler_options.generate_axiom_checks
+  ;
 
-(*
+(* Not working at the moment for unknown reason, chucks Not_found 
     (* Generate the why file *)
     generate_why_file state bsym_table root_proc;
 print_endline "Why file generated";
