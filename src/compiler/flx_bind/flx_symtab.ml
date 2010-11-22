@@ -1,3 +1,7 @@
+(* TO BE CHANGED: the initialisation code for a module and root should be put in the
+   SYMDEF_module and SYMDEF_root constructors instead of being wrapped in a function
+   which happens to be called _init_ in the hope we can retrieve it, that's a hack!
+*)
 open Flx_ast
 open Flx_types
 open Flx_btype
@@ -38,6 +42,38 @@ let detail x =
   "\nexports:\n"^ String.concat "\n" (List.map 
       (fun (_,s,b) -> Flx_print.string_of_iface 2 s ^ 
         (match b with | None ->"" | Some i -> " <-- " ^ string_of_int i)) x.exports) 
+
+let merge_entry_set htab k v =
+(*
+print_endline ("Merge entry " ^ k);
+*)
+  if Hashtbl.mem htab k then begin
+    (*
+    print_endline "Already in table, doing entryset merge";
+    *)
+    match Hashtbl.find htab k, v with
+    | FunctionEntry ls1, FunctionEntry ls2 ->
+      (* this isn't right! we should check for duplicates, but this is very hard 
+       * it isn't just a matter of checking for uniqueness of the symbol indices,
+       * since we could have multiple views of the same symbol. In the end, we
+       * will just let overload resolution find the problem..
+       *)
+      Hashtbl.replace htab k (FunctionEntry (ls1 @ ls2))
+
+    | NonFunctionEntry _, FunctionEntry _
+    | FunctionEntry _, NonFunctionEntry _ ->
+      failwith ("Duplicate and inconsistent entries for " ^ k ^ " on table merge")
+ 
+    | NonFunctionEntry {base_sym=0;}, NonFunctionEntry {base_sym=0;} -> () (* no point adding another pointer to root *)
+    | NonFunctionEntry _, NonFunctionEntry _ -> 
+      failwith ("Duplicate non-function entries for " ^ k ^ " on table merge")
+  end
+  else begin 
+(*
+    print_endline ("Adding new symbol " ^ k ^ " to root");
+*)
+    Hashtbl.add htab k v
+  end
 
 
 (* use fresh variables, but preserve names *)
@@ -185,9 +221,9 @@ let make_ivs ?(print=false) level counter_ref (vs, con) : ivs_list_t =
   registration of all the children and their parent is complete
 *)
 
-let add_root_entry counter_ref name_map root =
+let add_root_entry counter_ref name_map =
   Hashtbl.add name_map "root"
-    (NonFunctionEntry (mkentry counter_ref dfltvs root))
+    (NonFunctionEntry (mkentry counter_ref dfltvs 0))
 
 let rec build_tables
   ~pub_name_map
@@ -199,7 +235,6 @@ let rec build_tables
   inherit_ivs
   level
   parent
-  root
   asms
 =
   (* Split up the assemblies into their repsective types. split_asms returns
@@ -217,12 +252,12 @@ let rec build_tables
   if level = 0 then
     match dcls with
     | [x] -> ()
-    | _ -> failwith "Expected top level to contain exactly one module declaration"
+    | _ -> failwith "Expected top level to contain root declaration"
   else
     if name = "root" then
       failwith ("Can't name non-toplevel module 'root'")
     else 
-      add_root_entry counter_ref priv_name_map root
+      add_root_entry counter_ref priv_name_map
   ;
   let inner_interfaces = 
     add_dcls
@@ -233,7 +268,6 @@ let rec build_tables
       inherit_ivs
       level
       parent
-      root
       pub_name_map
       priv_name_map
       dcls
@@ -248,7 +282,6 @@ and add_dcls
   inherit_ivs 
   level 
   parent 
-  root 
   pub_name_map 
   priv_name_map 
   dcls
@@ -263,7 +296,6 @@ and add_dcls
       inherit_ivs
       level
       parent
-      root
       pub_name_map
       priv_name_map
       interfaces_ref
@@ -282,7 +314,6 @@ and build_table_for_dcl
   inherit_ivs
   level
   parent
-  root
   pub_name_map
   priv_name_map
   interfaces
@@ -304,6 +335,9 @@ and build_table_for_dcl
     | None -> Flx_mtypes2.fresh_bid counter_ref
   in
 
+(*
+print_endline ("Flx_symtab: Adding " ^ id^"="^string_of_int symbol_index);
+*)
   (* Update the type variable list to include the index. *)
   let ivs = make_ivs vs in
 
@@ -469,7 +503,6 @@ and build_table_for_dcl
           dfltvs
           (level + 1)
           (Some symbol_index)
-          root
           asms
       in
 
@@ -537,7 +570,6 @@ and build_table_for_dcl
           dfltvs
           (level + 1)
           (Some symbol_index)
-          root
           !new_asms
       in
 
@@ -569,6 +601,37 @@ and build_table_for_dcl
       (* Add the inserted function to the private symbol table. *)
       add_function priv_name_map id symbol_index
 
+  | DCL_root asms ->
+      let pubtab, privtab, exes, ifaces, dirs =
+        build_tables
+          ~pub_name_map:(Hashtbl.create 97)
+          ~priv_name_map:(Hashtbl.create 97)
+          print_flag
+          counter_ref
+          sym_table
+          id
+          (merge_ivs inherit_ivs ivs)
+          (level + 1)
+          (Some 0)
+          asms
+      in
+      (* Add the module to the sym_table. *)
+      begin 
+        let entry:Flx_sym_table.elt = try Hashtbl.find sym_table 0 with Not_found -> failwith "Flx_symtab: no root in symbol table" in
+        let sym:Flx_sym.t = match entry with { Flx_sym_table.sym=sym } -> sym in
+        match sym with {Flx_sym.pubmap=old_pubmap; privmap=old_privmap; dirs=old_dirs; symdef=symdef} ->
+        Hashtbl.iter (fun k v -> merge_entry_set old_pubmap k v) pubtab;
+        Hashtbl.iter (fun k v -> merge_entry_set old_privmap k v) privtab;
+        let symdef = match symdef with 
+        | SYMDEF_root old_exes -> SYMDEF_root (old_exes @ exes) (* ORDER OF INITIALISATION IS VITAL *)
+        | _ -> failwith "flx_symtab: expected index 0 to be SYMDEF_root!"
+        in
+        let dirs = old_dirs @ dirs in
+        let sym = { sym with Flx_sym.dirs=dirs ; symdef=symdef } in
+        let entry = { entry with Flx_sym_table.sym=sym; } in
+        Hashtbl.replace sym_table 0 entry
+      end
+
   | DCL_module asms ->
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
@@ -581,11 +644,13 @@ and build_table_for_dcl
           (merge_ivs inherit_ivs ivs)
           (level + 1)
           (Some symbol_index)
-          root
           asms
       in
       (* Add the module to the sym_table. *)
-      add_symbol ~pubtab ~privtab ~dirs symbol_index id SYMDEF_module;
+(*
+print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p -> string_of_int p | None -> "None"));
+*)
+      add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_module exes);
 
       (* Take all the exes and add them to a function called _init_ that's
        * called when the module is loaded. *)
@@ -631,7 +696,6 @@ and build_table_for_dcl
           (merge_ivs inherit_ivs ivs)
           (level + 1)
           (Some symbol_index)
-          root
           asms
       in
       let fudged_privtab = Hashtbl.create 97 in
@@ -694,7 +758,6 @@ and build_table_for_dcl
           dfltvs
           (level + 1)
           (Some symbol_index)
-          root
           asms
       in
 
@@ -1036,8 +1099,6 @@ let add_dcl ?parent print_flag counter_ref symbol_table dcl =
         0, symbol_table.pub_name_map, symbol_table.priv_name_map
   in
 
-  let root = !counter_ref in
-
   let interfaces = ref [] in
   let symbol_index =
     build_table_for_dcl
@@ -1048,7 +1109,6 @@ let add_dcl ?parent print_flag counter_ref symbol_table dcl =
       Flx_ast.dfltvs
       level
       parent
-      root
       pubmap
       privmap
       interfaces
@@ -1065,7 +1125,6 @@ let add_asms
   (name:string)
   (level:int) 
   (parent:bid_t option) 
-  (root:bid_t) 
   asms
 =
   let _, _, exes, interfaces, dirs =
@@ -1079,104 +1138,9 @@ let add_asms
       dfltvs
       level (*0*)
       parent (*None*)
-      root (* !counter_ref *)
       asms
   in
   symbol_table.init_exes <- symbol_table.init_exes @ exes;
   symbol_table.exports <- symbol_table.exports @ interfaces;
   symbol_table.directives <- symbol_table.directives @ dirs
-
-(* Note: these partial tables do NOT contain the root entry,
-   and so shouldn't be bound: merge them, then add the root entry
-*)
-let top_partial_symtab_create_from_asms
-  (print_flag:bool) 
-  (counter_ref:bid_t ref) 
-  (name:string)
-  asms
-=
-  let sym_table = Flx_sym_table.create () in
-  let pub_name_map = Hashtbl.create 97 in
-  let priv_name_map = Hashtbl.create 97 in
-
-  (* Split up the assemblies into their repsective types. split_asms returns
-   * reversed lists, so we must undo that. *)
-  let dcls, exes, ifaces, dirs = split_asms asms in
-  let dcls, exes, ifaces, dirs =
-    List.rev dcls, List.rev exes, List.rev ifaces, List.rev dirs
-  in
-
-  (* Add the parent to each interface *)
-  let ifaces = List.map (fun (i,j)-> i, j, None) ifaces in
-  let interfaces = ref ifaces in
-
-  let inner_interfaces = 
-    add_dcls
-      print_flag
-      counter_ref
-      sym_table
-      name
-      dfltvs
-      0 (* level *)
-      None (* parent *)
-      0 (* root *)
-      pub_name_map
-      priv_name_map
-      dcls
-  in
-  {
-    pub_name_map = pub_name_map;
-    priv_name_map = priv_name_map;
-    init_exes = exes;
-    exports = !interfaces @inner_interfaces;
-    directives = dirs;
-    sym_table = sym_table;
-  }
-
-let merge_entry_set htab k v =
-  if Hashtbl.mem htab k then begin
-    match Hashtbl.find htab k, v with
-    | FunctionEntry ls1, FunctionEntry ls2 ->
-      (* this isn't right! we should check for duplicates, but this is very hard 
-       * it isn't just a matter of checking for uniqueness of the symbol indices,
-       * since we could have multiple views of the same symbol. In the end, we
-       * will just let overload resolution find the problem..
-       *)
-      Hashtbl.replace htab k (FunctionEntry (ls1 @ ls2))
-
-    | NonFunctionEntry _, FunctionEntry _
-    | FunctionEntry _, NonFunctionEntry _ ->
-      failwith ("Duplicate and inconsistent entries for " ^ k ^ " on table merge")
- 
-    | NonFunctionEntry _, NonFunctionEntry _ -> 
-      failwith ("Duplicate non-function entries for " ^ k ^ " on table merge")
-  end
-  else Hashtbl.add htab k v
-
-let merge_top_partial_tables tables =
-  let sym_table = Flx_sym_table.create () in
-  let pub_name_map = Hashtbl.create 97 in
-  let priv_name_map = Hashtbl.create 97 in
-  let init_exes_ref = ref [] in
-  let exports_ref = ref [] in
-  let directives_ref = ref [] in
-  List.iter (fun x -> 
-     Flx_sym_table.iter (Flx_sym_table.unique_add sym_table) x.sym_table;
-     Hashtbl.iter (fun k v -> merge_entry_set pub_name_map k v) x.pub_name_map;
-     Hashtbl.iter (fun k v -> merge_entry_set priv_name_map k v) x.priv_name_map;
-     exports_ref := !exports_ref @ x.exports;
-     directives_ref := !directives_ref @ x.directives;
-     init_exes_ref := !init_exes_ref @ x.init_exes;
-  )
-  tables
-  ;
-  {
-    pub_name_map = pub_name_map;
-    priv_name_map = priv_name_map;
-    init_exes = !init_exes_ref;
-    exports = !exports_ref;
-    directives = !directives_ref;
-    sym_table = sym_table;
-  }
-
 

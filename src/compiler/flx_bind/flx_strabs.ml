@@ -21,7 +21,14 @@ type strabs_state_t = unit
 let make_strabs_state () = ()
 
 let check_inst bsym_table i ts =
-  match Flx_bsym_table.find_bbdcl bsym_table i with
+(*
+print_endline ("Check inst " ^ string_of_int i);
+*)
+  let entry = 
+    try Flx_bsym_table.find_bbdcl bsym_table i 
+    with Not_found -> failwith ("can't find entry " ^ string_of_int i ^ " in bsym table")
+  in
+  match entry with
   | BBDCL_newtype (vs,t) -> tsubst vs ts t
   | _ -> btyp_inst (i,ts)
 
@@ -42,7 +49,7 @@ let fixexpr bsym_table e =
     | BEXPR_apply ( (BEXPR_closure(i,_),_),a),_
     | BEXPR_apply_direct (i,_,a),_
     | BEXPR_apply_prim (i,_,a),_
-      when Flx_bsym_table.is_identity bsym_table i -> a
+      when (try Flx_bsym_table.is_identity bsym_table i with Not_found -> failwith ("strabs:is_identity checked not found on " ^ string_of_int i)) -> a
     | x -> x
   in
   f_bexpr e
@@ -137,7 +144,19 @@ let strabs_symbol state bsym_table index bsym =
 let strabs state bsym_table =
   (* Copy the bsym_table since we're going to directly modify it. *)
   let bsym_table' = Flx_bsym_table.copy bsym_table in
-
   Flx_bsym_table.iter
-    (fun bid _ sym -> strabs_symbol state bsym_table bid sym)
+    (fun bid _ sym -> 
+(*
+        print_endline ("Strabs on " ^ string_of_int bid ^ " " ^ sym.Flx_bsym.id);
+*)
+        begin try
+          strabs_symbol state bsym_table bid sym
+        with Not_found ->
+          failwith ("Strabs chucked not found processing " ^ string_of_int bid)
+        end
+(*
+        ;
+        print_endline ("Strabs on " ^ string_of_int bid ^ " done")
+*)
+    )
     bsym_table'

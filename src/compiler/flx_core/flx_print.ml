@@ -1761,8 +1761,13 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
   | SYMDEF_match_check (pat,(mvname,i))->
     "match_check " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
 
-  | SYMDEF_module ->
-    "module " ^ name ^ ";"
+  | SYMDEF_module exes ->
+    "module " ^ name ^ "{"^catmap ";" (string_of_sexe 2) exes ^"};"
+
+  | SYMDEF_root exes ->
+    "root {"^catmap ";" (string_of_sexe 2) exes ^"};"
+
+and string_of_sexe level (sr,x) = string_of_exe level x
 
 and string_of_exe level s =
   let spc = spaces level
@@ -2053,6 +2058,11 @@ and string_of_dcl level name seq vs (s:dcl_t) =
 
   | DCL_module (asms) ->
     sl ^ "module " ^ name^seq ^ string_of_vs vs ^ " = " ^
+    "\n" ^
+    string_of_asm_compound level asms
+
+  | DCL_root (asms) ->
+    sl ^ "root" ^ " = " ^
     "\n" ^
     string_of_asm_compound level asms
 

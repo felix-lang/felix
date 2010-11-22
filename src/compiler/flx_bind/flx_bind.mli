@@ -7,6 +7,7 @@ type bound_t =
 (** Constructs the bind state needed for a batch compiler. *)
 val make_bind_state:
   Flx_mtypes2.sym_state_t ->  (** The symbol state *)
+  Flx_sym_table.t ->          (** input symbol table *)
   bind_state_t
 
 (** Constructs the bind state needed for an interactive toplevel compiler. *)
@@ -28,11 +29,11 @@ val bind_asm:
 val bind_asms:
   bind_state_t ->         (** The state needed for binding. *)
   Flx_bsym_table.t ->     (** They bound symbol table. *)
+  Flx_types.bid_t ->      (** counter start range to bind *)
   Flx_types.asm_t list -> (** All the assemblies to bind. *)
   unit
 
 (** Find the root module's init function index. *)
 val find_root_module_init_function:
   bind_state_t ->     (** The state needed for binding. *)
-  Flx_types.bid_t ->  (** The root module index. *)
   Flx_types.bid_t     (** The root module index function. *)

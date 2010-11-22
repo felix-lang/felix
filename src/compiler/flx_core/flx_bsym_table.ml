@@ -83,7 +83,8 @@ let replace_elt bsym_table = Hashtbl.replace bsym_table.table
 (** Helper to add a bid to the table roots or it's parent's children. *)
 let add_bid_to_parent bsym_table parent bid =
   match parent with
-  | None ->
+  | None 
+  | Some 0 -> (* temporary hack *)
       bsym_table.roots <- Flx_types.BidSet.add bid bsym_table.roots
   | Some parent ->
       let elt = find_elt bsym_table parent in
@@ -93,7 +94,8 @@ let add_bid_to_parent bsym_table parent bid =
 (** Helper to remove a bid from the table roots or it's parent's children. *)
 let remove_bid_from_parent bsym_table parent bid =
   match parent with
-  | None ->
+  | None
+  | Some 0 ->
       bsym_table.roots <- Flx_types.BidSet.remove bid bsym_table.roots
   | Some parent ->
       try
@@ -106,8 +108,9 @@ let remove_bid_from_parent bsym_table parent bid =
 (** Helper to add a bid to the use list of another symbol. *)
 let add_use_to_bsym bsym_table user use =
   assert (user != use);
-  assert (mem bsym_table use);
-
+  if not (mem bsym_table use) then
+    failwith ("flx_bsym_table: Used symbol index " ^ string_of_int use ^ " expected in table but not found, used by "^string_of_int user)
+  ;
   let elt = find_elt bsym_table use in
   let users = Flx_types.BidSet.add user elt.users in
   replace_elt bsym_table use { elt with users=users }
@@ -133,7 +136,13 @@ let remove_use_from_bsyms bsym_table bid bbdcl =
 
 (** Adds the bound symbol with the index to the symbol table. *)
 let add bsym_table bid parent bsym =
-  assert (match parent with None -> true | Some p -> mem bsym_table p);
+  assert (match parent with None -> true | Some p -> p = 0 || mem bsym_table p);
+  if mem bsym_table bid then begin
+    print_endline ("Woops, index " ^ string_of_int bid ^ " already in table");
+    let { bsym=bsym }  = Hashtbl.find bsym_table.table bid in
+     Format.printf "Value %a" Flx_bsym.print bsym
+  end
+  ;
   assert (not (mem bsym_table bid));
 
   (* Add this child to the parent's child list, or to the root list.*)

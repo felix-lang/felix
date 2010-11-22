@@ -23,10 +23,10 @@ let detail x =
 let create () = Hashtbl.create 97
 
 (** Adds the symbol with index bid to the symbol table. *)
-let add sym_table bid parent sym =
+let replace sym_table bid parent sym =
   Hashtbl.replace sym_table bid { parent=parent; sym=sym }
 
-let unique_add sym_table bid parent sym =
+let add sym_table bid parent sym =
   if Hashtbl.mem sym_table bid
   then failwith ("Attempt to add existant index " ^ string_of_int bid ^
    " to symbol table")

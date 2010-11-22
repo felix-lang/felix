@@ -258,9 +258,9 @@ and resolve_inherits state bsym_table rs sr x =
   | FunctionEntry fs -> FunctionEntry (trclose state bsym_table rs sr fs)
 
 and inner_lookup_name_in_env state bsym_table env rs sr name : entry_set_t =
-  (*
+(*
   print_endline ("[lookup_name_in_env] " ^ name);
-  *)
+*)
   let rec aux env =
     match env with
     | [] -> None
@@ -276,6 +276,8 @@ and inner_lookup_name_in_env state bsym_table env rs sr name : entry_set_t =
       *)
       resolve_inherits state bsym_table rs sr x
     | None ->
+print_endline ("Can't find name " ^ name ^ " in env "); (* print_env env; *)
+
       clierr sr
       (
         "[lookup_name_in_env]: Name '" ^
@@ -3081,7 +3083,8 @@ and lookup_type_name_in_table_dirs_with_sig
     | SYMDEF_instance _
     | SYMDEF_lazy _
     | SYMDEF_match_check _
-    | SYMDEF_module
+    | SYMDEF_module _
+    | SYMDEF_root _
     | SYMDEF_newtype _
     | SYMDEF_reduce _
     | SYMDEF_typeclass
@@ -3307,7 +3310,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         | Some index' ->
             let sym = get_data state.sym_table index' in
             match sym.Flx_sym.symdef with
-            | SYMDEF_module
+            | SYMDEF_root _
+            | SYMDEF_module _
             | SYMDEF_function _ ->
                 koenig_lookup
                   state
@@ -5369,7 +5373,8 @@ and pub_table_dir state bsym_table env inst_check (invs,i,ts) : name_map_t =
   let invs = List.map (fun (i,n,_)->i,n) (fst invs) in
   let sym = get_data state.sym_table i in
   match sym.Flx_sym.symdef with
-  | SYMDEF_module ->
+  | SYMDEF_root _ 
+  | SYMDEF_module _ ->
     if List.length ts = 0 then sym.Flx_sym.pubmap else
     begin
       (*
@@ -5696,7 +5701,8 @@ and check_module state name sr entries ts =
     | NonFunctionEntry (index) ->
         let sym = get_data state.sym_table (sye index) in
         begin match sym.Flx_sym.symdef with
-        | SYMDEF_module ->
+        | SYMDEF_root _
+        | SYMDEF_module _ ->
             Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
         | SYMDEF_typeclass ->
             Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)

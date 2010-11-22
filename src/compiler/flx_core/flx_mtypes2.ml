@@ -88,7 +88,7 @@ type sym_state_t =
 
 let make_syms options =
   {
-    counter = ref 1;
+    counter = ref 10;
     varmap = Hashtbl.create 97;
     ticache = Hashtbl.create 97;
     env_cache = Hashtbl.create 97;

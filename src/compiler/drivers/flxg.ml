@@ -246,36 +246,26 @@ let parse_file state file =
 (** Desugar the statements *)
 let make_module module_name asms =
   let asms =
-    [Dcl (Flx_srcref.dummy_sr, module_name, None, `Public, dfltvs, DCL_module asms)]
+    [Dcl (Flx_srcref.dummy_sr, module_name, None, `Public, dfltvs, DCL_root asms)]
   in
   asms
 
 
 (** Bind the assemblies *)
-let bind_asms state asms =
+let bind_asms state sym_table bsym_table start_counter asms =
   fprintf state.ppf "//BINDING\n";
   let bind_timer = make_timer () in
 
-  (* THIS IS A HACK! *)
-  let root = !(state.syms.counter) in
-  fprintf state.ppf "//Top level module '%s' has index %s\n"
-    state.module_name
-    (string_of_bid root);
-
-  let bind_state = Flx_bind.make_bind_state state.syms in
-  let bsym_table = Flx_bsym_table.create () in
-  Flx_bind.bind_asms bind_state bsym_table asms;
-
-  let root_proc = Flx_bind.find_root_module_init_function bind_state root in
-  fprintf state.ppf "//root module's init procedure has index %s\n"
-    (Flx_print.string_of_bid root_proc);
-
-  Flx_typeclass.typeclass_instance_check state.syms bsym_table;
-
+  let bind_state = Flx_bind.make_bind_state state.syms sym_table in
+(*
+print_endline "Binding asms..";
+*)
+  Flx_bind.bind_asms bind_state bsym_table start_counter asms;
+(*
+print_endline "Binding asms done";
+*)
   state.bind_time <- state.bind_time +. bind_timer ();
-  fprintf state.ppf "//BINDING OK time %f\n" state.bind_time;
-
-  bsym_table, root_proc
+  fprintf state.ppf "//BINDING OK time %f\n" state.bind_time
 
 
 (** Generate the why file. *)
@@ -853,62 +843,92 @@ let save_profile state =
    names. (?)
 *)
 
+let strip_extension s =
+  let n = String.length s in
+  if n>4 then 
+    if String.sub s (n-4) 4 = ".flx" 
+    then String.sub s 0 (n-4)
+    else s
+  else s
+
 type include_entry_t = Search of string | NoSearch of string
 
+(* if an including_file_base "a/b" in including_file_dir "c/d" includes
+   with string 
+   "f" then we use include entry Search "f" (search the path)
+   "./f" then we use NoSearch "c/d/a/f" (sibling of including file)
+*)
+
+let make_include_entry including_file_dir including_file_base  include_string =
+  let n = String.length include_string in
+  if n > 1 then
+    if String.sub include_string 0 2 = "./" 
+    then begin 
+      let dirpart = Filename.dirname including_file_base in
+      let dirpart = if dirpart = "." then "" else dirpart in
+      let dir = Flx_filesys.join including_file_dir dirpart  in
+      let basepart = String.sub include_string 2 (n-2) in
+      let fullname = Flx_filesys.join dir basepart in
+      NoSearch fullname
+    end else Search include_string 
+  else Search include_string
+
+
+(* filename without the .flx extension *)
+type ub_entry_t = { filename:string;  asms: asm_t list }
+
+
 (* make_assembly does NOT modify anything at all in the symbol state
- * except for the fresh bid counter
- *)
+ * except for the fresh bid counter *)
 let make_assembly 
   state 
-  (exclusions:include_entry_t list)  
+  (exclusions:string list)  
   (module_name:string) 
   (input:include_entry_t) 
-  : ((include_entry_t * string)* (Flx_types.asm_t list * Flx_symtab.t)) list
+  : ub_entry_t list
 =
     let root = 0 in
     let counter_ref = state.syms.counter in
     let fresh_bid () = Flx_mtypes2.fresh_bid counter_ref in
     let print_flag = state.syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
     let outputs = ref [] in
+
     (* PARSE THE IMPLEMENTATION FILES *)
     let processed = ref exclusions in
     let unprocessed = ref [input] in
-(* print_endline ("Initial files are " ^ String.concat "," (!unprocessed)); *)
 
-    (* This algorithm is bugged! When desugaring finds a nested module,
-       it generated a call to the modules initialisation function.
-       So if we paste an include file into the parse tree somewhere,
-       it usually contains a module, and that module's initialisation
-       will be called: since includes go at the top of the file,
-       it will be done before assigning to any of ihe current files vars.
-    *)
-    let strip_extension s =
-      let n = String.length s in
-      if n>4 then 
-        if String.sub s (n-4) 4 = ".flx" 
-        then String.sub s 0 (n-4)
-        else s
-      else s
-    in
     let outdir= state.syms.compiler_options.cache_dir in
     while List.length (!unprocessed) > 0 do
+
+      (* pop a candidate *)
       let candidate = List.hd (!unprocessed) in
-(*      let candidate = strip_extension candidate in *)
       unprocessed := List.tl (!unprocessed);
-      if not (List.mem candidate (!processed)) then
+
+      (* resolve the filename *)
+      let filedir,filename = match candidate with
+        | Search s ->
+          Flx_filesys.find_include_dir 
+          ~include_dirs:state.syms.compiler_options.include_dirs
+          (s ^ ".flx"),s
+        | NoSearch s -> "",s
+      in
+      let flx_base_name = Flx_filesys.join filedir filename in
+     
+      (* check if already processed *)
+      if not (List.mem flx_base_name (!processed)) then
       begin
-        let filedir,filename = match candidate with
-          | Search s ->
-            Flx_filesys.find_include_dir 
-             ~include_dirs:state.syms.compiler_options.include_dirs
-            (s ^ ".flx"),s
-          | NoSearch s -> "",s
-        in
-        let flx_name = Flx_filesys.join filedir (filename ^ ".flx") in
+        (* flag already processed *)
+        processed := flx_base_name :: !processed;
+
+        (* check the felix file modification time *)
+        let flx_name = flx_base_name ^ ".flx" in
         let flx_time = Flx_filesys.virtual_filetime Flx_filesys.big_crunch flx_name in
-        processed := candidate :: !processed;
+
+        (* get the parse of the felix file, with caching  *)
         let stmts = 
-(* print_endline ("Filename is " ^ flx_name); *)
+(*
+print_endline ("Filename is " ^ flx_name);
+*)
           let in_par_name = Flx_filesys.join filedir filename ^ ".par2" in
           let out_par_name = 
              match outdir with 
@@ -922,92 +942,59 @@ let make_assembly
           in
           stmts
         in
+
+        (* Desugare the parse tree, and also return list of include strings *)
         let include_files, asms =  
           let desugar_state = Flx_desugar.make_desugar_state module_name fresh_bid in
           Flx_desugar.desugar_stmts desugar_state (Filename.dirname filename) stmts 
         in
-        let in_tab_name = Flx_filesys.join filedir filename ^ ".symtab" in
-        let out_tab_name = 
-             match outdir with 
-           | Some d -> Some (Flx_filesys.join d filename ^ ".symtab")
-           | None -> None
-        in
-(*
-print_endline ("Loading symbol tables for " ^ filename);
-*)
-        let symtab= Flx_filesys.cached_computation "symtab" in_tab_name
-          ~outfile:out_tab_name
-          ~force_calc:true
-          ~min_time:flx_time
-          (fun () -> 
-(*
-print_endline ("Attempting to make symbol tables for " ^ filename);
-*)
-          let symtab = Flx_symtab.top_partial_symtab_create_from_asms
-            print_flag counter_ref 
-            filename (* containing module name *)
-            asms     (* Stuff to add *)
-           in
-(*
-print_endline ("Made symbol tables for " ^ filename);
-*)
-           symtab
-           )
-        in 
-(*
-print_endline ("Table for " ^ filename ^ " " ^ Flx_symtab.detail symtab );
-*)
+
+        (* run through include strings found *)
         List.iter (fun s -> 
-          (* Grr.. design fault here. If the filename is ./fred.flx then we're
-           * and it is included by a/b.flx then we're talking about a/fred.flx
-           * Unfortunately, include files are being searched for, so what do
-           * we put? We want to *stop* the search in this case and use:
-           * filedir "/" dirname including_file "/" included_file[2:] ".flx"
-           *)
-          let s = 
-            let n = String.length s in
-            if n > 1 then
-              if String.sub s 0 2 = "./" 
-              then begin 
-                let dirpart = Filename.dirname filename in
-                let dirpart = if dirpart = "." then "" else dirpart in
-                let dir = Flx_filesys.join filedir dirpart  in
-                let basepart = String.sub s 2 (n-2) in
-                let fullname = Flx_filesys.join dir basepart in
-                NoSearch fullname
-              end else Search s
-            else Search s
-          in
-          if not (List.mem s (!processed)) && not (List.mem s (!unprocessed)) 
+          (* Convert include string to an include term *)
+          let include_entry = make_include_entry filedir filename s in
+
+          (* add the name to the unprocessed include list, even if already processed 
+           * if it is already processed that will be found when it is resolved at
+           * the top of this loop *)
+          if not (List.mem include_entry (!unprocessed)) 
           then begin
 (*            print_endline ("Add Include file: " ^ s); *)
-            unprocessed := s :: (!unprocessed)
+            unprocessed := include_entry :: (!unprocessed)
           end
         ) 
+        (* reverse order to compensate for stacking outputs *)
         (List.rev include_files)
         ;
-        (* the list is order of writing?
-           We reverse it.
-           The loop reverses it.
-           reversed yet a third time when the result
-           is pushed onto the output stack .. so we're back to
-           order of writing.
-        *)
-
-        outputs := ((candidate,filedir),(asms,symtab)) :: (!outputs)
+        (* add record for processed file *)
+        outputs := {filename=flx_base_name; asms=asms;} :: (!outputs);
      end
     done;
     !outputs
 
 let main () =
+  let start_counter = ref 2 in
   let ppf, compiler_options = parse_args () in
   let state = make_flxg_state ppf compiler_options in
   let module_name = 
      try make_module_name (List.hd state.syms.compiler_options.files)
      with _ -> "empty_module"
   in
+  let bsym_table = Flx_bsym_table.create () in
+  let sym_table = Flx_sym_table.create () in
+  let sym : Flx_sym.t = {
+    Flx_sym.id="root"; 
+    sr=Flx_srcref.dummy_sr; 
+    vs=dfltvs; 
+    pubmap=Hashtbl.create 97; 
+    privmap=Hashtbl.create 97; 
+    dirs=[]; 
+    symdef=(SYMDEF_root []) 
+  } 
+  in
+  let root_elt = {Flx_sym_table.parent=None; sym=sym; } in
+  Hashtbl.add sym_table 0 root_elt;
 
-  let outputs = ref [] in
   let inroots = List.rev state.syms.compiler_options.files in (* reverse order of command line *)
   let outdir= state.syms.compiler_options.cache_dir in
   (* print_endline ("Inputs=" ^ String.concat ", " inroots); *)
@@ -1017,13 +1004,15 @@ let main () =
     ;
     let main_prog = List.hd inroots in
     let libs = List.rev (List.tl inroots) in
-    (* print_endline ("Libraries=" ^ String.concat ", " libs); *)
-    (* print_endline ("Main program =" ^ main_prog); *)
-
-    let rec aux exclusions ls = match ls with 
+    print_endline ("Libraries=" ^ String.concat ", " libs);
+    print_endline ("Main program =" ^ main_prog);
+    let bsyms = ref [] in
+    let inits = ref [] in
+    let excls:string list ref = ref [] in
+    let rec aux ls = match ls with 
     | [] -> ()
     | h :: t -> 
-      (* print_endline ("Processing library " ^ h); *)
+      print_endline ("Processing library " ^ h);
       let lib_filedir,lib_filename = 
           Flx_filesys.find_include_dir 
            ~include_dirs:state.syms.compiler_options.include_dirs
@@ -1044,39 +1033,44 @@ let main () =
         | Some d -> Some (Flx_filesys.join d lib_filename ^ ".libtab")
         | None -> None
       in
-      let assembly, table, saved_counter =
+      let includes, asms, saved_counter =
         Flx_filesys.cached_computation "libtab" in_libtab_name
           ~outfile:out_libtab_name
           ~force_calc:true
           ~min_time:lib_time 
           (fun () -> 
-            let assembly = make_assembly state exclusions h (Search h) in
-            let assembly, tables = List.fold_left  
-              (fun (a,t) ((c,d),(m,s))-> ((c,d),m)::a, (s::t) ) 
-              ([],[]) 
-              (List.rev assembly) 
+            let assembly = make_assembly state !excls h (Search h) in
+            let includes, asmss= 
+               let rec aux includes asmss a = match a with
+               | [] -> includes, asmss
+               | { filename=filename; asms=asms; } :: t ->
+                   aux (filename :: includes) (asms::asmss) t
+               in aux [] [] assembly
             in
-            let table = Flx_symtab.merge_top_partial_tables tables in
-(*
-print_endline ("Merged tables for library " ^ h);
-print_endline (Flx_symtab.detail table);
-*)
-            assembly, table, !(state.syms.counter)
-         )
+            includes, asmss, !(state.syms.counter)
+          )
       in
       state.syms.counter := max !(state.syms.counter)  saved_counter;
-      outputs := assembly @ (!outputs);
+
+(*
 print_endline "Trial binding";
-      let asms = snd (List.split assembly) in
+*)
       let asms = List.concat (List.rev asms) in
       let asms = make_module module_name asms in
 (*
 print_endline "Binding asms: ";
 List.iter (fun a -> print_endline (Flx_print.string_of_asm 2 a)) asms;
 *)
-    (* Bind the assemblies. *)
-      let bsym_table, root_proc = bind_asms state asms in
+      (* Bind the assemblies. *)
+      bind_asms state sym_table bsym_table !start_counter asms;
+      start_counter := !(state.syms.counter);
+
+      excls := includes @ !excls;  (* already processed include files *)
+
+(*
 print_endline "Trial binding done";
+*)
+(*
       let clr s h = print_endline ("Table " ^ s ^ " len=" ^ string_of_int (Hashtbl.length h)); Hashtbl.clear h in
       let clrl s h = print_endline ("Table " ^ s ^ " len=" ^ string_of_int (List.length (!h))); h:=[] in
       (* while this is a hack, we have to clear the state out *)
@@ -1099,25 +1093,26 @@ print_endline "Trial binding done";
 
       clrl "axioms" state.syms.axioms;
       clrl "reductions" state.syms.reductions;
-
-      let exclusions = fst (List.split (fst (List.split assembly))) @ exclusions in
-      aux exclusions t
+*)
+      aux t
     in
-    aux [] libs;
- 
+    aux libs;
+
+(*
     print_endline ("Making symbol tables for main program " ^ main_prog);
-    let exclusions = fst (List.split (fst (List.split (!outputs)))) in
-    let assembly =  make_assembly state exclusions module_name (NoSearch main_prog) in
-    let assembly, tables = List.fold_left  
-      (fun (a,t) ((c,d),(m,s))-> ((c,d),m)::a, (s::t) ) 
-      ([],[]) 
-      (List.rev assembly) 
+*)
+    let assembly =  make_assembly state !excls module_name (NoSearch main_prog) in
+    let includes, asmss= 
+       let rec aux includes asmss a = match a with
+       | [] -> includes, asmss
+       | { filename=filename; asms=asms; } :: t ->
+       aux (filename :: includes) (asms::asmss) t
+       in aux [] [] assembly
     in
-    outputs := (!outputs) @ assembly;
+    let asms = List.concat (List.rev asmss) in
 
-(* this won't work since the include files aren't stored in the global state
- * object any more
- *)
+    (* update the global include file list *)
+    state.syms.include_files := includes;
     generate_dep_file state;
 
 (*
@@ -1125,26 +1120,76 @@ print_endline "DEBUG: include files are:";
 List.iter print_endline !(state.syms.include_files);
 *)
 
-    let asms = List.concat (snd (List.split (!outputs))) in
     let asms = make_module module_name asms in
 (*
-print_endline "Binding asms: ";
+print_endline "Binding main program asms";
+*)
+(*
 List.iter (fun a -> print_endline (Flx_print.string_of_asm 2 a)) asms;
 *)
     (* Bind the assemblies. *)
-    let bsym_table, root_proc = bind_asms state asms in
+(*
+print_endline "sym_table=";
+print_endline (Flx_sym_table.detail sym_table);
+*)
+    bind_asms state sym_table bsym_table (!start_counter) asms;
+    start_counter := !(state.syms.counter);
+print_endline "Main program bound";
 
+    (* make the root proc *)
+
+    let entry = try Hashtbl.find sym_table 0 with Not_found -> failwith "flxg: can't find root" in
+    let sym = match entry with
+      | { Flx_sym_table.parent=None; sym=sym } -> sym
+      | _ -> failwith "flxg: expected root entry to have parent None"
+    in 
+    let exes = match sym with
+    | {Flx_sym.symdef=SYMDEF_root exes} -> exes
+    | _ -> failwith "flxg: expected root entry to be SYMDEF_root"
+    in
+    let asms = List.map (fun x -> Exe x) exes in
+    (* this is a hack .. oh well .. *)
+    let root_proc = Flx_mtypes2.fresh_bid (state.syms.counter) in
+    let dcl =DCL_function (([],None),TYP_void Flx_srcref.dummy_sr,[],asms) in
+    let asm = Dcl (Flx_srcref.dummy_sr, "_init_", Some root_proc,`Public,dfltvs,dcl) in
+    let asms = make_module module_name [asm] in
+(*
+print_endline ("Binding init proc " ^ string_of_int root_proc);
+*)
+    bind_asms state sym_table bsym_table root_proc asms;
+(*
+print_endline "init proc bound";
+*)
+    if not (Flx_sym_table.mem sym_table root_proc) then
+      failwith "flxg: can't find init proc in unbond symbol table "
+    ;
+    if not (Flx_bsym_table.mem bsym_table root_proc) then
+      failwith "flxg: can't find init proc in bound symbol table"
+    ;
+
+    Flx_typeclass.typeclass_instance_check state.syms bsym_table;
+
+
+(*
     (* Generate the why file *)
     generate_why_file state bsym_table root_proc;
-
+print_endline "Why file generated";
+*)
     (* Optimize the bound values *)
     let bsym_table = optimize_bsyms state bsym_table root_proc in
-
+(*
+print_endline "Optimisation complete";
+*)
     (* Lower the bound symbols for the backend. *)
     let bsym_table = lower_bsyms state bsym_table root_proc in
-
+(*
+print_endline "Lowering abstract types complete";
+*)
     (* Start working on the backend. *)
-    codegen_bsyms state bsym_table root_proc;
+    codegen_bsyms state bsym_table root_proc
+(*
+; print_endline "Code gen complete"
+*)
   with x ->
     Flx_terminate.terminate compiler_options.reverse_return_parity x
   end;

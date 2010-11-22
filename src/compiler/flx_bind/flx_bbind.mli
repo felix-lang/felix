@@ -31,6 +31,7 @@ val bbind_symbol:
 (* Bind all the symbols in the symtab. *)
 val bbind:
   bbind_state_t ->
+  Flx_types.bid_t -> Flx_types.bid_t -> (** start and end counter values to bind *)
   Flx_bsym_table.t ->
   unit
 

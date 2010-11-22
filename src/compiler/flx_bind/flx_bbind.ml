@@ -144,9 +144,9 @@ let bind_qual bt qual = match qual with
 let bind_quals bt quals = map (bind_qual bt) quals
 
 let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
-  (*
-  print_endline ("Binding symbol index=" ^ string_of_int symbol_index);
-  *)
+(*
+  print_endline ("Binding symbol "^sym.Flx_sym.id^" index=" ^ string_of_int symbol_index);
+*)
   (* If we've already processed this bid, exit early. We do this so we can avoid
    * any infinite loops in the symbols. *)
   if Hashtbl.mem state.visited symbol_index then () else begin
@@ -171,12 +171,17 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
   print_env_short env;
   *)
 
+(* This is a bad idea on incremental build, because the "visited" list
+   is local to this binding exercise and can't account for what's
+   already in the table
+*)
   let bind_type_uses btype =
     (* Iterate through the now bound type and make sure to bind any referenced
      * bbdcls before continuing on. *)
     Flx_btype.iter ~f_bid:begin fun bid ->
       let parent, sym = Flx_sym_table.find_with_parent state.sym_table bid in
-      bbind_symbol state bsym_table bid parent sym
+      if not (Flx_bsym_table.mem bsym_table bid) then
+        bbind_symbol state bsym_table bid parent sym
     end btype
   in
   let bexes exes ret_type index tvars =
@@ -231,7 +236,6 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     let btype = f btype in
 
     bind_type_uses btype;
-
     (* Finally, return the type we bound previously. *)
     btype
   in
@@ -315,9 +319,20 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
   begin match sym.Flx_sym.symdef with
   (* Pure declarations of functions, modules, and type don't generate anything.
    * Variable dcls do, however. *)
+  (* CHANGED! Modules and root DO generate stuff now: their initialisation code.
+   * Primitive functions * definitions don't generate anything.. there are no
+   * pure declarations of functions.
+   *)
+
   | SYMDEF_typevar _ -> ()
 
-  | SYMDEF_module ->
+  (* the root module doesn't generate anything YET. After the complete 
+     program has been bound, THEN and only then we can extract the
+     initialisation code from it.
+  *)
+  | SYMDEF_root _ -> () 
+
+  | SYMDEF_module _ ->
     add_bsym true_parent (bbdcl_module ())
 
   | SYMDEF_reduce (ps,e1,e2) ->
@@ -787,16 +802,22 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
   *)
   end
 
-let bbind state bsym_table =
+let bbind state start_counter end_counter bsym_table =
   (* loop through all counter values [HACK] to get the indices in sequence, AND,
    * to ensure any instantiations will be bound, (since they're always using the
    * current value of state.counter for an index *)
+(*
+print_endline ("bbind from " ^ string_of_int start_counter ^ " to " ^ string_of_int end_counter);
+*)
   Flx_mtypes2.iter_bids begin fun i ->
+(*
+print_endline ("bbind " ^ string_of_int i);
+*)
     match
       try Some (Flx_sym_table.find_with_parent state.sym_table i)
       with Not_found -> None
     with
-    | None -> ()
+    | None -> (* print_endline "bbind: Symbol not found"; *) ()
     | Some (parent, symdef) ->
         try bbind_symbol state bsym_table i parent symdef
         with Not_found ->
@@ -805,8 +826,11 @@ let bbind state bsym_table =
               string_of_bid i)
           with Not_found ->
             failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
-  end dummy_bid !(state.counter)
-
+  end start_counter end_counter
+(*
+  ;
+  print_endline "Bbind finished"
+*)
 let bind_interface (state:bbind_state_t) bsym_table = function
   | sr, IFACE_export_fun (sn, cpp_name), parent ->
       let env = Flx_lookup.build_env state.lookup_state bsym_table parent in
@@ -858,3 +882,5 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       )
       else
         BIFACE_export_type (sr, t, cpp_name)
+
+

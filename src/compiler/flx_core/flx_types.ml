@@ -84,6 +84,7 @@ type dcl_t =
   | DCL_inherit_fun of   qualified_name_t
 
   (* module system *)
+  | DCL_root of          asm_t list
   | DCL_module of        asm_t list
   | DCL_instance of      qualified_name_t * asm_t list
 
@@ -126,7 +127,8 @@ type symbol_definition_t =
   | SYMDEF_reduce of parameter_t list * expr_t * expr_t
   | SYMDEF_function of params_t * typecode_t * property_t list * sexe_t list
   | SYMDEF_match_check of pattern_t * (string * bid_t)
-  | SYMDEF_module
+  | SYMDEF_root of sexe_t list
+  | SYMDEF_module of sexe_t list
   | SYMDEF_const_ctor of bid_t * typecode_t * int * ivs_list_t
   | SYMDEF_nonconst_ctor of bid_t * typecode_t * int * ivs_list_t * typecode_t
   | SYMDEF_const of property_t list * typecode_t * code_spec_t * named_req_expr_t

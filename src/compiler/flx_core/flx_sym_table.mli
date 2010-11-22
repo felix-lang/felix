@@ -1,5 +1,12 @@
 (** The type of the (raw, unbound) symbol table. *)
-type t
+type elt = {
+  sym: Flx_sym.t;                 (** The symbol. *)
+  parent: Flx_types.bid_t option; (** The parent of the symbol. *)
+}
+
+(** The type of the symbol table. *)
+type t = (Flx_types.bid_t, elt) Hashtbl.t
+
 
 (** quick debugging info *)
 val summary: t -> string
@@ -8,11 +15,11 @@ val detail: t -> string
 (** Construct a symbol table. *)
 val create : unit -> t
 
-(** Adds the symbol with the index to the symbol table. *)
-val add : t -> Flx_types.bid_t -> Flx_types.bid_t option -> Flx_sym.t -> unit
+(** add or replace the symbol with the index to the symbol table. *)
+val replace : t -> Flx_types.bid_t -> Flx_types.bid_t option -> Flx_sym.t -> unit
 
 (** As above but throws if the index is already in the table *)
-val unique_add : t -> Flx_types.bid_t -> Flx_types.bid_t option -> Flx_sym.t -> unit
+val add: t -> Flx_types.bid_t -> Flx_types.bid_t option -> Flx_sym.t -> unit
 
 (** Returns if the bound index is in the symbol table. *)
 val mem : t -> Flx_types.bid_t -> bool
