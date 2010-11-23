@@ -199,7 +199,10 @@ let sig_of_symdef symdef sr name i = match symdef with
       paramtype p,r,Some (List.map (fun (_,name,_,d)->name,d) p)
     end
 
-  | SYMDEF_cstruct ls
+  | SYMDEF_cstruct (ls, _) ->
+    type_of_list (List.map snd ls), TYP_index (sr,name,i),
+     Some (List.map (fun (p,_) -> p,None) ls)
+
   | SYMDEF_struct ls ->
     type_of_list (List.map snd ls), TYP_index (sr,name,i),
      Some (List.map (fun (p,_) -> p,None) ls)

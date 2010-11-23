@@ -247,7 +247,7 @@ let type_has_fn cache syms bsym_table children t =
         | BBDCL_union (vs,cs)->
           check_components vs ts (map (fun (_,_,t)->t) cs)
 
-        | BBDCL_cstruct (vs,cs)
+        | BBDCL_cstruct (vs,cs,_)
         | BBDCL_struct (vs,cs) ->
           check_components vs ts (map snd cs)
 
@@ -298,7 +298,7 @@ let type_has_ptr cache syms bsym_table children t =
         | BBDCL_union (vs,cs)->
           check_components vs ts (map (fun (_,_,t)->t) cs)
 
-        | BBDCL_cstruct (vs,cs)
+        | BBDCL_cstruct (vs,cs,_)
         | BBDCL_struct (vs,cs) ->
           check_components vs ts (map snd cs)
 

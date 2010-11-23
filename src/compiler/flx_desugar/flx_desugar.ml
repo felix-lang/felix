@@ -674,9 +674,9 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
      it is always empty for a function.
   *)
   let bridge n sr : asm_t =
-    (*
-    print_endline ("Making bridge for " ^ n ^ " -> " ^ name ^ print_vs _vs);
-    *)
+(*
+    print_endline ("Making bridge for " ^ n ^ " -> " ^ name ^ Flx_print.string_of_vs parent_vs);
+*)
     let ts = List.map (fun (s,_)-> TYP_name (sr,s,[])) (fst parent_vs) in
     let us = NREQ_atom (`AST_name (sr, "_rqs_" ^ name, ts)) in
     let body = DCL_insert (CS_str "", `Body, us) in
@@ -858,7 +858,9 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
 
   | STMT_union (sr,name, vs, components) -> [Dcl (sr,name,None,access,vs,DCL_union (components))]
   | STMT_struct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,DCL_struct (components))]
-  | STMT_cstruct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,DCL_cstruct (components))]
+  | STMT_cstruct (sr,name, vs, components, reqs) ->  
+    let props,dcls, reqs = mkreqs sr reqs in
+    Dcl (sr,name,None,access,vs,DCL_cstruct (components, map_reqs sr reqs)) :: dcls
 
   | STMT_typeclass (sr,name, vs, sts) ->
     let asms = rsts name (merge_vs parent_vs vs) `Public sts in

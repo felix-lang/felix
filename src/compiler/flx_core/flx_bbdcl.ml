@@ -42,7 +42,7 @@ type t =
 
   | BBDCL_union of      bvs_t * (id_t * int * Flx_btype.t) list
   | BBDCL_struct of     bvs_t * (id_t * Flx_btype.t) list
-  | BBDCL_cstruct of    bvs_t * (id_t * Flx_btype.t) list
+  | BBDCL_cstruct of    bvs_t * (id_t * Flx_btype.t) list * breqs_t
   | BBDCL_typeclass of  property_t list * bvs_t
   | BBDCL_instance of   property_t list *
                         bvs_t *
@@ -90,8 +90,8 @@ let bbdcl_union (bvs, cs) =
 let bbdcl_struct (bvs, cs) =
   BBDCL_struct (bvs, cs)
 
-let bbdcl_cstruct (bvs, cs) =
-  BBDCL_cstruct (bvs, cs)
+let bbdcl_cstruct (bvs, cs, breqs) =
+  BBDCL_cstruct (bvs, cs, breqs)
 
 let bbdcl_typeclass (prop, bvs) =
   BBDCL_typeclass (prop, bvs)
@@ -138,7 +138,7 @@ let get_bvs = function
   | BBDCL_external_code (bvs, _, _, _) -> bvs
   | BBDCL_union (bvs, _) -> bvs
   | BBDCL_struct (bvs, _) -> bvs
-  | BBDCL_cstruct (bvs, _) -> bvs
+  | BBDCL_cstruct (bvs, _,_) -> bvs
   | BBDCL_typeclass (_, bvs) -> bvs
   | BBDCL_instance (_, bvs, _, _, _) -> bvs
   | BBDCL_nonconst_ctor (bvs, _, _, _, _, _, _) -> bvs
@@ -211,9 +211,11 @@ let iter
       f_breqs breqs
   | BBDCL_union (_,cs) ->
       List.iter (fun (_,_,t) -> f_btype t) cs
-  | BBDCL_struct (_,cs)
-  | BBDCL_cstruct (_,cs) ->
+  | BBDCL_struct (_,cs) ->
       List.iter (fun (n,t) -> f_btype t) cs
+  | BBDCL_cstruct (_,cs,breqs) ->
+      List.iter (fun (n,t) -> f_btype t) cs;
+      f_breqs breqs
   | BBDCL_typeclass (_,_) -> ()
   | BBDCL_instance (_,_,cons,bid,ts) ->
       f_btype cons;
@@ -283,8 +285,8 @@ let map
       BBDCL_union (bvs,List.map (fun (n,i,t) -> n,i,f_btype t) cs)
   | BBDCL_struct (bvs,cs) ->
       BBDCL_struct (bvs,List.map (fun (n,t) -> n,f_btype t) cs)
-  | BBDCL_cstruct (bvs,cs) ->
-      BBDCL_cstruct (bvs,List.map (fun (n,t) -> n,f_btype t) cs)
+  | BBDCL_cstruct (bvs,cs, breqs) ->
+      BBDCL_cstruct (bvs,List.map (fun (n,t) -> n,f_btype t) cs, f_breqs breqs)
   | BBDCL_typeclass (props,bvs) -> bbdcl
   | BBDCL_instance (props,bvs,cons,bid,ts) ->
       BBDCL_instance (
@@ -348,6 +350,9 @@ let iter_uses f bbdcl =
       end
   | BBDCL_external_code (_,_,_,breqs) ->
       f_breqs breqs
+  | BBDCL_cstruct (_,_,breqs) ->
+      f_breqs breqs
+
   | _ ->
       iter ~f_bid:f ~f_btype ~f_bexpr ~f_bexe bbdcl
 
@@ -448,14 +453,15 @@ let rec print f = function
             print_string n
             Flx_btype.print t
         end) cs
-  | BBDCL_cstruct (bvs,cs) ->
-      print_variant2 f "BBDCL_cstruct"
+  | BBDCL_cstruct (bvs,cs, breqs) ->
+      print_variant3 f "BBDCL_cstruct"
         print_bvs bvs
         (Flx_list.print begin fun f (n,t) ->
           print_tuple2 f
             print_string n
             Flx_btype.print t
         end) cs
+        print_breqs breqs
   | BBDCL_typeclass (props,bvs) ->
       print_variant2 f "BBDCL_typeclass"
         print_properties props

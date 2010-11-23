@@ -324,7 +324,7 @@ let rec gen_expr'
 
     | BTYP_inst (i,_) ->
       begin match Flx_bsym_table.find_bbdcl bsym_table i with
-      | BBDCL_cstruct (_,ls)
+      | BBDCL_cstruct (_,ls,_)
       | BBDCL_struct (_,ls) ->
         let name,_ =
           try nth ls n
@@ -520,7 +520,7 @@ let rec gen_expr'
           | [BTYP_inst (i,_)] ->
             begin match Flx_bsym_table.find_bbdcl bsym_table i with
               | BBDCL_struct (_,ls) -> let n = length ls in ce_atom (si n)
-              | BBDCL_cstruct (_,ls) -> let n = length ls in ce_atom (si n)
+              | BBDCL_cstruct (_,ls,_) -> let n = length ls in ce_atom (si n)
               | BBDCL_union (_,ls) -> let n = length ls in ce_atom (si n)
               | _ ->
                 clierr sr (
@@ -766,7 +766,7 @@ let rec gen_expr'
     in
     let ts = map tsub ts in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_cstruct (vs,_) ->
+    | BBDCL_cstruct (vs,_,_) ->
       let name = tn (btyp_inst (index,ts)) in
       ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")")
 

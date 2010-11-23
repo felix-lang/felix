@@ -347,7 +347,17 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     rtnr (btyp_inst (i,ts))
 
 
-  | BBDCL_cstruct (vs,ps)
+  | BBDCL_cstruct (vs,ps, reqs) ->
+    let argtypes = map snd ps in
+    assert (length vs = length ts);
+    let vars = map2 (fun (s,i) t -> i,t) vs ts in
+    let hvarmap = hashtable_of_list vars in
+    let tss = map (varmap_subst hvarmap) argtypes in
+    iter rtr tss;
+    let vs t = varmap_subst hvarmap t in
+    do_reqs vs reqs;
+    rtnr (btyp_inst (i,ts))
+
   | BBDCL_struct (vs,ps) ->
     let argtypes = map snd ps in
     assert (length vs = length ts);

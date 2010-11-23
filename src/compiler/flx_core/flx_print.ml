@@ -1184,14 +1184,14 @@ and string_of_statement level s =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | STMT_cstruct (_,name, vs, cs) ->
+  | STMT_cstruct (_,name, vs, cs, reqs) ->
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
     in
     spaces level ^ "cstruct " ^ name ^ string_of_vs vs ^ " = " ^
     spaces level ^ "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
-    spaces level ^ "}"
+    spaces level ^ "}" ^ string_of_raw_reqs reqs ^";"
 
   | STMT_typeclass (_,name, vs, sts) ->
     spaces level ^ "typeclass " ^ name ^ string_of_vs vs ^ " = " ^
@@ -1674,8 +1674,8 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
   | SYMDEF_struct (cts) ->
     "struct " ^ name ^ string_of_ivs vs ^ ";"
 
-  | SYMDEF_cstruct (cts) ->
-    "cstruct " ^ name ^ string_of_ivs vs ^ ";"
+  | SYMDEF_cstruct (cts, reqs) ->
+    "cstruct " ^ name ^ string_of_ivs vs ^ string_of_named_reqs reqs ^ ";"
 
   | SYMDEF_typeclass ->
     "typeclass " ^ name ^ string_of_ivs vs ^ ";"
@@ -2081,14 +2081,14 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     sl ^ "}"
 
-  | DCL_cstruct (cs) ->
+  | DCL_cstruct (cs, reqs) ->
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ name^ ": " ^ st ty ^ ";"
     in
     sl ^ "cstruct " ^ name^seq ^ string_of_vs vs ^ " = " ^
     sl ^ "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
-    sl ^ "}"
+    sl ^ "} " ^ string_of_named_reqs reqs ^ ";"
 
   | DCL_typeclass (asms) ->
     sl ^ "type class " ^ name^seq ^ string_of_vs vs ^ " =\n" ^
@@ -2376,14 +2376,15 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"
 
-  | BBDCL_cstruct (vs,cs) ->
+  | BBDCL_cstruct (vs,cs, reqs) ->
     let string_of_struct_component (name,ty) =
       "  " ^ name ^ ": " ^ sobt ty ^ ";"
     in
     "cstruct " ^ name ^ string_of_bvs vs ^ " = " ^
     "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
-    "}"
+    "} " ^
+    string_of_breqs bsym_table reqs ^ ";"
 
   | BBDCL_typeclass (props,vs) ->
     string_of_properties props ^

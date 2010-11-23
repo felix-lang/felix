@@ -72,7 +72,7 @@ type dcl_t =
   | DCL_function of      params_t * typecode_t * property_t list * asm_t list
   | DCL_union of         (id_t * int option * vs_list_t * typecode_t) list
   | DCL_struct of        (id_t * typecode_t) list
-  | DCL_cstruct of       (id_t * typecode_t) list
+  | DCL_cstruct of       (id_t * typecode_t) list * named_req_expr_t
   | DCL_typeclass of     asm_t list
   | DCL_match_check of   pattern_t * (string * bid_t)
   | DCL_match_handler of pattern_t * (string * bid_t) * asm_t list
@@ -141,7 +141,7 @@ type symbol_definition_t =
   | SYMDEF_insert of code_spec_t  * ikind_t * named_req_expr_t
   | SYMDEF_union of (id_t * int *  vs_list_t * typecode_t) list
   | SYMDEF_struct of (id_t * typecode_t) list
-  | SYMDEF_cstruct of (id_t * typecode_t) list
+  | SYMDEF_cstruct of (id_t * typecode_t) list * named_req_expr_t 
   | SYMDEF_typeclass
   | SYMDEF_type_alias of typecode_t
   | SYMDEF_inherit of qualified_name_t

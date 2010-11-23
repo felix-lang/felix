@@ -1396,9 +1396,9 @@ syntax type_decls {
     `(ast_struct ,_sr ,(first _2) ,(second _2) ,_5)
      """;
 
-  sstruct_decl := "cstruct" sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
+  sstruct_decl := "cstruct" sdeclname = ? lbrace sstruct_mem_decl * rbrace srequires_clause ";" =>#
     """
-    `(ast_cstruct ,_sr ,(first _2) ,(second _2) ,_5)
+    `(ast_cstruct ,_sr ,(first _2) ,(second _2) ,_5 ,_7)
      """;
 
   sopt_name := sname =># "_1";
