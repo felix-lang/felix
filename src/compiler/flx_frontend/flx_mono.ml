@@ -281,7 +281,7 @@ let chk_mono syms bsym_table i =
   | BBDCL_external_const (_,_,_,CS_str "#this",_) -> true
   | BBDCL_external_const _ -> false
   | BBDCL_union (vs,ps) -> false
-  | BBDCL_cstruct (vs,ps) -> false
+  | BBDCL_cstruct (vs,ps,_) -> false
   | BBDCL_struct (vs,ps) -> false
   | BBDCL_newtype (vs,t) -> false
   | BBDCL_external_code _ -> false

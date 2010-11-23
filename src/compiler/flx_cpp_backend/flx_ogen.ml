@@ -594,7 +594,7 @@ let gen_offset_tables syms bsym_table module_name =
           ("[ogen] attempt to allocate an incomplete type: '" ^ Flx_bsym.id bsym ^"'")
 
       | BBDCL_union _ -> () (* handled by universal _uctor_ *)
-      | BBDCL_cstruct (vs,cps) ->
+      | BBDCL_cstruct (vs,cps, reqs) ->
         (* cstruct shouldn't have allocable stuff in it *)
 
         let this_ptr_map = name ^ "_ptr_map" in

@@ -3,7 +3,7 @@ struct S { int x; };
 """;
 
 // cstruct with one element as function
-cstruct S { x:int; }
+cstruct S { x:int; } ;
 proc print (s:S) { print "cstruct S x="; print s.x; }
 fun exec (p:int -> S, x:int) => p x;
 

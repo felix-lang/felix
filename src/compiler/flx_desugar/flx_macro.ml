@@ -925,9 +925,9 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let idts = List.map (fun (id,t) -> id,mt sr t) idts in
     tack (STMT_struct (sr, mi sr id, vs, idts))
 
-  | STMT_cstruct (sr, id, vs, idts) ->
+  | STMT_cstruct (sr, id, vs, idts, reqs) ->
     let idts = List.map (fun (id,t) -> id,mt sr t) idts in
-    tack (STMT_cstruct (sr, mi sr id, vs, idts))
+    tack (STMT_cstruct (sr, mi sr id, vs, idts, rqmap reqs))
 
   | STMT_typeclass (sr, id, vs, sts) ->
     tack (STMT_typeclass (sr, mi sr id, vs, ms sts))

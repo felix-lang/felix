@@ -276,7 +276,8 @@ and inner_lookup_name_in_env state bsym_table env rs sr name : entry_set_t =
       *)
       resolve_inherits state bsym_table rs sr x
     | None ->
-print_endline ("Can't find name " ^ name ^ " in env "); (* print_env env; *)
+print_endline ("[lookup_name_in_env]: Can't find name " ^ name ^ " in env "); (* print_env env; *)
+print_endline ("Issuing clierr .. why isn't it trapped?");
 
       clierr sr
       (
@@ -1665,7 +1666,7 @@ and btype_of_bsym state bsym_table bt bid bsym =
   | BBDCL_union (_,ls) ->
       btyp_variant (List.map (fun (n,_,t) -> n,t) ls)
   | BBDCL_struct (_,ls)
-  | BBDCL_cstruct (_,ls) ->
+  | BBDCL_cstruct (_,ls,_) ->
       (* Lower a struct type into a function that creates the struct. *)
       let ts = List.map
         (fun (s,i,_) -> TYP_name (Flx_bsym.sr bsym,s,[]))
@@ -1787,7 +1788,7 @@ and inner_type_of_index state bsym_table rs index =
       clierr sym.Flx_sym.sr ("Union " ^ sym.Flx_sym.id ^ " doesn't have a type")
 
   (* struct as function *)
-  | SYMDEF_cstruct ls
+  | SYMDEF_cstruct (ls,_)
   | SYMDEF_struct ls ->
       (* ARGGG WHAT A MESS *)
       let ts = List.map
@@ -1905,7 +1906,7 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
       begin match get_data state.sym_table index with
       { Flx_sym.id=id; vs=vs; symdef=entry } ->
         begin match entry with
-        | SYMDEF_cstruct (cs) -> t1, None
+        | SYMDEF_cstruct (cs,_) -> t1, None
         | SYMDEF_struct (cs) -> t1, None
         | _ ->
           clierr sr
@@ -4183,7 +4184,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       *)
       let id,vs,fls = match hfind "lookup" state.sym_table i with
         | { Flx_sym.id=id; vs=vs; symdef=SYMDEF_struct ls }
-        | { Flx_sym.id=id; vs=vs; symdef=SYMDEF_cstruct ls } -> id,vs,ls
+        | { Flx_sym.id=id; vs=vs; symdef=SYMDEF_cstruct (ls,_) } -> id,vs,ls
         | _ -> assert false
       in
       let alst = match ta with
@@ -4375,7 +4376,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
             end
           end
         (* LHS CSTRUCT *)
-        | { Flx_sym.id=id; vs=vs; symdef=SYMDEF_cstruct ls } ->
+        | { Flx_sym.id=id; vs=vs; symdef=SYMDEF_cstruct (ls,_) } ->
           (* NOTE: we try $1.name binding using get_n first,
           but if we can't find a component we treat the
           entity as abstract.

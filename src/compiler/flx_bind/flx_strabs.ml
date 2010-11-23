@@ -119,9 +119,9 @@ let strabs_symbol state bsym_table index bsym =
       let cts = map (fun (s,t) -> s,ft t) cts in
       h (bbdcl_struct (bvs, cts))
 
-  | BBDCL_cstruct (bvs, cts) ->
+  | BBDCL_cstruct (bvs, cts, breqs) ->
       let cts = map (fun (s,t) -> s,ft t) cts in
-      h (bbdcl_cstruct (bvs, cts))
+      h (bbdcl_cstruct (bvs, cts, breqs))
 
   | BBDCL_typeclass (props, bvs) ->
       h (bbdcl_typeclass (props, bvs))

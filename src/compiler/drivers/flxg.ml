@@ -1000,15 +1000,19 @@ let main () =
     ;
     let main_prog = List.hd inroots in
     let libs = List.rev (List.tl inroots) in
+(*
     print_endline ("Libraries=" ^ String.concat ", " libs);
     print_endline ("Main program =" ^ main_prog);
+*)
     let bsyms = ref [] in
     let inits = ref [] in
     let excls:string list ref = ref [] in
     let rec aux ls = match ls with 
     | [] -> ()
     | h :: t -> 
+(*
       print_endline ("Processing library " ^ h);
+*)
       let lib_filedir,lib_filename = 
           Flx_filesys.find_include_dir 
            ~include_dirs:state.syms.compiler_options.include_dirs
@@ -1130,8 +1134,9 @@ print_endline (Flx_sym_table.detail sym_table);
 *)
     bind_asms state sym_table bsym_table (!start_counter) asms;
     start_counter := !(state.syms.counter);
+(*
 print_endline "Main program bound";
-
+*)
     (* make the root proc *)
 
     let entry = try Hashtbl.find sym_table 0 with Not_found -> failwith "flxg: can't find root" in

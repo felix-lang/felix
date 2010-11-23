@@ -3,7 +3,7 @@ struct S { int x; int y; int z; };
 """;
 
 // cstruct with one element as function
-cstruct S { x:int; y:int; z:int; }
+cstruct S { x:int; y:int; z:int; } ;
 proc print (s:S) { print$ f"cstruct S x=%d y=%d z=%d" (s.x, s.y, s.z); }
 fun exec (p:(int * int * int) -> S, x:int, y:int, z:int) => p (x, y, z);
 

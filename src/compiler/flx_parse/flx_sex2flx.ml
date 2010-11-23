@@ -585,14 +585,14 @@ and xstatement_t sr x : statement_t =
     STMT_struct (xsr sr,n, xvs vs, ucmp)
 
 
-  | Lst [Id "ast_cstruct"; sr; Str n; vs; ucmp] ->
+  | Lst [Id "ast_cstruct"; sr; Str n; vs; ucmp; reqs] ->
     let xscmp = function
       | Lst [Id c; t] -> c, ti t
       | Lst [Str c; t] -> c, ti t
       | x -> err x "cstruct component"
     in
     let ucmp = lst "cstruct component" xscmp ucmp in
-    STMT_cstruct (xsr sr,n, xvs vs, ucmp)
+    STMT_cstruct (xsr sr,n, xvs vs, ucmp, xrr reqs)
 
   | Lst [Id "ast_type_alias"; sr; Str n; vs; t] ->
     STMT_type_alias (xsr sr,n, xvs vs, ti t)

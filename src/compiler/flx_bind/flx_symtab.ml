@@ -1050,18 +1050,29 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
       (* Add type variables to the private symbol table. *)
       add_tvars privtab
 
-  | DCL_cstruct sts
+  | DCL_cstruct (sts, reqs) ->
+      let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst ivs) in
+      let stype = `AST_name(sr, id, tvars) in
+
+      (* Add symbols to sym_table *)
+      add_symbol ~pubtab ~privtab symbol_index id ( SYMDEF_cstruct (sts, reqs));
+
+      (* Possibly add the struct to the public symbol table. *)
+      if access = `Public then add_unique pub_name_map id symbol_index;
+
+      (* Add struct to the private symbol table. *)
+      add_unique priv_name_map id symbol_index;
+
+      (* Add type variables to the private symbol table. *)
+      add_tvars privtab
+
+
   | DCL_struct sts ->
       let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst ivs) in
       let stype = `AST_name(sr, id, tvars) in
 
       (* Add symbols to sym_table *)
-      add_symbol ~pubtab ~privtab symbol_index id (
-        match dcl with
-        | DCL_struct _ -> SYMDEF_struct sts
-        | DCL_cstruct _ -> SYMDEF_cstruct sts
-        | _ -> assert false
-      );
+      add_symbol ~pubtab ~privtab symbol_index id ( SYMDEF_struct sts);
 
       (* Possibly add the struct to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;

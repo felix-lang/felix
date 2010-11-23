@@ -750,11 +750,12 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     let cs' = List.map (fun (n,t) -> n, bt t) cs in
     add_bsym None (bbdcl_struct (bvs, cs'))
 
-  | SYMDEF_cstruct cs ->
+  | SYMDEF_cstruct (cs,reqs) ->
     (* print_endline ("//Binding struct " ^ si i ^ " --> " ^ name);
     *)
     let cs' = List.map (fun (n,t) -> n, bt t) cs in
-    add_bsym None (bbdcl_cstruct (bvs, cs'))
+    let breqs = bind_reqs reqs in 
+    add_bsym None (bbdcl_cstruct (bvs, cs', breqs))
 
   | SYMDEF_typeclass ->
     add_bsym true_parent (bbdcl_typeclass ([], bvs))
@@ -796,8 +797,9 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
     add_bsym None (bbdcl_newtype (bvs, t))
 
   | SYMDEF_insert (ct,ikind,reqs) ->
-    (* print_endline ("//Binding header string " ^ si i ^ " --> " ^ name);
-    *)
+(*
+    print_endline ("//Binding insertion string " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id^ ":"^ string_of_ikind ikind ^"="^ string_of_code_spec ct);
+*)
     let reqs = bind_reqs reqs in
     add_bsym true_parent (bbdcl_external_code (bvs, ct, ikind, reqs))
   end

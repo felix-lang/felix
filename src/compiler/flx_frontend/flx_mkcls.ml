@@ -168,7 +168,7 @@ let gen_closure state bsym_table bid t =
         bbdcl_fun ([],vs,([param],None),ret,exes)
 
     | BBDCL_struct (vs,ps)
-    | BBDCL_cstruct (vs,ps) ->
+    | BBDCL_cstruct (vs,ps,_) ->
         let ts, param, arg = make_inner_function vs (List.map snd ps) in
 
         (* Generate a call to the wrapped function. *)

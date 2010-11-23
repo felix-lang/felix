@@ -363,7 +363,7 @@ let emit_whycode filename syms bsym_table root =
   output_string f "(****** STRUCTS *******)\n";
   Flx_bsym_table.iter begin fun index _ bsym ->
     match Flx_bsym.bbdcl bsym with
-    | BBDCL_cstruct (bvs,variants)
+    | BBDCL_cstruct (bvs,variants,_)
     | BBDCL_struct (bvs,variants) ->
         emit_type syms bsym_table f index (Flx_bsym.id bsym) (Flx_bsym.sr bsym) bvs
     | _ -> ()

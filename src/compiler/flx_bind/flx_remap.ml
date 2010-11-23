@@ -130,10 +130,11 @@ let remap_bbdcl offset bbdcl =
       let cs = List.map (fun (n,t) -> n,remap_btype t) cs in
       bbdcl_struct (vs, cs)
 
-  | BBDCL_cstruct (vs, cs) ->
+  | BBDCL_cstruct (vs, cs, reqs) ->
       let vs = remap_bvs vs in
       let cs = List.map (fun (n,t) -> n,remap_btype t) cs in
-      bbdcl_cstruct (vs, cs)
+      let reqs = remap_breqs reqs in
+      bbdcl_cstruct (vs, cs, reqs)
 
   | BBDCL_typeclass (props, vs) ->
       bbdcl_typeclass (props, remap_bvs vs)
