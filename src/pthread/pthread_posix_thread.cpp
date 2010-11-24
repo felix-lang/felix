@@ -18,7 +18,7 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
   tstart_t *ehd = (tstart_t*)e;
   thread_control_t *tc = ehd -> tc;
   if(tc && tc->debug)
-    fprintf(stderr,"Spawned Thread %lx start stack base = %p, tc=%p\n",get_current_native_thread(),stack_base, tc);
+    fprintf(stderr,"Spawned Thread %p start stack base = %p, tc=%p\n",get_current_native_thread(),stack_base, tc);
   if(tc)tc->add_thread(stack_base);
   void (*sr)(void*)=ehd->sr;
   void *cd = ehd->cd;

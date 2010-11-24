@@ -6,17 +6,17 @@ namespace flx { namespace rtl { namespace ioutil {
   using namespace std;
 
 /* small buffer for testing, should be much large in production version */
-#define BUFSIZ 512
+#define MYBUFSIZ 512
   string load_file (FILE *fi)
   {
     if (fi)
     {
       string x = "";
-      char buffer[BUFSIZ];
+      char buffer[MYBUFSIZ];
 more:
-      int n = fread(buffer,1,BUFSIZ,fi);
+      int n = fread(buffer,1,MYBUFSIZ,fi);
       if(n>0) x = x + string(buffer,n);
-      if (n == BUFSIZ)goto more;
+      if (n == MYBUFSIZ)goto more;
       fclose(fi);
       return x;
     }
@@ -30,11 +30,11 @@ more:
     if (fi)
     {
       string x = "";
-      char buffer[BUFSIZ];
+      char buffer[MYBUFSIZ];
 more:
-      int n = fread(buffer,1,BUFSIZ,fi);
+      int n = fread(buffer,1,MYBUFSIZ,fi);
       if(n>0) x = x + string(buffer,n);
-      if(n == BUFSIZ)goto more;
+      if(n == MYBUFSIZ)goto more;
       fclose(fi);
       return x;
     }
@@ -48,8 +48,8 @@ more:
     if(fi)
     {
       string x = "";
-      char buffer[BUFSIZ+1];
-      buffer[BUFSIZ]='\0';
+      char buffer[MYBUFSIZ+1];
+      buffer[MYBUFSIZ]='\0';
       int n;
       while
       (
@@ -58,7 +58,7 @@ more:
           x[n-1]=='\n'
         )
         &&
-        fgets(buffer,BUFSIZ,fi)
+        fgets(buffer,MYBUFSIZ,fi)
       )
         x = x + string(buffer);
       return x;

@@ -995,7 +995,8 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     let mdcl =
       [ Dcl (sr,name',None,access,vs', DCL_module asms) ]
     in
-      (* HACK !!!! *)
+    (* HACK !!!! Actually, it's wrong: there are no polymorphic modules
+       or polymorphic variables .. *)
     if vs' = dfltvs then gen_call_init sr name' :: mdcl else mdcl
 
   | STMT_insert (sr,name',vs,s,kind,reqs) ->

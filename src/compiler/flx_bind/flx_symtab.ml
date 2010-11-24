@@ -633,6 +633,7 @@ print_endline ("Flx_symtab: Adding " ^ id^"="^string_of_int symbol_index);
       end
 
   | DCL_module asms ->
+      let complete_vs = merge_ivs inherit_ivs ivs in
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
@@ -641,7 +642,7 @@ print_endline ("Flx_symtab: Adding " ^ id^"="^string_of_int symbol_index);
           counter_ref
           sym_table
           id
-          (merge_ivs inherit_ivs ivs)
+          complete_vs
           (level + 1)
           (Some symbol_index)
           asms
@@ -652,31 +653,37 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
 *)
       add_symbol ~pubtab ~privtab ~dirs symbol_index id (SYMDEF_module exes);
 
-      (* Take all the exes and add them to a function called _init_ that's
-       * called when the module is loaded. *)
-      let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
-
-      (* Get a unique index for the _init_ function. *)
-      let n' = Flx_mtypes2.fresh_bid counter_ref in
-
-      if print_flag then
-        print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n' ^
-        " -> _init_  (module " ^ id ^ ")");
-
-      (* Add the _init_ function to the sym_table. *)
-      add_symbol ~parent:(Some symbol_index) n' "_init_" init_def;
-
       (* Possibly add module to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
 
       (* Add the module to the private symbol table. *)
       add_unique priv_name_map id symbol_index;
 
-      (* Possibly add the _init_ function to the public symbol table. *)
-      if access = `Public then add_function pubtab "_init_" n';
+      (* WARNING: this is bugged for polymorphic modules, can't get that to work.
+         the call is only generated in flx_desugar for non-polymorphic modules
+         so we should only add an init function for them
+      *)
+      if complete_vs = dfltvs then begin
+        (* Take all the exes and add them to a function called _init_ that's
+         * called when the module is loaded. *)
+        let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
 
-      (* Add the _init_ function to the symbol table. *)
-      add_function privtab "_init_" n';
+        (* Get a unique index for the _init_ function. *)
+        let n' = Flx_mtypes2.fresh_bid counter_ref in
+
+        if print_flag then
+          print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n' ^
+          " -> _init_  (module " ^ id ^ ")");
+
+        (* Add the _init_ function to the sym_table. *)
+        add_symbol ~parent:(Some symbol_index) n' "_init_" init_def;
+        (* Possibly add the _init_ function to the public symbol table. *)
+        if access = `Public then add_function pubtab "_init_" n';
+
+        (* Add the _init_ function to the symbol table. *)
+        add_function privtab "_init_" n'
+      end
+      ;
 
       (* Add the interface. *)
       interfaces := !interfaces @ ifaces;

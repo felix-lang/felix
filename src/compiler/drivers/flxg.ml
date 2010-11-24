@@ -923,7 +923,7 @@ let make_assembly
         (* get the parse of the felix file, with caching  *)
         let stmts = 
 (*
-print_endline ("Filename is " ^ flx_name);
+let _ = print_endline ("Filename is " ^ flx_name) in
 *)
           let in_par_name = Flx_filesys.join filedir filename ^ ".par2" in
           let out_par_name = 
@@ -959,13 +959,16 @@ print_endline ("Filename is " ^ flx_name);
             unprocessed := include_entry :: (!unprocessed)
           end
         ) 
-        (* reverse order to compensate for stacking outputs *)
-        (List.rev include_files)
+        (* desugar outputs the include files backwards, but we push them onto the unprocessed
+         * stack which means the order is again reversed so we actually get the proper order
+         * of initialisation *)
+        include_files
         ;
         (* add record for processed file *)
         outputs := {filename=flx_base_name; asms=asms;} :: (!outputs);
      end
     done;
+    (* but again, the order is reversed here *)
     !outputs
 
 let main () =
@@ -1004,8 +1007,6 @@ let main () =
     print_endline ("Libraries=" ^ String.concat ", " libs);
     print_endline ("Main program =" ^ main_prog);
 *)
-    let bsyms = ref [] in
-    let inits = ref [] in
     let excls:string list ref = ref [] in
     let rec aux ls = match ls with 
     | [] -> ()
@@ -1039,6 +1040,8 @@ let main () =
           ~force_calc:true
           ~min_time:lib_time 
           (fun () -> 
+            (* make assembly outputs stuff in reversed order, but this routine
+             * reversed it back again *)
             let assembly = make_assembly state !excls h (Search h) in
             let includes, asmss= 
                let rec aux includes asmss a = match a with
@@ -1055,7 +1058,8 @@ let main () =
 (*
 print_endline "Trial binding";
 *)
-      let asms = List.concat (List.rev asms) in
+      (* already in the right order now *)
+      let asms = List.concat asms in
       let asms = make_module module_name asms in
 (*
 print_endline "Binding asms: ";

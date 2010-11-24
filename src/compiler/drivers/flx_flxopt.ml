@@ -38,7 +38,7 @@ let get_felix_options options =
           | Some i ->
             (
               if i = "none" then 0 else
-              if i = "" then 50 else
+              if i = "" then 150 else
                 try
                   int_of_string i
                 with _ ->
@@ -49,13 +49,13 @@ let get_felix_options options =
             | true -> 0
             | false ->
               begin match check_keys options ["inline";"opt";"optimise"] with
-              | true -> 50
-              | false -> 5
+              | true -> 250
+              | false -> 15
               end
             end
         in
           (* we need to at least inline a little for typeclasses *)
-          if inline < 1 then 1 else inline
+          if inline < 10 then 10 else inline
       end
     ;
     auto_imports = get_key_values options "import"

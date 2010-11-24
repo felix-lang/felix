@@ -276,9 +276,10 @@ and inner_lookup_name_in_env state bsym_table env rs sr name : entry_set_t =
       *)
       resolve_inherits state bsym_table rs sr x
     | None ->
+(*
 print_endline ("[lookup_name_in_env]: Can't find name " ^ name ^ " in env "); (* print_env env; *)
 print_endline ("Issuing clierr .. why isn't it trapped?");
-
+*)
       clierr sr
       (
         "[lookup_name_in_env]: Name '" ^
