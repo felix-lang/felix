@@ -1,7 +1,7 @@
 include "plat/filename";
 
 module Filename {
-  val sep = Plat_Filename::sep;
+  macro val sep = Plat_Filename::sep;
   // these seem more generic
 
   // split1 returns a pair consisting of a directory name and basename

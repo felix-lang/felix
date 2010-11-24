@@ -286,7 +286,7 @@ whilst grab == 1 and argno<System::argc do
 
   elif arg == "--man" do
     debugln "Display top level manual page using 'man' program";
-    C_hack::ignore(system( "man -M "+FLX_INSTALL_DIR+Filename::sep+"man"+" flx"));
+    C_hack::ignore(system( "man -M "+FLX_INSTALL_DIR+Plat_Filename::sep+"man"+" flx"));
     System::exit(0);
 
   elif arg == "--help" do

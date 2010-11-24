@@ -14,20 +14,11 @@ so it can be built early enough.
 proc kludge : 1 = "PTF gcp->allow_collection_anywhere=false;";
 kludge();
 
-open String;
-open List;
-open System;
-open Env;
-open Filename;
-open Text_file;
+macro val sep = Plat_Filename::sep;
 open Lexer;
-/*
-regexp white = " " +;
-regexp black = [^" "]+;
-regexp dquoted = '"' [^'"']* '"';
-regexp squoted = "'" [^"'"]* "'";
-regexp quoted = dquoted | squoted;
-*/
+open Env;
+open Text_file;
+open System;
 
 proc pre_incr:&iterator = "++*$1;";
 
