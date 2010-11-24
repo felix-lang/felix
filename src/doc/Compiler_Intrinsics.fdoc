@@ -14,6 +14,15 @@ to find the length of an array.
 The psuedo C code <code>#memcount</code> is replace by an integer literal
 repesenting the number of constructors in a union or sum type.
 
+@felix test/regress/rt/memcount-01.flx
+
+
 @h2 Tuple folders
 [See desugar module to write this up]
 
+@h2 __repr__
+This function like operator is used to obtain the representation
+of an abstract type. This can only be done in the module in
+which the type is defined.
+
+@felix test/regress/rt/abstract_types-01.flx

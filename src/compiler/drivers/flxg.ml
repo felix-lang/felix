@@ -979,8 +979,8 @@ let main () =
      try make_module_name (List.hd state.syms.compiler_options.files)
      with _ -> "empty_module"
   in
-  let bsym_table = Flx_bsym_table.create () in
-  let sym_table = Flx_sym_table.create () in
+  let bsym_table_ref = ref (Flx_bsym_table.create ()) in
+  let sym_table_ref = ref (Flx_sym_table.create ()) in
   let sym : Flx_sym.t = {
     Flx_sym.id="root"; 
     sr=Flx_srcref.dummy_sr; 
@@ -992,7 +992,7 @@ let main () =
   } 
   in
   let root_elt = {Flx_sym_table.parent=None; sym=sym; } in
-  Hashtbl.add sym_table 0 root_elt;
+  Hashtbl.add (!sym_table_ref) 0 root_elt;
 
   let inroots = List.rev state.syms.compiler_options.files in (* reverse order of command line *)
   let outdir= state.syms.compiler_options.cache_dir in
@@ -1034,14 +1034,27 @@ let main () =
         | Some d -> Some (Flx_filesys.join d lib_filename ^ ".libtab")
         | None -> None
       in
-      let includes, asms, saved_counter =
+      let 
+        includes, 
+        saved_counter, 
+        varmap, 
+        ticache, 
+        typeclass_to_instance, 
+        instances_of_typeclass, 
+        axioms, 
+        reductions,
+        out_sym_table,
+        out_bsym_table 
+      =
         Flx_filesys.cached_computation "libtab" in_libtab_name
           ~outfile:out_libtab_name
-          ~force_calc:true
+          ~force_calc:(false || state.syms.compiler_options.force_recompile)
           ~min_time:lib_time 
           (fun () -> 
             (* make assembly outputs stuff in reversed order, but this routine
              * reversed it back again *)
+            let cal_time = make_timer() in
+            print_endline ("Binding libary " ^ h);
             let assembly = make_assembly state !excls h (Search h) in
             let includes, asmss= 
                let rec aux includes asmss a = match a with
@@ -1050,30 +1063,41 @@ let main () =
                    aux (filename :: includes) (asms::asmss) t
                in aux [] [] assembly
             in
-            includes, asmss, !(state.syms.counter)
+            (* already in the right order now *)
+            let asms = List.concat asmss in
+            let asms = make_module module_name asms in
+            (*
+            print_endline "Binding asms: ";
+            List.iter (fun a -> print_endline (Flx_print.string_of_asm 2 a)) asms;
+            *)
+            (* Bind the assemblies. *)
+            bind_asms state !sym_table_ref !bsym_table_ref !start_counter asms;
+            print_endline ("binding library " ^ h ^ " done in "^ string_of_float (cal_time()) ^ " seconds");
+            includes, 
+            !(state.syms.counter),
+            state.syms.varmap, 
+            state.syms.ticache, 
+            state.syms.typeclass_to_instance, 
+            state.syms.instances_of_typeclass, 
+            !(state.syms.axioms), 
+            !(state.syms.reductions),
+            !sym_table_ref,
+            !bsym_table_ref 
           )
       in
       state.syms.counter := max !(state.syms.counter)  saved_counter;
-
-(*
-print_endline "Trial binding";
-*)
-      (* already in the right order now *)
-      let asms = List.concat asms in
-      let asms = make_module module_name asms in
-(*
-print_endline "Binding asms: ";
-List.iter (fun a -> print_endline (Flx_print.string_of_asm 2 a)) asms;
-*)
-      (* Bind the assemblies. *)
-      bind_asms state sym_table bsym_table !start_counter asms;
+      state.syms.varmap <- varmap;
+      state.syms.ticache <- ticache;
+      state.syms.typeclass_to_instance <- typeclass_to_instance;
+      state.syms.instances_of_typeclass <- instances_of_typeclass;
+      state.syms.axioms := axioms;
+      state.syms.reductions := reductions;
       start_counter := !(state.syms.counter);
+      sym_table_ref := out_sym_table;
+      bsym_table_ref := out_bsym_table;
 
       excls := includes @ !excls;  (* already processed include files *)
 
-(*
-print_endline "Trial binding done";
-*)
 (*
       let clr s h = print_endline ("Table " ^ s ^ " len=" ^ string_of_int (Hashtbl.length h)); Hashtbl.clear h in
       let clrl s h = print_endline ("Table " ^ s ^ " len=" ^ string_of_int (List.length (!h))); h:=[] in
@@ -1105,6 +1129,8 @@ print_endline "Trial binding done";
 (*
     print_endline ("Making symbol tables for main program " ^ main_prog);
 *)
+    let sym_table = !sym_table_ref in
+    let bsym_table = !bsym_table_ref in
     let assembly =  make_assembly state !excls module_name (NoSearch main_prog) in
     let includes, asmss= 
        let rec aux includes asmss a = match a with

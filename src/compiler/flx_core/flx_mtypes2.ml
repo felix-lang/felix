@@ -68,8 +68,8 @@ type felix_compiler_options_t =
 type sym_state_t =
 {
   counter : bid_t ref;
-  varmap : typevarmap_t;
-  ticache : (bid_t, Flx_btype.t) Hashtbl.t;
+  mutable varmap : typevarmap_t;
+  mutable ticache : (bid_t, Flx_btype.t) Hashtbl.t;
   env_cache : (bid_t, env_t) Hashtbl.t;
   registry : type_registry_t;
   compiler_options : felix_compiler_options_t;
@@ -81,8 +81,8 @@ type sym_state_t =
   reductions : reduction_t list ref;
   axioms: axiom_t list ref;
   variant_map: (Flx_btype.t * Flx_btype.t, bid_t) Hashtbl.t;
-  typeclass_to_instance: (bid_t, (bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
-  instances_of_typeclass: (bid_t, (bid_t * (bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
+  mutable typeclass_to_instance: (bid_t, (bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
+  mutable instances_of_typeclass: (bid_t, (bid_t * (bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
   transient_specialisation_cache: (bid_t * Flx_btype.t list, bid_t * Flx_btype.t list) Hashtbl.t;
 }
 

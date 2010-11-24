@@ -67,8 +67,8 @@ type felix_compiler_options_t =
 type sym_state_t =
 {
   counter : Flx_types.bid_t ref;
-  varmap : typevarmap_t;
-  ticache : (Flx_types.bid_t, Flx_btype.t) Hashtbl.t;
+  mutable varmap : typevarmap_t;
+  mutable ticache : (Flx_types.bid_t, Flx_btype.t) Hashtbl.t;
   env_cache : (Flx_types.bid_t, env_t) Hashtbl.t;
   registry : type_registry_t;
   compiler_options : felix_compiler_options_t;
@@ -80,8 +80,8 @@ type sym_state_t =
   reductions : reduction_t list ref;
   axioms : axiom_t list ref;
   variant_map: (Flx_btype.t * Flx_btype.t, Flx_types.bid_t) Hashtbl.t;
-  typeclass_to_instance: (Flx_types.bid_t, (Flx_types.bvs_t * Flx_btype.t * Flx_btype.t list * Flx_types.bid_t) list) Hashtbl.t;
-  instances_of_typeclass: (Flx_types.bid_t, (Flx_types.bid_t * (Flx_types.bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
+  mutable typeclass_to_instance: (Flx_types.bid_t, (Flx_types.bvs_t * Flx_btype.t * Flx_btype.t list * Flx_types.bid_t) list) Hashtbl.t;
+  mutable instances_of_typeclass: (Flx_types.bid_t, (Flx_types.bid_t * (Flx_types.bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
   transient_specialisation_cache: (Flx_types.bid_t * Flx_btype.t list, Flx_types.bid_t * Flx_btype.t list) Hashtbl.t;
 }
 
