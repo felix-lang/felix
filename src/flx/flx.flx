@@ -75,10 +75,15 @@ fun splitext(p:string)=>
 ;
 
 gen system(cmd:string):int= {
-  if ECHO==1 do println(cmd); done
+  if ECHO==1 do fprintln$ cerr, cmd; done
   var result = System::system(cmd);
-  if ECHO==1 do println("Result code " + str(result)); done
+  if ECHO==1 do fprintln$ cerr, "Result code " + str(result); done
   return result;
+}
+
+// Optionally print a debug line.
+proc debugln[T with Str[T]] (x:T) {
+  dbug ?? fprintln (cerr, str x);
 }
 
 var argno=1;
@@ -93,10 +98,10 @@ var result = 0;
 
 whilst grab == 1 and argno<System::argc do
   arg = System::argv argno;
-  dbug?? println$ "ARGNO="+str(argno)+", arg='"+arg+"'";
+  debugln$ "ARGNO="+str(argno)+", arg='"+arg+"'";
   var path,ext = splitext(arg);
   var dir,base = Filename::split1(path);
-  dbug?? println$ "path="+path+", ext="+ext+",dir="+dir+",base="+base;
+  debugln$ "path="+path+", ext="+ext+",dir="+dir+",base="+base;
   if ext != "flx" and ext != "" do
     // add to list of things to link, and also things to compile
     // if the extension is appropriate
@@ -108,26 +113,26 @@ whilst grab == 1 and argno<System::argc do
     done
 
   elif arg == "--nostdimport" do
-    dbug?? println "No standard library import";
+    debugln "No standard library import";
     // Note: currently, Felix compiler generates code that REQUIRES
     // the standard library, eg the driver passes a gc_profile_t record
     // and the compiler generates _uctor_ objects, etc etc
     STDIMPORT="";
 
   elif prefix(arg,"--import=") do
-   dbug?? println "Add import";
+   debugln "Add import";
    IMPORTS=IMPORTS + " " + arg.[9 to];
 
   elif prefix(arg,"--test=") do
-    dbug?? println "Set test directory";
+    debugln "Set test directory";
     FLX_INSTALL_DIR=arg.[7 to];
 
   elif arg=="--test" do
-    dbug?? println "Set test directory";
+    debugln "Set test directory";
     FLX_INSTALL_DIR=".";
 
   elif arg=="--install" do
-    dbug?? println "Intall Felix";
+    debugln "Install Felix";
     println "Install Felix: ONLY ON UNIX (you may need to be superuser)";
     println "Always installs the --test directory to the configured install target";
     println "Because that is hard coded into this program";
@@ -153,55 +158,55 @@ whilst grab == 1 and argno<System::argc do
     done
 
   elif prefix(arg,"--stdout=") do
-    dbug?? println "Redirect standard output";
+    debugln "Redirect standard output";
     // of the Felix program only: used for saving the output
     // to a file so the test harness can compare it with an .expect file
     STDOUT=arg.[9 to];
 
   elif arg=="--force" do
-    dbug?? println "Force recompilation";
+    debugln "Force recompilation";
     // of the felix code, runs Felix unless --nofelix is set
     // the C++ compiler is run unless the felix compile failed
     RECOMPILE=1;
 
   elif arg=="--debug" do
-    dbug?? println "Enable runtime debugging";
+    debugln "Enable runtime debugging";
     DEBUG=1;
 
   elif arg=="--debug-compiler" do
-    dbug?? println "Enable compiler debugging";
+    debugln "Enable compiler debugging";
     DEBUG_COMPILER=1;
 
   elif arg=="--nooptimise" do
-    dbug?? println "Disable optimisation";
+    debugln "Disable optimisation";
     NOOPTIMISE=1;
 
   elif arg=="--nostdlib" do
-    dbug?? println "Do not load standard library";
+    debugln "Do not load standard library";
     NOSTDLIB=1;
 
   elif arg == "--echo" do
-    dbug?? println "Echo commands sent to system";
+    debugln "Echo commands sent to system";
     ECHO=1;
 
   elif arg == "--static" do
-    dbug?? println "Compile a statically linked program";
+    debugln "Compile a statically linked program";
     STATIC=1;
 
   elif prefix(arg,"--inline=") do
-    dbug?? println "Set inline aggressiveness";
+    debugln "Set inline aggressiveness";
     INLINE=int(arg.[to 9]);
 
   elif arg == "--inline" do
-    dbug?? println "Set inline aggressiveness";
+    debugln "Set inline aggressiveness";
     INLINE=100;
 
   elif arg == "--noinline" do
-    dbug?? println "Disable inlining (NOT RECOMMENDED)";
+    debugln "Disable inlining (NOT RECOMMENDED)";
     INLINE=0;
 
   elif arg == "--version" do
-    dbug?? println "Print Felix version and exit";
+    debugln "Print Felix version and exit";
     print("version ..");
     println(VERSION);
     System::exit(0);
@@ -263,29 +268,29 @@ whilst grab == 1 and argno<System::argc do
     System::exit(0)
 
   elif arg == "--where" do
-    dbug?? println "Print location of install directory and exit";
+    debugln "Print location of install directory and exit";
     println(FLX_INSTALL_DIR);
     System::exit(0);
 
   elif arg == "--time" do
-    dbug?? println "Time program execution and print after running";
+    debugln "Time program execution and print after running";
     TIME=1;
 
   elif prefix(arg,"--output_dir=") do
-    dbug?? println "Set the directory for compiler generated C++ files";
+    debugln "Set the directory for compiler generated C++ files";
     OUTPUT_DIR=arg.[13 to];
 
   elif prefix(arg,"--cache_dir=") do
-    dbug?? println "Set the directory for compiler generated *.par files";
+    debugln "Set the directory for compiler generated *.par files";
     CACHE_DIR=arg.[12 to];
 
   elif arg == "--man" do
-    dbug?? println "Display top level manual page using 'man' program";
+    debugln "Display top level manual page using 'man' program";
     C_hack::ignore(system( "man -M "+FLX_INSTALL_DIR+Filename::sep+"man"+" flx"));
     System::exit(0);
 
   elif arg == "--help" do
-    dbug?? println "Display top level manual page using 'man' program";
+    debugln "Display top level manual page using 'man' program";
     println "Usage: flx [options] filename[.flx] [args ..]";
     println "options:";
     println "--test               : use felix installation in current directory";
@@ -325,76 +330,76 @@ whilst grab == 1 and argno<System::argc do
     System::exit(0);
 
   elif arg == "-c" do
-    dbug?? println "Compile program but do not run it";
+    debugln "Compile program but do not run it";
     RUNIT=0;
 
   elif prefix(arg,"-I") do
-    dbug?? println "Set include directories for both Felix and C/C++";
+    debugln "Set include directories for both Felix and C/C++";
     INCLUDE_DIRS=INCLUDE_DIRS + " " + arg;
 
   elif arg== "--nofelix" do
-    dbug?? println "Do not translate Felix code, just compile generated C++ (used to debug at C++ level)";
+    debugln "Do not translate Felix code, just compile generated C++ (used to debug at C++ level)";
     FELIX=0;
 
   elif prefix(arg,"-l") or prefix(arg,"-L") do
-    dbug?? println "Set extra switched for linker";
+    debugln "Set extra switched for linker";
     LINKER_SWITCHES=LINKER_SWITCHES + " " + arg;
 
   elif prefix(arg,"-D") do
-    dbug?? println "Set extra macros for C++ compilation";
+    debugln "Set extra macros for C++ compilation";
     MACROS=MACROS + " " + arg;
 
   elif prefix(arg,"--pkg=") do
-    dbug?? println "Add pkgconfig package to link";
+    debugln "Add pkgconfig package to link";
     pkgs= pkgs + " " + arg.[6 to];
 
   elif prefix(arg,"--") do
-    dbug?? println "Unknown -- style option, abort";
+    debugln "Unknown -- style option, abort";
     println("Unknown option '"+ arg+"'");
     System::exit(1);
 
 // the main filename -- subsequent args are args to flx_run
   else
-    dbug?? println "Assume we have the filename now";
+    debugln "Assume we have the filename now";
     grab=0;
   done
   argno = argno + 1;
 done
 
-dbug?? println$ grab,argno,System::argc;
+debugln$ grab, argno, System::argc;
 if grab == 1 and argno == System::argc do
-  println("usage: flx [options] filename");
+  println "usage: flx [options] filename";
   System::exit(1);
 done
 
-dbug?? println "#--------";
-dbug?? println$ "DONE, option index = "+str(argno);
-dbug?? println$ "path="+path+": dir="+dir+",base="+base", ext="+ext;
-dbug?? println$ "cpps="+cpps;
-dbug?? println$ "cppos="+cppos;
+debugln "#--------";
+debugln$ "DONE, option index = "+str(argno);
+debugln$ "path="+path+": dir="+dir+",base="+base", ext="+ext;
+debugln$ "cpps="+cpps;
+debugln$ "cppos="+cppos;
 
 var USER_ARGS = ""; whilst argno < System::argc do USER_ARGS+=" " + System::argv argno; ++argno; done
 //println$ "USER_ARGS=" + USER_ARGS;
 
 if NOOPTIMISE == 0 do
-  dbug?? println "Set C++ compiler optimisation switches";
+  debugln "Set C++ compiler optimisation switches";
   CCFLAGS=CCFLAGS+" " + OPTIMISE;
 else
-  dbug?? println "What, no optimisation?";
+  debugln "What, no optimisation?";
 done
 
 var PKGCONFIG=Filename::join$ List::list(FLX_INSTALL_DIR,"bin","flx_pkgconfig");
-dbug?? println$ "Felix package manager program is "+PKGCONFIG;
+debugln$ "Felix package manager program is "+PKGCONFIG;
 
 if ECHO == 1 do
-  println("#FLX_INSTALL_DIR="+FLX_INSTALL_DIR);
-  println("#PKGCONFIG="+PKGCONFIG);
+  fprintln (cerr, "#FLX_INSTALL_DIR="+FLX_INSTALL_DIR);
+  fprintln (cerr, "#PKGCONFIG="+PKGCONFIG);
 done
 
 DLINK_STRING, SLINK_STRING = Config::link_strings(FLX_INSTALL_DIR);
 
 CONFIG_DIR = Filename::join(FLX_INSTALL_DIR,'config');
-dbug?? println$ "Felix package manager config directory is "+CONFIG_DIR;
+debugln$ "Felix package manager config directory is "+CONFIG_DIR;
 // make a list of any *.cpp files (or other g++ options ..)
 
 var EXT_OBJ = 
@@ -420,9 +425,9 @@ dir =
 ;
 
 var filebase = Filename::join(dir,base);
-dbug?? println$ "User program base is " + filebase;
+debugln$ "User program base is " + filebase;
 var cpp_filebase = if OUTPUT_DIR=="" then filebase else Filename::join(OUTPUT_DIR,base) endif;
-dbug?? println$ "C++ file base is " + cpp_filebase;
+debugln$ "C++ file base is " + cpp_filebase;
 
 // Find absolute pathname
 
@@ -454,7 +459,7 @@ gen get_stdout(x:string) = {
 }
 
 gen xqt(cmd:string) = {
-  ECHO == 1 or dbug ?? println("cmd="+cmd);
+  ECHO == 1 or dbug ?? fprintln (cerr, "cmd="+cmd);
   var result,output = get_stdout(cmd);
   if result == 0 do
     n := 
@@ -464,9 +469,9 @@ gen xqt(cmd:string) = {
       endmatch
     ; 
     output = output.[to n]; // first line excluding newline
-    ECHO==1 or dbug ?? println("output='"+output+"'");
+    ECHO==1 or dbug ?? fprintln (cerr, "output='"+output+"'");
   else
-    dbug ?? println ("COMMAND FAILED");
+    debugln "COMMAND FAILED";
     fprint$ cerr, ("Error "+repr(result)+" executing command " + cmd + "/n");
     System::exit result;
   done
@@ -523,11 +528,11 @@ proc calpackages () {
   done
 
   if ECHO == 1 do
-    println("//RESOURCE FILE="+cpp_filebase+".resh");
-    println("//INCLUDE_DIRS="+INCLUDE_DIRS);
-    println("//INCLUDE_FILES="+INCLUDE_FILES);
-    println("//DRIVER="+DRIVER);
-    println("//LINK_STRING="+LINK_STRING);
+    fprintln (cerr, "//RESOURCE FILE="+cpp_filebase+".resh");
+    fprintln (cerr, "//INCLUDE_DIRS="+INCLUDE_DIRS);
+    fprintln (cerr, "//INCLUDE_FILES="+INCLUDE_FILES);
+    fprintln (cerr, "//DRIVER="+DRIVER);
+    fprintln (cerr, "//LINK_STRING="+LINK_STRING);
   done
 }
 
@@ -542,10 +547,10 @@ proc write_include_file(path:string) {
 }
 
 val args = USER_ARGS;
-dbug?? println$ "Target program args = "+args;
+debugln$ "Target program args = "+args;
 
 var INCLUDE_DIR="-I"+Filename::join(FLX_INSTALL_DIR,"lib","rtl") + " -I"+Filename::join(FLX_INSTALL_DIR,"config","target");
-dbug?? println$ "C++ Include directory for Felix library " + INCLUDE_DIR;
+debugln$ "C++ Include directory for Felix library " + INCLUDE_DIR;
 
 var FLXLIB="-I"+Filename::join(FLX_INSTALL_DIR,"lib");
 var STDLIB="std";
@@ -612,40 +617,40 @@ fun cal_time_from_dep (df: string):long=
 {
   val deptext = Text_file::load df;
   val lines = split (deptext, "\n"); 
-  dbug?? println$ "Deps=" + str(lines);
+  debugln$ "Deps=" + str(lines);
   val deptime = cal_files_time lines;
-  dbug?? println$ "Deptime=" + str(deptime);
+  debugln$ "Deptime=" + str(deptime);
   return deptime;
 }
 
 fun cal_dep_time(f:string)=>cal_time_from_dep(f+".dep");
 
 var cmd = "";
-dbug?? println$ "RECOMPILE="+str RECOMPILE;
-dbug?? println$ "RUNIT="+str RUNIT;
+debugln$ "RECOMPILE="+str RECOMPILE;
+debugln$ "RUNIT="+str RUNIT;
 
 if RECOMPILE == 0 and RUNIT == 1 do
   // not (--force or -c)
-  dbug?? println "Checking to see if the binary is uptodate";
-  dbug?? println$ "Binary time = " + str (dfiletime(filebase+EXT_SHLIB,past_time));
+  debugln "Checking to see if the binary is uptodate";
+  debugln$ "Binary time = " + str (dfiletime(filebase+EXT_SHLIB,past_time));
   if STATIC == 0 do
     if (dfiletime(filebase+EXT_SHLIB,past_time) > cal_dep_time (filebase)) do
-      dbug?? println$ "Running dynamically linked binary";
+      debugln$ "Running dynamically linked binary";
       calpackages();
       cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ filebase+EXT_SHLIB+" "+args;
-      dbug?? println$ "Uptodate shared lib: Running command " + cmd;
+      debugln$ "Uptodate shared lib: Running command " + cmd;
       System::exit(system(cmd));
     else
-      dbug?? println$ "Dynamically linked binary out of date or non-existant";
+      debugln$ "Dynamically linked binary out of date or non-existant";
     done
   else
     if (dfiletime(filebase+EXT_EXE,past_time) > cal_dep_time(filebase)) do
-      dbug?? println$ "Running statically linked binary";
+      debugln$ "Running statically linked binary";
       cmd=STATIC_ENV+" "+filebase+" "+args;
-      dbug?? println$ "Uptodate executable: Running command " + cmd;
+      debugln$ "Uptodate executable: Running command " + cmd;
       System::exit(system(cmd));
     else
-      dbug?? println$ "Statically linked binary out of date or non-existant";
+      debugln$ "Statically linked binary out of date or non-existant";
     done
   done
 done
@@ -656,10 +661,10 @@ dbug??println$ "RECOMPILING!!";
 var VERBOSE = "";
 if DEBUG_COMPILER == 1 do
   VERBOSE="-v";
-  dbug?? println "Compiler debugging on";
+  debugln "Compiler debugging on";
 else
   VERBOSE="-q";
-  dbug?? println "Compiler debugging off";
+  debugln "Compiler debugging off";
 done
 
 if DEBUG==1 do
@@ -679,23 +684,23 @@ if FELIX == 1 do
     VERBOSE, FLXFLAGS, FLXLIB,
     INCLUDE_DIRS, STDIMPORT, IMPORTS,
     STDLIB, filebase));
-  dbug?? println$ "Felix command="+FCMD;
+  debugln$ "Felix command="+FCMD;
   result=system(FCMD);
   if result != 0 do 
-   dbug?? println "Felix compilation failed";
+   debugln "Felix compilation failed";
     System::exit(int(0!=result)); 
   done
-  dbug?? println "Felix compilation succeeded";
+  debugln "Felix compilation succeeded";
   calpackages();
   write_include_file(cpp_filebase);
 else
-  dbug?? println "Felix compilation skipped by switch";
+  debugln "Felix compilation skipped by switch";
   calpackages(); // need to do this here to set linker switches
 done
 
 
 if STATIC == 0 do
-  dbug?? println "Dynamic linkage";
+  debugln "Dynamic linkage";
   CCMD=List::cat ' ' (List::list (
     CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
     INCLUDE_DIR, INCLUDE_DIRS, MACROS,
@@ -706,10 +711,10 @@ if STATIC == 0 do
     cppos, cpp_filebase+EXT_OBJ,
     SPEC_EXE_FILENAME+filebase+EXT_SHLIB,
     LINK_STRING));
-  dbug?? println$ "C++ command="+CCMD;
+  debugln$ "C++ command="+CCMD;
   result = system(CCMD);
   if result == 0 do
-    dbug?? println$ "Link command="+LCMD;
+    debugln$ "Link command="+LCMD;
     result = system(LCMD);
     if result == 0 do
       if RUNIT == 1 do
@@ -724,19 +729,19 @@ if STATIC == 0 do
             filebase+EXT_SHLIB, args));
         done
         if STDOUT != "" do cmd=cmd+" > " +STDOUT; done
-        dbug?? println$ "Run command="+cmd;
+        debugln$ "Run command="+cmd;
         System::exit(int(0!=system(cmd)));
       else
-        dbug?? println "Not running program selected by switch";
+        debugln "Not running program selected by switch";
       done
     else
-      dbug?? println "Dynamic linkage failed";
+      debugln "Dynamic linkage failed";
     done
   else
-    dbug?? println "C++ compilation failed";
+    debugln "C++ compilation failed";
   done
 else
-  dbug?? println "Static linkage";
+  debugln "Static linkage";
   CCMD=List::cat ' ' (List::list (
     CCOBJ_STATIC_LIB,
     CCFLAGS, "-DTARGET_BUILD",
@@ -746,10 +751,10 @@ else
   LCMD=List::cat ' ' (List::list (
     CCLINK_STATIC, SPEC_EXE_FILENAME+filebase+EXT_EXE,
     cpp_filebase+EXT_OBJ, DRIVER, cppos, LINK_STRING));
-  dbug?? println$ "C++ command="+CCMD;
+  debugln$ "C++ command="+CCMD;
   result=system(CCMD);
   if result == 0 do
-    dbug?? println$ "Link command="+LCMD;
+    debugln$ "Link command="+LCMD;
     result=system(LCMD);
     if result == 0 do
       // rm -f "$base.cpp"
@@ -762,16 +767,16 @@ else
             STATIC_ENV, filebase,args));
         done
         if STDOUT != "" do cmd=cmd + " > "+STDOUT; done
-        dbug?? println$ "Run command="+cmd;
+        debugln$ "Run command="+cmd;
         System::exit(int(0!=system(cmd)));
       else
-        dbug?? println "Not running program selected by switch";
+        debugln "Not running program selected by switch";
       done
     else
-      dbug?? println "Static Linkage failed";
+      debugln "Static Linkage failed";
     done
   else
-    dbug?? println "C++ compilation failed";
+    debugln "C++ compilation failed";
   done
 done
 
