@@ -1,0 +1,126 @@
+include "stl/stl_map";
+
+module Re2 {
+  requires package "re2";
+
+// This is an almost full binding of Google's re2 package.
+// We do not support conversions of digits strings to integers
+//
+// TODO: we need to check the lvalue handling here
+// The RE2, Options classes aren't copyable, so we may have
+// to use pointers
+
+  type RE2 = "::re2::RE2";
+  type StringPiece = "::re2::StringPiece";
+  type Arg = "::re2::Arg";
+
+  type Encoding = "::re2::RE2::Encoding";
+    const EncodingUTF8: Encoding = "::re2::RE2::EncodingUTF8";
+    const EncodingLatin1: Encoding = "::re2::RE2::EncodingLatin1";
+
+  type RE2Options = "::re2::RE2::Options";
+
+    proc Copy: RE2Options * RE2Options = "$1.Copy($2);";
+
+    fun encoding: RE2Options -> Encoding = "$1.encoding()";
+    proc set_encoding: RE2Options * Encoding = "$1.set_encoding($2);";
+    
+    fun posix_syntax: RE2Options -> bool = "$1.posix_syntax()";
+    proc set_posix_syntax: RE2Options * bool = "$1.set_posix_syntax($2);";
+
+    fun longest_match: RE2Options -> bool = "$1.longest_match()";
+    proc set_longest_match: RE2Options * bool = "$1.set_longest_match($2);";
+
+    
+    fun log_errors: RE2Options -> bool = "$1.log_errors()";
+    proc set_log_errors: RE2Options * bool = "$1.set_log_errors($2);";
+
+    
+    fun max_mem: RE2Options -> int = "$1.max_mem()";
+    proc set_max_mem: RE2Options * int = "$1.set_max_mem($2);";
+
+    
+    fun literal: RE2Options -> bool = "$1.literal()";
+    proc set_literal: RE2Options * bool = "$1.set_literal($2);";
+
+    
+    fun never_nl: RE2Options -> bool = "$1.never_nl()";
+    proc set_never_nl: RE2Options * bool = "$1.set_never_nl($2);";
+
+    
+    fun case_sensitive: RE2Options -> bool = "$1.case_sensitive()";
+    proc set_case_sensitive: RE2Options * bool = "$1.set_case_sensitive($2);";
+
+    
+    fun perl_classes: RE2Options -> bool = "$1.perl_classes()";
+    proc set_perl_classes: RE2Options * bool = "$1.set_perl_classes($2);";
+
+    
+    fun word_boundary: RE2Options -> bool = "$1.word_boundary()";
+    proc set_word_boundary: RE2Options * bool = "$1.set_word_boundary($2);";
+
+    
+    fun one_line: RE2Options -> bool = "$1.one_line()";
+    proc set_one_line: RE2Options * bool = "$1.set_one_line($2);";
+
+    fun ParseFlags: RE2Options -> int = "$1.ParseFlags()";
+   
+  type ErrorCode = "::re2::RE2::ErrorCode";
+    const NoError : ErrorCode = "::re2::RE2::NoError";
+    const ErrorInternal: ErrorCode = "::re2::RE2::ErrorInternal";
+    const ErrorBadEscape : ErrorCode = "::re2::RE2::ErrorBadEscape";
+    const ErrorBadCharClass : ErrorCode = "::re2::RE2::ErrorBadCharClass";
+    const ErrorBadCharRange : ErrorCode = "::re2::RE2::ErrorBadCharRange";
+    const ErrorMissingBracket : ErrorCode = "::re2::RE2::ErrorMissingBracket";
+    const ErrorMissingParen : ErrorCode = "::re2::RE2::ErrorMissingParen";
+    const ErrorTrailingBackslash : ErrorCode = "::re2::RE2::ErrorTrailingBackslash";
+    const ErrorRepeatArgument : ErrorCode = "::re2::RE2::ErrorRepeatArgument";
+    const ErrorRepeatSize : ErrorCode = "::re2::RE2::ErrorRepeatSize";
+    const ErrorRepeatOp: ErrorCode = "::re2::RE2::ErrorRepeatOp";
+    const ErrorBadPerlOp: ErrorCode = "::re2::RE2::ErrprBadPerlOp";
+    const ErrorBadUTF8: ErrorCode = "::re2::RE2::ErrorBadUTF8";
+    const ErrorBadNamedCapture: ErrorCode = "::re2::RE2::ErrorBadNamedCapture";
+    const ErrorPatternTooLarge: ErrorCode = "::re2::RE2::ErrorPatternTooLarge";
+
+  type Anchor = "::re2::RE2::Anchor";
+    const UNANCHORED: Anchor = "::res::RE2::UNANCHORED";
+    const ANCHORSTART: Anchor = "::res::RE2::ANCHORSTART";
+    const ANCHOREND: Anchor = "::res::RE2::ANCHOREND";
+
+  ctor RE2: string = "::re2::RE2($1)";
+  fun pattern: RE2 -> string = "$1.pattern()";
+  fun error: RE2 -> string = "$1.error()";
+  fun error_code: RE2 -> ErrorCode = "$1.error()";
+  fun error_arg: RE2 -> string = "$1.error()";
+  fun ok: RE2 -> bool = "$1.ok()";
+  fun ProgramSize: RE2 -> int = "$1.ProgramSize";
+
+  gen FullMatch: StringPiece * RE2 * &Arg * int -> bool = "::re2::RE2::FullMatchN($1,$2,$3,$4)";
+  gen FullMatch (inp:StringPiece, re:RE2, subs:varray[Arg]) => 
+    FullMatch(inp, re, subs.stl_begin, subs.len.int)
+  ;
+
+  gen PartialMatch: StringPiece * RE2 * &Arg * int -> bool = "::re2::RE2::FullMatchN($1,$2,$3,$4)";
+  gen PartialMatch(inp:StringPiece, re:RE2, subs:varray[Arg]) => 
+    PartialMatch(inp, re, subs.stl_begin, subs.len.int)
+  ;
+
+  gen Consume: &StringPiece * RE2 * &Arg * int -> bool = "::re2::RE2::ConsumeN($1,$2,$3,$4)";
+  gen Consume(inp:&StringPiece, re:RE2, subs:varray[Arg]) => 
+    Consume(inp, re, subs.stl_begin, subs.len.int)
+  ;
+
+  gen GlobalReplace: &string * RE2 * StringPiece -> int = "::re2::RE2::GlobalReplace($1, $2, $3)";
+  gen Extract: string * RE2 * StringPiece * &string -> int = "::re2::RE2::GlobalExtract($1, $2, $3, $4)";
+
+  fun QuoteMeta: StringPiece -> string = "::re2::RE2::QuoteMeta($1)";
+ 
+  fun PossibleMatchRange: RE2 * &string * &string * int -> bool = "$1.PossibleMatchRange($2,$3,$3,$4)";
+  fun NumberOfCapturingGroups: RE2 -> int = "$1.NumberOfCapturingGroups()";
+  fun NamedCapturingGroups: RE2 -> Map::stl_map[string, int] = "$1.NamedCapturingGroups()";
+  gen Match: RE2 * StringPiece * int * Anchor * &StringPiece * int -> bool = "$1.Match($2, $3, $4, $5, $6)";
+
+  fun CheckRewriteString: RE2 * StringPiece * &string -> bool = "$1.CheckRewriteString($2, $3)";
+
+
+}

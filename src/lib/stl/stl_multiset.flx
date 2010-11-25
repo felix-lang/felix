@@ -2,9 +2,9 @@ include "stl/stl";
 module MultiSet[t]
   {
     requires std_stl_set;
-    type stl_multiset = "std::multiset<?1>";
-    type stl_multiset_iterator = "std::multiset<?1>::iterator";
-    type stl_multiset_reverse_iterator = "std::multiset<?1>::reverse_iterator";
+    type stl_multiset = "::std::multiset<?1>";
+    type stl_multiset_iterator = "::std::multiset<?1>::iterator";
+    type stl_multiset_reverse_iterator = "::std::multiset<?1>::reverse_iterator";
     fun create : unit -> stl_multiset[t] = "(FLX_GXX_PARSER_HACK std::multiset<?1>())";
     proc insert : stl_multiset[t] * t = "$1.insert($2);";
     fun find : stl_multiset[t] * t ->  stl_multiset_iterator[t] = "$1.find($2)";

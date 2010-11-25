@@ -52,7 +52,7 @@ typeclass Reversible_Sequence[c,it,rit,v] {
 
 module Stl
 {
-  type pair[k,v] = "std::pair<?1 const,?2>";
-  fun make_pair[k,v]: k * v ->pair[k,v] = "std::make_pair($1,$2)";
+  type pair[k,v] = "::std::pair<?1 const,?2>";
+  fun make_pair[k,v]: k * v ->pair[k,v] = "::std::make_pair($1,$2)";
 }
 

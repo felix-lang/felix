@@ -2,9 +2,9 @@ include "stl/stl";
 module Map[k,v]
 {
     requires std_stl_map;
-    type stl_map = "std::map<?1,?2>";
-    type stl_map_iterator = "std::map<?1,?2>::iterator";
-    type stl_map_reverse_iterator = "std::map<?1,?2>::reverse_iterator";
+    type stl_map = "::std::map<?1,?2>";
+    type stl_map_iterator = "::std::map<?1,?2>::iterator";
+    type stl_map_reverse_iterator = "::std::map<?1,?2>::reverse_iterator";
     fun create : unit -> stl_map[k,v] = "(FLX_GXX_PARSER_HACK std::map<?1,?2>())";
     fun subscript: stl_map[k,v] * k -> lvalue[v] = "$1[$2]";
     fun find : stl_map[k,v] * k ->  stl_map_iterator[k,v] = "$1.find($2)";

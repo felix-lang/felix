@@ -3,12 +3,12 @@ include "stl/stl";
 module Stl_List[t]
 {
     requires std_stl_list;
-    type stl_list = "std::list<?1>";
+    type stl_list = "::std::list<?1>";
     fun create : unit -> stl_list[t] = "(FLX_GXX_PARSER_HACK std::list<?1>())";
     fun create : int * t -> stl_list[t]= "(FLX_GXX_PARSER_HACK std::list<?1>($1,$2))";
     fun create[i] : i * i -> stl_list[t] = "(FLX_GXX_PARSER_HACK std::list<?1>($1,$2))";
-    type stl_list_iterator = "std::list<?1>::iterator";
-    type stl_list_reverse_iterator = "std::list<?1>::reverse_iterator";
+    type stl_list_iterator = "::std::list<?1>::iterator";
+    type stl_list_reverse_iterator = "::std::list<?1>::reverse_iterator";
     proc insert: stl_list[t] * stl_list_iterator[t] *  t  = "$1.insert($2,$3);";
     proc push_front : stl_list[t] *  t  = "$1.push_front($2);";
     proc push_back : stl_list[t] *  t  = "$1.push_back($2);";

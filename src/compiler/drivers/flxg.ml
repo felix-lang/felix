@@ -971,12 +971,102 @@ let _ = print_endline ("Filename is " ^ flx_name) in
     (* but again, the order is reversed here *)
     !outputs
 
+let process_lib state sym_table_ref bsym_table_ref excls outdir module_name start_counter lib =
+(*
+      print_endline ("Processing library " ^ h);
+*)
+  let lib_filedir,lib_filename = 
+      Flx_filesys.find_include_dir 
+       ~include_dirs:state.syms.compiler_options.include_dirs
+      (lib ^ ".flx"),lib
+  in
+  let lib_name = Flx_filesys.join lib_filedir (lib_filename ^ ".flx") in
+
+  (* this is wrong, should be he max of the included file times, but until
+   * we load the cached value we don't know what files are included.
+   * To fix this we could use a separate dep file, or simply validate
+   * the file after it is loaded. Of course to do that I have to put
+   * the include file list into the cache!
+   *)
+  let lib_time = Flx_filesys.virtual_filetime Flx_filesys.big_crunch lib_name in
+  let in_libtab_name = Flx_filesys.join lib_filedir lib_filename ^ ".libtab" in
+  let out_libtab_name = 
+    match outdir with 
+    | Some d -> Some (Flx_filesys.join d lib_filename ^ ".libtab")
+    | None -> None
+  in
+  let 
+    includes, 
+    saved_counter, 
+    varmap, 
+    ticache, 
+    typeclass_to_instance, 
+    instances_of_typeclass, 
+    axioms, 
+    reductions,
+    out_sym_table,
+    out_bsym_table 
+  =
+    Flx_filesys.cached_computation "libtab" in_libtab_name
+      ~outfile:out_libtab_name
+      ~force_calc:(false || state.syms.compiler_options.force_recompile)
+      ~min_time:lib_time 
+      (fun () -> 
+        (* make assembly outputs stuff in reversed order, but this routine
+         * reversed it back again *)
+        let cal_time = make_timer() in
+        print_endline ("Binding libary " ^ lib);
+        let assembly = make_assembly state !excls lib (Search lib) in
+        let includes, asmss= 
+           let rec aux includes asmss a = match a with
+           | [] -> includes, asmss
+           | { filename=filename; asms=asms; } :: t ->
+               aux (filename :: includes) (asms::asmss) t
+           in aux [] [] assembly
+        in
+        (* already in the right order now *)
+        let asms = List.concat asmss in
+        let asms = make_module module_name asms in
+        (*
+        print_endline "Binding asms: ";
+        List.iter (fun a -> print_endline (Flx_print.string_of_asm 2 a)) asms;
+        *)
+        (* Bind the assemblies. *)
+        bind_asms state !sym_table_ref !bsym_table_ref !start_counter asms;
+        print_endline ("binding library " ^ lib ^ " done in "^ string_of_float (cal_time()) ^ " seconds");
+        includes, 
+        !(state.syms.counter),
+        state.syms.varmap, 
+        state.syms.ticache, 
+        state.syms.typeclass_to_instance, 
+        state.syms.instances_of_typeclass, 
+        !(state.syms.axioms), 
+        !(state.syms.reductions),
+        !sym_table_ref,
+        !bsym_table_ref 
+      )
+  in
+  state.syms.counter := max !(state.syms.counter)  saved_counter;
+  state.syms.varmap <- varmap;
+  state.syms.ticache <- ticache;
+  state.syms.typeclass_to_instance <- typeclass_to_instance;
+  state.syms.instances_of_typeclass <- instances_of_typeclass;
+  state.syms.axioms := axioms;
+  state.syms.reductions := reductions;
+  start_counter := !(state.syms.counter);
+  sym_table_ref := out_sym_table;
+  bsym_table_ref := out_bsym_table;
+
+  (* already processed include files *)
+  excls := includes @ !excls
+
+
 let main () =
   let start_counter = ref 2 in
   let ppf, compiler_options = parse_args () in
   let state = make_flxg_state ppf compiler_options in
   let module_name = 
-     try make_module_name (List.hd state.syms.compiler_options.files)
+     try make_module_name (List.hd (List.rev (state.syms.compiler_options.files)))
      with _ -> "empty_module"
   in
   let bsym_table_ref = ref (Flx_bsym_table.create ()) in
@@ -1008,123 +1098,7 @@ let main () =
     print_endline ("Main program =" ^ main_prog);
 *)
     let excls:string list ref = ref [] in
-    let rec aux ls = match ls with 
-    | [] -> ()
-    | h :: t -> 
-(*
-      print_endline ("Processing library " ^ h);
-*)
-      let lib_filedir,lib_filename = 
-          Flx_filesys.find_include_dir 
-           ~include_dirs:state.syms.compiler_options.include_dirs
-          (h ^ ".flx"),h
-      in
-      let lib_name = Flx_filesys.join lib_filedir (lib_filename ^ ".flx") in
-
-      (* this is wrong, should be he max of the included file times, but until
-       * we load the cached value we don't know what files are included.
-       * To fix this we could use a separate dep file, or simply validate
-       * the file after it is loaded. Of course to do that I have to put
-       * the include file list into the cache!
-       *)
-      let lib_time = Flx_filesys.virtual_filetime Flx_filesys.big_crunch lib_name in
-      let in_libtab_name = Flx_filesys.join lib_filedir lib_filename ^ ".libtab" in
-      let out_libtab_name = 
-        match outdir with 
-        | Some d -> Some (Flx_filesys.join d lib_filename ^ ".libtab")
-        | None -> None
-      in
-      let 
-        includes, 
-        saved_counter, 
-        varmap, 
-        ticache, 
-        typeclass_to_instance, 
-        instances_of_typeclass, 
-        axioms, 
-        reductions,
-        out_sym_table,
-        out_bsym_table 
-      =
-        Flx_filesys.cached_computation "libtab" in_libtab_name
-          ~outfile:out_libtab_name
-          ~force_calc:(false || state.syms.compiler_options.force_recompile)
-          ~min_time:lib_time 
-          (fun () -> 
-            (* make assembly outputs stuff in reversed order, but this routine
-             * reversed it back again *)
-            let cal_time = make_timer() in
-            print_endline ("Binding libary " ^ h);
-            let assembly = make_assembly state !excls h (Search h) in
-            let includes, asmss= 
-               let rec aux includes asmss a = match a with
-               | [] -> includes, asmss
-               | { filename=filename; asms=asms; } :: t ->
-                   aux (filename :: includes) (asms::asmss) t
-               in aux [] [] assembly
-            in
-            (* already in the right order now *)
-            let asms = List.concat asmss in
-            let asms = make_module module_name asms in
-            (*
-            print_endline "Binding asms: ";
-            List.iter (fun a -> print_endline (Flx_print.string_of_asm 2 a)) asms;
-            *)
-            (* Bind the assemblies. *)
-            bind_asms state !sym_table_ref !bsym_table_ref !start_counter asms;
-            print_endline ("binding library " ^ h ^ " done in "^ string_of_float (cal_time()) ^ " seconds");
-            includes, 
-            !(state.syms.counter),
-            state.syms.varmap, 
-            state.syms.ticache, 
-            state.syms.typeclass_to_instance, 
-            state.syms.instances_of_typeclass, 
-            !(state.syms.axioms), 
-            !(state.syms.reductions),
-            !sym_table_ref,
-            !bsym_table_ref 
-          )
-      in
-      state.syms.counter := max !(state.syms.counter)  saved_counter;
-      state.syms.varmap <- varmap;
-      state.syms.ticache <- ticache;
-      state.syms.typeclass_to_instance <- typeclass_to_instance;
-      state.syms.instances_of_typeclass <- instances_of_typeclass;
-      state.syms.axioms := axioms;
-      state.syms.reductions := reductions;
-      start_counter := !(state.syms.counter);
-      sym_table_ref := out_sym_table;
-      bsym_table_ref := out_bsym_table;
-
-      excls := includes @ !excls;  (* already processed include files *)
-
-(*
-      let clr s h = print_endline ("Table " ^ s ^ " len=" ^ string_of_int (Hashtbl.length h)); Hashtbl.clear h in
-      let clrl s h = print_endline ("Table " ^ s ^ " len=" ^ string_of_int (List.length (!h))); h:=[] in
-      (* while this is a hack, we have to clear the state out *)
-(*
-      clr "env_cache" state.syms.env_cache;
-*)
-      clr "varmap" state.syms.varmap;
-      clr "ticache" state.syms.ticache;
-(*
-      clr "registry" state.syms.registry;
-      clr "instances" state.syms.instances;
-      clr "quick_names" state.syms.quick_names;
-      clr "variant_map" state.syms.variant_map;
-*)
-      clr "typeclass_to_instance" state.syms.typeclass_to_instance;
-      clr "instances_of_typeclass" state.syms.instances_of_typeclass;
-(*
-      clr "transient_specialisation_cache" state.syms.transient_specialisation_cache;
-*)
-
-      clrl "axioms" state.syms.axioms;
-      clrl "reductions" state.syms.reductions;
-*)
-      aux t
-    in
-    aux libs;
+    List.iter (process_lib state sym_table_ref bsym_table_ref excls outdir module_name start_counter) libs;
 
 (*
     print_endline ("Making symbol tables for main program " ^ main_prog);

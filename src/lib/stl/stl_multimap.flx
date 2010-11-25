@@ -2,9 +2,9 @@ include "stl/stl";
   module MultiMap[k,v]
   {
     requires std_stl_map;
-    type stl_multimap = "std::multimap<?1,?2>";
-    type stl_multimap_iterator = "std::multimap<?1,?2>::iterator";
-    type stl_multimap_reverse_iterator = "std::multimap<?1,?2>::reverse_iterator";
+    type stl_multimap = "::std::multimap<?1,?2>";
+    type stl_multimap_iterator = "::std::multimap<?1,?2>::iterator";
+    type stl_multimap_reverse_iterator = "::std::multimap<?1,?2>::reverse_iterator";
     fun create : unit -> stl_multimap[k,v] = "(FLX_GXX_PARSER_HACK std::multimap<?1,?2>())";
     fun subscript: stl_multimap[k,v] * k -> lvalue[v] = "$1[$2]";
     fun find : stl_multimap[k,v] * k ->  stl_multimap_iterator[k,v] = "$1.find($2)";

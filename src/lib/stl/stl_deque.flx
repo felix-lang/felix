@@ -1,12 +1,12 @@
 module Deque[t]
 {
     requires std_stl_deque;
-    type stl_deque = "std::deque<?1>";
+    type stl_deque = "::std::deque<?1>";
     fun create : unit -> stl_deque[t] = "(FLX_GXX_PARSER_HACK std::deque<?1>())";
     fun create : int * t -> stl_deque[t]= "(FLX_GXX_PARSER_HACK std::deque<?1>($1,$2))";
     fun create[i] : i * i -> stl_deque[t] = "(FLX_GXX_PARSER_HACK std::deque<?1>($1,$2))";
-    type stl_deque_iterator = "std::deque<?1>::iterator";
-    type stl_deque_reverse_iterator = "std::deque<?1>::reverse_iterator";
+    type stl_deque_iterator = "::std::deque<?1>::iterator";
+    type stl_deque_reverse_iterator = "::std::deque<?1>::reverse_iterator";
     proc insert: stl_deque[t] * stl_deque_iterator[t] *  t  = "$1.insert($2,$3);";
     proc push_front : stl_deque[t] *  t  = "$1.push_front($2);";
     proc push_back : stl_deque[t] *  t  = "$1.push_back($2);";

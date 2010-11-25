@@ -52,3 +52,35 @@ by Felix, for example we can even do the primary
 build of faio from Felix, provided the tool doing
 the rebuilding isn't dependent on Faio. Even if it is,
 we only need a bootstrap version of the tool.
+
+@h2 Argv, Argc Pattern
+Many C functions support arguments like <code>... T* argv[], int argc, ...</code>
+find a nice way to capture this. At present we have to malloc and cast the array,
+and the casts are ugly! Ideally, we'd use a varray here, something like:
+<pre>
+var x: varray[T]; f(x.ptr, x.len)
+</pre>
+should do the trick nicely. oooo actually this works now:
+<pre>
+var x: varray[T]; f(x.stl_begin, x.len)
+</pre>
+Wow!
+
+@h2 code in fdoc
+Make {code} markup &lt;code&gt;code&lt;/code&gt;
+
+
+@h2 Enums
+C enums are hard to model, we seem to need to use consts. At least
+one problem is that the enum is often nested in a namespace or class,
+and the Felix auto-enum construction designed to model C enums only
+works for global namespace: eg
+<pre>
+  type ErrorCode = "::re2::RE2::ErrorCode";
+    const NoError : ErrorCode = "::re2::RE2::NoError";
+    const ErrorInternal: ErrorCode = "::re2::RE2::ErrorInternal";
+    const ErrorBadEscape : ErrorCode = "::re2::RE2::ErrorBadEscape";
+</pre>
+
+but the problem is: we can't use const in matches, since the type
+isn't a sum type (whereas a Felix enum is).

@@ -3,12 +3,12 @@ include "stl/stl";
 module Vector[t]
 {
     requires std_stl_vector;
-    type stl_vector = "std::vector<?1>";
+    type stl_vector = "::std::vector<?1>";
     fun create : unit -> stl_vector[t] = "(FLX_GXX_PARSER_HACK std::vector<?1>())";
     fun create : int * t -> stl_vector[t]= "(FLX_GXX_PARSER_HACK std::vector<?1>($1,$2))";
     fun create[i] : i * i -> stl_vector[t] = "(FLX_GXX_PARSER_HACK std::vector<?1>($1,$2))";
-    type stl_vector_iterator = "std::vector<?1>::iterator";
-    type stl_vector_reverse_iterator = "std::vector<?1>::reverse_iterator";
+    type stl_vector_iterator = "::std::vector<?1>::iterator";
+    type stl_vector_reverse_iterator = "::std::vector<?1>::reverse_iterator";
     proc insert: stl_vector[t] * stl_vector_iterator[t] *  t  = "$1.insert($2,$3);";
     proc push_back : stl_vector[t] *  t  = "$1.push_back($2);";
     fun front : stl_vector[t] -> t = "$1.front()";

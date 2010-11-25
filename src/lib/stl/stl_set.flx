@@ -3,9 +3,9 @@ header std_stl_set = "#include <set>";
   module Set[t]
   {
     requires std_stl_set;
-    type stl_set = "std::set<?1>";
-    type stl_set_iterator = "std::set<?1>::iterator";
-    type stl_set_reverse_iterator = "std::set<?1>::reverse_iterator";
+    type stl_set = "::std::set<?1>";
+    type stl_set_iterator = "::std::set<?1>::iterator";
+    type stl_set_reverse_iterator = "::std::set<?1>::reverse_iterator";
     fun create : unit -> stl_set[t] = "(FLX_GXX_PARSER_HACK std::set<?1>())";
     proc insert : stl_set[t] * t = "$1.insert($2);";
     fun find : stl_set[t] * t ->  stl_set_iterator[t] = "$1.find($2)";
