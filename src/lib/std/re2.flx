@@ -10,8 +10,13 @@ module Re2 {
 // The RE2, Options classes aren't copyable, so we may have
 // to use pointers
 
-  type RE2 = "::re2::RE2";
+  type RE2 = "::re2::RE2*";
   type StringPiece = "::re2::StringPiece";
+    ctor StringPiece: string = "::re2::StringPiece($1)";
+    ctor StringPiece: unit = "::re2::StringPiece()";
+    ctor string: StringPiece = "$1.as_string()";
+    fun len: StringPiece -> int = "$1.size()";
+
   type Arg = "::re2::Arg";
 
   type Encoding = "::re2::RE2::Encoding";
@@ -83,18 +88,26 @@ module Re2 {
     const ErrorPatternTooLarge: ErrorCode = "::re2::RE2::ErrorPatternTooLarge";
 
   type Anchor = "::re2::RE2::Anchor";
-    const UNANCHORED: Anchor = "::res::RE2::UNANCHORED";
-    const ANCHORSTART: Anchor = "::res::RE2::ANCHORSTART";
-    const ANCHOREND: Anchor = "::res::RE2::ANCHOREND";
+    const UNANCHORED: Anchor = "::re2::RE2::UNANCHORED";
+    const ANCHOR_START: Anchor = "::re2::RE2::ANCHOR_START";
+    const ANCHOR_END: Anchor = "::re2::RE2::ANCHOR_END";
 
-  ctor RE2: string = "::re2::RE2($1)";
-  fun pattern: RE2 -> string = "$1.pattern()";
-  fun error: RE2 -> string = "$1.error()";
-  fun error_code: RE2 -> ErrorCode = "$1.error()";
-  fun error_arg: RE2 -> string = "$1.error()";
-  fun ok: RE2 -> bool = "$1.ok()";
-  fun ProgramSize: RE2 -> int = "$1.ProgramSize";
+  // WRONG! This can't be implement like this.
+  // We need some support. Change gc to allow shapeless objects? 
+  // these have no RTTI and so can't be scanned or length checked,
+  // but that's exactly what we need for a C/C++ object.
+  // We need to do this so the pointer is deleted by the gc when not referenced though!
+  ctor RE2: string = "new ::re2::RE2($1)";
+  proc destroy: RE2 = "delete $1;"; // unfortunate
 
+  fun pattern: RE2 -> string = "$1->pattern()";
+  fun error: RE2 -> string = "$1->error()";
+  fun error_code: RE2 -> ErrorCode = "$1->error_code()";
+  fun error_arg: RE2 -> string = "$1->error_arg()";
+  fun ok: RE2 -> bool = "$1->ok()";
+  fun ProgramSize: RE2 -> int = "$1->ProgramSize()";
+
+/* this stuff is crud 
   gen FullMatch: StringPiece * RE2 * &Arg * int -> bool = "::re2::RE2::FullMatchN($1,$2,$3,$4)";
   gen FullMatch (inp:StringPiece, re:RE2, subs:varray[Arg]) => 
     FullMatch(inp, re, subs.stl_begin, subs.len.int)
@@ -109,18 +122,21 @@ module Re2 {
   gen Consume(inp:&StringPiece, re:RE2, subs:varray[Arg]) => 
     Consume(inp, re, subs.stl_begin, subs.len.int)
   ;
+*/
 
-  gen GlobalReplace: &string * RE2 * StringPiece -> int = "::re2::RE2::GlobalReplace($1, $2, $3)";
-  gen Extract: string * RE2 * StringPiece * &string -> int = "::re2::RE2::GlobalExtract($1, $2, $3, $4)";
+  gen GlobalReplace: &string * RE2 * StringPiece -> int = "::re2::RE2::GlobalReplace($1, *$2, $3)";
+  gen Extract: string * RE2 * StringPiece * &string -> int = "::re2::RE2::GlobalExtract($1, *$2, $3, $4)";
 
   fun QuoteMeta: StringPiece -> string = "::re2::RE2::QuoteMeta($1)";
  
-  fun PossibleMatchRange: RE2 * &string * &string * int -> bool = "$1.PossibleMatchRange($2,$3,$3,$4)";
-  fun NumberOfCapturingGroups: RE2 -> int = "$1.NumberOfCapturingGroups()";
-  fun NamedCapturingGroups: RE2 -> Map::stl_map[string, int] = "$1.NamedCapturingGroups()";
-  gen Match: RE2 * StringPiece * int * Anchor * &StringPiece * int -> bool = "$1.Match($2, $3, $4, $5, $6)";
+  fun PossibleMatchRange: RE2 * &string * &string * int -> bool = "$1->PossibleMatchRange($2,$3,$3,$4)";
+  fun NumberOfCapturingGroups: RE2 -> int = "$1->NumberOfCapturingGroups()";
+  fun NamedCapturingGroups: RE2 -> Map::stl_map[string, int] = "$1->NamedCapturingGroups()";
 
-  fun CheckRewriteString: RE2 * StringPiece * &string -> bool = "$1.CheckRewriteString($2, $3)";
+  // this function is fully general, just needs an anchor
+  gen Match: RE2 * StringPiece * int * Anchor * &StringPiece * int -> bool = "$1->Match($2, $3, $4, $5, $6)";
+
+  fun CheckRewriteString: RE2 * StringPiece * &string -> bool = "$1->CheckRewriteString($2, $3)";
 
 
 }
