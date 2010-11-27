@@ -331,10 +331,10 @@ let scan_exe syms bsym_table allocable_types exe : unit =
 let scan_exes syms bsym_table allocable_types exes : unit =
   iter (scan_exe syms bsym_table allocable_types) exes
 
-let gen_offset_tables syms bsym_table module_name =
+let gen_offset_tables syms bsym_table module_name first_ptr_map=
   let allocable_types = Hashtbl.create 97 in
   let scan exes = scan_exes syms bsym_table allocable_types exes in
-  let last_ptr_map = ref "NULL" in
+  let last_ptr_map = ref first_ptr_map in
   let primitive_shapes = Hashtbl.create 97 in
   let s = Buffer.create 20000 in
 
@@ -650,7 +650,8 @@ let gen_offset_tables syms bsym_table module_name =
   ;
   bcat s ("\n");
 
-  bcat s ("// Head of shape list\n");
+  bcat s ("// Head of shape list, included so dlsym() can find it when\n");
+  bcat s ("// this file is a shared lib, uses module name for uniqueness.\n");
   bcat s ("extern \"C\" FLX_EXPORT gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape;\n");
   bcat s ("gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape=" ^ !last_ptr_map ^ ";\n");
-  Buffer.contents s
+  !last_ptr_map,Buffer.contents s

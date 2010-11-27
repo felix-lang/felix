@@ -254,7 +254,8 @@ static std::size_t _address_offsets[1]={ 0 };
 
 
 // ********************************************************
-// unit implementation
+// unit implementation : MUST BE LAST because the compiler
+// uses "unit_pre_map" as the back link for generated shape tables
 // ********************************************************
 
 ::flx::gc::generic::gc_shape_t unit_ptr_map = {

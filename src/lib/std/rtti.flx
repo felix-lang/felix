@@ -1,0 +1,19 @@
+module Rtti {
+  type collector_t = "::flx::gc::generic::collector_t*";
+  type gc_shape_t = "::flx::gc::generic::gc_shape_t*";
+  fun isNULL: gc_shape_t -> bool = "$1==0";
+  enum gc_shape_flags_t { gc_flags_default, gc_flags_immobile, gc_flags_persistent, gc_flags_conservative };
+  typedef gc_finaliser_t = collector_t * address --> void;
+
+  fun next_shape: gc_shape_t -> gc_shape_t = "$1->next_shape";
+  fun cname: gc_shape_t -> charp = "$1->cname";
+  fun count: gc_shape_t -> size = "$1->size";
+  fun amt: gc_shape_t -> size = "$1->amt";
+  fun finaliser: gc_shape_t -> &gc_finaliser_t  = "$1->finaliser";
+  fun n_offsets: gc_shape_t -> size = "$1->n_offsets";
+  fun offsets: gc_shape_t -> &size = "$1->offsets";
+  fun flags: gc_shape_t -> gc_shape_flags_t = "$1->flags";
+
+  fun shape_list_head : unit -> gc_shape_t = "PTF shape_list_head";
+  
+}

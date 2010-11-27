@@ -542,6 +542,7 @@ let codegen_bsyms state bsym_table root_proc =
   "  FILE *flx_stdout;";
   "  FILE *flx_stderr;";
   "  gc_profile_t *gcp;";
+  "  ::flx::gc::generic::gc_shape_t *shape_list_head;";
   "  thread_frame_t(";
   "  );";
   ]
@@ -610,8 +611,34 @@ let codegen_bsyms state bsym_table root_proc =
   end
   ;
 
+  
+  (* emit rtti file now so we can get the last_ptr_map and stick it
+   * somewhere in the thread frame *)
+  let last_ptr_map, tables = Flx_ogen.gen_offset_tables
+    state.syms
+    bsym_table
+    state.module_name
+    "&flx::rtl::unit_ptr_map"
+  in 
+   plr tables
+  ;
+
+
   plb "\n//-----------------------------------------";
   plb ("namespace flxusr { namespace " ^ cid_of_flxid state.module_name ^ " {");
+
+  (* include RTTI file. Must be before the thread frame constructor because
+   * the head of the rtti shape list may be thread_frame_t_ptr_map
+   * which is stored in the thread frame so the library function can get
+   * the shape object list *)
+
+  ensure_closed state.rtti_file;
+  if was_used state.rtti_file then begin
+    plb "\n//-----------------------------------------";
+    plb "//DEFINE OFFSET tables for GC";
+    plb ("#include \"" ^ state.module_name ^ ".rtti\"");
+  end;
+
 
   plb "FLX_DEF_THREAD_FRAME";
   plb "//Thread Frame Constructor";
@@ -621,7 +648,8 @@ let codegen_bsyms state bsym_table root_proc =
   let topfuns = List.map fst topfuns in
   let topinits =
     [
-      "  gcp(0)"
+      "  gcp(0)";
+      "  shape_list_head("^last_ptr_map^")";
     ]
     @
     List.map
@@ -640,18 +668,6 @@ let codegen_bsyms state bsym_table root_proc =
   topinits;
   "{}"
   ];
-
-  plr (Flx_ogen.gen_offset_tables
-    state.syms
-    bsym_table
-    state.module_name);
-
-  ensure_closed state.rtti_file;
-  if was_used state.rtti_file then begin
-    plb "\n//-----------------------------------------";
-    plb "//DEFINE OFFSET tables for GC";
-    plb ("#include \"" ^ state.module_name ^ ".rtti\"");
-  end;
 
   begin
     let header_emitted = ref false in
