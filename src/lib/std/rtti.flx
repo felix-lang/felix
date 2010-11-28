@@ -41,7 +41,7 @@ module Rtti {
     return r;
   }
 
-  proc link_shape[T]: unit = """
+  proc _link_shape[T]: &gc_shape_t = """
     ::flx::gc::generic::gc_shape_t *p = (gc_shape_t*)malloc(sizeof(gc_shape_t));
     p->next_shape = PTF shape_list_head;
     PTF shape_list_head = p;
@@ -52,7 +52,10 @@ module Rtti {
     p->n_offsets = 0;
     p->offsets = 0;
     p->flags = ::flx::gc::generic::gc_flags_default;
+    *$1 = p;
     """ requires property "needs_gc";
+
+  gen link_shape[T]()= { var p: gc_shape_t; _link_shape[T] (&p); return p; }
 }
 
 

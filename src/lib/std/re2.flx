@@ -9,8 +9,22 @@ module Re2 {
 // TODO: we need to check the lvalue handling here
 // The RE2, Options classes aren't copyable, so we may have
 // to use pointers
+//
+// TODO: named group extractor
 
+  // this is all a biy hacky still
+  private incomplete type RE2_ = "::re2::RE2";
+  var re2_shape = link_shape[RE2_]();
+  C_hack::ignore(re2_shape); // needed to stop Felix optimising the variable away
   type RE2 = "::re2::RE2*";
+
+  // Uses gc heap, hacky reference to the shape variable!
+  // That var better be initialised before calling this routine!
+  // this code is works around the fact that Felix new always copies
+  // a value onto the heap, re2::RE2 isn't copyable
+  gen _ctor_RE2 : string -> RE2 = "new (*PTF gcp, *PTF re2_shape, false) RE2($1)";
+
+
   type StringPiece = "::re2::StringPiece";
     ctor StringPiece: string = "::re2::StringPiece($1)";
     ctor StringPiece: unit = "::re2::StringPiece()";
@@ -35,35 +49,27 @@ module Re2 {
 
     fun longest_match: RE2Options -> bool = "$1.longest_match()";
     proc set_longest_match: RE2Options * bool = "$1.set_longest_match($2);";
-
     
     fun log_errors: RE2Options -> bool = "$1.log_errors()";
     proc set_log_errors: RE2Options * bool = "$1.set_log_errors($2);";
-
     
     fun max_mem: RE2Options -> int = "$1.max_mem()";
     proc set_max_mem: RE2Options * int = "$1.set_max_mem($2);";
-
     
     fun literal: RE2Options -> bool = "$1.literal()";
     proc set_literal: RE2Options * bool = "$1.set_literal($2);";
 
-    
     fun never_nl: RE2Options -> bool = "$1.never_nl()";
     proc set_never_nl: RE2Options * bool = "$1.set_never_nl($2);";
-
     
     fun case_sensitive: RE2Options -> bool = "$1.case_sensitive()";
     proc set_case_sensitive: RE2Options * bool = "$1.set_case_sensitive($2);";
-
     
     fun perl_classes: RE2Options -> bool = "$1.perl_classes()";
     proc set_perl_classes: RE2Options * bool = "$1.set_perl_classes($2);";
-
     
     fun word_boundary: RE2Options -> bool = "$1.word_boundary()";
     proc set_word_boundary: RE2Options * bool = "$1.set_word_boundary($2);";
-
     
     fun one_line: RE2Options -> bool = "$1.one_line()";
     proc set_one_line: RE2Options * bool = "$1.set_one_line($2);";
@@ -92,37 +98,12 @@ module Re2 {
     const ANCHOR_START: Anchor = "::re2::RE2::ANCHOR_START";
     const ANCHOR_END: Anchor = "::re2::RE2::ANCHOR_END";
 
-  // WRONG! This can't be implement like this.
-  // We need some support. Change gc to allow shapeless objects? 
-  // these have no RTTI and so can't be scanned or length checked,
-  // but that's exactly what we need for a C/C++ object.
-  // We need to do this so the pointer is deleted by the gc when not referenced though!
-  ctor RE2: string = "new ::re2::RE2($1)";
-  proc destroy: RE2 = "delete $1;"; // unfortunate
-
   fun pattern: RE2 -> string = "$1->pattern()";
   fun error: RE2 -> string = "$1->error()";
   fun error_code: RE2 -> ErrorCode = "$1->error_code()";
   fun error_arg: RE2 -> string = "$1->error_arg()";
   fun ok: RE2 -> bool = "$1->ok()";
   fun ProgramSize: RE2 -> int = "$1->ProgramSize()";
-
-/* this stuff is crud 
-  gen FullMatch: StringPiece * RE2 * &Arg * int -> bool = "::re2::RE2::FullMatchN($1,$2,$3,$4)";
-  gen FullMatch (inp:StringPiece, re:RE2, subs:varray[Arg]) => 
-    FullMatch(inp, re, subs.stl_begin, subs.len.int)
-  ;
-
-  gen PartialMatch: StringPiece * RE2 * &Arg * int -> bool = "::re2::RE2::FullMatchN($1,$2,$3,$4)";
-  gen PartialMatch(inp:StringPiece, re:RE2, subs:varray[Arg]) => 
-    PartialMatch(inp, re, subs.stl_begin, subs.len.int)
-  ;
-
-  gen Consume: &StringPiece * RE2 * &Arg * int -> bool = "::re2::RE2::ConsumeN($1,$2,$3,$4)";
-  gen Consume(inp:&StringPiece, re:RE2, subs:varray[Arg]) => 
-    Consume(inp, re, subs.stl_begin, subs.len.int)
-  ;
-*/
 
   gen GlobalReplace: &string * RE2 * StringPiece -> int = "::re2::RE2::GlobalReplace($1, *$2, $3)";
   gen Extract: string * RE2 * StringPiece * &string -> int = "::re2::RE2::GlobalExtract($1, *$2, $3, $4)";
@@ -138,5 +119,7 @@ module Re2 {
 
   fun CheckRewriteString: RE2 * StringPiece * &string -> bool = "$1->CheckRewriteString($2, $3)";
 
+  // StringPiece is really cool, should be spit out and expanded
+  instance Str[StringPiece] { fun str(x:StringPiece)=>string x; }
 
 }

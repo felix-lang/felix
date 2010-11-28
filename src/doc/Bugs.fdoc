@@ -126,3 +126,24 @@ lots of test cases, and document what it actually does (or should do).
 
 
 
+@h1 Operator dot auto deref
+At present, even for a non struct, x.f is not equivalent to f x.
+This is because if x is a pointer, it is automagically dereferenced
+recursively until a non-pointer is obtained.
+
+This is correct behaviour for a field access: just syntactic sugar
+to save writing (*x).f or (*****x.f).
+
+But it isn't expected if f is a function requiring a pointer argument.
+
+The algorithm should (a) check if x is a pointer to a (pointer to a ..)
+struct type before doing the deref and/or try overload resolution first
+anyhow, just in case. This arose where:
+
+type RE2_ = "RE2";
+typedef RE2 = &RE2_;
+fun f: RE2 -> int = "..";
+var r = RE2(..);
+println$ r.ngroups; // fails, r is a pointer, tried to find ngroups (*r)
+
+
