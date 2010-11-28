@@ -84,3 +84,7 @@ works for global namespace: eg
 
 but the problem is: we can't use const in matches, since the type
 isn't a sum type (whereas a Felix enum is).
+
+Another problem with enums: modelling bitwise or-able flags.
+Example: gc_shape_flags_t
+

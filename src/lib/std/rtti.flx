@@ -2,7 +2,12 @@ module Rtti {
   type collector_t = "::flx::gc::generic::collector_t*";
   type gc_shape_t = "::flx::gc::generic::gc_shape_t*";
   fun isNULL: gc_shape_t -> bool = "$1==0";
-  enum gc_shape_flags_t { gc_flags_default, gc_flags_immobile, gc_flags_persistent, gc_flags_conservative };
+  typedef gc_shape_flags_t = uint;
+    val gc_flags_default = 0;
+    val gc_flags_immobile = 1;
+    val gc_flags_persistent = 2;
+    val gc_flags_conservative = 4;
+
   typedef gc_finaliser_t = collector_t * address --> void;
 
   fun next_shape: gc_shape_t -> gc_shape_t = "$1->next_shape";
@@ -15,5 +20,41 @@ module Rtti {
   fun flags: gc_shape_t -> gc_shape_flags_t = "$1->flags";
 
   fun shape_list_head : unit -> gc_shape_t = "PTF shape_list_head";
-  
+
+  type type_info = "::std::type_info" requires header "#include <typeinfo>";
+  fun name : type_info -> string = "::std::string($1.name())";
+  const typeid[T]: type_info = "typeid(?1)";
+
+  private proc _gxx_demangle: string * &string = """{
+    int status;
+    char *tmp=abi::__cxa_demangle($1.data(), 0,0, &status);
+    string s= string(tmp);
+    std::free(tmp);
+    *$2= s;
+    }
+  """ requires header "#include <cxxabi.h>";
+
+  fun gxx_demangle(s:string) :string = 
+  {
+    var r: string;
+    _gxx_demangle(s, &r);
+    return r;
+  }
+
+  proc link_shape[T]: unit = """
+    ::flx::gc::generic::gc_shape_t *p = (gc_shape_t*)malloc(sizeof(gc_shape_t));
+    p->next_shape = PTF shape_list_head;
+    PTF shape_list_head = p;
+    p->cname = typeid(?1).name();
+    p->count = 1;
+    p->amt = sizeof(?1);
+    p->finaliser = ::flx::gc::generic::std_finaliser<?1>;
+    p->n_offsets = 0;
+    p->offsets = 0;
+    p->flags = ::flx::gc::generic::gc_flags_default;
+    """ requires property "needs_gc";
 }
+
+
+
+

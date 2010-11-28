@@ -89,11 +89,11 @@ module C_hack
   fun address_of[t]: lvalue[t]-> address = "(void*)&$1";
 
 
-  fun isNULL: address -> bool = "(NULL==$1)";
-  fun isNULL[t]: &t -> bool = "(NULL==$1)";
-  fun isNULL[t]: ptr[t] -> bool = "(NULL==$1)";
-  fun isNULL[t]: cptr[t] -> bool = "(NULL==$1)";
-  fun isNULL[t]: gcptr[t] -> bool = "(NULL==$1)";
+  fun isNULL: address -> bool = "(0==$1)";
+  fun isNULL[t]: &t -> bool = "(0==$1)";
+  fun isNULL[t]: ptr[t] -> bool = "(0==$1)";
+  fun isNULL[t]: cptr[t] -> bool = "(0==$1)";
+  fun isNULL[t]: gcptr[t] -> bool = "(0==$1)";
 
   publish """
   Polymorphic null pointer constant
