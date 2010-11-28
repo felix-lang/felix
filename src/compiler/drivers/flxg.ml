@@ -618,7 +618,7 @@ let codegen_bsyms state bsym_table root_proc =
     state.syms
     bsym_table
     state.module_name
-    "&flx::rtl::unit_ptr_map"
+    "&::flx::rtl::unit_ptr_map"
   in 
    plr tables
   ;

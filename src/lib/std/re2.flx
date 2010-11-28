@@ -1,4 +1,5 @@
 include "stl/stl_map";
+include "std/rtti";
 
 module Re2 {
   requires package "re2";
@@ -13,8 +14,9 @@ module Re2 {
 // TODO: named group extractor
 
   // this is all a biy hacky still
+  // VERY HACKY: forces re2 to be linked in even if it isn't used elsewhere
   private incomplete type RE2_ = "::re2::RE2";
-  var re2_shape = link_shape[RE2_]();
+  var re2_shape = Rtti::link_shape[RE2_]();
   C_hack::ignore(re2_shape); // needed to stop Felix optimising the variable away
   type RE2 = "::re2::RE2*";
 
@@ -120,6 +122,6 @@ module Re2 {
   fun CheckRewriteString: RE2 * StringPiece * &string -> bool = "$1->CheckRewriteString($2, $3)";
 
   // StringPiece is really cool, should be spit out and expanded
-  instance Str[StringPiece] { fun str(x:StringPiece)=>string x; }
+  instance Str[StringPiece] { fun str(x:StringPiece)=>_ctor_string x; }
 
 }
