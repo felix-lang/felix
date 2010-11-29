@@ -76,11 +76,12 @@ def build_flx(phase):
                 'STATIC_LIBS': '-lglut',
             })
 
+    # THIS DOESN'T BELONG HERE, re2 is now builtin to felix
     re2_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
             'src/re2/re2.fpc', 'src/re2/re2.fpc.in', {
-                'SHARED_LIB': '-lre2',
-                'STATIC_LIB': '-lre2',
-                'INCLUDES': '<re2/re2.h>',
+                'SHARED_LIB': '-lflx_re2_dynamic',
+                'STATIC_LIB': '-lflx_re2_static',
+                'INCLUDES': '"re2.h"',
             })
 
 

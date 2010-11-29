@@ -2,5 +2,5 @@ Name: Re2
 Description: Google Re2 regexp library
 provides_dlib: @SHARED_LIB@
 provides_slib: @STATIC_LIB@
-includes: @INCLUDES@
+includes: '@INCLUDES@'
 
