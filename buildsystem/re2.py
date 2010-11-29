@@ -11,14 +11,12 @@ import buildsystem
 def build_runtime(phase):
     path = Path('src/re2/re2')
 
-    buildsystem.copy_hpps_to_rtl(phase.ctx,
-        #phase.ctx.buildroot / 'config/target/flx_re2_config.hpp',
-
-        # headers
+    buildsystem.copy_to(phase.ctx, phase.ctx.buildroot / "lib/rtl/re2", [
         path / 're2/re2.h',
         path / 're2/set.h',
         path / 're2/stringpiece.h',
         path / 're2/variadic_function.h',
+        ]
      )
 
     dst = 'lib/rtl/flx_re2'

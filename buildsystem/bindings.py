@@ -81,7 +81,7 @@ def build_flx(phase):
             'src/re2/re2.fpc', 'src/re2/re2.fpc.in', {
                 'SHARED_LIB': '-lflx_re2_dynamic',
                 'STATIC_LIB': '-lflx_re2_static',
-                'INCLUDES': '"re2.h"',
+                'INCLUDES': '"re2/re2.h"',
             })
 
 
