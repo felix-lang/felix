@@ -156,7 +156,6 @@ let make_flxg_state ppf compiler_options =
     | None -> filename
     | Some d -> Filename.concat d (Filename.basename filename)
   in
-
   {
     ppf = ppf;
     compile_start_gm_string = compile_start_gm_string;
@@ -926,6 +925,10 @@ let make_assembly
       in
       let flx_base_name = Flx_filesys.join filedir filename in
      
+(*
+let _ = print_endline ("flx_base_name= " ^ flx_base_name) in
+let _ = print_endline ("Processed = " ^ String.concat ", " (!processed)) in
+*)
       (* check if already processed *)
       if not (List.mem flx_base_name (!processed)) then
       begin
@@ -938,9 +941,7 @@ let make_assembly
 
         (* get the parse of the felix file, with caching  *)
         let stmts = 
-(*
-let _ = print_endline ("Filename is " ^ flx_name) in
-*)
+(* let _ = print_endline ("Filename is " ^ flx_name) in *)
           let in_par_name = Flx_filesys.join filedir filename ^ ".par2" in
           let out_par_name = 
              match outdir with 
@@ -1081,6 +1082,9 @@ let main () =
   let start_counter = ref 2 in
   let ppf, compiler_options = parse_args () in
   let state = make_flxg_state ppf compiler_options in
+(*
+print_endline ("Include dirs=" ^ String.concat ", " compiler_options.include_dirs);
+*)
   let module_name = 
      try make_module_name (List.hd (List.rev (state.syms.compiler_options.files)))
      with _ -> "empty_module"
@@ -1118,6 +1122,7 @@ let main () =
 
 (*
     print_endline ("Making symbol tables for main program " ^ main_prog);
+    print_endline ("Excludes: " ^ String.concat ", " (!excls));
 *)
     let sym_table = !sym_table_ref in
     let bsym_table = !bsym_table_ref in

@@ -22,6 +22,8 @@ val virtual_filetime:
 
 exception Missing_path of string
 
+val dir_sep : string
+
 (** Look in the filesystem for the path. Raises Missing_path if not found. *)
 val find_path:
   ?include_dirs:string list ->  (** Optional directories to search. *)

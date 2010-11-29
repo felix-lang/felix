@@ -1,3 +1,7 @@
+(* This module is responsible for generating shape tables for all dynamically allocated
+ * objects
+ *)
+
 open Flx_util
 open Flx_list
 open Flx_types
@@ -338,6 +342,7 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
   let primitive_shapes = Hashtbl.create 97 in
   let s = Buffer.create 20000 in
 
+  (* Make a shape for every non-C style function with the property `Heap_closure *)
   (* print_endline "Function and procedure offsets"; *)
   Hashtbl.iter begin fun (index,ts) instance ->
     let bsym =
@@ -368,6 +373,7 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
     | _ -> ()
   end syms.instances;
 
+  (* generate offsets for all pointers store in the thread_frame *)
   gen_thread_frame_offsets s syms bsym_table last_ptr_map;
 
   (* We're not finished: we need offsets dynamically allocated types too *)

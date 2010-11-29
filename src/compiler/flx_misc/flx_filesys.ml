@@ -16,11 +16,6 @@ let virtual_filetime dflt f =
   | Some t -> t
   | None -> dflt
 
-(* Note: empty list of components is not allowed *)
-let fcat fs =
-  if fs = [] then failwith "Empty include filename not permitted";
-  List.fold_left Filename.concat (List.hd fs) (List.tl fs)
-
 (* Note: a Felix include filename should be a lower case
    C identifier, or a sequence of such separated by /
    character, possible followed by an extension . and
@@ -52,6 +47,28 @@ let split_unix f =
   let fs = Str.split slosh f in
   if is_dir_sep f 0 then dir_sep :: fs else fs
 
+let native_join dir file =
+  let n = String.length dir in
+  (* chop non-leading trailing / off *)
+  let dir = 
+     if n>2 then 
+       if String.sub dir (n-1) 1 = dir_sep then String.sub dir 0 (n-1)
+       else dir
+     else dir
+  in
+
+  let joined = 
+    if dir = "" then file 
+    else 
+      if file = "" then dir 
+      else Filename.concat dir file
+  in joined
+
+(* Note: empty list of components is not allowed *)
+let fcat fs =
+  if fs = [] then failwith "Empty include filename not permitted";
+  List.fold_left native_join (List.hd fs) (List.tl fs)
+
 (** Convert a unix path into a native path. *)
 let unix2native f = if f = "" then "" else fcat (split_unix f)
 
@@ -75,6 +92,13 @@ let is_abs =
       s.[0] = '/'
     )
 
+
+(** Workaround bug in Ocaml Filename.concat *)
+let join dir file =
+  let file = unix2native file in
+  native_join dir file
+
+
 (** Look in the filesystem for the path. Raises Missing_path if not found. *)
 let find_path ?(include_dirs=[]) path =
   let path = unix2native path in
@@ -84,7 +108,7 @@ let find_path ?(include_dirs=[]) path =
 
     (* Nope, so search through the include dirs for the path. *)
     List.iter begin fun d ->
-      let path = Filename.concat d path in
+      let path = join d path in
       if Sys.file_exists path then raise (Found_path path)
     end include_dirs;
 
@@ -105,19 +129,13 @@ let find_include_dir ?(include_dirs=[]) path =
 
     (* Nope, so search through the include dirs for the path. *)
     List.iter begin fun d ->
-      let fullpath = Filename.concat d path in
+      let fullpath = join d path in
       if Sys.file_exists fullpath then raise (Found_path d)
     end include_dirs;
 
     (* We still didn't find it? Then error out. *)
     raise (Missing_path path)
   with Found_path path -> path
-
-(** Workaround bug in Ocaml Filename.concat *)
-let join dir file =
-  let file = unix2native file in
-  if dir = "" then file else Filename.concat dir file
-
 (** Look in the filesystem for the path. Raises Missing_path if not found or is
  * not a file. *)
 let find_file ?(include_dirs=[]) path =

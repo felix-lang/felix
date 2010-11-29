@@ -13,6 +13,20 @@ let print_chosen options =
     )
   )
 
+let fixit file =
+  let n = String.length file in
+  let s = ref "" in
+  let copy = ref true in
+  for i = 0 to n-1 do
+    let ch = String.sub file i 1 in
+    if ch <> Flx_filesys.dir_sep then copy := true;
+    if !copy then s := !s ^ ch;
+    copy := ch <> Flx_filesys.dir_sep 
+  done;
+  !s
+
+let fixup files = List.map fixit files
+
 let get_felix_options options =
   {
     optimise    = check_keys options ["opt"; "optimise"];
@@ -21,7 +35,7 @@ let get_felix_options options =
     document_typeclass = check_key options "document-typeclass";
     with_comments = check_key options "with-comments";
     mangle_names = check_key options "mangle-names";
-    include_dirs= get_keys_values options ["I"; "include"];
+    include_dirs= fixup (get_keys_values options ["I"; "include"]);
     print_flag  = check_keys options ["v"; "verbose"];
     generate_axiom_checks  = not (check_keys options ["no-check-axioms"]);
     trace       = check_keys options ["trace" ];
