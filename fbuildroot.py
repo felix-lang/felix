@@ -415,7 +415,12 @@ def build(ctx):
     call('buildsystem.flx_glob.build_runtime', phases.target)
     call('buildsystem.tre.build_runtime', phases.target)
 
-    for module in 'flx_glob', 'tre':
+    # temporarily, this is a secondary library
+    # which means flx_pkgconfig can't use it (since it is built
+    # before this step is executed
+    call('buildsystem.re2.build_runtime', phases.target)
+
+    for module in 'flx_glob', 'tre', 're2':
         call('buildsystem.' + module + '.build_flx', phases.target)
 
     call('buildsystem.bindings.build_flx', phases.target)
