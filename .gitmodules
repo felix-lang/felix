@@ -9,4 +9,4 @@
 	url = git://github.com/erickt/ocs.git
 [submodule "re2"]
 	path = src/re2/re2
-	url = git@github.com:skaller/re2.git
+	url = git://github.com/skaller/re2.git
