@@ -1466,9 +1466,11 @@ let gen_C_function_body filename syms bsym_table
       try
         gen_exes filename syms bsym_table [] label_info counter index exes vs ts instance_no true
       with x ->
+        (*
         print_endline (Printexc.to_string x);
         print_endline (catmap "\n" (string_of_bexe bsym_table 1) exes);
         print_endline "Can't gen exes ..";
+        *)
         raise x
     in
     let dcl_vars =
@@ -1583,9 +1585,6 @@ let gen_C_procedure_body filename syms bsym_table
       si (length ts)
     );
     let name = cpp_instance_name syms bsym_table index ts in
-
-    "//C PROC <" ^ string_of_bid index ^ ">: " ^ name ^ "\n" ^
-
     let argtype = typeof_bparams bps in
     let argtype = rt vs argtype in
 
@@ -1628,6 +1627,8 @@ let gen_C_procedure_body filename syms bsym_table
       )
       "" kids
     in
+    let output =
+      "//C PROC <" ^ string_of_bid index ^ ">: " ^ name ^ "\n" ^
       "void " ^
       (if mem `Cfun props then "" else "FLX_REGPARM ")^
       name ^ "(" ^
@@ -1682,6 +1683,8 @@ let gen_C_procedure_body filename syms bsym_table
       dcl_vars ^
       exe_string ^
       "}\n"
+      in 
+      output
 
   | _ -> failwith "procedure expected"
 
@@ -2000,6 +2003,7 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
     try Flx_bsym_table.find bsym_table index with Not_found ->
       failwith ("[gen_execute_methods] Can't find index " ^ string_of_bid index)
   in
+
   begin match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,(ps,traint),BTYP_void,_) ->
     bcat s ("//------------------------------\n");

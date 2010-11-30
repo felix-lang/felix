@@ -49,8 +49,7 @@ include "std/avl";
 include "std/lexer";
 
 include "std/rtti";
-// can't include this yet
-//include "std/re2";
+include "std/re2";
 
 // Version
 include "std/version";

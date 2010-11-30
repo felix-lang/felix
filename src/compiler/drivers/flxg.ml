@@ -713,6 +713,7 @@ let codegen_bsyms state bsym_table root_proc =
     (force_open state.body_file)
     (force_open state.ctors_file);
 
+
   fprintf state.ppf "//GENERATING C++: interface\n";
   plb "\n//-----------------------------------------";
   plb ("}} // namespace flxusr::" ^ cid_of_flxid state.module_name);

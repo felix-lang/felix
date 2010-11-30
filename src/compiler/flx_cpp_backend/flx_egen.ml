@@ -537,7 +537,7 @@ let rec gen_expr'
         | CS_str c -> ce_expr "expr" c
         | CS_str_template c ->
           let ts = map tn ts in
-          csubst sr (Flx_bsym.sr bsym) c (ce_atom "Error") [] [] "Error" "Error" ts "expr" "Error" ["Error"] ["Error"] ["Error"]
+          csubst sr (Flx_bsym.sr bsym) c ~arg:(ce_atom "Error") ~args:[] ~typs:[] ~argtyp:"Error" ~retyp:"Error" ~gargs:ts ~prec:"expr" ~argshape:"Error" ~argshapes:["Error"] ~display:["Error"] ~gargshapes:["Error"]
         end
 
       (* | BBDCL_fun (_,_,([s,(_,BTYP_void)],_),_,[BEXE_fun_return e]) -> *)

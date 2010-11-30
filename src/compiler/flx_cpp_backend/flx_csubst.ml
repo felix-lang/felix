@@ -94,7 +94,9 @@ let is_atomic s =
 
 let islower = function | 'a' .. 'z' -> true | _ -> false
 
-let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argshape argshapes display gargshapes =
+let csubst sr sr2 ct 
+  ~arg ~(args:cexpr_t list) ~typs ~argtyp ~retyp ~gargs ~prec ~argshape ~argshapes ~display ~gargshapes
+=
   (*
   print_endline ("INPUT ct,prec=" ^ ct ^ " is " ^ prec);
   *)
@@ -385,9 +387,9 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
        end
 
     | EarholeDigits ->
-        if !digits> List.length args
+        if !digits> List.length argshapes
         then serr i ("Parameter @" ^ string_of_int !digits ^ " too large")
-        else if !digits<0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
+        else if !digits<1 then serr i ("Argshape no " ^ string_of_int !digits ^ " too small")
         else
           let t = nth argshapes (!digits-1) in
           bcat (argshape);
@@ -395,9 +397,9 @@ let csubst sr sr2 ct arg (args:cexpr_t list) typs argtyp retyp gargs prec argsha
           trans i ch
 
     | HashDigits ->
-        if !digits> List.length args
+        if !digits> List.length typs
         then serr i ("Paramater #" ^ string_of_int !digits ^ " too large")
-        else if !digits<0 then serr i ("Arg no " ^ string_of_int !digits ^ " too small")
+        else if !digits<0 then serr i ("Parameter #" ^ string_of_int !digits ^ " too small")
         else
           bcat
           (

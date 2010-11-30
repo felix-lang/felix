@@ -439,7 +439,8 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
             let index = Hashtbl.find syms.registry t in
             Hashtbl.replace allocable_types t index
           with
-          | Not_found -> failwith "[gen_offset_tables] Woops, type isn't in registry?"
+          | Not_found -> failwith ("[gen_offset_tables] Woops, type "^si i^ "-->" ^ 
+             sbt bsym_table t ^" isn't in registry! Required shape of " ^ bsym.Flx_bsym.id)
           end
 
         | _ -> ()

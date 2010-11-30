@@ -94,7 +94,18 @@ let gen_prim_call
         in rev_map (fun _ -> t) (nlist n), rev_map (fun _ -> s) (nlist n)
       | _ -> assert false
     in
-    csubst sr sr2 ct carg ess ets tt ret ts prec ashape ashapes ["Error"] gshapes
+    csubst sr sr2 ct 
+      ~arg:carg 
+      ~args:ess 
+      ~typs:ets 
+      ~argtyp:tt
+      ~retyp:ret 
+      ~gargs:ts 
+      ~prec:prec 
+      ~argshape:ashape 
+      ~argshapes:ashapes 
+      ~display:["Error"] 
+      ~gargshapes:gshapes
 
   (* the argument isnt a tuple, but the type is *)
   | (_,BTYP_tuple typs) as x ->
@@ -105,7 +116,18 @@ let gen_prim_call
     in
     let ess = map (ge sr) es in
     let ets = map tn typs in
-    csubst sr sr2 ct carg ess ets tt ret ts prec ashape (map sh typs) ["Error"] gshapes
+    csubst sr sr2 ct 
+      ~arg:carg 
+      ~args:ess 
+      ~typs:ets 
+      ~argtyp:tt 
+      ~retyp:ret 
+      ~gargs:ts 
+      ~prec:prec 
+      ~argshape:ashape 
+      ~argshapes:(map sh typs) 
+      ~display:["Error"] 
+      ~gargshapes:gshapes
 
   (* the argument isnt a tuple, but the type is an array *)
   | (_,(BTYP_array(t,BTYP_unitsum n) as ta)) as x ->
@@ -114,10 +136,25 @@ let gen_prim_call
     let es = Flx_list.range (fun i -> bexpr_get_n t (i,x)) n in
     let ess = map (ge sr) es in
     let ets = map tn typs in
-    csubst sr sr2 ct carg ess ets tt ret ts prec ashape (map sh typs) ["error"] gshapes
+    csubst sr sr2 ct 
+      ~arg:carg ~args:ess 
+      ~typs:ets ~argtyp:tt ~retyp:ret 
+      ~gargs:ts 
+      ~prec:prec 
+      ~argshape:ashape 
+      ~argshapes:(map sh typs) ~display:["error"] 
+      ~gargshapes:gshapes
 
   (* the argument isn't an explicit tuple, and the type
      is neither an array nor tuple
   *)
   | (_,typ) ->
-    csubst sr sr2 ct carg [carg] [tt] tt ret ts prec ashape [ashape] ["Error"] gshapes
+    csubst sr sr2 ct 
+    ~arg:carg ~args:[carg] 
+    ~typs:[tt] ~argtyp:tt ~retyp:ret 
+    ~gargs:ts 
+    ~prec:prec 
+    ~argshape:ashape ~argshapes:[ashape] 
+    ~display:["Error"] 
+    ~gargshapes:gshapes
+

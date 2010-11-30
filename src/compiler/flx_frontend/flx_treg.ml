@@ -171,7 +171,31 @@ let rec register_type_r ui syms bsym_table exclude sr t =
       rnr (BTYP_function (argt,t))         (* constructor as function *)
       *)
 
-    | BBDCL_external_type _ -> ui i ts; rnr t  (* instantiate the type too *)
+    | BBDCL_external_type (vs,bquals,_,_)  -> 
+     (* instantiate the type too *)
+      ui i ts; rnr t;
+      begin (* if there is an associated shape required, we have to register the type *)
+       let handle_qual bqual = match bqual with
+        | `Bound_needs_shape t ->
+          (*
+          print_endline ("Needs shape (uninstantiated) " ^ sbt bsym_table t);
+          *)
+          (*
+          let varmap = mk_varmap vs ts in
+          let t = varmap_subst varmap t in
+          *)
+          let t' = tsubst vs ts t in
+          (*
+          print_endline ("Needs shape (instantiated) " ^ sbt bsym_table t);
+          *)
+          rr t'
+        | _ -> ()
+        in
+        let rec aux quals = match quals with
+        | [] -> ()
+        | h :: t -> handle_qual h; aux t
+        in aux bquals
+      end
 
     | _ ->
       clierr sr

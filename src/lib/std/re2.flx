@@ -16,15 +16,15 @@ module Re2 {
   // this is all a biy hacky still
   // VERY HACKY: forces re2 to be linked in even if it isn't used elsewhere
   private type RE2_ = "::re2::RE2";
-  var re2_shape = Rtti::link_shape[RE2_]();
-  C_hack::ignore(re2_shape); // needed to stop Felix optimising the variable away
+  //var re2_shape = Rtti::link_shape[RE2_]();
+  //C_hack::ignore(re2_shape); // needed to stop Felix optimising the variable away
   _gc_type RE2_ type RE2 = "::re2::RE2*";
 
   // Uses gc heap, hacky reference to the shape variable!
   // That var better be initialised before calling this routine!
   // this code is works around the fact that Felix new always copies
   // a value onto the heap, re2::RE2 isn't copyable
-  gen _ctor_RE2 : string -> RE2 = "new (*PTF gcp, *PTF re2_shape, false) RE2($1)";
+  gen _ctor_RE2 : string -> RE2 = "new (*PTF gcp, @0, false) RE2($1)";
 
 
   type StringPiece = "::re2::StringPiece";
