@@ -1038,6 +1038,25 @@ let process_lib state sym_table_ref bsym_table_ref excls outdir module_name star
     | Some d -> Some (Flx_filesys.join d lib_filename ^ ".libtab")
     | None -> None
   in
+  let lib_cache_time = Flx_filesys.virtual_filetime Flx_filesys.big_bang in_libtab_name in
+  let validate (_,depnames,_,_,_,_,_,_,_,_,_) = 
+    let filetimes = List.fold_left (fun acc f -> 
+      (*
+      print_endline ("Depfile=" ^ f); 
+      *)
+      max acc (Flx_filesys.virtual_filetime Flx_filesys.big_crunch (f^".flx"))) 
+      Flx_filesys.big_bang depnames 
+    in
+    (*
+    print_endline ("Cached include filetimes = " ^ string_of_float filetimes);
+    print_endline ("Libtime = " ^ string_of_float lib_time);
+    *)
+    let valid = filetimes < lib_cache_time in
+    (*
+    print_endline (if valid then "libtab is still valid" else "libtab is out of date");
+    *)
+    valid
+  in
   let 
     includes, depnames,
     saved_counter, 
@@ -1054,6 +1073,7 @@ let process_lib state sym_table_ref bsym_table_ref excls outdir module_name star
       ~outfile:out_libtab_name
       ~force_calc:(false || state.syms.compiler_options.force_recompile)
       ~min_time:lib_time 
+      ~validate
       (fun () -> 
         (* make assembly outputs stuff in reversed order, but this routine
          * reversed it back again *)

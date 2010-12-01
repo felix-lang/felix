@@ -8,7 +8,7 @@ val gen_prim_call :
   string ->
   Flx_btype.t list ->
   Flx_bexpr.t ->
-  string ->
+  Flx_btype.t ->
   Flx_srcref.t ->
   Flx_srcref.t ->
   string ->

@@ -797,7 +797,6 @@ let fold counter t =
   let rec aux trail depth t' =
     let ax t = aux ((depth,t')::trail) (depth+1) t in
     match t' with
-    | BTYP_none -> assert false
     | BTYP_intersect ls
     | BTYP_sum ls
     | BTYP_inst (_,ls)
@@ -811,6 +810,7 @@ let fold counter t =
 
     | BTYP_pointer a -> ax a
 
+    | BTYP_none
     | BTYP_void
     | BTYP_unitsum _
     | BTYP_type_var _

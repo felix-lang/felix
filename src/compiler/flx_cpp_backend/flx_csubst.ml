@@ -393,7 +393,7 @@ let csubst sr sr2 ct
         else if !digits<0 then serr i ("Argshape no " ^ string_of_int !digits ^ " too small")
         else
           let t = nth argshapes (!digits) in
-          bcat (argshape);
+          bcat t;
           mode := Normal;
           trans i ch
 

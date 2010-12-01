@@ -789,7 +789,7 @@ let gen_exe filename
           clierr2 sr (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
       | CS_str s -> ws (ce_expr "expr" s)
       | CS_str_template s ->
-        let ss = gen_prim_call syms bsym_table tsub ge' s ts a "Error" sr (Flx_bsym.sr bsym) "atom"  in
+        let ss = gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"  in
         ws ss
       end
 
@@ -802,7 +802,7 @@ let gen_exe filename
       ;
       let s = Flx_bsym.id bsym ^ "($a);" in
       let s =
-        gen_prim_call syms bsym_table tsub ge' s ts a "Error" sr (Flx_bsym.sr bsym) "atom"
+        gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"
       in
       let s = sc "expr" s in
       (if with_comments then "      // " ^ src_str ^ "\n" else "") ^

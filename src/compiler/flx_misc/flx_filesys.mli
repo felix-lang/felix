@@ -121,6 +121,7 @@ val cached_computation:
   ?force_calc:bool ->               (** ignore input cache, force calculation *)
   ?nowrite:bool ->                  (** don't write output *)
   ?min_time: float ->               (** minimum time the cache must have to be considered up to date *)
+  ?validate: ('a -> bool) ->        (** function to validate loaded data *)
   (unit -> 'a) ->                   (** function to calculate the result if the cache is invalid *)
   'a                                (** the result *)
 

@@ -229,6 +229,7 @@ let cached_computation
   ?(force_calc:bool=false)
   ?(nowrite:bool=false)
   ?(min_time:float=big_bang)
+  ?(validate: ('a-> bool)=(fun x -> true))
   (f: unit -> 'a) 
   : 'a
 =
@@ -258,6 +259,11 @@ let cached_computation
     else None
   in
   (* if that fails generate the data *)
+  let cached_data =
+    match cached_data with
+    | Some data -> if validate data then Some data else None
+    | None -> None
+  in 
   match cached_data with
   | Some data -> data
   | None ->

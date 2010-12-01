@@ -1165,7 +1165,7 @@ and gen_apply_prim
             s
             (List.map (beta_reduce this_vs this_ts) ts)
             (arg, beta_reduce this_vs this_ts argt)
-            (cpp_typename (beta_reduce vs ts retyp))
+            (beta_reduce vs ts retyp)
             sr
             (Flx_bsym.sr bsym)
             prec
@@ -1179,7 +1179,7 @@ and gen_apply_prim
             (Flx_bsym.id bsym ^ "($a)")
             (List.map (beta_reduce this_vs this_ts) ts)
             (arg, beta_reduce this_vs this_ts argt)
-            (cpp_typename (beta_reduce vs ts retyp))
+            (beta_reduce vs ts retyp)
             sr
             (Flx_bsym.sr bsym)
             "atom"

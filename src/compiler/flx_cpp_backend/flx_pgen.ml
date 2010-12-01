@@ -86,7 +86,7 @@ let gen_prim_call
   let argt = rt argt in
   let tt = tn argt in
   let sh t = shape_of syms bsym_table tn t in
-  let shret = ret ^ "_ptr_map" in (* hmm .. argghhh .. *)
+  let shret = sh ret in (* hmm .. argghhh .. *)
   let gshapes = map sh ts in
   let ts = map rtn ts in
   let carg =
@@ -131,7 +131,7 @@ let gen_prim_call
       ~args:ess 
       ~typs:ets 
       ~argtyp:tt
-      ~retyp:ret 
+      ~retyp:(tn ret)
       ~gargs:ts 
       ~prec:prec 
       ~argshape:ashape 
@@ -153,7 +153,7 @@ let gen_prim_call
       ~args:ess 
       ~typs:ets 
       ~argtyp:tt 
-      ~retyp:ret 
+      ~retyp:(tn ret) 
       ~gargs:ts 
       ~prec:prec 
       ~argshape:ashape 
@@ -170,7 +170,7 @@ let gen_prim_call
     let ets = map tn typs in
     csubst sr sr2 ct 
       ~arg:carg ~args:ess 
-      ~typs:ets ~argtyp:tt ~retyp:ret 
+      ~typs:ets ~argtyp:tt ~retyp:(tn ret) 
       ~gargs:ts 
       ~prec:prec 
       ~argshape:ashape 
@@ -184,7 +184,7 @@ let gen_prim_call
   | (_,typ) ->
     csubst sr sr2 ct 
     ~arg:carg ~args:[carg] 
-    ~typs:[tt] ~argtyp:tt ~retyp:ret 
+    ~typs:[tt] ~argtyp:tt ~retyp:(tn ret) 
     ~gargs:ts 
     ~prec:prec 
     ~argshape:ashape 
