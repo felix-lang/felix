@@ -13,6 +13,10 @@ let print_chosen options =
     )
   )
 
+(* this stupid routine gets rid of all duplicate // in a filename, and also
+ * any trailing /, since for some reason this confuses the include file
+ * exclusion checks
+ *)
 let fixit file =
   let n = String.length file in
   let s = ref "" in
@@ -23,7 +27,16 @@ let fixit file =
     if !copy then s := !s ^ ch;
     copy := ch <> Flx_filesys.dir_sep 
   done;
-  !s
+  let s = !s in
+  let n = String.length s in
+  let s = 
+    if n>1 then
+      if String.sub s (n-1) 1 = Flx_filesys.dir_sep 
+      then String.sub s (n-1) 1 
+      else s
+    else s
+  in 
+  s
 
 let fixup files = List.map fixit files
 

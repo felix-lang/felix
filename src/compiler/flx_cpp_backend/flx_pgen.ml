@@ -14,6 +14,8 @@ open Flx_ctypes
 open Flx_cexpr
 open Flx_maps
 
+exception Found of Flx_btype.t
+
 let shape_of syms bsym_table tn t =
   match t with
   | BTYP_inst (i,ts) ->
@@ -23,8 +25,37 @@ let shape_of syms bsym_table tn t =
       let cpts = map (fun (_,_,t) -> varmap_subst varmap t) idts in
       if all_voids cpts then "_int_ptr_map"
       else "_uctor_ptr_map"
+
+    (* special hack: if we have a type which has an associated gc_shape type,
+     * use the shape of that instead of the original type. This is a hack because
+     * it leaves no way to get the shape of the original type, however the 
+     * needs_shape property is basically there for when that type isn't actually
+     * allocated. The main example is when you have an immobile type, and so use
+     * a pointer instead, but we still want to create an object of the original type
+     * on the heap and return a pointer in a constructor.
+     *
+     * This would stuff up if we need to allocate the pointer, for example if it is
+     * an argument to a union constuctor, however it is very unlikely csubst will
+     * be used to generate such an expression (the shape use by the compiler will
+     * be the pointer's shape in this case).
+     *)
+    | BBDCL_external_type (bvs,bquals,ct,breqs) ->
+      let get_assoc_type bqual = 
+         match bqual with 
+         | `Bound_needs_shape t -> raise (Found t)
+         | _ -> ()
+      in
+      begin 
+        try 
+          List.iter get_assoc_type bquals;
+          tn t ^ "_ptr_map"
+        with Found t ->
+          let t = tsubst bvs ts t in
+          tn t ^ "_ptr_map"
+      end
     | _ -> tn t ^ "_ptr_map"
     end
+
   | BTYP_sum cpts ->
       if all_units cpts then "_int_ptr_map"
       else "_uctor_ptr_map"
@@ -55,6 +86,7 @@ let gen_prim_call
   let argt = rt argt in
   let tt = tn argt in
   let sh t = shape_of syms bsym_table tn t in
+  let shret = ret ^ "_ptr_map" in (* hmm .. argghhh .. *)
   let gshapes = map sh ts in
   let ts = map rtn ts in
   let carg =
@@ -103,7 +135,7 @@ let gen_prim_call
       ~gargs:ts 
       ~prec:prec 
       ~argshape:ashape 
-      ~argshapes:ashapes 
+      ~argshapes:(shret::ashapes)
       ~display:["Error"] 
       ~gargshapes:gshapes
 
@@ -125,7 +157,7 @@ let gen_prim_call
       ~gargs:ts 
       ~prec:prec 
       ~argshape:ashape 
-      ~argshapes:(map sh typs) 
+      ~argshapes:(shret::(map sh typs))
       ~display:["Error"] 
       ~gargshapes:gshapes
 
@@ -142,7 +174,8 @@ let gen_prim_call
       ~gargs:ts 
       ~prec:prec 
       ~argshape:ashape 
-      ~argshapes:(map sh typs) ~display:["error"] 
+      ~argshapes:(shret::map sh typs)
+      ~display:["error"] 
       ~gargshapes:gshapes
 
   (* the argument isn't an explicit tuple, and the type
@@ -154,7 +187,8 @@ let gen_prim_call
     ~typs:[tt] ~argtyp:tt ~retyp:ret 
     ~gargs:ts 
     ~prec:prec 
-    ~argshape:ashape ~argshapes:[ashape] 
+    ~argshape:ashape 
+    ~argshapes:(shret::[ashape])
     ~display:["Error"] 
     ~gargshapes:gshapes
 

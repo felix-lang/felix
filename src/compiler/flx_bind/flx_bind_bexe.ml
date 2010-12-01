@@ -638,6 +638,7 @@ let bind_exes state bsym_table sr exes =
 
   begin match state.ret_type with
   | BTYP_void ->
+    (*
     if
       not state.reachable &&
       state.proc_return_count = 0 (* &&
@@ -648,6 +649,8 @@ let bind_exes state bsym_table sr exes =
       " has no explicit return and doesn't drop thru end," ^
       "\npossible infinite loop"
     )
+    *) ()
+
   | _ ->
     if state.reachable then begin
       (* this is now a hard error ..

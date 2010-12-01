@@ -671,7 +671,8 @@ if DEBUG==1 do
   CCFLAGS=CCFLAGS+DEBUG_FLAGS;
 done
 
-var FLXFLAGS="--inline="+str(INLINE) + ' --output_dir=' + str(OUTPUT_DIR);
+var FLXFLAGS="--inline="+str(INLINE);
+if OUTPUT_DIR != "" do FLXFLAGS += ' --output_dir=' + str(OUTPUT_DIR); done;
 if CACHE_DIR != "" do FLXFLAGS += " --cache_dir=" + CACHE_DIR; done
 
 var FCMD="";

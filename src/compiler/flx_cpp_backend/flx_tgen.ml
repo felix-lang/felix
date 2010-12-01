@@ -229,7 +229,12 @@ let gen_type_name syms bsym_table (index,typ) =
         | CS_identity -> syserr (Flx_bsym.sr bsym) "Idendity type is nonsense!"
         | CS_str c -> c
         | CS_str_template c ->
-        try sc "expr" (csubst (Flx_bsym.sr bsym) (Flx_bsym.sr bsym) c (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" tss "atom" "Error" ["Error"] ["Error"] ["Error"])
+        try sc "expr" (csubst (Flx_bsym.sr bsym) (Flx_bsym.sr bsym) c 
+           ~arg:(Flx_cexpr.ce_atom "Error") 
+           ~args:[] ~typs:[] ~argtyp:"Error" ~retyp:"Error" 
+           ~gargs:tss 
+           ~prec:"atom" ~argshape:"Error" ~argshapes:["Error"] ~display:["Error"] ~gargshapes:["Error"]
+          )
         with Not_found -> failwith "[gen_type_name] Unexpected error in csubst"
       in
 

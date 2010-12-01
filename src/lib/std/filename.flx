@@ -25,7 +25,7 @@ module Filename {
   fun split(s:string, acc:List::list[string]):List::list[string]=>
     let ?d,?b = split1 s in
     if d == "" then List::Cons(b,acc) 
-    elif d == "/" then List::Cons(d, List::Cons(b,acc))
+    elif d == str sep then List::Cons(d, List::Cons(b,acc))
     else split (d, List::Cons (b, acc)) 
     endif
   ;

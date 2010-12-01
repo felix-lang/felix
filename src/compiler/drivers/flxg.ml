@@ -886,12 +886,32 @@ let make_include_entry including_file_dir including_file_base  include_string =
   else Search include_string
 
 
-(* filename without the .flx extension *)
-type ub_entry_t = { filename:string;  asms: asm_t list }
+(* filename: include string, with leading . replaced
+ * depname: the complete pathname
+*)
+type ub_entry_t = { filename:string;  depname:string; asms: asm_t list }
 
 
 (* make_assembly does NOT modify anything at all in the symbol state
  * except for the fresh bid counter *)
+
+(* exclusions: if an include was of the form "x/y",
+   then exclusions has the string "x/y".
+   if an include was from "d/a", and of the form "./x/y"
+   then exclusions has the string "d/x/y"
+   This form is thus relative to the current search path directory:
+   the sibling reference is factored out, but the form is invariant
+   over search paths. So if the Felix installation is moved this form
+   is invariant: we have to put this in the libtab cache so it is mobile.
+   However the *.dep file generated requires fully resolved path names.
+
+   This means "make_include_entry" should return only the canonical form,
+   and NOT the resolved filename, which means it has to be called with
+   the including_file_dir also being a canonical string and not a resolved
+   filename, however that won't work, because NoSearch doesn't search.
+
+*)
+
 let make_assembly 
   state 
   (exclusions:string list)  
@@ -899,6 +919,9 @@ let make_assembly
   (input:include_entry_t) 
   : ub_entry_t list
 =
+(*
+print_endline ("Exclusions = " ^ String.concat ", " exclusions);
+*)
     let root = 0 in
     let counter_ref = state.syms.counter in
     let fresh_bid () = Flx_mtypes2.fresh_bid counter_ref in
@@ -927,14 +950,16 @@ let make_assembly
       let flx_base_name = Flx_filesys.join filedir filename in
      
 (*
+let _ = print_endline ("filedir=" ^ filedir) in
+let _ = print_endline ("filename=" ^ filename) in
 let _ = print_endline ("flx_base_name= " ^ flx_base_name) in
 let _ = print_endline ("Processed = " ^ String.concat ", " (!processed)) in
 *)
       (* check if already processed *)
-      if not (List.mem flx_base_name (!processed)) then
+      if not (List.mem filename (!processed)) then
       begin
         (* flag already processed *)
-        processed := flx_base_name :: !processed;
+        processed := filename :: !processed;
 
         (* check the felix file modification time *)
         let flx_name = flx_base_name ^ ".flx" in
@@ -983,7 +1008,7 @@ let _ = print_endline ("Processed = " ^ String.concat ", " (!processed)) in
         include_files
         ;
         (* add record for processed file *)
-        outputs := {filename=flx_base_name; asms=asms;} :: (!outputs);
+        outputs := {filename=filename; depname=flx_base_name; asms=asms;} :: (!outputs);
      end
     done;
     (* but again, the order is reversed here *)
@@ -1014,7 +1039,7 @@ let process_lib state sym_table_ref bsym_table_ref excls outdir module_name star
     | None -> None
   in
   let 
-    includes, 
+    includes, depnames,
     saved_counter, 
     varmap, 
     ticache, 
@@ -1035,12 +1060,12 @@ let process_lib state sym_table_ref bsym_table_ref excls outdir module_name star
         let cal_time = make_timer() in
         print_endline ("Binding libary " ^ lib);
         let assembly = make_assembly state !excls lib (Search lib) in
-        let includes, asmss= 
-           let rec aux includes asmss a = match a with
-           | [] -> includes, asmss
-           | { filename=filename; asms=asms; } :: t ->
-               aux (filename :: includes) (asms::asmss) t
-           in aux [] [] assembly
+        let includes, depnames, asmss= 
+           let rec aux includes depnames asmss a = match a with
+           | [] -> includes, depnames, asmss
+           | { filename=filename; depname=depname; asms=asms; } :: t ->
+               aux (filename :: includes) (depname::depnames) (asms::asmss) t
+           in aux [] [] [] assembly
         in
         (* already in the right order now *)
         let asms = List.concat asmss in
@@ -1052,7 +1077,7 @@ let process_lib state sym_table_ref bsym_table_ref excls outdir module_name star
         (* Bind the assemblies. *)
         bind_asms state !sym_table_ref !bsym_table_ref !start_counter asms;
         print_endline ("binding library " ^ lib ^ " done in "^ string_of_float (cal_time()) ^ " seconds");
-        includes, 
+        includes, depnames,
         !(state.syms.counter),
         state.syms.varmap, 
         state.syms.ticache, 
@@ -1128,17 +1153,17 @@ print_endline ("Include dirs=" ^ String.concat ", " compiler_options.include_dir
     let sym_table = !sym_table_ref in
     let bsym_table = !bsym_table_ref in
     let assembly =  make_assembly state !excls module_name (NoSearch main_prog) in
-    let includes, asmss= 
-       let rec aux includes asmss a = match a with
-       | [] -> includes, asmss
-       | { filename=filename; asms=asms; } :: t ->
-       aux (filename :: includes) (asms::asmss) t
-       in aux [] [] assembly
+    let includes, depnames, asmss= 
+       let rec aux includes depnames asmss a = match a with
+       | [] -> includes, depnames, asmss
+       | { filename=filename; depname=depname; asms=asms; } :: t ->
+       aux (filename :: includes) (depname::depnames) (asms::asmss) t
+       in aux [] [] [] assembly
     in
     let asms = List.concat (List.rev asmss) in
 
     (* update the global include file list *)
-    state.syms.include_files := includes;
+    state.syms.include_files := depnames;
     generate_dep_file state;
 
 (*

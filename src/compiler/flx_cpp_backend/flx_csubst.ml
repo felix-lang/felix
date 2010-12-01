@@ -387,11 +387,12 @@ let csubst sr sr2 ct
        end
 
     | EarholeDigits ->
-        if !digits> List.length argshapes
+        (* note modified so that entry 0 is the return type shape *)
+        if !digits >= List.length argshapes
         then serr i ("Parameter @" ^ string_of_int !digits ^ " too large")
-        else if !digits<1 then serr i ("Argshape no " ^ string_of_int !digits ^ " too small")
+        else if !digits<0 then serr i ("Argshape no " ^ string_of_int !digits ^ " too small")
         else
-          let t = nth argshapes (!digits-1) in
+          let t = nth argshapes (!digits) in
           bcat (argshape);
           mode := Normal;
           trans i ch
