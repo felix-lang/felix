@@ -8,6 +8,10 @@
 *.pyo
 *.swp
 *.swo
+*.par2
+*.o
+*.so
+*.dylib
 build
 .dotest
 flxg_stats.txt
