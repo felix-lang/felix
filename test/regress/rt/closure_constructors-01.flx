@@ -3,7 +3,7 @@
 
 // primitive function
 fun appl (x:int, f:int * int -> int):int => f (x,x);
-
+//fun add: int * int -> int = "$1+$2";
 print "closure of add primitive ";
 print (appl (2, add of (int*int))); endl;
 

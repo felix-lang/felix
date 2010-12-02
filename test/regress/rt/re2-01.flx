@@ -1,0 +1,11 @@
+var r = RE2 ("(h)ello|(H)ello");
+var n = r.NumberOfCapturingGroups;
+println$ "Captures = "+str n;
+
+var s = "Hello";
+var v = _ctor_varray[StringPiece]$ (n+1).ulong, StringPiece "";
+
+var res = Re2::Match(r,StringPiece s,0, ANCHOR_START, v.stl_begin, v.len.int);
+println$ res;
+println$ v;
+

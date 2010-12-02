@@ -79,7 +79,11 @@ let gen_prim_call
   print_endline ("argt = " ^ sbt sym_table argt);
   print_endline ("arg = " ^ sbe sym_table a);
   *)
-  let tn t = cpp_typename syms bsym_table t in
+
+  (* we tolerate some errors at this point, in the hope the csubst won't 
+   * actually use the bad types..
+   *)
+  let tn t = try cpp_typename syms bsym_table t with _ -> "TYPE_VARIABLE_NAME_ERROR" in
   let rt t = tsub t in
   let rtn t = tn (rt t) in
 

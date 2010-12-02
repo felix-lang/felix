@@ -1,7 +1,7 @@
 include "stl/stl_map";
 include "std/rtti";
 
-module Re2 {
+open module Re2 {
   requires package "re2";
 
 // This is an almost full binding of Google's re2 package.
