@@ -1,5 +1,13 @@
 // felix document
 module Fdoc2Html {
+
+val markdown_code = RE2 ("({([^}]*)})");
+fun markdown (s:string):string= {
+  var x = s;
+  C_hack::ignore(GlobalReplace(&x, markdown_code, StringPiece ("<code>\\2</code>")));
+  return x;
+}
+
 fun xlat_fdoc(t:string)=
 {
   var out = "";
@@ -34,7 +42,7 @@ nextc:>
   | doc =>
     { 
       if char "@" == ch do 
-        if b != "" do write_string(b); done
+        if b != "" do write_string(markdown b); done
         s = cmd; b="";
       elif char "\n" == ch and char "\n" == ahead(1) do b+="\n<p>\n";
       else cp; 
@@ -91,7 +99,7 @@ nextc:>
 
 fin:>
    println "outof data";
-   if b != "" do write_string(b); done
+   if b != "" do write_string(match s with | doc => markdown b | _ => b endmatch); done
    return out;
 }
 }

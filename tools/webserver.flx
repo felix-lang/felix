@@ -577,7 +577,7 @@ proc serve_file(s: socket_t, infname: string)
     serve_py(s, fname);
   elif suffix in list ("ml","mli") do 
     serve_ocaml(s, fname);
-  elif suffix in list("cpp","hpp","h","c","cxx","rtti","includes") do 
+  elif suffix in list("cpp","hpp","h","c","cc","i","cxx","rtti","includes") do 
     serve_cpp(s, fname);
   elif suffix == "fpc" do 
     serve_fpc(s, fname);
