@@ -4,15 +4,18 @@
 @flx_version_major = '1'
 @flx_version_minor = '1'
 @flx_version_patch = '6'
-@flx_version_release = ''
+@flx_version_release = 'rc1'
 @flx_version = flx_version_major+'.'+flx_version_minor+'.'+flx_version_patch+flx_version_release
 @godi_revision = '0'
 @debian_revision = '1'
 @rpm_revision = '1'
 
 @select(tangler('version.py'))
-@tangle("flx_version = '"+flx_version+"'")
 @tangle("flx_version_major = '"+flx_version_major+"'")
+@tangle("flx_version_minor = '"+flx_version_minor+"'")
+@tangle("flx_version_patch = '"+flx_version_patch+"'")
+@tangle("flx_version_release = '"+flx_version_release+"'")
+@tangle("flx_version = '"+flx_version+"'")
 @tangle("godi_revision = '"+godi_revision+"'")
 @tangle("debian_revision = '"+debian_revision+"'")
 @doc()

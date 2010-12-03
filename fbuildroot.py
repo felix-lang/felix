@@ -581,3 +581,25 @@ def install(ctx):
     phases, iscr, felix = build(ctx)
 
     ctx.logger.log('Installing does not work yet.', color='red')
+
+# ------------------------------------------------------------------------------
+
+@fbuild.target.register()
+def dist(ctx):
+    """Creates tarball and zip distribution files."""
+
+    phases, iscr = configure(ctx)
+
+    # Extract the version from 
+    with open(ctx.buildroot / 'version.py') as f:
+        import re
+        for line in f:
+            m = re.match(r"flx_version = '(.*?)'", line)
+            if m:
+                version = m.group(1)
+                break
+        else:
+            raise fbuild.Error('could not determine Felix version')
+
+    call('buildsystem.dist.dist_tar', ctx, version)
+    call('buildsystem.dist.dist_zip', ctx, version)
