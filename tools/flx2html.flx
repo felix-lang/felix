@@ -112,7 +112,7 @@ fun xlat_felix(t:string, dir:string)=
       if n.[-4 to] != ".flx" do n+= ".flx"; done // hack, fixme
       match get_file(n,FLX_PATH) with
       | Some ?f => { write_string('<a href="/$'+f+'" >' + b + '</a>') ; }
-      | None => {  write_string('<span class=fstring>'+fixup b+"</span>"); }
+      | None => {  write_string('<span class="fstring">'+fixup b+"</span>"); }
       endmatch;
     elif last_key in ("header","body") do
       n = b; 
@@ -127,7 +127,7 @@ fun xlat_felix(t:string, dir:string)=
       // shouldn't happen ..
 unstring:>
       val c = Cpp2Html::xlat_cpp (n,dir);
-      write_string(quote+'<span class=embedded_c>' + c + '</span>'+quote); 
+      write_string(quote+'<span class="embedded_c">' + c + '</span>'+quote); 
     elif last_key == "package" do
        println$ "Package: " + b;
        n = b;
@@ -139,11 +139,11 @@ println$ "Package file basename is " + n;
       | Some ?f => { write_string('<a href="/$'+f+'" >' + fixup b + '</a>') ; }
       | None => { 
           println$ "Can't find "+n+" in path " + str FLX_PKGCONFIG_PATH;   
-          write_string('<span class=fstring>'+fixup b+"</span>"); 
+          write_string('<span class="fstring">'+fixup b+"</span>"); 
         }
       endmatch;
     else 
-     write_string('<span class=fstring>'+fixup b+"</span>"); 
+     write_string('<span class="fstring">'+fixup b+"</span>"); 
     done
   }
   proc w() { 
@@ -153,15 +153,15 @@ println$ "Package file basename is " + n;
     | sq => { ws; }
     | sq3 => { ws; }
     | dq3 => { ws; }
-    | ccomment=> { write_string('<span class=comment>'+b+"</span>"); }
-    | cppcomment=> { write_string('<span class=comment>'+b+"</span>"); }
+    | ccomment=> { write_string('<span class="comment">'+b+"</span>"); }
+    | cppcomment=> { write_string('<span class="comment">'+b+"</span>"); }
     | id => 
       { 
         last_id = b;
-        if b in big_keywords do last_key=b; write_string('<span class=big_keyword>'+b+"</span>"); 
-        elif b in small_keywords do last_key=b; write_string('<span class=small_keyword>'+b+"</span>"); 
-        elif b in qualifiers do write_string('<span class=qualifier>'+b+"</span>"); 
-        elif b in hack do write_string('<span class=hack>'+b+"</span>"); 
+        if b in big_keywords do last_key=b; write_string('<span class="big_keyword">'+b+"</span>"); 
+        elif b in small_keywords do last_key=b; write_string('<span class="small_keyword">'+b+"</span>"); 
+        elif b in qualifiers do write_string('<span class="qualifier">'+b+"</span>"); 
+        elif b in hack do write_string('<span class="hack">'+b+"</span>"); 
         else write_string(b); done
       }
     | _ =>

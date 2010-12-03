@@ -9,7 +9,7 @@ just a convenient convention.
 With this view you cannot copy a directory such as <code>/a/d</code>, only the set of files whose
 names match a particular pattern such as <code>/a/d/*</code>. Instead of a target there is
 a rule to create new filenames from old, such as a regexp search and replace which in Perl
-might look like <code>/a/d/(@*)->/a/e/\1</code> where <code>@</code> means any character
+might look like <code>/a/d/(&#64;*)-&gt;/a/e/\1</code> where <code>&#64;</code> means any character
 but <code>/</code>. There is no ambiguity here, only an issue
 if a target also names a source file. A similar pattern can be used for renaming,
 and may lead to the same ambiguity. Copying a directory as opposed to its entries requires
@@ -22,7 +22,7 @@ optimised to avoid the temporaries.
 An important point with these semantics is that there is never any need to create
 directories because they don't exist.
 
-We also get the ability to write patterns like <code>/a(/@*)*/@*.exe</code>
+We also get the ability to write patterns like <code>/a(/&#64;*)*/&#64;*.exe</code>
 which finds all files with extension <code>.exe</code> in directory <code>a</code>
 or any subdirectory thereof.
 

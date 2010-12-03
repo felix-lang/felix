@@ -29,5 +29,5 @@ platform dependent types: this particular code is generated
 by the Felix build system during configuration, which is why
 it lives in the <code>plat</code> directory.
 
-See also <a href=Type_Sets.fdoc>Type Sets</a> for a way to
+See also <a href='Type_Sets.fdoc'>Type Sets</a> for a way to
 classify these types conveniently.

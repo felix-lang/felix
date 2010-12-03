@@ -66,10 +66,6 @@ var x: varray[T]; f(x.stl_begin, x.len)
 </pre>
 Wow!
 
-@h2 code in fdoc
-Make {code} markup &lt;code&gt;code&lt;/code&gt;
-
-
 @h2 Enums
 C enums are hard to model, we seem to need to use consts. At least
 one problem is that the enum is often nested in a namespace or class,

@@ -16,7 +16,7 @@ fun g(x:int, y:int)=> x + y;
 // fun f[t] (x:t, y:t) => g (x,y); ERROR
 @
 very carefully because this would work in C++ provided
-a template for <code>f</code> was instantiated with int</code>
+a template for <code>f</code> was instantiated with {int}
 arguments.
 
 

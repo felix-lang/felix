@@ -31,9 +31,18 @@ fun xlat_fdoc(t:string)=
   var ch = t.[i];
   proc next() { ch = t.[i]; ++i; }
   fun ahead (j:int)=> t.[i+j-1]; 
-
   var b = "";
   proc cp() { b += ch; }
+
+
+  // paragraph control
+  var pstate = false;
+  proc start_p () { write_string("<p>"); pstate=true; }
+  proc end_p () { write_string("</p>"); pstate=false; }
+  proc break_p () { write_string("</p><p>"); }
+  proc sp() { if not pstate do start_p; done }
+  proc ep() { if pstate do end_p; done }
+  proc bp() { if pstate do end_p; done start_p; }
 
 nextc:>
   next();
@@ -44,7 +53,7 @@ nextc:>
       if char "@" == ch do 
         if b != "" do write_string(markdown b); done
         s = cmd; b="";
-      elif char "\n" == ch and char "\n" == ahead(1) do b+="\n<p>\n";
+      elif char "\n" == ch and char "\n" == ahead(1) do ep;
       else cp; 
       done
       goto nextc;
@@ -53,7 +62,7 @@ nextc:>
     { 
       if char "@" == ch do 
         if b != "" do 
-          write_string("<pre class=flxbg>"); 
+          write_string("<pre class='flxbg'>"); 
           write_string(Flx2Html::xlat_felix (b,"")); // no parent!
           write_string("</pre>"); 
           b= ""; 
@@ -72,21 +81,21 @@ nextc:>
         elif prefix (b,"felix") do {
           fname := strip(b.[5 to]);
           var flx = get_flx(fname);
-          write_string("<pre class=inclusion>\n"+fname+"</pre>\n");
-          write_string("<pre class=flxbg>"); 
+          write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
+          write_string("<pre class='flxbg'>"); 
           write_string(Flx2Html::xlat_felix (flx,""));
           write_string("</pre>"); 
         };
         s=doc;
-        elif b=="obsolete" do write_string("<p class=obsolete> <em>Obsolete</em> "); s=doc;
-        elif b=="caveat" do write_string("<p class=caveat> <em>Caveat: </em> "); s=doc;
-        elif b=="impl" do write_string("<p class=implementation_detail> <em>Implementation Detail: </em>"); s=doc;
-        elif b=="future" do write_string("<p class=future> <em>In future: </em>"); s=doc;
-        elif b=="bug" do write_string("<p class=bug> <em>In future: </em>"); s=doc;
-        elif prefix(b,"h1") do write_string("<h1>"+b.[3 to]+"</h1>\n"); s=doc;
-        elif prefix(b,"h2") do write_string("<h2>"+b.[3 to]+"</h2>\n"); s=doc;
-        elif prefix(b,"h3") do write_string("<h3>"+b.[3 to]+"</h3>\n"); s=doc;
-        elif prefix(b,"h4") do write_string("<h4>"+b.[3 to]+"</h4>\n"); s=doc;
+        elif b=="obsolete" do ep; pstate=true; write_string("<p class='obsolete'> <em>Obsolete</em> "); s=doc;
+        elif b=="caveat" do ep; pstate=true; write_string("<p class='caveat'> <em>Caveat: </em> "); s=doc;
+        elif b=="impl" do ep; pstate=true; write_string("<p class='implementation_detail'> <em>Implementation Detail: </em>"); s=doc;
+        elif b=="future" do ep; pstate=true; write_string("<p class='future'> <em>In future: </em>"); s=doc;
+        elif b=="bug" do ep; pstate=true; write_string("<p class='bug'> <em>Bug: </em>"); s=doc;
+        elif prefix(b,"h1") do ep; write_string("<h1>"+b.[3 to]+"</h1>\n"); s=doc;
+        elif prefix(b,"h2") do ep; write_string("<h2>"+b.[3 to]+"</h2>\n"); s=doc;
+        elif prefix(b,"h3") do ep; write_string("<h3>"+b.[3 to]+"</h3>\n"); s=doc;
+        elif prefix(b,"h4") do ep; write_string("<h4>"+b.[3 to]+"</h4>\n"); s=doc;
         else s = doc;
         done
       done
@@ -98,8 +107,9 @@ nextc:>
   println$ "Unexpected drop thru";
 
 fin:>
-   println "outof data";
+//   println "outof data";
    if b != "" do write_string(match s with | doc => markdown b | _ => b endmatch); done
+   ep;
    return out;
 }
 }

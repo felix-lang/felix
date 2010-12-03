@@ -171,6 +171,17 @@ Content-Length: """+str(len(contents)+11)+"""\r
 Forbidden: """+contents+"""\r
 """;
 
+fun make_raw(contents:string)=>
+"""HTTP/0.9 200 OK\r
+Date: Tue, 25 Apr 2006 00:16:12 GMT\r
+Server: felix web server\r
+Last-Modified: Wed, 01 Feb 2006 18:51:37 GMT\r
+Connection: close\r
+Content-Type: application/octet-stream\r
+Content-Length: """ + str (len (contents)) +"""\r
+\r
+"""+contents;
+
 fun make_html(contents:string)=>
 """HTTP/0.9 200 OK\r
 Date: Tue, 25 Apr 2006 00:16:12 GMT\r
@@ -181,6 +192,18 @@ Content-Type: text/html\r
 Content-Length: """ + str (len (contents)) +"""\r
 \r
 """+contents;
+
+fun make_xhtml(contents:string)=>
+"""HTTP/0.9 200 OK\r
+Date: Tue, 25 Apr 2006 00:16:12 GMT\r
+Server: felix web server\r
+Last-Modified: Wed, 01 Feb 2006 18:51:37 GMT\r
+Connection: close\r
+Content-Type: application/xhtml+xml\r
+Content-Length: """ + str (len (contents)) +"""\r
+\r
+"""+contents;
+
 
 fun get_file(fname:string, path:list[string]):opt[string]=
 {
@@ -231,10 +254,10 @@ proc serve_felix(k:socket_t, fname:string)
       val text=Text_file::load path;
       val dirname = Filename::dirname path;
       val data = make_html(
-        "<head>"+Css4Html::flx_head+"</head>"+
-        "<body><html><pre>"+
+        "<html><head>"+Css4Html::flx_head+"</head>"+
+        "<body><pre>"+
         Flx2Html::xlat_felix (text,dirname)+
-        "</pre></html></body>\n\r"
+        "</pre></body></html>\n\r"
       );
       write_string(k,data,&eof_flag);
     }
@@ -257,10 +280,10 @@ println$ "Serving fpc";
       val text=Text_file::load path;
       val dirname = Filename::dirname path;
       val data = make_html(
-        "<head>"+Css4Html::flx_head+"</head>"+
-        "<body><html><pre>"+
+        "<html><head>"+Css4Html::flx_head+"</head>"+
+        "<body><pre>"+
         Fpc2Html::xlat_fpc (text,dirname)+
-        "</pre></html></body>\n\r"
+        "</pre></body></html>\n\r"
       );
       write_string(k,data,&eof_flag);
     }
@@ -289,10 +312,10 @@ proc serve_py(k:socket_t, fname:string)
   var eof_flag = false;
   var flx = get_flx(fname);
   val data = make_html(
-    "<head>"+Css4Html::flx_head+"</head>"+
-    "<body><html><pre>"+
+    "<html><head>"+Css4Html::flx_head+"</head>"+
+    "<body><pre>"+
     Py2Html::xlat_py flx+
-    "</pre></html></body>\n\r"
+    "</pre></body></html>\n\r"
   );
   write_string(k,data,&eof_flag);
 }
@@ -314,10 +337,10 @@ proc serve_ocaml(k:socket_t, fname:string)
   var eof_flag = false;
   var flx = get_flx(fname);
   val data = make_html(
-    "<head>"+Css4Html::flx_head+"</head>"+
-    "<body><html><pre>"+
+    "<html><head>"+Css4Html::flx_head+"</head>"+
+    "<body><pre>"+
     Ocaml2Html::xlat_ocaml flx+
-    "</pre></html></body>\n\r"
+    "</pre></body></html>\n\r"
   );
   write_string(k,data,&eof_flag);
 }
@@ -333,10 +356,10 @@ proc serve_cpp(k:socket_t, fname:string)
       val text=Text_file::load path;
       val dirname = Filename::dirname path;
       val data = make_html(
-        "<head>"+Css4Html::flx_head+"</head>"+
-        "<body><html><pre>"+
+        "<html><head>"+Css4Html::flx_head+"</head>"+
+        "<body><pre>"+
         Cpp2Html::xlat_cpp (text,dirname)+
-        "</pre></html></body>\n\r"
+        "</pre></body></html>\n\r"
       );
       write_string(k,data,&eof_flag);
     }
@@ -359,13 +382,36 @@ proc serve_text(k:socket_t, fname:string)
   var txt = Text_file::load(fname);
   println$ "Loaded text file " + fname+", len="+str(len txt);
   val data = make_html(
-    "<head></head>"+
-    "<body><html><pre>"+
+    "<html><head></head>"+
+    "<body><pre>"+
     txt+
-    "</pre></html></body>\n\r"
+    "</pre></body></html>\n\r"
   );
   write_string(k,data,&eof_flag);
 }
+
+proc serve_html(k:socket_t, fname:string)
+{
+  var eof_flag = false;
+  var txt = Text_file::load(fname);
+  println$ "Loaded html file " + fname+", len="+str(len txt);
+  val data = make_html(
+    txt
+  );
+  write_string(k,data,&eof_flag);
+}
+
+proc serve_xhtml(k:socket_t, fname:string)
+{
+  var eof_flag = false;
+  var txt = Text_file::load(fname);
+  println$ "Loaded html file " + fname+", len="+str(len txt);
+  val data = make_xhtml(
+    txt
+  );
+  write_string(k,data,&eof_flag);
+}
+
 
 fun get_fdoc(fname:string):string=
 {
@@ -385,13 +431,32 @@ proc serve_fdoc(k:socket_t, fname:string)
   var txt = get_fdoc(fname);
   //println$ "Contents=" + flx;
   val data = make_html(
-    "<head>"+Css4Html::flx_head+"</head>"+
-    "<body><html>"+
+    "<html><head>"+Css4Html::flx_head+"</head>"+
+    "<body>"+
     Fdoc2Html::xlat_fdoc txt+
-    "</html></body>\n\r"
+    "</body></html>\n\r"
   );
   write_string(k,data,&eof_flag);
 }
+
+proc serve_xfdoc(k:socket_t, fname:string)
+{
+  var eof_flag = false;
+  var txt = get_fdoc(fname);
+  //println$ "Contents=" + flx;
+  val data = make_xhtml(
+'''<?xml version="1.0" encoding="UTF-8"?>  
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN"  
+ "http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd">  
+ <html xmlns="http://www.w3.org/1999/xhtml">'''+
+    "<head>"+Css4Html::flx_head+"</head>"+
+    "<body>"+
+    Fdoc2Html::xlat_fdoc txt+
+    "</body></html>\n\r"
+  );
+  write_string(k,data,&eof_flag);
+}
+
 
 proc serve_raw(k:socket_t, fname:string, suffix:string)
 {
@@ -399,7 +464,7 @@ proc serve_raw(k:socket_t, fname:string, suffix:string)
   var txt = Text_file::load(fname);
   println$ "Loaded raw file " + fname+", len="+str(len txt);
   //println$ "Contents=" + flx;
-  val data = make_html(txt);
+  val data = make_raw(txt);
   write_string(k,data,&eof_flag);
 }
 
@@ -582,7 +647,11 @@ proc serve_file(s: socket_t, infname: string)
   elif suffix == "fpc" do 
     serve_fpc(s, fname);
   elif suffix == "fdoc" do 
-    serve_fdoc(s, fname);
+    serve_xfdoc(s, fname);
+  elif suffix == "html" do
+    serve_html(s,fname)
+  elif suffix == "xhtml" do
+    serve_xhtml(s,fname)
   elif suffix in text_suffices do
     serve_text(s,fname)
   elif suffix in ("gif","png","jpg") do

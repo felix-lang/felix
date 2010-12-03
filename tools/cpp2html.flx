@@ -80,10 +80,10 @@ fun xlat_cpp(t:string, dir:string)=
           // the trailing ?cpp tells us the filetype is C/C++
           write_string('<a href="/$'+f+'?cpp" >' + x + '</a>'); 
         }
-      | None => { write_string('<span class=fstring>'+x+"</span>"); }
+      | None => { write_string('<span class="fstring">'+x+"</span>"); }
       endmatch;
     else 
-     write_string('<span class=fstring>'+b+"</span>"); 
+     write_string('<span class="fstring">'+b+"</span>"); 
     done
   }
   proc w() { 
@@ -91,15 +91,15 @@ fun xlat_cpp(t:string, dir:string)=
     match s with 
     | dq => { ws; }
     | sq => { ws; }
-    | ccomment=> { write_string('<span class=comment>'+b+"</span>"); }
-    | cppcomment=> { write_string('<span class=comment>'+b+"</span>"); }
+    | ccomment=> { write_string('<span class="comment">'+b+"</span>"); }
+    | cppcomment=> { write_string('<span class="comment">'+b+"</span>"); }
     | id => 
       { 
         last_id = b;
-        if b in cpp_big_keywords do write_string('<span class=big_keyword>'+b+"</span>"); 
-        elif b in cpp_small_keywords do write_string('<span class=small_keyword>'+b+"</span>"); 
-        elif b in cpp_qualifiers do write_string('<span class=qualifier>'+b+"</span>"); 
-        elif last_op == "#" and b in cpp_preproc do write_string('<span class=preproc>'+b+"</span>"); last_op="";
+        if b in cpp_big_keywords do write_string('<span class="big_keyword">'+b+"</span>"); 
+        elif b in cpp_small_keywords do write_string('<span class="small_keyword">'+b+"</span>"); 
+        elif b in cpp_qualifiers do write_string('<span class="qualifier">'+b+"</span>"); 
+        elif last_op == "#" and b in cpp_preproc do write_string('<span class="preproc">'+b+"</span>"); last_op="";
         else write_string(b); done
       }
     | angle => { ws; }

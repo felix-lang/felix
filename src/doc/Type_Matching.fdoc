@@ -4,7 +4,7 @@ run time <code>match</code> expression. In combination with type functions
 and meta-typing, the Felix type system is a powerful super set of the
 typed lambda calculus.
 
-A simple example from the standard library defined in <a href=/std/int.flx>std/int.flx</a>
+A simple example from the standard library defined in <a href="/std/int.flx">std/int.flx</a>
 is the rule for integral promotion:
 @felix
 typedef fun integral_promotion: TYPE -> TYPE =

@@ -1,5 +1,5 @@
 @h2 The command line harness (bin/flx)
-<p> When checking if a flx file needs recompilation, fails to account for include files. 
+When checking if a flx file needs recompilation, fails to account for include files. 
 Workaround: use --force switch. Fix: we could recursively scan files for inclusions,
 which would require parsing and path searching. A better technique would be to
 have the compiler generate a dependency file. An alternative under serious consideration
@@ -11,7 +11,7 @@ statement must use a name prefixed by ".".
 
 
 @h2 The Webserver (tools/webserver)
-<p>Appears to fail to send tail of files properly, apparently due to a bug
+Appears to fail to send tail of files properly, apparently due to a bug
 in Posix socket specification which allows a compliant OS to 
 junk the output buffers when an asynchronous socket is closed.
 Linux is known to do this. Workaround: I put a delay, which can be set
@@ -20,9 +20,9 @@ by --delay=99.99 command line switch, for delay in seconds. Default is
 cost resources since the fibre and socket remain allocated after they
 should be gone. Also exposes the server to a DNS attack.
 
-<p> Doesn't handle quotes embedded in strings correctly
+Doesn't handle quotes embedded in strings correctly
 
-<p> At present not all include files are found, including C++ headers
+At present not all include files are found, including C++ headers
 because they don't have an extension, and file relative includes,
 because the names are indistinguishable from path relative includes,
 and the including filename is lost at the point the client issues a
@@ -35,18 +35,21 @@ No known issues.
 
 @h2 The Felix Library (Felix)
 @h3 Filename
-<p>Filename split functions do not handle slosh quoted separators
-<p> Filename module doesn't provide a way to strip double separators eg // on Unix
-<p> No functions for splitting Windows drive letters or network drive names
+Filename split functions do not handle slosh quoted separators
+
+Filename module doesn't provide a way to strip double separators eg // on Unix
+
+No functions for splitting Windows drive letters or network drive names
+
 @h3 Posix
 @h2 The run time support libraries (C++)
 
 @h2 The compiler (bin/flxg)
 @h3 Closures of anon sums
-<p>Can't handle closures of anonymous sums.
+Can't handle closures of anonymous sums.
 
 @h3 Split nugram.flxh
-<p>The grammar file (lib/nugram.flxh) cannot be split up into parts
+The grammar file (lib/nugram.flxh) cannot be split up into parts
 because it is too early during parsing to use the include statement.
 It is not that the grammar production for the include statement is
 not yet defined, although that is the case at the moment, it could
@@ -60,7 +63,7 @@ The grammar works but the file is way too big to present in documentation
 as is.
 
 @h3 Error reporting
-<p>A large number of client errors are not reported properly. In particular
+A large number of client errors are not reported properly. In particular
 most type errors are not properly reported because source references
 are not propagated. In fact it seems we have lost all our source references
 in expressions, and we never had them for types: only executable statements
@@ -69,13 +72,13 @@ and very laborious. Code transformation involving both reductions and
 synthesis bring into question every time what source reference to use.
 
 @h3 Inefficient binding
-<p> The compiler needlessly binds symbols that are never used.
+The compiler needlessly binds symbols that are never used.
 This is done partly to ensure a whole file is properly type checked.
 Nevertheless the overhead of rebinding the whole library every time
 could be onerous. The optimiser does strip out unused entities.
 
 @h3 grammar for ctor 
-<p> The grammar for constructor is indadequate, I need to do this:
+The grammar for constructor is indadequate, I need to do this:
 @felix
 ctor[T,N] varray[T]: array[T,N] => ..
 @
@@ -89,7 +92,7 @@ The way C++ does this is the best, with an explicit schema quantifier
 (namely the <code>template</code> prefix).
 
 @h3 Operator dot failure
-<p>I expected this to work:
+I expected this to work:
 @felix
  fun sort[T] (lt:T*T->bool) (x:list[T])=
  {
@@ -100,13 +103,14 @@ but it gives:
 ~/felix>flx --test=build/release-optimized/ tl
 Failure binding expression (x.len)
 SYSTEM FAILURE
-[lookup] operator . Expected LHS nominal type to be (c)struct or abstract primitive, got list[<T4795>]
+[lookup] operator . Expected LHS nominal type to be (c)struct or abstract primitive, got list[&lt;T4795&gt;]
 </pre>
 Not clear why the AST_dot code doesn't handle this properly, looks like,
 in fact, that code isn't being called. Check out also the Koenig lookup code.
 The lookup routines have some duplication of handling depending on the
 exact context in which something is found.
-<p>I have to note another case that failed: 
+
+I have to note another case that failed: 
 @felix
 (&x).address
 @
@@ -141,7 +145,7 @@ struct type before doing the deref and/or try overload resolution first
 anyhow, just in case. This arose where:
 
 type RE2_ = "RE2";
-typedef RE2 = &RE2_;
+typedef RE2 = &amp;RE2_;
 fun f: RE2 -> int = "..";
 var r = RE2(..);
 println$ r.ngroups; // fails, r is a pointer, tried to find ngroups (*r)

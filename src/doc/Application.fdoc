@@ -126,7 +126,7 @@ feel of C++.
 
 The type name used in a contructor function must be
 an identifier. If you want to construct, say, a pointer
-to a char which has type <code>&char</code> you must
+to a char which has type <code>&amp;char</code> you must
 first give it a name:
 @felix
 typedef charptr = &char;

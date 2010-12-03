@@ -7,7 +7,7 @@ However Felix knows arrays and structs are layout compatible with
 tuples with the same sequence of element types, so construction of structs and arrays is done
 by first constructing the related tuple, and then casting the result
 to the target type, using the cheat template <code>reinterpret</code> found in
-<a href=rtl/flx_meta.hpp>flx_meta.hpp</a>. This template can convert rvalues
+<a href="rtl/flx_meta.hpp">flx_meta.hpp</a>. This template can convert rvalues
 to lvalues, defying the ban in C++ on doing this. The ban is plain stupid, because
 rvalues can be bound by const references, proving they're addressable.
 
