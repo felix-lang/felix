@@ -1,0 +1,5 @@
+// Posix process stuff
+module Process {
+  gen popen_in: string -> Text_file::input_text_file = 'popen($1.data(), "r")';
+  gen pclose: Text_file::input_text_file -> int = "pclose($1)";
+}

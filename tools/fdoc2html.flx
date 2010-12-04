@@ -92,6 +92,8 @@ nextc:>
         elif b=="impl" do ep; pstate=true; write_string("<p class='implementation_detail'> <em>Implementation Detail: </em>"); s=doc;
         elif b=="future" do ep; pstate=true; write_string("<p class='future'> <em>In future: </em>"); s=doc;
         elif b=="bug" do ep; pstate=true; write_string("<p class='bug'> <em>Bug: </em>"); s=doc;
+        elif b=="fixed" do ep; pstate=true; write_string("<p class='fixed'> <em>Fixed: </em>"); s=doc;
+        elif b=="done" do ep; pstate=true; write_string("<p class='done'> <em>Done: </em>"); s=doc;
         elif prefix(b,"h1") do ep; write_string("<h1>"+b.[3 to]+"</h1>\n"); s=doc;
         elif prefix(b,"h2") do ep; write_string("<h2>"+b.[3 to]+"</h2>\n"); s=doc;
         elif prefix(b,"h3") do ep; write_string("<h3>"+b.[3 to]+"</h3>\n"); s=doc;

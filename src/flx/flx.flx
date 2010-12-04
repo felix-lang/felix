@@ -1,4 +1,5 @@
 include "plat/config";
+include "std/posix/process";
 
 // Changed to just copy values out of the library
 // Change to use structs
@@ -440,22 +441,20 @@ gen get_stdout(x:string) = {
   // We're screwed if popen doesn't work ..
 /*
   if os.name == "nt": // popen doesn't work on Windows
-*/
     result := system(x + " >tmp.out");
     Stdout::flush();
     output := Text_file::load "tmp.out";
-/*
   else:
-    fout = os.popen(x+" 2>&1 ","r")
-    output = []
-    try:
-      for line in fout:
-        output.append(line)
-        if outit: outit(line)
-    finally:
-      result = fout.close()
 */
-  return result,output;
+    var fout = Process::popen_in(x+" 2>&1 ");
+    if Text_file::valid fout do
+      var output = Text_file::load fout;
+      var result = Process::pclose fout; 
+      return result, output;
+    else
+      println$ "Unable to run command '" + x "'";
+      return -1,"";
+    done
 }
 
 gen xqt(cmd:string) = {

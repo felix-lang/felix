@@ -1,8 +1,9 @@
 @h1 Dependency Checkers
 @h2 Felix
+@done
 For Felix, given a file and a path, we make a list of all the Felix
 files that files depends on and their signatures, and emit that list somewhere.
-
+@
 We also need to reparse any file if either the *.par file is out of date
 or non-existant, or, the syntax definition changed.
 
@@ -83,4 +84,24 @@ isn't a sum type (whereas a Felix enum is).
 
 Another problem with enums: modelling bitwise or-able flags.
 Example: gc_shape_flags_t
+
+@h2 Mathml support in fdoc, perhaps flx comments, even flx
+Test case
+  <math xmlns="http://www.w3.org/1998/Math/MathML">  
+    <mrow>  
+      <munderover>  
+        <mo>&Sum;</mo>  
+        <mrow>  
+          <mi>i</mi>  
+          <mo>=</mo>  
+          <mn>1</mn>  
+        </mrow>  
+        <mi>N</mi>  
+      </munderover>  
+      <msub>  
+        <mi>a</mi>  
+        <mi>i</mi>  
+      </msub>  
+    </mrow>  
+  </math>  
 

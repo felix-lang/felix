@@ -17,6 +17,8 @@ pre.inclusion {background-color:#D070D0; }
 .future { background-color:#FF8080; font-size: small}
 .implementation_detail { background-color:#E0E0E0; font-size: small; }
 .bug { background-color:#FFE0E0; font-size: small; }
+.fixed{ background-color:#FFE0E0; font-size: small; }
+.done { background-color:#FFE0E0; font-size: small; }
 .caveat { background-color:#FF8080; }
 </style>
 """;
