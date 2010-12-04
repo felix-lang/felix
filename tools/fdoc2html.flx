@@ -1,4 +1,6 @@
 // felix document
+include "std/posix/process";
+
 module Fdoc2Html {
 
 val markdown_code = RE2 ("({([^}]*)})");
@@ -98,6 +100,20 @@ nextc:>
         elif prefix(b,"h2") do ep; write_string("<h2>"+b.[3 to]+"</h2>\n"); s=doc;
         elif prefix(b,"h3") do ep; write_string("<h3>"+b.[3 to]+"</h3>\n"); s=doc;
         elif prefix(b,"h4") do ep; write_string("<h4>"+b.[3 to]+"</h4>\n"); s=doc;
+        elif prefix(b,"sh") do 
+          var cmd = b.[3 to];
+          var fout = Process::popen_in(cmd+" 2>&1 ");
+          if Text_file::valid fout do
+            var output = Text_file::load fout;
+            var result = Process::pclose fout; 
+            println$ "Ran cmd=" + cmd;
+            //println$ "Output = " + output;
+            write_string output;
+          else
+            println$ "Unable to run command '" + cmd "'";
+            write_string("Failed cmd: " + b);
+          done
+          s=doc;
         else s = doc;
         done
       done

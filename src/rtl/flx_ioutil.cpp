@@ -6,8 +6,8 @@ namespace flx { namespace rtl { namespace ioutil {
   using namespace std;
 
 /* small buffer for testing, should be much large in production version */
-#define MYBUFSIZ 512
-  string load_file (FILE *fi)
+#define MYBUFSIZ 5120
+  string load_file (FILE *fi) // note does NOT close file! (would screw up popen)
   {
     if (fi)
     {
@@ -17,7 +17,6 @@ more:
       int n = fread(buffer,1,MYBUFSIZ,fi);
       if(n>0) x = x + string(buffer,n);
       if (n == MYBUFSIZ)goto more;
-      fclose(fi);
       return x;
     }
     else return "";
