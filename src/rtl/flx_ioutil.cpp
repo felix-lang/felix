@@ -17,7 +17,6 @@ more:
       int n = fread(buffer,1,MYBUFSIZ,fi);
       if(n>0) x = x + string(buffer,n);
       if (n == MYBUFSIZ)goto more;
-      fclose(fi);
       return x;
     }
     else return "";
