@@ -40,7 +40,7 @@ more:
     else return "";
   }
 
-  // includes ewline if present
+  // includes newline if present
   // null string indicates end of file
   string readln (FILE *fi)
   {
