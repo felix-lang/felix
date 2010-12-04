@@ -208,7 +208,7 @@ whilst grab == 1 and argno<System::argc do
 
   elif arg == "--version" do
     debugln "Print Felix version and exit";
-    print("version ..");
+    print("version ");
     println(VERSION);
     System::exit(0);
 

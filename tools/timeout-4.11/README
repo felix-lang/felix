@@ -1,0 +1,15 @@
+TIMEOUT Version 4.11 (2010-12-04)
+
+This is the source code to a program which is licenced under the terms of
+GNU General Public License Version 3
+
+You should have received a file COPYING containing the full licence.
+
+Ideally, the build process should simply be a question of running:
+
+    make
+
+If you have questions or comments, please contact the author:
+Jonathan Leffler via email at jonathan.leffler@gmail.com
+
+Package created: 2010-12-04
