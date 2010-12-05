@@ -1,0 +1,66 @@
+union list[T] =
+  | Cons of T * list[T]
+  | Empty
+;
+
+struct pair[T,U] =
+{
+  fst : T;
+  snd : U;
+}
+
+var x = Cons (1,Empty[int]);
+  // the [int] in Empty is mandatory
+
+x =  Cons(2,x);
+x = Cons(3,x);
+
+fun f[t] (x:list[t]):list[t] = { return x; }
+
+x = f(x);
+
+val y = pair(1,2);
+print y.fst; print ","; print y.snd; endl;
+
+
+// check nested generics now
+
+module F[T] {
+  fun id1(x:T):T = { return x; }
+}
+
+print (F[int]::id1 1); endl;
+
+module A[T] {
+  module B[U] {
+    fun id2[V](x:T,y:U,z:V):V*U*T = { return z,y,x; }
+  }
+}
+
+val zyx = (A[int]::B[int]::id2(1,2,3));
+print zyx.(0);
+print zyx.(1);
+print zyx.(2);
+endl;
+
+// check specialisation
+fun idt[T] (x:T):T*T = { return x,x; }
+fun idt[T] (x:T*T):T*T = { return x; }
+
+val x1 = idt(1); // calls first idt
+val x2 = idt(1,2); // calls second idt
+print x1.(0); print x1.(1); endl; // print 11
+print x2.(0); print x2.(1); endl; // print 12
+
+proc pr[T] (x:list[T], pp:T->void) {
+  match x with
+  | Cons (?i,?t) => { pp i; pr (t,pp); }
+  | Empty => { print "Empty"; }
+  endmatch
+  ;
+}
+
+proc printint (x:int) { print x; }
+  // because we can't use a primitive as a closure yet
+
+pr (x,(printint of (int))); endl;

@@ -1,0 +1,9 @@
+body "#include <stdio.h>";
+body xprint = "void printx(char const*fmt, char const*s) { printf(fmt,s);}";
+module fred {
+  body printu = 'void print(char const*s) { printx("%s\\n",s); }';
+}
+requires xprint;
+
+proc hello:1='print("Hello");' requires fred::printu;
+hello;

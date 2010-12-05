@@ -1,0 +1,7 @@
+//Check type constraints
+open MixedInt;
+
+var x = 1;
+var y = 2L;
+
+print$ x + y; endl;

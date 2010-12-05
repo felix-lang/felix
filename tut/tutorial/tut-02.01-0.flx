@@ -1,0 +1,13 @@
+//Check bool
+{
+  val b1 : bool = false;
+  val b2 : bool = true;
+  val b4 : 2 = case 0 of 2; // false
+  val b3 : 2 = case 1 of 2; // true
+};
+println (not false);      println (lnot false);        // not
+println (true and false); println (land (true,false)); // and
+println (true or false);  println (lor  (true,false)); // or
+                          println (xor (true,true));
+println (true <= true);   println (implies (true,true));
+println (if true then "TRUE" else "FALSE" endif);

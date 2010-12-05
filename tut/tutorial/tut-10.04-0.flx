@@ -1,0 +1,37 @@
+//Check inherit directive
+header "#include <string>";
+
+module X {
+  fun f(a:int):int={ return 11; }
+}
+module Y {
+  fun g(a:int):int={ return 22; }
+}
+module Z { inherit X; inherit Y; }
+
+// check transitivity
+module A {
+  inherit Z;
+  print (f 3); print " "; print (g 5); endl;
+  print (Z::f 3); print " "; print (Z::g 5); endl;
+  print (A::f 3); print " "; print (A::g 5); endl;
+}
+
+
+// check recurisve transitive closure
+module P { inherit Q; fun ff(a:int):int={return 33;}}
+module Q { inherit P; fun gg(a:int):int={return 44;}}
+module R {
+  inherit P;
+  print (ff 1); print " "; print (gg 1); endl;
+  print (P::ff 1); print " "; print (P::gg 1); endl;
+  print (Q::ff 1); print " "; print (Q::gg 1); endl;
+  print (R::ff 1); print " "; print (R::gg 1); endl;
+}
+
+module W {
+  module J { val a:int = 1;}
+  inherit J;
+  print a; endl;
+}
+print W::a; endl;

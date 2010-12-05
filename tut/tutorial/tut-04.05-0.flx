@@ -1,0 +1,23 @@
+//Check fibres
+var y = ();
+proc f() { print "Hello"; endl; }
+f y;
+
+var x = mk_schannel[int]();
+
+proc reader() {
+  print "R1"; endl;
+  var u = read x;
+  print "R2-"; print u; endl;
+}
+
+proc writer() {
+  print "W1"; endl;
+  write (x,42);
+  print "W2"; endl;
+}
+
+spawn_fthread the reader;
+spawn_fthread the writer;
+
+print "Done"; endl;

@@ -1,0 +1,8 @@
+//Check conditional:functional
+// procedural if
+proc f(x:int) {
+  if x == 1 do print "ONE"; endl; done;
+}
+
+f 1;
+f 2;

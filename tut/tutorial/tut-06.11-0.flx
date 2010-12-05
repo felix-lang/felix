@@ -1,0 +1,15 @@
+var x = 1;
+var y = 2;
+
+val f1 = {x + y}; // lazy expression
+fun f2():int = { return x + y; } // equivalent
+
+print (f1 ());
+print (f2 ());
+
+x = 2; // change value of variables
+y = 3;
+
+print (f1 ());
+print (f2 ());
+endl;

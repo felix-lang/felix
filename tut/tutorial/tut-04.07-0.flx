@@ -1,0 +1,12 @@
+var cheat = 0;
+gen f():int = {
+  again:>
+    ++cheat;
+    yield cheat;
+    goto again;
+}
+
+var g = the f;
+print "F 1="; print$ g(); endl; // 1
+print "F 2="; print$ g(); endl; // 2
+

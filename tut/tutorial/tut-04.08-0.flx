@@ -1,0 +1,18 @@
+//Check pthreads
+include "pthread";
+open Pthread;
+
+var x = mk_pchannel[int]();
+
+proc reader() {
+  var u = read x;
+  print "R2-"; print u; endl;
+}
+
+proc writer() {
+  write (x,42);
+}
+
+spawn_pthread the reader;
+spawn_pthread the writer;
+

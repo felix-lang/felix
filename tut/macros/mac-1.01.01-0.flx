@@ -1,0 +1,21 @@
+macro val mx1 = 1+y;
+macro val mx2 = 2+y;
+val y = 100;
+print mx1; endl; // 101
+print mx2; endl; // 102
+{
+  macro val mx1 = 3+y; // 103
+  print mx1; endl;
+  macro val mx2 = mx2 + 10; // 112
+};
+print mx1; endl; // 101
+print mx2; endl; // 102
+
+// illustration of rescanning
+macro val r1 = y1;
+macro val r2 = y2;
+macro val y1 = print;
+macro val y2 = 1;
+
+r1 r2; // print 1
+endl;

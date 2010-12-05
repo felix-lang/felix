@@ -1,0 +1,12 @@
+//Check loops
+
+proc f(x:int)
+{
+  if x == 0 goto zero;
+  print x; endl; loop f(x-1);
+zero:>
+  print "Zero"; jump endl;
+}
+
+f(10);
+

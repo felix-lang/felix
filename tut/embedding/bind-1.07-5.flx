@@ -1,0 +1,4 @@
+proc f: 1 = 'printf("A is used\\n");'
+  requires header '#include <stdio.h>';
+
+f();

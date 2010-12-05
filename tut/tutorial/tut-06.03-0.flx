@@ -1,0 +1,39 @@
+open Long;
+
+typedef three = unit +  unit + unit;
+typedef four = 4;
+typedef nu = int + double + long;
+
+
+val x1 = case 0 of (1+1+1);
+val x2 = case 1 of 3;
+
+proc g(x:three) {
+  print "Case ";
+  match x with
+  | case 0 => { print 0; }
+  | case 1 => { print 1; }
+  | case 2 => { print 2; }
+  endmatch;
+  print " of three\n";
+}
+
+g x1;
+g x2;
+g (case 2 of three);
+
+proc f(x:nu) {
+  match x with
+  | case 0 ?z => { print "case 0 "; print z; }
+  | case 1 ?z => { print "case 1 "; print z; }
+  | case 2 ?z => { print "case 2 "; print z; }
+  endmatch;
+  print "\n";
+}
+
+val i1 = (case 0 of nu) 33;
+val i2 = (case 1 of nu) 3.3;
+val i3 = (case 2 of nu) 33L;
+f i1;
+f i2;
+f i3;

@@ -1,0 +1,4 @@
+header "#include<stdio.h>";
+print 1; endl;
+code 'printf("%d\\n",2);';
+print 3; endl;

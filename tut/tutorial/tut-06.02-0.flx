@@ -1,0 +1,19 @@
+val v = 1,2,(3,4);
+match (v) with
+  | (?x,_,?z) =>
+  {
+    print x;
+    print ", ";
+    match (z) with
+      | (?a,?b) =>
+      {
+        print "(";
+        print a;
+        print ", ";
+        print b;
+        print ")";
+      }
+    endmatch;
+  }
+endmatch;
+endl;

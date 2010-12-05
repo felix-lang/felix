@@ -1,0 +1,12 @@
+var x = 1;
+val p1 = { print x; };
+proc p2() { print x; }; // equivalent to p1 (almost)
+
+// all these calls have the same behaviour
+p1();
+p1;
+p2();
+p2;
+{ print x; }();
+{ print x; };
+print x; endl;

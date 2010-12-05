@@ -1,0 +1,9 @@
+//Check C syntax
+var i = 1;
+var j : int;
+while {i < 10}
+{
+  j = i + i;
+  print j; print "\n";
+  ++i;
+};

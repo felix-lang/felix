@@ -1,0 +1,4 @@
+val i : int = 40;
+val j : int = 2;
+val k : int = i + j;
+print k; print "\n";

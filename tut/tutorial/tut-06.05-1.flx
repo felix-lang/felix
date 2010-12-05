@@ -1,0 +1,56 @@
+//Check Records
+//Check Struct:initialised by record
+
+var x = struct {a=1; b=2; };
+println$ "a=" + str (x.a) + ", b=" + str (x.b);
+var y = (a=3, b=4);
+println$ "a="+ str (y.a) + ", b=" + str (y.b);
+
+struct X { aa:int; bb:int; };
+
+val k = X (1,2);
+println$ "aa=" + str (k.aa)+ ", bb=" + str (k.bb);
+
+val j = X (bb=11,aa=22);
+println$ "aa="+str(j.aa)+", bb=" + str (j.bb);
+
+val r = (bb=88,aa=99);
+val q = X r;
+println$ "aa="+str(q.aa)+", bb=" + str(q.bb);
+
+fun f(a:int, b:int)=> a + 2* b;
+fun f(x:int, y:int)=> 2 * x + 5* y;
+
+var d = f(b=1,a=2); // 4
+println$ "d=" + str (d);
+
+d = f(x=1,y=2); // 12
+println$ "d=" + str (d);
+
+
+fun g(xx:X)=> xx.aa+xx.bb;
+println$ g (X (aa=1,bb=2));
+
+
+proc p(a:int, b:string)
+{
+  println$ b + " " + str a;
+}
+
+p$ 1,"Hi";
+p (a=1,b="HIHI");
+
+fun f(a:int)=> 3 * a;
+println$ f 2;
+println$ f (a=4);
+
+fun g(x:struct {a:int;})=>9 * x.a;
+println$ g (a=2);
+
+fun df(a:int=1,b:long)=> long a + b;
+println$ df (1,2L);
+
+println$ df (b=2L); // a should default to 1
+
+fun df2(a:int=1,b:long=2L)=> long a + b;
+println$ df2 (); // should default both 1 and 2

@@ -1,0 +1,10 @@
+//Check lookup:koenig
+//Check lookup:dependent
+
+module A {
+  struct X {
+    x: int;
+  }
+}
+val e = A::X(5);
+print e.x; endl;

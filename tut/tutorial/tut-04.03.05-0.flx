@@ -1,0 +1,10 @@
+//Check C binding
+type metres = "double";
+fun add: metres * metres -> metres = "$1+$2";
+ctor metres: double = "$1";
+ctor double: metres = "$1";
+
+val x = metres 1.2;
+val y = metres 1.3;
+println (double (x + y));
+

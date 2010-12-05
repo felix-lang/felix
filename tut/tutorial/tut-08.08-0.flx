@@ -1,0 +1,11 @@
+//Check goto
+//Check labels
+print "start"; endl;
+var i = 1;
+start_loop:>
+  if (not (i<10)) goto end_loop;
+  print i; endl;
+  i++;
+  goto start_loop;
+end_loop:>
+  print "finished"; endl;

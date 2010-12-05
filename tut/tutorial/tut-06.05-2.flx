@@ -1,0 +1,11 @@
+//Check Records
+//Check operator dot
+//Check parameter names
+proc flooreach (name:string) (x:string)
+  {println$ name  " (name)="  x; }
+
+proc flooreach (prompt:string) (x:string)
+  {println$ prompt  "(prompt)="  x; }
+
+(name="hi") . flooreach "john";
+(prompt="bye") . flooreach "erick";

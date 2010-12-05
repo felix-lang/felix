@@ -1,0 +1,49 @@
+// procedure macro
+macro proc k ()
+{
+  val yy = xx * xx;
+  print xx; print " -> "; print yy; endl;
+}
+
+{
+  val xx = 1;
+  k();
+};
+{
+  val xx = 2;
+  k();
+};
+
+macro proc pkg (x)
+{
+  macro proc printxy (y) { print (x+y); endl; }
+  macro val doublex = x + x;
+}
+
+pkg 10;
+printxy doublex; // prints 30
+
+macro proc dump_s (sts:proc)
+{
+  print "Start dump_s"; endl;
+  sts;
+  print "End dump_s"; endl;
+}
+
+macro proc dump_e (sts:fun)
+{
+  print "Start dump_e"; endl;
+  sts;
+  print "End dump_e"; endl;
+}
+
+dump_s { print 1; endl; print 2; endl; };
+dump_e { val x = 1; print x; endl; print 2; endl; };
+
+macro proc todump () { print "Dumped"; endl; }
+dump_s todump;
+dump_e todump;
+
+macro proc todump_wa (x) { print x; endl; }
+dump_s (todump_wa 66);
+dump_e (todump_wa 66);

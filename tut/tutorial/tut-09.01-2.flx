@@ -1,0 +1,10 @@
+var x = 7;
+var y = x;
+
+proc decr(d:int when d>=0) expect x==y-d = {
+  y = x;
+  x -= d;
+}
+
+decr 2;
+print x; endl;

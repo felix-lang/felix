@@ -1,0 +1,15 @@
+//Check labels
+//Check return:procedure
+
+proc f(x:int)
+{
+  if x == 0 goto zero;
+  print x; endl;
+  goto finished;
+zero:>
+  print "Zero"; endl;
+finished:>
+}
+
+f(1);
+f(0);

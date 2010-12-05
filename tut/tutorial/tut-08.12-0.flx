@@ -1,0 +1,24 @@
+//Check conditional:procedural
+
+inline proc f(x:int) (y:int) {
+  print "NOT ONE"; endl;
+  if x == 1 do
+    print 1; print " ";
+    if y == 20 goto twenty;
+    if y == 10 do print "TEN"; else done;
+  elif x == 2 do
+    print 2; print " ";
+    if y == 20 do
+twenty:>
+      print "TWENTY";
+    done;
+  else print "Dunno .. ";
+  done;
+  endl;
+}
+
+f 1 10;
+f 1 20;
+f 1 40;
+f 2 20;
+f 3 30;

@@ -1,0 +1,32 @@
+open Uint;
+
+var i:int;
+var j:int;
+
+var u: uint;
+var v: uint;
+
+// operator    procedure
+i = 1;         // assignment, intrinsic
+j = 2;         // assignment, intrinsic
+i <-> j;       // swap, intrinsic
+i,j = j,i;     // another way to swap
+
+// integral
+i +=  1;       pluseq       (&i,1);
+i -=  1;       minuseq      (&i,1);
+i *=  1;       muleq        (&i,1);
+i /=  1;       diveq        (&i,1);
+i %=  1;       modeq        (&i,1);
+
+// bitwise: unsigned only
+u ^=  1u;       bxoreq      (&u,1u);
+u |=  1u;       boreq       (&u,1u);
+u &=  1u;       bandeq      (&u,1u);
+
+
+// counting
+++i;           pre_incr (&i);
+i++;           post_incr (&i);
+--i;           pre_decr (&i);
+i--;           post_decr (&i);

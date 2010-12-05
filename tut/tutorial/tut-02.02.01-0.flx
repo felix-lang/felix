@@ -1,0 +1,56 @@
+//Check lexemes:integer
+//Check literals:integer
+
+// radix
+{
+  val i1 = 999;      // decimal
+  val i2 = 0b1111;   // binary
+  val i3 = 0o7777;   // octal
+  val i4 = 0d9999;   // decimal
+  val i5 = 0xF1_F2;  // hex
+};
+
+// underscores
+{
+  val i1 = 123_456;
+  val i2 = 0x_FF_FFu;
+};
+
+// normal signed integers
+{
+  val i1 : tiny = 1t;
+  val i2 : short = 1s;
+  val i3 : int = 1; // default
+  val i4 : int = 1i;
+  val i5 : long = 1l;
+  val i6 : vlong = 1ll;
+};
+
+// normal unsigned integers
+{
+  val i1 : utiny = 1tu;
+  val i2 : utiny = 1ut; // u may be first or last
+  val i3 : ushort = 1su;
+  val i4 : uint = 1u; // default
+  val i5 : uint = 1iu;
+  val i6 : ulong = 1lu;
+  val i7 : uvlong = 1vu;
+  val i8 : uvlong = 1llu; // alternate
+};
+
+// exact signed integers
+{
+  val i1 : int8 = 1i8;
+  val i2 : int16 = 1i16;
+  val i3 : int32 = 1i32;
+  val i4 : int64 = 1i64;
+};
+
+// exact unsigned integers
+{
+  val i1 : uint8 = 1u8; // 1iu8 not allowed
+  val i2 : uint16 = 1u16;
+  val i3 : uint32 = 1u32;
+  val i4 : uint64 = 1u64;
+};
+

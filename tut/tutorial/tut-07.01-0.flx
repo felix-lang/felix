@@ -1,0 +1,12 @@
+header "#include <iostream>";
+proc print[T]:T="std::cout << $1 << std::endl;";
+fun fst[T,U](x:T,y:U): T ={ return x; }
+fun snd[T,U](x:T,y:U): U ={ return y; }
+
+val x = (1,2);
+print[int] (fst[int,int] x);
+print[int] (snd[int,int] x);
+
+proc pp[T] (x:T) { print[T](x); }
+
+pp[int] (snd[int,int] x);

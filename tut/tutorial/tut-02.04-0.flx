@@ -1,0 +1,3 @@
+var s = "Hello" 32; // add a space after "Hello"
+s = s s; // says "Hello Hello "
+print s; endl;

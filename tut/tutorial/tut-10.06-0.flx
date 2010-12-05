@@ -1,0 +1,32 @@
+//Check metatypes
+open Long;
+
+typedef fun list (elt:TYPE):TYPE => 1 + elt * list elt;
+
+typedef fun f(t1:TYPE, t2:TYPE->TYPE) (t3:TYPE): TYPE => (t2 t1) * t3;
+
+typedef g = (
+    fun (t1:TYPE, t2:TYPE->TYPE):TYPE->TYPE =>
+      ( fun (t3:TYPE):TYPE => (t2 t1) * t3 )
+  )
+;
+
+
+// FIXPOINTS WORKING NOW
+val x : list int = case 0 of list int;
+
+typedef fun pair (a:TYPE,b:TYPE):TYPE => a * b;
+//typedef pair = (fun (a:TYPE,b:TYPE):TYPE => {a * b});
+
+val x2 : (pair (int,long)) = (1,1L);
+match x2 with
+| (?a,?b) => { print a; endl; print b; endl; }
+endmatch;
+
+typedef fun twoup (x:TYPE):TYPE => x * x;
+
+// (twoup int) * int = (int * int) * int
+val x3 : (f (int,twoup of (TYPE)) (int)) = ((1,2),3);
+match x3 with
+| ((?a,?b),?c) => { print a; endl; print b; endl; print c; endl; }
+endmatch;

@@ -1,0 +1,24 @@
+fun pair1 x y = { return x,y; }
+fun pair2[t,u] (x:t) (y:u) = { return x,y; }
+fun diag x = { return x,x; }
+fun fst (x,y) = { return x; }
+fun snd (x,y) = { return y; }
+
+{
+  val x34 = pair1[int,int] 3 4;
+  val a = fst x34;
+  val b = snd x34;
+  print a; print ","; print b; endl;
+};
+
+{
+  val x34 = pair2[int,int] 3 4;
+  val a = fst x34;
+  val b = snd x34;
+  print a; print ","; print b; endl;
+};
+
+val x22 = diag 2;
+val x = fst x22;
+val y = snd x22;
+print x; print ","; print y; endl;

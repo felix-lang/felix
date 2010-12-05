@@ -1,0 +1,6 @@
+//Check functions:anonymous
+//Check functions:lambda
+var x = 10;
+while
+  (fun ():bool = { return x>0; })
+  { print x; endl; x = x - 1; };

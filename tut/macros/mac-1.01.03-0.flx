@@ -1,0 +1,5 @@
+header fred = "inline int f(int x){return x;}";
+macro val joe = fred;
+fun f: int -> int = "f($1)" requires joe;
+
+print$ f 2; endl;

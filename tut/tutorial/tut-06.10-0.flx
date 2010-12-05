@@ -1,0 +1,13 @@
+//Check modules:initialisation
+
+fun pone (): &int =
+{
+  var x : int = 1;
+  return &x;
+}
+
+var p1 = pone();
+print (*p1); endl;
+*p1 = 2;
+
+print (*p1); endl;

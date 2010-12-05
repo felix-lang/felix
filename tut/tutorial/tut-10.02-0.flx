@@ -1,0 +1,15 @@
+//Check use directive
+header "#include <iostream>";
+module X {
+  type INT = "int";
+  proc print: INT = "std::cout << $1;";
+  proc endl: 1 = "std::cout << std::endl;";
+  fun mkINT: int -> INT = "$1";
+}
+
+use X::INT;
+use eol = X::endl;
+
+val x:INT = X::mkINT 1;
+use y = x;
+X::print y; eol;

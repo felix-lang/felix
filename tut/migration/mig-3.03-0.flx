@@ -1,0 +1,6 @@
+proc f(x:int){ print 1; endl; }
+module X {
+  proc f(x:double) { print 2; endl; }
+  f 1; // calls f of (int)
+  f 1.2; // calls X::f of (double)
+}

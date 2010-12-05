@@ -1,0 +1,8 @@
+macro var mx1 = 1+y;
+val y = 100;
+print mx1; endl; // 101
+{
+  macro mx1 = 3+y; // 103 [assignment!]
+  print mx1; endl;
+};
+print mx1; endl; // 103 [uses assigned value]

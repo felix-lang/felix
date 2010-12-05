@@ -1,0 +1,9 @@
+enum color {red, green, blue};
+
+fun cname: color -> string =
+  | red => "red"
+  | green => "green"
+  | blue => "blue"
+;
+
+println (cname red);

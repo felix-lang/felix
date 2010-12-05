@@ -1,0 +1,13 @@
+header """
+struct X { int a; int b; };
+""";
+body """
+X rev(X x) { X y; y.a=x.b; y.b=x.a; return y; }
+""";
+
+cstruct X { a: int; b: int; };
+fun rev: X -> X = "rev($a)";
+val x:X = X(1,2);
+print x.a; print " "; print x.b; endl;
+val y:X = rev x;
+print y.a; print " "; print y.b; endl;

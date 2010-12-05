@@ -1,0 +1,4 @@
+//Check termination:failure
+//Check program:abort
+// uncomment to test
+//fail "Aborted";

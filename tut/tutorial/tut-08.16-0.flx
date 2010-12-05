@@ -1,0 +1,18 @@
+//Check closures:procedural
+val f = fun(a:int):int = { return a * a; };
+
+print (f 1);
+endl;
+
+print
+(
+  (fun(a:int):int = { return a * a; })
+  1
+);
+endl;
+
+proc thrice(p:unit->void) { p(); p(); p(); }
+thrice ( proc() { print 3; endl; } );
+thrice ( proc   { print 3; endl; } );
+thrice          { print 3; endl; };
+{ print "finished"; endl; };

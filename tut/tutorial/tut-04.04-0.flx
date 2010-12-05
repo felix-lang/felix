@@ -1,0 +1,6 @@
+proc print_newline (a:int)
+{
+  print a;
+  print "\n";
+}
+print_newline 1;

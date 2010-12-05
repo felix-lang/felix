@@ -1,0 +1,23 @@
+//Check exceptions
+
+proc main
+{
+  // do something
+
+  // raise err1
+  err 1; goto resume;
+
+  // do something else
+
+  // exception handlers
+  proc err(errno:int)
+  {
+    print "error "; print errno;
+    print " -- aborting"; endl;
+    goto resume;
+  }
+resume:>
+  print "error handled, continuing"; endl;
+}
+
+main;

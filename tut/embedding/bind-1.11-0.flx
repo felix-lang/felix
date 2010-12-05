@@ -1,0 +1,42 @@
+cfun fff(x:int)=>x + 1;
+
+print$ fff 22; endl;
+
+fun apl(g:int-->int,x:int)=> g x;
+
+print$ apl$ the fff,22; endl;
+
+var q = the fff;
+print$ apl$ q,22; endl;
+
+cproc ggg(x:int) {
+  print x; endl;
+}
+
+ggg 42;
+
+proc cll(g:int-->void, x:int) {
+  g x;
+}
+
+cll$ the ggg, 43;
+
+hhh := the ggg;
+
+cll$ hhh, 44;
+
+cfun f2(x:int, y:int)=>x+y;
+fun apl2(g:int*int-->int,x:int,y:int)=> g (x,y);
+print$ apl2$ the f2,12,13; endl;
+
+cproc g2(x:int,y:int) {
+  print x; print " "; print y; endl;
+}
+
+g2 (37,38);
+
+proc cll2(g:int*int-->void,x:int,y:int) {
+  g (x,y);
+}
+
+cll2(the g2, 39,40);

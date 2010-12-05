@@ -1,0 +1,21 @@
+//Check pattern match:union
+//Check unions:pattern match
+union int_option =
+  | iSome of int
+  | iNone
+;
+
+val y = iSome 1;
+
+match y with
+  | iSome ?i =>
+    {
+      print "Some ";
+      print i;
+    }
+  | iNone =>
+    {
+      print "None";
+    }
+endmatch;
+endl;

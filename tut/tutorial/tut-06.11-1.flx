@@ -1,0 +1,5 @@
+val x = 1;
+val f = { val y = x + 1; return y; };
+val eol = { endl; };
+
+print (f ()); eol;

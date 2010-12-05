@@ -1,0 +1,11 @@
+//Check functions:anonymous
+//Check functions:lambda
+fun f(g:int->int,x:int) = { return g x; }
+print
+(
+  f
+  (
+    (fun(a:int):int = { return a + a; }),
+    1
+  )
+); endl;
