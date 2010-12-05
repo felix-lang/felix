@@ -10,8 +10,10 @@ fun markdown (s:string):string= {
   return x;
 }
 
+val timeout = Filename::join (Confg::FLX_INSTALL_DIR, "bin", "timeout"+Config::EXT_EXE);
+
 gen safer_popen(cmd:string)=>
-  Process::popen_in("timeout -t 15 " + cmd + " 2>&1")
+  Process::popen_in(timeout+" -t 15 " + cmd + " 2>&1")
 ;
 
 fun xlat_fdoc(t:string)=

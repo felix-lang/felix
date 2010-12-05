@@ -1,8 +1,8 @@
 module FileSystem 
 {
+  requires header "#include <errno.h>";
   // stat
-  requires header "#include <sys/stat.h>";
-  type stat_t = "struct stat";
+  type stat_t = "struct stat" requires header "#include <sys/stat.h>";
   proc stat: string * &stat_t * &int = "*$3=stat($1.data(),$2);";
   body _mktim_fun = """
     unsigned long _mktim(struct timespec x){ 
@@ -55,7 +55,6 @@ module FileSystem
     else INDETERMINATE
     endif
   ;
-  requires header "#include <errno.h>";
   const EACCES: int;
   const ENOENT: int;
   fun filetype(f:string):file_type_t = 
@@ -73,9 +72,8 @@ module FileSystem
   }
 
   // directory
-  requires header '#include <dirent.h>';
-  type dirent_t = "struct dirent*";
-  type DIR_t = "DIR*";
+  type dirent_t = "struct dirent*" requires header '#include <dirent.h>';
+  type DIR_t = "DIR*" requires header '#include <dirent.h>';
   proc opendir: string * &DIR_t = "*$2=opendir($1.data());";
   fun isNULL: DIR_t -> bool = "$1==0";
   fun isNULL: dirent_t -> bool = "$1==0";
@@ -118,7 +116,7 @@ next:>
   }
 
   // current directory
-  private fun getcwd: &char * size -> &char = "getcwd($1,$2)";
+  private fun getcwd: &char * size -> &char = "getcwd($1,$2)" requires '#include <unistd.h>';
   fun getcwd():string = {
     var b: array[char,1024]; 
     var p = getcwd(C_hack::cast[&char] (&b),size 1024);
@@ -137,5 +135,18 @@ next:>
       endmatch
     endmatch
   ;
+
+
+  
+  body tmpnam = """
+    string flx_tmpnam() {
+      char tmpn[] = "/tmp/flx_XXXXXX";
+      close(mkstemp(tmpn));
+      return string(tmpn);
+     }
+  """ requires '#include <unistd.h>';
+
+  gen tmp_filename: string -> string = "flx_tmpnam($1)" requires tmpnam;
+    
 }
 
