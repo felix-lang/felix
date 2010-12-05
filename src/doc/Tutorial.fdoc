@@ -83,8 +83,178 @@ can bind to most C and C++ libraries without any
 needed for glue logic.
 
 
+@h2 Binding to C++
+Lightweight glue is required to map types and names
+across the boundary, but is simple and suitable
+for everyday use.
+
 @flx-and-expect tut/tutorial/tut-01.04-0
+
+The data type introduced here is a new primitive,
+that is, a fully abstract type, with semantics
+defined in terms of C, but typing managed by Felix.
+
+@h2 Modules
+Modules are like C++ namespaces, only they're a closed
+and can't be extended. Modules can have type parameters,
+however they're not actually polymorphic; rather this is a
+shorthand way to make each entry in the module polymorphic.
+
+@h2 Typeclasses
+Felix also supports ad-hoc polymorphism by specification of a set
+of function signatures parameterised by type variables,
+and with specified semantics, together with a set of concrete
+specialisations. This is similar to a C++ template with specialisations,
+or a Haskell type class. The salient point is that binding is parametric,
+whilst specialisations depend on a discrete set of type families
+which can be augmented by the user.
+
+Typeclasses are used extensively in the standard library to
+give the language a 'scripting' and 'dynamic' feel.
+
+@h2 Extensibility
+Felix has many advanced features which make a tutorial
+somewhat difficult to write. For example whilst we describe
+many types such as integers and strings as part of Felix,
+in fact they're primarily defined in the library. Felix
+is fairly unique in that the compiler does not support
+builtin types. It does have builtin type combinators
+though!
+
+Similarly, when describing the syntax, an advanced user will
+be aware that Felix actually has no proper syntax: the syntax
+is defined in the standard library.
+
+@h1 Primitive types
+Here is a more comprehensive set of examples
+of Felix standard types and lexicology.
+
+@h2 Bool
+Felix provides the usual boolean type bool with two values
+named false and true, with false less than true. Note that
+A implies B can be written A &lt;= B which may seem counterintuitive,
+but is quite logical.
+
+The name bool is actually an alias for the canonical enumeration 2,
+meaning a type with two values, and if you look closely in
+the library you will find it is actually defined with
+a typedef.
+
+As with all canonical enumerations, the notation
+<pre>
+  case &lt;index&gt; of &lt;count&gt;
+</pre>
+can be used to specify the n'th value of that type,
+with the rather unfortunate 0 origin convention.
+The names 'true' and 'false' are replaced with their canonical
+values by the parser. Canonical enumerations, also called
+unit sums, are explained in more detail later, however we mention
+this now so you can understand that bool is not an abstract type,
+but a special case of a more general class of types. Since
+canonical enumerations are represented by C++ type int,
+Felix bool is a C++ int, and not a C++ bool.
+
+Bools can also be used in a conditional expression,
+note that an endif keyword and both branches are always
+required.
 @flx-and-expect tut/tutorial/tut-02.01-0
+
+@h2 Arithmetic Types
+@h3 Integers
+Integers are not builtin types, but are in fact
+defined in the standard library by binding to
+their C equivalents.
+
+In the following table, the Felix names of the basic integer
+types are given, along with the corresponding C names. Felix allows
+either the Felix name or any valid C name to be used for these types.
+For example 'unsigned' is an an acceptable type name in Felix
+because it is in C.
+
+The table also lists the lower case versions of the type suffices allowed
+for literals of that type. Either or both the unsigned designator 'u'
+or the other part may be upper case instead (however lL is not permitted
+for long long, both letters must be either lower or upper case).
+@begin_table("Felix name","C name","Suffix")
+@table_row("tiny","signed char","t")
+@table_row("utiny","unsigned char","ut, tu")
+@table_row("short","signed short int","s")
+@table_row("ushort","unsigned short int","us, su")
+@table_row("int","signed int","<none>")
+@table_row("uint","unsigned int","u")
+@table_row("long","signed long int","l")
+@table_row("ulong","unsigned long int","lu, ul")
+@table_row("vlong","signed long long","ll, v")
+@table_row("uvlong","unsigned long long","ull, llu, uv, vu")
+@end_table()
+
+The following aliases are also provided, in this
+case the C name may not be used:
+@p()
+@begin_table("Felix name","C name")
+@table_row("size","size_t")
+@table_row("ptrdiff","ptrdiff_t")
+@table_row("intptr","intptr_t")
+@table_row("uintptr","uintptr_t")
+@table_row("intmax","intmax_t")
+@table_row("uintmax","uintmax_t")
+@end_table()
+@p()
+
+The following aliases for exact integers are also provided, in this
+case the C name may not be used:
+@p()
+@begin_table("Felix name","C name","Suffix")
+@table_row("int8","int8_t","i8")
+@table_row("uint8","uint8_t","u8")
+@table_row("int16","int16_t","i16")
+@table_row("uint16","uint16_t","u16")
+@table_row("int32","int32_t","i32")
+@table_row("uint32","uint32_t","u32")
+@table_row("int64","int64_t","i64")
+@table_row("uint64","uint64_t","u64")
+@end_table()
+@p()
+Felix guarantees all the addressing and exact integer aliases exist,
+even if the C89, C++ or C99 counterparts do not. When the C/C++ counterparts
+do exist, Felix binds to the same integer type, otherwise it binds to
+the largest appropriate integer type (for example, if both long
+and long long exist and are the same size as a pointer, and
+intptr_t is not defined by C or C++, then Felix choses long long
+as the alias).
+@p()
+Arithmetic types support the same operations as ISO C99,
+except that Felix does not support bitwise operations on
+signed integers (shifts are supported, they're multiplications
+by powers of two).
+@p()
+Overflow of operations on signed types is undefined
+behaviour. Operations on unsigned types cannot overflow
+because they are defined as the modular residual of the
+underlying mathematical operation on integers.
+@p()
+Thus, operations on exact unsigned integral types are fully
+deterministic, and operations on signed integral types
+are also deterministic when they do not overflow.
+@p()
+An integer literal consists of a prefix, numeric form and suffix.
+The suffix is noted in the tables above.
+Either the size indicator or signedness indicator 'u' or 'i'
+can be wholly capitalised (but note that lL is not allowed).
+@p()
+The prefix denotes the radix as in the table below:
+@begin_table("Prefix","Radix", "name", "Allowed digits")
+@table_row("0b,0B","2", "binary","01")
+@table_row("0o,0O","8", "octal","01234567")
+@table_row("0d,0D,<none>","10", "decimal","0123456789")
+@table_row("0x,0X","16", "hexadecimal","0123456789ABCDEFabcdef")
+@end_table()
+@p()
+The numeric form consists of digits from the table above,
+with optional underscores inserted for layout purposes.
+Two underscores in a row are not permitted, one is allowed
+between digits, or a digit and the prefix or suffix.
+
 @flx-and-expect tut/tutorial/tut-02.02.01-0
 @flx-and-expect tut/tutorial/tut-02.02.02-0
 @flx-and-expect tut/tutorial/tut-02.02.03-0

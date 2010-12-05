@@ -61,9 +61,12 @@ nextc:>
   | doc =>
     { 
       if char "@" == ch do 
-        if b != "" do write_string(markdown b); done
+        if b != "" do bp; write_string(markdown b); done
         s = cmd; b="";
-      elif char "\n" == ch and char "\n" == ahead(1) do ep;
+      elif char "\n" == ch and char "\n" == ahead(1) do 
+        write_string(markdown b);
+        b="";
+        ep;
       else cp; 
       done
       goto nextc;
