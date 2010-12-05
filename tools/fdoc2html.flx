@@ -10,6 +10,10 @@ fun markdown (s:string):string= {
   return x;
 }
 
+gen safer_popen(cmd:string)=>
+  Process::popen_in("timeout -t 15 " + cmd + " 2>&1")
+;
+
 fun xlat_fdoc(t:string)=
 {
   var out = "";
@@ -102,7 +106,7 @@ nextc:>
         elif prefix(b,"h4") do ep; write_string("<h4>"+b.[3 to]+"</h4>\n"); s=doc;
         elif prefix(b,"sh") do 
           var cmd = b.[3 to];
-          var fout = Process::popen_in(cmd+" 2>&1 ");
+          var fout = safer_popen(cmd);
           if Text_file::valid fout do
             var output = Text_file::load fout;
             var result = Process::pclose fout; 

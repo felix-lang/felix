@@ -434,6 +434,12 @@ def build(ctx):
         flags=['--test=' + ctx.buildroot])
 
     # --------------------------------------------------------------------------
+    # build support tools
+    # 
+    # C tools
+    #
+    mk_daemon = call('buildsystem.mk_daemon.build', phases.target)
+    #timeout = call('buildsystem.timeout.build', phases.target)
 
     return phases, iscr, felix
 
@@ -458,6 +464,10 @@ def doc(ctx):
     # in the build process
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src',
         pattern='*.{ml,mli,c,cc,cpp,h,hpp,flx,flxh}')
+
+    # copy the entire test directory so the user can browse it
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'test',
+        pattern='*.{flx,expect}')
 
     # copy the tools
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tools')

@@ -104,3 +104,9 @@ Test case
     </mrow>  
   </math>  
 
+Here is ls:
+<pre>
+@sh flx tut/tutorial/tut-01.01-0 
+</pre>
+after list here.
+
