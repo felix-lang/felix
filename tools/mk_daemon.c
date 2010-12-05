@@ -18,6 +18,7 @@ int main(int argc, char * const argv[]) {
   dup2(serr,2);
   execv(argv[1], argv+1);
   printf("Exec failed\n");
+  return 1;
 }
 
 
