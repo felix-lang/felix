@@ -28,10 +28,12 @@ fun xlat_fdoc(t:string)=
     | cmd // processing command
     | doc // processing document
     | felix // processing felix code
+    | flx_and_expect // processing felix code and expect file
   ;
   fun str(s:state_t) => match s with
   | doc => "doc"
   | felix => "felix"
+  | flx_and_expect => "flx-and-expect"
   | cmd => "cmd"
   endmatch;
   
@@ -86,15 +88,29 @@ nextc:>
       if char "\n" != ch do cp; goto nextc;
       else
         if b == "felix" do s = felix;
-        elif prefix (b,"felix") do {
-          fname := strip(b.[5 to]);
-          var flx = get_flx(fname);
-          write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
-          write_string("<pre class='flxbg'>"); 
-          write_string(Flx2Html::xlat_felix (flx,""));
-          write_string("</pre>"); 
-        };
-        s=doc;
+        elif prefix (b,"felix ") do 
+          {
+            fname := strip(b.[6 to]);
+            var flx = get_flx(fname);
+            write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
+            write_string("<pre class='flxbg'>"); 
+            write_string(Flx2Html::xlat_felix (flx,""));
+            write_string("</pre>"); 
+          };
+          s=doc;
+        elif prefix (b,"flx-and-expect ") do 
+          {
+            fname := strip(b.[6 to]);
+            var flx = get_flx(fname+".flx");
+            write_string("<pre class='inclusion'>\n"+fname+".flx</pre>\n");
+            write_string("<pre class='flxbg'>"); 
+            write_string(Flx2Html::xlat_felix (flx,""));
+            var xpected = get_flx(fname+".expect");
+            write_string("</pre></p><p>expected: </p><p><pre class='expected'>\n"); 
+            write_string(xpected);
+            write_string("</pre>"); 
+          };
+          s=doc;
         elif b=="obsolete" do ep; pstate=true; write_string("<p class='obsolete'> <em>Obsolete</em> "); s=doc;
         elif b=="caveat" do ep; pstate=true; write_string("<p class='caveat'> <em>Caveat: </em> "); s=doc;
         elif b=="impl" do ep; pstate=true; write_string("<p class='implementation_detail'> <em>Implementation Detail: </em>"); s=doc;

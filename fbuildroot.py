@@ -483,28 +483,28 @@ def doc(ctx):
     # 
     # The result of this process should be the old interscript documentation
     # in the build directory doc/iscr
-    (ctx.buildroot / 'doc/iscr').makedirs()
+    #(ctx.buildroot / 'doc/iscr').makedirs()
 
-    flags = [
-        '--weaver=web',
-        '--language=en',
-        '--weaver-directory=doc/iscr/',
-        '--passes=2']
+    #flags = [
+    #    '--weaver=web',
+    #    '--language=en',
+    #    '--weaver-directory=doc/iscr/',
+    #    '--passes=2']
 
-    ctx.logger.log('generating tutorial docs', color='cyan')
-    iscr('lpsrc/flx_tutorial.pak', flags=flags)
-    iscr('lpsrc/flx_tut_macro.pak', flags=flags)
-    iscr('lpsrc/flx_tut_bind.pak', flags=flags)
-    iscr('lpsrc/flx_tut_migrate.pak', flags=flags)
+    #ctx.logger.log('generating tutorial docs', color='cyan')
+    #iscr('lpsrc/flx_tutorial.pak', flags=flags)
+    #iscr('lpsrc/flx_tut_macro.pak', flags=flags)
+    #iscr('lpsrc/flx_tut_bind.pak', flags=flags)
+    #iscr('lpsrc/flx_tut_migrate.pak', flags=flags)
 
     # copy stuff for interscript generated docs
-    buildsystem.copy_to(ctx,
-        ctx.buildroot / 'doc/iscr',
-        (ctx.buildroot / 'misc.*.gif').glob())
+    #buildsystem.copy_to(ctx,
+    #    ctx.buildroot / 'doc/iscr',
+    #    (ctx.buildroot / 'misc.*.gif').glob())
 
-    buildsystem.copy_to(ctx,
-        ctx.buildroot / 'doc/iscr',
-        Path('misc/*.css').glob())
+    #buildsystem.copy_to(ctx,
+    #    ctx.buildroot / 'doc/iscr',
+    #    Path('misc/*.css').glob())
 
 # ------------------------------------------------------------------------------
 
