@@ -116,7 +116,7 @@ next:>
   }
 
   // current directory
-  private fun getcwd: &char * size -> &char = "getcwd($1,$2)" requires '#include <unistd.h>';
+  private fun getcwd: &char * size -> &char = "getcwd($1,$2)" requires header '#include <unistd.h>';
   fun getcwd():string = {
     var b: array[char,1024]; 
     var p = getcwd(C_hack::cast[&char] (&b),size 1024);
@@ -144,7 +144,7 @@ next:>
       close(mkstemp(tmpn));
       return string(tmpn);
      }
-  """ requires '#include <unistd.h>';
+  """ requires header '#include <unistd.h>';
 
   gen tmp_filename: string -> string = "flx_tmpnam($1)" requires tmpnam;
     

@@ -1,4 +1,88 @@
+@h1 Introduction
+@h2 Hello World
+This section deals with the basic concepts in Felix.
+There is no better introduction to a programming
+language than the infamous hello world program
 @flx-and-expect tut/tutorial/tut-01.01-0
+and the felix version is simplicity itself.
+
+The expected results are provided, and the build system
+compares them with the actual output and logs an error
+if there are any significant differences.
+
+You'll notice that the argument to print is not
+enclosed in brackets.  We'll learn more about
+this shortly.
+
+@h2 Running Programs
+To run some code, create a file {hello.flx} then type:
+<pre>
+flx hello
+</pre>
+at the command prompt. This assumes you have installed Felix of course!
+You will find quite a few files are produced. Here's what they're for:
+<pre>
+hello.par        cached parse tree (AST)
+hello.hpp        C++ header file
+hello.cpp        C++ translation of your program
+hello.ctors_cpp  C++ Constructors for generated classes
+hello.rtti       C++ Run time type information
+hello.includes   C++ Includes for external libraries
+hello.dep        List of all the Felix files your program depends on
+hello.resh       List of all the abstract resources required to build your program
+hello.os         object file for dynamic linkage
+hello.dll        dynamic link library: .so on Linux, .dylib on OSX, .dll on Windows
+</pre>
+To build a statically linked executable, do this instead:
+<pre>
+flx --static hello
+</pre>
+and you get these files
+<pre>
+hello.o         object file for static linkage
+hello           statically linked executable
+</pre>
+Felix is both a scripting language and statically type-checked
+fully compiled to native code high performance application
+development language.
+
+It provides the simple usage model of scripting languages
+like Python, Perl, PHP, and Ruby, with the early error
+detection of C++, SML, Ocaml and Haskell. With Felix you
+no longer need to worry about Makefiles or building code,
+just run the source, the scripting harness takes care of
+calculating dependencies, recompiling stale dependents,
+and linking in libraries.
+
+It is not only the fastest scripting language
+available, it competes very well with compiled languages,
+and is often faster than C.
+
+
+@h2 Platform Independence
+Felix provides platform independence like
+Java without using a bytecode interpreter or
+interpreted virtual machine, by mapping abstracted
+concepts onto the platform specific technologies
+at the source code level.
+
+The Felix code generator itself produces platform
+independent C++ code which should compile on any
+platform with any modern C++ compiler. Thus, the primary
+vehicle for platform independence is to use the ISO Standardised
+C++ object model as an abstract target, and use the local
+conforming C++ compiler as the implementation vehicle.
+
+At the same time, platform dependent features can
+easily be programmed without the need for facilities
+like the JNI (Java native code interface), using
+binding technology directly supported in Felix
+to map C and C++ functions and data types directly
+into Felix. Felix uses the C++ object model, and so
+can bind to most C and C++ libraries without any
+needed for glue logic.
+
+
 @flx-and-expect tut/tutorial/tut-01.04-0
 @flx-and-expect tut/tutorial/tut-02.01-0
 @flx-and-expect tut/tutorial/tut-02.02.01-0

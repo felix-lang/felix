@@ -10,7 +10,7 @@ fun markdown (s:string):string= {
   return x;
 }
 
-val timeout = Filename::join (Confg::FLX_INSTALL_DIR, "bin", "timeout"+Config::EXT_EXE);
+val timeout = Filename::join (Config::FLX_INSTALL_DIR, "bin", "timeout"+Config::EXT_EXE);
 
 gen safer_popen(cmd:string)=>
   Process::popen_in(timeout+" -t 15 " + cmd + " 2>&1")
@@ -100,13 +100,15 @@ nextc:>
           s=doc;
         elif prefix (b,"flx-and-expect ") do 
           {
-            fname := strip(b.[6 to]);
+            fname := strip(b.[15 to]);
             var flx = get_flx(fname+".flx");
-            write_string("<pre class='inclusion'>\n"+fname+".flx</pre>\n");
+            write_string("<pre class='inclusion'>"+fname+".flx</pre>\n");
             write_string("<pre class='flxbg'>"); 
             write_string(Flx2Html::xlat_felix (flx,""));
+            write_string("</pre>\n");
+            write_string("<pre class='inclusion'>"+fname+".expect</pre>\n");
             var xpected = get_flx(fname+".expect");
-            write_string("</pre></p><p>expected: </p><p><pre class='expected'>\n"); 
+            write_string("<pre class='expected'>\n"); 
             write_string(xpected);
             write_string("</pre>"); 
           };
