@@ -1874,7 +1874,6 @@ by the Felix build system.)
 <pre>
 open System;
 print "argc="; print argc; endl;
-
 var i:int;
 for_each {i=0;} {i<argc} {++i;}
 {
