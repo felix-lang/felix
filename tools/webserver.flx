@@ -244,6 +244,19 @@ fun get_flx(fname:string):string=
   return flx;
 }
 
+fun get_cpp(fname:string):string=
+{
+  var flx =
+    match get_file(fname,C_PATH) with
+    | Some ?name => Text_file::load(name)
+    | None => "NO FILE "+fname+" FOUND IN " + str C_PATH
+    endmatch
+  ;
+  println$ "Loaded c++ file " + fname+", len="+str (len flx);
+  return flx;
+}
+
+
 proc serve_felix(k:socket_t, fname:string)
 {
   var eof_flag = false;
@@ -273,7 +286,6 @@ proc serve_fpc(k:socket_t, fname:string)
 {
   var eof_flag = false;
 
-println$ "Serving fpc";
   match get_file(fname,FLX_PKGCONFIG_PATH) with
   | Some ?path =>
     {

@@ -28,11 +28,13 @@ fun xlat_fdoc(t:string)=
     | cmd // processing command
     | doc // processing document
     | felix // processing felix code
+    | cpp // processing felix code
     | flx_and_expect // processing felix code and expect file
   ;
   fun str(s:state_t) => match s with
   | doc => "doc"
   | felix => "felix"
+  | cpp => "c++"
   | flx_and_expect => "flx-and-expect"
   | cmd => "cmd"
   endmatch;
@@ -70,6 +72,21 @@ nextc:>
       done
       goto nextc;
     }
+  | cpp =>
+    { 
+      if char "@" == ch do 
+        if b != "" do 
+          write_string("<pre class='cppbg'>"); 
+          write_string(Cpp2Html::xlat_cpp (b,"")); // no parent!
+          write_string("</pre>"); 
+          b= ""; 
+        done
+        s = cmd;
+      else cp; 
+      done
+      goto nextc;
+    }
+
   | felix =>
     { 
       if char "@" == ch do 
@@ -112,6 +129,17 @@ nextc:>
             var xpected = get_flx(fname+".expect");
             write_string("<pre class='expected'>"); 
             write_string(xpected);
+            write_string("</pre>"); 
+          };
+          s=doc;
+          elif b == "c++" do s = cpp;
+          elif prefix (b,"c++") do 
+          {
+            fname := strip(b.[6 to]);
+            var flx = get_flx(fname);
+            write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
+            write_string("<pre class='cppbg'>"); 
+            write_string(Cpp2Html::xlat_cpp (flx,""));
             write_string("</pre>"); 
           };
           s=doc;
