@@ -420,7 +420,7 @@ def build(ctx):
     # before this step is executed
     call('buildsystem.re2.build_runtime', phases.target)
 
-    for module in 'flx_glob', 'tre', 're2':
+    for module in 'flx_glob', 'tre':
         call('buildsystem.' + module + '.build_flx', phases.target)
 
     call('buildsystem.bindings.build_flx', phases.target)

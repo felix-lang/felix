@@ -53,7 +53,7 @@ def build_runtime(phase):
         path / 'util/valgrind.cc',
      ]
     includes = [
-      phase.ctx.buildroot / 'config/target', 
+      phase.ctx.buildroot / 'config/target',
       path ]
     macros = ['BUILD_RE2']
     cflags = ['-Wno-sign-compare']
@@ -76,7 +76,3 @@ def build_runtime(phase):
             libs=libs,
             external_libs=external_libs,
             lflags=lflags))
-
-def build_flx(phase):
-    pass
-    #buildsystem.copy_flxs_to_lib(phase.ctx, Path('src/re2/re2/*.flx').glob())
