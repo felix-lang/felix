@@ -691,18 +691,19 @@ application inside the enclosing expression.
 In other words, function calls may be lazy, whereas
 generators are always evaluated eagerly.
 
-@flx-and-expect tut/tutorial/tut-04.07-0
 
 @h2 Iterators
 A generator may also yield a value and be resumed later.
 This is done in two steps. First the generator uses the
 yield statements instead of the return statements.
 Secondly, the generator itself must be stored in a variable.
-@flx-and-expect tut/tutorial/tut-04.08-0
+
 Note that when calling a generator which has yielded
 the parameters are re-assigned on every call, however
 control continues from the last yield point. Calling
 a generator which has returned is not permitted.
+
+@flx-and-expect tut/tutorial/tut-04.07-0
 
 A generator using in this way is sometimes called
 an iterator.
@@ -712,70 +713,1176 @@ Note that generators cannot read or write channels,
 you have to use an actual procedure for that.
 
 @h2 Threads
-@flx-and-expect tut/tutorial/tut-05.01-0
-@flx-and-expect tut/tutorial/tut-05.02-0
+@flx-and-expect tut/tutorial/tut-04.08-0
+@h1 Programs
+@h1 Structured Types
+@h2 Tuples
+As you might guess from the title, Felix has
+tuples. A tuple is a value consisting of an ordered sequence of
+two or more values, not necessarily of the same type.
+Here are some examples of tuples:
+<pre>
+  1,2
+  "Hello", "World"
+  (1, 2.7, "Hello")
+  ()
+</pre>
+The comma chain operator constructs tuples.
+While brackets are not always necessary, the comma
+operator has a low precedence so tuples usually
+appear in brackets. Notice there is a special
+unique empty tuple '()'. There are no tuples
+with one component: for all values 'a', '(a)' is
+equivalent.
+
+Now perhaps you have guessed what I meant earlier
+when I said the function mid only had a single
+argument. If not, you get another chance,
+studying this example, which is equivalent
+to the Functions example.
 @flx-and-expect tut/tutorial/tut-06.01-0
+
+Here you can see that mid takes a single
+argument which is a tuple of two ints.
+@p()
+A tuple is a product type: you may be
+familiar with the Cartesian product of sets.
+The notation for tuple types is the same,
+except of course we use '*' instead of
+a multiply sign: here is the declaration
+of x with a type annotation:
+@begin_displayed_code()
+  val x : int * int = (2,4);
+@end_displayed_code()
+You should note that tuple construction
+is not associative. Here are three
+tuple value declarations with type annotations:
+<pre>
+  val x : int * int * int = (1,2,3);
+  val y : (int * int) * int = ((1,2),3);
+  val z : int * (int * int) = (1,(2,3));
+</pre>
+These three tuples have distinct types and
+values. The first has three components,
+each of type int. The other two have two
+components each: an int and a pair of ints,
+in the two possible orderings.
+
+The type of the empty tuple '()' is called
+'unit'. It can also be called '1', the reason
+will become clear soon.
+
+I said before that 'almost' all functions in
+Felix have one argument. The tuple constructor
+is the exception.
+
+You can get at tuple components using a suffixed
+dot followed a zero origin integer in brackets:
+
 @flx-and-expect tut/tutorial/tut-06.01-1
+
+The brackets are needed so the lexer
+doesn't get confused with floating point.
+The notation is ugly and not recommended ..
+there is a better way called pattern matching
+which you will learn about soon.
+
+@h2 Pattern Matching Tuples
+It is also possible to pattern match tuples.
+Here is an example:
 @flx-and-expect tut/tutorial/tut-06.02-0
+
+Notice the use of the special pattern '_', which matches
+something without naming it. The ?x designation
+in a pattern introduces a variable.
+
+@h2 Numbered unions
+Numbered unions are algebraic types used to
+represent alternative cases. The infix
+operator + is the type combinator used
+to denote them. The number is zero origin.
+
+
 @flx-and-expect tut/tutorial/tut-06.03-0
+
+@h2 Structs
+Felix supports C like structs. A struct, like a tuple,
+is a categorical product type. Unlike a tuple,
+a struct is named, its members are named, and
+its members are mutable.
+@p()
+Struct members can be used with C style dot notation.
+Here is an example:
+
 @flx-and-expect tut/tutorial/tut-06.04-0
+
+The name of a struct is also the name of a function
+which constructs an object of the struct type
+from a tuple consisting of values to initialise
+the members in sequence. For example:
+
 @flx-and-expect tut/tutorial/tut-06.04-1
+
+@h2 Records: anonymous structs
+A record is an anonymous struct: its a tuple with
+named fields. Two records are the same type if their
+field names are the same, and have the same types.
+The order of fields is irrelevant.
+
+A record can be coerced to a record with less fields.
 @flx-and-expect tut/tutorial/tut-06.05-0
+
+[New 2007-09-20] Record values can also be written in the simpler form:
+<pre>
+  (a=1,b=2)
+</pre>
+Furthermore, structs can be initialised by a record with
+the same set of components, meaning the name and type agree.
+
+Also, records can be used as arguments to functions
+by specifying the parameter names.
+
+Also parameters can have default values.
+
 @flx-and-expect tut/tutorial/tut-06.05-1
 @flx-and-expect tut/tutorial/tut-06.05-2
+@h2 Arrays
+Felix provides arrays of constant length.
+The type notation
+<pre>
+  t ^ m
+</pre>
+is used to declare an array with elements
+of type t, indexed by elements of type m.
+Currently, m must be a sum of units, that is,
+it must have the form 1 + 1 + 1 .. which
+can be abbreviated by a non-negative integer
+constant. The implementation is a struct
+wrapping an actual C array.
+
+An array is just a tuple of m elements of type t.
+[More .. ]
+
+@h2 Unions
+Felix supports unions, but they are a bit
+different to C unions. A union is a way
+of merging a finite set of types into
+a single type; that is, it provides
+type unification. An object of a union type
+consists of a tag, identifying what type
+the component has, and the actual component.
+Here are some examples of unions.
+
 @flx-and-expect tut/tutorial/tut-06.07-0
+
+We'll see how to actually use unions in the
+next section. But note first that the parity
+example is very similar to a C enumeration.
+The names of the union components are
+called constructors by convention.
+They have two roles: they represent the
+constant value of the tag indicating
+which component we're talking about:
+tags values are assigned sequentially,
+starting at 0.
+
+In their second role, the constructors
+are considered functions, so that
+Some is a function with type:
+<pre>
+  int -&gt; int_option
+</pre>
+It is important to note that the constructor
+names are visible in the enclosing space,
+unlike struct component names.
+@p()
+The enum form only permits constant constructors
+(ones with no arguments), values are not permitted.
+
+@h2 Pattern Matching Unions
+The only way to get at the current component
+of a union is by pattern matching. Here is an example:
+
 @flx-and-expect tut/tutorial/tut-06.08-0
+
+Notice that the value 'i' in the line
+<pre>
+  | iSome ?i =>
+</pre>
+can be used in the handler for that case.
+This is how we get the 'int' out of the Some option.
+The 'i' is scoped so it can only be seen inside
+the handler for the Some case.
+The question mark is used to indicate a pattern
+variable, its type is deduced from the pattern context
+and match argument type.
+
+By the way, match/endmatch is an expression.
+It happens in the example above that each handler
+is a procedure value taking a unit argument, and the match
+expression returns one of these values depending on the
+argument exprssion. Oh, and it happens that the semi-colon
+after the 'endmatch' keyword then executes this procedure.
+
+It is important to note that the match expression is
+purely functional! It doesn't print anything, it just
+returns a procedure which could print something.
+
+@h2 The Conditional Expression
+Felix supports the conditional expression as shown:
+
 @flx-and-expect tut/tutorial/tut-06.09-0
+
+In the conditional construction, one or more
+elif clauses may be give, however the
+else clause is required. The elif clause
+is used reduce the need for terminating
+endif keywords.
+@p()
+The conditional expression is merely
+a shortcut for a match, as shown in the
+third sign function.
+
+env.head(2,'Pointers')
+Felix supports pointers. The type of a pointer to T is
+denoted:
+<pre>
+  &amp;T
+</pre>
+A pointer can be created by addressing a variable
+using the notation:
+<pre>
+  &amp;v
+</pre>
+Pointers can be dereferenced using the usual syntax:
+<pre>
+  *p
+</pre>
+and there is the usual arrow notation:
+<pre>
+  p-&gt;x
+</pre>
+which means the same as
+<pre>
+  (*p).x
+</pre>
+Only variables, not values, are addressable.
+Pointers are used to implement assignment.
+You have seen many examples of assignment:
+<pre>
+  var v : T;
+  v = e;
+</pre>
+What you didn't know was that the assignment
+operator is just syntactic sugar for
+the procedure call:
+<pre>
+  set(&amp;v,e);
+</pre>
+This procedure is defined automatically
+for structs, unions, and function and procedure
+closures, that is, for Felix types; but you can
+define it manually for abstract types including
+primitives. The usual definition is:
+<pre>
+  type T = "T";
+  proc _set: &amp;T * t = "*$1=$2;"
+</pre>
+If you don't define a set method for a primitive
+type, Felix assumes the C++ assignment operator
+as above. WARNING: This is wrong in principle,
+since Felix cannot check such a function exists,
+if it doesn't, you will get an error at C++ compilation
+time instead of Felix compilation time. Be warned!
+
+Note that all Felix primitives must be C++ assignable
+and implicitly default constructible,
+since in the generated code all values and variables
+are first declared without an initialiser and
+then assigned to.
+
+It is important to note that in Felix,
+you can take the address of any variable,
+and safely pass the pointer around, without
+fear it will dangle: this includes pointers
+to function and procedure local variables.
+
+This all works because Felix uses a garbage collector,
+but you should note that because the frame containing
+an object must be kept alive if there is a pointer into
+it, returning a pointer to a function local variable
+may prevent other local variables in the same
+frame from being destroyed.
+
+Here is an example:
+
 @flx-and-expect tut/tutorial/tut-06.10-0
+
+You should note that Felix pointers consist
+of two C pointers: a pointer to the variable,
+and a pointer to the frame containing the variable.
+It is this frame pointer which the garbage collector
+tracks. Although Felix pointers do not have to
+be initialised, the frame pointer component
+of the representation is always initialised to NULL
+so that the garbage collector doesn't chase off into
+the wild blue yonder.
+
+@h2 Lazy expressions
+There is a function which is so useful, there
+is a special syntax for it: the lazy expression.
 @flx-and-expect tut/tutorial/tut-06.11-0
+
+The curly brackets denote a lazy expression, it is
+a function which evaluates the expression when passed
+the special unit value () explained below, the return type
+is the type of the expression.
+
+You can also put statements inside curly brackets
+to define a lazy function:
+
 @flx-and-expect tut/tutorial/tut-06.11-1
+
+@h2 The block procedure
+There is a procedure which is so useful, there
+is a special syntax for it, as described above in
+the section on lazy things: the block.
+
 @flx-and-expect tut/tutorial/tut-06.12-0
+
+The block is a procedure taking a unit argument.
+So when you write one as a statement, it just gets
+called: note that unlike C, that thing in
+curly braces is an expression, and you must
+make a statement by adding a semi-colon,
+which has the effect of invoking it due to the
+short cut rule.
+
+
+@h1 Generics
+There are 3 kinds of genericity in Felix: ad hoc polymorphism
+in the form of overloading, parametric polymophism using
+type schema or families of entities indexed by types,
+and specialisations modelled with apparently parametric
+polymorphic typeclasses, but which are instantiated
+with specialised instances.
+
+@h2 Generic Functions
+Felix functions and procedures can be generic too.
+Here is a simple example.
+
 @flx-and-expect tut/tutorial/tut-07.01-0
+
+When declaring a generic function or procedure,
+if one of the parameters has the type of a type
+variable which is not used elsewhere, you can leave
+out the type variable, and one will be synthesised for you.
+Synthesised type variables are added
+to the type variable list at the end. For example:
 @flx-and-expect tut/tutorial/tut-07.01-1
+
+Note in this example, the return type cannot
+be stated since it depends on a synthesised type variable.
+
+When there is only one argument which has a type
+which is a type variable, then if the type variable
+is omitted, the parentheses can also be omitted.
+This is particularly useful with curried declarations.
+
+Note carefully that in the call to pair below, both the
+type subscripts must be given explicity, because they cannot
+be deduced from the argument.
 @flx-and-expect tut/tutorial/tut-07.01-2
+
+@h2 Generic Structs and Unions
+Felix structs and unions can be generic too.
+Here is a simple example.
 @flx-and-expect tut/tutorial/tut-07.02-0
+
+@h2 Argument Deduction
+It is inconvenient to specify the type
+arguments for a function. Generally,
+this is not necessary, as illustrated in
+the example: Felix deduces the value
+of the type variables from function arguments.
 @flx-and-expect tut/tutorial/tut-07.03-0
+
+@h2 Generic modules
+It is also possible specify type arguments for a module.
+The effect is simply that all the entities declared in
+the module are parameterised by the type parameter.
+
+Because of this, you can open a generic module,
+but you must do so without specifying any type arguments.
+
+When you use a qualified name, Felix concatenates
+all the arguments and applies them to the last component.
+
+Note this excludes parent functions, since the type
+arguments of the parent of a function are fully
+determined by its child.
 @flx-and-expect tut/tutorial/tut-07.04-0
+@h2 Inductive types
+Felix supports inductive types such as lists.
+Here is a list of ints.
 @flx-and-expect tut/tutorial/tut-08.01-0
+
+A more interesting example is now given.
+Here, we use a recursive routine to build the list,
+and an iterative routine to reverse it.
+
 @flx-and-expect tut/tutorial/tut-08.01-1
+
+@h2 Higher order Functions
+In Felix, functions and procedures are first class:
+they may accept functions or procedures as arguments,
+functions may return them, and you can have variables
+of function or procedure type.
+
+In particular, a function or procedure may be
+defined inside another function or procedure,
+and it may still use any values or variables
+defined in that function or procedure, even when
+it is returned by it.
+
+Note that when the returned function or procedure
+is called later, the values of variables may have
+changed since the time that it was passed.
+
+Here is an example, beware this example
+contains quite a lot of subtle features!
+
 @flx-and-expect tut/tutorial/tut-08.02-0
+There are a couple of things to notice.
+The function return type is given as
+
+<pre>
+  unit-&gt;void
+</pre>
+
+This is the notation for a procedure type accepting
+a unit argument.
+
+Notice also that the return value is
+
+<pre>
+  print of (unit)
+</pre>
+
+This is the name of the function called 'print'
+which accepts a unit argument. Felix can perform
+overload resolution when a function name is applied
+to an argument, by inspecting the type of the argument.
+In other circumstances, you have to specify the type
+of the argument.
+
+There is a subtle point of the overloading system
+here. The procedure 'print of (unit)' actually
+calls the procedure 'print of (int)'. Now if you are
+used to C++, you may wonder how this would work:
+the search for 'print of (int)' stats by finding
+'print of (unit)', and in C++ it would stop right there
+and report an error. In Felix, if overload resolution
+for an unqualified function or procedure name fails,
+the enclosing scope is examined. This 'overloading
+across scopes' is allows you to extend an overload
+set locally. The special rule does not apply
+to qualified names (where the name must be found
+in the designated scope). [I may change this!]
+
+Another thing to notice is that
+the call to print_i cannot be abbreviated by leaving
+the () off. This is because print_i is a function
+value, not the name of a function.
+
+More precisely, the function specification for p of (unit)
+is used to build a function closure: this consists of the
+code body of the function, together with the environment
+at the point of definition and the time the closure
+is created: it binds to the current 'activation record'
+or 'stack frame' of the enclosing function 'get_printer'.
+And because that environment contains the value 'i'
+initialised to 30, and the variable 'j', it will
+print 40 + j as an answer when called. This is 42
+the first time, since at that time j is 2, and 43 the
+second time, since j is then 3.
+
+The difference between a function specification
+and a function closure may seem difficult to grasp
+at first, but the implementation makes the distinction
+quite clear: a function specification is a C++ class,
+whereas a function closure is an object of that class.
+Function closures exist at run time, function specifications
+only exist at compile time. Unfortunately perhaps,
+the unqualified term "function" is used to refer to both.
+Even more confusing, it sometimes means procedures
+as well (even though they're utterly different beasts).
+
+@h2 The "the" keyword
+@obsolete
+When naming functions, it annoying
+to write the signature of the function
+when there is clearly only one function
+of a given name. in this special case
+you can use the keyword 'the' to specify
+you mean that function.
+@
+
 @flx-and-expect tut/tutorial/tut-08.03-0
+@h2 Currying
+Consider the following example:
+
 @flx-and-expect tut/tutorial/tut-08.04-0
+You should note that -&gt;  is right associative,
+so that
+
+<pre>
+  int-&gt;int-&gt;int-&gt;int
+</pre>
+is equivalent to
+<pre>
+  int-&gt;(int-&gt;(int-&gt;int))
+</pre>
+On the other hand, application is left associative,
+so that
+<pre>
+  f4 1 2 3 4
+</pre>
+is equivalent to
+<pre>
+  (((f4 1) 2) 3) 4
+</pre>
+
+Note that the 'partial' applications such as
+shown by the brackets, are of course closures
+of the inner functions, and you can use them
+to initialise values, assign them to variables
+or pass them to functions. Such 'partial'
+application is called currying (after the mathematician
+Howard Curry, who invented the lambda calculus).
+
+While this is a perfectly good defintion,
+there is a lot of housekeeping going on.
+Felix provides syntactic sugar that makes it easier
+to declare functions suitable for currying.
+Here is the equivalent code, using this sugar:
+
 @flx-and-expect tut/tutorial/tut-08.04-1
+
+You may remember eariler I said that
+all Felix accepted exactly one argument,
+with one exception: tuple constructors.
+
+It is conventional to say that a function like
+'f4' above has 4 arguments. Of course,
+you know that this isn't the case: it really
+has one argument and returns a function.
+It is also sometimes said that f4 has arity 4,
+meaning you can chain applications 4 times,
+until you get a non-function result.
+
+Note that the notation above can be used for
+procedures as well: of course, all the partial
+applications except the last return functions,
+and the last one returns a procedure.
+
+It is a matter of style whether you write
+functions in the curried form or not.
+Any function accepting a tuple can be changed
+to a currified function accepting the components
+in sequence. This is conventional in some
+functional programming languages (like Ocaml),
+but is less heavily used in others (like SML).
+
+In the current implementation of Felix, currified
+functions are more expensive than ones accepting
+tuples, but the currified version is easier to
+curry :-)
+
+As an exercise, write a function that given an
+arbitrary function f accepting a tuple of 3 ints,
+returns an equivalent currified version of it
+that accepts 3 arguments.
+
+What you have done is called eta-expansion.
+It is necessary even for currified functions
+if you want to fix the second argument, but
+leave the first free.
 @flx-and-expect tut/tutorial/tut-08.04-2
+
+@h2 List functions
 @flx-and-expect tut/tutorial/tut-08.05-0
+@h2 Koenig lookup
+Consider the following example:
 @flx-and-expect tut/tutorial/tut-08.06-0
+
+There is a subtle point here in this code.
+(Isn't there always?) Recall that
+<pre>
+  e.x
+</pre>
+is transformed by desugaring to the function application
+<pre>
+  get_x e
+</pre>
+If that is so, how is it that the get_x of (A::X)
+is found, when it is not visible in the top level scope?
+The answer is that I told a white lie before.
+
+What really happens is that e.x is transformed
+into a method application. This is exactly the
+same as a function application, except that
+overloading uses a special kind of lookup
+for the method name, called Koenig Lookup,
+after its inventor, Andrew Koenig.
+
+Koenig lookup works by searching the module
+in which the type of the expression e is
+defined: in Felix the type must be generative,
+which means it must be a declared type
+such as a named struct or union
+and not an implicitly defined type like a tuple,
+pointer, or function type (typedefs do not count
+here, as in C they just specify an alias, they
+don't define a type).
+
+In the example, 'get_x' is defined in the module X,
+because A is defined in the module X, and since
+e has type 'A', Felix looks in module X for 'get_x'.
+
+Koenig lookup only works for method calls, that is,
+when you use the syntax e.x.
+
+@env.head(2,'The ubiquitous goto')
+Felix allows statements to be labelled,
+and provides a conditional and unconditional goto statement.
+
+
 @flx-and-expect tut/tutorial/tut-08.08-0
+
+Note that labels require a terminating :> rather
+that C's plain :.
+
+Goto is not recommended programming style,
+but it is an essential primitive, and it is used
+both by the compiler and in the standard library
+to define control structures such as 'while'.
+
+It is also useful for inventing your own
+control structures: together with higher
+order functions and currying, you can do
+this quite easily in Felix, as we shall soon see.
+
+But first consider the following example:
 @flx-and-expect tut/tutorial/tut-08.08-1
+
+In this example, you see what is called a non-local
+goto: a jump into an enclosing procedure. Such jumps
+are quite OK.
+
+What you can't do is jump out of a function,
+that is, across a function boundary.
+[the reason will become clear much later]
+
+There is another interesting fact. A procedure
+nested in a module, including the top level,
+cannot jump to a label in the module.
+The reason is that executable code in a module,
+including any labels, are wrapped in an initialisation
+procedure, which is called where the module
+is defined. That initialisation procedure does not
+have the procedures defined in the module nested in it,
+instead, they're at the same level as the initialisation
+procedure. You can't jump into the initialisation procedure
+because it mightn't be active at the time the other
+procedure is called.
+
+[This may change: a better model would be a that a
+module returns the enities exported
+from it as a tuple: the procedures would
+then be nested in the initialisation routine.
+This would also make modules first class objects,
+with a type described more or less as a tuple.
+In turn this allows dynamic binding.]
+
+@h2 Procedure return
+A procedure can be terminated by a goto to a label
+at the end of the procedure:
+
 @flx-and-expect tut/tutorial/tut-08.09-0
+
+A slightly more structured way of doing this
+involves the procedural return statement:
 @flx-and-expect tut/tutorial/tut-08.09-1
+
+This can also be shortened by using a the jump statement:
+
 @flx-and-expect tut/tutorial/tut-08.09-2
+
+which is equivalent to a call statement followed by a
+return, which in turn is equivalent to a call
+followed by a goto the end of the procedure.
+
+@h2 Loops
+The final call in a procedure is known as a tail call,
+and and can be indicated by a jump statement as
+described in the previous section, though it isn't
+necessary: tail calls are detected by the compiler.
+
+There is a special kind of tail call known
+as a loop, in which the jump is made to the procedure
+containing the jump, or one or its parents.
+
+Provided no pointers are kept to any of the frames
+of the procedures between the target and current
+frame, so that all these frames would be garbage
+collected, a jump to a parent can reuse the parent's
+storage.
+
+This is a form of goto, except that the procedure
+arguments are re-initialised.
+
+Loops are automatically detected in some cases
+by the compiler. An explicit loop statement
+may also be used:
+
+
 @flx-and-expect tut/tutorial/tut-08.10-0
+@h2 Conditional Statements
+Felix supports a traditional procedural if chain.
+Here is a simple if/do/done:
+
 @flx-and-expect tut/tutorial/tut-08.11-0
+
+You can also have an else clause:
+
 @flx-and-expect tut/tutorial/tut-08.11-1
+
+and even elif clauses:
+
 @flx-and-expect tut/tutorial/tut-08.11-2
+
+Any number of statements can be used, including none.
+You can also use a conditional return or goto instead
+of the do part:
+
 @flx-and-expect tut/tutorial/tut-08.11-3
+
+@h2 More on Conditionals
+Of course conditional statements can be nested.
+
+Also, like C, you can jump into conditionals,
+although this practice isn't recommended.
+This is because conditionals are just
+shorthand for a web of labels and conditional gotos,
+so adding extra labels and gotos is possible.
 @flx-and-expect tut/tutorial/tut-08.12-0
+
+Conditionals are primarily a convenient shorthand for
+conditional expressions with procedural arguments.
+Conditional expresssions always have an else part,
+so that f1 and f2 below are equivalent:
+
 @flx-and-expect tut/tutorial/tut-08.12-1
+
+You can see we avoid the messy 'else {}'.
+
+Conditionals may contain declarations.
+However the bodies are not blocks, and the declared
+symbols are not local to the conditional bodies.
+
+The macro processor can fold
+conditional statements, in particular it can
+choose between two declarations.
+
 @flx-and-expect tut/tutorial/tut-08.12-2
+
+@h2 Failure
+The fail construction is used to abort a
+task with prejudice. A string argument may be
+given. A C++ exception is thrown. It cannot
+be caught by the Felix program (although
+it can be caught by the driver).
 @flx-and-expect tut/tutorial/tut-08.13-0
+
+@h2 Dynamic exception handling using goto
+Non local gotos are very useful for a form of
+exception handling. Consider the following example:
+
 @flx-and-expect tut/tutorial/tut-08.14-0
+
+Here, we establish a handler for an error,
+which is effectively established at the
+label resume: the handler is passed explicitly
+to the routine which may 'raise' it.
+
+
+@h2 Static exception handling using goto
+Non local gotos are very useful for another form of
+exception handling. Consider the following example:
 @flx-and-expect tut/tutorial/tut-08.15-0
+
+@h2 Procedure Values Again
+We've seen the advantages of higher order
+functions and procedures. It is possible
+to define anonymous procedure and function values
+literally, as in the next example,
+they're called lambdas, after the lambda calculus:
+
 @flx-and-expect tut/tutorial/tut-08.16-0
+
+Mickey Mouse! Checkout the shortcut on the
+second last line. You can just write
+statements in curly brackets for an
+anonymous procedure taking unit argument,
+you can leave off the
+@begin_displayed_code()
+  proc() // or
+  proc
+@end_displayed_code()
+But why does the last line work?
+The answer is: this is a special shortcut.
+A statement consisting of an anonymous
+procedure taking unit, and a semicolon ;
+is a shortcut for a call:
+@begin_displayed_code()
+  { print 1; }; // is a shortcut for ..
+  { print 1; } ();
+@end_displayed_code()
+much the same as
+@begin_displayed_code()
+  endl; // is a shortcut for ..
+  endl ();
+@end_displayed_code()
+Now, remember those ugly semicolons at the end
+of the while statement? Are you getting a glimmer?
+Hint: Felix doesn't have a while statement.
+It's a library routine!
+
+
+@h2 The While procedure
+Here is the while procedure from
+the standard library, renamed While
+to avoid a clash:
+
 @flx-and-expect tut/tutorial/tut-08.17-0
+
+Notice how simple and powerful the combination
+of the lazy expression syntax, block syntax,
+and currying are.
+
+Felix actually only has a three
+procedural control structures:
+label/goto, procedure call/return,
+and raise/attempt/catch; and even the latter
+is only supported by the compiler for syntactic
+convenience.
+
+The standard library defines several
+common procedural control structures.
+
+Note that much of the rich control is obtained
+from the functional subsystem. For example
+the match expression is purely functional,
+it simply returns one of several expressions,
+but of course those expressions can be procedures
+which are subsequently called: here the default
+call syntax fools you into believing there
+is a match statement when actually there isn't.
+
+@h2 Lambda expressions
+Felix allows a function to be specified in an expression;
+this is called a lambda expression:
 @flx-and-expect tut/tutorial/tut-08.18-0
+
+
+Of course, we have already used lambdas in the short form,
+by enclosing expressions in curly braces;
+this example shows the long form. Lambdas of course
+may have arguments:
 @flx-and-expect tut/tutorial/tut-08.18-1
+
+@h1 Contract Programming
+@h2 Preconditions and postconditions
+Functions can be given preconditions:
+
 @flx-and-expect tut/tutorial/tut-09.01-0
+Functions can also be given postconditions:
 @flx-and-expect tut/tutorial/tut-09.01-1
+
+Note the special identifier 'result' may be used to
+refer to the function result.
+
+If a pre- or post- condition is not met, a C++ exception
+is thrown. Typically this will result in a diagnostic
+error being printed the thread terminated by the driver.
+However, it is driver dependent.
+
+At present (Felix 1.1.1) recovery is not possible,
+nor is it possible to catch the exception.
+
+Procedures may also have pre and post conditions.
 @flx-and-expect tut/tutorial/tut-09.01-2
+
+@h2 Axioms and Reductions
+Felix allows you to specify rewriting rules called reductions.
+For example:
+<pre>
+  reduce idem(x:int): f ( f x ) => f x;
+</pre>
+Specifies f is idempotent, and f(f(x)) should be reduced to just f(x).
+Reductions are performed after inlining, and applied repeatly to all
+expressions until code is fully reduced. The name of a reduction
+is not significiant, it is for documentation only. Of course,
+reductions can be polymorphic.
+
+Axioms are statements of laws, for example
+<pre>
+  axiom symmetry (x:int,y:int): x + y == y + x;
+</pre>
+states that integer addition is symmetric. Axioms
+can be checked by providing test cases via calls
+to the pseudo function 'axiom_check'.
+<pre>
+  var i:int; forall i in 1 upto 5 do axiom_check (i,2); done;
+</pre>
+Axiom checks can be disable by the flxg compiler switch
+<pre>
+  --no-axiom-checks
+</pre>
+otherwise every axiom is matched against every test case,
+and each on the matches generates an assertion. An error
+is printed and the program aborted if any check fails
 @flx-and-expect tut/tutorial/tut-09.02-0
+
+@h1 Program Structure
+This section mainly deals with the Felix module system.
+
+@h2 The open directive
+It's really boring writing qualified names all
+the time. Felix provides the open directive
+to allow you to open a module so its contents
+can be accessed without using qualified names.
+Here's a simple example:
 @flx-and-expect tut/tutorial/tut-10.01-0
+ote that the open directive only affects lookup
+of unqualified names, or the first component of
+a qualified name. Lookup proceeds first in the
+current scope, before considering opened modules;
+then opened modules are considered, then the
+parent scope, then opened modules in the parent,
+etc.
+
+The name of the module
+to be opened is not looked up in the modules
+opened by open directives in the same module
+as itself. Open directives in containing modules
+are, however, examined.
+
+The reason for this last rule is as follows:
+open directives, like Felix declarations,
+are all considered in parallel; that is,
+their order of writing is irrelevant;
+hence, open directives are considered in a
+context in which none of the open directives
+have been applied.
+
+It is not an error to open modules containing
+conflicting definitions, however, it is an error
+to refer to a name with conflicting definitions.
+
+Functions with the same name in opened modules
+are overloaded. If two functions have the same
+signature, a reference will lead to an ambiguity.
+Such an ambiguity can be resolved by hiding
+such definitions in opened modules by providing
+a definition in the module containing the
+open directives. Alternatively, you can use
+a qualified name.
+
 @flx-and-expect tut/tutorial/tut-10.01-1
+
+Finally note that the effect of opening a module
+named X which contains an entity named X is well
+defined: the contained X will not be seen
+by other open directives, whereas the module X
+will not be seen by any declarations and definitions
+in the body of the containing scope.
+
+@h2 The use directive
+The open directive opens a whole module
+for internal use. Sometimes that is too coarse grained.
+The use directive allows you to import individual names into
+the current scope to reference with an unqualified name.
+The entity refered to can be a non-function, or a set of
+functions, and it can also be renamed in the use directive.
+The renaming feature can also be used on names in the current
+scope.
+
+Note that you can't sensibly use a name from an opened
+module, nor open a module using a used name (even as
+a prefix).
 @flx-and-expect tut/tutorial/tut-10.02-0
+
+You can see the two forms of the use directive:
+<pre>
+  use qualified_name;
+  use new_name = old_qualified_name;
+</pre>
+The first form requires a proper qualified name and is
+equivalent to the second form, where the new_name is the
+last component of the qualified_name.
+
+@h2 Renaming definitions
+It is possible to inject a name or family
+of function names defined elsewhere into the
+public interface of a module with the rename
+statement.
+
+Injected entities can be found both by
+unqualified and qualified lookup as if actually
+defined in the module, however the denoted
+entities are not actually part of the module,
+and in particular they're bound in the context
+in which they're actually defined.
+
+There are two forms of the rename statement,
+one for functions and one for non-functions.
+
+The non-function form injects a reference to
+a single non-function entity.
+
+The function form injects a complete overload set.
+Additional overloads can be added to the set,
+either by local definitions, or further inherit
+statements.
 @flx-and-expect tut/tutorial/tut-10.03-0
+
+Note that unlike open or use directives, injected
+names have the same priority as other names defined
+in the module: any collision with a locally defined
+function is final, and cannot be resolved.
+
+
+@h2 Modular inheritance
+It is possible to inherit all
+the symbols of a module with the inherit directive.
+Unlike the open directive, inherited symbols
+become part of the public interface of a module,
+as well as it's private interface.
+
+When lookup is performed, entities
+defined in the module are always considered
+before inherited ones. This is to ensure
+a local definition can always be used to
+resolve an ambiguity, and to ensure that
+any binding to a local definition cannot
+be hijacked by a non-local change in another
+module.
+
+Modular inclusion is transitive because
+it is specified to include the whole of
+the public interface of one module in another,
+including any symbols that module inherits.
+
+Note that as usual and unlike other programming
+languages, Felix inheritance is fully recursive:
+a module contains all the symbols it defines
+plus the transitive closure of all inherited
+modules.
+
+In particular, it is quite possible for two modules
+to inherit each other, thereby ensuring they
+publish the same set of names: note however that
+local overrides may mean the definition associated
+with a name is different for each module.
+
 @flx-and-expect tut/tutorial/tut-10.04-0
+
+@h2 Let expression
+There is a short form for match expressions.
+An expression of the form:
+<pre>
+  let letpat = expr1 in expr2
+</pre>
+is equivalent to
+<pre>
+  match expr1 with letpat => expr2 endmatch
+</pre>
+The let expression is, in effect, a prefix operator with
+the lowest precedence.
 @flx-and-expect tut/tutorial/tut-10.05-0
+
+@env.head(2,'Metatyping')
+Felix supports a metatyping or kinding system.
+The reserved identifer TYPE denotes the kind of a type.
+You can make a function that generates a type from
+other types. Of course, you can pass these functions
+to other type functions, and do currying.
+
+The type evaluator is a specialised version of the
+typed lambda calculus using eager evaluation.
+Note that in this calculus, types are values,
+and their type is TYPE, type functions are also
+values, with type TYPE->TYPE. Our calculus
+also supports type tuples of types such as
+<pre>
+TYPE * TYPE
+</pre>
+and values such as
+<pre>
+(int, long)
+</pre>
+Note that (unfortunately) in the abstraction form
+<pre>
+  fun (t:TYPE):TYPE =
+  {
+    t * t
+  }
+</pre>
+the curly braces are required, and you can even write:
+<pre>
+  fun (t:TYPE):TYPE =
+  {
+    return t * t;
+  }
+</pre>
+as for an ordinary function. This is because Felix uses
+precisely the same syntax for type functions and ordinary ones;
+that is, the parser uses the same grammar to build expressions
+and type expresssions (though each imposes constraints).
 @flx-and-expect tut/tutorial/tut-10.06-0
+
+@h1 Felix threads -- Cooperative Multitasking
+Felix supports event driven programming with
+a threading interface.
+
+[SECTION TO BE REPLACED]
+
+
+@h1 System interface
+We show how to get at the command line arguments.
+The function 'argv' returns an empty string
+if the argument index is out of range.
+argv 0 is usually the program name:
+for the flx_run driver it's the loaded library
+name: the driver name and control arguments
+are stripped. (Note: the output is platform
+dependent and so can't be automatically checked
+by the Felix build system.)
+
+<pre>
+open System;
+print "argc="; print argc; endl;
+
+var i:int;
+for_each {i=0;} {i<argc} {++i;}
+{
+  print i; print "->"; print (argv i); endl;
+};
+</pre>
+
+@h1 Typeclasses
 @flx-and-expect tut/tutorial/tut-13-0
 @flx-and-expect tut/tutorial/tut-13-1
 @flx-and-expect tut/tutorial/tut-13-2

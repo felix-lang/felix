@@ -30,8 +30,10 @@ private val big_keywords =
 private val small_keywords =
   "if", "then", "else", "elif", "endif", "do", "done",
   "in", "forall", "while", "whilst","to", "upto","downto",
-  "typematch","match","endmatch","with","requires","return","goto",
-  "package"
+  "typematch","match","endmatch","with","requires",
+  "return","goto","jump","loop",
+  "package",
+  "when", "result","expect"
 ;
 
 private val qualifiers = 
@@ -277,7 +279,7 @@ thisch:> // same char, reconsider it
   println$ "Unexpected drop thru";
 
 fin:>
-   println "outof data, final write ..";
+   //println "outof data, final write ..";
    w(); // whatever is left over gets written
    return out;
 }
