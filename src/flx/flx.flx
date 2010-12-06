@@ -450,7 +450,7 @@ gen get_stdout(x:string) = {
     if Text_file::valid fout do
       var output = Text_file::load fout;
       var result = Process::pclose fout; 
-      return result, output;
+      return (Process::WEXITSTATUS result), output;
     else
       println$ "Unable to run command '" + x "'";
       return -1,"";

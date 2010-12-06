@@ -2,4 +2,13 @@
 module Process {
   gen popen_in: string -> Text_file::input_text_file = 'popen($1.data(), "r")';
   gen pclose: Text_file::input_text_file -> int = "pclose($1)";
+
+  gen WIFCONTINUED: int -> int = "WIFCONTINUED($1)";
+  gen WIFEXITED: int -> int = "WIFEXITED($1)";
+  gen WISIGNALED: int -> int = "WISIGNALED($1)";
+  gen WIFSTOPPED: int -> int = "WIFSTOPPED($1)";
+  gen WEXITSTATUS: int -> int = "WEXITSTATUS($1)";
+  gen WTERMSIG: int -> int = "WTERMSIG($1)";
+  gen WCOREDUMP: int -> int = "WCOREDUMP($1)";
+  gen WSTOPSIG: int -> int = "WSTOPSIG($1)";
 }
