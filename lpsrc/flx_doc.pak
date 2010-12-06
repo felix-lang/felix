@@ -105,10 +105,6 @@ Felix async I/O library (interscript):
 @cite_url("rtl/flx_faio/en_flx_faio_top.html")
 @p()
 
-TRE: Ville Laurikari Tagged Regexp library (interscript):
-@cite_url("rtl/tre/en_tre_top.html")
-@p()
-
 @head(3,"Elkhound",nospawn=1)
 Elkhound: Scott McPeak's Elkhound GLR Parser(interscript):
 @p()

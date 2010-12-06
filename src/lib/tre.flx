@@ -2,7 +2,7 @@ module Tre
 {
   open C_hack;
   requires package 'tre';
-  header '#include "tre-regex.h"';
+  header '#include "tre/regex.h"';
   type tre_regex_t = "regex_t";
 
   const tre_version: string = "tre_version()";
