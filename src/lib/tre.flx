@@ -2,13 +2,13 @@ module Tre
 {
   open C_hack;
   requires package 'tre';
-  header '#include "tre/regex.h"';
+  header '#include "tre/tre.h"';
   type tre_regex_t = "regex_t";
 
   const tre_version: string = "tre_version()";
 
   private fun _tre_regcomp: ptr[tre_regex_t] * string  -> int =
-    "regncomp($1,$2.data(),$2.size(),REG_EXTENDED)"
+    "tre_regncomp($1,$2.data(),$2.size(),REG_EXTENDED)"
   ;
 
   fun tre_regcomp (x:string): opt[tre_regex_t] = {
@@ -38,7 +38,7 @@ module Tre
     ptr[regmatch_t]        // array to hold matches
     -> int
   =
-    "regnexec($1,$2.data(),$2.size(),$3,$4,0);"
+    "tre_regnexec($1,$2.data(),$2.size(),$3,$4,0);"
   ;
 
   fun tre_regexec (re_in: tre_regex_t) (x:string): int * int * ptr[regmatch_t] =

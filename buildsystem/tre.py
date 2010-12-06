@@ -80,12 +80,12 @@ def build_runtime(phase):
         'NO_MINUS_C_MINUS_O': None,
         'PACKAGE': '"tre"',
         'PACKAGE_TARNAME': '"tre"',
-        'PACKAGE_VERSION': '"0.7.6"',
+        'PACKAGE_VERSION': '"0.8.0"',
         'STACK_DIRECTION': None,
-        'VERSION': '"0.7.6"',
+        'VERSION': '"0.8.0"',
         'PACKAGE_BUGREPORT': '"tre-general@lists.laurikari.net"',
         'PACKAGE_NAME': '"TRE"',
-        'PACKAGE_STRING': '"TRE 0.7.6"',
+        'PACKAGE_STRING': '"TRE 0.8.0"',
         'PACKAGE_TARFILE': 'tre',
         'STDC_HEADERS': 1,
         'TRE_APPROX': 1,
@@ -95,10 +95,10 @@ def build_runtime(phase):
         'TRE_SYSTEM_REGEX_H_PATH': None,
         'TRE_USE_ALLOCA': alloca_h.alloca is not None,
         'TRE_USE_SYSTEM_REGEX_H': None,
-        'TRE_VERSION': '"0.7.6"',
+        'TRE_VERSION': '"0.8.0"',
         'TRE_VERSION_1': '0',
-        'TRE_VERSION_2': '7',
-        'TRE_VERSION_3': '6',
+        'TRE_VERSION_2': '8',
+        'TRE_VERSION_3': '0',
         'TRE_WCHAR': wchar_h.header is not None,
         'WCHAR_MAX': None,
         'WCHAR_T_SIGNED': None,
@@ -122,7 +122,7 @@ def build_runtime(phase):
         patterns)
 
     buildsystem.copy_to(phase.ctx, phase.ctx.buildroot / 'lib/rtl/tre', [
-        path / 'lib/regex.h',
+        path / 'lib/tre.h',
         phase.ctx.buildroot / path / 'lib/tre-config.h'])
 
     dst = 'lib/rtl/tre'
