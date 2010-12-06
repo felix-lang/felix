@@ -61,12 +61,11 @@ nextc:>
   | doc =>
     { 
       if char "@" == ch do 
-        if b != "" do bp; write_string(markdown b); done
+        if b != "" do bp; write_string(markdown b); ep; done
         s = cmd; b="";
       elif char "\n" == ch and char "\n" == ahead(1) do 
-        write_string(markdown b);
+        bp; write_string(markdown b); ep;
         b="";
-        ep;
       else cp; 
       done
       goto nextc;
@@ -111,7 +110,7 @@ nextc:>
             write_string("</pre>\n");
             write_string("<pre class='inclusion'>"+fname+".expect</pre>\n");
             var xpected = get_flx(fname+".expect");
-            write_string("<pre class='expected'>\n"); 
+            write_string("<pre class='expected'>"); 
             write_string(xpected);
             write_string("</pre>"); 
           };

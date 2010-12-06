@@ -22,26 +22,28 @@ flx hello
 at the command prompt. This assumes you have installed Felix of course!
 You will find quite a few files are produced. Here's what they're for:
 <pre>
-hello.par        cached parse tree (AST)
-hello.hpp        C++ header file
-hello.cpp        C++ translation of your program
-hello.ctors_cpp  C++ Constructors for generated classes
-hello.rtti       C++ Run time type information
-hello.includes   C++ Includes for external libraries
-hello.dep        List of all the Felix files your program depends on
-hello.resh       List of all the abstract resources required to build your program
-hello.os         object file for dynamic linkage
-hello.dll        dynamic link library: .so on Linux, .dylib on OSX, .dll on Windows
+  hello.par        cached parse tree (AST)
+  hello.hpp        C++ header file
+  hello.cpp        C++ translation of your program
+  hello.ctors_cpp  C++ Constructors for generated classes
+  hello.rtti       C++ Run time type information
+  hello.includes   C++ Includes for external libraries
+  hello.dep        List of all the Felix files your program depends on
+  hello.resh       List of all the abstract resources required to build your program
+  hello.os         object file for dynamic linkage
+  hello.dll        dynamic link library: .so on Linux, .dylib on OSX, .dll on Windows
 </pre>
-To build a statically linked executable, do this instead:
+The suffices may varying depending on your OS. To build a statically linked executable, do this instead:
 <pre>
 flx --static hello
 </pre>
 and you get these files
 <pre>
-hello.o         object file for static linkage
-hello           statically linked executable
+  hello.o         object file for static linkage
+  hello           statically linked executable
 </pre>
+For more details see <em>somewhere</em>.
+
 Felix is both a scripting language and statically type-checked
 fully compiled to native code high performance application
 development language.
@@ -166,55 +168,54 @@ defined in the standard library by binding to
 their C equivalents.
 
 In the following table, the Felix names of the basic integer
-types are given, along with the corresponding C names. Felix allows
-either the Felix name or any valid C name to be used for these types.
-For example 'unsigned' is an an acceptable type name in Felix
-because it is in C.
+types are given, along with the corresponding C names.
 
 The table also lists the lower case versions of the type suffices allowed
 for literals of that type. Either or both the unsigned designator 'u'
 or the other part may be upper case instead (however lL is not permitted
 for long long, both letters must be either lower or upper case).
-@begin_table("Felix name","C name","Suffix")
-@table_row("tiny","signed char","t")
-@table_row("utiny","unsigned char","ut, tu")
-@table_row("short","signed short int","s")
-@table_row("ushort","unsigned short int","us, su")
-@table_row("int","signed int","<none>")
-@table_row("uint","unsigned int","u")
-@table_row("long","signed long int","l")
-@table_row("ulong","unsigned long int","lu, ul")
-@table_row("vlong","signed long long","ll, v")
-@table_row("uvlong","unsigned long long","ull, llu, uv, vu")
-@end_table()
+<pre>
+  Felix name  C name              Suffix
+  tiny        signed char         t
+  utiny       unsigned char       ut, tu
+  short       signed short int    s
+  ushort      unsigned short int  us, su
+  int         signed int   
+  uint        unsigned int        u
+  long        signed long int     l
+  ulong       unsigned long int   lu, ul
+  vlong       signed long long    ll, v
+  uvlong      unsigned long long  ull, llu, uv, vu
+</pre>
 
 The following aliases are also provided, in this
 case the C name may not be used:
-@p()
-@begin_table("Felix name","C name")
-@table_row("size","size_t")
-@table_row("ptrdiff","ptrdiff_t")
-@table_row("intptr","intptr_t")
-@table_row("uintptr","uintptr_t")
-@table_row("intmax","intmax_t")
-@table_row("uintmax","uintmax_t")
-@end_table()
-@p()
+
+<pre>
+  Felix name    C name
+  size          size_t
+  ptrdiff       ptrdiff_t
+  intptr        intptr_t
+  uintptr       uintptr_t
+  intmax        intmax_t
+  uintmax       uintmax_t
+</pre>
 
 The following aliases for exact integers are also provided, in this
 case the C name may not be used:
-@p()
-@begin_table("Felix name","C name","Suffix")
-@table_row("int8","int8_t","i8")
-@table_row("uint8","uint8_t","u8")
-@table_row("int16","int16_t","i16")
-@table_row("uint16","uint16_t","u16")
-@table_row("int32","int32_t","i32")
-@table_row("uint32","uint32_t","u32")
-@table_row("int64","int64_t","i64")
-@table_row("uint64","uint64_t","u64")
-@end_table()
-@p()
+
+<pre>
+  Felix name  C name     Suffix
+  int8        int8_t     i8
+  uint8       uint8_t    u8
+  int16       int16_t    i16
+  uint16      uint16_t   u16
+  int32       int32_t    i32
+  uint32      uint32_t   u32
+  int64       int64_t    i64
+  uint64      uint64_t   u64
+</pre>
+
 Felix guarantees all the addressing and exact integer aliases exist,
 even if the C89, C++ or C99 counterparts do not. When the C/C++ counterparts
 do exist, Felix binds to the same integer type, otherwise it binds to
@@ -222,69 +223,495 @@ the largest appropriate integer type (for example, if both long
 and long long exist and are the same size as a pointer, and
 intptr_t is not defined by C or C++, then Felix choses long long
 as the alias).
-@p()
+
 Arithmetic types support the same operations as ISO C99,
 except that Felix does not support bitwise operations on
 signed integers (shifts are supported, they're multiplications
 by powers of two).
-@p()
+
 Overflow of operations on signed types is undefined
 behaviour. Operations on unsigned types cannot overflow
 because they are defined as the modular residual of the
 underlying mathematical operation on integers.
-@p()
+
 Thus, operations on exact unsigned integral types are fully
 deterministic, and operations on signed integral types
 are also deterministic when they do not overflow.
-@p()
+
 An integer literal consists of a prefix, numeric form and suffix.
 The suffix is noted in the tables above.
 Either the size indicator or signedness indicator 'u' or 'i'
 can be wholly capitalised (but note that lL is not allowed).
-@p()
+
 The prefix denotes the radix as in the table below:
-@begin_table("Prefix","Radix", "name", "Allowed digits")
-@table_row("0b,0B","2", "binary","01")
-@table_row("0o,0O","8", "octal","01234567")
-@table_row("0d,0D,<none>","10", "decimal","0123456789")
-@table_row("0x,0X","16", "hexadecimal","0123456789ABCDEFabcdef")
-@end_table()
-@p()
+<pre>
+  Prefix      Radix    name         Allowed digits
+  0b 0B       2        binary       01
+  0o 0O       8        octal        01234567
+  0d 0D none  10       decimal      0123456789
+  0x 0X       16       hexadecimal  0123456789ABCDEFabcdef
+</pre>
+
 The numeric form consists of digits from the table above,
 with optional underscores inserted for layout purposes.
 Two underscores in a row are not permitted, one is allowed
 between digits, or a digit and the prefix or suffix.
 
 @flx-and-expect tut/tutorial/tut-02.02.01-0
+
+@h3 Mixed Mode Integers
+Felix by default only supports arithmetic on integers
+of exactly the same type. To enable mixed mode arithmetic
+open the MixedInt module.
+
 @flx-and-expect tut/tutorial/tut-02.02.02-0
+
+@h3 Floating Point Reals
+Felix provides 3 floating point types.
+<pre>
+  Felix name     C++ name
+  float          float
+  double         double
+  ldouble       long double
+</pre>
+
 @flx-and-expect tut/tutorial/tut-02.02.03-0
+@h3 Floating Point Complex
+Felix provides 3 floating point types.
+<pre>
+  Felix name    C++ name
+  fcomplex      std::complex&lt;float&gt;
+  dcomplex      std::complex&lt;double&gt;
+  lcomplex      std::complex&lt;long double&gt;
+</pre>
+
 @flx-and-expect tut/tutorial/tut-02.02.04-0
+@h3 Floating Matches
+@obsolete
+Felix provides special matching for
+floating point. Here are some examples:
+@
 @flx-and-expect tut/tutorial/tut-02.02.05-0
+
+Things to note are: if there is NaN test,
+it must be the first test. If there is
+a test -inf .. inf, it tests for a non-NaN,
+and must be the last test. A NaN will fail
+all tests other than a test for NaN.
+
+A range test is neither inclusive nor exclusive!
+That's why there is no test for a particular float,
+and why the ranges above overlap.
+Welcome to constructive mathematics!
+
+Note that _floating_ point provides exact
+comparisons; however, the patterns above
+apply to constructive reals. The last
+example explains this best: you can't do
+non-constructive matches. [Use IEEE type
+for exact FP?]
+
+
 @flx-and-expect tut/tutorial/tut-02.03-0
+
+@h3 Characters
+Felix provides two character types: char and uchar.
+Type char provides 256 code points, whereas uchar
+provides at least 2147483648 (31 bits worth).
+
+There are no character literals. You can use the ord
+function to obtain the numeric value of a char or uchar
+as an int or uint32 respectively.
+
+Constructors for char and uchar convert any
+integer to the corresponding character. The result is
+undefined for negative values of signed types.
+
+The char and uchar constructors can be applied to a string
+of at least length 1 to obtain a literal, for example:
+
+@h2 Strings
+Felix provides two kinds of strings: 8-bit and 32-bit,
+denoted by string and ustring respectively.
+@p()
+Both kinds of string are intended to provide a universal
+representation of human readable text using the
+ISO-10646/Unicode character set.
+
+Both kinds of string encode 32-bit values representing
+ISO-10646 code points. Strings use UTF-8, whilst ustrings
+use UCS-4.
+
+Both kinds of string literals are replaced where they
+occur with named constants with internal linkage
+of types {basic_string&lt;char&gt;}, and
+{basic_string&lt;uint32_t&gt;}.
+
+String literals are output in the C files as C string
+literals with all UTF-8 encoding expressed with hex
+escapes, surrounded by a constructor for {basic_string&lt;char&gt;}.
+
+Ustrings are surrounded by a Felix function which constructs
+a {basic_string&gt;uint32_t&lt;} from an 8 bit C string literal
+by decoding UTF-8 sequences.
+
+Both kinds of string admit \uXXXX and \UXXXXXXXX escapes,
+as well as the usual C escapes \\, \', \", \r, \n, \t, \b, \v, \f
+for slosh (backslash), quote, double quote, return, newline, tab,
+bell, vertical tab, and form feed, respectively.
+
+Octal and hex escapes are NOT allowed: strings are
+for internationalisable human text, and do not represent
+arbitrary raw memory extents.
+
+Although not part of the lexicology, note here two special
+forms for strings: a string may be applied to a string, or,
+a string may be applied to an integer. The first case is
+remodelled as a concatenation, and the second as the concatenation
+of the string and the ISO-10646 code point the integer represents.
+Note that if the string is 8 bit, UTF-8 encoding will be applied.
 @flx-and-expect tut/tutorial/tut-02.04-0
+@h1 Expressions
+@h2 Identifiers
+Felix identifiers consists of a string of
+characters. The first character must be a letter
+or underscore, subsequent characters may be one of a
+letter, underscore, apostrophe or digit.
+
+Certain identifiers are reserved as keywords.
+Identifiers beginning with an underscore are
+reserved to Felix. Identifiers containing
+more than one underscore in a row are
+reserved to Felix. Reserved identifiers may
+be used by programmers, but not defined.
+
+The letters referred to consist of the usual
+A-Z and a-z, but also include any Unicode/ISO10646
+code point recommended as a letter for the purpose
+of use in identifiers of programming languages
+by ISO/IEC PDTR 10176, as adopted by ISO C++.
+A full table can be found in the reference manual,
+Felix Standard, and source code.
+
+These code points must be represented using UTF-8,
+or by embedded Universal Character Names (ucns).
+These consist of a \uXXXX or \UXXXXXXXX where the
+X's are hex digits. Felix normalises all such
+encodings so identifiers match properly.
+
 @flx-and-expect tut/tutorial/tut-03.01-0
+
+@h2 Applications: Overloading
+Felix supports overloading. To demonstrate this,
+we'll make a small modification to the hello
+world program. You can compile and run the
+program as before, just change the example number.
+
 @flx-and-expect tut/tutorial/tut-03.02-0
+Here you can see that there are two procedures,
+one to print strings, and one to print ints,
+but they're both called 'print'.
+
+Felix allows procedures and functions to be
+overloaded, as does C++. However, unlike C++,
+Felix has no automatic conversions, and
+overload matching must be exact.
+
+@h2 Operators
+Felix provides many of the operators found
+in C. Here is are some examples with equivalent
+function calls.
+Note that Felix does not have builtin expression syntax:
+the grammar, including expressions, is defined in the library.
+
 @flx-and-expect tut/tutorial/tut-03.02-1
+@h1 Simple Statements
+@h2 Value declaration
+Felix allows values to be declared using the 'val'
+keyword.
 @flx-and-expect tut/tutorial/tut-04.01-0
+
+There are three values declared here, 'i','j', and 'k'.
+The first two have the type 'int', because '40' and '2'
+have the type int, whilst 'k' has the type 'int'
+because the addition function which takes as
+an argument a pair of 'int', returns an 'int'.
+
+Notice you did not have to declare the type of
+the values. This is called 'type inference':
+the compiler works out the type from the initial
+value for you. You can declare the type of a variable
+if you want: the following program is equivalent
+to the one above:
 @flx-and-expect tut/tutorial/tut-04.01-1
+
+but it is never necessary for values: an initialiser
+must always be given. If you do declare the type,
+Felix will still deduce the type from the initialiser,
+and issue an error message if the types don't agree.
+
+Values are constants: they cannot be modified,
+and, as we will see later, they cannot be addressed.
+This means the compiler is free to load the value into a register
+or perform other optimisations (including elide the storage
+for the value entirely).
+
+There is a shortcut form for declaring values
+using the := operator:
+
 @flx-and-expect tut/tutorial/tut-04.01-2
+@h2 Variable declaration
+Felix also support mutable variables, which are
+declared with the 'var' keyword.
 @flx-and-expect tut/tutorial/tut-04.02-0
+Like value declarations, the type of a variable
+does not need to be declared if it is initialised.
+However, as you can see uninitialised variables
+are also permitted, and in this case the type
+must be given.
+
+You will notice the assignment in the line:
+<pre>
+  j = i + i;
+</pre>
+
+Naturally, variables must be initialised
+or assigned to before they are used, as in C.
+
+You will also have noticed the 'while' loop,
+one of the control structures Felix provides:
+it appears to work the same way as a 'while' loop in C,
+except that a trailing ; is strangely required,
+and the condition is given in curly brackets.
+We'll find out exactly why later, but here is a hint:
+there is no while statement in Felix!
+
+
+@h3 Assignments
+It is sometimes useful to simultaneously assign variables
+from the components of a tuple, which can be done as shown below.
+
+We may also wish to initialise multiple values, also shown below.
+
+More generally, you may wish to assign one component to an
+existing variable, create a new value binding for the second component,
+and a new variable for the third. This can be done with the 'def'
+keyword as illustrated.
+
+The patterns of vals and vars on the left hand side of such
+a statement is called an lvalue pattern. (Also sometime known
+as a tie).
+
+
 @flx-and-expect tut/tutorial/tut-04.02.01-0
+
+@h3 Other Mutators
+Felix provides a range of mutators,
+these being assignment operators and counting operators.
+Below is a list of operators and equivalent procedure names.
+
 @flx-and-expect tut/tutorial/tut-04.02.02-0
+
+@h2 Functions
+
+Felix allows you to define functions,
+although the syntax is different from C.
+Here is an example:
+
 @flx-and-expect tut/tutorial/tut-04.03-0
+
+It is clear that mid returns an int,
+and you might think that 'mid' has two arguments.
+This is not so. All functions in Felix have
+exactly one argument. Well, almost all of them :-)
+I'll explain shortly.
+
+Functions in Felix may not have any side effects,
+except for diagnostic outputs.  Note however that
+functions may modify their own private data,
+that is, may contain and mutate local variables.
+
+Whilst in the above example the return type of the
+function is clearly given, it is not necessary,
+as illustrated by the next example:
+
 @flx-and-expect tut/tutorial/tut-04.03-1
+
+which is equivalent to the one above.
+Note, however, that the types of the arguments
+must be given.
+
+@h3 Functions with shorthand syntax
+Functions can also be given with a shorthand syntax
+when the result can be written easily as a single
+expression:
+
 @flx-and-expect tut/tutorial/tut-04.03.01-0
+
+@h3 Primitive Functions
+A function can be defined in C++ instead of Felix:
+
 @flx-and-expect tut/tutorial/tut-04.03.02-0
+
+The special notation $1 and $2 refers to the first
+and second arguments, respectively. The function type
+must be given with the arguments separated by asterisks
+and the result following an arrow. Note that this is the
+standard mathematical notation for a function whose
+argument is cartesian product.
+
+The quoted code on the right is an arbitrary C++ expression
+which will be emitted by the code generator as written,
+with the $ terms replaced by the C++ encoding of the corresponding
+arguments. Felix generally takes care of precedences automatically
+but there is a full system for telling Felix precedences, so
+the emitted code doesn't contain so many brackets as to become
+unreadable.
+
+Note that Felix does not parse or type the C++ code: the programmer
+is responsible for getting it right.
+
+Felix has a sophisticated system for binding to C++ code:
+this function binding technology is one small but important part
+of it.
+
+@h3 C Functions
+Felix normally generates C++ applicative objects for
+non-inlined Felix functions, although it often simplifies
+them to C functions, or even elides them completely if
+all calls are inlined.
+
+If you need to generate a C function with a specific C type
+for use as a callback, you can use the cfun keyword in place
+of the fun keyword:
+
 @flx-and-expect tut/tutorial/tut-04.03.03-0
+Note that the function is still written in Felix code,
+however there are certain constraints on such functions,
+such as their inability to use the garbage collector
+or perform any service calls, including do any I/O on
+synchronous channels.
+
+Thus, the code you write in a cfun must clearly reduce
+to ordinary C code. This is your responsibility as the
+programmer: the compiler does not check if the function
+is suitable for reduction to C, it just generates the
+C form of a function unconditionally. This will result
+in a C++ compile time error if you exceed the capabilities
+of C.
+
+Note: a cfun has an ordinary Felix function type,
+not a C function pointer type.
+
 @flx-and-expect tut/tutorial/tut-04.03.03-1
+
+@h3 Functions with pattern syntax
+There is yet another syntax for functions based
+on pattern matching:
 @flx-and-expect tut/tutorial/tut-04.03.04-0
+This will be explained in more detail when we deal with
+pattern matching and variant types later.
+
+@h3 Constructors
+When introducing a new primitive data type via a binding to a C++
+type, it is often useful to use the type name as a function
+which constructs an instance of this type. We saw this in
+the preface already:
+
 @flx-and-expect tut/tutorial/tut-04.03.05-0
+
+The keyword ctor specifies a constructor for the given
+type, which is called using that type as a function name.
+A constructor can be given for a type alias given by
+a typedef too. Note that constructors specify only
+the function arguments, since the return type is implicit
+in the type name.
+
+@h2 Procedures
+Felix allows you to define procedures.
+They're like functions, but they can't return values.
+On the other hand, procedures may have side effects,
+and they may read input from the driver's message
+dispatch queue (which you will learn about much later).
+
+Here is an example of a procedure definition
+and use:
+
 @flx-and-expect tut/tutorial/tut-04.04-0
+
+There is a special shortcut for calling procedures
+with unit argument: if the procedure is called
+by its name, the () can be elided:
+
 @flx-and-expect tut/tutorial/tut-04.04-1
+
+More precisely, a statement consisting
+of an (almost) atomic expression
+is taken to be a call to a procedure with
+unit argument. Note there is no confusion
+with the use of a procedure name as an expression,
+that always represents the closure of the procedure
+at the point of writing.
+
+@h2 Fibres
+Felix procedures can also be used as threads.
+To do this, use the spawn_fthread library procedure
+to create a new thread of control which is scheduled
+for execution.
+
+When a fibre is scheduled it runs until it terminates
+or explicitly yields control. Yielding is done by
+reading or writing on a synchronous channel. Bidirectional
+are created with the mk_schannel library function.
 @flx-and-expect tut/tutorial/tut-04.05-0
+
+@h2 Generators
+In Felix, functions are not allowed to have side-effects.
+This does not mean they are pure, because they can
+depend on variables. However they cannot modify any
+variables outside their own bodies.
+
+It is still possible to write functions which have
+side-effects, they just have to be explicitly noted
+as generators with the gen keyword. For example:
+
 @flx-and-expect tut/tutorial/tut-04.06-0
+
+Note that generators must be used even if the side-effect
+is environmental, for example reading a file may move
+the current file pointer. Generators must always be used
+when returning the address of a fresh object.
+
+The semantics of functions allow Felix to duplicate
+or delay calling them: a generator disables this feature
+and forces the function to be called exactly once and
+the result assigned to a variable which replaces the
+application inside the enclosing expression.
+
+In other words, function calls may be lazy, whereas
+generators are always evaluated eagerly.
+
 @flx-and-expect tut/tutorial/tut-04.07-0
+
+@h2 Iterators
+A generator may also yield a value and be resumed later.
+This is done in two steps. First the generator uses the
+yield statements instead of the return statements.
+Secondly, the generator itself must be stored in a variable.
 @flx-and-expect tut/tutorial/tut-04.08-0
+Note that when calling a generator which has yielded
+the parameters are re-assigned on every call, however
+control continues from the last yield point. Calling
+a generator which has returned is not permitted.
+
+A generator using in this way is sometimes called
+an iterator.
+
+Generators are a functional form of a procedure.
+Note that generators cannot read or write channels,
+you have to use an actual procedure for that.
+
+@h2 Threads
 @flx-and-expect tut/tutorial/tut-05.01-0
 @flx-and-expect tut/tutorial/tut-05.02-0
 @flx-and-expect tut/tutorial/tut-06.01-0

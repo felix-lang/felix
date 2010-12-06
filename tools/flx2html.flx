@@ -2,7 +2,9 @@
 module Flx2Html {
 private val big_keywords = 
   "module",
+  "cfun",
   "fun",
+  "enum",
   "gen",
   "proc",
   "ctor",
