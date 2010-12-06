@@ -84,9 +84,15 @@ def build_flx(phase):
                 'INCLUDES': '"re2/re2.h"',
             })
 
+    tre_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
+            'src/tre/tre.fpc', 'src/tre/tre.fpc.in', {
+                'SHARED_LIB': '-ltre_dynamic',
+                'STATIC_LIB': '-ltre_static',
+                'INCLUDES': '"tre/tre.h"',
+            })
 
     dsts.extend(buildsystem.copy_fpc_to_config(phase.ctx,
-        [gl_fpc, glu_fpc, glext_fpc, glut_fpc, re2_fpc]))
+        [gl_fpc, glu_fpc, glext_fpc, glut_fpc, re2_fpc, tre_fpc]))
 
     dsts.extend(buildsystem.copy_to(phase.ctx,
         phase.ctx.buildroot / 'lib/GL', Path('src/opengl/*.flx').glob()))
