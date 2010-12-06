@@ -1,6 +1,7 @@
 // Felix
 module Flx2Html {
 private val big_keywords = 
+  "macro",
   "module",
   "cfun",
   "fun",

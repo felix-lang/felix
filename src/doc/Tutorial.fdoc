@@ -1878,7 +1878,7 @@ print "argc="; print argc; endl;
 var i:int;
 for_each {i=0;} {i<argc} {++i;}
 {
-  print i; print "->"; print (argv i); endl;
+  print i; print "-&gt;"; print (argv i); endl;
 };
 </pre>
 
