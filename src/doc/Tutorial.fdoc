@@ -1871,15 +1871,16 @@ are stripped. (Note: the output is platform
 dependent and so can't be automatically checked
 by the Felix build system.)
 
-<pre>
+@felix
 open System;
 print "argc="; print argc; endl;
 var i:int;
+
 for_each {i=0;} {i<argc} {++i;}
 {
-  print i; print "-&gt;"; print (argv i); endl;
+  print i; print "->print (argv i); endl;
 };
-</pre>
+@
 
 @h1 Typeclasses
 @flx-and-expect tut/tutorial/tut-13-0
