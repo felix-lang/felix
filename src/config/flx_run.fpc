@@ -1,0 +1,4 @@
+Name: flx_run
+Description: Felix standard driver, no async support
+Version: $Id$
+Requires: flx_pthread flx flx_gc

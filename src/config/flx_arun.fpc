@@ -1,0 +1,3 @@
+Name: flx_arun
+Description: Felix standard driver, async support
+Requires: flx_async faio demux flx_pthread flx flx_gc

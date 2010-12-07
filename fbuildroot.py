@@ -374,7 +374,10 @@ def configure(ctx):
     # since the stored *.fpc files are for Unix only
 
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/config',
-        pattern='*.fpc')
+        pattern='*.{fpc')
+
+    buildsystem.copy_to(ctx, ctx.buildroot/'config/target', 
+        Path('src/config/target/*.hpp').glob())
 
     # this is a hack: assume we're running on Unix.
     # later when Erick figures out how to fix this

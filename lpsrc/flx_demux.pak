@@ -27,17 +27,6 @@ Version: $Id$
 Requires: flx_pthread
 flx_requires_driver: flx_arun
 
-@select(tangler('config/target/flx_demux_config.hpp'))
-#ifndef __FLX_DEMUX_CONFIG_H__
-#define __FLX_DEMUX_CONFIG_H__
-#include "flx_rtl_config.hpp"
-#ifdef BUILD_DEMUX
-#define DEMUX_EXTERN FLX_EXPORT
-#else
-#define DEMUX_EXTERN FLX_IMPORT
-#endif
-#endif
-
 @select(tangler('config/target/demux_sockety_config.hpp'))
 #ifndef __DEMUX_SOCKETY_CONFIG_H__
 #define __DEMUX_SOCKETY_CONFIG_H__
