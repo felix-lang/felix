@@ -1,4 +1,0 @@
-Name: OpenGL
-Description OpenGL graphics
-requires_dlibs: @SHARED_LIBS@
-requires_slibs: @STATIC_LIBS@

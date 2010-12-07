@@ -410,8 +410,9 @@ def configure(ctx):
 
     # enable this on osx to clobber any fpc files 
     # where the generic unix ones are inadequate
-    #buildsystem.copy_to(ctx,
-    #    ctx.buildroot / 'config', Path('src/config/osx/*.fpc').glob())
+    if 'macosx' in target.platform:
+      buildsystem.copy_to(ctx,
+          ctx.buildroot / 'config', Path('src/config/macosx/*.fpc').glob())
 
 
 

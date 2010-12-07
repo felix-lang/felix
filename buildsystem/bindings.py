@@ -27,63 +27,6 @@ def build_flx(phase):
     dsts.extend(buildsystem.copy_to(phase.ctx,Path (phase.ctx.buildroot)/"lib/gnu/gmp",
             Path('src/lib/gnu/gmp/*.flx').glob()))
 
-    if 'macosx' in phase.platform:
-        gl_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
-            'src/opengl/gl.fpc', 'src/opengl/gl.fpc.in', {
-                'SHARED_LIBS': '-framework OpenGL',
-                'STATIC_LIBS': '-framework OpenGL',
-            })
-
-        glu_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
-            'src/opengl/glu.fpc', 'src/opengl/glu.fpc.in', {
-                'SHARED_LIBS': '-framework OpenGL',
-                'STATIC_LIBS': '-framework OpenGL',
-            })
-
-        glext_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
-            'src/opengl/glext.fpc', 'src/opengl/glext.fpc.in', {
-                'SHARED_LIBS': '-framework OpenGL',
-                'STATIC_LIBS': '-framework OpenGL',
-            })
-
-        glut_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
-            'src/opengl/glut.fpc', 'src/glut/glut.fpc.in', {
-                'SHARED_LIBS': '-framework GLUT',
-                'STATIC_LIBS': '-framework GLUT',
-            })
-    else:
-        gl_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
-            'src/opengl/gl.fpc', 'src/opengl/gl.fpc.in', {
-                'SHARED_LIBS': '-lGL',
-                'STATIC_LIBS': '-lGL',
-            })
-
-        glu_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
-            'src/opengl/glu.fpc', 'src/opengl/glu.fpc.in', {
-                'SHARED_LIBS': '-lGLU',
-                'STATIC_LIBS': '-lGLU',
-            })
-
-        glext_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
-            'src/opengl/glext.fpc', 'src/opengl/glext.fpc.in', {
-                'SHARED_LIBS': '-lGLEXT',
-                'STATIC_LIBS': '-lGLEXT',
-            })
-
-        glut_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
-            'src/opengl/glut.fpc', 'src/glut/glut.fpc.in', {
-                'SHARED_LIBS': '-lglut',
-                'STATIC_LIBS': '-lglut',
-            })
-
-    # THIS DOESN'T BELONG HERE, re2 is now builtin to felix
-    re2_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
-            'src/re2/re2.fpc', 'src/re2/re2.fpc.in', {
-                'SHARED_LIB': '-lflx_re2_dynamic',
-                'STATIC_LIB': '-lflx_re2_static',
-                'INCLUDES': '"re2/re2.h"',
-            })
-
     tre_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
             'src/tre/tre.fpc', 'src/tre/tre.fpc.in', {
                 'SHARED_LIB': '-ltre_dynamic',

@@ -1,5 +1,0 @@
-Name: GLU
-Description: GLU graphics
-requires_dlibs: @SHARED_LIBS@
-requires_slibs: @STATIC_LIBS@
-Requires: gl

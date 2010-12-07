@@ -1,0 +1,5 @@
+Name: GLUT
+Description: GLUT graphics
+requires_dlibs: -lglut
+requires_slibs: -lglut
+Requires: gl glu
