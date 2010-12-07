@@ -1,5 +1,4 @@
 // test Judy1
-include "judy";
 open Judy;
 open C_hack;            // ptr...
 

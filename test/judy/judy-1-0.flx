@@ -1,4 +1,3 @@
-include "judy";
 open Judy;
 open C_hack;
 

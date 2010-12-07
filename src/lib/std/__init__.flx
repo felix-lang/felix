@@ -50,6 +50,7 @@ include "std/lexer";
 
 include "std/rtti";
 include "std/re2";
+include "std/judy";
 
 // Version
 include "std/version";

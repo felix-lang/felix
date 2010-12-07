@@ -24,15 +24,14 @@ def build_runtime(phase):
     if 'win32' in phase.platform:
         srcs.extend((path / 'flx_glob.cpp', path / 'unixem_util.cpp'))
 
-    return Record(
-        #static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
-        #    macros=macros,
-        #    libs=[lib.static for lib in libs]),
-        shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
-            includes=includes,
-            macros=macros,
-            libs=[lib.shared for lib in libs]))
+        return Record(
+          static=buildsystem.build_cxx_static_lib(phase, dst, srcs,
+              macros=macros,
+              libs=[lib.static for lib in libs]),
+          shared=buildsystem.build_cxx_shared_lib(phase, dst, srcs,
+              includes=includes,
+              macros=macros,
+              libs=[lib.shared for lib in libs]))
+    else:
+        return Record()
 
-def build_flx(phase):
-    return buildsystem.copy_flxs_to_lib(phase.ctx,
-        Path.glob('src/unixem/*.flx'))
