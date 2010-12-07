@@ -12,6 +12,7 @@ from fbuild import ConfigFailed
 from fbuild.functools import call
 from fbuild.path import Path
 
+from buildsystem import version
 # ------------------------------------------------------------------------------
 
 class Iscr(fbuild.db.PersistentObject):
@@ -108,11 +109,11 @@ def _print_config(ctx, f, build, host, target):
     # --------------------------------------------------------------------------
     # version information
 
-    p('import version')
-    p('flx_version = version.flx_version')
-    p('flx_version_major = version.flx_version_major')
-    p('godi_revision = version.godi_revision')
-    p('debian_revision = version.debian_revision')
+    p('flx_version = ' + repr (version.flx_version))
+    p('flx_version_major = ' + repr (version.flx_version_major))
+    p('flx_version_minor = ' + repr (version.flx_version_minor))
+    p('flx_version_patch = ' + repr (version.flx_version_patch))
+    p('flx_version_release = ' + repr (version.flx_version_release))
 
     # --------------------------------------------------------------------------
     # setup paths

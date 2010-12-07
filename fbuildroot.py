@@ -417,7 +417,7 @@ def configure(ctx):
 
     # extract the configuration
     iscr = call('buildsystem.iscr.Iscr', ctx)
-    iscr('lpsrc/flx_config.pak')
+    #iscr('lpsrc/flx_config.pak')
 
     # convert the config into something iscr can use
     call('buildsystem.iscr.config_iscr_config', ctx, build, host, target)
@@ -653,7 +653,7 @@ def dist(ctx):
     phases, iscr = configure(ctx)
 
     # Extract the version from 
-    with open(ctx.buildroot / 'version.py') as f:
+    with open(ctx.buildroot / 'config/version.py') as f:
         import re
         for line in f:
             m = re.match(r"flx_version = '(.*?)'", line)
