@@ -35,7 +35,7 @@ def build_flx(phase):
             })
 
     dsts.extend(buildsystem.copy_fpc_to_config(phase.ctx,
-        [gl_fpc, glu_fpc, glext_fpc, glut_fpc, re2_fpc, tre_fpc]))
+        [tre_fpc]))
 
     dsts.extend(buildsystem.copy_to(phase.ctx,
         phase.ctx.buildroot / 'lib/GL', Path('src/opengl/*.flx').glob()))
