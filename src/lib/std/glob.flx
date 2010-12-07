@@ -5,7 +5,6 @@ open C_hack;
 
 module glob {
   // glob
-  header '#include "flx_glob.hpp"';
   requires package "flx_glob";
   cstruct glob_t {
     gl_pathc: size;

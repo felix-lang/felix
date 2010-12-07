@@ -1,35 +1,3 @@
-@import config
-
-@head(1,'Directory Services (glob)')
-@head(2,"Category Reference",nospawn=1)
-@h = tangler('config/flx_glob.fpc')
-@select(h)
-Name: glob
-Description: Directory Serivces
-Version: $Id$
-
-@if config.HAVE_MSVC:
-   tangle("provides_dlib: /DEFAULTLIB:flx_glob_dynamic")
-   tangle("provides_slib: /DEFAULTLIB:flx_glob_static")
- elif config.WIN32:
-   tangle("provides_dlib: -lflx_glob_dynamic")
-   tangle("provides_slib: -lflx_glob_static")
- else:
-   pass
-
-@h=tangler('config/target/flx_glob_config.hpp')
-@select(h)
-#ifndef __FLX_GLOB_CONFIG_H__
-#define __FLX_GLOB_CONFIG_H__
-#include "flx_rtl_config.hpp"
-#ifdef BUILD_GLOB
-#define GLOB_EXTERN FLX_EXPORT
-#else
-#define GLOB_EXTERN FLX_IMPORT
-#endif
-#endif
-
-@select(tangler("licences/glob.txt"))
 /* /////////////////////////////////////////////////////////////////////////////
  * File:    glob.c
  *
