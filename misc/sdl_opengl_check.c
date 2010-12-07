@@ -1,12 +1,3 @@
-@import config
-
-@set_title('SDL')
-@head(1,'SDL')
-@head(2,'SDL configuration')
-
-@head(2,'SDL package')
-
-@select(tangler("tmp/sdl_opengl.cxx",'c++'))
 // for testing whether we have SDL_opengl
 #include <SDL.h>            // overrides main
 #include <SDL_opengl.h>
@@ -26,4 +17,3 @@ main(int argc, char** argv)
 
     return 0;           // pass
 }
-@doc()
