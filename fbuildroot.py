@@ -376,6 +376,13 @@ def configure(ctx):
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/config',
         pattern='*.fpc')
 
+    # this is a hack: assume we're running on Unix.
+    # later when Erick figures out how to fix this
+    # we'd copy the win32 subdirectory entries instead
+    buildsystem.copy_to(ctx,
+        ctx.buildroot / 'config', Path('src/config/unix/*.fpc').glob())
+
+
     # extract the configuration
     iscr = call('buildsystem.iscr.Iscr', ctx)
     iscr('lpsrc/flx_config.pak')
