@@ -76,6 +76,53 @@ let make_inner_function state bsym_table closure_bid sr vs ps =
   ts, param, arg
 
 
+
+let gen_case_closure_entry state bsym_table sr f rt at  =
+  let vs = [] in (* HACK, temporary, WRONG *)
+  let ts = [] in (* HACK, temporary, WRONG *)
+  (* Make a bid for our closure wrapper function. *)
+  let closure_bid = fresh_bid state.syms.counter in
+
+  (* Make the wrapper function parameter variable. *)
+  let p_bid = fresh_bid state.syms.counter in
+  let p_name = "_a" ^ string_of_bid p_bid in
+  let p_val = bbdcl_val (vs,at,`Val) in
+
+  (* Make the parameters for the wrapper function. *)
+  let param =
+    { pkind=`PVal;
+      pid=p_name;
+      pindex=p_bid;
+      ptyp=at}
+  in
+
+  (* Make the argument that we'll pass to our wrapped function. *)
+  let arg = bexpr_name at (p_bid, []) in
+
+  (* the instructions of the function *)
+  let exes =
+    let e1 = bexpr_apply rt (f, arg) in
+    [ bexe_fun_return (sr, e1) ]
+  in
+
+  (* the function record *)
+  let bbdcl = bbdcl_fun ([],vs,([param],None),rt,exes) in
+
+  (* the complete symbol *)
+  let bsym = Flx_bsym.create ~sr:sr ("_a" ^ string_of_int closure_bid ) (bbdcl) in
+
+  (* now add it to the table *)
+  Flx_bsym_table.add bsym_table closure_bid None bsym;
+
+  (* add the parameter afterwards so its parent exists *)
+  Flx_bsym_table.add bsym_table p_bid (Some closure_bid)
+    (Flx_bsym.create ~sr p_name p_val)
+  ;
+
+(* return the index of the wrapper generated *)
+  closure_bid,ts
+ 
+
 let gen_composite_closure_entry state bsym_table sr (f1,t1) (f2,t2) =
   let vs = [] in (* HACK, temporary, WRONG *)
   let ts = [] in (* HACK, temporary, WRONG *)
@@ -242,6 +289,29 @@ let rec adj_lambda state bsym_table all_closures sr e =
     let i,ts = gen_composite_closure_entry state bsym_table sr f1 f2 in
     all_closures := BidSet.add i !all_closures;
     Flx_bexpr.bexpr_closure t (i,ts)
+
+  | BEXPR_case (v,t'),t as x ->
+    begin match unfold t' with
+    | BTYP_unitsum n -> x
+
+    | BTYP_sum ls ->
+      let n = List.length ls in
+      if v < 0 or v >= n
+      then
+        failwith
+        (
+          "Invalid case index " ^ si v ^
+          " of " ^ si n ^ " cases"
+        )
+      else let t2 = List.nth ls v in
+      if t2 = btyp_tuple []
+      then x
+      else
+        let i,ts = gen_case_closure_entry state bsym_table sr x t' t2 in
+        all_closures := BidSet.add i !all_closures;
+        Flx_bexpr.bexpr_closure t (i,ts)
+    | _ -> failwith ("flx_mkcls: Unexpected case of non sum") 
+    end
 
   | x -> x
 
