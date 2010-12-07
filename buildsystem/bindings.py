@@ -11,10 +11,6 @@ import buildsystem
 # ------------------------------------------------------------------------------
 
 def build_flx(phase):
-    # Note, *.flx bindings are copied even if the underlying C libs
-    # and/or header files don't exist, so the code will Felix compile
-    # After all the client may add these things later.. and they may
-    # be on the target machine even they're not on the host
     dsts = []
 
     if fbuild.config.c.gsl.gsl_gsl_blas_h(phase.cxx.shared).header:
@@ -26,16 +22,6 @@ def build_flx(phase):
 
     dsts.extend(buildsystem.copy_to(phase.ctx,Path (phase.ctx.buildroot)/"lib/gnu/gmp",
             Path('src/lib/gnu/gmp/*.flx').glob()))
-
-    tre_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
-            'src/tre/tre.fpc', 'src/tre/tre.fpc.in', {
-                'SHARED_LIB': '-ltre_dynamic',
-                'STATIC_LIB': '-ltre_static',
-                'INCLUDES': '"tre/tre.h"',
-            })
-
-    dsts.extend(buildsystem.copy_fpc_to_config(phase.ctx,
-        [tre_fpc]))
 
     dsts.extend(buildsystem.copy_to(phase.ctx,
         phase.ctx.buildroot / 'lib/GL', Path('src/opengl/*.flx').glob()))

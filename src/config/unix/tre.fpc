@@ -1,0 +1,5 @@
+Name: TRE
+Description: TRE regexp library
+provides_dlib: -ltre_dynamic 
+provides_slib: -ltre_static
+includes: '"tre/tre.h"'
