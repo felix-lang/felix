@@ -1,0 +1,5 @@
+module Linux {
+  header '#include "plat_linux.hpp"';
+  requires package "plat_linux";
+  fun get_cpu_nr: 1 -> int;
+}

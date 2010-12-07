@@ -1,0 +1,3 @@
+provides_dlib: -lsqlite3
+provides_slib: -lsqlite3
+

@@ -366,6 +366,16 @@ def configure(ctx):
     host = config_host(ctx, build)
     target = config_target(ctx, host)
 
+    # copy the config directory for initial config
+    # this will be overwritten by subsequent steps if
+    # necessary
+    #
+    # at present this is a hack, it only works on Unix systems
+    # since the stored *.fpc files are for Unix only
+
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/config',
+        pattern='*.fpc')
+
     # extract the configuration
     iscr = call('buildsystem.iscr.Iscr', ctx)
     iscr('lpsrc/flx_config.pak')
@@ -467,6 +477,11 @@ def doc(ctx):
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'test',
         pattern='*.{flx,expect}')
 
+    # copy the entire tut examples directory so the user can browse it
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tut',
+        pattern='*.{flx,expect}')
+
+
     # copy the tools
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tools')
 
@@ -539,7 +554,7 @@ def test(ctx):
     srcs = Path.globall(
         'test/*/*.flx',
         'test/*/*/*.flx',
-        ctx.buildroot / 'tut/*/*.flx',
+        'tut/*/*.flx',
         exclude=[
             'test/drivers/*.flx',
             'test/faio/posix-*.flx',
