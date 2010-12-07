@@ -417,7 +417,6 @@ def configure(ctx):
 
     # extract the configuration
     iscr = call('buildsystem.iscr.Iscr', ctx)
-    #iscr('lpsrc/flx_config.pak')
 
     # convert the config into something iscr can use
     call('buildsystem.iscr.config_iscr_config', ctx, build, host, target)
@@ -468,7 +467,7 @@ def build(ctx):
     # which means flx_pkgconfig can't use it (since it is built
     # before this step is executed
     call('buildsystem.re2.build_runtime', phases.target)
-
+    call('buildsystem.sqlite3.build_flx', phases.target)
     call('buildsystem.bindings.build_flx', phases.target)
 
     # --------------------------------------------------------------------------
@@ -527,35 +526,6 @@ def doc(ctx):
     buildsystem.copy_to(ctx,
         ctx.buildroot / 'doc',
         Path('src/doc/*.fdoc').glob())
-
-    # WARNING: this has the side effect of making a "tut" directory
-    # in the source (current) directory. It should go into the
-    # build directory instead, but I don't know how to make it do that.
-    # 
-    # The result of this process should be the old interscript documentation
-    # in the build directory doc/iscr
-    #(ctx.buildroot / 'doc/iscr').makedirs()
-
-    #flags = [
-    #    '--weaver=web',
-    #    '--language=en',
-    #    '--weaver-directory=doc/iscr/',
-    #    '--passes=2']
-
-    #ctx.logger.log('generating tutorial docs', color='cyan')
-    #iscr('lpsrc/flx_tutorial.pak', flags=flags)
-    #iscr('lpsrc/flx_tut_macro.pak', flags=flags)
-    #iscr('lpsrc/flx_tut_bind.pak', flags=flags)
-    #iscr('lpsrc/flx_tut_migrate.pak', flags=flags)
-
-    # copy stuff for interscript generated docs
-    #buildsystem.copy_to(ctx,
-    #    ctx.buildroot / 'doc/iscr',
-    #    (ctx.buildroot / 'misc.*.gif').glob())
-
-    #buildsystem.copy_to(ctx,
-    #    ctx.buildroot / 'doc/iscr',
-    #    Path('misc/*.css').glob())
 
 # ------------------------------------------------------------------------------
 
