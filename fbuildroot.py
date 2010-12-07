@@ -358,6 +358,8 @@ def src_dir(ctx):
 
 # ------------------------------------------------------------------------------
 
+import os
+
 @fbuild.target.register()
 def configure(ctx):
     """Configure Felix."""
@@ -366,24 +368,51 @@ def configure(ctx):
     host = config_host(ctx, build)
     target = config_target(ctx, host)
 
+    # this sucks, but it seems to be the only way
+    try: 
+      os.mkdir(ctx.buildroot/'config')
+    except:
+      pass
+    try:
+      os.mkdir(ctx.buildroot/'config/target')
+    except:
+      pass
+
     # copy the config directory for initial config
     # this will be overwritten by subsequent steps if
     # necessary
     #
-    # at present this is a hack, it only works on Unix systems
-    # since the stored *.fpc files are for Unix only
-
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/config',
-        pattern='*.{fpc')
-
+        pattern='*.fpc')
+    # most of these ones are actually platform independent
+    # just do the windows EXTERN to dllexport mapping
+    # which is controlled by compile time switches anyhow
+    # should probably move these out of config directory
+    # they're put in config in case there really are any
+    # platform mods.
     buildsystem.copy_to(ctx, ctx.buildroot/'config/target', 
-        Path('src/config/target/*.hpp').glob())
+        Path('src/config/target/*.hpp').glob()) 
 
     # this is a hack: assume we're running on Unix.
     # later when Erick figures out how to fix this
     # we'd copy the win32 subdirectory entries instead
     buildsystem.copy_to(ctx,
         ctx.buildroot / 'config', Path('src/config/unix/*.fpc').glob())
+
+    # enable this on win32 **instead** of the above to copy fpc files 
+    #buildsystem.copy_to(ctx,
+    #    ctx.buildroot / 'config', Path('src/config/win32/*.fpc').glob())
+
+    # enable this on solaris to clobber any fpc files 
+    # where the generic unix ones are inadequate
+    #buildsystem.copy_to(ctx,
+    #    ctx.buildroot / 'config', Path('src/config/solaris/*.fpc').glob())
+
+    # enable this on osx to clobber any fpc files 
+    # where the generic unix ones are inadequate
+    #buildsystem.copy_to(ctx,
+    #    ctx.buildroot / 'config', Path('src/config/osx/*.fpc').glob())
+
 
 
     # extract the configuration

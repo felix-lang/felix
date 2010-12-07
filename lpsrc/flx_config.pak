@@ -20,7 +20,9 @@
 @tangle("debian_revision = '"+debian_revision+"'")
 @doc()
 
-@select(tangler('iscrutil.py'))
+@# change the name to prove this is no longer used!
+
+@select(tangler('tmp/iscrutil.py'))
 import os
 import sys
 import pickle
