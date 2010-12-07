@@ -520,9 +520,9 @@ def doc(ctx):
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tut',
         pattern='*.{flx,expect}')
 
-
     # copy the tools
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tools')
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tools',
+        pattern="*.{c,flx}")
 
     # copy docs
     buildsystem.copy_to(ctx,
