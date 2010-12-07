@@ -1,5 +1,0 @@
-Name: TRE
-Description: TRE regexp library
-provides_dlib: @SHARED_LIB@
-provides_slib: @STATIC_LIB@
-includes: '@INCLUDES@'
