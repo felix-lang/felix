@@ -556,6 +556,7 @@ def test(ctx):
     except fbuild.ExecutionError as e:
         ctx.logger.log(e, verbose=1)
     else:
+        print("lib1="+lib1+", lib2="+lib2)
         if not test_flx(phases.target, felix, 'test/regress/drt/main1.flx',
                 env={'lib1': lib1, 'lib2': lib2}):
             failed_srcs.append('test/regress/drt/main1.flx')
