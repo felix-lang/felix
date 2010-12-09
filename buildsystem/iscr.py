@@ -20,7 +20,7 @@ class Iscr(fbuild.db.PersistentObject):
         super().__init__(ctx)
 
         if exe is None:
-            exe = call('fbuildroot.src_dir', ctx) / 'interscript/bin/iscr.py'
+            exe = call('fbuildroot.src_dir', ctx) / 'buildsystem/interscript/bin/iscr.py'
 
         self.exe = Path(exe)
 
@@ -50,7 +50,7 @@ class Iscr(fbuild.db.PersistentObject):
         stdout, stderr = self.ctx.execute(cmd, 'iscr extracting', src,
             color='green',
             cwd=buildroot,
-            env={'PYTHONPATH': Path('.').relpath(buildroot)},
+            env={'PYTHONPATH': Path('buildsystem').relpath(buildroot)},
             **kwargs)
 
         srcs = []
