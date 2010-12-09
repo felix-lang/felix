@@ -1,15 +1,5 @@
 @import config
 
-@head(1,"Address space management")
-
-NOTES. At present we're using configuration checks to decide
-which options mmap supports (if it is available at all).
-
-Probably this is not the "Felix way". Rather we should just define
-everything and then either let the program fail at C++ compile time,
-or, provide some way in Felix to filter the available options,
-rather than doing it here as part of the configuration process.
-
 @select(tangler('config/mmap.fpc', 'data'))
 Name: mmap
 

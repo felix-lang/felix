@@ -8,7 +8,6 @@ from interscript.drivers.sources import source_open_error
 from interscript.drivers.sources.disk import named_file_source
 from interscript.drivers.sources.base import eoi
 from interscript.frames.inputf import input_frame
-from interscript.weavers.auto import auto_weaver
 from interscript.drivers.sources.base import eoi
 from interscript.parsers.html import sgml_wrapper, html_filter
 
@@ -22,7 +21,6 @@ class pass_frame:
       self.process.acquire_object(self, 'PASS FRAME')
     self.passno = passno
 
-    self.autoweave = master.autoweave
     self.inhibit_sref = master.inhibit_sref
 
     self.ids = {}
@@ -39,9 +37,6 @@ class pass_frame:
     self.section_index = {}
     self.ftp_list = []
 
-    if 'weavers' in self.process.trace:
-      print('Autoweave',self.autoweave)
-
     file = self.master.filename
     encoding = self.master.encoding
     encoding = encoding.lower().replace('-','_')
@@ -54,7 +49,7 @@ class pass_frame:
     if file.find('.') != -1:
       basename = '.'.join(file.split('.')[:-1])
 
-    weaver = auto_weaver(self, basename, self.autoweave, master.title)
+    weaver = None
     userdict = { }
 
     try:

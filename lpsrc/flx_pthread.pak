@@ -1,12 +1,5 @@
 @import config
 
-@head(1, 'Pre-emptive threads (pthread)')
-Note WE say pthread means 'pre-emptive thread' not
-merely Posix thread. Confusing on Solaris especially.
-However it fits with name fthread for felix threads
-which are actually s- (synchronous) or np- (non-preemptive)
-threads.
-
 @h = tangler('config/flx_pthread.fpc')
 @select(h)
 Name: pthread

@@ -1,6 +1,4 @@
 @import config
-@head(1,'demux')
-
 @h = tangler('config/demux.fpc')
 @select(h)
 Name: demux

@@ -21,7 +21,6 @@ import interscript.drivers
 import interscript.drivers.sinks
 import interscript.drivers.sources
 import interscript.drivers.storage
-import interscript.weavers
 import interscript.tanglers
 import interscript.core
 
@@ -39,16 +38,10 @@ class global_frame:
 
   from interscript.drivers.storage.memory import memory
 
-  from interscript.weavers.auto import auto_weaver
-  from interscript.weavers.filter import markup_filter
-  from interscript.weavers.multiplexor import multiplexor
-
   from interscript.parsers.html import sgml_wrapper, html_filter
 
   from interscript.tanglers.data import data_tangler
-  from interscript.tanglers.python import python_tangler
   from interscript.tanglers.null import null_tangler
-  from interscript.tanglers.doc import doc_tangler
   import sys
   import os
   import string

@@ -1,9 +1,5 @@
 @import config
 
-@head(1,'Maker')
-@FLX_MAKER_CVS_ID='$Id$'
-@print(FLX_MAKER_CVS_ID)
-
 @def make_executable(path):
    import stat
    try:
@@ -29,20 +25,14 @@ for ch in data:
     counter = 0
 print()
 
-@head(1,'AUTHORS')
 @select(tangler('AUTHORS'))
 John (Max) Skaller skaller at users dot sourceforge dot net
 Peter Jolly helped do the Cygwin build
 
-@head(1,'LICENCE')
 @select(tangler('LICENCE'))
 @tangle('Version ' + config.flx_version + ' of Felix')
 is free for any use, provided the authors
 are not misrepresented in any way.
-
-@head(1,'W3C Cascading Style Sheets')
-Needed to view interscript generated documentation.
-Also some gif images.
 
 @python("//")
 def mkgif(fn,d):
@@ -83,8 +73,6 @@ mkgif("plus",plus)
 mkgif("minus",plus)
 mkgif("dot",dot)
 //
-
-@head(1, "Run script written in Felix")
 
 @# ------------- UNIVERSAL RUN SCRIPT flx.flx
 @# ------------- This script should be compiled to binary using one of the other
@@ -151,7 +139,6 @@ fun link_strings(FLX_INSTALL_DIR:string): string * string =
 }
 }
 
-@head(1,'Run script')
 @# ------------- RUN SCRIPT flx.bat FOR WINDOWS COMMAND LINE
 
 @select(tangler('bin/flx.bat','data'))
@@ -1323,7 +1310,6 @@ echo "---------"
 
 exit $bad
 
-@head(1,'Finish up')
 Just cleaning up script now.
 @make_executable(os.path.join('bin', 'flx.sh'))
 @make_executable(os.path.join('bin', 'flx.py'))

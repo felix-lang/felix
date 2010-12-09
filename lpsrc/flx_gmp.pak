@@ -1,13 +1,3 @@
-@head(1,'GNU Multiple Precision library')
-This module provides a wrapper for the Gnu Multiple
-Precision Arithmetic library known as gmp.
-The C++ interface is required for this library,
-you may need to download it. The library and include
-files must be available in standard places for the
-scripting harness to find them.
-@p()
-REQUIRES: -lgmpxx -lgmp
-
 @select(tangler("cpkgs/target/gmpxx.py"))
 try:
   from config.target_gmpxx_config import *

@@ -135,9 +135,6 @@ else:
 tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
 //
 
-@head(1,'Felix Standard Library')
-
-@head(2,"Code")
 @fc = {'float':'f', 'double':'','ldouble':'l'}
 
 @def gen_nan(t):

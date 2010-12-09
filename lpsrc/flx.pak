@@ -1,7 +1,5 @@
 @import config
 
-@head(1,'Version data hardcoded into Ocaml progs')
-
 @h=tangler('src/compiler/flx_version_hook/flx_version_hook.ml')
 @select(h)
 @python("//")

@@ -7,7 +7,6 @@ class tangler_base:
   def __init__(self,sink,weaver,nosref=0):
     self.nosref=nosref
     self.sink = sink
-    self.weaver = weaver
     self.inhibit_sref = 0
     if weaver:
       self.pass_frame = weaver.pass_frame
@@ -31,7 +30,6 @@ class tangler_base:
 
   def _write_and_echo(self,data):
     self._writeline(data)
-    self.weaver.echotangle(self.sink.lines_written,data)
 
   def _handle_sref(self, file, count, inhibit_sref):
     if not self.nosref and not inhibit_sref and not self.inhibit_sref:
