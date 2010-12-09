@@ -57,3 +57,890 @@ fun link_strings(FLX_INSTALL_DIR:string): string * string =
 }
 
 
+@select(tangler("config/target/flx_meta.hpp"))
+#ifndef __FLX_META_H__
+#define __FLX_META_H__
+// taken from BOOST
+@if config.TARGET_CXX.options.HAVE_INCLASS_MEMBER_INITIALIZATION:
+  tangle('#define FLX_HAVE_INCLASS_MEMBER_INITIALIZATION 1')
+ else:
+  tangle('#define FLX_HAVE_INCLASS_MEMBER_INITIALIZATION 0')
+
+#if FLX_HAVE_INCLASS_MEMBER_INITIALIZATION
+#  define FLX_STATIC_CONSTANT(type, assignment) static const type assignment
+#else
+#  define FLX_STATIC_CONSTANT(type, assignment) enum { assignment }
+#endif
+
+#include <cstddef>
+
+template <std::size_t> struct type_with_alignment;
+@for k, t in config.TARGET_CXX.options.flx_aligns.items():
+  tangle('template <> struct type_with_alignment<'+str(k)+'>{ typedef '+t+' type; };')
+
+template <typename T> struct alignment_of;
+
+template <typename T>
+struct alignment_of_hack
+{
+  char c;
+  T t;
+  alignment_of_hack();
+};
+
+template <unsigned A, unsigned S>
+struct alignment_logic
+{
+  FLX_STATIC_CONSTANT(std::size_t, value = A < S ? A : S);
+};
+
+template< typename T >
+struct alignment_of
+{
+  FLX_STATIC_CONSTANT(std::size_t, value =
+    (alignment_logic<
+      sizeof(alignment_of_hack<T>) - sizeof(T),
+      sizeof(T)
+    >::value));
+};
+
+template<std::size_t L, std::size_t A>
+struct aligned_storage
+{
+  union type
+  {
+    unsigned char data_[ L ];
+    typename type_with_alignment<A>::type align_;
+  };
+};
+
+template<typename T>
+struct store_of
+{
+  typedef typename aligned_storage<sizeof(T), alignment_of<T>::value>::type type;
+};
+
+// convert an rvalue to an lvalue
+template<typename T>
+T const &lvalue(T const &x)
+{
+  return x;
+}
+
+// this reinterpret cast works with rvalues too
+template<typename T, typename U>
+T &reinterpret(U const &x) {
+  return reinterpret_cast<T&>(const_cast<U&>(x));
+}
+
+template<typename T> void destroy(T *p){ p->T::~T(); }
+
+#endif
+@doc()
+
+@select(tangler("config/host/flx_host_config.hpp"))
+#ifndef __FLX_HOST_CONFIG_H__
+#define __FLX_HOST_CONFIG_H__
+
+@if config.HOST_CXX.options.WIN32:
+  tangle('#define FLX_WIN32 1')
+ else:
+  tangle('#define FLX_WIN32 0')
+
+@if config.HOST_CXX.options.HAVE_BOOL:
+  tangle('#define FLX_HAVE_BOOL 1')
+ else:
+  tangle('#define FLX_HAVE_BOOL 0')
+
+@if config.HOST_CXX.options.HAVE_LONGLONG:
+  tangle('#define FLX_HAVE_LONGLONG 1')
+ else:
+  tangle('#define FLX_HAVE_LONGLONG 0')
+
+@if config.HOST_CXX.options.HAVE_LONGDOUBLE:
+  tangle('#define FLX_HAVE_LONGDOUBLE 1')
+ else:
+  tangle('#define FLX_HAVE_LONGDOUBLE 0')
+
+#if !defined(FLX_STATIC_LINK) && FLX_WIN32
+#define FLX_EXPORT __declspec(dllexport)
+#define FLX_IMPORT __declspec(dllimport)
+#else
+#define FLX_EXPORT
+#define FLX_IMPORT
+#endif
+
+
+@def cal_raw_address():
+  if config.HOST_CXX.options.SIZEOF_INT      == config.HOST_CXX.options.SIZEOF_VOIDP: return "unsigned"
+  if config.HOST_CXX.options.SIZEOF_LONG     == config.HOST_CXX.options.SIZEOF_VOIDP: return "unsigned long"
+  if config.HOST_CXX.options.SIZEOF_LONGLONG == config.HOST_CXX.options.SIZEOF_VOIDP: return "unsigned long long"
+  raise "Cannot find an int the size of a void pointer"
+
+@tangle("#define FLX_RAWADDRESS " + cal_raw_address())
+@tangle('#define FLX_MAX_ALIGN ' + str(config.HOST_CXX.options.MAX_ALIGN))
+
+#if FLX_WIN32 && !defined(_WIN32_WINNT)
+#define _WIN32_WINNT 0x500 // Require Windows NT5 (2K, XP, 2K3)
+#endif
+
+
+#endif
+
+@select(tangler("config/target/flx_rtl_config.hpp"))
+#ifndef __FLX_RTL_CONFIG_H__
+#define __FLX_RTL_CONFIG_H__
+
+@if config.TARGET_CXX.options.HAVE_VSNPRINTF:
+  tangle('#define FLX_HAVE_VSNPRINTF 1')
+ else:
+  tangle('#define FLX_HAVE_VSNPRINTF 0')
+
+@if config.TARGET_CXX.options.HAVE_BOOL:
+  tangle('#define FLX_HAVE_BOOL 1')
+ else:
+  tangle('#define FLX_HAVE_BOOL 0')
+
+@if config.TARGET_CXX.options.HAVE_LONGLONG:
+  tangle('#define FLX_HAVE_LONGLONG 1')
+ else:
+  tangle('#define FLX_HAVE_LONGLONG 0')
+
+@if config.TARGET_CXX.options.HAVE_LONGDOUBLE:
+  tangle('#define FLX_HAVE_LONGDOUBLE 1')
+ else:
+  tangle('#define FLX_HAVE_LONGDOUBLE 0')
+
+@if config.HAVE_GNU:
+  tangle('#define FLX_HAVE_GNU 1')
+ else:
+  tangle('#define FLX_HAVE_GNU 0')
+
+@if config.TARGET_CXX.options.HAVE_GNU_X86:
+  tangle('#define FLX_HAVE_GNU_X86 1')
+ else:
+  tangle('#define FLX_HAVE_GNU_X86 0')
+
+@if config.TARGET_CXX.options.HAVE_GNU_X86_64:
+  tangle('#define FLX_HAVE_GNU_X86_64 1')
+ else:
+  tangle('#define FLX_HAVE_GNU_X86_64 0')
+
+@if config.TARGET_CXX.options.HAVE_GNU_BUILTIN_EXPECT:
+  # only use these with proper predicates!
+  tangle('#define FLX_UNLIKELY(x) __builtin_expect(long(x),0)')
+  tangle('#define FLX_LIKELY(x) __builtin_expect(long(x),1)')
+ else:
+  tangle('#define FLX_UNLIKELY(x) x')
+  tangle('#define FLX_LIKELY(x) x')
+
+@if config.TARGET_CXX.options.HAVE_CGOTO:
+  tangle("#define FLX_HAVE_CGOTO 1")
+ else:
+  tangle("#define FLX_HAVE_CGOTO 0")
+
+@if config.TARGET_CXX.options.USE_REGPARM3:
+  tangle("#define FLX_USE_REGPARM3 1")
+ else:
+  tangle("#define FLX_USE_REGPARM3 0")
+
+@if config.TARGET_CXX.options.HAVE_ASM_LABELS:
+  tangle("#define FLX_HAVE_ASM_LABELS 1")
+ else:
+  tangle("#define FLX_HAVE_ASM_LABELS 0")
+
+@if config.TARGET_CXX.options.HAVE_DLOPEN:
+  tangle("#define FLX_HAVE_DLOPEN 1")
+ else:
+  tangle("#define FLX_HAVE_DLOPEN 0")
+
+@if config.TARGET_CXX.options.MACOSX:
+  tangle("#define FLX_MACOSX 1")
+ else:
+  tangle("#define FLX_MACOSX 0")
+
+@if config.TARGET_CXX.options.LINUX:
+  tangle("#define FLX_LINUX 1")
+ else:
+  tangle("#define FLX_LINUX 0")
+
+@if config.TARGET_CXX.options.WIN32:
+  tangle("#define FLX_WIN32 1")
+ else:
+  tangle("#define FLX_WIN32 0")
+
+@if config.TARGET_CXX.options.WIN64:
+  tangle("#define FLX_WIN64 1")
+ else:
+  tangle("#define FLX_WIN64 0")
+
+@if config.TARGET_CXX.options.CYGWIN:
+  tangle("#define FLX_CYGWIN 1")
+ else:
+  tangle("#define FLX_CYGWIN 0")
+
+@if config.TARGET_CXX.options.POSIX:
+  tangle("#define FLX_POSIX 1")
+ else:
+  tangle("#define FLX_POSIX 0")
+
+@if config.TARGET_CXX.options.SOLARIS:
+  tangle("#define FLX_SOLARIS 1")
+ else:
+  tangle("#define FLX_SOLARIS 0")
+
+@if config.HAVE_MSVC:
+  tangle("#define FLX_HAVE_MSVC 1")
+ else:
+  tangle("#define FLX_HAVE_MSVC 0")
+
+@if config.TARGET_CXX.options.HAVE_KQUEUE_DEMUXER:
+  tangle("#define FLX_HAVE_KQUEUE_DEMUXER 1")
+ else:
+  tangle("#define FLX_HAVE_KQUEUE_DEMUXER 0")
+
+@if config.TARGET_CXX.options.HAVE_POLL:
+  tangle("#define FLX_HAVE_POLL 1")
+ else:
+  tangle("#define FLX_HAVE_POLL 0")
+
+@if config.TARGET_CXX.options.HAVE_EPOLL:
+  tangle("#define FLX_HAVE_EPOLL 1")
+ else:
+  tangle("#define FLX_HAVE_EPOLL 0")
+
+@if config.TARGET_CXX.options.HAVE_EVTPORTS:
+  tangle("#define FLX_HAVE_EVTPORTS 1")
+ else:
+  tangle("#define FLX_HAVE_EVTPORTS 0")
+
+@if config.TARGET_CXX.options.HAVE_SHARED_OPENMP:
+  tangle("#define FLX_HAVE_OPENMP 1")
+ else:
+  tangle("#define FLX_HAVE_OPENMP 0")
+
+#include "setjmp.h"
+
+#define FLX_SAVE_REGS \
+  jmp_buf reg_save_on_stack; \
+  setjmp (reg_save_on_stack)
+
+//
+#if FLX_HAVE_CGOTO && FLX_HAVE_ASM_LABELS
+#define FLX_CGOTO 1
+#else
+#define FLX_CGOTO 0
+#endif
+
+#if FLX_WIN32 && !defined(_WIN32_WINNT)
+#define _WIN32_WINNT 0x0600 // Require Windows NT5 (2K, XP, 2K3)
+#endif
+
+#if FLX_WIN32 && !defined(WINVER)
+#define WINVER 0x0600 // Require Windows NT5 (2K, XP, 2K3)
+#endif
+
+#if FLX_WIN32
+// vs windows.h just LOVES to include winsock version 1 headers by default.
+// that's bad for everyone, so quit it.
+#define _WINSOCKAPI_
+
+// windows.h defines min/max macros, which can cause all sorts of confusion.
+#define NOMINMAX
+#endif
+
+
+#if !defined(FLX_STATIC_LINK) && FLX_WIN32
+#define FLX_EXPORT __declspec(dllexport)
+#define FLX_IMPORT __declspec(dllimport)
+#else
+#define FLX_EXPORT
+#define FLX_IMPORT
+#endif
+
+
+#ifdef BUILD_RTL
+#define RTL_EXTERN FLX_EXPORT
+#else
+#define RTL_EXTERN FLX_IMPORT
+#endif
+
+#if FLX_MACOSX && !FLX_HAVE_DLOPEN
+#define FLX_MACOSX_NODLCOMPAT 1
+#else
+#define FLX_MACOSX_NODLCOMPAT 0
+#endif
+
+#if FLX_HAVE_GNU
+#define FLX_ALWAYS_INLINE __attribute__ ((always_inline))
+#define FLX_NOINLINE __attribute__ ((noinline))
+#define FLX_CONST __attribute__ ((const))
+#define FLX_PURE __attribute__ ((pure))
+#define FLX_GXX_PARSER_HACK (void)0,
+#define FLX_UNUSED __attribute__((unused))
+#else
+#define FLX_ALWAYS_INLINE
+#define FLX_NOINLINE
+#define FLX_CONST
+#define FLX_PURE
+#define FLX_GXX_PARSER_HACK
+#define FLX_UNUSED
+#endif
+
+@def cal_raw_address():
+  if config.TARGET_CXX.options.SIZEOF_INT      == config.TARGET_CXX.options.SIZEOF_VOIDP: return "unsigned"
+  if config.TARGET_CXX.options.SIZEOF_LONG     == config.TARGET_CXX.options.SIZEOF_VOIDP: return "unsigned long"
+  if config.TARGET_CXX.options.SIZEOF_LONGLONG == config.TARGET_CXX.options.SIZEOF_VOIDP: return "unsigned long long"
+  raise "Cannot find an int the size of a void pointer"
+
+@tangle("#define FLX_RAWADDRESS " + cal_raw_address())
+@tangle('#define FLX_MAX_ALIGN ' + str(config.TARGET_CXX.options.MAX_ALIGN))
+#endif
+@doc()
+
+
+@h = tangler('config/flx_pthread.fpc')
+@select(h)
+Name: pthread
+Description: Pre-emptive threading support
+
+@if config.HAVE_MSVC:
+   tangle("provides_dlib: /DEFAULTLIB:flx_pthread_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:flx_pthread_static")
+ elif config.WIN32:
+   tangle("provides_dlib: -lflx_pthread_dynamic")
+   tangle("provides_slib: -lflx_pthread_static")
+ else:
+   tangle("provides_dlib: -lflx_pthread_dynamic")
+   tangle("provides_slib: -lflx_pthread_static")
+ if config.TARGET_CXX.options.HAVE_PTHREADS:
+   tangle("requires_dlibs: "+config.TARGET_CXX.options.PTHREAD_SWITCH)
+   tangle("requires_slibs: "+config.TARGET_CXX.options.PTHREAD_SWITCH)
+
+includes: '"pthread_thread.hpp"'
+Requires: flx_gc
+
+
+
+@select(tangler('config/mmap.fpc', 'data'))
+Name: mmap
+
+@select(tangler('lib/mmap.flx'))
+module Mmap
+{
+  header """
+    #include <sys/mman.h>
+    #include <unistd.h>
+
+    // MAP_ANON is an older form of MAP_ANONYMOUS, and should be compatible
+    #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+    #  define MAP_ANONYMOUS MAP_ANON
+    #endif
+  """;
+
+  typedef off_t = ulong;
+  // protection options
+@if config.TARGET_CXX.options.HAVE_MMAP:
+  if config.TARGET_CXX.options.HAVE_PROT_EXEC:  tangle('  const PROT_EXEC : int;')
+  if config.TARGET_CXX.options.HAVE_PROT_READ:  tangle('  const PROT_READ : int;')
+  if config.TARGET_CXX.options.HAVE_PROT_WRITE: tangle('  const PROT_WRITE : int;')
+
+  if config.TARGET_CXX.options.HAVE_MAP_DENYWRITE:    tangle('  const MAP_DENYWRITE: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_ANON:         tangle('  const MAP_ANON: int;')
+
+  # RF: MAP_ANON/MAP_ANONYMOUS must mirror the macro example above, so the two can be synonyms
+  if config.TARGET_CXX.options.HAVE_MAP_ANONYMOUS or config.TARGET_CXX.options.HAVE_MAP_ANON:
+    tangle('  const MAP_ANONYMOUS: int;')
+
+  if config.TARGET_CXX.options.HAVE_MAP_FILE:         tangle('  const MAP_FILE: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_FIXED:        tangle('  const MAP_FIXED: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_HASSEMAPHORE: tangle('  const MAP_HASSEMAPHORE: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_SHARED:       tangle('  const MAP_SHARED : int;')
+  if config.TARGET_CXX.options.HAVE_MAP_PRIVATE:      tangle('  const MAP_PRIVATE : int;')
+  if config.TARGET_CXX.options.HAVE_MAP_NORESERVE:    tangle('  const MAP_NORESERVE: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_LOCKED:       tangle('  const MAP_LOCKED: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_GROWSDOWN:    tangle('  const MAP_GROWSDOWN: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_32BIT:        tangle('  const MAP_32BIT: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_POPULATE:     tangle('  const MAP_POPULATE: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_NONBLOCK:     tangle('  const MAP_NONBLOCK: int;')
+@#
+
+  const MAP_FAILED : address;
+
+  // size of a page
+  const _SC_PAGESIZE : long = "sysconf(_SC_PAGESIZE)";
+
+  fun mmap:
+    address * //< start address
+    size *    //< bytes to map
+    int *     //< protection
+    int *     //< flags
+    int *     //< file descriptor
+    off_t     //< offset into file, multiple of _SC_PAGESIZE
+    -> address; //< start of reserved address space
+
+  fun munmap: address * size -> int;
+}
+
+
+@h = tangler('config/demux.fpc')
+@select(h)
+Name: demux
+Description: Event handling
+Version: $Id$
+
+@if config.HAVE_MSVC:
+   tangle("provides_dlib: /DEFAULTLIB:demux_dynamic")
+   tangle("requires_dlibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
+   tangle("provides_slib: /DEFAULTLIB:demux_static")
+   tangle("requires_slibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
+ elif config.WIN32:
+   tangle("provides_dlib: -ldemux_dynamic")
+   tangle("requires_dlibs: -lws2_32 -lmswsock")
+   tangle("provides_slib: -ldemux_static")
+   tangle("requires_slibs: -lws2_32 -lmswsock")
+ elif config.SOLARIS:
+   tangle("provides_dlib: -ldemux_dynamic")
+   tangle("provides_slib: -ldemux_static -lsocket -lnsl")
+ else:
+   tangle("provides_dlib: -ldemux_dynamic")
+   tangle("provides_slib: -ldemux_static")
+
+Requires: flx_pthread
+flx_requires_driver: flx_arun
+
+@select(tangler('config/target/demux_sockety_config.hpp'))
+#ifndef __DEMUX_SOCKETY_CONFIG_H__
+#define __DEMUX_SOCKETY_CONFIG_H__
+#include <sys/socket.h>
+
+@tangle('typedef %s FLX_SOCKLEN_T;' % config.TARGET_CXX.options.FLX_SOCKLEN_T)
+#endif
+
+
+@python("//")
+rmap = {}
+
+tmap = {
+  # addressing
+  "byte"      : "unsigned char",
+  "size"      : "size_t",
+  "cvaddress" : "void const volatile*",
+  "vaddress"  : "void volatile*",
+  "caddress"  : "void const*",
+  "address"   : "void *",
+  "offset"    : "ptrdiff_t",
+  "ptrdiff"   : "ptrdiff_t",
+
+  #characters
+  "char"    : "char",
+  "wchar"   : "wchar_t",
+
+  #signed integers
+  "tiny"    : "signed char",
+  "short"   : "short",
+  "int"     : "int",
+  "long"    : "long",
+
+  #unsigned integers
+  "utiny"   : "unsigned char",
+  "ushort"  : "unsigned short",
+  "uint"    : "unsigned int",
+  "ulong"   : "unsigned long",
+
+  #floating
+  "float"   : "float",
+  "double"  : "double",
+  "ldouble"  : "long double"
+ }
+
+#if config.TARGET_CXX.options.HAVE_COMPLEX:
+if False:
+  tmap["imaginary"]="float _Imaginary"
+  tmap["dimaginary"]="double _Imaginary"
+  tmap["limaginary"]="long double _Imaginary"
+  tmap["fcomplex" ]="float _Complex"
+  tmap["dcomplex"]="double _Complex"
+  tmap["lcomplex"]="long double _Complex"
+
+  rmap["imaginary" ]="c99_complex_h"
+  rmap["dimaginary" ]="c99_complex_h"
+  rmap["limaginary" ]="c99_complex_h"
+  rmap["fcomplex" ]="c99_complex_h"
+  rmap["dcomplex"]="c99_complex_h"
+  rmap["lcomplex"]="c99_complex_h"
+else:
+  tmap["imaginary"]="float"
+  tmap["dimaginary"]="double"
+  tmap["limaginary"]="long double"
+  tmap["fcomplex" ]="std::complex<float>"
+  tmap["dcomplex"]="std::complex<double>"
+
+  rmap["fcomplex" ]="complex_hxx"
+  rmap["dcomplex"]="complex_hxx"
+  rmap["lcomplex"]="complex_hxx"
+
+if config.TARGET_CXX.options.HAVE_LONGDOUBLE:
+  tmap["ldouble"]="long double"
+  tmap["lcomplex"]="std::complex<long double>"
+else:
+  tmap["ldouble"]="double"
+  tmap["lcomplex"]="std::complex<double>"
+
+if config.TARGET_CXX.options.HAVE_LONGLONG:
+  tmap["vlong"]="long long"
+  tmap["uvlong"]="unsigned long long"
+else:
+  tmap["vlong"]="long"
+  tmap["uvlong"]="unsigned long"
+
+if config.TARGET_CXX.options.HAVE_STDINT:
+  tmap["int8"]="int8_t"
+  tmap["uint8"]="uint8_t"
+  tmap["int16"]="int16_t"
+  tmap["uint16"]="uint16_t"
+  tmap["int32"]="int32_t"
+  tmap["uint32"]="uint32_t"
+  tmap["int64"]="int64_t"
+  tmap["uint64"]="uint64_t"
+  tmap["intptr"]="intptr_t"
+  tmap["uintptr"]="uintptr_t"
+  tmap["intmax"]="intmax_t"
+  tmap["uintmax"]="uintmax_t"
+
+  # requirements
+  rmap["int8"]="c99_stdint_h"
+  rmap["uint8"]="c99_stdint_h"
+  rmap["int16"]="c99_stdint_h"
+  rmap["uint16"]="c99_stdint_h"
+  rmap["int32"]="c99_stdint_h"
+  rmap["uint32"]="c99_stdint_h"
+  rmap["int64"]="c99_stdint_h"
+  rmap["uint64"]="c99_stdint_h"
+  rmap["intptr"]="c99_stdint_h"
+  rmap["uintptr"]="c99_stdint_h"
+  rmap["intmax"]="c99_stdint_h"
+  rmap["uintmax"]="c99_stdint_h"
+else:
+  tmap["int8"]="signed char"
+  tmap["uint8"]="unsigned char"
+  sizes = {
+    config.TARGET_CXX.options.SIZEOF_SHORT*8 : "short",
+    config.TARGET_CXX.options.SIZEOF_INT*8: "int",
+    config.TARGET_CXX.options.SIZEOF_LONG*8 : "long",
+  }
+  tmap["intmax"]="long"
+  tmap["uintmax"]="unsigned long"
+  if config.TARGET_CXX.options.HAVE_LONGLONG:
+    sizes[config.TARGET_CXX.options.SIZEOF_LONGLONG*8]="long long"
+    tmap["intmax"]="long long"
+    tmap["uintmax"]="unsigned long long"
+  for size in [16,32,64]:
+    try:
+      t = sizes[size]
+    except KeyError:
+      tmap["int"+str(size)]="emul_int"+str(size)
+      tmap["uint"+str(size)]="emul_uint"+str(size)
+    else:
+      tmap["int"+str(size)]=t
+      tmap["uint"+str(size)]="unsigned " + t
+  try:
+    tmap["intptr"]=sizes[config.TARGET_CXX.options.SIZEOF_VOIDP*8]
+    tmap["uintptr"]="unsigned "+sizes[config.TARGET_CXX.options.SIZEOF_VOIDP*8]
+  except:
+    print("NO INTEGER THE SIZE OF A VOID*!")
+    sys.exit(1)
+
+tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
+//
+
+@fc = {'float':'f', 'double':'','ldouble':'l'}
+
+@def gen_nan(t):
+  if config.TARGET_CXX.options.HAVE_CXX_ISNAN_IN_CMATH:
+    tangle('  fun isnan: '+t+' -> bool = "::std::isnan($1)" is postfix requires cmath;')
+  elif config.TARGET_CXX.options.HAVE_C99_ISNAN_IN_MATH:
+    tangle('  fun isnan: '+t+' -> bool = "isnan($1)" is postfix requires math_h;')
+  elif config.TARGET_CXX.options.HAVE_BSD_ISNAN_IN_MATH:
+    tangle('  fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)" is postfix requires math_h;')
+  elif config.TARGET_CXX.options.HAVE_BSD_ISNAN_IN_IEEEFP:
+    tangle('  fun isnan: '+t+' -> bool = "isnanf'+fc[t]+'($1)" is postfix requires ieeefp_h;')
+  else:
+    tangle('  fun isnan: '+t+' -> bool = "!($1==$1)" is unary;')
+
+  if config.TARGET_CXX.options.HAVE_CXX_ISINF_IN_CMATH:
+    tangle('  fun isinf: '+t+' -> bool = "::std::isinf($1)" is postfix requires cmath;')
+  elif config.TARGET_CXX.options.HAVE_C99_ISINF_IN_MATH:
+    tangle('  fun isinf: '+t+' -> bool = "isinf($1)" is postfix requires math_h;')
+  elif config.TARGET_CXX.options.HAVE_BSD_ISINF_IN_MATH:
+    tangle('  fun isinf: '+t+' -> bool = "isinf'+fc[t]+'($1)" is postfix requires math_h;')
+  elif config.TARGET_CXX.options.HAVE_BSD_ISINF_IN_IEEEFP:
+    tangle('  fun isinf: '+t+' -> bool = "isinf'+fc[t]+'($1)" is postfix requires ieeefp_h;')
+  else:
+    tangle('  fun isinf: '+t+' -> bool = "($1==$1 && $1+$1+1.0==$1)" is unary;')
+
+  if config.TARGET_CXX.options.HAVE_CXX_ISFINITE_IN_CMATH:
+    tangle('  fun isfinite: '+t+' -> bool = "::std::isfinite($1)" is postfix requires cmath;')
+  elif config.TARGET_CXX.options.HAVE_C99_ISFINITE_IN_MATH:
+    tangle('  fun isfinite: '+t+' -> bool = "isfinite($1)" is postfix requires math_h;')
+  elif config.TARGET_CXX.options.HAVE_BSD_FINITE_IN_MATH:
+    tangle('  fun isfinite: '+t+' -> bool = "finite'+fc[t]+'($1)" is postfix requires math_h;')
+  elif config.TARGET_CXX.options.HAVE_BSD_FINITE_IN_IEEEFP:
+    tangle('  fun isfinite: '+t+' -> bool = "finite'+fc[t]+'($1)" is postfix requires ieeefp_h')
+  else:
+    tangle('  fun isfinite: '+t+' -> bool = "($1==$1 && $1!==0.0 && $1+$1!=$1)" is unary;')
+
+
+
+@h=tangler('lib/plat/flx.flxh','data')
+@select(h)
+// GENERATED DURING CONFIGURATION
+open syntax felix;
+
+@plats = ["WIN32","POSIX","LINUX","MACOSX","CYGWIN","SOLARIS","BSD"]
+
+@for i in plats:
+  if getattr(config, i):
+    tangle("macro val " + i + " = true;")
+  else:
+    tangle("macro val " + i + " = false;")
+
+@ctypes=tangler('lib/plat/flx_ctypes.flx','data')
+@select(ctypes)
+// GENERATED DURING CONFIGURATION
+header cctype_hxx = '#include <cctype>';
+header string_hxx = '#include <string>';
+header complex_hxx = '#include <complex>';
+header c99_complex_h = '#include <complex.h>';
+
+@if config.TARGET_CXX.options.HAVE_STDINT:
+  tangle('header c99_stdint_h = "#include <stdint.h>";')
+ else:
+  tangle('header c99_stdint_h = "";')
+
+header cstdlib = "#include <cstdlib>";
+header cstring = "#include <cstring>";
+
+@chars = ["char", "wchar", "uchar"]
+@fast_sints = [
+  "tiny", "short", "int", "long", "vlong"
+  ]
+@fast_uints = [
+  "utiny", "ushort", "uint", "ulong", "uvlong"
+  ]
+@exact_sints = [
+  "int8","int16","int32","int64"
+  ]
+@exact_uints = [
+  "uint8","uint16","uint32","uint64"
+  ]
+@sints = fast_sints + exact_sints
+@uints = fast_uints + exact_uints
+@fast_ints = fast_sints + fast_uints
+@exact_ints = exact_sints + exact_uints
+@ints = uints + sints
+
+@floats = ["float", "double", "ldouble"]
+
+@complex = ["fcomplex","dcomplex","lcomplex"]
+@imaginary= ["imaginary", "dimaginary", "limaginary"]
+@all = [
+  "byte", "address","caddress","vaddress","cvaddress",
+  "offset",
+  ] + chars + fast_ints + floats + complex + imaginary
+
+@def gen_type(t):
+  d = rmap.get(t,None)
+  if d:
+    tangle('pod type '+t+' = "'+tmap[t]+'" requires '+d+';')
+  else:
+    tangle('pod type '+t+' = "'+tmap[t]+'";')
+
+@fint2cint={
+  'tiny':'signed char',
+  'short':'short',
+  'int':'int',
+  'long':'long',
+  'vlong':'long long',
+  'utiny':'unsigned char',
+  'ushort':'unsigned short',
+  'uint':'unsigned int',
+  'ulong':'unsigned long',
+  'uvlong':'unsigned long long',
+  }
+
+@cint2fint = {}
+@for f in fint2cint.keys(): cint2fint[fint2cint[f]]=f
+
+@def alias_sint(t):
+  if t == 'int8': size = 1
+  elif t == 'int16': size = 2
+  elif t == 'int32': size = 4
+  elif t == 'int64': size = 8
+  if SIZEOF_CHAR == size: return 'tiny'
+  if SIZEOF_SHORT == size: return 'short'
+  if SIZEOF_INT == size: return 'int'
+  if SIZEOF_LONG == size: return 'long'
+  if SIZEOF_LONGLONG == size: return 'vlong'
+
+@def alias_uint(t):
+  if t == 'uint8': size = 1
+  elif t == 'uint16': size = 2
+  elif t == 'uint32': size = 4
+  elif t == 'uint64': size = 8
+  if SIZEOF_CHAR == size: return 'utiny'
+  if SIZEOF_SHORT == size: return 'ushort'
+  if SIZEOF_INT == size: return 'uint'
+  if SIZEOF_LONG == size: return 'ulong'
+  if SIZEOF_LONGLONG == size: return 'uvlong'
+
+@select(tangler("lib/plat/ctypedefs.flx",'data'))
+// GENERATED DURING CONFIGURATION
+@for t in all:
+  gen_type(t)
+
+_gc_pointer type gcaddress = "void*";
+_gc_pointer type gcptr[t]= "?1*";
+
+@# mandatory in C
+@for t in ['ptrdiff','size','intmax','uintmax','intptr','uintptr']:
+  equiv = cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]
+  tangle('typedef ' + t + ' = ' + equiv + ';')
+
+@# optional in C
+@for t in exact_ints:
+  equiv = cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]
+  tangle('typedef ' + t + ' = ' + equiv + ';')
+
+@select(tangler('lib/plat/arithmax.flx','data'))
+// GENERATED DURING CONFIGURATION
+// arithmetic conversion rule
+typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
+  typematch integral_promotion l, integral_promotion r with
+@for f1 in fint2cint.keys():
+  if f1 not in ['tiny','short','utiny','ushort']:
+    for f2 in fint2cint.keys():
+      if f2 not in ['tiny','short','utiny','ushort']:
+        f3 = cint2fint[config.TARGET_CXX.options.arith_conv[(fint2cint[f1],fint2cint[f2])]]
+        comment = ""
+        if f1 == f2:
+          if f2 != f1: comment = "// ERROR"
+        if (f1 == 'uvlong' or f2 == 'uvlong') and f3 != 'uvlong':
+          comment = "// ERROR, uvlong expected"
+        elif f3 != f1 and f3 != f2:
+          comment = "// SPECIAL PROMOTION"
+        elif f1 == 'uint' and f2=='long' or f1=='long' and f2=='uint':
+          comment = '// Representation Dependent (long or ulong)'
+        if f1 == 'uvlong' or f2 == 'uvlong' or f3 == 'int':
+          pass
+        else:
+          tangle('  | '+f1+','+f2+' => '+f3+' '+comment)
+@#
+  | uvlong,_ => uvlong
+  | _,uvlong => uvlong
+  | _,_ => int
+  endmatch
+;
+
+
+@select(tangler('lib/plat/float.flx','data'))
+// GENERATED DURING CONFIGURATION
+@for t in floats:
+  tangle("open module " + t.capitalize())
+  tangle("{")
+  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(::std::atof($1.data()))" requires cstdlib;')
+  tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
+  gen_nan(t)
+  tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
+  tangle("}")
+  tangle("")
+
+
+@select(ctypes)
+include "plat/ctypedefs";
+include "std/ctypesets";
+include "plat/arithmax";
+include "plat/float";
+
+
+fun _ctor_int: size -> int = "$1";
+fun _ctor_size: int -> size = "$1";
+
+
+instance [t in basic_types] Eq[t] {
+  fun eq: t * t -> bool = "$1==$2";
+}
+open[T in basic_types] Show[T];
+open Show[bool];
+@doc()
+
+@h = tangler("lib/std/version.flx")
+@select(h)
+// GENERATED DURING BUILD (for version number)
+publish "System Interface"
+module Version
+{
+@tangle('  const felix_version : string = \'::std::string("'+config.flx_version+'")\';')
+}
+
+
+@h = tangler("lib/plat/filename.flx")
+@select(h)
+// GENERATED DURING CONFIGURATION
+module Plat_Filename
+{
+@if os.sep == '\\':
+   # FFS!!! we put \\\\\\\\ here:
+   # Python reduces it to \\\\             !!!
+   # Felix then reduces it to \\           !!!
+   # and finally C reduces it to plain \   !!!
+   # don't remove the !!! because \ at eol is continuation .. argg
+   tangle('  val sep  = "\\\\\\\\"')
+ else:
+   tangle('  val sep = "'+os.sep+'";')
+@#
+ 
+}
+
+@h=tangler('src/compiler/flx_version_hook/flx_version_hook.ml')
+@select(h)
+@python("//")
+def get_buildno():
+  fname = "config/buildno.txt"
+  try:
+    f = open(fname)
+    s = f.readline()
+    s = s[0:-1]
+    i = int(s) + 1
+    f.close()
+  except:
+    i = 1
+  s = str(i)
+  try: os.mkdir("config")
+  except: pass
+  f = open(fname,"w")
+  f.write("%d\n" % i)
+  f.close()
+  return s
+//
+@import time
+@now = time.time()
+@gmtime = time.gmtime(now)
+@short_time = time.strftime("%a %d %b %Y",gmtime)
+@buildno = get_buildno()
+@print("BUILDNO",buildno)
+open Flx_version
+let version_data: version_data_t =
+{
+@tangle('  buildno = '+buildno+";")
+@tangle('  version_string = "%s";' % config.flx_version)
+@tangle('  build_time_float = %s;' % now)
+@tangle('  build_time = "%s";' % time.ctime(now))
+@f = open ("VERSION","w")
+@f.write(config.flx_version+"\n")
+@f.close()
+}
+;;
+let set_version () =
+  Flx_version.version_data := version_data
+;;
