@@ -4,7 +4,6 @@
 @select(h)
 Name: pthread
 Description: Pre-emptive threading support
-Version: $Id$
 
 @if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:flx_pthread_dynamic")
