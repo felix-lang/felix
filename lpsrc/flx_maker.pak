@@ -904,35 +904,13 @@ module Plat_Filename
 
 @h=tangler('src/compiler/flx_version_hook/flx_version_hook.ml')
 @select(h)
-@python("//")
-def get_buildno():
-  fname = "config/buildno.txt"
-  try:
-    f = open(fname)
-    s = f.readline()
-    s = s[0:-1]
-    i = int(s) + 1
-    f.close()
-  except:
-    i = 1
-  s = str(i)
-  try: os.mkdir("config")
-  except: pass
-  f = open(fname,"w")
-  f.write("%d\n" % i)
-  f.close()
-  return s
-//
 @import time
 @now = time.time()
 @gmtime = time.gmtime(now)
 @short_time = time.strftime("%a %d %b %Y",gmtime)
-@buildno = get_buildno()
-@print("BUILDNO",buildno)
 open Flx_version
 let version_data: version_data_t =
 {
-@tangle('  buildno = '+buildno+";")
 @tangle('  version_string = "%s";' % config.flx_version)
 @tangle('  build_time_float = %s;' % now)
 @tangle('  build_time = "%s";' % time.ctime(now))
