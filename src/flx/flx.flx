@@ -37,7 +37,7 @@ var TIME=0;
 var NOOPTIMISE=0;
 var TIMECMD="time -p";
 var STATIC=DEFAULT_LINK_STATIC;
-
+var SHOWCODE=0;
 var RUNIT=1;
 var CCFLAGS="";
 var FELIX=1;
@@ -92,7 +92,7 @@ fun prefix(arg:string,key:string)=>
   arg.[to len key]==key
 ;
 
-var compile_exts = List::list ('cpp','cxx');
+var compile_exts = List::list ('cpp','cxx','c','cc');
 var linkexts =  List::list ('o','obj','lib','dll','a','so');
 var arg = "";
 var result = 0;
@@ -163,6 +163,9 @@ whilst grab == 1 and argno<System::argc do
     // of the Felix program only: used for saving the output
     // to a file so the test harness can compare it with an .expect file
     STDOUT=arg.[9 to];
+
+  elif arg=="--show" do
+    SHOWCODE=1;
 
   elif arg=="--force" do
     debugln "Force recompilation";
@@ -266,6 +269,7 @@ whilst grab == 1 and argno<System::argc do
     println$ "FELIX              = "+str FELIX;
     println$ "LINKER_SWITCHES    = "+str LINKER_SWITCHES;
     println$ "MACROS             = "+str MACROS;
+    println$ "SHOWCODE           = "+str SHOWCODE;
     System::exit(0)
 
   elif arg == "--where" do
@@ -297,6 +301,7 @@ whilst grab == 1 and argno<System::argc do
     println "--test               : use felix installation in current directory";
     println "--test=dir           : use felix installation in dir";
     println "--where              : print location of felix installation";
+    println "--show               : print the felix program to stdout";
     println "-c                   : compile only, do not run";
     println "--static             : make standalone statically linked executable";
     println "--nofelix            : do not run felix translator, leave C++ outputs alone";
@@ -306,7 +311,7 @@ whilst grab == 1 and argno<System::argc do
     println "--force              : force run Felix compiler";
     println "--cache_dir=dir      : extant directory cache output from parser (*.par files)";
     println "--output_dir=dir     : extant directory to hold C++ output from translator";
-    println "--man                : show man page";
+    println "--man                : show flx man page (if there is one)";
     println "--help               : show this help";
     println "--noinline           : force inlining off, may break things!";
     println "--inline             : aggressive inlining"; 
@@ -325,8 +330,15 @@ whilst grab == 1 and argno<System::argc do
     println "-Ldir                : add dir to linker search path"; 
     println "-llib                : add dir lib to linker command";
     println "-Dmac                : add macro def to C++ compiler command";
-    println "*.cpp *.cxx *.o *.obj *.lib *.dll *.a *.so";
-    println "                     : add files to C++ compilation or linker steps";
+    println "-DFLX_ENABLE_TRACE       : enable compilation of trace generators (defaults off)";
+    println "-DFLX_PTF_STATIC_STRUCT  : make the thread_frame a static object (default Felix heap)";
+    println "-DFLX_PTF_STATIC_POINTER : access the thread_frame from a static pointer (default pass as arg)";
+    println "-DFLX_CGOTO              : use gcc indirect gotos and use assembler hack for long jumps (default on if config detects support)";
+    println "";
+    println "*.c *.cc *.cpp *.cxx ";
+    println "                     : add files to C++ compilation (and linker) steps";
+    println "*.o *.obj *.lib *.dll *.a *.so";
+    println "                     : add files to linker steps";
     println "* *.flx              : Felix program name, terminates options and starts runtime arguments";
     System::exit(0);
 
@@ -627,6 +639,10 @@ fun cal_dep_time(f:string)=>cal_time_from_dep(f+".dep");
 var cmd = "";
 debugln$ "RECOMPILE="+str RECOMPILE;
 debugln$ "RUNIT="+str RUNIT;
+if SHOWCODE == 1 do {
+  prg := Text_file::load(filebase+".flx");
+  print prg;
+} done
 
 if RECOMPILE == 0 and RUNIT == 1 do
   // not (--force or -c)

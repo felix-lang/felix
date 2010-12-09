@@ -35,11 +35,13 @@ private val small_keywords =
   "typematch","match","endmatch","with","requires",
   "return","goto","jump","loop",
   "package",
-  "when", "result","expect","for","ident","noexpand"
+  "when", "result","expect","for","ident","noexpand",
+  "typesetof"
 ;
 
 private val qualifiers = 
-  "virtual", "inline", "noinline", "private", "incomplete","callback"
+  "virtual", "inline", "noinline", "private", "incomplete","callback","pod",
+  "_gc_pointer"
 ;
 private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
 
