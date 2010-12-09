@@ -1,4 +1,4 @@
-#line 34 "interscript/src/input_frame.ipk"
+
 import string
 import re
 import traceback
@@ -23,7 +23,6 @@ from interscript.tanglers.data import data_tangler
 
 from interscript.core.protocols import has_protocol
 
-from interscript.parsers.html import sgml_wrapper, html_filter
 try:
   import interscript.utilities.diff
 except:
@@ -35,7 +34,7 @@ def compile_parse_tab(res):
 
 class deduce: pass
 
-#line 78 "interscript/src/input_frame.ipk"
+
 class input_frame:
 
   def __init__(self, pass_frame, src, reg_list, weaver, userdict, depth):
@@ -76,7 +75,7 @@ class input_frame:
 
   def get_input_frame(self): return self
 
-#line 124 "interscript/src/input_frame.ipk"
+
   def post_methods(self):
     # input frame methods
     self.userdict.update(self.process.global_frame.__dict__)
@@ -98,7 +97,6 @@ class input_frame:
       'include_file','include_source',
       'include_code','insert_code',
       'sink_verbatim','expand','define',
-      'include_html','html',
       'capture_output',
       'capture_python_output','print_python_output',
       'print_python_test_output',
@@ -108,7 +106,6 @@ class input_frame:
       'post_notice',
       'skip_upto','skip_upto_if',
       'set_encoding','get_encoding',
-      'help', 'weave_help'
       ]
     for m in method_names:
       self.userdict[m]=eval('self.'+m)
@@ -128,8 +125,6 @@ class input_frame:
     #master frame methods
     mastrer_frame_method_names = [
       'get_master_frame',
-      'set_title', 'get_title',
-      'add_author',
       'set_native_language','get_native_language',
       'set_document_data', 'get_document_data']
     for m in mastrer_frame_method_names:
@@ -141,41 +136,7 @@ class input_frame:
     for f in function_names:
       self.userdict[f]=eval(f)
 
-#line 210 "interscript/src/input_frame.ipk"
-  def help(self):
-    "Command help"
-    print("Command Help")
-    d = self.userdict
-    keys = list(d.keys())
-    keys.sort()
-    for key in keys:
-      routine = d[key]
-      typ = type(routine)
-      doc = getattr(routine,'__doc__','')
-      if typ.__name__ in ['module']:
-        print(typ.__name__,key)
-      else:
-        print(typ.__name__, key + "->",doc)
 
-  def weave_help(self, level):
-    "Weave help"
-    self.head(level,"Command Help")
-    d = self.userdict
-    keys = list(d.keys())
-    keys.sort()
-    for key in keys:
-      routine = d[key]
-      typ = type(routine)
-      doc = getattr(routine,'__doc__','')
-      if doc is None: doc = "No documentation"
-      self.head(level+1, typ.__name__+ " "+ key)
-      if typ is types.MethodType:
-        self.weave_line("Method of class " + routine.__self__.__class__.__name__+".")
-      self.begin_displayed_code()
-      self.weave(doc)
-      self.end_displayed_code()
-
-#line 246 "interscript/src/input_frame.ipk"
   def close(self):
     if 'frames' in self.process.trace:
       print('closing frame',self.source.name)
@@ -187,7 +148,7 @@ class input_frame:
     while self.current_tangler_stack: del self.current_tangler_stack[-1]
     while self.current_weaver_stack: del self.current_weaver_stack[-1]
 
-#line 259 "interscript/src/input_frame.ipk"
+
   def file_pass(self):
     while 1:
       try:
@@ -230,7 +191,7 @@ class input_frame:
         self.close()
         sys.exit(1)
 
-#line 308 "interscript/src/input_frame.ipk"
+
   def interscript_from_options(self,*args):
     "Run interscript from with the given command line options"
     from interscript  import run_from_options
@@ -254,7 +215,7 @@ class input_frame:
     else:
       return default
 
-#line 403 "interscript/src/input_frame.ipk"
+
   def begin(self):
     "Begin a block"
     ho = self.head_offset
@@ -275,7 +236,7 @@ class input_frame:
     self.select(None)
     raise eoi
 
-#line 477 "interscript/src/input_frame.ipk"
+
   def include_file(self,name,encoding=None):
     "Include an interscruot file"
     if 'input' in self.process.trace:
@@ -322,7 +283,7 @@ class input_frame:
     inpt.set_warning_character(python='@')
     inpt.file_pass()
 
-#line 527 "interscript/src/input_frame.ipk"
+
   def set_encoding(self, encoding):
     "Set the current encoding"
     self.source.set_encoding(encoding)
@@ -330,7 +291,7 @@ class input_frame:
     "Get the current encoding"
     return self.source.get_encoding()
 
-#line 558 "interscript/src/input_frame.ipk"
+
   def insert_code(self,name):
     "Insert code in an external file into the tangler stream"
     ifdata = (self.depth+1,'code: '+self.current_tangler.language,name)
@@ -389,39 +350,6 @@ class input_frame:
     data = source.readlines()
     self.current_tangler.sink.writelines(data)
 
-#line 637 "interscript/src/input_frame.ipk"
-
-#line 654 "interscript/src/input_frame.ipk"
-  def include_html(source):
-    "Include a HTML file as input. Translate to interscript."
-    self.select(None)
-    r = []
-    self.pass_frame.include_files.append((self.depth+1,'html: '+self.current_tangler.language,name))
-    inpt = input_frame(
-      self.pass_frame,
-      source,
-      r,
-      self.current_weaver,
-      self.userdict.copy(),
-      self.depth+1)
-    inpt.html_parser = sgml_wrapper(html_filter(inpt))
-    r.append((inpt.any_line_re,inpt.do_html))
-    inpt.file_pass()
-
-  def html(self):
-    "Begin processesing embedded HTML. Translate to interscript."
-    self.select(None)
-    r = []
-    inpt = input_frame(
-      self.pass_frame,
-      self.source,
-      r,
-      self.current_weaver,
-      self.userdict.copy(),
-      self.depth)
-    inpt.html_parser = sgml_wrapper(html_filter(inpt))
-    r.append((inpt.any_line_re,inpt.do_html))
-    inpt.file_pass()
 
 
 
@@ -441,7 +369,7 @@ class input_frame:
     "Disable the current weaver"
     self.current_weaver.disable()
 
-#line 740 "interscript/src/input_frame.ipk"
+
   def set_warning_character(self,python=None):
     "Set the interscript warning character (usually @)"
     res = self.make_parse_tab(pywarn=python)
@@ -455,7 +383,7 @@ class input_frame:
     else:
       pass
 
-#line 758 "interscript/src/input_frame.ipk"
+
   def enqueue_input(self,file, count, line):
     """Enqueue a line with cross reference information
     into the input stream."""
@@ -467,7 +395,7 @@ class input_frame:
     del self.read_buffer[0]
     return data
 
-  # This is the interscript version of a #line directive
+  # This is the interscript version of a 
   def line(self, number, filename):
     "Reset interscript's source reference data"
     self.inpt.original_file = filename
@@ -498,7 +426,7 @@ class input_frame:
         print('program error in readline:',sys.exc_info())
         self.process.update_files = 0
 
-#line 820 "interscript/src/input_frame.ipk"
+
   def untangle(self,name):
     """Wrap an external file up as an interscript package, the wrapped
     file is written to the current tangler."""
@@ -519,7 +447,7 @@ class input_frame:
     self.current_tangler.weaver.end_small()
     self.current_tangler.weaver.line_break()
 
-#line 867 "interscript/src/input_frame.ipk"
+
 # regexp's for the main functions
 
   def make_parse_tab(self, pywarn = None):
@@ -537,7 +465,7 @@ class input_frame:
       ]
     return res
 
-#line 894 "interscript/src/input_frame.ipk"
+
   def collect_stuff(self,prefix, cont_re, echo):
     saved = prefix
     try:
@@ -586,7 +514,7 @@ class input_frame:
     "Collect text up to marker line"
     return '\n'.join(self.collect_lines_upto(terminal,keep))+'\n'
 
-#line 944 "interscript/src/input_frame.ipk"
+
   def python(self, terminal, keep=0):
     "Execute embedded python script"
     file = self.original_filename
@@ -594,28 +522,28 @@ class input_frame:
     data = self.collect_upto(terminal)
     self.process.py_exec(data,file,count,self.userdict)
 
-#line 1116 "interscript/src/input_frame.ipk"
+
   def do_exec_line(self,match, file,count,dict):
     self.process.py_exec(match.group(1),file,count,dict)
 
-#line 1121 "interscript/src/input_frame.ipk"
+
   def do_exec_suite(self,match,file,count,dict):
     saved = self.collect_stuff(match.group(1), self.cont_re, self.echo)
     self.process.py_exec(saved,file,count,dict)
 
-#line 1127 "interscript/src/input_frame.ipk"
+
   def do_web(self,match,file,count,dict):
     self.normal_line(match.group(1),file,count)
 
-#line 1132 "interscript/src/input_frame.ipk"
+
   def do_quote_at(self,match,file,count,dict):
     self.normal_line(match.group(1)+match.group(2),file,count)
 
-#line 1137 "interscript/src/input_frame.ipk"
+
   def do_html(self,match,file,count,dict):
     self.html_parser.writeline(match.group(1),file,count)
 
-#line 1150 "interscript/src/input_frame.ipk"
+
   def tangler_push(self,f):
     "Push the current tangler onto the tangler stack then set it to the given tangler"
     self.current_tangler_stack.append(self.current_tangler)
@@ -634,7 +562,7 @@ class input_frame:
     "Get the current tangler (may be None)"
     return self.current_tangler
 
-#line 1174 "interscript/src/input_frame.ipk"
+
   def data_output(self,f): return self.tangler(f,'data')
   def c_output(self,f): return self.tangler(f,'c')
   def cpp_output(self,f): return self.tangler(f,'cpp')
@@ -699,7 +627,7 @@ class input_frame:
       t=data_tangler(sink,self.current_weaver)
     return t
 
-#line 1289 "interscript/src/input_frame.ipk"
+
   def push(self,f):
     "Push tangler onto tangler stack"
     self.tangler_push(f)
@@ -708,7 +636,7 @@ class input_frame:
     "Pop tangler from tangler stack"
     self.tangler_pop()
 
-#line 1302 "interscript/src/input_frame.ipk"
+
   def select(self, *args, **kwds):
     "Select the nominated object as the current tangler or weaver"
     for arg in args:
@@ -788,9 +716,9 @@ class input_frame:
     "Begin documentation mode"
     self.tangler_set(None)
 
-#line 1761 "interscript/src/input_frame.ipk"
+
   def post_notice(self, key, value):
     "Post a copyright, licence, or credit notice"
     self.master.noticedict[key]=value
-#line 1765 "interscript/src/input_frame.ipk"
+
 

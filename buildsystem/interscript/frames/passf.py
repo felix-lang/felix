@@ -1,4 +1,4 @@
-#line 26 "interscript/src/pass_frame.ipk"
+
 import string
 import traceback
 import sys
@@ -9,7 +9,6 @@ from interscript.drivers.sources.disk import named_file_source
 from interscript.drivers.sources.base import eoi
 from interscript.frames.inputf import input_frame
 from interscript.drivers.sources.base import eoi
-from interscript.parsers.html import sgml_wrapper, html_filter
 
 class pass_frame:
   def __init__(self,master, passno, skiplist):
@@ -43,7 +42,7 @@ class pass_frame:
     if 'frames' in self.process.trace:
       print('Processing',file,'Pass',passno+1,'Encoding',encoding)
 
-#line 81 "interscript/src/pass_frame.ipk"
+
 
     basename = file
     if file.find('.') != -1:

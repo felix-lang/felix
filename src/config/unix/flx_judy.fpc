@@ -1,5 +1,5 @@
 Name: Judy
 Description: Judy arrays
-provides_dlib: /DEFAULTLIB:flx_judy_dynamic
-provides_slib: /DEFAULTLIB:flx_judy_static
+provides_dlib: -lflx_judy_dynamic
+provides_slib: -lflx_judy_static
 includes "Judy.h"
