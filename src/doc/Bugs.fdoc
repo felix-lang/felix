@@ -150,4 +150,19 @@ fun f: RE2 -> int = "..";
 var r = RE2(..);
 println$ r.ngroups; // fails, r is a pointer, tried to find ngroups (*r)
 
+@h1 Increment varray element doesnt work
+You can't say this:
+@felix
+  var x = varray(5,1);
+  ++x.[1]; // error, can't address x.[1]
+@
+despite the fact the subscript operator is declared lvalue.
+This works though:
+@felix
+  x.[1] = x.[1] + 1;
+@
+which shows the restriction is unnecessary. Note that increment function {pre_incr}
+requires a pointer, the parser takes the address of the LHS to find it, on the
+assumption that it is a variable. A {varray}, however, it already a pointer..
+This needs to be sorted out.
 

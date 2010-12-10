@@ -679,8 +679,10 @@ proc serve_file(s: socket_t, infname: string)
   elif suffix == "fdoc" do 
     serve_xfdoc(s, fname);
   elif suffix == "html" do
+    fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
     serve_html(s,fname)
   elif suffix == "xhtml" do
+    fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
     serve_xhtml(s,fname)
   elif suffix in text_suffices do
     serve_text(s,fname)
