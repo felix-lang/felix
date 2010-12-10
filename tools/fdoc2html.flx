@@ -10,6 +10,34 @@ fun markdown (s:string):string= {
   return x;
 }
 
+val js_toggle = 
+"""
+<script type="text/javascript">
+
+function toggle(button,id)
+{
+  var n = document.getElementById(id).style;
+  if (n.display == "none")
+  {
+    button.src = "/web/images/minus.gif";
+    button.alt = "-";
+    n.display = "block";
+  }
+  else
+  {
+    button.src = "/web/images/plus.gif";
+    button.alt = "+";
+    n.display = "none";
+  }
+}
+</script>
+""";
+
+// bid is the button id, cid is the stuff which is controlled by it
+fun tree_button(bid:string, cid:string)=>
+  "<img src='/web/images/plus.gif' id='"+bid+"' onclick='toggle(this,\""+cid+"\")' alt='+'/>"
+;
+
 val timeout = Filename::join (Config::FLX_INSTALL_DIR, "bin", "timeout"+Config::EXT_EXE);
 
 gen safer_popen(cmd:string)=>
@@ -18,7 +46,7 @@ gen safer_popen(cmd:string)=>
 
 fun xlat_fdoc(t:string)=
 {
-  var out = "";
+  var out = js_toggle;
   proc write_string(t:string) 
   { 
     out += t;
@@ -56,6 +84,37 @@ fun xlat_fdoc(t:string)=
   proc ep() { if pstate do end_p; done }
   proc bp() { if pstate do end_p; done start_p; }
 
+  // heading control
+  var hstack = 0; // number of open <div>s
+  var hnums = varray[int] (size 5,1); 
+  proc edivs(n:int) { 
+    whilst hstack > n do 
+      write_string("</div>"); 
+      --hstack;
+      hnums.[hstack]=1;
+     done
+     if hstack == n do
+       --hstack;
+       write_string("</div>"); 
+       hnums.[hstack]=hnums.[hstack]+1; 
+     done
+  }
+  fun hnum() = {
+    var s = ""; var i:int;
+    forall i in 0 upto hstack-2 do
+      s+=str(hnums.[i]) + ".";
+    done
+    return s + str(hnums.[hstack-1]);
+  } 
+  proc h(n:int, txt:string) { 
+    ep; 
+    edivs(n); 
+    tb:=tree_button(txt,txt+"_d");
+    ++hstack;
+    write_string("<h"+str n+">"+tb+" "+hnum()+" "+ txt+"</h"+str n+"><div id='"+txt+"_d' style='display:none'>\n"); 
+    s=doc;
+  }
+ 
 nextc:>
   next();
   if isnull ch goto fin; // out of data
@@ -125,9 +184,10 @@ nextc:>
             write_string("<pre class='flxbg'>"); 
             write_string(Flx2Html::xlat_felix (flx,""));
             write_string("</pre>\n");
-            write_string("<pre class='inclusion'>"+fname+".expect</pre>\n");
+            write_string(tree_button(fname,fname+"_d"));
+            write_string("<code class='inclusion'>  "+fname+".expect</code>\n");
             var xpected = get_flx(fname+".expect");
-            write_string("<pre class='expected'>"); 
+            write_string("<pre id='"+fname+"_d' class='expected' style='display:none'>"); 
             write_string(xpected);
             write_string("</pre>"); 
           };
@@ -150,10 +210,10 @@ nextc:>
         elif b=="bug" do ep; pstate=true; write_string("<p class='bug'> <em>Bug: </em>"); s=doc;
         elif b=="fixed" do ep; pstate=true; write_string("<p class='fixed'> <em>Fixed: </em>"); s=doc;
         elif b=="done" do ep; pstate=true; write_string("<p class='done'> <em>Done: </em>"); s=doc;
-        elif prefix(b,"h1") do ep; write_string("<h1>"+b.[3 to]+"</h1>\n"); s=doc;
-        elif prefix(b,"h2") do ep; write_string("<h2>"+b.[3 to]+"</h2>\n"); s=doc;
-        elif prefix(b,"h3") do ep; write_string("<h3>"+b.[3 to]+"</h3>\n"); s=doc;
-        elif prefix(b,"h4") do ep; write_string("<h4>"+b.[3 to]+"</h4>\n"); s=doc;
+        elif prefix(b,"h1") do h(1,b.[3 to]); 
+        elif prefix(b,"h2") do h(2,b.[3 to]); 
+        elif prefix(b,"h3") do h(3,b.[3 to]);
+        elif prefix(b,"h4") do h(4,b.[3 to]);
         elif prefix(b,"sh") do 
           var cmd = b.[3 to];
           var fout = safer_popen(cmd);
@@ -182,6 +242,7 @@ fin:>
 //   println "outof data";
    if b != "" do write_string(match s with | doc => markdown b | _ => b endmatch); done
    ep;
+   edivs(1);
    return out;
 }
 }

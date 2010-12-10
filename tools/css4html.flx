@@ -15,6 +15,7 @@ pre.flxbg {background-color:#80FF80; }
 pre.cppbg {background-color:#80FF80; }
 pre.expected {background-color:#E0FF80; }
 pre.inclusion {background-color:#D070D0; }
+code.inclusion {background-color:#D070D0; }
 .obsolete { background-color:#FFEFEF; font-size: small}
 .future { background-color:#FF8080; font-size: small}
 .implementation_detail { background-color:#E0E0E0; font-size: small; }

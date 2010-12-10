@@ -125,6 +125,23 @@ fun parse_get_line (get:string): opt[string*string] =>
   split_url$ getline_to_url get
 ;
 
+// fixup text by replacing < > and & characters
+fun txt2html(x:string):string=
+{
+  var out2 = "";
+  var i:int;
+  forall i in 0 upto len x-1 do
+    var ch = x.[i];
+    if ch == char "<" do out2+="&lt;";
+    elif ch == char ">" do out2+="&gt;";
+    elif ch == char "&" do out2+="&amp;";
+    else out2+=ch;
+    done
+  done
+  return out2;
+}
+
+
 // functions to make responses
 fun make_image(suffix:string, contents:string)=> 
 let ?kind = if suffix == "jpg" then "jpeg" else suffix endif in
@@ -385,7 +402,8 @@ proc serve_cpp(k:socket_t, fname:string)
 val text_suffices = (
   "txt","py","ml","mli",
   "tex","pl","dyp",
-  "why","resh","pak","ipk"
+  "why","resh","pak","ipk",
+  "dep","stdout","expect"
 );
 
 proc serve_text(k:socket_t, fname:string)
@@ -654,7 +672,7 @@ proc serve_file(s: socket_t, infname: string)
     serve_py(s, fname);
   elif suffix in list ("ml","mli") do 
     serve_ocaml(s, fname);
-  elif suffix in list("cpp","hpp","h","c","cc","i","cxx","rtti","includes") do 
+  elif suffix in list("cpp","hpp","h","c","cc","i","cxx","rtti","includes","ctors_cpp") do 
     serve_cpp(s, fname);
   elif suffix == "fpc" do 
     serve_fpc(s, fname);

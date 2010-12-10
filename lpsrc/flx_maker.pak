@@ -60,6 +60,7 @@ fun link_strings(FLX_INSTALL_DIR:string): string * string =
 @select(tangler("config/target/flx_meta.hpp"))
 #ifndef __FLX_META_H__
 #define __FLX_META_H__
+// GENERATED during config
 // taken from BOOST
 @if config.TARGET_CXX.options.HAVE_INCLASS_MEMBER_INITIALIZATION:
   tangle('#define FLX_HAVE_INCLASS_MEMBER_INITIALIZATION 1')
