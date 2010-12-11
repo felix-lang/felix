@@ -98,20 +98,6 @@ fun xlat_felix(t:string, dir:string)=
   var last_key = "";
 
   proc cp() { b += ch; }
-  fun fixup(x:string):string={
-    var out2 = "";
-    var i:int;
-    forall i in 0 upto len x-1 do
-      var ch = x.[i];
-      if ch == char "<" do out2+="&lt;";
-      elif ch == char ">" do out2+="&gt;";
-      elif ch == char "&" do out2+="&amp;";
-      else out2+=ch;
-      done
-    done
-    return out2;
-  }
-
   proc ws() {
     if last_id == "include" do // hackery
       var n = b; 
@@ -120,7 +106,7 @@ fun xlat_felix(t:string, dir:string)=
       if n.[-4 to] != ".flx" do n+= ".flx"; done // hack, fixme
       match get_file(n,FLX_PATH) with
       | Some ?f => { write_string('<a href="/$'+f+'" >' + b + '</a>') ; }
-      | None => {  write_string('<span class="fstring">'+fixup b+"</span>"); }
+      | None => {  write_string('<span class="fstring">'+txt2html b+"</span>"); }
       endmatch;
     elif last_key in ("header","body") do
       n = b; 
@@ -144,14 +130,14 @@ unstring:>
       n+=".fpc";
 println$ "Package file basename is " + n;
       match get_file(n,FLX_PKGCONFIG_PATH) with
-      | Some ?f => { write_string('<a href="/$'+f+'" >' + fixup b + '</a>') ; }
+      | Some ?f => { write_string('<a href="/$'+f+'" >' + txt2html b + '</a>') ; }
       | None => { 
           println$ "Can't find "+n+" in path " + str FLX_PKGCONFIG_PATH;   
-          write_string('<span class="fstring">'+fixup b+"</span>"); 
+          write_string('<span class="fstring">'+txt2html b+"</span>"); 
         }
       endmatch;
     else 
-     write_string('<span class="fstring">'+fixup b+"</span>"); 
+     write_string('<span class="fstring">'+txt2html b+"</span>"); 
     done
   }
   proc w() { 

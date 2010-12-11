@@ -1,88 +1,5 @@
 @import config
 
-@def make_executable(path):
-   import stat
-   try:
-     mode = os.stat(path).st_mode
-     os.chmod(path, mode | stat.S_IXUSR)
-   except OSError as e:
-     print(e)
-
-@h = tangler('script/bin2hex.py')
-@select(h)
-# convert a binary file to hex
-import sys
-fn = sys.argv[1]
-f = open(fn)
-data = f.read()
-f.close()
-counter = 0
-for ch in data:
-  print("%02x" % ord(ch), end='')
-  counter = counter + 1
-  if counter == 8:
-    print()
-    counter = 0
-print()
-
-@select(tangler('AUTHORS'))
-John (Max) Skaller skaller at users dot sourceforge dot net
-Peter Jolly helped do the Cygwin build
-
-@select(tangler('LICENCE'))
-@tangle('Version ' + config.flx_version + ' of Felix')
-is free for any use, provided the authors
-are not misrepresented in any way.
-
-@python("//")
-def mkgif(fn,d):
-  try:
-    os.mkdir("misc")
-  except:
-    pass
-  f = open("misc"+os.sep+fn+".gif","wb")
-  f.write(d)
-  f.close()
-
-plus=(b"\x47\x49\x46\x38\x39\x61\x09\x00"
-  b"\x09\x00\x91\x00\x00\xfe\xfe\xfe"
-  b"\x82\x82\x82\x02\x02\x02\x00\x00"
-  b"\x00\x2c\x00\x00\x00\x00\x09\x00"
-  b"\x09\x00\x00\x02\x14\x8c\x8f\xa0"
-  b"\x0b\xb6\xb2\x9c\x82\xca\x89\x7b"
-  b"\x5b\x78\x71\xcf\xce\x74\x08\x52"
-  b"\x00\x00\x3b")
-
-minus=(b"\x47\x49\x46\x38\x39\x61\x09\x00"
-  b"\x09\x00\x91\x00\x00\xfe\xfe\xfe"
-  b"\x82\x82\x82\x02\x02\x02\x00\x00"
-  b"\x00\x2c\x00\x00\x00\x00\x09\x00"
-  b"\x09\x00\x00\x02\x11\x8c\x8f\xa0"
-  b"\x0b\xc6\xeb\x5e\x0b\x40\x58\x3b"
-  b"\x65\x96\xf1\xa1\x1f\x14\x00\x3b")
-
-dot=(b"\x47\x49\x46\x38\x39\x61\x09\x00"
-  b"\x09\x00\xa1\x03\x00\xfe\xfe\xfe"
-  b"\x82\x82\x82\x02\x02\x02\xff\xff"
-  b"\xff\x2c\x00\x00\x00\x00\x09\x00"
-  b"\x09\x00\x00\x02\x0d\x84\x8f\xa9"
-  b"\x20\x2b\x9f\x9e\x8c\x50\xb5\x85"
-  b"\x55\x01\x00\x3b")
-
-mkgif("plus",plus)
-mkgif("minus",plus)
-mkgif("dot",dot)
-//
-
-@# ------------- UNIVERSAL RUN SCRIPT flx.flx
-@# ------------- This script should be compiled to binary using one of the other
-@# ------------- run scripts, or even do it the hard way, the result is a binary
-@# ------------- executable with no dependencies which was generated from platform
-@# ------------- independent code. Obviously the install directory is bound in,
-@# ------------- but it can easily be overridden on the command line by again writing
-@# ------------- a native shell script to drive it (but now leaving the binary to
-@# ------------- do most of the command line argument processing etc
-
 @select(tangler('lib/plat/config.flx','data'))
 //GENERATED during config
 module Config {
@@ -139,1179 +56,870 @@ fun link_strings(FLX_INSTALL_DIR:string): string * string =
 }
 }
 
-@# ------------- RUN SCRIPT flx.bat FOR WINDOWS COMMAND LINE
 
-@select(tangler('bin/flx.bat','data'))
-@@echo off
-SETLOCAL
-SET RUNIT=1
-SET DOFLXG=1
-SET DOECHO=0
-SET FID=%FLX_INSTALL_DIR%
-SET STATIC=0
-
-:DOARGS
-IF "-c" EQU "%1" (
-SET RUNIT=0
-SHIFT
-GOTO DOARGS
-)
-
-IF "--nofelix" EQU "%1" (
-SET DOFLXG=0
-SHIFT
-GOTO DOARGS
-)
-
-IF "--echo" EQU "%1" (
-echo on
-SET DOECHO=1
-SHIFT
-GOTO DOARGS
-)
-
-IF "--test" EQU "%1" (
-SET FID=.
-SHIFT
-GOTO DOARGS
-)
-
-IF "--static" EQU "%1" (
-SET STATIC=1
-SHIFT
-GOTO DOARGS
-)
-
-"%FID%\BIN\FLXG" -I"%FID%\LIB" --import nugram.flxh --import:plat\\flx.flxh std %1 >"%1.LOG"
-if ERRORLEVEL 1 GOTO ERROR
-if %STATIC% EQU 0 (
-%FID%\BIN\FLX_PKGCONFIG --path:%FID%\CONFIG --field:cflags @%1.resh >%1_cflags.txt
-if ERRORLEVEL 1 GOTO ERROR
-cl /nologo /MD /c /EHs /w  /I"%FID%\LIB\RTL" /I"%FID%\config\target" @%1_cflags.txt %1.cpp /Fo%1.obj >"%1.LOG"
-if ERRORLEVEL 1 GOTO ERROR
-%FID%\BIN\FLX_PKGCONFIG --path:%FID%\CONFIG --field:provides_dlib --field:requires_dlibs @%1.resh >%1_linkflags.txt
-if ERRORLEVEL 1 GOTO ERROR
-link /dll %1.obj /OUT:%1.dll @%1_linkflags.txt /LIBPATH:"%FID%\BIN" /DEFAULTLIB:flx_dynamic >"%1.LOG"
-if ERRORLEVEL 1 GOTO ERROR
-del %1.exp
-del %1.lib
-del %1_cflags.txt
-del %1_linkflags.txt
-IF %RUNIT% EQU 1 (
-"%FID%\bin\flx_arun" %1.dll %2 %3 %4 %5 %6 %7 %8 %9
-)
-) else (
-%FID%\BIN\FLX_PKGCONFIG --path:%FID%\CONFIG --field:cflags @%1.resh >%1_cflags.txt
-if ERRORLEVEL 1 GOTO ERROR
-cl /nologo /MT /c /EHs /w  /I"%FID%\LIB\RTL" /I"%FID%\config\target" /DFLX_STATIC_LINK @%1_cflags.txt %1.cpp /Fo%1.obj >"%1.LOG"
-if ERRORLEVEL 1 GOTO ERROR
-%FID%\BIN\FLX_PKGCONFIG --path:%FID%\CONFIG --field:provides_slib --field:requires_slibs @%1.resh >%1_linkflags.txt
-link "%FID%\rtl\flx_arun_static.obj" %1.obj /OUT:%1.exe @%1_linkflags.txt /LIBPATH:"%FID%\RTL" /DEFAULTLIB:flx_async_static /DEFAULTLIB:faio_static /DEFAULTLIB:demux_static /DEFAULTLIB:flx_pthread_static /DEFAULTLIB:flx_static >"%1.LOG"
-if ERRORLEVEL 1 GOTO ERROR
-del %1_cflags.txt
-del %1_linkflags.txt
-%1 %2 %3 %4 %5 %6 %7 %8 %9
-)
-GOTO FINISHED
-:ERROR
-ECHO SOME KIND OF ERROR OCCURED, rerun with --echo
-type %1.LOG
-EXIT /B 1
-:FINISHED
-ENDLOCAL
-
-@# ------------- UNIVERSAL RUN SCRIPT flx.py REQUIRES PYTHON
-@select(tangler('bin/flx.py','data'))
-#!/usr/bin/env python3.1
-# flx.py - felix script harness (python version)
-import os
-import os.path
-import sys
-import stat
-import string
-
-
-@tangle("INSTALL_ROOT=os.path.join(%r, '/lib/felix/felix-%s')" % (config.PREFIX, config.flx_version))
-FLX_INSTALL_DIR = os.getenv("FLX_INSTALL_DIR", INSTALL_ROOT)
-@tangle("CYGWIN="+str(config.CYGWIN))
-@tangle("WIN32="+str(config.WIN32))
-@tangle("MACOSX="+str(config.MACOSX))
-@tangle("HAVE_GNU="+str(config.HAVE_GNU))
-@tangle("HAVE_MSVC="+str(config.HAVE_MSVC))
-@if config.TARGET_CXX.options.HAVE_PIC:
-  tangle('CCOBJ_DLLIB="'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+' '+config.TARGET_CXX.options.PIC+'"')
+@select(tangler("config/target/flx_meta.hpp"))
+#ifndef __FLX_META_H__
+#define __FLX_META_H__
+// GENERATED during config
+// taken from BOOST
+@if config.TARGET_CXX.options.HAVE_INCLASS_MEMBER_INITIALIZATION:
+  tangle('#define FLX_HAVE_INCLASS_MEMBER_INITIALIZATION 1')
  else:
-  tangle('CCOBJ_DLLIB="'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+'"')
-@tangle('CCLINK_DLLIB="'+config.TARGET_CXX.options.CCLINK_DYNAMIC_FLX+'"')
-@tangle('CCOBJ_STATIC_LIB="'+config.TARGET_CXX.options.CCOBJ_STATIC_FLX+'"')
-@tangle('CCLINK_STATIC="'+config.TARGET_CXX.options.CCLINK_STATIC+'"')
-@tangle('VERSION="'+config.flx_version+'"')
-@tangle('EXT_LIB="'+config.TARGET_CXX.options.EXT_LIB+'"')
-@tangle('EXT_STATIC_OBJ="'+config.TARGET_CXX.options.EXT_STATIC_OBJ+'"')
-@tangle('EXT_SHARED_OBJ="'+config.TARGET_CXX.options.EXT_SHARED_OBJ+'"')
-@tangle('EXT_EXE="'+config.TARGET_CXX.options.EXT_EXE+'"')
-@tangle('EXT_SHLIB="'+config.TARGET_CXX.options.EXT_SHLIB+'"')
-@tangle('SPEC_OBJ_FILENAME="'+config.TARGET_CXX.options.SPEC_OBJ_FILENAME+'"')
-@tangle('SPEC_EXE_FILENAME="'+config.TARGET_CXX.options.SPEC_EXE_FILENAME+'"')
-@tangle('OPTIMISE="'+config.TARGET_CXX.options.OPTIMISE+' "')
-@tangle('DEBUG_FLAGS="'+config.TARGET_CXX.options.DEBUG_FLAGS+' "')
+  tangle('#define FLX_HAVE_INCLASS_MEMBER_INITIALIZATION 0')
 
-# check for test mode: this argument must come first
+#if FLX_HAVE_INCLASS_MEMBER_INITIALIZATION
+#  define FLX_STATIC_CONSTANT(type, assignment) static const type assignment
+#else
+#  define FLX_STATIC_CONSTANT(type, assignment) enum { assignment }
+#endif
 
-RECOMPILE=0
-DEBUG=0
-DEBUG_COMPILER=0
-INLINE=100
-ECHO=0
-TIME=0
-NOOPTIMISE=0
-TIMECMD="time -p"
+#include <cstddef>
 
-@if config.DEFAULT_LINK_MODEL=="dynamic":
-   tangle("STATIC=0")
+template <std::size_t> struct type_with_alignment;
+@for k, t in config.TARGET_CXX.options.flx_aligns.items():
+  tangle('template <> struct type_with_alignment<'+str(k)+'>{ typedef '+t+' type; };')
+
+template <typename T> struct alignment_of;
+
+template <typename T>
+struct alignment_of_hack
+{
+  char c;
+  T t;
+  alignment_of_hack();
+};
+
+template <unsigned A, unsigned S>
+struct alignment_logic
+{
+  FLX_STATIC_CONSTANT(std::size_t, value = A < S ? A : S);
+};
+
+template< typename T >
+struct alignment_of
+{
+  FLX_STATIC_CONSTANT(std::size_t, value =
+    (alignment_logic<
+      sizeof(alignment_of_hack<T>) - sizeof(T),
+      sizeof(T)
+    >::value));
+};
+
+template<std::size_t L, std::size_t A>
+struct aligned_storage
+{
+  union type
+  {
+    unsigned char data_[ L ];
+    typename type_with_alignment<A>::type align_;
+  };
+};
+
+template<typename T>
+struct store_of
+{
+  typedef typename aligned_storage<sizeof(T), alignment_of<T>::value>::type type;
+};
+
+// convert an rvalue to an lvalue
+template<typename T>
+T const &lvalue(T const &x)
+{
+  return x;
+}
+
+// this reinterpret cast works with rvalues too
+template<typename T, typename U>
+T &reinterpret(U const &x) {
+  return reinterpret_cast<T&>(const_cast<U&>(x));
+}
+
+template<typename T> void destroy(T *p){ p->T::~T(); }
+
+#endif
+@doc()
+
+@select(tangler("config/host/flx_host_config.hpp"))
+#ifndef __FLX_HOST_CONFIG_H__
+#define __FLX_HOST_CONFIG_H__
+
+@if config.HOST_CXX.options.WIN32:
+  tangle('#define FLX_WIN32 1')
  else:
-   tangle("STATIC=1")
+  tangle('#define FLX_WIN32 0')
 
-RUNIT=1
-CCFLAGS=""
-FELIX=1
-LINKER_SWITCHES=""
-MACROS=""
-grab=1
-cpps=""
-cppos=""
-INCLUDE_DIRS=""
-INCLUDE_FILES=""
-NOSTDLIB=0
-STDOUT=""
-STDIMPORT="--import=nugram.flxh --import=plat/flx.flxh"
-IMPORTS=""
-OUTPUT_DIR=""
+@if config.HOST_CXX.options.HAVE_BOOL:
+  tangle('#define FLX_HAVE_BOOL 1')
+ else:
+  tangle('#define FLX_HAVE_BOOL 0')
 
-def splitext(p):
-  if p[-5:-1] == ".flx":
-    return p[:-5],".flx"
-  elif p[-5:-1] == ".cpp":
-    return p[:-5],".cpp"
-  return p,""
+@if config.HOST_CXX.options.HAVE_LONGLONG:
+  tangle('#define FLX_HAVE_LONGLONG 1')
+ else:
+  tangle('#define FLX_HAVE_LONGLONG 0')
 
-def system(cmd):
-  if ECHO==1: print(cmd)
-  result = os.system(cmd)
-  if ECHO==1: print("Result code " + str(result))
-  return result
+@if config.HOST_CXX.options.HAVE_LONGDOUBLE:
+  tangle('#define FLX_HAVE_LONGDOUBLE 1')
+ else:
+  tangle('#define FLX_HAVE_LONGDOUBLE 0')
 
-argno=1
-def prefix(arg,key):
-  return arg[:len(key)]==key
+#if !defined(FLX_STATIC_LINK) && FLX_WIN32
+#define FLX_EXPORT __declspec(dllexport)
+#define FLX_IMPORT __declspec(dllimport)
+#else
+#define FLX_EXPORT
+#define FLX_IMPORT
+#endif
 
-compile_exts = ['cpp','cxx']
-linkexts = ['o','obj','lib','dll','a','so']
 
-while grab == 1 and argno<len(sys.argv):
-  arg = sys.argv[argno]
-  #print "ARGNO="+str(argno)+", arg='"+arg+"'"
-  path,ext = splitext(arg)
-  dir,base = os.path.split(path)
-  #print "path="+path+", ext="+ext+",dir="+dir+",base="+base
-  #print "cpps="+cpps
-  #print "cppos="+cppos
-  #print "arg='"+arg+"'"
-  if ext != "flx" and ext != "":
-    if ext in compile_exts:
-      cpps = cpps + " " + arg
-      cppos = cppos + " " + path + "." + EXT_OBJ
+@def cal_raw_address():
+  if config.HOST_CXX.options.SIZEOF_INT      == config.HOST_CXX.options.SIZEOF_VOIDP: return "unsigned"
+  if config.HOST_CXX.options.SIZEOF_LONG     == config.HOST_CXX.options.SIZEOF_VOIDP: return "unsigned long"
+  if config.HOST_CXX.options.SIZEOF_LONGLONG == config.HOST_CXX.options.SIZEOF_VOIDP: return "unsigned long long"
+  raise "Cannot find an int the size of a void pointer"
+
+@tangle("#define FLX_RAWADDRESS " + cal_raw_address())
+@tangle('#define FLX_MAX_ALIGN ' + str(config.HOST_CXX.options.MAX_ALIGN))
+
+#if FLX_WIN32 && !defined(_WIN32_WINNT)
+#define _WIN32_WINNT 0x500 // Require Windows NT5 (2K, XP, 2K3)
+#endif
+
+
+#endif
+
+@select(tangler("config/target/flx_rtl_config.hpp"))
+#ifndef __FLX_RTL_CONFIG_H__
+#define __FLX_RTL_CONFIG_H__
+
+@if config.TARGET_CXX.options.HAVE_VSNPRINTF:
+  tangle('#define FLX_HAVE_VSNPRINTF 1')
+ else:
+  tangle('#define FLX_HAVE_VSNPRINTF 0')
+
+@if config.TARGET_CXX.options.HAVE_BOOL:
+  tangle('#define FLX_HAVE_BOOL 1')
+ else:
+  tangle('#define FLX_HAVE_BOOL 0')
+
+@if config.TARGET_CXX.options.HAVE_LONGLONG:
+  tangle('#define FLX_HAVE_LONGLONG 1')
+ else:
+  tangle('#define FLX_HAVE_LONGLONG 0')
+
+@if config.TARGET_CXX.options.HAVE_LONGDOUBLE:
+  tangle('#define FLX_HAVE_LONGDOUBLE 1')
+ else:
+  tangle('#define FLX_HAVE_LONGDOUBLE 0')
+
+@if config.HAVE_GNU:
+  tangle('#define FLX_HAVE_GNU 1')
+ else:
+  tangle('#define FLX_HAVE_GNU 0')
+
+@if config.TARGET_CXX.options.HAVE_GNU_X86:
+  tangle('#define FLX_HAVE_GNU_X86 1')
+ else:
+  tangle('#define FLX_HAVE_GNU_X86 0')
+
+@if config.TARGET_CXX.options.HAVE_GNU_X86_64:
+  tangle('#define FLX_HAVE_GNU_X86_64 1')
+ else:
+  tangle('#define FLX_HAVE_GNU_X86_64 0')
+
+@if config.TARGET_CXX.options.HAVE_GNU_BUILTIN_EXPECT:
+  # only use these with proper predicates!
+  tangle('#define FLX_UNLIKELY(x) __builtin_expect(long(x),0)')
+  tangle('#define FLX_LIKELY(x) __builtin_expect(long(x),1)')
+ else:
+  tangle('#define FLX_UNLIKELY(x) x')
+  tangle('#define FLX_LIKELY(x) x')
+
+@if config.TARGET_CXX.options.HAVE_CGOTO:
+  tangle("#define FLX_HAVE_CGOTO 1")
+ else:
+  tangle("#define FLX_HAVE_CGOTO 0")
+
+@if config.TARGET_CXX.options.USE_REGPARM3:
+  tangle("#define FLX_USE_REGPARM3 1")
+ else:
+  tangle("#define FLX_USE_REGPARM3 0")
+
+@if config.TARGET_CXX.options.HAVE_ASM_LABELS:
+  tangle("#define FLX_HAVE_ASM_LABELS 1")
+ else:
+  tangle("#define FLX_HAVE_ASM_LABELS 0")
+
+@if config.TARGET_CXX.options.HAVE_DLOPEN:
+  tangle("#define FLX_HAVE_DLOPEN 1")
+ else:
+  tangle("#define FLX_HAVE_DLOPEN 0")
+
+@if config.TARGET_CXX.options.MACOSX:
+  tangle("#define FLX_MACOSX 1")
+ else:
+  tangle("#define FLX_MACOSX 0")
+
+@if config.TARGET_CXX.options.LINUX:
+  tangle("#define FLX_LINUX 1")
+ else:
+  tangle("#define FLX_LINUX 0")
+
+@if config.TARGET_CXX.options.WIN32:
+  tangle("#define FLX_WIN32 1")
+ else:
+  tangle("#define FLX_WIN32 0")
+
+@if config.TARGET_CXX.options.WIN64:
+  tangle("#define FLX_WIN64 1")
+ else:
+  tangle("#define FLX_WIN64 0")
+
+@if config.TARGET_CXX.options.CYGWIN:
+  tangle("#define FLX_CYGWIN 1")
+ else:
+  tangle("#define FLX_CYGWIN 0")
+
+@if config.TARGET_CXX.options.POSIX:
+  tangle("#define FLX_POSIX 1")
+ else:
+  tangle("#define FLX_POSIX 0")
+
+@if config.TARGET_CXX.options.SOLARIS:
+  tangle("#define FLX_SOLARIS 1")
+ else:
+  tangle("#define FLX_SOLARIS 0")
+
+@if config.HAVE_MSVC:
+  tangle("#define FLX_HAVE_MSVC 1")
+ else:
+  tangle("#define FLX_HAVE_MSVC 0")
+
+@if config.TARGET_CXX.options.HAVE_KQUEUE_DEMUXER:
+  tangle("#define FLX_HAVE_KQUEUE_DEMUXER 1")
+ else:
+  tangle("#define FLX_HAVE_KQUEUE_DEMUXER 0")
+
+@if config.TARGET_CXX.options.HAVE_POLL:
+  tangle("#define FLX_HAVE_POLL 1")
+ else:
+  tangle("#define FLX_HAVE_POLL 0")
+
+@if config.TARGET_CXX.options.HAVE_EPOLL:
+  tangle("#define FLX_HAVE_EPOLL 1")
+ else:
+  tangle("#define FLX_HAVE_EPOLL 0")
+
+@if config.TARGET_CXX.options.HAVE_EVTPORTS:
+  tangle("#define FLX_HAVE_EVTPORTS 1")
+ else:
+  tangle("#define FLX_HAVE_EVTPORTS 0")
+
+@if config.TARGET_CXX.options.HAVE_SHARED_OPENMP:
+  tangle("#define FLX_HAVE_OPENMP 1")
+ else:
+  tangle("#define FLX_HAVE_OPENMP 0")
+
+#include "setjmp.h"
+
+#define FLX_SAVE_REGS \
+  jmp_buf reg_save_on_stack; \
+  setjmp (reg_save_on_stack)
+
+//
+#if FLX_HAVE_CGOTO && FLX_HAVE_ASM_LABELS
+#define FLX_CGOTO 1
+#else
+#define FLX_CGOTO 0
+#endif
+
+#if FLX_WIN32 && !defined(_WIN32_WINNT)
+#define _WIN32_WINNT 0x0600 // Require Windows NT5 (2K, XP, 2K3)
+#endif
+
+#if FLX_WIN32 && !defined(WINVER)
+#define WINVER 0x0600 // Require Windows NT5 (2K, XP, 2K3)
+#endif
+
+#if FLX_WIN32
+// vs windows.h just LOVES to include winsock version 1 headers by default.
+// that's bad for everyone, so quit it.
+#define _WINSOCKAPI_
+
+// windows.h defines min/max macros, which can cause all sorts of confusion.
+#define NOMINMAX
+#endif
+
+
+#if !defined(FLX_STATIC_LINK) && FLX_WIN32
+#define FLX_EXPORT __declspec(dllexport)
+#define FLX_IMPORT __declspec(dllimport)
+#else
+#define FLX_EXPORT
+#define FLX_IMPORT
+#endif
+
+
+#ifdef BUILD_RTL
+#define RTL_EXTERN FLX_EXPORT
+#else
+#define RTL_EXTERN FLX_IMPORT
+#endif
+
+#if FLX_MACOSX && !FLX_HAVE_DLOPEN
+#define FLX_MACOSX_NODLCOMPAT 1
+#else
+#define FLX_MACOSX_NODLCOMPAT 0
+#endif
+
+#if FLX_HAVE_GNU
+#define FLX_ALWAYS_INLINE __attribute__ ((always_inline))
+#define FLX_NOINLINE __attribute__ ((noinline))
+#define FLX_CONST __attribute__ ((const))
+#define FLX_PURE __attribute__ ((pure))
+#define FLX_GXX_PARSER_HACK (void)0,
+#define FLX_UNUSED __attribute__((unused))
+#else
+#define FLX_ALWAYS_INLINE
+#define FLX_NOINLINE
+#define FLX_CONST
+#define FLX_PURE
+#define FLX_GXX_PARSER_HACK
+#define FLX_UNUSED
+#endif
+
+@def cal_raw_address():
+  if config.TARGET_CXX.options.SIZEOF_INT      == config.TARGET_CXX.options.SIZEOF_VOIDP: return "unsigned"
+  if config.TARGET_CXX.options.SIZEOF_LONG     == config.TARGET_CXX.options.SIZEOF_VOIDP: return "unsigned long"
+  if config.TARGET_CXX.options.SIZEOF_LONGLONG == config.TARGET_CXX.options.SIZEOF_VOIDP: return "unsigned long long"
+  raise "Cannot find an int the size of a void pointer"
+
+@tangle("#define FLX_RAWADDRESS " + cal_raw_address())
+@tangle('#define FLX_MAX_ALIGN ' + str(config.TARGET_CXX.options.MAX_ALIGN))
+#endif
+@doc()
+
+
+@h = tangler('config/flx_pthread.fpc')
+@select(h)
+Name: pthread
+Description: Pre-emptive threading support
+
+@if config.HAVE_MSVC:
+   tangle("provides_dlib: /DEFAULTLIB:flx_pthread_dynamic")
+   tangle("provides_slib: /DEFAULTLIB:flx_pthread_static")
+ elif config.WIN32:
+   tangle("provides_dlib: -lflx_pthread_dynamic")
+   tangle("provides_slib: -lflx_pthread_static")
+ else:
+   tangle("provides_dlib: -lflx_pthread_dynamic")
+   tangle("provides_slib: -lflx_pthread_static")
+ if config.TARGET_CXX.options.HAVE_PTHREADS:
+   tangle("requires_dlibs: "+config.TARGET_CXX.options.PTHREAD_SWITCH)
+   tangle("requires_slibs: "+config.TARGET_CXX.options.PTHREAD_SWITCH)
+
+includes: '"pthread_thread.hpp"'
+Requires: flx_gc
+
+
+
+@select(tangler('config/mmap.fpc', 'data'))
+Name: mmap
+
+@select(tangler('lib/mmap.flx'))
+module Mmap
+{
+  header """
+    #include <sys/mman.h>
+    #include <unistd.h>
+
+    // MAP_ANON is an older form of MAP_ANONYMOUS, and should be compatible
+    #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+    #  define MAP_ANONYMOUS MAP_ANON
+    #endif
+  """;
+
+  typedef off_t = ulong;
+  // protection options
+@if config.TARGET_CXX.options.HAVE_MMAP:
+  if config.TARGET_CXX.options.HAVE_PROT_EXEC:  tangle('  const PROT_EXEC : int;')
+  if config.TARGET_CXX.options.HAVE_PROT_READ:  tangle('  const PROT_READ : int;')
+  if config.TARGET_CXX.options.HAVE_PROT_WRITE: tangle('  const PROT_WRITE : int;')
+
+  if config.TARGET_CXX.options.HAVE_MAP_DENYWRITE:    tangle('  const MAP_DENYWRITE: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_ANON:         tangle('  const MAP_ANON: int;')
+
+  # RF: MAP_ANON/MAP_ANONYMOUS must mirror the macro example above, so the two can be synonyms
+  if config.TARGET_CXX.options.HAVE_MAP_ANONYMOUS or config.TARGET_CXX.options.HAVE_MAP_ANON:
+    tangle('  const MAP_ANONYMOUS: int;')
+
+  if config.TARGET_CXX.options.HAVE_MAP_FILE:         tangle('  const MAP_FILE: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_FIXED:        tangle('  const MAP_FIXED: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_HASSEMAPHORE: tangle('  const MAP_HASSEMAPHORE: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_SHARED:       tangle('  const MAP_SHARED : int;')
+  if config.TARGET_CXX.options.HAVE_MAP_PRIVATE:      tangle('  const MAP_PRIVATE : int;')
+  if config.TARGET_CXX.options.HAVE_MAP_NORESERVE:    tangle('  const MAP_NORESERVE: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_LOCKED:       tangle('  const MAP_LOCKED: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_GROWSDOWN:    tangle('  const MAP_GROWSDOWN: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_32BIT:        tangle('  const MAP_32BIT: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_POPULATE:     tangle('  const MAP_POPULATE: int;')
+  if config.TARGET_CXX.options.HAVE_MAP_NONBLOCK:     tangle('  const MAP_NONBLOCK: int;')
+@#
+
+  const MAP_FAILED : address;
+
+  // size of a page
+  const _SC_PAGESIZE : long = "sysconf(_SC_PAGESIZE)";
+
+  fun mmap:
+    address * //< start address
+    size *    //< bytes to map
+    int *     //< protection
+    int *     //< flags
+    int *     //< file descriptor
+    off_t     //< offset into file, multiple of _SC_PAGESIZE
+    -> address; //< start of reserved address space
+
+  fun munmap: address * size -> int;
+}
+
+
+@h = tangler('config/demux.fpc')
+@select(h)
+Name: demux
+Description: Event handling
+Version: $Id$
+
+@if config.HAVE_MSVC:
+   tangle("provides_dlib: /DEFAULTLIB:demux_dynamic")
+   tangle("requires_dlibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
+   tangle("provides_slib: /DEFAULTLIB:demux_static")
+   tangle("requires_slibs: /DEFAULTLIB:ws2_32 /DEFAULTLIB:mswsock")
+ elif config.WIN32:
+   tangle("provides_dlib: -ldemux_dynamic")
+   tangle("requires_dlibs: -lws2_32 -lmswsock")
+   tangle("provides_slib: -ldemux_static")
+   tangle("requires_slibs: -lws2_32 -lmswsock")
+ elif config.SOLARIS:
+   tangle("provides_dlib: -ldemux_dynamic")
+   tangle("provides_slib: -ldemux_static -lsocket -lnsl")
+ else:
+   tangle("provides_dlib: -ldemux_dynamic")
+   tangle("provides_slib: -ldemux_static")
+
+Requires: flx_pthread
+flx_requires_driver: flx_arun
+
+@select(tangler('config/target/demux_sockety_config.hpp'))
+#ifndef __DEMUX_SOCKETY_CONFIG_H__
+#define __DEMUX_SOCKETY_CONFIG_H__
+#include <sys/socket.h>
+
+@tangle('typedef %s FLX_SOCKLEN_T;' % config.TARGET_CXX.options.FLX_SOCKLEN_T)
+#endif
+
+
+@python("//")
+rmap = {}
+
+tmap = {
+  # addressing
+  "byte"      : "unsigned char",
+  "size"      : "size_t",
+  "cvaddress" : "void const volatile*",
+  "vaddress"  : "void volatile*",
+  "caddress"  : "void const*",
+  "address"   : "void *",
+  "offset"    : "ptrdiff_t",
+  "ptrdiff"   : "ptrdiff_t",
+
+  #characters
+  "char"    : "char",
+  "wchar"   : "wchar_t",
+
+  #signed integers
+  "tiny"    : "signed char",
+  "short"   : "short",
+  "int"     : "int",
+  "long"    : "long",
+
+  #unsigned integers
+  "utiny"   : "unsigned char",
+  "ushort"  : "unsigned short",
+  "uint"    : "unsigned int",
+  "ulong"   : "unsigned long",
+
+  #floating
+  "float"   : "float",
+  "double"  : "double",
+  "ldouble"  : "long double"
+ }
+
+#if config.TARGET_CXX.options.HAVE_COMPLEX:
+if False:
+  tmap["imaginary"]="float _Imaginary"
+  tmap["dimaginary"]="double _Imaginary"
+  tmap["limaginary"]="long double _Imaginary"
+  tmap["fcomplex" ]="float _Complex"
+  tmap["dcomplex"]="double _Complex"
+  tmap["lcomplex"]="long double _Complex"
+
+  rmap["imaginary" ]="c99_complex_h"
+  rmap["dimaginary" ]="c99_complex_h"
+  rmap["limaginary" ]="c99_complex_h"
+  rmap["fcomplex" ]="c99_complex_h"
+  rmap["dcomplex"]="c99_complex_h"
+  rmap["lcomplex"]="c99_complex_h"
+else:
+  tmap["imaginary"]="float"
+  tmap["dimaginary"]="double"
+  tmap["limaginary"]="long double"
+  tmap["fcomplex" ]="std::complex<float>"
+  tmap["dcomplex"]="std::complex<double>"
+
+  rmap["fcomplex" ]="complex_hxx"
+  rmap["dcomplex"]="complex_hxx"
+  rmap["lcomplex"]="complex_hxx"
+
+if config.TARGET_CXX.options.HAVE_LONGDOUBLE:
+  tmap["ldouble"]="long double"
+  tmap["lcomplex"]="std::complex<long double>"
+else:
+  tmap["ldouble"]="double"
+  tmap["lcomplex"]="std::complex<double>"
+
+if config.TARGET_CXX.options.HAVE_LONGLONG:
+  tmap["vlong"]="long long"
+  tmap["uvlong"]="unsigned long long"
+else:
+  tmap["vlong"]="long"
+  tmap["uvlong"]="unsigned long"
+
+if config.TARGET_CXX.options.HAVE_STDINT:
+  tmap["int8"]="int8_t"
+  tmap["uint8"]="uint8_t"
+  tmap["int16"]="int16_t"
+  tmap["uint16"]="uint16_t"
+  tmap["int32"]="int32_t"
+  tmap["uint32"]="uint32_t"
+  tmap["int64"]="int64_t"
+  tmap["uint64"]="uint64_t"
+  tmap["intptr"]="intptr_t"
+  tmap["uintptr"]="uintptr_t"
+  tmap["intmax"]="intmax_t"
+  tmap["uintmax"]="uintmax_t"
+
+  # requirements
+  rmap["int8"]="c99_stdint_h"
+  rmap["uint8"]="c99_stdint_h"
+  rmap["int16"]="c99_stdint_h"
+  rmap["uint16"]="c99_stdint_h"
+  rmap["int32"]="c99_stdint_h"
+  rmap["uint32"]="c99_stdint_h"
+  rmap["int64"]="c99_stdint_h"
+  rmap["uint64"]="c99_stdint_h"
+  rmap["intptr"]="c99_stdint_h"
+  rmap["uintptr"]="c99_stdint_h"
+  rmap["intmax"]="c99_stdint_h"
+  rmap["uintmax"]="c99_stdint_h"
+else:
+  tmap["int8"]="signed char"
+  tmap["uint8"]="unsigned char"
+  sizes = {
+    config.TARGET_CXX.options.SIZEOF_SHORT*8 : "short",
+    config.TARGET_CXX.options.SIZEOF_INT*8: "int",
+    config.TARGET_CXX.options.SIZEOF_LONG*8 : "long",
+  }
+  tmap["intmax"]="long"
+  tmap["uintmax"]="unsigned long"
+  if config.TARGET_CXX.options.HAVE_LONGLONG:
+    sizes[config.TARGET_CXX.options.SIZEOF_LONGLONG*8]="long long"
+    tmap["intmax"]="long long"
+    tmap["uintmax"]="unsigned long long"
+  for size in [16,32,64]:
+    try:
+      t = sizes[size]
+    except KeyError:
+      tmap["int"+str(size)]="emul_int"+str(size)
+      tmap["uint"+str(size)]="emul_uint"+str(size)
     else:
-     cppos = cppos + " " + arg
-
-  elif arg == "--nostdimport":
-    STDIMPORT=""
-
-  elif prefix(arg,"--import="):
-   IMPORTS=IMPORTS + " " + arg[9:]
-
-  elif prefix(arg,"--test="):
-    FLX_INSTALL_DIR=arg[7:]
-
-  elif arg=="--test":
-    FLX_INSTALL_DIR="."
-
-  elif prefix(arg,"--stdout="):
-    STDOUT=arg[9:]
-
-  elif arg=="--force":
-    RECOMPILE=1
-
-  elif arg=="--debug":
-    DEBUG=1
-
-  elif arg=="--debug-compiler":
-    DEBUG_COMPILER=1
-
-  elif arg=="--nooptimise":
-    NOOPTIMISE=1
-
-  elif arg=="--nostdlib":
-    NOSTDLIB=1
-
-  elif arg == "--echo":
-    ECHO=1
-
-  elif arg == "--static":
-    STATIC=1
-
-  elif prefix(arg,"--inline="):
-    INLINE=int(arg[:9])
-
-  elif arg == "--inline":
-    INLINE=100
-
-  elif arg == "--noinline":
-    INLINE=0
-
-  elif arg == "--version":
-    print("version ..")
-    print(VERSION)
-    sys.exit(0)
-
-  elif arg == "--where":
-    print(FLX_INSTALL_DIR)
-    sys.exit(0)
-
-  elif arg == "--time":
-    TIME=1
-
-  elif prefix(arg,"--output_dir="):
-    OUTPUT_DIR=arg
-
-  elif arg == "--help":
-    os.system("man -M "+FLX_INSTALL_DIR+os.sep+"man"+" flx")
-    sys.exit(0)
-
-  elif arg == "-c":
-    RUNIT=0
-
-  elif prefix(arg,"-I"):
-    INCLUDE_DIRS=INCLUDE_DIRS + " " + arg
-
-  elif arg== "--nofelix":
-    FELIX=0
-
-  elif prefix(arg,"-l") or prefix(arg,"-L"):
-   LINKER_SWITCHES=LINKER_SWITCHES + " " + arg
-
-  elif prefix(arg,"-D"):
-   MACROS=MACROS + " " + arg
-
-  elif prefix(arg,"--pkg="):
-    pkgs= pkgs + " " + arg[6:]
-
-  elif prefix(arg,"--"):
-    print("Unknown option '"+ arg+"'")
+      tmap["int"+str(size)]=t
+      tmap["uint"+str(size)]="unsigned " + t
+  try:
+    tmap["intptr"]=sizes[config.TARGET_CXX.options.SIZEOF_VOIDP*8]
+    tmap["uintptr"]="unsigned "+sizes[config.TARGET_CXX.options.SIZEOF_VOIDP*8]
+  except:
+    print("NO INTEGER THE SIZE OF A VOID*!")
     sys.exit(1)
 
-# the main filename -- subsequent args are args to flx_run
+tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
+//
+
+@fc = {'float':'f', 'double':'','ldouble':'l'}
+
+@def gen_nan(t):
+  if config.TARGET_CXX.options.HAVE_CXX_ISNAN_IN_CMATH:
+    tangle('  fun isnan: '+t+' -> bool = "::std::isnan($1)" is postfix requires cmath;')
+  elif config.TARGET_CXX.options.HAVE_C99_ISNAN_IN_MATH:
+    tangle('  fun isnan: '+t+' -> bool = "isnan($1)" is postfix requires math_h;')
+  elif config.TARGET_CXX.options.HAVE_BSD_ISNAN_IN_MATH:
+    tangle('  fun isnan: '+t+' -> bool = "isnan'+fc[t]+'($1)" is postfix requires math_h;')
+  elif config.TARGET_CXX.options.HAVE_BSD_ISNAN_IN_IEEEFP:
+    tangle('  fun isnan: '+t+' -> bool = "isnanf'+fc[t]+'($1)" is postfix requires ieeefp_h;')
   else:
-    grab=0
-  argno = argno + 1
+    tangle('  fun isnan: '+t+' -> bool = "!($1==$1)" is unary;')
 
-#print grab,argno,len(sys.argv)
-if grab == 1 and argno == len(sys.argv):
-  print("usage: flx [options] filename")
-  sys.exit(1)
+  if config.TARGET_CXX.options.HAVE_CXX_ISINF_IN_CMATH:
+    tangle('  fun isinf: '+t+' -> bool = "::std::isinf($1)" is postfix requires cmath;')
+  elif config.TARGET_CXX.options.HAVE_C99_ISINF_IN_MATH:
+    tangle('  fun isinf: '+t+' -> bool = "isinf($1)" is postfix requires math_h;')
+  elif config.TARGET_CXX.options.HAVE_BSD_ISINF_IN_MATH:
+    tangle('  fun isinf: '+t+' -> bool = "isinf'+fc[t]+'($1)" is postfix requires math_h;')
+  elif config.TARGET_CXX.options.HAVE_BSD_ISINF_IN_IEEEFP:
+    tangle('  fun isinf: '+t+' -> bool = "isinf'+fc[t]+'($1)" is postfix requires ieeefp_h;')
+  else:
+    tangle('  fun isinf: '+t+' -> bool = "($1==$1 && $1+$1+1.0==$1)" is unary;')
 
-#print "#--------"
-#print "DONE, option index = "+str(argno)
-#print "path="+path+", ext="+ext+",dir="+dir+",base="+base
-#print "cpps="+cpps
-#print "cppos="+cppos
+  if config.TARGET_CXX.options.HAVE_CXX_ISFINITE_IN_CMATH:
+    tangle('  fun isfinite: '+t+' -> bool = "::std::isfinite($1)" is postfix requires cmath;')
+  elif config.TARGET_CXX.options.HAVE_C99_ISFINITE_IN_MATH:
+    tangle('  fun isfinite: '+t+' -> bool = "isfinite($1)" is postfix requires math_h;')
+  elif config.TARGET_CXX.options.HAVE_BSD_FINITE_IN_MATH:
+    tangle('  fun isfinite: '+t+' -> bool = "finite'+fc[t]+'($1)" is postfix requires math_h;')
+  elif config.TARGET_CXX.options.HAVE_BSD_FINITE_IN_IEEEFP:
+    tangle('  fun isfinite: '+t+' -> bool = "finite'+fc[t]+'($1)" is postfix requires ieeefp_h')
+  else:
+    tangle('  fun isfinite: '+t+' -> bool = "($1==$1 && $1!==0.0 && $1+$1!=$1)" is unary;')
 
-if NOOPTIMISE == 0:
-  CCFLAGS=CCFLAGS+" " + OPTIMISE
 
-@if config.HAVE_MSVC:
-  tangle('DLINK_STRING="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl "')
-  tangle('SLINK_STRING="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl "')
- elif config.CYGWIN or config.WIN32:
-  tangle('DLINK_STRING="-L"+{FLX_INSTALL_DIR+"/bin "')
-  tangle('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
+
+@h=tangler('lib/plat/flx.flxh','data')
+@select(h)
+// GENERATED DURING CONFIGURATION
+open syntax felix;
+
+@plats = ["WIN32","POSIX","LINUX","MACOSX","CYGWIN","SOLARIS","BSD"]
+
+@for i in plats:
+  if getattr(config, i):
+    tangle("macro val " + i + " = true;")
+  else:
+    tangle("macro val " + i + " = false;")
+
+@ctypes=tangler('lib/plat/flx_ctypes.flx','data')
+@select(ctypes)
+// GENERATED DURING CONFIGURATION
+header cctype_hxx = '#include <cctype>';
+header string_hxx = '#include <string>';
+header complex_hxx = '#include <complex>';
+header c99_complex_h = '#include <complex.h>';
+
+@if config.TARGET_CXX.options.HAVE_STDINT:
+  tangle('header c99_stdint_h = "#include <stdint.h>";')
  else:
-  tangle('DLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
-  tangle('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
+  tangle('header c99_stdint_h = "";')
 
+header cstdlib = "#include <cstdlib>";
+header cstring = "#include <cstring>";
 
-PKGCONFIG=os.path.join(FLX_INSTALL_DIR,"bin","flx_pkgconfig")
+@chars = ["char", "wchar", "uchar"]
+@fast_sints = [
+  "tiny", "short", "int", "long", "vlong"
+  ]
+@fast_uints = [
+  "utiny", "ushort", "uint", "ulong", "uvlong"
+  ]
+@exact_sints = [
+  "int8","int16","int32","int64"
+  ]
+@exact_uints = [
+  "uint8","uint16","uint32","uint64"
+  ]
+@sints = fast_sints + exact_sints
+@uints = fast_uints + exact_uints
+@fast_ints = fast_sints + fast_uints
+@exact_ints = exact_sints + exact_uints
+@ints = uints + sints
 
-if ECHO == 1:
-  print("#FLX_INSTALL_DIR="+FLX_INSTALL_DIR)
-  print("#PKGCONFIG="+PKGCONFIG)
+@floats = ["float", "double", "ldouble"]
 
-CONFIG_DIR = os.path.join(FLX_INSTALL_DIR,'config')
+@complex = ["fcomplex","dcomplex","lcomplex"]
+@imaginary= ["imaginary", "dimaginary", "limaginary"]
+@all = [
+  "byte", "address","caddress","vaddress","cvaddress",
+  "offset",
+  ] + chars + fast_ints + floats + complex + imaginary
 
-# find external header files
-PKGCONFIG_CFLAGS=PKGCONFIG+ " --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=cflags "
-
-# external header files
-PKGCONFIG_INCLUDES=PKGCONFIG+ " --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=includes "
-
-# find external dynload libraries
-PKGCONFIG_DLIBS=PKGCONFIG+" -r --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=provides_dlib --field=requires_dlibs "
-
-# find external static libraries
-PKGCONFIG_SLIBS=PKGCONFIG+" -r --keeprightmost --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=provides_slib --field=requires_slibs "
-
-#find driver package required
-PKGCONFIG_DRIVER=PKGCONFIG+" --path+="+os.path.join(FLX_INSTALL_DIR,"config") + " --field=flx_requires_driver "
-
-# make a list of any *.cpp files (or other g++ options ..)
-
-if STATIC == 0:
-  EXT_OBJ=EXT_SHARED_OBJ
-else:
-  EXT_OBJ=EXT_STATIC_OBJ
-
-# Strip trailing .flx or .so
-# users should type 'flx file' without extension,
-# but #! interpreter always passes extension ..
-
-if path.endswith('.flx'):
-  base = path[:-4]
-elif path.endswith('.so'):
-  base = path[:-3]
-else:
-  base = path
-
-# Find absolute pathname
-
-if path == "":
-  sys.stderr.write("No such felix program: "+path+"\n")
-  sys.exit(1)
-
-def get_stdout(x,outit=None):
-  # We're screwed if popen doesn't work ..
-
-  if os.name == "nt": # popen doesn't work on Windows
-    result = os.system(x + " >tmp.out")
-    fout = open("tmp.out")
-    output = fout.readlines()
-    if outit:
-      for line in output: outit(line)
-    fout.close()
+@def gen_type(t):
+  d = rmap.get(t,None)
+  if d:
+    tangle('pod type '+t+' = "'+tmap[t]+'" requires '+d+';')
   else:
-    fout = os.popen(x+" 2>&1 ","r")
-    output = []
-    try:
-      for line in fout:
-        output.append(line)
-        if outit: outit(line)
-    finally:
-      result = fout.close()
-  return result,output
+    tangle('pod type '+t+' = "'+tmap[t]+'";')
+
+@fint2cint={
+  'tiny':'signed char',
+  'short':'short',
+  'int':'int',
+  'long':'long',
+  'vlong':'long long',
+  'utiny':'unsigned char',
+  'ushort':'unsigned short',
+  'uint':'unsigned int',
+  'ulong':'unsigned long',
+  'uvlong':'unsigned long long',
+  }
+
+@cint2fint = {}
+@for f in fint2cint.keys(): cint2fint[fint2cint[f]]=f
+
+@def alias_sint(t):
+  if t == 'int8': size = 1
+  elif t == 'int16': size = 2
+  elif t == 'int32': size = 4
+  elif t == 'int64': size = 8
+  if SIZEOF_CHAR == size: return 'tiny'
+  if SIZEOF_SHORT == size: return 'short'
+  if SIZEOF_INT == size: return 'int'
+  if SIZEOF_LONG == size: return 'long'
+  if SIZEOF_LONGLONG == size: return 'vlong'
+
+@def alias_uint(t):
+  if t == 'uint8': size = 1
+  elif t == 'uint16': size = 2
+  elif t == 'uint32': size = 4
+  elif t == 'uint64': size = 8
+  if SIZEOF_CHAR == size: return 'utiny'
+  if SIZEOF_SHORT == size: return 'ushort'
+  if SIZEOF_INT == size: return 'uint'
+  if SIZEOF_LONG == size: return 'ulong'
+  if SIZEOF_LONGLONG == size: return 'uvlong'
+
+@select(tangler("lib/plat/ctypedefs.flx",'data'))
+// GENERATED DURING CONFIGURATION
+@for t in all:
+  gen_type(t)
+
+_gc_pointer type gcaddress = "void*";
+_gc_pointer type gcptr[t]= "?1*";
+
+@# mandatory in C
+@for t in ['ptrdiff','size','intmax','uintmax','intptr','uintptr']:
+  equiv = cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]
+  tangle('typedef ' + t + ' = ' + equiv + ';')
+
+@# optional in C
+@for t in exact_ints:
+  equiv = cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]
+  tangle('typedef ' + t + ' = ' + equiv + ';')
+
+@select(tangler('lib/plat/arithmax.flx','data'))
+// GENERATED DURING CONFIGURATION
+// arithmetic conversion rule
+typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
+  typematch integral_promotion l, integral_promotion r with
+@for f1 in fint2cint.keys():
+  if f1 not in ['tiny','short','utiny','ushort']:
+    for f2 in fint2cint.keys():
+      if f2 not in ['tiny','short','utiny','ushort']:
+        f3 = cint2fint[config.TARGET_CXX.options.arith_conv[(fint2cint[f1],fint2cint[f2])]]
+        comment = ""
+        if f1 == f2:
+          if f2 != f1: comment = "// ERROR"
+        if (f1 == 'uvlong' or f2 == 'uvlong') and f3 != 'uvlong':
+          comment = "// ERROR, uvlong expected"
+        elif f3 != f1 and f3 != f2:
+          comment = "// SPECIAL PROMOTION"
+        elif f1 == 'uint' and f2=='long' or f1=='long' and f2=='uint':
+          comment = '// Representation Dependent (long or ulong)'
+        if f1 == 'uvlong' or f2 == 'uvlong' or f3 == 'int':
+          pass
+        else:
+          tangle('  | '+f1+','+f2+' => '+f3+' '+comment)
+@#
+  | uvlong,_ => uvlong
+  | _,uvlong => uvlong
+  | _,_ => int
+  endmatch
+;
+
+
+@select(tangler('lib/plat/float.flx','data'))
+// GENERATED DURING CONFIGURATION
+@for t in floats:
+  tangle("open module " + t.capitalize())
+  tangle("{")
+  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(::std::atof($1.data()))" requires cstdlib;')
+  tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
+  gen_nan(t)
+  tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires iostream;')
+  tangle("}")
+  tangle("")
+
 
-def xqt(cmd, default=None):
-  if ECHO == 1: print(cmd)
-  result,output = get_stdout(cmd)
-  if not result:
-     output=output[0][:-1] # first line excluding newline
-     if ECHO==1:print("output="+output)
-     return output
-  if default is None:
-    print("Cmd FAILED")
-    sys.stderr.write("Error "+repr(result)+" executing command " + cmd+"\n")
-    if not hasattr(os, 'WEXITSTATUS'):
-      sys.exit(1)
-    else:
-      sys.exit(os.WEXITSTATUS(result))
-  else:
-    return default
+@select(ctypes)
+include "plat/ctypedefs";
+include "std/ctypesets";
+include "plat/arithmax";
+include "plat/float";
 
-def calpackages ():
-  # find all include directories
-  global INCLUDE_DIRS, INCLUDE_FILES, LINK_STRING, DRIVER
 
-  # find all include directories
-  x = xqt(PKGCONFIG_CFLAGS+ " @"+base+".resh")
-  INCLUDE_DIRS=INCLUDE_DIRS +" " + x
+fun _ctor_int: size -> int = "$1";
+fun _ctor_size: int -> size = "$1";
 
-  # find all include files
-  x = xqt(PKGCONFIG_INCLUDES+ " @"+base+".resh")
-  INCLUDE_FILES=INCLUDE_FILES +" " + x
 
-  # find the driver package
-  DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" @"+base+".resh")
-  if DRIVER_PKG == "":
-    DRIVER_PKG="flx_run"
+instance [t in basic_types] Eq[t] {
+  fun eq: t * t -> bool = "$1==$2";
+}
+open[T in basic_types] Show[T];
+open Show[bool];
+@doc()
 
-  # find the driver entity
-  if STATIC == 0:
-    # dynamic linkage: the driver executable
-    DRIVER=os.path.join(FLX_INSTALL_DIR,"bin",DRIVER_PKG+EXT_EXE)
-  else:
-    # static linkage: the driver object file
-    DRIVER=os.path.join(FLX_INSTALL_DIR,"lib","rtl",DRIVER_PKG+EXT_STATIC_OBJ)
-
-  if STATIC == 0:
-    # dynamic linkage: all the libraries required by the application
-    LINK_STRING=DLINK_STRING+LINKER_SWITCHES+xqt(
-      PKGCONFIG_DLIBS+" @"+base+".resh")
-  else:
-    # static linkage: all the libraries required by the application and driver
-    LINK_STRING=SLINK_STRING+LINKER_SWITCHES+xqt(
-      PKGCONFIG_SLIBS+" "+DRIVER_PKG+" @"+base+".resh")
-
-  if ECHO == 1:
-    print("#RESOURCE FILE="+base+".resh")
-    print("#INCLUDE_DIRS="+INCLUDE_DIRS)
-    print("#INCLUDE_FILES="+INCLUDE_FILES)
-    print("#DRIVER="+DRIVER)
-    print("#LINK_STRING="+LINK_STRING)
-
-def write_include_file(path):
-  includes = INCLUDE_FILES.strip().split()
-  f = open(path+".includes","w")
-  for i in includes:
-    f.write("#include " + i + "\n")
-  f.close()
-
-# grab program arguments
-grab=1
-args=' '.join(sys.argv[argno:])
-
-INCLUDE_DIR="-I"+os.path.join(FLX_INSTALL_DIR,"lib","rtl") + " -I"+os.path.join(FLX_INSTALL_DIR,"config","target")
-FLXLIB="-I"+os.path.join(FLX_INSTALL_DIR,"lib")
-STDLIB="std"
-if NOSTDLIB == 1:
-  FLXLIB=""
-  STDLIB=""
-
-if WIN32:
-  FLXG=os.path.join(FLX_INSTALL_DIR, 'bin', 'flxg')
-  FLXRUN=''
-else:
-  FLXG="env PATH="+FLX_INSTALL_DIR+"/bin:$PATH "+FLX_INSTALL_DIR+"/bin/flxg"
-  # the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
-  if MACOSX == 1:
-    FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH "
-  else:
-    FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH "
-
-DEBUGSWITCH=""
-if DEBUG_COMPILER == 1: DEBUGSWITCH=" --debug"
-
-STATIC_ENV=""
-if DEBUG_COMPILER == 1: STATIC_ENV="env FLX_DEBUG=1 "
-
-def filetime(f):
-  try:
-    t = os.stat(f)[stat.ST_MTIME]
-  except EnvironmentError:
-    t = 0
-  return t
-
-if RECOMPILE == 0 and RUNIT == 1:
-  # not (--force or -c)
-  if STATIC == 0:
-    if (filetime(base+EXT_SHLIB) > filetime (base+".flx")):
-      calpackages()
-      cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ base+EXT_SHLIB+" "+args
-      sys.exit(system(cmd))
-  else:
-    if (filetime(base+EXT_EXE) > filetime(base+".flx")):
-      cmd=STATIC_ENV+" "+base+" "+args
-      sys.exit(system(cmd))
-
-# Need Felix and c++ compile, then run it
-
-if DEBUG_COMPILER == 1:
-  VERBOSE="-v"
-else:
-  VERBOSE="-q"
-
-if DEBUG:
-  CCFLAGS=CCFLAGS+DEBUG_FLAGS
-
-FLXFLAGS="--inline="+str(INLINE) + ' ' + str(OUTPUT_DIR)
-
-result = 0
-
-if STATIC == 0:
-  if FELIX == 1:
-    FCMD=' '.join([
-      FLXG,
-      VERBOSE, FLXFLAGS, FLXLIB,
-      INCLUDE_DIRS, STDIMPORT, IMPORTS,
-      STDLIB, base])
-    result=system(FCMD)
-    if result != 0: sys.exit(0!=result)
-    calpackages()
-    write_include_file(base)
-    CCMD=' '.join([
-      CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
-      INCLUDE_DIR, INCLUDE_DIRS, MACROS,
-      cpps, base+".cpp",
-      SPEC_OBJ_FILENAME+base+EXT_OBJ])
-    LCMD=' '.join([
-      CCLINK_DLLIB, CCFLAGS,
-      cppos, base+EXT_OBJ,
-      SPEC_EXE_FILENAME+base+EXT_SHLIB,
-      LINK_STRING])
-    result = system(CCMD)
-    if result == 0:
-      result = system(LCMD)
-      if result == 0:
-        if RUNIT == 1:
-          if TIME == 1:
-            cmd=' '.join([
-              TIMECMD,
-              FLXRUN+DRIVER+DEBUGSWITCH,
-              base+EXT_SHLIB, args])
-          else:
-            cmd=' '.join([
-              FLXRUN+DRIVER+DEBUGSWITCH,
-              base+EXT_SHLIB, args])
-          if STDOUT != "": cmd=cmd+" > " +STDOUT
-          sys.exit(0!=system(cmd))
-else:
-  if FELIX == 1:
-    FCMD=' '.join([
-      FLXG, VERBOSE, FLXFLAGS,
-      FLXLIB, INCLUDE_DIRS, STDIMPORT,
-      IMPORTS, STDLIB, base])
-    result=system(FCMD)
-  if result == 0:
-    calpackages()
-    write_include_file(base)
-    CCMD=' '.join([
-      CCOBJ_STATIC_LIB,
-      CCFLAGS, "-DTARGET_BUILD",
-      "-DFLX_STATIC_LINK", INCLUDE_DIR, INCLUDE_DIRS,
-      MACROS, cpps, base+".cpp",
-      SPEC_OBJ_FILENAME+base+EXT_OBJ])
-    LCMD=' '.join([
-      CCLINK_STATIC, SPEC_EXE_FILENAME+base+EXT_EXE,
-      base+EXT_OBJ, DRIVER, cppos, LINK_STRING])
-    result=system(CCMD)
-    if result == 0:
-      result=system(LCMD)
-      if result == 0:
-        # rm -f "$base.cpp"
-        if RUNIT == 1:
-          if TIME == 1:
-            cmd=' '.join([
-              TIMECMD, STATIC_ENV, base, args])
-          else:
-            cmd=' '.join([
-              STATIC_ENV, base,args])
-          if STDOUT != "": cmd=cmd + " > "+STDOUT
-          sys.exit(0!=system(cmd))
-sys.exit(0!=result)
-
-@# ------------- UNIX RUN SCRIPT flx.sh REQUIRES bash
-@select(tangler('bin/flx.sh','data'))
-#!/usr/bin/env bash
-# flx - felix script harness
-@tangle("INSTALL_ROOT="+config.PREFIX+"/lib/felix/felix-"+config.flx_version)
-@tangle("FLX_INSTALL_DIR=${FLX_INSTALL_DIR:-$INSTALL_ROOT}")
-@tangle("CYGWIN="+str(config.CYGWIN and 1 or 0))
-@tangle("WIN32="+str(config.WIN32 and 1 or 0))
-@tangle("MACOSX="+str(config.MACOSX and 1 or 0))
-@tangle("HAVE_GNU="+str(config.HAVE_GNU and 1 or 0))
-@tangle("HAVE_MSVC="+str(config.HAVE_MSVC and 1 or 0))
-@if config.TARGET_CXX.options.HAVE_PIC:
-  tangle('CCOBJ_DLLIB="'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+' '+config.TARGET_CXX.options.PIC+'"')
- else:
-  tangle('CCOBJ_DLLIB="'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+'"')
-@tangle('CCLINK_DLLIB="'+config.TARGET_CXX.options.CCLINK_DYNAMIC_FLX+'"')
-@tangle('CCOBJ_STATIC_LIB="'+config.TARGET_CXX.options.CCOBJ_STATIC_FLX+'"')
-@tangle('CCLINK_STATIC="'+config.TARGET_CXX.options.CCLINK_STATIC+'"')
-@tangle('VERSION="'+config.flx_version+'"')
-@tangle('EXT_LIB="'+config.TARGET_CXX.options.EXT_LIB+'"')
-@tangle('EXT_STATIC_OBJ="'+config.TARGET_CXX.options.EXT_STATIC_OBJ+'"')
-@tangle('EXT_SHARED_OBJ="'+config.TARGET_CXX.options.EXT_SHARED_OBJ+'"')
-@tangle('EXT_EXE="'+config.TARGET_CXX.options.EXT_EXE+'"')
-@tangle('EXT_SHLIB="'+config.TARGET_CXX.options.EXT_SHLIB+'"')
-@tangle('SPEC_OBJ_FILENAME="'+config.TARGET_CXX.options.SPEC_OBJ_FILENAME+'"')
-@tangle('SPEC_EXE_FILENAME="'+config.TARGET_CXX.options.SPEC_EXE_FILENAME+'"')
-@tangle('OPTIMISE="'+config.TARGET_CXX.options.OPTIMISE+'"')
-@tangle('DEBUG_FLAGS="'+config.TARGET_CXX.options.DEBUG_FLAGS+'"')
-
-# check for test mode: this argument must come first
-
-RECOMPILE=0
-DEBUG=0
-INLINE=100
-ECHO=0
-TIME=0
-NOOPTIMISE=0
-
-@if config.DEFAULT_LINK_MODEL=="dynamic":
-   tangle("STATIC=0")
- else:
-   tangle("STATIC=1")
-
-RUNIT=1
-CCFLAGS=""
-INCLUDE_FILES=""
-FELIX=1
-LINKER_SWITCHES=""
-MACROS=""
-grab=1
-cpps=""
-cppos=""
-INCLUDE_DIRS=""
-NOSTDLIB=0
-STDOUT=""
-STDIMPORT="--import=nugram.flxh --import=plat/flx.flxh"
-IMPORTS=""
-OUTPUT_DIR=""
-
-while (( "$grab" == "1" ));
-do
-  case x$1 in
-
-  x--nostdimport)
-    STDIMPORT=""
-    shift
-  ;;
-
-  x--import=*)
-   IMPORTS="$IMPORTS --import=${1:9}"
-   shift
- ;;
-
-  x--test=*)
-    FLX_INSTALL_DIR=${1:7}
-    shift
-  ;;
-
-  x--test)
-    FLX_INSTALL_DIR=.
-    shift
-  ;;
-
-  x--stdout=*)
-    STDOUT=${1:9}
-    shift
-  ;;
-
-  x--force)
-    RECOMPILE=1
-    shift
-  ;;
-
-  x--debug)
-    DEBUG=1
-    ECHO=1
-    NOOPTIMISE=1
-    shift
-  ;;
-
-  x--time)
-    TIME=1
-    shift
-  ;;
-
-  x--nostdlib)
-    NOSTDLIB=1
-    shift
-  ;;
-
-  x--echo)
-    ECHO=1
-    shift
-  ;;
-
-  x--static)
-    STATIC=1
-    shift
-  ;;
-
-  x--inline=*)
-    INLINE=${1:9}
-    shift
-  ;;
-
-  x--inline)
-    INLINE=100
-    shift
-  ;;
-
-  x--noinline)
-    INLINE=0
-    shift
-  ;;
-
-  x--version)
-    echo $VERSION
-    exit 0
-  ;;
-
-  x--output_dir=*)
-    OUTPUT_DIR=$1
-    shift
-  ;;
-
-  x--help)
-    man -M $FLX_INSTALL_DIR/man flx
-    exit 0
-  ;;
-
-  x-c)
-    RUNIT=0
-    shift
-  ;;
-
-  x-I*)
-    INCLUDE_DIRS="$INCLUDE_DIRS $1"
-    shift
-  ;;
-
-  x--nofelix)
-    FELIX=0
-    shift
-  ;;
-
-  x-[lL]*)
-   LINKER_SWITCHES="$LINKER_SWITCHES $1"
-   shift
-  ;;
-
-  x-D*)
-   MACROS="$MACROS $1"
-   shift
-  ;;
-
-  x*.cpp)
-    cpps="$cpps $1"
-    cppos="$cppos `dirname $1`/`basename $1 .cpp`$EXT_OBJ"
-    shift
-  ;;
-
-  x*.cxx)
-    cpps="$cpps $1"
-    cppos="$cppos `dirname $1`/`basename $1 .cxx`$EXT_OBJ"
-    shift
-  ;;
-
-  x*.c)
-    cpps="$cpps $1"
-    cppos="$cppos `dirname $1`/`basename $1 .c`$EXT_OBJ"
-    shift
-  ;;
-
-  x*.o)
-    cppos="$cppos `dirname $1`/`basename $1 .o`$EXT_OBJ"
-    shift
-  ;;
-
-  x*.obj)
-    cppos="$cppos `dirname $1`/`basename $1 .obj`$EXT_OBJ"
-    shift
-  ;;
-
-  x*.a)
-    cppos="$cppos $1"
-    shift
-  ;;
-
-  x*.lib)
-    cppos="$cppos $1"
-    shift
-  ;;
-
-  x--pkg=*)
-    pkgs=" `echo \"$1\" | sed 's/--pkg=\(.*\)/\\1/'`"
-    shift
-  ;;
-
-# unknown flag .. pass to both compile and link
-   x-*)
-      cpps="$cpps $1"
-      cppos="$cppos $1"
-      shift
-    ;;
-
-# the main filename -- subsequent args are args to flx_run
-  x*)
-    grab=0
-  ;;
-
-  esac
-done
-
-if [ "$NOOPTIMISE" = "0" ]
-then
-  CCFLAGS=$CCFLAGS$OPTIMISE
-fi
-
-@if config.HAVE_MSVC:
-  tangle('DLINK_STRING="/link /LIBPATH:${FLX_INSTALL_DIR}\\\\bin "')
-  tangle('SLINK_STRING="/link /LIBPATH:${FLX_INSTALL_DIR}\\\\bin "')
- elif config.CYGWIN or config.WIN32:
-  tangle('DLINK_STRING="-L${FLX_INSTALL_DIR}/bin "')
-  tangle('SLINK_STRING="-L${FLX_INSTALL_DIR}/lib/rtl "')
- else:
-  tangle('DLINK_STRING="-L${FLX_INSTALL_DIR}/lib/rtl "')
-  tangle('SLINK_STRING="-L${FLX_INSTALL_DIR}/lib/rtl "')
-
-
-PKGCONFIG="env FLX_DEBUG=0 FLX_ALLOW_COLLECTION_ANYWHERE=0 $FLX_INSTALL_DIR/bin/flx_pkgconfig"
-
-if [ "$ECHO" = "1" ]
-then
-  echo "#FLX_INSTALL_DIR=$FLX_INSTALL_DIR"
-  echo "#PKGCONFIG=$PKGCONFIG"
-fi
-
-
-# find external header files
-PKGCONFIG_CFLAGS="$PKGCONFIG --path+=$FLX_INSTALL_DIR/config --field=cflags "
-
-# external header files
-PKGCONFIG_INCLUDES="$PKGCONFIG --path+=$FLX_INSTALL_DIR/config --field=includes "
-
-# find external dynload libraries
-PKGCONFIG_DLIBS="$PKGCONFIG -r --path+=$FLX_INSTALL_DIR/config --field=provides_dlib --field=requires_dlibs "
-
-# find external static libraries
-PKGCONFIG_SLIBS="$PKGCONFIG -r --keeprightmost --path+=$FLX_INSTALL_DIR/config --field=provides_slib --field=requires_slibs "
-
-#find driver package required
-PKGCONFIG_DRIVER="$PKGCONFIG --path+=$FLX_INSTALL_DIR/config --field=flx_requires_driver "
-
-# make a list of any *.cpp files (or other g++ options ..)
-
-if [ $STATIC = 0 ]
-then
-  EXT_OBJ=$EXT_SHARED_OBJ
-else
-  EXT_OBJ=$EXT_STATIC_OBJ
-fi
-
-if [ "x$1" = "x" ]
-then
-  echo "usage: flx [options] filename"
-  exit 1
-fi
-
-# Strip trailing .flx or .so
-# users should type 'flx file' without extension,
-# but #! interpreter always passes extension ..
-
-case "$1" in
-  *.flx)
-    arg="`echo $1 | sed 's/\.flx$//'`"
-    is_flx=1
-  ;;
-
-  *.so)
-    arg="`echo $1 | sed 's/\.so$//'`"
-    is_so=1
-  ;;
-
-  *)
-    arg="$1"
-esac
-
-# Find absolute pathname
-
-base=$arg
-
-if [ "x$base" = "x" ]
-then
-  echo "No such felix program: $arg" >&2
-  exit 1
-fi
-
-shift
-
-function calpackages () {
-  # find all include directories
-  if [ "$ECHO" = "1" ]
-  then
-    echo "$PKGCONFIG_CFLAGS @$base.resh"
-  fi
-  INCLUDE_DIRS="$INCLUDE_DIRS $($(echo $PKGCONFIG_CFLAGS @$base.resh))"
-
-  # find all include files
-  if [ "$ECHO" = "1" ]
-  then
-    echo "$PKGCONFIG_INCLUDES @$base.resh"
-  fi
-  INCLUDE_FILES="$INCLUDE_FILES $($(echo $PKGCONFIG_INCLUDES @$base.resh))"
-
-  if [ "$ECHO" = "1" ]
-  then
-    echo "$PKGCONFIG_DRIVER @$base.resh"
-  fi
-
-  # find the driver package
-  DRIVER_PKG=$($(echo $PKGCONFIG_DRIVER @$base.resh))
-  if [ x$DRIVER_PKG = x ]
-  then
-    # default to flx_run if none specified
-    DRIVER_PKG=flx_run
-  fi
-
-  # find the driver entity
-  if [ $STATIC = 0 ]
-  then
-    # dynamic linkage: the driver executable
-    DRIVER=$FLX_INSTALL_DIR/bin/$DRIVER_PKG$EXT_EXE
-  else
-    # static linkage: the driver object file
-    DRIVER=$FLX_INSTALL_DIR/lib/rtl/$DRIVER_PKG$EXT_STATIC_OBJ
-  fi
-
-  if [ $STATIC = 0 ]
-  then
-    if [ "$ECHO" = "1" ]
-    then
-     echo "$PKGCONFIG_DLIBS @$base.resh"
-    fi
-
-    # dynamic linkage: all the libraries required by the application
-    LINK_STRING="$DLINK_STRING$LINKER_SWITCHES $($(echo $PKGCONFIG_DLIBS @$base.resh))"
-  else
-    if [ "$ECHO" = "1" ]
-    then
-     echo "$PKGCONFIG_SLIBS $DRIVER_PKG @$base.resh"
-    fi
-
-    # static linkage: all the libraries required by the application and driver
-    LINK_STRING="$SLINK_STRING$LINKER_SWITCHES $($(echo $PKGCONFIG_SLIBS $DRIVER_PKG @$base.resh))"
-  fi
-
-  if [ $ECHO = 1 ]
-  then
-    echo "#RESOURCE FILE=$base.resh"
-    echo "#INCLUDE_DIRS=$INCLUDE_DIRS"
-    echo "#INCLUDE_FILES=$INCLUDE_FILES"
-    echo "#DRIVER=$DRIVER"
-    echo "#LINK_STRING=$LINK_STRING"
-  fi
-
+@h = tangler("lib/std/version.flx")
+@select(h)
+// GENERATED DURING BUILD (for version number)
+publish "System Interface"
+module Version
+{
+@tangle('  const felix_version : string = \'::std::string("'+config.flx_version+'")\';')
 }
 
-function write_include_file() {
-  (for filename in ${INCLUDE_FILES:1}; do echo "#include $filename"; done) > $1.includes
+
+@h = tangler("lib/plat/filename.flx")
+@select(h)
+// GENERATED DURING CONFIGURATION
+module Plat_Filename
+{
+@if os.sep == '\\':
+   # FFS!!! we put \\\\\\\\ here:
+   # Python reduces it to \\\\             !!!
+   # Felix then reduces it to \\           !!!
+   # and finally C reduces it to plain \   !!!
+   # don't remove the !!! because \ at eol is continuation .. argg
+   tangle('  val sep  = "\\\\\\\\"')
+ else:
+   tangle('  val sep = "'+os.sep+'";')
+@#
+ 
 }
 
-# grab arguments
-grab=1
-args=""
-while (( "$grab" == "1" ));
-do
-  case "x$1" in
-    x)
-      grab=0
-    ;;
-
-    x*)
-      args="$args $1"
-      shift
-    ;;
- esac
-done
-
-INCLUDE_DIR="-I$FLX_INSTALL_DIR/lib/rtl -I$FLX_INSTALL_DIR/config/target"
-FLXLIB="-I$FLX_INSTALL_DIR/lib"
-STDLIB="std"
-if [ "$NOSTDLIB" = "1" ]
-then
-  FLXLIB=""
-  STDLIB=""
-fi
-
-if [ "$CYGWIN" = "1" -o "$WIN32" = "1" ]
-then
-  # bash is a heap of crap! The escaped quotes here are
-  # required in case the PATH has a filename with spaces
-  # However this actually fails on Linux!
-  FLXG="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" $FLX_INSTALL_DIR/bin/flxg"
-  FLXRUN="env \"PATH=$FLX_INSTALL_DIR/bin:\$PATH\" "
-else
-  FLXG="env PATH=$FLX_INSTALL_DIR/bin:\$PATH $FLX_INSTALL_DIR/bin/flxg"
-  # the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
-  if [ "$MACOSX" = "1" ]
-  then
-    FLXRUN="env DYLD_LIBRARY_PATH=$FLX_INSTALL_DIR/lib/rtl:\$DYLD_LIBRARY_PATH "
-  else
-    FLXRUN="env LD_LIBRARY_PATH=$FLX_INSTALL_DIR/lib/rtl:\$LD_LIBRARY_PATH "
-  fi
-fi
-
-DEBUGSWITCH=""
-if [ "$DEBUG" = "1" ]; then DEBUGSWITCH=" --debug"; fi
-STATIC_ENV=""
-if [ "$DEBUG" = "1" ]; then STATIC_ENV="env FLX_DEBUG=1 "; fi
-
-# No need to compile, just run it
-if [ $STATIC = 0 ]
-then
-  if [ $RECOMPILE = 0 -a -r "$base$EXT_SHLIB" -a "(" ! -r "$base.flx" -o "$base$EXT_SHLIB" -nt "$base.flx" ")" ]
-  then
-    if [ $RUNIT = 1 ]
-    then
-      calpackages
-      write_include_file $base
-      cmd="$FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
-      if [ $ECHO = 1 ]; then echo $cmd; fi
-      eval $cmd
-      exit $?
-    fi
-  fi
-else
-  if [ $RECOMPILE = 0 -a -r "$base$EXT_EXE" -a "(" ! -r "$base.flx" -o "$base$EXT_EXE" -nt "$base.flx" ")" ]
-  then
-    if [ $RUNIT = 1 ]
-    then
-      cmd="$STATIC_ENV $base $args"
-      if [ $ECHO = 1 ]; then echo $cmd; fi
-      eval $cmd
-      exit $?
-    fi
-  fi
-fi
-
-# Need Felix and c++ compile, then run it
-
-if [ $DEBUG = 1 ]
-then
-  VERBOSE="-v"
-  CCFLAGS="$CCFLAGS$DEBUG_FLAGS"
-else
-  VERBOSE="-q"
-fi
-
-FLXFLAGS="--inline=$INLINE $OUTPUT_DIR"
-
-if [ $STATIC = 0 ]
-then
-  if [ $FELIX = 1 ]
-  then
-    FCMD="$FLXG $VERBOSE $FLXFLAGS $FLXLIB $INCLUDE_DIRS $STDIMPORT $IMPORTS $STDLIB $base"
-    if [ $ECHO = 1 ]; then echo "$FCMD"; fi
-    eval $FCMD || exit $?
-  fi
-  calpackages
-  write_include_file $base
-  CCMD="$CCOBJ_DLLIB $CCFLAGS -DTARGET_BUILD $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-  LCMD="$CCLINK_DLLIB $CCFLAGS $cppos $base$EXT_OBJ $SPEC_EXE_FILENAME$base$EXT_SHLIB $LINK_STRING "
-  if [ $ECHO = 1 ]; then echo "$CCMD"; fi
-  eval $CCMD || exit $?
-	if [ $ECHO = 1 ]; then echo "$LCMD"; fi
-	eval $LCMD || exit $?
-	if [ $RUNIT = 1 ]
-	then
-		if [ $TIME = 1 ]
-		then
-			cmd="time $FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
-		else
-			cmd="$FLXRUN$DRIVER$DEBUGSWITCH $base$EXT_SHLIB $args"
-		fi
-		if [ "$STDOUT" != "" ]; then cmd="$cmd > $STDOUT"; fi
-		if [ $ECHO = 1 ]; then echo $cmd; fi
-		eval $cmd || exit $?
-	fi
-else
-  if [ $FELIX = 1 ]
-  then
-    FCMD="$FLXG $VERBOSE $FLXFLAGS $FLXLIB $INCLUDE_DIRS $STDIMPORT $IMPORTS $STDLIB $base"
-    if [ $ECHO = 1 ]; then echo "$FCMD"; fi
-    eval $FCMD || exit $?
-    if [ $? != 0 ]; then exit $?; fi
-  fi
-  calpackages
-  write_include_file $base
-  CCMD="$CCOBJ_STATIC_LIB $CCFLAGS -DTARGET_BUILD -DFLX_STATIC_LINK $INCLUDE_DIR $INCLUDE_DIRS $MACROS $cpps $base.cpp $SPEC_OBJ_FILENAME$base$EXT_OBJ"
-  LCMD="$CCLINK_STATIC $SPEC_EXE_FILENAME$base$EXT_EXE $base$EXT_OBJ ${DRIVER} $cppos $LINK_STRING"
-  if [ $ECHO = 1 ]; then echo "$CCMD"; fi
-  eval $CCMD || exit $?
-  if [ $ECHO = 1 ]; then echo "$LCMD"; fi
-  eval $LCMD || exit $?
-  # rm -f "$base.cpp"
-  if [ $RUNIT = 1 ]
-  then
-    if [ $TIME = 1 ]
-    then
-      cmd="time $STATIC_ENV $base $args"
-    else
-      cmd="$STATIC_ENV $base $args"
-    fi
-    if [ "$STDOUT" != "" ]; then cmd="$cmd > $STDOUT"; fi
-    if [ $ECHO = 1 ]; then echo $cmd; fi
-    eval $cmd || exit $?
-  fi
-fi
-@select(tangler('bin/flx-postinstall-check','data'))
-#!/usr/bin/env bash
-FLX=flx
-if [ "x$1" != x ]; then FLX="$1 $2 $3 $4 $5 $6 $7 $8"; fi
-
-echo "Felix command is $FLX"
-ok=0
-bad=0
-total=0
-failed[0]=""
-
-for i in test/*/*.flx tut/*/*.flx
-do
-  expect=`dirname $i`/`basename $i .flx`.expect
-  if test -e $expect
-  then
-    total=$(($total+1))
-    echo "$total -- check dynamic $i"
-    rm -rf tmp.out
-    $FLX --force --stdout=tmp.out $i
-    diff -a -b -y --suppress-common-lines $expect tmp.out
-    if [ "$?" != "0" ]
-    then
-      echo "*********ERROR"
-      failed[$bad]="$total dynamic $i"
-      bad=$(($bad+1))
-    else
-      ok=$(($ok+1))
-    fi
-    total=$(($total+1))
-    echo "$total -- check static $i"
-    rm -rf tmp.out
-    $FLX --force --static --stdout=tmp.out $i
-    diff -a -b -y --suppress-common-lines $expect tmp.out
-    if [ "$?" != "0" ]
-    then
-      echo "*********ERROR"
-      failed[$bad]="$total static $i"
-      bad=$(($bad+1))
-    else
-      ok=$(($ok+1))
-    fi
-  fi
-done
-
-if [ $bad != 0 ]
-then
-  echo "============="
-  echo "$bad FAILURES"
-  echo "============="
-  for ((i=0; i<$bad; i=$i+1)); do echo ${failed[$i]}; done
-  echo $failed
-  echo
-fi
-echo
-echo "============"
-echo "TEST SUMMARY"
-echo "============"
-echo "GOOD $ok"
-echo "BAD  $bad"
-echo "---------"
-echo "TOTAL $total"
-echo "---------"
-
-exit $bad
-
-Just cleaning up script now.
-@make_executable(os.path.join('bin', 'flx.sh'))
-@make_executable(os.path.join('bin', 'flx.py'))
-
-
+@h=tangler('src/compiler/flx_version_hook/flx_version_hook.ml')
+@select(h)
+@import time
+@now = time.time()
+@gmtime = time.gmtime(now)
+@short_time = time.strftime("%a %d %b %Y",gmtime)
+open Flx_version
+let version_data: version_data_t =
+{
+@tangle('  version_string = "%s";' % config.flx_version)
+@tangle('  build_time_float = %s;' % now)
+@tangle('  build_time = "%s";' % time.ctime(now))
+@f = open ("VERSION","w")
+@f.write(config.flx_version+"\n")
+@f.close()
+}
+;;
+let set_version () =
+  Flx_version.version_data := version_data
+;;
