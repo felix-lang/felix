@@ -40,11 +40,7 @@ def dist_tar(ctx, git, version):
         '--format', 'tar',
         '--prefix', prefix,
         '-o', dst,
-<<<<<<< HEAD
-        'HEAD'
-=======
         'HEAD',
->>>>>>> fae6e0946e4cba45a83730600e6a8e6336fe9932
         ], git.name + ' archive', dst, color='yellow')
 
     with closing(tarfile.open(dst, 'a')) as supermodule_tar:
