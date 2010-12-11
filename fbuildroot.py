@@ -622,7 +622,7 @@ def dist(ctx):
     # If HEAD is not tagged or HEAD does not point at the tagged commit, use
     # the HEAD revision as our version.
     if not tag_revision or tag_revision != head_revision:
-        version = head_revision.decode().strip()
+        flx_version = head_revision.decode().strip()
 
-    call('buildsystem.dist.dist_tar', ctx, git, version)
-    call('buildsystem.dist.dist_zip', ctx, git, version)
+    call('buildsystem.dist.dist_tar', ctx, git, flx_version)
+    call('buildsystem.dist.dist_zip', ctx, git, flx_version)
