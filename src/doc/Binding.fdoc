@@ -268,15 +268,12 @@ same name.
 
 @flx-and-expect tut/embedding/bind-1.09-0
 
-@h2 Callbacks
-@flx-and-expect tut/embedding/bind-1.10-0
-
 @h2 C functions
 Felix can be forced to generate C/C++ style functions.
 The type:
-<pre>
-  int * int --&gt; int
-</pre>
+@felix
+  int * int --> int
+@
 with a long arrow denotes a C style function. The keywords
 cfun and cproc introduce such functions. C functions
 can be passed by value as in C, and are represented
@@ -288,3 +285,63 @@ the system standard calling conventions for a
 C++ function.
 
 @flx-and-expect tut/embedding/bind-1.11-0
+@h2 Callbacks
+A callback function is a C function designed by extenal code.
+Typically a pointer to the function is stored in a stucture directly,
+or, it is passed as an argument to a registering function.
+
+In both cases it is usual to find that the C function has a {void*}
+argument often named {client_data}. This is a pointer to some data
+the function uses by casting to a specific type. The pair consisting
+of the callback function and the client_data are equalivalent to
+a {closure}. In OO systems closures are sometime called applicative
+objets, in C++ unfortunatelyt the name {functor} is abused for
+the same idea. In Felix, all function variables are closures
+over the environment of the function at the time the variable is assigned.
+
+In Felix, you can specify a C style callback like this:
+@felix
+callback fun f: int * f -> int;
+@
+This is actually a definition of a C function which acts
+as a wrapper for a felix function! It is used like this:
+@felix
+fun g(x:int)=> x + x + 1;
+print$ f(2, g); endl;
+@
+Here, {f} calls {g}, passing to g the argument 2. The key thing to note
+is that {f} is a C function, whereas {g} is a Felix function.
+The function {f} accepts a Felix function in the argument position
+where its own name {f} is used as a marker. That Felix function has the type
+that {f} does with the marker argument removed, so the types of {f} and {g}
+are given by:
+@felix
+  fun f: int * (int -> int) --> int;
+  fun g: int -> int;
+@
+The arguments to {g} are collected by the call to {f}, and the {g}
+is applied to them. Here is a complete example:
+
+@flx-and-expect tut/embedding/bind-1.10-0
+
+You may ask, what is the point of all this? In fact there is a problem.
+The idea is that we can register the pair {f,g} with a callback registry
+such as an event manager. When an event occurs, the event manager calls
+{f} passing the actual even handler written in Felix, {g} to {f} as
+client data, along with other argument such as the event type.
+
+There is however a subtle problem here. In order for the demo Felix code above
+to work, the type of {f} most be:
+@felix
+  fun f: int * (int -> int) --> int;
+@
+Unfortunately a callback in a C system is going to require this type:
+@felix
+  fun f: int * address --> int; // address is a void*
+@
+This means we have to cast the type of the C function to register it,
+which unfortunately is not only not allowed in C or C++, it is also hard
+to do in Felix because the cast has to be done in C code and we don't
+know the name of the type above, if indeed Felix even generates such a name.
+This needs to be fixed!
+

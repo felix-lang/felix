@@ -13,6 +13,7 @@ private val big_keywords =
   "type",
   "union",
   "struct",
+  "cstruct",
   "typedef",
   "var",
   "val",

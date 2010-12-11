@@ -1,11 +1,29 @@
 @h1 Overload Resolution
 Felix overload resolution is similar to C++, however there are
-some key differences. The most important differences to note are
+some key differences. 
+
+@h2 Set-wise scoping
+On key difference to C and C++ is that the scope of names in Felix
+is the whole of the containing scope. This is similar to the scope
+of labels in C, or the scope of class members in C++. We call this
+<em>set-wise</em> scoping, as opposed to linear scoping, because the names
+in the scope act like a complete set, as opposed to a list. 
+This means that forward declarations are never required in Felix, indeed,
+there is no syntax to support such a thing. For example:
+@felix
+fun f(x:int)=>g(x:int);
+fun g(x:int)=>x;
+@
+is perfectly OK even though {g} is defined it is used to define {f}.
+
+@h2 Exact matching
+Another important difference to note are
 that in Felix, overloading requires an exact match, and hiding
 of functions depends on equal signatues not just the name,
 so functions which would not be visible in C++ due to name
 hiding will be visible in Felix.
 
+@h2 No dependent names
 There is another difference from C++ that should be mentioned here.
 Felix does not permit what C++ calls dependent names. In a polymorphic
 functions, overload resolution is carried out polymorphically and
