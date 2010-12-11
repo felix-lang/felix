@@ -40,7 +40,7 @@ def dist_tar(ctx, version):
         '--format', 'tar',
         '--prefix', prefix,
         '-o', dst,
-        'v' + version,
+        'HEAD'
         ], git.name + ' archive', dst, color='yellow')
 
     with closing(tarfile.open(dst, 'a')) as supermodule_tar:
@@ -103,7 +103,7 @@ def dist_zip(ctx, version):
         '--format', 'zip',
         '--prefix', prefix,
         '-o', dst,
-        'v' + version,
+        'HEAD',
         ], git.name + ' archive', dst, color='yellow')
 
     with closing(zipfile.ZipFile(dst, 'a')) as supermodule_zip:

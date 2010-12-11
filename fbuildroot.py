@@ -36,10 +36,6 @@ def pre_options(parser):
             default=False,
             action='store_true',
             help='enable debugging for all phases'),
-        make_option('-O', '--optimize',
-            default=False,
-            action='store_true',
-            help='enable optimization for all phases'),
         make_option('--skip-tests',
             default=False,
             action='store_true',
@@ -75,10 +71,6 @@ def pre_options(parser):
             default=False,
             action='store_true',
             help='turn on c/c++ build phase debugging'),
-        make_option('--build-c-optimize',
-            default=False,
-            action='store_true',
-            help='turn on optimizations for c/c++ build phase'),
     ))
 
     group = parser.add_option_group('host phase options')
@@ -110,10 +102,6 @@ def pre_options(parser):
             default=False,
             action='store_true',
             help='turn on c/c++ host phase debugging'),
-        make_option('--host-c-optimize',
-            default=False,
-            action='store_true',
-            help='turn on optimization for c/c++ host phase'),
         make_option('--host-ocaml-debug',
             default=False,
             action='store_true',
@@ -152,10 +140,6 @@ def pre_options(parser):
             default=False,
             action='store_true',
             help='turn on c/c++ target phase debugging'),
-        make_option('--target-c-optimize',
-            default=False,
-            action='store_true',
-            help='turn on optimization for c/c++ target phase'),
         make_option('--target-c-flag',
             dest='target_c_flags',
             default=[],
@@ -172,9 +156,6 @@ def post_options(options, args):
         options.buildroot = Path(options.buildroot, 'debug')
     else:
         options.buildroot = Path(options.buildroot, 'release')
-
-    if options.optimize:
-        options.buildroot += '-optimized'
 
     return options, args
 
@@ -230,14 +211,14 @@ def config_build(ctx):
         c=make_c_builder(ctx, ctx.options.build_cc,
             platform=platform,
             debug=ctx.options.debug or ctx.options.build_c_debug,
-            optimize=ctx.options.optimize or ctx.options.build_c_optimize,
+            optimize=not (ctx.options.debug or ctx.options.build_c_debug),
             includes=ctx.options.build_includes,
             libpaths=ctx.options.build_libpaths,
             flags=ctx.options.build_c_flags),
         cxx=make_cxx_builder(ctx, ctx.options.build_cxx,
             platform=platform,
             debug=ctx.options.debug or ctx.options.build_c_debug,
-            optimize=ctx.options.optimize or ctx.options.build_c_optimize,
+            optimize=not (ctx.options.debug or ctx.options.build_c_debug),
             includes=ctx.options.build_includes,
             libpaths=ctx.options.build_libpaths,
             flags=ctx.options.build_c_flags))
@@ -258,16 +239,14 @@ def config_host(ctx, build):
             c=make_c_builder(ctx, fbuild.builders.host_cc,
                 platform=platform,
                 debug=ctx.options.debug or ctx.options.host_c_debug,
-                optimize=ctx.options.optimize or
-                    ctx.options.host_c_optimize,
+                optimize=not (ctx.options.debug or ctx.options.host_c_debug),
                 includes=ctx.options.host_includes,
                 libpaths=ctx.options.host_libpaths,
                 flags=ctx.options.host_c_flags),
             cxx=make_cxx_builder(ctx, fbuild.buildesr.host_cxx,
                 platform=platform,
                 debug=ctx.options.debug or ctx.options.host_c_debug,
-                optimize=ctx.options.optimize or
-                    ctx.options.host_c_optimize,
+                optimize=not (ctx.options.debug or ctx.options.host_c_debug),
                 includes=ctx.options.host_includes,
                 libpaths=ctx.options.host_libpaths,
                 flags=ctx.options.host_c_flags))
@@ -319,16 +298,14 @@ def config_target(ctx, host):
             c=make_c_builder(ctx, ctx.options.target_cc,
                 platform=platform,
                 debug=ctx.options.debug or ctx.options.target_c_debug,
-                optimize=ctx.options.optimize or
-                    ctx.options.target_c_optimize,
+                optimize=not (ctx.options.debug or ctx.options.target_c_debug),
                 includes=ctx.options.target_includes,
                 libpaths=ctx.options.target_libpaths,
                 flags=ctx.options.target_c_flags),
             cxx=make_cxx_builder(ctx, ctx.options.target_cxx,
                 platform=platform,
                 debug=ctx.options.debug or ctx.options.target_c_debug,
-                optimize=ctx.options.optimize or
-                    ctx.options.target_c_optimize,
+                optimize=not(ctx.options.debug or ctx.options.target_c_debug),
                 includes=ctx.options.target_includes,
                 libpaths=ctx.options.target_libpaths,
                 flags=ctx.options.target_c_flags))
@@ -622,17 +599,8 @@ def dist(ctx):
     """Creates tarball and zip distribution files."""
 
     phases, iscr = configure(ctx)
-
+    from buildsystem.version import flx_version
+    print("Packing Source as Version: " + flx_version +" to " + ctx.buildroot)
     # Extract the version from 
-    with open(ctx.buildroot / 'config/version.py') as f:
-        import re
-        for line in f:
-            m = re.match(r"flx_version = '(.*?)'", line)
-            if m:
-                version = m.group(1)
-                break
-        else:
-            raise fbuild.Error('could not determine Felix version')
-
-    call('buildsystem.dist.dist_tar', ctx, version)
-    call('buildsystem.dist.dist_zip', ctx, version)
+    call('buildsystem.dist.dist_tar', ctx, flx_version)
+    call('buildsystem.dist.dist_zip', ctx, flx_version)
