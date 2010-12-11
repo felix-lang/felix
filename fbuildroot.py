@@ -599,8 +599,40 @@ def dist(ctx):
     """Creates tarball and zip distribution files."""
 
     phases, iscr = configure(ctx)
+<<<<<<< HEAD
     from buildsystem.version import flx_version
     print("Packing Source as Version: " + flx_version +" to " + ctx.buildroot)
     # Extract the version from 
     call('buildsystem.dist.dist_tar', ctx, flx_version)
     call('buildsystem.dist.dist_zip', ctx, flx_version)
+=======
+
+    # Find the git executable.
+    git = fbuild.builders.find_program(ctx, ['git'])
+
+    # Grab the HEAD revision.
+    head_revision, _ = ctx.execute(
+        [git, 'rev-parse', '--short', 'HEAD'],
+        quieter=1)
+
+    # Grab the current felix version.
+    import buildsystem.version
+    version = buildsystem.version.flx_version
+
+    # Check if the HEAD branch points at our version.
+    try:
+        tag_revision, _ = ctx.execute(
+            [git, 'rev-parse', '--short', 'v' + version],
+            quieter=1)
+    except fbuild.ExecutionError:
+        # It's okay if the tag hasn't been created.
+        tag_revision = None
+
+    # If HEAD is not tagged or HEAD does not point at the tagged commit, use
+    # the HEAD revision as our version.
+    if not tag_revision or tag_revision != head_revision:
+        version = head_revision.decode().strip()
+
+    call('buildsystem.dist.dist_tar', ctx, git, version)
+    call('buildsystem.dist.dist_zip', ctx, git, version)
+>>>>>>> fae6e0946e4cba45a83730600e6a8e6336fe9932
