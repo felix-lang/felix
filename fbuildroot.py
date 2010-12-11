@@ -601,9 +601,6 @@ def dist(ctx):
     phases, iscr = configure(ctx)
     from buildsystem.version import flx_version
     print("Packing Source as Version: " + flx_version +" to " + ctx.buildroot)
-    # Extract the version from 
-    call('buildsystem.dist.dist_tar', ctx, flx_version)
-    call('buildsystem.dist.dist_zip', ctx, flx_version)
 
     # Find the git executable.
     git = fbuild.builders.find_program(ctx, ['git'])
