@@ -19,15 +19,15 @@ def find_submodules(ctx, git):
         parts = line.decode().strip().split(' ')
         revision, path = parts[0], parts[1]
 
+        if revision and revision[0] in ('+-'):
+            revision = revision[1:]
+
         yield revision, path
 
 # ------------------------------------------------------------------------------
 
-def dist_tar(ctx, version):
+def dist_tar(ctx, git, version):
     """Creates tar files for all of the felix submodules."""
-
-    # Find the git executable.
-    git = fbuild.builders.find_program(ctx, ['git'])
 
     dst = ctx.buildroot / 'dist/felix-{}.tar'.format(version)
     dst.parent.makedirs()
@@ -40,7 +40,7 @@ def dist_tar(ctx, version):
         '--format', 'tar',
         '--prefix', prefix,
         '-o', dst,
-        'v' + version,
+        'HEAD',
         ], git.name + ' archive', dst, color='yellow')
 
     with closing(tarfile.open(dst, 'a')) as supermodule_tar:
@@ -86,7 +86,7 @@ def dist_tar(ctx, version):
 
 # ------------------------------------------------------------------------------
 
-def dist_zip(ctx, version):
+def dist_zip(ctx, git, version):
     """Creates zip files for all of the felix submodules."""
 
     # Find the git executable.
@@ -103,7 +103,7 @@ def dist_zip(ctx, version):
         '--format', 'zip',
         '--prefix', prefix,
         '-o', dst,
-        'v' + version,
+        'HEAD',
         ], git.name + ' archive', dst, color='yellow')
 
     with closing(zipfile.ZipFile(dst, 'a')) as supermodule_zip:

@@ -623,16 +623,31 @@ def dist(ctx):
 
     phases, iscr = configure(ctx)
 
-    # Extract the version from 
-    with open(ctx.buildroot / 'config/version.py') as f:
-        import re
-        for line in f:
-            m = re.match(r"flx_version = '(.*?)'", line)
-            if m:
-                version = m.group(1)
-                break
-        else:
-            raise fbuild.Error('could not determine Felix version')
+    # Find the git executable.
+    git = fbuild.builders.find_program(ctx, ['git'])
 
-    call('buildsystem.dist.dist_tar', ctx, version)
-    call('buildsystem.dist.dist_zip', ctx, version)
+    # Grab the HEAD revision.
+    head_revision, _ = ctx.execute(
+        [git, 'rev-parse', '--short', 'HEAD'],
+        quieter=1)
+
+    # Grab the current felix version.
+    import buildsystem.version
+    version = buildsystem.version.flx_version
+
+    # Check if the HEAD branch points at our version.
+    try:
+        tag_revision, _ = ctx.execute(
+            [git, 'rev-parse', '--short', 'v' + version],
+            quieter=1)
+    except fbuild.ExecutionError:
+        # It's okay if the tag hasn't been created.
+        tag_revision = None
+
+    # If HEAD is not tagged or HEAD does not point at the tagged commit, use
+    # the HEAD revision as our version.
+    if not tag_revision or tag_revision != head_revision:
+        version = head_revision.decode().strip()
+
+    call('buildsystem.dist.dist_tar', ctx, git, version)
+    call('buildsystem.dist.dist_zip', ctx, git, version)
