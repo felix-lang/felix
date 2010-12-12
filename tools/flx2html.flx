@@ -1,51 +1,93 @@
 // Felix
 module Flx2Html {
 private val big_keywords = 
-  "macro",
-  "module",
-  "cfun",
-  "cproc",
-  "fun",
-  "enum",
-  "gen",
-  "proc",
-  "ctor",
-  "type",
-  "union",
-  "struct",
-  "cstruct",
-  "typedef",
-  "var",
-  "val",
-  "typeclass",
-  "const",
-  "instance",
-  "header",
-  "body",
-  "include",
-  "open",
-  "spawn_fthread",
-  "spawn_pthread",
-  "reduce", "axiom", 
-  "open", "inherit",
-  "SCHEME","syntax","priority"
+  ("macro","prefix for macro definitions"),
+  ("module","Define a module namespace"),
+  ("cfun","Define a C function"),
+  ("cproc","Define a C procedure"),
+  ("fun","Define a function with no side-effects"),
+  ("enum","Elaborate an enumeration, a simple sum type"),
+  ("gen","Define a generator, a function with side-effects returning a value"),
+  ("proc","Define a procedure, a function with side-effects not returning a value"),
+  ("ctor","Define a type constructor"),
+  ("type","Define a primitive type by binding to a C type"),
+  ("ctypes","Define a set of primitive type by binding to C types with the same name"),
+  ("union","Define a union of alternatives"),
+  ("struct","Define a structure"),
+  ("cstruct","Provide a model for an existing C struct"),
+  ("typedef","Define an alias for a type expression"),
+  ("var","Define a mutable variable"),
+  ("val","Define an immutable value"),
+  ("typeclass","Define a type clas"),
+  ("const","Bind a Felix symbol to a C expression"),
+  ("instance","Provide an instance of a typeclass"),
+  ("header","Specify C code to be inserted into header file"),
+  ("body","Specify C code to be inserted into implementation file"),
+  ("include","Include a Felix file"),
+  ("spawn_fthread","Spawn a cooperative fibre"),
+  ("spawn_pthread","Spawn a pre-emptive thread"),
+  ("reduce", "Specify a reduction"),
+  ("axiom", "Specify core semantics"),
+  ("open", "Open a module or typeclass"),
+  ("inherit","Inherit symbols into a module or typeclass"),
+  ("SCHEME","Define Scheme symbols"),
+  ("syntax","define domain specific sublanguage module"),
+  ("priority","Define order of syntactic priority symbols")
 ;
 
 private val small_keywords =
-  "if", "then", "else", "elif", "endif", "do", "done",
-  "in", "forall", "while", "whilst","to", "upto","downto",
-  "typematch","match","endmatch","with","requires",
-  "return","goto","jump","loop",
+  "if", 
+  "then", 
+  "else", 
+  "elif", 
+  "endif", 
+  "do", 
+  "done",
+  "in", 
+  "forall", 
+  "while", 
+  "whilst",
+  "to", 
+  "upto",
+  "downto",
+  "typematch",
+  "match",
+  "endmatch",
+  "with", 
+  "requires",
+  "return",
+  "goto",
+  "jump",
+  "loop",
   "package",
-  "when", "result","expect","for","ident","noexpand",
+  "when", 
+  "result",
+  "expect",
+  "for",
+  "ident",
+  "noexpand",
   "typesetof"
 ;
 
 private val qualifiers = 
-  "virtual", "inline", "noinline", "private", "incomplete","callback","pod",
-  "_gc_pointer"
+  ("virtual", "Type of a function to be provided in type class instances"),
+  ("inline", "Function or procedure which should be inlined if possible"),
+  ("noinline", "Function or procedure which must not be inlined"),
+  ("private", "Symbol visible only in enclosing module or typeclass namespace"),
+  ("incomplete","A type which must not be instantiated"),
+  ("callback","A C wrapper for a Felix callback"),
+  ("pod","A Plain Old Data type, which needs no finalisation"),
+  ("_gc_pointer","A Felix heap allocated pointer")
 ;
 private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
+
+fun valof[N] (x:array[string * string,N], k:string) = {
+  var i:int;
+  forall i in 0 upto len x - 1 do
+    if x.[i].(0) == k do return x.[i].(1); done;
+  done
+  return "";
+}
 
 /*
 fun valof[N](x:array[string * string,N],key:string) =>
@@ -162,9 +204,12 @@ println$ "Package file basename is " + n;
     | id => 
       { 
         last_id = b;
-        if b in big_keywords do last_key=b; write_string('<span class="big_keyword" title="'+b+'">'+b+"</span>"); 
+        // this is a bit hacky but I can't see another way!
+        var bv=valof(big_keywords,b);
+        var qv=valof(qualifiers,b);
+        if bv != "" do last_key=b; write_string('<span class="big_keyword" title="'+bv+'">'+b+"</span>"); 
         elif b in small_keywords do last_key=b; write_string('<span class="small_keyword">'+b+"</span>"); 
-        elif b in qualifiers do write_string('<span class="qualifier">'+b+"</span>"); 
+        elif qv != "" do write_string('<span class="qualifier" title="'+qv+'">'+b+"</span>"); 
         elif b in hack do write_string('<span class="hack">'+b+"</span>"); 
         else write_string(b); done
       }

@@ -166,3 +166,36 @@ requires a pointer, the parser takes the address of the LHS to find it, on the
 assumption that it is a variable. A {varray}, however, it already a pointer..
 This needs to be sorted out.
 
+@h2 Overloading
+@felix
+fun valof[N](x:array[string * string,N],key:string) =>
+  match Array::find[string^2,N] (fun (k:string)=> k == key) x with
+  | Some (?k,?v) => v
+  | None => ""
+  endmatch
+;
+@
+matching against:
+@felix
+  fun find[T, N] (eq:T*T->bool) (x:array[T, N]) (e:T): opt[T] = ...
+  fun find[T, N] (eq:T->bool) (x:array[T, N]): opt[T] = ...
+@
+gives error:
+@felix
+Client Error binding expression (((Array)::find[string^bool, N] _lam_8035 of (string)) x)
+CLIENT ERROR
+[lookup_qn_with_sig] (Simple module) Unable to resolve overload of (Array)::find[string^bool, N] of (string -> bool,(string^2)^<T8860>)
+candidates are: {
+generated curry fun find[T: TYPE, N: TYPE]: (T -> bool) -> (array[T, N] -> opt[T]);
+  defined at build/release/lib/std/array.flx: line 141, cols 1 to 3
+  with view vs=T,N ts=<T5199>,<T5200>
+generated curry fun find[T: TYPE, N: TYPE]: (T * T -> bool) -> (array[T, N] -> (T -> opt[T]));
+  defined at build/release/lib/std/array.flx: line 129, cols 1 to 3
+  with view vs=T,N ts=<T5186>,<T5187>
+}
+In tools/flx2html.flx: line 51, cols 9 to 59
+50: fun valof[N](x:array[string * string,N],key:string) =>
+51:   match Array::find[string^2,N] (fun (k:string)=> k == key) x with
+            ***************************************************
+52:   | Some (?k,?v) => v
+@
