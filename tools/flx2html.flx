@@ -81,22 +81,13 @@ private val qualifiers =
 ;
 private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
 
-fun valof[N] (x:array[string * string,N], k:string) = {
-  var i:int;
-  forall i in 0 upto len x - 1 do
-    if x.[i].(0) == k do return x.[i].(1); done;
-  done
-  return "";
-}
 
-/*
 fun valof[N](x:array[string * string,N],key:string) =>
-  match Array::find[string^2,N] (fun (k:string)=> k == key) x with
+  match Array::find (fun (kv:string * string)=> kv.(0) == key) x with
   | Some (?k,?v) => v
   | None => ""
   endmatch
 ;
-*/
 
 fun xlat_felix(t:string, dir:string)=
 {
