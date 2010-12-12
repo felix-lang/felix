@@ -30,6 +30,7 @@ private val big_keywords =
   "open", "inherit",
   "SCHEME","syntax","priority"
 ;
+
 private val small_keywords =
   "if", "then", "else", "elif", "endif", "do", "done",
   "in", "forall", "while", "whilst","to", "upto","downto",
@@ -46,6 +47,14 @@ private val qualifiers =
 ;
 private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
 
+/*
+fun valof[N](x:array[string * string,N],key:string) =>
+  match Array::find[string^2,N] (fun (k:string)=> k == key) x with
+  | Some (?k,?v) => v
+  | None => ""
+  endmatch
+;
+*/
 
 fun xlat_felix(t:string, dir:string)=
 {
@@ -153,7 +162,7 @@ println$ "Package file basename is " + n;
     | id => 
       { 
         last_id = b;
-        if b in big_keywords do last_key=b; write_string('<span class="big_keyword">'+b+"</span>"); 
+        if b in big_keywords do last_key=b; write_string('<span class="big_keyword" title="'+b+'">'+b+"</span>"); 
         elif b in small_keywords do last_key=b; write_string('<span class="small_keyword">'+b+"</span>"); 
         elif b in qualifiers do write_string('<span class="qualifier">'+b+"</span>"); 
         elif b in hack do write_string('<span class="hack">'+b+"</span>"); 

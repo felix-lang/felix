@@ -10,10 +10,26 @@ fun markdown (s:string):string= {
   return x;
 }
 
-val js_toggle = 
+val js1 = 
 """
 <script type="text/javascript">
 
+function expand(but,id)
+{
+  var n = document.getElementById(id).style;
+  var button = document.getElementById(but);
+  button.src = "/web/images/minus.gif";
+  button.alt = "-";
+  n.display = "block";
+}
+function collapse(but,id)
+{
+  var n = document.getElementById(id).style;
+  var button = document.getElementById(but);
+  button.src = "/web/images/plus.gif";
+  button.alt = "+";
+  n.display = "none";
+}
 function toggle(button,id)
 {
   var n = document.getElementById(id).style;
@@ -30,14 +46,35 @@ function toggle(button,id)
     n.display = "none";
   }
 }
+var allbuttons = [
+""";
+val js2 =
+"""
+];
+function expand_all()
+{
+  for (i in allbuttons)
+  {
+    expand(allbuttons[i], allbuttons[i]+"_d");
+  }
+}
+function collapse_all()
+{
+  for (i in allbuttons)
+  {
+    collapse(allbuttons[i], allbuttons[i]+"_d");
+  }
+}
 </script>
 """;
+val nav = '<p><button type="button" onclick="expand_all()">Expand</button>'
+   '&nbsp;<button type="button" onclick="collapse_all()">Collapse</button> </p>'
+;
 
 // bid is the button id, cid is the stuff which is controlled by it
 fun tree_button(bid:string, cid:string)=>
   "<img src='/web/images/plus.gif' id='"+bid+"' onclick='toggle(this,\""+cid+"\")' alt='+'/>"
 ;
-
 val timeout = Filename::join (Config::FLX_INSTALL_DIR, "bin", "timeout"+Config::EXT_EXE);
 
 gen safer_popen(cmd:string)=>
@@ -46,7 +83,10 @@ gen safer_popen(cmd:string)=>
 
 fun xlat_fdoc(t:string)=
 {
-  var out = js_toggle;
+
+  var all_buttons = "";
+
+  var out = "";
   proc write_string(t:string) 
   { 
     out += t;
@@ -109,6 +149,7 @@ fun xlat_fdoc(t:string)=
   proc h(n:int, txt:string) { 
     ep; 
     edivs(n); 
+    all_buttons =if all_buttons != "" then all_buttons+',\n' else '' endif + '"' + txt + '"';
     tb:=tree_button(txt,txt+"_d");
     ++hstack;
     write_string("<h"+str n+">"+tb+" "+hnum()+" "+ txt+"</h"+str n+"><div id='"+txt+"_d' style='display:none'>\n"); 
@@ -184,6 +225,7 @@ nextc:>
             write_string("<pre class='flxbg'>"); 
             write_string(Flx2Html::xlat_felix (flx,""));
             write_string("</pre>\n");
+            all_buttons = if all_buttons != "" then all_buttons + ',' else '' endif + '"' + fname + '"';
             write_string(tree_button(fname,fname+"_d"));
             write_string("<code class='inclusion'>  "+fname+".expect</code>\n");
             var xpected = get_flx(fname+".expect");
@@ -243,6 +285,6 @@ fin:>
    if b != "" do write_string(match s with | doc => markdown b | _ => b endmatch); done
    ep;
    edivs(1);
-   return out;
+   return js1+all_buttons +js2+nav+out;
 }
 }

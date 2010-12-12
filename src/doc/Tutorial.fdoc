@@ -1218,7 +1218,7 @@ the unqualified term "function" is used to refer to both.
 Even more confusing, it sometimes means procedures
 as well (even though they're utterly different beasts).
 
-@h2 The "the" keyword
+@h2 The the keyword
 @obsolete
 When naming functions, it annoying
 to write the signature of the function
