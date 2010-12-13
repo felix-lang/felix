@@ -1,21 +1,19 @@
-#ifndef JUDY_EXTERN
-#if defined(_WIN32) && !defined(FLX_STATIC_LINK)
-#ifdef BUILD_JUDY
-#define JUDY_EXTERN __declspec(dllexport)
-#else
-#define JUDY_EXTERN __declspec(dllimport)
-#endif
-#else
-#define JUDY_EXTERN
-#endif
-#endif
-
-/* here JU_WIN <=> MSVC CL build */
-#ifdef _MSC_VER
-#define JU_WIN
-#endif
-
-
+// Copyright (C) 2000 - 2002 Hewlett-Packard Company
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the term of the GNU Lesser General Public License as published by the
+// Free Software Foundation; either version 2 of the License, or (at your
+// option) any later version.
+//
+// This program is distributed in the hope that it will be useful, but WITHOUT
+// ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License
+// for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// _________________
 
 // @(#) $Revision: 4.43 $ $Source: /judy/src/JudyCommon/JudyGet.c $
 //
