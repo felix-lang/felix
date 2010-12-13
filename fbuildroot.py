@@ -600,7 +600,6 @@ def dist(ctx):
 
     phases, iscr = configure(ctx)
     from buildsystem.version import flx_version
-    print("Packing Source as Version: " + flx_version +" to " + ctx.buildroot)
 
     # Find the git executable.
     git = fbuild.builders.find_program(ctx, ['git'])
@@ -623,6 +622,8 @@ def dist(ctx):
     # the HEAD revision as our version.
     if not tag_revision or tag_revision != head_revision:
         flx_version = head_revision.decode().strip()
+
+    ctx.logger.log('Packing Source as Version: %s' % flx_version)
 
     call('buildsystem.dist.dist_tar', ctx, git, flx_version)
     call('buildsystem.dist.dist_zip', ctx, git, flx_version)
