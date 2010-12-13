@@ -606,13 +606,13 @@ def dist(ctx):
 
     # Grab the HEAD revision.
     head_revision, _ = ctx.execute(
-        [git, 'rev-parse', '--short', 'HEAD'],
+        [git, 'rev-parse', '--short', 'HEAD^{}'],
         quieter=1)
 
     # Check if the HEAD branch points at our version.
     try:
         tag_revision, _ = ctx.execute(
-            [git, 'rev-parse', '--short', 'v' + flx_version],
+            [git, 'rev-parse', '--short', 'v' + flx_version + '^{}'],
             quieter=1)
     except fbuild.ExecutionError:
         # It's okay if the tag hasn't been created.
