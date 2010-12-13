@@ -1,0 +1,6 @@
+Here are the steps needed to release a new version of Felix:
+
+1. Update version in buildsystem/version.py
+2. Update version in web/index.html
+3. git tag -s $VERSION
+4. git push origin $VERSION
