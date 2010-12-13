@@ -271,6 +271,18 @@ and pattern_t =
   | PAT_when of Flx_srcref.t * pattern_t * expr_t
   | PAT_record of Flx_srcref.t * (id_t * pattern_t) list
 
+and regex_t =
+  | REGEX_alts of Flx_srcref.t * regex_t list
+  | REGEX_seqs of Flx_srcref.t * regex_t list
+  | REGEX_ast of Flx_srcref.t * regex_t
+  | REGEX_plus of Flx_srcref.t * regex_t
+  | REGEX_quest of Flx_srcref.t * regex_t
+  | REGEX_group of Flx_srcref.t * regex_t
+  | REGEX_charset of Flx_srcref.t * string
+  | REGEX_string of Flx_srcref.t * string
+  | REGEX_name of Flx_srcref.t * string (* change later to usual style of qualified name *)
+
+
 (** {7 Statements}
  *
  * Statements; that is, the procedural sequence control system. *)
@@ -480,6 +492,8 @@ and statement_t =
 
   | STMT_user_statement of Flx_srcref.t * string * ast_term_t
   | STMT_scheme_string of Flx_srcref.t * string
+
+  | STMT_regdef of Flx_srcref.t * string * regex_t
 
 type exe_t =
   | EXE_code of code_spec_t (* for inline C++ code *)

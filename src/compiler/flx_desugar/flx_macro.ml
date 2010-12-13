@@ -897,6 +897,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | STMT_include (sr, s) -> tack st
 
+  | STMT_regdef (sr,n,s) -> tack st
+
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)
   | STMT_open (sr, vs, qn) ->
     tack (STMT_open (sr, vs, mq qn))
