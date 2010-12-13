@@ -47,32 +47,32 @@
 // Return -1 if error (details in Pjpm), otherwise return 1.
 
 FUNCTION int j__udyCreateBranchL(
-        Pjp_t   Pjp,            // Build JPs from this place
-        Pjp_t   PJPs,           // Array of JPs to put into Bitmap branch
-        uint8_t Exp[],          // Array of expanses to put into bitmap
-        Word_t  ExpCnt,         // Number of above JPs and Expanses
-        Pvoid_t Pjpm)
+	Pjp_t	Pjp,		// Build JPs from this place
+	Pjp_t	PJPs,		// Array of JPs to put into Bitmap branch
+	uint8_t Exp[],		// Array of expanses to put into bitmap
+	Word_t  ExpCnt,		// Number of above JPs and Expanses
+	Pvoid_t	Pjpm)
 {
-        Pjbl_t  PjblRaw;        // pointer to linear branch.
-        Pjbl_t  Pjbl;
+	Pjbl_t	PjblRaw;	// pointer to linear branch.
+	Pjbl_t	Pjbl;
 
-        assert(ExpCnt <= cJU_BRANCHLMAXJPS);
+	assert(ExpCnt <= cJU_BRANCHLMAXJPS);
 
-        PjblRaw = j__udyAllocJBL(Pjpm);
-        if (PjblRaw == (Pjbl_t) NULL) return(-1);
+	PjblRaw	= j__udyAllocJBL(Pjpm);
+	if (PjblRaw == (Pjbl_t) NULL) return(-1);
         Pjbl    = P_JBL(PjblRaw);
 
-//      Build a Linear Branch
-        Pjbl->jbl_NumJPs = ExpCnt;
+//	Build a Linear Branch
+	Pjbl->jbl_NumJPs = ExpCnt;
 
-//      Copy from the Linear branch from splayed leaves
-        JU_COPYMEM(Pjbl->jbl_Expanse, Exp,  ExpCnt);
-        JU_COPYMEM(Pjbl->jbl_jp,      PJPs, ExpCnt);
+//	Copy from the Linear branch from splayed leaves
+	JU_COPYMEM(Pjbl->jbl_Expanse, Exp,  ExpCnt);
+	JU_COPYMEM(Pjbl->jbl_jp,      PJPs, ExpCnt);
 
-//      Pass back new pointer to the Linear branch in JP
-        Pjp->jp_Addr = (Word_t) PjblRaw;
+//	Pass back new pointer to the Linear branch in JP
+	Pjp->jp_Addr = (Word_t) PjblRaw;
 
-        return(1);
+	return(1);
 
 } // j__udyCreateBranchL()
 
@@ -89,16 +89,16 @@ FUNCTION int j__udyCreateBranchL(
 // Return -1 if error (details in Pjpm), otherwise return 1.
 
 FUNCTION int j__udyCreateBranchB(
-        Pjp_t   Pjp,            // Build JPs from this place
-        Pjp_t   PJPs,           // Array of JPs to put into Bitmap branch
-        uint8_t Exp[],          // Array of expanses to put into bitmap
-        Word_t  ExpCnt,         // Number of above JPs and Expanses
-        Pvoid_t Pjpm)
+	Pjp_t	Pjp,		// Build JPs from this place
+	Pjp_t	PJPs,		// Array of JPs to put into Bitmap branch
+	uint8_t Exp[],		// Array of expanses to put into bitmap
+	Word_t  ExpCnt,		// Number of above JPs and Expanses
+	Pvoid_t	Pjpm)
 {
-        Pjbb_t  PjbbRaw;        // pointer to bitmap branch.
-        Pjbb_t  Pjbb;
-        Word_t  ii, jj;         // Temps
-        uint8_t CurrSubExp;     // Current sub expanse for BM
+	Pjbb_t	PjbbRaw;	// pointer to bitmap branch.
+	Pjbb_t	Pjbb;
+	Word_t  ii, jj;		// Temps
+	uint8_t CurrSubExp;	// Current sub expanse for BM
 
 // This assertion says the number of populated subexpanses is not too large.
 // This function is only called when a BranchL overflows to a BranchB or when a
@@ -109,85 +109,85 @@ FUNCTION int j__udyCreateBranchB(
 // fact there should be no HARM in creating a BranchB with higher actual
 // fanout.
 
-        assert(ExpCnt <= cJU_BRANCHBMAXJPS);
+	assert(ExpCnt <= cJU_BRANCHBMAXJPS);
 
-//      Get memory for a Bitmap branch
-        PjbbRaw = j__udyAllocJBB(Pjpm);
-        if (PjbbRaw == (Pjbb_t) NULL) return(-1);
-        Pjbb = P_JBB(PjbbRaw);
+//	Get memory for a Bitmap branch
+	PjbbRaw	= j__udyAllocJBB(Pjpm);
+	if (PjbbRaw == (Pjbb_t) NULL) return(-1);
+	Pjbb = P_JBB(PjbbRaw);
 
-//      Get 1st "sub" expanse (0..7) of bitmap branch
-        CurrSubExp = Exp[0] / cJU_BITSPERSUBEXPB;
+//	Get 1st "sub" expanse (0..7) of bitmap branch
+	CurrSubExp = Exp[0] / cJU_BITSPERSUBEXPB;
 
 // Index thru all 1 byte sized expanses:
 
-        for (jj = ii = 0; ii <= ExpCnt; ii++)
-        {
-                Word_t SubExp;  // Cannot be a uint8_t
+	for (jj = ii = 0; ii <= ExpCnt; ii++)
+	{
+		Word_t SubExp;	// Cannot be a uint8_t
 
-//              Make sure we cover the last one
-                if (ii == ExpCnt)
-                {
-                        SubExp = cJU_ALLONES;   // Force last one
-                }
-                else
-                {
-//                      Calculate the "sub" expanse of the byte expanse
-                        SubExp = Exp[ii] / cJU_BITSPERSUBEXPB;  // Bits 5..7.
+//		Make sure we cover the last one
+		if (ii == ExpCnt)
+		{
+			SubExp = cJU_ALLONES;	// Force last one
+		}
+		else
+		{
+//			Calculate the "sub" expanse of the byte expanse
+			SubExp = Exp[ii] / cJU_BITSPERSUBEXPB;  // Bits 5..7.
 
-//                      Set the bit that represents the expanse in Exp[]
-                        JU_JBB_BITMAP(Pjbb, SubExp) |= JU_BITPOSMASKB(Exp[ii]);
-                }
-//              Check if a new "sub" expanse range needed
-                if (SubExp != CurrSubExp)
-                {
-//                      Get number of JPs in this sub expanse
-                        Word_t NumJP = ii - jj;
-                        Pjp_t  PjpRaw;
-                        Pjp_t  Pjp;
+//			Set the bit that represents the expanse in Exp[]
+			JU_JBB_BITMAP(Pjbb, SubExp) |= JU_BITPOSMASKB(Exp[ii]);
+		}
+//		Check if a new "sub" expanse range needed
+		if (SubExp != CurrSubExp)
+		{
+//			Get number of JPs in this sub expanse
+			Word_t NumJP = ii - jj;
+			Pjp_t  PjpRaw;
+			Pjp_t  Pjp;
 
-                        PjpRaw = j__udyAllocJBBJP(NumJP, Pjpm);
+			PjpRaw = j__udyAllocJBBJP(NumJP, Pjpm);
                         Pjp    = P_JP(PjpRaw);
 
-                        if (PjpRaw == (Pjp_t) NULL)     // out of memory.
-                        {
+			if (PjpRaw == (Pjp_t) NULL)	// out of memory.
+			{
 
 // Free any previous allocations:
 
-                            while(CurrSubExp--)
-                            {
-                                NumJP = j__udyCountBitsB(JU_JBB_BITMAP(Pjbb,
-                                                                  CurrSubExp));
-                                if (NumJP)
-                                {
-                                    j__udyFreeJBBJP(JU_JBB_PJP(Pjbb,
-                                                    CurrSubExp), NumJP, Pjpm);
-                                }
-                            }
-                            j__udyFreeJBB(PjbbRaw, Pjpm);
-                            return(-1);
-                        }
+			    while(CurrSubExp--)
+			    {
+				NumJP = j__udyCountBitsB(JU_JBB_BITMAP(Pjbb,
+								  CurrSubExp));
+				if (NumJP)
+				{
+				    j__udyFreeJBBJP(JU_JBB_PJP(Pjbb,
+						    CurrSubExp), NumJP, Pjpm);
+				}
+			    }
+			    j__udyFreeJBB(PjbbRaw, Pjpm);
+			    return(-1);
+			}
 
 // Place the array of JPs in bitmap branch:
 
-                        JU_JBB_PJP(Pjbb, CurrSubExp) = PjpRaw;
+			JU_JBB_PJP(Pjbb, CurrSubExp) = PjpRaw;
 
 // Copy the JPs to new leaf:
 
-                        JU_COPYMEM(Pjp, PJPs + jj, NumJP);
+			JU_COPYMEM(Pjp, PJPs + jj, NumJP);
 
 // On to the next bitmap branch "sub" expanse:
 
-                        jj         = ii;
-                        CurrSubExp = SubExp;
-                }
-        } // for each 1-byte expanse
+			jj	   = ii;
+			CurrSubExp = SubExp;
+		}
+	} // for each 1-byte expanse
 
 // Pass back some of the JP to the new Bitmap branch:
 
-        Pjp->jp_Addr = (Word_t) PjbbRaw;
+	Pjp->jp_Addr = (Word_t) PjbbRaw;
 
-        return(1);
+	return(1);
 
 } // j__udyCreateBranchB()
 
@@ -201,117 +201,116 @@ FUNCTION int j__udyCreateBranchB(
 // Return -1 if error (details in Pjpm), otherwise return 1.
 
 FUNCTION int j__udyCreateBranchU(
-        Pjp_t     Pjp,
-        Pvoid_t   Pjpm)
+	Pjp_t	  Pjp,
+	Pvoid_t	  Pjpm)
 {
-        jp_t      JPNull;
+	jp_t	  JPNull;
         Pjbu_t    PjbuRaw;
         Pjbu_t    Pjbu;
-        Pjbb_t    PjbbRaw;
-        Pjbb_t    Pjbb;
-        Word_t    ii, jj;
-        BITMAPB_t BitMap;
-        Pjp_t     PDstJP;
+	Pjbb_t	  PjbbRaw;
+	Pjbb_t	  Pjbb;
+	Word_t	  ii, jj;
+	BITMAPB_t BitMap;
+	Pjp_t	  PDstJP;
 #ifdef JU_STAGED_EXP
-        jbu_t     BranchU;      // Staged uncompressed branch
+	jbu_t	  BranchU;	// Staged uncompressed branch
 #else
 
 // Allocate memory for a BranchU:
 
-        PjbuRaw = j__udyAllocJBU(Pjpm);
-        if (PjbuRaw == (Pjbu_t) NULL) return(-1);
+	PjbuRaw = j__udyAllocJBU(Pjpm);
+	if (PjbuRaw == (Pjbu_t) NULL) return(-1);
         Pjbu = P_JBU(PjbuRaw);
 #endif
         JU_JPSETADT(&JPNull, 0, 0, JU_JPTYPE(Pjp) - cJU_JPBRANCH_B2 + cJU_JPNULL1);
 
 // Get the pointer to the BranchB:
 
-        PjbbRaw = (Pjbb_t) (Pjp->jp_Addr);
-        Pjbb    = P_JBB(PjbbRaw);
+	PjbbRaw	= (Pjbb_t) (Pjp->jp_Addr);
+	Pjbb	= P_JBB(PjbbRaw);
 
-//      Set the pointer to the Uncompressed branch
+//	Set the pointer to the Uncompressed branch
 #ifdef JU_STAGED_EXP
-        PDstJP = BranchU.jbu_jp;
+	PDstJP = BranchU.jbu_jp;
 #else
         PDstJP = Pjbu->jbu_jp;
 #endif
-        for (ii = 0; ii < cJU_NUMSUBEXPB; ii++)
-        {
-                Pjp_t   PjpA;
-                Pjp_t   PjpB;
+	for (ii = 0; ii < cJU_NUMSUBEXPB; ii++)
+	{
+		Pjp_t	PjpA;
+		Pjp_t	PjpB;
 
-                PjpB = PjpA = P_JP(JU_JBB_PJP(Pjbb, ii));
+		PjpB = PjpA = P_JP(JU_JBB_PJP(Pjbb, ii));
 
-//              Get the bitmap for this subexpanse
-                BitMap  = JU_JBB_BITMAP(Pjbb, ii);
+//		Get the bitmap for this subexpanse
+		BitMap	= JU_JBB_BITMAP(Pjbb, ii);
 
-//              NULL empty subexpanses
-                if (BitMap == 0)
-                {
-//                      But, fill with NULLs
-                        for (jj = 0; jj < cJU_BITSPERSUBEXPB; jj++)
-                        {
-                                PDstJP[jj] = JPNull;
-                        }
-                        PDstJP += cJU_BITSPERSUBEXPB;
-                        continue;
-                }
-//              Check if Uncompressed subexpanse
-                if (BitMap == cJU_FULLBITMAPB)
-                {
-//                      Copy subexpanse to the Uncompressed branch intact
-                        JU_COPYMEM(PDstJP, PjpA, cJU_BITSPERSUBEXPB);
+//		NULL empty subexpanses
+		if (BitMap == 0)
+		{
+//			But, fill with NULLs
+			for (jj = 0; jj < cJU_BITSPERSUBEXPB; jj++)
+			{
+				PDstJP[jj] = JPNull;
+			}
+			PDstJP += cJU_BITSPERSUBEXPB;
+			continue;
+		}
+//		Check if Uncompressed subexpanse
+		if (BitMap == cJU_FULLBITMAPB)
+		{
+//			Copy subexpanse to the Uncompressed branch intact
+			JU_COPYMEM(PDstJP, PjpA, cJU_BITSPERSUBEXPB);
 
-//                      Bump to next subexpanse
-                        PDstJP += cJU_BITSPERSUBEXPB;
+//			Bump to next subexpanse
+			PDstJP += cJU_BITSPERSUBEXPB;
 
-//                      Set length of subexpanse
-                        jj = cJU_BITSPERSUBEXPB;
-                }
-                else
-                {
-                        for (jj = 0; jj < cJU_BITSPERSUBEXPB; jj++)
-                        {
-//                              Copy JP or NULLJP depending on bit
-                                if (BitMap & 1) { *PDstJP = *PjpA++; }
-                                else            { *PDstJP = JPNull; }
+//			Set length of subexpanse
+			jj = cJU_BITSPERSUBEXPB;
+		}
+		else
+		{
+			for (jj = 0; jj < cJU_BITSPERSUBEXPB; jj++)
+			{
+//				Copy JP or NULLJP depending on bit
+				if (BitMap & 1) { *PDstJP = *PjpA++; }
+				else		{ *PDstJP = JPNull; }
 
-                                PDstJP++;       // advance to next JP
-                                BitMap >>= 1;
-                        }
-                        jj = PjpA - PjpB;
-                }
+				PDstJP++;	// advance to next JP
+				BitMap >>= 1;
+			}
+			jj = PjpA - PjpB;
+		}
 
 // Free the subexpanse:
 
-                j__udyFreeJBBJP(JU_JBB_PJP(Pjbb, ii), jj, Pjpm);
+		j__udyFreeJBBJP(JU_JBB_PJP(Pjbb, ii), jj, Pjpm);
 
-        } // for each JP in BranchU
+	} // for each JP in BranchU
 
 #ifdef JU_STAGED_EXP
 
 // Allocate memory for a BranchU:
 
-        PjbuRaw = j__udyAllocJBU(Pjpm);
-        if (PjbuRaw == (Pjbu_t) NULL) return(-1);
+	PjbuRaw = j__udyAllocJBU(Pjpm);
+	if (PjbuRaw == (Pjbu_t) NULL) return(-1);
         Pjbu = P_JBU(PjbuRaw);
 
 // Copy staged branch to newly allocated branch:
 //
 // TBD:  I think this code is broken.
 
-        *Pjbu = BranchU;
+	*Pjbu = BranchU;
 
 #endif // JU_STAGED_EXP
 
 // Finally free the BranchB and put the BranchU in its place:
 
-        j__udyFreeJBB(PjbbRaw, Pjpm);
+	j__udyFreeJBB(PjbbRaw, Pjpm);
 
-        Pjp->jp_Addr  = (Word_t) PjbuRaw;
-        Pjp->jp_Type += cJU_JPBRANCH_U - cJU_JPBRANCH_B;
+	Pjp->jp_Addr  = (Word_t) PjbuRaw;
+	Pjp->jp_Type += cJU_JPBRANCH_U - cJU_JPBRANCH_B;
 
-        return(1);
+	return(1);
 
 } // j__udyCreateBranchU()
-

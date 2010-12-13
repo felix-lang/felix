@@ -47,36 +47,36 @@ FUNCTION int JUDY_EXTERN Judy1First
 FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst
 #endif
         (
-        Pcvoid_t  PArray,       // Judy array to search.
-        Word_t *  PIndex,       // starting point and result.
-        PJError_t PJError       // optional, for returning error info.
+	Pcvoid_t  PArray,	// Judy array to search.
+	Word_t *  PIndex,	// starting point and result.
+	PJError_t PJError	// optional, for returning error info.
         )
 {
-        if (PIndex == (PWord_t) NULL)           // caller error:
-        {
-            JU_SET_ERRNO(PJError, JU_ERRNO_NULLPINDEX);
-            JUDY1CODE(return(JERRI );)
-            JUDYLCODE(return(PPJERR);)
-        }
+        if (PIndex == (PWord_t) NULL)		// caller error:
+	{
+	    JU_SET_ERRNO(PJError, JU_ERRNO_NULLPINDEX);
+	    JUDY1CODE(return(JERRI );)
+	    JUDYLCODE(return(PPJERR);)
+	}
 
 #ifdef JUDY1
-        switch (Judy1Test(PArray, *PIndex, PJError))
-        {
-        case 1:  return(1);                     // found *PIndex itself.
-        case 0:  return(Judy1Next(PArray, PIndex, PJError));
-        default: return(JERRI);
-        }
+	switch (Judy1Test(PArray, *PIndex, PJError))
+	{
+	case 1:	 return(1);			// found *PIndex itself.
+	case 0:  return(Judy1Next(PArray, PIndex, PJError));
+	default: return(JERRI);
+	}
 #else
-        {
-            PPvoid_t PValue;
+	{
+	    PPvoid_t PValue;
 
-            if ((PValue = JudyLGet(PArray, *PIndex, PJError)) == PPJERR)
-                return(PPJERR);
+	    if ((PValue = JudyLGet(PArray, *PIndex, PJError)) == PPJERR)
+		return(PPJERR);
 
-            if (PValue != (PPvoid_t) NULL) return(PValue);  // found *PIndex.
+	    if (PValue != (PPvoid_t) NULL) return(PValue);  // found *PIndex.
 
-            return(JudyLNext(PArray, PIndex, PJError));
-        }
+	    return(JudyLNext(PArray, PIndex, PJError));
+	}
 #endif
 
 } // Judy1First() / JudyLFirst()
@@ -90,40 +90,38 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLFirst
 
 #ifdef JUDY1
 FUNCTION int JUDY_EXTERN Judy1Last(
-
 #else
 FUNCTION PPvoid_t JUDY_EXTERN JudyLLast(
-
 #endif
-        Pcvoid_t  PArray,       // Judy array to search.
-        Word_t *  PIndex,       // starting point and result.
-        PJError_t PJError)      // optional, for returning error info.
+	Pcvoid_t  PArray,	// Judy array to search.
+	Word_t *  PIndex,	// starting point and result.
+	PJError_t PJError)	// optional, for returning error info.
 {
         if (PIndex == (PWord_t) NULL)
-        {
-            JU_SET_ERRNO(PJError, JU_ERRNO_NULLPINDEX);  // caller error.
-            JUDY1CODE(return(JERRI );)
-            JUDYLCODE(return(PPJERR);)
-        }
+	{
+	    JU_SET_ERRNO(PJError, JU_ERRNO_NULLPINDEX);	 // caller error.
+	    JUDY1CODE(return(JERRI );)
+	    JUDYLCODE(return(PPJERR);)
+	}
 
 #ifdef JUDY1
-        switch (Judy1Test(PArray, *PIndex, PJError))
-        {
-        case 1:  return(1);                     // found *PIndex itself.
-        case 0:  return(Judy1Prev(PArray, PIndex, PJError));
-        default: return(JERRI);
-        }
+	switch (Judy1Test(PArray, *PIndex, PJError))
+	{
+	case 1:	 return(1);			// found *PIndex itself.
+	case 0:  return(Judy1Prev(PArray, PIndex, PJError));
+	default: return(JERRI);
+	}
 #else
-        {
-            PPvoid_t PValue = JudyLGet(PArray, *PIndex, PJError);
+	{
+	    PPvoid_t PValue;
 
-            if (PValue == PPJERR)
-                return(PPJERR);
+	    if ((PValue = JudyLGet(PArray, *PIndex, PJError)) == PPJERR)
+		return(PPJERR);
 
-            if (PValue != (PPvoid_t) NULL) return(PValue);  // found *PIndex.
+	    if (PValue != (PPvoid_t) NULL) return(PValue);  // found *PIndex.
 
-            return(JudyLPrev(PArray, PIndex, PJError));
-        }
+	    return(JudyLPrev(PArray, PIndex, PJError));
+	}
 #endif
 
 } // Judy1Last() / JudyLLast()
@@ -137,39 +135,37 @@ FUNCTION PPvoid_t JUDY_EXTERN JudyLLast(
 
 #ifdef JUDY1
 FUNCTION int JUDY_EXTERN Judy1FirstEmpty(
-
 #else
 FUNCTION int JUDY_EXTERN JudyLFirstEmpty(
-
 #endif
-        Pcvoid_t  PArray,       // Judy array to search.
-        Word_t *  PIndex,       // starting point and result.
-        PJError_t PJError)      // optional, for returning error info.
+	Pcvoid_t  PArray,	// Judy array to search.
+	Word_t *  PIndex,	// starting point and result.
+	PJError_t PJError)	// optional, for returning error info.
 {
-        if (PIndex == (PWord_t) NULL)           // caller error:
-        {
-            JU_SET_ERRNO(PJError, JU_ERRNO_NULLPINDEX);
-            return(JERRI);
-        }
+        if (PIndex == (PWord_t) NULL)		// caller error:
+	{
+	    JU_SET_ERRNO(PJError, JU_ERRNO_NULLPINDEX);
+	    return(JERRI);
+	}
 
 #ifdef JUDY1
-        switch (Judy1Test(PArray, *PIndex, PJError))
-        {
-        case 0:  return(1);                     // found *PIndex itself.
-        case 1:  return(Judy1NextEmpty(PArray, PIndex, PJError));
-        default: return(JERRI);
-        }
+	switch (Judy1Test(PArray, *PIndex, PJError))
+	{
+	case 0:	 return(1);			// found *PIndex itself.
+	case 1:  return(Judy1NextEmpty(PArray, PIndex, PJError));
+	default: return(JERRI);
+	}
 #else
-        {
-            PPvoid_t PValue;
+	{
+	    PPvoid_t PValue;
 
-            if ((PValue = JudyLGet(PArray, *PIndex, PJError)) == PPJERR)
-                return(JERRI);
+	    if ((PValue = JudyLGet(PArray, *PIndex, PJError)) == PPJERR)
+		return(JERRI);
 
-            if (PValue == (PPvoid_t) NULL) return(1);   // found *PIndex.
+	    if (PValue == (PPvoid_t) NULL) return(1);	// found *PIndex.
 
-            return(JudyLNextEmpty(PArray, PIndex, PJError));
-        }
+	    return(JudyLNextEmpty(PArray, PIndex, PJError));
+	}
 #endif
 
 } // Judy1FirstEmpty() / JudyLFirstEmpty()
@@ -183,40 +179,37 @@ FUNCTION int JUDY_EXTERN JudyLFirstEmpty(
 
 #ifdef JUDY1
 FUNCTION int JUDY_EXTERN Judy1LastEmpty(
-
 #else
 FUNCTION int JUDY_EXTERN JudyLLastEmpty(
-
 #endif
-        Pcvoid_t  PArray,       // Judy array to search.
-        Word_t *  PIndex,       // starting point and result.
-        PJError_t PJError)      // optional, for returning error info.
+	Pcvoid_t  PArray,	// Judy array to search.
+	Word_t *  PIndex,	// starting point and result.
+	PJError_t PJError)	// optional, for returning error info.
 {
         if (PIndex == (PWord_t) NULL)
-        {
-            JU_SET_ERRNO(PJError, JU_ERRNO_NULLPINDEX);  // caller error.
-            return(JERRI);
-        }
+	{
+	    JU_SET_ERRNO(PJError, JU_ERRNO_NULLPINDEX);	 // caller error.
+	    return(JERRI);
+	}
 
 #ifdef JUDY1
-        switch (Judy1Test(PArray, *PIndex, PJError))
-        {
-        case 0:  return(1);                     // found *PIndex itself.
-        case 1:  return(Judy1PrevEmpty(PArray, PIndex, PJError));
-        default: return(JERRI);
-        }
+	switch (Judy1Test(PArray, *PIndex, PJError))
+	{
+	case 0:	 return(1);			// found *PIndex itself.
+	case 1:  return(Judy1PrevEmpty(PArray, PIndex, PJError));
+	default: return(JERRI);
+	}
 #else
-        {
-            PPvoid_t PValue;
+	{
+	    PPvoid_t PValue;
 
-            if ((PValue = JudyLGet(PArray, *PIndex, PJError)) == PPJERR)
-                return(JERRI);
+	    if ((PValue = JudyLGet(PArray, *PIndex, PJError)) == PPJERR)
+		return(JERRI);
 
-            if (PValue == (PPvoid_t) NULL) return(1);   // found *PIndex.
+	    if (PValue == (PPvoid_t) NULL) return(1);	// found *PIndex.
 
-            return(JudyLPrevEmpty(PArray, PIndex, PJError));
-        }
+	    return(JudyLPrevEmpty(PArray, PIndex, PJError));
+	}
 #endif
 
 } // Judy1LastEmpty() / JudyLLastEmpty()
-

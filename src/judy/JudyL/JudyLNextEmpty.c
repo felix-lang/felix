@@ -51,7 +51,7 @@
 
 #ifndef JUDYNEXT
 #ifndef JUDYPREV
-#define JUDYPREV 1              // neither set => use default.
+#define	JUDYPREV 1		// neither set => use default.
 #endif
 #endif
 
@@ -158,30 +158,30 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 #endif
 #endif
         (
-        Pcvoid_t  PArray,       // Judy array to search.
-        Word_t *  PIndex,       // starting point and result.
-        PJError_t PJError       // optional, for returning error info.
+	Pcvoid_t  PArray,	// Judy array to search.
+	Word_t *  PIndex,	// starting point and result.
+	PJError_t PJError	// optional, for returning error info.
         )
 {
-        Word_t    Index;        // fast copy, in a register.
-        Pjp_t     Pjp;          // current JP.
-        Pjbl_t    Pjbl;         // Pjp->jp_Addr masked and cast to types:
-        Pjbb_t    Pjbb;
-        Pjbu_t    Pjbu;
-        Pjlb_t    Pjlb;
-        PWord_t   Pword;        // alternate name for use by GET* macros.
+	Word_t	  Index;	// fast copy, in a register.
+	Pjp_t	  Pjp;		// current JP.
+	Pjbl_t	  Pjbl;		// Pjp->jp_Addr masked and cast to types:
+	Pjbb_t	  Pjbb;
+	Pjbu_t	  Pjbu;
+	Pjlb_t	  Pjlb;
+	PWord_t	  Pword;	// alternate name for use by GET* macros.
 
-        Word_t    digit;        // next digit to decode from Index.
-        Word_t    digits;       // current state in SM = digits left to decode.
-        Word_t    pop0;         // in a leaf.
-        Word_t    pop0mask;     // precalculated to avoid variable shifts.
-        long      offset;       // within a branch or leaf (can be large).
-        int       subexp;       // subexpanse in a bitmap branch.
-        BITMAPB_t bitposmaskB;  // bit in bitmap for bitmap branch.
-        BITMAPL_t bitposmaskL;  // bit in bitmap for bitmap leaf.
-        Word_t    possfullJP1;  // JP types for possibly full subexpanses:
-        Word_t    possfullJP2;
-        Word_t    possfullJP3;
+	Word_t	  digit;	// next digit to decode from Index.
+	Word_t	  digits;	// current state in SM = digits left to decode.
+	Word_t	  pop0;		// in a leaf.
+	Word_t	  pop0mask;	// precalculated to avoid variable shifts.
+	long	  offset;	// within a branch or leaf (can be large).
+	int	  subexp;	// subexpanse in a bitmap branch.
+	BITMAPB_t bitposmaskB;	// bit in bitmap for bitmap branch.
+	BITMAPL_t bitposmaskL;	// bit in bitmap for bitmap leaf.
+	Word_t	  possfullJP1;	// JP types for possibly full subexpanses:
+	Word_t	  possfullJP2;
+	Word_t	  possfullJP3;
 
 
 // ----------------------------------------------------------------------------
@@ -196,7 +196,7 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 // the latter clause since no Type should ever be below cJU_JPNULL1, but in
 // fact some root pointer types can be lower, so for safety do both checks.
 
-#define JPNULL(Type)  (((Type) >= cJU_JPNULL1) && ((Type) <= cJU_JPNULLMAX))
+#define	JPNULL(Type)  (((Type) >= cJU_JPNULL1) && ((Type) <= cJU_JPNULLMAX))
 
 
 // CHECK FOR A FULL JP:
@@ -225,22 +225,22 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 // First, JPFULL_BRANCH checks for a full expanse for a JP whose child can be a
 // branch, that is, a JP in a branch at level 3 or higher:
 
-#define JPFULL_BRANCH(Pjp)                                              \
-          ((((JU_JPDCDPOP0(Pjp) ^ cJU_ALLONES) & pop0mask) == 0)        \
-        && ((JU_JPTYPE(Pjp) == possfullJP1)                             \
-         || (JU_JPTYPE(Pjp) == possfullJP2)                             \
-         || (JU_JPTYPE(Pjp) == possfullJP3)))
+#define	JPFULL_BRANCH(Pjp)						\
+	  ((((JU_JPDCDPOP0(Pjp) ^ cJU_ALLONES) & pop0mask) == 0)	\
+	&& ((JU_JPTYPE(Pjp) == possfullJP1)				\
+	 || (JU_JPTYPE(Pjp) == possfullJP2)				\
+	 || (JU_JPTYPE(Pjp) == possfullJP3)))
 
 #ifdef JUDY1
-#define JPFULL(Pjp)                                                     \
-        ((digits == 2) ?                                                \
-         (JU_JPTYPE(Pjp) == cJ1_JPFULLPOPU1) : JPFULL_BRANCH(Pjp))
+#define	JPFULL(Pjp)							\
+	((digits == 2) ?						\
+	 (JU_JPTYPE(Pjp) == cJ1_JPFULLPOPU1) : JPFULL_BRANCH(Pjp))
 #else
-#define JPFULL(Pjp)                                                     \
-        ((digits == 2) ?                                                \
-           (JU_JPTYPE(Pjp) == cJU_JPLEAF_B1)                            \
-         && (((JU_JPDCDPOP0(Pjp) & cJU_POP0MASK(1)) == cJU_POP0MASK(1))) : \
-         JPFULL_BRANCH(Pjp))
+#define	JPFULL(Pjp)							\
+	((digits == 2) ?						\
+	   (JU_JPTYPE(Pjp) == cJU_JPLEAF_B1)				\
+	 && (((JU_JPDCDPOP0(Pjp) & cJU_POP0MASK(1)) == cJU_POP0MASK(1))) : \
+	 JPFULL_BRANCH(Pjp))
 #endif
 
 
@@ -250,12 +250,12 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 // local value for faster operation.  Note that the callers *PIndex is ALWAYS
 // modified upon success, at least decremented/incremented.
 
-#define RET_SUCCESS { *PIndex = Index; return(1); }
+#define	RET_SUCCESS { *PIndex = Index; return(1); }
 
 
 // RETURN A CORRUPTION:
 
-#define RET_CORRUPT { JU_SET_ERRNO(PJError, JU_ERRNO_CORRUPT); return(JERRI); }
+#define	RET_CORRUPT { JU_SET_ERRNO(PJError, JU_ERRNO_CORRUPT); return(JERRI); }
 
 
 // SEARCH A BITMAP BRANCH:
@@ -274,17 +274,17 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 // Shortcut and skip calling j__udyCountBitsB() if the bitmap is full, in which
 // case (Digit % cJU_BITSPERSUBEXPB) itself is the base-0 offset.
 
-#define SEARCHBITMAPB(Bitmap,Digit,Bitposmask)                          \
-        (((Bitmap) == cJU_FULLBITMAPB) ? (Digit % cJU_BITSPERSUBEXPB) : \
-         j__udyCountBitsB((Bitmap) & JU_MASKLOWERINC(Bitposmask)) - 1)
+#define	SEARCHBITMAPB(Bitmap,Digit,Bitposmask)				\
+	(((Bitmap) == cJU_FULLBITMAPB) ? (Digit % cJU_BITSPERSUBEXPB) :	\
+	 j__udyCountBitsB((Bitmap) & JU_MASKLOWERINC(Bitposmask)) - 1)
 
 #ifdef JUDYPREV
 // Equivalent to search for the highest offset in Bitmap, that is, one less
 // than the number of bits set:
 
-#define SEARCHBITMAPMAXB(Bitmap)                                        \
-        (((Bitmap) == cJU_FULLBITMAPB) ? cJU_BITSPERSUBEXPB - 1 :       \
-         j__udyCountBitsB(Bitmap) - 1)
+#define	SEARCHBITMAPMAXB(Bitmap)					\
+	(((Bitmap) == cJU_FULLBITMAPB) ? cJU_BITSPERSUBEXPB - 1 :	\
+	 j__udyCountBitsB(Bitmap) - 1)
 #endif
 
 
@@ -294,8 +294,8 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 // dont match, Index is outside the subexpanse of a narrow pointer, hence is
 // empty.
 
-#define CHECKDCD(cDigits) \
-        if (JU_DCDNOTMATCHINDEX(Index, Pjp, cDigits)) RET_SUCCESS
+#define	CHECKDCD(cDigits) \
+	if (JU_DCDNOTMATCHINDEX(Index, Pjp, cDigits)) RET_SUCCESS
 
 
 // REVISE REMAINDER OF INDEX:
@@ -309,35 +309,35 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 // that one digit.  If Digits == 1 the first operation is redundant, but either
 // very fast or even removed by the optimizer.
 
-#define CLEARLEASTDIGITS(Digits) Index &= ~JU_LEASTBYTESMASK(Digits)
-#define SETLEASTDIGITS(  Digits) Index |=  JU_LEASTBYTESMASK(Digits)
+#define	CLEARLEASTDIGITS(Digits) Index &= ~JU_LEASTBYTESMASK(Digits)
+#define	SETLEASTDIGITS(  Digits) Index |=  JU_LEASTBYTESMASK(Digits)
 
-#define CLEARLEASTDIGITS_D(Digit,Digits)        \
-        {                                       \
-            CLEARLEASTDIGITS(Digits);           \
-            JU_SETDIGIT(Index, Digit, Digits);  \
-        }
+#define	CLEARLEASTDIGITS_D(Digit,Digits)	\
+	{					\
+	    CLEARLEASTDIGITS(Digits);		\
+	    JU_SETDIGIT(Index, Digit, Digits);	\
+	}
 
-#define SETLEASTDIGITS_D(Digit,Digits)          \
-        {                                       \
-            SETLEASTDIGITS(Digits);             \
-            JU_SETDIGIT(Index, Digit, Digits);  \
-        }
+#define	SETLEASTDIGITS_D(Digit,Digits)		\
+	{					\
+	    SETLEASTDIGITS(Digits);		\
+	    JU_SETDIGIT(Index, Digit, Digits);	\
+	}
 
 
 // SET REMAINDER OF INDEX AND THEN RETURN OR CONTINUE:
 
-#define SET_AND_RETURN(OpLeastDigits,Digit,Digits)      \
-        {                                               \
-            OpLeastDigits(Digit, Digits);               \
-            RET_SUCCESS;                                \
-        }
+#define	SET_AND_RETURN(OpLeastDigits,Digit,Digits)	\
+	{						\
+	    OpLeastDigits(Digit, Digits);		\
+	    RET_SUCCESS;				\
+	}
 
-#define SET_AND_CONTINUE(OpLeastDigits,Digit,Digits)    \
-        {                                               \
-            OpLeastDigits(Digit, Digits);               \
-            goto SMGetContinue;                         \
-        }
+#define	SET_AND_CONTINUE(OpLeastDigits,Digit,Digits)	\
+	{						\
+	    OpLeastDigits(Digit, Digits);		\
+	    goto SMGetContinue;				\
+	}
 
 
 // PREPARE TO HANDLE A LEAFW OR JP BRANCH IN THE STATE MACHINE:
@@ -348,14 +348,14 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 // TBD:  Should this macro do more, such as preparing variable-shift masks for
 // use in CLEARLEASTDIGITS and SETLEASTDIGITS?
 
-#define SMPREPB(cDigits,Next,PossFullJP1,PossFullJP2,PossFullJP3)       \
-        digits   = (cDigits);                                           \
-        digit    = JU_DIGITATSTATE(Index, cDigits);                     \
-        pop0mask = cJU_POP0MASK((cDigits) - 1);  /* for branchs JPs */  \
-        possfullJP1 = (PossFullJP1);                                    \
-        possfullJP2 = (PossFullJP2);                                    \
-        possfullJP3 = (PossFullJP3);                                    \
-        goto Next
+#define	SMPREPB(cDigits,Next,PossFullJP1,PossFullJP2,PossFullJP3)	\
+	digits	 = (cDigits);						\
+	digit	 = JU_DIGITATSTATE(Index, cDigits);			\
+	pop0mask = cJU_POP0MASK((cDigits) - 1);	 /* for branchs JPs */	\
+	possfullJP1 = (PossFullJP1);					\
+	possfullJP2 = (PossFullJP2);					\
+	possfullJP3 = (PossFullJP3);					\
+	goto Next
 
 // Variations for specific-level branches and for shorthands:
 //
@@ -363,36 +363,36 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 // them for digits == 2, but gcc -Wall isnt quite smart enough to see this, so
 // waste a bit of time and space to get rid of the warning:
 
-#define SMPREPB2(Next)                          \
-        digits   = 2;                           \
-        digit    = JU_DIGITATSTATE(Index, 2);   \
-        pop0mask = cJU_POP0MASK(1);  /* for branchs JPs */ \
-        possfullJP1 = possfullJP2 = possfullJP3 = 0;        \
-        goto Next
+#define	SMPREPB2(Next)				\
+	digits	 = 2;				\
+	digit	 = JU_DIGITATSTATE(Index, 2);	\
+	pop0mask = cJU_POP0MASK(1);  /* for branchs JPs */ \
+	possfullJP1 = possfullJP2 = possfullJP3 = 0;	    \
+	goto Next
 
-#define SMPREPB3(Next) SMPREPB(3,             Next, cJU_JPBRANCH_L2, \
-                                                    cJU_JPBRANCH_B2, \
-                                                    cJU_JPBRANCH_U2)
+#define	SMPREPB3(Next) SMPREPB(3,	      Next, cJU_JPBRANCH_L2, \
+						    cJU_JPBRANCH_B2, \
+						    cJU_JPBRANCH_U2)
 #ifndef JU_64BIT
-#define SMPREPBL(Next) SMPREPB(cJU_ROOTSTATE, Next, cJU_JPBRANCH_L3, \
-                                                    cJU_JPBRANCH_B3, \
-                                                    cJU_JPBRANCH_U3)
+#define	SMPREPBL(Next) SMPREPB(cJU_ROOTSTATE, Next, cJU_JPBRANCH_L3, \
+						    cJU_JPBRANCH_B3, \
+						    cJU_JPBRANCH_U3)
 #else
-#define SMPREPB4(Next) SMPREPB(4,             Next, cJU_JPBRANCH_L3, \
-                                                    cJU_JPBRANCH_B3, \
-                                                    cJU_JPBRANCH_U3)
-#define SMPREPB5(Next) SMPREPB(5,             Next, cJU_JPBRANCH_L4, \
-                                                    cJU_JPBRANCH_B4, \
-                                                    cJU_JPBRANCH_U4)
-#define SMPREPB6(Next) SMPREPB(6,             Next, cJU_JPBRANCH_L5, \
-                                                    cJU_JPBRANCH_B5, \
-                                                    cJU_JPBRANCH_U5)
-#define SMPREPB7(Next) SMPREPB(7,             Next, cJU_JPBRANCH_L6, \
-                                                    cJU_JPBRANCH_B6, \
-                                                    cJU_JPBRANCH_U6)
-#define SMPREPBL(Next) SMPREPB(cJU_ROOTSTATE, Next, cJU_JPBRANCH_L7, \
-                                                    cJU_JPBRANCH_B7, \
-                                                    cJU_JPBRANCH_U7)
+#define	SMPREPB4(Next) SMPREPB(4,	      Next, cJU_JPBRANCH_L3, \
+						    cJU_JPBRANCH_B3, \
+						    cJU_JPBRANCH_U3)
+#define	SMPREPB5(Next) SMPREPB(5,	      Next, cJU_JPBRANCH_L4, \
+						    cJU_JPBRANCH_B4, \
+						    cJU_JPBRANCH_U4)
+#define	SMPREPB6(Next) SMPREPB(6,	      Next, cJU_JPBRANCH_L5, \
+						    cJU_JPBRANCH_B5, \
+						    cJU_JPBRANCH_U5)
+#define	SMPREPB7(Next) SMPREPB(7,	      Next, cJU_JPBRANCH_L6, \
+						    cJU_JPBRANCH_B6, \
+						    cJU_JPBRANCH_U6)
+#define	SMPREPBL(Next) SMPREPB(cJU_ROOTSTATE, Next, cJU_JPBRANCH_L7, \
+						    cJU_JPBRANCH_B7, \
+						    cJU_JPBRANCH_U7)
 #endif
 
 
@@ -402,9 +402,9 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 // over at the top of the tree.
 
 #ifdef JUDYPREV
-#define SMRESTART(Digits) { CLEARLEASTDIGITS(Digits); goto SMGetRestart; }
+#define	SMRESTART(Digits) { CLEARLEASTDIGITS(Digits); goto SMGetRestart; }
 #else
-#define SMRESTART(Digits) { SETLEASTDIGITS(  Digits); goto SMGetRestart; }
+#define	SMRESTART(Digits) { SETLEASTDIGITS(  Digits); goto SMGetRestart; }
 #endif
 
 
@@ -426,37 +426,37 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 // Note:  Variable shift occurs if Digits is not a constant.
 
 #ifdef JUDYPREV
-#define LEAF_EDGE(MinIndex,Digits)                      \
-        {                                               \
-            if (MinIndex) { --Index; RET_SUCCESS; }     \
-            SMRESTART(Digits);                          \
-        }
+#define	LEAF_EDGE(MinIndex,Digits)			\
+	{						\
+	    if (MinIndex) { --Index; RET_SUCCESS; }	\
+	    SMRESTART(Digits);				\
+	}
 #else
-#define LEAF_EDGE(MaxIndex,Digits)                      \
-        {                                               \
-            if ((MaxIndex) != JU_LEASTBYTES(cJU_ALLONES, Digits)) \
-            { ++Index; RET_SUCCESS; }                   \
-            SMRESTART(Digits);                          \
-        }
+#define	LEAF_EDGE(MaxIndex,Digits)			\
+	{						\
+	    if ((MaxIndex) != JU_LEASTBYTES(cJU_ALLONES, Digits)) \
+	    { ++Index; RET_SUCCESS; }			\
+	    SMRESTART(Digits);				\
+	}
 #endif
 
 // Same as above except Index is not already set to match the lowest/highest
 // index, so do that before decrementing/incrementing it:
 
 #ifdef JUDYPREV
-#define LEAF_EDGE_SET(MinIndex,Digits)  \
-        {                               \
-            if (MinIndex)               \
-            { JU_SETDIGITS(Index, MinIndex, Digits); --Index; RET_SUCCESS; } \
-            SMRESTART(Digits);          \
-        }
+#define	LEAF_EDGE_SET(MinIndex,Digits)	\
+	{				\
+	    if (MinIndex)		\
+	    { JU_SETDIGITS(Index, MinIndex, Digits); --Index; RET_SUCCESS; } \
+	    SMRESTART(Digits);		\
+	}
 #else
-#define LEAF_EDGE_SET(MaxIndex,Digits)  \
-        {                               \
-            if ((MaxIndex) != JU_LEASTBYTES(cJU_ALLONES, Digits))           \
-            { JU_SETDIGITS(Index, MaxIndex, Digits); ++Index; RET_SUCCESS; } \
-            SMRESTART(Digits);          \
-        }
+#define	LEAF_EDGE_SET(MaxIndex,Digits)	\
+	{				\
+	    if ((MaxIndex) != JU_LEASTBYTES(cJU_ALLONES, Digits))	    \
+	    { JU_SETDIGITS(Index, MaxIndex, Digits); ++Index; RET_SUCCESS; } \
+	    SMRESTART(Digits);		\
+	}
 #endif
 
 
@@ -473,23 +473,23 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 
 #ifdef JUDYPREV
 
-#define LEAF_HOLE_EVEN(cDigits,Pjll,IndexLSB)                           \
-        {                                                               \
-            while (*(Pjll) > (IndexLSB)) --(Pjll); /* too high */       \
-            if (*(Pjll) < (IndexLSB)) RET_SUCCESS  /* Index is empty */ \
-            while (*(--(Pjll)) == --(IndexLSB)) /* null, find a hole */;\
-            JU_SETDIGITS(Index, IndexLSB, cDigits);                     \
-            RET_SUCCESS;                                                \
-        }
+#define	LEAF_HOLE_EVEN(cDigits,Pjll,IndexLSB)				\
+	{								\
+	    while (*(Pjll) > (IndexLSB)) --(Pjll); /* too high */	\
+	    if (*(Pjll) < (IndexLSB)) RET_SUCCESS  /* Index is empty */	\
+	    while (*(--(Pjll)) == --(IndexLSB)) /* null, find a hole */;\
+	    JU_SETDIGITS(Index, IndexLSB, cDigits);			\
+	    RET_SUCCESS;						\
+	}
 #else
-#define LEAF_HOLE_EVEN(cDigits,Pjll,IndexLSB)                           \
-        {                                                               \
-            while (*(Pjll) < (IndexLSB)) ++(Pjll); /* too low */        \
-            if (*(Pjll) > (IndexLSB)) RET_SUCCESS  /* Index is empty */ \
-            while (*(++(Pjll)) == ++(IndexLSB)) /* null, find a hole */;\
-            JU_SETDIGITS(Index, IndexLSB, cDigits);                     \
-            RET_SUCCESS;                                                \
-        }
+#define	LEAF_HOLE_EVEN(cDigits,Pjll,IndexLSB)				\
+	{								\
+	    while (*(Pjll) < (IndexLSB)) ++(Pjll); /* too low */	\
+	    if (*(Pjll) > (IndexLSB)) RET_SUCCESS  /* Index is empty */	\
+	    while (*(++(Pjll)) == ++(IndexLSB)) /* null, find a hole */;\
+	    JU_SETDIGITS(Index, IndexLSB, cDigits);			\
+	    RET_SUCCESS;						\
+	}
 #endif
 
 
@@ -549,38 +549,38 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 
 #ifdef JUDYPREV
 
-#define JSLE_EVEN(Addr,Pop0,cDigits,LeafType)                           \
-        {                                                               \
-            LeafType * PjllLSB  = (LeafType *) (Addr);                  \
-            LeafType   IndexLSB = Index;        /* auto-masking */      \
-                                                                        \
-        /* Index before or at start of leaf: */                         \
-                                                                        \
-            if (*PjllLSB >= IndexLSB)           /* no need to search */ \
-            {                                                           \
-                if (*PjllLSB > IndexLSB) RET_SUCCESS; /* Index empty */ \
-                LEAF_EDGE(*PjllLSB, cDigits);                           \
-            }                                                           \
-                                                                        \
-        /* Index in or after leaf: */                                   \
-                                                                        \
-            offset = IndexLSB - *PjllLSB;       /* tentative offset  */ \
-            if (offset <= (Pop0))               /* can check density */ \
-            {                                                           \
-                PjllLSB += offset;              /* move to slot */      \
-                                                                        \
-                if (*PjllLSB <= IndexLSB)       /* dense or corrupt */  \
-                {                                                       \
-                    if (*PjllLSB == IndexLSB)   /* dense, check edge */ \
-                        LEAF_EDGE_SET(PjllLSB[-offset], cDigits);       \
-                    RET_CORRUPT;                                        \
-                }                                                       \
-                --PjllLSB;      /* not dense, start at previous */      \
-            }                                                           \
-            else PjllLSB = ((LeafType *) (Addr)) + (Pop0); /* start at max */ \
-                                                                        \
-            LEAF_HOLE_EVEN(cDigits, PjllLSB, IndexLSB);                 \
-        }
+#define	JSLE_EVEN(Addr,Pop0,cDigits,LeafType)				\
+	{								\
+	    LeafType * PjllLSB  = (LeafType *) (Addr);			\
+	    LeafType   IndexLSB = Index;	/* auto-masking */	\
+									\
+	/* Index before or at start of leaf: */				\
+									\
+	    if (*PjllLSB >= IndexLSB)		/* no need to search */	\
+	    {								\
+		if (*PjllLSB > IndexLSB) RET_SUCCESS; /* Index empty */	\
+		LEAF_EDGE(*PjllLSB, cDigits);				\
+	    }								\
+									\
+	/* Index in or after leaf: */					\
+									\
+	    offset = IndexLSB - *PjllLSB;	/* tentative offset  */	\
+	    if (offset <= (Pop0))		/* can check density */	\
+	    {								\
+		PjllLSB += offset;		/* move to slot */	\
+									\
+		if (*PjllLSB <= IndexLSB)	/* dense or corrupt */	\
+		{							\
+		    if (*PjllLSB == IndexLSB)	/* dense, check edge */	\
+			LEAF_EDGE_SET(PjllLSB[-offset], cDigits);	\
+		    RET_CORRUPT;					\
+		}							\
+		--PjllLSB;	/* not dense, start at previous */	\
+	    }								\
+	    else PjllLSB = ((LeafType *) (Addr)) + (Pop0); /* start at max */ \
+									\
+	    LEAF_HOLE_EVEN(cDigits, PjllLSB, IndexLSB);			\
+	}
 
 // JSLE_ODD is completely different from JSLE_EVEN because its important to
 // minimize copying odd indexes to compare them (see 4.14).  Furthermore, a
@@ -603,118 +603,118 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 // much in real applications because they will probably alternate SearchValid
 // and SearchEmpty calls.
 
-#define JSLE_ODD(cDigits,Pjll,Pop0,Search,Copy)                         \
-        {                                                               \
-            Word_t IndexLSB;            /* least bytes only */          \
-            Word_t IndexFound;          /* in leaf          */          \
-                                                                        \
-            if ((offset = Search(Pjll, (Pop0) + 1, Index)) < 0)         \
-                RET_SUCCESS;            /* Index is empty */            \
-                                                                        \
-            IndexLSB = JU_LEASTBYTES(Index, cDigits);                   \
-            offset  *= (cDigits);                                       \
-                                                                        \
-            while ((offset -= (cDigits)) >= 0)                          \
-            {                           /* skip until empty or start */ \
-                Copy(IndexFound, ((uint8_t *) (Pjll)) + offset);        \
-                if (IndexFound != (--IndexLSB)) /* found an empty */    \
-                { JU_SETDIGITS(Index, IndexLSB, cDigits); RET_SUCCESS; }\
-            }                                                           \
-            LEAF_EDGE_SET(IndexLSB, cDigits);                           \
-        }
+#define	JSLE_ODD(cDigits,Pjll,Pop0,Search,Copy)				\
+	{								\
+	    Word_t IndexLSB;		/* least bytes only */		\
+	    Word_t IndexFound;		/* in leaf	    */		\
+									\
+	    if ((offset = Search(Pjll, (Pop0) + 1, Index)) < 0)		\
+		RET_SUCCESS;		/* Index is empty */		\
+									\
+	    IndexLSB = JU_LEASTBYTES(Index, cDigits);			\
+	    offset  *= (cDigits);					\
+									\
+	    while ((offset -= (cDigits)) >= 0)				\
+	    {				/* skip until empty or start */	\
+		Copy(IndexFound, ((uint8_t *) (Pjll)) + offset);	\
+		if (IndexFound != (--IndexLSB))	/* found an empty */	\
+		{ JU_SETDIGITS(Index, IndexLSB, cDigits); RET_SUCCESS; }\
+	    }								\
+	    LEAF_EDGE_SET(IndexLSB, cDigits);				\
+	}
 
 #else // JUDYNEXT
 
-#define JSLE_EVEN(Addr,Pop0,cDigits,LeafType)                           \
-        {                                                               \
-            LeafType * PjllLSB   = ((LeafType *) (Addr)) + (Pop0);      \
-            LeafType   IndexLSB = Index;        /* auto-masking */      \
-                                                                        \
-        /* Index at or after end of leaf: */                            \
-                                                                        \
-            if (*PjllLSB <= IndexLSB)           /* no need to search */ \
-            {                                                           \
-                if (*PjllLSB < IndexLSB) RET_SUCCESS;  /* Index empty */\
-                LEAF_EDGE(*PjllLSB, cDigits);                           \
-            }                                                           \
-                                                                        \
-        /* Index before or in leaf: */                                  \
-                                                                        \
-            offset = *PjllLSB - IndexLSB;       /* tentative offset  */ \
-            if (offset <= (Pop0))               /* can check density */ \
-            {                                                           \
-                PjllLSB -= offset;              /* move to slot */      \
-                                                                        \
-                if (*PjllLSB >= IndexLSB)       /* dense or corrupt */  \
-                {                                                       \
-                    if (*PjllLSB == IndexLSB)   /* dense, check edge */ \
-                        LEAF_EDGE_SET(PjllLSB[offset], cDigits);        \
-                    RET_CORRUPT;                                        \
-                }                                                       \
-                ++PjllLSB;              /* not dense, start at next */  \
-            }                                                           \
-            else PjllLSB = (LeafType *) (Addr); /* start at minimum */  \
-                                                                        \
-            LEAF_HOLE_EVEN(cDigits, PjllLSB, IndexLSB);                 \
-        }
+#define	JSLE_EVEN(Addr,Pop0,cDigits,LeafType)				\
+	{								\
+	    LeafType * PjllLSB   = ((LeafType *) (Addr)) + (Pop0);	\
+	    LeafType   IndexLSB = Index;	/* auto-masking */	\
+									\
+	/* Index at or after end of leaf: */				\
+									\
+	    if (*PjllLSB <= IndexLSB)		/* no need to search */	\
+	    {								\
+		if (*PjllLSB < IndexLSB) RET_SUCCESS;  /* Index empty */\
+		LEAF_EDGE(*PjllLSB, cDigits);				\
+	    }								\
+									\
+	/* Index before or in leaf: */					\
+									\
+	    offset = *PjllLSB - IndexLSB;	/* tentative offset  */	\
+	    if (offset <= (Pop0))		/* can check density */	\
+	    {								\
+		PjllLSB -= offset;		/* move to slot */	\
+									\
+		if (*PjllLSB >= IndexLSB)	/* dense or corrupt */	\
+		{							\
+		    if (*PjllLSB == IndexLSB)	/* dense, check edge */	\
+			LEAF_EDGE_SET(PjllLSB[offset], cDigits);	\
+		    RET_CORRUPT;					\
+		}							\
+		++PjllLSB;		/* not dense, start at next */	\
+	    }								\
+	    else PjllLSB = (LeafType *) (Addr);	/* start at minimum */	\
+									\
+	    LEAF_HOLE_EVEN(cDigits, PjllLSB, IndexLSB);			\
+	}
 
-#define JSLE_ODD(cDigits,Pjll,Pop0,Search,Copy)                         \
-        {                                                               \
-            Word_t IndexLSB;            /* least bytes only */          \
-            Word_t IndexFound;          /* in leaf          */          \
-            int    offsetmax;           /* in bytes         */          \
-                                                                        \
-            if ((offset = Search(Pjll, (Pop0) + 1, Index)) < 0)         \
-                RET_SUCCESS;                    /* Index is empty */    \
-                                                                        \
-            IndexLSB  = JU_LEASTBYTES(Index, cDigits);                  \
-            offset   *= (cDigits);                                      \
-            offsetmax = (Pop0) * (cDigits);     /* single multiply */   \
-                                                                        \
-            while ((offset += (cDigits)) <= offsetmax)                  \
-            {                           /* skip until empty or end */   \
-                Copy(IndexFound, ((uint8_t *) (Pjll)) + offset);        \
-                if (IndexFound != (++IndexLSB)) /* found an empty */    \
-                { JU_SETDIGITS(Index, IndexLSB, cDigits); RET_SUCCESS; } \
-            }                                                           \
-            LEAF_EDGE_SET(IndexLSB, cDigits);                           \
-        }
+#define	JSLE_ODD(cDigits,Pjll,Pop0,Search,Copy)				\
+	{								\
+	    Word_t IndexLSB;		/* least bytes only */		\
+	    Word_t IndexFound;		/* in leaf	    */		\
+	    int	   offsetmax;		/* in bytes	    */		\
+									\
+	    if ((offset = Search(Pjll, (Pop0) + 1, Index)) < 0)		\
+		RET_SUCCESS;			/* Index is empty */	\
+									\
+	    IndexLSB  = JU_LEASTBYTES(Index, cDigits);			\
+	    offset   *= (cDigits);					\
+	    offsetmax = (Pop0) * (cDigits);	/* single multiply */	\
+									\
+	    while ((offset += (cDigits)) <= offsetmax)			\
+	    {				/* skip until empty or end */	\
+		Copy(IndexFound, ((uint8_t *) (Pjll)) + offset);	\
+		if (IndexFound != (++IndexLSB))	/* found an empty */	\
+		{ JU_SETDIGITS(Index, IndexLSB, cDigits); RET_SUCCESS; } \
+	    }								\
+	    LEAF_EDGE_SET(IndexLSB, cDigits);				\
+	}
 
 #endif // JUDYNEXT
 
 // Note:  Immediate indexes never fill a single index group, so for odd index
 // sizes, save time by calling JSLE_ODD_IMM instead of JSLE_ODD.
 
-#define j__udySearchLeafEmpty1(Addr,Pop0) \
-        JSLE_EVEN(Addr, Pop0, 1, uint8_t)
+#define	j__udySearchLeafEmpty1(Addr,Pop0) \
+	JSLE_EVEN(Addr, Pop0, 1, uint8_t)
 
-#define j__udySearchLeafEmpty2(Addr,Pop0) \
-        JSLE_EVEN(Addr, Pop0, 2, uint16_t)
+#define	j__udySearchLeafEmpty2(Addr,Pop0) \
+	JSLE_EVEN(Addr, Pop0, 2, uint16_t)
 
-#define j__udySearchLeafEmpty3(Addr,Pop0) \
-        JSLE_ODD(3, Addr, Pop0, j__udySearchLeaf3, JU_COPY3_PINDEX_TO_LONG)
+#define	j__udySearchLeafEmpty3(Addr,Pop0) \
+	JSLE_ODD(3, Addr, Pop0, j__udySearchLeaf3, JU_COPY3_PINDEX_TO_LONG)
 
 #ifndef JU_64BIT
 
-#define j__udySearchLeafEmptyL(Addr,Pop0) \
-        JSLE_EVEN(Addr, Pop0, 4, Word_t)
+#define	j__udySearchLeafEmptyL(Addr,Pop0) \
+	JSLE_EVEN(Addr, Pop0, 4, Word_t)
 
 #else
 
-#define j__udySearchLeafEmpty4(Addr,Pop0) \
-        JSLE_EVEN(Addr, Pop0, 4, uint32_t)
+#define	j__udySearchLeafEmpty4(Addr,Pop0) \
+	JSLE_EVEN(Addr, Pop0, 4, uint32_t)
 
-#define j__udySearchLeafEmpty5(Addr,Pop0) \
-        JSLE_ODD(5, Addr, Pop0, j__udySearchLeaf5, JU_COPY5_PINDEX_TO_LONG)
+#define	j__udySearchLeafEmpty5(Addr,Pop0) \
+	JSLE_ODD(5, Addr, Pop0, j__udySearchLeaf5, JU_COPY5_PINDEX_TO_LONG)
 
-#define j__udySearchLeafEmpty6(Addr,Pop0) \
-        JSLE_ODD(6, Addr, Pop0, j__udySearchLeaf6, JU_COPY6_PINDEX_TO_LONG)
+#define	j__udySearchLeafEmpty6(Addr,Pop0) \
+	JSLE_ODD(6, Addr, Pop0, j__udySearchLeaf6, JU_COPY6_PINDEX_TO_LONG)
 
-#define j__udySearchLeafEmpty7(Addr,Pop0) \
-        JSLE_ODD(7, Addr, Pop0, j__udySearchLeaf7, JU_COPY7_PINDEX_TO_LONG)
+#define	j__udySearchLeafEmpty7(Addr,Pop0) \
+	JSLE_ODD(7, Addr, Pop0, j__udySearchLeaf7, JU_COPY7_PINDEX_TO_LONG)
 
-#define j__udySearchLeafEmptyL(Addr,Pop0) \
-        JSLE_EVEN(Addr, Pop0, 8, Word_t)
+#define	j__udySearchLeafEmptyL(Addr,Pop0) \
+	JSLE_EVEN(Addr, Pop0, 8, Word_t)
 
 #endif // JU_64BIT
 
@@ -726,24 +726,24 @@ FUNCTION int JUDY_EXTERN JudyLNextEmpty
 //
 // Error out if PIndex is null.
 
-        if (PIndex == (PWord_t) NULL)
-        {
-            JU_SET_ERRNO(PJError, JU_ERRNO_NULLPINDEX);
-            return(JERRI);
-        }
+	if (PIndex == (PWord_t) NULL)
+	{
+	    JU_SET_ERRNO(PJError, JU_ERRNO_NULLPINDEX);
+	    return(JERRI);
+	}
 
-        Index = *PIndex;                        // fast local copy.
+	Index = *PIndex;			// fast local copy.
 
 // Set and pre-decrement/increment Index, watching for underflow/overflow:
 //
 // An out-of-bounds Index means failure:  No previous/next empty index.
 
-SMGetRestart:           // return here with revised Index.
+SMGetRestart:		// return here with revised Index.
 
 #ifdef JUDYPREV
-        if (Index-- == 0) return(0);
+	if (Index-- == 0) return(0);
 #else
-        if (++Index == 0) return(0);
+	if (++Index == 0) return(0);
 #endif
 
 // An empty array with an in-bounds (not underflowed/overflowed) Index means
@@ -752,7 +752,7 @@ SMGetRestart:           // return here with revised Index.
 // Note:  This check is redundant after restarting at SMGetRestart, but should
 // take insignificant time.
 
-        if (PArray == (Pvoid_t) NULL) RET_SUCCESS;
+	if (PArray == (Pvoid_t) NULL) RET_SUCCESS;
 
 // ----------------------------------------------------------------------------
 // ROOT-LEVEL LEAF that starts with a Pop0 word; just look within the leaf:
@@ -760,29 +760,29 @@ SMGetRestart:           // return here with revised Index.
 // If Index is not in the leaf, return success; otherwise return the first
 // empty Index, if any, below/above where it would belong.
 
-        if (JU_LEAFW_POP0(PArray) < cJU_LEAFW_MAXPOP1) // must be a LEAFW
-        {
-            Pjlw_t Pjlw = P_JLW(PArray);        // first word of leaf.
-            pop0 = Pjlw[0];
+	if (JU_LEAFW_POP0(PArray) < cJU_LEAFW_MAXPOP1) // must be a LEAFW
+	{
+	    Pjlw_t Pjlw = P_JLW(PArray);	// first word of leaf.
+	    pop0 = Pjlw[0];
 
-#ifdef  JUDY1
-            if (pop0 == 0)                      // special case.
-            {
+#ifdef	JUDY1
+	    if (pop0 == 0)			// special case.
+	    {
 #ifdef JUDYPREV
-                if ((Index != Pjlw[1]) || (Index-- != 0)) RET_SUCCESS;
+		if ((Index != Pjlw[1]) || (Index-- != 0)) RET_SUCCESS;
 #else
-                if ((Index != Pjlw[1]) || (++Index != 0)) RET_SUCCESS;
+		if ((Index != Pjlw[1]) || (++Index != 0)) RET_SUCCESS;
 #endif
-                return(0);              // no previous/next empty index.
-            }
+		return(0);		// no previous/next empty index.
+	    }
 #endif // JUDY1
 
-            j__udySearchLeafEmptyL(Pjlw + 1, pop0);
+	    j__udySearchLeafEmptyL(Pjlw + 1, pop0);
 
 //  No return -- thanks ALAN
 
-        }
-        else
+	}
+	else
 
 // ----------------------------------------------------------------------------
 // HANDLE JRP Branch:
@@ -790,12 +790,12 @@ SMGetRestart:           // return here with revised Index.
 // For JRP branches, traverse the JPM; handle LEAFW
 // directly; but look for the most common cases first.
 
-        {
-            Pjpm_t Pjpm = P_JPM(PArray);
-            Pjp = &(Pjpm->jpm_JP);
+	{
+	    Pjpm_t Pjpm = P_JPM(PArray);
+	    Pjp = &(Pjpm->jpm_JP);
 
-//          goto SMGetContinue;
-        }
+//	    goto SMGetContinue;
+	}
 
 
 // ============================================================================
@@ -818,14 +818,14 @@ SMGetRestart:           // return here with revised Index.
 // WARNING:  For run-time efficiency the following cases replicate code with
 // varying constants, rather than using common code with variable values!
 
-SMGetContinue:                  // return here for next branch/leaf.
+SMGetContinue:			// return here for next branch/leaf.
 
 #ifdef TRACEJPSE
-        JudyPrintJP(Pjp, "sf", __LINE__);
+	JudyPrintJP(Pjp, "sf", __LINE__);
 #endif
 
-        switch (JU_JPTYPE(Pjp))
-        {
+	switch (JU_JPTYPE(Pjp))
+	{
 
 
 // ----------------------------------------------------------------------------
@@ -834,20 +834,20 @@ SMGetContinue:                  // return here for next branch/leaf.
 // Check Decode bytes, if any, in the current JP, then search for a JP for the
 // next digit in Index.
 
-        case cJU_JPBRANCH_L2: CHECKDCD(2); SMPREPB2(SMBranchL);
-        case cJU_JPBRANCH_L3: CHECKDCD(3); SMPREPB3(SMBranchL);
+	case cJU_JPBRANCH_L2: CHECKDCD(2); SMPREPB2(SMBranchL);
+	case cJU_JPBRANCH_L3: CHECKDCD(3); SMPREPB3(SMBranchL);
 #ifdef JU_64BIT
-        case cJU_JPBRANCH_L4: CHECKDCD(4); SMPREPB4(SMBranchL);
-        case cJU_JPBRANCH_L5: CHECKDCD(5); SMPREPB5(SMBranchL);
-        case cJU_JPBRANCH_L6: CHECKDCD(6); SMPREPB6(SMBranchL);
-        case cJU_JPBRANCH_L7: CHECKDCD(7); SMPREPB7(SMBranchL);
+	case cJU_JPBRANCH_L4: CHECKDCD(4); SMPREPB4(SMBranchL);
+	case cJU_JPBRANCH_L5: CHECKDCD(5); SMPREPB5(SMBranchL);
+	case cJU_JPBRANCH_L6: CHECKDCD(6); SMPREPB6(SMBranchL);
+	case cJU_JPBRANCH_L7: CHECKDCD(7); SMPREPB7(SMBranchL);
 #endif
-        case cJU_JPBRANCH_L:               SMPREPBL(SMBranchL);
+	case cJU_JPBRANCH_L:		   SMPREPBL(SMBranchL);
 
 // Common code (state-independent) for all cases of linear branches:
 
 SMBranchL:
-            Pjbl = P_JBL(Pjp->jp_Addr);
+	    Pjbl = P_JBL(Pjp->jp_Addr);
 
 // First, check if Indexs expanse (digit) is below/above the first/last
 // populated expanse in the BranchL, in which case Index is empty; otherwise
@@ -864,52 +864,52 @@ SMBranchL:
 // just scan the expanse list.
 
 #ifdef JUDYPREV
-            if ((Pjbl->jbl_Expanse[0]) > digit) RET_SUCCESS;
+	    if ((Pjbl->jbl_Expanse[0]) > digit) RET_SUCCESS;
 
-            for (offset = (Pjbl->jbl_NumJPs) - 1; /* null */; --offset)
+	    for (offset = (Pjbl->jbl_NumJPs) - 1; /* null */; --offset)
 #else
-            if ((Pjbl->jbl_Expanse[(Pjbl->jbl_NumJPs) - 1]) < digit)
-                RET_SUCCESS;
+	    if ((Pjbl->jbl_Expanse[(Pjbl->jbl_NumJPs) - 1]) < digit)
+		RET_SUCCESS;
 
-            for (offset = 0; /* null */; ++offset)
+	    for (offset = 0; /* null */; ++offset)
 #endif
-            {
+	    {
 
 // Too low/high, keep going; or too high/low, meaning the loop passed a hole
 // and the initial Index is empty:
 
 #ifdef JUDYPREV
-                if ((Pjbl->jbl_Expanse[offset]) > digit) continue;
-                if ((Pjbl->jbl_Expanse[offset]) < digit) RET_SUCCESS;
+		if ((Pjbl->jbl_Expanse[offset]) > digit) continue;
+		if ((Pjbl->jbl_Expanse[offset]) < digit) RET_SUCCESS;
 #else
-                if ((Pjbl->jbl_Expanse[offset]) < digit) continue;
-                if ((Pjbl->jbl_Expanse[offset]) > digit) RET_SUCCESS;
+		if ((Pjbl->jbl_Expanse[offset]) < digit) continue;
+		if ((Pjbl->jbl_Expanse[offset]) > digit) RET_SUCCESS;
 #endif
 
 // Found expanse matching digit; if its not full, traverse through it:
 
-                if (! JPFULL((Pjbl->jbl_jp) + offset))
-                {
-                    Pjp = (Pjbl->jbl_jp) + offset;
-                    goto SMGetContinue;
-                }
+		if (! JPFULL((Pjbl->jbl_jp) + offset))
+		{
+		    Pjp = (Pjbl->jbl_jp) + offset;
+		    goto SMGetContinue;
+		}
 
 // Common code:  While searching for a lower/higher hole or a non-full JP, upon
 // finding a lower/higher hole, adjust Index using the revised digit and
 // return; or upon finding a consecutive lower/higher expanse, if the expanses
 // JP is non-full, modify Index and traverse through the JP:
 
-#define BRANCHL_CHECK(OpIncDec,OpLeastDigits,Digit,Digits)      \
-        {                                                       \
-            if ((Pjbl->jbl_Expanse[offset]) != OpIncDec digit)  \
-                SET_AND_RETURN(OpLeastDigits, Digit, Digits);   \
-                                                                \
-            if (! JPFULL((Pjbl->jbl_jp) + offset))              \
-            {                                                   \
-                Pjp = (Pjbl->jbl_jp) + offset;                  \
-                SET_AND_CONTINUE(OpLeastDigits, Digit, Digits); \
-            }                                                   \
-        }
+#define	BRANCHL_CHECK(OpIncDec,OpLeastDigits,Digit,Digits)	\
+	{							\
+	    if ((Pjbl->jbl_Expanse[offset]) != OpIncDec digit)	\
+		SET_AND_RETURN(OpLeastDigits, Digit, Digits);	\
+								\
+	    if (! JPFULL((Pjbl->jbl_jp) + offset))		\
+	    {							\
+		Pjp = (Pjbl->jbl_jp) + offset;			\
+		SET_AND_CONTINUE(OpLeastDigits, Digit, Digits);	\
+	    }							\
+	}
 
 // BranchL primary dead end:  Expanse matching Index/digit is full (rare except
 // for dense/sequential indexes):
@@ -918,11 +918,11 @@ SMBranchL:
 // list, while decrementing/incrementing digit.
 
 #ifdef JUDYPREV
-                while (--offset >= 0)
-                    BRANCHL_CHECK(--, SETLEASTDIGITS_D, digit, digits)
+		while (--offset >= 0)
+		    BRANCHL_CHECK(--, SETLEASTDIGITS_D, digit, digits)
 #else
-                while (++offset < Pjbl->jbl_NumJPs)
-                    BRANCHL_CHECK(++, CLEARLEASTDIGITS_D, digit, digits)
+		while (++offset < Pjbl->jbl_NumJPs)
+		    BRANCHL_CHECK(++, CLEARLEASTDIGITS_D, digit, digits)
 #endif
 
 // Passed end of BranchL expanse list after finding a matching but full
@@ -934,17 +934,17 @@ SMBranchL:
 // return success:
 
 #ifdef JUDYPREV
-                if (digit == 0) break;
-                --digit; SET_AND_RETURN(SETLEASTDIGITS_D, digit, digits);
+		if (digit == 0) break;
+		--digit; SET_AND_RETURN(SETLEASTDIGITS_D, digit, digits);
 #else
-                if (digit == JU_LEASTBYTES(cJU_ALLONES, 1)) break;
-                ++digit; SET_AND_RETURN(CLEARLEASTDIGITS_D, digit, digits);
+		if (digit == JU_LEASTBYTES(cJU_ALLONES, 1)) break;
+		++digit; SET_AND_RETURN(CLEARLEASTDIGITS_D, digit, digits);
 #endif
-            } // for-loop
+	    } // for-loop
 
 // BranchL secondary dead end, no non-full previous/next JP:
 
-            SMRESTART(digits);
+	    SMRESTART(digits);
 
 
 // ----------------------------------------------------------------------------
@@ -953,50 +953,50 @@ SMBranchL:
 // Check Decode bytes, if any, in the current JP, then search for a JP for the
 // next digit in Index.
 
-        case cJU_JPBRANCH_B2: CHECKDCD(2); SMPREPB2(SMBranchB);
-        case cJU_JPBRANCH_B3: CHECKDCD(3); SMPREPB3(SMBranchB);
+	case cJU_JPBRANCH_B2: CHECKDCD(2); SMPREPB2(SMBranchB);
+	case cJU_JPBRANCH_B3: CHECKDCD(3); SMPREPB3(SMBranchB);
 #ifdef JU_64BIT
-        case cJU_JPBRANCH_B4: CHECKDCD(4); SMPREPB4(SMBranchB);
-        case cJU_JPBRANCH_B5: CHECKDCD(5); SMPREPB5(SMBranchB);
-        case cJU_JPBRANCH_B6: CHECKDCD(6); SMPREPB6(SMBranchB);
-        case cJU_JPBRANCH_B7: CHECKDCD(7); SMPREPB7(SMBranchB);
+	case cJU_JPBRANCH_B4: CHECKDCD(4); SMPREPB4(SMBranchB);
+	case cJU_JPBRANCH_B5: CHECKDCD(5); SMPREPB5(SMBranchB);
+	case cJU_JPBRANCH_B6: CHECKDCD(6); SMPREPB6(SMBranchB);
+	case cJU_JPBRANCH_B7: CHECKDCD(7); SMPREPB7(SMBranchB);
 #endif
-        case cJU_JPBRANCH_B:               SMPREPBL(SMBranchB);
+	case cJU_JPBRANCH_B:		   SMPREPBL(SMBranchB);
 
 // Common code (state-independent) for all cases of bitmap branches:
 
 SMBranchB:
-            Pjbb = P_JBB(Pjp->jp_Addr);
+	    Pjbb = P_JBB(Pjp->jp_Addr);
 
 // Locate the digits JP in the subexpanse list, if present:
 
-            subexp     = digit / cJU_BITSPERSUBEXPB;
-            assert(subexp < cJU_NUMSUBEXPB);    // falls in expected range.
-            bitposmaskB = JU_BITPOSMASKB(digit);
+	    subexp     = digit / cJU_BITSPERSUBEXPB;
+	    assert(subexp < cJU_NUMSUBEXPB);	// falls in expected range.
+	    bitposmaskB = JU_BITPOSMASKB(digit);
 
 // Absent JP = no JP matches current digit in Index:
 
-//          if (! JU_BITMAPTESTB(Pjbb, digit))                  // slower.
-            if (! (JU_JBB_BITMAP(Pjbb, subexp) & bitposmaskB))  // faster.
-                RET_SUCCESS;
+//	    if (! JU_BITMAPTESTB(Pjbb, digit))			// slower.
+	    if (! (JU_JBB_BITMAP(Pjbb, subexp) & bitposmaskB))	// faster.
+		RET_SUCCESS;
 
 // Non-full JP matches current digit in Index:
 //
 // Iterate to the subsidiary non-full JP.
 
-            offset = SEARCHBITMAPB(JU_JBB_BITMAP(Pjbb, subexp), digit,
-                                   bitposmaskB);
-            // not negative since at least one bit is set:
-            assert(offset >= 0);
-            assert(offset < (int) cJU_BITSPERSUBEXPB);
+	    offset = SEARCHBITMAPB(JU_JBB_BITMAP(Pjbb, subexp), digit,
+				   bitposmaskB);
+	    // not negative since at least one bit is set:
+	    assert(offset >= 0);
+	    assert(offset < (int) cJU_BITSPERSUBEXPB);
 
 // Watch for null JP subarray pointer with non-null bitmap (a corruption):
 
-            if ((Pjp = P_JP(JU_JBB_PJP(Pjbb, subexp)))
-             == (Pjp_t) NULL) RET_CORRUPT;
+	    if ((Pjp = P_JP(JU_JBB_PJP(Pjbb, subexp)))
+	     == (Pjp_t) NULL) RET_CORRUPT;
 
-            Pjp += offset;
-            if (! JPFULL(Pjp)) goto SMGetContinue;
+	    Pjp += offset;
+	    if (! JPFULL(Pjp)) goto SMGetContinue;
 
 // BranchB primary dead end:
 //
@@ -1013,74 +1013,74 @@ SMBranchB:
 // JU_BITPOSMASKB, but this shift has knowledge of bit order that really should
 // be encapsulated in a header file.
 
-#define BRANCHB_CHECKBIT(OpLeastDigits)                                 \
-    if (! (JU_JBB_BITMAP(Pjbb, subexp) & bitposmaskB))  /* absent JP */ \
-        SET_AND_RETURN(OpLeastDigits, digit, digits)
+#define	BRANCHB_CHECKBIT(OpLeastDigits)					\
+    if (! (JU_JBB_BITMAP(Pjbb, subexp) & bitposmaskB))  /* absent JP */	\
+	SET_AND_RETURN(OpLeastDigits, digit, digits)
 
-#define BRANCHB_CHECKJPFULL(OpLeastDigits)                              \
-    if (! JPFULL(Pjp))                                                  \
-        SET_AND_CONTINUE(OpLeastDigits, digit, digits)
+#define	BRANCHB_CHECKJPFULL(OpLeastDigits)				\
+    if (! JPFULL(Pjp))							\
+	SET_AND_CONTINUE(OpLeastDigits, digit, digits)
 
-#define BRANCHB_STARTSUBEXP(OpLeastDigits)                              \
+#define	BRANCHB_STARTSUBEXP(OpLeastDigits)				\
     if (! JU_JBB_BITMAP(Pjbb, subexp)) /* empty subexpanse, shortcut */ \
-        SET_AND_RETURN(OpLeastDigits, digit, digits)                    \
+	SET_AND_RETURN(OpLeastDigits, digit, digits)			\
     if ((Pjp = P_JP(JU_JBB_PJP(Pjbb, subexp))) == (Pjp_t) NULL) RET_CORRUPT
 
 #ifdef JUDYPREV
 
-            --digit;                            // skip initial digit.
-            bitposmaskB >>= 1;                  // see TBD above.
+	    --digit;				// skip initial digit.
+	    bitposmaskB >>= 1;			// see TBD above.
 
-BranchBNextSubexp:      // return here to check next bitmap subexpanse.
+BranchBNextSubexp:	// return here to check next bitmap subexpanse.
 
-            while (bitposmaskB)                 // more bits to check in subexp.
-            {
-                BRANCHB_CHECKBIT(SETLEASTDIGITS_D);
-                --Pjp;                          // previous in subarray.
-                BRANCHB_CHECKJPFULL(SETLEASTDIGITS_D);
-                assert(digit >= 0);
-                --digit;
-                bitposmaskB >>= 1;
-            }
+	    while (bitposmaskB)			// more bits to check in subexp.
+	    {
+		BRANCHB_CHECKBIT(SETLEASTDIGITS_D);
+		--Pjp;				// previous in subarray.
+		BRANCHB_CHECKJPFULL(SETLEASTDIGITS_D);
+		assert(digit >= 0);
+		--digit;
+		bitposmaskB >>= 1;
+	    }
 
-            if (subexp-- > 0)                   // more subexpanses.
-            {
-                BRANCHB_STARTSUBEXP(SETLEASTDIGITS_D);
-                Pjp += SEARCHBITMAPMAXB(JU_JBB_BITMAP(Pjbb, subexp)) + 1;
-                bitposmaskB = (1U << (cJU_BITSPERSUBEXPB - 1));
-                goto BranchBNextSubexp;
-            }
+	    if (subexp-- > 0)			// more subexpanses.
+	    {
+		BRANCHB_STARTSUBEXP(SETLEASTDIGITS_D);
+		Pjp += SEARCHBITMAPMAXB(JU_JBB_BITMAP(Pjbb, subexp)) + 1;
+		bitposmaskB = (1U << (cJU_BITSPERSUBEXPB - 1));
+		goto BranchBNextSubexp;
+	    }
 
 #else // JUDYNEXT
 
-            ++digit;                            // skip initial digit.
-            bitposmaskB <<= 1;                  // note:  BITMAPB_t.
+	    ++digit;				// skip initial digit.
+	    bitposmaskB <<= 1;			// note:  BITMAPB_t.
 
-BranchBNextSubexp:      // return here to check next bitmap subexpanse.
+BranchBNextSubexp:	// return here to check next bitmap subexpanse.
 
-            while (bitposmaskB)                 // more bits to check in subexp.
-            {
-                BRANCHB_CHECKBIT(CLEARLEASTDIGITS_D);
-                ++Pjp;                          // previous in subarray.
-                BRANCHB_CHECKJPFULL(CLEARLEASTDIGITS_D);
-                assert(digit < cJU_SUBEXPPERSTATE);
-                ++digit;
-                bitposmaskB <<= 1;              // note:  BITMAPB_t.
-            }
+	    while (bitposmaskB)			// more bits to check in subexp.
+	    {
+		BRANCHB_CHECKBIT(CLEARLEASTDIGITS_D);
+		++Pjp;				// previous in subarray.
+		BRANCHB_CHECKJPFULL(CLEARLEASTDIGITS_D);
+		assert(digit < cJU_SUBEXPPERSTATE);
+		++digit;
+		bitposmaskB <<= 1;		// note:  BITMAPB_t.
+	    }
 
-            if (++subexp < cJU_NUMSUBEXPB)      // more subexpanses.
-            {
-                BRANCHB_STARTSUBEXP(CLEARLEASTDIGITS_D);
-                --Pjp;                          // pre-decrement.
-                bitposmaskB = 1;
-                goto BranchBNextSubexp;
-            }
+	    if (++subexp < cJU_NUMSUBEXPB)	// more subexpanses.
+	    {
+		BRANCHB_STARTSUBEXP(CLEARLEASTDIGITS_D);
+		--Pjp;				// pre-decrement.
+		bitposmaskB = 1;
+		goto BranchBNextSubexp;
+	    }
 
 #endif // JUDYNEXT
 
 // BranchB secondary dead end, no non-full previous/next JP:
 
-            SMRESTART(digits);
+	    SMRESTART(digits);
 
 
 // ----------------------------------------------------------------------------
@@ -1089,31 +1089,31 @@ BranchBNextSubexp:      // return here to check next bitmap subexpanse.
 // Check Decode bytes, if any, in the current JP, then search for a JP for the
 // next digit in Index.
 
-        case cJU_JPBRANCH_U2: CHECKDCD(2); SMPREPB2(SMBranchU);
-        case cJU_JPBRANCH_U3: CHECKDCD(3); SMPREPB3(SMBranchU);
+	case cJU_JPBRANCH_U2: CHECKDCD(2); SMPREPB2(SMBranchU);
+	case cJU_JPBRANCH_U3: CHECKDCD(3); SMPREPB3(SMBranchU);
 #ifdef JU_64BIT
-        case cJU_JPBRANCH_U4: CHECKDCD(4); SMPREPB4(SMBranchU);
-        case cJU_JPBRANCH_U5: CHECKDCD(5); SMPREPB5(SMBranchU);
-        case cJU_JPBRANCH_U6: CHECKDCD(6); SMPREPB6(SMBranchU);
-        case cJU_JPBRANCH_U7: CHECKDCD(7); SMPREPB7(SMBranchU);
+	case cJU_JPBRANCH_U4: CHECKDCD(4); SMPREPB4(SMBranchU);
+	case cJU_JPBRANCH_U5: CHECKDCD(5); SMPREPB5(SMBranchU);
+	case cJU_JPBRANCH_U6: CHECKDCD(6); SMPREPB6(SMBranchU);
+	case cJU_JPBRANCH_U7: CHECKDCD(7); SMPREPB7(SMBranchU);
 #endif
-        case cJU_JPBRANCH_U:               SMPREPBL(SMBranchU);
+	case cJU_JPBRANCH_U:		   SMPREPBL(SMBranchU);
 
 // Common code (state-independent) for all cases of uncompressed branches:
 
 SMBranchU:
-            Pjbu = P_JBU(Pjp->jp_Addr);
-            Pjp  = (Pjbu->jbu_jp) + digit;
+	    Pjbu = P_JBU(Pjp->jp_Addr);
+	    Pjp	 = (Pjbu->jbu_jp) + digit;
 
 // Absent JP = null JP for current digit in Index:
 
-            if (JPNULL(JU_JPTYPE(Pjp))) RET_SUCCESS;
+	    if (JPNULL(JU_JPTYPE(Pjp))) RET_SUCCESS;
 
 // Non-full JP matches current digit in Index:
 //
 // Iterate to the subsidiary JP.
 
-            if (! JPFULL(Pjp)) goto SMGetContinue;
+	    if (! JPFULL(Pjp)) goto SMGetContinue;
 
 // BranchU primary dead end:
 //
@@ -1124,28 +1124,28 @@ SMBranchU:
 // Note:  The preceding code is separate from this loop because Index does not
 // need revising (see SET_AND_*()) if the initial index is an empty index.
 
-#define BRANCHU_CHECKJP(OpIncDec,OpLeastDigits)                 \
-        {                                                       \
-            OpIncDec Pjp;                                       \
-                                                                \
-            if (JPNULL(JU_JPTYPE(Pjp)))                         \
-                SET_AND_RETURN(OpLeastDigits, digit, digits)    \
-                                                                \
-            if (! JPFULL(Pjp))                                  \
-                SET_AND_CONTINUE(OpLeastDigits, digit, digits)  \
-        }
+#define	BRANCHU_CHECKJP(OpIncDec,OpLeastDigits)			\
+	{							\
+	    OpIncDec Pjp;					\
+								\
+	    if (JPNULL(JU_JPTYPE(Pjp)))				\
+		SET_AND_RETURN(OpLeastDigits, digit, digits)	\
+								\
+	    if (! JPFULL(Pjp))					\
+		SET_AND_CONTINUE(OpLeastDigits, digit, digits)	\
+	}
 
 #ifdef JUDYPREV
-            while (digit-- > 0)
-                BRANCHU_CHECKJP(--, SETLEASTDIGITS_D);
+	    while (digit-- > 0)
+		BRANCHU_CHECKJP(--, SETLEASTDIGITS_D);
 #else
-            while (++digit < cJU_BRANCHUNUMJPS)
-                BRANCHU_CHECKJP(++, CLEARLEASTDIGITS_D);
+	    while (++digit < cJU_BRANCHUNUMJPS)
+		BRANCHU_CHECKJP(++, CLEARLEASTDIGITS_D);
 #endif
 
 // BranchU secondary dead end, no non-full previous/next JP:
 
-            SMRESTART(digits);
+	    SMRESTART(digits);
 
 
 // ----------------------------------------------------------------------------
@@ -1158,22 +1158,22 @@ SMBranchU:
 //
 // Note:  Pword is the name known to GET*; think of it as Pjlw.
 
-#define SMLEAFL(cDigits,Func)                   \
-        Pword = (PWord_t) P_JLW(Pjp->jp_Addr);  \
-        pop0  = JU_JPLEAF_POP0(Pjp);            \
-        Func(Pword, pop0)
+#define	SMLEAFL(cDigits,Func)                   \
+	Pword = (PWord_t) P_JLW(Pjp->jp_Addr);  \
+	pop0  = JU_JPLEAF_POP0(Pjp);            \
+	Func(Pword, pop0)
 
 #if (defined(JUDYL) || (! defined(JU_64BIT)))
-        case cJU_JPLEAF1:  CHECKDCD(1); SMLEAFL(1, j__udySearchLeafEmpty1);
+	case cJU_JPLEAF1:  CHECKDCD(1); SMLEAFL(1, j__udySearchLeafEmpty1);
 #endif
-        case cJU_JPLEAF2:  CHECKDCD(2); SMLEAFL(2, j__udySearchLeafEmpty2);
-        case cJU_JPLEAF3:  CHECKDCD(3); SMLEAFL(3, j__udySearchLeafEmpty3);
+	case cJU_JPLEAF2:  CHECKDCD(2); SMLEAFL(2, j__udySearchLeafEmpty2);
+	case cJU_JPLEAF3:  CHECKDCD(3); SMLEAFL(3, j__udySearchLeafEmpty3);
 
 #ifdef JU_64BIT
-        case cJU_JPLEAF4:  CHECKDCD(4); SMLEAFL(4, j__udySearchLeafEmpty4);
-        case cJU_JPLEAF5:  CHECKDCD(5); SMLEAFL(5, j__udySearchLeafEmpty5);
-        case cJU_JPLEAF6:  CHECKDCD(6); SMLEAFL(6, j__udySearchLeafEmpty6);
-        case cJU_JPLEAF7:  CHECKDCD(7); SMLEAFL(7, j__udySearchLeafEmpty7);
+	case cJU_JPLEAF4:  CHECKDCD(4); SMLEAFL(4, j__udySearchLeafEmpty4);
+	case cJU_JPLEAF5:  CHECKDCD(5); SMLEAFL(5, j__udySearchLeafEmpty5);
+	case cJU_JPLEAF6:  CHECKDCD(6); SMLEAFL(6, j__udySearchLeafEmpty6);
+	case cJU_JPLEAF7:  CHECKDCD(7); SMLEAFL(7, j__udySearchLeafEmpty7);
 #endif
 
 
@@ -1183,21 +1183,21 @@ SMBranchU:
 // Check Decode bytes, if any, in the current JP, then search the leaf for the
 // previous/next empty index starting at Index.
 
-        case cJU_JPLEAF_B1:
+	case cJU_JPLEAF_B1:
 
-            CHECKDCD(1);
+	    CHECKDCD(1);
 
-            Pjlb        = P_JLB(Pjp->jp_Addr);
-            digit       = JU_DIGITATSTATE(Index, 1);
-            subexp      = digit / cJU_BITSPERSUBEXPL;
-            bitposmaskL = JU_BITPOSMASKL(digit);
-            assert(subexp < cJU_NUMSUBEXPL);    // falls in expected range.
+	    Pjlb	= P_JLB(Pjp->jp_Addr);
+	    digit	= JU_DIGITATSTATE(Index, 1);
+	    subexp	= digit / cJU_BITSPERSUBEXPL;
+	    bitposmaskL	= JU_BITPOSMASKL(digit);
+	    assert(subexp < cJU_NUMSUBEXPL);	// falls in expected range.
 
 // Absent index = no index matches current digit in Index:
 
-//          if (! JU_BITMAPTESTL(Pjlb, digit))                  // slower.
-            if (! (JU_JLB_BITMAP(Pjlb, subexp) & bitposmaskL))  // faster.
-                RET_SUCCESS;
+//	    if (! JU_BITMAPTESTL(Pjlb, digit))			// slower.
+	    if (! (JU_JLB_BITMAP(Pjlb, subexp) & bitposmaskL))	// faster.
+		RET_SUCCESS;
 
 // LeafB1 primary dead end:
 //
@@ -1214,63 +1214,63 @@ SMBranchU:
 // JU_BITPOSMASKL, but this shift has knowledge of bit order that really should
 // be encapsulated in a header file.
 
-#define LEAFB1_CHECKBIT(OpLeastDigits)                          \
-        if (! (JU_JLB_BITMAP(Pjlb, subexp) & bitposmaskL))      \
-            SET_AND_RETURN(OpLeastDigits, digit, 1)
+#define	LEAFB1_CHECKBIT(OpLeastDigits)				\
+	if (! (JU_JLB_BITMAP(Pjlb, subexp) & bitposmaskL))	\
+	    SET_AND_RETURN(OpLeastDigits, digit, 1)
 
-#define LEAFB1_STARTSUBEXP(OpLeastDigits)                       \
-        if (! JU_JLB_BITMAP(Pjlb, subexp)) /* empty subexp */   \
-            SET_AND_RETURN(OpLeastDigits, digit, 1)
+#define	LEAFB1_STARTSUBEXP(OpLeastDigits)			\
+	if (! JU_JLB_BITMAP(Pjlb, subexp)) /* empty subexp */	\
+	    SET_AND_RETURN(OpLeastDigits, digit, 1)
 
 #ifdef JUDYPREV
 
-            --digit;                            // skip initial digit.
-            bitposmaskL >>= 1;                  // see TBD above.
+	    --digit;				// skip initial digit.
+	    bitposmaskL >>= 1;			// see TBD above.
 
-LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
+LeafB1NextSubexp:	// return here to check next bitmap subexpanse.
 
-            while (bitposmaskL)                 // more bits to check in subexp.
-            {
-                LEAFB1_CHECKBIT(SETLEASTDIGITS_D);
-                assert(digit >= 0);
-                --digit;
-                bitposmaskL >>= 1;
-            }
+	    while (bitposmaskL)			// more bits to check in subexp.
+	    {
+		LEAFB1_CHECKBIT(SETLEASTDIGITS_D);
+		assert(digit >= 0);
+		--digit;
+		bitposmaskL >>= 1;
+	    }
 
-            if (subexp-- > 0)           // more subexpanses.
-            {
-                LEAFB1_STARTSUBEXP(SETLEASTDIGITS_D);
-                bitposmaskL = (1UL << (cJU_BITSPERSUBEXPL - 1));
-                goto LeafB1NextSubexp;
-            }
+	    if (subexp-- > 0)		// more subexpanses.
+	    {
+		LEAFB1_STARTSUBEXP(SETLEASTDIGITS_D);
+		bitposmaskL = (1UL << (cJU_BITSPERSUBEXPL - 1));
+		goto LeafB1NextSubexp;
+	    }
 
 #else // JUDYNEXT
 
-            ++digit;                            // skip initial digit.
-            bitposmaskL <<= 1;                  // note:  BITMAPL_t.
+	    ++digit;				// skip initial digit.
+	    bitposmaskL <<= 1;			// note:  BITMAPL_t.
 
-LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
+LeafB1NextSubexp:	// return here to check next bitmap subexpanse.
 
-            while (bitposmaskL)                 // more bits to check in subexp.
-            {
-                LEAFB1_CHECKBIT(CLEARLEASTDIGITS_D);
-                assert(digit < cJU_SUBEXPPERSTATE);
-                ++digit;
-                bitposmaskL <<= 1;              // note:  BITMAPL_t.
-            }
+	    while (bitposmaskL)			// more bits to check in subexp.
+	    {
+		LEAFB1_CHECKBIT(CLEARLEASTDIGITS_D);
+		assert(digit < cJU_SUBEXPPERSTATE);
+		++digit;
+		bitposmaskL <<= 1;		// note:  BITMAPL_t.
+	    }
 
-            if (++subexp < cJU_NUMSUBEXPL)      // more subexpanses.
-            {
-                LEAFB1_STARTSUBEXP(CLEARLEASTDIGITS_D);
-                bitposmaskL = 1;
-                goto LeafB1NextSubexp;
-            }
+	    if (++subexp < cJU_NUMSUBEXPL)	// more subexpanses.
+	    {
+		LEAFB1_STARTSUBEXP(CLEARLEASTDIGITS_D);
+		bitposmaskL = 1;
+		goto LeafB1NextSubexp;
+	    }
 
 #endif // JUDYNEXT
 
 // LeafB1 secondary dead end, no empty index:
 
-            SMRESTART(1);
+	    SMRESTART(1);
 
 
 #ifdef JUDY1
@@ -1280,10 +1280,10 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 // If the Decode bytes do not match, Index is empty (without modification);
 // otherwise restart.
 
-        case cJ1_JPFULLPOPU1:
+	case cJ1_JPFULLPOPU1:
 
-            CHECKDCD(1);
-            SMRESTART(1);
+	    CHECKDCD(1);
+	    SMRESTART(1);
 #endif
 
 
@@ -1299,95 +1299,94 @@ LeafB1NextSubexp:       // return here to check next bitmap subexpanse.
 // Note:  Doug says its fast enough to calculate the index size (digits) in
 // the following; no need to set it separately for each case.
 
-        case cJU_JPIMMED_1_01:
-        case cJU_JPIMMED_2_01:
-        case cJU_JPIMMED_3_01:
+	case cJU_JPIMMED_1_01:
+	case cJU_JPIMMED_2_01:
+	case cJU_JPIMMED_3_01:
 #ifdef JU_64BIT
-        case cJU_JPIMMED_4_01:
-        case cJU_JPIMMED_5_01:
-        case cJU_JPIMMED_6_01:
-        case cJU_JPIMMED_7_01:
+	case cJU_JPIMMED_4_01:
+	case cJU_JPIMMED_5_01:
+	case cJU_JPIMMED_6_01:
+	case cJU_JPIMMED_7_01:
 #endif
-            if (JU_JPDCDPOP0(Pjp) != JU_TRIMTODCDSIZE(Index)) RET_SUCCESS;
-            digits = JU_JPTYPE(Pjp) - cJU_JPIMMED_1_01 + 1;
-            LEAF_EDGE(JU_LEASTBYTES(JU_JPDCDPOP0(Pjp), digits), digits);
+	    if (JU_JPDCDPOP0(Pjp) != JU_TRIMTODCDSIZE(Index)) RET_SUCCESS;
+	    digits = JU_JPTYPE(Pjp) - cJU_JPIMMED_1_01 + 1;
+	    LEAF_EDGE(JU_LEASTBYTES(JU_JPDCDPOP0(Pjp), digits), digits);
 
 // Immediate JPs with Pop1 > 1:
 
-#define IMM_MULTI(Func,BaseJPType)                      \
-        JUDY1CODE(Pword = (PWord_t) (Pjp->jp_1Index);)  \
-        JUDYLCODE(Pword = (PWord_t) (Pjp->jp_LIndex);)  \
-        Func(Pword, JU_JPTYPE(Pjp) - (BaseJPType) + 1)
+#define	IMM_MULTI(Func,BaseJPType)			\
+	JUDY1CODE(Pword = (PWord_t) (Pjp->jp_1Index);)	\
+	JUDYLCODE(Pword = (PWord_t) (Pjp->jp_LIndex);)	\
+	Func(Pword, JU_JPTYPE(Pjp) - (BaseJPType) + 1)
 
-        case cJU_JPIMMED_1_02:
-        case cJU_JPIMMED_1_03:
+	case cJU_JPIMMED_1_02:
+	case cJU_JPIMMED_1_03:
 #if (defined(JUDY1) || defined(JU_64BIT))
-        case cJU_JPIMMED_1_04:
-        case cJU_JPIMMED_1_05:
-        case cJU_JPIMMED_1_06:
-        case cJU_JPIMMED_1_07:
+	case cJU_JPIMMED_1_04:
+	case cJU_JPIMMED_1_05:
+	case cJU_JPIMMED_1_06:
+	case cJU_JPIMMED_1_07:
 #endif
 #if (defined(JUDY1) && defined(JU_64BIT))
-        case cJ1_JPIMMED_1_08:
-        case cJ1_JPIMMED_1_09:
-        case cJ1_JPIMMED_1_10:
-        case cJ1_JPIMMED_1_11:
-        case cJ1_JPIMMED_1_12:
-        case cJ1_JPIMMED_1_13:
-        case cJ1_JPIMMED_1_14:
-        case cJ1_JPIMMED_1_15:
+	case cJ1_JPIMMED_1_08:
+	case cJ1_JPIMMED_1_09:
+	case cJ1_JPIMMED_1_10:
+	case cJ1_JPIMMED_1_11:
+	case cJ1_JPIMMED_1_12:
+	case cJ1_JPIMMED_1_13:
+	case cJ1_JPIMMED_1_14:
+	case cJ1_JPIMMED_1_15:
 #endif
-            IMM_MULTI(j__udySearchLeafEmpty1, cJU_JPIMMED_1_02);
+	    IMM_MULTI(j__udySearchLeafEmpty1, cJU_JPIMMED_1_02);
 
 #if (defined(JUDY1) || defined(JU_64BIT))
-        case cJU_JPIMMED_2_02:
-        case cJU_JPIMMED_2_03:
+	case cJU_JPIMMED_2_02:
+	case cJU_JPIMMED_2_03:
 #endif
 #if (defined(JUDY1) && defined(JU_64BIT))
-        case cJ1_JPIMMED_2_04:
-        case cJ1_JPIMMED_2_05:
-        case cJ1_JPIMMED_2_06:
-        case cJ1_JPIMMED_2_07:
+	case cJ1_JPIMMED_2_04:
+	case cJ1_JPIMMED_2_05:
+	case cJ1_JPIMMED_2_06:
+	case cJ1_JPIMMED_2_07:
 #endif
 #if (defined(JUDY1) || defined(JU_64BIT))
-            IMM_MULTI(j__udySearchLeafEmpty2, cJU_JPIMMED_2_02);
+	    IMM_MULTI(j__udySearchLeafEmpty2, cJU_JPIMMED_2_02);
 #endif
 
 #if (defined(JUDY1) || defined(JU_64BIT))
-        case cJU_JPIMMED_3_02:
+	case cJU_JPIMMED_3_02:
 #endif
 #if (defined(JUDY1) && defined(JU_64BIT))
-        case cJ1_JPIMMED_3_03:
-        case cJ1_JPIMMED_3_04:
-        case cJ1_JPIMMED_3_05:
+	case cJ1_JPIMMED_3_03:
+	case cJ1_JPIMMED_3_04:
+	case cJ1_JPIMMED_3_05:
 #endif
 #if (defined(JUDY1) || defined(JU_64BIT))
-            IMM_MULTI(j__udySearchLeafEmpty3, cJU_JPIMMED_3_02);
+	    IMM_MULTI(j__udySearchLeafEmpty3, cJU_JPIMMED_3_02);
 #endif
 
 #if (defined(JUDY1) && defined(JU_64BIT))
-        case cJ1_JPIMMED_4_02:
-        case cJ1_JPIMMED_4_03:
-            IMM_MULTI(j__udySearchLeafEmpty4, cJ1_JPIMMED_4_02);
+	case cJ1_JPIMMED_4_02:
+	case cJ1_JPIMMED_4_03:
+	    IMM_MULTI(j__udySearchLeafEmpty4, cJ1_JPIMMED_4_02);
 
-        case cJ1_JPIMMED_5_02:
-        case cJ1_JPIMMED_5_03:
-            IMM_MULTI(j__udySearchLeafEmpty5, cJ1_JPIMMED_5_02);
+	case cJ1_JPIMMED_5_02:
+	case cJ1_JPIMMED_5_03:
+	    IMM_MULTI(j__udySearchLeafEmpty5, cJ1_JPIMMED_5_02);
 
-        case cJ1_JPIMMED_6_02:
-            IMM_MULTI(j__udySearchLeafEmpty6, cJ1_JPIMMED_6_02);
+	case cJ1_JPIMMED_6_02:
+	    IMM_MULTI(j__udySearchLeafEmpty6, cJ1_JPIMMED_6_02);
 
-        case cJ1_JPIMMED_7_02:
-            IMM_MULTI(j__udySearchLeafEmpty7, cJ1_JPIMMED_7_02);
+	case cJ1_JPIMMED_7_02:
+	    IMM_MULTI(j__udySearchLeafEmpty7, cJ1_JPIMMED_7_02);
 #endif
 
 
 // ----------------------------------------------------------------------------
 // INVALID JP TYPE:
 
-        default: RET_CORRUPT;
+	default: RET_CORRUPT;
 
-        } // SMGet switch.
+	} // SMGet switch.
 
 } // Judy1PrevEmpty() / Judy1NextEmpty() / JudyLPrevEmpty() / JudyLNextEmpty()
-

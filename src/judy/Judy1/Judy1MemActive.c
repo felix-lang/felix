@@ -47,26 +47,26 @@ FUNCTION Word_t JUDY_EXTERN Judy1MemActive
 FUNCTION Word_t JUDY_EXTERN JudyLMemActive
 #endif
         (
-        Pcvoid_t PArray         // from which to retrieve.
+	Pcvoid_t PArray	        // from which to retrieve.
         )
 {
-        if (PArray == (Pcvoid_t)NULL) return(0);
+	if (PArray == (Pcvoid_t)NULL) return(0);
 
-        if (JU_LEAFW_POP0(PArray) < cJU_LEAFW_MAXPOP1) // must be a LEAFW
+	if (JU_LEAFW_POP0(PArray) < cJU_LEAFW_MAXPOP1) // must be a LEAFW
         {
-            Pjlw_t Pjlw = P_JLW(PArray);        // first word of leaf.
-            Word_t Words = Pjlw[0] + 1;         // population.
+	    Pjlw_t Pjlw = P_JLW(PArray);	// first word of leaf.
+            Word_t Words = Pjlw[0] + 1;		// population.
 #ifdef JUDY1
             return((Words + 1) * sizeof(Word_t));
 #else
             return(((Words * 2) + 1) * sizeof(Word_t));
 #endif
         }
-        else
-        {
-            Pjpm_t Pjpm = P_JPM(PArray);
-            return(j__udyGetMemActive(&Pjpm->jpm_JP) + sizeof(jpm_t));
-        }
+	else
+	{
+	    Pjpm_t Pjpm = P_JPM(PArray);
+	    return(j__udyGetMemActive(&Pjpm->jpm_JP) + sizeof(jpm_t));
+	}
 
 } // JudyMemActive()
 
@@ -75,86 +75,86 @@ FUNCTION Word_t JUDY_EXTERN JudyLMemActive
 // __ J U D Y   G E T   M E M   A C T I V E
 
 FUNCTION static Word_t j__udyGetMemActive(
-        Pjp_t  Pjp)             // top of subtree.
+	Pjp_t  Pjp)		// top of subtree.
 {
-        Word_t offset;          // in a branch.
-        Word_t Bytes = 0;       // actual bytes used at this level.
-        Word_t IdxSz;           // bytes per index in leaves
+	Word_t offset;		// in a branch.
+	Word_t Bytes = 0;	// actual bytes used at this level.
+	Word_t IdxSz;		// bytes per index in leaves
 
-        switch (JU_JPTYPE(Pjp))
-        {
+	switch (JU_JPTYPE(Pjp))
+	{
 
-        case cJU_JPBRANCH_L2:
-        case cJU_JPBRANCH_L3:
+	case cJU_JPBRANCH_L2:
+	case cJU_JPBRANCH_L3:
 #ifdef JU_64BIT
-        case cJU_JPBRANCH_L4:
-        case cJU_JPBRANCH_L5:
-        case cJU_JPBRANCH_L6:
-        case cJU_JPBRANCH_L7:
+	case cJU_JPBRANCH_L4:
+	case cJU_JPBRANCH_L5:
+	case cJU_JPBRANCH_L6:
+	case cJU_JPBRANCH_L7:
 #endif
-        case cJU_JPBRANCH_L:
-        {
-            Pjbl_t Pjbl = P_JBL(Pjp->jp_Addr);
+	case cJU_JPBRANCH_L:
+	{
+	    Pjbl_t Pjbl = P_JBL(Pjp->jp_Addr);
 
-            for (offset = 0; offset < (Pjbl->jbl_NumJPs); ++offset)
-                Bytes += j__udyGetMemActive((Pjbl->jbl_jp) + offset);
+	    for (offset = 0; offset < (Pjbl->jbl_NumJPs); ++offset)
+	        Bytes += j__udyGetMemActive((Pjbl->jbl_jp) + offset);
 
-            return(Bytes + sizeof(jbl_t));
-        }
+	    return(Bytes + sizeof(jbl_t));
+	}
 
-        case cJU_JPBRANCH_B2:
-        case cJU_JPBRANCH_B3:
+	case cJU_JPBRANCH_B2:
+	case cJU_JPBRANCH_B3:
 #ifdef JU_64BIT
-        case cJU_JPBRANCH_B4:
-        case cJU_JPBRANCH_B5:
-        case cJU_JPBRANCH_B6:
-        case cJU_JPBRANCH_B7:
+	case cJU_JPBRANCH_B4:
+	case cJU_JPBRANCH_B5:
+	case cJU_JPBRANCH_B6:
+	case cJU_JPBRANCH_B7:
 #endif
-        case cJU_JPBRANCH_B:
-        {
-            Word_t subexp;
-            Word_t jpcount;
-            Pjbb_t Pjbb = P_JBB(Pjp->jp_Addr);
+	case cJU_JPBRANCH_B:
+	{
+	    Word_t subexp;
+	    Word_t jpcount;
+	    Pjbb_t Pjbb = P_JBB(Pjp->jp_Addr);
 
-            for (subexp = 0; subexp < cJU_NUMSUBEXPB; ++subexp)
-            {
-                jpcount = j__udyCountBitsB(JU_JBB_BITMAP(Pjbb, subexp));
+	    for (subexp = 0; subexp < cJU_NUMSUBEXPB; ++subexp)
+	    {
+	        jpcount = j__udyCountBitsB(JU_JBB_BITMAP(Pjbb, subexp));
                 Bytes  += jpcount * sizeof(jp_t);
 
-                for (offset = 0; offset < jpcount; ++offset)
-                {
-                    Bytes += j__udyGetMemActive(P_JP(JU_JBB_PJP(Pjbb, subexp))
-                           + offset);
-                }
-            }
+		for (offset = 0; offset < jpcount; ++offset)
+		{
+		    Bytes += j__udyGetMemActive(P_JP(JU_JBB_PJP(Pjbb, subexp))
+			   + offset);
+		}
+	    }
 
-            return(Bytes + sizeof(jbb_t));
-        }
+	    return(Bytes + sizeof(jbb_t));
+	}
 
-        case cJU_JPBRANCH_U2:
-        case cJU_JPBRANCH_U3:
+	case cJU_JPBRANCH_U2:
+	case cJU_JPBRANCH_U3:
 #ifdef JU_64BIT
-        case cJU_JPBRANCH_U4:
-        case cJU_JPBRANCH_U5:
-        case cJU_JPBRANCH_U6:
-        case cJU_JPBRANCH_U7:
+	case cJU_JPBRANCH_U4:
+	case cJU_JPBRANCH_U5:
+	case cJU_JPBRANCH_U6:
+	case cJU_JPBRANCH_U7:
 #endif
-        case cJU_JPBRANCH_U:
+	case cJU_JPBRANCH_U:
         {
-            Pjbu_t Pjbu = P_JBU(Pjp->jp_Addr);
+	    Pjbu_t Pjbu = P_JBU(Pjp->jp_Addr);
 
             for (offset = 0; offset < cJU_BRANCHUNUMJPS; ++offset)
-            {
-                if (((Pjbu->jbu_jp[offset].jp_Type) >= cJU_JPNULL1)
-                 && ((Pjbu->jbu_jp[offset].jp_Type) <= cJU_JPNULLMAX))
-                {
-                    continue;           // skip null JP to save time.
-                }
+	    {
+		if (((Pjbu->jbu_jp[offset].jp_Type) >= cJU_JPNULL1)
+		 && ((Pjbu->jbu_jp[offset].jp_Type) <= cJU_JPNULLMAX))
+		{
+		    continue;		// skip null JP to save time.
+		}
 
-                Bytes += j__udyGetMemActive(Pjbu->jbu_jp + offset);
-            }
+	        Bytes += j__udyGetMemActive(Pjbu->jbu_jp + offset);
+	    }
 
-            return(Bytes + sizeof(jbu_t));
+	    return(Bytes + sizeof(jbu_t));
         }
 
 
@@ -163,13 +163,13 @@ FUNCTION static Word_t j__udyGetMemActive(
 #if (defined(JUDYL) || (! defined(JU_64BIT)))
         case cJU_JPLEAF1: IdxSz = 1; goto LeafWords;
 #endif
-        case cJU_JPLEAF2: IdxSz = 2; goto LeafWords;
-        case cJU_JPLEAF3: IdxSz = 3; goto LeafWords;
+	case cJU_JPLEAF2: IdxSz = 2; goto LeafWords;
+	case cJU_JPLEAF3: IdxSz = 3; goto LeafWords;
 #ifdef JU_64BIT
-        case cJU_JPLEAF4: IdxSz = 4; goto LeafWords;
-        case cJU_JPLEAF5: IdxSz = 5; goto LeafWords;
-        case cJU_JPLEAF6: IdxSz = 6; goto LeafWords;
-        case cJU_JPLEAF7: IdxSz = 7; goto LeafWords;
+	case cJU_JPLEAF4: IdxSz = 4; goto LeafWords;
+	case cJU_JPLEAF5: IdxSz = 5; goto LeafWords;
+	case cJU_JPLEAF6: IdxSz = 6; goto LeafWords;
+	case cJU_JPLEAF7: IdxSz = 7; goto LeafWords;
 #endif
 LeafWords:
 
@@ -177,20 +177,20 @@ LeafWords:
             return(IdxSz * (JU_JPLEAF_POP0(Pjp) + 1));
 #else
             return((IdxSz + sizeof(Word_t))
-                 * (JU_JPLEAF_POP0(Pjp) + 1));
+		 * (JU_JPLEAF_POP0(Pjp) + 1));
 #endif
-        case cJU_JPLEAF_B1:
-        {
+	case cJU_JPLEAF_B1:
+	{
 #ifdef JUDY1
             return(sizeof(jlb_t));
 #else
             Bytes = (JU_JPLEAF_POP0(Pjp) + 1) * sizeof(Word_t);
 
-            return(Bytes + sizeof(jlb_t));
+	    return(Bytes + sizeof(jlb_t));
 #endif
-        }
+	}
 
-        JUDY1CODE(case cJ1_JPFULLPOPU1: return(0);)
+	JUDY1CODE(case cJ1_JPFULLPOPU1: return(0);)
 
 #ifdef JUDY1
 #define J__Mpy 0
@@ -198,65 +198,64 @@ LeafWords:
 #define J__Mpy sizeof(Word_t)
 #endif
 
-        case cJU_JPIMMED_1_01:  return(0);
-        case cJU_JPIMMED_2_01:  return(0);
-        case cJU_JPIMMED_3_01:  return(0);
+	case cJU_JPIMMED_1_01:	return(0);
+	case cJU_JPIMMED_2_01:	return(0);
+	case cJU_JPIMMED_3_01:	return(0);
 #ifdef JU_64BIT
-        case cJU_JPIMMED_4_01:  return(0);
-        case cJU_JPIMMED_5_01:  return(0);
-        case cJU_JPIMMED_6_01:  return(0);
-        case cJU_JPIMMED_7_01:  return(0);
+	case cJU_JPIMMED_4_01:	return(0);
+	case cJU_JPIMMED_5_01:	return(0);
+	case cJU_JPIMMED_6_01:	return(0);
+	case cJU_JPIMMED_7_01:	return(0);
 #endif
 
-        case cJU_JPIMMED_1_02:  return(J__Mpy * 2);
-        case cJU_JPIMMED_1_03:  return(J__Mpy * 3);
+	case cJU_JPIMMED_1_02:	return(J__Mpy * 2);
+	case cJU_JPIMMED_1_03:	return(J__Mpy * 3);
 #if (defined(JUDY1) || defined(JU_64BIT))
-        case cJU_JPIMMED_1_04:  return(J__Mpy * 4);
-        case cJU_JPIMMED_1_05:  return(J__Mpy * 5);
-        case cJU_JPIMMED_1_06:  return(J__Mpy * 6);
-        case cJU_JPIMMED_1_07:  return(J__Mpy * 7);
+	case cJU_JPIMMED_1_04:	return(J__Mpy * 4);
+	case cJU_JPIMMED_1_05:	return(J__Mpy * 5);
+	case cJU_JPIMMED_1_06:	return(J__Mpy * 6);
+	case cJU_JPIMMED_1_07:	return(J__Mpy * 7);
 #endif
 #if (defined(JUDY1) && defined(JU_64BIT))
-        case cJ1_JPIMMED_1_08:  return(0);
-        case cJ1_JPIMMED_1_09:  return(0);
-        case cJ1_JPIMMED_1_10:  return(0);
-        case cJ1_JPIMMED_1_11:  return(0);
-        case cJ1_JPIMMED_1_12:  return(0);
-        case cJ1_JPIMMED_1_13:  return(0);
-        case cJ1_JPIMMED_1_14:  return(0);
-        case cJ1_JPIMMED_1_15:  return(0);
-#endif
-
-#if (defined(JUDY1) || defined(JU_64BIT))
-        case cJU_JPIMMED_2_02:  return(J__Mpy * 2);
-        case cJU_JPIMMED_2_03:  return(J__Mpy * 3);
-#endif
-#if (defined(JUDY1) && defined(JU_64BIT))
-        case cJ1_JPIMMED_2_04:  return(0);
-        case cJ1_JPIMMED_2_05:  return(0);
-        case cJ1_JPIMMED_2_06:  return(0);
-        case cJ1_JPIMMED_2_07:  return(0);
+	case cJ1_JPIMMED_1_08:	return(0);
+	case cJ1_JPIMMED_1_09:	return(0);
+	case cJ1_JPIMMED_1_10:	return(0);
+	case cJ1_JPIMMED_1_11:	return(0);
+	case cJ1_JPIMMED_1_12:	return(0);
+	case cJ1_JPIMMED_1_13:	return(0);
+	case cJ1_JPIMMED_1_14:	return(0);
+	case cJ1_JPIMMED_1_15:	return(0);
 #endif
 
 #if (defined(JUDY1) || defined(JU_64BIT))
-        case cJU_JPIMMED_3_02:  return(J__Mpy * 2);
+	case cJU_JPIMMED_2_02:	return(J__Mpy * 2);
+	case cJU_JPIMMED_2_03:	return(J__Mpy * 3);
 #endif
 #if (defined(JUDY1) && defined(JU_64BIT))
-        case cJ1_JPIMMED_3_03:  return(0);
-        case cJ1_JPIMMED_3_04:  return(0);
-        case cJ1_JPIMMED_3_05:  return(0);
-
-        case cJ1_JPIMMED_4_02:  return(0);
-        case cJ1_JPIMMED_4_03:  return(0);
-        case cJ1_JPIMMED_5_02:  return(0);
-        case cJ1_JPIMMED_5_03:  return(0);
-        case cJ1_JPIMMED_6_02:  return(0);
-        case cJ1_JPIMMED_7_02:  return(0);
+	case cJ1_JPIMMED_2_04:	return(0);
+	case cJ1_JPIMMED_2_05:	return(0);
+	case cJ1_JPIMMED_2_06:	return(0);
+	case cJ1_JPIMMED_2_07:	return(0);
 #endif
 
-        } // switch (JU_JPTYPE(Pjp))
+#if (defined(JUDY1) || defined(JU_64BIT))
+	case cJU_JPIMMED_3_02:	return(J__Mpy * 2);
+#endif
+#if (defined(JUDY1) && defined(JU_64BIT))
+	case cJ1_JPIMMED_3_03:	return(0);
+	case cJ1_JPIMMED_3_04:	return(0);
+	case cJ1_JPIMMED_3_05:	return(0);
 
-        return(0);                      // to make some compilers happy.
+	case cJ1_JPIMMED_4_02:	return(0);
+	case cJ1_JPIMMED_4_03:	return(0);
+	case cJ1_JPIMMED_5_02:	return(0);
+	case cJ1_JPIMMED_5_03:	return(0);
+	case cJ1_JPIMMED_6_02:	return(0);
+	case cJ1_JPIMMED_7_02:	return(0);
+#endif
+
+	} // switch (JU_JPTYPE(Pjp))
+
+	return(0);			// to make some compilers happy.
 
 } // j__udyGetMemActive()
-

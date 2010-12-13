@@ -38,25 +38,16 @@
 // JUDY memory interface to malloc() FUNCTIONS:
 
 extern Word_t JUDY_EXTERN JudyMalloc(Word_t);               // words reqd => words allocd.
-
 extern Word_t JUDY_EXTERN JudyMallocVirtual(Word_t);        // words reqd => words allocd.
-
 extern void JUDY_EXTERN JudyFree(Pvoid_t, Word_t);        // block to free and its size in words.
-
 extern void JUDY_EXTERN JudyFreeVirtual(Pvoid_t, Word_t); // block to free and its size in words.
-
 
 // ****************************************************************************
 // JUDYHS FUNCTIONS:
 
 extern PPvoid_t JUDY_EXTERN JudyHSGet(       Pcvoid_t,  void *, Word_t);
-
 extern PPvoid_t JUDY_EXTERN JudyHSIns(       PPvoid_t,  void *, Word_t, P_JE);
-
 extern int JUDY_EXTERN JudyHSDel(       PPvoid_t,  void *, Word_t, P_JE);
-
 extern Word_t JUDY_EXTERN JudyHSFreeArray( PPvoid_t,                  P_JE);
 
-
 extern uint32_t JudyHashStr(                void *, Word_t);
-

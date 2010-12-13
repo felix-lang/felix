@@ -775,7 +775,7 @@ JUDYLCODE(Pjv_t Pjv);
 
 // Attach new LeafB1 to parent JP; note use of *PPop1 possibly < pop1:
 
-            JU_JPSETADT(PjpParent, (Word_t) PjlbRaw,
+            JU_JPSETADT(PjpParent, (Word_t) PjlbRaw, 
                     (*PIndex & cJU_DCDMASK(1)) | (*PPop1 - 1), cJU_JPLEAF_B1);
 
             return(retval);
@@ -1178,4 +1178,3 @@ SetParent:
         return(retval);
 
 } // j__udyInsArray()
-

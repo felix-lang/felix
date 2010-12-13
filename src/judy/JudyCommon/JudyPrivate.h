@@ -630,7 +630,7 @@ static inline BITMAPL_t j__udyCountBitsL(BITMAPL_t word)
 static __inline BITMAPB_t j__udyCountBitsB(BITMAPB_t word)
 #else
 static inline BITMAPB_t j__udyCountBitsB(BITMAPB_t word)
-#endif
+#endif 
 {
         word = (word & 0x55555555) + ((word & 0xAAAAAAAA) >>  1);
         word = (word & 0x33333333) + ((word & 0xCCCCCCCC) >>  2);
@@ -1613,4 +1613,3 @@ static inline int j__udySearchLeafW(Pjlw_t Pjlw, Word_t LeafPop1, Word_t Index)
 #endif // compiler support for inline
 
 #endif // ! _JUDYPRIVATE_INCLUDED
-

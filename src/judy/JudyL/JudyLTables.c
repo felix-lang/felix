@@ -21,5 +21,3 @@
 #else
 #include "JudyLTables32.c"
 #endif
-
-

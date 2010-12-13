@@ -1143,4 +1143,3 @@ JudySLFreeArray(PPvoid_t PPArray, PJError_t PJError)    // optional, for returni
     }
     return (bytes_total + bytes_freed);
 }                                       // JudySLFreeArray()
-

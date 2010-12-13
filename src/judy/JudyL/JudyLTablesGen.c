@@ -20,7 +20,7 @@
 // @(#) $Revision: 4.37 $ $Source: /judy/src/JudyCommon/JudyTables.c $
 
 #ifndef JU_WIN
-#include <unistd.h>             // unavailable on win_*.
+#include <unistd.h>		// unavailable on win_*.
 #endif
 
 #include <stdlib.h>
@@ -30,24 +30,24 @@
 #error:  One of -DJUDY1 or -DJUDYL must be specified.
 #endif
 
-#define TERMINATOR 999          // terminator for Alloc tables
+#define	TERMINATOR 999		// terminator for Alloc tables
 
-#define BPW sizeof(Word_t)      // define bytes per word
+#define BPW sizeof(Word_t)	// define bytes per word
 
 #ifdef JUDY1
 #include "Judy1.h"
 #else
 #include "JudyL.h"
 #endif
-
+    
 FILE *fd;
 
 // Definitions come from header files Judy1.h and JudyL.h:
 
 int AllocSizes[] = ALLOCSIZES;
 
-#define ROUNDUP(BYTES,BPW,OFFSETW) \
-        ((((BYTES) + (BPW) - 1) / (BPW)) + (OFFSETW))
+#define	ROUNDUP(BYTES,BPW,OFFSETW) \
+	((((BYTES) + (BPW) - 1) / (BPW)) + (OFFSETW))
 
 
 // ****************************************************************************
@@ -56,27 +56,27 @@ int AllocSizes[] = ALLOCSIZES;
 // Note:  "const" is required for newer compilers.
 
 FUNCTION void GenTable(
-    const char * TableName,     // name of table string
-    const char * TableSize,     // dimentioned size string
-    int          IndexBytes,    // bytes per Index
-    int          LeafSize,      // number elements in object
-    int          ValueBytes,    // bytes per Value
-    int          OffsetWords)   // 1 for LEAFW
+    const char * TableName,	// name of table string
+    const char * TableSize,	// dimentioned size string
+    int		 IndexBytes,	// bytes per Index
+    int		 LeafSize,	// number elements in object
+    int		 ValueBytes,	// bytes per Value
+    int		 OffsetWords)	// 1 for LEAFW
 {
-    int *        PAllocSizes = AllocSizes;
-    int          OWord;
-    int          CurWord;
-    int          IWord;
-    int          ii;
-    int          BytesOfIndex;
-    int          BytesOfObject;
-    int          Index;
-    int          LastWords;
-    int          Words [1000] = { 0 };
-    int          Offset[1000] = { 0 };
-    int          MaxWords;
+    int *	 PAllocSizes = AllocSizes;
+    int		 OWord;
+    int		 CurWord;
+    int		 IWord;
+    int		 ii;
+    int		 BytesOfIndex;
+    int		 BytesOfObject;
+    int		 Index;
+    int		 LastWords;
+    int		 Words [1000] = { 0 };
+    int		 Offset[1000] = { 0 };
+    int		 MaxWords;
 
-    MaxWords  = ROUNDUP((IndexBytes + ValueBytes) * LeafSize, BPW, OffsetWords);
+    MaxWords  =	ROUNDUP((IndexBytes + ValueBytes) * LeafSize, BPW, OffsetWords);
     Words[0]  = 0;
     Offset[0] = 0;
     CurWord   = TERMINATOR;
@@ -88,13 +88,13 @@ FUNCTION void GenTable(
 
 // Calculate byte required for next size:
 
-        BytesOfIndex  = IndexBytes * Index;
-        BytesOfObject = (IndexBytes + ValueBytes) * Index;
+	BytesOfIndex  = IndexBytes * Index;
+	BytesOfObject = (IndexBytes + ValueBytes) * Index;
 
 // Round up and calculate words required for next size:
 
-        OWord = ROUNDUP(BytesOfObject, BPW, OffsetWords);
-        IWord = ROUNDUP(BytesOfIndex,  BPW, OffsetWords);
+        OWord =	ROUNDUP(BytesOfObject, BPW, OffsetWords);
+        IWord =	ROUNDUP(BytesOfIndex,  BPW, OffsetWords);
 
 // Root-level leaves of population of 1 and 2 do not have the 1 word offset:
 
@@ -104,19 +104,19 @@ FUNCTION void GenTable(
 
 // Round up to next available size of words:
 
-        while (OWord > *PAllocSizes) PAllocSizes++;
+	while (OWord > *PAllocSizes) PAllocSizes++;
 
         if (Index == LeafSize)
         {
-            CurWord = Words[Index] = OWord;
+	    CurWord = Words[Index] = OWord;
             break;
         }
 //      end of available sizes ?
 
-        if (*PAllocSizes == TERMINATOR)
+	if (*PAllocSizes == TERMINATOR)
         {
             fprintf(stderr, "BUG, in %sPopToWords, sizes not big enough for object\n", TableName);
-            exit(1);
+	    exit(1);
         }
 
 // Save words required and last word:
@@ -150,13 +150,13 @@ FUNCTION void GenTable(
 
 // 8 columns per line, starting with 1:
 
-        if ((ii % 8) == 1) fprintf(fd,"\n\t");
+	if ((ii % 8) == 1) fprintf(fd,"\n\t");
 
-        fprintf(fd,"%2d", Words[ii]);
+	fprintf(fd,"%2d", Words[ii]);
 
 // If not last number place comma:
 
-        if (ii != LeafSize) fprintf(fd,", ");
+	if (ii != LeafSize) fprintf(fd,", ");
     }
     fprintf(fd,"\n};\n");
 
@@ -173,9 +173,9 @@ FUNCTION void GenTable(
     {
         if ((ii % 8) == 1) fprintf(fd,"\n\t");
 
-        fprintf(fd,"%2d", Offset[ii]);
+	fprintf(fd,"%2d", Offset[ii]);
 
-        if (ii != LeafSize) fprintf(fd,", ");
+	if (ii != LeafSize) fprintf(fd,", ");
     }
     fprintf(fd,"\n};\n");
 
@@ -196,8 +196,8 @@ FUNCTION int main()
 #endif
 
     if ((fd = fopen(fname, "w")) == NULL){
-        perror("FATAL ERROR: could not write to Judy[1L]Tables.c file\n");
-        return (-1);
+	perror("FATAL ERROR: could not write to Judy[1L]Tables.c file\n");
+	return (-1);
     }
 
 
@@ -211,16 +211,16 @@ FUNCTION int main()
     fprintf(fd,"#include \"Judy1.h\"\n");
 
     fprintf(fd,"// Leave the malloc() sizes readable in the binary (via "
-           "strings(1)):\n");
+	   "strings(1)):\n");
     fprintf(fd,"const char * Judy1MallocSizes = \"Judy1MallocSizes =");
 
     for (ii = 0; AllocSizes[ii] != TERMINATOR; ii++)
-        fprintf(fd," %d,", AllocSizes[ii]);
+	fprintf(fd," %d,", AllocSizes[ii]);
 
 #ifndef JU_64BIT
     fprintf(fd," Leaf1 = %d\";\n\n", cJ1_LEAF1_MAXPOP1);
 #else
-    fprintf(fd,"\";\n\n");                      // no Leaf1 in this case.
+    fprintf(fd,"\";\n\n");			// no Leaf1 in this case.
 #endif
 
 // ================================ 32 bit ================================
@@ -256,11 +256,11 @@ FUNCTION int main()
     fprintf(fd,"#include \"JudyL.h\"\n");
 
     fprintf(fd,"// Leave the malloc() sizes readable in the binary (via "
-           "strings(1)):\n");
+	   "strings(1)):\n");
     fprintf(fd,"const char * JudyLMallocSizes = \"JudyLMallocSizes =");
 
     for (ii = 0; AllocSizes[ii] != TERMINATOR; ii++)
-        fprintf(fd," %d,", AllocSizes[ii]);
+	fprintf(fd," %d,", AllocSizes[ii]);
 
     fprintf(fd," Leaf1 = %ld\";\n\n", (Word_t)cJL_LEAF1_MAXPOP1);
 
@@ -296,4 +296,3 @@ FUNCTION int main()
     return(0);
 
 } // main()
-

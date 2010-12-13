@@ -38,9 +38,9 @@
    malloc() can handle (~2GB).
 
    Compile:
-
+  
       cc -O JudyHS.c -c         needs to link with -lJudy (libJudy.a)
-
+  
       Note: in gcc version 3.3.1, -O2 generates faster code than -O
       Note: in gcc version 3.3.2, -O3 generates faster code than -O2
 
@@ -137,7 +137,7 @@ main()
         LineNumb++;                     // line number
 
 //      store string into array
-        JHSI(PValue, PJArray, Index, strlen(Index));
+        JHSI(PValue, PJArray, Index, strlen(Index)); 
         if (*PValue)                    // check if duplicate
         {
             Dups++;                     // count duplicates
@@ -148,7 +148,7 @@ main()
             *PValue = LineNumb;         // store Line number
         }
     }
-    printf("%lu Duplicates, free JudyHS array of %lu Lines\n",
+    printf("%lu Duplicates, free JudyHS array of %lu Lines\n", 
                     Dups, LineNumb - Dups);
     JHSFA(Bytes, PJArray);              // free array
     printf("The JudyHS array allocated %lu bytes of memory\n", Bytes);
@@ -181,7 +181,7 @@ typedef struct L_EAFSTRING
 #define LS_WORDLEN(LEN)  (((LEN) + LS_STRUCTOVD + WORDSIZE - 1) / WORDSIZE)
 
 // Copy from 0..4[8] bytes from string to a Word_t
-// NOTE: the copy in in little-endian order to take advantage of improved
+// NOTE: the copy in in little-endian order to take advantage of improved 
 // memory efficiency of JudyLIns() with smaller numbers
 //
 #define        COPYSTRING4toWORD(WORD,STR,LEN)          \
@@ -512,7 +512,7 @@ JudyHSIns(PPvoid_t PPArray,             // ^ to JudyHashArray name
     }
 #endif // DONOTUSEHASH
 
-    PPValue = insStrJudyLTree(String, Len, PPValue, PJError); // add string
+    PPValue = insStrJudyLTree(String, Len, PPValue, PJError); // add string 
     return (PPValue);                   //  ^  to Value
 }
 
@@ -563,7 +563,7 @@ delStrJudyLTree(uint8_t * String,      // delete from tree of JudyL arrays
 
 //      delete last 1-4[8] bytes from leaf element
 
-        Ret = JudyLDel(PPValue, Index, PJError);
+        Ret = JudyLDel(PPValue, Index, PJError); 
     }
     return (Ret);
 }
@@ -631,7 +631,7 @@ JudyHSDel(PPvoid_t PPArray,             // ^ to JudyHashArray struct
         {
 //          delete entry in Hash table
 
-            Ret = JudyLDel(PPHtble, (Word_t)HValue, PJError);
+            Ret = JudyLDel(PPHtble, (Word_t)HValue, PJError); 
             if (Ret != 1)
             {
                 JU_SET_ERRNO(PJError, 0);
@@ -643,7 +643,7 @@ JudyHSDel(PPvoid_t PPArray,             // ^ to JudyHashArray struct
         {
 //          delete entry from the String length table
 
-            Ret = JudyLDel(PPArray, Len, PJError);
+            Ret = JudyLDel(PPArray, Len, PJError); 
             if (Ret != 1)
             {
                 JU_SET_ERRNO(PJError, 0);
@@ -671,7 +671,7 @@ delJudyLTree(PPvoid_t PPValue,                 // ^ to JudyL root pointer
 
 //      Pointer is to a ls_t struct
 
-        if (IS_PLS(*PPValue))
+        if (IS_PLS(*PPValue)) 
         {
             Pls_t   Pls;
             Word_t  freewords;
@@ -728,13 +728,13 @@ JudyHSFreeArray(PPvoid_t PPArray,       // ^ to JudyHashArray struct
     Word_t    bytes_total;              // bytes total at all levels.
     PPvoid_t  PPHtble;
 
-    if (PPArray == NULL)
+    if (PPArray == NULL) 
         return (0);                     // no pointer, return none
 
 //  Walk the string length table for subsidary hash structs
 //  NOTE: This is necessary to determine the depth of the tree
 
-    bytes_freed = 0;
+    bytes_freed = 0; 
     bytes_total = 0;
     Len = 0;                            // walk to length table
 
@@ -787,4 +787,3 @@ JudyHSFreeArray(PPvoid_t PPArray,       // ^ to JudyHashArray struct
 
     return(bytes_total);                // return bytes freed
 }
-

@@ -53,43 +53,43 @@ FUNCTION Word_t JUDY_EXTERN Judy1FreeArray
 FUNCTION Word_t JUDY_EXTERN JudyLFreeArray
 #endif
         (
-        PPvoid_t  PPArray,      // array to free.
-        PJError_t PJError       // optional, for returning error info.
+	PPvoid_t  PPArray,	// array to free.
+	PJError_t PJError	// optional, for returning error info.
         )
 {
-        jpm_t     jpm;          // local to accumulate free statistics.
+	jpm_t	  jpm;		// local to accumulate free statistics.
 
 // CHECK FOR NULL POINTER (error by caller):
 
-        if (PPArray == (PPvoid_t) NULL)
-        {
-            JU_SET_ERRNO(PJError, JU_ERRNO_NULLPPARRAY);
-            return(JERR);
-        }
+	if (PPArray == (PPvoid_t) NULL)
+	{
+	    JU_SET_ERRNO(PJError, JU_ERRNO_NULLPPARRAY);
+	    return(JERR);
+	}
 
-        DBGCODE(JudyCheckPop(*PPArray);)
+	DBGCODE(JudyCheckPop(*PPArray);)
 
 // Zero jpm.jpm_Pop0 (meaning the array will be empty in a moment) for accurate
 // logging in TRACEMI2.
 
-        jpm.jpm_Pop0          = 0;              // see above.
-        jpm.jpm_TotalMemWords = 0;              // initialize memory freed.
+	jpm.jpm_Pop0	      = 0;		// see above.
+	jpm.jpm_TotalMemWords = 0;		// initialize memory freed.
 
-//      Empty array:
+// 	Empty array:
 
-        if (P_JLW(*PPArray) == (Pjlw_t) NULL) return(0);
+	if (P_JLW(*PPArray) == (Pjlw_t) NULL) return(0);
 
 // PROCESS TOP LEVEL "JRP" BRANCHES AND LEAF:
 
-        if (JU_LEAFW_POP0(*PPArray) < cJU_LEAFW_MAXPOP1) // must be a LEAFW
-        {
-            Pjlw_t Pjlw = P_JLW(*PPArray);      // first word of leaf.
+	if (JU_LEAFW_POP0(*PPArray) < cJU_LEAFW_MAXPOP1) // must be a LEAFW
+	{
+	    Pjlw_t Pjlw = P_JLW(*PPArray);	// first word of leaf.
 
-            j__udyFreeJLW(Pjlw, Pjlw[0] + 1, &jpm);
-            *PPArray = (Pvoid_t) NULL;          // make an empty array.
-            return (-(jpm.jpm_TotalMemWords * cJU_BYTESPERWORD));  // see above.
-        }
-        else
+	    j__udyFreeJLW(Pjlw, Pjlw[0] + 1, &jpm);
+	    *PPArray = (Pvoid_t) NULL;		// make an empty array.
+	    return (-(jpm.jpm_TotalMemWords * cJU_BYTESPERWORD));  // see above.
+	}
+	else
 
 // Rootstate leaves:  just free the leaf:
 
@@ -100,25 +100,25 @@ FUNCTION Word_t JUDY_EXTERN JudyLFreeArray
 // Accumulate (negative) words freed, while freeing objects.
 // Return the positive bytes freed.
 
-        {
-            Pjpm_t Pjpm     = P_JPM(*PPArray);
-            Word_t TotalMem = Pjpm->jpm_TotalMemWords;
+	{
+	    Pjpm_t Pjpm	    = P_JPM(*PPArray);
+	    Word_t TotalMem = Pjpm->jpm_TotalMemWords;
 
-            j__udyFreeSM(&(Pjpm->jpm_JP), &jpm);  // recurse through tree.
-            j__udyFreeJPM(Pjpm, &jpm);
+	    j__udyFreeSM(&(Pjpm->jpm_JP), &jpm);  // recurse through tree.
+	    j__udyFreeJPM(Pjpm, &jpm);
 
 // Verify the array was not corrupt.  This means that amount of memory freed
 // (which is negative) is equal to the initial amount:
 
-            if (TotalMem + jpm.jpm_TotalMemWords)
-            {
-                JU_SET_ERRNO(PJError, JU_ERRNO_CORRUPT);
-                return(JERR);
-            }
+	    if (TotalMem + jpm.jpm_TotalMemWords)
+	    {
+		JU_SET_ERRNO(PJError, JU_ERRNO_CORRUPT);
+		return(JERR);
+	    }
 
-            *PPArray = (Pvoid_t) NULL;          // make an empty array.
-            return (TotalMem * cJU_BYTESPERWORD);
-        }
+	    *PPArray = (Pvoid_t) NULL;		// make an empty array.
+	    return (TotalMem * cJU_BYTESPERWORD);
+	}
 
 } // Judy1FreeArray() / JudyLFreeArray()
 
@@ -137,20 +137,20 @@ FUNCTION Word_t JUDY_EXTERN JudyLFreeArray
 // and JPIMMED above first, and revert to returning bool_t (see 4.34).
 
 FUNCTION void j__udyFreeSM(
-        Pjp_t   Pjp,            // top of Judy (top-state).
-        Pjpm_t  Pjpm)           // to return words freed.
+	Pjp_t	Pjp,		// top of Judy (top-state).
+	Pjpm_t	Pjpm)		// to return words freed.
 {
-        Word_t  Pop1;
+	Word_t	Pop1;
 
-        switch (JU_JPTYPE(Pjp))
-        {
+	switch (JU_JPTYPE(Pjp))
+	{
 
 #ifdef JUDY1
 
 // FULL EXPANSE -- nothing to free  for this jp_Type.
 
-        case cJ1_JPFULLPOPU1:
-            break;
+	case cJ1_JPFULLPOPU1:
+	    break;
 #endif
 
 // JUDY BRANCH -- free the sub-tree depth first:
@@ -159,65 +159,65 @@ FUNCTION void j__udyFreeSM(
 //
 // Note:  There are no null JPs in a JBL.
 
-        case cJU_JPBRANCH_L:
-        case cJU_JPBRANCH_L2:
-        case cJU_JPBRANCH_L3:
+	case cJU_JPBRANCH_L:
+	case cJU_JPBRANCH_L2:
+	case cJU_JPBRANCH_L3:
 #ifdef JU_64BIT
-        case cJU_JPBRANCH_L4:
-        case cJU_JPBRANCH_L5:
-        case cJU_JPBRANCH_L6:
-        case cJU_JPBRANCH_L7:
+	case cJU_JPBRANCH_L4:
+	case cJU_JPBRANCH_L5:
+	case cJU_JPBRANCH_L6:
+	case cJU_JPBRANCH_L7:
 #endif // JU_64BIT
-        {
-            Pjbl_t Pjbl = P_JBL(Pjp->jp_Addr);
-            Word_t offset;
+	{
+	    Pjbl_t Pjbl = P_JBL(Pjp->jp_Addr);
+	    Word_t offset;
 
-            for (offset = 0; offset < Pjbl->jbl_NumJPs; ++offset)
-                j__udyFreeSM((Pjbl->jbl_jp) + offset, Pjpm);
+	    for (offset = 0; offset < Pjbl->jbl_NumJPs; ++offset)
+	        j__udyFreeSM((Pjbl->jbl_jp) + offset, Pjpm);
 
-            j__udyFreeJBL((Pjbl_t) (Pjp->jp_Addr), Pjpm);
-            break;
-        }
+	    j__udyFreeJBL((Pjbl_t) (Pjp->jp_Addr), Pjpm);
+	    break;
+	}
 
 
 // BITMAP BRANCH -- visit each JP in the JBBs list based on the bitmap, also
 //
 // Note:  There are no null JPs in a JBB.
 
-        case cJU_JPBRANCH_B:
-        case cJU_JPBRANCH_B2:
-        case cJU_JPBRANCH_B3:
+	case cJU_JPBRANCH_B:
+	case cJU_JPBRANCH_B2:
+	case cJU_JPBRANCH_B3:
 #ifdef JU_64BIT
-        case cJU_JPBRANCH_B4:
-        case cJU_JPBRANCH_B5:
-        case cJU_JPBRANCH_B6:
-        case cJU_JPBRANCH_B7:
+	case cJU_JPBRANCH_B4:
+	case cJU_JPBRANCH_B5:
+	case cJU_JPBRANCH_B6:
+	case cJU_JPBRANCH_B7:
 #endif // JU_64BIT
-        {
-            Word_t subexp;
-            Word_t offset;
-            Word_t jpcount;
+	{
+	    Word_t subexp;
+	    Word_t offset;
+	    Word_t jpcount;
 
-            Pjbb_t Pjbb = P_JBB(Pjp->jp_Addr);
+	    Pjbb_t Pjbb = P_JBB(Pjp->jp_Addr);
 
-            for (subexp = 0; subexp < cJU_NUMSUBEXPB; ++subexp)
-            {
-                jpcount = j__udyCountBitsB(JU_JBB_BITMAP(Pjbb, subexp));
+	    for (subexp = 0; subexp < cJU_NUMSUBEXPB; ++subexp)
+	    {
+	        jpcount = j__udyCountBitsB(JU_JBB_BITMAP(Pjbb, subexp));
 
-                if (jpcount)
-                {
-                    for (offset = 0; offset < jpcount; ++offset)
-                    {
-                       j__udyFreeSM(P_JP(JU_JBB_PJP(Pjbb, subexp)) + offset,
-                                    Pjpm);
-                    }
-                    j__udyFreeJBBJP(JU_JBB_PJP(Pjbb, subexp), jpcount, Pjpm);
-                }
-            }
-            j__udyFreeJBB((Pjbb_t) (Pjp->jp_Addr), Pjpm);
+	        if (jpcount)
+	        {
+		    for (offset = 0; offset < jpcount; ++offset)
+		    {
+		       j__udyFreeSM(P_JP(JU_JBB_PJP(Pjbb, subexp)) + offset,
+				    Pjpm);
+		    }
+		    j__udyFreeJBBJP(JU_JBB_PJP(Pjbb, subexp), jpcount, Pjpm);
+	        }
+	    }
+	    j__udyFreeJBB((Pjbb_t) (Pjp->jp_Addr), Pjpm);
 
-            break;
-        }
+	    break;
+	}
 
 
 // UNCOMPRESSED BRANCH -- visit each JP in the JBU array, then free the JBU
@@ -225,25 +225,25 @@ FUNCTION void j__udyFreeSM(
 //
 // Note:  Null JPs are handled during recursion at a lower state.
 
-        case cJU_JPBRANCH_U:
-        case cJU_JPBRANCH_U2:
-        case cJU_JPBRANCH_U3:
+	case cJU_JPBRANCH_U:
+	case cJU_JPBRANCH_U2:
+	case cJU_JPBRANCH_U3:
 #ifdef JU_64BIT
-        case cJU_JPBRANCH_U4:
-        case cJU_JPBRANCH_U5:
-        case cJU_JPBRANCH_U6:
-        case cJU_JPBRANCH_U7:
+	case cJU_JPBRANCH_U4:
+	case cJU_JPBRANCH_U5:
+	case cJU_JPBRANCH_U6:
+	case cJU_JPBRANCH_U7:
 #endif // JU_64BIT
-        {
-            Word_t offset;
-            Pjbu_t Pjbu = P_JBU(Pjp->jp_Addr);
+	{
+	    Word_t offset;
+	    Pjbu_t Pjbu = P_JBU(Pjp->jp_Addr);
 
-            for (offset = 0; offset < cJU_BRANCHUNUMJPS; ++offset)
-                j__udyFreeSM((Pjbu->jbu_jp) + offset, Pjpm);
+	    for (offset = 0; offset < cJU_BRANCHUNUMJPS; ++offset)
+	        j__udyFreeSM((Pjbu->jbu_jp) + offset, Pjpm);
 
-            j__udyFreeJBU((Pjbu_t) (Pjp->jp_Addr), Pjpm);
-            break;
-        }
+	    j__udyFreeJBU((Pjbu_t) (Pjp->jp_Addr), Pjpm);
+	    break;
+	}
 
 
 // -- Cases below here terminate and do not recurse. --
@@ -254,69 +254,69 @@ FUNCTION void j__udyFreeSM(
 // Note:  cJU_JPLEAF1 is a special case, see discussion in ../Judy1/Judy1.h
 
 #if (defined(JUDYL) || (! defined(JU_64BIT)))
-        case cJU_JPLEAF1:
-            Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
-            j__udyFreeJLL1((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
-            break;
+	case cJU_JPLEAF1:
+	    Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
+	    j__udyFreeJLL1((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
+	    break;
 #endif
 
-        case cJU_JPLEAF2:
-            Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
-            j__udyFreeJLL2((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
-            break;
+	case cJU_JPLEAF2:
+	    Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
+	    j__udyFreeJLL2((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
+	    break;
 
-        case cJU_JPLEAF3:
-            Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
-            j__udyFreeJLL3((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
-            break;
+	case cJU_JPLEAF3:
+	    Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
+	    j__udyFreeJLL3((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
+	    break;
 
 #ifdef JU_64BIT
-        case cJU_JPLEAF4:
-            Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
-            j__udyFreeJLL4((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
-            break;
+	case cJU_JPLEAF4:
+	    Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
+	    j__udyFreeJLL4((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
+	    break;
 
-        case cJU_JPLEAF5:
-            Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
-            j__udyFreeJLL5((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
-            break;
+	case cJU_JPLEAF5:
+	    Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
+	    j__udyFreeJLL5((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
+	    break;
 
-        case cJU_JPLEAF6:
-            Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
-            j__udyFreeJLL6((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
-            break;
+	case cJU_JPLEAF6:
+	    Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
+	    j__udyFreeJLL6((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
+	    break;
 
-        case cJU_JPLEAF7:
-            Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
-            j__udyFreeJLL7((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
-            break;
+	case cJU_JPLEAF7:
+	    Pop1 = JU_JPLEAF_POP0(Pjp) + 1;
+	    j__udyFreeJLL7((Pjll_t) (Pjp->jp_Addr), Pop1, Pjpm);
+	    break;
 #endif // JU_64BIT
 
 
 // BITMAP LEAF -- free sub-expanse arrays of JPs, then free the JBB.
 
-        case cJU_JPLEAF_B1:
-        {
+	case cJU_JPLEAF_B1:
+	{
 #ifdef JUDYL
-            Word_t subexp;
-            Word_t jpcount;
-            Pjlb_t Pjlb = P_JLB(Pjp->jp_Addr);
+	    Word_t subexp;
+	    Word_t jpcount;
+	    Pjlb_t Pjlb = P_JLB(Pjp->jp_Addr);
 
 // Free the value areas in the bitmap leaf:
 
-            for (subexp = 0; subexp < cJU_NUMSUBEXPL; ++subexp)
-            {
-                jpcount = j__udyCountBitsL(JU_JLB_BITMAP(Pjlb, subexp));
+	    for (subexp = 0; subexp < cJU_NUMSUBEXPL; ++subexp)
+	    {
+	        jpcount = j__udyCountBitsL(JU_JLB_BITMAP(Pjlb, subexp));
 
-                if (jpcount)
-                    j__udyLFreeJV(JL_JLB_PVALUE(Pjlb, subexp), jpcount, Pjpm);
-            }
+	        if (jpcount)
+		    j__udyLFreeJV(JL_JLB_PVALUE(Pjlb, subexp), jpcount, Pjpm);
+	    }
 #endif // JUDYL
 
-            j__udyFreeJLB1((Pjlb_t) (Pjp->jp_Addr), Pjpm);
-            break;
+	    j__udyFreeJLB1((Pjlb_t) (Pjp->jp_Addr), Pjpm);
+	    break;
 
-        } // case cJU_JPLEAF_B1
+	} // case cJU_JPLEAF_B1
 
 #ifdef JUDYL
 
@@ -325,29 +325,29 @@ FUNCTION void j__udyFreeSM(
 //
 // For JUDYL, all non JPIMMED_*_01s have a LeafV which must be freed:
 
-        case cJU_JPIMMED_1_02:
-        case cJU_JPIMMED_1_03:
+	case cJU_JPIMMED_1_02:
+	case cJU_JPIMMED_1_03:
 #ifdef JU_64BIT
-        case cJU_JPIMMED_1_04:
-        case cJU_JPIMMED_1_05:
-        case cJU_JPIMMED_1_06:
-        case cJU_JPIMMED_1_07:
+	case cJU_JPIMMED_1_04:
+	case cJU_JPIMMED_1_05:
+	case cJU_JPIMMED_1_06:
+	case cJU_JPIMMED_1_07:
 #endif
-            Pop1 = JU_JPTYPE(Pjp) - cJU_JPIMMED_1_02 + 2;
-            j__udyLFreeJV((Pjv_t) (Pjp->jp_Addr), Pop1, Pjpm);
-            break;
+	    Pop1 = JU_JPTYPE(Pjp) - cJU_JPIMMED_1_02 + 2;
+	    j__udyLFreeJV((Pjv_t) (Pjp->jp_Addr), Pop1, Pjpm);
+	    break;
 
 #ifdef JU_64BIT
-        case cJU_JPIMMED_2_02:
-        case cJU_JPIMMED_2_03:
+	case cJU_JPIMMED_2_02:
+	case cJU_JPIMMED_2_03:
 
-            Pop1 = JU_JPTYPE(Pjp) - cJU_JPIMMED_2_02 + 2;
-            j__udyLFreeJV((Pjv_t) (Pjp->jp_Addr), Pop1, Pjpm);
-            break;
+	    Pop1 = JU_JPTYPE(Pjp) - cJU_JPIMMED_2_02 + 2;
+	    j__udyLFreeJV((Pjv_t) (Pjp->jp_Addr), Pop1, Pjpm);
+	    break;
 
-        case cJU_JPIMMED_3_02:
-            j__udyLFreeJV((Pjv_t) (Pjp->jp_Addr), 2, Pjpm);
-            break;
+	case cJU_JPIMMED_3_02:
+	    j__udyLFreeJV((Pjv_t) (Pjp->jp_Addr), 2, Pjpm);
+	    break;
 
 #endif // JU_64BIT
 #endif // JUDYL
@@ -358,9 +358,8 @@ FUNCTION void j__udyFreeSM(
 // Note:  Lump together no-op and invalid JP types; see function header
 // comments.
 
-        default: break;
+	default: break;
 
-        } // switch (JU_JPTYPE(Pjp))
+	} // switch (JU_JPTYPE(Pjp))
 
 } // j__udyFreeSM()
-

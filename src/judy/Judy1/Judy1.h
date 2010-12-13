@@ -79,7 +79,7 @@
 // JUDY1 ROOT POINTER (JRP) AND JUDY1 POINTER (JP) TYPE FIELDS
 // ****************************************************************************
 //
-// The following enum lists all possible JP Type fields.
+// The following enum lists all possible JP Type fields. 
 
 typedef enum            // uint8_t -- but C does not support this type of enum.
 {
@@ -214,18 +214,18 @@ typedef enum            // uint8_t -- but C does not support this type of enum.
         cJ1_JPFULLPOPU1,        // 1[1] byte Pop0, 2[6] bytes Dcd.
 
 #ifdef notdef  // for future enhancements
-        cJ1_JPFULLPOPU1m1,      // Full Population - 1
-        cJ1_JPFULLPOPU1m2,      // Full Population - 2
-        cJ1_JPFULLPOPU1m3,      // Full Population - 3
-        cJ1_JPFULLPOPU1m4,      // Full Population - 4
-        cJ1_JPFULLPOPU1m5,      // Full Population - 5
-        cJ1_JPFULLPOPU1m6,      // Full Population - 6
-        cJ1_JPFULLPOPU1m7,      // Full Population - 7
+        cJ1_JPFULLPOPU1m1,      // Full Population - 1 
+        cJ1_JPFULLPOPU1m2,      // Full Population - 2 
+        cJ1_JPFULLPOPU1m3,      // Full Population - 3 
+        cJ1_JPFULLPOPU1m4,      // Full Population - 4 
+        cJ1_JPFULLPOPU1m5,      // Full Population - 5 
+        cJ1_JPFULLPOPU1m6,      // Full Population - 6 
+        cJ1_JPFULLPOPU1m7,      // Full Population - 7 
 
 #ifdef JU_64BIT
-        cJ1_JPFULLPOPU1m8,      // Full Population - 8
-        cJ1_JPFULLPOPU1m9,      // Full Population - 9
-        cJ1_JPFULLPOPU1m10,     // Full Population - 10
+        cJ1_JPFULLPOPU1m8,      // Full Population - 8 
+        cJ1_JPFULLPOPU1m9,      // Full Population - 9 
+        cJ1_JPFULLPOPU1m10,     // Full Population - 10 
         cJ1_JPFULLPOPU1m11,     // Full Population - 11
         cJ1_JPFULLPOPU1m12,     // Full Population - 12
         cJ1_JPFULLPOPU1m13,     // Full Population - 13
@@ -551,4 +551,3 @@ void    j__udy1FreeJLB1( Pj1lb_t,        Pj1pm_t);      // constant size.
 void    j__udy1FreeSM(   Pjp_t,          Pj1pm_t);      // everything below Pjp.
 
 #endif // ! _JUDY1_INCLUDED
-

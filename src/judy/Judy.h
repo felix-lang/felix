@@ -49,18 +49,18 @@ typedef unsigned __int64 uint64_t;
 #else /* ================ ! JU_WIN ============================= */
 
 // ISO C99: 7.8 Format conversion of integer types <inttypes.h>
-#include <inttypes.h>  /* if this FAILS, try #include <stdint.h> */
+#include <inttypes.h>  /* if this FAILS, try #include <stdint.h> */ 
 
-// ISO C99: 7.18 Integer types uint*_t
-//#include <stdint.h>
+// ISO C99: 7.18 Integer types uint*_t 
+//#include <stdint.h>  
 
 #endif /* ================ ! JU_WIN ============================= */
 
 // ISO C99 Standard: 7.20 General utilities
-#include <stdlib.h>
+#include <stdlib.h>  
 
 // ISO C99 Standard: 7.10/5.2.4.2.1 Sizes of integer types
-#include <limits.h>
+#include <limits.h>  
 
 #ifdef __cplusplus      /* support use by C++ code */
 extern "C" {
@@ -227,50 +227,30 @@ typedef struct J_UDY_ERROR_STRUCT
 // JUDY1 FUNCTIONS:
 
 extern int JUDY_EXTERN Judy1Test(       Pcvoid_t  PArray, Word_t   Index,   P_JE);
-
 extern int JUDY_EXTERN Judy1Set(        PPvoid_t PPArray, Word_t   Index,   P_JE);
-
 extern int JUDY_EXTERN Judy1SetArray(   PPvoid_t PPArray, Word_t   Count,
-
                                              const Word_t * const PIndex,
                                                                      P_JE);
 extern int JUDY_EXTERN Judy1Unset(      PPvoid_t PPArray, Word_t   Index,   P_JE);
-
 extern Word_t JUDY_EXTERN Judy1Count(      Pcvoid_t  PArray, Word_t   Index1,
-
                                                    Word_t   Index2,  P_JE);
 extern int JUDY_EXTERN Judy1ByCount(    Pcvoid_t  PArray, Word_t   Count,
-
                                                    Word_t * PIndex,  P_JE);
 extern Word_t JUDY_EXTERN Judy1FreeArray(  PPvoid_t PPArray,                   P_JE);
-
 extern Word_t JUDY_EXTERN Judy1MemUsed(    Pcvoid_t  PArray);
-
 extern Word_t JUDY_EXTERN Judy1MemActive(  Pcvoid_t  PArray);
-
 extern int JUDY_EXTERN Judy1First(      Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern int JUDY_EXTERN Judy1Next(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern int JUDY_EXTERN Judy1Last(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern int JUDY_EXTERN Judy1Prev(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern int JUDY_EXTERN Judy1FirstEmpty( Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern int JUDY_EXTERN Judy1NextEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern int JUDY_EXTERN Judy1LastEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern int JUDY_EXTERN Judy1PrevEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
 
-
 extern PPvoid_t JUDY_EXTERN JudyLGet(        Pcvoid_t  PArray, Word_t    Index,  P_JE);
-
 extern PPvoid_t JUDY_EXTERN JudyLIns(        PPvoid_t PPArray, Word_t    Index,  P_JE);
-
 extern int JUDY_EXTERN JudyLInsArray(   PPvoid_t PPArray, Word_t    Count,
-
                                              const Word_t * const PIndex,
                                              const Word_t * const PValue,
 
@@ -278,67 +258,41 @@ extern int JUDY_EXTERN JudyLInsArray(   PPvoid_t PPArray, Word_t    Count,
 // JUDYL FUNCTIONS:
                                                                      P_JE);
 extern int JUDY_EXTERN JudyLDel(        PPvoid_t PPArray, Word_t    Index,  P_JE);
-
 extern Word_t JUDY_EXTERN JudyLCount(      Pcvoid_t  PArray, Word_t    Index1,
-
                                                    Word_t    Index2, P_JE);
 extern PPvoid_t JUDY_EXTERN JudyLByCount(    Pcvoid_t  PArray, Word_t    Count,
-
                                                    Word_t *  PIndex, P_JE);
 extern Word_t JUDY_EXTERN JudyLFreeArray(  PPvoid_t PPArray,                   P_JE);
-
 extern Word_t JUDY_EXTERN JudyLMemUsed(    Pcvoid_t  PArray);
-
 extern Word_t JUDY_EXTERN JudyLMemActive(  Pcvoid_t  PArray);
-
 extern PPvoid_t JUDY_EXTERN JudyLFirst(      Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern PPvoid_t JUDY_EXTERN JudyLNext(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern PPvoid_t JUDY_EXTERN JudyLLast(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern PPvoid_t JUDY_EXTERN JudyLPrev(       Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern int JUDY_EXTERN JudyLFirstEmpty( Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern int JUDY_EXTERN JudyLNextEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern int JUDY_EXTERN JudyLLastEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 extern int JUDY_EXTERN JudyLPrevEmpty(  Pcvoid_t  PArray, Word_t * PIndex,  P_JE);
-
 
 // ****************************************************************************
 // JUDYSL FUNCTIONS:
 
 extern PPvoid_t JUDY_EXTERN JudySLGet(       Pcvoid_t, const uint8_t * Index, P_JE);
-
 extern PPvoid_t JUDY_EXTERN JudySLIns(       PPvoid_t, const uint8_t * Index, P_JE);
-
 extern int JUDY_EXTERN JudySLDel(       PPvoid_t, const uint8_t * Index, P_JE);
-
 extern Word_t JUDY_EXTERN JudySLFreeArray( PPvoid_t,                        P_JE);
-
 extern PPvoid_t JUDY_EXTERN JudySLFirst(     Pcvoid_t,       uint8_t * Index, P_JE);
-
 extern PPvoid_t JUDY_EXTERN JudySLNext(      Pcvoid_t,       uint8_t * Index, P_JE);
-
 extern PPvoid_t JUDY_EXTERN JudySLLast(      Pcvoid_t,       uint8_t * Index, P_JE);
-
 extern PPvoid_t JUDY_EXTERN JudySLPrev(      Pcvoid_t,       uint8_t * Index, P_JE);
-
 
 // ****************************************************************************
 // JUDYHSL FUNCTIONS:
 
 extern PPvoid_t JUDY_EXTERN JudyHSGet(       Pcvoid_t,  void *, Word_t);
-
 extern PPvoid_t JUDY_EXTERN JudyHSIns(       PPvoid_t,  void *, Word_t, P_JE);
-
 extern int JUDY_EXTERN JudyHSDel(       PPvoid_t,  void *, Word_t, P_JE);
-
 extern Word_t JUDY_EXTERN JudyHSFreeArray( PPvoid_t,                  P_JE);
-
 
 extern const char *Judy1MallocSizes;
 extern const char *JudyLMallocSizes;
@@ -347,13 +301,9 @@ extern const char *JudyLMallocSizes;
 // JUDY memory interface to malloc() FUNCTIONS:
 
 extern Word_t JUDY_EXTERN JudyMalloc(Word_t);               // words reqd => words allocd.
-
 extern Word_t JUDY_EXTERN JudyMallocVirtual(Word_t);        // words reqd => words allocd.
-
 extern void JUDY_EXTERN JudyFree(Pvoid_t, Word_t);        // free, size in words.
-
 extern void JUDY_EXTERN JudyFreeVirtual(Pvoid_t, Word_t); // free, size in words.
-
 
 #define JLAP_INVALID    0x1     /* flag to mark pointer "not a Judy array" */
 
@@ -676,4 +626,3 @@ extern void JUDY_EXTERN JudyFreeVirtual(Pvoid_t, Word_t); // free, size in words
 }
 #endif
 #endif /* ! _JUDY_INCLUDED */
-

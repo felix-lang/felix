@@ -782,4 +782,3 @@ FUNCTION void j__udyLFreeJV(Pjv_t Pjv, Word_t Pop1, Pjpm_t Pjpm)
 } // j__udyLFreeJV()
 
 #endif // JUDYL
-

@@ -40,25 +40,24 @@ FUNCTION Word_t JUDY_EXTERN Judy1MemUsed
 FUNCTION Word_t JUDY_EXTERN JudyLMemUsed
 #endif
         (
-        Pcvoid_t PArray         // from which to retrieve.
+	Pcvoid_t PArray 	// from which to retrieve.
         )
 {
-        Word_t   Words = 0;
+	Word_t	 Words = 0;
 
         if (PArray == (Pcvoid_t) NULL) return(0);
 
-        if (JU_LEAFW_POP0(PArray) < cJU_LEAFW_MAXPOP1) // must be a LEAFW
-        {
-            Pjlw_t Pjlw = P_JLW(PArray);                // first word of leaf.
-            Words = JU_LEAFWPOPTOWORDS(Pjlw[0] + 1);    // based on pop1.
-        }
-        else
-        {
-            Pjpm_t Pjpm = P_JPM(PArray);
-            Words = Pjpm->jpm_TotalMemWords;
-        }
+	if (JU_LEAFW_POP0(PArray) < cJU_LEAFW_MAXPOP1) // must be a LEAFW
+	{
+	    Pjlw_t Pjlw = P_JLW(PArray);		// first word of leaf.
+	    Words = JU_LEAFWPOPTOWORDS(Pjlw[0] + 1);	// based on pop1.
+	}
+	else
+	{
+	    Pjpm_t Pjpm = P_JPM(PArray);
+	    Words = Pjpm->jpm_TotalMemWords;
+	}
 
-        return(Words * sizeof(Word_t));         // convert to bytes.
+	return(Words * sizeof(Word_t));		// convert to bytes.
 
 } // Judy1MemUsed() / JudyLMemUsed()
-

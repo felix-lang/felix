@@ -505,4 +505,3 @@ void    j__udyLFreeJV(   Pjv_t,  Word_t, PjLpm_t);
 void    j__udyLFreeSM(   Pjp_t,          PjLpm_t);      // everything below Pjp.
 
 #endif // ! _JUDYL_INCLUDED
-
