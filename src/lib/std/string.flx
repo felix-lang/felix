@@ -90,14 +90,16 @@ open module String
 
   const stl_npos: int = "static_cast<int>(::std::string::npos)";
 
-  fun stl_find: string * string -> int = "$1.find($2)";
-  fun stl_find: string * string * int -> int = "$1.find($2,$3)";
-  fun stl_find: string * charp -> int = "$1.find($2)";
-  fun stl_find: string * &char -> int = "$1.find($2)";
-  fun stl_find: string * charp * int -> int = "$1.find($2,$3)";
-  fun stl_find: string * &char * int -> int = "$1.find($2,$3)";
-  fun stl_find: string * char -> int = "$1.find($2)";
-  fun stl_find: string * char * int -> int = "$1.find($2,$3)";
+  fun stl_find: string * string -> int = "(int)$1.find($2)";
+  fun stl_find: string * string * int -> int = "(int)$1.find($2,$3)";
+  fun stl_find: string * charp -> int = "(int)$1.find($2)";
+  fun stl_find: string * &char -> int = "(int)$1.find($2)";
+  fun stl_find: string * charp * int -> int = "(int)$1.find($2,$3)";
+  fun stl_find: string * &char * int -> int = "(int)$1.find($2,$3)";
+  fun stl_find: string * char -> int = "(int)$1.find($2)";
+  fun stl_find: string * char * int -> int = "(int)$1.find($2,$3)";
+
+  fun mem(c:char, s:string) => stl_find (s,c) != stl_npos;
 
   fun find (s:string, e:string) : opt[int] => match stl_find (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
   fun find (s:string, e:string, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
