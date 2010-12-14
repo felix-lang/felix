@@ -335,8 +335,6 @@ def src_dir(ctx):
 
 # ------------------------------------------------------------------------------
 
-import os
-
 @fbuild.target.register()
 def configure(ctx):
     """Configure Felix."""
@@ -345,15 +343,10 @@ def configure(ctx):
     host = config_host(ctx, build)
     target = config_target(ctx, host)
 
-    # this sucks, but it seems to be the only way
-    try: 
-      os.mkdir(ctx.buildroot/'config')
-    except:
-      pass
-    try:
-      os.mkdir(ctx.buildroot/'config/target')
-    except:
-      pass
+    # Make sure the config directories exist.
+    (ctx.buildroot / 'config/build').makedirs()
+    (ctx.buildroot / 'config/host').makedirs()
+    (ctx.buildroot / 'config/target').makedirs()
 
     # copy the config directory for initial config
     # this will be overwritten by subsequent steps if
@@ -388,10 +381,8 @@ def configure(ctx):
     # enable this on osx to clobber any fpc files 
     # where the generic unix ones are inadequate
     if 'macosx' in target.platform:
-      buildsystem.copy_to(ctx,
-          ctx.buildroot / 'config', Path('src/config/macosx/*.fpc').glob())
-
-
+        buildsystem.copy_to(ctx,
+            ctx.buildroot / 'config', Path('src/config/macosx/*.fpc').glob())
 
     # extract the configuration
     iscr = call('buildsystem.iscr.Iscr', ctx)
@@ -416,37 +407,42 @@ def build(ctx):
     phases, iscr = configure(ctx)
 
     # --------------------------------------------------------------------------
+    # Compile the compiler.
 
     compilers = call('buildsystem.flx_compiler.build_flx_drivers', ctx,
         phases.host)
 
-    drivers = call('buildsystem.flx_drivers.build', phases.target)
+    # --------------------------------------------------------------------------
+    # Compile the runtime dependencies.
 
-    flx_builder = call('buildsystem.flx.build', ctx,
-        compilers.flxg, phases.target.cxx.static, drivers)
+    call('buildsystem.judy.build_runtime', phases.target)
+    call('buildsystem.tre.build_runtime', phases.target)
+    call('buildsystem.re2.build_runtime', phases.target)
+    call('buildsystem.flx_glob.build_runtime', phases.target)
+
+    # --------------------------------------------------------------------------
+    # Build the standard library.
 
     # copy files into the library
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/lib')
 
-    for module in 'flx_stdlib', 'flx_pthread', 'demux', 'faio', 'judy':
+    for module in 'flx_stdlib', 'flx_pthread', 'demux', 'faio':
         call('buildsystem.' + module + '.build_flx', phases.target)
+
+    # --------------------------------------------------------------------------
+    # Compile the runtime drivers.
+
+    drivers = call('buildsystem.flx_drivers.build', phases.target)
+
+    # --------------------------------------------------------------------------
+    # Compile the builder.
+
+    flx_builder = call('buildsystem.flx.build', ctx,
+        compilers.flxg, phases.target.cxx.static, drivers)
 
     flx_pkgconfig = call('buildsystem.flx.build_flx_pkgconfig',
         phases.target, flx_builder)
     flx = call('buildsystem.flx.build_flx', phases.target, flx_builder)
-
-    # --------------------------------------------------------------------------
-    # build the secondary libraries
-
-    call('buildsystem.flx_glob.build_runtime', phases.target)
-    call('buildsystem.tre.build_runtime', phases.target)
-
-    # temporarily, this is a secondary library
-    # which means flx_pkgconfig can't use it (since it is built
-    # before this step is executed
-    call('buildsystem.re2.build_runtime', phases.target)
-    call('buildsystem.sqlite3.build_flx', phases.target)
-    call('buildsystem.bindings.build_flx', phases.target)
 
     # --------------------------------------------------------------------------
     # now, try building a file
@@ -533,7 +529,6 @@ def test(ctx):
     except fbuild.ExecutionError as e:
         ctx.logger.log(e, verbose=1)
     else:
-        print("lib1="+lib1+", lib2="+lib2)
         if not test_flx(phases.target, felix, 'test/regress/drt/main1.flx',
                 env={'lib1': lib1, 'lib2': lib2}):
             failed_srcs.append('test/regress/drt/main1.flx')

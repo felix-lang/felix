@@ -4,5 +4,5 @@ Description: Felix default garbage collector (Windows)
 provides_dlib: /DEFAULTLIB:flx_gc_dynamic
 provides_slib: /DEFAULTLIB:flx_gc_static
 includes: '"flx_gc.hpp"'
-Requires: flx_judy
+Requires: judy
 

@@ -25,7 +25,7 @@ def build_runtime(phase):
         'src/rtl',
         'src/pthread',
         'src/exceptions',
-        'src/judy',
+        'src/judy/src',
     ]
     macros = ['BUILD_FLX_GC']
     libs = [

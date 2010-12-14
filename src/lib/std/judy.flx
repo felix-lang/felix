@@ -7,7 +7,7 @@
 // So we will (later) use a typeset to fix this!
 module Judy
 {
-  requires package "flx_judy";
+  requires package "judy";
   requires header "#include <Judy.h>";
   open C_hack;
 

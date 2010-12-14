@@ -12,7 +12,7 @@ def build(phase):
         phase.ctx.buildroot / 'config/target',
         'src/exceptions',
         'src/gc',
-        'src/judy',
+        'src/judy/src',
         'src/pthread',
         'src/flx_async',
         'src/rtl',
