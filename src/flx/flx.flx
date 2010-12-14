@@ -138,6 +138,7 @@ whilst grab == 1 and argno<System::argc do
     println "Always installs the --test directory to the configured install target";
     println "Because that is hard coded into this program";
     println "Note: does NOT install this program 'flx' into your PATH!";
+    println "  Use --install-bin for that!";
     println$ "FROM: " + FLX_INSTALL_DIR;
     println$ "TO  : " + INSTALL_ROOT;
     if FLX_INSTALL_DIR == INSTALL_ROOT do
@@ -157,6 +158,30 @@ whilst grab == 1 and argno<System::argc do
       done
       System::exit(result);
     done
+
+  elif arg=="--install-bin" do
+    debugln "Install executables";
+    println$ "FROM: " + FLX_INSTALL_DIR;
+    println$ "TO  : /usr/local/bin (fixed, can't be changed: privilege required)";
+
+    result=system("cp "+FLX_INSTALL_DIR+"/bin/flx /usr/local/bin");
+    if result !=0 goto install_bin_failed;
+
+    result= system("cp "+FLX_INSTALL_DIR+"/bin/mk_daemon /usr/local/bin");
+    if result !=0 goto install_bin_failed;
+
+    result= system("cp "+FLX_INSTALL_DIR+"/bin/timeout /usr/local/bin");
+    if result !=0 goto install_bin_failed;
+
+    result= system("cp "+FLX_INSTALL_DIR+"/tools/webserver /usr/local/bin");
+    if result !=0 goto install_bin_failed;
+
+    println "Install succeeded";
+    System::exit(0);
+
+install_bin_failed:>
+    println$ "Install failed, code = " + str(result);
+    System::exit(result);
 
   elif prefix(arg,"--stdout=") do
     debugln "Redirect standard output";

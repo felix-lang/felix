@@ -428,6 +428,9 @@ def build(ctx):
     # copy files into the library
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/lib')
 
+    # copy tools
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tools')
+
     for module in 'flx_stdlib', 'flx_pthread', 'demux', 'faio', 'judy':
         call('buildsystem.' + module + '.build_flx', phases.target)
 
@@ -463,6 +466,7 @@ def build(ctx):
     #
     mk_daemon = call('buildsystem.mk_daemon.build', phases.target)
     timeout = call('buildsystem.timeout.build', phases.target)
+    webserver = call('buildsystem.webserver.build', phases.target)
 
     return phases, iscr, felix
 

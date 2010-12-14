@@ -1098,6 +1098,17 @@ and string_of_baxiom_method bsym_table a = match a with
   | `BPredicate e -> string_of_expr e
   | `BEquation (l,r) -> sbe bsym_table l ^ " = " ^ sbe bsym_table r
 
+and string_of_regex r = match r with
+  | REGEX_alts (_,rs) -> String.concat "|" (List.map (fun r -> "(" ^ string_of_regex r ^ ")") rs)
+  | REGEX_seqs (_,rs) -> String.concat " " (List.map (fun r -> "(" ^ string_of_regex r ^ ")") rs)
+  | REGEX_ast (_,r) -> "(" ^ string_of_regex r ^ ")*"
+  | REGEX_plus (_,r) -> "(" ^ string_of_regex r ^ "+"
+  | REGEX_quest (_,r) -> "(" ^ string_of_regex r ^ ")?"
+  | REGEX_group (_,r) -> "group (" ^ string_of_regex r ^ ")"
+  | REGEX_charset (_,s) -> "charset " ^string_of_string s
+  | REGEX_string (_,s) -> string_of_string s
+  | REGEX_name (_,n) -> n
+
 and string_of_statement level s =
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in
@@ -1576,6 +1587,9 @@ and string_of_statement level s =
     ps
     ^
     "\n"^spaces level^"endmatch;"
+
+  | STMT_regdef (_,n,r) ->
+    spaces level ^  "regdef " ^ n ^ " = " ^ string_of_regex r ^";"
 
 
 and string_of_compilation_unit stats =

@@ -1527,6 +1527,28 @@ syntax namespaces {
      """;
 }
 
+syntax regexps {
+  priority 
+    ralt_pri <
+    rseq_pri <
+    rpostfix_pri <
+    ratom_pri
+  ;
+
+  tstatement := "regdef " sname "=" sregexp[ralt_pri] ";" =># "`(ast_regdef ,_sr ,_2 ,_4)";
+  sregexp[ralt_pri] := sregexp[>ralt_pri] ("|" sregexp[>ralt_pri])+ =># "(chain 'ast_re_alts _1 _2)";
+  sregexp[rseq_pri] := sregexp[>rseq_pri] sregexp[>ralt_pri]+ =># "`(ast_re_seqs ,_sr ,(cons _1 _2)))";
+  sregexp[rpostfix_pri] := sregexp[ratom_pri] "*" =># "`(ast_re_ast ,_sr ,_1)";
+  sregexp[rpostfix_pri] := sregexp[ratom_pri] "+" =># "`(ast_re_plus ,_sr ,_1)";
+  sregexp[rpostfix_pri] := sregexp[ratom_pri] "?" =># "`(ast_re_quest ,_sr ,_1)";
+  sregexp[ratom_pri] := "(" sregexp[ralt_pri] ")" =># "_2";
+  sregexp[ratom_pri] := "group" "(" sregexp[ralt_pri] ")" =># "`(ast_re_group ,_sr ,_3)";
+  sregexp[ratom_pri] := "charset" sstring =># "`(ast_re_charset ,_sr ,_2)";
+  sregexp[ratom_pri] := sstring =># "`(ast_re_string ,_sr ,_1)";
+  sregexp[ratom_pri] := sname=># "`(ast_re_name ,_sr ,_1)";
+ 
+}
+
 //------------------------------------------
 syntax felix {
   requires
@@ -1541,6 +1563,7 @@ syntax felix {
     functions,
     patterns,
     cbind,
+    regexps,
     macros
   ;
 }
