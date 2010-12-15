@@ -184,6 +184,7 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
 let full_use_closure syms bsym_table =
   cal_use_closure syms bsym_table true
 
+
 let copy_used syms bsym_table =
   if syms.compiler_options.print_flag then
     print_endline "COPY USED";
@@ -210,15 +211,31 @@ let copy_used syms bsym_table =
               aux parent;
               Some parent
 
-            end else None
+            end else begin
+              if parent != 0 then 
+              begin 
+                print_endline ("Used symbols parent not marked as used: symbol: " ^ string_of_int bid ^
+                 ", parent=" ^ string_of_int parent);
+                let sym = Flx_bsym_table.find bsym_table bid in
+                print_endline ("Symbol: " ^ Flx_bsym.id sym);
+
+                try 
+                   let psym = Flx_bsym_table.find bsym_table parent in
+                   print_endline ("Parent: "^ Flx_bsym.id psym);
+                   begin match Flx_bsym.bbdcl psym with
+                   | BBDCL_module -> print_endline "MODULE"
+                   | BBDCL_typeclass _ -> print_endline "TYPECLASS"
+                   | _ -> ()
+                   end
+                   
+                   with Not_found -> print_endline "Parent not in bsym_table"
+              end
+              ;
+              None
+            end
       in
 
       let bsym = Flx_bsym_table.find bsym_table bid in
-
-      (* Try to add the uses if it's in the use list. *)
-      Flx_bsym.iter_uses begin fun use ->
-        if Flx_types.BidSet.mem use bidset then aux use
-      end bsym;
 
       (* Finally, add the symbol to the root. *)
       Flx_bsym_table.add new_bsym_table bid parent bsym
@@ -230,3 +247,4 @@ let copy_used syms bsym_table =
 
   (* Return the new symbol bsym_table. *)
   new_bsym_table
+

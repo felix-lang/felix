@@ -1256,7 +1256,7 @@ and remove_unused_children syms uses bsym_table i =
       Hashtbl.remove uses i;
       if syms.compiler_options.print_flag then
         print_endline ("REMOVED CHILD SYMBOL " ^
-          qualified_name_of_bindex bsym_table i)
+          qualified_name_of_bindex bsym_table i ^ "=" ^ string_of_int i)
     )
     unused_descendants
   end

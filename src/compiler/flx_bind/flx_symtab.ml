@@ -6,6 +6,8 @@ open Flx_ast
 open Flx_types
 open Flx_btype
 
+let str_parent x = match x with | Some p -> string_of_int p | None -> "None"
+
 type t = {
   sym_table: Flx_sym_table.t;
   pub_name_map: (string, Flx_btype.entry_set_t) Hashtbl.t;
@@ -335,9 +337,9 @@ and build_table_for_dcl
     | None -> Flx_mtypes2.fresh_bid counter_ref
   in
 
-(*
-print_endline ("Flx_symtab: Adding " ^ id^"="^string_of_int symbol_index);
-*)
+  if print_flag then
+    print_endline ("Flx_symtab: Adding " ^ id^"="^string_of_int symbol_index)
+  ;
   (* Update the type variable list to include the index. *)
   let ivs = make_ivs vs in
 
@@ -371,6 +373,9 @@ print_endline ("Flx_symtab: Adding " ^ id^"="^string_of_int symbol_index);
     id
     symdef
   =
+(*
+    print_endline ("Flx_symtab:raw add_symbol: " ^ id^"="^string_of_int index ^ ", parent=" ^ str_parent parent);
+*)
     let pubtab =
       match pubtab with
       | Some pubtab -> pubtab

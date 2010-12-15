@@ -3,9 +3,6 @@ type t = {
   id:string;
   sr:Flx_srcref.t;
   vs:Flx_types.ivs_list_t;
-  pubmap:Flx_btype.name_map_t;
-  privmap:Flx_btype.name_map_t;
-  dirs:Flx_types.sdir_t list;
   bbdcl:Flx_bbdcl.t;
 }
 
@@ -14,9 +11,6 @@ type t = {
 val create:
   ?sr:Flx_srcref.t ->
   ?vs:Flx_types.ivs_list_t ->
-  ?pubmap:Flx_btype.name_map_t ->
-  ?privmap:Flx_btype.name_map_t ->
-  ?dirs:Flx_types.sdir_t list ->
   string -> Flx_bbdcl.t ->
   t
 

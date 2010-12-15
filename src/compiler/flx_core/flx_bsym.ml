@@ -3,43 +3,23 @@ type t = {
   id:string;
   sr:Flx_srcref.t;
   vs:Flx_types.ivs_list_t;
-  pubmap:Flx_btype.name_map_t;
-  privmap:Flx_btype.name_map_t;
-  dirs:Flx_types.sdir_t list;
   bbdcl:Flx_bbdcl.t;
 }
 
 let create
   ?(sr=Flx_srcref.dummy_sr)
   ?(vs=Flx_ast.dfltvs)
-  ?pubmap
-  ?privmap
-  ?(dirs=[])
   id bbdcl
 =
   { id=id;
     sr=sr;
     vs=vs;
-    pubmap=
-      begin match pubmap with
-      | Some pubmap -> Hashtbl.copy pubmap
-      | None -> Hashtbl.create 0
-      end;
-    privmap=
-      begin match privmap with
-      | Some privmap -> Hashtbl.copy privmap
-      | None -> Hashtbl.create 0
-      end;
-    dirs=dirs;
     bbdcl=bbdcl }
 
 let of_sym sym bbdcl =
   { id=sym.Flx_sym.id;
     sr=sym.Flx_sym.sr;
     vs=sym.Flx_sym.vs;
-    pubmap=sym.Flx_sym.pubmap;
-    privmap=sym.Flx_sym.privmap;
-    dirs=sym.Flx_sym.dirs;
     bbdcl=bbdcl }
 
 let replace_bbdcl bsym bbdcl = { bsym with bbdcl=bbdcl }
@@ -92,11 +72,8 @@ let iter_uses f bsym = Flx_bbdcl.iter_uses f bsym.bbdcl
 
 (** Prints a bound symbol to a formatter. *)
 let print f bsym =
-  Flx_format.print_record7 f
+  Flx_format.print_record4 f
     "id" Flx_format.print_string bsym.id
     "sr" Flx_srcref.print bsym.sr
     "vs" Format.pp_print_string "..."
-    "pubmap" Flx_btype.print_name_map bsym.pubmap
-    "privmap" Flx_btype.print_name_map bsym.privmap
-    "dirs" Format.pp_print_string "..."
     "bbdcl" Flx_bbdcl.print bsym.bbdcl

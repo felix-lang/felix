@@ -327,7 +327,7 @@ let reparent1
     string_of_bid k ^ " with new parent " ^ sop parent
   );
   let update_bsym bbdcl =
-    Flx_bsym_table.remove bsym_table k;
+    (* Flx_bsym_table.remove bsym_table k; *)
     Flx_bsym_table.add bsym_table k parent (Flx_bsym.replace_bbdcl bsym bbdcl)
   in
 
@@ -403,8 +403,8 @@ let reparent1
 let reparent_children syms uses bsym_table
   caller_vs callee_vs_len index (parent:bid_t option) relabel varmap rescan_flag extras
 =
-  (*
   let pp p = match p with None -> "NONE" | Some i -> string_of_bid i in
+(*
   print_endline
   (
     "Renesting children of callee " ^ si index ^
@@ -412,8 +412,7 @@ let reparent_children syms uses bsym_table
      "\n  -- Caller vs len = " ^ si (length caller_vs) ^
      "\n  -- Callee vs len = " ^ si (callee_vs_len)
   );
-  *)
-
+*)
   let closure = Flx_bsym_table.find_descendants bsym_table index in
   assert (not (BidSet.mem index closure));
   let revariable = fold_left (fun acc i -> BidSet.add i acc) closure extras in
@@ -424,7 +423,7 @@ let reparent_children syms uses bsym_table
   let revariable = mk_remap syms.counter revariable in
 
   BidSet.iter begin fun i ->
-    let old_parent = Flx_bsym_table.find_parent bsym_table i in
+    let old_parent = try Flx_bsym_table.find_parent bsym_table i with Not_found -> failwith ("Bug8, can't find parent of " ^ string_of_int i) in
     let new_parent: bid_t option =
       match old_parent with
       | None -> assert false

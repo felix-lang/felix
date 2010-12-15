@@ -73,12 +73,18 @@ let print_bvs vs =
   if length vs = 0 then "" else
   "[" ^ catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") vs ^ "]"
 
+(* confused over Some 0 and None parents .. I added this! *)
 let rec find_true_parent sym_table child parent =
   match parent with
   | None -> None
+  | Some 0 -> Some 0
   | Some parent ->
-      match hfind "find_true_parent" sym_table parent with
-      | _ -> Some parent
+    let grandparent, sym = Flx_sym_table.find_with_parent sym_table parent in
+    match sym.Flx_sym.symdef with
+    | SYMDEF_module _  -> find_true_parent sym_table child grandparent
+    | SYMDEF_root _ -> None
+    | _ -> Some parent
+
 
 let bind_req state bsym_table env sr tag =
   (* HACKY *)
@@ -143,6 +149,8 @@ let bind_qual bt qual = match qual with
 
 let bind_quals bt quals = map (bind_qual bt) quals
 
+let str_parent p = match p with | Some p -> string_of_int p | None -> "None"
+
 let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
 (*
   print_endline ("Binding symbol "^sym.Flx_sym.id^" index=" ^ string_of_int symbol_index);
@@ -159,12 +167,10 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
    * screwed up syntax, don't put a print .. ; in here!
    *)
   let qname = qualified_name_of_index state.sym_table symbol_index in
-  let true_parent = find_true_parent
-    state.sym_table
-    sym.Flx_sym.id
-    sym_parent
-  in
-
+  let true_parent = find_true_parent state.sym_table sym.Flx_sym.id sym_parent in
+(*
+print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ str_parent true_parent);
+*)
   (* let env = Flx_lookup.build_env state.lookup_state state.sym_table parent in  *)
   let env = Flx_lookup.build_env
     state.lookup_state
@@ -338,8 +344,10 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
   *)
   | SYMDEF_root _ -> () 
 
-  | SYMDEF_module _ ->
+  | SYMDEF_module _ -> ()
+    (*
     add_bsym true_parent (bbdcl_module ())
+    *)
 
   | SYMDEF_reduce (ps,e1,e2) ->
     let bps = bind_basic_ps ps in

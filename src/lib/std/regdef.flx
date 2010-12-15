@@ -5,9 +5,19 @@ module Regdef {
   | Rpt of regex * int * int
   | Charset of string
   | String of string
+  | Group of regex
   ;
 
-  fun hex_digit(i:int)=> 
+  fun prec: regex -> int =
+  | Alts _ => 3
+  | Seqs _ => 2
+  | String _ => 2
+  | Rpt _ => 1
+  | Charset _ => 0
+  | Group _ => 0
+  ;
+
+  fun hex_digit (i:int)=>
     if i<10 then char (ord (char "0") + i) 
     else char (ord (char "A") + i - 10)
     endif
@@ -31,12 +41,25 @@ module Regdef {
   }
 
   fun ngrp (s:string)=> "(?:"+s+")";
-
+  fun cngrp (s:string, op: int, ip: int) => if ip > op then ngrp (s) else s endif; 
   fun render: regex -> string =
-  | Alts ?rs => fold_left (fun (acc:string) (elt:regex)=> acc + "|" + ngrp (render elt)) "" rs
-  | Seqs ?rs => fold_left (fun (acc:string) (elt:regex)=> acc + ngrp(render elt)) "" rs
-  | Rpt (?r,?i,?x) => render r + "{" + str i + "," + if x < 0 then "" else str x endif + "}"
+  | Alts ?rs => fold_left 
+   (fun (acc:string) (elt:regex)=> 
+     (if acc == "" then "" else acc + "|" endif) + (render elt)) 
+    "" rs
+  | Seqs ?rs => fold_left 
+    (fun (acc:string) (elt:regex)=> acc + cngrp(render elt,2,prec elt))
+    "" rs
+  | Rpt (?r,?i,?x) =>
+    if i == 0 and x == -1 then cngrp (render r,1,prec r) + "*"
+    elif i == 1 and x == -1 then cngrp (render r,1,prec r) + "+"
+    elif i == 0 and x == 1 then cngrp (render r,1,prec r) + "?"
+    else
+      cngrp(render r,1,prec r) + "{" + str i + "," + if x < 0 then "" else str x endif + "}"
+    endif
+
   | String ?s => QuoteMeta (StringPiece s)
   | Charset ?s => "[" + hex s + "]"
+  | Group ?r => "(" + render r + ")"
   ;
 }

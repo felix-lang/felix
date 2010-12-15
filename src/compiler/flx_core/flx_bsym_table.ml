@@ -1,20 +1,18 @@
 type elt = {
   bsym: Flx_bsym.t;               (** The symbol. *)
   parent: Flx_types.bid_t option; (** The parent of the symbol. *)
-  children: Flx_types.BidSet.t;   (** All of this symbol's children. *)
-  users: Flx_types.BidSet.t;      (** All the users of this symbol. *)
 }
 
 (** The type of the bound symbol table. *)
 type t = {
   table: (Flx_types.bid_t, elt) Hashtbl.t;
-  mutable roots: Flx_types.BidSet.t; (** All of this bsym table's roots. *)
+  childmap: (int, Flx_types.BidSet.t) Hashtbl.t; (** All of this bsym table's roots. *)
 }
 
 (** Construct a bound symbol table. *)
 let create () =
   { table=Hashtbl.create 97;
-    roots=Flx_types.BidSet.empty }
+    childmap=Hashtbl.create 97; }
 
 (** Returns how many items are in the bound symbol table. *)
 let length bsym_table = Hashtbl.length bsym_table.table
@@ -37,7 +35,9 @@ let find_with_parent bsym_table bid =
 let find_parent bsym_table bid = (find_elt bsym_table bid).parent
 
 (** Searches the bound symbol table for the given symbol's children. *)
-let find_children bsym_table bid = (find_elt bsym_table bid).children
+let find_children bsym_table bid = 
+   try Hashtbl.find bsym_table.childmap bid
+   with Not_found -> Flx_types.BidSet.empty
 
 (** Finds all the descendants of the given symbol. *)
 let rec find_descendants bsym_table bid =
@@ -47,20 +47,6 @@ let rec find_descendants bsym_table bid =
     d := Flx_types.BidSet.union !d (find_descendants bsym_table bid)
   end children;
   !d
-
-(** Searches the bound symbol table for all the users of this symbol. *)
-let find_users bsym_table bid = (find_elt bsym_table bid).users
-
-(** Searches the bound symbol table for all the uses of this symbol. *)
-let find_uses bsym_table bid =
-  let elt = find_elt bsym_table bid in
-  let uses = ref Flx_types.BidSet.empty in
-
-  Flx_bbdcl.iter_uses begin fun bid ->
-    uses := Flx_types.BidSet.add bid !uses
-  end (Flx_bsym.bbdcl elt.bsym);
-
-  !uses
 
 (** Searches the bound symbol table for the given symbol's id. *)
 let find_id bsym_table bid = Flx_bsym.id (find bsym_table bid)
@@ -83,60 +69,25 @@ let replace_elt bsym_table = Hashtbl.replace bsym_table.table
 (** Helper to add a bid to the table roots or it's parent's children. *)
 let add_bid_to_parent bsym_table parent bid =
   match parent with
-  | None 
-  | Some 0 -> (* temporary hack *)
-      bsym_table.roots <- Flx_types.BidSet.add bid bsym_table.roots
+  | None -> ()
   | Some parent ->
-      let elt = find_elt bsym_table parent in
-      let children = Flx_types.BidSet.add bid elt.children in
-      replace_elt bsym_table parent { elt with children=children }
+    Hashtbl.replace bsym_table.childmap parent (Flx_types.BidSet.add bid (find_children bsym_table parent))
 
 (** Helper to remove a bid from the table roots or it's parent's children. *)
 let remove_bid_from_parent bsym_table parent bid =
   match parent with
-  | None
-  | Some 0 ->
-      bsym_table.roots <- Flx_types.BidSet.remove bid bsym_table.roots
+  | None -> ()
   | Some parent ->
-      try
-        let elt = find_elt bsym_table parent in
-        let children = Flx_types.BidSet.remove bid elt.children in
-        replace_elt bsym_table parent { elt with children=children }
-      with Not_found ->
-        ()
-
-(** Helper to add a bid to the use list of another symbol. *)
-let add_use_to_bsym bsym_table user use =
-  assert (user != use);
-  if not (mem bsym_table use) then
-    failwith ("flx_bsym_table: Used symbol index " ^ string_of_int use ^ " expected in table but not found, used by "^string_of_int user)
-  ;
-  let elt = find_elt bsym_table use in
-  let users = Flx_types.BidSet.add user elt.users in
-  replace_elt bsym_table use { elt with users=users }
-
-(* Find all the bids that this bsym uses, and let them know that we're using
- * them. *)
-let add_use_to_bsyms bsym_table bid bbdcl =
-  Flx_bbdcl.iter_uses (add_use_to_bsym bsym_table bid) bbdcl
-
-(** Helper to remove a bid from the use list of another symbol. *)
-let remove_use_from_bsym bsym_table user use =
-  assert (user != use);
-  assert (mem bsym_table use);
-
-  let elt = find_elt bsym_table use in
-  let users = Flx_types.BidSet.remove user elt.users in
-  replace_elt bsym_table use { elt with users=users }
-
-(* Find all the bids that this bsym uses, and let them know that we're no longer
- * using them. *)
-let remove_use_from_bsyms bsym_table bid bbdcl =
-  Flx_bbdcl.iter_uses (remove_use_from_bsym bsym_table bid) bbdcl
+    let kids = 
+      try Hashtbl.find bsym_table.childmap parent 
+      with Not_found -> Flx_types.BidSet.empty 
+    in
+    let kids = Flx_types.BidSet.remove bid kids in
+    if Flx_types.BidSet.is_empty kids then Hashtbl.remove bsym_table.childmap parent 
+    else Hashtbl.replace bsym_table.childmap parent kids
 
 (** Adds the bound symbol with the index to the symbol table. *)
 let add bsym_table bid parent bsym =
-  assert (match parent with None -> true | Some p -> p = 0 || mem bsym_table p);
   if mem bsym_table bid then begin
     print_endline ("Woops, index " ^ string_of_int bid ^ " already in table");
     let { bsym=bsym }  = Hashtbl.find bsym_table.table bid in
@@ -148,31 +99,15 @@ let add bsym_table bid parent bsym =
   (* Add this child to the parent's child list, or to the root list.*)
   add_bid_to_parent bsym_table parent bid;
 
-  (* Add this child to the use list of all the symbols it uses. *)
-  add_use_to_bsyms bsym_table bid (Flx_bsym.bbdcl bsym);
-
   (* Then, add the child. *)
   replace_elt bsym_table bid {
     parent=parent;
-    children=Flx_types.BidSet.empty;
-    users=Flx_types.BidSet.empty;
     bsym=bsym }
 
 (** Updates a bound symbol in place while preserving the child-parent
  * relationships. *)
 let update bsym_table bid bsym =
   let elt = find_elt bsym_table bid in
-  let old_bbdcl = Flx_bsym.bbdcl elt.bsym in
-  let new_bbdcl = Flx_bsym.bbdcl bsym in
-
-  if old_bbdcl != new_bbdcl then begin
-    (* Since the bsym has a different bbdcl, we need to remove ourselves from
-     * all the user lists then re-add ourselves to the new use lists. *)
-
-    remove_use_from_bsyms bsym_table bid old_bbdcl;
-    add_use_to_bsyms bsym_table bid new_bbdcl;
-  end;
-
   replace_elt bsym_table bid { elt with bsym=bsym }
 
 (** Update a bound symbol's bbdcl in place. *)
@@ -180,31 +115,27 @@ let update_bbdcl bsym_table bid bbdcl =
   let elt = find_elt bsym_table bid in
   replace_elt bsym_table bid { elt with bsym=Flx_bsym.replace_bbdcl elt.bsym bbdcl }
 
-(** Remove a binding from the bound symbol table. *)
+(** Remove a binding and all descendants from the bound symbol table. *)
 let rec remove bsym_table bid =
   (* It's not a big deal if the bid isn't in the symbol table. *)
   if not (mem bsym_table bid) then () else begin
     let elt = find_elt bsym_table bid in
 
-    (* Make sure no one is using this symbol. *)
-    assert (Flx_types.BidSet.is_empty elt.users);
-
     (* Remove ourselves from our parent. *)
     remove_bid_from_parent bsym_table elt.parent bid;
-
-    (* Remove ourselves from the use lists. *)
-    remove_use_from_bsyms bsym_table bid (Flx_bsym.bbdcl elt.bsym);
 
     (* And then remove the actual symbol from the symbol table. *)
     Hashtbl.remove bsym_table.table bid;
 
     (* Finally, remove all our children as well. *)
-    Flx_types.BidSet.iter (remove bsym_table) elt.children
+    Flx_types.BidSet.iter (remove bsym_table) (find_children bsym_table bid)
   end
 
 (** Copies the bound symbol table. *)
 let copy bsym_table =
-  { bsym_table with table=Hashtbl.copy bsym_table.table }
+  { bsym_table with 
+      table=Hashtbl.copy bsym_table.table;
+      childmap=Hashtbl.copy bsym_table.childmap }
 
 (** Set's a symbol's parent. *)
 let set_parent bsym_table bid parent =
