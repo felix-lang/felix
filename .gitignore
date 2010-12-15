@@ -17,3 +17,5 @@ build
 flxg_stats.txt
 mydb.db
 tmp.txt
+tmp.out
+ocamlprof.dump
