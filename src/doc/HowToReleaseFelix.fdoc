@@ -4,3 +4,10 @@ Here are the steps needed to release a new version of Felix:
 2. Update version in web/index.html
 3. git tag -s $VERSION
 4. git push origin $VERSION
+5. Manually copy "flx" to /usr/local/bin.
+
+Kill and restart the webserver:
+
+1. flx --static -c --force tools/webserver
+2. mk_daemon tools/webserver --port=1116
+3. sudo privbind -u skaller mk_daemon tools/webserver --port=80 --root=/usr/local/lib/felix/felix-$VERSION/web/
