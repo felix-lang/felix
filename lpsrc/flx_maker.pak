@@ -9,6 +9,7 @@ True := true;
 
 @def tv(x): ts("var "+x)
 
+@tv("PREFIX="+config.PREFIX)
 @tv("INSTALL_ROOT_TOPDIR=Filename::join(%r, 'lib/felix')" % (config.PREFIX))
 @tv("INSTALL_ROOT=Filename::join(INSTALL_ROOT_TOPDIR, 'felix-%s')" % (config.flx_version))
 var FLX_INSTALL_DIR = Env::getenv("FLX_INSTALL_DIR", INSTALL_ROOT);
@@ -422,17 +423,11 @@ includes: '"pthread_thread.hpp"'
 Requires: flx_gc
 
 
-
-@select(tangler('config/mmap.fpc', 'data'))
-Name: mmap
-
 @select(tangler('lib/mmap.flx'))
 module Mmap
 {
+  requires package "mmap";
   header """
-    #include <sys/mman.h>
-    #include <unistd.h>
-
     // MAP_ANON is an older form of MAP_ANONYMOUS, and should be compatible
     #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
     #  define MAP_ANONYMOUS MAP_ANON
