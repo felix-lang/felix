@@ -6,9 +6,11 @@ module Regdef {
   | Charset of string
   | String of string
   | Group of regex
+  | Perl of string
   ;
 
   fun prec: regex -> int =
+  | Perl _ => 3
   | Alts _ => 3
   | Seqs _ => 2
   | String _ => 2
@@ -61,5 +63,6 @@ module Regdef {
   | String ?s => QuoteMeta (StringPiece s)
   | Charset ?s => "[" + hex s + "]"
   | Group ?r => "(" + render r + ")"
+  | Perl ?s => s
   ;
 }

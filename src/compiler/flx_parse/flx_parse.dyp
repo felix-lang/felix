@@ -673,7 +673,6 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 %token <string> WSTRING
 %token <string> USTRING
 %token <string> USER_KEYWORD
-%token <string list> HASH_INCLUDE_FILES
 %token DUMMY
 
 %token QUEST
@@ -988,7 +987,6 @@ main lexer =
   ">" -> GREATER
   "<=" -> LESSEQUAL
   ">=" -> GREATEREQUAL
-  "#!/" -> HASHBANGSLASH
 
 /* eof is not eaten up, so parent will find eof and emit ENDMARKER */
  "//" not_newline * (newline | eof) -> {

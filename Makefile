@@ -1,3 +1,5 @@
+all: configure build test doc dist
+
 configure:
 	fbuild/fbuild-light configure
 

@@ -25,7 +25,6 @@ type token =
   | WSTRING of string
   | USTRING of string
   | USER_KEYWORD of string
-  | HASH_INCLUDE_FILES of string list
   | DUMMY
   | QUEST
   | LPAR

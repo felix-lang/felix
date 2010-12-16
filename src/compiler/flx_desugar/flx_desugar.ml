@@ -752,7 +752,6 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     bindings defined in this entity
   *)
   match st with
-  | STMT_regdef _ -> [] (* do nothing for the moment *)
   | STMT_seq _ -> assert false
   | STMT_private (sr,st) -> rst state name `Private parent_vs st
   | STMT_include (sr,inspec) ->

@@ -20,7 +20,6 @@ let truthof x = match x with
 
 (*
  There are no type macros: use typedef facility.
- There are no regexp macros: use regdef facility.
 *)
 
 type macro_t =
@@ -896,8 +895,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     List.iter tack (ms sts)
 
   | STMT_include (sr, s) -> tack st
-
-  | STMT_regdef (sr,n,s) -> tack st
 
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)
   | STMT_open (sr, vs, qn) ->

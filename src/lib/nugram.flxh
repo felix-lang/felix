@@ -356,7 +356,8 @@ syntax expressions {
 
   squalified_name_comma_list:= squalified_name (, squalified_name)* =># "(cons _1 (map second _2))";
 
-  shash_name := "#" shash_name =># "`(ast_lift ,_2)";
+
+//  shash_name := "#" shash_name =># "`(ast_lift ,_2)";
   shash_name := sthe_name =># "_1";
 
   sthe_name :=
@@ -1535,17 +1536,48 @@ syntax regexps {
     ratom_pri
   ;
 
-  tstatement := "regdef " sname "=" sregexp[ralt_pri] ";" =># "`(ast_regdef ,_sr ,_2 ,_4)";
-  sregexp[ralt_pri] := sregexp[>ralt_pri] ("|" sregexp[>ralt_pri])+ =># "(chain 'ast_re_alts _1 _2)";
-  sregexp[rseq_pri] := sregexp[>rseq_pri] sregexp[>ralt_pri]+ =># "`(ast_re_seqs ,_sr ,(cons _1 _2)))";
-  sregexp[rpostfix_pri] := sregexp[ratom_pri] "*" =># "`(ast_re_ast ,_sr ,_1)";
-  sregexp[rpostfix_pri] := sregexp[ratom_pri] "+" =># "`(ast_re_plus ,_sr ,_1)";
-  sregexp[rpostfix_pri] := sregexp[ratom_pri] "?" =># "`(ast_re_quest ,_sr ,_1)";
+  x[sapplication_pri] := "regex" lpar sregexp[ralt_pri] rpar =># "_3";
+
+  sregexp[ralt_pri] := sregexp[>ralt_pri] ("|" sregexp[>ralt_pri])+ =># 
+    "`(ast_apply ,_sr ( ,(noi 'Alts) (ast_apply ,_sr (,(noi 'list) ,(cons _1 (map second _2))))))"
+  ;
+  sregexp[rseq_pri] := sregexp[>rseq_pri] sregexp[>ralt_pri]+ =># 
+    "`(ast_apply ,_sr ( ,(noi 'Seqs) (ast_apply ,_sr (,(noi 'list) ,(cons _1 _2)))))"
+  ;
+  sregexp[rpostfix_pri] := sregexp[ratom_pri] "*" =># 
+    "`(ast_apply ,_sr ( ,(noi 'Rpt) (,_1,0,-1)))"
+  ;
+  sregexp[rpostfix_pri] := sregexp[ratom_pri] "+" =>#
+    "`(ast_apply ,_sr ( ,(noi 'Rpt) (,_1,1,-1)))"
+  ;
+  sregexp[rpostfix_pri] := sregexp[ratom_pri] "?" =>#
+    "`(ast_apply ,_sr ( ,(noi 'Rpt) (,_1,1,-1)))"
+  ;
   sregexp[ratom_pri] := "(" sregexp[ralt_pri] ")" =># "_2";
-  sregexp[ratom_pri] := "group" "(" sregexp[ralt_pri] ")" =># "`(ast_re_group ,_sr ,_3)";
-  sregexp[ratom_pri] := "charset" sstring =># "`(ast_re_charset ,_sr ,_2)";
-  sregexp[ratom_pri] := sstring =># "`(ast_re_string ,_sr ,_1)";
-  sregexp[ratom_pri] := sname=># "`(ast_re_name ,_sr ,_1)";
+  sregexp[ratom_pri] := "group" "(" sregexp[ralt_pri] ")" =># 
+    "`(ast_apply ,_sr ( ,(noi 'Group) ,_3))"
+  ;
+  sregexp[ratom_pri] := "charset" sstring =># 
+    """`(ast_apply ,_sr ( 
+       ,( noi 'Charset)
+       (ast_literal ,_sr (ast_string ,_2))))
+    """
+  ;
+
+  sregexp[ratom_pri] := sstring =># 
+    """`(ast_apply ,_sr ( 
+       ( ast_lookup ( ,(noi 'Regdef) "String" () )  ) 
+       (ast_literal ,_sr (ast_string ,_1)))
+    ) """
+  ;
+
+  sregexp[ratom_pri] := "perl" "(" sexpr ")" =># 
+    """`(ast_apply ,_sr ( 
+       ,( noi 'Perl)
+       ,_3))
+    """
+  ;
+  sregexp[ratom_pri] := sname=># "`(ast_name ,_sr ,_1 ())";
  
 }
 

@@ -101,7 +101,7 @@ and xexpr_t sr x =
   let xsts x =  lst "statement" xs x in
   let xterm x = xast_term_t sr x in
   match x with
-  | Str s -> print_endline "Deprecated Scheme string as Felix string"; EXPR_literal (sr, (AST_string s))
+  | Str s -> print_endline ("Deprecated Scheme string "^ s ^"' as Felix string"); EXPR_literal (sr, (AST_string s))
   | Lst [] -> EXPR_tuple (sr,[])
   | Lst [x] -> ex x
   (* this term comes from the hard coded parser! *)
@@ -507,19 +507,6 @@ and xunion_component sr x =
   | Lst [Str c; io; vs; t] -> c,opt "union component" xi io,xvs vs, ti t
   | x -> err x "union component"
 
-and re x =
-  match x with
-  | Lst [Id "ast_re_alts"; sr; alts] -> REGEX_alts (xsr sr, lst "ast_re_alts" re alts) 
-  | Lst [Id "ast_re_seqs"; sr; seqs] -> REGEX_seqs (xsr sr, lst "ast_re_seqs" re seqs) 
-  | Lst [Id "ast_re_ast"; sr; r] -> REGEX_ast (xsr sr, re r) 
-  | Lst [Id "ast_re_plus"; sr; r] -> REGEX_plus (xsr sr, re r) 
-  | Lst [Id "ast_re_quest"; sr; r] -> REGEX_quest (xsr sr, re r) 
-  | Lst [Id "ast_re_group"; sr; r] -> REGEX_group (xsr sr, re r) 
-  | Lst [Id "ast_re_charset"; sr; Str s] -> REGEX_charset (xsr sr, s) 
-  | Lst [Id "ast_re_string"; sr; Str s] -> REGEX_string (xsr sr, s) 
-  | Lst [Id "ast_re_name"; sr; Str n] -> REGEX_name (xsr sr, n) 
-  | x -> err x "regexp"
-
 and xstatement_t sr x : statement_t =
   let xpvs x = xplain_vs_list_t sr x in
   let xs x = xstatement_t sr x in
@@ -759,9 +746,5 @@ and xstatement_t sr x : statement_t =
      pss
    in
    STMT_stmt_match (xsr sr, (ex' sr e,pss))
-
-  | Lst [Id "ast_regdef"; sr; Str n; r ] ->
-    STMT_regdef (xsr sr, n, re r)
-
 
   | x -> err x "statement"

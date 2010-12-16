@@ -9,7 +9,7 @@ True := true;
 
 @def tv(x): ts("var "+x)
 
-@tv("PREFIX="+config.PREFIX)
+@tv("PREFIX='"+config.PREFIX+"'")
 @tv("INSTALL_ROOT_TOPDIR=Filename::join(%r, 'lib/felix')" % (config.PREFIX))
 @tv("INSTALL_ROOT=Filename::join(INSTALL_ROOT_TOPDIR, 'felix-%s')" % (config.flx_version))
 var FLX_INSTALL_DIR = Env::getenv("FLX_INSTALL_DIR", INSTALL_ROOT);

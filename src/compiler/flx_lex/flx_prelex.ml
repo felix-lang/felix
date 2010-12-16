@@ -23,7 +23,6 @@ let string_of_token = function
   | WSTRING s -> Flx_string.c_quote_of_string s
   | USTRING s -> Flx_string.c_quote_of_string s
   | USER_KEYWORD s -> s
-  | HASH_INCLUDE_FILES fs -> "include_files(" ^ String.concat "," fs ^ ")"
   | QUEST _ -> "?"
   | LPAR _ -> "("
   | RPAR _ -> ")"
@@ -61,7 +60,6 @@ let name_of_token = function
   | WSTRING _ -> "WSTRING"
   | USTRING _ -> "USTRING"
   | USER_KEYWORD s -> s
-  | HASH_INCLUDE_FILES _ -> "HASH_INCLUDE_FILES"
   | QUEST _ -> "QUEST"
   | LPAR -> "LPAR"
   | RPAR -> "RPAR"
