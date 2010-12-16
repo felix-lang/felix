@@ -12,7 +12,7 @@ module Time
   private cstruct timeval {
     tv_sec: time_t;
     tv_usec: suseconds_t;
-  }
+  };
 
   private proc gettimeofday: ptr[timeval] = "gettimeofday($1, NULL);";
 

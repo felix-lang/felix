@@ -311,11 +311,11 @@ syntax expressions {
   x[srefr_pri] := anon_value =># "_1";
 
   anon_value := "struct" lbrace sstruct_mem_decl* rbrace =># "`(ast_record_type ,_3)";
-  anon_value := lpar sstruct_mem_decl+ rpar =># "`(ast_record_type ,_2)";
+  anon_value := "(" sstruct_mem_decl+ ")" =># "`(ast_record_type ,_2)";
   sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(,_1 ,_3)";
 
   anon_value := "struct" lbrace sstruct_assign* rbrace =># "`(ast_record ,_sr ,_3)";
-  anon_value := lpar sstruct_assign+ rpar =># "`(ast_record ,_sr ,_2)";
+  anon_value := "(" sstruct_assign+ ")" =># "`(ast_record ,_sr ,_2)";
   sstruct_assign := sname = sexpr ";" =># "`(,_1 ,_3)";
 
   anon_value := "union" lbrace stype_sum_item0* rbrace =># "`(ast_variant_type ,_3)";
@@ -349,7 +349,7 @@ syntax expressions {
   x[sfactor_pri] := x[sfactor_pri] "." shash_name =># "`(ast_dot ,_sr (,_1 ,_3))))";
   // note the next production MUST be after the previous one so it overrides the
   // interpretation of a.(0) as an AST_dot
-  x[sfactor_pri] := x[sfactor_pri] "." lpar sinteger rpar =># "`(ast_get_n ,_sr (,_4 ,_1))";
+  x[sfactor_pri] := x[sfactor_pri] "." "(" sinteger ")" =># "`(ast_get_n ,_sr (,_4 ,_1))";
 
   // these are weirdos
   sbasic_name_comma_list:= sname (, sname)* =># "(cons _1 (map second _2))";
@@ -378,7 +378,7 @@ syntax expressions {
   ssimple_name_parts := sname =># "`(,_1 ())";
   ssimple_name_parts := sname lsqb sexpr rsqb =># "`(,_1 ,(mkl _3))";
 
-  satom := lpar rassign (, rassign )* rpar =>#
+  satom := "(" rassign (, rassign )* ")" =>#
     "`(ast_record ,_sr ,(cons _2 (map second _3)))"
   ;
   rassign := sname = x[sor_condition_pri] =># "`(,_1 ,_3)";
@@ -395,8 +395,8 @@ syntax expressions {
 
   satom := scompound =># "(lazy _1)";
 
-  satom := lpar sexpr rpar =># "_2";
-  satom := lpar rpar =># "'()";
+  satom := "(" sexpr ")" =># "_2";
+  satom := "(" ")" =># "'()";
   satom := sconditional =># "_1";
 
   sconditional := "if" sexpr "then" sexpr selse_part "endif" =>#
@@ -448,7 +448,7 @@ syntax patterns {
   satomic_pattern := sstring =># "`(pat_string ,_sr ,_1)";
   satomic_pattern := quest sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
   satomic_pattern := _ =># "`(pat_any ,_sr)";
-  satomic_pattern := lpar spattern rpar =># "_2";
+  satomic_pattern := "(" spattern ")" =># "_2";
   satomic_pattern := "struct" lbrace spat_assign+ rbrace =># "`(pat_record ,_sr ,_3)";
 
   spat_assign := sname = spattern ";" =># "`(,_1 ,_3)";
@@ -509,8 +509,8 @@ syntax functions {
   sadjective := k"lvalue" =># "'Lvalue";
   sadjectives := sadjective* =># "_1";
 
-  slambda_fun_arg := lpar sparameter_comma_list "when" sexpr rpar =># "`(,_2 (some ,_4))";
-  slambda_fun_arg := lpar sparameter_comma_list rpar =># "`(,_2 none)";
+  slambda_fun_arg := "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";
+  slambda_fun_arg := "(" sparameter_comma_list ")" =># "`(,_2 none)";
   slambda_fun_args := slambda_fun_arg+ =># "_1";
 
   fun_return_type := ":" stypeexpr "expect" sexpr =># "`(,_2 (some ,_4))";
@@ -531,8 +531,8 @@ syntax functions {
   sparam_qual := "fun" =># "'PFun";
   sparam_qual := sepsilon =># "'PVal";
 
-  sfun_arg :=  lpar sparameter_comma_list "when" sexpr rpar =># "`(,_2 (some ,_4))";
-  sfun_arg :=  lpar sparameter_comma_list rpar =># "`(,_2 none)";
+  sfun_arg :=  "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";
+  sfun_arg :=  "(" sparameter_comma_list ")" =># "`(,_2 none)";
   sfun_arg :=  sname =># "`(((PVal ,_1 ,(noi 'typ_none) none)) none)";
 
   sfun_kind := "cfun" =># "'CFunction";
@@ -592,7 +592,7 @@ syntax functions {
   sopt_traint:= "expect" sexpr =># "`(some ,_2)";
   sopt_traint:= sepsilon =># "'none";
 
-  sctor_init := sname lpar sexpr rpar =># "`(,_1 ,_3)";
+  sctor_init := sname "(" sexpr ")" =># "`(,_1 ,_3)";
   sctor_inits := ":" sctor_init (, sctor_init)* =># "(cons _2 _3)";
   sctor_inits := sepsilon =># "()";
 
@@ -721,7 +721,7 @@ syntax statements {
   stypeparameter_comma_list := stypeparameter =># "`(,_1)";
 
   stypefun_arg := sname =># "`((,_1 ,(noi 'typ_none)))";
-  stypefun_arg := lpar stypeparameter_comma_list rpar =># "_2";
+  stypefun_arg := "(" stypeparameter_comma_list ")" =># "_2";
   stypefun_args := stypefun_arg+  =># "_1";
 
   stodo := "todo" sstring ";" =># "`(ast_nop ,_sr ,_2)";
@@ -864,7 +864,7 @@ syntax macros {
   smacro_definition := "macro" sname "is" sname ";" =># "`(ast_macro_name ,_2 ,_4)";
   smacro_definition := "macro" "for" sname "in" sbasic_name_comma_list "do" sstatements "done" ";" =>#
     "`(ast_macro_ifor ,_3 ,_5 ,_7)";
-  smacro_definition := "macro" "for" sname "in" lpar sbasic_name_comma_list rpar "do" sstatements "done" ";" =>#
+  smacro_definition := "macro" "for" sname "in" "(" sbasic_name_comma_list ")" "do" sstatements "done" ";" =>#
     "`(ast_macro_ifor ,_3 ,_6 ,_9)";
 
   smacro_definition := "macro" sname "is" "new" ";" =># """`(ast_macro_name ,_2 "")""";
@@ -900,8 +900,8 @@ syntax macros {
   smac_arg:= sname =># "`(,_1 Expr)";
   smac_args := smac_arg , smac_args =># "(cons _1 _3)";
   smac_args := smac_arg =># "`(,_1)";
-  smac_arg_list := lpar smac_args rpar =># "_2";
-  smac_arg_list := lpar rpar =># "()";
+  smac_arg_list := "(" smac_args ")" =># "_2";
+  smac_arg_list := "(" ")" =># "()";
 
   x[sapplication_pri] := "macro" "ctor" sname x[scoercion_pri] =># "`ast_macro_ctor (,_3 ,_4))";
 }
@@ -921,7 +921,7 @@ syntax cbind {
     "`(ast_export_python_fun ,_sr ,_4 ,_6)";
   sexport_statement := k"export" "proc" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
-  sexport_statement := k"export" "type" lpar sexpr rpar "as" sstring ";" =>#
+  sexport_statement := k"export" "type" "(" sexpr ")" "as" sstring ";" =>#
     "`(ast_export_type ,_sr ,_4 ,_7)";
 
   sopt_prec := "is" sname =># "_2";
@@ -1148,7 +1148,7 @@ syntax executable {
   slelement := "var" sname =># "`(Var ,_sr ,_2)";
   slelement := sname =># "`(Name ,_sr ,_1)";
   slelement := _ =># "`(Skip ,_sr)";
-  slelement := lpar slexprs rpar =># "`(List ,_2)";
+  slelement := "(" slexprs ")" =># "`(List ,_2)";
 
   stlelement := slelement ":" x[sfactor_pri] =># "`(,_1 (some ,_3))";
   stlelement := slelement =># "`(,_1 none)";
@@ -1311,7 +1311,7 @@ syntax requirements {
   srequirement :=  "package" scode_spec =># "`(Package_req ,_2)";
 
   srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";
-  srequirement_atom:= lpar srequirements rpar =># "_2";
+  srequirement_atom:= "(" srequirements ")" =># "_2";
 
   srequirement_and:= srequirement_and "and" srequirement_atom =>#
     "`(rreq_and ,_1 ,_3)";
@@ -1479,7 +1479,7 @@ syntax assertions {
       `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
     """;
 
-  sreduce_args := lpar stypeparameter_comma_list rpar =># "_2";
+  sreduce_args := "(" stypeparameter_comma_list ")" =># "_2";
 
   sassertion := "reduce" sdeclname sreduce_args ":" sexpr "=>" sexpr ";" =>#
     """
@@ -1536,7 +1536,7 @@ syntax regexps {
     ratom_pri
   ;
 
-  x[sapplication_pri] := "regex" lpar sregexp[ralt_pri] rpar =># "_3";
+  x[sapplication_pri] := "regex" "(" sregexp[ralt_pri] ")" =># "_3";
 
   sregexp[ralt_pri] := sregexp[>ralt_pri] ("|" sregexp[>ralt_pri])+ =># 
     "`(ast_apply ,_sr ( ,(noi 'Alts) (ast_apply ,_sr (,(noi 'list) ,(cons _1 (map second _2))))))"
