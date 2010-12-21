@@ -1536,7 +1536,12 @@ syntax regexps {
     ratom_pri
   ;
 
-  x[sapplication_pri] := "regex" "(" sregexp[ralt_pri] ")" =># "_3";
+  tstatement := "regdef" sdeclname = sregexp[ralt_pri] ";" =># 
+    """
+    `(ast_val_decl ,_sr ,(first _2) ,(second _2) (some (ast_lookup ( ,(noi 'Regdef) "regex" ()))) (some ,_4))
+    """;
+
+  x[sapplication_pri] := "regexp" "(" sregexp[ralt_pri] ")" =># "_3";
 
   sregexp[ralt_pri] := sregexp[>ralt_pri] ("|" sregexp[>ralt_pri])+ =># 
     "`(ast_apply ,_sr ( ,(noi 'Alts) (ast_apply ,_sr (,(noi 'list) ,(cons _1 (map second _2))))))"
@@ -1577,6 +1582,9 @@ syntax regexps {
        ,_3))
     """
   ;
+
+  sregexp[ratom_pri] := "regex" "(" sexpr ")" =># "_3";
+
   sregexp[ratom_pri] := sname=># "`(ast_name ,_sr ,_1 ())";
  
 }

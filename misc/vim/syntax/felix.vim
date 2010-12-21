@@ -1,7 +1,7 @@
 " Vim syntax file
 " Language:     Felix
-" Maintainer:   <John Max Skaller> skaller@ozemail.com.au
-" Last Change:  2002 Apr 25
+" Maintainer:   <John Max Skaller> skaller@users.sourceforge.net
+" Last Change:  2010 Dec 25
 
 " This vim file is adapted from the c.vim file
 " for use with Felix .. it doesn't quite work,
@@ -198,7 +198,7 @@ syn keyword felixStatement namespace module
 syn keyword felixStatement NaN
 syn keyword felixStatement obj of
 syn keyword felixStatement proc cproc
-syn keyword felixStatement raise ref regexp return
+syn keyword felixStatement raise ref regexp return regdef
 syn keyword felixStatement struct
 syn keyword felixStatement to type typedef typeof
 syn keyword felixStatement union

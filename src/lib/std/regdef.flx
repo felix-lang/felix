@@ -9,7 +9,7 @@ module Regdef {
   | Perl of string
   ;
 
-  fun prec: regex -> int =
+  private fun prec: regex -> int =
   | Perl _ => 3
   | Alts _ => 3
   | Seqs _ => 2
@@ -19,22 +19,22 @@ module Regdef {
   | Group _ => 0
   ;
 
-  fun hex_digit (i:int)=>
+  private fun hex_digit (i:int)=>
     if i<10 then char (ord (char "0") + i) 
     else char (ord (char "A") + i - 10)
     endif
   ;
-  fun hex2(c:char)=>
+  private fun hex2(c:char)=>
     let ?i = ord c in
     "\\x" + hex_digit ( i / 16 ) + hex_digit ( i % 16 )
   ;
-  fun charset_quote(c:char)=>
+  private fun charset_quote(c:char)=>
     if c in "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstvuwxyz" then string c
     else hex2 c
     endif
   ;
 
-  fun hex(s:string)= {
+  private fun hex(s:string)= {
     var r = ""; var i:int;
     forall i in 0 upto len s - 1 do
       r += charset_quote s.[i];
@@ -43,7 +43,8 @@ module Regdef {
   }
 
   fun ngrp (s:string)=> "(?:"+s+")";
-  fun cngrp (s:string, op: int, ip: int) => if ip > op then ngrp (s) else s endif; 
+  private fun cngrp (s:string, op: int, ip: int) => if ip > op then ngrp (s) else s endif; 
+
   fun render: regex -> string =
   | Alts ?rs => fold_left 
    (fun (acc:string) (elt:regex)=> 
