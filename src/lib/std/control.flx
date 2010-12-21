@@ -187,7 +187,7 @@ open module Control
 
   This is a low level primitive, bypassing fthreads.
   """
-  proc run: cont = "flx::rtl::executil::run($1);" requires flx_executil;
+  proc run: cont = "flx::rtl::executil::run($1);" requires package "flx_executil";
 
   private proc _send[t]: &cont * t =
   """

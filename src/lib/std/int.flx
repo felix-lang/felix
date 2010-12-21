@@ -132,15 +132,15 @@ open module Uint64
 }
 
 instance Str[tiny] {
-  fun str: tiny -> string = "::flx::rtl::strutil::str<int>($1)" requires flx_strutil;
+  fun str: tiny -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
 }
 
 instance Str[utiny] {
-  fun str: utiny -> string = "::flx::rtl::strutil::str<unsigned int>($1)" requires flx_strutil;
+  fun str: utiny -> string = "::flx::rtl::strutil::str<unsigned int>($1)" requires package "flx_strutil";
 }
 
 instance[T in short||ushort||int||uint||long||ulong||vlong||uvlong] Str[T] {
-  fun str: T -> string = "::flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  fun str: T -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
 }
 
 instance Repr[tiny]   { fun repr[with Str[tiny]]   (t:tiny)   : string => (str t) + "t";  }

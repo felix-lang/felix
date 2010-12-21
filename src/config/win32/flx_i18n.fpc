@@ -1,0 +1,3 @@
+Name: flx_i18n
+Requires: flx
+includes: '"flx_i18n.hpp"'

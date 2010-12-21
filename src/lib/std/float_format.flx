@@ -19,13 +19,13 @@ open module float_format
     | scientific(?w,?p) => fmt_scientific(real v,w,p)+"+"+fmt_scientific(imag v,w,p)+"i"
     endmatch
   ;
-  fun fmt_default[t] : t * int * int -> string="::flx::rtl::strutil::fmt_default($a)" requires flx_strutil;
-  fun fmt_fixed[t] : t * int * int -> string="::flx::rtl::strutil::fmt_fixed($a)" requires flx_strutil;
-  fun fmt_scientific[t] : t * int * int -> string="::flx::rtl::strutil::fmt_scientific($a)" requires flx_strutil;
+  fun fmt_default[t] : t * int * int -> string="::flx::rtl::strutil::fmt_default($a)" requires package "flx_strutil";
+  fun fmt_fixed[t] : t * int * int -> string="::flx::rtl::strutil::fmt_fixed($a)" requires package "flx_strutil";
+  fun fmt_scientific[t] : t * int * int -> string="::flx::rtl::strutil::fmt_scientific($a)" requires package "flx_strutil";
 }
 
 instance Str[float] {
-  fun xstr: float -> string = "::flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  fun xstr: float -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
   fun str(x:float):string =>
     if Float::isnan x then "nan"
     elif Float::isinf x then
@@ -36,7 +36,7 @@ instance Str[float] {
 }
 
 instance Str[double] {
-  fun xstr: double -> string = "::flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  fun xstr: double -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
   fun str(x:double):string =>
     if Double::isnan x then "nan"
     elif Double::isinf x then
@@ -47,7 +47,7 @@ instance Str[double] {
 }
 
 instance Str[ldouble] {
-  fun xstr: ldouble -> string = "::flx::rtl::strutil::str<#1>($1)" requires flx_strutil;
+  fun xstr: ldouble -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
   fun str(x:ldouble):string =>
     if Ldouble::isnan x then "nan"
     elif Ldouble::isinf x then

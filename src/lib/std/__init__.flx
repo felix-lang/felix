@@ -3,8 +3,11 @@ include "plat/config";
 
 // type classes
 include "std/flx_tclass";
+include "std/order";
+include "std/algebraic";
 
 // base scalar types 
+include "plat/flx_ctypes";
 include "std/address";
 include "std/bool";
 include "std/int";

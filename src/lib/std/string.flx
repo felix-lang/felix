@@ -1,4 +1,4 @@
-type string = "::std::string";
+type string = "::std::basic_string<char>" requires string_hxx;
 type ustring = "::std::basic_string<uint32_t>" requires string_hxx;
 
 typedef strings = typesetof (string,ustring);
@@ -35,8 +35,8 @@ open module String
   fun add: charp * string -> string = "$1+$2";
   fun add: string * char -> string = "$1+$2";
   fun add: char * string -> string = "$1+$2";
-  fun add: string * int -> string = "$1+::flx::rtl::i18n::utf8($2)" requires flx_i18n;
-  fun mul: string * int -> string = "::flx::rtl::strutil::mul($1,$2)" requires flx_strutil;
+  fun add: string * int -> string = "$1+::flx::rtl::i18n::utf8($2)" requires package "flx_i18n";
+  fun mul: string * int -> string = "::flx::rtl::strutil::mul($1,$2)" requires package "flx_strutil";
   fun mul: char * int -> string = "::std::string($2,$1)";
 
   fun apply (x:string, y:string):string => x + y;
@@ -51,13 +51,13 @@ open module String
   gen _ctor_string: charcp * int -> string = "::std::string($1,$2)";
 
   fun subscript: string * int -> char =
-    "::flx::rtl::strutil::subscript($1,$2)" requires flx_strutil;
+    "::flx::rtl::strutil::subscript($1,$2)" requires package "flx_strutil";
   fun copyfrom: string * int -> string =
-    "::flx::rtl::strutil::substr($1,$2,$1.size())" requires flx_strutil;
+    "::flx::rtl::strutil::substr($1,$2,$1.size())" requires package "flx_strutil";
   fun copyto: string * int -> string =
-    "::flx::rtl::strutil::substr($1,0,$2)" requires flx_strutil;
+    "::flx::rtl::strutil::substr($1,0,$2)" requires package "flx_strutil";
   fun substring: string * int * int -> string =
-    "::flx::rtl::strutil::substr($1,$2,$3)" requires flx_strutil;
+    "::flx::rtl::strutil::substr($1,$2,$3)" requires package "flx_strutil";
 
   fun subscript (x:string, s:slice[int]):string =>
     match s with
@@ -338,11 +338,11 @@ open module String
   fun cstr: string -> C_hack::cptr[char] = "$1.data()";
 
   fun vsprintf[t]: C_hack::ptr[char] * t -> string =
-    "::flx::rtl::strutil::flx_asprintf($1,$2)" requires flx_strutil
+    "::flx::rtl::strutil::flx_asprintf($1,$2)" requires package "flx_strutil"
   ;
 
   fun vsprintf[t]: string * t -> string =
-    "::flx::rtl::strutil::flx_asprintf(const_cast<char*>($1.c_str()),$2)" requires flx_strutil
+    "::flx::rtl::strutil::flx_asprintf(const_cast<char*>($1.c_str()),$2)" requires package "flx_strutil"
   ;
 }
 
@@ -351,11 +351,11 @@ instance Str[string] {
 }
 
 instance[T in charp||charcp || &char] Str[T] {
-  fun str: T -> string = '::flx::rtl::strutil::atostr($1)' requires flx_strutil;
+  fun str: T -> string = '::flx::rtl::strutil::atostr($1)' requires package "flx_strutil";
 }
 
 instance[T in ucharp||ucharcp] Str[T] {
-  fun str: T -> string = '::flx::rtl::strutil::atostr((char const*)$1)' requires flx_strutil;
+  fun str: T -> string = '::flx::rtl::strutil::atostr((char const*)$1)' requires package "flx_strutil";
 }
 
 instance Repr[string] {
@@ -386,11 +386,11 @@ open module Ustring
   fun subscript: ustring * int -> char =
     "$1[$2<0??$1.size()+$2 : $2]";
   fun copyfrom: ustring * int -> ustring =
-    "::flx::rtl::strutil::substr($1,$2,$1.size())" requires flx_strutil;
+    "::flx::rtl::strutil::substr($1,$2,$1.size())" requires package "flx_strutil";
   fun copyto: ustring * int -> ustring =
-    "::flx::rtl::strutil::substr($1,0,$2)" requires flx_strutil;
+    "::flx::rtl::strutil::substr($1,0,$2)" requires package "flx_strutil";
   fun substring: ustring * int * int -> ustring =
-    "::flx::rtl::strutil::substr($1,$2,$3)" requires flx_strutil;
+    "::flx::rtl::strutil::substr($1,$2,$3)" requires package "flx_strutil";
 
   // comparisons
   //gen_cmp ustring;

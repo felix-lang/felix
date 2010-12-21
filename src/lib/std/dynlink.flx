@@ -1,6 +1,6 @@
 module Dynlink
 {
-  requires flx_dynlink;
+  requires package "flx_dynlink";
   type flx_library = "flx::rtl::flx_dynlink_t*";
   type flx_instance = "flx::rtl::flx_libinit_t*";
   proc dlopen:flx_library * string = "$1->link($2.data());";

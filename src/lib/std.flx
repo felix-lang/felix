@@ -1,37 +1,16 @@
 header '#include "flx_rtl_config.hpp"';
 
+header string_hxx = "#include <string>";
 header iostream = "#include <iostream>";
 header cmath = "#include <cmath>";
 header math_h = "#include <math.h>";
 header ieeefp_h = """
 extern "C" {
 #include <ieeefp.h>
-}
+
 """;
 
-header """
-#include <cstdio>
-#include <cstddef>
-#include <cassert>
-#include <climits>
-using namespace std;
-""";
-
-header flx_ioutil = '#include "flx_ioutil.hpp"';
-header flx_executil = '#include "flx_executil.hpp"';
-header flx_dynlink = '#include "flx_dynlink.hpp"';
-header flx_i18n = '#include "flx_i18n.hpp"';
 header stdexcept = '#include <stdexcept>';
-
-// note -- this code is templated, we include
-// it in the header file because that's where
-// most C++ compilers need it (ISO requires
-// separate compilation of templates but most
-// compilers as at 2004 don't implement it)
-
-header flx_strutil = '#include "flx_strutil.hpp"';
-
-include "plat/flx_ctypes";
 
 body swapper[t] = """
   void swapper(?1 *a, ?1 *b){

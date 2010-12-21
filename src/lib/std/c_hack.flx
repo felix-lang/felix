@@ -98,6 +98,7 @@ module C_hack
   publish """
   Polymorphic null pointer constant
   """
+  const null[t]:&t = "(?1*)NULL";
   const null_ptr[t]:ptr[t] = "(?1*)NULL";
   const null_gcptr[t]:gcptr[t] = "(?1*)NULL";
   const null_cptr[t]:ptr[t] = "(?1 const*)NULL";

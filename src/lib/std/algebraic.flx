@@ -1,0 +1,152 @@
+
+// additive symmetric group
+typeclass FloatAddgrp[t] {
+  inherit Eq[t];
+  virtual fun zero: unit -> t;
+  virtual fun add: t * t -> t;
+  virtual fun neg: t -> t;
+  virtual fun sub(x:t,y:t):t => add (x,neg y);
+  virtual proc pluseq (px:&t,y:t) { px <- *px + y; }
+  virtual proc minuseq (px:&t,y:t) { px <- *px - y; }
+
+  reduce id (x:t): x+zero() => x;
+  reduce id (x:t): zero()+x => x;
+  reduce inv(x:t): x-x => zero();
+  reduce inv(x:t): - (-x) => x;
+  axiom sym (x:t,y:t): x+y == y+x;
+}
+
+typeclass Addgrp[t] {
+  inherit FloatAddgrp[t];
+  axiom assoc (x:t,y:t,z:t): (x+y)+z == x+(y+z);
+  reduce inv(x:t,y:t): x+y-y => x;
+}
+
+// mult semi group with unit
+typeclass FloatMultSemi1[t] {
+  inherit Eq[t];
+  virtual fun one: unit -> t;
+  virtual fun mul: t * t -> t;
+  virtual proc muleq (px:&t, y:t) { px <- *px * y; }
+  reduce id (x:t): x*one() => x;
+  reduce id (x:t): one()*x => x;
+}
+
+// mult semi group with unit
+typeclass MultSemi1[t] {
+  inherit FloatMultSemi1[t];
+  axiom assoc (x:t,y:t,z:t): (x*y)*z == x*(y*z);
+  reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
+}
+
+// ring
+typeclass FloatRing[t] {
+  inherit FloatAddgrp[t];
+  inherit FloatMultSemi1[t];
+}
+
+// ring
+typeclass Ring[t] {
+  inherit Addgrp[t];
+  inherit MultSemi1[t];
+  axiom distrib (x:t,y:t,z:t): x * ( y + z) == x * y + x * z;
+}
+
+// division ring
+typeclass FloatDring[t] {
+  inherit FloatRing[t];
+  virtual fun div: t * t -> t; // pre t != 0
+  virtual proc diveq: &t * t;
+  virtual fun mod : t * t -> t;
+  virtual proc modeq: &t * t;
+}
+
+// division ring
+typeclass Dring[t] {
+  inherit Ring[t];
+  inherit FloatDring[t];
+}
+
+
+typeclass Bits[t] {
+  virtual fun bxor: t * t -> t;
+  virtual fun bor: t * t -> t;
+  virtual fun band: t * t -> t;
+  virtual fun bnot: t -> t;
+  virtual proc bxoreq: &t * t;
+  virtual proc boreq: &t * t;
+  virtual proc bandeq: &t * t;
+}
+
+typeclass Integer[t] {
+  inherit Tord[t];
+  inherit Dring[t];
+  inherit Bidirectional[t];
+  virtual fun shl: t * t -> t;
+  virtual fun shr: t * t -> t;
+}
+
+// Signed Integers
+typeclass Signed_integer[t] {
+  inherit Integer[t];
+  virtual fun sgn: t -> int;
+  virtual fun abs: t -> t;
+}
+
+// Unsigned Integers
+typeclass Unsigned_integer[t] {
+  inherit Integer[t];
+  inherit Bits[t];
+}
+
+typeclass Trig[t] {
+  virtual fun sin: t -> t;
+  virtual fun cos: t -> t;
+  virtual fun tan: t -> t;
+  virtual fun asin: t -> t;
+  virtual fun acos: t -> t;
+  virtual fun atan: t -> t;
+  virtual fun sinh: t -> t;
+  virtual fun cosh: t -> t;
+  virtual fun tanh: t -> t;
+  virtual fun asinh: t -> t;
+  virtual fun acosh: t -> t;
+  virtual fun atanh: t -> t;
+  virtual fun exp: t -> t;
+  virtual fun log: t -> t;
+  virtual fun pow: t * t -> t;
+}
+
+typeclass Real[t] {
+  inherit Tord[t];
+  inherit Trig[t];
+  inherit FloatDring[t];
+  virtual fun log10: t -> t;
+  virtual fun abs: t -> t;
+  virtual fun sqrt: t -> t;
+  virtual fun ceil: t -> t;
+  virtual fun floor: t -> t;
+  virtual fun trunc: t -> t;
+}
+
+typeclass Complex[t,r] {
+  inherit Eq[t];
+  inherit FloatRing[t];
+  inherit Trig[t];
+  virtual fun real: t -> r;
+  virtual fun imag: t -> r;
+  virtual fun abs: t -> r;
+  virtual fun arg: t -> r;
+
+  virtual fun add: r * t -> t;
+  virtual fun add: t * r -> t;
+  virtual fun sub: r * t -> t;
+  virtual fun sub: t * r -> t;
+  virtual fun mul : t * r -> t;
+  virtual fun mul : r * t -> t;
+  virtual fun div : t * r -> t;
+  virtual fun div : r * t -> t;
+}
+
+
+

@@ -1,5 +1,4 @@
 include "stl/stl_map";
-include "std/rtti";
 
 open module Re2 {
   requires package "re2";
@@ -24,7 +23,19 @@ open module Re2 {
     ctor StringPiece: string = "::re2::StringPiece($1)";
     ctor StringPiece: unit = "::re2::StringPiece()";
     ctor string: StringPiece = "$1.as_string()";
-    fun len: StringPiece -> int = "$1.size()";
+    
+    instance Container[StringPiece,char] {
+      fun len: StringPiece -> size = "$1.size()";
+    }
+    instance Eq[StringPiece] {
+      fun eq: StringPiece * StringPiece -> bool = "$1==$2";
+    }
+    instance Tord[StringPiece] {
+      fun lt: StringPiece * StringPiece -> bool = "$1<$2";
+    }
+    instance Str[StringPiece] {
+      fun str: StringPiece -> string ="$1.as_string()";
+    }
 
   type Arg = "::re2::Arg";
 
@@ -114,7 +125,6 @@ open module Re2 {
 
   fun CheckRewriteString: RE2 * StringPiece * &string -> bool = "$1->CheckRewriteString($2, $3)";
 
-  // StringPiece is really cool, should be spit out and expanded
-  instance Str[StringPiece] { fun str(x:StringPiece)=>_ctor_string x; }
-
+  fun mem(s:string, r:RE2)=>
+    Match(r,StringPiece s,0,ANCHOR_START, C_hack::null[StringPiece], 0);
 }

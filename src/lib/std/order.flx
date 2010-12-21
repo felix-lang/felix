@@ -1,0 +1,54 @@
+
+// equality
+typeclass Eq[t] {
+  virtual fun eq: t * t -> bool;
+  virtual fun ne (x:t,y:t):bool => not (eq (x,y));
+  axiom reflex(x:t): eq(x,x);
+  axiom sym(x:t, y:t): eq(x,y) == eq(y,x);
+  axiom trans(x:t, y:t, z:t): implies(eq(x,y) and eq(y,z), eq(x,z));
+}
+
+// this is a pain .. equality for pairs
+instance[t,u with Eq[t], Eq[u]] Eq[t*u] {
+  fun eq: (t * u) * (t * u) -> bool =
+  | (?x1,?y1),(?x2,?y2) => x1==x2 and y1 == y2
+  ;
+}
+
+open[t,u] Eq[t*u];
+
+// equality for triples
+instance[t,u,v with Eq[t], Eq[u], Eq[v]] Eq[t*u*v] {
+  fun eq: (t * u * v) * (t * u * v) -> bool =
+  | (?x1,?y1,?z1),(?x2,?y2,?z2) => x1==x2 and y1 == y2 and z1 == z2
+  ;
+}
+
+open[t,u,v] Eq[t*u*v];
+
+
+// total order
+typeclass Tord[t]{
+  inherit Eq[t];
+  virtual fun lt: t * t -> bool;
+  virtual fun gt(x:t,y:t):bool =>lt(y,x);
+  virtual fun le(x:t,y:t):bool => not (gt(x,y));
+  virtual fun ge(x:t,y:t):bool => not (lt(x,y));
+  virtual fun max(x:t,y:t):t=> if lt(x,y) then y else x endif;
+  virtual fun min(x:t,y:t):t => if lt(x,y) then x else y endif;
+}
+
+typeclass Forward[t] {
+  virtual fun succ: t -> t;
+  virtual proc pre_incr: &t;
+  virtual proc post_incr: &t;
+}
+
+typeclass Bidirectional[t] {
+  inherit Forward[t];
+  virtual fun pred: t -> t;
+  virtual proc pre_decr: &t;
+  virtual proc post_decr: &t;
+}
+
+

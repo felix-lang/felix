@@ -1,6 +1,6 @@
 module Text_file
 {
-  requires flx_ioutil;
+  requires package "flx_ioutil";
 
   // This module provides simple I/O for text, primarily intended for
   // naive use, debugging etc. This is because there is no error

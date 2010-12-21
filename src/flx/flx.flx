@@ -615,7 +615,7 @@ var STATIC_ENV="";
 DEBUG_COMPILER == 1?? STATIC_ENV="env FLX_DEBUG=1 ";
 
 body """
-long macosx_ftime(string s) {
+long macosx_ftime(::std::string s) {
   struct stat sb;
   int e = stat(s.data(),&sb);
   if(e != 0) return 0l;
@@ -624,7 +624,7 @@ long macosx_ftime(string s) {
 """ requires header "#include <sys/stat.h>";
 
 body """
-long posix_ftime(string s) {
+long posix_ftime(::std::string s) {
   struct stat sb;
   int e = stat(s.data(),&sb);
   if(e != 0) return 0l;
