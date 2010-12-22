@@ -35,7 +35,7 @@ print$ geq(1,2); endl;
 
 module Fred[t]
 {
-  proc pr: t = "std::cout<<$1<<endl;";
+  proc pr: t = "::std::cout<<$1<<::std::endl;";
 }
 
 Fred::pr 1;
