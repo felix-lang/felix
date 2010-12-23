@@ -1,6 +1,9 @@
 include "plat/filename";
 include "plat/config";
 
+// ISO C++99 standard header tags
+include "std/cxx_headers";
+
 // type classes
 include "std/flx_tclass";
 include "std/order";

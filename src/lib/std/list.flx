@@ -13,7 +13,7 @@ open module List
   // we copy the first list, then splice the second one onto its last element
 
   // representation dependent: may break!
-  // A Felix list is a _uctor_ which has a variant code and pointer
+  // A Felix list is a ::flx::rtl::_uctor_ which has a variant code and pointer
   // If the variant is 1, the pointer points at the tuple of type
   // T * list[T]. There is no way to name this type from C,
   // so we just create an compatible type and use a cast.
@@ -21,8 +21,8 @@ open module List
   proc splice[T] : &list[T] * list[T] =
     """
     {
-      struct node_t { ?1 elt; _uctor_ tail; };
-      _uctor_ *p = $1;
+      struct node_t { ?1 elt; ::flx::rtl::_uctor_ tail; };
+      ::flx::rtl::_uctor_ *p = $1;
       while(p->variant) p = &((node_t*)p->data)->tail;
       *p = $2;
     }
@@ -36,12 +36,12 @@ open module List
     """
     void _rev(?2 plt)
     {
-      struct node_t { ?1 elt; _uctor_ tail; };
-      _uctor_ nutail = _uctor_(0,0);
-      _uctor_ cur = *plt;
+      struct node_t { ?1 elt; ::flx::rtl::_uctor_ tail; };
+      ::flx::rtl::_uctor_ nutail = ::flx::rtl::_uctor_(0,0);
+      ::flx::rtl::_uctor_ cur = *plt;
       while(cur.variant)
       {
-        _uctor_ oldtail = ((node_t*)cur.data)->tail;
+        ::flx::rtl::_uctor_ oldtail = ((node_t*)cur.data)->tail;
         ((node_t*)cur.data)->tail = nutail;
         nutail = cur;
         cur = oldtail;
@@ -56,13 +56,13 @@ open module List
   proc rev_last[T] : &list[T] * &list[T] =
     """
     {
-      struct node_t { ?1 elt; _uctor_ tail; };
-      _uctor_ nutail = _uctor_(0,0);
-      _uctor_ cur = *$1;
-      _uctor_ last = cur;
+      struct node_t { ?1 elt; ::flx::rtl::_uctor_ tail; };
+      ::flx::rtl::_uctor_ nutail = ::flx::rtl::_uctor_(0,0);
+      ::flx::rtl::_uctor_ cur = *$1;
+      ::flx::rtl::_uctor_ last = cur;
       while(cur.variant)
       {
-        _uctor_ oldtail = ((node_t*)cur.data)->tail;
+        ::flx::rtl::_uctor_ oldtail = ((node_t*)cur.data)->tail;
         ((node_t*)cur.data)->tail = nutail;
         nutail = cur;
         cur = oldtail;

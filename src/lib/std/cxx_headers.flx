@@ -1,0 +1,53 @@
+module Cxx_header
+{
+  header exception = '#include <exception>';
+  header limits = '#include <limits>';
+  header new = '#include <new>';
+  header typeinfo = '#include <typeinfo>';
+  header stdexception = '#include <stdexception>';
+  header utility = '#include <utility>';
+  header functional = '#include <functional>';
+  header memory = '#include <memory>';
+  header string = '#include <string>';
+  header locale = '#include <locale>';
+  header algorithm = '#include <algorithm>';
+  header bitset = '#include <bitset>';
+  header deque = '#include <deque>';
+  header iterator = '#include <iterator>';
+  header list = '#include <list>';
+  header map = '#include <map>';
+  header set = '#include <set>';
+  header stack = '#include <stack>';
+  header vector = '#include <vector>';
+  header complex = '#include <complex>';
+  header numeric = '#include <numeric>';
+  header valarray = '#include <valarray>';
+  header fstream = '#include <fstream>';
+  header iomanip = '#include <iomanip>';
+  header ios = '#include <ios>';
+  header iosfwd = '#include <iosfwd>';
+  header iostream = '#include <iostream>';
+  header istream = '#include <istream>';
+  header ostream = '#include <ostream>';
+  header streambuf = '#include <streambuf>';
+  header sstream = '#include <sstream>';
+
+  header cassert = '#include <cassert>';
+  header cctype = '#include <cctype>';
+  header cerrno = '#include <cerrno>';
+  header cfloat = '#include <cfloat>';
+  header ciso646 = '#include <ciso646>';
+  header climits = '#include <climits>';
+  header clocale = '#include <clocale>';
+  header cmath = '#include <cmath>';
+  header csetjmp = '#include <csetjmp>';
+  header csignal = '#include <csignal>';
+  header cstdarg = '#include <cstdarg>';
+  header cstdio = '#include <cstdio>';
+  header cstdlib = '#include <cstdlib>';
+  header cstring = '#include <cstring>';
+  header ctime = '#include <ctime>';
+  header cwchar = '#include <cwchar>';
+  header cwctype = '#include <cwctype>';
+}
+

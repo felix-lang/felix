@@ -104,13 +104,13 @@ open module Control
     _svc y;
   }
 
-  _gc_pointer type schannel[t] = "flx::rtl::schannel_t*";
-  _gc_pointer type ischannel[t] = "flx::rtl::schannel_t*";
-  _gc_pointer type oschannel[t] = "flx::rtl::schannel_t*";
+  _gc_pointer type schannel[t] = "::flx::rtl::schannel_t*";
+  _gc_pointer type ischannel[t] = "::flx::rtl::schannel_t*";
+  _gc_pointer type oschannel[t] = "::flx::rtl::schannel_t*";
 
-  private _gc_pointer type _schannel = "flx::rtl::schannel_t*";
+  private _gc_pointer type _schannel = "::flx::rtl::schannel_t*";
   gen mk_schannel[t]: 1->schannel[t] =
-    "new(*PTF gcp,flx::rtl::schannel_ptr_map,false) flx::rtl::schannel_t(PTF gcp)"
+    "new(*PTF gcp,::flx::rtl::schannel_ptr_map,false) ::flx::rtl::schannel_t(PTF gcp)"
     requires property "needs_gc"
   ;
 
