@@ -8,7 +8,7 @@ open module Bool
   fun xor: bool * bool -> bool = "$1!=$2";
   fun lnot: bool -> bool = "!$1";
   fun implies: bool * bool -> bool = "!$1||$2";
-  proc fprint: ostream * bool = '*$1<<($2??"true":"false");' requires iostream;
+  proc fprint: ostream * bool = '*$1<<($2??"true":"false");' requires Cxx_headers::iostream;
 }
 
 instance Str[bool] {

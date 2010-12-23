@@ -1,5 +1,5 @@
-type string = "::std::basic_string<char>" requires string_hxx;
-type ustring = "::std::basic_string<uint32_t>" requires string_hxx;
+type string = "::std::basic_string<char>" requires Cxx_headers::string;
+type ustring = "::std::basic_string<uint32_t>" requires Cxx_headers::string;
 
 typedef strings = typesetof (string,ustring);
 
@@ -15,7 +15,6 @@ open Eq[ustring];
 
 open module String
 {
-  requires string_hxx;
   open Bool;
   open Char;
   open Int;
@@ -325,12 +324,12 @@ open module String
   proc insert: string * int * string = "$1.insert($2,$3);";
   proc replace: string * int * int * string = "$1.replace($2,$3,$4);";
 
-  proc fprint: ostream * C_hack::ptr[char] = "*$1<<$2;" requires iostream;
-  proc fprint: ostream * C_hack::cptr[char] = "*$1<<$2;" requires iostream;
-  proc fprint: ostream * string = "*$1<<$2;" requires iostream;
-  fun atoi: string -> int = "::std::atoi($1.data())" requires cstdlib;
-  fun atol: string -> long = "::std::atol($1.data())" requires cstdlib;
-  fun atof: string -> double = "::std::atof($1.data())" requires cstdlib;
+  proc fprint: ostream * C_hack::ptr[char] = "*$1<<$2;" requires Cxx_headers::iostream;
+  proc fprint: ostream * C_hack::cptr[char] = "*$1<<$2;" requires Cxx_headers::iostream;
+  proc fprint: ostream * string = "*$1<<$2;" requires Cxx_headers::iostream;
+  fun atoi: string -> int = "::std::atoi($1.data())" requires Cxx_headers::cstdlib;
+  fun atol: string -> long = "::std::atol($1.data())" requires Cxx_headers::cstdlib;
+  fun atof: string -> double = "::std::atof($1.data())" requires Cxx_headers::cstdlib;
 
   proc reserve: lvalue[string] * int = "$1.reserve($2);";
 
@@ -395,7 +394,7 @@ open module Ustring
   // comparisons
   //gen_cmp ustring;
 
-  proc fprint: ostream * ustring = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * ustring = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open[T in strings] Show[T];

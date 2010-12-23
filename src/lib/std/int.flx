@@ -13,121 +13,121 @@ typedef fun integral_promotion: TYPE -> TYPE =
 
 open module Tiny
 {
-  fun _ctor_tiny: string -> tiny = "static_cast<signed char>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_tiny: string -> tiny = "static_cast<signed char>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_tiny[T in reals]: T -> tiny = "static_cast<signed char>($1)";
-  proc fprint: ostream * tiny = "*$1<<(int)$2;" requires iostream;
+  proc fprint: ostream * tiny = "*$1<<(int)$2;" requires Cxx_headers::iostream;
 }
 
 open module Short
 {
-  fun _ctor_short: string -> short = "static_cast<short>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_short: string -> short = "static_cast<short>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_short[T in reals]: T -> short = "static_cast<short>($1)";
-  proc fprint: ostream * short = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * short = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Int
 {
-  fun _ctor_int: string -> int = "static_cast<int>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_int: string -> int = "static_cast<int>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_int[T in reals]: T -> int = "static_cast<int>($1)";
   // special hack
   fun _ctor_int(x:bool)=> match x with | true => 1 | false => 0 endmatch;
-  proc fprint: ostream * int = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * int = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Long
 {
-  fun _ctor_long: string -> long = "static_cast<long>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_long: string -> long = "static_cast<long>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_long[T in reals]: T -> long = "static_cast<long>($1)";
-  proc fprint: ostream * long = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * long = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Vlong
 {
-  fun _ctor_vlong: string -> vlong = "static_cast<long long>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_vlong: string -> vlong = "static_cast<long long>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_vlong[T in reals]: T -> vlong = "static_cast<long long>($1)";
-  proc fprint: ostream * vlong = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * vlong = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Utiny
 {
-  fun _ctor_utiny: string -> utiny = "static_cast<unsigned char>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_utiny: string -> utiny = "static_cast<unsigned char>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_utiny[T in reals]: T -> utiny = "static_cast<unsigned char>($1)";
-  proc fprint: ostream * utiny = "*$1<<(unsigned int)$2;" requires iostream;
+  proc fprint: ostream * utiny = "*$1<<(unsigned int)$2;" requires Cxx_headers::iostream;
 }
 
 open module Ushort
 {
-  fun _ctor_ushort: string -> ushort = "static_cast<unsigned short>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_ushort: string -> ushort = "static_cast<unsigned short>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_ushort[T in reals]: T -> ushort = "static_cast<unsigned short>($1)";
-  proc fprint: ostream * ushort = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * ushort = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Uint
 {
-  fun _ctor_uint: string -> uint = "static_cast<unsigned int>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_uint: string -> uint = "static_cast<unsigned int>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_uint[T in reals]: T -> uint = "static_cast<unsigned int>($1)";
-  proc fprint: ostream * uint = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * uint = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Ulong
 {
-  fun _ctor_ulong: string -> ulong = "static_cast<unsigned long>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_ulong: string -> ulong = "static_cast<unsigned long>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_ulong[T in reals]: T -> ulong = "static_cast<unsigned long>($1)";
-  proc fprint: ostream * ulong = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * ulong = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Uvlong
 {
-  fun _ctor_uvlong: string -> uvlong = "static_cast<unsigned long long>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_uvlong: string -> uvlong = "static_cast<unsigned long long>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_uvlong[T in reals]: T -> uvlong = "static_cast<unsigned long long>($1)";
-  proc fprint: ostream * uvlong = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * uvlong = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Int8
 {
-  fun _ctor_int8: string -> int8 = "static_cast<?1>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_int8: string -> int8 = "static_cast<?1>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_int8[T in reals]: T -> int8 = "static_cast<?1>($1)";
 }
 
 open module Int16
 {
-  fun _ctor_int16: string -> int16 = "static_cast<?1>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_int16: string -> int16 = "static_cast<?1>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_int16[T in reals]: T -> int16 = "static_cast<?1>($1)";
 }
 
 open module Int32
 {
-  fun _ctor_int32: string -> int32 = "static_cast<?1>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_int32: string -> int32 = "static_cast<?1>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_int32[T in reals]: T -> int32 = "static_cast<?1>($1)";
 }
 
 open module Int64
 {
-  fun _ctor_int64: string -> int64 = "static_cast<?1>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_int64: string -> int64 = "static_cast<?1>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_int64[T in reals]: T -> int64 = "static_cast<?1>($1)";
 }
 
 open module Uint8
 {
-  fun _ctor_uint8: string -> uint8 = "static_cast<?1>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_uint8: string -> uint8 = "static_cast<?1>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_uint8[T in reals]: T -> uint8 = "static_cast<?1>($1)";
 }
 
 open module Uint16
 {
-  fun _ctor_uint16: string -> uint16 = "static_cast<?1>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_uint16: string -> uint16 = "static_cast<?1>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_uint16[T in reals]: T -> uint16 = "static_cast<?1>($1)";
 }
 
 open module Uint32
 {
-  fun _ctor_uint32: string -> uint32 = "static_cast<?1>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_uint32: string -> uint32 = "static_cast<?1>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_uint32[T in reals]: T -> uint32 = "static_cast<?1>($1)";
 }
 
 open module Uint64
 {
-  fun _ctor_uint64: string -> uint64 = "static_cast<?1>(::std::atoi($1.data()))" requires cstdlib;
+  fun _ctor_uint64: string -> uint64 = "static_cast<?1>(::std::atoi($1.data()))" requires Cxx_headers::cstdlib;
   fun _ctor_uint64[T in reals]: T -> uint64 = "static_cast<?1>($1)";
 }
 

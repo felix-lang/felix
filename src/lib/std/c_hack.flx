@@ -107,11 +107,11 @@ module C_hack
   publish """
   Unsafe output of hopefully null terminated C strings
   """
-  proc fprint: ostream * charp = "*$1<<$2;" requires iostream;
-  proc fprint: ostream * charcp = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * charp = "*$1<<$2;" requires Cxx_headers::iostream;
+  proc fprint: ostream * charcp = "*$1<<$2;" requires Cxx_headers::iostream;
 
   publish """ print an address in hex """
-  proc fprint: ostream * address = "*$1<<$2;" requires iostream;
+  proc fprint: ostream * address = "*$1<<$2;" requires Cxx_headers::iostream;
 
   header dflt_h = "template<class T> T dflt() { return T(); }";
   publish """

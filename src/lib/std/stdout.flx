@@ -4,14 +4,14 @@ open module Stdout
   // NOT on the streams passed in the thread frame
   // almost certainly this is a bug .. :)
   // fprint is defined in each types module
-  requires iostream;
-  type ostream = "std::ostream*";
-  const cout: ostream = "&std::cout";
-  const cerr: ostream = "&std::cerr";
-  proc endl: ostream = "*$1<<std::endl;";
-  proc endl: unit = "std::cout << std::endl;";
-  proc space: int = "std::cout << ' ';";
-  proc flush: unit = "std::cout.flush(); ";
+  requires Cxx_headers::iostream;
+  type ostream = "::std::ostream*";
+  const cout: ostream = "&::std::cout";
+  const cerr: ostream = "&::std::cerr";
+  proc endl: ostream = "*$1<<::std::endl;";
+  proc endl: unit = "::std::cout << ::std::endl;";
+  proc space: int = "::std::cout << ' ';";
+  proc flush: unit = "::std::cout.flush(); ";
 
   proc print  [T with Str[T]] (x:T) { fprint (cout, str x); };
   proc println[T with Str[T]] (x:T) { fprint (cout, str x); endl cout; };
