@@ -523,7 +523,8 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
     let ut = bt ut in
     let ct =
       if unit_sum then si ctor_idx
-      else "_uctor_(" ^ si ctor_idx ^ ",0)"
+      else "::flx::rtl::_uctor_(" ^ si ctor_idx ^ ",0)"
+           (* GAK! Backend specific code in front end *)
     in
 
     if state.print_flag then

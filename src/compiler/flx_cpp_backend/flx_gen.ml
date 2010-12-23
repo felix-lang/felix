@@ -413,7 +413,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
     "struct " ^ name ^
     (match funtypename with
     | Some x -> ": "^x
-    | None -> if not heapable then "" else ": con_t"
+    | None -> if not heapable then "" else ": ::flx::rtl::con_t"
     )
     ^
     " {\n" ^
@@ -445,15 +445,15 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
     (if argtype = btyp_tuple [] or argtype = btyp_void ()
     then
       (if stackable then "  void stack_call();\n" else "") ^
-      (if heapable then "  con_t *call(con_t*);\n" else "")
+      (if heapable then "  ::flx::rtl::con_t *call(::flx::rtl::con_t*);\n" else "")
     else
       (if stackable then "  void stack_call("^argtypename^" const &);\n" else "") ^
-      (if heapable then "  con_t *call(con_t*,"^argtypename^" const &);\n" else "")
+      (if heapable then "  ::flx::rtl::con_t *call(::flx::rtl::con_t*,"^argtypename^" const &);\n" else "")
     ) ^
     (*
     "  //resume\n" ^
     *)
-    (if heapable then "  con_t *resume();\n" else "")
+    (if heapable then "  ::flx::rtl::con_t *resume();\n" else "")
     ^
     "};\n"
 
@@ -884,7 +884,7 @@ let gen_exe filename
             else "") ^
             "      {\n" ^
             subs ^
-            "      con_t *_p =\n" ^
+            "      ::flx::rtl::con_t *_p =\n" ^
             "      (FLX_NEWP(" ^ name ^ ")" ^ Flx_gen_display.strd the_display props^ ")\n" ^
             "      ->call(" ^ args ^ ");\n" ^
             "      while(_p) _p=_p->resume();\n" ^
@@ -902,7 +902,7 @@ let gen_exe filename
               else "") ^
               "      {\n" ^
               subs ^
-              "      con_t *tmp = _caller;\n" ^
+              "      ::flx::rtl::con_t *tmp = _caller;\n" ^
               "      _caller = 0;\n" ^
               call_string ^
               "      }\n"
@@ -946,10 +946,10 @@ let gen_exe filename
     let frame_ptr = "ptr" ^ cpp_instance_name syms bsym_table frame ts in
     "      // non local goto " ^ cid_of_flxid s ^ "\n" ^
     "      {\n" ^
-    "        con_t *tmp1 = this;\n" ^
+    "        ::flx::rtl::con_t *tmp1 = this;\n" ^
     "        while(tmp1 && " ^ frame_ptr ^ "!= tmp1)\n" ^
     "        {\n" ^
-    "          con_t *tmp2 = tmp1->_caller;\n" ^
+    "          ::flx::rtl::con_t *tmp2 = tmp1->_caller;\n" ^
     "          tmp1 -> _caller = 0;\n" ^
     "          tmp1 = tmp2;\n" ^
     "        }\n" ^
@@ -1206,7 +1206,7 @@ let gen_exe filename
         "      //run procedure " ^ src_str ^ "\n"
         else "") ^
         "      {\n" ^
-        "        con_t *_p = ("^ge sr p ^ ")->clone()\n      ->call("^args^");\n" ^
+        "        ::flx::rtl::con_t *_p = ("^ge sr p ^ ")->clone()\n      ->call("^args^");\n" ^
         "        while(_p) _p=_p->resume();\n" ^
         "      }\n"
 
@@ -1236,7 +1236,7 @@ let gen_exe filename
       "      //"^ src_str ^ "\n"
       else "") ^
       "      {\n" ^
-      "        con_t *tmp = _caller;\n" ^
+      "        ::flx::rtl::con_t *tmp = _caller;\n" ^
       "        _caller=0;\n" ^
       "        return (" ^ ge sr p ^ ")\n      ->call(" ^ args ^");\n" ^
       "      }\n"
@@ -1749,7 +1749,7 @@ let gen_function_methods filename syms bsym_table
         *)
         raise x
     in
-    let cont = "con_t *" in
+    let cont = "::flx::rtl::con_t *" in
     let apply =
       rettypename^ " " ^name^
       "::apply("^
@@ -1888,7 +1888,7 @@ let gen_procedure_methods filename syms bsym_table
       gen_exes filename syms bsym_table display label_info counter index exes vs ts instance_no stackable
     in
 
-    let cont = "con_t *" in
+    let cont = "::flx::rtl::con_t *" in
     let heap_call_arg_sig, heap_call_arg =
       match argtype with
       | BTYP_tuple [] -> cont ^ "_ptr_caller","0"
@@ -1930,7 +1930,7 @@ let gen_procedure_methods filename syms bsym_table
           if not heapable
           then unpack_args ^ exe_string
           else
-            "  con_t *cc = call("^heap_call_arg^");\n" ^
+            "  ::flx::rtl::con_t *cc = call("^heap_call_arg^");\n" ^
             "  while(cc) cc = cc->resume();\n"
         ) ^ "\n}\n"
     and heap_call =
@@ -2140,7 +2140,7 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
           "  " ^ flx_fun_type_name ^ " callback = ("^flx_fun_type_name^")_a" ^ si client_data_pos ^ ";\n" ^
           (
             if ret = btyp_void () then begin
-              "  con_t *p = callback->call(0" ^
+              "  ::flx::rtl::con_t *p = callback->call(0" ^
               (if String.length flx_fun_arg > 0 then "," ^ flx_fun_arg else "") ^
               ");\n" ^
               "  while(p)p = p->resume();\n"
@@ -2189,7 +2189,7 @@ let gen_biface_header syms bsym_table biface = match biface with
       in
       let name, rettypename =
         match ret with
-        | BTYP_void -> "PROCEDURE", "con_t * "
+        | BTYP_void -> "PROCEDURE", "::flx::rtl::con_t * "
         | _ -> "FUNCTION", cpp_typename syms bsym_table ret
       in
 
@@ -2268,7 +2268,7 @@ let gen_biface_body syms bsym_table biface = match biface with
 
       "//EXPORT PROC " ^ cpp_instance_name syms bsym_table index [] ^
       " as " ^ export_name ^ "\n" ^
-      "con_t *" ^ export_name ^ "(\n" ^ strparams ^ "\n){\n" ^
+      "::flx::rtl::con_t *" ^ export_name ^ "(\n" ^ strparams ^ "\n){\n" ^
       (
         if mem `Stack_closure props then
         (

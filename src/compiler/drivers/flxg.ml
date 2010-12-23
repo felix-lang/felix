@@ -438,9 +438,9 @@ let codegen_bsyms state bsym_table root_proc =
    *)
   plh "//FELIX RUNTIME";
   plh "#include \"flx_rtl.hpp\"";  
-  plh "using namespace ::flx::rtl;"; 
+  (* plh "using namespace ::flx::rtl;";  *)
   plh "#include \"flx_gc.hpp\"";
-  plh "using namespace ::flx::gc::generic;"; 
+  (* plh "using namespace ::flx::gc::generic;"; *)
 
   plh "#ifndef FLX_NO_INCLUDES";
   plh ("#include \"" ^ state.module_name ^ ".includes\"");
@@ -540,7 +540,7 @@ let codegen_bsyms state bsym_table root_proc =
   "  FILE *flx_stdin;";
   "  FILE *flx_stdout;";
   "  FILE *flx_stderr;";
-  "  gc_profile_t *gcp;";
+  "  ::flx::gc::generic::gc_profile_t *gcp;";
   "  ::flx::gc::generic::gc_shape_t *shape_list_head;";
   "  thread_frame_t(";
   "  );";

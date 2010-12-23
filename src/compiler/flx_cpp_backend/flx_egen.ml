@@ -451,7 +451,7 @@ let rec gen_expr'
            if is_unitsum t then
              si v
            else
-             "_uctor_(" ^ si v ^ ",0)"
+             "::flx::rtl::_uctor_(" ^ si v ^ ",0)"
          else
            failwith
            (
@@ -678,7 +678,7 @@ let rec gen_expr'
       | None -> failwith "[egen] Woops, variant field not in type"
     in
     print_endline ("Index " ^ si vidx);
-    let uval = "_uctor_("^si vidx^"," ^ aval ^")"  in
+    let uval = "::flx::rtl::_uctor_("^si vidx^"," ^ aval ^")"  in
     ce_atom uval
 
   | BEXPR_coerce ((srcx,srct) as srce,dstt) ->
@@ -702,7 +702,7 @@ let rec gen_expr'
             i
         end
         in
-        ce_atom ("_uctor_(vmap_" ^ cid_of_bid i ^ "," ^ ge srce ^ ")")
+        ce_atom ("::flx::rtl::_uctor_(vmap_" ^ cid_of_bid i ^ "," ^ ge srce ^ ")")
       end
     in
     begin match dstt with
@@ -735,7 +735,7 @@ let rec gen_expr'
          if is_unitsum t then
            si v
          else
-         "_uctor_(" ^ si v ^ ", " ^ aval ^")"
+         "::flx::rtl::_uctor_(" ^ si v ^ ", " ^ aval ^")"
        in
        let s = "(" ^ union_typename ^ ")" ^ uval in
        ce_atom s
@@ -800,21 +800,21 @@ let rec gen_expr'
       let t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
       begin match ct with
       | BTYP_tuple [] ->
-        ce_atom ( "_uctor_(" ^ si cidx ^ ", NULL)")
+        ce_atom ( "::flx::rtl::_uctor_(" ^ si cidx ^ ", NULL)")
 
       (* function types are already pointers .. any use of this
          should do a clone .. class types are also pointers ..
       *)
       | BTYP_function _ ->
         ce_atom (
-          "_uctor_(" ^ si cidx ^ ", " ^ ge a ^")"
+          "::flx::rtl::_uctor_(" ^ si cidx ^ ", " ^ ge a ^")"
         )
 
       | _ ->
         let ctt = tn ct in
         let ptrmap = shape_of syms bsym_table tn ct in
         let txt =
-           "_uctor_(" ^ si cidx ^ ", new(*PTF gcp,"^ ptrmap^",true)"^
+           "::flx::rtl::_uctor_(" ^ si cidx ^ ", new(*PTF gcp,"^ ptrmap^",true)"^
            ctt ^"("^ ge a ^"))"
         in
         ce_atom txt

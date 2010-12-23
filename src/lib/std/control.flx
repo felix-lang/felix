@@ -20,21 +20,6 @@ open module Control
     finish:>
   }
 
-  /* DISABLED: replaced by UNTIL statement until the optimiser is working
-  publish """
-  C style while loop with reversed condition
-  note the until is tested first -- zero iterations are possible
-  """
-  proc until(cond:unit->bool) (bdy:unit->void)
-  {
-    repeatx:>
-      if cond() goto finish;
-      bdy();
-      goto repeatx;
-    finish:>
-  }
-  */
-
   publish "do nothing [the name pass comes from Python]"
   proc pass(){}
 
@@ -55,22 +40,22 @@ open module Control
   }
 
   publish 'abnormal termination with message'
-  proc fail:string = 'throw std::runtime_error($1);' requires stdexcept;
+  proc fail:string = 'throw ::std::runtime_error($1);' requires stdexcept;
 
   publish "WILL BE DEPRECATED, these don't work right"
-  fun fail_fun[t]:1->t = 'throw std::runtime_error(""),*(?1*)0' requires stdexcept;
+  fun fail_fun[t]:1->t = 'throw ::std::runtime_error(""),*(?1*)0' requires stdexcept;
 
   publish "WILL BE DEPRECATED, these don't work right"
-  fun fail_fun[t]:string->t = 'throw std::runtime_error($1),*(?1*)0' requires stdexcept;
+  fun fail_fun[t]:string->t = 'throw ::std::runtime_error($1),*(?1*)0' requires stdexcept;
 
   publish "Felix procedural continuation type"
-  _gc_pointer type cont = "flx::rtl::con_t*";
+  _gc_pointer type cont = "::flx::rtl::con_t*";
 
   publish "Current continuation"
   fun current_continuation: unit -> cont = "this";
 
   publish "Felix fthread"
-  _gc_pointer type fthread = "flx::rtl::fthread_t*";
+  _gc_pointer type fthread = "::flx::rtl::fthread_t*";
 
 
   publish """
@@ -167,7 +152,7 @@ open module Control
   private fun _start0: (1->0)->cont = "$1->clone()->call(0)";
   gen start (p:1->0) = { return _start0 (p); }
 
-  gen mk_thread: cont->fthread = "new(*PTF gcp,_fthread_ptr_map,false) flx::rtl::fthread_t($1)";
+  gen mk_thread: cont->fthread = "new(*PTF gcp,::flx::rtl::_fthread_ptr_map,false) ::flx::rtl::fthread_t($1)";
 
   proc spawn_fthread(p:1->0)
   {
@@ -187,12 +172,12 @@ open module Control
 
   This is a low level primitive, bypassing fthreads.
   """
-  proc run: cont = "flx::rtl::executil::run($1);" requires package "flx_executil";
+  proc run: cont = "::flx::rtl::executil::run($1);" requires package "flx_executil";
 
   private proc _send[t]: &cont * t =
   """
   {
-    using namespace flx::rtl;
+    using namespace ::flx::rtl;
     con_t *tmp = *(con_t**)$1.get_data();
     // run target until it reaches a service request (or death)
     while(tmp && (!tmp->p_svc || tmp->p_svc->variant == svc_yield)) {

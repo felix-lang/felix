@@ -578,10 +578,10 @@ else:
 
 if config.TARGET_CXX.options.HAVE_LONGDOUBLE:
   tmap["ldouble"]="long double"
-  tmap["lcomplex"]="std::complex<long double>"
+  tmap["lcomplex"]="::std::complex<long double>"
 else:
   tmap["ldouble"]="double"
-  tmap["lcomplex"]="std::complex<double>"
+  tmap["lcomplex"]="::std::complex<double>"
 
 if config.TARGET_CXX.options.HAVE_LONGLONG:
   tmap["vlong"]="long long"

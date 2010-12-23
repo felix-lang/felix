@@ -17,6 +17,8 @@ dist:
 
 install:
 	sudo build/release/bin/flx --test=build/release --install
+
+install-bin:
 	sudo build/release/bin/flx --test=build/release --install-bin
 
 websites-linux:
@@ -37,7 +39,7 @@ release:
 	echo "Restart webservers now"
 	echo "Upgrade buildsystem/version.py now and rebuild"
 
-.PHONY : configure build test doc install websites-linux websites-osx release
+.PHONY : configure build test doc install websites-linux websites-osx release install-bin
 	
 
 

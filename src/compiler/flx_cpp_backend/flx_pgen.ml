@@ -23,8 +23,8 @@ let shape_of syms bsym_table tn t =
     | BBDCL_union (vs,idts) ->
       let varmap = mk_varmap vs ts in
       let cpts = map (fun (_,_,t) -> varmap_subst varmap t) idts in
-      if all_voids cpts then "_int_ptr_map"
-      else "_uctor_ptr_map"
+      if all_voids cpts then "::flx::rtl::_int_ptr_map"
+      else "::flx::rtl::_uctor_ptr_map"
 
     (* special hack: if we have a type which has an associated gc_shape type,
      * use the shape of that instead of the original type. This is a hack because
@@ -57,10 +57,10 @@ let shape_of syms bsym_table tn t =
     end
 
   | BTYP_sum cpts ->
-      if all_units cpts then "_int_ptr_map"
-      else "_uctor_ptr_map"
+      if all_units cpts then "::flx::rtl::_int_ptr_map"
+      else "::flx::rtl::_uctor_ptr_map"
 
-  | BTYP_pointer _ -> "_address_ptr_map"
+  | BTYP_pointer _ -> "::flx::rtl::_address_ptr_map"
   | _ -> tn t ^ "_ptr_map"
 
 let gen_prim_call

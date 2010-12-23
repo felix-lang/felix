@@ -221,18 +221,18 @@ let gen_offset_data s n name offsets isfun props flags last_ptr_map =
   in
   if n <> 0 then
   begin
-    bcat s ("static std::size_t " ^ name ^
+    bcat s ("static ::std::size_t " ^ name ^
       "_offsets["^noffsets^ "]={\n");
     bcat s ("  " ^ cat "\n  " offsets);
     bcat s ("\n" ^  "};\n");
   end;
   bcat s ("FLX_FINALISER("^name^")\n");
-  bcat s (  "static gc_shape_t "^ this_ptr_map ^" ={\n");
+  bcat s (  "static ::flx::gc::generic::gc_shape_t "^ this_ptr_map ^" ={\n");
   bcat s ("  " ^ old_ptr_map ^ ",\n");
   bcat s ("  \"" ^ name ^ "\",\n");
   bcat s ("  1,sizeof("^name^"),\n  "^name^"_finaliser,\n");
   bcat s ("  "^noffsets^",\n  "^ (if n<>0 then name^"_offsets" else "0")^",\n  ");
-  bcat s (match flags with None -> "gc_flags_default\n" | Some flags ->  flags^"\n");
+  bcat s (match flags with None -> "::flx::gc::generic::gc_flags_default\n" | Some flags ->  flags^"\n");
   bcat s ( "};\n")
 
 let is_instantiated syms i ts = Hashtbl.mem syms.instances (i,ts)
@@ -309,7 +309,7 @@ let gen_thread_frame_offsets s syms bsym_table last_ptr_map =
   (
     "\n//OFFSETS for "^ name ^ "\n"
   );
-  gen_offset_data s n name offsets false [] (Some "gc_flags_immobile") last_ptr_map
+  gen_offset_data s n name offsets false [] (Some "::flx::gc::generic::gc_flags_immobile") last_ptr_map
 
 let id x = ()
 
@@ -520,7 +520,7 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
       let n = length offsets in
       bcat s ("\n//OFFSETS for array type " ^ string_of_bid index ^ "\n");
       if n <> 0 then begin
-        bcat s ("static std::size_t " ^ name ^ "_offsets["^si n^"]={\n  ");
+        bcat s ("static ::std::size_t " ^ name ^ "_offsets["^si n^"]={\n  ");
         bcat s ("  " ^ cat ",\n  " offsets);
         bcat s "};\n"
       end
@@ -531,12 +531,12 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
       last_ptr_map := "&"^this_ptr_map;
 
       if not is_pod then begin
-        bcat s ("static void " ^ name ^ "_finaliser(collector_t *, void *p){\n");
+        bcat s ("static void " ^ name ^ "_finaliser(::flx::gc::generic::collector_t *, void *p){\n");
         bcat s ("  (("^ tname ^ "*)p)->~" ^ tname ^ "();\n");
         bcat s ("}\n")
       end
       ;
-      bcat s ("static gc_shape_t "^ name ^"_ptr_map = {\n");
+      bcat s ("static ::flx::gc::generic::gc_shape_t "^ name ^"_ptr_map = {\n");
       bcat s ("  " ^ old_ptr_map ^ ",\n");
       bcat s ("  \"" ^ name ^ "\",\n");
       bcat s ("  " ^ si k ^ ",\n");
@@ -554,7 +554,7 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
           else ",\n  " ^name^"_offsets,\n"
         )
       );
-      bcat s "  gc_flags_default\n";
+      bcat s "  ::flx::gc::generic::gc_flags_default\n";
       bcat s "};\n"
 
     | BTYP_inst (i,ts) ->
@@ -583,13 +583,13 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
             last_ptr_map := "&"^this_ptr_map;
 
             if not pod then bcat s ("FLX_FINALISER("^name^")\n");
-            bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map = {\n") ;
+            bcat s ( "static ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map = {\n") ;
             bcat s ("  " ^ old_ptr_map ^ ",\n");
             bcat s ("  \"" ^ name ^ "\",\n");
             if pod then
-              bcat s ("  1,sizeof("^name^"),0,0,0,gc_flags_default\n")
+              bcat s ("  1,sizeof("^name^"),0,0,0,::flx::gc::generic::gc_flags_default\n")
             else
-              bcat s ("  1,sizeof("^name^"),"^name^"_finaliser,0,0,gc_flags_default\n")
+              bcat s ("  1,sizeof("^name^"),"^name^"_finaliser,0,0,::flx::gc::generic::gc_flags_default\n")
             ;
             bcat s "};\n"
           end else begin
@@ -613,13 +613,13 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
         (* HACK .. in fact, some C structs might have finalisers! *)
         let pod = true in
         if not pod then bcat s ("FLX_FINALISER("^name^")\n");
-        bcat s ( "static gc_shape_t " ^ name ^ "_ptr_map ={\n") ;
+        bcat s ( "static ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map ={\n") ;
         bcat s ("  " ^ old_ptr_map ^ ",\n");
         bcat s ("  \"" ^ name ^ "\",\n");
         if pod then
-          bcat s ("  1,sizeof("^name^"),0,0,0,gc_flags_default\n")
+          bcat s ("  1,sizeof("^name^"),0,0,0,::flx::gc::generic::gc_flags_default\n")
         else
-          bcat s ("  1,sizeof("^name^"),"^name^"_finaliser,0,0,gc_flags_default\n")
+          bcat s ("  1,sizeof("^name^"),"^name^"_finaliser,0,0,::flx::gc::generic::gc_flags_default\n")
         ;
         bcat s "};\n"
 
@@ -640,11 +640,11 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
 
    | BTYP_unitsum _ ->
      let name = cpp_typename syms bsym_table btyp in
-     bcat s ("static gc_shape_t &"^ name ^"_ptr_map = flx::rtl::_int_ptr_map;\n");
+     bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
 
    | BTYP_sum _ ->
      let name = cpp_typename syms bsym_table btyp in
-     bcat s ("static gc_shape_t &"^ name ^"_ptr_map = flx::rtl::_uctor_ptr_map;\n");
+     bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_uctor_ptr_map;\n");
 
    | _ ->
      failwith
@@ -659,6 +659,6 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
 
   bcat s ("// Head of shape list, included so dlsym() can find it when\n");
   bcat s ("// this file is a shared lib, uses module name for uniqueness.\n");
-  bcat s ("extern \"C\" FLX_EXPORT gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape;\n");
-  bcat s ("gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape=" ^ !last_ptr_map ^ ";\n");
+  bcat s ("extern \"C\" FLX_EXPORT ::flx::gc::generic::gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape;\n");
+  bcat s ("::flx::gc::generic::gc_shape_t *" ^ cid_of_flxid module_name ^ "_head_shape=" ^ !last_ptr_map ^ ";\n");
   !last_ptr_map,Buffer.contents s

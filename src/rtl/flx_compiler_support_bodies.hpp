@@ -12,7 +12,7 @@
   throw ::flx::rtl::flx_exec_failure_t (f,op,what)
 
 #define FLX_HALT(f,sl,sc,el,ec,s) \
-  throw ::flx::rtl::flx_halt_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__,s)
+  throw ::flx::rtl::flx_halt_t (::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__,s)
 
 // note call should be trace(&v,...) however that requires
 // compiler support to make a trace record for each tracepoint
@@ -20,25 +20,25 @@
 
 #ifdef FLX_ENABLE_TRACE
 #define FLX_TRACE(v,f,sl,sc,el,ec,s) \
-  ::flx::rtl::flx_trace (NULL,flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__,s)
+  ::flx::rtl::flx_trace (NULL,::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__,s)
 #else
 #define FLX_TRACE(v,f,sl,sc,el,ec,s)
 #endif
 
 #define FLX_MATCH_FAILURE(f,sl,sc,el,ec) \
-  throw ::flx::rtl::flx_match_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
+  throw ::flx::rtl::flx_match_failure_t (::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
 
 #define FLX_ASSERT_FAILURE(f,sl,sc,el,ec) \
-  throw ::flx::rtl::flx_assert_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
+  throw ::flx::rtl::flx_assert_failure_t (::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
 
 #define FLX_ASSERT2_FAILURE(f,sl,sc,el,ec,f2,sl2,sc2,el2,ec2) \
   throw ::flx::rtl::flx_assert2_failure_t (\
-    flx_range_srcref_t(f,sl,sc,el,ec),\
-    flx_range_srcref_t(f2,sl2,sc2,el2,sc2),\
+    ::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),\
+    ::flx::rtl::flx_range_srcref_t(f2,sl2,sc2,el2,sc2),\
     __FILE__,__LINE__)
 
 #define FLX_RANGE_FAILURE(f,sl,sc,el,ec) \
-  throw ::flx::rtl::flx_range_failure_t (flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
+  throw ::flx::rtl::flx_range_failure_t (::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
 
 // for generated code in body file
 #define INIT_PC pc=0;
@@ -63,7 +63,7 @@
   #define FLX_DECLARE_LABEL(n,i,x)
   #define FLX_LABEL(n,i,x) case n: x:;
   #define FLX_FARTARGET(n,i,x) n
-  #define FLX_END_SWITCH default: throw flx_switch_failure_t(); }
+  #define FLX_END_SWITCH default: throw ::flx::rtl::flx_switch_failure_t(); }
 #endif
 
 #define FLX_RETURN \
@@ -76,7 +76,7 @@
 #define FLX_NEWP(x) new(*PTF gcp,x##_ptr_map,true)x
 
 #define FLX_FINALISER(x) \
-static void x##_finaliser(collector_t *, void *p){\
+static void x##_finaliser(::flx::gc::generic::collector_t *, void *p){\
   ((x*)p)->~x();\
 }
 
@@ -127,7 +127,7 @@ static void x##_finaliser(collector_t *, void *p){\
 #if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_FRAME_WRAPPERS(mname) \
 extern "C" thread_frame_t *create_thread_frame(\
-  gc_profile_t *gcp\
+  ::flx::gc::generic::gc_profile_t *gcp\
 ) {\
   ptf.gcp = gcp;\
   return &ptf;\
@@ -135,7 +135,7 @@ extern "C" thread_frame_t *create_thread_frame(\
 #elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_FRAME_WRAPPERS(mname) \
 extern "C" thread_frame_t *create_thread_frame(\
-  gc_profile_t *gcp\
+  ::flx::gc::generic::gc_profile_t *gcp\
 ) {\
   mname::thread_frame_t *p = new(*gcp,mname::thread_frame_t_ptr_map,false) mname::thread_frame_t();\
   p->gcp = gcp;\
@@ -145,7 +145,7 @@ extern "C" thread_frame_t *create_thread_frame(\
 #else
 #define FLX_FRAME_WRAPPERS(mname) \
 extern "C" FLX_EXPORT mname::thread_frame_t *create_thread_frame(\
-  gc_profile_t *gcp\
+  ::flx::gc::generic::gc_profile_t *gcp\
 ) {\
   mname::thread_frame_t *p = new(*gcp,mname::thread_frame_t_ptr_map,false) mname::thread_frame_t();\
   p->gcp = gcp;\
@@ -155,7 +155,7 @@ extern "C" FLX_EXPORT mname::thread_frame_t *create_thread_frame(\
 
 #if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_START_WRAPPER(mname,x)\
-extern "C" con_t *flx_start(\
+extern "C" ::flx::rtl::con_t *flx_start(\
   mname::thread_frame_t *ptf,\
   int argc,\
   char **argv,\
@@ -173,7 +173,7 @@ extern "C" con_t *flx_start(\
 }
 #elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_START_WRAPPER(mname,x)\
-extern "C" con_t *flx_start(\
+extern "C" ::flx::rtl::con_t *flx_start(\
   mname::thread_frame_t *ptf,\
   int argc,\
   char **argv,\
@@ -191,7 +191,7 @@ extern "C" con_t *flx_start(\
 }
 #else
 #define FLX_START_WRAPPER(mname,x)\
-extern "C" FLX_EXPORT con_t *flx_start(\
+extern "C" FLX_EXPORT ::flx::rtl::con_t *flx_start(\
   mname::thread_frame_t *ptf,\
   int argc,\
   char **argv,\
@@ -211,7 +211,7 @@ extern "C" FLX_EXPORT con_t *flx_start(\
 
 #if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_STACK_START_WRAPPER(mname,x)\
-extern "C" con_t *flx_start(\
+extern "C" ::flx::rtl::con_t *flx_start(\
   mname::thread_frame_t *ptf,\
   int argc,\
   char **argv,\
@@ -229,7 +229,7 @@ extern "C" con_t *flx_start(\
 }
 #elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_STACK_START_WRAPPER(mname,x)\
-extern "C" con_t *flx_start(\
+extern "C" ::flx::rtl::con_t *flx_start(\
   mname::thread_frame_t *ptf,\
   int argc,\
   char **argv,\
@@ -247,7 +247,7 @@ extern "C" con_t *flx_start(\
 }
 #else
 #define FLX_STACK_START_WRAPPER(mname,x)\
-extern "C" FLX_EXPORT con_t *flx_start(\
+extern "C" FLX_EXPORT ::flx::rtl::con_t *flx_start(\
   mname::thread_frame_t *ptf,\
   int argc,\
   char **argv,\
@@ -267,7 +267,7 @@ extern "C" FLX_EXPORT con_t *flx_start(\
 
 #if defined(FLX_PTF_STATIC_STRUCT)
 #define FLX_C_START_WRAPPER(mname,x)\
-extern "C" con_t *flx_start(\
+extern "C" ::flx::rtl::con_t *flx_start(\
   mname::thread_frame_t *ptf,\
   int argc,\
   char **argv,\
@@ -285,7 +285,7 @@ extern "C" con_t *flx_start(\
 }
 #elif defined(FLX_PTF_STATIC_POINTER)
 #define FLX_C_START_WRAPPER(mname,x)\
-extern "C" con_t *flx_start(\
+extern "C" ::flx::rtl::con_t *flx_start(\
   mname::thread_frame_t *ptf,\
   int argc,\
   char **argv,\
@@ -303,7 +303,7 @@ extern "C" con_t *flx_start(\
 }
 #else
 #define FLX_C_START_WRAPPER(mname,x)\
-extern "C" FLX_EXPORT con_t *flx_start(\
+extern "C" FLX_EXPORT ::flx::rtl::con_t *flx_start(\
   mname::thread_frame_t *ptf,\
   int argc,\
   char **argv,\

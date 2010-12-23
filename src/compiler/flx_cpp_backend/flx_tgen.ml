@@ -199,10 +199,10 @@ let gen_type_name syms bsym_table (index,typ) =
     then
       "typedef int " ^ tn typ ^ ";\n"
     else
-      "typedef _uctor_ " ^ tn typ ^ ";\n"
+      "typedef ::flx::rtl::_uctor_ " ^ tn typ ^ ";\n"
 
   | BTYP_variant ts ->
-    "typedef _uctor_ " ^ tn typ ^ ";\n"
+    "typedef ::flx::rtl::_uctor_ " ^ tn typ ^ ";\n"
 
   | BTYP_void -> ""
 
@@ -289,7 +289,7 @@ let gen_type_name syms bsym_table (index,typ) =
       then
         "typedef int " ^ name ^ "; //ncases="^len^"\n"
       else
-        "typedef _uctor_ " ^ name ^ "; //ncases="^len^"\n"
+        "typedef ::flx::rtl::_uctor_ " ^ name ^ "; //ncases="^len^"\n"
 
 
     | _ ->
@@ -345,17 +345,17 @@ let gen_type syms bsym_table (index,typ) =
     and unitproc = a = btyp_tuple [] or a = btyp_void ()
     in
     "struct " ^ name ^
-    ": con_t {\n" ^
+    ": ::flx::rtl::con_t {\n" ^
     "  typedef void rettype;\n" ^
     "  typedef " ^ (if unitproc then "void" else argtype) ^ " argtype;\n" ^
     (if unitproc
     then
-    "  virtual con_t *call(con_t *)=0;\n"
+    "  virtual ::flx::rtl::con_t *call(::flx::rtl::con_t *)=0;\n"
     else
-    "  virtual con_t *call(con_t *, "^argtype^" const &)=0;\n"
+    "  virtual ::flx::rtl::con_t *call(::flx::rtl::con_t *, "^argtype^" const &)=0;\n"
     ) ^
     "  virtual "^name^" *clone()=0;\n"  ^
-    "  virtual con_t *resume()=0;\n"  ^
+    "  virtual ::flx::rtl::con_t *resume()=0;\n"  ^
     "};\n"
 
   (* FUNCTION *)

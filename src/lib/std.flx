@@ -7,7 +7,7 @@ header math_h = "#include <math.h>";
 header ieeefp_h = """
 extern "C" {
 #include <ieeefp.h>
-
+}
 """;
 
 header stdexcept = '#include <stdexcept>';
