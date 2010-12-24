@@ -1,11 +1,5 @@
 header '#include "flx_rtl_config.hpp"';
 
-header ieeefp_h = """
-extern "C" {
-#include <ieeefp.h>
-}
-""";
-
 body swapper[t] = """
   void swapper(?1 *a, ?1 *b){
     ?1 tmp = *a; *a = *b; *b = tmp;
@@ -23,9 +17,5 @@ typedef ucharp = C_hack::ptr[utiny];
 typedef ucharcp = C_hack::cptr[utiny];
 publish "Universal type 'x as x'"
   typedef any = any;
-
-publish "Lvalue hack"
-  //typedef lvalue[t] = lval t;
-  typedef lvalue[t] = t;
 
 include "std/__init__";

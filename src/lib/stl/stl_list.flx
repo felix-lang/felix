@@ -43,7 +43,7 @@ module Stl_List[t]
     fun lt: stl_list_iterator[t] * stl_list_iterator[t] -> bool = "$1<$2";
   }
   instance Iterator[stl_list_iterator[t],t] {
-    fun deref : stl_list_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+    fun deref : stl_list_iterator[t] ->  t  = "*(#0*)(void*)&*$1";
   }
   instance Forward[stl_list_iterator[t]] {
     fun succ: stl_list_iterator[t] -> stl_list_iterator[t] = "$1+1";
@@ -66,7 +66,7 @@ module Stl_List[t]
     fun lt: stl_list_reverse_iterator[t] * stl_list_reverse_iterator[t] -> bool = "$1<$2";
   }
   instance Iterator[stl_list_reverse_iterator[t],t] {
-    fun deref : stl_list_reverse_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+    fun deref : stl_list_reverse_iterator[t] ->  t  = "*(#0*)(void*)&*$1";
   }
   instance Forward[stl_list_reverse_iterator[t]] {
     fun succ: stl_list_reverse_iterator[t] -> stl_list_reverse_iterator[t] = "$1+1";

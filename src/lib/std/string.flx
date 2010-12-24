@@ -68,7 +68,7 @@ open module String
     endmatch
   ;
 
-  proc store: lvalue[string] * int * char = "$1[$2] = $3;";
+  proc store: string * int * char = "$1[$2] = $3;";
 
   fun map (f:char->char) (var x:string): string = {
     var i:int; forall i in 0 upto (len x) - 1 do
@@ -331,7 +331,7 @@ open module String
   fun atol: string -> long = "::std::atol($1.data())" requires Cxx_headers::cstdlib;
   fun atof: string -> double = "::std::atof($1.data())" requires Cxx_headers::cstdlib;
 
-  proc reserve: lvalue[string] * int = "$1.reserve($2);";
+  proc reserve: string * int = "$1.reserve($2);";
 
   publish "Unsafe extract buffer pointer"
   fun cstr: string -> C_hack::cptr[char] = "$1.data()";
@@ -373,7 +373,7 @@ open module Ustring
   open Char;
   open Int;
   fun _ctor_uchar (x:ustring) => x.[0];
-  proc pluseq: lvalue[ustring] * ustring = "$1.append($2);";
+  proc pluseq: ustring * ustring = "$1.append($2);";
 
   fun len: ustring -> int = "$1.size()";
   fun add: ustring * ustring -> ustring = "$1+$2";

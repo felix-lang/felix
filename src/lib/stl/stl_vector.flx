@@ -18,7 +18,7 @@ module Vector[t]
     fun sub: stl_vector_iterator[t] * int -> stl_vector_iterator[t] = "$1-$2";
     proc pluseq: &stl_vector_iterator[t] * int = "*$1+=$2;";
     proc minuseq: &stl_vector_iterator[t] * int = "*$1-=$2;";
-    fun subscript: stl_vector_iterator[t] * int -> lvalue[t] = "$1[$2]";
+    fun subscript: stl_vector_iterator[t] * int -> t = "$1[$2]";
 // Vector
   instance Eq[stl_vector[t]] {
     fun eq: stl_vector[t] * stl_vector[t] -> bool = "$1==$2";
@@ -47,7 +47,7 @@ module Vector[t]
     fun lt: stl_vector_iterator[t] * stl_vector_iterator[t] -> bool = "$1<$2";
   }
   instance Iterator[stl_vector_iterator[t],t] {
-    fun deref : stl_vector_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+    fun deref : stl_vector_iterator[t] ->  t  = "*(#0*)(void*)&*$1";
   }
   instance Forward[stl_vector_iterator[t]] {
     fun succ: stl_vector_iterator[t] -> stl_vector_iterator[t] = "$1+1";
@@ -70,7 +70,7 @@ module Vector[t]
     fun lt: stl_vector_reverse_iterator[t] * stl_vector_reverse_iterator[t] -> bool = "$1<$2";
   }
   instance Iterator[stl_vector_reverse_iterator[t],t] {
-    fun deref : stl_vector_reverse_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+    fun deref : stl_vector_reverse_iterator[t] ->  t  = "*(#0*)(void*)&*$1";
   }
   instance Forward[stl_vector_reverse_iterator[t]] {
     fun succ: stl_vector_reverse_iterator[t] -> stl_vector_reverse_iterator[t] = "$1+1";

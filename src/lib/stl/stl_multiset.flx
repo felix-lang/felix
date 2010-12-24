@@ -20,9 +20,9 @@ module MultiSet[t]
   instance Sequence[stl_multiset[t],stl_multiset_iterator[t],t] {
     fun begin : stl_multiset[t]-> stl_multiset_iterator[t]= "$1.begin()";
     fun end : stl_multiset[t]-> stl_multiset_iterator[t]= "$1.end()";
-    proc erase : lvalue[stl_multiset[t]] * stl_multiset_iterator[t] = "$1.erase($1);";
-    proc erase_between : lvalue[stl_multiset[t]] * stl_multiset_iterator[t] * stl_multiset_iterator[t] = "$1.erase($1,$2);";
-    proc clear : lvalue[stl_multiset[t]] = "$1.clear();";
+    proc erase : stl_multiset[t] * stl_multiset_iterator[t] = "$1.erase($1);";
+    proc erase_between : stl_multiset[t] * stl_multiset_iterator[t] * stl_multiset_iterator[t] = "$1.erase($1,$2);";
+    proc clear : stl_multiset[t] = "$1.clear();";
   }
   instance Reversible_Sequence[stl_multiset[t],stl_multiset_iterator[t],stl_multiset_reverse_iterator[t],t] {
     fun rbegin : stl_multiset[t]-> stl_multiset_reverse_iterator[t]= "$1.rbegin()";
@@ -37,7 +37,7 @@ module MultiSet[t]
     fun lt: stl_multiset_iterator[t] * stl_multiset_iterator[t] -> bool = "$1<$2";
   }
   instance Iterator[stl_multiset_iterator[t],t] {
-    fun deref : stl_multiset_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+    fun deref : stl_multiset_iterator[t] ->  t  = "*(#0*)(void*)&*$1";
   }
   instance Forward[stl_multiset_iterator[t]] {
     fun succ: stl_multiset_iterator[t] -> stl_multiset_iterator[t] = "$1+1";
@@ -60,7 +60,7 @@ module MultiSet[t]
     fun lt: stl_multiset_reverse_iterator[t] * stl_multiset_reverse_iterator[t] -> bool = "$1<$2";
   }
   instance Iterator[stl_multiset_reverse_iterator[t],t] {
-    fun deref : stl_multiset_reverse_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+    fun deref : stl_multiset_reverse_iterator[t] ->  t  = "*(#0*)(void*)&*$1";
   }
   instance Forward[stl_multiset_reverse_iterator[t]] {
     fun succ: stl_multiset_reverse_iterator[t] -> stl_multiset_reverse_iterator[t] = "$1+1";

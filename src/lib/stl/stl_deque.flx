@@ -42,7 +42,7 @@ module Deque[t]
     fun lt: stl_deque_iterator[t] * stl_deque_iterator[t] -> bool = "$1<$2";
   }
   instance Iterator[stl_deque_iterator[t],t] {
-    fun deref : stl_deque_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+    fun deref : stl_deque_iterator[t] ->  t  = "*(#0*)(void*)&*$1";
   }
   instance Forward[stl_deque_iterator[t]] {
     fun succ: stl_deque_iterator[t] -> stl_deque_iterator[t] = "$1+1";
@@ -65,7 +65,7 @@ module Deque[t]
     fun lt: stl_deque_reverse_iterator[t] * stl_deque_reverse_iterator[t] -> bool = "$1<$2";
   }
   instance Iterator[stl_deque_reverse_iterator[t],t] {
-    fun deref : stl_deque_reverse_iterator[t] ->  lvalue[t]  = "*(#0*)(void*)&*$1";
+    fun deref : stl_deque_reverse_iterator[t] ->  t  = "*(#0*)(void*)&*$1";
   }
   instance Forward[stl_deque_reverse_iterator[t]] {
     fun succ: stl_deque_reverse_iterator[t] -> stl_deque_reverse_iterator[t] = "$1+1";

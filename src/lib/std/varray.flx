@@ -62,7 +62,7 @@ open module Varray
     requires property "needs_gc"
   ;
 
-  lvalue fun subscript[t]: varray[t] * !ints -> lvalue[t] = "$1[$2]";
+  lvalue fun subscript[t]: varray[t] * !ints -> t = "$1[$2]";
 
   fun len[t]: varray[t] -> ulong =
     "PTF gcp->collector->get_used($1)"
@@ -150,7 +150,7 @@ struct comparator {
   comparator() : cmp(0) {}
   comparator(FFT cmp_a) : cmp(cmp_a) {}
   bool operator ()(CT x, CT y){
-    std::pair<CT,CT> z(x,y); 
+    ::std::pair<CT,CT> z(x,y); 
     return cmp->apply(*(FT2*)(void*)&z);
   }
 };
@@ -163,7 +163,7 @@ private fun _make_comparator[CT,FT2,FFT]: FFT -> comparator[CT] = "comparator<?1
 private fun make_comparator[T](cmp:T * T -> bool) => _make_comparator[T, T*T, T*T->bool] (cmp);
 
 // invoke stl sort
-private proc _sort[T]: comparator[T] * &T * &T = "std::sort($2, $3, $1);" 
+private proc _sort[T]: comparator[T] * &T * &T = "::std::sort($2, $3, $1);" 
   requires header "#include <algorithm>";
 
 

@@ -6,7 +6,7 @@ include "stl/stl";
     type stl_multimap_iterator = "::std::multimap<?1,?2>::iterator";
     type stl_multimap_reverse_iterator = "::std::multimap<?1,?2>::reverse_iterator";
     fun create : unit -> stl_multimap[k,v] = "(FLX_GXX_PARSER_HACK std::multimap<?1,?2>())";
-    fun subscript: stl_multimap[k,v] * k -> lvalue[v] = "$1[$2]";
+    fun subscript: stl_multimap[k,v] * k -> v = "$1[$2]";
     fun find : stl_multimap[k,v] * k ->  stl_multimap_iterator[k,v] = "$1.find($2)";
     fun mem : stl_multimap[k,v] * k -> bool = "$1.find($2) != $1.end()";
     proc insert : stl_multimap[k,v] * k * v = "$1.insert(std::make_pair($2,$3));";
@@ -38,7 +38,7 @@ include "stl/stl";
     fun lt: stl_multimap_iterator[k,v] * stl_multimap_iterator[k,v] -> bool = "$1<$2";
   }
   instance Iterator[stl_multimap_iterator[k,v],k*v] {
-    fun deref : stl_multimap_iterator[k,v] ->  lvalue[k*v]  = "*(#0*)(void*)&*$1";
+    fun deref : stl_multimap_iterator[k,v] ->  k*v  = "*(#0*)(void*)&*$1";
   }
   instance Forward[stl_multimap_iterator[k,v]] {
     fun succ: stl_multimap_iterator[k,v] -> stl_multimap_iterator[k,v] = "$1+1";
@@ -61,7 +61,7 @@ include "stl/stl";
     fun lt: stl_multimap_reverse_iterator[k,v] * stl_multimap_reverse_iterator[k,v] -> bool = "$1<$2";
   }
   instance Iterator[stl_multimap_reverse_iterator[k,v],k*v] {
-    fun deref : stl_multimap_reverse_iterator[k,v] ->  lvalue[k*v]  = "*(#0*)(void*)&*$1";
+    fun deref : stl_multimap_reverse_iterator[k,v] ->  k*v  = "*(#0*)(void*)&*$1";
   }
   instance Forward[stl_multimap_reverse_iterator[k,v]] {
     fun succ: stl_multimap_reverse_iterator[k,v] -> stl_multimap_reverse_iterator[k,v] = "$1+1";

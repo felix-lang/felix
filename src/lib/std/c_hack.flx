@@ -65,9 +65,9 @@ module C_hack
   an lvalue, the result is an lvalue. Assignments
   to const lvalues are trapped by the C/C++ compiler.
   """
-  fun deref[t]: ptr[t] -> lvalue[t] = "*$1";
-  fun deref[t]: cptr[t] -> lvalue[t] = "*$1";
-  fun deref[t]: gcptr[t] -> lvalue[t] = "*$1";
+  lvalue fun deref[t]: ptr[t] -> t = "*$1";
+  lvalue fun deref[t]: cptr[t] -> t = "*$1";
+  lvalue fun deref[t]: gcptr[t] -> t = "*$1";
 
   publish """
   Function to take the address of a C lvalue,
@@ -76,17 +76,17 @@ module C_hack
   containing frame won't be collected.
   Addresses of temporaries must not be taken.
   """
-  fun _ctor_ptr[t]: lvalue[t] -> ptr[t] = "&$1";
-  fun _ctor_cptr[t]: lvalue[t] -> cptr[t] = "(void*)&$1";
+  fun _ctor_ptr[t]: t -> ptr[t] = "&$1";
+  fun _ctor_cptr[t]: t -> cptr[t] = "(void*)&$1";
   fun _ctor_address[t]: ptr[t] -> address = "(void*)$1";
-  fun _ctor_address[t]: lvalue[t] -> address = "(void*)&$1";
+  fun _ctor_address[t]: t -> address = "(void*)&$1";
 
   // deprecated
-  fun addr[t]: lvalue[t] -> ptr[t] = "&$1";
-  fun caddr[t]: lvalue[t] -> cptr[t] ="(?1 const*)&$1";
+  fun addr[t]: t -> ptr[t] = "&$1";
+  fun caddr[t]: t -> cptr[t] ="(?1 const*)&$1";
 
   fun as_address[t]: ptr[t]->address = "(void*)$1";
-  fun address_of[t]: lvalue[t]-> address = "(void*)&$1";
+  fun address_of[t]: t-> address = "(void*)&$1";
 
 
   fun isNULL: address -> bool = "(0==$1)";
