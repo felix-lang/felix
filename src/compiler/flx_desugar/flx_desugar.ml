@@ -173,8 +173,8 @@ let assign sr op l r =
   so we have to apply rsts to these bodies..
 *)
 
-let rec rex state name (e:expr_t) : asm_t list * expr_t =
-  let rex e = rex state name e in
+let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
+  let rex e = rex mkreqs map_reqs state name e in
   let rsts sts = List.concat (List.map (rst state name `Private dfltvs) sts) in
   let sr = src_of_expr e in
   let seq () = state.fresh_bid () in
@@ -269,7 +269,9 @@ let rec rex state name (e:expr_t) : asm_t list * expr_t =
     in
     let ss = Flx_print.string_of_string fmt in
     let fs = "flx::rtl::strutil::flx_asprintf("^ss^","^args^")" in
-    let req = NREQ_atom (`AST_name (sr,"flx_strutil",[])) in
+    let rreq = RREQ_atom (Package_req (CS_str "flx_strutil")) in
+    let props, dcls, req = mkreqs sr rreq in
+    assert (props = []);
     let ts =
       let n = List.fold_left (fun n (i,_) -> max n i) 0 its in
       let a = Array.make n TYP_none in
@@ -288,11 +290,9 @@ let rec rex state name (e:expr_t) : asm_t list * expr_t =
       ;
       Array.to_list a
     in
-    let f = DCL_fun([], ts, str, CS_str_template fs, req, "primary") in
+    let f = DCL_fun([], ts, str, CS_str_template fs, map_reqs sr req, "primary") in
     let x = EXPR_index (sr,id,ix) in
-    [
-      Dcl (sr, id, Some ix, `Private, dfltvs, f);
-    ],x
+    Dcl (sr, id, Some ix, `Private, dfltvs, f) :: dcls, x
 
   | EXPR_cond (sr,(e,b1,b2)) ->
      rex
@@ -771,7 +771,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   (* rename _root headers *)
   let map_req n = if n = "_root" then "_rqs_" ^ name else n in
 
-  let rex x = rex state name x in
+  let rex x = rex mkreqs map_reqs state name x in
   let rsts name vs access sts = List.concat (List.map
     (rst state name access vs) sts)
   in
