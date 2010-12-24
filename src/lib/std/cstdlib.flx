@@ -1,10 +1,10 @@
 open module Cstdlib
 {
-  requires cstdlib;
+  requires Cxx_headers::cstdlib;
   const RAND_MAX:long;
 
-  proc srand: uint = 'std::srand($1);';
-  fun rand: unit -> int = 'std::rand()';
+  proc srand: uint = '::std::srand($1);';
+  fun rand: unit -> int = '::std::rand()';
 }
 
 

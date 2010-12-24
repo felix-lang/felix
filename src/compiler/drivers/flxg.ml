@@ -985,7 +985,14 @@ let _ = print_endline ("Processed = " ^ String.concat ", " (!processed)) in
         (* Desugare the parse tree, and also return list of include strings *)
         let include_files, asms =  
           let desugar_state = Flx_desugar.make_desugar_state module_name fresh_bid in
-          Flx_desugar.desugar_stmts desugar_state (Filename.dirname filename) stmts 
+          let include_files, asms = Flx_desugar.desugar_stmts desugar_state (Filename.dirname filename) stmts in
+          let top_req = 
+            let sr = Flx_srcref.dummy_sr in
+            let body = Flx_types.DCL_insert (Flx_ast.CS_str "", `Body, Flx_ast.NREQ_true) in
+            Flx_types.Dcl (sr, "_rqs_" ^ module_name, None, `Public, dfltvs, body) 
+          in
+          let asms = top_req::asms in
+          include_files, asms 
         in
 
         (* run through include strings found *)

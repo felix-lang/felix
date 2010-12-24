@@ -128,8 +128,8 @@ module C_hack
   fun xnew[t](x:t) => _udata$ _new x;
 
   // raw allocation and deallocation
-  fun malloc: int -> address = 'malloc($1)' requires stdlib_h;
-  proc free: address = 'free($1);' requires stdlib_h;
+  fun malloc: int -> address = '::std::malloc($1)' requires Cxx_headers::cstdlib;
+  proc free: address = '::std::free($1);' requires Cxx_headers::cstdlib;
 }
 
 

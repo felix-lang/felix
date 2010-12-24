@@ -1,15 +1,17 @@
-module Cxx_header
+module Cxx_headers
 {
   header exception = '#include <exception>';
   header limits = '#include <limits>';
   header new = '#include <new>';
   header typeinfo = '#include <typeinfo>';
-  header stdexception = '#include <stdexception>';
+  header stdexcept = '#include <stdexcept>';
   header utility = '#include <utility>';
-  header functional = '#include <functional>';
   header memory = '#include <memory>';
   header string = '#include <string>';
   header locale = '#include <locale>';
+
+// STL
+  header functional = '#include <functional>';
   header algorithm = '#include <algorithm>';
   header bitset = '#include <bitset>';
   header deque = '#include <deque>';
@@ -22,6 +24,8 @@ module Cxx_header
   header complex = '#include <complex>';
   header numeric = '#include <numeric>';
   header valarray = '#include <valarray>';
+
+// I/O
   header fstream = '#include <fstream>';
   header iomanip = '#include <iomanip>';
   header ios = '#include <ios>';
@@ -32,6 +36,7 @@ module Cxx_header
   header streambuf = '#include <streambuf>';
   header sstream = '#include <sstream>';
 
+// ISO C wrappers
   header cassert = '#include <cassert>';
   header cctype = '#include <cctype>';
   header cerrno = '#include <cerrno>';

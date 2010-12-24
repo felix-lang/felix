@@ -5828,9 +5828,9 @@ let lookup_code_in_env state bsym_table env sr qn =
     )
     x
     ;
-    x,ts
+    Some (x,ts)
 
-  | None -> [mkentry state dfltvs dummy_bid],[]
+  | None -> None
 
 let lookup_qn_in_env
   state

@@ -1,6 +1,6 @@
 open module Carray
 {
-  requires cstdlib;
+  requires Cxx_headers::cstdlib;
   open C_hack;
 
   publish "Carray type"
@@ -9,9 +9,9 @@ open module Carray
   publish "Convert Felix array to C array"
   fun _ctor_carray[T,N]: array[T,N] -> carray[T] = "$t.data";
 
-  fun array_alloc[T]: int -> carray[T] = '(?1*)std::malloc(sizeof(?1)*$1)';
-  fun array_calloc[T]: int -> carray[T] = '(?1*)std::calloc(sizeof(?1),$1)';
-  proc free[T]: carray[T] = "std::free($1);";
+  fun array_alloc[T]: int -> carray[T] = '(?1*)::std::malloc(sizeof(?1)*$1)';
+  fun array_calloc[T]: int -> carray[T] = '(?1*)::std::calloc(sizeof(?1),$1)';
+  proc free[T]: carray[T] = "::std::free($1);";
   lvalue fun subscript[T]: carray[T] * int -> lvalue[T] = '$1[$2]';
 
   fun add[T]: carray[T] * int -> carray[T]= '$1+$2';
@@ -42,11 +42,11 @@ open module Carray
   fun ptr_of[t]: ptr[t] -> &t = "$1";
 
   proc memcpy: address * address * size =
-    "{if($1 && $2 && $3)std::memcpy($1,$2,$3);}"
-    requires cstring
+    "{if($1 && $2 && $3)::std::memcpy($1,$2,$3);}"
+    requires Cxx_headers::cstring
   ;
-  fun memcmp: address * address * size -> int = "std::memcmp($1,$2,$3)"
-    requires cstring
+  fun memcmp: address * address * size -> int = "::std::memcmp($1,$2,$3)"
+    requires Cxx_headers::cstring
   ;
 }
 

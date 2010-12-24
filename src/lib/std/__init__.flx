@@ -3,6 +3,7 @@ include "plat/config";
 
 // ISO C++99 standard header tags
 include "std/cxx_headers";
+include "std/c_headers";
 
 // type classes
 include "std/flx_tclass";
@@ -10,7 +11,13 @@ include "std/order";
 include "std/algebraic";
 
 // base scalar types 
-include "plat/flx_ctypes";
+include "std/flx_ctypes";
+
+include "plat/ctypedefs";
+include "std/ctypesets";
+include "plat/arithmax";
+include "plat/float";
+
 include "std/address";
 include "std/bool";
 include "std/int";

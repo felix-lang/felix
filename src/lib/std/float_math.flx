@@ -93,7 +93,7 @@ open module Lcomplex
 }
 
 instance[t in (floats || complexes)] Trig[t] {
-  requires cmath;
+  requires Cxx_headers::cmath;
   fun sin: t -> t = "::std::sin($1)";
   fun cos: t -> t = "::std::cos($1)";
   fun tan: t -> t = "::std::tan($1)";
@@ -112,7 +112,7 @@ instance[t in (floats || complexes)] Trig[t] {
 }
 
 instance[t in floats] Real[t] {
-  requires cmath;
+  requires Cxx_headers::cmath;
   fun abs: t -> t = "::std::abs($1)";
   fun log10: t -> t = "::std::log10($1)";
   fun sqrt: t -> t = "::std::sqrt($1)";

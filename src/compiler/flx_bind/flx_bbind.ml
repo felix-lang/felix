@@ -87,53 +87,61 @@ let rec find_true_parent sym_table child parent =
 
 
 let bind_req state bsym_table env sr tag =
-  (* HACKY *)
-  try Some (Flx_lookup.lookup_code_in_env
+  Flx_lookup.lookup_code_in_env
     state.lookup_state
     bsym_table
     env
     sr
-    tag)
-  with Not_found -> None
+    tag
 
 
 (* this routine converts a requirements expression into a list
-  of requirements. Note later if we have conflicts (negation),
-  we'll need   to also return a list of requirements that
-  would generate a conflict
-
-  NOTE weird encoding: -1,[] is true (always satisfied)
-  and -2,[] is false (impossible to satisfy)
+  of requirements. Requirements must be satisfied.
 *)
+
+type tmp_req_t = 
+  | Satisfied of int * Flx_btype.t list 
+  | Fail of Flx_ast.qualified_name_t option
 
 let bind_reqs bt state bsym_table env sr reqs =
   let add lst i =
-    if
-      lst = [-2,[]] or
-      mem i lst or
-      i = (0,[])
-    then lst else i :: lst
+    if mem i lst then lst else i :: lst
   in
   let merge a b = fold_left add a b in
   let rec aux reqs = match reqs with
   | NREQ_true -> []
-  | NREQ_false -> [-2,[]]
+  | NREQ_false -> [Fail None]
   | NREQ_and (a,b) -> merge (aux a) (aux b)
   | NREQ_or (a,b) ->
+    let check a = 
+      try 
+        List.iter (fun x -> match x with 
+          | Satisfied _ -> () 
+          | Fail _ -> raise Not_found
+        )
+        a;
+        true
+      with Not_found -> false
+    in
     let a = aux a and b = aux b in
-    if a = [-2,[]] then b else a
+    (* Note: we don't check b here, because if we found a failure, what would we do?
+       We can't report an error, because the alternative might be nested in another.
+       We return b so that at least we can get *some* kind of diagnostic on the final
+       check: it will only list the failure of the second alternative, but that's 
+       better than nothing
+    *)
+    if check a then a else b
 
   | NREQ_atom tag ->
     match bind_req state bsym_table env sr tag with
-    | None -> [-2,[]]
+    | None -> [Fail (Some tag)]
     | Some (entries, ts) ->
       let ts = map bt ts in
       fold_left (fun lst index ->
         let index = sye index in
-        if index = 0 then lst else
         try
           let ts = adjust_ts state.sym_table bsym_table sr index ts in
-          add lst (index,ts)
+          add lst (Satisfied (index,ts))
         with x ->
           print_endline "** Bind_req failed due to vs/ts mismatch";
           print_endline "** IGNORING! (HACK!!)";
@@ -141,6 +149,13 @@ let bind_reqs bt state bsym_table env sr reqs =
       ) [] entries
   in
     let res = aux reqs in
+    let res = fold_left (fun acc r -> match r with 
+      | Satisfied (i,ts) -> (i,ts)::acc
+      | Fail None -> clierr sr "Explicit requirements failure"
+      | Fail (Some q) -> clierr sr ("Cannot find requirement for " ^ Flx_print.string_of_qualified_name q)
+      ) 
+      [] res 
+    in
     res
 
 let bind_qual bt qual = match qual with

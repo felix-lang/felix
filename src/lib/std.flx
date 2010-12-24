@@ -1,16 +1,10 @@
 header '#include "flx_rtl_config.hpp"';
 
-header string_hxx = "#include <string>";
-header iostream = "#include <iostream>";
-header cmath = "#include <cmath>";
-header math_h = "#include <math.h>";
 header ieeefp_h = """
 extern "C" {
 #include <ieeefp.h>
 }
 """;
-
-header stdexcept = '#include <stdexcept>';
 
 body swapper[t] = """
   void swapper(?1 *a, ?1 *b){

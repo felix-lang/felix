@@ -137,7 +137,7 @@ val lookup_code_in_env:
   env_t ->
   Flx_srcref.t ->
   qualified_name_t ->
-  entry_kind_t list * typecode_t list
+  (entry_kind_t list * typecode_t list) option
 
 (** This routine takes an unbound type term
 and binds it. The term may contain explicit

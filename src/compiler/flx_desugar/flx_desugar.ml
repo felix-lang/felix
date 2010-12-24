@@ -659,11 +659,39 @@ and gen_call_init sr name' =
     EXE_call (sname, unitt)
   )
 
+(* Here, "name" is the name of the containing parent, eg if the statement being
+ * processed is in a module X, then name will be "X". The name always exists.
+ * If it is a top level thing, the name is a munged version of the program filename.
+ *
+ * The idea here is: if you write "requires fred" in a module X, then "_rqs_X"
+ * will be an empty insertion with requirement "fred". We then make every symbol
+ * in X depend on "_rqs_X" and thus propagate the dependency on "fred".
+ *
+ * If a module Y is nested in a module X, then "_rqs_Y" will have a requirement
+ * on "_rqs_X", so the symbols in a nested module will inherit any requirements
+ * of the parent of the module which is their parent.
+ *
+ * Adding the dependency of Y on X is called making a bridge.
+ *
+ * BUG: TO BE FIXED: The top level "module" never gets an insertion!
+ * So the bridges built to that module fail. This only happens if
+ * we're processing a nested scope for which a bridge is generated,
+ * some some of our regression tests pass, but any with a function in them
+ * fail (since function have scopes and therefore generate bridges)
+ *
+ * The root rqs thing has to be manually inserted by the top level caller
+ * of desugar, which is the one inventing the top level module name from
+ * the program
+ *)
 and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   (* construct an anonymous name *)
   let parent_ts sr : typecode_t list =
     List.map (fun (s,tp)-> TYP_name (sr,s,[])) (fst parent_vs)
   in
+
+  (* this is the name of the parent's root requirement tag, if the parent
+   * is a module X, this will be "_rqs_X".
+   *)
   let rqname' sr = `AST_name (sr, "_rqs_" ^ name, parent_ts sr) in
 
   (* Add a root to child named 'n'.
