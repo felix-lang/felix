@@ -1869,6 +1869,7 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_closure (i,ts) -> sid i ^ string_of_inst bsym_table ts
   | BEXPR_ref (i,ts) -> "&" ^ sid i ^ string_of_inst bsym_table ts
   | BEXPR_new e -> "new " ^ se e
+  | BEXPR_class_new (t,e) -> "new " ^ sbt bsym_table t ^ "(" ^ se e ^ ")"
   | BEXPR_address e -> "&" ^ se e
   | BEXPR_likely e -> "likely(" ^ se e ^")"
   | BEXPR_unlikely e -> "unlikely(" ^ se e ^")"

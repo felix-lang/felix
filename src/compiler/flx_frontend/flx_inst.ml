@@ -184,6 +184,7 @@ let rec process_expr syms bsym_table ref_insts1 hvarmap sr ((e,t) as be) =
     *)
 
   | BEXPR_new e -> ue e
+  | BEXPR_class_new (t,e) -> ut t; ue e
   | BEXPR_address e -> ue e
   | BEXPR_likely e -> ue e
   | BEXPR_unlikely e -> ue e

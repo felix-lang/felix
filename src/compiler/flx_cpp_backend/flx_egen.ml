@@ -419,6 +419,17 @@ let rec gen_expr'
     in
     ce_atom reference
 
+(* class new constructs an object _in place_ on the heap, unlike ordinary
+ * new, which just makes a copy of an existing value.
+ *)
+  | BEXPR_class_new (t,a) ->
+    let ref_type = tn t in
+    let args = match a with
+    | BEXPR_tuple [],_ -> []
+    | BEXPR_tuple es,_ -> map ge' es
+    | _ -> [ge' a]
+    in
+    ce_new [ce_atom "*PTF gcp";ce_atom (ref_type^"_ptr_map"); ce_atom "true"] ref_type args
 
   | BEXPR_literal v ->
     if is_native_literal v

@@ -6,6 +6,7 @@ type bexpr_t =
   | BEXPR_unlikely of t
   | BEXPR_address of t
   | BEXPR_new of t
+  | BEXPR_class_new of Flx_btype.t * t
   | BEXPR_literal of Flx_ast.literal_t
   | BEXPR_apply of t * t
   | BEXPR_apply_prim of Flx_types.bid_t * Flx_btype.t list * t
@@ -43,6 +44,8 @@ let bexpr_unlikely ((_,t) as e) = BEXPR_unlikely e, t
 let bexpr_address ((_,t) as e) = BEXPR_address e, (Flx_btype.btyp_pointer t)
 
 let bexpr_new ((_,t) as e) = BEXPR_new e, (Flx_btype.btyp_pointer t)
+
+let bexpr_class_new cl e = BEXPR_class_new (cl,e), (Flx_btype.btyp_pointer cl)
 
 let bexpr_literal t l = BEXPR_literal l, t
 
@@ -129,6 +132,7 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   (* Note any two distinct new expressions are distinct ...
    * not sure what is really needed here *)
   | BEXPR_new e1,BEXPR_new e2 -> false
+  | BEXPR_class_new _,BEXPR_class_new _ -> false
 
   | _,BEXPR_likely e2
   | _,BEXPR_unlikely e2 -> cmp xa e2
@@ -184,6 +188,7 @@ let flat_iter
   | BEXPR_unlikely e -> f_bexpr e
   | BEXPR_address e -> f_bexpr e
   | BEXPR_new e -> f_bexpr e
+  | BEXPR_class_new (t,e) -> f_btype t; f_bexpr e
   | BEXPR_apply (e1,e2) ->
       f_bexpr e1;
       f_bexpr e2
@@ -254,6 +259,7 @@ let map
   | BEXPR_deref e,t -> BEXPR_deref (f_bexpr e), f_btype t
   | BEXPR_ref (i,ts),t -> BEXPR_ref (f_bid i, List.map f_btype ts), f_btype t
   | BEXPR_new e,t -> BEXPR_new (f_bexpr e), f_btype t
+  | BEXPR_class_new (cl,e),t -> BEXPR_class_new (f_btype cl, f_bexpr e), f_btype t
   | BEXPR_address e,t -> BEXPR_address (f_bexpr e), f_btype t
   | BEXPR_likely e,t -> BEXPR_likely (f_bexpr e), f_btype t
   | BEXPR_unlikely e,t -> BEXPR_unlikely (f_bexpr e), f_btype t
@@ -331,6 +337,8 @@ and print_bexpr f = function
       Flx_format.print_variant1 f "BEXPR_address" print e
   | BEXPR_new e ->
       Flx_format.print_variant1 f "BEXPR_new" print e
+  | BEXPR_class_new (cl,e) ->
+      Flx_format.print_variant2 f "BEXPR_class_new" Flx_btype.print cl print e
   | BEXPR_literal l ->
       Flx_format.print_variant1 f "BEXPR_literal"
         Flx_ast.print_literal l

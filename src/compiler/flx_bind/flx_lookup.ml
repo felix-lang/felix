@@ -4124,6 +4124,27 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     | _ -> clierr sr "[bind_expression'] Dereference non pointer"
     end
 
+  (* this is a bit hacky at the moment, try to cheat by using
+   * plain old new (T a) where T turns out to be a type
+   * down the track we have totally unchecked construction
+   * of a T by calling C++ new T (a), no idea if T is a suitable
+   * type nor if a is a suitable argument (or argument list) for
+   * the constructor. Need to fix this, but first see if we can
+   * generate the right code if the detector here finds some cases
+   * Ideally, the idea is that this is an optimisation, i.e.
+   * T (a) was already valid (via _ctor_T probably) and then
+   * new T(a) is like the ordinary copy of a value, except theres
+   * no copy, constuction is in place on the heap.
+   *)
+  | EXPR_new (srr,(EXPR_apply(sre,(cls,a)) as e)) ->
+    begin try
+      let cls = bt sre (typecode_of_expr cls) in
+print_endline "CLASS NEW";
+      bexpr_class_new cls (be a)
+    with _ ->
+    bexpr_new (be e)
+    end
+
   | EXPR_new (srr,e) ->
     bexpr_new (be e)
 

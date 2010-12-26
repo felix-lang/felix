@@ -89,6 +89,7 @@ let rec check_abstract_expr syms rls ((x,t) as e) =
   | BEXPR_likely e -> fe e
   | BEXPR_unlikely e -> fe e
   | BEXPR_new e -> fe e
+  | BEXPR_class_new (t,e) -> ft t; fe e
   | BEXPR_address e -> fe e
 
   | BEXPR_apply (e1,e2) -> fe e1; fe e2

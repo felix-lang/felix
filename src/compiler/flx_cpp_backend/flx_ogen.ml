@@ -315,7 +315,7 @@ let id x = ()
 
 let scan_bexpr syms bsym_table allocable_types e : unit =
   let rec aux e = match e with
-  | BEXPR_new ((_,t) as x),_ when t != Flx_btype.btyp_tuple [] ->
+  | BEXPR_new (_,t),_ when t != Flx_btype.btyp_tuple [] ->
     (*
     print_endline ("FOUND A NEW " ^ sbt bsym_table t);
     *)
@@ -325,7 +325,17 @@ let scan_bexpr syms bsym_table allocable_types e : unit =
     in
     Hashtbl.replace allocable_types t index;
 
-  | x -> ()
+    | BEXPR_class_new (cls, _),_ ->
+    (*
+    print_endline ("FOUND A CLASS NEW " ^ sbt bsym_table t);
+    *)
+    let index =
+      try Hashtbl.find syms.registry cls
+      with Not_found -> failwith ("Can't find type in registry " ^ sbt bsym_table cls)
+    in
+    Hashtbl.replace allocable_types cls index;
+
+| x -> ()
   in
   Flx_bexpr.iter ~f_bexpr:aux e
 
