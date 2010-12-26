@@ -141,12 +141,6 @@ open module Control
   }
   inline gen read[T] (chan:ischannel[T]) => read$ cast[schannel[T]] chan;
 
-  // crudy way to copy a value, should try "new" since we have that now ..
-/*
-  private union _dummy[t] = | _new of t;
-  private fun _udata[t]: _dummy[t]->gcptr[t] = "(?1*)$1.data";
-  private fun xnew[t](x:t) => _udata$ _new x;
-*/
   proc write[T] (chan:schannel[T], v:T) {
     var ps = cast[gcaddress]$ new v;
     svc$ svc_swrite$ cast[_schannel] chan, &ps;
