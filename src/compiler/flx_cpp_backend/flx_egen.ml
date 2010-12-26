@@ -179,6 +179,10 @@ let rec gen_expr'
   sr
   (e,t)
 =
+  match e with
+  (* replace heap allocation of a unit with NULL pointer *)
+  | BEXPR_new (BEXPR_tuple [],_) -> ce_atom "0"
+  | _ ->
   if length this_ts <> length this_vs then begin
     failwith
     (
