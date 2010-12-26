@@ -1,37 +1,36 @@
 include "stl/stl_vector";
 
 open Vector;
-open C_hack;
 
 module glob {
   // glob
   requires package "flx_glob";
   cstruct glob_t {
     gl_pathc: size;
-    gl_pathv: ptr[charp];
+    gl_pathv: &&char;
     gl_offs: size;
   };
-  private proc post_incr[t]: &ptr[t] = "(*$1)++;";
+  private proc post_incr[t]: &&t = "(*$1)++;";
 
-  gen glob: string * ptr[glob_t] -> bool = "0==::glob($1.data(),0,NULL,$2)";
-  proc globfree: ptr[glob_t] = "globfree($1);";
+  gen glob: string * &glob_t -> bool = "0==::glob($1.data(),0,NULL,$2)";
+  proc globfree: &glob_t = "globfree($1);";
 
   gen glob (pat:string): stl_vector[string] =
   {
     var files: stl_vector[string];
     var glob_data: glob_t;
     glob_data.gl_offs = size 0;
-    if glob(pat,addr glob_data) do
+    if glob(pat,&glob_data) do
       var n = glob_data.gl_pathc;
       var p = glob_data.gl_pathv;
       var pfile = *p;
-      whilst not isNULL(pfile) do
+      whilst not C_hack::isNULL(pfile) do
         var file = str(pfile);
         push_back (files, file);
         p++;
         pfile = *p;
       done;
-      globfree(addr glob_data);
+      globfree(&glob_data);
     done;
     return files;
   }

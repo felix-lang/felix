@@ -1,0 +1,3 @@
+provides_dlib: /DEFAULTLIB:sqlite3
+provides_slib: /DEFAULTLIB:sqlite3
+includes: "<sqlite3.h>"

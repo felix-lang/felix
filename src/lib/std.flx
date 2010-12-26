@@ -10,11 +10,6 @@ proc _swap[t]: &t * &t =
   "swapper($1,$2);"
   requires swapper[t];
 
-typedef charp = C_hack::ptr[char];
-typedef charcp = C_hack::cptr[char];
-
-typedef ucharp = C_hack::ptr[utiny];
-typedef ucharcp = C_hack::cptr[utiny];
 publish "Universal type 'x as x'"
   typedef any = any;
 

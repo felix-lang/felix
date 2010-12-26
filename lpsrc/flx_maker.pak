@@ -521,9 +521,6 @@ tmap = {
   # addressing
   "byte"      : "unsigned char",
   "size"      : "size_t",
-  "cvaddress" : "void const volatile*",
-  "vaddress"  : "void volatile*",
-  "caddress"  : "void const*",
   "address"   : "void *",
   "offset"    : "ptrdiff_t",
   "ptrdiff"   : "ptrdiff_t",
@@ -705,7 +702,7 @@ open syntax felix;
 
 @complex = ["fcomplex","dcomplex","lcomplex"]
 @all = [
-  "byte", "address","caddress","vaddress","cvaddress",
+  "byte", "address",
   "offset",
   ] + chars + fast_ints + floats + complex
 
@@ -759,6 +756,9 @@ open syntax felix;
 @for t in all:
   gen_type(t)
 
+// _gc_pointer is a special code which tells the compiler
+// that an opaque (primitive) data type is a pointer to be
+// followed by the gc.
 _gc_pointer type gcaddress = "void*";
 _gc_pointer type gcptr[t]= "?1*";
 

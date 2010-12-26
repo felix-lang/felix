@@ -26,8 +26,6 @@ module C_hack
   """
   proc ignore[t]:t = "(void)$t;";
 
-  fun _ctor_address[T]: &T -> address = "(void*)$1";
-
   fun cast[dst,src]: src->dst = '(?1)($1)';
   fun static_cast[dst,src]: src->dst = 'static_cast<?1>($1)';
   fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)';
@@ -42,73 +40,23 @@ module C_hack
   fun size_of:int->size='$1';
 
   publish "Pointer equality"
-  fun eq: address * address -> bool = "$1==$2";
-  fun ne: address * address -> bool = "$1!=$2";
-  fun eq[T]: ptr[T] * ptr[T] -> bool = "$1==$2";
-  fun ne[T]: ptr[T] * ptr[T] -> bool = "$1!=$2";
-  fun eq[T]: cptr[T] * cptr[T] -> bool = "$1==$2";
-  fun ne[T]: cptr[T] * cptr[T] -> bool = "$1!=$2";
   fun eq[T]: gcptr[T] * gcptr[T] -> bool = "$1==$2";
   fun ne[T]: gcptr[T] * gcptr[T] -> bool = "$1!=$2";
 
-  publish "Abstract type for C pointer"
-  pod type ptr[t]= "?1 *";
-
-  publish "Abstract type for C pointer to const"
-  pod type cptr[t]="?1 const *";
-
-  publish "Convert pointer to pointer to const"
-  fun enconst[t]: ptr[t]->cptr[t] = "(?1 const*)$1";
-
-  publish """
-  Dereference a C pointer. If the expression is an
-  an lvalue, the result is an lvalue. Assignments
-  to const lvalues are trapped by the C/C++ compiler.
-  """
-  lvalue fun deref[t]: ptr[t] -> t = "*$1";
-  lvalue fun deref[t]: cptr[t] -> t = "*$1";
   lvalue fun deref[t]: gcptr[t] -> t = "*$1";
 
-  publish """
-  Function to take the address of a C lvalue,
-  fails in C/C++ compiler if the argument isn't an lvalue.
-  Addresses of Felix variables are safe to use provided the
-  containing frame won't be collected.
-  Addresses of temporaries must not be taken.
-  """
-  fun _ctor_ptr[t]: t -> ptr[t] = "&$1";
-  fun _ctor_cptr[t]: t -> cptr[t] = "(void*)&$1";
-  fun _ctor_address[t]: ptr[t] -> address = "(void*)$1";
-  fun _ctor_address[t]: t -> address = "(void*)&$1";
-
-  // deprecated
-  fun addr[t]: t -> ptr[t] = "&$1";
-  fun caddr[t]: t -> cptr[t] ="(?1 const*)&$1";
-
-  fun as_address[t]: ptr[t]->address = "(void*)$1";
-  fun address_of[t]: t-> address = "(void*)&$1";
-
-
-  fun isNULL: address -> bool = "(0==$1)";
   fun isNULL[t]: &t -> bool = "(0==$1)";
-  fun isNULL[t]: ptr[t] -> bool = "(0==$1)";
-  fun isNULL[t]: cptr[t] -> bool = "(0==$1)";
   fun isNULL[t]: gcptr[t] -> bool = "(0==$1)";
 
   publish """
   Polymorphic null pointer constant
   """
   const null[t]:&t = "(?1*)NULL";
-  const null_ptr[t]:ptr[t] = "(?1*)NULL";
-  const null_gcptr[t]:gcptr[t] = "(?1*)NULL";
-  const null_cptr[t]:ptr[t] = "(?1 const*)NULL";
-  const NULL : address = "NULL";
 
   publish """
   Unsafe output of hopefully null terminated C strings
   """
-  proc fprint: ostream * charp = "*$1<<$2;" requires Cxx_headers::iostream;
-  proc fprint: ostream * charcp = "*$1<<$2;" requires Cxx_headers::iostream;
+  proc fprint: ostream * &char = "*$1<<$2;" requires Cxx_headers::iostream;
 
   publish """ print an address in hex """
   proc fprint: ostream * address = "*$1<<$2;" requires Cxx_headers::iostream;
@@ -120,12 +68,6 @@ module C_hack
   but screws up on (T())
   """
   fun dflt[t]:1->t = "dflt<?1>()" requires dflt_h;
-
-  // this hackery is here to force Felix to make
-  // a suitable shape object
-  private union _dummy[t] = | _new of t;
-  private fun _udata[t]: _dummy[t]->gcptr[t] = "(?1*)$1.data";
-  fun xnew[t](x:t) => _udata$ _new x;
 
   // raw allocation and deallocation
   fun malloc: int -> address = '::std::malloc($1)' requires Cxx_headers::cstdlib;

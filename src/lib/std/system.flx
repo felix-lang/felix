@@ -2,7 +2,7 @@ publish "System Interface"
 module System
 {
   const argc:int = "PTF argc";
-  const _argv:&charp= "PTF argv";
+  const _argv:&&char= "PTF argv";
 
   fun argv:int -> string = '::std::string($1<0||$1>=PTF argc??"":PTF argv[$1])';
   fun args () => List::map (the argv) (List::range argc);

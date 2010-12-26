@@ -1,4 +1,3 @@
-include "pthread";
 include "std/io/flx_faio";
 open String;
 

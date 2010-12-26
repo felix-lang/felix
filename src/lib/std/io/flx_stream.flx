@@ -259,7 +259,8 @@ module Flx_stream {
   (strm: istr, s: &string, id:string)
   {
     var c: char;
-    val ac = C_hack::cast[address]$ C_hack::addr c;
+    //val ac = C_hack::cast[address]$ &c;
+    val ac = address (&c);
     var st: string="";
     var finished = false;
 

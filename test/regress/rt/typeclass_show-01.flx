@@ -45,9 +45,6 @@ p $ uchar $ 97u;
 
 p $ C_hack::cast[byte] 1t;
 p $ C_hack::cast[address] 16ul;
-p $ C_hack::cast[caddress] 16ul;
-p $ C_hack::cast[vaddress] 16ul;
-p $ C_hack::cast[cvaddress] 16ul;
 p $ C_hack::cast[offset] 16ul;
 
 p "Domo Arigato,\nMr Roboto!";

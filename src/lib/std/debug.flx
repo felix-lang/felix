@@ -5,15 +5,15 @@ type flx_location_t = "flx::rtl::flx_range_srcref_t";
 module Debug
 {
   const FLX_SRCLOC : flx_location_t = "#srcloc";
-  fun filename: flx_location_t -> charp = "$1.filename";
+  fun filename: flx_location_t -> &char = "$1.filename";
   fun startline: flx_location_t -> int = "$1.startline";
   fun startcol: flx_location_t -> int = "$1.startcol";
   fun endline: flx_location_t -> int = "$1.endline";
   fun endcol: flx_location_t -> int = "$1.endcol";
 
   // hack to emit C++ source file locations
-  const CPP_FUNCTION : charp = "__FUNCTION__";
-  const CPP_FILE: charp = "__FILE__";
+  const CPP_FUNCTION : &char = "__FUNCTION__";
+  const CPP_FILE: &char = "__FILE__";
   const CPP_LINE: int = "__LINE__";
 
   // hack to emit C code an expression would generate

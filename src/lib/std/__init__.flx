@@ -65,6 +65,7 @@ include "std/rtti";
 include "std/re2";
 include "std/regdef";
 include "std/judy";
+include "std/pthread";
 
 // Version
 include "std/version";

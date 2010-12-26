@@ -9,7 +9,7 @@ module Faio {
     svc (svc_general y);
   }
 
-  proc get_thread(thread: ptr[fthread]) {
+  proc get_thread(thread: &fthread) {
       svc (svc_get_fthread thread );
   }
 

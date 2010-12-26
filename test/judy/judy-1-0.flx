@@ -5,9 +5,9 @@ gen _ctor_address : string -> address = "(void*)$1.data()";
 
 val je = JError_t();
 var ires : int;
-var pires = addr ires;
+var pires = &ires;
 var wres : word;
-var pwres = addr wres;
+var pwres = &wres;
 {
   val ja = J1Array();
   Judy1Set(ja,word 1,je,pires);
@@ -36,7 +36,7 @@ var pwres = addr wres;
   print "count="; println$ int wres;
 
   var curr: word = word 0;
-  var pcurr= addr curr;
+  var pcurr= &curr;
   Judy1First(ja,pcurr,je,pires);
   print "First="; println$ ulong curr;
   print "res="; println$ ires;
@@ -56,8 +56,8 @@ var pwres = addr wres;
 
 {
   val ja = JLArray();
-  var pv : ptr[word]; // pointer to space in the array to put value
-  var ppv = addr pv;
+  var pv : &word; // pointer to space in the array to put value
+  var ppv = &pv;
   JudyLIns(ja,word 1,je,ppv);
   *pv = word 11;
   JudyLIns(ja,word 7,je,ppv);
@@ -90,7 +90,7 @@ var pwres = addr wres;
   done;
 
   var curr: word = word 0;
-  var pcurr= C_hack::addr curr;
+  var pcurr= &curr;
   JudyLFirst(ja,pcurr,je,ppv);
   print "First="; print$ int curr; print " -> "; println$ int$ *pv;
 
@@ -103,8 +103,8 @@ var pwres = addr wres;
 
 {
   val ja = JHSArray();
-  var pv : ptr[word]; // pointer to space in the array to put value
-  var ppv = addr pv;
+  var pv : &word; // pointer to space in the array to put value
+  var ppv = &pv;
 
   s1 := "Hello";
   JudyHSIns(ja,address s1,word (len s1),je, ppv);

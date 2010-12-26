@@ -75,7 +75,7 @@ let fmts = [
   ("c","int");
 
   ("S","string");
-  ("s","charp");
+  ("s","&char");
   ("p","address");
   ("P","address");
 ]
@@ -153,7 +153,7 @@ let types_of_cformat_string sr s =
       (* last char of format spec *)
       else if is_final ch then
       begin
-        app (if ch = 'S' then 's' else ch); (* convert string to charp *)
+        app (if ch = 'S' then 's' else ch); (* convert string to &char *)
         let xfmt = !fmt ^ strchr ch in
         begin
           match !acc with | None -> () | Some j ->

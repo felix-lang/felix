@@ -1,5 +1,4 @@
 //Check type constraints
-open C_hack;
 header '#include <iostream>';
 
 fun f: !fast_ints * !fast_ints -> int = "$1+$2";
@@ -7,13 +6,13 @@ fun f: !fast_ints * !fast_ints -> int = "$1+$2";
 print$ f$ 1,2L; endl;
 
 var x = 1;
-var px:ptr[int] = addr x;
+var px:&int = &x;
 
-proc h[t,u=ptr[t]]: u  * t = "*$1=$2;";
+proc h[t,u=&t]: u  * t = "*$1=$2;";
 h(px,1);
 
-proc h2[t,u=ptr[t]]: u  * t = "*$1=$2;";
+proc h2[t,u=&t]: u  * t = "*$1=$2;";
 h2(px,1);
 
-proc k[t,u=ptr[t]]: u = "std::cout << *$1 <<std::endl;";
+proc k[t,u=&t]: u = "::std::cout << *$1 <<::std::endl;";
 k px;

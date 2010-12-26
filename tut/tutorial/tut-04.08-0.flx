@@ -1,5 +1,4 @@
 //Check pthreads
-include "pthread";
 open Pthread;
 
 var x = mk_pchannel[int]();

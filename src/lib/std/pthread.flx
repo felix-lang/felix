@@ -48,7 +48,7 @@ module Pthread
   // AND, if the I/O completed before the collection got
   // going, to yield at this point.
 
-  proc _read[t]: pchannel[t] * ptr[ptr[t]] = """
+  proc _read[t]: pchannel[t] * &&t = """
     {
     FLX_SAVE_REGS;
     PTF gcp->collector->get_thread_control()->suspend();
@@ -60,12 +60,12 @@ module Pthread
   """;
 
   gen read[t] (chan:pchannel[t]) = {
-    var p : ptr[t];
-    _read (chan, addr p);
+    var p : &t;
+    _read (chan,  &p);
     return *p;
   }
 
-  proc _write[t]: pchannel[t] * ptr[t] = """
+  proc _write[t]: pchannel[t] * &t = """
     {
     FLX_SAVE_REGS;
     PTF gcp->collector->get_thread_control()->suspend();
@@ -77,7 +77,7 @@ module Pthread
   """;
 
   proc write[t](chan:pchannel[t], v:t) {
-    var ps = cast[ptr[t]]$ xnew v;
+    var ps = new v;
     _write (chan,ps);
   }
 }

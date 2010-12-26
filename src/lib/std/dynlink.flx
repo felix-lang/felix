@@ -99,7 +99,7 @@ module Dynlink
   {
     var lib = get_library linstance;
     var sym = dlsym(lib, p);
-    if C_hack::isNULL(sym) do dlsym_err(lib,p); done;
+    if isNULL(sym) do dlsym_err(lib,p); done;
     var f = bind_proc(linstance, sym, data);
     run f;
   }

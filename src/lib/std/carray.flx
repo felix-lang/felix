@@ -4,7 +4,7 @@ open module Carray
   open C_hack;
 
   publish "Carray type"
-  typedef carray[T] = ptr[T];
+  typedef carray[T] = &T;
 
   publish "Convert Felix array to C array"
   fun _ctor_carray[T,N]: array[T,N] -> carray[T] = "$t.data";
@@ -36,10 +36,7 @@ open module Carray
   */
 
   publish "Convert C array to Felix array"
-  fun array_of[T,N]: carray[T] -> ptr[array[T,N]] = "*(#0*)(void*)$1";
-
-  publish "Convert C array to Felix pointer"
-  fun ptr_of[t]: ptr[t] -> &t = "$1";
+  fun array_of[T,N]: carray[T] -> &array[T,N] = "*(#0*)(void*)$1";
 
   proc memcpy: address * address * size =
     "{if($1 && $2 && $3)::std::memcpy($1,$2,$3);}"

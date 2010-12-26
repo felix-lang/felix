@@ -1433,18 +1433,17 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
   end
 
 
-and base_typename_of_literal = function
-  | AST_int (t,_) -> t
-  | AST_float (t,_) -> t
-  | AST_string _ -> "string"
-  | AST_cstring _ -> "charp"
-  | AST_wstring _ -> "wstring"
-  | AST_ustring _ -> "string"
+and base_type_of_literal sr = function
+  | AST_int (t,_) -> TYP_name (sr,t,[])
+  | AST_float (t,_) -> TYP_name (sr,t,[])
+  | AST_string _ -> TYP_name (sr,"string",[])
+  | AST_cstring _ -> TYP_pointer (TYP_name (sr,"char",[]))
+  | AST_wstring _ -> TYP_name (sr,"wstring",[])
+  | AST_ustring _ -> TYP_name (sr,"string",[])
 
 and type_of_literal state bsym_table env sr v =
   let _,_,root,_,_ = List.hd (List.rev env) in
-  let name = base_typename_of_literal v in
-  let t = TYP_name (sr,name,[]) in
+  let t = base_type_of_literal sr v in
   let bt = inner_bind_type state bsym_table env sr rsground t in
   bt
 

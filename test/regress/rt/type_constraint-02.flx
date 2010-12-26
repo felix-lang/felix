@@ -1,6 +1,4 @@
 //Check type constraints
-open C_hack;
-header '#include <iostream>';
 // basic type constraints
 
 // The general case is put in an open module

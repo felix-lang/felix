@@ -3,7 +3,7 @@ open Sqlite3;
 
 fun subscript: & &char * int -> &char = "$1[$2]";
 
-cfun eh(data:address, ncols:int, values: ptr[charp], names: ptr[charp]):int =
+cfun eh(data:address, ncols:int, values: &&char, names: &&char):int =
 {
   var ii:int = 0;
   whilst ii<ncols do
@@ -26,8 +26,8 @@ proc run(db:sqlite3_db_t) {
     "select all name,address from fred;",
     ""
   ;
-  var usr: address =  cast[address] c"user pointer";
-  var errm: charp =  c"";
+  var usr: address =  address c"user pointer";
+  var errm: &char =  c"";
 
   var i = 0;
   var p = sql.[i];

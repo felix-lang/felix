@@ -1,7 +1,7 @@
 
 typedef addressing = typesetof (
   byte,offset,
-  address,caddress,vaddress,cvaddress
+  address
 );
 
 typedef chars = typesetof (char, wchar, uchar);

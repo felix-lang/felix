@@ -2,9 +2,9 @@
 // The following program gets me c++ compilation errors when "print s" is
 // commented out:
 
-proc poot(s: charp) {
+proc poot(s: &char) {
   // print s;
 }
 
-export proc poot of (charp) as "poot";
+export proc poot of (&char) as "poot";
 

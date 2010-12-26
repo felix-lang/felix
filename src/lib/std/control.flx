@@ -84,7 +84,7 @@ open module Control
   // THESE VALUES MUST SYNC WITH THE RTL
   union svc_req_t =
   /*0*/ | svc_yield
-  /*1*/ | svc_get_fthread         of ptr[fthread]
+  /*1*/ | svc_get_fthread         of &fthread
   /*2*/ | svc_read                of address
   /*3*/ | svc_general             of &address
   /*4*/ | svc_reserved1
@@ -141,8 +141,14 @@ open module Control
   }
   inline gen read[T] (chan:ischannel[T]) => read$ cast[schannel[T]] chan;
 
+  // crudy way to copy a value, should try "new" since we have that now ..
+/*
+  private union _dummy[t] = | _new of t;
+  private fun _udata[t]: _dummy[t]->gcptr[t] = "(?1*)$1.data";
+  private fun xnew[t](x:t) => _udata$ _new x;
+*/
   proc write[T] (chan:schannel[T], v:T) {
-    var ps = cast[gcaddress]$ xnew v;
+    var ps = cast[gcaddress]$ new v;
     svc$ svc_swrite$ cast[_schannel] chan, &ps;
   }
   proc write[T] (chan:oschannel[T], v:T) { write (cast[schannel[T]] chan, v); }

@@ -58,12 +58,6 @@ str:  16
 repr: 16
 str:  16
 repr: 16
-str:  16
-repr: 16
-str:  16
-repr: 16
-str:  16
-repr: 16
 str:  Domo Arigato,
 Mr Roboto!
 repr: 'Domo Arigato,\nMr Roboto!'
