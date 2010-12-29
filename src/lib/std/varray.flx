@@ -30,11 +30,13 @@ open module Varray
   }
 
   publish "Construct a partially filled varray with a default value computed by a function"
-  ctor[t] varray[t] (size:ulong, used:ulong, f:ulong->t) = {
+  ctor[t] varray[t] (size:ulong, used:ulong, f:ulong->t when used <= size) = {
+//println$ "Make varray size " size.str " used " used.str " from function";
     var o = varray[t] size;
+//println$ "Constructed varray of 0 used elements size " size.str;
     var i : ulong;
 
-    if size > 0ul do forall i in 0ul upto min(used,size) - 1ul do
+    if used > 0ul do forall i in 0ul upto used - 1ul do
       _init(&o.[i], f i);
     done done
     set_used (o,used);
@@ -49,7 +51,7 @@ open module Varray
 
   publish "Construct a partially full varray from a varray"
   ctor[t] varray[t] (x:varray[t], maxlen:ulong) =>
-    varray[t] (maxlen, len x, (fun (i:ulong)=> x.[i]))
+    varray[t] (maxlen, min(maxlen,len x), (fun (i:ulong)=> x.[i]))
   ;
 
   publish "Construct a full varray from a varray (copy constructor)"

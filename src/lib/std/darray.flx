@@ -15,6 +15,10 @@ open module Darray
   cfun dflt_resize(old_max:ulong, requested:ulong):ulong=
   {
     // GOTCHA: don't forget that division has a higher precedence than multiplication!
+/*
+    if requested == 0ul do return 0ul; done
+    if requested < 20ul do return 20ul; done;
+*/
     if requested < old_max / 2ul do return (3ul * requested) / 2ul; done 
     if requested > old_max do return (requested * 3ul) / 2ul;  done
     return old_max;
@@ -24,8 +28,9 @@ open module Darray
 
   proc do_resize[T] (pd: darray[T], new_size: ulong)
   {
+//println$ "do resize " + new_size.str;
     var old = (_repr_ pd).a;
-    fun get(i:ulong)=>old.[i];
+//println$ "Making new array maxlen " new_size.str " old len " old.len.str;
     (_repr_ pd).a = varray[T] (new_size, (Varray::len old), (fun(i:ulong)=>old.[i]));
   }
 
@@ -50,8 +55,12 @@ open module Darray
   }
 
   proc pluseq[t] (a:&darray[t],v:t) {
+//println "Darray increment";
     r := _repr_ (*a);
+//println$ "Varray len    = " + r.a.len.str;
+//println$ "Varray maxlen = " + r.a.maxlen.str;
     newsize := r.resize (maxlen r.a, Varray::len r.a + 1ul);
+//println$ "Newsize = " + newsize.str;
     if newsize != maxlen r.a do do_resize(*a,newsize); done
     var z = r.a; z += v; // hack to workaround compiler error Address non variable
   }

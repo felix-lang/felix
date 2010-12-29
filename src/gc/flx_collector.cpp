@@ -153,7 +153,7 @@ void flx_collector_t::set_used(void *memory, unsigned long n)
   if(p==(Word_t*)PPJERR)judyerror("set_used");
   if(p==NULL)
   {
-    //fprintf(stderr,"No recorded usage! Creating store for data\n");
+    //fprintf(stderr,"set_used: No recorded usage! Creating store for data\n");
     p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
   }
   //fprintf(stderr,"Slot for %p usage is address %p\n",memory,p);
@@ -170,7 +170,9 @@ void flx_collector_t::incr_used(void *memory, unsigned long n)
   if(p==(Word_t*)PPJERR)judyerror("incr_used");
   if(p==NULL)
   {
+    //fprintf(stderr,"incr_used: No recorded usage! Creating store for data\n");
     p = (Word_t*)(void*)JudyLIns(&j_nused,(Word_t)memory,&je);
+    if(p==(Word_t*)PPJERR)judyerror("incr_used: new slot");
     *p = n;
   }
   else *p+=n;
@@ -183,7 +185,7 @@ unsigned long flx_collector_t::get_used(void *memory)
   //fprintf(stderr, "Get used of %p\n",memory);
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nused,(Word_t)memory,&je);
   if(p==(Word_t*)PPJERR)judyerror("get_used");
-  //fprintf(stderr, "Used slot at address %p\n",memory);
+  //fprintf(stderr, "Used slot at address %p\n",p);
   unsigned long z = p!=NULL?*p:1; // defaults to 1 for non-array support
   //fprintf(stderr,"Used of %p is %ld\n",memory,z);
   return z;
@@ -193,14 +195,19 @@ unsigned long flx_collector_t::get_used(void *memory)
 unsigned long flx_collector_t::get_count(void *memory)
 {
   assert(memory);
+  //fprintf(stderr, "Get count of %p\n",memory);
   Word_t *p = (Word_t*)(void*)JudyLGet(j_nalloc,(Word_t)memory,&je);
   if(p==(Word_t*)PPJERR)judyerror("get_count");
-  return p!=NULL?*p:1; // defaults to 1 for non-array support
+  //fprintf(stderr, "Count slot at address %p\n",p);
+  unsigned long z = p!=NULL?*p:1; // defaults to 1 for non-array support
+  //fprintf(stderr,"Count of %p is %ld\n",memory,z);
+  return z;
 }
 
 gc_shape_t *flx_collector_t::get_shape(void *memory)
 {
   assert(memory);
+  //fprintf(stderr, "Get shape of %p\n",memory);
   Word_t *pshape= (Word_t*)JudyLGet(j_shape,(Word_t)memory,&je);
   if(pshape==(Word_t*)PPJERR)judyerror("get_shape");
   if(pshape==NULL) abort();
