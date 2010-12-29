@@ -37,8 +37,8 @@
     ::flx::rtl::flx_range_srcref_t(f2,sl2,sc2,el2,sc2),\
     __FILE__,__LINE__)
 
-#define FLX_RANGE_FAILURE(f,sl,sc,el,ec) \
-  throw ::flx::rtl::flx_range_failure_t (::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
+#define FLX_RANGE_FAILURE(mi,v,ma,f,sl,sc,el,ec) \
+  throw ::flx::rtl::flx_range_failure_t (mi,v,ma,::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
 
 // for generated code in body file
 #define INIT_PC pc=0;

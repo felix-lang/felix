@@ -1,0 +1,117 @@
+@h2 Felix arrays
+Felix supports a large set of array types.
+Arrays can be characterised by a variety of parameters.
+
+Bounded arrays have a fixed maximum length, unbounded arrays do not.
+Fixed arrays have the same length as their maximum length.
+The maximum length of an array can be determined at compile time
+or run time.
+
+Arrays can be either first or second class. First class arrays
+are values which can be copied and assigned. Second class arrays
+are represented by pointers and so are effectively passed by
+reference.
+
+Arrays can also be stable or not under iterators. An array is stable
+under iterators if elements with a particular index have a fixed
+address.
+
+Arrays can also be either compact or sparse. 
+A sparse array only has values at some indices.
+
+Felix supports the following array kinds:
+
+@h2 array[T,N]
+Fixed length array of N elements of type T. First class value.
+Equal (exactly) to a tuple of N elements of type T. The size
+is determined at compile time. Note that N is a type, it is not
+an integer. The categorical notation {T^N} can also be used
+for this array.
+
+@h2 carray[T]
+This is a fixed length array whose length is determined at construction
+time but is not known to the system. Such arrays are usually created by
+{malloc}. They cannot be scanned by the garbage collector because the
+length is not known to the system. carrays are second class.
+
+This type is included in Felix primarily for C compatibility.
+It is currently equivalent to a Felix pointer.
+
+@h2 varray[T]
+This is a bounded array of variable length. The bound is established
+dynamically at construction time and cannot be changed. The length
+may vary from 0 up to and including this bound. Varrays are stable under
+iterators, meaning the addresses of elements cannot move.
+
+@h2 parray[T]
+<em>Not implemented yet</em>
+This is a persistent bounded fixed length array
+mapped to a disk file. It is only suitable for storing
+aggregates of scalar types. The client is reponsible for
+mapping the disk file to the proper type. The length
+is taken from the file size stored by the file system.
+This data type does not consume any virtual memory.
+It is implemented with {mmap} or Windows equivalent.
+It is stable under iteration.
+
+@h2 marray[T]
+<em>Not implemented yet</em>
+This is a bounded array of variable length like a varray,
+however the bound can be huge without using up memory.
+This array uses {mmap} to assign a large address space
+to the array without assigning memory.
+
+A flag is used to determine the implementation model.
+On Linux, memory may be mapped from the system page pool
+for the array, using {MMAP_ANONYMOUS} 
+This consumes virtual memory (but is very fast).
+
+Otherwise a temporary file is created and used for the array
+storage. This may be preferred on Linux too, since it
+does not consume virtual memory, however it is slower
+(since the OS has to build the mapping tables).
+This type is not persistent. However it can be used for
+any data type. (not just a POD). 
+
+This data type is stable under iteration.
+
+WARNING: using a type containing Felix pointers will
+result in an extremely expensive garbage collection.
+
+@h2 darray[T]
+This is an unbounded array or variable length. It is implemented
+with a an object containing a varray. If the varray is too big or
+too small for the number of elements used, a new varray is created
+with elements copied from the old varray, and the new array replaces
+the old one.
+
+@h2 sarray[T]
+<em>Not implemented yet!</em>
+This is an unbounded length sparse array designed for a random set
+of used indicies: for that usage it is exceptionally efficient.
+A JudyL array is used to map indices to a compact representation using
+a {darray}. A sparse array must have a default value to use when
+an index is not mapped. A free list is used to keep track of unused
+slots in the darray: these can arise if a non-default value is 
+replaced by the default: in that case the mapping is removed
+to free up the slot.
+
+@h2 strings
+Felix provides special arrays for strings of {char}, {wchar} and
+{uchar}. These are just C++ {basic_string} types. The primary
+difference from an unbounded variable length array is that
+strings only accept POD element types.
+
+@h2 vector[T]
+This is a binding to C++ {vector} type. It is not safe to use
+with a strong Felix collector managed pointer, or any object containing
+one, however weak or rooted
+pointers can be used (that is, pointers which are guarranteed
+to be removed before all the strong pointers become unreachable, or which
+are registered as roots).
+
+This is because Felix cannot scan a {vector} for pointers to determine
+that the pointed at object remains reachable.
+This type is first class. It also permits reserving space dynamically
+to reduce the cost of extension.
+

@@ -120,10 +120,11 @@ struct FLX_EXCEPTIONS_EXTERN flx_assert2_failure_t : flx_exception_t {
 // ********************************************************
 
 struct FLX_EXCEPTIONS_EXTERN flx_range_failure_t : flx_exception_t {
+  long min; long v; long max;
   flx_range_srcref_t flx_loc; ///< location in Felix file
   char const *cxx_srcfile;          ///< C++ file
   int cxx_srcline;            ///< __LINE__ macro
-  flx_range_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
+  flx_range_failure_t(long,long,long,flx_range_srcref_t ff, char const *cf, int cl);
   virtual ~flx_range_failure_t();
 };
 

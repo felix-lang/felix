@@ -15,10 +15,9 @@ open module Darray
   cfun dflt_resize(old_max:ulong, requested:ulong):ulong=
   {
     // GOTCHA: don't forget that division has a higher precedence than multiplication!
-/*
+    // sensible minimum size of 20, except if zero length
     if requested == 0ul do return 0ul; done
     if requested < 20ul do return 20ul; done;
-*/
     if requested < old_max / 2ul do return (3ul * requested) / 2ul; done 
     if requested > old_max do return (requested * 3ul) / 2ul;  done
     return old_max;

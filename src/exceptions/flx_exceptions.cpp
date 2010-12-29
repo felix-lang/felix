@@ -48,7 +48,7 @@ flx_switch_failure_t::~flx_switch_failure_t(){}
 long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl)
 {
   if (x>=l && x<h) return x;
-  throw flx::rtl::flx_range_failure_t (sref,cf,cl);
+  throw flx::rtl::flx_range_failure_t (l,x,h,sref,cf,cl);
 }
 
 void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl)
