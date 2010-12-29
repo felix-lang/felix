@@ -238,7 +238,9 @@ print_endline "Flx_bind.bind_asms: Making symbol table done";
   let ifaces = Flx_symtab.get_exports bind_state.symtab in
 
 (*
-print_endline "Flx_bind.bind_asms: build symbol table";
+print_endline "Flx_bind.bind_asms: built symbol table";
+*)
+(*
 print_endline (Flx_symtab.detail bind_state.symtab);
 *)
   (* Now, bind all the symbols. *)

@@ -1,0 +1,12 @@
+
+a := darray (20ul, 1);
+println$ "len=" + str (len a);
+println a;
+
+var b = darray[int]();
+println$ len b;
+
+b+= 22;
+b+= 33;
+iter println of (int) b;
+

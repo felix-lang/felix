@@ -60,6 +60,29 @@ It is not only the fastest scripting language
 available, it competes very well with compiled languages,
 and is often faster than C.
 
+@h2 Tools
+The Felix package comes with a number of tools.
+@h3 flx
+The command line harness. Organises and sequences the compilation and
+execution process.
+@h3 flxg
+The compiler. Translates Felix code to C++. The "g" is for generator.
+@h3 flx_pkgconfig
+The package manager. Utilising a database of {config/*.fpc} files
+it translates abstract resource requirements in the compiler
+produced {*.dep} and {*.resh} files into platform specific
+physical resource specifiers,
+typically C #include names and binary library names, compilation
+and linker switches.
+@h3 webserver
+A personal webserver designed to colourise and hyperlink C++
+and Felix code and Felix documentation to make browsing local
+browsing of your codebase
+easy, and to support online publishing of open sources.
+You're probably reading this doc using it now.
+@h3 mk_daemon
+A little C program which launches programs such as the webserver
+as daemons.
 
 @h2 Platform Independence
 Felix provides platform independence like
@@ -96,24 +119,6 @@ The data type introduced here is a new primitive,
 that is, a fully abstract type, with semantics
 defined in terms of C, but typing managed by Felix.
 
-@h2 Modules
-Modules are like C++ namespaces, only they're a closed
-and can't be extended. Modules can have type parameters,
-however they're not actually polymorphic; rather this is a
-shorthand way to make each entry in the module polymorphic.
-
-@h2 Typeclasses
-Felix also supports ad-hoc polymorphism by specification of a set
-of function signatures parameterised by type variables,
-and with specified semantics, together with a set of concrete
-specialisations. This is similar to a C++ template with specialisations,
-or a Haskell type class. The salient point is that binding is parametric,
-whilst specialisations depend on a discrete set of type families
-which can be augmented by the user.
-
-Typeclasses are used extensively in the standard library to
-give the language a 'scripting' and 'dynamic' feel.
-
 @h2 Extensibility
 Felix has many advanced features which make a tutorial
 somewhat difficult to write. For example whilst we describe
@@ -133,9 +138,11 @@ of Felix standard types and lexicology.
 
 @h2 Bool
 Felix provides the usual boolean type bool with two values
-named false and true, with false less than true. Note that
+named {false} and {true}, with false less than true. Note that
 A implies B can be written A &lt;= B which may seem counterintuitive,
 but is quite logical.
+
+@felix std/bool.flx
 
 The name bool is actually an alias for the canonical enumeration 2,
 meaning a type with two values, and if you look closely in

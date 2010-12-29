@@ -2,7 +2,7 @@ open module Char
 {
   open Int;
   fun ord: char -> int = "(int)$1";
-  fun _ctor_char[t in ints]: t -> char = "(char)$1";
+  ctor[t in ints] char: t = "(char)$1";
   proc fprint: ostream * char = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
@@ -10,14 +10,14 @@ open module Wchar
 {
   open Long;
   fun ord: wchar -> long ="(long)$1";
-  fun _ctor_wchar[t in ints]: t -> wchar = "(wchar_t)$1";
+  ctor[t in ints] wchar: t = "(wchar_t)$1";
   proc fprint: ostream * wchar = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Uchar
 {
   fun ord: uchar -> uint32 ="$1";
-  fun _ctor_uchar[t in ints]: t-> uchar = "$1";
+  ctor[t in ints] uchar: t = "$1";
   //this needs to be fixed!
   //proc print: uchar = "std::cout<<$1;" requires iostream;
 }

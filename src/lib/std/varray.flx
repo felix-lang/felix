@@ -4,7 +4,7 @@ open module Varray
 {
   _gc_pointer _gc_type t type varray[t] = "?1*";
 
-  gen _ctor_varray[t]: ulong -> varray[t] =
+  ctor[t] varray[t]: ulong =
     "(?1*)(PTF gcp->collector->create_empty_array(&@?1,$1))"
     requires property "needs_gc"
   ;
@@ -18,7 +18,7 @@ open module Varray
   // too many loop iterations ..
 
   publish "Construct a full varray with a default value"
-  gen _ctor_varray[t] (size:ulong, default:t) = {
+  ctor[t] varray[t] (size:ulong, default:t) = {
     var o = varray[t] size;
     var i : ulong;
 
@@ -30,7 +30,7 @@ open module Varray
   }
 
   publish "Construct a partially filled varray with a default value computed by a function"
-  gen _ctor_varray[t] (size:ulong, used:ulong, f:ulong->t) = {
+  ctor[t] varray[t] (size:ulong, used:ulong, f:ulong->t) = {
     var o = varray[t] size;
     var i : ulong;
 
@@ -43,18 +43,18 @@ open module Varray
 
   publish "Construct a full varray from an array"
   // funny, the N isn't explicitly used.
-  fun _ctor_varray[t,N] (x:array[t,N]):varray[t] => 
-     _ctor_varray[t] (ulong(Array::len x), ulong(Array::len x), (fun (i:ulong)=>x.[int(i)]))
+  ctor[t,N] varray[t] (x:array[t,N]) => 
+     varray[t] (ulong(Array::len x), ulong(Array::len x), (fun (i:ulong)=>x.[int(i)]))
   ;
 
   publish "Construct a partially full varray from a varray"
-  fun _ctor_varray[t] (x:varray[t], maxlen:ulong) =>
-    _ctor_varray[t] (maxlen, len x, (fun (i:ulong)=> x.[i]))
+  ctor[t] varray[t] (x:varray[t], maxlen:ulong) =>
+    varray[t] (maxlen, len x, (fun (i:ulong)=> x.[i]))
   ;
 
   publish "Construct a full varray from a varray (copy constructor)"
-  fun _ctor_varray[t] (x:varray[t]) =>
-    _ctor_varray[t] (len x, len x, (fun (i:ulong)=> x.[i]))
+  ctor[t] varray[t] (x:varray[t]) =>
+    varray[t] (len x, len x, (fun (i:ulong)=> x.[i]))
   ;
 
   private proc set_used[t]: varray[t] * ulong =
@@ -154,7 +154,7 @@ struct comparator {
     return cmp->apply(*(FT2*)(void*)&z);
   }
 };
-""" requires header "#include <utility>";
+""" requires Cxx_headers::utility;
 
 private type _comparator[CT,FT2,FFT] = "comparator<?1,?2,?3>";
 private typedef comparator[T] = _comparator[T,T*T,T*T->bool];
@@ -164,7 +164,7 @@ private fun make_comparator[T](cmp:T * T -> bool) => _make_comparator[T, T*T, T*
 
 // invoke stl sort
 private proc _sort[T]: comparator[T] * &T * &T = "::std::sort($2, $3, $1);" 
-  requires header "#include <algorithm>";
+  requires Cxx_headers::algorithm;
 
 
 // in place sort of varray using STL sort

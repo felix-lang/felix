@@ -20,42 +20,47 @@ open module Darray
     return old_max;
   }
 
-  // I need to figure out how to hide this representation
-  typedef darray[T] = &darray_ctl[T];
+  type darray[T] = new &darray_ctl[T];
 
   proc do_resize[T] (pd: darray[T], new_size: ulong)
   {
-    var old = pd.a;
+    var old = (_repr_ pd).a;
     fun get(i:ulong)=>old.[i];
-    pd.a = _ctor_varray[T] (new_size, (Varray::len old), (fun(i:ulong)=>old.[i]));
+    (_repr_ pd).a = varray[T] (new_size, (Varray::len old), (fun(i:ulong)=>old.[i]));
   }
 
   // make an empty darray, give it 20 slots for no particular reason
-  gen _ctor_darray[T] () => new darray_ctl( _ctor_varray[T] 20ul , dflt_resize);
+  ctor[T] darray[T] () => _make_darray[T]$ new darray_ctl[T](varray[T] 20ul , dflt_resize);
 
   // make a darray from a varray
-  gen _ctor_darray[T] (a:varray[T]) => new darray_ctl( _ctor_varray[T] a, dflt_resize);
+  ctor[T] darray[T] (a:varray[T]) =>  _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
+
+  // make a darray of a certain size initialised with some default value
+  ctor[T] darray[T] (size:ulong, default:T) => darray[T] (varray[T](size,default));
 
   // basic array stuff, same interface as array
-  fun subscript[t,ii in ints] (a:darray[t],  n:ii) => a.a.[n];
-  fun len[t] (a:darray[t])=> Varray::len a.a;
+  fun subscript[t,ii in ints] (a:darray[t],  n:ii) => (_repr_ a).a.[n];
+  fun len[t] (a:darray[t])=> Varray::len (_repr_ a).a;
 
   // basic array stuff, same interface as varray
   proc pop[t](a:darray[t]) {
-    pop a.a;
-    newsize := a.resize (maxlen a.a, Varray::len a.a);
-    if newsize != maxlen a.a do do_resize (a,newsize); done 
+    pop (_repr_ a).a;
+    newsize := (_repr_ a).resize (maxlen (_repr_ a).a, Varray::len (_repr_ a).a);
+    if newsize != maxlen (_repr_ a).a do do_resize (a,newsize); done 
   }
 
   proc pluseq[t] (a:&darray[t],v:t) {
-    newsize := a.resize (maxlen a.a, Varray::len a.a + 1ul);
-    if newsize != maxlen a.a do do_resize(*a,newsize); done
-    var z = a.a; z += v; // hack to workaround compiler error Address non variable
+    r := _repr_ (*a);
+    newsize := r.resize (maxlen r.a, Varray::len r.a + 1ul);
+    if newsize != maxlen r.a do do_resize(*a,newsize); done
+    var z = r.a; z += v; // hack to workaround compiler error Address non variable
   }
-  
+
+  proc iter[T] (_f:T->void) (x:darray[T]) = { iter _f (_repr_ x).a; }
+
+  instance[T with Show[T]] Str[Darray::darray[T]] {
+    fun str (x:darray[T])=> str (_repr_ x).a;
+  }
 }
 
-instance[T with Show[T]] Str[Darray::darray[T]] {
-  fun str (x:darray[T])=> str x.a;
-}
 

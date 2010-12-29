@@ -167,9 +167,9 @@ let bind_quals bt quals = map (bind_qual bt) quals
 let str_parent p = match p with | Some p -> string_of_int p | None -> "None"
 
 let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
-(*
+  (*
   print_endline ("Binding symbol "^sym.Flx_sym.id^" index=" ^ string_of_int symbol_index);
-*)
+  *)
   (* If we've already processed this bid, exit early. We do this so we can avoid
    * any infinite loops in the symbols. *)
   if Hashtbl.mem state.visited symbol_index then () else begin

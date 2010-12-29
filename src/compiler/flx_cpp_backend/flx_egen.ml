@@ -424,6 +424,7 @@ let rec gen_expr'
  *)
   | BEXPR_class_new (t,a) ->
     let ref_type = tn t in
+print_endline ("Generating class new for t=" ^ ref_type);
     let args = match a with
     | BEXPR_tuple [],_ -> []
     | BEXPR_tuple es,_ -> map ge' es

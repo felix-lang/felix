@@ -1,65 +1,58 @@
 
 SCHEME """
 (begin
+  ;; lists
   (define (first x)(car x))
   (define (second x)(cadr x))
   (define (third x)(caddr x))
   (define (tail x)(cdr x))
+  (define fold_left
+    (lambda (f acc lst)
+      (if (null? lst) acc (fold_left f (f acc (first lst)) (tail lst)))))
+
+  ;; list of pairs
+  (define (myassoc elt alst)
+    (let ((r (assoc elt alst)))
+    (if r (second r) `(MISMATCHED_BRACKET ,elt ,alst))))
+
+
+  ;; name term constructor
+  (define (nos x)`(ast_name ,_sr ,x ()))
+  (define (noi x)`(ast_name ,_sr ,(symbol->string x) ()))
+
+  ;; polymorphic parameters
+  (define (typesoftvarlist x) (map nos (map first (first x))))
+  (define dfltaux '( (ast_tuple ("dummy" 0 0 0 0) ()) ()))
+  (define dfltvs `( () ,dfltaux)) ;; vs list: name,type,constraint triple
+  (define dfltargs '((() none)))
 )
 """;
-
 SCHEME """
-(define fold_left
-  (lambda (f acc lst)
-    (if (null? lst) acc (fold_left f (f acc (first lst)) (tail lst)))))
-""";
-
-SCHEME """
-(define (nos x)`(ast_name ,_sr ,x ()))
-""";
-
-SCHEME """
-(define (noi x)`(ast_name ,_sr ,(symbol->string x) ()))
-""";
-
-SCHEME """
-(define (typesoftvarlist x) (map nos (map first (first x))))
-""";
-
-SCHEME """
-(define dfltaux '( (ast_tuple ("dummy" 0 0 0 0) ()) ()))
-""";
-
-SCHEME """
-(define dfltvs
-  `(
-    ()           ;; vs list: name,type,constraint triple
-    ,dfltaux
+(begin
+  (define (base_of_ast_lookup qn) (second (second qn)))
+  (define (base_of_ast_name n) (third n))
+  (define (base_of_qualified_name qn)
+    (cond 
+      ((eq? (first qn) 'ast_lookup) (base_of_ast_lookup qn))
+      ((eq? (first qn) 'ast_name) (base_of_ast_name qn))
+      (else (begin (display "QUALIFIED_NAME_EXPECTED got:")(display qn)))
+    )
   )
 )
 """;
 
 SCHEME """
-  (define dfltargs '((() none)))
-""";
-
-SCHEME """
+;; lambda terms
+(begin
   (define (lazy stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs ,(noi 'typ_none) ,stmts)))
-""";
-
-SCHEME """
   (define (lazy_proc stmts) `(ast_lambda ,_sr (,dfltvs ,dfltargs (ast_void ,_sr) ,stmts)))
-""";
-
-SCHEME """
-  (define (block stmts)`(ast_call ,_sr ,(lazy_proc stmts) ())))
-""";
-
-SCHEME """
+  (define (block stmts)`(ast_call ,_sr ,(lazy_proc stmts) ()))
   (define call (lambda (f a) `(ast_call ,_sr (ast_name ,_sr ,f ()) ,a)))
+)
 """;
 
 SCHEME """
+;; split an application term apply (f a) into list (f a)
 (define (splitapply x)
   (if (pair? x)
     (if (eq? (first x) 'ast_apply)
@@ -107,13 +100,6 @@ SCHEME """
   (if (pair? adjs)(first adjs)'Function
 ))))
 """;
-
-SCHEME """
-(define (myassoc elt alst)
-  (let ((r (assoc elt alst)))
-  (if r (second r) `(MISMATCHED_BRACKET ,elt ,alst))))
-""";
-
 SCHEME """
 (define (tvfixup_folder vsct vtc)
   (begin ;;(display "tvfixup_folder vsct=")(display vsct)(display ", vtc=")(display vtc)(display "\\n")
@@ -615,13 +601,13 @@ syntax functions {
       `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Ctor ,body))
     """;
 
-  sctor_definition := "ctor" stvarlist sname sfun_arg+ sopt_traint_eq scompound =>#
+  sctor_definition := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound =>#
     """
     (let*
       (
-        (name (string-append "_ctor_" _3))
+        (name (string-append "_ctor_" (base_of_qualified_name _3)))
         (vs _2)
-        (ret `(ast_name ,_sr ,_3 ()))
+        (ret _3)
         (traint _5)
         (body _6)
         (args _4)
@@ -629,13 +615,13 @@ syntax functions {
       `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
     """;
 
-  sctor_definition := "ctor" stvarlist sname sfun_arg+ sopt_traint "=>" sexpr ";" =>#
+  sctor_definition := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";" =>#
     """
     (let*
       (
-        (name (string-append "_ctor_" _3))
+        (name (string-append "_ctor_" (base_of_qualified_name _3)))
         (vs _2)
-        (ret `(ast_name ,_sr ,_3 ,(typesoftvarlist _2)))
+        (ret _3)
         (traint _5)
         (body `((ast_fun_return ,_sr ,_7)))
         (args _4)
@@ -972,17 +958,17 @@ syntax cbind {
         ('ERROR)))))
     """;
 
-  sfunction_definition := "ctor" sname stvarlist ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";" =>#
+  sfunction_definition := "ctor" stvarlist squalified_name ":" stypeexpr sopt_cstring sopt_prec srequires_clause ";" =>#
     """
     (let*
       (
-        (name (string-append "_ctor_" _2))
-        (vs _3)
-        (ret `(ast_name ,_sr ,_2 ()))
+        (name (string-append "_ctor_" (base_of_qualified_name _3)))
+        (vs _2)
+        (ret _3)
         (argt _5)
         (ct
           (if (eq? 'none _6)
-            `(StrTemplate ,(string-append _2 "($a)"))
+            `(StrTemplate ,(string-append (base_of_qualified_name _3) "($a)"))
             (second _6)
           )
         )

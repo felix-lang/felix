@@ -1,0 +1,39 @@
+@h1 Abstract Types
+Felix supports two kinds of abstract types: primitve types formed by binding
+to C/C++ types and Felix abstract types. See documentation of binding for
+information on binding C types.
+
+Felix abstract types work like this example:
+@felix
+module A {
+  type p2[t] = new t * t;
+  ctor[t] p2[t](x:t)=> _make_p2$ x,x;
+  fun get1[t](x:p2[t])=> (_repr_ x).(0);
+  fun get2[t](x:p2[t])=> (_repr_ x).(1);
+}
+
+var a = A::p2[int] (2);
+println$ A::get1 a, A::get2 a;
+@
+Here, the {type/new} definition is similar to a {typedef} however it
+the type is abstract, meaning the RHS representation is hidden.
+
+Inside the module containing the type definition, two functions can
+be used to define functions using the representation. The {_repr_}
+function converts a value of the abstract type {p2[t]} to the same
+value with the representation type {t*t}.
+
+The function {_make_p2} is the inverse, it converts a value of the
+representatino type {t*t} into a value of the abstract type {p2[t]}.
+
+Using these two function you can convert between the abstract and
+representation types in either direction.
+
+These two synthesised functions are private to the containing module {A}
+and so are not visible outside the module, effectively hiding the
+representation from clients.
+
+After binding is complete, a special pass of the compiler downgrades
+abstract types to their representation for optimisation, instantiation
+and code generation.
+

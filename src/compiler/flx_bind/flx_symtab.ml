@@ -891,7 +891,8 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
       add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_newtype t);
 
       (* Create an identity function that doesn't do anything. *)
-      let piname = TYP_name (sr,id,[]) in
+      let ts = List.map (fun (n,_) -> TYP_name (sr,n,[])) (fst vs) in
+      let piname = TYP_name (sr,id,ts) in
 
       (* XXX: What's the _repr_ function for? *)
       let n_repr = Flx_mtypes2.fresh_bid counter_ref in

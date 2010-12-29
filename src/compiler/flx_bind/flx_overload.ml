@@ -146,6 +146,25 @@ let get_data table index =
     failwith ("[Flx_lookup.get_data] No definition of <" ^
       string_of_bid index ^ ">")
 
+(* Overloading is called when an application apply (f,a) is found.
+ * sig_of_symdef is called when f is a closure, to find the signature
+ * of f, that is, the domain of f considered as a function.
+ * Thus, f may be a primitive or felix function, but it can also
+ * be a struct used as a constructor, a type function,
+ * a type, since types can be used as constructors, or,
+ * any value, since values can be used as function via
+ * an apply function.
+ *
+ * Constructors and apply functions should fail here: it is the
+ * job of the lookup routine to retry a type X considered as a
+ * constructor with routine _ctor_X, similarly a value used as
+ * a function via an apply method is retried by the lookup routine.
+ * 
+ * so .. this routine should only succeed for actual functions
+ * or entities considered as functions "intrinsically", not as a
+ * result of a syntax trick or user defined application or x
+ * constructor.
+ *)
 let sig_of_symdef symdef sr name i = match symdef with
   | SYMDEF_match_check (_)
     -> TYP_tuple[],TYP_sum [TYP_tuple[];TYP_tuple[]],None (* bool *)

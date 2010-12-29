@@ -1,8 +1,8 @@
 // note: has to be called Fcomplex to avoid clash with typeclass Complex
 open module Fcomplex
 {
-  ctor fcomplex[t in reals] : t * t = "::std::complex<float>($1,$2)";
-  ctor fcomplex[t in reals] : t = "::std::complex<float>($1,0)";
+  ctor[t in reals] fcomplex : t * t = "::std::complex<float>($1,$2)";
+  ctor[t in reals] fcomplex : t = "::std::complex<float>($1,0)";
   proc fprint: ostream * fcomplex = "*$1<<$2;" requires Cxx_headers::iostream;
   instance Str[fcomplex] {
     fun str (z:fcomplex) => str(real z) + "+" + str(imag z)+"i";
@@ -32,8 +32,8 @@ open module Fcomplex
 
 open module Dcomplex
 {
-  ctor dcomplex[t in reals] : t * t = "::std::complex<double>($1,$2)";
-  ctor dcomplex[t in reals] : t = "::std::complex<double>($1,0)";
+  ctor[t in reals] dcomplex : t * t = "::std::complex<double>($1,$2)";
+  ctor[t in reals] dcomplex : t = "::std::complex<double>($1,0)";
   proc fprint: ostream * dcomplex = "*$1<<$2;" requires Cxx_headers::iostream;
   instance Str[dcomplex] {
     fun str (z:dcomplex) => str(real z) + "+" + str(imag z)+"i";
@@ -63,8 +63,8 @@ open module Dcomplex
 
 open module Lcomplex
 {
-  ctor lcomplex[t in reals] : t * t = "::std::complex<long double>($1,$2)";
-  ctor lcomplex[t in reals] : t = "::std::complex<long double>($1,0)";
+  ctor[t in reals] lcomplex : t * t = "::std::complex<long double>($1,$2)";
+  ctor[t in reals] lcomplex : t = "::std::complex<long double>($1,0)";
   proc fprint: ostream * lcomplex = "*$1<<$2;" requires Cxx_headers::iostream;
   instance Str[lcomplex] {
     fun str (z:lcomplex) => str(real z) + "+" + str(imag z)+"i";

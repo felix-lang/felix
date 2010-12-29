@@ -1157,7 +1157,7 @@ and bind_type'
         | Some q -> q
         | None -> assert false
       in
-      let sr = src_of_qualified_name x in
+      let sr2 = src_of_qualified_name x in
       let entry_kind, ts = lookup_qn_in_env' state bsym_table env rs x in
       let ts = List.map bt ts in
       let baset = bi
@@ -1166,8 +1166,9 @@ and bind_type'
       in
       (* SHOULD BE CLIENT ERROR not assertion *)
       if List.length ts != List.length entry_kind.Flx_btype.spec_vs then begin
-        print_endline ("Qualified name lookup finds index " ^
+        print_endline ("bind_type': Type "^string_of_typecode t^"=Qualified name "^string_of_qualified_name x^" lookup finds index " ^
           string_of_bid entry_kind.Flx_btype.base_sym);
+        print_endline ("Kind=" ^ match t with | TYP_name (_,s,ts) -> "TYP_name ("^s^"["^catmap ","string_of_typecode ts^"])" | _ -> "TYP_*");
         print_endline ("spec_vs=" ^
           catmap ","
             (fun (s,j)-> s ^ "<" ^ string_of_bid j ^ ">")
@@ -1187,7 +1188,7 @@ and bind_type'
           | { Flx_sym.id=id } -> print_endline (id ^ " is not a type variable")
         end;
 
-        clierr sr
+        clierr2 sr sr2
           ("Wrong number of type variables, expected " ^
           si (List.length entry_kind.Flx_btype.spec_vs) ^ ", but got " ^
           si (List.length ts))
@@ -2118,6 +2119,7 @@ and lookup_qn_with_sig'
         (* actally the 'handle_function' call above already returns this .. *)
         bexpr_closure t (index,bts)
 
+      | SYMDEF_newtype _
       | SYMDEF_union _
       | SYMDEF_abs _
       | SYMDEF_type_alias _ ->
@@ -2830,6 +2832,7 @@ and lookup_name_in_table_dirs_with_sig
               Some tb
           | None -> None
           end
+    | SYMDEF_newtype _
     | SYMDEF_abs _
     | SYMDEF_union _
     | SYMDEF_type_alias _ ->
@@ -3062,6 +3065,7 @@ and lookup_type_name_in_table_dirs_with_sig
         "\ngot " ^ sbt bsym_table mt
       ); None)
 
+    | SYMDEF_newtype _
     | SYMDEF_abs _
     | SYMDEF_union _
     | SYMDEF_type_alias _ ->
@@ -3086,7 +3090,6 @@ and lookup_type_name_in_table_dirs_with_sig
     | SYMDEF_match_check _
     | SYMDEF_module _
     | SYMDEF_root _
-    | SYMDEF_newtype _
     | SYMDEF_reduce _
     | SYMDEF_typeclass
       ->
@@ -3782,7 +3785,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       *)
       (* should be a client error not an assertion *)
       if List.length spec_vs <> List.length ts then begin
-        print_endline ("BINDING NAME " ^ name);
+        print_endline ("bind_expression'; Expr_name: NonFunctionEntry: BINDING NAME " ^ name);
         begin match hfind "lookup" state.sym_table index with
           | { Flx_sym.id=id;vs=vs;symdef=SYMDEF_typevar _} ->
             print_endline (id ^ " is a typevariable, vs=" ^
@@ -3845,7 +3848,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     ->
       (* should be a client error not an assertion *)
       if List.length spec_vs <> List.length ts then begin
-        print_endline ("BINDING NAME " ^ name);
+        print_endline ("bind_expression'; Expr_name: FunctionEntry: BINDING NAME " ^ name);
         begin match hfind "lookup" state.sym_table index with
           | { Flx_sym.id=id;vs=vs;symdef=SYMDEF_typevar _} ->
             print_endline (id ^ " is a typevariable, vs=" ^
@@ -4135,15 +4138,23 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
    * T (a) was already valid (via _ctor_T probably) and then
    * new T(a) is like the ordinary copy of a value, except theres
    * no copy, constuction is in place on the heap.
+   *
+   * How to resolve the ambiguity? One way would be to require "cls"
+   * to be a cstruct .. however google re2::RE2_ is a primitive, not
+   * cstruct, and RE2 is currently also a primitive with a primitive ctor.
    *)
+(* Temporarily disable this so we can distinguish existing constuctors
+   and calls to C++ class constructors
+
   | EXPR_new (srr,(EXPR_apply(sre,(cls,a)) as e)) ->
     begin try
       let cls = bt sre (typecode_of_expr cls) in
-print_endline "CLASS NEW";
+print_endline ("CLASS NEW " ^sbt bsym_table cls);
       bexpr_class_new cls (be a)
     with _ ->
     bexpr_new (be e)
     end
+*)
 
   | EXPR_new (srr,e) ->
     bexpr_new (be e)
