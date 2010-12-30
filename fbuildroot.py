@@ -405,6 +405,9 @@ def configure(ctx):
     # overwrite or add *.fpc files to the config directory
     call('buildsystem.post_config.copy_user_fpcs', ctx)
 
+    # make Felix representation of whole build config
+    call('buildsystem.show_build_config.build',ctx)
+
     return Record(build=build, host=host, target=target), iscr
 
 # ------------------------------------------------------------------------------

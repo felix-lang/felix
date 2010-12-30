@@ -39,8 +39,8 @@ flx_assert2_failure_t::flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_sr
    flx_loc(ff), flx_loc2(ff2), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_assert2_failure_t::~flx_assert2_failure_t(){}
 
-flx_range_failure_t::flx_range_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
-   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_range_failure_t::flx_range_failure_t(long l, long x, long h, flx_range_srcref_t ff, char const *cf, int cl) :
+   min(l), v(x), max(h), flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_range_failure_t::~flx_range_failure_t(){}
 
 flx_switch_failure_t::~flx_switch_failure_t(){}

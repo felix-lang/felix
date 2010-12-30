@@ -1,0 +1,69 @@
+module Mmap
+{
+  requires package "mmap";
+  header """
+    // MAP_ANON is an older form of MAP_ANONYMOUS, and should be compatible
+    #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+    #  define MAP_ANONYMOUS MAP_ANON
+    #endif
+  """;
+
+  // Offset into file, should be defined elsewhere
+  typedef off_t = ulong;
+
+  // protection options
+  const PROT_NONE  : int;  // Posix: inaccessible
+  const PROT_EXEC  : int;  // Posix: allow exec
+  const PROT_READ  : int;  // Posix: allow read (and perhaps exec)
+  const PROT_WRITE : int;  // Posix: allow write (and perhaps write and exec)
+
+  // Linux only
+  const MAP_DENYWRITE: int; // Linux only
+
+  // flags: mode
+  const MAP_FILE: int;      // Posix: Default mode: map a file
+  const MAP_ANONYMOUS: int; // Linux, OSX: Map from VM pool
+
+  // flags: map address
+  const MAP_FIXED: int;     // Posix: Client tries to fix the mapping address, 
+                            // must set address argument non-NULL
+                            // Implementation dependent
+                            // Default: system chooses address is not specified
+                            // must set address NULL 
+
+  // flags: sharing
+  const MAP_SHARED : int;   // Posix: write changes to backing store on msync
+  const MAP_PRIVATE : int;  // Posix: don't write changes ever
+
+  // System dependent:
+  const MAP_HASSEMAPHORE: int;
+  const MAP_NORESERVE: int;
+  const MAP_LOCKED: int;
+  const MAP_GROWSDOWN: int;
+  const MAP_32BIT: int;
+  const MAP_POPULATE: int;
+  const MAP_NONBLOCK: int;
+
+  // return value of mmap
+  const MAP_FAILED : address;
+
+  // size of a page
+  const _SC_PAGESIZE : long = "sysconf(_SC_PAGESIZE)";
+
+  // establish a mapping
+  fun mmap:
+    address * //< start address
+    size *    //< bytes to map
+    int *     //< protection
+    int *     //< flags
+    int *     //< file descriptor
+    off_t     //< offset into file, multiple of _SC_PAGESIZE
+    -> address; //< start of reserved address space
+
+  // unmap a region
+  fun munmap: address * size -> int;
+
+  // save region to backing store (MAP_SHARED only)
+  fun msync: address * size * int -> int;
+}
+
