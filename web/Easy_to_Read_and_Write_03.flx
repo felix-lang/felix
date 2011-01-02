@@ -1,0 +1,5 @@
+var x = 1.0,2.0,2.5,3.0;
+println$ "The squares of " + str x " are" + 
+  fold_left (fun (acc:string) (x:double) => acc+" "+ str (x * x)) "" x
+;
+

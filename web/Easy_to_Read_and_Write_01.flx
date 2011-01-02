@@ -1,0 +1,8 @@
+var x = 1.0,2.0,2.5,3.0;
+var y = varray[double] x.len.size;
+
+var i:int; forall i in 0 upto x.len -1 do 
+  y += x.[i] * x.[i]; 
+done
+
+println$ "The squares of " + str x " are " + str y;

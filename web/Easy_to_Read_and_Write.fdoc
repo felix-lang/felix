@@ -1,0 +1,34 @@
+Here's a simple program to square some numbers:
+@flx-and-expect ../web/Easy_to_Read_and_Write_01
+We're using a for loop and a variable length array {y} with
+maximum size {x.len}. This is imperative code. There's
+a better way:
+@flx-and-expect ../web/Easy_to_Read_and_Write_02
+This uses the higher order function {map}.
+
+Here's another way, this time using the higher order function 
+{fold_left}:
+@flx-and-expect ../web/Easy_to_Read_and_Write_03
+So you want to make that simpler? Then we can do this:
+@flx-and-expect ../web/Easy_to_Read_and_Write_04
+Here we have defined our own polymorphic higher order function
+{catmap}, which maps the array, then converts the elements to
+a string with the {str} function, and folds them together with
+a specified separator.
+
+But what's that {with Str[T]} thing? Unlike C++, Felix does not
+permit dependent types in polymorphic functions. Instead, there is
+a type class called {Str[T]} defined in the library containing a 
+function {str: T -> string} which converts a value of type T to
+a string in some way. An instance of this class is defined for
+{double}. So in the function {catmap} we're specifying
+a <em>constraint</em> that the {T} used must have a {Str}
+instance.
+
+If that sounds confusing, just think of typeclasses as C++ template
+declarations without definitions, and instances as specialisations.
+
+The point is that the requirement is now part of the interface,
+and the {str} function is bound at the point of definition.
+
+

@@ -1,0 +1,9 @@
+fun catmap[T,N with Str[T]] (sep:string) (f:T -> T) (x:array[T,N]): string => 
+  fold_left (fun (acc:string) (x:T) => acc+sep+str (f x)) "" x
+;
+
+var x = 1.0,2.0,2.5,3.0;
+
+println$ "The squares of " + str x " are" + 
+  catmap " " (fun (x:double)=> x * x) x
+;
