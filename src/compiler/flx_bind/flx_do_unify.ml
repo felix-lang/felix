@@ -1,3 +1,4 @@
+
 (* returns true if a and b have an mgu,
    and also adds each element of the mgu to
    the varmap if it isn't already present
@@ -11,16 +12,6 @@
    variable one .. it must be eliminated, but
    type parameters must not be [since they're
    instantiated to multiple values .. ..])
-
-   The subtyping rule for lvalues also applies
-   here. An lvalue type for a returned expression
-   is compatible with a non-value function return.
-
-   The unification algorithm can account for this,
-   it requires the LHS = RHS equation to support
-   an extra 'lvalue' in the RHS, but not the other
-   way around. So the expression type has to be the RHS
-   and the declared type the LHS.
 *)
 let do_unify counter varmap sym_table bsym_table a b =
   let eqns =
@@ -72,6 +63,9 @@ let do_unify counter varmap sym_table bsym_table a b =
         in
         match sym.Flx_sym.symdef with
         | Flx_types.SYMDEF_function _ ->
+(*
+print_endline ("Adding binding for function " ^ string_of_int i ^ " ret type " ^ Flx_print.sbt bsym_table t);
+*)
             Hashtbl.add varmap i t
 
         (* if it's a declared type variable, leave it alone *)

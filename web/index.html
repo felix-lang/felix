@@ -1,12 +1,71 @@
-
 <html>
 <head>
     <title>Felix</title>
 </head>
 <body>
-<h1 style="text-align:center">Felix website: under construction</h1>
-<p style="align:center;margin-left:auto;margin-right:auto;width:50%"><img src=/images/FelixWork.jpg>
-<p style="margin-left:50px"><a href=http://felix-lang.org:1116/>Felix 1.1.6rc3 Live</a>
-<p style="margin-left:50px"><a href=http://felix-lang.org:1116/dist>Download Source</a>
+<h1 style="text-align:center">The Felix Programming Language</h1>
+<table><tr><td rowspan=20>
+<table>
+  <tr><td> <img style="align:top;" src=images/200px-Felix_the_cat.svg.png> <td></tr>
+  <tr><td><a href=http://felix-lang.org:1116/>Felix 1.1.6rc3 Live</a></td></tr>
+  <tr><td><a href=http://felix-lang.org:1116/dist>Download Source</a></td></tr>
+</table>
+</td><td>
+  </td></tr><tr><td></td><td>
+  Felix is a new programming language in the ML family.
+  </td></tr><tr><td></td><td>
+  <strong>Easy to Deploy:</strong> Felix is designed as a <em>scripting language</em> so it is as <em>easy to use</em> as Ruby, Python or PHP,
+  and provides the same kind of <em>platform independence</em> and <em>rapid prototyping</em>. 
+  <a href="./Easy_to_Deploy.fdoc">Look</a>
+  </td></tr><tr><td></td><td><p>
+  <strong>Easy to read and write:</strong> Felix code is syntactically clean and provides
+  many shortcuts for common requirements. The strongest feature here is what is left out:
+  there are no classes and so you can't get bogged down in object oriented method spaghetti.
+  <a href="./Easy_to_Read_and_Write.fdoc">Look</a>
+
+  </td></tr><tr><td></td><td><p>
+
+  <strong>High performance</strong> is delivered by advanced data structures,
+  whole program analysis with heavy inlining, and other high level optimisations. Felix then
+  generates C++ which is then optimised at the low level by your favourite ISO C++ compiler 
+  to generate machine binaries instead of bytecode. The result is sometimes faster than hand written C
+  and can you can always embed C directly in your Felix code if required.
+  </td></tr><tr><td></td><td><p>
+  <strong>Reuse C and C++ libraries:</strong> Felix provides a simple way to bind almost seamlessly to C and C++ code,
+  so you can continue to use all your favourite libraries: compatibility is assured
+  because Felix uses the C/C++ object model.
+  </td></tr><tr><td></td><td><p>
+  <strong>Program correctness</strong> is supported by a wide range of features including <em>garbage
+  collection</em> for automatic storage management, strict high power <em>static typing</em> including
+  <em>overloading</em>, <em>parametric polymorphism</em>, Haskell style <em>type classes</em>, and <em>type constraints</em>. 
+  </td></tr>
+</table>
+  
+  <strong>Contract programming:</strong>
+  Felix provides the best contract programming system of any production language.
+  It has the usual assertions, pre-conditions, and post-conditions for
+  functions, but also provides reductions, axioms, lemmas and theorems with an interface
+  to the Why automatic theorem proving machinery. Abstract typing is supported by modules,
+  and contol over visibility.
+
+  Felix provides the best contract programming system of any production language.
+  </td></tr><tr><td></td><td><p>
+  The type system is formally an enhanced version of the typed lambda calculus plus
+  pattern matching.  A wide range
+  of functional programming constructions including first class nested
+  functions with closures are provided. Felix also provides a range of type constructors
+  including tuples, records, and stucts, cases and variants.
+  </td></tr><tr><td></td><td><p>
+  Network programming is enhanced by a built-in asynchronous network I/O system coupled
+  with both pre-emptive threads and cooperative threads. Cooperative threads, or <em>fibres</em>
+  are light enough for mega-threading (millions of threads on a laptop).
+  </td></tr><tr><td></td><td><p>
+  Felix is designed to support <em>domain specific sublanguage</em> development.
+  The standard grammar is dynamically loaded and inline grammar extensions are
+  relatively easy to program. Felix uses an EBNF variant for the grammar with
+  parser actions coded in Scheme. The underlying parser is Dypgen, an extensible
+  GLR parser.
+<p style="margin-left:40px">Sourceforge mailing list: felix-language@lists.sourceforge.net
+<p style="margin-left:40px">Google mailing list: felix-language@googlegroups.com
 </body>
 </html>

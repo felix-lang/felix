@@ -165,6 +165,7 @@ let get_data table index =
  * result of a syntax trick or user defined application or x
  * constructor.
  *)
+
 let sig_of_symdef symdef sr name i = match symdef with
   | SYMDEF_match_check (_)
     -> TYP_tuple[],TYP_sum [TYP_tuple[];TYP_tuple[]],None (* bool *)
@@ -307,6 +308,8 @@ let fixup_argtypes be bid pnames base_domain argt rs =
 
 let resolve sym_table bsym_table base_sym bt be arg_types =
   let sym = Flx_sym_table.find sym_table base_sym in
+  let opt_bsym = try Some (Flx_bsym_table.find bsym_table base_sym) with Not_found -> None in
+
   let pvs, vs, { raw_type_constraint=con } =
     find_split_vs sym_table bsym_table base_sym
   in
@@ -332,10 +335,35 @@ let resolve sym_table bsym_table base_sym bt be arg_types =
   (* bind type in base context, then translate it to view context:
    * thus, base type variables are eliminated and specialisation
    * type variables introduced *)
-  let con = bt sym.Flx_sym.sr con in
-  let domain = bt sym.Flx_sym.sr base_domain in
-  let base_result = bt sym.Flx_sym.sr base_result in
 
+  let con = bt sym.Flx_sym.sr con in
+  let domain,base_result = 
+  (* this is primarily an optimisation to save recursive overload resolution
+   * to find the return type of a function, which may itself involve a chain
+   * of overload resolutions. However it also helps if a function isn't declared
+   * with a return type, to find the computed return type: however this will ONLY
+   * WORK if the function is already bound, so it can't be relied on. This needs
+   * to be fixed! Because the results of a call with multiple arguments depend
+   * on the return type, and we can't have the success of overloading depend on
+   * the order of binding the compiler happens to pick! FIX IT!
+   *)
+  match opt_bsym with
+  | Some {Flx_bsym.id=id;sr=sr;vs=view_bvs;bbdcl=Flx_bbdcl.BBDCL_fun (props,base_bvs,ps,rt,_)} ->
+(*
+    print_endline ("Found function binding for " ^ id);
+*)
+    let domain = Flx_bparams.get_btype ps in
+    let base_result = rt in
+    domain, base_result
+
+  | _ -> 
+(*
+print_endline ("Warning: didn't find function binding for " ^ sym.Flx_sym.id);
+*)
+    let domain = bt sym.Flx_sym.sr base_domain in
+    let base_result = bt sym.Flx_sym.sr base_result in
+    domain,base_result
+  in
   sym.Flx_sym.id, sym.Flx_sym.sr, vs, pvs, con, domain, base_result, arg_types
 
 
@@ -352,14 +380,14 @@ let hack_name qn = match qn with
 
 let specialize_domain base_vs sub_ts t =
   (*
-  print_endline ("specialise Base type " ^ sbt sym_table t);
+  print_endline ("specialise Base type " ^ sbt bsym_table t);
   *)
   let n = List.length base_vs in
   let ts = list_prefix sub_ts n in
   let vs = List.map (fun (i,n,_) -> i,n) base_vs in
   let t = tsubst vs ts t in
   (*
-  print_endline ("to View type " ^ sbt sym_table t);
+  print_endline ("to View type " ^ sbt bsym_table t);
   *)
   t
 
@@ -375,11 +403,10 @@ let make_equations
   spec_domain
   spec_result
 =
-  (*
+(*
   print_endline ("BASE Return type of function " ^ id ^ "<" ^
     si entry_kind.base_sym ^ ">=" ^ sbt bsym_table spec_result);
-  *)
-
+*)
   (* unravel function a->b->c->d->..->z into domains a,b,c,..y
      to match curry argument list *)
   let curry_domains =
@@ -389,8 +416,8 @@ let make_equations
   let curry_domains = spec_domain :: curry_domains in
 
   (*
-  print_endline ("Argument  sigs= " ^  catmap "->" (sbt sym_table) arg_types);
-  print_endline ("Candidate sigs= " ^  catmap "->" (sbt sym_table) curry_domains);
+  print_endline ("Argument  sigs= " ^  catmap "->" (sbt bsym_table) arg_types);
+  print_endline ("Candidate sigs= " ^  catmap "->" (sbt bsym_table) curry_domains);
   *)
   (* equations for user specified assignments *)
   let lhsi = List.map (fun (n,i) -> i) entry_kind.spec_vs in
@@ -406,13 +433,13 @@ let make_equations
 
   (*
   print_endline "TS EQUATIONS ARE:";
-  List.iter (fun (t1,t2) -> print_endline (sbt sym_table t1 ^ " = " ^ sbt sym_table t2))
+  List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
   eqns
   ;
   *)
 
   (*
-  print_endline ("Curry domains (presub)   = " ^ catmap ", " (sbt sym_table) curry_domains);
+  print_endline ("Curry domains (presub)   = " ^ catmap ", " (sbt bsym_table) curry_domains);
   *)
   let curry_domains = List.map
     (fun t -> list_subst counter eqnsi t)
@@ -420,7 +447,7 @@ let make_equations
   in
 
   (*
-  print_endline ("Curry domains (postsub)  = " ^ catmap ", " (sbt sym_table) curry_domains);
+  print_endline ("Curry domains (postsub)  = " ^ catmap ", " (sbt bsym_table) curry_domains);
   *)
 
   let curry_domains = List.map
@@ -429,7 +456,7 @@ let make_equations
   in
 
   (*
-  print_endline ("Curry domains (postbeta) = " ^ catmap ", " (sbt sym_table) curry_domains);
+  print_endline ("Curry domains (postbeta) = " ^ catmap ", " (sbt bsym_table) curry_domains);
   *)
 
   let n = min (List.length curry_domains) (List.length arg_types) in
@@ -605,7 +632,7 @@ let solve_mgu
         let t1 = List.assoc j' basemap in
         let t2 = et in
         (*
-        print_endline ("CONSTRAINT: Adding equation " ^ sbt sym_table t1 ^ " = " ^ sbt sym_table t2);
+        print_endline ("CONSTRAINT: Adding equation " ^ sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2);
         *)
         extra_eqns := (t1,t2) :: !extra_eqns
       end;
@@ -696,7 +723,7 @@ let solve_mgu
     (*
     print_endline "UNIFICATION STAGE 2";
     print_endline "EQUATIONS ARE:";
-    List.iter (fun (t1,t2) -> print_endline (sbt sym_table t1 ^ " = " ^ sbt sym_table t2))
+    List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
     !extra_eqns
     ;
     print_endline "...";
@@ -729,7 +756,7 @@ let solve_mgu
             let t = List.assoc j extra_mgu in
             (*
             print_endline ("CAN NOW RESOLVE " ^
-              th k ^ " vs term " ^ s ^ "<"^ si i^"> ---> " ^ sbt sym_table t)
+              th k ^ " vs term " ^ s ^ "<"^ si i^"> ---> " ^ sbt bsym_table t)
             ;
             *)
             mgu := (j,t) :: !mgu
@@ -784,11 +811,11 @@ let solve_mgu
 
     (*
     print_endline ("Matched candidate " ^ si i ^ "\n" ^
-      ", spec domain=" ^ sbt sym_table spec_domain ^"\n" ^
-      ", base domain=" ^ sbt sym_table domain ^"\n" ^
-      ", return=" ^ sbt sym_table spec_result ^"\n" ^
+      ", spec domain=" ^ sbt bsym_table spec_domain ^"\n" ^
+      ", base domain=" ^ sbt bsym_table domain ^"\n" ^
+      ", return=" ^ sbt bsym_table spec_result ^"\n" ^
       ", mgu=" ^ string_of_varlist sym_table !mgu ^ "\n" ^
-      ", ts=" ^ catmap ", " (sbt sym_table) base_ts
+      ", ts=" ^ catmap ", " (sbt bsym_table) base_ts
     );
     *)
 
@@ -804,16 +831,16 @@ let solve_mgu
     let type_constraint = build_type_constraints counter (bt sr) sr base_vs in
     let type_constraint = btyp_intersect [type_constraint; con] in
     (*
-    print_endline ("Raw type constraint " ^ sbt sym_table type_constraint);
+    print_endline ("Raw type constraint " ^ sbt bsym_table type_constraint);
     *)
     let vs = List.map (fun (s,i,_)-> s,i) base_vs in
     let type_constraint = tsubst vs base_ts type_constraint in
     (*
-    print_endline ("Substituted type constraint " ^ sbt sym_table type_constraint);
+    print_endline ("Substituted type constraint " ^ sbt bsym_table type_constraint);
     *)
     let reduced_constraint = beta_reduce counter bsym_table sr type_constraint in
     (*
-    print_endline ("Reduced type constraint " ^ sbt sym_table reduced_constraint);
+    print_endline ("Reduced type constraint " ^ sbt bsym_table reduced_constraint);
     *)
     begin match reduced_constraint with
     | BTYP_void ->
@@ -871,7 +898,7 @@ let consider
   let bt sr t = bt sr entry_kind.base_sym t in
 
   let id, sr, base_vs, parent_vs, con, domain, base_result, arg_types =
-    resolve sym_table bsym_table entry_kind.base_sym bt be arg_types
+    resolve sym_table bsym_table entry_kind.base_sym bt be arg_types 
   in
 
   (*
@@ -926,7 +953,7 @@ let consider
 
   (*
   if con <> btyp_tuple [] then
-    print_endline ("type constraint (for "^name^") = " ^ sbt sym_table con)
+    print_endline ("type constraint (for "^name^") = " ^ sbt bsym_table con)
   ;
   *)
 
