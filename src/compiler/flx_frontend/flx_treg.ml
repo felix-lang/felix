@@ -137,8 +137,9 @@ let rec register_type_r ui syms bsym_table exclude sr t =
         failwith ("[register_type_r] Can't find index " ^ string_of_bid i)
     in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_newtype (_,r) ->
-      rr r;
+    | BBDCL_newtype (vs,r) ->
+      let r' = tsubst vs ts r in
+      rr r';
       rnr t
 
     | BBDCL_union (vs,cs) ->

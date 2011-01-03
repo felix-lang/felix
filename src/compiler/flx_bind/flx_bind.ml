@@ -3,7 +3,6 @@ type bind_state_t = {
   sym_table: Flx_sym_table.t;
   symtab: Flx_symtab.t;
   parent: Flx_types.bid_t option;
-  strabs_state: Flx_strabs.strabs_state_t;
   bexe_state: Flx_bind_bexe.bexe_state_t;
   lookup_state: Flx_lookup.lookup_state_t;
   bbind_state: Flx_bbind.bbind_state_t;
@@ -40,7 +39,6 @@ let make_bind_state syms sym_table =
     sym_table = sym_table;
     symtab = Flx_symtab.make sym_table;
     parent = None;
-    strabs_state = Flx_strabs.make_strabs_state ();
     bexe_state = Flx_bind_bexe.make_bexe_state
       syms.Flx_mtypes2.counter
       sym_table
@@ -121,7 +119,6 @@ let make_toplevel_bind_state syms =
     sym_table = sym_table;
     symtab = symtab;
     parent = Some module_index;
-    strabs_state = Flx_strabs.make_strabs_state ();
     bexe_state = Flx_bind_bexe.make_bexe_state
       ~parent:module_index
       ~env:(Flx_lookup.build_env lookup_state bsym_table (Some init_index))
@@ -187,24 +184,6 @@ let bind_asm state bsym_table handle_bound init asm =
   (* Now that we've bound all the symbols, we can downgrade the types. *)
   let init = ref init in
 
-  Flx_mtypes2.iter_bids begin fun i ->
-    (* First, find the symbol to bind. *)
-    let symbol =
-      try Some (Flx_bsym_table.find bsym_table i)
-      with Not_found -> None
-    in
-    begin match symbol with
-    | None -> ()
-    | Some s ->
-        (* Finally, downgrade abstract types. *)
-        Flx_strabs.strabs_symbol
-            state.strabs_state
-            bsym_table
-            i
-            s
-    end
-  end initial_index !(state.syms.Flx_mtypes2.counter);
-
   (* Finally, pass on the bound symbols to the client. *)
   Flx_mtypes2.iter_bids begin fun i ->
     (* First, find the symbol to bind. *)
@@ -248,11 +227,6 @@ print_endline (Flx_symtab.detail bind_state.symtab);
   Flx_bbind.bbind bind_state.bbind_state start_counter end_counter bsym_table;
 (*
 print_endline "Flx_bind.bind_asms: bbind done";
-*)
-  (* Downgrade abstract types. *)
-  Flx_strabs.strabs bind_state.strabs_state bsym_table;
-(*
-print_endline "Flx_bind.bind_asms: abstract types downgraded";
 *)
   (* Bind the interfaces. *)
   bind_state.syms.Flx_mtypes2.bifaces <- List.map

@@ -1133,6 +1133,7 @@ and gen_apply_prim
       begin match kind with
       | `Code CS_identity -> gen_expr' sr a
       | `Code CS_virtual ->
+          print_endline ("Flx_egen: Waring: delayed virtual instantiation, external fun " ^ Flx_bsym.id bsym^ "<"^string_of_bid index^ ">");
           let ts = List.map (beta_reduce this_vs this_ts) ts in
           let index', ts' = Flx_typeclass.fixup_typeclass_instance
             syms

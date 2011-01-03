@@ -895,6 +895,7 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
       let piname = TYP_name (sr,id,ts) in
 
       (* XXX: What's the _repr_ function for? *)
+      (* ANS: it gets the representation of the abstract type *)
       let n_repr = Flx_mtypes2.fresh_bid counter_ref in
 
       (* Add the _repr_ function to the symbol table. *)
@@ -911,6 +912,7 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
       add_function priv_name_map "_repr_" n_repr;
 
       (* XXX: What's the _make_ function for? *)
+      (* ANS: its a type constructor for the abstract type, made from representation *)
       let n_make = Flx_mtypes2.fresh_bid counter_ref in
 
       (* Add the _make_ function to the symbol table. *)

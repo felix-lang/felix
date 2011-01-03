@@ -1259,12 +1259,36 @@ print_endline "init proc bound";
     generate_why_file state bsym_table root_proc;
 print_endline "Why file generated";
 *)
+
+(*
+    (* Remove unused symbols. *)
+
+    (* THIS DOESN'T WORK. WHY NOT? Seems like newtype isn't scanned
+       properly. No idea why! After downgrading, optimise does this
+       first thing, so, it has to be a problem with BBDCL_newtype!
+
+       AH. I know. The scan is finding the newtype index, but it 
+       isn't propagating that to the representation .. wonder why?
+
+       I mean, this HAS to work for say, structs.
+    *)
+    let bsym_table = Flx_use.copy_used state.syms bsym_table in
+*)
     (* Optimize the bound values *)
+(*
+print_endline "starting optimisation";
+*)
     let bsym_table = optimize_bsyms state bsym_table root_proc in
 (*
 print_endline "Optimisation complete";
 *)
-    (* Lower the bound symbols for the backend. *)
+    (* downgrade abstract types now *)
+    Flx_strabs.strabs (Flx_strabs.make_strabs_state ()) bsym_table; 
+(*
+print_endline "Strabs complete";
+*)
+
+(* Lower the bound symbols for the backend. *)
     let bsym_table = lower_bsyms state bsym_table root_proc in
 (*
 print_endline "Lowering abstract types complete";
