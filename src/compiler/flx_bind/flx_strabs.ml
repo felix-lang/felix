@@ -31,10 +31,12 @@ print_endline ("Check inst " ^ string_of_int i);
   match entry with
   | BBDCL_newtype (vs,t) -> 
     let t' = tsubst vs ts t in 
+(*
     print_endline ("Downgrading abstract type " ^ string_of_int i ^ 
     "[vs=" ^ catmap "," (fun (s,i)-> s^"<"^string_of_int i^">") vs ^ "]-->" ^ sbt bsym_table t ^ "/" ^
     "[ts=" ^ catmap "," (Flx_print.sbt bsym_table) ts ^ "]" ^
     " to " ^ Flx_print.sbt bsym_table t');
+*)
     t'
   | _ -> btyp_inst (i,ts)
 
