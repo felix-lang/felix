@@ -51,6 +51,14 @@ let incr_lineno lexbuf n =
   let n = ref n in
   while !n <> 0 do Lexing.new_line lexbuf; decr n done
 
+let set_lineno lexbuf n =
+  let lexbuf = Dyp.std_lexbuf lexbuf in
+  let lcp = lexbuf.lex_curr_p in
+  lexbuf.lex_curr_p <- { lcp with
+    pos_lnum = n;
+    pos_bol = lcp.pos_cnum;
+  }
+
 let lfcount s =
   let n = ref 0 in
   for i = 0 to (String.length s) - 1 do
@@ -112,6 +120,7 @@ let global_data = {
   pcounter = ref 1;
   env = init_env ();
   pdebug = ref false;
+  lexbuf_stack = [];
 }
 
 let local_data = {
@@ -119,6 +128,7 @@ let local_data = {
   Flx_token.loaded_dssls = [];
   Flx_token.scm = [];
 }
+
 
 let xsr sr =
   match Flx_srcref.to_tuple sr with f,fl,fc,ll,lc ->

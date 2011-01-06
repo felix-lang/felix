@@ -114,6 +114,8 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 %token <string> WSTRING
 %token <string> USTRING
 %token <string> USER_KEYWORD
+%token <'obj Dyp.dyplexbuf> HASH_LINE
+%token <'obj Dyp.dyplexbuf> HASH_INCLUDE
 %token DUMMY
 
 %token QUEST
@@ -435,10 +437,16 @@ main lexer =
       incr_lineno lexbuf 1
   }
 
-  "#line" not_newline * (newline | eof) -> HASH_LINE {
-     print_endline "Lexed a #line command";
-     lexeme lexbuf
+  "#line"  -> HASH_LINE {
+     lexbuf
   }
+
+/*
+  "#include"  -> HASH_INCLUDE {
+     print_endline "Lexed a #include command";
+     lexbuf
+  }
+*/
 
  "/*" -> { parse_C_comment 1 lexbuf }
 
@@ -666,13 +674,36 @@ print_endline "Scheme Done .. ";
 tstatement:
   | utstatement ";" @{ $1, [Keep_grammar; Local_data (dyp.last_local_data)] }
 
-  | HASH_LINE
+  | HASH_LINE INTEGER STRING newline
    {
      let sr = getsr dyp in
-     print_endline ("Saw " ^ $1);
+     let lexbuf = $1 in
+     let n = Big_int.int_of_big_int (snd $2)in
+     set_lineno lexbuf n;
+     Dyp.set_fname lexbuf $3;
      0,sr,Snull
    }
 
+  | HASH_LINE INTEGER newline
+   {
+     let sr = getsr dyp in
+     let lexbuf = $1 in
+     let n = Big_int.int_of_big_int (snd $2)in
+     set_lineno lexbuf n;
+     0,sr,Snull
+   }
+
+  | HASH_INCLUDE STRING newline
+    {
+      let sr = getsr dyp in
+      let lexbuf = $1 in
+      let include_file = $2 in
+      print_endline ("#include " ^ include_file);
+      (*
+      push_lexbuf dyp (Dyp.std_lexbuf lexbuf) $2;
+      *)
+      0,sr,Snull
+    }
 
 /* top level statements only */
 top_statements:
