@@ -45,6 +45,7 @@ type token =
   | LESSEQUAL
   | GREATEREQUAL
   | UNDERSCORE
+  | HASH
 
 and prio_t = [`Default | `Priority of string]
 

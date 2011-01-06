@@ -46,6 +46,7 @@ let string_of_token = function
   | ENDMARKER -> "<<EOF>>"
   | ERRORTOKEN s -> "<<ERROR '"^ s ^"'>>"
   | SLOSH -> "\\"
+  | HASH -> "#"
 
 let name_of_token = function
   | DUMMY -> "DUMMY"
@@ -83,3 +84,5 @@ let name_of_token = function
   | ENDMARKER -> "ENDMARKER"
   | ERRORTOKEN _ -> "ERRORTOKEN"
   | SLOSH -> "SLOSH"
+  | HASH -> "HASH"
+

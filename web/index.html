@@ -34,6 +34,7 @@
   <strong>Reuse C and C++ libraries:</strong> Felix provides a simple way to bind almost seamlessly to C and C++ code,
   so you can continue to use all your favourite libraries: compatibility is assured
   because Felix uses the C/C++ object model.
+  <a href="./Reuse_C_and_Cxx_Libraries.fdoc">Look</a>
   </td></tr><tr><td></td><td><p>
   <strong>Program correctness</strong> is supported by a wide range of features including <em>garbage
   collection</em> for automatic storage management, strict high power <em>static typing</em> including
@@ -41,25 +42,27 @@
   </td></tr>
 </table>
   
-  <strong>Contract programming:</strong>
+  <p><strong>Contract programming:</strong>
   Felix provides the best contract programming system of any production language.
   It has the usual assertions, pre-conditions, and post-conditions for
   functions, but also provides reductions, axioms, lemmas and theorems with an interface
   to the Why automatic theorem proving machinery. Abstract typing is supported by modules,
   and contol over visibility.
-
-  Felix provides the best contract programming system of any production language.
-  </td></tr><tr><td></td><td><p>
+  </p>
+  <p><strong>Type system:</strong>
   The type system is formally an enhanced version of the typed lambda calculus plus
   pattern matching.  A wide range
   of functional programming constructions including first class nested
   functions with closures are provided. Felix also provides a range of type constructors
   including tuples, records, and stucts, cases and variants.
-  </td></tr><tr><td></td><td><p>
-  Network programming is enhanced by a built-in asynchronous network I/O system coupled
-  with both pre-emptive threads and cooperative threads. Cooperative threads, or <em>fibres</em>
+  </p><p>
+  <strong>Network programming</strong> is enhanced by a built-in asynchronous network I/O system coupled
+  with both <em>pre-emptive threads</em> and <em>cooperative threads</em>. 
+  Cooperative threads, or <em>fibres</em>
   are light enough for mega-threading (millions of threads on a laptop).
-  </td></tr><tr><td></td><td><p>
+  Both kinds of thread synchronise using <em>channels</em>.
+  </p><p>
+  <strong>User defined syntax:</strong>
   Felix is designed to support <em>domain specific sublanguage</em> development.
   The standard grammar is dynamically loaded and inline grammar extensions are
   relatively easy to program. Felix uses an EBNF variant for the grammar with
