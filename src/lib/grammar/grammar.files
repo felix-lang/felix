@@ -1,0 +1,15 @@
+grammar/grammar_scheme_support.flx
+grammar/expressions.flxh
+grammar/patterns.flxh
+grammar/functions.flxh
+grammar/statements.flxh
+grammar/variables.flxh
+grammar/macros.flxh
+grammar/cbind.flxh
+grammar/executable.flxh
+grammar/requirements.flxh
+grammar/type_decls.flxh
+grammar/assertions.flxh
+grammar/namespaces.flxh
+grammar/regexps.flxh
+grammar/felix.flxh

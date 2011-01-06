@@ -1,0 +1,80 @@
+syntax statements {
+  requires expressions;
+  tstatement:= sexecutable=># "_1";
+  tstatement:= sdeclarative =># "_1";
+  tstatement:= sinclusion =># "_1";
+  tstatement:= sdirective =># "_1";
+  tstatement:= spublish =># "_1";
+  tstatement:= scomment =># "_1";
+  tstatement:= snull_statement =># "_1";
+  scomment := "comment" sstring ";" =># "`(ast_comment ,_sr ,_2)";
+
+  spublish := "private" sdeclarative =># "`(ast_private ,_2)";
+  spublish := "private" sbinding_definition =># "`(ast_private ,_2)";
+  spublish := "private" svar_def =># "`(ast_private ,_2)";
+  spublish := "private" sval_def =># "`(ast_private ,_2)";
+
+  spublish := "publish" sstring tstatement =># "_3";
+
+  sdeclarative := smodule_definition =># "_1";
+  sdeclarative := sunion_decl =># "_1";
+  sdeclarative := sstruct_decl =># "_1";
+  sdeclarative := stype_alias =># "_1";
+
+  sdirective := sopen_decl =># "_1";
+
+  snull_statement := ";" =># """`(ast_nop ,_sr "")""";
+
+  sinclusion := "include" sstring ";" =># "`(ast_include ,_sr ,_2)";
+
+  // note: list is reversed, eg X::Y::name goes to list name, Y, Z
+  sdeclname := sname stvarlist =># "`(,_1 ,_2)";
+
+  sabstract_type := stype_qual* "type" sdeclname = "new" sexpr ";" =>#
+    """
+    `(ast_newtype ,_sr ,(first _3) ,(second _3) ,_6)
+    """;
+
+  stype_constraint := "with" squalified_name_comma_list "where" sexpr =>#
+    "`(,_4 ,_2)";
+  stype_constraint := "where" sexpr "with" squalified_name_comma_list =>#
+    "`(,_2 ,_4)";
+  stype_constraint := "where" sexpr =># "`(,_2 ())";
+  stype_constraint := "with" squalified_name_comma_list =># "`((ast_tuple,_sr()) ,_2)";
+  stype_constraint := sepsilon =># "`((ast_tuple,_sr())())";
+
+  seqorin:= = stypeexpr =># "`(Eq ,_2)";
+  seqorin:= "in" stypeexpr =># "`(In ,_2)";
+  seqorin:= sepsilon =># "'NoConstraint";
+
+  stvar := sname seqorin =># """`(,_1 (ast_name ,_sr "TYPE" ()) ,_2)""";
+  stvar := sname ":" stypeexpr seqorin =># "`(,_1 ,_3 ,_4)";
+
+  stvar_comma_list := stvar scomma_tvar* =># "(cons _1 _2)";
+  stvar_comma_list := sepsilon =># "'()";
+  scomma_tvar := , stvar =># "_2";
+
+  stvarlist:= sepsilon =># "dfltvs";
+  stvarlist:= lsqb stvar_comma_list stype_constraint rsqb =>#
+    "(tvfixup _2 _3)";
+
+  stypeparameter:= sname ":" x[sarrow_pri] =># "`(,_1 ,_3)";
+  stypeparameter:= sname =># "`(,_1 ,(noi 'typ_none))";
+  stypeparameter_comma_list := sepsilon =># "()";
+  stypeparameter_comma_list := stypeparameter , stypeparameter_comma_list =># "(cons _1 _3)";
+  stypeparameter_comma_list := stypeparameter =># "`(,_1)";
+
+  stypefun_arg := sname =># "`((,_1 ,(noi 'typ_none)))";
+  stypefun_arg := "(" stypeparameter_comma_list ")" =># "_2";
+  stypefun_args := stypefun_arg+  =># "_1";
+
+  stodo := "todo" sstring ";" =># "`(ast_nop ,_sr ,_2)";
+  stodo := "todo" ";" =># """`(ast_nop ,_sr "todo")""";
+
+  //scompound := lbrace sstatements rbrace =># "_2";
+  scompound := lbrace tstatement* rbrace =># "_2";
+
+  sname_suffix:= comma sname sname_suffix =># "(cons _2 _3)";
+  sname_suffix:= comma sname =># "`(,_2)";
+}
+

@@ -1,0 +1,61 @@
+syntax regexps {
+  priority 
+    ralt_pri <
+    rseq_pri <
+    rpostfix_pri <
+    ratom_pri
+  ;
+
+  tstatement := "regdef" sdeclname = sregexp[ralt_pri] ";" =># 
+    """
+    `(ast_val_decl ,_sr ,(first _2) ,(second _2) (some (ast_lookup ( ,(noi 'Regdef) "regex" ()))) (some ,_4))
+    """;
+
+  x[sapplication_pri] := "regexp" "(" sregexp[ralt_pri] ")" =># "_3";
+
+  sregexp[ralt_pri] := sregexp[>ralt_pri] ("|" sregexp[>ralt_pri])+ =># 
+    "`(ast_apply ,_sr ( ,(noi 'Alts) (ast_apply ,_sr (,(noi 'list) ,(cons _1 (map second _2))))))"
+  ;
+  sregexp[rseq_pri] := sregexp[>rseq_pri] sregexp[>ralt_pri]+ =># 
+    "`(ast_apply ,_sr ( ,(noi 'Seqs) (ast_apply ,_sr (,(noi 'list) ,(cons _1 _2)))))"
+  ;
+  sregexp[rpostfix_pri] := sregexp[ratom_pri] "*" =># 
+    "`(ast_apply ,_sr ( ,(noi 'Rpt) (,_1,0,-1)))"
+  ;
+  sregexp[rpostfix_pri] := sregexp[ratom_pri] "+" =>#
+    "`(ast_apply ,_sr ( ,(noi 'Rpt) (,_1,1,-1)))"
+  ;
+  sregexp[rpostfix_pri] := sregexp[ratom_pri] "?" =>#
+    "`(ast_apply ,_sr ( ,(noi 'Rpt) (,_1,1,-1)))"
+  ;
+  sregexp[ratom_pri] := "(" sregexp[ralt_pri] ")" =># "_2";
+  sregexp[ratom_pri] := "group" "(" sregexp[ralt_pri] ")" =># 
+    "`(ast_apply ,_sr ( ,(noi 'Group) ,_3))"
+  ;
+  sregexp[ratom_pri] := "charset" sstring =># 
+    """`(ast_apply ,_sr ( 
+       ,( noi 'Charset)
+       (ast_literal ,_sr (ast_string ,_2))))
+    """
+  ;
+
+  sregexp[ratom_pri] := sstring =># 
+    """`(ast_apply ,_sr ( 
+       ( ast_lookup ( ,(noi 'Regdef) "String" () )  ) 
+       (ast_literal ,_sr (ast_string ,_1)))
+    ) """
+  ;
+
+  sregexp[ratom_pri] := "perl" "(" sexpr ")" =># 
+    """`(ast_apply ,_sr ( 
+       ,( noi 'Perl)
+       ,_3))
+    """
+  ;
+
+  sregexp[ratom_pri] := "regex" "(" sexpr ")" =># "_3";
+
+  sregexp[ratom_pri] := sname=># "`(ast_name ,_sr ,_1 ())";
+ 
+}
+

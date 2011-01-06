@@ -228,10 +228,11 @@ let parse_file state file =
   let include_dirs = state.syms.compiler_options.include_dirs in
   fprintf state.ppf "//Parsing Implementation %s\n" file_name;
   if state.syms.compiler_options.print_flag then print_endline ("Parsing " ^ file_name);
+  let auto_imports = List.concat (List.map (Flx_colns.render include_dirs) state.syms.compiler_options.auto_imports) in
   let parser_state = List.fold_left
     (Flx_parse.parse_file ~include_dirs)
     (Flx_parse.make_parser_state (fun stmt stmts -> stmt :: stmts) [])
-    (state.syms.compiler_options.auto_imports @ [file_name])
+    (auto_imports @ [file_name])
   in
   let stmts = List.rev (Flx_parse.parser_data parser_state) in
   let macro_state = Flx_macro.make_macro_state local_prefix in

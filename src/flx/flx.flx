@@ -50,7 +50,7 @@ var INCLUDE_DIRS="";
 var INCLUDE_FILES="";
 var NOSTDLIB=0;
 var STDOUT="";
-var STDIMPORT="--import=nugram.flxh --import=plat/flx.flxh";
+var STDIMPORT="--import=@grammar/grammar.files --import=plat/flx.flxh";
 var IMPORTS="";
 var OUTPUT_DIR="";
 var CACHE_DIR="";
@@ -350,6 +350,7 @@ install_bin_failed:>
     println "--stdout=file        : run program with standard output redirected to file";
     println "--install            : install --test directory to configured location";
     println "--import=file        : add an import which is prefixed to all files being translated";
+    println "--import=@file       : add all the files listed in file as imports (recursive on @)";
     println "--nostdimport        : don't import the standard imports nugram.flxh and flx.flxh";
     println "-Idir                : add dir to search path for both felix and C++ includes";                      
     println "-Ldir                : add dir to linker search path"; 

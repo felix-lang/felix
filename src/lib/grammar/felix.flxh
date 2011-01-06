@@ -1,0 +1,17 @@
+syntax felix {
+  requires
+    statements,
+    type_decls,
+    variables,
+    executable,
+    assertions,
+    namespaces,
+    requirements,
+    expressions,
+    functions,
+    patterns,
+    cbind,
+    regexps,
+    macros
+  ;
+}

@@ -1,0 +1,178 @@
+syntax functions {
+  requires expressions;
+  sdeclarative := sfunction_definition =># "_1";
+  sdeclarative := sprocedure_definition =># "_1";
+  sdeclarative := sctor_definition =># "_1";
+
+  x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type = scompound =>#
+    """
+    `(ast_lambda ,_sr (,_3 ,_4 ,(first _5) ,_7))
+    """;
+
+  x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=>" sexpr =>#
+    """
+    `(ast_lambda ,_sr (,_3 ,_4 ,(first _5) ((ast_fun_return ,_sr ,_7))))
+    """;
+
+  x[slambda_pri] := sadjectives "proc" stvarlist slambda_fun_args scompound =>#
+    """
+    `(ast_lambda ,_sr (,_3 ,_4 (ast_void ,_sr) ,_5))
+    """;
+
+  x[slambda_pri] := sadjectives "proc" stvarlist scompound =>#
+    """
+    `(ast_lambda ,_sr (,_3 ((() none)) (ast_void ,_sr) ,_4))
+    """;
+
+  sadjective := k"inline" =># "'InlineFunction";
+  sadjective := k"noinline" =># "'NoInlineFunction";
+  sadjective := k"static" =># "'InlineFunction";
+  sadjective := k"extern" =># "'NoInlineFunction";
+  sadjective := k"virtual" =># "'Virtual";
+  sadjective := k"lvalue" =># "'Lvalue";
+  sadjectives := sadjective* =># "_1";
+
+  slambda_fun_arg := "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";
+  slambda_fun_arg := "(" sparameter_comma_list ")" =># "`(,_2 none)";
+  slambda_fun_args := slambda_fun_arg+ =># "_1";
+
+  fun_return_type := ":" stypeexpr "expect" sexpr =># "`(,_2 (some ,_4))";
+  fun_return_type := ":" stypeexpr =># "`(,_2 none)";
+  fun_return_type := "expect" sexpr =># "`(,(noi 'typ_none) (some ,_2))";
+  fun_return_type := sepsilon =># "`(,(noi 'typ_none) none)";
+
+  sparameter := sparam_qual sname ":" x[sarrow_pri] = x[sor_condition_pri] =># "`(,_1 ,_2 ,_4 (some ,_6))";
+  sparameter := sparam_qual sname ":" x[sarrow_pri] =># "`(,_1 ,_2 ,_4 none)";
+  sparameter := sparam_qual sname =># "`(,_1 ,_2 ,(noi 'typ_none) none)";
+
+  sparameter_comma_list := sepsilon =># "()";
+  sparameter_comma_list := sparameter (, sparameter)* =># "(cons _1 (map second _2))";
+
+  sparam_qual := "val" =># "'PVal";
+  sparam_qual := "var" =># "'PVar";
+  sparam_qual := "ref" =># "'PRef";
+  sparam_qual := "fun" =># "'PFun";
+  sparam_qual := sepsilon =># "'PVal";
+
+  sfun_arg :=  "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";
+  sfun_arg :=  "(" sparameter_comma_list ")" =># "`(,_2 none)";
+  sfun_arg :=  sname =># "`(((PVal ,_1 ,(noi 'typ_none) none)) none)";
+
+  sfun_kind := "cfun" =># "'CFunction";
+  sfun_kind := "gen" =># "'Generator";
+  sfun_kind := "fun" =># "'Function";
+
+  sfunction_definition := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";" =>#
+    """
+      (let ((body `((ast_fun_return ,_sr ,_7))))
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,body)
+      )
+    """;
+
+  sfunction_definition := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type = scompound =>#
+    """
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
+    """;
+
+  sopt_cstring := = scode_spec =># "`(some ,_2)";
+  sopt_cstring := sepsilon =># "'none";
+
+  sfunction_definition := sadjectives sfun_kind sdeclname fun_return_type = smatching+ ";" =>#
+    """
+     (let
+       (
+        (t (first _4))
+        (traint (second _4))
+       )
+      (begin ;;(display "ftype=")(display t)(display "\\n")
+      (if (eq? 'ast_arrow (first t))
+        (let
+          (
+            (argt (caadr t))
+            (ret (cadadr t))
+            (body `((ast_fun_return ,_sr (ast_match ,_sr (,(noi '_a) ,_6)))))
+          )
+          `(ast_curry ,_sr ,(first _3) ,(second _3)
+            (
+              (((PVal _a ,argt none)) none)
+            )
+            (,ret ,traint)
+            ,(cal_funkind _1 _2) ,body)
+        )
+        'ERROR
+       )
+       )
+     )
+    """;
+
+  sproc_kind := "proc" =># "'Function";
+  sproc_kind := "cproc" =># "'CFunction";
+
+  sopt_traint_eq:= "expect" sexpr = =># "`(some ,_2)";
+  sopt_traint_eq:= = =># "'none";
+  sopt_traint_eq:= sepsilon =># "'none";
+
+  sopt_traint:= "expect" sexpr =># "`(some ,_2)";
+  sopt_traint:= sepsilon =># "'none";
+
+  sctor_init := sname "(" sexpr ")" =># "`(,_1 ,_3)";
+  sctor_inits := ":" sctor_init (, sctor_init)* =># "(cons _2 _3)";
+  sctor_inits := sepsilon =># "()";
+
+  // only used by classes
+  sctor_definition := "ctor" stvarlist sfun_arg* sopt_traint_eq sctor_inits scompound =>#
+    """
+    (let*
+      (
+        (name "__constructor__")
+        (vs _2)
+        (ret `(ast_void ,_sr))
+        (traint _4)
+        (body _6)
+        (inits _5)
+        (args _3)
+        (f (lambda (ne)`(ast_init ,_sr ,(first ne) ,(second ne))))
+        (body (append (map f inits) body))
+      )
+      `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Ctor ,body))
+    """;
+
+  sctor_definition := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound =>#
+    """
+    (let*
+      (
+        (name (string-append "_ctor_" (base_of_qualified_name _3)))
+        (vs _2)
+        (ret _3)
+        (traint _5)
+        (body _6)
+        (args _4)
+      )
+      `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
+    """;
+
+  sctor_definition := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";" =>#
+    """
+    (let*
+      (
+        (name (string-append "_ctor_" (base_of_qualified_name _3)))
+        (vs _2)
+        (ret _3)
+        (traint _5)
+        (body `((ast_fun_return ,_sr ,_7)))
+        (args _4)
+      )
+      `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
+    """;
+
+  sprocedure_definition := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound =>#
+    """
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,_5) ,(cal_funkind _1 _2) ,_6)
+    """;
+
+  sprocedure_definition := sadjectives sproc_kind sdeclname sfun_arg* "=>" tstatement =>#
+    """
+      `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) none) ,(cal_funkind _1 _2) (,_6))
+    """;
+}
+

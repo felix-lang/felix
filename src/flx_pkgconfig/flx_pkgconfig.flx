@@ -74,8 +74,7 @@ fun lexstr(s':string): list[string] =
   val finish = end_iterator s;
   var current = first;
   var words = Empty[string];
-  while { current != finish }
-  {
+  while { current != finish } {
     match lexit(current,finish) with
     | ?next,?lexeme =>
       {

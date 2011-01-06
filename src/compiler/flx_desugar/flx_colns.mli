@@ -2,6 +2,8 @@ open Flx_ast
 open Flx_types
 open Flx_mtypes2
 
+val render: string list -> string -> string list
+
 val include_file:
   sym_state_t ->
   string -> (* directory containing including file,

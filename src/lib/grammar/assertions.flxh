@@ -1,0 +1,36 @@
+syntax assertions {
+  requires statements;
+  sexecutable := sassert_statement =># "_1";
+
+  sassert_statement:= "assert" sexpr ";" =># "`(ast_assert ,_sr ,_2)";
+
+  sdeclarative := sassertion =># "_1";
+
+  sassertion := "axiom" sdeclname sfun_arg ":" sexpr ";" =>#
+    """
+      `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
+    """;
+
+  sassertion := "axiom" sdeclname sfun_arg ":" sexpr = sexpr ";" =>#
+    """
+      `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
+    """;
+
+  sassertion := "lemma" sdeclname sfun_arg ":" sexpr ";" =>#
+    """
+      `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
+    """;
+
+  sassertion := "lemma" sdeclname sfun_arg ":" sexpr = sexpr ";" =>#
+    """
+      `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
+    """;
+
+  sreduce_args := "(" stypeparameter_comma_list ")" =># "_2";
+
+  sassertion := "reduce" sdeclname sreduce_args ":" sexpr "=>" sexpr ";" =>#
+    """
+      `(ast_reduce ,_sr ,(first _2) ,(second _2) ,_3 ,_5 ,_7)
+    """;
+}
+

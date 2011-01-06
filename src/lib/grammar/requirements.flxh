@@ -1,0 +1,56 @@
+syntax requirements {
+  srequires_clause := "requires" srequirements =># "_2";
+
+  srequires_clause := sepsilon =># "'rreq_true";
+
+  srequirement:= squalified_name =># "`(Named_req ,_1)";
+  srequirement :=  "property" sstring =># "`(Property_req ,_2)";
+  srequirement :=  "package" scode_spec =># "`(Package_req ,_2)";
+
+  srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";
+  srequirement_atom:= "(" srequirements ")" =># "_2";
+
+  srequirement_and:= srequirement_and "and" srequirement_atom =>#
+    "`(rreq_and ,_1 ,_3)";
+  srequirement_and:= srequirement_atom =># "_1";
+
+  srequirement_or:= srequirement_or "or" srequirement_and =>#
+    "`(rreq_or ,_1 ,_3)";
+  srequirement_or:= srequirement_and =># "_1";
+
+  srequirements:= srequirements , srequirement_or =>#
+    "`(rreq_and ,_1 ,_3)";
+  srequirements:= srequirement_or =># "_1";
+
+  srequirement := "body" scode_spec =># "`(Body_req ,_2)";
+  srequirement := "header" scode_spec =># "`(Header_req ,_2)";
+
+  scode_spec := sstring =># "`(StrTemplate ,_1)";
+  scode_spec := scstring =># "`(Str ,_1)";
+  scode_spec := "ident" =># "'Identity";
+
+  sbinding_header := "requires" srequirements ";" =>#
+    """`(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_2)""";
+
+  sbinding_header := sname "requires" srequirements ";" =>#
+    """`(ast_insert ,_sr ,_1 ,dfltvs (Str "") body ,_3)""";
+
+  sbinding_header:= "header" scode_spec srequires_clause ";" =>#
+    """`(ast_insert ,_sr "_root" ,dfltvs ,_2 header ,_3))""";
+  sbinding_header:= "body" scode_spec srequires_clause ";" =>#
+    """`(ast_insert ,_sr "_root" ,dfltvs ,_2 body ,_3))""";
+  sbinding_header:= "header" = scode_spec srequires_clause ";" =>#
+    """`(ast_insert ,_sr "_root" ,dfltvs ,_3 header ,_4))""";
+  sbinding_header:= "body" = scode_spec srequires_clause ";" =>#
+    """`(ast_insert ,_sr "_root" ,dfltvs ,_3 body ,_4))""";
+  sbinding_header:= "header" sdeclname = scode_spec srequires_clause ";" =>#
+    """
+    `(ast_insert ,_sr ,(first _2) ,(second _2) ,_4 header ,_5)
+     """;
+
+  sbinding_header:= "body" sdeclname = scode_spec srequires_clause ";" =>#
+    """
+    `(ast_insert ,_sr ,(first _2) ,(second _2) ,_4 body ,_5)
+     """;
+}
+

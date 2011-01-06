@@ -673,7 +673,9 @@ print_endline "Scheme Done .. ";
 
 tstatement:
   | utstatement ";" @{ $1, [Keep_grammar; Local_data (dyp.last_local_data)] }
-
+/*
+  | utstatement newline @{ $1, [Keep_grammar; Local_data (dyp.last_local_data)] }
+*/
   | HASH_LINE INTEGER STRING newline
    {
      let sr = getsr dyp in

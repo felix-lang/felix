@@ -1,0 +1,56 @@
+syntax patterns {
+  satom := pattern_match =># "_1";
+
+  sexecutable := "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
+    "`(ast_stmt_match (,_sr ,_2 ,_4))";
+
+  stmt_matching  := vbar spattern "=>" tstatement+ =># "`(,_2 ,_4)";
+
+  pattern_match := "match" sexpr "with" smatching+ "endmatch" =>#
+    "`(ast_match ,_sr (,_2 ,_4))";
+
+  smatching  := vbar spattern "=>" sexpr =># "`(,_2 ,_4)";
+  smatching  := vbar "=>" sexpr =># "`(pat_none ,_sr ,_4)";
+
+  spattern := sas_pattern "when" sexpr =># "`(pat_when ,_sr ,_1 ,_3)";
+  spattern := sas_pattern =># "_1";
+
+  sas_pattern := stuple_pattern "as" sname =># "`(pat_as ,_sr ,_1 ,_3)";
+  sas_pattern := stuple_pattern =># "_1";
+
+  stuple_pattern := scoercive_pattern (, scoercive_pattern )* =># "(chain 'pat_tuple _1 _2)";
+
+  scoercive_pattern := satomic_pattern "|>" x[sarrow_pri] =># "`(pat_coercion ,_sr ,_1 ,_3)";
+  scoercive_pattern := satomic_pattern =># "_1";
+
+  satomic_pattern := "true" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 1))";
+  satomic_pattern := "false" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 0))";
+  satomic_pattern := sstring =># "`(pat_string ,_sr ,_1)";
+  satomic_pattern := quest sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+  satomic_pattern := _ =># "`(pat_any ,_sr)";
+  satomic_pattern := "(" spattern ")" =># "_2";
+  satomic_pattern := "struct" lbrace spat_assign+ rbrace =># "`(pat_record ,_sr ,_3)";
+
+  spat_assign := sname = spattern ";" =># "`(,_1 ,_3)";
+
+  satomic_pattern := sctor_name satomic_pattern =># "`(pat_nonconst_ctor ,_sr ,_1 ,_2)";
+  satomic_pattern := sctor_name =># "`(pat_const_ctor ,_sr ,_1)";
+
+  sctor_name := squalified_name =># "_1";
+  sctor_name := "case" sinteger =># "`(ast_case_tag ,_sr ,_2)";
+
+  satomic_pattern := sstring ".." sstring =># "`(pat_string_range ,_sr ,_1 ,_3)";
+  satomic_pattern := sintegral =># "`(pat_int ,_sr ,(first _1) ,(second _1))";
+  satomic_pattern := sintegral ".." sintegral=>#
+    "`(pat_int_range ,_sr ,(first _1) ,(second _1) ,(first _3) ,(second _3))";
+
+  satomic_pattern := "NaN" =># "`(pat_nan ,_sr)";
+  satomic_pattern := sfloating ".." sfloating =>#
+    "`(pat_float_range ,_sr ,_1 ,_3)";
+
+  sfloating:= sfloat =># "`(Float_plus ,(first _1) ,(second _1))";
+  sfloating:= "-" sfloat =># "`(Float_minus ,(first _2) ,(second _2))";
+  sfloating:= "inf" =># "'Float_inf";
+  sfloating:= "-" "inf" =># "'Float_minus_inf";
+}
+

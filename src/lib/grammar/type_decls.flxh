@@ -1,0 +1,92 @@
+syntax type_decls {
+  requires statements;
+
+  satom := stypematch =># "_1";
+
+  stype_alias := "typedef" sdeclname = sexpr ";" =>#
+    """
+    `(ast_type_alias ,_sr ,(first _2) ,(second _2) ,_4)
+    """;
+
+  stype_alias := "typedef" "fun" sdeclname stypefun_args ":" stypeexpr "=>" sexpr ";" =>#
+    """
+    `(mktypefun ,_sr ,(first _3) ,(second _3) ,_4 ,_6 ,_8)
+    """;
+
+  stype_alias := "typedef" "fun" sdeclname ":" stypeexpr = stype_matching+ ";" =>#
+    """
+    (if (eq? 'ast_arrow (first _5))
+      (let (
+        (argt (caadr _5))
+        (ret (cadadr _5))
+        (body `(ast_type_match ,_sr (,(noi '_a) ,_7))))
+        (let ((args `(((_a ,argt)))))
+      `(mktypefun ,_sr ,(first _3) ,(second _3) ,args ,ret ,body)
+      ))
+      ('ERROR)
+    )
+    """;
+
+  stype_matching := vbar sexpr "=>" sexpr =># "`(,_2 ,_4)";
+
+  stypematch := "typematch" sexpr "with" stype_matching+ "endmatch" =>#
+    "`(ast_type_match ,_sr (,_2 ,_4))";
+
+  sstruct_decl := "struct" sdeclname = ? lbrace sstruct_mem_decl * rbrace =>#
+    """
+    `(ast_struct ,_sr ,(first _2) ,(second _2) ,_5)
+     """;
+
+  sstruct_decl := "cstruct" sdeclname = ? lbrace sstruct_mem_decl * rbrace srequires_clause ";" =>#
+    """
+    `(ast_cstruct ,_sr ,(first _2) ,(second _2) ,_5 ,_7)
+     """;
+
+  sopt_name := sname =># "_1";
+  sopt_name := sepsilon =># '""';
+
+  sstruct_decl := "class" sdeclname = ? scompound =>#
+    """
+    `(ast_class ,_sr ,(first _2) ,(second _2) ,_4)
+     """;
+
+  sstruct_decl := "typeclass" sdeclname = ? scompound =>#
+    """
+    `(ast_typeclass ,_sr ,(first _2) ,(second _2) ,_4)
+     """;
+
+  sstruct_decl := "instance" stvarlist squalified_name = ? scompound =>#
+    """
+    `(ast_instance ,_sr ,_2 ,_3 ,_5)
+     """;
+
+  sunion_decl := "union" sdeclname = stype_sum_items2 ";" =>#
+    """
+    `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
+     """;
+
+  sunion_decl := "union" sdeclname lbrace stype_sum_item1* rbrace =>#
+    """
+    `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
+     """;
+
+  sunion_decl := senum_decl =># "_1";
+
+  senum_decl := "enum" sdeclname lbrace senum_items rbrace =>#
+    """
+    `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
+     """;
+
+  senum_decl := "enum" sdeclname = senum_items ";" =>#
+    """
+    `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)
+     """;
+
+  sopt_value := = sinteger =># "`(some ,_2)";
+  sopt_value := sepsilon =># "'none";
+  senum_item := sname sopt_value =># "`(,_1 ,_2 ,dfltvs (ast_void ,_sr))";
+  senum_items := senum_item , senum_items =># "(cons _1 _3)";
+  senum_items := senum_item =># "`(,_1)";
+  senum_items := sepsilon =># "()";
+}
+

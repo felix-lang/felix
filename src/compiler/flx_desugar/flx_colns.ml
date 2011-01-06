@@ -12,6 +12,32 @@ open Flx_exceptions
 open Flx_util
 open Flx_version
 
+(* return the given filename as a singleton list,
+ *  unless it starts with @, in which case return the
+ * list of lines in it (rendered recursively) 
+ * To support --import=@files,
+ * instead of having to --import each one on the command line,
+ * which I want mainly so I can split the grammar up into
+ * multiple files, which I can't do with #include, since I 
+ * can't do that with Dypgen at the moment..
+ *)
+let rec render path f = 
+  if String.length f < 1 then failwith "Empty --import filename";
+  if String.sub f 0 1 = "@" then
+    let f = Flx_filesys.find_file ~include_dirs:path (String.sub f 1 (String.length f - 1))in
+    let f = open_in f in
+    let res = ref [] in
+    try
+      let rec aux () =
+        let line = input_line f in
+        res := !res @ render path line;
+        aux ()
+      in aux ()
+    with End_of_file ->
+    close_in f;
+    !res
+  else [f]
+
 
 (* This routine does all the nasty work of trying to figure out
 where a file is, and if there is a viable cached parse of it.
@@ -93,10 +119,11 @@ let include_file syms curpath inspec =
   in
   let parseit () =
     if syms.compiler_options.print_flag then print_endline ("Parsing " ^ tf);
+    let auto_imports = List.concat (List.map (render include_dirs) syms.compiler_options.auto_imports) in
     let parser_state = List.fold_left
       (Flx_parse.parse_file ~include_dirs)
       (Flx_parse.make_parser_state (fun stmt stmts -> stmt :: stmts) [])
-      (syms.compiler_options.auto_imports @ [tf])
+      (auto_imports @ [tf])
     in
     let tree = List.rev (Flx_parse.parser_data parser_state) in
     let local_prefix = Filename.basename basename in
