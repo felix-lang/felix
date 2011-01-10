@@ -119,8 +119,8 @@ thisch:> // same char, reconsider it
       elif isdigit ch do s = num; goto contin;
       elif isdq ch do s = dq; goto contin;
       elif ch == char "(" do
-        if ahead(1) == char "*" do cp; next; s = ccomment; goto contin
-        else goto lastch
+        if ahead(1) == char "*" do cp; next; s = ccomment; goto contin;
+        else goto lastch;
         done 
       else cp; w; goto nextt;
       done

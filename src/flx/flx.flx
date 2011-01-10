@@ -153,7 +153,7 @@ whilst grab == 1 and argno<System::argc do
       result=system("rm -rf "+INSTALL_ROOT);
       result=system("mkdir -pv "+INSTALL_ROOT);
       result=system("cp -Rpv "+FLX_INSTALL_DIR+"/* "+INSTALL_ROOT);
-      if result == 0 do println "Install succeeded"
+      if result == 0 do println "Install succeeded";
       else println$ "Install failed, code = " + str(result);
       done
       System::exit(result);
@@ -295,7 +295,7 @@ install_bin_failed:>
     println$ "LINKER_SWITCHES    = "+str LINKER_SWITCHES;
     println$ "MACROS             = "+str MACROS;
     println$ "SHOWCODE           = "+str SHOWCODE;
-    System::exit(0)
+    System::exit(0);
 
   elif arg == "--where" do
     debugln "Print location of install directory and exit";
@@ -668,7 +668,7 @@ debugln$ "RUNIT="+str RUNIT;
 if SHOWCODE == 1 do {
   prg := Text_file::load(filebase+".flx");
   print prg;
-} done
+}; done
 
 if RECOMPILE == 0 and RUNIT == 1 do
   // not (--force or -c)

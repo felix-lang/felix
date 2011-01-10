@@ -105,7 +105,7 @@ open module Varray
     var i : ulong;
 
     if len(x) > 0ul do forall i in 0ul upto len(x) - 1ul do
-      _f x.[i]
+      _f x.[i];
     done done
   }
 

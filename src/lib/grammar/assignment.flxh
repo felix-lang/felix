@@ -1,50 +1,55 @@
 syntax assignment {
   requires statements;
-  sassignop:= = =># "'_set";
-  sassignop:= "<-" =># "'_pset";
-  sassignop:= ":=" =># "'_init";
 
-  srmwop:= "+=" =># "'pluseq";
-  srmwop:= "-=" =># "'minuseq";
-  srmwop:= "*=" =># "'muleq";
-  srmwop:= "/=" =># "'diveq";
-  srmwop:= "%=" =># "'modeq";
-  srmwop:= "<<=" =># "'leftshifteq";
-  srmwop:= ">>=" =># "'rightshifteq";
-  srmwop:= "^=" =># "'bxoreq";
-  srmwop:= "|=" =># "'boreq";
-  srmwop:= "&=" =># "'bandeq";
-  srmwop:= "~=" =># "'tildeeq";
-
-  sswapop := "<->" =># "'_swap";
-
-  spreincrop:= "++" =># "'pre_incr";
-  spreincrop:= "--" =># "'pre_decr";
-  spostincrop:= "++" =># "'post_incr";
-  spostincrop:= "--" =># "'post_decr";
-
-  slelement := "val" sname =># "`(Val ,_sr ,_2)";
-  slelement := "var" sname =># "`(Var ,_sr ,_2)";
-  slelement := sname =># "`(Name ,_sr ,_1)";
-  slelement := _ =># "`(Skip ,_sr)";
-  slelement := "(" slexprs ")" =># "`(List ,_2)";
-
-  stlelement := slelement ":" x[sfactor_pri] =># "`(,_1 (some ,_3))";
-  stlelement := slelement =># "`(,_1 none)";
-
-  slexprs := stlelement , slexprs =># "(cons _1 _3)";
-  slexprs := stlelement =># "`(,_1)";
-
-  slexpr := slexprs =># """ (if (null? (tail _1)) (first _1) `((List ,_1) none)) """;
-
-  sassignexpr := "def" slexpr = sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
-
-  sassignexpr := sexpr sswapop sexpr =># "`(ast_call ,_sr ,(noi _2) ((ast_ref ,_sr ,_1) (ast_ref ,_sr ,_3)))";
-
+  // assignment operators
   sassignexpr := sexpr sassignop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
-  sassignexpr := sexpr srmwop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
+    sassignop:= = =># "'_set";
+    sassignop:= "<-" =># "'_pset";
+    sassignop:= ":=" =># "'_init";
 
-  sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,(noi _2) (ast_ref ,_sr ,_1))";
+  // binary read-modify-write operators
+  sassignexpr := sexpr srmwop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
+    srmwop:= "+=" =># "'pluseq";
+    srmwop:= "-=" =># "'minuseq";
+    srmwop:= "*=" =># "'muleq";
+    srmwop:= "/=" =># "'diveq";
+    srmwop:= "%=" =># "'modeq";
+    srmwop:= "<<=" =># "'leftshifteq";
+    srmwop:= ">>=" =># "'rightshifteq";
+    srmwop:= "^=" =># "'bxoreq";
+    srmwop:= "|=" =># "'boreq";
+    srmwop:= "&=" =># "'bandeq";
+    srmwop:= "~=" =># "'tildeeq";
+
+  // swap operator
+  sassignexpr := sexpr sswapop sexpr =># "`(ast_call ,_sr ,(noi _2) ((ast_ref ,_sr ,_1) (ast_ref ,_sr ,_3)))";
+    sswapop := "<->" =># "'_swap";
+
+
+  // prefix read/modify/write
   sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,(noi _1) (ast_ref ,_sr ,_2))";
+    spreincrop:= "++" =># "'pre_incr";
+    spreincrop:= "--" =># "'pre_decr";
+
+  // postfix read/modify/write
+  sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,(noi _2) (ast_ref ,_sr ,_1))";
+    spostincrop:= "++" =># "'post_incr";
+    spostincrop:= "--" =># "'post_decr";
+
+  // multiple initialisation/assignment form
+  sassignexpr := "def" slexpr = sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
+    slexpr := slexprs =># """ (if (null? (tail _1)) (first _1) `((List ,_1) none)) """;
+    slexprs := stlelement , slexprs =># "(cons _1 _3)";
+    slexprs := stlelement =># "`(,_1)";
+
+    slelement := "val" sname =># "`(Val ,_sr ,_2)";
+    slelement := "var" sname =># "`(Var ,_sr ,_2)";
+    slelement := sname =># "`(Name ,_sr ,_1)";
+    slelement := _ =># "`(Skip ,_sr)";
+    slelement := "(" slexprs ")" =># "`(List ,_2)";
+
+    stlelement := slelement ":" x[sfactor_pri] =># "`(,_1 (some ,_3))";
+    stlelement := slelement =># "`(,_1 none)";
+
 }
 

@@ -4,25 +4,10 @@ syntax executable {
 
   tstatement := sassignexpr ";" =># "_1";
 
-/*
-  // a0 <- f (a1, a2, ..)  means f (a0, a1, a2 ..)
-  sassignexpr := sexpr "<-" sexpr =>#
-    """
-    (let* (
-      (fl (splitapply _3))
-      (f (first fl))
-      (a (second fl)))
-      (begin
-      ;; (display "f=")(display f)
-      ;; (display "\\n_1=")(display _1)
-      ;; (display "\\na=")(display a)
-      ;; (display "\\nnew a=")(display (cons _1 (mkl a)))
-      ;; (display "\\n")
-      `(ast_call ,_sr ,f ,(cons _1 (mkl a)))))
-    """;
-*/
-  // utstatement is some attempt to get "unterminated statements"
-  utstatement := "trace" sname sstring =># "`(ast_trace ,_sr ,_2 ,_3)";
+  tstatement := "trace" sname sstring ";" =># "`(ast_trace ,_sr ,_2 ,_3)";
+
+  // short form of "call f a;" is just "f a;"
+  // short form of "call f ();" is just "f"
   tstatement := sexpr ";" =># "(cons 'ast_call (cons _sr (splitapply _1)))";
 
 }

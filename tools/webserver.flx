@@ -224,7 +224,7 @@ Content-Length: """ + str (len (contents)) +"""\r
 fun get_file(fname:string, path:list[string]):opt[string]=
 {
   if fname.[0] == char "$" do fname = fname.[1 to]; done
-  if FileSystem::fileexists fname do return Some fname
+  if FileSystem::fileexists fname do return Some fname;
   else
     var f = Filename::join(INSTALL_ROOT,fname);
     if FileSystem::fileexists f do return Some f;
@@ -679,12 +679,12 @@ proc serve_file(s: socket_t, infname: string)
     serve_xfdoc(s, fname);
   elif suffix == "html" do
     fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
-    serve_html(s,fname)
+    serve_html(s,fname);
   elif suffix == "xhtml" do
     fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
-    serve_xhtml(s,fname)
+    serve_xhtml(s,fname);
   elif suffix in text_suffices do
-    serve_text(s,fname)
+    serve_text(s,fname);
   elif suffix in ("gif","png","jpg") do
     // path lookup for images
     fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
@@ -698,7 +698,7 @@ proc serve_file(s: socket_t, infname: string)
     | None => { serve_not_found(s,fname); }
     | Some ?f =>
       {
-        if prefix(fname,"/etc") do serve_forbidden(s,fname)
+        if prefix(fname,"/etc") do serve_forbidden(s,fname);
         else
         match FileSystem::filetype f with
         | FileSystem::REGULAR => { serve_raw(s,f,suffix); }
