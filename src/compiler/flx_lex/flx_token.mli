@@ -24,7 +24,6 @@ type token =
   | QSTRING of string
   | WSTRING of string
   | USTRING of string
-  | USER_KEYWORD of string
   | DUMMY
   | QUEST
   | LPAR
@@ -45,7 +44,6 @@ type token =
   | LESSEQUAL
   | GREATEREQUAL
   | UNDERSCORE
-  | HASH
 
 and prio_t = [`Default | `Priority of string]
 

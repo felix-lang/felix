@@ -1,18 +1,10 @@
 syntax executable {
   requires statements;
-  sexecutable := scall =># "_1";
-  sexecutable := ssvc =># "_1";
-  sexecutable := sreturn =># "_1";
-  sexecutable := sifgoto =># "_1";
-  sexecutable := stodo =># "_1";
-  sexecutable := sassignment =># "_1";
-  sexecutable := sgoto_statement=># "_1";
-  sexecutable := slabel_statement =># "_1";
+  tstatement := "_svc" sname ";" =># "`(ast_svc ,_sr ,_2)";
 
-  ssvc := "_svc" sname ";" =># "`(ast_svc ,_sr ,_2)";
+  tstatement := sassignexpr ";" =># "_1";
 
-  sassignment := sassignexpr ";" =># "_1";
-
+/*
   // a0 <- f (a1, a2, ..)  means f (a0, a1, a2 ..)
   sassignexpr := sexpr "<-" sexpr =>#
     """
@@ -28,183 +20,10 @@ syntax executable {
       ;; (display "\\n")
       `(ast_call ,_sr ,f ,(cons _1 (mkl a)))))
     """;
-
-  sassignop:= = =># "'_set";
-  sassignop:= "<-" =># "'_pset";
-  sassignop:= ":=" =># "'_init";
-
-  srmwop:= "+=" =># "'pluseq";
-  srmwop:= "-=" =># "'minuseq";
-  srmwop:= "*=" =># "'muleq";
-  srmwop:= "/=" =># "'diveq";
-  srmwop:= "%=" =># "'modeq";
-  srmwop:= "<<=" =># "'leftshifteq";
-  srmwop:= ">>=" =># "'rightshifteq";
-  srmwop:= "^=" =># "'bxoreq";
-  srmwop:= "|=" =># "'boreq";
-  srmwop:= "&=" =># "'bandeq";
-  srmwop:= "~=" =># "'tildeeq";
-
-  sswapop := "<->" =># "'_swap";
-
-  spreincrop:= "++" =># "'pre_incr";
-  spreincrop:= "--" =># "'pre_decr";
-  spostincrop:= "++" =># "'post_incr";
-  spostincrop:= "--" =># "'post_decr";
-
-  slelement := "val" sname =># "`(Val ,_sr ,_2)";
-  slelement := "var" sname =># "`(Var ,_sr ,_2)";
-  slelement := sname =># "`(Name ,_sr ,_1)";
-  slelement := _ =># "`(Skip ,_sr)";
-  slelement := "(" slexprs ")" =># "`(List ,_2)";
-
-  stlelement := slelement ":" x[sfactor_pri] =># "`(,_1 (some ,_3))";
-  stlelement := slelement =># "`(,_1 none)";
-
-  slexprs := stlelement , slexprs =># "(cons _1 _3)";
-  slexprs := stlelement =># "`(,_1)";
-
-  slexpr := slexprs =># """ (if (null? (tail _1)) (first _1) `((List ,_1) none)) """;
-
-  sassignexpr := "def" slexpr = sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
-
-  sassignexpr := sexpr sswapop sexpr =># "`(ast_call ,_sr ,(noi _2) ((ast_ref ,_sr ,_1) (ast_ref ,_sr ,_3)))";
-
-  sassignexpr := sexpr sassignop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
-  sassignexpr := sexpr srmwop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
-
-  sassignexpr := sexpr spostincrop =># "`(ast_call ,_sr ,(noi _2) (ast_ref ,_sr ,_1))";
-  sassignexpr := spreincrop sexpr =># "`(ast_call ,_sr ,(noi _1) (ast_ref ,_sr ,_2))";
-
+*/
   // utstatement is some attempt to get "unterminated statements"
-
-  utstatement := "yield" sexpr =># "`(ast_yield ,_sr ,_2)";
-  utstatement := "return" sexpr =># "`(ast_fun_return ,_sr ,_2)";
-  tstatement := "return" ";" =># "`(ast_proc_return ,_sr)";
-  utstatement := "halt" sstring =># "`(ast_halt ,_sr ,_2)";
   utstatement := "trace" sname sstring =># "`(ast_trace ,_sr ,_2 ,_3)";
+  tstatement := sexpr ";" =># "(cons 'ast_call (cons _sr (splitapply _1)))";
 
-  utstatement := "call" sexpr  =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
-  utstatement := "jump" sexpr =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
-  //scall := loop sname sexpr ";" =># "`(ast_loop ,_sr ,_2 ,_3)";
-  //scall := loop sname ";" =># "`(ast_loop ,_sr ,_2 (ast_tuple,_sr ()))";
-  utstatement  := "loop" sname sexpr =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
-  utstatement  := "loop" sname =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
-
-  utstatement := sexpr =># "(cons 'ast_call (cons _sr (splitapply _1)))";
-
-  tstatement := sname ":>" =># "`(ast_label ,_sr ,_1)";
-  tstatement := "goto" sname =># "`(ast_goto ,_sr ,_2)";
-
-  tstatement := "if" sexpr "goto" sname =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
-  utstatement := "if" sexpr "return" =># "`(ast_ifreturn ,_sr ,_2)";
-  utstatement := "if" sexpr "call" sexpr =>#
-    "`(ast_ifdo ,_sr ,_2 (,(cons 'ast_call (cons _sr (splitapply _4))))())";
-  tstatement := "if" sexpr "do" sstatements selse_clause "done" =>#
-    "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
-  tstatement := "if" sexpr "do" sstatements "done" =>#
-    "`(ast_ifdo ,_sr ,_2 ,_4 ())";
-
-  tstatement := sexpr "??" tstatement =>#
-    "`(ast_ifdo ,_sr ,_1 (,_3) ())";
-
-  selif_clause := "elif" sexpr "do" sstatements =># "`(,_2 ,_4)";
-  selif_clause := "elif" sexpr "return" ";"? =># "`(,_2 ((ast_proc_return ,_sr)))";
-  selif_clause := "elif" sexpr "goto" sname ";"? =># "`(,_2 (ast_goto ,_sr ,_4))";
-  selif_clauses := selif_clauses selif_clause =># "(cons _2 _1)";
-  selif_clauses := selif_clause =># "`(,_1)";
-  selse_clause := selif_clauses "else" sstatements =>#
-    """
-        (let ((f (lambda (result condthn)
-          (let ((cond (first condthn)) (thn (second condthn)))
-            `((ast_ifdo ,_sr ,cond ,thn ,result))))))
-        (fold_left f _3 _1))
-    """;
-
-  selse_clause := "else" sstatements =># "_2";
-  selse_clause := selif_clauses =>#
-    """
-        (let ((f (lambda (result condthn)
-          (let ((cond (first condthn)) (thn (second condthn)))
-            `((ast_ifdo ,_sr ,cond ,thn ,result))))))
-        (fold_left f () _1))
-    """;
-
-  tstatement := "break" =># '`(ast_goto ,_sr "break_label")';
-  tstatement := "continue" =># '`(ast_goto ,_sr "continue_label")';
-  tstatement := "redo" =># '`(ast_goto ,_sr "redo_label")';
-
-  tstatement := "whilst" sexpr "do" sstatements "done" =>#
-    """
-      `( ast_macro_block ,( append `(
-        ( ast_macro_name "break_label" "" )
-        ( ast_macro_name "continue_label" "" )
-        ( ast_label ,_sr "continue_label" )
-        ( ast_unlikely_ifnotgoto ,_sr ,_2 "break_label" ))
-        _4
-        `(( ast_goto ,_sr "continue_label" )
-        ( ast_label ,_sr "break_label" ))
-        )
-      )
-    """;
-
-  tstatement := "until" sexpr "do" sstatements "done" =>#
-    """
-      `( ast_macro_block ,( append `(
-        ( ast_macro_name "break_label" "" )
-        ( ast_macro_name "continue_label" "" )
-        ( ast_label ,_sr "continue_label" )
-        ( ast_unlikely_ifgoto ,_sr ,_2 "break_label" ))
-        _4
-        `(( ast_goto ,_sr "continue_label" )
-        ( ast_label ,_sr "break_label" ))
-        )
-      )
-    """;
-
-
-  tstatement := "forall" sname "in" sexpr "do" sstatements "done" =>#
-    "`(ast_macro_vfor (,_2) ,_4 ,_6)"
-  ;
-
-  tstatement := "forall" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
-    """
-      `(ast_macro_block ,( append `(
-        (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
-        ( ast_macro_name "break_label" "" )
-        ( ast_macro_name "continue_label" "" )
-        ( ast_macro_name "redo_label" "" )
-        ( ast_label ,_sr "redo_label" )
-        ( ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi 'le) ((ast_name ,_sr ,_2 ()),_6)))
-          "break_label"
-        ))
-        _8
-        `(( ast_label ,_sr "continue_label" )
-        (ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_2())))
-        ( ast_goto ,_sr "redo_label" )
-        ( ast_label ,_sr "break_label" ))
-       ))
-    """;
-
-  tstatement := "forall" sname "in" sexpr "downto" sexpr "do" sstatements "done" =>#
-    """
-      `(ast_macro_block ,( append `(
-        (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
-        ( ast_macro_name "break_label" "" )
-        ( ast_macro_name "continue_label" "" )
-        ( ast_macro_name "redo_label" "" )
-        ( ast_label ,_sr "redo_label" )
-        ( ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi 'ge) ((ast_name ,_sr ,_2 ()) ,_6)))
-          "break_label"
-        ))
-        _8
-        `(( ast_label ,_sr "continue_label" )
-        ( ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_2 ())))
-        ( ast_goto ,_sr "redo_label" )
-        ( ast_label ,_sr "break_label" ))
-       ))
-    """;
 }
 

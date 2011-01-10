@@ -1,42 +1,41 @@
 syntax macros {
   requires expressions, statements;
 
-  sdirective := smacro_definition =># "_1";
-  smacro_definition := "macro" sname "is" sbasic_name_comma_list ";" =>#
+  tstatement := "macro" sname "is" sbasic_name_comma_list ";" =>#
     "`(ast_macro_names ,_2 ,_4)";
 
   // this MUST be next, overrides case with only one name
-  smacro_definition := "macro" sname "is" sname ";" =># "`(ast_macro_name ,_2 ,_4)";
-  smacro_definition := "macro" "for" sname "in" sbasic_name_comma_list "do" sstatements "done" ";" =>#
+  tstatement := "macro" sname "is" sname ";" =># "`(ast_macro_name ,_2 ,_4)";
+  tstatement := "macro" "for" sname "in" sbasic_name_comma_list "do" sstatements "done" ";" =>#
     "`(ast_macro_ifor ,_3 ,_5 ,_7)";
-  smacro_definition := "macro" "for" sname "in" "(" sbasic_name_comma_list ")" "do" sstatements "done" ";" =>#
+  tstatement := "macro" "for" sname "in" "(" sbasic_name_comma_list ")" "do" sstatements "done" ";" =>#
     "`(ast_macro_ifor ,_3 ,_6 ,_9)";
 
-  smacro_definition := "macro" sname "is" "new" ";" =># """`(ast_macro_name ,_2 "")""";
-  smacro_definition := "macro" "var" sbasic_name_comma_list = sexpr ";" =>#
+  tstatement := "macro" sname "is" "new" ";" =># """`(ast_macro_name ,_2 "")""";
+  tstatement := "macro" "var" sbasic_name_comma_list = sexpr ";" =>#
     "`(ast_macro_var ,_3 ,_5)";
-  smacro_definition := "macro" "val" sbasic_name_comma_list = sexpr ";" =>#
+  tstatement := "macro" "val" sbasic_name_comma_list = sexpr ";" =>#
     "`(ast_macro_val ,_3 ,_5)";
-  smacro_definition := "macro" sbasic_name_comma_list = sexpr ";" =>#
+  tstatement := "macro" sbasic_name_comma_list = sexpr ";" =>#
     "`(ast_macro_assign ,_2 ,_4)";
-  smacro_definition := "macro" "val" sname "is" sexpr ";" =>#
+  tstatement := "macro" "val" sname "is" sexpr ";" =>#
     "`(ast_macro_vals ,_3 ,(mkl _5))";
-  smacro_definition := "macro" "fun" sname smac_arg_list = sexpr ";" =>#
+  tstatement := "macro" "fun" sname smac_arg_list = sexpr ";" =>#
     "`(ast_expr_macro ,_3 ,_4 ,_6)";
-  smacro_definition := "macro" "fun" sname smac_arg_list "=>" sexpr ";" =>#
+  tstatement := "macro" "fun" sname smac_arg_list "=>" sexpr ";" =>#
     "`(ast_expr_macro ,_3 ,_4 ,_6)";
-  smacro_definition := "macro" "proc" sname smac_arg_list scompound =>#
+  tstatement := "macro" "proc" sname smac_arg_list scompound =>#
     "`(ast_stmt_macro ,_3 ,_4 ,_5)";
-  smacro_definition := "macro" scompound ";" =># "`(ast_macro_block ,_2)";
-  smacro_definition := "macro" "forget" sbasic_name_comma_list ";" =>#
+  tstatement := "macro" scompound ";" =># "`(ast_macro_block ,_2)";
+  tstatement := "macro" "forget" sbasic_name_comma_list ";" =>#
     "`(ast_macro_forget ,_3)";
-  smacro_definition := "macro" "forget" ";" =>#
+  tstatement := "macro" "forget" ";" =>#
     "`(ast_macro_forget ())";
-  smacro_definition := "macro" "goto" sname ";" =># "`(ast_macro_goto ,_3)";
-  smacro_definition := "macro" sname ":>" =># "`(ast_macro_label ,_2)";
-  smacro_definition := "macro" "if" sexpr "goto" sname ";" =>#
+  tstatement := "macro" "goto" sname ";" =># "`(ast_macro_goto ,_3)";
+  tstatement := "macro" sname ":>" =># "`(ast_macro_label ,_2)";
+  tstatement := "macro" "if" sexpr "goto" sname ";" =>#
     "`(ast_macro_ifgoto ,_3 ,_5)";
-  smacro_definition := "macro" "for" "val" sbasic_name_comma_list "in" sexpr "do" sstatements "done" ";" =>#
+  tstatement := "macro" "for" "val" sbasic_name_comma_list "in" sexpr "do" sstatements "done" ";" =>#
     "`(ast_macro_vfor ,_4 ,_6 ,_8)";
 
   smac_arg:= sname ":" "fun" =># "`(,_1 Expr)";

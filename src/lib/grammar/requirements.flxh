@@ -29,26 +29,26 @@ syntax requirements {
   scode_spec := scstring =># "`(Str ,_1)";
   scode_spec := "ident" =># "'Identity";
 
-  sbinding_header := "requires" srequirements ";" =>#
+  tstatement := "requires" srequirements ";" =>#
     """`(ast_insert ,_sr "_root" ,dfltvs (Str "") body ,_2)""";
 
-  sbinding_header := sname "requires" srequirements ";" =>#
+  tstatement := sname "requires" srequirements ";" =>#
     """`(ast_insert ,_sr ,_1 ,dfltvs (Str "") body ,_3)""";
 
-  sbinding_header:= "header" scode_spec srequires_clause ";" =>#
+  tstatement := "header" scode_spec srequires_clause ";" =>#
     """`(ast_insert ,_sr "_root" ,dfltvs ,_2 header ,_3))""";
-  sbinding_header:= "body" scode_spec srequires_clause ";" =>#
+  tstatement := "body" scode_spec srequires_clause ";" =>#
     """`(ast_insert ,_sr "_root" ,dfltvs ,_2 body ,_3))""";
-  sbinding_header:= "header" = scode_spec srequires_clause ";" =>#
+  tstatement := "header" = scode_spec srequires_clause ";" =>#
     """`(ast_insert ,_sr "_root" ,dfltvs ,_3 header ,_4))""";
-  sbinding_header:= "body" = scode_spec srequires_clause ";" =>#
+  tstatement := "body" = scode_spec srequires_clause ";" =>#
     """`(ast_insert ,_sr "_root" ,dfltvs ,_3 body ,_4))""";
-  sbinding_header:= "header" sdeclname = scode_spec srequires_clause ";" =>#
+  tstatement := "header" sdeclname = scode_spec srequires_clause ";" =>#
     """
     `(ast_insert ,_sr ,(first _2) ,(second _2) ,_4 header ,_5)
      """;
 
-  sbinding_header:= "body" sdeclname = scode_spec srequires_clause ";" =>#
+  tstatement := "body" sdeclname = scode_spec srequires_clause ";" =>#
     """
     `(ast_insert ,_sr ,(first _2) ,(second _2) ,_4 body ,_5)
      """;

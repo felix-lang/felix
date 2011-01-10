@@ -1,0 +1,36 @@
+syntax conditional 
+{
+  tstatement := "if" sexpr "goto" sname =># "`(ast_ifgoto ,_sr ,_2 ,_4)";
+  utstatement := "if" sexpr "return" =># "`(ast_ifreturn ,_sr ,_2)";
+  utstatement := "if" sexpr "call" sexpr =>#
+    "`(ast_ifdo ,_sr ,_2 (,(cons 'ast_call (cons _sr (splitapply _4))))())";
+  tstatement := "if" sexpr "do" sstatements selse_clause "done" =>#
+    "`(ast_ifdo ,_sr ,_2 ,_4 ,_5)";
+  tstatement := "if" sexpr "do" sstatements "done" =>#
+    "`(ast_ifdo ,_sr ,_2 ,_4 ())";
+
+  tstatement := sexpr "??" tstatement =>#
+    "`(ast_ifdo ,_sr ,_1 (,_3) ())";
+
+  selif_clause := "elif" sexpr "do" sstatements =># "`(,_2 ,_4)";
+  selif_clause := "elif" sexpr "return" ";"? =># "`(,_2 ((ast_proc_return ,_sr)))";
+  selif_clause := "elif" sexpr "goto" sname ";"? =># "`(,_2 (ast_goto ,_sr ,_4))";
+  selif_clauses := selif_clauses selif_clause =># "(cons _2 _1)";
+  selif_clauses := selif_clause =># "`(,_1)";
+  selse_clause := selif_clauses "else" sstatements =>#
+    """
+        (let ((f (lambda (result condthn)
+          (let ((cond (first condthn)) (thn (second condthn)))
+            `((ast_ifdo ,_sr ,cond ,thn ,result))))))
+        (fold_left f _3 _1))
+    """;
+
+  selse_clause := "else" sstatements =># "_2";
+  selse_clause := selif_clauses =>#
+    """
+        (let ((f (lambda (result condthn)
+          (let ((cond (first condthn)) (thn (second condthn)))
+            `((ast_ifdo ,_sr ,cond ,thn ,result))))))
+        (fold_left f () _1))
+    """;
+}

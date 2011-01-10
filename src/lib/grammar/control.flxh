@@ -1,0 +1,16 @@
+syntax control 
+{
+  utstatement := "yield" sexpr =># "`(ast_yield ,_sr ,_2)";
+  utstatement := "return" sexpr =># "`(ast_fun_return ,_sr ,_2)";
+  tstatement := "return" ";" =># "`(ast_proc_return ,_sr)";
+  utstatement := "call" sexpr  =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
+  utstatement := "jump" sexpr =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
+  //scall := loop sname sexpr ";" =># "`(ast_loop ,_sr ,_2 ,_3)";
+  //scall := loop sname ";" =># "`(ast_loop ,_sr ,_2 (ast_tuple,_sr ()))";
+  utstatement  := "loop" sname sexpr =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
+  utstatement  := "loop" sname =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
+  utstatement := "halt" sstring =># "`(ast_halt ,_sr ,_2)";
+  tstatement := sname ":>" =># "`(ast_label ,_sr ,_1)";
+  tstatement := "goto" sname =># "`(ast_goto ,_sr ,_2)";
+}
+

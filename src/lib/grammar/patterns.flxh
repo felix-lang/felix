@@ -1,7 +1,7 @@
 syntax patterns {
   satom := pattern_match =># "_1";
 
-  sexecutable := "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
+  tstatement:= "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
     "`(ast_stmt_match (,_sr ,_2 ,_4))";
 
   stmt_matching  := vbar spattern "=>" tstatement+ =># "`(,_2 ,_4)";

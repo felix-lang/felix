@@ -4,7 +4,6 @@ open Flx_set
 open Flx_typing
 open Flx_typing2
 open Flx_print
-open Flx_charset
 open Flx_exceptions
 open Flx_util
 open Flx_list
@@ -14,6 +13,7 @@ open Dyp
 open Lexing
 open Flx_string
 open Flx_token
+open Flx_parse_ebnf
 
 let strip_us s =
   let n = String.length s in
@@ -29,11 +29,6 @@ let strip_us s =
 type action_t = [`Scheme of string | `None]
 type symbol_t = [`Atom of token | `Group of dyalt_t list]
 and dyalt_t = symbol_t list * Flx_srcref.t * action_t * anote_t
-
-type page_entry_t = [
-  | `Nt of string
-  | `Subpage of string * page_entry_t list
-]
 
 let lexeme x = Lexing.lexeme (Dyp.std_lexbuf x)
 
@@ -185,9 +180,6 @@ print_endline ("define_scheme " ^ name);
           (* Dyp.Ter "NAME" *)
           Dyp.Regexp (Dyp.RE_String s)
 
-      | USER_KEYWORD s ->
-         Dyp.Ter "NAME"
-
       | NONTERMINAL (s,p) ->
           let nt = mapnt s in
           let ntpri = cal_priority_relation p in
@@ -262,9 +254,7 @@ print_endline ("Running f, arg=\"" ^ name ^ "\"");
 
           | k,`Obj_keyword -> Sstring (Flx_prelex.string_of_token k)
 
-          | (STRING s1 | USER_KEYWORD s1),
-            (`Obj_NAME s2 | `Obj_USER_KEYWORD s2)
-            ->
+          | STRING s1, `Obj_NAME s2 ->
             if s1 <> s2 then raise Giveup;
             Sstring s1
 
@@ -314,116 +304,6 @@ let extend_grammar dyp (dssl,(name,prio,prod,action,anote,sr)) =
   define_scheme sr dyp dssl_record dssl name prio prod action
 
 (* ------------------------------------------------------ *)
-
-(* create rules for nt* nt+ and nt? *)
-let fixup_suffix_scheme sr pcounter rhs =
-  let rec aux inp out extras = match inp with
-  | [] -> List.rev out,extras
-  | NONTERMINAL (s,p) :: STAR :: t ->
-    let x = string_of_int (!pcounter) in incr pcounter;
-    let slr = s ^ "__rlist_"^x in
-    let sl = s ^ "__list_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sl,`No_prio)],"(reverse _1)","",sr in
-    let rule1 = sl,`Default,[NONTERMINAL(sl,`No_prio);NONTERMINAL(s,p)],"(cons _2 _1)","",sr in
-    let rule2 = sl,`Default,[],"'()","",sr in
-    aux t (NONTERMINAL (slr,`No_prio)::out) (rule0::rule1::rule2::extras)
-
-  | NONTERMINAL (s,p) :: PLUS :: t ->
-    let x = string_of_int (!pcounter) in incr pcounter;
-    let slr = s ^ "__nerlist_"^x in
-    let sl = s ^ "__nelist_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sl,`No_prio)],"(reverse _1)","",sr in
-    let rule1 = sl,`Default,[NONTERMINAL(sl,`No_prio);NONTERMINAL(s,p)],"(cons _2 _1)","",sr in
-    let rule2 = sl,`Default,[NONTERMINAL(s,`No_prio)],"`(,_1)","",sr in
-    aux t (NONTERMINAL (slr,`No_prio)::out) (rule0::rule1::rule2::extras)
-
-  | NONTERMINAL (s,p) :: QUEST :: t ->
-    let x = string_of_int (!pcounter) in incr pcounter;
-    let sl = s ^ "__opt_"^x in
-    let rule1 = sl,`Default,[NONTERMINAL(s,p)],"`(,_1)","",sr in
-    let rule2 = sl,`Default,[],"()","",sr in
-    aux t (NONTERMINAL (sl,`No_prio)::out) (rule1::rule2::extras)
-
-  | other :: QUEST :: t ->
-    let x = string_of_int (!pcounter) in incr pcounter;
-    let sl = "__opt_"^x in
-    let rule1 = sl,`Default,[other],"()","",sr in
-    let rule2 = sl,`Default,[],"()","",sr in
-    aux t (NONTERMINAL (sl,`No_prio)::out) (rule1::rule2::extras)
-
-  | h :: t -> aux t (h::out) extras
-  in aux rhs [] []
-
-let fixup_suffix_string sr pcounter rhs =
-  let rec aux inp out extras = match inp with
-  | [] -> List.rev out,extras
-  | NONTERMINAL (s,p) :: STAR :: t ->
-    let x = string_of_int (!pcounter) in incr pcounter;
-    let slr = s ^ "__rlist_"^x in
-    let sl = s ^ "__list_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sl,`No_prio)],"_1","",sr in
-    let rule1 = sl,`Default,[NONTERMINAL(sl,`No_prio);NONTERMINAL(s,p)],"(strcat `(,_1 ,_2))","",sr in
-    let rule2 = sl,`Default,[],"\"\"","",sr in
-    aux t (NONTERMINAL (slr,`No_prio)::out) (rule0::rule1::rule2::extras)
-
-  | NONTERMINAL (s,p) :: PLUS :: t ->
-    let x = string_of_int (!pcounter) in incr pcounter;
-    let slr = s ^ "__nerlist_"^x in
-    let sl = s ^ "__nelist_"^x in
-    let rule0 = slr,`Default,[NONTERMINAL(sl,`No_prio)],"_1","",sr in
-    let rule1 = sl,`Default,[NONTERMINAL(sl,`No_prio);NONTERMINAL(s,p)],"(strcat `(,_1 ,_2))","",sr in
-    let rule2 = sl,`Default,[NONTERMINAL(s,`No_prio)],"_1","",sr in
-    aux t (NONTERMINAL (slr,`No_prio)::out) (rule0::rule1::rule2::extras)
-
-  | NONTERMINAL (s,p) :: QUEST :: t ->
-    let x = string_of_int (!pcounter) in incr pcounter;
-    let sl = s ^ "__opt_"^x in
-    let rule1 = sl,`Default,[NONTERMINAL(s,p)],"_1","",sr in
-    let rule2 = sl,`Default,[],"\"\"","",sr in
-    aux t (NONTERMINAL (sl,`No_prio)::out) (rule1::rule2::extras)
-
-  | other :: QUEST :: t ->
-    let x = string_of_int (!pcounter) in incr pcounter;
-    let sl = "__opt_"^x in
-    let rule1 = sl,`Default,[other],"_1","",sr in
-    let rule2 = sl,`Default,[],"\"\"","",sr in
-    aux t (NONTERMINAL (sl,`No_prio)::out) (rule1::rule2::extras)
-
-  | h :: t -> aux t (h::out) extras
-  in aux rhs [] []
-
-let fixup_suffix sr pcounter kind rhs =
-  match kind with
-  | `Sval -> fixup_suffix_scheme sr pcounter rhs
-  | `String -> fixup_suffix_string sr pcounter rhs
-
-let fixup_prio sr rhs =
-  let rec aux inp out = match inp with
-  | [] -> List.rev out
-
-  (* Default relation is greater equal *)
-  | NAME s :: LSQB _ :: NAME p :: RSQB _ :: t ->
-    aux t (NONTERMINAL (s,`Greatereq_prio p)::out)
-
-  | NAME s :: LSQB _ :: LESS _ :: NAME p :: RSQB _ :: t ->
-    aux t (NONTERMINAL (s,`Less_prio p)::out)
-  | NAME s :: LSQB _ :: LESSEQUAL _ :: NAME p :: RSQB _ :: t ->
-    aux t (NONTERMINAL (s,`Lesseq_prio p)::out)
-  | NAME s :: LSQB _ :: GREATER _ :: NAME p :: RSQB _ :: t ->
-    aux t (NONTERMINAL (s,`Greater_prio p)::out)
-  | NAME s :: LSQB _ :: GREATEREQUAL _ :: NAME p :: RSQB _ :: t ->
-    aux t (NONTERMINAL (s,`Greatereq_prio p)::out)
-  | NAME s :: LSQB _ :: EQUAL _ :: NAME p :: RSQB _ :: t ->
-    aux t (NONTERMINAL (s,`Eq_prio p)::out)
-   
-  | NAME s :: LSQB :: _ ->
-    clierr sr "Dangling [ in grammar"
- 
-  | NAME s ::t ->
-    aux t (NONTERMINAL (s,`No_prio)::out)
-  | h :: t -> aux t (h::out)
-  in aux rhs []
-
 let dflt_action kind prod =
   let rn = ref 1 in
   let action =
@@ -564,8 +444,6 @@ let add_rule global_data local_data dssl rule =
      let m = { m with dssls = Drules.add dssl d m.dssls } in
      global_data,m
 
-  | `Document (name,s) -> global_data, local_data
-  | `Page (name,entries) -> global_data, local_data
   | `Priorities p ->
     let d = { d with prios = p::d.prios } in
     let m = { m with dssls = Drules.add dssl d m.dssls } in

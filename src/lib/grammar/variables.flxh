@@ -1,14 +1,7 @@
 syntax variables {
-  // assignments have lower priority than variable
-  // definitions to support 'int x = 1;' being
-  // a variable definition "not" an assignment,
-  // so we have to requires them first: they're
-  // currently defined in executable.. this is fragile ..
   requires statements, executable;
 
-  sexecutable := svar_def =># "_1";
-  sexecutable := sval_def =># "_1";
-  sval_def := "val" sname sname_suffix = sexpr ";" =>#
+  tstatement := "val" sname sname_suffix = sexpr ";" =>#
     """
     (let
       (
@@ -36,42 +29,42 @@ syntax variables {
     )))
     """;
 
-  sval_def := "val" sdeclname = sexpr ";" =>#
+  tstatement := "val" sdeclname = sexpr ";" =>#
     """
     `(ast_val_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
      """;
 
-  sval_def := "val" sdeclname ":" stypeexpr = sexpr ";" =>#
+  tstatement := "val" sdeclname ":" stypeexpr = sexpr ";" =>#
     """
     `(ast_val_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
      """;
 
-  sval_def := "val" sdeclname ":" stypeexpr ";" =>#
+  tstatement := "val" sdeclname ":" stypeexpr ";" =>#
     """
     `(ast_val_decl ,_sr ,(first _2) ,(second _2) (some ,_4) none)
      """;
 
-  sval_def := "ref" sdeclname "<-" sexpr ";" =>#
+  tstatement := "ref" sdeclname "<-" sexpr ";" =>#
     """
     `(ast_ref_decl ,(first _2) ,(second _2) none (some ,_4))
      """;
 
-  sval_def := "ref" sdeclname ":" stypeexpr "<-" sexpr ";" =>#
+  tstatement := "ref" sdeclname ":" stypeexpr "<-" sexpr ";" =>#
     """
     `(ast_ref_decl ,(first _2) ,(second _2) (some ,_4) (some ,_6))
      """;
 
-  sval_def := "fun" sdeclname "<-" sexpr ";" =>#
+  tstatement := "fun" sdeclname "<-" sexpr ";" =>#
     """
     `(ast_lazy_decl ,(first _2) ,(second _2) none (some ,_4))
      """;
 
-  sval_def := "fun" sdeclname ":" stypeexpr "<-" sexpr ";" =>#
+  tstatement := "fun" sdeclname ":" stypeexpr "<-" sexpr ";" =>#
     """
     `(ast_lazy_decl ,(first _2) ,(second _2) (some ,_4) (some ,_6))
      """;
 
-  svar_def := "var" sname sname_suffix = sexpr ";" =>#
+  tstatement := "var" sname sname_suffix = sexpr ";" =>#
     """
     (let
       (
@@ -99,17 +92,17 @@ syntax variables {
     )))
     """;
 
-  svar_def := "var" sdeclname = sexpr ";" =>#
+  tstatement := "var" sdeclname = sexpr ";" =>#
     """
     `(ast_var_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
      """;
 
-  svar_def := "var" sdeclname ":" stypeexpr = sexpr ";" =>#
+  tstatement := "var" sdeclname ":" stypeexpr = sexpr ";" =>#
     """
     `(ast_var_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
      """;
 
-  svar_def := "var" sdeclname ":" stypeexpr ";" =>#
+  tstatement := "var" sdeclname ":" stypeexpr ";" =>#
     """
     `(ast_var_decl ,_sr ,(first _2) ,(second _2) (some ,_4) none)
      """;

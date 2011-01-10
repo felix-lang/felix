@@ -1,21 +1,21 @@
 syntax namespaces {
   requires statements;
-  sopen_decl := "rename" sdeclname = squalified_name ";" =>#
+  tstatement := "rename" sdeclname = squalified_name ";" =>#
     """
     `(ast_inherit ,_sr ,(first _2) ,(second _2) ,_4)
     """;
 
-  sopen_decl := "rename" "fun" sdeclname = squalified_name ";" =>#
+  tstatement := "rename" "fun" sdeclname = squalified_name ";" =>#
     """
     `(ast_inherit_fun ,_sr ,(first _3) ,(second _3) ,_5)
     """;
 
-  sopen_decl := "inherit" squalified_name ";" =># "`(ast_inject_module ,_sr ,_2)";
+  tstatement := "inherit" squalified_name ";" =># "`(ast_inject_module ,_sr ,_2)";
 
-  sopen_decl := "open" stvarlist squalified_name ";" =>#
+  tstatement := "open" stvarlist squalified_name ";" =>#
     "`(ast_open ,_sr ,_2 ,_3)";
 
-  sopen_decl := "use" squalified_name ";" =>#
+  tstatement := "use" squalified_name ";" =>#
     """
     (let ((name
       (if (eq? (first _2) 'ast_lookup) (cadadr _2)
@@ -23,14 +23,14 @@ syntax namespaces {
         ("ERROR")))))
     `(ast_use ,_sr ,name ,_2))
     """;
-  sopen_decl := "use" sname = squalified_name ";" =># "`(ast_use ,_sr ,_2 ,_4)";
+  tstatement := "use" sname = squalified_name ";" =># "`(ast_use ,_sr ,_2 ,_4)";
 
-  smodule_definition := "module" sdeclname = ? scompound =>#
+  tstatement := "module" sdeclname = ? scompound =>#
     """
     `(ast_untyped_module ,_sr ,(first _2) ,(second _2) ,_4)
      """;
 
-  smodule_definition := "open" "module" sdeclname = ? scompound =>#
+  tstatement := "open" "module" sdeclname = ? scompound =>#
     """
     `(ast_seq ,_sr (
       (ast_untyped_module ,_sr ,(first _3) ,(second _3) ,_5)

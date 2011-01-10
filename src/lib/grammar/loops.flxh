@@ -1,0 +1,80 @@
+syntax loops
+{
+  tstatement := "break" =># '`(ast_goto ,_sr "break_label")';
+  tstatement := "continue" =># '`(ast_goto ,_sr "continue_label")';
+  tstatement := "redo" =># '`(ast_goto ,_sr "redo_label")';
+
+  tstatement := "whilst" sexpr "do" sstatements "done" =>#
+    """
+      `( ast_macro_block ,( append `(
+        ( ast_macro_name "break_label" "" )
+        ( ast_macro_name "continue_label" "" )
+        ( ast_label ,_sr "continue_label" )
+        ( ast_unlikely_ifnotgoto ,_sr ,_2 "break_label" ))
+        _4
+        `(( ast_goto ,_sr "continue_label" )
+        ( ast_label ,_sr "break_label" ))
+        )
+      )
+    """;
+
+  tstatement := "until" sexpr "do" sstatements "done" =>#
+    """
+      `( ast_macro_block ,( append `(
+        ( ast_macro_name "break_label" "" )
+        ( ast_macro_name "continue_label" "" )
+        ( ast_label ,_sr "continue_label" )
+        ( ast_unlikely_ifgoto ,_sr ,_2 "break_label" ))
+        _4
+        `(( ast_goto ,_sr "continue_label" )
+        ( ast_label ,_sr "break_label" ))
+        )
+      )
+    """;
+
+
+  tstatement := "forall" sname "in" sexpr "do" sstatements "done" =>#
+    "`(ast_macro_vfor (,_2) ,_4 ,_6)"
+  ;
+
+  tstatement := "forall" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
+    """
+      `(ast_macro_block ,( append `(
+        (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
+        ( ast_macro_name "break_label" "" )
+        ( ast_macro_name "continue_label" "" )
+        ( ast_macro_name "redo_label" "" )
+        ( ast_label ,_sr "redo_label" )
+        ( ast_unlikely_ifnotgoto ,_sr
+          (ast_apply ,_sr (,(noi 'le) ((ast_name ,_sr ,_2 ()),_6)))
+          "break_label"
+        ))
+        _8
+        `(( ast_label ,_sr "continue_label" )
+        (ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_2())))
+        ( ast_goto ,_sr "redo_label" )
+        ( ast_label ,_sr "break_label" ))
+       ))
+    """;
+
+  tstatement := "forall" sname "in" sexpr "downto" sexpr "do" sstatements "done" =>#
+    """
+      `(ast_macro_block ,( append `(
+        (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
+        ( ast_macro_name "break_label" "" )
+        ( ast_macro_name "continue_label" "" )
+        ( ast_macro_name "redo_label" "" )
+        ( ast_label ,_sr "redo_label" )
+        ( ast_unlikely_ifnotgoto ,_sr
+          (ast_apply ,_sr (,(noi 'ge) ((ast_name ,_sr ,_2 ()) ,_6)))
+          "break_label"
+        ))
+        _8
+        `(( ast_label ,_sr "continue_label" )
+        ( ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_2 ())))
+        ( ast_goto ,_sr "redo_label" )
+        ( ast_label ,_sr "break_label" ))
+       ))
+    """;
+}
+

@@ -22,7 +22,6 @@ let string_of_token = function
   | QSTRING s -> Flx_string.c_quote_of_string s
   | WSTRING s -> Flx_string.c_quote_of_string s
   | USTRING s -> Flx_string.c_quote_of_string s
-  | USER_KEYWORD s -> s
   | QUEST _ -> "?"
   | LPAR _ -> "("
   | RPAR _ -> ")"
@@ -46,7 +45,6 @@ let string_of_token = function
   | ENDMARKER -> "<<EOF>>"
   | ERRORTOKEN s -> "<<ERROR '"^ s ^"'>>"
   | SLOSH -> "\\"
-  | HASH -> "#"
 
 let name_of_token = function
   | DUMMY -> "DUMMY"
@@ -60,7 +58,6 @@ let name_of_token = function
   | QSTRING _ -> "QSTRING"
   | WSTRING _ -> "WSTRING"
   | USTRING _ -> "USTRING"
-  | USER_KEYWORD s -> s
   | QUEST _ -> "QUEST"
   | LPAR -> "LPAR"
   | RPAR -> "RPAR"
@@ -84,5 +81,4 @@ let name_of_token = function
   | ENDMARKER -> "ENDMARKER"
   | ERRORTOKEN _ -> "ERRORTOKEN"
   | SLOSH -> "SLOSH"
-  | HASH -> "HASH"
 

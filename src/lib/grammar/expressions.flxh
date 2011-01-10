@@ -125,9 +125,9 @@ syntax expressions {
 
   x[sfactor_pri] := shash_name =># "_1";
   x[sfactor_pri] := x[sfactor_pri] "." lsqb sexpr rsqb =># "`(ast_apply ,_sr (,(noi 'subscript) (,_1 ,_4)))";
-  x[sfactor_pri] := x[sfactor_pri] "." lsqb sexpr k"to" sexpr rsqb =># "`(ast_apply ,_sr (,(noi 'substring) (,_1 ,_4 ,_6)))";
-  x[sfactor_pri] := x[sfactor_pri] "." lsqb sexpr k"to" rsqb =># "`(ast_apply ,_sr (,(noi 'copyfrom) (,_1 ,_4)))";
-  x[sfactor_pri] := x[sfactor_pri] "." lsqb k"to" sexpr rsqb =># "`(ast_apply ,_sr (,(noi 'copyto) (,_1 ,_5)))";
+  x[sfactor_pri] := x[sfactor_pri] "." lsqb sexpr "to" sexpr rsqb =># "`(ast_apply ,_sr (,(noi 'substring) (,_1 ,_4 ,_6)))";
+  x[sfactor_pri] := x[sfactor_pri] "." lsqb sexpr "to" rsqb =># "`(ast_apply ,_sr (,(noi 'copyfrom) (,_1 ,_4)))";
+  x[sfactor_pri] := x[sfactor_pri] "." lsqb "to" sexpr rsqb =># "`(ast_apply ,_sr (,(noi 'copyto) (,_1 ,_5)))";
   x[sfactor_pri] := x[sfactor_pri] "." shash_name =># "`(ast_dot ,_sr (,_1 ,_3))))";
   // note the next production MUST be after the previous one so it overrides the
   // interpretation of a.(0) as an AST_dot

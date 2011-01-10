@@ -1,36 +1,18 @@
 syntax statements {
   requires expressions;
-  tstatement:= sexecutable=># "_1";
-  tstatement:= sdeclarative =># "_1";
-  tstatement:= sinclusion =># "_1";
-  tstatement:= sdirective =># "_1";
-  tstatement:= spublish =># "_1";
-  tstatement:= scomment =># "_1";
-  tstatement:= snull_statement =># "_1";
-  scomment := "comment" sstring ";" =># "`(ast_comment ,_sr ,_2)";
+  tstatement := "comment" sstring ";" =># "`(ast_comment ,_sr ,_2)";
 
-  spublish := "private" sdeclarative =># "`(ast_private ,_2)";
-  spublish := "private" sbinding_definition =># "`(ast_private ,_2)";
-  spublish := "private" svar_def =># "`(ast_private ,_2)";
-  spublish := "private" sval_def =># "`(ast_private ,_2)";
+  tstatement := "private" tstatement =># "`(ast_private ,_2)";
+  tstatement := "publish" sstring tstatement =># "_3";
 
-  spublish := "publish" sstring tstatement =># "_3";
+  tstatement := ";" =># """`(ast_nop ,_sr "")""";
 
-  sdeclarative := smodule_definition =># "_1";
-  sdeclarative := sunion_decl =># "_1";
-  sdeclarative := sstruct_decl =># "_1";
-  sdeclarative := stype_alias =># "_1";
-
-  sdirective := sopen_decl =># "_1";
-
-  snull_statement := ";" =># """`(ast_nop ,_sr "")""";
-
-  sinclusion := "include" sstring ";" =># "`(ast_include ,_sr ,_2)";
+  tstatement := "include" sstring ";" =># "`(ast_include ,_sr ,_2)";
 
   // note: list is reversed, eg X::Y::name goes to list name, Y, Z
   sdeclname := sname stvarlist =># "`(,_1 ,_2)";
 
-  sabstract_type := stype_qual* "type" sdeclname = "new" sexpr ";" =>#
+  tstatement := stype_qual* "type" sdeclname = "new" sexpr ";" =>#
     """
     `(ast_newtype ,_sr ,(first _3) ,(second _3) ,_6)
     """;

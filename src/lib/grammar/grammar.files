@@ -7,6 +7,10 @@ grammar/variables.flxh
 grammar/macros.flxh
 grammar/cbind.flxh
 grammar/executable.flxh
+grammar/assignment.flxh
+grammar/control.flxh
+grammar/conditional.flxh
+grammar/loops.flxh
 grammar/requirements.flxh
 grammar/type_decls.flxh
 grammar/assertions.flxh
