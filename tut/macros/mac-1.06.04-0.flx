@@ -1,5 +1,0 @@
-var x = 1;
-var y = 42;
-print (_str x); print " = "; print x; endl;
-print (_str y); print " = "; print y; endl;
-print (_str$ x+y); print " = "; print$ x+y; endl;

@@ -1,9 +1,0 @@
-macro for val i in ("Hello","World",42) do
-  print i; print " ";
-done;
-endl;
-
-macro for i in (a,b,c) do
-  var i = 1;
-  print$ Debug::repr_expr i; print "="; print i; endl;
-done;

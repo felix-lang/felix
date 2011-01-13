@@ -1,9 +1,0 @@
-macro val x,y = 1,2;
-macro var a,b = 1,2;
-macro a,b = a+1,b+1;
-macro for val i in x,y,a,b do print i; print " "; done; endl;
-
-macro for val i,j in ((1,2),(3,4)) do
-  print "("; print i; print ","; print j; print ")"; print " ";
-done;
-endl;

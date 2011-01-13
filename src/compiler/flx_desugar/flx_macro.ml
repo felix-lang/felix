@@ -42,6 +42,9 @@ type macro_state_t = {
   macros: macro_dfn_t list;
 }
 
+let string_of_statements sts =
+  String.concat "\n" (List.map (string_of_statement 1) sts)
+
 let print_mpar (id,t) =
   id ^ ":" ^
   (
@@ -107,7 +110,21 @@ let rec get_pattern_vars pat =
   | PAT_when (_,p,_) -> get_pattern_vars p
   | PAT_nonconst_ctor (_,_,p) -> get_pattern_vars p
   | PAT_tuple (_,ps) -> List.concat (List.map get_pattern_vars ps)
+  | PAT_record (_,ps) -> List.concat(List.map get_pattern_vars (List.map snd ps))
   | _ -> []
+
+let alpha_pat local_prefix seq fast_remap remap expand_expr pat = 
+  let ren v = List.assoc v fast_remap in
+  let rexp e = expand_expr 50 local_prefix seq remap e in 
+  let rec aux pat = match pat with
+  | PAT_name (sr,v) -> PAT_name (sr, ren v)
+  | PAT_as (sr,p,v) -> PAT_as (sr,aux p, ren v)
+  | PAT_when (sr,p,e) -> PAT_when (sr,aux p, rexp e)
+  | PAT_nonconst_ctor (sr,n,p) -> PAT_nonconst_ctor (sr, n, aux p)
+  | PAT_tuple (sr,ps) -> PAT_tuple (sr, List.map aux ps)
+  | PAT_record (sr, ps) -> PAT_record (sr, List.map (fun (id,p) -> id, aux p) ps)
+  | p -> p
+  in aux pat
 
 (* protect parameter names, to prevent gratuitous substitions *)
 let protect sr (ps:id_t list) : macro_dfn_t list =
@@ -151,7 +168,7 @@ let build_args sr ps args =
   ps args
 
 (* alpha convert parameter names *)
-  let rec alpha_expr sr local_prefix seq ps e =
+let rec alpha_expr sr local_prefix seq ps e =
   let psn, pst = List.split ps in
   let psn' =  (* new parameter names *)
     List.map
@@ -1100,13 +1117,35 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_untyped_module (sr, id, vs, sts) ->
     tack (STMT_untyped_module (sr, mi sr id, vs, ms sts))
 
+  (* this gets called twice, pointlessly *)
   | STMT_stmt_match (sr, (e, pss)) ->
-    (* note hack, not protecting pattern vars in stmts like ordinary match,
-    just laziness 
+    (*
+    print_endline "Handling statement match";
     *)
     let pss = List.map (fun (pat,sts) ->
       let pvs = get_pattern_vars pat in
-      pat, msp sr pvs sts
+      let pvs' =  (* new parameter names *)
+        List.map
+        (fun _ -> let b = !seq in incr seq; "_" ^ string_of_int b)
+        pvs
+      in
+      let fast_remap = List.combine pvs pvs' in
+      let remap = 
+        List.map2
+        (fun x y -> (x,MName y))
+        pvs pvs'
+      in
+      (* alpha convert pattern variable names *)
+      let pat' = alpha_pat local_prefix seq fast_remap remap expand_expr pat in
+      (* alpha convert statements *)
+      let sts' = subst_statements 50 local_prefix seq (ref true) remap sts in
+      (*
+      print_endline ("Statement match, original pattern: " ^ string_of_pattern pat);
+      print_endline ("Statement match, original statements: " ^ string_of_statements sts);
+      print_endline ("Statement match, new pattern: " ^ string_of_pattern pat');
+      print_endline ("Statement match, new statements: " ^ string_of_statements sts');
+      *)
+      pat', ms sts' (* no need for protection because pat vars are fresh *)
       )
       pss 
     in
@@ -1256,43 +1295,43 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
   let cf e = const_fold e in
 
   begin match st with
-  | STMT_expr_macro (sr, id, ps, e) ->
+  | STMT_expr_macro (sr, id, ps, e) -> failwith ("unexpected macro thing");
     let ps,e = alpha_expr sr local_prefix seq ps e in
     tack (STMT_expr_macro (sr, mi sr id, ps, me e))
 
-  | STMT_stmt_macro (sr, id, ps, sts) ->
+  | STMT_stmt_macro (sr, id, ps, sts) -> failwith ("unexpected macro thing");
     let ps,sts = alpha_stmts sr local_prefix seq ps sts in
     let sts = expand_statements recursion_limit local_prefix seq (ref true) macros sts in
     tack (STMT_stmt_macro (sr,id,ps,sts))
 
-  | STMT_macro_block (sr, sts) ->
+  | STMT_macro_block (sr, sts) -> failwith ("unexpected macro thing");
     (*
     let sts = expand_statements recursion_limit local_prefix seq (ref true) macros sts in
     *)
     let sts = mss sts in
     tack (STMT_macro_block (sr,sts))
 
-  | STMT_macro_name (sr, id1, id2) ->
+  | STMT_macro_name (sr, id1, id2) -> failwith ("unexpected macro thing");
     (* IN THIS SPECIAL CASE THE LHS NAME IS NOT MAPPED *)
     tack (STMT_macro_name (sr, id1, mi sr id2))
 
-  | STMT_macro_names (sr, id1, id2) ->
+  | STMT_macro_names (sr, id1, id2) -> failwith ("unexpected macro thing");
     (* IN THIS SPECIAL CASE THE LHS NAME IS NOT MAPPED *)
     tack (STMT_macro_names (sr, id1, List.map (mi sr) id2))
 
   | STMT_macro_val (sr, ids, e) ->
     tack (STMT_macro_val (sr, List.map (mi sr) ids, me e))
 
-  | STMT_macro_vals (sr, id, e) ->
+  | STMT_macro_vals (sr, id, e) -> failwith ("unexpected macro thing");
     tack (STMT_macro_vals (sr,mi sr id, List.map me e))
 
-  | STMT_macro_var (sr, ids, e) ->
+  | STMT_macro_var (sr, ids, e) -> failwith ("unexpected macro thing");
     tack (STMT_macro_var (sr, List.map (mi sr) ids, me e))
 
-  | STMT_macro_assign (sr, ids, e) ->
+  | STMT_macro_assign (sr, ids, e) -> failwith ("unexpected macro thing");
     tack (STMT_macro_assign (sr, List.map (mi sr) ids, me e))
 
-  | STMT_macro_ifor (sr,id,ids,sts) ->
+  | STMT_macro_ifor (sr,id,ids,sts) -> failwith ("unexpected macro thing");
     (* IN THIS SPECIAL CASE THE LHS NAME IS NOT MAPPED *)
     tack (STMT_macro_ifor (sr,id, List.map (mi sr) ids,mss sts))
 
@@ -1304,7 +1343,7 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
     so we can't elide it even if unreachable:
     it might expand to declarations or macros
   *)
-  | STMT_call (sr, (EXPR_name(srn,name,[]) as e1), e2) ->
+  | STMT_call (sr, (EXPR_name(srn,name,[]) as e1), e2) -> failwith ("unexpected macro thing");
     (* let e1 = EXPR_name(srn, name,[]) in *)
     begin try
       match List.assoc name macros with
@@ -1322,7 +1361,7 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
   | STMT_call (sr, e1, e2) ->
     tack (STMT_call (sr, me e1, me e2))
 
-  | STMT_user_statement (sr,name,term) ->
+  | STMT_user_statement (sr,name,term) -> failwith ("unexpected macro thing");
     (*
     print_endline ("Replacing into user statement call " ^ name);
     *)
@@ -1340,7 +1379,7 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
     in
     tack (STMT_user_statement (sr,name,aux term))
 
-  | STMT_macro_ifgoto (sr,e,id) ->
+  | STMT_macro_ifgoto (sr,e,id) -> failwith ("unexpected macro thing");
     (*
     print_endline ("Substituting if/goto " ^ string_of_expr e);
     *)
@@ -1350,8 +1389,8 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
   | STMT_macro_goto _
   | STMT_macro_proc_return _
   | STMT_macro_forget _
-    -> tack st
-
+    -> failwith ("unexpected macro thing"); tack st
+ 
   | st ->
     List.iter tack
     (
@@ -1442,7 +1481,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     )
   in
   begin match st with
-  | STMT_macro_forget (sr,ids) ->
+  | STMT_macro_forget (sr,ids) -> failwith ("Unexpected macro thing");
     begin
       match ids with
       | [] -> ref_macros := []
@@ -1450,7 +1489,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
         ref_macros := List.filter (fun (x,_) -> not (List.mem x ids)) !ref_macros
     end
 
-  | STMT_expr_macro (sr, id, ps, e) ->
+  | STMT_expr_macro (sr, id, ps, e) -> failwith ("Unexpected macro thing"); 
     let ps,e = alpha_expr sr local_prefix seq ps e in
     ref_macros := (id,MExpr (ps, e)) :: !ref_macros
 
@@ -1481,10 +1520,10 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       ides
     end
 
-  | STMT_macro_vals (sr, id, es) ->
+  | STMT_macro_vals (sr, id, es) ->  failwith ("Unexpected macro thing");
     ref_macros := (id,MVals (List.map me es)) :: !ref_macros
 
-  | STMT_macro_var (sr, ids, e) ->
+  | STMT_macro_var (sr, ids, e) -> failwith ("Unexpected macro thing"); 
     let e = me e in
     let n = List.length ids in
     if n = 1 then
@@ -1511,7 +1550,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       ides
     end
 
-  | STMT_macro_assign (sr, ids, e) ->
+  | STMT_macro_assign (sr, ids, e) -> failwith ("Unexpected macro thing");
     let assign id e =
       try
         let r = List.assoc id (!ref_macros @ macros) in
@@ -1542,7 +1581,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       List.iter (fun (id,v) -> assign id v) ides
     end
 
-  | STMT_macro_ifor (sr, id, names, sts) ->
+  | STMT_macro_ifor (sr, id, names, sts) -> failwith ("Unexpected macro thing");
     let names = expand_names sr names in
     List.iter (fun name ->
       let saved_macros = !ref_macros in
@@ -1599,11 +1638,11 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       ref_macros := saved_macros
     ) vals
 
-  | STMT_stmt_macro (sr, id, ps, sts) ->
+  | STMT_stmt_macro (sr, id, ps, sts) -> failwith ("Unexpected macro thing");
     let ps,sts = alpha_stmts sr local_prefix seq ps sts in
     ref_macros := (id, MStmt (ps,sts)) :: !ref_macros
 
-  | STMT_macro_name (sr, id1, id2) ->
+  | STMT_macro_name (sr, id1, id2) -> failwith ("Unexpected macro thing");
     let id2 = mi sr id2 in
     let id2 =
       match id2 with
@@ -1614,11 +1653,11 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     in
     ref_macros := (id1,MName id2) :: !ref_macros
 
-  | STMT_macro_names (sr, id, ids) ->
+  | STMT_macro_names (sr, id, ids) -> failwith ("Unexpected macro thing");
     let ids = List.map (mi sr) ids in
     ref_macros := (id,MNames ids) :: !ref_macros
 
-  | STMT_macro_block (sr,sts) ->
+  | STMT_macro_block (sr,sts) -> failwith ("Unexpected macro thing");
     let b = subst_statements recursion_limit local_prefix seq reachable [] sts in
     (* NOTE SPECIAL HACK -- ANY MACROS DEFINED IN A MACRO BLOCK ARE LOST *)
     let ses ss =
@@ -1627,7 +1666,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     let b = ses b in
     List.iter ctack b
 
-  | STMT_call (sr, EXPR_macro_statements (srs,sts), arg) ->
+  | STMT_call (sr, EXPR_macro_statements (srs,sts), arg) -> failwith ("Unexpected macro thing");
     begin match arg with
     | EXPR_tuple (_,[]) ->
       let sts = ms sts in
@@ -1639,7 +1678,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
   | STMT_call (sr,
       EXPR_name(srn,"_scheme", []),
       EXPR_literal (srl, AST_string s)
-    ) ->
+    ) -> failwith ("Unexpected macro thing");
     print_endline "DETECTED STATEMENT ENCODED AS SCHEME";
     let get_port = function
       | Ocs_types.Sport p -> p
@@ -1789,13 +1828,10 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       | _ -> ctack (STMT_call (sr,e1,e2))
       end
 
-  | STMT_user_statement (sr,name,term) ->
+  | STMT_user_statement (sr,name,term) -> failwith ("Unexpected macro thing");
     (*
     print_endline ("Expanding statement " ^ name);
     *)
-    let string_of_statements sts =
-        String.concat "\n" (List.map (string_of_statement 1) sts)
-    in
     let substitute_statement_terms sr ss ts =
       (*
       print_endline "[statement] Substitute statements terms!";
@@ -1915,7 +1951,7 @@ and special_expand_statements recursion_limit local_prefix seq
         )
       in
       begin match st with
-      | STMT_macro_goto (sr,label) ->
+      | STMT_macro_goto (sr,label) -> failwith ("Unexpected macro thing");
         begin
           try
             pc := snd (Hashtbl.find label_map label)
@@ -1924,9 +1960,9 @@ and special_expand_statements recursion_limit local_prefix seq
             clierr sr ("Undefined macro label " ^ label)
         end
 
-      | STMT_macro_proc_return _ -> raise Macro_return
+      | STMT_macro_proc_return _ -> failwith ("Unexpected macro thing"); raise Macro_return
 
-      | STMT_macro_ifgoto (sr,e,label) ->
+      | STMT_macro_ifgoto (sr,e,label) -> failwith ("Unexpected macro thing");
         (*
         print_endline ("Expanding if/goto " ^ string_of_expr e);
         *)

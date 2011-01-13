@@ -15,7 +15,7 @@ open Flx_stream;
 open TerminalIByteStream[fd_t];
 open TerminalIOByteStream[socket_t];
 
-macro fun dbg(x) = { fprint (cerr,x); };
+proc dbg(x:string) { fprint (cerr,x); };
 
 include "./cpp2html";
 include "./flx2html";

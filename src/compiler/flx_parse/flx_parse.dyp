@@ -161,6 +161,12 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 
 %token UNDERSCORE
 %constructor Obj_keyword %for UNDERSCORE
+
+
+%token FUN
+%constructor Obj_keyword %for FUN 
+
+
 /* top level entry */
 %constructor Obj_sexpr %for sterm
 

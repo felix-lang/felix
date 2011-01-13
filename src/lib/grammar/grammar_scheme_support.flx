@@ -1,3 +1,6 @@
+SCHEME """(define counter 100)""";
+
+SCHEME """(define (fresh_int x)(begin (set! counter (+ counter 1)) counter))""";
 
 SCHEME """
 (begin

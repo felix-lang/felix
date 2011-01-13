@@ -1,6 +1,6 @@
 syntax macros {
   requires expressions, statements;
-
+/*
   tstatement := "macro" sname "is" sbasic_name_comma_list ";" =>#
     "`(ast_macro_names ,_2 ,_4)";
 
@@ -14,8 +14,10 @@ syntax macros {
   tstatement := "macro" sname "is" "new" ";" =># """`(ast_macro_name ,_2 "")""";
   tstatement := "macro" "var" sbasic_name_comma_list = sexpr ";" =>#
     "`(ast_macro_var ,_3 ,_5)";
+*/
   tstatement := "macro" "val" sbasic_name_comma_list = sexpr ";" =>#
     "`(ast_macro_val ,_3 ,_5)";
+/*
   tstatement := "macro" sbasic_name_comma_list = sexpr ";" =>#
     "`(ast_macro_assign ,_2 ,_4)";
   tstatement := "macro" "val" sname "is" sexpr ";" =>#
@@ -48,5 +50,6 @@ syntax macros {
   smac_arg_list := "(" ")" =># "()";
 
   x[sapplication_pri] := "macro" "ctor" sname x[scoercion_pri] =># "`ast_macro_ctor (,_3 ,_4))";
+*/
 }
 

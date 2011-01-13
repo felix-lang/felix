@@ -1,4 +1,0 @@
-macro var x = _tuple 1;
-macro x = _tuple_cons (2,x);
-macro x = _tuple_cons (3,x);
-macro for val i in x do print i; print " "; done; endl;

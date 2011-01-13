@@ -1,33 +1,52 @@
 syntax assertions {
   requires statements;
 
+  // usual assert statement
   tstatement := "assert" sexpr ";" =># "`(ast_assert ,_sr ,_2)";
 
+  // define an axiom with a general predicate
   tstatement  := "axiom" sdeclname sfun_arg ":" sexpr ";" =>#
     """
       `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
     """;
 
+  // define an axiom with equality predicate
   tstatement  := "axiom" sdeclname sfun_arg ":" sexpr = sexpr ";" =>#
     """
       `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
     """;
 
+  // define an lemma: a theorem simple enough to prove
+  // with an automatic theorem prover
   tstatement  := "lemma" sdeclname sfun_arg ":" sexpr ";" =>#
     """
       `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
     """;
 
+  // lemma with equality predicate
   tstatement  := "lemma" sdeclname sfun_arg ":" sexpr = sexpr ";" =>#
     """
       `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
     """;
 
-  sreduce_args := "(" stypeparameter_comma_list ")" =># "_2";
+  // define a hard theorem with a general predicate
+  tstatement  := "theorem" sdeclname sfun_arg ":" sexpr proof? ";" =>#
+    """
+      `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Predicate ,_5))
+    """;
+    proof := "proof" sstring;
 
+  // define an hard theorem with equality predicate
+  tstatement  := "theorem" sdeclname sfun_arg ":" sexpr = sexpr proof? ";" =>#
+    """
+      `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
+    """;
+
+  // reduction: a theorem or axiom directing compiler to perform term reduction
   tstatement  := "reduce" sdeclname sreduce_args ":" sexpr "=>" sexpr ";" =>#
     """
       `(ast_reduce ,_sr ,(first _2) ,(second _2) ,_3 ,_5 ,_7)
     """;
+      sreduce_args := "(" stypeparameter_comma_list ")" =># "_2";
 }
 

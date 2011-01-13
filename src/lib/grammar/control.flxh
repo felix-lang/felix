@@ -1,14 +1,31 @@
 syntax control 
 {
-  tstatement := "yield" sexpr ";" =># "`(ast_yield ,_sr ,_2)";
-  tstatement := "return" sexpr ";" =># "`(ast_fun_return ,_sr ,_2)";
-  tstatement := "return" ";" =># "`(ast_proc_return ,_sr)";
+  // call a procedure (verbose)
   tstatement := "call" sexpr  ";" =># """(cons 'ast_call (cons _sr (splitapply _2)))""";
+
+  // procedure return
+  tstatement := "return" ";" =># "`(ast_proc_return ,_sr)";
+
+  // procedure explicit tail call
   tstatement := "jump" sexpr ";" =># """(cons 'ast_jump (cons _sr (splitapply _2)))""";
-  tstatement  := "loop" sname sexpr =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
-  tstatement  := "loop" sname ";" =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
+
+  // function return with value
+  tstatement := "return" sexpr ";" =># "`(ast_fun_return ,_sr ,_2)";
+
+  // generator/iterator exchange with value (restart after yield)
+  tstatement := "yield" sexpr ";" =># "`(ast_yield ,_sr ,_2)";
+
+  // procedure self-tail calls
+  tstatement := "loop" sname sexpr =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) ,_3)";
+  tstatement := "loop" sname ";" =># "`(ast_jump ,_sr (ast_name ,_sr ,_2 ()) (ast_tuple,_sr ()))";
+
+  // stop the program with prejudice and a message
   tstatement := "halt" sstring ";" =># "`(ast_halt ,_sr ,_2)";
+
+  // label
   tstatement := sname ":>" =># "`(ast_label ,_sr ,_1)";
+
+  // unconditional goto label
   tstatement := "goto" sname ";" =># "`(ast_goto ,_sr ,_2)";
 }
 

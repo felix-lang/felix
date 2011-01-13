@@ -165,6 +165,7 @@ let cal_priority_relation p =
   | `Greater_prio p -> Greater_priority p
   | `Greatereq_prio p -> Greatereq_priority p
 
+(* Add a production to a dssl *)
 let define_scheme sr dyp dssl_record dssl name prio rhs (scm:string) =
 (*
 print_endline ("define_scheme " ^ name);
@@ -174,30 +175,6 @@ print_endline ("define_scheme " ^ name);
   incr (dyp.global_data.pcounter);
   let name = mapnt name in
 
-  let rec f o =
-    match o with
-      | STRING s ->
-          (* Dyp.Ter "NAME" *)
-          Dyp.Regexp (Dyp.RE_String s)
-
-      | NONTERMINAL (s,p) ->
-          let nt = mapnt s in
-          let ntpri = cal_priority_relation p in
-          Dyp.Non_ter (nt,ntpri)
-
-      | NAME s -> assert false
-
-      | s ->
-(*
-print_endline ("Token=" ^ Flx_prelex.string_of_token s);
-print_endline ("Name =" ^ Flx_prelex.name_of_token s);
-*)
-        let name = Flx_prelex.name_of_token s in
-(*
-print_endline ("Running f, arg=\"" ^ name ^ "\"");
-*)
-        Dyp.Ter name
-  in
   let cde =
     try
       let l = scheme_lex sr scm in
@@ -208,16 +185,37 @@ print_endline ("Running f, arg=\"" ^ name ^ "\"");
   in
 
   let priority = match prio with
-  | `Default -> "default_priority"
-  | `Priority p -> p
+    | `Default -> "default_priority"
+    | `Priority p -> p
   in
-  let rule = name,(List.map f rhs),priority,[] in
+
+  (* Translate Felix production to Dypgen production *)
+  let rule = 
+    let f o = match o with
+      | STRING s ->  (* Handle strings like "fun" in productions *)
+        Dyp.Regexp (Dyp.RE_String s)
+
+      | NONTERMINAL (s,p) -> (* handle identifiers like sexpr in productions *)
+        let nt = mapnt s in
+        let ntpri = cal_priority_relation p in
+        Dyp.Non_ter (nt,ntpri)
+
+      | NAME s -> assert false (* should have been converted to NONTERMINAL *)
+
+      | s -> (* anything else is an actual keyword or symbol so make a Dypgen terminal *)
+        let name = Flx_prelex.name_of_token s in
+        Dyp.Ter name
+    in
+     name,(List.map f rhs),priority,[] 
+  in
   if !(dyp.global_data.pdebug) then
-  print_endline (
-    "Rule " ^ string_of_int pr_age ^ " " ^ name ^ "["^priority^"] := " ^
-    catmap " " silly_strtoken rhs ^
-    " =># " ^ scm
-  );
+    print_endline (
+      "Rule " ^ string_of_int pr_age ^ " " ^ name ^ "["^priority^"] := " ^
+      catmap " " silly_strtoken rhs ^
+      " =># " ^ scm
+    )
+   ;
+  (* this is the core routine which defines the action on reducing the production *)
   let action = fun dyp2 avl ->
     match avl,scm with
     (* optimise special case *)
@@ -242,6 +240,12 @@ print_endline ("Running f, arg=\"" ^ name ^ "\"");
     (* let env = Ocs_env.env_copy dyp.local_data.env in *)
     (* let env = dyp.local_data.env in *)
     let env = dyp.global_data.env in
+
+    (* this is the core routine which compares the parsed attributes
+     * with the translated production at parse time
+     * objs: the symbols of the production
+     * syms: the attributes parsed for those symbols 
+     *)
     let rec aux objs syms n = match objs, syms with
       | [],[] -> ()
       | [],_ | _,[] -> assert false
@@ -252,7 +256,7 @@ print_endline ("Running f, arg=\"" ^ name ^ "\"");
             (* age := max !age seq; *)
             s
 
-          | k,`Obj_keyword -> Sstring (Flx_prelex.string_of_token k)
+          | k,`Obj_keyword -> Snull (* Sstring (Flx_prelex.string_of_token k) *)
 
           | STRING s1, `Obj_NAME s2 ->
             if s1 <> s2 then raise Giveup;
@@ -298,6 +302,7 @@ print_endline ("sr of reduction is " ^ Flx_srcref.short_string_of_src sr);
   in
   rule,action,Bind_to_cons [(name, "Obj_sexpr")]
 
+(* top routine to add a new production to a dssl *)
 let extend_grammar dyp (dssl,(name,prio,prod,action,anote,sr)) =
   let m = dyp.local_data in
   let dssl_record = Drules.find dssl m.dssls in

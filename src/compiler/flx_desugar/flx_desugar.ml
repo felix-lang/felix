@@ -1211,7 +1211,32 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
           )
       vars;
       let body = 
+(*
         rsts name parent_vs access [block sr !new_sts]
+*)
+        rsts name parent_vs access !new_sts
+      in
+      (* hacky attempt to elide useless jumps at the end of each case
+       * doesn't account for non-returning calls, trailing comments or non
+       * executable statements, or complicated statements (such as nested matches)
+       *)
+      let returns = 
+        let rec aux body =
+          match List.rev body with 
+          | Exe (_,h) ::_ -> 
+            begin match h with
+            | EXE_noreturn_code _ 
+            | EXE_goto _ 
+            | EXE_jump _ 
+            | EXE_loop _ 
+            | EXE_fun_return _ 
+            | EXE_proc_return _ 
+            | EXE_halt _ 
+              -> true
+            | _ -> false
+            end
+          | _ -> false
+        in aux body
       in
       matches := !matches @
         [
@@ -1253,11 +1278,11 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
         @
         body
         @
+        (if not returns then [Exe (patsrc,EXE_goto end_match_label) ] else [])
+        @
         [
-        Exe (patsrc,EXE_goto end_match_label);
         Exe (patsrc,EXE_label ("_ml" ^ string_of_bid (!n2)))
         ]
-
       ;
       incr match_caseno
     )

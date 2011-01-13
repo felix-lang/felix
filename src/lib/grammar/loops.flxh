@@ -1,35 +1,33 @@
 syntax loops
 {
-  tstatement := "break" =># '`(ast_goto ,_sr "break_label")';
-  tstatement := "continue" =># '`(ast_goto ,_sr "continue_label")';
-  tstatement := "redo" =># '`(ast_goto ,_sr "redo_label")';
+  tstatement := "break" sname =># '`(ast_goto ,_sr ,(string-append "break_" _2))';
+  tstatement := "continue" sname =># '`(ast_goto ,_sr ,(string-append "continue_" _2))';
+  tstatement := "redo" sname =># '`(ast_goto ,_sr ,(string-append "redo_" _2))';
+  optlabel := sname ":" =># "_1";
+  optlabel := sepsilon =># "(number->string (fresh_int ()))";
 
-  tstatement := "whilst" sexpr "do" sstatements "done" =>#
-    """
-      `( ast_macro_block ,( append `(
-        ( ast_macro_name "break_label" "" )
-        ( ast_macro_name "continue_label" "" )
-        ( ast_label ,_sr "continue_label" )
-        ( ast_unlikely_ifnotgoto ,_sr ,_2 "break_label" ))
-        _4
-        `(( ast_goto ,_sr "continue_label" )
-        ( ast_label ,_sr "break_label" ))
-        )
-      )
+  tstatement := optlabel "whilst" sexpr "do" sstatements "done" =>#
+    """ 
+    `(ast_seq ,_sr
+      ,(append 
+        `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `((ast_unlikely_ifnotgoto ,_sr ,_3 ,(string-append "break_" _1)))
+        _5
+        `((ast_goto ,_sr ,(string-append "continue_" _1)))
+        `((ast_label ,_sr ,(string-append "break_" _1)))
+    ))
     """;
 
-  tstatement := "until" sexpr "do" sstatements "done" =>#
+  tstatement := optlabel "until" sexpr "do" sstatements "done" =>#
     """
-      `( ast_macro_block ,( append `(
-        ( ast_macro_name "break_label" "" )
-        ( ast_macro_name "continue_label" "" )
-        ( ast_label ,_sr "continue_label" )
-        ( ast_unlikely_ifgoto ,_sr ,_2 "break_label" ))
-        _4
-        `(( ast_goto ,_sr "continue_label" )
-        ( ast_label ,_sr "break_label" ))
-        )
-      )
+    `(ast_seq ,_sr
+      ,(append 
+        `(( ast_label ,_sr ,(string-append "continue_" _1)))
+        `(( ast_unlikely_ifgoto ,_sr ,_3 ,(string-append "break_" _1)))
+        _5
+        `(( ast_goto ,_sr ,(string-append "continue_" _1)))
+        `(( ast_label ,_sr ,(string-append "break_" _1)))
+    ))
     """;
 
 
@@ -37,44 +35,41 @@ syntax loops
     "`(ast_macro_vfor (,_2) ,_4 ,_6)"
   ;
 
-  tstatement := "forall" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
+  tstatement := optlabel "forall" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
     """
-      `(ast_macro_block ,( append `(
-        (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
-        ( ast_macro_name "break_label" "" )
-        ( ast_macro_name "continue_label" "" )
-        ( ast_macro_name "redo_label" "" )
-        ( ast_label ,_sr "redo_label" )
-        ( ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi 'le) ((ast_name ,_sr ,_2 ()),_6)))
-          "break_label"
+    `(ast_seq ,_sr
+      ,(append 
+        `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
+        `((ast_label ,_sr ,(string-append "redo_" _1)))
+        `((ast_unlikely_ifnotgoto ,_sr
+          (ast_apply ,_sr (,(noi 'le) ((ast_name ,_sr ,_3 ()),_7)))
+          ,(string-append "break_" _1)
         ))
-        _8
-        `(( ast_label ,_sr "continue_label" )
-        (ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_2())))
-        ( ast_goto ,_sr "redo_label" )
-        ( ast_label ,_sr "break_label" ))
+        _9
+        `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
+        `((ast_goto ,_sr ,(string-append "redo_" _1)))
+        `((ast_label ,_sr ,(string-append "break_" _1)))
        ))
     """;
 
-  tstatement := "forall" sname "in" sexpr "downto" sexpr "do" sstatements "done" =>#
+  tstatement := optlabel "forall" sname "in" sexpr "downto" sexpr "do" sstatements "done" =>#
     """
-      `(ast_macro_block ,( append `(
-        (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
-        ( ast_macro_name "break_label" "" )
-        ( ast_macro_name "continue_label" "" )
-        ( ast_macro_name "redo_label" "" )
-        ( ast_label ,_sr "redo_label" )
-        ( ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi 'ge) ((ast_name ,_sr ,_2 ()) ,_6)))
-          "break_label"
+    `(ast_seq ,_sr
+      ,(append 
+        `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
+        `((ast_label ,_sr ,(string-append "redo_" _1)))
+        `((ast_unlikely_ifnotgoto ,_sr
+          (ast_apply ,_sr (,(noi 'ge) ((ast_name ,_sr ,_3 ()),_7)))
+          ,(string-append "break_" _1)
         ))
-        _8
-        `(( ast_label ,_sr "continue_label" )
-        ( ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_2 ())))
-        ( ast_goto ,_sr "redo_label" )
-        ( ast_label ,_sr "break_label" ))
+        _9
+        `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
+        `((ast_goto ,_sr ,(string-append "redo_" _1)))
+        `((ast_label ,_sr ,(string-append "break_" _1)))
        ))
     """;
+
 }
 
