@@ -3355,9 +3355,6 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_setintersection _
   | EXPR_intersect _
   | EXPR_isin _
-  | EXPR_macro_ctor _
-  | EXPR_macro_statements  _
-  | EXPR_user_expr _
     ->
       clierr sr
      ("[bind_expression] Expected expression, got " ^ string_of_expr e)

@@ -23,13 +23,8 @@ let truthof x = match x with
 *)
 
 type macro_t =
- | MVar of expr_t ref
  | MVal of expr_t
- | MVals of expr_t list
- | MExpr of macro_parameter_t list * expr_t
- | MStmt of macro_parameter_t list * statement_t list
- | MName of id_t
- | MNames of id_t list
+ | MName of string
 
 type macro_dfn_t = id_t * macro_t
 
@@ -45,37 +40,10 @@ type macro_state_t = {
 let string_of_statements sts =
   String.concat "\n" (List.map (string_of_statement 1) sts)
 
-let print_mpar (id,t) =
-  id ^ ":" ^
-  (
-    match t with
-    | Expr -> "fun"
-    | Stmt -> "proc"
-    | Ident -> "ident"
-  )
-
-let print_mpars x =
-  "(" ^ String.concat ", " (List.map print_mpar x) ^ ")"
-
 let print_macro (id,t) =
  match t with
- | MVar v -> "MVar " ^ id ^ " = " ^ string_of_expr !v
  | MVal v -> "MVal " ^ id ^ " = " ^ string_of_expr v
- | MVals vs -> "MVals " ^ id ^ " = " ^ catmap "," string_of_expr vs
- | MExpr (ps,e) ->
-   "MExpr " ^ id ^
-   print_mpars ps ^
-   " = " ^
-   string_of_expr e
-
- | MStmt (ps,sts) ->
-   "MStmt " ^ id ^
-   print_mpars ps ^
-   " = " ^
-   String.concat "\n" (List.map (string_of_statement 1) sts)
-
- | MName id' -> "MName " ^ id ^ " = " ^ id'
- | MNames ids -> "MNames " ^ id ^ " = " ^ cat "," ids
+ | MName v -> "MName " ^ id ^ " = " ^ v
 
 let upper =  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 let lower = "abcdefghijklmnopqrstuvwxyz"
@@ -137,36 +105,6 @@ let protect sr (ps:id_t list) : macro_dfn_t list =
   in
     aux ps []
 
-let build_args sr ps args =
-  List.map2
-  (fun (p,t) a ->
-    match t with
-    | Ident ->
-      begin match a with
-      | EXPR_name (_,name,[]) -> (p,MName name)
-      | _ ->
-        clierr sr
-        (
-          "[build_args] Wrong argument type, expected Identifier, got:\n" ^
-          string_of_expr a
-        )
-      end
-
-    | Expr -> (p,MVal a)
-    | Stmt ->
-      begin match a with
-      | EXPR_lambda (_,(dfltvs,[[],_],TYP_none,sts)) -> (p,MStmt ([],sts))
-      | EXPR_name(_,name,[]) ->(p,MVal a)
-      | _ ->
-        clierr sr
-        (
-          "[build_args] Wrong argument type, expected {} enclosed statement list or macro procedure name, got\n" ^
-          string_of_expr a
-        )
-      end
-  )
-  ps args
-
 (* alpha convert parameter names *)
 let rec alpha_expr sr local_prefix seq ps e =
   let psn, pst = List.split ps in
@@ -200,110 +138,6 @@ and alpha_stmts sr local_prefix seq ps sts =
     let ps = List.combine psn' pst in
     ps,sts
 
-(* Syntax extension stuffs *)
-and eval_arg ses recursion_limit local_prefix seq reachable sr (id:string) (h:ast_term_t) : macro_dfn_t option =
-  let wrap_stmts ss = EXPR_macro_statements (sr,ss) in
-  match h with
-  | Expression_term  e -> Some (id,MVal e)
-  | Identifier_term s -> Some (id,MName s)
-  (*
-  | Statement_term s -> Some (id,MStmt ([],[s]))
-  | Statements_term ss -> Some (id,MStmt ([],ss))
-  *)
-  | Statement_term s -> Some (id,MVal (wrap_stmts [s]))
-  | Statements_term ss -> Some (id,MVal (wrap_stmts ss))
-  | Keyword_term _ ->
-    (*
-    print_endline ("[substitute statement terms] Keyword arg dropped " ^ id);
-    *)
-    None
-  | Apply_term (body,args) ->
-    let body = eval_apply ses recursion_limit local_prefix seq reachable sr body args in
-    eval_arg ses recursion_limit local_prefix seq reachable sr id body
-
-and eval_args ses recursion_limit local_prefix seq reachable sr (ts: ast_term_t list) : macro_dfn_t list =
-  let rec aux terms res count =
-    let id = "_" ^ si count in
-    match terms with
-    | h :: t ->
-      let mac = eval_arg ses recursion_limit local_prefix seq reachable sr id h in
-      begin match mac with
-      | Some m -> aux t (m::res) (count+1)
-      | None -> aux t res (count+1)
-      end
-    | [] -> res
-  in aux ts [] 1
-
-and eval_apply ses recursion_limit local_prefix seq reachable sr (body:ast_term_t) (args:ast_term_t list) : ast_term_t =
-  (*
-  print_endline "Processing Application .. evaluating args";
-  *)
-  let args = eval_args ses recursion_limit local_prefix seq reachable sr args in
-  (*
-  print_endline "[apply] Got arguments ..";
-  print_endline (string_of_macro_env args);
-  print_endline "[apply] WE SHOULD EXPAND THE ARGS BUT AREN'T AT THE MOMENT";
-  print_endline ("[apply] Body is " ^ string_of_ast_term 0 body);
-  print_endline "[apply] APPLYING TERM TO EVALUATED ARGUMENTS ";
-  *)
-  let term = eval_term_apply ses recursion_limit local_prefix seq reachable sr body args in
-  (*
-  print_endline ("Term after evaluation is " ^ string_of_ast_term 0 term);
-  *)
-  term
-
-and eval_term_apply ses recursion_limit local_prefix seq reachable sr (body:ast_term_t) (args:macro_dfn_t list) : ast_term_t =
-  match body with
-  | Expression_term e ->
-    (*
-    print_endline ("EXPANDING EXPRESSION " ^ string_of_expr e);
-    *)
-    let e = expand_expr (recursion_limit-1) local_prefix seq args e in
-    Expression_term e
-
-  | Identifier_term id ->
-    let id = expand_ident sr args [] id in
-    Identifier_term id
-
-  | Statement_term s ->
-    let ss = subst_statements recursion_limit local_prefix seq reachable args [s] in
-    (*
-    print_endline ("[apply:statement] Body after substitution is" ^ string_of_statements ss);
-    print_endline "[apply:statement] EXECUTING STATEMENTS NOW";
-    *)
-    let ss = ses ss in
-    Statements_term ss
-
-  | Statements_term ss ->
-    let ss = subst_statements recursion_limit local_prefix seq reachable args ss in
-    (*
-    print_endline ("[apply:statements] Body after substitution is " ^ string_of_statements ss);
-    print_endline "[apply:statements] EXECUTING STATEMENTS NOW";
-    *)
-    let ss = ses ss in
-    Statements_term ss
-
-  | Keyword_term _ -> body
-  | Apply_term (body',args') ->
-    (*
-    print_endline "[apply] Inner application";
-    *)
-    (* Inner application -- substitute into its arguments first *)
-    let args' =
-      List.map begin fun body ->
-        eval_term_apply
-          ses
-          recursion_limit
-          local_prefix
-          seq
-          reachable
-          sr
-          body
-          args
-      end args'
-    in
-    eval_apply ses recursion_limit local_prefix seq reachable sr body' args'
-
 and expand_type_expr sr recursion_limit local_prefix seq (macros:macro_dfn_t list) (t:typecode_t):typecode_t=
   if recursion_limit < 1
   then failwith "Recursion limit exceeded expanding macros";
@@ -320,13 +154,8 @@ and expand_type_expr sr recursion_limit local_prefix seq (macros:macro_dfn_t lis
   | TYP_name (sr, name,[]) as t ->
     begin try
       match List.assoc name macros with
-      | MVar b -> typecode_of_expr (me !b)
       | MVal b -> typecode_of_expr (me b)
-      | MExpr(ps,b) -> t
       | MName _ -> TYP_name (sr,mi sr name,[])
-      | MStmt (ps,b) -> t
-      | MVals xs -> t
-      | MNames idts -> t
     with
     | Not_found -> t
     end
@@ -515,22 +344,8 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     begin match mac with
     | None -> e
     | Some mac -> match mac with
-    | MVar b -> me !b
     | MVal b -> me b
-    | MVals bs -> EXPR_tuple (sr,(List.map me bs))
-    | MExpr(ps,b) ->
-     (*
-     clierr sr ("Name "^name^" expands to unapplied macro function");
-     *)
-     e
-
     | MName _ -> EXPR_name (sr,mi sr name,[])
-    | MNames _ -> clierr sr "Cannot use macro name list here"
-    | MStmt (ps,b) ->
-     (*
-     clierr sr ("Name "^name^" expands to unapplied macro procedure");
-     *)
-     e
     end
 
   | EXPR_name (sr, name,ts) ->
@@ -602,53 +417,9 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
         begin try
           match List.assoc name macros with
           | MName _
-          | MNames _
-          | MVar _
           | MVal _
-          | MVals _ -> assert false
+           -> assert false
 
-          | MExpr(ps,b) ->
-            let args =
-              match e2 with
-              | EXPR_tuple (_,ls) -> ls
-              | x -> [x]
-            in
-            let np = List.length ps and na = List.length args in
-            if na = np
-            then
-              begin
-                let args = List.map me args in
-                let args = build_args sr ps args in
-                let b = expand_expr recursion_limit local_prefix (ref 0) args b in
-                me b
-              end
-            else
-              clierr sr
-              (
-                "[expand_expr:apply] In application:\n" ^
-                "  fun = " ^string_of_expr e1'^" --> "^string_of_expr e1^"\n"^
-                "  arg = " ^string_of_expr e2'^" --> "^string_of_expr e2^"\n"^
-                "Macro "^name^
-                " requires "^string_of_int np^" arguments," ^
-                " got " ^ string_of_int na
-              )
-          | MStmt (ps,b) ->
-            (* replace the application with a lambda wrapping
-              of the corresponding procedure call
-            *)
-            let sts = [STMT_call (sr,e1, e2)] in
-            let sts = expand_statements recursion_limit local_prefix seq (ref true) macros sts in
-            EXPR_lambda(sr,(dfltvs,[[],None],TYP_none,sts))
-            (*
-            clierr sr
-            (
-              "[expand_expr:apply] In application:\n" ^
-              "  fun = " ^string_of_expr e1'^" --> "^string_of_expr e1^"\n"^
-              "  arg = " ^string_of_expr e2'^" --> "^string_of_expr e2^"\n"^
-              "Macro "^name^
-              " is a procedure macro"
-            )
-            *)
         with
         | Not_found ->
           cf (EXPR_apply(sr,(e1, e2)))
@@ -700,14 +471,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_case_tag (sr, i) -> e
   | EXPR_typed_case (sr, i, t) -> e
   | EXPR_case_index (sr,e) -> EXPR_case_index (sr,me e)
-
-  | EXPR_macro_ctor (sr,(name,e)) -> EXPR_macro_ctor (sr,(name,me e))
-  | EXPR_macro_statements (sr,sts) ->
-     let sts =
-      expand_statements recursion_limit local_prefix seq (ref true)
-      macros sts
-     in
-     EXPR_macro_statements (sr,sts)
 
   | EXPR_tuple (sr, es) -> EXPR_tuple (sr, List.map me es)
   | EXPR_record (sr, es) ->
@@ -781,62 +544,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_void _ -> e
 
   | EXPR_typeof (sr,e) -> EXPR_typeof (sr, me e)
-
-  | EXPR_user_expr (sr,name,term) ->
-    (* HACKS ARGGGHH .. *)
-    let ref_macros = ref [] in
-    let ses ss =
-      special_expand_statements recursion_limit local_prefix seq (ref true) ref_macros macros ss
-    in
-    let reachable = ref true in
-    (* END HACKS ARGGGHH .. *)
-
-    (*
-    print_endline ("Replacing into user expression " ^ name);
-    *)
-    let rec aux term = match term with
-      | Statement_term s -> clierr sr ( "User expr: expected expression ")
-      | Statements_term ss -> clierr sr ( "User expr: expected expression ")
-      | Expression_term e -> Expression_term (me e)
-      | Identifier_term s -> clierr sr ( "User expr : expected expression got identifier " ^ s)
-
-      (* ONLY SUBSTITUTE INTO PARAMETERS? *)
-      | Apply_term (t,ts) -> Apply_term (t, List.map aux ts)
-
-      (* invariant -- for the moment *)
-      | Keyword_term _ -> term
-    in
-    let e = aux term in
-    (*
-    print_endline ("Expanding expression " ^ name);
-    *)
-    let substitute_expr_terms sr e ts =
-      let args = eval_args ses recursion_limit local_prefix seq reachable sr ts in
-      let e = expand_expr recursion_limit local_prefix seq args e in
-      e
-    in
-    (*
-    print_endline ("Expand Statement: Processing user defined statement " ^ name);
-    *)
-    let aux term = match term with
-      | Statement_term s -> clierr sr ( "User expr: expected expression ")
-      | Statements_term ss -> clierr sr ( "User expr: expected expression ")
-      | Identifier_term s -> clierr sr ( "User expr : expected expression got identifier " ^ s)
-      | Keyword_term s -> clierr sr ( "User expr : expected statement got keyword " ^ s)
-
-      | Expression_term e -> e
-      | Apply_term (t,ts) ->
-        begin match t with
-        | Expression_term e ->
-          substitute_expr_terms sr e ts
-
-        | _ ->
-          clierr sr
-          (
-            "User statement: In application, expected statement "
-          )
-        end
-    in aux term
 
   (*
     -> syserr (Flx_srcref.src_of_expr e) ("Expand expr: expected expresssion, got type: " ^ string_of_expr e)
@@ -1295,102 +1002,15 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
   let cf e = const_fold e in
 
   begin match st with
-  | STMT_expr_macro (sr, id, ps, e) -> failwith ("unexpected macro thing");
-    let ps,e = alpha_expr sr local_prefix seq ps e in
-    tack (STMT_expr_macro (sr, mi sr id, ps, me e))
-
-  | STMT_stmt_macro (sr, id, ps, sts) -> failwith ("unexpected macro thing");
-    let ps,sts = alpha_stmts sr local_prefix seq ps sts in
-    let sts = expand_statements recursion_limit local_prefix seq (ref true) macros sts in
-    tack (STMT_stmt_macro (sr,id,ps,sts))
-
-  | STMT_macro_block (sr, sts) -> failwith ("unexpected macro thing");
-    (*
-    let sts = expand_statements recursion_limit local_prefix seq (ref true) macros sts in
-    *)
-    let sts = mss sts in
-    tack (STMT_macro_block (sr,sts))
-
-  | STMT_macro_name (sr, id1, id2) -> failwith ("unexpected macro thing");
-    (* IN THIS SPECIAL CASE THE LHS NAME IS NOT MAPPED *)
-    tack (STMT_macro_name (sr, id1, mi sr id2))
-
-  | STMT_macro_names (sr, id1, id2) -> failwith ("unexpected macro thing");
-    (* IN THIS SPECIAL CASE THE LHS NAME IS NOT MAPPED *)
-    tack (STMT_macro_names (sr, id1, List.map (mi sr) id2))
-
   | STMT_macro_val (sr, ids, e) ->
     tack (STMT_macro_val (sr, List.map (mi sr) ids, me e))
-
-  | STMT_macro_vals (sr, id, e) -> failwith ("unexpected macro thing");
-    tack (STMT_macro_vals (sr,mi sr id, List.map me e))
-
-  | STMT_macro_var (sr, ids, e) -> failwith ("unexpected macro thing");
-    tack (STMT_macro_var (sr, List.map (mi sr) ids, me e))
-
-  | STMT_macro_assign (sr, ids, e) -> failwith ("unexpected macro thing");
-    tack (STMT_macro_assign (sr, List.map (mi sr) ids, me e))
-
-  | STMT_macro_ifor (sr,id,ids,sts) -> failwith ("unexpected macro thing");
-    (* IN THIS SPECIAL CASE THE LHS NAME IS NOT MAPPED *)
-    tack (STMT_macro_ifor (sr,id, List.map (mi sr) ids,mss sts))
 
   | STMT_macro_vfor (sr,ids,e,sts) ->
     tack (STMT_macro_vfor (sr, List.map (mi sr) ids,me e,mss sts))
 
-  (* during parameter replacement,
-    we don't know if a call is executable or not,
-    so we can't elide it even if unreachable:
-    it might expand to declarations or macros
-  *)
-  | STMT_call (sr, (EXPR_name(srn,name,[]) as e1), e2) -> failwith ("unexpected macro thing");
-    (* let e1 = EXPR_name(srn, name,[]) in *)
-    begin try
-      match List.assoc name macros with
-      | MStmt ([],b) ->
-(*
-        print_endline ("EXPANDING call to macro " ^ name);
-*)
-        List.iter tack (mss b)
-      | _ ->
-        tack (STMT_call (sr, me e1, me e2))
-    with Not_found ->
-      tack (STMT_call (sr, me e1, me e2))
-    end
-
   | STMT_call (sr, e1, e2) ->
     tack (STMT_call (sr, me e1, me e2))
 
-  | STMT_user_statement (sr,name,term) -> failwith ("unexpected macro thing");
-    (*
-    print_endline ("Replacing into user statement call " ^ name);
-    *)
-    let rec aux term = match term with
-      | Statement_term s -> Statements_term (ms s)
-      | Statements_term ss -> Statements_term (mss ss)
-      | Expression_term e -> Expression_term (me e)
-      | Identifier_term s -> Identifier_term (mi sr s)
-
-      (* ONLY SUBSTITUTE INTO PARAMETERS? *)
-      | Apply_term (t,ts) -> Apply_term (t, List.map aux ts)
-
-      (* invariant -- for the moment *)
-      | Keyword_term _ -> term
-    in
-    tack (STMT_user_statement (sr,name,aux term))
-
-  | STMT_macro_ifgoto (sr,e,id) -> failwith ("unexpected macro thing");
-    (*
-    print_endline ("Substituting if/goto " ^ string_of_expr e);
-    *)
-    tack (STMT_macro_ifgoto (sr, cf (me e), mi sr id))
-
-  | STMT_macro_label _
-  | STMT_macro_goto _
-  | STMT_macro_proc_return _
-  | STMT_macro_forget _
-    -> failwith ("unexpected macro thing"); tack st
- 
   | st ->
     List.iter tack
     (
@@ -1438,7 +1058,6 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
           with Not_found -> None
         in
         match d with
-        | Some (MNames es) -> expand_names sr es
         | Some (MName x) -> [x]
         | Some(_) -> [name] (* clierr sr "Name list required" *)
         | None -> [name]
@@ -1462,14 +1081,9 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
           with Not_found -> None
         in
         begin match d with
-        | Some (MNames es) ->
-          expand_exprs sr
-          (List.map (fun name -> EXPR_name (sr,name,[])) es)
-
         | Some (MName x) ->
           expand_exprs sr [EXPR_name(sr,x,[])]
 
-        | Some(MVals xs) -> xs
         | Some(_) -> [expr]
         | None -> [expr]
         end
@@ -1481,18 +1095,6 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
     )
   in
   begin match st with
-  | STMT_macro_forget (sr,ids) -> failwith ("Unexpected macro thing");
-    begin
-      match ids with
-      | [] -> ref_macros := []
-      | _ ->
-        ref_macros := List.filter (fun (x,_) -> not (List.mem x ids)) !ref_macros
-    end
-
-  | STMT_expr_macro (sr, id, ps, e) -> failwith ("Unexpected macro thing"); 
-    let ps,e = alpha_expr sr local_prefix seq ps e in
-    ref_macros := (id,MExpr (ps, e)) :: !ref_macros
-
   | STMT_macro_val (sr, ids, e) ->
     let e = me e in
     let n = List.length ids in
@@ -1519,76 +1121,6 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       )
       ides
     end
-
-  | STMT_macro_vals (sr, id, es) ->  failwith ("Unexpected macro thing");
-    ref_macros := (id,MVals (List.map me es)) :: !ref_macros
-
-  | STMT_macro_var (sr, ids, e) -> failwith ("Unexpected macro thing"); 
-    let e = me e in
-    let n = List.length ids in
-    if n = 1 then
-      ref_macros := (List.hd ids,MVar (ref e)) :: !ref_macros
-    else begin
-      let vs =
-        match e with
-        | EXPR_tuple (_,ls) -> ls
-        | _ -> clierr sr "Unpack non-tuple"
-      in
-      let m = List.length vs in
-      if m <> n then
-        clierr sr
-        (
-          "Tuple is wrong length, got " ^
-          si n ^ " variables, only " ^
-          si m ^ " values"
-        )
-      else
-      let ides = List.combine ids vs in
-      List.iter (fun (id,v) ->
-        ref_macros := (id,MVar (ref v)) :: !ref_macros
-      )
-      ides
-    end
-
-  | STMT_macro_assign (sr, ids, e) -> failwith ("Unexpected macro thing");
-    let assign id e =
-      try
-        let r = List.assoc id (!ref_macros @ macros) in
-        match r with
-        | MVar p -> p := e
-        | _ -> clierr sr "Assignment to wrong kind of macro"
-      with Not_found -> clierr sr "Assignment requires macro var"
-    in
-    let e = me e in
-    let n = List.length ids in
-    if n = 1 then assign (List.hd ids) e
-    else begin
-      let vs =
-        match e with
-        | EXPR_tuple (_,ls) -> ls
-        | _ -> clierr sr "Unpack non-tuple"
-      in
-      let m = List.length vs in
-      if m <> n then
-        clierr sr
-        (
-          "Tuple is wrong length, got " ^
-          si n ^ " variables, only " ^
-          si m ^ " values"
-        )
-      else
-      let ides = List.combine ids vs in
-      List.iter (fun (id,v) -> assign id v) ides
-    end
-
-  | STMT_macro_ifor (sr, id, names, sts) -> failwith ("Unexpected macro thing");
-    let names = expand_names sr names in
-    List.iter (fun name ->
-      let saved_macros = !ref_macros in
-      ref_macros := (id,MName name) :: saved_macros;
-      List.iter tack (ms sts);
-      ref_macros := saved_macros
-    ) names
 
   | STMT_macro_vfor (sr, ids, e, sts) ->
     (*
@@ -1637,43 +1169,6 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       List.iter tack (ms sts);
       ref_macros := saved_macros
     ) vals
-
-  | STMT_stmt_macro (sr, id, ps, sts) -> failwith ("Unexpected macro thing");
-    let ps,sts = alpha_stmts sr local_prefix seq ps sts in
-    ref_macros := (id, MStmt (ps,sts)) :: !ref_macros
-
-  | STMT_macro_name (sr, id1, id2) -> failwith ("Unexpected macro thing");
-    let id2 = mi sr id2 in
-    let id2 =
-      match id2 with
-      | "" ->
-        let n = !seq in incr seq;
-        "_" ^ local_prefix^ "_" ^ string_of_int n
-      | _ -> id2
-    in
-    ref_macros := (id1,MName id2) :: !ref_macros
-
-  | STMT_macro_names (sr, id, ids) -> failwith ("Unexpected macro thing");
-    let ids = List.map (mi sr) ids in
-    ref_macros := (id,MNames ids) :: !ref_macros
-
-  | STMT_macro_block (sr,sts) -> failwith ("Unexpected macro thing");
-    let b = subst_statements recursion_limit local_prefix seq reachable [] sts in
-    (* NOTE SPECIAL HACK -- ANY MACROS DEFINED IN A MACRO BLOCK ARE LOST *)
-    let ses ss =
-      special_expand_statements recursion_limit local_prefix seq (ref true) (ref []) macros ss
-    in
-    let b = ses b in
-    List.iter ctack b
-
-  | STMT_call (sr, EXPR_macro_statements (srs,sts), arg) -> failwith ("Unexpected macro thing");
-    begin match arg with
-    | EXPR_tuple (_,[]) ->
-      let sts = ms sts in
-      List.iter ctack sts
-
-    | _ -> clierr sr "Apply statements requires unit arg"
-    end
 
   | STMT_call (sr,
       EXPR_name(srn,"_scheme", []),
@@ -1735,10 +1230,6 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
           match List.assoc name (!ref_macros @ macros) with
           | MName _
             -> failwith ("Unexpected MName " ^ name)
-          | MNames _
-            -> failwith ("Unexpected MNames " ^ name)
-          | MVar _
-            -> failwith ("Unexpected MVar " ^ name)
           | MVal _
             ->
             failwith
@@ -1746,80 +1237,6 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
               "Unexpected MVal " ^ name ^ " expansion\n" ^
               string_of_expr e1' ^ " --> " ^ string_of_expr e1
             )
-
-          | MVals _
-            ->
-            failwith
-            (
-              "Unexpected MVals " ^ name ^ " expansion\n" ^
-              string_of_expr e1' ^ " --> " ^ string_of_expr e1
-            )
-
-
-          (*
-            The executable syntax allows the statement
-
-            <atom>;
-
-            to mean
-
-            call <atom> ();
-
-            which means <atom> here must be a procedure
-            of type unit->void. The case:
-
-            <atom1> <atom2>;
-
-            however requires <atom1> to be a procedure,
-            it can't be a function even if the application
-
-            <atom1> <atom2>
-
-            would return a procedure: the insertion of the
-            trailing () is purely syntactic.
-
-            This isn't the case for the macro processor,
-            since it does 'type' analysis. We can allow
-            <atom1> to be a function which when applied
-            to <atom2> returns an expression denoting
-            a procedure, and apply it to ().
-          *)
-
-          | MExpr (ps,b) ->
-            (*
-            print_endline ("Expanding statement, MExpr " ^ name);
-            *)
-            let result = me (EXPR_apply (sr,(e1,e2))) in
-            let u = EXPR_tuple (sr,[]) in
-            List.iter tack (ms [STMT_call(sr,result,u)])
-
-          | MStmt(ps,b) ->
-            (*
-            print_endline ("Expanding statement, MStmt " ^ name);
-            *)
-            let args =
-              match e2 with
-              | EXPR_tuple (_,ls) -> ls
-              | x -> [x]
-            in
-            let np = List.length ps and na = List.length args in
-            if na = np
-            then
-              begin
-                let args= List.map me args in
-                let args = build_args sr ps args in
-                let b = subst_statements recursion_limit local_prefix seq reachable args b in
-                let b = ses b in
-                (* ?? ctack ?? *)
-                List.iter ctack b
-              end
-            else
-              clierr sr
-              (
-                "[expand_expr:call] Statement Macro "^name^
-                " requires "^string_of_int np^" arguments," ^
-                " got " ^ string_of_int na
-              )
         with
         | Not_found ->
           ctack (STMT_call (sr, e1, e2))
@@ -1827,62 +1244,6 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
 
       | _ -> ctack (STMT_call (sr,e1,e2))
       end
-
-  | STMT_user_statement (sr,name,term) -> failwith ("Unexpected macro thing");
-    (*
-    print_endline ("Expanding statement " ^ name);
-    *)
-    let substitute_statement_terms sr ss ts =
-      (*
-      print_endline "[statement] Substitute statements terms!";
-      print_endline "[statement] Original argument term list (the parse tree) is";
-      List.iter (fun term -> print_endline (string_of_ast_term 0 term)) ts;
-      *)
-      let args = eval_args ses recursion_limit local_prefix seq reachable sr ts in
-      (*
-      print_endline "[statement] Got arguments ..";
-      print_endline (string_of_macro_env args);
-      *)
-      (*
-      print_endline "[statement] WE SHOULD EXPAND THE ARGS BUT AREN'T AT THE MOMENT";
-      print_endline ("[statement] Body is " ^ string_of_statements ss);
-      print_endline "[statement] SUBSTITUTING";
-      *)
-      let ss = subst_statements recursion_limit local_prefix seq reachable args ss in
-      (*
-      print_endline ("[statement] Body after substitution is" ^ string_of_statements ss);
-      print_endline "[statement] EXECUTING STATEMENTS NOW";
-      *)
-      let ss = ses ss in
-      (*
-      print_endline ("[statement] Body after execution is" ^ string_of_statements ss);
-      *)
-      List.iter ctack ss
-    in
-    (*
-    print_endline ("Expand Statement: Processing user defined statement " ^ name);
-    *)
-    let aux term = match term with
-      | Statement_term s -> ctack s
-      | Statements_term ss -> List.iter ctack ss (* reverse order is correct *)
-      | Expression_term e -> clierr sr ( "User statement: expected statement got expression " ^ string_of_expr e)
-      | Identifier_term s -> clierr sr ( "User statement: expected statement got identifier " ^ s)
-      | Keyword_term s -> clierr sr ( "User statement: expected statement got keyword " ^ s)
-      | Apply_term (t,ts) ->
-        begin match t with
-        | Statement_term s ->
-          substitute_statement_terms sr [s] ts
-
-        | Statements_term ss ->
-          substitute_statement_terms sr ss ts
-
-        | _ ->
-          clierr sr
-          (
-            "User statement: In application, expected statement "
-          )
-        end
-    in aux term
 
 
   | st ->
@@ -1918,25 +1279,8 @@ and special_expand_statements recursion_limit local_prefix seq
   let tacks xs = List.iter tack xs in
   let pc = ref 0 in
   let label_map = Hashtbl.create 23 in
-  let count =
-    List.fold_left
-    (fun count x ->
-      match x with
-      | STMT_macro_label (sr,s) ->
-        Hashtbl.add label_map s (sr,count) ; count
-      | _ -> count+1
-    )
-    0
-    ss
-  in
-  let program =
-    Array.of_list
-    (
-      List.filter
-      (function | STMT_macro_label _ -> false | _ -> true)
-      ss
-    )
-  in
+  let count = List.length ss in
+  let program = Array.of_list ss in
   assert (count = Array.length program);
   try
     for i = 1 to 100000 do
@@ -1951,46 +1295,6 @@ and special_expand_statements recursion_limit local_prefix seq
         )
       in
       begin match st with
-      | STMT_macro_goto (sr,label) -> failwith ("Unexpected macro thing");
-        begin
-          try
-            pc := snd (Hashtbl.find label_map label)
-          with
-          | Not_found ->
-            clierr sr ("Undefined macro label " ^ label)
-        end
-
-      | STMT_macro_proc_return _ -> failwith ("Unexpected macro thing"); raise Macro_return
-
-      | STMT_macro_ifgoto (sr,e,label) -> failwith ("Unexpected macro thing");
-        (*
-        print_endline ("Expanding if/goto " ^ string_of_expr e);
-        *)
-        let result =
-          expand_expr
-            recursion_limit
-            local_prefix
-            seq
-            (!ref_macros @ macros)
-            e
-        in
-        let result = cf result in
-          begin match truthof result with
-          | Some false -> incr pc
-          | Some true ->
-            begin
-              try
-                pc := snd (Hashtbl.find label_map label);
-              with
-              | Not_found ->
-                clierr sr ("Undefined macro label " ^ label)
-            end
-
-          | None ->
-            clierr sr
-            ("Constant expression required, got " ^ string_of_expr e)
-          end
-
       | st ->
          let sts =
            expand_statement

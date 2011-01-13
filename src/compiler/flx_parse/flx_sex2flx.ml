@@ -219,10 +219,6 @@ and xexpr_t sr x =
      ts
    in EXPR_type_match (xsr sr,(ti t, ts))
 
- | Lst [Id "ast_macro_ctor";  Lst [Str s; e]] -> EXPR_macro_ctor (sr,(s, ex e))
- | Lst [Id "ast_macro_statements"; sts] -> EXPR_macro_statements (sr, xsts sts)
- | Lst [Id "ast_user_expr"; sr; Str s; term] -> EXPR_user_expr (xsr sr, s, xterm term)
-
   | Lst ls -> (* print_endline ("Unexpected literal tuple"); *) EXPR_tuple (sr, map ex ls)
 
   | Id y -> print_endline ("Unexpected ID=" ^ y); EXPR_name (sr,y,[])
@@ -420,19 +416,6 @@ and xfunkind_t sr x : funkind_t =
   | Id "Generator" -> `Generator
   | x -> err x "funkind_t"
 
-and xmacro_parameter_type_t sr x : macro_parameter_type_t =
-  match x with
-  | Id "Ident" -> Ident
-  | Id "Expr" -> Expr
-  | Id "Stmt" -> Stmt
-  | x -> err x "macro_parameter_type_t"
-
-and xmacro_parameter_t sr x : macro_parameter_t =
-  match x with
-  | Lst [Id s; m] -> s,xmacro_parameter_type_t sr m
-  | Lst [Str s; m] -> s,xmacro_parameter_type_t sr m
-  | x -> err x "macro_parameter_t"
-
 and xcode_spec_t sr x : code_spec_t =
   match x with
   | Lst [Id "StrTemplate"; Str s] -> CS_str_template (s)
@@ -522,7 +505,6 @@ and xstatement_t sr x : statement_t =
   let xprops x =  lst "property" (xproperty_t sr) x in
   let xfk x = xfunkind_t sr x in
   let ti x = type_of_sex sr x in
-  let xmps x = lst "macro_parameter_t" (xmacro_parameter_t sr) x in
   let xid = function | Str n -> n | x -> err x "id" in
   let ii i = int_of_string i in
   let xi = function | Int i -> ii i | x -> err x "int" in
@@ -553,21 +535,7 @@ and xstatement_t sr x : statement_t =
   | Lst [Id "ast_curry"; sr; Str s; vs; Lst pss; ret; fk; sts] ->
     STMT_curry(xsr sr,s,xvs vs, map xps pss,xret ret, xfk fk, xsts' sr sts)
 
-  | Lst [Id "ast_macro_name"; Str n; Str m] -> STMT_macro_name (sr,n,m)
-  | Lst [Id "ast_macro_names"; Str n; ms] -> STMT_macro_names (sr,n,lst "ast_macro_names" xid ms)
-  | Lst [Id "ast_expr_macro"; Str n; mps; e] -> STMT_expr_macro (sr,n, xmps mps, ex e)
-  | Lst [Id "ast_stmt_macro"; Str n; mps; stmts] -> STMT_stmt_macro (sr,n, xmps mps, xsts stmts)
-  | Lst [Id "ast_macro_block"; sts] -> STMT_macro_block (sr, xsts sts)
   | Lst [Id "ast_macro_val"; ids; v] -> STMT_macro_val (sr, lst "ast_macro_val" xid ids, ex v)
-  | Lst [Id "ast_macro_vals"; Str n; es] -> STMT_macro_vals (sr, n, lst "macro_vals" ex es)
-  | Lst [Id "ast_macro_var"; ids; v] -> STMT_macro_var (sr, lst "ast_macro_var" xid ids, ex v)
-  | Lst [Id "ast_macro_assign"; ids; v] -> STMT_macro_assign (sr, lst "ast_macro_assign" xid ids, ex v)
-  | Lst [Id "ast_macro_forget"; ids] -> STMT_macro_forget (sr, lst "ast_macro_forget" xid ids)
-  | Lst [Id "ast_macro_label"; Str n] -> STMT_macro_label (sr, n)
-  | Lst [Id "ast_macro_goto"; Str n] -> STMT_macro_goto (sr, n)
-  | Lst [Id "ast_macro_ifgoto"; e; Str n] -> STMT_macro_ifgoto (sr, ex e, n)
-  | Id "ast_macro_proc_return" -> STMT_macro_proc_return (sr)
-  | Lst [Id "ast_macro_ifor"; Str n; ids; sts] -> STMT_macro_ifor (sr,n,  lst "ast_macro_ifor" xid ids, xsts sts)
   | Lst [Id "ast_macro_vfor";ids; e; sts] -> STMT_macro_vfor (sr,lst "ast_macro_vfor" xid ids, ex e, xsts sts)
   | Lst [Id "ast_seq"; sr; sts] -> STMT_seq (xsr sr,xsts' sr sts)
 

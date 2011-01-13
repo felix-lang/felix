@@ -199,9 +199,6 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
   | EXPR_intersect _
   | EXPR_isin _
   | EXPR_setintersection _
-  | EXPR_macro_ctor _
-  | EXPR_macro_statements _
-  | EXPR_user_expr _
     ->
     clierr sr ("[rex] Unexpected " ^ string_of_expr e)
 
@@ -1320,23 +1317,9 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
 
   | STMT_user_statement _
   | STMT_ctypes _
-  | STMT_expr_macro _
   | STMT_ifdo _
   | STMT_ifreturn _
-  | STMT_macro_assign _
-  | STMT_macro_forget _
-  | STMT_macro_goto _
-  | STMT_macro_ifgoto _
-  | STMT_macro_label _
-  | STMT_macro_proc_return _
   | STMT_macro_val _
-  | STMT_macro_vals _
-  | STMT_macro_var _
-  | STMT_macro_name _
-  | STMT_macro_names _
-  | STMT_stmt_macro _
-  | STMT_macro_block _
-  | STMT_macro_ifor _
   | STMT_macro_vfor _
   | STMT_scheme_string _
     -> assert false

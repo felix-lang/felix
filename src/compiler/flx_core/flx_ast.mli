@@ -231,11 +231,6 @@ and expr_t =
 
   | EXPR_type_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
 
-  | EXPR_macro_ctor of Flx_srcref.t * (string * expr_t)
-  | EXPR_macro_statements of Flx_srcref.t * statement_t list
-
-  | EXPR_user_expr of Flx_srcref.t * string * ast_term_t
-
 (** {7 Patterns}
  *
  * Patterns; used for matching variants in match statements. *)
@@ -277,11 +272,6 @@ and pattern_t =
 and param_kind_t = [`PVal | `PVar | `PFun | `PRef ]
 and simple_parameter_t = id_t * typecode_t
 and parameter_t = param_kind_t * id_t * typecode_t * expr_t option
-and macro_parameter_type_t =
-  | Ident
-  | Expr
-  | Stmt
-and macro_parameter_t = id_t * macro_parameter_type_t
 and lvalue_t = [
   | `Val of Flx_srcref.t * string
   | `Var of Flx_srcref.t * string
@@ -394,23 +384,9 @@ and statement_t =
   | STMT_curry of Flx_srcref.t * id_t * vs_list_t * params_t list * (typecode_t * expr_t option) * funkind_t * statement_t list
 
   (* macros *)
-  | STMT_macro_name of Flx_srcref.t * id_t * id_t
-  | STMT_macro_names of Flx_srcref.t * id_t * id_t list
-  | STMT_expr_macro of Flx_srcref.t * id_t * macro_parameter_t list * expr_t
-  | STMT_stmt_macro of Flx_srcref.t * id_t * macro_parameter_t list * statement_t list
-  | STMT_macro_block of Flx_srcref.t * statement_t list
   | STMT_macro_val  of Flx_srcref.t * id_t list * expr_t
-  | STMT_macro_vals  of Flx_srcref.t * id_t * expr_t list
-  | STMT_macro_var  of Flx_srcref.t * id_t list * expr_t
-  | STMT_macro_assign of Flx_srcref.t * id_t list * expr_t
-  | STMT_macro_forget of Flx_srcref.t * id_t list
-  | STMT_macro_label of Flx_srcref.t * id_t
-  | STMT_macro_goto of Flx_srcref.t * id_t
-  | STMT_macro_ifgoto of Flx_srcref.t * expr_t * id_t
-  | STMT_macro_proc_return of Flx_srcref.t
 
   (* type macros *)
-  | STMT_macro_ifor of Flx_srcref.t * id_t * id_t list * statement_t list
   | STMT_macro_vfor of Flx_srcref.t * id_t list * expr_t * statement_t list
 
   (* composition of statements: note NOT A BLOCK *)

@@ -335,57 +335,6 @@ let dflt_action kind prod =
   *)
   action
 
-let user_expr prod fn : string =
-  (* this is a supreme hack .. but it is mandatory because Marshal
-     cannot save an Ocs.sval because it can contain primitive
-     functions
-  *)
-  let fn = Ocs_print.string_of_ocs fn in
-  (*
-  print_endline ("Rendered Ocs sval as " ^ fn);
-  *)
-  let rn = ref 1 in
-  let arg =
-    let rec aux acc inp = match inp with
-    | [] -> acc
-    | `Atom (NAME _) :: `Atom LSQB ::
-      `Atom
-      (
-        EQUAL | LESS |
-        GREATER | LESSEQUAL |
-        GREATEREQUAL
-      ) :: `Atom (NAME _) :: `Atom RSQB :: t
-
-    | `Atom (NAME _) :: t ->
-      let n = !rn in incr rn;
-      aux
-      (
-        (if acc = "" then "" else acc ^ " ")
-        ^ "(Expression_term ,_" ^ string_of_int n ^ ")"
-      ) t
-
-    | `Atom (QUEST | PLUS | STAR) :: _
-    | `Group _ :: _ ->
-      failwith "Production of user expression can't have meta symbols"
-
-    | `Atom k :: t ->
-      (* this is really a don't care case .. *)
-      let k = silly_strtoken k in
-      let n = !rn in incr rn;
-      aux
-      (
-        (if acc = "" then "" else acc ^ " ")
-        ^ "(Keyword_term " ^ Flx_string.c_quote_of_string k ^ ")"
-      ) t
-    in aux "" prod
-  in
-  let action = "(Apply_term (Expression_term " ^ fn ^ ") (" ^ arg ^ "))" in
-  let action = "`(ast_user_expr ,_sr \"dunno\" " ^ action ^ ")" in
-  (*
-  print_endline ("User expression, action=" ^ action);
-  *)
-  action
-
 let cal_action kind prod action =
   match action with
   | `None -> dflt_action kind prod

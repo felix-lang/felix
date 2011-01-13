@@ -309,17 +309,6 @@ and string_of_expr (e:expr_t) =
     ^
     "\n endmatch"
 
-  | EXPR_macro_ctor (_,(s,e)) ->
-    "macro ctor " ^ s ^ string_of_expr e
-
-  | EXPR_macro_statements (_,ss) ->
-    "macro statements begin\n" ^
-    catmap "\n" (string_of_statement 1) ss ^ "\nend"
-
-  | EXPR_user_expr (_,name,term) ->
-    let body = string_of_ast_term 0 term in
-    "User expr " ^ name ^ "(" ^ body ^ ")"
-
 (* precedences for type operators ..
    0 -- atomic
    0.5 -- indexing t[i]
@@ -880,11 +869,6 @@ and special_string_of_btypecode bsym_table ty =  (* used for constructors *)
   | BTYP_tuple [] -> ""
   | _ -> " of " ^ string_of_btypecode (Some bsym_table) ty
 
-and string_of_macro_parameter_type = function
-  | Expr -> "fun"
-  | Ident -> "ident"
-  | Stmt -> "proc"
-
 (*
 and string_of_maybe_tpattern = function
   | TPAT_any -> ""
@@ -1340,89 +1324,6 @@ and string_of_statement level s =
     se e ^
     ";"
 
-  | STMT_macro_vals (_,name, es) ->
-    spaces level ^
-    "macro val " ^ name ^ " = " ^
-    catmap ", " se es ^
-    ";"
-
-  | STMT_macro_var (_,names, e) ->
-    spaces level ^
-    "macro var " ^ String.concat ", " names ^ " = " ^
-    se e ^
-    ";"
-
-  | STMT_macro_assign (_,names, e) ->
-    spaces level ^
-    "macro " ^ String.concat ", " names ^ " = " ^
-    se e ^
-    ";\n"
-
-  | STMT_macro_name (_,lname, rname) ->
-    spaces level ^
-    "macro ident " ^ lname ^ " = " ^
-    (match rname with | "" -> "new" | _ -> rname) ^
-    ";"
-
-  | STMT_macro_names (_,lname, rnames) ->
-    spaces level ^
-    "macro ident " ^ lname ^ " = " ^
-    cat ", " rnames ^
-    ";"
-
-
-  | STMT_expr_macro (_,name, ps, e) ->
-    let sps =
-      map
-      (fun (p,t) -> p ^ ":" ^ string_of_macro_parameter_type t)
-      ps
-    in
-    spaces level ^
-    "macro fun " ^ name ^
-    "("^ cat ", " sps ^") = " ^
-    se e ^
-    ";"
-
-  | STMT_stmt_macro (_,name, ps, ss) ->
-    let sps =
-      map
-      (fun (p,t) -> p ^ ":" ^ string_of_macro_parameter_type t)
-      ps
-    in
-    spaces level ^
-    "macro proc " ^ name ^
-    "("^ cat ", " sps ^") " ^
-    short_string_of_compound level ss
-
-  | STMT_macro_block (_,ss) ->
-    spaces level ^
-    "macro " ^
-    short_string_of_compound level ss ^
-    "}"
-
-  | STMT_macro_forget (_,names) ->
-    spaces level ^
-    "macro forget" ^
-    (
-      match names with
-      | [] -> ""
-      | _ -> " "
-    ) ^
-    cat ", " names ^
-    ";"
-
-  | STMT_macro_label (_,id) ->
-    "macro " ^ id ^ ":>\n"
-
-  | STMT_macro_goto (_,id) ->
-    "macro goto " ^ id ^ ";\n"
-
-  | STMT_macro_ifgoto (_,e,id) ->
-    "macro if "^se e^" goto " ^ id ^ ";\n"
-
-  | STMT_macro_proc_return (_) ->
-    "macro return;\n"
-
   | STMT_val_decl (_,name, vs,ty, value) ->
     spaces level ^
     "val " ^ name ^
@@ -1487,12 +1388,6 @@ and string_of_statement level s =
       | None -> ""
     )
     ^ ";"
-
-  | STMT_macro_ifor (_,v,ids,sts) ->
-    spaces level
-    ^ "macro for ident " ^ v ^ " in " ^ cat "," ids ^ " do\n" ^
-    catmap "\n" (string_of_statement (level +2)) sts ^
-    spaces level ^ "done;"
 
   | STMT_macro_vfor (_,v,e,sts) ->
     let se e = string_of_expr e in

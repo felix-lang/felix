@@ -808,7 +808,6 @@ dyprod:
 
 action:
    | STRING { `Scheme $1 }
-   | LPAR sexpr RPAR { `Expr $2 }
 
 note:
    | NAME STRING
@@ -828,8 +827,6 @@ dyalt:
          match action with
          | `Scheme _ as x -> x
          | `None as x -> x
-         | `Expr (_,_,e) ->
-           `Scheme (user_expr prod e)
        in
        prod,getsr dyp,action,anote
      }

@@ -155,9 +155,6 @@ let map_expr f (e:expr_t):expr_t = match e with
 
   | EXPR_expr _ -> e
   | EXPR_type_match _ -> e
-  | EXPR_macro_ctor _ -> e
-  | EXPR_macro_statements _ -> e
-  | EXPR_user_expr (sr,term,ts) -> e (* ouch! *)
 
 
 let iter_expr f (e:expr_t) =
@@ -182,8 +179,6 @@ let iter_expr f (e:expr_t) =
   | EXPR_lambda _
   | EXPR_expr _
   | EXPR_type_match _
-  | EXPR_macro_ctor _
-  | EXPR_macro_statements _
     -> ()
 
   | EXPR_variant (_,(_,x))
@@ -232,7 +227,6 @@ let iter_expr f (e:expr_t) =
     f a; List.iter (fun (pat,x) -> f x) pes
 
   | EXPR_cond (sr,(a,b,c)) -> f a; f b; f c
-  | EXPR_user_expr (sr,term,ts) -> ()
 
 let scan_expr e =
   let ls = ref [] in

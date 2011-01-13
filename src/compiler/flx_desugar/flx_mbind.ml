@@ -77,12 +77,9 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_setintersection _
   | EXPR_intersect _
   | EXPR_isin _
-  | EXPR_macro_ctor _
-  | EXPR_macro_statements  _
   | EXPR_callback _
   | EXPR_record_type _
   | EXPR_variant_type _
-  | EXPR_user_expr _
     ->
       let sr = src_of_expr e in
       clierr sr "[mbind:subst] Not expected in when part of pattern"
