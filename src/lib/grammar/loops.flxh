@@ -30,11 +30,6 @@ syntax loops
     ))
     """;
 
-
-  tstatement := "forall" sname "in" sexpr "do" sstatements "done" =>#
-    "`(ast_macro_vfor (,_2) ,_4 ,_6)"
-  ;
-
   tstatement := optlabel "forall" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
     """
     `(ast_seq ,_sr

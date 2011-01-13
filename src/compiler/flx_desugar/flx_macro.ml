@@ -359,25 +359,26 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     end
 
 
-   (* artificially make singleton tuple *)
-  | EXPR_apply (sr,(EXPR_name(_,"_tuple",[]),x)) ->
-     (*
-     print_endline "Making singleton tuple";
-     *)
-     EXPR_tuple (sr,[me x])
+   (* builting function like things *)
 
+   (* convert arbitrary expression to string for debugging
+    * _str expr -> "expr"
+    *)
   | EXPR_apply (sr,(EXPR_name(_,"_str",[]),x)) ->
-     let x = me x in
-     let x = string_of_expr x in
-     EXPR_literal (sr, AST_string x)
+    let x = me x in
+    let x = string_of_expr x in
+    EXPR_literal (sr, AST_string x)
+
+   (* artificially make singleton tuple 
+    *   _tuple x 
+    *)
+  | EXPR_apply (sr,(EXPR_name(_,"_tuple",[]),x)) ->
+    EXPR_tuple (sr,[me x])
 
    (* _tuple_cons (a,t) ->
-     a,t if t is not a tuple
-     tuple t with a prepended otherwise
-
-     NOTE .. not sure if this should be done
-     before or after expansion ..
-   *)
+    *  a,t if t is not a tuple
+    * tuple t with a prepended otherwise
+    *)
   | EXPR_apply (sr,
        (
          EXPR_name(_,"_tuple_cons",[]),
@@ -397,16 +398,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
        EXPR_tuple (sr, [me h; tail])
      end
 
-   (* Name application *)
-   (* NOTE: Felix doesn't support shortcut applications
-      for executable expressions, however these
-      ARE available for macro expansion: this is in
-      fact completely basic: the expression
-        id
-      is indeed expanded and is of course
-      equivalent to
-        id ()
-   *)
+  (* Name application *)
   | EXPR_apply (sr, (e1', e2')) ->
     let
       e1 = me e1' and
@@ -428,6 +420,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
         EXPR_apply(sr,(e1, e2))
       end
 
+  (* optimise conditional with constant condition *)
   | EXPR_cond (sr, (e1, e2, e3)) ->
     let cond = me e1 in
     begin match cond with
@@ -545,20 +538,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | EXPR_typeof (sr,e) -> EXPR_typeof (sr, me e)
 
-  (*
-    -> syserr (Flx_srcref.src_of_expr e) ("Expand expr: expected expresssion, got type: " ^ string_of_expr e)
-  *)
-
-(* ---------------------------------------------------------------------
-  do the common work of both subst_statement and expand_statement,
-  recursion to the appropriate one as indicated by the argument 'recurse'
-
-  The flag 'reachable' is set to false on exit if the instruction
-  does not drop through. The flag may be true or false on entry.
-  Whilst the flag is false, no code is generated. Once the flag
-  is false, a label at the low level can cause subsequent code to become
-  reachble.
-*)
 and rqmap me reqs =
   let r req = rqmap me req in
   match reqs with
@@ -576,6 +555,17 @@ and rqmap me reqs =
           in
           RREQ_atom (Named_req qn)
       | x -> RREQ_atom x
+
+(* ---------------------------------------------------------------------
+  do the common work of both subst_statement and expand_statement,
+  recursion to the appropriate one as indicated by the argument 'recurse'
+
+  The flag 'reachable' is set to false on exit if the instruction
+  does not drop through. The flag may be true or false on entry.
+  Whilst the flag is false, no code is generated. Once the flag
+  is false, a label at the low level can cause subsequent code to become
+  reachble.
+*)
 
 and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (st:statement_t):statement_t list =
   (*
@@ -608,10 +598,6 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   let cf e = const_fold e in
 
   begin match st with
-  (* cheat for now and ignore public and private decls *)
-  (*
-  | STMT_public (_,_,st) -> List.iter tack (ms [st])
-  *)
   | STMT_private (sr,st) ->
     List.iter (fun st -> tack (STMT_private (sr,st))) (ms [st])
 

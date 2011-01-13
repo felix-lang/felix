@@ -1175,6 +1175,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     let match_caseno = ref 1 in
     let iswild = ref false in
     let n2 = ref (seq()) in (* the next case *)
+    let need_final_label = ref false in
     List.iter
     (fun (pat,sts) ->
       let n1 = !n2 in (* this case *)
@@ -1219,7 +1220,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
        *)
       let returns = 
         let rec aux body =
-          match List.rev body with 
+          match List.rev (List.filter (fun x -> match x with Exe x -> true | _ -> false) body) with 
           | Exe (_,h) ::_ -> 
             begin match h with
             | EXE_noreturn_code _ 
@@ -1235,6 +1236,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
           | _ -> false
         in aux body
       in
+      if not returns then need_final_label := true;
       matches := !matches @
         [
           Dcl (patsrc,match_checker_id,Some n1,`Private,dfltvs,
@@ -1306,9 +1308,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
       ]
     )
     @
-    [
-    Exe (sr,EXE_label end_match_label)
-    ]
+    (if !need_final_label then [ Exe (sr,EXE_label end_match_label) ] else [])
     in
     match_function_body
 

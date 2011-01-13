@@ -1,55 +1,11 @@
 syntax macros {
   requires expressions, statements;
-/*
-  tstatement := "macro" sname "is" sbasic_name_comma_list ";" =>#
-    "`(ast_macro_names ,_2 ,_4)";
-
-  // this MUST be next, overrides case with only one name
-  tstatement := "macro" sname "is" sname ";" =># "`(ast_macro_name ,_2 ,_4)";
-  tstatement := "macro" "for" sname "in" sbasic_name_comma_list "do" sstatements "done" ";" =>#
-    "`(ast_macro_ifor ,_3 ,_5 ,_7)";
-  tstatement := "macro" "for" sname "in" "(" sbasic_name_comma_list ")" "do" sstatements "done" ";" =>#
-    "`(ast_macro_ifor ,_3 ,_6 ,_9)";
-
-  tstatement := "macro" sname "is" "new" ";" =># """`(ast_macro_name ,_2 "")""";
-  tstatement := "macro" "var" sbasic_name_comma_list = sexpr ";" =>#
-    "`(ast_macro_var ,_3 ,_5)";
-*/
   tstatement := "macro" "val" sbasic_name_comma_list = sexpr ";" =>#
     "`(ast_macro_val ,_3 ,_5)";
-/*
-  tstatement := "macro" sbasic_name_comma_list = sexpr ";" =>#
-    "`(ast_macro_assign ,_2 ,_4)";
-  tstatement := "macro" "val" sname "is" sexpr ";" =>#
-    "`(ast_macro_vals ,_3 ,(mkl _5))";
-  tstatement := "macro" "fun" sname smac_arg_list = sexpr ";" =>#
-    "`(ast_expr_macro ,_3 ,_4 ,_6)";
-  tstatement := "macro" "fun" sname smac_arg_list "=>" sexpr ";" =>#
-    "`(ast_expr_macro ,_3 ,_4 ,_6)";
-  tstatement := "macro" "proc" sname smac_arg_list scompound =>#
-    "`(ast_stmt_macro ,_3 ,_4 ,_5)";
-  tstatement := "macro" scompound ";" =># "`(ast_macro_block ,_2)";
-  tstatement := "macro" "forget" sbasic_name_comma_list ";" =>#
-    "`(ast_macro_forget ,_3)";
-  tstatement := "macro" "forget" ";" =>#
-    "`(ast_macro_forget ())";
-  tstatement := "macro" "goto" sname ";" =># "`(ast_macro_goto ,_3)";
-  tstatement := "macro" sname ":>" =># "`(ast_macro_label ,_2)";
-  tstatement := "macro" "if" sexpr "goto" sname ";" =>#
-    "`(ast_macro_ifgoto ,_3 ,_5)";
-  tstatement := "macro" "for" "val" sbasic_name_comma_list "in" sexpr "do" sstatements "done" ";" =>#
-    "`(ast_macro_vfor ,_4 ,_6 ,_8)";
 
-  smac_arg:= sname ":" "fun" =># "`(,_1 Expr)";
-  smac_arg:= sname ":" "proc" =># "`(,_1 Stmt)";
-  smac_arg:= sname ":" "ident" =># "`(,_1 Stmt)";
-  smac_arg:= sname =># "`(,_1 Expr)";
-  smac_args := smac_arg , smac_args =># "(cons _1 _3)";
-  smac_args := smac_arg =># "`(,_1)";
-  smac_arg_list := "(" smac_args ")" =># "_2";
-  smac_arg_list := "(" ")" =># "()";
+  tstatement := "forall" sname "in" sexpr "do" sstatements "done" =>#
+    "`(ast_macro_vfor (,_2) ,_4 ,_6)"
+  ;
 
-  x[sapplication_pri] := "macro" "ctor" sname x[scoercion_pri] =># "`ast_macro_ctor (,_3 ,_4))";
-*/
 }
 
