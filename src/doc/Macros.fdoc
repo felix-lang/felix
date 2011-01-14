@@ -1,105 +1,18 @@
 @h1 Syntax Macro Processor Basics
-WARNING: Macros will probably be removed entirely.
-Generally speaking .. MACROS SUCK.
+NOTE: Most macro features have been removed.
 
-Why is this? Because, unlike normal programming where one generates output
-with explicit operations, macro definitions are reduced to become the output.
-This reduction is basically the same as beta-reduction in lambda-calculus
-and the ordering is generally normal; that is, lazy;
-except that values can be obtained both from parameter argument bindings and
-from environment bindings. We also have to provide alpha-conversion to ensure
-symbols are exposed to environment bindings where desired and not otherwise.
-Consequently the timing of reductions and alpha-conversions has a major impact
-on the resulting term, and the rules are usually complex and involve rescanning
-because otherwise the macros aren't powerful enough to really do anything useful.
-
-Their main purpose at the moment is to support 
-the parser action code to generate ASTs. This support was essential
-prior to introduction of the new parsing system which uses Scheme
-for the actions. Scheme is better structured and more powerful
-than any macro processor.
-
-WARNING: Macros respect Macro, Felix, and File scopes.
-The only exception is that procedure macros are designed to
-allow exporting of code defined in their bodies.
-
-Because macros respect scopes, and Felix include facility fully
-encapsulates all parsing and macro processing, macros cannot be
-propagated from one file to another. The only way to share macros
-in some file is to use the <pre>--import=macrofile</pre> switch
-of the {flxg} compiler or {flx} command line harness. 
-This causes the imported text to be "glued"
-onto the front of every file in such a way that macros and syntax
-definitions propagate globally. The system uses that to ensure macros
-defining the operating system are available to support conditional
-compilation based on platform.
-
-Macros currently have one other use: macro vals are occasionally useful
-for the same purpose as in C: to define compile time constants.
-In particular, pattern matching does not support expressions, only
-structural patterns using literals for constants: the constants cannot
-be named <em>except by a macro val</em>.
-
-WARNING: the macro elaboration rules are so complex and finicky
-that even this author doesn't really understand how they work.
-
-WARNING: Macro invocations can be recursive. There is a recursion limit
-to stop the compiler exploding.
-
-@h2 Expression Macro Facility
-Felix provides an powerful and dangerous
-expression macro facility. Felix macros
-generally respect scope, so any definitions
-nested in a function or module, for example,
-will not be visible outside that scope.
-
-Expresion symbols only expand inside expressions.
-
-@h3 Macro values
+@h2 Macro values
 The macro val statement defines a LHS symbol
 as the expansion of the RHS. The same
 value can be defined any number of times,
 a redefinition hides the preceding defintion
-until the end of the scope.
+until the end of the scope. Macro values
+are just compile time constants. They're scoped locally
+to each file.
 
-@flx-and-expect tut/macros/mac-1.01.01-0
-
-@h3 Macro variables
-The macro var statement defines a LHS symbol
-as the expansion of the RHS. The same
-value can be defined any number of times,
-a redefinition hides the preceding defintion
-until the end of the scope.
-
-Macro variables can be assigned a new value.
-@flx-and-expect tut/macros/mac-1.01.02-0
-
-@h3 Macro variables in requirements
-Named requirements in requirements clauses are
-macro expanded as expressions: they must be qualified
-names though.
-
-@flx-and-expect tut/macros/mac-1.01.03-0
-
-@h3 Macro functions
-You can also define a macro function.
-The expansion rules are: the body
-is not expanded during definition.
-At the point of call, the arguments
-are expanded and then substituted into
-the body, then the body is expanded.
-
-WARNING: macro function definitions need a semi-colon
-at the end. This is because the RHS is universally
-treated as an expression.
-@flx-and-expect tut/macros/mac-1.01.04-0
-
-It is vital to understand that macros cannot break
-syntactically established precedence rules.
-In the last example, a 1 expands to (b c) 1,
-which expands to f 1. Substitutions are implemented
-by manipulation of the abstract syntax tree (AST),
-not token pasting or string manipulation.
+@felix
+macro val WIN32 = false;
+@
 
 @h2 Constant Expression Folding
 The Felix macro processor also performs constant folding;
@@ -157,96 +70,58 @@ are semantically, but not physically equivalent.
 The first operation is the UTF-8 representation
 of 999, whilst the second is the UCS-4 value 999.
 
-@flx-and-expect tut/macros/mac-1.02-0
+@h2 Conditional compilation
+Felix does not provide any special conditional compilation operators:
+just use ordinary conditionals!
 
-@h2 Procedure Macros
-A procedure macro represents a list of statements.
-Macros defined in macro procedures are exported
-to the surrounding scope so that macro procedures
-can be used to package up a set of macro definitions.
-This represents a special exception to the rule
-that macros respect scope.
-@flx-and-expect tut/macros/mac-1.03-0
+The way this works is that Felix guarrantees to elide some unreachable
+code, as a result of folding constants. In particular values defined
+by {macro val} may be manifest compile time constants.
 
-Note there is a crucial difference between procedure
-and expressions macros. In the above example,
-dump requires a proc argument. When the parameter
-is expanded, the list of statements it represented
-is produced. Had this been a function macro,
-the result would have been an the call executable lambda
-expression applied to unit argument. The difference
-is in the handling of any variable declarations:
-they'd be exposed in the first case, but not the second.
-
-@h2 Advanced Procedure Macro Programming
-Felix procedure macros also contain rudimentary
-control structures: you can encode labels, unconditional
-jumps, conditional jumps, and returns. Note the conditional
-goto requires the condition resolve to a constant expression.
-Of course, the value can change with time, since it can
-depend on macro variables.
-@p()
-This example also illustrates the macro block, which is
-an anonymous procedure, called after definition. The effect
-is similar to the statements in the block, except that
-locally defined symbols are not exported. The construction
-is regularly required by the syntax extension facility,
-to prevent name conflicts when the same construction
-is expanded more than once, particularly cases where
-a macro expansion has as its argument another expansion
-of itself.
-
-@flx-and-expect tut/macros/mac-1.04-0
+For example:
+@felix
+macro val WIN32 = false;
+if WIN32 do
+  proc print_os () { println "Windows"; }
+else
+  proc print_os () { println "Unix"; }
+done
+print_os;
+@
+Constants for OS are constructed during configuration and prepended to
+all files during compilation by the {--import} switch.
 
 @h2 Expansion Barrier
 The symbol 'noexpand' can be used to block expansion.
+@felix
+val x = 1;
+val y = 2;
+macro val x = y;
+val ky = x; // ky == 2
+val kx = noexpand x; // kx == 1
+@
 
-@flx-and-expect tut/macros/mac-1.05-0
+@h2 For Loops
+Felix provides two a loop which iterates over tuples.
+@felix
+macro forall v in (1,2.0,"three") do println v; done;
+// equivalent to 
+println 1;
+println 2.0;
+println "three";
+@
 
-@h2 Identifier Macros
-A identifier macros represent names. They replace names
-in expressions and most declarations, including the
-name of a function or variable being defined.
-Names are not replaced in type expressions, patterns,
-or regular expressions.
 
-The special form in which the RHS name is called 'new'
-creates a fresh, previously unused name.
-
-Unlike other macros, the RHS name of an ident macro
-is not expanded at the point of definition.
-
-On use, the value of an ident macro is the first
-name in the chain which is not an ident macro,
-or which recurs.
-@flx-and-expect tut/macros/mac-1.06-0
-
-@h3 Forgetting Macros
-You can forget macros defined in the current scope with
-the forget statement. If no arguments are given,
-all macros defined in the current scope are forgotten.
-
-@flx-and-expect tut/macros/mac-1.06.01-0
-
-@h3 For Loops
-Felix provides two for loops which iterate over tuples.
-
-@flx-and-expect tut/macros/mac-1.06.02-0
-
-@h3 Unpacking Tuples
-Tuples can be unpacked by macro assignment,
-macro val, macro var, and macro for val statements.
-
-@flx-and-expect tut/macros/mac-1.06.03-0
-
-@env.head(3,"String representation")
+@h2 String representation
 The string representation of an expression can be obtained
 with the special operator _str. This is most useful for
 printing a variable name (but it works for any expression).
 Note the expanded value is stringized.
-@flx-and-expect tut/macros/mac-1.06.04-0
+@felix
+println$ _str (x + y);
+@
 
-@h3 Packing Tuples
+@h2 Packing Tuples
 The Felix syntax macro processor treats tuples as lists.
 The for val construction can be used to iterate over
 list contents. Two primitive macro functions are provided
@@ -267,115 +142,18 @@ These two functions are most useful in recursive
 expansions, particularly when driven by user defined
 nontermial parses (see the next section).
 
-@flx-and-expect tut/macros/mac-1.06.05-0
+@h2 Scheme encoding
+An application or call of special name {_scheme} applied to a string
+is replaced by the expression or statement (resp) obtained by 
+evaluating the argument as scheme code and converting to Felix term
+in the same way as is done in the parser.
 
-@h1 Use of Macros in Syntax definition
-The macro system is used to define the code generated by
-certain statements.  You should note all the code you
-are about to see is standard Felix. It is not special code
-in the compiler: it is ordinary user level code. This means
-you can define your own grammar (if you can figure out how
-to write the appropriate Scheme and use the macro processor).
+This mechanism allows generation of arbitrary terms from string
+constants. If you want to generate code conditionally, this is the way.
+Scheme is a better code generator thani any macro processor!
 
-@h2 A simple example
+Note, this mechanism allows generating terms, but not modifying
+other terms! If you want to change the interpretation of terms
+you must write grammar productions parse them.
 
-Here is a simple example from the standard
-grammar:
-@felix
-  tstatement := "break" =># '`(ast_goto ,_sr "break_label")';
-  tstatement := "continue" =># '`(ast_goto ,_sr "continue_label")';
-  tstatement := "redo" =># '`(ast_goto ,_sr "redo_label")';
-
-  tstatement := "whilst" sexpr "do" sstatements "done" =>#
-    """
-      `( ast_macro_block ,( append `(
-        ( ast_macro_name "break_label" "" )
-        ( ast_macro_name "continue_label" "" )
-        ( ast_label ,_sr "continue_label" )
-        ( ast_unlikely_ifnotgoto ,_sr ,_2 "break_label" ))
-        _4
-        `(( ast_goto ,_sr "continue_label" )
-        ( ast_label ,_sr "break_label" ))
-        )
-      )
-    """;
-@
-This production is for a {tstatement}, which is a terminated statement.
-It defines the {whilst} construction, which is a basic while loop,
-in terms of gotos. The representation is initially a Scheme s-expression,
-which is later converted to a Felix s-expression and thence to a Felix
-AST term. Then the macro processor expands the body. The main use of the
-macro processor here is to ensure the labels and gotos match up and don't
-conflict with labels from other {whilst} statements, including those nested
-inside this {whilst} statement.
-
-An anonymous macro block surrounds the whole term to prevent the generated
-labels being visible outside.
-
-Then we define an identifier macros {break_label} and {continue_label}
-to be fresh labels: the scheme s-expression used reduce to the equivalent of
-@felix
-macro ident break_label = new;
-macro ident continue_label = new;
-@
-Now we emit the actual loop, starting with the continue label,
-a conditional jump to the break label, the body of the loop,
-and then an unconditional jump to the continue label.
-
-Finally, we emit the continue label.
-
-In this code, the symbol {_sr} is a scheme variable containing the
-source code reference (file, line number, etc) which is propagated into
-the AST.  The terms {_2} and {_4} refer to non-terminals in the grammar
-production (other systems would use {$2} here, but we want a standard C
-identifier). The Scheme code is evaluated when the production is reduced
-by the parser and these variables are replaced by the s-expressions
-their action codes constructed.
-
-The term {ast_unlikely_ifnotgoto} is a jump which is taken
-if its argument is false, here it is used to exit the loop.
-Since the loop is going to go around many times and exit only once,
-the branch is marked as unlikely to be taken. This information is propagated
-all the way through to the underlying C compiler. {gcc} can recognize this 
-information and may use it to improve performance by reorganising blocks
-so the most likely code is more likely to be in the instruction pipeline.
-
-You may ask: can't we do this work in Scheme, instead of using the macro
-processor? The answer is: this author believes this is possible, but hasn't
-tried to do it yet. It is for this reason this whole section is
-marked with heavy warnings at the top. We hope to get rid of the macro
-processor altogether. Even for post-AST processing, Scheme is probably
-a better vehicle, and it would also allow more end user control
-over the front end.
-
-
-@h2 Another example
-This one works much the same way as the {whilst} loop, however it
-shows how to generate expressions.
-@felix
-  tstatement := "forall" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
-    """
-      `(ast_macro_block ,( append `(
-        (ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_2 ())) none) ,_4)
-        ( ast_macro_name "break_label" "" )
-        ( ast_macro_name "continue_label" "" )
-        ( ast_macro_name "redo_label" "" )
-        ( ast_label ,_sr "redo_label" )
-        ( ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi 'le) ((ast_name ,_sr ,_2 ()),_6)))
-          "break_label"
-        ))
-        _8
-        `(( ast_label ,_sr "continue_label" )
-        (ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_2())))
-        ( ast_goto ,_sr "redo_label" )
-        ( ast_label ,_sr "break_label" ))
-       ))
-    """;
-@
-Here, {noi} is a scheme function that converts a scheme symbol into the 
-s-expression for a Felix AST_name term. Again, a macro block is established
-to ensure the scope of the {ident} macros is encapsulated in this code section.
-If the same name is generated in a nested scope it hides the outer one.
-This ensures {break}, {continue} and {redo} jump to the right labels.
 

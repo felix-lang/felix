@@ -40,6 +40,47 @@ type macro_state_t = {
 let string_of_statements sts =
   String.concat "\n" (List.map (string_of_statement 1) sts)
 
+let scheme_eval s =
+    let get_port = function
+      | Ocs_types.Sport p -> p
+      | _ -> failwith "expected port"
+    in
+    let env = Ocs_top.make_env () in
+    let th = Ocs_top.make_thread () in
+    let inp = Ocs_port.string_input_port s in
+    let outp = get_port th.Ocs_types.th_stdout in
+    let lex = Ocs_lex.make_lexer inp "" in
+    let term = ref None in
+    begin try
+      match Ocs_read.read_expr lex with
+      | Ocs_types.Seof -> print_endline "END OF FILE?"
+      | v ->
+         let c = Ocs_compile.compile env v in
+         print_endline "COMPILED";
+         Ocs_eval.eval th (function
+           | Ocs_types.Sunspec -> print_endline "UNSPECIFIED"
+           | r ->
+             print_endline "EVALUATED";
+             Ocs_print.print outp false r;
+             Ocs_port.puts outp "\n";
+             Ocs_port.flush outp;
+             term := Some r
+         ) c
+    with
+      | Ocs_error.Error err
+      | Ocs_error.ErrorL (_,err)
+      ->
+        print_endline ("Error " ^ err)
+    end
+    ;
+    match !term with
+    | None -> failwith "Scheme term not returned!"
+    | Some r ->
+        let sex = Ocs2sex.ocs2sex r in
+        print_endline "OCS scheme term converted to s-expression:";
+        Sex_print.sex_print sex;
+        sex
+
 let print_macro (id,t) =
  match t with
  | MVal v -> "MVal " ^ id ^ " = " ^ string_of_expr v
@@ -398,27 +439,19 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
        EXPR_tuple (sr, [me h; tail])
      end
 
-  (* Name application *)
-  | EXPR_apply (sr, (e1', e2')) ->
-    let
-      e1 = me e1' and
-      e2 = me e2'
-    in
-      begin match e1 with
-      | EXPR_name(srn,name,[]) ->
-        begin try
-          match List.assoc name macros with
-          | MName _
-          | MVal _
-           -> assert false
+  | EXPR_apply (sr,
+      (EXPR_name(srn,"_scheme", []),
+      EXPR_literal (srl, AST_string s))
+    ) -> 
+    print_endline "DETECTED EXPR ENCODED AS SCHEME";
+    let sex = scheme_eval s in
+    let flx = Flx_sex2flx.xexpr_t sr sex in
+    print_endline "s-expression converted to Felix!";
+    print_endline (string_of_expr flx);
+    flx
 
-        with
-        | Not_found ->
-          cf (EXPR_apply(sr,(e1, e2)))
-        end
-      | _ ->
-        EXPR_apply(sr,(e1, e2))
-      end
+  (* general application *)
+  | EXPR_apply (sr, (e1, e2)) -> cf (EXPR_apply (sr, (me e1, me e2)))
 
   (* optimise conditional with constant condition *)
   | EXPR_cond (sr, (e1, e2, e3)) ->
@@ -815,6 +848,21 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     (*
     print_endline "Handling statement match";
     *)
+    (* as with other conditionals, it is possible to jump into the middle
+     * of a branch, so even if the whole statement is unreachable,
+     * some of the branch handling code may be if it contains a label.
+     * The end of the statement is reachable if the end of any branch
+     * is reachable.
+     *
+     * So, special handling: if the statement isn't reachable,
+     * we can drop the matching entirely, and just emit the reachable
+     * parts of each branch (from the first label). The inner call to subst_statements
+     * should already have elided the unreachable heads of the branches.
+     *)
+
+    let start_reachable = !reachable in
+    let case_end_reachable = ref false in
+    let end_label = "_degen_stmt_match_end_" ^ string_of_int (let n = !seq in incr seq; n) in
     let pss = List.map (fun (pat,sts) ->
       let pvs = get_pattern_vars pat in
       let pvs' =  (* new parameter names *)
@@ -831,18 +879,32 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
       (* alpha convert pattern variable names *)
       let pat' = alpha_pat local_prefix seq fast_remap remap expand_expr pat in
       (* alpha convert statements *)
-      let sts' = subst_statements 50 local_prefix seq (ref true) remap sts in
+      let branch_reachable = ref start_reachable in
+      let sts' = subst_statements 50 local_prefix seq branch_reachable remap sts in
+      case_end_reachable := !branch_reachable or !case_end_reachable;
       (*
       print_endline ("Statement match, original pattern: " ^ string_of_pattern pat);
       print_endline ("Statement match, original statements: " ^ string_of_statements sts);
       print_endline ("Statement match, new pattern: " ^ string_of_pattern pat');
       print_endline ("Statement match, new statements: " ^ string_of_statements sts');
       *)
-      pat', ms sts' (* no need for protection because pat vars are fresh *)
+      !branch_reachable, (pat', ms sts') (* no need for protection because pat vars are fresh *)
       )
       pss 
     in
-    tack (STMT_stmt_match (sr, (me e, pss)))
+    if start_reachable then
+      tack (STMT_stmt_match (sr, (me e, List.map snd pss)))
+    else begin
+      List.iter (fun (r,(_,ss)) ->
+        (List.iter tack ss);
+        if r then tack (STMT_goto (sr,end_label))
+      )
+      pss
+      ;
+      if !case_end_reachable then tack (STMT_label (sr,end_label))
+    end
+    ;
+    reachable := !case_end_reachable 
     
   | STMT_instance (sr, vs, qn, sts) ->
     tack (STMT_instance (sr, vs, mq qn, ms sts))
@@ -1030,9 +1092,6 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
   let result = ref [] in
   let tack x = result := x :: !result in
   let ctack x = if !reachable then tack x in
-  let ses ss =
-    special_expand_statements recursion_limit local_prefix seq (ref true) ref_macros macros ss
-  in
   let rec expand_names sr (names:string list):string list =
     List.concat
     (
@@ -1156,81 +1215,25 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       ref_macros := saved_macros
     ) vals
 
+  (* _scheme "(blah blah)" translates to an AST 
+   * by compiling and evaluating the string argument as
+   * scheme and then translating the resulting s-expression
+   * into Felix using ocs2sex and then sex2flx, the same as 
+   * the action code of a parse is handled.
+   *)
+
   | STMT_call (sr,
       EXPR_name(srn,"_scheme", []),
       EXPR_literal (srl, AST_string s)
-    ) -> failwith ("Unexpected macro thing");
+    ) -> 
     print_endline "DETECTED STATEMENT ENCODED AS SCHEME";
-    let get_port = function
-      | Ocs_types.Sport p -> p
-      | _ -> failwith "expected port"
-    in
-    let env = Ocs_top.make_env () in
-    let th = Ocs_top.make_thread () in
-    let inp = Ocs_port.string_input_port s in
-    let outp = get_port th.Ocs_types.th_stdout in
-    let lex = Ocs_lex.make_lexer inp "" in
-    let term = ref None in
-    begin try
-      match Ocs_read.read_expr lex with
-      | Ocs_types.Seof -> print_endline "END OF FILE?"
-      | v ->
-         let c = Ocs_compile.compile env v in
-         print_endline "COMPILED";
-         Ocs_eval.eval th (function
-           | Ocs_types.Sunspec -> print_endline "UNSPECIFIED"
-           | r ->
-             print_endline "EVALUATED";
-             Ocs_print.print outp false r;
-             Ocs_port.puts outp "\n";
-             Ocs_port.flush outp;
-             term := Some r
-         ) c
-    with
-      | Ocs_error.Error err
-      | Ocs_error.ErrorL (_,err)
-      ->
-        print_endline ("Error " ^ err)
-    end
-    ;
-    begin match !term with
-    | None -> failwith "Scheme term not returned!"
-    | Some r ->
-        let sex = Ocs2sex.ocs2sex r in
-        print_endline "OCS scheme term converted to s-expression:";
-        Sex_print.sex_print sex;
-        let flx = Flx_sex2flx.xstatement_t sr sex in
-        print_endline "s-expression converted to Felix statement!";
-        print_endline (string_of_statement 0 flx);
-        ctack flx
-    end
+    let sex = scheme_eval s in
+    let flx = Flx_sex2flx.xstatement_t sr sex in
+    print_endline "s-expression converted to Felix!";
+    print_endline (string_of_statement 0 flx);
+    ctack flx
 
-  | STMT_call (sr, e1', e2') ->
-    let
-      e1 = me e1' and
-      e2 = me e2'
-    in
-      begin match e1 with
-      | EXPR_name(srn,name,[]) ->
-        begin try
-          match List.assoc name (!ref_macros @ macros) with
-          | MName _
-            -> failwith ("Unexpected MName " ^ name)
-          | MVal _
-            ->
-            failwith
-            (
-              "Unexpected MVal " ^ name ^ " expansion\n" ^
-              string_of_expr e1' ^ " --> " ^ string_of_expr e1
-            )
-        with
-        | Not_found ->
-          ctack (STMT_call (sr, e1, e2))
-        end
-
-      | _ -> ctack (STMT_call (sr,e1,e2))
-      end
-
+  | STMT_call (sr, e1, e2) -> ctack (STMT_call (sr, me e1, me e2))
 
   | st ->
     List.iter tack
@@ -1243,65 +1246,16 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
 
 and expand_statements recursion_limit local_prefix seq reachable macros (ss:statement_t list) =
   let ref_macros = ref [] in
-  special_expand_statements recursion_limit local_prefix seq reachable ref_macros macros ss
-
-and special_expand_statements recursion_limit local_prefix seq
-  reachable ref_macros macros ss
-=
-  (*
-  List.iter (fun st -> print_endline (string_of_statement 0 st)) ss;
-  *)
-  if ss = [] then []
-  else
-  let sr =
-    Flx_srcref.rsrange
-    (src_of_stmt (List.hd ss))
-    (src_of_stmt (Flx_list.list_last ss))
-  in
-
-  let cf e = const_fold e in
-  let expansion = ref [] in
-  let tack x = expansion := x :: !expansion in
-  let tacks xs = List.iter tack xs in
-  let pc = ref 0 in
-  let label_map = Hashtbl.create 23 in
-  let count = List.length ss in
-  let program = Array.of_list ss in
-  assert (count = Array.length program);
-  try
-    for i = 1 to 100000 do
-      let st =
-        if !pc >=0 && !pc < Array.length program
-        then program.(!pc)
-        else syserr sr
-        (
-          "Program counter "^si !pc^
-          " out of range 0.." ^
-          si (Array.length program - 1)
-        )
-      in
-      begin match st with
-      | st ->
-         let sts =
-           expand_statement
-             recursion_limit
-             local_prefix
-             seq
-             reachable
-             ref_macros
-             macros
-             st
-         in
-           tacks sts;
-           incr pc
-      end
-      ;
-      if !pc = count then raise Macro_return
-    done;
-    clierr sr "macro execution step limit exceeded"
-  with
-    Macro_return -> List.rev !expansion
-
+  List.rev
+    (List.fold_left 
+      (fun acc st ->
+        let sts = expand_statement recursion_limit local_prefix seq reachable ref_macros macros st in
+        List.fold_left (fun acc st -> st::acc) acc sts
+      )
+      []
+      ss
+    )
+  
 let expand_macros macro_state stmts =
   expand_statements
     macro_state.recursion_limit

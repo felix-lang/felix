@@ -48,21 +48,6 @@ let rec xliteral_t sr x =
   | x -> err x "invalid literal"
 
 
-and xast_term_t sr x =
-  let ex x = xexpr_t sr x in
-  let xs x = xstatement_t sr x in
-  let xsts x =  lst "statement" xs x in
-  let xterm x = xast_term_t sr x in
-  match x with
-  | Lst [Id "Expression_term"; e] -> Expression_term (ex e)
-  | Lst [Id "Statement_term"; st] -> Statement_term (xs st)
-  | Lst [Id "Statements_term"; sts] -> Statements_term (xsts sts)
-  | Lst [Id "Identifier_term"; Str s] -> Identifier_term s
-  | Lst [Id "Keyword_term"; Str s] -> Keyword_term s
-  | Lst [Id "Apply_term"; fn; args] ->
-    Apply_term (xterm fn, lst "ast_term" xterm args)
-  | x -> err x "invalid ast_term_t"
-
 and type_of_sex sr w =
   (*
   print_endline ("Converting sexp " ^ Sex_print.string_of_sex w ^ " to a type");
@@ -99,7 +84,6 @@ and xexpr_t sr x =
   let xvs x = xvs_list_t sr x in
   let xs x = xstatement_t sr x in
   let xsts x =  lst "statement" xs x in
-  let xterm x = xast_term_t sr x in
   match x with
   | Str s -> print_endline ("Deprecated Scheme string "^ s ^"' as Felix string"); EXPR_literal (sr, (AST_string s))
   | Lst [] -> EXPR_tuple (sr,[])

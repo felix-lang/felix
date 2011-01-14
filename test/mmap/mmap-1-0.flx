@@ -1,4 +1,4 @@
-include "mmap";
+include "std/posix/mmap";
 open Mmap;
 open MixedInt;
 open C_hack;
