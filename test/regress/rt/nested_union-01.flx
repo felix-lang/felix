@@ -11,7 +11,7 @@ fun f(x:int) = {
     ;
   }
   val a = X x;
-  return a,the pr;
+  return a,pr;
 }
 
 val v,d = f 1;

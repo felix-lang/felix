@@ -179,9 +179,6 @@ syntax expressions {
   shash_name := sthe_name =># "_1";
 
   sthe_name :=
-    // unsuffixed binding to function (only works if only one in scope)
-    | "the" squalified_name =># "`(ast_the ,_sr ,_2)"
-
     // macro expansion freezer
     | "noexpand" squalified_name =># "`(ast_noexpand ,_sr ,_2)"
 

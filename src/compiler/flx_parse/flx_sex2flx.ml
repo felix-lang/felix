@@ -93,7 +93,6 @@ and xexpr_t sr x =
   | Lst [Id "ast_noexpand"; sr; e] -> EXPR_noexpand (xsr sr,ex e)
   | Lst [Id "ast_name"; sr; Id s ; Lst ts] -> EXPR_name (xsr sr,s,map ti ts)
   | Lst [Id "ast_name"; sr; Str s ; Lst ts] -> EXPR_name (xsr sr,s,map ti ts)
-  | Lst [Id "ast_the";  sr; e] -> EXPR_the (xsr sr, xq "ast_the" e) 
   (* can't occur in user code
   | Lst [Id "ast_index";  Str s ; Int i] -> EXPR_index (sr,s,ii i)
   *)

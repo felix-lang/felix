@@ -61,7 +61,6 @@ let string_of_literal e = match e with
 let rec string_of_qualified_name (n:qualified_name_t) =
   let se e = string_of_expr e in
   match n with
-  | `AST_the (sr,q) -> "the " ^ string_of_qualified_name q
   | `AST_index (sr,name,idx) -> name ^ "<" ^ string_of_bid idx ^ ">"
   | `AST_void _ -> "void"
   | `AST_name (_,name,ts) -> name ^
@@ -113,7 +112,6 @@ and string_of_expr (e:expr_t) =
   let sme e = string_of_expr e in
   let sqn e = string_of_qualified_name e in
   match e with
-  | EXPR_the (sr,q) -> "the " ^ string_of_qualified_name q
   | EXPR_index (sr,name,idx) -> name ^ "<" ^ string_of_bid idx ^ ">"
   | EXPR_void _ -> "void"
   | EXPR_name (_,name,ts) -> name ^
@@ -329,7 +327,6 @@ and string_of_expr (e:expr_t) =
 and st prec tc : string =
   let iprec,txt =
     match tc with
-    | TYP_the (sr,q) -> 0, "the " ^ string_of_qualified_name q
     | TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"
     | TYP_void _ -> 0, "void"
     | TYP_name (_,name,ts) -> 0, name ^

@@ -6,7 +6,7 @@ gen f():int = {
     goto again;
 }
 
-var g = the f;
+var g = f;
 print "F 1="; print$ g(); endl; // 1
 print "F 2="; print$ g(); endl; // 2
 

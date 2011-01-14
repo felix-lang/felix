@@ -2,7 +2,7 @@
 
 typedef fun Maybe (t:TYPE):TYPE=>opt[t];
 
-instance Monad [the Maybe] {
+instance Monad [Maybe] {
   fun bind[a,b] (x:Maybe a, f:a -> Maybe b) =>
     match x with
     | None[a] => None[b]
@@ -21,7 +21,7 @@ fun mdiv(x:double) (y:double):opt[double]=>
 ;
 fun mneg(x:double):opt[double]=>Some (-x);
 
-open Monad[the Maybe];
+open Monad[Maybe];
 
 proc show(r:Maybe double) {
    match r with

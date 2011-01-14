@@ -2,13 +2,13 @@ callback fun f: int * f -> int;
 
 fun g(x:int)=> x + x + 1;
 
-print$ f(2, the g); endl;
+print$ f(2, g); endl;
 
 callback proc p: int * p;
 
 proc q(x:int){ print x; endl; }
 
-p(31,the q);
+p(31,q);
 
 typedef cf = int --> int;
 

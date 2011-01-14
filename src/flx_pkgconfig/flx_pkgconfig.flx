@@ -259,9 +259,9 @@ proc handle_pkg (pkg:string, trace:list[string]){
 
          if mem streq fields key do
            match keep with
-           | keepleftmost => { iter the add_val values; }
-           | keeprightmost => { iter the tail_val values; }
-           | keepall => { iter the keep_val values; }
+           | keepleftmost => { iter add_val values; }
+           | keeprightmost => { iter tail_val values; }
+           | keepall => { iter keep_val values; }
            endmatch;
          done;
 

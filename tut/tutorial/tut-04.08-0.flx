@@ -12,6 +12,6 @@ proc writer() {
   write (x,42);
 }
 
-spawn_pthread the reader;
-spawn_pthread the writer;
+spawn_pthread reader;
+spawn_pthread writer;
 

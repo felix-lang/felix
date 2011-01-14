@@ -318,16 +318,6 @@ and lookup_qn_in_env2'
     *)
     inner_lookup_name_in_env state bsym_table env rs sr name, ts
 
-  | `AST_the (sr,qn) ->
-    print_endline ("[lookup_qn_in_env2'] AST_the " ^ string_of_qualified_name qn);
-    let es,ts = lookup_qn_in_env2' state bsym_table env rs qn in
-    begin match es with
-    | NonFunctionEntry  _
-    | FunctionEntry [_] -> es,ts
-    | _ -> clierr sr
-      "'the' expression denotes non-singleton function set"
-    end
-
   | `AST_lookup (sr,(me,name,ts)) ->
     (*
     print_endline ("Searching for name " ^ name);
@@ -1024,7 +1014,6 @@ and bind_type'
   | TYP_apply (TYP_case_tag _ as qn, t2)
   | TYP_apply (TYP_typed_case _ as qn, t2)
   | TYP_apply (TYP_lookup _ as qn, t2)
-  | TYP_apply (TYP_the _ as qn, t2)
   | TYP_apply (TYP_index _ as qn, t2)
   | TYP_apply (TYP_callback _ as qn, t2) ->
       let qn =
@@ -1096,55 +1085,6 @@ and bind_type'
       | _ ->
           print_endline ("Synthetic name "^name ^ " is not a nominal type!");
           syserr sr ("Synthetic name "^name ^ " is not a nominal type!")
-      end
-
-  (* QUALIFIED OR UNQUALIFIED NAME *)
-  | TYP_the (sr,qn) ->
-      let es,ts = lookup_qn_in_env2' state bsym_table env rs qn in
-      begin match es with
-      | FunctionEntry [index] -> bi (sye index) (List.map bt ts)
-      | NonFunctionEntry index  ->
-          let sym = hfind "lookup" state.sym_table (sye index) in
-          begin match sym.Flx_sym.symdef with
-          | SYMDEF_type_alias t ->
-              (* This is HACKY but probably right most of the time: we're
-               * defining "the t" where t is parameterised type as a type
-               * function accepting all the parameters and returning a type ..
-               * if the result were actually a functor this would be wrong ..
-               * you'd need to say "the (the t)" to bind the domain of the
-               * returned functor .. *)
-
-              (* NOTE THIS STUFF IGNORES THE VIEW AT THE MOMENT *)
-              let ivs,traint = sym.Flx_sym.vs in
-              let bmt mt =
-                match mt with
-                | TYP_patany _ -> btyp_type 0 (* default *)
-                | _ -> (try bt mt with _ -> clierr sr "metatyp binding FAILED")
-              in
-              let body =
-                let env = mkenv (sye index) in
-                let xparams = List.map
-                  (fun (id,idx,mt) -> id, btyp_type_var (idx, bmt mt))
-                  ivs
-                in
-                bind_type'
-                  state
-                  bsym_table
-                  env
-                  { rs with depth = rs.depth + 1 }
-                  sr
-                  t
-                  (xparams @ params)
-                  mkenv
-              in
-              let ret = btyp_type 0 in
-              let params = List.map (fun (id, idx, mt) -> idx, bmt mt) ivs in
-              btyp_type_function (params, ret, body)
-          | _ ->
-              let ts = List.map bt ts in
-              bi (sye index) ts
-          end
-      | _ -> clierr sr "'the' expression denotes non-singleton function set"
       end
 
   | TYP_name _
@@ -2195,12 +2135,6 @@ and lookup_qn_with_sig'
   | `AST_callback (sr,qn) ->
     failwith "[lookup_qn_with_sig] Callbacks not implemented yet"
 
-  | `AST_the (sr,qn) ->
-    (*
-    print_endline ("AST_the " ^ string_of_qualified_name qn);
-    *)
-    lookup_qn_with_sig' state bsym_table sra srn env rs qn signs
-
   | `AST_void _ -> clierr sra "qualified-name is void"
 
   | `AST_case_tag _ -> clierr sra "Can't lookup case tag here"
@@ -2449,12 +2383,6 @@ and lookup_type_qn_with_sig'
   match qn with
   | `AST_callback (sr,qn) ->
     failwith "[lookup_qn_with_sig] Callbacks not implemented yet"
-
-  | `AST_the (sr,qn) ->
-    print_endline ("AST_the " ^ string_of_qualified_name qn);
-    lookup_type_qn_with_sig' state bsym_table sra srn
-    env rs
-    qn signs
 
   | `AST_void _ -> clierr sra "qualified-name is void"
 
@@ -3918,32 +3846,6 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     *)
       bexpr_name t (index,ts)
     end
-
-  | EXPR_the(_,`AST_name (sr,name,ts)) ->
-    (*
-    print_endline ("[bind_expression] AST_the " ^ name);
-    print_endline ("AST_name " ^ name ^ "[" ^ catmap "," string_of_typecode ts^ "]");
-    *)
-    let ts = List.map (bt sr) ts in
-    begin match inner_lookup_name_in_env state bsym_table env rs sr name with
-    | NonFunctionEntry (index) ->
-      let index = sye index in
-      let ts = adjust_ts state.sym_table bsym_table sr index ts in
-      bexpr_name (ti sr index ts) (index,ts)
-
-    | FunctionEntry [index] ->
-      let index = sye index in
-      let ts = adjust_ts state.sym_table bsym_table sr index ts in
-      bexpr_closure (ti sr index ts) (index,ts)
-
-    | FunctionEntry _ ->
-      clierr sr
-      (
-        "[bind_expression] Simple 'the' name " ^ name ^
-        " binds to non-singleton function set"
-      )
-    end
-  | EXPR_the (sr,q) -> clierr sr "invalid use of 'the' "
 
   | (EXPR_lookup (sr,(e,name,ts))) as qn ->
     (*

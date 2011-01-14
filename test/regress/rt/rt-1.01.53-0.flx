@@ -52,7 +52,7 @@ fun main () =
 {
 
     var y = list(1, 3, 5, 7, 9 );
-    var z:avl[int] = (fold_left (the cadd_int_to_avl)  (avl[int]())  y);
+    var z:avl[int] = (fold_left (cadd_int_to_avl)  (avl[int]())  y);
     pr_treed(z);
     endl;
 

@@ -17,7 +17,7 @@ proc writer() {
   print "W2"; endl;
 }
 
-spawn_fthread the reader;
-spawn_fthread the writer;
+spawn_fthread reader;
+spawn_fthread writer;
 
 print "Done"; endl;

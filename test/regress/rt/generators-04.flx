@@ -7,7 +7,7 @@ gen f ():int = {
   halt "Call exhausted generator";
 }
 
-var g = the f;
+var g = f;
 print$ g (); endl;
 print$ g (); endl;
 print$ g (); endl;

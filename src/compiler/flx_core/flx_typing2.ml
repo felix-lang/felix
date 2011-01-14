@@ -11,7 +11,6 @@ let qualified_name_of_expr e =
   | EXPR_case_tag (sr,v) -> Some (`AST_case_tag (sr,v))
   | EXPR_typed_case (sr,v,t) -> Some (`AST_typed_case (sr,v,t))
   | EXPR_lookup (sr,(e,name,ts)) -> Some (`AST_lookup (sr,(e,name,ts)))
-  | EXPR_the (sr,name) -> Some (`AST_the (sr,name))
   | EXPR_index (sr,name,index) -> Some (`AST_index (sr,name,index))
   | EXPR_callback (sr,name) -> Some (`AST_callback (sr,name))
   | _ -> None
@@ -28,7 +27,6 @@ let expr_of_qualified_name e =
   | `AST_case_tag (sr,v) -> EXPR_case_tag (sr,v)
   | `AST_typed_case (sr,v,t) -> EXPR_typed_case (sr,v,t)
   | `AST_lookup (sr,(e,name,ts)) -> EXPR_lookup (sr,(e,name,ts))
-  | `AST_the (sr,name) -> EXPR_the (sr,name)
   | `AST_index (sr,name,index) -> EXPR_index (sr,name,index)
   | `AST_callback (sr,name) -> EXPR_callback (sr,name)
 
@@ -39,7 +37,6 @@ let expr_of_suffixed_name e =
   | `AST_case_tag (sr,v) -> EXPR_case_tag (sr,v)
   | `AST_typed_case (sr,v,t) -> EXPR_typed_case (sr,v,t)
   | `AST_lookup (sr,(e,name,ts)) -> EXPR_lookup (sr,(e,name,ts))
-  | `AST_the (sr,name) -> EXPR_the (sr,name)
   | `AST_index (sr,name,index) -> EXPR_index (sr,name,index)
   | `AST_callback (sr,name) -> EXPR_callback (sr,name)
   | `AST_suffix (sr,(name,ts)) -> EXPR_suffix (sr,(name,ts))
@@ -83,7 +80,6 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | EXPR_case_tag (sr,v) -> TYP_case_tag (sr,v)
   | EXPR_typed_case (sr,v,t) -> TYP_typed_case (sr,v,t)
   | EXPR_lookup (sr,(e,name,ts)) -> TYP_lookup (sr,(e,name,ts))
-  | EXPR_the (sr,q) -> TYP_the (sr,q)
   | EXPR_index (sr,name,index) -> TYP_index (sr,name,index)
   | EXPR_callback (sr,name) -> TYP_callback (sr,name)
   | EXPR_suffix (sr,(name,suffix)) -> TYP_suffix (sr,(name,suffix))

@@ -33,7 +33,7 @@ proc run(db:sqlite3_db_t) {
   var p = sql.[i];
   whilst p != "" do
     println p;
-    val cb : sqlite3_exec_callback_t = the eh;
+    val cb : sqlite3_exec_callback_t = eh;
     res := sqlite3_exec(db,p,cb,usr,&errm);
     if res !=0 do
       println$ "exec DB error[abort]: " + errm;

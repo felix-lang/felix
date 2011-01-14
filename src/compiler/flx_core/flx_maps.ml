@@ -73,7 +73,6 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_callback _
   | TYP_case_tag _
   | TYP_index _
-  | TYP_the _
   | TYP_var _
   | TYP_patvar _
   | TYP_patany _
@@ -94,7 +93,6 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_noexpand (sr,x) -> e (* DO NOT EXPAND .. HMM .. *)
   | EXPR_name _ -> e
   | EXPR_callback _ -> e
-  | EXPR_the _ -> e
   | EXPR_index _ -> e
   | EXPR_case_tag _ -> e
   | EXPR_typed_case _ -> e
@@ -165,7 +163,6 @@ let iter_expr f (e:expr_t) =
   | EXPR_vsprintf _
   | EXPR_name _
   | EXPR_callback _
-  | EXPR_the _
   | EXPR_index _
   | EXPR_case_tag _
   | EXPR_typed_case _

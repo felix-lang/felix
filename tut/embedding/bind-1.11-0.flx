@@ -4,9 +4,9 @@ print$ fff 22; endl;
 
 fun apl(g:int-->int,x:int)=> g x;
 
-print$ apl$ the fff,22; endl;
+print$ apl$ fff,22; endl;
 
-var q = the fff;
+var q = fff;
 print$ apl$ q,22; endl;
 
 cproc ggg(x:int) {
@@ -19,15 +19,15 @@ proc cll(g:int-->void, x:int) {
   g x;
 }
 
-cll$ the ggg, 43;
+cll$ ggg, 43;
 
-hhh := the ggg;
+hhh := ggg;
 
 cll$ hhh, 44;
 
 cfun f2(x:int, y:int)=>x+y;
 fun apl2(g:int*int-->int,x:int,y:int)=> g (x,y);
-print$ apl2$ the f2,12,13; endl;
+print$ apl2$ f2,12,13; endl;
 
 cproc g2(x:int,y:int) {
   print x; print " "; print y; endl;
@@ -39,4 +39,4 @@ proc cll2(g:int*int-->void,x:int,y:int) {
   g (x,y);
 }
 
-cll2(the g2, 39,40);
+cll2(g2, 39,40);

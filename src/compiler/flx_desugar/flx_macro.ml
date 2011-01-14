@@ -1,3 +1,13 @@
+(* This is the old macro processor, gradually being cut down to something
+ * saner and more manageable.
+ *
+ * It currently supports several special expansions including products and sums,
+ * conversion of expressions to type expressions, constant folding,
+ * val and foreach/val macros, and some weird specials including term generation
+ * via Scheme, translation of expressions to strings for debugging, and some 
+ * special code for managing tuples.
+ *)
+
 open Flx_ast
 open Flx_mtypes2
 open Flx_print
@@ -439,6 +449,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
        EXPR_tuple (sr, [me h; tail])
      end
 
+  (* _scheme string conversion to expression term *)
   | EXPR_apply (sr,
       (EXPR_name(srn,"_scheme", []),
       EXPR_literal (srl, AST_string s))
@@ -476,15 +487,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       (pr @ macros) sts
     in
     EXPR_lambda (sr, (vs,pss, t, sts))
-
-  (* Name lookup *)
-  | EXPR_the (sr, qn) ->
-    let qn =
-      match qualified_name_of_expr (me (expr_of_qualified_name qn)) with
-      | Some x -> x
-      | None -> assert false
-    in
-    EXPR_the (sr,qn)
 
   (* the name here is just for diagnostics *)
   | EXPR_index (sr, n, i) -> EXPR_index (sr,n,i)

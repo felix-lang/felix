@@ -10,7 +10,7 @@ fun f(x:int) = {
     return a.x;
   }
   val a = x_t x;
-  return a,the pr;
+  return a,pr;
 }
 
 val v,d = f 1;

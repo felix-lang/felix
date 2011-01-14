@@ -86,7 +86,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
 
   | EXPR_case_index _ -> e
   | EXPR_index _  -> e
-  | EXPR_the _  -> e
   | EXPR_lookup _ -> e
   | EXPR_suffix _ -> e
   | EXPR_literal _ -> e

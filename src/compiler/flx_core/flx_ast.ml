@@ -40,7 +40,6 @@ type qualified_name_t =
   | `AST_case_tag of Flx_srcref.t * int
   | `AST_typed_case of Flx_srcref.t * int * typecode_t
   | `AST_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
-  | `AST_the of Flx_srcref.t * qualified_name_t
   | `AST_index of Flx_srcref.t * string * index_t
   | `AST_callback of Flx_srcref.t * qualified_name_t
   ]
@@ -53,7 +52,6 @@ and suffixed_name_t =
   | `AST_case_tag of Flx_srcref.t * int
   | `AST_typed_case of Flx_srcref.t * int * typecode_t
   | `AST_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
-  | `AST_the of Flx_srcref.t * qualified_name_t
   | `AST_index of Flx_srcref.t * string * index_t
   | `AST_callback of Flx_srcref.t * qualified_name_t
   | `AST_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
@@ -72,7 +70,6 @@ and typecode_t =
   | TYP_case_tag of Flx_srcref.t * int
   | TYP_typed_case of Flx_srcref.t * int * typecode_t
   | TYP_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
-  | TYP_the of Flx_srcref.t * qualified_name_t
   | TYP_index of Flx_srcref.t * string * index_t
   | TYP_callback of Flx_srcref.t * qualified_name_t
   | TYP_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
@@ -160,7 +157,6 @@ and expr_t =
   | EXPR_map of Flx_srcref.t * expr_t * expr_t
   | EXPR_noexpand of Flx_srcref.t * expr_t
   | EXPR_name of Flx_srcref.t * string * typecode_t list
-  | EXPR_the of Flx_srcref.t * qualified_name_t
   | EXPR_index of Flx_srcref.t * string * index_t
   | EXPR_case_tag of Flx_srcref.t * int
   | EXPR_typed_case of Flx_srcref.t * int * typecode_t
@@ -493,7 +489,6 @@ let src_of_qualified_name (e : qualified_name_t) = match e with
   | `AST_case_tag (s,_)
   | `AST_typed_case (s,_,_)
   | `AST_lookup (s,_)
-  | `AST_the (s,_)
   | `AST_index (s,_,_)
   | `AST_callback (s,_)
   -> s
@@ -509,7 +504,6 @@ let src_of_typecode = function
   | TYP_case_tag (s,_)
   | TYP_typed_case (s,_,_)
   | TYP_lookup (s,_)
-  | TYP_the (s,_)
   | TYP_index (s,_,_)
   | TYP_callback (s,_)
   | TYP_suffix (s,_)
@@ -554,7 +548,6 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_case_tag (s,_)
   | EXPR_typed_case (s,_,_)
   | EXPR_lookup (s,_)
-  | EXPR_the (s,_)
   | EXPR_index (s,_,_)
   | EXPR_callback (s,_)
   | EXPR_suffix (s,_)
@@ -703,7 +696,6 @@ let typecode_of_qualified_name = function
   | `AST_case_tag (sr,v) -> TYP_case_tag (sr,v)
   | `AST_typed_case (sr,v,t) -> TYP_typed_case (sr,v,t)
   | `AST_lookup (sr,(e,name,ts)) -> TYP_lookup (sr,(e,name,ts))
-  | `AST_the (sr,name) -> TYP_the (sr,name)
   | `AST_index (sr,name,index) -> TYP_index (sr,name,index)
   | `AST_callback (sr,name) -> TYP_callback (sr,name)
 
@@ -713,7 +705,6 @@ let qualified_name_of_typecode = function
   | TYP_case_tag (sr,v) -> Some (`AST_case_tag (sr,v))
   | TYP_typed_case (sr,v,t) -> Some (`AST_typed_case (sr,v,t))
   | TYP_lookup (sr,(e,name,ts)) -> Some (`AST_lookup (sr,(e,name,ts)))
-  | TYP_the (sr,name) -> Some (`AST_the (sr,name))
   | TYP_index (sr,name,index) -> Some (`AST_index (sr,name,index))
   | TYP_callback (sr,name) -> Some (`AST_callback (sr,name))
   | _ -> None

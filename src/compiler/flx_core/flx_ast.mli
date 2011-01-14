@@ -36,7 +36,6 @@ type qualified_name_t =
   | `AST_case_tag of Flx_srcref.t * int
   | `AST_typed_case of Flx_srcref.t * int * typecode_t
   | `AST_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
-  | `AST_the of Flx_srcref.t * qualified_name_t
   | `AST_index of Flx_srcref.t * string * index_t
   | `AST_callback of Flx_srcref.t * qualified_name_t
   ]
@@ -49,7 +48,6 @@ and suffixed_name_t =
   | `AST_case_tag of Flx_srcref.t * int
   | `AST_typed_case of Flx_srcref.t * int * typecode_t
   | `AST_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
-  | `AST_the of Flx_srcref.t * qualified_name_t
   | `AST_index of Flx_srcref.t * string * index_t
   | `AST_callback of Flx_srcref.t * qualified_name_t
   | `AST_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
@@ -68,7 +66,6 @@ and typecode_t =
   | TYP_case_tag of Flx_srcref.t * int
   | TYP_typed_case of Flx_srcref.t * int * typecode_t
   | TYP_lookup of Flx_srcref.t * (expr_t * string * typecode_t list)
-  | TYP_the of Flx_srcref.t * qualified_name_t
   | TYP_index of Flx_srcref.t * string * index_t
   | TYP_callback of Flx_srcref.t * qualified_name_t
   | TYP_suffix of Flx_srcref.t * (qualified_name_t * typecode_t)
@@ -156,7 +153,6 @@ and expr_t =
   | EXPR_map of Flx_srcref.t * expr_t * expr_t
   | EXPR_noexpand of Flx_srcref.t * expr_t
   | EXPR_name of Flx_srcref.t * string * typecode_t list
-  | EXPR_the of Flx_srcref.t * qualified_name_t
   | EXPR_index of Flx_srcref.t * string * index_t
   | EXPR_case_tag of Flx_srcref.t * int
   | EXPR_typed_case of Flx_srcref.t * int * typecode_t

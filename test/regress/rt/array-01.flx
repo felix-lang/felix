@@ -12,7 +12,7 @@ var x = [|1,2,3|];
 var y = list(x);
 var z = list(4,5,6);
 
-Array::iter[int, 3] (the foo) x;
-iter (the foo) y;
-iter (the foo) z;
+Array::iter[int, 3] (foo) x;
+iter (foo) y;
+iter (foo) z;
 

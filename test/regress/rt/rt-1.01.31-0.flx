@@ -14,5 +14,5 @@ proc p1
   print "hello"; endl;
 }
 
-p0$ A the p1;
+p0$ A p1;
 

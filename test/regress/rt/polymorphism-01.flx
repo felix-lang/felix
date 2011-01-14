@@ -9,4 +9,4 @@ proc f[k] (z:k, pr:k->void) {
 
 // eta expansion
 proc pr(x:int) { fprint (cout,x); }
-f[int] (1, the pr);
+f[int] (1, pr);
