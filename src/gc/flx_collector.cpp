@@ -295,16 +295,20 @@ unsigned long flx_collector_t::reap ()
     res = Judy1Next(j_tmp,&next,&je);
   }
   Judy1FreeArray(&j_tmp,&je);
-  if(debug)
+  if(debug) {
     fprintf(stderr,"Reaped %lu objects\n",count);
+    fprintf(stderr,"Still allocated %lu objects occupying %lu bytes\n", get_allocation_count(), get_allocation_amt());
+  }
   return count;
 }
 
 void flx_collector_t::mark(pthread::memory_ranges_t *px)
 {
+  int reclimit = 64;
   if(debug)
     fprintf(stderr,"Collector: Running mark\n");
   assert (root_count == roots.size());
+  assert(j_tmp == 0);
 
   if(px)
   {
@@ -323,7 +327,7 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
       {
         //if(debug)
         //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
-        scan_object(*(void**)i);
+        scan_object(*(void**)i, reclimit);
       }
       if(debug)
         fprintf(stderr, "DONE: Conservate scan of memory %p->%p\n",range.b, range.e);
@@ -341,8 +345,19 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
   {
     if (debug)
       fprintf(stderr, "Scanning root %p\n", (*i).first);
-    scan_object((*i).first);
+    scan_object((*i).first, reclimit);
   }
+  // Now, scan the temporary list until it is empty
+  Word_t toscan = 0ul;
+  int res = Judy1First(j_tmp,&toscan,&je); // get one object scheduled for scanning
+  while(res) {
+    Judy1Unset(&j_tmp,toscan,&je);         // remove it immediately
+    scan_object((void*)toscan, reclimit);            // scan it, it will either be marked or discarded
+    toscan = 0ul;
+    res = Judy1First(j_tmp,&toscan,&je); 
+  }                                     
+  assert(j_tmp == 0);                  
+
   if(debug)
     fprintf(stderr, "Done Scanning roots\n");
 }
@@ -421,9 +436,10 @@ void flx_collector_t::impl_remove_root(void *memory)
     --(*iter).second;
 }
 
-void flx_collector_t::scan_object(void *p)
+void flx_collector_t::scan_object(void *p, int reclimit)
 {
   Word_t reachable = (parity & 1UL) ^ 1UL;
+again:
   if(debug)
     fprintf(stderr,"Scan object %p, reachable bit value = %d\n",p,(int)reachable);
   Word_t cand = (Word_t)p;
@@ -463,18 +479,35 @@ void flx_collector_t::scan_object(void *p)
     {
       //if(debug)
       //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
-      scan_object(*i);
+      if(reclimit==0)
+        Judy1Set(&j_tmp,(Word_t)*i,&je);
+      else
+        scan_object(*i,reclimit -1);
     }
   }
   else
   {
+    if (n_used * n_offsets == 1) // tail rec optimisation
+    {
+        void **pq = (void**)(void*)((unsigned char*)p + offsets[0]);
+        void *q = *pq;
+        if(q){
+          p = q;
+          goto again;
+        }
+    }
+    else
     for(unsigned long j=0; j<n_used; ++j)
     {
       for(unsigned int i=0; i<n_offsets; ++i)
       {
         void **pq = (void**)(void*)((unsigned char*)p + offsets[i]);
         void *q = *pq;
-        if(q)scan_object(q);
+        if(q)
+        {
+          if(reclimit==0)Judy1Set(&j_tmp,(Word_t)q,&je);
+          else scan_object(q, reclimit-1);
+        }
       }
       p=(void*)((unsigned char*)p+shape->amt);
     }

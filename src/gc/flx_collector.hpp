@@ -92,7 +92,7 @@ private:
 
   void mark(pthread::memory_ranges_t*);
   unsigned long sweep(); // calls scan_object
-  void scan_object(void *memory);
+  void scan_object(void *memory, int reclimit);
 
   typedef std::map<void *,unsigned long, std::less<void *> > rootmap_t;
   rootmap_t roots;

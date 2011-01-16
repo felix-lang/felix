@@ -37,16 +37,16 @@ open module List
     void _rev(?2 plt)
     {
       struct node_t { ?1 elt; ::flx::rtl::_uctor_ tail; };
-      ::flx::rtl::_uctor_ nutail = ::flx::rtl::_uctor_(0,0);
+      ::flx::rtl::_uctor_ nutail = ::flx::rtl::_uctor_(0,0);    // temp new tail
       ::flx::rtl::_uctor_ cur = *plt;
       while(cur.variant)
       {
-        ::flx::rtl::_uctor_ oldtail = ((node_t*)cur.data)->tail;
-        ((node_t*)cur.data)->tail = nutail;
-        nutail = cur;
-        cur = oldtail;
+        ::flx::rtl::_uctor_ oldtail = ((node_t*)cur.data)->tail; // save old tail in temp
+        ((node_t*)cur.data)->tail = nutail;                      // overwrite current node tail
+        nutail = cur;                                            // set new tail to current
+        cur = oldtail;                                           // set current to saved old tail
       }
-      *plt = nutail;
+      *plt = nutail;                                             // overwrite 
     }
     """
   ;
@@ -55,7 +55,7 @@ open module List
   // as a list, empty iff the original list is
   proc rev_last[T] : &list[T] * &list[T] =
     """
-    {
+    {                                                            // same routine as above
       struct node_t { ?1 elt; ::flx::rtl::_uctor_ tail; };
       ::flx::rtl::_uctor_ nutail = ::flx::rtl::_uctor_(0,0);
       ::flx::rtl::_uctor_ cur = *$1;
@@ -85,11 +85,11 @@ open module List
   }
 
 
-  fun _ctor_list[T] () => Empty[T];
+  ctor[T] list[T] () => Empty[T];
 
-  fun _ctor_list[T] (x:T) => Cons(x, Empty[T]);
+  ctor[T] list[T] (x:T) => Cons(x, Empty[T]);
 
-  fun _ctor_list[T, N] (x:Array::array[T, N]) = {
+  ctor[T,N] list[T] (x:Array::array[T, N]) = {
     var o = Empty[T];
     var i:int; forall i in Array::len(x) - 1 downto 0 do
       o = Cons (x.[i],o);
