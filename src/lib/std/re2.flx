@@ -102,7 +102,7 @@ open module Re2 {
   type Anchor = "::re2::RE2::Anchor";
     const UNANCHORED: Anchor = "::re2::RE2::UNANCHORED";
     const ANCHOR_START: Anchor = "::re2::RE2::ANCHOR_START";
-    const ANCHOR_END: Anchor = "::re2::RE2::ANCHOR_END";
+    const ANCHOR_BOTH: Anchor = "::re2::RE2::ANCHOR_BOTH";
 
   fun pattern: RE2 -> string = "$1->pattern()";
   fun error: RE2 -> string = "$1->error()";

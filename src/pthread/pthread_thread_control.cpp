@@ -6,7 +6,7 @@
 
 namespace flx { namespace pthread {
 
-static void *get_stack_pointer() { unsigned long x; return &x; }
+static void *get_stack_pointer() { void *x = (void*)&x; return x; }
 
 thread_control_t::thread_control_t (bool d) :
   do_world_stop(false), thread_counter(0), active_counter(0), debug(d)

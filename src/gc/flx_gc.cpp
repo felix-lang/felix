@@ -13,11 +13,12 @@ namespace flx {
 namespace gc {
 namespace generic {
 
-collector_t::collector_t() : debug(false) {}
+collector_t::collector_t() : debug(false){}
 
 gc_profile_t::gc_profile_t (
   bool debug_allocations_,
   bool debug_collections_,
+  bool report_collections_,
   bool allow_collection_anywhere_,
   unsigned long gc_freq_,
   unsigned long min_mem_,
@@ -28,6 +29,7 @@ gc_profile_t::gc_profile_t (
 ) :
   debug_allocations(debug_allocations_),
   debug_collections(debug_collections_),
+  report_collections(report_collections_),
   allow_collection_anywhere(allow_collection_anywhere_),
   gc_freq(gc_freq_),
   gc_counter(0),
@@ -52,7 +54,7 @@ unsigned long gc_profile_t::maybe_collect() {
 }
 
 unsigned long gc_profile_t::actually_collect() {
-  if(debug_collections) fprintf(stderr,"Actually collect\n");
+  if(debug_collections || report_collections) fprintf(stderr,"Actually collect\n");
   gc_counter = 0;
   unsigned long collected = collector->collect();
   unsigned long allocated = collector->get_allocation_amt();
@@ -60,7 +62,7 @@ unsigned long gc_profile_t::actually_collect() {
   threshhold = std::max ( min_mem,
     (unsigned long) (free_factor * (double)allocated))
   ;
-  if(debug_collections)
+  if(debug_collections || report_collections)
     fprintf(stderr, "actually collected %ld objects, still allocated %ld bytes\n",collected, allocated);
   return collected;
 }

@@ -519,6 +519,7 @@ int main(int argc, char** argv)
     printf("  FLX_DEBUG               # enable debugging traces (default off)\n");
     printf("  FLX_DEBUG_ALLOCATIONS   # enable debugging allocator (default FLX_DEBUG)\n");
     printf("  FLX_DEBUG_COLLECTIONS   # enable debugging collector (default FLX_DEBUG)\n");
+    printf("  FLX_REPORT_COLLECTIONS  # report collections (default FLX_DEBUG)\n");
     printf("  FLX_DEBUG_THREADS       # enable debugging collector (default FLX_DEBUG)\n");
     printf("  FLX_DEBUG_DRIVER        # enable debugging driver (default FLX_DEBUG)\n");
     printf("  FLX_FINALISE            # whether to cleanup on termination (default NO)\n");
@@ -574,6 +575,12 @@ int main(int argc, char** argv)
   if (debug_collections)
   {
     fprintf(stderr, "[FLX_DEBUG_COLLECTIONS] Collection debug enabled\n");
+  }
+
+  bool report_collections = egetv("FLX_REPORT_COLLECTIONS", debug);
+  if (report_collections)
+  {
+    fprintf(stderr, "[FLX_REPORT_COLLECTIONS] Collection report enabled\n");
   }
 
 
@@ -652,6 +659,7 @@ int main(int argc, char** argv)
   flx::gc::generic::gc_profile_t *gcp = new flx::gc::generic::gc_profile_t(
     debug_allocations,
     debug_collections,
+    report_collections,
     allow_collection_anywhere,
     gc_freq,
     min_mem,

@@ -20,7 +20,7 @@ open module List
 
   proc splice[T] : &list[T] * list[T] =
     """
-    {
+    { // list splice
       struct node_t { ?1 elt; ::flx::rtl::_uctor_ tail; };
       ::flx::rtl::_uctor_ *p = $1;
       while(p->variant) p = &((node_t*)p->data)->tail;
@@ -35,7 +35,7 @@ open module List
   body _iprev_[T,PLT]=
     """
     void _rev(?2 plt)
-    {
+    { // in place reversal
       struct node_t { ?1 elt; ::flx::rtl::_uctor_ tail; };
       ::flx::rtl::_uctor_ nutail = ::flx::rtl::_uctor_(0,0);    // temp new tail
       ::flx::rtl::_uctor_ cur = *plt;
@@ -55,20 +55,20 @@ open module List
   // as a list, empty iff the original list is
   proc rev_last[T] : &list[T] * &list[T] =
     """
-    {                                                            // same routine as above
+    { // in place reversal returns tail as well
       struct node_t { ?1 elt; ::flx::rtl::_uctor_ tail; };
-      ::flx::rtl::_uctor_ nutail = ::flx::rtl::_uctor_(0,0);
-      ::flx::rtl::_uctor_ cur = *$1;
-      ::flx::rtl::_uctor_ last = cur;
+      ::flx::rtl::_uctor_ nutail = ::flx::rtl::_uctor_(0,0); // new temp tail
+      ::flx::rtl::_uctor_ cur = *$1;                         // list to reverse
+      ::flx::rtl::_uctor_ last = cur;                        // save head
       while(cur.variant)
       {
-        ::flx::rtl::_uctor_ oldtail = ((node_t*)cur.data)->tail;
-        ((node_t*)cur.data)->tail = nutail;
-        nutail = cur;
-        cur = oldtail;
+        ::flx::rtl::_uctor_ oldtail = ((node_t*)cur.data)->tail; // set old tail to current's tail
+        ((node_t*)cur.data)->tail = nutail;                      // set current's tail to nutail
+        nutail = cur;                                            // set nutail to current
+        cur = oldtail;                                           // set current to old tail
       }
-      *$1 = nutail;
-      *$2 = last;
+      *$1 = nutail;                                              // reversed list
+      *$2 = last;                                                // original lists tail
     }
     """
   ;

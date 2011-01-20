@@ -156,6 +156,7 @@ private:
 struct GC_EXTERN gc_profile_t {
   bool debug_allocations;     ///< allocator debug on/off
   bool debug_collections;     ///< collector debug on/off
+  bool report_collections;     ///< collector debug on/off
   bool allow_collection_anywhere; ///< enable collect on allocate
 
   unsigned long gc_freq;      ///< how often to collect
@@ -183,6 +184,7 @@ struct GC_EXTERN gc_profile_t {
   gc_profile_t (
     bool debug_allocations_,
     bool debug_collections_,
+    bool report_collections_,
     bool allow_collection_anywhere_,
     unsigned long gc_freq_,
     unsigned long min_mem_,

@@ -1,0 +1,51 @@
+include "std/posix/filesystem";
+
+fun dbg(s:string):string={ println s; return s; }
+
+  fun regfilesin(dname:string, re:RE2): list[string] => 
+    if dname == "." or dname == ".." then Empty[string] else
+    match FileSystem::filesin(dname) with
+    | None  => Empty[string]
+    | Some ?files =>
+      List::fold_left 
+        (fun (acc:list[string]) (f:string) => if f == "." or f == ".." then Empty[string] else
+          let ?d = Filename::join (dname,f) in
+          let ?t = FileSystem::filetype d in
+          match t with
+            | REGULAR => 
+              if Re2::Match(re, Re2::StringPiece d, 0, Re2::ANCHOR_BOTH, C_hack::null[Re2::StringPiece], 0) 
+              then acc + d 
+              else acc
+              endif
+            | DIRECTORY => acc + regfilesin (d,re)
+            | _ => acc
+          endmatch
+          endif
+        )
+        Empty[string]
+        files
+    endmatch
+    endif
+  ;
+
+//println$ System::args ();
+//println$ "argc=" + str System::argc;
+
+var dir = 
+  if System::argc < 2 then FileSystem::getcwd()
+  else System::argv 1
+  endif
+;
+
+var regex = 
+  if System::argc < 3 then ".*"
+  else System::argv 2
+  endif
+;
+
+var re = Re2::RE2 regex;
+
+//println$ "Dir=" dir;
+//println$ "Files in dir " + dir + "=";
+iter (proc (s:string) { println s; }) (regfilesin (dir, re));
+
