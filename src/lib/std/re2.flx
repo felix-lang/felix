@@ -112,7 +112,7 @@ open module Re2 {
   fun ProgramSize: RE2 -> int = "$1->ProgramSize()";
 
   gen GlobalReplace: &string * RE2 * StringPiece -> int = "::re2::RE2::GlobalReplace($1, *$2, $3)";
-  gen Extract: string * RE2 * StringPiece * &string -> int = "::re2::RE2::GlobalExtract($1, *$2, $3, $4)";
+  gen Extract: StringPiece * RE2 * StringPiece * &string -> bool = "::re2::RE2::Extract($1, *$2, $3, $4)";
 
   fun QuoteMeta: StringPiece -> string = "::re2::RE2::QuoteMeta($1)";
  

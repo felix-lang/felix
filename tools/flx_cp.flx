@@ -1,0 +1,61 @@
+include "std/posix/filesystem";
+
+fun dbg(s:string):string={ println s; return s; }
+
+  proc copyfiles(dname:string, re:RE2, tpat:string) = {
+    if dname == "." or dname == ".." do return; done
+    match FileSystem::filesin(dname) with
+    | None  => return;
+    | Some ?files =>
+      List::iter
+        (proc (f:string) { 
+          if f == "." or f == ".." 
+          do ;
+          else 
+            var d = Filename::join (dname,f);
+            var t = FileSystem::filetype d;
+            match t with
+              | REGULAR => 
+                var target:string;
+                if Re2::Extract(Re2::StringPiece d, re, StringPiece tpat, &target) do
+                  println$ "Copy " + d + " -> " + target;
+                done
+              | DIRECTORY => copyfiles (d,re, tpat);
+              | _ => ;
+            endmatch;
+          done
+        })
+        files
+      ;
+    endmatch
+    ;
+  }
+
+//println$ System::args ();
+//println$ "argc=" + str System::argc;
+
+var dir = 
+  if System::argc < 2 then FileSystem::getcwd()
+  else System::argv 1
+  endif
+;
+
+var regex = 
+  if System::argc < 3 then ".*"
+  else System::argv 2
+  endif
+;
+
+var re = Re2::RE2 regex;
+
+if System::argc < 4 do
+  println "Error: not target specified for copy";
+  System::exit 1;
+done;
+
+var target =  System::argv 3;
+
+//println$ "Dir=" dir;
+//println$ "Files in dir " + dir + "=";
+copyfiles (dir, re, target);
+
