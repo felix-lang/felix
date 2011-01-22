@@ -302,6 +302,9 @@ unsigned long flx_collector_t::reap ()
   return count;
 }
 
+
+//#include <valgrind/memcheck.h>
+
 void flx_collector_t::mark(pthread::memory_ranges_t *px)
 {
   int reclimit = 64;
@@ -321,12 +324,16 @@ void flx_collector_t::mark(pthread::memory_ranges_t *px)
     {
       pthread::memory_range_t range = *i;
       if(debug)
-        fprintf(stderr, "Conservate scan of memory %p->%p\n",range.b, range.e);
+      {
+        unsigned long n = (char*)range.e - (char*)range.b;
+        fprintf(stderr, "Conservate scan of memory %p->%p, %ld bytes\n",range.b, range.e, n);
+      }
+      //VALGRIND_MAKE_MEM_DEFINED(range.b, (char*)range.e-(char*)range.b);
       void *end = range.e;
       for ( void *i = range.b; i != end; i = (void*)((void**)i+1))
       {
-        //if(debug)
-        //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
+        if(debug)
+          fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
         scan_object(*(void**)i, reclimit);
       }
       if(debug)
