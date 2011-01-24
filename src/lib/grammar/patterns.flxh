@@ -1,15 +1,15 @@
 syntax patterns {
-  satom := pattern_match =># "_1";
+  satom := pattern_match "endmatch" =># "_1";
 
   tstatement:= "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
     "`(ast_stmt_match (,_sr ,_2 ,_4))";
 
   stmt_matching  := vbar spattern "=>" tstatement+ =># "`(,_2 ,_4)";
 
-  pattern_match := "match" sexpr "with" smatching+ "endmatch" =>#
+  pattern_match := "match" sexpr "with" smatching+ =>#
     "`(ast_match ,_sr (,_2 ,_4))";
 
-  smatching  := vbar spattern "=>" sexpr =># "`(,_2 ,_4)";
+  smatching  := vbar spattern "=>" x[let_pri] =># "`(,_2 ,_4)";
   smatching  := vbar "=>" sexpr =># "`(pat_none ,_sr ,_4)";
 
   spattern := sas_pattern "when" sexpr =># "`(pat_when ,_sr ,_1 ,_3)";

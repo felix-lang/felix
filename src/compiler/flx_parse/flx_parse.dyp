@@ -26,6 +26,9 @@ open Flx_parse_helper
 let dypgen_choose_token = `all
 *)
 
+(*
+let dyp_merge = keep_all
+*)
 let smerge ((oseq,osr,osex),ogd,old as oit) ((nseq,nsr,nsex),ngd,nld as nit) =
 (*
    if !(global_data.pdebug) then
@@ -47,6 +50,9 @@ let smerge ((oseq,osr,osex),ogd,old as oit) ((nseq,nsr,nsex),ngd,nld as nit) =
      Flx_exceptions.clierr2 osr nsr ("AMBIGUITY PARSING, same production!,seq = " ^ string_of_int nseq)
    end
 
+let dyp_merge_Obj_sexpr ol = keep_all ol
+
+(*
 let dyp_merge_Obj_sexpr ol =
  match ol with
  | [] -> assert false
@@ -56,6 +62,7 @@ let dyp_merge_Obj_sexpr ol =
  | h :: t ->
    match List.fold_left smerge h t with
    ntt,gd,ld -> [ntt],gd,ld
+*)
 
 let rec elim_common_prefix x y =
   match x, y with
@@ -282,18 +289,21 @@ let suffix =
 
 let int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix
 
-/* floats: Follows ISO C89, except that we allow underscores */
+/* floats: Follows ISO C89, except that we allow underscores 
+   AND we do not allow .5, a leading digit is required!
+   This is so x.0 works for tuple projections.
+*/
 let decimal_string = digit (underscore? digit) *
 let hexadecimal_string = hexdigit (underscore? hexdigit) *
 
 let decimal_fractional_constant =
   decimal_string '.' decimal_string?
-  | '.' decimal_string
+  /* | '.' decimal_string */
 
 let hexadecimal_fractional_constant =
   ("0x" |"0X")
   (hexadecimal_string '.' hexadecimal_string?
-  | '.' hexadecimal_string)
+  | '.' hexadecimal_string) /* leading . allowed here because of prefix */
 
 let decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string
 let binary_exponent = ('P'|'p') ('+'|'-')? decimal_string

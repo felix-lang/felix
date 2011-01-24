@@ -36,6 +36,9 @@ syntax expressions {
 
   // let binding
   x[let_pri] := "let" spattern = x[let_pri] "in" x[let_pri] =># "`(ast_letin ,_sr (,_2 ,_4 ,_6))";
+  x[let_pri] := sconditional =># '_1';
+  x[let_pri] := pattern_match =># '_1';
+
 
   // alternate conditional
   x[sdollar_apply_pri] := x[stuple_pri] "unless" x[let_pri] "then" x[sdollar_apply_pri] =>#
@@ -169,7 +172,7 @@ syntax expressions {
   x[sfactor_pri] := x[sfactor_pri] "." shash_name =># "`(ast_dot ,_sr (,_1 ,_3))))";
   // note the next production MUST be after the previous one so it overrides the
   // interpretation of a.(0) as an AST_dot
-  x[sfactor_pri] := x[sfactor_pri] "." "(" sinteger ")" =># "`(ast_get_n ,_sr (,_4 ,_1))";
+  //x[sfactor_pri] := x[sfactor_pri] "." "(" sinteger ")" =># "`(ast_get_n ,_sr (,_4 ,_1))";
 
   // these are weirdos
   sbasic_name_comma_list:= sname (, sname)* =># "(cons _1 (map second _2))";
@@ -238,9 +241,9 @@ syntax expressions {
   satom := "(" ")" =># "'()";
 
   // conditional expression
-  satom := sconditional =># "_1";
+  satom := sconditional "endif" =># "_1";
 
-    sconditional := "if" sexpr "then" sexpr selse_part "endif" =>#
+    sconditional := "if" sexpr "then" sexpr selse_part =>#
       "`(ast_cond ,_sr (,_2 ,_4 ,_5))";
 
       selif := "elif" sexpr "then" sexpr =># "`(,_2 ,_4)";

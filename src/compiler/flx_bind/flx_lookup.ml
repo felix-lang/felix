@@ -4237,6 +4237,10 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     bexpr_tuple (btyp_tuple []) []
 
 
+  (* x.0 or x.(0) where rhs arg is int literal: tuple projection *)
+  | EXPR_dot (sr,(e, EXPR_literal (_, AST_int (_,s)) )) ->
+    be (EXPR_get_n (sr,(int_of_string s,e)))
+
   | EXPR_dot (sr,(e,e2)) ->
 
     (* Analyse LHS.
