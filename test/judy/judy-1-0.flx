@@ -3,7 +3,7 @@ open C_hack;
 
 gen _ctor_address : string -> address = "(void*)$1.data()";
 
-val e : JError_t;
+var e : JError_t;
 val je = &e;
 var ires : int;
 var pires = &ires;

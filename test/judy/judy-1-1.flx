@@ -5,7 +5,7 @@ print "judyable\n";
 
 var j1 = J1Array();  // new bit array, all zero
 var e :JError_t; // for error info
-var je = &je;
+var je = &e;
 
 var res: int;
 var pres = &res;
