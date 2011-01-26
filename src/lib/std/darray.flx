@@ -43,8 +43,9 @@ open module Darray
   ctor[T] darray[T] (size:ulong, default:T) => darray[T] (varray[T](size,default));
 
   // basic array stuff, same interface as array
-  fun subscript[t,ii in ints] (a:darray[t],  n:ii) => (_repr_ a).a.[n];
   fun len[t] (a:darray[t])=> Varray::len (_repr_ a).a;
+  fun subscript[t,ii in ints] (a:darray[t],  n:ii) => (_repr_ a).a.[n];
+  proc set[t,ii in ints] (a:darray[t],  n:ii, v:t) => set ((_repr_ a).a,n,v);
 
   // basic array stuff, same interface as varray
   proc pop[t](a:darray[t]) {
@@ -54,14 +55,14 @@ open module Darray
   }
 
   proc pluseq[t] (a:&darray[t],v:t) {
-//println "Darray increment";
-    r := _repr_ (*a);
-//println$ "Varray len    = " + r.a.len.str;
-//println$ "Varray maxlen = " + r.a.maxlen.str;
+    push_back (*a, v);
+  }
+
+  proc push_back[t] (a:darray[t], v:t) {
+    r := _repr_ a; 
     newsize := r.resize (maxlen r.a, Varray::len r.a + 1ul);
-//println$ "Newsize = " + newsize.str;
-    if newsize != maxlen r.a do do_resize(*a,newsize); done
-    var z = r.a; z += v; // hack to workaround compiler error Address non variable
+    if newsize != maxlen r.a do do_resize(a,newsize); done
+    push_back (r.a, v); // hack to workaround compiler error Address non variable
   }
 
   proc iter[T] (_f:T->void) (x:darray[T]) = { iter _f (_repr_ x).a; }

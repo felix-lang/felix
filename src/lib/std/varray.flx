@@ -65,7 +65,7 @@ open module Varray
   ;
 
   lvalue fun subscript[t]: varray[t] * !ints -> t = "$1[$2]";
-
+  proc set[t]: varray[t] * !ints * t = "$1[$2]=$3;";
   fun len[t]: varray[t] -> ulong =
     "PTF gcp->collector->get_used($1)"
     requires property "needs_gc"
@@ -79,12 +79,14 @@ open module Varray
   fun stl_begin[t]: varray[t] -> &t = "$1";
   fun stl_end[t]: varray[t] -> &t = "($1+PTF gcp->collector->get_used($1))";
 
-  proc pluseq[t] : &varray[t] * t = """
+  proc pluseq[t] (pa:&varray[t],v:t) { push_back (*pa,v); }
+
+  proc push_back[t] : varray[t] * t = """
     {
-      ?1 * _p = *$1;
-      unsigned long n = PTF gcp->collector->get_used(_p);
-      PTF gcp->collector->incr_used(_p,1L);
-      new(_p+n) ?1($2);
+      //?1 * _p = *$1;
+      unsigned long n = PTF gcp->collector->get_used($1);
+      PTF gcp->collector->incr_used($1,1L);
+      new($1+n) ?1($2);
     }
   """
     requires property "needs_gc"

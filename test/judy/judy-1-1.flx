@@ -4,7 +4,8 @@ open Judy;
 print "judyable\n";
 
 var j1 = J1Array();  // new bit array, all zero
-var je = JError_t(); // for error info
+var e :JError_t; // for error info
+var je = &je;
 
 var res: int;
 var pres = &res;
@@ -31,5 +32,4 @@ Judy1Last(j1, &last, je, pres);             // seems to give max uint
 Judy1Count(j1, first, last, je, &n);
 print (int n); endl;
 
-free je;
 free j1;

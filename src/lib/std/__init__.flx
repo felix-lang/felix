@@ -42,6 +42,10 @@ include "std/cstdlib";
 include "std/control";
 include "std/categ";
 
+// run time type information
+include "std/rtti";
+
+
 // I/O
 include "std/cstdio";
 include "std/textio";
@@ -52,19 +56,27 @@ include "std/filename";
 include "std/pointer";
 include "std/option";
 include "std/slice";
-include "std/carray";
 include "std/string";
 include "std/list";
+
+// arrays
+include "std/carray";
 include "std/array";
 include "std/varray";
 include "std/darray";
-include "std/avl";
-include "std/lexer";
+include "std/sarray";
+include "std/judy";
 
-include "std/rtti";
+// tree
+include "std/avl";
+
+// misc
+include "std/lexer";
+// google re2 regexps
 include "std/re2";
 include "std/regdef";
-include "std/judy";
+
+// pthreads (portable)
 include "std/pthread";
 
 // Version

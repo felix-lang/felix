@@ -30,13 +30,11 @@ let dypgen_choose_token = `all
 let dyp_merge = keep_all
 *)
 let smerge ((oseq,osr,osex),ogd,old as oit) ((nseq,nsr,nsex),ngd,nld as nit) =
-(*
    if !(global_data.pdebug) then
    begin
      print_endline ("MERGING! prev=" ^ string_of_int oseq ^ ", nxt=" ^ string_of_int nseq);
      print_endline ("MERGING! prev=" ^ Ocs_print.string_of_ocs osex ^ "\nnxt=" ^ Ocs_print.string_of_ocs nsex);
    end;
-*)
    if oseq > nseq then oit
    else if nseq > oseq then nit
    (* else if osex = nsex then oit *)

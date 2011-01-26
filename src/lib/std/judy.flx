@@ -12,13 +12,14 @@ module Judy
   open C_hack;
 
   type word = "Word_t";
-  fun _ctor_word: int -> word = "(Word_t)$1";
-  fun _ctor_int: word -> int = "(int)$1";
-  fun _ctor_ulong: word -> ulong = "(unsigned long int)$1";
+  ctor word: int = "(Word_t)$1";
+  ctor word: ulong = "(Word_t)$1";
+  ctor int: word = "(int)$1";
+  ctor ulong: word = "(unsigned long int)$1";
+  fun isNULL: word -> bool = "$1==0";
+  fun isNULL: &word -> bool = "$1==0";
 
-  type JError_t = "JError_t*";
-  gen _ctor_JError_t : 1 -> JError_t = "(JError_t*)malloc(sizeof(JError_t))";
-  proc free: JError_t = "free($1);";
+  type JError_t = "JError_t";
 
   type J1Array = "void**";
   gen _ctor_J1Array: 1 -> J1Array = "_mkj1()" requires body
@@ -38,48 +39,48 @@ module Judy
       }
     """;
 
-  proc Judy1Set: J1Array * word * JError_t * &int =
+  proc Judy1Set: J1Array * word * &JError_t * &int =
     "*$4=Judy1Set($1,$2,$3);";
 
-  proc Judy1UnSet: J1Array * word * JError_t * &int =
-    "*$4=Judy1UnSet($1,$2,$3);";
+  proc Judy1Unset: J1Array * word * &JError_t * &int =
+    "*$4=Judy1Unset($1,$2,$3);";
 
-  proc Judy1Test: J1Array * word * JError_t * &int =
+  proc Judy1Test: J1Array * word * &JError_t * &int =
     "*$4=Judy1Test(*$1,$2,$3);";
 
-  proc Judy1Count: J1Array * word * word* JError_t * &word =
+  proc Judy1Count: J1Array * word * word* &JError_t * &word =
     "*$5=Judy1Count(*$1,$2,$3,$4);";
 
-  proc Judy1ByCount: J1Array * word * &word * JError_t * &word =
+  proc Judy1ByCount: J1Array * word * &word * &JError_t * &word =
     "*$5=Judy1ByCount(*$1,$2,$3,$4);";
 
-  proc Judy1FreeArray: J1Array * JError_t * &word =
-    "*$3=Judy1Free($1,$2);";
+  proc Judy1FreeArray: J1Array * &JError_t * &word =
+    "*$3=Judy1FreeArray($1,$2);";
 
   proc Judy1MemUsed: J1Array * &word = "*$2=Judy1MemUsed(*$1);";
 
-  proc Judy1First: J1Array * &word * JError_t * &int =
+  proc Judy1First: J1Array * &word * &JError_t * &int =
     "*$4=Judy1First(*$1,$2,$3);";
 
-  proc Judy1Next: J1Array * &word * JError_t * &int =
+  proc Judy1Next: J1Array * &word * &JError_t * &int =
     "*$4=Judy1Next(*$1,$2,$3);";
 
-  proc Judy1Last: J1Array * &word * JError_t * &int =
+  proc Judy1Last: J1Array * &word * &JError_t * &int =
     "*$4=Judy1Last(*$1,$2,$3);";
 
-  proc Judy1Prev: J1Array * &word * JError_t * &int =
+  proc Judy1Prev: J1Array * &word * &JError_t * &int =
     "*$4=Judy1Prev(*$1,$2,$3);";
 
-  proc Judy1FirstEmpty: J1Array * &word * JError_t * &int =
+  proc Judy1FirstEmpty: J1Array * &word * &JError_t * &int =
     "*$4=Judy1FirstEmpty(*$1,$2,$3);";
 
-  proc Judy1NextEmpty: J1Array * &word * JError_t * &int =
+  proc Judy1NextEmpty: J1Array * &word * &JError_t * &int =
     "*$4=Judy1NextEmpty(*$1,$2,$3);";
 
-  proc Judy1LastEmpty: J1Array * &word * JError_t * &int =
+  proc Judy1LastEmpty: J1Array * &word * &JError_t * &int =
     "*$4=Judy1LastEmpty(*$1,$2,$3);";
 
-  proc Judy1PrevEmpty: J1Array * &word * JError_t * &int =
+  proc Judy1PrevEmpty: J1Array * &word * &JError_t * &int =
     "*$4=Judy1PrevEmpty(*$1,$2,$3);";
 
 ///////////////////////////////////////
@@ -99,49 +100,49 @@ module Judy
       void _jLfree(void **p) { JudyLFreeArray(p); free(p); }
     """;
 
-  proc JudyLIns: JLArray * word * JError_t * &&word =
+  proc JudyLIns: JLArray * word * &JError_t * &&word =
     "*(Word_t**)$4=(Word_t*)JudyLIns($1,$2,$3);";
 
-  proc JudyLDel: JLArray * word * JError_t * &int =
+  proc JudyLDel: JLArray * word * &JError_t * &int =
     "*$4=JudyLDel($1,$2,$3);";
 
-  proc JudyLGet: JLArray * word * JError_t * &&word =
+  proc JudyLGet: JLArray * word * &JError_t * &&word =
     "*$4=(Word_t*)JudyLGet(*$1,$2,$3);";
 
-  proc JudyLCount: JLArray * word * word * JError_t * &word =
+  proc JudyLCount: JLArray * word * word * &JError_t * &word =
     "*$5=JudyLCount(*$1,$2,$3,$4);";
 
-  proc JudyLByCount: JLArray * word * &word * JError_t * &&word =
+  proc JudyLByCount: JLArray * word * &word * &JError_t * &&word =
     "*$5=JudyLCount(*$1,$2,$3,$4);";
 
-  proc JudyLFreeArray: JLArray * JError_t * &word =
+  proc JudyLFreeArray: JLArray * &JError_t * &word =
     "*$3=JudyLFree($1,$2);";
 
   proc JudyLMemUsed: JLArray * &word =
     "*$2=JudyLMemUsed(*$1);";
 
-  proc JudyLFirst: JLArray * &word * JError_t * &&word =
+  proc JudyLFirst: JLArray * &word * &JError_t * &&word =
     "*(Word_t**)$4=(Word_t*)JudyLFirst(*$1,$2,$3);";
 
-  proc JudyLNext: JLArray * &word * JError_t * &&word =
+  proc JudyLNext: JLArray * &word * &JError_t * &&word =
     "*(Word_t**)$4=(Word_t*)JudyLNext(*$1,$2,$3);";
 
-  proc JudyLLast: JLArray * &word * JError_t * &&word =
+  proc JudyLLast: JLArray * &word * &JError_t * &&word =
     "*$4=JudyLLast(*$1,$2,$3);";
 
-  proc JudyLPrev: JLArray * &word * JError_t * &&word =
+  proc JudyLPrev: JLArray * &word * &JError_t * &&word =
     "*$4=JudyLPrev(*$1,$2,$3);";
 
-  proc JudyLFirstEmpty: JLArray * &word * JError_t * &word =
+  proc JudyLFirstEmpty: JLArray * &word * &JError_t * &word =
     "*$4=JudyLFirstEmpty(*$1,$2,$3);";
 
-  proc JudyLNextEmpty: JLArray * &word * JError_t * &word =
+  proc JudyLNextEmpty: JLArray * &word * &JError_t * &word =
     "*$4=JudyLNextEmpty(*$1,$2,$3);";
 
-  proc JudyLLastEmpty: JLArray * &word * JError_t * &word =
+  proc JudyLLastEmpty: JLArray * &word * &JError_t * &word =
     "*$4=JudyLLastEmpty(*$1,$2,$3);";
 
-  proc JudyLPrevEmpty: JLArray * &word * JError_t * &word =
+  proc JudyLPrevEmpty: JLArray * &word * &JError_t * &word =
     "*$4=JudyLPrevEmpty(*$1,$2,$3);";
 
   type JHSArray = "void**";
@@ -159,13 +160,13 @@ module Judy
       void _jHSfree(void **p) { JudyHSFreeArray(p); free(p); }
     """;
 
-  proc JudyHSIns: JHSArray * address * word * JError_t * &&word =
+  proc JudyHSIns: JHSArray * address * word * &JError_t * &&word =
     "*$5=(Word_t*)JudyHSIns($1,$2,$3,$4);";
 
-  proc JudyHSDel: JHSArray * address * word * JError_t * &int =
+  proc JudyHSDel: JHSArray * address * word * &JError_t * &int =
     "*$5=JudyHSDel($1,$2,$3,$4);";
 
-  proc JudyHSGet: JHSArray * address * word * JError_t * &&word =
+  proc JudyHSGet: JHSArray * address * word * &JError_t * &&word =
     "*$5=(Word_t*)JudyHSGet(*$1,$2,$3);";
 
 }

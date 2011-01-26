@@ -2190,7 +2190,8 @@ and lookup_qn_with_sig'
           sra srn
           env env rs name ts signs
       with
-      | OverloadKindError (sr,s) ->
+      | Free_fixpoint _ as x -> raise x
+      | OverloadKindError (sr1,s1) ->
         begin
           try
             (*
@@ -2201,19 +2202,28 @@ and lookup_qn_with_sig'
               bsym_table
               sra srn
               env env rs ("_ctor_" ^ name) ts signs
-           with ClientError (_,s2) ->
-             clierr sr
+          with ClientError (sr2,s2) ->
+             clierr2 sr1 sr2
              (
-             "ERROR: " ^ s ^
-             "\nERROR2: " ^ s2
+             "attempting name lookup of " ^ name ^ " got Overload Kind ERROR1: " ^ s1 ^
+             "\nattempting name lookup of _ctor_" ^ name ^ " got ERROR2: " ^ s2
              )
         end
-      | Free_fixpoint _ as x -> raise x
-      | x -> 
-        (* print_endline (
-        "Other exn = " ^ Printexc.to_string x);
-        *)
-        raise x;
+ 
+      | ClientError (sr1,s1) as x ->
+        begin
+          try
+            (*
+            print_endline "Trying _ctor_ hack";
+            *)
+            lookup_name_with_sig
+              state
+              bsym_table
+              sra srn
+              env env rs ("_ctor_" ^ name) ts signs
+          with ClientError (sr2,s2) -> raise x
+        end
+      | x -> raise x
     end
 
   | `AST_index (sr,name,index) as x ->
@@ -2355,7 +2365,9 @@ and lookup_type_qn_with_sig'
 
       | SYMDEF_union _
       | SYMDEF_type_alias _ ->
+        (*
         print_endline "mapping type name to _ctor_type [2]";
+        *)
         let qn =  match qn with
           | `AST_name (sr,name,ts) -> `AST_name (sr,"_ctor_"^name,ts)
           | `AST_lookup (sr,(e,name,ts)) -> `AST_lookup (sr,(e,"_ctor_"^name,ts))
@@ -3944,6 +3956,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       let e = be e in
       begin match e with
       | BEXPR_deref e,_ -> e
+
       | BEXPR_name (index,ts),_ ->
           (* Look up the type of the name, and make sure it's addressable. *)
           begin match
@@ -4010,6 +4023,24 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
 
       | BEXPR_apply ((BEXPR_closure (i,ts),_),a),_ when has_property i `Lvalue ->
           bexpr_address e
+
+      (* allow addressing of structure component of deref'ed pointer *)
+      | (BEXPR_get_n (_,(BEXPR_deref _,_)),_) as x -> 
+        bexpr_address x
+
+      (* Allow addressing structure components of variables .. actually
+       * we need to check here that "bid" is actually a variable .. 
+       *)
+      | (BEXPR_get_n (i,(BEXPR_name (bid,ts),_)),_) as x -> 
+        begin 
+          try 
+            match Flx_bsym.bbdcl (Flx_bsym_table.find bsym_table bid) with
+            | BBDCL_val (_,_,(`Var | `Ref)) -> bexpr_address x
+            | _ -> raise Not_found
+          with Not_found ->
+              clierr srr ("[bind_expression] [5]Address component of non variable " ^
+               sbe bsym_table e)
+        end
 
       | _ ->
           clierr srr ("[bind_expression] [4]Address non variable " ^
