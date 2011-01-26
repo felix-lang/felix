@@ -611,24 +611,8 @@ def dist(ctx):
     # Find the git executable.
     git = fbuild.builders.find_program(ctx, ['git'])
 
-    # Grab the HEAD revision.
-    head_revision, _ = ctx.execute(
-        [git, 'rev-parse', '--short', 'HEAD^{}'],
-        quieter=1)
-
-    # Check if the HEAD branch points at our version.
-    try:
-        tag_revision, _ = ctx.execute(
-            [git, 'rev-parse', '--short', 'v' + flx_version + '^{}'],
-            quieter=1)
-    except fbuild.ExecutionError:
-        # It's okay if the tag hasn't been created.
-        tag_revision = None
-
-    # If HEAD is not tagged or HEAD does not point at the tagged commit, use
-    # the HEAD revision as our version.
-    if not tag_revision or tag_revision != head_revision:
-        flx_version = head_revision.decode().strip()
+    # Grab our revision name from git.
+    flx_version = ctx.execute([git, 'describe'], quieter=1)[0].decode().strip()
 
     ctx.logger.log('Packing Source as Version: %s' % flx_version)
 
