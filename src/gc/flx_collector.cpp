@@ -472,8 +472,6 @@ again:
   *w = (*w & ~1uL) | reachable;
 
   unsigned long n_used = get_used((void*)fp) * shape->count;
-  std::size_t n_offsets = shape->n_offsets;
-  std::size_t *offsets = shape->offsets;
 
   if(shape->flags & gc_flags_conservative)
   {
@@ -482,7 +480,7 @@ again:
       (unsigned char*)(void*)fp +
       n_used * n / sizeof(void*) * sizeof(void*)
     );
-    for ( void **i = (void**)p; i != end; i = i+1)
+    for ( void **i = (void**)fp; i != end; i = i+1)
     {
       //if(debug)
       //  fprintf(stderr, "Check if *%p=%p is a pointer\n",i,*(void**)i);
@@ -494,9 +492,11 @@ again:
   }
   else
   {
+    ::std::size_t n_offsets = shape->n_offsets;
+    ::std::size_t *offsets = shape->offsets;
     if (n_used * n_offsets == 1) // tail rec optimisation
     {
-        void **pq = (void**)(void*)((unsigned char*)p + offsets[0]);
+        void **pq = (void**)(void*)((unsigned char*)fp + offsets[0]);
         void *q = *pq;
         if(q){
           p = q;
@@ -508,7 +508,7 @@ again:
     {
       for(unsigned int i=0; i<n_offsets; ++i)
       {
-        void **pq = (void**)(void*)((unsigned char*)p + offsets[i]);
+        void **pq = (void**)(void*)((unsigned char*)fp + offsets[i]);
         void *q = *pq;
         if(q)
         {
@@ -516,7 +516,7 @@ again:
           else scan_object(q, reclimit-1);
         }
       }
-      p=(void*)((unsigned char*)p+shape->amt);
+      fp=(Word_t)(void*)((unsigned char*)fp+shape->amt);
     }
   }
 }
