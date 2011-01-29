@@ -21,6 +21,7 @@ open Flx_cexpr
 open Flx_maps
 open Flx_pgen
 open Flx_beta
+open Flx_vgen
 
 let string_of_string = Flx_string.c_quote_of_string
 
@@ -169,7 +170,6 @@ let isid x =
     true
   with _ -> false
 ;;
-
 let rec gen_expr'
   syms
   bsym_table
@@ -674,7 +674,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
      arguments to be applied to a unit anyhow
   *)
 
-  | BEXPR_variant (s,((_,t') as e)) ->
+  | BEXPR_variant (s,((_,t') as e)) -> failwith ("Temporarily egen not handling BEXPR_variant");
     print_endline ("Variant " ^ s);
     print_endline ("Type " ^ sbt bsym_table t);
     let
@@ -697,7 +697,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
     let uval = "::flx::rtl::_uctor_("^si vidx^"," ^ aval ^")"  in
     ce_atom uval
 
-  | BEXPR_coerce ((srcx,srct) as srce,dstt) ->
+  | BEXPR_coerce ((srcx,srct) as srce,dstt) -> failwith ("Temporarily, egen not handling coercions");
     let coerce_variant () =
       let vts =
         match dstt with
@@ -736,7 +736,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
      (
        (BEXPR_case (v,t),t'),
        (a,t'')
-     ) ->
+     ) -> failwith ("Temporarily egen not handling application of BEXPR_case");
        (* t is the type of the sum,
           t' is the function type of the constructor,
           t'' is the type of the argument

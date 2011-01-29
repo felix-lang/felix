@@ -117,7 +117,6 @@ let global_data = {
   pcounter = ref 1;
   env = init_env ();
   pdebug = ref debug;
-  lexbuf_stack = [];
 }
 
 let local_data = {

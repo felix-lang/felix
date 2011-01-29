@@ -614,6 +614,7 @@ tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
 @select(h)
 // GENERATED DURING CONFIGURATION
 open syntax felix;
+//SAVE "grammar.automaton";
 
 @plats = ["WIN32","POSIX","LINUX","MACOSX","CYGWIN","SOLARIS","BSD"]
 

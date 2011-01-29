@@ -110,7 +110,7 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 /* literals */
 %token <string> NAME
 %token <(string * prio_t)> NONTERMINAL
-%token <(string * Big_int.big_int)> INTEGER
+%token <(string * string)> INTEGER
 %token <(string * string )> FLOAT
 %token <string> STRING
 %token <string> CSTRING
@@ -521,7 +521,7 @@ main lexer =
       in
       let d = String.sub s first (!k-first) in
       let v = (converter d) in
-      (t, v)
+      (t, Big_int.string_of_big_int v)
   }
 
  floating_literal -> FLOAT {
@@ -688,7 +688,7 @@ tstatement:
    {
      let sr = getsr dyp in
      let lexbuf = $1 in
-     let n = Big_int.int_of_big_int (snd $2)in
+     let n = int_of_string (snd $2)in
      set_lineno lexbuf n;
      Dyp.set_fname lexbuf $3;
      0,sr,Snull
@@ -698,7 +698,7 @@ tstatement:
    {
      let sr = getsr dyp in
      let lexbuf = $1 in
-     let n = Big_int.int_of_big_int (snd $2)in
+     let n = int_of_string (snd $2)in
      set_lineno lexbuf n;
      0,sr,Snull
    }
@@ -898,6 +898,16 @@ utstatement:
       (0, sr, Snull), [Local_data local_data]
     }
 
+  | "SAVE" STRING
+    {
+print_endline ("Saving automaton " ^ $2);
+      let sr = getsr dyp in
+      let oc = open_out $2 in
+      Marshal.to_channel oc dyp.parser_pilot [Marshal.Closures];
+      close_out oc;
+      (0,sr,Snull)    
+    }
+
   | "open" "syntax" basic_name_comma_list
     @{
       (*
@@ -1029,14 +1039,14 @@ sinteger:
   | INTEGER
     {
       let t, v = $1 in
-      0, getsr dyp, Sbigint v
+      0, getsr dyp, Sbigint (Big_int.big_int_of_string v)
     }
 
 strint:
   | INTEGER
     {
       let t, v = $1 in
-      let s = Big_int.string_of_big_int v in
+      let s =  v in
       0, getsr dyp, Sstring s
     }
 
@@ -1061,14 +1071,14 @@ sintegral:
   | INTEGER
     {
       let t, v = $1 in
-      let i = Sstring t :: Sbigint v :: [] in
+      let i = Sstring t :: Sbigint (Big_int.big_int_of_string v) :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev i) in
       0, getsr dyp, x
     }
   | "-" INTEGER
     {
       let t, v = $2 in
-      let v = Big_int.minus_big_int v in
+      let v = Big_int.minus_big_int (Big_int.big_int_of_string v) in
       let i = Sstring t :: Sbigint v :: [] in
       let x = Ocs_misc.make_slist Snull (List.rev i) in
       0, getsr dyp, x
@@ -1089,7 +1099,6 @@ sliteral:
     {
       let t, v = $1 in
       let sr = getsr dyp in
-      let v = Big_int.string_of_big_int v in
       let alit = Ocs_sym.get_symbol "ast_literal" in
       let aint = Ocs_sym.get_symbol "ast_int" in
       let i = aint :: Sstring t :: Sstring v :: [] in

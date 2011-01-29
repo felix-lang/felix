@@ -16,14 +16,7 @@ type token =
   | SLOSH
   | NAME of string
   | NONTERMINAL of (string * ntprio_t)
-  | INTEGER of (string * Big_int.big_int)
-  | FLOAT of (string * string)
   | STRING of string
-  | CSTRING of string
-  | FSTRING of string
-  | QSTRING of string
-  | WSTRING of string
-  | USTRING of string
   | DUMMY
   | QUEST
   | LPAR
@@ -67,5 +60,4 @@ and 'obj global_data_t = {
   pcounter : int ref;
   env : Ocs_types.env;
   pdebug : bool ref;
-  mutable lexbuf_stack: Lexing.lexbuf list;
 }

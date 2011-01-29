@@ -14,14 +14,7 @@ let string_of_token = function
   | DUMMY -> "DUMMY"
   | NAME s -> s
   | NONTERMINAL (s,p) -> s ^ sp p
-  | INTEGER (t,i) -> Big_int.string_of_big_int i
-  | FLOAT (t,v) -> v
   | STRING s -> Flx_string.c_quote_of_string s
-  | CSTRING s -> Flx_string.c_quote_of_string s
-  | FSTRING s -> Flx_string.c_quote_of_string s
-  | QSTRING s -> Flx_string.c_quote_of_string s
-  | WSTRING s -> Flx_string.c_quote_of_string s
-  | USTRING s -> Flx_string.c_quote_of_string s
   | QUEST _ -> "?"
   | LPAR _ -> "("
   | RPAR _ -> ")"
@@ -50,14 +43,7 @@ let name_of_token = function
   | DUMMY -> "DUMMY"
   | NAME _ -> "NAME"
   | NONTERMINAL _ -> "NONTERMINAL"
-  | INTEGER _ -> "INTEGER"
-  | FLOAT _ -> "FLOAT"
   | STRING _ -> "STRING"
-  | CSTRING _ -> "CSTRING"
-  | FSTRING _ -> "FSTRING"
-  | QSTRING _ -> "QSTRING"
-  | WSTRING _ -> "WSTRING"
-  | USTRING _ -> "USTRING"
   | QUEST _ -> "QUEST"
   | LPAR -> "LPAR"
   | RPAR -> "RPAR"
