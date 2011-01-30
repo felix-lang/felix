@@ -117,7 +117,10 @@ step:
     switch(cc->p_svc->variant)
     {
       case svc_get_fthread:
-        **(fthread_t***)(cc->p_svc->data) = this;
+        // NEW VARIANT LAYOUT RULES
+        // One less level of indirection here
+        //**(fthread_t***)(cc->p_svc->data) = this;
+        *(fthread_t**)(cc->p_svc->data) = this;
         goto restep;      // handled
 
       //case svc_yield:

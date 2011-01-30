@@ -82,11 +82,14 @@ open module Control
   private proc _throw: cont = "throw $1;";
 
   // THESE VALUES MUST SYNC WITH THE RTL
+  // LAYOUT CHANGE: pointers are now stored in the _uctor_
+  // instead of on the heap with a pointer in the uctor
+  // This doesn't affect abstract types, even if they're pointers in C
   union svc_req_t =
   /*0*/ | svc_yield
-  /*1*/ | svc_get_fthread         of &fthread
+  /*1*/ | svc_get_fthread         of &fthread    // CHANGED LAYOUT
   /*2*/ | svc_read                of address
-  /*3*/ | svc_general             of &address
+  /*3*/ | svc_general             of &address    // CHANGED LAYOUT
   /*4*/ | svc_reserved1
   /*5*/ | svc_spawn_pthread       of fthread
   /*6*/ | svc_spawn_detached      of fthread

@@ -13,10 +13,13 @@ let cal_variant_cases bsym_table t =
       try Flx_bsym_table.find bsym_table i with Not_found -> assert false
     in
     begin match Flx_bsym.bbdcl bsym with
-    (* BUG: the user is allowed to assign the indexes, so we should look for the max index .. 
-     * but I'm not sure we should be supporting this now: it's to support C enums
+    (* special: we take the max of declared constructors and the maximum user defined index
+     * It's not clear this is right, however the index actually stored in a packed pointer
+     * is the user asssigned one so it has to fit. Note: we have to use the assigned value + 1,
+     * since we're calculating a case count, an 0 .. n is n+1 cases. We're assuming non-negative
+     * values here .. urrggg.. review this!
      *)
-    | BBDCL_union (bvs,cts) -> List.length cts
+    | BBDCL_union (bvs,cts) -> List.fold_left (fun a (s,i,t) -> max a (i+1)) (List.length cts) cts
     | _ -> assert false 
     end
   | _ -> assert false 
@@ -50,7 +53,7 @@ let cal_variant_maxarg bsym_table t =
        * if a type variable were instantiated with a small size, but
        * hopefully this will be consistent!
        *)
-      List.fold_left (fun r (_,u,t) -> max r (size t)) 0  cts
+      List.fold_left (fun r (_,_,t) -> max r (size t)) 0  cts
     | _ -> assert false 
     end
   | _ -> assert false 

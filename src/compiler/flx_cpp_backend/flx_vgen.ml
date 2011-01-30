@@ -5,6 +5,7 @@ open Flx_ctypes
 open Flx_vrep
 
 let si = string_of_int
+exception Found_type of Flx_btype.t
 
 let check_case_index bsym_table t i =
   let n = cal_variant_cases bsym_table t in
@@ -31,7 +32,12 @@ let cal_case_type bsym_table n t : Flx_btype.t =
     in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_union (bvs,cts) -> 
-      let _,_,ct = List.nth cts n in
+      let ct = 
+        try 
+          List.iter (fun (s,i,ct)-> if i = n then raise (Found_type ct)) cts; 
+          assert false 
+        with Found_type ct -> ct 
+      in
       let ct = Flx_unify.tsubst bvs ts ct in (* eliminate type variables *)
       ct
     | _ -> assert false

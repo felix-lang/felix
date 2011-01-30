@@ -719,7 +719,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
     let uval = "::flx::rtl::_uctor_("^si vidx^"," ^ aval ^")"  in
     ce_atom uval
 
-  | BEXPR_coerce ((srcx,srct) as srce,dstt) -> failwith ("Temporarily, egen not handling coercions");
+  | BEXPR_coerce ((srcx,srct) as srce,dstt) -> 
     let coerce_variant () =
       let vts =
         match dstt with
@@ -740,6 +740,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
             i
         end
         in
+        failwith "egen: can't handle variant conversions yet";
         ce_atom ("::flx::rtl::_uctor_(vmap_" ^ cid_of_bid i ^ "," ^ ge srce ^ ")")
       end
     in

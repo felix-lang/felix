@@ -31,7 +31,7 @@ register void *sp __asm__("rsp");
 static void *sp = 0;
 #endif
 
-// non async drivers aren't don't depend on faio<-demux<-winsock
+// non async drivers don't depend on faio<-demux<-winsock
 // and so aren't linked with mswsock and ws2_32
 #if FLX_WIN32 && FLX_SUPPORT_ASYNC
   #include "demux_iocp_demuxer.hpp"
@@ -42,7 +42,7 @@ static void *sp = 0;
   // the destructor WSACleanup is called same number of times
   // Use of this RAII object ensures WSAinit/Cleanup calls balance.
   // RF: Still has to happen before any socket calls. Putting it in
-  // the async object which is created on command is already too late.
+  // the async object which is created on demand is already too late.
   // If that's a problem then any socket creation calls would have to
   // gratuitously make async calls.
   flx::demux::winsock_initer wsinit;
@@ -218,7 +218,10 @@ void doflx(void *data) {
               );
             }
             ++async_count;
-            void *dreq =  *(void**)ss.request->data;
+            // CHANGED TO USE NEW UNION LAYOUT RULES
+            // One less level of indirection for pointers
+            // void *dreq =  *(void**)ss.request->data;
+            void *dreq =  (void*)ss.request->data;
 
             // requests are now ALWAYS considered asynchronous
             // even if the request handler reschedules them immediately
