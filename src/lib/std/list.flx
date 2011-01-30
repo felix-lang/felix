@@ -17,13 +17,15 @@ open module List
   // If the variant is 1, the pointer points at the tuple of type
   // T * list[T]. There is no way to name this type from C,
   // so we just create an compatible type and use a cast.
+  // Note that cleverly, if the variant is 0, the data is also 0
+  // so the packed representation is 0
 
   proc splice[T] : &list[T] * list[T] =
     """
     { // list splice
       struct node_t { ?1 elt; void *tail; };
-      void *p = $1;
-      while(p) p = &((node_t*)FLX_VP(p))->tail;
+      void **p = $1;
+      while(*p) p = &((node_t*)FLX_VP(*p))->tail;
       *p = $2;
     }
     """
