@@ -81,16 +81,16 @@ let rec get_offsets' syms bsym_table typ : string list =
   | BTYP_none -> assert false
 
   | BTYP_pointer t -> ["0"]
-    (*
-    ["offsetof("^tname^",frame)"]
-    *)
-
-  | BTYP_sum args when not (all_units args) ->
-    ["offsetof("^tname^",data)"]
 
   (* need to fix the rule for optimisation here .. *)
+  | BTYP_sum _
   | BTYP_variant _ ->
-    ["offsetof("^tname^",data)"]
+    begin match Flx_vrep.cal_variant_rep bsym_table t' with
+    | Flx_vrep.VR_self -> assert false (* FIXME! *) 
+    | Flx_vrep.VR_int -> []
+    | Flx_vrep.VR_packed -> ["0"]
+    | Flx_vrep.VR_uctor -> ["offsetof("^tname^",data)"]
+    end
 
   | BTYP_inst (i,ts) ->
     let bsym =
@@ -100,10 +100,18 @@ let rec get_offsets' syms bsym_table typ : string list =
     in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_union (vs,idts) ->
+(*
       let varmap = mk_varmap vs ts in
       let cpts = map (fun (_,_,t) -> varmap_subst varmap t) idts in
       if all_voids cpts then []
       else ["offsetof("^tname^",data)"]
+*)
+      begin match Flx_vrep.cal_variant_rep bsym_table t' with
+      | Flx_vrep.VR_self -> assert false (* FIXME! *)
+      | Flx_vrep.VR_int -> []
+      | Flx_vrep.VR_packed -> ["0"]
+      | Flx_vrep.VR_uctor -> ["offsetof("^tname^",data)"]
+      end
 
     | BBDCL_struct (vs,idts) ->
       let varmap = mk_varmap vs ts in
@@ -194,7 +202,6 @@ let rec get_offsets' syms bsym_table typ : string list =
   | BTYP_type_set _
     -> failwith "[ogen] Type set has no representation"
 
-  | BTYP_sum _
   | BTYP_array _
   | BTYP_fix _
   | BTYP_void
@@ -610,7 +617,8 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
           clierr (Flx_bsym.sr bsym)
           ("[ogen] attempt to allocate an incomplete type: '" ^ Flx_bsym.id bsym ^"'")
 
-      | BBDCL_union _ -> () (* handled by universal _uctor_ *)
+      | BBDCL_union _ -> () (* handled by universal uctor, int, etc *) 
+
       | BBDCL_cstruct (vs,cps, reqs) ->
         (* cstruct shouldn't have allocable stuff in it *)
 
@@ -654,7 +662,15 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
 
    | BTYP_sum _ ->
      let name = cpp_typename syms bsym_table btyp in
-     bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_uctor_ptr_map;\n");
+     begin match Flx_vrep.cal_variant_rep bsym_table btyp with
+     | Flx_vrep.VR_self -> assert false
+     | Flx_vrep.VR_int ->
+       bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
+     | Flx_vrep.VR_packed ->
+       bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_address_ptr_map;\n");
+     | Flx_vrep.VR_uctor ->
+       bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_uctor_ptr_map;\n");
+     end
 
    | _ ->
      failwith

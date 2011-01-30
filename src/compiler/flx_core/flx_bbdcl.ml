@@ -49,6 +49,8 @@ type t =
                         Flx_btype.t (* constraint *) *
                         bid_t *
                         Flx_btype.t list
+  | BBDCL_const_ctor of bvs_t * bid_t * Flx_btype.t * int * 
+                        bvs_t * Flx_btype.t (* existentials and constraint for GADTs *)
   | BBDCL_nonconst_ctor of bvs_t * bid_t * Flx_btype.t * int * Flx_btype.t *
                         bvs_t * Flx_btype.t (* existentials and constraint for GADTs *)
   | BBDCL_axiom
@@ -99,6 +101,9 @@ let bbdcl_typeclass (prop, bvs) =
 let bbdcl_instance (prop, bvs, cons, bid, ts) =
   BBDCL_instance (prop, bvs, cons, bid, ts)
 
+let bbdcl_const_ctor (bvs, uidx, ut, ctor_idx, evs, etraint) =
+  BBDCL_const_ctor (bvs, uidx, ut, ctor_idx, evs, etraint)
+
 let bbdcl_nonconst_ctor (bvs, uidx, ut, ctor_idx, ctor_argt, evs, etraint) =
   BBDCL_nonconst_ctor (bvs, uidx, ut, ctor_idx, ctor_argt, evs, etraint)
 
@@ -141,6 +146,7 @@ let get_bvs = function
   | BBDCL_cstruct (bvs, _,_) -> bvs
   | BBDCL_typeclass (_, bvs) -> bvs
   | BBDCL_instance (_, bvs, _, _, _) -> bvs
+  | BBDCL_const_ctor (bvs, _, _, _, _, _) -> bvs
   | BBDCL_nonconst_ctor (bvs, _, _, _, _, _, _) -> bvs
   | BBDCL_axiom -> []
   | BBDCL_lemma -> []
@@ -221,6 +227,10 @@ let iter
       f_btype cons;
       f_bid bid;
       List.iter f_btype ts
+  | BBDCL_const_ctor (_,uidx,ut,_,_,etraint) ->
+      f_bid uidx;
+      f_btype ut;
+      f_btype etraint
   | BBDCL_nonconst_ctor (_,uidx,ut,_,ctor_argt,_,etraint) ->
       f_bid uidx;
       f_btype ut;
@@ -295,6 +305,14 @@ let map
         f_btype cons,
         f_bid bid,
         List.map f_btype ts)
+  | BBDCL_const_ctor (bvs,uidx,ut,ctor_idx,evs,etraint) ->
+      BBDCL_const_ctor (
+        bvs,
+        f_bid uidx,
+        f_btype ut,
+        f_bid ctor_idx,
+        evs,
+        f_btype etraint)
   | BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,ctor_argt,evs,etraint) ->
       BBDCL_nonconst_ctor (
         bvs,
@@ -473,6 +491,14 @@ let rec print f = function
         Flx_btype.print cons
         print_bid bid
         (Flx_list.print Flx_btype.print) ts
+  | BBDCL_const_ctor (bvs,uidx,ut,ctor_idx,evs,etraint) ->
+      print_variant6 f "BBDCL_const_ctor"
+        print_bvs bvs
+        print_bid uidx
+        Flx_btype.print ut
+        print_bid ctor_idx
+        print_bvs evs
+        Flx_btype.print etraint
   | BBDCL_nonconst_ctor (bvs,uidx,ut,ctor_idx,ctor_argt,evs,etraint) ->
       print_variant7 f "BBDCL_nonconst_ctor"
         print_bvs bvs

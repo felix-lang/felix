@@ -137,6 +137,9 @@ let strabs_symbol state bsym_table index bsym =
   | BBDCL_instance (props, bvs, t, j, ts) ->
       h (bbdcl_instance (props, bvs, ft t, j, fts ts))
 
+  | BBDCL_const_ctor (bvs, j, t1, k, evs, etraint) ->
+      h (bbdcl_const_ctor (bvs, j, ft t1, k, evs, ft etraint))
+
   | BBDCL_nonconst_ctor (bvs, j, t1, k,t2, evs, etraint) ->
       h (bbdcl_nonconst_ctor (bvs, j, ft t1, k, ft t2, evs, ft etraint))
 

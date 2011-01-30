@@ -2287,6 +2287,11 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     "instance "^string_of_bvs_cons bsym_table vs cons^
     " of <" ^ string_of_bid bid ^">["^ catmap "," (sbt bsym_table) ts ^ "];"
 
+  | BBDCL_const_ctor (vs,uidx,ut,ctor_idx, evs, etraint) ->
+    "uctor<" ^ name ^ ">" ^ string_of_bvs vs ^
+    " : " ^ sobt ut ^
+    ";"
+
   | BBDCL_nonconst_ctor (vs,uidx,ut,ctor_idx, ctor_argt, evs, etraint) ->
     "uctor<" ^ name ^ ">" ^ string_of_bvs vs ^
     " : " ^ sobt ut ^

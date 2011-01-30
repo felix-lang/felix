@@ -121,16 +121,7 @@ let gen_record name tn typs =
   type is sliced, since it's nothing more than a type
   correct wrapper for its base
 *)
-(*
-let gen_ref name typ =
-  "struct " ^ name ^ ": _ref_ {\n" ^
-  "  "^name^"(){}\n" ^
-  "  "^name^"(void *f, " ^typ^" *d): _ref_(f,d){}\n" ^
-  "  "^name^"(" ^typ^" *f): _ref_(f,std::ptrdiff_t(0)){}\n" ^
-  "  "^typ^" *operator->()const { return ("^typ^"*)get_data(); }\n" ^
-  "  "^typ^" &operator*() const { return *("^typ^"*)get_data(); }\n" ^
-  "};\n"
-*)
+
 
 (* this routine generates a typedef (for primitives)
 or struct declaration which names the type.
@@ -193,16 +184,16 @@ let gen_type_name syms bsym_table (index,typ) =
   | BTYP_unitsum k ->
       "typedef int " ^ tn typ ^ ";\n"
 
-  | BTYP_sum ts ->
+  | BTYP_sum _ 
+  | BTYP_variant _ ->
     descr ^
-    if is_unitsum typ
-    then
-      "typedef int " ^ tn typ ^ ";\n"
-    else
-      "typedef ::flx::rtl::_uctor_ " ^ tn typ ^ ";\n"
+    begin match Flx_vrep.cal_variant_rep bsym_table t with
+    | Flx_vrep.VR_self -> "// VR_self\n"
+    | Flx_vrep.VR_int -> "typedef int " ^ tn typ ^ "; // VR_int\n"
+    | Flx_vrep.VR_packed -> "typedef void *" ^ tn typ ^"; // VR_packed \n"
+    | Flx_vrep.VR_uctor -> "typedef ::flx::rtl::_uctor_ " ^ tn typ ^ "; //VR_uctor\n"
+    end
 
-  | BTYP_variant ts ->
-    "typedef ::flx::rtl::_uctor_ " ^ tn typ ^ ";\n"
 
   | BTYP_void -> ""
 
@@ -282,6 +273,14 @@ let gen_type_name syms bsym_table (index,typ) =
       in
       let name = cn typ in
       descr ^
+      begin match Flx_vrep.cal_variant_rep bsym_table t with
+      | Flx_vrep.VR_self -> "// VR_self\n"
+      | Flx_vrep.VR_int -> "typedef int " ^ tn typ ^ "; // VR_int\n"
+      | Flx_vrep.VR_packed -> "typedef void *" ^ tn typ ^"; // VR_packed \n"
+      | Flx_vrep.VR_uctor -> "typedef ::flx::rtl::_uctor_ " ^ tn typ ^ "; //VR_uctor\n"
+      end
+
+      (*
       let lss = map (fun (_,_,t)->t) ls in
       let lss = map (tsubst vs ts) lss in
       let len = si (length lss) in
@@ -290,7 +289,7 @@ let gen_type_name syms bsym_table (index,typ) =
         "typedef int " ^ name ^ "; //ncases="^len^"\n"
       else
         "typedef ::flx::rtl::_uctor_ " ^ name ^ "; //ncases="^len^"\n"
-
+      *)
 
     | _ ->
       failwith

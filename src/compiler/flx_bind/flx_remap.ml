@@ -146,6 +146,14 @@ let remap_bbdcl offset bbdcl =
       let ts = List.map remap_btype ts in
       bbdcl_instance (props, vs, cons, bid, ts)
 
+  | BBDCL_const_ctor (vs, uidx, ut, ctor_idx, evs, etraint) ->
+      let vs = remap_bvs vs in
+      let uidx = remap_bid uidx in
+      let ut = remap_btype ut in
+      let evs = remap_bvs evs in
+      let etraint = remap_btype etraint in
+      bbdcl_const_ctor (vs, uidx, ut, ctor_idx, evs, etraint)
+
   | BBDCL_nonconst_ctor (vs, uidx, ut, ctor_idx, ctor_argt, evs, etraint) ->
       let vs = remap_bvs vs in
       let uidx = remap_bid uidx in

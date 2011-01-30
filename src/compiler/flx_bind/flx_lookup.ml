@@ -1625,6 +1625,7 @@ and btype_of_bsym state bsym_table bt bid bsym =
       btyp_function (t, btyp_inst (bid, ts))
   | BBDCL_typeclass _ -> assert false
   | BBDCL_instance _ -> assert false
+  | BBDCL_const_ctor _ -> assert false
   | BBDCL_nonconst_ctor _ -> assert false
   | BBDCL_axiom -> assert false
   | BBDCL_lemma -> assert false

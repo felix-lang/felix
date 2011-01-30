@@ -523,30 +523,16 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
     (*
     print_endline ("Binding const ctor " ^ sym.Flx_sym.id);
     *)
-    let unit_sum =
-      match hfind "bbind" state.sym_table uidx with
-      | { Flx_sym.symdef=SYMDEF_union its} ->
-        fold_left
-        (fun v (_,_,_,t) ->
-          v && (match t with TYP_void _ -> true | _ -> false)
-        )
-        true
-        its
-      | _ -> assert false
-    in
     let t = type_of_index symbol_index in
     let ut = bt ut in
-    let ct =
-      if unit_sum then si ctor_idx
-      else "::flx::rtl::_uctor_(" ^ si ctor_idx ^ ",0)"
-           (* GAK! Backend specific code in front end *)
-    in
+    let btraint = bind_type_constraint vs' in
+    let evs = map (fun (s,i,__) -> s,i) (fst vs') in
 
     if state.print_flag then
-      print_endline ("//bound const " ^ sym.Flx_sym.id ^ "<" ^
+      print_endline ("//bound const ctor " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">:" ^ sbt bsym_table t);
 
-    add_bsym None (bbdcl_external_const ([], bvs, t, CS_str ct, []))
+    add_bsym None (bbdcl_const_ctor (bvs,uidx,ut,ctor_idx,evs,btraint))
 
   | SYMDEF_nonconst_ctor (uidx,ut,ctor_idx,vs',argt) ->
     (*
@@ -559,7 +545,7 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
     let evs = map (fun (s,i,__) -> s,i) (fst vs') in
 
     if state.print_flag then
-      print_endline ("//bound fun " ^ sym.Flx_sym.id ^ "<" ^
+      print_endline ("//bound nonconst ctor " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">:" ^ sbt bsym_table t);
 
     add_bsym None (bbdcl_nonconst_ctor (bvs,uidx,ut,ctor_idx,argt,evs,btraint))

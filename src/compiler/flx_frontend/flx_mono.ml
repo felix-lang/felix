@@ -287,6 +287,7 @@ let chk_mono syms bsym_table i =
   | BBDCL_external_code _ -> false
   | BBDCL_external_fun _ -> false
   | BBDCL_external_type (vs,tqual,ct,reqs) ->  false
+  | BBDCL_const_ctor (vs,uidx,udt, ctor_idx, evs, etraint) -> false
   | BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) -> false
   | BBDCL_typeclass (props,vs) ->  false
   | BBDCL_instance (props,vs,con,tc,ts) ->  false

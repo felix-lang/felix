@@ -21,7 +21,6 @@ open Flx_cexpr
 open Flx_maps
 open Flx_pgen
 open Flx_beta
-open Flx_vgen
 
 let string_of_string = Flx_string.c_quote_of_string
 
@@ -178,6 +177,7 @@ let rec gen_expr'
   this_ts
   sr
   (e,t)
+  : cexpr_t
 =
   match e with
   (* replace heap allocation of a unit with NULL pointer *)
@@ -205,6 +205,9 @@ let rec gen_expr'
     bsym_table
     (beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t))
   in
+
+  (* TO BE REPLACE BY Flx_vgen.gen_case_index *)
+(*
   let gen_case_index e =
     let _,t = e in
     begin match t with
@@ -232,6 +235,7 @@ let rec gen_expr'
     end
 
   in
+*)
   let ge_arg ((x,t) as a) =
     let t = tsub t in
     match t with
@@ -293,7 +297,7 @@ let rec gen_expr'
   match e with
   | BEXPR_expr (s,_) -> ce_top (cid_of_flxid s)
 
-  | BEXPR_case_index e -> gen_case_index e
+  | BEXPR_case_index e -> Flx_vgen.gen_get_case_index ge' bsym_table e
 
   | BEXPR_range_check (e1,e2,e3) ->
      let f,sl,sc,el,ec = Flx_srcref.to_tuple sr in
@@ -345,7 +349,7 @@ let rec gen_expr'
 
   | BEXPR_match_case (n,((e',t') as e)) ->
     let t' = beta_reduce syms.Flx_mtypes2.counter bsym_table sr t' in
-    let x = gen_case_index e in
+    let x = Flx_vgen.gen_get_case_index ge' bsym_table e in
     ce_infix "==" x (ce_atom (si n))
 
     (*
@@ -361,6 +365,8 @@ let rec gen_expr'
     (*
     print_endline ("Decoding nonconst ctor type " ^ sbt bsym_table t);
     *)
+    Flx_vgen.gen_get_case_arg ge' tn bsym_table n e
+    (*
     begin match t with (* t is the result of the whole expression *)
     | BTYP_function _ ->
       let cast = tn t in
@@ -369,6 +375,7 @@ let rec gen_expr'
       let cast = tn t ^ "*" in
       ce_prefix "*" (ce_cast cast (ce_dot (ge' e) "data"))
     end
+    *)
 
   | BEXPR_deref ((BEXPR_ref (index,ts)),BTYP_pointer t) ->
     ge' (bexpr_name t (index,ts))
@@ -439,7 +446,18 @@ print_endline ("Generating class new for t=" ^ ref_type);
     let t = tn t in
     ce_atom ("("^t ^ ")(" ^ cstring_of_literal v ^ ")")
 
+  (* A case tag: this is a variant value for any variant case
+   * which has no (or unit) argument: can't be used for a case
+   * with an argument. This is here for constant constructors,
+   * particularly enums.
+   *)
   | BEXPR_case (v,t') ->
+(*
+print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^ 
+" ctor#= " ^ si v ^ " union type = " ^ sbt bsym_table t);
+*)
+    Flx_vgen.gen_make_const_ctor bsym_table (e,t)
+    (* 
     begin match unfold t' with
     | BTYP_unitsum n ->
       if v < 0 or v >= n
@@ -480,6 +498,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
 
     | _ -> failwith "Case tag must have sum type"
     end
+*)
 
   | BEXPR_name (index,ts') ->
     let bsym_parent, bsym =
@@ -495,6 +514,9 @@ print_endline ("Generating class new for t=" ^ ref_type);
 
       | BBDCL_val (_,t,_) ->
           ce_atom (get_var_ref syms bsym_table this index ts)
+
+      | BBDCL_const_ctor (vs,uidx,udt, ctor_idx, evs, etraint) ->
+        Flx_vgen.gen_make_const_ctor bsym_table (e,t)
 
       | BBDCL_external_const (props,_,_,ct,_) ->
         if mem `Virtual props then
@@ -736,11 +758,13 @@ print_endline ("Generating class new for t=" ^ ref_type);
      (
        (BEXPR_case (v,t),t'),
        (a,t'')
-     ) -> failwith ("Temporarily egen not handling application of BEXPR_case");
+     ) -> 
+       Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table t v t' (a,t'')
        (* t is the type of the sum,
           t' is the function type of the constructor,
           t'' is the type of the argument
        *)
+(*
        let arg_typename = tn t'' in
        let union_typename = tn t in
        let aval =
@@ -768,7 +792,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
          "\ntype " ^ sbt bsym_table t''
        )
       *)
-
+*)
   | BEXPR_apply_prim (index,ts,arg) ->
     gen_apply_prim
       syms
@@ -812,8 +836,12 @@ print_endline ("Generating class new for t=" ^ ref_type);
       *)
       let ts = map tsub ts in
       let ct = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts ct) in
+(*
       let _,t = a in
       let t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
+*)
+      Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table udt cidx ct a 
+(*
       begin match ct with
       | BTYP_tuple [] ->
         ce_atom ( "::flx::rtl::_uctor_(" ^ si cidx ^ ", NULL)")
@@ -835,6 +863,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
         in
         ce_atom txt
       end
+*)
     | _ -> assert false
     end
 
@@ -1211,7 +1240,7 @@ and gen_apply_prim
         string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index
       )
 
-and gen_expr syms bsym_table this vs ts sr e =
+and gen_expr syms bsym_table this vs ts sr e : string =
   let e = Flx_bexpr.reduce e in
   let s =
     try gen_expr' syms bsym_table this vs ts sr e

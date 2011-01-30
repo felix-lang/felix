@@ -13,7 +13,7 @@ open module List
   // we copy the first list, then splice the second one onto its last element
 
   // representation dependent: may break!
-  // A Felix list is a ::flx::rtl::_uctor_ which has a variant code and pointer
+  // A Felix list is a void* which has a variant code in the low 2 bits of the pointer
   // If the variant is 1, the pointer points at the tuple of type
   // T * list[T]. There is no way to name this type from C,
   // so we just create an compatible type and use a cast.
@@ -21,9 +21,9 @@ open module List
   proc splice[T] : &list[T] * list[T] =
     """
     { // list splice
-      struct node_t { ?1 elt; ::flx::rtl::_uctor_ tail; };
-      ::flx::rtl::_uctor_ *p = $1;
-      while(p->variant) p = &((node_t*)p->data)->tail;
+      struct node_t { ?1 elt; void *tail; };
+      void *p = $1;
+      while(p) p = &((node_t*)FLX_VP(p))->tail;
       *p = $2;
     }
     """
@@ -36,17 +36,17 @@ open module List
     """
     void _rev(?2 plt)
     { // in place reversal
-      struct node_t { ?1 elt; ::flx::rtl::_uctor_ tail; };
-      ::flx::rtl::_uctor_ nutail = ::flx::rtl::_uctor_(0,0);    // temp new tail
-      ::flx::rtl::_uctor_ cur = *plt;
-      while(cur.variant)
+      struct node_t { ?1 elt; void *tail; };
+      void *nutail = 0; 
+      void *cur = *plt;
+      while(cur)
       {
-        ::flx::rtl::_uctor_ oldtail = ((node_t*)cur.data)->tail; // save old tail in temp
-        ((node_t*)cur.data)->tail = nutail;                      // overwrite current node tail
-        nutail = cur;                                            // set new tail to current
-        cur = oldtail;                                           // set current to saved old tail
+        void *oldtail = ((node_t*)FLX_VP(cur))->tail;   // save old tail in temp
+        ((node_t*)FLX_VP(cur))->tail = nutail;          // overwrite current node tail
+        nutail = cur;                                   // set new tail to current
+        cur = oldtail;                                  // set current to saved old tail
       }
-      *plt = nutail;                                             // overwrite 
+      *plt = nutail;                                    // overwrite 
     }
     """
   ;
@@ -56,14 +56,14 @@ open module List
   proc rev_last[T] : &list[T] * &list[T] =
     """
     { // in place reversal returns tail as well
-      struct node_t { ?1 elt; ::flx::rtl::_uctor_ tail; };
-      ::flx::rtl::_uctor_ nutail = ::flx::rtl::_uctor_(0,0); // new temp tail
-      ::flx::rtl::_uctor_ cur = *$1;                         // list to reverse
-      ::flx::rtl::_uctor_ last = cur;                        // save head
-      while(cur.variant)
+      struct node_t { ?1 elt; void *tail; };
+      void *nutail = (void*)0;                 // new temp tail
+      void *cur = *$1;                         // list to reverse
+      void *last = cur;                        // save head
+      while(cur)
       {
-        ::flx::rtl::_uctor_ oldtail = ((node_t*)cur.data)->tail; // set old tail to current's tail
-        ((node_t*)cur.data)->tail = nutail;                      // set current's tail to nutail
+        void *oldtail = ((node_t*)FLX_VP(cur))->tail;            // set old tail to current's tail
+        ((node_t*)FLX_VP(cur))->tail = nutail;                   // set current's tail to nutail
         nutail = cur;                                            // set nutail to current
         cur = oldtail;                                           // set current to old tail
       }

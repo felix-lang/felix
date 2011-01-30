@@ -463,6 +463,8 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs
 
+  | BBDCL_const_ctor (vs,uidx,udt, ctor_idx, evs, etraint) -> ()
+
   | BBDCL_nonconst_ctor (vs,uidx,udt, ctor_idx, ctor_argt, evs, etraint) ->
     assert (length vs = length ts);
     let vars = map2 (fun (s,i) t -> i,t) vs ts in

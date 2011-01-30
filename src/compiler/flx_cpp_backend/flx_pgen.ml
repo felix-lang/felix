@@ -21,11 +21,12 @@ let shape_of syms bsym_table tn t =
   | BTYP_inst (i,ts) ->
     begin match Flx_bsym_table.find_bbdcl bsym_table i with
     | BBDCL_union (vs,idts) ->
-      let varmap = mk_varmap vs ts in
-      let cpts = map (fun (_,_,t) -> varmap_subst varmap t) idts in
-      if all_voids cpts then "::flx::rtl::_int_ptr_map"
-      else "::flx::rtl::_uctor_ptr_map"
-
+      begin match Flx_vrep.cal_variant_rep bsym_table t with
+      | Flx_vrep.VR_self -> assert false
+      | Flx_vrep.VR_int -> "::flx::rtl::_int_ptr_map"
+      | Flx_vrep.VR_packed -> "::flx::rtl::_address_ptr_map"
+      | Flx_vrep.VR_uctor -> "::flx::rtl::_uctor_ptr_map"
+      end
     (* special hack: if we have a type which has an associated gc_shape type,
      * use the shape of that instead of the original type. This is a hack because
      * it leaves no way to get the shape of the original type, however the 

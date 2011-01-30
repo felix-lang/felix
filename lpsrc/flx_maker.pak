@@ -182,6 +182,13 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 @tangle("#define FLX_RAWADDRESS " + cal_raw_address())
 @tangle('#define FLX_MAX_ALIGN ' + str(config.HOST_CXX.options.MAX_ALIGN))
 
+// get variant index code and pointer from packed variant rep
+#define FLX_VP(x) ((void*)((FLX_RAWADDRESS)(x) & ~(FLX_RAWADDRESS)0x03))
+#define FLX_VI(x) ((int)((FLX_RAWADDRESS)(x) & (FLX_RAWADDRESS)0x03))
+
+// make a packed variant rep from index code and pointer
+#define FLX_VR(i,p) ((void*)((FLX_RAWADDRESS)(p)|(FLX_RAWADDRESS)(i)))
+
 #if FLX_WIN32 && !defined(_WIN32_WINNT)
 #define _WIN32_WINNT 0x500 // Require Windows NT5 (2K, XP, 2K3)
 #endif
@@ -397,6 +404,15 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 
 @tangle("#define FLX_RAWADDRESS " + cal_raw_address())
 @tangle('#define FLX_MAX_ALIGN ' + str(config.TARGET_CXX.options.MAX_ALIGN))
+
+// get variant index code and pointer from packed variant rep
+#define FLX_VP(x) ((void*)((FLX_RAWADDRESS)(x) & ~(FLX_RAWADDRESS)0x03))
+#define FLX_VI(x) ((int)((FLX_RAWADDRESS)(x) & (FLX_RAWADDRESS)0x03))
+
+// make a packed variant rep from index code and pointer
+#define FLX_VR(i,p) ((void*)((FLX_RAWADDRESS)(p)|(FLX_RAWADDRESS)(i)))
+
+
 #endif
 @doc()
 
