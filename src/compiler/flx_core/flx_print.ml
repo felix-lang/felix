@@ -1079,6 +1079,8 @@ and string_of_baxiom_method bsym_table a = match a with
   | `BPredicate e -> string_of_expr e
   | `BEquation (l,r) -> sbe bsym_table l ^ " = " ^ sbe bsym_table r
 
+and string_of_statements level ss = String.concat "" (List.map (fun s -> string_of_statement level s) ss)
+
 and string_of_statement level s =
   let se e = string_of_expr e in
   let sqn n = string_of_qualified_name n in

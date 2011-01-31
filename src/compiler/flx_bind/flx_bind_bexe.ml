@@ -313,9 +313,6 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
     handle_bexe (bexe_axiom_check (sr,be e2)) init
 
   | EXE_call (f',a') ->
-    (*
-    print_endline ("Apply " ^ string_of_expr f' ^ " to " ^  string_of_expr a');
-    *)
     let (ea,ta) as a = be a' in
     (*
     print_endline ("Recursive descent into application " ^ string_of_expr e);

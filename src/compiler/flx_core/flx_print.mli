@@ -39,6 +39,7 @@ val string_of_literal : literal_t -> string
 val string_of_parameters : params_t -> string
 val string_of_arguments : expr_t list -> string
 val string_of_statement : int -> statement_t -> string
+val string_of_statements : int -> statement_t list -> string
 val string_of_compilation_unit : compilation_unit_t -> string
 val string_of_asm : int -> asm_t -> string
 val string_of_desugared : asm_t list -> string

@@ -113,7 +113,6 @@ let init_env () =
 let debug = try ignore(Sys.getenv "FLX_DEBUG_PARSER"); true with Not_found -> false
 
 let global_data = {
-  handle_stmt = (fun stmt -> ());
   pcounter = ref 1;
   env = init_env ();
   pdebug = ref debug;
@@ -123,6 +122,7 @@ let local_data = {
   Flx_token.dssls = Drules.empty;
   Flx_token.loaded_dssls = [];
   Flx_token.scm = [];
+  Flx_token.rev_stmts = [];
 }
 
 

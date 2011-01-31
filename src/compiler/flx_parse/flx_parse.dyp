@@ -72,6 +72,7 @@ let rec elim_common_prefix x y =
   | x,y -> x,y
 
 let ssmerge ((xseq,x),xgd,xld as xit) ((yseq,y),ygd,yld as yit) =
+print_endline "statement merge happening?";
    if xseq > yseq then xit
    else if yseq > xseq then yit
    else
@@ -200,6 +201,7 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 %constructor Obj_sexpr %for sepsilon
 %constructor Obj_sexpr %for strepsilon
 
+/* Note: BACKWARDS list */
 %start <local_data_t> compilation_unit
 
 %lexer
@@ -604,6 +606,7 @@ compilation_unit:
     print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.last_local_data.loaded_dssls);
     print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm)); 
     print_endline ("Returning syntax, Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) dyp.last_local_data.dssls ""));
+    print_endline ("Returning syntax, statements = " ^ Flx_print.string_of_statements 0 (List.rev dyp.last_local_data.rev_stmts));
     *)
     dyp.last_local_data }
 
@@ -723,12 +726,12 @@ top_statements:
 (*
       print_endline ("BB sr=" ^ Flx_srcref.short_string_of_src sr);
 *)
-      let () =
+     let local_data = 
         match s with
-        | Snull -> ()
-        | _ -> dyp.global_data.handle_stmt (ocs2flx sr s)
+        | Snull -> dyp.last_local_data
+        | _ -> { dyp.last_local_data with rev_stmts = ocs2flx sr s :: dyp.last_local_data.rev_stmts }
       in
-      (), [Keep_grammar; Local_data (dyp.last_local_data)]
+      (),[Keep_grammar; Local_data (local_data)]
    }
 
  | { () }
@@ -1204,7 +1207,7 @@ epsilon: | { () }
 %%
 
 {
-let parse_lexbuf (handle_stmt, init, old_local_data) lexbuf =
+let parse_lexbuf old_local_data lexbuf =
   let show_error () =
     let b = (Dyp.std_lexbuf lexbuf) in
     let file = b.lex_start_p.pos_fname in
@@ -1215,15 +1218,11 @@ let parse_lexbuf (handle_stmt, init, old_local_data) lexbuf =
     let sr = Flx_srcref.make (file, start_line, start_col, end_line, end_col) in
     print_endline (Flx_srcref.long_string_of_src sr);
   in
-  (* Make the init a reference so that our handle_stmt function can update
-   * it. *)
-  let init = ref init in
   let local_data =
     try
       dyphack (compilation_unit
         ~local_data:old_local_data
-        ~global_data: { global_data with
-          handle_stmt = fun stmt -> init := handle_stmt stmt !init; }
+        ~global_data: global_data 
         lexbuf)
     with
       | Failure s ->
@@ -1266,11 +1265,11 @@ let parse_lexbuf (handle_stmt, init, old_local_data) lexbuf =
           raise (Flx_exceptions.ParseError "Unknown exception Parsing File")
         end
   in
-  handle_stmt, !init, local_data
+  local_data
 
-let make_parser_state handle_stmt init = handle_stmt, init, local_data
+let make_parser_state () = local_data
 
-let parser_data (handle_stmt, init, local_data) = init
+let parser_data { rev_stmts = r } = r 
 
 let parse_channel ?(name="<channel>") parser_state channel =
   let parser_pilot = pp () in
