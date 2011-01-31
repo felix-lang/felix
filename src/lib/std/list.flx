@@ -131,7 +131,7 @@ open module List
     return r;
   }
 
-  noinline fun rev[T] (x:list[T]):list[T]= {
+  fun rev[T] (x:list[T]):list[T]= {
     fun aux (x:list[T]) (y:list[T]) : list[T] =
     {
       return
