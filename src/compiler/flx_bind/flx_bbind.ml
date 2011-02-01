@@ -161,6 +161,7 @@ let bind_reqs bt state bsym_table env sr reqs =
 let bind_qual bt qual = match qual with
   | #base_type_qual_t as x -> x
   | `Raw_needs_shape t -> `Bound_needs_shape (bt t)
+  | `Scanner cs -> `Scanner cs
 
 let bind_quals bt quals = map (bind_qual bt) quals
 

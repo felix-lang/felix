@@ -448,6 +448,7 @@ and xrequirement_t sr x : requirement_t =
   | Lst [Id "Named_req"; qn] -> Named_req (xq "Named_req" qn)
   | Lst [Id "Property_req"; Str s] -> Property_req (s)
   | Lst [Id "Package_req"; ct] -> Package_req (xct ct)
+  | Lst [Id "Scanner_req"; ct] -> Scanner_req (xct ct)
   | x -> err x "requirement_t"
 
 and xraw_req_expr_t sr x : raw_req_expr_t =

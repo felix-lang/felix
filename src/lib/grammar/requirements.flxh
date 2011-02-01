@@ -6,6 +6,7 @@ syntax requirements {
   srequirement:= squalified_name =># "`(Named_req ,_1)";
   srequirement :=  "property" sstring =># "`(Property_req ,_2)";
   srequirement :=  "package" scode_spec =># "`(Package_req ,_2)";
+  srequirement :=  "scanner" scode_spec =># "`(Scanner_req ,_2)";
 
   srequirement_atom:= srequirement =># "`(rreq_atom ,_1)";
   srequirement_atom:= "(" srequirements ")" =># "_2";

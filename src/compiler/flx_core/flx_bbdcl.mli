@@ -4,6 +4,7 @@ open Flx_types
 type btype_qual_t = [
   | Flx_ast.base_type_qual_t
   | `Bound_needs_shape of Flx_btype.t
+  | `Scanner of code_spec_t
 ]
 
 type breqs_t = (Flx_types.bid_t * Flx_btype.t list) list

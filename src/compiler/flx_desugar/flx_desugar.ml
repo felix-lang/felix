@@ -266,7 +266,7 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
     let ss = Flx_print.string_of_string fmt in
     let fs = "flx::rtl::strutil::flx_asprintf("^ss^","^args^")" in
     let rreq = RREQ_atom (Package_req (CS_str "flx_strutil")) in
-    let props, dcls, req = mkreqs sr rreq in
+    let _,props, dcls, req = mkreqs sr rreq in
     assert (props = []);
     let ts =
       let n = List.fold_left (fun n (i,_) -> max n i) 0 its in
@@ -721,8 +721,9 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     | "virtual" -> `Virtual
     | x -> clierr sr ("Unknown property " ^ x)
   in
-  let mkreqs sr (rqs :raw_req_expr_t) : property_t list * asm_t list * named_req_expr_t =
+  let mkreqs sr (rqs :raw_req_expr_t) : type_qual_t list *property_t list * asm_t list * named_req_expr_t =
     let ix = None in
+    let quals = ref [] in
     let props = ref [] in
     let decls = ref [] in
     let mkreq s kind =
@@ -759,9 +760,12 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
       | Property_req s ->
         props := mkprop sr s :: !props;
         NREQ_true
+      | Scanner_req s ->
+        quals := `Scanner s :: !quals;
+        NREQ_true
     in
     let r = aux rqs in
-    !props, !decls, r
+    !quals, !props, !decls, r
   in
 
   (* rename _root headers *)
@@ -867,14 +871,14 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     end
 
   | STMT_const_decl (sr,name, vs,typ, s, reqs) ->
-    let props,dcls, reqs = mkreqs sr reqs in
+    let _,props,dcls, reqs = mkreqs sr reqs in
     Dcl (sr,name,None,access,vs,DCL_const (props,typ,s, map_reqs sr reqs))
     :: dcls
 
   (* types *)
   | STMT_abs_decl (sr,name,vs,quals,s, reqs) ->
-    let props,dcls, reqs = mkreqs sr reqs in
-    Dcl (sr,name,None,access,vs,DCL_abs (quals,s,map_reqs sr reqs))
+    let quals',props,dcls, reqs = mkreqs sr reqs in
+    Dcl (sr,name,None,access,vs,DCL_abs (quals' @ quals,s,map_reqs sr reqs))
     :: dcls
 
   | STMT_newtype (sr,name,vs,t) ->
@@ -883,7 +887,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   | STMT_union (sr,name, vs, components) -> [Dcl (sr,name,None,access,vs,DCL_union (components))]
   | STMT_struct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,DCL_struct (components))]
   | STMT_cstruct (sr,name, vs, components, reqs) ->  
-    let props,dcls, reqs = mkreqs sr reqs in
+    let _,props,dcls, reqs = mkreqs sr reqs in
     Dcl (sr,name,None,access,vs,DCL_cstruct (components, map_reqs sr reqs)) :: dcls
 
   | STMT_typeclass (sr,name, vs, sts) ->
@@ -983,7 +987,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     print_endline (string_of_statement 0 st);
     *)
     let vs,con = vs in
-    let props, dcls, reqs = mkreqs sr reqs in
+    let _,props, dcls, reqs = mkreqs sr reqs in
     (* hackery *)
     let vs,args = List.fold_left begin fun (vs,args) arg ->
       match arg with
@@ -1007,7 +1011,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     :: dcls
 
   | STMT_callback_decl (sr,name',args,result,reqs) ->
-    let props, dcls, reqs = mkreqs sr reqs in
+    let _,props, dcls, reqs = mkreqs sr reqs in
     Dcl (sr,name',None,access,dfltvs,
       DCL_callback (props,args,result,map_reqs sr reqs))
     :: dcls
@@ -1024,7 +1028,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     if vs' = dfltvs then gen_call_init sr name' :: mdcl else mdcl
 
   | STMT_insert (sr,name',vs,s,kind,reqs) ->
-    let props, dcls, reqs = mkreqs sr reqs in
+    let _,props, dcls, reqs = mkreqs sr reqs in
     (* SPECIAL case: insertion requires insertion use filo order *)
     dcls @ [
       Dcl (sr,map_req name',None,access,vs,DCL_insert (s, kind, map_reqs sr reqs))

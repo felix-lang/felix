@@ -1583,7 +1583,7 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
 
 (* -------------------------------------------------------------------------- *)
 
-(** Convert a bound symbol into a bound type. *)
+(** Find the type of a bound symbol. *)
 and btype_of_bsym state bsym_table bt bid bsym =
   (* Helper function to convert function parameters to a type. *)
   let type_of_params params =
@@ -1592,14 +1592,14 @@ and btype_of_bsym state bsym_table bt bid bsym =
 
   match Flx_bsym.bbdcl bsym with
   | BBDCL_invalid -> assert false
-  | BBDCL_module -> failwith
-     ("Attempt to construe module name " ^ Flx_bsym.id bsym ^ " as a type")
+  | BBDCL_module -> clierr (Flx_bsym.sr bsym) 
+     ("Attempt to find type of module name " ^ Flx_bsym.id bsym)
 
   | BBDCL_fun (_,_,(params,_),return_type,_) ->
       btyp_function (type_of_params params, return_type)
   | BBDCL_val (_,t,_) -> t
   | BBDCL_newtype (_,t) -> t
-  | BBDCL_external_type _ -> assert false
+  | BBDCL_external_type _ -> clierr (Flx_bsym.sr bsym) ("Use type as if variable: " ^ Flx_bsym.id bsym)
   | BBDCL_external_const (_,_,t,_,_) -> t
   | BBDCL_external_fun (_,_,params,return_type,_,_,_) ->
       btyp_function (btyp_tuple params, return_type)
@@ -1623,13 +1623,15 @@ and btype_of_bsym state bsym_table bt bid bsym =
       in
       let t = btyp_tuple (List.map snd ls) in
       btyp_function (t, btyp_inst (bid, ts))
-  | BBDCL_typeclass _ -> assert false
-  | BBDCL_instance _ -> assert false
-  | BBDCL_const_ctor _ -> assert false
-  | BBDCL_nonconst_ctor _ -> assert false
-  | BBDCL_axiom -> assert false
-  | BBDCL_lemma -> assert false
-  | BBDCL_reduce -> assert false
+  | BBDCL_typeclass _ 
+  | BBDCL_instance _ 
+  | BBDCL_const_ctor _ 
+  | BBDCL_nonconst_ctor _ 
+  | BBDCL_axiom 
+  | BBDCL_lemma 
+  | BBDCL_reduce ->
+    clierr (Flx_bsym.sr bsym) ("Use entity as if variable:" ^ Flx_bsym.id bsym)
+ 
 
 (* -------------------------------------------------------------------------- *)
 

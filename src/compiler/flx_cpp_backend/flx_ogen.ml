@@ -17,6 +17,8 @@ open Flx_print
 open Flx_exceptions
 open Flx_maps
 
+exception Scanner of Flx_ast.code_spec_t 
+
 let find_thread_vars_with_type bsym_table =
   let vars = ref [] in
   Flx_bsym_table.iter begin fun k parent bsym ->
@@ -583,6 +585,19 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
       | BBDCL_external_type (_,quals,_,_) ->
         let complete = not (mem `Incomplete quals) in
         let pod = mem `Pod quals in
+        let scanner = 
+           try 
+            List.iter (fun q-> match q with | `Scanner cs -> raise (Scanner cs) | _ -> () ) quals; 
+            None 
+          with Scanner cs -> Some cs 
+        in
+        let scanner = 
+          match scanner with 
+          | None -> "0" 
+          | Some (Flx_ast.CS_str s) -> s 
+          | Some (Flx_ast.CS_str_template s) -> s 
+          | Some _ -> assert false
+        in
         if complete then
           if not (Hashtbl.mem primitive_shapes name) then
           begin
@@ -600,9 +615,9 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
             bcat s ("  " ^ old_ptr_map ^ ",\n");
             bcat s ("  \"" ^ name ^ "\",\n");
             if pod then
-              bcat s ("  1,sizeof("^name^"),0,0,0,::flx::gc::generic::gc_flags_default\n")
+              bcat s ("  1,sizeof("^name^"),0,0,"^scanner^",::flx::gc::generic::gc_flags_default\n")
             else
-              bcat s ("  1,sizeof("^name^"),"^name^"_finaliser,0,0,::flx::gc::generic::gc_flags_default\n")
+              bcat s ("  1,sizeof("^name^"),"^name^"_finaliser,0,"^scanner^",::flx::gc::generic::gc_flags_default\n")
             ;
             bcat s "};\n"
           end else begin
