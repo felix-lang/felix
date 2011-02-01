@@ -543,7 +543,9 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
       if n <> 0 then begin
         bcat s ("static ::std::size_t " ^ name ^ "_offsets["^si n^"]={\n  ");
         bcat s ("  " ^ cat ",\n  " offsets);
-        bcat s "};\n"
+        bcat s "};\n";
+        bcat s ("static ::flx::gc::generic::offset_data_t " ^name^"_offset_data = { " ^ 
+          string_of_int n ^", " ^ name^ "_offsets};\n");
       end
       ;
 
@@ -562,19 +564,9 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
       bcat s ("  \"" ^ name ^ "\",\n");
       bcat s ("  " ^ si k ^ ",\n");
       bcat s ("  sizeof("^tname^"),\n"); (* NOTE: size of ONE element!! *)
-      bcat s
-      (
-        if not is_pod then ("  "^name^"_finaliser,\n")
-        else ("  0,\n")
-      );
-      bcat s
-      (
-        "  "^si n^
-        (
-          if n = 0 then ",0,\n"
-          else ",\n  " ^name^"_offsets,\n"
-        )
-      );
+      bcat s ( if not is_pod then ("  "^name^"_finaliser,\n") else ("  0,\n"));
+      bcat s ("  "^ (if n<>0 then "&"^name^"_offset_data" else "0")^",\n");
+      bcat s ("  "^ (if n<>0 then "&::flx::gc::generic::scan_by_offsets" else "0")^",\n");
       bcat s "  ::flx::gc::generic::gc_flags_default\n";
       bcat s "};\n"
 

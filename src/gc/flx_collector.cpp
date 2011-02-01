@@ -499,10 +499,9 @@ again:
   else
   {
     unsigned long dyncount = get_used((void*)fp);
-    void *r = shape->scanner(this, shape, (void*)fp,dyncount,reclimit);
-    if (r) {
-      p = r;
-      goto again;
+    if(shape->scanner) {
+      void *r = shape->scanner(this, shape, (void*)fp,dyncount,reclimit);
+      if (r) { p = r; goto again; }
     }
   }
 }
