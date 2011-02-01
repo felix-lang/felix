@@ -16,6 +16,7 @@ namespace generic {
 struct GC_EXTERN gc_shape_t;   // the shape of collectable objects
 struct GC_EXTERN collector_t;  // the collector itself
 struct GC_EXTERN allocator_t;  // the collector itself
+struct GC_EXTERN offset_data_t; // private data for offset scanner
 
 enum gc_shape_flags_t {
   gc_flags_default    = 0,            //< collectable and mobile
@@ -25,17 +26,28 @@ enum gc_shape_flags_t {
 };
 
 /// Describes runtime object shape.
+typedef void *scanner_t(collector_t*, gc_shape_t*, void *, unsigned long, int);
+
 struct GC_EXTERN gc_shape_t
 {
   gc_shape_t *next_shape;         ///< pointer to next shape in list or NULL
   char const *cname;              ///< C++ typename
-  std::size_t count;              ///< array element count
+  std::size_t count;              ///< static array element count
   std::size_t amt;                ///< bytes allocated
   void (*finaliser)(collector_t*, void*);  ///< finalisation function
-  std::size_t n_offsets;          ///< number of offsets
-  std::size_t *offsets;           ///< actual offsets
+  void *private_data;             ///< private data passed to scanner
+  scanner_t *scanner;             ///< scanner function 
   gc_shape_flags_t flags;         ///< flags
 };
+
+struct GC_EXTERN offset_data_t
+{
+  ::std::size_t n_offsets;
+  ::std::size_t *offsets;
+};
+
+GC_EXTERN scanner_t scan_by_offsets;
+
 
 /*
  * The following template is provided as a standard wrapper
@@ -81,7 +93,8 @@ struct GC_EXTERN collector_t
   void set_debug(bool d){debug=d;}
   collector_t();
   virtual ~collector_t(){}
-  virtual flx::pthread::thread_control_t *get_thread_control()const =0;
+  virtual ::flx::pthread::thread_control_t *get_thread_control()const =0;
+  virtual void register_pointer(void *q, int reclimit)=0;
 
   // These routines just provide statistics.
   unsigned long get_allocation_count()const {

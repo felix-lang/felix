@@ -232,14 +232,18 @@ let gen_offset_data s n name offsets isfun props flags last_ptr_map =
       "_offsets["^noffsets^ "]={\n");
     bcat s ("  " ^ cat "\n  " offsets);
     bcat s ("\n" ^  "};\n");
+    bcat s ("static ::flx::gc::generic::offset_data_t " ^name^"_offset_data = { " ^ 
+     noffsets ^", " ^ name^ "_offsets};\n");
   end;
+
   bcat s ("FLX_FINALISER("^name^")\n");
   bcat s (  "static ::flx::gc::generic::gc_shape_t "^ this_ptr_map ^" ={\n");
   bcat s ("  " ^ old_ptr_map ^ ",\n");
   bcat s ("  \"" ^ name ^ "\",\n");
   bcat s ("  1,sizeof("^name^"),\n  "^name^"_finaliser,\n");
-  bcat s ("  "^noffsets^",\n  "^ (if n<>0 then name^"_offsets" else "0")^",\n  ");
-  bcat s (match flags with None -> "::flx::gc::generic::gc_flags_default\n" | Some flags ->  flags^"\n");
+  bcat s ("  "^ (if n<>0 then "&"^name^"_offset_data" else "0")^",\n");
+  bcat s ("  "^ (if n<>0 then "&::flx::gc::generic::scan_by_offsets" else "0")^",\n");
+  bcat s (match flags with None -> "  ::flx::gc::generic::gc_flags_default\n" | Some flags ->  flags^"\n");
   bcat s ( "};\n")
 
 let is_instantiated syms i ts = Hashtbl.mem syms.instances (i,ts)

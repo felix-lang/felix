@@ -443,6 +443,12 @@ void flx_collector_t::impl_remove_root(void *memory)
     --(*iter).second;
 }
 
+void flx_collector_t::register_pointer(void *q, int reclimit)
+{
+  if(reclimit==0)Judy1Set(&j_tmp,(Word_t)q,&je);
+  else scan_object(q, reclimit-1);
+}
+
 void flx_collector_t::scan_object(void *p, int reclimit)
 {
   Word_t reachable = (parity & 1UL) ^ 1UL;
@@ -471,10 +477,10 @@ again:
 
   *w = (*w & ~1uL) | reachable;
 
-  unsigned long n_used = get_used((void*)fp) * shape->count;
 
   if(shape->flags & gc_flags_conservative)
   {
+    unsigned long n_used = get_used((void*)fp) * shape->count;
     // end of object, rounded down to size of a void*
     void **end = (void**)(
       (unsigned char*)(void*)fp +
@@ -492,31 +498,11 @@ again:
   }
   else
   {
-    ::std::size_t n_offsets = shape->n_offsets;
-    ::std::size_t *offsets = shape->offsets;
-    if (n_used * n_offsets == 1) // tail rec optimisation
-    {
-        void **pq = (void**)(void*)((unsigned char*)fp + offsets[0]);
-        void *q = *pq;
-        if(q){
-          p = q;
-          goto again;
-        }
-    }
-    else
-    for(unsigned long j=0; j<n_used; ++j)
-    {
-      for(unsigned int i=0; i<n_offsets; ++i)
-      {
-        void **pq = (void**)(void*)((unsigned char*)fp + offsets[i]);
-        void *q = *pq;
-        if(q)
-        {
-          if(reclimit==0)Judy1Set(&j_tmp,(Word_t)q,&je);
-          else scan_object(q, reclimit-1);
-        }
-      }
-      fp=(Word_t)(void*)((unsigned char*)fp+shape->amt);
+    unsigned long dyncount = get_used((void*)fp);
+    void *r = shape->scanner(this, shape, (void*)fp,dyncount,reclimit);
+    if (r) {
+      p = r;
+      goto again;
     }
   }
 }

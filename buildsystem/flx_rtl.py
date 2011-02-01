@@ -30,6 +30,7 @@ def build_runtime(phase):
         'src/exceptions',
         'src/demux',
         'src/faio',
+        'src/Judy',
         'src/gc',
         'src/pthread',
     ]

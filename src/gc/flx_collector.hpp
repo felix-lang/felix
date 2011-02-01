@@ -38,6 +38,7 @@ struct GC_EXTERN flx_collector_t : public collector_t
   void *create_empty_array( gc_shape_t *shape, unsigned long count);
   gc_shape_t *get_shape(void *memory);
   flx::pthread::thread_control_t *get_thread_control()const;
+  void register_pointer(void *q, int reclimit);
 
 protected:
 
@@ -92,7 +93,6 @@ private:
 
   void mark(pthread::memory_ranges_t*);
   unsigned long sweep(); // calls scan_object
-  void scan_object(void *memory, int reclimit);
 
   typedef std::map<void *,unsigned long, std::less<void *> > rootmap_t;
   rootmap_t roots;
@@ -105,7 +105,8 @@ private:
   void *j_shape;
   void *j_nalloc;
   void *j_nused;
-
+public:
+  void scan_object(void *memory, int reclimit);
   void *j_tmp;
   JError_t je;
 };

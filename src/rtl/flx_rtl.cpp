@@ -2,6 +2,8 @@
 #include <cstdio>
 #include <cassert>
 #include "flx_exceptions.hpp"
+#include "flx_collector.hpp"
+
 // main run time library code
 
 namespace flx { namespace rtl {
@@ -38,18 +40,19 @@ static std::size_t slist_node_offsets[2]={
     offsetof(slist_node_t,data)
 };
 
+static ::flx::gc::collector::offset_data_t slist_node_offset_data = { 2, slist_node_offsets };
 ::flx::gc::generic::gc_shape_t slist_node_ptr_map = {
   NULL,
   "slist_node_t",
   1,sizeof(slist_node_t),
   0, // no finaliser,
-  2,
-  slist_node_offsets,
-  gc::generic::gc_flags_default
+  &slist_node_offset_data,
+  ::flx::gc::generic::scan_by_offsets,
+  ::flx::gc::generic::gc_flags_default
 };
 
 
-slist_t::slist_t(gc::generic::gc_profile_t *_gcp) : gcp (_gcp), head(0) {}
+slist_t::slist_t(::flx::gc::generic::gc_profile_t *_gcp) : gcp (_gcp), head(0) {}
 slist_t::slist_t(slist_t const &r) : gcp (r.gcp), head(r.head) {}
 
 bool slist_t::isempty()const { return head == 0; }
@@ -74,15 +77,16 @@ void *slist_t::pop()
 static std::size_t slist_offsets[1]={
     offsetof(slist_t,head)
 };
+static ::flx::gc::collector::offset_data_t slist_offset_data = { 1, slist_offsets };
 
 ::flx::gc::generic::gc_shape_t slist_ptr_map = {
   &slist_node_ptr_map,
   "slist_t",
   1,sizeof(slist_t),
   0, // no finaliser
-  1,
-  slist_offsets,
-  gc::generic::gc_flags_default
+  &slist_offset_data,
+  ::flx::gc::generic::scan_by_offsets,
+  ::flx::gc::generic::gc_flags_default
 };
 
 // ********************************************************
@@ -141,13 +145,15 @@ static std::size_t _fthread_offsets[1]={
     offsetof(fthread_t,cc)
 };
 
+static ::flx::gc::collector::offset_data_t _fthread_offset_data = { 1, _fthread_offsets };
+
 ::flx::gc::generic::gc_shape_t _fthread_ptr_map = {
   &slist_ptr_map,
   "fthread_t",
   1,sizeof(fthread_t),
   0,
-  1,
-  _fthread_offsets,
+  &_fthread_offset_data,
+  ::flx::gc::generic::scan_by_offsets,
   gc::generic::gc_flags_immobile
 };
 
@@ -192,13 +198,15 @@ static std::size_t schannel_offsets[2]={
     offsetof(schannel_t,waiting_to_write)
 };
 
+static ::flx::gc::collector::offset_data_t schannel_offset_data = { 2, schannel_offsets };
+
 ::flx::gc::generic::gc_shape_t schannel_ptr_map = {
   &_fthread_ptr_map,
   "schannel_t",
   1,sizeof(schannel_t),
   0, // no finaliser
-  2,
-  schannel_offsets,
+  &schannel_offset_data,
+  ::flx::gc::generic::scan_by_offsets,
   gc::generic::gc_flags_default
 };
 
@@ -211,14 +219,16 @@ static std::size_t _uctor_offsets[1]= {
   offsetof(_uctor_,data)
 };
 
+static ::flx::gc::collector::offset_data_t _uctor_offset_data = { 1, _uctor_offsets };
+
 ::flx::gc::generic::gc_shape_t _uctor_ptr_map = {
   &schannel_ptr_map,
   "_uctor_",
   1,
   sizeof(_uctor_),
   0,
-  1,
-  _uctor_offsets,
+  &_uctor_offset_data,
+  ::flx::gc::generic::scan_by_offsets,
   gc::generic::gc_flags_default
 };
 
@@ -243,6 +253,7 @@ static std::size_t _uctor_offsets[1]= {
 
 //OFFSETS for address
 static std::size_t _address_offsets[1]={ 0 };
+static ::flx::gc::collector::offset_data_t _address_offset_data = { 1, _address_offsets };
 
 ::flx::gc::generic::gc_shape_t _address_ptr_map = {
   &_int_ptr_map,
@@ -250,8 +261,8 @@ static std::size_t _address_offsets[1]={ 0 };
   1,
   sizeof(void*),
   0,
-  1,
-  _address_offsets,
+  &_address_offset_data,
+  ::flx::gc::generic::scan_by_offsets,
   gc::generic::gc_flags_default
 };
 

@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cassert>
 #include "flx_gc_private.hpp"
+#include <Judy.h>
 
 #ifdef max
 #undef max
@@ -91,6 +92,37 @@ void *gc_profile_t::allocate(
     return collector -> allocate(shape,count);
 }
 
+void *scan_by_offsets(collector_t *collector, gc_shape_t *shape, void *p, unsigned long dyncount, int reclimit)
+{
+  Word_t fp = (Word_t)p;
+  unsigned long n_used = dyncount  * shape->count;
+
+  offset_data_t *data = (offset_data_t*)shape->private_data;
+  ::std::size_t n_offsets = data->n_offsets;
+  ::std::size_t *offsets = data->offsets;
+  if (n_used * n_offsets == 1) // tail rec optimisation
+  {
+      void **pq = (void**)(void*)((unsigned char*)fp + offsets[0]);
+      void *q = *pq;
+      if(q) return q; // tail rec optimisation
+  }
+  else
+  for(unsigned long j=0; j<n_used; ++j)
+  {
+    for(unsigned int i=0; i<n_offsets; ++i)
+    {
+      void **pq = (void**)(void*)((unsigned char*)fp + offsets[i]);
+      void *q = *pq;
+      if(q)
+      {
+        collector->register_pointer(q, reclimit);
+      }
+    }
+    fp=(Word_t)(void*)((unsigned char*)fp+shape->amt);
+  }
+  return 0;
+}
+
 }}} // end namespaces
 
 // in global namespace now ..
@@ -126,3 +158,5 @@ void operator delete(
 )
 {
 }
+
+
