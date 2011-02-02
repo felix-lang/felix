@@ -21,21 +21,35 @@ module Judy
 
   type JError_t = "JError_t";
 
-  type J1Array = "void**";
-  gen _ctor_J1Array: 1 -> J1Array = "_mkj1()" requires body
+  // the "value" of a judy array is just a void*
+  // to mutate it though, we need it to be on the heap
+  // and use the pointer to that object as the array,
+  // so that it can be copied about
+
+  private type J1Array_ = "void*"
+    requires scanner "::flx::gc::generic::Judy1_scanner",
+    header '#include "flx_judy_scanner.hpp"'
+  ;
+  _gc_pointer _gc_type J1Array_ type J1Array = "void**" requires property "needs_gc"; 
+
+  // @0 is wrong here, we need a J1Array_ptr_map
+  // but then, we don't need the "scanner" spec
+  gen _ctor_J1Array: 1 -> J1Array = "_mkj1(FLX_POINTER_TO_THREAD_FRAME, &@0)" requires body
    """
-     void **_mkj1(){
-       void **m =(void**)malloc(sizeof(void*));
+     void **_mkj1(FLX_APAR_DECL ::flx::gc::generic::gc_shape_t *jptr_map){
+       typedef void *voidp; // syntax
+       void **m = new (*PTF gcp, *jptr_map, false) voidp; 
        *m=0;
        return m;
      }
-   """;
+   """,
+   property "needs_gc";
 
   proc free: J1Array = "_j1free($1);" requires body
     """
       void _j1free(void **p) {
         JError_t je;
-        Judy1FreeArray(p, &je); free(p);
+        Judy1FreeArray(p, &je); 
       }
     """;
 
