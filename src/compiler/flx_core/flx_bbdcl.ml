@@ -7,6 +7,7 @@ type btype_qual_t = [
   | Flx_ast.base_type_qual_t
   | `Bound_needs_shape of Flx_btype.t
   | `Scanner of code_spec_t
+  | `Finaliser of code_spec_t
 ]
 
 type breqs_t = (Flx_types.bid_t * Flx_btype.t list) list
@@ -190,6 +191,7 @@ let iter
     | #base_type_qual_t -> ()
     | `Bound_needs_shape t -> f_btype t
     | `Scanner cs -> ()
+    | `Finaliser cs -> ()
   in
   match bbdcl with
   | BBDCL_invalid -> ()
@@ -266,6 +268,7 @@ let map
     | #base_type_qual_t as qual -> qual
     | `Bound_needs_shape t -> `Bound_needs_shape (f_btype t)
     | `Scanner cs -> `Scanner cs
+    | `Finaliser cs -> `Finaliser cs
   in
   match bbdcl with
   | BBDCL_invalid -> bbdcl
@@ -351,6 +354,7 @@ let iter_uses f bbdcl =
     | #base_type_qual_t -> ()
     | `Bound_needs_shape t -> f_btype t
     | `Scanner cs -> ()
+    | `Finaliser cs -> ()
   in
   match bbdcl with
   | BBDCL_fun (_,_,ps,res,_) ->
@@ -388,6 +392,8 @@ let print_btype_qual f = function
         Flx_btype.print t
   | `Scanner cs ->
       print_variant1 f "`Scanner " print_code_spec cs 
+  | `Finaliser cs ->
+      print_variant1 f "`Finaliser " print_code_spec cs 
 
 let print_breqs f breqs =
   Flx_list.print begin fun f (bid, ts) ->

@@ -45,5 +45,10 @@ open module Carray
   fun memcmp: address * address * size -> int = "::std::memcmp($1,$2,$3)"
     requires Cxx_headers::cstring
   ;
+
+  // unsafe C string functions
+  // move to where they should be (if it isn't here .. :)
+  proc strcpy: &char * &char = "(void)::std::strcpy($1,$2);" requires Cxx_headers::cstring;
+  fun strlen: &char ->size = "::std::strlen($1)" requires Cxx_headers::cstring;
 }
 

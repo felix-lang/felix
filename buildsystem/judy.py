@@ -57,6 +57,7 @@ def build_runtime(phase):
         path / 'JudyL/JUDYL_JudyLPrevEmpty.c',
         path / 'JudyL/JUDYL_JudyLGet.c',
         path / 'JudyL/JUDYL_j__udyLGet.c',
+        path / 'JudySL/JudySL.c',
         path / 'JudyHS/JudyHS.c',
     ]
 
@@ -65,6 +66,7 @@ def build_runtime(phase):
         path / 'JudyCommon',
         path / 'Judy1',
         path / 'JudyL',
+        path / 'JudySL',
         path / 'JudyHS',
     ]
 

@@ -763,6 +763,10 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
       | Scanner_req s ->
         quals := `Scanner s :: !quals;
         NREQ_true
+
+      | Finaliser_req s ->
+        quals := `Finaliser s :: !quals;
+        NREQ_true
     in
     let r = aux rqs in
     !quals, !props, !decls, r

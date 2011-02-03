@@ -176,6 +176,9 @@ whilst grab == 1 and argno<System::argc do
     result= system("cp "+FLX_INSTALL_DIR+"/tools/webserver /usr/local/bin");
     if result !=0 goto install_bin_failed;
 
+    result= system("cp "+FLX_INSTALL_DIR+"/tools/flx_ls /usr/local/bin");
+    if result !=0 goto install_bin_failed;
+
     println "Install succeeded";
     System::exit(0);
 

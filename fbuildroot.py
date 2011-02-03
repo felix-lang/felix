@@ -469,7 +469,15 @@ def build(ctx):
     #
     mk_daemon = call('buildsystem.mk_daemon.build', phases.target)
     timeout = call('buildsystem.timeout.build', phases.target)
+
+
+    # --------------------------------------------------------------------------
+    # build support tools
+    # 
+    # Felix tools
+    #
     webserver = call('buildsystem.webserver.build', phases.target)
+    tools = call('buildsystem.tools.build', phases.target)
 
     return phases, iscr, felix
 

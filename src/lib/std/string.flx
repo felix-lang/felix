@@ -321,7 +321,7 @@ open module String
 
   proc reserve: string * int = "$1.reserve($2);";
 
-  fun cstr: string -> &char = "$1.data()";
+  fun cstr: string -> &char = "(char*)$1.data()";
 
   fun vsprintf[t]: &char  * t -> string =
     "::flx::rtl::strutil::flx_asprintf($1,$2)" requires package "flx_strutil"

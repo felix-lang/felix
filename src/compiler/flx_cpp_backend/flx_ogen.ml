@@ -598,36 +598,51 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
           | Some (Flx_ast.CS_str_template s) -> s 
           | Some _ -> assert false
         in
+
+        let finaliser = 
+           try 
+            List.iter (fun q-> match q with | `Finaliser cs -> raise (Scanner cs) | _ -> () ) quals; 
+            None 
+          with Scanner cs -> Some cs 
+        in
+        let finaliser = 
+          match finaliser with 
+          | None -> "0" 
+          | Some (Flx_ast.CS_str s) -> s 
+          | Some (Flx_ast.CS_str_template s) -> s 
+          | Some _ -> assert false
+        in
+        let finaliser, gen_dflt_finaliser =
+          if finaliser = "0"
+          then 
+            if pod then "0",false
+            else name ^ "_finaliser",true
+          else finaliser, false
+        in
         if complete then
           if not (Hashtbl.mem primitive_shapes name) then
           begin
             Hashtbl.add primitive_shapes name true;
             bcat s ("\n//OFFSETS for complete abstract "^(if pod then "pod " else "finalisable ")^
-              "type " ^ name ^ " instance "^(if scanner="0" then "" else "with scanner")^" \n"
+              "type " ^ name ^ " instance "^
+              (if scanner="0" then "" else "with custom scanner ")^
+              (if pod || gen_dflt_finaliser then "" else "with custom finaliser ")^
+              " \n"
             );
 
             let this_ptr_map = name ^ "_ptr_map" in
             let old_ptr_map = !last_ptr_map in
             last_ptr_map := "&"^this_ptr_map;
 
-            if not pod then bcat s ("FLX_FINALISER("^name^")\n");
+            if gen_dflt_finaliser then bcat s ("FLX_FINALISER("^name^")\n");
             bcat s ( "static ::flx::gc::generic::gc_shape_t " ^ name ^ "_ptr_map = {\n") ;
             bcat s ("  " ^ old_ptr_map ^ ",\n");
             bcat s ("  \"" ^ name ^ "\",\n");
-            if pod then begin
-              bcat s ("  1,sizeof("^name^"),\n");
-              bcat s ("  0, // no finaliser\n");
-              bcat s ("  0, // no client data\n");
-              bcat s ("  "^scanner^", // scanner\n");
-              bcat s ("  ::flx::gc::generic::gc_flags_default\n")
-            end else begin
-              bcat s ("  1,sizeof("^name^"),\n");
-              bcat s ("  "^name^"_finaliser,\n");
-              bcat s ("  0, // no client data\n");
-              bcat s ("  "^scanner^", // scanner\n");
-              bcat s ("  ::flx::gc::generic::gc_flags_default\n")
-            end
-            ;
+            bcat s ("  1,sizeof("^name^"),\n");
+            bcat s ("  "^finaliser^","^(if pod then " // no finaliser" else "")^"\n");
+            bcat s ("  0, // no client data\n");
+            bcat s ("  "^scanner^", // scanner\n");
+            bcat s ("  ::flx::gc::generic::gc_flags_default\n");
             bcat s "};\n"
           end else begin
             bcat s ("\n//OFFSETS for abstract type " ^ name ^ " instance\n");

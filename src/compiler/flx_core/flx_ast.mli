@@ -320,6 +320,7 @@ and type_qual_t = [
   | base_type_qual_t
   | `Raw_needs_shape of typecode_t
   | `Scanner of code_spec_t
+  | `Finaliser of code_spec_t
 ]
 
 and requirement_t =
@@ -329,6 +330,7 @@ and requirement_t =
   | Property_req of string
   | Package_req of code_spec_t
   | Scanner_req of code_spec_t
+  | Finaliser_req of code_spec_t
 
 and ikind_t = [
   | `Header
