@@ -523,3 +523,12 @@ val print_properties : Format.formatter -> property_t list -> unit
 
 (** Prints out a param_kind_t to a formatter. *)
 val print_param_kind : Format.formatter -> param_kind_t -> unit
+
+(** Prints out a statement to a formatter. *)
+val print_type : Format.formatter -> typecode_t -> unit
+
+(** Prints out a statement to a formatter. *)
+val print_expr : Format.formatter -> expr_t -> unit
+
+(** Prints out a statement to a formatter. *)
+val print_statement : Format.formatter -> statement_t -> unit
