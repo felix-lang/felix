@@ -61,3 +61,30 @@ val print:
   Format.formatter ->
   'a list ->
   unit
+
+(** Prints out a list of tuples to a formatter. *)
+val print_tuples2:
+  (Format.formatter -> 'a -> unit) ->
+  (Format.formatter -> 'b -> unit) ->
+  Format.formatter ->
+  ('a * 'b) list ->
+  unit
+
+(** Prints out a list of tuples to a formatter. *)
+val print_tuples3:
+  (Format.formatter -> 'a -> unit) ->
+  (Format.formatter -> 'b -> unit) ->
+  (Format.formatter -> 'c -> unit) ->
+  Format.formatter ->
+  ('a * 'b * 'c) list ->
+  unit
+
+(** Prints out a list of tuples to a formatter. *)
+val print_tuples4:
+  (Format.formatter -> 'a -> unit) ->
+  (Format.formatter -> 'b -> unit) ->
+  (Format.formatter -> 'c -> unit) ->
+  (Format.formatter -> 'd -> unit) ->
+  Format.formatter ->
+  ('a * 'b * 'c * 'd) list ->
+  unit
