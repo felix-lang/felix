@@ -271,9 +271,9 @@ and param_kind_t = [`PVal | `PVar | `PFun | `PRef ]
 and simple_parameter_t = id_t * typecode_t
 and parameter_t = param_kind_t * id_t * typecode_t * expr_t option
 and lvalue_t = [
-  | `Val of Flx_srcref.t * string
-  | `Var of Flx_srcref.t * string
-  | `Name of Flx_srcref.t * string
+  | `Val of Flx_srcref.t * id_t
+  | `Var of Flx_srcref.t * id_t
+  | `Name of Flx_srcref.t * id_t
   | `Skip of Flx_srcref.t
   | `List of tlvalue_t list
   | `Expr of Flx_srcref.t * expr_t
