@@ -70,7 +70,7 @@ module C_hack
   fun dflt[t]:1->t = "dflt<?1>()" requires dflt_h;
 
   // raw allocation and deallocation
-  fun malloc: int -> address = '::std::malloc($1)' requires Cxx_headers::cstdlib;
+  fun malloc: !ints -> address = '::std::malloc($1)' requires Cxx_headers::cstdlib;
   proc free: address = '::std::free($1);' requires Cxx_headers::cstdlib;
 }
 

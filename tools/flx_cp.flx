@@ -1,35 +1,161 @@
 include "std/posix/filesystem";
+open Judy;
+
+var live = true;
 
 fun dbg(s:string):string={ println s; return s; }
 
-  proc copyfiles(dname:string, re:RE2, tpat:string) = {
-    if dname == "." or dname == ".." do return; done
-    match FileSystem::filesin(dname) with
-    | None  => return;
-    | Some ?files =>
-      List::iter
-        (proc (f:string) { 
-          if f == "." or f == ".." 
-          do ;
-          else 
-            var d = Filename::join (dname,f);
-            var t = FileSystem::filetype d;
+fun subst(s:string, v:varray[StringPiece]): string =
+{
+//println$ "Subst " + s +" with " + str v;
+   enum mode_t {cp, ins};
+   var b = "";
+   var mode=cp;
+   var j = 0;
+   var i:int; 
+   forall i in 0 upto len s - 1 do
+     match mode with
+     | cp => 
+       if s.[i] == char "\\" do 
+         mode = ins; 
+         j=0; 
+       else 
+        b += s.[i]; 
+       done
+     | ins =>
+       if s.[i] in "0123456789" do
+         j = j * 10 + ord(s.[i]) - ord (char "0");
+       else
+         if j < v.len.int do
+           b+= str v.[j];
+         done
+         mode = cp;
+         b += s.[i]; 
+       done
+     endmatch;
+   done
+   return b;
+}
+  proc copyfiles(dname:string, re:RE2, tpat:string) 
+  {
+    var ds = JSLArray ();
+    var sd = JSLArray ();
+    var je: JError_t;
+    var pv : &word;
+    var pv2 : &word;
+    var buffer: &char = C_hack::cast[&char] (C_hack::malloc(1000));
+    var buffer2: &char = C_hack::cast[&char] (C_hack::malloc(1000));
+    var dirs = JSLArray();
+    var n = re.NumberOfCapturingGroups;
+    var v = varray[StringPiece]$ (n+1).ulong, StringPiece "";
+    proc rfi(dname2: string) 
+    {   
+      if dname2 != "." and dname2 != ".." do
+      match FileSystem::filesin(Filename::join (dname,dname2)) with
+      | None  => ;
+      | Some ?files =>
+        List::iter
+          (proc (f:string) 
+          { if f != "." and f != ".." do 
+            var d = Filename::join (dname2,f);
+            val t = FileSystem::filetype (Filename::join (dname,d));
             match t with
               | REGULAR => 
-                var target:string;
-                if Re2::Extract(Re2::StringPiece d, re, StringPiece tpat, &target) do
-                  println$ "Copy " + d + " -> " + target;
-                done
-              | DIRECTORY => copyfiles (d,re, tpat);
+                if Re2::Match(re, StringPiece d, 0, ANCHOR_BOTH, v.stl_begin, v.len.int) 
+                do 
+                  var src = Filename::join (dname,d);
+                  dst := subst(tpat,v);
+                  JudySLIns(sd,cstr src,&je,&pv);
+                  pv <- C_hack::cast[word] (new dst);
+                  JudySLIns(ds,cstr dst,&je,&pv);
+                  // check for duplicate targets
+                  if not isNULL (*pv) do
+                    println$ "Duplicate target " + dst;
+                    System::exit(1);
+                  done
+                  pv <- C_hack::cast[word] (new src);
+                  //println$ "Copy " + src + " -> " + dst;
+                  iter 
+                    (proc (x:string) { JudySLIns(dirs, cstr x, &je,&pv); }) 
+                    (Filename::directories dst)
+                  ;
+                done 
+              | DIRECTORY => rfi (d);
               | _ => ;
             endmatch;
-          done
-        })
-        files
-      ;
-    endmatch
-    ;
+            done
+          }
+          )
+          files
+        ;
+      endmatch;
+      done
+    }
+    rfi ("");
+
+    // check record for dst clobbering src
+    *buffer=char 0;
+    JudySLFirst(sd,buffer,&je,&pv);
+    whilst not isNULL pv do
+      var cp = C_hack::cast[&string] (*pv);
+      //println$ "Recorded copy " + string buffer + " -> " + *cp;
+
+      Carray::strcpy(buffer2,buffer);
+      JudySLGet(ds,buffer2,&je,&pv2);
+      if not isNULL pv2 do
+        println$ "Target clobbers src: " + buffer;
+        System::exit(1);
+      done
+      JudySLGet(ds,buffer2,&je,&pv2);
+      JudySLNext(sd,buffer,&je,&pv);
+    done
+
+
+    // list in order of target (not for any particular reason)
+    /*
+    *buffer=char 0;
+    JudySLFirst(ds,buffer,&je,&pv);
+    whilst not isNULL pv do
+      cp = C_hack::cast[&string] (*pv);
+      println$ "Recorded copy " + string buffer + " <- " + *cp;
+      JudySLNext(ds,buffer,&je,&pv);
+    done
+    */
+
+    // list all target directories
+    *buffer = char 0;
+    JudySLFirst(dirs,buffer,&je,&pv);
+    whilst not isNULL pv do
+      dir := string buffer;
+      //println$ "Directory " + dir;
+      if live do
+        err:=FileSystem::mkdir(dir);
+        if err !=0 do 
+          //println$ "Mkdir, err=" + str err;
+        done
+      done
+      JudySLNext(dirs,buffer,&je,&pv);
+    done
+
+    if live do
+      *buffer=char 0;
+      JudySLFirst(sd,buffer,&je,&pv);
+      whilst not isNULL pv do
+        cp = C_hack::cast[&string] (*pv);
+        print$ "copy " + string buffer + " -> " + *cp;
+        if FileSystem::filecopy(string buffer, *cp) do
+          println " OK"; 
+        else
+          println "COPY FAILED";
+        done
+        JudySLNext(sd,buffer,&je,&pv);
+      done
+    done
+
+    C_hack::free(address buffer);
+    C_hack::free(address buffer2);
   }
+ 
 
 //println$ System::args ();
 //println$ "argc=" + str System::argc;
@@ -54,6 +180,14 @@ if System::argc < 4 do
 done;
 
 var target =  System::argv 3;
+
+if System::argc == 5 do
+  match System::argv 4 with
+  | "--test" => live = false; println "dry run";
+  | "--exec" => live = true;
+  | _ => println "trailing switch must be '--test' or '--exec'"; System::exit(1);
+  endmatch;
+done
 
 //println$ "Dir=" dir;
 //println$ "Files in dir " + dir + "=";

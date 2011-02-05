@@ -13,6 +13,7 @@ let check_case_index bsym_table t i =
 
 (* get the index of a variant value for purpose of matching cases *)
 let gen_get_case_index ge bsym_table e: cexpr_t  =
+(*print_endline ("Gen_get_case_index " ^ Flx_print.string_of_bound_expression bsym_table e); *)
   let _,t = e in
   match cal_variant_rep bsym_table t with
   | VR_self -> ce_atom "0"
@@ -22,6 +23,7 @@ let gen_get_case_index ge bsym_table e: cexpr_t  =
 
 (* helper to get the argument type of a non-constant variant constructor *)
 let cal_case_type bsym_table n t : Flx_btype.t =
+(*print_endline "cal_case_type"; *)
   match t with
   | BTYP_unitsum _ -> Flx_btype.btyp_tuple []
   | BTYP_sum ls -> List.nth ls n
@@ -48,6 +50,7 @@ let cal_case_type bsym_table n t : Flx_btype.t =
  *  when the case index has been found.
  *)
 let gen_get_case_arg ge tn bsym_table n (e:Flx_bexpr.t) : cexpr_t =
+(*print_endline "gen_get_case_arg"; *)
   let x,ut = e in
   let ct = cal_case_type bsym_table n ut in
   let cast = tn ct in
@@ -70,6 +73,7 @@ let gen_get_case_arg ge tn bsym_table n (e:Flx_bexpr.t) : cexpr_t =
 
 (* Value constructor for constant (argumentless) variant constructor case *)
 let gen_make_const_ctor bsym_table e : cexpr_t =
+(*print_endline "gen_make_const_ctor"; *)
   let x,ut = e in
   let v,ut' = 
     match x with 
@@ -98,6 +102,7 @@ let gen_make_const_ctor bsym_table e : cexpr_t =
 
 (* Helper function to make suitable argument for non-constant variant constructor *)
 let gen_make_ctor_arg ge tn syms bsym_table a : cexpr_t =
+(* print_endline "gen_make_ctor_arg"; *)
   let _,ct = a in
   match size ct with
   | 0 -> ce_atom "0"                (* NULL: for unit tuple *)
@@ -109,6 +114,7 @@ let gen_make_ctor_arg ge tn syms bsym_table a : cexpr_t =
 
 (* Value constructor for non-constant (argumentful) variant constructor case *)
 let gen_make_nonconst_ctor ge tn syms bsym_table ut cidx ct a : cexpr_t =
+(* print_endline "gen_make_nonconst_ctor"; *)
   match cal_variant_rep bsym_table ut with
   | VR_self -> ge a
   | VR_int -> assert false

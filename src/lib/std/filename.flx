@@ -41,6 +41,15 @@ module Filename {
   
   fun basename(s:string)=> match split1(s) with | _,?b => b endmatch;
   fun dirname(s:string)=> match split1(s) with | ?d,_ => d endmatch;
+  
+  // all dirs in pathname eg a/b/c gives "a", "a/b"
+  fun directories (s:string) : list[string] = {
+     return
+     let ?d,?b = split1 s in
+     if d == "" then Empty[string]
+     else directories d + d
+  ;
+  }
 
   fun join(a:string, b:string, c:string)=> join(join(a,b),c);
 

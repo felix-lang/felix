@@ -23,7 +23,7 @@ module Judy
 
   private body mkjudy =
     """
-      void **_mkj1(FLX_APAR_DECL ::flx::gc::generic::gc_shape_t *jptr_map){
+      void **_mkjudy(FLX_APAR_DECL ::flx::gc::generic::gc_shape_t *jptr_map){
         typedef void *voidp; // syntax
         void **m = new (*PTF gcp, *jptr_map, false) voidp; 
         *m=0;
@@ -125,7 +125,7 @@ module Judy
   ;
   _gc_pointer _gc_type JLArray_ type JLArray = "void**" requires property "needs_gc"; 
 
-  gen _ctor_JLArray: 1 -> JLArray = "_mkjL(FLX_POINTER_TO_THREAD_FRAME, &@0)" 
+  gen _ctor_JLArray: 1 -> JLArray = "_mkjudy(FLX_POINTER_TO_THREAD_FRAME, &@0)" 
     requires 
       mkjudy,
       property "needs_gc"
@@ -202,7 +202,7 @@ module Judy
   ;
   _gc_pointer _gc_type JSLArray_ type JSLArray = "void**" requires property "needs_gc"; 
 
-  gen _ctor_JSLArray: 1 -> JSLArray = "_mkjSL(FLX_POINTER_TO_THREAD_FRAME, &@0)" 
+  gen _ctor_JSLArray: 1 -> JSLArray = "_mkjudy(FLX_POINTER_TO_THREAD_FRAME, &@0)" 
     requires 
       mkjudy ,
       property "needs_gc"
@@ -236,6 +236,7 @@ module Judy
 
 ///////////////////////////////////////
 
+/*
   type JHSArray = "void**";
   gen _ctor_JHSArray: 1 -> JHSArray = "_mkjudy()" requires mkjudy;
 
@@ -252,6 +253,6 @@ module Judy
 
   proc JudyHSGet: JHSArray * address * word * &JError_t * &&word =
     "*$5=(Word_t*)JudyHSGet(*$1,$2,$3);";
-
+*/
 
 }

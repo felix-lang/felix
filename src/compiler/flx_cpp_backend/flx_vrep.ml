@@ -20,7 +20,10 @@ let cal_variant_cases bsym_table t =
      * values here .. urrggg.. review this!
      *)
     | BBDCL_union (bvs,cts) -> List.fold_left (fun a (s,i,t) -> max a (i+1)) (List.length cts) cts
-    | _ -> assert false 
+    | x -> failwith 
+        ("cal variant cases of non-variant nominal type " ^ 
+          Flx_print.string_of_bbdcl bsym_table x i 
+        )
     end
   | _ -> assert false 
 
