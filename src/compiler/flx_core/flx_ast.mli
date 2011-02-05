@@ -269,9 +269,9 @@ and param_kind_t = [`PVal | `PVar | `PFun | `PRef ]
 and simple_parameter_t = id_t * typecode_t
 and parameter_t = param_kind_t * id_t * typecode_t * expr_t option
 and lvalue_t = [
-  | `Val of Flx_srcref.t * string
-  | `Var of Flx_srcref.t * string
-  | `Name of Flx_srcref.t * string
+  | `Val of Flx_srcref.t * id_t
+  | `Var of Flx_srcref.t * id_t
+  | `Name of Flx_srcref.t * id_t
   | `Skip of Flx_srcref.t
   | `List of tlvalue_t list
   | `Expr of Flx_srcref.t * expr_t
@@ -523,3 +523,12 @@ val print_properties : Format.formatter -> property_t list -> unit
 
 (** Prints out a param_kind_t to a formatter. *)
 val print_param_kind : Format.formatter -> param_kind_t -> unit
+
+(** Prints out a statement to a formatter. *)
+val print_type : Format.formatter -> typecode_t -> unit
+
+(** Prints out a statement to a formatter. *)
+val print_expr : Format.formatter -> expr_t -> unit
+
+(** Prints out a statement to a formatter. *)
+val print_statement : Format.formatter -> statement_t -> unit

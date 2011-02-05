@@ -116,3 +116,22 @@ let print pp_elt ppf = function
         end true xs
   in
   fprintf ppf "@]]"
+
+(** Prints out a list of tuples to a formatter. *)
+let print_tuples2 pp_a pp_b ppf items =
+  let f ppf (a, b) =
+    Flx_format.print_tuple2 ppf pp_a a pp_b b
+  in
+  print f ppf items
+
+let print_tuples3 pp_a pp_b pp_c ppf items =
+  let f ppf (a, b, c) =
+    Flx_format.print_tuple3 ppf pp_a a pp_b b pp_c c
+  in
+  print f ppf items
+
+let print_tuples4 pp_a pp_b pp_c pp_d ppf items =
+  let f ppf (a, b, c, d) =
+    Flx_format.print_tuple4 ppf pp_a a pp_b b pp_c c pp_d d
+  in
+  print f ppf items
