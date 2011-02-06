@@ -39,7 +39,7 @@ module Judy
   private body j1free =
     """
       void _j1free(::flx::gc::generic::collector_t*,void *p) {
-        printf("Free J1Array %p\\n",p);
+        //printf("Free J1Array %p\\n",p);
         JError_t je;
         Judy1FreeArray((void**)p, &je); 
       }
@@ -110,7 +110,7 @@ module Judy
   private body jLfree =
     """
       void _jLfree(::flx::gc::generic::collector_t*,void *p) {
-        printf("Free JLArray %p\\n",p);
+        //printf("Free JLArray %p\\n",p);
         JError_t je;
         JudyLFreeArray((void**)p, &je); 
       }
@@ -187,7 +187,7 @@ module Judy
   body jSLfree =
     """
       void _jSLfree(::flx::gc::generic::collector_t*,void *p) {
-        printf("Free JSLArray %p\\n",p);
+        //printf("Free JSLArray %p\\n",p);
         JError_t je;
         JudySLFreeArray((void**)p, &je); 
       }
@@ -236,7 +236,9 @@ module Judy
 
 ///////////////////////////////////////
 
-/*
+/* JUDYHS is not supported because there's no way to iterate 
+   which is required for the GC to work
+
   type JHSArray = "void**";
   gen _ctor_JHSArray: 1 -> JHSArray = "_mkjudy()" requires mkjudy;
 

@@ -25,11 +25,11 @@ var n: word;
 
 Judy1First(j1, &first, je, pres);
 Judy1Last(j1, &last, je, pres);             // seems to give max uint
-//print "first="; print(int first); endl;
-//print "last="; print(ulong last); endl;
+println$ "first=" + str (int first);
+println$ "last=" + str (ulong last);
 
 // count 1 bits between range, returning in w.
 Judy1Count(j1, first, last, je, &n);
-print (int n); endl;
+println$ ulong n;
 
 free j1;

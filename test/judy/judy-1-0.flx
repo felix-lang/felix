@@ -102,6 +102,7 @@ var pwres = &wres;
   println "Done JL";
 };
 
+/*
 {
   val ja = JHSArray();
   var pv : &word; // pointer to space in the array to put value
@@ -122,4 +123,4 @@ var pwres = &wres;
   JudyHSGet(ja,address s2, word (len s2),je, ppv);
   println$ "s2 -> " + str (int(*pv));
 };
-
+*/
