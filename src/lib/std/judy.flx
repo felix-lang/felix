@@ -60,7 +60,7 @@ module Judy
       property "needs_gc"
   ;
 
-  proc free: J1Array = "_j1free(NULL,*$1);" requires j1free;
+  proc free: J1Array = "_j1free(NULL,$1);" requires j1free;
 
   proc Judy1Set: J1Array * word * &JError_t * &int =
     "*$4=Judy1Set($1,$2,$3);";
@@ -131,7 +131,7 @@ module Judy
       property "needs_gc"
   ;
 
-  proc free: JLArray = "_jLfree(NULL,*$1);" requires jLfree;
+  proc free: JLArray = "_jLfree(NULL,$1);" requires jLfree;
 
 
   proc JudyLIns: JLArray * word * &JError_t * &&word =
@@ -208,7 +208,7 @@ module Judy
       property "needs_gc"
   ;
 
-  proc free: JSLArray = "_jSLfree(NULL,*$1);" requires jSLfree;
+  proc free: JSLArray = "_jSLfree(NULL,$1);" requires jSLfree;
 
   proc JudySLIns: JSLArray * &char * &JError_t * &&word =
     """
