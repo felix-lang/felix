@@ -4,19 +4,18 @@ Installing Felix
 Requirements
 ------------
 * OCaml
-* Python >= 3.0
+* Python >= 3.1
 
 Compilation
 -----------
 
 1. First build it with
 
-python3 fbuild/fbuild-light -O --prefix=/usr/local --buildroot=build
+python3 fbuild/fbuild-light --prefix=/usr/local --buildroot=build
 
 2. Install with
 
-sudo ./build/release-optimized/bin/flx --test=build/release-optimized --install
-sudo cp build/release-optimized/bin/flx /usr/local/bin
+sudo python3 fbuild/fbuild-light --prefix=/usr/local --buildroot=build install
 
 Installation goes to directory /usr/local/lib/felix/felix-$version.
 

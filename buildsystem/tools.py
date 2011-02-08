@@ -1,24 +1,10 @@
-import fbuild
-from fbuild.path import Path
-from fbuild.record import Record
-from fbuild.functools import call
-
-import buildsystem
+import fbuild.builders.file
 
 # ------------------------------------------------------------------------------
 
-def build(phase):
-    # make flx command line harness
-    flx = call('fbuild.builders.felix.Flx', phase.ctx,
-          exe=phase.ctx.buildroot / 'bin/flx',
-          debug=phase.ctx.options.debug,
-          flags=['-c','--test=' + phase.ctx.buildroot])
+def build(phase, felix):
+    exe = felix.compile('tools/flx_ls.flx', static=True)
+    fbuild.builders.file.copy(phase.ctx, exe, 'bin')
 
-    path =phase.ctx.buildroot/'tools'
-    ls = path / 'flx_ls'
-
-    return Record (
-        flx_ls = flx(ls,static=True)
-    )
-
- 
+    exe = felix.compile('tools/webserver.flx', static=True)
+    fbuild.builders.file.copy(phase.ctx, exe, 'bin')
