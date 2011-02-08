@@ -1178,5 +1178,6 @@ let add_asms
   symbol_table.init_exes <- symbol_table.init_exes @ exes;
   symbol_table.exports <- symbol_table.exports @ interfaces;
   symbol_table.directives <- symbol_table.directives @ dirs
+(*
 ;print_endline ("Add asms .. exports: " ^ string_of_int (List.length symbol_table.exports));
-
+*)

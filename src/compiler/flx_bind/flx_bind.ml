@@ -215,7 +215,9 @@ print_endline "Flx_bind.bind_asms: Making symbol table done";
 *)
   let exes = Flx_symtab.get_init_exes bind_state.symtab in
   let ifaces = Flx_symtab.get_exports bind_state.symtab in
+(*
 print_endline ("Bind_asms: ifaces = " ^ string_of_int (List.length ifaces));
+*)
 
 (*
 print_endline "Flx_bind.bind_asms: built symbol table";
@@ -233,8 +235,10 @@ print_endline "Flx_bind.bind_asms: bbind done";
   bind_state.syms.Flx_mtypes2.bifaces <- bind_state.syms.Flx_mtypes2.bifaces @ List.map
     (Flx_bbind.bind_interface bind_state.bbind_state bsym_table) ifaces
  
+(*
 ;print_endline ("Flx_bind.bind_asms: " ^string_of_int (List.length bind_state.syms.Flx_mtypes2.bifaces)^ 
 " interfaces bound, to state.syms.bifaces")
+*)
 
 (** Find the root module's init function index. *)
 let find_root_module_init_function bind_state =
