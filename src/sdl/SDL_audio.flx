@@ -40,14 +40,14 @@ module SDL_audio_h
     src_format: uint16;
     dst_format: uint16;
     rate_incr: double;
-    buf: ptr[uint8];
+    buf: &uint8;
     len: int;
     len_cvt: int;
     len_mult: int;
     len_ratio: double;
-    filters: ptr[SDL_audio_h_cft_2];
+    filters: &SDL_audio_h_cft_2;
     filter_index: int;
-  }
+  };
   cstruct SDL_AudioSpec {
     freq: int;
     format: uint16;
@@ -58,7 +58,7 @@ module SDL_audio_h
     size: uint32;
     callback_: SDL_audio_h_cft_1;
     userdata: address;
-  }
+  };
 
   fun get_callback: SDL_AudioSpec -> SDL_audio_h_cft_1 = "$1.callback";
 
@@ -69,7 +69,7 @@ module SDL_audio_h
   header '''typedef void (*SDL_audio_h_cft_1)(void *,  Uint8 *, int);''';
   type SDL_audio_h_cft_1 = 'SDL_audio_h_cft_1';
 
-  typedef flx_audio_callback_arg_t = ptr[uint8] * int;
+  typedef flx_audio_callback_arg_t = &uint8 * int;
   typedef flx_audio_callback_t = flx_audio_callback_arg_t -> void;
   export type (flx_audio_callback_t) as "flx_audio_callback_t";
   export type (flx_audio_callback_arg_t) as "flx_audio_callback_arg_t";
@@ -92,7 +92,7 @@ module SDL_audio_h
   """;
 
 // not working yet
-//  callback proc SDL_audio_callback: SDL_audio_callback * ptr[uint8] * int;
+//  callback proc SDL_audio_callback: SDL_audio_callback * &uint8 * int;
 
   //STRUCT or UNION TAG ALIASES
 
@@ -110,19 +110,19 @@ module SDL_audio_h
   //PROCEDURES
   proc SDL_AudioQuit: 1;
   proc SDL_CloseAudio: 1;
-  proc SDL_FreeWAV: ptr[uint8];
+  proc SDL_FreeWAV: &uint8;
   proc SDL_LockAudio: 1;
-  proc SDL_MixAudio: ptr[uint8] * cptr[uint8] * uint32 * int;
+  proc SDL_MixAudio: &uint8 * &uint8 * uint32 * int;
   proc SDL_PauseAudio: int;
   proc SDL_UnlockAudio: 1;
 
   //FUNCTIONS
-  fun SDL_AudioDriverName: ptr[char] * int -> ptr[char];
-  fun SDL_AudioInit: cptr[char] -> int;
-  fun SDL_BuildAudioCVT: ptr[SDL_AudioCVT] * uint16 * uint8 * int * uint16 * uint8 * int -> int;
-  fun SDL_ConvertAudio: ptr[SDL_AudioCVT] -> int;
+  fun SDL_AudioDriverName: &char * int -> &char;
+  fun SDL_AudioInit: &char -> int;
+  fun SDL_BuildAudioCVT: &SDL_AudioCVT * uint16 * uint8 * int * uint16 * uint8 * int -> int;
+  fun SDL_ConvertAudio: &SDL_AudioCVT -> int;
   fun SDL_GetAudioStatus: 1 -> SDL_audiostatus;
-  fun SDL_LoadWAV_RW: ptr[SDL_RWops] * int * ptr[SDL_AudioSpec] * ptr[ptr[uint8]] * ptr[uint32] -> ptr[SDL_AudioSpec];
-  fun SDL_OpenAudio: ptr[SDL_AudioSpec] * ptr[SDL_AudioSpec] -> int;
-  fun SDL_LoadWAV: cptr[char] * ptr[SDL_AudioSpec] * ptr[ptr[uint8]] * ptr[uint32] -> ptr[SDL_AudioSpec];
+  fun SDL_LoadWAV_RW: &SDL_RWops * int * &SDL_AudioSpec * &&uint8 * &uint32 -> &SDL_AudioSpec;
+  fun SDL_OpenAudio: &SDL_AudioSpec * &SDL_AudioSpec -> int;
+  fun SDL_LoadWAV: &char * &SDL_AudioSpec * &&uint8 * &uint32 -> &SDL_AudioSpec;
 }

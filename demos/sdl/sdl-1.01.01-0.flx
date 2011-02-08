@@ -7,7 +7,7 @@ include "SDL/SDL_keysym";
 include "SDL/SDL_events";
 include "SDL/SDL_mutex";
 include "SDL/SDL_audio";
-include "flx_faio";
+include "std/io/flx_faio";
 include "flx_faio_sdl";
 
 // Raw SDL interfaces
@@ -30,7 +30,7 @@ open Uint8;
 // This is the Felix asynchronous event source
 open SDL_events;
 
-proc DrawPixel(screen:ptr[SDL_Surface], x:int32, y:int32, R:uint8, G:uint8, B:uint8)
+proc DrawPixel(screen:&SDL_Surface, x:int32, y:int32, R:uint8, G:uint8, B:uint8)
 {
     color := SDL_MapRGB((*screen).format, R, G, B);
 
@@ -41,19 +41,19 @@ proc DrawPixel(screen:ptr[SDL_Surface], x:int32, y:int32, R:uint8, G:uint8, B:ui
     match (*(*screen).format).BytesPerPixel with
     | 1 =>
       { /* Assuming 8-bpp */
-        bufp := cast[ptr[uint8]] (*screen).pixels + y*(*screen).pitch + x;
+        bufp := cast[&uint8] (*screen).pixels + y*(*screen).pitch + x;
         *bufp = uint8 color;
       }
 
     | 2 =>
       { /* Probably 15-bpp or 16-bpp */
-        bufp := cast[ptr[uint16]] (*screen).pixels + y*(*screen).pitch/2 + x;
+        bufp := cast[&uint16] (*screen).pixels + y*(*screen).pitch/2 + x;
         *bufp = uint16 color;
       }
 
     | 3 =>
       { /* Slow 24-bpp mode, usually not used */
-        bufp := cast[ptr[uint8]] (*screen).pixels + y*(*screen).pitch + x;
+        bufp := cast[&uint8] (*screen).pixels + y*(*screen).pitch + x;
         *(bufp+(*(*screen).format).Rshift/8) = R;
         *(bufp+(*(*screen).format).Gshift/8) = G;
         *(bufp+(*(*screen).format).Bshift/8) = B;
@@ -61,7 +61,7 @@ proc DrawPixel(screen:ptr[SDL_Surface], x:int32, y:int32, R:uint8, G:uint8, B:ui
 
     | 4 =>
       { /* Probably 32-bpp */
-        bufp := cast[ptr[uint32]] (*screen).pixels + y*(*screen).pitch/4 + x;
+        bufp := cast[&uint32] (*screen).pixels + y*(*screen).pitch/4 + x;
         *bufp = color;
       }
     endmatch;
@@ -77,7 +77,7 @@ if SDL_Init(SDL_INIT_AUDIO \| SDL_INIT_VIDEO) < 0 do
   System::exit(1);
 done;
 
-var screen: ptr[SDL_Surface];
+var screen: &SDL_Surface;
 screen = SDL_SetVideoMode(640, 480, 32, SDL_SWSURFACE);
 if isNULL screen do
   print "Unable to set 1024x768 video"; endl;
@@ -94,7 +94,7 @@ var i = 10i32; until i == 50i32 do
 done;
 
 struct sample_t {
-    data : ptr[uint8];
+    data : &uint8;
     dpos: uint32;
     dlen: uint32;
 };
@@ -105,19 +105,19 @@ var sounds : sample_t ^ NUM_SOUNDS;
 {
   var j:int;
   forall j in 0 upto NUM_SOUNDS-1 do
-    sounds.[j] = sample_t(null_ptr[uint8],0u32,0u32);
+    sounds.[j] = sample_t(null[uint8],0u32,0u32);
   done;
 };
 
-proc flx_mixaudio(stream : ptr[uint8], len : uint32)
+proc flx_mixaudio(stream : &uint8, len : uint32)
 {
   var i : int;
   var amount : uint32;
   forall i in 0 upto NUM_SOUNDS-1 do
     amount = sounds.[i].dlen - sounds.[i].dpos;
     if amount > len do amount = len; done;
-    var loc : ptr[uint8] = sounds.[i].data+ cast[int] sounds.[i].dpos;
-    SDL_MixAudio(stream, cast[cptr[uint8]] loc, amount, SDL_MIX_MAXVOLUME);
+    var loc : &uint8 = sounds.[i].data+ cast[int] sounds.[i].dpos;
+    SDL_MixAudio(stream, cast[&uint8] loc, amount, SDL_MIX_MAXVOLUME);
     sounds.[i].dpos = sounds.[i].dpos + amount;
   done;
 }
@@ -133,10 +133,10 @@ fmt.size=uint32 0u16;
 
 //const SDL_audio_callback : SDL_audio_h_cft_1;
 get_callback fmt = code [SDL_audio_h_cft_1] 'SDL_audio_callback';
-var mixer = the flx_mixaudio;
+var mixer = flx_mixaudio;
 fmt.userdata= cast[address] mixer;
 
-if SDL_OpenAudio(addr fmt, null_ptr[SDL_AudioSpec]) < 0 do
+if SDL_OpenAudio(&fmt, null[SDL_AudioSpec]) < 0 do
   print "Can't open Audio"; endl;
   System::exit 0;
 done;
@@ -145,7 +145,7 @@ proc PlaySound(filename:string)
 {
   var idx:int;
   var wave: SDL_AudioSpec;
-  var data : ptr[uint8];
+  var data : &uint8;
   var dlen : uint32;
   var cvt : SDL_AudioCVT;
   /* Look for an empty (or finished) sound slot */
@@ -158,7 +158,7 @@ proc PlaySound(filename:string)
     return;
   done;
 
-  if isNULL$ SDL_LoadWAV(cstr filename, addr wave, addr data, addr dlen) do
+  if isNULL$ SDL_LoadWAV(cstr filename, &wave, &data, &dlen) do
     print$ "Couldn't load Wav file " + filename; endl;
     return;
   done;
@@ -166,7 +166,7 @@ proc PlaySound(filename:string)
   print "Using slot "; print idx; endl;
 
   var result = SDL_BuildAudioCVT(
-    addr cvt,
+    &cvt,
     wave.format,
     wave.channels,
     wave.freq,
@@ -175,9 +175,9 @@ proc PlaySound(filename:string)
     22050
   );
   cvt.buf = array_alloc[uint8](dlen*cvt.len_mult);
-  memcpy(as_address cvt.buf, as_address data, cast[size] dlen);
+  memcpy(address cvt.buf, address data, cast[size] dlen);
   cvt.len = int dlen;
-  result = SDL_ConvertAudio(addr cvt);
+  result = SDL_ConvertAudio(&cvt);
   SDL_FreeWAV(data);
 
   /* Put the sound data in the slot (it starts playing immediately) */
@@ -198,20 +198,20 @@ SDL_PauseAudio 0;
   done;
 };
 
-var s: ptr[SDL_Surface] ^ 16;
+var s: &SDL_Surface ^ 16;
 {
   forall i in 1 upto 16 do
        //filename := "media/images/fc" + str i+ ".jpg";
        filename := "media/images/fc" + str i+ ".bmp";
        print$ "Loading file " + filename; endl;
-       rwop := SDL_RWFromFile (cstr filename,enconst (c"rb"));
+       rwop := SDL_RWFromFile (cstr filename,(c"rb"));
        //s.[i-1] = IMG_LoadJPG_RW(rwop);
        s.[i-1] = SDL_LoadBMP_RW(rwop,1);
   done;
 };
 
 var rcDest : SDL_Rect;
-SDL_GetClipRect(screen,addr rcDest);
+SDL_GetClipRect(screen,&rcDest);
 
 black := SDL_MapRGB((*screen).format, 0u8, 0u8, 0u8);
 
@@ -235,7 +235,7 @@ proc handle_key( keysym : SDL_keysym)
 
 var event_lock = SDL_CreateMutex ();
 
-proc poll_event(e:ptr[SDL_Event])
+proc poll_event(e:&SDL_Event)
 {
 tryagain:>
   //print "Polling event"; endl;
@@ -253,7 +253,7 @@ proc waitk(f:schannel[uint8]) {
   // So we have busy wait ;(
   //var &e : SDL_Event <- get_sdl_event event_lock;
   var e : SDL_Event;
-  poll_event(addr e);
+  poll_event(&e);
 
   var et = event_type e;
   whilst
@@ -262,7 +262,7 @@ proc waitk(f:schannel[uint8]) {
     et != SDL_QUIT
   do
     //&e <- get_sdl_event event_lock;
-    poll_event(addr e);
+    poll_event(&e);
     et = event_type e;
   done;
   if et == SDL_KEYDOWN call handle_key e.key.keysym;
@@ -280,10 +280,10 @@ proc waittk() {
 forall i in 0 upto 15 do
   if not (isNULL s.[i]) do
     print "Show "; print i; endl;
-    var r = SDL_BlitSurface ( s.[i], null_ptr[SDL_Rect], screen, addr rcDest );
+    var r = SDL_BlitSurface ( s.[i], null[SDL_Rect], screen, &rcDest );
     SDL_UpdateRect(screen, 0i32,0i32,0u,0u);
     waittk;
-    r = SDL_FillRect(screen, addr rcDest, black);
+    r = SDL_FillRect(screen, &rcDest, black);
   else
     print "Skip "; print i; endl;
   done;

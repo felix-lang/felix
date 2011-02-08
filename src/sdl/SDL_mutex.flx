@@ -23,25 +23,25 @@ module SDL_mutex_h
   incomplete ctypes SDL_mutex, SDL_cond, SDL_sem;
 
   //PROCEDURES
-  proc SDL_DestroyCond: ptr[SDL_cond];
-  proc SDL_DestroyMutex: ptr[SDL_mutex];
-  proc SDL_DestroySemaphore: ptr[SDL_sem];
+  proc SDL_DestroyCond: &SDL_cond;
+  proc SDL_DestroyMutex: &SDL_mutex;
+  proc SDL_DestroySemaphore: &SDL_sem;
 
   //FUNCTIONS
-  fun SDL_CondBroadcast: ptr[SDL_cond] -> int;
-  fun SDL_CondSignal: ptr[SDL_cond] -> int;
-  fun SDL_CondWait: ptr[SDL_cond] * ptr[SDL_mutex] -> int;
-  fun SDL_CondWaitTimeout: ptr[SDL_cond] * ptr[SDL_mutex] * uint32 -> int;
-  fun SDL_CreateCond: 1 -> ptr[SDL_cond];
-  fun SDL_CreateMutex: 1 -> ptr[SDL_mutex];
-  fun SDL_CreateSemaphore: uint32 -> ptr[SDL_sem];
-  fun SDL_SemPost: ptr[SDL_sem] -> int;
-  fun SDL_SemTryWait: ptr[SDL_sem] -> int;
-  fun SDL_SemValue: ptr[SDL_sem] -> uint32;
-  fun SDL_SemWait: ptr[SDL_sem] -> int;
-  fun SDL_SemWaitTimeout: ptr[SDL_sem] * uint32 -> int;
-  fun SDL_mutexP: ptr[SDL_mutex] -> int;
-  fun SDL_mutexV: ptr[SDL_mutex] -> int;
-  fun SDL_LockMutex: ptr[SDL_mutex] -> int;
-  fun SDL_UnlockMutex: ptr[SDL_mutex] -> int;
+  fun SDL_CondBroadcast: &SDL_cond -> int;
+  fun SDL_CondSignal: &SDL_cond -> int;
+  fun SDL_CondWait: &SDL_cond * &SDL_mutex -> int;
+  fun SDL_CondWaitTimeout: &SDL_cond * &SDL_mutex * uint32 -> int;
+  fun SDL_CreateCond: 1 -> &SDL_cond;
+  fun SDL_CreateMutex: 1 -> &SDL_mutex;
+  fun SDL_CreateSemaphore: uint32 -> &SDL_sem;
+  fun SDL_SemPost: &SDL_sem -> int;
+  fun SDL_SemTryWait: &SDL_sem -> int;
+  fun SDL_SemValue: &SDL_sem -> uint32;
+  fun SDL_SemWait: &SDL_sem -> int;
+  fun SDL_SemWaitTimeout: &SDL_sem * uint32 -> int;
+  fun SDL_mutexP: &SDL_mutex -> int;
+  fun SDL_mutexV: &SDL_mutex -> int;
+  fun SDL_LockMutex: &SDL_mutex -> int;
+  fun SDL_UnlockMutex: &SDL_mutex -> int;
 }

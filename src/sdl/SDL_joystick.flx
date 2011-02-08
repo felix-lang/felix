@@ -31,22 +31,22 @@ module SDL_joystick_h
   typedef SDL_Joystick = _struct__SDL_Joystick;
 
   //PROCEDURES
-  proc SDL_JoystickClose: ptr[SDL_Joystick];
+  proc SDL_JoystickClose: &SDL_Joystick;
   proc SDL_JoystickUpdate: 1;
 
   //FUNCTIONS
   fun SDL_JoystickEventState: int -> int;
-  fun SDL_JoystickGetAxis: ptr[SDL_Joystick] * int -> int16;
-  fun SDL_JoystickGetBall: ptr[SDL_Joystick] * int * ptr[int] * ptr[int] -> int;
-  fun SDL_JoystickGetButton: ptr[SDL_Joystick] * int -> uint8;
-  fun SDL_JoystickGetHat: ptr[SDL_Joystick] * int -> uint8;
-  fun SDL_JoystickIndex: ptr[SDL_Joystick] -> int;
-  fun SDL_JoystickName: int -> cptr[char];
-  fun SDL_JoystickNumAxes: ptr[SDL_Joystick] -> int;
-  fun SDL_JoystickNumBalls: ptr[SDL_Joystick] -> int;
-  fun SDL_JoystickNumButtons: ptr[SDL_Joystick] -> int;
-  fun SDL_JoystickNumHats: ptr[SDL_Joystick] -> int;
-  fun SDL_JoystickOpen: int -> ptr[SDL_Joystick];
+  fun SDL_JoystickGetAxis: &SDL_Joystick * int -> int16;
+  fun SDL_JoystickGetBall: &SDL_Joystick * int * &int * &int -> int;
+  fun SDL_JoystickGetButton: &SDL_Joystick * int -> uint8;
+  fun SDL_JoystickGetHat: &SDL_Joystick * int -> uint8;
+  fun SDL_JoystickIndex: &SDL_Joystick -> int;
+  fun SDL_JoystickName: int -> &char;
+  fun SDL_JoystickNumAxes: &SDL_Joystick -> int;
+  fun SDL_JoystickNumBalls: &SDL_Joystick -> int;
+  fun SDL_JoystickNumButtons: &SDL_Joystick -> int;
+  fun SDL_JoystickNumHats: &SDL_Joystick -> int;
+  fun SDL_JoystickOpen: int -> &SDL_Joystick;
   fun SDL_JoystickOpened: int -> int;
   fun SDL_NumJoysticks: 1 -> int;
 }

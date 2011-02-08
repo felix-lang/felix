@@ -32,7 +32,7 @@ module SDL_cdrom_h
     numtracks: int;
     cur_track: int;
     cur_frame: int;
-    track: ptr[SDL_CDtrack];
+    track: &SDL_CDtrack;
   }
   cstruct SDL_CDtrack {
     id: uint8;
@@ -58,17 +58,17 @@ module SDL_cdrom_h
   const CD_STOPPED: int = 'CD_STOPPED';
 
   //PROCEDURES
-  proc SDL_CDClose: ptr[SDL_CD];
+  proc SDL_CDClose: &SDL_CD;
 
   //FUNCTIONS
-  fun SDL_CDEject: ptr[SDL_CD] -> int;
-  fun SDL_CDName: int -> cptr[char];
+  fun SDL_CDEject: &SDL_CD -> int;
+  fun SDL_CDName: int -> &char;
   fun SDL_CDNumDrives: 1 -> int;
-  fun SDL_CDOpen: int -> ptr[SDL_CD];
-  fun SDL_CDPause: ptr[SDL_CD] -> int;
-  fun SDL_CDPlay: ptr[SDL_CD] * int * int -> int;
-  fun SDL_CDPlayTracks: ptr[SDL_CD] * int * int * int * int -> int;
-  fun SDL_CDResume: ptr[SDL_CD] -> int;
-  fun SDL_CDStatus: ptr[SDL_CD] -> CDstatus;
-  fun SDL_CDStop: ptr[SDL_CD] -> int;
+  fun SDL_CDOpen: int -> &SDL_CD;
+  fun SDL_CDPause: &SDL_CD -> int;
+  fun SDL_CDPlay: &SDL_CD * int * int -> int;
+  fun SDL_CDPlayTracks: &SDL_CD * int * int * int * int -> int;
+  fun SDL_CDResume: &SDL_CD -> int;
+  fun SDL_CDStatus: &SDL_CD -> CDstatus;
+  fun SDL_CDStop: &SDL_CD -> int;
 }

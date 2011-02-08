@@ -45,10 +45,10 @@ module SDL_rotozoom_h
   typedef _struct_tColorRGBA = tColorRGBA;
 
   //PROCEDURES
-  proc rotozoomSurfaceSize: int * int * double * double * ptr[int] * ptr[int];
-  proc zoomSurfaceSize: int * int * double * double * ptr[int] * ptr[int];
+  proc rotozoomSurfaceSize: int * int * double * double * &int * &int;
+  proc zoomSurfaceSize: int * int * double * double * &int * &int;
 
   //FUNCTIONS
-  fun rotozoomSurface: ptr[SDL_Surface] * double * double * int -> ptr[SDL_Surface];
-  fun zoomSurface: ptr[SDL_Surface] * double * double * int -> ptr[SDL_Surface];
+  fun rotozoomSurface: &SDL_Surface * double * double * int -> &SDL_Surface;
+  fun zoomSurface: &SDL_Surface * double * double * int -> &SDL_Surface;
 }

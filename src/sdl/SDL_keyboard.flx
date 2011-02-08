@@ -28,7 +28,7 @@ module SDL_keyboard_h
     sym: SDLKey;
     mod: SDLMod;
     unicode: uint16;
-  }
+  };
 
   //STRUCT or UNION TAG ALIASES
 
@@ -43,7 +43,7 @@ module SDL_keyboard_h
   //FUNCTIONS
   fun SDL_EnableKeyRepeat: int * int -> int;
   fun SDL_EnableUNICODE: int -> int;
-  fun SDL_GetKeyName: SDLKey -> ptr[char];
-  fun SDL_GetKeyState: ptr[int] -> ptr[uint8];
+  fun SDL_GetKeyName: SDLKey -> &char;
+  fun SDL_GetKeyState: &int -> &uint8;
   fun SDL_GetModState: 1 -> SDLMod;
 }

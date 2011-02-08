@@ -32,7 +32,7 @@ module SDL_timer_h
 
   //TYPE ALIASES
   typedef SDL_NewTimerCallback = SDL_timer_h_cft_2;
-  typedef SDL_TimerID = ptr[_struct__SDL_TimerID];
+  typedef SDL_TimerID = &_struct__SDL_TimerID;
   typedef SDL_TimerCallback = SDL_timer_h_cft_1;
 
   //PROCEDURES

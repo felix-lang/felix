@@ -42,19 +42,19 @@ module SDL_sound_h
 
   //PROCEDURES
   proc Sound_ClearError: 1;
-  proc Sound_FreeSample: ptr[Sound_Sample];
-  proc Sound_GetLinkedVersion: ptr[Sound_Version];
+  proc Sound_FreeSample: &Sound_Sample;
+  proc Sound_GetLinkedVersion: &Sound_Version;
 
   //FUNCTIONS
-  fun Sound_AvailableDecoders: 1 -> ptr[cptr[Sound_DecoderInfo]];
-  fun Sound_Decode: ptr[Sound_Sample] -> uint32;
-  fun Sound_DecodeAll: ptr[Sound_Sample] -> uint32;
-  fun Sound_GetError: 1 -> cptr[char];
+  fun Sound_AvailableDecoders: 1 -> &cptr[Sound_DecoderInfo];
+  fun Sound_Decode: &Sound_Sample -> uint32;
+  fun Sound_DecodeAll: &Sound_Sample -> uint32;
+  fun Sound_GetError: 1 -> &char;
   fun Sound_Init: 1 -> int;
-  fun Sound_NewSample: ptr[SDL_RWops] * cptr[char] * ptr[Sound_AudioInfo] * uint32 -> ptr[Sound_Sample];
-  fun Sound_NewSampleFromFile: cptr[char] * ptr[Sound_AudioInfo] * uint32 -> ptr[Sound_Sample];
+  fun Sound_NewSample: &SDL_RWops * &char * &Sound_AudioInfo * uint32 -> &Sound_Sample;
+  fun Sound_NewSampleFromFile: &char * &Sound_AudioInfo * uint32 -> &Sound_Sample;
   fun Sound_Quit: 1 -> int;
-  fun Sound_Rewind: ptr[Sound_Sample] -> int;
-  fun Sound_Seek: ptr[Sound_Sample] * uint32 -> int;
-  fun Sound_SetBufferSize: ptr[Sound_Sample] * uint32 -> int;
+  fun Sound_Rewind: &Sound_Sample -> int;
+  fun Sound_Seek: &Sound_Sample * uint32 -> int;
+  fun Sound_SetBufferSize: &Sound_Sample * uint32 -> int;
 }

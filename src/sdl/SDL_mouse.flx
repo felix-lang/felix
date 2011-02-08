@@ -33,10 +33,10 @@ module SDL_mouse_h
     area: SDL_Rect;
     hot_x: int16;
     hot_y: int16;
-    data: ptr[uint8];
-    mask: ptr[uint8];
-    save: ptr[ptr[uint8]];
-    wm_cursor: ptr[WMcursor];
+    data: &uint8;
+    mask: &uint8;
+    save: &ptr[uint8];
+    wm_cursor: &WMcursor;
   }
 
   //PURE INCOMPLETE TYPES
@@ -51,14 +51,14 @@ module SDL_mouse_h
   */
 
   //PROCEDURES
-  proc SDL_FreeCursor: ptr[SDL_Cursor];
-  proc SDL_SetCursor: ptr[SDL_Cursor];
+  proc SDL_FreeCursor: &SDL_Cursor;
+  proc SDL_SetCursor: &SDL_Cursor;
   proc SDL_WarpMouse: uint16 * uint16;
 
   //FUNCTIONS
-  fun SDL_CreateCursor: ptr[uint8] * ptr[uint8] * int * int * int * int -> ptr[SDL_Cursor];
-  fun SDL_GetCursor: 1 -> ptr[SDL_Cursor];
-  fun SDL_GetMouseState: ptr[int] * ptr[int] -> uint8;
-  fun SDL_GetRelativeMouseState: ptr[int] * ptr[int] -> uint8;
+  fun SDL_CreateCursor: &uint8 * &uint8 * int * int * int * int -> &SDL_Cursor;
+  fun SDL_GetCursor: 1 -> &SDL_Cursor;
+  fun SDL_GetMouseState: &int * &int -> uint8;
+  fun SDL_GetRelativeMouseState: &int * &int -> uint8;
   fun SDL_ShowCursor: int -> int;
 }

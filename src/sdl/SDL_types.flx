@@ -26,16 +26,16 @@ module SDL_types_h
 
   //TYPE ALIASES
   typedef Sint64 = vlong;
-  typedef SDL_dummy_uint32 = ptr[int];
-  typedef SDL_dummy_sint64 = ptr[int];
-  typedef SDL_dummy_sint16 = ptr[int];
-  typedef SDL_dummy_sint8 = ptr[int];
-  typedef SDL_dummy_sint32 = ptr[int];
-  typedef SDL_dummy_uint8 = ptr[int];
+  typedef SDL_dummy_uint32 = &int;
+  typedef SDL_dummy_sint64 = &int;
+  typedef SDL_dummy_sint16 = &int;
+  typedef SDL_dummy_sint8 = &int;
+  typedef SDL_dummy_sint32 = &int;
+  typedef SDL_dummy_uint8 = &int;
   typedef Uint64 = uvlong;
-  typedef SDL_dummy_uint64 = ptr[int];
-  typedef SDL_dummy_uint16 = ptr[int];
-  typedef SDL_dummy_enum = ptr[int];
+  typedef SDL_dummy_uint64 = &int;
+  typedef SDL_dummy_uint16 = &int;
+  typedef SDL_dummy_enum = &int;
 
   //ENUMERATION CONSTANTS
   const SDL_PRESSED: int = 'SDL_PRESSED';

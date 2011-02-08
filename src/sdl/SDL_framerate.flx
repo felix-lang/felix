@@ -29,10 +29,10 @@ module SDL_framerate_h
   type FPSmanager = 'FPSmanager';
 
   //PROCEDURES
-  proc SDL_framerateDelay: ptr[FPSmanager];
-  proc SDL_initFramerate: ptr[FPSmanager];
+  proc SDL_framerateDelay: &FPSmanager;
+  proc SDL_initFramerate: &FPSmanager;
 
   //FUNCTIONS
-  fun SDL_getFramerate: ptr[FPSmanager] -> int;
-  fun SDL_setFramerate: ptr[FPSmanager] * int -> int;
+  fun SDL_getFramerate: &FPSmanager -> int;
+  fun SDL_setFramerate: &FPSmanager * int -> int;
 }

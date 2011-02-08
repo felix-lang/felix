@@ -1,7 +1,7 @@
 include "SDL/SDL";
 include "SDL/SDL_events";
 include "SDL/SDL_mutex";
-include "flx_faio";
+include "std/io/flx_faio";
 
 module SDL_events
 {
@@ -12,14 +12,14 @@ module SDL_events
 
   fun event_type: SDL_Event -> uint8 = "$1.type";
 
-  proc block_sdl_events(m:ptr[SDL_mutex])
+  proc block_sdl_events(m:&SDL_mutex)
   {
     var dummy = SDL_UserEvent(SDL_USEREVENT,0,NULL,NULL);
-    ignore(SDL_PushEvent(cast [ptr[SDL_Event]] (addr dummy)));
+    ignore(SDL_PushEvent(cast [&SDL_Event] (&dummy)));
     ignore(SDL_LockMutex(m));
   }
 
-  proc unblock_sdl_events(m:ptr[SDL_mutex])
+  proc unblock_sdl_events(m:&SDL_mutex)
   {
     ignore(SDL_UnlockMutex(m));
   }

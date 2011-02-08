@@ -35,5 +35,5 @@ module SDL_version_h
   typedef _struct_SDL_version = SDL_version;
 
   //FUNCTIONS
-  fun SDL_Linked_Version: 1 -> cptr[SDL_version];
+  fun SDL_Linked_Version: 1 -> &SDL_version;
 }

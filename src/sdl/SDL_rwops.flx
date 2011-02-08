@@ -37,14 +37,14 @@ module SDL_rwops_h
   typedef SDL_RWops = _struct_SDL_RWops;
 
   //PROCEDURES
-  proc SDL_FreeRW: ptr[SDL_RWops];
+  proc SDL_FreeRW: &SDL_RWops;
 
   //FUNCTIONS
-  fun SDL_AllocRW: 1 -> ptr[SDL_RWops];
-  fun SDL_RWFromConstMem: caddress * int -> ptr[SDL_RWops];
-  fun SDL_RWFromFP: ptr[FILE] * int -> ptr[SDL_RWops];
-  fun SDL_RWFromFile: cptr[char] * cptr[char] -> ptr[SDL_RWops];
-  fun SDL_RWFromMem: address * int -> ptr[SDL_RWops];
+  fun SDL_AllocRW: 1 -> &SDL_RWops;
+  fun SDL_RWFromConstMem: address * int -> &SDL_RWops;
+  fun SDL_RWFromFP: &FILE * int -> &SDL_RWops;
+  fun SDL_RWFromFile: &char * &char -> &SDL_RWops;
+  fun SDL_RWFromMem: address * int -> &SDL_RWops;
 
   //STRUCT and UNION FIELDS
   fun get_read: _struct_SDL_RWops -> SDL_rwops_h_cft_2 = '$1->read';

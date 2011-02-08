@@ -16,5 +16,5 @@ module SDL_gfxPrimitives_font_h
   open C_hack;
 
   //VARIABLES
-  const gfxPrimitivesFontdata: ptr[utiny] = 'gfxPrimitivesFontdata';
+  const gfxPrimitivesFontdata: &utiny = 'gfxPrimitivesFontdata';
 }

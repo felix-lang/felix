@@ -31,35 +31,35 @@ module SDL_events_h
   //CSTRUCTS
   cstruct SDL_SysWMEvent {
     type_: uint8;
-    msg: ptr[SDL_SysWMmsg];
-  }
+    msg: &SDL_SysWMmsg;
+  };
   cstruct SDL_ResizeEvent {
     type_: uint8;
     w: int;
     h: int;
-  }
+  };
   cstruct SDL_KeyboardEvent {
     type_: uint8;
     which: uint8;
     state: uint8;
     keysym: SDL_keysym;
-  }
+  };
   cstruct SDL_JoyBallEvent {
     type_: uint8;
     which: uint8;
     ball: uint8;
     xrel: int16;
     yrel: int16;
-  }
+  };
   cstruct SDL_JoyHatEvent {
     type_: uint8;
     which: uint8;
     hat: uint8;
     value: uint8;
-  }
+  };
   cstruct SDL_ExposeEvent {
     type_: uint8;
-  }
+  };
   cstruct SDL_MouseButtonEvent {
     type_: uint8;
     which: uint8;
@@ -67,7 +67,7 @@ module SDL_events_h
     state: uint8;
     x: uint16;
     y: uint16;
-  }
+  };
   cstruct SDL_MouseMotionEvent {
     type_: uint8;
     which: uint8;
@@ -76,33 +76,33 @@ module SDL_events_h
     y: uint16;
     xrel: int16;
     yrel: int16;
-  }
+  };
   cstruct SDL_JoyButtonEvent {
     type_: uint8;
     which: uint8;
     button: uint8;
     state: uint8;
-  }
+  };
   cstruct SDL_QuitEvent {
     type_: uint8;
-  }
+  };
   cstruct SDL_JoyAxisEvent {
     type_: uint8;
     which: uint8;
     axis: uint8;
     value: int16;
-  }
+  };
   cstruct SDL_UserEvent {
     type_: uint8;
     code_: int;
     data1: address;
     data2: address;
-  }
+  };
   cstruct SDL_ActiveEvent {
     type_: uint8;
     gain: uint8;
     state: uint8;
-  }
+  };
 
   // This is ACTUALLY a C union .. but the syntax is the same
   // as for a struct .. so we can model it with a struct
@@ -121,7 +121,7 @@ module SDL_events_h
     quit: SDL_QuitEvent;
     user : SDL_UserEvent;
     syswm : SDL_SysWMEvent;
-  }
+  };
 
   // use name type_ instead of type ..
   fun get_type_:SDL_Event -> uint8 = "$1.type";
@@ -208,8 +208,8 @@ module SDL_events_h
   //FUNCTIONS
   fun SDL_EventState: uint8 * int -> uint8;
   fun SDL_GetEventFilter: 1 -> SDL_EventFilter;
-  fun SDL_PeepEvents: ptr[SDL_Event] * int * SDL_eventaction * uint32 -> int;
-  fun SDL_PollEvent: ptr[SDL_Event] -> int;
-  fun SDL_PushEvent: ptr[SDL_Event] -> int;
-  fun SDL_WaitEvent: ptr[SDL_Event] -> int;
+  fun SDL_PeepEvents: &SDL_Event * int * SDL_eventaction * uint32 -> int;
+  fun SDL_PollEvent: &SDL_Event -> int;
+  fun SDL_PushEvent: &SDL_Event -> int;
+  fun SDL_WaitEvent: &SDL_Event -> int;
 }
