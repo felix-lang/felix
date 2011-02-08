@@ -731,6 +731,7 @@ let codegen_bsyms state bsym_table root_proc =
   plb "\n//-----------------------------------------";
 
   plh ("using namespace ::flxusr::" ^ cid_of_flxid state.module_name ^ ";");
+print_endline ("EXPORT COUNT = " ^ string_of_int (List.length state.syms.bifaces));
   if List.length state.syms.bifaces > 0 then begin
     plh "//DECLARE USER EXPORTS";
     plh (gen_biface_headers state.syms bsym_table state.syms.bifaces);
@@ -1105,6 +1106,7 @@ let process_lib state sym_table_ref bsym_table_ref excls outdir module_name star
         (* Bind the assemblies. *)
         bind_asms state !sym_table_ref !bsym_table_ref !start_counter asms;
         print_endline ("binding library " ^ lib ^ " done in "^ string_of_float (cal_time()) ^ " seconds");
+print_endline ("Exports = " ^ string_of_int (List.length (state.syms.bifaces)));
         includes, depnames,
         !(state.syms.counter),
         state.syms.varmap, 
@@ -1212,6 +1214,7 @@ print_endline "sym_table=";
 print_endline (Flx_sym_table.detail sym_table);
 *)
     bind_asms state sym_table bsym_table (!start_counter) asms;
+print_endline ("Main prog: Exports = " ^ string_of_int (List.length (state.syms.bifaces)));
     start_counter := !(state.syms.counter);
 (*
 print_endline "Main program bound";
@@ -1237,6 +1240,7 @@ print_endline "Main program bound";
 print_endline ("Binding init proc " ^ string_of_int root_proc);
 *)
     bind_asms state sym_table bsym_table root_proc asms;
+print_endline ("Init proc: Exports = " ^ string_of_int (List.length (state.syms.bifaces)));
 (*
 print_endline "init proc bound";
 *)

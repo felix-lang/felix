@@ -245,7 +245,9 @@ let rec build_tables
   let dcls, exes, ifaces, dirs =
     List.rev dcls, List.rev exes, List.rev ifaces, List.rev dirs
   in
-
+(*
+print_endline ("Level " ^string_of_int level ^ " build tables, exports = " ^ string_of_int (List.length ifaces));
+*)
   (* Add the parent to each interface *)
   let ifaces = List.map (fun (i,j)-> i, j, parent) ifaces in
   let interfaces = ref ifaces in
@@ -274,6 +276,11 @@ let rec build_tables
       priv_name_map
       dcls
   in
+(*
+print_endline ("Interfaces level " ^string_of_int level ^  " = " ^
+       string_of_int (List.length (!interfaces)) ^ " + " ^ 
+        string_of_int (List.length inner_interfaces));
+*)
   pub_name_map, priv_name_map, exes, (!interfaces) @ inner_interfaces, dirs
 
 and add_dcls 
@@ -635,7 +642,9 @@ and build_table_for_dcl
         let sym = { sym with Flx_sym.dirs=dirs ; symdef=symdef } in
         let entry = { entry with Flx_sym_table.sym=sym; } in
         Hashtbl.replace sym_table 0 entry
-      end
+      end;
+      (* Add the interface. *)
+      interfaces := !interfaces @ ifaces
 
   | DCL_module asms ->
       let complete_vs = merge_ivs inherit_ivs ivs in
@@ -1169,4 +1178,5 @@ let add_asms
   symbol_table.init_exes <- symbol_table.init_exes @ exes;
   symbol_table.exports <- symbol_table.exports @ interfaces;
   symbol_table.directives <- symbol_table.directives @ dirs
+;print_endline ("Add asms .. exports: " ^ string_of_int (List.length symbol_table.exports));
 
