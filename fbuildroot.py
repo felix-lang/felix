@@ -356,14 +356,15 @@ def configure(ctx):
     target = config_target(ctx, host)
 
     # this sucks, but it seems to be the only way
-    try: 
-      os.mkdir(ctx.buildroot/'config')
-    except:
-      pass
     try:
-      os.mkdir(ctx.buildroot/'config/target')
-    except:
-      pass
+        os.mkdir(ctx.buildroot / 'config')
+    except OSError:
+        pass
+
+    try:
+        os.mkdir(ctx.buildroot / 'config/target')
+    except OSError:
+        pass
 
     # copy the config directory for initial config
     # this will be overwritten by subsequent steps if
@@ -377,8 +378,8 @@ def configure(ctx):
     # should probably move these out of config directory
     # they're put in config in case there really are any
     # platform mods.
-    buildsystem.copy_to(ctx, ctx.buildroot/'config/target', 
-        Path('src/config/target/*.hpp').glob()) 
+    buildsystem.copy_to(ctx, ctx.buildroot/'config/target',
+        Path('src/config/target/*.hpp').glob())
 
     # this is a hack: assume we're running on Unix.
     # later when Erick figures out how to fix this
@@ -400,8 +401,6 @@ def configure(ctx):
     if 'macosx' in target.platform:
       buildsystem.copy_to(ctx,
           ctx.buildroot / 'config', Path('src/config/macosx/*.fpc').glob())
-
-
 
     # extract the configuration
     iscr = call('buildsystem.iscr.Iscr', ctx)
@@ -479,7 +478,6 @@ def build(ctx):
     #
     mk_daemon = call('buildsystem.mk_daemon.build', phases.target)
     timeout = call('buildsystem.timeout.build', phases.target)
-
 
     # --------------------------------------------------------------------------
     # build support tools

@@ -13,6 +13,7 @@ from fbuild.functools import call
 from fbuild.path import Path
 
 from buildsystem import version
+
 # ------------------------------------------------------------------------------
 
 class Iscr(fbuild.db.PersistentObject):
