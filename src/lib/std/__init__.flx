@@ -9,7 +9,6 @@ include "std/c_headers";
 include "std/flx_tclass";
 include "std/order";
 include "std/algebraic";
-include "std/tuple";
 
 // base scalar types 
 include "std/flx_ctypes";
