@@ -16,7 +16,7 @@ syntax cbind {
   // note: also needed by typeclasses atm for virtual funs
   tstatement := sadjectives sfun_kind sdeclname fun_return_type sopt_cstring sopt_prec srequires_clause ";" =>#
     """
-      (let (
+      (let* (
         (name (first _3))
         (vs (second _3))
         (kind (cal_funkind _1 _2))
@@ -31,7 +31,7 @@ syntax cbind {
           (if (eq? 'none _5)
             (if (memv 'Virtual _1)
               'Virtual
-               `(StrTemplate ,(string-append (first _3) "($a)"))
+               `(StrTemplate ,(string-append "(#0)" name "($a)"))
              )
              (second _5))
         )
