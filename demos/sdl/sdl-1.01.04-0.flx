@@ -20,7 +20,7 @@ include "SDL/SDL_timer";
 include "SDL/SDL_mutex";
 include "SDL/SDL_opengl";
 
-include "flx_faio";
+include "std/io/flx_faio";
 include "flx_faio_sdl";
 
 open C_hack;
@@ -81,7 +81,7 @@ proc resizeWindow( wwidth : int, hheight :int)
 proc LoadGLTextures( )
 {
   /* Create storage space for the texture */
-  var TextureImage = SDL_LoadBMP(enconst c"demos/sdl/textures/nehe.bmp");
+  var TextureImage = SDL_LoadBMP(c"demos/sdl/textures/nehe.bmp");
   if isNULL TextureImage do
     print "Can't load texture file demos/sdl/textures/nehe.bmp";
     Quit 1;
@@ -318,7 +318,7 @@ proc execute(x:schannel[int], something:1->0)
 }
 
 val clock = Faio::mk_alarm_clock();
-proc poll_event(e:ptr[SDL_Event])
+proc poll_event(e:&SDL_Event)
 {
 tryagain:>
   //print "Polling event"; endl;
@@ -341,7 +341,7 @@ proc dispatch_event(
   whilst true do
     //var &e : SDL_Event <- get_sdl_event event_lock;
     var e : SDL_Event;
-    poll_event(addr e);
+    poll_event(&e);
     match e.type_ with
     | ?et when et == SDL_ACTIVEEVENT =>
       { write (active, e.active); }
@@ -393,9 +393,9 @@ spawn_fthread { resizechan resize; };
 spawn_fthread { activechan active; };
 spawn_fthread { keychan keyboard; };
 
-spawn_fthread { drawchan (clicks, the Drawing); };
+spawn_fthread { drawchan (clicks, Drawing); };
 spawn_fthread { framerate (clicks, 0.1); };
-spawn_fthread { execute (rotation, the rotate); };
+spawn_fthread { execute (rotation, rotate); };
 spawn_fthread { framerate (rotation, 0.1); };
 
 
