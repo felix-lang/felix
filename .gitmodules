@@ -13,3 +13,6 @@
 [submodule "src/tre/tre"]
 	path = src/tre/tre
 	url = git://github.com/erickt/tre.git
+[submodule "src/judy"]
+	path = src/judy
+	url = git://github.com/erickt/judy.git
