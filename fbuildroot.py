@@ -16,7 +16,13 @@ def pre_options(parser):
     group.add_options((
         make_option('--prefix',
             default='/usr/local',
-            help='specify the install location'),
+            help='specify the install location (default /usr/local)'),
+        make_option('--bindir',
+            default=None,
+            help='specify the binary install location (default $PREFIX/bin)'),
+        make_option('--libdir',
+            default=None,
+            help='specify the library install location (default $PREFIX/lib)'),
         make_option('-I', '--include',
             dest='includes',
             default=[],
@@ -151,6 +157,10 @@ def pre_options(parser):
 
 def post_options(options, args):
     options.prefix = Path(options.prefix)
+    options.bindir = Path(
+        options.prefix / 'bin' if options.bindir is None else options.bindir)
+    options.libdir = Path(
+        options.prefix / 'lib' if options.libdir is None else options.libdir)
 
     if options.debug:
         options.buildroot = Path(options.buildroot, 'debug')
@@ -346,14 +356,15 @@ def configure(ctx):
     target = config_target(ctx, host)
 
     # this sucks, but it seems to be the only way
-    try: 
-      os.mkdir(ctx.buildroot/'config')
-    except:
-      pass
     try:
-      os.mkdir(ctx.buildroot/'config/target')
-    except:
-      pass
+        os.mkdir(ctx.buildroot / 'config')
+    except OSError:
+        pass
+
+    try:
+        os.mkdir(ctx.buildroot / 'config/target')
+    except OSError:
+        pass
 
     # copy the config directory for initial config
     # this will be overwritten by subsequent steps if
@@ -367,8 +378,8 @@ def configure(ctx):
     # should probably move these out of config directory
     # they're put in config in case there really are any
     # platform mods.
-    buildsystem.copy_to(ctx, ctx.buildroot/'config/target', 
-        Path('src/config/target/*.hpp').glob()) 
+    buildsystem.copy_to(ctx, ctx.buildroot/'config/target',
+        Path('src/config/target/*.hpp').glob())
 
     # this is a hack: assume we're running on Unix.
     # later when Erick figures out how to fix this
@@ -390,8 +401,6 @@ def configure(ctx):
     if 'macosx' in target.platform:
       buildsystem.copy_to(ctx,
           ctx.buildroot / 'config', Path('src/config/macosx/*.fpc').glob())
-
-
 
     # extract the configuration
     iscr = call('buildsystem.iscr.Iscr', ctx)
@@ -470,14 +479,12 @@ def build(ctx):
     mk_daemon = call('buildsystem.mk_daemon.build', phases.target)
     timeout = call('buildsystem.timeout.build', phases.target)
 
-
     # --------------------------------------------------------------------------
     # build support tools
     # 
     # Felix tools
     #
-    webserver = call('buildsystem.webserver.build', phases.target)
-    tools = call('buildsystem.tools.build', phases.target)
+    call('buildsystem.tools.build', phases.target, felix)
 
     return phases, iscr, felix
 
@@ -599,13 +606,56 @@ def speed(ctx):
 # ------------------------------------------------------------------------------
 
 @fbuild.target.register()
-def install(ctx):
-    """Install Felix."""
+def install_lib(ctx):
+    """Install the Felix libraries into the lib directory."""
 
     # Make sure we're built.
     phases, iscr, felix = build(ctx)
 
-    ctx.logger.log('Installing does not work yet.', color='red')
+    # --------------------------------------------------------------------------
+    # Install the libraries.
+
+    from buildsystem.version import flx_version
+    installdir = ctx.options.libdir / 'felix/felix-{}'.format(flx_version)
+
+    ctx.logger.check(' * installing libraries into', installdir,
+        color='cyan')
+
+    if installdir.exists():
+        raise fbuild.Error(
+            'install directory {} already exists!'.format(installdir))
+
+    (ctx.buildroot / 'bin').copytree(installdir / 'bin')
+    (ctx.buildroot / 'lib').copytree(installdir / 'lib')
+    (ctx.buildroot / 'config').copytree(installdir / 'config')
+
+# ------------------------------------------------------------------------------
+
+@fbuild.target.register()
+def install_bin(ctx):
+    """Install the Felix binaries into the default bin directory."""
+
+    ctx.logger.check(' * installing binaries into', ctx.options.bindir,
+        color='cyan')
+
+    if not ctx.options.bindir.exists():
+        ctx.options.bindir.makedirs()
+
+    (ctx.buildroot / 'bin/flx').copy(ctx.options.bindir)
+    (ctx.buildroot / 'bin/flx_ls').copy(ctx.options.bindir)
+    #(ctx.buildroot / 'bin/mk_daemon').copy(ctx.options.bindir)
+    #(ctx.buildroot / 'bin/timeout').copy(ctx.options.bindir)
+    #(ctx.buildroot / 'bin/webserver').copy(ctx.options.bindir)
+    #(ctx.buildroot / 'tools/flx_ls').copy(ctx.options.bindir)
+
+# ------------------------------------------------------------------------------
+
+@fbuild.target.register()
+def install(ctx):
+    """Install Felix."""
+
+    install_lib(ctx)
+    install_bin(ctx)
 
 # ------------------------------------------------------------------------------
 
