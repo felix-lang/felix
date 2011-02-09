@@ -1,25 +1,28 @@
 all: configure build test doc dist
 
 configure:
-	fbuild/fbuild-light configure
+	python3 fbuild/fbuild-light configure
 
 build:
-	fbuild/fbuild-light build
+	python3 fbuild/fbuild-light build
 
 test:
-	fbuild/fbuild-light test
+	python3 fbuild/fbuild-light test
 
 doc:
-	fbuild/fbuild-light doc
+	python3 fbuild/fbuild-light doc
 
 dist:
-	fbuild/fbuild-light dist
+	python3 fbuild/fbuild-light dist
 
 install:
-	sudo build/release/bin/flx --test=build/release --install
+	sudo python3 fbuild/fbuild-light install
+
+install-lib:
+	sudo python3 fbuild/fbuild-light install_lib
 
 install-bin:
-	sudo build/release/bin/flx --test=build/release --install-bin
+	sudo python3 fbuild/fbuild-light install_bin
 
 websites-linux:
 	mk_daemon /usr/local/bin/webserver --port=1116
@@ -39,7 +42,4 @@ release:
 	echo "Restart webservers now"
 	echo "Upgrade buildsystem/version.py now and rebuild"
 
-.PHONY : configure build test doc install websites-linux websites-osx release install-bin
-	
-
-
+.PHONY : configure build test doc install websites-linux websites-osx release install-bin install-lib
