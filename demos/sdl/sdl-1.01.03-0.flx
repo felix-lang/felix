@@ -119,7 +119,6 @@ proc drawGLScene(drawing:1->0)
 
   /* Gather our frames per second */
   Frames++;
-println$ "FRAMES = " + Str[int]::str Frames;
   {
     var t = SDL_GetTicks();
     if t - T0 >= 5000u do
@@ -300,17 +299,18 @@ proc dispatch_event(
     //var &e : SDL_Event <- get_sdl_event event_lock;
     var e : SDL_Event;
     poll_event(&e);
-    match e.type_ with
-    | ?et when et == SDL_ACTIVEEVENT =>
+    // Grrr .. event codes are smaller than event type variable, need a cast
+    match get_type e with
+    | ?et when et == SDL_ACTIVEEVENT=> 
       { write (active, e.active); }
 
-    | ?et when et == SDL_VIDEORESIZE =>
+    | ?et when et == SDL_VIDEORESIZE=>
       { write (resize, e.resize); }
 
-    | ?et when et == SDL_KEYDOWN =>
+    | ?et when et == SDL_KEYDOWN=>
       { write (keyboard, e.key.keysym); }
 
-    | ?et when et == SDL_QUIT =>
+    | ?et when et == SDL_QUIT=>
       { Quit 0; }
 
     | _ => {}
