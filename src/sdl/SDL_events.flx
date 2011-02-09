@@ -30,47 +30,59 @@ module SDL_events_h
 
   //CSTRUCTS
   cstruct SDL_SysWMEvent {
-    type_: uint8;
+    type: uint32;
     msg: &SDL_SysWMmsg;
   };
+  cstruct SDL_WindowEvent {
+    type: uint32;
+    windowID: uint32;
+    event: uint8;
+    data1: int;
+    data2: int;
+  };
   cstruct SDL_ResizeEvent {
-    type_: uint8;
+    type: uint32;
     w: int;
     h: int;
   };
   cstruct SDL_KeyboardEvent {
-    type_: uint8;
-    which: uint8;
+    type: uint32;
+    windowID: uint32;
+    which: uint32;
     state: uint8;
+    repeat: uint8;
     keysym: SDL_keysym;
   };
   cstruct SDL_JoyBallEvent {
-    type_: uint8;
+    type: uint32;
     which: uint8;
     ball: uint8;
     xrel: int16;
     yrel: int16;
   };
   cstruct SDL_JoyHatEvent {
-    type_: uint8;
+    type: uint32;
     which: uint8;
     hat: uint8;
     value: uint8;
   };
-  cstruct SDL_ExposeEvent {
-    type_: uint8;
-  };
   cstruct SDL_MouseButtonEvent {
-    type_: uint8;
-    which: uint8;
+    type: uint32;
+    windowID: uint32;
     button: uint8;
     state: uint8;
     x: uint16;
     y: uint16;
   };
+  cstruct SDL_MouseWheelEvent {
+    type: uint32;
+    windowID: uint32;
+    x: uint16;
+    y: uint16;
+  };
   cstruct SDL_MouseMotionEvent {
-    type_: uint8;
-    which: uint8;
+    type: uint32;
+    windowID: uint32;
     state: uint8;
     x: uint16;
     y: uint16;
@@ -78,28 +90,28 @@ module SDL_events_h
     yrel: int16;
   };
   cstruct SDL_JoyButtonEvent {
-    type_: uint8;
+    type: uint32;
     which: uint8;
     button: uint8;
     state: uint8;
   };
   cstruct SDL_QuitEvent {
-    type_: uint8;
+    type: uint32;
   };
   cstruct SDL_JoyAxisEvent {
-    type_: uint8;
+    type: uint32;
     which: uint8;
     axis: uint8;
     value: int16;
   };
   cstruct SDL_UserEvent {
-    type_: uint8;
+    type: uint32;
     code_: int;
     data1: address;
     data2: address;
   };
   cstruct SDL_ActiveEvent {
-    type_: uint8;
+    type: uint32;
     gain: uint8;
     state: uint8;
   };
@@ -107,19 +119,19 @@ module SDL_events_h
   // This is ACTUALLY a C union .. but the syntax is the same
   // as for a struct .. so we can model it with a struct
   cstruct SDL_Event = {
-    //type_ : uint8; // type is a keyword ..
     active : SDL_ActiveEvent;
     key : SDL_KeyboardEvent;
     motion: SDL_MouseMotionEvent;
     button: SDL_MouseButtonEvent;
+    wheel: SDL_MouseWheelEvent;
     jaxis : SDL_JoyAxisEvent;
     jball : SDL_JoyBallEvent;
     jhat : SDL_JoyHatEvent;
     jbutton : SDL_JoyButtonEvent;
     resize : SDL_ResizeEvent;
-    expose : SDL_ExposeEvent;
     quit: SDL_QuitEvent;
     user : SDL_UserEvent;
+    window: SDL_WindowEvent;
     syswm : SDL_SysWMEvent;
   };
 

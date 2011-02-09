@@ -14,7 +14,7 @@ module SDL_events
 
   proc block_sdl_events(m:&SDL_mutex)
   {
-    var dummy = SDL_UserEvent(SDL_USEREVENT,0,NULL,NULL);
+    var dummy = SDL_UserEvent(cast[uint32] SDL_USEREVENT,0,NULL,NULL);
     ignore(SDL_PushEvent(cast [&SDL_Event] (&dummy)));
     ignore(SDL_LockMutex(m));
   }

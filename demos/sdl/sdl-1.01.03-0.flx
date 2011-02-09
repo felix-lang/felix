@@ -25,10 +25,6 @@ include "flx_faio_sdl";
 
 open C_hack;
 open Carray;
-open MixedInt;
-open Uint32;
-open Uint8;
-open Float;
 
 open SDL_h;
 open SDL_video_h;
@@ -123,13 +119,14 @@ proc drawGLScene(drawing:1->0)
 
   /* Gather our frames per second */
   Frames++;
+println$ "FRAMES = " + Str[int]::str Frames;
   {
     var t = SDL_GetTicks();
-    if t - T0 >= 5000 do
+    if t - T0 >= 5000u do
       val seconds = double_of (t - T0) / 1000.0;
       val fps = double_of Frames / seconds;
-      print Frames; print " frames in "; print seconds;
-      print " seconds = "; print fps; print " FPS"; endl;
+      println$ str Frames + " frames in " + str seconds +
+      " seconds = " + str fps + " FPS";
       T0 = t;
       Frames = 0;
     done;
@@ -170,14 +167,14 @@ var
   videoFlags |= SDL_RESIZABLE;       /* Enable window resizing */
 
 /* This checks to see if surfaces can be stored in memory */
-if (*videoInfo).hw_available != 0 do
+if (*videoInfo).hw_available != 0u do
     videoFlags |= SDL_HWSURFACE;
 else
     videoFlags |= SDL_SWSURFACE;
 done;
 
 /* This checks if hardware blits can be done */
-if (*videoInfo).blit_hw != 0 do
+if (*videoInfo).blit_hw != 0u do
     videoFlags |= SDL_HWACCEL;
 done;
 
@@ -204,7 +201,7 @@ resizeWindow( SCREEN_WIDTH, SCREEN_HEIGHT );
 // SDL Event dispatcher
 proc handle_active (e:SDL_ActiveEvent)
 {
-   isActive = e.gain != 0;
+   isActive = e.gain != 0 .utiny;
 }
 
 proc handle_resize(e:SDL_ResizeEvent)
