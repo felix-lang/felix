@@ -294,7 +294,7 @@ proc dispatch_event(
     var e : SDL_Event;
     poll_event(&e);
 
-    match e.type_ with
+    match get_type e with
     | ?et when et == SDL_ACTIVEEVENT =>
       { write (active, e.active); }
 

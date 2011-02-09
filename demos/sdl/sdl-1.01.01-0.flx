@@ -216,7 +216,7 @@ SDL_GetClipRect(screen,&rcDest);
 black := SDL_MapRGB((*screen).format, 0u8, 0u8, 0u8);
 
 val clock = Faio::mk_alarm_clock();
-proc waitt(t:double) (f:schannel[uint8]) {
+proc waitt(t:double) (f:schannel[uint32]) {
   Faio::sleep$ clock, t;
   write (f,SDL_USEREVENT); // hack for timer event
 }
@@ -248,14 +248,14 @@ tryagain:>
   goto tryagain;
 }
 
-proc waitk(f:schannel[uint8]) {
+proc waitk(f:schannel[uint32]) {
   // ASYNC event reading doesn't work with SDL on Windows
   // So we have busy wait ;(
   //var &e : SDL_Event <- get_sdl_event event_lock;
   var e : SDL_Event;
   poll_event(&e);
 
-  var et = event_type e;
+  var et = get_type e;
   whilst
     et != SDL_KEYDOWN and
     et != SDL_MOUSEBUTTONDOWN and
@@ -263,14 +263,14 @@ proc waitk(f:schannel[uint8]) {
   do
     //&e <- get_sdl_event event_lock;
     poll_event(&e);
-    et = event_type e;
+    et = get_type e;
   done;
   if et == SDL_KEYDOWN call handle_key e.key.keysym;
   write (f,et);
 }
 
 proc waittk() {
-  var w = mk_schannel[uint8] ();
+  var w = mk_schannel[uint32] ();
   spawn_fthread { waitt 15.0 w; };
   spawn_fthread { waitk w; };
   var i = read w;
@@ -292,7 +292,7 @@ done;
 print "Press any key"; endl;
 
 {
-  var x = mk_schannel[uint8] ();
+  var x = mk_schannel[uint32] ();
   spawn_fthread { waitk x; };
   var i = read x;
 };
