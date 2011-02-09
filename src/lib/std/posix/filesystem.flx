@@ -102,7 +102,7 @@ module FileSystem
     ;
   }
 
-  pod type file_perm_t = "int";
+  pod type file_perm_t = "int" requires Posix_headers::fcntl_h;
   const O_RDONLY     : file_perm_t;
   const O_WRONLY     : file_perm_t;
   const O_RDWR       : file_perm_t;
