@@ -206,15 +206,18 @@ proc handle_active (e:SDL_ActiveEvent)
 proc handle_resize(e:SDL_ResizeEvent)
 {
   block_sdl_events event_lock;
+println$ "Resize w=" + str e.w + ", h=" + str e.h;
   surface = SDL_SetVideoMode(
     e.w,
     e.h,
     16, videoFlags
   );
+println$ "Set video mode";
   if isNULL surface do
     print "Could not get a surface after resize"; endl;
   done;
   resizeWindow( e.w, e.h );
+println$ "Resized now";
   unblock_sdl_events event_lock;
 }
 
@@ -299,7 +302,6 @@ proc dispatch_event(
     //var &e : SDL_Event <- get_sdl_event event_lock;
     var e : SDL_Event;
     poll_event(&e);
-    // Grrr .. event codes are smaller than event type variable, need a cast
     match get_type e with
     | ?et when et == SDL_ACTIVEEVENT=> 
       { write (active, e.active); }
