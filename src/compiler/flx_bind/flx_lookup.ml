@@ -3153,6 +3153,12 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
 
   (* model infix operator as function call *)
   let apl2 (sri:Flx_srcref.t) (fn : string) (tup:expr_t list) =
+    (** get range from first and last expressions *)
+    let rsexpr a b = Flx_srcref.rsrange (src_of_expr a) (src_of_expr b) in
+
+    (** get source range of non-empty list of expressions *)
+    let rslist lst = rsexpr (List.hd lst) (Flx_list.list_last lst) in
+
     let sr = rslist tup in
     EXPR_apply
     (

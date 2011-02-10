@@ -597,9 +597,6 @@ val src_of_pat : pattern_t -> Flx_srcref.t
 val typecode_of_qualified_name : qualified_name_t -> typecode_t
 val qualified_name_of_typecode : typecode_t -> qualified_name_t option
 
-val rsexpr : expr_t -> expr_t -> Flx_srcref.t
-val rslist : expr_t list -> Flx_srcref.t
-
 (** Define a default vs_aux_t. *)
 val dfltvs_aux : vs_aux_t
 
