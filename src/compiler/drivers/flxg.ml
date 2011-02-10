@@ -376,49 +376,68 @@ let codegen_bsyms state bsym_table root_proc =
 
   fprintf state.ppf "//GENERATING Package Requirements\n";
 
-  (* These must be in order: build a list and sort it *)
-  begin
-    let dfnlist = ref [] in
-    Hashtbl.iter
-    (fun (i,ts) _ -> dfnlist := (i,ts) :: !dfnlist)
-    state.syms.instances
-    ;
-    let insts = Hashtbl.create 97 in
-    List.iter
-    (fun (i,ts)->
-      let bsym =
-        try Flx_bsym_table.find bsym_table i with Not_found ->
-          failwith ("[package] can't find index " ^ string_of_bid i)
-      in
-      match Flx_bsym.bbdcl bsym with
-      | BBDCL_external_code (_,s,`Package,_) ->
+  let instantiate_instance f insts kind (bid, ts) =
+    let bsym =
+      try Flx_bsym_table.find bsym_table bid with Not_found ->
+        failwith ("can't find index " ^ string_of_bid bid)
+    in
+
+    match Flx_bsym.bbdcl bsym with
+    | BBDCL_external_code (_,s,kind',_) when kind' = kind ->
         begin match s with
         | CS_identity | CS_str "" | CS_str_template "" -> ()
+        | CS_virtual ->
+            clierr (Flx_bsym.sr bsym) "Instantiate virtual insertion!"
         | _ ->
-          let s =
-            match s with
-            | CS_identity -> assert false (* covered above *)
-            | CS_virtual -> clierr (Flx_bsym.sr bsym) "Instantiate virtual insertion!"
-            | CS_str s -> Flx_cexpr.ce_expr "atom" s
-            | CS_str_template s ->
-              (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename state.syms bsym_table t in
-              let ts = List.map tn ts in
-              Flx_csubst.csubst (Flx_bsym.sr bsym) (Flx_bsym.sr bsym) s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
-          in
-          let s = Flx_cexpr.sc "expr" s in
-          if not (Hashtbl.mem insts s) then
-          begin
-            Hashtbl.add insts s ();
-            plp s
-          end
+            let s =
+              match s with
+              | CS_identity | CS_virtual -> assert false (* covered above *)
+              | CS_str s ->
+                  Flx_cexpr.ce_expr "atom" s
+              | CS_str_template s ->
+                  (* do we need tsubst vs ts t? *)
+                  let tn t = cpp_typename state.syms bsym_table t in
+                  let ts = List.map tn ts in
+                  Flx_csubst.csubst
+                    (Flx_bsym.sr bsym)
+                    (Flx_bsym.sr bsym)
+                    s
+                    (Flx_cexpr.ce_atom "Error")
+                    []
+                    []
+                    "Error"
+                    "Error"
+                    ts
+                    "atom"
+                    "Error"
+                    ["Error"]
+                    ["Error"]
+                    ["Error"]
+            in
+            let s = Flx_cexpr.sc "expr" s in
+            if not (Hashtbl.mem insts s) then begin
+              Hashtbl.add insts s ();
+              f s
+            end
         end
       | _ -> ()
-    )
-    (List.sort compare !dfnlist)
-  end
-  ;
+  in
 
+  let instantiate_instances f kind =
+    let dfnlist = ref [] in
+    Hashtbl.iter
+      (fun (i,ts) _ -> dfnlist := (i,ts) :: !dfnlist)
+      state.syms.instances;
+
+    let insts = Hashtbl.create 97 in
+
+    List.iter
+      (instantiate_instance f insts kind)
+      (List.sort compare !dfnlist)
+  in
+
+  (* These must be in order: build a list and sort it *)
+  instantiate_instances plp `Package;
 
   fprintf state.ppf "//GENERATING C++: user headers\n";
 
@@ -450,48 +469,9 @@ let codegen_bsyms state bsym_table root_proc =
 
   plh "\n//-----------------------------------------";
   plh "//USER HEADERS";
+
   (* These must be in order: build a list and sort it *)
-  begin
-    let dfnlist = ref [] in
-    Hashtbl.iter
-    (fun (i,ts) _ -> dfnlist := (i,ts) :: !dfnlist)
-    state.syms.instances
-    ;
-    let insts = Hashtbl.create 97 in
-    List.iter
-    (fun (i,ts)->
-      let bsym =
-        try Flx_bsym_table.find bsym_table i with Not_found ->
-          failwith ("[user header] can't find index " ^ string_of_bid i)
-      in
-      match Flx_bsym.bbdcl bsym with
-      | BBDCL_external_code (_,s,`Header,_) ->
-        begin match s with
-        | CS_identity | CS_str "" | CS_str_template "" -> ()
-        | _ ->
-          let s =
-            match s with
-            | CS_identity -> assert false
-            | CS_virtual -> clierr (Flx_bsym.sr bsym) "Instantiate virtual insertion!"
-            | CS_str s -> Flx_cexpr.ce_expr "atom" s
-            | CS_str_template s ->
-              (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename state.syms bsym_table t in
-              let ts = List.map tn ts in
-              Flx_csubst.csubst (Flx_bsym.sr bsym) (Flx_bsym.sr bsym) s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
-          in
-          let s = Flx_cexpr.sc "expr" s in
-          if not (Hashtbl.mem insts s) then
-          begin
-            Hashtbl.add insts s ();
-            plh s
-          end
-        end
-      | _ -> ()
-    )
-    (List.sort compare !dfnlist)
-  end
-  ;
+  instantiate_instances plh `Header;
 
   plh "\n//-----------------------------------------";
   List.iter plh [
@@ -568,49 +548,9 @@ let codegen_bsyms state bsym_table root_proc =
   plb "#define comma ,";
   plb "\n//-----------------------------------------";
   plb "//EMIT USER BODY CODE";
-  (* These must be in order: build a list and sort it *)
-  begin
-    let dfnlist = ref [] in
-    Hashtbl.iter
-    (fun (i,ts) _ -> dfnlist := (i,ts) :: !dfnlist)
-    state.syms.instances
-    ;
-    let insts = Hashtbl.create 97 in
-    List.iter
-    (fun (i,ts) ->
-      let bsym =
-        try Flx_bsym_table.find bsym_table i with Not_found ->
-          failwith ("[user body] can't find index " ^ string_of_bid i)
-      in
-      match Flx_bsym.bbdcl bsym with
-      | BBDCL_external_code (_,s,`Body,_) ->
-        begin match s with
-        | CS_identity | CS_str "" | CS_str_template "" -> ()
-        | _ ->
-          let s =
-            match s with
-            | CS_identity -> assert false
-            | CS_virtual -> clierr (Flx_bsym.sr bsym) "Instantiate virtual insertion!"
-            | CS_str s -> Flx_cexpr.ce_expr "atom" s
-            | CS_str_template s ->
-              (* do we need tsubst vs ts t? *)
-              let tn t = cpp_typename state.syms bsym_table t in
-              let ts = List.map tn ts in
-              Flx_csubst.csubst (Flx_bsym.sr bsym) (Flx_bsym.sr bsym) s (Flx_cexpr.ce_atom "Error") [] [] "Error" "Error" ts "atom" "Error" ["Error"] ["Error"] ["Error"]
-          in
-          let s = Flx_cexpr.sc "expr" s in
-          if not (Hashtbl.mem insts s) then
-          begin
-            Hashtbl.add insts s ();
-            plb s
-          end
-        end
-      | _ -> ()
-    )
-    (List.sort compare !dfnlist)
-  end
-  ;
 
+  (* These must be in order: build a list and sort it *)
+  instantiate_instances plb `Body;
   
   (* emit rtti file now so we can get the last_ptr_map and stick it
    * somewhere in the thread frame *)

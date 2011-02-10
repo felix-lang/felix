@@ -442,7 +442,13 @@ def build(ctx):
     # copy tools
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tools')
 
-    for module in 'flx_stdlib', 'flx_pthread', 'demux', 'faio', 'judy', 'bindings':
+    for module in (
+            'flx_stdlib',
+            'flx_pthread',
+            'demux',
+            'faio',
+            'judy',
+            'bindings'):
         call('buildsystem.' + module + '.build_flx', phases.target)
 
     # --------------------------------------------------------------------------
