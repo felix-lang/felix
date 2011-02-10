@@ -193,9 +193,9 @@ let rec get_pattern_vars
   | _ -> ()
 
 let rec gen_match_check pat (arg:expr_t) =
-  let lint sr t i = EXPR_literal (sr, AST_int (t,i))
-  and lstr sr s = EXPR_literal (sr, AST_string s)
-  and lfloat sr t x = EXPR_literal (sr, AST_float (t,x))
+  let lint sr t i = EXPR_literal (sr, Flx_literal.Int (t,i))
+  and lstr sr s = EXPR_literal (sr, Flx_literal.String s)
+  and lfloat sr t x = EXPR_literal (sr, Flx_literal.Float (t,x))
   and apl sr f x =
     EXPR_apply
     (

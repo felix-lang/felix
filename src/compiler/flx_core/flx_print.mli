@@ -35,7 +35,7 @@ val string_of_properties : property_t list -> string
 
 val string_of_pattern : pattern_t -> string
 val string_of_tpattern : tpattern_t -> string
-val string_of_literal : literal_t -> string
+val string_of_literal : Flx_literal.t -> string
 val string_of_parameters : params_t -> string
 val string_of_arguments : expr_t list -> string
 val string_of_statement : int -> statement_t -> string

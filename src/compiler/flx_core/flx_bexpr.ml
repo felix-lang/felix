@@ -7,7 +7,7 @@ type bexpr_t =
   | BEXPR_address of t
   | BEXPR_new of t
   | BEXPR_class_new of Flx_btype.t * t
-  | BEXPR_literal of Flx_ast.literal_t
+  | BEXPR_literal of Flx_literal.t
   | BEXPR_apply of t * t
   | BEXPR_apply_prim of Flx_types.bid_t * Flx_btype.t list * t
   | BEXPR_apply_direct of Flx_types.bid_t * Flx_btype.t list * t
@@ -140,7 +140,7 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_likely e1,_
   | BEXPR_unlikely e1,_ -> cmp e1 xb
 
-  | BEXPR_literal a,BEXPR_literal a' -> Flx_typing.cmp_literal a a'
+  | BEXPR_literal a,BEXPR_literal a' -> Flx_literal.eq a a'
 
   | BEXPR_apply (a,b),BEXPR_apply (a',b') -> cmp a a' && cmp b b'
 
@@ -341,7 +341,7 @@ and print_bexpr f = function
       Flx_format.print_variant2 f "BEXPR_class_new" Flx_btype.print cl print e
   | BEXPR_literal l ->
       Flx_format.print_variant1 f "BEXPR_literal"
-        Flx_ast.print_literal l
+        Flx_literal.print l
   | BEXPR_apply (e1, e2) ->
       Flx_format.print_variant2 f "BEXPR_apply" print e1 print e2
   | BEXPR_compose (e1, e2) ->

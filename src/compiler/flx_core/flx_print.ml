@@ -52,13 +52,13 @@ let string_of_bidset bidset =
   Printf.sprintf "{%s}"
     (String.concat ";" (List.map string_of_bid bidlist))
 
-let string_of_literal e = match e with
-  | AST_int (s,i) -> i^suffix_of_type s
-  | AST_float (t,v) -> v ^ suffix_of_type t
-  | AST_string s -> string_of_string s
-  | AST_cstring s -> "c"^string_of_string s
-  | AST_wstring s -> "w"^string_of_string s
-  | AST_ustring s -> "u"^string_of_string s
+let string_of_literal = function
+  | Flx_literal.Int (s,i) -> i ^ suffix_of_type s
+  | Flx_literal.Float (t,v) -> v ^ suffix_of_type t
+  | Flx_literal.String s -> string_of_string s
+  | Flx_literal.Cstring s -> "c" ^ string_of_string s
+  | Flx_literal.Wstring s -> "w" ^ string_of_string s
+  | Flx_literal.Ustring s -> "u" ^ string_of_string s
 
 let rec string_of_qualified_name (n:qualified_name_t) =
   let se e = string_of_expr e in

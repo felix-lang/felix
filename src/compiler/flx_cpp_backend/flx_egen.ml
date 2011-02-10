@@ -53,22 +53,22 @@ let csuffix_of_type s = match s with
   | _ -> failwith ("[csuffix_of_type]: Unexpected Type " ^ s)
 
 let cstring_of_literal e = match e with
-  | Flx_ast.AST_int (s,i) -> i^csuffix_of_type s
-  | Flx_ast.AST_float (s,x) -> x ^ csuffix_of_type s
-  | Flx_ast.AST_string s -> string_of_string s
-  | Flx_ast.AST_cstring s -> string_of_string s
-  | Flx_ast.AST_wstring s -> "L" ^ string_of_string s
-  | Flx_ast.AST_ustring s -> "L" ^ string_of_string s
+  | Flx_literal.Int (s,i) -> i^csuffix_of_type s
+  | Flx_literal.Float (s,x) -> x ^ csuffix_of_type s
+  | Flx_literal.String s -> string_of_string s
+  | Flx_literal.Cstring s -> string_of_string s
+  | Flx_literal.Wstring s -> "L" ^ string_of_string s
+  | Flx_literal.Ustring s -> "L" ^ string_of_string s
 
 (* a native literal is one not needing a cast to get the type right *)
 let is_native_literal e = match e with
-  | Flx_ast.AST_int ("int",_)
-  | Flx_ast.AST_int ("long",_)
-  | Flx_ast.AST_int ("uint",_)
-  | Flx_ast.AST_int ("ulong",_)
-  | Flx_ast.AST_int ("vlong",_)
-  | Flx_ast.AST_int ("uvlong",_)
-  | Flx_ast.AST_float ("double",_) -> true
+  | Flx_literal.Int ("int",_)
+  | Flx_literal.Int ("long",_)
+  | Flx_literal.Int ("uint",_)
+  | Flx_literal.Int ("ulong",_)
+  | Flx_literal.Int ("vlong",_)
+  | Flx_literal.Int ("uvlong",_)
+  | Flx_literal.Float ("double",_) -> true
   | _ -> false
 
 let get_var_frame syms bsym_table this index ts : string =

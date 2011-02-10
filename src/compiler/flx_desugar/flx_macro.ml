@@ -415,7 +415,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_apply (sr,(EXPR_name(_,"_str",[]),x)) ->
     let x = me x in
     let x = string_of_expr x in
-    EXPR_literal (sr, AST_string x)
+    EXPR_literal (sr, Flx_literal.String x)
 
    (* artificially make singleton tuple 
     *   _tuple x 
@@ -449,7 +449,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   (* _scheme string conversion to expression term *)
   | EXPR_apply (sr,
       (EXPR_name(srn,"_scheme", []),
-      EXPR_literal (srl, AST_string s))
+      EXPR_literal (srl, Flx_literal.String s))
     ) -> 
     print_endline "DETECTED EXPR ENCODED AS SCHEME";
     let sex = scheme_eval s in
@@ -1228,7 +1228,7 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
 
   | STMT_call (sr,
       EXPR_name(srn,"_scheme", []),
-      EXPR_literal (srl, AST_string s)
+      EXPR_literal (srl, Flx_literal.String s)
     ) -> 
     print_endline "DETECTED STATEMENT ENCODED AS SCHEME";
     let sex = scheme_eval s in

@@ -114,15 +114,6 @@ and vs_aux_t = {
 and plain_vs_list_t = (Flx_id.t * typecode_t) list
 and vs_list_t = plain_vs_list_t * vs_aux_t
 
-(** Literals recognized by the lexer. *)
-and literal_t =
-  | AST_int of string * string (* first string is kind, second is value *) 
-  | AST_string of string
-  | AST_cstring of string
-  | AST_wstring of string
-  | AST_ustring of string
-  | AST_float of string * string
-
 and axiom_kind_t = Axiom | Lemma
 and axiom_method_t = Predicate of expr_t | Equation of expr_t * expr_t
 
@@ -165,7 +156,7 @@ and expr_t =
   | EXPR_longarrow of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_superscript of Flx_srcref.t * (expr_t * expr_t)
 
-  | EXPR_literal of Flx_srcref.t * literal_t
+  | EXPR_literal of Flx_srcref.t * Flx_literal.t
   | EXPR_deref of Flx_srcref.t * expr_t
   | EXPR_ref of Flx_srcref.t * expr_t
   | EXPR_likely of Flx_srcref.t * expr_t
@@ -614,9 +605,6 @@ val dfltvs : 'a list * vs_aux_t
 
 (** Prints out a base_type_qual_t to a formatter. *)
 val print_base_type_qual : Format.formatter -> base_type_qual_t -> unit
-
-(** Prints out a literal_t to a formatter. *)
-val print_literal : Format.formatter -> literal_t -> unit
 
 (** Prints out a property_t to a formatter. *)
 val print_property : Format.formatter -> property_t -> unit

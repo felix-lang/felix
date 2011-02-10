@@ -47,8 +47,8 @@ let unravel syms bsym_table e =
       | BEXPR_apply (f, b), t -> refer (bexpr_apply t (aux f, aux b))
       | BEXPR_tuple ls, t -> (bexpr_tuple t (List.map aux ls))
       | (BEXPR_name _, t) as x -> x
-      | (BEXPR_literal (Flx_ast.AST_int _ )), t as x -> x
-      | (BEXPR_literal (Flx_ast.AST_float _ )), t as x -> x
+      | (BEXPR_literal (Flx_literal.Int _ )), t as x -> x
+      | (BEXPR_literal (Flx_literal.Float _ )), t as x -> x
       | x -> refer x
     in
       aux e

@@ -189,7 +189,7 @@ val type_of_literal:
   Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
-  Flx_ast.literal_t ->
+  Flx_literal.t ->
   Flx_btype.t
 
 val lookup_qn_with_sig:

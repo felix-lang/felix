@@ -7,7 +7,7 @@ type bexpr_t = private
   | BEXPR_address of t
   | BEXPR_new of t
   | BEXPR_class_new of Flx_btype.t * t
-  | BEXPR_literal of Flx_ast.literal_t
+  | BEXPR_literal of Flx_literal.t
   | BEXPR_apply of t * t
   | BEXPR_apply_prim of Flx_types.bid_t * Flx_btype.t list * t
   | BEXPR_apply_direct of Flx_types.bid_t * Flx_btype.t list * t
@@ -56,7 +56,7 @@ val bexpr_new : t -> t
 val bexpr_class_new : Flx_btype.t -> t -> t
 
 (** Construct a BEXPR_literal expression. *)
-val bexpr_literal : Flx_btype.t -> Flx_ast.literal_t -> t
+val bexpr_literal : Flx_btype.t -> Flx_literal.t -> t
 
 (** Construct a BEXPR_apply expression. *)
 val bexpr_apply : Flx_btype.t -> t * t -> t

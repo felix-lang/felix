@@ -1296,12 +1296,12 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
 
 
 and base_type_of_literal sr = function
-  | AST_int (t,_) -> TYP_name (sr,t,[])
-  | AST_float (t,_) -> TYP_name (sr,t,[])
-  | AST_string _ -> TYP_name (sr,"string",[])
-  | AST_cstring _ -> TYP_pointer (TYP_name (sr,"char",[]))
-  | AST_wstring _ -> TYP_name (sr,"wstring",[])
-  | AST_ustring _ -> TYP_name (sr,"string",[])
+  | Flx_literal.Int (t,_) -> TYP_name (sr,t,[])
+  | Flx_literal.Float (t,_) -> TYP_name (sr,t,[])
+  | Flx_literal.String _ -> TYP_name (sr,"string",[])
+  | Flx_literal.Cstring _ -> TYP_pointer (TYP_name (sr,"char",[]))
+  | Flx_literal.Wstring _ -> TYP_name (sr,"wstring",[])
+  | Flx_literal.Ustring _ -> TYP_name (sr,"string",[])
 
 and type_of_literal state bsym_table env sr v =
   let _,_,root,_,_ = List.hd (List.rev env) in
@@ -3407,7 +3407,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       | { Flx_sym.id="int";
           symdef=SYMDEF_abs (_, Flx_code_spec.Str_template "int", _) }  ->
         begin match e' with
-        | BEXPR_literal (AST_int (kind,big)) ->
+        | BEXPR_literal (Flx_literal.Int (kind,big)) ->
           let m =
             try int_of_string big
             with _ -> clierr sr "Integer is too large for unitsum"
@@ -3419,10 +3419,10 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         | _ ->
           let inttype = t' in
           let zero =
-            bexpr_literal t' (AST_int ("int","0"))
+            bexpr_literal t' (Flx_literal.Int ("int","0"))
           in
           let xn =
-            bexpr_literal t' (AST_int ("int",string_of_int n))
+            bexpr_literal t' (Flx_literal.Int ("int",string_of_int n))
           in
           bexpr_range_check (btyp_unitsum n) (zero,x',xn)
         end
@@ -3577,7 +3577,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     let int_t = bt sr (TYP_name (sr,"int",[])) in
     begin match e' with
     | BEXPR_case (i,_) ->
-      bexpr_literal int_t (AST_int ("int",string_of_int i))
+      bexpr_literal int_t (Flx_literal.Int ("int",string_of_int i))
     | _ -> bexpr_case_index int_t e
     end
 
@@ -3622,7 +3622,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     *)
     if name = "_felix_type_name" then
        let sname = catmap "," string_of_typecode ts in
-       let x = EXPR_literal (sr, AST_string sname) in
+       let x = EXPR_literal (sr, Flx_literal.String sname) in
        be x
     else
     let ts = List.map (bt sr) ts in
@@ -4194,7 +4194,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 
 
   (* x.0 or x.(0) where rhs arg is int literal: tuple projection *)
-  | EXPR_dot (sr,(e, EXPR_literal (_, AST_int (_,s)) )) ->
+  | EXPR_dot (sr,(e, EXPR_literal (_, Flx_literal.Int (_,s)) )) ->
     be (EXPR_get_n (sr,(int_of_string s,e)))
 
   | EXPR_dot (sr,(e,e2)) ->

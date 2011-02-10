@@ -38,13 +38,13 @@ let xsr x : Flx_srcref.t =
 
 let rec xliteral_t sr x =
   match x with
-  | Lst [Id "ast_int"; Str s; Int i] -> AST_int (s, i)
-  | Lst [Id "ast_int"; Str s; Str i] -> AST_int (s, i)
-  | Lst [Id "ast_string"; Str s] -> AST_string (s)
-  | Lst [Id "ast_cstring"; Str s] -> AST_cstring (s)
-  | Lst [Id "ast_wstring"; Str s] -> AST_wstring (s)
-  | Lst [Id "ast_ustring"; Str s] -> AST_ustring (s)
-  | Lst [Id "ast_float"; Str s1; Str s2] -> AST_float (s1, s2)
+  | Lst [Id "ast_int"; Str s; Int i] -> Flx_literal.Int (s, i)
+  | Lst [Id "ast_int"; Str s; Str i] -> Flx_literal.Int (s, i)
+  | Lst [Id "ast_string"; Str s] -> Flx_literal.String s
+  | Lst [Id "ast_cstring"; Str s] -> Flx_literal.Cstring s
+  | Lst [Id "ast_wstring"; Str s] -> Flx_literal.Wstring s
+  | Lst [Id "ast_ustring"; Str s] -> Flx_literal.Ustring s
+  | Lst [Id "ast_float"; Str s1; Str s2] -> Flx_literal.Float (s1, s2)
   | x -> err x "invalid literal"
 
 
@@ -89,7 +89,9 @@ and xexpr_t sr x =
   let xs x = xstatement_t sr x in
   let xsts x =  lst "statement" xs x in
   match x with
-  | Str s -> print_endline ("Deprecated Scheme string "^ s ^"' as Felix string"); EXPR_literal (sr, (AST_string s))
+  | Str s ->
+      print_endline ("Deprecated Scheme string " ^ s ^ "' as Felix string");
+      EXPR_literal (sr, (Flx_literal.String s))
   | Lst [] -> EXPR_tuple (sr,[])
   | Lst [x] -> ex x
   (* this term comes from the hard coded parser! *)
@@ -211,7 +213,7 @@ and xexpr_t sr x =
       print_endline ("Unexpected ID=" ^ Flx_id.to_string id);
       EXPR_name (sr, Flx_id.of_string id, [])
   | Int i ->
-    EXPR_literal (sr, AST_int ("int",i))
+    EXPR_literal (sr, Flx_literal.Int ("int",i))
 
   | x ->
     err x "expression"

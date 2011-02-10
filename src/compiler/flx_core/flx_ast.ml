@@ -119,15 +119,6 @@ and vs_aux_t = {
 and plain_vs_list_t = (Flx_id.t * typecode_t) list
 and vs_list_t = plain_vs_list_t * vs_aux_t
 
-(** Literals recognized by the lexer. *)
-and literal_t =
-  | AST_int of string * string (* first string is kind, second is value *) 
-  | AST_string of string
-  | AST_cstring of string
-  | AST_wstring of string
-  | AST_ustring of string
-  | AST_float of string * string
-
 and axiom_kind_t = Axiom | Lemma
 and axiom_method_t = Predicate of expr_t | Equation of expr_t * expr_t
 
@@ -167,7 +158,7 @@ and expr_t =
   | EXPR_arrow of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_longarrow of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_superscript of Flx_srcref.t * (expr_t * expr_t)
-  | EXPR_literal of Flx_srcref.t * literal_t
+  | EXPR_literal of Flx_srcref.t * Flx_literal.t
   | EXPR_deref of Flx_srcref.t * expr_t
   | EXPR_ref of Flx_srcref.t * expr_t
   | EXPR_likely of Flx_srcref.t * expr_t
@@ -836,25 +827,6 @@ let print_base_type_qual f = function
   | `Pod -> print_variant0 f "`Pod"
   | `GC_pointer -> print_variant0 f "`GC_pointer"
 
-(** Prints out a literal_t to a formatter. *)
-let print_literal f = function
-  | AST_int (s, i) ->
-      print_variant2 f "AST_int"
-        print_string s
-        print_string i
-  | AST_string s ->
-      print_variant1 f "AST_string" print_string s
-  | AST_cstring s ->
-      print_variant1 f "AST_cstring" print_string s
-  | AST_wstring s ->
-      print_variant1 f "AST_wstring" print_string s
-  | AST_ustring s ->
-      print_variant1 f "AST_ustring" print_string s
-  | AST_float (s1, s2) ->
-      print_variant2 f "AST_float"
-        print_string s1
-        print_string s2
-
 (** Prints out a property_t to a formatter. *)
 let print_property f = function
   | `Recursive -> fprintf f "`Recursive"
@@ -1251,7 +1223,7 @@ and print_expr ppf = function
         print_expr expr2
   | EXPR_literal (_, literal) -> 
       print_variant1 ppf "EXPR_literal"
-        print_literal literal
+        Flx_literal.print literal
   | EXPR_deref (_, expr) -> 
       print_variant1 ppf "EXPR_deref"
         print_expr expr

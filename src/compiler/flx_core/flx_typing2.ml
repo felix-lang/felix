@@ -130,7 +130,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | EXPR_typeof (_,e) -> TYP_typeof e
   | EXPR_as (sr,(t,x)) -> TYP_as (te t,x)
 
-  | EXPR_literal (sr,AST_int (enc,v)) ->
+  | EXPR_literal (sr, Flx_literal.Int (enc,v)) ->
     if enc <> "int"
     then
       clierr sr

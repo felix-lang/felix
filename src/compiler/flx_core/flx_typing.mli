@@ -6,8 +6,6 @@ exception UnificationError of Flx_btype.t * Flx_btype.t
 val flx_bool : typecode_t
 val flx_bbool : Flx_btype.t
 
-val cmp_literal: literal_t -> literal_t -> bool
-
 val type_of_argtypes :
   typecode_t list ->
   typecode_t
