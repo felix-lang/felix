@@ -3,3 +3,4 @@ Description: GLU graphics
 requires_dlibs: -lGLU
 requires_slibs: -LGLU
 Requires: gl
+includes: '"GL/glu.h"'
