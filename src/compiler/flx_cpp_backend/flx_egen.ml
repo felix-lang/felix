@@ -22,53 +22,55 @@ open Flx_pgen
 open Flx_beta
 
 module CS = Flx_code_spec
+module L = Flx_literal
 
 let string_of_string = Flx_string.c_quote_of_string
 
 (* HACKERY: this assumes library dependent things:
   but we can't add literals in the library code :-(
 *)
-let csuffix_of_type s = match s with
-  | "tiny" -> ""
-  | "short" -> ""
-  | "int" -> ""
-  | "long" -> "l"
-  | "vlong" -> "ll"
-  | "utiny" -> "u"
-  | "ushort" -> "u"
-  | "uint" -> "u"
-  | "ulong" -> "ul"
-  | "uvlong" -> "ull"
-  | "int8" -> ""
-  | "int16" -> ""
-  | "int32" -> "l"
-  | "int64" -> "ll"
-  | "uint8" -> "u"
-  | "uint16" -> "u"
-  | "uint32" -> "ul"
-  | "uint64" -> "ull"
-  | "double" -> ""
-  | "float" -> "f"
-  | "ldouble" -> "l"
-  | _ -> failwith ("[csuffix_of_type]: Unexpected Type " ^ s)
+let csuffix_of_int_kind = function
+  | L.Int_kind.Tiny -> ""
+  | L.Int_kind.Short -> ""
+  | L.Int_kind.Int -> ""
+  | L.Int_kind.Long -> "l"
+  | L.Int_kind.Vlong -> "ll"
+  | L.Int_kind.Utiny -> "u"
+  | L.Int_kind.Ushort -> "u"
+  | L.Int_kind.Uint -> "u"
+  | L.Int_kind.Ulong -> "ul"
+  | L.Int_kind.Uvlong -> "ull"
+  | L.Int_kind.Int8 -> ""
+  | L.Int_kind.Int16 -> ""
+  | L.Int_kind.Int32 -> "l"
+  | L.Int_kind.Int64 -> "ll"
+  | L.Int_kind.Uint8 -> "u"
+  | L.Int_kind.Uint16 -> "u"
+  | L.Int_kind.Uint32 -> "ul"
+  | L.Int_kind.Uint64 -> "ull"
+
+let csuffix_of_float_kind = function
+  | L.Float_kind.Float -> "f"
+  | L.Float_kind.Double -> ""
+  | L.Float_kind.Ldouble -> "l"
 
 let cstring_of_literal e = match e with
-  | Flx_literal.Int (s,i) -> i^csuffix_of_type s
-  | Flx_literal.Float (s,x) -> x ^ csuffix_of_type s
-  | Flx_literal.String s -> string_of_string s
-  | Flx_literal.Cstring s -> string_of_string s
-  | Flx_literal.Wstring s -> "L" ^ string_of_string s
-  | Flx_literal.Ustring s -> "L" ^ string_of_string s
+  | L.Int (k, i) -> i ^ csuffix_of_int_kind k
+  | L.Float (k, f) -> f ^ csuffix_of_float_kind k
+  | L.String s -> string_of_string s
+  | L.Cstring s -> string_of_string s
+  | L.Wstring s -> "L" ^ string_of_string s
+  | L.Ustring s -> "L" ^ string_of_string s
 
 (* a native literal is one not needing a cast to get the type right *)
 let is_native_literal e = match e with
-  | Flx_literal.Int ("int",_)
-  | Flx_literal.Int ("long",_)
-  | Flx_literal.Int ("uint",_)
-  | Flx_literal.Int ("ulong",_)
-  | Flx_literal.Int ("vlong",_)
-  | Flx_literal.Int ("uvlong",_)
-  | Flx_literal.Float ("double",_) -> true
+  | L.Int (L.Int_kind.Int,_)
+  | L.Int (L.Int_kind.Long,_)
+  | L.Int (L.Int_kind.Uint,_)
+  | L.Int (L.Int_kind.Ulong,_)
+  | L.Int (L.Int_kind.Vlong,_)
+  | L.Int (L.Int_kind.Uvlong,_)
+  | L.Float (L.Float_kind.Double,_) -> true
   | _ -> false
 
 let get_var_frame syms bsym_table this index ts : string =

@@ -1,12 +1,93 @@
 open Flx_format
 
+module Int_kind =
+  struct
+    type t =
+      | Tiny
+      | Short
+      | Int
+      | Long
+      | Vlong
+      | Utiny
+      | Ushort
+      | Uint
+      | Ulong
+      | Uvlong
+      | Int8
+      | Int16
+      | Int32
+      | Int64
+      | Uint8
+      | Uint16
+      | Uint32
+      | Uint64
+
+    let to_string = function
+      | Tiny -> "Tiny"
+      | Short -> "Short"
+      | Int -> "Int"
+      | Long -> "Long"
+      | Vlong -> "Vlong"
+      | Utiny -> "Utiny"
+      | Ushort -> "Ushort"
+      | Uint -> "Uint"
+      | Ulong -> "Ulong"
+      | Uvlong -> "Uvlong"
+      | Int8 -> "Int8"
+      | Int16 -> "Int16"
+      | Int32 -> "Int32"
+      | Int64 -> "Int64"
+      | Uint8 -> "Uint8"
+      | Uint16 -> "Uint16"
+      | Uint32 -> "Uint32"
+      | Uint64 -> "Uint64"
+
+    let print ppf = function
+      | Tiny -> print_variant0 ppf "Tiny"
+      | Short -> print_variant0 ppf "Short"
+      | Int -> print_variant0 ppf "Int"
+      | Long -> print_variant0 ppf "Long"
+      | Vlong -> print_variant0 ppf "Vlong"
+      | Utiny -> print_variant0 ppf "Utiny"
+      | Ushort -> print_variant0 ppf "Ushort"
+      | Uint -> print_variant0 ppf "Uint"
+      | Ulong -> print_variant0 ppf "Ulong"
+      | Uvlong -> print_variant0 ppf "Uvlong"
+      | Int8 -> print_variant0 ppf "Int8"
+      | Int16 -> print_variant0 ppf "Int16"
+      | Int32 -> print_variant0 ppf "Int32"
+      | Int64 -> print_variant0 ppf "Int64"
+      | Uint8 -> print_variant0 ppf "Uint8"
+      | Uint16 -> print_variant0 ppf "Uint16"
+      | Uint32 -> print_variant0 ppf "Uint32"
+      | Uint64 -> print_variant0 ppf "Uint64"
+  end
+
+module Float_kind =
+  struct
+    type t =
+      | Float
+      | Double
+      | Ldouble
+
+    let to_string = function
+      | Float -> "Float"
+      | Double -> "Double"
+      | Ldouble -> "Ldouble"
+
+    let print ppf = function
+      | Float -> print_variant0 ppf "Float"
+      | Double -> print_variant0 ppf "Double"
+      | Ldouble -> print_variant0 ppf "Ldouble"
+  end
+
 type t =
-  | Int of string * string (* first string is kind, second is value *)
+  | Int of Int_kind.t * string (* first string is kind, second is value *)
+  | Float of Float_kind.t * string
   | String of string
   | Cstring of string
   | Wstring of string
   | Ustring of string
-  | Float of string * string
 
 (* Note floats are equal iff they're textually identical, we don't make any
  * assumptions about the target machine FP model.  OTOH, int comparisons are
@@ -28,11 +109,10 @@ let eq lhs rhs =
   | Ustring s, Ustring s' -> s = s'
   | _ -> false
 
-(** Prints out a literal to a formatter. *)
 let print ppf = function
-  | Int (s, i) ->
+  | Int (kind, i) ->
       print_variant2 ppf "Int"
-        print_string s
+        Int_kind.print kind
         print_string i
   | String s ->
       print_variant1 ppf "String" print_string s
@@ -42,7 +122,7 @@ let print ppf = function
       print_variant1 ppf "Wstring" print_string s
   | Ustring s ->
       print_variant1 ppf "Ustring" print_string s
-  | Float (s1, s2) ->
+  | Float (kind, f) ->
       print_variant2 ppf "Float"
-        print_string s1
-        print_string s2
+        Float_kind.print kind
+        print_string f

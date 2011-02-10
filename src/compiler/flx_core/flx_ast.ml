@@ -2,6 +2,7 @@ open Format
 open Flx_format
 
 module CS = Flx_code_spec
+module L = Flx_literal
 
 (** {6 Source Reference}
  *
@@ -158,7 +159,7 @@ and expr_t =
   | EXPR_arrow of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_longarrow of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_superscript of Flx_srcref.t * (expr_t * expr_t)
-  | EXPR_literal of Flx_srcref.t * Flx_literal.t
+  | EXPR_literal of Flx_srcref.t * L.t
   | EXPR_deref of Flx_srcref.t * expr_t
   | EXPR_ref of Flx_srcref.t * expr_t
   | EXPR_likely of Flx_srcref.t * expr_t
@@ -205,8 +206,8 @@ and expr_t =
  *
  * Patterns; used for matching variants in match statements. *)
 and float_pat =
-  | Float_plus of string * string (** type, value *)
-  | Float_minus of string * string
+  | Float_plus of L.Float_kind.t * string
+  | Float_minus of L.Float_kind.t * string
   | Float_inf  (** infinity *)
   | Float_minus_inf (** negative infinity *)
 
@@ -215,11 +216,14 @@ and pattern_t =
   | PAT_none of Flx_srcref.t
 
   (* constants *)
-  | PAT_int of Flx_srcref.t * string * string
+  | PAT_int of Flx_srcref.t * L.Int_kind.t * string
   | PAT_string of Flx_srcref.t * string
 
   (* ranges *)
-  | PAT_int_range of Flx_srcref.t * string * string * string * string
+  | PAT_int_range of
+      Flx_srcref.t *
+      L.Int_kind.t * string *
+      L.Int_kind.t * string
   | PAT_string_range of Flx_srcref.t * string * string
   | PAT_float_range of Flx_srcref.t * float_pat * float_pat
 
@@ -1041,14 +1045,14 @@ and print_params ppf (parameters, expr) =
 
 (** Prints out a float pattern to a formatter. *)
 and print_float_pattern ppf = function
-  | Float_plus (f1, f2) ->
+  | Float_plus (kind, f) ->
       print_variant2 ppf "Float_plus"
-        print_string f1
-        print_string f2
-  | Float_minus (f1, f2) ->
+        L.Float_kind.print kind
+        print_string f
+  | Float_minus (kind, f) ->
       print_variant2 ppf "Float_minus"
-        print_string f1
-        print_string f2
+        L.Float_kind.print kind
+        print_string f
   | Float_inf ->
       print_variant0 ppf "Float_inf"
   | Float_minus_inf ->
@@ -1062,16 +1066,16 @@ and print_pattern ppf = function
       print_variant0 ppf "PAT_none"
   | PAT_int (_, kind, i) ->
       print_variant2 ppf "PAT_int"
-        print_string kind
+        L.Int_kind.print kind
         print_string i
   | PAT_string (_, s) ->
       print_variant1 ppf "PAT_string"
         print_string s
   | PAT_int_range (_, kind1, i1, kind2, i2) ->
       print_variant4 ppf "PAT_int_range"
-        print_string kind1
+        L.Int_kind.print kind1
         print_string i1
-        print_string kind2
+        L.Int_kind.print kind2
         print_string i2
   | PAT_string_range (_, s1, s2) ->
       print_variant2 ppf "PAT_string_range"
@@ -1223,7 +1227,7 @@ and print_expr ppf = function
         print_expr expr2
   | EXPR_literal (_, literal) -> 
       print_variant1 ppf "EXPR_literal"
-        Flx_literal.print literal
+        L.print literal
   | EXPR_deref (_, expr) -> 
       print_variant1 ppf "EXPR_deref"
         print_expr expr

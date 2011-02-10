@@ -36,15 +36,42 @@ let xsr x : Flx_srcref.t =
       Flx_srcref.make (fn,ii fl,ii fc,ii ll,ii lc)
   | x -> err x "Invalid source reference"
 
+let xint_kind x = match x with
+  | "tiny" -> Flx_literal.Int_kind.Tiny
+  | "short" -> Flx_literal.Int_kind.Short
+  | "int" -> Flx_literal.Int_kind.Int
+  | "long" -> Flx_literal.Int_kind.Long
+  | "vlong" -> Flx_literal.Int_kind.Vlong
+  | "utiny" -> Flx_literal.Int_kind.Utiny
+  | "ushort" -> Flx_literal.Int_kind.Ushort
+  | "uint" -> Flx_literal.Int_kind.Uint
+  | "ulong" -> Flx_literal.Int_kind.Ulong
+  | "uvlong" -> Flx_literal.Int_kind.Uvlong
+  | "int8" -> Flx_literal.Int_kind.Int8
+  | "int16" -> Flx_literal.Int_kind.Int16
+  | "int32" -> Flx_literal.Int_kind.Int32
+  | "int64" -> Flx_literal.Int_kind.Int64
+  | "uint8" -> Flx_literal.Int_kind.Uint8
+  | "uint16" -> Flx_literal.Int_kind.Uint16
+  | "uint32" -> Flx_literal.Int_kind.Uint32
+  | "uint64" -> Flx_literal.Int_kind.Uint64
+  | x -> err (Str x) "invalid literal integer kind"
+
+let xfloat_kind x = match x with
+  | "float" -> Flx_literal.Float_kind.Float
+  | "double" -> Flx_literal.Float_kind.Double
+  | "ldouble" -> Flx_literal.Float_kind.Ldouble
+  | x -> err (Str x) "invalid integer kind"
+
 let rec xliteral_t sr x =
   match x with
-  | Lst [Id "ast_int"; Str s; Int i] -> Flx_literal.Int (s, i)
-  | Lst [Id "ast_int"; Str s; Str i] -> Flx_literal.Int (s, i)
+  | Lst [Id "ast_int"; Str s; Int i] -> Flx_literal.Int (xint_kind s, i)
+  | Lst [Id "ast_int"; Str s; Str i] -> Flx_literal.Int (xint_kind s, i)
+  | Lst [Id "ast_float"; Str k; Str f] -> Flx_literal.Float (xfloat_kind k, f)
   | Lst [Id "ast_string"; Str s] -> Flx_literal.String s
   | Lst [Id "ast_cstring"; Str s] -> Flx_literal.Cstring s
   | Lst [Id "ast_wstring"; Str s] -> Flx_literal.Wstring s
   | Lst [Id "ast_ustring"; Str s] -> Flx_literal.Ustring s
-  | Lst [Id "ast_float"; Str s1; Str s2] -> Flx_literal.Float (s1, s2)
   | x -> err x "invalid literal"
 
 
@@ -213,15 +240,15 @@ and xexpr_t sr x =
       print_endline ("Unexpected ID=" ^ Flx_id.to_string id);
       EXPR_name (sr, Flx_id.of_string id, [])
   | Int i ->
-    EXPR_literal (sr, Flx_literal.Int ("int",i))
+    EXPR_literal (sr, Flx_literal.Int (Flx_literal.Int_kind.Int, i))
 
   | x ->
     err x "expression"
 
 and xfloat_pat x =
   match x with
-  | Lst [Id "Float_plus"; Str ty; Str vl] -> Float_plus (ty, vl)
-  | Lst [Id "Float_minus"; Str ty; Str vl] -> Float_minus (ty, vl)
+  | Lst [Id "Float_plus"; Str k; Str f] -> Float_plus (xfloat_kind k, f)
+  | Lst [Id "Float_minus"; Str k; Str f] -> Float_minus (xfloat_kind k, f)
   | Id "Float_inf" -> Float_inf
   | Id "Float_minus_inf" -> Float_minus_inf
   | x -> err x "Float_pat syntax error"
@@ -235,12 +262,12 @@ and xpattern_t x =
   | Lst [Id "pat_none"; sr] -> PAT_none (xsr sr)
 
   (* constants *)
-  | Lst [Id "pat_int"; sr; Str s; Int i] -> PAT_int (xsr sr,s, i)
+  | Lst [Id "pat_int"; sr; Str k; Int i] -> PAT_int (xsr sr, xint_kind k, i)
   | Lst [Id "pat_string"; sr; Str s] -> PAT_string (xsr sr,s)
 
   (* ranges *)
-  | Lst [Id "pat_int_range"; sr; Str s1; Int i1; Str s2; Int i2] ->
-    PAT_int_range (xsr sr,s1, i1, s2, i2)
+  | Lst [Id "pat_int_range"; sr; Str k1; Int i1; Str k2; Int i2] ->
+    PAT_int_range (xsr sr, xint_kind k1, i1, xint_kind k2, i2)
 
   | Lst [Id "pat_string_range"; sr; Str s1; Str s2] ->
     PAT_string_range (xsr sr,s1, s2)

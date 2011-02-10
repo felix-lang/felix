@@ -9,6 +9,8 @@ open Flx_bbdcl
 open Flx_typing
 open List
 
+module L = Flx_literal
+
 let rec string_of_string s = Flx_string.c_quote_of_string s
 
 let string_of_char c =
@@ -17,30 +19,30 @@ let string_of_char c =
   then "\\x" ^ Flx_string.hex2 c
   else String.make 1 (Char.chr c)
 
+let suffix_of_int_kind = function
+  | L.Int_kind.Tiny -> "t"
+  | L.Int_kind.Short -> "s"
+  | L.Int_kind.Int -> ""
+  | L.Int_kind.Long -> "l"
+  | L.Int_kind.Vlong -> "v"
+  | L.Int_kind.Utiny -> "tu"
+  | L.Int_kind.Ushort -> "su"
+  | L.Int_kind.Uint -> ""
+  | L.Int_kind.Ulong -> "lu"
+  | L.Int_kind.Uvlong -> "vu"
+  | L.Int_kind.Int8 -> "i8"
+  | L.Int_kind.Int16 -> "i16"
+  | L.Int_kind.Int32 -> "i32"
+  | L.Int_kind.Int64 -> "i64"
+  | L.Int_kind.Uint8 -> "u8"
+  | L.Int_kind.Uint16 -> "u16"
+  | L.Int_kind.Uint32 -> "u32"
+  | L.Int_kind.Uint64 -> "u64"
 
-let suffix_of_type s = match s with
-  | "tiny" -> "t"
-  | "short" -> "s"
-  | "int" -> ""
-  | "long" -> "l"
-  | "vlong" -> "v"
-  | "utiny" -> "tu"
-  | "ushort" -> "su"
-  | "uint" -> ""
-  | "ulong" -> "lu"
-  | "uvlong" -> "vu"
-  | "int8" -> "i8"
-  | "int16" -> "i16"
-  | "int32" -> "i32"
-  | "int64" -> "i64"
-  | "uint8" -> "u8"
-  | "uint16" -> "u16"
-  | "uint32" -> "u32"
-  | "uint64" -> "u64"
-  | "float" -> "f"
-  | "double" -> ""
-  | "ldouble" -> "l"
-  | _ -> failwith ("[suffix_of_type] Unexpected Type " ^ s)
+let suffix_of_float_kind = function
+  | L.Float_kind.Float -> "f"
+  | L.Float_kind.Double -> ""
+  | L.Float_kind.Ldouble -> "l"
 
 let string_of_id id = Flx_id.to_string id
 
@@ -53,12 +55,12 @@ let string_of_bidset bidset =
     (String.concat ";" (List.map string_of_bid bidlist))
 
 let string_of_literal = function
-  | Flx_literal.Int (s,i) -> i ^ suffix_of_type s
-  | Flx_literal.Float (t,v) -> v ^ suffix_of_type t
-  | Flx_literal.String s -> string_of_string s
-  | Flx_literal.Cstring s -> "c" ^ string_of_string s
-  | Flx_literal.Wstring s -> "w" ^ string_of_string s
-  | Flx_literal.Ustring s -> "u" ^ string_of_string s
+  | L.Int (kind,i) -> i ^ suffix_of_int_kind kind
+  | L.Float (kind,v) -> v ^ suffix_of_float_kind kind
+  | L.String s -> string_of_string s
+  | L.Cstring s -> "c" ^ string_of_string s
+  | L.Wstring s -> "w" ^ string_of_string s
+  | L.Ustring s -> "u" ^ string_of_string s
 
 let rec string_of_qualified_name (n:qualified_name_t) =
   let se e = string_of_expr e in
@@ -782,8 +784,8 @@ and string_of_component level (name, typ) =
    spaces level ^ name ^ ": " ^ (string_of_typecode typ)
 
 and string_of_float_pat = function
-  | Float_plus (t,v) -> v ^ t
-  | Float_minus (t,v) -> "-" ^ v ^ t
+  | Float_plus (kind, f) -> f ^ suffix_of_float_kind kind
+  | Float_minus (kind, f) -> "-" ^ f ^ suffix_of_float_kind kind
   | Float_inf -> "inf"
   | Float_minus_inf -> "-inf"
 
@@ -815,11 +817,11 @@ and string_of_pattern p =
   | PAT_coercion (_,p,t) -> "(" ^ string_of_pattern p ^ ":" ^ string_of_typecode t ^ ")"
   | PAT_none _ -> "<none>"
   | PAT_nan _ -> "NaN"
-  | PAT_int (_,t,i) -> i ^ suffix_of_type t
-  | PAT_int_range (_,t1,i1,t2,i2) ->
-    i1 ^ suffix_of_type t1 ^
+  | PAT_int (_,kind,i) -> i ^ suffix_of_int_kind kind
+  | PAT_int_range (_,k1,i1,k2,i2) ->
+    i1 ^ suffix_of_int_kind k1 ^
     " .. " ^
-    i2 ^ suffix_of_type t2
+    i2 ^ suffix_of_int_kind k2
 
   | PAT_string (_,s) -> string_of_string s
   | PAT_string_range (_,s1, s2) ->

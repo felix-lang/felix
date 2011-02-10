@@ -205,8 +205,8 @@ and expr_t =
  *
  * Patterns; used for matching variants in match statements. *)
 and float_pat =
-  | Float_plus of string * string (** type, value *)
-  | Float_minus of string * string
+  | Float_plus of Flx_literal.Float_kind.t * string
+  | Float_minus of Flx_literal.Float_kind.t * string
   | Float_inf  (** infinity *)
   | Float_minus_inf (** negative infinity *)
 
@@ -215,11 +215,14 @@ and pattern_t =
   | PAT_none of Flx_srcref.t
 
   (* constants *)
-  | PAT_int of Flx_srcref.t * string * string
+  | PAT_int of Flx_srcref.t * Flx_literal.Int_kind.t * string
   | PAT_string of Flx_srcref.t * string
 
   (* ranges *)
-  | PAT_int_range of Flx_srcref.t * string * string * string * string
+  | PAT_int_range of
+      Flx_srcref.t *
+      Flx_literal.Int_kind.t * string *
+      Flx_literal.Int_kind.t * string
   | PAT_string_range of Flx_srcref.t * string * string
   | PAT_float_range of Flx_srcref.t * float_pat * float_pat
 

@@ -18,6 +18,8 @@ open Flx_generic
 open Flx_overload
 open Flx_tpat
 
+module L = Flx_literal
+
 let hfind msg h k =
   try Flx_sym_table.find h k
   with Not_found ->
@@ -1294,14 +1296,38 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
       )
   end
 
+and base_type_of_int_kind sr = function
+  | L.Int_kind.Tiny -> TYP_name (sr,"tiny",[])
+  | L.Int_kind.Short -> TYP_name (sr,"short",[])
+  | L.Int_kind.Int -> TYP_name (sr,"int",[])
+  | L.Int_kind.Long -> TYP_name (sr,"long",[])
+  | L.Int_kind.Vlong -> TYP_name (sr,"vlong",[])
+  | L.Int_kind.Utiny -> TYP_name (sr,"utiny",[])
+  | L.Int_kind.Ushort -> TYP_name (sr,"ushort",[])
+  | L.Int_kind.Uint -> TYP_name (sr,"uint",[])
+  | L.Int_kind.Ulong -> TYP_name (sr,"ulong",[])
+  | L.Int_kind.Uvlong -> TYP_name (sr,"uvlong",[])
+  | L.Int_kind.Int8 -> TYP_name (sr,"int8",[])
+  | L.Int_kind.Int16 -> TYP_name (sr,"int16",[])
+  | L.Int_kind.Int32 -> TYP_name (sr,"int32",[])
+  | L.Int_kind.Int64 -> TYP_name (sr,"int64",[])
+  | L.Int_kind.Uint8 -> TYP_name (sr,"uint8",[])
+  | L.Int_kind.Uint16 -> TYP_name (sr,"uint16",[])
+  | L.Int_kind.Uint32 -> TYP_name (sr,"uint32",[])
+  | L.Int_kind.Uint64 -> TYP_name (sr,"uint64",[])
+
+and base_type_of_float_kind sr = function
+  | L.Float_kind.Float -> TYP_name (sr,"float",[])
+  | L.Float_kind.Double -> TYP_name (sr,"double",[])
+  | L.Float_kind.Ldouble -> TYP_name (sr,"ldouble",[])
 
 and base_type_of_literal sr = function
-  | Flx_literal.Int (t,_) -> TYP_name (sr,t,[])
-  | Flx_literal.Float (t,_) -> TYP_name (sr,t,[])
-  | Flx_literal.String _ -> TYP_name (sr,"string",[])
-  | Flx_literal.Cstring _ -> TYP_pointer (TYP_name (sr,"char",[]))
-  | Flx_literal.Wstring _ -> TYP_name (sr,"wstring",[])
-  | Flx_literal.Ustring _ -> TYP_name (sr,"string",[])
+  | L.Int (kind,_) -> base_type_of_int_kind sr kind
+  | L.Float (kind,_) -> base_type_of_float_kind sr kind
+  | L.String _ -> TYP_name (sr,"string",[])
+  | L.Cstring _ -> TYP_pointer (TYP_name (sr,"char",[]))
+  | L.Wstring _ -> TYP_name (sr,"wstring",[])
+  | L.Ustring _ -> TYP_name (sr,"string",[])
 
 and type_of_literal state bsym_table env sr v =
   let _,_,root,_,_ = List.hd (List.rev env) in
@@ -3407,7 +3433,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       | { Flx_sym.id="int";
           symdef=SYMDEF_abs (_, Flx_code_spec.Str_template "int", _) }  ->
         begin match e' with
-        | BEXPR_literal (Flx_literal.Int (kind,big)) ->
+        | BEXPR_literal (L.Int (kind,big)) ->
           let m =
             try int_of_string big
             with _ -> clierr sr "Integer is too large for unitsum"
@@ -3419,10 +3445,10 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         | _ ->
           let inttype = t' in
           let zero =
-            bexpr_literal t' (Flx_literal.Int ("int","0"))
+            bexpr_literal t' (L.Int (L.Int_kind.Int,"0"))
           in
           let xn =
-            bexpr_literal t' (Flx_literal.Int ("int",string_of_int n))
+            bexpr_literal t' (L.Int (L.Int_kind.Int,string_of_int n))
           in
           bexpr_range_check (btyp_unitsum n) (zero,x',xn)
         end
@@ -3577,7 +3603,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     let int_t = bt sr (TYP_name (sr,"int",[])) in
     begin match e' with
     | BEXPR_case (i,_) ->
-      bexpr_literal int_t (Flx_literal.Int ("int",string_of_int i))
+      bexpr_literal int_t (L.Int (L.Int_kind.Int,string_of_int i))
     | _ -> bexpr_case_index int_t e
     end
 
@@ -3622,7 +3648,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     *)
     if name = "_felix_type_name" then
        let sname = catmap "," string_of_typecode ts in
-       let x = EXPR_literal (sr, Flx_literal.String sname) in
+       let x = EXPR_literal (sr, L.String sname) in
        be x
     else
     let ts = List.map (bt sr) ts in
@@ -4194,7 +4220,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 
 
   (* x.0 or x.(0) where rhs arg is int literal: tuple projection *)
-  | EXPR_dot (sr,(e, EXPR_literal (_, Flx_literal.Int (_,s)) )) ->
+  | EXPR_dot (sr,(e, EXPR_literal (_, L.Int (_,s)) )) ->
     be (EXPR_get_n (sr,(int_of_string s,e)))
 
   | EXPR_dot (sr,(e,e2)) ->
