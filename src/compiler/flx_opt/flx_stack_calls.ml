@@ -1,5 +1,4 @@
 open Flx_util
-open Flx_ast
 open Flx_types
 open Flx_btype
 open Flx_bexpr
@@ -631,7 +630,7 @@ let mark_stackable syms bsym_table fn_cache ptr_cache label_map label_usage =
           [])
 
     | BBDCL_fun (props,vs,p,ret,exes) ->
-        let props: property_t list ref = ref props in
+        let props = ref props in
         if can_stack_func syms bsym_table fn_cache ptr_cache i then
         begin
           props := `Stackable :: !props;
@@ -640,7 +639,7 @@ let mark_stackable syms bsym_table fn_cache ptr_cache label_map label_usage =
             props := `Pure :: !props;
           end
         end;
-        let props : property_t list = !props in
+        let props = !props in
         let bbdcl = bbdcl_fun (props,vs,p,ret,exes) in
         Flx_bsym_table.update_bbdcl bsym_table i bbdcl
 

@@ -78,7 +78,6 @@
  * (string -> int) form.
  *)
 
-open Flx_ast
 open Flx_types
 open Flx_btype
 open Flx_mtypes2
@@ -114,21 +113,21 @@ val lookup_qn_in_env :
   lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
-  qualified_name_t ->
-  entry_kind_t * typecode_t list
+  Flx_ast.qualified_name_t ->
+  entry_kind_t * Flx_ast.typecode_t list
 
 val lookup_qn_in_env2:
   lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
-  qualified_name_t ->
-  entry_set_t * typecode_t list
+  Flx_ast.qualified_name_t ->
+  entry_set_t * Flx_ast.typecode_t list
 
 val lookup_sn_in_env :
   lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
-  suffixed_name_t ->
+  Flx_ast.suffixed_name_t ->
   bid_t * Flx_btype.t list
 
 val lookup_code_in_env:
@@ -136,8 +135,8 @@ val lookup_code_in_env:
   Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
-  qualified_name_t ->
-  (entry_kind_t list * typecode_t list) option
+  Flx_ast.qualified_name_t ->
+  (entry_kind_t list * Flx_ast.typecode_t list) option
 
 (** This routine takes an unbound type term
 and binds it. The term may contain explicit
@@ -154,21 +153,21 @@ val bind_type:
   Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
-  typecode_t ->
+  Flx_ast.typecode_t ->
   Flx_btype.t
 
 val bind_expression :
   lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
-  expr_t ->
+  Flx_ast.expr_t ->
   Flx_bexpr.t
 
 val bind_expression_with_args :
   lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
-  expr_t ->
+  Flx_ast.expr_t ->
   Flx_bexpr.t list ->
   Flx_bexpr.t
 
@@ -191,7 +190,7 @@ val type_of_literal:
   Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
-  literal_t ->
+  Flx_ast.literal_t ->
   Flx_btype.t
 
 val lookup_qn_with_sig:
@@ -200,9 +199,8 @@ val lookup_qn_with_sig:
   Flx_srcref.t ->
   Flx_srcref.t ->
   env_t ->
-  qualified_name_t ->
+  Flx_ast.qualified_name_t ->
   Flx_btype.t list ->
   Flx_bexpr.t
 
 val get_varmap: lookup_state_t -> typevarmap_t
-

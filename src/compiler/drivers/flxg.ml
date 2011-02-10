@@ -3,7 +3,6 @@
 open Format
 
 open Flx_util
-open Flx_ast
 open Flx_types
 open Flx_btype
 open Flx_bbdcl
@@ -289,7 +288,13 @@ let parse_file state parser_state file =
 (** Desugar the statements *)
 let make_module module_name asms =
   let asms =
-    [Dcl (Flx_srcref.dummy_sr, module_name, None, `Public, dfltvs, DCL_root asms)]
+    [Dcl (
+      Flx_srcref.dummy_sr,
+      module_name,
+      None,
+      `Public,
+      Flx_ast.dfltvs,
+      DCL_root asms)]
   in
   asms
 
@@ -984,7 +989,13 @@ let _ = print_endline ("Processed = " ^ String.concat ", " (!processed)) in
               `Body,
               Flx_ast.NREQ_true)
             in
-            Flx_types.Dcl (sr, "_rqs_" ^ module_name, None, `Public, dfltvs, body) 
+            Flx_types.Dcl (
+              sr,
+              "_rqs_" ^ module_name,
+              None,
+              `Public,
+              Flx_ast.dfltvs,
+              body)
           in
           let asms = top_req::asms in
           include_files, asms 
@@ -1143,7 +1154,7 @@ print_endline ("Include dirs=" ^ String.concat ", " compiler_options.include_dir
   let sym : Flx_sym.t = {
     Flx_sym.id="root"; 
     sr=Flx_srcref.dummy_sr; 
-    vs=dfltvs; 
+    vs=Flx_ast.dfltvs;
     pubmap=Hashtbl.create 97; 
     privmap=Hashtbl.create 97; 
     dirs=[]; 
@@ -1230,8 +1241,20 @@ print_endline "Main program bound";
     let asms = List.map (fun x -> Exe x) exes in
     (* this is a hack .. oh well .. *)
     let root_proc = Flx_mtypes2.fresh_bid (state.syms.counter) in
-    let dcl =DCL_function (([],None),TYP_void Flx_srcref.dummy_sr,[],asms) in
-    let asm = Dcl (Flx_srcref.dummy_sr, "_init_", Some root_proc,`Public,dfltvs,dcl) in
+    let dcl = DCL_function (
+      ([],None),
+      Flx_ast.TYP_void Flx_srcref.dummy_sr,
+      [],
+      asms)
+    in
+    let asm = Dcl (
+      Flx_srcref.dummy_sr,
+      "_init_",
+      Some root_proc,
+      `Public,
+      Flx_ast.dfltvs,
+      dcl)
+    in
     let asms = make_module module_name [asm] in
 (*
 print_endline ("Binding init proc " ^ string_of_int root_proc);

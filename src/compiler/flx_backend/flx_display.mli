@@ -1,7 +1,6 @@
 (** Display calcs *)
 
 open Flx_types
-open Flx_ast
 open Flx_mtypes2
 
 val get_display_list:

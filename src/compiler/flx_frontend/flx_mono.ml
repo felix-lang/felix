@@ -20,7 +20,6 @@ code and run the optimiser again.
 *)
 open Flx_util
 open Flx_list
-open Flx_ast
 open Flx_types
 open Flx_btype
 open Flx_bexpr
