@@ -78,7 +78,6 @@
  * (string -> int) form.
  *)
 
-open Flx_types
 open Flx_btype
 open Flx_mtypes2
 open Flx_overload
@@ -90,7 +89,7 @@ val make_lookup_state:
   bool -> (* print flag *)
   Flx_types.bid_t ref -> (* fresh bid counter ref *)
   Flx_mtypes2.typevarmap_t-> (* reference to global varmap! *)
-  (bid_t, Flx_btype.t) Hashtbl.t -> (* reference to global type cache *)
+  (Flx_types.bid_t, Flx_btype.t) Hashtbl.t -> (* reference to global type cache *)
   Flx_sym_table.t ->
   lookup_state_t
 
@@ -98,7 +97,7 @@ val make_lookup_state:
 val build_env:
   lookup_state_t ->
   Flx_bsym_table.t ->
-  bid_t option -> (* parent *)
+  Flx_types.bid_t option -> (* parent *)
   env_t
 
 val lookup_name_in_env :
@@ -128,7 +127,7 @@ val lookup_sn_in_env :
   Flx_bsym_table.t ->
   env_t ->
   Flx_ast.suffixed_name_t ->
-  bid_t * Flx_btype.t list
+  Flx_types.bid_t * Flx_btype.t list
 
 val lookup_code_in_env:
   lookup_state_t ->
@@ -174,14 +173,14 @@ val bind_expression_with_args :
 val type_of_index :
   lookup_state_t ->
   Flx_bsym_table.t ->
-  bid_t ->
+  Flx_types.bid_t ->
   Flx_btype.t
 
 val type_of_index_with_ts:
   lookup_state_t ->
   Flx_bsym_table.t ->
   Flx_srcref.t ->
-  bid_t ->
+  Flx_types.bid_t ->
   Flx_btype.t list ->
   Flx_btype.t
 
