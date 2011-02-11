@@ -53,6 +53,7 @@ include "std/stdout";
 include "std/filename";
 
 // base data types
+include "std/tuple";
 include "std/pointer";
 include "std/option";
 include "std/slice";

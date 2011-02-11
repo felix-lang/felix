@@ -6,5 +6,6 @@ fun _ctor_size: int -> size = "$1";
 instance [t in basic_types] Eq[t] {
   fun eq: t * t -> bool = "$1==$2";
 }
+open[T] Eq[T];
 open[T in basic_types] Show[T];
 open Show[bool];

@@ -8,25 +8,6 @@ typeclass Eq[t] {
   axiom trans(x:t, y:t, z:t): implies(eq(x,y) and eq(y,z), eq(x,z));
 }
 
-// this is a pain .. equality for pairs
-instance[t,u with Eq[t], Eq[u]] Eq[t*u] {
-  fun eq: (t * u) * (t * u) -> bool =
-  | (?x1,?y1),(?x2,?y2) => x1==x2 and y1 == y2
-  ;
-}
-
-open[t,u] Eq[t*u];
-
-// equality for triples
-instance[t,u,v with Eq[t], Eq[u], Eq[v]] Eq[t*u*v] {
-  fun eq: (t * u * v) * (t * u * v) -> bool =
-  | (?x1,?y1,?z1),(?x2,?y2,?z2) => x1==x2 and y1 == y2 and z1 == z2
-  ;
-}
-
-open[t,u,v] Eq[t*u*v];
-
-
 // total order
 typeclass Tord[t]{
   inherit Eq[t];
