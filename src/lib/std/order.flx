@@ -17,6 +17,9 @@ typeclass Tord[t]{
   virtual fun ge(x:t,y:t):bool => not (lt(x,y));
   virtual fun max(x:t,y:t):t=> if lt(x,y) then y else x endif;
   virtual fun min(x:t,y:t):t => if lt(x,y) then x else y endif;
+  axiom trans(x:t, y:t, z:t): implies(lt(x,y) and lt(y,z), lt(x,z));
+  axiom antisym(x:t, y:t): lt(x,y) or lt(y,x) or eq(x,y);
+  axiom reflex(x:t, y:t): implies(le(x,y) and le(y,x), eq(x,y));
 }
 
 typeclass Forward[t] {

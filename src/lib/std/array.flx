@@ -38,6 +38,7 @@ open module Array
 
   fun len[T, N] (x:array[T, N]): int => Typing::memcount[N];
 
+  // iteration
   proc iter[T, N] (_f:T->void) (x:array[T, N]) {
     var i : int;
 
@@ -98,6 +99,7 @@ open module Array
   }
 */
 
+  // searching
   fun mem[T, N] (eq:T->bool) (x:array[T, N]): bool = {
     var i : int;
 
@@ -140,6 +142,7 @@ open module Array
     return None[T];
   }
 
+  // reverse
   fun rev[T, N] (x:array[T, N]): array[T, N] = {
     var o : array[T, N];
     var i : int;
@@ -152,6 +155,7 @@ open module Array
     return o;
   }
 
+  // display
   instance[T,N with Show[T]] Str[array[T, N]] {
     fun str (xs:array[T,N]) = {
       var o = '(';
@@ -167,6 +171,28 @@ open module Array
 
       return o + ')';
     }
+  }
+
+  // equality
+  instance[T,N with Eq[T]] Eq[array[T, N]] {
+    fun eq(xs:array[T,N],ys:array[T,N]) = {
+        var i:int;
+        forall i in 0 upto len(xs) - 1 do
+          if not (xs.[i] == ys.[i]) do return false; done
+        done
+      return true;
+    }
+  }
+
+  instance[T,N with Tord[T]] Tord[array[T,N]] {
+    fun lt(xs:array[T,N],ys:array[T,N]) = {
+        var i:int;
+        forall i in 0 upto len(xs) - 1 do
+          if not (xs.[i] <= ys.[i]) do return false; done
+        done
+      return not (xs == ys);
+    }
+
   }
 }
 
