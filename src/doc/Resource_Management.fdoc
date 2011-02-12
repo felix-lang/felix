@@ -1,0 +1,62 @@
+@h1 Felix resource management system
+
+Felix has a sophisticated resource management system which obviates
+the need to repeatedly specify include files and platform dependent
+command line switches to link libraries.  Here's how it works:
+
+@h2 Abstract resources
+Abstract resources have a string name and are associated with C entities
+in the source code. For example:
+@felix
+pod type mpz_t = "mpz_t" requires package "gmpxx";
+fun add: mpz_t * mpz_t -> mpz_t = "$1+$2";
+@
+This specifies the GNU multiple precision arithmetic library
+{gmp}'s C++ binding {gmpxx} is required to use the type {mpz_t}.
+If you call the {add} function, that requires the type {mpz_t}
+which in turn requires the package {"gmpxx"}.
+
+@h2 Concrete resources
+In order to find the actual library components, we need to create the
+following file {config/gmpxx.fpc}:
+<pre>
+requires_slibs: -lgmp
+requires_dlibs: -lgmp
+provides_dlib: -lgmpxx
+provides_slib: -lgmpxx
+includes: '&lt;gmpxx.h&gt;'
+</pre>
+
+in directory {config}. Then the tool {flx_pkgconfig} is used to generate
+a file containing {#include <gmpxx.h>} which the C++ translation of the
+felix program using {add} includes. That takes care of compilation.
+At link time, the switches {-lgmp -lgmpxx} are added to the link line,
+again using {flx_pkgconfig}.
+
+@h2 Building the resource database.
+The resource data base lives in the installation directory, subdirectory
+{config}. It is built as follows: first, the source repository contains
+some default resource descriptor files. Then there are subdirectories
+for resources on a few popular platforms including unix, win32, and macosx.
+The generic config data is copied into the build image, then the platform
+specific entries for the target platform are copied as well.
+
+The build system also tries to calculate additional resources by
+inspection or using tools such as {sdl-config}.
+
+Finally, any files in {$HOME/.felix/config} are copied in, overwritting
+the build system's guesses and adding anything else the client requires.
+
+Eventually this directory is installed into {$FLX_INSTALL_DIR}.
+
+[TODO: we should add a univeral config directory in /usr/local/lib/felix,
+which is not specific to the version and persists across version changes.
+This is distinct from the config copied out of the client's home directory.]
+
+[TODO: details of fpc fields used by Felix]
+
+[TODO: details of the flx_pkgconfig tool]
+
+[TODO: more advanced management in Felix programs]
+
+
