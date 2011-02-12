@@ -28,7 +28,7 @@ includes: '&lt;gmpxx.h&gt;'
 </pre>
 
 in directory {config}. Then the tool {flx_pkgconfig} is used to generate
-a file containing {#include <gmpxx.h>} which the C++ translation of the
+a file containing {#include &lt;gmpxx.h&gt;} which the C++ translation of the
 felix program using {add} includes. That takes care of compilation.
 At link time, the switches {-lgmp -lgmpxx} are added to the link line,
 again using {flx_pkgconfig}.
