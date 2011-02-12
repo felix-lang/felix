@@ -5,16 +5,17 @@ instance[T,U] Str[T*U] {
 instance[T] Str[T*T] {
    fun str (t1:T, t2:T) => "("+str t1 + ", " + str t2+")";
 }
-instance[t,u] Eq[t*u] {
+instance[t,u with Eq[t],Eq[u]] Eq[t*u] {
   fun eq: (t * u) * (t * u) -> bool =
   | (?x1,?y1),(?x2,?y2) => x1==x2 and y1 == y2
   ;
 }
-instance[t] Eq[t*t] {
+instance[t with Eq[t]] Eq[t*t] {
   fun eq: (t * t) * (t * t) -> bool =
   | (?x1,?y1),(?x2,?y2) => x1==x2 and y1 == y2
   ;
 }
+open[t,u] Eq[t,u];
 
 // three components
 instance[T,U,V] Str[T*U*V] {
@@ -23,16 +24,17 @@ instance[T,U,V] Str[T*U*V] {
 instance[T] Str[T*T*T] {
   fun str (t1:T, t2:T, t3:T) => "("+str t1 + ", " + str t2 + ", " + str t3+")";
 }
-instance[t,u,v] Eq[t*u*v] {
+instance[t,u,v with Eq[t], Eq[u], Eq[v]] Eq[t*u*v] {
   fun eq: (t * u * v) * (t * u * v) -> bool =
   | (?x1,?y1,?z1),(?x2,?y2,?z2) => x1==x2 and y1 == y2 and z1 == z2
   ;
 }
-instance[t] Eq[t*t*t] {
+instance[t with Eq[t]] Eq[t*t*t] {
   fun eq: (t * t * t) * (t * t * t) -> bool =
   | (?x1,?y1,?z1),(?x2,?y2,?z2) => x1==x2 and y1 == y2 and z1 == z2
   ;
 }
+open[t,u,v] Eq[t,u,v];
 
 // four components
 instance[T,U,V,W] Str[T*U*V*W] {
@@ -41,16 +43,17 @@ instance[T,U,V,W] Str[T*U*V*W] {
 instance[T] Str[T*T*T*T] {
   fun str (t1:T, t2:T, t3:T, t4:T) => "("+str t1 + ", " + str t2 + ", " + str t3 + ", " + str t4+")";
 }
-instance[t,u,v,w] Eq[t*u*v*w] {
+instance[t,u,v,w with Eq[t], Eq[u], Eq[v], Eq[w]] Eq[t*u*v*w] {
   fun eq: (t * u * v * w) * (t * u * v * w) -> bool =
   | (?x1,?y1,?z1,?a1),(?x2,?y2,?z2,?a2) => x1==x2 and y1 == y2 and z1 == z2 and a1 == a2
   ;
 }
-instance[t] Eq[t*t*t*t] {
+instance[t with Eq[t]] Eq[t*t*t*t] {
   fun eq: (t * t * t * t) * (t * t * t * t) -> bool =
   | (?x1,?y1,?z1,?a1),(?x2,?y2,?z2,?a2) => x1==x2 and y1 == y2 and z1 == z2 and a1 == a2
   ;
 }
+open[t,u,v,w] Eq[t,u,v,w];
 
 // five components
 instance[T,U,V,W,X] Str[T*U*V*W*X] {
@@ -63,18 +66,19 @@ instance[T] Str[T*T*T*T*T] {
     "("+str t1 + ", " + str t2 + ", " + str t3 + ", " + str t4+", "+str t5+")"
   ;
 }
-instance[t,u,v,w,x] Eq[t*u*v*w*x] {
+instance[t,u,v,w,x with Eq[t], Eq[u], Eq[v], Eq[w], Eq[x]] Eq[t*u*v*w*x] {
   fun eq: (t * u * v * w *x) * (t * u * v * w * x) -> bool =
   | (?x1,?y1,?z1,?a1,?b1),(?x2,?y2,?z2,?a2,?b2) => 
     x1==x2 and y1 == y2 and z1 == z2 and a1 == a2 and b1 == b2;
   ;
 }
-instance[t] Eq[t*t*t*t*t] {
+instance[t with Eq[t]] Eq[t*t*t*t*t] {
   fun eq: (t * t * t * t *t) * (t * t * t * t * t) -> bool =
   | (?x1,?y1,?z1,?a1,?b1),(?x2,?y2,?z2,?a2,?b2) => 
     x1==x2 and y1 == y2 and z1 == z2 and a1 == a2 and b1 == b2;
   ;
 }
+open[t,u,v,w,x] Eq[t,u,v,w,x];
 
 
 

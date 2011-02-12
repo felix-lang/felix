@@ -186,14 +186,16 @@ open module Array
 
   instance[T,N with Tord[T]] Tord[array[T,N]] {
     fun lt(xs:array[T,N],ys:array[T,N]) = {
-        var i:int;
-        forall i in 0 upto len(xs) - 1 do
-          if not (xs.[i] <= ys.[i]) do return false; done
-        done
-      return not (xs == ys);
+      var i:int;
+      ph1:forall i in 0 upto len(xs) - 1 do
+        if not (xs.[i] < ys.[i]) do break ph1; done
+      done
+      forall i in i upto len(xs) - 1 do
+        if not (xs.[i] <= ys.[i]) do return false; done
+      done
+      return true;
     }
-
   }
 }
 
-
+open[T,N] Eq[array[T,N]];
