@@ -1,10 +1,14 @@
 fun _ctor_int: size -> int = "$1";
 fun _ctor_size: int -> size = "$1";
 
-
 instance [t in basic_types] Eq[t] {
   fun eq: t * t -> bool = "$1==$2";
 }
+
+// we're not opening Eq here because 
+// it should be opened in std/int.flx
+// via open Signed_integer[*] etc ..
+
 open[T in basic_types] Show[T];
 open Show[bool];
 
