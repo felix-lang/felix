@@ -129,12 +129,12 @@ module FileSystem
   gen write: posix_file * &char * size -> size = "read($1, $2, $3)";
   gen filecopy(src: string, dst: string) :  bool =
   {
-    var fsrc = open (src,O_RDONLY \| O_SHLOCK);
+    var fsrc = open (src,O_RDONLY );
     if not valid fsrc do
       println$ " Bad src file in Filesystem::filecopy " + src;
       return false; 
     done
-    var fdst = open (dst,O_WRONLY \| O_CREAT \| O_EXLOCK \| O_TRUNC, S_IRWXU);
+    var fdst = open (dst,O_WRONLY \| O_CREAT \| O_TRUNC, S_IRWXU);
     if not valid fdst do
       println$ " Bad dst file in Filesystem::filecopy " + dst;
       return false; 
