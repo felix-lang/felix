@@ -118,7 +118,7 @@ open module Re2 {
  
   fun PossibleMatchRange: RE2 * &string * &string * int -> bool = "$1->PossibleMatchRange($2,$3,$3,$4)";
   fun NumberOfCapturingGroups: RE2 -> int = "$1->NumberOfCapturingGroups()";
-  fun NamedCapturingGroups: RE2 -> Map::stl_map[string, int] = "$1->NamedCapturingGroups()";
+  fun NamedCapturingGroups: RE2 -> Stl_Map::stl_map[string, int] = "$1->NamedCapturingGroups()";
 
   // this function is fully general, just needs an anchor
   gen Match: RE2 * StringPiece * int * Anchor * &StringPiece * int -> bool = "$1->Match($2, $3, $4, $5, $6)";

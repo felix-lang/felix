@@ -1,6 +1,6 @@
-module Deque[t]
+module Stl_Deque[t]
 {
-    requires std_stl_deque;
+    requires Cxx_headers::deque;
     type stl_deque = "::std::deque<?1>";
     fun create : unit -> stl_deque[t] = "(FLX_GXX_PARSER_HACK std::deque<?1>())";
     fun create : int * t -> stl_deque[t]= "(FLX_GXX_PARSER_HACK std::deque<?1>($1,$2))";
@@ -14,7 +14,7 @@ module Deque[t]
     fun front : stl_deque[t] -> t = "$1.front()";
     fun front : stl_deque[t] -> t = "$1.front()";
     fun subscript : stl_deque[t] * int -> t = "$1.at($2)";
-// Deque
+// Stl_Deque
   instance Eq[stl_deque[t]] {
     fun eq: stl_deque[t] * stl_deque[t] -> bool = "$1==$2";
   }
@@ -34,7 +34,7 @@ module Deque[t]
     fun rend : stl_deque[t]-> stl_deque_reverse_iterator[t]= "$1.rend()";
   }
 
-// Deque iterator
+// Stl_Deque iterator
   instance Eq[stl_deque_iterator[t]] {
     fun eq: stl_deque_iterator[t] * stl_deque_iterator[t] -> bool = "$1==$2";
   }
@@ -57,7 +57,7 @@ module Deque[t]
   }
   instance Bidirectional_iterator[stl_deque_iterator[t],t] {}
 
-// Deque reverse iterator
+// Stl_Deque reverse iterator
   instance Eq[stl_deque_reverse_iterator[t]] {
     fun eq: stl_deque_reverse_iterator[t] * stl_deque_reverse_iterator[t] -> bool = "$1==$2";
   }
@@ -82,12 +82,12 @@ module Deque[t]
 
 }
 
-open Deque;
+open Stl_Deque;
 open[t] Reversible_Sequence[
-  Deque::stl_deque[t],
-  Deque::stl_deque_iterator[t],
-  Stl:Deque::stl_deque_reverse_iterator[t],t];
-open[t] Bidirectional_iterator[Deque::stl_deque_iterator[t],t];
-open[t] Bidirectional_iterator[Deque::stl_deque_reverse_iterator[t],t];
+  Stl_Deque::stl_deque[t],
+  Stl_Deque::stl_deque_iterator[t],
+  Stl:Stl_Deque::stl_deque_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_Deque::stl_deque_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_Deque::stl_deque_reverse_iterator[t],t];
 
 

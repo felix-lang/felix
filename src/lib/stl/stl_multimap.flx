@@ -1,7 +1,7 @@
 include "stl/stl";
-  module MultiMap[k,v]
+  module Stl_MultiMap[k,v]
   {
-    requires std_stl_map;
+    requires Cxx_headers::map;
     type stl_multimap = "::std::multimap<?1,?2>";
     type stl_multimap_iterator = "::std::multimap<?1,?2>::iterator";
     type stl_multimap_reverse_iterator = "::std::multimap<?1,?2>::reverse_iterator";
@@ -10,7 +10,7 @@ include "stl/stl";
     fun find : stl_multimap[k,v] * k ->  stl_multimap_iterator[k,v] = "$1.find($2)";
     fun mem : stl_multimap[k,v] * k -> bool = "$1.find($2) != $1.end()";
     proc insert : stl_multimap[k,v] * k * v = "$1.insert(std::make_pair($2,$3));";
-// MultiMap
+// Stl_MultiMap
   instance Eq[stl_multimap[k,v]] {
     fun eq: stl_multimap[k,v] * stl_multimap[k,v] -> bool = "$1==$2";
   }
@@ -30,7 +30,7 @@ include "stl/stl";
     fun rend : stl_multimap[k,v]-> stl_multimap_reverse_iterator[k,v]= "$1.rend()";
   }
 
-// MultiMap iterator
+// Stl_MultiMap iterator
   instance Eq[stl_multimap_iterator[k,v]] {
     fun eq: stl_multimap_iterator[k,v] * stl_multimap_iterator[k,v] -> bool = "$1==$2";
   }
@@ -53,7 +53,7 @@ include "stl/stl";
   }
   instance Bidirectional_iterator[stl_multimap_iterator[k,v],k*v] {}
 
-//MultiMap reverse iterator
+//Stl_MultiMap reverse iterator
   instance Eq[stl_multimap_reverse_iterator[k,v]] {
     fun eq: stl_multimap_reverse_iterator[k,v] * stl_multimap_reverse_iterator[k,v] -> bool = "$1==$2";
   }
@@ -78,12 +78,12 @@ include "stl/stl";
 
 }
 
-open MultiMap;
+open Stl_MultiMap;
 open[k,v] Reversible_Sequence[
-  MultiMap::stl_multimap[k,v],
-  MultiMap::stl_multimap_iterator[k,v],
-  MultiMap::stl_multimap_reverse_iterator[k,v],k*v];
-open[k,v] Bidirectional_iterator[MultiMap::stl_multimap_iterator[k,v],k*v];
-open[k,v] Bidirectional_iterator[MultiMap::stl_multimap_reverse_iterator[k,v],k*v];
+  Stl_MultiMap::stl_multimap[k,v],
+  Stl_MultiMap::stl_multimap_iterator[k,v],
+  Stl_MultiMap::stl_multimap_reverse_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Stl_MultiMap::stl_multimap_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Stl_MultiMap::stl_multimap_reverse_iterator[k,v],k*v];
 
 

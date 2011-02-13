@@ -1,10 +1,12 @@
 // two components
+// string
 instance[T,U] Str[T*U] {
    fun str (t:T, u:U) => "("+str t + ", " + str u+")";
 }
 instance[T] Str[T*T] {
    fun str (t1:T, t2:T) => "("+str t1 + ", " + str t2+")";
 }
+// equality
 instance[t,u with Eq[t],Eq[u]] Eq[t*u] {
   fun eq: (t * u) * (t * u) -> bool =
   | (?x1,?y1),(?x2,?y2) => x1==x2 and y1 == y2
@@ -15,6 +17,7 @@ instance[t with Eq[t]] Eq[t*t] {
   | (?x1,?y1),(?x2,?y2) => x1==x2 and y1 == y2
   ;
 }
+// total order
 instance[t,u with Tord[t],Tord[u]] Tord[t*u] {
   fun lt: (t * u) * (t * u) -> bool =
   | (?x1,?y1),(?x2,?y2) => x1 <= x2 and y1 < y2
@@ -26,15 +29,17 @@ instance[t with Tord[t]] Tord[t*t] {
   ;
 }
 open[t,u with Tord[t], Tord[u]] Tord[t*u];
-//open[t,u with Eq[t],Eq[u]] Eq[t*u];
 
+//---------------------------------------------------------------------------------
 // three components
+// string
 instance[T,U,V] Str[T*U*V] {
   fun str (t:T, u:U, v:V) => "("+str t + ", " + str u + ", " + str v+")";
 }
 instance[T] Str[T*T*T] {
   fun str (t1:T, t2:T, t3:T) => "("+str t1 + ", " + str t2 + ", " + str t3+")";
 }
+// equality
 instance[t,u,v with Eq[t], Eq[u], Eq[v]] Eq[t*u*v] {
   fun eq: (t * u * v) * (t * u * v) -> bool =
   | (?x1,?y1,?z1),(?x2,?y2,?z2) => x1==x2 and y1 == y2 and z1 == z2
@@ -45,15 +50,29 @@ instance[t with Eq[t]] Eq[t*t*t] {
   | (?x1,?y1,?z1),(?x2,?y2,?z2) => x1==x2 and y1 == y2 and z1 == z2
   ;
 }
-open[t,u,v] Eq[t*u*v];
+// total order
+instance[t,u,v with Tord[t],Tord[u],Tord[v]] Tord[t*u*v] {
+  fun lt: (t * u * v) * (t * u * v) -> bool =
+  | (?x1,?y1,?z1),(?x2,?y2,?z2) => x1 <= x2 and y1 <= y2 and z1 < z2
+  ;
+}
+instance[t with Tord[t]] Tord[t*t*t] {
+  fun lt: (t * t * t) * (t * t * t) -> bool =
+  | (?x1,?y1,?z1),(?x2,?y2,?z2) => x1 <= x2 and y1 <= y2 and z1 < z2
+  ;
+}
+open[t,u,v with Tord[t], Tord[u], Tord[v]] Tord[t*u*v];
 
+//---------------------------------------------------------------------------------
 // four components
+// string
 instance[T,U,V,W] Str[T*U*V*W] {
   fun str (t:T, u:U, v:V, w:W) => "("+str t + ", " + str u + ", " + str v + ", " + str w+")";
 }
 instance[T] Str[T*T*T*T] {
   fun str (t1:T, t2:T, t3:T, t4:T) => "("+str t1 + ", " + str t2 + ", " + str t3 + ", " + str t4+")";
 }
+// equality
 instance[t,u,v,w with Eq[t], Eq[u], Eq[v], Eq[w]] Eq[t*u*v*w] {
   fun eq: (t * u * v * w) * (t * u * v * w) -> bool =
   | (?x1,?y1,?z1,?a1),(?x2,?y2,?z2,?a2) => x1==x2 and y1 == y2 and z1 == z2 and a1 == a2
@@ -64,9 +83,22 @@ instance[t with Eq[t]] Eq[t*t*t*t] {
   | (?x1,?y1,?z1,?a1),(?x2,?y2,?z2,?a2) => x1==x2 and y1 == y2 and z1 == z2 and a1 == a2
   ;
 }
-open[t,u,v,w] Eq[t*u*v*w];
+// total order
+instance[t,u,v,w with Tord[t],Tord[u],Tord[v],Tord[w]] Tord[t*u*v*w] {
+  fun lt: (t * u * v *w) * (t * u * v * w) -> bool =
+  | (?x1,?y1,?z1,?a1),(?x2,?y2,?z2,?a2) => x1 <= x2 and y1 <= y2 and z1 <= z2 and a1 < a2
+  ;
+}
+instance[t with Tord[t]] Tord[t*t*t*t] {
+  fun lt: (t * t * t * t) * (t * t * t * t) -> bool =
+  | (?x1,?y1,?z1,?a1),(?x2,?y2,?z2,?a2) => x1 <= x2 and y1 <= y2 and z1 <= z2 and a1 < a2
+  ;
+}
+open[t,u,v,w with Tord[t], Tord[u], Tord[v], Tord[w]] Tord[t*u*v*w];
 
+//---------------------------------------------------------------------------------
 // five components
+// string
 instance[T,U,V,W,X] Str[T*U*V*W*X] {
   fun str (t:T, u:U, v:V, w:W, x:X) => 
     "("+str t + ", " + str u + ", " + str v + ", " + str w+", "+ str x+")"
@@ -77,6 +109,7 @@ instance[T] Str[T*T*T*T*T] {
     "("+str t1 + ", " + str t2 + ", " + str t3 + ", " + str t4+", "+str t5+")"
   ;
 }
+// equality
 instance[t,u,v,w,x with Eq[t], Eq[u], Eq[v], Eq[w], Eq[x]] Eq[t*u*v*w*x] {
   fun eq: (t * u * v * w *x) * (t * u * v * w * x) -> bool =
   | (?x1,?y1,?z1,?a1,?b1),(?x2,?y2,?z2,?a2,?b2) => 
@@ -89,9 +122,17 @@ instance[t with Eq[t]] Eq[t*t*t*t*t] {
     x1==x2 and y1 == y2 and z1 == z2 and a1 == a2 and b1 == b2;
   ;
 }
-open[t,u,v,w,x] Eq[t*u*v*w*x];
-
-
-
+// total order
+instance[t,u,v,w,x with Tord[t],Tord[u],Tord[v],Tord[w],Tord[x]] Tord[t*u*v*w*x] {
+  fun lt: (t * u * v * w * x) * (t * u * v * w * x) -> bool =
+  | (?x1,?y1,?z1,?a1,?b1),(?x2,?y2,?z2,?a2,?b2) => x1 <= x2 and y1 <= y2 and z1 <= z2 and a1 <= a2 and b1 < b2
+  ;
+}
+instance[t with Tord[t]] Tord[t*t*t*t*t] {
+  fun lt: (t * t * t * t *t) * (t * t * t * t * t) -> bool =
+  | (?x1,?y1,?z1,?a1,?b1),(?x2,?y2,?z2,?a2,?b2) => x1 <= x2 and y1 <= y2 and z1 <= z2 and a1 <= a2 and b1 < b2
+  ;
+}
+open[t,u,v,w,x with Tord[t], Tord[u], Tord[v], Tord[w], Tord[x]] Tord[t*u*v*w*x];
 
 

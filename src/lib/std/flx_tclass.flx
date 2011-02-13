@@ -22,7 +22,7 @@ typeclass IFile[f,t] {
 }
 
 typeclass OFile[f,t] {
-  inherit OStream;
+  inherit OStream[f,t];
   virtual proc close: f; // invalidates write operation
 }
 
@@ -33,8 +33,20 @@ typeclass IBuffer [f] {
 typeclass OBuffer [f] {
   virtual gen write : f -> address * int -> int * bool;
 }
+
+// note: eq is not necessarily required for a membership test
+// for example: string member of regexp doesn't require
+// string equality
+// Set need not be finite (example regexp again)
+// A list is a set, despite the duplications
+typeclass Set[c,t] {
+  virtual fun mem: t * c-> bool;
+}
+
+// roughly, a finite Set
 typeclass Container [c,v]
 {
+  inherit Set[c,v];
   virtual fun len: c -> size;
   virtual fun empty(x: c): bool => len x == size(0);
 }

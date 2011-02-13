@@ -1,7 +1,7 @@
 include "stl/stl";
-module MultiSet[t]
+module Stl_MultiSet[t]
   {
-    requires std_stl_set;
+    requires Cxx_headers::set;
     type stl_multiset = "::std::multiset<?1>";
     type stl_multiset_iterator = "::std::multiset<?1>::iterator";
     type stl_multiset_reverse_iterator = "::std::multiset<?1>::reverse_iterator";
@@ -9,7 +9,7 @@ module MultiSet[t]
     proc insert : stl_multiset[t] * t = "$1.insert($2);";
     fun find : stl_multiset[t] * t ->  stl_multiset_iterator[t] = "$1.find($2)";
     fun mem : stl_multiset[t] * t -> bool = "$1.find($2) != $1.end()";
-// MultiSet
+// Stl_MultiSet
   instance Eq[stl_multiset[t]] {
     fun eq: stl_multiset[t] * stl_multiset[t] -> bool = "$1==$2";
   }
@@ -29,7 +29,7 @@ module MultiSet[t]
     fun rend : stl_multiset[t]-> stl_multiset_reverse_iterator[t]= "$1.rend()";
   }
 
-// MultiSet iterator
+// Stl_MultiSet iterator
   instance Eq[stl_multiset_iterator[t]] {
     fun eq: stl_multiset_iterator[t] * stl_multiset_iterator[t] -> bool = "$1==$2";
   }
@@ -52,7 +52,7 @@ module MultiSet[t]
   }
   instance Bidirectional_iterator[stl_multiset_iterator[t],t] {}
 
-// MultiSet reverse iterator
+// Stl_MultiSet reverse iterator
   instance Eq[stl_multiset_reverse_iterator[t]] {
     fun eq: stl_multiset_reverse_iterator[t] * stl_multiset_reverse_iterator[t] -> bool = "$1==$2";
   }
@@ -77,12 +77,12 @@ module MultiSet[t]
 
 }
 
-open MultiSet;
+open Stl_MultiSet;
 open[t] Reversible_Sequence[
-  MultiSet::stl_multiset[t],
-  MultiSet::stl_multiset_iterator[t],
-  MultiSet::stl_multiset_reverse_iterator[t],t];
-open[t] Bidirectional_iterator[MultiSet::stl_multiset_iterator[t],t];
-open[t] Bidirectional_iterator[MultiSet::stl_multiset_reverse_iterator[t],t];
+  Stl_MultiSet::stl_multiset[t],
+  Stl_MultiSet::stl_multiset_iterator[t],
+  Stl_MultiSet::stl_multiset_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_MultiSet::stl_multiset_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_MultiSet::stl_multiset_reverse_iterator[t],t];
 
 

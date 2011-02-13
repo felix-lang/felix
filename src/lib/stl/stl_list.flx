@@ -2,7 +2,7 @@ include "stl/stl";
 
 module Stl_List[t]
 {
-    requires std_stl_list;
+    requires Cxx_headers::list;
     type stl_list = "::std::list<?1>";
     fun create : unit -> stl_list[t] = "(FLX_GXX_PARSER_HACK std::list<?1>())";
     fun create : int * t -> stl_list[t]= "(FLX_GXX_PARSER_HACK std::list<?1>($1,$2))";

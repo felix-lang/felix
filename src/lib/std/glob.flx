@@ -1,8 +1,8 @@
 include "stl/stl_vector";
 
-open Vector;
 
 module glob {
+  open Stl_Vector;
   // glob
   requires package "flx_glob";
   cstruct glob_t {

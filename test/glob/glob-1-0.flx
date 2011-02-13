@@ -5,9 +5,9 @@ include "std/glob";
 // THIS IS A HACK!
 var files = glob::glob((Env::getenv "TEST_DATA_DIR") + "/*.flx");
 open Reversible_Sequence[
-  Vector::stl_vector[string],
-  Vector::stl_vector_iterator[string],
-  Vector::stl_vector_reverse_iterator[string],
+  Stl_Vector::stl_vector[string],
+  Stl_Vector::stl_vector_iterator[string],
+  Stl_Vector::stl_vector_reverse_iterator[string],
   string
 ];
 

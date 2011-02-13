@@ -3,9 +3,9 @@
 include "stl/stl_vector";
 include "stl/stl_map";
 
-typedef ii = Vector::iterator[int];
+typedef ii = Stl_Vector::iterator[int];
 
-var v = Vector::create[int]();
+var v = Stl_Vector::create[int]();
 push_back (v,1);
 push_back (v,2);
 push_back (v,3);
@@ -16,7 +16,7 @@ var j = 0; until j==3 do
 done;
 
 
-var m = Map::create[int,int]();
+var m = Stl_Map::create[int,int]();
 
 insert(m,0,2);
 insert(m,1,23);

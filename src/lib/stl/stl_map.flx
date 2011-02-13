@@ -1,7 +1,7 @@
 include "stl/stl";
-module Map[k,v]
+module Stl_Map[k,v]
 {
-    requires std_stl_map;
+    requires Cxx_headers::map;
     type stl_map = "::std::map<?1,?2>";
     type stl_map_iterator = "::std::map<?1,?2>::iterator";
     type stl_map_reverse_iterator = "::std::map<?1,?2>::reverse_iterator";
@@ -10,7 +10,7 @@ module Map[k,v]
     fun find : stl_map[k,v] * k ->  stl_map_iterator[k,v] = "$1.find($2)";
     fun mem : stl_map[k,v] * k -> bool = "$1.find($2) != $1.end()";
     proc insert : stl_map[k,v] * k * v = "$1.insert(std::make_pair($2,$3));";
-// Map
+// Stl_Map
   instance Eq[stl_map[k,v]] {
     fun eq: stl_map[k,v] * stl_map[k,v] -> bool = "$1==$2";
   }
@@ -30,7 +30,7 @@ module Map[k,v]
     fun rend : stl_map[k,v]-> stl_map_reverse_iterator[k,v]= "$1.rend()";
   }
 
-// Map iterator
+// Stl_Map iterator
   instance Eq[stl_map_iterator[k,v]] {
     fun eq: stl_map_iterator[k,v] * stl_map_iterator[k,v] -> bool = "$1==$2";
   }
@@ -53,7 +53,7 @@ module Map[k,v]
   }
   instance Bidirectional_iterator[stl_map_iterator[k,v],k*v] {}
 
-// Map reverse iterator
+// Stl_Map reverse iterator
   instance Eq[stl_map_reverse_iterator[k,v]] {
     fun eq: stl_map_reverse_iterator[k,v] * stl_map_reverse_iterator[k,v] -> bool = "$1==$2";
   }
@@ -78,13 +78,13 @@ module Map[k,v]
 
 }
 
-open Map;
+open Stl_Map;
 open[k,v] Reversible_Sequence[
-  Map::stl_map[k,v],
-  Map::stl_map_iterator[k,v],
-  Map::stl_map_reverse_iterator[k,v],k*v];
-open[k,v] Bidirectional_iterator[Map::stl_map_iterator[k,v],k*v];
-open[k,v] Bidirectional_iterator[Map::stl_map_reverse_iterator[k,v],k*v];
+  Stl_Map::stl_map[k,v],
+  Stl_Map::stl_map_iterator[k,v],
+  Stl_Map::stl_map_reverse_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Stl_Map::stl_map_iterator[k,v],k*v];
+open[k,v] Bidirectional_iterator[Stl_Map::stl_map_reverse_iterator[k,v],k*v];
 
 
 

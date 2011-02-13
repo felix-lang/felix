@@ -1,10 +1,3 @@
-header std_stl_vector = "#include <vector>";
-header std_stl_list = "#include <list>";
-header std_stl_deque = "#include <deque>";
-header std_stl_set = "#include <set>";
-header std_stl_map = "#include <map>";
-
-
 typeclass Iterator[it,t] {
   virtual fun deref: it -> t;
 }

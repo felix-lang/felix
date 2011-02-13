@@ -1,8 +1,8 @@
 include "stl/stl";
 
-module Vector[t]
+module Stl_Vector[t]
 {
-    requires std_stl_vector;
+    requires Cxx_headers::vector;
     type stl_vector = "::std::vector<?1>";
     fun create : unit -> stl_vector[t] = "(FLX_GXX_PARSER_HACK std::vector<?1>())";
     fun create : int * t -> stl_vector[t]= "(FLX_GXX_PARSER_HACK std::vector<?1>($1,$2))";
@@ -19,7 +19,7 @@ module Vector[t]
     proc pluseq: &stl_vector_iterator[t] * int = "*$1+=$2;";
     proc minuseq: &stl_vector_iterator[t] * int = "*$1-=$2;";
     fun subscript: stl_vector_iterator[t] * int -> t = "$1[$2]";
-// Vector
+// Stl_Vector
   instance Eq[stl_vector[t]] {
     fun eq: stl_vector[t] * stl_vector[t] -> bool = "$1==$2";
   }
@@ -39,7 +39,7 @@ module Vector[t]
     fun rend : stl_vector[t]-> stl_vector_reverse_iterator[t]= "$1.rend()";
   }
 
-// Vector iterator
+// Stl_Vector iterator
   instance Eq[stl_vector_iterator[t]] {
     fun eq: stl_vector_iterator[t] * stl_vector_iterator[t] -> bool = "$1==$2";
   }
@@ -62,7 +62,7 @@ module Vector[t]
   }
   instance Bidirectional_iterator[stl_vector_iterator[t],t] {}
 
-// Vector reverse iterator
+// Stl_Vector reverse iterator
   instance Eq[stl_vector_reverse_iterator[t]] {
     fun eq: stl_vector_reverse_iterator[t] * stl_vector_reverse_iterator[t] -> bool = "$1==$2";
   }
@@ -86,12 +86,12 @@ module Vector[t]
   instance Bidirectional_iterator[stl_vector_reverse_iterator[t],t] {}
 }
 
-open Vector;
+open Stl_Vector;
 open[t] Reversible_Sequence[
-  Vector::stl_vector[t],
-  Vector::stl_vector_iterator[t],
-  Vector::stl_vector_reverse_iterator[t],t];
-open[t] Bidirectional_iterator[Vector::stl_vector_iterator[t],t];
-open[t] Bidirectional_iterator[Vector::stl_vector_reverse_iterator[t],t];
+  Stl_Vector::stl_vector[t],
+  Stl_Vector::stl_vector_iterator[t],
+  Stl_Vector::stl_vector_reverse_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_Vector::stl_vector_iterator[t],t];
+open[t] Bidirectional_iterator[Stl_Vector::stl_vector_reverse_iterator[t],t];
 
 
