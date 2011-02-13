@@ -198,4 +198,5 @@ open module Array
   }
 }
 
-open[T,N] Eq[array[T,N]];
+//open[T,N] Eq[array[T,N]];
+open[T,N] Tord[array[T,N]];

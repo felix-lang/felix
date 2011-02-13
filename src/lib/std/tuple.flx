@@ -15,20 +15,18 @@ instance[t with Eq[t]] Eq[t*t] {
   | (?x1,?y1),(?x2,?y2) => x1==x2 and y1 == y2
   ;
 }
-/*
 instance[t,u with Tord[t],Tord[u]] Tord[t*u] {
   fun lt: (t * u) * (t * u) -> bool =
   | (?x1,?y1),(?x2,?y2) => x1 <= x2 and y1 < y2
   ;
 }
 instance[t with Tord[t]] Tord[t*t] {
-  fun eq: (t * t) * (t * t) -> bool =
+  fun lt: (t * t) * (t * t) -> bool =
   | (?x1,?y1),(?x2,?y2) => x1 <= x2 and y1 < y2
   ;
 }
 open[t,u with Tord[t], Tord[u]] Tord[t*u];
-*/
-open[t,u with Eq[t],Eq[u]] Eq[t*u];
+//open[t,u with Eq[t],Eq[u]] Eq[t*u];
 
 // three components
 instance[T,U,V] Str[T*U*V] {
