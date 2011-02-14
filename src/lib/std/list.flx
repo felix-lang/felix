@@ -261,8 +261,9 @@ open module List
     mem (fun (x:T) => eq(x, e)) xs
   ;
 
-  fun mem[T with Eq[T]] (x:T, a:list[T]) => mem[T,T] eq of (T * T) a x;
-
+  instance[T with Eq[T]] Set[list[T],T] {
+    fun mem(x:T, a:list[T]) => mem[T,T] eq of (T * T) a x;
+  }
   fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T] =>
     match xs with
     | Empty => None[T]
@@ -368,4 +369,5 @@ module Assoc_list
     find (fun (a:A) => eq (a, e)) xs;
   ;
 }
+open[T with Eq[T]] Set[List::list[T],T];
 

@@ -198,5 +198,15 @@ instance[T with Show[T]] Str[Varray::varray[T]] {
   }
 }
 
+instance[T with Eq[T]] Set[varray[T],T] {
+ fun mem(x:T, a:varray[T]) : bool = {
+   var i:ulong; forall i in 0ul upto len a -1ul do
+     if a.[i] == x do return true; done
+   done
+   return false;
+ } 
+}
+
 open[T] Show[Varray::varray[T]];
+open[T] Set[Varray::varray[T],T];
 

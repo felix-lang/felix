@@ -67,9 +67,22 @@ open module Darray
 
   proc iter[T] (_f:T->void) (x:darray[T]) = { iter _f (_repr_ x).a; }
 
+  // uses _repr_ so has to be in the module
   instance[T with Show[T]] Str[Darray::darray[T]] {
     fun str (x:darray[T])=> str (_repr_ x).a;
   }
+
 }
 
+instance[T with Eq[T]] Set[darray[T],T] {
+ fun mem(x:T, a:darray[T]) : bool = {
+   var i:ulong; forall i in 0ul upto len a -1ul do
+     if a.[i] == x do return true; done
+   done
+   return false;
+ } 
+}
+
+open[T] Show[Darray::darray[T]];
+open[T] Set[Darray::darray[T],T];
 

@@ -116,7 +116,9 @@ open module Array
     mem (fun (i:T) => eq(i, e)) x
   ;
 
-  fun mem[T,N with Eq[T]] (x:T, a:array[T,N]) => mem[T,N,T] eq of (T * T) a x;
+  instance[T,N with Eq[T]] Set[array[T,N],T] {
+    fun mem (x:T, a:array[T,N]) => mem[T,N,T] eq of (T * T) a x;
+  }
 
   fun find[T, N] (eq:T*T->bool) (x:array[T, N]) (e:T): opt[T] = {
     var i : int;
@@ -200,3 +202,5 @@ open module Array
 
 //open[T,N] Eq[array[T,N]];
 open[T,N] Tord[array[T,N]];
+open[T,N with Eq[T]] Set[array[T,N],T];
+
