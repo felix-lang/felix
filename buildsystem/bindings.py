@@ -26,6 +26,9 @@ def build_flx(phase):
     dsts.extend(buildsystem.copy_to(phase.ctx,
         phase.ctx.buildroot / 'lib/GL', Path('src/opengl/*.flx').glob()))
 
+    dsts.extend(buildsystem.copy_to(phase.ctx,
+        phase.ctx.buildroot / 'lib/GL', Path('src/glut/*.flx').glob()))
+
     if phase.sdl_config:
         sdl_fpc = fbuild.builders.text.autoconf_config_file(phase.ctx,
             'src/sdl/sdl.fpc', 'src/sdl/sdl.fpc.in', {
