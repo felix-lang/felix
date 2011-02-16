@@ -1,6 +1,6 @@
 Name: GLU
 Description: GLU graphics
 requires_dlibs: -lGLU
-requires_slibs: -LGLU
+requires_slibs: -lGLU
 Requires: gl
 includes: '"GL/glu.h"'
