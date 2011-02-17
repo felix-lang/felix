@@ -1322,7 +1322,6 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
 
   (* split into multiple declarations *)
 
-  | STMT_user_statement _
   | STMT_ctypes _
   | STMT_ifdo _
   | STMT_ifreturn _

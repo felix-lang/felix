@@ -1457,10 +1457,6 @@ and string_of_statement level s =
   | STMT_svc (_,name) ->
     spaces level ^ "read " ^ name ^ ";"
 
-  | STMT_user_statement (_,name,term) ->
-    let body = string_of_ast_term level term in
-    spaces level ^ "User statement " ^ name ^ "\n" ^ body
-
   | STMT_scheme_string (_,s) ->
     spaces level ^ "Scheme string " ^ s ^ ";\n"
 

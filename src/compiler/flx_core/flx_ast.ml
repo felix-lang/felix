@@ -456,7 +456,6 @@ and statement_t =
   | STMT_export_python_fun of Flx_srcref.t * suffixed_name_t * string
   | STMT_export_type of Flx_srcref.t * typecode_t * string
 
-  | STMT_user_statement of Flx_srcref.t * string * ast_term_t
   | STMT_scheme_string of Flx_srcref.t * string
 
 type exe_t =
@@ -669,7 +668,6 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_include (s,_)
   | STMT_use (s,_,_)
   | STMT_seq (s,_)
-  | STMT_user_statement (s,_,_)
   | STMT_scheme_string (s,_)
   | STMT_comment (s,_)
   | STMT_stmt_match (s,_)
@@ -1697,10 +1695,6 @@ and print_statement ppf = function
       print_variant2 ppf "STMT_export_type"
         print_type typ
         print_string exported_name
-  | STMT_user_statement (_, name, term) ->
-      print_variant2 ppf "STMT_user_statement"
-        print_name name
-        print_term term
   | STMT_scheme_string (_, scheme) ->
       print_variant1 ppf "STMT_scheme_string"
         print_string scheme

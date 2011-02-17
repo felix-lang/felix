@@ -454,7 +454,6 @@ and statement_t =
   | STMT_export_python_fun of Flx_srcref.t * suffixed_name_t * string
   | STMT_export_type of Flx_srcref.t * typecode_t * string
 
-  | STMT_user_statement of Flx_srcref.t * string * ast_term_t
   | STMT_scheme_string of Flx_srcref.t * string
 
 type exe_t =
