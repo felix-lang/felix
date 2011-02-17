@@ -1394,10 +1394,10 @@ and string_of_statement level s =
     )
     ^ ";"
 
-  | STMT_macro_vfor (_,v,e,sts) ->
+  | STMT_macro_forall (_,v,e,sts) ->
     let se e = string_of_expr e in
     spaces level
-    ^ "macro for val " ^ String.concat ", " v ^ " in " ^ se e ^ " do\n" ^
+    ^ "forall " ^ String.concat ", " v ^ " in " ^ se e ^ " do\n" ^
     catmap "\n" (string_of_statement (level +2)) sts ^
     spaces level ^ "done;"
 

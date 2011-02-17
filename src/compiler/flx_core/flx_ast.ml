@@ -389,7 +389,7 @@ and statement_t =
   | STMT_macro_val  of Flx_srcref.t * id_t list * expr_t
 
   (* type macros *)
-  | STMT_macro_vfor of Flx_srcref.t * id_t list * expr_t * statement_t list
+  | STMT_macro_forall of Flx_srcref.t * id_t list * expr_t * statement_t list
 
   (* composition of statements: note NOT A BLOCK *)
   | STMT_seq of Flx_srcref.t * statement_t list
@@ -618,7 +618,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_lemma (s,_,_,_,_)
   | STMT_curry (s,_,_,_,_,_,_)
   | STMT_macro_val (s,_,_)
-  | STMT_macro_vfor (s,_,_,_)
+  | STMT_macro_forall (s,_,_,_)
   | STMT_val_decl (s,_,_,_,_)
   | STMT_lazy_decl (s,_,_,_,_)
   | STMT_var_decl (s,_,_,_,_)
@@ -1477,8 +1477,8 @@ and print_statement ppf = function
       print_variant2 ppf "STMT_macro_val"
         (Flx_list.print print_string) names
         print_expr expr
-  | STMT_macro_vfor (_, names, expr, statements) ->
-      print_variant3 ppf "STMT_macro_vfor"
+  | STMT_macro_forall (_, names, expr, statements) ->
+      print_variant3 ppf "STMT_macro_forall"
         (Flx_list.print print_string) names
         print_expr expr
         print_statements statements

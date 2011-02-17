@@ -521,7 +521,8 @@ and xstatement_t sr x : statement_t =
     STMT_curry(xsr sr,s,xvs vs, map xps pss,xret ret, xfk fk, xsts' sr sts)
 
   | Lst [Id "ast_macro_val"; ids; v] -> STMT_macro_val (sr, lst "ast_macro_val" xid ids, ex v)
-  | Lst [Id "ast_macro_vfor";ids; e; sts] -> STMT_macro_vfor (sr,lst "ast_macro_vfor" xid ids, ex e, xsts sts)
+  | Lst [Id "ast_macro_forall";ids; e; sts] ->
+      STMT_macro_forall (sr,lst "ast_macro_forall" xid ids, ex e, xsts sts)
   | Lst [Id "ast_seq"; sr; sts] -> STMT_seq (xsr sr,xsts' sr sts)
 
   | Lst [Id "ast_union"; sr; Str n; vs; ucmp] ->

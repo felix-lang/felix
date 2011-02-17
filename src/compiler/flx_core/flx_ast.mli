@@ -387,7 +387,7 @@ and statement_t =
   | STMT_macro_val  of Flx_srcref.t * id_t list * expr_t
 
   (* type macros *)
-  | STMT_macro_vfor of Flx_srcref.t * id_t list * expr_t * statement_t list
+  | STMT_macro_forall of Flx_srcref.t * id_t list * expr_t * statement_t list
 
   (* composition of statements: note NOT A BLOCK *)
   | STMT_seq of Flx_srcref.t * statement_t list

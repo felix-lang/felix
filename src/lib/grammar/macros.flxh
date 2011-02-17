@@ -4,7 +4,7 @@ syntax macros {
     "`(ast_macro_val ,_3 ,_5)";
 
   tstatement := "forall" sname "in" sexpr "do" sstatements "done" =>#
-    "`(ast_macro_vfor (,_2) ,_4 ,_6)"
+    "`(ast_macro_forall (,_2) ,_4 ,_6)"
   ;
 
 }
