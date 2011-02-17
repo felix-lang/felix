@@ -85,8 +85,8 @@ let get_felix_options options =
           if inline < 10 then 10 else inline
       end
     ;
-    auto_imports = get_key_values options "import"
-    ;
+    auto_imports = get_key_values options "import";
+    syntax= get_key_values options "syntax";
 
     compile_only = check_keys options ["c";"compile-only"]
   }
@@ -99,6 +99,7 @@ let print_options () =
   print_endline "  -c, --compile-only: no code generation";
   print_endline "  -Idir, --include=dir : append dir to include path";
   print_endline "  --import=file.flxh : automatically #import <file.flxh>";
+  print_endline "  --syntax=file.flxh : use syntax <file.flxh>";
   print_endline "  --inline, --noinline, --optimise";
   print_endline "  --cache_dir=<none>: .par and .syncache directory";
   print_endline "  --output_dir=<none>: .cpp, .hpp, .why etc directory";

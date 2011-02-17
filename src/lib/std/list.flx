@@ -369,5 +369,6 @@ module Assoc_list
     find (fun (a:A) => eq (a, e)) xs;
   ;
 }
+
 open[T with Eq[T]] Set[List::list[T],T];
 

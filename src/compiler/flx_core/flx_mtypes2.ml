@@ -60,6 +60,7 @@ type felix_compiler_options_t =
   mangle_names : bool;
   generate_axiom_checks : bool;
   auto_imports : string list;
+  syntax: string list;
   cache_dir : string option;
   output_dir : string option;
 }

@@ -906,7 +906,7 @@ utstatement:
 print_endline ("Saving automaton " ^ $2);
       let sr = getsr dyp in
       let oc = open_out $2 in
-      Marshal.to_channel oc dyp.parser_pilot [Marshal.Closures];
+      Marshal.to_channel oc (function_free_pdev dyp.parser_pilot.pp_dev) [];
       close_out oc;
       (0,sr,Snull)    
     }
