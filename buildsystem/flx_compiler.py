@@ -23,6 +23,7 @@ def build_flx_core(phase):
         srcs=Path.glob(path / '*.ml{,i}'),
         libs=[
             build_flx_misc(phase),
+            call('buildsystem.dypgen.build_lib', phase),
             call('buildsystem.ocs.build_lib', phase)],
         external_libs=['nums'])
 def build_flx_version_hook(phase):
