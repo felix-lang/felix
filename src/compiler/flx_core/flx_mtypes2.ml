@@ -85,7 +85,7 @@ type sym_state_t =
   mutable typeclass_to_instance: (bid_t, (bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
   mutable instances_of_typeclass: (bid_t, (bid_t * (bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
   transient_specialisation_cache: (bid_t * Flx_btype.t list, bid_t * Flx_btype.t list) Hashtbl.t;
-}
+} 
 
 let make_syms options =
   {
