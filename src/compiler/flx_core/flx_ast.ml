@@ -389,7 +389,7 @@ and statement_t =
   | STMT_macro_val  of Flx_srcref.t * id_t list * expr_t
 
   (* type macros *)
-  | STMT_macro_vfor of Flx_srcref.t * id_t list * expr_t * statement_t list
+  | STMT_macro_forall of Flx_srcref.t * id_t list * expr_t * statement_t list
 
   (* composition of statements: note NOT A BLOCK *)
   | STMT_seq of Flx_srcref.t * statement_t list
@@ -456,7 +456,6 @@ and statement_t =
   | STMT_export_python_fun of Flx_srcref.t * suffixed_name_t * string
   | STMT_export_type of Flx_srcref.t * typecode_t * string
 
-  | STMT_user_statement of Flx_srcref.t * string * ast_term_t
   | STMT_scheme_string of Flx_srcref.t * string
 
 type exe_t =
@@ -619,7 +618,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_lemma (s,_,_,_,_)
   | STMT_curry (s,_,_,_,_,_,_)
   | STMT_macro_val (s,_,_)
-  | STMT_macro_vfor (s,_,_,_)
+  | STMT_macro_forall (s,_,_,_)
   | STMT_val_decl (s,_,_,_,_)
   | STMT_lazy_decl (s,_,_,_,_)
   | STMT_var_decl (s,_,_,_,_)
@@ -669,7 +668,6 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_include (s,_)
   | STMT_use (s,_,_)
   | STMT_seq (s,_)
-  | STMT_user_statement (s,_,_)
   | STMT_scheme_string (s,_)
   | STMT_comment (s,_)
   | STMT_stmt_match (s,_)
@@ -1479,8 +1477,8 @@ and print_statement ppf = function
       print_variant2 ppf "STMT_macro_val"
         (Flx_list.print print_string) names
         print_expr expr
-  | STMT_macro_vfor (_, names, expr, statements) ->
-      print_variant3 ppf "STMT_macro_vfor"
+  | STMT_macro_forall (_, names, expr, statements) ->
+      print_variant3 ppf "STMT_macro_forall"
         (Flx_list.print print_string) names
         print_expr expr
         print_statements statements
@@ -1697,10 +1695,6 @@ and print_statement ppf = function
       print_variant2 ppf "STMT_export_type"
         print_type typ
         print_string exported_name
-  | STMT_user_statement (_, name, term) ->
-      print_variant2 ppf "STMT_user_statement"
-        print_name name
-        print_term term
   | STMT_scheme_string (_, scheme) ->
       print_variant1 ppf "STMT_scheme_string"
         print_string scheme

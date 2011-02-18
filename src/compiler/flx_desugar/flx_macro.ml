@@ -1055,8 +1055,8 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
   | STMT_macro_val (sr, ids, e) ->
     tack (STMT_macro_val (sr, List.map (mi sr) ids, me e))
 
-  | STMT_macro_vfor (sr,ids,e,sts) ->
-    tack (STMT_macro_vfor (sr, List.map (mi sr) ids,me e,mss sts))
+  | STMT_macro_forall (sr,ids,e,sts) ->
+    tack (STMT_macro_forall (sr, List.map (mi sr) ids,me e,mss sts))
 
   | STMT_call (sr, e1, e2) ->
     tack (STMT_call (sr, me e1, me e2))
@@ -1169,9 +1169,9 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
       ides
     end
 
-  | STMT_macro_vfor (sr, ids, e, sts) ->
+  | STMT_macro_forall (sr, ids, e, sts) ->
     (*
-    print_endline "Expanding vfor";
+    print_endline "Expanding forall";
     *)
     let e = me e in
     let vals = match e with

@@ -387,7 +387,7 @@ and statement_t =
   | STMT_macro_val  of Flx_srcref.t * id_t list * expr_t
 
   (* type macros *)
-  | STMT_macro_vfor of Flx_srcref.t * id_t list * expr_t * statement_t list
+  | STMT_macro_forall of Flx_srcref.t * id_t list * expr_t * statement_t list
 
   (* composition of statements: note NOT A BLOCK *)
   | STMT_seq of Flx_srcref.t * statement_t list
@@ -454,7 +454,6 @@ and statement_t =
   | STMT_export_python_fun of Flx_srcref.t * suffixed_name_t * string
   | STMT_export_type of Flx_srcref.t * typecode_t * string
 
-  | STMT_user_statement of Flx_srcref.t * string * ast_term_t
   | STMT_scheme_string of Flx_srcref.t * string
 
 type exe_t =

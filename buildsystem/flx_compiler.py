@@ -26,6 +26,7 @@ def build_flx_core(phase):
             call('buildsystem.dypgen.build_lib', phase),
             call('buildsystem.ocs.build_lib', phase)],
         external_libs=['nums'])
+
 def build_flx_version_hook(phase):
     path = phase.ctx.buildroot / 'src/compiler/flx_version_hook'
     return phase.ocaml.build_lib(path / 'flx_version_hook',

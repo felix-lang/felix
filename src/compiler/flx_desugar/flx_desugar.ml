@@ -1322,12 +1322,11 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
 
   (* split into multiple declarations *)
 
-  | STMT_user_statement _
   | STMT_ctypes _
   | STMT_ifdo _
   | STMT_ifreturn _
   | STMT_macro_val _
-  | STMT_macro_vfor _
+  | STMT_macro_forall _
   | STMT_scheme_string _
     -> assert false
 
