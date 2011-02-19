@@ -151,36 +151,28 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
       else TYP_unitsum !v
 
   (* NOTE SPECIAL NAME HANDLING HACKS!! *)
-  | EXPR_apply(sr,(e1,e2)) ->
-    begin match e1 with
-    | EXPR_name (_,name,[]) ->
-      let name' = name ^ "          " (* 10 chars *) in
-      if name = "typeof" then TYP_typeof e2
-      else let arg = typecode_of_expr e2 in
-      if name = "_isin" then
-      begin
-        match arg with
-        | TYP_type_tuple [memt; sett] ->
-           TYP_isin (memt, sett)
-        | _ ->
-          (* this can be fixed by taking projections but I can't be bothered atm *)
-          failwith
-           "Implementation limitation, 'isin' operator requires two explicit arguments"
+  | EXPR_apply (sr, (e1, e2)) ->
+      begin match e1 with
+      | EXPR_name (_, "_isin", []) ->
+          begin match typecode_of_expr e2 with
+          | TYP_type_tuple [memt; sett] -> TYP_isin (memt, sett)
+          | _ ->
+              (* this can be fixed by taking projections but I can't be bothered
+               * atm *)
+              failwith (
+                "Implementation limitation, 'isin' operator requires two " ^
+                "explicit arguments")
+          end
+      | EXPR_name (_, "bnot", []) -> TYP_dual (typecode_of_expr e2)
+      | EXPR_name (_, "typeof", []) -> TYP_typeof e2
+      | EXPR_name (_, "typesetof", []) ->
+          begin match typecode_of_expr e2 with
+          | TYP_type_tuple ls -> TYP_typeset ls
+          | x -> TYP_typeset [x]
+          end
+      | _ ->
+          TYP_apply (typecode_of_expr e1, typecode_of_expr e2)
       end
-      else if name = "typesetof" then
-      begin
-        match arg with
-        | TYP_type_tuple ls -> TYP_typeset ls
-        | x -> TYP_typeset [x]
-      end
-      else if name = "bnot" then TYP_dual arg
-
-      else
-        TYP_apply (typecode_of_expr e1,arg)
-
-    | _ ->
-      TYP_apply (typecode_of_expr e1,typecode_of_expr e2)
-    end
 
   | EXPR_lambda (sr,(vs,paramss,ret,body)) ->
      begin match paramss with
