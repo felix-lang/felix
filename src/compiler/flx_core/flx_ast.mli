@@ -100,8 +100,6 @@ and typecode_t =
   (* destructors *)
   | TYP_dom of typecode_t                      (** function domain extractor *)
   | TYP_cod of typecode_t                      (** function codomain extractor *)
-  | TYP_proj of int * typecode_t               (** tuple projection *)
-  | TYP_case_arg of int * typecode_t           (** argument of n'th variant *)
 
   | TYP_apply of typecode_t * typecode_t       (** type function application *)
   | TYP_typefun of simple_parameter_t list * typecode_t * typecode_t

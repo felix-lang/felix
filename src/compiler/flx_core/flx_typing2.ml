@@ -174,39 +174,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
         | x -> TYP_typeset [x]
       end
       else if name = "bnot" then TYP_dual arg
-      else if String.sub name' 0 5 = "proj_"
-      then
-        begin
-          let acc = ref 0 in
-          for i = 5 to String.length name - 1 do
-          if name.[i] <= '9' && name.[i] >='0'
-          then acc := 10 * !acc + Char.code (name.[i]) - Char.code '0'
-          else
-            clierr sr
-            (
-              "Digits expected in name '" ^ name ^ "' in\n" ^
-              Flx_srcref.short_string_of_src sr
-            )
-          done;
-          TYP_proj (!acc, arg)
-         end
 
-      else if String.sub name' 0 9 = "case_arg_"
-      then
-        begin
-          let acc = ref 0 in
-          for i = 9 to String.length name - 1 do
-          if name.[i] <= '9' && name.[i] >='0'
-          then acc := 10 * !acc + Char.code (name.[i]) - Char.code '0'
-          else
-            clierr sr
-            (
-              "Digits expected in name '" ^ name ^ "' in\n" ^
-              Flx_srcref.short_string_of_src sr
-            )
-          done;
-          TYP_case_arg (!acc, arg)
-         end
       else
         TYP_apply (typecode_of_expr e1,arg)
 

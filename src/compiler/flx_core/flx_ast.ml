@@ -104,8 +104,6 @@ and typecode_t =
   (* destructors *)
   | TYP_dom of typecode_t                      (** function domain extractor *)
   | TYP_cod of typecode_t                      (** function codomain extractor *)
-  | TYP_proj of int * typecode_t               (** tuple projection *)
-  | TYP_case_arg of int * typecode_t           (** argument of n'th variant *)
 
   | TYP_apply of typecode_t * typecode_t       (** type function application *)
   | TYP_typefun of simple_parameter_t list * typecode_t * typecode_t
@@ -536,8 +534,6 @@ let src_of_typecode = function
   | TYP_dual _
   | TYP_dom _
   | TYP_cod _
-  | TYP_proj _
-  | TYP_case_arg _
   | TYP_apply _
   | TYP_typefun _
   | TYP_type
@@ -940,14 +936,6 @@ and print_type ppf = function
         print_type typ
   | TYP_cod typ ->
       print_variant1 ppf "TYP_cod"
-        print_type typ
-  | TYP_proj (index, typ) ->
-      print_variant2 ppf "TYP_proj"
-        pp_print_int index
-        print_type typ
-  | TYP_case_arg (case, typ) ->
-      print_variant2 ppf "TYP_case_arg"
-        pp_print_int case
         print_type typ
   | TYP_apply (typ1, typ2) ->
       print_variant2 ppf "TYP_apply"

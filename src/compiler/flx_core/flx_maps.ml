@@ -50,8 +50,6 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_dom t -> TYP_dom (f t)
   | TYP_dual t -> TYP_dual (f t)
   | TYP_cod t -> TYP_cod (f t)
-  | TYP_proj (i,t) -> TYP_proj (i, f t)
-  | TYP_case_arg (i,t) -> TYP_case_arg (i, f t)
 
   (*
   | TYP_type_match (t,ps) ->
