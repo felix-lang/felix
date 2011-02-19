@@ -17,7 +17,7 @@ module BidSet : Flx_set.S with type elt = bid_t
 (** Convert a list of bids into a bid set. *)
 val bidset_of_list : bid_t list -> BidSet.t
 
-type plain_ivs_list_t = (id_t * bid_t * typecode_t) list
+type plain_ivs_list_t = (Flx_id.t * bid_t * typecode_t) list
 type ivs_list_t = plain_ivs_list_t * vs_aux_t
 
 type recstop = {
@@ -37,7 +37,7 @@ type recstop = {
 type dir_t =
   | DIR_open of ivs_list_t * qualified_name_t
   | DIR_inject_module of qualified_name_t
-  | DIR_use of id_t * qualified_name_t
+  | DIR_use of Flx_id.t * qualified_name_t
 
 type sdir_t = Flx_srcref.t * dir_t
 
@@ -50,9 +50,9 @@ type dcl_t =
   | DCL_lemma of         params_t * axiom_method_t
   | DCL_reduce of        simple_parameter_t list * expr_t * expr_t
   | DCL_function of      params_t * typecode_t * property_t list * asm_t list
-  | DCL_union of         (id_t * int option * vs_list_t * typecode_t) list
-  | DCL_struct of        (id_t * typecode_t) list
-  | DCL_cstruct of       (id_t * typecode_t) list * named_req_expr_t
+  | DCL_union of         (Flx_id.t * int option * vs_list_t * typecode_t) list
+  | DCL_struct of        (Flx_id.t * typecode_t) list
+  | DCL_cstruct of       (Flx_id.t * typecode_t) list * named_req_expr_t
   | DCL_typeclass of     asm_t list
   | DCL_match_check of   pattern_t * (string * bid_t)
   | DCL_match_handler of pattern_t * (string * bid_t) * asm_t list
@@ -78,7 +78,7 @@ type dcl_t =
 
 and access_t = [`Private | `Public ]
 
-and sdcl_t = Flx_srcref.t * id_t * bid_t option * access_t * vs_list_t * dcl_t
+and sdcl_t = Flx_srcref.t * Flx_id.t * bid_t option * access_t * vs_list_t * dcl_t
 
 and iface_t =
   | IFACE_export_fun of suffixed_name_t * string
@@ -119,9 +119,9 @@ type symbol_definition_t =
   | SYMDEF_fun of property_t list * typecode_t list * typecode_t * code_spec_t  * named_req_expr_t * prec_t
   | SYMDEF_callback of property_t list * typecode_t list * typecode_t * named_req_expr_t
   | SYMDEF_insert of code_spec_t * ikind_t * named_req_expr_t
-  | SYMDEF_union of (id_t * int * vs_list_t * typecode_t) list
-  | SYMDEF_struct of (id_t * typecode_t) list
-  | SYMDEF_cstruct of (id_t * typecode_t) list * named_req_expr_t
+  | SYMDEF_union of (Flx_id.t * int * vs_list_t * typecode_t) list
+  | SYMDEF_struct of (Flx_id.t * typecode_t) list
+  | SYMDEF_cstruct of (Flx_id.t * typecode_t) list * named_req_expr_t
   | SYMDEF_typeclass
   | SYMDEF_type_alias of typecode_t
   | SYMDEF_inherit of qualified_name_t

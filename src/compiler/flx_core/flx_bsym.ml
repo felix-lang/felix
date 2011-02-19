@@ -1,6 +1,6 @@
 (** The bound symbol type. *)
 type t = {
-  id:string;
+  id:Flx_id.t;
   sr:Flx_srcref.t;
   vs:Flx_types.ivs_list_t;
   bbdcl:Flx_bbdcl.t;
@@ -73,7 +73,7 @@ let iter_uses f bsym = Flx_bbdcl.iter_uses f bsym.bbdcl
 (** Prints a bound symbol to a formatter. *)
 let print f bsym =
   Flx_format.print_record4 f
-    "id" Flx_format.print_string bsym.id
+    "id" Flx_id.print bsym.id
     "sr" Flx_srcref.print bsym.sr
     "vs" Format.pp_print_string "..."
     "bbdcl" Flx_bbdcl.print bsym.bbdcl

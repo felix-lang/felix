@@ -42,9 +42,9 @@ type t =
   | BBDCL_external_code of
                         bvs_t * code_spec_t * ikind_t * breqs_t
 
-  | BBDCL_union of      bvs_t * (id_t * int * Flx_btype.t) list
-  | BBDCL_struct of     bvs_t * (id_t * Flx_btype.t) list
-  | BBDCL_cstruct of    bvs_t * (id_t * Flx_btype.t) list * breqs_t
+  | BBDCL_union of      bvs_t * (Flx_id.t * int * Flx_btype.t) list
+  | BBDCL_struct of     bvs_t * (Flx_id.t * Flx_btype.t) list
+  | BBDCL_cstruct of    bvs_t * (Flx_id.t * Flx_btype.t) list * breqs_t
   | BBDCL_typeclass of  property_t list * bvs_t
   | BBDCL_instance of   property_t list *
                         bvs_t *
@@ -471,7 +471,7 @@ let rec print f = function
         print_bvs bvs
         (Flx_list.print begin fun f (n,i,t) ->
           print_tuple3 f
-            print_string n
+            Flx_id.print n
             pp_print_int i
             Flx_btype.print t
         end) cs
@@ -480,7 +480,7 @@ let rec print f = function
         print_bvs bvs
         (Flx_list.print begin fun f (n,t) ->
           print_tuple2 f
-            print_string n
+            Flx_id.print n
             Flx_btype.print t
         end) cs
   | BBDCL_cstruct (bvs,cs, breqs) ->
@@ -488,7 +488,7 @@ let rec print f = function
         print_bvs bvs
         (Flx_list.print begin fun f (n,t) ->
           print_tuple2 f
-            print_string n
+            Flx_id.print n
             Flx_btype.print t
         end) cs
         print_breqs breqs

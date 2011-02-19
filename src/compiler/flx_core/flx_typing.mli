@@ -22,9 +22,9 @@ val sye: entry_kind_t -> Flx_types.bid_t
 
 val mktypefun:
   Flx_srcref.t ->
-  string ->
+  Flx_id.t ->
   vs_list_t ->
-  (string * typecode_t) list list ->
+  (Flx_id.t * typecode_t) list list ->
   typecode_t ->
   typecode_t ->
   statement_t

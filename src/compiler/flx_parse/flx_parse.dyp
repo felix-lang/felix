@@ -582,7 +582,7 @@ main lexer =
   over identifiers, eg r'x' is a string, not an identifier,
   but x'x' is an identifier .. yucky ..
 */
- identifier -> NAME { Flx_id.utf8_to_ucn (lexeme lexbuf) }
+ identifier -> NAME { Flx_utf.utf8_to_ucn (lexeme lexbuf) }
 
 /* whitespace */
  white+ -> { () }

@@ -107,7 +107,7 @@ val lookup_name_in_env :
   Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
-  id_t ->
+  Flx_id.t ->
   entry_set_t
 
 val lookup_qn_in_env :

@@ -14,8 +14,13 @@ let detail x =
   let pd e = 
     (match e with | None -> " of root" | Some p -> " of parent " ^ string_of_int p) 
   in
-  "symbols " ^ Hashtbl.fold (fun k v acc -> acc ^"\n"^
-    "  "^string_of_int k^" -> "^v.sym.Flx_sym.id^pd v.parent) x "" ^ 
+  "symbols " ^
+  Hashtbl.fold begin fun k v acc ->
+    acc ^ "\n" ^
+    "  " ^ string_of_int k ^ " -> " ^
+    Flx_id.to_string v.sym.Flx_sym.id ^
+    pd v.parent
+  end x "" ^ 
   "\n"
 
 

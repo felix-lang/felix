@@ -34,9 +34,9 @@ let truthof x = match x with
 
 type macro_t =
  | MVal of expr_t
- | MName of string
+ | MName of Flx_id.t
 
-type macro_dfn_t = id_t * macro_t
+type macro_dfn_t = Flx_id.t * macro_t
 
 type macro_state_t = {
   recursion_limit: int;
@@ -91,11 +91,6 @@ let scheme_eval s =
         Sex_print.sex_print sex;
         sex
 
-let print_macro (id,t) =
- match t with
- | MVal v -> "MVal " ^ id ^ " = " ^ string_of_expr v
- | MName v -> "MName " ^ id ^ " = " ^ v
-
 let upper =  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 let lower = "abcdefghijklmnopqrstuvwxyz"
 let digits = "0123456789"
@@ -107,8 +102,6 @@ let quotes =  "\"'`"
 let starts_id ch = String.contains idstart ch
 let continues_id ch = String.contains idmore ch
 let is_quote ch = String.contains quotes ch
-
-let string_of_macro_env x = String.concat "\n" (List.map print_macro x)
 
 (* ident expansion: guarranteed to terminate,
   expansion of x given x -> x is just x
@@ -146,7 +139,7 @@ let alpha_pat local_prefix seq fast_remap remap expand_expr pat =
   in aux pat
 
 (* protect parameter names, to prevent gratuitous substitions *)
-let protect sr (ps:id_t list) : macro_dfn_t list =
+let protect sr ps =
   let rec aux t macs =
     match t with
     | [] -> macs
@@ -160,9 +153,11 @@ let protect sr (ps:id_t list) : macro_dfn_t list =
 let rec alpha_expr sr local_prefix seq ps e =
   let psn, pst = List.split ps in
   let psn' =  (* new parameter names *)
-    List.map
-    (fun _ -> let b = !seq in incr seq; "_" ^ string_of_int b)
-    psn
+    List.map begin fun _ ->
+      let b = !seq in
+      incr seq;
+      Flx_id.of_string ("_" ^ string_of_int b)
+    end psn
   in
   let remap =
     List.map2
@@ -176,9 +171,11 @@ let rec alpha_expr sr local_prefix seq ps e =
 and alpha_stmts sr local_prefix seq ps sts =
   let psn, pst = List.split ps in
   let psn' =  (* new parameter names *)
-    List.map
-    (fun _ -> let b = !seq in incr seq; "_" ^ local_prefix ^ "_" ^ string_of_int b)
-    psn
+    List.map begin fun _ ->
+      let b = !seq in
+      incr seq;
+      Flx_id.of_string ("_" ^ local_prefix ^ "_" ^ string_of_int b)
+    end psn
   in
   let remap =
     List.map2
@@ -1034,7 +1031,6 @@ and subst_statement recursion_limit local_prefix seq reachable macros (st:statem
   (*
   print_endline ("subst statement " ^ string_of_statement 0 st);
   print_endline ("Macro context length " ^ si (List.length macros));
-  print_endline (string_of_macro_env macros);
   *)
   if recursion_limit < 1
   then failwith "Recursion limit exceeded expanding macros";
@@ -1080,7 +1076,6 @@ and expand_statement recursion_limit local_prefix seq reachable ref_macros macro
   (*
   print_endline ("Expand statement " ^ string_of_statement 0 st);
   print_endline ("Macro context length " ^ si (List.length macros));
-  print_endline (string_of_macro_env macros);
   *)
   if recursion_limit < 1
   then failwith "Recursion limit exceeded expanding macros";

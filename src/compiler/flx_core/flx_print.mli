@@ -45,7 +45,7 @@ val string_of_asm : int -> asm_t -> string
 val string_of_desugared : asm_t list -> string
 val string_of_suffixed_name : suffixed_name_t -> string
 val string_of_qualified_name : qualified_name_t -> string
-val string_of_dcl : int -> id_t -> bid_t option -> vs_list_t -> dcl_t -> string
+val string_of_dcl : int -> Flx_id.t -> bid_t option -> vs_list_t -> dcl_t -> string
 val string_of_bexe : Flx_bsym_table.t -> int -> Flx_bexe.t -> string
 val sbx: Flx_bsym_table.t -> Flx_bexe.t -> string
 val string_of_exe : int -> exe_t -> string
@@ -61,7 +61,9 @@ val string_of_bbdcl :
   string
 
 val string_of_symdef :
-  symbol_definition_t -> string -> ivs_list_t ->
+  symbol_definition_t ->
+  Flx_id.t ->
+  ivs_list_t ->
   string
 
 (** [string_of_entry_kind entry-kind] converts the [entry-kind] to a string. *)
@@ -108,7 +110,7 @@ val print_symbols:
 
 val print_function_body:
   Flx_bsym_table.t ->
-  string ->
+  Flx_id.t ->
   bid_t ->
   bvs_t ->
   Flx_bparams.t ->

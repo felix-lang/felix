@@ -41,9 +41,9 @@ type t = private
   | BBDCL_external_code of
                         bvs_t * code_spec_t * ikind_t * breqs_t
 
-  | BBDCL_union of      bvs_t * (id_t * int * Flx_btype.t) list
-  | BBDCL_struct of     bvs_t * (id_t * Flx_btype.t) list
-  | BBDCL_cstruct of    bvs_t * (id_t * Flx_btype.t) list * breqs_t
+  | BBDCL_union of      bvs_t * (Flx_id.t * int * Flx_btype.t) list
+  | BBDCL_struct of     bvs_t * (Flx_id.t * Flx_btype.t) list
+  | BBDCL_cstruct of    bvs_t * (Flx_id.t * Flx_btype.t) list * breqs_t
   | BBDCL_typeclass of  property_t list * bvs_t
   | BBDCL_instance of   property_t list *
                         bvs_t *
@@ -76,9 +76,9 @@ val bbdcl_external_fun :
     external_fun_kind_t ->
   t
 val bbdcl_external_code : bvs_t * code_spec_t * ikind_t * breqs_t -> t
-val bbdcl_union : bvs_t * (id_t * int * Flx_btype.t) list -> t
-val bbdcl_struct : bvs_t * (id_t * Flx_btype.t) list -> t
-val bbdcl_cstruct : bvs_t * (id_t * Flx_btype.t) list * breqs_t -> t
+val bbdcl_union : bvs_t * (Flx_id.t * int * Flx_btype.t) list -> t
+val bbdcl_struct : bvs_t * (Flx_id.t * Flx_btype.t) list -> t
+val bbdcl_cstruct : bvs_t * (Flx_id.t * Flx_btype.t) list * breqs_t -> t
 val bbdcl_typeclass : property_t list * bvs_t -> t
 val bbdcl_instance : property_t list * bvs_t * Flx_btype.t * bid_t * Flx_btype.t list -> t
 val bbdcl_const_ctor : bvs_t * bid_t * Flx_btype.t * int * bvs_t * Flx_btype.t -> t
