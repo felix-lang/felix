@@ -64,7 +64,7 @@ let gen_tcdoc () =
         end
 
       | STMT_fun_decl (sr,name,vs,args,result,code,reqs,prec)
-        when code = CS_virtual ->
+        when code = Flx_code_spec.Virtual ->
         begin match result with
         | TYP_void _ ->
           w (begin_div "element" ^

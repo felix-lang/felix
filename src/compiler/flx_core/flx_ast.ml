@@ -1,6 +1,8 @@
 open Format
 open Flx_format
 
+module CS = Flx_code_spec
+
 (** {6 Source Reference}
  *
  * Provides a reference to the original source.  *)
@@ -11,13 +13,6 @@ open Flx_format
 
 type index_t = int
 type index_map_t = (int,int) Hashtbl.t
-
-(** Type of embedded C++ code. *)
-type code_spec_t =
-  | CS_str_template of string
-  | CS_str of string
-  | CS_virtual
-  | CS_identity
 
 type base_type_qual_t = [
   | `Incomplete
@@ -307,18 +302,18 @@ and property_t = [
 and type_qual_t = [
   | base_type_qual_t
   | `Raw_needs_shape of typecode_t
-  | `Scanner of code_spec_t
-  | `Finaliser of code_spec_t
+  | `Scanner of CS.t
+  | `Finaliser of CS.t
 ]
 
 and requirement_t =
-  | Body_req of code_spec_t
-  | Header_req of code_spec_t
+  | Body_req of CS.t
+  | Header_req of CS.t
   | Named_req of qualified_name_t
   | Property_req of string
-  | Package_req of code_spec_t
-  | Scanner_req of code_spec_t
-  | Finaliser_req of code_spec_t
+  | Package_req of CS.t
+  | Scanner_req of CS.t
+  | Finaliser_req of CS.t
 
 and ikind_t = [
   | `Header
@@ -517,7 +512,7 @@ and statement_t =
       Flx_id.t *
       vs_list_t *
       type_qual_t list *
-      code_spec_t *
+      Flx_code_spec.t *
       raw_req_expr_t
 
   | STMT_ctypes of
@@ -531,7 +526,7 @@ and statement_t =
       Flx_id.t *
       vs_list_t *
       typecode_t *
-      code_spec_t *
+      Flx_code_spec.t *
       raw_req_expr_t
 
   | STMT_fun_decl of
@@ -540,7 +535,7 @@ and statement_t =
       vs_list_t *
       typecode_t list *
       typecode_t *
-      code_spec_t *
+      Flx_code_spec.t *
       raw_req_expr_t *
       prec_t
 
@@ -556,11 +551,11 @@ and statement_t =
       Flx_srcref.t *
       Flx_id.t *
       vs_list_t *
-      code_spec_t *
+      Flx_code_spec.t *
       ikind_t *
       raw_req_expr_t
-  | STMT_code of Flx_srcref.t * code_spec_t
-  | STMT_noreturn_code of Flx_srcref.t * code_spec_t
+  | STMT_code of Flx_srcref.t * Flx_code_spec.t
+  | STMT_noreturn_code of Flx_srcref.t * Flx_code_spec.t
 
   | STMT_export_fun of Flx_srcref.t * suffixed_name_t * string
   | STMT_export_python_fun of Flx_srcref.t * suffixed_name_t * string
@@ -569,8 +564,8 @@ and statement_t =
   | STMT_scheme_string of Flx_srcref.t * string
 
 type exe_t =
-  | EXE_code of code_spec_t (* for inline C++ code *)
-  | EXE_noreturn_code of code_spec_t (* for inline C++ code *)
+  | EXE_code of CS.t (* for inline C++ code *)
+  | EXE_noreturn_code of CS.t (* for inline C++ code *)
   | EXE_comment of string (* for documenting generated code *)
   | EXE_label of string (* for internal use only *)
   | EXE_goto of string  (* for internal use only *)
@@ -832,16 +827,8 @@ let dfltvs_aux =
 (** Define a default vs_list_t. *)
 let dfltvs = [], dfltvs_aux
 
-(** Prints out a code_spec_t to a formatter. *)
-let print_code_spec f = function
-  | CS_str_template s ->
-      print_variant1 f "CS_str_template" print_string s
-  | CS_str s ->
-      print_variant1 f "CS_str" print_string s
-  | CS_virtual ->
-      print_variant0 f "CS_virtual"
-  | CS_identity ->
-      print_variant0 f "CS_identity"
+(** Prints out a name to a formatter. *)
+let print_name ppf = print_string ppf
 
 (** Prints out a base_type_qual_t to a formatter. *)
 let print_base_type_qual f = function
@@ -1448,19 +1435,19 @@ and print_type_qual ppf = function
         print_type typ
   | `Scanner code ->
       print_variant1 ppf "`Scanner"
-        print_code_spec code
+        CS.print code
   | `Finaliser code ->
       print_variant1 ppf "`Finaliser"
-        print_code_spec code
+        CS.print code
 
 (** Prints out a requirement to a formatter. *)
 and print_requirement ppf = function
   | Body_req code ->
       print_variant1 ppf "Body_req"
-        print_code_spec code
+        CS.print code
   | Header_req code ->
       print_variant1 ppf "Header_req"
-        print_code_spec code
+        CS.print code
   | Named_req qualified_name ->
       print_variant1 ppf "Named_req"
         print_qualified_name qualified_name
@@ -1469,13 +1456,13 @@ and print_requirement ppf = function
         print_string property
   | Package_req code ->
       print_variant1 ppf "Package_req"
-        print_code_spec code
+        CS.print code
   | Scanner_req code ->
       print_variant1 ppf "Scanner_req"
-        print_code_spec code
+        CS.print code
   | Finaliser_req code ->
       print_variant1 ppf "Finaliser_req"
-        print_code_spec code
+        CS.print code
 
 (** Prints out an lvalue to a formatter. *)
 and print_lvalue ppf = function
@@ -1730,7 +1717,7 @@ and print_statement ppf = function
         Flx_id.print name
         print_vs vs
         (Flx_list.print print_type_qual) type_quals
-        print_code_spec code
+        CS.print code
         print_raw_requirement raw_req
   | STMT_ctypes (_, names, type_quals, raw_req) ->
       print_variant3 ppf "STMT_ctypes"
@@ -1742,7 +1729,7 @@ and print_statement ppf = function
         Flx_id.print name
         print_vs vs
         print_type typ
-        print_code_spec code
+        CS.print code
         print_raw_requirement raw_req
   | STMT_fun_decl (_, name, vs, arg_types, return_type, code, raw_req, prec) ->
       print_variant7 ppf "STMT_fun_decl"
@@ -1750,7 +1737,7 @@ and print_statement ppf = function
         print_vs vs
         print_types arg_types
         print_type return_type
-        print_code_spec code
+        CS.print code
         print_raw_requirement raw_req
         print_prec prec
   | STMT_callback_decl (_, name, arg_typs, return_type, raw_req) ->
@@ -1763,15 +1750,15 @@ and print_statement ppf = function
       print_variant5 ppf "STMT_insert"
         Flx_id.print name
         print_vs vs
-        print_code_spec code
+        CS.print code
         print_ikind ikind
         print_raw_requirement raw_req
   | STMT_code (_, code) ->
       print_variant1 ppf "STMT_code"
-        print_code_spec code
+        CS.print code
   | STMT_noreturn_code (_, code) ->
       print_variant1 ppf "STMT_noreturn_code"
-        print_code_spec code
+        CS.print code
   | STMT_export_fun (_, name, exported_name) ->
       print_variant2 ppf "STMT_export_fun"
         print_suffixed_name name

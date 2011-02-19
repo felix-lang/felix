@@ -15,6 +15,8 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 
+module CS = Flx_code_spec
+
 let hfind msg h k =
   try Hashtbl.find h k
   with Not_found ->
@@ -88,7 +90,7 @@ let rec is_pure syms bsym_table i =
   (* not sure if this is the right place for this check .. *)
   | BBDCL_external_fun (_,_,_,_,_,_,kind) ->
       begin match kind with
-      | `Code CS_virtual -> false
+      | `Code CS.Virtual -> false
       | _ -> true
       end
 
@@ -550,7 +552,7 @@ and check_stackable_proc
   match Flx_bsym.bbdcl bsym with
   | BBDCL_external_fun (_,_,_,_,_,_,kind) ->
     begin match kind with
-    | `Code ct -> ct <> CS_virtual
+    | `Code ct -> ct <> CS.Virtual
     | `Callback _ ->
         (* not sure if this is right .. *)
         false

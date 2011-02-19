@@ -11,6 +11,8 @@ open Flx_typing2
 open Flx_pat
 open Flx_exceptions
 
+module CS = Flx_code_spec
+
 type desugar_state_t = {
   name: string;
   macro_state: Flx_macro.macro_state_t;
@@ -265,7 +267,7 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
     in
     let ss = Flx_print.string_of_string fmt in
     let fs = "flx::rtl::strutil::flx_asprintf("^ss^","^args^")" in
-    let rreq = RREQ_atom (Package_req (CS_str "flx_strutil")) in
+    let rreq = RREQ_atom (Package_req (CS.Str "flx_strutil")) in
     let _,props, dcls, req = mkreqs sr rreq in
     assert (props = []);
     let ts =
@@ -286,7 +288,14 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
       ;
       Array.to_list a
     in
-    let f = DCL_fun([], ts, str, CS_str_template fs, map_reqs sr req, "primary") in
+    let f = DCL_fun (
+      [],
+      ts,
+      str,
+      CS.Str_template fs,
+      map_reqs sr req,
+      "primary")
+    in
     let x = EXPR_index (sr,id,ix) in
     Dcl (sr, id, Some ix, `Private, dfltvs, f) :: dcls, x
 
@@ -592,7 +601,7 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
         Exe (sr, EXE_comment "match failure");
         Exe (sr, EXE_label failure_label);
         Exe (sr, EXE_noreturn_code (
-          CS_str ("      FLX_MATCH_FAILURE(" ^ s ^ ");\n")));
+          CS.Str ("      FLX_MATCH_FAILURE(" ^ s ^ ");\n")));
       ]
     )
     in
@@ -703,7 +712,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
 *)
     let ts = List.map (fun (s,_)-> TYP_name (sr,s,[])) (fst parent_vs) in
     let us = NREQ_atom (`AST_name (sr, "_rqs_" ^ name, ts)) in
-    let body = DCL_insert (CS_str "", `Body, us) in
+    let body = DCL_insert (CS.Str "", `Body, us) in
     Dcl (sr, "_rqs_" ^ n, None, `Public, dfltvs, body)
   in
 
@@ -1310,7 +1319,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
       in
       [
         Exe (sr,EXE_comment "match failure");
-        Exe (sr,EXE_noreturn_code (CS_str
+        Exe (sr,EXE_noreturn_code (CS.Str
           ("      FLX_MATCH_FAILURE(" ^ s ^ ");\n")));
       ]
     )

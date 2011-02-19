@@ -9,13 +9,6 @@
 type index_t = int
 type index_map_t = (int,int) Hashtbl.t
 
-(** Type of embedded C++ code. *)
-type code_spec_t =
-  | CS_str_template of string
-  | CS_str of string
-  | CS_virtual
-  | CS_identity
-
 type base_type_qual_t = [
   | `Incomplete
   | `Pod
@@ -309,18 +302,18 @@ and property_t = [
 and type_qual_t = [
   | base_type_qual_t
   | `Raw_needs_shape of typecode_t
-  | `Scanner of code_spec_t
-  | `Finaliser of code_spec_t
+  | `Scanner of Flx_code_spec.t
+  | `Finaliser of Flx_code_spec.t
 ]
 
 and requirement_t =
-  | Body_req of code_spec_t
-  | Header_req of code_spec_t
+  | Body_req of Flx_code_spec.t
+  | Header_req of Flx_code_spec.t
   | Named_req of qualified_name_t
   | Property_req of string
-  | Package_req of code_spec_t
-  | Scanner_req of code_spec_t
-  | Finaliser_req of code_spec_t
+  | Package_req of Flx_code_spec.t
+  | Scanner_req of Flx_code_spec.t
+  | Finaliser_req of Flx_code_spec.t
 
 and ikind_t = [
   | `Header
@@ -519,7 +512,7 @@ and statement_t =
       Flx_id.t *
       vs_list_t *
       type_qual_t list *
-      code_spec_t *
+      Flx_code_spec.t *
       raw_req_expr_t
 
   | STMT_ctypes of
@@ -533,7 +526,7 @@ and statement_t =
       Flx_id.t *
       vs_list_t *
       typecode_t *
-      code_spec_t *
+      Flx_code_spec.t *
       raw_req_expr_t
 
   | STMT_fun_decl of
@@ -542,7 +535,7 @@ and statement_t =
       vs_list_t *
       typecode_t list *
       typecode_t *
-      code_spec_t *
+      Flx_code_spec.t *
       raw_req_expr_t *
       prec_t
 
@@ -558,11 +551,11 @@ and statement_t =
       Flx_srcref.t *
       Flx_id.t *
       vs_list_t *
-      code_spec_t *
+      Flx_code_spec.t *
       ikind_t *
       raw_req_expr_t
-  | STMT_code of Flx_srcref.t * code_spec_t
-  | STMT_noreturn_code of Flx_srcref.t * code_spec_t
+  | STMT_code of Flx_srcref.t * Flx_code_spec.t
+  | STMT_noreturn_code of Flx_srcref.t * Flx_code_spec.t
 
   | STMT_export_fun of Flx_srcref.t * suffixed_name_t * string
   | STMT_export_python_fun of Flx_srcref.t * suffixed_name_t * string
@@ -571,8 +564,8 @@ and statement_t =
   | STMT_scheme_string of Flx_srcref.t * string
 
 type exe_t =
-  | EXE_code of code_spec_t (* for inline C++ code *)
-  | EXE_noreturn_code of code_spec_t (* for inline C++ code *)
+  | EXE_code of Flx_code_spec.t (* for inline C++ code *)
+  | EXE_noreturn_code of Flx_code_spec.t (* for inline C++ code *)
   | EXE_comment of string (* for documenting generated code *)
   | EXE_label of string (* for internal use only *)
   | EXE_goto of string  (* for internal use only *)
@@ -618,9 +611,6 @@ val dfltvs_aux : vs_aux_t
 
 (** Define a default vs_list_t. *)
 val dfltvs : 'a list * vs_aux_t
-
-(** Prints out a code_spec_t to a formatter. *)
-val print_code_spec : Format.formatter -> code_spec_t -> unit
 
 (** Prints out a base_type_qual_t to a formatter. *)
 val print_base_type_qual : Format.formatter -> base_type_qual_t -> unit

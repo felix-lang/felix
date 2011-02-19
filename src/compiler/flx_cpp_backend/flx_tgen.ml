@@ -16,6 +16,8 @@ open List
 open Flx_ctype
 open Flx_maps
 
+module CS = Flx_code_spec
+
 (*
  * Now some code to generate the bases, given the hashtable. We also mangle
  * c++ abstract type names.
@@ -216,10 +218,10 @@ let gen_type_name syms bsym_table (index,typ) =
       let tss = map tn ts in
       let instance =
         match ct with
-        | CS_virtual -> clierr (Flx_bsym.sr bsym) "Instantiate virtual type!"
-        | CS_identity -> syserr (Flx_bsym.sr bsym) "Idendity type is nonsense!"
-        | CS_str c -> c
-        | CS_str_template c ->
+        | CS.Virtual -> clierr (Flx_bsym.sr bsym) "Instantiate virtual type!"
+        | CS.Identity -> syserr (Flx_bsym.sr bsym) "Idendity type is nonsense!"
+        | CS.Str c -> c
+        | CS.Str_template c ->
         try sc "expr" (csubst (Flx_bsym.sr bsym) (Flx_bsym.sr bsym) c 
            ~arg:(Flx_cexpr.ce_atom "Error") 
            ~args:[] ~typs:[] ~argtyp:"Error" ~retyp:"Error" 

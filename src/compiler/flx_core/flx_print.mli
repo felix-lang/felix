@@ -153,7 +153,7 @@ val string_of_ast_term: int -> ast_term_t -> string
 val string_of_string: string -> string
 val string_of_bquals: Flx_bsym_table.t -> Flx_bbdcl.btype_qual_t list -> string
 val string_of_bvs: bvs_t -> string
-val string_of_code_spec: code_spec_t -> string
+val string_of_code_spec: Flx_code_spec.t -> string
 val string_of_raw_reqs: raw_req_expr_t -> string
 val string_of_ikind: ikind_t -> string
 

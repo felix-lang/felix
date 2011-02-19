@@ -34,7 +34,7 @@ let is_identity bsym =
   match bsym.bbdcl with
   | Flx_bbdcl.BBDCL_external_fun (_,_,_,_,_,_,kind) ->
       begin match kind with
-      | `Code Flx_ast.CS_identity -> true
+      | `Code Flx_code_spec.Identity -> true
       | _ -> false
       end
   | _ -> false

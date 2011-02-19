@@ -3404,7 +3404,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     begin match t',t'' with
     | BTYP_inst (i,[]),BTYP_unitsum n ->
       begin match hfind "lookup" state.sym_table i with
-      | { Flx_sym.id="int"; symdef=SYMDEF_abs (_, CS_str_template "int", _) }  ->
+      | { Flx_sym.id="int";
+          symdef=SYMDEF_abs (_, Flx_code_spec.Str_template "int", _) }  ->
         begin match e' with
         | BEXPR_literal (AST_int (kind,big)) ->
           let m =

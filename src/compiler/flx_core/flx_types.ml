@@ -90,11 +90,11 @@ type dcl_t =
 
   (* binding structures [prolog] *)
   | DCL_newtype of       typecode_t
-  | DCL_abs of           type_qual_t list * code_spec_t * named_req_expr_t
-  | DCL_const of         property_t list * typecode_t * code_spec_t * named_req_expr_t
-  | DCL_fun of           property_t list * typecode_t list * typecode_t * code_spec_t * named_req_expr_t * prec_t
+  | DCL_abs of           type_qual_t list * Flx_code_spec.t * named_req_expr_t
+  | DCL_const of         property_t list * typecode_t * Flx_code_spec.t * named_req_expr_t
+  | DCL_fun of           property_t list * typecode_t list * typecode_t * Flx_code_spec.t * named_req_expr_t * prec_t
   | DCL_callback of      property_t list * typecode_t list * typecode_t * named_req_expr_t
-  | DCL_insert of        code_spec_t * ikind_t * named_req_expr_t
+  | DCL_insert of        Flx_code_spec.t * ikind_t * named_req_expr_t
 
 and access_t = [`Private | `Public ]
 
@@ -119,7 +119,7 @@ type bvs_t = (string * bid_t) list
 
 type symbol_definition_t =
   | SYMDEF_newtype of typecode_t
-  | SYMDEF_abs of type_qual_t list * code_spec_t * named_req_expr_t
+  | SYMDEF_abs of type_qual_t list * Flx_code_spec.t * named_req_expr_t
   | SYMDEF_parameter of  param_kind_t * typecode_t
   | SYMDEF_typevar of typecode_t (* usually type TYPE *)
   | SYMDEF_axiom of params_t * axiom_method_t
@@ -131,14 +131,14 @@ type symbol_definition_t =
   | SYMDEF_module of sexe_t list
   | SYMDEF_const_ctor of bid_t * typecode_t * int * ivs_list_t
   | SYMDEF_nonconst_ctor of bid_t * typecode_t * int * ivs_list_t * typecode_t
-  | SYMDEF_const of property_t list * typecode_t * code_spec_t * named_req_expr_t
+  | SYMDEF_const of property_t list * typecode_t * Flx_code_spec.t * named_req_expr_t
   | SYMDEF_var of typecode_t
   | SYMDEF_val of typecode_t
   | SYMDEF_ref of typecode_t
   | SYMDEF_lazy of typecode_t * expr_t
-  | SYMDEF_fun of property_t list * typecode_t list * typecode_t * code_spec_t  * named_req_expr_t * prec_t
+  | SYMDEF_fun of property_t list * typecode_t list * typecode_t * Flx_code_spec.t  * named_req_expr_t * prec_t
   | SYMDEF_callback of property_t list * typecode_t list * typecode_t * named_req_expr_t
-  | SYMDEF_insert of code_spec_t  * ikind_t * named_req_expr_t
+  | SYMDEF_insert of Flx_code_spec.t  * ikind_t * named_req_expr_t
   | SYMDEF_union of (Flx_id.t * int *  vs_list_t * typecode_t) list
   | SYMDEF_struct of (Flx_id.t * typecode_t) list
   | SYMDEF_cstruct of (Flx_id.t * typecode_t) list * named_req_expr_t 

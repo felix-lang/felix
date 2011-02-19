@@ -19,8 +19,9 @@ open Flx_exceptions
 open Flx_flxopt
 open Flx_ogen
 open Flx_typing
-;;
 
+module CS = Flx_code_spec
+;;
 
 (* We have to set the felix version first. *)
 Flx_version_hook.set_version ()
@@ -385,16 +386,19 @@ let codegen_bsyms state bsym_table root_proc =
     match Flx_bsym.bbdcl bsym with
     | BBDCL_external_code (_,s,kind',_) when kind' = kind ->
         begin match s with
-        | CS_identity | CS_str "" | CS_str_template "" -> ()
-        | CS_virtual ->
+        | CS.Identity
+        | CS.Str ""
+        | CS.Str_template "" -> ()
+        | CS.Virtual ->
             clierr (Flx_bsym.sr bsym) "Instantiate virtual insertion!"
         | _ ->
             let s =
               match s with
-              | CS_identity | CS_virtual -> assert false (* covered above *)
-              | CS_str s ->
+              | CS.Identity | CS.Virtual ->
+                  assert false (* covered above *)
+              | CS.Str s ->
                   Flx_cexpr.ce_expr "atom" s
-              | CS_str_template s ->
+              | CS.Str_template s ->
                   (* do we need tsubst vs ts t? *)
                   let tn t = cpp_typename state.syms bsym_table t in
                   let ts = List.map tn ts in
@@ -932,7 +936,11 @@ let _ = print_endline ("Processed = " ^ String.concat ", " (!processed)) in
           let include_files, asms = Flx_desugar.desugar_stmts desugar_state (Filename.dirname filename) stmts in
           let top_req = 
             let sr = Flx_srcref.dummy_sr in
-            let body = Flx_types.DCL_insert (Flx_ast.CS_str "", `Body, Flx_ast.NREQ_true) in
+            let body = Flx_types.DCL_insert (
+              CS.Str "",
+              `Body,
+              Flx_ast.NREQ_true)
+            in
             Flx_types.Dcl (sr, "_rqs_" ^ module_name, None, `Public, dfltvs, body) 
           in
           let asms = top_req::asms in

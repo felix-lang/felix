@@ -399,12 +399,13 @@ and xfunkind_t sr x : funkind_t =
   | Id "Generator" -> `Generator
   | x -> err x "funkind_t"
 
-and xcode_spec_t sr x : code_spec_t =
+and xcode_spec_t sr x : Flx_code_spec.t =
+  let module CS = Flx_code_spec in
   match x with
-  | Lst [Id "StrTemplate"; Str s] -> CS_str_template (s)
-  | Lst [Id "Str"; Str s] -> CS_str (s)
-  | Id "Virtual" -> CS_virtual
-  | Id "Identity" -> CS_identity
+  | Lst [Id "StrTemplate"; Str s] -> CS.Str_template (s)
+  | Lst [Id "Str"; Str s] -> CS.Str (s)
+  | Id "Virtual" -> CS.Virtual
+  | Id "Identity" -> CS.Identity
   | x -> err x "c_t"
 
 and xlvalue_t sr x : lvalue_t =

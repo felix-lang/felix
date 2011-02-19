@@ -20,8 +20,8 @@ type t =
   | BEXE_yield of Flx_srcref.t * Flx_bexpr.t
   | BEXE_proc_return of Flx_srcref.t
   | BEXE_nop of Flx_srcref.t * string
-  | BEXE_code of Flx_srcref.t * code_spec_t
-  | BEXE_nonreturn_code of Flx_srcref.t * code_spec_t
+  | BEXE_code of Flx_srcref.t * Flx_code_spec.t
+  | BEXE_nonreturn_code of Flx_srcref.t * Flx_code_spec.t
   | BEXE_assign of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
   | BEXE_init of Flx_srcref.t * bid_t * Flx_bexpr.t
   | BEXE_begin
@@ -284,11 +284,11 @@ let print f = function
   | BEXE_code (sr, code) ->
       print_variant2 f "BEXE_code"
         Flx_srcref.print sr
-        print_code_spec code
+        Flx_code_spec.print code
   | BEXE_nonreturn_code (sr, code) ->
       print_variant2 f "BEXE_nonreturn_code"
         Flx_srcref.print sr
-        print_code_spec code
+        Flx_code_spec.print code
   | BEXE_assign (sr, l, r) ->
       print_variant3 f "BEXE_assign"
         Flx_srcref.print sr

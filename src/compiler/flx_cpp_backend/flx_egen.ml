@@ -22,6 +22,8 @@ open Flx_maps
 open Flx_pgen
 open Flx_beta
 
+module CS = Flx_code_spec
+
 let string_of_string = Flx_string.c_quote_of_string
 
 (* HACKERY: this assumes library dependent things:
@@ -523,10 +525,10 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
           print_endline ("Instantiate virtual const " ^ Flx_bsym.id bsym)
         ;
         begin match ct with
-        | CS_identity -> syserr sr ("Nonsense Idendity const" ^ Flx_bsym.id bsym)
-        | CS_virtual -> clierr2 sr (Flx_bsym.sr bsym) ("Instantiate virtual const " ^ Flx_bsym.id bsym)
-        | CS_str c
-        | CS_str_template c when c = "#srcloc" ->
+        | CS.Identity -> syserr sr ("Nonsense Idendity const" ^ Flx_bsym.id bsym)
+        | CS.Virtual -> clierr2 sr (Flx_bsym.sr bsym) ("Instantiate virtual const " ^ Flx_bsym.id bsym)
+        | CS.Str c
+        | CS.Str_template c when c = "#srcloc" ->
            let f, l1, c1, l2, c2 = Flx_srcref.to_tuple sr in
            ce_atom ("flx::rtl::flx_range_srcref_t(" ^
              string_of_string f ^ "," ^
@@ -536,7 +538,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
              si c2 ^ ")"
            )
 
-        | CS_str c when c = "#this" ->
+        | CS.Str c when c = "#this" ->
           begin match bsym_parent with
           | None -> clierr sr "Use 'this' outside class"
           | Some p ->
@@ -547,8 +549,8 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
             ce_atom("ptr"^name)
           end
 
-        | CS_str c
-        | CS_str_template c when c = "#memcount" ->
+        | CS.Str c
+        | CS.Str_template c when c = "#memcount" ->
           begin match ts with
           | [BTYP_void] -> ce_atom "0"
           | [BTYP_unitsum n]
@@ -572,8 +574,8 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
               sbt bsym_table (hd ts)
             )
           end
-        | CS_str c -> ce_expr "expr" c
-        | CS_str_template c ->
+        | CS.Str c -> ce_expr "expr" c
+        | CS.Str_template c ->
           let ts = map tn ts in
           csubst sr (Flx_bsym.sr bsym) c 
             ~arg:(ce_atom "Error") ~args:[] 
@@ -1161,8 +1163,8 @@ and gen_apply_prim
         si (length ts)
       );
       begin match kind with
-      | `Code CS_identity -> gen_expr' sr a
-      | `Code CS_virtual ->
+      | `Code CS.Identity -> gen_expr' sr a
+      | `Code CS.Virtual ->
           print_endline ("Flx_egen: Waring: delayed virtual instantiation, external fun " ^ Flx_bsym.id bsym^ "<"^string_of_bid index^ ">");
           let ts = List.map (beta_reduce this_vs this_ts) ts in
           let index', ts' = Flx_typeclass.fixup_typeclass_instance
@@ -1202,8 +1204,8 @@ and gen_apply_prim
               clierr2 sr (Flx_bsym.sr bsym)
                 ("expected instance to be function " ^ Flx_bsym.id bsym)
           end
-      | `Code (CS_str s) -> ce_expr prec s
-      | `Code (CS_str_template s) ->
+      | `Code (CS.Str s) -> ce_expr prec s
+      | `Code (CS.Str_template s) ->
           gen_prim_call
             syms
             bsym_table

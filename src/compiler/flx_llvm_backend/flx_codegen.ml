@@ -1,3 +1,5 @@
+module CS = Flx_code_spec
+
 type codegen_state_t =
   {
     syms: Flx_mtypes2.sym_state_t;
@@ -716,11 +718,11 @@ let codegen_bexe state bsym_table builder bexe =
       print_endline "BEXE_nop";
       assert false
 
-  | Flx_bexe.BEXE_code (sr, code_spec_t) ->
+  | Flx_bexe.BEXE_code (sr, code) ->
       print_endline "BEXE_code";
       assert false
 
-  | Flx_bexe.BEXE_nonreturn_code (sr, code_spec_t) ->
+  | Flx_bexe.BEXE_nonreturn_code (sr, code) ->
       print_endline "BEXE_nonreturn_code";
       assert false
 
@@ -1128,7 +1130,7 @@ and codegen_fun state index props vs ps ret_type code reqs prec =
 
   let f =
     match code with
-    | Flx_ast.CS_str_template s ->
+    | CS.Str_template s ->
         (* We found an external function. Lets check if it's a native
          * instruction. Those start with a '%'. Otherwise, it must be the name
          * of an external function. *)
@@ -1167,16 +1169,16 @@ and codegen_fun state index props vs ps ret_type code reqs prec =
             end
         end
 
-    | Flx_ast.CS_str s ->
-        print_endline ("CS_str: " ^ s);
+    | CS.Str s ->
+        print_endline ("Flx_code_spec.Str: " ^ s);
         assert false
 
-    | Flx_ast.CS_virtual ->
-        print_endline "CS_virtual";
+    | CS.Virtual ->
+        print_endline "Flx_code_spec.Virtual";
         assert false
 
-    | Flx_ast.CS_identity ->
-        print_endline "CS_identity";
+    | CS.Identity ->
+        print_endline "Flx_code_spec.Iidentity";
         assert false
   in
   Hashtbl.add state.call_bindings index f
@@ -1186,7 +1188,7 @@ and codegen_fun state index props vs ps ret_type code reqs prec =
 and codegen_abs state index vs quals code reqs =
   let t =
     match code with
-    | Flx_ast.CS_str_template s ->
+    | CS.Str_template s ->
         (* We found an external type. Lets check if it's a native llvm type.
          * These start with a '%'. *)
         let t =
@@ -1203,16 +1205,16 @@ and codegen_abs state index vs quals code reqs =
         in
         t
 
-    | Flx_ast.CS_str s ->
-        print_endline ("CS_str: " ^ s);
+    | CS.Str s ->
+        print_endline ("Flx_code_spec.Str: " ^ s);
         assert false
 
-    | Flx_ast.CS_virtual ->
-        print_endline "CS_virtual";
+    | CS.Virtual ->
+        print_endline "Flx_code_spec.Virtual";
         assert false
 
-    | Flx_ast.CS_identity ->
-        print_endline "CS_identity";
+    | CS.Identity ->
+        print_endline "Flx_code_spec.Identity";
         assert false
   in
   Hashtbl.add state.type_bindings index t

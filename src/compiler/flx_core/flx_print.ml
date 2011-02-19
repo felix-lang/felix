@@ -1000,19 +1000,22 @@ and string_of_properties ps =
   | [] -> ""
   | ps -> catmap " " string_of_property ps ^ " "
 
-and string_of_code_spec = function
-  | CS_str_template s -> "\"" ^ s ^  "\""
-  | CS_str s -> "c\"" ^ s ^  "\""
-  | CS_virtual -> "virtual"
-  | CS_identity -> "identity"
+and string_of_code_spec =
+  let module CS = Flx_code_spec in
+  function
+  | CS.Str_template s -> "\"" ^ s ^  "\""
+  | CS.Str s -> "c\"" ^ s ^  "\""
+  | CS.Virtual -> "virtual"
+  | CS.Identity -> "identity"
 
 and string_of_long_code_spec c =
+  let module CS = Flx_code_spec in
   let triple_quote = "\"\"\"" in
   match c with
-  | CS_str_template s -> triple_quote ^ s ^ triple_quote
-  | CS_str s -> "c" ^ triple_quote ^ s ^ triple_quote
-  | CS_virtual -> "virtual"
-  | CS_identity -> "identity"
+  | CS.Str_template s -> triple_quote ^ s ^ triple_quote
+  | CS.Str s -> "c" ^ triple_quote ^ s ^ triple_quote
+  | CS.Virtual -> "virtual"
+  | CS.Identity -> "identity"
 
 and string_of_raw_req = function
   | Named_req s -> string_of_qualified_name s
