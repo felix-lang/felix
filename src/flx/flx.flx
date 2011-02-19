@@ -50,7 +50,8 @@ var INCLUDE_DIRS="";
 var INCLUDE_FILES="";
 var NOSTDLIB=0;
 var STDOUT="";
-var STDIMPORT="--import=@grammar/grammar.files --import=plat/flx.flxh";
+var STDSYNTAX="--syntax=@grammar/grammar.files";
+var STDIMPORT="--import=plat/flx.flxh";
 var IMPORTS="";
 var OUTPUT_DIR="";
 var CACHE_DIR="";
@@ -288,6 +289,7 @@ install_bin_failed:>
     println$ "DEBUG              = "+str DEBUG;
     println$ "DEBUG_COMPILER     = "+str DEBUG_COMPILER;
     println$ "STDIMPORT          = "+str STDIMPORT;
+    println$ "STDSYNTAX          = "+str STDSYNTAX;
     println$ "IMPORTS            = "+str IMPORTS;
     println$ "RECOMPILE          = "+str RECOMPILE;
     println$ "cpps               = "+str cpps;
@@ -730,7 +732,7 @@ if FELIX == 1 do
   FCMD=List::cat ' ' (List::list (
     FLXG,
     VERBOSE, FLXFLAGS, FLXLIB,
-    INCLUDE_DIRS, STDIMPORT, IMPORTS,
+    INCLUDE_DIRS, STDSYNTAX, STDIMPORT, IMPORTS,
     STDLIB, filebase));
   debugln$ "Felix command="+FCMD;
   result=system(FCMD);

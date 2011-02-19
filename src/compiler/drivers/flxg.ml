@@ -218,7 +218,32 @@ let wl f x = ws f (x ^ "\n")
 
 
 (** Parse an implementation file *)
-let parse_file state file =
+let parse_syntax state=
+  let parse_timer = make_timer () in
+
+  let include_dirs = state.syms.compiler_options.include_dirs in
+  let synfiles = List.concat (List.map (Flx_colns.render include_dirs) state.syms.compiler_options.syntax) in
+  (* print_endline ("//Parsing syntax " ^ String.concat ", " synfiles); *)
+  let parser_state = List.fold_left
+    (fun state file -> Flx_parse.parse_syntax_file ~include_dirs state file)
+    (Flx_parse.make_parser_state ())
+    (synfiles)
+  in
+
+  let auto_imports = List.concat (List.map (Flx_colns.render include_dirs) state.syms.compiler_options.auto_imports) in
+  let parser_state = List.fold_left
+    (fun state file -> Flx_parse.parse_file ~include_dirs state file)
+    parser_state 
+    auto_imports
+  in
+  let parse_time = parse_timer () in
+  state.parse_time <- state.parse_time +. parse_time;
+  print_endline ("PARSED SYNTAX/IMPORT FILES " ^ string_of_float parse_time ^ " secs");
+  parser_state
+
+
+(** Parse an implementation file *)
+let parse_file state parser_state file =
   let parse_timer = make_timer () in
 
   let file_name =
@@ -228,12 +253,7 @@ let parse_file state file =
   let include_dirs = state.syms.compiler_options.include_dirs in
   fprintf state.ppf "//Parsing Implementation %s\n" file_name;
   if state.syms.compiler_options.print_flag then print_endline ("Parsing " ^ file_name);
-  let auto_imports = List.concat (List.map (Flx_colns.render include_dirs) state.syms.compiler_options.auto_imports) in
-  let parser_state = List.fold_left
-    (fun state file -> Flx_parse.parse_file ~include_dirs state file)
-    (Flx_parse.make_parser_state ())
-    (auto_imports @ [file_name])
-  in
+  let parser_state = Flx_parse.parse_file ~include_dirs parser_state file_name in
   let stmts = List.rev (Flx_parse.parser_data parser_state) in
   let macro_state = Flx_macro.make_macro_state local_prefix in
   let stmts = Flx_macro.expand_macros macro_state stmts in
@@ -858,6 +878,7 @@ type ub_entry_t = { filename:string;  depname:string; asms: asm_t list }
 
 let make_assembly 
   state 
+  parser_state
   (exclusions:string list)  
   (module_name:string) 
   (input:include_entry_t) 
@@ -921,7 +942,7 @@ let _ = print_endline ("Processed = " ^ String.concat ", " (!processed)) in
           let stmts = Flx_filesys.cached_computation "parse" in_par_name
             ~outfile:out_par_name
             ~min_time:flx_time
-            (fun () -> parse_file state flx_name)
+            (fun () -> parse_file state parser_state flx_name)
           in
           stmts
         in
@@ -965,7 +986,7 @@ let _ = print_endline ("Processed = " ^ String.concat ", " (!processed)) in
     (* but again, the order is reversed here *)
     !outputs
 
-let process_lib state sym_table_ref bsym_table_ref excls outdir module_name start_counter lib =
+let process_lib state parser_state sym_table_ref bsym_table_ref excls outdir module_name start_counter lib =
 (*
       print_endline ("Processing library " ^ h);
 *)
@@ -1030,7 +1051,7 @@ let process_lib state sym_table_ref bsym_table_ref excls outdir module_name star
          * reversed it back again *)
         let cal_time = make_timer() in
         print_endline ("Binding libary " ^ lib);
-        let assembly = make_assembly state !excls lib (Search lib) in
+        let assembly = make_assembly state parser_state !excls lib (Search lib) in
         let includes, depnames, asmss= 
            let rec aux includes depnames asmss a = match a with
            | [] -> includes, depnames, asmss
@@ -1109,6 +1130,8 @@ print_endline ("Include dirs=" ^ String.concat ", " compiler_options.include_dir
     if List.length inroots = 0 then
       raise (Failure "No input files on comamnd line")
     ;
+    let parser_state = parse_syntax state in
+
     let main_prog = List.hd inroots in
     let libs = List.rev (List.tl inroots) in
 (*
@@ -1116,7 +1139,7 @@ print_endline ("Include dirs=" ^ String.concat ", " compiler_options.include_dir
     print_endline ("Main program =" ^ main_prog);
 *)
     let excls:string list ref = ref [] in
-    List.iter (process_lib state sym_table_ref bsym_table_ref excls outdir module_name start_counter) libs;
+    List.iter (process_lib state parser_state sym_table_ref bsym_table_ref excls outdir module_name start_counter) libs;
 
 (*
     print_endline ("Making symbol tables for main program " ^ main_prog);
@@ -1124,7 +1147,7 @@ print_endline ("Include dirs=" ^ String.concat ", " compiler_options.include_dir
 *)
     let sym_table = !sym_table_ref in
     let bsym_table = !bsym_table_ref in
-    let assembly =  make_assembly state !excls module_name (NoSearch main_prog) in
+    let assembly =  make_assembly state parser_state !excls module_name (NoSearch main_prog) in
     let includes, depnames, asmss= 
        let rec aux includes depnames asmss a = match a with
        | [] -> includes, depnames, asmss
