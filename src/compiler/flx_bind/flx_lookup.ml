@@ -804,31 +804,6 @@ and bind_type'
 
   | TYP_dual t -> dual (bt t)
 
-  | TYP_dom t ->
-    let t = bt t in
-    begin match unfold t with
-    | BTYP_function (a,b) -> a
-    | BTYP_cfunction (a,b) -> a
-    | _ ->
-      clierr sr
-      (
-        Flx_srcref.short_string_of_src sr ^
-        "\ntype domain requires function"
-      )
-    end
-  | TYP_cod t ->
-    let t = bt t in
-    begin match unfold t with
-    | BTYP_function (a,b) -> b
-    | BTYP_cfunction (a,b) -> b
-    | _ ->
-      clierr sr
-      (
-        Flx_srcref.short_string_of_src sr ^
-        "\ntype codomain requires function"
-      )
-    end
-
   | TYP_ellipsis ->
     failwith "Unexpected TYP_ellipsis (...) in bind type"
   | TYP_none ->

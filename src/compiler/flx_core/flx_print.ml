@@ -442,8 +442,6 @@ and st prec tc : string =
     | TYP_as (t,s) -> 11,st 11 t ^ " as " ^ s
 
     | TYP_dual t -> 2,"~"^ st 2 t
-    | TYP_dom t -> 2,"dom "^ st 2 t
-    | TYP_cod t -> 2,"cod "^st 2 t
 
     | TYP_isin (t1,t2) -> 6,st 2 t1 ^ " isin " ^ st 6 t2
 

@@ -101,10 +101,6 @@ and typecode_t =
   (* dualizer *)
   | TYP_dual of typecode_t                     (** dual *)
 
-  (* destructors *)
-  | TYP_dom of typecode_t                      (** function domain extractor *)
-  | TYP_cod of typecode_t                      (** function codomain extractor *)
-
   | TYP_apply of typecode_t * typecode_t       (** type function application *)
   | TYP_typefun of simple_parameter_t list * typecode_t * typecode_t
                                                 (** type lambda *)
@@ -532,8 +528,6 @@ let src_of_typecode = function
   | TYP_setunion _
   | TYP_setintersection _
   | TYP_dual _
-  | TYP_dom _
-  | TYP_cod _
   | TYP_apply _
   | TYP_typefun _
   | TYP_type
@@ -930,12 +924,6 @@ and print_type ppf = function
         print_types typs
   | TYP_dual typ ->
       print_variant1 ppf "TYP_dual"
-        print_type typ
-  | TYP_dom typ ->
-      print_variant1 ppf "TYP_dom"
-        print_type typ
-  | TYP_cod typ ->
-      print_variant1 ppf "TYP_cod"
         print_type typ
   | TYP_apply (typ1, typ2) ->
       print_variant2 ppf "TYP_apply"
