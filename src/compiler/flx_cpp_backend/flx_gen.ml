@@ -25,6 +25,8 @@ open Flx_pgen
 open Flx_ctorgen
 open Flx_beta
 
+module CS = Flx_code_spec
+
 let find_variable_indices syms bsym_table index =
   let children = Flx_bsym_table.find_children bsym_table index in
   Flx_types.BidSet.fold begin fun bid bids ->
@@ -784,11 +786,11 @@ let gen_exe filename
         sub_end
       in
       begin match code with
-      | CS_identity -> syserr sr "Identity proc is nonsense"
-      | CS_virtual ->
+      | CS.Identity -> syserr sr "Identity proc is nonsense"
+      | CS.Virtual ->
           clierr2 sr (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
-      | CS_str s -> ws (ce_expr "expr" s)
-      | CS_str_template s ->
+      | CS.Str s -> ws (ce_expr "expr" s)
+      | CS.Str_template s ->
         let ss = gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"  in
         ws ss
       end
@@ -958,10 +960,10 @@ let gen_exe filename
     "      return " ^ frame_ptr ^ ";\n"
   in
   let forget_template sr s = match s with
-  | CS_identity -> syserr sr "Identity proc is nonsense(2)!"
-  | CS_virtual -> clierr sr "Instantiate virtual procedure(2)!"
-  | CS_str s -> s
-  | CS_str_template s -> s
+  | CS.Identity -> syserr sr "Identity proc is nonsense(2)!"
+  | CS.Virtual -> clierr sr "Instantiate virtual procedure(2)!"
+  | CS.Str s -> s
+  | CS.Str_template s -> s
   in
   let rec gexe exe =
     (*

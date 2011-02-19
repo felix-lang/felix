@@ -17,6 +17,8 @@ open Flx_exceptions
 open Flx_use
 open Flx_beta
 
+module CS = Flx_code_spec
+
 let vs2ts vs = map (fun (s,i) -> btyp_type_var (i, btyp_type 0)) vs
 
 (* drop first n elements of list l *)
@@ -219,7 +221,7 @@ let check_instance
     Flx_types.BidSet.iter begin fun tck ->
       let tck_bsym = Flx_bsym_table.find bsym_table tck in
       match Flx_bsym.bbdcl tck_bsym with
-      | BBDCL_external_fun (_,bvs,params,ret,_,_,`Code CS_virtual) ->
+      | BBDCL_external_fun (_,bvs,params,ret,_,_,`Code Flx_code_spec.Virtual) ->
         let ft = btyp_function (btyp_tuple params,ret) in
         check_binding true tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
 

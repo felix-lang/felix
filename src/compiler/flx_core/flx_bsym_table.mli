@@ -42,7 +42,7 @@ val find_children : t -> Flx_types.bid_t -> Flx_types.BidSet.t
 val find_descendants: t -> Flx_types.bid_t -> Flx_types.BidSet.t
 
 (** Searches the bound symbol table for the given symbol's id. *)
-val find_id : t -> Flx_types.bid_t -> string
+val find_id : t -> Flx_types.bid_t -> Flx_id.t
 
 (** Searches the bound symbol table for the given symbol's source reference. *)
 val find_sr : t -> Flx_types.bid_t -> Flx_srcref.t

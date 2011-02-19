@@ -6,7 +6,7 @@ open Flx_types
 *)
 
 (* handle curried type functions *)
-let mktypefun sr (name:string) (vs:vs_list_t) (args: (string * typecode_t) list list) (return_type:typecode_t) (body:typecode_t) : statement_t =
+let mktypefun sr name vs args return_type body =
   let argtyp t = match t with
     | [] -> failwith "Lambda abstraction requires nonunit parameter"
     | [x] -> x

@@ -1,6 +1,6 @@
 (** The symbol type. *)
 type t = {
-  id:string;
+  id:Flx_id.t;
   sr:Flx_srcref.t;
   vs:Flx_types.ivs_list_t;
   pubmap:Flx_btype.name_map_t;

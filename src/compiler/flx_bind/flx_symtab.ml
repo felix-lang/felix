@@ -912,7 +912,7 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
         [],
         [piname],
         t,
-        CS_identity,
+        Flx_code_spec.Identity,
         NREQ_true
         ,
         "expr"));
@@ -929,7 +929,7 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
         [],
         [t],
         piname,
-        CS_identity,
+        Flx_code_spec.Identity,
         NREQ_true,
         "expr"));
 

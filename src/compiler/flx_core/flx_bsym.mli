@@ -1,6 +1,6 @@
 (** The bound symbol type. *)
 type t = {
-  id:string;
+  id:Flx_id.t;
   sr:Flx_srcref.t;
   vs:Flx_types.ivs_list_t;
   bbdcl:Flx_bbdcl.t;
@@ -11,7 +11,7 @@ type t = {
 val create:
   ?sr:Flx_srcref.t ->
   ?vs:Flx_types.ivs_list_t ->
-  string -> Flx_bbdcl.t ->
+  Flx_id.t -> Flx_bbdcl.t ->
   t
 
 (** Constructs a bound symbol based off the unbound symbol. *)
@@ -21,7 +21,7 @@ val of_sym: Flx_sym.t -> Flx_bbdcl.t -> t
  * bbdcl.*)
 val replace_bbdcl: t -> Flx_bbdcl.t -> t
 
-val id: t -> string
+val id: t -> Flx_id.t
 val sr: t -> Flx_srcref.t
 val vs: t -> Flx_types.ivs_list_t
 val bbdcl: t -> Flx_bbdcl.t

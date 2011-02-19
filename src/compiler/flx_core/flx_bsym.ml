@@ -1,6 +1,6 @@
 (** The bound symbol type. *)
 type t = {
-  id:string;
+  id:Flx_id.t;
   sr:Flx_srcref.t;
   vs:Flx_types.ivs_list_t;
   bbdcl:Flx_bbdcl.t;
@@ -34,7 +34,7 @@ let is_identity bsym =
   match bsym.bbdcl with
   | Flx_bbdcl.BBDCL_external_fun (_,_,_,_,_,_,kind) ->
       begin match kind with
-      | `Code Flx_ast.CS_identity -> true
+      | `Code Flx_code_spec.Identity -> true
       | _ -> false
       end
   | _ -> false
@@ -73,7 +73,7 @@ let iter_uses f bsym = Flx_bbdcl.iter_uses f bsym.bbdcl
 (** Prints a bound symbol to a formatter. *)
 let print f bsym =
   Flx_format.print_record4 f
-    "id" Flx_format.print_string bsym.id
+    "id" Flx_id.print bsym.id
     "sr" Flx_srcref.print bsym.sr
     "vs" Format.pp_print_string "..."
     "bbdcl" Flx_bbdcl.print bsym.bbdcl

@@ -803,85 +803,6 @@ and bind_type'
       btyp_type_match (t,pts)
 
   | TYP_dual t -> dual (bt t)
-  | TYP_proj (i,t) ->
-      let t = bt t in
-      ignore (try unfold t with _ -> failwith "TYP_proj unfold screwd");
-      begin match unfold t with
-      | BTYP_tuple ls ->
-          if i < 1 or i> List.length ls
-          then
-            clierr sr
-            (
-              "product type projection index " ^
-              string_of_int i ^
-              " out of range 1 to " ^
-              string_of_int (List.length ls)
-            )
-          else List.nth ls (i-1)
-
-      | _ ->
-          clierr sr "\ntype projection requires product type"
-      end
-
-  | TYP_dom t ->
-    let t = bt t in
-    begin match unfold t with
-    | BTYP_function (a,b) -> a
-    | BTYP_cfunction (a,b) -> a
-    | _ ->
-      clierr sr
-      (
-        Flx_srcref.short_string_of_src sr ^
-        "\ntype domain requires function"
-      )
-    end
-  | TYP_cod t ->
-    let t = bt t in
-    begin match unfold t with
-    | BTYP_function (a,b) -> b
-    | BTYP_cfunction (a,b) -> b
-    | _ ->
-      clierr sr
-      (
-        Flx_srcref.short_string_of_src sr ^
-        "\ntype codomain requires function"
-      )
-    end
-
-  | TYP_case_arg (i,t) ->
-    let t = bt t in
-    ignore (try unfold t with _ -> failwith "TYP_case_arg unfold screwd");
-    begin match unfold t with
-    | BTYP_unitsum k ->
-      if i < 0 or i >= k
-      then
-        clierr sr
-        (
-          "sum type extraction index " ^
-          string_of_int i ^
-          " out of range 0 to " ^ si (k-1)
-        )
-      else unit_t
-
-    | BTYP_sum ls ->
-      if i < 0 or i>= List.length ls
-      then
-        clierr sr
-        (
-          "sum type extraction index " ^
-          string_of_int i ^
-          " out of range 0 to " ^
-          string_of_int (List.length ls - 1)
-        )
-      else List.nth ls i
-
-    | _ ->
-      clierr sr
-      (
-        "sum type extraction requires sum type"
-      )
-    end
-
 
   | TYP_ellipsis ->
     failwith "Unexpected TYP_ellipsis (...) in bind type"
@@ -3483,7 +3404,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     begin match t',t'' with
     | BTYP_inst (i,[]),BTYP_unitsum n ->
       begin match hfind "lookup" state.sym_table i with
-      | { Flx_sym.id="int"; symdef=SYMDEF_abs (_, CS_str_template "int", _) }  ->
+      | { Flx_sym.id="int";
+          symdef=SYMDEF_abs (_, Flx_code_spec.Str_template "int", _) }  ->
         begin match e' with
         | BEXPR_literal (AST_int (kind,big)) ->
           let m =

@@ -26,7 +26,7 @@ type env_t = (
 ) list
 
 type axiom_t =
-  Flx_ast.id_t *
+  Flx_id.t *
   Flx_srcref.t *
   Flx_types.bid_t option *
   Flx_ast.axiom_kind_t *
@@ -35,7 +35,7 @@ type axiom_t =
   baxiom_method_t
 
 type reduction_t =
-  Flx_ast.id_t *
+  Flx_id.t *
   Flx_types.bvs_t *
   Flx_bparameter.t list *
   Flx_bexpr.t *

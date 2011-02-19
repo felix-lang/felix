@@ -28,8 +28,8 @@ val mem : t -> Flx_types.bid_t -> bool
  * index is not in the symbol table. *)
 val find : t -> Flx_types.bid_t -> Flx_sym.t
 
-(** find string name by index, raises Not_found if missing  *)
-val find_id : t -> Flx_types.bid_t -> string
+(** find id by index, raises Not_found if missing  *)
+val find_id : t -> Flx_types.bid_t -> Flx_id.t
 
 (** Searches the bound symbol table for the given symbol. *)
 val find_with_parent :

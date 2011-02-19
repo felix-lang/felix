@@ -108,7 +108,7 @@ let strabs_symbol state bsym_table index bsym =
 
   | BBDCL_external_fun (props, bvs, ts, t, breqs, prec, kind) ->
       (* Ignore identity functions. *)
-      if kind = `Code CS_identity then () else
+      if kind = `Code Flx_code_spec.Identity then () else
       let kind =
         match kind with
         | `Callback (ts2, j) -> `Callback (fts ts2, j)

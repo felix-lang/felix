@@ -42,6 +42,8 @@ let suffix_of_type s = match s with
   | "ldouble" -> "l"
   | _ -> failwith ("[suffix_of_type] Unexpected Type " ^ s)
 
+let string_of_id id = Flx_id.to_string id
+
 let string_of_bid bid =
   string_of_int bid
 
@@ -63,20 +65,23 @@ let rec string_of_qualified_name (n:qualified_name_t) =
   match n with
   | `AST_index (sr,name,idx) -> name ^ "<" ^ string_of_bid idx ^ ">"
   | `AST_void _ -> "void"
-  | `AST_name (_,name,ts) -> name ^
-    (
-      if List.length ts = 0 then ""
-      else "[" ^ catmap ", " string_of_typecode ts ^ "]"
-    )
+  | `AST_name (_,name,ts) ->
+      string_of_id name ^
+      (
+        if List.length ts = 0 then ""
+        else "[" ^ catmap ", " string_of_typecode ts ^ "]"
+      )
   | `AST_case_tag (_,v) -> "case " ^ si v
   | `AST_typed_case (_,v,t) ->
     "(case " ^ si v ^
     " of " ^ string_of_typecode t ^ ")"
 
-  | `AST_lookup (_,(e,name, ts)) -> "("^se e ^")::" ^ name ^
-    (if length ts = 0 then "" else
-    "[" ^ catmap ", " string_of_typecode ts ^ "]"
-    )
+  | `AST_lookup (_,(e,name, ts)) ->
+      "(" ^ se e ^ ")::" ^ string_of_id name ^
+      (
+        if length ts = 0 then "" else
+        "[" ^ catmap ", " string_of_typecode ts ^ "]"
+      )
   | `AST_callback (_,name) -> "callback " ^string_of_qualified_name name
 
 and string_of_suffixed_name (n:suffixed_name_t) =
@@ -114,25 +119,28 @@ and string_of_expr (e:expr_t) =
   match e with
   | EXPR_index (sr,name,idx) -> name ^ "<" ^ string_of_bid idx ^ ">"
   | EXPR_void _ -> "void"
-  | EXPR_name (_,name,ts) -> name ^
-    (
-      if List.length ts = 0 then ""
-      else "[" ^ catmap ", " string_of_typecode ts ^ "]"
-    )
+  | EXPR_name (_,name,ts) ->
+      string_of_id name ^
+      (
+        if List.length ts = 0 then ""
+        else "[" ^ catmap ", " string_of_typecode ts ^ "]"
+      )
   | EXPR_case_tag (_,v) -> "case " ^ si v
   | EXPR_typed_case (_,v,t) ->
     "(case " ^ si v ^
     " of " ^ string_of_typecode t ^ ")"
 
-  | EXPR_lookup (_,(e,name, ts)) -> "("^se e ^")::" ^ name ^
-    (if length ts = 0 then "" else
-    "[" ^ catmap ", " string_of_typecode ts ^ "]"
-    )
+  | EXPR_lookup (_, (e, name, ts)) ->
+      "(" ^ se e ^ ")::" ^ string_of_id name ^
+      (
+        if length ts = 0 then "" else
+        "[" ^ catmap ", " string_of_typecode ts ^ "]"
+      )
   | EXPR_callback (_,name) -> "callback " ^string_of_qualified_name name
   | EXPR_suffix (_,(name,suf)) ->
     string_of_qualified_name name ^ " of (" ^ string_of_typecode suf ^ ")"
 
-  | EXPR_patvar (sr,s) -> "?"^s
+  | EXPR_patvar (sr,s) -> "?" ^ string_of_id s
   | EXPR_patany sr -> "ANY"
   | EXPR_vsprintf (sr,s) -> "f"^string_of_string s
   | EXPR_ellipsis _ -> "..."
@@ -159,9 +167,10 @@ and string_of_expr (e:expr_t) =
     " endif"
 
   | EXPR_typeof (_,e) -> "typeof("^se e^")"
-  | EXPR_as (_,(e1, name)) -> "(" ^ se e1 ^ ") as " ^ name
+  | EXPR_as (_, (e1, name)) -> "(" ^ se e1 ^ ") as " ^ string_of_id name
   | EXPR_get_n (_,(n,e)) -> "get (" ^ si n ^ ", " ^se e^")"
-  | EXPR_get_named_variable (_,(n,e)) -> "get (" ^ n ^ ", " ^se e^")"
+  | EXPR_get_named_variable (_,(n,e)) ->
+      "get (" ^ string_of_id n ^ ", " ^ se e ^ ")"
   | EXPR_map (_,f,e) -> "map (" ^ se f ^ ") (" ^ se e ^ ")"
   | EXPR_deref (_,e) -> "*(" ^ se e ^ ")"
   | EXPR_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
@@ -209,19 +218,26 @@ and string_of_expr (e:expr_t) =
 
   | EXPR_tuple (_,t) -> "(" ^ catmap ", " sme t ^ ")"
 
-  | EXPR_record (_,ts) -> "struct {" ^
-      catmap "; " (fun (s,e) -> s ^ "="^ sme e ^";") ts ^
-    "}"
+  | EXPR_record (_,ts) ->
+      "struct {" ^
+      catmap "; " (fun (s,e) -> string_of_id s ^ "=" ^ sme e ^ ";") ts ^
+      "}"
 
-  | EXPR_record_type (_,ts) -> "struct {" ^
-      catmap "; " (fun (s,t) -> s ^ ":"^ string_of_typecode t ^";") ts ^
-    "}"
+  | EXPR_record_type (_,ts) ->
+      "struct {" ^
+      catmap "; "
+        (fun (s,t) -> string_of_id s ^ ":" ^ string_of_typecode t ^ ";")
+        ts ^
+      "}"
 
-  | EXPR_variant (_,(s,e)) -> "case " ^ s ^ " of (" ^ se e ^ ")"
+  | EXPR_variant (_, (s, e)) -> "case " ^ string_of_id s ^ " of (" ^ se e ^ ")"
 
-  | EXPR_variant_type (_,ts) -> "union {" ^
-      catmap "; " (fun (s,t) -> s ^ " of "^ string_of_typecode t ^";") ts ^
-    "}"
+  | EXPR_variant_type (_,ts) ->
+      "union {" ^
+      catmap "; "
+        (fun (s,t) -> string_of_id s ^ " of " ^ string_of_typecode t ^ ";")
+        ts ^
+      "}"
 
   | EXPR_arrayof (_,t) -> "[|" ^ catmap ", " sme t ^ "|]"
   (*
@@ -329,28 +345,30 @@ and st prec tc : string =
     match tc with
     | TYP_index (sr,name,idx) -> 0, name ^ "<" ^ string_of_bid idx ^ ">"
     | TYP_void _ -> 0, "void"
-    | TYP_name (_,name,ts) -> 0, name ^
-      (
-        if List.length ts = 0 then ""
-        else "[" ^ catmap ", " string_of_typecode ts ^ "]"
-      )
+    | TYP_name (_,name,ts) ->
+        0, string_of_id name ^
+        (
+          if List.length ts = 0 then ""
+          else "[" ^ catmap ", " string_of_typecode ts ^ "]"
+        )
     | TYP_case_tag (_,v) -> 0, "case " ^ si v
     | TYP_typed_case (_,v,t) ->
       0, "(case " ^ si v ^ " of " ^ string_of_typecode t ^ ")"
 
     | TYP_lookup (_,(e,name, ts)) ->
-      0,
-      "(" ^ string_of_expr e ^ ")::" ^ name ^
-      (if length ts = 0 then "" else
-      "[" ^ catmap ", " string_of_typecode ts ^ "]"
-      )
+        0,
+        "(" ^ string_of_expr e ^ ")::" ^ string_of_id name ^
+        (
+          if length ts = 0 then "" else
+          "[" ^ catmap ", " string_of_typecode ts ^ "]"
+        )
     | TYP_callback (_,name) -> 0, "callback " ^ string_of_qualified_name name
 
     | TYP_suffix (_,(name,suf)) ->
       0,
       string_of_qualified_name name ^ " of (" ^ string_of_typecode suf ^ ")"
 
-    | TYP_patvar (sr,s) -> 0,"?"^s
+    | TYP_patvar (sr,s) -> 0, "?" ^ string_of_id s
     | TYP_patany sr -> 0,"ANY"
     | TYP_none -> 0,"<none>"
     | TYP_ellipsis-> 0,"..."
@@ -385,14 +403,18 @@ and st prec tc : string =
       begin match ls with
       | [] -> 0,"unit"
       | _ ->
-          0, "struct {" ^ catmap "" (fun (s,t)->s^":"^st 0 t ^"; ") ls ^ "}"
+          0, "struct {" ^
+          catmap "" (fun (s,t) -> string_of_id s ^ ":" ^ st 0 t ^ "; ") ls ^
+          "}"
       end
 
     | TYP_variant ls ->
       begin match ls with
       | [] -> 0,"void"
       | _ ->
-          0, "union {" ^ catmap "" (fun (s,t)->s^" of "^st 0 t ^"; ") ls ^ "}"
+          0, "union {" ^
+          catmap "" (fun (s,t) -> string_of_id s ^ " of " ^ st 0 t ^ "; ") ls ^
+          "}"
       end
 
     | TYP_sum ls ->
@@ -439,13 +461,9 @@ and st prec tc : string =
 (*    | TYP_lvalue t -> 0,"lvalue[" ^ st 1 t ^"]" *)
 
     | TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
-    | TYP_as (t,s) -> 11,st 11 t ^ " as " ^ s
+    | TYP_as (t,s) -> 11, st 11 t ^ " as " ^ string_of_id s
 
-    | TYP_proj (i,t) -> 2,"proj_"^si i^" "^ st 2 t
     | TYP_dual t -> 2,"~"^ st 2 t
-    | TYP_dom t -> 2,"dom "^ st 2 t
-    | TYP_cod t -> 2,"cod "^st 2 t
-    | TYP_case_arg (i,t) -> 2,"case_arg_"^si i^" "^st 2 t
 
     | TYP_isin (t1,t2) -> 6,st 2 t1 ^ " isin " ^ st 6 t2
 
@@ -460,7 +478,7 @@ and st prec tc : string =
          "fun(" ^ cat ", "
          (
            map
-           (fun (n,t)-> n ^ ": " ^ st 10 t)
+           (fun (n,t) -> string_of_id n ^ ": " ^ st 10 t)
            args
          ) ^
          "): " ^ st 0 ret ^ "=" ^ st 10 body
@@ -477,7 +495,7 @@ and qualified_name_of_index_with_vs sym_table index =
   match parent with
   | Some parent ->
       qualified_name_of_index_with_vs sym_table parent ^
-      sym.Flx_sym.id ^
+      string_of_id sym.Flx_sym.id ^
       string_of_ivs sym.Flx_sym.vs ^
       "::"
   | None ->
@@ -491,7 +509,7 @@ and qualified_name_of_index' sym_table index =
   | Some parent -> qualified_name_of_index_with_vs sym_table parent
   | None -> ""
   end ^
-  sym.Flx_sym.id
+  string_of_id sym.Flx_sym.id
 
 and qualified_name_of_index sym_table index =
   try qualified_name_of_index' sym_table index ^ "<" ^ string_of_bid index ^ ">"
@@ -500,7 +518,7 @@ and qualified_name_of_index sym_table index =
 and get_name_parent bsym_table index =
   try
     let parent, bsym = Flx_bsym_table.find_with_parent bsym_table index in
-    Flx_bsym.id bsym, parent
+    string_of_id (Flx_bsym.id bsym), parent
   with Not_found -> "index_" ^ string_of_bid index, None
 
 and qualified_name_of_bindex bsym_table index =
@@ -699,7 +717,7 @@ and qsbt a b = string_of_btypecode None b
 and string_of_basic_parameters (ps: simple_parameter_t list) =
   cat
     ", "
-    (map (fun (x,y)-> x ^ ": "^(string_of_typecode y)) ps)
+    (map (fun (x,y) -> string_of_id x ^ ": " ^ (string_of_typecode y)) ps)
 
 and string_of_param_kind = function
   | `PVal -> "val"
@@ -714,7 +732,7 @@ and string_of_parameters (ps:params_t) =
     (map
       (fun (k,x,y,d)->
         string_of_param_kind k^ " " ^
-        x ^ ": "^(string_of_typecode y) ^
+        string_of_id x ^ ": "^(string_of_typecode y) ^
         (match d with None -> "" | Some e -> "="^ string_of_expr e)
       )
       ps
@@ -808,31 +826,31 @@ and string_of_pattern p =
     string_of_string s1 ^ " .. " ^ string_of_string s2
   | PAT_float_range (_,x1, x2) ->
     string_of_float_pat x1 ^ " .. " ^ string_of_float_pat x2
-  | PAT_name (_,s) -> s
+  | PAT_name (_,s) -> string_of_id s
   | PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_pattern ps ^ ")"
   | PAT_any _ -> "any"
   | PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
   | PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_pattern p
   | PAT_as (_,p,n) ->
     begin match p with
-    | PAT_any _ -> n
-    | _ ->
-      "(" ^ string_of_pattern p ^ " as " ^ n ^ ")"
+    | PAT_any _ -> string_of_id n
+    | _ -> "(" ^ string_of_pattern p ^ " as " ^ (string_of_id n) ^ ")"
     end
   | PAT_when (_,p,e) -> "(" ^ string_of_pattern p ^ " when " ^ se e ^ ")"
   | PAT_record (_,ps) ->
-     "struct { " ^ catmap "; " (fun (s,p) -> s ^ "="^string_of_pattern p) ps ^"; }"
+     "struct { " ^ catmap "; " (fun (s,p) ->
+       string_of_id s ^ "=" ^ string_of_pattern p) ps ^ "; }"
 
 and string_of_letpat p =
   match p with
-  | PAT_name (_,s) -> s
-  | PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_letpat ps ^ ")"
+  | PAT_name (_,s) -> string_of_id s
+  | PAT_tuple (_,ps) -> "(" ^ catmap ", " string_of_letpat ps ^ ")"
   | PAT_any _ -> "_"
   | PAT_const_ctor (_,s) -> "|" ^ string_of_qualified_name s
   | PAT_nonconst_ctor (_,s,p)-> "|" ^ string_of_qualified_name s ^ " " ^ string_of_letpat p
-  | PAT_as (_,p,n) -> "(" ^ string_of_pattern p ^ " as " ^ n ^ ")"
+  | PAT_as (_,p,n) -> "(" ^ string_of_pattern p ^ " as " ^ string_of_id n ^ ")"
   | PAT_record (_,ps) ->
-     "struct { " ^ catmap "; " (fun (s,p) -> s ^ "="^string_of_pattern p) ps ^"; }"
+     "struct { " ^ catmap "; " (fun (s,p) -> string_of_id s ^ "="^string_of_pattern p) ps ^"; }"
 
   | _ -> failwith "unexpected pattern kind in let/in pattern"
 
@@ -893,7 +911,7 @@ and string_of_tcon {raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} =
 
 and string_of_plain_ivs ivs =
   catmap ", "
-  (fun (name,ix,tpat) -> name ^ string_of_maybe_typecode tpat)
+  (fun (name,ix,tpat) -> string_of_id name ^ string_of_maybe_typecode tpat)
   ivs
 
 and string_of_ivs (ivs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con)) =
@@ -901,7 +919,7 @@ and string_of_ivs (ivs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as c
   | [],TYP_tuple [],[] -> ""
   | _ ->
       let ivs = catmap ", "
-        (fun (name,ix,tpat) -> name ^ string_of_maybe_typecode tpat)
+        (fun (name,ix,tpat) -> string_of_id name ^ string_of_maybe_typecode tpat)
         ivs
       in
       Printf.sprintf "[%s%s]" ivs (string_of_tcon con)
@@ -911,7 +929,7 @@ and string_of_vs (vs,({raw_type_constraint=tcon; raw_typeclass_reqs=rtcr} as con
   | [],TYP_tuple [],[] -> ""
   | _ ->
       let vs = catmap ", "
-        (fun (name,tpat) -> name ^ string_of_maybe_typecode tpat)
+        (fun (name,tpat) -> string_of_id name ^ string_of_maybe_typecode tpat)
         vs
       in
       Printf.sprintf "[%s%s]" vs (string_of_tcon con)
@@ -941,9 +959,9 @@ and string_of_inst bsym_table = function
 and sl x = string_of_lvalue x
 and string_of_lvalue (x,t) =
   begin match x with
-  | `Val (sr,x) -> "val " ^ x
-  | `Var (sr,x) -> "var " ^ x
-  | `Name (sr,x) -> x
+  | `Val (sr,x) -> "val " ^ string_of_id x
+  | `Var (sr,x) -> "var " ^ string_of_id x
+  | `Name (sr,x) -> string_of_id x
   | `Skip (sr) -> "_"
   | `List ls -> "(" ^ catmap ", " sl ls ^ ")"
   | `Expr (sr,e) -> string_of_expr e
@@ -982,19 +1000,22 @@ and string_of_properties ps =
   | [] -> ""
   | ps -> catmap " " string_of_property ps ^ " "
 
-and string_of_code_spec = function
-  | CS_str_template s -> "\"" ^ s ^  "\""
-  | CS_str s -> "c\"" ^ s ^  "\""
-  | CS_virtual -> "virtual"
-  | CS_identity -> "identity"
+and string_of_code_spec =
+  let module CS = Flx_code_spec in
+  function
+  | CS.Str_template s -> "\"" ^ s ^  "\""
+  | CS.Str s -> "c\"" ^ s ^  "\""
+  | CS.Virtual -> "virtual"
+  | CS.Identity -> "identity"
 
 and string_of_long_code_spec c =
+  let module CS = Flx_code_spec in
   let triple_quote = "\"\"\"" in
   match c with
-  | CS_str_template s -> triple_quote ^ s ^ triple_quote
-  | CS_str s -> "c" ^ triple_quote ^ s ^ triple_quote
-  | CS_virtual -> "virtual"
-  | CS_identity -> "identity"
+  | CS.Str_template s -> triple_quote ^ s ^ triple_quote
+  | CS.Str s -> "c" ^ triple_quote ^ s ^ triple_quote
+  | CS.Virtual -> "virtual"
+  | CS.Identity -> "identity"
 
 and string_of_raw_req = function
   | Named_req s -> string_of_qualified_name s
@@ -1121,13 +1142,13 @@ and string_of_statement level s =
     string_of_typecode flx_type ^
     ") as \"" ^ cpp_name ^ "\";"
 
-  | STMT_label (_,s) -> s ^ ":"
-  | STMT_goto (_,s) -> spaces level ^ "goto " ^ s ^ ";"
+  | STMT_label (_,s) -> string_of_id s ^ ":"
+  | STMT_goto (_,s) -> spaces level ^ "goto " ^ string_of_id s ^ ";"
 
   | STMT_assert (_,e) -> spaces level ^ "assert " ^ se e ^ ";"
 
   | STMT_init (_,v,e) ->
-    spaces level ^ v ^ " := " ^ se e ^ ";"
+    spaces level ^ string_of_id v ^ " := " ^ se e ^ ";"
 
   | STMT_comment (_,s) -> spaces level ^ "// " ^ s
 
@@ -1141,49 +1162,51 @@ and string_of_statement level s =
     spaces level ^ "include " ^ string_of_string s ^ ";"
 
   | STMT_use (_,n,qn) ->
-    spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
+    spaces level ^ "use " ^ string_of_id n ^ " = " ^ sqn qn ^ ";"
 
   | STMT_type_alias (_,t1,vs,t2) ->
-    spaces level ^ "typedef " ^ t1 ^ string_of_vs vs ^
+    spaces level ^ "typedef " ^ string_of_id t1 ^ string_of_vs vs ^
     " = " ^
     string_of_typecode t2 ^ ";"
 
   | STMT_inherit (_,name,vs,qn) ->
-    spaces level ^ "inherit " ^ name ^ string_of_vs vs ^
+    spaces level ^ "inherit " ^ string_of_id name ^ string_of_vs vs ^
     " = " ^
     string_of_qualified_name qn ^ ";"
 
   | STMT_inherit_fun (_,name,vs,qn) ->
-    spaces level ^ "inherit fun " ^ name ^ string_of_vs vs ^
+    spaces level ^ "inherit fun " ^ string_of_id name ^ string_of_vs vs ^
     " = " ^
     string_of_qualified_name qn ^ ";"
 
   | STMT_untyped_module (_,name, vs,sts)  ->
-    spaces level ^ "module " ^ name ^ string_of_vs vs ^
+    spaces level ^ "module " ^ string_of_id name ^ string_of_vs vs ^
     " = " ^
     "\n" ^
     string_of_compound level sts
 
   | STMT_struct (_,name, vs, cs) ->
     let string_of_struct_component (name,ty) =
-      (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
+      (spaces (level+1)) ^ string_of_id name ^ ": " ^
+      string_of_typecode ty ^ ";"
     in
-    spaces level ^ "struct " ^ name ^ string_of_vs vs ^ " = " ^
+    spaces level ^ "struct " ^ string_of_id name ^ string_of_vs vs ^ " = " ^
     spaces level ^ "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}"
 
   | STMT_cstruct (_,name, vs, cs, reqs) ->
     let string_of_struct_component (name,ty) =
-      (spaces (level+1)) ^ name ^ ": " ^ string_of_typecode ty ^ ";"
+      (spaces (level+1)) ^ string_of_id name ^ ": " ^
+      string_of_typecode ty ^ ";"
     in
-    spaces level ^ "cstruct " ^ name ^ string_of_vs vs ^ " = " ^
+    spaces level ^ "cstruct " ^ string_of_id name ^ string_of_vs vs ^ " = " ^
     spaces level ^ "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}" ^ string_of_raw_reqs reqs ^";"
 
   | STMT_typeclass (_,name, vs, sts) ->
-    spaces level ^ "typeclass " ^ name ^ string_of_vs vs ^ " = " ^
+    spaces level ^ "typeclass " ^ string_of_id name ^ string_of_vs vs ^ " = " ^
     string_of_compound level sts
 
   | STMT_instance (_,vs,name, sts) ->
@@ -1193,35 +1216,35 @@ and string_of_statement level s =
 
   | STMT_union (_,name, vs,cs) ->
     let string_of_union_component (name,cval, vs,ty) =
-      (spaces (level+1)) ^ "|" ^ name ^
+      (spaces (level+1)) ^ "|" ^ string_of_id name ^
       (match cval with None -> "" | Some i -> "="^ si i) ^
       special_string_of_typecode ty
     in
-    spaces level ^ "union " ^ name ^ string_of_vs vs ^ " = " ^
+    spaces level ^ "union " ^ string_of_id name ^ string_of_vs vs ^ " = " ^
     spaces level ^ "{\n" ^
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     spaces level ^ "}"
 
   | STMT_ctypes (_,names, quals, reqs) -> spaces level ^
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
-    "ctypes " ^ catmap "," snd names ^
+    "ctypes " ^ catmap "," (fun (_,name) -> string_of_id name) names ^
     string_of_raw_reqs reqs ^
     ";"
 
   | STMT_abs_decl (_,t,vs, quals, ct, reqs) -> spaces level ^
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
-    "type " ^ t ^ string_of_vs vs ^
+    "type " ^ string_of_id t ^ string_of_vs vs ^
     " = " ^ string_of_code_spec ct ^
     string_of_raw_reqs reqs ^
     ";"
 
   | STMT_newtype (_,t,vs, nt) -> spaces level ^
-    "type " ^ t ^ string_of_vs vs ^
+    "type " ^ string_of_id t ^ string_of_vs vs ^
     " = new " ^ string_of_typecode nt ^
     ";"
 
   | STMT_callback_decl (_,name,args,result, reqs) -> spaces level ^
-    "callback " ^ name ^ ": " ^
+    "callback " ^ string_of_id name ^ ": " ^
     (string_of_typecode (TYP_tuple args)) ^ " -> " ^
     (string_of_typecode result) ^
     string_of_raw_reqs reqs ^
@@ -1229,7 +1252,7 @@ and string_of_statement level s =
 
   | STMT_fun_decl (_,name,vs,args, result, code, reqs,prec) ->
     spaces level ^
-    "fun " ^ name ^ string_of_vs vs ^
+    "fun " ^ string_of_id name ^ string_of_vs vs ^
     ": " ^
     (string_of_typecode (TYP_tuple args)) ^ " -> " ^
     (string_of_typecode result) ^
@@ -1240,7 +1263,7 @@ and string_of_statement level s =
 
   | STMT_const_decl (_,name,vs,typ, code, reqs) ->
     spaces level ^
-     "const " ^ name ^
+     "const " ^ string_of_id name ^
      ": " ^ string_of_typecode typ ^
      " = "^string_of_code_spec code^
      string_of_raw_reqs reqs ^
@@ -1248,7 +1271,7 @@ and string_of_statement level s =
 
   | STMT_insert (_,n,vs,s, ikind, reqs) ->
     spaces level ^ string_of_ikind ikind ^
-    n^string_of_vs vs^
+    string_of_id n ^ string_of_vs vs ^
     "\n" ^ string_of_code_spec s ^ " " ^
      string_of_raw_reqs reqs ^
     ";\n"
@@ -1261,21 +1284,21 @@ and string_of_statement level s =
 
   | STMT_reduce (_,name, vs, ps, rsrc, rdst) ->
     spaces level ^
-    "reduce " ^ name ^ string_of_vs vs ^
+    "reduce " ^ string_of_id name ^ string_of_vs vs ^
     "("^string_of_basic_parameters ps^"): "^
     string_of_expr rsrc ^ " => " ^ string_of_expr rdst ^
     ";\n"
 
   | STMT_axiom (_,name, vs, ps, a) ->
     spaces level ^
-    "axiom " ^ name ^ string_of_vs vs ^
+    "axiom " ^ string_of_id name ^ string_of_vs vs ^
     "("^string_of_parameters ps^"): "^
     string_of_axiom_method a ^
     ";\n"
 
   | STMT_lemma (_,name, vs, ps, a) ->
     spaces level ^
-    "lemma " ^ name ^ string_of_vs vs ^
+    "lemma " ^ string_of_id name ^ string_of_vs vs ^
     "("^string_of_parameters ps^"): "^
     string_of_axiom_method a ^
     ";\n"
@@ -1283,7 +1306,7 @@ and string_of_statement level s =
   | STMT_function (_,name, vs, ps, (res,post), props, ss) ->
     spaces level ^
     string_of_properties props ^
-    "fun " ^ name ^ string_of_vs vs ^
+    "fun " ^ string_of_id name ^ string_of_vs vs ^
     "("^string_of_parameters ps^"): "^string_of_typecode res^
     (match post with
     | None -> ""
@@ -1306,7 +1329,7 @@ and string_of_statement level s =
     | `Generator -> "generator "
     )
     ^
-    name ^ string_of_vs vs ^
+    string_of_id name ^ string_of_vs vs ^
     catmap " "
     (fun ps ->
       "("^string_of_parameters ps^")"
@@ -1325,13 +1348,13 @@ and string_of_statement level s =
 
   | STMT_macro_val (_,names, e) ->
     spaces level ^
-    "macro val " ^ String.concat ", " names ^ " = " ^
+    "macro val " ^ String.concat ", " (List.map string_of_id names) ^ " = " ^
     se e ^
     ";"
 
   | STMT_val_decl (_,name, vs,ty, value) ->
     spaces level ^
-    "val " ^ name ^
+    "val " ^ string_of_id name ^
     (
       match ty with
       | Some t -> ": " ^ string_of_typecode t
@@ -1347,7 +1370,7 @@ and string_of_statement level s =
 
   | STMT_ref_decl (_,name, vs,ty, value) ->
     spaces level ^
-    "ref " ^ name ^
+    "ref " ^ string_of_id name ^
     (
       match ty with
       | Some t -> ": " ^ string_of_typecode t
@@ -1364,7 +1387,7 @@ and string_of_statement level s =
 
   | STMT_lazy_decl (_,name, vs,ty, value) ->
     spaces level ^
-    "fun " ^ name ^
+    "fun " ^ string_of_id name ^
     (
       match ty with
       | Some t -> ": " ^ string_of_typecode t
@@ -1380,7 +1403,7 @@ and string_of_statement level s =
 
   | STMT_var_decl (_,name, vs,ty, value) ->
     spaces level ^
-    "var " ^ name ^
+    "var " ^ string_of_id name ^
     (
       match ty with
       | Some t -> ": " ^ string_of_typecode t
@@ -1394,10 +1417,11 @@ and string_of_statement level s =
     )
     ^ ";"
 
-  | STMT_macro_forall (_,v,e,sts) ->
+  | STMT_macro_forall (_,vs,e,sts) ->
     let se e = string_of_expr e in
     spaces level
-    ^ "forall " ^ String.concat ", " v ^ " in " ^ se e ^ " do\n" ^
+    ^ "forall " ^ String.concat ", " (List.map string_of_id vs) ^
+    " in " ^ se e ^ " do\n" ^
     catmap "\n" (string_of_statement (level +2)) sts ^
     spaces level ^ "done;"
 
@@ -1407,7 +1431,7 @@ and string_of_statement level s =
 
   | STMT_assign (_,name,l,r) ->
     spaces level
-    ^ "call " ^ name ^ "(" ^ sl l ^ "," ^se r^");"
+    ^ "call " ^ string_of_id name ^ "(" ^ sl l ^ "," ^ se r ^ ");"
 
   | STMT_cassign (_,l,r) ->
     spaces level ^
@@ -1419,13 +1443,13 @@ and string_of_statement level s =
 
   | STMT_loop (_,pr, args) ->
     spaces level
-    ^ "call " ^ pr ^ " " ^ se args ^ ";"
+    ^ "call " ^ string_of_id pr ^ " " ^ se args ^ ";"
 
   | STMT_nop (_,s) -> spaces level ^ "{/*"^s^"*/;}"
 
   | STMT_ifgoto (_,e,lab) ->
     spaces level ^
-    "if("^string_of_expr e^")goto " ^ lab ^ ";"
+    "if("^string_of_expr e^")goto " ^ string_of_id lab ^ ";"
 
   | STMT_ifreturn (_,e) ->
     spaces level ^
@@ -1452,10 +1476,11 @@ and string_of_statement level s =
     spaces level ^ "halt "^string_of_string s^";"
 
   | STMT_trace (_,v,s) ->
-    spaces level ^ "trace "^v^ ", msg="^string_of_string s^";"
+    spaces level ^ "trace " ^ string_of_id v ^ ", msg=" ^
+    string_of_string s ^ ";"
 
   | STMT_svc (_,name) ->
-    spaces level ^ "read " ^ name ^ ";"
+    spaces level ^ "read " ^ string_of_id name ^ ";"
 
   | STMT_scheme_string (_,s) ->
     spaces level ^ "Scheme string " ^ s ^ ";\n"
@@ -1494,7 +1519,7 @@ and string_of_iface level s =
     spc ^ "export type (" ^ string_of_typecode flx_type ^
     ") as \"" ^ cpp_name ^ "\";"
 
-and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
+and string_of_symdef entry name vs =
   let se e = string_of_expr e in
   let st t = string_of_typecode t in
   match entry with
@@ -1504,80 +1529,82 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
 
   | SYMDEF_const_ctor (uidx,ut,idx,vs') ->
      st ut ^ "  const_ctor: " ^
-     name ^ string_of_ivs vs ^
+     string_of_id name ^ string_of_ivs vs ^
      ";"
 
   | SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) ->
      st ut ^ "  nonconst_ctor: " ^
-     name ^ string_of_ivs vs ^
+     string_of_id name ^ string_of_ivs vs ^
      " of " ^ st argt ^
      ";"
 
   | SYMDEF_type_alias t ->
-    "typedef " ^ name ^ string_of_ivs vs ^" = " ^ st t ^ ";"
+    "typedef " ^ string_of_id name ^ string_of_ivs vs ^" = " ^ st t ^ ";"
 
   | SYMDEF_inherit qn ->
-    "inherit " ^ name ^ string_of_ivs vs ^" = " ^ string_of_qualified_name qn ^ ";"
+    "inherit " ^ string_of_id name ^ string_of_ivs vs ^" = " ^
+    string_of_qualified_name qn ^ ";"
 
   | SYMDEF_inherit_fun qn ->
-    "inherit fun " ^ name ^ string_of_ivs vs ^" = " ^ string_of_qualified_name qn ^ ";"
+    "inherit fun " ^ string_of_id name ^ string_of_ivs vs ^" = " ^
+    string_of_qualified_name qn ^ ";"
 
   | SYMDEF_abs (quals,code, reqs) ->
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
-    "type " ^ name ^ string_of_ivs vs ^
+    "type " ^ string_of_id name ^ string_of_ivs vs ^
     " = " ^ string_of_code_spec code ^
     string_of_named_reqs reqs ^
     ";"
 
   | SYMDEF_newtype (nt) ->
-    "type " ^ name ^ string_of_ivs vs ^
+    "type " ^ string_of_id name ^ string_of_ivs vs ^
     " = new " ^ st nt ^
     ";"
 
   | SYMDEF_var (t) ->
-    "var " ^ name ^ string_of_ivs vs ^":"^ st t ^ ";"
+    "var " ^ string_of_id name ^ string_of_ivs vs ^":"^ st t ^ ";"
 
   | SYMDEF_val (t) ->
-    "val " ^ name ^ string_of_ivs vs ^":"^ st t ^ ";"
+    "val " ^ string_of_id name ^ string_of_ivs vs ^":"^ st t ^ ";"
 
   | SYMDEF_ref (t) ->
-    "ref " ^ name ^ string_of_ivs vs ^":"^ st t ^ ";"
+    "ref " ^ string_of_id name ^ string_of_ivs vs ^":"^ st t ^ ";"
 
   | SYMDEF_lazy (t,e) ->
-    "fun " ^ name ^ string_of_ivs vs ^
+    "fun " ^ string_of_id name ^ string_of_ivs vs ^
     ": "^ st t ^
     "= " ^ se e ^
     ";"
 
   | SYMDEF_parameter (k,t) ->
     "parameter " ^ string_of_param_kind k ^ " " ^
-    name ^ string_of_ivs vs ^":"^ st t ^ ";"
+    string_of_id name ^ string_of_ivs vs ^":"^ st t ^ ";"
 
   | SYMDEF_typevar (t) ->
-    "typevar " ^ name ^ string_of_ivs vs ^":"^ st t ^ ";"
+    "typevar " ^ string_of_id name ^ string_of_ivs vs ^":"^ st t ^ ";"
 
   | SYMDEF_const (props,t,ct, reqs) ->
     string_of_properties props ^
-    "const " ^ name ^ string_of_ivs vs ^":"^
+    "const " ^ string_of_id name ^ string_of_ivs vs ^":"^
     st t ^ " = " ^string_of_code_spec ct^
     string_of_named_reqs reqs ^
     ";"
 
   | SYMDEF_union (cts) ->
-    "union " ^ name ^ string_of_ivs vs ^ ";"
+    "union " ^ string_of_id name ^ string_of_ivs vs ^ ";"
 
   | SYMDEF_struct (cts) ->
-    "struct " ^ name ^ string_of_ivs vs ^ ";"
+    "struct " ^ string_of_id name ^ string_of_ivs vs ^ ";"
 
   | SYMDEF_cstruct (cts, reqs) ->
-    "cstruct " ^ name ^ string_of_ivs vs ^ string_of_named_reqs reqs ^ ";"
+    "cstruct " ^ string_of_id name ^ string_of_ivs vs ^ string_of_named_reqs reqs ^ ";"
 
   | SYMDEF_typeclass ->
-    "typeclass " ^ name ^ string_of_ivs vs ^ ";"
+    "typeclass " ^ string_of_id name ^ string_of_ivs vs ^ ";"
 
   | SYMDEF_fun (props, pts,res,cts, reqs,prec) ->
     string_of_properties props ^
-    "fun " ^ name ^ string_of_ivs vs ^
+    "fun " ^ string_of_id name ^ string_of_ivs vs ^
     ": " ^ st
     (
       TYP_function
@@ -1597,7 +1624,7 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
 
   | SYMDEF_callback (props, pts,res,reqs) ->
     string_of_properties props ^
-    "callback fun " ^ name ^ string_of_ivs vs ^
+    "callback fun " ^ string_of_id name ^ string_of_ivs vs ^
     ": " ^ st
     (
       TYP_cfunction
@@ -1620,24 +1647,24 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
     | `Body -> "body "
     | `Package -> "package "
     ) ^
-    name ^ string_of_ivs vs ^
+    string_of_id name ^ string_of_ivs vs ^
     " "^ string_of_code_spec s ^
      string_of_named_reqs reqs ^
     ";\n"
 
   | SYMDEF_reduce (ps,e1,e2) ->
-    "reduce " ^ name ^ string_of_ivs vs ^ ";"
+    "reduce " ^ string_of_id name ^ string_of_ivs vs ^ ";"
 
   | SYMDEF_axiom (ps,e1) ->
-    "axiom " ^ name ^ string_of_ivs vs ^ ";"
+    "axiom " ^ string_of_id name ^ string_of_ivs vs ^ ";"
 
   | SYMDEF_lemma (ps,e1) ->
-    "lemma " ^ name ^ string_of_ivs vs ^ ";"
+    "lemma " ^ string_of_id name ^ string_of_ivs vs ^ ";"
 
   | SYMDEF_function (ps,res,props,es) ->
     let ps,traint = ps in
     string_of_properties props ^
-    "fun " ^ name ^ string_of_ivs vs ^
+    "fun " ^ string_of_id name ^ string_of_ivs vs ^
     ": " ^ st
     (
       TYP_function
@@ -1654,10 +1681,10 @@ and string_of_symdef (entry:symbol_definition_t) name (vs:ivs_list_t) =
     ";"
 
   | SYMDEF_match_check (pat,(mvname,i))->
-    "match_check " ^ name ^ " for " ^ string_of_pattern pat ^ ";"
+    "match_check " ^ string_of_id name ^ " for " ^ string_of_pattern pat ^ ";"
 
   | SYMDEF_module exes ->
-    "module " ^ name ^ "{"^catmap ";" (string_of_sexe 2) exes ^"};"
+    "module " ^ string_of_id name ^ "{"^catmap ";" (string_of_sexe 2) exes ^"};"
 
   | SYMDEF_root exes ->
     "root {"^catmap ";" (string_of_sexe 2) exes ^"};"
@@ -1693,11 +1720,11 @@ and string_of_exe level s =
 
   | EXE_loop (p,a) -> spc ^
     "loop " ^
-    p ^ " " ^
+    string_of_id p ^ " " ^
     se a ^ ";"
 
   | EXE_svc v -> spc ^
-    "_svc " ^ v
+    "_svc " ^ string_of_id v
 
   | EXE_fun_return x -> spc ^
     "return " ^ se x ^ ";"
@@ -1712,7 +1739,7 @@ and string_of_exe level s =
     "halt "^string_of_string s^";"
 
   | EXE_trace (v,s) -> spc ^
-    "trace "^v^"="^string_of_string s^";"
+    "trace " ^ string_of_id v ^ "=" ^ string_of_string s ^ ";"
 
 
   | EXE_nop s -> spc ^
@@ -1725,10 +1752,10 @@ and string_of_exe level s =
     "noreturn_code " ^ string_of_code_spec s
 
   | EXE_init (l,r) -> spc ^
-    l ^ " := " ^ se r ^ ";"
+    string_of_id l ^ " := " ^ se r ^ ";"
 
   | EXE_iinit ((l,i),r) -> spc ^
-    l ^ "<" ^ string_of_bid i ^ "> := " ^ se r ^ ";"
+    string_of_id l ^ "<" ^ string_of_bid i ^ "> := " ^ se r ^ ";"
 
   | EXE_assign (l,r) -> spc ^
     se l ^ " = " ^ se r ^ ";"
@@ -1941,19 +1968,19 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   let seq = match seq with Some i -> "<" ^ string_of_bid i ^ ">" | None -> "" in
   match s with
   | DCL_type_alias (t2) ->
-    sl ^ "typedef " ^ name^seq ^ string_of_vs vs ^
+    sl ^ "typedef " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     " = " ^ st t2 ^ ";"
 
   | DCL_inherit qn ->
-    sl ^ "inherit " ^ name^seq ^ string_of_vs vs ^
+    sl ^ "inherit " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     " = " ^ string_of_qualified_name qn ^ ";"
 
   | DCL_inherit_fun qn ->
-    sl ^ "inherit fun " ^ name^seq ^ string_of_vs vs ^
+    sl ^ "inherit fun " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     " = " ^ string_of_qualified_name qn ^ ";"
 
   | DCL_module (asms) ->
-    sl ^ "module " ^ name^seq ^ string_of_vs vs ^ " = " ^
+    sl ^ "module " ^ string_of_id name ^ seq ^ string_of_vs vs ^ " = " ^
     "\n" ^
     string_of_asm_compound level asms
 
@@ -1970,46 +1997,46 @@ and string_of_dcl level name seq vs (s:dcl_t) =
 
   | DCL_struct (cs) ->
     let string_of_struct_component (name,ty) =
-      (spaces (level+1)) ^ name^ ": " ^ st ty ^ ";"
+      (spaces (level+1)) ^ string_of_id name ^ ": " ^ st ty ^ ";"
     in
-    sl ^ "struct " ^ name^seq ^ string_of_vs vs ^ " = " ^
+    sl ^ "struct " ^ string_of_id name ^ seq ^ string_of_vs vs ^ " = " ^
     sl ^ "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     sl ^ "}"
 
   | DCL_cstruct (cs, reqs) ->
     let string_of_struct_component (name,ty) =
-      (spaces (level+1)) ^ name^ ": " ^ st ty ^ ";"
+      (spaces (level+1)) ^ string_of_id name ^ ": " ^ st ty ^ ";"
     in
-    sl ^ "cstruct " ^ name^seq ^ string_of_vs vs ^ " = " ^
+    sl ^ "cstruct " ^ string_of_id name ^ seq ^ string_of_vs vs ^ " = " ^
     sl ^ "{\n" ^
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     sl ^ "} " ^ string_of_named_reqs reqs ^ ";"
 
   | DCL_typeclass (asms) ->
-    sl ^ "type class " ^ name^seq ^ string_of_vs vs ^ " =\n" ^
+    sl ^ "type class " ^ string_of_id name ^ seq ^ string_of_vs vs ^ " =\n" ^
     string_of_asm_compound level asms
 
   | DCL_union (cs) ->
     let string_of_union_component (name,v,vs,ty) =
       (spaces (level+1)) ^
-      "|" ^name^
+      "|" ^ string_of_id name ^
       (match v with | None -> "" | Some i -> "="^si i) ^
       special_string_of_typecode ty
     in
-    sl ^ "union " ^ name^seq ^ string_of_vs vs ^
+    sl ^ "union " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     " = " ^
     sl ^ "{\n" ^
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     sl ^ "}"
 
   | DCL_newtype (nt)-> sl ^
-    "type " ^ name^seq ^ string_of_vs vs ^
+    "type " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     " = new " ^ st nt ^ ";"
 
   | DCL_abs (quals, code, reqs) -> sl ^
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
-    "type " ^ name^seq ^ string_of_vs vs ^
+    "type " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     " = " ^ string_of_code_spec code ^
     string_of_named_reqs reqs ^
     ";"
@@ -2019,7 +2046,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     let t:typecode_t = TYP_function (argtype,result) in
     sl ^
     string_of_properties props ^
-    "fun " ^ name^seq ^ string_of_vs vs ^
+    "fun " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     ": " ^ st t ^
     " = " ^ string_of_code_spec code ^
     (if prec = "" then "" else ":"^prec^" ")^
@@ -2031,7 +2058,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     let t:typecode_t = TYP_cfunction (argtype,result) in
     sl ^
     string_of_properties props ^
-    "callback fun " ^ name^seq ^ string_of_vs vs ^
+    "callback fun " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     ": " ^ st t ^
     string_of_named_reqs reqs ^
     ";"
@@ -2043,14 +2070,14 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     | `Body -> "body "
     | `Package -> "package "
     ) ^
-    name^seq ^  string_of_vs vs ^
+    string_of_id name ^ seq ^  string_of_vs vs ^
     " = "^ string_of_code_spec s ^
     string_of_named_reqs reqs ^ ";"
 
   | DCL_const (props,typ, code, reqs) ->
     sl ^
     string_of_properties props ^
-    "const " ^ name^seq ^string_of_vs vs ^
+    "const " ^ string_of_id name ^ seq ^string_of_vs vs ^
     ": " ^ st typ ^
     " = "^string_of_code_spec code^
     string_of_named_reqs reqs ^
@@ -2058,45 +2085,45 @@ and string_of_dcl level name seq vs (s:dcl_t) =
 
   | DCL_reduce (ps, e1,e2) ->
     sl ^
-    "reduce " ^ name^seq ^ string_of_vs vs ^
+    "reduce " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     "("^ string_of_basic_parameters ps ^"): " ^
     string_of_expr e1 ^ " => " ^ string_of_expr e2 ^ ";"
 
   | DCL_axiom (ps, e1) ->
     sl ^
-    "axiom " ^ name^seq ^ string_of_vs vs ^
+    "axiom " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     "("^ string_of_parameters ps ^"): " ^
     string_of_axiom_method e1 ^ ";"
 
   | DCL_lemma (ps, e1) ->
     sl ^
-    "lemma " ^ name^seq ^ string_of_vs vs ^
+    "lemma " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     "("^ string_of_parameters ps ^"): " ^
     string_of_axiom_method e1 ^ ";"
 
   | DCL_function (ps, res, props, ss) ->
     sl ^
     string_of_properties props ^
-    "fun " ^ name^seq ^ string_of_vs vs ^
+    "fun " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     "("^ (string_of_parameters ps)^"): "^(st res)^"\n" ^
     string_of_asm_compound level ss
 
 
   | DCL_match_check (pat,(s,i)) ->
     sl ^
-    "function " ^ name^seq ^ "() { " ^
+    "function " ^ string_of_id name ^ seq ^ "() { " ^
     s ^ "<" ^ string_of_bid i ^ "> matches " ^ string_of_pattern pat ^
     " }"
 
   | DCL_match_handler (pat,(varname, i), sts) ->
     sl ^
-    "match_handler " ^ name ^ seq ^
+    "match_handler " ^ string_of_id name ^ seq ^
     "(" ^ string_of_pattern pat ^ ")" ^
     string_of_asm_compound level sts
 
   | DCL_value (ty, kind) ->
     let make_suffix () =
-      name ^ seq ^ string_of_vs vs ^ ": " ^ st ty ^ ";"
+      string_of_id name ^ seq ^ string_of_vs vs ^ ": " ^ st ty ^ ";"
     in
     sl ^
     begin match kind with
@@ -2104,7 +2131,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     | `Var -> "var " ^ make_suffix ()
     | `Ref -> "ref " ^ make_suffix ()
     | `Lazy e ->
-        "fun " ^ name ^ seq ^ string_of_vs vs ^ ": " ^ st ty ^ " = " ^ se e ^
+        "fun " ^ string_of_id name ^ seq ^ string_of_vs vs ^ ": " ^ st ty ^ " = " ^ se e ^
         ";"
     end
 
@@ -2131,7 +2158,7 @@ and string_of_dir level s =
     spaces level ^ "open " ^ string_of_ivs vs ^ sqn qn ^ ";"
 
   | DIR_use (n,qn) ->
-    spaces level ^ "use " ^ n ^ " = " ^ sqn qn ^ ";"
+    spaces level ^ "use " ^ string_of_id n ^ " = " ^ sqn qn ^ ";"
 
   | DIR_inject_module (qn) ->
     spaces level ^ "inherit " ^ sqn qn ^ ";"
@@ -2254,7 +2281,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
 
   | BBDCL_union (vs,cs) ->
     let string_of_union_component (name,v,ty) =
-      "  " ^ "|" ^name ^
+      "  " ^ "| " ^ string_of_id name ^
      "="^si v^
       special_string_of_btypecode bsym_table ty
     in
@@ -2265,7 +2292,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
 
   | BBDCL_struct (vs,cs) ->
     let string_of_struct_component (name,ty) =
-      "  " ^ name ^ ": " ^ sobt ty ^ ";"
+      "  " ^ string_of_id name ^ ": " ^ sobt ty ^ ";"
     in
     "struct " ^ name ^ string_of_bvs vs ^ " = " ^
     "{\n" ^
@@ -2274,7 +2301,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
 
   | BBDCL_cstruct (vs,cs, reqs) ->
     let string_of_struct_component (name,ty) =
-      "  " ^ name ^ ": " ^ sobt ty ^ ";"
+      "  " ^ string_of_id name ^ ": " ^ sobt ty ^ ";"
     in
     "cstruct " ^ name ^ string_of_bvs vs ^ " = " ^
     "{\n" ^
@@ -2382,7 +2409,7 @@ let print_env_short e =
 
 let print_function_body bsym_table id i (bvs:bvs_t) ps exes =
   print_endline "";
-  print_endline ("BODY OF " ^ id ^ "<" ^ string_of_bid i ^ "> [" ^
+  print_endline ("BODY OF " ^ string_of_id id ^ "<" ^ string_of_bid i ^ "> [" ^
   catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs ^
   "] (" ^ string_of_bparameters bsym_table ps ^ ")"
   );
@@ -2438,7 +2465,7 @@ let print_symbols bsym_table =
         in
         Printf.printf "%s %s <%s> [%s] type %s"
           kind
-          (Flx_bsym.id bsym)
+          (string_of_id (Flx_bsym.id bsym))
           (string_of_bid i)
           (catmap "," (fun (s,i) -> s ^ "<" ^ string_of_bid i ^ ">") bvs)
           (sbt bsym_table t)
@@ -2458,7 +2485,7 @@ let print_sym sym_table bid =
   let parent, sym = Flx_sym_table.find_with_parent sym_table bid in
 
   print_endline ("index: " ^ string_of_bid bid);
-  print_endline ("id: " ^ sym.Flx_sym.id);
+  print_endline ("id: " ^ string_of_id sym.Flx_sym.id);
   print_endline ("parent: " ^ 
     match parent with
     | Some parent -> string_of_bid parent
@@ -2496,7 +2523,7 @@ let print_bsym bsym_table bid =
   let parent, bsym = Flx_bsym_table.find_with_parent bsym_table bid in
 
   print_endline ("index: " ^ string_of_bid bid);
-  print_endline ("id: " ^ Flx_bsym.id bsym);
+  print_endline ("id: " ^ string_of_id (Flx_bsym.id bsym));
   print_endline ("parent: " ^ 
     match parent with
     | Some parent -> string_of_bid parent

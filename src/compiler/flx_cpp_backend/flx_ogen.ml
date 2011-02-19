@@ -17,7 +17,9 @@ open Flx_print
 open Flx_exceptions
 open Flx_maps
 
-exception Scanner of Flx_ast.code_spec_t 
+module CS = Flx_code_spec
+
+exception Scanner of CS.t
 
 let find_thread_vars_with_type bsym_table =
   let vars = ref [] in
@@ -594,8 +596,8 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
         let scanner = 
           match scanner with 
           | None -> "0" 
-          | Some (Flx_ast.CS_str s) -> s 
-          | Some (Flx_ast.CS_str_template s) -> s 
+          | Some (CS.Str s) -> s
+          | Some (CS.Str_template s) -> s
           | Some _ -> assert false
         in
 
@@ -608,8 +610,8 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
         let finaliser = 
           match finaliser with 
           | None -> "0" 
-          | Some (Flx_ast.CS_str s) -> s 
-          | Some (Flx_ast.CS_str_template s) -> s 
+          | Some (CS.Str s) -> s
+          | Some (CS.Str_template s) -> s
           | Some _ -> assert false
         in
         let finaliser, gen_dflt_finaliser =

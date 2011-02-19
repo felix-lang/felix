@@ -196,8 +196,8 @@ syntax expressions {
     "`(ast_lookup (,_1 ,(first _3) ,(second _3)))";
   squalified_name := ssimple_name_parts =>#
     "`(ast_name ,_sr ,(first _1) ,(second _1))";
-    ssimple_name_parts := sname =># "`(,_1 ())";
-    ssimple_name_parts := sname lsqb sexpr rsqb =># "`(,_1 ,(mkl _3))";
+  ssimple_name_parts := sname =># "`(,_1 ())";
+  ssimple_name_parts := sname lsqb sexpr rsqb =># "`(,_1 ,(mkl _3))";
 
   // suffixed name (to name functions)
   ssuffixed_name := squalified_name "of" x[sfactor_pri] =>#

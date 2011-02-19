@@ -3,11 +3,13 @@ open Flx_ast
 open Flx_types
 open Flx_format
 
+module CS = Flx_code_spec
+
 type btype_qual_t = [
   | Flx_ast.base_type_qual_t
   | `Bound_needs_shape of Flx_btype.t
-  | `Scanner of code_spec_t
-  | `Finaliser of code_spec_t
+  | `Scanner of CS.t
+  | `Finaliser of CS.t
 ]
 
 type breqs_t = (Flx_types.bid_t * Flx_btype.t list) list
@@ -17,7 +19,7 @@ type value_kind_t = [`Val | `Var | `Ref | `Tmp]
 
 (** Used to represent all the different external function types. *)
 type external_fun_kind_t = [
-  | `Code of code_spec_t
+  | `Code of CS.t
   | `Callback of Flx_btype.t list * int
 ]
 
@@ -32,19 +34,19 @@ type t =
   (* binding structures [prolog] *)
   | BBDCL_newtype of    bvs_t * Flx_btype.t
   | BBDCL_external_type of
-                        bvs_t * btype_qual_t list * code_spec_t * breqs_t
+                        bvs_t * btype_qual_t list * CS.t * breqs_t
   | BBDCL_external_const of
-                        property_t list * bvs_t * Flx_btype.t * code_spec_t *
+                        property_t list * bvs_t * Flx_btype.t * CS.t *
                         breqs_t
   | BBDCL_external_fun of
                         property_t list * bvs_t * Flx_btype.t list *
                         Flx_btype.t * breqs_t * prec_t * external_fun_kind_t
   | BBDCL_external_code of
-                        bvs_t * code_spec_t * ikind_t * breqs_t
+                        bvs_t * CS.t * ikind_t * breqs_t
 
-  | BBDCL_union of      bvs_t * (id_t * int * Flx_btype.t) list
-  | BBDCL_struct of     bvs_t * (id_t * Flx_btype.t) list
-  | BBDCL_cstruct of    bvs_t * (id_t * Flx_btype.t) list * breqs_t
+  | BBDCL_union of      bvs_t * (Flx_id.t * int * Flx_btype.t) list
+  | BBDCL_struct of     bvs_t * (Flx_id.t * Flx_btype.t) list
+  | BBDCL_cstruct of    bvs_t * (Flx_id.t * Flx_btype.t) list * breqs_t
   | BBDCL_typeclass of  property_t list * bvs_t
   | BBDCL_instance of   property_t list *
                         bvs_t *
@@ -391,9 +393,9 @@ let print_btype_qual f = function
       print_variant1 f "`Bound_needs_shape"
         Flx_btype.print t
   | `Scanner cs ->
-      print_variant1 f "`Scanner " print_code_spec cs 
+      print_variant1 f "`Scanner " CS.print cs
   | `Finaliser cs ->
-      print_variant1 f "`Finaliser " print_code_spec cs 
+      print_variant1 f "`Finaliser " CS.print cs
 
 let print_breqs f breqs =
   Flx_list.print begin fun f (bid, ts) ->
@@ -428,19 +430,19 @@ let rec print f = function
       print_variant4 f "BBDCL_external_type"
         print_bvs bvs
         (Flx_list.print print_btype_qual) quals
-        print_code_spec code
+        CS.print code
         print_breqs reqs
   | BBDCL_external_const (props,bvs,t,code,reqs) ->
       print_variant5 f "BBDCL_external_const"
         print_properties props
         print_bvs bvs
         Flx_btype.print t
-        print_code_spec code
+        CS.print code
         print_breqs reqs
   | BBDCL_external_fun (props,bvs,ps,rt,reqs,prec,kind) ->
       let print_kind f = function
         | `Code code ->
-            print_variant1 f "`Code" print_code_spec code
+            print_variant1 f "`Code" CS.print code
         | `Callback (ps_c,k) ->
             print_variant2 f "`Callback"
               (Flx_list.print Flx_btype.print) ps_c
@@ -463,7 +465,7 @@ let rec print f = function
       in
       print_variant4 f "BBDCL_external_code"
         print_bvs bvs
-        print_code_spec code
+        CS.print code
         pp_print_string ikind
         print_breqs reqs
   | BBDCL_union (bvs,cs) ->
@@ -471,7 +473,7 @@ let rec print f = function
         print_bvs bvs
         (Flx_list.print begin fun f (n,i,t) ->
           print_tuple3 f
-            print_string n
+            Flx_id.print n
             pp_print_int i
             Flx_btype.print t
         end) cs
@@ -480,7 +482,7 @@ let rec print f = function
         print_bvs bvs
         (Flx_list.print begin fun f (n,t) ->
           print_tuple2 f
-            print_string n
+            Flx_id.print n
             Flx_btype.print t
         end) cs
   | BBDCL_cstruct (bvs,cs, breqs) ->
@@ -488,7 +490,7 @@ let rec print f = function
         print_bvs bvs
         (Flx_list.print begin fun f (n,t) ->
           print_tuple2 f
-            print_string n
+            Flx_id.print n
             Flx_btype.print t
         end) cs
         print_breqs breqs

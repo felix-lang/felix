@@ -9,6 +9,8 @@ open Flx_util
 open Flx_exceptions
 open Flx_backend_config
 
+module CS = Flx_code_spec
+
 (* these words are either keywords or peculiar to the
    compiler code generator, so we have to avoid a clash.
    This list has been constructed by trial and error ..
@@ -204,20 +206,20 @@ let rec cpp_type_classname syms bsym_table t =
       match Flx_bsym.bbdcl bsym with
       | BBDCL_cstruct _ -> fname
       (*
-      | BBDCL_external_type (_,_,CS_str "char",_) -> "char" (* hack .. *)
-      | BBDCL_external_type (_,_,CS_str "int",_) -> "int" (* hack .. *)
-      | BBDCL_external_type (_,_,CS_str "short",_) -> "short" (* hack .. *)
-      | BBDCL_external_type (_,_,CS_str "long",_) -> "long" (* hack .. *)
+      | BBDCL_external_type (_,_,CS.Str "char",_) -> "char" (* hack .. *)
+      | BBDCL_external_type (_,_,CS.Str "int",_) -> "int" (* hack .. *)
+      | BBDCL_external_type (_,_,CS.Str "short",_) -> "short" (* hack .. *)
+      | BBDCL_external_type (_,_,CS.Str "long",_) -> "long" (* hack .. *)
 
-      | BBDCL_external_type (_,_,CS_str "float",_) -> "float" (* hack .. *)
-      | BBDCL_external_type (_,_,CS_str "double",_) -> "double" (* hack .. *)
+      | BBDCL_external_type (_,_,CS.Str "float",_) -> "float" (* hack .. *)
+      | BBDCL_external_type (_,_,CS.Str "double",_) -> "double" (* hack .. *)
 
-      | BBDCL_external_type (_,_,CS_str_template "char",_) -> "char" (* hack .. *)
-      | BBDCL_external_type (_,_,CS_str_template "int",_) -> "int" (* hack .. *)
-      | BBDCL_external_type (_,_,CS_str_template "short",_) -> "short" (* hack .. *)
-      | BBDCL_external_type (_,_,CS_str_template "long",_) -> "long" (* hack .. *)
-      | BBDCL_external_type (_,_,CS_str_template "float",_) -> "float" (* hack .. *)
-      | BBDCL_external_type (_,_,CS_str_template "double",_) -> "double" (* hack .. *)
+      | BBDCL_external_type (_,_,CS.Str_template "char",_) -> "char" (* hack .. *)
+      | BBDCL_external_type (_,_,CS.Str_template "int",_) -> "int" (* hack .. *)
+      | BBDCL_external_type (_,_,CS.Str_template "short",_) -> "short" (* hack .. *)
+      | BBDCL_external_type (_,_,CS.Str_template "long",_) -> "long" (* hack .. *)
+      | BBDCL_external_type (_,_,CS.Str_template "float",_) -> "float" (* hack .. *)
+      | BBDCL_external_type (_,_,CS.Str_template "double",_) -> "double" (* hack .. *)
       *)
 
       (* this is more general than the above: if the felix name and the C name
@@ -254,8 +256,8 @@ let rec cpp_type_classname syms bsym_table t =
        * here in some cases, instead of the name the generator makes, but
        * we have no way to propagate a flag saying "use this name".
        *)
-      | BBDCL_external_type (_,_,CS_str cname,_) 
-      | BBDCL_external_type (_,_,CS_str_template cname,_) 
+      | BBDCL_external_type (_,_,CS.Str cname,_)
+      | BBDCL_external_type (_,_,CS.Str_template cname,_)
          when cname = fname -> cname
 
       | bbdcl ->

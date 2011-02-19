@@ -46,12 +46,8 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_setintersection ts -> TYP_setintersection (List.map f ts)
   | TYP_setunion ts -> TYP_setunion (List.map f ts)
 
-  (* destructors *)
-  | TYP_dom t -> TYP_dom (f t)
+  (* dualizer *)
   | TYP_dual t -> TYP_dual (f t)
-  | TYP_cod t -> TYP_cod (f t)
-  | TYP_proj (i,t) -> TYP_proj (i, f t)
-  | TYP_case_arg (i,t) -> TYP_case_arg (i, f t)
 
   (*
   | TYP_type_match (t,ps) ->
