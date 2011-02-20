@@ -65,9 +65,10 @@ class Builder(fbuild.db.PersistentObject):
         syntaxes = list(syntaxes)
         if include_std:
             imports.insert(0, 'plat/flx.flxh')
-            imports.insert(0, '@grammar/grammar.files')
+            syntaxes.insert(0, '@grammar/grammar.files')
 
         cmd.extend('-I' + i for i in sorted(includes) if Path.exists(i))
+        cmd.extend('--syntax=' + i for i in syntaxes)
         cmd.extend('--import=' + i for i in imports)
         cmd.append('--output_dir=' + dst.parent)
         cmd.extend(flags)

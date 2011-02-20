@@ -237,11 +237,33 @@ let parse_syntax state=
     parser_state 
     auto_imports
   in
+  let parsing_device = !(Flx_parse_helper.global_data.Flx_token.parsing_device) in
   let parse_time = parse_timer () in
   state.parse_time <- state.parse_time +. parse_time;
   print_endline ("PARSED SYNTAX/IMPORT FILES " ^ string_of_float parse_time ^ " secs");
+  let oc = open_out_bin "automaton.syntax" in
+  Marshal.to_channel oc parser_state [];
+  Marshal.to_channel oc parsing_device [];
+  close_out oc;
+  print_endline "Saved automaton to disk";
   parser_state
 
+let load_syntax state =
+  try 
+     let filename = "automaton.syntax" in
+     let oc = open_in_bin filename in
+     let local_data = Marshal.from_channel oc in
+     let parsing_device = Marshal.from_channel oc in
+     close_in oc;
+     print_endline "Loaded automaton from disk";
+     let env = Flx_parse_helper.global_data.Flx_token.env in
+     let scm = local_data.Flx_token.scm in
+     Flx_parse.load_scheme_defs env scm; 
+     Flx_parse_helper.global_data.Flx_token.parsing_device := parsing_device;
+     local_data
+  with _ ->
+    print_endline "Can't load automaton from disk: building!";
+    parse_syntax state 
 
 (** Parse an implementation file *)
 let parse_file state parser_state file =
@@ -1138,7 +1160,7 @@ print_endline ("Include dirs=" ^ String.concat ", " compiler_options.include_dir
     if List.length inroots = 0 then
       raise (Failure "No input files on comamnd line")
     ;
-    let parser_state = parse_syntax state in
+    let parser_state = load_syntax state in
 
     let main_prog = List.hd inroots in
     let libs = List.rev (List.tl inroots) in

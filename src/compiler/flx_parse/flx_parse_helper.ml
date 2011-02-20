@@ -116,6 +116,7 @@ let global_data = {
   pcounter = ref 1;
   env = init_env ();
   pdebug = ref debug;
+  parsing_device = ref None;
 }
 
 let local_data = {

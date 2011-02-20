@@ -93,3 +93,6 @@ let print ppf (f,l1,c1,l2,c2) =
     Format.pp_print_int c1
     Format.pp_print_int l2
     Format.pp_print_int c2
+
+let file (f,_,_,_,_) = f
+

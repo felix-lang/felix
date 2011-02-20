@@ -60,4 +60,5 @@ and 'obj global_data_t = {
   pcounter : int ref;
   env : Ocs_types.env;
   pdebug : bool ref;
+  parsing_device: string option ref
 }
