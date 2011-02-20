@@ -4,13 +4,13 @@ syntax patterns {
   tstatement:= "match" sexpr "with" stmt_matching+ "endmatch" ";" =>#
     "`(ast_stmt_match (,_sr ,_2 ,_4))";
 
-  stmt_matching  := vbar spattern "=>" tstatement+ =># "`(,_2 ,_4)";
+  stmt_matching  := "|" spattern "=>" tstatement+ =># "`(,_2 ,_4)";
 
   pattern_match := "match" sexpr "with" smatching+ =>#
     "`(ast_match ,_sr (,_2 ,_4))";
 
-  smatching  := vbar spattern "=>" x[let_pri] =># "`(,_2 ,_4)";
-  smatching  := vbar "=>" sexpr =># "`(pat_none ,_sr ,_4)";
+  smatching  := "|" spattern "=>" x[let_pri] =># "`(,_2 ,_4)";
+  smatching  := "|" "=>" sexpr =># "`(pat_none ,_sr ,_4)";
 
   spattern := sas_pattern "when" sexpr =># "`(pat_when ,_sr ,_1 ,_3)";
   spattern := sas_pattern =># "_1";
@@ -26,10 +26,10 @@ syntax patterns {
   satomic_pattern := "true" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 1))";
   satomic_pattern := "false" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 0))";
   satomic_pattern := sstring =># "`(pat_string ,_sr ,_1)";
-  satomic_pattern := quest sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
+  satomic_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
   satomic_pattern := _ =># "`(pat_any ,_sr)";
   satomic_pattern := "(" spattern ")" =># "_2";
-  satomic_pattern := "struct" lbrace spat_assign+ rbrace =># "`(pat_record ,_sr ,_3)";
+  satomic_pattern := "struct" "{" spat_assign+ "}" =># "`(pat_record ,_sr ,_3)";
 
   spat_assign := sname = spattern ";" =># "`(,_1 ,_3)";
 

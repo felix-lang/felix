@@ -42,7 +42,7 @@ syntax functions {
   sparameter := sparam_qual sname =># "`(,_1 ,_2 ,(noi 'typ_none) none)";
 
   sparameter_comma_list := sepsilon =># "()";
-  sparameter_comma_list := sparameter (, sparameter)* =># "(cons _1 (map second _2))";
+  sparameter_comma_list := sparameter ("," sparameter)* =># "(cons _1 (map second _2))";
 
   sparam_qual := "val" =># "'PVal";
   sparam_qual := "var" =># "'PVar";

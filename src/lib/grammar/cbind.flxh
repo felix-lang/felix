@@ -115,7 +115,7 @@ syntax cbind {
   tstatement:= "code" scode_spec ";" =># "`(ast_code ,_sr ,_2)";
   tstatement:= "noreturn" "code" scode_spec ";" =># "`(ast_noreturn_code ,_sr ,_3)";
 
-  sexpr_code_prefix := "code" lsqb stypeexpr rsqb =># "_3";
+  sexpr_code_prefix := "code" "[" stypeexpr "]" =># "_3";
   satom := sexpr_code_prefix sstring =># "`(ast_expr ,_sr ,_2 ,_1)";
   satom := sexpr_code_prefix sname =># "`(ast_expr ,_sr ,_2 ,_1)";
 
