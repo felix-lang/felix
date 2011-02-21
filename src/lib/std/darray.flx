@@ -45,6 +45,7 @@ open module Darray
   // basic array stuff, same interface as array
   fun len[t] (a:darray[t])=> Varray::len (_repr_ a).a;
   fun subscript[t,ii in ints] (a:darray[t],  n:ii) => (_repr_ a).a.[n];
+  fun get[t,ii in ints] (a:darray[t],  n:ii) => (_repr_ a).a.[n];
   proc set[t,ii in ints] (a:darray[t],  n:ii, v:t) => set ((_repr_ a).a,n,v);
 
   // basic array stuff, same interface as varray
