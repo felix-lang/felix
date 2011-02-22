@@ -1,4 +1,4 @@
-include "flx_faio_win32";
+include "std/win32/faio_win32";
 open Faio_win32;
 
 var port = 1234;  // can't yet get os to choose the port. should fix that.

@@ -1,15 +1,15 @@
 if POSIX do
-include "std/posix/flx_faio_posix";  // aio_ropen
+include "std/posix/faio_posix";  // aio_ropen
 //open Faio_posix;
 include "std/posix/signal";
 include "std/posix/filesystem";
 Posix_Signal::ignore_signal(Posix_Signal::SIGPIPE);
 done
 
-include "std/io/flx_socket";
+include "std/io/socket";
 open Flx_socket;
 
-include "std/io/flx_stream";
+include "std/io/stream";
 open Flx_stream;
 
 open TerminalIByteStream[fd_t];

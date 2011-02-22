@@ -1,7 +1,7 @@
 // contains posix async socket io & copipes, all wrapped up streams
 
-include "std/io/flx_faio"; //mutual recursion? Really!
-include "std/io/flx_demux";
+include "std/io/faio"; //mutual recursion? Really!
+include "std/io/demux";
 include "std/posix/posix_headers";
 
 module Faio_posix  {
@@ -169,7 +169,7 @@ fun get_pb: flxfileio_request -> sel_param_ptr = '&$1.pb';
 
 proc faio_rw(q:job_queue, fd: fd_t, len: &int, buf: address, eof: &bool, read_flag: bool)
 {
-    // constant offset for now, rushing to get this in flx_stream
+    // constant offset for now, rushing to get this in stream
     var faio = mk_faio(q, fd, buf, *len, 0, read_flag);
     faio_req$ &faio;
     //print$ f"faio_rw: request %d, actual %d\n" (*len,faio.pb.bytes_done);

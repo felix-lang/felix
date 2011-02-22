@@ -1,4 +1,4 @@
-include "std/io/flx_faio";
+include "std/io/faio";
 open String;
 
 print "Garbage collector world stop test"; endl;

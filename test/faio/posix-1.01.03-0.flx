@@ -1,4 +1,4 @@
 // actually portable, but I don't know the scheme for
 // adding those tests.
-include "std/io/flx_stream";
+include "std/io/stream";
 print "more output here\n";

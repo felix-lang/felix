@@ -1,5 +1,5 @@
-include "flx_faio";
-include "flx_stream";
+include "std/io/faio";
+include "std/io/stream";
 
 open Faio;
 open Flx_stream;

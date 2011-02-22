@@ -1,4 +1,4 @@
-include "Flx_faio_win32";
+include "std/win32/faio_win32";
 open Faio_win32;
 
 // let's add a win32 namedpipe test!
@@ -17,7 +17,7 @@ proc CreateNamedPipe: lvalue[WFILE]*string =
  '$1 = CreateNamedPipe($2.c_str(), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,\
      PIPE_TYPE_BYTE, 1, 256, 256, 0, NULL);';
 
-// OpenFile in flx_faio_win32 should work fine here
+// OpenFile in faio_win32 should work fine here
 
 print "Creating named pipe "; print pname; endl;
 var pipe: WFILE <- CreateNamedPipe(pname);

@@ -1,4 +1,4 @@
-include "std/posix/flx_faio_posix";
+include "std/posix/faio_posix";
 open Faio_posix;
 
 // create a listening socket, spawn a thread to connect to it.
