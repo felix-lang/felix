@@ -1,6 +1,6 @@
 syntax functions {
   requires expressions;
-  x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type = scompound =>#
+  x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
     """
     `(ast_lambda ,_sr (,_3 ,_4 ,(first _5) ,_7))
     """;
