@@ -1,4 +1,4 @@
-include "sqlite3/flx_sqlite3";
+include "sqlite3/sqlite3";
 open Sqlite3;
 
 fun subscript: & &char * int -> &char = "$1[$2]";

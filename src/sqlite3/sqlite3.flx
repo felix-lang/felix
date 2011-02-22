@@ -47,7 +47,7 @@ syntax sql { // see: http://www.sqlite.org/lang.html
     (database_name ".")? index_name "on" table_name lpar column_name (, column_name)* rpar;
   column_name := sname ("collate" collation_name) ("asc" | "desc")?;
 
-  sql_command : string = 	
+  sql_command : string =
     "create" ("temp" | "temporary")? table
       ("if" "not" "exists")? (database_name ".")? table_name
       lpar column_def (, column_def)* (, constraint)?* rpar
