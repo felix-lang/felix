@@ -30,7 +30,7 @@ spawn_fthread
     //println$ "fthread's socket is " + str c;
     var st: string;
 
-    get_line(c, &st,"fthread");
+    get_line(c, &st);
     print "connector got "; print st; endl;
     write_string(c, "thanks\n", &eof);         // newline important
 
@@ -49,7 +49,7 @@ print "got connection\n";
 write_string(s, "server says hi\n", &eof);     // newline important here
 
 var st: string;
-get_line(s, &st,"mainline");
+get_line(s, &st);
 
 print "server got "; print st; endl;
 ioclose(s);

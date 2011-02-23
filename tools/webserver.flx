@@ -730,7 +730,7 @@ noinline proc handler (var k:socket_t) ()
   // should spawn fthread here to allow for more io overlap
 
   var line: string;
-  get_line(k, &line, str(k));  // should be the GET line.
+  get_line(k, &line);  // should be the GET line.
   //cat(s, DEVNULL);
 
   print$ "got line from socket "+str k+": "; print line; endl;

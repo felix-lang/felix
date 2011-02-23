@@ -5,7 +5,7 @@ elif WIN32 do
   include "std/win32/faio_win32";
 else
   include "ERROR: stream requires POSIX or WIN32";
-done;
+done
 
 module Stream {
   requires package "demux";
@@ -18,137 +18,193 @@ module Stream {
     typedef fd_t = Faio_posix::fd_t;
   else
     open Faio_win32;
-  done;
+  done
+
+  // ---------------------------------------------------------------------------
+
+  publish "The interface for a readable stream of bytes."
+  typeclass IByteStream[T] {
+    publish "Read N bytes from the stream into the address."
+    virtual proc read: T * &int * address * &bool;
+  }
+
+  publish "The interface for a writable stream of bytes."
+  typeclass OByteStream[T] {
+    publish "Write N bytes from the address into the stream."
+    virtual proc write: T * &int * address * &bool;
+  }
+
+  publish "The interface for a readable and writable stream of bytes."
+  typeclass IOByteStream[T] {
+    inherit IByteStream[T];
+    inherit OByteStream[T];
+  }
+
+  publish "A readable stream that can have it's read channel closed."
+  typeclass TerminalIByteStream[T] {
+    inherit IByteStream[T];
+
+    publish "Close the input stream."
+    virtual proc iclose: T;
+  }
+
+  publish "A writable stream that can have it's write channel closed."
+  typeclass TerminalOByteStream[T] {
+    inherit OByteStream[T];
+
+    publish "Close the output stream."
+    virtual proc oclose: T;
+  }
+
+  publish "A writable stream that can have it's channels closed."
+  typeclass TerminalIOByteStream[T] {
+    inherit TerminalIByteStream[T];
+    inherit TerminalOByteStream[T];
+
+    publish "Close the stream."
+    virtual proc ioclose: T;
+  }
+
+  // ---------------------------------------------------------------------------
 
   union devnull_t = DEVNULL;
 
-  typeclass IByteStream[s] {
-    virtual proc read: s * &int * address * &bool;
-  }
-
-  typeclass OByteStream[s] {
-    virtual proc write: s * &int * address * &bool;
-  }
-
-  typeclass IOByteStream[s] {
-    inherit IByteStream[s];
-    inherit OByteStream[s];
-  }
-
-  typeclass TerminalIByteStream[s] {
-    inherit IByteStream[s];
-    virtual proc iclose: s;
-  }
-
-  typeclass TerminalOByteStream[s] {
-    inherit OByteStream[s];
-    virtual proc oclose: s;
-  }
-
-  typeclass TerminalIOByteStream[s] {
-    inherit TerminalIByteStream[s];
-    inherit TerminalOByteStream[s];
-    virtual proc ioclose: s;
-  }
-
-  //
-  // devnull_t
-  //
+  publish "devnull_t"
   instance IByteStream[devnull_t]
   {
-    proc read(strm: devnull_t, len: &int, buf: address, eof: &bool)
-      { *len = 0; *eof = true; }
+    proc read(strm: devnull_t, len: &int, buf: address, eof: &bool) {
+      *len = 0;
+      *eof = true;
+    }
   }
 
   instance OByteStream[devnull_t]
   {
-    proc write(strm: devnull_t, len: &int, buf: address, eof: &bool)
-      { *eof = false; }
+    proc write(strm: devnull_t, len: &int, buf: address, eof: &bool) {
+      *eof = false;
+    }
   }
 
   instance IOByteStream[devnull_t] {}
-  instance TerminalIByteStream[devnull_t] { proc iclose (x:devnull_t) { } }
-  instance TerminalOByteStream[devnull_t] { proc oclose (x:devnull_t) { } }
-  instance TerminalIOByteStream[devnull_t] { proc ioclose (x:devnull_t) { } }
+  instance TerminalIByteStream[devnull_t] { proc iclose (x:devnull_t) {} }
+  instance TerminalOByteStream[devnull_t] { proc oclose (x:devnull_t) {} }
+  instance TerminalIOByteStream[devnull_t] { proc ioclose (x:devnull_t) {} }
 
+  // ---------------------------------------------------------------------------
 
-  //
-  // fd_t -- native file handle (disk file)
-  //
+  publish "fd_t -- native file handle (disk file)"
   instance IByteStream[fd_t]
   {
-    if POSIX do
-      proc read(s: fd_t, len: &int, buf: address, eof: &bool)
-        { faio_read(s, len, buf, eof); }
-    else
-      proc read(s: fd_t, len: &int, buf: address, eof: &bool)
-        { ReadFile(s, len, buf, eof); }
-    done;
+    proc read(fd: fd_t, len: &int, buf: address, eof: &bool) {
+      if POSIX do
+        faio_read(fd, len, buf, eof);
+      else
+        ReadFile(fd, len, buf, eof);
+      done
+    }
   }
 
   instance OByteStream[fd_t]
   {
-    if POSIX do
-      proc write(s: fd_t, len: &int, buf: address, eof: &bool)
-        { faio_write(s, len, buf, eof); }
-    else
-      proc write(s: fd_t, len: &int, buf: address, eof: &bool)
-        { WriteFile(s, len, buf, eof); }
-    done;
+    proc write(fd: fd_t, len: &int, buf: address, eof: &bool) {
+      if POSIX do
+        faio_write(fd, len, buf, eof);
+      else
+        WriteFile(fd, len, buf, eof);
+      done
+    }
   }
 
   instance IOByteStream[fd_t] {}
 
   instance TerminalIByteStream[fd_t]
   {
-    if POSIX do
-      proc iclose (f:fd_t) { close f; }
-    else
-      proc iclose (f:fd_t) { CloseFile f; }
-    done;
+    proc iclose (fd: fd_t) {
+      if POSIX do
+        close fd;
+      else
+        CloseFile fd;
+      done
+    }
   }
 
   instance TerminalOByteStream[fd_t]
   {
-    if POSIX do
-    proc oclose (f:fd_t) { close f; }
-    else
-      proc oclose (f:fd_t) { CloseFile f; }
-    done;
+    proc oclose (fd: fd_t) {
+      if POSIX do
+        close fd;
+      else
+        CloseFile fd;
+      done
+    }
   }
 
   instance TerminalIOByteStream[fd_t]
   {
-    if POSIX do
-      proc ioclose (f:fd_t) { close f; }
-    else
-      proc ioclose (f:fd_t) { CloseFile f; }
-    done;
+    proc ioclose (fd: fd_t) {
+      if POSIX do
+        close fd;
+      else
+        CloseFile fd;
+      done
+    }
   }
 
-  proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
-  (infd: istr , outfd: ostr, buf: address, bufsize: int)
+  // ---------------------------------------------------------------------------
+
+  publish "Read the input stream to the output stream."
+  proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]] (
+    istream: istr,
+    ostream: ostr,
+    buf: address,
+    bufsize: int)
   {
-      var eof = false;
-      var weof = false;
-      var len: int;
+    var reof = false;
+    var weof = false;
+    var len: int;
 
-      // if we finish input, stop. if output eofs, don't keep hammering on it!
-      while{not(eof) and not(weof)} {
-          len = bufsize;
-          read(infd, &len, buf, &eof);
-          //fprint$ cerr,q"catted in $len bytes, eof=$eof\n";
-          //fprint$ cerr, string(C_hack::cast[charp] buf,len);
-          write(outfd, &len, buf, &weof);
-          //fprint$ cerr,q"catted out $len bytes, eof=$weof\n";
-      };
+    // if we finish input, stop. if output eofs, don't keep hammering on it!
+    whilst not reof and not weof do
+      len = bufsize;
+      read (istream, &len, buf, &reof);
+      write(ostream, &len, buf, &weof);
+    done
   }
 
-  // It's very unfortunate that memcmp doesn't return the position
-  // of the first non-equality
+  publish "Read the input stream to the output stream."
+  proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]] (
+    istream: istr,
+    ostream: ostr)
+  {
+    val BUFSIZE = 100000;
+    var buf = C_hack::malloc(BUFSIZE);
 
-  proc stream_cmp[istr1,istr2 with IByteStream[istr1], IByteStream[istr2]]
-  (fd1: istr1 , fd2: istr2, buf1: address, buf2: address, bufsize: int, sign: &int)
+    // that's some nice error checking
+    cat (istream, ostream, buf, BUFSIZE);
+
+    C_hack::free (buf);
+  }
+
+  publish "Read all the input streams to the output stream."
+  proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]] (
+    istreams: list[istr],
+    ostream: ostr,
+    buf: address,
+    bufsize: int)
+  {
+    List::iter (proc (istream:istr) {
+      cat (istream, ostream, buf, bufsize);
+    }) istreams;
+  }
+
+  publish "Compare the results of two streams."
+  proc stream_cmp[istr1,istr2 with IByteStream[istr1], IByteStream[istr2]] (
+    stream1: istr1,
+    stream2: istr2,
+    buf1: address,
+    buf2: address,
+    bufsize: int,
+    sign: &int)
   {
     var eof1 = false;
     var eof2 = false;
@@ -157,13 +213,14 @@ module Stream {
     var terminated = false;
     var cmp = 0;
 
-    while{cmp == 0 and not terminated} {
-      len1 = bufsize; read(fd1, &len1, buf1, &eof1);
-      len2 = bufsize; read(fd2, &len2, buf2, &eof2);
-  //print "Len1="; print len1; endl;
-  //print "Len2="; print len2; endl;
+    whilst cmp == 0 and not terminated do
+      len1 = bufsize; read(stream1, &len1, buf1, &eof1);
+      len2 = bufsize; read(stream2, &len2, buf2, &eof2);
 
-      len  := min(len1,len2);
+      len := min(len1, len2);
+
+      // It's very unfortunate that memcmp doesn't return the position of the
+      // first non-equality
       cmp = Carray::memcmp(buf1, buf2, size len);
 
       if cmp == 0 do
@@ -179,134 +236,95 @@ module Stream {
             | case 1, case 0 => -1
             endmatch
           ;
-        done;
-      done;
-    };
+        done
+      done
+    done
+
     *sign = cmp;
   }
 
 
-  proc cmp
-    [istr1, istr2 with IByteStream[istr1], IByteStream[istr2]]
-    (i1: istr1, i2: istr2, res: &int)
+  publish "Compare the results of two streams."
+  proc cmp[istr1, istr2 with IByteStream[istr1], IByteStream[istr2]] (
+    istream1: istr1,
+    istream2: istr2,
+    res: &int)
   {
     val BUFSIZE = 100000;
     var buf1 = C_hack::malloc(BUFSIZE);
     var buf2 = C_hack::malloc(BUFSIZE);
-    stream_cmp(i1, i2, buf1, buf2, BUFSIZE, res);
+    stream_cmp(istream1, istream2, buf1, buf2, BUFSIZE, res);
     C_hack::free(buf1);
     C_hack::free(buf2);
   }
 
-  proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
-  (infd: istr, outfd: ostr)
+  publish "Read the results of a stream back into it's stream."
+  proc echo[iostr with IOByteStream[iostr]] (
+    iostream: iostr,
+    buf: address,
+    bufsize: int)
   {
-      val BUFSIZE = 100000;
-      var buf = C_hack::malloc(BUFSIZE);
-
-      // that's some nice error checking
-      cat(infd, outfd, buf, BUFSIZE);
-      C_hack::free(buf);
+    // echo a = cat a a. that's deep, man.
+    cat(iostream, iostream, buf, bufsize);
   }
 
-  open List;
-
-  proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
-  (in_fds: list[istr], outfd: ostr,
-      buf: address, bufsize: int)
+  publish "Read in from a stream and write to two streams."
+  proc tee[istr,ostr with IByteStream[istr], OByteStream[ostr]] (
+    istream: istr,
+    ostream1: ostr,
+    ostream2: ostr)
   {
-      match in_fds with
-      | Empty[istr] => {}                     // finished
-      | Cons[istr] (?fd, ?l) =>
-          {
-              cat(fd, outfd, buf, bufsize);   // cat first
-              cat(l, outfd, buf, bufsize);    // cat the rest
-          }
-      endmatch
-      ;
-  }
+    var reof  = false;
+    var weof1 = false;
+    var weof2 = false;
+    var len: int;
 
-  proc echo[iostr with IOByteStream[iostr]]
-  (fd: iostr, buf: address, bufsize: int)
-  {
-      // echo a = cat a a. that's deep, man.
-      cat(fd, fd, buf, bufsize);
-  };
+    val BUFSIZE = 10*1024;
+    var buf = C_hack::malloc(BUFSIZE);
 
-  proc tee[istr,ostr with IByteStream[istr], OByteStream[ostr]]
-  (infd: istr, outfd: ostr, outfd2: ostr)
-  {
-      var eof = false;
-      var weof = false;
-      var weof2 = false;
-      var len: int;
+    // don't hammer!
+    whilst not reof and not weof1 and not weof2 do
+      len = BUFSIZE;
+      read  (istream,  &len, buf, &reof);
+      write (ostream1, &len, buf, &weof1);
+      write (ostream2, &len, buf, &weof2);
+    done
 
-      val BUFSIZE = 10*1024;
-      var buf = C_hack::malloc(BUFSIZE);
-
-      // don't hammer!
-      while{not(eof) and not(weof) and not(weof2)} {
-          len = BUFSIZE;
-          read(infd, &len, buf, &eof);
-          write(outfd, &len, buf, &weof);
-          write(outfd2, &len, buf, &weof2);
-      };
-      C_hack::free buf;
+    C_hack::free buf;
   }
 
   // highly inefficient!
-  noinline proc get_line[istr with IByteStream[istr]]
-  (strm: istr, s: &string, id:string)
+  noinline proc get_line[istr with IByteStream[istr]] (
+    istream: istr,
+    s: &string)
   {
     var c: char;
-    //val ac = C_hack::cast[address]$ &c;
     val ac = address (&c);
     var st: string="";
     var finished = false;
 
-    //fprintln$ cerr,"Get line from IByteStream "+id;
     whilst not finished do
       var len = 1;
       var eof: bool;
 
-      read(strm, &len, ac, &eof);
-
-      /*
-      if len == 0 do
-        fprintln$ cerr,"Got nothing from IByteStream "+id;
-        if eof do fprintln$ cerr,"Eof on IBytestream "+id;
-        else fprintln$ cerr,"So not eof but also got nothing? "+id
-        done
-      else
-        if eof do
-          fprintln$ cerr,"What, eof on stream and read char " + str c + " IByteStream=" + id;
-        else
-          //fprintln$ cerr,"Got char " + str c + " from an IByteStream "+id;
-        done
-      done
-      */
+      read(istream, &len, ac, &eof);
 
       if eof or c == char '\n' do
-        //fprintln$ cerr,"Got end of line (or file) from an IByteStream "+id;
         finished = true;
       else
         st += c;
       done
     done
     *s = st;  // pass back result
-    //println$ "Got: " + st;
-
   }
 
-  proc get_line[istr with IByteStream[istr]]
-  (strm: istr, s: &string) { get_line(strm, s, "UNKNOWN"); }
-
-
-  proc write_string[ostr with OByteStream[ostr]]
-  (sk: ostr, var s: string, eof: &bool)
+  proc write_string[ostr with OByteStream[ostr]] (
+    ostream: ostr,
+    var s: string,
+    eof: &bool)
   {
     var slen = len s;
     var a = C_hack::cast[address]$ cstr s;
-    write(sk, &slen, a, eof);
+    write(ostream, &slen, a, eof);
   }
 } // module Stream
