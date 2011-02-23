@@ -1,7 +1,7 @@
 include "std/posix/posix_headers";
+include "std/posix/errno";
 module FileSystem 
 {
-  requires C89_headers::errno_h;
   // stat
   pod type stat_t = "struct stat" requires Posix_headers::sys_stat_h;
   proc stat: string * &stat_t * &int = "*$3=stat($1.data(),$2);";
@@ -80,13 +80,6 @@ module FileSystem
     else INDETERMINATE
     endif
   ;
-
-  pod type errno_t = "int"; // errno values
-  const errno : errno_t = "errno"; // SUCKS
-  const EACCES: errno_t;
-  const ENOENT: errno_t;
-
-  fun eq: errno_t * errno_t -> bool= "$1==$2";
 
   fun filetype(f:string):file_type_t = 
   {

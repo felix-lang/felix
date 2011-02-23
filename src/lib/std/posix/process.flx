@@ -1,4 +1,7 @@
 // Posix process stuff
+include "std/posix/posix_headers";
+include "std/posix/errno";
+
 module Process {
   gen popen_in: string -> Text_file::input_text_file = 'popen($1.data(), "r")';
   gen pclose: Text_file::input_text_file -> int = "pclose($1)";
@@ -11,4 +14,68 @@ module Process {
   gen WTERMSIG: int -> int = "WTERMSIG($1)";
   gen WCOREDUMP: int -> int = "WCOREDUMP($1)";
   gen WSTOPSIG: int -> int = "WSTOPSIG($1)";
+
+
+  const environ: &&char = "environ" requires Posix_headers::unistd_h;
+
+  type exec_result_t = "int";
+  const bad_exec: exec_result_t = "-1";
+  fun eq: exec_result_t * exec_result_t -> bool= "$1==$2";
+
+  gen execv:&char *  &&char -> exec_result_t = "execv($1, $2)" requires Posix_headers::unistd_h;
+  gen execvp:&char *  &&char -> exec_result_t = "execvp($1, $2)" requires Posix_headers::unistd_h;
+  gen execve:&char *  &&char * &&char -> exec_result_t = "execve($1, $2, $3)" requires Posix_headers::unistd_h;
+
+  // do NOT try to fork Felix programs, it doesn't work
+  // because of threads already running. We use fork only
+  // to preceed exec() calls.
+  type pid_t = "pid_t" requires Posix_headers::unistd_h;
+  const child_process : pid_t = "0";
+  const bad_process : pid_t = "-1";
+  fun eq: pid_t * pid_t -> bool= "$1==$2";
+
+  gen fork: unit -> pid_t = "fork()" requires Posix_headers::unistd_h;
+
+  gen spawnv(file: string, argv:&&char) : errno_t = {
+    var x = fork();
+    if x == child_process do 
+      var y = execv(file.cstr, argv); 
+      if y == bad_exec do 
+        return errno; 
+      else 
+        return ENOERROR; 
+      done 
+    elif x == bad_process do return errno;
+    else return ENOERROR;
+    done
+  }
+
+  gen spawnvp(file: string, argv:&&char) = { 
+    var x = fork();
+    if x == child_process do 
+      var y = execvp(file.cstr, argv); 
+      if y == bad_exec do 
+        return errno; 
+      else 
+        return ENOERROR; 
+      done 
+    elif x == bad_process do return errno;
+    else return ENOERROR;
+    done
+  }
+
+  gen spawnve(file: string, argv:&&char, env: &&char) : errno_t = {
+    var x = fork();
+    if x == child_process do 
+      var y = execve(file.cstr, argv, env); 
+      if y == bad_exec do 
+        return errno; 
+      else 
+        return ENOERROR; 
+      done 
+    elif x == bad_process do return errno;
+    else return ENOERROR;
+    done
+  }
+
 }

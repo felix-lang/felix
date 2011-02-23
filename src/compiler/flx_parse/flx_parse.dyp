@@ -685,7 +685,7 @@ compilation_unit:
 
 graminit: @{
     let file = Flx_srcref.file (getsr dyp) in
-    print_endline ("graminit: Parsing " ^ file);
+    (* print_endline ("graminit: Parsing " ^ file); *)
     let m = dyp.local_data in
     let loaded_dssls = m.loaded_dssls in
     let to_install = tran_cls_dssls m.dssls loaded_dssls in
@@ -693,9 +693,9 @@ graminit: @{
 
     match !(dyp.global_data.parsing_device) with
     | Some device -> 
-      print_endline "Parsing device detected";
+      (* print_endline "Parsing device detected"; *)
       let ffpdev = Marshal.from_string device 0 in
-      print_endline "Unmarshalled parsing device";
+      (* print_endline "Unmarshalled parsing device"; *)
       let bindings = ref [] in
       let add_rules = List.map (fun rule ->
         let rule, action, binding = extend_grammar dyp rule in

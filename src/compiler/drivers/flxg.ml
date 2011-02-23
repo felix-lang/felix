@@ -254,7 +254,7 @@ let load_syntax state =
      let local_data = Marshal.from_channel oc in
      let parsing_device = Marshal.from_channel oc in
      close_in oc;
-     print_endline "Loaded automaton from disk";
+     (* print_endline "Loaded automaton from disk"; *)
      let env = Flx_parse_helper.global_data.Flx_token.env in
      let scm = local_data.Flx_token.scm in
      Flx_parse.load_scheme_defs env scm; 
@@ -1110,7 +1110,7 @@ let process_lib state parser_state sym_table_ref bsym_table_ref excls outdir mod
         (* Bind the assemblies. *)
         bind_asms state !sym_table_ref !bsym_table_ref !start_counter asms;
         print_endline ("binding library " ^ lib ^ " done in "^ string_of_float (cal_time()) ^ " seconds");
-print_endline ("Exports = " ^ string_of_int (List.length (state.syms.bifaces)));
+        print_endline ("Exports = " ^ string_of_int (List.length (state.syms.bifaces)));
         includes, depnames,
         !(state.syms.counter),
         state.syms.varmap, 
