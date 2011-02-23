@@ -3255,6 +3255,10 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       clierr sr
      ("[bind_expression] Expected expression, got " ^ string_of_expr e)
 
+  | EXPR_range_check (sr, mi, v, mx) ->
+    let (x,t) as v' = be v in
+    bexpr_range_check t (be mi, v', be mx)
+
   | EXPR_apply (sr,(EXPR_name (_,"_tuple_flatten",[]),e)) ->
     let result = ref [] in
     let stack = ref [] in

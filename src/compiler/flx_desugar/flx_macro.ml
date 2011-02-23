@@ -412,6 +412,12 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
    (* convert arbitrary expression to string for debugging
     * _str expr -> "expr"
     *)
+  | EXPR_apply (sr, (
+      EXPR_name (_,"range_check",[]),
+      EXPR_tuple (_,[e1;e2;e3])
+    )) ->
+    EXPR_range_check (sr,me e1, me e2, me e3)
+
   | EXPR_apply (sr,(EXPR_name(_,"_str",[]),x)) ->
     let x = me x in
     let x = string_of_expr x in
@@ -569,6 +575,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_void _ -> e
 
   | EXPR_typeof (sr,e) -> EXPR_typeof (sr, me e)
+  | EXPR_range_check (sr, mi, v, mx) -> EXPR_range_check (sr, me mi, me v, me mx)
 
 and rqmap me reqs =
   let r req = rqmap me req in

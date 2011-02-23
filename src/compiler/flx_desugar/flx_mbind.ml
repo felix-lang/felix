@@ -131,6 +131,8 @@ let rec subst vars (e:expr_t) mv : expr_t =
 
   | EXPR_coercion _ -> failwith "subst: coercion"
 
+  | EXPR_range_check (sr, mi, v, mx) -> EXPR_range_check (sr, subst mi, subst v, subst mx)
+
 (* This routine runs through a pattern looking for
   pattern variables, and adds a record to a hashtable
   keyed by each variable name. The data recorded

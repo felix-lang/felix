@@ -168,6 +168,7 @@ and expr_t =
   | EXPR_callback of Flx_srcref.t * qualified_name_t
   | EXPR_dot of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_lambda of Flx_srcref.t * (vs_list_t * params_t list * typecode_t * statement_t list)
+  | EXPR_range_check of Flx_srcref.t * expr_t * expr_t * expr_t
 
   (* this boolean expression checks its argument is
      the nominated union variant .. not a very good name for it
@@ -697,6 +698,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_expr (s,_,_)
   | EXPR_letin (s,_)
   | EXPR_typeof (s,_)
+  | EXPR_range_check (s,_,_,_)
   -> s
 
 let src_of_stmt (e : statement_t) = match e with
@@ -1304,6 +1306,10 @@ and print_expr ppf = function
       print_variant2 ppf "EXPR_type_match"
         print_type typ
         (Flx_list.print_tuples2 print_type print_type) patterns
+
+  | EXPR_range_check (_,mi,v,mx) ->
+      print_variant3 ppf "EXPR_range_check"
+      print_expr mi print_expr v print_expr mx
 
 (** Prints out a list of expressions to a formatter. *)
 and print_exprs ppf =

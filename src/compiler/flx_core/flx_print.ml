@@ -325,6 +325,9 @@ and string_of_expr (e:expr_t) =
     ^
     "\n endmatch"
 
+  | EXPR_range_check (_,mi,v,mx) ->
+    "range_check " ^ se mi ^ " <= " ^ se v ^ " < " ^ se mx
+ 
 (* precedences for type operators ..
    0 -- atomic
    0.5 -- indexing t[i]
@@ -1853,7 +1856,7 @@ and string_of_bound_expression' bsym_table se e =
     "code ["^string_of_btypecode (Some bsym_table) t^"]" ^ "'" ^ s ^ "'"
 
   | BEXPR_range_check (e1,e2,e3) ->
-    "range_check(" ^ se e1 ^"," ^ se e2 ^"," ^se e3 ^ ")"
+    "range_check(" ^ se e1 ^"<=" ^ se e2 ^"<" ^se e3 ^ ")"
 
   | BEXPR_coerce (e,t) -> se e ^ " : " ^ string_of_btypecode (Some bsym_table) t
 

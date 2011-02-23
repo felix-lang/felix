@@ -241,6 +241,12 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
   | EXPR_suffix _ -> [],e  (* ?? *)
   | EXPR_callback _ -> [],e  (* ?? *)
 
+  | EXPR_range_check (sr, mi, v, mx) ->
+    let l1,x1 = rex mi in
+    let l2,x2 = rex v in 
+    let l3,x3 = rex mx in
+    l1 @ l2 @ l3, EXPR_range_check (sr,x1, x2, x3)
+
   | EXPR_index (_,_,_) -> [],e
 
   | EXPR_lookup (sr,(e,id,ts)) ->
