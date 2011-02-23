@@ -7,10 +7,10 @@ Posix_Signal::ignore_signal(Posix_Signal::SIGPIPE);
 done
 
 include "std/io/socket";
-open Flx_socket;
+open Socket;
 
 include "std/io/stream";
-open Flx_stream;
+open Stream;
 
 open TerminalIByteStream[fd_t];
 open TerminalIOByteStream[socket_t];
@@ -791,7 +791,7 @@ retry:>
   assert b==0;
 
 force_close:> 
-  Flx_socket::shutdown(k,2);
+  Socket::shutdown(k,2);
   ioclose(k);
   fprint$ cerr,"fthread "+str k+" terminating!\n";
 };
