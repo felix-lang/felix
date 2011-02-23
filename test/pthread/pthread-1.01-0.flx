@@ -1,4 +1,4 @@
-include "std/io/flx_faio";
+include "std/io/faio";
 open Pthread;
 
 print "Pthread spawning test"; endl;

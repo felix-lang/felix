@@ -1,26 +1,25 @@
-include "std/io/flx_faio";
-include "std/io/flx_stream";
+include "std/io/faio";
+include "std/io/stream";
 
 if POSIX do
-  include "std/posix/flx_faio_posix";
+  include "std/posix/faio_posix";
 elif WIN32 do
-  include "std/win32/flx_faio_win32";
+  include "std/win32/faio_win32";
 else
-  include "ERROR: flx_socket requires POSIX or WIN32";
+  include "ERROR: socket requires POSIX or WIN32";
 done;
 
-module Flx_socket {
+module Socket {
   if POSIX do
     typedef socket_t = Faio_posix::socket_t;
   else
     typedef socket_t = Faio_win32::socket_t;
   done;
 
-
   proc mk_listener(l: &socket_t, port: &int, qlen: int)
   {
   if POSIX do
-    Faio_posix::mk_listener(l,port, qlen);
+    Faio_posix::mk_listener(l, port, qlen);
   else
     Faio_win32::mk_listener(l, port, qlen);
   done;
@@ -52,9 +51,9 @@ module Flx_socket {
   proc connect(s: &socket_t, addr: &char, port: int)
   {
   if POSIX do
-      Faio_posix::connect(s, addr, port );
+      Faio_posix::connect(s, addr, port);
   else
-      Faio_win32::Connect( s, addr, port );
+      Faio_win32::Connect(s, addr, port);
   done;
   }
 
@@ -62,7 +61,7 @@ module Flx_socket {
   //
   // socket_t
   //
-  instance Flx_stream::IByteStream[socket_t]
+  instance Stream::IByteStream[socket_t]
   {
     if POSIX do
     proc read(s: socket_t, len: &int, buf: address, eof: &bool)
@@ -73,14 +72,14 @@ module Flx_socket {
     done;
   }
 
-  instance Flx_stream::OByteStream[socket_t]
+  instance Stream::OByteStream[socket_t]
   {
     if POSIX do
     proc write(s: socket_t, len: &int, buf: address, eof: &bool)
       {
-        //println$ "faio/flx_socket.flx: Flx_stream::OByteStream[socket_t]: write(s,"+str (*len)+",buf,"+str(*eof)+") calling async_write ..";
-        Faio_posix::async_write(s, len, buf, eof); 
-        //println$ "faio/flx_socket.flx: Flx_stream::OByteStream[socket_t]: write(s,"+str (*len)+",buf,"+str(*eof)+") called async_write ..";
+        //println$ "faio/socket.flx: Stream::OByteStream[socket_t]: write(s,"+str (*len)+",buf,"+str(*eof)+") calling async_write ..";
+        Faio_posix::async_write(s, len, buf, eof);
+        //println$ "faio/socket.flx: Stream::OByteStream[socket_t]: write(s,"+str (*len)+",buf,"+str(*eof)+") called async_write ..";
       }
     else
     proc write(s: socket_t, len: &int, buf: address, eof: &bool)
@@ -88,9 +87,9 @@ module Flx_socket {
     done;
   }
 
-  instance Flx_stream::IOByteStream[socket_t] {}
+  instance Stream::IOByteStream[socket_t] {}
 
-  instance Flx_stream::TerminalIByteStream[socket_t]
+  instance Stream::TerminalIByteStream[socket_t]
   {
     if POSIX do
     proc iclose (s:socket_t)
@@ -101,7 +100,7 @@ module Flx_socket {
     done;
   }
 
-  instance Flx_stream::TerminalOByteStream[socket_t]
+  instance Stream::TerminalOByteStream[socket_t]
   {
     if POSIX do
     proc oclose (s:socket_t)
@@ -112,7 +111,7 @@ module Flx_socket {
     done;
   }
 
-  instance Flx_stream::TerminalIOByteStream[socket_t]
+  instance Stream::TerminalIOByteStream[socket_t]
   {
     if POSIX do
     proc ioclose (s:socket_t)

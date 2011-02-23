@@ -1,13 +1,13 @@
-include "std/io/flx_faio";
+include "std/io/faio";
 if POSIX do
-  include "std/posix/flx_faio_posix";
+  include "std/posix/faio_posix";
 elif WIN32 do
-  include "std/win32/flx_faio_win32";
+  include "std/win32/faio_win32";
 else
-  include "ERROR: flx_stream requires POSIX or WIN32";
+  include "ERROR: stream requires POSIX or WIN32";
 done;
 
-module Flx_stream {
+module Stream {
   requires package "demux";
   requires package "faio";
 
@@ -16,7 +16,7 @@ module Flx_stream {
   if POSIX do
     open Faio_posix;
     typedef fd_t = Faio_posix::fd_t;
-  else 
+  else
     open Faio_win32;
   done;
 
@@ -80,10 +80,10 @@ module Flx_stream {
     if POSIX do
       proc read(s: fd_t, len: &int, buf: address, eof: &bool)
         { faio_read(s, len, buf, eof); }
-    else 
+    else
       proc read(s: fd_t, len: &int, buf: address, eof: &bool)
         { ReadFile(s, len, buf, eof); }
-    done; 
+    done;
   }
 
   instance OByteStream[fd_t]
@@ -91,7 +91,7 @@ module Flx_stream {
     if POSIX do
       proc write(s: fd_t, len: &int, buf: address, eof: &bool)
         { faio_write(s, len, buf, eof); }
-    else 
+    else
       proc write(s: fd_t, len: &int, buf: address, eof: &bool)
         { WriteFile(s, len, buf, eof); }
     done;
@@ -105,7 +105,7 @@ module Flx_stream {
       proc iclose (f:fd_t) { close f; }
     else
       proc iclose (f:fd_t) { CloseFile f; }
-    done; 
+    done;
   }
 
   instance TerminalOByteStream[fd_t]
@@ -114,7 +114,7 @@ module Flx_stream {
     proc oclose (f:fd_t) { close f; }
     else
       proc oclose (f:fd_t) { CloseFile f; }
-    done; 
+    done;
   }
 
   instance TerminalIOByteStream[fd_t]
@@ -123,7 +123,7 @@ module Flx_stream {
       proc ioclose (f:fd_t) { close f; }
     else
       proc ioclose (f:fd_t) { CloseFile f; }
-    done; 
+    done;
   }
 
   proc cat[istr,ostr with IByteStream[istr], OByteStream[ostr]]
@@ -309,4 +309,4 @@ module Flx_stream {
     var a = C_hack::cast[address]$ cstr s;
     write(sk, &slen, a, eof);
   }
-} // module Flx_stream
+} // module Stream
