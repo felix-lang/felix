@@ -258,6 +258,7 @@ and xpattern_t x =
   let ti sr x = type_of_sex sr x in
   let xq sr m qn = qne (xexpr_t (xsr sr)) m qn in
   match x with
+  | Lst [Id "pat_expr"; sr; e] -> PAT_expr (xsr sr, xexpr_t (xsr sr) e)
   | Lst [Id "pat_nan"; sr] -> PAT_nan (xsr sr)
   | Lst [Id "pat_none"; sr] -> PAT_none (xsr sr)
 

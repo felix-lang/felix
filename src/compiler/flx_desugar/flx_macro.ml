@@ -114,6 +114,40 @@ let rec expand_ident sr macros noexpand id =
     | _ -> id
   with Not_found -> id
 
+let fix_pattern counter pat =
+  let rec aux p = match p with
+  | PAT_nan _ 
+  | PAT_none _
+
+  | PAT_int _
+  | PAT_string _
+
+  | PAT_int_range  _
+  | PAT_string_range _ 
+  | PAT_float_range  _
+  | PAT_name _
+  | PAT_any _
+  | PAT_const_ctor _ 
+    -> p
+
+  | PAT_coercion (sr, p, t) -> PAT_coercion (sr, aux p, t)
+  | PAT_tuple (sr,ps) -> PAT_tuple (sr,List.map aux ps)
+  | PAT_nonconst_ctor (sr,qn,p) -> PAT_nonconst_ctor (sr,qn,aux p)
+  | PAT_as (sr,p,i) -> PAT_as (sr,aux p,i)
+  | PAT_when (sr,p,e) -> PAT_when (sr,aux p,e)
+  | PAT_record (sr, ps) -> PAT_record (sr, List.map (fun (i,p) -> i,aux p) ps)
+
+  | PAT_expr (sr,e) -> 
+    let n = "_sypv_" ^ (string_of_int !counter) in 
+    let v = EXPR_name (sr,n,[]) in
+    incr counter;
+    let eq = EXPR_name (sr,"eq",[]) in
+    let args = EXPR_tuple (sr,[v;e]) in
+    let test = EXPR_apply (sr, (eq,args)) in
+    PAT_when (sr,PAT_name (sr,n),test)
+
+  in aux pat
+
 (* Find variable names in patterns so as to protect them *)
 let rec get_pattern_vars pat =
   match pat with
@@ -558,6 +592,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     let pes =
       List.map
       (fun (pat,e) ->
+        let pat = fix_pattern seq pat in
         pat,
         let pvs = get_pattern_vars pat in
         let pr = protect sr pvs in
@@ -877,6 +912,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     let case_end_reachable = ref false in
     let end_label = "_degen_stmt_match_end_" ^ string_of_int (let n = !seq in incr seq; n) in
     let pss = List.map (fun (pat,sts) ->
+      let pat = fix_pattern seq pat in
       let pvs = get_pattern_vars pat in
       let pvs' =  (* new parameter names *)
         List.map

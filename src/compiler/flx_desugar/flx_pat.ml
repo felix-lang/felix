@@ -182,6 +182,7 @@ and find_match_type pat = match pat with
   | PAT_nonconst_ctor _ -> check_match_union
   | PAT_record (_,_) -> check_match_record
 
+  | PAT_expr _ -> assert false
   | PAT_as (_,pat,_)
   | PAT_when (_,pat,_)
   | PAT_coercion (_,pat,_) -> find_match_type pat

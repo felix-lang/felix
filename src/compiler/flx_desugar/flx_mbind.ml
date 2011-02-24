@@ -224,6 +224,7 @@ let rec gen_match_check pat (arg:expr_t) =
   and ssrc x = Flx_srcref.short_string_of_src x
   in
   match pat with
+  | PAT_expr _ -> assert false
   | PAT_int (sr,t,i) -> apl2 sr "eq" (lint sr t i) arg
   | PAT_string (sr,s) -> apl2 sr "eq" (lstr sr s) arg
   | PAT_nan sr -> apl sr "isnan" arg
@@ -345,3 +346,5 @@ let rec gen_match_check pat (arg:expr_t) =
     let vars =  Hashtbl.create 97 in
     get_pattern_vars vars pat [];
     apl2 sr "land" (gen_match_check pat arg) (subst vars expr arg)
+
+

@@ -240,6 +240,7 @@ and pattern_t =
   | PAT_as of Flx_srcref.t * pattern_t * Flx_id.t
   | PAT_when of Flx_srcref.t * pattern_t * expr_t
   | PAT_record of Flx_srcref.t * (Flx_id.t * pattern_t) list
+  | PAT_expr of Flx_srcref.t * expr_t
 
 (** {7 Statements}
  *
@@ -788,6 +789,7 @@ let src_of_pat (e : pattern_t) = match e with
   | PAT_as (s,_,_)
   | PAT_when (s,_,_)
   | PAT_record (s,_)
+  | PAT_expr (s,_)
   -> s
 
 let typecode_of_qualified_name = function
@@ -1109,6 +1111,9 @@ and print_pattern ppf = function
   | PAT_record (_, items) ->
       print_variant1 ppf "PAT_record"
         (Flx_list.print_tuples2 Flx_id.print print_pattern) items
+  | PAT_expr (_,e) ->
+      print_variant1 ppf "PAT_expr"
+      print_expr e
 
 (** Prints out an expression to a formatter. *)
 and print_expr ppf = function

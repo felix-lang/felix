@@ -239,6 +239,7 @@ and pattern_t =
   | PAT_as of Flx_srcref.t * pattern_t * Flx_id.t
   | PAT_when of Flx_srcref.t * pattern_t * expr_t
   | PAT_record of Flx_srcref.t * (Flx_id.t * pattern_t) list
+  | PAT_expr of Flx_srcref.t * expr_t
 
 (** {7 Statements}
  *

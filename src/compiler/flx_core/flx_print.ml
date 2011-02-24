@@ -845,6 +845,7 @@ and string_of_pattern p =
   | PAT_record (_,ps) ->
      "struct { " ^ catmap "; " (fun (s,p) ->
        string_of_id s ^ "=" ^ string_of_pattern p) ps ^ "; }"
+  | PAT_expr (_,e) -> "$(" ^ string_of_expr e ^ ")"
 
 and string_of_letpat p =
   match p with
