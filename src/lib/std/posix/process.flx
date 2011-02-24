@@ -1,10 +1,13 @@
 // Posix process stuff
 include "std/posix/posix_headers";
 include "std/posix/errno";
+include "std/posix/signal";
 
 module Process {
+  open Posix_Signal;
+
   gen popen_in: string -> Text_file::input_text_file = 'popen($1.data(), "r")';
-  gen pclose: Text_file::input_text_file -> int = "pclose($1)";
+  gen pclose: Text_file::input_text_file -> process_status_t = "pclose($1)";
 
   type process_status_t = "int";
 
