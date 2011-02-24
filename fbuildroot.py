@@ -437,10 +437,12 @@ def build(ctx):
     # Build the standard library.
 
     # copy files into the library
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/lib')
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/lib',
+        pattern='*.{flx,flxh,files}')
 
     # copy tools
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tools')
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tools',
+        pattern='*.flx{,h}')
 
     for module in (
             'sqlite3',
