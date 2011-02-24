@@ -287,8 +287,10 @@ def _print_types(lang, p):
     stddef_h = call('fbuild.config.c.stdlib.stddef_h', lang.static)
     complex_h = call('fbuild.config.c.stdlib.complex_h', lang.static)
     stdint_h = call('fbuild.config.c.stdlib.stdint_h', lang.static)
+    sys_types_h = call('fbuild.config.c.posix.sys_types_h', lang.static)
 
     p('HAVE_STDINT', bool(stdint_h.header))
+    p('HAVE_SYS_TYPES', bool(sys_types_h.header))
 
     # write out data for the types.
     for name, type_ in set(chain(
@@ -296,7 +298,8 @@ def _print_types(lang, p):
             c99_types.types(),
             stddef_h.types(),
             complex_h.types(),
-            stdint_h.types())):
+            stdint_h.types(),
+            sys_types_h.types())):
         if type_ is None:
             continue
         write(name, type_)
@@ -321,6 +324,13 @@ def _print_types(lang, p):
         p('ALIAS_intptr_t', cxx_types.structural_alias(cxx_types.voidp))
         p('ALIAS_uintptr_t',
             'unsigned ' + cxx_types.structural_alias(cxx_types.voidp))
+
+    if not sys_types_h.ssize_t:
+        if c99_types.long_long and \
+                stddef_h.size_t.size == c99_types.long_long.size:
+            p('ALIAS_ssize_t', 'long long')
+        else:
+            p('ALIAS_ssize_t', 'long')
 
 def _print_c99_support(lang, p):
     stdio_h = call('fbuild.config.c.stdlib.stdio_h', lang.static)
