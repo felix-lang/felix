@@ -1,18 +1,18 @@
 [submodule "fbuild"]
 	path = fbuild
-	url = git://github.com/erickt/fbuild.git
+	url = git://github.com/felix-lang/fbuild.git
 [submodule "src/compiler/dypgen"]
 	path = src/compiler/dypgen
-	url = git://github.com/erickt/dypgen.git
+	url = git://github.com/felix-lang/dypgen.git
 [submodule "src/compiler/ocs"]
 	path = src/compiler/ocs
-	url = git://github.com/erickt/ocs.git
+	url = git://github.com/felix-lang/ocs.git
 [submodule "re2"]
 	path = src/re2/re2
-	url = git://github.com/skaller/re2.git
+	url = git://github.com/felix-lang/re2.git
 [submodule "src/tre/tre"]
 	path = src/tre/tre
-	url = git://github.com/erickt/tre.git
+	url = git://github.com/felix-lang/tre.git
 [submodule "src/judy"]
 	path = src/judy
-	url = git://github.com/erickt/judy.git
+	url = git://github.com/felix-lang/judy.git
