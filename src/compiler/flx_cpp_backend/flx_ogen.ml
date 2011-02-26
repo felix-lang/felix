@@ -179,7 +179,7 @@ let rec get_offsets' syms bsym_table typ : string list =
     ;
     !lst
 
-  | BTYP_record args ->
+  | BTYP_record (_,args) ->
     let lst = ref [] in
     iter
     (fun (s,t) ->

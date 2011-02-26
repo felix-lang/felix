@@ -22,7 +22,7 @@ and t =
   | BTYP_inst of bid_t * t list
   | BTYP_tuple of t list
   | BTYP_array of t * t
-  | BTYP_record of (string * t) list
+  | BTYP_record of string * (string * t) list
   | BTYP_variant of (string * t) list
   | BTYP_pointer of t
   | BTYP_function of t * t
@@ -111,16 +111,14 @@ let btyp_array (t, n) =
   | _ -> BTYP_array (t, n)
 
 (** Construct a BTYP_record type. *)
-let btyp_record = function
-  | [] -> BTYP_tuple []
-  | ts ->
+let btyp_record name ts = 
       (* Make sure all the elements are sorted by name. *)
       let ts = List.sort compare ts in
-      BTYP_record ts
+      BTYP_record (name,ts)
 
 (** Construct a BTYP_variant type. *)
 let btyp_variant = function
-  | [] -> BTYP_tuple []
+  | [] -> BTYP_void
   | ts ->
       (* Make sure all the elements are sorted by name. *)
       let ts = List.sort compare ts in
@@ -232,7 +230,7 @@ let flat_iter
   | BTYP_inst (i,ts) -> f_bid i; List.iter f_btype ts
   | BTYP_tuple ts -> List.iter f_btype ts
   | BTYP_array (t1,t2)->  f_btype t1; f_btype t2
-  | BTYP_record ts -> List.iter (fun (s,t) -> f_btype t) ts
+  | BTYP_record (_,ts) -> List.iter (fun (s,t) -> f_btype t) ts
   | BTYP_variant ts -> List.iter (fun (s,t) -> f_btype t) ts
   | BTYP_pointer t -> f_btype t
   | BTYP_function (a,b) -> f_btype a; f_btype b
@@ -295,7 +293,7 @@ let map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_inst (i,ts) -> BTYP_inst (f_bid i, List.map f_btype ts)
   | BTYP_tuple ts -> BTYP_tuple (List.map f_btype ts)
   | BTYP_array (t1,t2) -> BTYP_array (f_btype t1, f_btype t2)
-  | BTYP_record ts -> BTYP_record (List.map (fun (s,t) -> s, f_btype t) ts)
+  | BTYP_record (n,ts) -> BTYP_record (n,List.map (fun (s,t) -> s, f_btype t) ts)
   | BTYP_variant ts -> BTYP_variant (List.map (fun (s,t) -> s, f_btype t) ts)
   | BTYP_pointer t -> BTYP_pointer (f_btype t)
   | BTYP_function (a,b) -> BTYP_function (f_btype a, f_btype b)
@@ -363,8 +361,8 @@ and print f =
       print_variant1 f "BTYP_tuple" print_btypes ts
   | BTYP_array (t, n) ->
       print_variant2 f "BTYP_array" print t print n
-  | BTYP_record ls ->
-      print_variant1 f "BTYP_record" print_string_btypes ls
+  | BTYP_record (name,ls) ->
+      print_variant2 f "BTYP_record" print_string name print_string_btypes ls
   | BTYP_variant ls ->
       print_variant1 f "BTYP_variant" print_string_btypes ls
   | BTYP_pointer t ->

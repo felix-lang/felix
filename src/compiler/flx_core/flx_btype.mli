@@ -20,7 +20,7 @@ and t = private
   | BTYP_inst of bid_t * t list
   | BTYP_tuple of t list
   | BTYP_array of t * t
-  | BTYP_record of (string * t) list
+  | BTYP_record of string * (string * t) list
   | BTYP_variant of (string * t) list
   | BTYP_pointer of t
   | BTYP_function of t * t
@@ -90,7 +90,7 @@ val btyp_tuple : t list -> t
 val btyp_array : t * t -> t
 
 (** Construct a BTYP_record type. *)
-val btyp_record : (string * t) list -> t
+val btyp_record : string -> (string * t) list -> t
 
 (** Construct a BTYP_variant type. *)
 val btyp_variant : (string * t) list -> t

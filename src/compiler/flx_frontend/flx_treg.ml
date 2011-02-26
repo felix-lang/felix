@@ -46,7 +46,7 @@ let register_tuple syms bsym_table t =
     let ts = rev_map (fun _ -> t') (nlist n) in
     register_type_nr syms bsym_table (btyp_tuple ts)
 
-  | BTYP_record ts ->
+  | BTYP_record (n,ts) ->
     begin match t with
     | BTYP_tuple [] -> ()
     | _ -> register_type_nr syms bsym_table t
@@ -110,7 +110,7 @@ let rec register_type_r ui syms bsym_table exclude sr t =
 
   | BTYP_tuple ps -> iter rr ps; rnr t
 
-  | BTYP_record ps -> iter (fun (s,t)->rr t) ps; rnr t
+  | BTYP_record (n,ps) -> iter (fun (s,t)->rr t) ps; rnr t
   | BTYP_variant ps -> iter (fun (s,t)->rr t) ps; rnr t
 
   | BTYP_sum ps ->

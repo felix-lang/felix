@@ -729,7 +729,7 @@ and bind_type'
   | TYP_patany _ -> failwith "Not implemented patany in typecode"
 
   | TYP_intersect ts -> btyp_intersect (List.map bt ts)
-  | TYP_record ts -> btyp_record (List.map (fun (s,t) -> s,bt t) ts)
+  | TYP_record ts -> btyp_record "" (List.map (fun (s,t) -> s,bt t) ts)
   | TYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s,bt t) ts)
 
   (* We first attempt to perform the match at binding time as an optimisation,
@@ -1737,7 +1737,7 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
             | BTYP_record _
             | BTYP_tuple [] ->
                 let rs = match t2 with
-                  | BTYP_record rs -> rs
+                  | BTYP_record ("",rs) -> rs
                   | BTYP_tuple [] -> []
                   | _ -> assert false
                 in
@@ -3185,7 +3185,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     let meth_ts = List.map (bt sra) meth_ts in
     let (be2,t2) as x2 = be e2 in
     begin match t2 with
-    | BTYP_record es ->
+    | BTYP_record ("",es) ->
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
       let es = List.sort rcmp es in
       let field_name = String.sub fn 4 (String.length fn -4) in
@@ -3468,7 +3468,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         ^"to unitsum " ^ si n)
       end
 
-    | BTYP_record ls',BTYP_record ls'' ->
+    | BTYP_record (n',ls'),BTYP_record (n'',ls'') when n' = n''->
       begin
       try
       bexpr_record t''
@@ -3579,7 +3579,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_get_named_variable (sr,(name,e')) ->
     let e'',t'' as x2 = be e' in
     begin match t'' with
-    | BTYP_record es
+    | BTYP_record ("",es)
       ->
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
       let es = List.sort rcmp es in
@@ -4111,7 +4111,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
         | _ -> assert false
       in
       let alst = match ta with
-        |BTYP_record ts -> ts
+        |BTYP_record ("",ts) -> ts
         | _ -> assert false
       in
       let nf = List.length fls in
@@ -4204,7 +4204,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     let ss,es = List.split ls in
     let es = List.map be es in
     let ts = List.map snd es in
-    let t = btyp_record (List.combine ss ts) in
+    let t = btyp_record "" (List.combine ss ts) in
     bexpr_record t (List.combine ss es)
     end
 
@@ -4373,7 +4373,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
         end
 
       (* LHS HAS A RECORD TYPE *)
-      | BTYP_record es ->
+      | BTYP_record ("",es) ->
         let rcmp (s1,_) (s2,_) = compare s1 s2 in
         let es = List.sort rcmp es in
         let field_name = name in
@@ -5588,9 +5588,9 @@ and rebind_btype state bsym_table env sr ts t =
   | BTYP_type_set_intersection ts -> btyp_type_set_intersection (List.map rbt ts)
 
   | BTYP_tuple ts -> btyp_tuple (List.map rbt ts)
-  | BTYP_record ts ->
+  | BTYP_record (n,ts) ->
       let ss,ts = List.split ts in
-      btyp_record (List.combine ss (List.map rbt ts))
+      btyp_record n (List.combine ss (List.map rbt ts))
 
   | BTYP_variant ts ->
       let ss,ts = List.split ts in

@@ -41,7 +41,7 @@ let rec dual t =
 
   | BTYP_type_set ts -> btyp_intersect (List.map dual ts)
   | BTYP_intersect ts -> btyp_type_set (List.map dual ts)
-  | BTYP_record ts -> btyp_variant ts
+  | BTYP_record (n,ts) -> btyp_variant ts
   | t -> t
 
 (* top down check for fix point not under sum or pointer *)
@@ -262,8 +262,8 @@ let fix i t =
     | BTYP_pointer a -> btyp_pointer (aux a)
     | BTYP_array (a,b) -> btyp_array (aux a, aux b)
 
-    | BTYP_record ts ->
-       btyp_record (List.map (fun (s,t) -> s, aux t) ts)
+    | BTYP_record (n,ts) ->
+       btyp_record n (List.map (fun (s,t) -> s, aux t) ts)
 
     | BTYP_variant ts ->
        btyp_variant (List.map (fun (s,t) -> s, aux t) ts)
@@ -379,11 +379,11 @@ let rec unification counter eqns dvars =
       | BTYP_cfunction (t11, t12), BTYP_cfunction (t21, t22) ->
         eqns := (t11,t21) :: (t12,t22) :: !eqns
 
-      | BTYP_record [],BTYP_tuple []
-      | BTYP_tuple [],BTYP_record [] -> ()
+      | BTYP_record ("",[]),BTYP_tuple []
+      | BTYP_tuple [],BTYP_record ("",[]) -> ()
 
-      | BTYP_record t1,BTYP_record t2 ->
-        if List.length t1 = List.length t2
+      | BTYP_record (n1,t1),BTYP_record (n2,t2) ->
+        if n1 = n2 && List.length t1 = List.length t2
         then begin
           let rcmp (s1,_) (s2,_) = compare s1 s2 in
           let t1 = List.sort rcmp t1 in
@@ -628,11 +628,11 @@ let rec type_eq' counter ltrail ldepth rtrail rdepth trail t1 t2 =
     *)
     result
 
-  | BTYP_record [],BTYP_tuple []
-  | BTYP_tuple [],BTYP_record [] -> true
+  | BTYP_record ("",[]),BTYP_tuple []
+  | BTYP_tuple [],BTYP_record ("",[]) -> true
 
-  | BTYP_record t1,BTYP_record t2 ->
-    if List.length t1 = List.length t2
+  | BTYP_record (n1,t1),BTYP_record (n2,t2) ->
+    if n1 = n2 && List.length t1 = List.length t2
     then begin
       let rcmp (s1,_) (s2,_) = compare s1 s2 in
       let t1 = List.sort rcmp t1 in
@@ -767,7 +767,7 @@ let unfold t =
     match t' with
     | BTYP_sum ls -> btyp_sum (List.map uf ls)
     | BTYP_tuple ls -> btyp_tuple (List.map uf ls)
-    | BTYP_record ls -> btyp_record (List.map (fun (s,t) -> s,uf t) ls)
+    | BTYP_record (n,ls) -> btyp_record n (List.map (fun (s,t) -> s,uf t) ls)
     | BTYP_variant ls -> btyp_variant (List.map (fun (s,t) -> s,uf t) ls)
     | BTYP_array (a,b) -> btyp_array (uf a,uf b)
     | BTYP_function (a,b) -> btyp_function (uf a,uf b)
@@ -801,7 +801,7 @@ let fold counter t =
     | BTYP_sum ls
     | BTYP_inst (_,ls)
     | BTYP_tuple ls -> List.iter ax ls
-    | BTYP_record ls -> List.iter (fun (s,t) -> ax t) ls
+    | BTYP_record (n,ls) -> List.iter (fun (s,t) -> ax t) ls
     | BTYP_variant ls -> List.iter (fun (s,t) -> ax t) ls
 
     | BTYP_array (a,b)
@@ -854,7 +854,7 @@ let var_occurs t =
     | BTYP_sum ls
     | BTYP_inst (_,ls)
     | BTYP_tuple ls -> List.iter aux ls
-    | BTYP_record ls -> List.iter (fun (s,t) -> aux t) ls
+    | BTYP_record (n,ls) -> List.iter (fun (s,t) -> aux t) ls
     | BTYP_variant ls -> List.iter (fun (s,t) -> aux t) ls
 
     | BTYP_array (a,b)

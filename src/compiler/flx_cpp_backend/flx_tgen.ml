@@ -69,9 +69,10 @@ let gen_tuple name tn typs =
   ^
   "};\n"
 
-let gen_record name tn typs =
+let gen_record rname tname tn typs =
   let n = length typs in
-  "struct " ^ name ^ " {\n" ^
+  "// Record " ^ rname ^ "\n" ^
+  "struct " ^ tname ^ " {\n" ^
   catmap ""
   (fun (n,t) ->
     if t = btyp_tuple []
@@ -80,13 +81,13 @@ let gen_record name tn typs =
   )
   typs
   ^
-  "  " ^ name ^ "(){}\n" (* default constructor *)
+  "  " ^ tname ^ "(){}\n" (* default constructor *)
   ^
   (
     if fold_left (fun r (n,t) -> r && t = btyp_tuple []) true typs
     then ""
     else
-    "  " ^ name ^ "(" ^
+    "  " ^ tname ^ "(" ^
     fold_left
     (fun s (n,t) ->
       if t = btyp_tuple [] then s
@@ -385,9 +386,9 @@ let gen_type syms bsym_table (index,typ) =
      descr ^
      gen_tuple (tn typ) tn ts
 
-  | BTYP_record ts ->
+  | BTYP_record (n,ts) ->
      descr ^
-     gen_record (cn typ) tn ts
+     gen_record n (cn typ) tn ts
 
   | BTYP_void -> ""
   | BTYP_pointer t ->

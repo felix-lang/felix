@@ -600,10 +600,10 @@ and sb bsym_table depth fixlist counter prec tc =
       | _ -> 4,cat " * " (map (sbt 4) ls)
       end
 
-    | BTYP_record ls ->
+    | BTYP_record (n,ls) ->
       begin match ls with
       | [] -> 0,"record_unit"
-      | _ -> 0,"struct {"^catmap "" (fun (s,t)->s^":"^sbt 0 t^";") ls ^"}"
+      | _ -> 0,"struct "^n^" {"^catmap "" (fun (s,t)->s^":"^sbt 0 t^";") ls ^"}"
       end
 
     | BTYP_variant ls ->

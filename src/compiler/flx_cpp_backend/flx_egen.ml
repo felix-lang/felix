@@ -325,7 +325,7 @@ let rec gen_expr'
       | _ -> ()
       end;
       ce_dot (ge' e) ("data["^si n^"]")
-    | BTYP_record es ->
+    | BTYP_record (name,es) ->
       let field_name,_ =
         try nth es n
         with Not_found ->
