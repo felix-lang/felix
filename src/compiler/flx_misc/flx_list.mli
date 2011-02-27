@@ -1,6 +1,7 @@
 (** Generic list functions *)
 
-(** hmmm *)
+(** Transpose a matrix list of lists.
+ * [[1; 2]; [3; 4]] -> [[1; 3]; [2; 4]] *)
 val transpose: 'a list list -> 'a list list
 
 (** last element of list *)

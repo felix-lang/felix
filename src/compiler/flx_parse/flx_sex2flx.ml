@@ -268,35 +268,39 @@ and xpattern_t x =
 
   (* ranges *)
   | Lst [Id "pat_int_range"; sr; Str k1; Int i1; Str k2; Int i2] ->
-    PAT_int_range (xsr sr, xint_kind k1, i1, xint_kind k2, i2)
+      PAT_int_range (xsr sr, xint_kind k1, i1, xint_kind k2, i2)
 
   | Lst [Id "pat_string_range"; sr; Str s1; Str s2] ->
-    PAT_string_range (xsr sr,s1, s2)
+      PAT_string_range (xsr sr,s1, s2)
+
   | Lst [Id "pat_float_range"; sr; p1; p2] ->
-    PAT_float_range (xsr sr, xfloat_pat p1, xfloat_pat p2)
+      PAT_float_range (xsr sr, xfloat_pat p1, xfloat_pat p2)
 
   (* other *)
   | Lst [Id "pat_coercion"; sr; p; t] ->
-   PAT_coercion (xsr sr, xp p, ti (xsr sr) t)
+      PAT_coercion (xsr sr, xp p, ti (xsr sr) t)
 
   | Lst [Id "pat_name"; sr; id] -> PAT_name (xsr sr, xid id)
   | Lst [Id "pat_tuple"; sr; Lst ps] -> PAT_tuple (xsr sr, map xp ps)
 
   | Lst [Id "pat_any"; sr] -> PAT_any (xsr sr)
-  | Lst [Id "pat_const_ctor"; sr; qn] -> PAT_const_ctor (xsr sr, xq sr "pat_const_ctor" qn)
-  | Lst [Id "pat_nonconst_ctor"; sr; qn; p] -> PAT_nonconst_ctor (xsr sr, xq sr "pat_nonconst_ctor" qn, xp p)
+  | Lst [Id "pat_const_ctor"; sr; qn] ->
+      PAT_const_ctor (xsr sr, xq sr "pat_const_ctor" qn)
+  | Lst [Id "pat_nonconst_ctor"; sr; qn; p] ->
+      PAT_nonconst_ctor (xsr sr, xq sr "pat_nonconst_ctor" qn, xp p)
 
   | Lst [Id "pat_as"; sr; p; id] -> PAT_as (xsr sr, xp p, xid id)
   | Lst [Id "pat_when"; sr; p; e] -> PAT_when (xsr sr, xp p, xexpr_t (xsr sr) e)
 
   | Lst [Id "pat_record"; sr; Lst ips] ->
-    let ips =
-      List.map begin function
-        | Lst [id; p] -> xid id, xp p
-        | x -> err x "pat_record syntax"
-      end ips
-    in
-    PAT_record (xsr sr, ips)
+      let ips =
+        List.map begin function
+          | Lst [id; p] -> xid id, xp p
+          | x -> err x "pat_record syntax"
+        end ips
+      in
+      PAT_record (xsr sr, ips)
+
   | x ->
     err x "pattern"
 

@@ -284,34 +284,34 @@ let rec adj_cls state bsym_table all_closures sr e =
 let rec adj_lambda state bsym_table all_closures sr e =
   let adj e = adj_lambda state bsym_table all_closures sr e in
   match Flx_bexpr.map ~f_bexpr:adj e with
-
   | BEXPR_compose (f1,f2),t ->
-    let i,ts = gen_composite_closure_entry state bsym_table sr f1 f2 in
-    all_closures := BidSet.add i !all_closures;
-    Flx_bexpr.bexpr_closure t (i,ts)
+      let i,ts = gen_composite_closure_entry state bsym_table sr f1 f2 in
+      all_closures := BidSet.add i !all_closures;
+      Flx_bexpr.bexpr_closure t (i,ts)
 
   | BEXPR_case (v,t'),t as x ->
-    begin match unfold t' with
-    | BTYP_unitsum n -> x
+      begin match unfold t' with
+      | BTYP_unitsum n -> x
 
-    | BTYP_sum ls ->
-      let n = List.length ls in
-      if v < 0 or v >= n
-      then
-        failwith
-        (
-          "Invalid case index " ^ si v ^
-          " of " ^ si n ^ " cases"
-        )
-      else let t2 = List.nth ls v in
-      if t2 = btyp_tuple []
-      then x
-      else
-        let i,ts = gen_case_closure_entry state bsym_table sr x t' t2 in
-        all_closures := BidSet.add i !all_closures;
-        Flx_bexpr.bexpr_closure t (i,ts)
-    | _ -> failwith ("flx_mkcls: Unexpected case of non sum") 
-    end
+      | BTYP_sum ls ->
+          let n = List.length ls in
+          if v < 0 or v >= n
+          then
+            failwith
+            (
+              "Invalid case index " ^ si v ^
+              " of " ^ si n ^ " cases"
+            )
+          else let t2 = List.nth ls v in
+          if t2 = btyp_tuple []
+          then x
+          else
+            let i,ts = gen_case_closure_entry state bsym_table sr x t' t2 in
+            all_closures := BidSet.add i !all_closures;
+            Flx_bexpr.bexpr_closure t (i,ts)
+
+      | _ -> failwith ("flx_mkcls: Unexpected case of non sum")
+      end
 
   | x -> x
 

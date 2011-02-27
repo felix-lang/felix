@@ -1,6 +1,5 @@
 open module Bool
 {
-
   fun land: bool * bool -> bool = "$1&&$2";      // x and y
   fun nand: bool * bool -> bool = "!($1&&$2)";   // not (x and y)
   fun lor: bool * bool -> bool = "$1||$2";       // x or y
@@ -22,5 +21,3 @@ instance Tord[bool] {
 }
 
 open Tord[bool];
-
-

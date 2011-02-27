@@ -293,10 +293,27 @@ let rec gen_match_check pat (arg:expr_t) =
 
   (* other *)
   | PAT_name (sr,_) -> truth sr
+
+  | PAT_tuple (sr,[]) ->
+      (* Lower:
+       *
+       *   match () with
+       *   | () => ...
+       *   endmatch;
+       *
+       * to:
+       *
+       *   if eq ((), ()) then ...
+       *
+       * We can't lower it directly to "if true" because we need to check
+       * that the argument is the right type.
+       *
+       * *)
+      apl2 sr "eq" (EXPR_tuple (sr, [])) arg
+
   | PAT_tuple (sr,pats) ->
     let counter = ref 1 in
-    List.fold_left
-    (fun init pat ->
+    List.fold_left (fun init pat ->
       let sr = src_of_pat pat in
       let n = !counter in
       incr counter;
@@ -346,5 +363,3 @@ let rec gen_match_check pat (arg:expr_t) =
     let vars =  Hashtbl.create 97 in
     get_pattern_vars vars pat [];
     apl2 sr "land" (gen_match_check pat arg) (subst vars expr arg)
-
-

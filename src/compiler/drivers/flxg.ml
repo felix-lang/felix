@@ -222,7 +222,11 @@ let parse_syntax state=
   let parse_timer = make_timer () in
 
   let include_dirs = state.syms.compiler_options.include_dirs in
-  let synfiles = List.concat (List.map (Flx_colns.render include_dirs) state.syms.compiler_options.syntax) in
+  let synfiles = List.concat
+    (List.map
+      (Flx_colns.render include_dirs)
+      state.syms.compiler_options.syntax)
+  in
   (* print_endline ("//Parsing syntax " ^ String.concat ", " synfiles); *)
   let parser_state = List.fold_left
     (fun state file -> Flx_parse.parse_syntax_file ~include_dirs state file)
