@@ -443,7 +443,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       handle_bexe (bexe_fun_return (sr,(e',t'))) init
     else clierr sr
       (
-        "[bind_exe: fun_return ] return of  " ^
+        "[bind_exe: fun_return ] return of " ^
         sbe bsym_table e ^ ":\n" ^
         "fun return type:\n" ^ sbt bsym_table state.ret_type ^
         "\nmust have same type as return expression:\n"^

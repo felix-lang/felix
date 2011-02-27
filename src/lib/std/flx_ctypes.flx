@@ -11,4 +11,3 @@ instance [t in basic_types] Eq[t] {
 
 open[T in basic_types] Show[T];
 open Show[bool];
-
