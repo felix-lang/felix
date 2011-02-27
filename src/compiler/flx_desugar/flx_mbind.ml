@@ -293,6 +293,24 @@ let rec gen_match_check pat (arg:expr_t) =
 
   (* other *)
   | PAT_name (sr,_) -> truth sr
+
+  | PAT_tuple (sr,[]) ->
+      (* Lower:
+       *
+       *   match () with
+       *   | () => ...
+       *   endmatch;
+       *
+       * to:
+       *
+       *   if eq ((), ()) then ...
+       *
+       * We can't lower it directly to "if true" because we need to check
+       * that the argument is the right type.
+       *
+       * *)
+      apl2 sr "eq" (EXPR_tuple (sr, [])) arg
+
   | PAT_tuple (sr,pats) ->
     let counter = ref 1 in
     List.fold_left (fun init pat ->

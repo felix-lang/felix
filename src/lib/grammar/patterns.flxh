@@ -31,6 +31,7 @@ syntax patterns {
   satomic_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
   satomic_pattern := _ =># "`(pat_any ,_sr)";
   satomic_pattern := "(" spattern ")" =># "_2";
+  satomic_pattern := "(" ")" =># "`(pat_tuple ,_sr ())";
   satomic_pattern := "struct" "{" spat_assign+ "}" =># "`(pat_record ,_sr ,_3)";
   satomic_pattern := "$" "(" sexpr ")" =># "`(pat_expr ,_sr ,_3)";
 
