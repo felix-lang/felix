@@ -3,14 +3,17 @@ open Format
 
 let transpose x =
   let dtor ls =
-    split (map (fun x -> hd x, tl x) ls)
+    List.split (List.map (fun x -> List.hd x, List.tl x) ls)
   in
   let rec cons ls (h, t) =
-    match hd t with
+    match List.hd t with
     | [] -> h :: ls
     | _ -> cons (h :: ls) (dtor t)
   in
-  tl (rev (cons [] ([],x)))
+
+  match x with
+  | [] -> []
+  | _ -> List.tl (List.rev (cons [] ([], x)))
 
 let rec list_last ls =
   match ls with
