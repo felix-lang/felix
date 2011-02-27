@@ -80,3 +80,22 @@ typeclass Show [T] {
   inherit Str[T];
   inherit Repr[T];
 }
+
+// -----------------------------------------------------------------------------
+
+instance Str[void] {
+  fun str (x:void) => "void";
+}
+open Show[void];
+
+// -----------------------------------------------------------------------------
+
+instance Str[unit] {
+  fun str (x:unit) => "()";
+}
+open Show[unit];
+
+instance Eq[unit] {
+  fun eq (x:unit, y:unit) => true;
+}
+open Eq[unit];
