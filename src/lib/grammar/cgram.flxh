@@ -1,0 +1,9 @@
+syntax cgram {
+  tstatement := "extern" '"C"' cstatement =># '`(ast_comment ,_sr "C code ..")';
+  tstatement := "extern" '"C"' "{" cstatement+ "}" =># '`(ast_comment ,_sr "C code ..")';
+  cstatement := "typedef" declarator ";" =># "()";
+  declarator := typename sname =># "()";
+  typename := "int";
+  typename := "long";
+}
+

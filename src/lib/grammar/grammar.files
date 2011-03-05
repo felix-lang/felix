@@ -16,5 +16,6 @@ grammar/type_decls.flxh
 grammar/assertions.flxh
 grammar/namespaces.flxh
 grammar/regexps.flxh
+grammar/cgram.flxh
 grammar/felix.flxh
 grammar/save.flxh
