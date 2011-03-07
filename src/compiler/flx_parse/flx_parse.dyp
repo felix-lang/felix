@@ -95,7 +95,8 @@ let dyp_merge_Obj_statement_star ol =
 let dyphack (ls : ( 'a * string) list) : 'a =
   match ls with
   | [x,_] -> x
-  | _ -> failwith "Dypgen parser failed"
+  | [] -> failwith "No parse found"
+  | _ -> failwith "Multiple parses found"
 
 
 (* move this to elsewhere eventually *)
