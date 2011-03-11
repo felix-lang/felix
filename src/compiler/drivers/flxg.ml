@@ -144,7 +144,7 @@ let make_flxg_state ppf compiler_options =
   let compile_start_gm_string = format_time compile_start_gm ^ " UTC" in
   let compile_start_local_string = format_time compile_start_local ^ " (local)" in
 
-  let filename = List.hd (List.rev compiler_options.files) in
+  let filename = List.hd compiler_options.files in
   let inbase = filename in
 
   let input_filename = inbase ^ ".flx" in
@@ -1150,7 +1150,7 @@ let main () =
 print_endline ("Include dirs=" ^ String.concat ", " compiler_options.include_dirs);
 *)
   let module_name = 
-     try make_module_name (List.hd (List.rev (state.syms.compiler_options.files)))
+     try make_module_name (List.hd state.syms.compiler_options.files)
      with _ -> "empty_module"
   in
   let bsym_table_ref = ref (Flx_bsym_table.create ()) in
@@ -1168,7 +1168,7 @@ print_endline ("Include dirs=" ^ String.concat ", " compiler_options.include_dir
   let root_elt = {Flx_sym_table.parent=None; sym=sym; } in
   Hashtbl.add (!sym_table_ref) 0 root_elt;
 
-  let inroots = List.rev state.syms.compiler_options.files in (* reverse order of command line *)
+  let inroots = state.syms.compiler_options.files in (* reverse order of command line *)
   let outdir= state.syms.compiler_options.cache_dir in
   (* print_endline ("Inputs=" ^ String.concat ", " inroots); *)
   begin try
