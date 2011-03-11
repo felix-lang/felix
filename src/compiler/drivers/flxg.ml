@@ -320,6 +320,59 @@ print_endline "Binding asms done";
   fprintf state.ppf "//BINDING OK time %f\n" state.bind_time
 
 
+(** Bind the root module. *)
+let bind_root_module state sym_table bsym_table module_name =
+  let entry =
+    try Hashtbl.find sym_table 0
+    with Not_found -> failwith "flxg: can't find root"
+  in
+
+  let sym =
+    match entry with
+    | { Flx_sym_table.parent=None; sym=sym } -> sym
+    | _ -> failwith "flxg: expected root entry to have parent None"
+  in
+
+  let exes =
+    match sym with
+    | { Flx_sym.symdef=SYMDEF_root exes } -> exes
+    | _ -> failwith "flxg: expected root entry to be SYMDEF_root"
+  in
+
+  (* this is a hack .. oh well .. *)
+  let root_proc = Flx_mtypes2.fresh_bid (state.syms.counter) in
+  let dcl = DCL_function (
+    ([],None),
+    Flx_ast.TYP_void Flx_srcref.dummy_sr,
+    [],
+    (List.map (fun x -> Exe x) exes))
+  in
+
+  let asm = Dcl (
+    Flx_srcref.dummy_sr,
+    "_init_",
+    Some root_proc,
+    `Public,
+    Flx_ast.dfltvs,
+    dcl)
+  in
+
+  let asms = make_module module_name [asm] in
+
+  (* Finally, bind the root module's init procedure. *)
+  bind_asms state sym_table bsym_table root_proc asms;
+
+  (* Extra finally, let's do some paranoia checks to make sure everything went
+   * well. *)
+  if not (Flx_sym_table.mem sym_table root_proc) then
+    failwith "flxg: can't find init proc in unbound symbol table";
+
+  if not (Flx_bsym_table.mem bsym_table root_proc) then
+    failwith "flxg: can't find init proc in bound symbol table";
+
+  root_proc
+
+
 (** Generate the why file. *)
 let generate_why_file state bsym_table root_proc =
   (* generate why file *)
@@ -1217,54 +1270,9 @@ let main () =
     (* Grab the last index created so we can determine which symbols were made
      * when we bind the root module. *)
     start_counter := !(state.syms.counter);
-(*
-print_endline "Main program bound";
-*)
-    (* make the root proc *)
 
-    let entry = try Hashtbl.find sym_table 0 with Not_found -> failwith "flxg: can't find root" in
-    let sym = match entry with
-      | { Flx_sym_table.parent=None; sym=sym } -> sym
-      | _ -> failwith "flxg: expected root entry to have parent None"
-    in 
-    let exes = match sym with
-    | {Flx_sym.symdef=SYMDEF_root exes} -> exes
-    | _ -> failwith "flxg: expected root entry to be SYMDEF_root"
-    in
-    let asms = List.map (fun x -> Exe x) exes in
-    (* this is a hack .. oh well .. *)
-    let root_proc = Flx_mtypes2.fresh_bid (state.syms.counter) in
-    let dcl = DCL_function (
-      ([],None),
-      Flx_ast.TYP_void Flx_srcref.dummy_sr,
-      [],
-      asms)
-    in
-    let asm = Dcl (
-      Flx_srcref.dummy_sr,
-      "_init_",
-      Some root_proc,
-      `Public,
-      Flx_ast.dfltvs,
-      dcl)
-    in
-    let asms = make_module module_name [asm] in
-(*
-print_endline ("Binding init proc " ^ string_of_int root_proc);
-*)
-    bind_asms state sym_table bsym_table root_proc asms;
-(*
-print_endline ("Init proc: Exports = " ^ string_of_int (List.length (state.syms.bifaces)));
-*)
-(*
-print_endline "init proc bound";
-*)
-    if not (Flx_sym_table.mem sym_table root_proc) then
-      failwith "flxg: can't find init proc in unbond symbol table "
-    ;
-    if not (Flx_bsym_table.mem bsym_table root_proc) then
-      failwith "flxg: can't find init proc in bound symbol table"
-    ;
+    (* Bind the root module's init procedure. *)
+    let root_proc = bind_root_module state sym_table bsym_table module_name in
 
     Flx_typeclass.typeclass_instance_check state.syms bsym_table;
 
