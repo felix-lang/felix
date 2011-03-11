@@ -1208,52 +1208,99 @@ let process_lib
   (* already processed include files *)
   excls := includes @ !excls
 
+(* -------------------------------------------------------------------------- *)
+
+let make_sym_table () =
+  let sym_table = Flx_sym_table.create () in
+
+  (* We need the root symbol that will be the parent for all the other
+   * symbols. *)
+  let sym = {
+    Flx_sym.id="root";
+    sr=Flx_srcref.dummy_sr;
+    vs=Flx_ast.dfltvs;
+    pubmap=Hashtbl.create 97;
+    privmap=Hashtbl.create 97;
+    dirs=[];
+    symdef=(SYMDEF_root []) }
+  in
+
+  (* The root symbol's index is 0. *)
+  Hashtbl.add sym_table 0 { Flx_sym_table.parent=None; sym=sym };
+
+  sym_table
+
+(* -------------------------------------------------------------------------- *)
+
+let make_bsym_table () =
+  Flx_bsym_table.create ()
+
+(* -------------------------------------------------------------------------- *)
+
+let process_libs state parser_state module_name start_counter =
+  (* Create the symbol tables. These may be changed while we're processing each
+   * library, so we'll pass around references. *)
+  let sym_table_ref = ref (make_sym_table ()) in
+  let bsym_table_ref = ref (make_bsym_table ()) in
+
+  (* The libraries are just all but the first specified files. *)
+  let libs = List.rev (List.tl state.syms.compiler_options.files) in
+
+  let excls = ref [] in
+  List.iter
+    (process_lib
+      state
+      parser_state
+      sym_table_ref
+      bsym_table_ref
+      excls
+      state.syms.compiler_options.cache_dir
+      module_name
+      start_counter)
+    libs;
+
+  excls, !sym_table_ref, !bsym_table_ref
+
+(* -------------------------------------------------------------------------- *)
 
 let main () =
   let start_counter = ref 2 in
   let ppf, compiler_options = parse_args () in
   let state = make_flxg_state ppf compiler_options in
-  let module_name = 
-     try make_module_name (List.hd state.syms.compiler_options.files)
-     with _ -> "empty_module"
-  in
-  let bsym_table_ref = ref (Flx_bsym_table.create ()) in
-  let sym_table_ref = ref (Flx_sym_table.create ()) in
-  let sym : Flx_sym.t = {
-    Flx_sym.id="root"; 
-    sr=Flx_srcref.dummy_sr; 
-    vs=Flx_ast.dfltvs;
-    pubmap=Hashtbl.create 97; 
-    privmap=Hashtbl.create 97; 
-    dirs=[]; 
-    symdef=(SYMDEF_root []) 
-  } 
-  in
-  let root_elt = {Flx_sym_table.parent=None; sym=sym; } in
-  Hashtbl.add (!sym_table_ref) 0 root_elt;
 
-  let inroots = state.syms.compiler_options.files in (* reverse order of command line *)
-  let outdir= state.syms.compiler_options.cache_dir in
+  (* The first file specified is the main program. *)
+  let main_prog = List.hd compiler_options.files in
+
+  (* Look up the name of the main module. *)
+  let module_name = make_module_name main_prog in
+
   begin try
-    if List.length inroots = 0 then
-      raise (Failure "No input files on comamnd line")
-    ;
     let parser_state = load_syntax state in
 
-    let main_prog = List.hd inroots in
-    let libs = List.rev (List.tl inroots) in
-    let excls:string list ref = ref [] in
-    List.iter (process_lib state parser_state sym_table_ref bsym_table_ref excls outdir module_name start_counter) libs;
+    let excls, sym_table, bsym_table = process_libs
+      state
+      parser_state
+      module_name
+      start_counter
+    in
 
-    let sym_table = !sym_table_ref in
-    let bsym_table = !bsym_table_ref in
-    let assembly =  make_assembly state parser_state !excls module_name (NoSearch main_prog) in
-    let includes, depnames, asmss= 
-       let rec aux includes depnames asmss a = match a with
-       | [] -> includes, depnames, asmss
-       | { filename=filename; depname=depname; asms=asms; } :: t ->
-       aux (filename :: includes) (depname::depnames) (asms::asmss) t
-       in aux [] [] [] assembly
+    (* Create the symbol table assembly for the main program. *)
+    let assembly = make_assembly
+      state
+      parser_state
+      !excls
+      module_name
+      (NoSearch main_prog)
+    in
+
+    let includes, depnames, asmss =
+      let rec aux includes depnames asmss a =
+        match a with
+        | [] -> includes, depnames, asmss
+        | { filename=filename; depname=depname; asms=asms; } :: t ->
+            aux (filename :: includes) (depname::depnames) (asms::asmss) t
+      in
+      aux [] [] [] assembly
     in
     let asms = List.concat (List.rev asmss) in
 
