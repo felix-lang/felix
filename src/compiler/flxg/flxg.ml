@@ -15,7 +15,6 @@ open Flx_gen
 open Flx_getopt
 open Flx_version
 open Flx_exceptions
-open Flx_flxopt
 open Flx_ogen
 open Flx_typing
 
@@ -53,7 +52,7 @@ let parse_args () =
 
   (* Print help and version out. *)
   if check_keys raw_options ["h"; "help"] then begin
-    print_options ();
+    Flxg_options.print_options ();
     exit 0
   end;
 
@@ -63,11 +62,11 @@ let parse_args () =
   end;
 
   (* Now extract the driver options. *)
-  let compiler_options = get_felix_options raw_options in
+  let compiler_options = Flxg_options.get_options raw_options in
 
   (* Error out if we didn't specify any files. *)
   if compiler_options.files = [] then begin
-    print_options ();
+    Flxg_options.print_options ();
     exit 1
   end;
 
@@ -237,7 +236,7 @@ let parse_syntax state=
   let auto_imports = List.concat (List.map (Flx_colns.render include_dirs) state.syms.compiler_options.auto_imports) in
   let parser_state = List.fold_left
     (fun state file -> Flx_parse.parse_file ~include_dirs state file)
-    parser_state 
+    parser_state
     auto_imports
   in
   let parsing_device = !(Flx_parse_helper.global_data.Flx_token.parsing_device) in
@@ -252,7 +251,7 @@ let parse_syntax state=
   parser_state
 
 let load_syntax state =
-  try 
+  try
      let filename = "automaton.syntax" in
      let oc = open_in_bin filename in
      let local_data = Marshal.from_channel oc in
@@ -261,12 +260,12 @@ let load_syntax state =
      (* print_endline "Loaded automaton from disk"; *)
      let env = Flx_parse_helper.global_data.Flx_token.env in
      let scm = local_data.Flx_token.scm in
-     Flx_parse.load_scheme_defs env scm; 
+     Flx_parse.load_scheme_defs env scm;
      Flx_parse_helper.global_data.Flx_token.parsing_device := parsing_device;
      local_data
   with _ ->
     print_endline "Can't load automaton from disk: building!";
-    parse_syntax state 
+    parse_syntax state
 
 (** Parse an implementation file *)
 let parse_file state parser_state file =
@@ -387,10 +386,10 @@ let generate_dep_file state =
  * flx, but it doesn't say where the *.par files are.. we need to list both,
  * since the *.par files might be in a --cache_dir directory.
  *
- * Still there's another way to use the information here: 
+ * Still there's another way to use the information here:
  * We just check the time stamps relative to the main program *.par file
  * and/or generated program, whatever flx does now with the main program
- * filename. I.e. we just take the time stamp of the main program as the 
+ * filename. I.e. we just take the time stamp of the main program as the
  * largest of all the time stamps. If a file is deleted its stamp is 0,
  * which will only cause a problem if there's a dangling reference,
  * otherwise the including file had to be changed to stop this, and its
@@ -565,7 +564,7 @@ let codegen_bsyms state bsym_table root_proc =
    * qualification everywhere which will make the code a bit of a mess..
    *)
   plh "//FELIX RUNTIME";
-  plh "#include \"flx_rtl.hpp\"";  
+  plh "#include \"flx_rtl.hpp\"";
   (* plh "using namespace ::flx::rtl;";  *)
   plh "#include \"flx_gc.hpp\"";
   (* plh "using namespace ::flx::gc::generic;"; *)
@@ -659,7 +658,7 @@ let codegen_bsyms state bsym_table root_proc =
 
   (* These must be in order: build a list and sort it *)
   instantiate_instances plb `Body;
-  
+
   (* emit rtti file now so we can get the last_ptr_map and stick it
    * somewhere in the thread frame *)
   let last_ptr_map, tables = Flx_ogen.gen_offset_tables
@@ -667,7 +666,7 @@ let codegen_bsyms state bsym_table root_proc =
     bsym_table
     state.module_name
     "&::flx::rtl::unit_ptr_map"
-  in 
+  in
    plr tables
   ;
 
@@ -908,8 +907,8 @@ let save_profile state =
 
 let strip_extension s =
   let n = String.length s in
-  if n>4 then 
-    if String.sub s (n-4) 4 = ".flx" 
+  if n>4 then
+    if String.sub s (n-4) 4 = ".flx"
     then String.sub s 0 (n-4)
     else s
   else s
@@ -917,7 +916,7 @@ let strip_extension s =
 type include_entry_t = Search of string | NoSearch of string
 
 (* if an including_file_base "a/b" in including_file_dir "c/d" includes
-   with string 
+   with string
    "f" then we use include entry Search "f" (search the path)
    "./f" then we use NoSearch "c/d/a/f" (sibling of including file)
 *)
@@ -925,15 +924,15 @@ type include_entry_t = Search of string | NoSearch of string
 let make_include_entry including_file_dir including_file_base  include_string =
   let n = String.length include_string in
   if n > 1 then
-    if String.sub include_string 0 2 = "./" 
-    then begin 
+    if String.sub include_string 0 2 = "./"
+    then begin
       let dirpart = Filename.dirname including_file_base in
       let dirpart = if dirpart = "." then "" else dirpart in
       let dir = Flx_filesys.join including_file_dir dirpart  in
       let basepart = String.sub include_string 2 (n-2) in
       let fullname = Flx_filesys.join dir basepart in
       NoSearch fullname
-    end else Search include_string 
+    end else Search include_string
   else Search include_string
 
 
@@ -963,8 +962,8 @@ type ub_entry_t = { filename:string;  depname:string; asms: asm_t list }
 
 *)
 
-let make_assembly 
-  state 
+let make_assembly
+  state
   parser_state
   (exclusions:string list)
   (module_name:string)
@@ -1105,8 +1104,8 @@ let process_lib
    *)
   let lib_time = Flx_filesys.virtual_filetime Flx_filesys.big_crunch lib_name in
   let in_libtab_name = Flx_filesys.join lib_filedir lib_filename ^ ".libtab" in
-  let out_libtab_name = 
-    match outdir with 
+  let out_libtab_name =
+    match outdir with
     | Some d -> Some (Flx_filesys.join d lib_filename ^ ".libtab")
     | None -> None
   in
@@ -1121,7 +1120,7 @@ let process_lib
   let validate (_,depnames,_,_,_,_,_,_,_,_,_) =
     let filetimes = List.fold_left (fun acc f ->
       max acc (Flx_filesys.virtual_filetime Flx_filesys.big_crunch (f^".flx")))
-      Flx_filesys.big_bang depnames 
+      Flx_filesys.big_bang depnames
     in
     filetimes < lib_cache_time
   in
@@ -1361,7 +1360,7 @@ let main () =
     codegen_bsyms state bsym_table root_proc
 
   with x ->
-    Flx_terminate.terminate compiler_options.reverse_return_parity x
+    Flxg_terminate.terminate compiler_options.reverse_return_parity x
   end;
 
   (* We're done! let's calculate some simple profile statistics. *)

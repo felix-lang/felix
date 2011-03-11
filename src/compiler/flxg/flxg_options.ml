@@ -2,17 +2,6 @@ open Flx_set
 open Flx_mtypes2
 open Flx_getopt
 
-let print_chosen options =
-  print_endline
-  (String.concat ", "
-    (List.map
-      (fun (a, b) ->
-        a ^ "=" ^ b
-      )
-      options
-    )
-  )
-
 (* this stupid routine gets rid of all duplicate // in a filename, and also
  * any trailing /, since for some reason this confuses the include file
  * exclusion checks
@@ -25,22 +14,22 @@ let fixit file =
     let ch = String.sub file i 1 in
     if ch <> Flx_filesys.dir_sep then copy := true;
     if !copy then s := !s ^ ch;
-    copy := ch <> Flx_filesys.dir_sep 
+    copy := ch <> Flx_filesys.dir_sep
   done;
   let s = !s in
   let n = String.length s in
-  let s = 
+  let s =
     if n>1 then
-      if String.sub s (n-1) 1 = Flx_filesys.dir_sep 
-      then String.sub s (n-1) 1 
+      if String.sub s (n-1) 1 = Flx_filesys.dir_sep
+      then String.sub s (n-1) 1
       else s
     else s
-  in 
+  in
   s
 
 let fixup files = List.map fixit files
 
-let get_felix_options options =
+let get_options options =
   {
     optimise    = check_keys options ["opt"; "optimise"];
     debug       = check_key options "debug";
