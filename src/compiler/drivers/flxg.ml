@@ -841,14 +841,13 @@ let save_profile state =
   with _ -> ()
 
 (* Desugar takes a parse tree, which is an Ocaml list of STMT_* s
-   and produces a list of include file names and
-   a list of assmebly instructions. The only state used is a fresh
-   id generator. 
+   and produces a list of include file names and a list of assmebly
+   instructions. The only state used is a fresh id generator.
 *)
 
 (* make_assembly parses and desugars the transitive closure of the specified
-   input file with respect to includes,  and returns a list of pairs
-   mapping files to assembly lists. 
+   input file with respect to includes, and returns a list of pairs mapping
+   files to assembly lists.
 
    The name specified is only used by the macroprocessor to create unique
    names. (?)
@@ -914,130 +913,133 @@ type ub_entry_t = { filename:string;  depname:string; asms: asm_t list }
 let make_assembly 
   state 
   parser_state
-  (exclusions:string list)  
-  (module_name:string) 
-  (input:include_entry_t) 
+  (exclusions:string list)
+  (module_name:string)
+  (input:include_entry_t)
   : ub_entry_t list
 =
-(*
-print_endline ("Exclusions = " ^ String.concat ", " exclusions);
-*)
-    let root = 0 in
-    let counter_ref = state.syms.counter in
-    let fresh_bid () = Flx_mtypes2.fresh_bid counter_ref in
-    let print_flag = state.syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
-    let outputs = ref [] in
+  let fresh_bid () = Flx_mtypes2.fresh_bid state.syms.counter in
+  let outputs = ref [] in
 
-    (* PARSE THE IMPLEMENTATION FILES *)
-    let processed = ref exclusions in
-    let unprocessed = ref [input] in
+  (* PARSE THE IMPLEMENTATION FILES *)
+  let processed = ref exclusions in
+  let unprocessed = ref [input] in
 
-    let outdir= state.syms.compiler_options.cache_dir in
-    while List.length (!unprocessed) > 0 do
+  while !unprocessed != [] do
+    (* Pop a candidate. *)
+    let candidate = List.hd (!unprocessed) in
+    unprocessed := List.tl (!unprocessed);
 
-      (* pop a candidate *)
-      let candidate = List.hd (!unprocessed) in
-      unprocessed := List.tl (!unprocessed);
+    (* Resolve the filename. *)
+    let filedir,filename =
+      match candidate with
+      | Search s ->
+          Flx_filesys.find_include_dir
+            ~include_dirs:state.syms.compiler_options.include_dirs
+            (s ^ ".flx"),s
+      | NoSearch s -> "",s
+    in
+    let flx_base_name = Flx_filesys.join filedir filename in
 
-      (* resolve the filename *)
-      let filedir,filename = match candidate with
-        | Search s ->
-          Flx_filesys.find_include_dir 
-          ~include_dirs:state.syms.compiler_options.include_dirs
-          (s ^ ".flx"),s
-        | NoSearch s -> "",s
-      in
-      let flx_base_name = Flx_filesys.join filedir filename in
-     
-(*
-let _ = print_endline ("filedir=" ^ filedir) in
-let _ = print_endline ("filename=" ^ filename) in
-let _ = print_endline ("flx_base_name= " ^ flx_base_name) in
-let _ = print_endline ("Processed = " ^ String.concat ", " (!processed)) in
-*)
-      (* check if already processed *)
-      if not (List.mem filename (!processed)) then
-      begin
-        (* flag already processed *)
-        processed := filename :: !processed;
+    (* Check if already processed. *)
+    if not (List.mem filename !processed) then begin
+      (* flag already processed *)
+      processed := filename :: !processed;
 
+      (* Get the parse of the felix file, with caching. *)
+      let stmts =
         (* check the felix file modification time *)
         let flx_name = flx_base_name ^ ".flx" in
-        let flx_time = Flx_filesys.virtual_filetime Flx_filesys.big_crunch flx_name in
+        let flx_time = Flx_filesys.virtual_filetime
+          Flx_filesys.big_crunch
+          flx_name
+        in
 
-        (* get the parse of the felix file, with caching  *)
-        let stmts = 
-(* let _ = print_endline ("Filename is " ^ flx_name) in *)
-          let in_par_name = Flx_filesys.join filedir filename ^ ".par2" in
-          let out_par_name = 
-             match outdir with 
-             | Some d -> Some (Flx_filesys.join d filename ^ ".par2")
-             | None -> None
-          in
-          let stmts = Flx_filesys.cached_computation "parse" in_par_name
-            ~outfile:out_par_name
-            ~min_time:flx_time
-            (fun () -> parse_file state parser_state flx_name)
-          in
+        let in_par_name = Flx_filesys.join filedir filename ^ ".par2" in
+        let out_par_name =
+           match state.syms.compiler_options.cache_dir with
+           | Some d -> Some (Flx_filesys.join d filename ^ ".par2")
+           | None -> None
+        in
+        let stmts = Flx_filesys.cached_computation "parse" in_par_name
+          ~outfile:out_par_name
+          ~min_time:flx_time
+          (fun () -> parse_file state parser_state flx_name)
+        in
+        stmts
+      in
+
+      (* Desugare the parse tree, and also return list of include strings *)
+      let include_files, asms =
+        let desugar_state = Flx_desugar.make_desugar_state
+          module_name
+          fresh_bid
+        in
+        let include_files, asms = Flx_desugar.desugar_stmts
+          desugar_state
+          (Filename.dirname filename)
           stmts
         in
 
-        (* Desugare the parse tree, and also return list of include strings *)
-        let include_files, asms =  
-          let desugar_state = Flx_desugar.make_desugar_state module_name fresh_bid in
-          let include_files, asms = Flx_desugar.desugar_stmts desugar_state (Filename.dirname filename) stmts in
-          let top_req = 
-            let sr = Flx_srcref.dummy_sr in
-            let body = Flx_types.DCL_insert (
-              CS.Str "",
-              `Body,
-              Flx_ast.NREQ_true)
-            in
-            Flx_types.Dcl (
-              sr,
-              "_rqs_" ^ module_name,
-              None,
-              `Public,
-              Flx_ast.dfltvs,
-              body)
+        let top_req =
+          let sr = Flx_srcref.dummy_sr in
+          let body = Flx_types.DCL_insert (
+            CS.Str "",
+            `Body,
+            Flx_ast.NREQ_true)
           in
-          let asms = top_req::asms in
-          include_files, asms 
+          Flx_types.Dcl (
+            sr,
+            "_rqs_" ^ module_name,
+            None,
+            `Public,
+            Flx_ast.dfltvs,
+            body)
         in
+        let asms = top_req::asms in
+        include_files, asms
+      in
 
-        (* run through include strings found *)
-        List.iter (fun s -> 
-          (* Convert include string to an include term *)
-          let include_entry = make_include_entry filedir filename s in
+      (* Run through include strings found. Desugar outputs the include files
+       * backwards, but we push them onto the unprocessed stack which means the
+       * order is again reversed so we actually get the proper order of
+       * initialisation. *)
+      List.iter begin fun s ->
+        (* Convert include string to an include term. *)
+        let include_entry = make_include_entry filedir filename s in
 
-          (* add the name to the unprocessed include list, even if already processed 
-           * if it is already processed that will be found when it is resolved at
-           * the top of this loop *)
-          if not (List.mem include_entry (!unprocessed)) 
-          then begin
-(*            print_endline ("Add Include file: " ^ s); *)
-            unprocessed := include_entry :: (!unprocessed)
-          end
-        ) 
-        (* desugar outputs the include files backwards, but we push them onto the unprocessed
-         * stack which means the order is again reversed so we actually get the proper order
-         * of initialisation *)
-        include_files
-        ;
-        (* add record for processed file *)
-        outputs := {filename=filename; depname=flx_base_name; asms=asms;} :: (!outputs);
-     end
-    done;
-    (* but again, the order is reversed here *)
-    !outputs
+        (* Add the name to the unprocessed include list, even if already
+         * processed if it is already processed that will be found when it is
+         * resolved at the top of this loop. *)
+        if not (List.mem include_entry (!unprocessed)) then begin
+          unprocessed := include_entry :: (!unprocessed)
+        end
+      end include_files;
 
-let process_lib state parser_state sym_table_ref bsym_table_ref excls outdir module_name start_counter lib =
-(*
-      print_endline ("Processing library " ^ h);
-*)
-  let lib_filedir,lib_filename = 
-      Flx_filesys.find_include_dir 
-       ~include_dirs:state.syms.compiler_options.include_dirs
+      (* add record for processed file *)
+      outputs :=
+        { filename=filename; depname=flx_base_name; asms=asms } :: !outputs;
+    end
+  done;
+
+  (* But again, the order is reversed here. *)
+  !outputs
+
+
+let process_lib
+  state
+  parser_state
+  sym_table_ref
+  bsym_table_ref
+  excls
+  outdir
+  module_name
+  start_counter
+  lib
+=
+  let lib_filedir,lib_filename =
+    Flx_filesys.find_include_dir
+      ~include_dirs:state.syms.compiler_options.include_dirs
       (lib ^ ".flx"),lib
   in
   let lib_name = Flx_filesys.join lib_filedir (lib_filename ^ ".flx") in
@@ -1055,79 +1057,91 @@ let process_lib state parser_state sym_table_ref bsym_table_ref excls outdir mod
     | Some d -> Some (Flx_filesys.join d lib_filename ^ ".libtab")
     | None -> None
   in
-  let lib_cache_time = Flx_filesys.virtual_filetime Flx_filesys.big_bang in_libtab_name in
-  let validate (_,depnames,_,_,_,_,_,_,_,_,_) = 
-    let filetimes = List.fold_left (fun acc f -> 
-      (*
-      print_endline ("Depfile=" ^ f); 
-      *)
-      max acc (Flx_filesys.virtual_filetime Flx_filesys.big_crunch (f^".flx"))) 
+
+  (* Look up the time the file was cached. *)
+  let lib_cache_time = Flx_filesys.virtual_filetime
+    Flx_filesys.big_bang
+    in_libtab_name
+  in
+
+  (* Return if the file has been changed since it was cached. *)
+  let validate (_,depnames,_,_,_,_,_,_,_,_,_) =
+    let filetimes = List.fold_left (fun acc f ->
+      max acc (Flx_filesys.virtual_filetime Flx_filesys.big_crunch (f^".flx")))
       Flx_filesys.big_bang depnames 
     in
-    (*
-    print_endline ("Cached include filetimes = " ^ string_of_float filetimes);
-    print_endline ("Libtime = " ^ string_of_float lib_time);
-    *)
-    let valid = filetimes < lib_cache_time in
-    (*
-    print_endline (if valid then "libtab is still valid" else "libtab is out of date");
-    *)
-    valid
+    filetimes < lib_cache_time
   in
-  let 
-    includes, depnames,
-    saved_counter, 
-    varmap, 
-    ticache, 
-    typeclass_to_instance, 
-    instances_of_typeclass, 
-    axioms, 
+
+  let
+    includes,
+    depnames,
+    saved_counter,
+    varmap,
+    ticache,
+    typeclass_to_instance,
+    instances_of_typeclass,
+    axioms,
     reductions,
     out_sym_table,
-    out_bsym_table 
+    out_bsym_table
   =
     Flx_filesys.cached_computation "libtab" in_libtab_name
       ~outfile:out_libtab_name
       ~force_calc:(false || state.syms.compiler_options.force_recompile)
-      ~min_time:lib_time 
+      ~min_time:lib_time
       ~validate
-      (fun () -> 
+      (fun () ->
         (* make assembly outputs stuff in reversed order, but this routine
          * reversed it back again *)
-        let cal_time = make_timer() in
+        let cal_time = make_timer () in
         print_endline ("Binding libary " ^ lib);
         let assembly = make_assembly state parser_state !excls lib (Search lib) in
-        let includes, depnames, asmss= 
-           let rec aux includes depnames asmss a = match a with
-           | [] -> includes, depnames, asmss
-           | { filename=filename; depname=depname; asms=asms; } :: t ->
-               aux (filename :: includes) (depname::depnames) (asms::asmss) t
-           in aux [] [] [] assembly
+
+        (* Split the assembly into the includes, dependencies, and asms. *)
+        let includes, depnames, asmss =
+          let rec aux includes depnames asmss a =
+            match a with
+            | [] -> includes, depnames, asmss
+            | { filename=filename; depname=depname; asms=asms; } :: t ->
+                aux
+                  (filename :: includes)
+                  (depname :: depnames)
+                  (asms :: asmss)
+                  t
+           in
+           aux [] [] [] assembly
         in
+
         (* already in the right order now *)
         let asms = List.concat asmss in
         let asms = make_module module_name asms in
-        (*
-        print_endline "Binding asms: ";
-        List.iter (fun a -> print_endline (Flx_print.string_of_asm 2 a)) asms;
-        *)
+
         (* Bind the assemblies. *)
         bind_asms state !sym_table_ref !bsym_table_ref !start_counter asms;
-        print_endline ("binding library " ^ lib ^ " done in "^ string_of_float (cal_time()) ^ " seconds");
-        print_endline ("Exports = " ^ string_of_int (List.length (state.syms.bifaces)));
-        includes, depnames,
+
+        print_endline (
+          "binding library " ^ lib ^ " done in "^ string_of_float (cal_time()) ^
+          " seconds");
+
+        print_endline (
+          "Exports = " ^ string_of_int (List.length (state.syms.bifaces)));
+
+        includes,
+        depnames,
         !(state.syms.counter),
-        state.syms.varmap, 
-        state.syms.ticache, 
-        state.syms.typeclass_to_instance, 
-        state.syms.instances_of_typeclass, 
-        !(state.syms.axioms), 
+        state.syms.varmap,
+        state.syms.ticache,
+        state.syms.typeclass_to_instance,
+        state.syms.instances_of_typeclass,
+        !(state.syms.axioms),
         !(state.syms.reductions),
         !sym_table_ref,
-        !bsym_table_ref 
+        !bsym_table_ref
       )
   in
-  state.syms.counter := max !(state.syms.counter)  saved_counter;
+
+  state.syms.counter := max !(state.syms.counter) saved_counter;
   state.syms.varmap <- varmap;
   state.syms.ticache <- ticache;
   state.syms.typeclass_to_instance <- typeclass_to_instance;
@@ -1146,9 +1160,6 @@ let main () =
   let start_counter = ref 2 in
   let ppf, compiler_options = parse_args () in
   let state = make_flxg_state ppf compiler_options in
-(*
-print_endline ("Include dirs=" ^ String.concat ", " compiler_options.include_dirs);
-*)
   let module_name = 
      try make_module_name (List.hd state.syms.compiler_options.files)
      with _ -> "empty_module"
@@ -1170,7 +1181,6 @@ print_endline ("Include dirs=" ^ String.concat ", " compiler_options.include_dir
 
   let inroots = state.syms.compiler_options.files in (* reverse order of command line *)
   let outdir= state.syms.compiler_options.cache_dir in
-  (* print_endline ("Inputs=" ^ String.concat ", " inroots); *)
   begin try
     if List.length inroots = 0 then
       raise (Failure "No input files on comamnd line")
@@ -1179,17 +1189,9 @@ print_endline ("Include dirs=" ^ String.concat ", " compiler_options.include_dir
 
     let main_prog = List.hd inroots in
     let libs = List.rev (List.tl inroots) in
-(*
-    print_endline ("Libraries=" ^ String.concat ", " libs);
-    print_endline ("Main program =" ^ main_prog);
-*)
     let excls:string list ref = ref [] in
     List.iter (process_lib state parser_state sym_table_ref bsym_table_ref excls outdir module_name start_counter) libs;
 
-(*
-    print_endline ("Making symbol tables for main program " ^ main_prog);
-    print_endline ("Excludes: " ^ String.concat ", " (!excls));
-*)
     let sym_table = !sym_table_ref in
     let bsym_table = !bsym_table_ref in
     let assembly =  make_assembly state parser_state !excls module_name (NoSearch main_prog) in
@@ -1206,27 +1208,14 @@ print_endline ("Include dirs=" ^ String.concat ", " compiler_options.include_dir
     state.syms.include_files := depnames;
     generate_dep_file state;
 
-(*
-print_endline "DEBUG: include files are:";
-List.iter print_endline !(state.syms.include_files);
-*)
-
+    (* Make the toplevel module. *)
     let asms = make_module module_name asms in
-(*
-print_endline "Binding main program asms";
-*)
-(*
-List.iter (fun a -> print_endline (Flx_print.string_of_asm 2 a)) asms;
-*)
+
     (* Bind the assemblies. *)
-(*
-print_endline "sym_table=";
-print_endline (Flx_sym_table.detail sym_table);
-*)
     bind_asms state sym_table bsym_table (!start_counter) asms;
-(*
-print_endline ("Main prog: Exports = " ^ string_of_int (List.length (state.syms.bifaces)));
-*)
+
+    (* Grab the last index created so we can determine which symbols were made
+     * when we bind the root module. *)
     start_counter := !(state.syms.counter);
 (*
 print_endline "Main program bound";
@@ -1279,56 +1268,43 @@ print_endline "init proc bound";
 
     Flx_typeclass.typeclass_instance_check state.syms bsym_table;
 
-  (* generate axiom checks *)
-  (* or not: the routine must be run to strip axiom checks out of the code *)
-  Flx_axiom.axiom_check state.syms bsym_table
-    state.syms.compiler_options.generate_axiom_checks
-  ;
+    (* generate axiom checks *)
+    (* or not: the routine must be run to strip axiom checks out of the code *)
+    Flx_axiom.axiom_check state.syms bsym_table
+      state.syms.compiler_options.generate_axiom_checks;
 
-(* Not working at the moment for unknown reason, chucks Not_found 
-    (* Generate the why file *)
+    (* Not working at the moment for unknown reason, chucks Not_found.
+    (* Generate the why file. *)
     generate_why_file state bsym_table root_proc;
-print_endline "Why file generated";
-*)
+    *)
 
-(*
+    (*
     (* Remove unused symbols. *)
 
     (* THIS DOESN'T WORK. WHY NOT? Seems like newtype isn't scanned
        properly. No idea why! After downgrading, optimise does this
        first thing, so, it has to be a problem with BBDCL_newtype!
 
-       AH. I know. The scan is finding the newtype index, but it 
+       AH. I know. The scan is finding the newtype index, but it
        isn't propagating that to the representation .. wonder why?
 
        I mean, this HAS to work for say, structs.
     *)
     let bsym_table = Flx_use.copy_used state.syms bsym_table in
-*)
-    (* Optimize the bound values *)
-(*
-print_endline "starting optimisation";
-*)
-    let bsym_table = optimize_bsyms state bsym_table root_proc in
-(*
-print_endline "Optimisation complete";
-*)
-    (* downgrade abstract types now *)
-    Flx_strabs.strabs (Flx_strabs.make_strabs_state ()) bsym_table; 
-(*
-print_endline "Strabs complete";
-*)
+    *)
 
-(* Lower the bound symbols for the backend. *)
+    (* Optimize the bound values. *)
+    let bsym_table = optimize_bsyms state bsym_table root_proc in
+
+    (* Downgrade abstract types now. *)
+    Flx_strabs.strabs (Flx_strabs.make_strabs_state ()) bsym_table;
+
+    (* Lower the bound symbols for the backend. *)
     let bsym_table = lower_bsyms state bsym_table root_proc in
-(*
-print_endline "Lowering abstract types complete";
-*)
+
     (* Start working on the backend. *)
     codegen_bsyms state bsym_table root_proc
-(*
-; print_endline "Code gen complete"
-*)
+
   with x ->
     Flx_terminate.terminate compiler_options.reverse_return_parity x
   end;
