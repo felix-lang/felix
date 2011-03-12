@@ -1,3 +1,2 @@
-val parse_args :
-  unit ->
-  Format.formatter * Flx_mtypes2.felix_compiler_options_t
+(** Parse the arguments. *)
+val parse_args : unit -> Format.formatter * Flx_options.t

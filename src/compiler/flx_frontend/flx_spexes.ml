@@ -107,7 +107,7 @@ let gen_body syms uses bsym_table id
   varmap ps relabel revariable exes argument
   sr caller callee vs callee_vs_len inline_method props
 =
-  if syms.compiler_options.print_flag then
+  if syms.compiler_options.Flx_options.print_flag then
   print_endline ("Gen body caller = " ^ string_of_bid caller ^
     ", callee=" ^ id ^ "<" ^ string_of_bid callee ^ ">"
   );
@@ -156,7 +156,7 @@ let gen_body syms uses bsym_table id
   (*
   print_endline ("Inlining " ^ si callee ^ " into " ^ si caller);
   *)
-  if syms.compiler_options.print_flag then
+  if syms.compiler_options.Flx_options.print_flag then
   begin begin match inline_method with
   | `Eager ->
       print_endline ("Eager INLINING " ^ id ^ "<" ^

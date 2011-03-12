@@ -9,6 +9,7 @@ open List
 open Flx_ast
 open Flx_exceptions
 open Flx_mtypes2
+open Flx_options
 open Flx_types
 open Flx_util
 open Flx_version

@@ -1,9 +1,10 @@
 open Format
 
-open Flx_btype
 open Flx_bbdcl
+open Flx_btype
 open Flx_exceptions
 open Flx_mtypes2
+open Flx_options
 open Flx_print
 open Flx_util
 open Flx_version

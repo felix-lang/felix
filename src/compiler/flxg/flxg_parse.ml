@@ -1,5 +1,6 @@
 open Format
 
+open Flx_options
 open Flx_mtypes2
 open Flxg_state
 

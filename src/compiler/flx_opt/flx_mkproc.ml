@@ -8,11 +8,11 @@ open Flx_bexpr
 open Flx_bexe
 open Flx_bparameter
 open Flx_bbdcl
+open Flx_options
 open Flx_print
 open Flx_set
 open Flx_mtypes2
 open Flx_typing
-open List
 open Flx_maps
 open Flx_exceptions
 open Flx_use

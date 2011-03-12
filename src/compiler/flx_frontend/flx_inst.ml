@@ -307,7 +307,7 @@ and process_inst syms bsym_table instps ref_insts1 i ts inst =
   in
   let rtr t = register_type_r uis syms bsym_table [] (Flx_bsym.sr bsym) t in
   let rtnr t = register_type_nr syms bsym_table t in
-  if syms.compiler_options.print_flag then
+  if syms.compiler_options.Flx_options.print_flag then
   print_endline ("//Instance " ^ string_of_bid inst ^ "=" ^ Flx_bsym.id bsym ^
     "<" ^ string_of_bid i ^ ">[" ^
     catmap "," (sbt bsym_table) ts ^ "]");

@@ -138,7 +138,7 @@ let is_export syms id =
 
 let cpp_instance_name syms bsym_table index ts =
   let long_name = cpp_instance_name' syms bsym_table index ts in
-  if syms.compiler_options.mangle_names then long_name else
+  if syms.compiler_options.Flx_options.mangle_names then long_name else
   let id =
     try Flx_bsym_table.find_id bsym_table index
     with _ -> failwith ("[cpp_name] Can't find index " ^ string_of_bid index)

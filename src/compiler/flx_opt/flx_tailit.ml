@@ -11,6 +11,7 @@ open Flx_exceptions
 open Flx_list
 open Flx_maps
 open Flx_mtypes2
+open Flx_options
 open Flx_print
 open Flx_set
 open Flx_types

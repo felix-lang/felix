@@ -14,7 +14,7 @@ let make_lower_state syms = {
 
 (* Convenience function for printing debug statements. *)
 let print_debug state msg =
-  if state.syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag
+  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag
   then print_endline msg
 
 

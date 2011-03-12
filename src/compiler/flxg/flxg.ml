@@ -2,6 +2,7 @@
 
 open Format
 
+open Flx_options
 open Flx_mtypes2
 open Flx_types
 open Flx_version

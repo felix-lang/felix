@@ -1,8 +1,9 @@
 open Format
 
-open Flx_set
-open Flx_mtypes2
 open Flx_getopt
+open Flx_mtypes2
+open Flx_options
+open Flx_set
 open Flx_version
 
 (* this stupid routine gets rid of all duplicate // in a filename, and also

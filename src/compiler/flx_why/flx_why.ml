@@ -10,6 +10,7 @@ open Flx_bparameter
 open Flx_btype
 open Flx_maps
 open Flx_mtypes2
+open Flx_options
 open Flx_types
 open Flx_util
 

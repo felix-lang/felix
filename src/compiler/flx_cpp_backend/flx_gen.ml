@@ -18,6 +18,7 @@ open Flx_maps
 open Flx_mtypes2
 open Flx_name
 open Flx_ogen
+open Flx_options
 open Flx_pgen
 open Flx_print
 open Flx_types
