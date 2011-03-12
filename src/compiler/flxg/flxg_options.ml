@@ -1,6 +1,9 @@
+open Format
+
 open Flx_set
 open Flx_mtypes2
 open Flx_getopt
+open Flx_version
 
 (* this stupid routine gets rid of all duplicate // in a filename, and also
  * any trailing /, since for some reason this confuses the include file
@@ -27,7 +30,9 @@ let fixit file =
   in
   s
 
+
 let fixup files = List.map fixit files
+
 
 let get_options options =
   {
@@ -80,6 +85,7 @@ let get_options options =
     compile_only = check_keys options ["c";"compile-only"]
   }
 
+
 let print_options () =
   print_endline "options:";
   print_endline "  -h, --help : print this help";
@@ -95,3 +101,59 @@ let print_options () =
   print_endline "  --force : force recompilation";
   print_endline "  --with-comments : generate code with comments";
   print_endline "  --mangle-names : generate code with fully mangled names"
+
+
+(* Parse the felix arguments and do some option parsing while we're at it. *)
+let parse_args () =
+  (* Argument parsing *)
+  let argc = Array.length Sys.argv in
+
+  (* Error out if we don't have enough arguments. *)
+  if argc <= 1 then begin
+    print_endline "usage: flxg --key=value ... filename; -h for help";
+    exit 1
+  end;
+
+  (* Now, parse those arguments *)
+  let raw_options = parse_options Sys.argv in
+
+  (* Print help and version out. *)
+  if check_keys raw_options ["h"; "help"] then begin
+    print_options ();
+    exit 0
+  end;
+
+  if check_key raw_options "version" then begin
+    Printf.printf "Felix version %s\n" !version_data.version_string;
+    exit 0
+  end;
+
+  (* Now extract the driver options. *)
+  let compiler_options = get_options raw_options in
+
+  (* Error out if we didn't specify any files. *)
+  if compiler_options.files = [] then begin
+    print_options ();
+    exit 1
+  end;
+
+  (* Create a formatter for logging if debugging's enabled. Otherwise, create a
+   * null formatter. *)
+  let ppf =
+    if compiler_options.print_flag
+    then err_formatter
+    else make_formatter (fun _ _ _ -> ()) (fun () -> ())
+  in
+
+  fprintf ppf "// Include directories = %s\n"
+    (String.concat " " compiler_options.include_dirs);
+
+  (* Make sure the current directory is in the search path. *)
+  let include_dirs =
+    Filename.current_dir_name :: compiler_options.include_dirs
+  in
+  let compiler_options = { compiler_options with
+    include_dirs = include_dirs }
+  in
+
+  ppf, compiler_options

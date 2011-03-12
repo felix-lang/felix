@@ -2,7 +2,6 @@
 
 open Format
 
-open Flx_getopt
 open Flx_mtypes2
 open Flx_types
 open Flx_version
@@ -13,62 +12,6 @@ module CS = Flx_code_spec
 
 (* We have to set the felix version first. *)
 Flx_version_hook.set_version ()
-
-
-(* Parse the felix arguments and do some option parsing while we're at it. *)
-let parse_args () =
-  (* Argument parsing *)
-  let argc = Array.length Sys.argv in
-
-  (* Error out if we don't have enough arguments. *)
-  if argc <= 1 then begin
-    print_endline "usage: flxg --key=value ... filename; -h for help";
-    exit 1
-  end;
-
-  (* Now, parse those arguments *)
-  let raw_options = parse_options Sys.argv in
-
-  (* Print help and version out. *)
-  if check_keys raw_options ["h"; "help"] then begin
-    Flxg_options.print_options ();
-    exit 0
-  end;
-
-  if check_key raw_options "version" then begin
-    Printf.printf "Felix version %s\n" !version_data.version_string;
-    exit 0
-  end;
-
-  (* Now extract the driver options. *)
-  let compiler_options = Flxg_options.get_options raw_options in
-
-  (* Error out if we didn't specify any files. *)
-  if compiler_options.files = [] then begin
-    Flxg_options.print_options ();
-    exit 1
-  end;
-
-  (* Create a formatter for logging if debugging's enabled. Otherwise, create a
-   * null formatter. *)
-  let ppf =
-    if compiler_options.print_flag
-    then err_formatter
-    else make_formatter (fun _ _ _ -> ()) (fun () -> ())
-  in
-
-  fprintf ppf "// Include directories = %s\n"
-    (String.concat " " compiler_options.include_dirs);
-
-  (* Make sure the current directory is in the search path. *)
-  let include_dirs =
-    Filename.current_dir_name :: compiler_options.include_dirs
-  in
-  let compiler_options = { compiler_options with
-    include_dirs = include_dirs }
-  in
-
-  ppf, compiler_options
 
 
 let make_module_name inbase =
@@ -527,7 +470,7 @@ let process_libs state parser_state module_name start_counter =
 
 let main () =
   let start_counter = ref 2 in
-  let ppf, compiler_options = parse_args () in
+  let ppf, compiler_options = Flxg_options.parse_args () in
   let state = make_flxg_state ppf compiler_options in
 
   (* The first file specified is the main program. *)
