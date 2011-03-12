@@ -1,6 +1,6 @@
 (* Convenience function for printing debug statements. *)
 let print_debug syms msg =
-  if syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag
+  if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag
   then print_endline msg
 
 
@@ -26,7 +26,7 @@ let uncurry_functions syms bsym_table clean_bsym_table =
 
 (* Recursively inline functions. *)
 let inline_functions syms bsym_table root_proc clean_bsym_table =
-  if syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag then begin
+  if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then begin
     print_endline "";
     print_endline "---------------------------";
     print_endline "INPUT TO OPTIMISATION PASS";
@@ -64,7 +64,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
   in
 
   print_debug syms "PHASE 1 INLINING COMPLETE";
-  if syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag then begin
+  if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then begin
     print_endline "";
     print_endline "---------------------------";
     print_endline "POST PHASE 1 FUNCTION SET";
@@ -104,7 +104,7 @@ let inline_functions syms bsym_table root_proc clean_bsym_table =
     else bsym_table
   in
 
-  if syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag then begin
+  if syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then begin
     print_endline "";
     print_endline "---------------------------";
     print_endline "POST MONOMORPHISATION FUNCTION SET";
@@ -212,7 +212,7 @@ let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
     let compiler_options = syms.Flx_mtypes2.compiler_options in
 
     (* Exit early if we don't want to do any inlining. *)
-    if compiler_options.Flx_mtypes2.max_inline_length <= 0
+    if compiler_options.Flx_options.max_inline_length <= 0
     then bsym_table
     else inline_functions syms bsym_table root_proc clean_bsym_table
   in

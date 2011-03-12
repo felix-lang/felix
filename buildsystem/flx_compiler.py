@@ -155,19 +155,7 @@ def build_flx_llvm_backend(phase):
             ])
 
 def build_flx_drivers(ctx, phase):
-    path = Path('src', 'compiler', 'drivers')
-
-    lib = phase.ocaml.build_lib(path / 'flx_driver',
-        Path.globall(
-            path / 'flx_terminate.ml{,i}',
-            path / 'flx_flxopt.ml{,i}'),
-        libs=[
-            build_flx_misc(phase),
-            build_flx_core(phase)])
-
-    external_libs = ['nums', 'unix', 'str']
-
-    flxp_libs = [
+    libs = [
         call('buildsystem.ocs.build_lib', phase),
         call('buildsystem.sex.build', phase),
         call('buildsystem.dypgen.build_lib', phase),
@@ -176,11 +164,8 @@ def build_flx_drivers(ctx, phase):
         build_flx_core(phase),
         build_flx_lex(phase),
         build_flx_parse(phase),
-        ]
-    flxm_libs = flxp_libs + [build_flx_desugar(phase)]
-    flxd_libs = flxm_libs
-    flxb_libs = flxd_libs + [build_flx_bind(phase)]
-    flxg_libs = flxb_libs + [
+        build_flx_desugar(phase),
+        build_flx_bind(phase),
         build_flx_why(phase),
         build_flx_frontend(phase),
         build_flx_opt(phase),
@@ -189,15 +174,20 @@ def build_flx_drivers(ctx, phase):
         build_flx_cpp_backend(phase),
         build_flx_version_hook(phase),
         ]
+
+    external_libs = ['nums', 'unix', 'str']
+
     flxg = phase.ocaml.build_exe('bin/flxg',
-        [path / 'flxg.ml'], libs=flxg_libs + [lib], external_libs=external_libs)
+        Path.glob('src/compiler/flxg/*.ml{,i}'),
+        libs=libs,
+        external_libs=external_libs)
 
     # Don't compile flxc if llvm isn't installed
     if phase.llvm_config:
         flxc = phase.ocaml.build_exe('bin/flxc',
             Path('src/compiler/flxc/*.ml{,i}').glob(),
             includes=[phase.llvm_config.ocaml_libdir()],
-            libs=flxg_libs + [build_flx_llvm_backend(phase)],
+            libs=libs + [build_flx_llvm_backend(phase)],
             external_libs=external_libs + [
                 'llvm',
                 'llvm_analysis',

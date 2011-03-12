@@ -1,28 +1,30 @@
-open Flx_util
-open Flx_list
-open Flx_types
-open Flx_btype
-open Flx_bexpr
-open Flx_bexe
-open Flx_bparameter
-open Flx_bbdcl
-open Flx_mtypes2
-open Flx_print
-open Flx_typing
-open Flx_name
-open Flx_unify
-open Flx_exceptions
-open Flx_display
 open List
-open Flx_label
-open Flx_ogen
-open Flx_ctypes
-open Flx_cexpr
-open Flx_maps
-open Flx_egen
-open Flx_pgen
-open Flx_ctorgen
+
+open Flx_bbdcl
 open Flx_beta
+open Flx_bexe
+open Flx_bexpr
+open Flx_bparameter
+open Flx_btype
+open Flx_cexpr
+open Flx_ctorgen
+open Flx_ctypes
+open Flx_display
+open Flx_egen
+open Flx_exceptions
+open Flx_label
+open Flx_list
+open Flx_maps
+open Flx_mtypes2
+open Flx_name
+open Flx_ogen
+open Flx_options
+open Flx_pgen
+open Flx_print
+open Flx_types
+open Flx_typing
+open Flx_unify
+open Flx_util
 
 module CS = Flx_code_spec
 
@@ -122,7 +124,7 @@ let gen_C_function syms bsym_table props index id sr vs bps ret' ts instance_no 
   (*
   print_endline ("C Function " ^ id ^ " " ^ if requires_ptf then "requires ptf" else "does NOT require ptf");
   *)
-  let ps = map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
+  let ps = List.map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
   let params = Flx_bparameter.get_bids bps in
   if syms.compiler_options.print_flag then
   print_endline
@@ -226,7 +228,7 @@ let gen_class syms bsym_table props index id sr vs ts instance_no =
     | display ->
       cat ""
       (
-        map
+        List.map
         (fun (i, vslen) ->
          try
          let instname = cpp_instance_name syms bsym_table i (list_prefix ts vslen) in
@@ -248,7 +250,7 @@ let gen_class syms bsym_table props index id sr vs ts instance_no =
     ^
     cat ","
       (
-        map
+        List.map
         (
           fun (i,vslen) ->
           let instname = cpp_instance_name syms bsym_table i (list_prefix ts vslen) in
@@ -318,7 +320,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
   (*
   print_endline ("The function " ^ id ^ (if requires_ptf then " REQUIRES PTF" else "DOES NOT REQUIRE PTF"));
   *)
-  let ps = map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
+  let ps = List.map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
   if syms.compiler_options.print_flag then
   print_endline
   (
@@ -369,7 +371,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
     | display ->
       cat ""
       (
-        map
+        List.map
         (fun (i, vslen) ->
          try
          let instname = cpp_instance_name syms bsym_table i (list_prefix ts vslen) in
@@ -391,7 +393,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
     ^
     cat ", "
       (
-        map
+        List.map
         (
           fun (i,vslen) ->
           let instname = cpp_instance_name syms bsym_table i (list_prefix ts vslen) in
@@ -514,7 +516,7 @@ let gen_function_names syms bsym_table =
   ;
 
   let s = Buffer.create 2000 in
-  iter
+  List.iter
   (fun (i,(index,ts)) ->
     let tss =
       if length ts = 0 then "" else
@@ -550,7 +552,7 @@ let gen_functions syms bsym_table =
   ;
 
   let s = Buffer.create 2000 in
-  iter
+  List.iter
   (fun ((i:bid_t),(index,ts)) ->
     let tss =
       if length ts = 0 then "" else
@@ -820,7 +822,7 @@ let gen_exe filename
         let n = fresh_bid counter in
         let the_display =
           let d' =
-            map begin fun (i,vslen) ->
+            List.map begin fun (i,vslen) ->
               "ptr" ^ cpp_instance_name syms bsym_table i (list_prefix ts vslen)
             end (get_display_list bsym_table index)
           in
@@ -1078,7 +1080,7 @@ let gen_exe filename
       | BBDCL_fun (props,vs,(ps,traint),BTYP_void,_) ->
         assert (mem `Stack_closure props);
         let a = match a with (a,t) -> a, tsub t in
-        let ts = map tsub ts in
+        let ts = List.map tsub ts in
         (* C FUNCTION CALL *)
         if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
           let display = get_display_list bsym_table index in
@@ -1151,7 +1153,10 @@ let gen_exe filename
             "  " ^ name ^ "(" ^ s ^ ");\n"
         else
           let subs,x = Flx_unravel.unravel syms bsym_table a in
-          let subs = map (fun ((e,t),s) -> (e,tsub t), cid_of_flxid s) subs in
+          let subs = List.map
+            (fun ((e,t),s) -> (e,tsub t), cid_of_flxid s)
+            subs
+          in
           handle_closure sr false index ts subs x true
       | _ -> failwith "procedure expected"
       end
@@ -1162,8 +1167,8 @@ let gen_exe filename
     | BEXE_call (sr,(BEXPR_closure (index,ts),_),a) ->
       let a = match a with (a,t) -> a, tsub t in
       let subs,x = Flx_unravel.unravel syms bsym_table a in
-      let subs = map (fun ((e,t),s) -> (e,tsub t), cid_of_flxid s) subs in
-      let ts = map tsub ts in
+      let subs = List.map (fun ((e,t),s) -> (e,tsub t), cid_of_flxid s) subs in
+      let ts = List.map tsub ts in
       handle_closure sr false index ts subs x false
 
     (* i1: variable
@@ -1175,8 +1180,8 @@ let gen_exe filename
     | BEXE_jump_direct (sr,index,ts,a) ->
       let a = match a with (a,t) -> a, tsub t in
       let subs,x = Flx_unravel.unravel syms bsym_table a in
-      let subs = map (fun ((e,t),s) -> (e,tsub t), cid_of_flxid s) subs in
-      let ts = map tsub ts in
+      let subs = List.map (fun ((e,t),s) -> (e,tsub t), cid_of_flxid s) subs in
+      let ts = List.map tsub ts in
       handle_closure sr true index ts subs x false
 
     (* If p is a variable containing a closure,
@@ -1379,7 +1384,7 @@ let gen_exes
 =
   let needs_switch = ref false in
   let s = cat ""
-    (map (gen_exe
+    (List.map (gen_exe
       filename
       syms
       bsym_table
@@ -1880,7 +1885,7 @@ let gen_procedure_methods filename syms bsym_table
     (*
     let dtor = gen_dtor syms bsym_table name display ts in
     *)
-    let ps = map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
+    let ps = List.map (fun {pid=id; pindex=ix; ptyp=t} -> id,t) bps in
     let params = Flx_bparameter.get_bids bps in
     let exe_string,needs_switch =
       (*
@@ -2051,8 +2056,8 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
       end
       ;
       let rt vs t = beta_reduce syms.Flx_mtypes2.counter bsym_table (Flx_bsym.sr bsym) (tsubst vs ts t) in
-      let ps_c = map (rt vs) ps_c in
-      let ps_cf = map (rt vs) ps_cf in
+      let ps_c = List.map (rt vs) ps_c in
+      let ps_cf = List.map (rt vs) ps_cf in
       let ret = rt vs ret' in
       if syms.compiler_options.print_flag then
       print_endline
@@ -2094,12 +2099,12 @@ let gen_execute_methods filename syms bsym_table label_info counter bf bf2 =
       in
       let flx_fun_atype =
         if length flx_fun_atypes = 1 then fst (hd flx_fun_atypes)
-        else btyp_tuple (map fst flx_fun_atypes)
+        else btyp_tuple (List.map fst flx_fun_atypes)
       in
       let flx_fun_reduced_atype = rt vs flx_fun_atype in
       let flx_fun_atype_name = cpp_typename syms bsym_table flx_fun_atype in
       let flx_fun_reduced_atype_name = cpp_typename syms bsym_table flx_fun_reduced_atype in
-      let flx_fun_args = map (fun (_,i) -> "_a"^si i) flx_fun_atypes in
+      let flx_fun_args = List.map (fun (_,i) -> "_a" ^ si i) flx_fun_atypes in
       let flx_fun_arg = match length flx_fun_args with
         | 0 -> ""
         | 1 -> hd flx_fun_args
@@ -2179,7 +2184,7 @@ let gen_biface_header syms bsym_table biface = match biface with
       then clierr sr "Can't export nested function";
 
       let arglist =
-        map
+        List.map
         (fun {ptyp=t} -> cpp_typename syms bsym_table t)
         ps
       in
@@ -2234,7 +2239,7 @@ let gen_biface_body syms bsym_table biface = match biface with
         ps)
       in
       let params =
-        map
+        List.map
         (fun {ptyp=t; pindex=pidx; pid=name} ->
           cpp_typename syms bsym_table t ^ " " ^ name
         )
@@ -2257,7 +2262,7 @@ let gen_biface_body syms bsym_table biface = match biface with
             bexpr_tuple
               (btyp_tuple (Flx_bparameter.get_btypes ps))
               (
-                map
+                List.map
                 (fun {ptyp=t; pid=name; pindex=idx} ->
                   bexpr_expr (name,t)
                 )
@@ -2310,7 +2315,7 @@ let gen_biface_body syms bsym_table biface = match biface with
       if length display <> 0
       then clierr sr "Can't export nested function";
       let arglist =
-        map
+        List.map
         (fun {ptyp=t; pid=name} -> cpp_typename syms bsym_table t ^ " " ^ name)
         ps
       in
@@ -2353,10 +2358,10 @@ let gen_biface_body syms bsym_table biface = match biface with
   | BIFACE_export_type _ -> ""
 
 let gen_biface_headers syms bsym_table bifaces =
-  cat "" (map (gen_biface_header syms bsym_table) bifaces)
+  cat "" (List.map (gen_biface_header syms bsym_table) bifaces)
 
 let gen_biface_bodies syms bsym_table bifaces =
-  cat "" (map (gen_biface_body syms bsym_table) bifaces)
+  cat "" (List.map (gen_biface_body syms bsym_table) bifaces)
 
 (*  Generate Python module initialisation entry point
 if a Python module function is detected as an export

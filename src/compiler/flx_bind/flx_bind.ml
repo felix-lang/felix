@@ -16,14 +16,14 @@ type bound_t =
 let make_bind_state syms sym_table =
   let lookup_state = 
     Flx_lookup.make_lookup_state 
-      syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag 
+      syms.Flx_mtypes2.compiler_options.Flx_options.print_flag
       syms.Flx_mtypes2.counter 
       syms.Flx_mtypes2.varmap
       syms.Flx_mtypes2.ticache
       sym_table 
   in
   let bbind_state = Flx_bbind.make_bbind_state 
-   ~print_flag:syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag
+   ~print_flag:syms.Flx_mtypes2.compiler_options.Flx_options.print_flag
    ~counter:syms.Flx_mtypes2.counter
    ~sym_table 
    ~lookup_state: lookup_state
@@ -51,21 +51,21 @@ let make_bind_state syms sym_table =
 
 (** Constructs the bind state needed for an interactive toplevel compiler. *)
 let make_toplevel_bind_state syms =
-  let print_flag = syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
+  let print_flag = syms.Flx_mtypes2.compiler_options.Flx_options.print_flag in
   let counter_ref = syms.Flx_mtypes2.counter in
   let sym_table = Flx_sym_table.create () in
   let symtab = Flx_symtab.make sym_table in
   let bsym_table = Flx_bsym_table.create () in
   let lookup_state = 
     Flx_lookup.make_lookup_state 
-      syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag 
+      syms.Flx_mtypes2.compiler_options.Flx_options.print_flag
       syms.Flx_mtypes2.counter 
       syms.Flx_mtypes2.varmap
       syms.Flx_mtypes2.ticache
       sym_table 
   in
   let bbind_state:Flx_bbind.bbind_state_t = Flx_bbind.make_bbind_state
-   ~print_flag:syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag
+   ~print_flag:syms.Flx_mtypes2.compiler_options.Flx_options.print_flag
    ~counter:syms.Flx_mtypes2.counter
    ~sym_table 
    ~lookup_state: lookup_state
@@ -132,7 +132,7 @@ let make_toplevel_bind_state syms =
   }, bsym_table
 
 let bind_asm state bsym_table handle_bound init asm =
-  let print_flag = state.syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
+  let print_flag = state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag in
   let counter_ref = state.syms.Flx_mtypes2.counter in
   (* We need to save the symbol index counter so we can bind all of the symbols
    * that we just added. *)
@@ -207,7 +207,7 @@ let bind_asms bind_state bsym_table start_counter asms =
 print_endline "Flx_bind.bind_asms: Binding asms ..";
 *)
   (* Add the symbols to the symtab. *)
-  let print_flag = bind_state.syms.Flx_mtypes2.compiler_options.Flx_mtypes2.print_flag in
+  let print_flag = bind_state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag in
   let counter_ref = bind_state.syms.Flx_mtypes2.counter in
   Flx_symtab.add_asms print_flag counter_ref bind_state.symtab "root" 0 None asms;
 (*
