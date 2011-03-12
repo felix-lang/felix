@@ -1,3 +1,5 @@
+open List
+
 open Flx_util
 open Flx_ast
 open Flx_types
@@ -40,7 +42,7 @@ let find_mkproc_exe mkproc_map exe =
   Flx_bexe.iter ~f_bexpr:(find_mkproc_expr mkproc_map) exe
 
 let find_mkproc_exes mkproc_map exes =
-  iter (find_mkproc_exe mkproc_map) exes
+  List.iter (find_mkproc_exe mkproc_map) exes
 
 (* THIS CODE REPLACES APPLICATIONS WITH CALLS *)
 let mkproc_expr syms bsym_table sr this mkproc_map vs e =
@@ -66,7 +68,7 @@ let mkproc_expr syms bsym_table sr this mkproc_map vs e =
       Flx_bsym_table.add bsym_table k (Some this) bsym;
 
       (* append a pointer to this variable to the argument *)
-      let ts' = map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) vs in
+      let ts' = List.map (fun (s,i) -> btyp_type_var (i,btyp_type 0)) vs in
       let ptr = bexpr_ref (btyp_pointer ret) (k,ts') in
       let (_,at') as a' = append_args syms bsym_table f a [ptr] in
 
@@ -103,13 +105,15 @@ let mkproc_exe syms bsym_table sr this mkproc_map vs exe =
     if length exes > 1 then begin
       print_endline ("Unravelling exe=\n" ^ string_of_bexe bsym_table 2 exe);
       print_endline ("Unravelled exes =");
-      iter (fun exe -> print_endline (string_of_bexe bsym_table 2 exe)) exes;
+      List.iter
+        (fun exe -> print_endline (string_of_bexe bsym_table 2 exe))
+        exes
     end;
   end;
   exes
 
 let mkproc_exes syms bsym_table sr this mkproc_map vs exes =
-  List.concat (map (mkproc_exe syms bsym_table sr this mkproc_map vs) exes)
+  List.concat (List.map (mkproc_exe syms bsym_table sr this mkproc_map vs) exes)
 
 
 let proc_exe k exe = match exe with
@@ -127,7 +131,7 @@ let proc_exe k exe = match exe with
 
   | x -> [x]
 
-let proc_exes syms bsym_table k exes = concat (map (proc_exe k) exes)
+let proc_exes syms bsym_table k exes = List.concat (List.map (proc_exe k) exes)
 
 let mkproc_gen syms bsym_table =
   let ut = Hashtbl.create 97 in (* dummy usage table *)
@@ -246,7 +250,9 @@ let mkproc_gen syms bsym_table =
       if syms.compiler_options.print_flag then
       begin
         print_endline "OLD FUNCTION BODY ****************";
-        iter (fun exe -> print_endline (string_of_bexe bsym_table 2 exe)) exes;
+        List.iter
+          (fun exe -> print_endline (string_of_bexe bsym_table 2 exe))
+          exes
       end;
 
       let fixup vsc exesc =
@@ -260,7 +266,9 @@ let mkproc_gen syms bsym_table =
         in
         let revar i = try Hashtbl.find revariable i with Not_found -> i in
         begin
-          iter (fun ({pid=s; pindex=i} as p) -> assert (i <> revar i)) ps;
+          List.iter
+            (fun ({pid=s; pindex=i} as p) -> assert (i <> revar i))
+            ps
         end;
 
         (* make new parameter: note the name is remapped to _k_mkproc below *)
@@ -275,7 +283,7 @@ let mkproc_gen syms bsym_table =
         in
 
         (* clone old parameters, also happens to create our new one *)
-        iter
+        List.iter
           (fun {pkind=pk; ptyp=t; pid=s; pindex=pi} ->
             let n = revar pi in
             let bbdcl = match pk with
@@ -295,7 +303,12 @@ let mkproc_gen syms bsym_table =
         ;
 
         (* rename parameter list *)
-        let ps = map (fun ({pid=s; pindex=i} as p) -> {p with pid=s^"_mkproc"; pindex = revar i}) ps in
+        let ps = List.map
+          begin fun ({pid=s; pindex=i} as p) ->
+            { p with pid=s^"_mkproc"; pindex = revar i }
+          end
+          ps
+        in
         let rec revare e = Flx_bexpr.map ~f_bid:revar ~f_bexpr:revare e in
 
         (* remap all the exes to use the new parameters and children *)
@@ -311,7 +324,7 @@ let mkproc_gen syms bsym_table =
       let vix,ps,exes = fixup vs exes in
 
       (* and actually convert it *)
-      let ts = map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
+      let ts = List.map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
       (* let dv = BEXPR_deref (BEXPR_name (vix,ts),btyp_pointer * ret),btyp_lvalue ret in *)
       let dv = bexpr_deref ret (bexpr_name (btyp_pointer ret) (vix,ts)) in
       let exes = proc_exes syms bsym_table dv exes in
@@ -323,7 +336,9 @@ let mkproc_gen syms bsym_table =
       if syms.compiler_options.print_flag then
       begin
         print_endline "NEW PROCEDURE BODY ****************";
-        iter (fun exe -> print_endline (string_of_bexe bsym_table 2 exe)) exes;
+        List.iter
+          (fun exe -> print_endline (string_of_bexe bsym_table 2 exe))
+          exes;
       end;
   end mkproc_map;
 

@@ -1,21 +1,22 @@
-open Flx_util
-open Flx_ast
-open Flx_types
-open Flx_bexpr
-open Flx_bexe
-open Flx_bparameter
-open Flx_bbdcl
-open Flx_print
-open Flx_set
-open Flx_mtypes2
-open Flx_typing
 open List
-open Flx_unify
-open Flx_maps
+
+open Flx_ast
+open Flx_bbdcl
+open Flx_bexe
+open Flx_bexpr
+open Flx_bparameter
 open Flx_exceptions
-open Flx_use
+open Flx_maps
+open Flx_mtypes2
+open Flx_print
 open Flx_reparent
+open Flx_set
 open Flx_spexes
+open Flx_types
+open Flx_typing
+open Flx_unify
+open Flx_use
+open Flx_util
 
 let string_of_bidset s =
   "{ " ^
@@ -113,7 +114,7 @@ let fold_vars syms bsym_table uses i ps exes =
   (*
   print_endline ("Locals of " ^ si i ^ " are " ^ string_of_bidset locls);
   print_endline "INPUT Code is";
-  iter (fun exe -> print_endline (string_of_bexe 0 exe)) exes;
+  List.iter (fun exe -> print_endline (string_of_bexe 0 exe)) exes;
   *)
 
   let elim_pass exes =
@@ -163,7 +164,8 @@ let fold_vars syms bsym_table uses i ps exes =
            | BEXE_init (_,k,_) when j = k -> incr setcnt
            | _ -> ()
         in
-        iter sets t; iter sets outexes;
+        List.iter sets t;
+        List.iter sets outexes;
         (*
         print_endline ("Set count = " ^ si !setcnt);
         *)
@@ -245,7 +247,7 @@ let fold_vars syms bsym_table uses i ps exes =
         in
         let elimi exe = Flx_bexe.map ~f_bexpr:subi exe in
         let subs = ref true in
-        let elim exes = map
+        let elim exes = List.map
           (fun exe ->
           (*
           print_endline ("In Exe = " ^ string_of_bexe 2 exe);
@@ -371,7 +373,7 @@ let fold_vars syms bsym_table uses i ps exes =
     print_endline ("Removed " ^ si !master_count ^" variables in " ^ si !iters ^ " passes");
     (*
     print_endline "OUTPUT Code is";
-    iter (fun exe -> print_endline (string_of_bexe 0 exe)) exes;
+    List.iter (fun exe -> print_endline (string_of_bexe 0 exe)) exes;
     *)
   end
   ;

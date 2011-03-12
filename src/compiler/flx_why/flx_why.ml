@@ -1,16 +1,17 @@
 (** Flx_why: This module converts a bound Felix program into the Why
  * verification language. See this for more: http://why.lri.fr/. *)
 
-open Flx_util
-open Flx_ast
-open Flx_types
-open Flx_btype
-open Flx_bparameter
-open Flx_bexpr
-open Flx_bbdcl
-open Flx_mtypes2
 open List
+
+open Flx_ast
+open Flx_bbdcl
+open Flx_bexpr
+open Flx_bparameter
+open Flx_btype
 open Flx_maps
+open Flx_mtypes2
+open Flx_types
+open Flx_util
 
 (** Searches the bound symbol table for all the symbols with the given name. *)
 let find_name bsym_table root name =
@@ -282,7 +283,7 @@ let emit_axiom syms bsym_table logics f (k:axiom_kind_t) (name,sr,parent,kind,bv
   in
   output_string f ("(* "^tkind^" " ^ name ^ ", at "^srt^" *)\n\n");
   output_string f (ykind ^ " " ^ name ^ ":\n");
-  iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} ->
+  List.iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} ->
     output_string f
     ("  forall " ^ pid ^ "_" ^ whyid_of_bid pindex ^ ": " ^
       cal_type syms bsym_table ptyp ^ ".\n")
@@ -305,7 +306,7 @@ let emit_axiom syms bsym_table logics f (k:axiom_kind_t) (name,sr,parent,kind,bv
 let emit_reduction syms bsym_table logics f (name,bvs,bps,el,er) =
   output_string f ("(* reduction " ^ name ^ " *)\n\n");
   output_string f ("axiom " ^ name ^ ":\n");
-  iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} ->
+  List.iter (fun {pkind=pkind; pid=pid; pindex=pindex; ptyp=ptyp} ->
     output_string f
     ("  forall " ^ pid ^ "_" ^ Flx_print.string_of_bid pindex ^ ": " ^
       cal_type syms bsym_table ptyp ^ ".\n")
@@ -401,21 +402,18 @@ let emit_whycode filename syms bsym_table root =
   end bsym_table;
 
   output_string f "(******* AXIOMS ******)\n";
-  iter
-  (emit_axiom syms bsym_table logics f Axiom)
-  !(syms.axioms)
-  ;
+  List.iter
+    (emit_axiom syms bsym_table logics f Axiom)
+    !(syms.axioms);
 
   output_string f "(******* REDUCTIONS ******)\n";
-  iter
-  (emit_reduction syms bsym_table logics f)
-  !(syms.reductions)
-  ;
+  List.iter
+    (emit_reduction syms bsym_table logics f)
+    !(syms.reductions);
 
   output_string f "(******* LEMMAS (goals) ******)\n";
-  iter
-  (emit_axiom syms bsym_table logics f Lemma)
-  !(syms.axioms)
-  ;
+  List.iter
+    (emit_axiom syms bsym_table logics f Lemma)
+    !(syms.axioms);
+
   close_out f
-  ;
