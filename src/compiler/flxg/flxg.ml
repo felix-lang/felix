@@ -123,13 +123,6 @@ let make_flxg_state ppf compiler_options =
     report_file = Flxg_file.make (outbase ^ ".xref");
     why_file = Flxg_file.make (outbase ^ ".why");
     dep_file_name = outbase ^ ".dep";
-    parse_time = 0.0;
-    desugar_time = 0.0;
-    bind_time = 0.0;
-    opt_time = 0.0;
-    lower_time = 0.0;
-    instantiation_time = 0.0;
-    codegen_time = 0.0;
   }
 
 
@@ -154,60 +147,13 @@ let generate_dep_file state =
 
 
 (** Save basic profiling numbers. *)
-let save_profile state =
-  let total_time =
-    state.parse_time +.
-    state.desugar_time +.
-    state.bind_time +.
-    state.opt_time +.
-    state.instantiation_time +.
-    state.codegen_time
-  in
-  fprintf state.ppf "//Felix compiler time %f\n" total_time;
+let save_profile () =
   let fname = "flxg_stats.txt" in
-  let
-    old_parse_time,
-    old_desugar_time,
-    old_bind_time,
-    old_opt_time,
-    old_instantiation_time,
-    old_codegen_time,
-    old_total_time
-  =
-    let zeroes = 0.0,0.0,0.0,0.0,0.0,0.0,0.0 in
-    let f = try Some (open_in fname) with _ -> None in
-    begin match f with
-    | None -> zeroes
-    | Some f ->
-      let x =
-        try
-          let id x1 x2 x3 x4 x5 x6 x7 = x1, x2, x3, x4, x5, x6, x7 in
-          Scanf.fscanf f
-          "parse=%f desugar=%f bind=%f opt=%f inst=%f gen=%f tot=%f"
-          id
-        with
-        | Scanf.Scan_failure _
-        | Failure _
-        | End_of_file -> zeroes
-      in close_in f; x
-    end
-  in
-
-  (* *)
   (* failure to save stats isn't fatal *)
   try
     let f = open_out fname in
-    Printf.fprintf
-      f
-      "parse=%f\ndesugar=%f\nbind=%f\nopt=%f\ninst=%f\ngen=%f\ntot=%f\n"
-      (old_parse_time +. state.parse_time)
-      (old_desugar_time +. state.desugar_time)
-      (old_bind_time +. state.bind_time)
-      (old_opt_time +. state.opt_time)
-      (old_instantiation_time +. state.instantiation_time)
-      (old_codegen_time +. state.codegen_time)
-      (old_total_time +. total_time)
-    ;
+    let ppf = formatter_of_out_channel f in
+    Flx_profile.print ppf;
     close_out f
   with _ -> ()
 
@@ -223,14 +169,6 @@ let save_profile state =
    The name specified is only used by the macroprocessor to create unique
    names. (?)
 *)
-
-let strip_extension s =
-  let n = String.length s in
-  if n>4 then
-    if String.sub s (n-4) 4 = ".flx"
-    then String.sub s 0 (n-4)
-    else s
-  else s
 
 type include_entry_t = Search of string | NoSearch of string
 
@@ -335,7 +273,10 @@ let make_assembly
         let stmts = Flx_filesys.cached_computation "parse" in_par_name
           ~outfile:out_par_name
           ~min_time:flx_time
-          (fun () -> Flxg_parse.parse_file state parser_state flx_name)
+          (fun () -> Flx_profile.call
+            "Flxg_parse.parse_file"
+            (Flxg_parse.parse_file state parser_state)
+            flx_name)
         in
         stmts
       in
@@ -462,10 +403,9 @@ let process_lib
       ~force_calc:(false || state.syms.compiler_options.force_recompile)
       ~min_time:lib_time
       ~validate
-      (fun () ->
+      (Flx_profile.call ("binding library " ^ lib) begin fun () ->
         (* make assembly outputs stuff in reversed order, but this routine
          * reversed it back again *)
-        let cal_time = Flxg_profile.make_timer () in
         print_endline ("Binding libary " ^ lib);
         let assembly = make_assembly state parser_state !excls lib (Search lib) in
 
@@ -489,16 +429,15 @@ let process_lib
         let asms = Flxg_bind.make_module module_name asms in
 
         (* Bind the assemblies. *)
-        Flxg_bind.bind_asms
-          state
-          !sym_table_ref
-          !bsym_table_ref
-          !start_counter
+        Flx_profile.call "Flxg_bind.bind_asms"
+          (Flxg_bind.bind_asms
+            state
+            !sym_table_ref
+            !bsym_table_ref
+            !start_counter)
           asms;
 
-        print_endline (
-          "binding library " ^ lib ^ " done in "^ string_of_float (cal_time()) ^
-          " seconds");
+        print_endline ("binding library " ^ lib ^ " done");
 
         print_endline (
           "Exports = " ^ string_of_int (List.length (state.syms.bifaces)));
@@ -514,7 +453,7 @@ let process_lib
         !(state.syms.reductions),
         !sym_table_ref,
         !bsym_table_ref
-      )
+      end)
   in
 
   state.syms.counter := max !(state.syms.counter) saved_counter;
@@ -598,7 +537,11 @@ let main () =
   let module_name = make_module_name main_prog in
 
   begin try
-    let parser_state = Flxg_parse.load_syntax state in
+    let parser_state = Flx_profile.call
+      "Flxg_parse.load_syntax"
+      Flxg_parse.load_syntax
+      state
+    in
 
     let excls, sym_table, bsym_table = process_libs
       state
@@ -635,11 +578,9 @@ let main () =
     let asms = Flxg_bind.make_module module_name asms in
 
     (* Bind the assemblies. *)
-    Flxg_bind.bind_asms
-      state
-      sym_table
-      bsym_table
-      !start_counter
+    Flx_profile.call
+      "Flxg_bind.bind_asms"
+      (Flxg_bind.bind_asms state sym_table bsym_table !start_counter)
       asms;
 
     (* Grab the last index created so we can determine which symbols were made
@@ -647,10 +588,9 @@ let main () =
     start_counter := !(state.syms.counter);
 
     (* Bind the root module's init procedure. *)
-    let root_proc = Flxg_bind.bind_root_module
-      state
-      sym_table
-      bsym_table
+    let root_proc = Flx_profile.call
+      "Flxg_bind.bind_root_module"
+      (Flxg_bind.bind_root_module state sym_table bsym_table)
       module_name
     in
 
@@ -682,25 +622,36 @@ let main () =
     *)
 
     (* Optimize the bound values. *)
-    let bsym_table = Flxg_opt.optimize state bsym_table root_proc in
+    let bsym_table = Flx_profile.call
+      "Flxg_opt.optimize"
+      (Flxg_opt.optimize state bsym_table)
+      root_proc
+    in
 
     (* Downgrade abstract types now. *)
     Flx_strabs.strabs (Flx_strabs.make_strabs_state ()) bsym_table;
 
     (* Lower the bound symbols for the backend. *)
-    let bsym_table = Flxg_lower.lower state bsym_table root_proc in
+    let bsym_table = Flx_profile.call
+      "Flxg_lower.lower"
+      (Flxg_lower.lower state bsym_table)
+      root_proc
+    in
 
     (* Start working on the backend. *)
-    Flxg_codegen.codegen state bsym_table root_proc
+    Flx_profile.call
+      "Flxg_codegen.codegen"
+      (Flxg_codegen.codegen state bsym_table)
+      root_proc
 
   with x ->
     Flxg_terminate.terminate compiler_options.reverse_return_parity x
   end;
 
-  (* We're done! let's calculate some simple profile statistics. *)
-  save_profile state;
-
   if compiler_options.reverse_return_parity then 1 else 0
 ;;
 
-exit (main ())
+exit (Flx_util.finally
+  save_profile
+  (Flx_profile.call "Flxg.main" main)
+  ())

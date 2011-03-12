@@ -17,11 +17,4 @@ type t = {
   report_file: Flxg_file.t;
   why_file: Flxg_file.t;
   dep_file_name: string;
-  mutable parse_time: float;
-  mutable desugar_time: float;
-  mutable bind_time: float;
-  mutable opt_time: float;
-  mutable lower_time: float;
-  mutable instantiation_time: float;
-  mutable codegen_time: float;
 }

@@ -22,18 +22,11 @@ let make_module module_name asms =
 (** Bind the assemblies *)
 let bind_asms state sym_table bsym_table start_counter asms =
   fprintf state.ppf "//BINDING\n";
-  let bind_timer = Flxg_profile.make_timer () in
 
   let bind_state = Flx_bind.make_bind_state state.syms sym_table in
-(*
-print_endline "Binding asms..";
-*)
   Flx_bind.bind_asms bind_state bsym_table start_counter asms;
-(*
-print_endline "Binding asms done";
-*)
-  state.bind_time <- state.bind_time +. bind_timer ();
-  fprintf state.ppf "//BINDING OK time %f\n" state.bind_time
+
+  fprintf state.ppf "//BINDING OK\n"
 
 
 (** Bind the root module. *)

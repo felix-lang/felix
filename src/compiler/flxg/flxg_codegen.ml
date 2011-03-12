@@ -12,9 +12,8 @@ open Flxg_state
 module CS = Flx_code_spec
 
 
-let codegen state bsym_table root_proc =
+let instantiate state bsym_table root_proc =
   fprintf state.ppf "//INSTANTIATING\n";
-  let instantiation_timer = Flxg_profile.make_timer () in
 
   let label_map = Flx_label.create_label_map bsym_table state.syms.counter in
   let label_usage = Flx_label.create_label_usage state.syms bsym_table label_map in
@@ -37,16 +36,18 @@ let codegen state bsym_table root_proc =
   in
   fprintf state.ppf "//root module's init procedure has name %s\n" top_class;
 
-  state.instantiation_time <- state.instantiation_time +. instantiation_timer ();
-  fprintf state.ppf "//instantiation time %f\n" state.instantiation_time;
+  label_map, label_usage, label_info, top_class, topclass_props
 
-  (* Exit early if we're done. *)
-  if state.syms.compiler_options.compile_only then () else
 
-  (* Finally, lets do some code generation! *)
-
-  let codegen_timer = Flxg_profile.make_timer () in
-
+let codegen_bsyms
+  state
+  bsym_table
+  label_map
+  label_usage
+  label_info
+  top_class
+  topclass_props
+=
   let psh s = Flxg_file.output_string state.header_file s in
   let psb s = Flxg_file.output_string state.body_file s in
   let psp s = Flxg_file.output_string state.package_file s in
@@ -434,7 +435,22 @@ let codegen state bsym_table root_proc =
   Flxg_file.close_out state.ctors_file;
   plp "flx";
   plp "flx_gc";  (* RF: flx apps now need flx_gc. is this the way to do it? *)
-  Flxg_file.close_out state.package_file;
+  Flxg_file.close_out state.package_file
 
-  state.codegen_time <- state.codegen_time +.  codegen_timer ();
-  fprintf state.ppf "//code generation time %f\n" state.codegen_time
+
+let codegen state bsym_table root_proc =
+  let label_map, label_usage, label_info, top_class, topclass_props =
+    Flx_profile.call
+      "Flxg_codegen.instantiate"
+      (instantiate state bsym_table)
+      root_proc
+  in
+
+  (* Exit early if we're done. *)
+  if state.syms.compiler_options.compile_only then () else
+
+  (* Finally, lets do some code generation! *)
+  Flx_profile.call
+    "Flxg_codegen.codegen_bsyms"
+    (codegen_bsyms state bsym_table label_map label_usage label_info top_class)
+    topclass_props
