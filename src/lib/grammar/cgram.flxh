@@ -2,139 +2,142 @@ syntax cgram {
   tstatement := "extern" '"C"' cstatement =># '`(ast_comment ,_sr "C code ..")';
   tstatement := "extern" '"C"' "{" cstatement+ "}" =># '`(ast_comment ,_sr "C code ..")';
   cstatement := external_declaration;
+  // this only for testing
+  satom := "extern" '"C"' "(" expression ")" =># "_4";
+
 
 TYPE_NAME := sname ; // special, needs to lookup typedef names
 
 primary_expression
-	:= sname
-	| sliteral
-	| '(' expression ')'
+	:= sname             =># "_1"
+	| sliteral           =># "_1"
+	| '(' expression ')' =># "_2"
 	;
 
 postfix_expression
-	:= primary_expression
-	| postfix_expression '[' expression ']'
-	| postfix_expression '(' ')'
-	| postfix_expression '(' argument_expression_list ')'
-	| postfix_expression '.' sname
-	| postfix_expression '->' sname
-	| postfix_expression '++'
-	| postfix_expression '--'
+	:= primary_expression =># "_1"
+	| postfix_expression '[' expression ']' =># "`(subscript ,_sr ,_1 ,_3)"
+	| postfix_expression '(' ')'            =># "`(apply ,_sr ,_1 ())"
+	| postfix_expression '(' argument_expression_list ')' =># "`(ast_apply ,_sr ,(_1 (rev _3)))"
+	| postfix_expression '.' sname                        =># "`(ast_dot ,_sr (,_1 ,_3))"
+	| postfix_expression '->' sname                       =># "`(ast_arrow ,_sr (,_1 ,_3))"
+	| postfix_expression '++'                             =># "`(uop ,_sr 'postincr' ,_1)"
+	| postfix_expression '--'                             =># "`(uop ,_sr 'postdecr' ,_1)"
 	;
 
 argument_expression_list
-	:= assignment_expression
-	| argument_expression_list ',' assignment_expression
+	:= assignment_expression =># "`(,_1)"
+	| argument_expression_list ',' assignment_expression =># "(cons _3 _1)"
 	;
 
 unary_expression
-	:= postfix_expression
-	| '++' unary_expression
-	| '--' unary_expression
-	| unary_operator cast_expression
-	| 'sizeof' unary_expression
-	| 'sizeof' '(' type_name ')'
+	:= postfix_expression =># "_1"
+	| unary_operator cast_expression =># "(prefix _2)"
+	| 'sizeof' '(' type_name ')' =># "`(sizeoftype ,_sr ,_3)" // FIXME, WRONG!
 	;
 
 unary_operator
-	:= '&'
-	| '*'
-	| '+'
-	| '-'
-	| '~'
-	| '!'
+	:= '&' =># "'addressof"
+	| '*'  =># "'deref" 
+	| '+'  =># "'pos"
+	| '-'  =># "'neg"
+	| '~'  =># "'compl"
+	| '!'  =># "'excl"
+  | '++' =># "'preincr"
+  | '--' =># "'postincr"
+  | 'sizeof' =># "'sizeof"
 	;
 
 cast_expression
-	:= unary_expression
-	| '(' type_name ')' cast_expression
+	:= unary_expression =># "_1"
+	| '(' type_name ')' cast_expression =># "`(ast_coercion ,_sr (,_3 ,_2))" // FIXME, WRONG!
 	;
 
 multiplicative_expression
-	:= cast_expression
-	| multiplicative_expression '*' cast_expression
-	| multiplicative_expression '/' cast_expression
-	| multiplicative_expression '%' cast_expression
+	:= cast_expression =># "_1"
+	| multiplicative_expression '*' cast_expression =># "(infix 'mul)"
+	| multiplicative_expression '/' cast_expression =># "(infix 'div)"
+	| multiplicative_expression '%' cast_expression =># "(infix 'mod)"
 	;
 
 additive_expression
-	:= multiplicative_expression
-	| additive_expression '+' multiplicative_expression
-	| additive_expression '-' multiplicative_expression
+	:= multiplicative_expression =># "_1"
+	| additive_expression '+' multiplicative_expression =># "(infix 'add)" 
+	| additive_expression '-' multiplicative_expression =># "(infix 'sub)" 
 	;
 
 shift_expression
-	:= additive_expression
-	| shift_expression '<<' additive_expression
-	| shift_expression '>>' additive_expression
+	:= additive_expression =># "_1"
+	| shift_expression '<<' additive_expression =># "(infix 'shl)" 
+	| shift_expression '>>' additive_expression =># "(infix 'shr)" 
 	;
 
 relational_expression
-	:= shift_expression
-	| relational_expression '<' shift_expression
-	| relational_expression '>' shift_expression
-	| relational_expression '<=' shift_expression
-	| relational_expression '>=' shift_expression
+	:= shift_expression =># "_1"
+	| relational_expression '<' shift_expression =># "(infix 'lt)" 
+	| relational_expression '>' shift_expression =># "(infix 'gt)" 
+	| relational_expression '<=' shift_expression =># "(infix 'le)" 
+	| relational_expression '>=' shift_expression =># "(infix 'ge)" 
 	;
 
 equality_expression
-	:= relational_expression
-	| equality_expression '==' relational_expression
-	| equality_expression '!=' relational_expression
+	:= relational_expression =># "_1"
+	| equality_expression '==' relational_expression =># "(infix 'eq)" 
+	| equality_expression '!=' relational_expression =># "(infix 'ne)"
 	;
 
 and_expression
-	:= equality_expression
-	| and_expression '&' equality_expression
+	:= equality_expression =># "_1"
+	| and_expression '&' equality_expression =># "(infix 'band)" 
 	;
 
 exclusive_or_expression
-	:= and_expression
-	| exclusive_or_expression '^' and_expression
+	:= and_expression =># "_1"
+	| exclusive_or_expression '^' and_expression =># "(infix 'bxor)" 
 	;
 
 inclusive_or_expression
-	:= exclusive_or_expression
-	| inclusive_or_expression '|' exclusive_or_expression
+	:= exclusive_or_expression =># "_1"
+	| inclusive_or_expression '|' exclusive_or_expression =># "(infix 'bor)" 
 	;
 
 logical_and_expression
-	:= inclusive_or_expression
-	| logical_and_expression '&&' inclusive_or_expression
+	:= inclusive_or_expression =># "_1"
+	| logical_and_expression '&&' inclusive_or_expression =># "(infix 'land)" 
 	;
 
 logical_or_expression
-	:= logical_and_expression
-	| logical_or_expression '||' logical_and_expression
+	:= logical_and_expression =># "_1"
+	| logical_or_expression '||' logical_and_expression =># "(infix 'lor))" 
 	;
 
 conditional_expression
-	:= logical_or_expression
-	| logical_or_expression '?' expression ':=' conditional_expression
+	:= logical_or_expression =># "_1"
+	| logical_or_expression '?' expression ':' conditional_expression =># "`(ast_cond ,_sr (,_1 ,_3 ,_5))" 
 	;
 
 assignment_expression
-	:= conditional_expression
-	| unary_expression assignment_operator assignment_expression
+	:= conditional_expression =># "_1"
+	| unary_expression assignment_operator assignment_expression =># "(infix _2)" 
 	;
 
 assignment_operator
-	:= '='
-	| '*='
-	| '/='
-	| '%='
-	| '+='
-	| '-='
-	| '<<='
-	| '>>='
-	| '&='
-	| '^='
-	| '|='
+	:= '=' =># "'_set"
+	| '*=' =># "'muleq"
+	| '/=' =># "'diveq"
+	| '%=' =># "'modeq"
+	| '+=' =># "'addeq"
+	| '-=' =># "'subeq"
+	| '<<=' =># "'lsheq"
+	| '>>=' =># "'rsheq"
+	| '&=' =># "'bandeq"
+	| '^=' =># "'bxoreq"
+	| '|=' =># "'boreq"
 	;
 
 expression
-	:= assignment_expression
-	| expression ',' assignment_expression
+	:= assignment_expression =># "_1"
+	| expression ',' assignment_expression =># "(infix 'comma)" 
 	;
 
 declaration
