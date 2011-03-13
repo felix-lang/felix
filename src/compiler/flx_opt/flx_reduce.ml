@@ -1,12 +1,14 @@
-open Flx_ast
-open Flx_types
-open Flx_set
-open Flx_mtypes2
-open Flx_print
-open Flx_util
 open List
-open Flx_unify
+
+open Flx_ast
 open Flx_maps
+open Flx_mtypes2
+open Flx_options
+open Flx_print
+open Flx_set
+open Flx_types
+open Flx_unify
+open Flx_util
 
 let id x = x
 

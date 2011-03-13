@@ -1,23 +1,25 @@
-open Flx_util
-open Flx_list
-open Flx_ast
-open Flx_types
-open Flx_btype
-open Flx_bexpr
-open Flx_bexe
-open Flx_bbdcl
-open Flx_print
-open Flx_set
-open Flx_mtypes2
-open Flx_typing
 open List
-open Flx_unify
-open Flx_maps
+
+open Flx_ast
+open Flx_bbdcl
+open Flx_bexe
+open Flx_bexpr
+open Flx_btype
 open Flx_exceptions
-open Flx_use
-open Flx_reparent
-open Flx_spexes
 open Flx_foldvars
+open Flx_list
+open Flx_maps
+open Flx_mtypes2
+open Flx_options
+open Flx_print
+open Flx_reparent
+open Flx_set
+open Flx_spexes
+open Flx_types
+open Flx_typing
+open Flx_unify
+open Flx_use
+open Flx_util
 
 let string_of_vs vs =
   "[" ^ catmap "," (fun (s,i)->s^"<"^si i^">") vs ^ "]"
@@ -71,7 +73,7 @@ let mk_label_map syms exes =
     Hashtbl.add h s s'
   | _ -> ()
   in
-    iter aux exes;
+    List.iter aux exes;
     h
 
 let idt t = t
@@ -156,7 +158,7 @@ let call_lifting syms uses bsym_table caller caller_vs callee ts a argument =
     let n = fresh_bid syms.counter in
     let end_label = "_end_call_lift_" ^ string_of_bid n in
     body2 := bexe_label (Flx_bsym.sr bsym,end_label) :: !body2;
-    iter
+    List.iter
       (function
       | BEXE_fun_return (sr,e) ->
         (* NOTE REVERSED ORDER *)
@@ -301,7 +303,7 @@ let inline_function syms uses bsym_table caller caller_vs callee ts a varindex =
     let end_label = "_end_inline_" ^ Flx_bsym.id bsym ^ "_" ^ string_of_bid n in
     let t = ref None in
     let end_label_used = ref false in
-    iter
+    List.iter
       (function
       | BEXE_fun_return (sr,((_,t') as e)) ->
         t := Some t';
@@ -724,7 +726,7 @@ let virtual_check syms bsym_table sr i ts =
     print_endline ("ts = " ^ catmap "," (sbt bsym_table) ts);
     *)
     let matches = ref [] in
-    iter (fun (j,(jvs,jcon,jts)) ->
+    List.iter (fun (j,(jvs,jcon,jts)) ->
       (*
       print_endline ("instance[" ^
         catmap "," (fun (s,i) -> s^ "<"^si i^">") jvs ^ "] " ^
@@ -823,7 +825,10 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
 
 
           (* replace application with the variable *)
-          let ts = map (fun (_,i)-> btyp_type_var (i,btyp_type 0)) caller_vs in
+          let ts = List.map
+            (fun (_,i)-> btyp_type_var (i,btyp_type 0))
+            caller_vs
+          in
           bexpr_name t (urv,ts)
 
         | BBDCL_fun (props,vs,(ps,traint),ret,exes) ->
@@ -844,7 +849,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
 
 
           (* replace application with the variable *)
-          let ts = map (fun (_,i)-> btyp_type_var (i,btyp_type 0)) caller_vs in
+          let ts = List.map (fun (_,i)-> btyp_type_var (i,btyp_type 0)) caller_vs in
           BEXPR_name (urv,ts),t
           *)
 
@@ -942,7 +947,7 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
                     (*
                     print_endline "DETECTED SPECIAL CASE";
                     print_endline "Outputing tail:";
-                    iter (fun x -> print_endline (string_of_bexe bsym_table 0 x)) (rev tail);
+                    List.iter (fun x -> print_endline (string_of_bexe bsym_table 0 x)) (rev tail);
                     print_endline ("Expr: " ^ sbe bsym_table e');
                     *)
                     let tail = hic revariable callee (rev tail) in
@@ -957,7 +962,10 @@ let rec special_inline syms uses bsym_table caller_vs caller hic excludes sr e =
 
                     let rxs = hic revariable callee xs in
                     exes' := rev rxs @ !exes';
-                    let ts = map (fun (_,i)-> btyp_type_var (i,btyp_type 0)) caller_vs in
+                    let ts = List.map
+                      (fun (_,i)-> btyp_type_var (i,btyp_type 0))
+                      caller_vs
+                    in
                     bexpr_name t (urv,ts)
                 end
                 else
@@ -1045,14 +1053,14 @@ and heavy_inline_calls
 
   let ee exe = expand_exe syms bsym_table sinl exe in
   let exes' = ref [] in (* reverse order *)
-  iter  (* each exe *)
+  List.iter  (* each exe *)
   (fun exeIN ->
     (*
     print_endline ("EXE[in] =" ^ string_of_bexe bsym_table 0 exeIN);
     *)
     let xs = ee exeIN in
     (*
-    iter (fun x -> print_endline ("EXE[out]=" ^ string_of_bexe bsym_table 0 x)) xs;
+    List.iter (fun x -> print_endline ("EXE[out]=" ^ string_of_bexe bsym_table 0 x)) xs;
     print_endline "--";
     *)
     (*
@@ -1075,7 +1083,7 @@ and heavy_inline_calls
       more than once .. but that doesn't work if the
       function is cloned.
     *)
-    iter (fun exe ->
+    List.iter (fun exe ->
     match exe with
     | BEXE_call (sr,(BEXPR_closure(callee,ts),clt),argument)
     (*
@@ -1286,7 +1294,7 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
       print_endline ("HIB:Examining function " ^ Flx_bsym.id bsym ^ "<" ^
         string_of_bid i ^ "> for inlinable calls");
       
-      let exes = map Flx_bexe.reduce exes in (* term reduction *)
+      let exes = List.map Flx_bexe.reduce exes in (* term reduction *)
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = fold_vars syms bsym_table uses i ps exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
@@ -1313,13 +1321,13 @@ and heavily_inline_bbdcl syms uses bsym_table excludes i =
         exes
       in
       let exes = check_reductions syms bsym_table exes in (* typeclass reduce statements *)
-      let exes = map Flx_bexe.reduce exes in (* term reduction *)
+      let exes = List.map Flx_bexe.reduce exes in (* term reduction *)
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = fold_vars syms bsym_table uses i ps exes in
       recal_exes_usage uses (Flx_bsym.sr bsym) i ps exes;
       let exes = check_reductions syms bsym_table exes in
       let exes = Flx_cflow.chain_gotos syms exes in
-      let exes = map Flx_bexe.reduce exes in
+      let exes = List.map Flx_bexe.reduce exes in
       let props = `Inlining_complete :: props in
       let bbdcl = bbdcl_fun (props,vs,(ps,traint),ret,exes) in
       Flx_bsym_table.update_bbdcl bsym_table i bbdcl;

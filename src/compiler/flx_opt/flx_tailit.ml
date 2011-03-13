@@ -1,22 +1,24 @@
-open Flx_util
-open Flx_list
+open List
+
 open Flx_ast
-open Flx_types
-open Flx_btype
-open Flx_bexpr
-open Flx_bexe
-open Flx_bparameter
 open Flx_bbdcl
+open Flx_bexe
+open Flx_bexpr
+open Flx_bparameter
+open Flx_btype
+open Flx_call
+open Flx_exceptions
+open Flx_list
+open Flx_maps
+open Flx_mtypes2
+open Flx_options
 open Flx_print
 open Flx_set
-open Flx_mtypes2
+open Flx_types
 open Flx_typing
-open List
 open Flx_unify
-open Flx_maps
-open Flx_exceptions
 open Flx_use
-open Flx_call
+open Flx_util
 
 let add_xclosure syms cls e =
   (*
@@ -40,7 +42,7 @@ let exe_find_xclosure syms cls exe =
   Flx_bexe.iter ~f_bexpr:(expr_find_xclosures syms cls) exe
 
 let exes_find_xclosure syms cls exes =
-  iter (exe_find_xclosure syms cls) exes
+  List.iter (exe_find_xclosure syms cls) exes
 
 let exes_get_xclosures syms exes =
   let cls = ref BidSet.empty in
@@ -55,7 +57,7 @@ let function_find_xclosure syms cls bsym_table i =
   in
   (*
   print_endline ("ROUTINE " ^ si i);
-  iter (fun exe -> print_endline (string_of_bexe 0 exe)) exes;
+  List.iter (fun exe -> print_endline (string_of_bexe 0 exe)) exes;
   *)
   exes_find_xclosure syms cls exes
 
@@ -102,7 +104,7 @@ let check_proj_wrap_exe syms bsym_table n i x =
     raise BadUse
 
 let check_proj_wrap_exes syms bsym_table n i xs =
-  iter (check_proj_wrap_exe syms bsym_table n i) xs
+  List.iter (check_proj_wrap_exe syms bsym_table n i) xs
 
 let check_proj_wrap_entry syms bsym_table n i k =
   match Flx_bsym_table.find_bbdcl bsym_table k with
@@ -123,12 +125,16 @@ let check_proj_wrap_closure syms bsym_table descend usage n i e =
 let tailit syms bsym_table uses id this sr ps vs exes =
   (*
   print_endline ("======= Tailing " ^ id ^ "<" ^ si this ^ "> exes=====");
-  iter (fun x -> print_endline (string_of_bexe 0 x)) exes;
+  List.iter (fun x -> print_endline (string_of_bexe 0 x)) exes;
   print_endline "======== END BODY ========";
   *)
 
-  let ts' = map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
-  let pset = fold_left (fun s {pindex=i} -> BidSet.add i s) BidSet.empty ps in
+  let ts' = List.map (fun (_,i) -> btyp_type_var (i,btyp_type 0)) vs in
+  let pset = List.fold_left
+    (fun s {pindex=i} -> BidSet.add i s)
+    BidSet.empty
+    ps
+  in
   let parameters = ref [] in
   let descend = Flx_bsym_table.find_descendants bsym_table this in
   let children =
@@ -223,7 +229,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         result := bexe_goto (sr,start_label) :: !result;
         (*
           print_endline "Tail opt code is:";
-          iter (fun x -> print_endline (string_of_bexe 0 x) ) (rev !result);
+          List.iter (fun x -> print_endline (string_of_bexe 0 x) ) (rev !result);
         *)
         !result
 
@@ -240,7 +246,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         let p = bexpr_name t (pix,ts') in
         let n = ref 0 in
         let param_decode =
-          map
+          List.map
           (fun {pindex=ix; ptyp=prjt} ->
             let prj = Flx_bexpr.reduce (bexpr_get_n prjt (!n,p)) in
             incr n;
@@ -265,8 +271,12 @@ let tailit syms bsym_table uses id this sr ps vs exes =
     (* vset is the restriction set applied to the usage closure to
       restrict attention to the LHS variables
     *)
-    let vset = fold_left (fun acc (k,_,_) ->BidSet.add k acc) BidSet.empty pas in
-    let asgns = map
+    let vset = List.fold_left
+      (fun acc (k,_,_) ->BidSet.add k acc)
+      BidSet.empty
+      pas
+    in
+    let asgns = List.map
       (fun (k,p,t) ->
         let name = "DUNNO_" ^ string_of_bid k in
         let e = nth ls p in
@@ -279,11 +289,9 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       parameters := tmps @ !parameters;
       if syms.compiler_options.print_flag then begin
         print_endline "CALCULATED ACTUAL PARALLEL ASSIGNMENTS!";
-        iter (fun x ->
-          print_endline (string_of_bexe bsym_table 0 x)
-        )
-        (rev exes)
-        ;
+        List.iter
+          (fun x -> print_endline (string_of_bexe bsym_table 0 x))
+          (rev exes)
       end;
       (* NOTE: we have to KEEP the tuple variable in case
         it is used elsewhere .. it should get dropped by later
@@ -292,7 +300,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
     exes
   in
   let asgn2 i t ls =
-    map2
+    List.map2
     (fun (e,t' as x) j ->
       bexe_assign
       (
@@ -368,11 +376,10 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         let can_opt =
           try
             let counter = ref 0 in
-            iter (fun e ->
+            List.iter (fun e ->
               let n = !counter in incr counter;
               check_proj_wrap_closure syms bsym_table descend uses n i e
-            )
-            ls;
+            ) ls;
             true
           with
             BadUse -> false
@@ -448,7 +455,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       print_endline ("This = " ^ si this);
       print_endline ("ts'=" ^"["^catmap "," (sbt bsym_table) ts'^"]");
       print_endline "TAIL=";
-      iter (fun x -> print_endline (string_of_bexe 0 x)) tail;
+      List.iter (fun x -> print_endline (string_of_bexe 0 x)) tail;
       print_endline "-- end of tail --";
       *)
       aux tail (x::res)
@@ -468,7 +475,7 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       | BEXPR_get_n (k,(BEXPR_tuple ls,_)),_ -> nth ls k
       | x -> x
       in
-      let ls = map unproj ls in
+      let ls = List.map unproj ls in
       (*
       print_endline "DETECTED PARALLEL ASSIGN WITH LHS EXPR";
       print_endline (string_of_bexe bsym_table 0 h);
@@ -492,10 +499,10 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       print_endline (if check then "MATCHES SELF" else "DOES'T MATCH SELF");
       *)
       if check then begin
-        let ls' = map repl ls in
+        let ls' = List.map repl ls in
         (*
         let j = ref 0 in
-        iter2 (fun x x' ->
+        List.iter2 (fun x x' ->
           print_endline ("Recoded " ^
             sbe bsym_table x ^
             "\nas var " ^ string_of_bid (List.nth is !j) ^ "=" ^
@@ -507,8 +514,12 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         ls ls'
         ;
         *)
-        let vset = fold_left (fun acc k -> BidSet.add (k+pbase) acc) BidSet.empty (nlist n) in
-        let asgns = map
+        let vset = List.fold_left
+          (fun acc k -> BidSet.add (k+pbase) acc)
+          BidSet.empty
+          (nlist n)
+        in
+        let asgns = List.map
           (fun k ->
           let name = "DUNNO_" ^ si (k+pbase) in
           let e = nth ls' k in
@@ -528,11 +539,9 @@ let tailit syms bsym_table uses id this sr ps vs exes =
         if syms.compiler_options.print_flag then
         begin
           print_endline "PARALLEL ASSIGNMENTS (before unsub) =";
-          iter (fun x ->
-            print_endline (string_of_bexe bsym_table 0 x)
-          )
-          (rev exes)
-          ;
+          List.iter
+            (fun x -> print_endline (string_of_bexe bsym_table 0 x))
+            (rev exes)
         end;
         let rec undo_expr e = match Flx_bexpr.map ~f_bexpr:undo_expr e with
         | BEXPR_name (j,[]),t when i = j  -> x
@@ -547,15 +556,13 @@ let tailit syms bsym_table uses id this sr ps vs exes =
 
         | x -> Flx_bexe.map ~f_bexpr:undo_expr x
         in
-        let exes = map undo_st exes in
+        let exes = List.map undo_st exes in
         if syms.compiler_options.print_flag then
         begin
           print_endline "PARALLEL ASSIGNMENTS (after unsub) = ";
-          iter (fun x ->
-            print_endline (string_of_bexe bsym_table 0 x)
-          )
-          (rev exes)
-          ;
+          List.iter
+            (fun x -> print_endline (string_of_bexe bsym_table 0 x))
+            (rev exes)
         end;
         aux tail (exes @ res)
       end
@@ -582,6 +589,6 @@ let tailit syms bsym_table uses id this sr ps vs exes =
       in
         (*
         print_endline ("Tailed exes = ");
-        iter (fun exe -> print_endline (string_of_bexe 0 exe)) exes;
+        List.iter (fun exe -> print_endline (string_of_bexe 0 exe)) exes;
         *)
         exes

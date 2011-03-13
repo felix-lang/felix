@@ -41,30 +41,6 @@ type reduction_t =
   Flx_bexpr.t *
   Flx_bexpr.t
 
-type felix_compiler_options_t =
-{
-  print_flag: bool;
-  debug : bool;
-  optimise : bool;
-  trace : bool;
-  include_dirs : string list;
-  files : string list;
-  raw_options: (string * string) list;
-  reverse_return_parity: bool;
-  max_inline_length : int;
-  compile_only : bool;
-  force_recompile : bool;
-  with_comments : bool;
-  document_grammar: bool;
-  document_typeclass: bool;
-  mangle_names : bool;
-  generate_axiom_checks : bool;
-  auto_imports : string list;
-  syntax: string list;
-  cache_dir : string option;
-  output_dir : string option;
-}
-
 type sym_state_t =
 {
   counter : Flx_types.bid_t ref;
@@ -72,7 +48,7 @@ type sym_state_t =
   mutable ticache : (Flx_types.bid_t, Flx_btype.t) Hashtbl.t;
   env_cache : (Flx_types.bid_t, env_t) Hashtbl.t;
   registry : type_registry_t;
-  compiler_options : felix_compiler_options_t;
+  compiler_options : Flx_options.t;
   instances : instance_registry_t;
   include_files : string list ref;
   roots : Flx_types.BidSet.t ref;
@@ -86,7 +62,7 @@ type sym_state_t =
   transient_specialisation_cache: (Flx_types.bid_t * Flx_btype.t list, Flx_types.bid_t * Flx_btype.t list) Hashtbl.t;
 }
 
-val make_syms: felix_compiler_options_t -> sym_state_t
+val make_syms: Flx_options.t -> sym_state_t
 
 val fresh_bid: Flx_types.bid_t ref -> Flx_types.bid_t
 

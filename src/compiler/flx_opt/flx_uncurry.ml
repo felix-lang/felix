@@ -1,24 +1,26 @@
-open Flx_util
-open Flx_ast
-open Flx_types
-open Flx_btype
-open Flx_bexpr
-open Flx_bexe
-open Flx_bparameter
-open Flx_bbdcl
-open Flx_print
-open Flx_set
-open Flx_mtypes2
-open Flx_typing
 open List
-open Flx_unify
-open Flx_maps
-open Flx_exceptions
-open Flx_use
-open Flx_reparent
-open Flx_spexes
-open Flx_foldvars
+
 open Flx_args
+open Flx_ast
+open Flx_bbdcl
+open Flx_bexe
+open Flx_bexpr
+open Flx_bparameter
+open Flx_btype
+open Flx_exceptions
+open Flx_foldvars
+open Flx_maps
+open Flx_mtypes2
+open Flx_options
+open Flx_print
+open Flx_reparent
+open Flx_set
+open Flx_spexes
+open Flx_types
+open Flx_typing
+open Flx_unify
+open Flx_use
+open Flx_util
 
 let rec vs_is_ts vs ts =  match vs,ts with
   | (_,i)::vt,(BTYP_type_var (j,BTYP_type 0))::tt when i = j -> vs_is_ts vt tt
@@ -70,7 +72,7 @@ let find_uncurry_exe syms bsym_table uncurry_map vs exe =
   Flx_bexe.iter ~f_bexpr:(find_uncurry_expr syms bsym_table uncurry_map vs) exe
 
 let find_uncurry_exes syms bsym_table uncurry_map vs exes =
-  iter (find_uncurry_exe syms bsym_table uncurry_map vs) exes
+  List.iter (find_uncurry_exe syms bsym_table uncurry_map vs) exes
 
 let uncurry_expr syms bsym_table uncurry_map vs e =
   let rec aux e = match Flx_bexpr.map ~f_bexpr:aux e with
@@ -120,7 +122,8 @@ let uncurry_exe syms bsym_table uncurry_map vs exe =
   in
   Flx_bexe.map ~f_bexpr:(uncurry_expr syms bsym_table uncurry_map vs) exe
 
-let uncurry_exes syms bsym_table uncurry_map vs exes = map (uncurry_exe syms bsym_table uncurry_map vs) exes
+let uncurry_exes syms bsym_table uncurry_map vs exes =
+  List.map (uncurry_exe syms bsym_table uncurry_map vs) exes
 
 (** make the uncurry map *)
 let make_uncurry_map syms bsym_table =

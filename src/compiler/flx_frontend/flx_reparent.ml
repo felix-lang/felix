@@ -319,7 +319,7 @@ let reparent1
   let rreqs rqs = remap_reqs syms bsym_table varmap revariable caller_vars callee_vs_len rqs in
   let bsym = Flx_bsym_table.find bsym_table index in
   let bsym_parent = Flx_bsym_table.find_parent bsym_table index in
-  if syms.compiler_options.print_flag then
+  if syms.compiler_options.Flx_options.print_flag then
   print_endline
   (
     "COPYING " ^ Flx_bsym.id bsym ^ " index " ^ string_of_bid index ^
@@ -435,7 +435,7 @@ let reparent_children syms uses bsym_table
     reparent1 syms uses bsym_table relabel varmap revariable
       caller_vs callee_vs_len i new_parent k rescan_flag
   end closure;
-  if syms.compiler_options.print_flag then begin
+  if syms.compiler_options.Flx_options.print_flag then begin
     Hashtbl.iter
     (fun i j ->
       print_endline ("//Reparent " ^ string_of_bid j ^ " <-- " ^

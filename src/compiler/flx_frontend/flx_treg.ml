@@ -27,7 +27,7 @@ let register_type_nr syms bsym_table t =
     then begin
       let () = check_recursion t in
       let n = fresh_bid syms.counter in
-      if syms.compiler_options.print_flag then
+      if syms.compiler_options.Flx_options.print_flag then
       print_endline ("//Register type " ^ string_of_bid n ^ ": " ^
         sbt bsym_table t);
       Hashtbl.add syms.registry t n

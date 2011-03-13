@@ -1,17 +1,10 @@
-open Flx_set
-open Flx_mtypes2
-open Flx_getopt
+open Format
 
-let print_chosen options =
-  print_endline
-  (String.concat ", "
-    (List.map
-      (fun (a, b) ->
-        a ^ "=" ^ b
-      )
-      options
-    )
-  )
+open Flx_getopt
+open Flx_mtypes2
+open Flx_options
+open Flx_set
+open Flx_version
 
 (* this stupid routine gets rid of all duplicate // in a filename, and also
  * any trailing /, since for some reason this confuses the include file
@@ -25,22 +18,24 @@ let fixit file =
     let ch = String.sub file i 1 in
     if ch <> Flx_filesys.dir_sep then copy := true;
     if !copy then s := !s ^ ch;
-    copy := ch <> Flx_filesys.dir_sep 
+    copy := ch <> Flx_filesys.dir_sep
   done;
   let s = !s in
   let n = String.length s in
-  let s = 
+  let s =
     if n>1 then
-      if String.sub s (n-1) 1 = Flx_filesys.dir_sep 
-      then String.sub s (n-1) 1 
+      if String.sub s (n-1) 1 = Flx_filesys.dir_sep
+      then String.sub s (n-1) 1
       else s
     else s
-  in 
+  in
   s
+
 
 let fixup files = List.map fixit files
 
-let get_felix_options options =
+
+let get_options options =
   {
     optimise    = check_keys options ["opt"; "optimise"];
     debug       = check_key options "debug";
@@ -52,7 +47,7 @@ let get_felix_options options =
     print_flag  = check_keys options ["v"; "verbose"];
     generate_axiom_checks  = not (check_keys options ["no-check-axioms"]);
     trace       = check_keys options ["trace" ];
-    files       = get_key_values options "";
+    files       = List.rev (get_key_values options "");
     raw_options = options;
     reverse_return_parity = check_key options "e";
     force_recompile = check_keys options ["force"];
@@ -91,6 +86,7 @@ let get_felix_options options =
     compile_only = check_keys options ["c";"compile-only"]
   }
 
+
 let print_options () =
   print_endline "options:";
   print_endline "  -h, --help : print this help";
@@ -106,3 +102,59 @@ let print_options () =
   print_endline "  --force : force recompilation";
   print_endline "  --with-comments : generate code with comments";
   print_endline "  --mangle-names : generate code with fully mangled names"
+
+
+(* Parse the felix arguments and do some option parsing while we're at it. *)
+let parse_args () =
+  (* Argument parsing *)
+  let argc = Array.length Sys.argv in
+
+  (* Error out if we don't have enough arguments. *)
+  if argc <= 1 then begin
+    print_endline "usage: flxg --key=value ... filename; -h for help";
+    exit 1
+  end;
+
+  (* Now, parse those arguments *)
+  let raw_options = parse_options Sys.argv in
+
+  (* Print help and version out. *)
+  if check_keys raw_options ["h"; "help"] then begin
+    print_options ();
+    exit 0
+  end;
+
+  if check_key raw_options "version" then begin
+    Printf.printf "Felix version %s\n" !version_data.version_string;
+    exit 0
+  end;
+
+  (* Now extract the driver options. *)
+  let compiler_options = get_options raw_options in
+
+  (* Error out if we didn't specify any files. *)
+  if compiler_options.files = [] then begin
+    print_options ();
+    exit 1
+  end;
+
+  (* Create a formatter for logging if debugging's enabled. Otherwise, create a
+   * null formatter. *)
+  let ppf =
+    if compiler_options.print_flag
+    then err_formatter
+    else make_formatter (fun _ _ _ -> ()) (fun () -> ())
+  in
+
+  fprintf ppf "// Include directories = %s\n"
+    (String.concat " " compiler_options.include_dirs);
+
+  (* Make sure the current directory is in the search path. *)
+  let include_dirs =
+    Filename.current_dir_name :: compiler_options.include_dirs
+  in
+  let compiler_options = { compiler_options with
+    include_dirs = include_dirs }
+  in
+
+  ppf, compiler_options

@@ -186,7 +186,7 @@ let full_use_closure syms bsym_table =
 
 
 let copy_used syms bsym_table =
-  if syms.compiler_options.print_flag then
+  if syms.compiler_options.Flx_options.print_flag then
     print_endline "COPY USED";
 
   (* Calculate the used symbols. *)
