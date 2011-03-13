@@ -31,6 +31,7 @@ dbug := false; // switch off for production
 var RECOMPILE=0;
 var DEBUG=0;
 var DEBUG_COMPILER=0;
+var COMPILER_PHASE="";
 var INLINE=100;
 var ECHO=0;
 var TIME=0;
@@ -213,6 +214,11 @@ install_bin_failed:>
     debugln "Enable compiler debugging";
     DEBUG_COMPILER=1;
 
+  elif prefix(arg,"--compiler-phase=") do
+    debugln "Change the compiler phase";
+    COMPILER_PHASE=arg.[len "--compiler-phase=" to];
+    RUNIT=0;
+
   elif arg=="--nooptimise" do
     debugln "Disable optimisation";
     NOOPTIMISE=1;
@@ -360,6 +366,7 @@ install_bin_failed:>
     println "--import=file        : add an import which is prefixed to all files being translated";
     println "--import=@file       : add all the files listed in file as imports (recursive on @)";
     println "--nostdimport        : don't import the standard imports nugram.flxh and flx.flxh";
+    println "--compiler-phase     : specify which phase of the compiler to run";
     println "-Idir                : add dir to search path for both felix and C++ includes";                      
     println "-Ldir                : add dir to linker search path"; 
     println "-llib                : add dir lib to linker command";
@@ -723,6 +730,7 @@ done
 var FLXFLAGS="--inline="+str(INLINE);
 if OUTPUT_DIR != "" do FLXFLAGS += ' --output_dir=' + str(OUTPUT_DIR); done;
 if CACHE_DIR != "" do FLXFLAGS += " --cache_dir=" + CACHE_DIR; done
+if COMPILER_PHASE != "" do FLXFLAGS += ' --compiler-phase=' + COMPILER_PHASE; done;
 
 var FCMD="";
 var LCMD="";

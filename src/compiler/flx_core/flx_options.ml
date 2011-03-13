@@ -1,5 +1,14 @@
+type compiler_phase_t =
+  | Phase_parse
+  | Phase_desugar
+  | Phase_bind
+  | Phase_optimize
+  | Phase_lower
+  | Phase_codegen
+
 type t =
 {
+  compiler_phase: compiler_phase_t;
   print_flag: bool;
   debug : bool;
   optimise : bool;
