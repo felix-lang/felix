@@ -1,0 +1,203 @@
+open Flx_ast
+open Flx_mtypes2
+open Flx_options
+open Flx_types
+open Flxg_state
+
+module CS = Flx_code_spec
+
+
+(* filename: include string, with leading . replaced
+ * depname: the complete pathname
+*)
+type ub_entry_t = {
+  filename: string;  (** include string, with leading '.' replaced' *)
+  depname: string;   (** the complete pathname. *)
+  stmts: statement_t list;
+  asms: asm_t list
+}
+
+type t = ub_entry_t list
+
+(* make_assembly parses and desugars the transitive closure of the specified
+   input file with respect to includes, and returns a list of pairs mapping
+   files to assembly lists.
+
+   The name specified is only used by the macroprocessor to create unique
+   names. (?)
+*)
+
+type include_entry_t = Search of string | NoSearch of string
+
+(* if an including_file_base "a/b" in including_file_dir "c/d" includes
+   with string
+   "f" then we use include entry Search "f" (search the path)
+   "./f" then we use NoSearch "c/d/a/f" (sibling of including file)
+*)
+
+let make_include_entry including_file_dir including_file_base include_string =
+  let n = String.length include_string in
+  if n > 1 then
+    if String.sub include_string 0 2 = "./"
+    then begin
+      let dirpart = Filename.dirname including_file_base in
+      let dirpart = if dirpart = "." then "" else dirpart in
+      let dir = Flx_filesys.join including_file_dir dirpart  in
+      let basepart = String.sub include_string 2 (n-2) in
+      let fullname = Flx_filesys.join dir basepart in
+      NoSearch fullname
+    end else Search include_string
+  else Search include_string
+
+
+(* make_assembly does NOT modify anything at all in the symbol state
+ * except for the fresh bid counter *)
+
+(* exclusions: if an include was of the form "x/y",
+   then exclusions has the string "x/y".
+   if an include was from "d/a", and of the form "./x/y"
+   then exclusions has the string "d/x/y"
+   This form is thus relative to the current search path directory:
+   the sibling reference is factored out, but the form is invariant
+   over search paths. So if the Felix installation is moved this form
+   is invariant: we have to put this in the libtab cache so it is mobile.
+   However the *.dep file generated requires fully resolved path names.
+
+   This means "make_include_entry" should return only the canonical form,
+   and NOT the resolved filename, which means it has to be called with
+   the including_file_dir also being a canonical string and not a resolved
+   filename, however that won't work, because NoSearch doesn't search.
+
+*)
+
+let assemble state parser_state exclusions module_name input =
+  let fresh_bid () = Flx_mtypes2.fresh_bid state.syms.counter in
+  let outputs = ref [] in
+
+  (* PARSE THE IMPLEMENTATION FILES *)
+  let processed = ref exclusions in
+  let unprocessed = ref [input] in
+
+  while !unprocessed != [] do
+    (* Pop a candidate. *)
+    let candidate = List.hd (!unprocessed) in
+    unprocessed := List.tl (!unprocessed);
+
+    (* Resolve the filename. *)
+    let filedir,filename =
+      match candidate with
+      | Search s ->
+          Flx_filesys.find_include_dir
+            ~include_dirs:state.syms.compiler_options.include_dirs
+            (s ^ ".flx"),s
+      | NoSearch s -> "",s
+    in
+    let flx_base_name = Flx_filesys.join filedir filename in
+
+    (* Check if already processed. *)
+    if not (List.mem filename !processed) then begin
+      (* flag already processed *)
+      processed := filename :: !processed;
+
+      (* Get the parse of the felix file, with caching. *)
+      let stmts =
+        (* check the felix file modification time *)
+        let flx_name = flx_base_name ^ ".flx" in
+        let flx_time = Flx_filesys.virtual_filetime
+          Flx_filesys.big_crunch
+          flx_name
+        in
+
+        let in_par_name = Flx_filesys.join filedir filename ^ ".par2" in
+        let out_par_name =
+           match state.syms.compiler_options.cache_dir with
+           | Some d -> Some (Flx_filesys.join d filename ^ ".par2")
+           | None -> None
+        in
+        let stmts = Flx_filesys.cached_computation "parse" in_par_name
+          ~outfile:out_par_name
+          ~min_time:flx_time
+          (fun () -> Flx_profile.call
+            "Flxg_parse.parse_file"
+            (Flxg_parse.parse_file state parser_state)
+            flx_name)
+        in
+        stmts
+      in
+
+      (* Desugar the parse tree, and also return list of include strings. *)
+      let include_files, asms =
+        let desugar_state = Flx_desugar.make_desugar_state
+          module_name
+          fresh_bid
+        in
+        let include_files, asms = Flx_desugar.desugar_stmts
+          desugar_state
+          (Filename.dirname filename)
+          stmts
+        in
+
+        let top_req =
+          let sr = Flx_srcref.dummy_sr in
+          let body = Flx_types.DCL_insert (
+            CS.Str "",
+            `Body,
+            Flx_ast.NREQ_true)
+          in
+          Flx_types.Dcl (
+            sr,
+            "_rqs_" ^ module_name,
+            None,
+            `Public,
+            Flx_ast.dfltvs,
+            body)
+        in
+        let asms = top_req::asms in
+        include_files, asms
+      in
+
+      (* Run through include strings found. Desugar outputs the include files
+       * backwards, but we push them onto the unprocessed stack which means the
+       * order is again reversed so we actually get the proper order of
+       * initialisation. *)
+      List.iter begin fun s ->
+        (* Convert include string to an include term. *)
+        let include_entry = make_include_entry filedir filename s in
+
+        (* Add the name to the unprocessed include list, even if already
+         * processed if it is already processed that will be found when it is
+         * resolved at the top of this loop. *)
+        if not (List.mem include_entry (!unprocessed)) then begin
+          unprocessed := include_entry :: (!unprocessed)
+        end
+      end include_files;
+
+      (* add record for processed file *)
+      outputs := {
+        filename=filename;
+        depname=flx_base_name;
+        stmts=stmts;
+        asms=asms } :: !outputs;
+    end
+  done;
+
+  (* But again, the order is reversed here. *)
+  let assembly = !outputs in
+
+  (* Split the assembly into the includes, dependencies, and asms. *)
+  let includes, depnames, stmtss, asmss =
+    let rec aux includes depnames stmtss asmss a =
+      match a with
+      | [] -> includes, depnames, stmtss, asmss
+      | { filename=filename; depname=depname; stmts=stmts; asms=asms; } :: t ->
+          aux
+            (filename :: includes)
+            (depname :: depnames)
+            (stmts :: stmtss)
+            (asms :: asmss)
+            t
+     in
+     aux [] [] [] [] assembly
+  in
+
+  includes, depnames, stmtss, asmss

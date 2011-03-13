@@ -80,3 +80,24 @@ let bind_root_module state sym_table bsym_table module_name =
     failwith "flxg: can't find init proc in bound symbol table";
 
   root_proc
+
+
+(** Bind the asms. *)
+let bind state sym_table bsym_table module_name start_counter asms =
+  (* Make the toplevel module. *)
+  let asms = make_module module_name asms in
+
+  (* Bind the assemblies. *)
+  Flx_profile.call
+    "Flxg_bind.bind_asms"
+    (bind_asms state sym_table bsym_table !start_counter)
+    asms;
+
+  (* Bind the root module's init procedure. *)
+  let root_proc = Flx_profile.call
+    "Flxg_bind.bind_root_module"
+    (bind_root_module state sym_table bsym_table)
+    module_name
+  in
+
+  root_proc

@@ -36,7 +36,22 @@ let fixup files = List.map fixit files
 
 
 let get_options options =
+  let compiler_phase =
+    match get_key_value options "compiler-phase" with
+    | None -> Phase_codegen
+    | Some phase ->
+        match phase with
+        | "parse" -> Phase_parse
+        | "desugar" -> Phase_desugar
+        | "bind" -> Phase_bind
+        | "optimize" -> Phase_optimize
+        | "lower" -> Phase_lower
+        | "codegen" -> Phase_codegen
+        | _ -> failwith "Invalid value for --compiler-phase"
+  in
+
   {
+    compiler_phase = compiler_phase;
     optimise    = check_keys options ["opt"; "optimise"];
     debug       = check_key options "debug";
     document_grammar = check_key options "document-grammar";
@@ -46,7 +61,7 @@ let get_options options =
     include_dirs= fixup (get_keys_values options ["I"; "include"]);
     print_flag  = check_keys options ["v"; "verbose"];
     generate_axiom_checks  = not (check_keys options ["no-check-axioms"]);
-    trace       = check_keys options ["trace" ];
+    trace       = check_keys options ["trace"];
     files       = List.rev (get_key_values options "");
     raw_options = options;
     reverse_return_parity = check_key options "e";
