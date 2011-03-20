@@ -143,6 +143,22 @@ let extract_syntax to_install dssls =
     ([],[])
     to_install
 
+
+(** Create the bindings from all the rules. *)
+let bind_grammar_rules dyp rules =
+  let bindings = ref [] in
+  let add_rules = List.map
+    begin fun rule ->
+      let rule, action, binding = extend_grammar dyp rule in
+      bindings := binding :: !bindings;
+      rule, action
+    end
+    rules
+  in
+  add_rules, !bindings
+
+
+(** Run all the scheme commands for a rule. *)
 let load_scheme_defs env scm =
   (*
   print_endline ("Doing scheme .. " ^ string_of_int (List.length scm) ^ " fragments");
@@ -696,39 +712,33 @@ graminit: @{
     match !(dyp.global_data.parsing_device) with
     | Some device ->
       (* print_endline "Parsing device detected"; *)
+
       let ffpdev = Marshal.from_string device 0 in
       (* print_endline "Unmarshalled parsing device"; *)
-      let bindings = ref [] in
-      let add_rules =
-        List.map begin fun rule ->
-          let rule, action, binding = extend_grammar dyp rule in
-          bindings := binding :: !bindings;
-          rule, action
-        end
-        rules
-      in
+
+      let add_rules, bindings = bind_grammar_rules dyp rules in
       let pdev = import_functions ffpdev dyp.parser_pilot add_rules in
-      (),!bindings @ [Parser pdev]
+      (), bindings @ [Parser pdev]
 
     | None ->
-      print_endline "Parsing device missing";
+      (* print_endline "Parsing device missing"; *)
+
+      (* Since we don't have a parsing device, we will have to run the scheme
+       * commands. *)
       let env = dyp.global_data.env in
       let scm = List.rev m.scm in
       load_scheme_defs env scm;
-      let bindings = ref [] in
-      let add_rules = List.map
-        begin fun rule ->
-          let rule, action, binding = extend_grammar dyp rule in
-          bindings := binding :: !bindings;
-          rule, action
-        end
-        rules
-      in
+
+      (* We need to bind after we've executed the scheme. *)
+      let add_rules, bindings = bind_grammar_rules dyp rules in
+
       let local_data = { m with loaded_dssls = to_install } in
       (*
       print_endline ("Mounting Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) m.dssls ""));
       *)
-      (),!bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
+
+      (),
+      bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
   }
 
 tstatement:
@@ -999,60 +1009,19 @@ tstatement:
         ("Opening syntax extensions " ^ Flx_srcref.short_string_of_src sr);
 
       let dssls = List.map snd $3 in
+
       print_endline
         ("Parsed open of syntax extensions " ^ String.concat "," dssls);
 
       let m = dyp.local_data in
 
-      (* calculate the transitive closure of DSSL's required
-         minus those already installed
-      *)
-      let installed = m.loaded_dssls in
-      let visited = ref [] in
-      let to_install = ref [] in
-      let rec cal_install s =
-        if List.mem s installed or List.mem s !visited then ()
-        else begin
-          visited := s :: !visited;
-          let d =
-            try Drules.find s m.dssls
-            with Not_found -> failwith ("Can't open syntax " ^ s)
-          in
-          List.iter cal_install d.deps;
-          to_install := s :: !to_install
-        end
-      in
-      List.iter cal_install dssls
-      ;
-      let to_install = List.rev (!to_install) in
-      print_endline ("Installing " ^ cat "," to_install);
-      let rules,prios =
-        List.fold_left (fun (acc_rules, acc_prios) dssl ->
-        let rules,prios =
-          let d =
-            try Drules.find dssl m.dssls
-            with Not_found -> failwith ("Can't open syntax " ^ dssl)
-          in d.rules,d.prios
-        in
-        let rules = List.map (fun x -> dssl,x) rules in
-        acc_rules @ rules, acc_prios @ prios
-        )
-        ([],[])
-        to_install
-      in
+      let to_install = tran_cls_dssls m.dssls m.loaded_dssls in
+      let rules, prios = extract_syntax to_install m.dssls in
+      let add_rules, bindings = bind_grammar_rules dyp rules in
 
-      let bindings = ref [] in
-      let add_rules = List.map begin fun rule ->
-        let rule, action, binding = extend_grammar dyp rule in
-        bindings := binding :: !bindings;
-        rule, action
-      end rules in
-(*
-      print_endline "Prepared nu grammar rules to yield to Dypgen";
-*)
       let local_data = { m with loaded_dssls = to_install @ m.loaded_dssls } in
       (0, sr, Snull),
-      !bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
+      bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
     }
 
 sexpr: | DUMMY { 0, Flx_srcref.dummy_sr, Snull }
