@@ -3,7 +3,9 @@ module type S =
     include Set.S
     val map : (elt -> elt) -> t -> t
     val iteri : (int -> elt -> unit) -> t -> unit
+    val union_list : elt list -> t -> t
     val of_list : elt list -> t
+    val to_list : t -> elt list
     val print : Format.formatter -> t -> unit
   end;;
 

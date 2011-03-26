@@ -3,7 +3,9 @@ module type S =
     include Set.S
     val map : (elt -> elt) -> t -> t
     val iteri : (int -> elt -> unit) -> t -> unit
+    val union_list : elt list -> t -> t
     val of_list : elt list -> t
+    val to_list : t -> elt list
     val print : Format.formatter -> t -> unit
   end;;
 
@@ -18,7 +20,10 @@ module Make (M:OrderedTypePrintable) : S with type elt = M.t =
     include Set.Make(M)
     let map f set = fold (fun x -> add (f x)) set empty
     let iteri f set = ignore (fold (fun x i -> f i x; i + 1) set 0)
-    let of_list l = List.fold_right add l empty
+    let union_list list set =
+      List.fold_left (fun set elt -> add elt set) set list
+    let of_list list = union_list list empty
+    let to_list set = fold (fun elt list -> elt :: list) set []
     let print f s =
       Format.fprintf f "@[<hv0>@[<hv2>{.@ ";
       let _ =
