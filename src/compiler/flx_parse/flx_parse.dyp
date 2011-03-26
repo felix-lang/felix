@@ -102,7 +102,7 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 
 (* move this to elsewhere eventually *)
 (* calculate the dssls that need to be loaded based on those already loaded *)
-let tran_cls_dssls dssls loaded_dssls =
+let tran_cls_dssls drules dssls =
   (* calculate the transitive closure of DSSL's required *)
   let visited = ref [] in
   let to_install = ref [] in
@@ -110,15 +110,15 @@ let tran_cls_dssls dssls loaded_dssls =
     if List.mem s !visited then ()
     else begin
       visited := s :: !visited;
-      let d =
-        try Drules.find s dssls
+      let drule =
+        try Drules.find s drules
         with Not_found -> failwith ("Can't open syntax " ^ s)
       in
-      List.iter cal_install d.deps;
+      List.iter cal_install drule.deps;
       to_install := s :: !to_install
     end
   in
-  List.iter cal_install loaded_dssls;
+  List.iter cal_install dssls;
   let to_install = List.rev (!to_install) in
   (*
   print_endline ("Installing " ^ cat "," to_install);
@@ -679,7 +679,7 @@ main lexer =
 syntax_unit:
   | syntax_init top_statements ENDMARKER {
     (*
-    print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.last_local_data.loaded_dssls);
+    print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.last_local_data.installed_dssls);
     print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm));
     print_endline ("Returning syntax, Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) dyp.last_local_data.dssls ""));
     print_endline ("Returning syntax, statements = " ^ Flx_print.string_of_statements 0 (List.rev dyp.last_local_data.rev_stmts));
@@ -695,7 +695,7 @@ syntax_init:
 compilation_unit:
   | grammar_init top_statements ENDMARKER {
     (*
-    print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.last_local_data.loaded_dssls);
+    print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.last_local_data.installed_dssls);
     print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm));
     print_endline ("Returning syntax, Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) dyp.last_local_data.dssls ""));
     print_endline ("Returning syntax, statements = " ^ Flx_print.string_of_statements 0 (List.rev dyp.last_local_data.rev_stmts));
@@ -706,7 +706,7 @@ grammar_init: @{
     let file = Flx_srcref.file (getsr dyp) in
     (* print_endline ("grammar_init: Parsing " ^ file); *)
     let m = dyp.local_data in
-    let to_install = tran_cls_dssls m.dssls m.loaded_dssls in
+    let to_install = tran_cls_dssls m.dssls m.installed_dssls in
     let rules, prios = extract_syntax to_install m.dssls in
 
     match !(dyp.global_data.parsing_device) with
@@ -732,7 +732,7 @@ grammar_init: @{
       (* We need to bind after we've executed the scheme. *)
       let add_rules, bindings = bind_grammar_rules dyp rules in
 
-      let local_data = { m with loaded_dssls = to_install } in
+      let local_data = { m with installed_dssls = to_install } in
       (*
       print_endline ("Mounting Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) m.dssls ""));
       *)
@@ -1015,11 +1015,11 @@ tstatement:
 
       let m = dyp.local_data in
 
-      let to_install = tran_cls_dssls m.dssls m.loaded_dssls in
+      let to_install = tran_cls_dssls m.dssls m.installed_dssls in
       let rules, prios = extract_syntax to_install m.dssls in
       let add_rules, bindings = bind_grammar_rules dyp rules in
 
-      let local_data = { m with loaded_dssls = to_install @ m.loaded_dssls } in
+      let local_data = { m with installed_dssls = to_install @ m.installed_dssls } in
       (0, sr, Snull),
       bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
     }

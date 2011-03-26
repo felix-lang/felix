@@ -121,7 +121,7 @@ let global_data = {
 
 let local_data = {
   Flx_token.dssls = Drules.empty;
-  Flx_token.loaded_dssls = [];
+  Flx_token.installed_dssls = [];
   Flx_token.scm = [];
   Flx_token.rev_stmts = [];
 }
