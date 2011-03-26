@@ -72,25 +72,26 @@ let rec elim_common_prefix x y =
   | x,y -> x,y
 
 let ssmerge ((xseq,x),xgd,xld as xit) ((yseq,y),ygd,yld as yit) =
-print_endline "statement merge happening?";
-   if xseq > yseq then xit
-   else if yseq > xseq then yit
-   else
-   let xsr = src_of_stmt (List.hd x) and ysr = src_of_stmt (List.hd y) in
-   print_endline "Ambiguity parsing statements:";
-   let x = List.rev x and y = List.rev y in
-   let x,y = elim_common_prefix x y in
-   print_endline ("Statements 1 = " ^ catmap "\n----\n" (string_of_statement 1) x);
-   print_endline ("Statement 2 = " ^ catmap "\n----\n" (string_of_statement 1) y);
-   Flx_exceptions.clierr2 xsr ysr "AMBIGUITY PARSING TOP LEVEL!"
+  print_endline "statement merge happening?";
+  if xseq > yseq then xit else
+  if yseq > xseq then yit else
+  let xsr = src_of_stmt (List.hd x) in
+  let ysr = src_of_stmt (List.hd y) in
+  print_endline "Ambiguity parsing statements:";
+  let x = List.rev x in
+  let y = List.rev y in
+  let x,y = elim_common_prefix x y in
+  print_endline ("Statements 1 = " ^ catmap "\n----\n" (string_of_statement 1) x);
+  print_endline ("Statement 2 = " ^ catmap "\n----\n" (string_of_statement 1) y);
+  Flx_exceptions.clierr2 xsr ysr "AMBIGUITY PARSING TOP LEVEL!"
 
 let dyp_merge_Obj_statement_star ol =
- match ol with
- | []
- | [_] -> assert false
- | h::t ->
-   match List.fold_left ssmerge h t with
-   | ntt,gd,ld -> [ntt],gd,ld
+  match ol with
+  | []
+  | [_] -> assert false
+  | h::t ->
+      match List.fold_left ssmerge h t with
+      | ntt,gd,ld -> [ntt],gd,ld
 
 let dyphack (ls : ( 'a * string) list) : 'a =
   match ls with
@@ -100,9 +101,7 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 
 
 (* move this to elsewhere eventually *)
-(* calculate the dssls that need to be loaded based
- *  on those already loaded
- *)
+(* calculate the dssls that need to be loaded based on those already loaded *)
 let tran_cls_dssls dssls loaded_dssls =
   (* calculate the transitive closure of DSSL's required *)
   let visited = ref [] in
@@ -126,35 +125,37 @@ let tran_cls_dssls dssls loaded_dssls =
   *)
   to_install
 
-(* extract rules and priority scheme from the dssls 
- * which are to be installed
- *)
+(* Extract rules and priority scheme from the dssls which are to be
+ * installed. *)
 let extract_syntax to_install dssls =
-  List.fold_left (fun (acc_rules, acc_prios) dssl ->
-  let rules,prios =
-    let d =
-      try Drules.find dssl dssls
-      with Not_found -> failwith ("Can't open syntax " ^ dssl)
-    in d.rules,d.prios
-  in
-  let rules = List.map (fun x -> dssl,x) rules in
-  acc_rules @ rules, acc_prios @ prios
-  )
-  ([],[])
-  to_install
+  List.fold_left
+    begin fun (acc_rules, acc_prios) dssl ->
+      let rules, prios =
+        let d =
+          try Drules.find dssl dssls
+          with Not_found -> failwith ("Can't open syntax " ^ dssl)
+        in
+        d.rules, d.prios
+      in
+      let rules = List.map (fun x -> dssl,x) rules in
+      acc_rules @ rules, acc_prios @ prios
+    end
+    ([],[])
+    to_install
 
 let load_scheme_defs env scm =
   (*
   print_endline ("Doing scheme .. " ^ string_of_int (List.length scm) ^ " fragments");
   *)
-  List.iter (fun (sr,s) -> ignore (
-    (* print_endline ("Scheme: " ^ s); *)
-     try scheme_run sr env s
-     with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
-       print_endline ("Error "^err^" executing " ^s);
-       failwith "Error executing SCHEME"
-   ))
-   scm
+  List.iter begin fun (sr,s) ->
+    ignore (
+      (* print_endline ("Scheme: " ^ s); *)
+       try scheme_run sr env s
+       with Ocs_error.Error err | Ocs_error.ErrorL (_,err) ->
+         print_endline ("Error "^err^" executing " ^s);
+         failwith "Error executing SCHEME"
+     )
+  end scm
   (*
   ; print_endline "Scheme Done .. "
   *)
@@ -232,7 +233,7 @@ let load_scheme_defs env scm =
 
 
 %token FUN
-%constructor Obj_keyword %for FUN 
+%constructor Obj_keyword %for FUN
 
 
 /* top level entry */
@@ -246,8 +247,8 @@ let load_scheme_defs env scm =
 %constructor Obj_sexpr %for sname sliteral
 
 /* literals */
-%constructor Obj_sexpr %for sinteger sfloat sstring scstring 
-%constructor Obj_sexpr %for strint strfloat strstring 
+%constructor Obj_sexpr %for sinteger sfloat sstring scstring
+%constructor Obj_sexpr %for strint strfloat strstring
 
 /* patterns */
 %constructor Obj_sexpr %for sintegral
@@ -348,7 +349,7 @@ let suffix =
 
 let int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix
 
-/* floats: Follows ISO C89, except that we allow underscores 
+/* floats: Follows ISO C89, except that we allow underscores
    AND we do not allow .5, a leading digit is required!
    This is so x.0 works for tuple projections.
 */
@@ -660,10 +661,10 @@ main lexer =
 %parser
 
 syntax_unit:
-  | syn_init top_statements ENDMARKER { 
+  | syn_init top_statements ENDMARKER {
     (*
     print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.last_local_data.loaded_dssls);
-    print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm)); 
+    print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm));
     print_endline ("Returning syntax, Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) dyp.last_local_data.dssls ""));
     print_endline ("Returning syntax, statements = " ^ Flx_print.string_of_statements 0 (List.rev dyp.last_local_data.rev_stmts));
     *)
@@ -674,11 +675,12 @@ syn_init:
     let file = Flx_srcref.file (getsr dyp) in
     print_endline ("syninit: Parsing " ^ file)
    }
+
 compilation_unit:
-  | graminit top_statements ENDMARKER { 
+  | graminit top_statements ENDMARKER {
     (*
     print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.last_local_data.loaded_dssls);
-    print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm)); 
+    print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm));
     print_endline ("Returning syntax, Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) dyp.last_local_data.dssls ""));
     print_endline ("Returning syntax, statements = " ^ Flx_print.string_of_statements 0 (List.rev dyp.last_local_data.rev_stmts));
     *)
@@ -688,38 +690,39 @@ graminit: @{
     let file = Flx_srcref.file (getsr dyp) in
     (* print_endline ("graminit: Parsing " ^ file); *)
     let m = dyp.local_data in
-    let loaded_dssls = m.loaded_dssls in
-    let to_install = tran_cls_dssls m.dssls loaded_dssls in
-    let rules,prios = extract_syntax to_install m.dssls in
+    let to_install = tran_cls_dssls m.dssls m.loaded_dssls in
+    let rules, prios = extract_syntax to_install m.dssls in
 
     match !(dyp.global_data.parsing_device) with
-    | Some device -> 
+    | Some device ->
       (* print_endline "Parsing device detected"; *)
       let ffpdev = Marshal.from_string device 0 in
       (* print_endline "Unmarshalled parsing device"; *)
       let bindings = ref [] in
-      let add_rules = List.map (fun rule ->
-        let rule, action, binding = extend_grammar dyp rule in
-        bindings := binding :: !bindings;
-        rule, action
-        ) 
-      rules
+      let add_rules =
+        List.map begin fun rule ->
+          let rule, action, binding = extend_grammar dyp rule in
+          bindings := binding :: !bindings;
+          rule, action
+        end
+        rules
       in
-      let pdev = import_functions ffpdev dyp.parser_pilot add_rules in 
+      let pdev = import_functions ffpdev dyp.parser_pilot add_rules in
       (),!bindings @ [Parser pdev]
 
-    | None -> 
+    | None ->
       print_endline "Parsing device missing";
       let env = dyp.global_data.env in
       let scm = List.rev m.scm in
       load_scheme_defs env scm;
       let bindings = ref [] in
-      let add_rules = List.map (fun rule ->
-        let rule, action, binding = extend_grammar dyp rule in
-        bindings := binding :: !bindings;
-        rule, action
-        ) 
-        rules 
+      let add_rules = List.map
+        begin fun rule ->
+          let rule, action, binding = extend_grammar dyp rule in
+          bindings := binding :: !bindings;
+          rule, action
+        end
+        rules
       in
       let local_data = { m with loaded_dssls = to_install } in
       (*
@@ -772,7 +775,7 @@ top_statements:
 (*
       print_endline ("BB sr=" ^ Flx_srcref.short_string_of_src sr);
 *)
-     let local_data = 
+     let local_data =
         match s with
         | Snull -> dyp.last_local_data
         | _ -> { dyp.last_local_data with rev_stmts = ocs2flx sr s :: dyp.last_local_data.rev_stmts }
@@ -784,7 +787,7 @@ top_statements:
 
 
 /* inner statements only */
-sstatements: 
+sstatements:
   | sstatement_star utstatement?
     {
       let _, stmts = $1 in
@@ -833,7 +836,7 @@ prilist:
   | pri { [$1] }
 
 dyprod:
-   | opt_private NAME opt_prio ":=" dyalts ";" 
+   | opt_private NAME opt_prio ":=" dyalts ";"
      {
        (*
        print_endline ("RULE " ^ snd $2);
@@ -841,7 +844,7 @@ dyprod:
        `Scheme_rule ($1, $2, $3, `Sval, $5)
      }
 
-   | opt_private NAME opt_prio ":" NAME EQUAL dyalts ";" 
+   | opt_private NAME opt_prio ":" NAME EQUAL dyalts ";"
      {
        if $5 <> "string" then raise Giveup;
        (*
@@ -851,13 +854,13 @@ dyprod:
      }
 
 
-   | "requires" basic_name_comma_list ";" 
+   | "requires" basic_name_comma_list ";"
      {
         let dssls = List.map snd $2 in
        `Requires dssls
      }
 
-   | NAME prilist ";" 
+   | NAME prilist ";"
      {
        if $1 <> "priority" then raise Giveup;
        `Priorities $2
@@ -928,7 +931,7 @@ rhs_atom:
   | UNDERSCORE { UNDERSCORE }
 
 utstatement:
-  | "SCHEME" STRING 
+  | "SCHEME" STRING
     @{
       let sr = getsr dyp in
       let s = $2 in
@@ -949,12 +952,13 @@ utstatement:
 
   | "SAVE"
     {
-print_endline ("Setting automaton ");
+      print_endline "Setting automaton";
       let sr = getsr dyp in
       let s = Marshal.to_string (function_free_pdev dyp.parser_pilot.pp_dev) [] in
       dyp.global_data.parsing_device := Some s;
-      (0,sr,Snull)    
+      (0,sr,Snull)
     }
+
 tstatement:
   | "syntax" NAME LBRACE dyprods RBRACE
     @{
@@ -963,15 +967,17 @@ tstatement:
       print_endline ("Parsed syntax extensions " ^ (snd $2));
       print_endline ("Defining syntax extensions " ^ (snd $2));
       *)
-      let sr =   getsr dyp in
+      let sr = getsr dyp in
       let dssl = $2 in
       let m = dyp.local_data in
       let m =
         if Drules.mem dssl m.dssls then m
-        else {m with dssls=Drules.add dssl fresh_dssl m.dssls}
+        else { m with dssls=Drules.add dssl fresh_dssl m.dssls }
       in
-      let global_data,local_data =
-        List.fold_left (fun (g,l) x -> add_rule g l dssl x) (dyp.global_data, m) $4
+      let global_data,local_data = List.fold_left
+        (fun (g,l) x -> add_rule g l dssl x)
+        (dyp.global_data, m)
+        $4
       in
       (* This cal tries to avoid gratutions mods to global/local data
          by checking for physical equality. Note changes to any
@@ -989,9 +995,13 @@ tstatement:
   | "open" "syntax" basic_name_comma_list ";"
     @{
       let sr = getsr dyp in
-      print_endline ("Opening syntax extensions " ^Flx_srcref.short_string_of_src sr);
+      print_endline
+        ("Opening syntax extensions " ^ Flx_srcref.short_string_of_src sr);
+
       let dssls = List.map snd $3 in
-      print_endline ("Parsed open of syntax extensions " ^ String.concat "," dssls);
+      print_endline
+        ("Parsed open of syntax extensions " ^ String.concat "," dssls);
+
       let m = dyp.local_data in
 
       (* calculate the transitive closure of DSSL's required
@@ -1239,10 +1249,7 @@ let parse_lexbuf old_local_data lexbuf =
   in
   let local_data =
     try
-      dyphack (compilation_unit
-        ~local_data:old_local_data
-        ~global_data: global_data 
-        lexbuf)
+      dyphack (compilation_unit ~local_data:old_local_data ~global_data lexbuf)
     with
       | Failure s ->
         begin
@@ -1288,7 +1295,7 @@ let parse_lexbuf old_local_data lexbuf =
 
 let make_parser_state () = local_data
 
-let parser_data { rev_stmts = r } = r 
+let parser_data { rev_stmts = r } = r
 
 let parse_channel ?(name="<channel>") parser_state channel =
   let parser_pilot = pp () in
@@ -1327,10 +1334,7 @@ let parse_syntax_lexbuf old_local_data lexbuf =
   in
   let local_data =
     try
-      dyphack (syntax_unit
-        ~local_data:old_local_data
-        ~global_data: global_data 
-        lexbuf)
+      dyphack (syntax_unit ~local_data:old_local_data ~global_data lexbuf)
     with
       | Failure s ->
         begin

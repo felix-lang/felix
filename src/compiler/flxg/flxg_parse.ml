@@ -31,7 +31,9 @@ let parse_syntax state =
     auto_imports
   in
 
-  let parsing_device = !(Flx_parse_helper.global_data.Flx_token.parsing_device) in
+  let parsing_device =
+    !(Flx_parse_helper.global_data.Flx_token.parsing_device)
+  in
   fprintf state.ppf "PARSED SYNTAX/IMPORT FILES@.";
 
   let oc = open_out_bin "automaton.syntax" in
