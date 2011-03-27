@@ -102,7 +102,7 @@ fun getline_to_url (get:string) =>
 ;
 
 // strip off the leading http:// then split on the next /
-fun split_url (inurl:string): opt[string*string] = {
+fun split_url (inurl:string) = {
   val url =
     if startswith inurl "http://" then
       inurl.[to 7]
@@ -120,12 +120,12 @@ fun split_url (inurl:string): opt[string*string] = {
 }
 
 // parse balance of HTTP GET request (after gthe GET keyword)
-fun parse_get_line (get:string): opt[string*string] =>
+fun parse_get_line (get:string) =>
   split_url$ getline_to_url get
 ;
 
 // fixup text by replacing < > and & characters
-fun txt2html(x:string):string=
+fun txt2html (x:string) =
 {
   var out2 = "";
   var i:int;
@@ -137,57 +137,61 @@ fun txt2html(x:string):string=
     else out2+=ch;
     done
   done
+
   return out2;
 }
 
 
 // functions to make responses
-fun make_image(suffix:string, contents:string)=> 
+fun make_image (suffix:string, contents:string) =>
 let ?kind = if suffix == "jpg" then "jpeg" else suffix endif in
 """HTTP/0.9 200 OK\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
 Connection: close\r
-Content-Type: image/"""+kind+"""\r
-Content-Length: """+str(len(contents))+"""\r
+Content-Type: image/""" + kind + """\r
+Content-Length: """ + str (len contents) + """\r
 \r
 """+contents;
 
-fun make_css(contents:string)=> """HTTP/0.9 200 OK\r
+fun make_css (contents:string) =>
+"""HTTP/0.9 200 OK\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
 Connection: close\r
 Content-Type: text/css\r
-Content-Length: """+str (len (contents))+"""\r
+Content-Length: """ + str (len contents) + """\r
 \r
 """+contents;
 
 
-fun make_not_found(contents:string)=> """HTTP/0.9 404 Not Found\r
+fun make_not_found (contents:string) =>
+"""HTTP/0.9 404 Not Found\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
 Connection: close\r
 Content-Type: text/html\r
-Content-Length: """+str(len(contents)+18)+"""\r
+Content-Length: """ + str ((len contents) + 18) + """\r
 \r
-PAGE NOT FOUND: """+contents+"""\r
+PAGE NOT FOUND: """ + contents + """\r
 """;
 
-fun make_forbidden(contents:string)=> """HTTP/0.9 403 Forbidden\r
+fun make_forbidden (contents:string) =>
+"""HTTP/0.9 403 Forbidden\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
 Last-Modified: Sun, 28 Nov 2004 18:59:31 GMT\r
 Connection: close\r
 Content-Type: text/html\r
-Content-Length: """+str(len(contents)+11)+"""\r
+Content-Length: """ + str((len contents) + 11) + """\r
 \r
-Forbidden: """+contents+"""\r
+Forbidden: """ + contents + """\r
 """;
 
-fun make_raw(contents:string)=>
+fun make_raw (contents:string) =>
 """HTTP/0.9 200 OK\r
 Date: Tue, 25 Apr 2006 00:16:12 GMT\r
 Server: felix web server\r
@@ -196,33 +200,32 @@ Connection: close\r
 Content-Type: application/octet-stream\r
 Content-Length: """ + str (len (contents)) +"""\r
 \r
-"""+contents;
+""" + contents;
 
-fun make_html(contents:string)=>
+fun make_html (contents:string) =>
 """HTTP/0.9 200 OK\r
 Date: Tue, 25 Apr 2006 00:16:12 GMT\r
 Server: felix web server\r
 Last-Modified: Wed, 01 Feb 2006 18:51:37 GMT\r
 Connection: close\r
 Content-Type: text/html\r
-Content-Length: """ + str (len (contents)) +"""\r
+Content-Length: """ + str (len contents) + """\r
 \r
-"""+contents;
+""" + contents;
 
-fun make_xhtml(contents:string)=>
+fun make_xhtml (contents:string) =>
 """HTTP/0.9 200 OK\r
 Date: Tue, 25 Apr 2006 00:16:12 GMT\r
 Server: felix web server\r
 Last-Modified: Wed, 01 Feb 2006 18:51:37 GMT\r
 Connection: close\r
 Content-Type: application/xhtml+xml\r
-Content-Length: """ + str (len (contents)) +"""\r
+Content-Length: """ + str (len contents) + """\r
 \r
-"""+contents;
+""" + contents;
 
 
-fun get_file(fname:string, path:list[string]):opt[string]=
-{
+fun get_file (fname:string, path:list[string]) = {
   if fname.[0] == char "$" do fname = fname.[1 to]; done
   if FileSystem::fileexists fname do return Some fname;
   else
@@ -234,34 +237,30 @@ fun get_file(fname:string, path:list[string]):opt[string]=
 }
 
 
-proc serve_not_found(k:socket_t, fname:string)
-{
+proc serve_not_found (k:socket_t, fname:string) {
    var eof_flag = false;
    val data = make_not_found(fname);
    write_string(k,data,&eof_flag);
 }
 
-proc serve_forbidden(k:socket_t, fname:string)
-{
+proc serve_forbidden (k:socket_t, fname:string) {
    var eof_flag = false;
    val data = make_forbidden(fname);
    write_string(k,data,&eof_flag);
 }
 
-fun get_flx(fname:string):string=
-{
+fun get_flx (fname:string) = {
   var flx =
     match get_file(fname,FLX_PATH) with
     | Some ?name => Text_file::load(name)
-    | None => "NO FILE "+fname+" FOUND IN " + str FLX_PATH
+    | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
     endmatch
   ;
   println$ "Loaded felix file " + fname+", len="+str (len flx);
   return flx;
 }
 
-fun get_cpp(fname:string):string=
-{
+fun get_cpp (fname:string) = {
   var flx =
     match get_file(fname,C_PATH) with
     | Some ?name => Text_file::load(name)
@@ -273,21 +272,19 @@ fun get_cpp(fname:string):string=
 }
 
 
-proc serve_felix(k:socket_t, fname:string)
-{
+proc serve_felix (k:socket_t, fname:string) {
   var eof_flag = false;
 
   match get_file(fname,C_PATH) with
   | Some ?path =>
     {
-      val text=Text_file::load path;
+      val text = Text_file::load path;
       val dirname = Filename::dirname path;
-      val data = make_html(
-        "<html><head>"+Css4Html::flx_head+"</head>"+
-        "<body><pre>"+
-        Flx2Html::xlat_felix (text,dirname)+
-        "</pre></body></html>\n\r"
-      );
+      val data = make_html$
+        "<html><head>%S</head><body><pre>%S</pre></body></html>\n\r"
+        Css4Html::flx_head
+        (Flx2Html::xlat_felix (text, dirname));
+
       write_string(k,data,&eof_flag);
     }
   | None =>
@@ -298,21 +295,19 @@ proc serve_felix(k:socket_t, fname:string)
 
 }
 
-proc serve_fpc(k:socket_t, fname:string)
-{
+proc serve_fpc (k:socket_t, fname:string) {
   var eof_flag = false;
 
-  match get_file(fname,FLX_PKGCONFIG_PATH) with
+  match get_file (fname, FLX_PKGCONFIG_PATH) with
   | Some ?path =>
     {
       val text=Text_file::load path;
       val dirname = Filename::dirname path;
-      val data = make_html(
-        "<html><head>"+Css4Html::flx_head+"</head>"+
-        "<body><pre>"+
-        Fpc2Html::xlat_fpc (text,dirname)+
-        "</pre></body></html>\n\r"
-      );
+      val data = make_html$
+        "<html><head>%S</head><body><pre>%S</pre></body></html>\n\r"
+        Css4Html::flx_head
+        (Fpc2Html::xlat_fpc (text, dirname));
+
       write_string(k,data,&eof_flag);
     }
   | None =>
@@ -323,58 +318,52 @@ proc serve_fpc(k:socket_t, fname:string)
 
 }
 
-fun get_py(fname:string):string=
-{
+fun get_py (fname:string) = {
   var flx =
     match get_file(fname,FLX_PATH) with
     | Some ?name => Text_file::load(name)
-    | None => "NO FILE "+fname+" FOUND IN " + str FLX_PATH
-    endmatch
-  ;
-  println$ "Loaded Python file " + fname+", len="+str (len flx);
+    | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
+    endmatch;
+
+  println$ f"Loaded Python file %S, len=%d" (fname, len flx);
   return flx;
 }
 
-proc serve_py(k:socket_t, fname:string)
-{
+proc serve_py (k:socket_t, fname:string) {
   var eof_flag = false;
-  var flx = get_flx(fname);
-  val data = make_html(
-    "<html><head>"+Css4Html::flx_head+"</head>"+
-    "<body><pre>"+
-    Py2Html::xlat_py flx+
-    "</pre></body></html>\n\r"
-  );
-  write_string(k,data,&eof_flag);
+  var flx = get_flx fname;
+  val data = make_html$
+    "<html><head>%S</head><body><pre>%S</pre></body></html>\n\r"
+    Css4Html::flx_head
+    (Py2Html::xlat_py flx);
+
+  write_string (k, data, &eof_flag);
 }
 
-fun get_ocaml(fname:string):string=
-{
+fun get_ocaml (fname:string) = {
   var flx =
-    match get_file(fname,FLX_PATH) with
-    | Some ?name => Text_file::load(name)
-    | None => "NO FILE "+fname+" FOUND IN " + str FLX_PATH
+    match get_file (fname, FLX_PATH) with
+    | Some ?name => Text_file::load name
+    | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
     endmatch
   ;
-  println$ "Loaded Ocaml file " + fname+", len="+str (len flx);
+
+  println$ f"Loaded Ocaml file %S, len=%d" (fname, len flx);
   return flx;
 }
 
-proc serve_ocaml(k:socket_t, fname:string)
-{
+proc serve_ocaml (k:socket_t, fname:string) {
   var eof_flag = false;
-  var flx = get_flx(fname);
-  val data = make_html(
-    "<html><head>"+Css4Html::flx_head+"</head>"+
-    "<body><pre>"+
-    Ocaml2Html::xlat_ocaml flx+
-    "</pre></body></html>\n\r"
-  );
-  write_string(k,data,&eof_flag);
+  var flx = get_flx fname;
+  val data = make_html$
+    "<html><head>%S</head><body><pre>%S</pre></body></html>\n\r"
+    Css4Html::flx_head
+    (Ocaml2Html::xlat_ocaml flx);
+
+  write_string (k, data, &eof_flag);
 }
 
-proc serve_cpp(k:socket_t, fname:string)
-{
+proc serve_cpp (k:socket_t, fname:string) {
   var eof_flag = false;
   var text: string;
 
@@ -383,13 +372,12 @@ proc serve_cpp(k:socket_t, fname:string)
     {
       val text=Text_file::load path;
       val dirname = Filename::dirname path;
-      val data = make_html(
-        "<html><head>"+Css4Html::flx_head+"</head>"+
-        "<body><pre>"+
-        Cpp2Html::xlat_cpp (text,dirname)+
-        "</pre></body></html>\n\r"
-      );
-      write_string(k,data,&eof_flag);
+      val data = make_html$
+        "<html><head>%S</head><body><pre>%S</pre></body></html>\n\r"
+        Css4Html::flx_head
+        (Cpp2Html::xlat_cpp (text, dirname));
+
+      write_string (k, data, &eof_flag);
     }
   | None =>
     {
@@ -405,57 +393,49 @@ val text_suffices = (
   "dep","stdout","expect"
 );
 
-proc serve_text(k:socket_t, fname:string)
-{
+proc serve_text (k:socket_t, fname:string) {
   var eof_flag = false;
   var txt = Text_file::load(fname);
-  println$ "Loaded text file " + fname+", len="+str(len txt);
-  val data = make_html(
-    "<html><head></head>"+
-    "<body><pre>"+
-    txt+
-    "</pre></body></html>\n\r"
-  );
-  write_string(k,data,&eof_flag);
+  println$ f"Loaded text file %S, len=%d" (fname, len txt);
+  val data = make_html$
+    "<html><head></head><body><pre>%S</pre></body></html>\n\r"
+    txt;
+
+  write_string (k, data, &eof_flag);
 }
 
-proc serve_html(k:socket_t, fname:string)
-{
+proc serve_html (k:socket_t, fname:string) {
   var eof_flag = false;
-  var txt = Text_file::load(fname);
-  println$ "Loaded html file " + fname+", len="+str(len txt);
-  val data = make_html(
-    txt
-  );
-  write_string(k,data,&eof_flag);
+  var txt = Text_file::load fname;
+  println$ f"Loaded html file %S, len=%d" (fname, len txt);
+  val data = make_html txt;
+
+  write_string (k, data, &eof_flag);
 }
 
-proc serve_xhtml(k:socket_t, fname:string)
-{
+proc serve_xhtml (k:socket_t, fname:string) {
   var eof_flag = false;
-  var txt = Text_file::load(fname);
-  println$ "Loaded html file " + fname+", len="+str(len txt);
-  val data = make_xhtml(
-    txt
-  );
-  write_string(k,data,&eof_flag);
+  var txt = Text_file::load fname;
+  println$ f"Loaded html file %S, len=%d" (fname, len txt);
+  val data = make_xhtml txt;
+
+  write_string (k, data, &eof_flag);
 }
 
 
-fun get_fdoc(fname:string):string=
-{
+fun get_fdoc (fname:string):string = {
   var flx =
     match get_file(fname,FDOC_PATH) with
     | Some ?name => Text_file::load(name)
-    | None => "NO FILE "+fname+" FOUND IN " + str FDOC_PATH
+    | None => f"NO FILE %S FOUND IN %S" (fname, str FDOC_PATH)
     endmatch
   ;
-  println$ "Loaded fdoc file " + fname+", len="+str (len flx);
+
+  println$ f"Loaded fdoc file %S, len=%d" (fname, len flx);
   return flx;
 }
 
-proc serve_fdoc(k:socket_t, fname:string)
-{
+proc serve_fdoc (k:socket_t, fname:string) {
   var eof_flag = false;
   var txt = get_fdoc(fname);
   //println$ "Contents=" + flx;
@@ -468,8 +448,7 @@ proc serve_fdoc(k:socket_t, fname:string)
   write_string(k,data,&eof_flag);
 }
 
-proc serve_xfdoc(k:socket_t, fname:string)
-{
+proc serve_xfdoc (k:socket_t, fname:string) {
   var eof_flag = false;
   var txt = get_fdoc(fname);
   //println$ "Contents=" + flx;
@@ -487,38 +466,34 @@ proc serve_xfdoc(k:socket_t, fname:string)
 }
 
 
-proc serve_raw(k:socket_t, fname:string, suffix:string)
-{
+proc serve_raw (k:socket_t, fname:string, suffix:string) {
   var eof_flag = false;
-  var txt = Text_file::load(fname);
-  println$ "Loaded raw file " + fname+", len="+str(len txt);
+  var txt = Text_file::load fname;
+  println$ f"Loaded raw file %S, len=%d" (fname, len txt);
   //println$ "Contents=" + flx;
-  val data = make_raw(txt);
+  val data = make_raw txt;
+  write_string (k, data, &eof_flag);
+}
+
+proc serve_image (k:socket_t, fname:string, suffix:string) {
+  var eof_flag = false;
+  var txt = Text_file::load fname;
+  println$ f"Loaded image file %S, len=%d" (fname, len txt);
+  //println$ "Contents=" + flx;
+  val data = make_image (suffix,txt);
+  write_string (k, data, &eof_flag);
+}
+
+proc serve_css(k:socket_t, fname:string, suffix:string) {
+  var eof_flag = false;
+  var txt = Text_file::load fname;
+  println$ f"Loaded css file %S, len=%d" (fname, len txt);
+  //println$ "Contents=" + flx;
+  val data = make_css txt;
   write_string(k,data,&eof_flag);
 }
 
-proc serve_image(k:socket_t, fname:string, suffix:string)
-{
-  var eof_flag = false;
-  var txt = Text_file::load(fname);
-  println$ "Loaded image file " + fname+", len="+str(len txt);
-  //println$ "Contents=" + flx;
-  val data = make_image(suffix,txt);
-  write_string(k,data,&eof_flag);
-}
-
-proc serve_css(k:socket_t, fname:string, suffix:string)
-{
-  var eof_flag = false;
-  var txt = Text_file::load(fname);
-  println$ "Loaded css file " + fname+", len="+str(len txt);
-  //println$ "Contents=" + flx;
-  val data = make_css(txt);
-  write_string(k,data,&eof_flag);
-}
-
-fun mk_dir_lines (fname:string, dirs: list[string]) : string =
-{
+fun mk_dir_lines (fname:string, dirs: list[string]) = {
   fun rf(f:string)=>'  <a href="/$'+ fname + '/' +f+'">'+f+'</a>';
   return 
     fold_left (fun (acc: string) (f:string) => 
@@ -534,8 +509,7 @@ fun mk_dir_lines (fname:string, dirs: list[string]) : string =
 }
 
   
-fun mk_reg_lines (fname:string, files: list[string]) : string =
-{
+fun mk_reg_lines (fname:string, files: list[string]) = {
   var eof = false;
   var s = "";
   var old_base = "";
@@ -548,7 +522,7 @@ fun mk_reg_lines (fname:string, files: list[string]) : string =
   proc hd() { chd; }
   proc chd() { exts=list(extn); old_base=base; }
   proc cft() {
-println$ "Cft for key " + old_base + " exts=" + str exts;
+    println$ "Cft for key " + old_base + " exts=" + str exts;
     fun rf(x:string)=>
       '  <a href="/$'+ fname + '/' +old_base+x+'">'+
       if x == "" then "(none)" else x endif +
@@ -595,8 +569,7 @@ fin:>
   return s;
 }
 
-proc serve_directory(k:socket_t, fname:string)
-{
+proc serve_directory (k:socket_t, fname:string) {
   var dirname = Filename::basename fname;
   var eof_flag = false;
   val top = "A DIRECTORY " + fname + "\r\n";
@@ -810,5 +783,4 @@ forever {
 };
 
 println "WEB SERVER FINNISHED?";
-iclose(listener);
-
+iclose (listener);
