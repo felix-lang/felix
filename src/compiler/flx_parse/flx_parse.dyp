@@ -721,8 +721,8 @@ grammar_init: @{
     let m = dyp.local_data in
 
     (* We need to reinstall the dssls that we loaded in syntax_unit. *)
-    let to_install = tran_cls_dssls m.dssls [] m.installed_dssls in
-    let rules, prios = extract_syntax to_install m.dssls in
+    let to_install = tran_cls_dssls m.drules [] m.installed_dssls in
+    let rules, prios = extract_syntax to_install m.drules in
 
     match !(dyp.global_data.parsing_device) with
     | Some device ->
@@ -749,7 +749,7 @@ grammar_init: @{
 
       let local_data = { m with installed_dssls = to_install } in
       (*
-      print_endline ("Mounting Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) m.dssls ""));
+      print_endline ("Mounting Dssls = " ^ (Drules.fold (fun k _ acc -> acc ^ " " ^ k) m.drules ""));
       *)
 
       (),
@@ -996,8 +996,8 @@ tstatement:
       let dssl = $2 in
       let m = dyp.local_data in
       let m =
-        if Drules.mem dssl m.dssls then m
-        else { m with dssls=Drules.add dssl fresh_dssl m.dssls }
+        if Drules.mem dssl m.drules then m
+        else { m with drules = Drules.add dssl fresh_dssl m.drules }
       in
       let global_data,local_data = List.fold_left
         (fun (g,l) x -> add_rule g l dssl x)
@@ -1030,8 +1030,8 @@ tstatement:
 
       let m = dyp.local_data in
 
-      let to_install = tran_cls_dssls m.dssls m.installed_dssls dssls in
-      let rules, prios = extract_syntax to_install m.dssls in
+      let to_install = tran_cls_dssls m.drules m.installed_dssls dssls in
+      let rules, prios = extract_syntax to_install m.drules in
       let add_rules, bindings = bind_grammar_rules dyp rules in
 
       let local_data = { m with installed_dssls = to_install @ m.installed_dssls } in

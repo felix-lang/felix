@@ -120,7 +120,7 @@ let global_data = {
 }
 
 let local_data = {
-  Flx_token.dssls = Drules.empty;
+  Flx_token.drules = Drules.empty;
   Flx_token.installed_dssls = [];
   Flx_token.scm = [];
   Flx_token.rev_stmts = [];
@@ -307,7 +307,7 @@ print_endline ("sr of reduction is " ^ Flx_srcref.short_string_of_src sr);
 (* top routine to add a new production to a dssl *)
 let extend_grammar dyp (dssl,(name,prio,prod,action,anote,sr)) =
   let m = dyp.local_data in
-  let dssl_record = Drules.find dssl m.dssls in
+  let dssl_record = Drules.find dssl m.drules in
   define_scheme sr dyp dssl_record dssl name prio prod action
 
 (* ------------------------------------------------------ *)
@@ -378,7 +378,7 @@ and fixup_alternatives pcounter kind name prio dyalts =
 
 let add_rule global_data local_data dssl rule =
   let m = local_data in
-  let d = try Drules.find dssl m.dssls with Not_found -> fresh_dssl in
+  let d = try Drules.find dssl m.drules with Not_found -> fresh_dssl in
   match rule with
   | `Scheme_rule (privacy,name,prio,kind,dyalts) ->
      let rules = fixup_alternatives global_data.pcounter kind name prio dyalts in
@@ -392,17 +392,17 @@ let add_rule global_data local_data dssl rule =
        | `Public -> d.privacy
      in
      let d = { d with rules = rules; privacy = privacy } in
-     let m = { m with dssls = Drules.add dssl d m.dssls } in
+     let m = { m with drules = Drules.add dssl d m.drules } in
      global_data,m
 
   | `Requires ls ->
      let d = { d with deps = ls @ d.deps } in
-     let m = { m with dssls = Drules.add dssl d m.dssls } in
+     let m = { m with drules = Drules.add dssl d m.drules } in
      global_data,m
 
   | `Priorities p ->
     let d = { d with prios = p::d.prios } in
-    let m = { m with dssls = Drules.add dssl d m.dssls } in
+    let m = { m with drules = Drules.add dssl d m.drules } in
     global_data, m
 
 let ocs2flx sr r =
