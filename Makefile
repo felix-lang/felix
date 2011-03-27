@@ -26,7 +26,7 @@ install-bin:
 
 websites-linux:
 	mk_daemon /usr/local/bin/webserver --port=1116
-	sudo mk_daemon /usr/bin/privbind -u felixweb /usr/local/bin/webserver --port=80 --root=/usr/local/lib/felix/felix-latest
+	sudo mk_daemon /usr/bin/privbind -u felixweb /usr/local/bin/webserver --port=80 --root=/usr/local/lib/felix/felix-latest/web
 
 websites-osx:
 	mk_daemon /usr/local/bin/webserver --port=1116
