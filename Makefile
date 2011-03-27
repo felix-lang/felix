@@ -16,17 +16,17 @@ dist:
 	python3 fbuild/fbuild-light dist
 
 install:
-	sudo python3 fbuild/fbuild-light install
-
-install-lib:
-	sudo python3 fbuild/fbuild-light install_lib
+	sudo build/release/flx --test=build/release --install 
+	echo Stop web servers now, then do make install-bin
 
 install-bin:
-	sudo python3 fbuild/fbuild-light install_bin
+	echo Make sure you have stopped webservers before doing this!
+	sudo build/release/flx --test=build/release --install-bin
+	echo Restart webservers now
 
 websites-linux:
 	mk_daemon /usr/local/bin/webserver --port=1116
-	sudo privbind -u skaller mk_daemon /usr/local/bin/webserver --port=80 --root=`flx --where`/web
+	sudo mk_daemon /usr/bin/privbind -u felixweb /usr/local/bin/webserver --port=80 --root=/usr/local/lib/felix/felix-latest
 
 websites-osx:
 	mk_daemon /usr/local/bin/webserver --port=1116
