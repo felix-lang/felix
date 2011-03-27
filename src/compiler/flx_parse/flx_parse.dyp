@@ -101,28 +101,41 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 
 
 (* move this to elsewhere eventually *)
-(* calculate the dssls that need to be loaded based on those already loaded *)
-let tran_cls_dssls drules dssls =
-  (* calculate the transitive closure of DSSL's required *)
-  let visited = ref [] in
-  let to_install = ref [] in
-  let rec cal_install s =
-    if List.mem s !visited then ()
-    else begin
-      visited := s :: !visited;
-      let drule =
-        try Drules.find s drules
-        with Not_found -> failwith ("Can't open syntax " ^ s)
-      in
-      List.iter cal_install drule.deps;
-      to_install := s :: !to_install
-    end
+(* Calculate the dssls that need to be loaded based on those already loaded. *)
+let tran_cls_dssls drules installed_dssls dssls =
+  (* Calculate the transitive closure of DSSL's required. *)
+  let rec cal_install (visited, to_install) dssl =
+    (* Ignore dssls we've already visited. *)
+    if StringSet.mem dssl visited then (visited, to_install) else
+    let visited = StringSet.add dssl visited in
+
+    let drule =
+      try Drules.find dssl drules
+      with Not_found -> failwith ("Can't open syntax " ^ dssl)
+    in
+
+    (* Make sure we install all of the dssl's dependencies first. *)
+    let visited, to_install = List.fold_left
+      cal_install
+      (visited, to_install)
+      drule.deps
+    in
+
+    visited, dssl :: to_install
   in
-  List.iter cal_install dssls;
-  let to_install = List.rev (!to_install) in
-  (*
-  print_endline ("Installing " ^ cat "," to_install);
-  *)
+
+  (* Finally, calculate the dssls we need to install. We'll consider all the
+   * installed dssls as already visited. *)
+  let _, to_install = List.fold_left
+    cal_install
+    (StringSet.of_list installed_dssls, [])
+    dssls
+  in
+
+  (* We got our list backwards. *)
+  let to_install = List.rev to_install in
+
+  (* print_endline ("Installing " ^ cat "," to_install); *)
   to_install
 
 (* Extract rules and priority scheme from the dssls which are to be
@@ -706,7 +719,9 @@ grammar_init: @{
     let file = Flx_srcref.file (getsr dyp) in
     (* print_endline ("grammar_init: Parsing " ^ file); *)
     let m = dyp.local_data in
-    let to_install = tran_cls_dssls m.dssls m.installed_dssls in
+
+    (* We need to reinstall the dssls that we loaded in syntax_unit. *)
+    let to_install = tran_cls_dssls m.dssls [] m.installed_dssls in
     let rules, prios = extract_syntax to_install m.dssls in
 
     match !(dyp.global_data.parsing_device) with
@@ -1015,7 +1030,7 @@ tstatement:
 
       let m = dyp.local_data in
 
-      let to_install = tran_cls_dssls m.dssls m.installed_dssls in
+      let to_install = tran_cls_dssls m.dssls m.installed_dssls dssls in
       let rules, prios = extract_syntax to_install m.dssls in
       let add_rules, bindings = bind_grammar_rules dyp rules in
 
