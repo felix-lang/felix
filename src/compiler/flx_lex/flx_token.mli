@@ -50,8 +50,8 @@ and dssl_t = {
 }
 
 and local_data_t = {
-  dssls : dssl_t Flx_mtypes2.Drules.t;
-  loaded_dssls : string list;
+  drules : dssl_t Flx_mtypes2.Drules.t;
+  installed_dssls : string list;
   scm : (Flx_srcref.t * string) list;
   rev_stmts: Flx_ast.statement_t list;
 }
