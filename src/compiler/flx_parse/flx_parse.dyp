@@ -677,7 +677,7 @@ main lexer =
 %parser
 
 syntax_unit:
-  | syn_init top_statements ENDMARKER {
+  | syntax_init top_statements ENDMARKER {
     (*
     print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.last_local_data.loaded_dssls);
     print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm));
@@ -686,14 +686,14 @@ syntax_unit:
     *)
     dyp.last_local_data }
 
-syn_init:
+syntax_init:
    {
     let file = Flx_srcref.file (getsr dyp) in
     print_endline ("syninit: Parsing " ^ file)
    }
 
 compilation_unit:
-  | graminit top_statements ENDMARKER {
+  | grammar_init top_statements ENDMARKER {
     (*
     print_endline ("Returning syntax, loaded dssls = " ^ String.concat ","dyp.last_local_data.loaded_dssls);
     print_endline ("Returning syntax, Schemes = " ^ string_of_int (List.length dyp.last_local_data.scm));
@@ -702,9 +702,9 @@ compilation_unit:
     *)
     dyp.last_local_data }
 
-graminit: @{
+grammar_init: @{
     let file = Flx_srcref.file (getsr dyp) in
-    (* print_endline ("graminit: Parsing " ^ file); *)
+    (* print_endline ("grammar_init: Parsing " ^ file); *)
     let m = dyp.local_data in
     let to_install = tran_cls_dssls m.dssls m.loaded_dssls in
     let rules, prios = extract_syntax to_install m.dssls in
@@ -974,8 +974,8 @@ tstatement:
     @{
       (* NOTE ORDER!! dyprods is reversed, but the fold reverses it again *)
       (*
-      print_endline ("Parsed syntax extensions " ^ (snd $2));
-      print_endline ("Defining syntax extensions " ^ (snd $2));
+      print_endline ("Parsed syntax extensions " ^ $2);
+      print_endline ("Defining syntax extensions " ^ $2);
       *)
       let sr = getsr dyp in
       let dssl = $2 in
