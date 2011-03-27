@@ -16,12 +16,12 @@ dist:
 	python3 fbuild/fbuild-light dist
 
 install:
-	sudo build/release/flx --test=build/release --install 
+	sudo build/release/bin/flx --test=build/release --install 
 	echo Stop web servers now, then do make install-bin
 
 install-bin:
 	echo Make sure you have stopped webservers before doing this!
-	sudo build/release/flx --test=build/release --install-bin
+	sudo build/release/bin/flx --test=build/release --install-bin
 	echo Restart webservers now
 
 websites-linux:
