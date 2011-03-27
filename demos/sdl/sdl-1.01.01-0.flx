@@ -7,7 +7,7 @@ include "SDL/SDL_keysym";
 include "SDL/SDL_events";
 include "SDL/SDL_mutex";
 include "SDL/SDL_audio";
-include "std/io/flx_faio";
+include "std/io/faio";
 include "flx_faio_sdl";
 
 // Raw SDL interfaces

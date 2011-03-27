@@ -1,7 +1,7 @@
 include "SDL/SDL";
 include "SDL/SDL_events";
 include "SDL/SDL_mutex";
-include "std/io/flx_faio";
+include "std/io/faio";
 
 module SDL_events
 {

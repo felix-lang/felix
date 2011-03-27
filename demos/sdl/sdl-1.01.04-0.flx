@@ -20,7 +20,7 @@ include "SDL/SDL_timer";
 include "SDL/SDL_mutex";
 include "SDL/SDL_opengl";
 
-include "std/io/flx_faio";
+include "std/io/faio";
 include "flx_faio_sdl";
 
 open C_hack;

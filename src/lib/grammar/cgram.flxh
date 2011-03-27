@@ -18,7 +18,7 @@ postfix_expression
 	:= primary_expression =># "_1"
 	| postfix_expression '[' expression ']' =># "`(subscript ,_sr ,_1 ,_3)"
 	| postfix_expression '(' ')'            =># "`(apply ,_sr ,_1 ())"
-	| postfix_expression '(' argument_expression_list ')' =># "`(ast_apply ,_sr ,(_1 (rev _3)))"
+	| postfix_expression '(' argument_expression_list ')' =># "`(ast_apply ,_sr ,(_1 (reverse _3)))"
 	| postfix_expression '.' sname                        =># "`(ast_dot ,_sr (,_1 ,_3))"
 	| postfix_expression '->' sname                       =># "`(ast_arrow ,_sr (,_1 ,_3))"
 	| postfix_expression '++'                             =># "`(uop ,_sr 'postincr' ,_1)"
@@ -143,6 +143,7 @@ expression
 declaration
 	:= declaration_specifiers ';'
 	| declaration_specifiers init_declarator_list ';'
+  | 'typedef' type_specifier declarator ';'
 	;
 
 declaration_specifiers
@@ -165,7 +166,7 @@ init_declarator
 	;
 
 storage_class_specifier
-	:= 'typedef'
+	:= 
 	| 'extern'
 	| 'static'
 	| 'auto'
@@ -241,31 +242,10 @@ enumerator
 	| sname '=' constant_expression
 	;
 
+// Felix doesn't support const or volatile
 type_qualifier
 	:= 'const'
 	| 'volatile'
-	;
-
-declarator
-	:= pointer direct_declarator
-	| direct_declarator
-	;
-
-direct_declarator
-	:= sname 
-	| '(' declarator ')'
-	| direct_declarator '[' constant_expression ']'
-	| direct_declarator '[' ']'
-	| direct_declarator '(' parameter_type_list ')'
-	| direct_declarator '(' identifier_list ')'
-	| direct_declarator '(' ')'
-	;
-
-pointer
-	:= '*'
-	| '*' type_qualifier_list
-	| '*' pointer
-	| '*' type_qualifier_list pointer
 	;
 
 type_qualifier_list
@@ -273,31 +253,51 @@ type_qualifier_list
 	| type_qualifier_list type_qualifier
 	;
 
+declarator
+	:= pointer direct_declarator =># "`(ast_ref ,_sr ,_2)" 
+	| direct_declarator =># "_1"
+	;
+
+direct_declarator
+	:= sname                        =># "_1"
+	| '(' declarator ')'            =># "_2"
+	| direct_declarator '[' constant_expression ']' =># "`(array ,_sr ,_1 ,_3)"
+	| direct_declarator '[' ']'                     =># "`(array ,_sr ,_1 ())"  
+	| direct_declarator '(' parameter_type_list ')' =># "`(fun ,_sr ,_1 ,(reverse _3))"
+	| direct_declarator '(' ')'                     =># "`(fun ,_sr ,_1 ())"
+	;
+
+pointer
+	:= '*'                                          =># "`(ptr)"
+	| '*' type_qualifier_list                       =># "`(ptr)"
+	| '*' pointer                                   =># "(cons 'ptr ,_2)"
+	| '*' type_qualifier_list pointer               =># "(cons 'ptr ,_3)"
+	;
 
 parameter_type_list
-	:= parameter_list
-	| parameter_list ',' '...'
+	:= parameter_list              =># "_1"
+	| parameter_list ',' '...'     =># "(cons 'ellipsis _1)"
 	;
 
 parameter_list
-	:= parameter_declaration
-	| parameter_list ',' parameter_declaration
+	:= parameter_declaration                   =># "`(,_1)"
+	| parameter_list ',' parameter_declaration =># "(cons _3 _1)"
 	;
 
 parameter_declaration
-	:= declaration_specifiers declarator
-	| declaration_specifiers abstract_declarator
-	| declaration_specifiers
+	:= declaration_specifiers declarator         =># "`(,_1 ,_2)"
+	| declaration_specifiers abstract_declarator =># "`(,_1 ,_2)"
+	| declaration_specifiers                     =># "`(,_1 ())"
 	;
 
 identifier_list
-	:= sname
-	| identifier_list ',' sname
+	:= sname                                =># "`(,_1)"
+	| identifier_list ',' sname             =># "(cons _3 _1)"
 	;
 
 type_name
-	:= specifier_qualifier_list
-	| specifier_qualifier_list abstract_declarator
+	:= specifier_qualifier_list                    =># "`(,_1 ())"
+	| specifier_qualifier_list abstract_declarator =># "`(,_1 ,_2)"
 	;
 
 abstract_declarator
