@@ -721,7 +721,7 @@ _gc_pointer type gcaddress = "void*";
 _gc_pointer type gcptr[t]= "?1*";
 
 @# mandatory in C
-@for t in ['ptrdiff','size','intmax','uintmax','intptr','uintptr']:
+@for t in ['ptrdiff','size','ssize','intmax','uintmax','intptr','uintptr']:
   equiv = cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]
   tangle('typedef ' + t + ' = ' + equiv + ';')
 
