@@ -1,26 +1,33 @@
 import fbuild.builders.text
 import fbuild.config.c.c99 as c99
 import fbuild.config.c.posix as posix
-from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
 import buildsystem
+from buildsystem.config import config_call
 
 # ------------------------------------------------------------------------------
 
 def build_runtime(phase):
     path = Path('src/tre/tre')
 
-    alloca_h = call('fbuild.config.c.malloc.alloca_h', phase.c.static)
-    getopt_h = call('fbuild.config.c.gnu.getopt_h', phase.c.static)
-    libutf8_h = call('fbuild.config.c.libutf8.libutf8_h', phase.c.static)
-    memory_h = call('fbuild.config.c.bsd.memory_h', phase.c.static)
-    regex_h = call('fbuild.config.c.posix.regex_h', phase.c.static)
-    stdlib_h = call('fbuild.config.c.posix.stdlib_h', phase.c.static)
-    sys_types_h = call('fbuild.config.c.posix.sys_types_h', phase.c.static)
-    wchar_h = call('fbuild.config.c.posix.wchar_h', phase.c.static)
-    wctype_h = call('fbuild.config.c.posix.wctype_h', phase.c.static)
+    alloca_h = config_call('fbuild.config.c.malloc.alloca_h', phase.platform, phase.c.static)
+    dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h', phase.platform, phase.c.static, phase.c.shared)
+    getopt_h = config_call('fbuild.config.c.gnu.getopt_h', phase.platform, phase.c.static)
+    inttypes_h = config_call('fbuild.config.c.posix.inttypes_h', phase.platform, phase.c.static)
+    libutf8_h = config_call('fbuild.config.c.libutf8.libutf8_h', phase.platform, phase.c.static)
+    memory_h = config_call('fbuild.config.c.bsd.memory_h', phase.platform, phase.c.static)
+    regex_h = config_call('fbuild.config.c.posix.regex_h', phase.platform, phase.c.static)
+    stdint_h = config_call('fbuild.config.c.c99.stdint_h', phase.platform, phase.c.static)
+    stdlib_h = config_call('fbuild.config.c.posix.stdlib_h', phase.platform, phase.c.static)
+    string_h = config_call('fbuild.config.c.c99.string_h', phase.platform, phase.c.static)
+    strings_h = config_call('fbuild.config.c.posix.strings_h', phase.platform, phase.c.static)
+    sys_stat_h = config_call('fbuild.config.c.posix.sys_stat_h', phase.platform, phase.c.static)
+    sys_types_h = config_call('fbuild.config.c.posix.sys_types_h', phase.platform, phase.c.static)
+    unistd_h = config_call('fbuild.config.c.posix.unistd_h', phase.platform, phase.c.static)
+    wchar_h = config_call('fbuild.config.c.posix.wchar_h', phase.platform, phase.c.static)
+    wctype_h = config_call('fbuild.config.c.posix.wctype_h', phase.platform, phase.c.static)
 
     if 'win32' in phase.platform:
         inline = '__inline'
@@ -38,12 +45,12 @@ def build_runtime(phase):
         'HAVE_CFLOCALECOPYCURRENT': None,
         'HAVE_CFPREFERENCESCOPYAPPVALUE': None,
         'HAVE_DCGETTEXT': None,
-        'HAVE_DLFCN_H': posix.dlfcn_h(phase.c.static, phase.c.shared).header is not None,
+        'HAVE_DLFCN_H': dlfcn_h.header is not None,
         'HAVE_GETOPT_H': getopt_h.header is not None ,
         'HAVE_GETOPT_LONG': getopt_h.getopt_long is not None,
         'HAVE_GETTEXT': None,
         'HAVE_ICONV': None,
-        'HAVE_INTTYPES_H': posix.inttypes_h(phase.c.static).header is not None,
+        'HAVE_INTTYPES_H': inttypes_h.header is not None,
         'HAVE_ISASCII': 1,
         'HAVE_ISBLANK': 1,
         'HAVE_ISWASCII': wctype_h.iswascii is not None,
@@ -58,15 +65,15 @@ def build_runtime(phase):
         'HAVE_MEMORY_H': memory_h.header is not None,
         'HAVE_REGEX_H': regex_h.header is not None,
         'HAVE_REG_ERRCODE_T': regex_h.reg_errcode_t is not None,
-        'HAVE_STDINT_H': c99.stdint_h(phase.c.static).header is not None,
-        'HAVE_STDLIB_H': c99.stdlib_h(phase.c.static).header is not None,
-        'HAVE_STRINGS_H': posix.strings_h(phase.c.static).header is not None,
-        'HAVE_STRING_H': c99.string_h(phase.c.static).header is not None,
-        'HAVE_SYS_STAT_H': posix.sys_stat_h(phase.c.static).header is not None,
+        'HAVE_STDINT_H': stdint_h.header is not None,
+        'HAVE_STDLIB_H': stdlib_h.header is not None,
+        'HAVE_STRINGS_H': strings_h.header is not None,
+        'HAVE_STRING_H': string_h.header is not None,
+        'HAVE_SYS_STAT_H': sys_stat_h.header is not None,
         'HAVE_SYS_TYPES_H': sys_types_h.header is not None,
         'HAVE_TOWLOWER': wctype_h.towlower is not None,
         'HAVE_TOWUPPER': wctype_h.towupper is not None,
-        'HAVE_UNISTD_H': posix.unistd_h(phase.c.static).header is not None,
+        'HAVE_UNISTD_H': unistd_h.header is not None,
         'HAVE_WCHAR_H': wchar_h.header is not None,
         'HAVE_WCHAR_T': wchar_h.wchar_t is not None,
         'HAVE_WCSCHR': wchar_h.wcschr is not None,

@@ -428,10 +428,10 @@ def build(ctx):
     # --------------------------------------------------------------------------
     # Compile the runtime dependencies.
 
-    call('buildsystem.judy.build_runtime', phases.target)
+    call('buildsystem.judy.build_runtime', phases.host, phases.target)
     call('buildsystem.tre.build_runtime', phases.target)
     call('buildsystem.re2.build_runtime', phases.target)
-    call('buildsystem.flx_glob.build_runtime', phases.target)
+    call('buildsystem.flx_glob.build_runtime', phases.host, phases.target)
 
     # --------------------------------------------------------------------------
     # Build the standard library.
@@ -457,7 +457,7 @@ def build(ctx):
     # --------------------------------------------------------------------------
     # Compile the runtime drivers.
 
-    drivers = call('buildsystem.flx_drivers.build', phases.target)
+    drivers = call('buildsystem.flx_drivers.build', phases.host, phases.target)
 
     # --------------------------------------------------------------------------
     # Compile the builder.
@@ -466,8 +466,8 @@ def build(ctx):
         compilers.flxg, phases.target.cxx.static, drivers)
 
     flx_pkgconfig = call('buildsystem.flx.build_flx_pkgconfig',
-        phases.target, flx_builder)
-    flx = call('buildsystem.flx.build_flx', phases.target, flx_builder)
+        phases.host, phases.target, flx_builder)
+    flx = call('buildsystem.flx.build_flx', phases.host, phases.target, flx_builder)
 
     # --------------------------------------------------------------------------
     # now, try building a file

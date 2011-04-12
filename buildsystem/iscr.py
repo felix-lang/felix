@@ -13,6 +13,7 @@ from fbuild.functools import call
 from fbuild.path import Path
 
 from buildsystem import version
+from buildsystem.config import config_call
 
 # ------------------------------------------------------------------------------
 
@@ -131,7 +132,8 @@ def _print_config(ctx, f, build, host, target):
         supported_platforms |= platforms
     supported_platforms = sorted(supported_platforms)
 
-    windows_h = call('fbuild.config.c.win32.windows_h', target.c.static)
+    windows_h = config_call('fbuild.config.c.win32.windows_h',
+        target.platform, target.c.static)
 
     p('HAVE_MSVC', bool(windows_h.header))
     p('HAVE_GNU', 'windows' not in target.platform)
@@ -153,14 +155,14 @@ def _print_config(ctx, f, build, host, target):
             lang = phase[lang]
 
             _print_compiler(ctx, lang, platform, pp)
-            _print_types(lang, pp)
-            _print_c99_support(lang, pp)
-            _print_posix_support(lang, platform, pp)
-            _print_windows_support(lang, platform, pp)
-            _print_math_support(lang, pp)
-            _print_openmp_support(ctx, lang, pp)
-            _print_cxx_bugs(ctx, lang, pp)
-            _print_gcc_extensions(lang, pp)
+            _print_types(platform, lang, pp)
+            _print_c99_support(platform, lang, pp)
+            _print_posix_support(platform, lang, pp)
+            _print_windows_support(platform, lang, pp)
+            _print_math_support(platform, lang, pp)
+            _print_openmp_support(ctx, platform, lang, pp)
+            _print_cxx_bugs(ctx, platform, lang, pp)
+            _print_gcc_extensions(platform, lang, pp)
 
     # --------------------------------------------------------------------------
     # expose target_cxx to the top level config
@@ -243,11 +245,12 @@ def _print_compiler(ctx, lang, platform, p):
         p('OPTIMISE',       ' '.join(static.compiler.gcc.optimize_flags))
         p('DEBUG_FLAGS',    ' '.join(static.compiler.gcc.debug_flags))
 
-    p('LITTLE_ENDIAN',
-        call('fbuild.builders.c.config_little_endian', ctx, static))
+    p('LITTLE_ENDIAN', config_call('fbuild.config.c.platform.arch',
+        platform, static).little_endian)
 
-def _print_types(lang, p):
-    cxx_types = call('fbuild.config.cxx.cxx03.types', lang.static)
+def _print_types(platform, lang, p):
+    cxx_types = config_call('fbuild.config.cxx.cxx03.types',
+        platform, lang.static)
 
     def write(name, type_):
         if name == '_Bool':
@@ -283,11 +286,16 @@ def _print_types(lang, p):
     p('flx_aligns', aligns)
     p('arith_conv', cxx_types.conversion_map())
 
-    c99_types = call('fbuild.config.c.stdlib.types', lang.static)
-    stddef_h = call('fbuild.config.c.stdlib.stddef_h', lang.static)
-    complex_h = call('fbuild.config.c.stdlib.complex_h', lang.static)
-    stdint_h = call('fbuild.config.c.stdlib.stdint_h', lang.static)
-    sys_types_h = call('fbuild.config.c.posix.sys_types_h', lang.static)
+    c99_types = config_call('fbuild.config.c.stdlib.types',
+        platform, lang.static)
+    stddef_h = config_call('fbuild.config.c.stdlib.stddef_h',
+        platform, lang.static)
+    complex_h = config_call('fbuild.config.c.stdlib.complex_h',
+        platform, lang.static)
+    stdint_h = config_call('fbuild.config.c.stdlib.stdint_h',
+        platform, lang.static)
+    sys_types_h = config_call('fbuild.config.c.posix.sys_types_h',
+        platform, lang.static)
 
     p('HAVE_STDINT', bool(stdint_h.header))
     p('HAVE_SYS_TYPES', bool(sys_types_h.header))
@@ -332,13 +340,15 @@ def _print_types(lang, p):
         else:
             p('ALIAS_ssize_t', 'long')
 
-def _print_c99_support(lang, p):
-    stdio_h = call('fbuild.config.c.stdlib.stdio_h', lang.static)
+def _print_c99_support(platform, lang, p):
+    stdio_h = config_call('fbuild.config.c.stdlib.stdio_h',
+        platform, lang.static)
     p('HAVE_VSNPRINTF', bool(stdio_h.vsnprintf))
 
-def _print_posix_support(lang, platform, p):
+def _print_posix_support(platform, lang, p):
     # print out information about the posix libraries
-    dlfcn_h = call('fbuild.config.c.posix.dlfcn_h', lang.static, lang.shared)
+    dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h',
+        platform, lang.static, lang.shared)
     if dlfcn_h.dlopen:
         p('HAVE_DLOPEN', True)
         p('SUPPORT_DYNAMIC_LOADING', True)
@@ -352,12 +362,14 @@ def _print_posix_support(lang, platform, p):
     else:
         p('HAVE_DLOPEN', False)
 
-    socket_h = call('fbuild.config.c.posix.sys_socket_h', lang.static)
+    socket_h = config_call('fbuild.config.c.posix.sys_socket_h',
+        platform, lang.static)
     if socket_h.accept:
         # We strip off the trailing '*' from the socklen_t type.
         p('FLX_SOCKLEN_T', socket_h.accept.args[-1][:-1])
 
-    pthread_h = call('fbuild.config.c.posix.pthread_h', lang.static)
+    pthread_h = config_call('fbuild.config.c.posix.pthread_h',
+        platform, lang.static)
     if pthread_h.pthread_create:
         p('HAVE_PTHREADS', True)
         switch = list(pthread_h.flags)
@@ -368,22 +380,27 @@ def _print_posix_support(lang, platform, p):
     else:
         p('HAVE_PTHREADS', False)
 
-    poll_h = call('fbuild.config.c.posix.poll_h', lang.static)
+    poll_h = config_call('fbuild.config.c.posix.poll_h',
+        platform, lang.static)
     p('HAVE_POLL', bool(poll_h.header))
 
-    mman_h = call('fbuild.config.c.posix.sys_mman_h', lang.static)
+    mman_h = config_call('fbuild.config.c.posix.sys_mman_h',
+        platform, lang.static)
 
     p('HAVE_MMAP', bool(mman_h.header))
     for name, macro in mman_h.macros():
         p('HAVE_' + name, bool(macro))
 
-    event_h = call('fbuild.config.c.bsd.sys_event_h', lang.static)
+    event_h = config_call('fbuild.config.c.bsd.sys_event_h',
+        platform, lang.static)
     p('HAVE_KQUEUE_DEMUXER', bool(event_h.kqueue))
 
-    epoll_h = call('fbuild.config.c.linux.sys_epoll_h', lang.static)
+    epoll_h = config_call('fbuild.config.c.linux.sys_epoll_h',
+        platform, lang.static)
     p('HAVE_EPOLL', bool(epoll_h.epoll_create))
 
-    port_h = call('fbuild.config.c.solaris.port_h', lang.static)
+    port_h = config_call('fbuild.config.c.solaris.port_h',
+        platform, lang.static)
     p('HAVE_EVTPORTS', bool(port_h.port_create))
 
 def _print_windows_support(lang, platform, p):
@@ -393,10 +410,13 @@ def _print_windows_support(lang, platform, p):
     p('SUPPORT_DYNAMIC_LOADING', True)
     p('FLX_SOCKLEN_T', 'int')
 
-def _print_math_support(lang, p):
-    cmath = call('fbuild.config.cxx.cmath.cmath', lang.static)
-    math_h = call('fbuild.config.c.stdlib.math_h', lang.static)
-    ieeefp_h = call('fbuild.config.c.ieeefp_h.ieeefp_h', lang.static)
+def _print_math_support(platform, lang, p):
+    cmath = config_call('fbuild.config.cxx.cmath.cmath',
+        platform, lang.static)
+    math_h = config_call('fbuild.config.c.stdlib.math_h',
+        platform, lang.static)
+    ieeefp_h = config_call('fbuild.config.c.ieeefp_h.ieeefp_h',
+        platform, lang.static)
 
     p('HAVE_CXX_ISNAN_IN_CMATH', bool(cmath.isnan))
     p('HAVE_CXX_ISINF_IN_CMATH', bool(cmath.isinf))
@@ -414,14 +434,16 @@ def _print_math_support(lang, p):
     p('HAVE_ISINF_IN_IEEEFP', bool(ieeefp_h.isinf))
     p('HAVE_ISNANF_IN_IEEEFP', bool(ieeefp_h.isnanf))
 
-def _print_openmp_support(ctx, lang, p):
+def _print_openmp_support(ctx, platform, lang, p):
     try:
-        static = call('fbuild.builders.c.openmp.config', ctx, lang.static)
+        static = config_call('fbuild.builders.c.openmp.config',
+            platform, ctx, lang.static)
     except ConfigFailed:
         static = {}
 
     try:
-        shared = call('fbuild.builders.c.openmp.config', ctx, lang.shared)
+        shared = config_call('fbuild.builders.c.openmp.config',
+            platform, ctx, lang.shared)
     except ConfigFailed:
         shared = {}
 
@@ -429,10 +451,10 @@ def _print_openmp_support(ctx, lang, p):
     p('HAVE_STATIC_OPENMP', bool(static))
     p('HAVE_SHARED_OPENMP', bool(shared))
 
-def _print_cxx_bugs(ctx, lang, p):
+def _print_cxx_bugs(ctx, platform, lang, p):
     try:
-        bugs = call('fbuild.builders.cxx.std.config_compiler_bugs', ctx,
-            lang.static)
+        bugs = config_call('fbuild.builders.cxx.std.config_compiler_bugs',
+            platform, ctx, lang.static)
     except fbuild.ConfigFailed:
         bugs = {}
     try:
@@ -442,8 +464,8 @@ def _print_cxx_bugs(ctx, lang, p):
     else:
         p('HAVE_INCLASS_MEMBER_INITIALIZATION', test)
 
-def _print_gcc_extensions(lang, p):
-    gcc = call('fbuild.config.c.gnu.extensions', lang.static)
+def _print_gcc_extensions(platform, lang, p):
+    gcc = config_call('fbuild.config.c.gnu.extensions', platform, lang.static)
 
     have_gnu_x86 = gcc.named_registers_x86 and not gcc.named_registers_x86_64
 
@@ -454,5 +476,6 @@ def _print_gcc_extensions(lang, p):
     p('HAVE_GNU_BUILTIN_EXPECT', bool(gcc.builtin_expect))
     p('USE_REGPARM3',            have_gnu_x86)
 
-    hash_map = call('fbuild.config.cxx.gnu.gcc_cxx_hash_map', lang.static)
+    hash_map = config_call('fbuild.config.cxx.gnu.gcc_cxx_hash_map',
+        platform, lang.static)
     p('HAVE_STL_GNU_CXX', hash_map.header)

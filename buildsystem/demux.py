@@ -1,13 +1,10 @@
 import fbuild
-import fbuild.config.c.bsd
-import fbuild.config.c.linux
-import fbuild.config.c.posix04
-import fbuild.config.c.solaris
 from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
 import buildsystem
+from buildsystem.config import config_call
 
 # ------------------------------------------------------------------------------
 
@@ -85,7 +82,12 @@ def build_runtime(phase):
         ))
         includes.append(path / 'posix')
 
-    if fbuild.config.c.posix04.poll_h(phase.cxx.shared).header:
+    poll_h = config_call('fbuild.config.c.posix.poll_h', phase.platform, phase.cxx.shared)
+    sys_epoll_h = config_call('fbuild.config.c.linux.sys_epoll_h', phase.platform, phase.cxx.shared)
+    sys_event_h = config_call('fbuild.config.c.bsd.sys_event_h', phase.platform, phase.cxx.shared)
+    port_h = config_call('fbuild.config.c.solaris.port_h', phase.platform, phase.cxx.shared)
+
+    if poll_h.header:
         srcs.extend((
             # I've seen poll on linux and osx10.4 systems.
             # conditionally compiled and used.
@@ -94,15 +96,15 @@ def build_runtime(phase):
         ))
         includes.append(path / 'poll')
 
-    if fbuild.config.c.linux.sys_epoll_h(phase.cxx.shared).header:
+    if sys_epoll_h.header:
         srcs.append(path / 'epoll/demux_epoll_demuxer.cpp')
         includes.append(path / 'epoll')
 
-    if fbuild.config.c.bsd.sys_event_h(phase.cxx.shared).header:
+    if sys_event_h.header:
         srcs.append(path / 'kqueue/demux_kqueue_demuxer.cpp')
         includes.append(path / 'kqueue')
 
-    if fbuild.config.c.solaris.port_h(phase.cxx.shared).header:
+    if port_h.header:
         srcs.append(path / 'evtport/demux_evtport_demuxer.cpp')
         includes.append(path / 'evtport')
 
