@@ -84,6 +84,51 @@ You're probably reading this doc using it now.
 A little C program which launches programs such as the webserver
 as daemons.
 
+@h2 Filesystem tools
+This is a set of commands, also available as library functions, which 
+provide a directory-free view of the file system; that is, directories
+are considered implementation details.
+
+@h3 flx_ls
+A sane replacement for the {ls} command:
+<pre>
+flx_ls dir regexp
+</pre>
+lists all the regular files in {dir} matching the Perl style regular expression {regexp},
+recursively. The names listed are relative to the {dir}. Directories, devices files,
+symlinks and the like are not listed, only regular files.
+@h3 flx_cp
+A sane replacement for the {cp} comman:
+<pre>
+flx_cp dir srcre dstrep
+</pre>
+copies the files in {dir} matching the Perl style regular
+expression {srcre} to {dstrep} where each substring slosh digit
+such as {\9} is replaced by the corresponding capture from the
+{srcre}. Target subdirectories are automatically created.
+For example to copy all files in {src} to {dst} write:
+<pre>
+flx_cp src '(.*)' 'dst/\\1'
+</pre>
+This command checks that no files write to same destination,
+and it checks that no files write over any source file.
+These conditions ensure the order of copying is irrelevant.
+Other existing files may be overwritten.
+@h3 flx_mv
+To be written. Will do the same as {flx_cp} except the files are moved
+instead of being copied.
+@h3 flx_rm
+To be written. Similar to {flx_ls} except the files are deleted.
+@h3 flx_rmdir
+The command
+<pre>
+flx_rmdir {dir}
+</pre>
+removes {dir} and all subdirectories or {dir} recursively which
+are useless. A directory is useless if it is empty or contains
+only useless directories. This command is a clean up command
+and has no effect on the regular files set.
+
 @h2 Platform Independence
 Felix provides platform independence like
 Java without using a bytecode interpreter or
@@ -195,8 +240,7 @@ for long long, both letters must be either lower or upper case).
   uvlong      unsigned long long  ull, llu, uv, vu
 </pre>
 
-The following aliases are also provided, in this
-case the C name may not be used:
+The following aliases are also provided:
 
 <pre>
   Felix name    C name
@@ -208,8 +252,7 @@ case the C name may not be used:
   uintmax       uintmax_t
 </pre>
 
-The following aliases for exact integers are also provided, in this
-case the C name may not be used:
+The following aliases for exact integers are also provided:
 
 <pre>
   Felix name  C name     Suffix

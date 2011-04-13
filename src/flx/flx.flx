@@ -166,22 +166,22 @@ whilst grab == 1 and argno<System::argc do
     println$ "FROM: " + FLX_INSTALL_DIR;
     println$ "TO  : /usr/local/bin (fixed, can't be changed: privilege required)";
 
-    result=system("cp "+FLX_INSTALL_DIR+"/bin/flx /usr/local/bin");
+    result=system("cp -f "+FLX_INSTALL_DIR+"/bin/flx /usr/local/bin");
     if result !=0 goto install_bin_failed;
 
-    result= system("cp "+FLX_INSTALL_DIR+"/bin/mk_daemon /usr/local/bin");
+    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/mk_daemon /usr/local/bin");
     if result !=0 goto install_bin_failed;
 
-    result= system("cp "+FLX_INSTALL_DIR+"/bin/timeout /usr/local/bin");
+    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/timeout /usr/local/bin");
     if result !=0 goto install_bin_failed;
 
-    result= system("cp "+FLX_INSTALL_DIR+"/tools/webserver /usr/local/bin");
+    result= system("cp -f "+FLX_INSTALL_DIR+"/tools/webserver /usr/local/bin");
     if result !=0 goto install_bin_failed;
 
-    result= system("cp "+FLX_INSTALL_DIR+"/tools/flx_ls /usr/local/bin");
+    result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_ls /usr/local/bin");
     if result !=0 goto install_bin_failed;
 
-    result= system("cp "+FLX_INSTALL_DIR+"/tools/flx_cp /usr/local/bin");
+    result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_cp /usr/local/bin");
     if result !=0 goto install_bin_failed;
 
     println "Install succeeded";
