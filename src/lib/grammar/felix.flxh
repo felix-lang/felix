@@ -16,7 +16,6 @@ syntax felix {
     patterns,
     cbind,
     regexps,
-    macros,
-    cgram
+    macros
   ;
 }
