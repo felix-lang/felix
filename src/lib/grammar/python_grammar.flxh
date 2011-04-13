@@ -1,0 +1,4 @@
+syntax python_grammar {
+  tstatement := "export" "python" "fun" ssuffixed_name "as" sstring ";" =>#
+    "`(ast_export_python_fun ,_sr ,_4 ,_6)";
+}
