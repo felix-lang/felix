@@ -1,9 +1,9 @@
 import fbuild
-from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
 import buildsystem
+from buildsystem.config import config_call
 
 # ------------------------------------------------------------------------------
 
@@ -53,7 +53,10 @@ def build_runtime(phase):
     if 'posix' in phase.platform:
         srcs.append(path / 'pthread_posix_thread.cpp')
 
-    pthread_h = call('fbuild.config.c.posix.pthread_h', phase.cxx.shared)
+    pthread_h = config_call('fbuild.config.c.posix.pthread_h',
+        phase.platform,
+        phase.cxx.shared)
+
     if pthread_h.pthread_create:
         flags.extend(pthread_h.flags)
         libs.extend(pthread_h.libs)

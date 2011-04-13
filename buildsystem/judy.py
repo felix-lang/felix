@@ -1,11 +1,11 @@
 import fbuild
 import fbuild.db
 from fbuild.builders.file import copy, copy_regex
-from fbuild.functools import call
 from fbuild.path import Path
 from fbuild.record import Record
 
 import buildsystem
+from buildsystem.config import config_call
 
 # ------------------------------------------------------------------------------
 
@@ -28,7 +28,7 @@ def build_judytables(ctx, tablegen, dst) -> fbuild.db.DST:
 
 # ------------------------------------------------------------------------------
 
-def _build_objs(ctx, builder, dstname):
+def _build_objs(host_phase, target_phase, builder, dstname):
     """
     Build the object files for Judy1 or JudyL. Unfortunately the judy build
     process is a little complicated because the same underlying code is used for
@@ -40,17 +40,18 @@ def _build_objs(ctx, builder, dstname):
     path = Path('src/judy/src')
     includes = [path, path / 'JudyCommon', path / dstname]
 
-    types = call('fbuild.builders.c.std.config_types', ctx, builder)
+    types = config_call('fbuild.config.c.c99.types',
+        target_phase.platform, builder)
 
     macros = [dstname.upper()]
-    if types['void*']['size'] == 8:
+    if types.voidp.size == 8:
         macros.append('JU_64BIT')
     else:
         macros.append('JU_32BIT')
 
     # First, copy all the common files into the Judy* directory.
     srcs = []
-    srcs.extend(copy_regex(ctx,
+    srcs.extend(copy_regex(target_phase.ctx,
         srcdir=path / 'JudyCommon',
         dstdir=path / dstname,
         src_pattern=r'^Judy(.*\.c)',
@@ -65,16 +66,17 @@ def _build_objs(ctx, builder, dstname):
             r'JudyPrintJP.c)'))
 
     # Create the tablegen.
-    tablegen = builder.build_exe(path / dstname / dstname + 'TableGen',
-        [copy(ctx,
+    tablegen = host_phase.c.static.build_exe(
+        path / dstname / dstname + 'TableGen',
+        [copy(target_phase.ctx,
             src=path / 'JudyCommon/JudyTables.c',
             dst=path / dstname / dstname + 'TablesGen.c')],
         includes=includes,
         macros=macros)
 
     # Create the table source.
-    srcs.append(build_judytables(ctx, tablegen,
-        ctx.buildroot / path / dstname / dstname + 'Tables.c'))
+    srcs.append(build_judytables(target_phase.ctx, tablegen,
+        target_phase.ctx.buildroot / path / dstname / dstname + 'Tables.c'))
     # Compile the objects.
 
     objs = []
@@ -118,7 +120,7 @@ def _build_objs(ctx, builder, dstname):
     return objs
 
 
-def build_runtime(phase):
+def build_runtime(host_phase, target_phase):
     """
     Builds the judy runtime library, and returns the static and shared
     library versions.
@@ -127,27 +129,30 @@ def build_runtime(phase):
     path = Path('src/judy/src')
 
     # Copy the header into the runtime library.
-    buildsystem.copy_to(phase.ctx, phase.ctx.buildroot / 'lib/rtl', [
-        path / 'Judy.h'])
+    buildsystem.copy_to(target_phase.ctx,
+        target_phase.ctx.buildroot / 'lib/rtl',
+        [path / 'Judy.h'])
 
     srcs = [
         path / 'JudyCommon/JudyMalloc.c',
         path / 'JudySL/JudySL.c',
         path / 'JudyHS/JudyHS.c']
 
-    return Record(
-        static=buildsystem.build_c_static_lib(phase, 'lib/rtl/judy',
-            srcs=srcs,
-            objs=\
-                _build_objs(phase.ctx, phase.c.static, 'Judy1') +
-                _build_objs(phase.ctx, phase.c.static, 'JudyL'),
-            includes=[path, path / 'JudyCommon']),
-        shared=buildsystem.build_c_shared_lib(phase, 'lib/rtl/judy',
-            srcs=srcs,
-            objs=
-                _build_objs(phase.ctx, phase.c.shared, 'Judy1') +
-                _build_objs(phase.ctx, phase.c.shared, 'JudyL'),
-            includes=[path, path / 'JudyCommon']))
+    static = buildsystem.build_c_static_lib(target_phase, 'lib/rtl/judy',
+        srcs=srcs,
+        objs=
+            _build_objs(host_phase, target_phase, target_phase.c.static, 'Judy1') +
+            _build_objs(host_phase, target_phase, target_phase.c.static, 'JudyL'),
+        includes=[path, path / 'JudyCommon'])
+
+    shared = buildsystem.build_c_shared_lib(target_phase, 'lib/rtl/judy',
+        srcs=srcs,
+        objs=
+            _build_objs(host_phase, target_phase, target_phase.c.shared, 'Judy1') +
+            _build_objs(host_phase, target_phase, target_phase.c.shared, 'JudyL'),
+        includes=[path, path / 'JudyCommon'])
+
+    return Record(static=static, shared=shared)
 
 # ------------------------------------------------------------------------------
 
