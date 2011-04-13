@@ -48,6 +48,42 @@ syntax loops
        ))
     """;
 
+  tstatement := optlabel "for" "var" sname ":" sexpr "in" sexpr "upto" sexpr "do" sstatements "done" =>#
+    """
+    (block
+      (append 
+        `((ast_var_decl ,_sr ,_4 ,dfltvs (some ,_6) (some ,_8)))
+        `((ast_label ,_sr ,(string-append "redo_" _1)))
+        `((ast_unlikely_ifnotgoto ,_sr
+          (ast_apply ,_sr (,(noi 'le) ((ast_name ,_sr ,_4 ()),_10)))
+          ,(string-append "break_" _1)
+        ))
+        _12
+        `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
+        `((ast_goto ,_sr ,(string-append "redo_" _1)))
+        `((ast_label ,_sr ,(string-append "break_" _1)))
+       ))
+    """;
+
+  tstatement := optlabel "for" "var" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
+    """
+    (block
+      (append 
+        `((ast_var_decl ,_sr ,_4 ,dfltvs none (some ,_6)))
+        `((ast_label ,_sr ,(string-append "redo_" _1)))
+        `((ast_unlikely_ifnotgoto ,_sr
+          (ast_apply ,_sr (,(noi 'le) ((ast_name ,_sr ,_4 ()),_8)))
+          ,(string-append "break_" _1)
+        ))
+        _10
+        `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
+        `((ast_goto ,_sr ,(string-append "redo_" _1)))
+        `((ast_label ,_sr ,(string-append "break_" _1)))
+       ))
+    """;
+
   tstatement := optlabel "forall" sname "in" sexpr "downto" sexpr "do" sstatements "done" =>#
     """
     `(ast_seq ,_sr
@@ -61,6 +97,42 @@ syntax loops
         _9
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
+        `((ast_goto ,_sr ,(string-append "redo_" _1)))
+        `((ast_label ,_sr ,(string-append "break_" _1)))
+       ))
+    """;
+
+  tstatement := optlabel "for" "var" sname ":" sexpr "in" sexpr "downto" sexpr "do" sstatements "done" =>#
+    """
+    (block
+      (append 
+        `((ast_var_decl ,_sr ,_4 ,dfltvs (some ,_6) (some ,_8)))
+        `((ast_label ,_sr ,(string-append "redo_" _1)))
+        `((ast_unlikely_ifnotgoto ,_sr
+          (ast_apply ,_sr (,(noi 'ge) ((ast_name ,_sr ,_4 ()),_10)))
+          ,(string-append "break_" _1)
+        ))
+        _12
+        `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
+        `((ast_goto ,_sr ,(string-append "redo_" _1)))
+        `((ast_label ,_sr ,(string-append "break_" _1)))
+       ))
+    """;
+
+  tstatement := optlabel "for" "var" sname "in" sexpr "downto" sexpr "do" sstatements "done" =>#
+    """
+    (block
+      (append 
+        `((ast_var_decl ,_sr ,_4 ,dfltvs none (some ,_6)))
+        `((ast_label ,_sr ,(string-append "redo_" _1)))
+        `((ast_unlikely_ifnotgoto ,_sr
+          (ast_apply ,_sr (,(noi 'ge) ((ast_name ,_sr ,_4 ()),_8)))
+          ,(string-append "break_" _1)
+        ))
+        _10
+        `((ast_label ,_sr ,(string-append "continue_" _1)))
+        `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
         `((ast_goto ,_sr ,(string-append "redo_" _1)))
         `((ast_label ,_sr ,(string-append "break_" _1)))
        ))
