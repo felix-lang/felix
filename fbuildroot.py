@@ -648,10 +648,10 @@ def install_bin(ctx):
 
     (ctx.buildroot / 'bin/flx').copy(ctx.options.bindir)
     (ctx.buildroot / 'bin/flx_ls').copy(ctx.options.bindir)
-    #(ctx.buildroot / 'bin/mk_daemon').copy(ctx.options.bindir)
-    #(ctx.buildroot / 'bin/timeout').copy(ctx.options.bindir)
-    #(ctx.buildroot / 'bin/webserver').copy(ctx.options.bindir)
-    #(ctx.buildroot / 'tools/flx_ls').copy(ctx.options.bindir)
+    (ctx.buildroot / 'bin/mk_daemon').copy(ctx.options.bindir)
+    (ctx.buildroot / 'bin/timeout').copy(ctx.options.bindir)
+    (ctx.buildroot / 'bin/webserver').copy(ctx.options.bindir)
+    (ctx.buildroot / 'tools/flx_ls').copy(ctx.options.bindir)
 
 # ------------------------------------------------------------------------------
 
