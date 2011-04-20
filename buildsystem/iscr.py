@@ -452,17 +452,11 @@ def _print_openmp_support(ctx, platform, lang, p):
     p('HAVE_SHARED_OPENMP', bool(shared))
 
 def _print_cxx_bugs(ctx, platform, lang, p):
-    try:
-        bugs = config_call('fbuild.builders.cxx.std.config_compiler_bugs',
-            platform, ctx, lang.static)
-    except fbuild.ConfigFailed:
-        bugs = {}
-    try:
-        test = bugs.class_member_intialization
-    except AttributeError:
-        p('HAVE_INCLASS_MEMBER_INITIALIZATION', False)
-    else:
-        p('HAVE_INCLASS_MEMBER_INITIALIZATION', test)
+    compiler = config_call('fbuild.config.cxx.compiler.bugs',
+        platform, lang.static)
+
+    p('HAVE_INCLASS_MEMBER_INITIALIZATION',
+        compiler.class_member_intialization)
 
 def _print_gcc_extensions(platform, lang, p):
     gcc = config_call('fbuild.config.c.gnu.extensions', platform, lang.static)

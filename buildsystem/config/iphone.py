@@ -14,6 +14,7 @@ import fbuild.config.c.posix as posix
 import fbuild.config.c.solaris as solaris
 import fbuild.config.c.stdlib as stdlib
 import fbuild.config.c.win32 as win32
+import fbuild.config.cxx.compiler as cxx_compiler
 import fbuild.config.cxx.cmath as cmath
 import fbuild.config.cxx.gnu as cxx_gnu
 from fbuild.functools import call, import_function
@@ -476,6 +477,12 @@ class c_win32_windows_h(win32.windows_h):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.header = None
+
+class cxx_compiler_bugs(cxx_compiler.bugs):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.class_member_initialization = True
 
 class cxx_cxx03_types(c_c90_types):
     def __init__(self, *args, **kwargs):
