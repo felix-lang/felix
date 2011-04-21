@@ -214,23 +214,33 @@ def _print_compiler(ctx, lang, platform, p):
         p('SPEC_OBJ_FILENAME', '-o ')
         p('SPEC_EXE_FILENAME', '-o ')
 
+        static_arch = static.compiler.gcc.arch
         p('CCOBJ_STATIC_FLX', str(static.compiler.gcc.exe) + ' -c ' +
             ' '.join(static.compiler.flags) + ' ' +
             ' '.join('-I' + i for i in static.compiler.gcc.includes) + ' ' +
+            ' '.join('-m' + i for i in static.compiler.gcc.machine_flags) + ' ' +
+            ('-arch ' + static_arch if static_arch else '') + ' ' +
             ' -Wall -Wno-invalid-offsetof -Wfatal-errors')
 
         p('CCLINK_STATIC', str(static.exe_linker.gcc.exe) + ' ' +
             ' '.join(shared.exe_linker.flags) + ' ' +
+            ' '.join('-m' + i for i in static.compiler.gcc.machine_flags) + ' ' +
+            ('-arch ' + static_arch if static_arch else '') + ' ' +
             ' '.join('-L' + i for i in static.exe_linker.gcc.libpaths))
 
+        shared_arch = shared.compiler.gcc.arch
         p('CCOBJ_DYNAMIC_FLX', str(shared.compiler.gcc.exe) + ' -c ' +
             ' '.join(shared.compiler.flags) + ' ' +
             ' '.join('-I' + i for i in shared.compiler.gcc.includes) + ' ' +
+            ('-arch ' + shared_arch if shared_arch else '') + ' ' +
+            ' '.join('-m' + i for i in shared.compiler.gcc.machine_flags) + ' ' +
             ' -Wall -Wno-invalid-offsetof -Wfatal-errors')
 
         p('CCLINK_DYNAMIC_FLX', str(shared.lib_linker.gcc.exe) + ' ' +
             ' '.join(shared.lib_linker.flags) + ' ' +
-            ' '.join('-L' + i for i in static.compiler.gcc.libpaths))
+            ('-arch ' + shared_arch if shared_arch else '') + ' ' +
+            ' '.join('-m' + i for i in shared.compiler.gcc.machine_flags) + ' ' +
+            ' '.join('-L' + i for i in shared.compiler.gcc.libpaths))
 
     p('EXT_STATIC_OBJ', fbuild.builders.platform.static_obj_suffix(ctx))
     p('EXT_SHARED_OBJ', fbuild.builders.platform.shared_obj_suffix(ctx))
