@@ -49,6 +49,10 @@ def _build_objs(host_phase, target_phase, builder, dstname):
     else:
         macros.append('JU_32BIT')
 
+    kwargs = {}
+    if 'iphone' in target_phase.platform:
+        kwargs['machine_flags'] = ['32']
+
     # First, copy all the common files into the Judy* directory.
     srcs = []
     srcs.extend(copy_regex(target_phase.ctx,
@@ -72,7 +76,9 @@ def _build_objs(host_phase, target_phase, builder, dstname):
             src=path / 'JudyCommon/JudyTables.c',
             dst=path / dstname / dstname + 'TablesGen.c')],
         includes=includes,
-        macros=macros)
+        macros=macros,
+        ckwargs=kwargs,
+        lkwargs=kwargs)
 
     # Create the table source.
     srcs.append(build_judytables(target_phase.ctx, tablegen,
