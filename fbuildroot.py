@@ -212,7 +212,7 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
 def config_build(ctx):
     ctx.logger.log('configuring build phase', color='cyan')
 
-    platform = call('fbuild.builders.platform.platform', ctx,
+    platform = call('fbuild.builders.platform.guess_platform', ctx,
         ctx.options.build_platform)
 
     return Record(
@@ -236,7 +236,7 @@ def config_build(ctx):
 def config_host(ctx, build):
     ctx.logger.log('configuring host phase', color='cyan')
 
-    platform = call('fbuild.builders.platform.platform', ctx,
+    platform = call('fbuild.builders.platform.guess_platform', ctx,
         ctx.options.build_platform)
 
     if platform == build.platform:
@@ -295,7 +295,7 @@ def config_host(ctx, build):
 def config_target(ctx, host):
     ctx.logger.log('configuring target phase', color='cyan')
 
-    platform = call('fbuild.builders.platform.platform', ctx,
+    platform = call('fbuild.builders.platform.guess_platform', ctx,
         ctx.options.target_platform)
 
     if platform == host.platform:

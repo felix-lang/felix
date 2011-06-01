@@ -214,33 +214,33 @@ def _print_compiler(ctx, lang, platform, p):
         p('SPEC_OBJ_FILENAME', '-o ')
         p('SPEC_EXE_FILENAME', '-o ')
 
-        static_arch = static.compiler.gcc.arch
-        p('CCOBJ_STATIC_FLX', str(static.compiler.gcc.exe) + ' -c ' +
+        static_arch = static.compiler.cc.arch
+        p('CCOBJ_STATIC_FLX', str(static.compiler.cc.exe) + ' -c ' +
             ' '.join(static.compiler.flags) + ' ' +
-            ' '.join('-I' + i for i in static.compiler.gcc.includes) + ' ' +
-            ' '.join('-m' + i for i in static.compiler.gcc.machine_flags) + ' ' +
+            ' '.join('-I' + i for i in static.compiler.cc.includes) + ' ' +
+            ' '.join('-m' + i for i in static.compiler.cc.machine_flags) + ' ' +
             ('-arch ' + static_arch if static_arch else '') + ' ' +
             ' -Wall -Wno-invalid-offsetof -Wfatal-errors')
 
-        p('CCLINK_STATIC', str(static.exe_linker.gcc.exe) + ' ' +
+        p('CCLINK_STATIC', str(static.exe_linker.cc.exe) + ' ' +
             ' '.join(shared.exe_linker.flags) + ' ' +
-            ' '.join('-m' + i for i in static.compiler.gcc.machine_flags) + ' ' +
+            ' '.join('-m' + i for i in static.compiler.cc.machine_flags) + ' ' +
             ('-arch ' + static_arch if static_arch else '') + ' ' +
-            ' '.join('-L' + i for i in static.exe_linker.gcc.libpaths))
+            ' '.join('-L' + i for i in static.exe_linker.cc.libpaths))
 
-        shared_arch = shared.compiler.gcc.arch
-        p('CCOBJ_DYNAMIC_FLX', str(shared.compiler.gcc.exe) + ' -c ' +
+        shared_arch = shared.compiler.cc.arch
+        p('CCOBJ_DYNAMIC_FLX', str(shared.compiler.cc.exe) + ' -c ' +
             ' '.join(shared.compiler.flags) + ' ' +
-            ' '.join('-I' + i for i in shared.compiler.gcc.includes) + ' ' +
+            ' '.join('-I' + i for i in shared.compiler.cc.includes) + ' ' +
             ('-arch ' + shared_arch if shared_arch else '') + ' ' +
-            ' '.join('-m' + i for i in shared.compiler.gcc.machine_flags) + ' ' +
+            ' '.join('-m' + i for i in shared.compiler.cc.machine_flags) + ' ' +
             ' -Wall -Wno-invalid-offsetof -Wfatal-errors')
 
-        p('CCLINK_DYNAMIC_FLX', str(shared.lib_linker.gcc.exe) + ' ' +
+        p('CCLINK_DYNAMIC_FLX', str(shared.lib_linker.cc.exe) + ' ' +
             ' '.join(shared.lib_linker.flags) + ' ' +
             ('-arch ' + shared_arch if shared_arch else '') + ' ' +
-            ' '.join('-m' + i for i in shared.compiler.gcc.machine_flags) + ' ' +
-            ' '.join('-L' + i for i in shared.compiler.gcc.libpaths))
+            ' '.join('-m' + i for i in shared.compiler.cc.machine_flags) + ' ' +
+            ' '.join('-L' + i for i in shared.compiler.cc.libpaths))
 
     p('EXT_STATIC_OBJ', fbuild.builders.platform.static_obj_suffix(ctx))
     p('EXT_SHARED_OBJ', fbuild.builders.platform.shared_obj_suffix(ctx))
@@ -252,8 +252,8 @@ def _print_compiler(ctx, lang, platform, p):
         p('OPTIMISE',       ' '.join(static.compiler.cl.optimize_flags))
         p('DEBUG_FLAGS',    ' '.join(static.compiler.cl.debug_flags))
     else:
-        p('OPTIMISE',       ' '.join(static.compiler.gcc.optimize_flags))
-        p('DEBUG_FLAGS',    ' '.join(static.compiler.gcc.debug_flags))
+        p('OPTIMISE',       ' '.join(static.compiler.cc.optimize_flags))
+        p('DEBUG_FLAGS',    ' '.join(static.compiler.cc.debug_flags))
 
     p('LITTLE_ENDIAN', config_call('fbuild.config.c.platform.arch',
         platform, static).little_endian)
