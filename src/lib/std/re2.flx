@@ -121,7 +121,9 @@ open module Re2 {
   fun NamedCapturingGroups: RE2 -> Stl_Map::stl_map[string, int] = "$1->NamedCapturingGroups()";
 
   // this function is fully general, just needs an anchor
-  gen Match: RE2 * StringPiece * int * Anchor * &StringPiece * int -> bool = "$1->Match($2, $3, $4, $5, $6)";
+  gen Match: RE2 * StringPiece * int * Anchor * &StringPiece * int -> bool = 
+    "$1->Match($2, $3, $2.length(),$4, $5, $6)"
+   ;
 
   fun CheckRewriteString: RE2 * StringPiece * &string -> bool = "$1->CheckRewriteString($2, $3)";
 
