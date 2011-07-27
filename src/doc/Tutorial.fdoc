@@ -993,7 +993,7 @@ The conditional expression is merely
 a shortcut for a match, as shown in the
 third sign function.
 
-env.head(2,'Pointers')
+@h2 Pointers
 Felix supports pointers. The type of a pointer to T is
 denoted:
 <pre>
