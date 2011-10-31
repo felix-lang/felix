@@ -4,7 +4,7 @@ module FileSystem
 {
   // stat
   pod type stat_t = "struct stat" requires Posix_headers::sys_stat_h;
-  proc stat: string * &stat_t * &int = "*$3=stat($1.data(),$2);";
+  proc stat: string * &stat_t * &int = "*$3=stat($1.c_str(),$2);";
   body _mktim_fun = """
     unsigned long _mktim(struct timespec x){ 
      return x.tv_sec * 1000L + x.tv_nsec /1000L; // milliseconds
@@ -115,8 +115,8 @@ module FileSystem
   pod type posix_file = "int";
   fun valid: posix_file -> bool = "$1 != -1";
 
-  gen open: string * file_perm_t * mode_t -> posix_file = "open($1.data(), $2, $3)";
-  gen open: string * file_perm_t -> posix_file = "open($1.data(), $2)";
+  gen open: string * file_perm_t * mode_t -> posix_file = "open($1.c_str(), $2, $3)";
+  gen open: string * file_perm_t -> posix_file = "open($1.c_str(), $2)";
   gen close: posix_file -> int = "close($1)";
   gen read: posix_file * &char * size -> size = "read($1, $2, $3)";
   gen write: posix_file * &char * size -> size = "read($1, $2, $3)";
@@ -147,15 +147,15 @@ module FileSystem
   }
   
   // change permissions
-  gen chmod: string * mode_t -> int = "chmod($1.data(), $2)";
+  gen chmod: string * mode_t -> int = "chmod($1.c_str(), $2)";
 
   // create directory
-  gen mkdir: string * mode_t -> int = "mkdir($1.data(), $2)";
-  gen mkdir: string  -> int = "mkdir($1.data(), 0777)";
+  gen mkdir: string * mode_t -> int = "mkdir($1.c_str(), $2)";
+  gen mkdir: string  -> int = "mkdir($1.c_str(), 0777)";
 
   type dirent_t = "struct dirent*" requires Posix_headers::dirent_h;
   type DIR_t = "DIR*" requires Posix_headers::dirent_h;
-  proc opendir: string * &DIR_t = "*$2=opendir($1.data());";
+  proc opendir: string * &DIR_t = "*$2=opendir($1.c_str());";
   fun isNULL: DIR_t -> bool = "$1==0";
   fun isNULL: dirent_t -> bool = "$1==0";
   proc readdir: DIR_t * dirent_t * &dirent_t * &int = "*$4=readdir_r($1, $2, $3);";

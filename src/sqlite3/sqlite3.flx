@@ -2,13 +2,13 @@ module Sqlite3 {
   requires package "sqlite3";
   type sqlite3_db_t = "sqlite3*";
   gen sqlite3_open : string * &sqlite3_db_t -> int =
-    "sqlite3_open($1.data(), $2)"
+    "sqlite3_open($1.c_str(), $2)"
   ;
   proc sqlite3_close : sqlite3_db_t = "sqlite3_close($1);";
   typedef sqlite3_exec_callback_t = address * int * &&char * &&char --> int;
   gen sqlite3_exec :
     sqlite3_db_t * string * sqlite3_exec_callback_t * address * &&char -> int =
-    "sqlite3_exec($1,$2.data(),$3,$4,$5)"
+    "sqlite3_exec($1,$2.c_str(),$3,$4,$5)"
   ;
 
   gen sqlite3_errmsg : sqlite3_db_t -> &char=

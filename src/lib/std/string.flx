@@ -315,13 +315,13 @@ open module String
   proc replace: string * int * int * string = "$1.replace($2,$3,$4);";
 
   proc fprint: ostream * string = "*$1<<$2;" requires Cxx_headers::iostream;
-  fun atoi: string -> int = "::std::atoi($1.data())" requires Cxx_headers::cstdlib;
-  fun atol: string -> long = "::std::atol($1.data())" requires Cxx_headers::cstdlib;
-  fun atof: string -> double = "::std::atof($1.data())" requires Cxx_headers::cstdlib;
+  fun atoi: string -> int = "::std::atoi($1.c_str())" requires Cxx_headers::cstdlib;
+  fun atol: string -> long = "::std::atol($1.c_str())" requires Cxx_headers::cstdlib;
+  fun atof: string -> double = "::std::atof($1.c_str())" requires Cxx_headers::cstdlib;
 
   proc reserve: string * int = "$1.reserve($2);";
 
-  fun cstr: string -> &char = "(char*)$1.data()";
+  fun cstr: string -> &char = "(char*)$1.c_str()";
 
   fun vsprintf[t]: &char  * t -> string =
     "::flx::rtl::strutil::flx_asprintf($1,$2)" requires package "flx_strutil"

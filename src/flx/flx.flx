@@ -633,7 +633,7 @@ DEBUG_COMPILER == 1?? STATIC_ENV="env FLX_DEBUG=1 ";
 body """
 long macosx_ftime(::std::string s) {
   struct stat sb;
-  int e = stat(s.data(),&sb);
+  int e = stat(s.c_str(),&sb);
   if(e != 0) return 0l;
   return sb.st_mtime;
 }
@@ -642,7 +642,7 @@ long macosx_ftime(::std::string s) {
 body """
 long posix_ftime(::std::string s) {
   struct stat sb;
-  int e = stat(s.data(),&sb);
+  int e = stat(s.c_str(),&sb);
   if(e != 0) return 0l;
   return sb.st_mtime;
 }

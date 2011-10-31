@@ -7,7 +7,7 @@ module Tre
   const tre_version: string = "tre_version()";
 
   private fun _tre_regcomp: &tre_regex_t * string  -> int =
-    "tre_regncomp($1,$2.data(),$2.size(),REG_EXTENDED)"
+    "tre_regncomp($1,$2.c_str(),$2.size(),REG_EXTENDED)"
   ;
 
   fun tre_regcomp (x:string): opt[tre_regex_t] = {
@@ -37,7 +37,7 @@ module Tre
     &regmatch_t        // array to hold matches
     -> int
   =
-    "tre_regnexec($1,$2.data(),$2.size(),$3,$4,0);"
+    "tre_regnexec($1,$2.c_str(),$2.size(),$3,$4,0);"
   ;
 
   fun tre_regexec (re_in: tre_regex_t) (x:string): int * int * &regmatch_t =

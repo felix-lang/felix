@@ -6,7 +6,7 @@ include "std/posix/signal";
 module Process {
   open Posix_Signal;
 
-  gen popen_in: string -> Text_file::input_text_file = 'popen($1.data(), "r")';
+  gen popen_in: string -> Text_file::input_text_file = 'popen($1.c_str(), "r")';
   gen pclose: Text_file::input_text_file -> process_status_t = "pclose($1)";
 
   type process_status_t = "int";

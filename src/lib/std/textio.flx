@@ -16,8 +16,8 @@ module Text_file
   pod type output_text_file = "FILE*";
 
   // open for reading or writing
-  gen fopen_input: string -> input_text_file = '::std::fopen($1.data(),"rt")';
-  gen fopen_output: string -> output_text_file = '::std::fopen($1.data(),"wt")';
+  gen fopen_input: string -> input_text_file = '::std::fopen($1.c_str(),"rt")';
+  gen fopen_output: string -> output_text_file = '::std::fopen($1.c_str(),"wt")';
 
   // check if the file was opened correctly
   gen valid : input_text_file -> bool = "$1!=(FILE*)0";

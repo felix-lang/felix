@@ -1,8 +1,8 @@
 module Lexer
 {
   pod type iterator = "char const*";
-  fun start_iterator : string -> iterator = "$1.data()";
-  fun end_iterator: string -> iterator = "$1.data()+$1.size()";
+  fun start_iterator : string -> iterator = "$1.c_str()";
+  fun end_iterator: string -> iterator = "$1.c_str()+$1.size()";
   fun bounds (x:string): iterator * iterator = {
     return
       start_iterator x,

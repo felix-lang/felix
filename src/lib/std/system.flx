@@ -6,7 +6,7 @@ module System
 
   fun argv:int -> string = '::std::string($1<0||$1>=PTF argc??"":PTF argv[$1])';
   fun args () => List::map (argv) (List::range argc);
-  fun system: string -> int = "::std::system($1.data())"
+  fun system: string -> int = "::std::system($1.c_str())"
     requires Cxx_headers::cstdlib;
   proc exit: int = '::std::exit($1);' requires Cxx_headers::cstdlib;
   proc abort: 1 = "::std::abort($1);" requires Cxx_headers::cstdlib;

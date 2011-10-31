@@ -66,12 +66,12 @@ gen aio_creat: string * posix_permissions-> fd_t = ' open($1.c_str(), O_RDWR | O
 
 
 // blocking
-gen ropen: string -> fd_t = 'open($1.data(), O_RDONLY,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
-gen wopen: string -> fd_t = 'open($1.data(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
-gen rwopen: string -> fd_t = 'open($1.data(), O_RDWR,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
-gen creat: string * posix_permissions -> fd_t = 'open($1.data(), O_WRONLY | O_CREAT | O_TRUNC, $2)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+gen ropen: string -> fd_t = 'open($1.c_str(), O_RDONLY,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+gen wopen: string -> fd_t = 'open($1.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+gen rwopen: string -> fd_t = 'open($1.c_str(), O_RDWR,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+gen creat: string * posix_permissions -> fd_t = 'open($1.c_str(), O_WRONLY | O_CREAT | O_TRUNC, $2)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
 
-fun access: string -> posix_permissions = "get_perm($1.data())"
+fun access: string -> posix_permissions = "get_perm($1.c_str())"
   requires body """
   mode_t get_perm(char const *f)
   {

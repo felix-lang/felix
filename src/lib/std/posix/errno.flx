@@ -10,6 +10,6 @@ open module Errno
 
   fun eq: errno_t * errno_t -> bool= "$1==$2";
 
-  proc perror: string = "perror($1.data())" requires C89_headers::stdio_h;
+  proc perror: string = "perror($1.c_str())" requires C89_headers::stdio_h;
 }
 

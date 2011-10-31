@@ -27,7 +27,7 @@ module Rtti {
 
   private proc _gxx_demangle: string * &string = """{
     int status;
-    char *tmp=abi::__cxa_demangle($1.data(), 0,0, &status);
+    char *tmp=abi::__cxa_demangle($1.c_str(), 0,0, &status);
     string s= string(tmp);
     std::free(tmp);
     *$2= s;

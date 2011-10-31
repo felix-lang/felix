@@ -12,7 +12,7 @@ module glob {
   };
   private proc post_incr[t]: &&t = "(*$1)++;";
 
-  gen glob: string * &glob_t -> bool = "0==::glob($1.data(),0,NULL,$2)";
+  gen glob: string * &glob_t -> bool = "0==::glob($1.c_str(),0,NULL,$2)";
   proc globfree: &glob_t = "globfree($1);";
 
   gen glob (pat:string): stl_vector[string] =

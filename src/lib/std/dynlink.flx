@@ -3,7 +3,7 @@ module Dynlink
   requires package "flx_dynlink";
   type flx_library = "flx::rtl::flx_dynlink_t*";
   type flx_instance = "flx::rtl::flx_libinit_t*";
-  proc dlopen:flx_library * string = "$1->link($2.data());";
+  proc dlopen:flx_library * string = "$1->link($2.c_str());";
   proc dlclose:flx_library = "$1->unlink();";
 
   // this is a procedure, so maybe the caller is too
@@ -75,7 +75,7 @@ module Dynlink
 
   publish "dlsym wrapper, returns any symbol"
   fun dlsym:flx_library * string->address =
-      "SDLSYM($1->library,$2.data())";
+      "SDLSYM($1->library,$2.c_str())";
 
   publish """
     execute an address representing a top
