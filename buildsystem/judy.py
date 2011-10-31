@@ -139,6 +139,14 @@ def build_runtime(host_phase, target_phase):
         target_phase.ctx.buildroot / 'lib/rtl',
         [path / 'Judy.h'])
 
+    types = config_call('fbuild.config.c.c99.types',
+        target_phase.platform, target_phase.c.static)
+
+    if types.voidp.size == 8:
+        macros = ['JU_64BIT']
+    else:
+        macros = ['JU_32BIT']
+
     srcs = [
         path / 'JudyCommon/JudyMalloc.c',
         path / 'JudySL/JudySL.c',
@@ -149,6 +157,7 @@ def build_runtime(host_phase, target_phase):
         objs=
             _build_objs(host_phase, target_phase, target_phase.c.static, 'Judy1') +
             _build_objs(host_phase, target_phase, target_phase.c.static, 'JudyL'),
+        macros=macros,
         includes=[path, path / 'JudyCommon'])
 
     shared = buildsystem.build_c_shared_lib(target_phase, 'lib/rtl/judy',
@@ -156,6 +165,7 @@ def build_runtime(host_phase, target_phase):
         objs=
             _build_objs(host_phase, target_phase, target_phase.c.shared, 'Judy1') +
             _build_objs(host_phase, target_phase, target_phase.c.shared, 'JudyL'),
+        macros=macros,
         includes=[path, path / 'JudyCommon'])
 
     return Record(static=static, shared=shared)
