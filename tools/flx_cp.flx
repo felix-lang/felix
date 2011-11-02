@@ -137,20 +137,22 @@ fun subst(s:string, v:varray[StringPiece]): string =
       JudySLNext(dirs,buffer,&je,&pv);
     done
 
-    if live do
       *buffer=char 0;
       JudySLFirst(sd,buffer,&je,&pv);
       whilst not isNULL pv do
         cp = C_hack::cast[&string] (*pv);
         print$ "copy " + string buffer + " -> " + *cp;
-        if FileSystem::filecopy(string buffer, *cp) do
-          println " OK"; 
-        else
-          println "COPY FAILED";
+        if live do
+          if FileSystem::filecopy(string buffer, *cp) do
+            println " OK"; 
+          else
+            println "COPY FAILED";
+          done
+        else 
+          println$ "  proposed";
         done
         JudySLNext(sd,buffer,&je,&pv);
       done
-    done
 
     C_hack::free(address buffer);
     C_hack::free(address buffer2);

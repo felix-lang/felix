@@ -9,7 +9,7 @@ open module Errno
   const ENOMEM: errno_t;
 
   fun eq: errno_t * errno_t -> bool= "$1==$2";
-
+  ctor int : errno_t = "$1";
   proc perror: string = "perror($1.c_str())" requires C89_headers::stdio_h;
 }
 

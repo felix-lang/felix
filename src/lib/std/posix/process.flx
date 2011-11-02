@@ -38,6 +38,7 @@ module Process {
   // because of threads already running. We use fork only
   // to preceed exec() calls.
   type pid_t = "pid_t" requires Posix_headers::unistd_h;
+  ctor int: pid_t = "((int)$1)";
   const child_process : pid_t = "0";
   const bad_process : pid_t = "-1";
   fun eq: pid_t * pid_t -> bool= "$1==$2";

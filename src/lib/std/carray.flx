@@ -12,7 +12,7 @@ open module Carray
   fun array_alloc[T]: int -> carray[T] = '(?1*)::std::malloc(sizeof(?1)*$1)';
   fun array_calloc[T]: int -> carray[T] = '(?1*)::std::calloc(sizeof(?1),$1)';
   proc free[T]: carray[T] = "::std::free($1);";
-  lvalue fun subscript[T]: carray[T] * int -> T = '$1[$2]';
+  fun subscript[T]: carray[T] * int -> T = '$1[$2]';
 
   fun add[T]: carray[T] * int -> carray[T]= '$1+$2';
   fun sub[T]: carray[T] * int -> carray[T] = '$1-$2';

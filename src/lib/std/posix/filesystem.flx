@@ -219,6 +219,8 @@ next:>
 
   fun regfilesin(dname:string, re:string): list[string] => regfilesin(dname, Re2::RE2 re);
 
+  //private gen dbg (s:string) : int = { println s; return 0; }
+
   fun regfilesin(dname:string, re:RE2): list[string] = {
     fun rfi(dname2: string) =>   
       if dname2 == "." or dname2 == ".." then Empty[string] else
@@ -231,7 +233,8 @@ next:>
             let ?t = FileSystem::filetype (Filename::join (dname,d)) in
             match t with
               | REGULAR => 
-                if Re2::Match(re, Re2::StringPiece d, 0, Re2::ANCHOR_BOTH, C_hack::null[Re2::StringPiece], 0) 
+                //let ?xx = dbg ("found file " + d) in
+                if /* xx == 0 and */ Re2::Match(re, Re2::StringPiece d, 0, Re2::ANCHOR_BOTH, C_hack::null[Re2::StringPiece], 0) 
                 then acc + d 
                 else acc
                 endif
