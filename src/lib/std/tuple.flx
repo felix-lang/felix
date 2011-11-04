@@ -29,6 +29,8 @@ instance[t with Tord[t]] Tord[t*t] {
   ;
 }
 open[t,u with Tord[t], Tord[u]] Tord[t*u];
+fun field[n,t,u where n==0] (a:t,b:u)=>a;
+fun field[n,t,u where n==1] (a:t,b:u)=>b;
 
 //---------------------------------------------------------------------------------
 // three components
@@ -62,6 +64,10 @@ instance[t with Tord[t]] Tord[t*t*t] {
   ;
 }
 open[t,u,v with Tord[t], Tord[u], Tord[v]] Tord[t*u*v];
+fun field[n,t,u,v where n==0] (a:t,b:u,c:v)=>a;
+fun field[n,t,u,v where n==1] (a:t,b:u,c:v)=>b;
+fun field[n,t,u,v where n==2] (a:t,b:u,c:v)=>c;
+
 
 //---------------------------------------------------------------------------------
 // four components
@@ -95,6 +101,12 @@ instance[t with Tord[t]] Tord[t*t*t*t] {
   ;
 }
 open[t,u,v,w with Tord[t], Tord[u], Tord[v], Tord[w]] Tord[t*u*v*w];
+fun field[n,t,u,v,w where n==0] (a:t,b:u,c:v,d:w)=>a;
+fun field[n,t,u,v,w where n==1] (a:t,b:u,c:v,d:w)=>b;
+fun field[n,t,u,v,w where n==2] (a:t,b:u,c:v,d:w)=>c;
+fun field[n,t,u,v,w where n==3] (a:t,b:u,c:v,d:w)=>d;
+
+
 
 //---------------------------------------------------------------------------------
 // five components
@@ -134,5 +146,11 @@ instance[t with Tord[t]] Tord[t*t*t*t*t] {
   ;
 }
 open[t,u,v,w,x with Tord[t], Tord[u], Tord[v], Tord[w], Tord[x]] Tord[t*u*v*w*x];
+fun field[n,t,u,v,w,x where n==0] (a:t,b:u,c:v,d:w,e:x)=>a;
+fun field[n,t,u,v,w,x where n==1] (a:t,b:u,c:v,d:w,e:x)=>b;
+fun field[n,t,u,v,w,x where n==2] (a:t,b:u,c:v,d:w,e:x)=>c;
+fun field[n,t,u,v,w,x where n==3] (a:t,b:u,c:v,d:w,e:x)=>d;
+fun field[n,t,u,v,w,x where n==4] (a:t,b:u,c:v,d:w,e:x)=>e;
+
 
 
