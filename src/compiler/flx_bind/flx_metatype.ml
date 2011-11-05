@@ -109,7 +109,16 @@ and metatype' sym_table bsym_table sr term =
             sbt bsym_table term)
       end
 
+  (* no idea why at the moment, just to shut up the diagnostic *)
+  | BTYP_void
+  | BTYP_tuple []
+  | BTYP_unitsum _ -> btyp_type 0
+
   | _ ->
     print_endline ("Questionable meta typing of term: " ^
       sbt bsym_table term);
     btyp_type 0 (* THIS ISN'T RIGHT *)
+
+
+
+

@@ -31,12 +31,12 @@ open module List
     """
   ;
 
-  // in place list reversal
-  proc rev[T,PLT=&list[T]] : &list[T] = "_rev($1);" requires _iprev_[T,PLT];
+  // in place list reversal: unsafe! second arg is a dummy to make overload work
+  proc rev[T,PLT=&list[T]] : &list[T] = "_rev($1,(?1*)0);" requires _iprev_[T,PLT];
 
   body _iprev_[T,PLT]=
     """
-    void _rev(?2 plt)
+    void _rev(?2 plt, ?1*) // second arg is a dummy
     { // in place reversal
       struct node_t { ?1 elt; void *tail; };
       void *nutail = 0; 
@@ -55,6 +55,7 @@ open module List
 
   // in place list reversal, also returns the last element
   // as a list, empty iff the original list is
+  // unsafe!
   proc rev_last[T] : &list[T] * &list[T] =
     """
     { // in place reversal returns tail as well
@@ -75,22 +76,28 @@ open module List
     """
   ;
 
+  // copy a list
   fun copy[T] (x:list[T]):list[T]= {
     var y = rev x;
     rev (&y);
     return y;
   }
 
+  // copy a list, and return last element as a list 
+  // (empty if original list was empty)
   proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T]) {
     *out = rev inp;
     rev_last (out, last);
   }
 
 
+  // make an empty list
   ctor[T] list[T] () => Empty[T];
 
+  // make a list with one element
   ctor[T] list[T] (x:T) => Cons(x, Empty[T]);
 
+  // make a list from an array (tuple)
   ctor[T,N] list[T] (x:Array::array[T, N]) = {
     var o = Empty[T];
     var i:int; forall i in Array::len(x) - 1 downto 0 do
@@ -99,6 +106,7 @@ open module List
     return o;
   }
 
+  // number of elements in a list
   fun len[T] (x:list[T]) = {
     fun aux (acc:int) (x:list[T]) =>
       match x with
@@ -109,11 +117,13 @@ open module List
     return aux 0 x;
   }
 
+  // true if list is empty
   fun is_empty[T] : list[T] -> 2 =
     | Empty => true
     | _ => false
   ;
 
+  // map a list, return mapped list in reverse order (tail rec)
   fun rev_map[T,U] (_f:T->U) (x:list[T]): list[U] = {
     fun aux (inp:list[T]) (out:list[U]) : list[U] =>
       match inp with
@@ -124,6 +134,7 @@ open module List
     return aux x Empty[U];
   }
 
+  // map a list (also tail rec due to in-place reversal of result)
   fun map[T,U] (_f:T->U) (x:list[T]): list[U] =
   {
     var r = rev_map _f x;
@@ -131,6 +142,7 @@ open module List
     return r;
   }
 
+  // reverse a list (tail rec)
   fun rev[T] (x:list[T]):list[T]= {
     fun aux (x:list[T]) (y:list[T]) : list[T] =
     {
@@ -144,6 +156,7 @@ open module List
     return aux x Empty[T];
   }
 
+  // apply a procedure to each element of a list
   proc iter[T] (_f:T->void) (x:list[T]) {
     match x with
     | Empty[T] => {}
@@ -152,6 +165,7 @@ open module List
     ;
   }
 
+  // traditional left fold over list (tail rec)
   fun fold_left[T,U] (_f:U->T->U) (init:U) (x:list[T]):U =
   {
     fun aux (init:U) (x:list[T]):U =>
@@ -163,6 +177,7 @@ open module List
     return aux init x;
   }
 
+  // right fold (not tail rec!)
   fun fold_right[T,U] (_f:T->U->U) (x:list[T]) (init:U):U =
   {
     fun aux (x:list[T]) (init:U):U =>
@@ -174,6 +189,8 @@ open module List
     return aux x init;
   }
 
+  // ordered list of ints between low and high with given step
+  // low included, high not included
   fun range (low:int, high:int, step:int) =
   {
     fun inner(low:int, high:int, step:int, values:list[int]) =
@@ -203,10 +220,13 @@ open module List
     ;
   }
 
+  // range with step 1
   fun range (low:int, high:int) => range(low, high, 1);
 
+  // range from 0 to num (excluded)
   fun range (num:int) => range(0, num, 1);
 
+  // concatenate two lists
   fun join[T] (x:list[T]) (y:list[T]):list[T] =
   {
     if is_empty x do
@@ -220,15 +240,20 @@ open module List
     done;
   }
 
+  // concatenate two lists
   fun add[T] (x:list[T], y: list[T]):list[T] => join x y;
 
+  // prepend element to head of list
   fun add[T] (x:T, y:list[T]):list[T] => Cons (x, y);
 
+  // append element to tail of list
   // very slow, adding to end ..
   noinline fun add[T] (x:list[T], y:T):list[T] => rev$ Cons (y, rev x);
 
+  // append element to tail of list
   proc pluseq[T] (x:&list[T], y:T) { x <- *x + y; }
 
+  // concatenate all the lists in a list of lists
   noinline fun cat[T] (x:list[list[T]]):list[T] =
   {
      return
@@ -239,6 +264,7 @@ open module List
      ;
    }
 
+  // concatenate all the strings in a list with given separator
   fun cat (sep:string) (x:list[string]):string =
   {
     return
@@ -250,6 +276,7 @@ open module List
     ;
   }
 
+  // return true if one value in a list satisfies the predicate
   fun mem[T] (eq:T -> bool) (xs:list[T]) : bool =>
     match xs with
     | Empty => false
@@ -257,13 +284,20 @@ open module List
     endmatch
   ;
 
+  // return true if one value in the list satisfies the relation 
+  // in the left slot with 
+  // the given element on the right slot
   fun mem[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : bool =>
     mem (fun (x:T) => eq(x, e)) xs
   ;
 
+  // construe a list as a set, imbuing it with a membership
+  // test, provided the element type has an equality operator
   instance[T with Eq[T]] Set[list[T],T] {
     fun mem(x:T, a:list[T]) => mem[T,T] eq of (T * T) a x;
   }
+
+  // return option of the first element in a list satisfying the predicate
   fun find[T] (eq:T -> bool) (xs:list[T]) : opt[T] =>
     match xs with
     | Empty => None[T]
@@ -271,10 +305,15 @@ open module List
     endmatch
   ;
 
+
+  // return option the first value in the list satisfies the relation 
+  // in the left slot with 
+  // the given element on the right slot
   fun find[T, U] (eq:T * U -> bool) (xs:list[T]) (e:U) : opt[T] =>
     find (fun (x:T) => eq(x, e)) xs;
   ;
 
+  // return a sub list with elements satisfying the given predicate
   noinline fun filter[T] (P:T -> bool) (x:list[T]) : list[T] =
   {
     fun aux (inp:list[T], out: list[T]) =>
@@ -289,18 +328,25 @@ open module List
     return aux (x,Empty[T]);
   }
 
+  // push element onto front of list if there isn't one in the
+  // list already satisfying the relation.
   fun prepend_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
     if mem eq x e then x else Cons (e,x) endif
   ;
 
+  // attach element to tail of list if there isn't one in the
+  // list already satisfying the relation.
   fun insert_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
     if mem eq x e then x else rev$ Cons (e,rev x) endif
   ;
 
+  // remove all elements from a list satisfying relation
   fun remove[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] =>
     filter (fun (y:T) => not eq (e,y)) x
   ;
 
+  // attach element to tail of list if there isn't one in the
+  // list already satisfying the relation. Tail rec.
   noinline fun append_unique[T] (eq: T * T -> bool) (x:list[T]) (e:T) : list[T] = {
     fun aux (inp:list[T], out: list[T]) =>
       match inp with
@@ -314,26 +360,29 @@ open module List
     return aux (x,Empty[T]);
   }
 
- fun sort[T] (lt:T*T->bool) (x:list[T])=
- {
-   val n = len x;
-   var a = varray[T]$ ulong n;
-   iter (proc (e:T) { a+=e; }) x;
-   Varray::sort lt a;
-   var r = Empty[T];
-   var i:int;
-   forall i in n - 1 downto 0 do r = Cons(a.[i], r); done
-   return r;
- }
+  // sort a list with given less than operator, which must be
+  // total order. Uses varray sort (which uses STL sort)
+  fun sort[T] (lt:T*T->bool) (x:list[T])=
+  {
+    val n = len x;
+    var a = varray[T]$ ulong n;
+    iter (proc (e:T) { a+=e; }) x;
+    Varray::sort lt a;
+    var r = Empty[T];
+    for var i in n - 1 downto 0 do r = Cons(a.[i], r); done
+    return r;
+  }
 
- fun sort[T with Tord[T]](x:list[T])=> sort lt x;
+  fun sort[T with Tord[T]](x:list[T])=> sort lt x;
     
 
 }
 
+// display list as string given element type with str operator
+// elements are separated by a comma and one space
 instance[T with Show[T]] Str[List::list[T]] {
   fun str (xs:List::list[T]) =>
-    '[' +
+    'list(' +
       match xs with
       | Empty[T] => ''
       | Cons(?o, ?os) =>
@@ -341,7 +390,7 @@ instance[T with Show[T]] Str[List::list[T]] {
             fun (a:string) (b:T):string => a + ', ' + (repr b)
           ) (repr o) os
       endmatch
-    + ']'
+    + ')'
   ;
 }
 
@@ -350,14 +399,20 @@ module Assoc_list
 {
   typedef assoc_list[A,B] = List::list[A*B];
 
+  // check is the key (left element) of a pair
+  // satisfies the predicate
   fun mem[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : bool =>
     List::mem (fun (a:A, b:B) => eq a) xs;
   ;
 
+  // check is the key (left element) of a pair
+  // satisfies the relation to given element 
   fun mem[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : bool =>
     mem (fun (a:A) => eq(a, e)) xs;
   ;
 
+  // find optionally the first value whose associate key satisfies 
+  // the given predicate
   fun find[A,B] (eq:A -> bool) (xs:assoc_list[A,B]) : opt[B] =>
     match xs with
     | Empty => None[B]
@@ -365,6 +420,8 @@ module Assoc_list
     endmatch
   ;
 
+  // find optionally the first value whose associate key (left slot)
+  // satisfies the given relation to the given element (right slot) 
   fun find[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : opt[B] =>
     find (fun (a:A) => eq (a, e)) xs;
   ;

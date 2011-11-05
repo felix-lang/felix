@@ -13,27 +13,46 @@ fun subst(s:string, v:varray[StringPiece]): string =
    var mode=cp;
    var j = 0;
    var i:int; 
+   var count = 0;
    forall i in 0 upto len s - 1 do
      match mode with
      | cp => 
        if s.[i] == char "\\" do 
          mode = ins; 
-         j=0; 
+         j=0; count = 0; 
        else 
         b += s.[i]; 
        done
      | ins =>
        if s.[i] in "0123456789" do
          j = j * 10 + ord(s.[i]) - ord (char "0");
+         ++count;
        else
-         if j < v.len.int do
+         if count == 0 do
+           b += "\\";
+         elif j < v.len.int do
            b+= str v.[j];
          done
-         mode = cp;
-         b += s.[i]; 
+         // adjacent insertion?
+         if s.[i] == char "\\" do
+           j=0; count=0;
+         else
+           mode = cp;
+           b += s.[i]; 
+         done
        done
      endmatch;
    done
+   // run off end
+   match mode with
+   | cp => ;
+   | ins =>
+     if count == 0 do
+       b += "\\";
+     elif j < v.len.int do
+       b+= str v.[j];
+     done
+   endmatch;
    return b;
 }
   proc copyfiles(dname:string, re:RE2, tpat:string) 
@@ -61,13 +80,16 @@ fun subst(s:string, v:varray[StringPiece]): string =
             val t = FileSystem::filetype (Filename::join (dname,d));
             match t with
               | REGULAR => 
+                //println$ "d="+d;
                 if Re2::Match(re, StringPiece d, 0, ANCHOR_BOTH, v.stl_begin, v.len.int) 
                 do 
                   var src = Filename::join (dname,d);
                   dst := subst(tpat,v);
                   JudySLIns(sd,cstr src,&je,&pv);
+                  assert not isNULL(pv);
                   pv <- C_hack::cast[word] (new dst);
                   JudySLIns(ds,cstr dst,&je,&pv);
+                  assert not isNULL(pv);
                   // check for duplicate targets
                   if not isNULL (*pv) do
                     println$ "Duplicate target " + dst;
@@ -191,7 +213,7 @@ if System::argc == 5 do
   endmatch;
 done
 
-//println$ "Dir=" dir;
+println$ "Dir='" + dir + "', pattern='"+regex+"', dst='"+target+"'";
 //println$ "Files in dir " + dir + "=";
 copyfiles (dir, re, target);
 

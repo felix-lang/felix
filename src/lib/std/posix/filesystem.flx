@@ -161,7 +161,9 @@ module FileSystem
   proc readdir: DIR_t * dirent_t * &dirent_t * &int = "*$4=readdir_r($1, $2, $3);";
   proc closedir: DIR_t = "closedir($1);";
   fun filename: dirent_t -> string = "std::string($1->d_name)";
+
   fun filesin(dname:string): opt[List::list[string]] = {
+    //println$ "filesin " + dname;
     var d:DIR_t;
     var e: dirent_t = C_hack::cast[dirent_t]$ C_hack::malloc 5000;
     var eret = e;
@@ -169,7 +171,7 @@ module FileSystem
     var files = List::Empty[string];
     opendir(dname,&d);
     if isNULL d do 
-      //println "Error opening dir"; 
+      println "Error opening dir"; 
       C_hack::free$ C_hack::cast[address] e; 
       return None[List::list[string]];
     else
@@ -177,14 +179,14 @@ module FileSystem
 next:>
       readdir(d,e,&eret, &err);
       if err != 0 do 
-        //println "Error reading dir"; flush;
+        println "Error reading dir"; flush;
         closedir d; 
         C_hack::free$ C_hack::cast[address] e; 
         return None[List::list[string]];
       elif isNULL eret do 
         //println "End of dir"; 
-        C_hack::free$ C_hack::cast[address] e; 
         closedir d; 
+        C_hack::free$ C_hack::cast[address] e; 
         return Some files;
       else 
         //println "Think we got a file?";
@@ -219,7 +221,7 @@ next:>
 
   fun regfilesin(dname:string, re:string): list[string] => regfilesin(dname, Re2::RE2 re);
 
-  //private gen dbg (s:string) : int = { println s; return 0; }
+  private gen dbg (s:string) : int = { println s; return 0; }
 
   fun regfilesin(dname:string, re:RE2): list[string] = {
     fun rfi(dname2: string) =>   
@@ -227,16 +229,19 @@ next:>
       match FileSystem::filesin(Filename::join (dname,dname2)) with
       | None  => Empty[string]
       | Some ?files =>
+        {
+        //println$ "got files in " + dname2;
+        return
         List::fold_left 
           (fun (acc:list[string]) (f:string) => if f == "." or f == ".." then Empty[string] else
             let ?d = Filename::join (dname2,f) in
             let ?t = FileSystem::filetype (Filename::join (dname,d)) in
             match t with
               | REGULAR => 
-                //let ?xx = dbg ("found file " + d) in
-                if /* xx == 0 and */ Re2::Match(re, Re2::StringPiece d, 0, Re2::ANCHOR_BOTH, C_hack::null[Re2::StringPiece], 0) 
-                then acc + d 
-                else acc
+                let ?xx = dbg ("found file " + d) in
+                if xx == 0 and Re2::Match(re, Re2::StringPiece d, 0, Re2::ANCHOR_BOTH, C_hack::null[Re2::StringPiece], 0) 
+                then field[1](dbg("matched "+d),acc + d) 
+                else field[1](dbg("no match "+d),acc)
                 endif
               | DIRECTORY => acc + rfi (d)
               | _ => acc
@@ -244,7 +249,8 @@ next:>
             endif
           )
           Empty[string]
-          files
+          files;
+        }()
       endmatch
       endif
     ;

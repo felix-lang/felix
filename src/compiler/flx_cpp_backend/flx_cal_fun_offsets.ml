@@ -13,40 +13,11 @@ open List
 open Flx_print
 open Flx_exceptions
 open Flx_maps
+open Flx_cal_type_offsets
 open Flx_gen_shape
+open Flx_findvars
 
-let find_references syms bsym_table index ts =
-  let children =
-    try
-      Flx_bsym_table.find_children bsym_table index
-    with Not_found -> Flx_types.BidSet.empty
-  in
-  let references = ref [] in
-
-  Flx_types.BidSet.iter begin fun idx ->
-    try
-      let bsym = Flx_bsym_table.find bsym_table idx in
-      match Flx_bsym.bbdcl bsym with
-      | BBDCL_val (vs,t,(`Val | `Var | `Ref)) ->
-          if length ts <> length vs then begin
-            failwith
-            (
-              "[find_references] entry " ^ string_of_bid index ^
-              ", child " ^ Flx_bsym.id bsym ^ "<" ^ string_of_bid idx ^ ">" ^
-              ", wrong number of args, expected vs = " ^
-              si (length vs) ^
-              ", got ts=" ^
-              si (length ts)
-            )
-          end;
-          let t = tsubst vs ts t in
-          references := (idx,t) :: !references
-      | _ -> ()
-    with Not_found -> ()
-  end children;
-
-  !references
-
+let is_instantiated syms i ts = Hashtbl.mem syms.instances (i,ts)
 
 let gen_fun_offsets s syms bsym_table index vs ps ret ts instance props last_ptr_map : unit =
   let vars =  (find_references syms bsym_table index ts) in
@@ -93,6 +64,39 @@ let gen_fun_offsets s syms bsym_table index vs ps ret ts instance props last_ptr
     (match ret with BTYP_void -> "procedure " | _ -> "function ") ^
     name ^ "\n"
   );
-  gen_offset_data s n name offsets true props None last_ptr_map
+  gen_offset_data s n name offsets true false props None last_ptr_map
+
+let gen_all_fun_shapes scan s syms bsym_table last_ptr_map =
+
+  (* Make a shape for every non-C style function with the property `Heap_closure *)
+  (* print_endline "Function and procedure offsets"; *)
+  Hashtbl.iter begin fun (index,ts) instance ->
+    let bsym =
+      try Flx_bsym_table.find bsym_table index
+      with Not_found ->
+        failwith ("[gen_offset_tables] can't find index " ^ string_of_bid index)
+    in
+    (*
+    print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt bsym_table) ts ^"]");
+    *)
+    match Flx_bsym.bbdcl bsym with
+    | BBDCL_fun (props,vs,ps,ret,exes) ->
+        scan exes;
+        if mem `Cfun props then () else
+        if mem `Heap_closure props then
+          gen_fun_offsets
+            s
+            syms
+            bsym_table
+            index
+            vs
+            ps
+            ret
+            ts
+            instance
+            props
+            last_ptr_map
+    | _ -> ()
+  end syms.instances;
 
 

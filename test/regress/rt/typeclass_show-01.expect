@@ -61,7 +61,7 @@ repr: 16
 str:  Domo Arigato,
 Mr Roboto!
 repr: 'Domo Arigato,\nMr Roboto!'
-str:  [1, 2, 3]
-repr: [1, 2, 3]
-str:  ['a', 'b', 'c']
-repr: ['a', 'b', 'c']
+str:  list(1, 2, 3)
+repr: list(1, 2, 3)
+str:  list('a', 'b', 'c')
+repr: list('a', 'b', 'c')

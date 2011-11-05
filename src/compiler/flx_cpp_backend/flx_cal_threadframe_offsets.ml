@@ -13,17 +13,9 @@ open List
 open Flx_print
 open Flx_exceptions
 open Flx_maps
+open Flx_cal_type_offsets
 open Flx_gen_shape
-
-let find_thread_vars_with_type bsym_table =
-  let vars = ref [] in
-  Flx_bsym_table.iter begin fun k parent bsym ->
-    match parent, Flx_bsym.bbdcl bsym with
-    | None,BBDCL_val (_,t,(`Val | `Var)) -> vars := (k,t) :: !vars
-    | None,BBDCL_val (_,t,`Ref) -> vars := (k, btyp_pointer t) :: !vars
-    | _ -> ()
-  end bsym_table;
-  !vars
+open Flx_findvars
 
 
 let gen_thread_frame_offsets s syms bsym_table last_ptr_map =
@@ -51,6 +43,6 @@ let gen_thread_frame_offsets s syms bsym_table last_ptr_map =
   (
     "\n//OFFSETS for "^ name ^ "\n"
   );
-  gen_offset_data s n name offsets false [] (Some "::flx::gc::generic::gc_flags_immobile") last_ptr_map
+  gen_offset_data s n name offsets false false [] (Some "::flx::gc::generic::gc_flags_immobile") last_ptr_map
 
 

@@ -1739,7 +1739,7 @@ let gen_function_methods filename syms bsym_table
     let rettypename = cpp_typename syms bsym_table ret in
 
     let ctor =
-      let vars = find_references syms bsym_table index ts in
+      let vars = Flx_findvars.find_references syms bsym_table index ts in
       let funs = filter (fun (_,t) -> is_gc_pointer syms bsym_table (Flx_bsym.sr bsym) t) vars in
       gen_ctor syms bsym_table name display funs [] [] ts props
     in
@@ -1877,7 +1877,7 @@ let gen_procedure_methods filename syms bsym_table
     let display = get_display_list bsym_table index in
 
     let ctor =
-      let vars = find_references syms bsym_table index ts in
+      let vars = Flx_findvars.find_references syms bsym_table index ts in
       let funs = filter (fun (i,t) -> is_gc_pointer syms bsym_table (Flx_bsym.sr bsym) t) vars in
       gen_ctor syms bsym_table name display funs [] [] ts props
     in

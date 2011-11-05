@@ -69,8 +69,16 @@ module C_hack
   """
   fun dflt[t]:1->t = "dflt<?1>()" requires dflt_h;
 
+  body checked_malloc = """
+    void *checked_malloc(size_t n) {
+      void *p = ::std::malloc(n);
+      if(p) return p;
+      else throw "out of memory";
+    }
+  """; 
   // raw allocation and deallocation
-  fun malloc: !ints -> address = '::std::malloc($1)' requires Cxx_headers::cstdlib;
+  gen raw_malloc: !ints -> address = '::std::malloc($1)' requires Cxx_headers::cstdlib;
+  gen malloc: !ints -> address = 'checked_malloc($1)' requires Cxx_headers::cstdlib, checked_malloc;
   proc free: address = '::std::free($1);' requires Cxx_headers::cstdlib;
 }
 

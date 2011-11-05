@@ -18,6 +18,8 @@ open Flx_exceptions
 open Flx_maps
 open Flx_cal_type_offsets
 open Flx_cal_fun_offsets
+open Flx_cal_threadframe_offsets
+open Flx_findvars
 open Flx_gen_shape
 
 module CS = Flx_code_spec
@@ -32,7 +34,6 @@ let comma_sub s =
     with Not_found -> l ^ r
   in
   aux "" s
-let is_instantiated syms i ts = Hashtbl.mem syms.instances (i,ts)
 let id x = ()
 
 let scan_bexpr syms bsym_table allocable_types e : unit =
@@ -69,41 +70,12 @@ let scan_exes syms bsym_table allocable_types exes : unit =
 
 let gen_offset_tables syms bsym_table module_name first_ptr_map=
   let allocable_types = Hashtbl.create 97 in
-  let scan exes = scan_exes syms bsym_table allocable_types exes in
   let last_ptr_map = ref first_ptr_map in
   let primitive_shapes = Hashtbl.create 97 in
   let s = Buffer.create 20000 in
-
+  
   (* Make a shape for every non-C style function with the property `Heap_closure *)
-  (* print_endline "Function and procedure offsets"; *)
-  Hashtbl.iter begin fun (index,ts) instance ->
-    let bsym =
-      try Flx_bsym_table.find bsym_table index
-      with Not_found ->
-        failwith ("[gen_offset_tables] can't find index " ^ string_of_bid index)
-    in
-    (*
-    print_endline ("Offsets for " ^ id ^ "<"^ si index ^">["^catmap "," (sbt bsym_table) ts ^"]");
-    *)
-    match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (props,vs,ps,ret,exes) ->
-        scan exes;
-        if mem `Cfun props then () else
-        if mem `Heap_closure props then
-          gen_fun_offsets
-            s
-            syms
-            bsym_table
-            index
-            vs
-            ps
-            ret
-            ts
-            instance
-            props
-            last_ptr_map
-    | _ -> ()
-  end syms.instances;
+  gen_all_fun_shapes (scan_exes syms bsym_table allocable_types) s syms bsym_table last_ptr_map;
 
   (* generate offsets for all pointers store in the thread_frame *)
   gen_thread_frame_offsets s syms bsym_table last_ptr_map;
@@ -226,7 +198,7 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
       let n = length offsets in
       let classname = cpp_type_classname syms bsym_table btyp in
       bcat s ("\n//OFFSETS for tuple type " ^ string_of_bid index ^ "\n");
-      gen_offset_data s n name offsets false [] None last_ptr_map
+      gen_offset_data s n name offsets false false [] None last_ptr_map
 
     (* This is a pointer, the offset data is in the system library *)
     | BTYP_pointer t -> ()
@@ -242,8 +214,11 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
       let offsets = get_offsets syms bsym_table t in
       let is_pod =
         match t with
+        | BTYP_sum _ 
+        | BTYP_variant _ -> true
         | BTYP_inst (k,ts) ->
           begin match Flx_bsym_table.find_bbdcl bsym_table k with
+          | BBDCL_union _ -> true
           | BBDCL_external_type (_,quals,_,_) -> mem `Pod quals
           | _ -> false
           end
@@ -397,7 +372,7 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
         bcat s ("\n//OFFSETS for struct type " ^ name ^ " instance\n");
         let offsets = get_offsets syms bsym_table btyp in
         let n = length offsets in
-        gen_offset_data s n name offsets false [] None last_ptr_map
+        gen_offset_data s n name offsets false false [] None last_ptr_map
 
       | _ ->
         failwith

@@ -200,7 +200,7 @@ let codegen_bsyms
   plh  "//DEFINE FUNCTION CLASSES";
   plh  (Flx_gen.gen_functions state.syms bsym_table);
 
-  let topvars_with_type = Flx_ogen.find_thread_vars_with_type bsym_table in
+  let topvars_with_type = Flx_findvars.find_thread_vars_with_type bsym_table in
   let topvars = List.map fst topvars_with_type in
   List.iter plh
   [

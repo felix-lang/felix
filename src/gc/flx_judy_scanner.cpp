@@ -39,14 +39,14 @@ void *JudyL_scanner(collector_t *collector, gc_shape_t *shape, void *pp, unsigne
 void *JudySL_scanner(collector_t *collector, gc_shape_t *shape, void *pp, unsigned long dyncount, int reclimit)
 {
   void *p = *(void**)pp;
-  //printf("Scanning judyL array %p->%p\n", pp, p);
+  printf("Scanning judySL array %p->%p\n", pp, p);
   JError_t je;
   unsigned char *key = (unsigned char*)::std::malloc(10000); // HACK
   *key = 0;
   Word_t *pval = 0;
   pval = (Word_t*)JudySLFirst(p, key, &je);
   while(pval) {
-    //printf("JudyL scanning p=%s\n",key); 
+    //printf("JudyL scanning p=%s, v=%p\n",key,*pval); 
     collector->register_pointer((void*)*pval,reclimit);
     pval = (Word_t*)JudySLNext(p, key, &je);
   }
