@@ -187,7 +187,8 @@ let gen_type_name syms bsym_table (index,typ) =
       "typedef int " ^ tn typ ^ ";\n"
 
   | BTYP_sum _ 
-  | BTYP_variant _ ->
+  | BTYP_variant _ -> ""
+    (*
     descr ^
     begin match Flx_vrep.cal_variant_rep bsym_table t with
     | Flx_vrep.VR_self -> "// VR_self\n"
@@ -195,6 +196,7 @@ let gen_type_name syms bsym_table (index,typ) =
     | Flx_vrep.VR_packed -> "typedef void *" ^ tn typ ^"; // VR_packed \n"
     | Flx_vrep.VR_uctor -> "typedef ::flx::rtl::_uctor_ " ^ tn typ ^ "; //VR_uctor\n"
     end
+    *)
 
 
   | BTYP_void -> ""
@@ -266,7 +268,8 @@ let gen_type_name syms bsym_table (index,typ) =
       let name = cn typ in
       descr ^ "struct " ^ name ^ ";\n"
 
-    | BBDCL_union (vs,ls) ->
+    | BBDCL_union (vs,ls) -> ""
+(*
       let descr =
         "\n//UNION " ^ string_of_bid i ^ " INSTANCE " ^
         string_of_bid index ^ ": " ^
@@ -281,7 +284,7 @@ let gen_type_name syms bsym_table (index,typ) =
       | Flx_vrep.VR_packed -> "typedef void *" ^ tn typ ^"; // VR_packed \n"
       | Flx_vrep.VR_uctor -> "typedef ::flx::rtl::_uctor_ " ^ tn typ ^ "; //VR_uctor\n"
       end
-
+*)
       (*
       let lss = map (fun (_,_,t)->t) ls in
       let lss = map (tsubst vs ts) lss in

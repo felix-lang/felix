@@ -187,22 +187,46 @@ let rec cpp_type_classname syms bsym_table t =
   | BTYP_array _ -> "_at" ^ cid_of_bid (tix t)
   | BTYP_tuple _ -> "_tt" ^ cid_of_bid (tix t)
   | BTYP_record _ -> "_art" ^ cid_of_bid (tix t)
+(*
   | BTYP_variant _ -> "_avt" ^ cid_of_bid (tix t)
   | BTYP_sum _ -> "_st" ^ cid_of_bid (tix t)
+*)
+  | BTYP_variant _
+  | BTYP_sum _ ->
+    begin match Flx_vrep.cal_variant_rep bsym_table t with
+    | Flx_vrep.VR_self -> assert false
+    | Flx_vrep.VR_int -> "int"
+    | Flx_vrep.VR_packed -> "void*"
+    | Flx_vrep.VR_uctor -> "::flx::rtl::_uctor_"
+    end
+
   | BTYP_unitsum k -> "_us" ^ string_of_int k
 
   | BTYP_inst (i,ts) ->
+    let bsym = Flx_bsym_table.find bsym_table i in
+    let fname = Flx_bsym.id bsym in
+    let bbdcl = Flx_bsym.bbdcl bsym in
     let cal_prefix = function
       | BBDCL_struct _  -> "_s"
+(*
       | BBDCL_union _   -> "_u"
+*)
+      | BBDCL_union _   -> ""
       | BBDCL_external_type _  -> "_a"
       | BBDCL_newtype _ -> "_abstr_"
       | _ -> "_unk_"
     in
+    begin match bbdcl with 
+    | BBDCL_union _   ->
+      begin match Flx_vrep.cal_variant_rep bsym_table t with
+      | Flx_vrep.VR_self -> assert false
+      | Flx_vrep.VR_int -> "int"
+      | Flx_vrep.VR_packed -> "void*"
+      | Flx_vrep.VR_uctor -> "::flx::rtl::_uctor_"
+      end
+    | _ ->
     if ts = [] then
-      let bsym = Flx_bsym_table.find bsym_table i in
-      let fname = Flx_bsym.id bsym in
-      match Flx_bsym.bbdcl bsym with
+      match bbdcl with
       | BBDCL_cstruct _ -> fname
       (*
       | BBDCL_external_type (_,_,CS.Str "char",_) -> "char" (* hack .. *)
@@ -264,7 +288,7 @@ let rec cpp_type_classname syms bsym_table t =
           prefix ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
     else
       "_poly_" ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
-
+  end
   | _ ->
     failwith
     (
