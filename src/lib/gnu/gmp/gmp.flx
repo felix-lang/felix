@@ -90,58 +90,59 @@ module Gmp
   fun sqrt:mpf->mpf="sqrt($1)";
   fun cmp:mpf*mpf->int="cmp($1,$2)";
   proc fprint: ostream * mpf="*$1<<$2;";
-fun lcm: mpz * mpz -> mpz = "flx::gmp::lcm($1,$2)" requires gmpxx_lcm;
-fun gcd: mpz * mpz -> mpz = "flx::gmp::gcd($1,$2)" requires gmpxx_gcd;
-fun wedge: mpz * mpz -> mpz = "flx::gmp::lcm($1,$2)" requires gmpxx_lcm;
-fun vee: mpz * mpz -> mpz = "flx::gmp::gcd($1,$2)" requires gmpxx_gcd;
+  fun lcm: mpz * mpz -> mpz = "flx::gmp::lcm($1,$2)" requires gmpxx_lcm;
+  fun gcd: mpz * mpz -> mpz = "flx::gmp::gcd($1,$2)" requires gmpxx_gcd;
+  fun wedge: mpz * mpz -> mpz = "flx::gmp::lcm($1,$2)" requires gmpxx_lcm;
+  fun vee: mpz * mpz -> mpz = "flx::gmp::gcd($1,$2)" requires gmpxx_gcd;
 
-fun mod: mpz * mpz -> mpz = "$1%$2";
-fun mpz_of_int: int -> mpz = "mpz_class($1)";
-fun mpq_of_int: int -> mpq = "mpq_class($1)";
-fun mpf_of_double: double -> mpf = "mpf_class($1)";
+  fun mod: mpz * mpz -> mpz = "$1%$2";
+  fun mpz_of_int: int -> mpz = "mpz_class($1)";
+  fun mpq_of_int: int -> mpq = "mpq_class($1)";
+  fun mpf_of_double: double -> mpf = "mpf_class($1)";
 
-instance Eq[mpz] {
-  fun eq:mpz*mpz->bool="$1==2";
-  fun ne:mpz*mpz->bool="$1!=$2";
-}
-instance Tord[mpz] {
-  fun lt:mpz*mpz->bool="$1<$2";
-  fun le:mpz*mpz->bool="$1<=$2";
-  fun gt:mpz*mpz->bool="$1>$2";
-  fun ge:mpz*mpz->bool="$1>=$2";
-}
-instance Eq[mpq] {
-  fun eq:mpq*mpq->bool="$1==2";
-  fun ne:mpq*mpq->bool="$1!=$2";
-}
-instance Tord[mpq] {
-  fun lt:mpq*mpq->bool="$1<$2";
-  fun le:mpq*mpq->bool="$1<=$2";
-  fun gt:mpq*mpq->bool="$1>$2";
-  fun ge:mpq*mpq->bool="$1>=$2";
-}
-instance Eq[mpf] {
-  fun eq:mpf*mpf->bool="$1==2";
-  fun ne:mpf*mpf->bool="$1!=$2";
-}
-instance Tord[mpf] {
-  fun lt:mpf*mpf->bool="$1<$2";
-  fun le:mpf*mpf->bool="$1<=$2";
-  fun gt:mpf*mpf->bool="$1>$2";
-  fun ge:mpf*mpf->bool="$1>=$2";
-}
-instance Str[mpz] {
-  fun str:mpz->string="#1($1).get_str(10)";
-}
-instance Str[mpq] {
-  fun str:mpq->string="#1($1).get_str(10)";
+  instance Eq[mpz] {
+    fun eq:mpz*mpz->bool="$1==2";
+    fun ne:mpz*mpz->bool="$1!=$2";
+  }
+  instance Tord[mpz] {
+    fun lt:mpz*mpz->bool="$1<$2";
+    fun le:mpz*mpz->bool="$1<=$2";
+    fun gt:mpz*mpz->bool="$1>$2";
+    fun ge:mpz*mpz->bool="$1>=$2";
+  }
+  instance Eq[mpq] {
+    fun eq:mpq*mpq->bool="$1==2";
+    fun ne:mpq*mpq->bool="$1!=$2";
+  }
+  instance Tord[mpq] {
+    fun lt:mpq*mpq->bool="$1<$2";
+    fun le:mpq*mpq->bool="$1<=$2";
+    fun gt:mpq*mpq->bool="$1>$2";
+    fun ge:mpq*mpq->bool="$1>=$2";
+  }
+  instance Eq[mpf] {
+    fun eq:mpf*mpf->bool="$1==2";
+    fun ne:mpf*mpf->bool="$1!=$2";
+  }
+  instance Tord[mpf] {
+    fun lt:mpf*mpf->bool="$1<$2";
+    fun le:mpf*mpf->bool="$1<=$2";
+    fun gt:mpf*mpf->bool="$1>$2";
+    fun ge:mpf*mpf->bool="$1>=$2";
+  }
+  instance Str[mpz] {
+    fun str:mpz->string="#1($1).get_str(10)";
+  }
+  instance Str[mpq] {
+    fun str:mpq->string="#1($1).get_str(10)";
+  }
+
+  instance Str[mpf] {
+    fun str:mpf->string="flx::gmp::flx_mpf_get_str($1)" requires flx_mpf_get_str_h;
+  }
+
 }
 
-instance Str[mpf] {
-  fun str:mpf->string="flx::gmp::flx_mpf_get_str($1)" requires flx_mpf_get_str_h;
-}
-
-}
 open Eq[Gmp::mpz];
 open Tord[Gmp::mpz];
 open Str[Gmp::mpz];

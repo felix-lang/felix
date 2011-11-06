@@ -2,21 +2,290 @@ include "plat/config";
 include "std/posix/process";
 include "std/posix/shell";
 
-// Changed to just copy values out of the library
-// Change to use structs
+// Felix version of THIS program (NOT the one being installed
+// if you're using flx to install Felix)
+
+var VERSION=Config::VERSION;
+
+// --------------------------------------------------
+// Print help
+// --------------------------------------------------
+
+
+proc print_help() {
+  debugln "Display top level manual page using 'man' program";
+  println "Usage: flx [options] filename[.flx] [args ..]";
+  println "options:";
+  println "--test               : use felix installation in current directory";
+  println "--test=dir           : use felix installation in dir";
+  println "--where              : print location of felix installation";
+  println "--show               : print the felix program to stdout";
+  println "-c                   : compile only, do not run";
+  println "--static             : make standalone statically linked executable";
+  println "--nofelix            : do not run felix translator, leave C++ outputs alone";
+  println "--options            : show option set";
+  println "--config             : show configuration";
+  println "--version            : show felix version";
+  println "--force              : force run Felix compiler";
+  println "--cache_dir=dir      : extant directory cache output from parser (*.par files)";
+  println "--output_dir=dir     : extant directory to hold C++ output from translator";
+  println "--man                : show flx man page (if there is one)";
+  println "--help               : show this help";
+  println "--noinline           : force inlining off, may break things!";
+  println "--inline             : aggressive inlining"; 
+  println "--inline=999         : set inline cap to 999 'instructions'"; 
+  println "--echo               : print shell commands before running them";
+  println "--time               : print target program run time after it finishes";
+  println "--nostdlib           : don't load the standard library";
+  println "--nooptimise         : disable C++ compiler optimisation";
+  println "--debug              : put debug symbols in generated binaries";
+  println "--debug-compiler     : make felix compiler print progress diagnostics";
+  println "--stdout=file        : run program with standard output redirected to file";
+  println "--install            : install --test directory to configured location";
+  println "--import=file        : add an import which is prefixed to all files being translated";
+  println "--import=@file       : add all the files listed in file as imports (recursive on @)";
+  println "--nostdimport        : don't import the standard imports nugram.flxh and flx.flxh";
+  println "--compiler-phase     : specify which phase of the compiler to run";
+  println "-Idir                : add dir to search path for both felix and C++ includes";                      
+  println "-Ldir                : add dir to linker search path"; 
+  println "-llib                : add dir lib to linker command";
+  println "-Dmac                : add macro def to C++ compiler command";
+  println "-DFLX_ENABLE_TRACE       : enable compilation of trace generators (defaults off)";
+  println "-DFLX_PTF_STATIC_STRUCT  : make the thread_frame a static object (default Felix heap)";
+  println "-DFLX_PTF_STATIC_POINTER : access the thread_frame from a static pointer (default pass as arg)";
+  println "-DFLX_CGOTO              : use gcc indirect gotos and use assembler hack for long jumps (default on if config detects support)";
+  println "";
+  println "*.c *.cc *.cpp *.cxx ";
+  println "                     : add files to C++ compilation (and linker) steps";
+  println "*.o *.obj *.lib *.dll *.a *.so";
+  println "                     : add files to linker steps";
+  println "* *.flx              : Felix program name, terminates options and starts runtime arguments";
+}
+
+
+
+// --------------------------------------------------
+// String Utilities 
+// --------------------------------------------------
+
+fun splitext(p:string)=>
+  if p.[-4 to] == ".flx" then p.[to -4],"flx"
+  elif p.[-4 to] == ".cpp" then p.[to -4],"cpp"
+  else p,""
+  endif
+;
+
+fun prefix(arg:string,key:string)=>
+  arg.[to len key]==key
+;
+
+// --------------------------------------------------
+// Optionally print a debug line.
+// --------------------------------------------------
+
+dbug := false; // switch off for production
+proc debugln[T with Str[T]] (x:T) {
+  dbug ?? fprintln (cerr, str x);
+}
+
+// --------------------------------------------------
+// Invoke the shell
+// --------------------------------------------------
+
+var ECHO=0;
+gen system(cmd:string):int= {
+  if ECHO==1 do fprintln$ cerr, cmd; done
+  var result = System::system(cmd);
+  if ECHO==1 do fprintln$ cerr, "Result code " + str(result); done
+  return result;
+}
+
+gen get_stdout(x:string) = {
+  // We're screwed if popen doesn't work ..
+/*
+  if os.name == "nt": // popen doesn't work on Windows
+    result := system(x + " >tmp.out");
+    Stdout::flush();
+    output := Text_file::load "tmp.out";
+  else:
+*/
+    var fout = Process::popen_in(x+" 2>&1 ");
+    if Text_file::valid fout do
+      var output = Text_file::load fout;
+      var result = Process::pclose fout; 
+      return (Process::WEXITSTATUS result), output;
+    else
+      println$ "Unable to run command '" + x "'";
+      return -1,"";
+    done
+}
+
+gen xqt(cmd:string) = {
+  ECHO == 1 or dbug ?? fprintln (cerr, "cmd="+cmd);
+  var result,output = get_stdout(cmd);
+  if result == 0 do
+    n := 
+      match find_first_of (output, char "\n") with
+      | Some ?n => n 
+      | None => len output 
+      endmatch
+    ; 
+    output = output.[to n]; // first line excluding newline
+    ECHO==1 or dbug ?? fprintln (cerr, "output='"+output+"'");
+  else
+    debugln "COMMAND FAILED";
+    fprint$ cerr, ("Error "+repr(result)+" executing command " + cmd + "/n");
+    System::exit result;
+  done
+  return output;
+}
+
+
+// --------------------------------------------------
+// Install scripts
+// --------------------------------------------------
+
 var INSTALL_ROOT_TOPDIR=Config::INSTALL_ROOT_TOPDIR;
 var INSTALL_ROOT=Config::INSTALL_ROOT;
 var FLX_INSTALL_DIR=Config::FLX_INSTALL_DIR;
+
+proc install() {
+    debugln "Install Felix";
+    println "Install Felix: ONLY ON UNIX (you may need to be superuser)";
+    println "Always installs the --test directory to the configured install target";
+    println "Because that is hard coded into this program";
+    println "Note: does NOT install this program 'flx' into your PATH!";
+    println "  Use --install-bin for that!";
+    println$ "FROM: " + FLX_INSTALL_DIR;
+    println$ "TO  : " + INSTALL_ROOT;
+    if FLX_INSTALL_DIR == INSTALL_ROOT do
+      println "Can't install, src and dst are the same";
+      System::exit(1);
+    else
+      result=system("mkdir -pv "+INSTALL_ROOT_TOPDIR);
+      if result != 0 do
+        println$ "Cannot create directory " + INSTALL_ROOT_TOPDIR;
+        System::exit 1;
+      done
+      result=system("rm -rf "+INSTALL_ROOT);
+      result=system("mkdir -pv "+INSTALL_ROOT);
+      result=system("cp -Rpv "+FLX_INSTALL_DIR+"/* "+INSTALL_ROOT);
+      if result == 0 do println "Install succeeded";
+      else println$ "Install failed, code = " + str(result);
+      done
+      System::exit(result);
+    done
+}
+
+// install executable files in usr/local/bin
+// target cannot be changed.
+
+proc install_bin ()
+{
+  debugln "Install executables";
+  println$ "FROM: " + FLX_INSTALL_DIR;
+  println$ "TO  : /usr/local/bin (fixed, can't be changed: privilege required)";
+
+  result=system("cp -f "+FLX_INSTALL_DIR+"/bin/flx /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/bin/mk_daemon /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/bin/timeout /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/webserver /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_ls /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_cp /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+
+  println "Install succeeded";
+  System::exit(0);
+
+install_bin_failed:>
+  println$ "Install failed, code = " + str(result);
+  System::exit(result);
+}
+// --------------------------------------------------
+// OS kind
+// --------------------------------------------------
+
 var CYGWIN=Config::CYGWIN;
 var WIN32=Config::WIN32;
 var MACOSX=Config::MACOSX;
+
+// --------------------------------------------------
+// File time stamp processing
+// --------------------------------------------------
+
+body """
+long macosx_ftime(::std::string s) {
+  struct stat sb;
+  int e = stat(s.c_str(),&sb);
+  if(e != 0) return 0l;
+  return sb.st_mtime;
+}
+""" requires header "#include <sys/stat.h>";
+
+body """
+long posix_ftime(::std::string s) {
+  struct stat sb;
+  int e = stat(s.c_str(),&sb);
+  if(e != 0) return 0l;
+  return sb.st_mtime;
+}
+""" requires header "#include <sys/stat.h>";
+
+
+fun macosx_ftime: string -> long = "macosx_ftime($1)";
+fun posix_ftime: string -> long = "posix_ftime($1)";
+
+val past_time = -1l;
+val future_time = long(ulong(-1)/2ul); // a hacky way to get a big number
+
+fun filetime(f:string)=>if MACOSX then macosx_ftime(f) else posix_ftime(f) endif;
+fun dfiletime(f:string, dflt:long )=
+{
+  val x = filetime (f);
+  dbug??println$ "Time of file " + f + " is " + str x;
+  return if x == 0l then dflt else x endif;
+}
+
+fun maxf (x: long) (f:string) => max (x, if f == "" then x else dfiletime (f+".flx",future_time) endif);
+fun cal_files_time (fs: list[string])=> fold_left maxf 0L fs;
+fun cal_time_from_dep (df: string):long=
+{
+  val deptext = Text_file::load df;
+  val lines = split (deptext, "\n"); 
+  debugln$ "Deps=" + str(lines);
+  val deptime = cal_files_time lines;
+  debugln$ "Deptime=" + str(deptime);
+  return deptime;
+}
+
+fun cal_dep_time(f:string)=>cal_time_from_dep(f+".dep");
+
+
+// --------------------------------------------------
+// Other Configuration Data
+// --------------------------------------------------
+
+//  C compiler kind
 var HAVE_GNU=Config::HAVE_GNU;
 var HAVE_MSVC=Config::HAVE_MSVC;
+
+// compilation and linkage command heads
 var CCOBJ_DLLIB=Config::CCOBJ_DLLIB;
 var CCLINK_DLLIB=Config::CCLINK_DLLIB;
 var CCOBJ_STATIC_LIB=Config::CCOBJ_STATIC_LIB;
 var CCLINK_STATIC=Config::CCLINK_STATIC;
-var VERSION=Config::VERSION;
+
+// extensions of various file kinds
 var EXT_LIB=Config::EXT_LIB;
 var EXT_STATIC_OBJ=Config::EXT_STATIC_OBJ;
 var EXT_SHARED_OBJ=Config::EXT_SHARED_OBJ;
@@ -24,28 +293,71 @@ var EXT_EXE=Config::EXT_EXE;
 var EXT_SHLIB=Config::EXT_SHLIB;
 var SPEC_OBJ_FILENAME=Config::SPEC_OBJ_FILENAME;
 var SPEC_EXE_FILENAME=Config::SPEC_EXE_FILENAME;
+
+// compilation switches
 var OPTIMISE=Config::OPTIMISE;
 var DEBUG_FLAGS=Config::DEBUG_FLAGS;
 var DEFAULT_LINK_STATIC=Config::DEFAULT_LINK_STATIC;
 
-dbug := false; // switch off for production
+proc print_config() {
+  println$ "VERSION            = "+VERSION;
+  println$ "INSTALL_ROOT_TOPDIR= "+INSTALL_ROOT_TOPDIR;
+  println$ "INSTALL_ROOT       = "+INSTALL_ROOT;
+  println$ "FLX_INSTALL_DIR    = "+FLX_INSTALL_DIR;
+  println$ "";
+  println$ "CYGWIN             = "+str CYGWIN;
+  println$ "WIN32              = "+str WIN32;
+  println$ "MACOSX             = "+str MACOSX;
+
+  println$ "";
+  println$ "HAVE_GNU           = "+str HAVE_GNU;
+  println$ "HAVE_MSVC          = "+str HAVE_MSVC;
+
+  println$ "";
+  println$ "CCOBJ_DLLIB        = "+CCOBJ_DLLIB;
+  println$ "CCLINK_DLLIB       = "+CCLINK_DLLIB;
+  println$ "CCOBJ_STATIC_LIB   = "+CCOBJ_STATIC_LIB;
+  println$ "CCLINK_STATIC      = "+CCLINK_STATIC;
+
+  println$ "";
+  println$ "EXT_LIB            = "+EXT_LIB;
+  println$ "EXT_STATIC_OBJ     = "+EXT_STATIC_OBJ;
+  println$ "EXT_SHARED_OBJ     = "+EXT_SHARED_OBJ;
+  println$ "EXT_EXE            = "+EXT_EXE;
+  println$ "EXT_SHLIB          = "+EXT_SHLIB;
+  println$ "SPEC_OBJ_FILENAME  = "+SPEC_OBJ_FILENAME;
+  println$ "SPEC_EXE_FILENAME  = "+SPEC_EXE_FILENAME;
+
+  println$ "";
+  println$ "OPTIMISE           = "+str OPTIMISE;
+  println$ "DEBUG_FLAGS        = "+str DEBUG_FLAGS;
+}
+
+
+// --------------------------------------------------
+// Control Values
+// --------------------------------------------------
+
 var RECOMPILE=0;
+var RUNIT=1;
+var FELIX=1;
+
+// --------------------------------------------------
+// processing options
+// --------------------------------------------------
+
 var DEBUG=0;
 var DEBUG_COMPILER=0;
 var COMPILER_PHASE="";
 var INLINE=100;
-var ECHO=0;
 var TIME=0;
 var NOOPTIMISE=0;
 var TIMECMD="time -p";
 var STATIC=DEFAULT_LINK_STATIC;
 var SHOWCODE=0;
-var RUNIT=1;
 var CCFLAGS="";
-var FELIX=1;
 var LINKER_SWITCHES="";
 var MACROS="";
-var grab=1;
 var cpps="";
 var cppos="";
 var INCLUDE_DIRS="";
@@ -71,35 +383,38 @@ var FLXRUN = "";
 var DLINK_STRING:string;
 var SLINK_STRING:string;
 
-fun splitext(p:string)=>
-  if p.[-4 to] == ".flx" then p.[to -4],"flx"
-  elif p.[-4 to] == ".cpp" then p.[to -4],"cpp"
-  else p,""
-  endif
-;
-
-gen system(cmd:string):int= {
-  if ECHO==1 do fprintln$ cerr, cmd; done
-  var result = System::system(cmd);
-  if ECHO==1 do fprintln$ cerr, "Result code " + str(result); done
-  return result;
+proc print_options() {
+    println$ "NOOPTIMISE         = "+str NOOPTIMISE;
+    println$ "STATIC             = "+str STATIC;
+    println$ "ECHO               = "+str ECHO;
+    println$ "NOSTDLIB           = "+str NOSTDLIB;
+    println$ "DEBUG              = "+str DEBUG;
+    println$ "DEBUG_COMPILER     = "+str DEBUG_COMPILER;
+    println$ "STDIMPORT          = "+str STDIMPORT;
+    println$ "STDSYNTAX          = "+str STDSYNTAX;
+    println$ "IMPORTS            = "+str IMPORTS;
+    println$ "RECOMPILE          = "+str RECOMPILE;
+    println$ "cpps               = "+str cpps;
+    println$ "cppos              = "+str cppos;
+    println$ "TIME               = "+str TIME;
+    println$ "OUTPUT_DIR         = "+str OUTPUT_DIR;
+    println$ "CACHE_DIR          = "+str CACHE_DIR;
+    println$ "RUNIT              = "+str RUNIT;
+    println$ "INCLUDE_DIRS       = "+str INCLUDE_DIRS;
+    println$ "FELIX              = "+str FELIX;
+    println$ "LINKER_SWITCHES    = "+str LINKER_SWITCHES;
+    println$ "MACROS             = "+str MACROS;
+    println$ "SHOWCODE           = "+str SHOWCODE;
 }
-
-// Optionally print a debug line.
-proc debugln[T with Str[T]] (x:T) {
-  dbug ?? fprintln (cerr, str x);
-}
-
-var argno=1;
-fun prefix(arg:string,key:string)=>
-  arg.[to len key]==key
-;
 
 var compile_exts = List::list ('cpp','cxx','c','cc');
 var linkexts =  List::list ('o','obj','lib','dll','a','so');
-var arg = "";
 var result = 0;
 
+// Argument parsing loop
+var argno=1;
+var grab=1;
+var arg = "";
 whilst grab == 1 and argno<System::argc do
   arg = System::argv argno;
   debugln$ "ARGNO="+str(argno)+", arg='"+arg+"'";
@@ -136,62 +451,9 @@ whilst grab == 1 and argno<System::argc do
     FLX_INSTALL_DIR=".";
 
   elif arg=="--install" do
-    debugln "Install Felix";
-    println "Install Felix: ONLY ON UNIX (you may need to be superuser)";
-    println "Always installs the --test directory to the configured install target";
-    println "Because that is hard coded into this program";
-    println "Note: does NOT install this program 'flx' into your PATH!";
-    println "  Use --install-bin for that!";
-    println$ "FROM: " + FLX_INSTALL_DIR;
-    println$ "TO  : " + INSTALL_ROOT;
-    if FLX_INSTALL_DIR == INSTALL_ROOT do
-      println "Can't install, src and dst are the same";
-      System::exit(1);
-    else
-      result=system("mkdir -pv "+INSTALL_ROOT_TOPDIR);
-      if result != 0 do
-        println$ "Cannot create directory " + INSTALL_ROOT_TOPDIR;
-        System::exit 1;
-      done
-      result=system("rm -rf "+INSTALL_ROOT);
-      result=system("mkdir -pv "+INSTALL_ROOT);
-      result=system("cp -Rpv "+FLX_INSTALL_DIR+"/* "+INSTALL_ROOT);
-      if result == 0 do println "Install succeeded";
-      else println$ "Install failed, code = " + str(result);
-      done
-      System::exit(result);
-    done
-
+    install; // non-return
   elif arg=="--install-bin" do
-    debugln "Install executables";
-    println$ "FROM: " + FLX_INSTALL_DIR;
-    println$ "TO  : /usr/local/bin (fixed, can't be changed: privilege required)";
-
-    result=system("cp -f "+FLX_INSTALL_DIR+"/bin/flx /usr/local/bin");
-    if result !=0 goto install_bin_failed;
-
-    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/mk_daemon /usr/local/bin");
-    if result !=0 goto install_bin_failed;
-
-    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/timeout /usr/local/bin");
-    if result !=0 goto install_bin_failed;
-
-    result= system("cp -f "+FLX_INSTALL_DIR+"/tools/webserver /usr/local/bin");
-    if result !=0 goto install_bin_failed;
-
-    result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_ls /usr/local/bin");
-    if result !=0 goto install_bin_failed;
-
-    result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_cp /usr/local/bin");
-    if result !=0 goto install_bin_failed;
-
-    println "Install succeeded";
-    System::exit(0);
-
-install_bin_failed:>
-    println$ "Install failed, code = " + str(result);
-    System::exit(result);
-
+    install_bin; // non-return
   elif prefix(arg,"--stdout=") do
     debugln "Redirect standard output";
     // of the Felix program only: used for saving the output
@@ -255,61 +517,11 @@ install_bin_failed:>
     System::exit(0);
 
   elif arg == "--config" do
-    println$ "VERSION            = "+VERSION;
-    println$ "INSTALL_ROOT_TOPDIR= "+INSTALL_ROOT_TOPDIR;
-    println$ "INSTALL_ROOT       = "+INSTALL_ROOT;
-    println$ "FLX_INSTALL_DIR    = "+FLX_INSTALL_DIR;
-    println$ "";
-    println$ "CYGWIN             = "+str CYGWIN;
-    println$ "WIN32              = "+str WIN32;
-    println$ "MACOSX             = "+str MACOSX;
-
-    println$ "";
-    println$ "HAVE_GNU           = "+str HAVE_GNU;
-    println$ "HAVE_MSVC          = "+str HAVE_MSVC;
-
-    println$ "";
-    println$ "CCOBJ_DLLIB        = "+CCOBJ_DLLIB;
-    println$ "CCLINK_DLLIB       = "+CCLINK_DLLIB;
-    println$ "CCOBJ_STATIC_LIB   = "+CCOBJ_STATIC_LIB;
-    println$ "CCLINK_STATIC      = "+CCLINK_STATIC;
-
-    println$ "";
-    println$ "EXT_LIB            = "+EXT_LIB;
-    println$ "EXT_STATIC_OBJ     = "+EXT_STATIC_OBJ;
-    println$ "EXT_SHARED_OBJ     = "+EXT_SHARED_OBJ;
-    println$ "EXT_EXE            = "+EXT_EXE;
-    println$ "EXT_SHLIB          = "+EXT_SHLIB;
-    println$ "SPEC_OBJ_FILENAME  = "+SPEC_OBJ_FILENAME;
-    println$ "SPEC_EXE_FILENAME  = "+SPEC_EXE_FILENAME;
-
-    println$ "";
-    println$ "OPTIMISE           = "+str OPTIMISE;
-    println$ "DEBUG_FLAGS        = "+str DEBUG_FLAGS;
+    print_config;
     System::exit(0);
 
   elif arg == "--options" do
-    println$ "NOOPTIMISE         = "+str NOOPTIMISE;
-    println$ "STATIC             = "+str STATIC;
-    println$ "ECHO               = "+str ECHO;
-    println$ "NOSTDLIB           = "+str NOSTDLIB;
-    println$ "DEBUG              = "+str DEBUG;
-    println$ "DEBUG_COMPILER     = "+str DEBUG_COMPILER;
-    println$ "STDIMPORT          = "+str STDIMPORT;
-    println$ "STDSYNTAX          = "+str STDSYNTAX;
-    println$ "IMPORTS            = "+str IMPORTS;
-    println$ "RECOMPILE          = "+str RECOMPILE;
-    println$ "cpps               = "+str cpps;
-    println$ "cppos              = "+str cppos;
-    println$ "TIME               = "+str TIME;
-    println$ "OUTPUT_DIR         = "+str OUTPUT_DIR;
-    println$ "CACHE_DIR          = "+str CACHE_DIR;
-    println$ "RUNIT              = "+str RUNIT;
-    println$ "INCLUDE_DIRS       = "+str INCLUDE_DIRS;
-    println$ "FELIX              = "+str FELIX;
-    println$ "LINKER_SWITCHES    = "+str LINKER_SWITCHES;
-    println$ "MACROS             = "+str MACROS;
-    println$ "SHOWCODE           = "+str SHOWCODE;
+    print_options;
     System::exit(0);
 
   elif arg == "--where" do
@@ -335,53 +547,7 @@ install_bin_failed:>
     System::exit(0);
 
   elif arg == "--help" do
-    debugln "Display top level manual page using 'man' program";
-    println "Usage: flx [options] filename[.flx] [args ..]";
-    println "options:";
-    println "--test               : use felix installation in current directory";
-    println "--test=dir           : use felix installation in dir";
-    println "--where              : print location of felix installation";
-    println "--show               : print the felix program to stdout";
-    println "-c                   : compile only, do not run";
-    println "--static             : make standalone statically linked executable";
-    println "--nofelix            : do not run felix translator, leave C++ outputs alone";
-    println "--options            : show option set";
-    println "--config             : show configuration";
-    println "--version            : show felix version";
-    println "--force              : force run Felix compiler";
-    println "--cache_dir=dir      : extant directory cache output from parser (*.par files)";
-    println "--output_dir=dir     : extant directory to hold C++ output from translator";
-    println "--man                : show flx man page (if there is one)";
-    println "--help               : show this help";
-    println "--noinline           : force inlining off, may break things!";
-    println "--inline             : aggressive inlining"; 
-    println "--inline=999         : set inline cap to 999 'instructions'"; 
-    println "--echo               : print shell commands before running them";
-    println "--time               : print target program run time after it finishes";
-    println "--nostdlib           : don't load the standard library";
-    println "--nooptimise         : disable C++ compiler optimisation";
-    println "--debug              : put debug symbols in generated binaries";
-    println "--debug-compiler     : make felix compiler print progress diagnostics";
-    println "--stdout=file        : run program with standard output redirected to file";
-    println "--install            : install --test directory to configured location";
-    println "--import=file        : add an import which is prefixed to all files being translated";
-    println "--import=@file       : add all the files listed in file as imports (recursive on @)";
-    println "--nostdimport        : don't import the standard imports nugram.flxh and flx.flxh";
-    println "--compiler-phase     : specify which phase of the compiler to run";
-    println "-Idir                : add dir to search path for both felix and C++ includes";                      
-    println "-Ldir                : add dir to linker search path"; 
-    println "-llib                : add dir lib to linker command";
-    println "-Dmac                : add macro def to C++ compiler command";
-    println "-DFLX_ENABLE_TRACE       : enable compilation of trace generators (defaults off)";
-    println "-DFLX_PTF_STATIC_STRUCT  : make the thread_frame a static object (default Felix heap)";
-    println "-DFLX_PTF_STATIC_POINTER : access the thread_frame from a static pointer (default pass as arg)";
-    println "-DFLX_CGOTO              : use gcc indirect gotos and use assembler hack for long jumps (default on if config detects support)";
-    println "";
-    println "*.c *.cc *.cpp *.cxx ";
-    println "                     : add files to C++ compilation (and linker) steps";
-    println "*.o *.obj *.lib *.dll *.a *.so";
-    println "                     : add files to linker steps";
-    println "* *.flx              : Felix program name, terminates options and starts runtime arguments";
+    print_help;
     System::exit(0);
 
   elif arg == "-c" do
@@ -437,7 +603,7 @@ var USER_ARGS = "";
 whilst argno < System::argc do 
   USER_ARGS+=" " + Bash::quote (System::argv argno); ++argno; 
 done
-//println$ "USER_ARGS=" + USER_ARGS;
+debugln$ "USER_ARGS=" + USER_ARGS;
 
 if NOOPTIMISE == 0 do
   debugln "Set C++ compiler optimisation switches";
@@ -493,46 +659,6 @@ if path == "" do
   fprint$ cerr, ("No such felix program: "+path+"\n");
   System::exit(1);
 done
-
-gen get_stdout(x:string) = {
-  // We're screwed if popen doesn't work ..
-/*
-  if os.name == "nt": // popen doesn't work on Windows
-    result := system(x + " >tmp.out");
-    Stdout::flush();
-    output := Text_file::load "tmp.out";
-  else:
-*/
-    var fout = Process::popen_in(x+" 2>&1 ");
-    if Text_file::valid fout do
-      var output = Text_file::load fout;
-      var result = Process::pclose fout; 
-      return (Process::WEXITSTATUS result), output;
-    else
-      println$ "Unable to run command '" + x "'";
-      return -1,"";
-    done
-}
-
-gen xqt(cmd:string) = {
-  ECHO == 1 or dbug ?? fprintln (cerr, "cmd="+cmd);
-  var result,output = get_stdout(cmd);
-  if result == 0 do
-    n := 
-      match find_first_of (output, char "\n") with
-      | Some ?n => n 
-      | None => len output 
-      endmatch
-    ; 
-    output = output.[to n]; // first line excluding newline
-    ECHO==1 or dbug ?? fprintln (cerr, "output='"+output+"'");
-  else
-    debugln "COMMAND FAILED";
-    fprint$ cerr, ("Error "+repr(result)+" executing command " + cmd + "/n");
-    System::exit result;
-  done
-  return output;
-}
 
 proc calpackages () {
 
@@ -633,53 +759,6 @@ DEBUG_COMPILER == 1?? DEBUGSWITCH=" --debug";
 
 var STATIC_ENV="";
 DEBUG_COMPILER == 1?? STATIC_ENV="env FLX_DEBUG=1 ";
-
-body """
-long macosx_ftime(::std::string s) {
-  struct stat sb;
-  int e = stat(s.c_str(),&sb);
-  if(e != 0) return 0l;
-  return sb.st_mtime;
-}
-""" requires header "#include <sys/stat.h>";
-
-body """
-long posix_ftime(::std::string s) {
-  struct stat sb;
-  int e = stat(s.c_str(),&sb);
-  if(e != 0) return 0l;
-  return sb.st_mtime;
-}
-""" requires header "#include <sys/stat.h>";
-
-
-fun macosx_ftime: string -> long = "macosx_ftime($1)";
-fun posix_ftime: string -> long = "posix_ftime($1)";
-
-val past_time = -1l;
-val future_time = long(ulong(-1)/2ul); // a hacky way to get a big number
-
-fun filetime(f:string)=>if MACOSX then macosx_ftime(f) else posix_ftime(f) endif;
-fun dfiletime(f:string, dflt:long )=
-{
-  val x = filetime (f);
-  dbug??println$ "Time of file " + f + " is " + str x;
-  return if x == 0l then dflt else x endif;
-}
-
-fun maxf (x: long) (f:string) => max (x, if f == "" then x else dfiletime (f+".flx",future_time) endif);
-fun cal_files_time (fs: list[string])=> fold_left maxf 0L fs;
-fun cal_time_from_dep (df: string):long=
-{
-  val deptext = Text_file::load df;
-  val lines = split (deptext, "\n"); 
-  debugln$ "Deps=" + str(lines);
-  val deptime = cal_files_time lines;
-  debugln$ "Deptime=" + str(deptime);
-  return deptime;
-}
-
-fun cal_dep_time(f:string)=>cal_time_from_dep(f+".dep");
 
 var cmd = "";
 debugln$ "RECOMPILE="+str RECOMPILE;
