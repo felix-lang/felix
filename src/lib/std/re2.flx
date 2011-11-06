@@ -15,7 +15,7 @@ open module Re2 {
   // hackery because ::re2::RE2 isn't copyable, so we have to use a pointer
   // but we need the shape of RE2 to create on the heap
   private type RE2_ = "::re2::RE2";
-  _gc_type RE2_ type RE2 = "::re2::RE2*";
+  _gc_pointer _gc_type RE2_ type RE2 = "::re2::RE2*";
   gen _ctor_RE2 : string -> RE2 = "new (*PTF gcp, @0, false) RE2($1)";
 
 

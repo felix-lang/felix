@@ -661,7 +661,10 @@ let bind_exes state bsym_table sr exes =
       List.iter begin fun exe ->
         print_endline (string_of_bexe bsym_table 0 exe)
       end bound_exes;
+      (*
       clierr sr
+      *)
+      print_endline
       (
         "[bind_exes]: function " ^ state.id ^ " drops off end, missing " ^
         "return statement"
