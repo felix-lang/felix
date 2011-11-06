@@ -1,5 +1,6 @@
 include "plat/config";
 include "std/posix/process";
+include "std/posix/shell";
 
 // Changed to just copy values out of the library
 // Change to use structs
@@ -428,11 +429,14 @@ done
 
 debugln "#--------";
 debugln$ "DONE, option index = "+str(argno);
-debugln$ "path="+path+": dir="+dir+",base="+base", ext="+ext;
+debugln$ "path="+path+": dir="+dir+",base="+base+", ext="+ext;
 debugln$ "cpps="+cpps;
 debugln$ "cppos="+cppos;
 
-var USER_ARGS = ""; whilst argno < System::argc do USER_ARGS+=" " + System::argv argno; ++argno; done
+var USER_ARGS = ""; 
+whilst argno < System::argc do 
+  USER_ARGS+=" " + Bash::quote (System::argv argno); ++argno; 
+done
 //println$ "USER_ARGS=" + USER_ARGS;
 
 if NOOPTIMISE == 0 do
