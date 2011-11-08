@@ -98,6 +98,35 @@ with optional underscores inserted for layout purposes.
 Two underscores in a row are not permitted, one is allowed
 between digits, or a digit and the prefix or suffix.
 
+@h2 Exact rule for literals
+@felix
+let bindigit = ['0'-'1']
+let octdigit = ['0'-'7']
+let digit = ['0'-'9']
+let hexdigit = digit | ['A'-'F'] | ['a'-'f']
+let underscore = '_'
+
+let bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +
+let oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +
+let dec_lit  = ('0' ('d' | 'D'| "d_" | "D_"))? digit (underscore? digit) *
+let hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +
+let fastint_type_suffix = 't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"
+let exactint_type_suffix =
+    "i8" | "i16" | "i32" | "i64"
+  | "u8" | "u16" | "u32" | "u64"
+  | "I8" | "I16" | "I32" | "I64"
+  | "U8" | "U16" | "U32" | "U64"
+
+let signind = 'u' | 'U'
+
+let suffix =
+    '_'? exactint_type_suffix
+  | ('_'? fastint_type_suffix)? ('_'? signind)?
+  | ('_'? signind)? ('_'? fastint_type_suffix)?
+
+let int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix
+@
+
 @h2 Example literals
 @felix
 // radix

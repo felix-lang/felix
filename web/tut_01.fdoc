@@ -21,11 +21,11 @@ It's a pretty boring program, so lets try an improvement:
 @felix
 println$ "Hello " + Env::getenv "USER";
 @
-The getenv command can't fail, it will just return an empty string
+The {getenv} command can't fail, it will just return an empty string
 of the environment variable is not set. The infix operator {+} you
 see is string concatenation.
 
-@h2 Commandline arguments
+@h2 Command line arguments
 Ok, so here's another way:
 @felix
 println$ "Hello " + System::argv 1;
@@ -90,23 +90,22 @@ more than reverse application.
 
 And those with a Haskell background will readily understand that in
 @felix
-write$ stdout,"Hello";
+val name = strip $ readln $ stdin;
 @
-the {$} is just a low precedence forward application, so the above
-is the same as
-@felix
-write (stdout, "Hello");
-@
-the {$} just saves on parentheses. It's commonly used after the
-procedure name in a command. You will also note that in Felix
-you do not need parentheses to call a function like you do in C:
+the {$} is just a low precedence forward application, so 
+it is also the same as before.
+
+@h2 Parentheses are purely for grouping
+You may have noticed that you can write:
 @felix
 fflush stdout;
 @
-is equivalent to
+which is equivalent to
 @felix
 fflush (stdout);
 @
+Parentheses are not required for function application or procedure
+calls, just for grouping.
 
 @h2 Summary
 We have learned 

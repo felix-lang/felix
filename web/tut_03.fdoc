@@ -1,21 +1,124 @@
-@h1 Floating Point 
+@h1 Floating Point Types 
+There are 6 floating point types: {float}, {double}, and {long double}
+real and complex numbers.  All support these base functions:
+<pre>
+  neg: t -&gt; t;
+  add: t * t -&gt; t;
+  sub: t * t -&gt; t;
+  mul: t * t -&gt; t;
+  div: t * t -&gt; t;
+</pre>
+and these trigonometric functions:
+<pre>
+  sin: t -&gt; t;
+  cos: t -&gt; t;
+  tan: t -&gt; t;
+  asin: t -&gt; t;
+  acos: t -&gt; t;
+  atan: t -&gt; t;
+  sinh: t -&gt; t;
+  cosh: t -&gt; t;
+  tanh: t -&gt; t;
+  asinh: t -&gt; t;
+  acosh: t -&gt; t;
+  atanh: t -&gt; t;
+  exp: t -&gt; t;
+  log: t -&gt; t;
+  pow: t * t -&gt; t;
+</pre>
+
 @h2 Reals
 Felix provides 3 floating point types.
 <pre>
-  Felix name     C++ name
-  float          float
-  double         double
-  ldouble       long double
+  Felix name     C name       Suffix
+  ----------------------------------
+  float         float         f
+  double        double        d (default)
+  ldouble       long double   l
+</pre>
+Floating literals roughly follow ISO C99, except underscores are allowed between digits.
+The mantissa radix can either be decimal (default) or hexadecimal with a {0x} or {0X} prefix.
+The exponent is always decimal radix but can either be a power of 10 with an {E} or {e} separator
+or binary, with a {P} or {p} separator.
+
+There is also an additional constraint: decimal radix floating literals
+which include a decimal point, must include at least one digit
+before and after the decimal point.
+ 
+@h3 Exact rule for literals
+@felix
+  let decimal_string = digit (underscore? digit) *
+  let hexadecimal_string = hexdigit (underscore? hexdigit) *
+
+  let decimal_fractional_constant =
+    decimal_string '.' decimal_string?
+
+  let hexadecimal_fractional_constant =
+    ("0x" |"0X")
+    (hexadecimal_string '.' hexadecimal_string?
+    | '.' hexadecimal_string) /* leading . allowed here because of prefix */
+
+  let decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string
+  let binary_exponent = ('P'|'p') ('+'|'-')? decimal_string
+
+  let floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd'
+  let floating_literal =
+    (
+      decimal_fractional_constant decimal_exponent? |
+      hexadecimal_fractional_constant binary_exponent?
+    )
+    floating_suffix?
+@
+
+@h3 Real Functions
+In addition to the trigonometric functions, reals support these functions:
+<pre>
+  log10: t -&gt; t;
+  abs: t -&gt; t;
+  sqrt: t -&gt; t;
+  ceil: t -&gt; t;
+  floor: t -&gt; t;
+  trunc: t -&gt; t;
 </pre>
 
-@h3 Floating Point Complex
+@h2 Floating Point Complex
 Felix provides 3 floating point types.
 <pre>
   Felix name    C++ name
+  -----------------------------------------------
   fcomplex      std::complex&lt;float&gt;
   dcomplex      std::complex&lt;double&gt;
   lcomplex      std::complex&lt;long double&gt;
 </pre>
+
+@h3 Complex constructors
+Complex numbers do not have literals, instead they have constructors.
+A complex number of any type can be constructed from one real of any type,
+or two reals of the same type, this being the Cartesian form.
+ 
+@h3 Complex functions
+
+In addition to the base and trigonometric functions, complex numbers support these functions:
+
+@felix
+  // destructors
+  real: t -> r;
+  imag: t -> r;
+  abs: t -> r;
+  arg: t -> r;
+
+  // mixed complex and real operations
+  add: r * t -> t;
+  add: t * r -> t;
+  sub: r * t -> t;
+  sub: t * r -> t;
+  mul : t * r -> t;
+  mul : r * t -> t;
+  div : t * r -> t;
+  div : r * t -> t;
+@
+
+where {r} is the real type corresponding to the complex type {t}.
 
 <a href="tut_04.fdoc">Next</a>
 
