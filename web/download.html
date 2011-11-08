@@ -33,11 +33,11 @@ make test
 <p>Now to install Felix:
 <pre>
 make install           # sudo password required
-sudo make install-bin  # sudo password required
+make install-bin       # sudo password required
 mk_daemon /usr/local/bin/webserver --port=1116
 # point your browser at http://localhost:1116
 </pre>
-Felix should now be installed in <pre>/usr/local/felix/felix-1.1.6rc4</pre>
+Felix should now be installed in <pre>/usr/local/lib/felix/felix-1.1.6rc4</pre>
 the core binaries in <pre>/usr/local/bin</pre> and the webserver should
 be running on port 1116 (clearly, change details depending on version!).
 </p>
@@ -45,7 +45,7 @@ be running on port 1116 (clearly, change details depending on version!).
 All versions of Felix are installed concurrently. If you're finished
 using a version you should delete the installation directory.
 The binaries in <pre>/usr/local/bin</pre> are copies of those
-in the last install directory
+in the last install directory.
 </p>
 
 <h2>Updating Felix</h2>
@@ -88,6 +88,7 @@ the Felix mailing list.</p>
 <h2>Mailing Lists</h2>
 <pre>
 mailto:felix-language@googlegroups.com # registration required
+mailto:felix-language@lists.sourceforge.net # registration required
 </pre>
 </p>
 

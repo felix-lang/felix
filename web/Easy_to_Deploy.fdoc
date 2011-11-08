@@ -1,9 +1,0 @@
-Just type up your program:
-@felix
-println "Hello World";
-@
-and run it:
-<pre>
-flx hello
-</pre>
-

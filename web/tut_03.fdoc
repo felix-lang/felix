@@ -1,0 +1,21 @@
+@h1 Floating Point 
+@h2 Reals
+Felix provides 3 floating point types.
+<pre>
+  Felix name     C++ name
+  float          float
+  double         double
+  ldouble       long double
+</pre>
+
+@h3 Floating Point Complex
+Felix provides 3 floating point types.
+<pre>
+  Felix name    C++ name
+  fcomplex      std::complex&lt;float&gt;
+  dcomplex      std::complex&lt;double&gt;
+  lcomplex      std::complex&lt;long double&gt;
+</pre>
+
+<a href="tut_04.fdoc">Next</a>
+

@@ -1,3 +1,0 @@
-var x = 1.0,2.0,2.5,3.0;
-var y = map (fun (x:double)=> x * x) x;
-println$ "The squares of " + str x " are" + str y;
