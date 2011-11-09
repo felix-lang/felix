@@ -73,7 +73,7 @@ val nav = '<p><button type="button" onclick="expand_all()">Expand</button>'
 
 // bid is the button id, cid is the stuff which is controlled by it
 fun tree_button(bid:string, cid:string)=>
-  "<img src='/web/images/plus.gif' id='"+bid+"' onclick='toggle(this,\""+cid+"\")' alt='+'/>"
+  "<img src='/web/images/minus.gif' id='"+bid+"' onclick='toggle(this,\""+cid+"\")' alt='+'/>"
 ;
 val timeout = Filename::join (Config::FLX_INSTALL_DIR, "bin", "timeout"+Config::EXT_EXE);
 
@@ -96,13 +96,15 @@ fun xlat_fdoc(t:string)=
     | cmd // processing command
     | doc // processing document
     | felix // processing felix code
-    | cpp // processing felix code
+    | cpp // processing C/C++ code
+    | pre // processing pre-formatted code
     | flx_and_expect // processing felix code and expect file
   ;
   fun str(s:state_t) => match s with
   | doc => "doc"
   | felix => "felix"
   | cpp => "c++"
+  | pre => "preforma"
   | flx_and_expect => "flx-and-expect"
   | cmd => "cmd"
   endmatch;
@@ -152,7 +154,7 @@ fun xlat_fdoc(t:string)=
     all_buttons =if all_buttons != "" then all_buttons+',\n' else '' endif + '"' + txt + '"';
     tb:=tree_button(txt,txt+"_d");
     ++hstack;
-    write_string("<h"+str n+">"+tb+" "+hnum()+" "+ txt+"</h"+str n+"><div id='"+txt+"_d' style='display:none'>\n"); 
+    write_string("<h"+str n+">"+tb+" "+hnum()+" "+ txt+"</h"+str n+"><div id='"+txt+"_d' style='display:block'>\n"); 
     s=doc;
   }
  
@@ -172,6 +174,22 @@ nextc:>
       done
       goto nextc;
     }
+  | pre =>
+    { 
+      if char "@" == ch do 
+        if b != "" do 
+          sp; 
+          write_string("<pre>"); 
+          write_string(markdown b); 
+          write_string("</pre>"); 
+          ep;
+        done
+        s = cmd; b="";
+      else cp; 
+      done
+      goto nextc;
+    }
+
   | cpp =>
     { 
       if char "@" == ch do 
@@ -245,6 +263,7 @@ nextc:>
             write_string("</pre>"); 
           };
           s=doc;
+        elif b=="pre" do s = pre; 
         elif b=="obsolete" do ep; pstate=true; write_string("<p class='obsolete'> <em>Obsolete</em> "); s=doc;
         elif b=="caveat" do ep; pstate=true; write_string("<p class='caveat'> <em>Caveat: </em> "); s=doc;
         elif b=="impl" do ep; pstate=true; write_string("<p class='implementation_detail'> <em>Implementation Detail: </em>"); s=doc;

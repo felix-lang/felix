@@ -11,7 +11,7 @@ The table also lists the lower case versions of the type suffices allowed
 for literals of that type. Either or both the unsigned designator 'u'
 or the other part may be upper case instead (however lL is not permitted
 for long long, both letters must be either lower or upper case).
-<pre>
+@pre
   Felix name  C name              Suffix
   -------------------------------------------------
   tiny        signed char         t
@@ -24,7 +24,7 @@ for long long, both letters must be either lower or upper case).
   ulong       unsigned long int   lu, ul
   vlong       signed long long    ll, v
   uvlong      unsigned long long  ull, llu, uv, vu
-</pre>
+@
 
 The following aliases for exact integers are also provided:
 

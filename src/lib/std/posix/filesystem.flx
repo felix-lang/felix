@@ -10,7 +10,10 @@ module FileSystem
      return x.tv_sec * 1000L + x.tv_nsec /1000L; // milliseconds
     }
   """;
+  pod type time_t = "time_t";
   fun mtime: &stat_t -> uvlong = "(unsigned long)($1->st_mtime * 1000ul)";
+
+  // get access and modification time of a file
   fun filetime(f:string):uvlong = // milliseconds
   {
     var b: stat_t;
@@ -19,6 +22,25 @@ module FileSystem
     return if err == 0 then mtime (&b) else uvlong 0 endif;
   }
   fun fileexists(f:string):bool=> filetime f != uvlong 0;
+
+  // set access and modification time of a file
+  proc utime: string * uvlong * uvlong * &int = 
+  """
+    {
+    utimbuf u; 
+    u.actime=(time_t)$2/1000;
+    u.modtime=(time_t)$3/1000;
+    *$4 = utime($1.c_str(),&u)";
+    }
+  """
+  requires Posix_headers::utime_h;
+
+  gen utime(f:string, a:uvlong, m:uvlong): bool = {
+    var r:int;
+    utime(f,a,m,&r);
+    return r == 0;
+  }
+  gen utime(f:string, t:uvlong) => utime(f,t,t);
 
   ctypes mode_t requires Posix_headers::sys_stat_h;
   // file types
