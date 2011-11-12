@@ -180,7 +180,7 @@ nextc:>
         if b != "" do 
           sp; 
           write_string("<pre>"); 
-          write_string(markdown b); 
+          write_string(txt2html b); 
           write_string("</pre>"); 
           ep;
         done
