@@ -1,0 +1,8 @@
+@h1 Strings
+Felix provides 3 kinds of strings: {string}, {wstring} and {ustring}.
+The most commonly used string is {string}, it is an 8 bit clean string
+implement by the C++ {::std::basic_string&lt;char&gt;}.
+
+The {ustring} type is based on ISO10646/Unicode character set encoded using
+{UTF-8}.
+
