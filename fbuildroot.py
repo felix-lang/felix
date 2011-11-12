@@ -506,7 +506,7 @@ def doc(ctx):
     ctx.logger.log('building documentation', color='cyan')
 
     # copy website index
-    buildsystem.copy_to(ctx, ctx.buildroot, ['index.html'])
+    buildsystem.copy_to(ctx, ctx.buildroot, ['index.html','index2.html'])
 
     # copy website
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'web')

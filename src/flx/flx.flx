@@ -199,6 +199,7 @@ proc backup() {
      "doc/.*\\.(fdoc|html)",
      "web/.*\\.(fdoc|html|gif|png|jpg)",
      "index.html",
+     "index2.html",
      "automaton.syntax",
      "VERSION"
     );
