@@ -344,13 +344,55 @@ let tcinst_chk syms bsym_table allow_fail i ts sr (inst_vs, inst_constraint, ins
      let vset = fold_left (fun acc (_,i) -> IntSet.add i acc) IntSet.empty inst_vs' in
      *)
      let eqns = combine (list_prefix ts (length inst_ts)) inst_ts' in
-     (*
+(*
      print_endline ("Solving equations\n " ^
        catmap "\n" (fun (a,b) -> sbt bsym_table a ^ " = " ^ sbt bsym_table b ) eqns
      );
+*)
+     (* Well, this is a hack, but it may help solve equations containing
+      lambdas and type matches which unification can't handle
      *)
+     let assigns, rest = fold_left 
+        (fun (assigns,rest) (l,r) -> 
+         match l,r with
+         | BTYP_type_var (x,BTYP_type 0), other
+         | other, BTYP_type_var (x,BTYP_type 0) -> (x,other) :: assigns, rest
+
+         | _ -> assigns, (l,r) :: rest
+        )
+        ([],[]) 
+        eqns 
+     in
+(*
+     print_endline ("Now Solving equations\n " ^
+       catmap "\n" (fun (a,b) -> sbt bsym_table a ^ " = " ^ sbt bsym_table b ) rest 
+     );
+     print_endline ("With assignments \n " ^
+       catmap "\n" (fun (a,b) -> si a ^ " = " ^ sbt bsym_table b ) assigns
+     );
+*)
+     let eqns = map (fun (l,r) -> Flx_unify.list_subst syms.counter assigns l, Flx_unify.list_subst syms.counter assigns r) rest in
+(*
+     print_endline ("After quick subst: Solving equations\n " ^
+       catmap "\n" (fun (a,b) -> sbt bsym_table a ^ " = " ^ sbt bsym_table b ) eqns
+     );
+*)
+     let eqns = map 
+       (fun (l,r) -> 
+         beta_reduce syms.counter bsym_table sr l,
+         beta_reduce syms.counter bsym_table sr r
+       ) 
+       eqns
+     in
+(*
+     print_endline ("After beta reduction: Solving equations\n " ^
+       catmap "\n" (fun (a,b) -> sbt bsym_table a ^ " = " ^ sbt bsym_table b ) eqns
+     );
+
+*)
+     let assignments = map (fun (i,t) -> btyp_type_var (i,btyp_type 0),t) assigns in
      let mgu =
-       try Some (unification syms.counter eqns vset)
+       try Some (unification syms.counter (assignments @ eqns) vset)
        with Not_found -> None
      in
      begin match mgu with
@@ -403,10 +445,24 @@ let tcinst_chk syms bsym_table allow_fail i ts sr (inst_vs, inst_constraint, ins
 
 
 let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
+  let id = Flx_bsym.id (Flx_bsym_table.find bsym_table i) in
   let entries =
     try Hashtbl.find syms.typeclass_to_instance i
     with Not_found -> (* print_endline ("Symbol " ^ si i ^ " Not instantiated?"); *) []
   in
+(*
+  if List.length entries > 0 then begin 
+    print_endline ("Attempt to fixup virtual function " ^ id ^ "<" ^ si i ^ ">" ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]");
+    print_endline ("Found " ^ si (List.length entries) ^ " candidates:");
+    List.iter
+      (fun (bvs, ret, args, ix) -> print_endline (
+        Flx_print.string_of_bvs bvs ^ 
+        (catmap "*" (sbt bsym_table) args) ^ "->" ^ sbt bsym_table ret) 
+      )
+    entries
+  end
+  ;
+*)
   let sr = try Flx_bsym_table.find_sr bsym_table i with Not_found ->
     failwith ("fixup_typeclass_instance': Can't find <" ^ string_of_bid i ^ ">")
   in
@@ -427,12 +483,12 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
     if not (Flx_bsym_table.mem bsym_table i) then
       failwith ("Woops can't find virtual function index "  ^ string_of_bid i);
 
-    (*
     print_endline
-    ("Unimplemented: Multiple matching instances for typeclass virtual instance\n"
+    ("Multiple matching instances for typeclass virtual instance\n"
      ^id^"<"^ si i^">["^ catmap "," (sbt bsym_table) ts ^"]"
     )
     ;
+    (*
     iter
     (fun ((j,ts),(inst_vs,con,inst_ts,k)) ->
        let id,parent,sr,entry =
@@ -450,9 +506,7 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
     let candidates = fold_left
     (fun oc (((j,ts),(inst_vs,con,inst_ts,k)) as r) ->
        let c = btyp_type_tuple inst_ts in
-       (*
        print_endline ("Considering candidate sig " ^ sbt bsym_table c);
-       *)
        let rec aux lhs rhs =
          match rhs with
          | [] ->

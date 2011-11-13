@@ -116,7 +116,7 @@ val varmap_subst:
   (bid_t, Flx_btype.t) Hashtbl.t ->
   Flx_btype.t ->
   Flx_btype.t
-
+  
 (** check for variables *)
 val var_occurs:
   Flx_btype.t ->

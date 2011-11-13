@@ -1189,7 +1189,14 @@ and gen_apply_prim
             clierr2 sr (Flx_bsym.sr bsym) ("Instantiate virtual function(2) " ^
               Flx_bsym.id bsym ^ "<" ^
               string_of_bid index ^ ">, no instance for ts="^
-              catmap "," (sbt bsym_table) ts)
+              catmap "," (sbt bsym_table) ts ^ "\n" ^
+              "Instances are " ^ 
+              catmap "\n" 
+                (fun (bvs, ret, args, ix) -> 
+                  Flx_print.string_of_bvs bvs ^ 
+                 (catmap "*" (sbt bsym_table) args) ^ "->" ^ sbt bsym_table ret
+                ) 
+                entries)
           end;
 
           let bsym =
