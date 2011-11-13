@@ -23,15 +23,8 @@ typedef floats = typesetof (float, double, ldouble);
 typedef reals = ints || floats;
 
 typedef complexes = typesetof (fcomplex,dcomplex,lcomplex);
-typedef complex[t in floats] = typematch t with
-  | float => fcomplex
-  | double => dcomplex
-  | ldouble => lcomplex
-  endmatch
-;
-// typedef imaginaries = typesetof (imaginary, dimaginary, limaginary);
 
-typedef numbers = reals || /* imaginaries || */ complexes;
+typedef numbers = reals || complexes;
 
 typedef basic_types = bool || numbers || chars || addressing;
 

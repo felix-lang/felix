@@ -1,4 +1,8 @@
 // note: has to be called Fcomplex to avoid clash with typeclass Complex
+
+// Note: ideally we'd use constrained polymorphism for the instances..
+// saves typing it all out so many times
+
 open module Fcomplex
 {
   ctor[t in reals] fcomplex : t * t = "::std::complex<float>($1,$2)";
@@ -7,6 +11,7 @@ open module Fcomplex
   instance Str[fcomplex] {
     fun str (z:fcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
+/*
   instance Complex[fcomplex,float] {
     fun real : fcomplex -> float = "real($1)";
     fun imag : fcomplex -> float = "imag($1)";
@@ -28,6 +33,7 @@ open module Fcomplex
     fun zero(): fcomplex => fcomplex 0.0;
     fun one(): fcomplex => fcomplex 1.0;
   }
+*/
 }
 
 open module Dcomplex
@@ -38,6 +44,7 @@ open module Dcomplex
   instance Str[dcomplex] {
     fun str (z:dcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
+/*
   instance Complex[dcomplex,double] {
     fun real : dcomplex -> double = "real($1)";
     fun imag : dcomplex -> double = "imag($1)";
@@ -59,6 +66,7 @@ open module Dcomplex
     fun zero(): dcomplex => dcomplex 0.0;
     fun one(): dcomplex => dcomplex 1.0;
   }
+*/
 }
 
 open module Lcomplex
@@ -69,6 +77,7 @@ open module Lcomplex
   instance Str[lcomplex] {
     fun str (z:lcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
+/*
   instance Complex[lcomplex,ldouble] {
     fun real : lcomplex -> ldouble = "real($1)";
     fun imag : lcomplex -> ldouble = "imag($1)";
@@ -90,7 +99,29 @@ open module Lcomplex
     fun zero(): lcomplex => lcomplex 0.0;
     fun one(): lcomplex => lcomplex 1.0;
   }
+*/
 }
+  instance[t in floats] Complex[complex[t],t] {
+    fun real : complex[t] -> t = "real($1)";
+    fun imag : complex[t] -> t = "imag($1)";
+    fun abs: complex[t] -> t = "abs($1)";
+    fun arg : complex[t] -> t = "arg($1)";
+    fun neg: complex[t] -> complex[t] = "-$1";
+    fun add : complex[t] * complex[t] -> complex[t] = "$1+$2";
+    fun sub: complex[t] * complex[t] -> complex[t] = "$1-$2";
+    fun mul: complex[t] * complex[t] -> complex[t] = "$1*$2";
+    fun div: complex[t] * complex[t] -> complex[t] = "$1/$2";
+    fun add : complex[t] * t -> complex[t] = "$1+$2";
+    fun sub: complex[t] * t -> complex[t] = "$1-$2";
+    fun mul: complex[t] * t -> complex[t] = "$1*$2";
+    fun div: complex[t] * t -> complex[t] = "$1/$2";
+    fun add : t * complex[t] -> complex[t] = "$1+$2";
+    fun sub: t * complex[t] -> complex[t] = "$1-$2";
+    fun mul: t * complex[t] -> complex[t] = "$1*$2";
+    fun div: t * complex[t] -> complex[t] = "$1/$2";
+    fun zero: 1 -> complex[t] = "::std::complex<?1>(0.0)";
+    fun one: 1 -> complex[t] = "::std::complex<?1>(1.0)";
+  }
 
 instance[t in (floats || complexes)] Trig[t] {
   requires Cxx_headers::cmath;
@@ -125,6 +156,25 @@ typeclass CartComplex[r] {
   typedef t = complex[r];
   inherit Complex[t,r];
 }
+
+typedef complex[t in floats] = typematch t with
+  | float => fcomplex
+  | double => dcomplex
+  | ldouble => lcomplex
+  endmatch
+;
+
+ctor complex[float] (x:float, y:float) => fcomplex(x,y);
+ctor complex[double] (x:double, y:double) => dcomplex(x,y);
+ctor complex[ldouble] (x:ldouble, y:ldouble) => lcomplex(x,y);
+
+ctor complex[float] (x:float) => fcomplex(x,0.0f);
+ctor complex[double] (x:double) => dcomplex(x,0.0);
+ctor complex[ldouble] (x:ldouble) => lcomplex(x,0.0l);
+
+typedef polar[t in floats] = complex[t];
+ctor[t in floats] polar[t] : t * t = "::std::polar($1,$2)";
+
 
 instance[r in floats] CartComplex[r] {}
 

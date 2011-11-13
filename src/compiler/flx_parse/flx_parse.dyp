@@ -379,20 +379,19 @@ let suffix =
 let int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix
 
 /* floats: Follows ISO C89, except that we allow underscores
-   AND we do not allow .5, a leading digit is required!
-   This is so x.0 works for tuple projections.
+   AND we require both leading and trailing digits so 
+   x.0 works for tuple projections and 0.f is a function
+   application
 */
 let decimal_string = digit (underscore? digit) *
 let hexadecimal_string = hexdigit (underscore? hexdigit) *
 
 let decimal_fractional_constant =
-  decimal_string '.' decimal_string?
-  /* | '.' decimal_string */
+  decimal_string '.' decimal_string
 
 let hexadecimal_fractional_constant =
   ("0x" |"0X")
-  (hexadecimal_string '.' hexadecimal_string?
-  | '.' hexadecimal_string) /* leading . allowed here because of prefix */
+  hexadecimal_string '.' hexadecimal_string
 
 let decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string
 let binary_exponent = ('P'|'p') ('+'|'-')? decimal_string

@@ -7,7 +7,7 @@ import buildsystem
 # ------------------------------------------------------------------------------
 
 def build(phase):
-    path = Path('tools')
+    path = Path('src/tools')
     dst = phase.ctx.buildroot / 'bin/mk_daemon'
     src = path / 'mk_daemon.c'
     includes = ['src/tools']

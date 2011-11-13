@@ -21,7 +21,7 @@ It's a pretty boring program, so lets try an improvement:
 @felix
 println$ "Hello " + Env::getenv "USER";
 @
-The {getenv} command can't fail, it will just return an empty string
+The {getenv} function can't fail, it will just return an empty string
 of the environment variable is not set. The infix operator {+} you
 see is string concatenation.
 

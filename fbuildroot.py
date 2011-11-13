@@ -441,7 +441,7 @@ def build(ctx):
         pattern='*.{flx,flxh,files}')
 
     # copy tools
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tools',
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/tools',
         pattern='*.flx{,h}')
 
     for module in (
@@ -523,10 +523,6 @@ def doc(ctx):
     # copy the entire tut examples directory so the user can browse it
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tut',
         pattern='*.{flx,expect}')
-
-    # copy the tools
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'tools',
-        pattern="*.{c,flx}")
 
     # copy docs
     buildsystem.copy_to(ctx,
@@ -648,10 +644,10 @@ def install_bin(ctx):
 
     (ctx.buildroot / 'bin/flx').copy(ctx.options.bindir)
     (ctx.buildroot / 'bin/flx_ls').copy(ctx.options.bindir)
+    (ctx.buildroot / 'bin/flx_cp').copy(ctx.options.bindir)
     (ctx.buildroot / 'bin/mk_daemon').copy(ctx.options.bindir)
     (ctx.buildroot / 'bin/timeout').copy(ctx.options.bindir)
     (ctx.buildroot / 'bin/webserver').copy(ctx.options.bindir)
-    (ctx.buildroot / 'tools/flx_ls').copy(ctx.options.bindir)
 
 # ------------------------------------------------------------------------------
 

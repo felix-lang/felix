@@ -15,10 +15,6 @@ open Eq[ustring];
 
 open module String
 {
-  open Bool;
-  open Char;
-  open Int;
-
   proc pluseq: &string * string = "$1->append($2);";
   proc pluseq: &string * &char = "$1->append($2);";
   proc pluseq: &string * char = "*$1 += $2;";
@@ -356,9 +352,6 @@ instance Repr[string] {
 
 open module Ustring
 {
-  open Bool;
-  open Char;
-  open Int;
   fun _ctor_uchar (x:ustring) => x.[0];
   proc pluseq: ustring * ustring = "$1.append($2);";
 
@@ -377,9 +370,6 @@ open module Ustring
     "::flx::rtl::strutil::substr($1,0,$2)" requires package "flx_strutil";
   fun substring: ustring * int * int -> ustring =
     "::flx::rtl::strutil::substr($1,$2,$3)" requires package "flx_strutil";
-
-  // comparisons
-  //gen_cmp ustring;
 
   proc fprint: ostream * ustring = "*$1<<$2;" requires Cxx_headers::iostream;
 }
