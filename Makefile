@@ -17,20 +17,14 @@ dist:
 
 install:
 	sudo build/release/bin/flx --test=build/release --install 
-	echo Stop web servers now, then do make install-bin
 
 install-bin:
-	echo Make sure you have stopped webservers before doing this!
 	sudo build/release/bin/flx --test=build/release --install-bin
-	echo Restart webservers now
 
-websites-linux:
-	mk_daemon /usr/local/bin/webserver --port=1116
-	sudo mk_daemon /usr/bin/privbind -u felixweb /usr/local/bin/webserver --port=80 --root=/usr/local/lib/felix/felix-latest/web
-
-websites-osx:
-	mk_daemon /usr/local/bin/webserver --port=1116
-	mk_daemon /usr/local/bin/webserver --port=80 --root=`flx --where`/web
+install-felix-lang.org:
+	stop felixweb
+	sudo build/release/bin/flx --test=build/release --install-bin
+	start felixweb
 
 release:
 	git tag v`flx --version`

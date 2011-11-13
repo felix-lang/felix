@@ -11,7 +11,6 @@ open module Fcomplex
   instance Str[fcomplex] {
     fun str (z:fcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
-/*
   instance Complex[fcomplex,float] {
     fun real : fcomplex -> float = "real($1)";
     fun imag : fcomplex -> float = "imag($1)";
@@ -33,7 +32,6 @@ open module Fcomplex
     fun zero(): fcomplex => fcomplex 0.0;
     fun one(): fcomplex => fcomplex 1.0;
   }
-*/
 }
 
 open module Dcomplex
@@ -44,7 +42,6 @@ open module Dcomplex
   instance Str[dcomplex] {
     fun str (z:dcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
-/*
   instance Complex[dcomplex,double] {
     fun real : dcomplex -> double = "real($1)";
     fun imag : dcomplex -> double = "imag($1)";
@@ -66,7 +63,6 @@ open module Dcomplex
     fun zero(): dcomplex => dcomplex 0.0;
     fun one(): dcomplex => dcomplex 1.0;
   }
-*/
 }
 
 open module Lcomplex
@@ -77,7 +73,6 @@ open module Lcomplex
   instance Str[lcomplex] {
     fun str (z:lcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
-/*
   instance Complex[lcomplex,ldouble] {
     fun real : lcomplex -> ldouble = "real($1)";
     fun imag : lcomplex -> ldouble = "imag($1)";
@@ -99,8 +94,8 @@ open module Lcomplex
     fun zero(): lcomplex => lcomplex 0.0;
     fun one(): lcomplex => lcomplex 1.0;
   }
-*/
 }
+/*
   instance[t in floats] Complex[complex[t],t] {
     fun real : complex[t] -> t = "real($1)";
     fun imag : complex[t] -> t = "imag($1)";
@@ -122,7 +117,7 @@ open module Lcomplex
     fun zero: 1 -> complex[t] = "::std::complex<?1>(0.0)";
     fun one: 1 -> complex[t] = "::std::complex<?1>(1.0)";
   }
-
+*/
 instance[t in (floats || complexes)] Trig[t] {
   requires Cxx_headers::cmath;
   fun sin: t -> t = "::std::sin($1)";
