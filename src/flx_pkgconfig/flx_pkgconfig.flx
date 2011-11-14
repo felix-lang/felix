@@ -74,7 +74,7 @@ fun lexstr(s':string): list[string] =
   val finish = end_iterator s;
   var current = first;
   var words = Empty[string];
-  while { current != finish } {
+  while current != finish do 
     match lexit(current,finish) with
     | ?next,?lexeme =>
       {
@@ -82,7 +82,7 @@ fun lexstr(s':string): list[string] =
         if lexeme != "" do words = Cons(lexeme,words); done;
       }
     endmatch;
-  };
+  done
   //println$ "Words='" + str(rev words)+"'";
   return rev words;
 }

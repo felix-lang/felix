@@ -12,7 +12,7 @@ fun subst(s:string, v:varray[StringPiece]): string =
    var j = 0;
    var i:int; 
    var count = 0;
-   forall i in 0 upto len s - 1 do
+   for i in 0 upto len s - 1 do
      match mode with
      | cp => 
        if s.[i] == char "\\" do 
@@ -116,7 +116,7 @@ fun subst(s:string, v:varray[StringPiece]): string =
     // check record for dst clobbering src
     *buffer=char 0;
     JudySLFirst(sd,buffer,&je,&pv);
-    whilst not isNULL pv do
+    while not isNULL pv do
       var cp = C_hack::cast[&string] (*pv);
       //println$ "Recorded copy " + string buffer + " -> " + *cp;
 
@@ -135,7 +135,7 @@ fun subst(s:string, v:varray[StringPiece]): string =
     /*
     *buffer=char 0;
     JudySLFirst(ds,buffer,&je,&pv);
-    whilst not isNULL pv do
+    while not isNULL pv do
       cp = C_hack::cast[&string] (*pv);
       println$ "Recorded copy " + string buffer + " <- " + *cp;
       JudySLNext(ds,buffer,&je,&pv);
@@ -145,7 +145,7 @@ fun subst(s:string, v:varray[StringPiece]): string =
     // list all target directories
     *buffer = char 0;
     JudySLFirst(dirs,buffer,&je,&pv);
-    whilst not isNULL pv do
+    while not isNULL pv do
       dir := string buffer;
       //println$ "Directory " + dir;
       if live do
@@ -159,7 +159,7 @@ fun subst(s:string, v:varray[StringPiece]): string =
 
       *buffer=char 0;
       JudySLFirst(sd,buffer,&je,&pv);
-      whilst not isNULL pv do
+      while not isNULL pv do
         cp = C_hack::cast[&string] (*pv);
         if verbose do print$ "cp " + string buffer + "  " + *cp; done
         if live do
