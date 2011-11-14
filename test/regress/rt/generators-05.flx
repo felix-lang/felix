@@ -35,7 +35,7 @@ fun accumulate(it: 1-> int):int=
 {
   var x = 0;
   var v = it();
-  whilst v != -1 do
+  while v != -1 do
     x += v;
     v = it();
   done;
@@ -50,14 +50,14 @@ gen visitor(x:tree) () : int =
         print "visiting node: left\n";
         var it = visitor(aa);
         var v = it();
-        whilst v != -1 do
+        while v != -1 do
           yield v;
           v = it();
         done;
         print "visiting node: right\n";
         it = visitor(bb);
         v = it();
-        whilst v != -1 do
+        while v != -1 do
           yield v;
           v = it();
         done;

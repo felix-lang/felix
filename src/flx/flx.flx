@@ -451,7 +451,7 @@ var result = 0;
 var argno=1;
 var grab=1;
 var arg = "";
-whilst grab == 1 and argno<System::argc do
+while grab == 1 and argno<System::argc do
   arg = System::argv argno;
   debugln$ "ARGNO="+str(argno)+", arg='"+arg+"'";
   var path,ext = splitext(arg);
@@ -638,7 +638,7 @@ debugln$ "cpps="+cpps;
 debugln$ "cppos="+cppos;
 
 var USER_ARGS = ""; 
-whilst argno < System::argc do 
+while argno < System::argc do 
   USER_ARGS+=" " + Bash::quote (System::argv argno); ++argno; 
 done
 debugln$ "USER_ARGS=" + USER_ARGS;

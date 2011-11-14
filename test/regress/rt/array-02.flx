@@ -10,7 +10,7 @@ println$ "len aa= " + aa.len.str;
 println$ "len va= " + va.len.str;
 println$ "len da= " + (len da).str;
 
-var i:int; forall i in 0 upto 9 do
+var i:int; for i in 0 upto 9 do
 //  set(ca,i,i); println$ i," ",get(ca,i);
   set(&aa,i,i); println$ i,get(aa,i);
   set(va,i,i); println$ i,get(va,i);

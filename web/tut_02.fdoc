@@ -300,5 +300,3 @@ Felix supports the following procedures on integers:
 Note that the first argument of the procedure is a pointer to the store to
 be modified.
 
-<a href="tut_03.fdoc">Next</a>
-

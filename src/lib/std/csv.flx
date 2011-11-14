@@ -10,7 +10,7 @@ module Csv {
     fun eq(a:state_t, b:state_t)=> caseno a == caseno b;
 
     var state = skip;
-    var j:int; ech:forall j in *i upto n-1 do
+    var j:int; ech:for j in *i upto n-1 do
       ch := s.[j];
       if ch == char "," do 
         match state with 
@@ -41,7 +41,7 @@ module Csv {
     var res = "";
     var pos = 0;
     n := len s;
-    whilst pos < n do
+    while pos < n do
       get_csv_value (inp, &pos, &res);
       if len res >0 do v += res; done;
     done;

@@ -62,7 +62,7 @@ open module Sarray
     var i = 0ul;         // slot index for new array
     var slot : &word;
     JudyLFirst(r.j, &index, &e, &slot);
-    whilst not isNULL slot do
+    while not isNULL slot do
       push_back (x, r.a.[(*slot).ulong]);
       slot <- i.word; ++i;
       JudyLNext(r.j, &index, &e, &slot);

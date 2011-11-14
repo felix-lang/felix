@@ -65,8 +65,8 @@ fun xlat_cpp(t:string, dir:string)=
   proc ws() {
     if last_id == "include" do // hackery
       var n = b; 
-      whilst n.[0] == char '<' or n.[0] == char '"' do n = n.[1 to]; done
-      whilst n.[-1] == char '>' or n.[-1] == char '"' do n = n.[to -1]; done
+      while n.[0] == char '<' or n.[0] == char '"' do n = n.[1 to]; done
+      while n.[-1] == char '>' or n.[-1] == char '"' do n = n.[to -1]; done
       var x = b;
       if x.[0] == char "<" do x = "&lt;" + x.[1 to]; done
       if x.[-1] == char ">" do x = x.[to -1] + "&gt;"; done

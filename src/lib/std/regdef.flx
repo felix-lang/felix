@@ -36,7 +36,7 @@ module Regdef {
 
   private fun hex(s:string)= {
     var r = ""; var i:int;
-    forall i in 0 upto len s - 1 do
+    for i in 0 upto len s - 1 do
       r += charset_quote s.[i];
     done
     return r; 

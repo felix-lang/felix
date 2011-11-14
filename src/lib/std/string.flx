@@ -59,7 +59,7 @@ open module String
   proc store: string * int * char = "$1[$2] = $3;";
 
   fun map (f:char->char) (var x:string): string = {
-    var i:int; forall i in 0 upto (len x) - 1 do
+    var i:int; for i in 0 upto (len x) - 1 do
       // FIXME: The statement below currently doesn't compile correctly.
       //x.[i] = _f x.[i];
 
@@ -169,7 +169,7 @@ open module String
       return false;
     done;
 
-    var i: int; forall i in 0 upto (len e) - 1 do
+    var i: int; for i in 0 upto (len e) - 1 do
       if e.[i] != x.[i] do
         return false;
       done;
@@ -187,7 +187,7 @@ open module String
       return false;
     done;
 
-    var i: int; forall i in 0 upto (len_e) - 1 do
+    var i: int; for i in 0 upto (len_e) - 1 do
       if e.[len_e - i - 1] != x.[len_x - i - 1] do
         return false;
       done;
@@ -221,9 +221,9 @@ open module String
   // strip whitespace
   fun lstrip (x:string, e:string) : string =
   {
-    var i: int; forall i in 0 upto (len x) - 1 do
+    var i: int; for i in 0 upto (len x) - 1 do
       var found = false;
-      var j: int; forall j in 0 upto (len e) - 1 do
+      var j: int; for j in 0 upto (len e) - 1 do
         if x.[i] == e.[j] do
           found = true;
         done;
@@ -239,9 +239,9 @@ open module String
 
   fun rstrip (x:string, e:string) : string =
   {
-    var i: int; forall i in (len x) - 1 downto 0 do
+    var i: int; for i in (len x) - 1 downto 0 do
       var found = false;
-      var j: int; forall j in 0 upto (len e) - 1 do
+      var j: int; for j in 0 upto (len e) - 1 do
         if x.[i] == e.[j] do
           found = true;
         done;
@@ -343,7 +343,7 @@ instance Str[&uchar] {
 instance Repr[string] {
   fun repr (x:string) : string = {
     var o = "'";
-    var i: int; forall i in 0 upto (String::len x) - 1 do
+    var i: int; for i in 0 upto (String::len x) - 1 do
       o += repr x.[i];
     done;
     return o + "'";

@@ -34,8 +34,8 @@ fun xlat_fpc(t:string, dir:string)=
   }
   proc handle_include(s:string) {
     var n = s;
-    whilst n.[0] in (char '"', char '<', char "'") do n=n.[1 to]; done
-    whilst n.[-1] in (char '"',char '>',char "'") do n=n.[to -1]; done
+    while n.[0] in (char '"', char '<', char "'") do n=n.[1 to]; done
+    while n.[-1] in (char '"',char '>',char "'") do n=n.[to -1]; done
     match get_file(n,C_PATH) with
     | Some ?path => { out += '<a href="/$' + path + '?cpp">' + s + '</a> '; }
     | None => { out += s + " "; }

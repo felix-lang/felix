@@ -158,7 +158,7 @@ module FileSystem
     var bread = bsiz;
     var buffer = C_hack::cast[&char] (C_hack::malloc(bsiz)); // 4 MEG
     bread = read (fsrc, buffer, bsiz);
-    whilst bread > size 0 do
+    while bread > size 0 do
       var bwrite = write (fdst,buffer,bread);
       bread = read (fsrc, buffer, bsiz);
     done

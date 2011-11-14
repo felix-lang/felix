@@ -22,7 +22,7 @@ open module Varray
     var o = varray[t] size;
     var i : ulong;
 
-    if size > 0ul do forall i in 0ul upto size - 1ul do
+    if size > 0ul do for i in 0ul upto size - 1ul do
       _init(&o.[i], default);
     done done
     set_used (o,size);
@@ -36,7 +36,7 @@ open module Varray
 //println$ "Constructed varray of 0 used elements size " size.str;
     var i : ulong;
 
-    if used > 0ul do forall i in 0ul upto used - 1ul do
+    if used > 0ul do for i in 0ul upto used - 1ul do
       _init(&o.[i], f i);
     done done
     set_used (o,used);
@@ -120,7 +120,7 @@ open module Varray
   proc iter[T] (_f:T->void) (x:varray[T]) {
     var i : ulong;
 
-    if len(x) > 0ul do forall i in 0ul upto len(x) - 1ul do
+    if len(x) > 0ul do for i in 0ul upto len(x) - 1ul do
       _f x.[i];
     done done
   }
@@ -129,7 +129,7 @@ open module Varray
     var o = varray[U]$ len(x);
     var i : ulong;
 
-    if len x > 0ul do forall i in 0ul upto len(x) - 1ul do
+    if len x > 0ul do for i in 0ul upto len(x) - 1ul do
       o.[i] = _f x.[i];
     done done
 
@@ -141,7 +141,7 @@ open module Varray
     var o = init;
     var i : ulong;
 
-    if len x > 0ul do forall i in 0ul upto len(x) - 1ul do
+    if len x > 0ul do for i in 0ul upto len(x) - 1ul do
       o = _f o x.[i];
     done done
 
@@ -152,7 +152,7 @@ open module Varray
     var o = init;
     var i : ulong;
 
-    if len x > 0ul do forall i in len(x) - 1ul downto 0ul do
+    if len x > 0ul do for i in len(x) - 1ul downto 0ul do
       o = _f x.[i] o;
     done done
 
@@ -203,7 +203,7 @@ instance[T with Show[T]] Str[Varray::varray[T]] {
     if Varray::len xs > 0ul do
       o += repr xs.[0];
 
-      forall i in 1ul upto Varray::len xs - 1ul do
+      for i in 1ul upto Varray::len xs - 1ul do
         o += ', ' + repr xs.[i];
       done
     done
@@ -214,7 +214,7 @@ instance[T with Show[T]] Str[Varray::varray[T]] {
 
 instance[T with Eq[T]] Set[varray[T],T] {
  fun mem(x:T, a:varray[T]) : bool = {
-   var i:ulong; forall i in 0ul upto len a -1ul do
+   var i:ulong; for i in 0ul upto len a -1ul do
      if a.[i] == x do return true; done
    done
    return false;

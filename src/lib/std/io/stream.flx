@@ -164,7 +164,7 @@ module Stream {
     var len: int;
 
     // if we finish input, stop. if output eofs, don't keep hammering on it!
-    whilst not reof and not weof do
+    while not reof and not weof do
       len = bufsize;
       read (istream, &len, buf, &reof);
       write(ostream, &len, buf, &weof);
@@ -213,7 +213,7 @@ module Stream {
     var terminated = false;
     var cmp = 0;
 
-    whilst cmp == 0 and not terminated do
+    while cmp == 0 and not terminated do
       len1 = bufsize; read(stream1, &len1, buf1, &eof1);
       len2 = bufsize; read(stream2, &len2, buf2, &eof2);
 
@@ -283,7 +283,7 @@ module Stream {
     var buf = C_hack::malloc(BUFSIZE);
 
     // don't hammer!
-    whilst not reof and not weof1 and not weof2 do
+    while not reof and not weof1 and not weof2 do
       len = BUFSIZE;
       read  (istream,  &len, buf, &reof);
       write (ostream1, &len, buf, &weof1);
@@ -303,7 +303,7 @@ module Stream {
     var st: string="";
     var finished = false;
 
-    whilst not finished do
+    while not finished do
       var len = 1;
       var eof: bool;
 

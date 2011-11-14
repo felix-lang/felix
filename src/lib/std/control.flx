@@ -10,16 +10,6 @@ open module Control
     dummy:> // fool reachability checker
   }
 
-  publish 'C style while loop'
-  proc while (cond:unit->bool) (bdy:unit->void)
-  {
-    rpeat:>
-      if not (cond()) goto finish;
-      bdy();
-      goto rpeat;
-    finish:>
-  }
-
   publish "do nothing [the name pass comes from Python]"
   proc pass(){}
 

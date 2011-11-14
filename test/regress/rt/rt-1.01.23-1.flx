@@ -6,7 +6,7 @@ var chin,chout = mk_ioschannel_pair[int] ();
 
 spawn_fthread {
   var x = 1;
-  whilst x <= 10 do
+  while x <= 10 do
     write$ chout,x;
     ++x;
   done;
@@ -14,7 +14,7 @@ spawn_fthread {
 
 spawn_fthread {
   var x = 1;
-  whilst x < 10 do
+  while x < 10 do
     x = read chin; print x; endl;
   done;
 };

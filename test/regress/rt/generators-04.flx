@@ -1,7 +1,7 @@
 //Check generators
 
 gen f ():int = {
-  var i:int; forall i in 0 upto 5 do
+  var i:int; for i in 0 upto 5 do
     yield i;
   done;
   halt "Call exhausted generator";

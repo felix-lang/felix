@@ -828,7 +828,7 @@ let solve_mgu
       (fun (n,i,_) -> btyp_type_var (i, btyp_type 0))
       parent_vs
     in
-    let type_constraint = build_type_constraints counter (bt sr) sr base_vs in
+    let type_constraint = build_type_constraints counter bsym_table (bt sr) sr base_vs in
     let type_constraint = btyp_intersect [type_constraint; con] in
     (*
     print_endline ("Raw type constraint " ^ sbt bsym_table type_constraint);
@@ -856,9 +856,6 @@ let solve_mgu
         Some (entry_kind.base_sym,domain,spec_result,!mgu,parent_ts @ base_ts)
 
     | x ->
-        (*
-        print_endline "About to check constraint implication";
-        *)
         let implied = constraint_implies counter env_traint reduced_constraint in
         if implied then 
           let parent_ts = List.map

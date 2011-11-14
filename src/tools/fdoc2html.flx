@@ -81,8 +81,44 @@ gen safer_popen(cmd:string)=>
   Process::popen_in(timeout+" -t 15 " + cmd + " 2>&1")
 ;
 
-fun xlat_fdoc(t:string)=
+fun xlat_fdoc(t:string, filename:string)=
 {
+
+  fun cal_nav() = 
+  {
+    val relfile = match (filename,'/').split.rev with | Cons(?h,_) => h | Empty => "";
+    var lpos = relfile.len;
+    while lpos > 0 and not isdigit(relfile.[lpos-1]) do 
+       --lpos; 
+    done 
+    assert lpos == 0 or relfile.[lpos-1].isdigit;
+    var fpos = lpos;
+    while fpos > 0 and isdigit(relfile.[fpos-1]) do --fpos; done 
+    assert fpos == 0 or relfile.[fpos].isdigit;
+    val digits = 
+      if fpos >=0 and lpos > fpos then
+        relfile.[fpos to lpos]
+      else ""
+    ;
+
+    val n = digits.len;
+    val v = digits.int;
+    val vnext = v + 1;
+    val vprev = v - 1;
+    val snext = (f"%010d" vnext).[10-n to];
+    val sprev= (f"%010d" vprev).[10-n to];
+
+    snext = relfile.[to fpos] + snext + relfile.[lpos to];
+    sprev = relfile.[to fpos] + sprev + relfile.[lpos to];
+    return
+      if digits == "" then 
+        None[int],None[string],None[string]
+      elif vprev > 0 then 
+        Some v,Some sprev, Some snext
+      else
+        Some v,None[string], Some snext
+    ;
+  }
 
   var all_buttons = "";
 
@@ -91,6 +127,22 @@ fun xlat_fdoc(t:string)=
   { 
     out += t;
   }
+
+  proc shownav() {
+    write_string (
+       match cal_nav() with
+       | _,Some ?sprev, Some ?snext => "<a href='"+sprev+"'>Prev</a>  " +  "<a href='"+snext+"'>Next</a>"
+       | _,None, Some ?snext => "<a href='"+snext+"'>Next</a>" 
+       | _,None, None => ""
+     );
+  }
+  fun docnum()=>
+    match cal_nav() with
+    | None,_,_ => ""
+    | Some ?v,_,_=> str v + "."
+  ; 
+
+  shownav();
 
   union state_t = 
     | cmd // processing command
@@ -130,7 +182,7 @@ fun xlat_fdoc(t:string)=
   var hstack = 0; // number of open <div>s
   var hnums = varray[int] (ulong 5,1); 
   proc edivs(n:int) { 
-    whilst hstack > n do 
+    while hstack > n do 
       write_string("</div>"); 
       --hstack;
       hnums.[hstack]=1;
@@ -143,7 +195,7 @@ fun xlat_fdoc(t:string)=
   }
   fun hnum() = {
     var s = ""; var i:int;
-    forall i in 0 upto hstack-2 do
+    for i in 0 upto hstack-2 do
       s+=str(hnums.[i]) + ".";
     done
     return s + str(hnums.[hstack-1]);
@@ -154,7 +206,7 @@ fun xlat_fdoc(t:string)=
     all_buttons =if all_buttons != "" then all_buttons+',\n' else '' endif + '"' + txt + '"';
     tb:=tree_button(txt,txt+"_d");
     ++hstack;
-    write_string("<h"+str n+">"+tb+" "+hnum()+" "+ txt+"</h"+str n+"><div id='"+txt+"_d' style='display:block'>\n"); 
+    write_string("<h"+str n+">"+tb+" "+docnum()+hnum()+" "+ txt+"</h"+str n+"><div id='"+txt+"_d' style='display:block'>\n"); 
     s=doc;
   }
  
@@ -304,6 +356,7 @@ fin:>
    if b != "" do write_string(match s with | doc => markdown b | _ => b endmatch); done
    ep;
    edivs(1);
+   shownav();
    return js1+all_buttons +js2+nav+out;
 }
 }

@@ -16,7 +16,7 @@ print$ f"%d threads, %d jobs\n"$ nthreads,njobs;
 proc worker(i:int, chan:pchannel[int])(){
  print$ f"Starting pthread %d\n" i;
  var delay = read chan;
- whilst delay != 0 do
+ while delay != 0 do
    print$ f"Thread %i, Delay %d\n"$ i,delay;
    sleep$ clock,double delay;
    delay = read chan;
@@ -34,7 +34,7 @@ proc spawn_workers(i:int)
 spawn_workers 1;
 
 // dispatch jobs
-whilst njobs > 0 do
+while njobs > 0 do
   var delay = Cstdlib::rand () % 10 + 1;
   print$ f"Dispatch job %d\n" delay;
   write$ chan, delay;
@@ -42,7 +42,7 @@ whilst njobs > 0 do
 done;
 
 // terminate workers
-whilst nthreads > 0 do
+while nthreads > 0 do
   write$ chan, 0;
   --nthreads;
 done;

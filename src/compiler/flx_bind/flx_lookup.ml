@@ -4366,9 +4366,14 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
           end
 
         | _ ->
+          (* Try reverse application *)
+          let retry = EXPR_apply (sr,(e2,e)) in
+          be retry
+          (*
           failwith ("[lookup] operator . Expected LHS nominal type to be"^
           " (c)struct or abstract primitive, got " ^
           sbt bsym_table ttt)
+          *)
 
         end
 
@@ -4841,24 +4846,20 @@ and check_instances state bsym_table call_sr calledname classname es ts' mkenv =
           print_endline ("check base vs (constraint) = " ^ print_ivs_with_index vs);
           *)
           let cons = try
-            Flx_tconstraint.build_type_constraints state.counter bt sr (fst vs)
+            Flx_tconstraint.build_type_constraints state.counter bsym_table bt sr (fst vs)
             with _ -> clierr sr "Can't build type constraints, type binding failed"
           in
           let {raw_type_constraint=icons} = snd vs in
           let icons = bt icons in
           (*
-          print_endline ("Constraint = " ^ sbt bsym_table cons);
           print_endline ("VS Constraint = " ^ sbt bsym_table icons);
           *)
           let cons = btyp_intersect [cons; icons] in
-          (*
-          print_endline ("Constraint = " ^ sbt bsym_table cons);
-          *)
           let cons = list_subst state.counter mgu cons in
-          (*
-          print_endline ("Constraint = " ^ sbt bsym_table cons);
-          *)
           let cons = beta_reduce state.counter bsym_table sr cons in
+          (*
+          print_endline ("[flx_lookup:4] Reduced Constraint = " ^ sbt bsym_table cons);
+          *)
           match cons with
           | BTYP_tuple [] -> true
           | BTYP_void -> false

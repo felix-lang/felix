@@ -4,15 +4,18 @@ corresponding to {float}, {double}, and {long double}
 real numbers.  The mapping is to these C++ types:
 
 @pre
-  Felix name    C name
-  -----------------------------------------------
-  fcomplex      std::complex<float>
-  dcomplex      std::complex<double>
-  lcomplex      std::complex<long double>
+  Felix name    Alias              C name
+  -----------------------------------------------------------
+  fcomplex      complex[float]    ::std::complex<float>
+  dcomplex      complex[double]   ::std::complex<double>
+  lcomplex      complex[ldouble]  ::std::complex<long double>
 @  
 
 @h2 Functions
-All support these base functions:
+Complex floats can be compared for equality, however there are
+no other comparisons because there is no canonical way to order them.
+
+Complex floats support these base functions:
 @pre
   neg: t -> t;
   add: t * t -> t;
@@ -70,7 +73,4 @@ In addition to the base and trigonometric functions, complex numbers support the
 @
 
 where {r} is the real type corresponding to the complex type {t}.
-
-<a href="tut_05.fdoc">Next</a>
-<a href="tut_03.fdoc">Prev</a>
 

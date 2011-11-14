@@ -63,7 +63,7 @@ var C_PATH=list(
 
 var FLX_PKGCONFIG_PATH=Empty[string];
 
-whilst argno<System::argc do
+while argno<System::argc do
   arg = System::argv argno;
   println$ "ARG=" + arg;
   if prefix(arg,"--root=") do
@@ -129,7 +129,7 @@ fun txt2html (x:string) =
 {
   var out2 = "";
   var i:int;
-  forall i in 0 upto len x-1 do
+  for i in 0 upto len x-1 do
     var ch = x.[i];
     if ch == char "<" do out2+="&lt;";
     elif ch == char ">" do out2+="&gt;";
@@ -442,7 +442,7 @@ proc serve_fdoc (k:socket_t, fname:string) {
   val data = make_html(
     "<html><head>"+Css4Html::flx_head+"</head>"+
     "<body>"+
-    Fdoc2Html::xlat_fdoc txt+
+    Fdoc2Html::xlat_fdoc (txt,fname)+
     "</body></html>\n\r"
   );
   write_string(k,data,&eof_flag);
@@ -459,7 +459,7 @@ proc serve_xfdoc (k:socket_t, fname:string) {
  <html xmlns="http://www.w3.org/1999/xhtml">'''+
     "<head>"+Css4Html::flx_head+"</head>"+
     "<body>"+
-    Fdoc2Html::xlat_fdoc txt+
+    Fdoc2Html::xlat_fdoc (txt,fname)+
     "</body></html>\n\r"
   );
   write_string(k,data,&eof_flag);

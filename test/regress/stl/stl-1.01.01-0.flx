@@ -20,28 +20,28 @@ proc check[c,it,rit with Reversible_Sequence[c,it,rit,int]]
 {
   // forward iterator: forwards
   var i = begin x;
-  whilst i != end x do
+  while i != end x do
     print$ *i; endl;
     i++;
   done;
 
   // forward iterator: backwards
   i = end x;
-  whilst i != begin x do
+  while i != begin x do
     i--;
     print$ *i; endl;
   done;
 
   // reverse iterator: forwards
   var j = rbegin x;
-  whilst j != rend x do
+  while j != rend x do
     print$ *j; endl;
     j++;
   done;
 
   // reverse iterator: backwards
   j = rend x;
-  whilst j != rbegin x do
+  while j != rbegin x do
     j--;
     print$ *j; endl;
   done;

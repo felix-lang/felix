@@ -231,10 +231,10 @@ syn keyword felixConditional typecase
 syn keyword felixConditional endcase
 
 " repeating constructs
-syn keyword felixRepeat for forall
+syn keyword felixRepeat for 
 syn keyword felixRepeat do done downto
 syn keyword felixRepeat until upto
-syn keyword felixRepeat while whilst
+syn keyword felixRepeat while 
 
 " standard library types
 syn keyword felixType unit
@@ -276,7 +276,6 @@ syn keyword felixType wchar
 syn keyword felixType uchar
 
 syn keyword felixType string
-syn keyword felixType wstring
 syn keyword felixType ustring
 
 syn keyword felixType cont

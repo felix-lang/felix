@@ -24,7 +24,7 @@ module glob {
       var n = glob_data.gl_pathc;
       var p = glob_data.gl_pathv;
       var pfile = *p;
-      whilst not C_hack::isNULL(pfile) do
+      while not C_hack::isNULL(pfile) do
         var file = str(pfile);
         push_back (files, file);
         p++;

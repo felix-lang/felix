@@ -27,7 +27,7 @@ var pwres = &wres;
   print "7 was unset="; println$ ires;
 
   var i : int;
-  forall i in 0 upto 10 do
+  for i in 0 upto 10 do
     Judy1Test(ja,word i,je,pires);
     print i; print " isset="; println$ ires;
   done;
@@ -79,7 +79,7 @@ var pwres = &wres;
   print "Count="; println$ int wres;
 
   var i : int;
-  forall i in 0 upto 10 do
+  for i in 0 upto 10 do
     JudyLGet(ja,word i,je,ppv);
     print i;
     if isNULL pv do

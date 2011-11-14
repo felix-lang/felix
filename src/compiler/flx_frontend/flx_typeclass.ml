@@ -36,6 +36,9 @@ let check_instance
   tc
   inst_ts
 =
+  (*
+  print_endline ("Check instance, inst_constraint=" ^ sbt bsym_table inst_constraint);
+  *)
   let tc_bsym = Flx_bsym_table.find bsym_table tc in
   match Flx_bsym.bbdcl tc_bsym with
   | BBDCL_typeclass (tc_props, tc_bvs) ->
@@ -417,9 +420,6 @@ let tcinst_chk syms bsym_table allow_fail i ts sr (inst_vs, inst_constraint, ins
          )
          inst_vs
        in
-       (*
-       print_endline ("instance constraint: " ^ sbt bsym_table inst_constraint);
-       *)
        let con = list_subst syms.counter mgu inst_constraint in
        let con = Flx_beta.beta_reduce syms.Flx_mtypes2.counter bsym_table sr con in
        match con with
@@ -483,11 +483,13 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
     if not (Flx_bsym_table.mem bsym_table i) then
       failwith ("Woops can't find virtual function index "  ^ string_of_bid i);
 
+    (*
     print_endline
     ("Multiple matching instances for typeclass virtual instance\n"
      ^id^"<"^ si i^">["^ catmap "," (sbt bsym_table) ts ^"]"
     )
     ;
+    *)
     (*
     iter
     (fun ((j,ts),(inst_vs,con,inst_ts,k)) ->
@@ -506,7 +508,9 @@ let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
     let candidates = fold_left
     (fun oc (((j,ts),(inst_vs,con,inst_ts,k)) as r) ->
        let c = btyp_type_tuple inst_ts in
+       (*
        print_endline ("Considering candidate sig " ^ sbt bsym_table c);
+       *)
        let rec aux lhs rhs =
          match rhs with
          | [] ->

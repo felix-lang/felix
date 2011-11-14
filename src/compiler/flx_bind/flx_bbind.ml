@@ -294,6 +294,7 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
       try
         Flx_tconstraint.build_type_constraints
           state.counter
+          bsym_table
           bt
           sym.Flx_sym.sr
           (fst ivs)
@@ -306,6 +307,10 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
     cons
   in
   let bcons = bind_type_constraint ivs in
+  let bcons = Flx_beta.beta_reduce state.counter bsym_table sym.Flx_sym.sr bcons in
+  (*
+  print_endline ("[flx_bbind] Constraint = " ^ sbt bsym_table bcons);
+  *)
   let btraint = function | Some x -> Some (be x) | None -> None in
   let bind_reqs reqs =
     bind_reqs bt state bsym_table env sym.Flx_sym.sr reqs
@@ -792,6 +797,9 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
     let ts = map bt ts in
     (*
     print_endline "DOne ..";
+    *)
+    (*
+    print_endline ("Flx_bbind: adding instance with constraint " ^ sbt bsym_table bcons);
     *)
     add_bsym true_parent (bbdcl_instance ([], bvs, bcons, k, ts))
 

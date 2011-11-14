@@ -43,7 +43,7 @@ open module Array
   proc iter[T, N] (_f:T->void) (x:array[T, N]) {
     var i : int;
 
-    forall i in 0 upto len(x) - 1 do
+    for i in 0 upto len(x) - 1 do
       _f x.[i];
     done;
   }
@@ -52,7 +52,7 @@ open module Array
     var o : array[U, N];
     var i : int;
 
-    forall i in 0 upto len(x) - 1 do
+    for i in 0 upto len(x) - 1 do
       o.[i] = _f x.[i];
     done;
 
@@ -63,7 +63,7 @@ open module Array
     var o = init;
     var i : int;
 
-    forall i in 0 upto len(x) - 1 do
+    for i in 0 upto len(x) - 1 do
       o = _f o x.[i];
     done;
 
@@ -74,7 +74,7 @@ open module Array
     var o = init;
     var i : int;
 
-    forall i in len(x) - 1 downto 0 do
+    for i in len(x) - 1 downto 0 do
       o = _f x.[i] o;
     done;
 
@@ -86,13 +86,13 @@ open module Array
     var o = array[T, _flatten(N + M)];
     val i : int;
 
-    forall i in 0 upto len(x) - 1 do
+    for i in 0 upto len(x) - 1 do
       o.[i] = x.[i];
     done;
 
     val j : int;
 
-    forall k in 0 upto len(y) - 1 do
+    for k in 0 upto len(y) - 1 do
       o.[i + j] = y.[i];
     done;
 
@@ -104,7 +104,7 @@ open module Array
   fun mem[T, N] (eq:T->bool) (x:array[T, N]): bool = {
     var i : int;
 
-    forall i in 0 upto len(x) - 1 do
+    for i in 0 upto len(x) - 1 do
       if eq(x.[i]) do
         return true;
       done;
@@ -124,7 +124,7 @@ open module Array
   fun find[T, N] (eq:T*T->bool) (x:array[T, N]) (e:T): opt[T] = {
     var i : int;
 
-    forall i in 0 upto len(x) - 1 do
+    for i in 0 upto len(x) - 1 do
       if eq(x.[i], e) do
         return Some x.[i];
       done;
@@ -136,7 +136,7 @@ open module Array
   fun find[T, N] (eq:T->bool) (x:array[T, N]): opt[T] = {
     var i : int;
 
-    forall i in 0 upto len(x) - 1 do
+    for i in 0 upto len(x) - 1 do
       if eq(x.[i]) do
         return Some x.[i];
       done;
@@ -151,7 +151,7 @@ open module Array
     var i : int;
     var length = len x;
 
-    forall i in 0 upto length - 1 do
+    for i in 0 upto length - 1 do
       o.[length - 1 - i] = x.[i];
     done;
 
@@ -167,7 +167,7 @@ open module Array
       if len(xs) > 0 do
         o += repr xs.[0];
 
-        forall i in 1 upto len(xs) - 1 do
+        for i in 1 upto len(xs) - 1 do
           o += ', ' + repr xs.[i];
         done;
       done;
@@ -180,7 +180,7 @@ open module Array
   instance[T,N with Eq[T]] Eq[array[T, N]] {
     fun eq(xs:array[T,N],ys:array[T,N]) = {
         var i:int;
-        forall i in 0 upto len(xs) - 1 do
+        for i in 0 upto len(xs) - 1 do
           if not (xs.[i] == ys.[i]) do return false; done
         done
       return true;
@@ -190,10 +190,10 @@ open module Array
   instance[T,N with Tord[T]] Tord[array[T,N]] {
     fun lt(xs:array[T,N],ys:array[T,N]) = {
       var i:int;
-      ph1:forall i in 0 upto len(xs) - 1 do
+      ph1:for i in 0 upto len(xs) - 1 do
         if not (xs.[i] < ys.[i]) do break ph1; done
       done
-      forall i in i upto len(xs) - 1 do
+      for i in i upto len(xs) - 1 do
         if not (xs.[i] <= ys.[i]) do return false; done
       done
       return true;

@@ -11,7 +11,7 @@ open Reversible_Sequence[
   string
 ];
 
-var p = begin files; whilst p != end files do
+var p = begin files; while p != end files do
   println$ *p;
   ++p;
 done;

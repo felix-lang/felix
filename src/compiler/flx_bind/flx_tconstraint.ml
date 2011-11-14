@@ -91,7 +91,7 @@ let build_constraint_element counter bt sr i p1 =
     (* print_endline ("Bound typematch is " ^ sbt counter.sym_table tm); *)
     tm
 
-let build_type_constraints counter bt sr vs =
+let build_type_constraints counter bsym_table bt sr vs =
   let type_constraints =
     map (fun (s,i,tp) ->
       let tp = build_constraint_element counter bt sr i tp in
@@ -106,4 +106,9 @@ let build_type_constraints counter bt sr vs =
     )
     vs
   in
-    btyp_intersect type_constraints
+    let tc = btyp_intersect type_constraints in
+    let tc = Flx_beta.beta_reduce counter bsym_table sr tc in
+    (*
+    print_endline ("Type constraints = " ^ sbt bsym_table tc);
+    *)
+    tc

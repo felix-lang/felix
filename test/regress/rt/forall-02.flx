@@ -1,4 +1,4 @@
-var i:int; lab:forall i in 0 upto 10 do
+var i:int; lab:for i in 0 upto 10 do
   if i == 5 do
     continue lab;
   done;

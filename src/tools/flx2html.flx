@@ -44,9 +44,9 @@ private val small_keywords =
   "do", 
   "done",
   "in", 
-  "forall", 
+  "for", 
   "while", 
-  "whilst",
+  "while",
   "to", 
   "upto",
   "downto",
@@ -144,8 +144,8 @@ fun xlat_felix(t:string, dir:string)=
   proc ws() {
     if last_id == "include" do // hackery
       var n = b; 
-      whilst n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
-      whilst n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
+      while n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
+      while n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
       if n.[-4 to] != ".flx" do n+= ".flx"; done // hack, fixme
       match get_file(n,FLX_PATH) with
       | Some ?f => { write_string('<a href="/$'+f+'" >' + b + '</a>') ; }
@@ -168,8 +168,8 @@ unstring:>
     elif last_key == "package" do
        println$ "Package: " + b;
        n = b;
-      whilst n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
-      whilst n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
+      while n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
+      while n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
       n+=".fpc";
 println$ "Package file basename is " + n;
       match get_file(n,FLX_PKGCONFIG_PATH) with

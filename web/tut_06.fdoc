@@ -1,7 +1,3 @@
-
-<a href="tut_07.fdoc">Next</a>
-<a href="tut_06.fdoc">Prev</a>
-
 @h1 String functions
 Felix supports a rich set of functions on strings. Most of the 
 C++ standard library functions are supported. In this tutorial
@@ -258,7 +254,5 @@ These are strongly prefered for safety but there is a performance cost.
   fun vsprintf[t]: &char  * t -> string =
   fun vsprintf[t]: string * t -> string =
 @
-<a href="tut_07.fdoc">Next</a>
-<a href="tut_05.fdoc">Prev</a>
 
 

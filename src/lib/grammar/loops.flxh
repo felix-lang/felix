@@ -6,7 +6,7 @@ syntax loops
   optlabel := sname ":" =># "_1";
   optlabel := sepsilon =># "(number->string (fresh_int ()))";
 
-  tstatement := optlabel "whilst" sexpr "do" sstatements "done" =>#
+  tstatement := optlabel "while" sexpr "do" sstatements "done" =>#
     """ 
     `(ast_seq ,_sr
       ,(append 
@@ -30,7 +30,7 @@ syntax loops
     ))
     """;
 
-  tstatement := optlabel "forall" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
+  tstatement := optlabel "for" sname "in" sexpr "upto" sexpr "do" sstatements "done" =>#
     """
     `(ast_seq ,_sr
       ,(append 
@@ -84,7 +84,7 @@ syntax loops
        ))
     """;
 
-  tstatement := optlabel "forall" sname "in" sexpr "downto" sexpr "do" sstatements "done" =>#
+  tstatement := optlabel "for" sname "in" sexpr "downto" sexpr "do" sstatements "done" =>#
     """
     `(ast_seq ,_sr
       ,(append 

@@ -81,6 +81,3 @@ In addition to the trigonometric functions, reals support these functions:
   trunc: t -> t;
 @
 
-<a href="tut_04.fdoc">Next</a>
-<a href="tut_02.fdoc">Prev</a>
-

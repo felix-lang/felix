@@ -9,7 +9,7 @@ proc randprint(n:int)
 {
   var i = 5;
   print$ "Start Thread number "+str(n); endl;
-  whilst i > 0 do
+  while i > 0 do
     var d = double_of$ Cstdlib::rand()%10;
     if d == 0.0 do
       print "ZERO FOUND -- collecting!"; endl;

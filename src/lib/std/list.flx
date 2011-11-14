@@ -100,7 +100,7 @@ open module List
   // make a list from an array (tuple)
   ctor[T,N] list[T] (x:Array::array[T, N]) = {
     var o = Empty[T];
-    var i:int; forall i in Array::len(x) - 1 downto 0 do
+    var i:int; for i in Array::len(x) - 1 downto 0 do
       o = Cons (x.[i],o);
     done;
     return o;

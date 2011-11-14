@@ -1,7 +1,3 @@
-
-<a href="tut_06.fdoc">Next</a>
-<a href="tut_04.fdoc">Prev</a>
-
 @h1 String Literals
 Felix provides 2 kinds of strings: {string}, and {ustring}.
 The most commonly used string is {string}, it is an 8 bit clean string
@@ -132,8 +128,3 @@ being the {utf-8} representation of code point 255.
 @h3 Other escapes
 All other escapes are left intact, that is, including the
 slosh, for example {\c} translates to {\c} and not just {c}.
-
-<a href="tut_06.fdoc">Next</a>
-<a href="tut_04.fdoc">Prev</a>
-
-

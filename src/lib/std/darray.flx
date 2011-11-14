@@ -77,7 +77,7 @@ open module Darray
 
 instance[T with Eq[T]] Set[darray[T],T] {
  fun mem(x:T, a:darray[T]) : bool = {
-   var i:ulong; forall i in 0ul upto len a -1ul do
+   var i:ulong; for i in 0ul upto len a -1ul do
      if a.[i] == x do return true; done
    done
    return false;

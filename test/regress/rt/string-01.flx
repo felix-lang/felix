@@ -11,15 +11,15 @@ print x.[6 to -1]; endl;
 
 var i = 0;
 var n = len x;
-while {i < n} {
+while i < n do 
   print x.[i];
   ++i;
-};
+done
 endl;
 
 i = 1;
-while {i <= n} {
+while i <= n do
   print x.[-i];
   ++i;
-};
+done
 endl;

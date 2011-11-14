@@ -24,7 +24,7 @@ typeclass Sequence[c,it,v] {
   virtual proc clear: c;
   virtual fun fold[i] (f:i->v->i) (var acc:i) (x:c): i = {
     var s = begin x; var e = end x;
-    whilst s != e do acc = f acc (*s); ++s; done;
+    while s != e do acc = f acc (*s); ++s; done;
     return acc;
   }
 }
@@ -37,7 +37,7 @@ typeclass Reversible_Sequence[c,it,rit,v] {
   virtual gen rend: c -> rit;
   virtual fun rfold[i] (f:i->v->i) (var acc:i) (x:c): i = {
     var s = rbegin x; var e = rend x;
-    whilst s != e do acc = f acc (*s); ++s; done;
+    while s != e do acc = f acc (*s); ++s; done;
     return acc;
   }
 }
