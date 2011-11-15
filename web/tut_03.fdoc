@@ -1,83 +1,100 @@
-@h1 Floating Point Reals 
-There are 3 floating point real types: {float}, {double}, and {long double}
-real and complex numbers.  All support these base functions:
-Felix provides 3 floating point types.
-@pre
-  Felix name     C name       Suffix
-  ----------------------------------
-  float         float         f
-  double        double        d (default)
-  ldouble       long double   l
-@
-Floating literals roughly follow ISO C99, except underscores are allowed between digits.
-The mantissa radix can either be decimal (default) or hexadecimal with a {0x} or {0X} prefix.
-The exponent is always decimal radix but can either be a power of 10 with an {E} or {e} separator
-or binary, with a {P} or {p} separator.
-
-There is also an additional constraint: decimal radix floating literals
-which include a decimal point, must include at least one digit
-before and after the decimal point.
- 
-@h3 Exact rule for literals
+@h1 Functions and Procedures
+@h2 Felix functions
+When you see code like this:
 @felix
-  let decimal_string = digit (underscore? digit) *
-  let hexadecimal_string = hexdigit (underscore? hexdigit) *
+println$ "Square of " + str 1 + " is " + str (1 * 1);
+println$ "Square of " + str 2 + " is " + str (2 * 2);
+println$ "Sguare of " + str 3 + " is " + str (3 * 1);
+@
+You know you need a function (notice the typos on the last line?)
+Basic Felix functions are easy:
+@felix
+fun square(x:int)=>x * x;  // define a function
+println$ "Square of " + str 1 " is " str (square 1);
+println$ "Square of " + str 2 " is " str 2.square;
+println$ "Sguare of " + str 3 " is " str$ square 3;
+@
+We fixed the bug in the calculation of the square of 3, and 
+we're also showing the three ways to apply a function: 
+high precedence application using operator whitespace
+which needs surrounding parentheses for correct grouping,
+reverse application using operator dot, which is even higher
+precedence than whitespace, and so does not, and finally we're
+applying the {str} function to a whitespace application
+using operator dollar, which has lower precedence than whitespace.
 
-  let decimal_fractional_constant =
-    decimal_string '.' decimal_string?
+There's a longer way to write a function:
+@felix
+fun square(x:int):int = {
+  val s = x * x;
+  return x;
+}
+@
+This way allows complicated expressions to be broken up
+into arbitrary code. 
 
-  let hexadecimal_fractional_constant =
-    ("0x" |"0X")
-    (hexadecimal_string '.' hexadecimal_string?
-    | '.' hexadecimal_string) /* leading . allowed here because of prefix */
+Functions are not allowed to have side effects.
 
-  let decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string
-  let binary_exponent = ('P'|'p') ('+'|'-')? decimal_string
+@h2 Felix Procedures
+Still, there must be a way to repeat the print: there is,
+by using a procedure.
+@felix
+fun square(x:int)=>x * x;  // define a function
+proc ps(x:int) {
+  println$ "Square of " + str x + " is " + str x.square;
+}
+ps 1; ps 2; ps 3;
+@
+A procedure is like a function, except it returns no value,
+and it may and indeed should have side effects.
 
-  let floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd'
-  let floating_literal =
-    (
-      decimal_fractional_constant decimal_exponent? |
-      hexadecimal_fractional_constant binary_exponent?
-    )
-    floating_suffix?
+@h2 Multiple arguments
+A function (or procedure) always has exactly one argument.
+However you can simulate multiple arguments with a tuple:
+@felix
+fun addup (x:int, y:int) => x + y;
+println$ addup (1,2); // 3
+val pair = 1,2;
+println$ addup pair; // 3
+@
+The last line shows clearly that {addup} takes a single argument
+which is a pair (tuple with two components).
+
+@h2 Function types
+A function value has a type:
+@felix
+  int -> int       // type of square
+  int -> void      // type of ps
+  int * int -> int // type of addup
 @
 
-@h2 Real Functions
-Felix provides these base functions:
-@pre
-  neg: t -> t;
-  add: t * t -> t;
-  sub: t * t -> t;
-  mul: t * t -> t;
-  div: t * t -> t;
+@h2 Generators
+There is a special kind of procedure that looks like
+a function and may have side-effects, it is called
+a generator:
+@felix
+var x =0;
+gen incx():int = { val tmp = x; ++x; return tmp; }
+println$ incx(), incx();
 @
-and these trigonometric functions:
-@pre
-  sin: t -> t;
-  cos: t -> t;
-  tan: t -> t;
-  asin: t -> t;
-  acos: t -> t;
-  atan: t -> t;
-  sinh: t -> t;
-  cosh: t -> t;
-  tanh: t -> t;
-  asinh: t -> t;
-  acosh: t -> t;
-  atanh: t -> t;
-  exp: t -> t;
-  log: t -> t;
-  pow: t * t -> t;
+When an expression contains one or more generator application, the applications
+are lifted out and evaluated in pre-order: this is basically left to right
+order of writing for terms at the same level, except that if a generator has
+an argument that is, or contains a generator application, that will have to
+be evaluated first. The serialisation of generator application is deterministic
+and based on the structure of the expression being evaluated <em>after</em>
+syntactic sugar is removed. For example
+@felix
+  var r = (g1 1).(g2 2)
 @
+will be evaluated as:
+@felix
+  val a2 = g2 2;
+  val a1 = g1 1;
+  val r = a2 a1;
+@
+because reverse application is just sugar for a swapped forward application.
 
-In addition to the trigonometric functions, reals support these functions:
-@pre
-  log10: t -> t;
-  abs: t -> t;
-  sqrt: t -> t;
-  ceil: t -> t;
-  floor: t -> t;
-  trunc: t -> t;
-@
+@caveat: Generators have the same type as a function. This is a design fault
+in the current version of Felix.
 

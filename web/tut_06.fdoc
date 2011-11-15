@@ -1,258 +1,78 @@
-@h1 String functions
-Felix supports a rich set of functions on strings. Most of the 
-C++ standard library functions are supported. In this tutorial
-we're going to grow up a lot and look at extracts from
-real library code! You can find the actual library code here:
-<a href="/lib/std/string.flx"> string</a>
-
-@h2 Comparisons
-Strings are totally ordered lexicographically and so support the
-usual comparisions.
- 
-@h2 Length
-Here is the function that returns the length of a string.
-As you can see the implementation in Felix is simply delegated
-to C++. This is called a binding. Notice we use {$1} to denote
-the first argument of the function. Also notice we have cast
-the C++ result from {size_t} to {int} for convenience.
+@h1 Arrays
+@h2 Array Values
+When you write a tuple like this:
 @felix
-  fun len: string -> int = "static_cast<int>($1.size())";
+  val x = 1,2,3,4,5;
 @
-@h2 Concatenation
-Below you'll see some {proc} bindings, these are procedures.
-Procedures are like functions except they're allowed to have
-side effects, and they don't return a value. Functions in 
-Felix may not have side effects!
-
+where all the components have the same type, it is called an 
+array. A special notation may be used for this array type:
 @felix
-  proc pluseq: &string * &char = "$1->append($2);";
-  proc pluseq: &string * char = "*$1 += $2;";
-
-
-  fun add: string * string -> string = "$1+$2";
-  fun add: string * &char -> string = "$1+$2";
-  fun add: string * char -> string = "$1+$2";
-  fun add: char * string -> string = "$1+$2";
-  fun add: string * int -> string = "$1+::flx::rtl::i18n::utf8($2)" requires package "flx_i18n";
+  int^5
 @
-@h2 Repetition
-These functions form a string by repeated concatenation.
-Particularly useful for making a long string of the same character.
+that is, int multipled by itself 5 times: this type is exactly
+the same (not equivalent or isomorphic but exactly the same) as:
 @felix
-  fun mul: string * int -> string = "::flx::rtl::strutil::mul($1,$2)" requires package "flx_strutil";
-  fun mul: char * int -> string = "::std::string($2,$1)";
+  int * int * int * int * int
 @
-@h2 Apply method
-Felix provides a special method {apply} to define the application of a 
-non-function data value. Here we define the application of a string
-to another string as concatenation, application of a string to an integer
-adds the character with the given numeric code to the string:
+There is also an alias in the library which can be used:
 @felix
-  fun apply (x:string, y:string):string => x + y;
-  fun apply (x:string, y:int):string => x + y;
+  array[int,5]
 @
-The effect of this is you can write:
-@felix
-  val world = "World";
-  println$ "Hello" 32 world;
-@
-instead of using operator {+}. This is consistent with the
-string folding used to form long strings show in the previous
-chapter, however we now see that arbitrary expressions can
-be concatenated this way, by virtue of the {apply} function.
+You should note that {int^1} is exactly the same as {int}:
+it is technically not a tuple.
 
-Indeed {apply} can be defined for any data type except that
-the first argument can't be a function or procedure because
-the way of applying a function or procedure is built into the
-language and takes precedence over any apply method.
+This kind of array is a first class value, it is <em>not an object</em>.
 
-@h2 Constructors
+Read the library code for <a href='/lib/std/ array.flx'> array</a>.
+
+@h2 Carray
+A {carray} is your traditional C array: it has a bounded length,
+but the bound is unknown to the system: the client programmer must
+keep track of the bound manually.
+
+The type {carray[T]} is just an alias for {{&amp;T}, a pointer to {T}.
+Generally {carray} is unsafe and should be avoided but it is
+essential for C interfacing so we had to put it in.
+
+Read the library code for <a href='/lib/std/ array.flx'> array</a>.
+
+@h2 Varray and Darray
+Felix provides two variable length array objects called {varray} and {darray}
+in the library. A {varray} is a bounded variable length array, they're 
+good for buffers, but otherwise not use much because of the bound.
+{darray} is unbounded and typically just as efficient; it is implemented
+with {varray}, which is the main reason {varray} exists.
+
+@h3 Varray
+A {varray} is typically constructed from an {array}, you can use get and
+set functions to store a value at a particular index or retrieve it:
 @felix
-  fun _ctor_char (x:string) => x.[0];
-  fun _ctor_string (c:char) => ""+c;
-  gen _ctor_string: &char -> string = "::std::string($1)";
+val a = varray (1,2,3,4,5);
+set (a, 2, 99);     // store 99 in slot index 2 (the third slot)
+println$ a;         // array(1,2,99,3,4,5)
+println$ get(a,2);  // 99
 @
 
-@h2 Substrings
+A {varray} can also be constructed with a fixed bound and completely filled
+with a single value:
 @felix
-  fun subscript: string * int -> char =
-    "::flx::rtl::strutil::subscript($1,$2)" requires package "flx_strutil";
-  fun copyfrom: string * int -> string =
-    "::flx::rtl::strutil::substr($1,$2,$1.size())" requires package "flx_strutil";
-  fun copyto: string * int -> string =
-    "::flx::rtl::strutil::substr($1,0,$2)" requires package "flx_strutil";
-  fun substring: string * int * int -> string =
-    "::flx::rtl::strutil::substr($1,$2,$3)" requires package "flx_strutil";
+val a = varray(5.ul,0); // 5 elements all 0
 @
-@h2 Overwrite
-@felix
-  proc store: string * int * char = "$1[$2] = $3;";
-@
-@h2 Mapping
-@felix
-  fun map (f:char->char) (var x:string): string = {
-@
-@h2 Searching
-The following function supports the nice {in} notation stolen from Python:
-@felix
-  char "x" in "uvwxyz"
-@
-@felix
-  fun mem(c:char, s:string) => stl_find (s,c) != stl_npos;
-@
-Below are the C++ library search functions. The argument to search in can be a string,
-or a string with a starting position. The string to search for
-can be either a string, a C string (null terminated char array), a C string
-with length constraint, or a character.
+Note that {varray(5ul,3ul)} is ambiguous! It could be either a two element
+array constructed from the tuple {5ul,3ul} or a 5 element array initialised
+to {3ul,3ul,3ul,3ul,3ul}.
 
-The {stl_*} versions are directly mapped to C++ and return {stl_npos} for failure.
-The versions without the {stl_} prefix return a Felix option type instead.
-These are strongly prefered for safety but there is a performance cost.
+Read the library code for <a href='/lib/std/varray.flx'>varray</a>.
+@h3 Darray
 
-@felix
-  const stl_npos: int = "static_cast<int>(::std::string::npos)";
-  fun stl_find: string * string -> int = "(int)$1.find($2)";
-  fun stl_find: string * string * int -> int = "(int)$1.find($2,$3)";
-  fun stl_find: string * &char -> int = "(int)$1.find($2)";
-  fun stl_find: string * &char * int -> int = "(int)$1.find($2,$3)";
-  fun stl_find: string * char -> int = "(int)$1.find($2)";
-  fun stl_find: string * char * int -> int = "(int)$1.find($2,$3)";
+Read the library code for <a href='/lib/std/darray.flx'>darray</a>.
 
-  fun find (s:string, e:string) : opt[int] => match stl_find (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find (s:string, e:string, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find (s:string, e:&char) : opt[int] => match stl_find (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find (s:string, e:&char, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find (s:string, e:char) : opt[int] => match stl_find (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find (s:string, e:char, i:int) : opt[int] => match stl_find (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
+@h3 Sarray
+An {sarray} is an ultra-high performance sparse array.
+It is can accept elements at any non-negative integral position
+for integers up to the size of type {size}.
 
-  fun stl_rfind: string * string -> int = "$1.rfind($2)";
-  fun stl_rfind: string * string * int -> int = "$1.rfind($2,$3)";
-  fun stl_rfind: string * &char-> int = "$1.rfind($2)";
-  fun stl_rfind: string * &char * int -> int = "$1.rfind($2,$3)";
-  fun stl_rfind: string * char -> int = "$1.rfind($2)";
-  fun stl_rfind: string * char * int -> int = "$1.rfind($2,$3)";
+{Sarray} is implemented using JudyL arrays.
 
-  fun rfind (s:string, e:string) : opt[int] => match stl_rfind (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun rfind (s:string, e:string, i:int) : opt[int] => match stl_rfind (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun rfind (s:string, e:&char) : opt[int] => match stl_rfind (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun rfind (s:string, e:&char, i:int) : opt[int] => match stl_rfind (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun rfind (s:string, e:char) : opt[int] => match stl_rfind (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun rfind (s:string, e:char, i:int) : opt[int] => match stl_rfind (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-
-  fun stl_find_first_of: string * string -> int = "$1.find_first_of($2)";
-  fun stl_find_first_of: string * string * int -> int = "$1.find_first_of($2,$3)";
-  fun stl_find_first_of: string * &char -> int = "$1.find_first_of($2)";
-  fun stl_find_first_of: string * &char * int -> int = "$1.find_first_of($2,$3)";
-  fun stl_find_first_of: string * char -> int = "$1.find_first_of($2)";
-  fun stl_find_first_of: string * char * int -> int = "$1.find_first_of($2,$3)";
-
-  fun find_first_of (s:string, e:string) : opt[int] => match stl_find_first_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_of (s:string, e:string, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_of (s:string, e:&char) : opt[int] => match stl_find_first_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_of (s:string, e:&char, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_of (s:string, e:char) : opt[int] => match stl_find_first_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_of (s:string, e:char, i:int) : opt[int] => match stl_find_first_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-
-  fun stl_find_first_not_of: string * string -> int = "$1.find_first_not_of($2)";
-  fun stl_find_first_not_of: string * string * int -> int = "$1.find_first_not_of($2,$3)";
-  fun stl_find_first_not_of: string * &char -> int = "$1.find_first_not_of($2)";
-  fun stl_find_first_not_of: string * &char * int -> int = "$1.find_first_not_of($2,$3)";
-  fun stl_find_first_not_of: string * char -> int = "$1.find_first_not_of($2)";
-  fun stl_find_first_not_of: string * char * int -> int = "$1.find_first_not_of($2,$3)";
-
-  fun find_first_not_of (s:string, e:string) : opt[int] => match stl_find_first_not_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_not_of (s:string, e:string, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_not_of (s:string, e:&char) : opt[int] => match stl_find_first_not_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_not_of (s:string, e:&char, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_not_of (s:string, e:char) : opt[int] => match stl_find_first_not_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_first_not_of (s:string, e:char, i:int) : opt[int] => match stl_find_first_not_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-
-  fun stl_find_last_of: string * string -> int = "$1.find_last_of($2)";
-  fun stl_find_last_of: string * string * int -> int = "$1.find_last_of($2,$3)";
-  fun stl_find_last_of: string * &char -> int = "$1.find_last_of($2)";
-  fun stl_find_last_of: string * &char * int -> int = "$1.find_last_of($2,$3)";
-  fun stl_find_last_of: string * char -> int = "$1.find_last_of($2)";
-  fun stl_find_last_of: string * char * int -> int = "$1.find_last_of($2,$3)";
-
-  fun find_last_of (s:string, e:string) : opt[int] => match stl_find_last_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_of (s:string, e:string, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_of (s:string, e:&char) : opt[int] => match stl_find_last_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_of (s:string, e:&char, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_of (s:string, e:char) : opt[int] => match stl_find_last_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_of (s:string, e:char, i:int) : opt[int] => match stl_find_last_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-
-  fun stl_find_last_not_of: string * string -> int = "$1.find_last_not_of($2)";
-  fun stl_find_last_not_of: string * string * int -> int = "$1.find_last_not_of($2,$3)";
-  fun stl_find_last_not_of: string * &char -> int = "$1.find_last_not_of($2)";
-  fun stl_find_last_not_of: string * &char * int -> int = "$1.find_last_not_of($2,$3)";
-  fun stl_find_last_not_of: string * char -> int = "$1.find_last_not_of($2)";
-  fun stl_find_last_not_of: string * char * int -> int = "$1.find_last_not_of($2,$3)";
-
-  fun find_last_not_of (s:string, e:string) : opt[int] => match stl_find_last_not_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_not_of (s:string, e:string, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_not_of (s:string, e:&char) : opt[int] => match stl_find_last_not_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_not_of (s:string, e:&char, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_not_of (s:string, e:char) : opt[int] => match stl_find_last_not_of (s, e) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-  fun find_last_not_of (s:string, e:char, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i == stl_npos => None[int] | ?i => Some i endmatch;
-
-  fun startswith (x:string) (e:string) : bool =
-  fun endswith (x:string) (e:string) : bool =
-  fun startswith (x:string) (e:char) : bool => x.[0] == e;
-  fun endswith (x:string) (e:char) : bool => x.[len x - 1] == e;
-@
-@h2 Trimmimg
-@felix
-
-  fun ltrim (x:string) (e:string) : string =>
-  fun rtrim (x:string) (e:string) : string =>
-  fun trim (x:string) (e:string) : string => ltrim (rtrim x e) e;
-  fun lstrip (x:string, e:string) : string =
-  fun rstrip (x:string, e:string) : string =
-  fun strip (x:string, e:string) : string => lstrip(rstrip(x, e), e);
-  fun lstrip (x:string) : string => lstrip(x, " \t\n\r\f\v");
-  fun rstrip (x:string) : string => rstrip(x, " \t\n\r\f\v");
-  fun strip (x:string) : string => lstrip$ rstrip x;
-  fun ljust(x:string, width:int) : string =>
-  fun rjust(x:string, width:int) : string =>
-@
-@h2 Splitting
-@felix
-
-  fun split (x:string, d:char): List::list[string] = {
-  fun split (x:string, d:string): List::list[string] = {
-  fun split (x:string, d:&char): List::list[string] = {
-@
-@h2 Insertion and removal
-@felix
-
-  // Note: pos, length!
-  proc erase: string * int * int = "$1.erase($2,$3);";
-  proc insert: string * int * string = "$1.insert($2,$3);";
-  proc replace: string * int * int * string = "$1.replace($2,$3,$4);";
-@
-@h2 printing
-@felix
-
-  proc fprint: ostream * string = "*$1<<$2;" requires Cxx_headers::iostream;
-@
-@h2 Parsing numeric values
-@felix
-  fun atoi: string -> int = "::std::atoi($1.c_str())" requires Cxx_headers::cstdlib;
-  fun atol: string -> long = "::std::atol($1.c_str())" requires Cxx_headers::cstdlib;
-  fun atof: string -> double = "::std::atof($1.c_str())" requires Cxx_headers::cstdlib;
-@
-@h2 Performance
-@felix
-  proc reserve: string * int = "$1.reserve($2);";
-@
-@h2 Conversion to C string
-@felix
-  fun cstr: string -> &char = "(char*)$1.c_str()";
-@
-@h2 Formatting
-@felix
-  fun vsprintf[t]: &char  * t -> string =
-  fun vsprintf[t]: string * t -> string =
-@
-
+Read the library code for <a href='/lib/std/darray.flx'>darray</a>.
 

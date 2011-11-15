@@ -1,76 +1,80 @@
-@h1 Floating Point Complex 
-There are 3 floating point complex types: {fcomplex}, {dcomplex} and {lcomplex}
-corresponding to {float}, {double}, and {long double}
-real numbers.  The mapping is to these C++ types:
-
-@pre
-  Felix name    Alias              C name
-  -----------------------------------------------------------
-  fcomplex      complex[float]    ::std::complex<float>
-  dcomplex      complex[double]   ::std::complex<double>
-  lcomplex      complex[ldouble]  ::std::complex<long double>
-@  
-
-@h2 Functions
-Complex floats can be compared for equality, however there are
-no other comparisons because there is no canonical way to order them.
-
-Complex floats support these base functions:
-@pre
-  neg: t -> t;
-  add: t * t -> t;
-  sub: t * t -> t;
-  mul: t * t -> t;
-  div: t * t -> t;
-@
-and these trigonometric functions:
-@pre
-  sin: t -> t;
-  cos: t -> t;
-  tan: t -> t;
-  asin: t -> t;
-  acos: t -> t;
-  atan: t -> t;
-  sinh: t -> t;
-  cosh: t -> t;
-  tanh: t -> t;
-  asinh: t -> t;
-  acosh: t -> t;
-  atanh: t -> t;
-  exp: t -> t;
-  log: t -> t;
-  pow: t * t -> t;
-@
- 
-@h3 Complex constructors
-Complex numbers do not have literals, instead they have constructors.
-A complex number of any type can be constructed from one real of any type,
-or two reals of the same type, this being the Cartesian form.
+@h2 Basic Overloading
+As in C++, Felix allows functions and procedures to be
+overloaded. However there's a difference: in Felix the arguments
+to a function must match exactly: there are no automatic conversions
+in Felix as there are in C and C++.
 @felix
-val z = dcomplex (1,0,2.0);
+fun f(x:int)=> x * x; 
+fun f(x:double)=> x * x;
+fun f(x:int, y:double) => x.double * y;
+println$ f 1;       // calls f of (int)
+println$ f 1.0;     // calls f of (double)
+println$ f (1,1.0); // calls f of (int * double)
 @
- 
-@h3 Complex functions
+In the comments the name of the called function is 
+indicated: this notation can be used in programs to
+identify a particular function from an overload set.
 
-In addition to the base and trigonometric functions, complex numbers support these functions:
-
+@h2 Hiding
+Note that unlike C++, when you use nested scopes, 
+the identifier name of a function defined in the
+inner scope does not hide functions with the same
+identifier in the outer scope. Only functions with the
+same name and signature (type of the domain of the function)
+in the outer scope are hidden:
 @felix
-  // destructors
-  real: t -> r;
-  imag: t -> r;
-  abs: t -> r;
-  arg: t -> r;
-
-  // mixed complex and real operations
-  add: r * t -> t;
-  add: t * r -> t;
-  sub: r * t -> t;
-  sub: t * r -> t;
-  mul : t * r -> t;
-  mul : r * t -> t;
-  div : t * r -> t;
-  div : r * t -> t;
+fun f(x:int)=>x;
+fun f(x:double)=>x;
+{
+  fun f(x:int)=> x + 1;
+  println$ f 4.2; // 4.2 : calls outer f of (double)
+  println$ f 42;  // 43  : calls inner f of (int)
+};
 @
 
-where {r} is the real type corresponding to the complex type {t}.
+@h2 Named arguments
+It is possible to call functions with named arguments:
+@felix
+fun f(x:int, y:int) => x + 2 * y;
+println$ f(y=2, x=1);
+@
+If you do this <em>all</em> the arguments must be named,
+and the order of the arguments is immaterial.
+
+Named arguments can also help resolve overloads of functions
+with the same type:
+@felix
+fun f(x:int) => x;
+fun f(y:int) => y + y;
+println$ f (y=1);  // 2: calls second f
+@
+You may notice this looks like {f} is called with a
+record argument. Congratulations! Consider this:
+@felix
+fun f(a:(x:int;))=>"Record " + str a.x;
+fun f(x:int)=>"Value " + str x;
+//println$ (x=1); // AMBIGUOUS
+@
+Although records are tuples are isomorphic type, they're
+distinct types. Nevertheless in this special case Felix
+actually does apply an automatic conversion based on
+the isomorphism, and the two applications can never be
+distinguished. Just don't!
+
+@h2 Default values
+It is also possible to provide default values for function (and procedure) parameters.
+If you do this, you can still call the function with a full tuple
+argument, ignoring the default. However if you wish to use
+the defaults you <em>must</em> call the function with a record argument,
+that is, using named parameters, leaving one or more of the defaults out.
+Default values can only be supplied for trailing parameters.
+@felix
+fun f(x:int, y:int=2, z:int=3) => x + 2 * y + z * 3;
+println$ f (10,20,30);        // 140 : using a tuple of 3 components
+println$ f (x=10,y=20,z=30);  // 140 : using a record of 3 components
+println$ f (x=1);             //  14 : using both defaults
+println$ f (x=10,y=20);       //  59 : using one default
+println$ f (x=10,z=30);       // 104 : using the other default
+@
+
 

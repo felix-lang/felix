@@ -1,0 +1,302 @@
+@h1 Integers
+Integers are not builtin types, but are in fact
+defined in the standard library by binding to
+their C equivalents.
+
+@h2 Integer types and literal suffix
+In the following table, the Felix names of the basic integer
+types are given, along with the corresponding C names.
+
+The table also lists the lower case versions of the type suffices allowed
+for literals of that type. Either or both the unsigned designator 'u'
+or the other part may be upper case instead (however lL is not permitted
+for long long, both letters must be either lower or upper case).
+@pre
+  Felix name  C name              Suffix
+  -------------------------------------------------
+  tiny        signed char         t
+  utiny       unsigned char       ut, tu
+  short       signed short int    s
+  ushort      unsigned short int  us, su
+  int         signed int   
+  uint        unsigned int        u
+  long        signed long int     l
+  ulong       unsigned long int   lu, ul
+  vlong       signed long long    ll, v
+  uvlong      unsigned long long  ull, llu, uv, vu
+@
+
+The following aliases for exact integers are also provided:
+
+<pre>
+  Felix name  C name     Suffix
+  -----------------------------
+  int8        int8_t     i8
+  uint8       uint8_t    u8
+  int16       int16_t    i16
+  uint16      uint16_t   u16
+  int32       int32_t    i32
+  uint32      uint32_t   u32
+  int64       int64_t    i64
+  uint64      uint64_t   u64
+</pre>
+
+The following special aliases are also provided
+to use in low level code related to address calculations:
+
+<pre>
+  Felix name    C name
+  ------------------------
+  size          size_t
+  ptrdiff       ptrdiff_t
+  intptr        intptr_t
+  uintptr       uintptr_t
+  intmax        intmax_t
+  uintmax       uintmax_t
+</pre>
+
+
+Felix guarantees all the addressing and exact integer aliases exist,
+even if the C89, C++ or C99 counterparts do not. When the C/C++ counterparts
+do exist, Felix binds to the same integer type, otherwise it binds to
+the largest appropriate integer type (for example, if both long
+and long long exist and are the same size as a pointer, and
+intptr_t is not defined by C or C++, then Felix choses long long
+as the alias).
+
+Note that there are no suffices for the special address calculating
+integer aliases. It is best to use a literal with a long enough type
+and cast it as required.
+
+Note also that unlike modern C and C++ very long integers without
+a suffix are still type {int}. This is because Felix has no idea
+of the limits of integer types.
+
+@h2 Integer literal radix
+An integer literal consists of a prefix, numeric form and suffix.
+The suffix is noted in the tables above.
+Either the size indicator or signedness indicator 'u' or 'i'
+can be wholly capitalised (but note that lL is not allowed).
+
+The prefix denotes the radix as in the table below:
+<pre>
+  Prefix      Radix    name         Allowed digits
+  --------------------------------------------------------
+  0b 0B       2        binary       01
+  0o 0O       8        octal        01234567
+  0d 0D none  10       decimal      0123456789
+  0x 0X       16       hexadecimal  0123456789ABCDEFabcdef
+</pre>
+
+Hexadecimal digits which are letters may also be capitalised.
+Please note that unlike C {077} is decimal 77, it is not octal,
+you must use {0o77} to get octal!
+
+@h2 Underscore separators
+The numeric form consists of digits from the table above,
+with optional underscores inserted for layout purposes.
+Two underscores in a row are not permitted, one is allowed
+between digits, or a digit and the prefix or suffix.
+
+@h2 Exact rule for literals
+@felix
+let bindigit = ['0'-'1']
+let octdigit = ['0'-'7']
+let digit = ['0'-'9']
+let hexdigit = digit | ['A'-'F'] | ['a'-'f']
+let underscore = '_'
+
+let bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +
+let oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +
+let dec_lit  = ('0' ('d' | 'D'| "d_" | "D_"))? digit (underscore? digit) *
+let hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +
+let fastint_type_suffix = 't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"
+let exactint_type_suffix =
+    "i8" | "i16" | "i32" | "i64"
+  | "u8" | "u16" | "u32" | "u64"
+  | "I8" | "I16" | "I32" | "I64"
+  | "U8" | "U16" | "U32" | "U64"
+
+let signind = 'u' | 'U'
+
+let suffix =
+    '_'? exactint_type_suffix
+  | ('_'? fastint_type_suffix)? ('_'? signind)?
+  | ('_'? signind)? ('_'? fastint_type_suffix)?
+
+let int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix
+@
+
+@h2 Example literals
+@felix
+// radix
+{
+  val i1 = 999;      // decimal
+  val i2 = 0b1111;   // binary
+  val i3 = 0o7777;   // octal
+  val i4 = 0d9999;   // decimal
+  val i5 = 0xF1_F2;  // hex
+};
+
+// underscores
+{
+  val i1 = 123_456;
+  val i2 = 0x_FF_FFu;
+};
+
+// normal signed integers
+{
+  val i1 : tiny = 1t;
+  val i2 : short = 1s;
+  val i3 : int = 1; // default
+  val i4 : int = 1i;
+  val i5 : long = 1l;
+  val i6 : vlong = 1ll;
+};
+
+// normal unsigned integers
+{
+  val i1 : utiny = 1tu;
+  val i2 : utiny = 1ut; // u may be first or last
+  val i3 : ushort = 1su;
+  val i4 : uint = 1u; // default
+  val i5 : uint = 1iu;
+  val i6 : ulong = 1lu;
+  val i7 : uvlong = 1vu;
+  val i8 : uvlong = 1llu; // alternate
+};
+
+// exact signed integers
+{
+  val i1 : int8 = 1i8;
+  val i2 : int16 = 1i16;
+  val i3 : int32 = 1i32;
+  val i4 : int64 = 1i64;
+};
+
+// exact unsigned integers
+{
+  val i1 : uint8 = 1u8; // 1iu8 not allowed
+  val i2 : uint16 = 1u16;
+  val i3 : uint32 = 1u32;
+  val i4 : uint64 = 1u64;
+};
+@
+
+@h2 Functions 
+Arithmetic types support the same operations as ISO C99,
+except that Felix does not support bitwise operations on
+signed integers (shifts are supported, they're multiplications
+by powers of two).
+
+Note also, Felix does not provide automatic conversions.
+All standard integer operations of two arguments require
+both argument to be the same type, all operations return
+a value of that type. 
+
+Overflow of operations on signed types is undefined
+behaviour. Operations on unsigned types cannot overflow
+because they are defined as the modular residual of the
+underlying mathematical operation on integers.
+
+Thus, operations on exact unsigned integral types are fully
+deterministic, and operations on signed integral types
+are also deterministic when they do not overflow.
+
+In the table below the most tightly binding operation
+groups are given first (with one exception, power).
+Please note that all operator expressions are transformed
+by the parser into function calls.
+<pre>
+  operator parsing function     meaning
+  ------------------------------------------------------------------
+                   abs i        absolute value         (signed only)
+                   sgn i        sign       (returns int -1, 0 or +1)
+                                                       (signed only)
+                   succ i       successor
+                   pred i       predecessor
+                   max(i,j)     maximum
+                   min(i,j)     minimum
+                   gcd(i,j)     greatest common divisor
+                   lcm(i,j)     lowest common multiple
+  ------------------------------------------------------------------
+  +i       special plus i       identity
+  -i       special neg i        negation
+  ~i       special bnot i       bitwise compliment   (unsigned only)
+  i**j     special pow (i,j)    power
+  ------------------------------------------------------------------
+  i/j      left    div (i,j)    integer division
+  i%j      left    mod (i,j)    modular remainder
+  ------------------------------------------------------------------
+  i*j      unassoc mul (i,j)    multiplication
+  ------------------------------------------------------------------
+  i-j      left    sub (i,j)    subtraction
+  ------------------------------------------------------------------
+  i+j      unassoc add (i,j)    addition
+  ------------------------------------------------------------------
+  i&lt;&lt;j     left    shl (i,j)    multiply by power of 2
+  i&gt;&gt;j     left    shr (i,j)    divide by power of 2
+  -----------------------------------------------------------------
+  i\&amp;j     left    band (i,j)   bitwise and          (unsigned only)
+  ------------------------------------------------------------------
+  i\^j     left    bxor (i,j)   bitwise exclusive or (unsigned only)
+  ------------------------------------------------------------------
+  i\|j     left    bor (i,j)    bitwise or           (unsigned only)
+  ------------------------------------------------------------------
+  i&lt;j              lt (i,j)      less than             (returns bool)
+  i&lt;=j             le (i,j)      less than or equal    (returns bool)
+  i&gt;=j             ge (i,j)      greater than or equal (returns bool)
+  i&gt;j              gt (i,j)      greater than          (returns bool)
+  i==j             eq (i,j)      equal                 (returns bool)
+  i!=j             neq (i,j)     not equal             (returns bool)
+</pre>
+There two very important and unusual things to note.
+The first is the weird special grammar of the power operator.
+Whilst {- a**b} means {-(a**b)}, weirdly {a**-b} means 
+{a^(-b)}. This special grammar supports common mathematical
+usage.
+
+The second thing to note is that division has a higher precedence
+than multiplication, and subtraction has a higher precedence than addition.
+This has no effect on non-overflowing signed integer operations,
+but it does make a difference for unsigned integer operations and
+also floating point (which isn't associative).
+
+The reason for this quirk is that Felix uses the same grammar for
+types as run time expressions, and we require tuple types {a * b * c}
+to be distinct from {a * (b * c)} and {(a * b) * c} and similarly for {a + b + c}.
+Because of this operator {*} is not left or right associative, and in particular
+can't associate with operator {/} so they have to have different precedences.
+
+For a complete and precise understanding of the grammar you must
+consult the grammar file {lib/grammar/expressions.flxh}.
+
+For a precise understanding of the standard operations on integers you
+must consult the typeclass specifications in {lib/std/algebraic.flx}.
+
+@h3 Mixed mode integer operations
+Felix by default only supports arithmetic on integers
+of exactly the same type. To enable mixed mode arithmetic
+open the MixedInt module.
+
+@h2 Procedures
+Felix supports the following procedures on integers:
+<pre>
+  operator     procedure
+  -----------------------------
+  ++i;         pre_incr (&amp;i)
+  i++;         post_incr (&amp;i)
+  --i;         pre_decr (&amp;i)
+  i--;         post_decr (&amp;i)
+  i+=j;        plus_eq  (&amp;i,j)
+  i-=j;        minus_eq (&amp;i,j)
+  i*=j;        mul_eq (&amp;i,j)
+  i/=j;        div_eq (&amp;i,j)
+  i%=j;        mod_eq (&amp;i,j)
+  i|=j;        bor_eq (&amp;i,j)
+  i^=j;        bxor_eq (&amp;i,j)
+  i&amp;=j;        band_eq (&amp;i,j)
+</pre>
+Note that the first argument of the procedure is a pointer to the store to
+be modified.
+

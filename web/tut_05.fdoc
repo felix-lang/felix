@@ -1,130 +1,109 @@
-@h1 String Literals
-Felix provides 2 kinds of strings: {string}, and {ustring}.
-The most commonly used string is {string}, it is an 8 bit clean string
-implement by the C++ {::std::basic_string&lt;char&gt;}.
+@h1 Variables and Pointers
+In Felix, there are two kinds of entities: <em>values</em>
+and <em>objects</em>. 
 
-The {ustring} type is based on ISO10646/Unicode character set with
-code points represented by type {uint32}. As this type currently
-has limited functionality we will focus on the {string} type.
+Literals are values, all computations yield values, and all parameter
+passing is notionally passing of a value.
 
-@h2 String literals
-Felix provides string literals modelled on Python's system.
+In Felix all value types are first class, meaning they can be 
+default initialised, copy constructed, copy assigned, and destroyed.
+Values are generally immutable.
 
-@h3 Basic quotation
-Strings can use either single {'} quotes or double {"} quotes,
-such strings must not span lines (i.e. they may not contain
-literal newline characters). Single quoted string can contain
-double quotes and double quoted strings can contain single quotes:
+Although everything is a value, Felix also has objects.
+Objects are not first class and need not be default initialisable,
+copyable or assignable, although they must be destructible.
+
+Objects types in Felix are always constructed on the heap and represented
+thereafter by a pointer. Pointers are first class values in themselves,
+even though what they represent may not be. If {T} is a type then
+{&amp;T} is the type of a pointer to that type.
+
+We have seen you can name values like this:
 @felix
-println "Hello";
-println 'Hello';
-println "'ello world";
-println 'Say "Hello World"';
+val x = 1;
+val y = 2;
+val z = y + y;
 @
-@h3 Extended quotation: Preformatted text
-To span many lines you can use triple quotes:
+
+All values can be used as objects. There are two ways to do this.
+The first way is to copy the value onto the heap using {new}
+and retrieve the value by dereferencing the returned pointer:
+with operator {*}:
 @felix
-println 
-"""
-  This is a preformatted text,
-  It allows another line to be next,
-  Leading spaces are kept,
-  "Confusing", he wept
-  Programming languages must be hex'd.
-""";
-
-println '''Tripled single quotes are 
-allowed too";
+val px = new 1;
+val py = new 2;
+val z = *px + *py;
 @
-With preformatted text the initial newline is kept too.
-
-@h3 Character Escapes
-Strings using basic or extended quotation can have
-certain special characters embedded in them using
-slosh (backslash) escapes. The standard escapes
-are shown below. The encoding is from the old ASCII
-character set. The so-called "control characters" were
-used in the old days to control an electric typewritter.
-@pre
-  Escape            Replacement   Old meaning
-  --------------------------------------------------
-  \a                char 7        bell
-  \b                char 8        BS: backspace 
-  \t                char 9        HT: horizontal tab
-  \n                char 10       LF: linefeed (newline)
-  \v                char 11       VT: vertical tab
-  \f                char 12       FF: form feed
-  \r                char 13       CR: carriage return
-@
-The following escapes are used to control quoting:
-@pre
-  Escape            Replacement   
-  -----------------------------
-  \'                '            
-  \"                "           
-  \\                \          
-@
-In addition, slosh space normally emits a space.
-However slosh followed by 0 or more spaces followed
-by a newline causes all the spaces and the newline
-to be elided, effectively concatenating two lines of text.
-For example
+The second way is to create a <em>variable slot</em> on the
+stack or global store with a {var} definition and find a
+pointer to the variable using the addressing operators {&amp;}:
 @felix
-println """\
-Hello \ 
-World\
-""";
+var x = 1;
+val px = &x;
+val z = *px + *px;
 @
-prints the hello world message on a single line. This is similar
-to the usual C and Unix end of line processing <em>except</em>
-extra spaces are allowed before the newline. The reason is that
-it is hard, if not impossible, to actually see if the character
-following the slosh is a newline or some spaces followed by a newline.
-The unix and C rules are two fragile for safe use.
-
-@String folding
-There's another way to get nice formatted text: string folding:
+Note that unlike C and C++ it is safe, although definitely not
+recommended, to take the address of a variable in a function
+and return it:
 @felix
-println$
-  "This is a preformatted text,\n"
-  "It allows another line to be next,\n"
-  "Leading spaces are kept,\n"
-  '"Confusing", he wept\n'
-  "Programming languages must be hex'd.\n"
-;
-@ 
-Here we manually inserted the line ends. Incidentally such folding
-is not just a pre-processing step. When one string expression is
-applied to another the result is the concatenation of the strings.
-However if literals are used, the concatenation is done by the parser
-instead of at run time.
-
-@h3 Numeric Escapes
-There is another form of escaping where one or more characters are
-inserted into a string based on a numeric code. These are:
-@pre
-  Escape            Scan  Chars      Name
-  --------------------------------------------------
-  \oOOO             0-3     Octal    Octal Escape
-  \dDDD             0-3     Decimal  Decimal Escape
-  \xHH              0-2     Hex      Hex Escape
-  \uHHHH            0-4     Hex      Short unicode escape 
-  \UHHHHHHH         0-8     Hex      Long unicode escape
+fun f(x:int) : &int = {
+   var a = x;
+   return &x; // safe!
+}
 @
-The rules are a bit tricky. All these escapes scan for between
-0 and N characters, as indicated in the scan column. The scan
-never exceeds the maximum number of characters. It is also stopped
-when a character is not in the indicated character set, for example
-{\xx} will emit a code {0} or {nul} character followed by an {x}.
+if you do this, Felix will allocate the function's stack from on the heap,
+and the garbage collector will not reap that object until it is unreachable.
+Whilst the pointer to the variable {a} is itself stored in a reachable location,
+the stack frame will remain allocated.
 
-The unicode escapes emit a stream of characters, namely the
-decoded code point encoded by {utf-8}. Thus, if you consider
-your 8 bit clean strings as containing {utf-8} encoded unicode
-you can use these escapes. Note that {\xFF} is quite distinct
-from {\uFF} since the latter emits a single character with 
-code point 255, whereas the former emits two characters
-being the {utf-8} representation of code point 255.
+Storing function frames on the heap is inefficient compared to using the stack
+so it is better to avoid this practice.
 
-@h3 Other escapes
-All other escapes are left intact, that is, including the
-slosh, for example {\c} translates to {\c} and not just {c}.
+@h2 Assignment
+Once you have a pointer to an object, you may be able to modify it.
+If the object type is first class, or otherwise assignable,
+you can put a new value into the object:
+@felix
+var x: int = 0;       // make an object 
+val px = &x;          // find its address
+px <- 1;              // store new value at pointer
+println$ x;           // 1 : the object has been set to a new value
+@
+Using the heap:
+@felix
+val px = new 0;
+px <- 1;
+println$ x;
+@
+
+The store operator {&lt;-} as the type:
+@felix
+  &T * T -> void
+@
+Felix also provides the more traditional assignment operator {=}:
+@felix
+var x = 1; 
+x = 2;       // syntactic sugar for &x <- 2
+println$ x;  // 2
+@
+but as you can see it is just syntactic sugar. All mutators work this
+way for example:
+@felix
+  var x = 1;
+  x++;    // syntactic sugar for post_dec (&x)
+  x+=1;   // syntactic sugar for plus_eq (&x,1)
+@
+In particular all operators and functions except {&amp;}
+accept values: there are no reference types. There are no
+operations which modify values directly.
+
+Some values, when encoded in object store, can be modified
+partially via a pointer to that store. Clearly scalar values
+cannot be partially modified, most aggregates can be.
+
+For Felix types, whether or not this is possible is determined solely by functions
+that manipulate pointers to objects storing those values.
+
+For types defined in C++ and lifted into Felix, the programmer may
+provide mutators.
+ 

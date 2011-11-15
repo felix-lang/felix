@@ -1,0 +1,25 @@
+@h1 Arrays
+Felix has several kinds of array
+
+@h2 Arrays
+When you write a tuple like this:
+@felix
+  val x = 1,2,3,4,5;
+@
+where all the components have the same type, it is called an 
+array. A special notation may be used for this array type:
+@felix
+  int^5
+@
+that is, int multipled by itself 5 times: this type is exactly
+the same (not equivalent or isomorphic but exactly the same) as:
+@felix
+  int * int * int * int * int
+@
+There is also an alias in the library which can be used:
+@felix
+  array[int,5]
+@
+You should note that {int^1} is exactly the same as {int}:
+it is technically not a tuple.
+
