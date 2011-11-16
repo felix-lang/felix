@@ -28,6 +28,7 @@ type t = private
   | BEXE_assert of Flx_srcref.t * Flx_bexpr.t
   | BEXE_assert2 of Flx_srcref.t * Flx_srcref.t * Flx_bexpr.t option * Flx_bexpr.t
   | BEXE_axiom_check of Flx_srcref.t * Flx_bexpr.t
+  | BEXE_axiom_check2 of Flx_srcref.t * Flx_srcref.t * Flx_bexpr.t option * Flx_bexpr.t
 
 (* -------------------------------------------------------------------------- *)
 
@@ -56,6 +57,7 @@ val bexe_begin : unit -> t
 val bexe_end : unit -> t
 val bexe_assert : Flx_srcref.t * Flx_bexpr.t -> t
 val bexe_assert2 : Flx_srcref.t * Flx_srcref.t * Flx_bexpr.t option * Flx_bexpr.t -> t
+val bexe_axiom_check2 : Flx_srcref.t * Flx_srcref.t * Flx_bexpr.t option * Flx_bexpr.t -> t
 val bexe_axiom_check : Flx_srcref.t * Flx_bexpr.t -> t
 
 (* -------------------------------------------------------------------------- *)

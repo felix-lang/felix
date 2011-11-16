@@ -10,9 +10,9 @@ You know you need a function (notice the typos on the last line?)
 Basic Felix functions are easy:
 @felix
 fun square(x:int)=>x * x;  // define a function
-println$ "Square of " + str 1 " is " str (square 1);
-println$ "Square of " + str 2 " is " str 2.square;
-println$ "Sguare of " + str 3 " is " str$ square 3;
+println$ "Square of " + str 1 + " is " + str (square 1);
+println$ "Square of " + str 2 + " is " + str 2.square;
+println$ "Sguare of " + str 3 + " is " + str$ square 3;
 @
 We fixed the bug in the calculation of the square of 3, and 
 we're also showing the three ways to apply a function: 

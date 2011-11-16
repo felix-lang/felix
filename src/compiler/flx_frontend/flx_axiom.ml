@@ -149,10 +149,10 @@ let verify syms bsym_table csr e =
       | None -> None
       in
       let comment = bexe_comment (csr,"Check " ^ id) in
-      let ax = bexe_assert2 (csr,axsr,precond,cond) in
-      (*
-      print_endline ("Assertion: " ^ tsbe sym_table cond);
-      *)
+      let ax = bexe_axiom_check2 (csr,axsr,precond,cond) in
+(*
+      print_endline ("axiom_check2 : " ^ tsbe sym_table cond);
+*)
       xx := ax :: comment :: !xx
   )
   !(syms.axioms)

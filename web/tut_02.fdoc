@@ -12,6 +12,13 @@ Note that there are no {char} literals, instead the char constructor takes
 a string and provides the first character (if there is one) or the {nul}
 character if the string is empty.
 
+@h1 Type aliases
+In Felix you can introduce an alias for a type:
+@felix
+typedef myint = int;
+typedef int_pair = int * int;
+@
+
 @h1 Tuples
 We can combine several values in a comma separated list to form tuple.
 @felix
@@ -29,6 +36,15 @@ You can retrive a value from a tuple with a integral literal:
   println x.2; // "Hello"
 @
 Note the field numbers are zero origin in keeping with C conventions.
+There are no tuples with one component. 
+@h2 Unit
+However, there is a tuple with no components with a single unique value:
+@felix
+  ()
+@
+the type of which is called {unit} type and can also
+be designated by {1}.
+
 
 @h2 Records
 There is another aggregate similar to a tuple except the fields are named:
@@ -43,11 +59,7 @@ The type of these (equal) records are given by:
 @felix
   (a:int; b:double; c:string;)
 @
-@h2 Unit
-The type {int^0} also exists and is identical to {t^0} for
-all (non-void) types {t} it is called the {unit} type and can also
-be designated by {1}. The unique value of this type is written:
-@felix
-  ()
-@
+Records can have a any number of components, including 1 and 0.
+The record type with zero components is identified with the tuple
+with no components, namely {unit}.
 

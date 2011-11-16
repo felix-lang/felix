@@ -29,6 +29,7 @@ type t =
   | BEXE_assert of Flx_srcref.t * Flx_bexpr.t
   | BEXE_assert2 of Flx_srcref.t * Flx_srcref.t * Flx_bexpr.t option * Flx_bexpr.t
   | BEXE_axiom_check of Flx_srcref.t * Flx_bexpr.t
+  | BEXE_axiom_check2 of Flx_srcref.t * Flx_srcref.t * Flx_bexpr.t option * Flx_bexpr.t
 
 (* -------------------------------------------------------------------------- *)
 
@@ -58,6 +59,7 @@ let bexe_end () = BEXE_end
 let bexe_assert (sr,e) = BEXE_assert (sr,e)
 let bexe_assert2 (sr1,sr2,e1,e2) = BEXE_assert2 (sr1,sr2,e1,e2)
 let bexe_axiom_check (sr,e) = BEXE_axiom_check (sr,e)
+let bexe_axiom_check2 (sr1,sr2,e1,e2) = BEXE_axiom_check2 (sr1,sr2,e1,e2)
 
 (* -------------------------------------------------------------------------- *)
 
@@ -66,6 +68,7 @@ let get_srcref = function
   | BEXE_goto (sr,_)
   | BEXE_assert (sr,_)
   | BEXE_assert2 (sr,_,_,_)
+  | BEXE_axiom_check2 (sr,_,_,_)
   | BEXE_axiom_check (sr,_)
   | BEXE_halt (sr,_)
   | BEXE_trace (sr,_,_)
@@ -129,7 +132,8 @@ let iter
   | BEXE_fun_return (sr,e) -> f_bexpr e
   | BEXE_yield (sr,e) -> f_bexpr e
   | BEXE_axiom_check (_,e) -> f_bexpr e
-  | BEXE_assert2 (_,_,e1,e2) ->
+  | BEXE_assert2 (_,_,e1,e2) 
+  | BEXE_axiom_check2 (_,_,e1,e2) ->
       (match e1 with Some e -> f_bexpr e | None->());
       f_bexpr e2
   | BEXE_assert (_,e) -> f_bexpr e
@@ -174,6 +178,9 @@ let map
   | BEXE_assert2 (sr,sr2,e1,e2) ->
       let e1 = match e1 with Some e1 -> Some (f_bexpr e1) | None -> None in
       BEXE_assert2 (sr,sr2,e1,f_bexpr e2)
+  | BEXE_axiom_check2 (sr,sr2,e1,e2) ->
+      let e1 = match e1 with Some e1 -> Some (f_bexpr e1) | None -> None in
+      BEXE_axiom_check2 (sr,sr2,e1,f_bexpr e2)
   | BEXE_axiom_check (sr,e) -> BEXE_axiom_check (sr,f_bexpr e)
   | BEXE_init (sr,i,e) -> BEXE_init (sr,f_bid i,f_bexpr e)
   | BEXE_svc (sr,i) -> BEXE_svc (sr,f_bid i)
@@ -309,6 +316,12 @@ let print f = function
         Flx_bexpr.print e
   | BEXE_assert2 (sr1, sr2, e1, e2) ->
       print_variant4 f "BEXE_assert2"
+        Flx_srcref.print sr1
+        Flx_srcref.print sr2
+        (print_opt Flx_bexpr.print) e1
+        Flx_bexpr.print e2
+  | BEXE_axiom_check2 (sr1, sr2, e1, e2) ->
+      print_variant4 f "BEXE_axiom_check2"
         Flx_srcref.print sr1
         Flx_srcref.print sr2
         (print_opt Flx_bexpr.print) e1

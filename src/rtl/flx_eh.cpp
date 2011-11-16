@@ -52,6 +52,13 @@ int ::flx::rtl::flx_exception_handler (flx_exception_t *e)
     print_loc(stderr,x->flx_loc2,x->cxx_srcfile, x->cxx_srcline);
     return 3;
   }
+  if (flx_axiom_check_failure_t *x = dynamic_cast<flx_axiom_check_failure_t*>(e))
+  {
+    fprintf(stderr,"Axiom Check Failure\n");
+    print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    print_loc(stderr,x->flx_loc2,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
   else
   if (flx_match_failure_t *x = dynamic_cast<flx_match_failure_t*>(e))
   {

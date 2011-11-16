@@ -37,6 +37,12 @@
     ::flx::rtl::flx_range_srcref_t(f2,sl2,sc2,el2,sc2),\
     __FILE__,__LINE__)
 
+#define FLX_AXIOM_CHECK_FAILURE(f,sl,sc,el,ec,f2,sl2,sc2,el2,ec2) \
+  throw ::flx::rtl::flx_axiom_check_failure_t (\
+    ::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),\
+    ::flx::rtl::flx_range_srcref_t(f2,sl2,sc2,el2,sc2),\
+    __FILE__,__LINE__)
+
 #define FLX_RANGE_FAILURE(mi,v,ma,f,sl,sc,el,ec) \
   throw ::flx::rtl::flx_range_failure_t (mi,v,ma,::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
 

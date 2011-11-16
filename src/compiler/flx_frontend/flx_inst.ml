@@ -228,6 +228,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
     ->
       ue sr e
 
+  | BEXE_axiom_check2 (sr,_,e1,e2)
   | BEXE_assert2 (sr,_,e1,e2)
     ->
      begin match e1 with Some e -> ue sr e | None -> () end;

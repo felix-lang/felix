@@ -15,6 +15,7 @@ struct FLX_EXCEPTIONS_EXTERN flx_range_srcref_t;
 struct FLX_EXCEPTIONS_EXTERN flx_match_failure_t;
 struct FLX_EXCEPTIONS_EXTERN flx_assert_failure_t;
 struct FLX_EXCEPTIONS_EXTERN flx_assert2_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_axiom_check_failure_t;
 struct FLX_EXCEPTIONS_EXTERN flx_switch_failure_t;
 
 // ********************************************************
@@ -112,6 +113,15 @@ struct FLX_EXCEPTIONS_EXTERN flx_assert2_failure_t : flx_exception_t {
   int cxx_srcline;            ///< __LINE__ macro
   flx_assert2_failure_t(flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl);
   virtual ~flx_assert2_failure_t();
+};
+
+struct FLX_EXCEPTIONS_EXTERN flx_axiom_check_failure_t : flx_exception_t {
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  flx_range_srcref_t flx_loc2; ///< second location in Felix file
+  char const *cxx_srcfile;          ///< C++ file
+  int cxx_srcline;            ///< __LINE__ macro
+  flx_axiom_check_failure_t (flx_range_srcref_t ff, flx_range_srcref_t ff2, char const *cf, int cl);
+  virtual ~flx_axiom_check_failure_t ();
 };
 
 // ********************************************************

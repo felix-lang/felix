@@ -48,7 +48,7 @@ and return it:
 @felix
 fun f(x:int) : &int = {
    var a = x;
-   return &x; // safe!
+   return &a; // safe!
 }
 @
 if you do this, Felix will allocate the function's stack from on the heap,
@@ -83,15 +83,15 @@ The store operator {&lt;-} as the type:
 Felix also provides the more traditional assignment operator {=}:
 @felix
 var x = 1; 
-x = 2;       // syntactic sugar for &x <- 2
+x = 2;       // syntactic sugar for &amp;x &lt;- 2
 println$ x;  // 2
 @
 but as you can see it is just syntactic sugar. All mutators work this
 way for example:
 @felix
   var x = 1;
-  x++;    // syntactic sugar for post_dec (&x)
-  x+=1;   // syntactic sugar for plus_eq (&x,1)
+  x++;    // syntactic sugar for post_dec (&amp;x)
+  x+=1;   // syntactic sugar for plus_eq (&amp;x,1)
 @
 In particular all operators and functions except {&amp;}
 accept values: there are no reference types. There are no

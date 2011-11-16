@@ -514,6 +514,7 @@ let rec can_stack_proc
     | BEXE_ifgoto _
     | BEXE_assert _
     | BEXE_assert2 _
+    | BEXE_axiom_check2 _
     | BEXE_begin
     | BEXE_end
     | BEXE_nop _

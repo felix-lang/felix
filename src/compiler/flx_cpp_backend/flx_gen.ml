@@ -1348,6 +1348,7 @@ let gen_exe filename
        "        FLX_ASSERT_FAILURE("^s^");}\n"
 
     | BEXE_assert2 (sr,sr2,e1,e2) ->
+       print_endline "ASSERT2";
        let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
        let s = string_of_string f ^ "," ^
          si sl ^ "," ^ si sc ^ "," ^
@@ -1366,6 +1367,35 @@ let gen_exe filename
        )
        ^
        "        FLX_ASSERT2_FAILURE("^s^"," ^ s2 ^");}\n"
+
+    | BEXE_axiom_check2 (sr,sr2,e1,e2) ->
+       (*
+       print_endline "AXIOM CHECK";
+       *)
+       let f, sl, sc, el, ec = Flx_srcref.to_tuple sr in
+       let s = string_of_string f ^ "," ^
+         si sl ^ "," ^ si sc ^ "," ^
+         si el ^ "," ^ si ec
+       in
+       let f2, sl2, sc2, el2, ec2 = Flx_srcref.to_tuple sr2 in
+       let s2 = string_of_string f2 ^ "," ^
+         si sl2 ^ "," ^ si sc2 ^ "," ^
+         si el2 ^ "," ^ si ec2
+       in
+       try
+       (match e1 with
+       | None ->
+       "      {if(FLX_UNLIKELY(!(" ^ ge sr e2 ^ ")))\n"
+       | Some e ->
+       "      {if(FLX_UNLIKELY("^ge sr e^" && !(" ^ ge sr e2 ^ ")))\n"
+       )
+       ^
+       "        FLX_AXIOM_CHECK_FAILURE("^s^"," ^ s2 ^");}\n"
+       with _ ->
+         print_endline "ELIDING FAULTY AXIOM CHECK -- typeclass virtual instantiation failure?";
+         ""
+
+
   in gexe exe
 
 let gen_exes

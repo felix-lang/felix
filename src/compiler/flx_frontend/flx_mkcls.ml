@@ -344,6 +344,9 @@ let process_exe ue state bsym_table all_closures exe =
   | BEXE_init (sr,i,e) -> bexe_init (sr,i,ue sr e)
   | BEXE_assign (sr,e1,e2) -> bexe_assign (sr, ue sr e1, ue sr e2)
   | BEXE_assert (sr,e) -> bexe_assert (sr, ue sr e)
+  | BEXE_axiom_check2 (sr,sr2,e1,e2) ->
+    let e1 = match e1 with Some e -> Some (ue sr e) | None -> None in
+    bexe_axiom_check2 (sr, sr2,e1,ue sr e2)
   | BEXE_assert2 (sr,sr2,e1,e2) ->
     let e1 = match e1 with Some e -> Some (ue sr e) | None -> None in
     bexe_assert2 (sr, sr2,e1,ue sr e2)

@@ -237,7 +237,9 @@ and xexpr_t sr x =
   | Lst ls -> (* print_endline ("Unexpected literal tuple"); *) EXPR_tuple (sr, map ex ls)
 
   | Id id ->
+      (*
       print_endline ("Unexpected ID=" ^ Flx_id.to_string id);
+      *)
       EXPR_name (sr, Flx_id.of_string id, [])
   | Int i ->
     EXPR_literal (sr, Flx_literal.Int (Flx_literal.Int_kind.Int, i))

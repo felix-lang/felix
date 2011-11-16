@@ -1888,6 +1888,9 @@ and string_of_bexe bsym_table level s =
   | BEXE_goto (_,s) -> spc ^ "goto " ^ s ^ ";"
 
   | BEXE_assert (_,e) -> spc ^ "assert " ^ se e ^ ";"
+  | BEXE_axiom_check2 (_,_,e1,e2) -> spc ^ "axiom_check2 " ^
+    (match e1 with Some e1 -> se e1 ^ " implies " | None -> "") ^
+    se e2^";"
   | BEXE_assert2 (_,_,e1,e2) -> spc ^ "assert2 " ^
     (match e1 with Some e1 -> se e1 ^ " implies " | None -> "") ^
     se e2^";"

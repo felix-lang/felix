@@ -303,6 +303,7 @@ let fold_vars syms bsym_table uses i ps exes =
           | BEXE_ifgoto _
           | BEXE_assert _
           | BEXE_assert2 _
+          | BEXE_axiom_check2 _
              -> elimi exe
 
           (* terminate substitution, return modified instr *)

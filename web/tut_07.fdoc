@@ -1,25 +1,61 @@
-@h1 Arrays
-Felix has several kinds of array
+@h1 Machine Addresses
+Felix provides some types which are used to manipulate
+machine addresses and memory at a low level.
 
-@h2 Arrays
-When you write a tuple like this:
-@felix
-  val x = 1,2,3,4,5;
-@
-where all the components have the same type, it is called an 
-array. A special notation may be used for this array type:
-@felix
-  int^5
-@
-that is, int multipled by itself 5 times: this type is exactly
-the same (not equivalent or isomorphic but exactly the same) as:
-@felix
-  int * int * int * int * int
-@
-There is also an alias in the library which can be used:
-@felix
-  array[int,5]
-@
-You should note that {int^1} is exactly the same as {int}:
-it is technically not a tuple.
+The type {address} is basically a C {void*}.
+However, you can add or subtract an integer from an address,
+as if it were actually a C {unsigned char*}, and of course
+you can also just increment or decrement an addess.
 
+Addition of an integer to an address is modular, that is,
+the addition may cause wrap around like an unsigned integer type.
+
+Addresses are totally ordered and support the usual comparisons
+however addition is not confluent with comparisons:
+@pre
+x > y does not imply x + 1 > y + 1
+@
+
+You can also subtract two addresses, the result is of type {ptrdiff}.
+This is a signed integer type with the same number of values as
+there are addresses. If the addresses are close and the first address
+is larger than the second the result is positive, negative if they're
+ordered the other way. If the addresses are a long way apart, in particular
+more than half the total number of addres value distant, then the difference
+goes through the maximum value to the zero value and the sign is the
+opposite of what is expected. In particular the absolute value
+of the difference is the shortest distance between the addresses
+around the address circle.
+
+Therefore, the difference operation is also not confluent with
+comparisons, that is, 
+@pre
+x &lt; y does not imply y - x &gt; 0
+@
+In particular if {x} is very small, and {y} is very big then 
+whilst mathematically {y-x &gt; 0}, the {ptrdiff} will instead be a
+small negative value.
+
+To solve this problem Felix also provides two more types: 
+{intptr} and {uintptr} which support the same number of values
+as an address: {intptr} is identical to {ptrdiff} whereas
+{uintptr} is unsigned.
+
+Casting a pointer difference to {uintptr} is confluent with comparisons.
+If {y &gt; x} then {(y-x).uintptr} is precisely the mathematical value
+of the difference. If the pointers are reversed the value is the mathematical
+result (which is negative) added to the number of values (one more than the
+maximum).
+
+Addresses cannot be dereferenced.
+
+An address can be obtained from any pointer or integer.
+You can also cast an address to any pointer type, the onus is on
+you, the programmer, to ensure the address actually pointers to
+store containing a value of that type.
+
+The type
+@felix
+  &byte
+@
+supports the same operations as an address except it can be dereferenced.

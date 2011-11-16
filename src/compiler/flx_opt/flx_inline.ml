@@ -386,6 +386,14 @@ let expand_exe syms bsym_table u exe =
       let e2,xs2 = u sr e2 in
       bexe_assert2 (sr,sr2,e1,e2) :: xs2 @ xs1
 
+    | BEXE_axiom_check2 (sr,sr2,e1,e2) ->
+      let e1,xs1 =
+        match e1 with Some e -> let a,b = u sr e in Some a,b
+        | None -> None,[]
+      in
+      let e2,xs2 = u sr e2 in
+      bexe_axiom_check2 (sr,sr2,e1,e2) :: xs2 @ xs1
+
     (* preserve call lift pattern ??*)
     | BEXE_call (sr,(BEXPR_apply((BEXPR_closure(i,ts),t'),e1),t),e2) ->
       let e1,xs1 = u sr e1 in
