@@ -243,28 +243,28 @@ proc draw(drawing: 1->0) {
 
 proc keychan(x:schannel[SDL_keysym])
 {
-  whilst true do
+  while true do
     handle_key$ read x;
   done;
 }
 
 proc activechan(x:schannel[SDL_ActiveEvent])
 {
-  whilst true do
+  while true do
     handle_active$ read x;
   done;
 }
 
 proc resizechan(x:schannel[SDL_ResizeEvent])
 {
-  whilst true do
+  while true do
     handle_resize$ read x;
   done;
 }
 
 proc drawchan(x:schannel[int], drawing:1->0)
 {
-  whilst true do
+  while true do
     var k = read x;
     draw drawing;
   done;
@@ -272,7 +272,7 @@ proc drawchan(x:schannel[int], drawing:1->0)
 
 proc execute(x:schannel[int], something:1->0)
 {
-  whilst true do
+  while true do
     var k = read x;
     something();
   done;
@@ -298,7 +298,7 @@ proc dispatch_event(
   resize:schannel[SDL_ResizeEvent]
 )
 {
-  whilst true do
+  while true do
     //var &e : SDL_Event <- get_sdl_event event_lock;
     var e : SDL_Event;
     poll_event(&e);
@@ -323,7 +323,7 @@ proc dispatch_event(
 /* write ticks at the desired framerate */
 proc framerate (x:schannel[int], framerate:double)
 {
-  whilst true do
+  while true do
     Faio::sleep $ clock,framerate;
     write (x,1);
   done;

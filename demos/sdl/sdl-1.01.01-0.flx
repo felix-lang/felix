@@ -104,7 +104,7 @@ var sounds : sample_t ^ NUM_SOUNDS;
 
 {
   var j:int;
-  forall j in 0 upto NUM_SOUNDS-1 do
+  for j in 0 upto NUM_SOUNDS-1 do
     sounds.[j] = sample_t(null[uint8],0u32,0u32);
   done;
 };
@@ -113,7 +113,7 @@ proc flx_mixaudio(stream : &uint8, len : uint32)
 {
   var i : int;
   var amount : uint32;
-  forall i in 0 upto NUM_SOUNDS-1 do
+  for i in 0 upto NUM_SOUNDS-1 do
     amount = sounds.[i].dlen - sounds.[i].dpos;
     if amount > len do amount = len; done;
     var loc : &uint8 = sounds.[i].data+ cast[int] sounds.[i].dpos;
@@ -149,7 +149,7 @@ proc PlaySound(filename:string)
   var dlen : uint32;
   var cvt : SDL_AudioCVT;
   /* Look for an empty (or finished) sound slot */
-  forall idx in 0 upto 2 do
+  for idx in 0 upto 2 do
     if sounds.[idx].dpos == sounds.[idx].dlen goto found;
   done;
   found:>
@@ -191,7 +191,7 @@ proc PlaySound(filename:string)
 
 SDL_PauseAudio 0;
 {
-  forall i in 1 upto 16 do
+  for i in 1 upto 16 do
     filename := "media/sounds/fs" + str i + ".wav";
     print$ "Playing file " + filename; endl;
     PlaySound(filename);
@@ -200,7 +200,7 @@ SDL_PauseAudio 0;
 
 var s: &SDL_Surface ^ 16;
 {
-  forall i in 1 upto 16 do
+  for i in 1 upto 16 do
        //filename := "media/images/fc" + str i+ ".jpg";
        filename := "media/images/fc" + str i+ ".bmp";
        print$ "Loading file " + filename; endl;
@@ -256,7 +256,7 @@ proc waitk(f:schannel[uint32]) {
   poll_event(&e);
 
   var et = get_type e;
-  whilst
+  while
     et != SDL_KEYDOWN and
     et != SDL_MOUSEBUTTONDOWN and
     et != SDL_QUIT
@@ -277,7 +277,7 @@ proc waittk() {
 }
 
 
-forall i in 0 upto 15 do
+for i in 0 upto 15 do
   if not (isNULL s.[i]) do
     print "Show "; print i; endl;
     var r = SDL_BlitSurface ( s.[i], null[SDL_Rect], screen, &rcDest );

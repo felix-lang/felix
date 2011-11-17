@@ -1,3 +1,0 @@
-val user = Env::getenv("USER","World");
-println$ "Hello "+user+" from Felix " + Version::felix_version;
-

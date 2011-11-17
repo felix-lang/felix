@@ -506,10 +506,10 @@ def doc(ctx):
     ctx.logger.log('building documentation', color='cyan')
 
     # copy website index
-    buildsystem.copy_to(ctx, ctx.buildroot, ['index.html','index2.html'])
+    buildsystem.copy_to(ctx, ctx.buildroot, Path('src/*.html').glob())
 
     # copy website
-    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'web')
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, Path('src')/'web')
 
     # copy the entire src directory so the user can browse it not actually used
     # in the build process

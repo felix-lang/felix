@@ -151,7 +151,7 @@ proc initGL()
   glEnable( GL_BLEND );
 
   /* Create A Loop That Goes Through All The Stars */
-  var i = 0; whilst i< NUM do
+  var i = 0; while i< NUM do
       /* Start All The Stars At Angle Zero */
       stars.[i].angle = 0.0f;
 
@@ -175,7 +175,7 @@ var spin = 0.0f;
 proc rotate()
 {
   var i : int;
-  forall i in 0 upto NUM - 1 do
+  for i in 0 upto NUM - 1 do
     /* Used To Spin The Stars */
     spin += 0.01f;
     /* Changes The Angle Of A Star */
@@ -358,28 +358,28 @@ proc draw(drawing: 1->0) {
 
 proc keychan(x:schannel[SDL_keysym])
 {
-  whilst true do
+  while true do
     handle_key$ read x;
   done;
 }
 
 proc activechan(x:schannel[SDL_ActiveEvent])
 {
-  whilst true do
+  while true do
     handle_active$ read x;
   done;
 }
 
 proc resizechan(x:schannel[SDL_ResizeEvent])
 {
-  whilst true do
+  while true do
     handle_resize$ read x;
   done;
 }
 
 proc drawchan(x:schannel[int], drawing:1->0)
 {
-  whilst true do
+  while true do
     var k = read x;
     draw drawing;
   done;
@@ -387,7 +387,7 @@ proc drawchan(x:schannel[int], drawing:1->0)
 
 proc execute(x:schannel[int], something:1->0)
 {
-  whilst true do
+  while true do
     var k = read x;
     something();
   done;
@@ -413,7 +413,7 @@ proc dispatch_event(
   resize:schannel[SDL_ResizeEvent]
 )
 {
-  whilst true do
+  while true do
     //var &e : SDL_Event <- get_sdl_event event_lock;
     var e : SDL_Event;
     poll_event(&e);
@@ -438,7 +438,7 @@ proc dispatch_event(
 /* write ticks at the desired framerate */
 proc framerate (x:schannel[int], framerate:double)
 {
-  whilst true do
+  while true do
     Faio::sleep$ clock, framerate;
     write (x,1);
   done;
@@ -488,7 +488,7 @@ proc Drawing()
 
     /* Loop Through All The Stars */
   var i = 0;
-  forall i in 0 upto NUM - 1 do
+  for i in 0 upto NUM - 1 do
     /* Reset The View Before We Draw Each Star */
     glLoadIdentity( );
     /* Zoom Into The Screen (Using The Value In 'zoom') */
