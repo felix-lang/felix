@@ -1,10 +1,22 @@
 include "std/posix/posix_headers";
 include "std/posix/errno";
+include "std/posix/time";
 module FileSystem 
 {
+  //------------------------------------------------------------
   // stat
+  //------------------------------------------------------------
   pod type stat_t = "struct stat" requires Posix_headers::sys_stat_h;
   proc stat: string * &stat_t * &int = "*$3=stat($1.c_str(),$2);";
+  gen stat(file: string, statbuf:&stat_t) = { 
+    var res: int; 
+    stat(file, statbuf, &res); 
+    return res == 0;
+  }
+
+  //------------------------------------------------------------
+  // access and modification times
+  //------------------------------------------------------------
   body _mktim_fun = """
     unsigned long _mktim(struct timespec x){ 
      return x.tv_sec * 1000L + x.tv_nsec /1000L; // milliseconds
@@ -13,7 +25,7 @@ module FileSystem
   pod type time_t = "time_t";
   fun mtime: &stat_t -> uvlong = "(unsigned long)($1->st_mtime * 1000ul)";
 
-  // get access and modification time of a file
+  // get modification time of a file
   fun filetime(f:string):uvlong = // milliseconds
   {
     var b: stat_t;
@@ -21,7 +33,6 @@ module FileSystem
     stat(f,&b,&err);
     return if err == 0 then mtime (&b) else uvlong 0 endif;
   }
-  fun fileexists(f:string):bool=> filetime f != uvlong 0;
 
   // set access and modification time of a file
   proc utime: string * uvlong * uvlong * &int = 
@@ -30,7 +41,7 @@ module FileSystem
     utimbuf u; 
     u.actime=(time_t)$2/1000;
     u.modtime=(time_t)$3/1000;
-    *$4 = utime($1.c_str(),&u)";
+    *$4 = utime($1.c_str(),&u); 
     }
   """
   requires Posix_headers::utime_h;
@@ -42,8 +53,14 @@ module FileSystem
   }
   gen utime(f:string, t:uvlong) => utime(f,t,t);
 
-  ctypes mode_t requires Posix_headers::sys_stat_h;
+  fun fileexists(f:string):bool=> filetime f != uvlong 0;
+
+  //------------------------------------------------------------
+  // file mode: type and permissions
+  //------------------------------------------------------------
+  ctypes mode_t requires Posix_headers::sys_types_h;
   // file types
+  const S_IFMT  : mode_t; // file type mask
   const S_IFIFO : mode_t;
   const S_IFCHR : mode_t;
   const S_IFDIR : mode_t;
@@ -72,11 +89,21 @@ module FileSystem
   const S_ISGID : mode_t; // set group id on execute
   const S_ISVXT : mode_t; // sticky bit
 
+  fun bnot : mode_t -> mode_t = "~$1";
   fun bor : mode_t * mode_t -> mode_t = "$1|$2";
   fun band : mode_t * mode_t -> mode_t = "$1&$2";
   fun eq: mode_t * mode_t -> bool = "$1==$2";
 
-  fun raw_mode: &stat_t -> mode_t = "$1->st_mode & S_IFMT";
+  val access_mask = S_IXOTH \| S_IXGRP \| S_IXUSR;
+
+  gen chmod: string * mode_t -> int = "chmod($1.c_str(),$2)" requires Posix_headers::sys_stat_h;
+
+  fun raw_mode: &stat_t -> mode_t = "$1->st_mode";
+  fun file_type(m:mode_t)=>m \& S_IFMT;
+  fun file_perm(m:mode_t)=>m \& ~S_IFMT;
+
+  ctor uint: mode_t = "(unsigned int)$1";
+
   union file_type_t = 
     | PIPE 
     | STREAM 
@@ -90,8 +117,8 @@ module FileSystem
     | NOPERMISSION
   ;
 
-  fun mode (s:&stat_t): file_type_t =>
-    let ?m = raw_mode s in
+  fun file_type (s:&stat_t): file_type_t =>
+    let ?m = file_type$ raw_mode s in
     if m == S_IFIFO then PIPE
     elif m == S_IFCHR then STREAM
     elif m == S_IFDIR then DIRECTORY
@@ -103,13 +130,15 @@ module FileSystem
     endif
   ;
 
+  gen umask: mode_t -> mode_t = "umask($1)";
+
   fun filetype(f:string):file_type_t = 
   {
     var b:stat_t;
     var err:int;
     stat(f,&b,&err);
     return 
-      if err == 0 then mode (&b)
+      if err == 0 then file_type (&b)
       elif errno == EACCES then NOPERMISSION
       elif errno == ENOENT then NONEXISTANT  
       else INDETERMINATE
@@ -117,6 +146,9 @@ module FileSystem
     ;
   }
 
+  //------------------------------------------------------------
+  // File access and create modes
+  //------------------------------------------------------------
   pod type file_perm_t = "int" requires Posix_headers::fcntl_h;
   const O_RDONLY     : file_perm_t;
   const O_WRONLY     : file_perm_t;
@@ -134,47 +166,83 @@ module FileSystem
   fun band : file_perm_t * file_perm_t -> file_perm_t = "$1&$2";
   fun bor  : file_perm_t * file_perm_t -> file_perm_t = "$1|$2";
 
+  //------------------------------------------------------------
+  // File I/O functions
+  //------------------------------------------------------------
   pod type posix_file = "int";
   fun valid: posix_file -> bool = "$1 != -1";
+  ctor int : posix_file = "$1";
 
   gen open: string * file_perm_t * mode_t -> posix_file = "open($1.c_str(), $2, $3)";
   gen open: string * file_perm_t -> posix_file = "open($1.c_str(), $2)";
   gen close: posix_file -> int = "close($1)";
   gen read: posix_file * &char * size -> size = "read($1, $2, $3)";
-  gen write: posix_file * &char * size -> size = "read($1, $2, $3)";
+  gen write: posix_file * &char * size -> size = "write($1, $2, $3)";
+
+
+  //------------------------------------------------------------
+  // copy a file, preserving last access and modification times
+  // owner, group, and permissions
+  //------------------------------------------------------------
   gen filecopy(src: string, dst: string) :  bool =
   {
+    //println$ "Copy " + src + " -> " + dst;
+
+    val now = (Time::time()).uvlong/1000ull; // milliseconds
+    var stat_buf:stat_t;
+    if not stat (src, &stat_buf) do
+      println$ "Can't stat source file " + src;
+      return false;
+    done;
+    val permissions = file_perm$ raw_mode (&stat_buf);
+    val last_modification = filetime(src);
     var fsrc = open (src,O_RDONLY );
     if not valid fsrc do
       println$ " Bad src file in Filesystem::filecopy " + src;
       return false; 
     done
-    var fdst = open (dst,O_WRONLY \| O_CREAT \| O_TRUNC, S_IRWXU);
+    var fdst = open (dst,O_WRONLY \| O_CREAT \| O_TRUNC, permissions);
     if not valid fdst do
       println$ " Bad dst file in Filesystem::filecopy " + dst;
       return false; 
     done
-    bsiz := size (4066 * 1024); // 4 Meg
-    var bread = bsiz;
+    bsiz := size (4096 * 1024); // 4 Meg
     var buffer = C_hack::cast[&char] (C_hack::malloc(bsiz)); // 4 MEG
-    bread = read (fsrc, buffer, bsiz);
+    var bread = read (fsrc, buffer, bsiz);
     while bread > size 0 do
       var bwrite = write (fdst,buffer,bread);
+      if bread != bwrite do
+        if bwrite.int == -1 do
+          println$ 
+            "Dest des = " + str fdst.int+ " "+
+            "Attempt to copy " + str bread + " bytes from " + src + " to " + dst + 
+            " failed with errno = " + str errno + ": " + strerror_r() 
+          ;
+        else
+          println$ 
+            "Attempt to copy " + str bread + " bytes from " + src + " to " + dst + 
+            " failed with " +  str bwrite + " only copied!"
+          ;
+        done
+      done
       bread = read (fsrc, buffer, bsiz);
     done
     var res = close fsrc;
     res = close fdst;
+    C_hack::ignore(utime(dst,now,last_modification));
     C_hack::free(C_hack::cast[address] buffer);
     return true;
   }
   
-  // change permissions
-  gen chmod: string * mode_t -> int = "chmod($1.c_str(), $2)";
-
+  //------------------------------------------------------------
   // create directory
+  //------------------------------------------------------------
   gen mkdir: string * mode_t -> int = "mkdir($1.c_str(), $2)";
   gen mkdir: string  -> int = "mkdir($1.c_str(), 0777)";
 
+  //------------------------------------------------------------
+  // directory searching
+  //------------------------------------------------------------
   type dirent_t = "struct dirent*" requires Posix_headers::dirent_h;
   type DIR_t = "DIR*" requires Posix_headers::dirent_h;
   proc opendir: string * &DIR_t = "*$2=opendir($1.c_str());";
@@ -286,6 +354,9 @@ next:>
   }
  
   
+  //------------------------------------------------------------
+  // generate temporary file name
+  //------------------------------------------------------------
   body tmpnam = """
     string flx_tmpnam() {
       char tmpn[] = "/tmp/flx_XXXXXX";

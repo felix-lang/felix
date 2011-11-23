@@ -1,7 +1,7 @@
 module Time
 {
   open C_hack;
-  header "#include <sys/time.h>";
+  requires Posix_headers::sys_time_h;
 
   private type time_t = "time_t";
   private type suseconds_t = "suseconds_t";
@@ -14,11 +14,12 @@ module Time
     tv_usec: suseconds_t;
   };
 
-  private proc gettimeofday: ptr[timeval] = "gettimeofday($1, NULL);";
+  private proc gettimeofday: &timeval = "gettimeofday($1, NULL);";
 
-  gen time () = {
+  // time in microseconds since Epoch (midnight Jan 1 1970) as a float double
+  gen time () : double = {
     var tv:timeval;
-    gettimeofday(addr tv);
-    return (_ctor_double tv.tv_sec) + ((_ctor_double tv.tv_usec) / 1.0e6);
+    gettimeofday(&tv);
+    return tv.tv_sec.double + tv.tv_usec.double / 1.0e6;
   }
 }

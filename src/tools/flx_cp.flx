@@ -78,7 +78,7 @@ fun subst(s:string, v:varray[StringPiece]): string =
             val t = FileSystem::filetype (Filename::join (dname,d));
             match t with
               | REGULAR => 
-                //println$ "d="+d;
+                // println$ "d="+d;
                 if Re2::Match(re, StringPiece d, 0, ANCHOR_BOTH, v.stl_begin, v.len.int) 
                 do 
                   var src = Filename::join (dname,d);

@@ -10,6 +10,15 @@ open module Errno
 
   fun eq: errno_t * errno_t -> bool= "$1==$2";
   ctor int : errno_t = "$1";
-  proc perror: string = "perror($1.c_str())" requires C89_headers::stdio_h;
+  gen strerror_r: errno_t* &char * size -> int = "strerror_r($1, $2, $3)";
+  gen strerror_r() : string = {
+    var b:array[char,1000];
+    var res = strerror_r(errno, C_hack::cast[&char] (&b), b.len.size);
+    if res != 0 do
+      println$ "Strerror_r failed";
+    done
+    return string( C_hack::cast [&char] (&b));
+  }
+  instance Str[errno_t] { fun str(e:errno_t)=> str e.int; }
 }
 
