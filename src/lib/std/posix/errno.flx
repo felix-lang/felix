@@ -10,13 +10,14 @@ open module Errno
 
   fun eq: errno_t * errno_t -> bool= "$1==$2";
   ctor int : errno_t = "$1";
-  gen strerror_r: errno_t* &char * size -> int = "strerror_r($1, $2, $3)";
+  // Note: we have to void out the return of strerror_r because OSX and XSI 
+  // return int, which disagrees with the GNU version which returns char*
+  // To fix this we'd need more configuration stuff. Can be done,
+  // but currently deferred.
+  proc strerror_r: errno_t* &char * size  = "(void)strerror_r($1, $2, $3)";
   gen strerror_r() : string = {
     var b:array[char,1000];
-    var res = strerror_r(errno, C_hack::cast[&char] (&b), b.len.size);
-    if res != 0 do
-      println$ "Strerror_r failed";
-    done
+    strerror_r(errno, C_hack::cast[&char] (&b), b.len.size);
     return string( C_hack::cast [&char] (&b));
   }
   instance Str[errno_t] { fun str(e:errno_t)=> str e.int; }
