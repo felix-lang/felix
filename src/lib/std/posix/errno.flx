@@ -14,7 +14,7 @@ open module Errno
   // return int, which disagrees with the GNU version which returns char*
   // To fix this we'd need more configuration stuff. Can be done,
   // but currently deferred.
-  proc strerror_r: errno_t* &char * size  = "(void)strerror_r($1, $2, $3)";
+  proc strerror_r: errno_t* &char * size  = "(void)strerror_r($1, $2, $3);";
   gen strerror_r() : string = {
     var b:array[char,1000];
     strerror_r(errno, C_hack::cast[&char] (&b), b.len.size);
