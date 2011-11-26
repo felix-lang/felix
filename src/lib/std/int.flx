@@ -131,6 +131,55 @@ open module Uint64
   ctor[T in reals] uint64: T = "static_cast<?1>($1)";
 }
 
+open module Ssize
+{
+  ctor ssize: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] ssize: T = "static_cast<?1>($1)";
+}
+
+open module Size
+{
+  ctor size: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] size: T = "static_cast<?1>($1)";
+}
+
+open module Offset 
+{
+  ctor offset: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] offset: T = "static_cast<?1>($1)";
+}
+
+open module Ptrdiff
+{
+  ctor ptrdiff: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] ptrdiff: T = "static_cast<?1>($1)";
+}
+
+open module Intptr
+{
+  ctor intptr: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] intptr: T = "static_cast<?1>($1)";
+}
+
+open module Uintptr
+{
+  ctor uintptr: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] uintptr: T = "static_cast<?1>($1)";
+}
+
+open module Intmax 
+{
+  ctor intmax: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] intmax: T = "static_cast<?1>($1)";
+}
+
+open module Uintmax
+{
+  ctor uintmax: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] uintmax: T = "static_cast<?1>($1)";
+}
+
+
 instance Str[tiny] {
   fun str: tiny -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
 }

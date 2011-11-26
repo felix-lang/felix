@@ -362,7 +362,7 @@ let bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +
 let oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +
 let dec_lit  = ('0' ('d' | 'D'| "d_" | "D_"))? digit (underscore? digit) *
 let hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +
-let fastint_type_suffix = 't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"
+let fastint_type_suffix = 't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"|"z"|"Z"|"j"|"J"|"p"|"P"|"d"|"D"
 let exactint_type_suffix =
     "i8" | "i16" | "i32" | "i64"
   | "u8" | "u16" | "u32" | "u64"
@@ -594,9 +594,13 @@ main lexer =
           begin try while !k>first do
             (match s.[!k] with
             | 'u' | 'U' -> sign := "u"
-            | 't' | 'T' -> typ := "tiny"
+            | 't' | 'T' -> typ := "tiny" (* stolen code for ptrdiff .. hmm *)
             | 's' | 'S' -> typ := "short"
             | 'i' | 'I' -> typ := "int"
+            | 'z' | 'Z' -> typ := "size"
+            | 'j' | 'J' -> typ := "intmax"
+            | 'p' | 'P' -> typ := "intptr"
+            | 'd' | 'D' -> typ := "ptrdiff" (* note 'd' instead of the 't' used in C *)
             | 'l' | 'L' ->
               typ :=
                 if !typ = "long" then "vlong" else "long"
@@ -606,7 +610,10 @@ main lexer =
             decr k
           done with _ -> () end;
           incr k;
-          !sign ^ !typ
+          if !typ = "size" then 
+            if !sign = "u" then "size" else "ssize" 
+          else
+            !sign ^ !typ
         end
       in
       let d = String.sub s first (!k-first) in

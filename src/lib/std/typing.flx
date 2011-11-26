@@ -47,7 +47,7 @@ open module Typing
   ;
 
 
-  const memcount[t] : int = "#memcount";
+  const memcount[t] : size = "#memcount";
 }
 
 

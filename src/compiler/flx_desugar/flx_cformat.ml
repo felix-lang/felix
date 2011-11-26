@@ -40,19 +40,27 @@ let fmts = [
   ("llx","uvlong");
   ("llX","uvlong");
 
-  ("zd","size");
-  ("zi","size");
+  ("zd","ssize");
+  ("zi","ssize");
   ("zu","size");
   ("zo","size");
   ("zx","size");
   ("zX","size");
 
+  ("jd","intmax");
+  ("ji","intmax");
+  ("ju","uintmax");
+  ("jo","uintmax");
+  ("jx","uintmax");
+  ("jX","uintmax");
+
+
   ("td","ptrdiff");
   ("ti","ptrdiff");
-  ("tu","ptrdiff");
-  ("to","ptrdiff");
-  ("tx","ptrdiff");
-  ("tX","ptrdiff");
+  ("tu","uptrdiff");
+  ("to","uptrdiff");
+  ("tx","uptrdiff");
+  ("tX","uptrdiff");
 
   ("e","double");
   ("E","double");

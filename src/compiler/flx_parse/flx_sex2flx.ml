@@ -47,6 +47,7 @@ let xint_kind x = match x with
   | "uint" -> Flx_literal.Int_kind.Uint
   | "ulong" -> Flx_literal.Int_kind.Ulong
   | "uvlong" -> Flx_literal.Int_kind.Uvlong
+
   | "int8" -> Flx_literal.Int_kind.Int8
   | "int16" -> Flx_literal.Int_kind.Int16
   | "int32" -> Flx_literal.Int_kind.Int32
@@ -55,6 +56,15 @@ let xint_kind x = match x with
   | "uint16" -> Flx_literal.Int_kind.Uint16
   | "uint32" -> Flx_literal.Int_kind.Uint32
   | "uint64" -> Flx_literal.Int_kind.Uint64
+
+  | "intmax" -> Flx_literal.Int_kind.Intmax
+  | "uintmax" -> Flx_literal.Int_kind.Uintmax
+  | "intptr" -> Flx_literal.Int_kind.Intptr
+  | "uintptr" -> Flx_literal.Int_kind.Uintptr
+  | "ptrdiff" -> Flx_literal.Int_kind.Ptrdiff
+  | "uptrdiff" -> Flx_literal.Int_kind.Uptrdiff
+  | "ssize" -> Flx_literal.Int_kind.Ssize
+  | "size" -> Flx_literal.Int_kind.Size
   | x -> err (Str x) "invalid literal integer kind"
 
 let xfloat_kind x = match x with

@@ -1316,6 +1316,15 @@ and base_type_of_int_kind sr = function
   | L.Int_kind.Uint32 -> TYP_name (sr,"uint32",[])
   | L.Int_kind.Uint64 -> TYP_name (sr,"uint64",[])
 
+  | L.Int_kind.Intmax-> TYP_name (sr,"intmax",[])
+  | L.Int_kind.Uintmax-> TYP_name (sr,"uintmax",[])
+  | L.Int_kind.Intptr-> TYP_name (sr,"intptr",[])
+  | L.Int_kind.Uintptr-> TYP_name (sr,"uintptr",[])
+  | L.Int_kind.Ptrdiff-> TYP_name (sr,"ptrdiff",[])
+  | L.Int_kind.Uptrdiff-> TYP_name (sr,"uptrdiff",[])
+  | L.Int_kind.Ssize-> TYP_name (sr,"ssize",[])
+  | L.Int_kind.Size-> TYP_name (sr,"size",[])
+
 and base_type_of_float_kind sr = function
   | L.Float_kind.Float -> TYP_name (sr,"float",[])
   | L.Float_kind.Double -> TYP_name (sr,"double",[])

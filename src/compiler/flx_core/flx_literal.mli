@@ -20,6 +20,16 @@ module Int_kind :
       | Uint32
       | Uint64
 
+      | Intptr
+      | Uintptr
+      | Intmax
+      | Uintmax
+      | Ptrdiff
+      | Uptrdiff
+      | Ssize
+      | Size
+
+
     (** Convert the integer kind to a string. *)
     val to_string : t -> string
 

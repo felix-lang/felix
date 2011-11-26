@@ -22,6 +22,15 @@ module Int_kind =
       | Uint32
       | Uint64
 
+      | Intptr
+      | Uintptr
+      | Intmax
+      | Uintmax
+      | Ptrdiff
+      | Uptrdiff
+      | Ssize
+      | Size
+
     let to_string = function
       | Tiny -> "Tiny"
       | Short -> "Short"
@@ -42,6 +51,15 @@ module Int_kind =
       | Uint32 -> "Uint32"
       | Uint64 -> "Uint64"
 
+      | Intptr-> "Intptr"
+      | Uintptr-> "Uintptr"
+      | Intmax-> "Intmax"
+      | Uintmax-> "Uintmax"
+      | Ptrdiff-> "Ptrdiff"
+      | Uptrdiff-> "Uptrdiff"
+      | Ssize -> "Ssize"
+      | Size -> "Size"
+
     let print ppf = function
       | Tiny -> print_variant0 ppf "Tiny"
       | Short -> print_variant0 ppf "Short"
@@ -61,7 +79,16 @@ module Int_kind =
       | Uint16 -> print_variant0 ppf "Uint16"
       | Uint32 -> print_variant0 ppf "Uint32"
       | Uint64 -> print_variant0 ppf "Uint64"
-  end
+      | Intptr-> print_variant0 ppf "Intptr"
+      | Uintptr-> print_variant0 ppf "Uintptr"
+      | Intmax-> print_variant0 ppf "Intmax"
+      | Uintmax-> print_variant0 ppf "Uintmax"
+      | Ptrdiff-> print_variant0 ppf "Ptrdiff"
+      | Uptrdiff-> print_variant0 ppf "Uptrdiff"
+      | Ssize -> print_variant0 ppf "Ssize"
+      | Size -> print_variant0 ppf "Size"
+
+end
 
 module Float_kind =
   struct
@@ -126,3 +153,4 @@ let print ppf = function
       print_variant2 ppf "Float"
         Float_kind.print kind
         print_string f
+

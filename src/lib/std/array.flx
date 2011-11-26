@@ -6,78 +6,61 @@ open module Array
   typedef array[t,n] = t ^ n;
 
   publish "Array constructors"
-  fun _ctor_array[T,N] (x:array[T,N]) => x;
+  ctor[T,N] array[T,N] (x:array[T,N]) => x;
 
   publish "Array access: works on LHS of assignment too"
-  fun subscript[t,n]: array[t, n] * int -> t = "$1.data[$2]";
-  fun get[t,n]: array[t, n] * int -> t = "$1.data[$2]";
-  //fun subscript[t,n]: lvalue[array[t, n]] * int -> lvalue[t] = "$1.data[$2]";
-
-  /*
-  THIS HACK IS NASTY because we get the error:
-
-    Too many candidates match in overloading subscript with argument types lvalue[(string<1498>)] * lvalue[(int<709>)]
-    Of the matching candidates, the following are most specialised ones are incomparable
-    String::subscript<2115><2115> sig string<1498> * int<709>
-    Array::subscript<3461><3461> sig lvalue[(<T3462>)] * int<709>
-    Perhaps you need to define a function more specialised than all these?
-
-  and it is RIGHT. There's no lvalue form of String::subscript.
-  We would HAVE to define one to resolve the conflict.
-
-  I have no idea what I changed .. this used to work .. hmm ..
-  I fiddled with overloading ..
-
-  // hack to make subscript of non-array work: ignores index
-  fun subscript[t]: lvalue[t] * int -> lvalue[t] = "$1";
-  fun subscript[t]: t * int -> t = "$1";
-  */
-
+  fun subscript[t,n]: array[t, n] * !ints -> t = "$1.data[$2]";
+  fun get[t,n]: array[t, n] * !ints -> t = "$1.data[$2]";
 
   publish "Explicit array set function"
-  proc set[t,n]: &array[t,n] * int * t = "((?1*)($1->data))[$2]=$3;";
+  proc set[t,n]: &array[t,n] * !ints * t = "((?1*)($1->data))[$2]=$3;";
 
-  fun len[T, N] (x:array[T, N]): int => Typing::memcount[N];
+  fun len[T, N] (x:array[T, N]): size => Typing::memcount[N];
+
+  // Note: for many loops below, note we're using unsigned values
+  // iterating from 0 to N-1. Subtraction N-1 fails for n == 0
+  // so we need a special test. 
 
   // iteration
   proc iter[T, N] (_f:T->void) (x:array[T, N]) {
-    var i : int;
-
-    for i in 0 upto len(x) - 1 do
-      _f x.[i];
-    done;
+    val n = x.len;
+    if n > 0uz do
+      for var i:size in 0uz upto n - 1uz do
+        _f x.[i];
+      done
+    done
   }
 
   fun map[T, N, U] (_f:T->U) (x:array[T, N]): array[U, N] = {
     var o : array[U, N];
-    var i : int;
-
-    for i in 0 upto len(x) - 1 do
-      o.[i] = _f x.[i];
-    done;
-
+    val n = x.len;
+    if n > 0uz do
+      for var i: size in 0uz upto n - 1uz do
+        o.[i] = _f x.[i];
+      done
+    done
     return o;
   }
 
   fun fold_left[T, N, U] (_f:U->T->U) (init:U) (x:array[T, N]): U = {
     var o = init;
-    var i : int;
-
-    for i in 0 upto len(x) - 1 do
-      o = _f o x.[i];
-    done;
-
+    val n = x.len;
+    if n > 0uz do
+      for var i:size in 0uz upto n - 1uz do
+        o = _f o x.[i];
+      done
+    done
     return o;
   }
 
   fun fold_right[T, N, U] (_f:T->U->U) (x:array[T, N]) (init:U): U = {
     var o = init;
-    var i : int;
-
-    for i in len(x) - 1 downto 0 do
-      o = _f x.[i] o;
-    done;
-
+    val n = x.len;
+    if n > 0uz do
+      for var i:size in n - 1uz downto 0uz do
+        o = _f x.[i] o;
+      done
+    done
     return o;
   }
 
@@ -101,15 +84,15 @@ open module Array
 */
 
   // searching
-  fun mem[T, N] (eq:T->bool) (x:array[T, N]): bool = {
-    var i : int;
-
-    for i in 0 upto len(x) - 1 do
-      if eq(x.[i]) do
-        return true;
-      done;
-    done;
-
+  fun mem[T, N] (pred:T->bool) (x:array[T, N]): bool = {
+    val n = x.len;
+    if n > 0uz do
+      for var i:size in 0uz upto n  - 1uz do
+        if pred(x.[i]) do
+          return true;
+        done
+      done
+    done
     return false;
   }
 
@@ -121,40 +104,40 @@ open module Array
     fun mem (x:T, a:array[T,N]) => mem[T,N,T] eq of (T * T) a x;
   }
 
-  fun find[T, N] (eq:T*T->bool) (x:array[T, N]) (e:T): opt[T] = {
-    var i : int;
-
-    for i in 0 upto len(x) - 1 do
-      if eq(x.[i], e) do
-        return Some x.[i];
-      done;
-    done;
+  fun find[T, N] (pred:T*T->bool) (x:array[T, N]) (e:T): opt[T] = {
+    val n = x.len;
+    if n > 0uz do
+      for var i:size in 0uz upto n - 1uz do
+        if pred(x.[i], e) do
+          return Some x.[i];
+        done
+      done
+    done
 
     return None[T];
   }
 
-  fun find[T, N] (eq:T->bool) (x:array[T, N]): opt[T] = {
-    var i : int;
-
-    for i in 0 upto len(x) - 1 do
-      if eq(x.[i]) do
-        return Some x.[i];
-      done;
-    done;
-
+  fun find[T, N] (pred:T->bool) (x:array[T, N]): opt[T] = {
+    val n = x.len;
+    if  n > 0uz do 
+      for var i:size in 0uz upto n - 1uz do
+        if pred(x.[i]) do
+          return Some x.[i];
+        done
+      done
+    done
     return None[T];
   }
 
   // reverse
   fun rev[T, N] (x:array[T, N]): array[T, N] = {
     var o : array[T, N];
-    var i : int;
-    var length = len x;
-
-    for i in 0 upto length - 1 do
-      o.[length - 1 - i] = x.[i];
-    done;
-
+    var n = len x;
+    if n > 0uz do
+      for var i:size in 0uz upto n - 1uz do
+        o.[n - 1uz - i] = x.[i];
+      done
+    done
     return o;
   }
 
@@ -162,16 +145,14 @@ open module Array
   instance[T,N with Show[T]] Str[array[T, N]] {
     fun str (xs:array[T,N]) = {
       var o = '(';
-      var i : int;
-
-      if len(xs) > 0 do
+      val n = xs.len;
+      if n  > 0uz do
         o += repr xs.[0];
 
-        for i in 1 upto len(xs) - 1 do
+        for var i:size in 1uz upto n - 1uz do
           o += ', ' + repr xs.[i];
-        done;
-      done;
-
+        done
+      done
       return o + ')';
     }
   }
@@ -179,21 +160,29 @@ open module Array
   // equality
   instance[T,N with Eq[T]] Eq[array[T, N]] {
     fun eq(xs:array[T,N],ys:array[T,N]) = {
-        var i:int;
-        for i in 0 upto len(xs) - 1 do
+      val n = xs.len;
+      // assert n == ys.len;
+      if n == 0uz do
+        return true;
+      else
+        for var i:size in 0uz upto n - 1uz do
           if not (xs.[i] == ys.[i]) do return false; done
         done
+      done
       return true;
     }
   }
 
   instance[T,N with Tord[T]] Tord[array[T,N]] {
     fun lt(xs:array[T,N],ys:array[T,N]) = {
-      var i:int;
-      ph1:for i in 0 upto len(xs) - 1 do
+      val n = xs.len;
+      if n == 0uz do return false; done
+      // assert n == ys.len;
+      var i:size;
+      ph1:for i in 0uz upto n - 1uz do
         if not (xs.[i] < ys.[i]) do break ph1; done
       done
-      for i in i upto len(xs) - 1 do
+      for i in i upto n - 1uz do
         if not (xs.[i] <= ys.[i]) do return false; done
       done
       return true;

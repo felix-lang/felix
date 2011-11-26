@@ -49,6 +49,16 @@ let csuffix_of_int_kind = function
   | L.Int_kind.Uint32 -> "ul"
   | L.Int_kind.Uint64 -> "ull"
 
+  | L.Int_kind.Intmax   -> "ll"
+  | L.Int_kind.Uintmax  -> "ull"
+  | L.Int_kind.Intptr   -> "ll"
+  | L.Int_kind.Uintptr  -> "ull"
+  | L.Int_kind.Ptrdiff  -> "ll"
+  | L.Int_kind.Uptrdiff -> "ull"
+  | L.Int_kind.Ssize    -> "ll"
+  | L.Int_kind.Size     -> "ull"
+
+
 let csuffix_of_float_kind = function
   | L.Float_kind.Float -> "f"
   | L.Float_kind.Double -> ""

@@ -39,6 +39,15 @@ let suffix_of_int_kind = function
   | L.Int_kind.Uint32 -> "u32"
   | L.Int_kind.Uint64 -> "u64"
 
+  | L.Int_kind.Intptr -> "ip"
+  | L.Int_kind.Uintptr -> "up"
+  | L.Int_kind.Intmax -> "j"
+  | L.Int_kind.Uintmax -> "uj"
+  | L.Int_kind.Ptrdiff-> "d"
+  | L.Int_kind.Uptrdiff -> "ud"
+  | L.Int_kind.Size -> "uz"
+  | L.Int_kind.Ssize-> "z"
+
 let suffix_of_float_kind = function
   | L.Float_kind.Float -> "f"
   | L.Float_kind.Double -> ""
