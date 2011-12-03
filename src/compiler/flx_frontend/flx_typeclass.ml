@@ -103,9 +103,20 @@ let check_instance
     in
     let check_binding force tck sr id tck_bvs tctype =
       let sigmatch i inst_funbvs t =
+        (* typeclass X[t1,t2] { virtual fun f[t3] .. }
+           Instance[i1, i2, i3] X[..,..] { fun f[i4] 
+
+           typeclass fun poly vars = all fun vars - typeclass vars = 3 - 1 = 1
+           inst fun poly vars = all fun vars - inst vars = 4 - 3 = 1
+        *)
+
         let tc_ptv = length tck_bvs - length tc_bvs in
         let inst_ptv = length inst_funbvs - length inst_vs in
-        if inst_ptv <> tc_ptv then false else
+        if inst_ptv <> tc_ptv then (
+          (*print_endline ("Wrong no args: inst_ptv="^ si inst_ptv^"<>"^si tc_ptv); *)
+          false
+        )
+        else
         let inst_funts = inst_ts @ vs2ts (drop inst_funbvs (length inst_vs)) in
         assert (length tck_bvs = length inst_funts);
         let tct = beta_reduce
@@ -115,6 +126,12 @@ let check_instance
           (tsubst tck_bvs inst_funts tctype)
         in
         let matches =  tct = t in
+        (*
+        print_endline ("Matches " ^ 
+          sbt bsym_table tct ^ " = " ^ sbt bsym_table t ^ " is " ^ 
+          (match matches with true->"true" | false -> "false")
+        );
+        *)
         matches
       in
       let entries = filter (fun (name,(i,(inst_funbvs,t))) -> name = id && sigmatch i inst_funbvs t) inst_map in
@@ -243,8 +260,11 @@ let check_instance
         (*
         clierr tcksr "Typeclass entry must be virtual function or procedure"
         *)
+        (*
         print_endline ("Warning: typeclass " ^ Flx_bsym.id tc_bsym ^ " entry " ^
           Flx_bsym.id tck_bsym ^ " is not virtual");
+        *)
+        ()
     end tc_kids
 
   | _ ->
@@ -262,7 +282,8 @@ let typeclass_instance_check_symbol syms bsym_table i bsym =
         with Not_found -> []
       in
       let entry = i, (vs, cons, ts) in
-      Hashtbl.replace syms.instances_of_typeclass tc (entry::iss);
+      Hashtbl.replace syms.instances_of_typeclass tc (entry::iss)
+      ;
       check_instance
         syms
         bsym_table

@@ -83,7 +83,7 @@ private val hack = "C_hack","C_hack"; // to make it an array we need 2 component
 
 
 fun valof[N](x:array[string * string,N],key:string) =>
-  match Array::find (fun (kv:string * string)=> kv.(0) == key) x with
+  match find (fun (kv:string * string)=> kv.(0) == key) x with
   | Some (?k,?v) => v
   | None => ""
   endmatch

@@ -1,0 +1,96 @@
+typeclass ArrayValue[t,v]
+{
+  virtual fun len: t -> size;
+  virtual fun unsafe_get: t * size -> v;
+
+  fun subscript[I in ints] (x:t, i:I) => get (x,i.size);
+
+  fun get[I in ints] (x:t, i:I) = { 
+    assert i.size < x.len;
+    return unsafe_get (x,i.size);
+  }
+
+  proc iter (_f:v->void) (x:t) {
+    val n = x.len;
+    if n > 0uz do
+      for var i:size in 0uz upto n - 1uz do
+        _f x.[i];
+      done
+    done
+  }
+
+  fun fold_left[u] (_f:u->v->u) (init:u) (x:t): u = {
+    var o = init;
+    val n = x.len;
+    if n > 0uz do
+      for var i:size in 0uz upto n - 1uz do
+        o = _f o x.[i];
+      done
+    done
+    return o;
+  }
+
+  fun fold_right[u] (_f:v->u->u) (x:t) (init:u): u = {
+    var o = init;
+    val n = x.len;
+    if n > 0uz do
+      for var i:size in n - 1uz downto 0uz do
+        o = _f x.[i] o;
+      done
+    done
+    return o;
+  }
+
+  // map: can't be implemented easily because constructor required for result
+
+  // searching by predicate
+  fun mem(pred:v->bool) (x:t): bool = {
+    val n = x.len;
+    if n > 0uz do
+      for var i:size in 0uz upto n  - 1uz do
+        if pred(x.[i]) do
+          return true;
+        done
+      done
+    done
+    return false;
+  }
+
+  // searching by relation 
+  fun mem[u] (rel:v*u->bool) (x:t) (e:u): bool =>
+    mem (fun (i:v) => rel(i, e)) x
+  ;
+
+  fun find (rel:v*v->bool) (x:t) (e:v): opt[v] = {
+    val n = x.len;
+    if n > 0uz do
+      for var i:size in 0uz upto n - 1uz do
+        if rel(x.[i], e) do
+          return Some x.[i];
+        done
+      done
+    done
+
+    return None[v];
+  }
+
+  fun find(pred:v->bool) (x:t): opt[v] = {
+    val n = x.len;
+    if  n > 0uz do 
+      for var i:size in 0uz upto n - 1uz do
+        if pred(x.[i]) do
+          return Some x.[i];
+        done
+      done
+    done
+    return None[v];
+  }
+
+}
+
+typeclass ArrayObject[t,v]
+{
+  inherit ArrayValue[t,v];
+  virtual proc unsafe_set: t * size * v;
+  proc set[I in ints] (x:t, i:I, a:v) { assert i.size < x.len; unsafe_set (x,i.size,a); } 
+}

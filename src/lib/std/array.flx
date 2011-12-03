@@ -1,6 +1,6 @@
-publish "Array manipulation"
+publish "Compile Time Fixed Length Array"
 
-open module Array
+open module Farray
 {
   publish "Array type"
   typedef array[t,n] = t ^ n;
@@ -8,125 +8,64 @@ open module Array
   publish "Array constructors"
   ctor[T,N] array[T,N] (x:array[T,N]) => x;
 
-  publish "Array access: works on LHS of assignment too"
-  fun subscript[t,n]: array[t, n] * !ints -> t = "$1.data[$2]";
-  fun get[t,n]: array[t, n] * !ints -> t = "$1.data[$2]";
+  // array as value
+  instance[t,n] ArrayValue[array[t,n], t] {
+    fun len (x:array[t, n]): size => Typing::memcount[n];
+    fun unsafe_get: array[t, n] * size -> t = "$1.data[$2]";
+  }
 
-  publish "Explicit array set function"
-  proc set[t,n]: &array[t,n] * !ints * t = "((?1*)($1->data))[$2]=$3;";
+  // array as object
+  instance[t,n] ArrayValue[&array[t,n], t] {
+    fun len (x:&array[t, n]): size => Typing::memcount[n];
+    fun unsafe_get: &array[t, n] * size -> t = "$1->data[$2]";
+  }
 
-  fun len[T, N] (x:array[T, N]): size => Typing::memcount[N];
+  instance[t,n] ArrayObject[&array[t,n], t] {
+    proc unsafe_set: &array[t,n] * size * t = "((?1*)($1->data))[$2]=$3;";
+  }
+
+  fun map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N] = {
+    var o : array[U,N];
+    val n = x.len;
+    if n > 0uz do
+      for var i: size in 0uz upto n - 1uz do
+        set (&o,i, _f x.[i]);
+      done
+    done
+    return o;
+  }
+
+
 
   // Note: for many loops below, note we're using unsigned values
   // iterating from 0 to N-1. Subtraction N-1 fails for n == 0
   // so we need a special test. 
-
-  // iteration
-  proc iter[T, N] (_f:T->void) (x:array[T, N]) {
-    val n = x.len;
-    if n > 0uz do
-      for var i:size in 0uz upto n - 1uz do
-        _f x.[i];
-      done
-    done
-  }
-
-  fun map[T, N, U] (_f:T->U) (x:array[T, N]): array[U, N] = {
-    var o : array[U, N];
-    val n = x.len;
-    if n > 0uz do
-      for var i: size in 0uz upto n - 1uz do
-        o.[i] = _f x.[i];
-      done
-    done
-    return o;
-  }
-
-  fun fold_left[T, N, U] (_f:U->T->U) (init:U) (x:array[T, N]): U = {
-    var o = init;
-    val n = x.len;
-    if n > 0uz do
-      for var i:size in 0uz upto n - 1uz do
-        o = _f o x.[i];
-      done
-    done
-    return o;
-  }
-
-  fun fold_right[T, N, U] (_f:T->U->U) (x:array[T, N]) (init:U): U = {
-    var o = init;
-    val n = x.len;
-    if n > 0uz do
-      for var i:size in n - 1uz downto 0uz do
-        o = _f x.[i] o;
-      done
-    done
-    return o;
-  }
 
 /*
   fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, _flatten(N + M)] = {
     var o = array[T, _flatten(N + M)];
     val i : int;
 
-    for i in 0 upto len(x) - 1 do
-      o.[i] = x.[i];
-    done;
+    if x.len > 0uz do
+      for i in 0uz upto len(x) - 1uz do
+        o.[i] = x.[i];
+      done
+    done
 
     val j : int;
 
-    for k in 0 upto len(y) - 1 do
-      o.[i + j] = y.[i];
-    done;
+    if y.len > 0uz do
+      for k in 0uz upto len(y) - 1uz do
+        o.[i + j] = y.[i];
+      done
+    done
 
     return o;
   }
 */
 
-  // searching
-  fun mem[T, N] (pred:T->bool) (x:array[T, N]): bool = {
-    val n = x.len;
-    if n > 0uz do
-      for var i:size in 0uz upto n  - 1uz do
-        if pred(x.[i]) do
-          return true;
-        done
-      done
-    done
-    return false;
-  }
-
-  fun mem[T, N, U] (eq:T*U->bool) (x:array[T, N]) (e:U): bool =>
-    mem (fun (i:T) => eq(i, e)) x
-  ;
-
   instance[T,N with Eq[T]] Set[array[T,N],T] {
     fun mem (x:T, a:array[T,N]) => mem[T,N,T] eq of (T * T) a x;
-  }
-
-  fun find[T, N] (pred:T*T->bool) (x:array[T, N]) (e:T): opt[T] = {
-    val n = x.len;
-    if n > 0uz do
-      for var i:size in 0uz upto n - 1uz do
-        if pred(x.[i], e) do
-          return Some x.[i];
-        done
-      done
-    done
-
-    return None[T];
-  }
-
-  fun find[T, N] (pred:T->bool) (x:array[T, N]): opt[T] = {
-    val n = x.len;
-    if  n > 0uz do 
-      for var i:size in 0uz upto n - 1uz do
-        if pred(x.[i]) do
-          return Some x.[i];
-        done
-      done
-    done
-    return None[T];
   }
 
   // reverse
@@ -135,7 +74,7 @@ open module Array
     var n = len x;
     if n > 0uz do
       for var i:size in 0uz upto n - 1uz do
-        o.[n - 1uz - i] = x.[i];
+        set(&o,n - 1uz - i, x.[i]);
       done
     done
     return o;
@@ -193,4 +132,8 @@ open module Array
 //open[T,N] Eq[array[T,N]];
 open[T,N] Tord[array[T,N]];
 open[T,N with Eq[T]] Set[array[T,N],T];
+
+open[T,N] ArrayValue[array[T,N], T];
+open[T,N] ArrayValue[&array[T,N], T];
+open[T,N] ArrayObject[&array[T,N], T];
 

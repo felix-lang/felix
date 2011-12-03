@@ -1,10 +1,10 @@
-publish "Bounded Variable length arrays"
+publish "Bounded Variable length arrays, bound set at construction time"
 
 open module Varray
 {
   _gc_pointer _gc_type t type varray[t] = "?1*";
 
-  ctor[t] varray[t]: ulong =
+  ctor[t] varray[t]: size =
     "(?1*)(PTF gcp->collector->create_empty_array(&@?1,$1))"
     requires property "needs_gc"
   ;
@@ -13,79 +13,58 @@ open module Varray
   private proc _init[T]: &T * T = "new((void*)$1) ?1($2);";
  
 
-  // Note: the test on size > 0ul is required because
-  // 0ul - 1ul is MAX_ULONG which causes a rather
-  // too many loop iterations ..
-
   publish "Construct a full varray with a default value"
-  ctor[t] varray[t] (size:ulong, default:t) = {
-    var o = varray[t] size;
-    var i : ulong;
-
-    if size > 0ul do for i in 0ul upto size - 1ul do
-      _init(&o.[i], default);
+  ctor[t] varray[t] (bound:size, default:t) = {
+    var o = varray[t] bound;
+    if bound > 0uz do for var i in 0uz upto bound - 1uz do
+      push_back(o, default);
     done done
-    set_used (o,size);
     return o;
   }
 
   publish "Construct a partially filled varray with a default value computed by a function"
-  ctor[t] varray[t] (size:ulong, used:ulong, f:ulong->t when used <= size) = {
-//println$ "Make varray size " size.str " used " used.str " from function";
-    var o = varray[t] size;
-//println$ "Constructed varray of 0 used elements size " size.str;
-    var i : ulong;
-
-    if used > 0ul do for i in 0ul upto used - 1ul do
-      _init(&o.[i], f i);
+  ctor[t] varray[t] (bound:size, used:size, f:size->t when used <= bound) = {
+    var o = varray[t] bound;
+    if used > 0uz do for var i in 0uz upto used - 1uz do
+      push_back(o, f i);
     done done
-    set_used (o,used);
     return o;
   }
 
   publish "Construct a full varray from an array"
   // funny, the N isn't explicitly used.
   ctor[t,N] varray[t] (x:array[t,N]) => 
-     varray[t] (ulong(Array::len x), ulong(Array::len x), (fun (i:ulong)=>x.[int(i)]))
+     varray[t] (len x, len x, (fun (i:size)=>x.[i]))
   ;
 
   publish "Construct a partially full varray from a varray"
-  ctor[t] varray[t] (x:varray[t], maxlen:ulong) =>
-    varray[t] (maxlen, min(maxlen,len x), (fun (i:ulong)=> x.[i]))
+  ctor[t] varray[t] (x:varray[t], maxlen:size) =>
+    varray[t] (maxlen, min(maxlen,len x), (fun (i:size)=> x.[i]))
   ;
 
   publish "Construct a full varray from a varray (copy constructor)"
   ctor[t] varray[t] (x:varray[t]) =>
-    varray[t] (len x, len x, (fun (i:ulong)=> x.[i]))
+    varray[t] (len x, len x, (fun (i:size)=> x.[i]))
   ;
 
-  private proc set_used[t]: varray[t] * ulong =
+  private proc set_used[t]: varray[t] * size =
     "PTF gcp->collector->set_used($1,$2);"
     requires property "needs_gc"
   ;
 
-  lvalue fun subscript[t]: varray[t] * !ints -> t = "$1[$2]";
+  instance[v] ArrayValue[varray[v],v] {
+    fun len: varray[v] -> size =
+      "PTF gcp->collector->get_used($1)"
+      requires property "needs_gc"
+    ;
+    fun unsafe_get: varray[v] * size -> v = "$1[$2]";
+  } 
 
-  lvalue fun _unsafe_get[t]: varray[t] * !ints -> t = "$1[$2]";
-
-  fun get[t,ii in ints] (a:varray[t],i:ii): t = {
-    assert 0ul <= i.ulong and i.ulong < len a; 
-    return _unsafe_get(a,i.ulong);
+  instance[v] ArrayObject[varray[v],v] {
+    proc unsafe_set: varray[v] * size * v = "$1[$2]=$3;";
   }
 
-  proc _unsafe_set[t]: varray[t] * !ints * t = "$1[$2]=$3;";
-
-  proc set[t,ii in ints] (a:varray[t], i:ii,v:t) {
-    assert 0ul <= i.ulong and i.ulong < len a; 
-    _unsafe_set(a,i.ulong,v);
-  }
-
-  fun len[t]: varray[t] -> ulong =
-    "PTF gcp->collector->get_used($1)"
-    requires property "needs_gc"
-  ;
-
-  fun maxlen[t]: varray[t] -> ulong =
+  fun maxlen[t]: varray[t] -> size =
     "PTF gcp->collector->get_count($1)"
     requires property "needs_gc"
   ;
@@ -117,93 +96,60 @@ open module Varray
     requires property "needs_gc"
   ;
 
-  proc iter[T] (_f:T->void) (x:varray[T]) {
-    var i : ulong;
-
-    if len(x) > 0ul do for i in 0ul upto len(x) - 1ul do
-      _f x.[i];
-    done done
-  }
-
   fun map[T, U] (_f:T->U) (x:varray[T]): varray[U] = {
     var o = varray[U]$ len(x);
-    var i : ulong;
 
-    if len x > 0ul do for i in 0ul upto len(x) - 1ul do
-      o.[i] = _f x.[i];
+    if len x > 0uz do for var i in 0uz upto len(x) - 1uz do
+      push_back (o, _f x.[i]);
     done done
-
-    set_used (o,len(x));
     return o;
   }
 
-  fun fold_left[T, U] (_f:U->T->U) (init:U) (x:varray[T]): U = {
-    var o = init;
-    var i : ulong;
+  // sort
+  header 
+  """
+  template<class CT, class FT2, class FFT>
+  struct comparator {
+    FFT cmp;
+    comparator() : cmp(0) {}
+    comparator(FFT cmp_a) : cmp(cmp_a) {}
+    bool operator ()(CT x, CT y){
+      ::std::pair<CT,CT> z(x,y); 
+      return cmp->apply(*(FT2*)(void*)&z);
+    }
+  };
+  """ requires Cxx_headers::utility;
 
-    if len x > 0ul do for i in 0ul upto len(x) - 1ul do
-      o = _f o x.[i];
-    done done
+  private type _comparator[CT,FT2,FFT] = "comparator<?1,?2,?3>";
+  private typedef comparator[T] = _comparator[T,T*T,T*T->bool];
 
-    return o;
+  private fun _make_comparator[CT,FT2,FFT]: FFT -> comparator[CT] = "comparator<?1,?2,?3>($1)";
+  private fun make_comparator[T](cmp:T * T -> bool) => _make_comparator[T, T*T, T*T->bool] (cmp);
+
+  // invoke stl sort
+  private proc _sort[T]: comparator[T] * &T * &T = "::std::sort($2, $3, $1);" 
+    requires Cxx_headers::algorithm;
+
+
+  // in place sort of varray using STL sort
+  proc sort[t] (cmp: t * t -> bool) (a:varray[t]) {
+    var first = a.stl_begin;
+    var last = a.stl_end;
+    var z: comparator[t] = make_comparator[t] (cmp);
+    _sort[t] (z,first,last);
   }
-
-  fun fold_right[T, U] (_f:T->U->U) (x:varray[T]) (init:U): U = {
-    var o = init;
-    var i : ulong;
-
-    if len x > 0ul do for i in len(x) - 1ul downto 0ul do
-      o = _f x.[i] o;
-    done done
-
-    return o;
-  }
-
-// sort
-header 
-"""
-template<class CT, class FT2, class FFT>
-struct comparator {
-  FFT cmp;
-  comparator() : cmp(0) {}
-  comparator(FFT cmp_a) : cmp(cmp_a) {}
-  bool operator ()(CT x, CT y){
-    ::std::pair<CT,CT> z(x,y); 
-    return cmp->apply(*(FT2*)(void*)&z);
-  }
-};
-""" requires Cxx_headers::utility;
-
-private type _comparator[CT,FT2,FFT] = "comparator<?1,?2,?3>";
-private typedef comparator[T] = _comparator[T,T*T,T*T->bool];
-
-private fun _make_comparator[CT,FT2,FFT]: FFT -> comparator[CT] = "comparator<?1,?2,?3>($1)";
-private fun make_comparator[T](cmp:T * T -> bool) => _make_comparator[T, T*T, T*T->bool] (cmp);
-
-// invoke stl sort
-private proc _sort[T]: comparator[T] * &T * &T = "::std::sort($2, $3, $1);" 
-  requires Cxx_headers::algorithm;
-
-
-// in place sort of varray using STL sort
-proc sort[t] (cmp: t * t -> bool) (a:varray[t]) {
-  var first = a.stl_begin;
-  var last = a.stl_end;
-  var z: comparator[t] = make_comparator[t] (cmp);
-  _sort[t] (z,first,last);
-}
 
 }
 
 instance[T with Show[T]] Str[Varray::varray[T]] {
   fun str (xs:varray[T]) = {
     var o = 'varray(';
-    var i : ulong;
+    var i : size;
 
-    if Varray::len xs > 0ul do
+    if len xs > 0uz do
       o += repr xs.[0];
 
-      for i in 1ul upto Varray::len xs - 1ul do
+      for i in 1uz upto len xs - 1uz do
         o += ', ' + repr xs.[i];
       done
     done
@@ -214,8 +160,10 @@ instance[T with Show[T]] Str[Varray::varray[T]] {
 
 instance[T with Eq[T]] Set[varray[T],T] {
  fun mem(x:T, a:varray[T]) : bool = {
-   var i:ulong; for i in 0ul upto len a -1ul do
-     if a.[i] == x do return true; done
+   if len a > 0uz do
+     for var i in 0uz upto len a - 1uz do
+       if a.[i] == x do return true; done
+     done
    done
    return false;
  } 
@@ -223,4 +171,6 @@ instance[T with Eq[T]] Set[varray[T],T] {
 
 open[T] Show[Varray::varray[T]];
 open[T] Set[Varray::varray[T],T];
+open[T] ArrayValue[varray[T], T];
+open[T] ArrayObject[varray[T], T];
 

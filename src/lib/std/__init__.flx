@@ -61,6 +61,7 @@ include "std/string";
 include "std/list";
 
 // arrays
+include "std/array_class";
 include "std/carray";
 include "std/array";
 include "std/varray";

@@ -1,8 +1,6 @@
 //Check arrays
 //Check array iterators
 
-open List;
-
 proc foo (x:int) {
   print x;
   endl;
@@ -12,7 +10,7 @@ var x = [|1,2,3|];
 var y = list(x);
 var z = list(4,5,6);
 
-Array::iter[int, 3] (foo) x;
+iter[int, 3] (foo) x;
 iter (foo) y;
 iter (foo) z;
 

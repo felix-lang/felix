@@ -337,11 +337,11 @@ syn case match
 " numbers -- skip weird error checks for now .. too hard
 syn case ignore
 syn match       felixNumbers    display transparent "\<\d" contains=felixNumber
-syn match       felixNumber     display contained "\(0d_\=\)\=\(\d\+_\)*\d\+\(u\=\(t\|s\|l\|v\|ll\)\=u\=\)\>"
+syn match       felixNumber     display contained "\(0d_\=\)\=\(\d\+_\)*\d\+\(u\=\(t\|s\|l\|v\|ll\|z\)\=u\=\)\>"
 syn match       felixNumber     display contained "\(\d\+_\)*\d\+[.]\(\d+_\)*\d\+\(e[+-]\=\d\+\)\=\>"
-syn match       felixNumber     display contained "0x_\=\(\x\+_\)*\(\x\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
-syn match       felixNumber     display contained "0o_\=\(\o\+_\)*\(\o\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
-syn match       felixNumber     display contained "0b_\=\([01]\+_\)*\([01]\)\+u\=\(t\|s\|l\|v\|ll\)\=u\=\>"
+syn match       felixNumber     display contained "0x_\=\(\x\+_\)*\(\x\)\+u\=\(t\|s\|l\|v\|ll\|z\)\=u\=\>"
+syn match       felixNumber     display contained "0o_\=\(\o\+_\)*\(\o\)\+u\=\(t\|s\|l\|v\|ll\|z\)\=u\=\>"
+syn match       felixNumber     display contained "0b_\=\([01]\+_\)*\([01]\)\+u\=\(t\|s\|l\|v\|ll\|z\)\=u\=\>"
 syn case match
 
 " comments

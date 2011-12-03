@@ -98,7 +98,7 @@ open module List
   ctor[T] list[T] (x:T) => Cons(x, Empty[T]);
 
   // make a list from an array (tuple)
-  ctor[T,N] list[T] (x:Array::array[T, N]) = {
+  ctor[T,N] list[T] (x:array[T, N]) = {
     var o = Empty[T];
     var i:int; for i in x.len.int - 1 downto 0 do
       o = Cons (x.[i],o);

@@ -10,7 +10,6 @@ iter println of (int) b;
 b+= 22;
 b+= 33;
 iter println of (int) b;
-
 c:= map (curry sub of (int * int) 100) b;
 println c;
 
