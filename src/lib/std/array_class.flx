@@ -14,7 +14,7 @@ typeclass ArrayValue[t,v]
     val n = x.len;
     if n > 0uz do
       for var i:size in 0uz upto n - 1uz do
-        _f x.[i];
+        _f$ unsafe_get(x,i);
       done
     done
   }
@@ -24,7 +24,7 @@ typeclass ArrayValue[t,v]
     val n = x.len;
     if n > 0uz do
       for var i:size in 0uz upto n - 1uz do
-        o = _f o x.[i];
+        o = _f o (unsafe_get(x,i));
       done
     done
     return o;
@@ -35,7 +35,7 @@ typeclass ArrayValue[t,v]
     val n = x.len;
     if n > 0uz do
       for var i:size in n - 1uz downto 0uz do
-        o = _f x.[i] o;
+        o = _f (unsafe_get(x,i)) o;
       done
     done
     return o;
@@ -48,7 +48,7 @@ typeclass ArrayValue[t,v]
     val n = x.len;
     if n > 0uz do
       for var i:size in 0uz upto n  - 1uz do
-        if pred(x.[i]) do
+        if pred(unsafe_get(x,i)) do
           return true;
         done
       done
@@ -65,8 +65,8 @@ typeclass ArrayValue[t,v]
     val n = x.len;
     if n > 0uz do
       for var i:size in 0uz upto n - 1uz do
-        if rel(x.[i], e) do
-          return Some x.[i];
+        if rel(unsafe_get (x,i), e) do
+          return Some$ unsafe_get (x,i);
         done
       done
     done
@@ -78,8 +78,8 @@ typeclass ArrayValue[t,v]
     val n = x.len;
     if  n > 0uz do 
       for var i:size in 0uz upto n - 1uz do
-        if pred(x.[i]) do
-          return Some x.[i];
+        if pred(unsafe_get(x,i)) do
+          return Some$ unsafe_get(x,i);
         done
       done
     done
