@@ -92,5 +92,7 @@ typeclass ArrayObject[t,v]
 {
   inherit ArrayValue[t,v];
   virtual proc unsafe_set: t * size * v;
+  virtual fun stl_begin: t -> &v;
+  virtual fun stl_end: t -> &v;
   proc set[I in ints] (x:t, i:I, a:v) { assert i.size < x.len; unsafe_set (x,i.size,a); } 
 }

@@ -3,40 +3,42 @@ open module Carray
   requires Cxx_headers::cstdlib;
   open C_hack;
 
-  publish "Carray type"
-  typedef carray[T] = &T;
+  publish "Carray type is just a pointer"
 
   publish "Convert Felix array to C array"
-  fun _ctor_carray[T,N]: array[T,N] -> carray[T] = "$t.data";
+  fun _ctor_carray[T,N]: array[T,N] -> &T = "$t.data";
 
-  fun array_alloc[T]: int -> carray[T] = '(?1*)::std::malloc(sizeof(?1)*$1)';
-  fun array_calloc[T]: int -> carray[T] = '(?1*)::std::calloc(sizeof(?1),$1)';
-  proc free[T]: carray[T] = "::std::free($1);";
-  fun subscript[T]: carray[T] * int -> T = '$1[$2]';
+  fun array_alloc[T]: !ints -> &T = '(?1*)::std::malloc(sizeof(?1)*$1)';
+  fun array_calloc[T]: !ints -> &T = '(?1*)::std::calloc(sizeof(?1),$1)';
+  proc free[T]: &T = "::std::free($1);";
+  fun subscript[T]: &T * !ints -> T = '$1[$2]';
+  fun deref[T]: &T -> T = '*$1';
 
-  fun add[T]: carray[T] * int -> carray[T]= '$1+$2';
-  fun sub[T]: carray[T] * int -> carray[T] = '$1-$2';
-  fun sub[T]: carray[T] * carray[T]-> int = '$1-$2';
+  fun add[T]: &T * !ints -> &T= '$1+$2';
+  fun sub[T]: &T * !ints -> &T = '$1-$2';
+  fun sub[T]: &T * &T-> ptrdiff = '$1-$2';
 
-  proc pre_incr[T]: &carray[T] = '++*$1;';
-  proc post_incr[T]: &carray[T] = '(*$1)++;';
-  proc pre_decr[T]: &carray[T] = '--*$1;';
-  proc post_decr[T]: &carray[T] = '(*$1)--;';
-  proc pluseq[T]: &carray[T] * int = '*$1+=$2;';
-  proc minuseq[T]: &carray[T] * int = '*$1-=$2;';
+  proc pre_incr[T]: &&T = '++*$1;';
+  proc post_incr[T]: &&T = '(*$1)++;';
+  proc pre_decr[T]: &&T = '--*$1;';
+  proc post_decr[T]: &&T = '(*$1)--;';
+  proc pluseq[T]: &&T * !ints = '*$1+=$2;';
+  proc minuseq[T]: &&T * !ints = '*$1-=$2;';
 
   /* carray is alias for a pointer .. */
-  /*
-  fun eq[T]: carray[T] * carray[T] -> bool = '$1==$2';
-  fun ne[T]: carray[T] * carray[T] -> bool = '$1!=$2';
-  fun lt[T]: carray[T] * carray[T] -> bool = '$1<$2';
-  fun le[T]: carray[T] * carray[T] -> bool = '$1<=$2';
-  fun gt[T]: carray[T] * carray[T] -> bool = '$1>$2';
-  fun ge[T]: carray[T] * carray[T] -> bool = '$1>=$2';
-  */
+  instance[T] Eq[&T] {
+    fun eq: &T * &T -> bool = '$1==$2';
+    fun ne: &T * &T -> bool = '$1!=$2';
+  }
+  instance[T] Tord[&T] {
+    fun lt: &T * &T -> bool = '$1<$2';
+    fun le: &T * &T -> bool = '$1<=$2';
+    fun gt: &T * &T -> bool = '$1>$2';
+    fun ge: &T * &T -> bool = '$1>=$2';
+  }
 
   publish "Convert C array to Felix array"
-  fun array_of[T,N]: carray[T] -> &array[T,N] = "*(#0*)(void*)$1";
+  fun array_of[T,N]: &T -> &array[T,N] = "*(#0*)(void*)$1";
 
   proc memcpy: address * address * size =
     "{if($1 && $2 && $3)::std::memcpy($1,$2,$3);}"
@@ -53,3 +55,5 @@ open module Carray
   fun strlen: &char ->size = "::std::strlen($1)" requires Cxx_headers::cstring;
 }
 
+open[T] Eq[&T];
+open[T] Tord[&T];

@@ -21,7 +21,9 @@ open module Farray
   }
 
   instance[t,n] ArrayObject[&array[t,n], t] {
-    proc unsafe_set: &array[t,n] * size * t = "((?1*)($1->data))[$2]=$3;";
+    proc unsafe_set: &array[t,n] * size * t = "$1->data[$2]=$3;";
+    fun stl_begin: &array[t,n] -> &t = "$1->data";
+    fun stl_end ( x:&array[t,n] ) : &t => stl_begin x + len x;
   }
 
   fun map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N] = {

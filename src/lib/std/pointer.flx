@@ -1,8 +1,0 @@
-open module Pointer
-{
-  fun eq[t]: &t * &t -> 2 = "$1==$2";
-  fun ne[t]: &t * &t -> 2 = "$1!=$2";
-  inline fun deref[t](p:&t):t => _deref p;
-}
-
-

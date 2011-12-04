@@ -62,16 +62,14 @@ open module Varray
 
   instance[v] ArrayObject[varray[v],v] {
     proc unsafe_set: varray[v] * size * v = "$1[$2]=$3;";
+    fun stl_begin: varray[v] -> &v = "$1";
+    fun stl_end: varray[v] -> &v = "($1+PTF gcp->collector->get_used($1))";
   }
 
   fun maxlen[t]: varray[t] -> size =
     "PTF gcp->collector->get_count($1)"
     requires property "needs_gc"
   ;
-
-  fun stl_begin[t]: varray[t] -> &t = "$1";
-  fun stl_end[t]: varray[t] -> &t = "($1+PTF gcp->collector->get_used($1))";
-
   proc pluseq[t] (pa:&varray[t],v:t) { push_back (*pa,v); }
 
   proc push_back[t] : varray[t] * t = """
@@ -144,12 +142,11 @@ open module Varray
 instance[T with Show[T]] Str[Varray::varray[T]] {
   fun str (xs:varray[T]) = {
     var o = 'varray(';
-    var i : size;
 
     if len xs > 0uz do
       o += repr xs.[0];
 
-      for i in 1uz upto len xs - 1uz do
+      for var i in 1uz upto len xs - 1uz do
         o += ', ' + repr xs.[i];
       done
     done
