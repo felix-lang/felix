@@ -1,0 +1,53 @@
+// Bounded sparse array
+open module Bsarray
+{
+  private struct bsarray_ctl[T] { a: sarray[T]; n:size; };
+  type bsarray[T] = new &bsarray_ctl[T];
+
+  ctor[T,I in ints] bsarray[T] (dflt:T, bound:I) =>
+    _make_bsarray[T]$ new bsarray_ctl[T] (sarray[T](dflt), bound.size)
+  ;
+  instance[T] ArrayValue[bsarray[T],T] {
+    fun len(b:bsarray[T])=> (_repr_ b).n;
+    fun unsafe_get(b:bsarray[T], i:size)=> get ((_repr_ b).a, i);
+  }
+  instance[T] ArrayObject[bsarray[T],T] {
+    proc unsafe_set(b:bsarray[T], i:size, v:T)=> set ((_repr_ b).a, i, v);
+  }
+
+  instance[T with Eq[T]] Set[bsarray[T],T] {
+   // FIX ME: inefficient!
+   fun mem(x:T, a:bsarray[T]) : bool = {
+     if len a > 0uz do
+       for var i in 0uz upto len a - 1uz do
+         if a.[i] == x do return true; done
+       done
+     done
+     return false;
+   } 
+  }
+
+  instance[T with Show[T]] Str[Bsarray::bsarray[T]] {
+    fun str (xs:bsarray[T]) = {
+      var o = 'bsarray(';
+
+      if len xs > 0uz do
+        o += repr xs.[0];
+
+        for var i in 1uz upto len xs - 1uz do
+          o += ', ' + repr xs.[i];
+        done
+      done
+
+      return o + ')';
+    }
+  }
+}
+
+
+open[T] Show[Bsarray::bsarray[T]];
+open[T] Set[Bsarray::bsarray[T],T];
+open[T] ArrayValue[bsarray[T], T];
+open[T] ArrayObject[bsarray[T], T];
+open[T] ContiguousArrayObject[bsarray[T], T];
+

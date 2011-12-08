@@ -22,6 +22,9 @@ open module Farray
 
   instance[t,n] ArrayObject[&array[t,n], t] {
     proc unsafe_set: &array[t,n] * size * t = "$1->data[$2]=$3;";
+  }
+
+  instance[t,n] ContiguousArrayObject[&array[t,n], t] {
     fun stl_begin: &array[t,n] -> &t = "$1->data";
     fun stl_end ( x:&array[t,n] ) : &t => stl_begin x + len x;
   }
@@ -114,6 +117,7 @@ open module Farray
     }
   }
 
+  // total ordering 
   instance[T,N with Tord[T]] Tord[array[T,N]] {
     fun lt(xs:array[T,N],ys:array[T,N]) = {
       val n = xs.len;
@@ -131,11 +135,12 @@ open module Farray
   }
 }
 
-//open[T,N] Eq[array[T,N]];
+open[T,N] Eq[array[T,N]];
 open[T,N] Tord[array[T,N]];
 open[T,N with Eq[T]] Set[array[T,N],T];
 
 open[T,N] ArrayValue[array[T,N], T];
 open[T,N] ArrayValue[&array[T,N], T];
 open[T,N] ArrayObject[&array[T,N], T];
+open[T,N] ContiguousArrayObject[&array[T,N], T];
 

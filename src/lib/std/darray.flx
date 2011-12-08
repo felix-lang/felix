@@ -45,8 +45,12 @@ open module Darray
     fun len (a:darray[v])=> len (_repr_ a).a;
     fun unsafe_get (a:darray[v], i:size) => (_repr_ a).a.[i];
   }
+
   instance[v] ArrayObject[darray[v],v] {
     proc unsafe_set (b:darray[v],  n:size, x:v) => unsafe_set ((_repr_ b).a,n,x);
+  }
+
+  instance[v] ContiguousArrayObject[darray[v],v] {
     fun stl_begin(b:darray[v]) => stl_begin b._repr_.a;
     fun stl_end(b:darray[v]) => stl_end b._repr_.a;
   }
@@ -90,4 +94,5 @@ open[T] Set[Darray::darray[T],T];
 
 open[T] ArrayValue[darray[T], T];
 open[T] ArrayObject[darray[T], T];
+open[T] ContiguousArrayObject[darray[T], T];
 

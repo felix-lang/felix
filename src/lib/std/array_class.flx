@@ -19,6 +19,15 @@ typeclass ArrayValue[t,v]
     done
   }
 
+  proc iiter (_f:size * v->void) (x:t) {
+    val n = x.len;
+    if n > 0uz do
+      for var i:size in 0uz upto n - 1uz do
+        _f$ (i,unsafe_get(x,i));
+      done
+    done
+  }
+
   fun fold_left[u] (_f:u->v->u) (init:u) (x:t): u = {
     var o = init;
     val n = x.len;
@@ -92,7 +101,13 @@ typeclass ArrayObject[t,v]
 {
   inherit ArrayValue[t,v];
   virtual proc unsafe_set: t * size * v;
-  virtual fun stl_begin: t -> &v;
-  virtual fun stl_end: t -> &v;
   proc set[I in ints] (x:t, i:I, a:v) { assert i.size < x.len; unsafe_set (x,i.size,a); } 
 }
+
+typeclass ContiguousArrayObject[t,v]
+{
+  inherit ArrayObject[t,v];
+  virtual fun stl_begin: t -> &v;
+  virtual fun stl_end: t -> &v;
+}
+

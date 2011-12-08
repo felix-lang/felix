@@ -62,6 +62,9 @@ open module Varray
 
   instance[v] ArrayObject[varray[v],v] {
     proc unsafe_set: varray[v] * size * v = "$1[$2]=$3;";
+  }
+
+  instance[v] ContiguousArrayObject[varray[v],v] {
     fun stl_begin: varray[v] -> &v = "$1";
     fun stl_end: varray[v] -> &v = "($1+PTF gcp->collector->get_used($1))";
   }
@@ -170,4 +173,5 @@ open[T] Show[Varray::varray[T]];
 open[T] Set[Varray::varray[T],T];
 open[T] ArrayValue[varray[T], T];
 open[T] ArrayObject[varray[T], T];
+open[T] ContiguousArrayObject[varray[T], T];
 
