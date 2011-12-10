@@ -1,0 +1,22 @@
+include "std/posix/filesystem";
+open Text_file;
+
+re := RE2("tut_\\d*\\.fdoc");
+docs := FileSystem::regfilesin("src/web/", re);
+iter println of (string) docs;
+f := fopen_output("src/web/tut_index.fdoc");
+writeln$ f,"@h1 Tutorial Index";
+writeln$ f,"<ul>";
+iter (proc (x:string) { writeln$ f, mkentry x; }) docs;
+writeln$ f,"</ul>";
+fclose f;
+
+fun mkentry(x:string):string = 
+{
+  f := fopen_input("src/web/"+x);
+  hline := f.readln;
+  fclose f;
+  title := hline.strip.[4 to];
+  html := '<li><a href="' + x + '">' + title + '</a></li>';
+  return html;
+}

@@ -1,0 +1,22 @@
+@h1 Tutorial Index
+<ul>
+<li><a href="tut_01.fdoc">Introductory Hands On</a></li>
+<li><a href="tut_02.fdoc">Basic Data types</a></li>
+<li><a href="tut_03.fdoc">Functions and Procedures</a></li>
+<li><a href="tut_04.fdoc">Basic Overloading</a></li>
+<li><a href="tut_05.fdoc">Variables and Pointers</a></li>
+<li><a href="tut_06.fdoc">Arrays</a></li>
+<li><a href="tut_07.fdoc">Machine Addresses</a></li>
+<li><a href="tut_08.fdoc">Unused</a></li>
+<li><a href="tut_09.fdoc">Unused</a></li>
+<li><a href="tut_10.fdoc">Polymorphism</a></li>
+<li><a href="tut_11.fdoc">Type Constraints</a></li>
+<li><a href="tut_12.fdoc">Type classes</a></li>
+<li><a href="tut_13.fdoc">Fibres and Channels</a></li>
+<li><a href="tut_14.fdoc">Unused</a></li>
+<li><a href="tut_15.fdoc">Integers</a></li>
+<li><a href="tut_16.fdoc">Floating Point Reals</a></li>
+<li><a href="tut_17.fdoc">Floating Point Complex</a></li>
+<li><a href="tut_18.fdoc">String Literals</a></li>
+<li><a href="tut_19.fdoc">String functions</a></li>
+</ul>

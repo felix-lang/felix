@@ -54,6 +54,7 @@ syn keyword felixStatement all
 syn keyword felixStatement assert
 syn keyword felixStatement axiom
 syn keyword felixStatement body
+syn keyword felixStatement break 
 syn keyword felixStatement call
 syn keyword felixStatement case
 syn keyword felixStatement caseno
@@ -61,6 +62,7 @@ syn keyword felixStatement cfun
 syn keyword felixStatement class
 syn keyword felixStatement comment
 syn keyword felixStatement compound
+syn keyword felixStatement continue
 syn keyword felixStatement const
 syn keyword felixStatement cproc
 syn keyword felixStatement cstruct
@@ -123,6 +125,8 @@ syn keyword felixStatement requires
 syn keyword felixStatement return
 syn keyword felixStatement SCHEME
 syn keyword felixStatement syntax
+syn keyword felixStatement spawn_fthread
+syn keyword felixStatement spawn_pthread
 syn keyword felixStatement static
 syn keyword felixStatement struct
 syn keyword felixStatement then

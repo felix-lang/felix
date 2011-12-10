@@ -1,0 +1,24 @@
+open module Gc
+{
+  publish """
+  Invoke the garbage collector inside a procedure run
+  by the top level (external) driver.
+
+  Don't call this procedure in a procedure which is run
+  with 'run', because such procedures do not link to their
+  caller with frame pointers -- unless of course a such a
+  procedure has a private collector.
+
+  Note procedure called by functions are run with
+  code equivalent to 'run'.
+  """
+  proc collect() { svc svc_collect; }
+
+  fun gc_get_allocation_amt : unit -> ulong = "PTF gcp->collector->get_allocation_amt()"
+    requires property "needs_gc";
+  fun gc_get_allocation_count : unit -> ulong = "PTF gcp->collector->get_allocation_count()"
+    requires property "needs_gc";
+  fun gc_get_root_count : unit -> ulong = "PTF gcp->collector->get_root_count()"
+    requires property "needs_gc";
+}
+

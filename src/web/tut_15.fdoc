@@ -18,7 +18,7 @@ for long long, both letters must be either lower or upper case).
   utiny       unsigned char       ut, tu
   short       signed short int    s
   ushort      unsigned short int  us, su
-  int         signed int   
+  int         signed int          i (none) 
   uint        unsigned int        u
   long        signed long int     l
   ulong       unsigned long int   lu, ul
@@ -45,14 +45,16 @@ The following special aliases are also provided
 to use in low level code related to address calculations:
 
 <pre>
-  Felix name    C name
-  ------------------------
-  size          size_t
-  ptrdiff       ptrdiff_t
-  intptr        intptr_t
-  uintptr       uintptr_t
-  intmax        intmax_t
-  uintmax       uintmax_t
+  Felix name    C name      Suffix
+  --------------------------------
+  size          size_t          uz
+  ssize         ssize_t          z
+  ptrdiff       ptrdiff_t        d
+  uptrdiff      ptrdiff_t       ud
+  intptr        intptr_t         p 
+  uintptr       uintptr_t       up
+  intmax        intmax_t         j
+  uintmax       uintmax_t       uj
 </pre>
 
 
@@ -243,12 +245,12 @@ by the parser into function calls.
   ------------------------------------------------------------------
   i\|j     left    bor (i,j)    bitwise or           (unsigned only)
   ------------------------------------------------------------------
-  i&lt;j              lt (i,j)      less than             (returns bool)
-  i&lt;=j             le (i,j)      less than or equal    (returns bool)
-  i&gt;=j             ge (i,j)      greater than or equal (returns bool)
-  i&gt;j              gt (i,j)      greater than          (returns bool)
-  i==j             eq (i,j)      equal                 (returns bool)
-  i!=j             neq (i,j)     not equal             (returns bool)
+  i&lt;j              lt (i,j)     less than             (returns bool)
+  i&lt;=j             le (i,j)     less than or equal    (returns bool)
+  i&gt;=j             ge (i,j)     greater than or equal (returns bool)
+  i&gt;j              gt (i,j)     greater than          (returns bool)
+  i==j             eq (i,j)     equal                 (returns bool)
+  i!=j             neq (i,j)    not equal             (returns bool)
 </pre>
 There two very important and unusual things to note.
 The first is the weird special grammar of the power operator.

@@ -1,0 +1,75 @@
+open module Fibres
+{
+  private gen _start[t]: (t->0)*t->cont = "$1->clone()->call(0,$2)";
+  gen start[t] (p:t->0) (x:t) = { return _start (p,x); }
+  private fun _start0: (1->0)->cont = "$1->clone()->call(0)";
+  gen start (p:1->0) = { return _start0 (p); }
+
+  gen mk_thread: cont->fthread = "new(*PTF gcp,::flx::rtl::_fthread_ptr_map,false) ::flx::rtl::fthread_t($1)";
+
+  proc spawn_fthread(p:1->0)
+  {
+      var con = start p;              // get continuation of p
+      var fthr = mk_thread con;
+      svc$ svc_spawn_detached fthr;
+  }
+
+  publish "Resume a continuation until it yields"
+  gen step: cont -> cont = "$1->resume()";
+  proc kill: fthread = "$1->cc = 0;";
+
+  publish """
+  Run a continuation until it terminates.
+  Do not use this proc if the underlying
+  procedure attempts to read messages.
+
+  This is a low level primitive, bypassing fthreads.
+  """
+  proc run: cont = "::flx::rtl::executil::run($1);" requires package "flx_executil";
+
+  private proc _send[t]: &cont * t =
+  """
+  {
+    using namespace ::flx::rtl;
+    con_t *tmp = *(con_t**)$1.get_data();
+    // run target until it reaches a service request (or death)
+    while(tmp && (!tmp->p_svc || tmp->p_svc->variant == svc_yield)) {
+      try { tmp=tmp->resume(); }
+      catch (con_t *x) { tmp = x; }
+    }
+    // check it is alive and making the expected service request
+    if (!tmp)
+      throw flx_exec_failure_t (__FILE__,"send","Send to terminated procedure");
+    if (!tmp->p_svc)
+      throw flx_exec_failure_t (__FILE__,"send","Send to unready Procedure");
+    if (tmp->p_svc->variant != svc_read)
+      throw flx_exec_failure_t (__FILE__,"send","Send to Procedure which is not trying to read");
+    // store the message
+    **(?1**)tmp->p_svc->data= $2;
+    // clear the service request
+    tmp->p_svc = 0;
+    // run the target until the next service request (or death)
+    while(tmp && (!tmp->p_svc || tmp->p_svc->variant == svc_yield)) {
+      try { tmp=tmp->resume(); }
+      catch (con_t *x) { tmp = x; }
+    }
+    // save the new continuation
+    *(con_t**)$1.get_data() = tmp;
+
+  }
+  """;
+
+  publish """Send a message to a continuation.
+  There is no type checking on the message type.
+  The procedure is executed until
+  the next wait_state, then the message is stored.
+
+  Low level primitive, bypassing fthreads.
+  """
+  proc send[t] (p:&cont) (x:t)
+  {
+    _send (p,x);
+  }
+
+}
+

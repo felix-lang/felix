@@ -19,11 +19,11 @@ typeclass ArrayValue[t,v]
     done
   }
 
-  proc iiter (_f:size * v->void) (x:t) {
+  proc iiter (_f:size -> v->void) (x:t) {
     val n = x.len;
     if n > 0uz do
       for var i:size in 0uz upto n - 1uz do
-        _f$ (i,unsafe_get(x,i));
+        _f i  (x,i).unsafe_get;
       done
     done
   }

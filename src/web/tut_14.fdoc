@@ -1,0 +1,34 @@
+@h1 Pthreads and Channels 
+Felix also supports pre-emptive threads with channels.
+The syntax is similar to that used for fibres and channels:
+
+@felix
+open Text_file;
+
+proc client(x:ischannel[string]) {
+ while true do
+   line := read x;
+   print line;
+ done
+}
+
+proc server(x:oschannel[string]) {
+  f := fopen_input "xyz.flx";
+  var line = readln f;
+  while line != "" do
+    write$ x,line;
+    line = readln f;
+  done;
+  fclose f;
+}
+
+proc launch() {
+  inp,out:= mk_ioschannel_pair[string]();
+  spawn_pthread { client(inp); };
+  spawn_pthread { server (out); };
+}
+
+launch;
+println$ "Launched!";
+@
+

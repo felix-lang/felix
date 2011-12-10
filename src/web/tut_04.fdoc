@@ -1,4 +1,4 @@
-@h2 Basic Overloading
+@h1 Basic Overloading
 As in C++, Felix allows functions and procedures to be
 overloaded. However there's a difference: in Felix the arguments
 to a function must match exactly: there are no automatic conversions

@@ -48,7 +48,7 @@ module Dynlink
     dlopen(library,filename);
     create (library,linstance);
     var init = get_init linstance;
-    Control::run init;
+    Fibres::run init;
     return linstance;
   }
 
@@ -66,7 +66,7 @@ module Dynlink
   noinline proc destroy_lib(linstance:flx_instance)
   {
     destroy linstance;
-    Control::collect();
+    Gc::collect();
     dl := get_library linstance;
     delete_instance_handle linstance;
     dlclose dl;

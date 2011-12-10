@@ -1,0 +1,68 @@
+open module Pchannel
+{
+  requires package "flx_pthread";
+  // pre-emptive thread channels (monitor)
+  type pchannel[t] = "flx::pthread::monitor_t*" requires monitor_hxx;
+  type ipchannel[t] = "flx::pthread::monitor_t*" requires monitor_hxx;
+  type opchannel[t] = "flx::pthread::monitor_t*" requires monitor_hxx;
+
+  fun mk_pchannel[t]: 1->pchannel[t] = "new flx::pthread::monitor_t()";
+
+  // safe casts from bidirectional to unidirectional channels
+  ctor[t] opchannel[t](x:pchannel[t]) => C_hack::cast[opchannel[t]] x;
+  ctor[t] ipchannel[t](x:pchannel[t]) => C_hack::cast[ipchannel[t]] x;
+
+  // make an input and an output channel out of a bidirectional channel
+  fun mk_iopchannel_pair[t](var ch:pchannel[t]) =>
+    ipchannel[t] ch, opchannel[t] ch
+  ;
+
+  // construct a connected input and output channel pair
+  fun mk_iopchannel_pair[t]() =>
+    mk_iopchannel_pair[t]$ mk_pchannel[t] ()
+  ;
+
+
+  // NOTE: read/write on pchannels uses suspend/resume
+  // to tell any pending collector it is safe to proceed
+  // whilst it is doing the I/O (which may block),
+  // to block returning from the I/O during a collection
+  // AND, if the I/O completed before the collection got
+  // going, to yield at this point.
+
+  proc _read[t]: pchannel[t] * &&t = """
+    {
+    FLX_SAVE_REGS;
+    PTF gcp->collector->get_thread_control()->suspend();
+    //fprintf(stderr,"READ:DQ\\n");
+    *$2 = (?1*)($1->dequeue());
+    //fprintf(stderr,"DONE READ:DQ\\n");
+    PTF gcp->collector->get_thread_control()->resume();
+    }
+  """;
+
+  gen read[t] (chan:pchannel[t]) = {
+    var p : &t;
+    _read (chan,  &p);
+    return *p;
+  }
+  gen read[t] (chan:ipchannel[t]) => read$ C_hack::cast[pchannel[t]] chan;
+
+  proc _write[t]: pchannel[t] * &t = """
+    {
+    FLX_SAVE_REGS;
+    PTF gcp->collector->get_thread_control()->suspend();
+    //fprintf(stderr,"WRITE:NQ\\n");
+    $1->enqueue((void*)$2);
+    //fprintf(stderr,"DONE WRITE:NQ\\n");
+    PTF gcp->collector->get_thread_control()->resume();
+    }
+  """;
+
+  proc write[t](chan:pchannel[t], v:t) {
+    var ps = new v;
+    _write (chan,ps);
+  }
+  proc write[t] (chan:opchannel[t], v:t) { write$ C_hack::cast[pchannel[t]] chan,v; }
+}
+

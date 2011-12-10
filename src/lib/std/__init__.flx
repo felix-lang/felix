@@ -1,3 +1,4 @@
+// platform dependent stuff
 include "plat/filename";
 include "plat/config";
 
@@ -5,7 +6,7 @@ include "plat/config";
 include "std/cxx_headers";
 include "std/c_headers";
 
-// type classes
+// core type classes
 include "std/flx_tclass";
 include "std/order";
 include "std/algebraic";
@@ -39,12 +40,22 @@ include "std/system";
 include "std/dynlink";
 include "std/env";
 include "std/cstdlib";
-include "std/control";
 include "std/categ";
+
+// control
+include "std/control";
+include "std/schannels";
+include "std/fibres";
+
+// pthreads (portable)
+include "std/pthread";
+include "std/pchannels";
+
+//memory management
+include "std/gc";
 
 // run time type information
 include "std/rtti";
-
 
 // I/O
 include "std/cstdio";
@@ -74,12 +85,10 @@ include "std/avl";
 
 // misc
 include "std/lexer";
+
 // google re2 regexps
 include "std/re2";
 include "std/regdef";
-
-// pthreads (portable)
-include "std/pthread";
 
 // Version
 include "std/version";
