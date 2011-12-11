@@ -1,0 +1,3 @@
+* Operator . doesn't work right for procedures. Eg x.println doesn't work.
+  FIXED 11/12/2011
+

@@ -313,6 +313,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
     handle_bexe (bexe_axiom_check (sr,be e2)) init
 
   | EXE_call (f',a') ->
+    begin try
     let (ea,ta) as a = be a' in
     (*
     print_endline ("Recursive descent into application " ^ string_of_expr e);
@@ -366,27 +367,15 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       in
       apl "apply"
     end
-
-  (*
-  | EXE_call (f', a') -> (* OVERLOADING *)
-    let sr = src_of_expr sn in
-    let be2,t2 = be e2 in
-    let (be1,t1) as tbe1 =
-       match sn with
-       | #qualified_name_t as qn ->
-         lookup_qn_with_sig
-         state.syms
-         sr sr
-         state.env
-         qn [t2]
-       | _ -> be sn
-    in
-    handle_bexe (cal_call state.syms state.sym_table sr tbe1 (be2,t2)) init
-
-  | EXE_call (p,e) ->
-    let p',pt' = be p and e',et' = be e in
-    handle_bexe (cal_call state.syms state.sym_table sr (p', pt') (e', et')) init
-  *)
+    with x ->
+      begin try 
+        match f',a' with
+        | EXPR_dot (sr,(a'',f'')), EXPR_tuple (_,[]) -> 
+          bind_exe state bsym_table handle_bexe (sr, EXE_call (f'',a'')) init
+        | _ -> raise x
+      with _ -> raise x
+      end
+   end
 
   | EXE_svc s ->
     begin match lun sr s with

@@ -1,0 +1,12 @@
+open module Condition_Variable
+{
+  requires package "flx_pthread";
+  type condition_variable = "::flx::pthread::flx_condv_t*" requires condv_hxx;
+  ctor condition_variable: 1 = "new ::flx::pthread::flx_condv_t";
+  proc destroy: condition_variable = "delete $1;";
+  proc wait: condition_variable * mutex = "$1->wait($2);";
+  proc signal: condition_variable = "$1->signal();";
+  proc broadcast: condition_variable = "$1->broadcast();";
+  // can't do timedwait without timespec ...
+  //gen timedwait: condition_variable * mutex * &timespec -> int = "$1->timedwait($2, $3)";
+}

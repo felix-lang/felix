@@ -5,14 +5,17 @@ The syntax is similar to that used for fibres and channels:
 @felix
 open Text_file;
 
-proc client(x:ischannel[string]) {
- while true do
-   line := read x;
-   print line;
- done
+proc client(x:ipchannel[opt[string]]) {
+  var finished = false;
+  while not finished do
+    match read x with
+    | Some ?line => print line;
+    | None => finished = true;
+    endmatch;
+  done
 }
 
-proc server(x:oschannel[string]) {
+proc server(x:opchannel[string]) {
   f := fopen_input "xyz.flx";
   var line = readln f;
   while line != "" do
@@ -20,10 +23,11 @@ proc server(x:oschannel[string]) {
     line = readln f;
   done;
   fclose f;
+  write$ x, None[string];
 }
 
 proc launch() {
-  inp,out:= mk_ioschannel_pair[string]();
+  inp,out:= mk_iopchannel_pair[string]();
   spawn_pthread { client(inp); };
   spawn_pthread { server (out); };
 }
@@ -31,4 +35,109 @@ proc launch() {
 launch;
 println$ "Launched!";
 @
+
+@h2 Broadcast example
+Here is the broadcast code using pthreads:
+
+@felix
+gen broadcaster() : 
+  opchannel[opt[opchannel[string]]] * // subscription channel
+  opchannel[string]                   // news reporting channel
+=
+{
+  // -------------------------------------------------------------
+  // SUBSCRIPTIONS
+  // -------------------------------------------------------------
+
+  // subscriber list
+  var clients = darray[opchannel[string]] ();
+
+  // subscription channel
+  iregistry, oregistry := mk_iopchannel_pair[opt[opchannel[string]]]();
+
+  // accept registrations until end of broadcast
+  // a subscription of None signals end of broadcast
+  spawn_pthread {
+    var end_of_news = false;
+    while not end_of_news do
+      match read iregistry with
+      | None => end_of_news = true;
+      | Some ?chan => 
+        push_back (clients, chan);
+        println "Got a subscriber";
+      endmatch;
+    done
+    println "Finished accepting subscribers";
+  };
+ 
+  // -------------------------------------------------------------
+  // RELAY THE NEWS
+  // -------------------------------------------------------------
+
+  // news reading channel
+  inews, onews := mk_iopchannel_pair[string]();
+
+  // send news to all clients
+  spawn_pthread {
+    var news_line = read inews;
+    while true do 
+      if len clients > 0uz do
+        for var i in 0uz upto len clients - 1uz do
+          write$ clients.[i], news_line;
+        done
+      done
+      if news_line == "END OF NEWS\n" do 
+        println "Finished news relay"; 
+        return; 
+      done
+      news_line = read inews;
+    done
+  };
+
+  // return the channel for subscribing to news reports,
+  // and the channel for making news reports
+  return oregistry, onews;
+}
+
+// Create the broadcast station
+subscribe, news := broadcaster();
+
+// create a template for bored train commuters who want to read the news
+proc commuter (i:int) {
+  ichan, ochan := mk_iopchannel_pair[string]();
+  write$ subscribe, Some ochan; //subscribe to news
+  var line = read ichan;
+  while line != "END OF NEWS\n" do 
+    print$ "Commuter " + str i + ": " + line;
+    line = read ichan;
+  done
+  print$ "Commuter " + str i + ": " + line;
+}
+
+// create two commuters
+spawn_pthread { commuter 1; };
+spawn_pthread { commuter 2; };
+
+// create a reporter that just sends a file as news
+spawn_pthread {
+  f := Text_file::fopen_input "br.flx";
+  var line = Text_file::readln f;
+  while line != "" do
+    print$ "Reporting : " + line;
+    write$ news, line;
+    line = Text_file::readln f;
+  done
+  write$ news, "END OF NEWS\n";
+  Text_file::fclose f;
+  write$ subscribe, None[opchannel[string]];
+  println "Done reporting news";
+};
+
+println$ "Demo started";
+@
+
+You should note that there's no assurance the subscribers get all the news!
+In fact this code can deadlock, because the news can be over before one
+of the subscribers gets to subscribe. In that case the write to the
+subscription channel will hang forever since the reader is gone.
 

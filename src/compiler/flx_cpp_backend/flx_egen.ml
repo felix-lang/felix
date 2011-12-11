@@ -308,7 +308,7 @@ let rec gen_expr'
      (* ce_atom ("UNIT_ERROR") *)
   | _ ->
   match e with
-  | BEXPR_expr (s,_) -> ce_top (cid_of_flxid s)
+  | BEXPR_expr (s,_) -> ce_top (s)
 
   | BEXPR_case_index e -> Flx_vgen.gen_get_case_index ge' bsym_table e
 

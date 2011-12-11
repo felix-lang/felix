@@ -50,6 +50,7 @@ include "std/fibres";
 // pthreads (portable)
 include "std/pthread";
 include "std/pchannels";
+include "std/mutex";
 
 //memory management
 include "std/gc";

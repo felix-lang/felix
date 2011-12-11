@@ -27,10 +27,4 @@ open module Pthread
       svc$ svc_spawn_pthread fthr;
   }
 
-  type mutex = "flx::pthread::flx_mutex_t" requires mutex_hxx;
-  proc lock: mutex = "$1.lock();";
-  proc unlock: mutex = "$1.unlock();";
-  proc lock (m:&mutex) { lock$ *m; }
-  proc unlock (m:&mutex) { unlock$ *m; }
-
 }

@@ -162,8 +162,9 @@ fun xlat_fdoc(t:string, filename:string)=
   endmatch;
   
   var i = 0; var s:state_t=doc;
-  var ch = t.[i];
-  proc next() { ch = t.[i]; ++i; }
+  var ch = char "\n";
+  var sol = true;
+  proc next() { sol = ch == char "\n"; ch = t.[i]; ++i; }
   fun ahead (j:int)=> t.[i+j-1]; 
   var b = "";
   proc cp() { b += ch; }
@@ -216,7 +217,7 @@ nextc:>
   match s with 
   | doc =>
     { 
-      if char "@" == ch do 
+      if sol and char "@" == ch do 
         if b != "" do sp; write_string(markdown b); ep; done
         s = cmd; b="";
       elif char "\n" == ch and char "\n" == ahead(1) do 
@@ -228,7 +229,7 @@ nextc:>
     }
   | pre =>
     { 
-      if char "@" == ch do 
+      if sol and char "@" == ch  do 
         if b != "" do 
           sp; 
           write_string("<pre>"); 
@@ -244,7 +245,7 @@ nextc:>
 
   | cpp =>
     { 
-      if char "@" == ch do 
+      if sol and char "@" == ch do 
         if b != "" do 
           write_string("<pre class='cppbg'>"); 
           write_string(Cpp2Html::xlat_cpp (b,"")); // no parent!
@@ -259,7 +260,7 @@ nextc:>
 
   | felix =>
     { 
-      if char "@" == ch do 
+      if sol and char "@" == ch do 
         if b != "" do 
           write_string("<pre class='flxbg'>"); 
           write_string(Flx2Html::xlat_felix (b,"")); // no parent!

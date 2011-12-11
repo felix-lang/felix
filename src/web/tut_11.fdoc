@@ -1,3 +1,72 @@
 @h1 Type Constraints
-Stuff.
+Felix provides a simple system of type constraints.
+The need for type constraints arose when binding C:
+@felix
+type int = "int";
+type long = "long";
+fun add: int * int = "$1+$2";
+fun add: long * long = "$1+$2";
+@
+C has a lot of integer types and writing out all the operators
+for all the types is boring, error prone, and slows down compilation.
+If you also wanted to allow mixed operators you'd need to add:
+@felix
+fun add: int * long = "$1+$2";
+fun add: long * int = "$1+$2";
+@
+and you can see we would rapidly get into an untenable combinatorial
+explosion.
+
+To solve the problem we use type constraints.
+
+First we introduce a construction to make a set of types:
+@felix
+typedef integers = typesetof(int, long);
+@
+Now we write polymorphic functions with type constraints:
+@felix
+fun add[I in integers]: I * I = "$1+$2";
+@
+Here the type variable {I} may only be {int} or {long}.
+If you wanted to support mixed addition:
+@felix
+fun add[I in Integers, J in Integers]: I * J = "$1+$2";
+@
+Note carefully the difference between these two functions:
+in the first function {I} is set to either {int} or {long}
+and so only two {int}s or two {long}s can be added.
+
+In the second case, {I} and {J} are set independently
+to either {int} or {long} which allows any combination 
+to be added.
+
+There is a shorthand for the second formulation:
+@felix
+fun add: !integers * !integers = "$1+$2";
+@
+
+Note carefully that Felix does not support conversions when overloading,
+exact matches are required, <em>but</em> we can use constrained 
+genericity to simulate a lot of that functionality.
+
+When Felix performs overload resolution, initially candidates are found
+without considering type constraints; that is, as if the type variables
+were able to bind to any type.
+
+Then, the type constraints are checked and candidates failing to meet 
+the constraints are rejected. For example:
+@felix
+fun f[T in ints]: T -> T = "$1+1";
+fun f[T in floats]: T -> T = "$1+2";
+println$ (f 1.2), f 1;
+@
+Type sets also support the set union operator:
+@felix
+typedef sints = fast_sints || exact_sints;
+@
+Note that the typesets {ints} and {floats}, along with some other
+basic type sets, are defined in the standard library: 
+
+@felix ../lib/std/ctypesets.flx
+
 

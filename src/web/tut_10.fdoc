@@ -1,2 +1,10 @@
 @h1 Polymorphism
-Stuff.
+Almost everything (except variables) in Felix can be polymorphic, that is,
+parametrised by a list of types. Here is a simple example:
+
+@felix
+fun diag[T,U] (x:T, y:U)=> y,x;
+a := 1,"Hi";
+println$ a, diag a, diag (diag a);
+@
+

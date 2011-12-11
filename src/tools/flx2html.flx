@@ -9,7 +9,7 @@ private val big_keywords =
   ("enum","Elaborate an enumeration, a simple sum type"),
   ("gen","Define a generator, a function with side-effects returning a value"),
   ("proc","Define a procedure, a function with side-effects not returning a value"),
-  ("ctor","Define a type constructor"),
+  ("ctor","Define a value constructor or conversion operator for a type"),
   ("type","Define a primitive type by binding to a C type"),
   ("ctypes","Define a set of primitive type by binding to C types with the same name"),
   ("union","Define a union of alternatives"),
@@ -32,41 +32,41 @@ private val big_keywords =
   ("inherit","Inherit symbols into a module or typeclass"),
   ("SCHEME","Define Scheme symbols"),
   ("syntax","define domain specific sublanguage module"),
-  ("priority","Define order of syntactic priority symbols")
+  ("priority","Define order of syntactic priority symbols"),
+  ("requires","specify requirements")
 ;
 
 private val small_keywords =
-  "if", 
-  "then", 
-  "else", 
-  "elif", 
-  "endif", 
-  "do", 
-  "done",
-  "in", 
-  "for", 
-  "while", 
-  "while",
-  "to", 
-  "upto",
-  "downto",
-  "typematch",
-  "match",
-  "endmatch",
-  "with", 
-  "requires",
-  "return",
-  "goto",
-  "jump",
-  "loop",
-  "package",
-  "when", 
-  "result",
-  "expect",
-  "for",
-  "ident",
-  "noexpand",
-  "typesetof"
+  ("if","conditional"), 
+  ("then","conditional"), 
+  ("else","conditional"), 
+  ("elif","conditional"), 
+  ("endif","conditional"), 
+  ("do","imperative code begins"), 
+  ("done","end of body"),
+  ("in", "membership operator, function mem"),
+  ("for", "for loop"),
+  ("while","while loop"),
+  ("to", "substring range separator"),
+  ("upto","upwards counting for loop"),
+  ("downto","downwards counting for loop"),
+  ("typematch","type match expression"),
+  ("match","match statement or expression"),
+  ("endmatch","end a match statement or expression"),
+  ("with", "type-class constraint"),
+  ("return","return"),
+  ("goto","jump to label"),
+  ("jump","tail call of function"),
+  ("loop","self-tail call"),
+  ("package","specifies an abstract package name"),
+  ("when", "predicative type constraint"),
+  ("result","value of function return used in post condition"),
+  ("expect","post condition"),
+  ("for","for loop"),
+  ("ident","identifier macro"),
+  ("noexpand","inhibit macro expansion"),
+  ("typesetof","a set of types"),
+  ("code","literal C code insertion")
 ;
 
 private val qualifiers = 
@@ -77,8 +77,58 @@ private val qualifiers =
   ("incomplete","A type which must not be instantiated"),
   ("callback","A C wrapper for a Felix callback"),
   ("pod","A Plain Old Data type, which needs no finalisation"),
-  ("_gc_pointer","A Felix heap allocated pointer")
+  ("_gc_pointer","A Felix heap allocated pointer"),
+  ("_gc_type","Type of object pointed to"),
+  ("scanner","names C routine which scans a data structure for pointers"),
+  ("finaliser","names C routine which finalises an object")
 ;
+
+private val library = 
+  ("void", "Type with no values, returning void indicates a procedure"),
+  ("unit", "Type with one values (), the empty tuple"),
+  ("tiny", "binding of C signed char type"),
+  ("utiny", "binding of C unsigned char type"),
+  ("short", "binding of C short type"),
+  ("ushort", "binding of C unsigned short type"),
+  ("int", "binding of C int type"),
+  ("uint", "binding of C unsigned int type"),
+  ("long", "binding of C long type"),
+  ("ulong", "binding of C unsigned long type"),
+  ("vlong", "binding of C long long type"),
+  ("uvlong", "binding of C unsigned long long type"),
+  ("int8", "binding of C int8_t type"),
+  ("int16", "binding of C int16_t type"),
+  ("int32", "binding of C int32_t type"),
+  ("int64", "binding of C int64 type"),
+  ("uint8", "binding of C uint8_t type"),
+  ("uint16", "binding of C uint16_t type"),
+  ("uint32", "binding of C uint32_t type"),
+  ("uint64", "binding of C uint64 type"),
+  ("char", "binding of C char type"),
+  ("uchar", "binding of C int32_t type used for Unicode character set"),
+  ("intptr", "binding of C intptr_t type"),
+  ("uintptr", "binding of C unsigned type corresponding to intptr_t type"),
+  ("maxint", "binding of C maxint_t type"),
+  ("umaxint", "binding of C unsigned type corresponding to maxint_t type"),
+  ("size", "binding of C size_t type"),
+  ("ssize", "binding of C signed type corresponding to size_t type"),
+  ("float", "binding of C float type"),
+  ("double", "binding of C double float type"),
+  ("ldouble", "binding of C long double type"),
+
+  ("opt", "option type: Some x or None"),
+  ("list", "functional, singly linked list"),
+  ("array", "array type, a tuple of all components the same type"),
+  ("varray", "array with dynamically variable limit up to a fixed bound"),
+  ("darray", "array with unbounded dynamically variable limit"),
+  ("sarray", "unbounded sparse array"),
+  ("bsarray", "bounded sparse array"),
+
+  ("str", "Convert a value to a string"),
+  ("print", "Print a string to standard output"),
+  ("println", "Print a string to standard output with newline appended")
+;
+
 private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
 
 
@@ -197,10 +247,13 @@ println$ "Package file basename is " + n;
         last_id = b;
         // this is a bit hacky but I can't see another way!
         var bv=valof(big_keywords,b);
+        var sv=valof(small_keywords,b);
         var qv=valof(qualifiers,b);
-        if bv != "" do last_key=b; write_string('<span class="big_keyword" title="'+bv+'">'+b+"</span>"); 
-        elif b in small_keywords do last_key=b; write_string('<span class="small_keyword">'+b+"</span>"); 
+        var lv=valof(library,b);
+        if   bv != "" do last_key=b; write_string('<span class="big_keyword" title="'+bv+'">'+b+"</span>"); 
+        elif sv != "" do last_key=b; write_string('<span class="small_keyword" title="'+sv+'">'+b+"</span>");
         elif qv != "" do write_string('<span class="qualifier" title="'+qv+'">'+b+"</span>"); 
+        elif lv != "" do write_string('<span class="library" title="'+lv+'">'+b+"</span>"); 
         elif b in hack do write_string('<span class="hack">'+b+"</span>"); 
         else write_string(b); done
       }

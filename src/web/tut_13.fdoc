@@ -22,10 +22,10 @@ Best to show an example of course!
 open Text_file;
 
 proc client(x:ischannel[string]) {
- while true do
-   line := read x;
-   print line;
- done
+  while true do
+    line := read x;
+    print line;
+  done
 }
 
 proc server(x:oschannel[string]) {

@@ -9,7 +9,7 @@ flx_condv_t::flx_condv_t() {
   #if !FLX_WIN32
   if(res==EINVAL) {
     // I suspect this is an error .. perhaps something got deleted
-    fprintf(stderr,"pthred_cond_init returned EINVAL!");
+    fprintf(stderr,"pthread_cond_init returned EINVAL!");
   }
   #endif
 }
@@ -18,7 +18,7 @@ flx_condv_t::~flx_condv_t() {
   #if !FLX_WIN32
   if(res==EINVAL) {
     // I suspect this is an error .. perhaps something got deleted
-    fprintf(stderr,"pthred_cond_destroy returned EINVAL!");
+    fprintf(stderr,"pthread_cond_destroy returned EINVAL!");
   }
   #endif
 }
@@ -27,7 +27,7 @@ void flx_condv_t::wait(flx_mutex_t *m) {
   #if !FLX_WIN32
   if(res==EINVAL) {
     // I suspect this is an error .. perhaps something got deleted
-    fprintf(stderr,"pthred_cond_wait returned EINVAL!");
+    fprintf(stderr,"pthread_cond_wait returned EINVAL!");
   }
   #endif
 }
@@ -36,7 +36,7 @@ void flx_condv_t::signal() {
   #if !FLX_WIN32
   if(res==EINVAL) {
     // I suspect this is an error .. perhaps something got deleted
-    fprintf(stderr,"pthred_cond_signal returned EINVAL!");
+    fprintf(stderr,"pthread_cond_signal returned EINVAL!");
   }
   #endif
 }
@@ -45,7 +45,7 @@ void flx_condv_t::broadcast() {
   #if !FLX_WIN32
   if(res==EINVAL) {
     // I suspect this is an error .. perhaps something got deleted
-    fprintf(stderr,"pthred_cond_broadcast returned EINVAL!");
+    fprintf(stderr,"pthread_cond_broadcast returned EINVAL!");
   }
   #endif
 }
@@ -54,7 +54,7 @@ int flx_condv_t::timedwait(flx_mutex_t *m, timespec *t) {
   #if !FLX_WIN32
   if(res==EINVAL) {
     // I suspect this is an error .. perhaps something got deleted
-    fprintf(stderr,"pthred_cond_timedwait returned EINVAL!");
+    fprintf(stderr,"pthread_cond_timedwait returned EINVAL!");
     return 0; // this is NOT an error!
   }
   #endif
