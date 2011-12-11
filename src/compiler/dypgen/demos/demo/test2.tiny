@@ -1,0 +1,7 @@
+define list_contents := expr(x) = List(x,Nil) in
+define list_contents := expr(x) ";" list_contents(y) = List(x,y) in
+define expr := "[" "]" = Nil in
+define expr := "[" list_contents(x) "]" = x in
+define expr := expr(x) "::" expr(y) = List(x,y) in
+
+(([x;2;3],7::[]),(9::[4],[]))

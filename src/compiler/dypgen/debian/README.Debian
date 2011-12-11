@@ -1,0 +1,7 @@
+dypgen for Debian
+-----------------
+
+The dypgen archive is now very easy to package, all make install target are
+debian compatible.
+
+ -- Christophe Raffalli <christophe.raffalli@univ-savoie.fr>  Fri, 18 Jun 2010 17:34:50 +0200

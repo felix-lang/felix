@@ -1,0 +1,23 @@
+define
+  list_contents := expr(x) = List(x,Nil)
+  and list_contents := expr(x) ";" list_contents(y) = List(x,y)
+  and expr := "[" "]" = Nil
+  and expr := "[" list_contents(x) "]" = x
+  and expr := expr(x) "::" expr(y) = List(x,y)
+;;
+
+let rec append arg = match arg with
+  | ([],list) -> list
+  | ((head::tail),list) -> (head::(append (tail,list)))
+;;
+
+define
+  expr := expr(x) "@" expr(y) = append (x,y)
+;;
+
+let rec reverse l = match l with
+  | [] -> []
+  | head::tail -> ((reverse tail)@[head])
+;;
+
+reverse [0;1;2;3];;

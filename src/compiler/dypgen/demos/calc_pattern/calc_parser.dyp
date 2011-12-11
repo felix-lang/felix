@@ -1,0 +1,21 @@
+%token LPAREN RPAREN <int> INT <string> OP EOL
+
+%relation pi<pt<pp   /* same as  pi<pt pt<pp pi<pp */
+
+%start <int> main
+
+%%
+
+main : expr EOL { $1 }
+
+expr :
+  | INT<x>                             { x }     pi
+  | OP<"-"> expr(=pi)<x>               { -x }    pi
+  | LPAREN expr<x> RPAREN              { x }     pi
+  | expr(<=pp)<x> OP<"+"> expr(<pp)<y> { x + y } pp
+  | expr(<=pp)<x> OP<"-"> expr(<pp)<y> { x - y } pp
+  | expr(<=pt)<x> OP<"*"> expr(<pt)<y> { x * y } pt
+  | expr(<=pt)<x> OP<"/"> expr(<pt)<y> { x / y } pt
+
+
+

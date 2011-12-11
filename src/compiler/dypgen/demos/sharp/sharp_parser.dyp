@@ -1,0 +1,38 @@
+{
+open Dyp
+
+let r_sharp = ("expr", [
+  Non_ter ("expr",Lesseq_priority "p1");
+  Regexp (RE_String "#");
+  Non_ter ("expr",Lesseq_priority "p2")
+  ],"p1",[])
+(* E -> E # E *)
+
+let action_plus = (fun dyp l ->
+  let x1, x2 = match l with
+    | [Obj_expr x1;_;Obj_expr x2] -> x1, x2
+    | _ -> failwith "action_plus"
+  in
+  (Obj_expr (x1+x2)), [Dont_shift])
+
+let action_time = (fun dyp l ->
+  let x1, x2 = match l with
+    | [Obj_expr x1;_;Obj_expr x2] -> x1, x2
+    | _ -> failwith "action_plus"
+  in
+  (Obj_expr (x1*x2)), [Dont_shift])
+}
+
+%start main
+%relation p1<p2
+%layout [' ' '\t']
+
+%parser
+
+main: expr "\n" { $1 }
+
+expr:
+  | ['0'-'9']+  { int_of_string $1 } p1
+  | "(" expr ")" { $2 } p1
+  | "&+" ...@{ (), [Add_rules [(r_sharp, action_plus)]] } expr { $3 } p2
+  | "&*" ...@{ (), [Add_rules [(r_sharp, action_time)]] } expr { $3 } p2

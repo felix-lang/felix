@@ -1,0 +1,78 @@
+/* parser.dyp */
+
+{ open Parse_tree
+open Dyp
+
+let string_buf = Buffer.create 10
+
+let a_define_in dyp (s,ol,e) =
+  let f o =
+    match o with
+      | Nt (s,_) -> Non_ter (s,No_priority)
+      | Token s -> Regexp (RE_String s)
+  in
+  let rule  = s,(List.map f ol),"default_priority",[] in
+  let action = (fun _ avl ->
+    let f2 env o av = match o with
+      | Nt (_,var_name) -> String_map.add var_name av env
+      | _ -> env
+    in
+    let f3 av = match av with
+      | Obj_expr exp -> exp
+      | _ -> Int 0
+    in
+    let avl = List.map f3 avl in
+    let env = List.fold_left2 f2 String_map.empty ol avl in
+    Obj_expr (substitute env e), [])
+  in rule, action
+}
+
+%start main
+
+%lexer
+
+let newline = ('\010' | '\013' | "\013\010")
+let blank = [' ' '\009' '\012']
+let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
+let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
+let identchar =
+  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+
+rule string = parse
+  | '"' { () }
+  | _ { Buffer.add_string string_buf (Dyp.lexeme lexbuf);
+      string lexbuf }
+
+main lexer =
+newline | blank + ->
+lowercase identchar * -> LIDENT { Dyp.lexeme lexbuf }
+uppercase identchar * -> UIDENT { Dyp.lexeme lexbuf }
+'"' -> STRING { Buffer.clear string_buf;
+      string lexbuf;
+      Buffer.contents string_buf }
+
+%parser
+
+main : expr eof { $1 }
+
+expr :
+  | ['0'-'9']+ { Int (int_of_string $1) }
+  | "(" expr "," expr ")" { Pair ($2,$4) }
+  | UIDENT expr
+    { match $2 with
+        | Pair (a,b) -> Cons ($1,(2,[a;b]))
+        | exp -> Cons ($1,(1,[exp])) }
+  | UIDENT { Cons ($1,(0,[])) }
+  | LIDENT { Lident $1 }
+  | define_in expr { $2 }
+
+define_in :
+  | "define" LIDENT ":=" rhs "=" expr "in"
+    @{ (), [ Add_rules [a_define_in dyp ($2,$4,$6)];
+      Bind_to_cons [$2,"Obj_expr"]] }
+
+rhs :
+  | LIDENT "(" LIDENT ")" { [Nt ($1,$3)] }
+  | STRING { [Token $1] }
+  | LIDENT "(" LIDENT ")" rhs { (Nt ($1,$3))::$5 }
+  | STRING rhs { (Token $1)::$2 }

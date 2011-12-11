@@ -1,0 +1,11 @@
+dypgen (0.20100625-1) unstable; urgency=low
+
+  * Incorporate some bux fixes and reduces the patch needed
+
+ -- Christophe Raffalli (LAMA - UMR 5127) <Christophe.Raffalli@univ-savoie.fr>  Fri, 24 Jun 2010 23:34:50 +0200
+
+dypgen (0.20091118-1) unstable; urgency=low
+
+  * Initial release (Closes: #586891)
+
+ -- Christophe Raffalli (LAMA - UMR 5127) <Christophe.Raffalli@univ-savoie.fr>  Fri, 18 Jun 2010 17:34:50 +0200

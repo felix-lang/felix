@@ -1,0 +1,6 @@
+let rec reverse l = match l with
+  | [] -> []
+  | head::tail -> ((reverse tail)@[head])
+;;
+
+reverse [0;1;2;3];;

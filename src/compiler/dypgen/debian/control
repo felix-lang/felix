@@ -1,0 +1,33 @@
+Source: dypgen
+Section: devel
+Priority: extra
+Maintainer: Christophe Raffalli <christophe.raffalli@univ-savoie.fr>
+Build-Depends: debhelper (>= 7), ocaml-base-nox | ocaml-base | ocaml-nox | ocaml, ocaml-findlib
+Standards-Version: 3.8.3
+Homepage: http://dypgen.free.fr/
+
+Package: dypgen
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},  ${ocaml:Depends}, libdypgen-ocaml-dev
+Recommands: dypgen-doc
+Description: A GLR parser and lexer generator for OCaml
+ A GLR parser and lexer generator for OCaml with some unique features: 
+ self extensible grammars, rejection of rule by exception, merge for 
+ amiguous grammar, can output all parse-tree, handling or priorities 
+ by arbitrary relation, automatically generated the lexer by using 
+ strings as terminals, context dependent lexer, pattern matching in 
+ rule, ...
+
+Package: libdypgen-ocaml-dev
+Section: ocaml
+Architecture: any
+Depends:
+  ${ocaml:Depends},
+  ${shlibs:Depends},
+  ${misc:Depends}
+Suggests: ocaml-findlib
+Provides:
+  ${ocaml:Provides}
+Description: Dypgen library for OCaml
+ This package contains the library containing the GLR engine for dypgen
+ generated file.
