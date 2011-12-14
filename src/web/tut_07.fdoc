@@ -39,8 +39,8 @@ union Z =
 ;
 
 fun str (z:Z) => match z with
-  | Cart ?x,?y => str x + "+"+str y+"i"
-  | Polar ?r,?theta => str r + "e^"+str theta+"i"
+  | Cart (?x,?y) => str x + "+"+str y+"i"
+  | Polar (?r,?theta) => str r + "e^"+str theta+"i"
 ;
 @
 
@@ -83,10 +83,81 @@ println$ xaxis (x=1.2,y=2.2);
 @
 Here the {_} is a wildcard that matches anything.
 
-You can also match against literals:
-...
-compound matches
-...
-ranges
-...
+You can also match against literals and ranges of
+integers floats and strings:
+@felix
+fun (x:int) => match x with
+  | 1 => "one"
+  | 2..10 => "two to ten"
+  | _ => "other"
+  endmatch
+;
+@
+
+Of course, matches are general patterns and can be combined, we've already
+seen that in the first example which combines are match against constructors
+and tuples.
+
+@h2 Enumerations
+Felix has C++ style {enum}s.
+@h3 Linear enumeration
+@felix
+enum colour {red, green, blue};
+
+fun str: colour = 
+  | red => "red"
+  | blue => "blue"
+  | green => "green"
+;
+
+println$ red;
+@
+This is a shorthand for a union, where the enumeration
+tags are type constuctors. 
+
+Note also in the above example the shorthand version of a function
+which consists solely of a match.
+
+@h3 Flags 
+Here's an example with 
+user specified constructor indicies:
+@felix
+enum flags {b1=1,b2=2,b3=4};
+println$ caseno b3;
+
+// Use C to model flag like operations
+type flagset = "int";
+ctor flagset: flags = "$1";
+fun bor:flags * flags -> flagset = "$1|$2";
+fun bor:flags * flagset -> flagset = "$1|$2";
+fun bor:flagset * flags -> flagset = "$1|$2";
+fun bor:flagset * flagset -> flagset = "$1|$2";
+fun mem: flags * flagset -> bool = "($1&$2)!=0";
+
+fun eq: flagset * flagset -> bool = "$1==$2";
+fun ne: flagset * flagset -> bool = "$1!=$2";
+fun le: flagset * flagset -> bool = "($1&~$2)==0";
+fun lt (x:flagset,y:flagset)=> x<=y and not x == y;
+fun gt (x:flagset,y:flagset)=> not x<=y;
+fun ge (x:flagset,y:flagset)=> not x<y;
+
+
+var x = b1 \| b2;         // infix operator \| is function bor!
+println$ b1 in x;         // true: infix operator in is function mem!
+println$ b2 in x;         // true
+println$ b3 in x;         // false
+println$ b1.flagset < x;  // true
+println$ x < b1.flagset;  // false
+
+@
+You can find the index
+of any constructor as an {int} with the {caseno} operator. 
+In the example note that although the constructor with index
+0 and 3 is not named, it is still a value of the type.
+
+You cannot directly perform mathematical or bitwise operations
+on constructors, not even enumeration constants. Note that that includes
+comparison for equality! Use the {caseno} operator to get around this,
+or bind into C as shown in the example.
+
 
