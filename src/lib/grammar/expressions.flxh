@@ -119,19 +119,24 @@ syntax expressions {
   x[srefr_pri] := "new" x[srefr_pri] =># "`(ast_new ,_sr ,_2)";
   x[srefr_pri] := anon_value =># "_1";
 
+  // record type
+  anon_value := "(" srecord_mem_decl ("," srecord_mem_decl)*  ")" =># 
+   "`(ast_record_type ,(cons _2 (map second _3)))";
+    srecord_mem_decl := sname ":" stypeexpr =># "`(,_1 ,_3)";
+
   // record type (verbose form)
-  anon_value := "struct" "{" sstruct_mem_decl* "}" =># "`(ast_record_type ,_3)";
+  //anon_value := "struct" "{" sstruct_mem_decl* "}" =># "`(ast_record_type ,_3)";
 
   // record type (semicolon terminated)
-  anon_value := "(" sstruct_mem_decl+ ")" =># "`(ast_record_type ,_2)";
-    sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(,_1 ,_3)";
+  //anon_value := "(" sstruct_mem_decl+ ")" =># "`(ast_record_type ,_2)";
+  //  sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(,_1 ,_3)";
 
   // record value (verbose form)
-  anon_value := "struct" "{" sstruct_assign* "}" =># "`(ast_record ,_sr ,_3)";
+  //anon_value := "struct" "{" sstruct_assign* "}" =># "`(ast_record ,_sr ,_3)";
 
   // record value (semicolon terminated)
-  anon_value := "(" sstruct_assign+ ")" =># "`(ast_record ,_sr ,_2)";
-    sstruct_assign := sname "=" sexpr ";" =># "`(,_1 ,_3)";
+  //anon_value := "{" sstruct_assign+ "}" =># "`(ast_record ,_sr ,_2)";
+  //  sstruct_assign := sname "=" sexpr ";" =># "`(,_1 ,_3)";
 
   // variant type
   anon_value := "union" "{" stype_sum_item0* "}" =># "`(ast_variant_type ,_3)";
@@ -159,7 +164,7 @@ syntax expressions {
 
   // suffixed coercion
   // mainly required in patterns? Can be used for type checking?
-  x[scoercion_pri] := x[scoercion_pri] ":" x[sfactor_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
+  x[scoercion_pri] := x[scoercion_pri] ":>>" x[sfactor_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
   x[scoercion_pri] := ssuffixed_name =># "_1";
 
   x[sfactor_pri] := shash_name =># "_1";

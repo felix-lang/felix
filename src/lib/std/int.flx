@@ -13,22 +13,22 @@ typedef fun integral_promotion: TYPE -> TYPE =
 
 open module Tiny
 {
-  ctor tiny: string = "static_cast<signed char>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] tiny: T = "static_cast<signed char>($1)";
+  ctor tiny: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] tiny: T = "static_cast<#0>($1)";
   proc fprint: ostream * tiny = "*$1<<(int)$2;" requires Cxx_headers::iostream;
 }
 
 open module Short
 {
-  ctor short: string = "static_cast<short>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] short: T = "static_cast<short>($1)";
+  ctor short: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] short: T = "static_cast<#0>($1)";
   proc fprint: ostream * short = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Int
 {
-  ctor int: string = "static_cast<int>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] int: T = "static_cast<int>($1)";
+  ctor int: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] int: T = "static_cast<#0>($1)";
   // special hack
   ctor int(x:bool)=> match x with | true => 1 | false => 0 endmatch;
   proc fprint: ostream * int = "*$1<<$2;" requires Cxx_headers::iostream;
@@ -36,147 +36,147 @@ open module Int
 
 open module Long
 {
-  ctor long: string = "static_cast<long>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] long: T = "static_cast<long>($1)";
+  ctor long: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] long: T = "static_cast<#0>($1)";
   proc fprint: ostream * long = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Vlong
 {
-  ctor vlong: string = "static_cast<long long>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] vlong: T = "static_cast<long long>($1)";
+  ctor vlong: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] vlong: T = "static_cast<#0>($1)";
   proc fprint: ostream * vlong = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Utiny
 {
-  ctor utiny: string = "static_cast<unsigned char>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] utiny: T = "static_cast<unsigned char>($1)";
+  ctor utiny: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] utiny: T = "static_cast<#0>($1)";
   proc fprint: ostream * utiny = "*$1<<(unsigned int)$2;" requires Cxx_headers::iostream;
 }
 
 open module Ushort
 {
-  ctor ushort: string = "static_cast<unsigned short>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] ushort: T = "static_cast<unsigned short>($1)";
+  ctor ushort: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] ushort: T = "static_cast<#0>($1)";
   proc fprint: ostream * ushort = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Uint
 {
-  ctor uint: string = "static_cast<unsigned int>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uint: T = "static_cast<unsigned int>($1)";
+  ctor uint: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] uint: T = "static_cast<#0>($1)";
   proc fprint: ostream * uint = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Ulong
 {
-  ctor ulong: string = "static_cast<unsigned long>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] ulong: T = "static_cast<unsigned long>($1)";
+  ctor ulong: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] ulong: T = "static_cast<#0>($1)";
   proc fprint: ostream * ulong = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Uvlong
 {
-  ctor uvlong: string = "static_cast<unsigned long long>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uvlong: T = "static_cast<unsigned long long>($1)";
+  ctor uvlong: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] uvlong: T = "static_cast<#0>($1)";
   proc fprint: ostream * uvlong = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open module Int8
 {
-  ctor int8: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] int8: T = "static_cast<?1>($1)";
+  ctor int8: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] int8: T = "static_cast<#0>($1)";
 }
 
 open module Int16
 {
-  ctor int16: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] int16: T = "static_cast<?1>($1)";
+  ctor int16: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] int16: T = "static_cast<#0>($1)";
 }
 
 open module Int32
 {
-  ctor int32: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] int32: T = "static_cast<?1>($1)";
+  ctor int32: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] int32: T = "static_cast<#0>($1)";
 }
 
 open module Int64
 {
-  ctor int64: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] int64: T = "static_cast<?1>($1)";
+  ctor int64: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] int64: T = "static_cast<#0>($1)";
 }
 
 open module Uint8
 {
-  ctor uint8: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uint8: T = "static_cast<?1>($1)";
+  ctor uint8: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] uint8: T = "static_cast<#0>($1)";
 }
 
 open module Uint16
 {
-  ctor uint16: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uint16: T = "static_cast<?1>($1)";
+  ctor uint16: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] uint16: T = "static_cast<#0>($1)";
 }
 
 open module Uint32
 {
-  ctor uint32: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uint32: T = "static_cast<?1>($1)";
+  ctor uint32: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] uint32: T = "static_cast<#0>($1)";
 }
 
 open module Uint64
 {
-  ctor uint64: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uint64: T = "static_cast<?1>($1)";
+  ctor uint64: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] uint64: T = "static_cast<#0>($1)";
 }
 
 open module Ssize
 {
-  ctor ssize: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] ssize: T = "static_cast<?1>($1)";
+  ctor ssize: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] ssize: T = "static_cast<#0>($1)";
 }
 
 open module Size
 {
-  ctor size: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] size: T = "static_cast<?1>($1)";
+  ctor size: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] size: T = "static_cast<#0>($1)";
 }
 
 open module Offset 
 {
-  ctor offset: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] offset: T = "static_cast<?1>($1)";
+  ctor offset: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] offset: T = "static_cast<#0>($1)";
 }
 
 open module Ptrdiff
 {
-  ctor ptrdiff: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] ptrdiff: T = "static_cast<?1>($1)";
+  ctor ptrdiff: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] ptrdiff: T = "static_cast<#0>($1)";
 }
 
 open module Intptr
 {
-  ctor intptr: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] intptr: T = "static_cast<?1>($1)";
+  ctor intptr: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] intptr: T = "static_cast<#0>($1)";
 }
 
 open module Uintptr
 {
-  ctor uintptr: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uintptr: T = "static_cast<?1>($1)";
+  ctor uintptr: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] uintptr: T = "static_cast<#0>($1)";
 }
 
 open module Intmax 
 {
-  ctor intmax: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] intmax: T = "static_cast<?1>($1)";
+  ctor intmax: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] intmax: T = "static_cast<#0>($1)";
 }
 
 open module Uintmax
 {
-  ctor uintmax: string = "static_cast<?1>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
-  ctor[T in reals] uintmax: T = "static_cast<?1>($1)";
+  ctor uintmax: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor[T in reals] uintmax: T = "static_cast<#0>($1)";
 }
 
 

@@ -13,6 +13,9 @@ instance[t in strings] Tord[t] {
 open Eq[string];
 open Eq[ustring];
 
+open Tord[string];
+open Tord[ustring];
+
 open module String
 {
   proc pluseq: &string * string = "$1->append($2);";
@@ -33,9 +36,9 @@ open module String
   fun apply (x:string, y:string):string => x + y;
   fun apply (x:string, y:int):string => x + y;
 
-  fun _ctor_char (x:string) => x.[0];
-  fun _ctor_string (c:char) => ""+c;
-  gen _ctor_string: &char -> string = "::std::string($1)";
+  ctor char (x:string) => x.[0];
+  ctor string (c:char) => ""+c;
+  ctor string: &char = "::std::string($1)";
 
   fun subscript: string * int -> char =
     "::flx::rtl::strutil::subscript($1,$2)" requires package "flx_strutil";

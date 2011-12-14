@@ -32,10 +32,12 @@ syntax patterns {
   satomic_pattern := _ =># "`(pat_any ,_sr)";
   satomic_pattern := "(" spattern ")" =># "_2";
   satomic_pattern := "(" ")" =># "`(pat_tuple ,_sr ())";
-  satomic_pattern := "struct" "{" spat_assign+ "}" =># "`(pat_record ,_sr ,_3)";
+  satomic_pattern :=  "(" spat_assign ("," spat_assign )* ")" =>#
+    "`(pat_record ,_sr ,(cons _2 (map second _3)))"
+  ;
+    spat_assign := sname = spattern =># "`(,_1 ,_3)";
   satomic_pattern := "$" "(" sexpr ")" =># "`(pat_expr ,_sr ,_3)";
 
-  spat_assign := sname = spattern ";" =># "`(,_1 ,_3)";
 
   satomic_pattern := sctor_name satomic_pattern =>#
     "`(pat_nonconst_ctor ,_sr ,_1 ,_2)";

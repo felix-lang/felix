@@ -1,7 +1,7 @@
 //Check types:nested
 
 fun f(x:int) = {
-  typedef x_t = struct { x:int; };
+  typedef x_t =( x:int );
   fun pr(a:x_t): int = {
     return a.x;
   }

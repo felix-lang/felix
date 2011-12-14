@@ -1,14 +1,14 @@
 //Check Records
 open Float;
 
-typedef big = struct { a:int; b: long; c: float; };
-typedef small = struct { a: int; c:float; };
+typedef big = ( a:int, b: long, c: float);
+typedef small = (a: int, c:float);
 
 proc f(x:small) {
   print$ x.a; endl;
   print$ x.c; endl;
 }
 
-val b = struct { b=2L; c=3.1f; a=6; };
+val b = (b=2L, c=3.1f, a=6);
 
-f (b:small);
+f (b:>>small);

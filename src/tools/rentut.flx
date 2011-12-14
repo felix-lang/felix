@@ -1,0 +1,52 @@
+// File renumbering
+include "std/posix/filesystem";
+
+re := RE2("tut_(\\d*)\\.fdoc");
+
+if System::argc < 2 do
+  println "Usage: rentut first dst";
+  System::exit(1);
+done
+
+s_first := System::argv 1;
+s_moveto  := System::argv 2;
+first := size s_first;
+moveto := size s_moveto;
+
+println$ "Renumber files from " + str first + " to " + str moveto;
+
+docs := FileSystem::regfilesin("src/web/", re);
+var files = varray docs;
+sort gt of (string * string) files;
+println$ "Files = " + str files;
+var groups : array[StringPiece,2];
+
+iter 
+  (proc(f:string){
+    println f;
+    res := Match(re, StringPiece f,0,ANCHOR_BOTH,C_hack::cast[&StringPiece] (&groups),2);
+    if res do
+      //println$ "Group 1 = " + str (groups.[1]);
+      n := size (str (groups.[1]));
+      if n >= first do
+        m := n + moveto - first;
+        s := f"%02d" m.int;
+        //println$ str n " -> " + s;
+        soffset := groups.[1].data - f.cstr;
+        var newf = f;
+        replace(newf,soffset.int,2,s);
+        res2 := FileSystem::rename_file("src/web/"+f,"src/web/"+newf); 
+        if res2 != 0 do
+          println$ "Rename " + f + " -> " + newf + " failed";
+        else
+          println$ f + " -> " + newf;
+        done
+      else
+        // println$ str n + " Unchanged";
+      done
+    else
+      println "NO match";
+    done
+  }) 
+files;
+

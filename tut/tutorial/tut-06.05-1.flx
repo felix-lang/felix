@@ -1,7 +1,7 @@
 //Check Records
 //Check Struct:initialised by record
 
-var x = struct {a=1; b=2; };
+var x = (a=1, b=2);
 println$ "a=" + str (x.a) + ", b=" + str (x.b);
 var y = (a=3, b=4);
 println$ "a="+ str (y.a) + ", b=" + str (y.b);
@@ -44,7 +44,7 @@ fun f(a:int)=> 3 * a;
 println$ f 2;
 println$ f (a=4);
 
-fun g(x:struct {a:int;})=>9 * x.a;
+fun g(x:(a:int))=>9 * x.a;
 println$ g (a=2);
 
 fun df(a:int=1,b:long)=> long a + b;

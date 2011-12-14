@@ -36,6 +36,7 @@ syntax type_decls {
     """
     `(ast_struct ,_sr ,(first _2) ,(second _2) ,_5)
      """;
+    sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(,_1 ,_3)";
 
   tstatement := "cstruct" sdeclname "=" ? "{" sstruct_mem_decl * "}" srequires_clause ";" =>#
     """

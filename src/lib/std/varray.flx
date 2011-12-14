@@ -47,6 +47,14 @@ open module Varray
     varray[t] (len x, len x, (fun (i:size)=> x.[i]))
   ;
 
+  // construct a varray from a list
+  ctor[t] varray[t] (x:list[t]) = {
+    val n = x.len.size;
+    var a = varray[t] n;
+    iter (proc (v:t) { push_back(a,v); }) x;
+    return a;
+  }
+
   private proc set_used[t]: varray[t] * size =
     "PTF gcp->collector->set_used($1,$2);"
     requires property "needs_gc"

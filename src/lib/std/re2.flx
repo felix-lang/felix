@@ -23,7 +23,10 @@ open module Re2 {
     ctor StringPiece: string = "::re2::StringPiece($1)";
     ctor StringPiece: unit = "::re2::StringPiece()";
     ctor string: StringPiece = "$1.as_string()";
-    
+    fun len: StringPiece -> size = "(size_t)$1.length()";
+    fun data: StringPiece -> &char = "$1.data()";
+ 
+ 
     instance Container[StringPiece,char] {
       fun len: StringPiece -> size = "$1.size()";
     }

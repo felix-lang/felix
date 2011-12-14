@@ -1,7 +1,7 @@
 a := 1;
-b:int := 2;
+b := 2;
 
-c:int,(d,e) := 3,(4,5);
+c,(d,e) := 3,(4,5);
 
 print a; print " ";
 print b; print " ";
