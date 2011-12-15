@@ -12,10 +12,13 @@ module Judy
   open C_hack;
 
   type word = "Word_t";
-  ctor word: int = "(Word_t)$1";
-  ctor word: ulong = "(Word_t)$1";
+  ctor word: !ints = "(Word_t)$1";
+  ctor word: address = "(Word_t)$1";
   ctor int: word = "(int)$1";
-  ctor ulong: word = "(unsigned long int)$1";
+  ctor uint: word = "(int)$1";
+  ctor ulong: word = "(unsigned long)$1";
+  ctor size: word = "(size_t)$1";
+  ctor address: word = "(void*)$1";
   fun isNULL: word -> bool = "$1==0";
   fun isNULL: &word -> bool = "$1==0";
 

@@ -550,7 +550,7 @@ fun mk_reg_lines (fname:string, files: list[string]) = {
   }
 
   //special case for empty list
-  if len files == 0 do return ""; done
+  if len files == 0uz do return ""; done
 
   nxt;                    //prime the system
   hd;                     // head off

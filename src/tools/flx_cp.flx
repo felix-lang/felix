@@ -64,7 +64,7 @@ fun subst(s:string, v:varray[StringPiece]): string =
     var buffer2: &char = C_hack::cast[&char] (C_hack::malloc(1000));
     var dirs = JSLArray();
     var n = re.NumberOfCapturingGroups;
-    var v = varray[StringPiece]$ (n+1).ulong, StringPiece "";
+    var v = varray[StringPiece]$ (n+1).size, StringPiece "";
     proc rfi(dname2: string) 
     {   
       if dname2 != "." and dname2 != ".." do

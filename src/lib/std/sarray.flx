@@ -6,15 +6,15 @@ open module Sarray
 
   ctor[T] sarray[T] (dflt:T) => _make_sarray[T]$ new sarray_ctl[T] (darray[T](), JLArray(), J1Array(),dflt);
 
-  fun get[T] (a:sarray[T], i:ulong) : T = {
+  fun get[T] (a:sarray[T], i:size) : T = {
      var pk: &word;
      var e: JError_t;
      JudyLGet ( (_repr_ a).j, i.word, &e, &pk);
-     var r = if C_hack::isNULL pk then (_repr_ a).dflt else (_repr_ a).a.[ulong (*pk)];
+     var r = if C_hack::isNULL pk then (_repr_ a).dflt else (_repr_ a).a.[size(*pk)];
      return r;
   }
     
-  proc set[T] (a:sarray[T], i:ulong, v:T) {
+  proc set[T] (a:sarray[T], i:size, v:T) {
     var pk: &word;
     var e: JError_t;
     JudyLGet ( (_repr_ a).j, i.word, &e, &pk);    // see if already in array
@@ -27,23 +27,23 @@ open module Sarray
         push_back ((_repr_ a).a, v);              // then push onto array end
       else
         Judy1Unset((_repr_ a).free,idx,&e,&b);     // remove free slot from free set
-        set ((_repr_ a).a,ulong idx,v);            // store value
+        set ((_repr_ a).a,size idx,v);            // store value
       done
       JudyLIns ( (_repr_ a).j,i.word, &e, &pk);    // add new index to j mapping
       pk <- idx;
     else 
-      set ((_repr_ a).a, ulong (*pk), v);
+      set ((_repr_ a).a, size (*pk), v);
     done
   }
 
-  proc del[T] (a:sarray[T], i:ulong) {
+  proc del[T] (a:sarray[T], i:size) {
     var pk: &word;
     var e: JError_t;
     JudyLGet ( (_repr_ a).j, i.word, &e, &pk);     // see if already in array
     if not C_hack::isNULL pk do                    // if it is
       var b:int;
       Judy1Set ((_repr_ a).free, i.word, &e, &b);  // add slot to free set
-      set ( (_repr_ a).a, pk.ulong, (_repr_ a).dflt); // replace old value with default
+      set ( (_repr_ a).a, pk.size, (_repr_ a).dflt); // replace old value with default
     done    
   }
 
@@ -57,13 +57,13 @@ open module Sarray
     var e: JError_t;
     var n: word;
     JudyLCount (r.j, word 0, word (-1ul), &e, &n);
-    var x = varray[T] n.ulong;
+    var x = varray[T] n.size;
     var index = word 0;      
     var i = 0ul;         // slot index for new array
     var slot : &word;
     JudyLFirst(r.j, &index, &e, &slot);
     while not isNULL slot do
-      push_back (x, r.a.[(*slot).ulong]);
+      push_back (x, r.a.[(*slot).size]);
       slot <- i.word; ++i;
       JudyLNext(r.j, &index, &e, &slot);
     done

@@ -2,8 +2,8 @@
 
 //var ca = carray[int,10];
 var aa = 0,0,0,0,0,0,0,0,0,0;
-var va = varray[int] (10ul,0);
-var da = darray[int] (10ul,0);
+var va = varray[int] (10uz,0);
+var da = darray[int] (10uz,0);
 var sa = sarray[int] (0);
 
 println$ "len aa= " + aa.len.str;
@@ -14,6 +14,6 @@ var i:int; for i in 0 upto 9 do
 //  set(ca,i,i); println$ i," ",get(ca,i);
   set(&aa,i,i); println$ i,get(aa,i);
   set(va,i,i); println$ i,get(va,i);
-  set(da,i.ulong,i); println$ i,get(da,i);
-  set(sa,i.ulong,i); println$ i,get(sa,i.ulong);
+  set(da,i.size,i); println$ i,get(da,i);
+  set(sa,i.size,i); println$ i,get(sa,i.size);
 done

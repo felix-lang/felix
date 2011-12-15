@@ -108,13 +108,13 @@ open module List
 
   // number of elements in a list
   fun len[T] (x:list[T]) = {
-    fun aux (acc:int) (x:list[T]) =>
+    fun aux (acc:size) (x:list[T]) =>
       match x with
       | Empty => acc
-      | Cons (_,?t) => aux (acc + 1) t
+      | Cons (_,?t) => aux (acc + 1uz) t
       endmatch
     ;
-    return aux 0 x;
+    return aux 0uz x;
   }
 
   // true if list is empty
@@ -365,11 +365,11 @@ open module List
   fun sort[T] (lt:T*T->bool) (x:list[T])=
   {
     val n = len x;
-    var a = varray[T]$ ulong n;
+    var a = varray[T]$ n;
     iter (proc (e:T) { a+=e; }) x;
     Varray::sort lt a;
     var r = Empty[T];
-    for var i in n - 1 downto 0 do r = Cons(a.[i], r); done
+    for var i in n - 1uz downto 0uz do r = Cons(a.[i], r); done
     return r;
   }
 

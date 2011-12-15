@@ -68,7 +68,7 @@ open module Darray
 
   proc push_back[t] (a:darray[t], v:t) {
     r := _repr_ a; 
-    newsize := r.resize (maxlen r.a, len r.a + 1ul);
+    newsize := r.resize (maxlen r.a, len r.a + 1uz);
     if newsize != maxlen r.a do do_resize(a,newsize); done
     push_back (r.a, v); // hack to workaround compiler error Address non variable
   }

@@ -1,19 +1,19 @@
 
 // test code, remove when putting in library
 var x = sarray 0.0;
-iter (proc (d:double) { set (x, d.ulong, d); }) (1.1,2.2,3.3);
-iter (proc (d:double) { set (x, d.ulong, d); }) (6.6,7.7,8.9);
+iter (proc (d:double) { set (x, d.size, d); }) (1.1,2.2,3.3);
+iter (proc (d:double) { set (x, d.size, d); }) (6.6,7.7,8.9);
 var i : int;
-for i in 0 upto 10 do println$ i.str+ " "+(x,i.ulong).get.str ; done
+for i in 0 upto 10 do println$ i.str+ " "+(x,i.size).get.str ; done
 println "---";
 
-del (x,ulong 2);
-for i in 0 upto 10 do println$ i.str+ " "+(x,i.ulong).get.str ; done
+del (x,size 2);
+for i in 0 upto 10 do println$ i.str+ " "+(x,i.size).get.str ; done
 println "---";
 
 pack x;
-for i in 0 upto 10 do println$ i.str+ " "+(x,i.ulong).get.str ; done
+for i in 0 upto 10 do println$ i.str+ " "+(x,i.size).get.str ; done
 
 pack x;
-for i in 0 upto 10 do println$ i.str+ " "+(x,i.ulong).get.str ; done
+for i in 0 upto 10 do println$ i.str+ " "+(x,i.size).get.str ; done
 

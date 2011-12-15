@@ -3,7 +3,7 @@ var n = r.NumberOfCapturingGroups;
 println$ "Captures = "+str n;
 
 var s = "Hello";
-var v = _ctor_varray[StringPiece]$ (n+1).ulong, StringPiece "";
+var v = _ctor_varray[StringPiece]$ (n+1).size, StringPiece "";
 
 var res = Re2::Match(r,StringPiece s,0, ANCHOR_START, v.stl_begin, v.len.int);
 println$ res;

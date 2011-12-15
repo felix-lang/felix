@@ -1,5 +1,5 @@
 
-a := darray (20ul, 1);
+a := darray (20uz, 1);
 println$ "len=" + str (len a);
 println a;
 
