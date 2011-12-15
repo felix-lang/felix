@@ -9,11 +9,10 @@
 
 //#define GFX_FONTDATAMAX (8*256)
 
-module SDL_gfxPrimitives_font_h
+open module SDL_gfxPrimitives_font_h
 {
   requires package "sdl";
   header '#include "SDL_gfxPrimitives_font.h"';
-  open C_hack;
 
   //VARIABLES
   const gfxPrimitivesFontdata: &utiny = 'gfxPrimitivesFontdata';

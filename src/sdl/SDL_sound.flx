@@ -16,15 +16,10 @@
 //#define SDLCALL
 //#define _INCLUDE_SDL_SOUND_H_
 
-//INCLUDES
-include "SDL/SDL_rwops";
-
-module SDL_sound_h
+open module SDL_sound_h
 {
   requires package "sdl";
   header '#include "SDL_sound.h"';
-  open C_hack;
-  open SDL_rwops_h;
 
   //ABSTRACT TYPES
   type Sound_Sample = 'Sound_Sample';
@@ -46,7 +41,7 @@ module SDL_sound_h
   proc Sound_GetLinkedVersion: &Sound_Version;
 
   //FUNCTIONS
-  fun Sound_AvailableDecoders: 1 -> &cptr[Sound_DecoderInfo];
+  fun Sound_AvailableDecoders: 1 -> &&Sound_DecoderInfo;
   fun Sound_Decode: &Sound_Sample -> uint32;
   fun Sound_DecodeAll: &Sound_Sample -> uint32;
   fun Sound_GetError: 1 -> &char;

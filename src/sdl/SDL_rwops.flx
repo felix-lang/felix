@@ -16,10 +16,8 @@
 
 //INCLUDES
 
-module SDL_rwops_h
+open module SDL_rwops_h
 {
-  open C_hack;
-
   //ABSTRACT TYPES
   type _struct_SDL_RWops = 'struct SDL_RWops';
 

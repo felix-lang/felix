@@ -12,11 +12,10 @@
 //#define DLLINTERFACE __declspec(dllexport)
 //#define _SDL_imageFilter_h
 
-module SDL_imageFilter_h
+open module SDL_imageFilter_h
 {
   requires package "sdl";
   header '#include "SDL_imageFilter.h"';
-  open C_hack;
 
   //PROCEDURES
   proc SDL_imageFilterAlignStack: 1;

@@ -18,11 +18,10 @@
 //#define SDL_HAT_CENTERED      0x00
 //#define _SDL_joystick_h
 
-module SDL_joystick_h
+open module SDL_joystick_h
 {
   requires package "sdl";
   header '#include "SDL_joystick.h"';
-  open C_hack;
 
   //PURE INCOMPLETE TYPES
   type _struct__SDL_Joystick = 'struct _SDL_Joystick'; //local

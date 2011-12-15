@@ -39,17 +39,10 @@
 //#define SDL_ALPHA_OPAQUE 255
 //#define _SDL_video_h
 
-//INCLUDES
-include"SDL/SDL_rwops";
-include"SDL/SDL_types";
-
-module SDL_video_h
+open module SDL_video_h
 {
   requires package "sdl";
   header '#include "SDL_video.h"';
-  open C_hack;
-  open SDL_rwops_h;
-  open SDL_types_h;
 
   fun SDL_MUSTLOCK: &SDL_Surface -> bool;
   const SDL_PHYSPAL : uint32;

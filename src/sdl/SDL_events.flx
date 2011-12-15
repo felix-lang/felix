@@ -15,15 +15,10 @@
 //#define SDL_EVENTMASK(X)      (1<<(X))
 //#define _SDL_events_h
 
-//INCLUDES
-include"SDL/SDL_keyboard";
-
-module SDL_events_h
+open module SDL_events_h
 {
   requires package "sdl";
   header '#include "SDL_events.h"';
-  open C_hack;
-  open SDL_keyboard_h;
 
   //ABSTRACT TYPES
   type SDL_eventaction = 'SDL_eventaction';

@@ -14,25 +14,22 @@
 //#define SDL_TABLESIZE(table)  (sizeof(table)/sizeof(table[0]))
 //#define _SDL_types_h
 
-module SDL_types_h
+open module SDL_types_h
 {
   requires package "sdl";
   header '#include "SDL_types.h"';
-  open C_hack;
 
   //ABSTRACT TYPES
   type SDL_bool = 'SDL_bool';
   type SDL_DUMMY_ENUM = 'SDL_DUMMY_ENUM';
 
   //TYPE ALIASES
-  typedef Sint64 = vlong;
   typedef SDL_dummy_uint32 = &int;
   typedef SDL_dummy_sint64 = &int;
   typedef SDL_dummy_sint16 = &int;
   typedef SDL_dummy_sint8 = &int;
   typedef SDL_dummy_sint32 = &int;
   typedef SDL_dummy_uint8 = &int;
-  typedef Uint64 = uvlong;
   typedef SDL_dummy_uint64 = &int;
   typedef SDL_dummy_uint16 = &int;
   typedef SDL_dummy_enum = &int;

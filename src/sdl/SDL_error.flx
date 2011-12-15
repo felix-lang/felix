@@ -10,11 +10,10 @@
 //#define SDL_OutOfMemory()     SDL_Error(SDL_ENOMEM)
 //#define _SDL_error_h
 
-module SDL_error_h
+open module SDL_error_h
 {
   requires package "sdl";
   header '#include "SDL_error.h"';
-  open C_hack;
 
   //ABSTRACT TYPES
   type SDL_errorcode = 'SDL_errorcode';
@@ -32,5 +31,5 @@ module SDL_error_h
   proc SDL_SetError[t]: t;
 
   //FUNCTIONS
-  fun SDL_GetError: 1 -> ptr[char];
+  fun SDL_GetError: 1 -> &char;
 }

@@ -12,15 +12,10 @@
 //#define SDL_ALL_HOTKEYS               0xFFFFFFFF
 //#define _SDL_keyboard_h
 
-//INCLUDES
-include"SDL/SDL_keysym";
-
-module SDL_keyboard_h
+open module SDL_keyboard_h
 {
   requires package "sdl";
   header '#include "SDL_keyboard.h"';
-  open C_hack;
-  open SDL_keysym_h;
 
   //CSTRUCTS
   cstruct SDL_keysym {

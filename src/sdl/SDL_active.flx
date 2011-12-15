@@ -12,11 +12,10 @@
 //#define SDL_APPMOUSEFOCUS     0x01            /* The app has mouse coverage */
 //#define _SDL_active_h
 
-module SDL_active_h
+open module SDL_active_h
 {
   requires package "sdl";
   header '#include "SDL_active.h"';
-  open C_hack;
 
   //FUNCTIONS
   fun SDL_GetAppState: 1 -> uint8;

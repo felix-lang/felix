@@ -11,15 +11,11 @@
 //#define SDL_TIMESLICE         10
 //#define _SDL_timer_h
 
-//INCLUDES
-include"SDL/SDL_types";
-
-module SDL_timer_h
+// DO NOT USE Felix has its own timer
+open module SDL_timer_h
 {
   requires package "sdl";
   header '#include "SDL_timer.h"';
-  open C_hack;
-  open SDL_types_h;
 
   //C FUNCTION POINTER TYPES
   header '''typedef Uint32 (*SDL_timer_h_cft_2)(Uint32,  void *);''';

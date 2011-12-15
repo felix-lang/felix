@@ -24,19 +24,10 @@
 //#define TTF_MAJOR_VERSION     2
 //#define _SDLttf_h
 
-//INCLUDES
-include "SDL/SDL_rwops";
-include "SDL/SDL_version";
-include "SDL/SDL_video";
-
-module SDL_ttf_h
+open module SDL_ttf_h
 {
   requires package "sdl";
   header '#include "SDL_ttf.h"';
-  open C_hack;
-  open SDL_rwops_h;
-  open SDL_version_h;
-  open SDL_video_h;
 
   //PURE INCOMPLETE TYPES
   type _struct__TTF_Font = 'struct _TTF_Font'; //local

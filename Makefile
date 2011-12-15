@@ -22,9 +22,9 @@ install-bin:
 	sudo build/release/bin/flx --test=build/release --install-bin
 
 install-felix-lang.org:
-	stop felixweb
+	sudo stop felixweb
 	sudo build/release/bin/flx --test=build/release --install-bin
-	start felixweb
+	sudo start felixweb
 
 release:
 	git tag v`flx --version`

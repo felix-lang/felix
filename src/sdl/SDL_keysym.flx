@@ -13,11 +13,10 @@
 //#define KMOD_CTRL     (KMOD_LCTRL|KMOD_RCTRL)
 //#define _SDL_keysym_h
 
-module SDL_keysym_h
+open module SDL_keysym_h
 {
   requires package "sdl";
   header '#include "SDL_keysym.h"';
-  open C_hack;
 
   //ABSTRACT TYPES
   type SDLKey = 'SDLKey';

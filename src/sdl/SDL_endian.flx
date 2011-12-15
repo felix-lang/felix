@@ -22,33 +22,26 @@
 //#define SDL_Swap64(X) (X)
 //#define _SDL_endian_h
 
-//INCLUDES
-include "SDL/SDL_rwops";
-include "SDL/SDL_types";
-
-module SDL_endian_h
+open module SDL_endian_h
 {
   requires package "sdl";
   header '#include "SDL_endian.h"';
-  open C_hack;
-  open SDL_rwops_h;
-  open SDL_types_h;
 
   //FUNCTIONS
   fun SDL_ReadBE16: &SDL_RWops -> uint16;
   fun SDL_ReadBE32: &SDL_RWops -> uint32;
-  fun SDL_ReadBE64: &SDL_RWops -> Uint64;
+  fun SDL_ReadBE64: &SDL_RWops -> uint64;
   fun SDL_ReadLE16: &SDL_RWops -> uint16;
   fun SDL_ReadLE32: &SDL_RWops -> uint32;
-  fun SDL_ReadLE64: &SDL_RWops -> Uint64;
+  fun SDL_ReadLE64: &SDL_RWops -> uint64;
   fun SDL_Swap16: uint16 -> uint16;
   fun SDL_Swap32: uint32 -> uint32;
-  fun SDL_Swap64: Uint64 -> Uint64;
+  fun SDL_Swap64: uint64 -> uint64;
   fun SDL_WriteBE16: &SDL_RWops * uint16 -> int;
   fun SDL_WriteBE32: &SDL_RWops * uint32 -> int;
-  fun SDL_WriteBE64: &SDL_RWops * Uint64 -> int;
+  fun SDL_WriteBE64: &SDL_RWops * uint64 -> int;
   fun SDL_WriteLE16: &SDL_RWops * uint16 -> int;
   fun SDL_WriteLE32: &SDL_RWops * uint32 -> int;
-  fun SDL_WriteLE64: &SDL_RWops * Uint64 -> int;
+  fun SDL_WriteLE64: &SDL_RWops * uint64 -> int;
 }
 

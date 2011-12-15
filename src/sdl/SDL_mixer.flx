@@ -30,17 +30,10 @@
 //#define SDL_MIXER_MAJOR_VERSION       1
 //#define _SDL_MIXER_H
 
-//INCLUDES
-include "SDL/SDL_rwops";
-include "SDL/SDL_version";
-
-module SDL_mixer_h
+open module SDL_mixer_h
 {
   requires package "sdl";
   header '#include "SDL_mixer.h"';
-  open C_hack;
-  open SDL_rwops_h;
-  open SDL_version_h;
 
   //ABSTRACT TYPES
   type Mix_MusicType = 'Mix_MusicType';

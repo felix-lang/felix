@@ -6,7 +6,8 @@ open module Carray
   publish "Carray type is just a pointer"
 
   publish "Convert Felix array to C array"
-  fun _ctor_carray[T,N]: array[T,N] -> &T = "$t.data";
+  typedef carray[T] = &T;
+  ctor[T,N] carray[T]: array[T,N] = "$t.data";
 
   fun array_alloc[T]: !ints -> &T = '(?1*)::std::malloc(sizeof(?1)*$1)';
   fun array_calloc[T]: !ints -> &T = '(?1*)::std::calloc(sizeof(?1),$1)';

@@ -12,36 +12,12 @@
  */
 
 include "SDL/SDL";
-include "SDL/SDL_keyboard";
-include "SDL/SDL_keysym";
-include "SDL/SDL_video";
-include "SDL/SDL_events";
-include "SDL/SDL_timer";
-include "SDL/SDL_mutex";
-include "SDL/SDL_opengl";
-
 include "std/io/faio";
 include "flx_faio_sdl";
 
 open C_hack;
 open Carray;
 open MixedInt;
-open Uint32;
-open Uint8;
-open Float;
-
-open SDL_h;
-open SDL_video_h;
-open SDL_keyboard_h;
-open SDL_events_h;
-open SDL_keysym_h;
-open SDL_timer_h;
-open SDL_mutex_h;
-
-// This is the Felix asynchronous event source
-open SDL_events;
-
-open SDL_opengl_h;
 
 /* screen width, height, and bit depth */
 val SCREEN_WIDTH  = 640;
@@ -210,7 +186,7 @@ var LightPosition = 0.0f, 0.0f, 2.0f, 1.0f;
 var filter = 0;
 
 var f_texture : uint ^ 3; /* Storage For 3 Textures ( NEW ) */
-var texture : carray[uint] = carray f_texture;
+var texture : &uint = carray f_texture;
 
 
 /* Here goes our drawing code */

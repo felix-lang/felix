@@ -14,11 +14,10 @@
 // DO NOT USE THIS MODULE
 // FELIX HAS ITS OWN THREAD HANDLING
 
-module SDL_mutex_h
+open module SDL_mutex_h
 {
   requires package "sdl";
   header '#include "SDL_mutex.h"';
-  open C_hack;
 
   incomplete ctypes SDL_mutex, SDL_cond, SDL_sem;
 

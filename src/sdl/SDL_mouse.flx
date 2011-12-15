@@ -18,15 +18,10 @@
 //#define SDL_BUTTON(X)         (SDL_PRESSED<<(X-1))
 //#define _SDL_mouse_h
 
-//INCLUDES
-include"SDL/SDL_video";
-
 module SDL_mouse_h
 {
   requires package "sdl";
   header '#include "SDL_mouse.h"';
-  open C_hack;
-  open SDL_video_h;
 
   //CSTRUCTS
   cstruct SDL_Cursor {
@@ -35,9 +30,9 @@ module SDL_mouse_h
     hot_y: int16;
     data: &uint8;
     mask: &uint8;
-    save: &ptr[uint8];
+    save: &&uint8;
     wm_cursor: &WMcursor;
-  }
+  };
 
   //PURE INCOMPLETE TYPES
   type _struct_WMcursor = 'struct WMcursor'; //local

@@ -17,11 +17,10 @@
 //#define       SDL_INIT_TIMER          0x00000001
 //#define _SDL_H
 
-module SDL_h
+open module SDL_h
 {
   requires package "sdl";
-  header '#include "SDL.h"';
-  open C_hack;
+  header '#include "sdl/SDL.h"';
 
   const SDL_INIT_EVERYTHING: uint32;
   const SDL_INIT_EVENTTHREAD: uint32;
@@ -41,3 +40,38 @@ module SDL_h
   fun SDL_InitSubSystem: uint32 -> int;
   fun SDL_WasInit: uint32 -> uint32;
 }
+
+
+
+include "std/io/faio";
+include "flx_faio_sdl";
+
+include "SDL/SDL_active";
+include "SDL/SDL_audio";
+include "SDL/SDL_cdrom";
+include "SDL/SDL_endian";
+include "SDL/SDL_error";
+include "SDL/SDL_events";
+include "SDL/SDL_framerate";
+include "SDL/SDL_gfxPrimitives";
+include "SDL/SDL_gfxPrimitives_font";
+include "SDL/SDL_image";
+include "SDL/SDL_imageFilter";
+include "SDL/SDL_joystick";
+include "SDL/SDL_keyboard";
+include "SDL/SDL_keysym";
+include "SDL/SDL_mixer";
+include "SDL/SDL_mouse";
+include "SDL/SDL_mutex"; // DONT USE (Felix does it better)
+//include "SDL/SDL_net";   // DONT USE (Felix does it better) 
+include "SDL/SDL_opengl";
+include "SDL/SDL_rotozoom";
+include "SDL/SDL_rwops";
+include "SDL/SDL_sound";
+include "SDL/SDL_timer";
+include "SDL/SDL_ttf";
+include "SDL/SDL_types";
+include "SDL/SDL_version";
+include "SDL/SDL_video";
+
+

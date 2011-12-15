@@ -1,31 +1,10 @@
 include "SDL/SDL";
-include "SDL/SDL_video";
-include "SDL/SDL_rwops";
-//include "SDL/SDL_image";
-include "SDL/SDL_keyboard";
-include "SDL/SDL_keysym";
-include "SDL/SDL_events";
-include "SDL/SDL_mutex";
-include "SDL/SDL_audio";
 include "std/io/faio";
 include "flx_faio_sdl";
-
-// Raw SDL interfaces
-open SDL_h;
-open SDL_video_h;
-open SDL_rwops_h;
-//open SDL_image_h;
-open SDL_events_h;
-open SDL_audio_h;
-open SDL_mutex_h;
-open SDL_keyboard_h;
-open SDL_keysym_h;
 
 open C_hack;
 open Carray;
 open MixedInt;
-open Uint32;
-open Uint8;
 
 // This is the Felix asynchronous event source
 open SDL_events;

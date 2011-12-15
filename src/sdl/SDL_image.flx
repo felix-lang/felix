@@ -15,19 +15,10 @@
 //#define SDL_IMAGE_MAJOR_VERSION       1
 //#define _SDL_IMAGE_H
 
-//INCLUDES
-include "SDL/SDL_rwops";
-include "SDL/SDL_version";
-include "SDL/SDL_video";
-
-module SDL_image_h
+open module SDL_image_h
 {
   requires package "sdl";
   header '#include "SDL_image.h"';
-  open C_hack;
-  open SDL_rwops_h;
-  open SDL_version_h;
-  open SDL_video_h;
 
   //FUNCTIONS
   fun IMG_InvertAlpha: int -> int;
@@ -46,7 +37,7 @@ module SDL_image_h
   fun IMG_LoadXCF_RW: &SDL_RWops -> &SDL_Surface;
   fun IMG_LoadXPM_RW: &SDL_RWops -> &SDL_Surface;
   fun IMG_Load_RW: &SDL_RWops * int -> &SDL_Surface;
-  fun IMG_ReadXPMFromArray: &ptr[char] -> &SDL_Surface;
+  fun IMG_ReadXPMFromArray: &&char -> &SDL_Surface;
   fun IMG_isBMP: &SDL_RWops -> int;
   fun IMG_isGIF: &SDL_RWops -> int;
   fun IMG_isJPG: &SDL_RWops -> int;

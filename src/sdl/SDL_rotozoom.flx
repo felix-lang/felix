@@ -15,17 +15,10 @@
 //#define M_PI  3.141592654
 //#define _SDL_rotozoom_h
 
-//INCLUDES
-include "SDL/SDL";
-include "SDL/SDL_video";
-
-module SDL_rotozoom_h
+open module SDL_rotozoom_h
 {
   requires package "sdl";
   header '#include "SDL_rotozoom.h"';
-  open C_hack;
-  open SDL_h;
-  open SDL_video_h;
 
   //CSTRUCTS
   cstruct tColorRGBA {
@@ -33,10 +26,10 @@ module SDL_rotozoom_h
     g: uint8;
     b: uint8;
     a: uint8;
-  }
+  };
   cstruct tColorY {
     y: uint8;
-  }
+  };
 
   //STRUCT or UNION TAG ALIASES
 

@@ -16,11 +16,10 @@
 //#define SDL_MAX_TRACKS        99
 //#define _SDL_cdrom_h
 
-module SDL_cdrom_h
+open module SDL_cdrom_h
 {
   requires package "sdl";
   header '#include "SDL_cdrom.h"';
-  open C_hack;
 
   //ABSTRACT TYPES
   type CDstatus = 'CDstatus';
@@ -33,14 +32,14 @@ module SDL_cdrom_h
     cur_track: int;
     cur_frame: int;
     track: &SDL_CDtrack;
-  }
+  };
   cstruct SDL_CDtrack {
     id: uint8;
     type_: uint8;
     unused: uint16;
     length: uint32;
     offset: uint32;
-  }
+  };
 
   //STRUCT or UNION TAG ALIASES
 
