@@ -68,7 +68,7 @@ include "SDL/SDL_opengl";
 include "SDL/SDL_rotozoom";
 include "SDL/SDL_rwops";
 include "SDL/SDL_sound";
-include "SDL/SDL_timer";
+include "SDL/SDL_timer"; // DONT USE (Felix does it better)
 include "SDL/SDL_ttf";
 include "SDL/SDL_types";
 include "SDL/SDL_version";

@@ -114,7 +114,7 @@ associative. There's a simpler way to write the function {f}:
 fun f(x:int) (y:long) => x.long + y;
 @
 Here one says {f} has arity 2. Note it still has only
-one argument, namely {x} or type {int}. A function with arity
+one argument, namely {x} of type {int}. A function with arity
 2 or greater is called a <em>higher order function</em>
 or Hof for short.
 
@@ -160,7 +160,7 @@ such as an iteration, map or fold of some data structure.
 The library module {categ} defines a way to convert between these styles
 for 2 or 3 "arguments". The function {curry} takes a function accepting
 a tuple of 2 or 3 components and makes it into a higher order function
-with arity 2 or 2. The functions {uncurry2} and {uncurry3} reverse
+with arity 2 or 3. The functions {uncurry2} and {uncurry3} reverse
 this transformation and convert a higher order function of arity 2 or 3,
 into a function accepting a tuple of 2 or 3 components, respectively.
 
@@ -177,3 +177,12 @@ This is an expression equivalent to
 @felix
 proc () { println "Hello"; }
 @
+
+There's a similar shorthand for function or unit argument:
+@felix
+val y = 1;
+{ val x = y + 1; return x; }
+@
+distinguished from the procedure case by ending with
+a return statement.
+

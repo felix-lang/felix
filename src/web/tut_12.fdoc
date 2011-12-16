@@ -4,15 +4,15 @@ The need for type constraints arose when binding C:
 @felix
 type int = "int";
 type long = "long";
-fun add: int * int = "$1+$2";
-fun add: long * long = "$1+$2";
+fun add: int * int -> int = "$1+$2";
+fun add: long * long -> long = "$1+$2";
 @
 C has a lot of integer types and writing out all the operators
 for all the types is boring, error prone, and slows down compilation.
 If you also wanted to allow mixed operators you'd need to add:
 @felix
-fun add: int * long = "$1+$2";
-fun add: long * int = "$1+$2";
+fun add: int * long -> long = "$1+$2";
+fun add: long * int -> long = "$1+$2";
 @
 and you can see we would rapidly get into an untenable combinatorial
 explosion.
@@ -25,12 +25,12 @@ typedef integers = typesetof(int, long);
 @
 Now we write polymorphic functions with type constraints:
 @felix
-fun add[I in integers]: I * I = "$1+$2";
+fun add[I in integers]: I * I -> I = "$1+$2";
 @
 Here the type variable {I} may only be {int} or {long}.
 If you wanted to support mixed addition:
 @felix
-fun add[I in Integers, J in Integers]: I * J = "$1+$2";
+fun add[I in Integers, J in Integers]: I * J -> arithmax (I,J) = "$1+$2";
 @
 Note carefully the difference between these two functions:
 in the first function {I} is set to either {int} or {long}
@@ -42,12 +42,25 @@ to be added.
 
 There is a shorthand for the second formulation:
 @felix
-fun add: !integers * !integers = "$1+$2";
+fun add: !integers * !integers -> int = "(int)($1+$2)";
 @
 
-Note carefully that Felix does not support conversions when overloading,
-exact matches are required, <em>but</em> we can use constrained 
-genericity to simulate a lot of that functionality.
+but note the downside: lacking names for the type variables we must
+return a fixed type. This notation, however, if exceptionally useful
+when binding external C libraries:
+@felix
+header "int f(int, int);";
+fun f: !ints * !ints -> int" = "f($1, $2)";
+@
+
+The reason this is <em>so</em> useful is that if we just lifted the
+signature of {f} from C, we'd be ignoring the fact that the C programmer
+has automatic conversions and can call {f(42L, 23u)}, which would
+fail in Felix because it has no automatic conversions. The user
+would have to cast every argument to exactly the right type which is
+not practical. By using constrained polymorphism, we can make
+all the calls that work in C work in Felix, and by using the shorthand
+notation the overhead specifying the function is minimal.
 
 When Felix performs overload resolution, initially candidates are found
 without considering type constraints; that is, as if the type variables

@@ -15,6 +15,18 @@ In the comments the name of the called function is
 indicated: this notation can be used in programs to
 identify a particular function from an overload set.
 
+The lack of automatic conversions is a good thing and was
+deliberate: it means you have more of an idea reading
+code what types function argument have, and hence
+which overload is called.
+
+However there is support for constrained polymorphism
+and type sets which alleviates the need to continually
+convert value to the right type: functions can be
+designed to accept a set of types. One can also use
+typeclasses to obtain a similar effect in a more
+systematic and structured way.
+
 @h2 Hiding
 Note that unlike C++, when you use nested scopes, 
 the identifier name of a function defined in the
@@ -31,6 +43,10 @@ fun f(x:double)=>x;
   println$ f 42;  // 43  : calls inner f of (int)
 };
 @
+
+This is also a deliberate departure from C++ where
+messy arrangements for forwarding functions from
+outer to inner scopes is required.
 
 @h2 Named arguments
 It is possible to call functions with named arguments:

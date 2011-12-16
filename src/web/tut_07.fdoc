@@ -1,11 +1,11 @@
 @h1 Unions and Matches
-The dual concept to structures is unions. A structures has "each of" logic whereas
+The dual concept to structures is unions. A structure has "each of" logic whereas
 a union has "one of logic". Each-of logic demands treating each of the components
 in sequence whereas one-of logic demand selecting one of the components.
 
 Unions therefore represent alternatives. We use pattern matching with
 the {match} construction to discover which alternative is encoded
-and handle it in a typesafe manner. A {match} is an advanced for
+and handle it in a typesafe manner. A {match} is an advanced form
 of a {switch}: {union}s are an advanced form of an {enum}eration.
 
 @felix
@@ -41,6 +41,7 @@ union Z =
 fun str (z:Z) => match z with
   | Cart (?x,?y) => str x + "+"+str y+"i"
   | Polar (?r,?theta) => str r + "e^"+str theta+"i"
+  endmatch
 ;
 @
 

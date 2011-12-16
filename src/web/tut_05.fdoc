@@ -76,7 +76,7 @@ px <- 1;
 println$ x;
 @
 
-The store operator {&lt;-} as the type:
+The store operator {&lt;-} has the type:
 @felix
   &T * T -> void
 @

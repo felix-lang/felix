@@ -1,3 +1,113 @@
-@h1 Type classes
-Stuff.
+@h1 Assertions
+Felix is unique amoung production systems and applications languages in providing
+a modest assertional facilities that includes the ability to state, in 
+the language, rather than comments, semantics of some constructions.
+
+@h2 Assert
+Felix has the traditional dynamic assertion as part of the language:
+@felix
+assert 2 > 1;
+@
+If an assertion fails, the error message gives both the Felix and 
+C++ line number of the assertion. Assertions can't be turned off
+and a failure always terminates the program by throwing an exception.
+
+@h2 Pre-conditions
+Felix provides functions and procedures to state pre-conditions:
+@felix
+fun div(x:int, y:int when y != 0) => x/y;
+@
+These preconditions are checked dynamically before calling the function.
+@bug
+The current implementation wraps the precondition around the function.
+Unless it is inlined, the failing point of call may not be properly reported.
+@
+You should note that in theory, a pre-condition is a way of expressing
+a subset of the actual argument type, in the {div} example the actual
+domain is {int * (int - 0)}. At present in Felix the pre-condition is
+not considered part of the type.
+
+@h2 Post-conditions
+Felix allows functions to express post-conditions:
+@felix
+fun abs(x:int):int expect result >= 0 = "abs($1)";
+@
+Post conditions must be expressed only using global constants,
+including functions, the function parameters, and the magic
+identifier {result} which stands for the return value of the function.
+
+
+A note on interpretation of pre- and post-conditions: the neutralised
+meaning of pre- and post-conditions is simply that if the pre-condition
+holds, then so should the post-condition. With that interpretation there
+is no justification in terminating the program if the pre-condition does
+not hold on a particular call: the programmer may well now what the
+result will be.
+
+Felix, however, will abort the program if a pre-condition does not hold.
+If the programmer wants to simply express some of the semantics,
+they can write the implication {prec implies post} as the postcondition
+and leave out the pre-condition. This then causes the program to abort
+if the function is found to fail to meet its design goal, without restricting
+its use.
+
+@h2 Axioms, Lemmas and Theorems
+Felix provides a way to state some semantics by axioms.
+This feature is primarily useful in type classes,
+but can be used in any context. For example:
+@felix
+axiom assoc(x:int, y:int, z:int): (x+y)+z == x+(y+z);
+@
+states that integer addition is associative. The name
+of the axiom is primarily for documentation purposes.
+An axiom is basically a function which should always 
+evaluate to true.
+
+Axioms can have pre-conditions. The post condition that the axiom
+be true does not hold if the pre-condition is false.
+
+Felix also provides lemmas and theorms, with identical
+syntax and semantics as axioms. The intention is that
+axioms be used to represent a core set of properties
+(not necessaily independent!). Lemmas should represent
+properties which can be derived from the axioms so easily
+an automatic theorem prover can prove them without assistance.
+
+Theorems are intended to represent properties derived from
+axioms which are too hard for an automatic theorem prover
+to derive: instead, the programmer would provide a skeletal
+proof and hints to a proof assistant. No framework for providing
+that is available at present.
+
+@h2 Reductions
+Felix provides another kind of assertion similar to an axiom:
+@felix
+reduce[T] revrev[T](x:list[T]): rev(rev x) => x;
+@
+Such an axiom, called a reduction, is not merely a statement of semantics
+but an instruction to the compiler to actually replace a double list
+reversal with the original list; that is, it represents a semantic isomorphism
+associated with a performance optimisation.
+
+Implementation of reductions is extremely expensive: do not use too many.
+It is also essential (and difficult) to ensure reduction chains terminate.
+There is no guarrantee reductions will actually be applied. The compiler
+tries hard but it requires exhaustive pattern matching not just of every
+expression and subexpression .. but also repeating all of that after every
+modification to a term (including the application of a reduction).
+
+Nevertheless reductions provide a very powerful though limited way of
+expression very high level optimisations. Only Haskell has a similar feature.
+
+@h2 Axiom checks
+Felix also provides a way to check if axioms hold:
+@felix
+axiom_check (1,2);
+@
+
+This is an executable statement which invokes all axioms for which
+the argument matches. Axiom checks don't prove correctness, they can,
+however find counter-examples which indicate either the axiom is 
+invalid or there's a bug in a program, usually in the implementation
+of a typeclass instance.
 
