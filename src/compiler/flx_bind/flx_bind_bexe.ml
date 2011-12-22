@@ -478,7 +478,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       )
 
   | EXE_iinit ((s,index),e) ->
-print_endline ("Bind EXE_iinit "^s);
+(* print_endline ("Bind EXE_iinit "^s); *)
       let e',rhst = be e in 
       (* a type variable in executable code just has to be of kind TYPE *)
       let parent_ts = map
@@ -509,7 +509,7 @@ print_endline ("Bind EXE_iinit "^s);
       )
 
   | EXE_init (s,e) ->
-print_endline ("Bind EXE_init "^s);
+(* print_endline ("Bind EXE_init "^s); *)
       begin match lun sr s with
       | FunctionEntry _ -> clierr sr "Can't init function constant"
       | NonFunctionEntry (index) ->

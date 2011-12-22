@@ -7,7 +7,7 @@ open module Carray
 
   publish "Convert Felix array to C array"
   typedef carray[T] = &T;
-  ctor[T,N] carray[T]: array[T,N] = "$t.data";
+  ctor[T,N] carray[T]: &array[T,N] = "($t)->data";
 
   fun array_alloc[T]: !ints -> &T = '(?1*)::std::malloc(sizeof(?1)*$1)';
   fun array_calloc[T]: !ints -> &T = '(?1*)::std::calloc(sizeof(?1),$1)';

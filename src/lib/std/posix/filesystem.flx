@@ -226,7 +226,7 @@ module FileSystem
           println$ 
             "Dest des = " + str fdst.int+ " "+
             "Attempt to copy " + str bread + " bytes from " + src + " to " + dst + 
-            " failed with errno = " + str errno + ": " + strerror_r() 
+            " failed with errno = " + str errno + ": " + strerror() 
           ;
         else
           println$ 

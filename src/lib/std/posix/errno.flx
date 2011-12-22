@@ -1,25 +1,31 @@
 open module Errno 
 {
   pod type errno_t = "int" requires C89_headers::errno_h;
+  ctor int : errno_t = "$1";
+  ctor errno_t : int = "$1";
+  fun eq: errno_t * errno_t -> bool= "$1==$2";
+  fun ne: errno_t * errno_t -> bool= "$1!=$2";
+  
   const errno : errno_t = "errno"; // SUCKS
   const ENOERROR : errno_t = "0";
   const EACCES: errno_t;
   const ENOENT: errno_t;
   const EAGAIN: errno_t;
   const ENOMEM: errno_t;
+  const EEXIST: errno_t;
 
-  fun eq: errno_t * errno_t -> bool= "$1==$2";
-  ctor int : errno_t = "$1";
   // Note: we have to void out the return of strerror_r because OSX and XSI 
   // return int, which disagrees with the GNU version which returns char*
   // To fix this we'd need more configuration stuff. Can be done,
   // but currently deferred.
   proc strerror_r: errno_t* &char * size  = "(void)strerror_r($1, $2, $3);";
-  gen strerror_r() : string = {
+  fun strerror(e:errno_t) : string = {
     var b:array[char,1000];
-    strerror_r(errno, C_hack::cast[&char] (&b), b.len.size);
-    return string( C_hack::cast [&char] (&b));
+    strerror_r(e,carray (&b), b.len.size);
+    return string( carray (&b));
   }
+  gen strerror()=> strerror errno;
+
   instance Str[errno_t] { fun str(e:errno_t)=> str e.int; }
 }
 

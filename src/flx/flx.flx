@@ -41,6 +41,7 @@ proc print_help() {
   println "--debug              : put debug symbols in generated binaries";
   println "--debug-compiler     : make felix compiler print progress diagnostics";
   println "--stdout=file        : run program with standard output redirected to file";
+  println "--backup             : backup working source tree to dir 'backup'";
   println "--install            : install --test directory to configured location";
   println "--import=file        : add an import which is prefixed to all files being translated";
   println "--import=@file       : add all the files listed in file as imports (recursive on @)";
@@ -149,7 +150,7 @@ var INSTALL_ROOT_TOPDIR=Config::INSTALL_ROOT_TOPDIR;
 var INSTALL_ROOT=Config::INSTALL_ROOT;
 var FLX_INSTALL_DIR=Config::FLX_INSTALL_DIR;
 
-proc install() {
+proc install_old() {
     debugln "Install Felix";
     println "Install Felix: ONLY ON UNIX (you may need to be superuser)";
     println "Always installs the --test directory to the configured install target";
@@ -176,6 +177,74 @@ proc install() {
       System::exit(result);
     done
 }
+
+proc install() {
+    debugln "Install Felix build";
+    println$ "FROM: " + FLX_INSTALL_DIR;
+    println$ "TO  : " + INSTALL_ROOT;
+
+    if FLX_INSTALL_DIR == INSTALL_ROOT do
+      println "Can't install, src and dst are the same";
+      System::exit(1);
+    done
+
+    var result = 0;
+
+    // remove old install
+    result=system("rm -rf "+INSTALL_ROOT);
+    result=system("mkdir -pv "+INSTALL_ROOT);
+    println "Target directory cleaned";
+ 
+    // copy using flx_cp from build
+    proc cp(s:string) {
+      cmd=FLX_INSTALL_DIR+"/bin/flx_cp '"+FLX_INSTALL_DIR+"' '"+s+"' '"+INSTALL_ROOT+"/\\0'";
+      //println$ "shell cmd = " + cmd;
+      result=system(cmd);
+      if result != 0 do  
+        goto failure; done
+    }
+    dss:= list(
+
+     (" * Tools", list( "bin/.*" )),
+
+     (" * Run time libraries and C/C++ headers",
+     list( 
+       "lib/rtl/.*\\.(h|hpp|c|cpp|dylib|so|a)",
+       "lib/rtl/flx_a?run.(o|obj)"
+     )),
+
+
+     (" * Resource database", list("config/[^/]*\\.fpc")),
+
+     (" * Platform Dependent C++ headers", list("config/.*\\.hpp")),
+
+     (" * Felix library",
+     list( 
+       "(tools|lib)/.*\\.(flxh?|par2|libtab)"
+     )),
+
+     (" * Regression and Unit test code", list("(test|tut)/.*\\.(flx|expect)")),
+
+     (" * Documentation", 
+       list (
+        "doc/.*\\.(fdoc|html)",
+        "web/.*\\.(fdoc|html|gif|png|jpg)",
+        "index.html",
+        "index2.html",
+        "VERSION"
+     ))
+
+    );
+    iter (proc (desc:string, srcs:list[string]) { println$ desc; iter cp srcs; }) dss; 
+
+    println "Source Install succeeded";
+    System::exit(result);
+failure:> 
+    println$ "Install failed, code = " + str(result);
+    println$ "Flx_cp: ERROR " + str result+": "+strerror(result.errno_t); 
+    System::exit(result);
+}
+
 
 proc backup() {
     debugln "Backup Felix build";
@@ -211,6 +280,7 @@ failure:>
     println$ "Install failed, code = " + str(result);
     System::exit(result);
 }
+
 
 
 // install executable files in usr/local/bin

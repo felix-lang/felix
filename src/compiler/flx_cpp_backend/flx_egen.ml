@@ -533,7 +533,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
 
       | BBDCL_external_const (props,_,_,ct,_) ->
         if mem `Virtual props then
-          print_endline ("Instantiate virtual const " ^ Flx_bsym.id bsym)
+          print_endline ("Instantiate virtual const " ^ Flx_bsym.id bsym ^ "["^catmap "," (sbt bsym_table) ts^"]")
         ;
         begin match ct with
         | CS.Identity -> syserr sr ("Nonsense Idendity const" ^ Flx_bsym.id bsym)

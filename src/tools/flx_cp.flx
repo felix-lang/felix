@@ -143,6 +143,8 @@ fun subst(s:string, v:varray[StringPiece]): string =
     */
 
     // list all target directories
+    //println$ "Creating target directories";
+
     *buffer = char 0;
     JudySLFirst(dirs,buffer,&je,&pv);
     while not isNULL pv do
@@ -151,7 +153,9 @@ fun subst(s:string, v:varray[StringPiece]): string =
       if live do
         err:=FileSystem::mkdir(dir);
         if err !=0 do 
-          //println$ "Mkdir, err=" + str err;
+          if errno != EEXIST do 
+            println$ "Mkdir, err=" + strerror() + " .. ignoring";
+          done
         done
       done
       JudySLNext(dirs,buffer,&je,&pv);
@@ -207,7 +211,7 @@ elif regex == "" do println$ "Missing regex (arg2)"; System::exit(1);
 elif target == "" do println$ "Missing target (arg3)"; System::exit(1);
 done
 
-println$ "#Dir='" + dir + "', pattern='"+regex+"', dst='"+target+"'";
+if verbose do println$ "#Dir='" + dir + "', pattern='"+regex+"', dst='"+target+"'"; done
 
 var re = Re2::RE2 regex;
 copyfiles (dir, re, target, live, verbose);

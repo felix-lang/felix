@@ -167,14 +167,14 @@ syntax expressions {
   x[scoercion_pri] := x[scoercion_pri] ":>>" x[sfactor_pri] =># "`(ast_coercion ,_sr (,_1 ,_3))";
   x[scoercion_pri] := ssuffixed_name =># "_1";
 
-  x[sfactor_pri] := shash_name =># "_1";
+  x[sfactor_pri] := sthe_name =># "_1";
 
   // indexes and slices
   x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'subscript) (,_1 ,_4)))";
   x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'substring) (,_1 ,_4 ,_6)))";
   x[sfactor_pri] := x[sfactor_pri] "." "[" sexpr "to" "]" =># "`(ast_apply ,_sr (,(noi 'copyfrom) (,_1 ,_4)))";
   x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]" =># "`(ast_apply ,_sr (,(noi 'copyto) (,_1 ,_5)))";
-  x[sfactor_pri] := x[sfactor_pri] "." shash_name =># "`(ast_dot ,_sr (,_1 ,_3))))";
+  x[sfactor_pri] := x[sfactor_pri] "." sthe_name =># "`(ast_dot ,_sr (,_1 ,_3))))";
   // note the next production MUST be after the previous one so it overrides the
   // interpretation of a.(0) as an AST_dot
   //x[sfactor_pri] := x[sfactor_pri] "." "(" sinteger ")" =># "`(ast_get_n ,_sr (,_4 ,_1))";
@@ -183,10 +183,9 @@ syntax expressions {
   sbasic_name_comma_list:= sname ("," sname)* =># "(cons _1 (map second _2))";
   squalified_name_comma_list:= squalified_name ("," squalified_name)* =># "(cons _1 (map second _2))";
 
-
-  shash_name := sthe_name =># "_1";
-
   sthe_name :=
+    | "#" sthe_name =># "`(ast_apply ,_sr (,_2 (ast_tuple ,_sr ())))"
+
     // macro expansion freezer
     | "noexpand" squalified_name =># "`(ast_noexpand ,_sr ,_2)"
 
