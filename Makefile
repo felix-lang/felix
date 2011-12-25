@@ -1,4 +1,4 @@
-all: build test doc dist
+all: build test doc 
 
 build64:
 	python3 fbuild/fbuild-light --c-flag=-m32 --buildroot=build32 build

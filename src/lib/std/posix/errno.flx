@@ -18,7 +18,9 @@ open module Errno
   // return int, which disagrees with the GNU version which returns char*
   // To fix this we'd need more configuration stuff. Can be done,
   // but currently deferred.
-  proc strerror_r: errno_t* &char * size  = "(void)strerror_r($1, $2, $3);";
+  proc strerror_r: errno_t* &char * size  = "(void)strerror_r($1, $2, $3);" 
+    requires C89_headers::string_h /* on Linux.. on OSX it's in stdio.h */
+  ;
   fun strerror(e:errno_t) : string = {
     var b:array[char,1000];
     strerror_r(e,carray (&b), b.len.size);
