@@ -1,9 +1,9 @@
 all: build test doc 
 
-build64:
+build32:
 	python3 fbuild/fbuild-light --c-flag=-m32 --buildroot=build32 build
 
-build32:
+build64:
 	python3 fbuild/fbuild-light --c-flag=-m64 --buildroot=build64 build
 
 build: build32 build64

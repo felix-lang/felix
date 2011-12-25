@@ -11,6 +11,12 @@ module Debug
   fun endline: flx_location_t -> int = "$1.endline";
   fun endcol: flx_location_t -> int = "$1.endcol";
 
+  instance Str[flx_location_t] {
+    fun str(var x:flx_location_t)=> 
+    string (x.filename) + ":"+ x.startline.str + "[" + x.startcol.str + "]" + "-" +
+    x.endline.str + "[" + x.endcol.str + "]";
+  }
+
   // hack to emit C++ source file locations
   const CPP_FUNCTION : &char = "__FUNCTION__";
   const CPP_FILE: &char = "__FILE__";

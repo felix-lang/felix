@@ -4,3 +4,17 @@
 * Operator . doesn't work right for procedures. Eg x.println doesn't work.
   FIXED 11/12/2011
 
+* when x.filename is a &char, x.filename.string doesn't do what I expected,
+  it actually does string of the char pointed at, using the rule that
+  p.a means (*p).a if p is a pointer. This coupled with the fact 
+  r.a means a'th field of record or struct r, not reverse application.
+
+  BOTH these meanings of operator . (not to mention composition!)
+  can lead to unexpected results. We need to unify/fix this mess.
+
+  For get method, easy to make x.a mean (a x) as reverse application,
+  if the field name 'a' is notionally a projection function.
+
+  For assignment like x.a = v, goes to &(x.a) <- v, we need to make
+  &(x.a) equal (&x).a = pointer to a component, NOT value of a.
+  This seems to conflict with auto-deref.
