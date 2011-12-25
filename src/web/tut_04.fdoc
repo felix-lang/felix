@@ -93,4 +93,15 @@ println$ f (x=10,y=20);       //  59 : using one default
 println$ f (x=10,z=30);       // 104 : using the other default
 @
 
+@h2 Overloading with higher order functions
+Felix can overload on however many "arguments" of a higher
+order function are used:
+@felix
+fun f(x:int) (y:int) => x + y;
+fun f(x:int) (y:double) => x.double + y;
+
+println$ f 1 1;
+println$ f 1 2.0;
+@
+A partial evaluation of either {f} here would be ambiguous.
 

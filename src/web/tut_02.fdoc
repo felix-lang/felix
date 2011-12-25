@@ -3,6 +3,7 @@ To get moving we give some basic data types:
 @pre
   Type        Example Values
   ---------------------------------------
+  bool        true, false
   int         1234, 0, -24
   double      12.34,  -2.0e2, 7.6e-2, 0.0
   string      "hello", 'world'

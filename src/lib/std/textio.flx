@@ -1,4 +1,4 @@
-module Text_file
+open module Text_file
 {
   requires package "flx_ioutil";
 

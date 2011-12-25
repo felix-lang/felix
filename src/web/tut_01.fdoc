@@ -40,39 +40,16 @@ then Joachim will be welcomed.
 @h2 Reading and writing standard streams
 Well then, here's another way to get some data in:
 @felix
-Text_file::write$ Text_file::stdout,"Enter your name: ";
-Text_file::fflush Text_file::stdout;
-val name = Text_file::readln$ Text_file::stdin; 
-Text_file::writeln$ Text_file::stdout, "Hello " + name;
-@
-Here {val} is declaring and initialising a named value, which you can
-think of as an immutable unaddressable variable.
-
-We also see the procedure {write}, which writes a string to a nominated output stream
-without appending a newline, {readnln} which reads a line from nominated
-input stream, {writeln} which writes a string to a nominated output stream
-an then sends a newline, and the standard streams {stdout} and {stdin},
-all part of the module {Text_file}.
-
-@h2 Opening a module
-Instead of writing the qualifiers all the time we can write the program
-like this:
-@felix
-open Text_file;
 write$ stdout,"Enter your name: "; fflush stdout;
 val name = readln$ stdin;
 writeln$ stdout, "Hello " + name;
 @
-By {open}ing the module {Text_file} we can use the symbols defined 
-in it without qualification. Most standard library modules
-are open by default: {Text_file}, however is not.
 
 @h2 Stripping leading and trailing spaces from a string
 Unfortunately there's a bug in this program: {readln} reads
 in a line including the newline. We can fix this, and remove
 excess spaces at the same time as shown here:
 @felix
-open Text_file;
 write$ stdout,"Enter your name: "; fflush stdout;
 val name = strip (readln$ stdin));
 writeln$ stdout, "Hello " + name + "!";
@@ -81,21 +58,8 @@ This uses the function {strip} from the  String module
 to remove leading and trailing whitespace, including newlines.
 
 @h2 Application and call operators
-Those with an OO background may find this more pleasing:
-@felix
-val name = stdin.readln.strip;
-@
-It means exactly the same as before, the operator {.} is nothing
-more than reverse application.
 
-And those with a Haskell background will readily understand that in
-@felix
-val name = strip $ readln $ stdin;
-@
-the {$} is just a low precedence forward application, so 
-it is also the same as before.
-
-@h2 Parentheses are purely for grouping
+@h3 Operator whitespace 
 You may have noticed that you can write:
 @felix
 fflush stdout;
@@ -105,7 +69,42 @@ which is equivalent to
 fflush (stdout);
 @
 Parentheses are not required for function application or procedure
-calls, just for grouping.
+calls, just for grouping. 
+It's fun to call juxtaposition "operator whitspace".
+
+@h3 Operator dot
+Those with an OO background may find this more pleasing:
+@felix
+val name = stdin.readln.strip;
+@
+It means exactly the same as before, the operator {.} is nothing
+more than reverse application.
+
+@h3 Operator dollar
+And those with a Haskell background will readily understand that in
+@felix
+val name = strip $ readln $ stdin;
+@
+the {$} is just a low precedence forward application, so 
+it is also the same as before.
+
+@h3 Operator hash 
+Finally if a function takes only a unit argument:
+you can use the high precedence prefix {#} operator to call it:
+@felix
+fun pi() = 22.0/7.0;
+println$ "Pi=" + str #pi;
+@
+
+[See next chapter for explanation of {unit} type]
+
+@h3 Implied procedure call 
+And there's a special case for procedures with no arguments:
+@felix
+proc doit() { println "Done"; }
+doit;
+@
+allowing you to omit the unit argument.
 
 @h2 Summary
 We have learned 
@@ -119,19 +118,14 @@ We have learned
 using {readln}, {write}, {writeln} and {fflush}.</li>
 </ul>
 
-We have learned that library functions and procedures 
-<ul>
-<li>live in modules such as {Env}, {System} and {Text_file} and</li>
-<li>how to name them in a qualified way, and</li>
-<li>how to get around needing to specify the qualifiers.</li>
-</ul>
-
-We've also learned that in Felix there are three ways to apply
+We've also learned that in Felix there are at least three ways to apply
 a function or procedure to a value:
 <ul>
 <li>using operator whitespace (juxtaposition), </li>
 <li>using operator {.} (dot), and</li>
 <li>using operator {$} (dollar).</li>
+<li>using operator {#} (hash).</li>
+<li>special call for procedure of unit</li>
 </ul>
 
 and we also learned how to name a value with {val}.
