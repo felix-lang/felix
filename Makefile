@@ -3,18 +3,14 @@ all: build test doc
 build32:
 	python3 fbuild/fbuild-light --c-flag=-m32 --buildroot=build32 build
 
-build64:
+build:
 	python3 fbuild/fbuild-light --c-flag=-m64 --buildroot=build64 build
-
-build: build32 build64
 
 test32:
 	python3 fbuild/fbuild-light --c-flag=-m32 --buildroot=build32 test
 
-test64:
+test:
 	python3 fbuild/fbuild-light --c-flag=-m64 --buildroot=build64 test
-
-test: test32 test64
 
 doc:
 	python3 fbuild/fbuild-light doc
@@ -40,4 +36,4 @@ release:
 	echo "Restart webservers now"
 	echo "Upgrade buildsystem/version.py now and rebuild"
 
-.PHONY : build32 build64 test32 test64 doc install websites-linux  release install-bin 
+.PHONY : build32 build test32 test doc install websites-linux  release install-bin 
