@@ -213,7 +213,7 @@ module FileSystem
     done
     var fdst = open (dst,O_WRONLY \| O_CREAT \| O_TRUNC, permissions);
     if not valid fdst do
-      println$ " Bad dst file in Filesystem::filecopy " + dst + "Error: " + #strerror;
+      println$ " Bad dst file in Filesystem::filecopy " + dst + "Error: " + str errno + "=" + #strerror;
       return false; 
     done
     bsiz := size (4096 * 1024); // 4 Meg
