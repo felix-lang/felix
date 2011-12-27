@@ -11,7 +11,7 @@
  * email to leggett@eecs.tulane.edu
  */
 
-include "SDL/SDL";
+include "sdl/SDL";
 open C_hack;
 open Carray;
 open MixedInt;

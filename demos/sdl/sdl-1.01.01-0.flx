@@ -1,6 +1,4 @@
-include "SDL/SDL";
-include "std/io/faio";
-include "flx_faio_sdl";
+include "sdl/SDL";
 
 open C_hack;
 open Carray;

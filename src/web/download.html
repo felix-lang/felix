@@ -47,6 +47,21 @@ using a version you should delete the installation directory.
 The binaries in <pre>/usr/local/bin</pre> are copies of those
 in the last install directory.
 </p>
+<h2>Options</h2>
+You can also build a debug version of Felix:
+<pre>
+make build-debug
+</pre>
+This builds in directory <pre>build/debug</pre>. The code is
+built with debug symbols and unoptimised.
+
+If you like you can also build for a different word size using
+<pre>
+make build32 test32
+make build64 test64
+</pre>
+(pick whichever the standard build didn't select). This is mainly
+for checking if your code is portable.
 
 <h2>Updating Felix</h2>
 To update felix do this:
@@ -68,6 +83,14 @@ This is even more drastic:
 </pre>
 git clean -dfx
 </pre>
+<h2>Using Felix</h2>
+To use Felix you prepare a file and invoke the command line harness:
+<pre>
+echo 'println$ "Hello World";'' > hello.flx
+flx hello 
+</pre>
+You can also find sample code in directory <code>test</code> and <code>tut</code>.
+Perhaps more interesting, but required SDL installed, graphics demos in <code>demos</code>.
 <h2>Contributing to Felix</h2>
 Always discuss on mailing list first.
 To contribute directly to the main repository you will require

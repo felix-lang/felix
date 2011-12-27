@@ -11,11 +11,7 @@
  * email to leggett@eecs.tulane.edu
  */
 
-include "SDL/SDL";
-
-include "std/io/faio";
-include "flx_faio_sdl";
-
+include "sdl/SDL";
 open C_hack;
 open Carray;
 open MixedInt;
@@ -125,7 +121,7 @@ proc rotate()
 }
 
 var f_texture : uint ^ 2; /* Storage For One Texture ( NEW ) */
-var texture : &uint = carray f_texture;
+var texture : &uint = carray (&f_texture);
 
 
 /* Here goes our drawing code */

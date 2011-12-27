@@ -220,7 +220,7 @@ proc install() {
 
      (" * Felix library",
      list( 
-       "(tools|lib)/.*\\.(flxh?|par2|libtab)"
+       "(tools|lib)/.*\\.(flxh?|par2|libtab|files)"
      )),
 
      (" * Regression and Unit test code", list("(test|tut)/.*\\.(flx|expect)")),
@@ -853,7 +853,7 @@ if WIN32 do
   FLXG=Filename::join(FLX_INSTALL_DIR, 'bin', 'flxg');
   FLXRUN='';
 else
-  FLXG="env PATH="+FLX_INSTALL_DIR+"/bin:$PATH "+FLX_INSTALL_DIR+"/bin/flxg";
+  FLXG=FLX_INSTALL_DIR+"/bin/flxg";
   // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
   if MACOSX do
     FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH ";

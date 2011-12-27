@@ -11,10 +11,7 @@
  * email to leggett@eecs.tulane.edu
  */
 
-include "SDL/SDL";
-include "std/io/faio";
-include "flx_faio_sdl";
-
+include "sdl/SDL";
 open C_hack;
 open Carray;
 open MixedInt;
@@ -134,13 +131,13 @@ proc initGL()
   glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
 
   /* Setup The Ambient Light */
-  glLightfv( GL_LIGHT1, GL_AMBIENT, (carray LightAmbient) );
+  glLightfv( GL_LIGHT1, GL_AMBIENT, (carray (&LightAmbient)) );
 
   /* Setup The Diffuse Light */
-  glLightfv( GL_LIGHT1, GL_DIFFUSE, (carray LightDiffuse) );
+  glLightfv( GL_LIGHT1, GL_DIFFUSE, (carray (&LightDiffuse)) );
 
   /* Position The Light */
-  glLightfv( GL_LIGHT1, GL_POSITION, (carray LightPosition) );
+  glLightfv( GL_LIGHT1, GL_POSITION, (carray (&LightPosition)) );
 
   /* Enable Light One */
   glEnable( GL_LIGHT1 );
@@ -186,7 +183,7 @@ var LightPosition = 0.0f, 0.0f, 2.0f, 1.0f;
 var filter = 0;
 
 var f_texture : uint ^ 3; /* Storage For 3 Textures ( NEW ) */
-var texture : &uint = carray f_texture;
+var texture : &uint = carray (&f_texture);
 
 
 /* Here goes our drawing code */
