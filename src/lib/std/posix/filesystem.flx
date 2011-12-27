@@ -213,7 +213,7 @@ module FileSystem
     done
     var fdst = open (dst,O_WRONLY \| O_CREAT \| O_TRUNC, permissions);
     if not valid fdst do
-      println$ " Bad dst file in Filesystem::filecopy " + dst + "Error: " + str errno + "=" + #strerror;
+      println$ " Bad dst file in Filesystem::filecopy " + dst + ", Error: " + str errno + "=" + #strerror;
       return false; 
     done
     bsiz := size (4096 * 1024); // 4 Meg
@@ -238,7 +238,13 @@ module FileSystem
       bread = read (fsrc, buffer, bsiz);
     done
     var res = close fsrc;
+    if res != 0 do
+      println$ "In filesystem::filecopy close on src " + src + " failed: " + str errno + "=" + #strerror;
+    done
     res = close fdst;
+    if res != 0 do
+      println$ "In filesystem::filecopy close on dst " + dst + " failed: " + str errno + "=" + #strerror;
+    done
     C_hack::ignore(utime(dst,now,last_modification));
     C_hack::free(C_hack::cast[address] buffer);
     return true;
