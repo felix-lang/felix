@@ -4,7 +4,7 @@ type bind_state_t = {
   symtab: Flx_symtab.t;
   parent: Flx_types.bid_t option;
   bexe_state: Flx_bind_bexe.bexe_state_t;
-  lookup_state: Flx_lookup.lookup_state_t;
+  lookup_state: Flx_dot.lookup_state_t;
   bbind_state: Flx_bbind.bbind_state_t;
 }
 

@@ -16,7 +16,7 @@ val make_bbind_state:
   sym_table:Flx_sym_table.t ->
   axioms: Flx_mtypes2.axiom_t list ref ->
   reductions: Flx_mtypes2.reduction_t list ref ->
-  lookup_state:Flx_lookup.lookup_state_t ->
+  lookup_state:Flx_dot.lookup_state_t ->
   bbind_state_t
 
 (* Bind a single symbol. *)

@@ -82,7 +82,7 @@ open Flx_btype
 open Flx_mtypes2
 open Flx_overload
 
-type lookup_state_t
+(* type lookup_state_t *)
 
 (** Create the state needed for lookup. *)
 val make_lookup_state:
@@ -91,17 +91,17 @@ val make_lookup_state:
   Flx_mtypes2.typevarmap_t-> (* reference to global varmap! *)
   (Flx_types.bid_t, Flx_btype.t) Hashtbl.t -> (* reference to global type cache *)
   Flx_sym_table.t ->
-  lookup_state_t
+  Flx_dot.lookup_state_t
 
 
 val build_env:
-  lookup_state_t ->
+  Flx_dot.lookup_state_t ->
   Flx_bsym_table.t ->
   Flx_types.bid_t option -> (* parent *)
   env_t
 
 val lookup_name_in_env :
-  lookup_state_t ->
+  Flx_dot.lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
@@ -109,28 +109,28 @@ val lookup_name_in_env :
   entry_set_t
 
 val lookup_qn_in_env :
-  lookup_state_t ->
+  Flx_dot.lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   Flx_ast.qualified_name_t ->
   entry_kind_t * Flx_ast.typecode_t list
 
 val lookup_qn_in_env2:
-  lookup_state_t ->
+  Flx_dot.lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   Flx_ast.qualified_name_t ->
   entry_set_t * Flx_ast.typecode_t list
 
 val lookup_sn_in_env :
-  lookup_state_t ->
+  Flx_dot.lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   Flx_ast.suffixed_name_t ->
   Flx_types.bid_t * Flx_btype.t list
 
 val lookup_code_in_env:
-  lookup_state_t ->
+  Flx_dot.lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
@@ -148,7 +148,7 @@ variables is not a type function.
 *)
 
 val bind_type:
-  lookup_state_t ->
+  Flx_dot.lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
@@ -156,14 +156,14 @@ val bind_type:
   Flx_btype.t
 
 val bind_expression :
-  lookup_state_t ->
+  Flx_dot.lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   Flx_ast.expr_t ->
   Flx_bexpr.t
 
 val bind_expression_with_args :
-  lookup_state_t ->
+  Flx_dot.lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   Flx_ast.expr_t ->
@@ -171,13 +171,13 @@ val bind_expression_with_args :
   Flx_bexpr.t
 
 val type_of_index :
-  lookup_state_t ->
+  Flx_dot.lookup_state_t ->
   Flx_bsym_table.t ->
   Flx_types.bid_t ->
   Flx_btype.t
 
 val type_of_index_with_ts:
-  lookup_state_t ->
+  Flx_dot.lookup_state_t ->
   Flx_bsym_table.t ->
   Flx_srcref.t ->
   Flx_types.bid_t ->
@@ -185,7 +185,7 @@ val type_of_index_with_ts:
   Flx_btype.t
 
 val type_of_literal:
-  lookup_state_t ->
+  Flx_dot.lookup_state_t ->
   Flx_bsym_table.t ->
   env_t ->
   Flx_srcref.t ->
@@ -193,7 +193,7 @@ val type_of_literal:
   Flx_btype.t
 
 val lookup_qn_with_sig:
-  lookup_state_t ->
+  Flx_dot.lookup_state_t ->
   Flx_bsym_table.t ->
   Flx_srcref.t ->
   Flx_srcref.t ->
@@ -202,4 +202,4 @@ val lookup_qn_with_sig:
   Flx_btype.t list ->
   Flx_bexpr.t
 
-val get_varmap: lookup_state_t -> typevarmap_t
+val get_varmap: Flx_dot.lookup_state_t -> typevarmap_t
