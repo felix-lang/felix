@@ -1,0 +1,21 @@
+@h1 Special Things
+@h2 Apply function
+Normally, you can only expect:
+@felix
+f x
+@
+to work when f is a function. However if you write a function:
+@felix
+fun apply (x:string, y:string) => x + y;
+@
+then you can write:
+@felix
+h := "Hello";
+sp := " ";
+world := "World";
+println$ h sp world;
+@
+Applying a string to another string is now defined by the {apply} function.
+We have turned {string} into an <em>applicative type</em>.
+
+

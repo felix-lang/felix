@@ -1,0 +1,13 @@
+@h1 Debugging
+Felix has a number of special features to help with debugging.
+Of course you can debug the generated C++ code in the usual way.
+Don't forget you can say:
+@pre
+flx --nofelix prog
+@
+to skip translation of Felix programs to C++, which allows you to edit
+the C++ code, say, adding debugging prints.
+
+@h2 Debug module
+...
+
