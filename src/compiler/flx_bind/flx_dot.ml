@@ -233,9 +233,9 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
 
     (* LHS HAS POINTER TYPE *)
     | BTYP_pointer t ->
-
+(*
 print_endline "pointer dot";
-
+*)
       begin try 
 (* THIS IS A HACK!!! It will not only try to get a field address
    it will ALSO try reverse application. Wrong!! Will do temporarily
