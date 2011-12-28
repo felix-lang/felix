@@ -8,11 +8,11 @@ open module Bsarray
     _make_bsarray[T]$ new bsarray_ctl[T] (sarray[T](dflt), bound.size)
   ;
   instance[T] ArrayValue[bsarray[T],T] {
-    fun len(b:bsarray[T])=> (_repr_ b).n;
-    fun unsafe_get(b:bsarray[T], i:size)=> get ((_repr_ b).a, i);
+    fun len(b:bsarray[T])=> (_repr_ b)*.n;
+    fun unsafe_get(b:bsarray[T], i:size)=> get ((_repr_ b)*.a, i);
   }
   instance[T] ArrayObject[bsarray[T],T] {
-    proc unsafe_set(b:bsarray[T], i:size, v:T)=> set ((_repr_ b).a, i, v);
+    proc unsafe_set(b:bsarray[T], i:size, v:T)=> set ((_repr_ b)*.a, i, v);
   }
 
   instance[T with Eq[T]] Set[bsarray[T],T] {

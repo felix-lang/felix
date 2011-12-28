@@ -27,8 +27,8 @@ open module Darray
 
   proc do_resize[T] (pd: darray[T], new_size: size)
   {
-    var old = (_repr_ pd).a;
-    (_repr_ pd).a = varray[T] (new_size, (len old), (fun(i:size)=>old.[i]));
+    var old = (_repr_ pd)*.a;
+    (_repr_ pd)*.a = varray[T] (new_size, (len old), (fun(i:size)=>old.[i]));
   }
 
   // make an empty darray, give it 20 slots for no particular reason
@@ -42,24 +42,24 @@ open module Darray
 
   // basic array stuff, same interface as array
   instance[v] ArrayValue[darray[v],v] {
-    fun len (a:darray[v])=> len (_repr_ a).a;
-    fun unsafe_get (a:darray[v], i:size) => (_repr_ a).a.[i];
+    fun len (a:darray[v])=> len (_repr_ a)*.a;
+    fun unsafe_get (a:darray[v], i:size) => (_repr_ a)*.a.[i];
   }
 
   instance[v] ArrayObject[darray[v],v] {
-    proc unsafe_set (b:darray[v],  n:size, x:v) => unsafe_set ((_repr_ b).a,n,x);
+    proc unsafe_set (b:darray[v],  n:size, x:v) => unsafe_set ((_repr_ b)*.a,n,x);
   }
 
   instance[v] ContiguousArrayObject[darray[v],v] {
-    fun stl_begin(b:darray[v]) => stl_begin b._repr_.a;
-    fun stl_end(b:darray[v]) => stl_end b._repr_.a;
+    fun stl_begin(b:darray[v]) => stl_begin b._repr_*.a;
+    fun stl_end(b:darray[v]) => stl_end b._repr_*.a;
   }
 
   // basic array stuff, same interface as varray
   proc pop[t](a:darray[t]) {
-    pop (_repr_ a).a;
-    newsize := (_repr_ a).resize (maxlen (_repr_ a).a, len (_repr_ a).a);
-    if newsize != maxlen (_repr_ a).a do do_resize (a,newsize); done 
+    pop (_repr_ a)*.a;
+    newsize := (_repr_ a)*.resize (maxlen (_repr_ a)*.a, len (_repr_ a)*.a);
+    if newsize != maxlen (_repr_ a)*.a do do_resize (a,newsize); done 
   }
 
   proc pluseq[t] (a:&darray[t],v:t) {
@@ -68,14 +68,14 @@ open module Darray
 
   proc push_back[t] (a:darray[t], v:t) {
     r := _repr_ a; 
-    newsize := r.resize (maxlen r.a, len r.a + 1uz);
-    if newsize != maxlen r.a do do_resize(a,newsize); done
-    push_back (r.a, v); // hack to workaround compiler error Address non variable
+    newsize := r*.resize (maxlen r*.a, len r*.a + 1uz);
+    if newsize != maxlen r*.a do do_resize(a,newsize); done
+    push_back (r*.a, v); // hack to workaround compiler error Address non variable
   }
 
   // uses _repr_ so has to be in the module
   instance[T with Show[T]] Str[Darray::darray[T]] {
-    fun str (x:darray[T])=> str (_repr_ x).a;
+    fun str (x:darray[T])=> str (_repr_ x)*.a;
   }
 
 }

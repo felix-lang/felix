@@ -9,41 +9,41 @@ open module Sarray
   fun get[T] (a:sarray[T], i:size) : T = {
      var pk: &word;
      var e: JError_t;
-     JudyLGet ( (_repr_ a).j, i.word, &e, &pk);
-     var r = if C_hack::isNULL pk then (_repr_ a).dflt else (_repr_ a).a.[size(*pk)];
+     JudyLGet ( (_repr_ a)*.j, i.word, &e, &pk);
+     var r = if C_hack::isNULL pk then (_repr_ a)*.dflt else (_repr_ a)*.a.[size(*pk)];
      return r;
   }
     
   proc set[T] (a:sarray[T], i:size, v:T) {
     var pk: &word;
     var e: JError_t;
-    JudyLGet ( (_repr_ a).j, i.word, &e, &pk);    // see if already in array
+    JudyLGet ( (_repr_ a)*.j, i.word, &e, &pk);    // see if already in array
     if C_hack::isNULL pk do
       var idx: word = word 0;
       var b: int;
-      Judy1First((_repr_ a).free,&idx,&e,&b);     // try to find a free slot
+      Judy1First((_repr_ a)*.free,&idx,&e,&b);     // try to find a free slot
       if b == 0 do                                // none?
-        idx = word (len (_repr_ a).a);
-        push_back ((_repr_ a).a, v);              // then push onto array end
+        idx = word (len (_repr_ a)*.a);
+        push_back ((_repr_ a)*.a, v);              // then push onto array end
       else
-        Judy1Unset((_repr_ a).free,idx,&e,&b);     // remove free slot from free set
-        set ((_repr_ a).a,size idx,v);            // store value
+        Judy1Unset((_repr_ a)*.free,idx,&e,&b);     // remove free slot from free set
+        set ((_repr_ a)*.a,size idx,v);            // store value
       done
-      JudyLIns ( (_repr_ a).j,i.word, &e, &pk);    // add new index to j mapping
+      JudyLIns ( (_repr_ a)*.j,i.word, &e, &pk);    // add new index to j mapping
       pk <- idx;
     else 
-      set ((_repr_ a).a, size (*pk), v);
+      set ((_repr_ a)*.a, size (*pk), v);
     done
   }
 
   proc del[T] (a:sarray[T], i:size) {
     var pk: &word;
     var e: JError_t;
-    JudyLGet ( (_repr_ a).j, i.word, &e, &pk);     // see if already in array
+    JudyLGet ( (_repr_ a)*.j, i.word, &e, &pk);     // see if already in array
     if not C_hack::isNULL pk do                    // if it is
       var b:int;
-      Judy1Set ((_repr_ a).free, i.word, &e, &b);  // add slot to free set
-      set ( (_repr_ a).a, pk.size, (_repr_ a).dflt); // replace old value with default
+      Judy1Set ((_repr_ a)*.free, i.word, &e, &b);  // add slot to free set
+      set ( (_repr_ a)*.a, pk*.size, (_repr_ a)*.dflt); // replace old value with default
     done    
   }
 
@@ -56,21 +56,21 @@ open module Sarray
     r := _repr_ a;
     var e: JError_t;
     var n: word;
-    JudyLCount (r.j, word 0, word (-1ul), &e, &n);
+    JudyLCount (r*.j, word 0, word (-1ul), &e, &n);
     var x = varray[T] n.size;
     var index = word 0;      
     var i = 0ul;         // slot index for new array
     var slot : &word;
-    JudyLFirst(r.j, &index, &e, &slot);
+    JudyLFirst(r*.j, &index, &e, &slot);
     while not isNULL slot do
-      push_back (x, r.a.[(*slot).size]);
+      push_back (x, r*.a.[(*slot).size]);
       slot <- i.word; ++i;
-      JudyLNext(r.j, &index, &e, &slot);
+      JudyLNext(r*.j, &index, &e, &slot);
     done
     var m : word;
-    Judy1FreeArray(r.free,&e,&m);
+    Judy1FreeArray(r*.free,&e,&m);
     //println$ m.ulong.str + " bytes freed --> counted "+n.ulong.str;
-    r.a = darray x;
+    r*.a = darray x;
   }
 }
 

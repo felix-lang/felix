@@ -24,7 +24,7 @@ spawn_fthread{
     shutdown(c, 1);  // no further writes (wakes reader)
 
     var b: tstbuf;
-    async_read(c, &len, b.data, &eof);
+    async_read(c, &len, b.get_data, &eof);
     print "connector read "; dprint b; endl;
     System::exit 0;
   };
@@ -35,6 +35,6 @@ accept (&s, listener);  // async!
 var b: tstbuf;
 var len = 16;           // ask for more than there is and rely on shutdown
 var eof: bool;
-async_read(s, &len, b.data, &eof);
+async_read(s, &len, b.get_data, &eof);
 print "acceptor read "; print len; print " bytes: "; dprint b; endl;
 async_write(s, &len, get_data((c"thanks!!")), &eof);

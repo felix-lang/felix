@@ -11,8 +11,8 @@ struct gauss
 """;
 
 type gauss = "gauss";
-fun get_x: gauss -> int = "$1.x";
-fun get_y: gauss -> int = "$1.y";
+fun x: gauss -> int = "$1.x";
+fun y: gauss -> int = "$1.y";
 fun mkgauss: int * int -> gauss = "gauss($1,$2)";
 
 val z = mkgauss(1,2);

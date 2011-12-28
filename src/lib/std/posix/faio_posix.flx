@@ -110,7 +110,7 @@ proc async_rw(fd: socket_t, len: &int, buf: address, eof: &bool, read_flag: bool
     faio_req$ &asyncb;
     //println$ "faio/flx_faoi_posix.flx: async_rw ("+ str fd+", "+str (*len)+",buf,"+str(*eof)+", "+str read_flag+") calculating eof ..";
 
-    calc_eof(asyncb.pb, len, eof);
+    calc_eof(asyncb.get_pb, len, eof);
     //println$ "faio/flx_faoi_posix.flx: async_rw (s,"+str (*len)+",buf,"+str(*eof)+", "+str read_flag+") called mk_socketio_req ..";
 }
 
@@ -141,7 +141,7 @@ proc connect(s: &socket_t, addr: &char, port: int)
 {
     var ac = mk_async_connect(sys_demux,addr, port);
     faio_req$ &ac;
-    *s = ac.socket;
+    *s = ac.get_socket;
 }
 
 type accept_request = "flx::faio::accept_request";
@@ -157,7 +157,7 @@ proc accept(s: &socket_t, listener: socket_t)
 {
     var acc = mk_accept$ sys_demux,listener;
     faio_req$ &acc;
-    *s = acc.socket;
+    *s = acc.get_socket;
 }
 
 // ASYNC FILE IO
@@ -173,7 +173,7 @@ proc faio_rw(q:job_queue, fd: fd_t, len: &int, buf: address, eof: &bool, read_fl
     var faio = mk_faio(q, fd, buf, *len, 0, read_flag);
     faio_req$ &faio;
     //print$ f"faio_rw: request %d, actual %d\n" (*len,faio.pb.bytes_done);
-    calc_eof(faio.pb, len, eof);
+    calc_eof(faio.get_pb, len, eof);
 }
 
 // HACKERY -- system job queue

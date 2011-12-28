@@ -18,3 +18,11 @@
   For assignment like x.a = v, goes to &(x.a) <- v, we need to make
   &(x.a) equal (&x).a = pointer to a component, NOT value of a.
   This seems to conflict with auto-deref.
+
+* I think there is a bug in the compiler where a generator result assigned
+  to a variable is ignored if that value of the variable is ignored.
+  This has the effect of eliminating the side effect. The case causing
+  the problem was posix close(), the result being leaving open a heap
+  of files. Try to reproduce this problem, then fix the compiler so it doesn't
+  happen! Or, document it and show the proper workaround (eg C_hack::ignore).
+
