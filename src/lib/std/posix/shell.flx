@@ -9,7 +9,7 @@ module Bash {
   // I think this is all ..
   fun quote(s:string):string= {
     var r = "";
-    for var i in 0 upto len s - 1 do
+    for var i in 0uz upto s.len - 1uz do
       var ch = s.[i];
       if ch in "\\$\"`" do
         r += "\\"+ str ch;

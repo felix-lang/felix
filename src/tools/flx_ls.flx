@@ -1,3 +1,4 @@
+include "std/posix/directory";
 include "std/posix/filesystem";
 
 fun dbg(s:string):string={ println s; return s; }
@@ -5,7 +6,7 @@ fun dbg(s:string):string={ println s; return s; }
 //println$ "argc=" + str System::argc;
 
 var dir = 
-  if System::argc < 2 then FileSystem::getcwd()
+  if System::argc < 2 then Directory::getcwd()
   else System::argv 1
   endif
 ;

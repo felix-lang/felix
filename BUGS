@@ -26,3 +26,23 @@
   of files. Try to reproduce this problem, then fix the compiler so it doesn't
   happen! Or, document it and show the proper workaround (eg C_hack::ignore).
 
+* HIJACKING BUG: If an open library module X contains a symbol "len" and another library
+  module Y uses the symbol "len" unqualified, a user program also 
+  declaring "len" will hijack the meaning of len in all included
+  modules except X. This is because symbols in the global scope have precedence
+  over those introduced behind the global scope by the open directive.
+
+  This should not affect symbols in the library "std" because that is *bound*
+  during the build processes, but it affects other parts of the library such
+  as the posix subsystem because they're not.
+
+  Not only is the hijacking a problem, the fact that binding a library changes
+  the semantics is very bad.
+
+  A solution is to "wrap" user "program" code in an unopened module secretly,
+  to prevent leaking of user program symbols into the library. At present,
+  "user program" code is generally **improperly** initialisation code.
+  Actually it was intended the user code be written in flx_main() as in C,
+  or other functions... but no one does this, not even me .. I've never used
+  flx_main().
+

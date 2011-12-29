@@ -2,7 +2,7 @@
 
 include "std/io/faio"; //mutual recursion? Really!
 include "std/io/demux";
-include "std/posix/posix_headers";
+include "std/posix/__init__";
 
 module Faio_posix  {
 header faio_posixio_hpp = '#include "faio_posixio.hpp"';
@@ -23,11 +23,8 @@ header sockety_h = '#include "demux_sockety.hpp"';  // my socket utils
 header = '#include "faio_posixio.hpp"';
 
 
-type fd_t = "int";
-fun invalid: fd_t -> bool="$1==-1";
-
-instance Str[fd_t] {
-  fun str: fd_t -> string = "flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
+instance Str[FileSystem::posix_file] {
+  fun str: FileSystem::posix_file -> string = "flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
 }
 
 instance Str[socket_t] {
@@ -35,70 +32,27 @@ instance Str[socket_t] {
 }
 
 proc close: socket_t = 'close($1);' requires Posix_headers::unistd_h;
-proc close: fd_t = 'close($1);' requires Posix_headers::unistd_h;
-
 proc shutdown: socket_t*int = 'shutdown($a);' requires Posix_headers::sys_socket_h;
-
 fun bad_socket : socket_t -> bool = "$1 == -1";
-
-type posix_permissions = "mode_t" requires Posix_headers::sys_stat_h;
-const S_IRUSR : posix_permissions;
-const S_IWUSR : posix_permissions;
-const S_IXUSR : posix_permissions;
-const S_IRGRP : posix_permissions;
-const S_IWGRP : posix_permissions;
-const S_IXGRP : posix_permissions;
-const S_IROTH : posix_permissions;
-const S_IWOTH : posix_permissions;
-const S_IXOTH : posix_permissions;
 
 // non blocking
 /*
-gen aio_ropen: string -> fd_t = 'open($1.c_str(), O_RDONLY | O_NONBLOCK)'
+gen aio_ropen: string -> FileSystem::posix_file = 'open($1.c_str(), O_RDONLY | O_NONBLOCK)'
     requires fcntl_h, sys_stat_h;
-gen aio_wopen: string -> fd_t = ' open($1.c_str(), O_WRONLY | O_NONBLOCK | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR)'
+gen aio_wopen: string -> FileSystem::posix_file = ' open($1.c_str(), O_WRONLY | O_NONBLOCK | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR)'
     requires fcntl_h, sys_stat_h;
-gen aio_rwopen: string -> fd_t = ' open($1.c_str(), O_RDWR | O_NONBLOCK | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR)'
+gen aio_rwopen: string -> FileSystem::posix_file = ' open($1.c_str(), O_RDWR | O_NONBLOCK | O_CREAT | O_TRUNC, S_IRUSR|S_IWUSR)'
     requires fcntl_h, sys_stat_h;
-gen aio_creat: string * posix_permissions-> fd_t = ' open($1.c_str(), O_RDWR | O_NONBLOCK | O_CREAT | O_TRUNC, $2)'
+gen aio_creat: string * posix_permissions-> FileSystem::posix_file = ' open($1.c_str(), O_RDWR | O_NONBLOCK | O_CREAT | O_TRUNC, $2)'
     requires fcntl_h, sys_stat_h;
 */
-
-
-// blocking
-gen ropen: string -> fd_t = 'open($1.c_str(), O_RDONLY,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
-gen wopen: string -> fd_t = 'open($1.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
-gen rwopen: string -> fd_t = 'open($1.c_str(), O_RDWR,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
-gen creat: string * posix_permissions -> fd_t = 'open($1.c_str(), O_WRONLY | O_CREAT | O_TRUNC, $2)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
-
-fun access: string -> posix_permissions = "get_perm($1.c_str())"
-  requires body """
-  mode_t get_perm(char const *f)
-  {
-    struct stat b;
-    stat(f,&b);
-    return b.st_mode;
-  }
-  """
-;
-
-fun access: fd_t -> posix_permissions = "get_perm($1)"
-  requires body """
-  mode_t get_perm(int f)
-  {
-    struct stat b;
-    fstat(f,&b);
-    return b.st_mode;
-  }
-  """
-;
 
 type socket_t = "int";
 // socketio_request should be renamed to be async_fd_request
 type socketio_request = "flx::faio::socketio_request";
 
 gen mk_socketio_request: demuxer * socket_t*address*int*bool -> socketio_request
-    = 'flx::faio::socketio_request($1, $2, (char*)$3, $4, $5)';
+    = '::flx::faio::socketio_request($1, $2, (char*)$3, $4, $5)';
 
 fun get_pb: socketio_request -> sel_param_ptr = '&$1.sv.pb';
 
@@ -163,11 +117,11 @@ proc accept(s: &socket_t, listener: socket_t)
 // ASYNC FILE IO
 
 // offset ? let it be for a moment
-fun mk_faio: job_queue * fd_t*address*int*int*bool -> flxfileio_request
+fun mk_faio: job_queue * FileSystem::posix_file *address*int*int*bool -> flxfileio_request
     = 'flx::faio::flxfileio_request($1,$2, (char*)$3, $4, $5, $6)';
 fun get_pb: flxfileio_request -> sel_param_ptr = '&$1.pb';
 
-proc faio_rw(q:job_queue, fd: fd_t, len: &int, buf: address, eof: &bool, read_flag: bool)
+proc faio_rw(q:job_queue, fd: FileSystem::posix_file, len: &int, buf: address, eof: &bool, read_flag: bool)
 {
     // constant offset for now, rushing to get this in stream
     var faio = mk_faio(q, fd, buf, *len, 0, read_flag);
@@ -181,13 +135,13 @@ val qbound = 20;
 val nthreads = 4;
 val sys_job_queue = Pthread::mk_job_queue(qbound,nthreads);
 
-proc faio_read(fd: fd_t, len: &int, buf: address,
+proc faio_read(fd: FileSystem::posix_file, len: &int, buf: address,
     eof: &bool)
 {
     faio_rw(sys_job_queue, fd, len, buf, eof, true);       // read
 }
 
-proc faio_write(fd: fd_t, len: &int, buf: address, eof: &bool)
+proc faio_write(fd: FileSystem::posix_file, len: &int, buf: address, eof: &bool)
 {
     faio_rw(sys_job_queue, fd, len, buf, eof, false);      // write
 }

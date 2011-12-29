@@ -10,7 +10,7 @@ print x.[6 to]; endl;
 print x.[6 to -1]; endl;
 
 var i = 0;
-var n = len x;
+var n = x.len.int;
 while i < n do 
   print x.[i];
   ++i;

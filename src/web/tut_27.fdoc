@@ -19,3 +19,101 @@ Applying a string to another string is now defined by the {apply} function.
 We have turned {string} into an <em>applicative type</em>.
 
 
+@h2 Printf style formatting
+You can use a special notation:
+@felix
+println$ f"Loaded text file %S, len=%d" (fname, txt.len.int);
+@
+to get {printf} style formatting. The {f".."} string here
+is actually a function. Felix supports a substantial set of
+the usual printf codes. Underneath it uses {vsprintf} to do the
+formatting. However it is fully typesafe. Only literal strings
+can be used.
+
+Here is a complete list of supported format type codes:
+@pre
+  Code       Arg type
+  ------------------------
+  hhd        tiny
+  hhi        tiny
+  hho        utiny
+  hhx        utiny
+  hhX        utiny
+
+  hd         short
+  hi         short
+  hu         ushort
+  ho         ushort
+  hx         ushort
+  hX         ushort
+
+  d          int
+  i          int
+  u          uint
+  o          uint
+  x          uint
+  X          uint
+
+  ld         long
+  li         long
+  lu         ulong
+  lo         ulong
+  lx         ulong
+  lX         ulong
+
+  lld        vlong
+  lli        vlong
+  llu        uvlong
+  llo        uvlong
+  llx        uvlong
+  llX        uvlong
+
+  zd         ssize
+  zi         ssize
+  zu         size
+  zo         size
+  zx         size
+  zX         size
+
+  jd         intmax
+  ji         intmax
+  ju         uintmax
+  jo         uintmax
+  jx         uintmax
+  jX         uintmax
+
+
+  td         ptrdiff
+  ti         ptrdiff
+  tu         uptrdiff
+  to         uptrdiff
+  tx         uptrdiff
+  tX         uptrdiff
+
+  e          double
+  E          double
+  f          double
+  F          double
+  g          double
+  G          double
+  a          double
+  A          double
+
+  Le         ldouble
+  LE         ldouble
+  Lf         ldouble
+  LF         ldouble
+  Lg         ldouble
+  LG         ldouble
+  La         ldouble
+  LA         ldouble
+
+  c          int
+
+  S          string
+  s          &char
+  p          address
+  P          address
+
+@
+

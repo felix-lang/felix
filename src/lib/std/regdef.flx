@@ -34,9 +34,9 @@ module Regdef {
     endif
   ;
 
-  private fun hex(s:string)= {
-    var r = ""; var i:int;
-    for i in 0 upto len s - 1 do
+  private fun hex(s:string when len s > 0uz)= {
+    var r = ""; 
+    for var i in 0uz upto len s - 1uz do
       r += charset_quote s.[i];
     done
     return r; 

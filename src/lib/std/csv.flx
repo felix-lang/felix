@@ -5,12 +5,12 @@ module Csv {
   proc get_csv_value(s:string, i:&int,res:&string) {
     var r = "";
     proc add(j:int) { r += s.[j]; }
-    n := len s;
+    n := s.len.int;
     enum state_t = skip,collect,quote;
     fun eq(a:state_t, b:state_t)=> caseno a == caseno b;
 
     var state = skip;
-    var j:int; ech:for j in *i upto n-1 do
+    ech:for var j in *i upto n-1 do
       ch := s.[j];
       if ch == char "," do 
         match state with 
@@ -40,10 +40,10 @@ module Csv {
     var v: list[string] = Empty[string];
     var res = "";
     var pos = 0;
-    n := len s;
+    n := s.len.int;
     while pos < n do
       get_csv_value (inp, &pos, &res);
-      if len res >0 do v += res; done;
+      if res.len.int >0 do v += res; done;
     done;
     return v;
   }

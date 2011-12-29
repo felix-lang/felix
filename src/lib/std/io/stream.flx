@@ -15,7 +15,7 @@ module Stream {
 
   if POSIX do
     open Faio_posix;
-    typedef fd_t = Faio_posix::fd_t;
+    typedef fd_t = FileSystem::posix_file;
   else
     open Faio_win32;
   done
@@ -121,7 +121,7 @@ module Stream {
   {
     proc iclose (fd: fd_t) {
       if POSIX do
-        close fd;
+        C_hack::ignore(FileSystem::close fd);
       else
         CloseFile fd;
       done
@@ -132,7 +132,7 @@ module Stream {
   {
     proc oclose (fd: fd_t) {
       if POSIX do
-        close fd;
+        C_hack::ignore(FileSystem::close fd);
       else
         CloseFile fd;
       done
@@ -143,7 +143,7 @@ module Stream {
   {
     proc ioclose (fd: fd_t) {
       if POSIX do
-        close fd;
+        C_hack::ignore(FileSystem::close fd);
       else
         CloseFile fd;
       done
@@ -323,7 +323,7 @@ module Stream {
     var s: string,
     eof: &bool)
   {
-    var slen = len s;
+    var slen = s.len.int;
     var a = C_hack::cast[address]$ cstr s;
     write(ostream, &slen, a, eof);
   }

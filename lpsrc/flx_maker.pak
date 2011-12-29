@@ -421,6 +421,7 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 @select(h)
 Name: pthread
 Description: Pre-emptive threading support
+Comment: Generated during configuration
 
 @if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:flx_pthread_dynamic")
@@ -443,7 +444,7 @@ Requires: flx_gc
 @select(h)
 Name: demux
 Description: Event handling
-Version: $Id$
+Comment: Generated during configuration
 
 @if config.HAVE_MSVC:
    tangle("provides_dlib: /DEFAULTLIB:demux_dynamic")
@@ -469,6 +470,7 @@ flx_requires_driver: flx_arun
 #ifndef __DEMUX_SOCKETY_CONFIG_H__
 #define __DEMUX_SOCKETY_CONFIG_H__
 #include <sys/socket.h>
+// GENERATED DURING CONFIGURATION
 
 @tangle('typedef %s FLX_SOCKLEN_T;' % config.TARGET_CXX.options.FLX_SOCKLEN_T)
 #endif

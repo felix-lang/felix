@@ -1,4 +1,5 @@
 include "std/posix/filesystem";
+include "std/posix/directory";
 open Judy;
 
 fun dbg(s:string):string={ println s; return s; }
@@ -10,9 +11,8 @@ fun subst(s:string, v:varray[StringPiece]): string =
    var b = "";
    var mode=cp;
    var j = 0;
-   var i:int; 
    var count = 0;
-   for i in 0 upto len s - 1 do
+   for var i in 0 upto s.len.int - 1 do
      match mode with
      | cp => 
        if s.[i] == char "\\" do 
@@ -68,14 +68,14 @@ fun subst(s:string, v:varray[StringPiece]): string =
     proc rfi(dname2: string) 
     {   
       if dname2 != "." and dname2 != ".." do
-      match FileSystem::filesin(Filename::join (dname,dname2)) with
+      match Directory::filesin(Filename::join (dname,dname2)) with
       | None  => ;
       | Some ?files =>
         List::iter
           (proc (f:string) 
           { if f != "." and f != ".." do 
             var d = Filename::join (dname2,f);
-            val t = FileSystem::filetype (Filename::join (dname,d));
+            val t = FileStat::filetype (Filename::join (dname,d));
             match t with
               | REGULAR => 
                 // println$ "d="+d;
@@ -151,7 +151,7 @@ fun subst(s:string, v:varray[StringPiece]): string =
       dir := string buffer;
       //println$ "Directory " + dir;
       if live do
-        err:=FileSystem::mkdir(dir);
+        err:=Directory::mkdir(dir);
         if err !=0 do 
           if errno != EEXIST do 
             println$ "Mkdir, err=" + strerror() + " .. ignoring";

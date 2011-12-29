@@ -18,13 +18,13 @@ spawn_fthread{
     var c: socket_t;
     connect(&c, c"127.0.0.1", port);
 
-    var len = 8;
+    var n = 8;
     var eof: bool;
-    async_write(c, &len, get_data((c"faio2you")), &eof);
+    async_write(c, &n, get_data((c"faio2you")), &eof);
     shutdown(c, 1);  // no further writes (wakes reader)
 
     var b: tstbuf;
-    async_read(c, &len, b.get_data, &eof);
+    async_read(c, &n, b.get_data, &eof);
     print "connector read "; dprint b; endl;
     System::exit 0;
   };
@@ -33,8 +33,8 @@ spawn_fthread{
 var s: socket_t;
 accept (&s, listener);  // async!
 var b: tstbuf;
-var len = 16;           // ask for more than there is and rely on shutdown
+var n = 16;           // ask for more than there is and rely on shutdown
 var eof: bool;
-async_read(s, &len, b.get_data, &eof);
-print "acceptor read "; print len; print " bytes: "; dprint b; endl;
-async_write(s, &len, get_data((c"thanks!!")), &eof);
+async_read(s, &n, b.get_data, &eof);
+print "acceptor read "; print n; print " bytes: "; dprint b; endl;
+async_write(s, &n, get_data((c"thanks!!")), &eof);

@@ -1,0 +1,69 @@
+include "std/posix/posix_headers";
+include "std/posix/filestat";
+
+module Directory
+{
+  //------------------------------------------------------------
+  // create directory
+  //------------------------------------------------------------
+  gen mkdir: string * FileStat::mode_t -> int = "mkdir($1.c_str(), $2)";
+  gen mkdir: string  -> int = "mkdir($1.c_str(), 0777)";
+
+  //------------------------------------------------------------
+  // directory searching
+  //------------------------------------------------------------
+  type dirent_t = "struct dirent*" requires Posix_headers::dirent_h;
+  type DIR_t = "DIR*" requires Posix_headers::dirent_h;
+  proc opendir: string * &DIR_t = "*$2=opendir($1.c_str());";
+  fun isNULL: DIR_t -> bool = "$1==0";
+  fun isNULL: dirent_t -> bool = "$1==0";
+  proc readdir: DIR_t * dirent_t * &dirent_t * &int = "*$4=readdir_r($1, $2, $3);";
+  proc closedir: DIR_t = "closedir($1);";
+  fun filename: dirent_t -> string = "std::string($1->d_name)";
+
+  fun filesin(dname:string): opt[List::list[string]] = {
+    //println$ "filesin " + dname;
+    var d:DIR_t;
+    var e: dirent_t = C_hack::cast[dirent_t]$ C_hack::malloc 5000;
+    var eret = e;
+    var err:int = 0;
+    var files = List::Empty[string];
+    opendir(dname,&d);
+    if isNULL d do 
+      println "Error opening dir"; 
+      C_hack::free$ C_hack::cast[address] e; 
+      return None[List::list[string]];
+    else
+    //println$ "Opened dir " + dname;
+next:>
+      readdir(d,e,&eret, &err);
+      if err != 0 do 
+        println "Error reading dir"; flush;
+        closedir d; 
+        C_hack::free$ C_hack::cast[address] e; 
+        return None[List::list[string]];
+      elif isNULL eret do 
+        //println "End of dir"; 
+        closedir d; 
+        C_hack::free$ C_hack::cast[address] e; 
+        return Some files;
+      else 
+        //println "Think we got a file?";
+        assert err == 0;
+        //println$ "Found a file " + filename e; 
+        files += filename e; 
+        goto next;
+      done
+    done
+  }
+
+  // current directory
+  private fun getcwd: &char * size -> &char = "getcwd($1,$2)" requires Posix_headers::unistd_h;
+  fun getcwd():string = {
+    var b: array[char,1024]; 
+    var p = getcwd(C_hack::cast[&char] (&b),size 1024);
+    return if C_hack::isNULL p then "" else string p endif; 
+  }
+
+}
+

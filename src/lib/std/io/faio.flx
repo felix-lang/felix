@@ -13,10 +13,6 @@ module Faio {
       svc (svc_get_fthread thread );
   }
 
-  header stdlib_h = '#include <stdlib.h>';            // malloc, free
-  header = '#include "faio_asyncio.hpp"';
-  header faio_timer_h = '#include "faio_timer.hpp"';
-
   type sel_param = "flx::demux::sel_param";
   type sel_param_ptr = "flx::demux::sel_param*";
 
@@ -36,11 +32,11 @@ module Faio {
       //println$ "Reset len to bytes done ..";
   }
 
-  type sleep_request = 'flx::faio::sleep_request' requires faio_timer_h;
-  type alarm_clock = 'flx::demux::timer_queue*' requires faio_timer_h;
+  type sleep_request = 'flx::faio::sleep_request' requires package "timer";
+  type alarm_clock = 'flx::demux::timer_queue*' requires package "timer"; 
 
-  fun mk_alarm_clock: 1 -> alarm_clock = 'flx::demux::mk_timer_queue()';
-  fun mk_sleep_request: alarm_clock * double -> sleep_request = 'flx::faio::sleep_request($1,$2)';
+  fun mk_alarm_clock: 1 -> alarm_clock = '::flx::demux::mk_timer_queue()';
+  fun mk_sleep_request: alarm_clock * double -> sleep_request = '::flx::faio::sleep_request($1,$2)';
 
   var sys_clock = mk_alarm_clock();
 

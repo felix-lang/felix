@@ -11,6 +11,8 @@ include "std/posix/signal";
 include "std/posix/time";
 
 // filesystem
+include "std/posix/filestat";
+include "std/posix/directory";
 include "std/posix/filesystem";
 
 // processes

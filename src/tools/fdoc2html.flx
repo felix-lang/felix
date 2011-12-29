@@ -87,7 +87,7 @@ fun xlat_fdoc(t:string, filename:string)=
   fun cal_nav() = 
   {
     val relfile = match (filename,'/').split.rev with | Cons(?h,_) => h | Empty => "";
-    var lpos = relfile.len;
+    var lpos = relfile.len.int;
     while lpos > 0 and not isdigit(relfile.[lpos-1]) do 
        --lpos; 
     done 
@@ -101,7 +101,7 @@ fun xlat_fdoc(t:string, filename:string)=
       else ""
     ;
 
-    val n = digits.len;
+    val n = digits.len.int;
     val v = digits.int;
     val vnext = v + 1;
     val vprev = v - 1;
