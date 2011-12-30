@@ -85,18 +85,23 @@ let rsground= {
   
 
 *)
-let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_apply bind_type' mkenv sr e e2 name ts i ts' =
+
+exception Not_field
+
+let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_apply bind_type' mkenv 
+  sr e e2 name ts i ts' isptr
+=
   let rt t = beta_reduce state.counter bsym_table sr t in
   let (_,t) as te = be e in
   let ttt =rt t in
   match hfind "lookup" state.sym_table i with
 
   (* STRUCT *)
-  | { Flx_sym.id=id; vs=vs; sr=sra; symdef=SYMDEF_struct ls } ->
-    begin try
+  | { Flx_sym.id=id; vs=vs; sr=sra; symdef=SYMDEF_struct ls }
+  | { Flx_sym.id=id; vs=vs; sr=sra; symdef=SYMDEF_cstruct (ls,_) } ->
     let cidx,ct =
       let rec scan i = function
-      | [] -> raise Not_found
+      | [] -> raise Not_field
       | (vn,vat)::_ when vn = name -> i,vat
       | _:: t -> scan (i+1) t
       in scan 0 ls
@@ -111,117 +116,13 @@ let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_
     in
     let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
     let ct = tsubst vs' ts' ct in
+    let ct = if isptr then btyp_pointer ct else ct in
     bexpr_get_n ct (cidx,te)
-    with Not_found ->
-      begin try be (EXPR_apply (sr,(e2,e)))
-      with exn2 ->
-      clierr sr (
-        "AST_dot: struct type: apply " ^ name ^
-        " failed with " ^ Printexc.to_string exn2
-        )
-      end
-    end
-
-  (* LHS CSTRUCT *)
-  | { Flx_sym.id=id; vs=vs; sr=sra; symdef=SYMDEF_cstruct (ls,_) } ->
-    (* NOTE: we try $1.name binding using get_n first,
-    but if we can't find a component we treat the
-    entity as abstract.
-
-    Hmm not sure that cstructs can be polymorphic.
-    *)
-    begin try
-      let cidx,ct =
-        let rec scan i = function
-        | [] -> raise Not_found
-        | (vn,vat)::_ when vn = name -> i,vat
-        | _:: t -> scan (i+1) t
-        in scan 0 ls
-      in
-      let ct =
-        let bvs = List.map
-          (fun (n,i,_) -> n, btyp_type_var (i, btyp_type 0))
-          (fst vs)
-        in
-        let env' = build_env state bsym_table (Some i) in
-        bind_type' state bsym_table env' rsground sr ct bvs mkenv
-      in
-      let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
-      let ct = tsubst vs' ts' ct in
-      (* propagate lvalueness to struct component *)
-      bexpr_get_n ct (cidx,te)
-    with
-    | Not_found ->
-      begin try be (EXPR_apply (sr,(e2,e)))
-      with exn ->
-      clierr sr (
-        "AST_dot: cstruct type: apply " ^ name ^
-        " failed with " ^ Printexc.to_string exn
-        )
-      end
-     end
-
-  (* LHS HAS A PRIMITIVE TYPE *)
-  | { Flx_sym.id=id; sr=sra; symdef=SYMDEF_abs _ } ->
-    begin try be (EXPR_apply (sr,(e2,e)))
-    with exn2 -> 
-    clierr2 sr sra
-    (
-      "AST_dot: Abstract type "^id^"="^sbt bsym_table ttt ^
-      "\napply " ^ name ^
-      " failed with " ^ Printexc.to_string exn2
-    )
-    end
-
-  | _ ->
-    (* Try reverse application *)
-    let retry = EXPR_apply (sr,(e2,e)) in
-    be retry
-    (*
-    failwith ("[lookup] operator . Expected LHS nominal type to be"^
-    " (c)struct or abstract primitive, got " ^
-    sbt bsym_table ttt)
-    *)
+  | _ ->  raise Not_field
 
 let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply bind_type' sr e e2 =
   let mkenv i = build_env state bsym_table (Some i) in
   let rt t = beta_reduce state.counter bsym_table sr t in
-  (* Analyse LHS.
-    If it is a pointer, dereference it transparently.
-    The component lookup is an lvalue if the argument
-    is an lvalue or a pointer, unless an apply method
-    is used, in which case the user function result
-    determines the lvalueness.
-  *)
-
-  (* NOTES: THIS IS WRONG WRONG WRONG! IT PREVENTS
-     px.f working where f: &T -> U
-     In particular at the moment it prevents 
-
-     var x: array[int,2] = 1,2;
-     var px = (&x).carray;
-
-     working. Auto-deref should only be applied AFTER other
-     things fail.
-  *)
-(*
-  let ttt,e,te =
-    let (_,tt') as te = be e in (* polymorphic! *)
-    let rec aux n t = match t with
-      | BTYP_pointer t -> aux (n+1) t
-      | _ -> n,t
-    in
-    let np,ttt = aux 0 (rt tt') in
-    let rec dref n x = match n with
-        | 0 -> x
-        | _ -> dref (n-1) (EXPR_deref (sr,x))
-    in
-    let e = dref np e in
-    let e',t' = be e in
-    let te = e',t' in
-    ttt,e,te
-  in
-*)
 
   let (_,tt) as te = be e in (* polymorphic! *)
   let ttt = rt tt in
@@ -232,32 +133,62 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
     begin match ttt with
 
     (* LHS HAS POINTER TYPE *)
-    | BTYP_pointer t ->
-(*
-print_endline "pointer dot";
-*)
-      begin try 
-(* THIS IS A HACK!!! It will not only try to get a field address
-   it will ALSO try reverse application. Wrong!! Will do temporarily
-   for testing.
-*)
-        let v = be (EXPR_dot (sr, ((EXPR_deref (sr, e)), e2))) in
-        bexpr_address v
-      with _ -> try be (EXPR_apply (sr,(e2,e)))
+    | BTYP_pointer (BTYP_inst (i,ts')) ->
+      begin 
+      try
+        handle_field_name state bsym_table build_env env rs be bt 
+          koenig_lookup cal_apply bind_type' mkenv sr e e2 name ts i ts' true
+      with Not_field ->
+      try be (EXPR_apply (sr,(e2,e)))
+      with exn ->
+        clierr sr
+        (
+          "[bind_expression] operator dot: Field " ^ name ^
+          " is not a member of structure type " ^
+           sbt bsym_table ttt ^
+           "\n and trying reverse application of " ^ name ^
+           " as a function also failed"
+        )
+      end
+
+
+    | BTYP_pointer (BTYP_record ("",es) ) ->
+      let rcmp (s1,_) (s2,_) = compare s1 s2 in
+      let es = List.sort rcmp es in
+      let field_name = name in
+      begin match list_index (List.map fst es) field_name with
+      | Some n -> bexpr_get_n (btyp_pointer (List.assoc field_name es)) (n,te)
+      | None ->
+      try be (EXPR_apply (sr,(e2,e)))
       with exn ->
       clierr sr
         (
           "[bind_expression] operator dot: Field " ^ name ^
-          " is not a member of derefed pointer to structure type " ^
+          " is not a member of derefed pointer to record type " ^
            sbt bsym_table ttt ^
-           "\n and trying " ^ name ^
+           "\n and trying reverse application of " ^ name ^
            " as a function also failed"
         )
       end
 
     (* LHS HAS A NOMINAL TYPE *)
     | BTYP_inst (i,ts') ->
-       handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_apply bind_type' mkenv sr e e2 name ts i ts'
+      begin 
+      try
+        handle_field_name state bsym_table build_env env rs be bt 
+          koenig_lookup cal_apply bind_type' mkenv sr e e2 name ts i ts' false
+      with Not_field ->
+      try be (EXPR_apply (sr,(e2,e)))
+      with exn ->
+        clierr sr
+        (
+          "[bind_expression] operator dot: Field " ^ name ^
+          " is not a member of structure type " ^
+           sbt bsym_table ttt ^
+           "\n and trying reverse application of " ^ name ^
+           " as a function also failed"
+        )
+      end
 
     (* LHS HAS A RECORD TYPE *)
     | BTYP_record ("",es) ->
@@ -272,9 +203,9 @@ print_endline "pointer dot";
         clierr sr
         (
           "[bind_expression] operator dot: Field " ^ name ^
-          " is not a member of anonymous structure type " ^
+          " is not a member of record type " ^
            sbt bsym_table ttt ^
-           "\n and trying " ^ name ^
+           "\n and trying reverse application of " ^ name ^
            " as a function also failed"
         )
       end

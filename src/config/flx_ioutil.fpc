@@ -1,3 +1,5 @@
 Name: flx_ioutil
-Requires: flx
+Description: I/O support
 includes: '"flx_ioutil.hpp"'
+Requires: flx
+

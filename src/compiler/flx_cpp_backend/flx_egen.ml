@@ -357,6 +357,28 @@ let rec gen_expr'
       | _ -> failwith "[flx_egen] Instance expected to be (c)struct"
       end
 
+    | BTYP_pointer (BTYP_record (name,es)) ->
+      let field_name,_ =
+        try nth es n
+        with Not_found ->
+          failwith "[flx_egen] Woops, index of non-existent struct field"
+      in
+      ce_prefix "&" (ce_arrow (ge' e) field_name)
+
+    | BTYP_pointer (BTYP_inst (i,_)) ->
+      begin match Flx_bsym_table.find_bbdcl bsym_table i with
+      | BBDCL_cstruct (_,ls,_)
+      | BBDCL_struct (_,ls) ->
+        let name,_ =
+          try nth ls n
+          with _ ->
+            failwith "Woops, index of non-existent struct field"
+        in
+        ce_prefix "&" (ce_arrow (ge' e) name)
+
+      | _ -> failwith "[flx_egen] Instance expected to be (c)struct"
+      end
+
     | _ -> ce_dot (ge' e) ("mem_" ^ si n)
     end
 

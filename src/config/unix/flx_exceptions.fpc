@@ -1,4 +1,4 @@
-Name: flx
+Name: flx_exceptions
 Description: Felix exceptions
 provides_dlib: -lflx_exceptions_dynamic
 provides_slib: -lflx_exceptions_static

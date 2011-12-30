@@ -1,4 +1,3 @@
-
 Name: faio
 Description: Asynchronous I/O support
 provides_dlib: -lfaio_dynamic

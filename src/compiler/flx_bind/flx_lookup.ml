@@ -3917,24 +3917,6 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       | BEXPR_apply ((BEXPR_closure (i,ts),_),a),_ when has_property i `Lvalue ->
           bexpr_address e
 
-      (* allow addressing of structure component of deref'ed pointer *)
-      | (BEXPR_get_n (_,(BEXPR_deref _,_)),_) as x -> 
-        bexpr_address x
-
-      (* Allow addressing structure components of variables .. actually
-       * we need to check here that "bid" is actually a variable .. 
-       *)
-      | (BEXPR_get_n (i,(BEXPR_name (bid,ts),_)),_) as x -> 
-        begin 
-          try 
-            match Flx_bsym.bbdcl (Flx_bsym_table.find bsym_table bid) with
-            | BBDCL_val (_,_,(`Var | `Ref)) -> bexpr_address x
-            | _ -> raise Not_found
-          with Not_found ->
-              clierr srr ("[bind_expression] [5]Address component of non variable " ^
-               sbe bsym_table e)
-        end
-
       | _ ->
           clierr srr ("[bind_expression] [4]Address non variable " ^
             sbe bsym_table e)

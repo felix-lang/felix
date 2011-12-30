@@ -1,3 +1,4 @@
 Name: flx_dynlink
+Description: Dynamic loading support
 Requires: flx
 includes: '"flx_dynlink.hpp"'
