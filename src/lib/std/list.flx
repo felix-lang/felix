@@ -100,7 +100,7 @@ open module List
   // make a list from an array (tuple)
   ctor[T,N] list[T] (x:array[T, N]) = {
     var o = Empty[T];
-    var i:int; for i in x.len.int - 1 downto 0 do
+    for var i in x.len.int - 1 downto 0 do
       o = Cons (x.[i],o);
     done;
     return o;
@@ -369,7 +369,9 @@ open module List
     iter (proc (e:T) { a+=e; }) x;
     Varray::sort lt a;
     var r = Empty[T];
-    for var i in n - 1uz downto 0uz do r = Cons(a.[i], r); done
+    if n > 0uz do
+      for var i in n - 1uz downto 0uz do r = Cons(a.[i], r); done
+    done
     return r;
   }
 
