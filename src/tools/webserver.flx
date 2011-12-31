@@ -613,7 +613,7 @@ proc serve_file(s: socket_t, infname: string)
 
   // set mime type depending on extension...
   // serve a "not found page" for that case (check for recursion)
-  print "serve file: "; print fname; endl;
+  //print "serve file: "; print fname; endl;
 
   // figure out the filetype
   // we first check if the filename has a suffix like ?cpp
@@ -635,7 +635,7 @@ proc serve_file(s: socket_t, infname: string)
     }
   endmatch;
 
-  print "suffix is "; print suffix; endl;
+  //print "suffix is "; print suffix; endl;
 
   if suffix in list ("flx","flxh") do 
     serve_felix(s, fname);
