@@ -139,8 +139,9 @@ fun valof[N](x:array[string * string,N],key:string) =>
   endmatch
 ;
 
-fun xlat_felix(t:string, dir:string)=
+fun xlat_felix(t:string, dir:string): bool * string =
 {
+  var needs_mathjax = false;
   var out = "";
   proc write_string(t:string) 
   { 
@@ -150,23 +151,25 @@ fun xlat_felix(t:string, dir:string)=
   union state_t = 
     | sot // start of token
     | id // processing identifier
+    | texid // processing identifier
     | num // in a number
     | sq // processing single quote string
     | dq // processing double quote string
     | sq3 // processing single quote string
     | dq3 // processing double quote string
-    | ccomment // a C style comment
+    | ccomment of int // a C style comment
     | cppcomment // a C++ style comment
   ;
   fun str(s:state_t) => match s with
   | sot => "sot"
   | id => "id"
+  | texid => "texid"
   | num => "num"
   | sq => "sq"
   | dq => "dq"
   | sq3 => "sq3"
   | dq3 => "dq3"
-  | ccomment=> "ccomment"
+  | ccomment ?n => "ccomment_"+ str n
   | cppcomment => "cppcomment"
   endmatch;
   
@@ -240,8 +243,13 @@ println$ "Package file basename is " + n;
     | sq => { ws; }
     | sq3 => { ws; }
     | dq3 => { ws; }
-    | ccomment=> { write_string('<span class="comment">'+b+"</span>"); }
+    | ccomment _ => { write_string('<span class="comment">'+b+"</span>"); }
     | cppcomment=> { write_string('<span class="comment">'+b+"</span>"); }
+    | texid => { write_string (
+        '<span class="tex_symbol" title="'+b+'">\\(' + b + '\\)</span>'
+        ); 
+        needs_mathjax = true; 
+      }  // format with MathJax
     | id => 
       { 
         last_id = b;
@@ -300,6 +308,7 @@ thisch:> // same char, reconsider it
   | sot =>
     { 
       if isidstart ch do s = id; goto contin;
+      elif ch == char "\\" and isletter (ahead(1)) do cp; next; s = texid; goto contin; 
       elif isdigit ch do s = num; goto contin;
       elif issq3() do cp; next; cp; next; s = sq3; goto contin;
       elif isdq3() do cp; next; cp; next; s = dq3; goto contin;
@@ -307,13 +316,19 @@ thisch:> // same char, reconsider it
       elif isdq ch do s = dq; goto contin;
       elif ch == char "/" do
         if ahead(1) == char "/" do cp; next; s = cppcomment; goto contin;
-        elif ahead(1) == char "*" do cp; next; s = ccomment; goto contin;
+        elif ahead(1) == char "*" do cp; next; s = ccomment 1; goto contin;
         else goto lastch;
         done 
       else cp; w; goto nextt;
       done
     }
 
+  | texid => 
+    {
+      if isletter ch do goto contin;
+      else goto overrun;
+      done
+    }
   | id => 
     {
       if isalphanum ch do goto contin;
@@ -355,12 +370,21 @@ thisch:> // same char, reconsider it
       else goto contin;
       done
     }
-  | ccomment => // doesn't handle nested comments yet
+  | ccomment ?n => 
     {
       if ch == char "*" and ahead(1) == char "/" do 
-        cp; 
-        goto lastch;
-      else goto contin;
+        if n == 1 do 
+          cp; next;
+          goto lastch;
+        else
+          s = ccomment (n-1);
+          goto contin;
+        done
+      elif ch == char "/" and ahead(1) == char "*" do 
+        s = ccomment (n+1);
+        goto contin;
+      else 
+        goto contin;
       done
     }
   endmatch
@@ -370,6 +394,6 @@ thisch:> // same char, reconsider it
 fin:>
    //println "outof data, final write ..";
    w(); // whatever is left over gets written
-   return out;
+   return needs_mathjax, out;
 }
 }

@@ -15,6 +15,7 @@ fun isdigit(x:char) => match find$ digits,x with | Some _ => true | None _ => fa
 fun isnumeric(x:char) => match find$ numeric,x with | Some _ => true | None _ => false endmatch;
 fun isupper(x:char) => match find$ upper,x with | Some _ => true | None _ => false endmatch;
 fun isalphanum(x:char) => isidstart x or isdigit x;
+fun isletter (x:char) => match find$ letters, x with | Some _ => true | None => false endmatch;
 
 fun issq(x:char) => x == char "'";
 fun isdq(x:char) => x == char '"';

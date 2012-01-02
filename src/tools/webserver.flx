@@ -140,6 +140,21 @@ fun txt2html (x:string) =
   return out2;
 }
 
+// put into <head> of document
+// http://www.mathjax.org/docs/1.1/start.html#mathjax-cdn
+mathjax := '''
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ["script","noscript","style","textarea"]
+    }
+  });
+</script> 
+<script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+''';
+
 
 // functions to make responses
 fun make_image (suffix:string, contents:string) =>
@@ -279,10 +294,12 @@ proc serve_felix (k:socket_t, fname:string) {
     {
       val text = Text_file::load path;
       val dirname = Filename::dirname path;
+      def val needs_mathjax, val html = Flx2Html::xlat_felix(text,dirname);
       val data = make_html$
-        "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+
-        (Flx2Html::xlat_felix (text, dirname))
-        +"</pre></body></html>\n\r"
+        "<html><head>"+Css4Html::flx_head+
+         if needs_mathjax then mathjax else "" endif +
+        "</head><body><pre>"+ html +
+        "</pre></body></html>\n\r"
       ;
       write_string(k,data,&eof_flag);
     }
@@ -438,10 +455,12 @@ proc serve_fdoc (k:socket_t, fname:string) {
   var eof_flag = false;
   var txt = get_fdoc(fname);
   //println$ "Contents=" + flx;
+  needs_mathjax, html := Fdoc2Html::xlat_fdoc (txt,fname);
   val data = make_html(
-    "<html><head>"+Css4Html::flx_head+"</head>"+
-    "<body>"+
-    Fdoc2Html::xlat_fdoc (txt,fname)+
+    "<html><head>"+Css4Html::flx_head+
+    if needs_mathjax then mathjax else "" endif +
+    "</head>"+
+    "<body>"+html+
     "</body></html>\n\r"
   );
   write_string(k,data,&eof_flag);
@@ -451,14 +470,16 @@ proc serve_xfdoc (k:socket_t, fname:string) {
   var eof_flag = false;
   var txt = get_fdoc(fname);
   //println$ "Contents=" + flx;
+  needs_mathjax, html := Fdoc2Html::xlat_fdoc (txt,fname);
   val data = make_xhtml(
 '''<?xml version="1.0" encoding="UTF-8"?>  
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN"  
  "http://www.w3.org/Math/DTD/mathml2/xhtml-math11-f.dtd">  
  <html xmlns="http://www.w3.org/1999/xhtml">'''+
-    "<head>"+Css4Html::flx_head+"</head>"+
-    "<body>"+
-    Fdoc2Html::xlat_fdoc (txt,fname)+
+    "<head>"+Css4Html::flx_head+
+    if needs_mathjax then mathjax else "" endif +
+    "</head>"+
+    "<body>"+ html
     "</body></html>\n\r"
   );
   write_string(k,data,&eof_flag);

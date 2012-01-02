@@ -316,7 +316,6 @@ let digit = ['0'-'9']
 let hexdigit = digit | ['A'-'F'] | ['a'-'f']
 let lower = ['a'-'z']
 let upper = ['A'-'Z']
-/* let letter = lower | upper */
 let letter = lower | upper
 let hichar = ['\128'-'\255']
 let white = space | tab
@@ -678,6 +677,7 @@ main lexer =
   but x'x' is an identifier .. yucky ..
 */
  identifier -> NAME { Flx_utf.utf8_to_ucn (lexeme lexbuf) }
+ slosh letter+ -> NAME { lexeme lexbuf }
 
 /* whitespace */
  white+ -> { () }

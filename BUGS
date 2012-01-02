@@ -19,6 +19,9 @@
   &(x.a) equal (&x).a = pointer to a component, NOT value of a.
   This seems to conflict with auto-deref.
 
+  CHANGED: 30/12/2011. Autoderef is gone. So are get_ methods.
+  
+
 * I think there is a bug in the compiler where a generator result assigned
   to a variable is ignored if that value of the variable is ignored.
   This has the effect of eliminating the side effect. The case causing
@@ -46,3 +49,23 @@
   or other functions... but no one does this, not even me .. I've never used
   flx_main().
 
+
+  NOTE: Another solution, and the right one: in library code, either use
+  qualified names OR simply open the required modules inside the library
+  module to hide the global level (and the level under the global level).
+
+  This looks a bit more ugly, but it is the correct solution: library
+  code shouldn't depend on global scope!
+
+  SOLUTION: probably we should do BOTH these things ...
+
+* NAMING ISSUE
+
+  Well, this isn't a bug. At present, Felix uses the original names in structs,
+  but not for functions, variables, etc. The reason it doesn't do this for functions
+  is that they're actually classes, and class names can't be overloaded.
+
+
+* Webserver doesn't display nested C comments correctly
+  FIXED: 2/1/2012
+ 
