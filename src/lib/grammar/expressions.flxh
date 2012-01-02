@@ -63,6 +63,7 @@ syntax expressions {
   x[scomparison_pri]:= x[>scomparison_pri] ">=" x[>scomparison_pri] =># "(infix 'ge)";
   x[scomparison_pri]:= x[>scomparison_pri] ">" x[>scomparison_pri] =># "(infix 'gt)";
   x[scomparison_pri]:= x[>scomparison_pri] "in" x[>scomparison_pri] =># "(infix 'mem)";
+  x[scomparison_pri]:= x[>scomparison_pri] "\in" x[>scomparison_pri] =># "(infix 'mem)";
 
   // named temporary
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
@@ -123,20 +124,6 @@ syntax expressions {
   anon_value := "(" srecord_mem_decl ("," srecord_mem_decl)*  ")" =># 
    "`(ast_record_type ,(cons _2 (map second _3)))";
     srecord_mem_decl := sname ":" stypeexpr =># "`(,_1 ,_3)";
-
-  // record type (verbose form)
-  //anon_value := "struct" "{" sstruct_mem_decl* "}" =># "`(ast_record_type ,_3)";
-
-  // record type (semicolon terminated)
-  //anon_value := "(" sstruct_mem_decl+ ")" =># "`(ast_record_type ,_2)";
-  //  sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(,_1 ,_3)";
-
-  // record value (verbose form)
-  //anon_value := "struct" "{" sstruct_assign* "}" =># "`(ast_record ,_sr ,_3)";
-
-  // record value (semicolon terminated)
-  //anon_value := "{" sstruct_assign+ "}" =># "`(ast_record ,_sr ,_2)";
-  //  sstruct_assign := sname "=" sexpr ";" =># "`(,_1 ,_3)";
 
   // variant type
   anon_value := "union" "{" stype_sum_item0* "}" =># "`(ast_variant_type ,_3)";

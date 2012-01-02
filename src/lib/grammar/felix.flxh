@@ -12,6 +12,7 @@ syntax felix {
     namespaces,
     requirements,
     expressions,
+    texsyms,
     functions,
     patterns,
     cbind,

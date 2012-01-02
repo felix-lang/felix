@@ -1,0 +1,7 @@
+syntax texsyms {
+  sym := "\\curlyeqprec" =># '(nos _1)';
+  sym := "\\curlyeqsucc" =># '(nos _1)';
+
+  x[scomparison_pri]:= x[>scomparison_pri] sym x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
+}
+
