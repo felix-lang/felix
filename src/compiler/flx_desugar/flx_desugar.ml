@@ -197,10 +197,8 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
   | EXPR_andlist _
   | EXPR_orlist _
   | EXPR_ellipsis _
-  | EXPR_setunion  _
   | EXPR_intersect _
   | EXPR_isin _
-  | EXPR_setintersection _
     ->
     clierr sr ("[rex] Unexpected " ^ string_of_expr e)
 

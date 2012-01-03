@@ -107,8 +107,6 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_ellipsis sr -> e
   | EXPR_product (sr,es) -> EXPR_product (sr, List.map f es)
   | EXPR_sum (sr,es) -> EXPR_sum (sr, List.map f es)
-  | EXPR_setunion (sr,es) -> EXPR_setunion (sr, List.map f es)
-  | EXPR_setintersection (sr,es) -> EXPR_setintersection (sr, List.map f es)
   | EXPR_intersect (sr,es) -> EXPR_intersect (sr, List.map f es)
   | EXPR_isin (sr,(a,b)) -> EXPR_isin (sr, (f a, f b))
   | EXPR_orlist (sr,es) -> EXPR_orlist (sr, List.map f es)
@@ -207,9 +205,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_tuple (_,es)
   | EXPR_product (_,es)
   | EXPR_sum (_,es)
-  | EXPR_setunion (_,es)
   | EXPR_intersect (_,es)
-  | EXPR_setintersection (_,es)
   | EXPR_orlist (_,es)
   | EXPR_andlist (_,es)
   | EXPR_arrayof (_, es) ->

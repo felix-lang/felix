@@ -123,7 +123,7 @@ open module Lcomplex
     fun one: 1 -> complex[t] = "::std::complex<?1>(1.0)";
   }
 
-instance[t in (floats || complexes)] Trig[t] {
+instance[t in (floats  \cup  complexes)] Trig[t] {
   requires Cxx_headers::cmath;
   fun sin: t -> t = "::std::sin($1)";
   fun cos: t -> t = "::std::cos($1)";

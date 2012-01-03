@@ -145,7 +145,7 @@ fun txt2html (x:string) =
 mathjax := '''
 <script type="text/x-mathjax-config">
   MathJax.Hub.Config({
-      tex2jax: {
+    tex2jax: {
         skipTags: ["script","noscript","style","textarea"]
     }
   });

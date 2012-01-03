@@ -73,8 +73,6 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_superscript _
   | EXPR_match _
   | EXPR_ellipsis _
-  | EXPR_setunion _
-  | EXPR_setintersection _
   | EXPR_intersect _
   | EXPR_isin _
   | EXPR_callback _

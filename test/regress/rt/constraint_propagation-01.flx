@@ -1,14 +1,14 @@
 {
-  fun g[v in int || long ] (a:v) : string = {
-    fun f[u in int || long || double] (x:u)=> "int";
+  fun g[v in int  \cup  long ] (a:v) : string = {
+    fun f[u in int  \cup  long  \cup  double] (x:u)=> "int";
     return f a;
   }
   println$ g 1;
 };
 
 {
-  fun g[v in long || int] (a:v) : string = {
-    fun f[u in int || double || long] (x:u)=> "int";
+  fun g[v in long  \cup  int] (a:v) : string = {
+    fun f[u in int  \cup  double  \cup  long] (x:u)=> "int";
     return f a;
   }
   println$ g 1;

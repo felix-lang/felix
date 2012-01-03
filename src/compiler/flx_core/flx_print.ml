@@ -200,12 +200,6 @@ and string_of_expr (e:expr_t) =
   | EXPR_sum (_,ts) ->
      cat "+" (map se ts)
 
-  | EXPR_setunion (_,ts) ->
-     cat "||" (map se ts)
-
-  | EXPR_setintersection (_,ts) ->
-     cat "&&" (map se ts)
-
   | EXPR_intersect (_,ts) ->
      cat "&" (map se ts)
 

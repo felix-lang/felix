@@ -95,8 +95,6 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | EXPR_product (_,ts) -> TYP_tuple (map te ts)
   | EXPR_intersect (_,ts) -> TYP_intersect (map te ts)
   | EXPR_isin (_,(a,b)) -> TYP_isin (te a, te b)
-  | EXPR_setintersection (_,ts) -> TYP_setintersection (map te ts)
-  | EXPR_setunion (_,ts) -> TYP_setunion (map te ts)
   | EXPR_arrow (_,(a,b)) -> TYP_function (te a, te b)
   | EXPR_longarrow (_,(a,b)) -> TYP_cfunction (te a, te b)
   | EXPR_superscript (_,(a,b)) -> TYP_array (te a, te b)
@@ -165,6 +163,16 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
           end
       | EXPR_name (_, "bnot", []) -> TYP_dual (typecode_of_expr e2)
       | EXPR_name (_, "typeof", []) -> TYP_typeof e2
+      | EXPR_name (_, "setintersection", []) -> 
+          begin match e2 with
+          | EXPR_tuple (_,[s1;s2]) -> TYP_setintersection[typecode_of_expr s1; typecode_of_expr s2]
+          | _ -> assert false
+          end
+      | EXPR_name (_, "setunion", []) -> 
+          begin match e2 with
+          | EXPR_tuple (_, [s1;s2]) -> TYP_setunion [typecode_of_expr s1; typecode_of_expr s2]
+          | _ -> assert false
+          end
       | EXPR_name (_, "typesetof", []) ->
           begin match typecode_of_expr e2 with
           | TYP_type_tuple ls -> TYP_typeset ls

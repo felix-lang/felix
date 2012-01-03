@@ -188,7 +188,7 @@ instance Str[utiny] {
   fun str: utiny -> string = "::flx::rtl::strutil::str<unsigned int>($1)" requires package "flx_strutil";
 }
 
-instance[T in short||ushort||int||uint||long||ulong||vlong||uvlong] Str[T] {
+instance[T in short \cup ushort \cup int \cup uint \cup long \cup ulong \cup vlong \cup uvlong] Str[T] {
   fun str: T -> string = "::flx::rtl::strutil::str<#1>($1)" requires package "flx_strutil";
 }
 

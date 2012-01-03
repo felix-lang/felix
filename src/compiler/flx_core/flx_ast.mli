@@ -148,8 +148,6 @@ and expr_t =
   | EXPR_sum of Flx_srcref.t * expr_t list
   | EXPR_intersect of Flx_srcref.t * expr_t list
   | EXPR_isin of Flx_srcref.t * (expr_t * expr_t)
-  | EXPR_setintersection of Flx_srcref.t * expr_t list
-  | EXPR_setunion of Flx_srcref.t * expr_t list
   | EXPR_orlist of Flx_srcref.t * expr_t list
   | EXPR_andlist of Flx_srcref.t * expr_t list
   | EXPR_arrow of Flx_srcref.t * (expr_t * expr_t)

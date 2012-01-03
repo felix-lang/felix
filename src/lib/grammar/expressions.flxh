@@ -8,6 +8,9 @@ syntax expressions {
     sor_condition_pri <
     sand_condition_pri <
     snot_condition_pri <
+    stex_or_condition_pri <
+    stex_and_condition_pri <
+    stex_not_condition_pri <
     scomparison_pri <
     sas_expr_pri <
     ssetunion_pri <
@@ -68,12 +71,7 @@ syntax expressions {
   // named temporary
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
 
-  // set ops 
-  x[ssetunion_pri] := x[>ssetunion_pri] ( "||" x[>ssetunion_pri])+ =># "(chain 'ast_setunion _1 _2)" note "setunion";
-  x[ssetunion_pri] := x[>ssetunion_pri] ( "\\cup" x[>ssetunion_pri])+ =># "(chain 'ast_setunion _1 _2)" note "setunion";
-  x[ssetintersection_pri] := x[>ssetintersection_pri] ("\\cap" x[>ssetintersection_pri])+ =># "(chain 'ast_setintersection _1 _2)" note "setintersection";
-
-  // right arrows (no semantics)
+  // right arrows: RIGHT ASSOCIATIVE!
   x[sarrow_pri] := x[scase_literal_pri] "->" x[sarrow_pri] =># "`(ast_arrow (,_1 ,_3))";
   x[sarrow_pri] := x[scase_literal_pri] "-->" x[sarrow_pri] =># "`(ast_longarrow (,_1 ,_3))";
 

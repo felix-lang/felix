@@ -373,50 +373,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
       h t
     end
 
-  (* Setunion desugaring: x || y || z || ... *)
-  | EXPR_setunion (sr, es) ->
-    begin match es with
-    | [] -> failwith "Unexpected empty setunion "
-    | h::t ->
-      List.fold_left
-      (fun x y ->
-        me
-        (
-          EXPR_apply
-          (
-            sr,
-            (
-              EXPR_name ( sr,"setunion",[]),
-              EXPR_tuple (sr,[me x; me y])
-            )
-          )
-        )
-      )
-      h t
-    end
-
-  (* Setintersection desugaring: x && y && z && ... *)
-  | EXPR_setintersection (sr, es) ->
-    begin match es with
-    | [] -> failwith "Unexpected empty set intersection"
-    | h::t ->
-      List.fold_left
-      (fun x y ->
-        me
-        (
-          EXPR_apply
-          (
-            sr,
-            (
-              EXPR_name ( sr,"setintersect",[]),
-              EXPR_tuple (sr,[me x; me y])
-            )
-          )
-        )
-      )
-      h t
-    end
-
   (* Name expansion *)
   | EXPR_name (sr, name,[]) ->
     (*

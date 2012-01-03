@@ -3179,8 +3179,6 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_longarrow _
   | EXPR_superscript _
   | EXPR_ellipsis _
-  | EXPR_setunion _
-  | EXPR_setintersection _
   | EXPR_intersect _
   | EXPR_isin _
     ->

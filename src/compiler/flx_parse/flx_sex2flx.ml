@@ -188,8 +188,6 @@ and xexpr_t sr x =
  | Lst [Id "ast_sum";  sr; Lst es] -> EXPR_sum (xsr sr,map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_intersect"; Lst es] -> EXPR_intersect (sr, map ex es)
  | Lst [Id "ast_isin"; Lst [a; b]] -> EXPR_isin (sr, (ex a, ex b))
- | Lst [Id "ast_setintersection"; sr; Lst es] -> EXPR_setintersection (xsr sr, map ex es)
- | Lst [Id "ast_setunion"; sr; Lst es] -> EXPR_setunion (xsr sr, map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_orlist"; sr; Lst es] -> EXPR_orlist (xsr sr, map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_andlist"; sr; Lst es] -> EXPR_andlist (xsr sr, map (xexpr_t (xsr sr)) es)
  | Lst [Id "ast_arrow";  Lst [e1; e2]] -> EXPR_arrow (sr,(ex e1, ex e2))

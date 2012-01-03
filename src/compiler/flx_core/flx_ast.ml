@@ -152,8 +152,6 @@ and expr_t =
   | EXPR_sum of Flx_srcref.t * expr_t list
   | EXPR_intersect of Flx_srcref.t * expr_t list
   | EXPR_isin of Flx_srcref.t * (expr_t * expr_t)
-  | EXPR_setintersection of Flx_srcref.t * expr_t list
-  | EXPR_setunion of Flx_srcref.t * expr_t list
   | EXPR_orlist of Flx_srcref.t * expr_t list
   | EXPR_andlist of Flx_srcref.t * expr_t list
   | EXPR_arrow of Flx_srcref.t * (expr_t * expr_t)
@@ -659,10 +657,8 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_noexpand (s,_)
   | EXPR_product (s,_)
   | EXPR_sum (s,_)
-  | EXPR_setunion (s,_)
   | EXPR_intersect (s,_)
   | EXPR_isin (s,_)
-  | EXPR_setintersection (s,_)
   | EXPR_orlist (s,_)
   | EXPR_andlist (s,_)
   | EXPR_arrow (s,_)
@@ -1200,12 +1196,6 @@ and print_expr ppf = function
       print_variant2 ppf "EXPR_isin"
         print_expr expr1
         print_expr expr2
-  | EXPR_setintersection (_, exprs) -> 
-      print_variant1 ppf "EXPR_setintersection"
-        print_exprs exprs
-  | EXPR_setunion (_, exprs) -> 
-      print_variant1 ppf "EXPR_setunion"
-        print_exprs exprs
   | EXPR_orlist (_, exprs) -> 
       print_variant1 ppf "EXPR_orlist"
         print_exprs exprs

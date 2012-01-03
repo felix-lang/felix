@@ -429,5 +429,25 @@ module Assoc_list
   ;
 }
 
+module Sexpr 
+{
+  union sexpr_node[T] = | Leaf of T | Tree of sexpr[T]; 
+  typedef sexpr[T] = list[sexpr_node[T]];
+
+  // inefficient! Use non-local goto to shortcut
+  fun mem[T with Eq[T]] (x:T, A: sexpr[T]) =>
+    fold_left 
+      (fun (acc:bool) (elt:sexpr[T]) => 
+        match elt with
+        | Leaf ?a => acc or ?a == x
+        | Tree ?b => acc or x \in b
+        endmatch
+      )
+      false 
+      A
+  ;
+
+}
+
 open[T with Eq[T]] Set[List::list[T],T];
 
