@@ -220,7 +220,7 @@ proc install() {
 
      (" * Felix library",
      list( 
-       "(tools|lib)/.*\\.(flxh?|par2|libtab|files)"
+       "(tools|lib)/.*\\.(flxh?|par2|libtab|files|automaton)"
      )),
 
      (" * Regression and Unit test code", list("(test|tut)/.*\\.(flx|expect)")),

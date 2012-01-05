@@ -706,6 +706,7 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
       add_tvars privtab
 
   | DCL_typeclass asms ->
+      let complete_vs = merge_ivs inherit_ivs ivs in
       let pubtab, privtab, exes, ifaces, dirs =
         build_tables
           ~pub_name_map:(Hashtbl.create 97)
@@ -714,7 +715,7 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
           counter_ref
           sym_table
           id
-          (merge_ivs inherit_ivs ivs)
+          complete_vs
           (level + 1)
           (Some symbol_index)
           asms
@@ -754,6 +755,29 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
         ~privtab:fudged_privtab
         ~dirs
         symbol_index id SYMDEF_typeclass;
+
+      if complete_vs = dfltvs then begin
+        (* Take all the exes and add them to a function called _init_ that's
+         * called when the module is loaded. *)
+        let init_def = SYMDEF_function (([], None), TYP_void sr, [], exes) in
+
+        (* Get a unique index for the _init_ function. *)
+        let n' = Flx_mtypes2.fresh_bid counter_ref in
+
+        if print_flag then
+          print_endline ("//  " ^ spc ^ Flx_print.string_of_bid n' ^
+          " -> _init_  (class " ^ id ^ ")");
+
+        (* Add the _init_ function to the sym_table. *)
+        add_symbol ~parent:(Some symbol_index) n' "_init_" init_def;
+
+        (* Possibly add the _init_ function to the public symbol table. *)
+        if access = `Public then add_function pubtab "_init_" n';
+
+        (* Add the _init_ function to the symbol table. *)
+        add_function fudged_privtab "_init_" n'
+      end
+      ;
 
       (* Possibly add the typeclass to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;

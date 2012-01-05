@@ -49,16 +49,14 @@ let get_options options =
         | "codegen" -> Phase_codegen
         | _ -> failwith "Invalid value for --compiler-phase"
   in
-
+  let include_dirs= fixup (get_keys_values options ["I"; "include"]) in
   {
     compiler_phase = compiler_phase;
     optimise    = check_keys options ["opt"; "optimise"];
     debug       = check_key options "debug";
-    document_grammar = check_key options "document-grammar";
-    document_typeclass = check_key options "document-typeclass";
     with_comments = check_key options "with-comments";
     mangle_names = check_key options "mangle-names";
-    include_dirs= fixup (get_keys_values options ["I"; "include"]);
+    include_dirs= include_dirs;
     print_flag  = check_keys options ["v"; "verbose"];
     generate_axiom_checks  = not (check_keys options ["no-check-axioms"]);
     trace       = check_keys options ["trace"];
@@ -97,6 +95,21 @@ let get_options options =
     ;
     auto_imports = get_key_values options "import";
     syntax= get_key_values options "syntax";
+    automaton_filename= 
+      begin match get_key_value options "automaton" with
+      | Some a -> a
+      | None ->
+        begin 
+          try 
+            Flx_filesys.find_file ~include_dirs "syntax.automaton" 
+          with Flx_filesys.Missing_path _ -> 
+          try 
+            let d = Flx_filesys.find_dir ~include_dirs "grammar" in
+            Flx_filesys.join d "syntax.automaton"
+          with Flx_filesys.Missing_path _ -> "syntax.automaton" (* current directory *)
+        end
+      end
+    ;
 
     compile_only = check_keys options ["c";"compile-only"]
   }
@@ -111,6 +124,7 @@ let print_options () =
   print_endline "  -Idir, --include=dir : append dir to include path";
   print_endline "  --import=file.flxh : automatically #import <file.flxh>";
   print_endline "  --syntax=file.flxh : use syntax <file.flxh>";
+  print_endline "  --automaton=syntax.automaton : parser automaton filename";
   print_endline "  --inline, --noinline, --optimise";
   print_endline "  --cache_dir=<none>: .par and .syncache directory";
   print_endline "  --output_dir=<none>: .cpp, .hpp, .why etc directory";

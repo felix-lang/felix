@@ -21,12 +21,11 @@ type t =
   compile_only : bool;
   force_recompile : bool;
   with_comments : bool;
-  document_grammar: bool;
-  document_typeclass: bool;
   mangle_names : bool;
   generate_axiom_checks : bool;
   auto_imports : string list;
   syntax: string list;
+  automaton_filename: string;
   cache_dir : string option;
   output_dir : string option;
 }

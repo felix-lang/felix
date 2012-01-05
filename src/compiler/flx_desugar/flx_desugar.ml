@@ -916,7 +916,23 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   | STMT_typeclass (sr,name, vs, sts) ->
     let asms = rsts name (merge_vs parent_vs vs) `Public sts in
     let asms = bridge name sr :: asms in
-    [ Dcl (sr,name,None,access,vs, DCL_typeclass asms) ]
+    let mdcl = [ Dcl (sr,name,None,access,vs, DCL_typeclass asms) ] in
+    (* hack: add _init_ function to typeclass to init any variables,
+       but only if it is not polymorphic
+    *)
+    if vs = dfltvs then gen_call_init sr name :: mdcl else mdcl
+
+  (* typeclasses and modules are basically the same thing now .. *)
+  | STMT_untyped_module (sr,name', vs', sts) ->
+    let asms = rsts name' (merge_vs parent_vs vs') `Public sts in
+    let asms = bridge name' sr :: asms in
+    let mdcl =
+      [ Dcl (sr,name',None,access,vs', DCL_module asms) ]
+    in
+    (* HACK !!!! Actually, it's wrong: there are no polymorphic modules
+       or polymorphic variables .. *)
+    if vs' = dfltvs then gen_call_init sr name' :: mdcl else mdcl
+
 
   | STMT_instance (sr, vs, name, sts) ->
     let name',ts = match name with
@@ -1040,16 +1056,6 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     :: dcls
 
   (* misc *)
-  | STMT_untyped_module (sr,name', vs', sts) ->
-    let asms = rsts name' (merge_vs parent_vs vs') `Public sts in
-    let asms = bridge name' sr :: asms in
-    let mdcl =
-      [ Dcl (sr,name',None,access,vs', DCL_module asms) ]
-    in
-    (* HACK !!!! Actually, it's wrong: there are no polymorphic modules
-       or polymorphic variables .. *)
-    if vs' = dfltvs then gen_call_init sr name' :: mdcl else mdcl
-
   | STMT_insert (sr,name',vs,s,kind,reqs) ->
     let _,props, dcls, reqs = mkreqs sr reqs in
     (* SPECIAL case: insertion requires insertion use filo order *)

@@ -36,7 +36,7 @@ let parse_syntax state =
   in
   fprintf state.ppf "PARSED SYNTAX/IMPORT FILES@.";
 
-  let oc = open_out_bin "automaton.syntax" in
+  let oc = open_out_bin state.syms.compiler_options.automaton_filename in
   Marshal.to_channel oc parser_state [];
   Marshal.to_channel oc parsing_device [];
   close_out oc;
@@ -46,7 +46,7 @@ let parse_syntax state =
 
 let load_syntax state =
   try
-     let filename = "automaton.syntax" in
+     let filename = state.syms.compiler_options.automaton_filename in
      let oc = open_in_bin filename in
      let local_data = Marshal.from_channel oc in
      let parsing_device = Marshal.from_channel oc in
