@@ -1,6 +1,6 @@
 include "plat/filename";
 
-module Filename {
+class Filename {
   macro val sep = Plat_Filename::sep;
   // these seem more generic
 

@@ -1,7 +1,7 @@
 include "std/posix/posix_headers";
 include "std/posix/filestat";
 
-module Directory
+class Directory
 {
   //------------------------------------------------------------
   // create directory

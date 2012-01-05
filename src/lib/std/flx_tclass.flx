@@ -6,37 +6,37 @@ typedef bool = 2;
 
 // -----------------------------------------------------------------------------
 
-typeclass IStream[f,t] {
+class IStream[f,t] {
   virtual gen read: f -> t;
 }
 
-typeclass OStream[f,t] {
+class OStream[f,t] {
   virtual proc write: f * t;
 }
 
-typeclass IOStream[f,t] {
+class IOStream[f,t] {
   inherit IStream[f,t];
   inherit OStream[f,t];
 }
 
 // -----------------------------------------------------------------------------
 
-typeclass IFile[f,t] {
+class IFile[f,t] {
   inherit IStream [f,opt[t]];
 }
 
-typeclass OFile[f,t] {
+class OFile[f,t] {
   inherit OStream[f,t];
   virtual proc close: f; // invalidates write operation
 }
 
 // -----------------------------------------------------------------------------
 
-typeclass IBuffer [f] {
+class IBuffer [f] {
   virtual gen read: f -> address * int -> int * bool;
 }
 
-typeclass OBuffer [f] {
+class OBuffer [f] {
   virtual gen write : f -> address * int -> int * bool;
 }
 
@@ -47,12 +47,12 @@ typeclass OBuffer [f] {
 // string equality
 // Set need not be finite (example regexp again)
 // A list is a set, despite the duplications
-typeclass Set[c,t] {
+class Set[c,t] {
   virtual fun mem: t * c-> bool;
 }
 
 // roughly, a finite Set
-typeclass Container [c,v]
+class Container [c,v]
 {
   inherit Set[c,v];
   virtual fun len: c -> size;
@@ -61,22 +61,22 @@ typeclass Container [c,v]
 
 // -----------------------------------------------------------------------------
 
-typeclass Monad [M: TYPE->TYPE] {
+class Monad [M: TYPE->TYPE] {
   virtual fun bind[a,b]: M a * (a -> M b) -> M b;
   virtual fun ret[a]: a -> M a;
 }
 
 // -----------------------------------------------------------------------------
 
-typeclass Str [T] {
+class Str [T] {
   virtual fun str: T -> string;
 }
 
-typeclass Repr [T with Str[T]] {
+class Repr [T with Str[T]] {
   virtual fun repr (t:T) : string => str t;
 }
 
-typeclass Show [T] {
+class Show [T] {
   inherit Str[T];
   inherit Repr[T];
 }

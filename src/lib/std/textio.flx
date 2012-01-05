@@ -1,8 +1,8 @@
-open module Text_file
+open class Text_file
 {
   requires package "flx_ioutil";
 
-  // This module provides simple I/O for text, primarily intended for
+  // This class provides simple I/O for text, primarily intended for
   // naive use, debugging etc. This is because there is no error
   // handling. This simplifies usage at the expense of correctness,
   // and so these routine should not be used in production code.

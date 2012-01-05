@@ -1,4 +1,4 @@
-module Dynlink
+class Dynlink
 {
   requires package "flx_dynlink";
   type flx_library = "flx::rtl::flx_dynlink_t*";

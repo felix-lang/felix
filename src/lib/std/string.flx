@@ -16,7 +16,7 @@ open Eq[ustring];
 open Tord[string];
 open Tord[ustring];
 
-open module String
+open class String
 {
   proc pluseq: &string * string = "$1->append($2);";
   proc pluseq: &string * &char = "$1->append($2);";
@@ -360,7 +360,7 @@ instance Repr[string] {
   }
 }
 
-open module Ustring
+open class Ustring
 {
   fun _ctor_uchar (x:ustring) => x.[0];
   proc pluseq: ustring * ustring = "$1.append($2);";

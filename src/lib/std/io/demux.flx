@@ -1,8 +1,11 @@
-module Demux
+
+class Demux
 {
   type demuxer = "flx::demux::flx_demuxer_t*"
     requires header '#include "flx_demux.hpp"'
   ;
   gen mk_sys_demux: 1->demuxer = "flx::demux::make_std_demuxer()";
-  val sys_demux =  mk_sys_demux();
 }
+
+val sys_demux =  Demux::mk_sys_demux();
+

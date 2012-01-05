@@ -1,4 +1,4 @@
-open module Gc
+open class Gc
 {
   publish """
   Invoke the garbage collector inside a procedure run

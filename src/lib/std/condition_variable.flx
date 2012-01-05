@@ -1,4 +1,4 @@
-open module Condition_Variable
+open class Condition_Variable
 {
   requires package "flx_pthread";
   type condition_variable = "::flx::pthread::flx_condv_t*" requires condv_hxx;

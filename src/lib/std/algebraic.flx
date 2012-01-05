@@ -1,6 +1,6 @@
 
 // additive symmetric group
-typeclass FloatAddgrp[t] {
+class FloatAddgrp[t] {
   inherit Eq[t];
   virtual fun zero: unit -> t;
   virtual fun add: t * t -> t;
@@ -16,14 +16,14 @@ typeclass FloatAddgrp[t] {
   axiom sym (x:t,y:t): x+y == y+x;
 }
 
-typeclass Addgrp[t] {
+class Addgrp[t] {
   inherit FloatAddgrp[t];
   axiom assoc (x:t,y:t,z:t): (x+y)+z == x+(y+z);
   reduce inv(x:t,y:t): x+y-y => x;
 }
 
 // mult semi group with unit
-typeclass FloatMultSemi1[t] {
+class FloatMultSemi1[t] {
   inherit Eq[t];
   virtual fun one: unit -> t;
   virtual fun mul: t * t -> t;
@@ -33,27 +33,27 @@ typeclass FloatMultSemi1[t] {
 }
 
 // mult semi group with unit
-typeclass MultSemi1[t] {
+class MultSemi1[t] {
   inherit FloatMultSemi1[t];
   axiom assoc (x:t,y:t,z:t): (x*y)*z == x*(y*z);
   reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
 }
 
 // ring
-typeclass FloatRing[t] {
+class FloatRing[t] {
   inherit FloatAddgrp[t];
   inherit FloatMultSemi1[t];
 }
 
 // ring
-typeclass Ring[t] {
+class Ring[t] {
   inherit Addgrp[t];
   inherit MultSemi1[t];
   axiom distrib (x:t,y:t,z:t): x * ( y + z) == x * y + x * z;
 }
 
 // division ring
-typeclass FloatDring[t] {
+class FloatDring[t] {
   inherit FloatRing[t];
   virtual fun div: t * t -> t; // pre t != 0
   virtual proc diveq: &t * t;
@@ -62,13 +62,13 @@ typeclass FloatDring[t] {
 }
 
 // division ring
-typeclass Dring[t] {
+class Dring[t] {
   inherit Ring[t];
   inherit FloatDring[t];
 }
 
 
-typeclass Bits[t] {
+class Bits[t] {
   virtual fun bxor: t * t -> t;
   virtual fun bor: t * t -> t;
   virtual fun band: t * t -> t;
@@ -78,7 +78,7 @@ typeclass Bits[t] {
   virtual proc bandeq: &t * t;
 }
 
-typeclass Integer[t] {
+class Integer[t] {
   inherit Tord[t];
   inherit Dring[t];
   inherit Bidirectional[t];
@@ -87,19 +87,19 @@ typeclass Integer[t] {
 }
 
 // Signed Integers
-typeclass Signed_integer[t] {
+class Signed_integer[t] {
   inherit Integer[t];
   virtual fun sgn: t -> int;
   virtual fun abs: t -> t;
 }
 
 // Unsigned Integers
-typeclass Unsigned_integer[t] {
+class Unsigned_integer[t] {
   inherit Integer[t];
   inherit Bits[t];
 }
 
-typeclass Trig[t] {
+class Trig[t] {
   virtual fun sin: t -> t;
   virtual fun cos: t -> t;
   virtual fun tan: t -> t;
@@ -117,7 +117,7 @@ typeclass Trig[t] {
   virtual fun pow: t * t -> t;
 }
 
-typeclass Real[t] {
+class Real[t] {
   inherit Tord[t];
   inherit Trig[t];
   inherit FloatDring[t];
@@ -129,7 +129,7 @@ typeclass Real[t] {
   virtual fun trunc: t -> t;
 }
 
-typeclass Complex[t,r] {
+class Complex[t,r] {
   inherit Eq[t];
   inherit FloatRing[t];
   inherit Trig[t];

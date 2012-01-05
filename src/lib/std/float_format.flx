@@ -1,4 +1,4 @@
-open module float_format
+open class float_format
 {
   union mode =
     | default of int * int

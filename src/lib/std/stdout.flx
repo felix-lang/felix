@@ -1,9 +1,9 @@
-open module Stdout
+open class Stdout
 {
-  // NOTE: this module works on C++ standard streams
+  // NOTE: this class works on C++ standard streams
   // NOT on the streams passed in the thread frame
   // almost certainly this is a bug .. :)
-  // fprint is defined in each types module
+  // fprint is defined in each types class
   requires Cxx_headers::iostream;
   type ostream = "::std::ostream*";
   const cout: ostream = "&::std::cout";

@@ -1,19 +1,19 @@
-typeclass Iterator[it,t] {
+class Iterator[it,t] {
   virtual fun deref: it -> t;
 }
 
-typeclass Forward_iterator[it,t] {
+class Forward_iterator[it,t] {
   inherit Tord[it];
   inherit Forward[it];
   inherit Iterator[it,t];
 }
 
-typeclass Bidirectional_iterator[it,t] {
+class Bidirectional_iterator[it,t] {
   inherit Forward_iterator[it,t];
   inherit Bidirectional[it];
 }
 
-typeclass Sequence[c,it,v] {
+class Sequence[c,it,v] {
   inherit Eq[c];
   inherit Forward_iterator[it,v];
   inherit Container[c,v];
@@ -29,7 +29,7 @@ typeclass Sequence[c,it,v] {
   }
 }
 
-typeclass Reversible_Sequence[c,it,rit,v] {
+class Reversible_Sequence[c,it,rit,v] {
   inherit Sequence[c,it,v];
   inherit Bidirectional_iterator[it,v];
   inherit Bidirectional_iterator[rit,v];
@@ -43,7 +43,7 @@ typeclass Reversible_Sequence[c,it,rit,v] {
 }
 
 
-module Stl
+class Stl
 {
   type pair[k,v] = "::std::pair<?1 const,?2>";
   fun make_pair[k,v]: k * v ->pair[k,v] = "::std::make_pair($1,$2)";

@@ -3,7 +3,7 @@ include "std/posix/errno";
 include "std/posix/time";
 include "std/posix/filestat";
 
-module FileSystem 
+class FileSystem 
 {
   //------------------------------------------------------------
   // File access and create modes

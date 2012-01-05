@@ -7,7 +7,7 @@ else
   include "ERROR: stream requires POSIX or WIN32";
 done
 
-module Stream {
+class Stream {
   requires package "demux";
   requires package "faio";
 
@@ -23,25 +23,25 @@ module Stream {
   // ---------------------------------------------------------------------------
 
   publish "The interface for a readable stream of bytes."
-  typeclass IByteStream[T] {
+  class IByteStream[T] {
     publish "Read N bytes from the stream into the address."
     virtual proc read: T * &int * address * &bool;
   }
 
   publish "The interface for a writable stream of bytes."
-  typeclass OByteStream[T] {
+  class OByteStream[T] {
     publish "Write N bytes from the address into the stream."
     virtual proc write: T * &int * address * &bool;
   }
 
   publish "The interface for a readable and writable stream of bytes."
-  typeclass IOByteStream[T] {
+  class IOByteStream[T] {
     inherit IByteStream[T];
     inherit OByteStream[T];
   }
 
   publish "A readable stream that can have it's read channel closed."
-  typeclass TerminalIByteStream[T] {
+  class TerminalIByteStream[T] {
     inherit IByteStream[T];
 
     publish "Close the input stream."
@@ -49,7 +49,7 @@ module Stream {
   }
 
   publish "A writable stream that can have it's write channel closed."
-  typeclass TerminalOByteStream[T] {
+  class TerminalOByteStream[T] {
     inherit OByteStream[T];
 
     publish "Close the output stream."
@@ -57,7 +57,7 @@ module Stream {
   }
 
   publish "A writable stream that can have it's channels closed."
-  typeclass TerminalIOByteStream[T] {
+  class TerminalIOByteStream[T] {
     inherit TerminalIByteStream[T];
     inherit TerminalOByteStream[T];
 
@@ -327,4 +327,4 @@ module Stream {
     var a = C_hack::cast[address]$ cstr s;
     write(ostream, &slen, a, eof);
   }
-} // module Stream
+} // class Stream

@@ -1,13 +1,13 @@
-//Check typeclasses:inheritance
+//Check classes:inheritance
 //Check inherit:specialisation
 header '#include <iostream>';
 
-typeclass XEq[t] {
+class XEq[t] {
   virtual fun xeq: t * t -> bool;
   virtual fun xne: t * t -> bool;
 }
 
-typeclass XCmp[t] {
+class XCmp[t] {
   inherit XEq[t];
   virtual fun xlt: t * t -> bool;
   virtual fun xgt: t * t -> bool;

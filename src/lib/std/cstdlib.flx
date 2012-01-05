@@ -1,4 +1,4 @@
-open module Cstdlib
+open class Cstdlib
 {
   requires Cxx_headers::cstdlib;
   const RAND_MAX:long;

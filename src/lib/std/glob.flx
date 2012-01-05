@@ -1,7 +1,10 @@
 include "stl/stl_vector";
 
+// Will be deprecated. Posix subsystem provides all the required functionality
+// in conjunction with Re2. We just need a Windows equivalent to get rid of glob.
+// At present, glob works on both posix and windows so we have to keep it.
 
-module glob {
+class glob {
   open Stl_Vector;
   // glob
   requires package "flx_glob";

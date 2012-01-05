@@ -5,7 +5,7 @@
 // But Felix doesn't support automatic int/address conversions
 //
 // So we will (later) use a typeset to fix this!
-module Judy
+class Judy
 {
   requires package "judy";
   requires header "#include <Judy.h>";

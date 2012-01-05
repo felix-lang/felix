@@ -1,4 +1,4 @@
-open module Errno 
+open class Errno 
 {
   pod type errno_t = "int" requires C89_headers::errno_h;
   ctor int : errno_t = "$1";

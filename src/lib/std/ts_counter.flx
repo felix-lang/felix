@@ -1,4 +1,4 @@
-open module Ts_counter
+open class Ts_counter
 {
   type ts_counter = "::flx::pthread::flx_ts_counter_t*";
   ctor ts_counter = "new ::flx::pthread::flx_ts_counter_t;";

@@ -3,7 +3,7 @@ include "std/posix/posix_headers";
 include "std/posix/errno";
 include "std/posix/signal";
 
-module Process {
+class Process {
   open Posix_Signal;
 
   gen popen_in: string -> Text_file::input_text_file = 'popen($1.c_str(), "r")';

@@ -1,4 +1,4 @@
-open module Categ 
+open class Categ 
 {
   // note: in Felix, products are uniquely decomposable, but arrows
   // are not. So we cannot overload based on arrow factorisation.

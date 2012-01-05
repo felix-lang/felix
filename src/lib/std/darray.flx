@@ -1,6 +1,6 @@
 publish "Unbounded Variable length arrays"
 
-open module Darray
+open class Darray
 {
   private struct darray_ctl[T]
   {

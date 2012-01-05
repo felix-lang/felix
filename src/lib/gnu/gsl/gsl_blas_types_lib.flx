@@ -11,7 +11,7 @@ include 'std';
 //#define __GSL_BLAS_TYPES_H__
 header '#include "gsl/gsl_blas_types.h"';
 
-module gsl_blas_types_h
+class gsl_blas_types_h
 {
   open C_hack;
 

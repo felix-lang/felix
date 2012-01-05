@@ -1,11 +1,11 @@
 publish """
-This module provides access to raw C/C++ encodings.
+This class provides access to raw C/C++ encodings.
 Incorrect typing is likely to pass by Felix and
 be trapped by the C/C++ compiler. Incorrect management
 of storage can lead to corruption. The use of the
-C_hack module is necessary for interfacing.
+C_hack class is necessary for interfacing.
 """
-module C_hack
+class C_hack
 {
   publish "C void"
   incomplete type void_t = "void";

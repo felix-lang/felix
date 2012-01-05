@@ -1,7 +1,7 @@
 // Note: shell functions here only work with Bash.
 // However, the system() function always calls sh,
 // and sh is always an ash, which is almost always bash
-module Bash {
+class Bash {
 
   // we can't use single quotes becase there's no way to represent a ' 
   // in a single quoted string .. so we have to use double quotes and

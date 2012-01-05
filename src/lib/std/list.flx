@@ -1,5 +1,5 @@
 publish "List manipulation"
-open module List
+open class List
 {
   union list[T] = | Empty | Cons of T * list[T];
 
@@ -397,7 +397,7 @@ instance[T with Show[T]] Str[List::list[T]] {
 }
 
 publish "Association Lists (lists of pairs)"
-module Assoc_list
+class Assoc_list
 {
   typedef assoc_list[A,B] = List::list[A*B];
 
@@ -429,25 +429,49 @@ module Assoc_list
   ;
 }
 
-module Sexpr 
+class S_expr 
 {
-  union sexpr_node[T] = | Leaf of T | Tree of sexpr[T]; 
-  typedef sexpr[T] = list[sexpr_node[T]];
+  union sexpr[T] = | Leaf of T | Tree of list[sexpr[T]]; 
 
-  // inefficient! Use non-local goto to shortcut
-  fun mem[T with Eq[T]] (x:T, A: sexpr[T]) =>
-    fold_left 
-      (fun (acc:bool) (elt:sexpr[T]) => 
-        match elt with
-        | Leaf ?a => acc or ?a == x
-        | Tree ?b => acc or x \in b
-        endmatch
-      )
-      false 
-      A
+  fun fold_left[T,U] (_f:U->T->U) (init:U) (x:sexpr[T]):U =>
+    match x with
+    | Leaf ?a => _f init a
+    | Tree ?b => List::fold_left (S_expr::fold_left _f) init b
   ;
 
+  proc iter[T] (_f:T->void) (x:sexpr[T]) {
+    match x with
+    | Leaf ?a => _f a;
+    | Tree ?b => List::iter (S_expr::iter _f) b;
+    endmatch;
+  }
+
+  fun map[T,U] (_f:T->U) (x:sexpr[T]):sexpr[U] =>
+    match x with
+    | Leaf ?a => Leaf (_f a)
+    | Tree ?b => Tree ( List::map (S_expr::map _f) b )
+  ;
+
+  instance[T with Eq[T]] Set[sexpr[T],T] {
+    fun mem (elt:T, x:sexpr[T]) = {
+      iter (proc (v:T) {if v == elt goto True;}) x; 
+      return false;
+    True:>
+      return true;
+    }
+  }
+  instance[T with Str[T]] Str[sexpr[T]] {
+    fun str(x:sexpr[T])=>
+      match x with 
+      | Leaf ?a => str a
+      | Tree ?b => str b 
+    ;
+  }
 }
 
+open[T with Str[T]] Str[List::list[T]];
+open[T with Str[T]] Str[S_expr::sexpr[T]];
 open[T with Eq[T]] Set[List::list[T],T];
+open[T with Eq[T]] Set[S_expr::sexpr[T],T];
+
 

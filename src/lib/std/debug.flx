@@ -2,9 +2,13 @@
 // has to be global to simplify compiler hack
 type flx_location_t = "flx::rtl::flx_range_srcref_t";
 
-module Debug
+class Debug
 {
   const FLX_SRCLOC : flx_location_t = "#srcloc";
+    // NOTE: this doesn't actually work! The replacement typically
+    // occurs in the wrong place: one gets the location of FLX_SRCLOC
+    // right here in the debug class .. not useful!
+
   fun filename: flx_location_t -> &char = "$1.filename";
   fun startline: flx_location_t -> int = "$1.startline";
   fun startcol: flx_location_t -> int = "$1.startcol";

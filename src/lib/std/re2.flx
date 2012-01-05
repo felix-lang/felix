@@ -1,6 +1,6 @@
 include "stl/stl_map";
 
-open module Re2 {
+open class Re2 {
   requires package "re2";
 
 // This is an almost full binding of Google's re2 package.

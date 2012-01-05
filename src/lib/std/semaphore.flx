@@ -1,4 +1,4 @@
-open module Semaphore
+open class Semaphore
 {
   requires package "pthread";
   type semaphore = "::flx::pthread::flx_semaphore_t*" requires semaphore_hxx;

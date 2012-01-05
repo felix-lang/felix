@@ -1,6 +1,6 @@
 publish "Compile Time Fixed Length Array"
 
-open module Farray
+open class Farray
 {
   publish "Array type"
   typedef array[t,n] = t ^ n;

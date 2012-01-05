@@ -1,4 +1,4 @@
-open module Schannel 
+open class Schannel 
 {
   // the type of bidirectional, input and output synchronous channels
   _gc_pointer type schannel[t] = "::flx::rtl::schannel_t*";

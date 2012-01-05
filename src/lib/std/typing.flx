@@ -1,4 +1,4 @@
-open module Typing
+open class Typing
 {
   typedef fun dom(t:TYPE):TYPE =>
     typematch t with

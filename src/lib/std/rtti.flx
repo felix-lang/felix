@@ -1,4 +1,4 @@
-module Rtti {
+class Rtti {
   type collector_t = "::flx::gc::generic::collector_t*";
   type gc_shape_t = "::flx::gc::generic::gc_shape_t*";
   fun isNULL: gc_shape_t -> bool = "$1==0";

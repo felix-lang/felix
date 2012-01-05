@@ -1,4 +1,4 @@
-module Lexer
+class Lexer
 {
   pod type iterator = "char const*";
   fun start_iterator : string -> iterator = "$1.c_str()";

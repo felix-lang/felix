@@ -1,4 +1,4 @@
-open module Fibres
+open class Fibres
 {
   private gen _start[t]: (t->0)*t->cont = "$1->clone()->call(0,$2)";
   gen start[t] (p:t->0) (x:t) = { return _start (p,x); }

@@ -4,7 +4,14 @@ include "std/io/faio"; //mutual recursion? Really!
 include "std/io/demux";
 include "std/posix/__init__";
 
-module Faio_posix  {
+// HACKERY -- system job queue: have to move out of class since type classes
+// can't contain variables .. I wonder why? We should remove this restriction.
+val qbound = 20;
+val nthreads = 4;
+val sys_job_queue = Pthread::mk_job_queue(qbound,nthreads);
+
+
+class Faio_posix  {
 header faio_posixio_hpp = '#include "faio_posixio.hpp"';
 requires package "demux";
 requires package "faio";
@@ -13,12 +20,6 @@ open Faio;
 open Pthread;
 open Demux;
 
-/*
-header unistd_h = '#include <unistd.h>';            // close
-header fcntl_h = '#include <fcntl.h>';              // fcntl for O_NONBLOCK
-header sys_stat_h = '#include <fcntl.h>';              // for S_* permissions
-header sys_socket_h = '#include <sys/socket.h>';    // shutdown
-*/
 header sockety_h = '#include "demux_sockety.hpp"';  // my socket utils
 header = '#include "faio_posixio.hpp"';
 
@@ -129,12 +130,6 @@ proc faio_rw(q:job_queue, fd: FileSystem::posix_file, len: &int, buf: address, e
     //print$ f"faio_rw: request %d, actual %d\n" (*len,faio.pb.bytes_done);
     calc_eof(faio.get_pb, len, eof);
 }
-
-// HACKERY -- system job queue
-val qbound = 20;
-val nthreads = 4;
-val sys_job_queue = Pthread::mk_job_queue(qbound,nthreads);
-
 proc faio_read(fd: FileSystem::posix_file, len: &int, buf: address,
     eof: &bool)
 {
@@ -146,4 +141,4 @@ proc faio_write(fd: FileSystem::posix_file, len: &int, buf: address, eof: &bool)
     faio_rw(sys_job_queue, fd, len, buf, eof, false);      // write
 }
 
-} // module faio_posix
+} // class faio_posix

@@ -1,8 +1,8 @@
-//Check typeclasses
+//Check classes
 
 open List;
 
-typeclass Str2[T] {
+class Str2[T] {
   virtual fun str2: T->string;
 }
 

@@ -1,4 +1,4 @@
-module Regdef {
+class Regdef {
   union regex =
   | Alts of list[regex]
   | Seqs of list[regex]

@@ -1,4 +1,4 @@
-open module Carray
+open class Carray
 {
   requires Cxx_headers::cstdlib;
   open C_hack;

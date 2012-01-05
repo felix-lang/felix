@@ -1,4 +1,4 @@
-open module Mutex
+open class Mutex
 {
   requires package "flx_pthread";
   // this needs to be fixed to work with gc but at the

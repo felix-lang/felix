@@ -1,5 +1,5 @@
 publish "System Interface"
-module System
+class System
 {
   const argc:int = "PTF argc";
   const _argv:&&char= "PTF argv";

@@ -1,4 +1,4 @@
-open module Bool
+open class Bool
 {
   fun land: bool * bool -> bool = "$1&&$2";      // x and y
   fun nand: bool * bool -> bool = "!($1&&$2)";   // not (x and y)

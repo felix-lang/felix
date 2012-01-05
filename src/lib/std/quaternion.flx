@@ -1,4 +1,4 @@
-module Quaternion
+class Quaternion
 {
   type quaternion = new double ^ 4;
   ctor quaternion (x:double^4) => _make_quaterion x;

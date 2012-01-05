@@ -1,6 +1,6 @@
 include "std/c_hack";
 
-module Posix_Signal {
+class Posix_Signal {
   requires header '#include <signal.h>';
   type signal_t = "int";
   ctor signal_t: int = "$1";

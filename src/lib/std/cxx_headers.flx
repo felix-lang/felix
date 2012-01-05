@@ -1,4 +1,4 @@
-module Cxx_headers
+class Cxx_headers
 {
   header exception = '#include <exception>';
   header limits = '#include <limits>';

@@ -145,7 +145,7 @@ SCHEME """
 """;
 
 //
-// rti = rtc:type constraint, rtr:typeclass requirement list
+// rti = rtc:type constraint, rtr:class requirement list
 //
 
 SCHEME """

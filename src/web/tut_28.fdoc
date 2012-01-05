@@ -11,3 +11,7 @@ the C++ code, say, adding debugging prints.
 @h2 Debug module
 ...
 
+@h2 Trace
+@felix
+trace name "string";
+@

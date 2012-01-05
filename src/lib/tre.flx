@@ -1,4 +1,4 @@
-module Tre
+class Tre
 {
   open C_hack;
   requires package 'tre';

@@ -1,7 +1,7 @@
 //Check typeclasses
 proc pr[t]:t="std::cout<<$1<<std::endl;" requires Cxx_headers::iostream;
 
-typeclass XEq[t,u] {
+class XEq[t,u] {
   virtual fun xeq: t * u -> 2;
   virtual proc ppp: t;
 }

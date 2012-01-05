@@ -1,7 +1,7 @@
 // reference: Wikipedia: http://en.wikibooks.org/wiki/C_Programming/Reference_Tables#List_of_Standard_Headers 
 
 // ANSI C89 = ISO C90
-module C89_headers 
+class C89_headers 
 {
   header assert_h =   "#include <assert.h>";
   header ctype_h =    "#include <ctype.h>";
@@ -21,7 +21,7 @@ module C89_headers
 }
 
 // ISO C94/95 Amendment 1
-module C95_headers  
+class C95_headers  
 {
   inherit C89_headers;
   header iso646_h =   "#include <iso646.h>";
@@ -30,7 +30,7 @@ module C95_headers
 }
 
 // ISO C99
-module C99_headers 
+class C99_headers 
 {
   inherit C95_headers;
   header complex_h =  "#include <complex.h>";

@@ -1,6 +1,6 @@
-//Check typeclasses
+//Check classes
 
-typeclass XStr[T] {
+class XStr[T] {
   virtual fun str2: T->string;
 }
 

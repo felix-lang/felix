@@ -212,6 +212,7 @@ let copy_used syms bsym_table =
               Some parent
 
             end else begin
+(*
               if parent != 0 then 
               begin 
                 print_endline ("Used symbols parent not marked as used: symbol: " ^ string_of_int bid ^
@@ -231,6 +232,7 @@ let copy_used syms bsym_table =
                    with Not_found -> print_endline "Parent not in bsym_table"
               end
               ;
+*)
               None
             end
       in

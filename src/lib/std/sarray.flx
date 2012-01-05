@@ -1,4 +1,4 @@
-open module Sarray
+open class Sarray
 {
   open Judy;
   private struct sarray_ctl[T] { a: darray[T]; j:JLArray; free:J1Array; dflt:T; };

@@ -1,9 +1,9 @@
-//Check typeclasses:imbue module
-//Check typeclasses:polymorphic methods
+//Check classes:imbue module
+//Check classes:polymorphic methods
 header '#include <iostream>';
 
 
-typeclass XEq[t] {
+class XEq[t] {
   virtual fun xeq: t * t -> bool;
   virtual fun xne: t * t -> bool;
 }

@@ -1,6 +1,6 @@
-//Check typeclasses:polymorphic methods
+//Check classes:polymorphic methods
 
-typeclass X[u] {
+class X[u] {
   virtual fun f[v]: u * v -> int;
 }
 

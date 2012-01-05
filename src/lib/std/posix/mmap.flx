@@ -1,4 +1,4 @@
-module Mmap
+class Mmap
 {
   requires package "mmap";
   header """

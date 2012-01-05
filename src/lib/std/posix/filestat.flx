@@ -1,6 +1,6 @@
 include "std/posix/errno";
 
-module FileStat
+class FileStat
 {
   //------------------------------------------------------------
   // stat

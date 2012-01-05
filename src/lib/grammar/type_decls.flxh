@@ -46,21 +46,6 @@ syntax type_decls {
   sopt_name := sname =># "_1";
   sopt_name := sepsilon =># '""';
 
-  tstatement := "class" sdeclname "=" ? scompound =>#
-    """
-    `(ast_class ,_sr ,(first _2) ,(second _2) ,_4)
-     """;
-
-  tstatement := "typeclass" sdeclname "=" ? scompound =>#
-    """
-    `(ast_typeclass ,_sr ,(first _2) ,(second _2) ,_4)
-     """;
-
-  tstatement := "instance" stvarlist squalified_name "=" ? scompound =>#
-    """
-    `(ast_instance ,_sr ,_2 ,_3 ,_5)
-     """;
-
   tstatement := "union" sdeclname "=" stype_sum_items2 ";" =>#
     """
     `(ast_union ,_sr ,(first _2) ,(second _2) ,_4)

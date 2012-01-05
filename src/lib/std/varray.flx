@@ -1,6 +1,6 @@
 publish "Bounded Variable length arrays, bound set at construction time"
 
-open module Varray
+open class Varray
 {
   _gc_pointer _gc_type t type varray[t] = "?1*";
 

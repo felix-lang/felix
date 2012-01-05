@@ -23,7 +23,7 @@ include "gsl_vector_complex_float_lib";
 include "gsl_vector_double_lib";
 include "gsl_vector_float_lib";
 
-module gsl_blas_h
+class gsl_blas_h
 {
   open C_hack;
   open gsl_blas_types_h;

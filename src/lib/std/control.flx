@@ -1,4 +1,4 @@
-open module Control
+open class Control
 {
   open C_hack;
   publish 'infinite loop'
@@ -72,7 +72,7 @@ open module Control
   private proc _throw: cont = "throw $1;";
 
 
-  // should be private but needed in this module for the data type,
+  // should be private but needed in this class for the data type,
   // and also needed in schannels to do the svc call.
 
   _gc_pointer type _schannel = "::flx::rtl::schannel_t*";

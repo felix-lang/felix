@@ -7,12 +7,12 @@ header monitor_hxx = '#include "pthread_monitor.hpp"';
 header work_fifo_hxx = '#include "pthread_work_fifo.hpp"';
 
 publish """
-This module provides access to the operating system's native
+This class provides access to the operating system's native
 threading routines. On systems with multiple cpus, this may
 increase performance as the operating system may schedule
 threads on different processors.
 """
-open module Pthread
+open class Pthread
 {
   requires package "flx_pthread";
 

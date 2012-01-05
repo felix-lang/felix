@@ -14,7 +14,7 @@ header '#include "gsl/gsl_block_char.h"';
 //INCLUDES
 include "gsl_block_char_struct_lib";
 
-module gsl_block_char_h
+class gsl_block_char_h
 {
   open C_hack;
   open gsl_block_char_struct_h;

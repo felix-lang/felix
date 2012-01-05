@@ -1,5 +1,5 @@
 publish "Mixed Mode arithmentic"
-module MixedInt
+class MixedInt
 {
   fun add[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1+$2";
   fun sub[t1 in fast_ints, t2 in fast_ints]: t1 * t2 -> arithmax(t1,t2)="$1-$2";

@@ -1,5 +1,5 @@
 // CSV reader
-module Csv {
+class Csv {
   open List;
 
   proc get_csv_value(s:string, i:&int,res:&string) {

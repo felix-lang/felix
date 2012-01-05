@@ -1,9 +1,9 @@
-// note: has to be called Fcomplex to avoid clash with typeclass Complex
+// note: has to be called Fcomplex to avoid clash with class Complex
 
 // Note: ideally we'd use constrained polymorphism for the instances..
 // saves typing it all out so many times
 
-open module Fcomplex
+open class Fcomplex
 {
   ctor[t in reals] fcomplex : t * t = "::std::complex<float>($1,$2)";
   ctor[t in reals] fcomplex : t = "::std::complex<float>($1,0)";
@@ -36,7 +36,7 @@ open module Fcomplex
 */
 }
 
-open module Dcomplex
+open class Dcomplex
 {
   ctor[t in reals] dcomplex : t * t = "::std::complex<double>($1,$2)";
   ctor[t in reals] dcomplex : t = "::std::complex<double>($1,0)";
@@ -69,7 +69,7 @@ open module Dcomplex
 */
 }
 
-open module Lcomplex
+open class Lcomplex
 {
   ctor[t in reals] lcomplex : t * t = "::std::complex<long double>($1,$2)";
   ctor[t in reals] lcomplex : t = "::std::complex<long double>($1,0)";
@@ -152,7 +152,7 @@ instance[t in floats] Real[t] {
   fun trunc: t -> t = "::std::trunc($1)";
 }
 
-typeclass CartComplex[r] {
+class CartComplex[r] {
   typedef t = complex[r];
   inherit Complex[t,r];
 }

@@ -1,4 +1,4 @@
-open module Pchannel
+open class Pchannel
 {
   requires package "flx_pthread";
   // pre-emptive thread channels (monitor)

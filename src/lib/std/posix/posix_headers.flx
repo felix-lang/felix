@@ -1,4 +1,4 @@
-module Posix_headers {
+class Posix_headers {
   header aio_h = "#include <aio.h>";
   header arpa_inet_h = "#include <arpa/inet.h>";
   header cpio_h = "#include <cpio.h>";

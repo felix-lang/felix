@@ -1,5 +1,5 @@
 // Bounded sparse array
-open module Bsarray
+open class Bsarray
 {
   private struct bsarray_ctl[T] { a: sarray[T]; n:size; };
   type bsarray[T] = new &bsarray_ctl[T];

@@ -1,4 +1,4 @@
-typeclass ArrayValue[t,v]
+class ArrayValue[t,v]
 {
   virtual fun len: t -> size;
   virtual fun unsafe_get: t * size -> v;
@@ -97,14 +97,14 @@ typeclass ArrayValue[t,v]
 
 }
 
-typeclass ArrayObject[t,v]
+class ArrayObject[t,v]
 {
   inherit ArrayValue[t,v];
   virtual proc unsafe_set: t * size * v;
   proc set[I in ints] (x:t, i:I, a:v) { assert i.size < x.len; unsafe_set (x,i.size,a); } 
 }
 
-typeclass ContiguousArrayObject[t,v]
+class ContiguousArrayObject[t,v]
 {
   inherit ArrayObject[t,v];
   virtual fun stl_begin: t -> &v;

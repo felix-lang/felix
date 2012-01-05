@@ -4940,61 +4940,35 @@ and make_view_table state table vs ts : name_map_t =
   ;
   h
 
-and pub_table_dir state bsym_table env inst_check (invs,i,ts) : name_map_t =
+and pub_table_dir state bsym_table env (invs,i,ts) : name_map_t =
   let invs = List.map (fun (i,n,_)->i,n) (fst invs) in
   let sym = get_data state.sym_table i in
   match sym.Flx_sym.symdef with
   | SYMDEF_root _ 
   | SYMDEF_module _ ->
-    if List.length ts = 0 then sym.Flx_sym.pubmap else
-    begin
-      (*
-      print_endline ("TABLE " ^ id);
-      *)
-      let table = make_view_table state sym.Flx_sym.pubmap invs ts in
-      (*
-      print_name_table state.sym_table table;
-      *)
-      table
-    end
+    let table = 
+      if List.length ts = 0 
+      then sym.Flx_sym.pubmap 
+      else make_view_table state sym.Flx_sym.pubmap invs ts 
+    in
+    table
 
   | SYMDEF_typeclass ->
-    let table = make_view_table state sym.Flx_sym.pubmap invs ts in
+    let table = 
+      if List.length ts = 0 
+      then sym.Flx_sym.pubmap 
+      else make_view_table state sym.Flx_sym.pubmap invs ts 
+    in
     (* a bit hacky .. add the type class specialisation view
        to its contents as an instance
     *)
     let inst = mkentry state sym.Flx_sym.vs i in
     let inst = review_entry state invs ts inst in
     let inst_name = "_inst_" ^ sym.Flx_sym.id in
+
+    (* add inst thing to table *)
     Hashtbl.add table inst_name (FunctionEntry [inst]);
-    if inst_check then begin
-      if state.print_flag then
-        print_endline ("Added typeclass " ^ string_of_bid i ^
-          " as instance " ^ inst_name ^": " ^
-          string_of_myentry bsym_table inst);
-      let luqn2 qn =
-        try
-          Some (lookup_qn_in_env2' state bsym_table env rsground qn)
-        with _ -> None
-      in
-      let res = luqn2 (`AST_name (sym.Flx_sym.sr, inst_name, [])) in
-      match res with
-      | None ->
-          clierr sym.Flx_sym.sr ("Couldn't find any instances to open for " ^
-            sym.Flx_sym.id ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]"
-        )
-      | Some (es,_) ->
-          check_instances
-            state
-            bsym_table
-            sym.Flx_sym.sr
-            "open"
-            sym.Flx_sym.id
-            es
-            ts
-            (mk_bare_env state bsym_table)
-      end;
-      table
+    table
 
   | _ ->
       clierr sym.Flx_sym.sr "[map_dir] Expected module"
@@ -5004,7 +4978,7 @@ and get_pub_tables state bsym_table env rs dirs =
   let _,includes,_ = split_dirs rs.open_excludes dirs in
   let xs = uniq_list (List.map (bind_dir state bsym_table env rs) includes) in
   let includes = get_includes state bsym_table rs xs in
-  let tables = List.map (pub_table_dir state bsym_table env false) includes in
+  let tables = List.map (pub_table_dir state bsym_table env ) includes in
   tables
 
 and mk_bare_env state bsym_table index =
@@ -5040,7 +5014,7 @@ and merge_directives state bsym_table rs env dirs typeclasses =
       (*
       print_endline "includes got, doing pub_table_dir";
       *)
-      let tables = List.map (pub_table_dir state bsym_table !env false) u in
+      let tables = List.map (pub_table_dir state bsym_table !env ) u in
       (*
       print_endline "pub table dir done!";
       *)
@@ -5138,7 +5112,7 @@ and merge_opens state bsym_table env rs (typeclasses,opens,includes,uses) =
   let u = get_includes state bsym_table rs u in
 
   (* convert the i,ts list to a list of lookup tables *)
-  let tables = List.map (pub_table_dir state bsym_table env false) u in
+  let tables = List.map (pub_table_dir state bsym_table env ) u in
 
   (* return the list with the explicitly renamed symbols prefixed
      so they can be used for clash resolution

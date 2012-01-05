@@ -1,4 +1,4 @@
-module Faio {
+class Faio {
   requires package "demux";
   requires package "faio";
 
@@ -38,11 +38,13 @@ module Faio {
   fun mk_alarm_clock: 1 -> alarm_clock = '::flx::demux::mk_timer_queue()';
   fun mk_sleep_request: alarm_clock * double -> sleep_request = '::flx::faio::sleep_request($1,$2)';
 
-  var sys_clock = mk_alarm_clock();
-
   proc sleep(clock: alarm_clock, delta: double)
   {
     var sr = mk_sleep_request$ clock,delta;
     faio_req$ &sr;
   }
-} // module faio
+} // class faio
+
+var sys_clock = Faio::mk_alarm_clock();
+
+

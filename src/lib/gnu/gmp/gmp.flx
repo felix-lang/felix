@@ -53,7 +53,7 @@ namespace flx { namespace gmp {
 """;
 
 
-module Gmp
+class Gmp
 {
   requires gmpxx_h;
   requires package "gmpxx";
