@@ -1,4 +1,5 @@
 type bexpr_t = private
+  | BEXPR_not of t
   | BEXPR_deref of t
   | BEXPR_name of Flx_types.bid_t * Flx_btype.t list
   | BEXPR_ref of Flx_types.bid_t * Flx_btype.t list
@@ -30,6 +31,9 @@ type bexpr_t = private
 and t = bexpr_t * Flx_btype.t
 
 (* -------------------------------------------------------------------------- *)
+
+(** Construct a BEXPR_not expression. *)
+val bexpr_not : t -> t
 
 (** Construct a BEXPR_deref expression. *)
 val bexpr_deref : Flx_btype.t -> t -> t

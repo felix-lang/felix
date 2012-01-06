@@ -148,8 +148,8 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_expr _ -> e
   | EXPR_type_match _ -> e
   | EXPR_range_check (sr,mi,v,mx) -> EXPR_range_check (sr, f mi, f v, f mx)
-
-
+  | EXPR_not (sr,e) -> EXPR_not (sr, f e)
+  
 let iter_expr f (e:expr_t) =
   f e;
   match e with
@@ -190,6 +190,7 @@ let iter_expr f (e:expr_t) =
   | EXPR_new (_,x)
   | EXPR_lookup (_,(x,_,_))
   | EXPR_coercion (_, (x,_))
+  | EXPR_not (_,x) 
     -> f x
 
   | EXPR_letin (_,(_,a,b))

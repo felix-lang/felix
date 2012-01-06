@@ -1,4 +1,5 @@
 type bexpr_t =
+  | BEXPR_not of t
   | BEXPR_deref of t
   | BEXPR_name of Flx_types.bid_t * Flx_btype.t list
   | BEXPR_ref of Flx_types.bid_t * Flx_btype.t list
@@ -32,6 +33,8 @@ and t = bexpr_t * Flx_btype.t
 (* -------------------------------------------------------------------------- *)
 
 let bexpr_deref t e : t = BEXPR_deref e, t
+
+let bexpr_not (e,t) : t = BEXPR_not (e,t), t
 
 let bexpr_name t (bid, ts) = BEXPR_name (bid, ts), t
 
@@ -122,6 +125,7 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_variant (s,e),BEXPR_variant (s',e') ->
     s = s' && cmp e e'
 
+  | BEXPR_not (e),BEXPR_not (e') 
   | BEXPR_deref e,BEXPR_deref e' -> cmp e e'
 
   | BEXPR_name (i,ts),BEXPR_name (i',ts')
@@ -180,6 +184,7 @@ let flat_iter
   ?(f_bexpr=fun _ -> ())
   ((x,t) as e) =
   match x with
+  | BEXPR_not e -> f_bexpr e
   | BEXPR_deref e -> f_bexpr e
   | BEXPR_ref (i,ts) ->
       f_bid i;
@@ -256,6 +261,7 @@ let map
   e
 =
   match e with
+  | BEXPR_not e,t -> BEXPR_not (f_bexpr e), f_btype t
   | BEXPR_deref e,t -> BEXPR_deref (f_bexpr e), f_btype t
   | BEXPR_ref (i,ts),t -> BEXPR_ref (f_bid i, List.map f_btype ts), f_btype t
   | BEXPR_new e,t -> BEXPR_new (f_bexpr e), f_btype t
@@ -301,6 +307,7 @@ let rec reduce e =
     | BEXPR_apply ((BEXPR_closure (i,ts),_),a),t ->
         BEXPR_apply_direct (i,ts,a),t
     *)
+    | BEXPR_not (BEXPR_not (e,t1),t2),t3 when t1 = t2 && t2 = t3 -> e,t1 (* had better be bool! *)
     | BEXPR_get_n (n,((BEXPR_tuple ls),_)),_ -> List.nth ls n
     | BEXPR_deref (BEXPR_ref (i,ts),_),t -> BEXPR_name (i,ts),t
     | BEXPR_deref (BEXPR_address (e,t),_),_ -> (e,t)
@@ -319,6 +326,8 @@ let rec reduce e =
 (* -------------------------------------------------------------------------- *)
 
 and print_bexpr f = function
+  | BEXPR_not e ->
+      Flx_format.print_variant1 f "BEXPR_not" print e
   | BEXPR_deref e ->
       Flx_format.print_variant1 f "BEXPR_deref" print e
   | BEXPR_name (bid, ts) ->

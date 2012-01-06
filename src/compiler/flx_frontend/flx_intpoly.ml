@@ -84,6 +84,7 @@ let rec check_abstract_expr syms rls ((x,t) as e) =
   let ft t = check_abstract_type syms rls t in
   check_abstract_type syms rls t;
   match x with
+  | BEXPR_not e -> fe e
   | BEXPR_deref e -> fe e
   | BEXPR_ref (i,ts) -> fi i
   | BEXPR_likely e -> fe e

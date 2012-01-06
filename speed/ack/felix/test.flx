@@ -1,5 +1,5 @@
 // Felix Performance Test Program
-include "std/time";
+include "std/posix/__init__";
 
 fun ack(x:int,y:int):int =>
   if x == 0 then y + 1

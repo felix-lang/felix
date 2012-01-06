@@ -224,6 +224,10 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
     let l1,x1 = rex e in
     l1, EXPR_ref (sr,x1)
 
+  | EXPR_not (sr,e) ->
+    let l1, x1 = rex e in
+    l1, EXPR_not (sr,x1)
+
   | EXPR_likely (sr,e) ->
     let l1,x1 = rex e in
     l1, EXPR_likely (sr,x1)
@@ -537,18 +541,15 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
             patsrc,
             EXE_ifgoto
             (
-              EXPR_apply
+              EXPR_not
               (
                 patsrc,
+                EXPR_apply
                 (
-                  EXPR_name (patsrc,"lnot",[]),
-                  EXPR_apply
+                  patsrc,
                   (
-                    patsrc,
-                    (
-                      match_checker,
-                      EXPR_tuple (patsrc,[])
-                    )
+                    match_checker,
+                    EXPR_tuple (patsrc,[])
                   )
                 )
               ),
@@ -1286,18 +1287,15 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
             patsrc,
             EXE_ifgoto
             (
-              EXPR_apply
+              EXPR_not
               (
                 patsrc,
+                EXPR_apply
                 (
-                  EXPR_name (patsrc,"lnot",[]),
-                  EXPR_apply
+                  patsrc,
                   (
-                    patsrc,
-                    (
-                      match_checker,
-                      EXPR_tuple (patsrc,[])
-                    )
+                    match_checker,
+                    EXPR_tuple (patsrc,[])
                   )
                 )
               ),

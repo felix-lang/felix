@@ -567,6 +567,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
 
   | EXPR_typeof (sr,e) -> EXPR_typeof (sr, me e)
   | EXPR_range_check (sr, mi, v, mx) -> EXPR_range_check (sr, me mi, me v, me mx)
+  | EXPR_not (sr,e) -> EXPR_not (sr, me e)
 
 and rqmap me reqs =
   let r req = rqmap me req in
@@ -959,7 +960,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
     | _ ->
       let n = !seq in incr seq;
       let lab = "_ifret_" ^ string_of_int n in
-      ctack (STMT_ifgoto (sr, EXPR_apply(sr,(EXPR_name (sr,"lnot",[]), e)), lab));
+      ctack (STMT_ifgoto (sr, EXPR_not (sr,e) , lab));
       ctack (STMT_proc_return sr);
       ctack (STMT_label (sr,lab))
     end
@@ -991,7 +992,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
          So we must tack, not ctack, the code of the inner
          compound statements, they're NOT blocks.
       *)
-      ctack (STMT_ifgoto (sr, EXPR_apply (sr,(EXPR_name (sr,"lnot",[]),e)), lab1));
+      ctack (STMT_ifgoto (sr, EXPR_not (sr,e), lab1));
       let r1 = ref !reachable in
       List.iter tack (ms' r1 sts1);
       if !r1 then tack (STMT_goto (sr,lab2));

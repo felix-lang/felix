@@ -241,6 +241,8 @@ let const_fold' e sr name arg =
 let rec const_fold e =
   let e' = map_expr const_fold e in
   match e' with
+  | EXPR_not (sr, EXPR_not (sr2, e)) -> e (* could do more here .. *)
+
   | EXPR_apply (sr, (EXPR_name (_,name,[]),arg)) ->
     const_fold' e sr name arg
 

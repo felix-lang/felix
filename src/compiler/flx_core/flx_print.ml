@@ -128,6 +128,7 @@ and string_of_expr (e:expr_t) =
   let sme e = string_of_expr e in
   let sqn e = string_of_qualified_name e in
   match e with
+  | EXPR_not (sr,e) -> "not(" ^ se e ^ ")"
   | EXPR_index (sr,name,idx) -> name ^ "<" ^ string_of_bid idx ^ ">"
   | EXPR_void _ -> "void"
   | EXPR_name (_,name,ts) ->
@@ -1796,6 +1797,7 @@ and string_of_bound_expression' bsym_table se e =
 
   | BEXPR_get_n (n,e') -> "(" ^ se e' ^ ").mem_" ^ si n
 
+  | BEXPR_not e -> "not("^ se e ^ ")"
   | BEXPR_deref e -> "*("^ se e ^ ")"
   | BEXPR_name (i,ts) -> sid i ^ string_of_inst bsym_table ts
   | BEXPR_closure (i,ts) -> sid i ^ string_of_inst bsym_table ts

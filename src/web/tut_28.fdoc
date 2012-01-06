@@ -12,6 +12,18 @@ the C++ code, say, adding debugging prints.
 ...
 
 @h2 Trace
+Felix has a special trace command:
 @felix
+var name = "FELIX";
 trace name "string";
+@
+To use this you must compile with the FLX_ENABLE_TRACE macro defined:
+@pre
+flx -DFLX_ENABLE_TRACE abc
+@
+which prints something like:
+@pre
+1 : TRACE: hello
+Felix location: ./abc.flx 2[1]-2[16]
+C++ location  : ./abc.cpp 76
 @

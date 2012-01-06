@@ -218,37 +218,6 @@ let rec gen_expr'
     bsym_table
     (beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst this_vs this_ts t))
   in
-
-  (* TO BE REPLACE BY Flx_vgen.gen_case_index *)
-(*
-  let gen_case_index e =
-    let _,t = e in
-    begin match t with
-    | BTYP_sum _
-    | BTYP_unitsum _
-    | BTYP_variant _ ->
-      if is_unitsum t then ge' e
-      else ce_dot (ge' e) "variant"
-    | BTYP_inst (i,ts) ->
-      let ts = map tsub ts in
-      let bsym =
-        try Flx_bsym_table.find bsym_table i with Not_found ->
-          failwith ("[gen_expr: case_index] Can't find index " ^
-            string_of_bid i)
-      in
-      begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_union (bvs,cts) ->
-        let tsub' t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst bvs ts t) in
-        let cts = map (fun (_,_,t) -> tsub' t) cts in
-        if all_voids cts then ge' e
-        else ce_dot (ge' e) "variant"
-      | _ -> failwith ("Woops expected union, got " ^ Flx_bsym.id bsym)
-      end
-    | _ -> failwith ("Woops expected union or sum, got " ^ sbt bsym_table t)
-    end
-
-  in
-*)
   let ge_arg ((x,t) as a) =
     let t = tsub t in
     match t with
@@ -387,14 +356,12 @@ let rec gen_expr'
     let x = Flx_vgen.gen_get_case_index ge' bsym_table e in
     ce_infix "==" x (ce_atom (si n))
 
-    (*
-    if is_unitsum t' then
-      ce_infix "==" (ge' e) (ce_atom (si n))
-    else
-      ce_infix "=="
-      (ce_dot (ge' e) "variant")
-      (ce_atom (si n))
-    *)
+  | BEXPR_not (BEXPR_match_case (n,((e',t') as e)),_) ->
+    let t' = beta_reduce syms.Flx_mtypes2.counter bsym_table sr t' in
+    let x = Flx_vgen.gen_get_case_index ge' bsym_table e in
+    ce_infix "!=" x (ce_atom (si n))
+
+  | BEXPR_not e -> print_endline "Generating NOT"; ce_prefix "!" (ge' e)
 
   | BEXPR_case_arg (n,e) ->
     (*
@@ -800,35 +767,6 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
           t' is the function type of the constructor,
           t'' is the type of the argument
        *)
-(*
-       let arg_typename = tn t'' in
-       let union_typename = tn t in
-       let aval =
-         "new (*PTF gcp, "^arg_typename^"_ptr_map,true) " ^
-         arg_typename ^ "(" ^ ge_arg (a,t'') ^ ")"
-       in
-       let uval =
-         if is_unitsum t then
-           si v
-         else
-         "::flx::rtl::_uctor_(" ^ si v ^ ", " ^ aval ^")"
-       in
-       let s = "(" ^ union_typename ^ ")" ^ uval in
-       ce_atom s
-
-       (*
-       failwith
-       (
-         "Trapped application, case " ^
-         si v ^
-         " of " ^ sbt bsym_table t ^
-         "\ntype " ^ sbt bsym_table t' ^
-         "\nargument=" ^
-         string_of_bound_expression sym_table (a,t'') ^
-         "\ntype " ^ sbt bsym_table t''
-       )
-      *)
-*)
   | BEXPR_apply_prim (index,ts,arg) ->
     gen_apply_prim
       syms
@@ -872,34 +810,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
       *)
       let ts = map tsub ts in
       let ct = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts ct) in
-(*
-      let _,t = a in
-      let t = beta_reduce syms.Flx_mtypes2.counter bsym_table sr (tsubst vs ts t) in
-*)
       Flx_vgen.gen_make_nonconst_ctor ge' tn syms bsym_table udt cidx ct a 
-(*
-      begin match ct with
-      | BTYP_tuple [] ->
-        ce_atom ( "::flx::rtl::_uctor_(" ^ si cidx ^ ", NULL)")
-
-      (* function types are already pointers .. any use of this
-         should do a clone .. class types are also pointers ..
-      *)
-      | BTYP_function _ ->
-        ce_atom (
-          "::flx::rtl::_uctor_(" ^ si cidx ^ ", " ^ ge a ^")"
-        )
-
-      | _ ->
-        let ctt = tn ct in
-        let ptrmap = shape_of syms bsym_table tn ct in
-        let txt =
-           "::flx::rtl::_uctor_(" ^ si cidx ^ ", new(*PTF gcp,"^ ptrmap^",true)"^
-           ctt ^"("^ ge a ^"))"
-        in
-        ce_atom txt
-      end
-*)
     | _ -> assert false
     end
 
@@ -1291,3 +1202,6 @@ and gen_expr syms bsym_table this vs ts sr e : string =
     ("[gen_expr] Unknown precedence name '"^p^"' in " ^ sbe bsym_table e)
   in
   string_of_cexpr s
+
+
+

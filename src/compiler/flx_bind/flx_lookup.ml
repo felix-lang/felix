@@ -3822,6 +3822,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
 
   | EXPR_likely (srr,e) -> bexpr_likely (be e)
   | EXPR_unlikely (srr,e) -> bexpr_unlikely (be e)
+  | EXPR_not (sr,e) -> bexpr_not (be e)
 
   | EXPR_ref (_,(EXPR_deref (_,e))) -> be e
   | EXPR_ref (srr,e) ->

@@ -226,10 +226,51 @@ let ce_top s = ce_expr "expr" s
 let ce_dot e s = ce_infix "." e (ce_atom s)
 let ce_arrow e s = ce_infix "->" e (ce_atom s)
 
-let string_of_cexpr e = cep 1000 e
 let sc p e = cep (find_prec p) e
 let ce p s = ce_expr p s
 
 let genprec ct prec =
   try Hashtbl.find prec_remap ct
   with Not_found -> ct,prec
+
+(* WARNING: These reductions only work for code that obeys C semantics, i.e. it will
+   NOT work for all possible overloads of C++ operations: it should be OK provided
+   the C++ code follows the C semantic mode. Eg x + 0 -> x is always ok in C.
+   Similarly !(x = y) -> x != y is always ok in C.
+   In C++ anything could happen.
+
+   Our excuse here is that these combinators can ONLY be introduce by Felix
+   compiler OR Felix code combining bound operations. The compiler always generates
+   code for C.
+
+   Felix programmers combining stuff bound to C++ code should ensure that non-conforming
+   operations are OPAQUE. Generally, this will be true because the combinations
+   are all done with string substitution, not these combinators.
+
+   We need to be a bit careful the Felix compiler doesn't analyse C binding strings
+   too hard and try to remodel them with combinators. It already DOES analyse them
+   in order to establish precedences. See above!
+*)
+let rec reduce (e:cexpr_t) : cexpr_t =
+  let r e = reduce e in
+  match e with (* this would be better if it were bottom up rather than top down *)
+  (* flip comparisons *)
+  | `Ce_prefix ("!", (`Ce_infix ("==", e1, e2))) -> r (`Ce_infix ("!=", e1, e2))
+  | `Ce_prefix ("!", (`Ce_infix ("!=", e1, e2))) -> r (`Ce_infix ("==", e1, e2))
+
+  | `Ce_prefix (s,e) -> `Ce_prefix (s,r e)
+
+  | `Ce_infix (s,e1,e2) -> `Ce_infix (s,r e1, r e2)
+
+  | `Ce_postfix (s,e) -> `Ce_postfix (s, r e)
+  | `Ce_call (e1,es) -> `Ce_call (r e1, List.map r es)
+  | `Ce_array (e1,e2) -> `Ce_array (r e1, r e2)
+  | `Ce_cond (c,e1,e2) -> `Ce_cond (r c, r e1, r e2)
+  | `Ce_cast(s,e) -> `Ce_cast (s, r e)
+
+  | _ -> e
+
+  
+let string_of_cexpr e = cep 1000 (reduce e)
+
+ 

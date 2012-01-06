@@ -21,3 +21,5 @@ val ce_arrow : cexpr_t -> string -> cexpr_t
 exception Unknown_prec of prec_t
 
 val genprec: string -> prec_t -> string * prec_t
+val reduce: cexpr_t -> cexpr_t
+

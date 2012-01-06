@@ -548,11 +548,7 @@ and xstatement_t sr x : statement_t =
   let xucmp x = xunion_component sr x in
   let xscmp x = xstruct_component sr x in
   let xp x = xpattern_t x in
-  let lnot sr x =
-    EXPR_apply (
-      sr,
-      (EXPR_name (sr, Flx_id.of_string "lnot", []), x))
-  in
+  let lnot sr x = EXPR_not (sr, x) in
   match x with
   | Lst [] -> STMT_nop(sr,"null")
   | Lst [Id "ast_include"; sr; Str s] -> STMT_include (xsr sr, s)

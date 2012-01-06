@@ -164,6 +164,7 @@ and expr_t =
   | EXPR_dot of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_lambda of Flx_srcref.t * (vs_list_t * params_t list * typecode_t * statement_t list)
   | EXPR_range_check of Flx_srcref.t * expr_t * expr_t * expr_t
+  | EXPR_not of Flx_srcref.t * expr_t
 
   (* this boolean expression checks its argument is
      the nominated union variant .. not a very good name for it
