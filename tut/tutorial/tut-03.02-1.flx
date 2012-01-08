@@ -16,7 +16,7 @@ println (1 > 2); println (gt (1,2));  // greater
 println (1 <= 2); println (le (1,2));  // less or equal
 println (1 >= 2); println (ge (1,2));  // greater or equal
 // bitwise
-println (~0x01tu); println (bnot 0x01tu);  // bitwise complement
+println (~0x01tu);        println (bnot (0x01tu));      // bitwise complement
 println (0x23u \& 0x0fu); println (band (0x23u,0x0fu)); // bitwise and
 println (0x23u \| 0x0fu); println (bor (0x23u,0x0fu));  // bitwise or
-println (0x23u \^ 0x0fu); println (bxor (0x23u,0x0fu));  // bitwise xor
+println (0x23u \^ 0x0fu); println (bxor (0x23u,0x0fu)); // bitwise xor

@@ -76,7 +76,7 @@ syntax cbind {
     )
     """;
 
-  tstatement:= stype_qual* "type" sdeclname = scode_spec srequires_clause ";" =>#
+  tstatement:= stype_qual* "type" sdeclname "=" scode_spec srequires_clause ";" =>#
     """
     `(ast_abs_decl ,_sr ,(first _3) ,(second _3) ,_1 ,_5 ,_6)
     """;
@@ -118,7 +118,7 @@ syntax cbind {
   satom := sexpr_code_prefix sname =># "`(ast_expr ,_sr ,_2 ,_1)";
 
   // note: also needed by typeclasses atm for virtual consts
-  tstatement := sadjectives "const" sdeclname ":" stypeexpr = scode_spec srequires_clause ";" =>#
+  tstatement := sadjectives "const" sdeclname ":" stypeexpr "=" scode_spec srequires_clause ";" =>#
     """
       (let ((reqs (if (memv 'Virtual _1)
         `(rreq_and (rreq_atom (Property_req "virtual")) ,_8)

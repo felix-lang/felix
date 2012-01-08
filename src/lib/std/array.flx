@@ -103,7 +103,7 @@ open class Farray
 
   // equality
   instance[T,N with Eq[T]] Eq[array[T, N]] {
-    fun eq(xs:array[T,N],ys:array[T,N]) = {
+    fun == (xs:array[T,N],ys:array[T,N]) = {
       val n = xs.len;
       // assert n == ys.len;
       if n == 0uz do
@@ -119,7 +119,7 @@ open class Farray
 
   // total ordering 
   instance[T,N with Tord[T]] Tord[array[T,N]] {
-    fun lt(xs:array[T,N],ys:array[T,N]) = {
+    fun < (xs:array[T,N],ys:array[T,N]) = {
       val n = xs.len;
       if n == 0uz do return false; done
       // assert n == ys.len;

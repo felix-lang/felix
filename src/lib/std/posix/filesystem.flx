@@ -22,8 +22,8 @@ class FileSystem
   const O_NOFOLLOW   : file_perm_t;
   const O_SYMLINK    : file_perm_t;
   const O_EVTONLY    : file_perm_t;
-  fun band : file_perm_t * file_perm_t -> file_perm_t = "$1&$2";
-  fun bor  : file_perm_t * file_perm_t -> file_perm_t = "$1|$2";
+  fun \& : file_perm_t * file_perm_t -> file_perm_t = "$1&$2";
+  fun \|  : file_perm_t * file_perm_t -> file_perm_t = "$1|$2";
 
   //------------------------------------------------------------
   // File I/O functions

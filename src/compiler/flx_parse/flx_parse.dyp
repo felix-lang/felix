@@ -215,6 +215,9 @@ let load_scheme_defs env scm =
 %token <'obj Dyp.dyplexbuf> HASH_INCLUDE
 %token DUMMY
 
+/* This stuff is only needed to specify the type of the RHS elements of
+   an extensible grammar production, i.e. for parsing the Felix grammar.
+*/
 %token QUEST
 %constructor Obj_keyword %for QUEST
 %token PLUS
@@ -260,10 +263,11 @@ let load_scheme_defs env scm =
 %token UNDERSCORE
 %constructor Obj_keyword %for UNDERSCORE
 
-
+/* 
 %token FUN
 %constructor Obj_keyword %for FUN
 
+*/
 
 /* top level entry */
 %constructor Obj_sexpr %for sterm
@@ -331,19 +335,6 @@ let ordinary = letter | digit | hichar |
   '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
   '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_' |
   '`' | '{' | '|' | '}' | '~'
-
-/* any sequence of these characters makes one or more tokens */
-/* MISSING: # should be in here, but can't be supported atm
-  because preprocessor # uses a conditional, and just errors
-  out if the # isn't at the start of a line .. needs fixing,
-  not sure how to fix it
-*/
-
-let symchar =
-  '!' | '$' | '%' | '&' | '(' | ')' | '*' |
-  '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
-  '=' | '>' | '?' | '@' | '[' | ']' | '^' |
-  '`' | '{' | '|' | '}' | '~' | '#' | '\\'
 
 let printable = ordinary | quote | dquote | slosh | hash
 
@@ -514,26 +505,6 @@ and parse_C_comment count = parse
 
 
 main lexer =
-  "_" -> UNDERSCORE
-  "?" -> QUEST
-  "(" -> LPAR
-  ")" -> RPAR
-  "[" -> LSQB
-  "]" -> RSQB
-  "{" -> LBRACE
-  "}" -> RBRACE
-  "," -> COMMA
-  "+" -> PLUS
-  "*" -> STAR
-  "=" -> EQUAL
-  "==" -> EQEQUAL
-  "!=" -> NOTEQUAL
-  "|" -> VBAR
-  "<" -> LESS
-  ">" -> GREATER
-  "<=" -> LESSEQUAL
-  ">=" -> GREATEREQUAL
-
 /* eof is not eaten up, so parent will find eof and emit ENDMARKER */
  "//" not_newline * (newline | eof) -> {
       incr_lineno lexbuf 1
@@ -678,6 +649,36 @@ main lexer =
 */
  identifier -> NAME { Flx_utf.utf8_to_ucn (lexeme lexbuf) }
  slosh letter+ -> NAME { lexeme lexbuf }
+ "+" -> NAME { lexeme lexbuf }
+ "-" -> NAME { lexeme lexbuf }
+ "*" -> NAME { lexeme lexbuf }
+ "/" -> NAME { lexeme lexbuf }
+ "%" -> NAME { lexeme lexbuf }
+ "^" -> NAME { lexeme lexbuf }
+ "~" -> NAME { lexeme lexbuf }
+ "\\&" -> NAME { lexeme lexbuf }
+ "\\|" -> NAME { lexeme lexbuf }
+ "\\^" -> NAME { lexeme lexbuf }
+/* mutator */
+ "&=" -> NAME { lexeme lexbuf }
+ "|=" -> NAME { lexeme lexbuf }
+ "+=" -> NAME { lexeme lexbuf }
+ "-=" -> NAME { lexeme lexbuf }
+ "*=" -> NAME { lexeme lexbuf }
+ "/=" -> NAME { lexeme lexbuf }
+ "%=" -> NAME { lexeme lexbuf }
+ "^=" -> NAME { lexeme lexbuf }
+ "<<=" -> NAME { lexeme lexbuf }
+ ">>=" -> NAME { lexeme lexbuf }
+/* comparison */
+ "<" -> NAME { lexeme lexbuf }
+ ">" -> NAME { lexeme lexbuf }
+ "==" -> NAME { lexeme lexbuf }
+ "!=" -> NAME { lexeme lexbuf }
+ "<=" -> NAME { lexeme lexbuf }
+ ">=" -> NAME { lexeme lexbuf }
+ "<<" -> NAME { lexeme lexbuf }
+ ">>" -> NAME { lexeme lexbuf }
 
 /* whitespace */
  white+ -> { () }
@@ -856,14 +857,14 @@ opt_private:
   | { `Public }
 
 opt_prio:
-  | LSQB NAME RSQB { `Priority $2 }
+  | "[" NAME "]" { `Priority $2 }
   | { `Default }
 
 pri:
   | NAME { $1 }
 
 prilist:
-  | pri LESS prilist { $1 :: $3 }
+  | pri "<" prilist { $1 :: $3 }
   | pri { [$1] }
 
 dyprod:
@@ -875,7 +876,7 @@ dyprod:
        `Scheme_rule ($1, $2, $3, `Sval, $5)
      }
 
-   | opt_private NAME opt_prio ":" NAME EQUAL dyalts ";"
+   | opt_private NAME opt_prio ":" NAME "=" dyalts ";"
      {
        if $5 <> "string" then raise Giveup;
        (*
@@ -925,11 +926,11 @@ dyalt:
 
 dyaltlist:
    | { [] }
-   | VBAR dyalt dyaltlist { $2 :: $3 }
+   | "|" dyalt dyaltlist { $2 :: $3 }
 
 dyalts:
    | dyalt dyaltlist { $1 :: $2 }
-   | VBAR dyalt dyaltlist { $2 :: $3 }
+   | "|"  dyalt dyaltlist { $2 :: $3 }
 
 rhs:
   | rhs_term { [$1] }
@@ -937,29 +938,29 @@ rhs:
 
 rhs_term :
   | rhs_atom { `Atom $1 }
-  | LPAR dyalts RPAR { `Group $2 }
+  | "(" dyalts ")" { `Group $2 }
 
 rhs_atom:
   | NAME { NAME $1 } /* arbitrary nonterminal */
   | STRING { STRING $1 } /* the string as an identifier */
-  | QUEST { QUEST }
-  | PLUS { PLUS }
-  | STAR { STAR }
-  | LPAR { LPAR }
-  | RPAR { RPAR }
-  | LSQB { LSQB }
-  | RSQB { RSQB }
-  | LBRACE { LBRACE }
-  | RBRACE { RBRACE }
-  | COMMA { COMMA }
-  | LESS { LESS }
-  | GREATER { GREATER }
-  | EQUAL { EQUAL }
-  | EQEQUAL { EQEQUAL }
-  | NOTEQUAL { NOTEQUAL }
-  | LESSEQUAL { LESSEQUAL }
-  | GREATEREQUAL { GREATEREQUAL }
-  | UNDERSCORE { UNDERSCORE }
+  | "?"{ QUEST }
+  | "+" { PLUS }
+  | "*" { STAR }
+  | "(" { LPAR }
+  | ")" { RPAR }
+  | "[" { LSQB }
+  | "]" { RSQB }
+  | "{" { LBRACE }
+  | "}" { RBRACE }
+  | "," { COMMA }
+  | "<" { LESS }
+  | ">" { GREATER }
+  | "=" { EQUAL }
+  | "==" { EQEQUAL }
+  | "!=" { NOTEQUAL }
+  | "<=" { LESSEQUAL }
+  | ">=" { GREATEREQUAL }
+  | "_" { UNDERSCORE }
 
 utstatement:
   | "SCHEME" STRING
@@ -991,7 +992,7 @@ utstatement:
     }
 
 tstatement:
-  | "syntax" NAME LBRACE dyprods RBRACE
+  | "syntax" NAME "{" dyprods "}"
     @{
       (* NOTE ORDER!! dyprods is reversed, but the fold reverses it again *)
       (*
@@ -1218,7 +1219,7 @@ basic_name:
   | NAME { getsr dyp, $1 }
 
 basic_name_comma_list:
-  | basic_name COMMA basic_name_comma_list { $1 :: $3 }
+  | basic_name "," basic_name_comma_list { $1 :: $3 }
   | basic_name { [$1] }
 
 epsilon: | { () }

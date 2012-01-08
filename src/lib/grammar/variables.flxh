@@ -1,7 +1,7 @@
 syntax variables {
   requires statements, executable;
 
-  tstatement := "val" sname sname_suffix = sexpr ";" =>#
+  tstatement := "val" sname sname_suffix "=" sexpr ";" =>#
     """
     (let
       (
@@ -29,12 +29,12 @@ syntax variables {
     )))
     """;
 
-  tstatement := "val" sdeclname = sexpr ";" =>#
+  tstatement := "val" sdeclname "=" sexpr ";" =>#
     """
     `(ast_val_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
      """;
 
-  tstatement := "val" sdeclname ":" stypeexpr = sexpr ";" =>#
+  tstatement := "val" sdeclname ":" stypeexpr "=" sexpr ";" =>#
     """
     `(ast_val_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
      """;
@@ -64,7 +64,7 @@ syntax variables {
     `(ast_lazy_decl ,(first _2) ,(second _2) (some ,_4) (some ,_6))
      """;
 
-  tstatement := "var" sname sname_suffix = sexpr ";" =>#
+  tstatement := "var" sname sname_suffix "=" sexpr ";" =>#
     """
     (let
       (
@@ -92,12 +92,12 @@ syntax variables {
     )))
     """;
 
-  tstatement := "var" sdeclname = sexpr ";" =>#
+  tstatement := "var" sdeclname "=" sexpr ";" =>#
     """
     `(ast_var_decl ,_sr ,(first _2) ,(second _2) none (some ,_4))
      """;
 
-  tstatement := "var" sdeclname ":" stypeexpr = sexpr ";" =>#
+  tstatement := "var" sdeclname ":" stypeexpr "=" sexpr ";" =>#
     """
     `(ast_var_decl ,_sr ,(first _2) ,(second _2) (some ,_4) (some ,_6))
      """;

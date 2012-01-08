@@ -161,7 +161,7 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
                 "Implementation limitation, 'isin' operator requires two " ^
                 "explicit arguments")
           end
-      | EXPR_name (_, "bnot", []) -> TYP_dual (typecode_of_expr e2)
+      | EXPR_name (_, "~", []) -> TYP_dual (typecode_of_expr e2)
       | EXPR_name (_, "typeof", []) -> TYP_typeof e2
       | EXPR_name (_, "setintersection", []) -> 
           begin match e2 with

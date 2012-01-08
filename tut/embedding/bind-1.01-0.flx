@@ -23,8 +23,8 @@ struct gauss {
 // Now the Felix binding
 type gauss = "gauss";
 proc _set : &gauss * gauss = "*$1 = $2;";
-fun add: gauss * gauss -> gauss = "$1 + $2";
-fun mul: gauss * gauss -> gauss = "$1 * $2";
+fun + : gauss * gauss -> gauss = "$1 + $2";
+fun * : gauss * gauss -> gauss = "$1 * $2";
 fun mkgauss: int * int -> gauss = "gauss($1,$2)";
 fun real: gauss -> int = "$1.x";
 fun imag: gauss -> int = "$1.y";

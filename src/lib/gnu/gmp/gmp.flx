@@ -60,31 +60,31 @@ class Gmp
   type mpz='mpz_class';
   type mpq='mpq_class';
   type mpf='mpf_class';
-  fun add:mpz*mpz->mpz="$1+$2";
-  fun sub:mpz*mpz->mpz="$1-$2";
-  fun mul:mpz*mpz->mpz="$1*$2";
-  fun div:mpz*mpz->mpz="$1/$2";
-  fun neg:mpz->mpz="-$1";
+  fun + :mpz*mpz->mpz="$1+$2";
+  fun - :mpz*mpz->mpz="$1-$2";
+  fun * :mpz*mpz->mpz="$1*$2";
+  fun / :mpz*mpz->mpz="$1/$2";
+  fun -:mpz->mpz="-$1";
   fun abs:mpz->mpz="abs($1)";
   fun sgn:mpz->int="sgn($1)";
   fun sqrt:mpz->mpz="sqrt($1)";
   fun cmp:mpz*mpz->int="cmp($1,$2)";
   proc fprint: ostream * mpz="*$1<<$2;";
-  fun add:mpq*mpq->mpq="$1+$2";
-  fun sub:mpq*mpq->mpq="$1-$2";
-  fun mul:mpq*mpq->mpq="$1*$2";
-  fun div:mpq*mpq->mpq="$1/$2";
-  fun neg:mpq->mpq="-$1";
+  fun + :mpq*mpq->mpq="$1+$2";
+  fun - :mpq*mpq->mpq="$1-$2";
+  fun * :mpq*mpq->mpq="$1*$2";
+  fun / :mpq*mpq->mpq="$1/$2";
+  fun - :mpq->mpq="-$1";
   fun abs:mpq->mpq="abs($1)";
   fun sgn:mpq->int="sgn($1)";
   fun sqrt:mpq->mpq="sqrt($1)";
   fun cmp:mpq*mpq->int="cmp($1,$2)";
   proc fprint: ostream * mpq="*$1<<$2;";
-  fun add:mpf*mpf->mpf="$1+$2";
-  fun sub:mpf*mpf->mpf="$1-$2";
-  fun mul:mpf*mpf->mpf="$1*$2";
-  fun div:mpf*mpf->mpf="$1/$2";
-  fun neg:mpf->mpf="-$1";
+  fun + :mpf*mpf->mpf="$1+$2";
+  fun - :mpf*mpf->mpf="$1-$2";
+  fun * :mpf*mpf->mpf="$1*$2";
+  fun / :mpf*mpf->mpf="$1/$2";
+  fun - :mpf->mpf="-$1";
   fun abs:mpf->mpf="abs($1)";
   fun sgn:mpf->int="sgn($1)";
   fun sqrt:mpf->mpf="sqrt($1)";
@@ -95,40 +95,40 @@ class Gmp
   fun wedge: mpz * mpz -> mpz = "flx::gmp::lcm($1,$2)" requires gmpxx_lcm;
   fun vee: mpz * mpz -> mpz = "flx::gmp::gcd($1,$2)" requires gmpxx_gcd;
 
-  fun mod: mpz * mpz -> mpz = "$1%$2";
+  fun % : mpz * mpz -> mpz = "$1%$2";
   fun mpz_of_int: int -> mpz = "mpz_class($1)";
   fun mpq_of_int: int -> mpq = "mpq_class($1)";
   fun mpf_of_double: double -> mpf = "mpf_class($1)";
 
   instance Eq[mpz] {
-    fun eq:mpz*mpz->bool="$1==2";
-    fun ne:mpz*mpz->bool="$1!=$2";
+    fun == :mpz*mpz->bool="$1==2";
+    fun != :mpz*mpz->bool="$1!=$2";
   }
   instance Tord[mpz] {
-    fun lt:mpz*mpz->bool="$1<$2";
-    fun le:mpz*mpz->bool="$1<=$2";
-    fun gt:mpz*mpz->bool="$1>$2";
-    fun ge:mpz*mpz->bool="$1>=$2";
+    fun <  :mpz*mpz->bool="$1<$2";
+    fun <= :mpz*mpz->bool="$1<=$2";
+    fun >  :mpz*mpz->bool="$1>$2";
+    fun >= :mpz*mpz->bool="$1>=$2";
   }
   instance Eq[mpq] {
-    fun eq:mpq*mpq->bool="$1==2";
-    fun ne:mpq*mpq->bool="$1!=$2";
+    fun == :mpq*mpq->bool="$1==2";
+    fun != :mpq*mpq->bool="$1!=$2";
   }
   instance Tord[mpq] {
-    fun lt:mpq*mpq->bool="$1<$2";
-    fun le:mpq*mpq->bool="$1<=$2";
-    fun gt:mpq*mpq->bool="$1>$2";
-    fun ge:mpq*mpq->bool="$1>=$2";
+    fun <  :mpq*mpq->bool="$1<$2";
+    fun <= :mpq*mpq->bool="$1<=$2";
+    fun >  :mpq*mpq->bool="$1>$2";
+    fun >= :mpq*mpq->bool="$1>=$2";
   }
   instance Eq[mpf] {
-    fun eq:mpf*mpf->bool="$1==2";
-    fun ne:mpf*mpf->bool="$1!=$2";
+    fun == :mpf*mpf->bool="$1==2";
+    fun != :mpf*mpf->bool="$1!=$2";
   }
   instance Tord[mpf] {
-    fun lt:mpf*mpf->bool="$1<$2";
-    fun le:mpf*mpf->bool="$1<=$2";
-    fun gt:mpf*mpf->bool="$1>$2";
-    fun ge:mpf*mpf->bool="$1>=$2";
+    fun <  :mpf*mpf->bool="$1<$2";
+    fun <= :mpf*mpf->bool="$1<=$2";
+    fun >  :mpf*mpf->bool="$1>$2";
+    fun >= :mpf*mpf->bool="$1>=$2";
   }
   instance Str[mpz] {
     fun str:mpz->string="#1($1).get_str(10)";

@@ -1,6 +1,6 @@
 
 instance[t in reals] Tord[t] {
-  fun lt: t * t -> bool = "$1<$2";
+  fun < : t * t -> bool = "$1<$2";
 }
 
 

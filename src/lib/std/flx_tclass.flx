@@ -96,6 +96,7 @@ instance Str[unit] {
 open Show[unit];
 
 instance Eq[unit] {
-  fun eq (x:unit, y:unit) => true;
+  fun == (x:unit, y:unit) => true;
 }
 open Eq[unit];
+

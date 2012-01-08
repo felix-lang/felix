@@ -12,7 +12,7 @@ syntax statements {
   // note: list is reversed, eg X::Y::name goes to list name, Y, Z
   sdeclname := sname stvarlist =># "`(,_1 ,_2)";
 
-  tstatement := stype_qual* "type" sdeclname = "new" sexpr ";" =>#
+  tstatement := stype_qual* "type" sdeclname "=" "new" sexpr ";" =>#
     """
     `(ast_newtype ,_sr ,(first _3) ,(second _3) ,_6)
     """;
@@ -25,7 +25,7 @@ syntax statements {
   stype_constraint := "with" squalified_name_comma_list =># "`((ast_tuple,_sr()) ,_2)";
   stype_constraint := sepsilon =># "`((ast_tuple,_sr())())";
 
-  seqorin:= = stypeexpr =># "`(Eq ,_2)";
+  seqorin:= "=" stypeexpr =># "`(Eq ,_2)";
   seqorin:= "in" stypeexpr =># "`(In ,_2)";
   seqorin:= sepsilon =># "'NoConstraint";
 

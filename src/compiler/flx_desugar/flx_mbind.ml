@@ -231,13 +231,13 @@ let rec gen_match_check pat (arg:expr_t) =
 
   (* ranges *)
   | PAT_int_range (sr,t1,i1,t2,i2) ->
-    let b1 = apl2 sr "le" (lint sr t1 i1) arg
-    and b2 = apl2 sr "le" arg (lint sr t2 i2)
+    let b1 = apl2 sr "<=" (lint sr t1 i1) arg
+    and b2 = apl2 sr "<=" arg (lint sr t2 i2)
     in apl2 sr "land" b1 b2
 
   | PAT_string_range (sr,s1,s2) ->
-    let b1 = apl2 sr "le" (lstr sr s1) arg
-    and b2 = apl2 sr "le" arg (lstr sr s2)
+    let b1 = apl2 sr "<=" (lstr sr s1) arg
+    and b2 = apl2 sr "<=" arg (lstr sr s2)
     in apl2 sr "land" b1 b2
 
   | PAT_float_range (sr,x1,x2) ->
@@ -246,16 +246,16 @@ let rec gen_match_check pat (arg:expr_t) =
       if t1 <> t2 then
         failwith ("Inconsistent endpoint types in " ^ ssrc sr)
       else
-        let b1 = apl2 sr "le" (lfloat sr t1 v1) arg
-        and b2 = apl2 sr "le" arg (lfloat sr t2 v2)
+        let b1 = apl2 sr "<=" (lfloat sr t1 v1) arg
+        and b2 = apl2 sr "<=" arg (lfloat sr t2 v2)
         in apl2 sr "land" b1 b2
 
     | (Float_minus(t1,v1), Float_minus (t2,v2)) ->
       if t1 <> t2 then
         failwith ("Inconsistent endpoint types in " ^ ssrc sr)
       else
-        let b1 = apl2 sr "le" (lfloat sr t1 ("-"^ v1)) arg
-        and b2 = apl2 sr "le" arg (lfloat sr t2 ("-"^v2))
+        let b1 = apl2 sr "<=" (lfloat sr t1 ("-"^ v1)) arg
+        and b2 = apl2 sr "<=" arg (lfloat sr t2 ("-"^v2))
         in apl2 sr "land" b1 b2
 
 
@@ -263,22 +263,22 @@ let rec gen_match_check pat (arg:expr_t) =
       if t1 <> t2 then
         failwith ("Inconsistent endpoint types in " ^ ssrc sr)
       else
-        let b1 = apl2 sr "le" (lfloat sr t1 ("-"^ v1)) arg
-        and b2 = apl2 sr "le" arg (lfloat sr t2 v2)
+        let b1 = apl2 sr "<=" (lfloat sr t1 ("-"^ v1)) arg
+        and b2 = apl2 sr "<=" arg (lfloat sr t2 v2)
         in apl2 sr "land" b1 b2
 
 
     | (Float_minus (t1,v1), Float_inf) ->
-        apl2 sr "le" (lfloat sr t1 ("-"^ v1)) arg
+        apl2 sr "<=" (lfloat sr t1 ("-"^ v1)) arg
 
     | (Float_plus (t1,v1), Float_inf) ->
-        apl2 sr "le" (lfloat sr t1 v1) arg
+        apl2 sr "<=" (lfloat sr t1 v1) arg
 
     | (Float_minus_inf, Float_minus (t2,v2)) ->
-        apl2 sr "le" arg (lfloat sr t2 ("-"^v2))
+        apl2 sr "<=" arg (lfloat sr t2 ("-"^v2))
 
     | (Float_minus_inf, Float_plus (t2,v2)) ->
-        apl2 sr "le" arg (lfloat sr t2 v2)
+        apl2 sr "<=" arg (lfloat sr t2 v2)
 
     | (Float_minus_inf , Float_inf ) ->
        apl sr "not" (apl sr "isnan" arg)

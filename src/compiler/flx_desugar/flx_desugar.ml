@@ -1031,7 +1031,7 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     (* hackery *)
     let vs,args = List.fold_left begin fun (vs,args) arg ->
       match arg with
-      | TYP_apply (TYP_name (_,"excl",[]), TYP_name (sr,name,[])) ->
+      | TYP_apply (TYP_name (_,"!",[]), TYP_name (sr,name,[])) ->
           let n = seq() in
           let var = "T" ^ string_of_bid n in
           (*

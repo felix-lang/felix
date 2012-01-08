@@ -361,7 +361,7 @@ let rec gen_expr'
     let x = Flx_vgen.gen_get_case_index ge' bsym_table e in
     ce_infix "!=" x (ce_atom (si n))
 
-  | BEXPR_not e -> print_endline "Generating NOT"; ce_prefix "!" (ge' e)
+  | BEXPR_not e -> ce_prefix "!" (ge' e)
 
   | BEXPR_case_arg (n,e) ->
     (*

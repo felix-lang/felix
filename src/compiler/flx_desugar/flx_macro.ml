@@ -141,7 +141,7 @@ let fix_pattern counter pat =
     let n = "_sypv_" ^ (string_of_int !counter) in 
     let v = EXPR_name (sr,n,[]) in
     incr counter;
-    let eq = EXPR_name (sr,"eq",[]) in
+    let eq = EXPR_name (sr,"==",[]) in
     let args = EXPR_tuple (sr,[v;e]) in
     let test = EXPR_apply (sr, (eq,args)) in
     PAT_when (sr,PAT_name (sr,n),test)
@@ -342,7 +342,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
           (
             sr,
             (
-              EXPR_name ( sr,"add",[]),
+              EXPR_name ( sr,"+",[]),
               EXPR_tuple (sr,[me x; me y])
             )
           )
@@ -364,7 +364,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
           (
             sr,
             (
-              EXPR_name ( sr,"mul",[]),
+              EXPR_name ( sr,"*",[]),
               EXPR_tuple (sr,[me x; me y])
             )
           )

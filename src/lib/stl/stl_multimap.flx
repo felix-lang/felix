@@ -12,7 +12,7 @@ class Stl_MultiMap[k,v]
     proc insert : stl_multimap * k * v = "$1.insert(std::make_pair($2,$3));";
 // Stl_MultiMap
   instance Eq[stl_multimap] {
-    fun eq: stl_multimap * stl_multimap -> bool = "$1==$2";
+    fun == : stl_multimap * stl_multimap -> bool = "$1==$2";
   }
   instance Container[stl_multimap,k*v] {
     fun len: stl_multimap -> size = "$1.size()";
@@ -32,10 +32,10 @@ class Stl_MultiMap[k,v]
 
 // Stl_MultiMap iterator
   instance Eq[stl_multimap_iterator] {
-    fun eq: stl_multimap_iterator * stl_multimap_iterator -> bool = "$1==$2";
+    fun == : stl_multimap_iterator * stl_multimap_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_multimap_iterator] {
-    fun lt: stl_multimap_iterator * stl_multimap_iterator -> bool = "$1<$2";
+    fun < : stl_multimap_iterator * stl_multimap_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_multimap_iterator,k*v] {
     fun deref : stl_multimap_iterator ->  k*v  = "*(#0*)(void*)&*$1";
@@ -55,10 +55,10 @@ class Stl_MultiMap[k,v]
 
 //Stl_MultiMap reverse iterator
   instance Eq[stl_multimap_reverse_iterator] {
-    fun eq: stl_multimap_reverse_iterator * stl_multimap_reverse_iterator -> bool = "$1==$2";
+    fun == : stl_multimap_reverse_iterator * stl_multimap_reverse_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_multimap_reverse_iterator] {
-    fun lt: stl_multimap_reverse_iterator * stl_multimap_reverse_iterator -> bool = "$1<$2";
+    fun < : stl_multimap_reverse_iterator * stl_multimap_reverse_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_multimap_reverse_iterator,k*v] {
     fun deref : stl_multimap_reverse_iterator ->  k*v  = "*(#0*)(void*)&*$1";

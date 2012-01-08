@@ -6,7 +6,7 @@ syntax regexps {
     ratom_pri
   ;
 
-  tstatement := "regdef" sdeclname = sregexp[ralt_pri] ";" =># 
+  tstatement := "regdef" sdeclname "=" sregexp[ralt_pri] ";" =># 
     """
     `(ast_val_decl ,_sr ,(first _2) ,(second _2) (some (ast_lookup ( ,(noi 'Regdef) "regex" ()))) (some ,_4))
     """;

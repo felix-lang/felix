@@ -3,10 +3,10 @@ fun isNULL: address -> bool = "(0==$1)";
 const NULL : address = "NULL";
 
 instance Eq[address] {
-  fun eq: address * address -> bool = "$1==$2";
+  fun == : address * address -> bool = "$1==$2";
 }
 instance Tord[address] {
-  fun lt: address * address -> bool = "::std::less<?1>($1,$2)";
+  fun < : address * address -> bool = "::std::less<?1>($1,$2)";
 }
 instance[T in addressing] Str[T] {
   fun str (t:T) : string => vsprintf (c"%i", t);

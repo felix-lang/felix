@@ -20,7 +20,7 @@ syntax requirements {
     "`(rreq_or ,_1 ,_3)";
   srequirement_or:= srequirement_and =># "_1";
 
-  srequirements:= srequirements , srequirement_or =>#
+  srequirements:= srequirements "," srequirement_or =>#
     "`(rreq_and ,_1 ,_3)";
   srequirements:= srequirement_or =># "_1";
 
@@ -41,16 +41,16 @@ syntax requirements {
     """`(ast_insert ,_sr "_root" ,dfltvs ,_2 header ,_3))""";
   tstatement := "body" scode_spec srequires_clause ";" =>#
     """`(ast_insert ,_sr "_root" ,dfltvs ,_2 body ,_3))""";
-  tstatement := "header" = scode_spec srequires_clause ";" =>#
+  tstatement := "header" "=" scode_spec srequires_clause ";" =>#
     """`(ast_insert ,_sr "_root" ,dfltvs ,_3 header ,_4))""";
-  tstatement := "body" = scode_spec srequires_clause ";" =>#
+  tstatement := "body" "=" scode_spec srequires_clause ";" =>#
     """`(ast_insert ,_sr "_root" ,dfltvs ,_3 body ,_4))""";
-  tstatement := "header" sdeclname = scode_spec srequires_clause ";" =>#
+  tstatement := "header" sdeclname "=" scode_spec srequires_clause ";" =>#
     """
     `(ast_insert ,_sr ,(first _2) ,(second _2) ,_4 header ,_5)
      """;
 
-  tstatement := "body" sdeclname = scode_spec srequires_clause ";" =>#
+  tstatement := "body" sdeclname "=" scode_spec srequires_clause ";" =>#
     """
     `(ast_insert ,_sr ,(first _2) ,(second _2) ,_4 body ,_5)
      """;

@@ -28,7 +28,7 @@ class Process {
 
   type exec_result_t = "int";
   const bad_exec: exec_result_t = "-1";
-  fun eq: exec_result_t * exec_result_t -> bool= "$1==$2";
+  fun == : exec_result_t * exec_result_t -> bool= "$1==$2";
 
   gen execv:&char *  &&char -> exec_result_t = "execv($1, $2)" requires Posix_headers::unistd_h;
   gen execvp:&char *  &&char -> exec_result_t = "execvp($1, $2)" requires Posix_headers::unistd_h;
@@ -41,7 +41,7 @@ class Process {
   ctor int: pid_t = "((int)$1)";
   const child_process : pid_t = "0";
   const bad_process : pid_t = "-1";
-  fun eq: pid_t * pid_t -> bool= "$1==$2";
+  fun == : pid_t * pid_t -> bool= "$1==$2";
 
   gen fork: unit -> pid_t = "fork()" requires Posix_headers::unistd_h;
 

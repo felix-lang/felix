@@ -5,9 +5,11 @@ syntax expressions {
     slambda_pri <
     sdollar_apply_pri < 
     stuple_pri <
+    simplies_condition_pri <
     sor_condition_pri <
     sand_condition_pri <
     snot_condition_pri <
+    stex_implies_condition_pri <
     stex_or_condition_pri <
     stex_and_condition_pri <
     stex_not_condition_pri <
@@ -54,17 +56,18 @@ syntax expressions {
   x[stuple_pri] := x[>stuple_pri] ( "," x[>stuple_pri])+ =># "(chain 'ast_tuple _1 _2)";
 
   // logic
+  x[simplies_condition_pri] := x[>simplies_condition_pri] "implies" x[>simplies_condition_pri] =># "(Infix)";
   x[sor_condition_pri] := x[>sor_condition_pri] ( "or" x[>sor_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
   x[sand_condition_pri] := x[>sand_condition_pri] ( "and" x[>sand_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
   x[snot_condition_pri] := "not" x[snot_condition_pri]  =># "(prefix 'lnot)";
 
   // comparisons
-  x[scomparison_pri]:= x[>scomparison_pri] "<" x[>scomparison_pri] =># "(infix 'lt)";
-  x[scomparison_pri]:= x[>scomparison_pri] "<=" x[>scomparison_pri] =># "(infix 'le)";
-  x[scomparison_pri]:= x[>scomparison_pri] "==" x[>scomparison_pri] =># "(infix 'eq)";
-  x[scomparison_pri]:= x[>scomparison_pri] "!=" x[>scomparison_pri] =># "(infix 'ne)";
-  x[scomparison_pri]:= x[>scomparison_pri] ">=" x[>scomparison_pri] =># "(infix 'ge)";
-  x[scomparison_pri]:= x[>scomparison_pri] ">" x[>scomparison_pri] =># "(infix 'gt)";
+  x[scomparison_pri]:= x[>scomparison_pri] "<" x[>scomparison_pri] =># "(Infix)";
+  x[scomparison_pri]:= x[>scomparison_pri] "<=" x[>scomparison_pri] =># "(Infix)";
+  x[scomparison_pri]:= x[>scomparison_pri] "==" x[>scomparison_pri] =># "(Infix)";
+  x[scomparison_pri]:= x[>scomparison_pri] "!=" x[>scomparison_pri] =># "(Infix)";
+  x[scomparison_pri]:= x[>scomparison_pri] ">=" x[>scomparison_pri] =># "(Infix)";
+  x[scomparison_pri]:= x[>scomparison_pri] ">" x[>scomparison_pri] =># "(Infix)";
   x[scomparison_pri]:= x[>scomparison_pri] "in" x[>scomparison_pri] =># "(infix 'mem)";
   x[scomparison_pri]:= x[>scomparison_pri] "\in" x[>scomparison_pri] =># "(infix 'mem)";
 
@@ -81,31 +84,31 @@ syntax expressions {
   x[scase_literal_pri] := "case" sname "of" x[ssum_pri] =># "`(ast_variant (,_2 ,_4))";
 
   // bitwise operators
-  x[sbor_pri] := x[sbor_pri] "\\|" x[>sbor_pri] =># "(infix 'bor)";
-  x[sbxor_pri] := x[sbxor_pri] "\\^" x[>sbxor_pri] =># "(infix 'bxor)";
-  x[sband_pri] := x[sband_pri] "\\&" x[>sband_pri] =># "(infix 'band)";
-  x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri] =># "(infix 'shl)";
-  x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] =># "(infix 'shr)";
+  x[sbor_pri] := x[sbor_pri] "\\|" x[>sbor_pri] =># "(Infix)";
+  x[sbxor_pri] := x[sbxor_pri] "\\^" x[>sbxor_pri] =># "(Infix)";
+  x[sband_pri] := x[sband_pri] "\\&" x[>sband_pri] =># "(Infix)";
+  x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri] =># "(Infix)";
+  x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] =># "(Infix)";
 
   // addition
   x[ssum_pri] := x[>ssum_pri] ("+" x[>ssum_pri])+ =># "(chain 'ast_sum _1 _2)" note "add";
 
   // subtraction
-  x[ssubtraction_pri] := x[ssubtraction_pri] "-" x[sproduct_pri] =># "(infix 'sub)";
+  x[ssubtraction_pri] := x[ssubtraction_pri] "-" x[sproduct_pri] =># "(Infix)";
 
   
   // multiplication
   x[sproduct_pri] := x[>sproduct_pri] ("*" x[>sproduct_pri])+ =># "(chain 'ast_product _1 _2)" note "mul";
 
   // division
-  x[s_term_pri] := x[s_term_pri] "/" x[>s_term_pri] =># "(infix 'div)";
-  x[s_term_pri] := x[s_term_pri] "%" x[>s_term_pri] =># "(infix 'mod)";
+  x[s_term_pri] := x[s_term_pri] "/" x[>s_term_pri] =># "(Infix)";
+  x[s_term_pri] := x[s_term_pri] "%" x[>s_term_pri] =># "(Infix)";
 
   // prefixes
-  x[sprefixed_pri] := "!" x[spower_pri] =># "(prefix 'excl)";
-  x[sprefixed_pri] := "+" x[spower_pri] =># "(prefix 'pos)";
-  x[sprefixed_pri] := "-" x[spower_pri] =># "(prefix 'neg)";
-  x[sprefixed_pri] := "~" x[spower_pri] =># "(prefix 'bnot)";
+  x[sprefixed_pri] := "!" x[spower_pri] =># "(Prefix)";
+  x[sprefixed_pri] := "+" x[spower_pri] =># "(Prefix)";
+  x[sprefixed_pri] := "-" x[spower_pri] =># "(Prefix)";
+  x[sprefixed_pri] := "~" x[spower_pri] =># "(Prefix)";
 
   // superscripts
   x[spower_pri] := x[ssuperscript_pri] "**" x[sprefixed_pri] =># "(infix 'pow)";

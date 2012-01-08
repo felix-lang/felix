@@ -45,13 +45,13 @@ syntax loops
         `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi 'le) ((ast_name ,_sr ,_3 ()),_7)))
+          (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_3 ()),_7)))
           ,(string-append "break_" _1)
         ))
         _9
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `((ast_unlikely_ifgoto ,_sr
-          (ast_apply ,_sr (,(noi 'eq) ((ast_name ,_sr ,_3 ()),_7)))
+          (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_3 ()),_7)))
           ,(string-append "break_" _1)
         ))
         `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
@@ -67,13 +67,13 @@ syntax loops
         `((ast_var_decl ,_sr ,_4 ,dfltvs (some ,_6) (some ,_8)))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi 'le) ((ast_name ,_sr ,_4 ()),_10)))
+          (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_4 ()),_10)))
           ,(string-append "break_" _1)
         ))
         _12
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `((ast_unlikely_ifgoto ,_sr
-          (ast_apply ,_sr (,(noi 'eq) ((ast_name ,_sr ,_4 ()),_10)))
+          (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_4 ()),_10)))
           ,(string-append "break_" _1)
         ))
         `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
@@ -89,13 +89,13 @@ syntax loops
         `((ast_var_decl ,_sr ,_4 ,dfltvs none (some ,_6)))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi 'le) ((ast_name ,_sr ,_4 ()),_8)))
+          (ast_apply ,_sr (,(noi '<=) ((ast_name ,_sr ,_4 ()),_8)))
           ,(string-append "break_" _1)
         ))
         _10
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `((ast_unlikely_ifgoto ,_sr
-          (ast_apply ,_sr (,(noi 'eq) ((ast_name ,_sr ,_4 ()),_8)))
+          (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_4 ()),_8)))
           ,(string-append "break_" _1)
         ))
         `((ast_call ,_sr ,(noi 'pre_incr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
@@ -111,13 +111,13 @@ syntax loops
         `((ast_assign ,_sr _set ((Expr ,_sr (ast_name ,_sr ,_3 ())) none) ,_5))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi 'ge) ((ast_name ,_sr ,_3 ()),_7)))
+          (ast_apply ,_sr (,(noi '>=) ((ast_name ,_sr ,_3 ()),_7)))
           ,(string-append "break_" _1)
         ))
         _9
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `((ast_unlikely_ifgoto ,_sr
-          (ast_apply ,_sr (,(noi 'eq) ((ast_name ,_sr ,_3 ()),_7)))
+          (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_3 ()),_7)))
           ,(string-append "break_" _1)
         ))
         `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_3()))))
@@ -133,13 +133,13 @@ syntax loops
         `((ast_var_decl ,_sr ,_4 ,dfltvs (some ,_6) (some ,_8)))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi 'ge) ((ast_name ,_sr ,_4 ()),_10)))
+          (ast_apply ,_sr (,(noi '>=) ((ast_name ,_sr ,_4 ()),_10)))
           ,(string-append "break_" _1)
         ))
         _12
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `((ast_unlikely_ifgoto ,_sr
-          (ast_apply ,_sr (,(noi 'eq) ((ast_name ,_sr ,_4 ()),_10)))
+          (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_4 ()),_10)))
           ,(string-append "break_" _1)
         ))
         `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))
@@ -155,13 +155,13 @@ syntax loops
         `((ast_var_decl ,_sr ,_4 ,dfltvs none (some ,_6)))
         `((ast_label ,_sr ,(string-append "redo_" _1)))
         `((ast_unlikely_ifnotgoto ,_sr
-          (ast_apply ,_sr (,(noi 'ge) ((ast_name ,_sr ,_4 ()),_8)))
+          (ast_apply ,_sr (,(noi '>=) ((ast_name ,_sr ,_4 ()),_8)))
           ,(string-append "break_" _1)
         ))
         _10
         `((ast_label ,_sr ,(string-append "continue_" _1)))
         `((ast_unlikely_ifgoto ,_sr
-          (ast_apply ,_sr (,(noi 'eq) ((ast_name ,_sr ,_4 ()),_8)))
+          (ast_apply ,_sr (,(noi '==) ((ast_name ,_sr ,_4 ()),_8)))
           ,(string-append "break_" _1)
         ))
         `((ast_call ,_sr ,(noi 'pre_decr) (ast_ref ,_sr (ast_name ,_sr ,_4()))))

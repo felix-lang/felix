@@ -21,7 +21,7 @@ class Stl_Vector[t]
     fun subscript: stl_vector_iterator * int -> t = "$1[$2]";
 // Stl_Vector
   instance Eq[stl_vector] {
-    fun eq: stl_vector * stl_vector -> bool = "$1==$2";
+    fun == : stl_vector * stl_vector -> bool = "$1==$2";
   }
   instance Container[stl_vector,t] {
     fun len: stl_vector -> size = "$1.size()";
@@ -41,10 +41,10 @@ class Stl_Vector[t]
 
 // Stl_Vector iterator
   instance Eq[stl_vector_iterator] {
-    fun eq: stl_vector_iterator * stl_vector_iterator -> bool = "$1==$2";
+    fun == : stl_vector_iterator * stl_vector_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_vector_iterator] {
-    fun lt: stl_vector_iterator * stl_vector_iterator -> bool = "$1<$2";
+    fun < : stl_vector_iterator * stl_vector_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_vector_iterator,t] {
     fun deref : stl_vector_iterator ->  t  = "*(#0*)(void*)&*$1";
@@ -64,10 +64,10 @@ class Stl_Vector[t]
 
 // Stl_Vector reverse iterator
   instance Eq[stl_vector_reverse_iterator] {
-    fun eq: stl_vector_reverse_iterator * stl_vector_reverse_iterator -> bool = "$1==$2";
+    fun == : stl_vector_reverse_iterator * stl_vector_reverse_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_vector_reverse_iterator] {
-    fun lt: stl_vector_reverse_iterator * stl_vector_reverse_iterator -> bool = "$1<$2";
+    fun < : stl_vector_reverse_iterator * stl_vector_reverse_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_vector_reverse_iterator,t] {
     fun deref : stl_vector_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";

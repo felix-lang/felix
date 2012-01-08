@@ -11,7 +11,7 @@ class Stl_MultiSet[t]
     fun mem : stl_multiset * t -> bool = "$1.find($2) != $1.end()";
 // Stl_MultiSet
   instance Eq[stl_multiset] {
-    fun eq: stl_multiset * stl_multiset -> bool = "$1==$2";
+    fun == : stl_multiset * stl_multiset -> bool = "$1==$2";
   }
   instance Container[stl_multiset,t] {
     fun len: stl_multiset -> size = "$1.size()";
@@ -31,10 +31,10 @@ class Stl_MultiSet[t]
 
 // Stl_MultiSet iterator
   instance Eq[stl_multiset_iterator] {
-    fun eq: stl_multiset_iterator * stl_multiset_iterator -> bool = "$1==$2";
+    fun == : stl_multiset_iterator * stl_multiset_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_multiset_iterator] {
-    fun lt: stl_multiset_iterator * stl_multiset_iterator -> bool = "$1<$2";
+    fun < : stl_multiset_iterator * stl_multiset_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_multiset_iterator,t] {
     fun deref : stl_multiset_iterator ->  t  = "*(#0*)(void*)&*$1";
@@ -54,10 +54,10 @@ class Stl_MultiSet[t]
 
 // Stl_MultiSet reverse iterator
   instance Eq[stl_multiset_reverse_iterator] {
-    fun eq: stl_multiset_reverse_iterator * stl_multiset_reverse_iterator -> bool = "$1==$2";
+    fun == : stl_multiset_reverse_iterator * stl_multiset_reverse_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_multiset_reverse_iterator] {
-    fun lt: stl_multiset_reverse_iterator * stl_multiset_reverse_iterator -> bool = "$1<$2";
+    fun < : stl_multiset_reverse_iterator * stl_multiset_reverse_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_multiset_reverse_iterator,t] {
     fun deref : stl_multiset_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";

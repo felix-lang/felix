@@ -203,4 +203,23 @@ SCHEME """
 SCHEME """
   (define (prefix op) `(ast_apply ,_sr (,(noi op) ,_2)))
 """;
+SCHEME """
+  (define (Prefix) `(ast_apply ,_sr (,(nos _1) ,_2)))
+""";
+SCHEME """
+  (define (Infix) `(ast_apply ,_sr (,(nos _2) (,_1 ,_3))))
+""";
+
+
+
+
+
+
+
+
+
+
+
+
+
 

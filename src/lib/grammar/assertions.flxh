@@ -11,7 +11,7 @@ syntax assertions {
     """;
 
   // define an axiom with equality predicate
-  tstatement  := "axiom" sdeclname sfun_arg ":" sexpr = sexpr ";" =>#
+  tstatement  := "axiom" sdeclname sfun_arg ":" sexpr "=" sexpr ";" =>#
     """
       `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
     """;
@@ -24,7 +24,7 @@ syntax assertions {
     """;
 
   // lemma with equality predicate
-  tstatement  := "lemma" sdeclname sfun_arg ":" sexpr = sexpr ";" =>#
+  tstatement  := "lemma" sdeclname sfun_arg ":" sexpr "=" sexpr ";" =>#
     """
       `(ast_lemma ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
     """;
@@ -37,7 +37,7 @@ syntax assertions {
     proof := "proof" sstring;
 
   // define an hard theorem with equality predicate
-  tstatement  := "theorem" sdeclname sfun_arg ":" sexpr = sexpr proof? ";" =>#
+  tstatement  := "theorem" sdeclname sfun_arg ":" sexpr "=" sexpr proof? ";" =>#
     """
       `(ast_axiom ,_sr ,(first _2) ,(second _2) ,_3 (Equation (,_5 ,_7)))
     """;

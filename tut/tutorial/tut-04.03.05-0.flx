@@ -1,6 +1,6 @@
 //Check C binding
 type metres = "double";
-fun add: metres * metres -> metres = "$1+$2";
+fun + : metres * metres -> metres = "$1+$2";
 ctor metres: double = "$1";
 ctor double: metres = "$1";
 

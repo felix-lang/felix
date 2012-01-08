@@ -12,18 +12,18 @@ class Lexer
   fun string_between: iterator * iterator -> string =
    "::std::string($1,$2)";
 
-  fun add: iterator * int -> iterator = "$1 + $2";
-  fun sub: iterator * int -> iterator = "$1 - $2";
-  fun sub: iterator * iterator -> int = "$1 - $2";
+  fun + : iterator * int -> iterator = "$1 + $2";
+  fun - : iterator * int -> iterator = "$1 - $2";
+  fun - : iterator * iterator -> int = "$1 - $2";
   fun deref: iterator -> char = "*$1";
 }
 
 instance Eq[Lexer::iterator] {
-  fun eq:Lexer::iterator * Lexer::iterator -> bool = "$1==$2";
+  fun == :Lexer::iterator * Lexer::iterator -> bool = "$1==$2";
 }
 
 instance Tord[Lexer::iterator] {
-  fun lt:Lexer::iterator * Lexer::iterator -> bool = "$1<$2";
+  fun < :Lexer::iterator * Lexer::iterator -> bool = "$1<$2";
 }
 
 open Eq[Lexer::iterator];

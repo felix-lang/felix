@@ -127,7 +127,7 @@ syntax texsyms {
 
   bin := "\\iff" =># '(nos _1)'; 
   bin := "\\impliedby" =># '(nos _1)'; 
-  bin := "\\implies" =># '(nos _1)'; 
+  //bin := "\\implies" =># '(nos _1)'; 
   //cmp := "\\in" =># '(nos _1)'; 
 
 // J
@@ -138,7 +138,7 @@ syntax texsyms {
 
 // L
 
-  sym := "\\le" =># '(nos _1)'; 
+  cmp := "\\le" =># '(nos _1)'; 
   arr := "\\leadsto" =># '(nos _1)'; 
   arr := "\\Leftarrow" =># '(nos _1)'; 
   arr := "\\leftarrow" =># '(nos _1)'; 
@@ -357,6 +357,7 @@ syntax texsyms {
   x[scomparison_pri]:= x[>scomparison_pri] cmp x[>scomparison_pri] =># "`(ast_apply ,_sr (,_2 (,_1 ,_3)))";
 
   // tex logic operators
+  x[stex_implies_condition_pri] := x[>stex_implies_condition_pri]  "\\implies" x[>stex_implies_condition_pri] =># "(infix 'implies)";
   x[stex_or_condition_pri] := x[>stex_or_condition_pri] ( "\\lor" x[>stex_or_condition_pri])+ =># "(chain 'ast_orlist _1 _2)" note "lor";
   x[stex_and_condition_pri] := x[>stex_and_condition_pri] ( "\\land" x[>stex_and_condition_pri])+ =># "(chain 'ast_andlist _1 _2)" note "land";
   x[stex_not_condition_pri] := "\\lnot" x[stex_not_condition_pri]  =># "(prefix 'lnot)";

@@ -17,7 +17,7 @@ class Stl_List[t]
     proc pop_front : stl_list = "$1.pop_back();";
 // List
   instance Eq[stl_list] {
-    fun eq: stl_list * stl_list -> bool = "$1==$2";
+    fun == : stl_list * stl_list -> bool = "$1==$2";
   }
   instance Container[stl_list,t] {
     fun len: stl_list -> size = "$1.size()";
@@ -37,10 +37,10 @@ class Stl_List[t]
 
 // List iterator
   instance Eq[stl_list_iterator] {
-    fun eq: stl_list_iterator * stl_list_iterator -> bool = "$1==$2";
+    fun == : stl_list_iterator * stl_list_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_list_iterator] {
-    fun lt: stl_list_iterator * stl_list_iterator -> bool = "$1<$2";
+    fun < : stl_list_iterator * stl_list_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_list_iterator,t] {
     fun deref : stl_list_iterator ->  t  = "*(#0*)(void*)&*$1";
@@ -60,10 +60,10 @@ class Stl_List[t]
 
 // List reverse iterator
   instance Eq[stl_list_reverse_iterator] {
-    fun eq: stl_list_reverse_iterator * stl_list_reverse_iterator -> bool = "$1==$2";
+    fun == : stl_list_reverse_iterator * stl_list_reverse_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_list_reverse_iterator] {
-    fun lt: stl_list_reverse_iterator * stl_list_reverse_iterator -> bool = "$1<$2";
+    fun < : stl_list_reverse_iterator * stl_list_reverse_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_list_reverse_iterator,t] {
     fun deref : stl_list_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";

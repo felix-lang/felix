@@ -3,17 +3,26 @@
 class FloatAddgrp[t] {
   inherit Eq[t];
   virtual fun zero: unit -> t;
-  virtual fun add: t * t -> t;
-  virtual fun neg: t -> t;
-  virtual fun sub(x:t,y:t):t => add (x,neg y);
-  virtual proc pluseq (px:&t,y:t) { px <- *px + y; }
-  virtual proc minuseq (px:&t,y:t) { px <- *px - y; }
+  virtual fun + : t * t -> t;
+  virtual fun - : t -> t;
+  virtual fun + : t -> t = "$1";
+  virtual fun - (x:t,y:t):t => x + -y;
+  virtual proc += (px:&t,y:t) { px <- *px + y; }
+  virtual proc -= (px:&t,y:t) { px <- *px - y; }
 
   reduce id (x:t): x+zero() => x;
   reduce id (x:t): zero()+x => x;
   reduce inv(x:t): x-x => zero();
   reduce inv(x:t): - (-x) => x;
   axiom sym (x:t,y:t): x+y == y+x;
+
+  fun add(x:t,y:t)=> x + y;
+  fun plus(x:t)=> +x;
+  fun sub(x:t,y:t)=> x - y;
+  fun neg(x:t)=> -x;
+  proc pluseq(px:&t, y:t) {  += (px,y); }
+  proc  minuseq(px:&t, y:t) { -= (px,y); }
+
 }
 
 class Addgrp[t] {
@@ -25,9 +34,11 @@ class Addgrp[t] {
 // mult semi group with unit
 class FloatMultSemi1[t] {
   inherit Eq[t];
+  proc muleq(px:&t, y:t) { *= (px,y); }
+  fun mul(x:t, y:t) => x * y;
   virtual fun one: unit -> t;
-  virtual fun mul: t * t -> t;
-  virtual proc muleq (px:&t, y:t) { px <- *px * y; }
+  virtual fun * : t * t -> t;
+  virtual proc *= (px:&t, y:t) { px <- *px * y; }
   reduce id (x:t): x*one() => x;
   reduce id (x:t): one()*x => x;
 }
@@ -55,10 +66,15 @@ class Ring[t] {
 // division ring
 class FloatDring[t] {
   inherit FloatRing[t];
-  virtual fun div: t * t -> t; // pre t != 0
-  virtual proc diveq: &t * t;
-  virtual fun mod : t * t -> t;
-  virtual proc modeq: &t * t;
+  virtual fun / : t * t -> t; // pre t != 0
+  virtual proc /= : &t * t;
+  virtual fun % : t * t -> t;
+  virtual proc %= : &t * t;
+
+  fun div(x:t, y:t) => x / y;
+  fun mod(x:t, y:t) => x % y;
+  proc diveq(px:&t, y:t) { /= (px,y); }
+  proc modeq(px:&t, y:t) { %= (px,y); }
 }
 
 // division ring
@@ -69,21 +85,30 @@ class Dring[t] {
 
 
 class Bits[t] {
-  virtual fun bxor: t * t -> t;
-  virtual fun bor: t * t -> t;
-  virtual fun band: t * t -> t;
-  virtual fun bnot: t -> t;
-  virtual proc bxoreq: &t * t;
-  virtual proc boreq: &t * t;
-  virtual proc bandeq: &t * t;
+  virtual fun \^ : t * t -> t = "(?1)($1^$2)";
+  virtual fun \| : t * t -> t = "$1|$2";
+  virtual fun \& : t * t -> t = "$1&$2";
+  virtual fun ~: t -> t = "(?1)(~$1)";
+  virtual proc ^= : &t * t = "*$1^=$2;";
+  virtual proc |= : &t * t = "*$1|=$2;";
+  virtual proc &= : &t * t = "*$1&=$2;";
+
+  fun bxor(x:t,y:t)=> x \^ y;
+  fun bor(x:t,y:t)=> x \| y;
+  fun band(x:t,y:t)=> x \& y;
+  fun bnot(x:t)=> ~ x;
+
 }
 
 class Integer[t] {
   inherit Tord[t];
   inherit Dring[t];
   inherit Bidirectional[t];
-  virtual fun shl: t * t -> t;
-  virtual fun shr: t * t -> t;
+  virtual fun << : t * t -> t = "$1<<$2";
+  virtual fun >> : t * t -> t = "$1>>$2";
+
+  fun shl(x:t,y:t)=> x << y;
+  fun shr(x:t,y:t)=> x >> y;
 }
 
 // Signed Integers
@@ -138,14 +163,14 @@ class Complex[t,r] {
   virtual fun abs: t -> r;
   virtual fun arg: t -> r;
 
-  virtual fun add: r * t -> t;
-  virtual fun add: t * r -> t;
-  virtual fun sub: r * t -> t;
-  virtual fun sub: t * r -> t;
-  virtual fun mul : t * r -> t;
-  virtual fun mul : r * t -> t;
-  virtual fun div : t * r -> t;
-  virtual fun div : r * t -> t;
+  virtual fun + : r * t -> t;
+  virtual fun + : t * r -> t;
+  virtual fun - : r * t -> t;
+  virtual fun - : t * r -> t;
+  virtual fun * : t * r -> t;
+  virtual fun * : r * t -> t;
+  virtual fun / : t * r -> t;
+  virtual fun / : r * t -> t;
 }
 
 

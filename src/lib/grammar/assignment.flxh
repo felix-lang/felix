@@ -3,23 +3,24 @@ syntax assignment {
 
   // assignment operators
   sassignexpr := sexpr sassignop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
-    sassignop:= = =># "'_set";
+    sassignop:= "=" =># "'_set";
     sassignop:= "<-" =># "'_pset";
     sassignop:= ":=" =># "'_init";
 
   // binary read-modify-write operators
   sassignexpr := sexpr srmwop sexpr =># "`(ast_assign ,_sr ,_2 ((Expr ,_sr ,_1) none) ,_3)";
-    srmwop:= "+=" =># "'pluseq";
-    srmwop:= "-=" =># "'minuseq";
-    srmwop:= "*=" =># "'muleq";
-    srmwop:= "/=" =># "'diveq";
-    srmwop:= "%=" =># "'modeq";
-    srmwop:= "<<=" =># "'leftshifteq";
-    srmwop:= ">>=" =># "'rightshifteq";
-    srmwop:= "^=" =># "'bxoreq";
-    srmwop:= "|=" =># "'boreq";
-    srmwop:= "&=" =># "'bandeq";
-    srmwop:= "~=" =># "'tildeeq";
+    srmwop:= "+=" =># "_1";
+    srmwop:= "-=" =># "_1";
+    srmwop:= "*=" =># "_1";
+    srmwop:= "/=" =># "_1";
+    srmwop:= "%=" =># "_1";
+    srmwop:= "<<=" =># "_1";
+    srmwop:= ">>=" =># "_1";
+    srmwop:= "^=" =># "_1";
+    srmwop:= "|=" =># "_1";
+    srmwop:= "&=" =># "_1";
+    srmwop:= "<<=" =># "_1";
+    srmwop:= ">>=" =># "_1";
 
   // swap operator
   sassignexpr := sexpr sswapop sexpr =># "`(ast_call ,_sr ,(noi _2) ((ast_ref ,_sr ,_1) (ast_ref ,_sr ,_3)))";
@@ -37,9 +38,9 @@ syntax assignment {
     spostincrop:= "--" =># "'post_decr";
 
   // multiple initialisation/assignment form
-  sassignexpr := "def" slexpr = sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
+  sassignexpr := "def" slexpr "=" sexpr =># "`(ast_assign ,_sr _set ,_2 ,_4)";
     slexpr := slexprs =># """ (if (null? (tail _1)) (first _1) `((List ,_1) none)) """;
-    slexprs := stlelement , slexprs =># "(cons _1 _3)";
+    slexprs := stlelement "," slexprs =># "(cons _1 _3)";
     slexprs := stlelement =># "`(,_1)";
 
     slelement := "val" sname =># "`(Val ,_sr ,_2)";

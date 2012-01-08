@@ -88,10 +88,10 @@ class FileStat
   const S_ISGID : mode_t; // set group id on execute
   const S_ISVXT : mode_t; // sticky bit
 
-  fun bnot : mode_t -> mode_t = "~$1";
-  fun bor : mode_t * mode_t -> mode_t = "$1|$2";
-  fun band : mode_t * mode_t -> mode_t = "$1&$2";
-  fun eq: mode_t * mode_t -> bool = "$1==$2";
+  instance Bits[mode_t] {} // defaults to C operators
+  instance Eq[mode_t] { fun == : mode_t * mode_t -> bool = "$1==$2"; }
+  open Eq[mode_t]; 
+  open Bits[mode_t];
 
   val access_mask = S_IXOTH \| S_IXGRP \| S_IXUSR;
 

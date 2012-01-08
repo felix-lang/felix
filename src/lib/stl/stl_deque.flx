@@ -16,7 +16,7 @@ class Stl_Deque[t]
     fun subscript : stl_deque * int -> t = "$1.at($2)";
 // Stl_Deque
   instance Eq[stl_deque] {
-    fun eq: stl_deque * stl_deque -> bool = "$1==$2";
+    fun == : stl_deque * stl_deque -> bool = "$1==$2";
   }
   instance Container[stl_deque,t] {
     fun len: stl_deque -> size = "$1.size()";
@@ -36,10 +36,10 @@ class Stl_Deque[t]
 
 // Stl_Deque iterator
   instance Eq[stl_deque_iterator] {
-    fun eq: stl_deque_iterator * stl_deque_iterator -> bool = "$1==$2";
+    fun == : stl_deque_iterator * stl_deque_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_deque_iterator] {
-    fun lt: stl_deque_iterator * stl_deque_iterator -> bool = "$1<$2";
+    fun < : stl_deque_iterator * stl_deque_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_deque_iterator,t] {
     fun deref : stl_deque_iterator ->  t  = "*(#0*)(void*)&*$1";
@@ -59,10 +59,10 @@ class Stl_Deque[t]
 
 // Stl_Deque reverse iterator
   instance Eq[stl_deque_reverse_iterator] {
-    fun eq: stl_deque_reverse_iterator * stl_deque_reverse_iterator -> bool = "$1==$2";
+    fun == : stl_deque_reverse_iterator * stl_deque_reverse_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_deque_reverse_iterator] {
-    fun lt: stl_deque_reverse_iterator * stl_deque_reverse_iterator -> bool = "$1<$2";
+    fun < : stl_deque_reverse_iterator * stl_deque_reverse_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_deque_reverse_iterator,t] {
     fun deref : stl_deque_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";

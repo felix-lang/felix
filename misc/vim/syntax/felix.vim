@@ -134,7 +134,6 @@ syn keyword felixStatement todo
 syn keyword felixStatement to
 syn keyword felixStatement typedef
 syn keyword felixStatement type
-syn keyword felixStatement typeclass
 syn keyword felixStatement union
 syn keyword felixStatement use
 syn keyword felixStatement val
@@ -149,6 +148,7 @@ syn keyword felixStatement _gc_type
 syn keyword felixStatement _svc
 syn keyword felixStatement _deref
 syn keyword felixStatement and
+syn keyword felixStatement implies 
 syn keyword felixStatement as
 syn keyword felixStatement callback
 syn keyword felixStatement code

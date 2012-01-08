@@ -7,6 +7,9 @@ open class Bool
   fun xor: bool * bool -> bool = "$1!=$2";       // (x or y) and not (x and y)
   fun lnot: bool -> bool = "!$1";                // not x
   fun implies: bool * bool -> bool = "!$1||$2";  // not x or y
+  proc |= : &bool * bool = "*$1|=$2;";  
+  proc &= : &bool * bool = "*$1&=$2;";  
+
   reduce dneg(x:bool): lnot (lnot x) => x;       // elide double negations
   reduce dneg(x:bool,y:bool): lnot (nand(x,y)) => land(x,y); 
   reduce dneg(x:bool,y:bool): lnot (nor(x,y)) => lor(x,y);
@@ -17,7 +20,7 @@ instance Str[bool] {
   fun str (b:bool) : string => if b then "true" else "false" endif;
 }
 instance Tord[bool] {
-  fun lt: bool * bool -> bool = "$1<$2";   // aka "implication"
+  fun < : bool * bool -> bool = "$1<$2";   // aka "implication"
 }
 
 open Tord[bool];

@@ -12,7 +12,7 @@ class Stl_Map[k,v]
     proc insert : stl_map * k * v = "$1.insert(std::make_pair($2,$3));";
 // Stl_Map
   instance Eq[stl_map] {
-    fun eq: stl_map * stl_map -> bool = "$1==$2";
+    fun ==: stl_map * stl_map -> bool = "$1==$2";
   }
   instance Container[stl_map,k*v] {
     fun len: stl_map -> size = "$1.size()";
@@ -32,10 +32,10 @@ class Stl_Map[k,v]
 
 // Stl_Map iterator
   instance Eq[stl_map_iterator] {
-    fun eq: stl_map_iterator * stl_map_iterator -> bool = "$1==$2";
+    fun ==: stl_map_iterator * stl_map_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_map_iterator] {
-    fun lt: stl_map_iterator * stl_map_iterator -> bool = "$1<$2";
+    fun < : stl_map_iterator * stl_map_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_map_iterator,k*v] {
     fun deref : stl_map_iterator ->  k*v  = "*(#0*)(void*)&*$1";
@@ -55,10 +55,10 @@ class Stl_Map[k,v]
 
 // Stl_Map reverse iterator
   instance Eq[stl_map_reverse_iterator] {
-    fun eq: stl_map_reverse_iterator * stl_map_reverse_iterator -> bool = "$1==$2";
+    fun ==: stl_map_reverse_iterator * stl_map_reverse_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_map_reverse_iterator] {
-    fun lt: stl_map_reverse_iterator * stl_map_reverse_iterator -> bool = "$1<$2";
+    fun < : stl_map_reverse_iterator * stl_map_reverse_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_map_reverse_iterator,k*v] {
     fun deref : stl_map_reverse_iterator ->  k*v  = "*(#0*)(void*)&*$1";

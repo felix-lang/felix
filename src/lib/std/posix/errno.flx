@@ -3,8 +3,8 @@ open class Errno
   pod type errno_t = "int" requires C89_headers::errno_h;
   ctor int : errno_t = "$1";
   ctor errno_t : int = "$1";
-  fun eq: errno_t * errno_t -> bool= "$1==$2";
-  fun ne: errno_t * errno_t -> bool= "$1!=$2";
+  fun == : errno_t * errno_t -> bool= "$1==$2";
+  fun != : errno_t * errno_t -> bool= "$1!=$2";
   
   const errno : errno_t = "errno"; // SUCKS
   const ENOERROR : errno_t = "0";

@@ -129,26 +129,26 @@ println$ caseno b3;
 // Use C to model flag like operations
 type flagset = "int";
 ctor flagset: flags = "$1";
-fun bor:flags * flags -> flagset = "$1|$2";
-fun bor:flags * flagset -> flagset = "$1|$2";
-fun bor:flagset * flags -> flagset = "$1|$2";
-fun bor:flagset * flagset -> flagset = "$1|$2";
-fun mem: flags * flagset -> bool = "($1&$2)!=0";
+fun \vee :flags * flags -> flagset = "$1|$2";
+fun \vee :flags * flagset -> flagset = "$1|$2";
+fun \vee :flagset * flags -> flagset = "$1|$2";
+fun \cup :flagset * flagset -> flagset = "$1|$2";
+fun \in : flags * flagset -> bool = "($1&$2)!=0";
 
 fun eq: flagset * flagset -> bool = "$1==$2";
 fun ne: flagset * flagset -> bool = "$1!=$2";
-fun le: flagset * flagset -> bool = "($1&~$2)==0";
-fun lt (x:flagset,y:flagset)=> x<=y and not x == y;
-fun gt (x:flagset,y:flagset)=> not x<=y;
-fun ge (x:flagset,y:flagset)=> not x<y;
+fun \subseteq : flagset * flagset -> bool = "($1&~$2)==0";
+fun \subset (x:flagset,y:flagset)=> x \subset y and not x == y;
+fun \supset (x:flagset,y:flagset)=> not x \subseteq y;
+fun \supseteq (x:flagset,y:flagset)=> not x \subset y;
 
 
-var x = b1 \| b2;         // infix operator \| is function bor!
-println$ b1 in x;         // true: infix operator in is function mem!
-println$ b2 in x;         // true
-println$ b3 in x;         // false
-println$ b1.flagset < x;  // true
-println$ x < b1.flagset;  // false
+var x = b1 \vee b2;         // infix operator \| is function bor!
+println$ b1 \in x;         // true: infix operator in is function mem!
+println$ b2 \in x;         // true
+println$ b3 \in x;         // false
+println$ b1.flagset \subset x;  // true
+println$ x \subset b1.flagset;  // false
 
 @
 You can find the index

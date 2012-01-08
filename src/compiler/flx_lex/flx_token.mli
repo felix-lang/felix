@@ -9,6 +9,10 @@ type ntprio_t = [
   | `Greatereq_prio of string
 ]
 
+(* NOTE!! These tokens have NOTHING to do with the parser.
+  In fact they're just constructors used by the code that
+  translates the dynamically loaded Felix grammar.
+*)
 type token =
   | ERRORTOKEN of string
   | ENDMARKER

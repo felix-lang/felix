@@ -18,7 +18,7 @@ syntax patterns {
   sas_pattern := stuple_pattern "as" sname =># "`(pat_as ,_sr ,_1 ,_3)";
   sas_pattern := stuple_pattern =># "_1";
 
-  stuple_pattern := scoercive_pattern (, scoercive_pattern )* =>#
+  stuple_pattern := scoercive_pattern ("," scoercive_pattern )* =>#
     "(chain 'pat_tuple _1 _2)";
 
   scoercive_pattern := satomic_pattern "|>" x[sarrow_pri] =>#
@@ -29,13 +29,13 @@ syntax patterns {
   satomic_pattern := "false" =># "`(pat_const_ctor ,_sr (ast_case_tag ,_sr 0))";
   satomic_pattern := sstring =># "`(pat_string ,_sr ,_1)";
   satomic_pattern := "?" sname =># "`(pat_as ,_sr (pat_any ,_sr) ,_2)";
-  satomic_pattern := _ =># "`(pat_any ,_sr)";
+  satomic_pattern := "_" =># "`(pat_any ,_sr)";
   satomic_pattern := "(" spattern ")" =># "_2";
   satomic_pattern := "(" ")" =># "`(pat_tuple ,_sr ())";
   satomic_pattern :=  "(" spat_assign ("," spat_assign )* ")" =>#
     "`(pat_record ,_sr ,(cons _2 (map second _3)))"
   ;
-    spat_assign := sname = spattern =># "`(,_1 ,_3)";
+    spat_assign := sname "=" spattern =># "`(,_1 ,_3)";
   satomic_pattern := "$" "(" sexpr ")" =># "`(pat_expr ,_sr ,_3)";
 
 

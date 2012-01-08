@@ -81,7 +81,7 @@ open class Varray
     "PTF gcp->collector->get_count($1)"
     requires property "needs_gc"
   ;
-  proc pluseq[t] (pa:&varray[t],v:t) { push_back (*pa,v); }
+  proc += [t] (pa:&varray[t],v:t) { push_back (*pa,v); }
 
   proc push_back[t] : varray[t] * t = """
     {

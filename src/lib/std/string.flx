@@ -4,10 +4,10 @@ type ustring = "::std::basic_string<uint32_t>" requires Cxx_headers::string;
 typedef strings = typesetof (string,ustring);
 
 instance[t in strings] Eq[t] {
-  fun eq: t * t -> bool = "$1==$2";
+  fun == : t * t -> bool = "$1==$2";
 }
 instance[t in strings] Tord[t] {
-  fun lt: t * t -> bool = "$1<$2";
+  fun < : t * t -> bool = "$1<$2";
 }
 
 open Eq[string];
@@ -18,20 +18,20 @@ open Tord[ustring];
 
 open class String
 {
-  proc pluseq: &string * string = "$1->append($2);";
-  proc pluseq: &string * &char = "$1->append($2);";
-  proc pluseq: &string * char = "*$1 += $2;";
+  proc  += : &string * string = "$1->append($2);";
+  proc  += : &string * &char = "$1->append($2);";
+  proc  += : &string * char = "*$1 += $2;";
 
   // we need to cast to an int so that c++ won't complain
   fun len: string -> size = "$1.size()";
 
-  fun add: string * string -> string = "$1+$2";
-  fun add: string * &char -> string = "$1+$2";
-  fun add: string * char -> string = "$1+$2";
-  fun add: char * string -> string = "$1+$2";
-  fun add: string * int -> string = "$1+::flx::rtl::i18n::utf8($2)" requires package "flx_i18n";
-  fun mul: string * int -> string = "::flx::rtl::strutil::mul($1,$2)" requires package "flx_strutil";
-  fun mul: char * int -> string = "::std::string($2,$1)";
+  fun + : string * string -> string = "$1+$2";
+  fun + : string * &char -> string = "$1+$2";
+  fun + : string * char -> string = "$1+$2";
+  fun + : char * string -> string = "$1+$2";
+  fun + : string * int -> string = "$1+::flx::rtl::i18n::utf8($2)" requires package "flx_i18n";
+  fun * : string * int -> string = "::flx::rtl::strutil::mul($1,$2)" requires package "flx_strutil";
+  fun * : char * int -> string = "::std::string($2,$1)";
 
   fun apply (x:string, y:string):string => x + y;
   fun apply (x:string, y:int):string => x + y;
@@ -363,12 +363,12 @@ instance Repr[string] {
 open class Ustring
 {
   fun _ctor_uchar (x:ustring) => x.[0];
-  proc pluseq: ustring * ustring = "$1.append($2);";
+  proc  += : ustring * ustring = "$1.append($2);";
 
   fun len: ustring -> int = "$1.size()";
-  fun add: ustring * ustring -> ustring = "$1+$2";
-  fun mul: ustring * int -> ustring = "::flx::lib::mul($1,$2)";
-  fun mul: char * int -> ustring = "ustring($2,$1)";
+  fun + : ustring * ustring -> ustring = "$1+$2";
+  fun * : ustring * int -> ustring = "::flx::lib::mul($1,$2)";
+  fun * : char * int -> ustring = "ustring($2,$1)";
 
   fun apply (x:ustring, y:ustring):ustring => x + y;
 

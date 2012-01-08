@@ -11,7 +11,7 @@ include "stl/stl";
     fun mem : stl_set * t -> bool = "$1.find($2) != $1.end()";
 // Stl_Set
   instance Eq[Stl_Set::stl_set] {
-    fun eq: Stl_Set::stl_set * Stl_Set::stl_set -> bool = "$1==$2";
+    fun == : Stl_Set::stl_set * Stl_Set::stl_set -> bool = "$1==$2";
   }
   instance Container[Stl_Set::stl_set,t] {
     fun len: Stl_Set::stl_set -> size = "$1.size()";
@@ -31,10 +31,10 @@ include "stl/stl";
 
 // Stl_Set iterator
   instance Eq[stl_set_iterator] {
-    fun eq: stl_set_iterator * stl_set_iterator -> bool = "$1==$2";
+    fun == : stl_set_iterator * stl_set_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_set_iterator] {
-    fun lt: stl_set_iterator * stl_set_iterator -> bool = "$1<$2";
+    fun < : stl_set_iterator * stl_set_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_set_iterator,t] {
     fun deref : stl_set_iterator ->  t  = "*(#0*)(void*)&*$1";
@@ -54,10 +54,10 @@ include "stl/stl";
 
 // Stl_Set reverse iterator
   instance Eq[stl_set_reverse_iterator] {
-    fun eq: stl_set_reverse_iterator * stl_set_reverse_iterator -> bool = "$1==$2";
+    fun == : stl_set_reverse_iterator * stl_set_reverse_iterator -> bool = "$1==$2";
   }
   instance Tord[stl_set_reverse_iterator] {
-    fun lt: stl_set_reverse_iterator * stl_set_reverse_iterator -> bool = "$1<$2";
+    fun < : stl_set_reverse_iterator * stl_set_reverse_iterator -> bool = "$1<$2";
   }
   instance Iterator[stl_set_reverse_iterator,t] {
     fun deref : stl_set_reverse_iterator ->  t  = "*(#0*)(void*)&*$1";

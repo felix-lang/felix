@@ -50,7 +50,7 @@ let const_fold' e sr name arg =
     EXPR_literal (sr,L.Int (L.Int_kind.Int, (abs x)))
 
   (* x+y *)
-  | "add", EXPR_tuple ( _, [
+  | "+", EXPR_tuple ( _, [
            EXPR_literal (_,L.Int (L.Int_kind.Int,x));
            EXPR_literal (_,L.Int (L.Int_kind.Int,y))
           ])
@@ -58,7 +58,7 @@ let const_fold' e sr name arg =
     EXPR_literal (sr,L.Int (L.Int_kind.Int,(add x y)))
 
   (* x-y *)
-  | "sub", EXPR_tuple ( _, [
+  | "-", EXPR_tuple ( _, [
            EXPR_literal (_,L.Int (L.Int_kind.Int,x));
            EXPR_literal (_,L.Int (L.Int_kind.Int,y))
           ])
@@ -66,7 +66,7 @@ let const_fold' e sr name arg =
     EXPR_literal (sr,L.Int (L.Int_kind.Int,(sub x y)))
 
   (* x*y *)
-  | "mul", EXPR_tuple ( _, [
+  | "*", EXPR_tuple ( _, [
            EXPR_literal (_,L.Int (L.Int_kind.Int,x));
            EXPR_literal (_,L.Int (L.Int_kind.Int,y))
           ])
@@ -74,7 +74,7 @@ let const_fold' e sr name arg =
     EXPR_literal (sr,L.Int (L.Int_kind.Int,(mult x y)))
 
   (* x/y *)
-  | "div", EXPR_tuple ( _, [
+  | "/", EXPR_tuple ( _, [
            EXPR_literal (_,L.Int (L.Int_kind.Int,x));
            EXPR_literal (_,L.Int (L.Int_kind.Int,y))
           ])
@@ -109,7 +109,7 @@ let const_fold' e sr name arg =
     EXPR_literal (sr,L.Int (L.Int_kind.Int,(pow x y)))
 
   (* x < y *)
-  | "lt", EXPR_tuple ( _, [
+  | "<", EXPR_tuple ( _, [
            EXPR_literal (_,L.Int (L.Int_kind.Int,x));
            EXPR_literal (_,L.Int (L.Int_kind.Int,y))
           ])
@@ -117,7 +117,7 @@ let const_fold' e sr name arg =
     truth sr (lt x y)
 
   (* x > y *)
-  | "gt", EXPR_tuple ( _, [
+  | ">", EXPR_tuple ( _, [
            EXPR_literal (_,L.Int (L.Int_kind.Int,x));
            EXPR_literal (_,L.Int (L.Int_kind.Int,y))
           ])
@@ -125,7 +125,7 @@ let const_fold' e sr name arg =
     truth sr (gt x y)
 
   (* x <= y *)
-  | "le", EXPR_tuple ( _, [
+  | "<=", EXPR_tuple ( _, [
            EXPR_literal (_,L.Int (L.Int_kind.Int,x));
            EXPR_literal (_,L.Int (L.Int_kind.Int,y))
           ])
@@ -133,7 +133,7 @@ let const_fold' e sr name arg =
     truth sr (le x y)
 
   (* x >= y *)
-  | "ge", EXPR_tuple ( _, [
+  | ">=", EXPR_tuple ( _, [
            EXPR_literal (_,L.Int (L.Int_kind.Int,x));
            EXPR_literal (_,L.Int (L.Int_kind.Int,y))
           ])
@@ -141,7 +141,7 @@ let const_fold' e sr name arg =
     truth sr (ge x y)
 
   (* x == y *)
-  | "eq", EXPR_tuple ( _, [
+  | "==", EXPR_tuple ( _, [
            EXPR_literal (_,L.Int (L.Int_kind.Int,x));
            EXPR_literal (_,L.Int (L.Int_kind.Int,y))
           ])
@@ -149,7 +149,7 @@ let const_fold' e sr name arg =
     truth sr (eq x y)
 
   (* x != y *)
-  | "ne", EXPR_tuple ( _, [
+  | "!=", EXPR_tuple ( _, [
            EXPR_literal (_,L.Int (L.Int_kind.Int,x));
            EXPR_literal (_,L.Int (L.Int_kind.Int,y))
           ])
@@ -158,7 +158,7 @@ let const_fold' e sr name arg =
 
   (* strings *)
   (* x+y *)
-  | "add", EXPR_tuple ( _, [
+  | "+", EXPR_tuple ( _, [
            EXPR_literal (_,L.String x);
            EXPR_literal (_,L.String y)
           ])
@@ -166,7 +166,7 @@ let const_fold' e sr name arg =
     EXPR_literal (sr,L.String (String.concat "" [x; y]))
 
   (* x*y *)
-  | "mul", EXPR_tuple ( _, [
+  | "*", EXPR_tuple ( _, [
            EXPR_literal (_,L.String x);
            EXPR_literal (_,L.Int (L.Int_kind.Int,y))
           ])
@@ -186,7 +186,7 @@ let const_fold' e sr name arg =
     EXPR_literal (sr,L.String (Buffer.contents s))
 
   (* x == y *)
-  | "eq", EXPR_tuple ( _, [
+  | "==", EXPR_tuple ( _, [
            EXPR_literal (_,L.String x);
            EXPR_literal (_,L.String y)
           ])
@@ -194,7 +194,7 @@ let const_fold' e sr name arg =
     truth sr (x = y)
 
   (* x != y *)
-  | "ne", EXPR_tuple ( _, [
+  | "!=", EXPR_tuple ( _, [
            EXPR_literal (_,L.String x);
            EXPR_literal (_,L.String y)
           ])
@@ -223,14 +223,14 @@ let const_fold' e sr name arg =
     -> truth sr (x=1 && y=1)
 
   (* x eq y *)
-  | "eq", EXPR_tuple ( _, [
+  | "==", EXPR_tuple ( _, [
            EXPR_typed_case (_,x,TYP_unitsum 2);
            EXPR_typed_case (_,y,TYP_unitsum 2)
           ])
     -> truth sr (x=y)
 
   (* x ne y *)
-  | "ne", EXPR_tuple ( _, [
+  | "!=", EXPR_tuple ( _, [
            EXPR_typed_case (_,x,TYP_unitsum 2);
            EXPR_typed_case (_,y,TYP_unitsum 2)
           ])
@@ -250,3 +250,4 @@ let rec const_fold e =
     const_fold' e sr "add" (EXPR_tuple (sr,[x;y]))
 
   | _ -> e'
+

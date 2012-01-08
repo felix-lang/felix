@@ -46,6 +46,13 @@ open class Typing
     endmatch
   ;
 
+  typedef fun == (x:TYPE, y:TYPE):TYPE=>
+    typematch x with
+    | y => typematch y with | x => 1 | _ => 0 endmatch
+    | _ => 0
+    endmatch
+  ;
+
 
   const memcount[t] : size = "#memcount";
 }

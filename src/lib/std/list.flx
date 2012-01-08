@@ -241,17 +241,17 @@ open class List
   }
 
   // concatenate two lists
-  fun add[T] (x:list[T], y: list[T]):list[T] => join x y;
+  fun + [T] (x:list[T], y: list[T]):list[T] => join x y;
 
   // prepend element to head of list
-  fun add[T] (x:T, y:list[T]):list[T] => Cons (x, y);
+  fun + [T] (x:T, y:list[T]):list[T] => Cons (x, y);
 
   // append element to tail of list
   // very slow, adding to end ..
-  noinline fun add[T] (x:list[T], y:T):list[T] => rev$ Cons (y, rev x);
+  noinline fun + [T] (x:list[T], y:T):list[T] => rev$ Cons (y, rev x);
 
   // append element to tail of list
-  proc pluseq[T] (x:&list[T], y:T) { x <- *x + y; }
+  proc += [T] (x:&list[T], y:T) { x <- *x + y; }
 
   // concatenate all the lists in a list of lists
   noinline fun cat[T] (x:list[list[T]]):list[T] =

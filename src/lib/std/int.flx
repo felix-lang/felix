@@ -209,15 +209,15 @@ instance[t in ints] MultSemi1[t] {}
 instance[t in ints] Dring[t] {}
 
 instance [t in fast_uints] Bits [t] {
-  fun bxor: t * t -> t = "(?1)($1^$2)";
-  fun bor: t * t -> t = "(?1)($1|$2)";
-  fun band: t * t -> t = "(?1)($1&$2)";
+  fun \^ : t * t -> t = "(?1)($1^$2)";
+  fun \| : t * t -> t = "(?1)($1|$2)";
+  fun \& : t * t -> t = "(?1)($1&$2)";
 
   // note: the cast is essential to ensure ~1tu is 254tu
-  fun bnot: t -> t = "(?1)~$1";
-  proc bxoreq: &t * t = "*$1^=$2;";
-  proc boreq: &t * t = "*$1|=$2;";
-  proc bandeq: &t * t = "*$1&=$2;";
+  fun ~ : t -> t = "(?1)~$1";
+  proc ^= : &t * t = "*$1^=$2;";
+  proc |= : &t * t = "*$1|=$2;";
+  proc &= : &t * t = "*$1&=$2;";
 }
 
 instance[t in ints] Forward[t] {
@@ -233,8 +233,8 @@ instance[t in ints] Bidirectional[t] {
 }
 
 instance[t in ints] Integer[t] {
-  fun shl: t * t -> t = "$1<<$2";
-  fun shr: t * t -> t = "$1>>$2";
+  fun << : t * t -> t = "$1<<$2";
+  fun >> : t * t -> t = "$1>>$2";
 }
 
 instance[t in fast_sints] Signed_integer[t] {

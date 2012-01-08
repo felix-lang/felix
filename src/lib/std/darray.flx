@@ -62,7 +62,7 @@ open class Darray
     if newsize != maxlen (_repr_ a)*.a do do_resize (a,newsize); done 
   }
 
-  proc pluseq[t] (a:&darray[t],v:t) {
+  proc += [t] (a:&darray[t],v:t) {
     push_back (*a, v);
   }
 
@@ -82,7 +82,7 @@ open class Darray
 
 instance[T with Eq[T]] Set[darray[T],T] {
  fun mem(x:T, a:darray[T]) : bool = {
-   ; for var i in 0uz upto len a -1uz do
+   for var i in 0uz upto len a -1uz do
      if a.[i] == x do return true; done
    done
    return false;

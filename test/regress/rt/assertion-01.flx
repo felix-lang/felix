@@ -29,7 +29,7 @@ lab:>
   if i <= 5  goto lab;
 
 axiom poly[t] ( sym:t * t -> t, eq:t * t-> bool, x:t, y:t):
-  sym(x,y) == sym(y,x)
+  eq(sym(x,y), sym(y,x))
 ;
 
 axiom_check (add of (int * int), eq of (int * int), 1,2);

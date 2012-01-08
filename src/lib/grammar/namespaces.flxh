@@ -1,11 +1,11 @@
 syntax namespaces {
   requires statements;
-  tstatement := "rename" sdeclname = squalified_name ";" =>#
+  tstatement := "rename" sdeclname "=" squalified_name ";" =>#
     """
     `(ast_inherit ,_sr ,(first _2) ,(second _2) ,_4)
     """;
 
-  tstatement := "rename" "fun" sdeclname = squalified_name ";" =>#
+  tstatement := "rename" "fun" sdeclname "=" squalified_name ";" =>#
     """
     `(ast_inherit_fun ,_sr ,(first _3) ,(second _3) ,_5)
     """;
@@ -23,14 +23,14 @@ syntax namespaces {
         ("ERROR")))))
     `(ast_use ,_sr ,name ,_2))
     """;
-  tstatement := "use" sname = squalified_name ";" =># "`(ast_use ,_sr ,_2 ,_4)";
+  tstatement := "use" sname "=" squalified_name ";" =># "`(ast_use ,_sr ,_2 ,_4)";
 
-  tstatement := "module" sdeclname = ? scompound =>#
+  tstatement := "module" sdeclname "=" ? scompound =>#
     """
     `(ast_untyped_module ,_sr ,(first _2) ,(second _2) ,_4)
      """;
 
-  tstatement := "open" "module" sdeclname = ? scompound =>#
+  tstatement := "open" "module" sdeclname "=" ? scompound =>#
     """
     `(ast_seq ,_sr (
       (ast_untyped_module ,_sr ,(first _3) ,(second _3) ,_5)
@@ -42,7 +42,7 @@ syntax namespaces {
     `(ast_typeclass ,_sr ,(first _2) ,(second _2) ,_4)
     """;
 
-  tstatement := "open" "class" sdeclname = ? scompound =>#
+  tstatement := "open" "class" sdeclname "=" ? scompound =>#
     """
     `(ast_seq ,_sr (
       (ast_typeclass ,_sr ,(first _3) ,(second _3) ,_5)

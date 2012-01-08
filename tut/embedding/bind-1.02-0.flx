@@ -9,11 +9,11 @@ proc _set ( lhs: &gauss, rhs: gauss )
   (*lhs).y = rhs.y;
 }
 
-fun add (a:gauss, b:gauss): gauss = {
+fun + (a:gauss, b:gauss): gauss = {
   return gauss(a.x+b.x, a.y+b.y);
 }
 
-fun mul (a:gauss, b:gauss): gauss = {
+fun * (a:gauss, b:gauss): gauss = {
   return gauss(a.x+b.x - a.y+b.y, a.x*b.y + a.y*b.x);
 }
 

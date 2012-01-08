@@ -31,10 +31,10 @@ open class Re2 {
       fun len: StringPiece -> size = "$1.size()";
     }
     instance Eq[StringPiece] {
-      fun eq: StringPiece * StringPiece -> bool = "$1==$2";
+      fun == : StringPiece * StringPiece -> bool = "$1==$2";
     }
     instance Tord[StringPiece] {
-      fun lt: StringPiece * StringPiece -> bool = "$1<$2";
+      fun < : StringPiece * StringPiece -> bool = "$1<$2";
     }
     instance Str[StringPiece] {
       fun str: StringPiece -> string ="$1.as_string()";
