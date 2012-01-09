@@ -1,5 +1,6 @@
-include "std/io/flx_faio";     // defines copipes & some driver interaction
-include "std/io/flx_demux";
+include "std/io/faio";     // defines copipes & some driver interaction
+include "std/io/demux";
+include "std/win32/__init__";
 
 module Faio_win32 {
 requires package "demux";

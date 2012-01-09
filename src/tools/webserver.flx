@@ -1,4 +1,4 @@
-if POSIX do
+if PLAT_POSIX do
 include "std/posix/faio_posix";  // aio_ropen
 //open Faio_posix;
 include "std/posix/signal";
@@ -43,7 +43,7 @@ var argno = 1;
 fun prefix(arg:string,key:string)=>
   arg.[to len key]==key
 ;
-var INSTALL_ROOT = Config::FLX_INSTALL_DIR;
+var INSTALL_ROOT = #Config::config.FLX_INSTALL_DIR;
  
 var DELAY = 0.1;
 var PORT=1234;

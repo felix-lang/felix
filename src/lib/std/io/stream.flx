@@ -1,7 +1,7 @@
 include "std/io/faio";
-if POSIX do
+if PLAT_POSIX do
   include "std/posix/faio_posix";
-elif WIN32 do
+elif PLAT_WIN32 do
   include "std/win32/faio_win32";
 else
   include "ERROR: stream requires POSIX or WIN32";
@@ -13,7 +13,7 @@ class Stream {
 
   open Faio;
 
-  if POSIX do
+  if PLAT_POSIX do
     open Faio_posix;
     typedef fd_t = FileSystem::posix_file;
   else
@@ -96,7 +96,7 @@ class Stream {
   instance IByteStream[fd_t]
   {
     proc read(fd: fd_t, len: &int, buf: address, eof: &bool) {
-      if POSIX do
+      if PLAT_POSIX do
         faio_read(fd, len, buf, eof);
       else
         ReadFile(fd, len, buf, eof);
@@ -107,7 +107,7 @@ class Stream {
   instance OByteStream[fd_t]
   {
     proc write(fd: fd_t, len: &int, buf: address, eof: &bool) {
-      if POSIX do
+      if PLAT_POSIX do
         faio_write(fd, len, buf, eof);
       else
         WriteFile(fd, len, buf, eof);
@@ -120,7 +120,7 @@ class Stream {
   instance TerminalIByteStream[fd_t]
   {
     proc iclose (fd: fd_t) {
-      if POSIX do
+      if PLAT_POSIX do
         C_hack::ignore(FileSystem::close fd);
       else
         CloseFile fd;
@@ -131,7 +131,7 @@ class Stream {
   instance TerminalOByteStream[fd_t]
   {
     proc oclose (fd: fd_t) {
-      if POSIX do
+      if PLAT_POSIX do
         C_hack::ignore(FileSystem::close fd);
       else
         CloseFile fd;
@@ -142,7 +142,7 @@ class Stream {
   instance TerminalIOByteStream[fd_t]
   {
     proc ioclose (fd: fd_t) {
-      if POSIX do
+      if PLAT_POSIX do
         C_hack::ignore(FileSystem::close fd);
       else
         CloseFile fd;

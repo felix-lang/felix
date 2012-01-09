@@ -1,16 +1,16 @@
 include "std/io/faio";
 include "std/io/stream";
 
-if POSIX do
+if PLAT_POSIX do
   include "std/posix/faio_posix";
-elif WIN32 do
+elif PLAT_WIN32 do
   include "std/win32/faio_win32";
 else
   include "ERROR: socket requires POSIX or WIN32";
 done;
 
 class Socket {
-  if POSIX do
+  if PLAT_POSIX do
     typedef socket_t = Faio_posix::socket_t;
   else
     typedef socket_t = Faio_win32::socket_t;
@@ -18,7 +18,7 @@ class Socket {
 
   proc mk_listener(l: &socket_t, port: &int, qlen: int)
   {
-  if POSIX do
+  if PLAT_POSIX do
     Faio_posix::mk_listener(l, port, qlen);
   else
     Faio_win32::mk_listener(l, port, qlen);
@@ -27,7 +27,7 @@ class Socket {
 
   proc accept(l: socket_t, s: &socket_t)
   {
-  if POSIX do
+  if PLAT_POSIX do
     Faio_posix::accept(s, l);  // success or not? error checking
   else
     var success: bool;
@@ -41,7 +41,7 @@ class Socket {
 
   proc shutdown(s: socket_t, how: int)
   {
-  if POSIX do
+  if PLAT_POSIX do
     Faio_posix::shutdown(s, how);
   else
     Faio_win32::shutdown(s, how);
@@ -50,7 +50,7 @@ class Socket {
 
   proc connect(s: &socket_t, addr: &char, port: int)
   {
-  if POSIX do
+  if PLAT_POSIX do
       Faio_posix::connect(s, addr, port);
   else
       Faio_win32::Connect(s, addr, port);
@@ -63,7 +63,7 @@ class Socket {
   //
   instance Stream::IByteStream[socket_t]
   {
-    if POSIX do
+    if PLAT_POSIX do
     proc read(s: socket_t, len: &int, buf: address, eof: &bool)
       { Faio_posix::async_read(s, len, buf, eof); }
     else
@@ -74,7 +74,7 @@ class Socket {
 
   instance Stream::OByteStream[socket_t]
   {
-    if POSIX do
+    if PLAT_POSIX do
     proc write(s: socket_t, len: &int, buf: address, eof: &bool)
       {
         //println$ "faio/socket.flx: Stream::OByteStream[socket_t]: write(s,"+str (*len)+",buf,"+str(*eof)+") calling async_write ..";
@@ -91,7 +91,7 @@ class Socket {
 
   instance Stream::TerminalIByteStream[socket_t]
   {
-    if POSIX do
+    if PLAT_POSIX do
     proc iclose (s:socket_t)
       { Faio_posix::shutdown (s,0); Faio_posix::close s; }
     else
@@ -102,7 +102,7 @@ class Socket {
 
   instance Stream::TerminalOByteStream[socket_t]
   {
-    if POSIX do
+    if PLAT_POSIX do
     proc oclose (s:socket_t)
       { Faio_posix::shutdown (s,1); Faio_posix::close s; }
     else
@@ -113,7 +113,7 @@ class Socket {
 
   instance Stream::TerminalIOByteStream[socket_t]
   {
-    if POSIX do
+    if PLAT_POSIX do
     proc ioclose (s:socket_t)
       {
         // RF: just close, I don't think any of this stuff is necessary.

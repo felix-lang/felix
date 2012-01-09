@@ -2,22 +2,24 @@
 
 @select(tangler('lib/plat/config.flx','data'))
 //GENERATED during config
-module Config {
-False := false;
-True := true;
-@def ts(x): tangle(x+";")
+class Config {
+@def ts(x): tangle(x+",")
+@def tv(x): ts("    "+x)
+@def b(x): return str(x).lower()
 
-@def tv(x): ts("var "+x)
-
+fun config() => 
+@tangle("  let ?INSTALL_ROOT_TOPDIR=Filename::join(%r, 'lib/felix') in" % (config.PREFIX))
+@tangle("  let ?INSTALL_ROOT=Filename::join(INSTALL_ROOT_TOPDIR, 'felix-%s') in " % (config.flx_version))
+  (
 @tv("PREFIX='"+config.PREFIX+"'")
-@tv("INSTALL_ROOT_TOPDIR=Filename::join(%r, 'lib/felix')" % (config.PREFIX))
-@tv("INSTALL_ROOT=Filename::join(INSTALL_ROOT_TOPDIR, 'felix-%s')" % (config.flx_version))
-var FLX_INSTALL_DIR = Env::getenv("FLX_INSTALL_DIR", INSTALL_ROOT);
-@tv("CYGWIN="+str(config.CYGWIN))
-@tv("WIN32="+str(config.WIN32))
-@tv("MACOSX="+str(config.MACOSX))
-@tv("HAVE_GNU="+str(config.HAVE_GNU))
-@tv("HAVE_MSVC="+str(config.HAVE_MSVC))
+@tv("INSTALL_ROOT_TOPDIR=INSTALL_ROOT_TOPDIR")
+@tv("INSTALL_ROOT=INSTALL_ROOT")
+    FLX_INSTALL_DIR = Env::getenv("FLX_INSTALL_DIR", INSTALL_ROOT),
+@tv("CYGWIN="+b(config.CYGWIN))
+@tv("WIN32="+b(config.WIN32))
+@tv("MACOSX="+b(config.MACOSX))
+@tv("HAVE_GNU="+b(config.HAVE_GNU))
+@tv("HAVE_MSVC="+b(config.HAVE_MSVC))
 @if config.TARGET_CXX.options.HAVE_PIC:
   tv('CCOBJ_DLLIB="'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+' '+config.TARGET_CXX.options.PIC+'"')
  else:
@@ -36,22 +38,24 @@ var FLX_INSTALL_DIR = Env::getenv("FLX_INSTALL_DIR", INSTALL_ROOT);
 @tv('OPTIMISE="'+config.TARGET_CXX.options.OPTIMISE+' "')
 @tv('DEBUG_FLAGS="'+config.TARGET_CXX.options.DEBUG_FLAGS+' "')
 @if config.DEFAULT_LINK_MODEL=="dynamic":
-   tv("DEFAULT_LINK_STATIC=0;")
+  tangle("    DEFAULT_LINK_STATIC=0")
  else:
-   tv("DEFAULT_LINK_STATIC=1;")
-
+  tangle("    DEFAULT_LINK_STATIC=1")
+@#
+  )
+;
 
 fun link_strings(FLX_INSTALL_DIR:string): string * string =
 {
 @if config.HAVE_MSVC:
-  tv('DLINK_STRING="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl "')
-  tangle('SLINK_STRING="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl "')
+  tangle('  DLINK_STRING:="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl ";')
+  tangle('  SLINK_STRING:="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl ";')
  elif config.CYGWIN or config.WIN32:
-  tv('DLINK_STRING="-L"+{FLX_INSTALL_DIR+"/bin "')
-  tv('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
+  tangle('  DLINK_STRING:="-L"+{FLX_INSTALL_DIR+"/bin "')
+  tangle('  SLINK_STRING:="-L"+FLX_INSTALL_DIR+"/lib/rtl ";')
  else:
-  tv('DLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
-  tv('SLINK_STRING="-L"+FLX_INSTALL_DIR+"/lib/rtl "')
+  tangle('  DLINK_STRING:="-L"+FLX_INSTALL_DIR+"/lib/rtl ";')
+  tangle('  SLINK_STRING:="-L"+FLX_INSTALL_DIR+"/lib/rtl ";')
 @#
   return DLINK_STRING,SLINK_STRING;
 }
@@ -635,9 +639,9 @@ tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
 
 @for i in plats:
   if getattr(config, i):
-    tangle("macro val " + i + " = true;")
+    tangle("macro val PLAT_" + i + " = true;")
   else:
-    tangle("macro val " + i + " = false;")
+    tangle("macro val PLAT_" + i + " = false;")
 
 @chars = ["char", "wchar", "uchar"]
 @fast_sints = [
@@ -766,10 +770,10 @@ typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
 @select(tangler('lib/plat/float.flx','data'))
 // GENERATED DURING CONFIGURATION
 @for t in floats:
-  tangle("open module " + t.capitalize())
+  tangle("open class " + t.capitalize())
   tangle("{")
-  tangle('  fun _ctor_'+t+': string -> '+t+' = "static_cast<'+tmap[t]+'>(::std::atof($1.data()))" requires Cxx_headers::cstdlib;')
-  tangle('  fun _ctor_'+t+'[T:reals]: T -> '+t+' = "static_cast<'+tmap[t]+'>($1)";')
+  tangle('  ctor '+t+': string = "static_cast<'+tmap[t]+'>(::std::atof($1.data()))" requires Cxx_headers::cstdlib;')
+  tangle('  ctor[T in reals] '+t+': T = "static_cast<'+tmap[t]+'>($1)";')
   gen_nan(t)
   tangle('  proc fprint: ostream * '+t+' = "*$1<<$2;" requires Cxx_headers::iostream;')
   tangle("}")
@@ -779,7 +783,7 @@ typedef fun arithmax(l: TYPE, r: TYPE): TYPE =>
 @select(h)
 // GENERATED DURING BUILD (for version number)
 publish "System Interface"
-module Version
+class Version
 {
 @tangle('  const felix_version : string = \'::std::string("'+config.flx_version+'")\';')
 }
@@ -788,7 +792,7 @@ module Version
 @h = tangler("lib/plat/filename.flx")
 @select(h)
 // GENERATED DURING CONFIGURATION
-module Plat_Filename
+class Plat_Filename
 {
 @if os.sep == '\\':
    # FFS!!! we put \\\\\\\\ here:
@@ -796,9 +800,9 @@ module Plat_Filename
    # Felix then reduces it to \\           !!!
    # and finally C reduces it to plain \   !!!
    # don't remove the !!! because \ at eol is continuation .. argg
-   tangle('  val sep  = "\\\\\\\\"')
+   tangle('  fun sep()  => "\\\\\\\\";')
  else:
-   tangle('  val sep = "'+os.sep+'";')
+   tangle('  fun sep() => "'+os.sep+'";')
 @#
  
 }

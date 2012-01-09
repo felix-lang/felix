@@ -77,7 +77,7 @@ val nav = '<p><button type="button" onclick="expand_all()">Expand</button>'
 fun tree_button(bid:string, cid:string)=>
   "<img src='/web/images/minus.gif' id='"+bid+"' onclick='toggle(this,\""+cid+"\")' alt='+'/>"
 ;
-val timeout = Filename::join (Config::FLX_INSTALL_DIR, "bin", "timeout"+Config::EXT_EXE);
+val timeout = Filename::join (#Config::config.FLX_INSTALL_DIR, "bin", "timeout"+#Config::config.EXT_EXE);
 
 gen safer_popen(cmd:string)=>
   Process::popen_in(timeout+" -t 15 " + cmd + " 2>&1")

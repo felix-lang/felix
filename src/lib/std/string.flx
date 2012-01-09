@@ -64,22 +64,13 @@ open class String
   fun map (f:char->char) (var x:string): string = {
     if len x > 0uz do
       for var i in 0uz upto (len x) - 1uz do
-        // FIXME: The statement below currently doesn't compile correctly.
-        //x.[i] = _f x.[i];
-
         store(x, i, f x.[i]);
       done
     done
     return x;
   }
 
-  // comparisons
-  //gen_cmp string;
-
-  // Note we use int instead of size here: size is correct,
-  // but that would requires heaps of casts in Felix
-
-  const stl_npos: size = "static_cast<int>(::std::string::npos)";
+  const stl_npos: size = "::std::string::npos";
 
   fun stl_find: string * string -> int = "(int)$1.find($2)";
   fun stl_find: string * string * int -> int = "(int)$1.find($2,$3)";
@@ -365,7 +356,7 @@ open class Ustring
   fun _ctor_uchar (x:ustring) => x.[0];
   proc  += : ustring * ustring = "$1.append($2);";
 
-  fun len: ustring -> int = "$1.size()";
+  fun len: ustring -> size = "$1.size()";
   fun + : ustring * ustring -> ustring = "$1+$2";
   fun * : ustring * int -> ustring = "::flx::lib::mul($1,$2)";
   fun * : char * int -> ustring = "ustring($2,$1)";

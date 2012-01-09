@@ -72,7 +72,7 @@ more:
 
   void writeln (FILE *fi, string s)
   {
-    static char *eol = "\n";
+    static char const *eol = "\n";
     static int n = 0;
     if(n==0)n=strlen(eol);
     fwrite(s.data(),s.size(),1,fi);

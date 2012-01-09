@@ -14,7 +14,6 @@ so it can be built early enough.
 proc kludge : 1 = "PTF gcp->allow_collection_anywhere=false;";
 kludge();
 
-macro val sep = Plat_Filename::sep;
 open Lexer;
 open Env;
 open Text_file;
@@ -234,7 +233,7 @@ proc handle_pkg (pkg:string, trace:list[string]){
    var found = false;
    iter(proc (dir:string){
      val filename =
-       if dir=="" then "." else dir endif + sep + pkg + ".fpc"
+       if dir=="" then "." else dir endif + #Filename::sep + pkg + ".fpc"
      ;
      //print filename; endl;
 
