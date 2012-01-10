@@ -294,7 +294,7 @@ open class List
   // construe a list as a set, imbuing it with a membership
   // test, provided the element type has an equality operator
   instance[T with Eq[T]] Set[list[T],T] {
-    fun mem(x:T, a:list[T]) => mem[T,T] eq of (T * T) a x;
+    fun \in (x:T, a:list[T]) => mem[T,T] eq of (T * T) a x;
   }
 
   // return option of the first element in a list satisfying the predicate
@@ -453,7 +453,7 @@ class S_expr
   ;
 
   instance[T with Eq[T]] Set[sexpr[T],T] {
-    fun mem (elt:T, x:sexpr[T]) = {
+    fun \in (elt:T, x:sexpr[T]) = {
       iter (proc (v:T) {if v == elt goto True;}) x; 
       return false;
     True:>

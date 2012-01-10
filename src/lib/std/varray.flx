@@ -167,7 +167,7 @@ instance[T with Show[T]] Str[Varray::varray[T]] {
 }
 
 instance[T with Eq[T]] Set[varray[T],T] {
- fun mem(x:T, a:varray[T]) : bool = {
+ fun \in (x:T, a:varray[T]) : bool = {
    if len a > 0uz do
      for var i in 0uz upto len a - 1uz do
        if a.[i] == x do return true; done

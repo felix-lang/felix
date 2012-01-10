@@ -130,6 +130,11 @@ open class Re2 {
 
   fun CheckRewriteString: RE2 * StringPiece * &string -> bool = "$1->CheckRewriteString($2, $3)";
 
-  fun mem(s:string, r:RE2)=>
-    Match(r,StringPiece s,0,ANCHOR_START, C_hack::null[StringPiece], 0);
+  instance Set[RE2, string] {
+    fun \in (s:string, r:RE2)=>
+      Match(r,StringPiece s,0,ANCHOR_START, C_hack::null[StringPiece], 0);
+  }
 }
+
+open Set[RE2, string];
+

@@ -7,3 +7,5 @@ val s = Tree (list(t1,t2,l3));
 
 println$ s;
 println$ str (91 \in s);
+
+

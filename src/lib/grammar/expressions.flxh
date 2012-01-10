@@ -68,8 +68,10 @@ syntax expressions {
   x[scomparison_pri]:= x[>scomparison_pri] "!=" x[>scomparison_pri] =># "(Infix)";
   x[scomparison_pri]:= x[>scomparison_pri] ">=" x[>scomparison_pri] =># "(Infix)";
   x[scomparison_pri]:= x[>scomparison_pri] ">" x[>scomparison_pri] =># "(Infix)";
-  x[scomparison_pri]:= x[>scomparison_pri] "in" x[>scomparison_pri] =># "(infix 'mem)";
-  x[scomparison_pri]:= x[>scomparison_pri] "\in" x[>scomparison_pri] =># "(infix 'mem)";
+
+  // F knows why we need to use BOTH raw strings and double up the \ in these names ..
+  x[scomparison_pri]:= x[>scomparison_pri] "in" x[>scomparison_pri] =># r'''`(ast_apply ,_sr (,(nos "\\in" ) (,_1 ,_3)))''';
+  x[scomparison_pri]:= x[>scomparison_pri] "\\in" x[>scomparison_pri] =># r'''`(ast_apply ,_sr (,(nos "\\in" ) (,_1 ,_3)))'''; 
 
   // named temporary
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";

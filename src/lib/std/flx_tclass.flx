@@ -48,7 +48,8 @@ class OBuffer [f] {
 // Set need not be finite (example regexp again)
 // A list is a set, despite the duplications
 class Set[c,t] {
-  virtual fun mem: t * c-> bool;
+  fun mem (elt:t, container:c):bool => elt \in container;
+  virtual fun \in : t * c-> bool;
 }
 
 // roughly, a finite Set

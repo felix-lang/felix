@@ -75,7 +75,7 @@ class Judy
     "*$4=Judy1Test(*$1,$2,$3);";
 
   instance Set[J1Array,word] {
-    fun mem(x:word, a:J1Array) : bool = {
+    fun \in (x:word, a:J1Array) : bool = {
       var e:JError_t;
       var r:int;
       Judy1Test(a,x,&e,&r);
