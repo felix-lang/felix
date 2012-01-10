@@ -453,12 +453,8 @@ class S_expr
   ;
 
   instance[T with Eq[T]] Set[sexpr[T],T] {
-    fun \in (elt:T, x:sexpr[T]) = {
-      iter (proc (v:T) {if v == elt goto True;}) x; 
-      return false;
-    True:>
-      return true;
-    }
+    fun \in (elt:T, x:sexpr[T]) => 
+      fold_left (fun (acc:bool) (v:T) => acc or v == elt) false x; 
   }
   instance[T with Str[T]] Str[sexpr[T]] {
     fun str(x:sexpr[T])=>
