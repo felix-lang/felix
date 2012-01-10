@@ -1,5 +1,4 @@
-include "std/posix/posix_headers";
-include "std/posix/filestat";
+include "std/posix/__init__";
 
 class Directory
 {

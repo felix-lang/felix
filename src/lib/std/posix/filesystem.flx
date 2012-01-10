@@ -1,7 +1,4 @@
-include "std/posix/posix_headers";
-include "std/posix/errno";
-include "std/posix/time";
-include "std/posix/filestat";
+include "std/posix/__init__";
 
 class FileSystem 
 {
