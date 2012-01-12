@@ -1104,12 +1104,14 @@ and cal_assoc_type state (bsym_table:Flx_bsym_table.t) sr t =
 
 and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts mkenv
 =
-  (*
+(*
   print_endline
   (
     "BINDING INDEX " ^ string_of_int index ^
     " with ["^ catmap ", " (sbt bsym_table) ts^ "]"
   );
+*)
+  (*
   print_endline ("type alias fixlist is " ^ catmap ","
     (fun (i,j) -> si i ^ "(depth "^si j^")") type_alias_fixlist
   );
@@ -1254,6 +1256,9 @@ and bind_type_index state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts
     | SYMDEF_cstruct _
     | SYMDEF_typeclass
       ->
+(*
+print_endline ("bind type index, struct thing " ^ si index ^ " ts=" ^ catmap "," (sbt bsym_table) ts);
+*)
       btyp_inst (index,ts)
 
 
@@ -1541,10 +1546,12 @@ and btype_of_bsym state bsym_table bt bid bsym =
       btyp_variant (List.map (fun (n,_,t) -> n,t) ls)
   | BBDCL_struct (_,ls)
   | BBDCL_cstruct (_,ls,_) ->
+     let _,vs,_ = find_split_vs state.sym_table bsym_table bid in
+(* print_endline ("btype of bsym struct " ^ Flx_bsym.id bsym ^ "<" ^ si bid ^ ">, #vs =" ^ si (List.length vs)); *)
       (* Lower a struct type into a function that creates the struct. *)
       let ts = List.map
         (fun (s,i,_) -> TYP_name (Flx_bsym.sr bsym,s,[]))
-        (fst (Flx_bsym.vs bsym))
+        vs 
       in
       let ts = List.map (bt (Flx_bsym.sr bsym)) ts in
       let ts = adjust_ts
@@ -1667,7 +1674,6 @@ and inner_type_of_index state bsym_table rs index =
   (* struct as function *)
   | SYMDEF_cstruct (ls,_)
   | SYMDEF_struct ls ->
-      (* ARGGG WHAT A MESS *)
       let ts = List.map
         (fun (s,i,_) -> TYP_name (sym.Flx_sym.sr,s,[]))
         (fst sym.Flx_sym.vs)
@@ -1942,6 +1948,7 @@ and lookup_qn_with_sig'
 
       | SYMDEF_cstruct _
       | SYMDEF_struct _ ->
+print_endline ("Handle nonfunction" ^ si index);
         let sign = try List.hd signs with _ -> assert false in
         (*
         print_endline ("Lookup qn with sig' found a struct "^ id ^
@@ -4268,55 +4275,55 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
      end
 
   | EXPR_ctor_arg (sr,(qn,e)) ->
+(* print_endline ("Bind expression: EXPR_ctor_arg "^ string_of_qualified_name qn ^ " of " ^ string_of_expr e); *)
+    let (_,ut) as ue = be e in
+    let ut = rt ut in
+(*    print_endline ("Match expression type: " ^ sbt bsym_table ut); *)
     begin match qn with
     | `AST_name (sr,name,ts) ->
-      (*
-      print_endline ("WARNING(deprecate): decode variant by name! " ^ name);
-      *)
-      let (_,ut) as ue = be e in
-      let ut = rt ut in
-      (*
-      print_endline ("Union type is " ^ sbt bsym_table ut);
-      *)
+(*      print_endline ("Constructor to extract: " ^ name ^ "[" ^ catmap "," string_of_typecode ts ^ "]"); *)
       begin match ut with
       | BTYP_inst (i,ts') ->
-        (*
-        print_endline ("OK got type " ^ si i);
-        *)
         begin match hfind "lookup" state.sym_table i with
-        | { Flx_sym.id=id; vs=vs; symdef=SYMDEF_union ls } ->
-          (*
-          print_endline ("UNION TYPE! " ^ id);
-          *)
-          let vidx,vt =
+        | { Flx_sym.id=id; symdef=SYMDEF_union ls } ->
+          let _,vs,_  = find_split_vs state.sym_table bsym_table i in
+(*
+        print_endline (
+            "OK got union type " ^ id ^ "<"^si i ^ "> vs= " ^ 
+            catmap "," (fun (id,j,_)-> id^"<"^si j^">") (fst vs) 
+             ^ "instance ts = [" ^catmap "," (sbt bsym_table) ts'^ "]"
+        );
+*)
+(* print_endline ("Constructor to extract " ^ name ^ " should agree with encoded constuctor " ^ id); *)
+(* print_endline ("Union parent vs = " ^ catmap "," (fun (s,_,_) -> s) parent_vs ^ " local vs = " ^ catmap "," (fun (s,_,_) -> si i) vs''); *)
+
+          let vidx,vs', vt =
             let rec scan = function
             | [] -> failwith "Can't find union variant"
-            | (vn,vidx,vs',vt)::_ when vn = name -> vidx,vt
+            | (vn,vidx,vs',vt)::_ when vn = name -> vidx,vs',vt
             | _:: t -> scan t
             in scan ls
           in
-          (*
-          print_endline ("Index is " ^ si vidx);
-          *)
+(*          print_endline ("Constructor Index is " ^ si vidx ^ " vs'=" ^ catmap "," fst (fst vs')); *)
           let vt =
             let bvs = List.map
               (fun (n,i,_) -> n, btyp_type_var (i, btyp_type 0))
-              (fst vs)
+              vs
             in
-            (*
-            print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
-            *)
+(*            print_endline ("Binding ctor arg type = " ^ string_of_typecode vt); *)
             let env' = build_env state bsym_table (Some i) in
             bind_type' state bsym_table env' rsground sr vt bvs mkenv
           in
-          (*
-          print_endline ("Bound polymorphic type = " ^ sbt bsym_table vt);
-          *)
-          let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
+(*          print_endline ("Bound polymorphic arg type = " ^ sbt bsym_table vt); *)
+          let vs' = List.map (fun (s,i,tp) -> s,i) vs in
+(*          print_endline ("vs in union type = " ^ catmap "," (fun (s,i) -> s ^ "<" ^ si i ^ ">") vs'); *)
+(*          print_endline ("ts' to bind to them = " ^ catmap "," (sbt bsym_table) ts'); *)
+(*
+          let ts' = adjust_ts state.sym_table bsym_table sr i ts' in
+          print_endline ("ts' to bind to them after adjust = " ^ catmap "," (sbt bsym_table) ts');
+*)
           let vt = tsubst vs' ts' vt in
-          (*
-          print_endline ("Instantiated type = " ^ sbt bsym_table vt);
-          *)
+(*          print_endline ("Instantiated type = " ^ sbt bsym_table vt); *)
           bexpr_case_arg vt (vidx,ue)
 
         (* this handles the case of a C type we want to model
@@ -4348,7 +4355,8 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
         print_endline ("OK got type " ^ si i);
         *)
         begin match hfind "lookup" state.sym_table i with
-        | { Flx_sym.id=id; vs=vs; symdef=SYMDEF_union ls } ->
+        | { Flx_sym.id=id; symdef=SYMDEF_union ls } ->
+          let _,vs,_  = find_split_vs state.sym_table bsym_table i in
           (*
           print_endline ("UNION TYPE! " ^ id);
           *)
@@ -4365,7 +4373,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
           let vt =
             let bvs = List.map
               (fun (n,i,_) -> n, btyp_type_var (i, btyp_type 0))
-              (fst vs)
+              vs
             in
             (*
             print_endline ("Binding ctor arg type = " ^ string_of_typecode vt);
@@ -4376,7 +4384,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
           (*
           print_endline ("Bound polymorphic type = " ^ sbt bsym_table vt);
           *)
-          let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
+          let vs' = List.map (fun (s,i,tp) -> s,i) vs in
           let vt = tsubst vs' ts' vt in
           (*
           print_endline ("Instantiated type = " ^ sbt bsym_table vt);

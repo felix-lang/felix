@@ -81,6 +81,7 @@ install:
 #
 install-bin:
 	sudo build/release/bin/flx --test=build/release --install-bin
+	sudo touch build/release/lib/std.libtab
 
 #
 # Install binaries on felix-lang.org

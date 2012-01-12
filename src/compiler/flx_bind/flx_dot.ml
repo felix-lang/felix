@@ -99,6 +99,7 @@ let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_
   (* STRUCT *)
   | { Flx_sym.id=id; vs=vs; sr=sra; symdef=SYMDEF_struct ls }
   | { Flx_sym.id=id; vs=vs; sr=sra; symdef=SYMDEF_cstruct (ls,_) } ->
+    let _,vs,_ = find_split_vs state.sym_table bsym_table i in
     let cidx,ct =
       let rec scan i = function
       | [] -> raise Not_field
@@ -109,12 +110,12 @@ let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_
     let ct =
       let bvs = List.map
         (fun (n,i,_) -> n, btyp_type_var (i, btyp_type 0))
-        (fst vs)
+        (vs)
       in
       let env' = build_env state bsym_table (Some i) in
       bind_type' state bsym_table env' rsground sr ct bvs mkenv
     in
-    let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
+    let vs' = List.map (fun (s,i,tp) -> s,i) vs in
     let ct = tsubst vs' ts' ct in
     let ct = if isptr then btyp_pointer ct else ct in
     bexpr_get_n ct (cidx,te)
