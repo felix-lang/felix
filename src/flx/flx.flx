@@ -111,7 +111,8 @@ gen get_stdout(x:string) = {
     output := Text_file::load "tmp.out";
   else:
 */
-    var fout = Process::popen_in(x+" 2>&1 ");
+    //var fout = Process::popen_in(x+" 2>&1 "); // this screws up flx_pkgconfig!
+    var fout = Process::popen_in(x+" ");
     if Text_file::valid fout do
       var output = Text_file::load fout;
       var result = Process::pclose fout; 
