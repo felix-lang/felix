@@ -2,7 +2,7 @@ class MultipleSAModel {
   open Sqlite3;
   open Sqlite3Ext;
   open ServerConfig;
-
+ 
   gen get_sas_for_ip(ip:string ) ():opt[string*string*string*string] = {
     val db = let Some ?d = db_pool.get_next() in d;
     match sqlite3_prepare_stmt(db,"""SELECT ip,contact_id,first_name,last_name
@@ -22,24 +22,23 @@ FROM multiple_sa_tmp INNER JOIN contact on id=contact_id WHERE ip='"""+ip+"'") w
 
 
   gen set_sa_for_ip(ip:string,id:string ):bool = {
-    println("Setting sa:"+id+" for:"+ip);
     val db = let Some ?d = db_pool.get_next() in d;
     match sqlite3_prepare_stmt(db,"INSERT INTO multiple_sa_tmp (ip,contact_id) VALUES('"+ip+"','"+id+"')") with
       | qry_ok ?s  => return sqlite3_execute(s); 
-      | _ => println(str(sqlite3_errmsg(db))) ; return false;
+      | _ =>  return false;
     endmatch;
+    return false;
   }
 
 
   gen unset_sa_for_ip(ip:string,id:string ):bool = {
-    println("Unsetting sa:"+id+" for:"+ip);
     val db = let Some ?d = db_pool.get_next() in d;
     val qry="DELETE FROM multiple_sa_tmp WHERE ip='"+ip+"' AND contact_id='"+id+"'";
-    println(qry);
     match sqlite3_prepare_stmt(db,qry) with
       | qry_ok ?s  => return sqlite3_execute(s); 
       | _ => println(str(sqlite3_errmsg(db))) ; return false;
     endmatch;
+    return false;
   }
 
   gen search_sas_for(term:string ) ():opt[string*string*string] = {
@@ -60,7 +59,7 @@ FROM multiple_sa_tmp INNER JOIN contact on id=contact_id WHERE ip='"""+ip+"'") w
                       done
        
       | _ => yield  None[(string*string*string)];
-     endmatch;
+    endmatch;
     return None[(string*string*string)];
   }
 
@@ -81,7 +80,7 @@ FROM contact WHERE id='"""+id+"'") with
        
       | _ => yield  None[(string*string*string*string*string*string*string)];
      endmatch;
-    return None[(string*string*string*string*string*string*string)];
+     return None[(string*string*string*string*string*string*string)];
   }
 
 
