@@ -59,9 +59,7 @@ include "std/gc";
 include "std/rtti";
 
 // I/O
-include "std/cstdio";
-include "std/textio";
-include "std/stdout";
+include "std/io/textio";
 include "std/filename";
 
 // base data types

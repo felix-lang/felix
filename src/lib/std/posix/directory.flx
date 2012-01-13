@@ -37,7 +37,7 @@ class Directory
 next:>
       readdir(d,e,&eret, &err);
       if err != 0 do 
-        println "Error reading dir"; flush;
+        println "Error reading dir"; fflush;
         closedir d; 
         C_hack::free$ C_hack::cast[address] e; 
         return None[List::list[string]];

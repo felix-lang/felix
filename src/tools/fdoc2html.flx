@@ -342,8 +342,8 @@ nextc:>
         elif prefix(b,"sh") do 
           var cmd = b.[3 to];
           var fout = safer_popen(cmd);
-          if Text_file::valid fout do
-            var output = Text_file::load fout;
+          if valid fout do
+            var output = load fout;
             var result = Process::pclose fout; 
             println$ "Ran cmd=" + cmd;
             //println$ "Output = " + output;

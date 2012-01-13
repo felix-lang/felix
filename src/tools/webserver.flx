@@ -266,7 +266,7 @@ proc serve_forbidden (k:socket_t, fname:string) {
 fun get_flx (fname:string) = {
   var flx =
     match get_file(fname,FLX_PATH) with
-    | Some ?name => Text_file::load(name)
+    | Some ?name => load(name)
     | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
     endmatch
   ;
@@ -277,7 +277,7 @@ fun get_flx (fname:string) = {
 fun get_cpp (fname:string) = {
   var flx =
     match get_file(fname,C_PATH) with
-    | Some ?name => Text_file::load(name)
+    | Some ?name => load(name)
     | None => "NO FILE "+fname+" FOUND IN " + str C_PATH
     endmatch
   ;
@@ -292,7 +292,7 @@ proc serve_felix (k:socket_t, fname:string) {
   match get_file(fname,C_PATH) with
   | Some ?path =>
     {
-      val text = Text_file::load path;
+      val text = load path;
       val dirname = Filename::dirname path;
       def val needs_mathjax, val html = Flx2Html::xlat_felix(text,dirname);
       val data = make_html$
@@ -317,7 +317,7 @@ proc serve_fpc (k:socket_t, fname:string) {
   match get_file (fname, FLX_PKGCONFIG_PATH) with
   | Some ?path =>
     {
-      val text=Text_file::load path;
+      val text=load path;
       val dirname = Filename::dirname path;
       val data = make_html$
         "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+
@@ -337,7 +337,7 @@ proc serve_fpc (k:socket_t, fname:string) {
 fun get_py (fname:string) = {
   var flx =
     match get_file(fname,FLX_PATH) with
-    | Some ?name => Text_file::load(name)
+    | Some ?name => load(name)
     | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
     endmatch;
 
@@ -358,7 +358,7 @@ proc serve_py (k:socket_t, fname:string) {
 fun get_ocaml (fname:string) = {
   var flx =
     match get_file (fname, FLX_PATH) with
-    | Some ?name => Text_file::load name
+    | Some ?name => load name
     | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
     endmatch
   ;
@@ -385,7 +385,7 @@ proc serve_cpp (k:socket_t, fname:string) {
   match get_file(fname,C_PATH) with
   | Some ?path =>
     {
-      val text=Text_file::load path;
+      val text=load path;
       val dirname = Filename::dirname path;
       val data = make_html$
         "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
@@ -410,7 +410,7 @@ val text_suffices = (
 
 proc serve_text (k:socket_t, fname:string) {
   var eof_flag = false;
-  var txt = Text_file::load(fname);
+  var txt = load(fname);
   println$ f"Loaded text file %S, len=%d" (fname, txt.len.int);
   val data = make_html$
     "<html><head></head><body><pre>"+
@@ -422,7 +422,7 @@ proc serve_text (k:socket_t, fname:string) {
 
 proc serve_html (k:socket_t, fname:string) {
   var eof_flag = false;
-  var txt = Text_file::load fname;
+  var txt = load fname;
   println$ f"Loaded html file %S, len=%d" (fname, txt.len.int);
   val data = make_html txt;
 
@@ -431,7 +431,7 @@ proc serve_html (k:socket_t, fname:string) {
 
 proc serve_xhtml (k:socket_t, fname:string) {
   var eof_flag = false;
-  var txt = Text_file::load fname;
+  var txt = load fname;
   println$ f"Loaded html file %S, len=%d" (fname, txt.len.int);
   val data = make_xhtml txt;
 
@@ -442,7 +442,7 @@ proc serve_xhtml (k:socket_t, fname:string) {
 fun get_fdoc (fname:string):string = {
   var flx =
     match get_file(fname,FDOC_PATH) with
-    | Some ?name => Text_file::load(name)
+    | Some ?name => load(name)
     | None => f"NO FILE %S FOUND IN %S" (fname, str FDOC_PATH)
     endmatch
   ;
@@ -488,7 +488,7 @@ proc serve_xfdoc (k:socket_t, fname:string) {
 
 proc serve_raw (k:socket_t, fname:string, suffix:string) {
   var eof_flag = false;
-  var txt = Text_file::load fname;
+  var txt = load fname;
   println$ f"Loaded raw file %S, len=%d" (fname, txt.len.int);
   //println$ "Contents=" + flx;
   val data = make_raw txt;
@@ -497,7 +497,7 @@ proc serve_raw (k:socket_t, fname:string, suffix:string) {
 
 proc serve_image (k:socket_t, fname:string, suffix:string) {
   var eof_flag = false;
-  var txt = Text_file::load fname;
+  var txt = load fname;
   println$ f"Loaded image file %S, len=%d" (fname, txt.len.int);
   //println$ "Contents=" + flx;
   val data = make_image (suffix,txt);
@@ -506,7 +506,7 @@ proc serve_image (k:socket_t, fname:string, suffix:string) {
 
 proc serve_css(k:socket_t, fname:string, suffix:string) {
   var eof_flag = false;
-  var txt = Text_file::load fname;
+  var txt = load fname;
   println$ f"Loaded css file %S, len=%d" (fname, txt.len.int);
   //println$ "Contents=" + flx;
   val data = make_css txt;

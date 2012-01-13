@@ -15,14 +15,12 @@ open class Tiny
 {
   ctor tiny: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] tiny: T = "static_cast<#0>($1)";
-  proc fprint: ostream * tiny = "*$1<<(int)$2;" requires Cxx_headers::iostream;
 }
 
 open class Short
 {
   ctor short: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] short: T = "static_cast<#0>($1)";
-  proc fprint: ostream * short = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open class Int
@@ -31,56 +29,48 @@ open class Int
   ctor[T in reals] int: T = "static_cast<#0>($1)";
   // special hack
   ctor int(x:bool)=> match x with | true => 1 | false => 0 endmatch;
-  proc fprint: ostream * int = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open class Long
 {
   ctor long: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] long: T = "static_cast<#0>($1)";
-  proc fprint: ostream * long = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open class Vlong
 {
   ctor vlong: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] vlong: T = "static_cast<#0>($1)";
-  proc fprint: ostream * vlong = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open class Utiny
 {
   ctor utiny: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] utiny: T = "static_cast<#0>($1)";
-  proc fprint: ostream * utiny = "*$1<<(unsigned int)$2;" requires Cxx_headers::iostream;
 }
 
 open class Ushort
 {
   ctor ushort: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] ushort: T = "static_cast<#0>($1)";
-  proc fprint: ostream * ushort = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open class Uint
 {
   ctor uint: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] uint: T = "static_cast<#0>($1)";
-  proc fprint: ostream * uint = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open class Ulong
 {
   ctor ulong: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] ulong: T = "static_cast<#0>($1)";
-  proc fprint: ostream * ulong = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open class Uvlong
 {
   ctor uvlong: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] uvlong: T = "static_cast<#0>($1)";
-  proc fprint: ostream * uvlong = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open class Int8

@@ -1,26 +1,14 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <iostream>
+
 #include "flx_ioutil.hpp"
 namespace flx { namespace rtl { namespace ioutil {
   using namespace std;
 
 /* small buffer for testing, should be much large in production version */
 #define MYBUFSIZ 5120
-  string load_file (FILE *fi) // note does NOT close file! (would screw up popen)
-  {
-    if (fi)
-    {
-      string x = "";
-      char buffer[MYBUFSIZ];
-more:
-      int n = fread(buffer,1,MYBUFSIZ,fi);
-      if(n>0) x = x + string(buffer,n);
-      if (n == MYBUFSIZ)goto more;
-      return x;
-    }
-    else return "";
-  }
 
   string load_file (string f)
   {
@@ -40,6 +28,23 @@ more:
     else return "";
   }
 
+// C FILE IO
+
+  string load_file (FILE *fi) // note does NOT close file! (would screw up popen)
+  {
+    if (fi)
+    {
+      string x = "";
+      char buffer[MYBUFSIZ];
+more:
+      int n = fread(buffer,1,MYBUFSIZ,fi);
+      if(n>0) x = x + string(buffer,n);
+      if (n == MYBUFSIZ)goto more;
+      return x;
+    }
+    else return "";
+  }
+
   // includes newline if present
   // null string indicates end of file
   string readln (FILE *fi)
@@ -49,18 +54,12 @@ more:
       string x = "";
       char buffer[MYBUFSIZ+1];
       buffer[MYBUFSIZ]='\0';
-      int n;
-      while
-      (
-        !(
-          (n=x.size()) &&
-          x[n-1]=='\n'
-        )
-        &&
-        fgets(buffer,MYBUFSIZ,fi)
-      )
-        x = x + string(buffer);
-      return x;
+next:
+      bool eof = fgets(buffer, MYBUFSIZ, fi) == 0;
+      if(eof) return x;
+      x = x + string(buffer);
+      if(x[x.size()-1]=='\n') return x;
+      goto next;
     }
     else return "";
   }
@@ -70,6 +69,7 @@ more:
     fwrite(s.data(),s.size(),1,fi);
   }
 
+
   void writeln (FILE *fi, string s)
   {
     static char const *eol = "\n";
@@ -78,5 +78,53 @@ more:
     fwrite(s.data(),s.size(),1,fi);
     fwrite(eol,n,1,fi);
   }
+
+// C++ file IO
+
+  string load_file (istream *fi) // note does NOT close file! (would screw up popen)
+  {
+    if (fi)
+    {
+      string x = "";
+      char buffer[MYBUFSIZ];
+more:
+      fi->read(buffer,MYBUFSIZ);
+      int n = fi->gcount();
+      if(n>0) x = x + string(buffer,n);
+      if (n == MYBUFSIZ)goto more;
+      return x;
+    }
+    else return "";
+  }
+
+  // includes newline if present
+  // null string indicates end of file
+  string readln (istream *fi)
+  {
+    if(fi)
+    {
+      ::std::string x = "";
+      ::std::getline(*fi,x);
+      if (fi->fail()) return x; 
+      else return x+"\n";
+    }
+    else return "";
+  }
+
+  void write (ostream *fi, string s)
+  {
+    fi->write(s.data(),s.size());
+  }
+
+  void writeln (ostream *fi, string s)
+  {
+    static char const *eol = "\n";
+    static int n = 0;
+    if(n==0)n=strlen(eol);
+    fi->write(s.data(),s.size());
+    fi->write(eol,n);
+  }
+
+
 
 }}}

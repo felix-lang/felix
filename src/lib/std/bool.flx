@@ -13,7 +13,6 @@ open class Bool
   reduce dneg(x:bool): lnot (lnot x) => x;       // elide double negations
   reduce dneg(x:bool,y:bool): lnot (nand(x,y)) => land(x,y); 
   reduce dneg(x:bool,y:bool): lnot (nor(x,y)) => lor(x,y);
-  proc fprint: ostream * bool = '*$1<<($2??"true":"false");' requires Cxx_headers::iostream;
 }
 
 instance Str[bool] {

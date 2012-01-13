@@ -22,9 +22,6 @@ fun fold_file[a,b]
   return aux seed;
 }
 
-include "std/textio";
-open Text_file;
-
 fun line_count (filename:string) : int =
 {
    f := fopen_input filename;

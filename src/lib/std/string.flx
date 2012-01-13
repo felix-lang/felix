@@ -311,7 +311,6 @@ open class String
   proc insert: string * int * string = "$1.insert($2,$3);";
   proc replace: string * int * int * string = "$1.replace($2,$3,$4);";
 
-  proc fprint: ostream * string = "*$1<<$2;" requires Cxx_headers::iostream;
   fun atoi: string -> int = "::std::atoi($1.c_str())" requires Cxx_headers::cstdlib;
   fun atol: string -> long = "::std::atol($1.c_str())" requires Cxx_headers::cstdlib;
   fun atof: string -> double = "::std::atof($1.c_str())" requires Cxx_headers::cstdlib;
@@ -374,7 +373,6 @@ open class Ustring
   fun substring: ustring * int * int -> ustring =
     "::flx::rtl::strutil::substr($1,$2,$3)" requires package "flx_strutil";
 
-  proc fprint: ostream * ustring = "*$1<<$2;" requires Cxx_headers::iostream;
 }
 
 open[T in strings] Show[T];

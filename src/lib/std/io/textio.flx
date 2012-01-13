@@ -1,0 +1,162 @@
+// These classes provide simple I/O for text, primarily intended for
+// naive use, debugging etc. This is because there is no error
+// handling. This simplifies usage at the expense of correctness,
+// and so these routines should not be used in production code.
+
+class Input_text_file[input_text_file]
+{
+
+  // load file from filename
+  // note: loaded in binary mode not text mode!
+  fun load: string -> string = "::flx::rtl::ioutil::load_file($1)"
+    requires package "flx_ioutil";
+
+  // open for reading 
+  virtual gen fopen_input: string -> input_text_file; 
+
+  // check if the file was opened correctly
+  virtual gen valid : input_text_file -> bool;
+ 
+  // close
+  virtual proc fclose: input_text_file;
+
+  // load the rest of an open file
+  virtual gen load: input_text_file -> string;
+
+  // read one line with the trailing end-line mark stripped
+  virtual gen readln: input_text_file -> string;
+
+  // check for end of file
+  virtual gen feof : input_text_file -> bool;
+}
+
+class Output_text_file[output_text_file]
+{
+  // open for writing
+  virtual gen fopen_output: string -> output_text_file;
+
+  // check if the file was opened correctly
+  virtual gen valid : output_text_file -> bool;
+ 
+  // close
+  virtual proc fclose: output_text_file;
+
+  // write one line adding the trailing end line mark
+  virtual proc writeln : output_text_file * string;
+
+  // write a string
+  virtual proc write : output_text_file * string;
+
+  // write a byte 
+  virtual proc write : output_text_file * utiny;
+
+  // write a char 
+  virtual proc write : output_text_file * char;
+
+  // flush the buffers
+  virtual proc fflush: output_text_file;
+
+  proc space (s:output_text_file) { write (s, " "); };
+  proc endl (s:output_text_file) { write (s, "\n"); };
+  proc fprint[T with Str[T]] (s:output_text_file, x:T) { write (s, str x); };
+  proc fprintln[T with Str[T]] (s:output_text_file, x:T) { write (s, str x); endl s; };
+}
+
+open class Cstdio {
+
+  incomplete type FILE = "::std::FILE";
+
+  pod type ifile = "::std::FILE*" requires Cxx_headers::cstdio;
+  pod type ofile = "::std::FILE*" requires Cxx_headers::cstdio;
+
+  // standard files: Felix mapped
+  // can be redirected by flx_run
+  const stdin: ifile = "PTF flx_stdin";
+  const stdout: ofile = "PTF flx_stdout";
+  const stderr: ofile = "PTF flx_stderr";
+
+  // standard files: C mapped
+  // can only be redirected by shell
+  const cstdin: ifile = "::std::stdin";
+  const cstdout: ofile = "::std::stdout";
+  const cstderr: ofile = "::std::stderr";
+
+  instance Input_text_file[ifile] {
+    requires package "flx_ioutil";
+    gen fopen_input: string -> ifile = '::std::fopen($1.c_str(),"rt")';
+    gen valid : ifile -> bool = "$1!=(FILE*)0";
+    proc fclose: ifile = '(void)::std::fclose($1);';
+    gen load: ifile -> string = "::flx::rtl::ioutil::load_file($1)";
+    gen readln: ifile -> string ="::flx::rtl::ioutil::readln($1)";
+    gen feof : ifile -> bool = "::std::feof($1)";
+  }
+
+  instance Output_text_file[ofile] {
+    requires package "flx_ioutil";
+    gen fopen_output: string -> ofile = '::std::fopen($1.c_str(),"wt")';
+    gen valid : ofile -> bool = "$1!=(FILE*)0";
+    proc fclose: ofile = '(void)::std::fclose($1);';
+    proc writeln : ofile * string ="::flx::rtl::ioutil::writeln($1,$2);";
+    proc write : ofile * string ="::flx::rtl::ioutil::write($1,$2);";
+    proc write : ofile * utiny ="::std::fwrite($2,1,1,$1);";
+    proc write : ofile * char ="::std::fwrite($2,1,1,$1);";
+    proc fflush: ofile = "::std::fflush($1);";
+  }
+}
+
+open Input_text_file[Cstdio::ifile];
+open Output_text_file[Cstdio::ofile];
+
+open class Iostream {
+
+  pod type istream = "::std::istream*" requires Cxx_headers::fstream;
+  pod type ostream = "::std::ostream*" requires Cxx_headers::fstream;
+
+  // standard files: Felix mapped
+  // can be redirected by flx_run
+  const cin : istream = "&::std::cin" requires Cxx_headers::iostream;
+  const cout: ostream = "&::std::cout" requires Cxx_headers::iostream;
+  const cerr: ostream = "&::std::cerr" requires Cxx_headers::iostream;
+  const clog : ostream = "&::std::clog" requires Cxx_headers::iostream;
+
+  instance Input_text_file[istream] {
+    requires package "flx_ioutil";
+    gen fopen_input: string -> istream = '::std::fopen($1.c_str(),"rt")';
+    gen valid : istream -> bool = "!$1->fail()";
+    proc fclose: istream = '$1->close();';
+    gen load: istream -> string = "::flx::rtl::ioutil::load_file($1)";
+    gen readln: istream -> string ="::flx::rtl::ioutil::readln($1)";
+    gen feof : istream -> bool = "$1->eof()";
+  }
+
+  instance Output_text_file[ostream] {
+    requires package "flx_ioutil";
+    gen fopen_output: string -> ostream = '::std::fopen($1.c_str(),"wt")';
+    gen valid : ostream -> bool = "!$1->fail()";
+    proc fclose: ostream = '$1->close();';
+    proc writeln : ostream * string ="::flx::rtl::ioutil::writeln($1,$2);";
+    proc write : ostream * string ="::flx::rtl::ioutil::write($1,$2);";
+    proc write : ostream * utiny ="$1->put($2);";
+    proc write : ostream * char ="$1->put($2);";
+    proc fflush: ostream = "$1->flush();";
+  }
+}
+
+
+open Input_text_file[Iostream::istream];
+open Output_text_file[Iostream::ostream];
+
+// convenience writes to cout
+proc print  [T with Str[T]] (x:T) { fprint (cout, x); };
+proc println[T with Str[T]] (x:T) { fprint (cout, x); endl cout; };
+proc endl() { endl cout; }
+proc space() { space cout; }
+proc fflush() { fflush cout; }
+
+
+// convenience writes to cerr
+proc eprint  [T with Str[T]] (x:T) { fprint (cerr, x); };
+proc eprintln[T with Str[T]] (x:T) { fprint (cerr, x); endl cerr; };
+proc eendl() { endl cerr; }
+proc espace() { space cerr; }
+

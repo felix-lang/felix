@@ -7,7 +7,6 @@ open class Fcomplex
 {
   ctor[t in reals] fcomplex : t * t = "::std::complex<float>($1,$2)";
   ctor[t in reals] fcomplex : t = "::std::complex<float>($1,0)";
-  proc fprint: ostream * fcomplex = "*$1<<$2;" requires Cxx_headers::iostream;
   instance Str[fcomplex] {
     fun str (z:fcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
@@ -40,7 +39,6 @@ open class Dcomplex
 {
   ctor[t in reals] dcomplex : t * t = "::std::complex<double>($1,$2)";
   ctor[t in reals] dcomplex : t = "::std::complex<double>($1,0)";
-  proc fprint: ostream * dcomplex = "*$1<<$2;" requires Cxx_headers::iostream;
   instance Str[dcomplex] {
     fun str (z:dcomplex) => str(real z) + "+" + str(imag z)+"i";
   }
@@ -73,7 +71,6 @@ open class Lcomplex
 {
   ctor[t in reals] lcomplex : t * t = "::std::complex<long double>($1,$2)";
   ctor[t in reals] lcomplex : t = "::std::complex<long double>($1,0)";
-  proc fprint: ostream * lcomplex = "*$1<<$2;" requires Cxx_headers::iostream;
   instance Str[lcomplex] {
     fun str (z:lcomplex) => str(real z) + "+" + str(imag z)+"i";
   }

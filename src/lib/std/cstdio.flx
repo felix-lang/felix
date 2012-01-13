@@ -1,6 +1,0 @@
-open class Cstdio
-{
-  header "#include <cstdio>";
-  incomplete type FILE = "std::FILE";
-}
-

@@ -53,14 +53,6 @@ class C_hack
   """
   const null[t]:&t = "(?1*)NULL";
 
-  publish """
-  Unsafe output of hopefully null terminated C strings
-  """
-  proc fprint: ostream * &char = "*$1<<$2;" requires Cxx_headers::iostream;
-
-  publish """ print an address in hex """
-  proc fprint: ostream * address = "*$1<<$2;" requires Cxx_headers::iostream;
-
   header dflt_h = "template<class T> T dflt() { return T(); }";
   publish """
   Workaround for g++ 3.2.2 parsing bug,

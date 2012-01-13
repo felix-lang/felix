@@ -108,13 +108,13 @@ gen get_stdout(x:string) = {
   if os.name == "nt": // popen doesn't work on Windows
     result := system(x + " >tmp.out");
     Stdout::flush();
-    output := Text_file::load "tmp.out";
+    output := load "tmp.out";
   else:
 */
     //var fout = Process::popen_in(x+" 2>&1 "); // this screws up flx_pkgconfig!
     var fout = Process::popen_in(x+" ");
-    if Text_file::valid fout do
-      var output = Text_file::load fout;
+    if valid fout do
+      var output = load fout;
       var result = Process::pclose fout; 
       return (Process::WEXITSTATUS result), output;
     else
@@ -367,7 +367,7 @@ fun maxf (x: long) (f:string) => max (x, if f == "" then x else dfiletime (f+".f
 fun cal_files_time (fs: list[string])=> fold_left maxf 0L fs;
 fun cal_time_from_dep (df: string):long=
 {
-  val deptext = Text_file::load df;
+  val deptext = load df;
   val lines = split (deptext, "\n"); 
   debugln$ "Deps=" + str(lines);
   val deptime = cal_files_time lines;
@@ -829,12 +829,12 @@ proc calpackages () {
 
 proc write_include_file(path:string) {
   includes := split (strip INCLUDE_FILES,char " ");
-  var f = Text_file::fopen_output(path+".includes");
+  var f = fopen_output(path+".includes");
   List::iter  
-    (proc (i:string) { Text_file::writeln$ f, "#include " + i; })
+    (proc (i:string) { writeln$ f, "#include " + i; })
     includes
   ;
-  Text_file::fclose f;
+  fclose f;
 }
 
 val args = USER_ARGS;
@@ -873,7 +873,7 @@ var cmd = "";
 debugln$ "RECOMPILE="+str RECOMPILE;
 debugln$ "RUNIT="+str RUNIT;
 if SHOWCODE == 1 do {
-  prg := Text_file::load(filebase+".flx");
+  prg := load(filebase+".flx");
   print prg;
 }; done
 

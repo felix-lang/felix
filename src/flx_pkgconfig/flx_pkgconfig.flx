@@ -16,7 +16,6 @@ kludge();
 
 open Lexer;
 open Env;
-open Text_file;
 open System;
 
 proc pre_incr:&iterator = "++*$1;";
@@ -171,7 +170,7 @@ proc parse_args(args:list[string])
 
 
       elif "@" == arg.[0 to 1] do
-        val data = Text_file::load$ strip arg.[1 to];
+        val data = load$ strip arg.[1 to];
         parse_args$ split(data,c" \n\r\t,");
 
       // ignore unknown options
