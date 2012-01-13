@@ -9,6 +9,8 @@ else
   include "ERROR: socket requires POSIX or WIN32";
 done;
 
+requires package "demux";
+
 class Socket {
   if PLAT_POSIX do
     typedef socket_t = Faio_posix::socket_t;

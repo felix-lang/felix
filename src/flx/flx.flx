@@ -224,6 +224,12 @@ proc install() {
        "(tools|lib)/.*\\.(flxh?|par2|libtab|files|automaton)"
      )),
 
+     (" * Felix web resources",
+     list( 
+       "(lib/web)/.*\\.(css|png|jpg|gif|js|db|sql|html)"
+     )),
+
+
      (" * Regression and Unit test code", list("(test|tut)/.*\\.(flx|expect)")),
 
      (" * Documentation", 
