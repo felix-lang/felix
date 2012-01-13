@@ -1,0 +1,113 @@
+publish """
+Main attractions are wrappers for strptime ( date/time parsing fn ) and
+strftime ( date/time formatting fn ) and rfc1123_date (used in construction HTTP responses
+
+Example:
+ open LowResTime;
+  var time_epoch_seconds = time_t();
+  val tm_struct =  gmtime(time_epoch_seconds);
+  println (str(tm_struct.tm_year + 1900)+"-"+str(tm_struct.tm_mon + 1)+"-"+str(tm_struct.tm_mday));
+  println ("asctime: "+asctime(tm_struct));
+  val fmt = "%a, %d %b %Y %H:%M:%S GMT";
+  val formatted_datetime = strftime(fmt,tm_struct);
+  println$ ("RFC 1123 Date Format w/strftime: "+formatted_datetime);
+  match strptime(formatted_datetime,fmt) with
+    | Some(?t) => {val new_val = strftime(fmt,t);
+      	       	   println ("RFC 1123 Date Format w/strptime->strftime: "+new_val);
+		  }();
+    | _        => println$ "Error parsing time:";
+  endmatch;
+  match strptime("Not a date","%M") with
+    |Some(?s) => println("Good Time");
+    | _      => println("Bad Time");
+  endmatch; 
+"""  
+/*
+TODO: Add date/time utility functions (date time delta calulations, etc.) 
+*/
+include "std/posix/posix_headers";
+class LowResTime
+{
+  open C_hack;
+  
+  requires Posix_headers::sys_time_h;
+
+  type time_t = "time_t";
+
+  proc time: &time_t = "time($1);";
+
+  ctor time_t  () = {
+    var time_v:time_t;
+    time(&time_v);
+    return time_v;
+  }
+
+  cstruct tm {
+    tm_sec:int;         /* seconds */
+    tm_min:int;         /* minutes */
+    tm_hour:int;        /* hours */
+    tm_mday:int;        /* day of the month */
+    tm_mon:int;         /* month */
+    tm_year:int;        /* year */
+    tm_wday:int;        /* day of the week */
+    tm_yday:int;        /* day in the year */
+    tm_isdst:int;       /* daylight saving time */
+  };
+
+  
+  fun localtime:time_t -> &tm = "localtime(&$1)";
+  fun gmtime:time_t -> &tm = "gmtime(&$1)";
+  fun asctime:&tm -> string = "asctime($1)";
+
+  header """
+    char* strftime_helper(const char *pat,    const struct tm * ti) {
+      int len = 64;
+      char *fmted = (char*) malloc(sizeof(char)*64);
+      strftime(fmted,len,pat,ti);
+      return fmted;
+    }
+
+    struct tm * strptime_helper(const char *s, const char *fmt) {
+      struct tm *t = (struct tm *) malloc(sizeof(struct tm));
+      char *ret = strptime(s,fmt,t);
+      if (ret != NULL) {
+         return t;
+      } else {
+        free(t);
+        return NULL;
+      }
+    }
+  """;
+
+
+  publish """strftime returns formatted string date defined my format string and tm struct.
+See C manpage for strftime for format codes"""
+
+  gen strftime: string*&tm -> string = "strftime_helper(($1.c_str()),$2)";
+
+
+  publish """Parses string date in first arg with format codes in second arg and 
+returns pointer to tm structure if successful or NULL if unsucessful """
+
+  gen raw_strptime: string*string -> &tm = "strptime_helper ($1.c_str(), $2.c_str())";
+
+
+  publish """"Parses string date in first arg with format codes in second arg and 
+returns pointer to tm structure wrapped in opt."""
+
+  fun strptime (s:string,fmt:string):opt[&tm]  => let ?r = raw_strptime(s,fmt) in 
+      if isNULL(r) then None[&tm] else Some(r) endif; endl;
+
+ fun rfc1123_date (dt:&tm) => strftime("%a, %d %b %Y %H:%M:%S %Z",dt);
+
+  fun rfc1123_date () = {
+    var time_epoch_seconds = time_t();
+    val tm_struct =  gmtime(time_epoch_seconds);
+    return rfc1123_date(tm_struct);
+  }
+
+}
+
+ 
+  
+

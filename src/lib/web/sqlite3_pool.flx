@@ -1,0 +1,30 @@
+include "web/sqlite3_ext";
+
+class Sqlite3Pool {
+  open Sqlite3;
+  open Sqlite3Ext;
+  open Pool[sqlite3_db_t];
+  
+  publish """
+  Creates a pool of db handles of sz size to a sqlite3 database db
+  """ 
+  fun create_sqlite3_pool(db_file:string,sz:int) = {
+    var connections:list[sqlite3_db_t]; 
+    for var i in 1 upto sz do
+      var db : sqlite3_db_t;
+      val err = sqlite3_open(db_file, &db);
+      if err != 0 do
+        fail "open DB error[abort] ";
+      else
+        connections = Cons (db,connections);
+      done
+    done
+    return create_pool[sqlite3_db_t](connections);
+  }
+
+  instance Pool[sqlite3_db_t] {
+    proc destroy_member (m:member[sqlite3_db_t]) =   {
+      sqlite3_close(m.member[sqlite3_db_t]);
+    }
+  }
+}

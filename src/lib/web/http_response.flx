@@ -1,0 +1,66 @@
+publish """
+Use make_<response type> to wrap html in an apropriate response
+"""
+
+class HTTPResponse {
+  open LowResTime;
+  open HTTPStatusCodes;
+  open MIMEType;
+
+  struct http_response {
+    status_code:status_code;
+    last_modified:&tm;
+    content_type:mime_type;
+    content:string;
+  }
+
+
+  fun http_header (response:http_response) =>
+"""HTTP/1.0 """ + str(response.status_code) +"""\r
+Date: """ + rfc1123_date() + """\r
+Server: felix web server\r
+Last-Modified: """ + rfc1123_date(response.last_modified) +""")\r
+Connection: close\r
+Content-Type: """ + str(response.content_type) + """\r
+Content-Length: """ + str (len response.content) + """\r
+\r
+""";
+
+  fun make_image(mime:mime_type, content:string) => 
+    http_header(http_response(SC_OK,localtime(time_t()),mime,content)) +
+      content; 
+
+  fun make_css (content:string) =>
+    http_header(http_response(SC_OK,localtime(time_t()),text css,content)) +
+      content; 
+
+  fun make_js (content:string) =>
+    http_header(http_response(SC_OK,localtime(time_t()),application javascript,content)) +
+      content; 
+
+  fun make_json (content:string) =>
+    http_header(http_response(SC_OK,localtime(time_t()),application json,content)) +
+      content; 
+
+  fun make_not_found (content:string) =>
+    let ?response = http_response(SC_NOT_FOUND,localtime(time_t()),text css,
+				  "PAGE NOT FOUND: "+content) in
+    	http_header(response) + response.content; 
+
+  fun make_forbidden (content:string) =>
+    let ?response = http_response(SC_FORBIDDEN,localtime(time_t()),text css,
+				  "Forbidden: "+content) in
+    	http_header(response) + response.content; 
+
+  fun make_raw (content:string) =>
+    http_header(http_response(SC_OK,localtime(time_t()),application octet_DASH_stream,
+                              content)) + content; 
+
+  fun make_html (content:string) =>
+    http_header(http_response(SC_OK,localtime(time_t()),text html,
+                              content)) + content; 
+  fun make_xhtml (content:string) =>
+    http_header(http_response(SC_OK,localtime(time_t()),application xhtml_PLUS_xml,
+                              content)) + content; 
+
+}

@@ -1,0 +1,45 @@
+module ServerConfig {
+  open HTTPHandler;
+  open List;
+  open Sqlite3Pool;
+
+  struct server_config {
+        delay : double;
+        port : int;
+        document_root : string;
+        handlers: list[http_handler];
+
+  }
+
+  fun enhance_with_command_line_arguments(config:server_config) = {
+    var arg = "";
+    var argno = 1;
+    while argno<System::argc do
+      arg = System::argv argno;
+      println$ "ARG=" + arg;
+      if prefix(arg,"--root=") do
+        config.document_root = arg.[7 to];
+      elif prefix(arg,"--close-delay=") do
+        config.delay = strtod arg.[14 to];
+      elif prefix(arg,"--port=") do
+        config.port = atoi arg.[7 to];
+      done
+      ++argno;
+    done
+
+    println$ "document_root="+config.document_root;
+    println$ "delay="+str config.delay;
+    println$ "PORT="+str config.port;
+    return config;
+  }
+
+fun prefix(arg:string,key:string)=>
+    arg.[to len key]==key
+  ;
+
+fun strtod: string -> double = "strtod($1.data(),0)";
+
+fun atoi: string -> int = "atoi($1.data())";
+
+}
+
