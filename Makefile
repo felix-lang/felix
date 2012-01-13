@@ -74,6 +74,7 @@ doc:
 #
 install:
 	sudo build/release/bin/flx --test=build/release --install 
+	sudo touch build/release/lib/std.libtab
 
 
 #
