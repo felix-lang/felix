@@ -438,8 +438,8 @@ def build(ctx):
 
     # copy files into the library
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/lib',
-        pattern='*.{flx,flxh,files}')
-
+        pattern='*.{flx,flxh,files,html,db,sql,css,js,py}')
+    
     # copy tools
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/tools',
         pattern='*.flx{,h}')
