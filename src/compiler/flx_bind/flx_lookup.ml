@@ -1948,7 +1948,9 @@ and lookup_qn_with_sig'
 
       | SYMDEF_cstruct _
       | SYMDEF_struct _ ->
-print_endline ("Handle nonfunction" ^ si index);
+(*
+print_endline ("Handle nonfunction " ^ si index);
+*)
         let sign = try List.hd signs with _ -> assert false in
         (*
         print_endline ("Lookup qn with sig' found a struct "^ id ^

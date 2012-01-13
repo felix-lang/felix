@@ -66,6 +66,7 @@ type variant_rep = VR_self | VR_int |  VR_packed | VR_uctor
 let cal_variant_rep bsym_table t =
   let n = cal_variant_cases bsym_table t in
   let z = cal_variant_maxarg bsym_table t in
+let rep =
   match n,z with
   | -1,_ -> assert false
 (* Remove this case temporarily because it is a bit tricky to implement *)
@@ -74,4 +75,14 @@ let cal_variant_rep bsym_table t =
   | k,_ when k <= 4 -> VR_packed   (* At most 4 cases, encode caseno in point low bits *)
   | _,_ -> VR_uctor                (* Standard Uctor *)
 
-
+in 
+(*
+  (print_endline 
+  (match rep with
+  | VR_self -> "VR_self"
+  | VR_int -> "VR_int"
+  | VR_packed -> "VR_packed"
+  | VR_uctor -> "VR_uctor"
+)) ; 
+*)
+rep

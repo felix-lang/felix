@@ -3,6 +3,7 @@ open Flx_bbdcl
 open Flx_cexpr
 open Flx_ctypes
 open Flx_vrep
+open Flx_print
 
 let si = string_of_int
 exception Found_type of Flx_btype.t
@@ -108,13 +109,43 @@ let gen_make_ctor_arg ge tn syms bsym_table a : cexpr_t =
   | 0 -> ce_atom "0"                (* NULL: for unit tuple *)
   | 1 -> ge a                       (* small value goes right into data slot *)
   | _ ->                            (* make a copy on the heap and return pointer *)
+
+(* OK, this is wrong. For a varray[T], the type we want is T: Flx_pgen.shape_of gets
+   this correct, we get the right shape. For example if T = int, we get int_ptr_map.
+   However a varray[int] is an int*. We want ctt to be "int" and NOT "int*".
+
+   HMMM .. the REAL problem here is that the whole thing is super bugged!
+   We actually just want to use the original pointer, not copy it onto
+   the heap and use a pointer to it! 
+*)
+
+(*
+print_endline ("Type of ctor arg = " ^ sbt bsym_table ct);
+*)
     let ctt = tn ct in
-    let ptrmap = Flx_pgen.shape_of syms bsym_table tn ct in
+(*
+print_endline ("Type name of ctor arg = " ^ ctt);
+*)
+
+(* FIX: ignore the associated shape, just use the actual shape.
+   This fixes the problem with varray[int] argument. It isn't 
+   clear it is the right answer because the "associated shape"
+   was specifically designed to be used with operator new
+   in C insertions, and this is a C insertion.
+*)
+    (* let ptrmap = Flx_pgen.shape_of syms bsym_table tn ct in *)
+    let ptrmap = Flx_pgen.direct_shape_of syms bsym_table tn ct in
+
+(*
+print_endline ("Shape name is " ^ ptrmap);
+*)
     ce_new [ce_atom "*PTF gcp"; ce_atom ptrmap; ce_atom "true"] ctt [ge a]
 
 (* Value constructor for non-constant (argumentful) variant constructor case *)
 let gen_make_nonconst_ctor ge tn syms bsym_table ut cidx ct a : cexpr_t =
-(* print_endline "gen_make_nonconst_ctor"; *)
+(*
+print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^ " type=" ^ Flx_print.sbt bsym_table ut); 
+*)
   match cal_variant_rep bsym_table ut with
   | VR_self -> ge a
   | VR_int -> assert false

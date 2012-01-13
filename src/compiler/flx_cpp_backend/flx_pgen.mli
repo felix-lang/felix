@@ -20,3 +20,10 @@ val shape_of:
   (Flx_btype.t -> string) ->
   Flx_btype.t ->
   string
+
+val direct_shape_of:
+  Flx_mtypes2.sym_state_t ->
+  Flx_bsym_table.t ->
+  (Flx_btype.t -> string) ->
+  Flx_btype.t ->
+  string

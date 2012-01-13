@@ -97,8 +97,8 @@ let handle_field_name state bsym_table build_env env rs be bt koenig_lookup cal_
   match hfind "lookup" state.sym_table i with
 
   (* STRUCT *)
-  | { Flx_sym.id=id; vs=vs; sr=sra; symdef=SYMDEF_struct ls }
-  | { Flx_sym.id=id; vs=vs; sr=sra; symdef=SYMDEF_cstruct (ls,_) } ->
+  | { Flx_sym.id=id; sr=sra; symdef=SYMDEF_struct ls }
+  | { Flx_sym.id=id; sr=sra; symdef=SYMDEF_cstruct (ls,_) } ->
     let _,vs,_ = find_split_vs state.sym_table bsym_table i in
     let cidx,ct =
       let rec scan i = function

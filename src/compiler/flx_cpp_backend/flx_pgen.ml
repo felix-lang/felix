@@ -16,7 +16,7 @@ open Flx_maps
 
 exception Found of Flx_btype.t
 
-let shape_of syms bsym_table tn t =
+let shape_of' use_assoc_type syms bsym_table tn t =
   match t with
   | BTYP_inst (i,ts) ->
     begin match Flx_bsym_table.find_bbdcl bsym_table i with
@@ -41,19 +41,23 @@ let shape_of syms bsym_table tn t =
      * be the pointer's shape in this case).
      *)
     | BBDCL_external_type (bvs,bquals,ct,breqs) ->
-      let get_assoc_type bqual = 
-         match bqual with 
-         | `Bound_needs_shape t -> raise (Found t)
-         | _ -> ()
-      in
-      begin 
-        try 
-          List.iter get_assoc_type bquals;
-          tn t ^ "_ptr_map"
-        with Found t ->
-          let t = tsubst bvs ts t in
-          tn t ^ "_ptr_map"
-      end
+      if use_assoc_type then
+        let get_assoc_type bqual = 
+           match bqual with 
+           | `Bound_needs_shape t -> raise (Found t)
+           | _ -> ()
+        in
+        begin 
+          try 
+            List.iter get_assoc_type bquals;
+            tn t ^ "_ptr_map"
+          with Found t ->
+            let t = tsubst bvs ts t in
+            tn t ^ "_ptr_map"
+        end
+      else
+        tn t ^ "_ptr_map"
+
     | _ -> tn t ^ "_ptr_map"
     end
 
@@ -63,6 +67,11 @@ let shape_of syms bsym_table tn t =
 
   | BTYP_pointer _ -> "::flx::rtl::_address_ptr_map"
   | _ -> tn t ^ "_ptr_map"
+
+let shape_of syms bsym_table tn t = shape_of' true syms bsym_table tn t
+let direct_shape_of syms bsym_table tn t = shape_of' false syms bsym_table tn t
+
+
 
 let gen_prim_call
   syms
