@@ -1,6 +1,7 @@
+include "web/sqlite3_pool";
+
 module ServerConfig {
   open HTTPHandler;
-  open List;
   open Sqlite3Pool;
 
   struct server_config {
