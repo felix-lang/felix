@@ -111,7 +111,7 @@ class Sqlite3Ext {
      |26 => SQLITE_NOTADB 
      |100 => SQLITE_ROW   
      |101 => SQLITE_DONE 
-     |_   => SQLITE_UNK_RESULT;
+     | _   => SQLITE_UNK_RESULT;
 
   enum sqlite3_types {
     SQLITE_INTEGER  = 1,
@@ -122,7 +122,7 @@ class Sqlite3Ext {
     SQLITE_UNK_TYPE = 999
   }
   instance Eq[sqlite3_result_codes]  {
-    fun eq: sqlite3_result_codes * sqlite3_result_codes -> bool = "$1==$2";
+    fun == : sqlite3_result_codes * sqlite3_result_codes -> bool = "$1==$2";
   }
   open Eq[sqlite3_result_codes];
 
@@ -132,7 +132,7 @@ class Sqlite3Ext {
     |4 => SQLITE_BLOB
     |5 => SQLITE_NULL
     |3 => SQLITE_TEXT
-    |_ => SQLITE_UNK_TYPE;
+    | _ => SQLITE_UNK_TYPE;
 
      
   gen sqlite3_prepare_v2: sqlite3_db_t * string * int * sqlite3_stmt_t *string -> int =

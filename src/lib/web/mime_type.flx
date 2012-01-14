@@ -300,7 +300,7 @@ TODO: implement more MIME types.
 
         
 instance Eq[mime_type]  {
-  fun eq: mime_type * mime_type -> bool = "$1==$2";
+  fun == : mime_type * mime_type -> bool = "$1==$2";
 }
 //instance Tord[test_mime_subtype] {
 //    fun eq: t * t -> bool = "$1==$2";

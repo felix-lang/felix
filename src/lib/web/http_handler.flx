@@ -36,7 +36,7 @@ fun get_fs_path (config:server_config,request:http_request) =>
                                   else
                                     None[string]
                                   endif)) (list(config.document_root,
-                                              Filename::join(Filename::join(Filename::join(Config::FLX_INSTALL_DIR,"lib"),"web"),"html")))
+                                              Filename::join(Filename::join(Filename::join(#Config::config.FLX_INSTALL_DIR,"lib"),"web"),"html")))
       | _ => None[string]
     endmatch;
 
@@ -72,7 +72,7 @@ fun get_fs_path (config:server_config,request:http_request) =>
     match get_fs_path(conn.config,request) with
       | Some(?file) => {
                        println("CSS:"+file);
-                       val txt = Text_file::load (file);
+                       val txt = load (file);
       		       write_string(conn.sock,(make_css txt),&eof_flag);
                        }
       | _ => {handle_not_found(conn,request);}
@@ -89,7 +89,7 @@ fun get_fs_path (config:server_config,request:http_request) =>
     var eof_flag = false;
     match get_fs_path(conn.config,request) with
       | Some(?file) => {
-                       val txt = Text_file::load (file);
+                       val txt = load (file);
       		       write_string(conn.sock,(make_js txt),&eof_flag);
                        }
       | _ => {handle_not_found(conn,request);}
@@ -107,7 +107,7 @@ fun get_fs_path (config:server_config,request:http_request) =>
     var eof_flag = false;
     match get_fs_path(conn.config,request) with
       | Some(?file) => {
-                       val txt = Text_file::load (file);
+                       val txt = load (file);
       		       write_string(conn.sock,make_image((mime_type_from_extension file), txt),&eof_flag);
                        }
       | _ => {handle_not_found(conn,request);}
@@ -123,12 +123,12 @@ fun get_fs_path (config:server_config,request:http_request) =>
   proc handle_html(conn:http_connection, request:http_request) {
     var eof_flag = false;
     if (request.uri == "/" and request.path == "/") do 
-      val txt = Text_file::load (conn.config.document_root+"/index.html");
+      val txt = load (conn.config.document_root+"/index.html");
       write_string(conn.sock,(make_html txt),&eof_flag);
     else                   
       match get_fs_path(conn.config,request) with
         | Some(?file) => {
-                       val txt = Text_file::load (file);
+                       val txt = load (file);
       		       write_string(conn.sock,(make_html txt),&eof_flag);
                        }
         | _ => {handle_not_found(conn,request);}
