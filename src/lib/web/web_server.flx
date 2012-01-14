@@ -21,7 +21,7 @@ open TerminalIByteStream[fd_t];
 open TerminalIOByteStream[socket_t];
 
 proc dbg(x:string) { fprint (cerr,x); };
-
+include "std/io/textio";
 include "web/server_config";
 include "web/http_request";
 include "web/http_connection";

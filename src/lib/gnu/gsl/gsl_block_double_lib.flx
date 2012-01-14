@@ -7,7 +7,8 @@
 //Flxcc Control : gsl.flxcc
 //Felix Version : 1.1.2_rc7
 include 'std';
-
+typedef cptr[T]=&T;
+typedef ptr[T]=&T;
 //#define __GSL_BLOCK_DOUBLE_H__
 header '#include "gsl/gsl_block_double.h"';
 
@@ -23,7 +24,7 @@ module gsl_block_double_h
   cstruct gsl_block_struct {
     size: size;
     data: ptr[double];
-  }
+  };
 
   //STRUCT or UNION TAG ALIASES
   typedef gsl_block = gsl_block_struct;

@@ -122,7 +122,8 @@ class Sqlite3Ext {
     SQLITE_UNK_TYPE = 999
   }
   instance Eq[sqlite3_result_codes]  {
-    fun == : sqlite3_result_codes * sqlite3_result_codes -> bool = "$1==$2";
+    
+    fun ==: sqlite3_result_codes * sqlite3_result_codes -> bool = "$1==$2";
   }
   open Eq[sqlite3_result_codes];
 

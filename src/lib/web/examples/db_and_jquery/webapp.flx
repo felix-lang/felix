@@ -16,8 +16,6 @@ var config = enhance_with_command_line_arguments
     )
   )
 ;
-
-// Default handlers
 // default_handlers provides handling for mundane requets (static html, not found, etc.
 // They also provides you with the java script jquery and jquery-ui libraries and
 // supporing stylesheets.
