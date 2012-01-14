@@ -948,7 +948,9 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     in
     mdcl
 
-  | STMT_type_alias (sr,name,vs,typ) -> [Dcl (sr,name,None,access,vs,DCL_type_alias (typ))]
+  | STMT_type_alias (sr,name,vs,typ) -> 
+    [Dcl (sr,name,None,access,vs,DCL_type_alias (typ))]
+
   | STMT_inherit (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit qn)]
   | STMT_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit_fun qn)]
 

@@ -510,7 +510,7 @@ and build_table_for_dcl
           ~priv_name_map:(Hashtbl.create 97)
           print_flag
           counter_ref
-          sym_table
+          sym_table 
           id
           dfltvs
           (level + 1)
@@ -849,6 +849,7 @@ print_endline ("Adding module " ^ id ^ " parent " ^ (match parent with | Some p 
       add_tvars privtab
 
   | DCL_type_alias t ->
+
       (* Add the type alias to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id (SYMDEF_type_alias t);
 

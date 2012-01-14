@@ -1,50 +1,49 @@
 
 /* clunky typedef needs to be in Pool[s] put struct pool is depenant 
    but struct cant be in class for some reason*/
-
-typedef member[s] = (free:bool,member:s);
-struct pool[s] =
-{
-  members : list[member[s]];
-  get_next : ()->opt[s];
-  initialized : bool;
-};
-
 class Pool[s] {
 
-  
+  typedef member_t = (free:bool,member:s);
+  struct pool =
+  {
+  members : list[member_t];
+  get_next : unit ->opt[s];
+  initialized : bool;
+  };
+
+ 
   publish """ iterates over a list members rotating back to start of list """
   /* TODO: pull non free members out of rotation, once this happens
            need to determine how to handle allocation of all members.
            block? Error out? */
            
-  gen get_next_member[s](p:&list[member[s]]) ():opt[s] ={
+  gen get_next_member(p:&list[member_t]) ():opt[s] ={
     var rotation =  *p;
     while true do
       match rotation with 
         | Cons (?h,?t) => h.free=false;yield Some h.member;rotation = t;
-        | Empty[list[S]] => rotation = *p;
+        | Empty[list[s]] => rotation = *p;
       endmatch;
     done
     return None[s];
   }
 
-  fun create_pool (members:list[s]):pool[s] ={
-    var m:list[member[s]] = map (fun (x:s) => (free=true,member=x)) members; 
-    return pool(m, get_next_member[s](&m) ,true);  
+  fun create_pool (members:list[s]):pool ={
+    var m:list[member_t] = map (fun (x:s) => (free=true,member=x)) members; 
+    return pool(m, get_next_member(&m) ,true);  
   }
   
   publish """ Implemented to allow custom shut down ad dallocation """
-  virtual proc destroy_member: member[s];
+  virtual proc destroy_member: member_t;
 
-  proc destroy_members(m:list[member[s]]) {
+  proc destroy_members(m:list[member_t]) {
     match m with
       | Cons (?h,?t) => {destroy_member h; destroy_members t;}
-      | Empty[list[member[s]]] =>{}
+      | Empty[list[member_t]] =>{}
     endmatch;
   } 
   
-  proc destroy_pool (p:pool[s]) {
+  proc destroy_pool (p:pool) {
      destroy_members p.members;
   }
   

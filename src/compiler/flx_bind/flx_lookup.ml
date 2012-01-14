@@ -237,9 +237,7 @@ and resolve_inherits state bsym_table rs sr x =
   | FunctionEntry fs -> FunctionEntry (trclose state bsym_table rs sr fs)
 
 and inner_lookup_name_in_env state bsym_table env rs sr name : entry_set_t =
-(*
-  print_endline ("[lookup_name_in_env] " ^ name);
-*)
+(*  print_endline ("[lookup_name_in_env] " ^ name); *)
   let rec aux env =
     match env with
     | [] -> None
@@ -255,10 +253,8 @@ and inner_lookup_name_in_env state bsym_table env rs sr name : entry_set_t =
       *)
       resolve_inherits state bsym_table rs sr x
     | None ->
-(*
-print_endline ("[lookup_name_in_env]: Can't find name " ^ name ^ " in env "); (* print_env env; *)
+print_endline ("[lookup_name_in_env]: Can't find name " ^ name ^ " in env "); print_env env; 
 print_endline ("Issuing clierr .. why isn't it trapped?");
-*)
       clierr sr
       (
         "[lookup_name_in_env]: Name '" ^
@@ -1418,10 +1414,10 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
   match (get_data state.sym_table index) with
   | { Flx_sym.id=id;
       sr=sr;
-      vs=vs;
       dirs=dirs;
       symdef=SYMDEF_function ((ps,_),rt,props,exes)
     } ->
+(* print_endline ("Cal ret type of " ^ id ^ " at " ^ Flx_srcref.short_string_of_src sr); *)
     let rt = bind_type' state bsym_table env rs sr rt args mkenv in
     let rt = beta_reduce state.counter bsym_table sr rt in
     let ret_type = ref rt in
@@ -1429,6 +1425,8 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
     List.iter
     (fun exe -> match exe with
     | (sr,EXE_fun_return e) ->
+(* print_endline ("Cal ret type of " ^ id ^ " got return: " ^ string_of_expr e); *)
+
       incr return_counter;
       begin try
         let t =
@@ -1443,6 +1441,7 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
               e []
             )
         in
+(* print_endline "Bound the expression .. "; *)
         if Flx_do_unify.do_unify
           state.counter
           state.varmap
@@ -1515,6 +1514,7 @@ and cal_ret_type state bsym_table (rs:recstop) index args =
     print_endline ("state.varmap=" ^ !ss);
     print_endline ("  .. ret type index " ^ si index ^ " = " ^ sbt bsym_table !ret_type);
     *)
+(* print_endline ("Ret type is " ^ sbt bsym_table (!ret_type)); *)
     !ret_type
 
   | _ -> assert false
@@ -1674,13 +1674,17 @@ and inner_type_of_index state bsym_table rs index =
   (* struct as function *)
   | SYMDEF_cstruct (ls,_)
   | SYMDEF_struct ls ->
+      let _,vs,_  = find_split_vs state.sym_table bsym_table index in
       let ts = List.map
         (fun (s,i,_) -> TYP_name (sym.Flx_sym.sr,s,[]))
-        (fst sym.Flx_sym.vs)
+        vs
+        (* (fst sym.Flx_sym.vs) *)
       in
       let ts = List.map (bt sym.Flx_sym.sr) ts in
 
+(* print_endline "inner type of index .. struct .. about to adjust ts"; *)
       let ts = adjust_ts state.sym_table bsym_table sym.Flx_sym.sr index ts in
+(* print_endline "inner type of index .. struct .. adjust ts done"; *)
       let t = type_of_list (List.map snd ls) in
       btyp_function (bt sym.Flx_sym.sr t, btyp_inst (index, ts))
 
@@ -1787,7 +1791,7 @@ and cal_apply' state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
     (* HACKERY TO SUPPORT STRUCT CONSTRUCTORS *)
     | BTYP_inst (index,ts) ->
       begin match get_data state.sym_table index with
-      { Flx_sym.id=id; vs=vs; symdef=entry } ->
+      { Flx_sym.id=id; symdef=entry } ->
         begin match entry with
         | SYMDEF_cstruct (cs,_) -> t1, None
         | SYMDEF_struct (cs) -> t1, None
@@ -1948,9 +1952,6 @@ and lookup_qn_with_sig'
 
       | SYMDEF_cstruct _
       | SYMDEF_struct _ ->
-(*
-print_endline ("Handle nonfunction " ^ si index);
-*)
         let sign = try List.hd signs with _ -> assert false in
         (*
         print_endline ("Lookup qn with sig' found a struct "^ id ^
@@ -2276,7 +2277,7 @@ and lookup_type_qn_with_sig'
     inner_bind_type state bsym_table env sr rs t
   in
   let handle_nonfunction_index index ts =
-    print_endline ("Found non function? index " ^ string_of_bid index);
+(*    print_endline ("Found non function? index " ^ string_of_bid index); *)
     begin match get_data state.sym_table index with
     { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
       begin match entry with
@@ -4032,6 +4033,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
         | { Flx_sym.id=id; vs=vs; symdef=SYMDEF_cstruct (ls,_) } -> id,vs,ls
         | _ -> assert false
       in
+      let _,vs,_  = find_split_vs state.sym_table bsym_table i in
       let alst = match ta with
         |BTYP_record ("",ts) -> ts
         | _ -> assert false
@@ -4045,10 +4047,10 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
       else begin
         let bvs = List.map
           (fun (n,i,_) -> n, btyp_type_var (i, btyp_type 0))
-          (fst vs)
+          (vs)
         in
         let env' = build_env state bsym_table (Some i) in
-        let vs' = List.map (fun (s,i,tp) -> s,i) (fst vs) in
+        let vs' = List.map (fun (s,i,tp) -> s,i) (vs) in
         let alst = List.sort (fun (a,_) (b,_) -> compare a b) alst in
         let ialst = List.map2 (fun (k,t) i -> k,(t,i)) alst (nlist na) in
         let a =
@@ -5066,6 +5068,7 @@ and merge_directives state bsym_table rs env dirs typeclasses =
  modules or types at the moment .. only functions .. so it
  probably doesn't matter
  *)
+(* AHEM, this has changed! Type classes can contain anything now! *)
  List.iter add_qn typeclasses;
  !env
 
@@ -5200,6 +5203,8 @@ and build_env state bsym_table parent : env_t =
    if an abstract type is mapped to a typedef, so we have
    to factor them out again .. YUK!!
 *)
+
+(* THIS ROUTINE APPEARS TO BE UNUSED! *)
 
 and rebind_btype state bsym_table env sr ts t =
   let rbt t = rebind_btype state bsym_table env sr ts t in

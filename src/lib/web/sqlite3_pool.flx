@@ -1,4 +1,5 @@
 include "web/sqlite3_ext";
+include "web/pool";
 
 class Sqlite3Pool {
   open Sqlite3;
@@ -19,12 +20,12 @@ class Sqlite3Pool {
         connections = Cons (db,connections);
       done
     done
-    return create_pool[sqlite3_db_t](connections);
+    return create_pool(connections);
   }
 
   instance Pool[sqlite3_db_t] {
-    proc destroy_member (m:member[sqlite3_db_t]) =   {
-      sqlite3_close(m.member[sqlite3_db_t]);
+    proc destroy_member (m:member_t) =   {
+      sqlite3_close(m.member);
     }
   }
 }

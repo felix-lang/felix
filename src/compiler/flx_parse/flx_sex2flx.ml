@@ -622,7 +622,7 @@ and xstatement_t sr x : statement_t =
       let ucmp = lst "cstruct component" xscmp ucmp in
       STMT_cstruct (xsr sr, xid id, xvs vs, ucmp, xrr reqs)
 
-  | Lst [Id "ast_type_alias"; sr; id; vs; t] ->
+  | Lst [Id "ast_type_alias"; sr; id; vs; t] -> 
       STMT_type_alias (xsr sr, xid id, xvs vs, ti t)
 
   | Lst [Id "mktypefun"; sr; id; vs; argss; ret; body] ->
