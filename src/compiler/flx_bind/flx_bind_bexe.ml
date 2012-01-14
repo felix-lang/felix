@@ -648,18 +648,22 @@ let bind_exes state bsym_table sr exes =
          however, is required to supply a dead code assertion
          to prevent the error.
       *)
+(*
       print_endline "[DEBUG] Instruction sequence is:";
       List.iter begin fun exe ->
         print_endline (string_of_bexe bsym_table 0 exe)
       end bound_exes;
+*)
       (*
       clierr sr
       *)
+(*
       print_endline
       (
         "[bind_exes]: function " ^ state.id ^ " drops off end, missing " ^
         "return statement"
       )
+*)
       (*
       ;
       print_endline "[DEBUG] Instruction sequence is:";
