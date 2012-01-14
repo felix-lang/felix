@@ -5,12 +5,6 @@
 
 class Input_text_file[input_text_file]
 {
-
-  // load file from filename
-  // note: loaded in binary mode not text mode!
-  fun load: string -> string = "::flx::rtl::ioutil::load_file($1)"
-    requires package "flx_ioutil";
-
   // open for reading 
   virtual gen fopen_input: string -> input_text_file; 
 
@@ -68,6 +62,12 @@ open class Cstdio {
 
   pod type ifile = "::std::FILE*" requires Cxx_headers::cstdio;
   pod type ofile = "::std::FILE*" requires Cxx_headers::cstdio;
+
+  // load file from filename
+  // note: loaded in binary mode not text mode!
+  fun load: string -> string = "::flx::rtl::ioutil::load_file($1)"
+    requires package "flx_ioutil";
+
 
   // standard files: Felix mapped
   // can be redirected by flx_run
