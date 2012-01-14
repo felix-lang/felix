@@ -1,18 +1,23 @@
 include "web/web_server";
 include "web/sqlite3_pool";
-include "multiple_sa_model";
-include "multiple_sa";
+include "./multiple_sa_model";
+include "./multiple_sa";
 
 open HTTPHandler;
 open ServerConfig;
 
-var config = enhance_with_command_line_arguments(
-  ServerConfig::server_config(0.1,
-                              1234,                           // Port
-                              "./html",                       // Document Root
-  	                      (add[http_handler]              // Handlers 
-                                (MultipleSA::app_handlers() , 
-                                 default_handlers()))));      // Default handlers
+var config = enhance_with_command_line_arguments
+  (
+    ServerConfig::server_config(
+      0.1,
+      1234,                           // Port
+      "./html",                       // Document Root
+       MultipleSA::app_handlers() + default_handlers() // Handlers 
+    )
+  )
+;
+
+// Default handlers
 // default_handlers provides handling for mundane requets (static html, not found, etc.
 // They also provides you with the java script jquery and jquery-ui libraries and
 // supporing stylesheets.
