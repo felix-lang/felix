@@ -65,6 +65,15 @@ let shape_of' use_assoc_type syms bsym_table tn t =
       if all_units cpts then "::flx::rtl::_int_ptr_map"
       else "::flx::rtl::_uctor_ptr_map"
 
+  (* The shape of an actual function is CLASSNAME_ptr_map,
+     The shape of a function **variable** is address_ptr_map, since it's
+     just an ordinary pointer. In particular, you can't have the offsets
+     into a function type, you need offsets into the actual function.
+  *)
+  | BTYP_function _ -> 
+    (* print_endline "Function/procedure type shape: using address"; *)
+    "::flx::rtl::_address_ptr_map"
+
   | BTYP_pointer _ -> "::flx::rtl::_address_ptr_map"
   | _ -> tn t ^ "_ptr_map"
 

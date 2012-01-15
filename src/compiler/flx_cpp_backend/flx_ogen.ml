@@ -39,9 +39,7 @@ let id x = ()
 let scan_bexpr syms bsym_table allocable_types e : unit =
   let rec aux e = match e with
   | BEXPR_new (_,t),_ when t <> Flx_btype.btyp_tuple [] ->
-    (*
-    print_endline ("FOUND A NEW " ^ sbt bsym_table t);
-    *)
+    (* print_endline ("FOUND A NEW " ^ sbt bsym_table t); *)
     let index =
       try Hashtbl.find syms.registry t
       with Not_found -> failwith ("Can't find type in registry " ^ sbt bsym_table t)
