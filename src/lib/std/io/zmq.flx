@@ -275,6 +275,7 @@ class zmq {
     | zmq_rcvtimeo ?x => "rcvtimeo " + str x+" ms"
     | zmq_sndtimeo ?x => "sndtimeo " + str x+" ms"
     | zmq_ipv4only ?x => "ipv4only " + str x
+    ;
   }
 
   private typedef blobkind = typesetof (uint64,int64,int,char,size,bool,file,zmq_pollitem_flag_t, zmq_socket_type_t);
