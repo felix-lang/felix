@@ -4,7 +4,7 @@ publish """
 Lightwight 0MQ wrapper.
 """
 
-class zmq {
+class ZeroMQ {
   requires package "zmq";
 
   open Errno;
@@ -131,6 +131,7 @@ class zmq {
   instance Eq[zmq_socket_type_t] {
     fun == : zmq_socket_type_t * zmq_socket_type_t -> bool = "$1==$2";
   }
+
   const ZMQ_PAIR : zmq_socket_type_t;
   const ZMQ_PUB : zmq_socket_type_t;
   const ZMQ_SUB : zmq_socket_type_t;
@@ -195,6 +196,7 @@ class zmq {
   const ZMQ_RCVTIMEO : zmq_sockopts_tag;
   const ZMQ_SNDTIMEO : zmq_sockopts_tag;
   const ZMQ_IPV4ONLY : zmq_sockopts_tag;
+
   instance Str[zmq_sockopts_tag] {
     fun str:zmq_sockopts_tag-> string =
     | $(ZMQ_AFFINITY) => "ZMQ_AFFINITY"
@@ -384,7 +386,11 @@ class zmq {
   pod type zmq_xmit_options_t = "int";
   const ZMQ_DONTWAIT : zmq_xmit_options_t;
   const ZMQ_SNDMORE : zmq_xmit_options_t;
-  
+  instance Eq[zmq_socket_type_t] {
+    fun == : zmq_xmit_options_t * zmq_xmit_options_t -> bool = "$1==$2";
+  }
+
+ 
   gen zmq_send : zmq_socket * address * size * zmq_xmit_options_t -> int;
   gen zmq_recv : zmq_socket * address * size * zmq_xmit_options_t -> int;
   gen zmq_sendmsg : zmq_socket * zmq_msg_t * zmq_xmit_options_t  -> int;
@@ -410,4 +416,12 @@ class zmq {
 
   gen zmq_poll: &zmq_pollitem_t * int * long -> int;
 }
+
+open Eq[ZeroMQ::zmq_socket_type_t];
+open Str[ZeroMQ::zmq_socket_type_t];
+
+open Eq[ZeroMQ::zmq_xmit_options_t];
+
+open Str[ZeroMQ::zmq_sockopts_tag];
+open Str[ZeroMQ::zmq_socket_options];
 
