@@ -58,7 +58,7 @@ class ZeroMQ {
 
   body "void zmq_finalise(void *, void *p){ zmq_close(p); }";
 
-  private incomplete type zmq_msg_t_ = "zmq_msg_t";
+  private type zmq_msg_t_ = "zmq_msg_t";
   _gc_pointer _gc_type zmq_msg_t_ type zmq_msg_t  = "zmq_msg_t*" requires finaliser "zmq_finalise";
   private gen make_zmq_msg_t : 1 -> zmq_msg_t = "new (*PTF gcp, @0, false) zmq_msg_t";
 
@@ -384,6 +384,7 @@ class ZeroMQ {
 /******************************************************************************/
 
   pod type zmq_xmit_options_t = "int";
+  const ZMQ_XMIT_OPTIONS_NONE : zmq_xmit_options_t = "0";
   const ZMQ_DONTWAIT : zmq_xmit_options_t;
   const ZMQ_SNDMORE : zmq_xmit_options_t;
   instance Eq[zmq_xmit_options_t] {

@@ -60,6 +60,7 @@ include "std/rtti";
 
 // I/O
 include "std/io/textio";
+include "std/io/faio";
 include "std/io/zmq";
 include "std/filename";
 
