@@ -117,7 +117,6 @@ syntax expressions {
   x[ssuperscript_pri] := x[ssuperscript_pri] "^" x[srefr_pri] =># "`(ast_superscript (,_1 ,_3))";
 
   // more prefixes
-  x[srefr_pri] := "&" x[srefr_pri] =># "`(ast_ref ,_sr ,_2)";
   x[srefr_pri] := "*" x[srefr_pri] =># "(prefix 'deref)";
   x[srefr_pri] := "_deref" x[srefr_pri] =># "`(ast_deref ,_sr ,_2)";
   x[srefr_pri] := "new" x[srefr_pri] =># "`(ast_new ,_sr ,_2)";
@@ -173,6 +172,7 @@ syntax expressions {
 
   sthe_name :=
     | "#" sthe_name =># "`(ast_apply ,_sr (,_2 (ast_tuple ,_sr ())))"
+    | "&" sthe_name =># "`(ast_ref ,_sr ,_2)"
 
     // macro expansion freezer
     | "noexpand" squalified_name =># "`(ast_noexpand ,_sr ,_2)"

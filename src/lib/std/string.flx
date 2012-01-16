@@ -39,6 +39,7 @@ open class String
   ctor char (x:string) => x.[0];
   ctor string (c:char) => ""+c;
   ctor string: &char = "::std::string($1)";
+  ctor string: &char  * !ints = "::std::string($1,$2)";
 
   fun subscript: string * !ints -> char =
     "::flx::rtl::strutil::subscript($1,$2)" requires package "flx_strutil";

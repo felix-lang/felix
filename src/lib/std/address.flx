@@ -1,4 +1,4 @@
-fun _ctor_address[T]: &T -> address = "(void*)$1";
+ctor[T] address: &T = "(void*)$1";
 fun isNULL: address -> bool = "(0==$1)";
 const NULL : address = "NULL";
 

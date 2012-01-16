@@ -13,6 +13,11 @@ open class Errno
   const EAGAIN: errno_t;
   const ENOMEM: errno_t;
   const EEXIST: errno_t;
+  const EINTR: errno_t; // call interrupted by a signal
+
+  proc maybe_exit(var n:int) { if n != 0 do System::exit(errno.int); done }
+  proc maybe_exit(var n:errno_t) { if n != ENOERROR  do System::exit(n.int); done }
+  proc maybe_exit() { if errno != ENOERROR do System::exit(errno.int); done }
 
   // Note: we have to void out the return of strerror_r because OSX and XSI 
   // return int, which disagrees with the GNU version which returns char*
