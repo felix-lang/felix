@@ -1,0 +1,14 @@
+
+
+cookie-1-0
+----------------
+Cookie Creation:
+
+Manually:UserId=sombody; Domain=127.0.0.1; Path=/;   HttpOnly;
+Via constructor:x=v;    Expires=Mon, 16 Jan 2012 14:20:07 GMT;  
+
+Setting a cookie for HTTP
+Set-Cookie:UserId=sombody; Domain=127.0.0.1; Path=/;   HttpOnly;
+
+Setting multiple cookies for HTTP
+Set-Cookie:x=v;    Expires=Mon, 16 Jan 2012 14:20:07 GMT;   UserId=sombody; Domain=127.0.0.1; Path=/;   HttpOnly; 
