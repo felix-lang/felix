@@ -1,0 +1,172 @@
+publish """
+
+"""
+class Base64 {
+  val b64_chars = ('A','B','C','D','E','F','G','H','I','J','K','L','M',
+                   'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+                   'a','b','c','d','e','f','g','h','i','j','k','l','m',
+                   'n','o','p','q','r','s','t','u','v','w','x','y','z',
+                   '0','1','2','3','4','5','6','7','8','9','+','/');
+
+  val b64_string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+  gen make_string: size*char->string = "std::string ($1, $2)";
+
+  instance Bits[char] {
+    fun \& : char * char -> char = "$1&$2";
+    fun \| : char * char -> char = "$1|$2";
+  }
+
+  open Bits[char];
+  private fun >> : char * int -> char = "$1>>$2";
+  private fun << : char * int -> char = "$1<<$2";
+  private fun utiny_of: char -> utiny = "(unsigned char)$1:cast" is cast;
+
+/* Encode function derived from encode function http://www.source-code.biz/base64coder/java/Base64Coder.java.txt by Christian d'Heureuse, Inventec Informatik AG, Zurich, Switzerland */
+  publish "Returns base 64 encoding of supplied string inp"
+  fun encode (inp:string) ={ val l = len inp; return encode(inp,0,int(l));}
+  fun encode (in:string, iOff:int, iLen:int) = {
+    val oDataLen = (iLen*4+2)/3;       // output length without padding
+    val oLen = ((iLen+2)/3)*4;         // output length including padding
+    // if using darray would use this
+    //var out = darray[char]( size oLen,char(0));
+    var out:string;//make_string(size oLen,char(0));
+    var ip = iOff;
+    var iEnd = iOff + iLen;
+    var op = 0;
+    while (ip < iEnd) do
+      val i0 = in.[ip] \& char(0xff);ip++;
+      val i1 = if ip < iEnd then in.[ip] \& char(0xff) else char(0) endif;if ip < iEnd do ip++; done
+      val i2 = if ip < iEnd then in.[ip] \& char(0xff) else char(0) endif;if ip < iEnd do ip++; done
+      val o0 = i0 >> 2;
+      val o1 = ((i0 \&   char(3)) << 4) \| (i1 >> 4);
+      val o2 = ((i1 \& char(0xf)) << 2) \| (i2 >> 6);
+      val o3 = i2 \& char(0x3F);
+      out  += char (b64_chars.[utiny_of(o0)]);op++;
+      out  += char (b64_chars.[utiny_of(o1)]);op++;
+      out  += if op < oDataLen then char (b64_chars.[utiny_of(o2)]) else char('=') endif;
+      // if usaing darray then would use this
+      //out.[op] = char (b64_chars.[utiny_of(o0)]);op++;
+      //out.[op] = char (b64_chars.[utiny_of(o1)]);op++;
+      //out.[op] = if op < oDataLen then char (b64_chars.[utiny_of(o2)]) else char('=') endif;
+      op++;
+        out += if op < oDataLen then  char(b64_chars.[utiny_of(o3)]) else char('=') endif;
+        //if using darray would do this
+        //out.[op] = if op < oDataLen then  char(b64_chars.[utiny_of(o3)]) else char('=') endif;
+      op++; 
+   done
+   return out; 
+  }
+
+  /* adapted from René Nyffenegger(rene.nyffenegger@adp-gmbh.ch) 
+     base64_encode@http://www.adp-gmbh.ch/cpp/common/base64.html
+     not handeling end of encoding correctly will proably remove. 
+  fun base64_encode(bytes:string) = {
+    var in_len = len bytes;
+    var ret:string;
+    var i:int = 0;
+    var inp:char^4;
+    var outp:char^5;
+    var k = 0;
+    while (in_len > 0ui) do
+      in_len--;
+      inp.[i] = bytes.[k];
+      i++; k++;
+      if (i == 3) do
+        outp.[0] = ((inp.[0]) \& char(0xfc)) >> 2;
+        outp.[1] = ((inp.[0] \& char(0x03)) << 4) \| ((inp.[1] \& char(0xf0)) >> 4);
+        outp.[2] = ((inp.[1] \& char(0x0f)) << 2) \| ((inp.[2] \& char(0xc0)) >> 6);
+        outp.[3] = inp.[2] \& char(0x3f);
+        for var n in 0 upto 3 do
+          var idx=utiny_of(outp.[n]);
+          ret = ret + b64_chars.[idx];
+        done
+        i = 0;
+      done
+    done
+    if i > 0 do
+      
+
+      for var m in i upto 2 do
+        inp.[m] = char('\0');
+      done
+      outp.[0] = (inp.[0] \& char(0xfc)) >> 2;
+      outp.[1] = ((inp.[0] \& char(0x03)) << 4) \| ((inp.[1] \& char(0xf0)) >> 4);
+      outp.[2] = ((inp.[1] \& char(0x0f)) << 2) \| ((inp.[2] \& char(0xc0)) >> 6);
+      outp.[3] = inp.[2] \& char(0x3f);
+      for var o in  0 upto  i do
+        ret = ret + b64_chars.[o];
+      done
+      while i < 3 do
+        i++;
+        ret = ret + '=';
+      done
+    done
+    return ret;
+  }
+*/
+
+  publish "wraps encoded string after ll chars"
+  fun wrap (b64_str:string,ll:uint) = {
+    val ret:string;
+    var k = 0ui;
+    for var i in 1ui upto ((len b64_str)/ll - 0ui)  do
+      ret = ret + substring(b64_str,k,ll*i)+"\n";
+      k=ll*i;
+    done
+    return (ret + substring(b64_str,k,(len b64_str) - 0ui));
+  }
+
+  publish "Decodes supplied base 64 encoded string "
+  fun decode(enc_str:string) = {
+    var in_len:uint = len enc_str;
+    var i:int = 0;
+    var j:int = 0;
+    var in_ = 0;
+    var char_array_4:char^4;
+    var char_array_3:char^3;
+    var ret:string;
+
+    while in_len > 0ui and ( enc_str.[in_] != char('=')) do 
+      //(and is_base64(enc_str[in_])) 
+      in_len--;
+      char_array_4.[i] = enc_str.[in_];i++; in_++;
+      if (i == 4) do
+        for var ip in  0 upto 3 do
+          char_array_4.[ip] =( match find(b64_string,char_array_4.[ip]) with 
+            |Some ?v => char(v)
+            |_ => char(0)
+          endmatch);
+        done
+        char_array_3.[0] = (char_array_4.[0] << 2) \| ((char_array_4.[1] \& char(0x30)) >> 4);
+        char_array_3.[1] = ((char_array_4.[1] \& char(0xf)) << 4) \| ((char_array_4.[2] \& char(0x3c)) >> 2);
+        char_array_3.[2] = ((char_array_4.[2] \& char(0x3)) << 6) \| char_array_4.[3];
+        for var l in  0 upto 2 do
+          ret = ret + char_array_3.[l];
+        done
+        i = 0;
+      done
+    done
+  if (i > 0 ) do
+    char_array_4.[i] = char_array_3.[1]; 
+    for var m in i upto 3 do
+      char_array_4.[i] = char(0);
+    done
+    for var k in 0 upto 3 do
+      char_array_4.[k] =( match find(b64_string,char_array_4.[k]) with 
+            |Some ?v => char(v)
+            |_ => char(0)
+          endmatch);
+    done
+    char_array_3.[0] = (char_array_4.[0] << 2) \| ((char_array_4.[1] \& char(0x30)) >> 4);
+    char_array_3.[1] = ((char_array_4.[1] \& char(0xf)) << 4) \| ((char_array_4.[2] \& char(0x3c)) >> 2);
+    char_array_3.[2] = ((char_array_4.[2] \& char(0x3)) << 6) \| char_array_4.[3];
+
+    for var n in  0 upto  (i - 2) do
+       ret += char_array_3.[n];
+    done
+  done
+  return ret;
+  }
+
+}
