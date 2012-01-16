@@ -25,9 +25,8 @@ Last-Modified: """ + rfc1123_date(response.last_modified) +"""\r
 Connection: close\r
 Content-Type: """ + str(response.content_type) + """\r
 Content-Length: """ + str (len response.content) + """\r
-"""+(fold_left (fun(x:string) (y:string):string => x + y) "" (map (fun (n:string*string) => n.(0)+": "+n.(1)+"") response.headers))+"""
-\r
-\r""";
+"""+(fold_left (fun(x:string) (y:string):string => x + y) "" (map (fun (n:string*string) => n.(0)+": "+n.(1)+"") response.headers))+"""\r
+""";
 
   
   fun make_image(mime:mime_type, content:string) => 
@@ -47,12 +46,12 @@ Content-Length: """ + str (len response.content) + """\r
       content; 
 
   fun make_not_found (content:string) =>
-    let ?response = http_response(SC_NOT_FOUND,localtime(time_t()),text css,no_headers(),
+    let ?response = http_response(SC_NOT_FOUND,localtime(time_t()),text html,no_headers(),
 				  "PAGE NOT FOUND: "+content) in
     	http_header(response) + response.content; 
 
   fun make_forbidden (content:string) =>
-    let ?response = http_response(SC_FORBIDDEN,localtime(time_t()),text css,no_headers(),
+    let ?response = http_response(SC_FORBIDDEN,localtime(time_t()),text html,no_headers(),
 				  "Forbidden: "+content) in
     	http_header(response) + response.content; 
 
