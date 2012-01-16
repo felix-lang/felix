@@ -4,6 +4,7 @@ publish """
 Lightwight 0MQ wrapper.
 """
 
+
 class ZeroMQ {
   requires package "zmq";
 
@@ -45,8 +46,25 @@ class ZeroMQ {
 
   fun zmq_errno : 1-> errno_t;
   fun zmq_strerror : errno_t -> string = "::std::string(zmq_strerror($1))";
-
+ 
   gen ewrap(var x:int) => if x == 0 then errno_t(0) else errno endif;
+
+  proc zmq_validate (msg:string) (var retcode: int) {
+    if retcode != -1 return;
+    var err = errno;
+    println$ (if msg=="" then "" else msg+" ") + "Exit due to ZMQ error "  + str err + ": " + zmq_strerror err;
+    System::exit err.int;
+  }
+  proc zmq_validate (var retcode: int) { zmq_validate "" retcode; }
+
+  fun zmq_check (msg:string) (var retcode:int) = {
+    if retcode != -1 do return retcode; done
+    var err = errno;
+    println$ (if msg=="" then "" else msg+" ") + "Exit due to ZMQ error "  + str err + ": " + zmq_strerror err;
+    System::exit err.int;
+  }
+
+  fun zmq_check(var retcode: int) => zmq_check "" retcode;
 
 /******************************************************************************/
 /*  0MQ message definition.                                                   */
@@ -54,37 +72,17 @@ class ZeroMQ {
 
   typedef zmq_free_fn = address * address --> void;
   body "void zmq_free(void *p, void *){ ::std::free(p); }";
-  private const zmq_free: zmq_free_fn;
-
-  body "void zmq_finalise(void *, void *p){ zmq_close(p); }";
+  const zmq_free: zmq_free_fn;
 
   private type zmq_msg_t_ = "zmq_msg_t";
-  _gc_pointer _gc_type zmq_msg_t_ type zmq_msg_t  = "zmq_msg_t*" requires finaliser "zmq_finalise";
-  private gen make_zmq_msg_t : 1 -> zmq_msg_t = "new (*PTF gcp, @0, false) zmq_msg_t";
+  _gc_pointer _gc_type zmq_msg_t_ type zmq_msg_t  = "zmq_msg_t*";
+  gen make_zmq_msg_t : 1 -> zmq_msg_t = "new (*PTF gcp, @0, false) zmq_msg_t";
 
-  gen zmq_msg_init:  zmq_msg_t->int;
+  // raw
+  gen zmq_msg_init: zmq_msg_t->int;
   gen zmq_msg_init_size: zmq_msg_t * size -> int;
   gen zmq_msg_init_data: zmq_msg_t * address * size * zmq_free_fn * address -> int;
-  private gen zmq_msg_close: zmq_msg_t -> int;
-
-  ctor zmq_msg_t () {
-    var x = make_zmq_msg_t();
-    maybe_exit (zmq_msg_init x);
-    return x;
-  } 
-  ctor zmq_msg_t (n:size) {
-    var x = make_zmq_msg_t();
-    maybe_exit(zmq_msg_init_size (x,n));
-    return x;
-  } 
-  ctor zmq_msg_t (s:string) {
-    var x = make_zmq_msg_t();
-    var n = len s;
-    var b = C_hack::malloc(n);
-    memcpy(b, address s.cstr, n);
-    maybe_exit(zmq_msg_init_data (x, b, n, zmq_free, NULL));
-    return x;
-  } 
+  gen zmq_msg_close: zmq_msg_t -> int;
 
   gen zmq_msg_move: zmq_msg_t * zmq_msg_t -> int;
   gen zmq_msg_copy: zmq_msg_t * zmq_msg_t -> int;
@@ -95,38 +93,35 @@ class ZeroMQ {
   pod type zmq_message_option_code_t = "int";
   const ZMQ_MORE : zmq_message_option_code_t;
 
-  private fun zmq_getmsgopt: zmq_msg_t * zmq_message_option_code_t * address * &size -> int;
-  fun zmq_more(m:zmq_msg_t):bool = 
-  {
-    var x: int;
-    var n:size;
-    C_hack::ignore(zmq_getmsgopt(m,ZMQ_MORE,&x.address,&n));
-    assert n == C_hack::sizeof[int];
-    return x != 0;
-  } 
-
-  ctor string: zmq_msg_t = "::std::string(zmq_msg_data($1), zmq_msg_size($1))";
+  fun zmq_getmsgopt: zmq_msg_t * zmq_message_option_code_t * address * &size -> int;
 
 /******************************************************************************/
 /*  0MQ infrastructure (a.k.a. context) initialisation & termination.         */
 /******************************************************************************/
 
   pod type zmq_context = "void*";
+
+  // raw
   gen zmq_init : int  -> zmq_context;
   gen zmq_term : zmq_context -> int;
-  ctor zmq_context : int = "zmq_init($1)";
 
 /******************************************************************************/
 /*  0MQ socket definition.                                                    */
 /******************************************************************************/
 
   pod type zmq_socket= "void*";
+  // raw
   ctor zmq_socket : zmq_context * zmq_socket_type_t = "zmq_socket($1,$2)";
+  gen zmq_close: zmq_socket -> int;
+  gen zmq_bind : zmq_socket * string -> int = "zmq_bind($1, $2.c_str())";
+  gen zmq_connect : zmq_socket * string -> int = "zmq_connect($1, $2.c_str())";
+  fun valid: zmq_socket->bool = "$1!=0";
 
 /******************************************************************************/
 /*  Socket types.                                                             */ 
 /******************************************************************************/
 
+  header "typedef int zmq_socket_type_t;";
   cenum zmq_socket_type_t =   
     ZMQ_PAIR, ZMQ_PUB, ZMQ_SUB, ZMQ_REQ, ZMQ_REP, ZMQ_XREQ, ZMQ_XREP,
     ZMQ_PULL, ZMQ_PUSH, ZMQ_XPUB, ZMQ_XSUB, ZMQ_ROUTER, ZMQ_DEALER 
@@ -154,6 +149,7 @@ class ZeroMQ {
 /*  Socket options.                                                           */
 /******************************************************************************/
 
+  header "typedef int zmq_sockopts_tag;";
   cenum zmq_sockopts_tag =
     ZMQ_AFFINITY, ZMQ_IDENTITY, ZMQ_SUBSCRIBE, ZMQ_UNSUBSCRIBE, ZMQ_RATE,
     ZMQ_RECOVERY_IVL, ZMQ_SNDBUF, ZMQ_RCVBUF, ZMQ_RCVMORE, ZMQ_FD, ZMQ_EVENTS,
@@ -258,10 +254,10 @@ class ZeroMQ {
   private gen zset(s:zmq_socket, o:zmq_sockopts_tag, x:bool )       => 
     zset(s, o, if x then 1 else 0 endif);
   private gen zset(s:zmq_socket, o:zmq_sockopts_tag, x:string )     => 
-    zmq_setsockopt (s, o, x.cstr, x.size);
+    zmq_setsockopt (s, o, x.cstr, x.len);
   
  
-  gen zmq_setsockopt(s: zmq_socket, o: zmq_socket_options) =>
+  gen set_sockopt(s: zmq_socket) (o: zmq_socket_options) =>
     match o with
     | zmq_affinity ?x          => zset(s, ZMQ_AFFINITY, x) 
     | zmq_identity ?x          => zset(s, ZMQ_IDENTITY, x) 
@@ -282,7 +278,7 @@ class ZeroMQ {
     | zmq_rcvtimeo ?x          => zset(s, ZMQ_RCVTIMEO, x) 
     | zmq_sndtimeo ?x          => zset(s, ZMQ_SNDTIMEO, x) 
     | zmq_ipv4only ?x          => zset(s, ZMQ_IPV4ONLY, x) 
-    | _ => Control::fail_fun[int]$ "ZMQ: Cannot set socket option " + str o
+    | _ => Control::fail_fun[int]$ "ZMQ: socket option " + str o + " cannot be set"
   ;
  
   private gen zmq_getsockopt : zmq_socket * zmq_sockopts_tag * address * &size -> int;
@@ -339,24 +335,21 @@ class ZeroMQ {
     | $(ZMQ_SNDTIMEO)          => zmq_sndtimeo (get_int(s, o))
     | $(ZMQ_IPV4ONLY)          => zmq_ipv4only (get_bool(s, o))
   ;
- 
-  gen zmq_close: zmq_socket -> int;
-  gen zmq_bind : zmq_socket * string -> int = "zmq_bind($1, $2.c_str())";
-  gen zmq_connect : zmq_socket * string -> int = "zmq_connect($1, $2.c_str())";
 
 /******************************************************************************/
 /*  Send/recv                                                                 */
 /******************************************************************************/
 
+  header "typedef int zmq_xmit_options_t;";
   cenum zmq_xmit_options_t = ZMQ_DONTWAIT, ZMQ_SNDMORE;
   const ZMQ_XMIT_OPTIONS_NONE : zmq_xmit_options_t = "0";
 
  
+  // raw
   gen zmq_send : zmq_socket * address * size * zmq_xmit_options_t -> int;
   gen zmq_recv : zmq_socket * address * size * zmq_xmit_options_t -> int;
   gen zmq_sendmsg : zmq_socket * zmq_msg_t * zmq_xmit_options_t  -> int;
   gen zmq_recvmsg : zmq_socket * zmq_msg_t * zmq_xmit_options_t -> int;
-
 /******************************************************************************/
 /*  I/O multiplexing.                                                         */
 /******************************************************************************/
@@ -379,10 +372,77 @@ class ZeroMQ {
   };
 
   gen zmq_poll: &zmq_pollitem_t * int * long -> int;
+
+  inherit Str[zmq_socket_type_t];
+  inherit Str[zmq_sockopts_tag];
+  inherit Str[zmq_socket_options];
+  inherit Str[zmq_pollitem_flag_t];
 }
 
-open Str[ZeroMQ::zmq_socket_type_t];
-open Str[ZeroMQ::zmq_sockopts_tag];
-open Str[ZeroMQ::zmq_socket_options];
-open Str[ZeroMQ::zmq_pollitem_flag_t];
+class Checked_ZeroMQ[T] {
+  inherit ZeroMQ;
+  open Errno::Check[T];
+
+  proc init_size (x:zmq_msg_t) (n:size) { int_to_proc$ zmq_msg_init_size (x,n); }
+  proc init (x:zmq_msg_t) { int_to_proc$ zmq_msg_init (x); }
+  proc close (x:zmq_msg_t) { int_to_proc$ zmq_msg_close x; }
+
+  fun _ctor_zmq_msg_t ()  => make_zmq_msg_t();
+
+  proc init_string (x:zmq_msg_t) (s:string) {
+    var n = len s;
+    var b = C_hack::malloc(n);
+    memcpy(b, address s.cstr, n);
+    int_to_proc (zmq_msg_init_data (x, b, n, zmq_free, NULL));
+  } 
+
+  ctor string: zmq_msg_t = "::std::string((char const*)zmq_msg_data($1), (size_t)zmq_msg_size($1))";
+
+  fun zmq_more(m:zmq_msg_t):bool = 
+  {
+    var x: int;
+    var n:size;
+    int_to_proc (zmq_getmsgopt(m,ZMQ_MORE,&x.address,&n));
+    assert n == C_hack::sizeof[int];
+    return x != 0;
+  } 
+
+
+  proc send_msg (s:zmq_socket) (m:zmq_msg_t) => int_to_proc$ zmq_sendmsg (s,m,ZMQ_XMIT_OPTIONS_NONE);
+  proc send_string (s:zmq_socket) (m:string) => int_to_proc$ zmq_send(s,m.cstr.address,m.len,ZMQ_XMIT_OPTIONS_NONE);
+  proc recv_msg (s:zmq_socket) (m:zmq_msg_t) => int_to_proc$ zmq_recvmsg (s,m,ZMQ_XMIT_OPTIONS_NONE);
+  gen recv_string (s:zmq_socket) = {
+    var m : zmq_msg_t = zmq_msg_t();
+    m.init;
+    recv_msg s m;
+    r := m.string;
+    m.close;
+    return r;
+  }
+
+  ctor zmq_context : int = "zmq_init($1)";
+  proc term (x:zmq_context) => int_to_proc$ zmq_term x;
+
+  fun check_socket(var x:zmq_socket)= { if x.valid do return x; else ehandler; done; }
+  gen mk_socket (c: zmq_context) (t:zmq_socket_type_t) => check_socket$ zmq_socket (c,t);
+  proc set_opt(s: zmq_socket) (o: zmq_socket_options) => int_to_proc (set_sockopt s o);
+
+  proc bind(x:zmq_socket) (a:string) => int_to_proc$ zmq_bind(x,a);
+  proc connect(x:zmq_socket) (a:string) => int_to_proc$ zmq_connect(x,a);
+  proc close (s:zmq_socket) => int_to_proc$ zmq_close s;
+} 
+
+type zmq_ehandler_t = ""; // phantom
+instance Check[zmq_ehandler_t]
+{
+  proc ehandler() {
+    err := errno;
+    println$  "Exit due to ZMQ error "  + str err + ": " + ZeroMQ::zmq_strerror err;
+    System::exit err.int;
+  }
+}
+
+class ZMQ {
+  inherit Checked_ZeroMQ[zmq_ehandler_t];
+}
 

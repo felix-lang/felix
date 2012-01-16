@@ -103,8 +103,8 @@ let fold_vars syms bsym_table uses i ps exes =
   let pset = fold_left (fun s {pindex=i}-> BidSet.add i s) BidSet.empty ps in
   let kids = Flx_bsym_table.find_children bsym_table i in
   (*
-  let id,_,_,_ = Flx_bsym_table.find bsym_table i in
-  print_endline ("\nFOLDing " ^ id ^ "<" ^ si i ^">");
+  let bsym = Flx_bsym_table.find bsym_table i in
+  print_endline ("\nFOLDing " ^ Flx_bsym.id bsym ^ "<" ^ si i ^">");
   print_endline ("Kids = " ^ catmap ", " si kids);
   *)
   let descend = Flx_bsym_table.find_descendants bsym_table i in

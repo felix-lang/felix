@@ -34,5 +34,24 @@ open class Errno
   gen strerror()=> strerror errno;
 
   instance Str[errno_t] { fun str(e:errno_t)=> str e.int; }
+
+  class Check[T] 
+  {
+    proc int_to_proc (var x:int) { if x == -1 do ehandler; done }
+    fun int_to_int (var x:int) = { if x == -1 do ehandler; done return x; }
+    fun pointer_to_pointer[U] (var p:&U) = { if C_hack::isNULL p do #ehandler; done return p; }
+    virtual proc ehandler: unit;
+  }
+
+  type check_ignore = "";
+  instance Check[check_ignore] 
+  {
+    proc ehandler () {}
+  }
+  type check_throw = "";
+  instance Check[check_throw] 
+  {
+    proc ehandler () { fail #strerror; }
+  }
 }
 
