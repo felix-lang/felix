@@ -41,7 +41,7 @@ class LowResTime
     time(&time_v);
     return time_v;
   }
-
+ 
   cstruct tm {
     tm_sec:int;         /* seconds */
     tm_min:int;         /* minutes */
@@ -90,7 +90,9 @@ See C manpage for strftime for format codes"""
 returns pointer to tm structure if successful or NULL if unsucessful """
 
   gen raw_strptime: string*string -> &tm = "strptime_helper ($1.c_str(), $2.c_str())";
-
+  
+  fun +: time_t*time_t -> time_t = "$1+$2";
+  fun +: time_t*int -> time_t = "$1+(time_t)$2";
 
   publish """"Parses string date in first arg with format codes in second arg and 
 returns pointer to tm structure wrapped in opt."""
@@ -106,6 +108,14 @@ returns pointer to tm structure wrapped in opt."""
     return rfc1123_date(tm_struct);
   }
 
+ fun hour() => 3600;
+
+ fun day() => 86400;
+
+ fun expires_seconds_from_now(seconds:int) ={ 
+   var time_epoch_seconds = time_t() +seconds;
+   return rfc1123_date (gmtime(time_epoch_seconds));
+ }
 }
 
  
