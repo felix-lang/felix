@@ -220,6 +220,7 @@ class zmq {
     | $(ZMQ_RCVTIMEO) => "ZMQ_RCVTIMEO"
     | $(ZMQ_SNDTIMEO) => "ZMQ_SNDTIMEO"
     | $(ZMQ_IPV4ONLY) => "ZMQ_IPV4ONLY"
+    ;
   }
 
 
