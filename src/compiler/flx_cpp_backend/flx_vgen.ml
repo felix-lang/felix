@@ -68,7 +68,8 @@ let gen_get_case_arg ge tn bsym_table n (e:Flx_bexpr.t) : cexpr_t =
   | VR_uctor ->
     begin match size ct with
     | 0 -> assert false
-    | 1 -> ce_cast cast (ce_dot (ge e) "data") 
+           (* convert to uintptr_t first *) 
+    | 1 -> ce_cast cast (ce_cast "FLX_RAWADDRESS" (ce_dot (ge e) "data")) 
     | _ -> ce_prefix "*" (ce_cast (cast^"*") (ce_dot (ge e) "data"))
     end
 
@@ -107,7 +108,7 @@ let gen_make_ctor_arg ge tn syms bsym_table a : cexpr_t =
   let _,ct = a in
   match size ct with
   | 0 -> ce_atom "0"                (* NULL: for unit tuple *)
-  | 1 -> ge a                       (* small value goes right into data slot *)
+  | 1 -> ce_cast "void*" (ge a)   (* small value goes right into data slot *)
   | _ ->                            (* make a copy on the heap and return pointer *)
 
 (* OK, this is wrong. For a varray[T], the type we want is T: Flx_pgen.shape_of gets

@@ -120,7 +120,7 @@ class ZeroMQ {
 /*  0MQ socket definition.                                                    */
 /******************************************************************************/
 
-  pod type zmq_socket= "zmq_socket";
+  pod type zmq_socket= "void*";
   ctor zmq_socket : zmq_context * zmq_socket_type_t = "zmq_socket($1,$2)";
 
 /******************************************************************************/
@@ -320,35 +320,35 @@ class ZeroMQ {
     | _ => Control::fail_fun[int]$ "ZMQ: Cannot set socket option " + str o
   ;
  
-  private gen zmq_getsockopt_ : zmq_socket * zmq_sockopts_tag * address * &size -> int;
-  proc zmq_getsockopt[T:blobkind](s:zmq_socket, o:zmq_sockopts_tag, pd:&T, ps: &size)
+  private gen zmq_getsockopt : zmq_socket * zmq_sockopts_tag * address * &size -> int;
+
+  proc get_sockopt[T:blobkind](s:zmq_socket, o:zmq_sockopts_tag, pd:&T, ps: &size)
   {
   again:>
-    val ok = zmq_getsockopt_(s,o,pd.address,ps);
+    val ok = zmq_getsockopt(s,o,pd.address,ps);
     if ok == 0 return;
     if errno == EINTR goto again;
     Control::fail$ "zmq_setsockopt failed with code " + zmq_strerror errno;
   }
 
   private gen get_uint64(s:zmq_socket, o: zmq_sockopts_tag) = { 
-    var x:uint64; var n = C_hack::sizeof[typeof(x)]; zmq_getsockopt(s,o,&x,&n); return x; }
+    var x:uint64; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
   private gen get_int64(s:zmq_socket, o: zmq_sockopts_tag) = { 
-    var x:int64; var n = C_hack::sizeof[typeof(x)]; zmq_getsockopt(s,o,&x,&n); return x; }
+    var x:int64; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
   private gen get_int(s:zmq_socket, o: zmq_sockopts_tag) = { 
-    var x:int; var n = C_hack::sizeof[typeof(x)]; zmq_getsockopt(s,o,&x,&n); return x; }
-  private gen get_bool(s:zmq_socket, o: zmq_sockopts_tag) = { 
-    var x:bool ; var n = C_hack::sizeof[typeof(x)]; zmq_getsockopt(s,o,&x,&n); return x; }
+    var x:int; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
+  private gen get_bool(s:zmq_socket, o: zmq_sockopts_tag) = { return get_int(s,o)!=0; } 
   private gen get_file(s:zmq_socket, o: zmq_sockopts_tag) = { 
-    var x:file; var n = C_hack::sizeof[typeof(x)]; zmq_getsockopt(s,o,&x,&n); return x; }
+    var x:file; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
   private gen get_socket_type(s:zmq_socket, o: zmq_sockopts_tag) = { 
-    var x:zmq_socket_type_t; var n = C_hack::sizeof[typeof(x)]; zmq_getsockopt(s,o,&x,&n); return x; }
+    var x:zmq_socket_type_t; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
   private gen get_string(s:zmq_socket, o: zmq_sockopts_tag) : string = { 
-    var x:array[char,256]; var n = 256uz; zmq_getsockopt(s,o,carray &x,&n); return string(carray &x,n); }
+    var x:array[char,256]; var n = 256uz; get_sockopt(s,o,carray &x,&n); return string(carray &x,n); }
   private gen get_pollitem(s:zmq_socket, o: zmq_sockopts_tag) = { 
-    var x:zmq_pollitem_flag_t; var n = C_hack::sizeof[typeof(x)]; zmq_getsockopt(s,o,&x,&n); return x; }
+    var x:zmq_pollitem_flag_t; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
 
 
-  gen zmq_getsockopt(s: zmq_socket, o: zmq_sockopts_tag) : zmq_socket_options =>
+  gen getsockopt(s: zmq_socket, o: zmq_sockopts_tag) : zmq_socket_options =>
     match o with
     | $(ZMQ_AFFINITY)          => zmq_affinity (get_uint64(s, o))
     | $(ZMQ_IDENTITY)          => zmq_identity (get_string(s, o))
@@ -405,6 +405,9 @@ class ZeroMQ {
   const ZMQ_POLLOUT : zmq_pollitem_flag_t;
   const ZMQ_POLLERR : zmq_pollitem_flag_t;
   instance Bits[zmq_pollitem_flag_t] {}
+  instance Str[zmq_pollitem_flag_t] {
+    fun str(x:zmq_pollitem_flag_t) => "Some flag here";
+  }
 
   type zmq_poll_item = "zmq_pollitem_t";
   cstruct zmq_pollitem_t {
@@ -426,4 +429,5 @@ open Eq[ZeroMQ::zmq_sockopts_tag];
 open Str[ZeroMQ::zmq_sockopts_tag];
 
 open Str[ZeroMQ::zmq_socket_options];
+open Str[ZeroMQ::zmq_pollitem_flag_t];
 
