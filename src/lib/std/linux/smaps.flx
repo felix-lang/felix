@@ -16,7 +16,6 @@ Example: (gets total smaps values for heap
 """
 
 class Smaps {
-  open Text_file;
   open Smaps;
   struct smaps_metric {
      size:uint;
