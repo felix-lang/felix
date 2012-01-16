@@ -317,7 +317,7 @@ class ZeroMQ {
     | zmq_rcvtimeo ?x          => zset(s, ZMQ_RCVTIMEO, x) 
     | zmq_sndtimeo ?x          => zset(s, ZMQ_SNDTIMEO, x) 
     | zmq_ipv4only ?x          => zset(s, ZMQ_IPV4ONLY, x) 
-    | _ => Control::fail_fun[int] "ZMQ: Cannot set socket option " + str o
+    | _ => Control::fail_fun[int]$ "ZMQ: Cannot set socket option " + str o
   ;
  
   private gen zmq_getsockopt_ : zmq_socket * zmq_sockopts_tag * address * &size -> int;
@@ -386,7 +386,7 @@ class ZeroMQ {
   pod type zmq_xmit_options_t = "int";
   const ZMQ_DONTWAIT : zmq_xmit_options_t;
   const ZMQ_SNDMORE : zmq_xmit_options_t;
-  instance Eq[zmq_socket_type_t] {
+  instance Eq[zmq_xmit_options_t] {
     fun == : zmq_xmit_options_t * zmq_xmit_options_t -> bool = "$1==$2";
   }
 
@@ -422,6 +422,8 @@ open Str[ZeroMQ::zmq_socket_type_t];
 
 open Eq[ZeroMQ::zmq_xmit_options_t];
 
+open Eq[ZeroMQ::zmq_sockopts_tag];
 open Str[ZeroMQ::zmq_sockopts_tag];
+
 open Str[ZeroMQ::zmq_socket_options];
 
