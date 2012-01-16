@@ -132,19 +132,10 @@ class ZeroMQ {
     fun == : zmq_socket_type_t * zmq_socket_type_t -> bool = "$1==$2";
   }
 
-  const ZMQ_PAIR : zmq_socket_type_t;
-  const ZMQ_PUB : zmq_socket_type_t;
-  const ZMQ_SUB : zmq_socket_type_t;
-  const ZMQ_REQ : zmq_socket_type_t;
-  const ZMQ_REP : zmq_socket_type_t;
-  const ZMQ_XREQ : zmq_socket_type_t;
-  const ZMQ_XREP : zmq_socket_type_t;
-  const ZMQ_PULL : zmq_socket_type_t;
-  const ZMQ_PUSH : zmq_socket_type_t;
-  const ZMQ_XPUB : zmq_socket_type_t;
-  const ZMQ_XSUB : zmq_socket_type_t;
-  const ZMQ_ROUTER : zmq_socket_type_t;
-  const ZMQ_DEALER : zmq_socket_type_t;
+  const 
+    ZMQ_PAIR, ZMQ_PUB, ZMQ_SUB, ZMQ_REQ, ZMQ_REP, ZMQ_XREQ, ZMQ_XREP,
+    ZMQ_PULL, ZMQ_PUSH, ZMQ_XPUB, ZMQ_XSUB, ZMQ_ROUTER, ZMQ_DEALER 
+  : zmq_socket_type_t;
 
   instance Str[zmq_socket_type_t] {
     fun str: zmq_socket_type_t -> string =
@@ -173,29 +164,13 @@ class ZeroMQ {
     fun == : zmq_sockopts_tag * zmq_sockopts_tag -> bool = "$1==$2";
   }
 
-  const ZMQ_AFFINITY : zmq_sockopts_tag;
-  const ZMQ_IDENTITY : zmq_sockopts_tag;
-  const ZMQ_SUBSCRIBE : zmq_sockopts_tag;
-  const ZMQ_UNSUBSCRIBE : zmq_sockopts_tag;
-  const ZMQ_RATE : zmq_sockopts_tag;
-  const ZMQ_RECOVERY_IVL : zmq_sockopts_tag;
-  const ZMQ_SNDBUF : zmq_sockopts_tag;
-  const ZMQ_RCVBUF : zmq_sockopts_tag;
-  const ZMQ_RCVMORE : zmq_sockopts_tag;
-  const ZMQ_FD : zmq_sockopts_tag;
-  const ZMQ_EVENTS : zmq_sockopts_tag;
-  const ZMQ_TYPE : zmq_sockopts_tag;
-  const ZMQ_LINGER : zmq_sockopts_tag;
-  const ZMQ_RECONNECT_IVL : zmq_sockopts_tag;
-  const ZMQ_BACKLOG : zmq_sockopts_tag;
-  const ZMQ_RECONNECT_IVL_MAX : zmq_sockopts_tag;
-  const ZMQ_MAXMSGSIZE : zmq_sockopts_tag;
-  const ZMQ_SNDHWM : zmq_sockopts_tag;
-  const ZMQ_RCVHWM : zmq_sockopts_tag;
-  const ZMQ_MULTICAST_HOPS : zmq_sockopts_tag;
-  const ZMQ_RCVTIMEO : zmq_sockopts_tag;
-  const ZMQ_SNDTIMEO : zmq_sockopts_tag;
-  const ZMQ_IPV4ONLY : zmq_sockopts_tag;
+  const 
+    ZMQ_AFFINITY, ZMQ_IDENTITY, ZMQ_SUBSCRIBE, ZMQ_UNSUBSCRIBE, ZMQ_RATE,
+    ZMQ_RECOVERY_IVL, ZMQ_SNDBUF, ZMQ_RCVBUF, ZMQ_RCVMORE, ZMQ_FD, ZMQ_EVENTS,
+    ZMQ_TYPE, ZMQ_LINGER, ZMQ_RECONNECT_IVL, ZMQ_BACKLOG, ZMQ_RECONNECT_IVL_MAX,
+    ZMQ_MAXMSGSIZE, ZMQ_SNDHWM, ZMQ_RCVHWM, ZMQ_MULTICAST_HOPS, ZMQ_RCVTIMEO,
+    ZMQ_SNDTIMEO, ZMQ_IPV4ONLY
+  : zmq_sockopts_tag;
 
   instance Str[zmq_sockopts_tag] {
     fun str:zmq_sockopts_tag-> string =

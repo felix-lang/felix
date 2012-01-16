@@ -137,6 +137,23 @@ syntax cbind {
       )
     """;
 
+  sdeclnames := sdeclname ("," sdeclname )+ =># "(cons _1 (map second _2))";
+
+  // note: also needed by typeclasses atm for virtual consts
+  tstatement := sadjectives "const" sdeclnames ":" stypeexpr srequires_clause ";" =>#
+    """
+      (let ((reqs (if (memv 'Virtual _1)
+        `(rreq_and (rreq_atom (Property_req "virtual")) ,_6)
+        _6)))
+      (begin 
+         (define (constdef sym) 
+          `(ast_const_decl ,_sr ,(first sym) ,(second sym) ,_5 (Str ,(first sym)) ,reqs))
+         `(ast_seq ,_sr ,(map constdef _3)) 
+      )
+    )
+    """;
+
+
   // note: also needed by typeclasses atm for virtual procs
   tstatement := sadjectives sproc_kind sdeclname ":" stypeexpr sopt_cstring srequires_clause ";" =>#
     """
