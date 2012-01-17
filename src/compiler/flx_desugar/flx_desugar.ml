@@ -811,7 +811,10 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   | STMT_open (sr,(vs,aux),name) ->
     let vs = List.map (fun (n,t)->let i = seq() in n,i,t) vs in
     [Dir (sr,DIR_open ((vs,aux),name))]
-  | STMT_inject_module (sr,name) -> [Dir (sr,DIR_inject_module name)]
+  | STMT_inject_module (sr,(vs,aux),name) -> 
+    let vs = List.map (fun (n,t)->let i = seq() in n,i,t) vs in
+    [Dir (sr,DIR_inject_module ((vs,aux),name))]
+
   | STMT_use (sr,n,qn) -> [Dir (sr,DIR_use (n,qn))]
   | STMT_comment (sr,s) -> [Exe (sr,EXE_comment s)]
 

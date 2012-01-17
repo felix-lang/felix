@@ -161,11 +161,11 @@ syntax cbind {
           `(ast_const_decl ,_sr ,sym ,dfltvs ,(nos _2) (Str ,sym) ,_5))
            (let* 
              (
-               (tdec `(ast_abs_decl ,_sr ,_2 ,dfltvs () (Str ,_2) ,_5))
+               (tdec `(ast_abs_decl ,_sr ,_2 ,dfltvs (Pod) (Str ,_2) ,_5))
                (argt `(ast_product ,_sr (,(nos _2) ,(nos _2))))
                (eqdef `(ast_fun_decl ,_sr "==" ,dfltvs ,(mkl2 argt) ,(nos "bool") (StrTemplate "$1==$2") rreq_true ""))
                (instdef `(ast_instance ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2))) (,eqdef)))
-               (inherit `(ast_inject_module ,_sr (ast_name ,_sr "Eq" (,(nos _2)))))
+               (inherit `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2)))))
              )
              `(ast_seq ,_sr ,(append `(,tdec ,instdef ,inherit) (map constdef _4)))
            )

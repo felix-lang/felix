@@ -4710,8 +4710,8 @@ and split_dirs open_excludes dirs :
        List.map
        (fun (sr,x) -> match x with
          | DIR_open (vs,qn) -> if List.mem (vs,qn) open_excludes then [] else [vs,qn]
-         | DIR_inject_module qn -> []
-         | DIR_use (n,qn) -> []
+         | DIR_inject_module _  -> []
+         | DIR_use _ -> []
        )
        dirs
      )
@@ -4721,8 +4721,8 @@ and split_dirs open_excludes dirs :
        List.map
        (fun (sr,x) -> match x with
          | DIR_open _-> []
-         | DIR_inject_module qn -> [dfltvs,qn]
-         | DIR_use (n,qn) -> []
+         | DIR_inject_module (vs,qn) -> if List.mem (vs,qn) open_excludes then [] else [vs,qn]
+         | DIR_use _ -> []
        )
        dirs
      )
@@ -4732,7 +4732,7 @@ and split_dirs open_excludes dirs :
        List.map
        (fun (sr,x) -> match x with
          | DIR_open _-> []
-         | DIR_inject_module qn -> []
+         | DIR_inject_module _ -> []
          | DIR_use (n,qn) -> [n,qn]
        )
        dirs
@@ -5038,7 +5038,7 @@ and merge_directives state bsym_table rs env dirs typeclasses =
   in
   List.iter
   (fun (sr,dir) -> match dir with
-  | DIR_inject_module qn -> add_qn (dfltvs,qn)
+  | DIR_inject_module (vs,qn) -> add_qn (vs,qn)
   | DIR_use (n,qn) ->
     begin let entry,_ = lookup_qn_in_env2' state bsym_table !env rs qn in
     match entry with

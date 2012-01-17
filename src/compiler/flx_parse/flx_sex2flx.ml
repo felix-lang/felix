@@ -553,7 +553,7 @@ and xstatement_t sr x : statement_t =
   | Lst [] -> STMT_nop(sr,"null")
   | Lst [Id "ast_include"; sr; Str s] -> STMT_include (xsr sr, s)
   | Lst [Id "ast_open"; sr; vs; qn] -> STMT_open (xsr sr, xvs vs, xq "ast_open" qn)
-  | Lst [Id "ast_inject_module"; sr; qn] -> STMT_inject_module (xsr sr, xq "ast_inject_module" qn)
+  | Lst [Id "ast_inject_module"; sr; vs; qn] -> STMT_inject_module (xsr sr, xvs vs, xq "ast_inject_module" qn)
   | Lst [Id "ast_use"; sr; id; qn] -> STMT_use (xsr sr, xid id, xq "ast_use" qn)
   | Lst [Id "ast_comment"; sr; Str s] -> STMT_comment(xsr sr, s)
   | Lst [Id "ast_private"; x] -> STMT_private (sr, xs x)

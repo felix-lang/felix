@@ -1165,8 +1165,8 @@ and string_of_statement level s =
   | STMT_open (_,vs,n) ->
     spaces level ^ "open " ^ string_of_vs vs ^ " " ^ sqn n ^ ";"
 
-  | STMT_inject_module (_,n) ->
-    spaces level ^ "inherit " ^ sqn n ^ ";"
+  | STMT_inject_module (_,vs,n) ->
+    spaces level ^ "inherit " ^ string_of_vs vs ^ " " ^ sqn n ^ ";"
 
   | STMT_include (_,s) ->
     spaces level ^ "include " ^ string_of_string s ^ ";"
@@ -2174,8 +2174,8 @@ and string_of_dir level s =
   | DIR_use (n,qn) ->
     spaces level ^ "use " ^ string_of_id n ^ " = " ^ sqn qn ^ ";"
 
-  | DIR_inject_module (qn) ->
-    spaces level ^ "inherit " ^ sqn qn ^ ";"
+  | DIR_inject_module (vs,qn) ->
+    spaces level ^ "inherit " ^ string_of_ivs vs ^ sqn qn ^ ";"
 
 and string_of_breq bsym_table (i,ts) =
   "rq<" ^ string_of_bid i ^ ">" ^ string_of_inst bsym_table ts

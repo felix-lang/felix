@@ -127,15 +127,10 @@ class ZeroMQ {
 /*  Socket types.                                                             */ 
 /******************************************************************************/
 
-  type zmq_socket_type_t = "int";
-  instance Eq[zmq_socket_type_t] {
-    fun == : zmq_socket_type_t * zmq_socket_type_t -> bool = "$1==$2";
-  }
-
-  const 
+  cenum zmq_socket_type_t =   
     ZMQ_PAIR, ZMQ_PUB, ZMQ_SUB, ZMQ_REQ, ZMQ_REP, ZMQ_XREQ, ZMQ_XREP,
     ZMQ_PULL, ZMQ_PUSH, ZMQ_XPUB, ZMQ_XSUB, ZMQ_ROUTER, ZMQ_DEALER 
-  : zmq_socket_type_t;
+  ;
 
   instance Str[zmq_socket_type_t] {
     fun str: zmq_socket_type_t -> string =
@@ -159,18 +154,13 @@ class ZeroMQ {
 /*  Socket options.                                                           */
 /******************************************************************************/
 
-  type zmq_sockopts_tag = "int";
-  instance Eq[zmq_sockopts_tag] {
-    fun == : zmq_sockopts_tag * zmq_sockopts_tag -> bool = "$1==$2";
-  }
-
-  const 
+  cenum zmq_sockopts_tag =
     ZMQ_AFFINITY, ZMQ_IDENTITY, ZMQ_SUBSCRIBE, ZMQ_UNSUBSCRIBE, ZMQ_RATE,
     ZMQ_RECOVERY_IVL, ZMQ_SNDBUF, ZMQ_RCVBUF, ZMQ_RCVMORE, ZMQ_FD, ZMQ_EVENTS,
     ZMQ_TYPE, ZMQ_LINGER, ZMQ_RECONNECT_IVL, ZMQ_BACKLOG, ZMQ_RECONNECT_IVL_MAX,
     ZMQ_MAXMSGSIZE, ZMQ_SNDHWM, ZMQ_RCVHWM, ZMQ_MULTICAST_HOPS, ZMQ_RCVTIMEO,
     ZMQ_SNDTIMEO, ZMQ_IPV4ONLY
-  : zmq_sockopts_tag;
+  ;
 
   instance Str[zmq_sockopts_tag] {
     fun str:zmq_sockopts_tag-> string =
@@ -358,13 +348,8 @@ class ZeroMQ {
 /*  Send/recv                                                                 */
 /******************************************************************************/
 
-  pod type zmq_xmit_options_t = "int";
+  cenum zmq_xmit_options_t = ZMQ_DONTWAIT, ZMQ_SNDMORE;
   const ZMQ_XMIT_OPTIONS_NONE : zmq_xmit_options_t = "0";
-  const ZMQ_DONTWAIT : zmq_xmit_options_t;
-  const ZMQ_SNDMORE : zmq_xmit_options_t;
-  instance Eq[zmq_xmit_options_t] {
-    fun == : zmq_xmit_options_t * zmq_xmit_options_t -> bool = "$1==$2";
-  }
 
  
   gen zmq_send : zmq_socket * address * size * zmq_xmit_options_t -> int;
@@ -396,14 +381,8 @@ class ZeroMQ {
   gen zmq_poll: &zmq_pollitem_t * int * long -> int;
 }
 
-open Eq[ZeroMQ::zmq_socket_type_t];
 open Str[ZeroMQ::zmq_socket_type_t];
-
-open Eq[ZeroMQ::zmq_xmit_options_t];
-
-open Eq[ZeroMQ::zmq_sockopts_tag];
 open Str[ZeroMQ::zmq_sockopts_tag];
-
 open Str[ZeroMQ::zmq_socket_options];
 open Str[ZeroMQ::zmq_pollitem_flag_t];
 

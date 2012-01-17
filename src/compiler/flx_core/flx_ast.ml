@@ -347,7 +347,7 @@ and statement_t =
   | STMT_open of Flx_srcref.t * vs_list_t * qualified_name_t
 
   (* the keyword for this one is 'inherit' *)
-  | STMT_inject_module of Flx_srcref.t * qualified_name_t
+  | STMT_inject_module of Flx_srcref.t * vs_list_t * qualified_name_t
   | STMT_use of Flx_srcref.t * Flx_id.t * qualified_name_t
   | STMT_comment of Flx_srcref.t * string (* for documenting generated code *)
   (*
@@ -761,7 +761,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_export_python_fun (s,_,_)
   | STMT_export_type (s,_,_)
   | STMT_open (s,_,_)
-  | STMT_inject_module (s,_)
+  | STMT_inject_module (s,_,_)
   | STMT_include (s,_)
   | STMT_use (s,_,_)
   | STMT_seq (s,_)
@@ -1474,8 +1474,9 @@ and print_statement ppf = function
       print_variant2 ppf "STMT_open"
         print_vs vs
         print_qualified_name name
-  | STMT_inject_module (_, name) ->
-      print_variant1 ppf "STMT_inject_module"
+  | STMT_inject_module (_, vs, name) ->
+      print_variant2 ppf "STMT_inject_module"
+        print_vs vs
         print_qualified_name name
   | STMT_use (_, name1, name2) ->
       print_variant2 ppf "STMT_use"

@@ -346,7 +346,7 @@ and statement_t =
   | STMT_open of Flx_srcref.t * vs_list_t * qualified_name_t
 
   (* the keyword for this one is 'inherit' *)
-  | STMT_inject_module of Flx_srcref.t * qualified_name_t
+  | STMT_inject_module of Flx_srcref.t * vs_list_t * qualified_name_t
   | STMT_use of Flx_srcref.t * Flx_id.t * qualified_name_t
   | STMT_comment of Flx_srcref.t * string (* for documenting generated code *)
   (*

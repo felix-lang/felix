@@ -10,7 +10,8 @@ syntax namespaces {
     `(ast_inherit_fun ,_sr ,(first _3) ,(second _3) ,_5)
     """;
 
-  tstatement := "inherit" squalified_name ";" =># "`(ast_inject_module ,_sr ,_2)";
+  tstatement := "inherit" stvarlist squalified_name ";" =># 
+    "`(ast_inject_module ,_sr ,_2 ,_3)";
 
   tstatement := "open" stvarlist squalified_name ";" =>#
     "`(ast_open ,_sr ,_2 ,_3)";

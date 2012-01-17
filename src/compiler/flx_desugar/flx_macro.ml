@@ -641,7 +641,8 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_open (sr, vs, qn) ->
     tack (STMT_open (sr, vs, mq qn))
 
-  | STMT_inject_module (sr, qn) -> tack st
+  | STMT_inject_module (sr, vs, qn) -> 
+    tack (STMT_inject_module (sr, vs, mq qn))
 
   (* FIX TO SUPPORT IDENTIFIER RENAMING *)
   | STMT_use (sr, id, qn) -> tack (STMT_use (sr,mi sr id,qn))

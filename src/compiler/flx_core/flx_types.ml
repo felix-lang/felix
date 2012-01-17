@@ -56,7 +56,7 @@ type recstop = {
  * match. *)
 type dir_t =
   | DIR_open of ivs_list_t * qualified_name_t
-  | DIR_inject_module of qualified_name_t
+  | DIR_inject_module of ivs_list_t * qualified_name_t
   | DIR_use of Flx_id.t * qualified_name_t
 
 type sdir_t = Flx_srcref.t * dir_t

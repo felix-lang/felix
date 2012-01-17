@@ -7,18 +7,19 @@ private val big_keywords =
   ("cproc","Define a C procedure"),
   ("fun","Define a function with no side-effects"),
   ("enum","Elaborate an enumeration, a simple sum type"),
+  ("cenum","Lift an enumeration from C"),
   ("gen","Define a generator, a function with side-effects returning a value"),
   ("proc","Define a procedure, a function with side-effects not returning a value"),
   ("ctor","Define a value constructor or conversion operator for a type"),
   ("type","Define a primitive type by binding to a C type"),
   ("ctypes","Define a set of primitive type by binding to C types with the same name"),
-  ("union","Define a union of alternatives"),
+  ("union","Define a union of variants (alternatives)"),
   ("struct","Define a structure"),
   ("cstruct","Provide a model for an existing C struct"),
   ("typedef","Define an alias for a type expression"),
   ("var","Define a mutable variable"),
   ("val","Define an immutable value"),
-  ("typeclass","Define a type clas"),
+  ("class","Define a type class"),
   ("const","Bind a Felix symbol to a C expression"),
   ("instance","Provide an instance of a typeclass"),
   ("header","Specify C code to be inserted into header file"),
@@ -28,7 +29,7 @@ private val big_keywords =
   ("spawn_pthread","Spawn a pre-emptive thread"),
   ("reduce", "Specify a reduction"),
   ("axiom", "Specify core semantics"),
-  ("open", "Open a module or typeclass"),
+  ("open", "Open a module or class"),
   ("inherit","Inherit symbols into a module or typeclass"),
   ("SCHEME","Define Scheme symbols"),
   ("syntax","define domain specific sublanguage module"),
@@ -80,7 +81,8 @@ private val qualifiers =
   ("_gc_pointer","A Felix heap allocated pointer"),
   ("_gc_type","Type of object pointed to"),
   ("scanner","names C routine which scans a data structure for pointers"),
-  ("finaliser","names C routine which finalises an object")
+  ("finaliser","names C routine which finalises an object"),
+  ("_repr_","Refer to the representation of a Felix abstract type")
 ;
 
 private val library = 
