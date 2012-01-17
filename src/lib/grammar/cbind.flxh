@@ -153,7 +153,6 @@ syntax cbind {
     )
     """;
 
-
   // note: also needed by typeclasses atm for virtual procs
   tstatement := sadjectives sproc_kind sdeclname ":" stypeexpr sopt_cstring srequires_clause ";" =>#
     """
