@@ -77,6 +77,7 @@ syn keyword felixStatement endcase
 syn keyword felixStatement endif
 syn keyword felixStatement endmatch
 syn keyword felixStatement enum
+syn keyword felixStatement cenum
 syn keyword felixStatement expect
 syn keyword felixStatement export
 syn keyword felixStatement extern
@@ -270,6 +271,15 @@ syn keyword felixType uint8
 syn keyword felixType uint16
 syn keyword felixType uint32
 syn keyword felixType uint64
+
+syn keyword felixType size
+syn keyword felixType ssize
+syn keyword felixType intptr
+syn keyword felixType uintptr
+syn keyword felixType intmax 
+syn keyword felixType uintmax 
+syn keyword felixType ptrdiff
+syn keyword felixType offset
 
 syn keyword felixType float
 syn keyword felixType double

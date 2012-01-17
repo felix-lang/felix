@@ -105,6 +105,14 @@ release:
 	echo "Restart webservers now"
 	echo "Upgrade buildsystem/version.py now and rebuild"
 
+#
+# Helper for checking new syntax
+#
+syntax:
+	rm -f build/release/lib/grammar/*
+	cp src/lib/grammar/* build/release/lib/grammar
+	rm *.par2
+
 .PHONY : build32 build64 build test32 test64 test 
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
 .PHONY : doc install websites-linux  release install-bin 

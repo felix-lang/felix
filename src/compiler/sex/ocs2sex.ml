@@ -4,33 +4,33 @@ open Ocs_types
 let rec ocs2sex (s:sval) : sexp_t =
   match s with
   | Sunbound
-    -> failwith "unmapped ocs type Sunbound"
+    -> failwith ("unmapped ocs type Sunbound " ^ Ocs_print.string_of_ocs s)
   | Seof
-    -> failwith "unmapped ocs type Seof"
+    -> failwith ("unmapped ocs type Seof " ^ Ocs_print.string_of_ocs s)
   | Sreal _
-    -> failwith "unmapped ocs type Sreal"
+    -> failwith ("unmapped ocs type Sreal " ^ Ocs_print.string_of_ocs s)
   | Scomplex _
-    -> failwith "unmapped ocs type Scomplex"
+    -> failwith ("unmapped ocs type Scomplex " ^ Ocs_print.string_of_ocs s)
   | Srational _
-    -> failwith "unmapped ocs type Srational"
+    -> failwith ("unmapped ocs type Srational " ^ Ocs_print.string_of_ocs s)
   | Schar _
-    -> failwith "unmapped ocs type Schar"
+    -> failwith ("unmapped ocs type Schar " ^ Ocs_print.string_of_ocs s)
   | Sport _
-    -> failwith "unmapped ocs type Sport"
+    -> failwith ("unmapped ocs type Sport " ^ Ocs_print.string_of_ocs s)
   | Sprim _
-    -> failwith "unmapped ocs type Sprim"
+    -> failwith ("unmapped ocs type Sprim " ^ Ocs_print.string_of_ocs s)
   | Svalues _
-    -> failwith "unmapped ocs type Svalues"
+    -> failwith ("unmapped ocs type Svalues " ^ Ocs_print.string_of_ocs s)
   | Sesym _
-    -> failwith "unmapped ocs type Sesym"
+    -> failwith ("unmapped ocs type Sesym " ^ Ocs_print.string_of_ocs s)
   | Swrapped _
-    -> failwith "unmapped ocs type Swrapped"
+    -> failwith ("unmapped ocs type Swrapped " ^ Ocs_print.string_of_ocs s)
   | Sunspec
-    -> failwith "unmapped ocs type Sunspec"
+    -> failwith ("unmapped ocs type Sunspec " ^ Ocs_print.string_of_ocs s)
   | Spromise _
-    -> failwith "unmapped ocs type Spromise"
+    -> failwith ("unmapped ocs type Spromise " ^ Ocs_print.string_of_ocs s)
   | Sproc _
-    -> failwith "unmapped ocs type Sproc"
+    -> failwith ("unmapped ocs type Sproc " ^ Ocs_print.string_of_ocs s)
 
   | Snull -> Lst []
   | Strue -> Id "true"
