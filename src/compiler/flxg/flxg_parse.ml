@@ -36,12 +36,20 @@ let parse_syntax state =
   in
   fprintf state.ppf "PARSED SYNTAX/IMPORT FILES@.";
 
-  let oc = open_out_bin state.syms.compiler_options.automaton_filename in
-  Marshal.to_channel oc parser_state [];
-  Marshal.to_channel oc parsing_device [];
-  close_out oc;
-  fprintf state.ppf "Saved automaton to disk@.";
-
+  let oc = 
+    try Some ( open_out_bin state.syms.compiler_options.automaton_filename )
+    with _ -> None
+  in
+  begin match oc with
+  | Some oc ->
+    Marshal.to_channel oc parser_state [];
+    Marshal.to_channel oc parsing_device [];
+    close_out oc;
+    fprintf state.ppf "Saved automaton to disk@.";
+  | None ->
+    fprintf state.ppf "Failed to save automaton to disk@.";
+  end
+  ;
   parser_state
 
 let load_syntax state =

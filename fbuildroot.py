@@ -560,6 +560,8 @@ def test(ctx):
     try:
         lib1 = felix.compile('test/regress/drt/lib1.flx', static=False)
         lib2 = felix.compile('test/regress/drt/lib2.flx', static=False)
+        print("lib1="+lib1)
+        print("lib2="+lib2)
     except fbuild.ExecutionError as e:
         ctx.logger.log(e, verbose=1)
     else:
