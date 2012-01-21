@@ -1,3 +1,4 @@
+include "std/posix/posix_headers";
 class Time
 {
   open C_hack;
@@ -16,7 +17,7 @@ class Time
 
   private proc gettimeofday: &timeval = "gettimeofday($1, NULL);";
 
-  // time in microseconds since Epoch (midnight Jan 1 1970) as a float double
+  // time in seconds since Epoch (midnight Jan 1 1970) as a float double
   gen time () : double = {
     var tv:timeval;
     gettimeofday(&tv);

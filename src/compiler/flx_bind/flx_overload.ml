@@ -1161,6 +1161,7 @@ let overload
                 | `Equal ->
                     (* same function .. *)
                     if i = j then aux lhs t else
+                   (* this bit is dubious! *)
                     let sym1 =
                       try Flx_sym_table.find sym_table i with Not_found ->
                         failwith "ovrload BUGGED"
@@ -1169,15 +1170,39 @@ let overload
                       try Flx_sym_table.find sym_table j with Not_found ->
                         failwith "overload Bugged"
                     in
-                    clierrn [call_sr; sym2.Flx_sym.sr; sym1.Flx_sym.sr]
-                    (
-                      "[resolve_overload] Ambiguous call: Not expecting " ^
-                      "equal signatures" ^
-                      "\n(1) fun " ^ string_of_bid i ^ ":" ^
-                      sbt bsym_table typ ^
-                      "\n(2) fun " ^ string_of_bid j ^ ":" ^
-                      sbt bsym_table c
-                    )
+                    let isvirtual1 = 
+                      let props = 
+                        match sym1.Flx_sym.symdef with
+                        | SYMDEF_function (_,_,props,_) -> props
+                        | SYMDEF_fun (props,_,_,_,_,_) -> props
+                        | _ -> failwith "OK, dunno what we got!"
+                      in
+                      List.mem `Virtual props  
+                    in
+                   let isvirtual2 = 
+                      let props = 
+                        match sym2.Flx_sym.symdef with
+                        | SYMDEF_function (_,_,props,_) -> props
+                        | SYMDEF_fun (props,_,_,_,_,_) -> props
+                        | _ -> failwith "OK, dunno what we got!"
+                      in
+                      List.mem `Virtual props  
+                    in
+                    begin match isvirtual1, isvirtual2 with
+                    | true, false -> aux lhs t
+                    | false, true -> lhs @ rhs
+                    | _ ->
+                   (* end dubious bit *)
+                      clierrn [call_sr; sym2.Flx_sym.sr; sym1.Flx_sym.sr]
+                      (
+                        "[resolve_overload] Ambiguous call: Not expecting " ^
+                        "equal signatures" ^
+                        "\n(1) fun " ^ string_of_bid i ^ ":" ^
+                        sbt bsym_table typ ^
+                        "\n(2) fun " ^ string_of_bid j ^ ":" ^
+                        sbt bsym_table c
+                      )
+                    end
 
                 | `Greater ->
                     (* Candidate is less general: discard this element *)
