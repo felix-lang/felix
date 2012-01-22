@@ -3,6 +3,7 @@ Container for server config and socket_t
 """
 class HTTPConnection {
   open ServerConfig;
+  open Socket;
   struct http_connection {
     config:server_config;
     sock:socket_t;

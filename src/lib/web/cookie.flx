@@ -1,0 +1,70 @@
+include "web/low_res_time";
+
+class Cookie {
+  open HTTPRequest;
+  open LowResTime;
+
+  struct cookie {
+    name:string;
+    value:string;
+    domain:string;
+    path:string;
+    expires:string;
+    secure:bool;
+    http_only:bool;
+  }
+
+  fun _ctor_cookie (n:string,v:string) = {
+    var c:cookie;c.name=n;c.value=v;return c;}
+
+  fun split_first (x:string, d:string): opt[string*string] =>
+      match find_first_of (x, d) with
+      | None => None[string*string]
+      | Some ?n => Some (x.[to n],substring(x,n+1,(len x)))
+      endmatch
+    ;
+
+
+  instance Str[cookie] {
+    fun str (c:cookie) => c.name+"="+c.value+"; "+match c.domain with 
+      |'' => ' ' | ?d => "Domain="+d+"; " endmatch+
+      match c.path with |'' => ' ' |?p => "Path="+p+"; " endmatch+
+      match c.expires with |'' => ' ' |?e => " Expires="+e+"; " endmatch+
+      (if c.secure then "Secure; " else " " endif)+
+      (if c.http_only then "HttpOnly;" else "" endif);
+  }
+
+  fun set_cookie (c:cookie):string*string => ("Set-Cookie",str(c));
+  fun set_cookies (c:list[cookie]):string*string => ("Set-Cookie",
+    fold_left (fun(x:string) (y:string):string => y +"\r"+ x) "" 
+      (map (fun(z:cookie):string => str(z)) c));
+
+ /* fun get_cookies(request:http_request):list[opt[cookie]] = {
+    val st:opt[string] =  Assoc_list::find (fun (a:string,b:string) => eq(a,b)) (request.headers) 
+                           ('Cookie');
+    match st with
+      |Some ?s      => { var parts:list[string] = split(s,';');
+                         return (map[string,opt[cookie]] (fun (t) => match (split_first(t,'=')) with
+                                          |Some (?n,?v) => Some cookie(n,v)
+                                          |_ => None[cookie]
+                                         endmatch) parts);}
+      |_ => {return Empty[opt[cookie]];}
+    endmatch;
+  }*/
+fun get_cookies(request:http_request):list[cookie] = {
+    
+     val cline= Assoc_list::find (fun (a:string,b:string) => eq(a,b)) (request.headers)  ('Cookie');
+     val lines = match cline with
+       | Some ?s => (match split(s,';') with
+                       |Cons (?h,?t) => Cons(h,t)
+                       |_            => Empty[string]
+                     endmatch)
+       | _        => Empty[string]
+     endmatch;
+     val pairs = filter (fun (sl:opt[string^2]) => match sl with |Some _ => true |_ => false endmatch) (map (fun (cl:string) => split_first(cl,"=")) lines);
+      return (map (fun (p:opt[string^2]) => let Some ?q = p in cookie(q.(0),q.(1))) pairs);
+}
+
+
+
+}
