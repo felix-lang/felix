@@ -10,17 +10,6 @@ class ZeroMQ {
 
   open Errno;
 
-  // temporary hack to get it to compile
-  // replace later with standard Felix mapping of native socket handles
-
-  if PLAT_WIN32 do
-    type file = "SOCKET";
-  elif PLAT_POSIX do
-    type file = "int";
-  else
-    compile_fail "ZMQ: Unsupported OS";
-  done
-
 /******************************************************************************/
 /*  0MQ version.                                                              */
 /******************************************************************************/
@@ -152,8 +141,9 @@ class ZeroMQ {
   header "typedef int zmq_sockopts_tag;";
   cenum zmq_sockopts_tag =
     ZMQ_AFFINITY, ZMQ_IDENTITY, ZMQ_SUBSCRIBE, ZMQ_UNSUBSCRIBE, ZMQ_RATE,
-    ZMQ_RECOVERY_IVL, ZMQ_SNDBUF, ZMQ_RCVBUF, ZMQ_RCVMORE, ZMQ_FD, ZMQ_EVENTS,
-    ZMQ_TYPE, ZMQ_LINGER, ZMQ_RECONNECT_IVL, ZMQ_BACKLOG, ZMQ_RECONNECT_IVL_MAX,
+    ZMQ_RECOVERY_IVL, ZMQ_SNDBUF, ZMQ_RCVBUF, ZMQ_RCVMORE, 
+    //ZMQ_FD, 
+    ZMQ_EVENTS, ZMQ_TYPE, ZMQ_LINGER, ZMQ_RECONNECT_IVL, ZMQ_BACKLOG, ZMQ_RECONNECT_IVL_MAX,
     ZMQ_MAXMSGSIZE, ZMQ_SNDHWM, ZMQ_RCVHWM, ZMQ_MULTICAST_HOPS, ZMQ_RCVTIMEO,
     ZMQ_SNDTIMEO, ZMQ_IPV4ONLY
   ;
@@ -169,7 +159,7 @@ class ZeroMQ {
     | $(ZMQ_SNDBUF) => "ZMQ_SNDBUF"
     | $(ZMQ_RCVBUF) => "ZMQ_RCVBUF"
     | $(ZMQ_RCVMORE) => "ZMQ_RCVMORE"
-    | $(ZMQ_FD) => "ZMQ_FD"
+    //| $(ZMQ_FD) => "ZMQ_FD"
     | $(ZMQ_EVENTS) => "ZMQ_EVENTS"
     | $(ZMQ_TYPE) => "ZMQ_TYPE"
     | $(ZMQ_LINGER) => "ZMQ_LINGER"
@@ -197,7 +187,7 @@ class ZeroMQ {
   | zmq_sndbuf of int                  // bytes
   | zmq_rcvbuf of int                  // bytes
   | zmq_rcvmore of bool                // encoding: int, true=more parts following
-  | zmq_fd of file                     // native file type 
+  //| zmq_fd of file                     // native file type 
   | zmq_events of zmq_pollitem_flag_t  // encoding: int
   | zmq_type of  zmq_socket_type_t     // ro, socket type: encoding int
   | zmq_linger of int                  // close linger time
@@ -224,7 +214,7 @@ class ZeroMQ {
     | zmq_sndbuf ?x => "sndbuf " + str x+" bytes"
     | zmq_rcvbuf ?x => "rcvbuf " + str x+" bytes"
     | zmq_rcvmore ?x => "rcvmore " + str x
-    | zmq_fd ?x => "fd ?? native file type " // fix, numeric code
+    //| zmq_fd ?x => "fd ?? native file type " // fix, numeric code
     | zmq_events ?x => "events " + str x
     | zmq_type ?x => "type " + str x
     | zmq_linger ?x => "linger " + str x+" ms"
@@ -299,8 +289,8 @@ class ZeroMQ {
   private gen get_int(s:zmq_socket, o: zmq_sockopts_tag) = { 
     var x:int; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
   private gen get_bool(s:zmq_socket, o: zmq_sockopts_tag) = { return get_int(s,o)!=0; } 
-  private gen get_file(s:zmq_socket, o: zmq_sockopts_tag) = { 
-    var x:file; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
+  //private gen get_file(s:zmq_socket, o: zmq_sockopts_tag) = { 
+  //  var x:file; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
   private gen get_socket_type(s:zmq_socket, o: zmq_sockopts_tag) = { 
     var x:zmq_socket_type_t; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
   private gen get_string(s:zmq_socket, o: zmq_sockopts_tag) : string = { 
@@ -320,7 +310,7 @@ class ZeroMQ {
     | $(ZMQ_SNDBUF)            => zmq_sndbuf (get_int(s, o))
     | $(ZMQ_RCVBUF)            => zmq_rcvbuf (get_int(s, o))
     | $(ZMQ_RCVMORE)           => zmq_rcvmore (get_bool(s, o))
-    | $(ZMQ_FD)                => zmq_fd (get_file(s, o))
+    //| $(ZMQ_FD)                => zmq_fd (get_file(s, o))
     | $(ZMQ_EVENTS)            => zmq_events (get_pollitem(s, o))
     | $(ZMQ_TYPE)              => zmq_type (get_socket_type(s, o))
     | $(ZMQ_LINGER)            => zmq_linger (get_int(s, o))
@@ -363,15 +353,22 @@ class ZeroMQ {
     fun str(x:zmq_pollitem_flag_t) => "Some flag here";
   }
 
-  type zmq_poll_item = "zmq_pollitem_t";
-  cstruct zmq_pollitem_t {
-    socket:zmq_socket;
-    fd: file;
-    events:short;
-    revents:short;
-  };
+  body """
+    zmq_pollitem_t mk_zmq_pollitem(zmq_socket_t s, short events) {
+      zmq_pollitem_t p = {s,0,events,0};
+      return p;
+    }
+  """;
 
-  gen zmq_poll: &zmq_pollitem_t * int * long -> int;
+  type zmq_poll_item = "zmq_pollitem_t";
+  ctor zmq_poll_item: zmq_socket * zmq_pollitem_flag_t = "mk_zmq_pollitem($1,$2)";
+  fun revents: zmq_pollitem_t -> zmq_pollitem_flag_t = "$1.revents";
+
+  gen zmq_poll: &zmq_poll_item * int * long -> int;
+
+  gen zmq_poll(pits : varray[zmq_poll_item], t:double) => // Felix time is in seconds
+    return zmq_poll (carray pits, pits.len, if t >= 0.0 then long (t/1000000.0) else -1L endif);
+
 
   inherit Str[zmq_socket_type_t];
   inherit Str[zmq_sockopts_tag];
@@ -411,10 +408,20 @@ class Checked_ZeroMQ[T] {
   proc send_msg (s:zmq_socket) (m:zmq_msg_t) => int_to_proc$ zmq_sendmsg (s,m,ZMQ_XMIT_OPTIONS_NONE);
   proc send_string (s:zmq_socket) (m:string) => int_to_proc$ zmq_send(s,m.cstr.address,m.len,ZMQ_XMIT_OPTIONS_NONE);
   proc recv_msg (s:zmq_socket) (m:zmq_msg_t) => int_to_proc$ zmq_recvmsg (s,m,ZMQ_XMIT_OPTIONS_NONE);
+  proc recv_msg_dontwait (s:zmq_socket) (m:zmq_msg_t) => int_to_proc$ zmq_recvmsg (s,m,ZMQ_DONTWAIT);
   gen recv_string (s:zmq_socket) = {
     var m : zmq_msg_t = zmq_msg_t();
     m.init;
     recv_msg s m;
+    r := m.string;
+    m.close;
+    return r;
+  }
+
+  gen recv_string_dontwait (s:zmq_socket) = {
+    var m : zmq_msg_t = zmq_msg_t();
+    m.init;
+    recv_msg_dontwait s m;
     r := m.string;
     m.close;
     return r;
