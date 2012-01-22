@@ -231,7 +231,9 @@ class ZeroMQ {
     ;
   }
 
-  private typedef blobkind = typesetof (uint64,int64,int,char,size,bool,file,zmq_pollitem_flag_t, zmq_socket_type_t);
+  private typedef blobkind = typesetof (uint64,int64,int,char,size,bool,
+    //file,
+    zmq_pollitem_flag_t, zmq_socket_type_t);
   private typedef blobkind_ptr = typesetof (&uint64,&int64,&int,&char,&size);
 
   private gen zmq_setsockopt : zmq_socket * zmq_sockopts_tag * !blobkind_ptr * size -> int;
@@ -348,13 +350,14 @@ class ZeroMQ {
   const ZMQ_POLLIN : zmq_pollitem_flag_t;
   const ZMQ_POLLOUT : zmq_pollitem_flag_t;
   const ZMQ_POLLERR : zmq_pollitem_flag_t;
+  ctor short: zmq_pollitem_flag_t = "$1";
   instance Bits[zmq_pollitem_flag_t] {}
   instance Str[zmq_pollitem_flag_t] {
     fun str(x:zmq_pollitem_flag_t) => "Some flag here";
   }
 
   body """
-    zmq_pollitem_t mk_zmq_pollitem(zmq_socket_t s, short events) {
+    zmq_pollitem_t mk_zmq_pollitem(void *s, short events) {
       zmq_pollitem_t p = {s,0,events,0};
       return p;
     }
@@ -362,18 +365,19 @@ class ZeroMQ {
 
   type zmq_poll_item = "zmq_pollitem_t";
   ctor zmq_poll_item: zmq_socket * zmq_pollitem_flag_t = "mk_zmq_pollitem($1,$2)";
-  fun revents: zmq_pollitem_t -> zmq_pollitem_flag_t = "$1.revents";
+  fun revents: zmq_poll_item -> zmq_pollitem_flag_t = "$1.revents";
 
   gen zmq_poll: &zmq_poll_item * int * long -> int;
 
   gen zmq_poll(pits : varray[zmq_poll_item], t:double) => // Felix time is in seconds
-    return zmq_poll (carray pits, pits.len, if t >= 0.0 then long (t/1000000.0) else -1L endif);
+    zmq_poll (carray pits, pits.len.int, if t >= 0.0 then long (t/1000000.0) else -1L endif);
 
 
   inherit Str[zmq_socket_type_t];
   inherit Str[zmq_sockopts_tag];
   inherit Str[zmq_socket_options];
   inherit Str[zmq_pollitem_flag_t];
+  inherit Bits[zmq_pollitem_flag_t];
 }
 
 class Checked_ZeroMQ[T] {
@@ -437,6 +441,9 @@ class Checked_ZeroMQ[T] {
   proc bind(x:zmq_socket) (a:string) => int_to_proc$ zmq_bind(x,a);
   proc connect(x:zmq_socket) (a:string) => int_to_proc$ zmq_connect(x,a);
   proc close (s:zmq_socket) => int_to_proc$ zmq_close s;
+
+  gen poll(pits:varray[zmq_poll_item], timeout:double) => // seconds, -1=block
+   int_to_int (zmq_poll (pits, timeout));
 } 
 
 type zmq_ehandler_t = ""; // phantom

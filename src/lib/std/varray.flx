@@ -4,6 +4,9 @@ open class Varray
 {
   _gc_pointer _gc_type t type varray[t] = "?1*";
 
+  // an ordinary carray, but owned by the GC
+  ctor[t] carray[t] : varray[t] = "$1";
+
   ctor[t] varray[t]: size =
     "(?1*)(PTF gcp->collector->create_empty_array(&@?1,$1))"
     requires property "needs_gc"
