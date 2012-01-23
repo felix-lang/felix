@@ -411,6 +411,7 @@ class Checked_ZeroMQ[T] {
 
   proc send_msg (s:zmq_socket) (m:zmq_msg_t) => int_to_proc$ zmq_sendmsg (s,m,ZMQ_XMIT_OPTIONS_NONE);
   proc send_string (s:zmq_socket) (m:string) => int_to_proc$ zmq_send(s,m.cstr.address,m.len,ZMQ_XMIT_OPTIONS_NONE);
+  proc send_string_part (s:zmq_socket) (m:string) => int_to_proc$ zmq_send(s,m.cstr.address,m.len,ZMQ_SNDMORE);
   proc recv_msg (s:zmq_socket) (m:zmq_msg_t) => int_to_proc$ zmq_recvmsg (s,m,ZMQ_XMIT_OPTIONS_NONE);
   proc recv_msg_dontwait (s:zmq_socket) (m:zmq_msg_t) => int_to_proc$ zmq_recvmsg (s,m,ZMQ_DONTWAIT);
   gen recv_string (s:zmq_socket) = {
@@ -437,6 +438,7 @@ class Checked_ZeroMQ[T] {
   fun check_socket(var x:zmq_socket)= { if x.valid do return x; else ehandler; done; }
   gen mk_socket (c: zmq_context) (t:zmq_socket_type_t) => check_socket$ zmq_socket (c,t);
   proc set_opt(s: zmq_socket) (o: zmq_socket_options) => int_to_proc (set_sockopt s o);
+  fun get_opt(s: zmq_socket) (o: zmq_sockopts_tag) : zmq_socket_options => getsockopt (s,o);
 
   proc bind(x:zmq_socket) (a:string) => int_to_proc$ zmq_bind(x,a);
   proc connect(x:zmq_socket) (a:string) => int_to_proc$ zmq_connect(x,a);
