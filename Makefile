@@ -74,22 +74,20 @@ doc:
 #
 install:
 	sudo build/release/bin/flx --test=build/release --install 
-	sudo touch build/release/lib/std.libtab
-
-
-#
-# Install binaries into /usr/local/bin
-#
-install-bin:
 	sudo build/release/bin/flx --test=build/release --install-bin
-	sudo touch build/release/lib/std.libtab
-
+	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
+	sudo flx install-done
+	sudo rm install-done.*
 #
 # Install binaries on felix-lang.org
 #
 install-felix-lang.org:
 	sudo stop felixweb
+	sudo build/release/bin/flx --test=build/release --install 
 	sudo build/release/bin/flx --test=build/release --install-bin
+	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
+	sudo flx install-done
+	sudo rm install-done.*
 	sudo start felixweb
 
 #
