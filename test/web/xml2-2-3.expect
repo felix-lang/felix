@@ -1,0 +1,11 @@
+----------Test xml2-2-3------------------
+-----xml_new_cdata_block-----------------
+----------------------------------------
+<?xml version="1.0"?>
+<!DOCTYPE HTML>
+<html><head><script><![CDATA[
+ function loadpdf() {
+    document.getElementById("pdf-object").src="http://www.w3.org/TR/xhtml1/xhtml1.pdf";
+ }
+]]></script></head><body><div>Hello World</div></body></html>
+----------------------------------------

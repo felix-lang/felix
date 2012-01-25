@@ -1,0 +1,22 @@
+----------Test xml2-2-0------------------
+-xml_doc_get_root_element-xml_set_prop---
+-xml_get_prop-xml_new_text_child---------
+Root node had id: notes_list
+notes node has priority: high
+----------------------------------------
+<?xml version="1.0"?>
+<notes id="notes_list" priority="high">
+  <note id="note1">
+	<to>Tove</to>
+	<from>Jani</from>
+	<heading>Reminder</heading>
+	<body id="note1_body">Don't forget me this weekend!</body>
+  </note>
+   <note id="note2">
+	<to>Becca</to>
+	<from>Mike</from>
+	<heading>Reminder</heading>
+	<body id="note2_body">Your awesome!</body>
+  </note>
+<node1>Another node</node1></notes>
+----------------------------------------

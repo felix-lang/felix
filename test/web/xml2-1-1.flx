@@ -1,0 +1,26 @@
+include "web/xml2";
+
+open XML2;
+
+println("----------Test xml2-1------------------");
+println("--------xml_parse_file_string----------");
+val xml_string = """<notes>
+  <note id="note1">
+	<to>Tove</to>
+	<from>Jani</from>
+	<heading>Reminder</heading>
+	<body id="note1_body">Don't forget me this weekend!</body>
+  </note>
+   <note id="note2">
+	<to>Becca</to>
+	<from>Mike</from>
+	<heading>Reminder</heading>
+	<body id="note2_body">Your awesome!</body>
+  </note>
+</notes>
+""";
+var xml_doc2 = xml_parse_string(xml_string); // parse string
+println("----------------------------------------");
+print(xml_doc_dump(xml_doc2));
+println("----------------------------------------");
+xml_free_doc(xml_doc2);
