@@ -221,7 +221,7 @@ proc install() {
 
      (" * Felix library",
      list( 
-       "(tools|lib)/.*\\.(flxh?|par2|libtab|files|automaton)"
+       "(tools|lib)/.*\\.(flxh?|par2|files|automaton)"
      )),
 
      (" * Felix web resources",

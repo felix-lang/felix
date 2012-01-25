@@ -789,7 +789,7 @@ let gen_exe filename
       begin match code with
       | CS.Identity -> syserr sr "Identity proc is nonsense"
       | CS.Virtual ->
-          clierr2 sr (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
+          clierr2 (Flx_bexe.get_srcref exe) (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
       | CS.Str s -> ws (ce_expr "expr" s)
       | CS.Str_template s ->
         let ss = gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"  in

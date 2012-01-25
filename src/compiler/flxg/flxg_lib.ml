@@ -46,6 +46,7 @@ let process_lib
   (* Return if the file has been changed since it was cached. *)
   let validate (_,depnames,_,_,_,_,_,_,_,_,_) =
     let filetimes = List.fold_left (fun acc f ->
+(* print_endline ("dep file = " ^ f); *)
       max acc (Flx_filesys.virtual_filetime Flx_filesys.big_crunch (f^".flx")))
       Flx_filesys.big_bang depnames
     in

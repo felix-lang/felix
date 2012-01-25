@@ -408,6 +408,11 @@ class Checked_ZeroMQ[T] {
     return x != 0;
   } 
 
+  fun zmq_more (s:zmq_socket) => 
+    match s.get_opt ZMQ_RCVMORE with 
+    | zmq_rcvmore ?x => x 
+    endmatch 
+  ;
 
   proc send_msg (s:zmq_socket) (m:zmq_msg_t) => int_to_proc$ zmq_sendmsg (s,m,ZMQ_XMIT_OPTIONS_NONE);
   proc send_string (s:zmq_socket) (m:string) => int_to_proc$ zmq_send(s,m.cstr.address,m.len,ZMQ_XMIT_OPTIONS_NONE);
@@ -460,5 +465,31 @@ instance Check[zmq_ehandler_t]
 
 class ZMQ {
   inherit Checked_ZeroMQ[zmq_ehandler_t];
+
+  gen recv_strings (s:zmq_socket) = {
+    var ss = Empty[string];
+    var more = true;
+    while more do 
+      var r = s.recv_string;
+      ss= Cons (r,ss);
+      more = zmq_more s;
+    done
+    return varray (rev ss);
+  }
+
+  proc send_strings (s:zmq_socket) (ss:list[string]) {
+    send_strings s (varray ss);
+  }
+
+  proc send_strings (s:zmq_socket) (ss:varray[string]) {
+    var n = ss.len.int;
+    for var i in 0 upto n-2 do
+      send_string_part s ss.[i];
+    done
+    if n>0 do
+      send_string s ss.[n-1];
+    done
+  }
+
 }
 
