@@ -106,15 +106,21 @@ class Base64 {
   }
 */
 
-  publish "wraps encoded string after ll chars"
+  publish "wraps encoded string after ll chars, no newline on last line"
   fun wrap (b64_str:string,ll:uint) = {
-    val ret:string;
-    var k = 0ui;
-    for var i in 1ui upto ((len b64_str)/ll - 0ui)  do
-      ret = ret + substring(b64_str,k,ll*i)+"\n";
-      k=ll*i;
+    var ret = "";
+    val n = b64_str.len.uint;
+    val whole = n/ll;
+    val rmd = n%ll;
+    reserve (&ret, n+whole+1u);
+    for var i in 0ui upto whole-2u do
+      ret += b64_str.[i*ll to (i+1u)*ll]+"\n";
     done
-    return (ret + substring(b64_str,k,(len b64_str) - 0ui));
+    ret += b64_str.[(whole - 1u)*ll to (whole)*ll];
+    if rmd > 0u do
+      ret+= "\n" + b64_str.[whole*ll to whole*ll+rmd];
+    done
+    return ret;
   }
 
   publish "Decodes supplied base 64 encoded string "

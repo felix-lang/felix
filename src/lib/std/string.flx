@@ -316,7 +316,7 @@ open class String
   fun atol: string -> long = "::std::atol($1.c_str())" requires Cxx_headers::cstdlib;
   fun atof: string -> double = "::std::atof($1.c_str())" requires Cxx_headers::cstdlib;
 
-  proc reserve: string * int = "$1.reserve($2);";
+  proc reserve: &string * !ints = "$1->reserve($2);";
 
   fun cstr: string -> &char = "(char*)$1.c_str()";
 
