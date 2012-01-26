@@ -10,7 +10,7 @@ class Base64 {
 
   val b64_string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-  gen make_string: size*char->string = "std::string ($1, $2)";
+  gen make_string: size*char->string = "::std::string ($1, $2)";
 
   instance Bits[char] {
     fun \& : char * char -> char = "$1&$2";

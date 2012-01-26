@@ -582,6 +582,7 @@ def test(ctx):
             'test/regress/kf/*.flx',
             'test/regress/nd/*.flx',
             'test/test-data/*.flx',
+            'test/zmq/*.flx',
         ])
 
     if 'posix' in phases.target.platform:
