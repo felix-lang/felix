@@ -747,8 +747,8 @@ let gen_exe filename
     let index',ts' = index,ts in
     let index, ts = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
     if index <> index' then
-      clierr sr ("Virtual call of " ^ string_of_bid index' ^ " dispatches to " ^
-        string_of_bid index')
+      clierr sr ("[flx_gen] Virtual call of " ^ string_of_bid index' ^ " dispatches to " ^
+        string_of_bid index)
     ;
     let subs =
       catmap ""

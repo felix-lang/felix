@@ -36,6 +36,14 @@ let dummy_sr = Flx_srcref.make_dummy "[flx_inst] generated"
 let null_table = Hashtbl.create 3
 
 let add_inst syms bsym_table ref_insts1 (i,ts) =
+  iter (fun t -> match t with 
+    | BTYP_void -> 
+      print_endline ("Attempt to register instance " ^ si i ^ "[" ^
+      catmap ", " (sbt bsym_table) ts ^ "]");
+      failwith "Attempt to instantiate type variable with type void"
+    | _ -> ()
+    )
+  ts;
     (*
     print_endline ("Attempt to register instance " ^ si i ^ "[" ^
     catmap ", " (sbt bsym_table) ts ^ "]");

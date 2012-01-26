@@ -818,7 +818,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
     let ts = map tsub ts in
     let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
     if index <> index' then
-      clierr sr ("Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
+      clierr sr ("[Flx_egen:apply_direct] Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
         string_of_bid index')
     ;
     if index <> index' then
@@ -887,7 +887,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
     let ts = map tsub ts in
     let index', ts' = Flx_typeclass.fixup_typeclass_instance syms bsym_table index ts in
     if index <> index' then
-      clierr sr ("Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
+      clierr sr ("[Flx_egen: apply_stack] Virtual call of " ^ string_of_bid index ^ " dispatches to " ^
         string_of_bid index')
     ;
     if index <> index' then
@@ -1119,7 +1119,7 @@ and gen_apply_prim
           in
 
           if index <> index' then begin
-            clierr sr ("Virtual call of " ^ string_of_bid index ^
+            clierr sr ("[Flx_egen: apply_prim] Virtual call of " ^ string_of_bid index ^
               " dispatches to " ^ string_of_bid index')
           end;
 

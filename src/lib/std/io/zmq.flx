@@ -451,6 +451,32 @@ class Checked_ZeroMQ[T] {
 
   gen poll(pits:varray[zmq_poll_item], timeout:double) => // seconds, -1=block
    int_to_int (zmq_poll (pits, timeout));
+
+  proc send_strings (s:zmq_socket) (ss:varray[string]) {
+    var n = ss.len.int;
+    for var i in 0 upto n-2 do
+      send_string_part s ss.[i];
+    done
+    if n>0 do
+      send_string s ss.[n-1];
+    done
+  }
+
+  proc send_strings (s:zmq_socket) (ss:list[string]) {
+    send_strings s (varray ss);
+  }
+
+  gen recv_strings (s:zmq_socket) : varray[string] = {
+    var ss = Empty[string];
+    var more = true;
+    while more do 
+      var r = recv_string s;
+      ss= Cons (r,ss);
+      more = zmq_more s;
+    done
+    return varray (rev ss);
+  }
+
 } 
 
 type zmq_ehandler_t = ""; // phantom
@@ -466,30 +492,9 @@ instance Check[zmq_ehandler_t]
 class ZMQ {
   inherit Checked_ZeroMQ[zmq_ehandler_t];
 
-  gen recv_strings (s:zmq_socket) = {
-    var ss = Empty[string];
-    var more = true;
-    while more do 
-      var r = s.recv_string;
-      ss= Cons (r,ss);
-      more = zmq_more s;
-    done
-    return varray (rev ss);
-  }
-
-  proc send_strings (s:zmq_socket) (ss:list[string]) {
-    send_strings s (varray ss);
-  }
-
-  proc send_strings (s:zmq_socket) (ss:varray[string]) {
-    var n = ss.len.int;
-    for var i in 0 upto n-2 do
-      send_string_part s ss.[i];
-    done
-    if n>0 do
-      send_string s ss.[n-1];
-    done
-  }
-
+  // this function cannot go in Checked_ZeroMQ
+  // we get ehandler virtual persisting to code gen
+  // why?
+ 
 }
 

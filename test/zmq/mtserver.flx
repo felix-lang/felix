@@ -10,7 +10,7 @@ proc worker_routine (context:zmq_context) {
 
   while true do
     var s = receiver.recv_string;
-    println (f"Received request: [%S]", s);
+    println (f"Received request: [%S]" s);
     //  Do some 'work'
     Faio::sleep (sys_clock,1.0e-3);
     //  Send reply back to client

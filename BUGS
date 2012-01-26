@@ -69,3 +69,27 @@
 * Webserver doesn't display nested C comments correctly
   FIXED: 2/1/2012
  
+
+* virtual function instantiation problem:
+in class ZMQ move this:
+  gen recv_strings (s:zmq_socket) = {
+into class Checked_ZeroMQ[T] {
+and we get
+
+~/felix>flx --test=build/release --force test/zmq/mtserver
+CLIENT ERROR
+Instantiate virtual procedure(1) ehandler
+In build/release/lib/std/posix/errno.flx: line 43, cols 3 to 32
+42:     fun pointer_to_pointer[U] (var p:&U) = { if C_hack::isNULL p do #ehandler; done return p; }
+43:     virtual proc ehandler: unit;
+      ******************************
+44:   }
+
+See also build/release/lib/std/posix/errno.flx: line 43, cols 3 to 32
+42:     fun pointer_to_pointer[U] (var p:&U) = { if C_hack::isNULL p do #ehandler; done return p; }
+43:     virtual proc ehandler: unit;
+      ******************************
+44:   }
+
+WHY? And why isn't the srcref showing the location of the instruction
+triggering it?
