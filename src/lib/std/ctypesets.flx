@@ -10,9 +10,11 @@ typedef fast_sints = typesetof (tiny, short, int, long, vlong);
 typedef exact_sints = typesetof(int8,int16,int32,int64);
 typedef fast_uints = typesetof (utiny, ushort, uint, ulong,uvlong);
 typedef exact_uints = typesetof (uint8,uint16,uint32,uint64);
+typedef weird_sints = typesetof (ssize, ptrdiff, intmax, intptr);
+typedef weird_uints = typesetof (size, uintmax, uintptr);
 
-typedef sints = fast_sints \cup exact_sints;
-typedef uints = fast_uints \cup exact_uints;
+typedef sints = fast_sints \cup exact_sints \cup weird_sints;
+typedef uints = fast_uints \cup exact_uints \cup weird_uints;
 
 typedef fast_ints = fast_sints \cup fast_uints;
 typedef exact_ints = exact_sints \cup exact_uints;

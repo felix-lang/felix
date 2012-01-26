@@ -730,12 +730,14 @@ _gc_pointer type gcptr[t]= "?1*";
 @# mandatory in C
 @for t in ['ptrdiff','size','ssize','intmax','uintmax','intptr','uintptr']:
   equiv = cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]
-  tangle('typedef ' + t + ' = ' + equiv + ';')
+  #tangle('typedef ' + t + ' = ' + equiv + ';')
+  tangle('type ' + t + ' = "' + fint2cint[equiv] + '";')
 
 @# optional in C
 @for t in exact_ints:
   equiv = cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]
-  tangle('typedef ' + t + ' = ' + equiv + ';')
+  #tangle('typedef ' + t + ' = ' + equiv + ';')
+  tangle('type ' + t + ' = "' + fint2cint[equiv] + '";')
 
 @select(tangler('lib/plat/arithmax.flx','data'))
 // GENERATED DURING CONFIGURATION

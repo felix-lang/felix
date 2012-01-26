@@ -78,6 +78,14 @@ let rec check_abstract_type syms rls t =
  * these apply to variables including parameters as qualifiers:
  * we're only interested in the actual types.
  *)
+
+(* Above comment is crap.. We have to disable this routine now,
+ * because the algorithm is wrong.
+ * What is required is a recursive descent on the call graph.
+ * Even if a routine doesn't use a T at all, routines it calls
+ * might, and that makes this routine non-polyvariadic.
+ *)
+
 let rec check_abstract_expr syms rls ((x,t) as e) =
   let fi = ignore in
   let fe e = check_abstract_expr syms rls e in
@@ -126,7 +134,7 @@ let check_abstract_exe syms rls exe =
    exe 
 
 
-let cal_polyvars syms bsym_table =
+let cal_polyvars syms bsym_table = if true then () else
   let absvars = Hashtbl.create 97 in
   Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
