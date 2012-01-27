@@ -255,7 +255,25 @@ def build_flx(host_phase, target_phase, flx_builder):
     )
 
 # ------------------------------------------------------------------------------
+# for compile only tests
+def compile_flx(phase, felix, src, *args, **kwargs):
+    src = Path(src)
 
+    passed = True
+    for static in False, True:
+        try:
+            exe = felix.compile(src, static=static)
+        except fbuild.ExecutionError as e:
+            phase.ctx.logger.log(e, verbose=1)
+            if e.stdout:
+                phase.ctx.logger.log(e.stdout.decode().strip(), verbose=1)
+            if e.stderr:
+                phase.ctx.logger.log(e.stderr.decode().strip(), verbose=1)
+            passed = False
+    return passed
+
+
+# compile and run, compare with .expect
 def test_flx(phase, felix, src, *args, **kwargs):
     src = Path(src)
 
