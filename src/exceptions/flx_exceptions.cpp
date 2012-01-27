@@ -31,6 +31,10 @@ flx_match_failure_t::flx_match_failure_t(flx_range_srcref_t ff, char const *cf, 
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_match_failure_t::~flx_match_failure_t(){}
 
+flx_dropthru_failure_t::flx_dropthru_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
+   flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
+flx_dropthru_failure_t::~flx_dropthru_failure_t(){}
+
 flx_assert_failure_t::flx_assert_failure_t(flx_range_srcref_t ff, char const *cf, int cl) :
    flx_loc(ff), cxx_srcfile(cf), cxx_srcline(cl) {}
 flx_assert_failure_t::~flx_assert_failure_t(){}

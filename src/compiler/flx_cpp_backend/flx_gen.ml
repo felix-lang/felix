@@ -1745,6 +1745,7 @@ let gen_function_methods filename syms bsym_table
   );
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,(bps,traint),ret',exes) ->
+    let tailsr = Flx_bsym.sr bsym in
     if length ts <> length vs then
     failwith
     (
@@ -1829,7 +1830,12 @@ let gen_function_methods filename syms bsym_table
         "  FLX_START_SWITCH\n" else ""
         ) ^
         exe_string ^
-        "    throw -1; // HACK! \n" ^ (* HACK .. should be in exe_string .. *)
+        (let f, sl, sc, el, ec = Flx_srcref.to_tuple tailsr in
+         let s = string_of_string f ^ "," ^
+         si sl ^ "," ^ si sc ^ "," ^
+         si el ^ "," ^ si ec
+        in
+        "    FLX_DROPTHRU_FAILURE("^s^"); // HACK! \n") ^ (* HACK .. should be in exe_string .. *)
         (if needs_switch then
         "  FLX_END_SWITCH\n" else ""
         )
