@@ -106,6 +106,10 @@ open class List
     return o;
   }
 
+  // comprehension
+  ctor[T] list[T](f: (1->opt[T])) => list_comprehension f;
+
+
   // number of elements in a list
   fun len[T] (x:list[T]) = {
     fun aux (acc:size) (x:list[T]) =>
@@ -377,7 +381,7 @@ open class List
 
   fun sort[T with Tord[T]](x:list[T])=> sort lt x;
     
-  fun comprehension[T] (f: (1->opt[T])) = {
+  fun list_comprehension[T] (f: (1->opt[T])) = {
     var ff = f;
     fun aux (l:list[T]) = {
       var x = ff();

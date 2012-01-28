@@ -300,6 +300,9 @@ syn keyword felixConstant true false
 " standard library types
 syn keyword felixType array
 syn keyword felixType varray
+syn keyword felixType darray
+syn keyword felixType sarray
+syn keyword felixType dsarray
 syn keyword felixType carray
 syn keyword felixType list
 

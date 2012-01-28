@@ -34,6 +34,9 @@ open class Darray
   // make an empty darray, give it 20 slots for no particular reason
   ctor[T] darray[T] () => _make_darray[T]$ new darray_ctl[T](varray[T] 20uz , dflt_resize);
 
+  // make a darray from an array
+  ctor[T,N] darray[T] (a:array[T,N]) =>  _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
+
   // make a darray from a varray
   ctor[T] darray[T] (a:varray[T]) =>  _make_darray[T]$ new darray_ctl[T]( varray[T] a, dflt_resize);
 
