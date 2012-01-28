@@ -377,6 +377,28 @@ open class List
 
   fun sort[T with Tord[T]](x:list[T])=> sort lt x;
     
+  fun comprehension[T] (f: (1->opt[T])) = {
+    var ff = f;
+    fun aux (l:list[T]) = {
+      var x = ff();
+      return 
+        match x with 
+       | Some ?elt => aux (Cons (elt,l)) 
+       | None => rev l
+       endmatch
+      ;
+    }
+    return aux Empty[T];
+  }
+
+  gen iterator[T] (var xs:list[T]) () = {
+    while true do
+      match xs with
+      | Cons (?h,?t) => xs = t; yield Some h;
+      | Empty => return None[T];
+      endmatch;
+    done
+  }
 
 }
 

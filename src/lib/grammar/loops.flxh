@@ -170,5 +170,29 @@ syntax loops
        ))
     """;
 
+  tstatement := optlabel "for" "var" sname "in" sexpr "do" sstatements "done" =>#
+    """
+    (let* (
+     (generator_string_name (string-append "_generator_" (number->string (fresh_int ()))))
+     (generator_call_name (nos generator_string_name))
+     (generator_init `(ast_apply ,_sr (,(nos "iterator") ,_6 )))
+     (generator_call `(ast_apply ,_sr (,generator_call_name ())))
+     (some_pattern `(pat_nonconst_ctor ,_sr ,(nos "Some") (pat_as ,_sr (pat_any ,_sr) ,_4) ))
+     (some_exit `(ast_goto ,_sr ,(string-append "continue_" _1))) 
+     (some_handler (append _8 `(,some_exit)))
+     (none_pattern `(pat_const_ctor ,_sr ,(nos "None")))
+     (none_handler `((ast_nop ,_sr, "drop thru")))
+     (some_item `(,some_pattern ,some_handler))
+     (none_item `(,none_pattern ,none_handler))
+     (matchings `(,some_item ,none_item))
+    )
+    `(ast_seq ,_sr (
+        (ast_var_decl ,_sr ,generator_string_name ,dfltvs none (some ,generator_init))
+        (ast_label ,_sr ,(string-append "continue_" _1))
+        (ast_stmt_match (,_sr ,generator_call ,matchings))
+        (ast_label ,_sr ,(string-append "break_" _1))
+       )))
+    """;
+
 }
 

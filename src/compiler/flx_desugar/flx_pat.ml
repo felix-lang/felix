@@ -151,7 +151,7 @@ and check_match_union pats =
         clierr sr
         (
           Flx_srcref.short_string_of_src (src_of_pat pat) ^
-          ": union pattern expected"
+          ": union pattern expected, got " ^ string_of_pattern pat
         )
   in
   List.iter check pats

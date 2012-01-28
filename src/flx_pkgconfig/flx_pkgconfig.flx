@@ -18,9 +18,9 @@ open Lexer;
 open Env;
 open System;
 
-proc pre_incr:&iterator = "++*$1;";
+proc pre_incr:&lex_iterator = "++*$1;";
 
-fun lexit(ini:iterator, finish:iterator): iterator * string =
+fun lexit(ini:lex_iterator, finish:lex_iterator): lex_iterator * string =
 {
   //println$ "lexit input='" + string_between(ini,finish)+"'";
 

@@ -1249,10 +1249,15 @@ let gen_exe filename
       end
 
     | BEXE_proc_return _ ->
-      if stackable then
-      "      return;\n"
-      else
-      "      FLX_RETURN\n"
+      begin match kind with
+      | Procedure ->
+        if stackable then
+        "      return;\n"
+        else
+        "      FLX_RETURN // procedure return\n"
+      | Function ->
+        clierr sr "Function contains procedure return";
+      end
 
     | BEXE_svc (sr,index) ->
       let bsym =
