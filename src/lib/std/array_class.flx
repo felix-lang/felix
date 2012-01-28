@@ -28,6 +28,16 @@ class ArrayValue[t,v]
     done
   }
 
+  gen iterator(xs:t) () : opt[v] = 
+  {
+    if xs.len > 0uz do
+      for var j in 0uz upto xs.len - 1uz do
+        yield Some (xs,j).unsafe_get;
+      done
+    done
+    return None[v];
+  } 
+
   fun fold_left[u] (_f:u->v->u) (init:u) (x:t): u = {
     var o = init;
     val n = x.len;
