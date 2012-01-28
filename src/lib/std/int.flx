@@ -191,7 +191,7 @@ Str[T]
 
 instance Repr[tiny]   { fun repr[with Str[tiny]]   (t:tiny)   : string => (str t) + "t";  }
 instance Repr[short]  { fun repr[with Str[short]]  (t:short)  : string => (str t) + "s";  }
-instance Repr[int]   { fun repr[with Str[int]]   (t:int)   : string => (str t) + "i";  }
+instance Repr[int]   { fun repr[with Str[int]]   (t:int)   : string => (str t) + "";  }
 instance Repr[long]   { fun repr[with Str[long]]   (t:long)   : string => (str t) + "l";  }
 instance Repr[vlong]  { fun repr[with Str[vlong]]  (t:vlong)  : string => (str t) + "v";  }
 instance Repr[int8]  { fun repr[with Str[int8]]  (t:int8)  : string => (str t) + "i8";  }

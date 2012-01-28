@@ -608,7 +608,8 @@ and xstatement_t sr x : statement_t =
 
   | Lst [Id "ast_macro_forall";ids; e; sts] ->
       STMT_macro_forall (sr,lst "ast_macro_forall" xid ids, ex e, xsts sts)
-  | Lst [Id "ast_seq"; sr; sts] -> STMT_seq (xsr sr,xsts' sr sts)
+  | Lst [Id "ast_seq"; sr; sts] -> 
+      STMT_seq (xsr sr,xsts' sr sts)
 
   | Lst [Id "ast_union"; sr; id; vs; ucmp] ->
       let ucmp = lst "union component" xucmp ucmp in
@@ -794,7 +795,7 @@ and xstatement_t sr x : statement_t =
   
   | Lst [Id "ast_stmt_match";  Lst [sr; e; Lst pss]]->
     let pss = map (function
-      | Lst [p;stmts] -> xp p, xsts' sr stmts
+      | Lst [p;stmts] ->  xp p, xsts' sr stmts
       | x -> err x "ast_stmt_match syntax"
       )
      pss

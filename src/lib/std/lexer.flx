@@ -1,30 +1,30 @@
 class Lexer
 {
-  pod type iterator = "char const*";
-  fun start_iterator : string -> iterator = "$1.c_str()";
-  fun end_iterator: string -> iterator = "$1.c_str()+$1.size()";
-  fun bounds (x:string): iterator * iterator = {
+  pod type lex_iterator = "char const*";
+  fun start_iterator : string -> lex_iterator = "$1.c_str()";
+  fun end_iterator: string -> lex_iterator = "$1.c_str()+$1.size()";
+  fun bounds (x:string): lex_iterator * lex_iterator = {
     return
       start_iterator x,
       end_iterator x
     ;
   }
-  fun string_between: iterator * iterator -> string =
+  fun string_between: lex_iterator * lex_iterator -> string =
    "::std::string($1,$2)";
 
-  fun + : iterator * int -> iterator = "$1 + $2";
-  fun - : iterator * int -> iterator = "$1 - $2";
-  fun - : iterator * iterator -> int = "$1 - $2";
-  fun deref: iterator -> char = "*$1";
+  fun + : lex_iterator * int -> lex_iterator = "$1 + $2";
+  fun - : lex_iterator * int -> lex_iterator = "$1 - $2";
+  fun - : lex_iterator * lex_iterator -> int = "$1 - $2";
+  fun deref: lex_iterator -> char = "*$1";
 }
 
-instance Eq[Lexer::iterator] {
-  fun == :Lexer::iterator * Lexer::iterator -> bool = "$1==$2";
+instance Eq[Lexer::lex_iterator] {
+  fun == :Lexer::lex_iterator * Lexer::lex_iterator -> bool = "$1==$2";
 }
 
-instance Tord[Lexer::iterator] {
-  fun < :Lexer::iterator * Lexer::iterator -> bool = "$1<$2";
+instance Tord[Lexer::lex_iterator] {
+  fun < :Lexer::lex_iterator * Lexer::lex_iterator -> bool = "$1<$2";
 }
 
-open Eq[Lexer::iterator];
+open Eq[Lexer::lex_iterator];
 

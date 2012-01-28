@@ -17,6 +17,7 @@ struct FLX_EXCEPTIONS_EXTERN flx_assert_failure_t;
 struct FLX_EXCEPTIONS_EXTERN flx_assert2_failure_t;
 struct FLX_EXCEPTIONS_EXTERN flx_axiom_check_failure_t;
 struct FLX_EXCEPTIONS_EXTERN flx_switch_failure_t;
+struct FLX_EXCEPTIONS_EXTERN flx_dropthru_failure_t;
 
 // ********************************************************
 /// EXCEPTION: Felix exception base abstraction.
@@ -91,6 +92,19 @@ struct FLX_EXCEPTIONS_EXTERN flx_match_failure_t : flx_exception_t {
   int cxx_srcline;            ///< C++ line number
   flx_match_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
   virtual ~flx_match_failure_t();
+};
+
+// ********************************************************
+/// EXCEPTION: DROPTHRU failure.
+/// Thrown when function drops off end without returning value
+// ********************************************************
+
+struct FLX_EXCEPTIONS_EXTERN flx_dropthru_failure_t : flx_exception_t {
+  flx_range_srcref_t flx_loc; ///< location in Felix file
+  char const *cxx_srcfile;          ///< C++ file name
+  int cxx_srcline;            ///< C++ line number
+  flx_dropthru_failure_t(flx_range_srcref_t ff, char const *cf, int cl);
+  virtual ~flx_dropthru_failure_t();
 };
 
 // ********************************************************

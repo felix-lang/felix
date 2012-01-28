@@ -544,13 +544,21 @@ def test(ctx):
     # Make sure we're built.
     phases, iscr, felix = build(ctx)
 
-    from buildsystem.flx import test_flx
+    from buildsystem.flx import test_flx, compile_flx
 
     failed_srcs = []
 
     def test(src):
         try:
             passed = test_flx(phases.target, felix, src)
+        except fbuild.ConfigFailed as e:
+            ctx.logger.log(str(e))
+            passed = False
+        return src, passed
+
+    def test_compile(src):
+        try:
+            passed = compile_flx(phases.target, felix, src)
         except fbuild.ConfigFailed as e:
             ctx.logger.log(str(e))
             passed = False
@@ -585,6 +593,10 @@ def test(ctx):
             'test/zmq/*.flx',
         ])
 
+    srcs2 = Path.globall(
+        'test/zmq/*.flx',
+        )
+
     if 'posix' in phases.target.platform:
         srcs.extend(Path.glob('test/faio/posix-*.flx'))
 
@@ -594,6 +606,12 @@ def test(ctx):
     for src, passed in phases.target.ctx.scheduler.map(
             test,
             sorted(srcs, reverse=True)):
+        if not passed:
+            failed_srcs.append(src)
+
+    for src, passed in phases.target.ctx.scheduler.map(
+            test_compile,
+            sorted(srcs2, reverse=True)):
         if not passed:
             failed_srcs.append(src)
 

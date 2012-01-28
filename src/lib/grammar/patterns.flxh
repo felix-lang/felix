@@ -10,7 +10,7 @@ syntax patterns {
     "`(ast_match ,_sr (,_2 ,_4))";
 
   smatching := "|" spattern "=>" x[let_pri] =># "`(,_2 ,_4)";
-  smatching := "|" "=>" sexpr =># "`(pat_none ,_sr ,_4)";
+  smatching := "|" "=>" sexpr =># "`((pat_none ,_sr) ,_3)";
 
   spattern := sas_pattern "when" sexpr =># "`(pat_when ,_sr ,_1 ,_3)";
   spattern := sas_pattern =># "_1";

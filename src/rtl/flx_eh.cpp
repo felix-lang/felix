@@ -67,6 +67,13 @@ int ::flx::rtl::flx_exception_handler (flx_exception_t *e)
     return 3;
   }
   else
+  if (flx_dropthru_failure_t *x = dynamic_cast<flx_dropthru_failure_t*>(e))
+  {
+    fprintf(stderr,"Function Drops Off End Failure\n");
+    print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
+    return 3;
+  }
+  else
   if (flx_range_failure_t *x = dynamic_cast<flx_range_failure_t*>(e))
   {
     fprintf(stderr,"Range Check Failure %ld <= %ld < %ld\n",x->min, x->v,x->max);

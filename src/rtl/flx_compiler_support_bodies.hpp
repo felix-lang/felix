@@ -28,6 +28,9 @@
 #define FLX_MATCH_FAILURE(f,sl,sc,el,ec) \
   throw ::flx::rtl::flx_match_failure_t (::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
 
+#define FLX_DROPTHRU_FAILURE(f,sl,sc,el,ec) \
+  throw ::flx::rtl::flx_dropthru_failure_t (::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
+
 #define FLX_ASSERT_FAILURE(f,sl,sc,el,ec) \
   throw ::flx::rtl::flx_assert_failure_t (::flx::rtl::flx_range_srcref_t(f,sl,sc,el,ec),__FILE__,__LINE__)
 
