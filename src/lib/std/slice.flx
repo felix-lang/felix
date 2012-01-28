@@ -7,4 +7,10 @@ publish "slice type"
     | Slice_one of T
   ;
 
+gen slice_range (first:size) (last:size) () = {
+  for var i in first upto last do yield Some i; done return None[size]; 
+}
+
+// hack so for in f do .. done will work too
+gen iterator[t] (f:1->opt[t]) => f;
 
