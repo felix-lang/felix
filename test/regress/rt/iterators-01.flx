@@ -20,4 +20,8 @@ println zz;
 
 var kk = list { for k in (11,7,3) do yield Some$ k+40; done return None[int]; };
 println$ kk;
+
+for k in list_comprehension (slice_range 10uz 20uz) do println k; done 
+
+for k in (slice_range 10uz 20uz) do println k; done 
  
