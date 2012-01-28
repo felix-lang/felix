@@ -42,6 +42,8 @@ class LowResTime
     return time_v;
   }
  
+  fun time_t_of_uint:  uint -> time_t = "(time_t)$1:cast" is cast;
+
   cstruct tm {
     tm_sec:int;         /* seconds */
     tm_min:int;         /* minutes */
