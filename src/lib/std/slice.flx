@@ -7,8 +7,8 @@ publish "slice type"
     | Slice_one of T
   ;
 
-gen slice_range (first:size) (last:size) () = {
-  for var i in first upto last do yield Some i; done return None[size]; 
+gen slice_range[T with Integer[T]] (first:T) (last:T) () = {
+  for var i in first upto last do yield Some i; done return None[T]; 
 }
 
 // hack so for in f do .. done will work too

@@ -54,6 +54,12 @@ open class Carray
   proc strcpy: &char * &char = "(void)::std::strcpy($1,$2);" requires Cxx_headers::cstring;
   proc strncpy: &char * &char * !ints = "(void)::std::strncpy($1,$2,$3);" requires Cxx_headers::cstring;
   fun strlen: &char ->size = "::std::strlen($1)" requires Cxx_headers::cstring;
+  gen strdup(s:&char) = {
+    val n = strlen s;
+    var out=array_alloc[char] (n+1uz);
+    strcpy(out,s);
+    return out;
+  }
 }
 
 open[T] Eq[&T];

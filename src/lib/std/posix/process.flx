@@ -10,18 +10,19 @@ class Process {
   gen pclose: Cstdio::ifile -> process_status_t = "pclose($1)";
 
   type process_status_t = "int";
+  ctor int:process_status_t = "$1";
 
-  gen WIFCONTINUED: process_status_t -> bool = "WIFCONTINUED($1)!=0";
-  gen WIFEXITED: process_status_t -> int = "WIFEXITED($1)!=0";
-  gen WISIGNALED: process_status_t -> int = "WISIGNALED($1)!=0";
-  gen WIFSTOPPED: process_status_t -> int = "WIFSTOPPED($1)!=0";
+  fun WIFCONTINUED: process_status_t -> bool = "WIFCONTINUED($1)!=0";
+  fun WIFEXITED: process_status_t -> int = "WIFEXITED($1)!=0";
+  fun WISIGNALED: process_status_t -> int = "WISIGNALED($1)!=0";
+  fun WIFSTOPPED: process_status_t -> int = "WIFSTOPPED($1)!=0";
 
-  gen WEXITSTATUS: process_status_t -> int = "WEXITSTATUS($1)";
-  gen WTERMSIG: process_status_t -> signal_t = "WTERMSIG($1)";
-  gen WSTOPSIG: process_status_t -> signal_t = "WSTOPSIG($1)";
+  fun WEXITSTATUS: process_status_t -> int = "WEXITSTATUS($1)";
+  fun WTERMSIG: process_status_t -> signal_t = "WTERMSIG($1)";
+  fun WSTOPSIG: process_status_t -> signal_t = "WSTOPSIG($1)";
 
   // OSX only, not in Posix
-  gen WCOREDUMP: process_status_t -> int = "WCOREDUMP($1)";
+  fun  WCOREDUMP: process_status_t -> int = "WCOREDUMP($1)";
 
 
   const environ: &&char = "environ" requires Posix_headers::unistd_h;
@@ -45,7 +46,7 @@ class Process {
 
   gen fork: unit -> pid_t = "fork()" requires Posix_headers::unistd_h;
 
-  union spawn_result_t = | Error of errno_t | Process of pid_t;
+  union spawn_result_t = | Error of errno_t | ProcessId of pid_t;
 
   gen spawnv(file: string, argv:&&char) : spawn_result_t = {
     var x = fork();
@@ -54,10 +55,10 @@ class Process {
       if y == bad_exec do 
         return Error errno; 
       else 
-        return Process x; // never taken! 
+        return ProcessId x; // never taken! 
       done 
     elif x == bad_process do return Error errno;
-    else return Process x;
+    else return ProcessId x;
     done
   }
 
@@ -68,10 +69,10 @@ class Process {
       if y == bad_exec do 
         return Error errno; 
       else 
-        return Process x; // never taken! 
+        return ProcessId x; // never taken! 
       done 
     elif x == bad_process do return Error errno;
-    else return Process x;
+    else return ProcessId x;
     done
   }
 
@@ -82,12 +83,49 @@ class Process {
       if y == bad_exec do 
         return Error errno; 
       else 
-        return Process x; // never taken! 
+        return ProcessId x; // never taken! 
       done 
     elif x == bad_process do return Error errno;
-    else return Process x;
+    else return ProcessId x;
     done
   }
 
-  // implement waitpid here ..
+  type process_status_options_t = "int";
+  const WCONTINUED: process_status_options_t;
+  const WNOHANG: process_status_options_t;
+  const WUNTRACED: process_status_options_t;
+  const WNONE: process_status_options_t="0";
+  fun \| : process_status_options_t * process_status_options_t -> process_status_options_t = "$1|$2";
+
+  gen waitpid: pid_t * &process_status_t * process_status_options_t -> pid_t;
+
+  gen waitpid(pid:pid_t) = {
+    var status: process_status_t;
+    var pid' = waitpid(pid,&status,WNONE);
+    if pid' == bad_process do 
+      println$ "Waitpid failed .. fix me!";
+      System::exit 1;
+    else
+      return status;
+    done
+  }
+
+  union ProcesStatus= | Running | Stopped of process_status_t;
+
+  gen checkpid(pid:pid_t) = {
+    var status: process_status_t;
+    var pid' = waitpid(pid,&status,WNOHANG);
+    if pid' == bad_process do 
+      println$ "Waitpid failed .. fix me!";
+      System::exit 1;
+    elif pid'.int == 0 do
+      return Running;
+    else
+      return Stopped status;
+    done
+  }
+
+
+  gen kill: pid_t * signal_t -> int;
+ 
 }

@@ -8,7 +8,14 @@ class Posix_Signal {
 
   type sig_t = "sig_t"; // what a pity posix calls the handler sig_t
   gen signal: signal_t * sig_t -> sig_t = "signal($1, $2)";
-  const SIGPIPE : signal_t;
+
+  // http://pubs.opengroup.org/onlinepubs/009695399/basedefs/signal.h.html
+  const 
+    SIGABRT, SIGALRM, SIGBUS, SIGCHLD, SIGCONT, SIGFPE, SIGHUP, SIGILL, SIGINT, SIGKILL,
+    SIGPIPE, SIGQUIT, SIGSEGV, SIGSTOP, SIGTERM, SIGTSTP, SIGTTN, SIGTTOU, SIGUSR1, SIGUSR2,
+    SIGPOLL, SIGPROF, SIGSYS, SIGTRAP, SIGURG, SIGVTALRM, SIGXCPU,SIGXSZ
+  : signal_t;
+
   body "void null_signal_handler(int){}";
   const null_signal_handler: sig_t;
   proc ignore_signal(s:signal_t) { C_hack::ignore(signal(s, null_signal_handler)); }
