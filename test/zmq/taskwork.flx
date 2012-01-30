@@ -20,11 +20,9 @@ sender.connect "tcp://localhost:5558";
 //  Process tasks forever
 while true do
   var s = receiver.recv_string;
-  //  Simple progress indicator for the viewer
-  println s; fflush stdout;
 
   //  Do the work
-  Faio::sleep (sys_clock, atof s/1000.0);
+  Faio::sleep (sys_clock, atof s); // seconds
 
   //  Send results to sink
   sender.send_string "";

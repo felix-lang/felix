@@ -30,7 +30,7 @@ done
 //  Calculate and report duration of batch
 var now = #Time::time;
 println$ f"Total elapsed time: %d ms"
-  ((now  - start_time)*1000.0).int
+  ((now  - start_time)/1000.0).int
 ;
 
 receiver.close;
