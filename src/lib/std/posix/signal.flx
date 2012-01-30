@@ -19,4 +19,22 @@ class Posix_Signal {
   body "void null_signal_handler(int){}";
   const null_signal_handler: sig_t;
   proc ignore_signal(s:signal_t) { C_hack::ignore(signal(s, null_signal_handler)); }
+
+  // http://pubs.opengroup.org/onlinepubs/007904975/functions/sigaction.html
+  body ctrl_c_handling = """
+    static bool ctrl_c_flag = false;
+    bool get_ctrl_c() { return ctrl_c_flag; }
+    void set_ctrl_c_flag(int) { ctrl_c_flag = true; }
+
+    void trap_ctrl_c () {
+      struct sigaction sa;
+      sa.sa_handler = set_ctrl_c_flag;
+      sigemptyset(&sa.sa_mask);
+      sa.sa_flags = SA_RESTART;
+      sigaction(SIGINT, &sa, NULL);
+   }
+  """;
+  proc trap_ctrl_c: unit requires ctrl_c_handling;
+  gen get_ctrl_c_flag: 1 -> bool requires ctrl_c_handling;
+
 }

@@ -268,7 +268,7 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
     let fmt,its = Flx_cformat.types_of_cformat_string sr s in
     let args = catmap ","
       (fun (i,s) -> match s with
-      | TYP_name (_,"string",[]) -> "$" ^ si i ^ ".data()"
+      | TYP_name (_,"string",[]) -> "$" ^ si i ^ ".c_str()"
       | _ ->  "$" ^ si i
       )
       its
