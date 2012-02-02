@@ -13,6 +13,7 @@ class XML2 {
 
   fun xml_parse_string:string -> xml_doc_ptr = "xmlParseMemory($1.c_str(),$1.length())";
 
+  private fun equals (s1:string) (s2:string) => s1 == s2;
 cenum xmlParserOption = 
     XML_PARSE_RECOVER,// = 1,  : recover on errors
     XML_PARSE_NOENT,// = 2,  : substitute entities
@@ -103,7 +104,7 @@ cenum xmlParserOption =
  
   type xml_char_ptr = "xmlChar *";  
   proc xml_free:xml_char_ptr = "xmlFree($1);";
-  
+  gen xml_char_ptr_to_str: xml_char_ptr->string = "std::string(($1==NULL)\?\"\":(const char *)$1)";
   proc xml_free_node:xml_node_ptr = "xmlFreeNode($1);";
 
   proc xml_free_node_list: xml_node_ptr = "xmlFreeNodeList($1);";  
@@ -224,7 +225,20 @@ size:	OUT: the memory length
 
   proc xml_free_doc: xml_doc_ptr = "xmlFreeDoc($1);";
 
- 
+ /* gen iterator (var doc:xml_doc_ptr) () = {
+    var node = xml_doc_get_root_element(doc);
+    gen wrkr(n:xml_node_ptr) ={
+      yeild n;
+      if not isNull[xml_node_ptr]((*n).children) do 
+        wrkr(*n.children);
+      done
+      if not isNull[xml_node_ptr]((*n).next) do
+        wrkr(*n.next);
+      done
+    }
+    yeild wrkr(node);
+  }*/
+
 
   fun xml_find_all_nodes (pred:xml_node_ptr->bool,node:xml_node_ptr):list[xml_node_ptr] = {
     var found = Empty[xml_node_ptr];
@@ -267,6 +281,9 @@ size:	OUT: the memory length
   else
     false
   endif;
+
+  fun node_has_attribute_with_value (node:xml_node_ptr) (name:string,value:string) =>
+    node_has_attribute_with_value_where (name,equals(value)) node;
 
   fun node_with_name (name:string) (node:xml_node_ptr):bool =>
     if not isNull[xml_node_ptr](node) and 
