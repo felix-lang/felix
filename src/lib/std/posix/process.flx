@@ -98,7 +98,7 @@ class Process {
   const WNONE: process_status_options_t="0";
   fun \| : process_status_options_t * process_status_options_t -> process_status_options_t = "$1|$2";
 
-  gen waitpid: pid_t * &process_status_t * process_status_options_t -> pid_t;
+  gen waitpid: pid_t * &process_status_t * process_status_options_t -> pid_t requires Posix_headers::sys_wait_h;
 
   gen waitpid(pid:pid_t) = {
     var status: process_status_t;
