@@ -22,7 +22,7 @@ class FAIO_EXTERN socketio_wakeup : public demux::socket_wakeup {
 public:
   demux::sel_param   pb;     // in: what you want, out: what you get
   int       sio_flags;  // either one of PDEMUX_{READ|WRITE}A
-  struct socketio_request *request;
+  class socketio_request *request;
 
   virtual void wakeup(demux::posix_demuxer& demux);
 };

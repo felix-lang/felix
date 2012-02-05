@@ -588,13 +588,13 @@ def test(ctx):
             'test/regress/drt/*.flx',
             'test/regress/bt/*.flx',
             'test/regress/kf/*.flx',
-            'test/regress/nd/*.flx',
             'test/test-data/*.flx',
             'test/zmq/*.flx',
         ])
 
     srcs2 = Path.globall(
         'test/zmq/*.flx',
+        'demos/sdl/*.flx',
         )
 
     if 'posix' in phases.target.platform:

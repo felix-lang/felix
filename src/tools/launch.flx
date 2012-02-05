@@ -120,10 +120,10 @@ fun make_args(p:list[string]) =>
 open Process;
 
 noinline proc launch_managed_process (
-  port: opchannel[string], 
-  name:string, 
-  inargs:list[string], 
-  timelimit:double) 
+  var port: opchannel[int], 
+  var name:string, 
+  var inargs:list[string], 
+  var timelimit:double) 
 {
   //eprintln$ "name=" + name;
   def val pn, val outargs = make_args inargs;
@@ -137,13 +137,13 @@ noinline proc launch_managed_process (
     | ProcessId ?pid =>
       eprintln$ "[" + name + "] "+"Process " + pid.int.str + " created for program " + pn;
     check_pid:>
-      val status = checkpid(pid);
+      var status = checkpid(pid);
       match status with
       | Running => 
         if Time::time() - start_time > timelimit do
            C_hack::ignore$ Process::kill(pid, Posix_Signal::SIGKILL);
            eprintln$  "[" + name + "] "+"KILL: Process "+pid.int.str +" for " + pn + " exceeded time limit " + str timelimit;
-        elif #get_ctrl_c do
+        elif #Posix_Signal::get_ctrl_c_flag do
            C_hack::ignore$ Process::kill(pid, Posix_Signal::SIGKILL);
            eprintln$  "[" + name + "] "+"KILL: Process "+pid.int.str +" for " + pn + " due to Ctrl-C";
         else
@@ -158,28 +158,28 @@ noinline proc launch_managed_process (
       endmatch;
     endmatch;
     eprintln$ "[" + name + "] "+"Monitoring pthread for "+pn+" done finish at " + #Time::time.int.str;
-    write (port, "DEAD");
+    write (port, -1);
     eprintln$ "[" + name + "] "+"Signalled DEAD for "+pn;
   };
 }
 
-noinline proc funeral(port:ipchannel[string], name:string, process_count: &int)
+noinline proc funeral(var port:ipchannel[int], var name:string, var process_count: &int)
 {
   spawn_fthread { 
-    assert read port == "DEAD"; 
+    assert read port == -1; 
     process_count <- *process_count - 1; 
     eprintln$ "Funeral of " + name; 
   };
 }
 
-noinline proc launch_managed_processes (inp: string * list[string * list[string]], timelimit: double) {
-  desc, tinp := inp;
+noinline proc launch_managed_processes (var inp: string * list[string * list[string]], var timelimit: double) {
+  def var desc, var tinp = inp;
   eprintln desc;
   var process_count = 0;
   for k in tinp do
-    name, args := k;
+    def var name, var args = k;
     eprintln$ name, args;
-    def var iport, var oport = mk_iopchannel_pair[string]();
+    def var iport, var oport = mk_iopchannel_pair[int]();
     launch_managed_process(oport, name, args, timelimit);
     ++process_count;
     funeral(iport, name, &process_count);
@@ -191,16 +191,15 @@ noinline proc launch_managed_processes (inp: string * list[string * list[string]
 
 //launch_managed_process ("p1proc", list("./p1"),10.0);
 
-trap_ctrl_c;
+Posix_Signal::trap_ctrl_c;
 
-launch_managed_processes (group1, 20.0);
-launch_managed_processes (group2, 20.0);
-launch_managed_processes (group3, 20.0);
-launch_managed_processes (group4, 20.0);
-launch_managed_processes (group5, 20.0);
-launch_managed_processes (group6, 20.0);
-launch_managed_processes (group7, 20.0);
-launch_managed_processes (group8, 20.0);
+run:for group in (group1, group2, group3, group4, group5, group6,
+  group7, group8, group9)
+do
+  launch_managed_processes (group, 20.0);
+  if #Posix_Signal::get_ctrl_c_flag do break run; done
+done
 
 eprintln "Mainline waiting for pthreads";
+C_hack::ignore$ kill(OUR_PROCESS_GROUP,Posix_Signal::SIGKILL);
 

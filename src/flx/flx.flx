@@ -1,6 +1,26 @@
 include "plat/config";
 include "std/posix/process";
 include "std/posix/shell";
+open Process;
+
+proc pexit(e:int)
+{
+  if e != 0 do
+    if WIFEXITED e.process_status_t do
+      err :=  WEXITSTATUS e.process_status_t;
+      eprintln$ "Error "+err.str+" in flx: " + strerror err.errno_t;
+      System::exit err;
+    elif WIFSIGNALED e.process_status_t do
+      sig := WTERMSIG e.process_status_t;
+      eprintln$ "Shell terminated by signal " + str sig;
+      System::exit 2;
+    else
+      eprintln$ "Unknown error in shell " + str e;
+      System::exit 3;
+    done
+  done
+  System::exit e;
+}
 
 // Felix version of THIS program (NOT the one being installed
 // if you're using flx to install Felix)
@@ -138,7 +158,7 @@ gen xqt(cmd:string) = {
   else
     debugln "COMMAND FAILED";
     fprint$ cerr, ("Error "+repr(result)+" executing command " + cmd + "/n");
-    System::exit result;
+    pexit result;
   done
   return output;
 }
@@ -161,21 +181,21 @@ proc install_old() {
     println$ "FROM: " + FLX_INSTALL_DIR;
     println$ "TO  : " + INSTALL_ROOT;
     if FLX_INSTALL_DIR == INSTALL_ROOT do
-      println "Can't install, src and dst are the same";
+      eprintln "Can't install, src and dst are the same";
       System::exit(1);
     else
       result=system("mkdir -pv "+INSTALL_ROOT_TOPDIR);
       if result != 0 do
-        println$ "Cannot create directory " + INSTALL_ROOT_TOPDIR;
+        eprintln$ "Cannot create directory " + INSTALL_ROOT_TOPDIR;
         System::exit 1;
       done
       result=system("rm -rf "+INSTALL_ROOT);
       result=system("mkdir -pv "+INSTALL_ROOT);
       result=system("cp -Rpv "+FLX_INSTALL_DIR+"/* "+INSTALL_ROOT);
       if result == 0 do println "Install succeeded";
-      else println$ "Install failed, code = " + str(result);
+      else eprintln$ "Install failed, code = " + str(result);
       done
-      System::exit(result);
+      pexit(result);
     done
 }
 
@@ -893,7 +913,7 @@ if RECOMPILE == 0 and RUNIT == 1 do
       calpackages();
       cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ filebase+EXT_SHLIB+" "+args;
       debugln$ "Uptodate shared lib: Running command " + cmd;
-      System::exit(system(cmd));
+      pexit(system(cmd));
     else
       debugln$ "Dynamically linked binary out of date or non-existant";
     done
@@ -902,7 +922,7 @@ if RECOMPILE == 0 and RUNIT == 1 do
       debugln$ "Running statically linked binary";
       cmd=STATIC_ENV+" "+filebase+" "+args;
       debugln$ "Uptodate executable: Running command " + cmd;
-      System::exit(system(cmd));
+      pexit(system(cmd));
     else
       debugln$ "Statically linked binary out of date or non-existant";
     done
@@ -943,8 +963,8 @@ if FELIX == 1 do
   debugln$ "Felix command="+FCMD;
   result=system(FCMD);
   if result != 0 do 
-   debugln "Felix compilation failed";
-    System::exit(int(0!=result)); 
+    debugln "Felix compilation failed";
+    pexit(result); 
   done
   debugln "Felix compilation succeeded";
   calpackages();
@@ -986,7 +1006,7 @@ if STATIC == 0 do
         done
         if STDOUT != "" do cmd=cmd+" > " +STDOUT; done
         debugln$ "Run command="+cmd;
-        System::exit(int(0!=system(cmd)));
+        pexit(system(cmd));
       else
         debugln "Not running program selected by switch";
       done
@@ -1024,7 +1044,7 @@ else
         done
         if STDOUT != "" do cmd=cmd + " > "+STDOUT; done
         debugln$ "Run command="+cmd;
-        System::exit(int(0!=system(cmd)));
+        pexit(system(cmd));
       else
         debugln "Not running program selected by switch";
       done
@@ -1036,5 +1056,5 @@ else
   done
 done
 
-System::exit(int(0!=result));
+pexit(result);
 

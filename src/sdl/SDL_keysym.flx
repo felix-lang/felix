@@ -271,6 +271,8 @@ open module SDL_keysym_h
   const KMOD_CAPS: SDLKey = 'KMOD_CAPS';
   const SDLK_WORLD_0: SDLKey = 'SDLK_WORLD_0';
 
-  fun eq: SDLKey * SDLKey -> bool = "$1==$2";
-  fun ne: SDLKey * SDLKey -> bool = "$1!=$2";
+  instance Eq[SDLKey] { 
+    fun ==: SDLKey * SDLKey -> bool = "$1==$2";
+  }
+  inherit Eq[SDLKey];
 }
