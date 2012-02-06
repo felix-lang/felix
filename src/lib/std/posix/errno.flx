@@ -21,11 +21,8 @@ open class Errno
   proc maybe_exit(var n:errno_t) { if n != ENOERROR  do System::exit(n.int); done }
   proc maybe_exit() { if errno != ENOERROR do System::exit(errno.int); done }
 
-  // Note: we have to void out the return of strerror_r because OSX and XSI 
-  // return int, which disagrees with the GNU version which returns char*
-  // To fix this we'd need more configuration stuff. Can be done,
-  // but currently deferred.
-  proc strerror_r: errno_t* &char * size -> int = "strerror_r($1, $2, $3)" 
+  // XSI compliant. Upgrade gcc if this fails on your box.
+  gen strerror_r: errno_t * &char * size -> int = "strerror_r($1, $2, $3)" 
     requires C89_headers::string_h /* on Linux.. on OSX it's in stdio.h */
   ;
   fun strerror(e:errno_t) : string = {
