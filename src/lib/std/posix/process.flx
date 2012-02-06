@@ -31,8 +31,8 @@ class Process {
        val e = x.WEXITSTATUS;
        return "Exit " + str e + ": " +e.errno_t.strerror;
     elif WIFSIGNALED x do
-       val s = WTERMSIG;
-       return "SIGNAL " + e.int.str + ": " + e.str;
+       val s = x.WTERMSIG;
+       return "SIGNAL " + s.int.str + ": " + s.str;
     else
        return "Unknown temination status " + x.int.str;
     done
