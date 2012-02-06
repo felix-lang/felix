@@ -39,9 +39,9 @@ open class Pchannel
     //fprintf(stderr,"DONE READ:DQ\\n");
     PTF gcp->collector->get_thread_control()->resume();
     }
-  """;
+  """ requires property "needs_ptf";
 
-  gen read[t] (chan:pchannel[t]) = {
+  noinline gen read[t] (chan:pchannel[t]) = {
     var p : &t;
     _read (chan,  &p);
     return *p;
@@ -57,9 +57,9 @@ open class Pchannel
     //fprintf(stderr,"DONE WRITE:NQ\\n");
     PTF gcp->collector->get_thread_control()->resume();
     }
-  """;
+  """ requires property "needs_ptf";
 
-  proc write[t](chan:pchannel[t], v:t) {
+  noinline proc write[t](chan:pchannel[t], v:t) {
     var ps = new v;
     _write (chan,ps);
   }

@@ -198,6 +198,10 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
             'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof'],
             'flags': ['-fno-common'] + flags,
             'optimize_flags': ['-O3', '-fomit-frame-pointer', '--inline']}),
+        ({'darwin'}, {
+            'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof'],
+            'flags': ['-fno-common'] + flags,
+            'optimize_flags': ['-O3', '-fomit-frame-pointer', '--inline']}),
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
             'optimize_flags': ['/Ox']}),

@@ -26,6 +26,18 @@ class Process {
   fun  WCOREDUMP: process_status_t -> int = "WCOREDUMP($1)";
 
 
+  fun str(x:process_status_t) = {
+    if WIFEXITED x do
+       val e = x.WEXITSTATUS;
+       return "Exit " + str e + ": " +e.errno_t.strerror;
+    elif WIFSIGNALED x do
+       val s = WTERMSIG;
+       return "SIGNAL " + e.int.str + ": " + e.str;
+    else
+       return "Unknown temination status " + x.int.str;
+    done
+  }
+
   const environ: &&char = "environ" requires Posix_headers::unistd_h;
 
   type exec_result_t = "int";
