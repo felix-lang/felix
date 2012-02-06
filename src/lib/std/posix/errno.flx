@@ -21,8 +21,9 @@ open class Errno
   proc maybe_exit(var n:errno_t) { if n != ENOERROR  do System::exit(n.int); done }
   proc maybe_exit() { if errno != ENOERROR do System::exit(errno.int); done }
 
-  // XSI compliant. Upgrade gcc if this fails on your box.
-  gen strerror_r: errno_t * &char * size -> int = "strerror_r($1, $2, $3)" 
+  // Unfortunately we get the crappy GNU version of strerror_r 
+  // even if we don't define _GNU_SOURCE
+  proc strerror_r: errno_t * &char * size  = "(void)strerror_r($1, $2, $3)" 
     requires C89_headers::string_h /* on Linux.. on OSX it's in stdio.h */
   ;
   fun strerror(e:errno_t) : string = {
@@ -30,12 +31,8 @@ open class Errno
       return "OK"; 
     else
       var b:array[char,1000];
-      val res = strerror_r(e,carray (&b), b.len.size);
-      if res == 0 do 
-        return string( carray (&b));
-      else
-       return "Unknown Error " + str res;
-      done
+      strerror_r(e,carray (&b), b.len.size);
+      return string( carray (&b));
     done
   }
  
