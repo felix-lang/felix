@@ -1,5 +1,5 @@
 #include "flx_async.hpp"
-#include "pthread_sleep_queue.hpp"
+#include "pthread_bound_queue.hpp"
 #include "flx_rtl.hpp"
 #include "demux_demuxer.hpp"
 #include "faio_asyncio.hpp"
@@ -14,7 +14,7 @@ using namespace flx::faio;
 class async_hooker_impl : public async_hooker {
 public:
   void handle_request(void *data,fthread_t *ss);
-  virtual sleep_queue_t *get_ready_queue()=0;
+  virtual bound_queue_t *get_ready_queue()=0;
   ~async_hooker_impl();
 };
 
@@ -46,7 +46,7 @@ void async_hooker_impl::handle_request(void *data,fthread_t *ft)
 
 class proto_async : public async_hooker_impl
 {
-    sleep_queue_t async_active;
+    bound_queue_t async_active;
 
 public:
    proto_async(int n0, int n1, int m1, int n2, int m2) :
@@ -57,7 +57,7 @@ public:
   ~proto_async(){
     //fprintf(stderr,"Deleting proto async\n");
   }
-  sleep_queue_t *get_ready_queue() { return &async_active; }
+  bound_queue_t *get_ready_queue() { return &async_active; }
   fthread_t* dequeue()
   {
     return (fthread_t*)async_active.dequeue();

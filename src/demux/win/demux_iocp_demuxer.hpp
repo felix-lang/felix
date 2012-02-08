@@ -9,7 +9,7 @@
 #include <WinSock2.h>
 
 #include "demux_demuxer.hpp"
-#include "pthread_sleep_queue.hpp"
+#include "pthread_bound_queue.hpp"
 
 
 namespace flx { namespace demux {

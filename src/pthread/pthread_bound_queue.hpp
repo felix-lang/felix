@@ -1,5 +1,5 @@
-#ifndef __FLX_PTHREAD_SLEEP_QUEUE_H__
-#define __FLX_PTHREAD_SLEEP_QUEUE_H__
+#ifndef __FLX_PTHREAD_BOUND_QUEUE_H__
+#define __FLX_PTHREAD_BOUND_QUEUE_H__
 #include "flx_pthread_config.hpp"
 #include "pthread_mutex.hpp"
 #include "pthread_condv.hpp"
@@ -23,14 +23,14 @@ namespace flx { namespace pthread {
 /// and continues without waiting for the data to be read.
 // ********************************************************
 
-class PTHREAD_EXTERN sleep_queue_t {
+class PTHREAD_EXTERN bound_queue_t {
   flx_condv_t size_changed;
   void *lame_opaque;
   size_t bound;
 public:
   flx_mutex_t member_lock;
-  sleep_queue_t(size_t);
-  ~sleep_queue_t();
+  bound_queue_t(size_t);
+  ~bound_queue_t();
   void enqueue(void*);
   void* dequeue();
   void resize(size_t);

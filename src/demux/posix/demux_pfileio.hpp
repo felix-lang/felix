@@ -3,7 +3,7 @@
 #include <flx_demux_config.hpp>
 
 #include "demux_demuxer.hpp"
-#include "pthread_sleep_queue.hpp"
+#include "pthread_bound_queue.hpp"
 #include "pthread_mutex.hpp"
 // #include <sys/types.h> // off_t (don't have flx iface to this yet)
               // can just add new constructor

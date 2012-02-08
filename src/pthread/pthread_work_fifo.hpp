@@ -3,7 +3,7 @@
 #include "flx_pthread_config.hpp"
 #include "pthread_thread.hpp"
 #include "pthread_mutex.hpp"
-#include "pthread_sleep_queue.hpp"
+#include "pthread_bound_queue.hpp"
 
 namespace flx { namespace pthread {
 
@@ -27,7 +27,7 @@ class PTHREAD_EXTERN worker_fifo
 {
   flx_mutex_t nlock;
   int nthreads;                 /// scheduled number of threads
-  sleep_queue_t fifo;
+  bound_queue_t fifo;
 
   static void thread_start(void*); // thread entry point, passed this
   bool thread_loop_body();      // returns keep going flag
