@@ -3,6 +3,6 @@ Description: Asynchronous I/O support
 provides_dlib: -lfaio_dynamic
 provides_slib: -lfaio_static
 includes: '"faio_posixio.hpp"'
-Requires: demux
+Requires: flx_async flx_pthread demux flx 
 
 

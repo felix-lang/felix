@@ -2,7 +2,7 @@
 #define __FLX_FAIO_POSIXIO_H__
 #include <flx_faio_config.hpp>
 
-#include "faio_asyncio.hpp"
+#include "flx_async.hpp"
 
 // we don't need to piggyback much data at all. for now just the demuxer,
 // so that we can be woken up, and the buffer info (this replaces the
@@ -31,7 +31,7 @@ public:
 // files & pipes. NICE. the fact that the socket is now in here may mean
 // I can get rid of the epoll hack
 // Not sure if this can be used for file fds.
-class FAIO_EXTERN socketio_request : public flx_driver_request_base {
+class FAIO_EXTERN socketio_request : public ::flx::async::flx_driver_request_base {
 public:
     socketio_wakeup sv;
     demux::posix_demuxer *pd;
@@ -45,7 +45,7 @@ public:
 
 // client open
 class FAIO_EXTERN connect_request
-  : public flx_driver_request_base, public demux::connect_control_block {
+  : public ::flx::async::flx_driver_request_base, public demux::connect_control_block {
 public:
   demux::posix_demuxer *pd;
   connect_request() {}      // flx linkage
@@ -57,7 +57,7 @@ public:
 
 // server open
 class FAIO_EXTERN accept_request
-  : public flx_driver_request_base, public demux::accept_control_block {
+  : public ::flx::async::flx_driver_request_base, public demux::accept_control_block {
 public:
   // we sometimes know that there'll be several connections to accept.
   // this'll need a different wakeup - and a different interface between
@@ -80,7 +80,7 @@ public:
 // separate pthread file io
 // hum. multiple inheritance
 class FAIO_EXTERN flxfileio_request
-    : public flx_driver_request_base, public demux::fileio_request
+    : public ::flx::async::flx_driver_request_base, public demux::fileio_request
 {
     pthread::worker_fifo       *aio_worker;
 public:
