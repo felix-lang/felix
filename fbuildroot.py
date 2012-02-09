@@ -179,6 +179,14 @@ def make_c_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
             {'warnings': ['all', 'fatal-errors'],
             'flags': ['-fno-common'] + flags,
             'optimize_flags': ['-O3', '-fomit-frame-pointer', '--inline']}),
+        # THIS IS FOR CLANG
+        ({'darwin'},
+            {'warnings': ['all', 'fatal-errors', 
+                'no-constant-logical-operand',
+                'no-array-bounds',
+                ],
+            'flags': ['-fno-common'] + flags,
+            'optimize_flags': ['-O3', '-fomit-frame-pointer']}),
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
             'optimize_flags': ['/Ox']}),
@@ -198,10 +206,17 @@ def make_cxx_builder(ctx, *args, includes=[], libpaths=[], flags=[], **kwargs):
             'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof'],
             'flags': ['-fno-common'] + flags,
             'optimize_flags': ['-O3', '-fomit-frame-pointer', '--inline']}),
+        # THIS IS FOR CLANG++
         ({'darwin'}, {
-            'warnings': ['all', 'fatal-errors', 'no-invalid-offsetof'],
+            'warnings': ['all', 'fatal-errors', 
+                'no-invalid-offsetof', 
+                'no-bitwise-op-parentheses',
+                'no-parentheses-equality',
+                'no-return-stack-address',
+                'no-tautological-compare',
+                ],
             'flags': ['-fno-common'] + flags,
-            'optimize_flags': ['-O3', '-fomit-frame-pointer', '--inline']}),
+            'optimize_flags': ['-O3', '-fomit-frame-pointer']}),
         ({'windows'}, {
             'flags': ['/GR', '/MD', '/EHs', '/wd4291'] + flags,
             'optimize_flags': ['/Ox']}),
@@ -285,12 +300,13 @@ def config_host(ctx, build):
     try:
         llvm_config = call('fbuild.builders.llvm.LlvmConfig', ctx,
             ctx.options.host_llvm_config,
-            requires_version=(2, '7svn'))
+            requires_at_least_version=(2, 7))
     except fbuild.ConfigFailed:
         phase.llvm_config = None
     else:
         if llvm_config.ocaml_libdir().exists():
-            phase.llvm_config = llvm_config
+            #phase.llvm_config = llvm_config
+            phase.llvm_config = None
         else:
             phase.llvm_config = None
 
