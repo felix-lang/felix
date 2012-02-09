@@ -1,4 +1,4 @@
 Name: flx_dynlink
-Description: Dynamic loading support
-Requires: flx
+Description: Felix Dynamic loading support
+Requires: flx dl
 includes: '"flx_dynlink.hpp"'

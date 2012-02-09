@@ -437,12 +437,26 @@ Comment: Generated during configuration
    tangle("provides_dlib: -lflx_pthread_dynamic")
    tangle("provides_slib: -lflx_pthread_static")
  if config.TARGET_CXX.options.HAVE_PTHREADS:
-   tangle("requires_dlibs: "+config.TARGET_CXX.options.PTHREAD_SWITCH)
-   tangle("requires_slibs: "+config.TARGET_CXX.options.PTHREAD_SWITCH)
+   tangle("cflags: "+config.TARGET_CXX.options.PTHREAD_CFLAGS)
+   tangle("requires_dlibs: "+config.TARGET_CXX.options.PTHREAD_LIBS)
+   tangle("requires_slibs: "+config.TARGET_CXX.options.PTHREAD_LIBS)
 
 includes: '"pthread_thread.hpp"'
 Requires: flx_gc
 
+@h = tangler('config/dl.fpc')
+@select(h)
+Name: dl
+Description: dynamic loading support
+Comment: Generated during configuration
+
+@if config.TARGET_CXX.options.HAVE_DLOPEN:
+   tangle("cflags: "+config.TARGET_CXX.options.DYNAMIC_LOADING_CFLAGS)
+   tangle("requires_dlibs: "+config.TARGET_CXX.options.DYNAMIC_LOADING_LIBS)
+   tangle("requires_slibs: "+config.TARGET_CXX.options.DYNAMIC_LOADING_LIBS)
+
+@if config.TARGET_CXX.options.HAVE_DLOPEN:
+   tangle('includes: <dlfcn.h>')
 
 @h = tangler('config/demux.fpc')
 @select(h)
