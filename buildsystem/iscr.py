@@ -220,7 +220,8 @@ def _print_compiler(ctx, lang, platform, p):
             ' '.join('-I' + i for i in static.compiler.cc.includes) + ' ' +
             ' '.join('-m' + i for i in static.compiler.cc.machine_flags) + ' ' +
             ('-arch ' + static_arch if static_arch else '') + ' ' +
-            ' -Wall -Wno-invalid-offsetof -Wfatal-errors')
+            ' -Wall -Wfatal-errors' + ' ' +
+            ' '.join('-W' + i for i in static.compiler.cc.warnings))
 
         p('CCLINK_STATIC', str(static.exe_linker.cc.exe) + ' ' +
             ' '.join(shared.exe_linker.flags) + ' ' +
@@ -234,7 +235,8 @@ def _print_compiler(ctx, lang, platform, p):
             ' '.join('-I' + i for i in shared.compiler.cc.includes) + ' ' +
             ('-arch ' + shared_arch if shared_arch else '') + ' ' +
             ' '.join('-m' + i for i in shared.compiler.cc.machine_flags) + ' ' +
-            ' -Wall -Wno-invalid-offsetof -Wfatal-errors')
+            ' -Wall -Wfatal-errors' + ' ' +
+            ' '.join('-W' + i for i in static.compiler.cc.warnings)) 
 
         p('CCLINK_DYNAMIC_FLX', str(shared.lib_linker.cc.exe) + ' ' +
             ' '.join(shared.lib_linker.flags) + ' ' +
