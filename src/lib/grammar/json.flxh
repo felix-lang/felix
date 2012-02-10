@@ -1,0 +1,28 @@
+syntax json {
+  requires expressions;
+  x[sapplication_pri] := "json" "(" json_value ")" =># "_3";
+
+  json_object : string = "{" "}";
+  json_object : string = "{" json_members "}";
+  json_members : string = json_pair ( "," json_pair ) *;
+  json_pair : string = strstring ":" json_value;
+
+  json_array : string = "[" "]";
+  json_array : string = "[" json_elements "]";
+  json_elements : string = json_value ( "," json_value ) *;
+
+  json_value : string = 
+     | strstring 
+     | json_number
+     | json_object
+     | json_array
+     | "true"
+     | "false"
+     | "null"
+  ;
+  json_number : string = 
+     | strint
+     | strfloat
+  ;
+}
+
