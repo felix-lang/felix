@@ -3,6 +3,7 @@
 #include "flx_pthread_config.hpp"
 #include "pthread_mutex.hpp"
 #include "pthread_condv.hpp"
+#include "flx_gc.hpp"
 
 // interface for a consumer/producer queue. threads requesting a resource
 // that isn't there block until one is available. push/pop re-entrant
@@ -25,9 +26,9 @@ namespace flx { namespace pthread {
 
 class PTHREAD_EXTERN bound_queue_t {
   flx_condv_t size_changed;
-  void *lame_opaque;
   size_t bound;
 public:
+  void *lame_opaque; // has to be public for the scanner to find it
   flx_mutex_t member_lock;
   bound_queue_t(size_t);
   ~bound_queue_t();
@@ -36,6 +37,8 @@ public:
   void resize(size_t);
   void wait_until_empty();
 };
+
+PTHREAD_EXTERN ::flx::gc::generic::scanner_t bound_queue_scanner;
 
 }} // namespace pthread, flx
 #endif

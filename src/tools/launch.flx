@@ -120,7 +120,7 @@ fun make_args(p:list[string]) =>
 open Process;
 
 noinline proc launch_managed_process (
-  var port: opchannel[int], 
+  var q: ts_bound_queue_t[string],  
   var name:string, 
   var inargs:list[string], 
   var timelimit:double) 
@@ -158,33 +158,28 @@ noinline proc launch_managed_process (
       endmatch;
     endmatch;
     eprintln$ "[" + name + "] "+"Monitoring pthread for "+pn+" done finish at " + #Time::time.int.str;
-    write (port, -1);
+    q.enqueue(name);
     eprintln$ "[" + name + "] "+"Signalled DEAD for "+pn;
   };
 }
 
-noinline proc funeral(var port:ipchannel[int], var name:string, var process_count: &int)
-{
-  spawn_fthread { 
-    assert read port == -1; 
-    process_count <- *process_count - 1; 
-    eprintln$ "Funeral of " + name; 
-  };
-}
 
 noinline proc launch_managed_processes (var inp: string * list[string * list[string]], var timelimit: double) {
   def var desc, var tinp = inp;
   eprintln desc;
+  var q = ts_bound_queue_t[string] 100;
   var process_count = 0;
   for k in tinp do
     def var name, var args = k;
     //eprintln$ name, args;
-    def var iport, var oport = mk_iopchannel_pair[int]();
-    launch_managed_process(oport, name, args, timelimit);
+    launch_managed_process(q, name, args, timelimit);
     ++process_count;
-    funeral(iport, name, &process_count);
   done
-  while process_count > 0 do Faio::sleep(sys_clock,1.0); done
+  while process_count > 0 do 
+    var death_name = q.dequeue;
+    println$ "Funeral of process " + death_name;
+    --process_count;
+  done
   eprintln$ "Finished with group " + desc;
   eprintln$ "-" * 20;
 }

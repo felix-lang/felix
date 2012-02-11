@@ -4,7 +4,7 @@
 using namespace std;
 
 namespace flx { namespace pthread {
-typedef queue<void*> void_queue;
+typedef deque<void*> void_queue;
 
 #define ELTQ ((void_queue*)lame_opaque)
 
@@ -32,7 +32,7 @@ bound_queue_t::enqueue(void* elt)
   flx_mutex_locker_t   l(member_lock);
   while(ELTQ->size() >= bound) // guard against spurious wakeups!
     size_changed.wait(&member_lock);
-  ELTQ->push(elt);
+  ELTQ->push_back(elt);
   size_changed.broadcast(); // cannot return an error
 }
 
@@ -43,7 +43,7 @@ bound_queue_t::dequeue()
   while(ELTQ->empty())  // guard against spurious wakeups!
     size_changed.wait(&member_lock);
   void *elt = ELTQ->front();
-  ELTQ->pop();
+  ELTQ->pop_front();
   size_changed.broadcast();
   return elt;
 }
@@ -56,6 +56,37 @@ bound_queue_t::resize(size_t n)
   // get things rolling again
   size_changed.broadcast();
 }
+
+using namespace flx;;
+using namespace gc;
+using namespace generic;
+
+void *bound_queue_scanner(
+  collector_t *collector, 
+  gc_shape_t *shape, void *pp, 
+  unsigned long dyncount, 
+  int reclimit
+)
+{
+  // input is a pointer to a pointer to a bound queue object
+  void *p = *(void**)pp;
+  bound_queue_t *bq = (bound_queue_t*)p;
+  void_queue *pq = (void_queue*) bq->lame_opaque;
+  printf("Scanning bound queue %p->%p\n", pp, p);
+  
+  ::std::deque<void*>::const_iterator stl_end = pq->end();
+  for(
+    ::std::deque<void*>::const_iterator iter= pq->begin(); 
+    iter < stl_end;
+    ++iter
+  ) {
+    void *value = *iter;
+    printf("bound_queue scanning p=%p\n",value); 
+    collector->register_pointer(value,reclimit);
+  }
+  return 0;
+}
+
 
 }}
 

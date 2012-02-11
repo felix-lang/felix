@@ -41,7 +41,7 @@ def build_runtime(phase):
         path / 'pthread_work_fifo.cpp',
         path / 'pthread_thread_control.cpp',
     ]
-    includes = [phase.ctx.buildroot / 'config/target', 'src/rtl']
+    includes = [phase.ctx.buildroot / 'config/target', 'src/rtl', 'src/gc']
     macros = ['BUILD_PTHREAD']
     flags = []
     libs = []
