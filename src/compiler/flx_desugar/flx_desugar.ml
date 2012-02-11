@@ -261,6 +261,91 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
 
   | EXPR_expr _ -> [],e
 
+  | EXPR_interpolate (sr,s) -> 
+    let outstr = ref "" in
+    let outexprs = ref [] in
+    let outexpr = ref "" in
+    let n = String.length s in
+    let mode = ref `Char in
+    let i = ref 0 in
+    while !i < n do
+      match !mode with
+      | `Char  ->
+        if s.[!i] <> '$' 
+        then
+          begin
+            outstr := !outstr ^ String.sub s (!i) 1;
+            incr i
+          end
+        else 
+          begin
+            assert (s.[!i] = '$');
+            if !i + 1 < n then 
+              begin 
+                if s.[!i+1] = '$' then 
+                  begin (* $$ *)
+                    outstr := !outstr ^ String.sub s (!i) 1;
+                    incr i; 
+                    incr i
+                  end 
+                else if s.[!i+1] <> '(' then 
+                  begin
+                    clierr sr ("In q'" ^ s   ^"' require ( after $ at pos " ^ si (!i))
+                  end
+                else 
+                  begin (* $( *)
+                    incr i;
+                    assert (s.[!i] = '(');
+                    outstr := !outstr ^ "%S";
+                    outexpr := "(";
+                    mode := `Expr 1;
+                    incr i
+                  end
+              end             
+            else
+              begin
+                clierr sr ("In q'" ^ s   ^"' require ( after $ , got eos")
+              end
+          end
+      | `Expr 0 ->
+        outexprs := !outexpr :: !outexprs;
+        outexpr := "";
+        mode := `Char
+
+      | `Expr k ->
+        outexpr := !outexpr ^ String.sub s (!i) 1;
+        if s.[!i] = '(' then mode := `Expr (k+1)
+        else if s.[!i] = ')' then mode := `Expr (k-1)
+        ;
+        incr i
+    done
+    ;
+    begin match !mode with
+    | `Expr 0 ->
+      outexprs := !outexpr :: !outexprs;
+      outexpr := "";
+      mode := `Char
+    | `Expr k ->
+      clierr sr ("In q'" ^ s   ^"' require closing ) after $expr , got eos at level " ^ si k)
+    | `Char -> ()
+    end
+    ;
+    (* print_endline ("outstr=" ^ !outstr); *)
+    let outexprs = List.rev_map 
+      (fun x ->  
+        let n = String.length x in
+        if n < 3 then clierr sr ("in q'" ^ s ^ "', require $(ident)");
+        String.sub x 1 (n-2)
+      )
+      (!outexprs) 
+    in
+    (* List.iter (fun s -> print_endline ("Expr = " ^ s)) outexprs; *)
+    let xs = List.map (fun x -> EXPR_name (sr, x, [])) outexprs in
+    let str = EXPR_name (sr, "str",[]) in
+    let xs = List.map (fun x -> EXPR_apply (sr, (str,x) )) xs in
+    let res = EXPR_apply (sr, (EXPR_vsprintf (sr, !outstr), EXPR_tuple (sr,xs)))  in
+    rex res
+
   | EXPR_vsprintf (sr,s) ->
     let ix = seq () in
     let id = "_fmt_" ^ string_of_bid ix in

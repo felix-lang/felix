@@ -3180,6 +3180,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_patvar _
   | EXPR_patany _
   | EXPR_vsprintf _
+  | EXPR_interpolate _
   | EXPR_type_match _
   | EXPR_noexpand _
   | EXPR_letin _

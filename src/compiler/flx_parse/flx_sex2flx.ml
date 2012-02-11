@@ -133,6 +133,7 @@ and xexpr_t sr x =
   | Lst [x] -> ex x
   (* this term comes from the hard coded parser! *)
   | Lst [Id "ast_vsprintf";  Str s] -> EXPR_vsprintf (sr,s)
+  | Lst [Id "ast_interpolate";  Str s] -> EXPR_interpolate (sr,s)
   | Lst [Id "ast_noexpand"; sr; e] -> EXPR_noexpand (xsr sr,ex e)
   | Lst [Id "ast_name"; sr; id; Lst ts] -> EXPR_name (xsr sr, xid id, map ti ts)
   (* can't occur in user code

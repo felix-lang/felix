@@ -1,6 +1,6 @@
 syntax json {
   requires expressions;
-  x[sapplication_pri] := "json" "(" json_value ")" =># "_3";
+  x[sapplication_pri] := "json" "(" json_value ")" =># "`(ast_literal ,_sr (ast_string ,_3))";
 
   json_object : string = "{" "}";
   json_object : string = "{" json_members "}";

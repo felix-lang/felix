@@ -322,10 +322,6 @@ let dflt_action kind prod =
       ) "" prod
       ^ ")"
 
-    (* FIXME: perhaps should return a Felix string literal, not a scheme string? 
-     * However, consider we're using scheme strcat over ,_1 ,_2 etc so maybe
-     * this wouldn't compose .. so the translation needs to be done elsewhere!
-     *)
     | `String -> 
       "(strcat `(" ^
       List.fold_left (fun acc _ -> let n = !rn in incr rn;

@@ -15,6 +15,9 @@ all: build test doc
 build:
 	python3 fbuild/fbuild-light build
 
+build-clang:
+	python3 fbuild/fbuild-light build --build-cc=clang --build-cxx=clang++
+
 test:
 	python3 fbuild/fbuild-light test
 

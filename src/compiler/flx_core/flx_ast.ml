@@ -128,6 +128,7 @@ and axiom_method_t = Predicate of expr_t | Equation of expr_t * expr_t
  * Raw expression terms. *)
 and expr_t =
   | EXPR_vsprintf of Flx_srcref.t * string
+  | EXPR_interpolate of Flx_srcref.t * string
   | EXPR_map of Flx_srcref.t * expr_t * expr_t
   | EXPR_noexpand of Flx_srcref.t * expr_t
   | EXPR_name of Flx_srcref.t * Flx_id.t * typecode_t list
@@ -654,6 +655,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_patvar (s,_)
   | EXPR_patany s
   | EXPR_vsprintf (s,_)
+  | EXPR_interpolate (s,_)
   | EXPR_ellipsis s
   | EXPR_noexpand (s,_)
   | EXPR_product (s,_)
@@ -1117,6 +1119,9 @@ and print_pattern ppf = function
 and print_expr ppf = function
   | EXPR_vsprintf (_, s) ->
       print_variant1 ppf "EXPR_vsprintf"
+        print_string s
+  | EXPR_interpolate (_, s) ->
+      print_variant1 ppf "EXPR_interpolate"
         print_string s
   | EXPR_map (_, expr1, expr2) -> 
       print_variant2 ppf "EXPR_map"
