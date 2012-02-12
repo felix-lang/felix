@@ -137,17 +137,43 @@ bad:>
 
   private fun parse_string (s:string) (var i:int) = {
     var r = "";
-    while s.[i] != "".char and s.[i] != '"'.char do
+ordinary:>
+    while s.[i] != "".char and s.[i] != '"'.char and s.[i] != "\\".char do
+      if s.[i].ord < 32 goto bad; // control chars are not allowed
       r += s.[i];
       ++i;
     done
-    if s.[i] == '"'.char do
+
+    if s.[i] == '"'.char do // closing quote
       ++i;
-      return i,Good (Jstring r);
-    else
-      return i, Bad i;
+      goto good;
+    elif s.[i] == "\\".char do // escape
+      r += s.[i];
+      ++i;
+      if s.[i] in '"\\/bfnrt' do // one char escape code
+        r += s.[i];
+        ++i;
+        goto ordinary; 
+      elif s.[i] == "u".char do // hex escape
+        r += s.[i];
+        ++i;
+        if s.[i] in "0123456789ABCDEFabcdef" do r += s.[i]; ++i; else goto bad; done
+        if s.[i] in "0123456789ABCDEFabcdef" do r += s.[i]; ++i; else goto bad; done
+        if s.[i] in "0123456789ABCDEFabcdef" do r += s.[i]; ++i; else goto bad; done
+        if s.[i] in "0123456789ABCDEFabcdef" do r += s.[i]; ++i; else goto bad; done
+        goto ordinary;
+      else
+        goto bad;
+      done
+    else // end of input
+      goto bad;
     done
-  }
+
+good:>
+    return i,Good (Jstring r);
+bad:>
+    return i, Bad i;
+}
 
   private fun parse_dictionary (s:string) (var i:int) = {
     var elts = #list[Jvalue * Jvalue];
