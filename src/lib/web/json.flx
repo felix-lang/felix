@@ -2,7 +2,7 @@ open class Json
 {
   union Jvalue = 
   | Jstring of string
-  | Jinteger of string
+  | Jnumber of string
   | Jdictionary of list[Jpair]
   | Jarray of list [Jvalue]
   | Jname of string
@@ -13,7 +13,7 @@ open class Json
 
   fun str (v: Jvalue) : string => match v with
   | Jstring ?s => '"' + s + '"' // hack, ignores quoting rules
-  | Jinteger ?i => i
+  | Jnumber ?i => i
   | Jdictionary ?d => "{" + cat ", " (map str of (Jpair) d) + "}"
   | Jarray ?a => "[" + cat ", " (map str of (Jvalue) a) + "]"
   | Jname ?a => a
@@ -42,7 +42,7 @@ open class Json
   }
 
   private fun parse_value (s:string) (i:int): int * ParseResult =>
-    if s.[i] in "0123456789" then parse_int s i
+    if s.[i] in "-0123456789" then parse_number s i
     elif s.[i] == '"'.char then parse_string s (i+1)
     elif s.[i] == "{".char then parse_dictionary s (i+1)
     elif s.[i] ==  "[".char then parse_array s (i+1)
@@ -61,13 +61,78 @@ open class Json
     return i,Good (Jname j);
   }
 
-  private fun parse_int (s:string) (var i:int) = {
+  private fun parse_number (s:string) (var i:int) = {
     var j = "";
+
+    // optional leading sign
+    if s.[i] == "-".char do 
+      j += s.[i]; 
+      ++i;
+    done
+
+    // zero integral part
+    if s.[i] == "0".char do
+      j+= s.[i];
+      ++i;
+      goto point;
+    done
+
+    // nonzero integral part
+    if s.[i] in "123456789" do
+      j += s.[i];
+      ++i;
+    else 
+      goto bad;
+    done
+
+    // rest of integral part
     while s.[i] in "0123456789" do
        j += s.[i];
        ++i;
     done
-    return i,Good (Jinteger j);
+
+point:>
+    if s.[i] != ".".char goto exponent;
+    j += s.[i];
+    ++i;
+
+fraction:>
+    if s.[i] in "0123456789" do
+      while s.[i] in "0123456789" do
+         j += s.[i];
+         ++i;
+      done
+    else
+      goto bad;
+    done
+
+exponent:>
+    if s.[i] in "eE" do
+      j += s.[i];
+      ++i;
+    else
+      goto good;
+    done
+
+    // sign of exponent
+    if s.[i] in "+-" do
+      j += s.[i];
+      ++i;
+    done
+
+    // exponent value
+    if s.[i] in "0123456789" do
+      while s.[i] in "0123456789" do
+      j += s.[i];
+      ++i;
+      done
+    else
+      goto bad;
+    done
+good:>
+    return i,Good (Jnumber j);
+bad:>
+    return i, Bad i;
   }
 
   private fun parse_string (s:string) (var i:int) = {
