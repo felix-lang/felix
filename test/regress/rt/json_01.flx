@@ -1,0 +1,3 @@
+val x = json ( [true, 12_3.4, 'Hello', {"HI": 1, "LO":2}, null] );
+println$ x;
+
