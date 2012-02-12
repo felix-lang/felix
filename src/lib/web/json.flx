@@ -58,7 +58,11 @@ open class Json
        j += s.[i];
        ++i;
     done
-    return i,Good (Jname j);
+    if j in ("true","false","null") do
+      return i,Good (Jname j);
+    else
+      return i, Bad i;
+    done
   }
 
   private fun parse_number (s:string) (var i:int) = {
