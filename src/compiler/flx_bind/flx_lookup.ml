@@ -4188,7 +4188,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
           *)
           let vidx =
             let rec scan = function
-            | [] -> failwith "Can't find union variant"
+            | [] -> failwith ("EXPR_match_ctor: Can't find union variant " ^ name)
             | (vn,vidx,vs',vat)::_ when vn = name -> vidx
             | _:: t -> scan t
             in scan ls
@@ -4232,7 +4232,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
           *)
           let vidx =
             let rec scan = function
-            | [] -> failwith "Can't find union variant"
+            | [] -> failwith ("AST_lookup1: Can't find union variant " ^ name)
             | (vn,vidx,vs,vat)::_ when vn = name -> vidx
             | _:: t -> scan t
             in scan ls
@@ -4306,7 +4306,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 
           let vidx,vs', vt =
             let rec scan = function
-            | [] -> failwith "Can't find union variant"
+            | [] -> failwith ("EXPR_ctor_arg: Can't find union variant " ^ name);
             | (vn,vidx,vs',vt)::_ when vn = name -> vidx,vs',vt
             | _:: t -> scan t
             in scan ls
@@ -4369,7 +4369,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
           *)
           let vidx,vt =
             let rec scan = function
-            | [] -> failwith "Can't find union variant"
+            | [] -> failwith ("AST_lookup2: Can't find union variant " ^ name)
             | (vn,vidx,vs',vt)::_ when vn = name -> vidx,vt
             | _:: t -> scan t
             in scan ls
