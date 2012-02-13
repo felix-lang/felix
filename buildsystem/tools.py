@@ -13,7 +13,7 @@ def build(phase, felix):
     exe = felix.compile(phase.ctx.buildroot/'tools/webserver.flx', static=True)
     fbuild.builders.file.copy(phase.ctx, exe, 'bin')
 
-    exe = felix.compile(phase.ctx.buildroot/'tools/launch.flx', static=True)
+    exe = felix.compile(phase.ctx.buildroot/'tools/norK.flx', static=True)
     fbuild.builders.file.copy(phase.ctx, exe, 'bin')
 
     exe = felix.compile(phase.ctx.buildroot/'tools/rentut.flx', static=True)
