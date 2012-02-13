@@ -53,7 +53,7 @@ class Output_text_file[output_text_file]
   proc space (s:output_text_file) { write (s, " "); };
   proc endl (s:output_text_file) { write (s, "\n"); };
   proc fprint[T with Str[T]] (s:output_text_file, x:T) { write (s, str x); };
-  proc fprintln[T with Str[T]] (s:output_text_file, x:T) { write (s, str x); endl s; };
+  proc fprintln[T with Str[T]] (s:output_text_file, x:T) { write (s, str x+"\n"); };
 }
 
 open class Cstdio {
@@ -126,14 +126,14 @@ open class Iostream {
     proc fclose: istream = '$1->close();';
     gen load: istream -> string = "::flx::rtl::ioutil::load_file($1)";
     gen readln: istream -> string ="::flx::rtl::ioutil::readln($1)";
-    gen feof : istream -> bool = "$1->eof()";
+    gen feof : istream -> bool = "$1->eof() || $1->fail()";
   }
 
   instance Output_text_file[ostream] {
     requires package "flx_ioutil";
     gen fopen_output: string -> ostream = '::std::fopen($1.c_str(),"wt")';
     gen valid : ostream -> bool = "!$1->fail()";
-    proc fclose: ostream = '$1->close();';
+    proc fclose: ostream = '$1->setstate(::std::ios::eofbit);';
     proc writeln : ostream * string ="::flx::rtl::ioutil::writeln($1,$2);";
     proc write : ostream * string ="::flx::rtl::ioutil::write($1,$2);";
     proc write : ostream * utiny ="$1->put($2);";
@@ -148,7 +148,7 @@ open Output_text_file[Iostream::ostream];
 
 // convenience writes to cout
 proc print  [T with Str[T]] (x:T) { fprint (cout, x); };
-proc println[T with Str[T]] (x:T) { fprint (cout, x); endl cout; };
+proc println[T with Str[T]] (x:T) { fprintln (cout, x); };
 proc endl() { endl cout; }
 proc space() { space cout; }
 proc fflush() { fflush cout; }
@@ -156,7 +156,7 @@ proc fflush() { fflush cout; }
 
 // convenience writes to cerr
 proc eprint  [T with Str[T]] (x:T) { fprint (cerr, x); };
-proc eprintln[T with Str[T]] (x:T) { fprint (cerr, x); endl cerr; };
+proc eprintln[T with Str[T]] (x:T) { fprintln (cerr, x);};
 proc eendl() { endl cerr; }
 proc espace() { space cerr; }
 

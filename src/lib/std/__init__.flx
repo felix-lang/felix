@@ -51,6 +51,7 @@ include "std/fibres";
 include "std/pthread";
 include "std/pchannels";
 include "std/mutex";
+include "std/ts_bound_queue";
 
 //memory management
 include "std/gc";

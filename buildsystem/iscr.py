@@ -220,7 +220,7 @@ def _print_compiler(ctx, lang, platform, p):
             ' '.join('-I' + i for i in static.compiler.cc.includes) + ' ' +
             ' '.join('-m' + i for i in static.compiler.cc.machine_flags) + ' ' +
             ('-arch ' + static_arch if static_arch else '') + ' ' +
-            ' -Wall -Wno-invalid-offsetof -Wfatal-errors')
+            ' '.join('-W' + i for i in static.compiler.cc.warnings))
 
         p('CCLINK_STATIC', str(static.exe_linker.cc.exe) + ' ' +
             ' '.join(shared.exe_linker.flags) + ' ' +
@@ -234,7 +234,7 @@ def _print_compiler(ctx, lang, platform, p):
             ' '.join('-I' + i for i in shared.compiler.cc.includes) + ' ' +
             ('-arch ' + shared_arch if shared_arch else '') + ' ' +
             ' '.join('-m' + i for i in shared.compiler.cc.machine_flags) + ' ' +
-            ' -Wall -Wno-invalid-offsetof -Wfatal-errors')
+            ' '.join('-W' + i for i in static.compiler.cc.warnings)) 
 
         p('CCLINK_DYNAMIC_FLX', str(shared.lib_linker.cc.exe) + ' ' +
             ' '.join(shared.lib_linker.flags) + ' ' +
@@ -363,12 +363,11 @@ def _print_posix_support(platform, lang, p):
         p('HAVE_DLOPEN', True)
         p('SUPPORT_DYNAMIC_LOADING', True)
         switch = list(dlfcn_h.flags)
-        switch.extend('-L' + p for p in dlfcn_h.libpaths)
+        p('DYNAMIC_LOADING_CFLAGS', ' '.join(switch))
+        switch=list('-L' + p for p in dlfcn_h.libpaths)
         switch.extend('-l' + l for l in dlfcn_h.libs)
         switch.extend('-l' + l for l in dlfcn_h.external_libs)
-        if switch:
-            p('CCLINK_STATIC+=" " + %r' % ' '.join(switch))
-            p('CCLINK_DYNAMIC_FLX+=" " + %r' % ' '.join(switch))
+        p('DYNAMIC_LOADING_LIBS', ' '.join(switch))
     else:
         p('HAVE_DLOPEN', False)
 
@@ -383,10 +382,11 @@ def _print_posix_support(platform, lang, p):
     if pthread_h.pthread_create:
         p('HAVE_PTHREADS', True)
         switch = list(pthread_h.flags)
-        switch.extend('-L' + p for p in pthread_h.libpaths)
+        p('PTHREAD_CFLAGS', ' '.join(switch))
+        switch=list('-L' + p for p in pthread_h.libpaths)
         switch.extend('-l' + l for l in pthread_h.libs)
         switch.extend('-l' + l for l in pthread_h.external_libs)
-        p('PTHREAD_SWITCH', ' '.join(switch))
+        p('PTHREAD_LIBS', ' '.join(switch))
     else:
         p('HAVE_PTHREADS', False)
 

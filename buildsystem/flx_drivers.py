@@ -49,7 +49,12 @@ def build(host_phase, target_phase):
         dst='bin/flx_arun',
         srcs=[path / 'flx_arun.cxx'],
         includes=arun_includes,
-        libs=[call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).shared],
+        libs=[
+           call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).shared,
+           call('buildsystem.flx_pthread.build_runtime', target_phase).shared,
+           call('buildsystem.flx_async.build_runtime', target_phase).shared,
+           call('buildsystem.demux.build_runtime', target_phase).shared,
+           call('buildsystem.faio.build_runtime', target_phase).shared],
     )
 
     return Record(

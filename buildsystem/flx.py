@@ -170,7 +170,7 @@ class Builder(fbuild.db.PersistentObject):
             stdout_quieter=1)
 
         with open(includes, 'w') as f:
-            for include in stdout.decode().strip().split(' '):
+            for include in stdout.decode('ascii').strip().split(' '):
                 print('#include %s' % include, file=f)
 
         return resh, includes
@@ -266,9 +266,9 @@ def compile_flx(phase, felix, src, *args, **kwargs):
         except fbuild.ExecutionError as e:
             phase.ctx.logger.log(e, verbose=1)
             if e.stdout:
-                phase.ctx.logger.log(e.stdout.decode().strip(), verbose=1)
+                phase.ctx.logger.log(e.stdout.decode('ascii').strip(), verbose=1)
             if e.stderr:
-                phase.ctx.logger.log(e.stderr.decode().strip(), verbose=1)
+                phase.ctx.logger.log(e.stderr.decode('ascii').strip(), verbose=1)
             passed = False
     return passed
 
@@ -284,9 +284,9 @@ def test_flx(phase, felix, src, *args, **kwargs):
         except fbuild.ExecutionError as e:
             phase.ctx.logger.log(e, verbose=1)
             if e.stdout:
-                phase.ctx.logger.log(e.stdout.decode().strip(), verbose=1)
+                phase.ctx.logger.log(e.stdout.decode('ascii').strip(), verbose=1)
             if e.stderr:
-                phase.ctx.logger.log(e.stderr.decode().strip(), verbose=1)
+                phase.ctx.logger.log(e.stderr.decode('ascii').strip(), verbose=1)
             passed = False
             continue
 
@@ -328,9 +328,9 @@ def check_flx(ctx, felix,
 
         ctx.logger.log(e, verbose=1)
         if e.stdout:
-            ctx.logger.log(e.stdout.decode().strip(), verbose=1)
+            ctx.logger.log(e.stdout.decode('ascii').strip(), verbose=1)
         if e.stderr:
-            ctx.logger.log(e.stderr.decode().strip(), verbose=1)
+            ctx.logger.log(e.stderr.decode('ascii').strip(), verbose=1)
         return False
 
     with open(dst, 'wb') as f:
@@ -351,8 +351,8 @@ def check_flx(ctx, felix,
         else:
             ctx.logger.failed('failed: output does not match')
             for line in difflib.ndiff(
-                    stdout.decode().split('\n'),
-                    s.decode().split('\n')):
+                    stdout.decode('ascii').split('\n'),
+                    s.decode('ascii').split('\n')):
                 ctx.logger.log(line)
             dst.remove()
             return False

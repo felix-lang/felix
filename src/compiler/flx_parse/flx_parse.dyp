@@ -627,6 +627,11 @@ main lexer =
  ('f'|'F') dquote -> FSTRING { parse_dstring lexbuf }
  ('f'|'F') ddd    -> FSTRING { parse_dddstring lexbuf }
 
+/* Interpolation strings */
+ ('q'|'Q') qqq    -> QSTRING { parse_qqqstring lexbuf }
+ ('q'|'Q') dquote -> QSTRING { parse_dstring lexbuf }
+ ('q'|'Q') ddd    -> QSTRING { parse_dddstring lexbuf }
+
 /* wide strings */
  ('w' | 'W') qqq    -> WSTRING { parse_qqqstring lexbuf }
  ('w' | 'W') dquote -> WSTRING { parse_dstring lexbuf }

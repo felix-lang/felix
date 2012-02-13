@@ -1,5 +1,4 @@
 include "std/posix/filesystem";
-open Text_file;
 
 re := RE2("tut_\\d*\\.fdoc");
 docs := FileSystem::regfilesin("src/web/", re);

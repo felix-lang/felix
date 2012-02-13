@@ -322,7 +322,7 @@ let dflt_action kind prod =
       ) "" prod
       ^ ")"
 
-    | `String ->
+    | `String -> 
       "(strcat `(" ^
       List.fold_left (fun acc _ -> let n = !rn in incr rn;
         (if acc = "" then "" else acc ^ " ") ^ ",_" ^ string_of_int n

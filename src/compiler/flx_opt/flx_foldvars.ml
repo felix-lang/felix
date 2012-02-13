@@ -99,7 +99,7 @@ let locals bsym_table uses i =
   BidSet.diff kids u
 
 
-let fold_vars syms bsym_table uses i ps exes =
+let fold_vars syms bsym_table uses i ps exes = 
   let pset = fold_left (fun s {pindex=i}-> BidSet.add i s) BidSet.empty ps in
   let kids = Flx_bsym_table.find_children bsym_table i in
   (*

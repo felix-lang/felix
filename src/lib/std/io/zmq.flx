@@ -112,7 +112,7 @@ class ZeroMQ {
 
   header "typedef int zmq_socket_type_t;";
   cenum zmq_socket_type_t =   
-    ZMQ_PAIR, ZMQ_PUB, ZMQ_SUB, ZMQ_REQ, ZMQ_REP, ZMQ_XREQ, ZMQ_XREP,
+    ZMQ_PAIR, ZMQ_PUB, ZMQ_SUB, ZMQ_REQ, ZMQ_REP, 
     ZMQ_PULL, ZMQ_PUSH, ZMQ_XPUB, ZMQ_XSUB, ZMQ_ROUTER, ZMQ_DEALER 
   ;
 
@@ -123,8 +123,6 @@ class ZeroMQ {
     | $(ZMQ_SUB) => "ZMQ_SUB"
     | $(ZMQ_REQ) => "ZMQ_REQ"
     | $(ZMQ_REP) => "ZMQ_REP"
-    | $(ZMQ_XREQ) => "ZMQ_XREQ"
-    | $(ZMQ_XREP) => "ZMQ_XREP"
     | $(ZMQ_PULL) => "ZMQ_PULL"
     | $(ZMQ_PUSH) => "ZMQ_PUSH"
     | $(ZMQ_XPUB) => "ZMQ_XPUB"

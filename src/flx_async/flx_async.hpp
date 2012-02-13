@@ -2,6 +2,7 @@
 #define __FLX_ASYNC_H__
 #include "flx_rtl_config.hpp"
 #include "flx_rtl.hpp"
+#include "pthread_bound_queue.hpp"
 
 #ifdef BUILD_ASYNC
 #define ASYNC_EXTERN FLX_EXPORT
@@ -40,5 +41,36 @@ create_async_hooker
   int m2    // number of threads doing async fileio
 );
 }
+
+namespace flx { namespace async {
+struct ASYNC_EXTERN finote_t
+{
+  virtual void signal()=0;
+  virtual ~finote_t(){}
+};
+
+class ASYNC_EXTERN wakeup_fthread_t : public finote_t
+{
+  ::flx::rtl::fthread_t *f;
+  ::flx::pthread::bound_queue_t *q;
+public:
+  wakeup_fthread_t(::flx::pthread::bound_queue_t *q_a, ::flx::rtl::fthread_t *f_a) : f(f_a), q(q_a) {}
+  void signal () { q->enqueue(f); }
+};
+
+
+class ASYNC_EXTERN flx_driver_request_base {
+    finote_t *fn;
+    virtual bool start_async_op_impl() = 0;
+public:
+    flx_driver_request_base() : fn(0) {}
+    virtual ~flx_driver_request_base() {}       // so destructors work
+
+    // returns finished flag (async may fail or immediately finish)
+    void start_async_op(finote_t *fn_a);
+    void notify_finished();
+};
+
+}}
 
 #endif

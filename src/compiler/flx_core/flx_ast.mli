@@ -122,6 +122,7 @@ and axiom_method_t = Predicate of expr_t | Equation of expr_t * expr_t
  * Raw expression terms. *)
 and expr_t =
   | EXPR_vsprintf of Flx_srcref.t * string
+  | EXPR_interpolate of Flx_srcref.t * string
   | EXPR_map of Flx_srcref.t * expr_t * expr_t
   | EXPR_noexpand of Flx_srcref.t * expr_t
   | EXPR_name of Flx_srcref.t * Flx_id.t * typecode_t list

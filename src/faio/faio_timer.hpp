@@ -3,7 +3,7 @@
 #include <flx_faio_config.hpp>
 
 #include "demux_demuxer.hpp"        // sel_param, demuxer base
-#include "faio_asyncio.hpp"
+#include "flx_async.hpp"
 #include "demux_timer_queue.hpp"
 
 #include "flx_rtl.hpp"
@@ -13,7 +13,7 @@ namespace flx { namespace faio {
 
 // sleeping
 class FAIO_EXTERN sleep_request
-  : public flx_driver_request_base, public demux::sleep_task
+  : public ::flx::async::flx_driver_request_base, public demux::sleep_task
 {
   demux::timer_queue *sleepers;
   double      delta;

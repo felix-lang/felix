@@ -84,6 +84,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
 let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_patvar _
   | EXPR_patany _
+  | EXPR_interpolate _ 
   | EXPR_vsprintf _ -> e
   | EXPR_map (sr,a,b) -> EXPR_map (sr,f a, f b)
   | EXPR_noexpand (sr,x) -> e (* DO NOT EXPAND .. HMM .. *)
@@ -155,6 +156,7 @@ let iter_expr f (e:expr_t) =
   match e with
   | EXPR_patvar _
   | EXPR_patany _
+  | EXPR_interpolate _
   | EXPR_vsprintf _
   | EXPR_name _
   | EXPR_callback _

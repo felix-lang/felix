@@ -2,7 +2,7 @@
 #define __FLX_FAIO_DRV_H__
 #include <flx_faio_config.hpp>
 
-#include "pthread_sleep_queue.hpp"
+#include "pthread_bound_queue.hpp"
 #include "pthread_work_fifo.hpp"
 #include "demux_timer_queue.hpp"
 #include "demux_demuxer.hpp"

@@ -54,6 +54,7 @@ def build_runtime(phase):
     includes = [
         phase.ctx.buildroot / 'config/target',
         Path('src', 'pthread'),
+        Path('src', 'gc'),
         path,
     ]
     macros = ['BUILD_DEMUX']

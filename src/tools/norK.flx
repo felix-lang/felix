@@ -106,7 +106,7 @@ group10 :=
 ;
 
 fun pack_args(t:list[string]) = {
-  var out = array_alloc[&char] t.len+1;
+  var out = array_alloc[&char] (t.len+1uz);
   var i = 0;
   for k in t do out.[i]=strdup k.cstr; ++i; done
   out.[i] = C_hack::null[char];
@@ -120,30 +120,47 @@ fun make_args(p:list[string]) =>
 open Process;
 
 noinline proc launch_managed_process (
-  port: opchannel[string], 
-  name:string, 
-  inargs:list[string], 
-  timelimit:double) 
+  var q: ts_bound_queue_t[string],  
+  var name:string, 
+  var inargs:list[string], 
+  var timelimit:double)
 {
+  gen setup()= { eprintln$ "BAD SETUP DONE"; return 1; }
+
   //eprintln$ "name=" + name;
   def val pn, val outargs = make_args inargs;
   spawn_pthread { 
     start_time := #Time::time;
     eprintln$ "[" + name + "] "+"Process Monitoring pthread for " +pn+ " start at " + start_time.int.str;
-    result := spawnv(pn, outargs);
+    result := spawnv(pn, outargs, setup);
     match result with
-    | Error ?e =>
-      eprintln$ "[" + name + "] "+"Error opening process for program " + pn + ": " +strerror e;
+    // Child, exec failed
+    | BadExec ?e =>
+      eprintln$ "[" + name + "] "+"[Child] Error executing program " + pn + ": " +strerror e;
+      System::exit e.int; // exit child
+
+    // Child
+    | BadSetup ?ret =>
+      eprintln$ "[" + name + "] "+"[Child] Setup Failed Code " + ret.str;
+      System::exit ret; // exit child
+
+    // Parent, fork failed
+    | BadFork ?e =>
+      eprintln$ "[" + name + "] "+"Fork failed for program " + pn + ": " +strerror e;
+      goto finish;
+
+    // Parent, child running
     | ProcessId ?pid =>
       eprintln$ "[" + name + "] "+"Process " + pid.int.str + " created for program " + pn;
+
     check_pid:>
-      val status = checkpid(pid);
+      var status = checkpid(pid);
       match status with
       | Running => 
         if Time::time() - start_time > timelimit do
            C_hack::ignore$ Process::kill(pid, Posix_Signal::SIGKILL);
            eprintln$  "[" + name + "] "+"KILL: Process "+pid.int.str +" for " + pn + " exceeded time limit " + str timelimit;
-        elif #get_ctrl_c do
+        elif #Posix_Signal::get_ctrl_c_flag do
            C_hack::ignore$ Process::kill(pid, Posix_Signal::SIGKILL);
            eprintln$  "[" + name + "] "+"KILL: Process "+pid.int.str +" for " + pn + " due to Ctrl-C";
         else
@@ -154,53 +171,103 @@ noinline proc launch_managed_process (
         goto check_pid;
 
       | Stopped ?status =>
-        eprintln$ "[" + name + "] "+"Exit "+ pid.int.str+" status " + str status.int;
+        eprintln$ "[" + name + "] "+ status.str;
       endmatch;
     endmatch;
+finish:>
     eprintln$ "[" + name + "] "+"Monitoring pthread for "+pn+" done finish at " + #Time::time.int.str;
-    write (port, "DEAD");
+    q.enqueue(name);
     eprintln$ "[" + name + "] "+"Signalled DEAD for "+pn;
   };
 }
 
-noinline proc funeral(port:ipchannel[string], name:string, process_count: &int)
-{
-  spawn_fthread { 
-    assert read port == "DEAD"; 
-    process_count <- *process_count - 1; 
-    eprintln$ "Funeral of " + name; 
-  };
-}
 
-noinline proc launch_managed_processes (inp: string * list[string * list[string]], timelimit: double) {
-  desc, tinp := inp;
+noinline proc launch_managed_processes (var inp: string * list[string * list[string]], var timelimit: double) {
+  def var desc, var tinp = inp;
   eprintln desc;
+  var q = ts_bound_queue_t[string] 100;
   var process_count = 0;
   for k in tinp do
-    name, args := k;
-    eprintln$ name, args;
-    def var iport, var oport = mk_iopchannel_pair[string]();
-    launch_managed_process(oport, name, args, timelimit);
+    def var name, var args = k;
+    //eprintln$ name, args;
+    launch_managed_process(q, name, args, timelimit);
     ++process_count;
-    funeral(iport, name, &process_count);
   done
-  while process_count > 0 do Faio::sleep(sys_clock,1.0); done
+  while process_count > 0 do 
+    var death_name = q.dequeue;
+    eprintln$ "["death_name+ "] Process Funeral";
+    --process_count;
+  done
   eprintln$ "Finished with group " + desc;
   eprintln$ "-" * 20;
 }
 
 //launch_managed_process ("p1proc", list("./p1"),10.0);
 
-trap_ctrl_c;
+Posix_Signal::trap_ctrl_c;
 
-launch_managed_processes (group1, 20.0);
-launch_managed_processes (group2, 20.0);
-launch_managed_processes (group3, 20.0);
-launch_managed_processes (group4, 20.0);
-launch_managed_processes (group5, 20.0);
-launch_managed_processes (group6, 20.0);
-launch_managed_processes (group7, 20.0);
-launch_managed_processes (group8, 20.0);
+// Create a thread to capture all stderr output, from
+// both this application and its threads, and also
+// any such output from the launched processes
+// The thread will grab all that stuff and republish
+// it with timestamps
+
+proc emux() {
+  // make a new file descriptor that goes to where stderr used to go
+  var old_stderr = FileSystem::dup(FileSystem::fd2);
+
+  // make a pipe
+  var inp, out = FileSystem::pipe(); 
+
+  // reassign the write end of the pipe to stderr
+  C_hack::ignore$ FileSystem::dup2(out,FileSystem::fd2); 
+
+  // close the fd of the write end, now it is re-assigned
+  C_hack::ignore$ FileSystem::close(out); 
+
+  // create a C stream associated with the read end of the pipe
+  var input_file = FileSystem::fdopen_input inp;
+
+  // create a C stream associated with the old error channel
+  var output_file = FileSystem::fdopen_output old_stderr;
+
+  spawn_pthread {
+     while not feof input_file do
+       var msg = readln input_file;
+       if msg == "" goto finish;
+       write$ output_file, "STDERR capture: " + msg; 
+     done
+  finish:>
+
+  // close the old error channel so any process that called us
+  // can get an eof on their stderr
+  fclose output_file;
+
+  // close the C stream and underlying fd of the read end of the pipe
+  fclose input_file;
+  };
+
+}
+
+emux();
+
+run:for group in (group1, group2, group3, group4, group5, group6,
+  group7, group8, group9)
+do
+  launch_managed_processes (group, 20.0);
+  if #Posix_Signal::get_ctrl_c_flag do break run; done
+done
 
 eprintln "Mainline waiting for pthreads";
+
+// we can't close err, because it isn't an fostream
+// so close stderr instead: that's actually the write
+// end of the pipe
+fclose stderr;
+
+// close the underlying pipe fd as well for good measure.
+C_hack::ignore$ FileSystem::close FileSystem::fd2;
+
+// emergency suicide of our whole family
+//C_hack::ignore$ kill(OUR_PROCESS_GROUP,Posix_Signal::SIGKILL);
 

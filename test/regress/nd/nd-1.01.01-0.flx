@@ -1,6 +1,6 @@
 //Check garbage collector
 open List;
-Control::collect();
+Gc::collect();
 var a = list(1,2,3,4);
 fun conv (a:list[int])=>
   fold_left
@@ -12,24 +12,22 @@ fun conv (a:list[int])=>
 ;
 
 var x = conv a;
-Control::collect();
-println q"x=$(x)";
-Control::collect();
+Gc::collect();
+println$ "x="+str x;
+Gc::collect();
 x = conv x;
-Control::collect();
-println q"x=$(x)";
-Control::collect();
-/*
+Gc::collect();
+println$ "x=" + str x;
+Gc::collect();
 x = conv x;
-Control::collect();
-println q"x=$(x)";
-Control::collect();
-*/
+Gc::collect();
+//println$ "x="+str x;
+Gc::collect();
 
 var x_sum = fold_left (fun (acc:int) (item:int)=>acc+item) 0 x;
 var y = map (fun (item:int)=> item * item) x;
 var y_sum = fold_left (fun (acc:int) (item:int)=>acc+item) 0 y;
 
-println q"x_sum=$x_sum, y_sum=$(y_sum)";
+println$ "x_sum="+ str x_sum+ ", y_sum" + str y_sum;
 
 

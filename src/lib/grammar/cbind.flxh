@@ -172,6 +172,25 @@ syntax cbind {
       )
     """;
 
+  tstatement := "cflags" sname "=" sbasic_name_comma_list srequires_clause ";" =>#
+    """
+      (begin 
+         (define (constdef sym) 
+          `(ast_const_decl ,_sr ,sym ,dfltvs ,(nos _2) (Str ,sym) ,_5))
+           (let* 
+             (
+               (tdec `(ast_abs_decl ,_sr ,_2 ,dfltvs (Pod) (Str ,_2) ,_5))
+               (argt `(ast_product ,_sr (,(nos _2) ,(nos _2))))
+               (eqdef `(ast_fun_decl ,_sr "==" ,dfltvs ,(mkl2 argt) ,(nos "bool") (StrTemplate "$1==$2") rreq_true ""))
+               (instdef `(ast_instance ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2))) (,eqdef)))
+               (inherit `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2)))))
+               (inherit2 `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Bits" (,(nos _2)))))
+             )
+             `(ast_seq ,_sr ,(append `(,tdec ,instdef ,inherit ,inherit2) (map constdef _4)))
+           )
+      )
+    """;
+
 
   // note: also needed by typeclasses atm for virtual procs
   tstatement := sadjectives sproc_kind sdeclname ":" stypeexpr sopt_cstring srequires_clause ";" =>#

@@ -154,6 +154,7 @@ and string_of_expr (e:expr_t) =
 
   | EXPR_patvar (sr,s) -> "?" ^ string_of_id s
   | EXPR_patany sr -> "ANY"
+  | EXPR_interpolate (sr,s) -> "q"^string_of_string s
   | EXPR_vsprintf (sr,s) -> "f"^string_of_string s
   | EXPR_ellipsis _ -> "..."
   (*

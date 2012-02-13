@@ -78,6 +78,7 @@ syn keyword felixStatement endif
 syn keyword felixStatement endmatch
 syn keyword felixStatement enum
 syn keyword felixStatement cenum
+syn keyword felixStatement cflags
 syn keyword felixStatement expect
 syn keyword felixStatement export
 syn keyword felixStatement extern
@@ -173,6 +174,8 @@ syn keyword felixDefine body
 syn keyword felixDefine comment
 syn keyword felixDefine export
 syn keyword felixDefine header
+syn keyword felixDefine scanner 
+syn keyword felixDefine finaliser 
 syn keyword felixDefine include inherit inline
 syn keyword felixDefine macro
 syn keyword felixDefine noinline
