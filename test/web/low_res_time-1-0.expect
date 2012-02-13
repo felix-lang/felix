@@ -1,2 +1,4 @@
 
-low_res_time-1-0 pass test1 passed
+ Input: Mon, 16 Jan 2012 14:20:07 GMT
+Output: Mon, 16 Jan 2012 14:20:07 GMT
+Output: Mon, 16 Jan 2012 14:20:07 EST
