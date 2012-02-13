@@ -126,14 +126,14 @@ open class Iostream {
     proc fclose: istream = '$1->close();';
     gen load: istream -> string = "::flx::rtl::ioutil::load_file($1)";
     gen readln: istream -> string ="::flx::rtl::ioutil::readln($1)";
-    gen feof : istream -> bool = "$1->eof()";
+    gen feof : istream -> bool = "$1->eof() || $1->fail()";
   }
 
   instance Output_text_file[ostream] {
     requires package "flx_ioutil";
     gen fopen_output: string -> ostream = '::std::fopen($1.c_str(),"wt")';
     gen valid : ostream -> bool = "!$1->fail()";
-    proc fclose: ostream = '$1->close();';
+    proc fclose: ostream = '$1->setstate(::std::ios::eofbit);';
     proc writeln : ostream * string ="::flx::rtl::ioutil::writeln($1,$2);";
     proc write : ostream * string ="::flx::rtl::ioutil::write($1,$2);";
     proc write : ostream * utiny ="$1->put($2);";

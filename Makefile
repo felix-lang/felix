@@ -21,6 +21,9 @@ build-clang:
 test:
 	python3 fbuild/fbuild-light test
 
+test-clang:
+	python3 fbuild/fbuild-light build --build-cc=clang --build-cxx=clang++ test
+
 
 #
 # debug build
@@ -71,6 +74,9 @@ test64-debug:
 #
 doc:
 	python3 fbuild/fbuild-light doc
+
+doc-clang:
+	python3 fbuild/fbuild-light build --build-cc=clang --build-cxx=clang++ doc
 
 #
 # Install default build into /usr/local/lib/felix/version/

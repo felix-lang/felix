@@ -78,6 +78,7 @@ syn keyword felixStatement endif
 syn keyword felixStatement endmatch
 syn keyword felixStatement enum
 syn keyword felixStatement cenum
+syn keyword felixStatement cflags
 syn keyword felixStatement expect
 syn keyword felixStatement export
 syn keyword felixStatement extern

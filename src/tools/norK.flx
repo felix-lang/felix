@@ -222,16 +222,29 @@ proc emux() {
   // reassign the write end of the pipe to stderr
   C_hack::ignore$ FileSystem::dup2(out,FileSystem::fd2); 
 
+  // close the fd of the write end, now it is re-assigned
+  C_hack::ignore$ FileSystem::close(out); 
+
+  // create a C stream associated with the read end of the pipe
   var input_file = FileSystem::fdopen_input inp;
+
+  // create a C stream associated with the old error channel
   var output_file = FileSystem::fdopen_output old_stderr;
 
   spawn_pthread {
      while not feof input_file do
        var msg = readln input_file;
-       if msg == "$$EOF$$\n" goto finish;
+       if msg == "" goto finish;
        write$ output_file, "STDERR capture: " + msg; 
      done
   finish:>
+
+  // close the old error channel so any process that called us
+  // can get an eof on their stderr
+  fclose output_file;
+
+  // close the C stream and underlying fd of the read end of the pipe
+  fclose input_file;
   };
 
 }
@@ -246,7 +259,14 @@ do
 done
 
 eprintln "Mainline waiting for pthreads";
-eprintln "$$EOF$$";
+
+// we can't close err, because it isn't an fostream
+// so close stderr instead: that's actually the write
+// end of the pipe
+fclose stderr;
+
+// close the underlying pipe fd as well for good measure.
+C_hack::ignore$ FileSystem::close FileSystem::fd2;
 
 // emergency suicide of our whole family
 //C_hack::ignore$ kill(OUR_PROCESS_GROUP,Posix_Signal::SIGKILL);
