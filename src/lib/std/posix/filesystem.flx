@@ -28,6 +28,9 @@ class FileSystem
   pod type posix_file = "int";
   fun valid: posix_file -> bool = "$1 != -1";
   ctor int : posix_file = "$1";
+  const fd0 : posix_file = "0";
+  const fd1 : posix_file = "1";
+  const fd2 : posix_file = "2";
 
   gen open: string * file_perm_t * FileStat::mode_t -> posix_file = "open($1.c_str(), $2, $3)";
   gen open: string * file_perm_t -> posix_file = "open($1.c_str(), $2)";
@@ -41,6 +44,25 @@ class FileSystem
   gen read: posix_file * &char * size -> size = "read($1, $2, $3)";
   gen write: posix_file * &char * size -> size = "write($1, $2, $3)";
 
+  gen dup: posix_file -> posix_file = "dup($1)" requires Posix_headers::unistd_h;
+  gen dup2: posix_file * posix_file -> posix_file = "dup2($1,$2)" requires Posix_headers::unistd_h;
+  header piper_def = """
+    struct _piper_hack { int i; int o; };
+  """;
+  body piper_def = """
+    _piper_hack _piper() {
+      _piper_hack p;
+      pipe((int*)(void*)&p);
+      return p;
+    }
+  """ requires Posix_headers::unistd_h;
+  private cstruct _piper_hack { i:posix_file; o:posix_file; };
+  private gen _piper: 1 -> _piper_hack requires piper_def;
+  private fun _mkpair (x: _piper_hack) => x.i, x.o;
+  gen pipe () => _mkpair #_piper;
+
+  gen fdopen_input: posix_file ->  ifile = 'fdopen($1,"r")';
+  gen fdopen_output: posix_file ->  ofile = 'fdopen($1,"w")';
 
   //------------------------------------------------------------
   // delete (unlink) a file

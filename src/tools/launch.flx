@@ -123,19 +123,36 @@ noinline proc launch_managed_process (
   var q: ts_bound_queue_t[string],  
   var name:string, 
   var inargs:list[string], 
-  var timelimit:double) 
+  var timelimit:double)
 {
+  gen setup()= { eprintln$ "BAD SETUP DONE"; return 1; }
+
   //eprintln$ "name=" + name;
   def val pn, val outargs = make_args inargs;
   spawn_pthread { 
     start_time := #Time::time;
     eprintln$ "[" + name + "] "+"Process Monitoring pthread for " +pn+ " start at " + start_time.int.str;
-    result := spawnv(pn, outargs);
+    result := spawnv(pn, outargs, setup);
     match result with
-    | Error ?e =>
-      eprintln$ "[" + name + "] "+"Error opening process for program " + pn + ": " +strerror e;
+    // Child, exec failed
+    | BadExec ?e =>
+      eprintln$ "[" + name + "] "+"[Child] Error executing program " + pn + ": " +strerror e;
+      System::exit e.int; // exit child
+
+    // Child
+    | BadSetup ?ret =>
+      eprintln$ "[" + name + "] "+"[Child] Setup Failed Code " + ret.str;
+      System::exit ret; // exit child
+
+    // Parent, fork failed
+    | BadFork ?e =>
+      eprintln$ "[" + name + "] "+"Fork failed for program " + pn + ": " +strerror e;
+      goto finish;
+
+    // Parent, child running
     | ProcessId ?pid =>
       eprintln$ "[" + name + "] "+"Process " + pid.int.str + " created for program " + pn;
+
     check_pid:>
       var status = checkpid(pid);
       match status with
@@ -157,6 +174,7 @@ noinline proc launch_managed_process (
         eprintln$ "[" + name + "] "+ status.str;
       endmatch;
     endmatch;
+finish:>
     eprintln$ "[" + name + "] "+"Monitoring pthread for "+pn+" done finish at " + #Time::time.int.str;
     q.enqueue(name);
     eprintln$ "[" + name + "] "+"Signalled DEAD for "+pn;
@@ -177,7 +195,7 @@ noinline proc launch_managed_processes (var inp: string * list[string * list[str
   done
   while process_count > 0 do 
     var death_name = q.dequeue;
-    println$ "Funeral of process " + death_name;
+    eprintln$ "["death_name+ "] Process Funeral";
     --process_count;
   done
   eprintln$ "Finished with group " + desc;
@@ -188,6 +206,38 @@ noinline proc launch_managed_processes (var inp: string * list[string * list[str
 
 Posix_Signal::trap_ctrl_c;
 
+// Create a thread to capture all stderr output, from
+// both this application and its threads, and also
+// any such output from the launched processes
+// The thread will grab all that stuff and republish
+// it with timestamps
+
+proc emux() {
+  // make a new file descriptor that goes to where stderr used to go
+  var old_stderr = FileSystem::dup(FileSystem::fd2);
+
+  // make a pipe
+  var inp, out = FileSystem::pipe(); 
+
+  // reassign the write end of the pipe to stderr
+  C_hack::ignore$ FileSystem::dup2(out,FileSystem::fd2); 
+
+  var input_file = FileSystem::fdopen_input inp;
+  var output_file = FileSystem::fdopen_output old_stderr;
+
+  spawn_pthread {
+     while not feof input_file do
+       var msg = readln input_file;
+       if msg == "$$EOF$$\n" goto finish;
+       write$ output_file, "STDERR capture: " + msg; 
+     done
+  finish:>
+  };
+
+}
+
+emux();
+
 run:for group in (group1, group2, group3, group4, group5, group6,
   group7, group8, group9)
 do
@@ -196,6 +246,7 @@ do
 done
 
 eprintln "Mainline waiting for pthreads";
+eprintln "$$EOF$$";
 
 // emergency suicide of our whole family
 //C_hack::ignore$ kill(OUR_PROCESS_GROUP,Posix_Signal::SIGKILL);

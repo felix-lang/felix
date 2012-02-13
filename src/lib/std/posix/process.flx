@@ -59,47 +59,73 @@ class Process {
 
   gen fork: unit -> pid_t = "fork()" requires Posix_headers::unistd_h;
 
-  union spawn_result_t = | Error of errno_t | ProcessId of pid_t;
+  union spawn_result_t = 
+  // returned to parent process
+  | BadFork of errno_t  
+  | ProcessId of pid_t 
 
-  gen spawnv(file: string, argv:&&char) : spawn_result_t = {
+  // returned to child proces
+  | BadExec of errno_t 
+  | BadSetup of int
+  ;
+
+  gen spawnv(file: string, argv:&&char, setup:1->int) : spawn_result_t = {
     var x = fork();
-    if x == child_process do 
+    if x == child_process do  // CHILD
+      var result = #setup;
+      if result != 0 do
+        return BadSetup result;
+      done
       var y = execv(file.cstr, argv); 
       if y == bad_exec do 
-        return Error errno; 
+        return BadExec errno; 
       else 
-        return ProcessId x; // never taken! 
+        return ProcessId x; // never taken! fool type system 
       done 
-    elif x == bad_process do return Error errno;
-    else return ProcessId x;
+    elif x == bad_process do // PARENT 
+      return BadFork errno;
+    else 
+      return ProcessId x;
     done
   }
 
-  gen spawnvp(file: string, argv:&&char) : spawn_result_t = { 
+  gen spawnvp(file: string, argv:&&char, setup:1->int) : spawn_result_t = { 
     var x = fork();
-    if x == child_process do 
+    if x == child_process do // CHILD
+      var result = #setup;
+      if result != 0 do
+        return BadSetup result;
+      done
       var y = execvp(file.cstr, argv); 
       if y == bad_exec do 
-        return Error errno; 
+        return BadExec errno; 
       else 
-        return ProcessId x; // never taken! 
+        return ProcessId x; // never taken! fool type system 
       done 
-    elif x == bad_process do return Error errno;
-    else return ProcessId x;
+    elif x == bad_process do  // PARENT
+      return BadFork errno;
+    else 
+      return ProcessId x;
     done
   }
 
-  gen spawnve(file: string, argv:&&char, env: &&char) : spawn_result_t = {
+  gen spawnve(file: string, argv:&&char, env: &&char, setup:1->int) : spawn_result_t = {
     var x = fork();
-    if x == child_process do 
+    if x == child_process do // CHILD
+      var result = #setup;
+      if result != 0 do
+        return BadSetup result;
+      done
       var y = execve(file.cstr, argv, env); 
       if y == bad_exec do 
-        return Error errno; 
+        return BadExec errno; 
       else 
-        return ProcessId x; // never taken! 
+        return ProcessId x; // never taken! fool type system
       done 
-    elif x == bad_process do return Error errno;
-    else return ProcessId x;
+    elif x == bad_process do // PARENT
+      return BadFork errno;
+    else 
+      return ProcessId x;
     done
   }
 
