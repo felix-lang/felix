@@ -1,5 +1,6 @@
 #include "pthread_bound_queue.hpp"
 #include <queue>        // stl to the bloated rescue
+#include <stdio.h>      // debugging in scanner
 
 using namespace std;
 
