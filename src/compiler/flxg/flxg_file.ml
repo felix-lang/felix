@@ -11,7 +11,9 @@ let open_out f =
   match f.out_chan with
   | `Open chan -> chan
   | _ ->
-    let chan = Pervasives.open_out f.out_filename in
+    let outname = (f.out_filename) in
+    Flx_filesys.mkdirs (Filename.dirname outname);
+    let chan = Pervasives.open_out outname in
     f.out_chan <- `Open chan;
     chan
 
@@ -23,7 +25,7 @@ let close_out f =
     f.out_chan <- `Closed
 
 let filename f =
-  f.out_filename
+  Flx_filesys.mkabs (f.out_filename)
 
 let output_string f s =
   let chan = open_out f in
@@ -33,3 +35,4 @@ let was_used f =
   match f.out_chan with
   | `NeverOpened -> false
   | _ -> true
+

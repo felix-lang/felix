@@ -26,6 +26,6 @@ type t =
   auto_imports : string list;
   syntax: string list;
   automaton_filename: string;
-  cache_dir : string option;
-  output_dir : string option;
+  cache_dir : string;
+  output_dir : string;
 }

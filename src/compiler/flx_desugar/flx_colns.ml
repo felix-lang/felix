@@ -77,10 +77,7 @@ let include_file syms curpath inspec =
         Flx_filesys.find_file ~include_dirs:[curpath] (basename ^ ".par")
       else
         Flx_filesys.find_file
-          ~include_dirs:(match syms.compiler_options.cache_dir with
-          | None -> include_dirs
-          | Some d -> d::include_dirs
-          )
+          ~include_dirs:include_dirs
           (basename ^ ".par")
     with Flx_filesys.Missing_path _ ->
       (* It's okay if the .par file doesn't exist. *)
@@ -100,14 +97,9 @@ let include_file syms curpath inspec =
   let cbt = this_version.build_time_float in
   let saveit sts =
       let pf =
-        match syms.compiler_options.cache_dir with
-        | None ->
-          if pf = "" then
-            (try Filename.chop_extension tf with | _ -> tf) ^ ".par"
-          else pf
-        | Some d -> (Filename.concat d
+        (Filename.concat syms.compiler_options.cache_dir
           (try Filename.chop_extension basename with _ -> basename)
-          ) ^ ".par"
+        ) ^ ".par"
       in
         let x = try Some (open_out_bin pf) with _ -> None in
         match x with

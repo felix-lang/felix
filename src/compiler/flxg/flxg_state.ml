@@ -55,11 +55,8 @@ let make_state ppf compiler_options =
   (*
   and iface_file_name = filebase ^ ".fix"
   *)
-  let outbase =
-    match compiler_options.output_dir with
-    | None -> filename
-    | Some d -> Filename.concat d (Filename.basename filename)
-  in
+  let outbase = Filename.concat compiler_options.output_dir (Flx_filesys.mkabs filename) in
+print_endline ("File outbase = " ^ outbase);
   {
     ppf = ppf;
     compile_start_gm_string = compile_start_gm_string;
@@ -74,5 +71,5 @@ let make_state ppf compiler_options =
     rtti_file = Flxg_file.make (outbase ^ ".rtti");
     report_file = Flxg_file.make (outbase ^ ".xref");
     why_file = Flxg_file.make (outbase ^ ".why");
-    dep_file_name = outbase ^ ".dep";
+    dep_file_name = (outbase ^ ".dep");
   }

@@ -5,6 +5,7 @@ import fbuild
 import fbuild.db
 from fbuild.functools import call
 from fbuild.path import Path
+import os
 
 # ------------------------------------------------------------------------------
 
@@ -38,13 +39,14 @@ class Builder(fbuild.db.PersistentObject):
         src = Path(src)
         src_buildroot = src.addroot(buildroot)
 
-        dst = src.addroot(buildroot)
-
         if preparse:
+            dst = buildroot + "/cache/binary/"+os.getcwd()+"/"+buildroot+"/"+src
             dst = dst.replaceext('.par')
         else:
+            dst = buildroot + "/cache/text/"+os.getcwd()+"/"+buildroot+"/"+src
             dst = dst.replaceext('.cpp')
 
+        print("flg dst=" + dst)
         if src != src_buildroot:
             src_buildroot.parent.makedirs()
             src.copy(src_buildroot)
@@ -70,7 +72,8 @@ class Builder(fbuild.db.PersistentObject):
         cmd.extend('-I' + i for i in sorted(includes) if Path.exists(i))
         cmd.extend('--syntax=' + i for i in syntaxes)
         cmd.extend('--import=' + i for i in imports)
-        cmd.append('--output_dir=' + dst.parent)
+        cmd.append('--output_dir=' + Path(buildroot)/"cache"/"text")
+        cmd.append('--cache_dir=' + Path(buildroot)/"cache"/"binary")
         cmd.extend(flags)
 
         if include_std:
@@ -102,7 +105,7 @@ class Builder(fbuild.db.PersistentObject):
             buildroot=None):
         buildroot = buildroot or self.ctx.buildroot
 
-        src = Path(src)
+        print("_link: C++ compile src = " + src)
 
         if dst is None:
             dst = src.replaceext('')
@@ -203,6 +206,7 @@ class Builder(fbuild.db.PersistentObject):
             cxx_cflags=[],
             cxx_libs=[],
             cxx_lflags=[]):
+        print("_build_flx_pkgconfig_link:src="+src)
         obj = self.compile(src, includes=includes, flags=flags)
 
         return function(obj, dst,

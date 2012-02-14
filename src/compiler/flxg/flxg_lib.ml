@@ -30,17 +30,13 @@ let process_lib
    * the include file list into the cache!
    *)
   let lib_time = Flx_filesys.virtual_filetime Flx_filesys.big_crunch lib_name in
-  let in_libtab_name = Flx_filesys.join lib_filedir lib_filename ^ ".libtab" in
-  let out_libtab_name =
-    match outdir with
-    | Some d -> Some (Flx_filesys.join d lib_filename ^ ".libtab")
-    | None -> None
-  in
+  let libtab_name = Flx_filesys.join lib_filedir lib_filename ^ ".libtab" in
+  let libtab_name = (Flx_filesys.join outdir libtab_name) in
 
   (* Look up the time the file was cached. *)
   let lib_cache_time = Flx_filesys.virtual_filetime
     Flx_filesys.big_bang
-    in_libtab_name
+    libtab_name
   in
 
   (* Return if the file has been changed since it was cached. *)
@@ -66,8 +62,8 @@ let process_lib
     out_sym_table,
     out_bsym_table
   =
-    Flx_filesys.cached_computation "libtab" in_libtab_name
-      ~outfile:out_libtab_name
+    Flx_filesys.cached_computation "libtab" libtab_name
+      ~outfile:None
       ~force_calc:(false || state.syms.compiler_options.force_recompile)
       ~min_time:lib_time
       ~validate

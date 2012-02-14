@@ -35,9 +35,9 @@ let fixit file =
 let fixup files = List.map fixit files
 
 
-let get_options options =
+let get_options raw_options =
   let compiler_phase =
-    match get_key_value options "compiler-phase" with
+    match get_key_value raw_options "compiler-phase" with
     | None -> Phase_codegen
     | Some phase ->
         match phase with
@@ -49,27 +49,29 @@ let get_options options =
         | "codegen" -> Phase_codegen
         | _ -> failwith "Invalid value for --compiler-phase"
   in
-  let include_dirs= fixup (get_keys_values options ["I"; "include"]) in
+  let include_dirs= fixup (get_keys_values raw_options ["I"; "include"]) in
+  let include_dirs = List.map (fun s -> Flx_filesys.mkabs s) include_dirs in
+  let options =
   {
     compiler_phase = compiler_phase;
-    optimise    = check_keys options ["opt"; "optimise"];
-    debug       = check_key options "debug";
-    with_comments = check_key options "with-comments";
-    mangle_names = check_key options "mangle-names";
+    optimise    = check_keys raw_options ["opt"; "optimise"];
+    debug       = check_key raw_options "debug";
+    with_comments = check_key raw_options "with-comments";
+    mangle_names = check_key raw_options "mangle-names";
     include_dirs= include_dirs;
-    print_flag  = check_keys options ["v"; "verbose"];
-    generate_axiom_checks  = not (check_keys options ["no-check-axioms"]);
-    trace       = check_keys options ["trace"];
-    files       = List.rev (get_key_values options "");
-    raw_options = options;
-    reverse_return_parity = check_key options "e";
-    force_recompile = check_keys options ["force"];
-    cache_dir = get_key_value options "cache_dir";
-    output_dir = get_key_value options "output_dir";
+    print_flag  = check_keys raw_options ["v"; "verbose"];
+    generate_axiom_checks  = not (check_keys raw_options ["no-check-axioms"]);
+    trace       = check_keys raw_options ["trace"];
+    files       = List.rev (get_key_values raw_options "");
+    raw_options = raw_options;
+    reverse_return_parity = check_key raw_options "e";
+    force_recompile = check_keys raw_options ["force"];
+    cache_dir = Flx_filesys.mkabs (match get_key_value raw_options "cache_dir" with Some x -> x | None -> Flx_filesys.root_dir);
+    output_dir = Flx_filesys.mkabs (match get_key_value raw_options "output_dir" with Some x -> x | None -> Flx_filesys.root_dir);
     max_inline_length =
       begin
         let inline =
-          match get_key_value options "inline" with
+          match get_key_value raw_options "inline" with
           | Some i ->
             (
               if i = "none" then 0 else
@@ -80,10 +82,10 @@ let get_options options =
                   failwith ("Invalid value for inline: '" ^ i^"'")
             )
           | None ->
-            begin match check_key options "noinline" with
+            begin match check_key raw_options "noinline" with
             | true -> 0
             | false ->
-              begin match check_keys options ["inline";"opt";"optimise"] with
+              begin match check_keys raw_options ["inline";"opt";"optimise"] with
               | true -> 250
               | false -> 15
               end
@@ -93,11 +95,15 @@ let get_options options =
           if inline < 10 then 10 else inline
       end
     ;
-    auto_imports = get_key_values options "import";
-    syntax= get_key_values options "syntax";
-    automaton_filename= 
-      begin match get_key_value options "automaton" with
-      | Some a -> a
+    auto_imports = get_key_values raw_options "import";
+    syntax= get_key_values raw_options "syntax";
+    automaton_filename=""; 
+    compile_only = check_keys raw_options ["c";"compile-only"]
+  }
+  in
+  let automaton =
+      begin match get_key_value raw_options "automaton" with
+      | Some a -> Flx_filesys.mkabs a
       | None ->
         begin 
           try 
@@ -105,14 +111,21 @@ let get_options options =
           with Flx_filesys.Missing_path _ -> 
           try 
             let d = Flx_filesys.find_dir ~include_dirs "grammar" in
-            Flx_filesys.join d "syntax.automaton"
-          with Flx_filesys.Missing_path _ -> "syntax.automaton" (* current directory *)
+            Flx_filesys.join options.cache_dir (Flx_filesys.join d "syntax.automaton")
+          with Flx_filesys.Missing_path _ -> Flx_filesys.join options.cache_dir "syntax.automaton" 
         end
       end
     ;
-
-    compile_only = check_keys options ["c";"compile-only"]
-  }
+  in
+  let options = { options with automaton_filename = automaton } in
+  print_endline ("Cache_dir= " ^ options.cache_dir);
+  print_endline ("Output_dir= " ^ options.output_dir);
+  print_endline ("Include_dirs= " ^ String.concat ", " options.include_dirs);
+  print_endline ("Syntax_automaton= " ^ options.automaton_filename);
+  print_endline ("Auto_imports= " ^ String.concat ", " options.auto_imports);
+  print_endline ("Syntax = " ^ String.concat ", " options.syntax);
+  print_endline ("Files = " ^ String.concat ", " options.files);
+  options
 
 
 let print_options () =

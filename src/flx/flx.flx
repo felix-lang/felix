@@ -48,8 +48,8 @@ proc print_help() {
   println "--config             : show configuration";
   println "--version            : show felix version";
   println "--force              : force run Felix compiler";
-  println "--cache_dir=dir      : extant directory cache output from parser (*.par files)";
-  println "--output_dir=dir     : extant directory to hold C++ output from translator";
+  println "--cache_dir=dir      : directory cache output from parser (*.par files), autocreated, default $HOME/.felix/cache";
+  println "--output_dir=dir     : directory to hold C++ output from translator, autocreated, default $HOME/.felix/cache";
   println "--man                : show flx man page (if there is one)";
   println "--help               : show this help";
   println "--noinline           : force inlining off, may break things!";
@@ -479,6 +479,8 @@ var FELIX=1;
 // processing options
 // --------------------------------------------------
 
+var HOME= Env::getenv "HOME";
+
 var DEBUG=0;
 var DEBUG_COMPILER=0;
 var COMPILER_PHASE="";
@@ -500,8 +502,16 @@ var STDOUT="";
 var STDSYNTAX="--syntax=@grammar/grammar.files";
 var STDIMPORT="--import=plat/flx.flxh";
 var IMPORTS="";
-var OUTPUT_DIR="";
-var CACHE_DIR="";
+var CACHE_DIR=
+  let ?x = Sys::getenv "FLX_CACHE_DIR" in 
+  if x != "" then x else
+  if HOME=="" then "" else Filename::join (list(HOME,".felix","cache","binary")) 
+;
+var OUTPUT_DIR=
+  let ?x = Sys::getenv "FLX_OUTPUT_DIR" in 
+  if x != "" then x else
+    if HOME=="" then "" else Filename::join (list (HOME,".felix","cache","text"))
+;
 
 var DRIVER_PKG = "";
 var DRIVER = "";

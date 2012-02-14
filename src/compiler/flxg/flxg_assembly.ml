@@ -108,14 +108,12 @@ let assemble state parser_state exclusions module_name input =
           flx_name
         in
 
-        let in_par_name = Flx_filesys.join filedir filename ^ ".par2" in
-        let out_par_name =
-           match state.syms.compiler_options.cache_dir with
-           | Some d -> Some (Flx_filesys.join d filename ^ ".par2")
-           | None -> None
+        let par_name = Flx_filesys.join filedir filename ^ ".par2" in
+        let par_name = Flx_filesys.mkabs par_name in
+        let par_name =
+           Flx_filesys.join state.syms.compiler_options.cache_dir par_name
         in
-        let stmts = Flx_filesys.cached_computation "parse" in_par_name
-          ~outfile:out_par_name
+        let stmts = Flx_filesys.cached_computation "parse" par_name ~outfile:None
           ~min_time:flx_time
           (fun () -> Flx_profile.call
             "Flxg_parse.parse_file"

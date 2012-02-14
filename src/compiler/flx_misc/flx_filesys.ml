@@ -42,6 +42,8 @@ let dir_sep, is_dir_sep =
   | "Cygwin" -> "/", win32_is_dir_sep
   | _ -> assert false
 
+let root_dir = dir_sep
+
 let slosh = Str.regexp "/"
 let split_unix f =
   let fs = Str.split slosh f in
@@ -212,15 +214,21 @@ let marshal_in (kind:string) (filename:string) ?(min_time=big_bang) : 'a option 
   Throws whatever the computation throws if it is invoked.
 *)
 
-let rec mkdirs h =
-  let d = Filename.dirname h in
-  let b = Filename.basename h in
-  if d = "." then begin
-    try Unix.mkdir b 0o777 with _ -> ()
-  end else begin
-    mkdirs d;
-    try Unix.mkdir b 0o777 with _ -> ()
-  end
+let rec mkdirs d =
+  let p = Filename.dirname d in
+  if p = "/" or p = "." or p = "" then () else mkdirs p;
+  try Unix.mkdir d 0o777 with _ -> ()
+
+let mkabs d =
+  if not (Filename.is_relative d) then d else
+  let cd = Sys.getcwd() in
+  if Filename.is_implicit d then 
+    Filename.concat cd d
+  else
+    let _ = () in
+    print_endline ("Nasty name " ^ d);
+    Filename.concat cd d
+
 
 let cached_computation 
   (result_kind:string) 
@@ -233,6 +241,13 @@ let cached_computation
   (f: unit -> 'a) 
   : 'a
 =
+print_endline ("Input: Filename: " ^ filename ^ ", outfilename = " ^ (match outfile with | None -> "NONE" | Some f -> f));
+
+  let filename = mkabs filename in
+  let outfile = match outfile with | None -> None | Some f -> Some (mkabs f) in
+
+print_endline ("Absolutised: Filename: " ^ filename ^  ", outfilename = " ^ (match outfile with | None -> "NONE" | Some f -> f));
+
   let cached_data = 
     if not force_calc then
     (* try to read the output file first *)
@@ -240,6 +255,7 @@ let cached_computation
         match outfile with
         | Some f -> 
           begin
+print_endline ("Try to read cached output data " ^ f);
             try marshal_in result_kind f ~min_time
             with _ -> None
           end
@@ -250,6 +266,7 @@ let cached_computation
         match cached_data with
         | None -> 
           begin 
+print_endline ("Try to read cached input data " ^ filename);
             try marshal_in result_kind filename ~min_time 
             with _ -> None 
           end
@@ -279,8 +296,10 @@ let cached_computation
      *)
     if not nowrite then
       begin try 
+print_endline ("Try to write cached output data " ^ outname);
         marshal_out result_kind outname data
       with _ ->
+print_endline ("Write failed, trying to make directories for " ^ outname);
         mkdirs (Filename.dirname outname);
         marshal_out result_kind outname data
       end

@@ -23,6 +23,7 @@ val virtual_filetime:
 exception Missing_path of string
 
 val dir_sep : string
+val root_dir : string
 
 (** Look in the filesystem for the path. Raises Missing_path if not found. *)
 val find_path:
@@ -93,6 +94,21 @@ val marshal_in:
   string ->               (** input filename *)
   ?min_time:float ->      (** minimum write time of the file *)
   'a option               (** result *)
+
+(** Make all the directories of the given path. Should be absolute name.
+  Example: /usr/local/lib/felix/bin
+  Will make sure /usr/local/lib/felix/bin is a directory, by creating
+  /usr, /usr/local, /usr/local/lib, /usr/local/lib/felix, /usr/local/lib/felix/bin
+  in turn. Might fail due to permissions. No error is returned: you'll find
+  out when you try to create or read something in the directory.
+ *)
+val mkdirs : string -> unit
+
+(** Convert a filename to an absolute one if it isn't already,
+  by prefixing with current working directory absolute 
+  path name
+*)
+val mkabs: string -> string
 
 (** Try to load the cached result of a computation. If it is found
   * and up to date, return it. Otherwise perform the computation
