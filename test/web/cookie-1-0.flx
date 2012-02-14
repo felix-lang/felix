@@ -1,7 +1,7 @@
-include "web/web_server";
+include "web/cookie";
+include "web/low_res_time";
 
 open Cookie;
-open HTTPRequest;
 open LowResTime;
 
 

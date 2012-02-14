@@ -1,7 +1,6 @@
 include "web/low_res_time";
 
 class Cookie {
-  open HTTPRequest;
   open LowResTime;
 
   struct cookie {
@@ -39,31 +38,6 @@ class Cookie {
     fold_left (fun(x:string) (y:string):string => y +"\r"+ x) "" 
       (map (fun(z:cookie):string => str(z)) c));
 
- /* fun get_cookies(request:http_request):list[opt[cookie]] = {
-    val st:opt[string] =  Assoc_list::find (fun (a:string,b:string) => eq(a,b)) (request.headers) 
-                           ('Cookie');
-    match st with
-      |Some ?s      => { var parts:list[string] = split(s,';');
-                         return (map[string,opt[cookie]] (fun (t) => match (split_first(t,'=')) with
-                                          |Some (?n,?v) => Some cookie(n,v)
-                                          |_ => None[cookie]
-                                         endmatch) parts);}
-      |_ => {return Empty[opt[cookie]];}
-    endmatch;
-  }*/
-fun get_cookies(request:http_request):list[cookie] = {
-    
-     val cline= Assoc_list::find (fun (a:string,b:string) => eq(a,b)) (request.headers)  ('Cookie');
-     val lines = match cline with
-       | Some ?s => (match split(s,';') with
-                       |Cons (?h,?t) => Cons(h,t)
-                       |_            => Empty[string]
-                     endmatch)
-       | _        => Empty[string]
-     endmatch;
-     val pairs = filter (fun (sl:opt[string^2]) => match sl with |Some _ => true |_ => false endmatch) (map (fun (cl:string) => split_first(cl,"=")) lines);
-      return (map (fun (p:opt[string^2]) => let Some ?q = p in cookie(q.(0),q.(1))) pairs);
-}
 
 
 

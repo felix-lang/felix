@@ -3,3 +3,5 @@ provides_slib: -lxml2
 cflags: -I/usr/include/libxml2
 includes: "<libxml/parser.h>"
 includes: "<libxml/tree.h>"
+includes: "<libxml/uri.h>"
+includes: "<string.h>"

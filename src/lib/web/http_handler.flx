@@ -56,26 +56,30 @@ fun get_fs_path (config:server_config,request:http_request) =>
    return out2;
   }
 
-   proc handle_not_found(conn:http_connection, request:http_request) {
-     var eof_flag = false;
+   gen handle_not_found(conn:http_connection, request:http_request) =  {
      var txt = "<div style='text-color:red;'>Page "+ 
        (match get_fname request with | Some(?fname) => fname | _ => "NONE" endmatch)+
        " not found.</div>";
      val data = make_not_found txt;
-     write_string(conn.sock,data,&eof_flag);
-  }
+     write(conn,data);
+     return ;
+   }
   
+  proc do_handle_not_found(conn:http_connection, request:http_request) {
+    handle_not_found(conn,request);
+  }
+   
   fun handle_not_found_route (config:server_config, request:http_request) => true; 
 
-  proc handle_css(conn:http_connection, request:http_request) {
-    var eof_flag = false;
+  gen handle_css(conn:http_connection, request:http_request) = {
     match get_fs_path(conn.config,request) with
       | Some(?file) => {
                        val txt = load (file);
-      		       write_string(conn.sock,(make_css txt),&eof_flag);
+      		       write(conn,(make_css txt));
                        }
-      | _ => {handle_not_found(conn,request);}
+      | _ => {do_handle_not_found(conn,request);}
    endmatch;  
+   return ;
   }
 
   fun handle_css_route (config:server_config, request:http_request) =>
@@ -84,15 +88,15 @@ fun get_fs_path (config:server_config,request:http_request) =>
        | _ => false
      endmatch;
 
-  proc handle_js(conn:http_connection, request:http_request) {
-    var eof_flag = false;
+  gen handle_js(conn:http_connection, request:http_request) = {
     match get_fs_path(conn.config,request) with
       | Some(?file) => {
-                       val txt = load (file);
-      		       write_string(conn.sock,(make_js txt),&eof_flag);
+                       val txt = load (file);println(txt);
+      		       write(conn,(make_js txt));
                        }
-      | _ => {handle_not_found(conn,request);}
-   endmatch;  
+      | _ => {do_handle_not_found(conn,request);}
+   endmatch;
+   return ;
   }
 
   fun handle_js_route (config:server_config, request:http_request) =>
@@ -102,15 +106,15 @@ fun get_fs_path (config:server_config,request:http_request) =>
       | _ => false
      endmatch;
 
-  proc handle_image(conn:http_connection, request:http_request) {
-    var eof_flag = false;
+  gen handle_image(conn:http_connection, request:http_request) = {
     match get_fs_path(conn.config,request) with
       | Some(?file) => {
                        val txt = load (file);
-      		       write_string(conn.sock,make_image((mime_type_from_file file), txt),&eof_flag);
+      		       write(conn,make_image((mime_type_from_file file), txt));
                        }
-      | _ => {handle_not_found(conn,request);}
+      | _ => {do_handle_not_found(conn,request);}
    endmatch;  
+   return ;
   }
 
   fun handle_image_route (config:server_config,request:http_request) => 
@@ -119,20 +123,20 @@ fun get_fs_path (config:server_config,request:http_request) =>
        | _ => false
      endmatch;
 
-  proc handle_html(conn:http_connection, request:http_request) {
-    var eof_flag = false;
+  gen handle_html(conn:http_connection, request:http_request) = {
     if (request.uri == "/" and request.path == "/") do 
       val txt = load (conn.config.document_root+"/index.html");
-      write_string(conn.sock,(make_html txt),&eof_flag);
+      write(conn,(make_html txt));
     else                   
       match get_fs_path(conn.config,request) with
         | Some(?file) => {
                        val txt = load (file);
-      		       write_string(conn.sock,(make_html txt),&eof_flag);
+      		       write(conn,(make_html txt));
                        }
-        | _ => {handle_not_found(conn,request);}
+        | _ => {do_handle_not_found(conn,request);}
        endmatch;
-    done  
+    done
+    return ;
   }
 
   fun handle_html_route (config:server_config,request:http_request):bool =>

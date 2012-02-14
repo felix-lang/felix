@@ -55,6 +55,13 @@ Content-Length: """ + str (len response.content) + """\r
 				  "Forbidden: "+content) in
     	http_header(response) + response.content; 
 
+  fun make_unauthorized (headers:assoc_list[string,string]) =>
+    let ?response = http_response(SC_UNAUTHORIZED,localtime(time_t()),text html,headers,
+				  "") in
+    	http_header(response) +"\nBasic realm=\"cPanel\""; 
+
+  
+
   fun make_raw (content:string) => make_raw(content,no_headers());
   fun make_raw (content:string,headers:assoc_list[string,string]) =>
     http_header(http_response(SC_OK,localtime(time_t()),application octet_DASH_stream,
@@ -70,3 +77,4 @@ Content-Length: """ + str (len response.content) + """\r
                               headers,content)) + content; 
 
 }
+//WWW-Authenticate: Basic realm="WallyWorld"

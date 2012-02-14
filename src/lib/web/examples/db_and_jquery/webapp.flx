@@ -5,17 +5,8 @@ include "./multiple_sa";
 
 open HTTPHandler;
 open ServerConfig;
+var config = basic_server_config(MultipleSA::app_handlers() + default_handlers());
 
-var config = enhance_with_command_line_arguments
-  (
-    ServerConfig::server_config(
-      0.1,
-      1234,                           // Port
-      "./html",                       // Document Root
-       MultipleSA::app_handlers() + default_handlers() // Handlers 
-    )
-  )
-;
 // default_handlers provides handling for mundane requets (static html, not found, etc.
 // They also provides you with the java script jquery and jquery-ui libraries and
 // supporing stylesheets.
