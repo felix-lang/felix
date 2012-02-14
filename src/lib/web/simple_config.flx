@@ -1,0 +1,80 @@
+
+publish """
+Simple config file reader. Splits key value pairs seperated by the equals character.
+Skips lines where first non-space character is the # character. Max configuration file size 
+is 65535 bytes
+
+Example input:
+  # Sample configuration file
+  delay         =    0.05
+  port          =    1234
+  document_root =  ./html
+
+Example code:
+  open SimpleConfig;
+  if System::argc > 0 do
+    var arg = System::argv 1;
+    println$ "config file:" + arg;
+    iter (proc (kv:string*string) { println(kv.(0)+":"+kv.(1)); })  
+         (read_config(System::argv 1));
+  else
+    println("No config file specified");
+  done
+"""
+
+class SimpleConfig {
+  requires header '#include <sys/stat.h>';
+  open Assoc_list;
+
+  typedef configuration = assoc_list[string,string];
+
+  publish """
+  Reads configuration file and returns associative list
+  """
+  fun read_config(config_file:string):configuration = {
+    val fsz =  fsize(config_file);
+    var config = Empty[string*string];
+    if fsz > size(0) and fsz < size(65535) do 
+      val handle = fopen_input config_file;
+      if valid handle do
+        val config_text = load(handle);
+        iter (proc (line:string) {config = config + parse(line);})  
+             (split(str(config_text),"\n"));
+        fclose(handle);
+      done
+    done
+    return config;
+  }
+
+  private fun parse(line:string):list[string*string] =>
+    if startswith (strip line) (char '#') then
+      Empty[string*string]
+    else
+      match split_first(line, (char '=')) with 
+        |Some ?s => list[string*string](s) 
+        |None[string*string] => Empty[string*string] 
+      endmatch 
+    endif;
+  
+  private fun split_first (x:string, c:char): opt[string*string] ={
+    var d = c;
+    return match find_first_of (x, &d) with
+      | None => None[string*string]
+      | Some ?n => Some(strip(x.[to n]),strip(x.[n+1 to]))
+      endmatch
+    ;
+  }
+
+  private proc fsize_: string*&size = """
+    {struct stat st;
+     stat($1.c_str(), &st);
+     *$2 = st.st_size;}
+  """;
+
+  private gen fsize(name:string):size = {
+    var sz:size;
+    fsize_(name,&sz);
+    return sz;
+  }
+
+}

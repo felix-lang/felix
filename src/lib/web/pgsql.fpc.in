@@ -1,0 +1,10 @@
+Name: Pgsql
+Description: PostgresSQL database bindings
+Version: @VERSION@
+cflags: @CFLAGS@
+requires_dlibs: @LIBDIR@ -lpq
+requires_slibs: @LIBDIR@ -lpq
+includes: "<libpq-fe.h>"
+
+
+

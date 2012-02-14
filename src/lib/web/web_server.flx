@@ -8,6 +8,7 @@ include "std/posix/faio_posix";  // aio_ropen
 include "std/posix/signal";
 include "std/posix/filesystem";
 include "std/posix/filestat";
+include "web/xml2";
 Posix_Signal::ignore_signal(Posix_Signal::SIGPIPE);
 //done
 
@@ -21,6 +22,7 @@ open TerminalIByteStream[fd_t];
 open TerminalIOByteStream[socket_t];
 
 proc dbg(x:string) { fprint (cerr,x); };
+
 include "std/io/textio";
 include "web/server_config";
 include "web/http_request";
@@ -30,9 +32,16 @@ include "web/http_handler";
 include "web/mime_type";
 include "web/http_status_code";
 include "web/low_res_time";
-include "web/sqlite3_ext";
-include "web/pool"; 
 include "web/cookie";
+include "web/logger";
+include "web/simple_config";
+include "web/xml2";
+include "web/decorators";
+include "web/templates";
+include "web/dom";
+include "web/base64";
+include "web/http_auth";
+
 // this is a hack to make close work on a listenter
 // RF got this right the first time:
 // in the abstract a listener is NOT a socket
@@ -47,24 +56,30 @@ class WebServer {
   open HTTPRequest;
   open HTTPConnection;
   open MIMEType;
+  open Eq[mime_type];
   open Assoc_list;  
   open HTTPHandler;  
+  open Logger;
 
   proc serve(conn:http_connection, request: http_request)
   {
     val s = conn.sock;
-    match find (fun (a:http_handler) => a.handles(conn.config,request)) 
-            conn.config.handlers with
-      | Some(?h) => { h.handler_fn(conn,request); }
-      | _ => {}
-    endmatch;
+    iter (proc (handler:http_handler) { 
+      if not *conn.dirty  do
+        if handler.handles(conn.config,request) do
+          handler.handler_fn(conn,request);
+        done
+      else
+        goto finished; 
+      done
+      }) conn.config.handlers;
+    finished:> 
     return;
   }
 
-  
   proc start_webserver(config:server_config) {
     val webby_port = config.port;
-    print "FLX WEB!!! listening on port "; print webby_port; endl;
+    config.log(INFO, "Server started, listenting on "+str config.port);
     // up the queue len for stress testing
     var p = webby_port;
     var listener: socket_t;
@@ -75,11 +90,27 @@ class WebServer {
     // being duplicated as it must be [a bug in Felix]
     noinline proc handler (var k:socket_t) ()
     {
-      dbg$ "Spawned fthread running for socket "+str k+"\n";
+      config.log(DEBUG,"Spawned fthread running for socket "+str k);
       // should spawn fthread here to allow for more io overlap
       val conn = http_connection(config ,k);
       var request:http_request;
+      open HTTPRequest;
+      open  Eq[http_method];
       HTTPRequest::get_request(conn,&request);
+       Faio::sleep(clock,config.delay);
+      /*Get entity form parameters if method is post and 
+        content type is application/x-www-form-urlencoded */
+      if str(request.method) == str(POST) do
+        match get_header(request,"Content-Type") with
+          | Some ?c => {match MIMEType::from_str(c) with
+              |Some ?z =>{if str(z) == str(application x_DASH_www_DASH_form_DASH_urlencoded) do
+                          HTTPRequest::get_entity_params(conn,&request);
+                        done }
+              |_ => {}
+            endmatch;}
+          |_ => {}
+        endmatch;
+      done
       serve(conn,request);
       fprint$ cerr,"fthread socket "+str k+" close delay ..\n";
       Faio::sleep(clock,config.delay); // give OS time to empty its buffers
@@ -93,21 +124,21 @@ class WebServer {
       var buf:char ^1025;
       var counter = 0;
       var extra = 0;
-      shutdown(k,1); // shutdown read
+      shutdown(k,1); // shutdown write
       retry:>
         var b = hack_recv(k,C_hack::cast[&char] (&buf),1024,0);
         //println$ "Error code " + str b + " from read after shutdown";
         if b > 0 do
           extra += b;
           if extra > 2000 do
-            println$ "Read too many extraneous bytes from OS buffer";
+            config.log(WARNING,"Read too many extraneous bytes from OS buffer");
             goto force_close;
           done;
           goto retry;
         elif b == -1 do
         ++counter;
         if counter > 200 do
-          println "Timeout waiting for write buffers to be flushed";
+          config.log(WARNING,"Timeout waiting for write buffers to be flushed");
           goto force_close;
         done;
         Faio::sleep(clock,0.1); // 100 ms
@@ -116,25 +147,25 @@ class WebServer {
       assert b==0;
 
       force_close:> 
-      Socket::shutdown(k,2);
+      Socket::shutdown(k,2); 
       ioclose(k);
       fprint$ cerr,"fthread "+str k+" terminating!\n";
     };
 
     forever {
       var s: socket_t;
-      dbg$ "Waiting for connection\n";
+      config.log(DEBUG,"Waiting for connection");
       accept(listener, &s);  // blocking
-      dbg$ "got connection "+str s + "\n";  // error check here
+      config.log(DEBUG,"got connection "+str s);  // error check here
 
       //  - spawning an fthread is blocking the web server. don't know why
-      print$ "spawning fthread to handle connection "+str s+"\n";
+      config.log(DEBUG,"spawning fthread to handle connection "+str s);
       var h = handler s;
       spawn_fthread  h;
-      //collect(); // this hangs everything, no idea why!
+      collect(); // this hangs everything, no idea why!
     };
 
-    println "WEB SERVER FINNISHED?";
+    config.log(INFO,"WEB SERVER SHUTDOWN");
     iclose (listener);
   }
 

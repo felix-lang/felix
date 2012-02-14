@@ -1,0 +1,87 @@
+
+include "web/xml2";
+class DOM {
+  open XML2;
+
+  typedef dom_node = xml_node_ptr;
+
+  publish """"Parses string well formed XML fragment and returns handle
+   to internal representation"""
+
+  fun parse (txt:string):xml_node_ptr =>
+    xml_doc_get_root_element(xml_parse_string(txt));
+  
+  fun new_node (name:string) => xml_new_node(name);
+ 
+  fun new_node (name:string,text:string) = {
+    val node = xml_new_node(name);
+    node.set_text(text);
+    return node;
+  }
+
+  fun new_text_node (text:string) => 
+    xml_new_text(text);
+
+  proc do_add_child(node:xml_node_ptr) (child:xml_node_ptr) {
+     C_hack::ignore(node.add_child(child));
+  }
+
+  fun add_child(node:xml_node_ptr) (child:xml_node_ptr) = {
+     return xml_add_child(node,child);
+  }
+
+  proc do_add_cdata (node:xml_node_ptr) (txt:string) {
+    C_hack::ignore(node.add_cdata (txt));
+  }
+
+  fun add_cdata (node:xml_node_ptr) (txt:string) =>
+    node.add_child(xml_new_cdata_block (*node.doc,txt));
+  
+
+  proc set_text (node:xml_node_ptr) (txt:string) {
+    xml_node_set_content (node,txt);
+  }
+
+  fun get_text (node:xml_node_ptr) =>  xml_char_ptr_to_str(xml_node_get_content(node));
+
+  proc replace (old:xml_node_ptr) (n:xml_node_ptr) {
+    xml_replace_node_p(old,n);
+  }
+
+
+  proc add_next (node:xml_node_ptr) (sibling:xml_node_ptr) {
+    C_hack::ignore(xml_add_next_sibling(node,sibling));
+  }
+ 
+  proc add_prev (node:xml_node_ptr) (sibling:xml_node_ptr) {
+    C_hack::ignore(xml_add_prev_sibling(node,sibling));
+  }
+
+  proc set_prop (node:xml_node_ptr) (name:string,value:string) {
+    C_hack::ignore(xml_set_prop(node,name,value));
+  }
+  
+  proc set_props (node:xml_node_ptr) (props:list[string*string]) {
+    iter (proc (p:string*string) { node.set_prop(p.(0),p.(1)); }) props;
+  }
+
+  fun get_prop (node:xml_node_ptr) (name:string) =>
+    xml_get_prop(node,name);
+  
+  fun has_prop (node:xml_node_ptr) (name:string,value:string) =>
+    node.node_has_attribute_with_value(name,value); 
+  
+  fun has_prop (name:string,value:string) (node:xml_node_ptr) =>
+    node.node_has_attribute_with_value(name,value); 
+
+  fun has_name (name:string) (node:xml_node_ptr) =>
+    node_with_name (name) (node);
+
+  fun has_name  (node:xml_node_ptr) (name:string) =>
+    node_with_name (name) (node);
+
+  fun find_nodes (node:xml_node_ptr) (pred:xml_node_ptr->bool) =>
+    xml_find_all_nodes (pred,node);
+
+
+}

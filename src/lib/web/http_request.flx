@@ -7,6 +7,9 @@ and get_http_request which extracts request from stream
 class HTTPRequest {
    open HTTPConnection;
    open Assoc_list;   
+   open XML2;
+   open Logger;
+   open Cookie;
    
    union http_method = 
      | GET
@@ -19,11 +22,19 @@ class HTTPRequest {
       | POST => "POST"
       | BAD => "BAD";
    }
+
+  instance Eq[http_method] {
+    fun == : http_method*http_method->bool = "$1==$2";
+    fun != : http_method*http_method->bool = "$1!=$2";
+  }
+  
+
    struct http_request {
     method: http_method;
     uri: string;
     path:string;
     params:assoc_list[string,string];
+    entity_params:assoc_list[string,string];
     headers:assoc_list[string,string];    
   }
 
@@ -31,24 +42,26 @@ class HTTPRequest {
     fun str (request: http_request) => 
       "HTTP Request\n"+
       "\tMethod:"+str(request.method)+"\n"+
-      "\tURI:"""+request.uri+"\n"+
+      //"\tURI:"""+request.uri+"\n"+
       "\tPath:"""+request.path+"\n"+
       "\tParams:"""+str(request.params)+"\n"+
-      "Headers:"""+str(request.headers)+"\n";
+      "\tHeaders:"""+str(request.headers)+"\n";
   } 
       
-  proc copy_request(orig:&http_request,cpy:&http_request) = {
+  private proc copy_request(orig:&http_request,cpy:&http_request) = {
     *cpy.method = *orig.method;
     *cpy.uri = *orig.uri;
     *cpy.path = *orig.path;
     *cpy.params = *orig.params;
   }
 
-
+  publish """
+  Parses a list of URI encoded key value parameters and returns as an assoc_list.
+  """
   fun get_params(p:string):list[string*string] ={
      var params = split(p,'&');
      return   map  (fun(x:string):string*string =>let Cons(?hd,?tl) = split(x,'=') in
-                     (hd,(fold_left (fun(x:string) (y:string):string => x + y) "" tl))
+                     (xml_uri_unescape_string(hd),xml_uri_unescape_string((fold_left (fun(x:string) (y:string):string => x + y) "" tl)))
                      ) params;
   }
 
@@ -63,41 +76,95 @@ class HTTPRequest {
           | (GET,?uri,Cons(?path,?rest),?prot) => 
                http_request(GET,uri,path,
                 get_params((fold_left (fun(x:string) (y:string):string => x + y) "" rest)),
-                Empty[string*string])
+                Empty[string*string],Empty[string*string])
             endmatch
+        | ("POST",?uri,?prot)  => match (POST,uri,split(uri,'?'),prot) with
+          | (POST,?uri,Cons(?path,?rest),?prot) => http_request(POST,uri,path,
+                get_params((fold_left (fun(x:string) (y:string):string => x + y) "" rest)),
+                Empty[string*string],Empty[string*string])
+          endmatch
 	  endmatch
-        | _ =>  http_request(BAD,"","",Empty[string*string],Empty[string*string])
+        | _ =>  http_request(BAD,"","",Empty[string*string],Empty[string*string],
+                             Empty[string*string])
     endmatch;  
     var headers = Empty[string*string];
     while line != "" and line != "\r" do
-      get_line(k, &line);  // should be the GET line.
+      get_line(k, &line); 
       match split(line,':') with
-        | Cons(?key,?value) =>{headers = Cons((key,  
-	      (fold_left (fun(x:string) (y:string):string => x + y) "" value)),
-              headers);}();
-        | ?x => println(x); // Should probably fail
+        | Cons(?key,?value) =>
+              headers = Cons((xml_uri_unescape_string(strip(key)),   
+	      xml_uri_unescape_string(strip(fold_left (fun(x:string) (y:string):string => x + y) "" value))),
+              headers);
+         | ?x => println("WARNING:Possible malformed request headerline:"+x); 
       endmatch;
     done
     got.headers = headers;
-    print(str(got));
+    conn.config.log(DEBUG,str(got));
     copy_request(&got,request); 
+    *request.headers=headers;
   }
 
-  fun get_fname(request:http_request) =>
-    match rev(split(request.path,'/')) with
+  publish """
+  Populates entity_params in request. Entity params are URI encoded key value pairs in
+  request body that are supplied when a POST request is made by the browser.
+  """
+  proc get_entity_params(conn:http_connection,request:&http_request) = {
+    val olen = match get_header(*request,"Content-Length") with |Some ?s=> int(s) |_ => 0 endmatch;
+    var len = olen;
+    var eof=false;
+    var params:assoc_list[string,string] = Empty[string*string];
+    if olen > 0 do
+      var buf = C_hack::cast[&char] (C_hack::malloc(len+1));
+      var buf_a = address(buf);
+      read(conn.sock,&len,buf_a,&eof);
+      iter (proc (line:string) {params = params + get_params(line);})  (split(str(buf),"\n"));
+      C_hack::free(buf_a);
+    done
+    conn.config.log(DEBUG,"POST PARAMS:"+str(params));
+    *request.entity_params = params;
+    return ;
+  }
+
+  fun get_fname(request:http_request) ={
+    val v = match rev(split(request.path,'/')) with
       | Cons(?hd,_) => Some(hd) 
       | _ => None[string]
     endmatch;
+    return v;
+  }
 
-  fun get_path_and_fname(request:http_request) =>
-    match rev(split(request.path,'/')) with
+  fun get_path_and_fname(request:http_request) ={
+    return match rev(split(request.path,'/')) with
       | Cons(?hd,?tl) => Some(
             (fold_left (fun(x:string) (y:string):string => x +"/"+ y) "" (rev(tl))), hd)
       | _ => None[string*string]
     endmatch;
-  
+  }
+
   publish """ Return opt[string] parameter value for given name """
   fun get_param(request:http_request,name:string) =>
      find (fun (a:string,b:string) => eq(a,b)) request.params name;
+
+  publish """ Return opt[string] post parameter value for given name """
+  fun get_post_param(request:http_request,name:string) =>
+     find (fun (a:string,b:string) => eq(a,b)) request.entity_params name;
+
+  publish """ Return opt[string] request header value for given name """
+  fun get_header(request:http_request,name:string) =>
+     find (fun (a:string,b:string) => eq(a,b)) request.headers name;
+
+  fun get_cookies(request:http_request):list[cookie] = {
+    
+     val cline= Assoc_list::find (fun (a:string,b:string) => eq(a,b)) (request.headers)  ('Cookie');
+     val lines = match cline with
+       | Some ?s => (match split(s,';') with
+                       |Cons (?h,?t) => Cons(h,t)
+                       |_            => Empty[string]
+                     endmatch)
+       | _        => Empty[string]
+     endmatch;
+     val pairs = filter (fun (sl:opt[string^2]) => match sl with |Some _ => true |_ => false endmatch) (map (fun (cl:string) => split_first(cl,"=")) lines);
+      return (map (fun (p:opt[string^2]) => let Some ?q = p in cookie(q.(0),q.(1))) pairs);
+}
 
 }
