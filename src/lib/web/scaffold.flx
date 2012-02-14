@@ -253,7 +253,7 @@ endif+
    </body>
 </html>
   """;
-    val sample_template_xhtml = fopen_output(join(list(base,"html","templates",
+    val sample_template_xhtml = fopen_output(join(list(base,"html",
                                                        "sample_template.xhtml")));
     if sample_template_xhtml.valid do
       write(sample_template_xhtml, sample_template_xhtml_txt);
