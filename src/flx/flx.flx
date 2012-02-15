@@ -1,6 +1,5 @@
 include "plat/config";
-include "std/posix/process";
-include "std/posix/shell";
+include "std/posix/__init__";
 open Process;
 
 proc pexit(e:int)
@@ -50,6 +49,7 @@ proc print_help() {
   println "--force              : force run Felix compiler";
   println "--cache_dir=dir      : directory cache output from parser (*.par files), autocreated, default $HOME/.felix/cache";
   println "--output_dir=dir     : directory to hold C++ output from translator, autocreated, default $HOME/.felix/cache";
+  println "--clean              : delete the caches first";
   println "--man                : show flx man page (if there is one)";
   println "--help               : show this help";
   println "--noinline           : force inlining off, may break things!";
@@ -61,6 +61,7 @@ proc print_help() {
   println "--nooptimise         : disable C++ compiler optimisation";
   println "--debug              : put debug symbols in generated binaries";
   println "--debug-compiler     : make felix compiler print progress diagnostics";
+  println "--debug-flx          : make flx tool print diagnostics";
   println "--stdout=file        : run program with standard output redirected to file";
   println "--backup             : backup working source tree to dir 'backup'";
   println "--install            : install --test directory to configured location";
@@ -105,9 +106,9 @@ fun prefix(arg:string,key:string)=>
 // Optionally print a debug line.
 // --------------------------------------------------
 
-dbug := false; // switch off for production
+var dbug = false; // switch off for production
 proc debugln[T with Str[T]] (x:T) {
-  dbug ?? fprintln (cerr, str x);
+  dbug ?? fprintln (cerr, "[flx] " + str x);
 }
 
 // --------------------------------------------------
@@ -241,7 +242,7 @@ proc install() {
 
      (" * Felix library",
      list( 
-       "(tools|lib)/.*\\.(flxh?|par2|files|automaton)"
+       "(tools|lib)/.*\\.(flxh?|files)"
      )),
 
      (" * Felix web resources",
@@ -502,15 +503,23 @@ var STDOUT="";
 var STDSYNTAX="--syntax=@grammar/grammar.files";
 var STDIMPORT="--import=plat/flx.flxh";
 var IMPORTS="";
-var CACHE_DIR=
-  let ?x = Sys::getenv "FLX_CACHE_DIR" in 
-  if x != "" then x else
+var CLEAR_CACHE=0;
+
+var DEFAULT_CACHE_DIR = 
   if HOME=="" then "" else Filename::join (list(HOME,".felix","cache","binary")) 
 ;
+
+var CACHE_DIR=
+  let ?x = Env::getenv "FLX_CACHE_DIR" in 
+  if x != "" then x else DEFAULT_CACHE_DIR
+;
+
+var DEFAULT_OUTPUT_DIR = 
+    if HOME=="" then "" else Filename::join (list (HOME,".felix","cache","text"));
+
 var OUTPUT_DIR=
-  let ?x = Sys::getenv "FLX_OUTPUT_DIR" in 
-  if x != "" then x else
-    if HOME=="" then "" else Filename::join (list (HOME,".felix","cache","text"))
+  let ?x = Env::getenv "FLX_OUTPUT_DIR" in 
+  if x != "" then x else DEFAULT_OUTPUT_DIR
 ;
 
 var DRIVER_PKG = "";
@@ -608,11 +617,20 @@ while grab == 1 and argno<System::argc do
   elif arg=="--show" do
     SHOWCODE=1;
 
+  elif arg=="--clean" do
+    debugln "Clear caches";
+    CLEAR_CACHE=1;
+
   elif arg=="--force" do
     debugln "Force recompilation";
     // of the felix code, runs Felix unless --nofelix is set
     // the C++ compiler is run unless the felix compile failed
     RECOMPILE=1;
+
+  elif arg=="--debug-flx" do
+    dbug = true;
+    debugln "debug flx tool ON";
+    DEBUG=1;
 
   elif arg=="--debug" do
     debugln "Enable runtime debugging";
@@ -732,10 +750,55 @@ while grab == 1 and argno<System::argc do
   argno = argno + 1;
 done
 
+// FFF BE CAREFUL! The value "/" for these caches is perfectly good
+if CLEAR_CACHE != 0 do
+  // refuse to delete "" or "/" or ".", basic safety check
+  if 
+    (OUTPUT_DIR == "/" or OUTPUT_DIR == "" or OUTPUT_DIR == ".") or
+    (CACHE_DIR == "/" or CACHE_DIR == "" or CACHE_DIR == ".")
+  do
+    println "WILL NOT DELETE CACHES";
+    println$ "output cache " + OUTPUT_DIR;
+    println$ "binary cache " + CACHE_DIR;
+    System::exit(1);
+  done
+
+  // if the cache is default $HOME one, which cannot be ""
+  // due to previous check, then delete without question
+  if 
+    OUTPUT_DIR == DEFAULT_OUTPUT_DIR and 
+    CACHE_DIR == DEFAULT_CACHE_DIR 
+  do 
+    var answer = "Y\n";
+  else
+    // otherwise prompt for confirmation
+    println$ "Would delete cache " + OUTPUT_DIR;
+    println$ "Would delete cache " + CACHE_DIR;
+    print "Are you SURE? (Y/n) "; fflush stdout;
+    answer = readln stdin;
+  done
+  if answer == "Y\n" or answer == "y\n" do
+    // delete the caches loudly
+    println$ "Delete cache " + OUTPUT_DIR;
+    C_hack::ignore$ xqt("rm -rf " + OUTPUT_DIR);
+    println$ "Delete cache " + CACHE_DIR;
+    C_hack::ignore$ xqt("rm -rf " + CACHE_DIR);
+  else
+    // otherwise exit with an error
+    println "Not deleting cache, exiting with error 1";
+    System::exit(1);
+  done
+done
+
+
 debugln$ grab, argno, System::argc;
 if grab == 1 and argno == System::argc do
-  println "usage: flx [options] filename";
-  System::exit(1);
+  if CLEAR_CACHE == 1 do
+    System::exit(0);
+  else
+    println "usage: flx [options] filename";
+    System::exit(1);
+  done
 done
 
 debugln "#--------";
@@ -743,6 +806,10 @@ debugln$ "DONE, option index = "+str(argno);
 debugln$ "path="+path+": dir="+dir+",base="+base+", ext="+ext;
 debugln$ "cpps="+cpps;
 debugln$ "cppos="+cppos;
+
+if dbug do 
+  ECHO=1;
+done
 
 var USER_ARGS = ""; 
 while argno < System::argc do 
@@ -793,9 +860,9 @@ dir =
   endif
 ;
 
-var filebase = Filename::join(dir,base);
+var filebase = Directory::mk_absolute_filename$ Filename::join(dir,base);
 debugln$ "User program base is " + filebase;
-var cpp_filebase = if OUTPUT_DIR=="" then filebase else Filename::join(OUTPUT_DIR,base) endif;
+var cpp_filebase = if OUTPUT_DIR=="" then filebase else Filename::join(OUTPUT_DIR,filebase) endif;
 debugln$ "C++ file base is " + cpp_filebase;
 
 // Find absolute pathname

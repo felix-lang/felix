@@ -118,6 +118,7 @@ let get_options raw_options =
     ;
   in
   let options = { options with automaton_filename = automaton } in
+(*
   print_endline ("Cache_dir= " ^ options.cache_dir);
   print_endline ("Output_dir= " ^ options.output_dir);
   print_endline ("Include_dirs= " ^ String.concat ", " options.include_dirs);
@@ -125,6 +126,7 @@ let get_options raw_options =
   print_endline ("Auto_imports= " ^ String.concat ", " options.auto_imports);
   print_endline ("Syntax = " ^ String.concat ", " options.syntax);
   print_endline ("Files = " ^ String.concat ", " options.files);
+*)
   options
 
 

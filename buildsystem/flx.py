@@ -46,7 +46,7 @@ class Builder(fbuild.db.PersistentObject):
             dst = buildroot + "/cache/text/"+os.getcwd()+"/"+buildroot+"/"+src
             dst = dst.replaceext('.cpp')
 
-        print("flg dst=" + dst)
+        #print("flg dst=" + dst)
         if src != src_buildroot:
             src_buildroot.parent.makedirs()
             src.copy(src_buildroot)
@@ -105,7 +105,7 @@ class Builder(fbuild.db.PersistentObject):
             buildroot=None):
         buildroot = buildroot or self.ctx.buildroot
 
-        print("_link: C++ compile src = " + src)
+        #print("_link: C++ compile src = " + src)
 
         if dst is None:
             dst = src.replaceext('')
@@ -206,7 +206,7 @@ class Builder(fbuild.db.PersistentObject):
             cxx_cflags=[],
             cxx_libs=[],
             cxx_lflags=[]):
-        print("_build_flx_pkgconfig_link:src="+src)
+        #print("_build_flx_pkgconfig_link:src="+src)
         obj = self.compile(src, includes=includes, flags=flags)
 
         return function(obj, dst,

@@ -36,8 +36,11 @@ let parse_syntax state =
   in
   fprintf state.ppf "PARSED SYNTAX/IMPORT FILES@.";
 
+    let filename =state.syms.compiler_options.automaton_filename  in
+    Flx_filesys.mkdirs (Filename.dirname filename);
+print_endline ("Trying to store automaton " ^ filename);
   let oc = 
-    try Some ( open_out_bin state.syms.compiler_options.automaton_filename )
+    try Some ( open_out_bin filename)
     with _ -> None
   in
   begin match oc with
@@ -47,6 +50,7 @@ let parse_syntax state =
     close_out oc;
     fprintf state.ppf "Saved automaton to disk@.";
   | None ->
+print_endline ("Can't store automaton to disk file " ^ filename);
     fprintf state.ppf "Failed to save automaton to disk@.";
   end
   ;
@@ -55,6 +59,7 @@ let parse_syntax state =
 let load_syntax state =
   try
      let filename = state.syms.compiler_options.automaton_filename in
+(* print_endline ("Trying to load automaton " ^ filename); *)
      let oc = open_in_bin filename in
      let local_data = Marshal.from_channel oc in
      let parsing_device = Marshal.from_channel oc in

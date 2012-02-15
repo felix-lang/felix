@@ -241,12 +241,12 @@ let cached_computation
   (f: unit -> 'a) 
   : 'a
 =
-print_endline ("Input: Filename: " ^ filename ^ ", outfilename = " ^ (match outfile with | None -> "NONE" | Some f -> f));
+(* print_endline ("Input: Filename: " ^ filename ^ ", outfilename = " ^ (match outfile with | None -> "NONE" | Some f -> f)); *)
 
   let filename = mkabs filename in
   let outfile = match outfile with | None -> None | Some f -> Some (mkabs f) in
 
-print_endline ("Absolutised: Filename: " ^ filename ^  ", outfilename = " ^ (match outfile with | None -> "NONE" | Some f -> f));
+(* print_endline ("Absolutised: Filename: " ^ filename ^  ", outfilename = " ^ (match outfile with | None -> "NONE" | Some f -> f)); *)
 
   let cached_data = 
     if not force_calc then
@@ -255,7 +255,7 @@ print_endline ("Absolutised: Filename: " ^ filename ^  ", outfilename = " ^ (mat
         match outfile with
         | Some f -> 
           begin
-print_endline ("Try to read cached output data " ^ f);
+(* print_endline ("Try to read cached output data " ^ f); *)
             try marshal_in result_kind f ~min_time
             with _ -> None
           end
@@ -266,7 +266,7 @@ print_endline ("Try to read cached output data " ^ f);
         match cached_data with
         | None -> 
           begin 
-print_endline ("Try to read cached input data " ^ filename);
+(* print_endline ("Try to read cached input data " ^ filename); *)
             try marshal_in result_kind filename ~min_time 
             with _ -> None 
           end
@@ -296,10 +296,10 @@ print_endline ("Try to read cached input data " ^ filename);
      *)
     if not nowrite then
       begin try 
-print_endline ("Try to write cached output data " ^ outname);
+(* print_endline ("Try to write cached output data " ^ outname); *)
         marshal_out result_kind outname data
       with _ ->
-print_endline ("Write failed, trying to make directories for " ^ outname);
+(* print_endline ("Write failed, trying to make directories for " ^ outname); *)
         mkdirs (Filename.dirname outname);
         marshal_out result_kind outname data
       end
