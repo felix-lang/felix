@@ -123,8 +123,8 @@ start_webserver(config);
 if with_jquery then
 """
   <link   rel="stylesheet"       href="/themes/base/jquery.ui.all.css"/>
-  <script type="text/javascript" src="/js/jquery-1.6.2.min.js"/>
-  <script type="text/javascript" src="js/jquery-ui-1.8.16.custom.min.js"/>
+  <script type="text/javascript" src="/js/jquery-1.6.2.min.js"></script>
+  <script type="text/javascript" src="js/jquery-ui-1.8.16.custom.min.js"></script>
 """
 else
 ""
