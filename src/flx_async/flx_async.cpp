@@ -62,11 +62,12 @@ public:
 void flx_driver_request_base:: start_async_op(finote_t *fn_a)
 {
   //fprintf(stderr,"start async op %p, set fn = %p\n",this,fn_a);
+  assert(fn==0);
   fn = fn_a;
   bool completed =  start_async_op_impl();
   if(completed)
   {
-    //fprintf(stderr,"instant complete\n");
+    fprintf(stderr,"instant complete\n");
     notify_finished();
   }
   else

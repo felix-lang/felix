@@ -22,7 +22,7 @@ posix_demuxer::~posix_demuxer()
 bool
 posix_demuxer::socket_recv(int s, sel_param* pb)
 {
-  fprintf(stderr,"posix_demuxer:socket_recv req=%ld\n", (long)pb->buffer_size);
+  //fprintf(stderr,"posix_demuxer:socket_recv req=%ld\n", (long)pb->buffer_size);
   // why do I have the zero buffer size?
   assert(pb->buffer_size > pb->bytes_written || 0 == pb->buffer_size);
   ssize_t     nbytes;
@@ -67,6 +67,7 @@ posix_demuxer::socket_send(int s, sel_param* pb)
   // to write... imagine that!
 
   // why do I have the zero buffer size?
+  //fprintf(stderr,"posix_demuxer:socket_send req=%ld, written=%ld\n", (long)pb->buffer_size, pb->bytes_written);
   assert(pb->buffer_size > pb->bytes_written || 0 == pb->buffer_size);
 
   ssize_t     nbytes;
@@ -74,12 +75,12 @@ posix_demuxer::socket_send(int s, sel_param* pb)
   //fprintf(stderr,"posix_demuxer:socket_send\n", nbytes);
   nbytes = send(s, pb->buffer + pb->bytes_written,
     pb->buffer_size - pb->bytes_written, 0);
-  fprintf(stderr,"posix_demuxer:socket_send wrote %ld bytes from offset %ld out of %ld to be written\n", 
+  /*fprintf(stderr,"posix_demuxer:socket_send wrote %ld bytes from offset %ld out of %ld to be written\n", 
        (long) nbytes,
        (long) pb->bytes_written,
        (long) pb->buffer_size - pb->bytes_written
   );
-
+  */
   /*
   fprintf(stderr,"posix_demuxer SEND: s=%d, pb=%p buf+%d, req=%d, got %d\n",
     s,pb, int(pb->bytes_written), int(pb->buffer_size - pb->bytes_written), int(nbytes)

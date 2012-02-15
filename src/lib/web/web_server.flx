@@ -152,7 +152,7 @@ class WebServer {
       fprint$ cerr,"fthread "+str k+" terminating!\n";
     };
 
-    forever {
+    noinline proc stuff {
       var s: socket_t;
       config.log(DEBUG,"Waiting for connection");
       accept(listener, &s);  // blocking
@@ -160,10 +160,10 @@ class WebServer {
 
       //  - spawning an fthread is blocking the web server. don't know why
       config.log(DEBUG,"spawning fthread to handle connection "+str s);
-      var h = handler s;
-      spawn_fthread  h;
+      spawn_fthread$  handler s; 
       collect(); // this hangs everything, no idea why!
     };
+    while true do stuff; done
 
     config.log(INFO,"WEB SERVER SHUTDOWN");
     iclose (listener);

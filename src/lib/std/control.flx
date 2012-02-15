@@ -98,7 +98,7 @@ open class Control
   publish "Call Supervisor"
   // this interface just gets rid of the horrible requirement
   // the request be in a variable so it is addressable
-  proc svc(x:svc_req_t) {
+  noinline proc svc(x:svc_req_t) {
     var y=x;
     _svc y;
   }

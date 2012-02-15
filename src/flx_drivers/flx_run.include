@@ -161,15 +161,29 @@ void doflx(void *data) {
             if (debug_driver)
               fprintf(stderr, "doflx: svc_general from fthread=%p\n", ss.ft);
 
+            if(debug_driver)
+              fprintf(stderr, "doflx: async=%p, ptr_create_async_hooker=%p\n", async,ptr_create_async_hooker);
             if (!async) {
+              if(debug_driver)
+                fprintf(stderr,"doflx: trying to create async system..\n");
+
               if (ptr_create_async_hooker == NULL) {
+                if(debug_driver)
+                  fprintf(stderr,"doflx: trying to create async hooker..\n");
 #if !FLX_SUPPORT_ASYNC
                 ptr_create_async_hooker = 0;
+                if(debug_driver)
+                  fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC FALSE\n");
 #else
                 ptr_create_async_hooker = create_async_hooker;
+                if(debug_driver)
+                  fprintf(stderr,"doflx: FLX_SUPPORT_ASYNC TRUE, create_async_hooker = %p\n", create_async_hooker);
 #  ifndef FLX_STATIC_LINK
                 // Try to dynamically load the felix asynchronous library
                 
+                if(debug_driver)
+                  fprintf(stderr,"doflx: dymamic_link: trying to load libflx_async_dynamic\n");
+
                 LIBHANDLE async_lib = flx_load_module("libflx_async_dynamic");
 
                 // Error out if we couldn't load the library.
@@ -202,6 +216,8 @@ void doflx(void *data) {
                     fprintf(stderr, "found 'create_async_hooker'!\n");
                 }
 #  endif
+                if(debug_driver)
+                  fprintf(stderr,"doflx: static_link: libflx_async_static SHOULD BE LINKED IN\n");
 #endif
               }
               // Error out if we don't have the hooker function.
