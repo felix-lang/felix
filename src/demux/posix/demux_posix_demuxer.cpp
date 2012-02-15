@@ -22,7 +22,7 @@ posix_demuxer::~posix_demuxer()
 bool
 posix_demuxer::socket_recv(int s, sel_param* pb)
 {
-  //fprintf(stderr,"posix_demuxer:socket_recv\n");
+  fprintf(stderr,"posix_demuxer:socket_recv req=%ld\n", (long)pb->buffer_size);
   // why do I have the zero buffer size?
   assert(pb->buffer_size > pb->bytes_written || 0 == pb->buffer_size);
   ssize_t     nbytes;
