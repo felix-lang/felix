@@ -18,7 +18,7 @@ class HTTPConnection {
     *conn.dirty = state;
   }
 
-  proc write(conn:http_connection,content:string) {
+  noinline proc write(var conn:http_connection,var content:string) {
     
     var eof_flag = false;
     val content_len = content.len;
@@ -28,13 +28,13 @@ class HTTPConnection {
     var remainder = content.len % chunk_size;
     var base = size(0);
     for var i in size(1) upto chunks do
-      conn.config.log(DEBUG,"Writing:"+str(base)+" to "+str(base+chunk_size));
+      conn.config.log(DEBUG,"Writing[sock="+str conn.sock+"]:"+str(base)+" to "+str(base+chunk_size));
       write_string(conn.sock,content.[base to (base+chunk_size)],&eof_flag);
       base = base + chunk_size;
       
     done
     if remainder > size(0) do
-       conn.config.log(DEBUG,"Writing Remainder:"+str(base)+" to "+str(content_len));
+       conn.config.log(DEBUG,"Writing[sock="+str conn.sock+"] Remainder:"+str(base)+" to "+str(content_len));
        write_string(conn.sock,content.[base to ],&eof_flag);
     done
     set_dirty(conn,true);  
