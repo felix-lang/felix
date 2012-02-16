@@ -70,7 +70,7 @@ let rep =
   match n,z with
   | -1,_ -> assert false
 (* Remove this case temporarily because it is a bit tricky to implement *)
-(*  | 1,_ -> VR_self *)                 (* only one case do drop variant *)
+  | 1,_ -> VR_self                  (* only one case do drop variant *)
   | _,0 -> VR_int                  (* no arguments, just use an int *)
   | k,_ when k <= 4 -> VR_packed   (* At most 4 cases, encode caseno in point low bits *)
   | _,_ -> VR_uctor                (* Standard Uctor *)

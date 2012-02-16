@@ -217,7 +217,8 @@ let rec cpp_type_classname syms bsym_table t =
       | _ -> "_unk_"
     in
     begin match bbdcl with 
-    | BBDCL_union _   ->
+    | BBDCL_union ([], [id,n,t']) -> cpp_type_classname syms bsym_table t'
+    | BBDCL_union _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table t with
       | Flx_vrep.VR_self -> assert false
       | Flx_vrep.VR_int -> "int"

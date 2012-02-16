@@ -42,6 +42,7 @@ let rec get_offsets' syms bsym_table typ : string list =
         ("get_offsets'] can't find index " ^ string_of_bid i)
     in
     begin match Flx_bsym.bbdcl bsym with
+    | BBDCL_union ([], [id,n,t']) -> get_offsets' syms bsym_table t'
     | BBDCL_union (vs,idts) ->
 (*
       let varmap = mk_varmap vs ts in
