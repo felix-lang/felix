@@ -25,6 +25,7 @@ Example code:
 class SimpleConfig {
   requires header '#include <sys/stat.h>';
   open Assoc_list;
+  open Csv;
 
   typedef configuration = assoc_list[string,string];
 
