@@ -7,7 +7,14 @@ class Directory
   //------------------------------------------------------------
   gen mkdir: string * FileStat::mode_t -> int = "mkdir($1.c_str(), $2)";
   gen mkdir: string  -> int = "mkdir($1.c_str(), 0777)";
-
+  proc mkdirs (s:string)
+  {
+    if s == "" or s == "." or s == ".." or s == "/" do 
+       return;
+    done
+    mkdirs$ Filename::dirname s;
+    C_hack::ignore$ mkdir s;
+  }
   //------------------------------------------------------------
   // directory searching
   //------------------------------------------------------------

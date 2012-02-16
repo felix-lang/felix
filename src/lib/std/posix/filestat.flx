@@ -23,6 +23,7 @@ class FileStat
   """;
   pod type time_t = "time_t";
   fun mtime: &stat_t -> uvlong = "(unsigned long)($1->st_mtime * 1000ul)";
+  fun ctime: &stat_t -> uvlong = "(unsigned long)($1->st_ctime * 1000ul)";
 
   // get modification time of a file
   fun filetime(f:string):uvlong = // milliseconds

@@ -750,6 +750,40 @@ while grab == 1 and argno<System::argc do
   argno = argno + 1;
 done
 
+if WIN32 do
+  FLXG=Filename::join(FLX_INSTALL_DIR, 'bin', 'flxg');
+  FLXRUN='';
+else
+  FLXG=FLX_INSTALL_DIR+"/bin/flxg";
+  // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
+  if MACOSX do
+    FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH ";
+  else
+    FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH ";
+  done
+done
+
+Directory::mkdirs(CACHE_DIR);
+
+var flxg_time = FileStat::filetime(FLXG);
+var flxg_stamp = Filename::join CACHE_DIR "flxg_time.stamp";
+var cache_time = FileStat::filetime(flxg_stamp); 
+
+// Still if this fails,  the compiler is new and 
+// the cache should be deleted.
+if cache_time != 0uv and flxg_time > cache_time do
+  println$ "Cache may be out of date due to compiler upgrade!";
+  println$ "Flxg compiler time stamp=" + str flxg_time;
+  println$ "Cache time stamp is " + str cache_time;
+  if not (
+    (OUTPUT_DIR == "/" or OUTPUT_DIR == "" or OUTPUT_DIR == ".") or
+    (CACHE_DIR == "/" or CACHE_DIR == "" or CACHE_DIR == ".")
+  )
+  do 
+    CLEAR_CACHE = 1;
+  done
+done
+
 // FFF BE CAREFUL! The value "/" for these caches is perfectly good
 if CLEAR_CACHE != 0 do
   // refuse to delete "" or "/" or ".", basic safety check
@@ -783,6 +817,10 @@ if CLEAR_CACHE != 0 do
     C_hack::ignore$ xqt("rm -rf " + OUTPUT_DIR);
     println$ "Delete cache " + CACHE_DIR;
     C_hack::ignore$ xqt("rm -rf " + CACHE_DIR);
+    Directory::mkdirs(CACHE_DIR);
+    var f = fopen_output flxg_stamp;
+    write(f, str flxg_time);
+    f.fclose;
   else
     // otherwise exit with an error
     println "Not deleting cache, exiting with error 1";
@@ -951,19 +989,6 @@ var STDLIB="std";
 if NOSTDLIB == 1 do
   FLXLIB="";
   STDLIB="";
-done
-
-if WIN32 do
-  FLXG=Filename::join(FLX_INSTALL_DIR, 'bin', 'flxg');
-  FLXRUN='';
-else
-  FLXG=FLX_INSTALL_DIR+"/bin/flxg";
-  // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
-  if MACOSX do
-    FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH ";
-  else
-    FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH ";
-  done
 done
 
 var DEBUGSWITCH="";
