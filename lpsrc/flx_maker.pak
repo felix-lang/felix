@@ -183,7 +183,7 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
   if config.HOST_CXX.options.SIZEOF_LONGLONG == config.HOST_CXX.options.SIZEOF_VOIDP: return "unsigned long long"
   raise "Cannot find an int the size of a void pointer"
 
-@tangle("#define FLX_RAWADDRESS " + cal_raw_address())
+@tangle("typedef " + cal_raw_address() + " FLX_RAWADDRESS;")
 @tangle('#define FLX_MAX_ALIGN ' + str(config.HOST_CXX.options.MAX_ALIGN))
 
 // get variant index code and pointer from packed variant rep
@@ -406,7 +406,7 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
   if config.TARGET_CXX.options.SIZEOF_LONGLONG == config.TARGET_CXX.options.SIZEOF_VOIDP: return "unsigned long long"
   raise "Cannot find an int the size of a void pointer"
 
-@tangle("#define FLX_RAWADDRESS " + cal_raw_address())
+@tangle("typedef " + cal_raw_address() + " FLX_RAWADDRESS;")
 @tangle('#define FLX_MAX_ALIGN ' + str(config.TARGET_CXX.options.MAX_ALIGN))
 
 // get variant index code and pointer from packed variant rep
