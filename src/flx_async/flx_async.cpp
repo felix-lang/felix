@@ -2,6 +2,8 @@
 #include "pthread_bound_queue.hpp"
 #include "flx_rtl.hpp"
 #include <cassert>
+#include <cstdio>
+
 using namespace ::flx::rtl;
 using namespace ::flx::pthread;
 using namespace ::flx::async;
@@ -67,7 +69,7 @@ void flx_driver_request_base:: start_async_op(finote_t *fn_a)
   bool completed =  start_async_op_impl();
   if(completed)
   {
-    fprintf(stderr,"instant complete\n");
+    fprintf(::std::stderr,"instant complete\n");
     notify_finished();
   }
   else
