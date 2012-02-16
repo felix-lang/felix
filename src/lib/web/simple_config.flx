@@ -1,4 +1,4 @@
-
+include "std/csv";
 publish """
 Simple config file reader. Splits key value pairs seperated by the equals character.
 Skips lines where first non-space character is the # character. Max configuration file size 
@@ -33,7 +33,8 @@ class SimpleConfig {
   """
   fun read_config(config_file:string):configuration = {
     val fsz =  fsize(config_file);
-    var config = Empty[string*string];
+    var config = Cons(('INSTALL_ROOT',#Config::config.FLX_INSTALL_DIR),
+                      Empty[string*string]);
     if fsz > size(0) and fsz < size(65535) do 
       val handle = fopen_input config_file;
       if valid handle do
@@ -45,20 +46,52 @@ class SimpleConfig {
     done
     return config;
   }
+  
+  publish """
+    returns opt param value for given key
+  """
+  fun get_param(params:list[string*string],name:string) =>
+     find (fun (a:string,b:string) => eq(a,b)) params name;
+
+  publish """
+    return list strings from comma seperated parameter value
+  """
+  fun get_param_list(params:list[string*string],name:string) =>
+    match get_param(params,name) with |Some ?v => get_csv_values(v) |_ => Empty[string] endmatch;
+  
+  publish """
+     Supports $variables in config files. Uses previously defined paramater keys
+     as $ variables. Only supports first occurance of $variable. Also
+     $INSTALL_ROOT is available nad populated with the value for the felix
+     install root
+  """
+  fun apply_param_vars (par:list[string*string]):list[string*string] ={
+    var kp:string; var vp:string; 
+    return map (fun (k:string,v:string) = {
+      kp = k; vp = v; 
+      iter (proc (k1:string,v1:string) { 
+        kp,vp = match find(vp,k1) with
+          |Some ?p => (kp, substring(vp,0,(p-1)) + v1 +
+                          substring(vp,p+int(k1.len),vp.len))
+          |_ => (kp,vp)
+        endmatch;
+      }) par;
+      return (kp,vp);
+    }) par;
+  }
 
   private fun parse(line:string):list[string*string] =>
     if startswith (strip line) (char '#') then
       Empty[string*string]
     else
-      match split_first(line, (char '=')) with 
-        |Some ?s => list[string*string](s) 
+      match split_first(line, "=") with 
+        |Some ?s => list[string*string]((strip(s.(0)),strip(s.(1)))) 
         |None[string*string] => Empty[string*string] 
       endmatch 
     endif;
   
-  private fun split_first (x:string, c:char): opt[string*string] ={
-    var d = c;
-    return match find_first_of (x, &d) with
+  private fun split_first (x:string, c:string): opt[string*string] ={
+    return match find_first_of (x, c) with
       | None => None[string*string]
       | Some ?n => Some(strip(x.[to n]),strip(x.[n+1 to]))
       endmatch
