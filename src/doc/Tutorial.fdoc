@@ -993,7 +993,7 @@ The conditional expression is merely
 a shortcut for a match, as shown in the
 third sign function.
 
-env.head(2,'Pointers')
+@h2 Pointers
 Felix supports pointers. The type of a pointer to T is
 denoted:
 <pre>
@@ -1403,7 +1403,7 @@ e has type 'A', Felix looks in module X for 'get_x'.
 Koenig lookup only works for method calls, that is,
 when you use the syntax e.x.
 
-@env.head(2,'The ubiquitous goto')
+@h2 The ubiquitous goto
 Felix allows statements to be labelled,
 and provides a conditional and unconditional goto statement.
 
@@ -1863,7 +1863,7 @@ The let expression is, in effect, a prefix operator with
 the lowest precedence.
 @flx-and-expect tut/tutorial/tut-10.05-0
 
-@env.head(2,'Metatyping')
+@h2 Metatyping
 Felix supports a metatyping or kinding system.
 The reserved identifer TYPE denotes the kind of a type.
 You can make a function that generates a type from
