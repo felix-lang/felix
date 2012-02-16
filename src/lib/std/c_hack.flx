@@ -26,12 +26,12 @@ class C_hack
   """
   proc ignore[t]:t = "(void)$t;";
 
-  fun cast[dst,src]: src->dst = '(?1)($1)';
-  fun static_cast[dst,src]: src->dst = 'static_cast<?1>($1)';
-  fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)';
-  fun const_cast[dst,src]: src->dst = 'const_cast<?1>($1)';
-  fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($1)';
-  fun reinterpret[dst,src]: src->dst = 'reinterpret<?1>($1)';
+  fun cast[dst,src]: src->dst = '(?1)($1:assign)' is cast;
+  fun static_cast[dst,src]: src->dst = 'static_cast<?1>($1)' is postfix;
+  fun dynamic_cast[dst,src]: src->dst = 'dynamic_cast<?1>($1)' is postfix;
+  fun const_cast[dst,src]: src->dst = 'const_cast<?1>($1)' is postfix;
+  fun reinterpret_cast[dst,src]: src->dst = 'reinterpret_cast<?1>($1)' is postfix;
+  fun reinterpret[dst,src]: src->dst = 'reinterpret<?1>($1)' is postfix;
 
   const sizeof[t]:size = 'sizeof(?1)';
 

@@ -18,8 +18,8 @@ open Tord[ustring];
 
 open class String
 {
-  proc  += : &string * string = "$1->append($2);";
-  proc  += : &string * &char = "$1->append($2);";
+  proc  += : &string * string = "$1->append($2:assign);";
+  proc  += : &string * &char = "$1->append($2:assign);";
   proc  += : &string * char = "*$1 += $2;";
 
   // we need to cast to an int so that c++ won't complain
@@ -29,26 +29,26 @@ open class String
   fun + : string * &char -> string = "$1+$2";
   fun + : string * char -> string = "$1+$2";
   fun + : char * string -> string = "$1+$2";
-  fun + : string * int -> string = "$1+::flx::rtl::i18n::utf8($2)" requires package "flx_i18n";
-  fun * : string * int -> string = "::flx::rtl::strutil::mul($1,$2)" requires package "flx_strutil";
-  fun * : char * int -> string = "::std::string($2,$1)";
+  fun + : string * int -> string = "$1+::flx::rtl::i18n::utf8($2:assign)" is add requires package "flx_i18n";
+  fun * : string * int -> string = "::flx::rtl::strutil::mul($1:assign,$2:assign)" requires package "flx_strutil";
+  fun * : char * int -> string = "::std::string($2:assign,$1:assign)";
 
   fun apply (x:string, y:string):string => x + y;
   fun apply (x:string, y:int):string => x + y;
 
   ctor char (x:string) => x.[0];
   ctor string (c:char) => ""+c;
-  ctor string: &char = "::std::string($1)";
-  ctor string: &char  * !ints = "::std::string($1,$2)";
+  ctor string: &char = "::std::string($1:assign)";
+  ctor string: &char  * !ints = "::std::string($1:assign,$2:assign)";
 
   fun subscript: string * !ints -> char =
-    "::flx::rtl::strutil::subscript($1,$2)" requires package "flx_strutil";
+    "::flx::rtl::strutil::subscript($1:assign,$2:assign)" requires package "flx_strutil";
   fun copyfrom: string * !ints -> string =
-    "::flx::rtl::strutil::substr($1,$2,$1.size())" requires package "flx_strutil";
+    "::flx::rtl::strutil::substr($1:assign,$2:assign,$1:postfix.size())" requires package "flx_strutil";
   fun copyto: string * !ints -> string =
-    "::flx::rtl::strutil::substr($1,0,$2)" requires package "flx_strutil";
+    "::flx::rtl::strutil::substr($1:assign,0,$2:assign)" requires package "flx_strutil";
   fun substring: string * !ints * !ints -> string =
-    "::flx::rtl::strutil::substr($1,$2,$3)" requires package "flx_strutil";
+    "::flx::rtl::strutil::substr($1:assign,$2:assign,$3:assign)" requires package "flx_strutil";
 
   fun subscript (x:string, s:slice[int]):string =>
     match s with
@@ -73,12 +73,12 @@ open class String
 
   const stl_npos: size = "::std::string::npos";
 
-  fun stl_find: string * string -> int = "(int)$1.find($2)";
-  fun stl_find: string * string * int -> int = "(int)$1.find($2,$3)";
-  fun stl_find: string * &char -> int = "(int)$1.find($2)";
-  fun stl_find: string * &char * int -> int = "(int)$1.find($2,$3)";
-  fun stl_find: string * char -> int = "(int)$1.find($2)";
-  fun stl_find: string * char * int -> int = "(int)$1.find($2,$3)";
+  fun stl_find: string * string -> int = "(int)$1.find($2)" is cast;
+  fun stl_find: string * string * int -> int = "(int)$1.find($2,$3)" is cast;
+  fun stl_find: string * &char -> int = "(int)$1.find($2)" is cast;
+  fun stl_find: string * &char * int -> int = "(int)$1.find($2,$3)" is cast;
+  fun stl_find: string * char -> int = "(int)$1.find($2)" is cast;
+  fun stl_find: string * char * int -> int = "(int)$1.find($2,$3)" is cast;
 
   instance Set[string,char] {
     fun \in (c:char, s:string) => stl_find (s,c) != stl_npos.int;
@@ -312,13 +312,13 @@ open class String
   proc insert: string * int * string = "$1.insert($2,$3);";
   proc replace: string * int * int * string = "$1.replace($2,$3,$4);";
 
-  fun atoi: string -> int = "::std::atoi($1.c_str())" requires Cxx_headers::cstdlib;
-  fun atol: string -> long = "::std::atol($1.c_str())" requires Cxx_headers::cstdlib;
-  fun atof: string -> double = "::std::atof($1.c_str())" requires Cxx_headers::cstdlib;
+  fun atoi: string -> int = "::std::atoi($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
+  fun atol: string -> long = "::std::atol($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
+  fun atof: string -> double = "::std::atof($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
 
   proc reserve: &string * !ints = "$1->reserve($2);";
 
-  fun cstr: string -> &char = "(char*)$1.c_str()";
+  fun cstr: string -> &char = "(char*)$1:postfix.c_str()" is cast ;
 
   fun vsprintf[t]: &char  * t -> string =
     "::flx::rtl::strutil::flx_asprintf($1,$2)" requires package "flx_strutil"
@@ -368,11 +368,11 @@ open class Ustring
   fun subscript: ustring * int -> char =
     "$1[$2<0??$1.size()+$2 : $2]";
   fun copyfrom: ustring * int -> ustring =
-    "::flx::rtl::strutil::substr($1,$2,$1.size())" requires package "flx_strutil";
+    "::flx::rtl::strutil::substr($1:assign,$2:assign,$1:postfix.size())" requires package "flx_strutil";
   fun copyto: ustring * int -> ustring =
-    "::flx::rtl::strutil::substr($1,0,$2)" requires package "flx_strutil";
+    "::flx::rtl::strutil::substr($1:assign,0,$2:assign)" requires package "flx_strutil";
   fun substring: ustring * int * int -> ustring =
-    "::flx::rtl::strutil::substr($1,$2,$3)" requires package "flx_strutil";
+    "::flx::rtl::strutil::substr($1:assign,$2:assign,$3:assign)" requires package "flx_strutil";
 
 }
 

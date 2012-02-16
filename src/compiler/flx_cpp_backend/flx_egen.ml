@@ -419,14 +419,12 @@ let rec gen_expr'
     let _,t' = e in
     let pname = shape_of syms bsym_table tn t' in
     let typ = tn t' in
-    let frame_ptr =
-      "new(*PTF gcp,"^pname^",true) " ^
-      typ ^ "("^ge e ^")"
+    let frame_ptr = ce_new 
+        [ ce_atom "*PTF gcp"; ce_atom pname; ce_atom "true"] 
+        typ 
+        [ge' e]
     in
-    let reference =
-      "(" ^ ref_type ^ ")(" ^ frame_ptr ^ ")" 
-    in
-    ce_atom reference
+    ce_cast ref_type frame_ptr
 
 (* class new constructs an object _in place_ on the heap, unlike ordinary
  * new, which just makes a copy of an existing value.
@@ -446,7 +444,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
     then ce_atom (cstring_of_literal v)
     else
     let t = tn t in
-    ce_atom ("("^t ^ ")(" ^ cstring_of_literal v ^ ")")
+    ce_cast t  (ce_atom (cstring_of_literal v))
 
   (* A case tag: this is a variant value for any variant case
    * which has no (or unit) argument: can't be used for a case

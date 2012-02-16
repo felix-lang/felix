@@ -140,6 +140,17 @@ let remaps = [
   "$1.*$2",("$1:pm.*$2:cast","pm");
   "$1->*$2",("$1:pm->*$2:cast","pm");
   "$1:comma,$2:comma",("$1,$2","comma");
+
+  (* common library stuff: a hack but safe, prolly should fix in library*)
+  "&::std::cout",("&::std::cout","unary");
+  "&::std::cerr",("&::std::cerr","unary");
+  "$1.size()",("$1:postfix.size()","postfix");
+  "$1.data[$2]",("$1:postfix.data[$2:expr]","postfix");
+
+  "::flx::rtl::strutil::str<int>($1)",("::flx::rtl::strutil::str<int>($1:assign)","postfix");
+  "::flx::rtl::strutil::str<#1>($1)",("::flx::rtl::strutil::str<#1>($1:assign)","postfix");
+  "static_cast<#0>($1)",("static_cast<#0>($1:assign)","postfix");
+  "reinterpret<?1>($1)",("reinterpret<?1>($1:assign)","postfix");
 ]
 ;;
 
@@ -212,6 +223,19 @@ and cep cp e =
   ^
   (if need_brackets then ")" else "")
 
+let alnum = "ABCDEFGHIJKLMNOPQRSTUVWXYabcdefghijklmnopqrstuvwxyz0123456789_:"
+
+let is_id x =
+  try 
+   for i = 0 to String.length x - 1 do 
+     if not (String.contains alnum (x.[i]))
+     then raise Not_found  else ()
+   done
+   ; 
+   true 
+  with  Not_found -> false
+
+
 let ce_atom s = `Ce_atom s
 let ce_postfix o e = `Ce_postfix (o,e)
 let ce_prefix o e = `Ce_prefix (o,e)
@@ -219,7 +243,7 @@ let ce_infix o a b = `Ce_infix (o,a,b)
 let ce_call a b = `Ce_call (a,b)
 let ce_array a b = `Ce_array (a,b)
 let ce_new p c a = `Ce_new (p,c,a)
-let ce_cast s e = `Ce_cast (s,e)
+let ce_cast s e = if is_id s then `Ce_call (`Ce_atom s, [e]) else `Ce_cast (s,e)
 let ce_cond c a b = `Ce_cond (c,a,b)
 let ce_expr p s = `Ce_expr (p,s)
 let ce_top s = ce_expr "expr" s
@@ -229,9 +253,47 @@ let ce_arrow e s = ce_infix "->" e (ce_atom s)
 let sc p e = cep (find_prec p) e
 let ce p s = ce_expr p s
 
+(* name(...) form *)
+let check_apl ct =
+  let n = String.length ct in
+  let bcount = ref 0 in
+  let mode = ref "id" in
+  for i = 0 to n - 2 do
+     if !mode = "id" then
+       if ct.[i] = '(' then 
+         mode := "scan"
+       else 
+         if String.contains alnum ct.[i] then () 
+         else raise Not_found
+     else begin
+       if ct.[i]='(' then incr bcount
+       else if ct.[i]=')' then if !bcount > 0 then decr bcount else raise Not_found
+       else ()
+    end
+  done;
+  if !mode="scan" && !bcount=0 && ct.[n-1] = ')' 
+  then begin 
+    ct, "postfix" 
+  end
+  else raise Not_found
+
 let genprec ct prec =
-  try Hashtbl.find prec_remap ct
-  with Not_found -> ct,prec
+  assert (ct <> "");
+  if is_id ct then ct,"atom" else
+  let n = String.length ct in
+  if ct.[n-1] = ';' then begin ct, prec end else
+  try 
+    let ct,prec = Hashtbl.find prec_remap ct in
+    ct,prec
+
+  with Not_found -> 
+  try 
+    let ct,prec = check_apl ct in
+    (* print_endline ("Fun cal found prec " ^ prec ^ " for " ^ ct); *)
+    ct,prec
+  with Not_found -> 
+    (* print_endline ("Fun cal FAILED, using prec " ^ prec ^ " for " ^ ct); *)
+    ct,prec
 
 (* WARNING: These reductions only work for code that obeys C semantics, i.e. it will
    NOT work for all possible overloads of C++ operations: it should be OK provided

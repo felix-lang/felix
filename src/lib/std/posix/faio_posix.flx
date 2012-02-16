@@ -25,11 +25,11 @@ header = '#include "faio_posixio.hpp"';
 
 
 instance Str[FileSystem::posix_file] {
-  fun str: FileSystem::posix_file -> string = "flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
+  fun str: FileSystem::posix_file -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
 }
 
 instance Str[socket_t] {
-  fun str: socket_t -> string = "flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
+  fun str: socket_t -> string = "::flx::rtl::strutil::str<int>($1)" requires package "flx_strutil";
 }
 
 proc close: socket_t = 'close($1);' requires Posix_headers::unistd_h;
@@ -50,7 +50,7 @@ gen aio_creat: string * posix_permissions-> FileSystem::posix_file = ' open($1.c
 
 type socket_t = "int";
 // socketio_request should be renamed to be async_fd_request
-type socketio_request = "flx::faio::socketio_request";
+type socketio_request = "::flx::faio::socketio_request";
 
 gen mk_socketio_request: demuxer * socket_t*address*int*bool -> socketio_request
     = '::flx::faio::socketio_request($1, $2, (char*)$3, $4, $5)';
@@ -82,12 +82,12 @@ proc async_write(fd: socket_t, len: &int, buf: address, eof: &bool)
     //println$ "faio/flx_faoi_posix.flx: async_write(s,"+str (*len)+",buf,"+str(*eof)+" call async_rw ..";
 }
 
-type flxfileio_request = "flx::faio::flxfileio_request";
+type flxfileio_request = "::flx::faio::flxfileio_request";
 
 // connect!
-type async_connect = 'flx::faio::connect_request';
+type async_connect = '::flx::faio::connect_request';
 
-fun mk_async_connect: demuxer * &char *int-> async_connect = 'flx::faio::connect_request($a)';
+fun mk_async_connect: demuxer * &char *int-> async_connect = '::flx::faio::connect_request($a)';
 fun get_socket: async_connect -> socket_t = '$1.s';
 fun get_err: async_connect -> int = '$1.socket_err';
 
@@ -99,14 +99,14 @@ proc connect(s: &socket_t, addr: &char, port: int)
     *s = ac.get_socket;
 }
 
-type accept_request = "flx::faio::accept_request";
+type accept_request = "::flx::faio::accept_request";
 
-fun mk_accept: demuxer * socket_t -> accept_request = 'flx::faio::accept_request($1,$2)';
+fun mk_accept: demuxer * socket_t -> accept_request = '::flx::faio::accept_request($1,$2)';
 fun get_socket: accept_request -> socket_t = '$1.accepted';
 
 // arg1 = returned socket, arg2 is port, pass 0 to have one assigned
 proc mk_listener: &socket_t* &int *int
-    = '*$1 = flx::demux::create_async_listener($2, $3);' requires sockety_h;
+    = '*$1 = ::flx::demux::create_async_listener($2, $3);' requires sockety_h;
 
 proc accept(s: &socket_t, listener: socket_t)
 {
@@ -119,7 +119,7 @@ proc accept(s: &socket_t, listener: socket_t)
 
 // offset ? let it be for a moment
 fun mk_faio: job_queue * FileSystem::posix_file *address*int*int*bool -> flxfileio_request
-    = 'flx::faio::flxfileio_request($1,$2, (char*)$3, $4, $5, $6)';
+    = '::flx::faio::flxfileio_request($1,$2, (char*)$3, $4, $5, $6)';
 fun get_pb: flxfileio_request -> sel_param_ptr = '&$1.pb';
 
 proc faio_rw(q:job_queue, fd: FileSystem::posix_file, len: &int, buf: address, eof: &bool, read_flag: bool)
