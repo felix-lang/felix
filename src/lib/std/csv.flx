@@ -42,7 +42,7 @@ class Csv {
     var pos = 0;
     n := s.len.int;
     while pos < n do
-      get_csv_value (inp, &pos, &res);
+      get_csv_value (s, &pos, &res);
       if res.len.int >0 do v += res; done;
     done;
     return v;
