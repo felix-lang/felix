@@ -84,7 +84,7 @@ doc-clang:
 install:
 	sudo build/release/bin/flx --test=build/release --install 
 	sudo build/release/bin/flx --test=build/release --install-bin
-	sudo flx --clean
+	sudo rm -rf $(HOME)/.felix/cache
 	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
 	flx install-done
 	rm install-done.*
@@ -95,7 +95,7 @@ install-felix-lang.org:
 	sudo stop felixweb
 	sudo build/release/bin/flx --test=build/release --install 
 	sudo build/release/bin/flx --test=build/release --install-bin
-	sudo flx --clean
+	sudo rm -rf $(HOME)/.felix/cache
 	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
 	flx install-done
 	rm install-done.*
