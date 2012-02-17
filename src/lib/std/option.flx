@@ -13,4 +13,19 @@ instance[T with Show[T]] Str[opt[T]] {
   ;
 }
 
+fun or_else[T] (x:opt[T]) (d:T) : T =>
+       match x with
+       | Some ?v => v
+       | None => d
+       endmatch
+       ;
 
+
+class DefaultValue[T] {
+  virtual fun default[T]: ()->T;
+
+  fun or_default[T]  (x:opt[T]) () =>
+               x.or_else #default[T]
+       ;
+  
+}
