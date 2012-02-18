@@ -1,0 +1,34 @@
+// codecs
+include "web/base64";
+include "web/json";                    
+include "web/xml2";
+include "web/mime_type";
+
+// http protocol handlers
+//include "web/http_handler";            
+//include "web/http_connection";         
+//include "web/http_request";            
+//include "web/http_status_code";        
+//include "web/http_response";           
+//include "web/http_auth";               
+//include "web/cookie";                  
+
+
+// data base
+//include "web/pgsql";
+//include "web/sqlite3_ext";
+//include "web/sqlite3_pool";
+
+// web server
+//include "web/server_config";
+//include "web/simple_config";
+//include "web/templates";
+//include "web/logger";                  
+
+//include "web/decorators";              
+//include "web/dom";                     
+
+// misc
+//include "web/low_res_time";
+//include "web/pool";
+

@@ -56,7 +56,7 @@ fun xlat_cpp(t:string, dir:string)=
   var i = 0; var s:state_t;
   var ch = t.[i];
   proc next() { ch = t.[i]; ++i; }
-  fun ahead (j:int)=> t.[i+j-1]; 
+  fun ahead (j:int)=> t.[i + j - 1]; 
 
   var b = "";
   var last_id = "";

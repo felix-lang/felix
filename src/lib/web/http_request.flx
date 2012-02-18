@@ -1,3 +1,6 @@
+include "std/io/socket";
+include "std/io/stream";
+
 publish """
 Defines types and container for http_request.
 Main entry points are get_param (helper to extract params from http_request)
@@ -10,7 +13,10 @@ class HTTPRequest {
    open XML2;
    open Logger;
    open Cookie;
-   
+   open Stream;
+   open Socket;
+   open TerminalIOByteStream[socket_t];
+ 
    union http_method = 
      | GET
      | POST
@@ -168,3 +174,4 @@ class HTTPRequest {
 }
 
 }
+

@@ -128,7 +128,7 @@ fun parse_get_line (get:string) =>
 fun txt2html (x:string) =
 {
   var out2 = "";
-  for var i in 0 upto x.len.int-1 do
+  for var i in 0 upto x.len.int - 1 do
     var ch = x.[i];
     if ch == char "<" do out2+="&lt;";
     elif ch == char ">" do out2+="&gt;";

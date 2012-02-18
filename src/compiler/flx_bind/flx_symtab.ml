@@ -45,7 +45,7 @@ let detail x =
       (fun (_,s,b) -> Flx_print.string_of_iface 2 s ^ 
         (match b with | None ->"" | Some i -> " <-- " ^ string_of_int i)) x.exports) 
 
-let merge_entry_set htab k v =
+let merge_entry_set sym_table htab k v =
 (*
 print_endline ("Merge entry " ^ k);
 *)
@@ -67,8 +67,16 @@ print_endline ("Merge entry " ^ k);
       failwith ("Duplicate and inconsistent entries for " ^ k ^ " on table merge")
  
     | NonFunctionEntry {base_sym=0;}, NonFunctionEntry {base_sym=0;} -> () (* no point adding another pointer to root *)
-    | NonFunctionEntry _, NonFunctionEntry _ -> 
-      failwith ("Duplicate non-function entries for " ^ k ^ " on table merge")
+    | NonFunctionEntry {base_sym=s1}, NonFunctionEntry {base_sym=s2} ->
+      let d1 = try Flx_sym_table.find sym_table s1 with Not_found -> assert false in
+      let d2 = try Flx_sym_table.find sym_table s2 with Not_found -> assert false in
+      print_endline ("Duplicate non-function entries for '" ^ k ^ "' on table merge");
+      print_endline ("s1=" ^ string_of_int s1);
+      print_endline (Flx_srcref.long_string_of_src d1.Flx_sym.sr);
+      print_endline ("s2=" ^ string_of_int s2);
+      print_endline (Flx_srcref.long_string_of_src d2.Flx_sym.sr);
+      failwith ("Duplicate non-function entries for '" ^ k ^ "' on table merge, s1="^
+        string_of_int s1^", s2="^string_of_int s2 )
   end
   else begin 
 (*
@@ -632,8 +640,8 @@ and build_table_for_dcl
         let entry:Flx_sym_table.elt = try Hashtbl.find sym_table 0 with Not_found -> failwith "Flx_symtab: no root in symbol table" in
         let sym:Flx_sym.t = match entry with { Flx_sym_table.sym=sym } -> sym in
         match sym with {Flx_sym.pubmap=old_pubmap; privmap=old_privmap; dirs=old_dirs; symdef=symdef} ->
-        Hashtbl.iter (fun k v -> merge_entry_set old_pubmap k v) pubtab;
-        Hashtbl.iter (fun k v -> merge_entry_set old_privmap k v) privtab;
+        Hashtbl.iter (fun k v -> merge_entry_set sym_table old_pubmap k v) pubtab;
+        Hashtbl.iter (fun k v -> merge_entry_set sym_table old_privmap k v) privtab;
         let symdef = match symdef with 
         | SYMDEF_root old_exes -> SYMDEF_root (old_exes @ exes) (* ORDER OF INITIALISATION IS VITAL *)
         | _ -> failwith "flx_symtab: expected index 0 to be SYMDEF_root!"

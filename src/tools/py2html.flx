@@ -47,7 +47,7 @@ fun xlat_py(t:string)=
   var i = 0; var s:state_t;
   var ch = t.[i];
   proc next() { ch = t.[i]; ++i; }
-  fun ahead (j:int)=> t.[i+j-1]; 
+  fun ahead (j:int)=> t.[i + j - 1]; 
   fun issq3() => 
     ch == char "'" and 
     ahead(1) == char "'" and

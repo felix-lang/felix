@@ -1,5 +1,8 @@
+include "std/io/faio";
 
 // fthread/sleep test
+
+var sys_clock = #Faio::mk_alarm_clock;
 
 noinline proc mkfibre(p:int, f:int) {
   spawn_fthread {

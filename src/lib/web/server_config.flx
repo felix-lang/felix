@@ -13,7 +13,7 @@ class ServerConfig {
         handlers: list[http_handler];
         log:log_message->void;
         params:list[string*string];
-  }
+  };
 
   fun _ctor_server_config(handlers:list[http_handler]) => server_config(0.05,8080,".","./html",handlers,
     logger(console_logger(INFO)+console_logger(ERROR)),Empty[string*string]);
@@ -89,8 +89,6 @@ class ServerConfig {
   ;
 
   fun strtod: string -> double = "strtod($1.data(),0)";
-
-  fun atoi: string -> int = "atoi($1.data())";
 
 }
 

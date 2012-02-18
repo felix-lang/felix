@@ -5,6 +5,8 @@ class HTTPBasicAuth {
   open Assoc_list;
   open HTTPResponse;
   open Base64;
+  open ServerConfig;
+  open HTTPHandler;
 
   publish """
   A default app_handler for implementing Basic Auth. You mush supply a function that 

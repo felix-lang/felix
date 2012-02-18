@@ -91,12 +91,12 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
   {
     val relfile = match (filename,'/').split.rev with | Cons(?h,_) => h | Empty => "";
     var lpos = relfile.len.int;
-    while lpos > 0 and not isdigit(relfile.[lpos-1]) do 
+    while lpos > 0 and not isdigit(relfile.[lpos - 1]) do 
        --lpos; 
     done 
-    assert lpos == 0 or relfile.[lpos-1].isdigit;
+    assert lpos == 0 or relfile.[lpos - 1].isdigit;
     var fpos = lpos;
-    while fpos > 0 and isdigit(relfile.[fpos-1]) do --fpos; done 
+    while fpos > 0 and isdigit(relfile.[fpos - 1]) do --fpos; done 
     assert fpos == 0 or relfile.[fpos].isdigit;
     val digits = 
       if fpos >=0 and lpos > fpos then
@@ -170,7 +170,7 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
   var ch = char "\n";
   var sol = true;
   proc next() { sol = ch == char "\n"; ch = t.[i]; ++i; }
-  fun ahead (j:int)=> t.[i+j-1]; 
+  fun ahead (j:int)=> t.[i + j -1]; 
   var b = "";
   proc cp() { b += ch; }
 
@@ -201,10 +201,10 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
   }
   fun hnum() = {
     var s = ""; var i:int;
-    for i in 0 upto hstack-2 do
+    for i in 0 upto hstack - 2 do
       s+=str(hnums.[i]) + ".";
     done
-    return s + str(hnums.[hstack-1]);
+    return s + str(hnums.[hstack - 1]);
   } 
   proc h(n:int, txt:string) { 
     ep; 

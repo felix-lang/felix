@@ -220,7 +220,13 @@ let rec cpp_type_classname syms bsym_table t =
     | BBDCL_union ([], [id,n,t']) -> cpp_type_classname syms bsym_table t'
     | BBDCL_union _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table t with
-      | Flx_vrep.VR_self -> assert false
+      | Flx_vrep.VR_self -> 
+        begin match bbdcl with 
+        | BBDCL_union (vs, [id,n,t']) -> 
+          print_endline ("[Flx_name: cpp_type_classname] Warning, polymorphic union " ^fname^ " VR_self ctor " ^ id)
+        | _ -> print_endline "COMPILER BUG, VR_self on multi-constructor union"
+        end; 
+        assert false
       | Flx_vrep.VR_int -> "int"
       | Flx_vrep.VR_packed -> "void*"
       | Flx_vrep.VR_uctor -> "::flx::rtl::_uctor_"
