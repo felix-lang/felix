@@ -129,7 +129,7 @@ let gen_record rname tname tn typs =
 or struct declaration which names the type.
 *)
 
-let gen_type_name syms bsym_table (index,typ) =
+let rec gen_type_name syms bsym_table (index,typ) =
   (*
   print_endline (
     "GENERATING TYPE NAME " ^
@@ -268,6 +268,10 @@ let gen_type_name syms bsym_table (index,typ) =
       let name = cn typ in
       descr ^ "struct " ^ name ^ ";\n"
 
+    | BBDCL_union (vs,[id,_,t']) -> 
+      let t'' = tsubst vs ts t' in
+      gen_type_name syms bsym_table (index,t'')
+
     | BBDCL_union (vs,ls) -> ""
 (*
       let descr =
@@ -319,7 +323,7 @@ let mk_listwise_ctor syms i name typ cts ctss =
 
 
 (* This routine generates complete types when needed *)
-let gen_type syms bsym_table (index,typ) =
+let rec gen_type syms bsym_table (index,typ) =
   (*
   print_endline (
     "GENERATING TYPE " ^
@@ -472,6 +476,11 @@ let gen_type syms bsym_table (index,typ) =
       ^
       "};\n"
 
+    | BBDCL_union (vs,[id,n,t']) -> 
+      (* ("\n// Skipping solo union " ^ Flx_bsym.id bsym) *)
+      "\n// SOLO UNION tgen\n" ^
+      let t'' = tsubst vs ts t' in
+      gen_type syms bsym_table (index,t'')
 
     | BBDCL_union _ -> ""
 

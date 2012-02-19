@@ -217,16 +217,13 @@ let rec cpp_type_classname syms bsym_table t =
       | _ -> "_unk_"
     in
     begin match bbdcl with 
-    | BBDCL_union ([], [id,n,t']) -> cpp_type_classname syms bsym_table t'
+    | BBDCL_union (vs, [id,n,t']) -> 
+      let t'' = tsubst vs ts t' in
+      cpp_type_classname syms bsym_table t''
+
     | BBDCL_union _ ->
       begin match Flx_vrep.cal_variant_rep bsym_table t with
-      | Flx_vrep.VR_self -> 
-        begin match bbdcl with 
-        | BBDCL_union (vs, [id,n,t']) -> 
-          print_endline ("[Flx_name: cpp_type_classname] Warning, polymorphic union " ^fname^ " VR_self ctor " ^ id)
-        | _ -> print_endline "COMPILER BUG, VR_self on multi-constructor union"
-        end; 
-        assert false
+      | Flx_vrep.VR_self -> assert false
       | Flx_vrep.VR_int -> "int"
       | Flx_vrep.VR_packed -> "void*"
       | Flx_vrep.VR_uctor -> "::flx::rtl::_uctor_"
@@ -315,6 +312,17 @@ let rec cpp_typename syms bsym_table t =
   | BTYP_function _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_cfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_pointer t -> cpp_typename syms bsym_table t ^ "*"
+  | BTYP_inst (i,ts) ->
+    let bsym = Flx_bsym_table.find bsym_table i in
+    let fname = Flx_bsym.id bsym in
+    let bbdcl = Flx_bsym.bbdcl bsym in
+    begin match bbdcl with
+    | BBDCL_union (vs, [id,n,t']) -> 
+      let t'' = tsubst vs ts t' in
+      cpp_typename  syms bsym_table t''
+    | _ -> cpp_type_classname syms bsym_table t
+    end
+
   | _ -> cpp_type_classname syms bsym_table t
 
 let cpp_ltypename syms bsym_table t = cpp_typename syms bsym_table t

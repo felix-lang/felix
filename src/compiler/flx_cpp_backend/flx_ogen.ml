@@ -66,124 +66,7 @@ let scan_exe syms bsym_table allocable_types exe : unit =
 let scan_exes syms bsym_table allocable_types exes : unit =
   iter (scan_exe syms bsym_table allocable_types) exes
 
-let gen_offset_tables syms bsym_table module_name first_ptr_map=
-  let allocable_types = Hashtbl.create 97 in
-  let last_ptr_map = ref first_ptr_map in
-  let primitive_shapes = Hashtbl.create 97 in
-  let s = Buffer.create 20000 in
-  
-  (* Make a shape for every non-C style function with the property `Heap_closure *)
-  gen_all_fun_shapes (scan_exes syms bsym_table allocable_types) s syms bsym_table last_ptr_map;
-
-  (* generate offsets for all pointers store in the thread_frame *)
-  gen_thread_frame_offsets s syms bsym_table last_ptr_map;
-
-  (* We're not finished: we need offsets dynamically allocated types too *)
-
-  (* currently the ONLY non-function types that can be allocated
-    are the arguments of non-constant variant constructors:
-    this WILL change when a 'new' operator is introduced.
-  *)
-  Hashtbl.iter
-  (fun btyp index ->
-    match unfold btyp with
-    | BTYP_sum args ->
-      iter begin fun t ->
-        match t with
-        | BTYP_tuple []
-        | BTYP_void -> ()
-        | _ ->
-          try
-            let index = Hashtbl.find syms.registry t in
-            Hashtbl.replace allocable_types t index
-          with Not_found -> ()
-      end args
-
-    | BTYP_variant args ->
-      iter begin fun (_,t) ->
-        match t with
-        | BTYP_tuple []
-        | BTYP_void -> ()
-        | _ ->
-          try
-            let index = Hashtbl.find syms.registry t in
-            Hashtbl.replace allocable_types t index
-          with Not_found -> ()
-      end args
-
-    | BTYP_inst (i,ts) ->
-      (*
-      print_endline ("Thinking about instance type --> " ^ string_of_btypecode sym_table btyp);
-      *)
-      let bsym =
-        try Flx_bsym_table.find bsym_table i
-        with Not_found ->
-          failwith ("[gen_offset_tables:BTYP_inst] can't find index " ^
-            string_of_bid i)
-      in
-      begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_external_type (vs,bquals,_,_) ->
-        (*
-        print_endline ("abstract type "^id^".. quals:");
-        print_endline (string_of_bquals sym_table bquals);
-        *)
-        let handle_qual bqual = match bqual with
-        | `Bound_needs_shape t ->
-          (*
-          print_endline ("Needs shape (uninstantiated) " ^ sbt bsym_table t);
-          *)
-          let varmap = mk_varmap vs ts in
-          let t = varmap_subst varmap t in
-          (*
-          print_endline ("Needs shape (instantiated) " ^ sbt bsym_table t);
-          *)
-          begin try
-            let index = Hashtbl.find syms.registry t in
-            Hashtbl.replace allocable_types t index
-          with
-          | Not_found -> failwith ("[gen_offset_tables] Woops, type "^si i^ "-->" ^ 
-             sbt bsym_table t ^" isn't in registry! Required shape of " ^ bsym.Flx_bsym.id)
-          end
-
-        | _ -> ()
-        in
-        let rec aux quals = match quals with
-        | [] -> ()
-        | h :: t -> handle_qual h; aux t
-        in aux bquals
-
-
-      (* this routine assumes any use of a union component is
-         allocable .. this is quite wrong but safe. This SHOULD
-         be drived by detecting constructor expressions
-
-         We don't need to worry about pattern matches .. if
-         we didn't construct it, perhaps a foreigner did,
-         in which case THEY needed to create the shape object
-      *)
-      | BBDCL_union (vs,args) ->
-        let varmap = mk_varmap vs ts in
-        let args = map (fun (_,_,t)->t) args in
-        let args = map (varmap_subst varmap) args in
-        iter begin fun t ->
-          match t with
-          | BTYP_tuple []
-          | BTYP_void -> ()
-          | _ ->
-            try
-              let index = Hashtbl.find syms.registry t in
-              Hashtbl.replace allocable_types t index
-            with Not_found -> ()
-        end args
-
-      | _ -> ()
-      end
-    | _ -> ()
-  )
-  syms.registry
-  ;
-  Hashtbl.iter
-  (fun btyp index ->
+let rec gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp index =
     (*
     print_endline ("allocable type --> " ^ string_of_btypecode sym_table btyp);
     *)
@@ -334,6 +217,11 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
           clierr (Flx_bsym.sr bsym)
           ("[ogen] attempt to allocate an incomplete type: '" ^ Flx_bsym.id bsym ^"'")
 
+      | BBDCL_union (vs,[id,n,t']) -> 
+        print_endline "Warning VR_self rep not handled right?";
+        let t'' = tsubst vs ts t' in
+        gen_type_shape s syms bsym_table last_ptr_map primitive_shapes t'' index
+        
       | BBDCL_union _ -> () (* handled by universal uctor, int, etc *) 
 
       | BBDCL_cstruct (vs,cps, reqs) ->
@@ -402,6 +290,125 @@ let gen_offset_tables syms bsym_table module_name first_ptr_map=
        "[ogen]: Unknown kind of allocable type " ^
        sbt bsym_table btyp
      )
+
+let gen_offset_tables syms bsym_table module_name first_ptr_map=
+  let allocable_types = Hashtbl.create 97 in
+  let last_ptr_map = ref first_ptr_map in
+  let primitive_shapes = Hashtbl.create 97 in
+  let s = Buffer.create 20000 in
+  
+  (* Make a shape for every non-C style function with the property `Heap_closure *)
+  gen_all_fun_shapes (scan_exes syms bsym_table allocable_types) s syms bsym_table last_ptr_map;
+
+  (* generate offsets for all pointers store in the thread_frame *)
+  gen_thread_frame_offsets s syms bsym_table last_ptr_map;
+
+  (* We're not finished: we need offsets dynamically allocated types too *)
+
+  (* currently the ONLY non-function types that can be allocated
+    are the arguments of non-constant variant constructors:
+    this WILL change when a 'new' operator is introduced.
+  *)
+  Hashtbl.iter
+  (fun btyp index ->
+    match unfold btyp with
+    | BTYP_sum args ->
+      iter begin fun t ->
+        match t with
+        | BTYP_tuple []
+        | BTYP_void -> ()
+        | _ ->
+          try
+            let index = Hashtbl.find syms.registry t in
+            Hashtbl.replace allocable_types t index
+          with Not_found -> ()
+      end args
+
+    | BTYP_variant args ->
+      iter begin fun (_,t) ->
+        match t with
+        | BTYP_tuple []
+        | BTYP_void -> ()
+        | _ ->
+          try
+            let index = Hashtbl.find syms.registry t in
+            Hashtbl.replace allocable_types t index
+          with Not_found -> ()
+      end args
+
+    | BTYP_inst (i,ts) ->
+      (*
+      print_endline ("Thinking about instance type --> " ^ string_of_btypecode sym_table btyp);
+      *)
+      let bsym =
+        try Flx_bsym_table.find bsym_table i
+        with Not_found ->
+          failwith ("[gen_offset_tables:BTYP_inst] can't find index " ^
+            string_of_bid i)
+      in
+      begin match Flx_bsym.bbdcl bsym with
+      | BBDCL_external_type (vs,bquals,_,_) ->
+        (*
+        print_endline ("abstract type "^id^".. quals:");
+        print_endline (string_of_bquals sym_table bquals);
+        *)
+        let handle_qual bqual = match bqual with
+        | `Bound_needs_shape t ->
+          (*
+          print_endline ("Needs shape (uninstantiated) " ^ sbt bsym_table t);
+          *)
+          let varmap = mk_varmap vs ts in
+          let t = varmap_subst varmap t in
+          (*
+          print_endline ("Needs shape (instantiated) " ^ sbt bsym_table t);
+          *)
+          begin try
+            let index = Hashtbl.find syms.registry t in
+            Hashtbl.replace allocable_types t index
+          with
+          | Not_found -> failwith ("[gen_offset_tables] Woops, type "^si i^ "-->" ^ 
+             sbt bsym_table t ^" isn't in registry! Required shape of " ^ bsym.Flx_bsym.id)
+          end
+
+        | _ -> ()
+        in
+        let rec aux quals = match quals with
+        | [] -> ()
+        | h :: t -> handle_qual h; aux t
+        in aux bquals
+
+
+      (* this routine assumes any use of a union component is
+         allocable .. this is quite wrong but safe. This SHOULD
+         be drived by detecting constructor expressions
+
+         We don't need to worry about pattern matches .. if
+         we didn't construct it, perhaps a foreigner did,
+         in which case THEY needed to create the shape object
+      *)
+      | BBDCL_union (vs,args) ->
+        let varmap = mk_varmap vs ts in
+        let args = map (fun (_,_,t)->t) args in
+        let args = map (varmap_subst varmap) args in
+        iter begin fun t ->
+          match t with
+          | BTYP_tuple []
+          | BTYP_void -> ()
+          | _ ->
+            try
+              let index = Hashtbl.find syms.registry t in
+              Hashtbl.replace allocable_types t index
+            with Not_found -> ()
+        end args
+
+      | _ -> ()
+      end
+    | _ -> ()
+  )
+  syms.registry
+  ;
+  Hashtbl.iter
+  (fun btyp index -> gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp index 
   )
   allocable_types
   ;

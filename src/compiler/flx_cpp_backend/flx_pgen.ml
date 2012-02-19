@@ -16,10 +16,14 @@ open Flx_maps
 
 exception Found of Flx_btype.t
 
-let shape_of' use_assoc_type syms bsym_table tn t =
+let rec shape_of' use_assoc_type syms bsym_table tn t =
   match t with
   | BTYP_inst (i,ts) ->
     begin match Flx_bsym_table.find_bbdcl bsym_table i with
+    | BBDCL_union (vs,[id,n,t']) -> 
+      let t'' = tsubst vs ts t' in
+      shape_of' use_assoc_type syms bsym_table tn t''
+
     | BBDCL_union (vs,idts) ->
       begin match Flx_vrep.cal_variant_rep bsym_table t with
       | Flx_vrep.VR_self -> assert false
