@@ -49,6 +49,10 @@ Content-Length: """ + str (len response.content) + """\r
     let ?response = http_response(SC_NOT_FOUND,localtime(time_t()),text html,no_headers(),
 				  "PAGE NOT FOUND: "+content) in
     	http_header(response) + response.content; 
+  
+  fun make_see_other (location:string) =>
+    let ?response = http_response(SC_SEE_OTHER,localtime(time_t()),text html,Cons(("Location",location),Empty[string^2]),"") in
+    	http_header(response) + response.content; 
 
   fun make_forbidden (content:string) =>
     let ?response = http_response(SC_FORBIDDEN,localtime(time_t()),text html,no_headers(),
