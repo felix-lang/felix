@@ -86,7 +86,7 @@ class SimpleConfig {
     vp = v; 
     iter (proc (k1:string,v1:string) { 
       vp = match find(vp,k1) with
-          |Some ?p => substring(vp,0,(p-1)) + v1 +
+          |Some ?p => substring(vp,0,(p - 1)) + v1 +
                       substring(vp,p+int(k1.len),vp.len)
           |_ => vp
         endmatch;
