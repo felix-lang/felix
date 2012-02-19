@@ -1,3 +1,6 @@
+include "std/io/faio";
+
+var sys_clock =  #Faio::mk_alarm_clock;
 
 noinline proc mk_xfib(k:int, inp:ischannel[int],out:oschannel[int])
 {

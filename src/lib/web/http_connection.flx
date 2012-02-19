@@ -5,6 +5,10 @@ class HTTPConnection {
   open ServerConfig;
   open Socket;
   open Logger;
+  open Stream;
+  open Socket;
+  open TerminalIOByteStream[socket_t];
+
   struct http_connection {
     config:server_config;
     sock:socket_t;

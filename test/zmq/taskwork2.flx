@@ -3,6 +3,8 @@
 //  Adds pub-sub flow to receive and respond to kill signal
 //
 open ZMQ;
+include "std/io/faio";
+var sys_clock = #Faio::mk_alarm_clock;
 
 var context = zmq_init 1;
 

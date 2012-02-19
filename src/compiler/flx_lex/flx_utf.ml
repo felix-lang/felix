@@ -16,6 +16,7 @@ open Flx_string
 
 let ucs_id_ranges = [
   (* ASCII *)
+  (0x002d,0x002d); (* dash - *)
   (0x0041,0x005a);
   (0x0061,0x007a);
 

@@ -178,7 +178,7 @@ fun xlat_felix(t:string, dir:string): bool * string =
   var i = 0; var s:state_t;
   var ch = t.[i];
   proc next() { ch = t.[i]; ++i; }
-  fun ahead (j:int)=> t.[i+j-1]; 
+  fun ahead (j:int)=> t.[i + j - 1]; 
   fun issq3() => 
     ch == char "'" and 
     ahead(1) == char "'" and
@@ -379,11 +379,11 @@ thisch:> // same char, reconsider it
           cp; next;
           goto lastch;
         else
-          s = ccomment (n-1);
+          s = ccomment (n - 1);
           goto contin;
         done
       elif ch == char "/" and ahead(1) == char "*" do 
-        s = ccomment (n+1);
+        s = ccomment (n + 1);
         goto contin;
       else 
         goto contin;

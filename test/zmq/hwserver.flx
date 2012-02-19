@@ -2,6 +2,8 @@
 // Binds REP socket to tcp://*:5555
 // Expects "Hello" from client, replies with "World"
 
+include "std/io/faio";
+var sys_clock = #Faio::mk_alarm_clock;
 open ZMQ;
 println "hwserver, Felix version";
 

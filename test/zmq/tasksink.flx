@@ -4,6 +4,10 @@
 //  Collects results from workers via that socket
 //
 include "std/posix/time";
+
+include "std/io/faio";
+var sys_clock = #Faio::mk_alarm_clock;
+
 open ZMQ;
 
 //  Prepare our context and socket

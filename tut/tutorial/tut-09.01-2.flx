@@ -1,7 +1,7 @@
 var x = 7;
 var y = x;
 
-proc decr(d:int when d>=0) expect x==y-d = {
+proc decr(d:int when d>=0) expect x == y - d = {
   y = x;
   x -= d;
 }

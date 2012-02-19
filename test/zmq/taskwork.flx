@@ -5,6 +5,8 @@
 //  Connects PUSH socket to tcp://localhost:5558
 //  Sends results to sink via that socket
 
+include "std/io/faio";
+var sys_clock = #Faio::mk_alarm_clock;
 open ZMQ;
 
 var context = zmq_init (1);

@@ -45,6 +45,5 @@ class Faio {
   }
 } // class faio
 
-var sys_clock = Faio::mk_alarm_clock();
 
 

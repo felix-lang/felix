@@ -344,8 +344,11 @@ let ucn =
   | "\\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit
 
 let prime = '\''
+let dash = '-'
 let idletter = letter | underscore | hichar | ucn
-let identifier = idletter (idletter | digit | prime )*
+let alphnum = idletter | digit
+let innerglyph = idletter | digit | dash
+let identifier = idletter (innerglyph? (alphnum | prime) +)* prime*
 
 /* integers */
 let bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +

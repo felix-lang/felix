@@ -10,7 +10,7 @@ class Csv {
     fun eq(a:state_t, b:state_t)=> caseno a == caseno b;
 
     var state = skip;
-    ech:for var j in *i upto n-1 do
+    ech:for var j in *i upto n - 1 do
       ch := s.[j];
       if ch == char "," do 
         match state with 

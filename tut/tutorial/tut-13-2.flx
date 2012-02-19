@@ -13,9 +13,9 @@ instance Monad [Maybe] {
   fun ret[a](x:a):Maybe a => Some x;
 }
 
-fun madd(x:double) (y:double):opt[double]=>Some (y+x);
-fun msub(x:double) (y:double):opt[double]=>Some (y-x);
-fun mmul(x:double) (y:double):opt[double]=>Some (y*x);
+fun madd(x:double) (y:double):opt[double]=>Some (y + x);
+fun msub(x:double) (y:double):opt[double]=>Some (y - x);
+fun mmul(x:double) (y:double):opt[double]=>Some (y * x);
 fun mdiv(x:double) (y:double):opt[double]=>
   if x == 0.0 then None[double] else Some (y/x) endif
 ;

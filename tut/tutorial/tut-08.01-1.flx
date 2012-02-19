@@ -20,7 +20,7 @@ proc xprint (a: int_list)
 fun mk(i: int, tl:int_list):int_list =
 {
   return
-    if(i>0) then mk(i-1,Cons(i,tl))
+    if(i>0) then mk(i - 1,Cons(i,tl))
     else tl
     endif
   ;

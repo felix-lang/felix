@@ -2,6 +2,8 @@
 //  Task ventilator
 //  Binds PUSH socket to tcp://localhost:5557
 //  Sends batch of tasks to workers via that socket
+include "std/io/faio";
+var sys_clock = #Faio::mk_alarm_clock;
 
 open ZMQ;
 

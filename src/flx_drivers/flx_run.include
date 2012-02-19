@@ -143,7 +143,7 @@ void doflx(void *data) {
               if (debug_driver)
                 fprintf(stderr,
                   "Thread %p waiting for spawned thread to register itself\n",
-                  get_current_native_thread());
+                  (void*)get_current_native_thread());
 
               while (!spawner_flag)
                 spawner_cond.wait(&spawner_lock);
@@ -151,7 +151,7 @@ void doflx(void *data) {
               if (debug_driver)
                 fprintf(stderr,
                   "Thread %p notes spawned thread has registered itself\n",
-                  get_current_native_thread());
+                  (void*)get_current_native_thread());
             }
           }
           goto process_active;
@@ -304,7 +304,7 @@ void doflx(void *data) {
 //
 // CURRENTLY ONLY CALLED ONCE IN MAIN THREAD
 
-static void *get_stack_pointer() { unsigned long x; return &x; }
+static void *get_stack_pointer() { void *x=(void*)&x; return x; }
 
 void run_felix_pthread(
   bool debug_driver,

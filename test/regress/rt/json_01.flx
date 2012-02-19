@@ -9,7 +9,7 @@ proc check (s:string) {
   | Bad ?i => 
      println$ "Parse Error pos " + str i;
      println$ s;
-     println$ "-" * (i-1) + "^";
+     println$ "-" * (i - 1) + "^";
   endmatch
   ;
 }

@@ -8,7 +8,7 @@ cfun eh(data:address, ncols:int, values: &&char, names: &&char):int =
   var ii:int = 0;
   while ii<ncols do
     print$ str names.[ii] + "=" + str values.[ii];
-    if ii<ncols-1 do print ", ";  done;
+    if ii<ncols- 1  do print ", ";  done;
     ++ii;
   done;
   println "";

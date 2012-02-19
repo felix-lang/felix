@@ -985,10 +985,10 @@ var INCLUDE_DIR="-I"+Filename::join(FLX_INSTALL_DIR,"lib","rtl") + " -I"+Filenam
 debugln$ "C++ Include directory for Felix library " + INCLUDE_DIR;
 
 var FLXLIB="-I"+Filename::join(FLX_INSTALL_DIR,"lib");
-var STDLIB="std";
+var STDLIB=list("std","posix","web");
 if NOSTDLIB == 1 do
   FLXLIB="";
-  STDLIB="";
+  STDLIB=Empty[string];
 done
 
 var DEBUGSWITCH="";
@@ -1057,11 +1057,14 @@ var LCMD="";
 var CCMD="";
 
 if FELIX == 1 do
+  var stdlibs = cat ' ' STDLIB;
   FCMD=List::cat ' ' (List::list (
     FLXG,
     VERBOSE, FLXFLAGS, FLXLIB,
-    INCLUDE_DIRS, STDSYNTAX, STDIMPORT, IMPORTS,
-    STDLIB, filebase));
+    INCLUDE_DIRS, STDSYNTAX, STDIMPORT, IMPORTS)) + 
+    ' ' + stdlibs + 
+    ' ' + filebase
+  ;
   debugln$ "Felix command="+FCMD;
   result=system(FCMD);
   if result != 0 do 

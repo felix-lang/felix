@@ -113,8 +113,8 @@ class Base64 {
     val whole = n/ll;
     val rmd = n%ll;
     reserve (&ret, n+whole+1u);
-    for var i in 0ui upto whole-2u do
-      ret += b64_str.[i*ll to (i+1u)*ll]+"\n";
+    for var i in 0ui upto whole - 2u do
+      ret += b64_str.[i*ll to (i + 1u)*ll]+"\n";
     done
     ret += b64_str.[(whole - 1u)*ll to (whole)*ll];
     if rmd > 0u do

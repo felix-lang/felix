@@ -3,8 +3,11 @@
 //  Adds pub-sub flow to send kill signal to workers
 //
 include "std/posix/time";
+include "std/io/faio";
 
 open ZMQ;
+
+var sys_clock = #Faio::mk_alarm_clock;
 
 var context = zmq_init 1;
 

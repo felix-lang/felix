@@ -80,24 +80,24 @@ class FileSystem
   //------------------------------------------------------------
   gen filecopy(src: string, dst: string) :  bool =
   {
-    //println$ "Copy " + src + " -> " + dst;
+    //eprintln$ "Copy " + src + " -> " + dst;
 
     val now = (Time::time()).uvlong/1000ull; // milliseconds
     var stat_buf: FileStat::stat_t;
     if not FileStat::stat (src, &stat_buf) do
-      println$ "Can't stat source file " + src;
+      eprintln$ "Can't stat source file " + src;
       return false;
     done;
     val permissions = FileStat::file_perm$ FileStat::raw_mode (&stat_buf);
     val last_modification = FileStat::filetime(src);
     var fsrc = open (src,O_RDONLY );
     if not valid fsrc do
-      println$ " Bad src file in Filesystem::filecopy " + src;
+      eprintln$ " Bad src file in Filesystem::filecopy " + src;
       return false; 
     done
     var fdst = open (dst,O_WRONLY \| O_CREAT \| O_TRUNC, permissions);
     if not valid fdst do
-      println$ " Bad dst file in Filesystem::filecopy " + dst + ", Error: " + str errno + "=" + #strerror;
+      eprintln$ " Bad dst file in Filesystem::filecopy " + dst + ", Error: " + str errno + "=" + #strerror;
       return false; 
     done
     bsiz := size (4096 * 1024); // 4 Meg
@@ -107,13 +107,13 @@ class FileSystem
       var bwrite = write (fdst,buffer,bread);
       if bread != bwrite do
         if bwrite.int == -1 do
-          println$ 
+          eprintln$ 
             "Dest des = " + str fdst.int+ " "+
             "Attempt to copy " + str bread + " bytes from " + src + " to " + dst + 
             " failed with errno = " + str errno + ": " + strerror() 
           ;
         else
-          println$ 
+          eprintln$ 
             "Attempt to copy " + str bread + " bytes from " + src + " to " + dst + 
             " failed with " +  str bwrite + " only copied!"
           ;
@@ -123,11 +123,11 @@ class FileSystem
     done
     var res = close fsrc;
     if res != 0 do
-      println$ "In filesystem::filecopy close on src " + src + " failed: " + str errno + "=" + #strerror;
+      eprintln$ "In filesystem::filecopy close on src " + src + " failed: " + str errno + "=" + #strerror;
     done
     res = close fdst;
     if res != 0 do
-      println$ "In filesystem::filecopy close on dst " + dst + " failed: " + str errno + "=" + #strerror;
+      eprintln$ "In filesystem::filecopy close on dst " + dst + " failed: " + str errno + "=" + #strerror;
     done
     C_hack::ignore(FileStat::utime(dst,now,last_modification));
     C_hack::free(C_hack::cast[address] buffer);
@@ -149,7 +149,7 @@ class FileSystem
 
   fun regfilesin(dname:string, re:string): list[string] => regfilesin(dname, Re2::RE2 re);
 
-  private gen dbg (s:string) : int = { println s; return 0; }
+  private gen dbg (s:string) : int = { eprintln s; return 0; }
 
   fun regfilesin(dname:string, re:RE2): list[string] = {
     fun rfi(dname2: string) =>   
@@ -158,7 +158,7 @@ class FileSystem
       | None  => Empty[string]
       | Some ?files =>
         {
-        //println$ "got files in " + dname2;
+        //eprintln$ "got files in " + dname2;
         return
         List::fold_left 
           (fun (acc:list[string]) (f:string) => if f == "." or f == ".." then Empty[string] else

@@ -2,6 +2,8 @@
 //  Multithreaded Hello World server
 //
 open ZMQ;
+include "std/io/faio";
+var sys_clock = #Faio::mk_alarm_clock;
 
 proc worker_routine (context:zmq_context) {
   //  Socket to talk to dispatcher
