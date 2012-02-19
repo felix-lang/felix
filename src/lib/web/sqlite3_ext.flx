@@ -243,6 +243,16 @@ class Sqlite3Ext {
       return v;
   }
 
+  header """
+    std::string sqlite3_quote_helper(const char *str) {
+      const char * val = sqlite3_mprintf("%q",str);
+      std::string ret = std::string(val);
+      sqlite3_free((char *)val);
+      return ret;
+    }
+  """;
+  gen sqlite3_quote: string->string = "sqlite3_quote_helper($1.c_str())";
+
 }
 
 

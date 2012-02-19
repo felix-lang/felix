@@ -45,7 +45,7 @@ class SimpleConfig {
         fclose(handle);
       done
     done
-    return config;
+    return apply_param_vars(config);
   }
   
   publish """
@@ -80,6 +80,22 @@ class SimpleConfig {
       return (kp,vp);
     }) par;
   }
+
+  fun apply_param_vars_to (par:list[string*string],v:string):string ={
+    var vp:string;
+    vp = v; 
+    iter (proc (k1:string,v1:string) { 
+      vp = match find(vp,k1) with
+          |Some ?p => substring(vp,0,(p - 1)) + v1 +
+                      substring(vp,p+int(k1.len),vp.len)
+          |_ => vp
+        endmatch;
+      }) par;
+      return vp;
+  }
+
+  fun apply_param_vars_to (par:list[string*string],l:list[string]):list[string] =>
+    (map (fun (s:string) => apply_param_vars_to (config.params,s)) (l));
 
   private fun parse(line:string):list[string*string] =>
     if startswith (strip line) (char '#') then
