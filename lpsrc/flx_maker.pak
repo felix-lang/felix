@@ -193,6 +193,13 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 // make a packed variant rep from index code and pointer
 #define FLX_VR(i,p) ((void*)((FLX_RAWADDRESS)(p)|(FLX_RAWADDRESS)(i)))
 
+// get variant index code and pointer from nullptr variant rep
+#define FLX_VNP(x) (x)
+#define FLX_VNI(x) ((int)(x!=0))
+
+// make a nullptr variant rep from index code and pointer
+#define FLX_VNR(i,p) (p)
+
 #if FLX_WIN32 && !defined(_WIN32_WINNT)
 #define _WIN32_WINNT 0x500 // Require Windows NT5 (2K, XP, 2K3)
 #endif
@@ -415,6 +422,14 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 
 // make a packed variant rep from index code and pointer
 #define FLX_VR(i,p) ((void*)((FLX_RAWADDRESS)(p)|(FLX_RAWADDRESS)(i)))
+
+
+// get variant index code and pointer from nullptr variant rep
+#define FLX_VNP(x) (x)
+#define FLX_VNI(x) ((int)(x!=0))
+
+// make a nullptr variant rep from index code and pointer
+#define FLX_VNR(i,p) (p)
 
 
 #endif

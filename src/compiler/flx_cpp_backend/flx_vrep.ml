@@ -61,28 +61,54 @@ let cal_variant_maxarg bsym_table t =
     end
   | _ -> assert false 
 
-type variant_rep = VR_self | VR_int |  VR_packed | VR_uctor
+let isnullptr bsym_table t = match t with
+  | BTYP_inst (i,_) ->
+    let bsym =
+      try Flx_bsym_table.find bsym_table i with Not_found -> assert false
+    in
+    begin match Flx_bsym.bbdcl bsym with
+    | BBDCL_union (bvs,[id1,0,BTYP_void; id2, 1, t2]) -> true
+(*
+      begin
+        match t2 with
+        | BTYP_pointer _
+        | BTYP_function _
+        | BTYP_cfunction _ -> true
+        | _ -> false
+      end 
+*)
+    | _ -> false
+    end
+  | _ -> false
+
+type variant_rep = VR_self | VR_int |  VR_nullptr | VR_packed | VR_uctor
 
 let cal_variant_rep bsym_table t =
+  if isnullptr bsym_table t then 
+    begin
+      (* print_endline ("type " ^ Flx_print.sbt bsym_table t ^" is a VR_nullptr"); *)
+      VR_nullptr
+    end
+  else
   let n = cal_variant_cases bsym_table t in
   let z = cal_variant_maxarg bsym_table t in
-let rep =
-  match n,z with
-  | -1,_ -> assert false
-(* Remove this case temporarily because it is a bit tricky to implement *)
-  | 1,_ -> VR_self                  (* only one case do drop variant *)
-  | _,0 -> VR_int                  (* no arguments, just use an int *)
-  | k,_ when k <= 4 -> VR_packed   (* At most 4 cases, encode caseno in point low bits *)
-  | _,_ -> VR_uctor                (* Standard Uctor *)
+  let rep =
+    match n,z with
+    | -1,_ -> assert false
+  (* Remove this case temporarily because it is a bit tricky to implement *)
+    | 1,_ -> VR_self                  (* only one case do drop variant *)
+    | _,0 -> VR_int                  (* no arguments, just use an int *)
+    | k,_ when k <= 4 -> VR_packed   (* At most 4 cases, encode caseno in point low bits *)
+    | _,_ -> VR_uctor                (* Standard Uctor *)
 
-in 
-(*
-  (print_endline 
-  (match rep with
-  | VR_self -> "VR_self"
-  | VR_int -> "VR_int"
-  | VR_packed -> "VR_packed"
-  | VR_uctor -> "VR_uctor"
-)) ; 
-*)
+  in 
+  (*
+    (print_endline 
+    (match rep with
+    | VR_self -> "VR_self"
+    | VR_int -> "VR_int"
+    | VR_packed -> "VR_packed"
+    | VR_uctor -> "VR_uctor"
+  )) ; 
+  *)
 rep

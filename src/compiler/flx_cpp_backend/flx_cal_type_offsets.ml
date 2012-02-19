@@ -31,6 +31,7 @@ let rec get_offsets' syms bsym_table typ : string list =
     begin match Flx_vrep.cal_variant_rep bsym_table t' with
     | Flx_vrep.VR_self -> assert false (* FIXME! *) 
     | Flx_vrep.VR_int -> []
+    | Flx_vrep.VR_nullptr -> ["0"]
     | Flx_vrep.VR_packed -> ["0"]
     | Flx_vrep.VR_uctor -> ["offsetof("^tname^",data)"]
     end
@@ -55,6 +56,7 @@ let rec get_offsets' syms bsym_table typ : string list =
       begin match Flx_vrep.cal_variant_rep bsym_table t' with
       | Flx_vrep.VR_self -> assert false (* FIXME! *)
       | Flx_vrep.VR_int -> []
+      | Flx_vrep.VR_nullptr -> ["0"]
       | Flx_vrep.VR_packed -> ["0"]
       | Flx_vrep.VR_uctor -> ["offsetof("^tname^",data)"]
       end

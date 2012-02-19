@@ -196,6 +196,7 @@ let rec cpp_type_classname syms bsym_table t =
     begin match Flx_vrep.cal_variant_rep bsym_table t with
     | Flx_vrep.VR_self -> assert false
     | Flx_vrep.VR_int -> "int"
+    | Flx_vrep.VR_nullptr -> "void*"
     | Flx_vrep.VR_packed -> "void*"
     | Flx_vrep.VR_uctor -> "::flx::rtl::_uctor_"
     end
@@ -225,6 +226,7 @@ let rec cpp_type_classname syms bsym_table t =
       begin match Flx_vrep.cal_variant_rep bsym_table t with
       | Flx_vrep.VR_self -> assert false
       | Flx_vrep.VR_int -> "int"
+      | Flx_vrep.VR_nullptr -> "void*"
       | Flx_vrep.VR_packed -> "void*"
       | Flx_vrep.VR_uctor -> "::flx::rtl::_uctor_"
       end

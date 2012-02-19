@@ -19,6 +19,7 @@ let gen_get_case_index ge bsym_table e: cexpr_t  =
   match cal_variant_rep bsym_table t with
   | VR_self -> ce_atom "0"
   | VR_int -> ge e
+  | VR_nullptr -> ce_call (ce_atom "FLX_VNI") [ge e]
   | VR_packed -> ce_call (ce_atom "FLX_VI") [ge e]
   | VR_uctor -> ce_dot (ge e) "variant"
 
@@ -58,6 +59,13 @@ let gen_get_case_arg ge tn bsym_table n (e:Flx_bexpr.t) : cexpr_t =
   match cal_variant_rep bsym_table ut with
   | VR_self -> ge e
   | VR_int -> assert false
+  | VR_nullptr ->
+    begin match size ct with
+    | 0 -> assert false
+    | 1 -> ce_cast cast (ce_call (ce_atom "FLX_VNP") [ge e])
+    | _ -> ce_prefix "*" (ce_cast (cast^"*") (ce_call (ce_atom "FLX_VNP") [ge e]))
+    end
+
   | VR_packed ->
     begin match size ct with
     | 0 -> assert false
@@ -99,6 +107,7 @@ let gen_make_const_ctor bsym_table e : cexpr_t =
   match cal_variant_rep bsym_table ut with
   | VR_self -> assert false (* will fail if there's one trivial case! FIX! Felix should elide completely *)
   | VR_int -> ce_atom (si v)
+  | VR_nullptr -> ce_cast "void*" (ce_atom (si v))
   | VR_packed -> ce_cast "void*" (ce_atom (si v))
   | VR_uctor -> ce_atom ("::flx::rtl::_uctor_(" ^ si v ^ ",0)") 
 
@@ -150,6 +159,10 @@ print_endline ("gen_make_nonconst_ctor arg=" ^ Flx_print.sbe bsym_table a ^ " ty
   match cal_variant_rep bsym_table ut with
   | VR_self -> ge a
   | VR_int -> assert false
+  | VR_nullptr -> 
+    let arg = gen_make_ctor_arg ge tn syms bsym_table a in
+    ce_call (ce_atom "FLX_VNR") [ce_atom (si cidx); arg]
+
   | VR_packed -> 
     let arg = gen_make_ctor_arg ge tn syms bsym_table a in
     ce_call (ce_atom "FLX_VR") [ce_atom (si cidx); arg]

@@ -278,6 +278,8 @@ let rec gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp inde
      | Flx_vrep.VR_self -> assert false
      | Flx_vrep.VR_int ->
        bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_int_ptr_map;\n");
+     | Flx_vrep.VR_nullptr ->
+       bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_address_ptr_map;\n");
      | Flx_vrep.VR_packed ->
        bcat s ("static ::flx::gc::generic::gc_shape_t &"^ name ^"_ptr_map = ::flx::rtl::_address_ptr_map;\n");
      | Flx_vrep.VR_uctor ->
