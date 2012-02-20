@@ -62,7 +62,7 @@ Content-Length: """ + str (len response.content) + """\r
   fun make_unauthorized (headers:assoc_list[string,string]) =>
     let ?response = http_response(SC_UNAUTHORIZED,localtime(time_t()),text html,headers,
 				  "") in
-    	http_header(response) +"\nBasic realm=\"cPanel\""; 
+    	http_header(response) +"\nUnauthorized"; 
 
   
 
