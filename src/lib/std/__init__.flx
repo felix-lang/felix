@@ -13,6 +13,7 @@ include "std/algebraic";
 
 // base scalar types 
 include "std/flx_ctypes";
+include "std/cptr";
 
 include "plat/ctypedefs";
 include "std/ctypesets";

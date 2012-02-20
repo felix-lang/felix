@@ -173,6 +173,7 @@ syntax expressions {
   sthe_name :=
     | "#" sthe_name =># "`(ast_apply ,_sr (,_2 (ast_tuple ,_sr ())))"
     | "&" sthe_name =># "`(ast_ref ,_sr ,_2)"
+    | "@" sthe_name =># "(Prefix)"
 
     // macro expansion freezer
     | "noexpand" squalified_name =># "`(ast_noexpand ,_sr ,_2)"
