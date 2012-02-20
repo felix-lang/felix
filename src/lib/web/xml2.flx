@@ -194,6 +194,20 @@ size:	OUT: the memory length
 
   gen xml_add_sibling: xml_node_ptr*xml_node_ptr->xml_node_ptr = "xmlAddSibling($1,$2)";
 
+  header """ 
+  std::string xml_encode_special_chars_helper(const xmlChar *input) {
+    xmlDocPtr doc = xmlNewDoc((const xmlChar *)"");
+    xmlChar *enc =  xmlEncodeSpecialChars(doc,input);
+    std::string ret = std::string((const char *)enc);
+    xmlFree(enc);
+    xmlFreeDoc(doc);
+    return ret;
+  }
+  """;
+
+  gen xml_encode_special_chars: string->string = "xml_encode_special_chars_helper((const xmlChar *)$1.c_str())";
+
+ 
   publish " replaces old node with new node. Old not must be destroyed with xml_free_node "
   gen xml_replace_node: xml_node_ptr*xml_node_ptr->xml_node_ptr = "xmlReplaceNode($1, $2)";
 
