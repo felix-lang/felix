@@ -402,7 +402,9 @@ fun cal_time_from_dep (df: string):long=
   return deptime;
 }
 
-fun cal_dep_time(f:string)=>cal_time_from_dep(f+".dep");
+fun cal_dep_time(f:string)=> max(
+  filetime(f+".flx"),
+  cal_time_from_dep(f+".dep"));
 
 
 // --------------------------------------------------

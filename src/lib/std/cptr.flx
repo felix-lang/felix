@@ -6,4 +6,3 @@ ctor[T] cptr[T]: &T -> @T = "$1"; // safe
 ctor[T] ptr[T]( px:@T) => let Ptr  ?p = px in p; // match failure if null
 fun deref[T] (px:@T)=> *(px.ptr); // checked deref
 fun is_nullptr[T] (px:@T)=> match px with | nullptr => true | _ => false endmatch;
-
