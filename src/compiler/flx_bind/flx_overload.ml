@@ -336,7 +336,7 @@ let resolve sym_table bsym_table base_sym bt be arg_types =
    * thus, base type variables are eliminated and specialisation
    * type variables introduced *)
 
-  let con = bt sym.Flx_sym.sr con in
+  let con = match con with | TYP_tuple [] -> Flx_btype.btyp_tuple [] | _ -> bt sym.Flx_sym.sr con in
   let domain,base_result = 
   (* this is primarily an optimisation to save recursive overload resolution
    * to find the return type of a function, which may itself involve a chain
@@ -1078,7 +1078,7 @@ let overload
       (fun (ix,id,_,_,con) -> 
         if List.mem ix rs.constraint_overload_trail then btyp_tuple [] else
         let rs = { rs with constraint_overload_trail = ix::rs.constraint_overload_trail } in
-        let r = bt rs call_sr ix con in
+        let r = match con with | TYP_tuple [] -> Flx_btype.btyp_tuple [] | _ -> bt rs call_sr ix con in
         r
       ) 
       env
