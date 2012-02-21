@@ -49,4 +49,14 @@ class HTTPBasicAuth {
     return ;
   }
 
+  proc requires_auth (auth_source:(string*string->bool),realm:string,
+                     handler_fn:(http_connection*http_request) -> void)
+                    (conn:http_connection, request:http_request ) = {
+    http_basic_auth (auth_source,realm) (conn, request);
+    if not *conn.dirty do
+      handler_fn(conn,request);
+    done
+  }
+ 
+
 }
