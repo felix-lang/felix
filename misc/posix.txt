@@ -1,0 +1,1796 @@
+#include <arpa/inet.h>
+in_addr_t    inet_addr(const char *);
+char        *inet_ntoa(struct in_addr);
+const char  *inet_ntop(int, const void *restrict, char *restrict,
+                 socklen_t);
+int          inet_pton(int, const char *restrict, void *restrict);
+
+#include <assert.h>
+ 
+#include <complex.h>
+    double               cabs(double complex);
+    float                cabsf(float complex);
+    long double          cabsl(long double complex);
+    double complex       cacos(double complex);
+    float complex        cacosf(float complex);
+    double complex       cacosh(double complex);
+    float complex        cacoshf(float complex);
+    long double complex  cacoshl(long double complex);
+    long double complex  cacosl(long double complex);
+    double               carg(double complex);
+    float                cargf(float complex);
+    long double          cargl(long double complex);
+    double complex       casin(double complex);
+    float complex        casinf(float complex);
+    double complex       casinh(double complex);
+    float complex        casinhf(float complex);
+    long double complex  casinhl(long double complex);
+    long double complex  casinl(long double complex);
+    double complex       catan(double complex);
+    float complex        catanf(float complex);
+    double complex       catanh(double complex);
+    float complex        catanhf(float complex);
+    long double complex  catanhl(long double complex);
+    long double complex  catanl(long double complex);
+    double complex       ccos(double complex);
+    float complex        ccosf(float complex);
+    double complex       ccosh(double complex);
+    float complex        ccoshf(float complex);
+    long double complex  ccoshl(long double complex);
+    long double complex  ccosl(long double complex);
+    double complex       cexp(double complex);
+    float complex        cexpf(float complex);
+    long double complex  cexpl(long double complex);
+    double               cimag(double complex);
+    float                cimagf(float complex);
+    long double          cimagl(long double complex);
+    double complex       clog(double complex);
+    float complex        clogf(float complex);
+    long double complex  clogl(long double complex);
+    double complex       conj(double complex);
+    float complex        conjf(float complex);
+    long double complex  conjl(long double complex);
+    double complex       cpow(double complex, double complex);
+    float complex        cpowf(float complex, float complex);
+    long double complex  cpowl(long double complex, long double complex);
+    double complex       cproj(double complex);
+    float complex        cprojf(float complex);
+    long double complex  cprojl(long double complex);
+    double               creal(double complex);
+    float                crealf(float complex);
+    long double          creall(long double complex);
+    double complex       csin(double complex);
+    float complex        csinf(float complex);
+    double complex       csinh(double complex);
+    float complex        csinhf(float complex);
+    long double complex  csinhl(long double complex);
+    long double complex  csinl(long double complex);
+    double complex       csqrt(double complex);
+    float complex        csqrtf(float complex);
+    long double complex  csqrtl(long double complex);
+    double complex       ctan(double complex);
+    float complex        ctanf(float complex);
+    double complex       ctanh(double complex);
+    float complex        ctanhf(float complex);
+    long double complex  ctanhl(long double complex);
+    long double complex  ctanl(long double complex);
+
+[XSI] [Option Start]
+#include <cpio.h> 
+[Option End]
+
+#include <ctype.h>
+int   isalnum(int);
+int   isalpha(int);
+[XSI][Option Start]
+int   isascii(int);
+[Option End]
+int   isblank(int);
+int   iscntrl(int);
+int   isdigit(int);
+int   isgraph(int);
+int   islower(int);
+int   isprint(int);
+int   ispunct(int);
+int   isspace(int);
+int   isupper(int);
+int   isxdigit(int);
+[XSI][Option Start]
+int   toascii(int);
+[Option End]
+int   tolower(int);
+int   toupper(int);
+[XSI][Option Start]
+int   _toupper(int);
+int   _tolower(int);
+[Option End]
+
+#include <dirent.h>
+int            closedir(DIR *);
+DIR           *opendir(const char *);
+struct dirent *readdir(DIR *);
+[TSF][Option Start]
+int            readdir_r(DIR *restrict, struct dirent *restrict,
+                   struct dirent **restrict);
+[Option End]
+void           rewinddir(DIR *);
+[XSI][Option Start]
+void           seekdir(DIR *, long);
+long           telldir(DIR *);
+[Option End]
+
+[XSI] [Option Start] 
+#include <dlfcn.h> 
+[Option End]
+int    dlclose(void *);
+char  *dlerror(void);
+void  *dlopen(const char *, int);
+void  *dlsym(void *restrict, const char *restrict);
+
+#include <errno.h>
+#include <fcntl.h>
+int  creat(const char *, mode_t);
+int  fcntl(int, int, ...);
+int  open(const char *, int, ...);
+[ADV][Option Start]
+int  posix_fadvise(int, off_t, off_t, int);
+int  posix_fallocate(int, off_t, off_t);
+[Option End]
+
+#include <fenv.h>
+int  feclearexcept(int);
+int  fegetexceptflag(fexcept_t *, int);
+int  feraiseexcept(int);
+int  fesetexceptflag(const fexcept_t *, int);
+int  fetestexcept(int);
+int  fegetround(void);
+int  fesetround(int);
+int  fegetenv(fenv_t *);
+int  feholdexcept(fenv_t *);
+int  fesetenv(const fenv_t *);
+int  feupdateenv(const fenv_t *);
+
+#include <float.h>
+[XSI] [Option Start] 
+#include <fmtmsg.h> 
+[Option End]
+    int fmtmsg(long, const char *, int,
+        const char *, const char *, const char *);
+
+#include <fnmatch.h>
+int fnmatch(const char *, const char *, int);
+[XSI] [Option Start] 
+#include <ftw.h> 
+[Option End]
+int ftw(const char *, int (*)(const char *, const struct stat *,
+    int), int);
+int nftw(const char *, int (*)(const char *, const struct stat *,
+    int, struct FTW*), int, int);
+
+#include <grp.h>
+struct group  *getgrgid(gid_t);
+struct group  *getgrnam(const char *);
+[TSF][Option Start]
+int            getgrgid_r(gid_t, struct group *, char *,
+                   size_t, struct group **);
+int            getgrnam_r(const char *, struct group *, char *,
+                   size_t , struct group **);
+[Option End]
+[XSI][Option Start]
+struct group  *getgrent(void);
+void           endgrent(void);
+void           setgrent(void);
+[Option End]
+  
+[XSI] [Option Start] 
+#include <iconv.h> 
+[Option End]
+iconv_t iconv_open(const char *, const char *);
+size_t  iconv(iconv_t, char **restrict, size_t *restrict,
+            char **restrict, size_t *restrict);
+int     iconv_close(iconv_t);
+#include <iso646.h>
+[XSI] [Option Start] 
+#include <langinfo.h> 
+[Option End]
+char *nl_langinfo(nl_item);
+#include <math.h>
+int fpclassify(real-floating x);
+int isfinite(real-floating x);
+int isinf(real-floating x);
+int isnan(real-floating x);
+int isnormal(real-floating x);
+int signbit(real-floating x);
+int isgreater(real-floating x, real-floating y);
+int isgreaterequal(real-floating x, real-floating y);
+int isless(real-floating x, real-floating y);
+int islessequal(real-floating x, real-floating y);
+int islessgreater(real-floating x, real-floating y);
+int isunordered(real-floating x, real-floating y);
+double      acos(double);
+float       acosf(float);
+double      acosh(double);
+float       acoshf(float);
+long double acoshl(long double);
+long double acosl(long double);
+double      asin(double);
+float       asinf(float);
+double      asinh(double);
+float       asinhf(float);
+long double asinhl(long double);
+long double asinl(long double);
+double      atan(double);
+double      atan2(double, double);
+float       atan2f(float, float);
+long double atan2l(long double, long double);
+float       atanf(float);
+double      atanh(double);
+float       atanhf(float);
+long double atanhl(long double);
+long double atanl(long double);
+double      cbrt(double);
+float       cbrtf(float);
+long double cbrtl(long double);
+double      ceil(double);
+float       ceilf(float);
+long double ceill(long double);
+double      copysign(double, double);
+float       copysignf(float, float);
+long double copysignl(long double, long double);
+double      cos(double);
+float       cosf(float);
+double      cosh(double);
+float       coshf(float);
+long double coshl(long double);
+long double cosl(long double);
+double      erf(double);
+double      erfc(double);
+float       erfcf(float);
+long double erfcl(long double);
+float       erff(float);
+long double erfl(long double);
+double      exp(double);
+double      exp2(double);
+float       exp2f(float);
+long double exp2l(long double);
+float       expf(float);
+long double expl(long double);
+double      expm1(double);
+float       expm1f(float);
+long double expm1l(long double);
+double      fabs(double);
+float       fabsf(float);
+long double fabsl(long double);
+double      fdim(double, double);
+float       fdimf(float, float);
+long double fdiml(long double, long double);
+double      floor(double);
+float       floorf(float);
+long double floorl(long double);
+double      fma(double, double, double);
+float       fmaf(float, float, float);
+long double fmal(long double, long double, long double);
+double      fmax(double, double);
+float       fmaxf(float, float);
+long double fmaxl(long double, long double);
+double      fmin(double, double);
+float       fminf(float, float);
+long double fminl(long double, long double);
+double      fmod(double, double);
+float       fmodf(float, float);
+long double fmodl(long double, long double);
+double      frexp(double, int *);
+float       frexpf(float value, int *);
+long double frexpl(long double value, int *);
+double      hypot(double, double);
+float       hypotf(float, float);
+long double hypotl(long double, long double);
+int         ilogb(double);
+int         ilogbf(float);
+int         ilogbl(long double);
+[XSI][Option Start]
+double      j0(double);
+double      j1(double);
+double      jn(int, double);
+[Option End]
+double      ldexp(double, int);
+float       ldexpf(float, int);
+long double ldexpl(long double, int);
+double      lgamma(double);
+float       lgammaf(float);
+long double lgammal(long double);
+long long   llrint(double);
+long long   llrintf(float);
+long long   llrintl(long double);
+long long   llround(double);
+long long   llroundf(float);
+long long   llroundl(long double);
+double      log(double);
+double      log10(double);
+float       log10f(float);
+long double log10l(long double);
+double      log1p(double);
+float       log1pf(float);
+long double log1pl(long double);
+double      log2(double);
+float       log2f(float);
+long double log2l(long double);
+double      logb(double);
+float       logbf(float);
+long double logbl(long double);
+float       logf(float);
+long double logl(long double);
+long        lrint(double);
+long        lrintf(float);
+long        lrintl(long double);
+long        lround(double);
+long        lroundf(float);
+long        lroundl(long double);
+double      modf(double, double *);
+float       modff(float, float *);
+long double modfl(long double, long double *);
+double      nan(const char *);
+float       nanf(const char *);
+long double nanl(const char *);
+double      nearbyint(double);
+float       nearbyintf(float);
+long double nearbyintl(long double);
+double      nextafter(double, double);
+float       nextafterf(float, float);
+long double nextafterl(long double, long double);
+double      nexttoward(double, long double);
+float       nexttowardf(float, long double);
+long double nexttowardl(long double, long double);
+double      pow(double, double);
+float       powf(float, float);
+long double powl(long double, long double);
+double      remainder(double, double);
+float       remainderf(float, float);
+long double remainderl(long double, long double);
+double      remquo(double, double, int *);
+float       remquof(float, float, int *);
+long double remquol(long double, long double, int *);
+double      rint(double);
+float       rintf(float);
+long double rintl(long double);
+double      round(double);
+float       roundf(float);
+long double roundl(long double);
+[XSI][Option Start]
+double      scalb(double, double);
+[Option End]
+double      scalbln(double, long);
+float       scalblnf(float, long);
+long double scalblnl(long double, long);
+double      scalbn(double, int);
+float       scalbnf(float, int);
+long double scalbnl(long double, int);
+double      sin(double);
+float       sinf(float);
+double      sinh(double);
+float       sinhf(float);
+long double sinhl(long double);
+long double sinl(long double);
+double      sqrt(double);
+float       sqrtf(float);
+long double sqrtl(long double);
+double      tan(double);
+float       tanf(float);
+double      tanh(double);
+float       tanhf(float);
+long double tanhl(long double);
+long double tanl(long double);
+double      tgamma(double);
+float       tgammaf(float);
+long double tgammal(long double);
+double      trunc(double);
+float       truncf(float);
+long double truncl(long double);
+[XSI][Option Start]
+double      y0(double);
+double      y1(double);
+double      yn(int, double);
+[Option End]
+
+[XSI] [Option Start] 
+#include <monetary.h>
+[Option End]
+ssize_t  strfmon(char *restrict, size_t, const char *restrict, ...);
+
+[MSG] [Option Start] 
+#include <mqueue.h> 
+[Option End]
+int      mq_close(mqd_t);
+int      mq_getattr(mqd_t, struct mq_attr *);
+int      mq_notify(mqd_t, const struct sigevent *);
+mqd_t    mq_open(const char *, int, ...);
+ssize_t  mq_receive(mqd_t, char *, size_t, unsigned *);
+int      mq_send(mqd_t, const char *, size_t, unsigned );
+int      mq_setattr(mqd_t, const struct mq_attr *restrict,
+             struct mq_attr *restrict);
+[TMO][Option Start]
+ssize_t  mq_timedreceive(mqd_t, char *restrict, size_t,
+             unsigned *restrict, const struct timespec *restrict);
+int      mq_timedsend(mqd_t, const char *, size_t, unsigned ,
+             const struct timespec *);
+[Option End]
+int      mq_unlink(const char *);
+[XSI] [Option Start] 
+#include <ndbm.h> 
+[Option End]
+int     dbm_clearerr(DBM *);
+void    dbm_close(DBM *);
+int     dbm_delete(DBM *, datum);
+int     dbm_error(DBM *);
+datum   dbm_fetch(DBM *, datum);
+datum   dbm_firstkey(DBM *);
+datum   dbm_nextkey(DBM *);
+DBM    *dbm_open(const char *, int, mode_t);
+int     dbm_store(DBM *, datum, datum, int);
+#include <netdb.h>
+
+void              endhostent(void);
+void              endnetent(void);
+void              endprotoent(void);
+void              endservent(void);
+void              freeaddrinfo(struct addrinfo *);
+const char       *gai_strerror(int);
+int               getaddrinfo(const char *restrict, const char *restrict,
+                      const struct addrinfo *restrict,
+                      struct addrinfo **restrict);
+struct hostent   *gethostbyaddr(const void *, socklen_t, int);
+struct hostent   *gethostbyname(const char *);
+struct hostent   *gethostent(void);
+int               getnameinfo(const struct sockaddr *restrict, socklen_t,
+                      char *restrict, socklen_t, char *restrict,
+                      socklen_t, int);
+struct netent    *getnetbyaddr(uint32_t, int);
+struct netent    *getnetbyname(const char *);
+struct netent    *getnetent(void);
+struct protoent  *getprotobyname(const char *);
+struct protoent  *getprotobynumber(int);
+struct protoent  *getprotoent(void);
+struct servent   *getservbyname(const char *, const char *);
+struct servent   *getservbyport(int, const char *);
+struct servent   *getservent(void);
+void              sethostent(int);
+void              setnetent(int);
+void              setprotoent(int);
+void              setservent(int);
+#include <net/if.h>
+unsigned              if_nametoindex(const char *);
+char                 *if_indextoname(unsigned, char *);
+struct if_nameindex  *if_nameindex(void);
+void                  if_freenameindex(struct if_nameindex *);
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+[XSI] [Option Start] 
+#include <nl_types.h> 
+[Option End]
+int       catclose(nl_catd);
+char     *catgets(nl_catd, int, int, const char *);
+nl_catd   catopen(const char *, int);
+
+
+[XSI] [Option Start] 
+#include <poll.h> 
+[Option End]
+int   poll(struct pollfd[], nfds_t, int);
+
+[THR] [Option Start] 
+#include <pthread.h> 
+[Option End]
+
+int   pthread_atfork(void (*)(void), void (*)(void),
+          void(*)(void));
+int   pthread_attr_destroy(pthread_attr_t *);
+int   pthread_attr_getdetachstate(const pthread_attr_t *, int *);
+[XSI][Option Start]
+int   pthread_attr_getguardsize(const pthread_attr_t *restrict,
+          size_t *restrict);
+[Option End]
+[TPS][Option Start]
+int   pthread_attr_getinheritsched(const pthread_attr_t *restrict,
+          int *restrict);
+[Option End]
+int   pthread_attr_getschedparam(const pthread_attr_t *restrict,
+          struct sched_param *restrict);
+[TPS][Option Start]
+int   pthread_attr_getschedpolicy(const pthread_attr_t *restrict,
+          int *restrict);
+[Option End]
+[TPS][Option Start]
+int   pthread_attr_getscope(const pthread_attr_t *restrict,
+          int *restrict);
+[Option End]
+[TSA TSS][Option Start]
+int   pthread_attr_getstack(const pthread_attr_t *restrict,
+          void **restrict, size_t *restrict);
+[Option End]
+[TSA][Option Start]
+int   pthread_attr_getstackaddr(const pthread_attr_t *restrict,
+          void **restrict);
+[Option End]
+[TSS][Option Start]
+int   pthread_attr_getstacksize(const pthread_attr_t *restrict,
+          size_t *restrict);
+[Option End]
+int   pthread_attr_init(pthread_attr_t *);
+int   pthread_attr_setdetachstate(pthread_attr_t *, int);
+[XSI][Option Start]
+int   pthread_attr_setguardsize(pthread_attr_t *, size_t);
+[Option End]
+[TPS][Option Start]
+int   pthread_attr_setinheritsched(pthread_attr_t *, int);
+[Option End]
+int   pthread_attr_setschedparam(pthread_attr_t *restrict,
+          const struct sched_param *restrict);
+[TPS][Option Start]
+int   pthread_attr_setschedpolicy(pthread_attr_t *, int);
+int   pthread_attr_setscope(pthread_attr_t *, int);
+[Option End]
+[TSA TSS][Option Start]
+int   pthread_attr_setstack(pthread_attr_t *, void *, size_t);
+[Option End]
+[TSA][Option Start]
+int   pthread_attr_setstackaddr(pthread_attr_t *, void *);
+[Option End]
+[TSS][Option Start]
+int   pthread_attr_setstacksize(pthread_attr_t *, size_t);
+[Option End]
+[BAR][Option Start]
+int   pthread_barrier_destroy(pthread_barrier_t *);
+int   pthread_barrier_init(pthread_barrier_t *restrict,
+          const pthread_barrierattr_t *restrict, unsigned);
+int   pthread_barrier_wait(pthread_barrier_t *);
+int   pthread_barrierattr_destroy(pthread_barrierattr_t *);
+[Option End]
+[BAR TSH][Option Start]
+int   pthread_barrierattr_getpshared(
+          const pthread_barrierattr_t *restrict, int *restrict);
+[Option End]
+[BAR][Option Start]
+int   pthread_barrierattr_init(pthread_barrierattr_t *);
+[Option End]
+[BAR TSH][Option Start]
+int   pthread_barrierattr_setpshared(pthread_barrierattr_t *, int);
+[Option End]
+int   pthread_cancel(pthread_t);
+void  pthread_cleanup_push(void (*)(void *), void *);
+void  pthread_cleanup_pop(int);
+int   pthread_cond_broadcast(pthread_cond_t *);
+int   pthread_cond_destroy(pthread_cond_t *);
+int   pthread_cond_init(pthread_cond_t *restrict,
+          const pthread_condattr_t *restrict);
+int   pthread_cond_signal(pthread_cond_t *);
+int   pthread_cond_timedwait(pthread_cond_t *restrict,
+          pthread_mutex_t *restrict, const struct timespec *restrict);
+int   pthread_cond_wait(pthread_cond_t *restrict,
+          pthread_mutex_t *restrict);
+int   pthread_condattr_destroy(pthread_condattr_t *);
+[CS][Option Start]
+int   pthread_condattr_getclock(const pthread_condattr_t *restrict,
+          clockid_t *restrict);
+[Option End]
+[TSH][Option Start]
+int   pthread_condattr_getpshared(const pthread_condattr_t *restrict,
+          int *restrict);
+[Option End]
+int   pthread_condattr_init(pthread_condattr_t *);
+[CS][Option Start]
+int   pthread_condattr_setclock(pthread_condattr_t *, clockid_t);
+[Option End]
+[TSH][Option Start]
+int   pthread_condattr_setpshared(pthread_condattr_t *, int);
+[Option End]
+int   pthread_create(pthread_t *restrict, const pthread_attr_t *restrict,
+          void *(*)(void *), void *restrict);
+int   pthread_detach(pthread_t);
+int   pthread_equal(pthread_t, pthread_t);
+void  pthread_exit(void *);
+[XSI][Option Start]
+int   pthread_getconcurrency(void);
+[Option End]
+[TCT][Option Start]
+int   pthread_getcpuclockid(pthread_t, clockid_t *);
+[Option End]
+[TPS][Option Start]
+int   pthread_getschedparam(pthread_t, int *restrict,
+          struct sched_param *restrict);
+[Option End]
+void *pthread_getspecific(pthread_key_t);
+int   pthread_join(pthread_t, void **);
+int   pthread_key_create(pthread_key_t *, void (*)(void *));
+int   pthread_key_delete(pthread_key_t);
+int   pthread_mutex_destroy(pthread_mutex_t *);
+[TPP][Option Start]
+int   pthread_mutex_getprioceiling(const pthread_mutex_t *restrict,
+          int *restrict);
+[Option End]
+int   pthread_mutex_init(pthread_mutex_t *restrict,
+          const pthread_mutexattr_t *restrict);
+int   pthread_mutex_lock(pthread_mutex_t *);
+[TPP][Option Start]
+int   pthread_mutex_setprioceiling(pthread_mutex_t *restrict, int,
+          int *restrict);
+[Option End]
+[TMO][Option Start]
+int   pthread_mutex_timedlock(pthread_mutex_t *,
+          const struct timespec *);
+[Option End]
+int   pthread_mutex_trylock(pthread_mutex_t *);
+int   pthread_mutex_unlock(pthread_mutex_t *);
+int   pthread_mutexattr_destroy(pthread_mutexattr_t *);
+[TPP][Option Start]
+int   pthread_mutexattr_getprioceiling(
+          const pthread_mutexattr_t *restrict, int *restrict);
+[Option End]
+[TPP|TPI][Option Start]
+int   pthread_mutexattr_getprotocol(const pthread_mutexattr_t *restrict,
+          int *restrict);
+[Option End]
+[TSH][Option Start]
+int   pthread_mutexattr_getpshared(const pthread_mutexattr_t *restrict,
+          int *restrict);
+[Option End]
+[XSI][Option Start]
+int   pthread_mutexattr_gettype(const pthread_mutexattr_t *restrict,
+          int *restrict);
+[Option End]
+int   pthread_mutexattr_init(pthread_mutexattr_t *);
+[TPP][Option Start]
+int   pthread_mutexattr_setprioceiling(pthread_mutexattr_t *, int);
+[Option End]
+[TPP|TPI][Option Start]
+int   pthread_mutexattr_setprotocol(pthread_mutexattr_t *, int);
+[Option End]
+[TSH][Option Start]
+int   pthread_mutexattr_setpshared(pthread_mutexattr_t *, int);
+[Option End]
+[XSI][Option Start]
+int   pthread_mutexattr_settype(pthread_mutexattr_t *, int);
+[Option End]
+int   pthread_once(pthread_once_t *, void (*)(void));
+int   pthread_rwlock_destroy(pthread_rwlock_t *);
+int   pthread_rwlock_init(pthread_rwlock_t *restrict,
+          const pthread_rwlockattr_t *restrict);
+int   pthread_rwlock_rdlock(pthread_rwlock_t *);
+[TMO][Option Start]
+int   pthread_rwlock_timedrdlock(pthread_rwlock_t *restrict,
+          const struct timespec *restrict);
+int   pthread_rwlock_timedwrlock(pthread_rwlock_t *restrict,
+          const struct timespec *restrict);
+[Option End]
+int   pthread_rwlock_tryrdlock(pthread_rwlock_t *);
+int   pthread_rwlock_trywrlock(pthread_rwlock_t *);
+int   pthread_rwlock_unlock(pthread_rwlock_t *);
+int   pthread_rwlock_wrlock(pthread_rwlock_t *);
+int   pthread_rwlockattr_destroy(pthread_rwlockattr_t *);
+[TSH][Option Start]
+int   pthread_rwlockattr_getpshared(
+          const pthread_rwlockattr_t *restrict, int *restrict);
+[Option End]
+int   pthread_rwlockattr_init(pthread_rwlockattr_t *);
+[TSH][Option Start]
+int   pthread_rwlockattr_setpshared(pthread_rwlockattr_t *, int);
+[Option End]
+pthread_t
+      pthread_self(void);
+int   pthread_setcancelstate(int, int *);
+int   pthread_setcanceltype(int, int *);
+[XSI][Option Start]
+int   pthread_setconcurrency(int);
+[Option End]
+[TPS][Option Start]
+int   pthread_setschedparam(pthread_t, int,
+          const struct sched_param *);
+[Option End]
+[TPS][Option Start]
+int   pthread_setschedprio(pthread_t, int);
+[Option End]
+int   pthread_setspecific(pthread_key_t, const void *);
+[SPI][Option Start]
+int   pthread_spin_destroy(pthread_spinlock_t *);
+int   pthread_spin_init(pthread_spinlock_t *, int);
+int   pthread_spin_lock(pthread_spinlock_t *);
+int   pthread_spin_trylock(pthread_spinlock_t *);
+int   pthread_spin_unlock(pthread_spinlock_t *);
+[Option End]
+void  pthread_testcancel(void);
+
+#include <pwd.h>
+struct passwd *getpwnam(const char *);
+struct passwd *getpwuid(uid_t);
+[TSF][Option Start]
+int            getpwnam_r(const char *, struct passwd *, char *,
+                   size_t, struct passwd **);
+int            getpwuid_r(uid_t, struct passwd *, char *,
+                   size_t, struct passwd **);
+[Option End]
+[XSI][Option Start]
+void           endpwent(void);
+struct passwd *getpwent(void);
+void           setpwent(void);
+[Option End]
+
+#include <regex.h>
+int    regcomp(regex_t *restrict, const char *restrict, int);
+size_t regerror(int, const regex_t *restrict, char *restrict, size_t);
+int    regexec(const regex_t *restrict, const char *restrict, size_t,
+           regmatch_t[restrict], int);
+void   regfree(regex_t *);
+
+[PS] [Option Start] 
+#include <sched.h> 
+[Option End]
+[TPS][Option Start]
+int    sched_get_priority_max(int);
+int    sched_get_priority_min(int);
+[Option End]
+int    sched_getparam(pid_t, struct sched_param *);
+int    sched_getscheduler(pid_t);
+[TPS][Option Start]
+int    sched_rr_get_interval(pid_t, struct timespec *);
+[Option End]
+int    sched_setparam(pid_t, const struct sched_param *);
+int    sched_setscheduler(pid_t, int, const struct sched_param *);
+[THR][Option Start]
+int    sched_yield(void);
+[Option End]
+
+[XSI] [Option Start] 
+#include <search.h> 
+[Option End]
+
+int    hcreate(size_t);
+void   hdestroy(void);
+ENTRY *hsearch(ENTRY, ACTION);
+void   insque(void *, void *);
+void  *lfind(const void *, const void *, size_t *,
+          size_t, int (*)(const void *, const void *));
+void  *lsearch(const void *, void *, size_t *,
+          size_t, int (*)(const void *, const void *));
+void   remque(void *);
+void  *tdelete(const void *restrict, void **restrict,
+          int(*)(const void *, const void *));
+void  *tfind(const void *, void *const *,
+          int(*)(const void *, const void *));
+void  *tsearch(const void *, void **,
+          int(*)(const void *, const void *));
+void   twalk(const void *,
+          void (*)(const void *, VISIT, int ));
+
+[SEM] [Option Start] 
+#include <semaphore.h> 
+[Option End]
+int    sem_close(sem_t *);
+int    sem_destroy(sem_t *);
+int    sem_getvalue(sem_t *restrict, int *restrict);
+int    sem_init(sem_t *, int, unsigned);
+sem_t *sem_open(const char *, int, ...);
+int    sem_post(sem_t *);
+[TMO][Option Start]
+int    sem_timedwait(sem_t *restrict, const struct timespec *restrict);
+[Option End]
+int    sem_trywait(sem_t *);
+int    sem_unlink(const char *);
+int    sem_wait(sem_t *);
+#include <setjmp.h>
+void   longjmp(jmp_buf, int);
+[CX][Option Start]
+void   siglongjmp(sigjmp_buf, int);
+[Option End]
+[XSI][Option Start]
+void  _longjmp(jmp_buf, int);
+[Option End]
+int    setjmp(jmp_buf);
+[CX][Option Start]
+int    sigsetjmp(sigjmp_buf, int);
+[Option End]
+[XSI][Option Start]
+int   _setjmp(jmp_buf);
+[Option End]
+#include <signal.h>
+[XSI][Option Start]
+void (*bsd_signal(int, void (*)(int)))(int);
+[Option End]
+[CX][Option Start]
+int    kill(pid_t, int);
+[Option End]
+[XSI][Option Start]
+int    killpg(pid_t, int);
+[Option End]
+[THR][Option Start]
+int    pthread_kill(pthread_t, int);
+int    pthread_sigmask(int, const sigset_t *, sigset_t *);
+[Option End]
+int    raise(int);
+[CX][Option Start]
+int    sigaction(int, const struct sigaction *restrict,
+           struct sigaction *restrict);
+int    sigaddset(sigset_t *, int);
+[Option End]
+[XSI][Option Start]
+int    sigaltstack(const stack_t *restrict, stack_t *restrict);
+[Option End]
+[CX][Option Start]
+int    sigdelset(sigset_t *, int);
+int    sigemptyset(sigset_t *);
+int    sigfillset(sigset_t *);
+[Option End]
+[XSI][Option Start]
+int    sighold(int);
+int    sigignore(int);
+int    siginterrupt(int, int);
+[Option End]
+[CX][Option Start]
+int    sigismember(const sigset_t *, int);
+[Option End]
+void (*signal(int, void (*)(int)))(int);
+[XSI][Option Start]
+int    sigpause(int);
+[Option End]
+[CX][Option Start]
+int    sigpending(sigset_t *);
+int    sigprocmask(int, const sigset_t *restrict, sigset_t *restrict);
+[Option End]
+[RTS][Option Start]
+int    sigqueue(pid_t, int, const union sigval);
+[Option End]
+[XSI][Option Start]
+int    sigrelse(int);
+void (*sigset(int, void (*)(int)))(int);
+[Option End]
+[CX][Option Start]
+int    sigsuspend(const sigset_t *);
+[Option End]
+[RTS][Option Start]
+int    sigtimedwait(const sigset_t *restrict, siginfo_t *restrict,
+           const struct timespec *restrict);
+[Option End]
+[CX][Option Start]
+int    sigwait(const sigset_t *restrict, int *restrict);
+[Option End]
+[RTS][Option Start]
+int    sigwaitinfo(const sigset_t *restrict, siginfo_t *restrict);
+[Option End]
+[SPN] [Option Start] 
+#include <spawn.h> 
+[Option End]
+int   posix_spawn(pid_t *restrict, const char *restrict,
+          const posix_spawn_file_actions_t *,
+          const posix_spawnattr_t *restrict, char *const [restrict],
+          char *const [restrict]);
+int   posix_spawn_file_actions_addclose(posix_spawn_file_actions_t *,
+          int);
+int   posix_spawn_file_actions_adddup2(posix_spawn_file_actions_t *,
+          int, int);
+int   posix_spawn_file_actions_addopen(posix_spawn_file_actions_t *restrict,
+          int, const char *restrict, int, mode_t);
+int   posix_spawn_file_actions_destroy(posix_spawn_file_actions_t *);
+int   posix_spawn_file_actions_init(posix_spawn_file_actions_t *);
+int   posix_spawnattr_destroy(posix_spawnattr_t *);
+int   posix_spawnattr_getsigdefault(const posix_spawnattr_t *restrict,
+          sigset_t *restrict);
+int   posix_spawnattr_getflags(const posix_spawnattr_t *restrict,
+          short *restrict);
+int   posix_spawnattr_getpgroup(const posix_spawnattr_t *restrict,
+          pid_t *restrict);
+[PS][Option Start]
+int   posix_spawnattr_getschedparam(const posix_spawnattr_t *restrict,
+          struct sched_param *restrict);
+int   posix_spawnattr_getschedpolicy(const posix_spawnattr_t *restrict,
+          int *restrict);
+[Option End]
+int   posix_spawnattr_getsigmask(const posix_spawnattr_t *restrict,
+          sigset_t *restrict);
+int   posix_spawnattr_init(posix_spawnattr_t *);
+int   posix_spawnattr_setsigdefault(posix_spawnattr_t *restrict,
+          const sigset_t *restrict);
+int   posix_spawnattr_setflags(posix_spawnattr_t *, short);
+int   posix_spawnattr_setpgroup(posix_spawnattr_t *, pid_t);
+
+
+[PS][Option Start]
+int   posix_spawnattr_setschedparam(posix_spawnattr_t *restrict,
+          const struct sched_param *restrict);
+int   posix_spawnattr_setschedpolicy(posix_spawnattr_t *, int);
+[Option End]
+int   posix_spawnattr_setsigmask(posix_spawnattr_t *restrict,
+          const sigset_t *restrict);
+int   posix_spawnp(pid_t *restrict, const char *restrict,
+          const posix_spawn_file_actions_t *,
+          const posix_spawnattr_t *restrict,
+          char *const [restrict], char *const [restrict]);
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+
+void     clearerr(FILE *);
+[CX][Option Start]
+char    *ctermid(char *);
+[Option End]
+int      fclose(FILE *);
+[CX][Option Start]
+FILE    *fdopen(int, const char *);
+[Option End]
+int      feof(FILE *);
+int      ferror(FILE *);
+int      fflush(FILE *);
+int      fgetc(FILE *);
+int      fgetpos(FILE *restrict, fpos_t *restrict);
+char    *fgets(char *restrict, int, FILE *restrict);
+[CX][Option Start]
+int      fileno(FILE *);
+[Option End]
+[TSF][Option Start]
+void     flockfile(FILE *);
+[Option End]
+FILE    *fopen(const char *restrict, const char *restrict);
+int      fprintf(FILE *restrict, const char *restrict, ...);
+int      fputc(int, FILE *);
+int      fputs(const char *restrict, FILE *restrict);
+size_t   fread(void *restrict, size_t, size_t, FILE *restrict);
+FILE    *freopen(const char *restrict, const char *restrict,
+             FILE *restrict);
+int      fscanf(FILE *restrict, const char *restrict, ...);
+int      fseek(FILE *, long, int);
+[CX][Option Start]
+int      fseeko(FILE *, off_t, int);
+[Option End]
+int      fsetpos(FILE *, const fpos_t *);
+long     ftell(FILE *);
+[CX][Option Start]
+off_t    ftello(FILE *);
+[Option End]
+[TSF][Option Start]
+int      ftrylockfile(FILE *);
+void     funlockfile(FILE *);
+[Option End]
+size_t   fwrite(const void *restrict, size_t, size_t, FILE *restrict);
+int      getc(FILE *);
+int      getchar(void);
+[TSF][Option Start]
+int      getc_unlocked(FILE *);
+int      getchar_unlocked(void);
+[Option End]
+char    *gets(char *);
+[CX][Option Start]
+int      pclose(FILE *);
+[Option End]
+void     perror(const char *);
+[CX][Option Start]
+FILE    *popen(const char *, const char *);
+[Option End]
+int      printf(const char *restrict, ...);
+int      putc(int, FILE *);
+int      putchar(int);
+[TSF][Option Start]
+int      putc_unlocked(int, FILE *);
+int      putchar_unlocked(int);
+[Option End]
+int      puts(const char *);
+int      remove(const char *);
+int      rename(const char *, const char *);
+void     rewind(FILE *);
+int      scanf(const char *restrict, ...);
+void     setbuf(FILE *restrict, char *restrict);
+int      setvbuf(FILE *restrict, char *restrict, int, size_t);
+int      snprintf(char *restrict, size_t, const char *restrict, ...);
+int      sprintf(char *restrict, const char *restrict, ...);
+int      sscanf(const char *restrict, const char *restrict, int ...);
+[XSI][Option Start]
+char    *tempnam(const char *, const char *);
+[Option End]
+FILE    *tmpfile(void);
+char    *tmpnam(char *);
+int      ungetc(int, FILE *);
+int      vfprintf(FILE *restrict, const char *restrict, va_list);
+int      vfscanf(FILE *restrict, const char *restrict, va_list);
+int      vprintf(const char *restrict, va_list);
+int      vscanf(const char *restrict, va_list);
+int      vsnprintf(char *restrict, size_t, const char *restrict,
+             va_list);
+int      vsprintf(char *restrict, const char *restrict, va_list);
+int      vsscanf(const char *restrict, const char *restrict,
+             va_list arg);
+#include <stdlib.h>
+
+
+void          _Exit(int);
+[XSI][Option Start]
+long          a64l(const char *);
+[Option End]
+void          abort(void);
+int           abs(int);
+int           atexit(void (*)(void));
+double        atof(const char *);
+int           atoi(const char *);
+long          atol(const char *);
+long long     atoll(const char *);
+void         *bsearch(const void *, const void *, size_t, size_t,
+                  int (*)(const void *, const void *));
+void         *calloc(size_t, size_t);
+div_t         div(int, int);
+[XSI][Option Start]
+double        drand48(void);
+char         *ecvt(double, int, int *restrict, int *restrict); (LEGACY )
+double        erand48(unsigned short[3]);
+[Option End]
+void          exit(int);
+[XSI][Option Start]
+char         *fcvt(double, int, int *restrict, int *restrict); (LEGACY )
+[Option End]
+void          free(void *);
+[XSI][Option Start]
+char         *gcvt(double, int, char *); (LEGACY )
+[Option End]
+char         *getenv(const char *);
+[XSI][Option Start]
+int           getsubopt(char **, char *const *, char **);
+int           grantpt(int);
+char         *initstate(unsigned, char *, size_t);
+long          jrand48(unsigned short[3]);
+char         *l64a(long);
+[Option End]
+long          labs(long);
+[XSI][Option Start]
+void          lcong48(unsigned short[7]);
+[Option End]
+ldiv_t        ldiv(long, long);
+long long     llabs(long long);
+lldiv_t       lldiv(long long, long long);
+[XSI][Option Start]
+long          lrand48(void);
+[Option End]
+void         *malloc(size_t);
+int           mblen(const char *, size_t);
+size_t        mbstowcs(wchar_t *restrict, const char *restrict, size_t);
+int           mbtowc(wchar_t *restrict, const char *restrict, size_t);
+[XSI][Option Start]
+char         *mktemp(char *); (LEGACY )
+int           mkstemp(char *);
+long          mrand48(void);
+long          nrand48(unsigned short[3]);
+[Option End]
+[ADV][Option Start]
+int           posix_memalign(void **, size_t, size_t);
+[Option End]
+[XSI][Option Start]
+int           posix_openpt(int);
+char         *ptsname(int);
+int           putenv(char *);
+[Option End]
+void          qsort(void *, size_t, size_t, int (*)(const void *,
+                  const void *));
+int           rand(void);
+[TSF][Option Start]
+int           rand_r(unsigned *);
+[Option End]
+[XSI][Option Start]
+long          random(void);
+[Option End]
+void         *realloc(void *, size_t);
+[XSI][Option Start]
+char         *realpath(const char *restrict, char *restrict);
+unsigned short seed48(unsigned short[3]);
+[Option End]
+[CX][Option Start]
+int           setenv(const char *, const char *, int);
+[Option End]
+[XSI][Option Start]
+void          setkey(const char *);
+char         *setstate(const char *);
+[Option End]
+void          srand(unsigned);
+[XSI][Option Start]
+void          srand48(long);
+void          srandom(unsigned);
+[Option End]
+double        strtod(const char *restrict, char **restrict);
+float         strtof(const char *restrict, char **restrict);
+long          strtol(const char *restrict, char **restrict, int);
+long double   strtold(const char *restrict, char **restrict);
+long long     strtoll(const char *restrict, char **restrict, int);
+unsigned long strtoul(const char *restrict, char **restrict, int);
+unsigned long long
+              strtoull(const char *restrict, char **restrict, int);
+int           system(const char *);
+[XSI][Option Start]
+int           unlockpt(int);
+[Option End]
+[CX][Option Start]
+int           unsetenv(const char *);
+[Option End]
+size_t        wcstombs(char *restrict, const wchar_t *restrict, size_t);
+int           wctomb(char *, wchar_t);
+
+
+#include <string.h>
+[XSI][Option Start]
+void    *memccpy(void *restrict, const void *restrict, int, size_t);
+[Option End]
+void    *memchr(const void *, int, size_t);
+int      memcmp(const void *, const void *, size_t);
+void    *memcpy(void *restrict, const void *restrict, size_t);
+void    *memmove(void *, const void *, size_t);
+void    *memset(void *, int, size_t);
+char    *strcat(char *restrict, const char *restrict);
+char    *strchr(const char *, int);
+int      strcmp(const char *, const char *);
+int      strcoll(const char *, const char *);
+char    *strcpy(char *restrict, const char *restrict);
+size_t   strcspn(const char *, const char *);
+[XSI][Option Start]
+char    *strdup(const char *);
+[Option End]
+char    *strerror(int);
+[TSF][Option Start]
+int     *strerror_r(int, char *, size_t);
+[Option End]
+size_t   strlen(const char *);
+char    *strncat(char *restrict, const char *restrict, size_t);
+int      strncmp(const char *, const char *, size_t);
+char    *strncpy(char *restrict, const char *restrict, size_t);
+char    *strpbrk(const char *, const char *);
+char    *strrchr(const char *, int);
+size_t   strspn(const char *, const char *);
+char    *strstr(const char *, const char *);
+char    *strtok(char *restrict, const char *restrict);
+[TSF][Option Start]
+char    *strtok_r(char *, const char *, char **);
+[Option End]
+size_t   strxfrm(char *restrict, const char *restrict, size_t);
+
+[XSI] [Option Start] 
+#include <strings.h> 
+[Option End]
+
+int    bcmp(const void *, const void *, size_t); // (LEGACY )
+void   bcopy(const void *, void *, size_t); // (LEGACY )
+void   bzero(void *, size_t);  // (LEGACY )
+int    ffs(int);
+char  *index(const char *, int); // (LEGACY )
+char  *rindex(const char *, int); // (LEGACY )
+int    strcasecmp(const char *, const char *);
+int    strncasecmp(const char *, const char *, size_t);
+
+[XSR] [Option Start] 
+#include <stropts.h> 
+[Option End]
+
+int    isastream(int);
+int    getmsg(int, struct strbuf *restrict, struct strbuf *restrict,
+           int *restrict);
+int    getpmsg(int, struct strbuf *restrict, struct strbuf *restrict,
+           int *restrict, int *restrict);
+int    ioctl(int, int, ... );
+int    putmsg(int, const struct strbuf *, const struct strbuf *, int);
+int    putpmsg(int, const struct strbuf *, const struct strbuf *, int,
+           int);
+int    fattach(int, const char *);
+int    fdetach(const char *);
+[XSI] [Option Start] 
+#include <sys/ipc.h> 
+[Option End]
+key_t  ftok(const char *, int);
+#include <sys/mman.h>
+[MLR][Option Start]
+int    mlock(const void *, size_t);
+[Option End]
+[ML][Option Start]
+int    mlockall(int);
+[Option End]
+[MC3][Option Start]
+void  *mmap(void *, size_t, int, int, int, off_t);
+[Option End]
+[MPR][Option Start]
+int    mprotect(void *, size_t, int);
+[Option End]
+[MF|SIO][Option Start]
+int    msync(void *, size_t, int);
+[Option End]
+[MLR][Option Start]
+int    munlock(const void *, size_t);
+[Option End]
+[ML][Option Start]
+int    munlockall(void);
+[Option End]
+[MC3][Option Start]
+int    munmap(void *, size_t);
+[Option End]
+[ADV][Option Start]
+int    posix_madvise(void *, size_t, int);
+[Option End]
+[TYM][Option Start]
+int    posix_mem_offset(const void *restrict, size_t, off_t *restrict,
+           size_t *restrict, int *restrict);
+int    posix_typed_mem_get_info(int, struct posix_typed_mem_info *);
+int    posix_typed_mem_open(const char *, int, int);
+[Option End]
+[SHM][Option Start]
+int    shm_open(const char *, int, mode_t);
+int    shm_unlink(const char *);
+[Option End]
+[XSI] [Option Start] 
+#include <sys/msg.h> 
+[Option End]
+int       msgctl(int, int, struct msqid_ds *);
+int       msgget(key_t, int);
+ssize_t   msgrcv(int, void *, size_t, long, int);
+int       msgsnd(int, const void *, size_t, int);
+
+
+[XSI] [Option Start] 
+#include <sys/resource.h> 
+[Option End]
+int  getpriority(int, id_t);
+int  getrlimit(int, struct rlimit *);
+int  getrusage(int, struct rusage *);
+int  setpriority(int, id_t, int);
+int  setrlimit(int, const struct rlimit *);
+  
+#include <sys/select.h>
+int  pselect(int, fd_set *restrict, fd_set *restrict, fd_set *restrict,
+         const struct timespec *restrict, const sigset_t *restrict);
+int  select(int, fd_set *restrict, fd_set *restrict, fd_set *restrict,
+         struct timeval *restrict);
+
+[XSI] [Option Start] 
+#include <sys/sem.h> 
+[Option End]
+int   semctl(int, int, int, ...);
+int   semget(key_t, int, int);
+int   semop(int, struct sembuf *, size_t);
+
+[XSI] [Option Start] 
+#include <sys/shm.h> 
+[Option End]
+
+void *shmat(int, const void *, int);
+int   shmctl(int, int, struct shmid_ds *);
+int   shmdt(const void *);
+int   shmget(key_t, size_t, int);
+
+#include <sys/socket.h>
+
+int     accept(int, struct sockaddr *restrict, socklen_t *restrict);
+int     bind(int, const struct sockaddr *, socklen_t);
+int     connect(int, const struct sockaddr *, socklen_t);
+int     getpeername(int, struct sockaddr *restrict, socklen_t *restrict);
+int     getsockname(int, struct sockaddr *restrict, socklen_t *restrict);
+int     getsockopt(int, int, int, void *restrict, socklen_t *restrict);
+int     listen(int, int);
+ssize_t recv(int, void *, size_t, int);
+ssize_t recvfrom(int, void *restrict, size_t, int,
+        struct sockaddr *restrict, socklen_t *restrict);
+ssize_t recvmsg(int, struct msghdr *, int);
+ssize_t send(int, const void *, size_t, int);
+ssize_t sendmsg(int, const struct msghdr *, int);
+ssize_t sendto(int, const void *, size_t, int, const struct sockaddr *,
+        socklen_t);
+int     setsockopt(int, int, int, const void *, socklen_t);
+int     shutdown(int, int);
+int     socket(int, int, int);
+int     sockatmark(int);
+int     socketpair(int, int, int, int[2]);
+#include <sys/stat.h>
+int    chmod(const char *, mode_t);
+int    fchmod(int, mode_t);
+int    fstat(int, struct stat *);
+int    lstat(const char *restrict, struct stat *restrict);
+int    mkdir(const char *, mode_t);
+int    mkfifo(const char *, mode_t);
+[XSI][Option Start]
+int    mknod(const char *, mode_t, dev_t);
+[Option End]
+int    stat(const char *restrict, struct stat *restrict);
+mode_t umask(mode_t);
+[XSI] [Option Start] 
+#include <sys/statvfs.h> 
+[Option End]
+
+int statvfs(const char *restrict, struct statvfs *restrict);
+int fstatvfs(int, struct statvfs *);
+
+[XSI] [Option Start] 
+#include <sys/timeb.h> 
+[Option End]
+int   ftime(struct timeb *); // (LEGACY )
+
+[XSI] [Option Start] 
+#include <sys/time.h> 
+[Option End]
+int   getitimer(int, struct itimerval *);
+int   gettimeofday(struct timeval *restrict, void *restrict);
+int   select(int, fd_set *restrict, fd_set *restrict, fd_set *restrict,
+          struct timeval *restrict);
+int   setitimer(int, const struct itimerval *restrict,
+          struct itimerval *restrict);
+int   utimes(const char *, const struct timeval [2]); //(LEGACY )
+#include <sys/times.h>
+
+clock_t times(struct tms *);
+#include <sys/types.h>
+[XSI] [Option Start] 
+#include <sys/uio.h> 
+[Option End]
+ssize_t readv(int, const struct iovec *, int);
+ssize_t writev(int, const struct iovec *, int);
+
+#include <sys/un.h>
+
+#include <sys/utsname.h>
+int uname(struct utsname *);
+#include <sys/wait.h>
+pid_t  wait(int *);
+[XSI][Option Start]
+int    waitid(idtype_t, id_t, siginfo_t *, int);
+[Option End]
+pid_t  waitpid(pid_t, int *, int);
+
+#include <tar.h>
+#include <termios.h>
+
+speed_t cfgetispeed(const struct termios *);
+speed_t cfgetospeed(const struct termios *);
+int     cfsetispeed(struct termios *, speed_t);
+int     cfsetospeed(struct termios *, speed_t);
+int     tcdrain(int);
+int     tcflow(int, int);
+int     tcflush(int, int);
+int     tcgetattr(int, struct termios *);
+[XSI][Option Start]
+pid_t   tcgetsid(int);
+[Option End]
+int     tcsendbreak(int, int);
+int     tcsetattr(int, int, const struct termios *);
+#include <tgmath.h>
+
+
+#include <time.h>
+
+char      *asctime(const struct tm *);
+[TSF][Option Start]
+char      *asctime_r(const struct tm *restrict, char *restrict);
+[Option End]
+clock_t    clock(void);
+[CPT][Option Start]
+int        clock_getcpuclockid(pid_t, clockid_t *);
+[Option End]
+[TMR][Option Start]
+int        clock_getres(clockid_t, struct timespec *);
+int        clock_gettime(clockid_t, struct timespec *);
+[Option End]
+[CS][Option Start]
+int        clock_nanosleep(clockid_t, int, const struct timespec *,
+               struct timespec *);
+[Option End]
+[TMR][Option Start]
+int        clock_settime(clockid_t, const struct timespec *);
+[Option End]
+char      *ctime(const time_t *);
+[TSF][Option Start]
+char      *ctime_r(const time_t *, char *);
+[Option End]
+double     difftime(time_t, time_t);
+[XSI][Option Start]
+struct tm *getdate(const char *);
+[Option End]
+struct tm *gmtime(const time_t *);
+[TSF][Option Start]
+struct tm *gmtime_r(const time_t *restrict, struct tm *restrict);
+[Option End]
+struct tm *localtime(const time_t *);
+[TSF][Option Start]
+struct tm *localtime_r(const time_t *restrict, struct tm *restrict);
+[Option End]
+time_t     mktime(struct tm *);
+[TMR][Option Start]
+int        nanosleep(const struct timespec *, struct timespec *);
+[Option End]
+size_t     strftime(char *restrict, size_t, const char *restrict,
+           const struct tm *restrict);
+[XSI][Option Start]
+char      *strptime(const char *restrict, const char *restrict,
+               struct tm *restrict);
+[Option End]
+time_t     time(time_t *);
+[TMR][Option Start]
+int        timer_create(clockid_t, struct sigevent *restrict,
+               timer_t *restrict);
+int        timer_delete(timer_t);
+int        timer_gettime(timer_t, struct itimerspec *);
+int        timer_getoverrun(timer_t);
+int        timer_settime(timer_t, int, const struct itimerspec *restrict,
+               struct itimerspec *restrict);
+[Option End]
+[CX][Option Start]
+void       tzset(void);
+[Option End]
+[TRC] [Option Start] 
+#include <trace.h> 
+[Option End]
+int  posix_trace_attr_destroy(trace_attr_t *);
+int  posix_trace_attr_getclockres(const trace_attr_t *,
+         struct timespec *);
+int  posix_trace_attr_getcreatetime(const trace_attr_t *,
+         struct timespec *);
+int  posix_trace_attr_getgenversion(const trace_attr_t *, char *);
+[TRI][Option Start]
+int  posix_trace_attr_getinherited(const trace_attr_t *restrict,
+         int *restrict);
+[Option End]
+[TRL][Option Start]
+int  posix_trace_attr_getlogfullpolicy(const trace_attr_t *restrict,
+         int *restrict);
+int  posix_trace_attr_getlogsize(const trace_attr_t *restrict,
+         size_t *restrict);
+[Option End]
+int  posix_trace_attr_getmaxdatasize(const trace_attr_t *restrict,
+         size_t *restrict);
+int  posix_trace_attr_getmaxsystemeventsize(const trace_attr_t *restrict,
+         size_t *restrict);
+int  posix_trace_attr_getmaxusereventsize(const trace_attr_t *restrict,
+         size_t, size_t *restrict);
+int  posix_trace_attr_getname(const trace_attr_t *, char *);
+int  posix_trace_attr_getstreamfullpolicy(const trace_attr_t *restrict,
+         int *restrict);
+int  posix_trace_attr_getstreamsize(const trace_attr_t *restrict,
+         size_t *restrict);
+int  posix_trace_attr_init(trace_attr_t *);
+[TRI][Option Start]
+int  posix_trace_attr_setinherited(trace_attr_t *, int);
+[Option End]
+[TRL][Option Start]
+int  posix_trace_attr_setlogfullpolicy(trace_attr_t *, int);
+int  posix_trace_attr_setlogsize(trace_attr_t *, size_t);
+[Option End]
+int  posix_trace_attr_setmaxdatasize(trace_attr_t *, size_t);
+int  posix_trace_attr_setname(trace_attr_t *, const char *);
+int  posix_trace_attr_setstreamsize(trace_attr_t *, size_t);
+int  posix_trace_attr_setstreamfullpolicy(trace_attr_t *, int);
+int  posix_trace_clear(trace_id_t);
+[TRL][Option Start]
+int  posix_trace_close(trace_id_t);
+[Option End]
+int  posix_trace_create(pid_t, const trace_attr_t *restrict,
+         trace_id_t *restrict);
+[TRL][Option Start]
+int  posix_trace_create_withlog(pid_t, const trace_attr_t *restrict,
+         int, trace_id_t *restrict);
+[Option End]
+void posix_trace_event(trace_event_id_t, const void *restrict, size_t);
+int  posix_trace_eventid_equal(trace_id_t, trace_event_id_t,
+         trace_event_id_t);
+int  posix_trace_eventid_get_name(trace_id_t, trace_event_id_t, char *);
+int  posix_trace_eventid_open(const char *restrict,
+         trace_event_id_t *restrict);
+[TEF][Option Start]
+int  posix_trace_eventset_add(trace_event_id_t, trace_event_set_t *);
+int  posix_trace_eventset_del(trace_event_id_t, trace_event_set_t *);
+int  posix_trace_eventset_empty(trace_event_set_t *);
+int  posix_trace_eventset_fill(trace_event_set_t *, int);
+int  posix_trace_eventset_ismember(trace_event_id_t,
+         const trace_event_set_t *restrict, int *restrict);
+[Option End]
+int  posix_trace_eventtypelist_getnext_id(trace_id_t,
+         trace_event_id_t *restrict, int *restrict);
+int  posix_trace_eventtypelist_rewind(trace_id_t);
+[TRL][Option Start]
+int  posix_trace_flush(trace_id_t);
+[Option End]
+int  posix_trace_get_attr(trace_id_t, trace_attr_t *);
+[TEF][Option Start]
+int  posix_trace_get_filter(trace_id_t, trace_event_set_t *);
+[Option End]
+int  posix_trace_get_status(trace_id_t,
+         struct posix_trace_status_info *);
+int  posix_trace_getnext_event(trace_id_t,
+         struct posix_trace_event_info *restrict , void *restrict,
+         size_t, size_t *restrict, int *restrict);
+[TRL][Option Start]
+int  posix_trace_open(int, trace_id_t *);
+int  posix_trace_rewind(trace_id_t);
+[Option End]
+[TEF][Option Start]
+int  posix_trace_set_filter(trace_id_t, const trace_event_set_t *, int);
+[Option End]
+int  posix_trace_shutdown(trace_id_t);
+int  posix_trace_start(trace_id_t);
+int  posix_trace_stop(trace_id_t);
+[TMO][Option Start]
+int  posix_trace_timedgetnext_event(trace_id_t,
+         struct posix_trace_event_info *restrict, void *restrict,
+         size_t, size_t *restrict, int *restrict,
+         const struct timespec *restrict);
+[Option End]
+[TEF][Option Start]
+int  posix_trace_trid_eventid_open(trace_id_t, const char *restrict,
+         trace_event_id_t *restrict);
+[Option End]
+int  posix_trace_trygetnext_event(trace_id_t,
+         struct posix_trace_event_info *restrict, void *restrict, size_t,
+         size_t *restrict, int *restrict);
+
+[XSI] [Option Start] 
+#include <ucontext.h> 
+[Option End]
+
+[OB][Option Start]
+int  getcontext(ucontext_t *);
+void makecontext(ucontext_t *, void (*)(void), int, ...);
+int  setcontext(const ucontext_t *);
+int  swapcontext(ucontext_t *restrict, const ucontext_t *restrict);
+[Option End]
+[XSI] [Option Start] 
+#include <ulimit.h> 
+[Option End]
+long ulimit(int, ...);
+#include <unistd.h>
+int          access(const char *, int);
+unsigned     alarm(unsigned);
+int          chdir(const char *);
+int          chown(const char *, uid_t, gid_t);
+int          close(int);
+size_t       confstr(int, char *, size_t);
+
+
+[XSI][Option Start]
+char        *crypt(const char *, const char *);
+char        *ctermid(char *);
+[Option End]
+int          dup(int);
+
+
+int          dup2(int, int);
+[XSI][Option Start]
+void         encrypt(char[64], int);
+[Option End]
+int          execl(const char *, const char *, ...);
+int          execle(const char *, const char *, ...);
+int          execlp(const char *, const char *, ...);
+int          execv(const char *, char *const []);
+int          execve(const char *, char *const [], char *const []);
+int          execvp(const char *, char *const []);
+void        _exit(int);
+int          fchown(int, uid_t, gid_t);
+[XSI][Option Start]
+int          fchdir(int);
+[Option End]
+[SIO][Option Start]
+int          fdatasync(int);
+[Option End]
+pid_t        fork(void);
+long         fpathconf(int, int);
+[FSC][Option Start]
+int          fsync(int);
+[Option End]
+int          ftruncate(int, off_t);
+char        *getcwd(char *, size_t);
+gid_t        getegid(void);
+uid_t        geteuid(void);
+gid_t        getgid(void);
+int          getgroups(int, gid_t []);
+[XSI][Option Start]
+long         gethostid(void);
+[Option End]
+int          gethostname(char *, size_t);
+char        *getlogin(void);
+int          getlogin_r(char *, size_t);
+int          getopt(int, char * const [], const char *);
+[XSI][Option Start]
+pid_t        getpgid(pid_t);
+[Option End]
+pid_t        getpgrp(void);
+pid_t        getpid(void);
+pid_t        getppid(void);
+[XSI][Option Start]
+pid_t        getsid(pid_t);
+[Option End]
+uid_t        getuid(void);
+[XSI][Option Start]
+char        *getwd(char *); (LEGACY )
+[Option End]
+int          isatty(int);
+[XSI][Option Start]
+int          lchown(const char *, uid_t, gid_t);
+[Option End]
+int          link(const char *, const char *);
+[XSI][Option Start]
+int          lockf(int, int, off_t);
+[Option End]
+off_t        lseek(int, off_t, int);
+[XSI][Option Start]
+int          nice(int);
+[Option End]
+long         pathconf(const char *, int);
+int          pause(void);
+int          pipe(int [2]);
+[XSI][Option Start]
+ssize_t      pread(int, void *, size_t, off_t);
+ssize_t      pwrite(int, const void *, size_t, off_t);
+[Option End]
+ssize_t      read(int, void *, size_t);
+ssize_t      readlink(const char *restrict, char *restrict, size_t);
+int          rmdir(const char *);
+int          setegid(gid_t);
+int          seteuid(uid_t);
+int          setgid(gid_t);
+
+
+int          setpgid(pid_t, pid_t);
+[XSI][Option Start]
+pid_t        setpgrp(void);
+int          setregid(gid_t, gid_t);
+int          setreuid(uid_t, uid_t);
+[Option End]
+pid_t        setsid(void);
+int          setuid(uid_t);
+unsigned     sleep(unsigned);
+[XSI][Option Start]
+void         swab(const void *restrict, void *restrict, ssize_t);
+[Option End]
+int          symlink(const char *, const char *);
+[XSI][Option Start]
+void         sync(void);
+[Option End]
+long         sysconf(int);
+pid_t        tcgetpgrp(int);
+int          tcsetpgrp(int, pid_t);
+[XSI][Option Start]
+int          truncate(const char *, off_t);
+[Option End]
+char        *ttyname(int);
+int          ttyname_r(int, char *, size_t);
+[XSI][Option Start]
+useconds_t   ualarm(useconds_t, useconds_t);
+[Option End]
+int          unlink(const char *);
+[XSI][Option Start]
+int          usleep(useconds_t);
+pid_t        vfork(void);
+[Option End]
+ssize_t      write(int, const void *, size_t);
+
+#include <utime.h>
+int utime(const char *, const struct utimbuf *);
+[XSI] [Option Start]
+#include <utmpx.h>
+[Option End]
+void          endutxent(void);
+struct utmpx *getutxent(void);
+struct utmpx *getutxid(const struct utmpx *);
+struct utmpx *getutxline(const struct utmpx *);
+struct utmpx *pututxline(const struct utmpx *);
+void          setutxent(void);
+
+#include <wchar.h>
+wint_t        btowc(int);
+wint_t        fgetwc(FILE *);
+wchar_t      *fgetws(wchar_t *restrict, int, FILE *restrict);
+wint_t        fputwc(wchar_t, FILE *);
+int           fputws(const wchar_t *restrict, FILE *restrict);
+int           fwide(FILE *, int);
+int           fwprintf(FILE *restrict, const wchar_t *restrict, ...);
+int           fwscanf(FILE *restrict, const wchar_t *restrict, ...);
+wint_t        getwc(FILE *);
+wint_t        getwchar(void);
+[XSI][Option Start]
+int           iswalnum(wint_t);
+int           iswalpha(wint_t);
+int           iswcntrl(wint_t);
+int           iswctype(wint_t, wctype_t);
+int           iswdigit(wint_t);
+int           iswgraph(wint_t);
+int           iswlower(wint_t);
+int           iswprint(wint_t);
+int           iswpunct(wint_t);
+int           iswspace(wint_t);
+int           iswupper(wint_t);
+int           iswxdigit(wint_t);
+[Option End]
+size_t        mbrlen(const char *restrict, size_t, mbstate_t *restrict);
+size_t        mbrtowc(wchar_t *restrict, const char *restrict, size_t,
+                  mbstate_t *restrict);
+int           mbsinit(const mbstate_t *);
+size_t        mbsrtowcs(wchar_t *restrict, const char **restrict, size_t,
+                  mbstate_t *restrict);
+wint_t        putwc(wchar_t, FILE *);
+wint_t        putwchar(wchar_t);
+int           swprintf(wchar_t *restrict, size_t,
+                  const wchar_t *restrict, ...);
+int           swscanf(const wchar_t *restrict,
+                  const wchar_t *restrict, ...);
+[XSI][Option Start]
+wint_t        towlower(wint_t);
+wint_t        towupper(wint_t);
+[Option End]
+wint_t        ungetwc(wint_t, FILE *);
+int           vfwprintf(FILE *restrict, const wchar_t *restrict, va_list);
+int           vfwscanf(FILE *restrict, const wchar_t *restrict, va_list);
+int           vwprintf(const wchar_t *restrict, va_list);
+int           vswprintf(wchar_t *restrict, size_t,
+                  const wchar_t *restrict, va_list);
+int           vswscanf(const wchar_t *restrict, const wchar_t *restrict,
+                  va_list);
+int           vwscanf(const wchar_t *restrict, va_list);
+size_t        wcrtomb(char *restrict, wchar_t, mbstate_t *restrict);
+wchar_t      *wcscat(wchar_t *restrict, const wchar_t *restrict);
+wchar_t      *wcschr(const wchar_t *, wchar_t);
+int           wcscmp(const wchar_t *, const wchar_t *);
+int           wcscoll(const wchar_t *, const wchar_t *);
+wchar_t      *wcscpy(wchar_t *restrict, const wchar_t *restrict);
+size_t        wcscspn(const wchar_t *, const wchar_t *);
+size_t        wcsftime(wchar_t *restrict, size_t,
+                  const wchar_t *restrict, const struct tm *restrict);
+size_t        wcslen(const wchar_t *);
+wchar_t      *wcsncat(wchar_t *restrict, const wchar_t *restrict, size_t);
+int           wcsncmp(const wchar_t *, const wchar_t *, size_t);
+wchar_t      *wcsncpy(wchar_t *restrict, const wchar_t *restrict, size_t);
+wchar_t      *wcspbrk(const wchar_t *, const wchar_t *);
+wchar_t      *wcsrchr(const wchar_t *, wchar_t);
+size_t        wcsrtombs(char *restrict, const wchar_t **restrict,
+                  size_t, mbstate_t *restrict);
+size_t        wcsspn(const wchar_t *, const wchar_t *);
+wchar_t      *wcsstr(const wchar_t *restrict, const wchar_t *restrict);
+double        wcstod(const wchar_t *restrict, wchar_t **restrict);
+float         wcstof(const wchar_t *restrict, wchar_t **restrict);
+wchar_t      *wcstok(wchar_t *restrict, const wchar_t *restrict,
+                  wchar_t **restrict);
+long          wcstol(const wchar_t *restrict, wchar_t **restrict, int);
+long double   wcstold(const wchar_t *restrict, wchar_t **restrict);
+long long     wcstoll(const wchar_t *restrict, wchar_t **restrict, int);
+unsigned long wcstoul(const wchar_t *restrict, wchar_t **restrict, int);
+unsigned long long
+              wcstoull(const wchar_t *restrict, wchar_t **restrict, int);
+[XSI][Option Start]
+wchar_t      *wcswcs(const wchar_t *, const wchar_t *);
+int           wcswidth(const wchar_t *, size_t);
+[Option End]
+size_t        wcsxfrm(wchar_t *restrict, const wchar_t *restrict, size_t);
+int           wctob(wint_t);
+[XSI][Option Start]
+wctype_t      wctype(const char *);
+int           wcwidth(wchar_t);
+[Option End]
+wchar_t      *wmemchr(const wchar_t *, wchar_t, size_t);
+int           wmemcmp(const wchar_t *, const wchar_t *, size_t);
+wchar_t      *wmemcpy(wchar_t *restrict, const wchar_t *restrict, size_t);
+wchar_t      *wmemmove(wchar_t *, const wchar_t *, size_t);
+wchar_t      *wmemset(wchar_t *, wchar_t, size_t);
+int           wprintf(const wchar_t *restrict, ...);
+int           wscanf(const wchar_t *restrict, ...);
+
+#include <wctype.h>
+
+int       iswalnum(wint_t);
+int       iswalpha(wint_t);
+int       iswblank(wint_t);
+int       iswcntrl(wint_t);
+int       iswdigit(wint_t);
+int       iswgraph(wint_t);
+int       iswlower(wint_t);
+int       iswprint(wint_t);
+int       iswpunct(wint_t);
+int       iswspace(wint_t);
+int       iswupper(wint_t);
+int       iswxdigit(wint_t);
+int       iswctype(wint_t, wctype_t);
+wint_t    towctrans(wint_t, wctrans_t);
+wint_t    towlower(wint_t);
+wint_t    towupper(wint_t);
+wctrans_t wctrans(const char *);
+wctype_t  wctype(const char *);
+
+#include <wordexp.h>
+int  wordexp(const char *restrict, wordexp_t *restrict, int);
+void wordfree(wordexp_t *);
+
+
+
+
+
+
