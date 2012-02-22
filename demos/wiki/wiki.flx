@@ -1,8 +1,6 @@
 include "wiki_model";
 include "web/web_server";
-include "hello";
 include "wiki_handler";
-include "sample_decorator";
 include "util";
 
 open HTTPRequest;
