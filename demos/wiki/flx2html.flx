@@ -1,0 +1,401 @@
+// Felix
+module Flx2Html {
+private val big_keywords = 
+  ("macro","prefix for macro definitions"),
+  ("module","Define a module namespace"),
+  ("cfun","Define a C function"),
+  ("cproc","Define a C procedure"),
+  ("fun","Define a function with no side-effects"),
+  ("enum","Elaborate an enumeration, a simple sum type"),
+  ("cenum","Lift an enumeration from C"),
+  ("gen","Define a generator, a function with side-effects returning a value"),
+  ("proc","Define a procedure, a function with side-effects not returning a value"),
+  ("ctor","Define a value constructor or conversion operator for a type"),
+  ("type","Define a primitive type by binding to a C type"),
+  ("ctypes","Define a set of primitive type by binding to C types with the same name"),
+  ("union","Define a union of variants (alternatives)"),
+  ("struct","Define a structure"),
+  ("cstruct","Provide a model for an existing C struct"),
+  ("typedef","Define an alias for a type expression"),
+  ("var","Define a mutable variable"),
+  ("val","Define an immutable value"),
+  ("class","Define a type class"),
+  ("const","Bind a Felix symbol to a C expression"),
+  ("instance","Provide an instance of a typeclass"),
+  ("header","Specify C code to be inserted into header file"),
+  ("body","Specify C code to be inserted into implementation file"),
+  ("include","Include a Felix file"),
+  ("spawn_fthread","Spawn a cooperative fibre"),
+  ("spawn_pthread","Spawn a pre-emptive thread"),
+  ("reduce", "Specify a reduction"),
+  ("axiom", "Specify core semantics"),
+  ("open", "Open a module or class"),
+  ("inherit","Inherit symbols into a module or typeclass"),
+  ("SCHEME","Define Scheme symbols"),
+  ("syntax","define domain specific sublanguage module"),
+  ("priority","Define order of syntactic priority symbols"),
+  ("requires","specify requirements")
+;
+
+private val small_keywords =
+  ("if","conditional"), 
+  ("then","conditional"), 
+  ("else","conditional"), 
+  ("elif","conditional"), 
+  ("endif","conditional"), 
+  ("do","imperative code begins"), 
+  ("done","end of body"),
+  ("in", "membership operator, function mem"),
+  ("for", "for loop"),
+  ("while","while loop"),
+  ("to", "substring range separator"),
+  ("upto","upwards counting for loop"),
+  ("downto","downwards counting for loop"),
+  ("typematch","type match expression"),
+  ("match","match statement or expression"),
+  ("endmatch","end a match statement or expression"),
+  ("with", "type-class constraint"),
+  ("return","return"),
+  ("goto","jump to label"),
+  ("jump","tail call of function"),
+  ("loop","self-tail call"),
+  ("package","specifies an abstract package name"),
+  ("when", "predicative type constraint"),
+  ("result","value of function return used in post condition"),
+  ("expect","post condition"),
+  ("for","for loop"),
+  ("ident","identifier macro"),
+  ("noexpand","inhibit macro expansion"),
+  ("typesetof","a set of types"),
+  ("code","literal C code insertion")
+;
+
+private val qualifiers = 
+  ("virtual", "Type of a function to be provided in type class instances"),
+  ("inline", "Function or procedure which should be inlined if possible"),
+  ("noinline", "Function or procedure which must not be inlined"),
+  ("private", "Symbol visible only in enclosing module or typeclass namespace"),
+  ("incomplete","A type which must not be instantiated"),
+  ("callback","A C wrapper for a Felix callback"),
+  ("pod","A Plain Old Data type, which needs no finalisation"),
+  ("_gc_pointer","A Felix heap allocated pointer"),
+  ("_gc_type","Type of object pointed to"),
+  ("scanner","names C routine which scans a data structure for pointers"),
+  ("finaliser","names C routine which finalises an object"),
+  ("_repr_","Refer to the representation of a Felix abstract type")
+;
+
+private val library = 
+  ("void", "Type with no values, returning void indicates a procedure"),
+  ("unit", "Type with one values (), the empty tuple"),
+  ("tiny", "binding of C signed char type"),
+  ("utiny", "binding of C unsigned char type"),
+  ("short", "binding of C short type"),
+  ("ushort", "binding of C unsigned short type"),
+  ("int", "binding of C int type"),
+  ("uint", "binding of C unsigned int type"),
+  ("long", "binding of C long type"),
+  ("ulong", "binding of C unsigned long type"),
+  ("vlong", "binding of C long long type"),
+  ("uvlong", "binding of C unsigned long long type"),
+  ("int8", "binding of C int8_t type"),
+  ("int16", "binding of C int16_t type"),
+  ("int32", "binding of C int32_t type"),
+  ("int64", "binding of C int64 type"),
+  ("uint8", "binding of C uint8_t type"),
+  ("uint16", "binding of C uint16_t type"),
+  ("uint32", "binding of C uint32_t type"),
+  ("uint64", "binding of C uint64 type"),
+  ("char", "binding of C char type"),
+  ("uchar", "binding of C int32_t type used for Unicode character set"),
+  ("intptr", "binding of C intptr_t type"),
+  ("uintptr", "binding of C unsigned type corresponding to intptr_t type"),
+  ("maxint", "binding of C maxint_t type"),
+  ("umaxint", "binding of C unsigned type corresponding to maxint_t type"),
+  ("size", "binding of C size_t type"),
+  ("ssize", "binding of C signed type corresponding to size_t type"),
+  ("float", "binding of C float type"),
+  ("double", "binding of C double float type"),
+  ("ldouble", "binding of C long double type"),
+
+  ("opt", "option type: Some x or None"),
+  ("list", "functional, singly linked list"),
+  ("array", "array type, a tuple of all components the same type"),
+  ("varray", "array with dynamically variable limit up to a fixed bound"),
+  ("darray", "array with unbounded dynamically variable limit"),
+  ("sarray", "unbounded sparse array"),
+  ("bsarray", "bounded sparse array"),
+
+  ("str", "Convert a value to a string"),
+  ("print", "Print a string to standard output"),
+  ("println", "Print a string to standard output with newline appended")
+;
+
+private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
+
+
+fun valof[N](x:array[string * string,N],key:string) =>
+  match find (fun (kv:string * string)=> kv.(0) == key) x with
+  | Some (?k,?v) => v
+  | None => ""
+  endmatch
+;
+
+fun xlat_felix(t:string, dir:string): bool * string =
+{
+  var needs_mathjax = false;
+  var out = "";
+  proc write_string(t:string) 
+  { 
+   out += t;
+  }
+
+  union state_t = 
+    | sot // start of token
+    | id // processing identifier
+    | texid // processing identifier
+    | num // in a number
+    | sq // processing single quote string
+    | dq // processing double quote string
+    | sq3 // processing single quote string
+    | dq3 // processing double quote string
+    | ccomment of int // a C style comment
+    | cppcomment // a C++ style comment
+  ;
+  fun str(s:state_t) => match s with
+  | sot => "sot"
+  | id => "id"
+  | texid => "texid"
+  | num => "num"
+  | sq => "sq"
+  | dq => "dq"
+  | sq3 => "sq3"
+  | dq3 => "dq3"
+  | ccomment ?n => "ccomment_"+ str n
+  | cppcomment => "cppcomment"
+  endmatch;
+  
+  var i = 0; var s:state_t;
+  var ch = t.[i];
+  proc next() { ch = t.[i]; ++i; }
+  fun ahead (j:int)=> t.[i+j - 1]; 
+  fun issq3() => 
+    ch == char "'" and 
+    ahead(1) == char "'" and
+    ahead(2) == char "'" 
+  ;
+  fun isdq3() => 
+    ch == char '"'  and
+    ahead(1) == char '"' and
+    ahead(2) == char '"' 
+  ;
+
+  var b = "";
+  var last_id = "";
+  var last_op = "";
+  var last_key = "";
+
+  proc cp() { b += ch; }
+  proc ws() {
+    if last_id == "include" do // hackery
+      var n = b; 
+      while n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
+      while n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
+      if n.[-4 to] != ".flx" do n+= ".flx"; done // hack, fixme
+      match get_file(n,FLX_PATH) with
+      | Some ?f => { write_string('<a href="/$'+f+'" >' + b + '</a>') ; }
+      | None => {  write_string('<span class="fstring">'+txt2html b+"</span>"); }
+      endmatch;
+    elif last_key in ("header","body") do
+      n = b; 
+      var quote = '"""';
+      if prefix(b,quote) do n = b.[3 to -3]; goto unstring; done
+      quote = "'''"; 
+      if prefix(b,quote) do n = b.[3 to -3]; goto unstring; done
+      quote = "'"; 
+      if prefix(b,quote) do n = b.[1 to -1]; goto unstring; done
+      quote = '"'; 
+      if prefix(b,quote) do n = b.[1 to -1]; goto unstring; done
+      // shouldn't happen ..
+unstring:>
+      val c = Cpp2Html::xlat_cpp (n,dir);
+      write_string(quote+'<span class="embedded_c">' + c + '</span>'+quote); 
+    elif last_key == "package" do
+       println$ "Package: " + b;
+       n = b;
+      while n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
+      while n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
+      n+=".fpc";
+println$ "Package file basename is " + n;
+      match get_file(n,FLX_PKGCONFIG_PATH) with
+      | Some ?f => { write_string('<a href="/$'+f+'" >' + txt2html b + '</a>') ; }
+      | None => { 
+          println$ "Can't find "+n+" in path " + str FLX_PKGCONFIG_PATH;   
+          write_string('<span class="fstring">'+txt2html b+"</span>"); 
+        }
+      endmatch;
+    else 
+     write_string('<span class="fstring">'+txt2html b+"</span>"); 
+    done
+  }
+  proc w() { 
+    //println$ "Token["+str s+"]="+b; 
+    match s with 
+    | dq => { ws; }
+    | sq => { ws; }
+    | sq3 => { ws; }
+    | dq3 => { ws; }
+    | ccomment _ => { write_string('<span class="comment">'+b+"</span>"); }
+    | cppcomment=> { write_string('<span class="comment">'+b+"</span>"); }
+    | texid => { write_string (
+        '<span class="tex_symbol" title="'+b+'">\\(' + b + '\\)</span>'
+        ); 
+        needs_mathjax = true; 
+      }  // format with MathJax
+    | id => 
+      { 
+        last_id = b;
+        // this is a bit hacky but I can't see another way!
+        var bv=valof(big_keywords,b);
+        var sv=valof(small_keywords,b);
+        var qv=valof(qualifiers,b);
+        var lv=valof(library,b);
+        if   bv != "" do last_key=b; write_string('<span class="big_keyword" title="'+bv+'">'+b+"</span>"); 
+        elif sv != "" do last_key=b; write_string('<span class="small_keyword" title="'+sv+'">'+b+"</span>");
+        elif qv != "" do write_string('<span class="qualifier" title="'+qv+'">'+b+"</span>"); 
+        elif lv != "" do write_string('<span class="library" title="'+lv+'">'+b+"</span>"); 
+        elif b in hack do write_string('<span class="hack">'+b+"</span>"); 
+        else write_string(b); done
+      }
+    | _ =>
+      { 
+        last_op=b; 
+        if b == ";" do last_key = ""; done
+        if b == "<" do b = "&lt;";
+        elif b == ">" do b = "&gt;";
+        elif b == "&" do b = "&amp;";
+        done;
+        write_string(b);  
+      }
+    endmatch;
+    b = "";  
+  }
+
+
+  goto nextt;
+
+contin:> // copy char and continue
+  cp();
+  goto nextch;
+   
+overrun:> // one past last char of token
+  w();
+  s = sot;
+  goto thisch;
+
+lastch:> // last char of token
+  cp();
+  w();
+
+nextt:>  // new token on next char
+  s = sot;
+
+nextch:> // next char
+  next();
+
+thisch:> // same char, reconsider it
+  //println$ "Considering char " + str(ord(ch));
+  if isnull ch goto fin; // out of data
+  match s with 
+  | sot =>
+    { 
+      if isidstart ch do s = id; goto contin;
+      elif ch == char "\\" and isletter (ahead(1)) do cp; next; s = texid; goto contin; 
+      elif isdigit ch do s = num; goto contin;
+      elif issq3() do cp; next; cp; next; s = sq3; goto contin;
+      elif isdq3() do cp; next; cp; next; s = dq3; goto contin;
+      elif issq ch do s = sq; goto contin;
+      elif isdq ch do s = dq; goto contin;
+      elif ch == char "/" do
+        if ahead(1) == char "/" do cp; next; s = cppcomment; goto contin;
+        elif ahead(1) == char "*" do cp; next; s = ccomment 1; goto contin;
+        else goto lastch;
+        done 
+      else cp; w; goto nextt;
+      done
+    }
+
+  | texid => 
+    {
+      if isletter ch do goto contin;
+      else goto overrun;
+      done
+    }
+  | id => 
+    {
+      if isalphanum ch do goto contin;
+      else goto overrun;
+      done
+    }
+  | num => 
+    {
+      if isnumeric ch do goto contin;
+      else goto overrun; 
+      done
+    } 
+  // single quoted strings
+  | sq =>
+    {
+      if issq ch do goto lastch; done
+      goto contin;
+    }
+  | dq =>
+    {
+      if isdq ch do goto lastch; done
+      goto contin;
+    }
+   // triple quoted strings
+  | sq3 =>
+    {
+      if issq3() do cp; next; cp; next; cp; w; goto nextt; done
+      goto contin;
+    }
+  | dq3 =>
+    {
+      if isdq3() do cp; next; cp; next; cp; w; goto nextt; done
+      goto contin;
+    }
+   // comments
+  | cppcomment =>
+    {
+      if iseol ch do goto lastch;
+      else goto contin;
+      done
+    }
+  | ccomment ?n => 
+    {
+      if ch == char "*" and ahead(1) == char "/" do 
+        if n == 1 do 
+          cp; next;
+          goto lastch;
+        else
+          s = ccomment (n - 1);
+          goto contin;
+        done
+      elif ch == char "/" and ahead(1) == char "*" do 
+        s = ccomment (n+1);
+        goto contin;
+      else 
+        goto contin;
+      done
+    }
+  endmatch
+  ; // execute selected function
+  println$ "Unexpected drop thru";
+
+fin:>
+   //println "outof data, final write ..";
+   w(); // whatever is left over gets written
+   return needs_mathjax, out;
+}
+}

@@ -1,0 +1,270 @@
+
+class WikiHandler {
+  open ServerConfig;
+  open HTTPRequest;
+  open HTTPConnection;
+  open HTTPHandler;
+  open HTTPResponse;
+  open HTTPBasicAuth;
+  open WikiModel;
+
+  fun app_handlers() =>
+      Cons (http_handler(save_edit_route,requires_auth(auth_source,"Felix Wiki",save_edit)),
+      Cons (http_handler(edit_route,requires_auth(auth_source,"Felix Wiki",edit)),
+      Cons (http_handler(delete_route,requires_auth(auth_source,"Felix Wiki",delete)),
+      Cons (http_handler(search_route,search),
+      Cons (http_handler(wiki_route,wiki),
+      Cons (http_handler(web_route,web),
+      Cons (http_handler(lib_route,lib),
+      Cons (http_handler(inc_route,inc),
+      Empty[http_handler]))))))));
+ 
+  fun auth_source(uname:string,passwd:string):bool => 
+    db_get_auth_fdoc(uname,passwd);
+
+  fun wiki_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/wiki";
+  }
+
+  proc wiki (conn:http_connection, request:http_request ) {
+    var fname= let ?f = ((get_fname(request)).or_else "") in if f == "" then "main.fdoc" else f endif;
+   println(request.uri);
+   var txt:string;
+    if db_has_fdoc(fname) do
+       txt = match db_get_fdoc(fname) with
+               | Some ?s => s.content
+               | _ => ""
+             endmatch;
+    elif has_fdoc(fname) do
+       txt = get_fdoc(fname);
+    else 
+       write(conn,make_see_other("/wiki/edit/"+fname));
+       return;
+    done
+    needs_mathjax, html := Fdoc2Html::xlat_fdoc (txt,fname);
+    val data = make_html(doc_head(needs_mathjax,"")+page_controls(fname)+html+doc_tail());
+    write(conn,data);
+  }
+
+  fun doc_head(needs_mathjax:bool,head:string) => "<html><head>"+Css4Html::flx_head+
+    """<link rel="stylesheet" type="text/css" href="/css/wiki.css" />"""+
+    if needs_mathjax then Fdoc2Html::mathjax else "" endif +head+"</head><body>"+"""
+<div id="menu">
+<ul>
+<li><a href="/wiki/" class="external">Home</a></li>
+<li><a href="/wiki/Download.fdoc" class="external">Download</a></li>
+<li><a href="/wiki/tut_index.fdoc" class="external">Tutorial</a></li>
+<li><a href="/wiki/Libraries.fdoc" class="external">Libraries</a></li>
+<li><a href="/wiki/Documentation.fdoc" class="external">Documentation</a></li>
+</ul></div>
+""";
+
+  fun doc_tail() => "</div></body></html>"; 
+
+  fun page_controls (fname:string) =>  """
+<div id='search'><form action='/wiki/search'><div>
+       <label>Search</label><input name='for' type='text'/><input type='submit' name='search' value='Search'/>
+     </div></form>
+</div>
+<ul id="page-specific-links">"""+
+if fname == "" then "" else
+"<li><a href='/wiki/edit/"+fname+"'>Edit</a>" endif+"""</li>
+<li><a href='#' onclick="expand_all()">Expand</a></li>'
+<li><a href='#' onclick="collapse_all()">Collapse</a></li>
+</ul>
+<div id='content'>
+""";
+
+  fun edit_route(config:server_config,request:http_request) =>
+    startswith request.path  "/wiki/edit/";
+
+  proc edit (conn:http_connection, request:http_request ) {
+    var fname = (get_fname(request)).or_else "main.fdoc";
+    var txt:string;
+    if db_has_fdoc(fname) do
+       txt = match db_get_fdoc(fname) with
+               | Some ?s => s.content
+               | _ => ""
+             endmatch;
+    elif has_fdoc(fname) do
+       txt = get_fdoc(fname);
+    else 
+      txt = "";
+    done
+    val data = make_html(doc_head(false,"")+page_controls("")+"""
+  <h4>Editing """+fname+"""</h4><div id='edit_wiki'>
+  <form name='edit_wiki' id='edit_wiki' method='POST'>
+    <textarea id='content' name='content' rows='20' cols='80'>"""+txt+"""
+    </textarea><br/>
+    <div style='float:left;'><input style='float:left;padding-right:10px;' type='submit' id='submit0' name='submit0' value='Save'/><input style='float:left;padding-right:10px;' type='button' id='cancel' name='cancel0' value='Cancel' onclick='history.go(-1)'/>
+   </form></div>
+   <div style='float:left;padding-right:10px;'> <form name='delete_wiki' id='delete_wiki' method='POST' action='/wiki/delete/"""+
+fname+"""' >
+     <input style='float:left;padding-right:10px;' type='submit' id='delete0' name='delete0' value='Delete'/></form>"""+doc_tail());    
+    write(conn,data);
+  }
+
+  fun delete_route(config:server_config,request:http_request) =>
+    startswith request.path  "/wiki/delete/";
+
+  proc delete (conn:http_connection, request:http_request ) {
+    var fname= (get_fname(request)).or_else "main.fdoc";
+    if db_has_fdoc(fname) do
+      if db_delete_fdoc(fname) do
+        write(conn,make_see_other("/wiki/edit/"+fname));
+      else
+        write(conn,make_see_other("/wiki/edit/"+fname));
+      done
+    else
+      write(conn,make_see_other("/wiki/edit/"+fname));
+    done
+  }
+
+
+ fun save_edit_route(config:server_config,request:http_request) =>
+    (startswith request.path  "/wiki/edit/") and str(request.method) == str(POST);
+
+
+  proc save_edit (conn:http_connection, request:http_request ) {
+    var txt = strip_ctrl_m((get_post_param(request,"content")).or_else "");    
+    var fname= (get_fname(request)).or_else "main.fdoc";
+    txt = XML2::xml_encode_special_chars(txt);
+    if ((get_post_param(request,"delete0")).or_else "") == "Delete" do
+      delete(conn,request);
+    else
+      if (if db_has_fdoc(fname) then
+         db_update_fdoc(entry(fname,txt))
+        else
+          db_insert_fdoc(entry(fname,txt))
+        endif) do
+        write(conn,make_see_other("/wiki/"+fname));
+      else
+        wiki(conn,request);
+      done
+    done
+  }
+
+  fun search_route(config:server_config,request:http_request) =>
+    request.path == "/wiki/search";
+
+  proc search (conn:http_connection, request:http_request ) {
+    var key = (get_param(request,"for")).or_else("");
+    var rows = "";
+    iter (proc (x:string^2) {
+        var mj,c = Fdoc2Html::xlat_fdoc(x.(1).[to 255],"");
+        rows = rows + "<tr><td><div class='doclink'><a href='/wiki/"+x.(0)+"'>"+x.(0)+"</a>"+
+          "<br/>"+
+          "</div><div class='docdesc'>"+c+
+          "</div></td></tr><tr><td><hr/></td></tr>"; })  (db_search(key)); 
+    val data = make_html(doc_head(false,"")+page_controls("")+
+       """<table class='searchresults'><caption>Search Results</caption>"""+ 
+       rows+"</table>"+doc_tail());
+    write(conn,data);
+  }
+
+
+  fun web_route(config:server_config,request:http_request) => startswith request.path "/web/";
+
+  proc web(conn:http_connection,request:http_request) {
+    conn.config.document_root = #Config::config.FLX_INSTALL_DIR;
+    iter (proc (handler:http_handler) { 
+      if not *conn.dirty  do
+        if handler.handles(conn.config,request) do
+          handler.handler_fn(conn,request);
+        done
+      else
+        goto finished; 
+      done
+      }) (default_handlers());
+    finished:> 
+      return;
+  }
+
+  fun lib_route(config:server_config,request:http_request) => startswith request.path "/lib/";
+
+  proc lib(conn:http_connection,request:http_request) {
+    request.path ="/"+request.path;
+    request.params = Cons((get_suffix(request.path),""),Empty[string^2]);
+    inc(conn,request); 
+  }
+
+  fun inc_route(config:server_config,request:http_request) => startswith request.path "/$/";
+
+  proc inc(conn:http_connection,request:http_request) {
+    var content:string;
+    match request.params with
+        | Cons(?a,_) => {
+                        
+                        match a with
+                          | ("cpp",_) => {  
+                                           match get_ref_file(request.path.[1 to],C_PATH) with
+                                            | Some ?path => {
+                                              val text=load path;
+                                              val dirname = Filename::dirname path;
+                                              content = (Cpp2Html::xlat_cpp (text, dirname));
+                                             } 
+                                            | None => {content = "NOTHING";}
+                                          endmatch;
+                                          }  
+                          | ("flx",_) => {  
+                                           match get_ref_file(request.path.[1 to],C_PATH) with
+                                            | Some ?path => {
+                                              val text=load path;
+                                              val dirname = Filename::dirname path;
+                                              var ok = false;
+                                              ok,content = (Flx2Html::xlat_felix (text, dirname));
+                                             } 
+                                            | None => {content = "NOTHING";}
+                                          endmatch;
+                                          }         
+                          | (?b,_)    =>  {
+                                          match get_ref_file(request.path.[1 to],C_PATH) with
+                                            | Some ?path => {
+                                              val text=load path;
+                                              val dirname = Filename::dirname path;
+                                              var ok = false;
+                                              ok,content = (Flx2Html::xlat_felix (text, dirname));
+                                             } 
+                                            | None => {content = "NOTHING";}
+                                          endmatch;
+                                          }
+
+                        endmatch;
+                        write(conn,make_html(
+                              "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
+                              content+
+                              "</pre></body></html>"));
+                        return;
+                      }
+        | _ => { handle_not_found(conn,request); }
+    endmatch;
+  }
+
+
+fun get_ref_file (fname:string, path:list[string]) = {
+  if fname.[0] == char "$" do fname = fname.[1 to]; done
+    val inpath:bool = match find (fun (x:string) => startswith  fname x) path with |Some _ => true |_ => false endmatch;
+  if FileStat::fileexists fname do return Some fname;
+  else
+    var f = Filename::join(INSTALL_ROOT,fname);
+    if FileStat::fileexists f do return Some f;
+    else return FileSystem::find_in_path (fname, path);
+    done
+  done
+}
+
+  fun get_suffix(fname:string) = {
+    var suffix = "";
+    match rfind (fname, "?") with
+      | Some ?pos => { suffix = fname.[pos + 1 to]; fname=fname.[0 to pos]; }
+      | None[int] =>
+      {
+        match rfind (fname, ".") with
+          | None[int] => {}
+          | Some ?pos => { suffix = fname.[pos + 1 to]; }
+        endmatch; 
+      }
+    endmatch;
+    return suffix;
+  }
+}

@@ -95,7 +95,7 @@ class SimpleConfig {
   }
 
   fun apply_param_vars_to (par:list[string*string],l:list[string]):list[string] =>
-    (map (fun (s:string) => apply_param_vars_to (config.params,s)) (l));
+    (map (fun (s:string) => apply_param_vars_to (par,s)) (l));
 
   private fun parse(line:string):list[string*string] =>
     if startswith (strip line) (char '#') then
