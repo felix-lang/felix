@@ -1,0 +1,56 @@
+
+
+fun get_file (fname:string, path:list[string]) = {
+  if fname.[0] == char "$" do fname = fname.[1 to]; done
+  if FileStat::fileexists fname do return Some fname;
+  else
+    var f = Filename::join(INSTALL_ROOT,fname);
+    if FileStat::fileexists f do return Some f;
+    else return FileSystem::find_in_path (fname, path);
+    done
+  done
+}
+
+fun get_flx (fname:string) = {
+  var flx =
+    match get_file(fname,FLX_PATH) with
+    | Some ?name => load(name)
+    | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
+    endmatch
+  ;
+  println$ "Loaded felix file " + fname+", len="+str (flx.len.int);
+  return flx;
+}
+
+fun get_cpp (fname:string) = {
+  var flx =
+    match get_file(fname,C_PATH) with
+    | Some ?name => load(name)
+    | None => "NO FILE "+fname+" FOUND IN " + str C_PATH
+    endmatch
+  ;
+  println$ "Loaded c++ file " + fname+", len="+str (len flx);
+  return flx;
+}
+
+fun get_fdoc (fname:string):string = {
+  var flx =
+    match get_file(fname,FDOC_PATH) with
+    | Some ?name => load(name)
+    | None => f"NO FILE %S FOUND IN %S" (fname, str FDOC_PATH)
+    endmatch
+  ;
+  
+  return flx;
+}
+
+fun has_fdoc (fname:string):bool =>
+    match get_file(fname,FDOC_PATH) with
+    | Some ?name => true
+    | None => false
+    endmatch
+  ;
+
+fun strip_ctrl_m(s:string) =>
+  (fold_left (fun(x:string) (y:string):string => x + y) "" 
+   (split(s,(char(13)))));

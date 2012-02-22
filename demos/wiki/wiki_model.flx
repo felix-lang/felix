@@ -1,0 +1,148 @@
+include "web/sqlite3_pool";
+
+class WikiModel {
+  open Sqlite3;
+  open Sqlite3Ext;
+
+  /*
+  create table fdocs (
+  name text primary key,
+  content text,
+  modified_on timestamp,
+  modified_by text );
+  */
+
+  struct entry {
+    name:string;
+    content:string;
+    modified_on:string;
+    modified_by:string;
+  };
+
+  fun _ctor_entry(name:string,content:string) => entry(name,content,"","");
+
+  gen db_get_fdoc(name:string):opt[entry] = {
+    val db = let Some ?d = db_pool.get_next() in d;
+    val qry = """SELECT name,content,modified_on,modified_by 
+FROM fdocs WHERE name='"""+name+"'";
+    match sqlite3_prepare_stmt(db,qry) with
+      | qry_ok ?s  => var it = sqlite3_row_iterator (s);
+                      var row:ret_val[darray[column_value]];
+                      if get_next(it,&row) do
+                        return  (match row with
+                                  |row ?r => Some
+                                      (entry((get_text_val(get(r,0))),(get_text_val(get(r,1))),
+                                      (get_text_val(get(r,2))),(get_text_val(get(r,0)))))
+                                  |_ =>None[entry]
+                                endmatch);
+                      done
+       
+      | _ => return  None[entry];
+     endmatch;
+    return None[entry];
+  }
+
+
+  gen db_insert_fdoc(e:entry):bool = {
+    val db = let Some ?d = db_pool.get_next() in d;
+    var qry = """INSERT INTO fdocs (name,content,modified_on) 
+                 VALUES('"""+sqlite3_quote(e.name)+"','"+sqlite3_quote(e.content)+"',"+
+                        "datetime('now'))";
+    match sqlite3_prepare_stmt(db,qry) with
+      | qry_ok ?s  =>  var v = sqlite3_execute(s); C_hack::ignore(sqlite3_finalize(s)); return v; 
+      | _ =>  return false;
+    endmatch;
+    return false;
+  }
+
+  gen db_update_fdoc(e:entry):bool = {
+    val db = let Some ?d = db_pool.get_next() in d;
+    var qry = "UPDATE fdocs set content='"+sqlite3_quote(e.content)+"""',
+modified_on=datetime('now') 
+WHERE name='"""+sqlite3_quote(e.name)+"'";
+    match sqlite3_prepare_stmt(db,qry) with
+      | qry_ok ?s  => var ret = sqlite3_execute(s); C_hack::ignore(sqlite3_finalize(s));return ret; 
+      | _ =>  return false;
+    endmatch;
+    return false;
+  }
+
+  gen db_delete_fdoc(name:string):bool = {
+    val db = let Some ?d = db_pool.get_next() in d;
+    var qry = "DELETE from fdocs WHERE name='"""+name+"'";
+    match sqlite3_prepare_stmt(db,qry) with
+      | qry_ok ?s  => var ret = sqlite3_execute(s); C_hack::ignore(sqlite3_finalize(s));return ret; 
+      | _ =>  return false;
+    endmatch;
+    return false;
+  }
+
+
+
+  gen db_has_fdoc(name:string):bool = {
+    val db = let Some ?d = db_pool.get_next() in d;
+    match sqlite3_prepare_stmt(db,"""SELECT count(*) 
+FROM fdocs WHERE name='"""+name+"'") with
+      | qry_ok ?s  =>  var it = sqlite3_row_iterator (s);
+                      var row:ret_val[darray[column_value]];
+                      if get_next(it,&row) do
+                        val ret =  (match row with
+                                  |row ?r => get_int_val(get(r,0))>0
+                                  |_ => false
+                                endmatch);
+                        C_hack::ignore(sqlite3_finalize(s));
+                        return ret; 
+                      else 
+                        return false;
+                      done
+      | _ =>  return false;
+     endmatch;
+    return None[entry];
+  }
+
+
+ gen db_search(key:string):list[string^2] = {
+   val db = let Some ?d = db_pool.get_next() in d;
+   val qry = 
+     "SELECT name,content FROM fdocs WHERE name like '%"+key+"%' OR content like '%"+key+"%' "+
+     "LIMIT 10";
+   var results = Empty[string^2];
+   match sqlite3_prepare_stmt(db,qry) with
+      | qry_ok ?s  => var it = sqlite3_row_iterator (s);
+                      var row:ret_val[darray[column_value]];
+                      while get_next(it,&row) do
+                        results = results + (match row with
+                                  |row ?r => Cons((get_text_val(get(r,0)),get_text_val(get(r,01))),
+                                                  Empty[string^2])
+                                  |_ => Empty[string^2]
+                                endmatch);
+                      done
+       
+      | _ => return results;
+     endmatch;
+    return results;
+  }
+
+  gen db_get_auth_fdoc(name:string,passwd:string):bool = {
+    val db = let Some ?d = db_pool.get_next() in d;
+    val qry = """SELECT count(*) 
+FROM users WHERE user='"""+name+"' AND password='"+Base64::encode(passwd)+"'";
+    match sqlite3_prepare_stmt(db,qry) with
+      | qry_ok ?s  =>  var it = sqlite3_row_iterator (s);
+                      var row:ret_val[darray[column_value]];
+                      if get_next(it,&row) do
+                        val ret =  (match row with
+                                  |row ?r => get_int_val(get(r,0))>0
+                                  |_ => false
+                                endmatch);
+                        C_hack::ignore(sqlite3_finalize(s));
+                        return ret; 
+                      else 
+                        return false;
+                      done
+      | _ =>  return false;
+     endmatch;
+    return None[entry];
+  }
+
+}
