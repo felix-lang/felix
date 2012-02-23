@@ -196,14 +196,14 @@ class FileSystem
   // generate temporary file name
   //------------------------------------------------------------
   body tmpnam = """
-    string flx_tmpnam() {
+    std::string flx_tmpnam() {
       char tmpn[] = "/tmp/flx_XXXXXX";
       close(mkstemp(tmpn));
-      return string(tmpn);
+      return std::string(tmpn);
      }
   """ requires header '#include <unistd.h>';
 
-  gen tmp_filename: string -> string = "flx_tmpnam($1)" requires tmpnam;
+  gen tmp_filename: 1 -> string = "flx_tmpnam()" requires tmpnam;
     
 }
 

@@ -1,0 +1,85 @@
+class WikiTool {
+
+  proc help() {
+    println("WIKI tool help");
+    //        --root=PATH          Optional path to flatten to or post from otherwise CWD
+    println("Usage: "+(System::argv 0)+""" [OPTION] [fdoc]
+        --tool=flatten|post  Selects flatten or post took
+        --user=user:password Username and password for wiki
+        --url=URL            Base URL of wiki to post to or flatten from
+        [fdoc]               if --tool=post fdoc document to post
+"""); 
+  }
+
+  proc which_tool {
+    var arg = "";
+    var argno = 1;
+    var tool:string;
+    var url:string;
+    var doc_root:string;
+    var user:string;
+    while argno<System::argc do
+      arg = System::argv argno;
+      println$ "ARG=" + arg;
+      if prefix(arg,"--tool=") do
+        tool = arg.[7 to];
+      elif prefix(arg,"--url=") do
+        url =  arg.[6 to];
+      elif prefix(arg,"--root=") do
+        doc_root =  arg.[7 to];
+      elif prefix(arg,"--user=") do
+        user =  arg.[7 to];
+      done
+      ++argno;
+    done
+
+    if tool == "help"  do
+      help(); 
+    done
+    if tool == "" do 
+      return;   //Not a tool start the server
+    elif tool == "flatten" do
+      flatten(url,doc_root); 
+    elif tool == "post" do 
+      var doc = System::argv (System::argc - 1);
+      post(url,doc_root,user,doc); 
+    else
+      println("Invalid tool:"+tool);
+      help(); 
+    done      
+    System::exit(0);
+  }
+
+  proc flatten(url:string,doc_root:string) {
+    println("Sorry flatten is not implemented at this time");
+ 
+  }
+
+  proc post(url:string,doc_root:string,user:string,doc:string) {
+    open Output_text_file;
+    open XML2;
+    println("Posting:"+doc+" to "+url);
+    var data = load(doc);
+    println(data);
+    var enc:string = "content="+XML2::xml_uri_escape_string (data,"<> ");
+    var fn:string = FileSystem::tmp_filename();
+    var post_handle = fopen_output (fn);
+    if not valid post_handle do
+      eprintln("Unable to open tmpfile:"+fn);
+    else
+      fprint (post_handle,enc);
+      fflush(post_handle);
+      fclose(post_handle);
+      val cmd = "curl  --data @"+fn+" --anyauth --user "+user+" "+
+          url+"/wiki/edit/"+doc;
+      println(cmd);
+      if System::system(cmd) == 0 do
+        println("Post successful");
+      else
+        println("Post failed");
+        System::exit(-1);
+      done
+    done
+  }
+    
+}
