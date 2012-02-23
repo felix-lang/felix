@@ -20,8 +20,8 @@ class Regdef {
   ;
 
   private fun hex_digit (i:int)=>
-    if i<10 then char (ord (char "0") + i) 
-    else char (ord (char "A") + i - 10)
+    if i<10 then string (char (ord (char "0") + i)) 
+    else string (char (ord (char "A") + i - 10))
     endif
   ;
   private fun hex2(c:char)=>
@@ -54,14 +54,14 @@ class Regdef {
     (fun (acc:string) (elt:regex)=> acc + cngrp(render elt,2,prec elt))
     "" rs
   | Rpt (?r,?i,?x) =>
-    if i == 0 and x == -1 then cngrp (render r,1,prec r) + "*"
-    elif i == 1 and x == -1 then cngrp (render r,1,prec r) + "+"
-    elif i == 0 and x == 1 then cngrp (render r,1,prec r) + "?"
+    if i == 0 and x == -1 then ngrp (render r) + "*"
+    elif i == 1 and x == -1 then ngrp (render r) + "+"
+    elif i == 0 and x == 1 then ngrp (render r) + "?"
     else
       cngrp(render r,1,prec r) + "{" + str i + "," + if x < 0 then "" else str x endif + "}"
     endif
 
-  | String ?s => QuoteMeta (StringPiece s)
+  | String ?s => hex(s)
   | Charset ?s => "[" + hex s + "]"
   | Group ?r => "(" + render r + ")"
   | Perl ?s => s

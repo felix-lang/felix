@@ -8,72 +8,72 @@ int          inet_pton(int, const char *restrict, void *restrict);
 #include <assert.h>
  
 #include <complex.h>
-    double               cabs(double complex);
-    float                cabsf(float complex);
-    long double          cabsl(long double complex);
-    double complex       cacos(double complex);
-    float complex        cacosf(float complex);
-    double complex       cacosh(double complex);
-    float complex        cacoshf(float complex);
-    long double complex  cacoshl(long double complex);
-    long double complex  cacosl(long double complex);
-    double               carg(double complex);
-    float                cargf(float complex);
-    long double          cargl(long double complex);
-    double complex       casin(double complex);
-    float complex        casinf(float complex);
-    double complex       casinh(double complex);
-    float complex        casinhf(float complex);
-    long double complex  casinhl(long double complex);
-    long double complex  casinl(long double complex);
-    double complex       catan(double complex);
-    float complex        catanf(float complex);
-    double complex       catanh(double complex);
-    float complex        catanhf(float complex);
-    long double complex  catanhl(long double complex);
-    long double complex  catanl(long double complex);
-    double complex       ccos(double complex);
-    float complex        ccosf(float complex);
-    double complex       ccosh(double complex);
-    float complex        ccoshf(float complex);
-    long double complex  ccoshl(long double complex);
-    long double complex  ccosl(long double complex);
-    double complex       cexp(double complex);
-    float complex        cexpf(float complex);
-    long double complex  cexpl(long double complex);
-    double               cimag(double complex);
-    float                cimagf(float complex);
-    long double          cimagl(long double complex);
-    double complex       clog(double complex);
-    float complex        clogf(float complex);
-    long double complex  clogl(long double complex);
-    double complex       conj(double complex);
-    float complex        conjf(float complex);
-    long double complex  conjl(long double complex);
-    double complex       cpow(double complex, double complex);
-    float complex        cpowf(float complex, float complex);
-    long double complex  cpowl(long double complex, long double complex);
-    double complex       cproj(double complex);
-    float complex        cprojf(float complex);
-    long double complex  cprojl(long double complex);
-    double               creal(double complex);
-    float                crealf(float complex);
-    long double          creall(long double complex);
-    double complex       csin(double complex);
-    float complex        csinf(float complex);
-    double complex       csinh(double complex);
-    float complex        csinhf(float complex);
-    long double complex  csinhl(long double complex);
-    long double complex  csinl(long double complex);
-    double complex       csqrt(double complex);
-    float complex        csqrtf(float complex);
-    long double complex  csqrtl(long double complex);
-    double complex       ctan(double complex);
-    float complex        ctanf(float complex);
-    double complex       ctanh(double complex);
-    float complex        ctanhf(float complex);
-    long double complex  ctanhl(long double complex);
-    long double complex  ctanl(long double complex);
+double               cabs(double complex);
+float                cabsf(float complex);
+long double          cabsl(long double complex);
+double complex       cacos(double complex);
+float complex        cacosf(float complex);
+double complex       cacosh(double complex);
+float complex        cacoshf(float complex);
+long double complex  cacoshl(long double complex);
+long double complex  cacosl(long double complex);
+double               carg(double complex);
+float                cargf(float complex);
+long double          cargl(long double complex);
+double complex       casin(double complex);
+float complex        casinf(float complex);
+double complex       casinh(double complex);
+float complex        casinhf(float complex);
+long double complex  casinhl(long double complex);
+long double complex  casinl(long double complex);
+double complex       catan(double complex);
+float complex        catanf(float complex);
+double complex       catanh(double complex);
+float complex        catanhf(float complex);
+long double complex  catanhl(long double complex);
+long double complex  catanl(long double complex);
+double complex       ccos(double complex);
+float complex        ccosf(float complex);
+double complex       ccosh(double complex);
+float complex        ccoshf(float complex);
+long double complex  ccoshl(long double complex);
+long double complex  ccosl(long double complex);
+double complex       cexp(double complex);
+float complex        cexpf(float complex);
+long double complex  cexpl(long double complex);
+double               cimag(double complex);
+float                cimagf(float complex);
+long double          cimagl(long double complex);
+double complex       clog(double complex);
+float complex        clogf(float complex);
+long double complex  clogl(long double complex);
+double complex       conj(double complex);
+float complex        conjf(float complex);
+long double complex  conjl(long double complex);
+double complex       cpow(double complex, double complex);
+float complex        cpowf(float complex, float complex);
+long double complex  cpowl(long double complex, long double complex);
+double complex       cproj(double complex);
+float complex        cprojf(float complex);
+long double complex  cprojl(long double complex);
+double               creal(double complex);
+float                crealf(float complex);
+long double          creall(long double complex);
+double complex       csin(double complex);
+float complex        csinf(float complex);
+double complex       csinh(double complex);
+float complex        csinhf(float complex);
+long double complex  csinhl(long double complex);
+long double complex  csinl(long double complex);
+double complex       csqrt(double complex);
+float complex        csqrtf(float complex);
+long double complex  csqrtl(long double complex);
+double complex       ctan(double complex);
+float complex        ctanf(float complex);
+double complex       ctanh(double complex);
+float complex        ctanhf(float complex);
+long double complex  ctanhl(long double complex);
+long double complex  ctanl(long double complex);
 
 [XSI] [Option Start]
 #include <cpio.h> 
@@ -195,18 +195,18 @@ int     iconv_close(iconv_t);
 [Option End]
 char *nl_langinfo(nl_item);
 #include <math.h>
-int fpclassify(real-floating x);
-int isfinite(real-floating x);
-int isinf(real-floating x);
-int isnan(real-floating x);
-int isnormal(real-floating x);
-int signbit(real-floating x);
-int isgreater(real-floating x, real-floating y);
-int isgreaterequal(real-floating x, real-floating y);
-int isless(real-floating x, real-floating y);
-int islessequal(real-floating x, real-floating y);
-int islessgreater(real-floating x, real-floating y);
-int isunordered(real-floating x, real-floating y);
+int fpclassify(real_floating x);
+int isfinite(real_floating x);
+int isinf(real_floating x);
+int isnan(real_floating x);
+int isnormal(real_floating x);
+int signbit(real_floating x);
+int isgreater(real_floating x, real_floating y);
+int isgreaterequal(real_floating x, real_floating y);
+int isless(real_floating x, real_floating y);
+int islessequal(real_floating x, real_floating y);
+int islessgreater(real_floating x, real_floating y);
+int isunordered(real_floating x, real_floating y);
 double      acos(double);
 float       acosf(float);
 double      acosh(double);
@@ -792,7 +792,7 @@ int   _setjmp(jmp_buf);
 [Option End]
 #include <signal.h>
 [XSI][Option Start]
-void (*bsd_signal(int, void (*)(int)))(int);
+//void (*bsd_signal(int, void (*)(int)))(int);
 [Option End]
 [CX][Option Start]
 int    kill(pid_t, int);
@@ -826,7 +826,7 @@ int    siginterrupt(int, int);
 [CX][Option Start]
 int    sigismember(const sigset_t *, int);
 [Option End]
-void (*signal(int, void (*)(int)))(int);
+//void (*signal(int, void (*)(int)))(int);
 [XSI][Option Start]
 int    sigpause(int);
 [Option End]
@@ -839,7 +839,7 @@ int    sigqueue(pid_t, int, const union sigval);
 [Option End]
 [XSI][Option Start]
 int    sigrelse(int);
-void (*sigset(int, void (*)(int)))(int);
+//void (*sigset(int, void (*)(int)))(int);
 [Option End]
 [CX][Option Start]
 int    sigsuspend(const sigset_t *);
@@ -1016,16 +1016,16 @@ void         *calloc(size_t, size_t);
 div_t         div(int, int);
 [XSI][Option Start]
 double        drand48(void);
-char         *ecvt(double, int, int *restrict, int *restrict); (LEGACY )
+char         *ecvt(double, int, int *restrict, int *restrict); (LEGACY)
 double        erand48(unsigned short[3]);
 [Option End]
 void          exit(int);
 [XSI][Option Start]
-char         *fcvt(double, int, int *restrict, int *restrict); (LEGACY )
+char         *fcvt(double, int, int *restrict, int *restrict); (LEGACY)
 [Option End]
 void          free(void *);
 [XSI][Option Start]
-char         *gcvt(double, int, char *); (LEGACY )
+char         *gcvt(double, int, char *); (LEGACY)
 [Option End]
 char         *getenv(const char *);
 [XSI][Option Start]
@@ -1050,7 +1050,7 @@ int           mblen(const char *, size_t);
 size_t        mbstowcs(wchar_t *restrict, const char *restrict, size_t);
 int           mbtowc(wchar_t *restrict, const char *restrict, size_t);
 [XSI][Option Start]
-char         *mktemp(char *); (LEGACY )
+char         *mktemp(char *); (LEGACY)
 int           mkstemp(char *);
 long          mrand48(void);
 long          nrand48(unsigned short[3]);
@@ -1148,12 +1148,12 @@ size_t   strxfrm(char *restrict, const char *restrict, size_t);
 #include <strings.h> 
 [Option End]
 
-int    bcmp(const void *, const void *, size_t); // (LEGACY )
-void   bcopy(const void *, void *, size_t); // (LEGACY )
-void   bzero(void *, size_t);  // (LEGACY )
+int    bcmp(const void *, const void *, size_t); (LEGACY)
+void   bcopy(const void *, void *, size_t); (LEGACY)
+void   bzero(void *, size_t);  (LEGACY)
 int    ffs(int);
-char  *index(const char *, int); // (LEGACY )
-char  *rindex(const char *, int); // (LEGACY )
+char  *index(const char *, int); (LEGACY)
+char  *rindex(const char *, int); (LEGACY)
 int    strcasecmp(const char *, const char *);
 int    strncasecmp(const char *, const char *, size_t);
 
@@ -1298,7 +1298,7 @@ int fstatvfs(int, struct statvfs *);
 [XSI] [Option Start] 
 #include <sys/timeb.h> 
 [Option End]
-int   ftime(struct timeb *); // (LEGACY )
+int   ftime(struct timeb *); (LEGACY)
 
 [XSI] [Option Start] 
 #include <sys/time.h> 
@@ -1309,7 +1309,7 @@ int   select(int, fd_set *restrict, fd_set *restrict, fd_set *restrict,
           struct timeval *restrict);
 int   setitimer(int, const struct itimerval *restrict,
           struct itimerval *restrict);
-int   utimes(const char *, const struct timeval [2]); //(LEGACY )
+int   utimes(const char *, const struct timeval [2]); (LEGACY)
 #include <sys/times.h>
 
 clock_t times(struct tms *);
@@ -1592,7 +1592,7 @@ pid_t        getsid(pid_t);
 [Option End]
 uid_t        getuid(void);
 [XSI][Option Start]
-char        *getwd(char *); (LEGACY )
+char        *getwd(char *); (LEGACY)
 [Option End]
 int          isatty(int);
 [XSI][Option Start]

@@ -16,17 +16,17 @@ syntax regexps {
   sregexp[ralt_pri] := sregexp[>ralt_pri] ("|" sregexp[>ralt_pri])+ =># 
     "`(ast_apply ,_sr ( ,(noi 'Alts) (ast_apply ,_sr (,(noi 'list) ,(cons _1 (map second _2))))))"
   ;
-  sregexp[rseq_pri] := sregexp[>rseq_pri] sregexp[>ralt_pri]+ =># 
+  sregexp[rseq_pri] := sregexp[>rseq_pri] (sregexp[>rseq_pri])+ =># 
     "`(ast_apply ,_sr ( ,(noi 'Seqs) (ast_apply ,_sr (,(noi 'list) ,(cons _1 _2)))))"
   ;
-  sregexp[rpostfix_pri] := sregexp[ratom_pri] "*" =># 
+  sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "*" =># 
     "`(ast_apply ,_sr ( ,(noi 'Rpt) (,_1,0,-1)))"
   ;
-  sregexp[rpostfix_pri] := sregexp[ratom_pri] "+" =>#
+  sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "+" =>#
     "`(ast_apply ,_sr ( ,(noi 'Rpt) (,_1,1,-1)))"
   ;
-  sregexp[rpostfix_pri] := sregexp[ratom_pri] "?" =>#
-    "`(ast_apply ,_sr ( ,(noi 'Rpt) (,_1,1,-1)))"
+  sregexp[rpostfix_pri] := sregexp[rpostfix_pri] "?" =>#
+    "`(ast_apply ,_sr ( ,(noi 'Rpt) (,_1,0,1)))"
   ;
   sregexp[ratom_pri] := "(" sregexp[ralt_pri] ")" =># "_2";
   sregexp[ratom_pri] := "group" "(" sregexp[ralt_pri] ")" =># 
