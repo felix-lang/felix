@@ -2,6 +2,7 @@ include "wiki_model";
 include "web/web_server";
 include "wiki_handler";
 include "util";
+include "wiki_tool";
 
 open HTTPRequest;
 open HTTPHandler;
@@ -11,6 +12,8 @@ open Csv;
 open Assoc_list;
 open ServerConfig;	
 open SimpleConfig;
+
+WikiTool::which_tool();
 
 var config = basic_server_config( WikiHandler::app_handlers() + default_handlers());
 
