@@ -1,0 +1,119 @@
+open Regdef;
+regdef spce = " ";
+
+regdef eol = "\n";
+regdef white = spce | eol;
+regdef not_eol = perl ( "." );
+regdef optnoteol = not_eol*;
+regdef ccomment = "//" optnoteol eol;
+regdef ws = white+;
+regdef endline = ws? ccomment | white*;
+
+regdef upper = perl("[[:upper:]]");
+regdef lower = perl("[[:lower:]]");
+regdef digit = perl ("[[:digit:]]");
+regdef letter = upper | lower;
+regdef alnum = letter | digit;
+regdef us = "_";
+regdef cid = (letter | us) (alnum | us)*;
+
+regdef open_option = "[Option Start]";
+regdef start_option = "[" group(cid ((ws cid)|("|" cid))*) "]" ws? open_option;
+regdef end_option = "[Option End]";
+
+regdef filename = cid ("/" cid)* ".h"?;
+regdef head = "#include" ws "<" filename ">";
+
+regdef legacy = "(LEGACY)";
+regdef return_type = cid (ws cid | ws? "*")* (ws|ws? "*");
+regdef arglist = (ws | cid | "*" | "..." | "(" | ")" | "," | "[" (digit+|"restrict")? "]")*;
+regdef fundef = group(return_type) group(cid) ws? "(" group(ws? arglist) ")" ";" group((ws legacy)?); 
+regdef entry =ws? ( 
+   group(head) | 
+   start_option | 
+   group(end_option) |  
+   group(ccomment) | 
+   group(fundef) 
+  ) ws?
+;
+
+fun pack(s:string) = {
+  var bits = split(s,' \n');
+  var bits2 = filter (fun (s:string)=> s!="") bits;
+  var bits3 = cat " " bits2;
+  return bits3;
+}
+
+regdef xx = entry;
+println$ xx.render;
+
+var lentry = RE2(xx.render);
+var stuff = load ("misc/posix.txt");
+//print stuff;
+
+var n = lentry.NumberOfCapturingGroups;
+println$ "Number of groups = " + str n;
+var spos = 0;
+var fun_option_code="";
+var file_option_code="";
+var option_code = "";
+var just_set = false;
+
+next:while true do
+  //println$ "Start pos=" +  spos.str + "=" + stuff.[spos to spos + 10];
+  var result = varray[StringPiece] (n.size + 1, StringPiece "");
+  val m = Match(lentry,stuff.StringPiece, spos, ANCHOR_START,result.carray,n + 1);
+  not m ?? break next;
+  //println$ "Match = " + str m;
+  //println$ result;
+  if result.[1].len != 0uz do
+    if not just_set do 
+      file_option_code=""; 
+    else 
+      file_option_code = fun_option_code;
+      fun_option_code = "";
+    done
+    println$ "// Include file=" + result.[1].str + if option_code!="" then " //["+file_option_code+"]" else "" endif;
+  elif result.[2].len != 0uz do
+    fun_option_code=result.[2].str;
+    just_set=true;
+  elif result.[3].len != 0uz do
+    if just_set do
+      file_option_code = "";
+    else
+       fun_option_code="";
+    done
+    just_set=false;
+  elif result.[4].len != 0uz do
+    println$ result.[4].str;
+  elif result.[5].len != 0uz do
+    just_set=false;
+    //println$ "function=" + result.[5].str;
+    option_code = (file_option_code + " " + fun_option_code).pack;
+    var name=result.[7].str;
+    var ret=result.[6].str.pack;
+    var args=result.[8].str.pack;
+    var legaci=result.[9].str;
+    var trail = 
+      if option_code != "" or legaci !="" 
+      then "//" + 
+        if option_code!="" 
+        then "["+option_code+"]" 
+        else "" 
+        endif
+        +legaci
+      else ""
+      endif
+    ;
+    if ret == "void" do
+      println$ "  proc " + name + ": " + args +";" + trail;
+    else
+      println$ "  fun  " + name + ": " + args + " -> " + ret ";" + trail;
+    done
+  done
+
+  spos += result.[0].len.int;
+done
+
+println$ "Finished";
+
