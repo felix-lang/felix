@@ -74,7 +74,7 @@ class HTTPRequest {
   publish """ Main entry point for extracting HTTP request from stream """
   noinline proc get_request(conn:http_connection,request:&http_request) = {
     var k = conn.sock;
-    var line: string;
+    var line: string = "";
     get_line(k, &line);  // shouldg be the GET line.
     var got = match split(line,' ') with
       | Cons (?method,Cons(?uri,Cons(?prot,_))) => match (method,uri,prot) with
