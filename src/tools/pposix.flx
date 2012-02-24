@@ -38,26 +38,157 @@ regdef entry =ws? (
 ;
 
 fun pack(s:string) = {
-  var bits = split(s,' \n');
+  var bits = split(s,' \n\r');
   var bits2 = filter (fun (s:string)=> s!="") bits;
   var bits3 = cat " " bits2;
   return bits3;
 }
 
+
 regdef xx = entry;
-println$ xx.render;
+//println$ xx.render;
 
 var lentry = RE2(xx.render);
 var stuff = load ("misc/posix.txt");
 //print stuff;
 
 var n = lentry.NumberOfCapturingGroups;
-println$ "Number of groups = " + str n;
+//println$ "Number of groups = " + str n;
 var spos = 0;
 var fun_option_code="";
 var file_option_code="";
 var option_code = "";
 var just_set = false;
+
+var replist = list (
+  ("struct ","struct_"),
+  ("void**","&address"),
+  ("void*","address"),
+  ("void(*)(void)","(unit --> void)"),
+  ("void(*)(address)","(address --> void)"),
+  ("address(*)(address)","(address --> address)"),
+  ("int(*)(address)","(address --> int)"),
+  ("int(*)(address, address)","(address * address --> int)"),
+  ("void(*)(address, VISIT, int)","(address * VISIT * int --> void)"),
+
+  ("char**","&ntbs"),
+  ("char*","ntbs"),
+  ("ntbs []","&ntbs"),
+
+  ("size_t","size"),
+  ("size**","&&size"),
+  ("size*","&size"),
+
+  ("wchar_t","wchar"),
+  ("wchar**","&&wchar"),
+  ("wchar*","&wchar"),
+  ("DIR*","DIR_t"),
+  ("FILE*","stream_file"),
+  ("DBM*", "dbm"),
+  ("ENTRY*", "&ENTRY"),
+
+
+  ("wordexp_t*","&wordexp_t"),
+  ("regex_t*","&regex_t"),
+  ("fexcept_t*","&fexcept_t"),
+  ("mbstate_t*","&mbstate_t"),
+  ("struct_utimbuf*","&struct_utimbuf"),
+  ("ucontext_t*","&ucontext_t"),
+  ("trace_event_set_t*","&trace_event_set_t"),
+  ("trace_attr_t*","&trace_attr_t"),
+  ("trace_event_id_t*","&trace_event_id_t"),
+  ("trace_id_t*","&trace_id_t"),
+  ("struct_posix_trace_status_info*","&struct_posix_status_info"),
+  ("struct_posix_trace_event_info*","&struct_posix_event_info"),
+  ("struct_sigevent*","&struct_sigevent"),
+  ("struct_itimerspec*","&struct_itimerspec"),
+  ("timer_t*","&timer_t"),
+  ("struct_tm*","&struct_tm"),
+  ("struct_timespec*","&struct_timespec"),
+  ("siginfo_t*","&siginfo_t"),
+  ("time_t*","&time_t"),
+  ("clockid_t*","&clockid_t"),
+  ("fd_set*","&fd_set"),
+  ("struct_itimerval*","&struct_itimerval"),
+  ("struct_timeval*","&struct_timeval"),
+  ("struct_statvfs*","&struct_vfs"),
+  ("struct_stat*","&struct_stat"),
+  ("struct_termios*","&struct_termios"),
+  ("struct_iovec*","&struct_iovec"),
+  ("struct_msghdr*","&struct_msghdr"),
+  ("struct_utsname*","&struct_utsname"),
+  ("struct_utmpx*","&struct_utmpx"),
+  ("struct_timeb*","&struct_timeb"),
+  ("socklen_t*","&socklen_t"),
+  ("stack_t*","&stack_t"),
+  ("posix_spawnattr_t*","&posix_spawnattr_t"),
+  ("posix_spawn_file_actions_t*","&posix_spawn_file_actions_t"),
+  ("struct_sched_param*","&struct_sched_param"),
+  ("posix_typed_mem_info*","&posix_typed_mem_info"),
+  ("sigset_t*","&sigset_t"),
+  ("fpos_t*","&fpos_t"),
+  ("off_t*","&off_t"),
+  ("sem_t*","&sem_t"),
+  ("env_t*","&env_t"),
+  ("pid_t*","&pid_t"),
+  ("struct_sockaddr*","&struct_sockaddr"),
+  ("pthread_t*","&pthread_t"),
+  ("pthread_rwlock_t*","&pthread_rwlock_t"),
+  ("pthread_spinlock_t*","&pthread_spinlock_t"),
+  ("pthread_once_t*","&pthread_once_t"),
+  ("pthread_mutex_t*","&pthread_mutex_t"),
+  ("pthread_mutexattr_t*","&pthread_mutexattr_t"),
+  ("pthread_condattr_t*","&pthread_condattr_t"),
+  ("pthread_cond_t*","&pthread_cond_t"),
+  ("pthread_barrier_t*","&pthread_barrier_t"),
+  ("pthread_key_t*","&pthread_key_t"),
+  ("pthread_barrierattr_t*","&pthread_barrierattr_t"),
+  ("pthread_attr_t*","&pthread_attr_t"),
+  ("pthread_rwlockattr_t*","&pthread_rwlockattr_t"),
+  ("struct_passwd**","&&struct_passwd"),
+  ("struct_passwd*","&struct_passwd"),
+  ("struct_strbuf*","&struct_strbuf"),
+  ("struct_servent*","&struct_servent"),
+  ("struct_hostent*","&struct_hostent"),
+  ("struct_protoent*","&struct_protoent"),
+  ("struct_sigaction*","&struct_sigaction"),
+  ("struct_rusage*","&struct_rusage"),
+  ("struct_rlimit*","&struct_rlimit"),
+  ("struct_addrinfo**","&&struct_addrinfo"),
+  ("struct_addrinfo*","&struct_addrinfo"),
+  ("struct_dirent**","&&struct_dirent"),
+  ("struct_dirent*","&struct_dirent"),
+  ("struct_group**","&&struct_group"),
+  ("struct_group*","&struct_group"),
+  ("struct_mq_attr*","&struct_mq_attr"),
+  ("struct_shmid_ds*","&struct_shmid_ds"),
+  ("struct_msqid_ds*","&struct_msqid_ds"),
+  ("struct_netent*","&struct_netent"),
+  ("struct_if_nameindex*","&struct_if_nameindex"),
+  ("struct_tms*","&struct_tms"),
+  ("struct_sembuf*","&struct_sembuf"),
+
+  ("int(*)(ntbs, &struct_stat, int)","(ntbs * &struct_stat * int --> int)"),
+  ("int(*)(ntbs, &struct_stat, int, struct_FTW*)","(ntbs * &struct_stat * int * &struct_FTW --> int)"),
+  ("int(*)(address, address)","(address * address --> int)"),
+
+  ("long double complex", "dcomplex"),
+  ("double complex", "complex"),
+  ("float complex", "fcomplex"),
+
+  ("long double", "ldouble"),
+  ("double*", "&double"),
+  ("float*", "&float"),
+
+  ("long long unsigned", "uvlong"),
+  ("long long", "vlong"),
+  ("long long unsigned int", "uvlong"),
+  ("unsigned short", "ushort"),
+  ("short*","&short"),
+  ("unsigned", "uint"),
+  ("int*","&int")
+);
+
 
 next:while true do
   //println$ "Start pos=" +  spos.str + "=" + stuff.[spos to spos + 10];
@@ -92,11 +223,11 @@ next:while true do
     option_code = (file_option_code + " " + fun_option_code).pack;
     var name=result.[7].str;
     var ret=result.[6].str.pack;
-    var args=result.[8].str.pack;
+    var args=result.[8].str;
     var legaci=result.[9].str;
     var trail = 
       if option_code != "" or legaci !="" 
-      then "//" + 
+      then " //" + 
         if option_code!="" 
         then "["+option_code+"]" 
         else "" 
@@ -105,10 +236,31 @@ next:while true do
       else ""
       endif
     ;
+    args= args.pack;
+    ret= ret.pack;
+    args = search_and_replace(args, "  "," ");
+    args = search_and_replace(args, "  "," ");
+    args = search_and_replace(args, "const ","");
+    args = search_and_replace(args, "restrict","");
+    args = search_and_replace(args, " )",")");
+    args = search_and_replace(args, " (","(");
+    args = search_and_replace(args, "( ","(");
+    args = search_and_replace(args, " *","*");
+    args = search_and_replace(args, " *","*");
+    ret = search_and_replace(ret, " *","*");
+    ret = search_and_replace(ret, " *","*");
+
+    for sr in replist do
+      args = search_and_replace(args, sr.0,sr.1);
+      ret = search_and_replace(ret, sr.0,sr.1);
+    done
+    //args= args.pack;
+    ret = ret.pack;
+    args = cat " *" (split (args, ","));
     if ret == "void" do
       println$ "  proc " + name + ": " + args +";" + trail;
     else
-      println$ "  fun  " + name + ": " + args + " -> " + ret ";" + trail;
+      println$ "  gen " + name + ": " + args + " -> " + ret ";" + trail;
     done
   done
 

@@ -162,10 +162,8 @@ int fnmatch(const char *, const char *, int);
 [XSI] [Option Start] 
 #include <ftw.h> 
 [Option End]
-int ftw(const char *, int (*)(const char *, const struct stat *,
-    int), int);
-int nftw(const char *, int (*)(const char *, const struct stat *,
-    int, struct FTW*), int, int);
+int ftw(const char *, int (*)(const char *, const struct stat *, int), int);
+int nftw(const char *, int (*)(const char *, const struct stat *, int, struct FTW*), int, int);
 
 #include <grp.h>
 struct group  *getgrgid(gid_t);
@@ -583,8 +581,7 @@ int   pthread_condattr_setclock(pthread_condattr_t *, clockid_t);
 [TSH][Option Start]
 int   pthread_condattr_setpshared(pthread_condattr_t *, int);
 [Option End]
-int   pthread_create(pthread_t *restrict, const pthread_attr_t *restrict,
-          void *(*)(void *), void *restrict);
+int   pthread_create(pthread_t *restrict, const pthread_attr_t *restrict, void *(*)(void *), void *restrict);
 int   pthread_detach(pthread_t);
 int   pthread_equal(pthread_t, pthread_t);
 void  pthread_exit(void *);
@@ -746,19 +743,13 @@ int    hcreate(size_t);
 void   hdestroy(void);
 ENTRY *hsearch(ENTRY, ACTION);
 void   insque(void *, void *);
-void  *lfind(const void *, const void *, size_t *,
-          size_t, int (*)(const void *, const void *));
-void  *lsearch(const void *, void *, size_t *,
-          size_t, int (*)(const void *, const void *));
+void  *lfind(const void *, const void *, size_t *, size_t, int (*)(const void *, const void *));
+void  *lsearch(const void *, void *, size_t *, size_t, int (*)(const void *, const void *));
 void   remque(void *);
-void  *tdelete(const void *restrict, void **restrict,
-          int(*)(const void *, const void *));
-void  *tfind(const void *, void *const *,
-          int(*)(const void *, const void *));
-void  *tsearch(const void *, void **,
-          int(*)(const void *, const void *));
-void   twalk(const void *,
-          void (*)(const void *, VISIT, int ));
+void  *tdelete(const void *restrict, void **restrict, int(*)(const void *, const void *));
+void  *tfind(const void *, void *const *, int(*)(const void *, const void *));
+void  *tsearch(const void *, void **, int(*)(const void *, const void *));
+void   twalk(const void *, void (*)(const void *, VISIT, int ));
 
 [SEM] [Option Start] 
 #include <semaphore.h> 
@@ -1010,8 +1001,7 @@ double        atof(const char *);
 int           atoi(const char *);
 long          atol(const char *);
 long long     atoll(const char *);
-void         *bsearch(const void *, const void *, size_t, size_t,
-                  int (*)(const void *, const void *));
+void         *bsearch(const void *, const void *, size_t, size_t, int (*)(const void *, const void *));
 void         *calloc(size_t, size_t);
 div_t         div(int, int);
 [XSI][Option Start]
@@ -1063,8 +1053,7 @@ int           posix_openpt(int);
 char         *ptsname(int);
 int           putenv(char *);
 [Option End]
-void          qsort(void *, size_t, size_t, int (*)(const void *,
-                  const void *));
+void          qsort(void *, size_t, size_t, int (*)(const void *, const void *));
 int           rand(void);
 [TSF][Option Start]
 int           rand_r(unsigned *);

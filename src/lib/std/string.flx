@@ -312,6 +312,22 @@ open class String
   proc insert: string * int * string = "$1.insert($2,$3);";
   proc replace: string * int * int * string = "$1.replace($2,$3,$4);";
 
+  fun search_and_replace (x:string, var spos:size, s:string, r:string) : string =
+  {
+    val m = s.len;
+    var o = x.[to spos];
+    val n = (x,s,spos.int).stl_find.size;
+    while n != stl_npos do
+      o+=x.[spos to n]+r;
+      spos = n+m;
+      n = (x,s,spos.int).stl_find.size;
+    done
+    o+=x.[spos to];
+    return o;
+  }
+  fun search_and_replace (x:string, s:string, r:string) : string => search_and_replace (x,0uz,s,r);
+
+
   fun atoi: string -> int = "::std::atoi($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
   fun atol: string -> long = "::std::atol($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
   fun atof: string -> double = "::std::atof($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
