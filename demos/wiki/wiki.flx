@@ -3,6 +3,7 @@ include "web/web_server";
 include "wiki_handler";
 include "util";
 include "wiki_tool";
+include "uri_codec";
 
 open HTTPRequest;
 open HTTPHandler;

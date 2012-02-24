@@ -80,7 +80,7 @@ if fname == "" then "" else
 
   proc edit (conn:http_connection, request:http_request ) {
     var fname = (get_fname(request)).or_else "main.fdoc";
-    var txt:string;
+    var txt:string = "";
     if db_has_fdoc(fname) do
        txt = match db_get_fdoc(fname) with
                | Some ?s => s.content
@@ -128,7 +128,6 @@ fname+"""' >
   proc save_edit (conn:http_connection, request:http_request ) {
     var txt = strip_ctrl_m((get_post_param(request,"content")).or_else "");    
     var fname= (get_fname(request)).or_else "main.fdoc";
-    //txt = XML2::xml_encode_special_chars(txt);
     if ((get_post_param(request,"delete0")).or_else "") == "Delete" do
       delete(conn,request);
     else
@@ -191,7 +190,7 @@ fname+"""' >
   fun inc_route(config:server_config,request:http_request) => startswith request.path "/$/";
 
   proc inc(conn:http_connection,request:http_request) {
-    var content:string;
+    var content:string = "";
     match request.params with
         | Cons(?a,_) => {
                         
