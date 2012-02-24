@@ -4,7 +4,7 @@ class WikiTool {
     println("WIKI tool help");
     //        --root=PATH          Optional path to flatten to or post from otherwise CWD
     println("Usage: "+(System::argv 0)+""" [OPTION] [fdoc]
-        --tool=flatten|post  Selects flatten or post took
+        --tool=push|pull     Selects push or pull tool
         --user=user:password Username and password for wiki
         --url=URL            Base URL of wiki to post to or flatten from
         [fdoc]               if --tool=post fdoc document to post
@@ -14,10 +14,10 @@ class WikiTool {
   proc which_tool {
     var arg = "";
     var argno = 1;
-    var tool:string;
-    var url:string;
-    var doc_root:string;
-    var user:string;
+    var tool:string = "";
+    var url:string = "";
+    var doc_root:string = "";
+    var user:string = "";
     while argno<System::argc do
       arg = System::argv argno;
       println$ "ARG=" + arg;
@@ -38,9 +38,9 @@ class WikiTool {
     done
     if tool == "" do 
       return;   //Not a tool start the server
-    elif tool == "flatten" do
+    elif tool == "pull" do
       flatten(url,doc_root); 
-    elif tool == "post" do 
+    elif tool == "push" do 
       var doc = System::argv (System::argc - 1);
       post(url,doc_root,user,doc); 
     else
@@ -60,8 +60,7 @@ class WikiTool {
     open XML2;
     println("Posting:"+doc+" to "+url);
     var data = load(doc);
-    println(data);
-    var enc:string = "content="+XML2::xml_uri_escape_string (data,"<> ");
+    var enc:string = "content="+URICodec::uri_encode(data);
     var fn:string = FileSystem::tmp_filename();
     var post_handle = fopen_output (fn);
     if not valid post_handle do

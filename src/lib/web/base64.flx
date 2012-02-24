@@ -30,7 +30,7 @@ class Base64 {
     val oLen = ((iLen+2)/3)*4;         // output length including padding
     // if using darray would use this
     //var out = darray[char]( size oLen,char(0));
-    var out:string;//make_string(size oLen,char(0));
+    var out:string = "";//make_string(size oLen,char(0));
     var ip = iOff;
     var iEnd = iOff + iLen;
     var op = 0;
@@ -63,7 +63,7 @@ class Base64 {
      not handeling end of encoding correctly will proably remove. 
   fun base64_encode(bytes:string) = {
     var in_len = len bytes;
-    var ret:string;
+    var ret:string = "";
     var i:int = 0;
     var inp:char^4;
     var outp:char^5;

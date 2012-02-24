@@ -67,7 +67,7 @@ class SimpleConfig {
      install root
   """
   fun apply_param_vars (par:list[string*string]):list[string*string] ={
-    var kp:string; var vp:string; 
+    var kp:string = ""; var vp:string = ""; 
     return map (fun (k:string,v:string) = {
       kp = k; vp = v; 
       iter (proc (k1:string,v1:string) { 
