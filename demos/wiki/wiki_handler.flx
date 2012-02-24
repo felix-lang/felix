@@ -23,7 +23,8 @@ class WikiHandler {
     db_get_auth_fdoc(uname,passwd);
 
   fun wiki_route(config:server_config,request:http_request) ={
-    return startswith request.path  "/wiki";
+    return startswith request.path  "/wiki" or request.path =="/" or 
+           request.path == "";
   }
 
   proc wiki (conn:http_connection, request:http_request ) {
