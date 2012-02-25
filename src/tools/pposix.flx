@@ -72,6 +72,8 @@ var replist = list (
   ("void(*)(address, VISIT, int)","(address * VISIT * int --> void)"),
 
   ("char**","&ntbs"),
+  ("struct_pollfd[64]","&struct_pollfd"),
+  (" [2]","*"),
   ("char*","ntbs"),
   ("ntbs []","&ntbs"),
 
@@ -90,6 +92,7 @@ var replist = list (
 
   ("wordexp_t*","&wordexp_t"),
   ("regex_t*","&regex_t"),
+  ("regmatch_t*","&rematch_t"),
   ("fexcept_t*","&fexcept_t"),
   ("mbstate_t*","&mbstate_t"),
   ("struct_utimbuf*","&struct_utimbuf"),
@@ -124,11 +127,12 @@ var replist = list (
   ("posix_spawnattr_t*","&posix_spawnattr_t"),
   ("posix_spawn_file_actions_t*","&posix_spawn_file_actions_t"),
   ("struct_sched_param*","&struct_sched_param"),
-  ("posix_typed_mem_info*","&posix_typed_mem_info"),
+  ("struct_posix_typed_mem_info*","&struct_posix_typed_mem_info"),
   ("sigset_t*","&sigset_t"),
   ("fpos_t*","&fpos_t"),
   ("off_t*","&off_t"),
   ("sem_t*","&sem_t"),
+  ("fenv_t*","&fenv_t"),
   ("env_t*","&env_t"),
   ("pid_t*","&pid_t"),
   ("struct_sockaddr*","&struct_sockaddr"),
@@ -177,18 +181,37 @@ var replist = list (
   ("float complex", "fcomplex"),
 
   ("long double", "ldouble"),
+  ("ldouble*", "&ldouble"),
   ("double*", "&double"),
   ("float*", "&float"),
 
-  ("long long unsigned", "uvlong"),
-  ("long long", "vlong"),
-  ("long long unsigned int", "uvlong"),
+  ("unsigned long long", "uvlong"),
+  ("unsigned long", "ulong"),
+  ("unsigned int", "uint"),
   ("unsigned short", "ushort"),
+  ("ushort[7]","&short"),
+  ("ushort[3]","&short"),
+  ("char[64]","&char"),
+
+  ("long long", "vlong"),
+  ("uint32_t", "uint32"),
   ("short*","&short"),
   ("unsigned", "uint"),
+  ("uint*","&uint"),
   ("int*","&int")
 );
 
+var types = Empty[string];
+var igntypes = list(
+  "...","[]","*","-->","",
+  "char","ntbs","void",
+  "short","int","long","vlong",
+  "ushort","uint","ulong","uvlong",
+  "float","double","ldouble",
+  "fcomplex","dcomplex","lcomplex",
+  "uint32",
+  "size","ssize","wchar","va_list"
+);
 
 next:while true do
   //println$ "Start pos=" +  spos.str + "=" + stuff.[spos to spos + 10];
@@ -247,6 +270,8 @@ next:while true do
     args = search_and_replace(args, "( ","(");
     args = search_and_replace(args, " *","*");
     args = search_and_replace(args, " *","*");
+    args = search_and_replace(args, " []","*");
+    args = search_and_replace(args, "[]","*");
     ret = search_and_replace(ret, " *","*");
     ret = search_and_replace(ret, " *","*");
 
@@ -254,17 +279,33 @@ next:while true do
       args = search_and_replace(args, sr.0,sr.1);
       ret = search_and_replace(ret, sr.0,sr.1);
     done
-    //args= args.pack;
+    args= args.pack;
     ret = ret.pack;
-    args = cat " *" (split (args, ","));
+    var arg_list = split (args, ",");
+    args = cat " *" arg_list;
+    arg_list = Cons (ret, arg_list);
     if ret == "void" do
       println$ "  proc " + name + ": " + args +";" + trail;
     else
       println$ "  gen " + name + ": " + args + " -> " + ret ";" + trail;
     done
+    for argx in arg_list do
+      var arg = argx.strip;
+      if arg.[0] == "&".char do arg = arg.[1 to]; done
+      if arg.[0] == "&".char do arg = arg.[1 to]; done
+      if not (arg in igntypes  or arg in types) do
+        types = Cons(arg, types);
+      done
+    done
   done
 
   spos += result.[0].len.int;
+done
+
+println$ "/" * 20;
+types = types.sort;
+for t in types do
+   println$ "'"+t+"'";
 done
 
 println$ "Finished";
