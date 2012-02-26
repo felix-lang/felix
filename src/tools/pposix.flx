@@ -72,7 +72,8 @@ var replist = list (
   ("void(*)(address, VISIT, int)","(address * VISIT * int --> void)"),
 
   ("char**","&ntbs"),
-  ("struct_pollfd[64]","&struct_pollfd"),
+  ("struct_pollfd[]","&struct_pollfd"),
+  ("[2]","*"),
   (" [2]","*"),
   ("char*","ntbs"),
   ("ntbs []","&ntbs"),
@@ -90,6 +91,7 @@ var replist = list (
   ("ENTRY*", "&ENTRY"),
 
 
+  ("gid_t []","&gid_t"),
   ("wordexp_t*","&wordexp_t"),
   ("regex_t*","&regex_t"),
   ("regmatch_t*","&rematch_t"),
@@ -189,8 +191,8 @@ var replist = list (
   ("unsigned long", "ulong"),
   ("unsigned int", "uint"),
   ("unsigned short", "ushort"),
-  ("ushort[7]","&short"),
-  ("ushort[3]","&short"),
+  ("ushort[7]","&ushort"),
+  ("ushort[3]","&ushort"),
   ("char[64]","&char"),
 
   ("long long", "vlong"),

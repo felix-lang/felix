@@ -1,0 +1,1298 @@
+// Include file=#include <arpa/inet.h>
+  gen inet_addr: ntbs -> in_addr_t;
+  gen inet_ntoa: struct_in_addr -> ntbs;
+  gen inet_ntop: int * address * ntbs * socklen_t -> const ntbs;
+  gen inet_pton: int * ntbs * address -> int;
+// Include file=#include <assert.h>
+// Include file=#include <complex.h>
+  gen cabs: complex -> double;
+  gen cabsf: fcomplex -> float;
+  gen cabsl: dcomplex -> ldouble;
+  gen cacos: complex -> complex;
+  gen cacosf: fcomplex -> fcomplex;
+  gen cacosh: complex -> complex;
+  gen cacoshf: fcomplex -> fcomplex;
+  gen cacoshl: dcomplex -> dcomplex;
+  gen cacosl: dcomplex -> dcomplex;
+  gen carg: complex -> double;
+  gen cargf: fcomplex -> float;
+  gen cargl: dcomplex -> ldouble;
+  gen casin: complex -> complex;
+  gen casinf: fcomplex -> fcomplex;
+  gen casinh: complex -> complex;
+  gen casinhf: fcomplex -> fcomplex;
+  gen casinhl: dcomplex -> dcomplex;
+  gen casinl: dcomplex -> dcomplex;
+  gen catan: complex -> complex;
+  gen catanf: fcomplex -> fcomplex;
+  gen catanh: complex -> complex;
+  gen catanhf: fcomplex -> fcomplex;
+  gen catanhl: dcomplex -> dcomplex;
+  gen catanl: dcomplex -> dcomplex;
+  gen ccos: complex -> complex;
+  gen ccosf: fcomplex -> fcomplex;
+  gen ccosh: complex -> complex;
+  gen ccoshf: fcomplex -> fcomplex;
+  gen ccoshl: dcomplex -> dcomplex;
+  gen ccosl: dcomplex -> dcomplex;
+  gen cexp: complex -> complex;
+  gen cexpf: fcomplex -> fcomplex;
+  gen cexpl: dcomplex -> dcomplex;
+  gen cimag: complex -> double;
+  gen cimagf: fcomplex -> float;
+  gen cimagl: dcomplex -> ldouble;
+  gen clog: complex -> complex;
+  gen clogf: fcomplex -> fcomplex;
+  gen clogl: dcomplex -> dcomplex;
+  gen conj: complex -> complex;
+  gen conjf: fcomplex -> fcomplex;
+  gen conjl: dcomplex -> dcomplex;
+  gen cpow: complex * complex -> complex;
+  gen cpowf: fcomplex * fcomplex -> fcomplex;
+  gen cpowl: dcomplex * dcomplex -> dcomplex;
+  gen cproj: complex -> complex;
+  gen cprojf: fcomplex -> fcomplex;
+  gen cprojl: dcomplex -> dcomplex;
+  gen creal: complex -> double;
+  gen crealf: fcomplex -> float;
+  gen creall: dcomplex -> ldouble;
+  gen csin: complex -> complex;
+  gen csinf: fcomplex -> fcomplex;
+  gen csinh: complex -> complex;
+  gen csinhf: fcomplex -> fcomplex;
+  gen csinhl: dcomplex -> dcomplex;
+  gen csinl: dcomplex -> dcomplex;
+  gen csqrt: complex -> complex;
+  gen csqrtf: fcomplex -> fcomplex;
+  gen csqrtl: dcomplex -> dcomplex;
+  gen ctan: complex -> complex;
+  gen ctanf: fcomplex -> fcomplex;
+  gen ctanh: complex -> complex;
+  gen ctanhf: fcomplex -> fcomplex;
+  gen ctanhl: dcomplex -> dcomplex;
+  gen ctanl: dcomplex -> dcomplex;
+// Include file=#include <cpio.h>
+// Include file=#include <ctype.h>
+  gen isalnum: int -> int;
+  gen isalpha: int -> int;
+  gen isascii: int -> int; //[XSI]
+  gen isblank: int -> int;
+  gen iscntrl: int -> int;
+  gen isdigit: int -> int;
+  gen isgraph: int -> int;
+  gen islower: int -> int;
+  gen isprint: int -> int;
+  gen ispunct: int -> int;
+  gen isspace: int -> int;
+  gen isupper: int -> int;
+  gen isxdigit: int -> int;
+  gen toascii: int -> int; //[XSI]
+  gen tolower: int -> int;
+  gen toupper: int -> int;
+  gen _toupper: int -> int; //[XSI]
+  gen _tolower: int -> int; //[XSI]
+// Include file=#include <dirent.h> //[]
+  gen closedir: DIR_t -> int;
+  gen opendir: ntbs -> DIR_t;
+  gen readdir: DIR_t -> &struct_dirent;
+  gen readdir_r: DIR_t * &struct_dirent * &&struct_dirent -> int; //[TSF]
+  proc rewinddir: DIR_t;
+  proc seekdir: DIR_t * long; //[XSI]
+  gen telldir: DIR_t -> long; //[XSI]
+// Include file=#include <dlfcn.h> //[XSI]
+  gen dlclose: address -> int;
+  gen dlerror: void -> ntbs;
+  gen dlopen: ntbs * int -> address;
+  gen dlsym: address * ntbs -> address;
+// Include file=#include <errno.h>
+// Include file=#include <fcntl.h>
+  gen creat: ntbs * mode_t -> int;
+  gen fcntl: int * int * ... -> int;
+  gen open: ntbs * int * ... -> int;
+  gen posix_fadvise: int * off_t * off_t * int -> int; //[ADV]
+  gen posix_fallocate: int * off_t * off_t -> int; //[ADV]
+// Include file=#include <fenv.h> //[]
+  gen feclearexcept: int -> int;
+  gen fegetexceptflag: &fexcept_t * int -> int;
+  gen feraiseexcept: int -> int;
+  gen fesetexceptflag: &fexcept_t * int -> int;
+  gen fetestexcept: int -> int;
+  gen fegetround: void -> int;
+  gen fesetround: int -> int;
+  gen fegetenv: &fenv_t -> int;
+  gen feholdexcept: &fenv_t -> int;
+  gen fesetenv: &fenv_t -> int;
+  gen feupdateenv: &fenv_t -> int;
+// Include file=#include <float.h>
+// Include file=#include <fmtmsg.h>
+  gen fmtmsg: long * ntbs * int * ntbs * ntbs * ntbs -> int;
+// Include file=#include <fnmatch.h>
+  gen fnmatch: ntbs * ntbs * int -> int;
+// Include file=#include <ftw.h>
+  gen ftw: ntbs * (ntbs * &struct_stat * int --> int) * int -> int;
+  gen nftw: ntbs * (ntbs * &struct_stat * int * &struct_FTW --> int) * int * int -> int;
+// Include file=#include <grp.h>
+  gen getgrgid: gid_t -> &struct_group;
+  gen getgrnam: ntbs -> &struct_group;
+  gen getgrgid_r: gid_t * &struct_group * ntbs * size * &&struct_group -> int; //[TSF]
+  gen getgrnam_r: ntbs * &struct_group * ntbs * size  * &&struct_group -> int; //[TSF]
+  gen getgrent: void -> &struct_group; //[XSI]
+  proc endgrent: void; //[XSI]
+  proc setgrent: void; //[XSI]
+// Include file=#include <iconv.h> //[XSI]
+  gen iconv_open: ntbs * ntbs -> iconv_t;
+  gen iconv: iconv_t * &ntbs * &size * &ntbs * &size -> size;
+  gen iconv_close: iconv_t -> int;
+// Include file=#include <iso646.h>
+// Include file=#include <langinfo.h>
+  gen nl_langinfo: nl_item -> ntbs;
+// Include file=#include <math.h>
+  gen fpclassify: real_floating x -> int;
+  gen isfinite: real_floating x -> int;
+  gen isinf: real_floating x -> int;
+  gen isnan: real_floating x -> int;
+  gen isnormal: real_floating x -> int;
+  gen signbit: real_floating x -> int;
+  gen isgreater: real_floating x * real_floating y -> int;
+  gen isgreaterequal: real_floating x * real_floating y -> int;
+  gen isless: real_floating x * real_floating y -> int;
+  gen islessequal: real_floating x * real_floating y -> int;
+  gen islessgreater: real_floating x * real_floating y -> int;
+  gen isunordered: real_floating x * real_floating y -> int;
+  gen acos: double -> double;
+  gen acosf: float -> float;
+  gen acosh: double -> double;
+  gen acoshf: float -> float;
+  gen acoshl: ldouble -> ldouble;
+  gen acosl: ldouble -> ldouble;
+  gen asin: double -> double;
+  gen asinf: float -> float;
+  gen asinh: double -> double;
+  gen asinhf: float -> float;
+  gen asinhl: ldouble -> ldouble;
+  gen asinl: ldouble -> ldouble;
+  gen atan: double -> double;
+  gen atan2: double * double -> double;
+  gen atan2f: float * float -> float;
+  gen atan2l: ldouble * ldouble -> ldouble;
+  gen atanf: float -> float;
+  gen atanh: double -> double;
+  gen atanhf: float -> float;
+  gen atanhl: ldouble -> ldouble;
+  gen atanl: ldouble -> ldouble;
+  gen cbrt: double -> double;
+  gen cbrtf: float -> float;
+  gen cbrtl: ldouble -> ldouble;
+  gen ceil: double -> double;
+  gen ceilf: float -> float;
+  gen ceill: ldouble -> ldouble;
+  gen copysign: double * double -> double;
+  gen copysignf: float * float -> float;
+  gen copysignl: ldouble * ldouble -> ldouble;
+  gen cos: double -> double;
+  gen cosf: float -> float;
+  gen cosh: double -> double;
+  gen coshf: float -> float;
+  gen coshl: ldouble -> ldouble;
+  gen cosl: ldouble -> ldouble;
+  gen erf: double -> double;
+  gen erfc: double -> double;
+  gen erfcf: float -> float;
+  gen erfcl: ldouble -> ldouble;
+  gen erff: float -> float;
+  gen erfl: ldouble -> ldouble;
+  gen exp: double -> double;
+  gen exp2: double -> double;
+  gen exp2f: float -> float;
+  gen exp2l: ldouble -> ldouble;
+  gen expf: float -> float;
+  gen expl: ldouble -> ldouble;
+  gen expm1: double -> double;
+  gen expm1f: float -> float;
+  gen expm1l: ldouble -> ldouble;
+  gen fabs: double -> double;
+  gen fabsf: float -> float;
+  gen fabsl: ldouble -> ldouble;
+  gen fdim: double * double -> double;
+  gen fdimf: float * float -> float;
+  gen fdiml: ldouble * ldouble -> ldouble;
+  gen floor: double -> double;
+  gen floorf: float -> float;
+  gen floorl: ldouble -> ldouble;
+  gen fma: double * double * double -> double;
+  gen fmaf: float * float * float -> float;
+  gen fmal: ldouble * ldouble * ldouble -> ldouble;
+  gen fmax: double * double -> double;
+  gen fmaxf: float * float -> float;
+  gen fmaxl: ldouble * ldouble -> ldouble;
+  gen fmin: double * double -> double;
+  gen fminf: float * float -> float;
+  gen fminl: ldouble * ldouble -> ldouble;
+  gen fmod: double * double -> double;
+  gen fmodf: float * float -> float;
+  gen fmodl: ldouble * ldouble -> ldouble;
+  gen frexp: double * &int -> double;
+  gen frexpf: float value * &int -> float;
+  gen frexpl: ldouble value * &int -> ldouble;
+  gen hypot: double * double -> double;
+  gen hypotf: float * float -> float;
+  gen hypotl: ldouble * ldouble -> ldouble;
+  gen ilogb: double -> int;
+  gen ilogbf: float -> int;
+  gen ilogbl: ldouble -> int;
+  gen j0: double -> double; //[XSI]
+  gen j1: double -> double; //[XSI]
+  gen jn: int * double -> double; //[XSI]
+  gen ldexp: double * int -> double;
+  gen ldexpf: float * int -> float;
+  gen ldexpl: ldouble * int -> ldouble;
+  gen lgamma: double -> double;
+  gen lgammaf: float -> float;
+  gen lgammal: ldouble -> ldouble;
+  gen llrint: double -> vlong;
+  gen llrintf: float -> vlong;
+  gen llrintl: ldouble -> vlong;
+  gen llround: double -> vlong;
+  gen llroundf: float -> vlong;
+  gen llroundl: ldouble -> vlong;
+  gen log: double -> double;
+  gen log10: double -> double;
+  gen log10f: float -> float;
+  gen log10l: ldouble -> ldouble;
+  gen log1p: double -> double;
+  gen log1pf: float -> float;
+  gen log1pl: ldouble -> ldouble;
+  gen log2: double -> double;
+  gen log2f: float -> float;
+  gen log2l: ldouble -> ldouble;
+  gen logb: double -> double;
+  gen logbf: float -> float;
+  gen logbl: ldouble -> ldouble;
+  gen logf: float -> float;
+  gen logl: ldouble -> ldouble;
+  gen lrint: double -> long;
+  gen lrintf: float -> long;
+  gen lrintl: ldouble -> long;
+  gen lround: double -> long;
+  gen lroundf: float -> long;
+  gen lroundl: ldouble -> long;
+  gen modf: double * &double -> double;
+  gen modff: float * &float -> float;
+  gen modfl: ldouble * &ldouble -> ldouble;
+  gen nan: ntbs -> double;
+  gen nanf: ntbs -> float;
+  gen nanl: ntbs -> ldouble;
+  gen nearbyint: double -> double;
+  gen nearbyintf: float -> float;
+  gen nearbyintl: ldouble -> ldouble;
+  gen nextafter: double * double -> double;
+  gen nextafterf: float * float -> float;
+  gen nextafterl: ldouble * ldouble -> ldouble;
+  gen nexttoward: double * ldouble -> double;
+  gen nexttowardf: float * ldouble -> float;
+  gen nexttowardl: ldouble * ldouble -> ldouble;
+  gen pow: double * double -> double;
+  gen powf: float * float -> float;
+  gen powl: ldouble * ldouble -> ldouble;
+  gen remainder: double * double -> double;
+  gen remainderf: float * float -> float;
+  gen remainderl: ldouble * ldouble -> ldouble;
+  gen remquo: double * double * &int -> double;
+  gen remquof: float * float * &int -> float;
+  gen remquol: ldouble * ldouble * &int -> ldouble;
+  gen rint: double -> double;
+  gen rintf: float -> float;
+  gen rintl: ldouble -> ldouble;
+  gen round: double -> double;
+  gen roundf: float -> float;
+  gen roundl: ldouble -> ldouble;
+  gen scalb: double * double -> double; //[XSI]
+  gen scalbln: double * long -> double;
+  gen scalblnf: float * long -> float;
+  gen scalblnl: ldouble * long -> ldouble;
+  gen scalbn: double * int -> double;
+  gen scalbnf: float * int -> float;
+  gen scalbnl: ldouble * int -> ldouble;
+  gen sin: double -> double;
+  gen sinf: float -> float;
+  gen sinh: double -> double;
+  gen sinhf: float -> float;
+  gen sinhl: ldouble -> ldouble;
+  gen sinl: ldouble -> ldouble;
+  gen sqrt: double -> double;
+  gen sqrtf: float -> float;
+  gen sqrtl: ldouble -> ldouble;
+  gen tan: double -> double;
+  gen tanf: float -> float;
+  gen tanh: double -> double;
+  gen tanhf: float -> float;
+  gen tanhl: ldouble -> ldouble;
+  gen tanl: ldouble -> ldouble;
+  gen tgamma: double -> double;
+  gen tgammaf: float -> float;
+  gen tgammal: ldouble -> ldouble;
+  gen trunc: double -> double;
+  gen truncf: float -> float;
+  gen truncl: ldouble -> ldouble;
+  gen y0: double -> double; //[XSI]
+  gen y1: double -> double; //[XSI]
+  gen yn: int * double -> double; //[XSI]
+// Include file=#include <monetary.h> //[XSI]
+  gen strfmon: ntbs * size * ntbs * ... -> ssize;
+// Include file=#include <mqueue.h>
+  gen mq_close: mqd_t -> int;
+  gen mq_getattr: mqd_t * &struct_mq_attr -> int;
+  gen mq_notify: mqd_t * &struct_sigevent -> int;
+  gen mq_open: ntbs * int * ... -> mqd_t;
+  gen mq_receive: mqd_t * ntbs * size * &uint -> ssize;
+  gen mq_send: mqd_t * ntbs * size * uint -> int;
+  gen mq_setattr: mqd_t * &struct_mq_attr * &struct_mq_attr -> int;
+  gen mq_timedreceive: mqd_t * ntbs * size * &uint * &struct_timespec -> ssize; //[TMO]
+  gen mq_timedsend: mqd_t * ntbs * size * uint  * &struct_timespec -> int; //[TMO]
+  gen mq_unlink: ntbs -> int;
+// Include file=#include <ndbm.h>
+  gen dbm_clearerr: dbm -> int;
+  proc dbm_close: dbm;
+  gen dbm_delete: dbm * datum -> int;
+  gen dbm_error: dbm -> int;
+  gen dbm_fetch: dbm * datum -> datum;
+  gen dbm_firstkey: dbm -> datum;
+  gen dbm_nextkey: dbm -> datum;
+  gen dbm_open: ntbs * int * mode_t -> dbm;
+  gen dbm_store: dbm * datum * datum * int -> int;
+// Include file=#include <netdb.h>
+  proc endhostent: void;
+  proc endnetent: void;
+  proc endprotoent: void;
+  proc endservent: void;
+  proc freeaddrinfo: &struct_addrinfo;
+  gen gai_strerror: int -> const ntbs;
+  gen getaddrinfo: ntbs * ntbs * &struct_addrinfo * &&struct_addrinfo -> int;
+  gen gethostbyaddr: address * socklen_t * int -> &struct_hostent;
+  gen gethostbyname: ntbs -> &struct_hostent;
+  gen gethostent: void -> &struct_hostent;
+  gen getnameinfo: &struct_sockaddr * socklen_t * ntbs * socklen_t * ntbs * socklen_t * int -> int;
+  gen getnetbyaddr: uint32 * int -> &struct_netent;
+  gen getnetbyname: ntbs -> &struct_netent;
+  gen getnetent: void -> &struct_netent;
+  gen getprotobyname: ntbs -> &struct_protoent;
+  gen getprotobynumber: int -> &struct_protoent;
+  gen getprotoent: void -> &struct_protoent;
+  gen getservbyname: ntbs * ntbs -> &struct_servent;
+  gen getservbyport: int * ntbs -> &struct_servent;
+  gen getservent: void -> &struct_servent;
+  proc sethostent: int;
+  proc setnetent: int;
+  proc setprotoent: int;
+  proc setservent: int;
+// Include file=#include <net/if.h>
+  gen if_nametoindex: ntbs -> uint;
+  gen if_indextoname: uint * ntbs -> ntbs;
+  gen if_nameindex: void -> &struct_if_nameindex;
+  proc if_freenameindex: &struct_if_nameindex;
+// Include file=#include <netinet/in.h>
+// Include file=#include <netinet/tcp.h>
+// Include file=#include <nl_types.h>
+  gen catclose: nl_catd -> int;
+  gen catgets: nl_catd * int * int * ntbs -> ntbs;
+  gen catopen: ntbs * int -> nl_catd;
+// Include file=#include <poll.h>
+  gen poll: struct_pollfd* * nfds_t * int -> int;
+// Include file=#include <pthread.h>
+  gen pthread_atfork: (unit --> void) * (unit --> void) * (unit --> void) -> int;
+  gen pthread_attr_destroy: &pthread_attr_t -> int;
+  gen pthread_attr_getdetachstate: &pthread_attr_t * &int -> int;
+  gen pthread_attr_getguardsize: &pthread_attr_t * &size -> int; //[XSI]
+  gen pthread_attr_getinheritsched: &pthread_attr_t * &int -> int; //[TPS]
+  gen pthread_attr_getschedparam: &pthread_attr_t * &struct_sched_param -> int;
+  gen pthread_attr_getschedpolicy: &pthread_attr_t * &int -> int; //[TPS]
+  gen pthread_attr_getscope: &pthread_attr_t * &int -> int; //[TPS]
+  gen pthread_attr_getstack: &pthread_attr_t * &address * &size -> int; //[TSA TSS]
+  gen pthread_attr_getstackaddr: &pthread_attr_t * &address -> int; //[TSA]
+  gen pthread_attr_getstacksize: &pthread_attr_t * &size -> int; //[TSS]
+  gen pthread_attr_init: &pthread_attr_t -> int;
+  gen pthread_attr_setdetachstate: &pthread_attr_t * int -> int;
+  gen pthread_attr_setguardsize: &pthread_attr_t * size -> int; //[XSI]
+  gen pthread_attr_setinheritsched: &pthread_attr_t * int -> int; //[TPS]
+  gen pthread_attr_setschedparam: &pthread_attr_t * &struct_sched_param -> int;
+  gen pthread_attr_setschedpolicy: &pthread_attr_t * int -> int; //[TPS]
+  gen pthread_attr_setscope: &pthread_attr_t * int -> int; //[TPS]
+  gen pthread_attr_setstack: &pthread_attr_t * address * size -> int; //[TSA TSS]
+  gen pthread_attr_setstackaddr: &pthread_attr_t * address -> int; //[TSA]
+  gen pthread_attr_setstacksize: &pthread_attr_t * size -> int; //[TSS]
+  gen pthread_barrier_destroy: &pthread_barrier_t -> int; //[BAR]
+  gen pthread_barrier_init: &pthread_barrier_t * &pthread_barrierattr_t * uint -> int; //[BAR]
+  gen pthread_barrier_wait: &pthread_barrier_t -> int; //[BAR]
+  gen pthread_barrierattr_destroy: &pthread_barrierattr_t -> int; //[BAR]
+  gen pthread_barrierattr_getpshared: &pthread_barrierattr_t * &int -> int; //[BAR TSH]
+  gen pthread_barrierattr_init: &pthread_barrierattr_t -> int; //[BAR]
+  gen pthread_barrierattr_setpshared: &pthread_barrierattr_t * int -> int; //[BAR TSH]
+  gen pthread_cancel: pthread_t -> int;
+  proc pthread_cleanup_push: (address --> void) * address;
+  proc pthread_cleanup_pop: int;
+  gen pthread_cond_broadcast: &pthread_cond_t -> int;
+  gen pthread_cond_destroy: &pthread_cond_t -> int;
+  gen pthread_cond_init: &pthread_cond_t * &pthread_condattr_t -> int;
+  gen pthread_cond_signal: &pthread_cond_t -> int;
+  gen pthread_cond_timedwait: &pthread_cond_t * &pthread_mutex_t * &struct_timespec -> int;
+  gen pthread_cond_wait: &pthread_cond_t * &pthread_mutex_t -> int;
+  gen pthread_condattr_destroy: &pthread_condattr_t -> int;
+  gen pthread_condattr_getclock: &pthread_condattr_t * &clockid_t -> int; //[CS]
+  gen pthread_condattr_getpshared: &pthread_condattr_t * &int -> int; //[TSH]
+  gen pthread_condattr_init: &pthread_condattr_t -> int;
+  gen pthread_condattr_setclock: &pthread_condattr_t * clockid_t -> int; //[CS]
+  gen pthread_condattr_setpshared: &pthread_condattr_t * int -> int; //[TSH]
+  gen pthread_create: &pthread_t * &pthread_attr_t * (address --> address) * address -> int;
+  gen pthread_detach: pthread_t -> int;
+  gen pthread_equal: pthread_t * pthread_t -> int;
+  proc pthread_exit: address;
+  gen pthread_getconcurrency: void -> int; //[XSI]
+  gen pthread_getcpuclockid: pthread_t * &clockid_t -> int; //[TCT]
+  gen pthread_getschedparam: pthread_t * &int * &struct_sched_param -> int; //[TPS]
+  gen pthread_getspecific: pthread_key_t -> address;
+  gen pthread_join: pthread_t * &address -> int;
+  gen pthread_key_create: &pthread_key_t * (address --> void) -> int;
+  gen pthread_key_delete: pthread_key_t -> int;
+  gen pthread_mutex_destroy: &pthread_mutex_t -> int;
+  gen pthread_mutex_getprioceiling: &pthread_mutex_t * &int -> int; //[TPP]
+  gen pthread_mutex_init: &pthread_mutex_t * &pthread_mutexattr_t -> int;
+  gen pthread_mutex_lock: &pthread_mutex_t -> int;
+  gen pthread_mutex_setprioceiling: &pthread_mutex_t * int * &int -> int; //[TPP]
+  gen pthread_mutex_timedlock: &pthread_mutex_t * &struct_timespec -> int; //[TMO]
+  gen pthread_mutex_trylock: &pthread_mutex_t -> int;
+  gen pthread_mutex_unlock: &pthread_mutex_t -> int;
+  gen pthread_mutexattr_destroy: &pthread_mutexattr_t -> int;
+  gen pthread_mutexattr_getprioceiling: &pthread_mutexattr_t * &int -> int; //[TPP]
+  gen pthread_mutexattr_getprotocol: &pthread_mutexattr_t * &int -> int; //[TPP|TPI]
+  gen pthread_mutexattr_getpshared: &pthread_mutexattr_t * &int -> int; //[TSH]
+  gen pthread_mutexattr_gettype: &pthread_mutexattr_t * &int -> int; //[XSI]
+  gen pthread_mutexattr_init: &pthread_mutexattr_t -> int;
+  gen pthread_mutexattr_setprioceiling: &pthread_mutexattr_t * int -> int; //[TPP]
+  gen pthread_mutexattr_setprotocol: &pthread_mutexattr_t * int -> int; //[TPP|TPI]
+  gen pthread_mutexattr_setpshared: &pthread_mutexattr_t * int -> int; //[TSH]
+  gen pthread_mutexattr_settype: &pthread_mutexattr_t * int -> int; //[XSI]
+  gen pthread_once: &pthread_once_t * (unit --> void) -> int;
+  gen pthread_rwlock_destroy: &pthread_rwlock_t -> int;
+  gen pthread_rwlock_init: &pthread_rwlock_t * &pthread_rwlockattr_t -> int;
+  gen pthread_rwlock_rdlock: &pthread_rwlock_t -> int;
+  gen pthread_rwlock_timedrdlock: &pthread_rwlock_t * &struct_timespec -> int; //[TMO]
+  gen pthread_rwlock_timedwrlock: &pthread_rwlock_t * &struct_timespec -> int; //[TMO]
+  gen pthread_rwlock_tryrdlock: &pthread_rwlock_t -> int;
+  gen pthread_rwlock_trywrlock: &pthread_rwlock_t -> int;
+  gen pthread_rwlock_unlock: &pthread_rwlock_t -> int;
+  gen pthread_rwlock_wrlock: &pthread_rwlock_t -> int;
+  gen pthread_rwlockattr_destroy: &pthread_rwlockattr_t -> int;
+  gen pthread_rwlockattr_getpshared: &pthread_rwlockattr_t * &int -> int; //[TSH]
+  gen pthread_rwlockattr_init: &pthread_rwlockattr_t -> int;
+  gen pthread_rwlockattr_setpshared: &pthread_rwlockattr_t * int -> int; //[TSH]
+  gen pthread_self: void -> pthread_t;
+  gen pthread_setcancelstate: int * &int -> int;
+  gen pthread_setcanceltype: int * &int -> int;
+  gen pthread_setconcurrency: int -> int; //[XSI]
+  gen pthread_setschedparam: pthread_t * int * &struct_sched_param -> int; //[TPS]
+  gen pthread_setschedprio: pthread_t * int -> int; //[TPS]
+  gen pthread_setspecific: pthread_key_t * address -> int;
+  gen pthread_spin_destroy: &pthread_spinlock_t -> int; //[SPI]
+  gen pthread_spin_init: &pthread_spinlock_t * int -> int; //[SPI]
+  gen pthread_spin_lock: &pthread_spinlock_t -> int; //[SPI]
+  gen pthread_spin_trylock: &pthread_spinlock_t -> int; //[SPI]
+  gen pthread_spin_unlock: &pthread_spinlock_t -> int; //[SPI]
+  proc pthread_testcancel: void;
+// Include file=#include <pwd.h>
+  gen getpwnam: ntbs -> &struct_passwd;
+  gen getpwuid: uid_t -> &struct_passwd;
+  gen getpwnam_r: ntbs * &struct_passwd * ntbs * size * &&struct_passwd -> int; //[TSF]
+  gen getpwuid_r: uid_t * &struct_passwd * ntbs * size * &&struct_passwd -> int; //[TSF]
+  proc endpwent: void; //[XSI]
+  gen getpwent: void -> &struct_passwd; //[XSI]
+  proc setpwent: void; //[XSI]
+// Include file=#include <regex.h> //[]
+  gen regcomp: &regex_t * ntbs * int -> int;
+  gen regerror: int * &regex_t * ntbs * size -> size;
+  gen regexec: &regex_t * ntbs * size * &rematch_t * int -> int;
+  proc regfree: &regex_t;
+// Include file=#include <sched.h>
+  gen sched_get_priority_max: int -> int; //[TPS]
+  gen sched_get_priority_min: int -> int; //[TPS]
+  gen sched_getparam: pid_t * &struct_sched_param -> int;
+  gen sched_getscheduler: pid_t -> int;
+  gen sched_rr_get_interval: pid_t * &struct_timespec -> int; //[TPS]
+  gen sched_setparam: pid_t * &struct_sched_param -> int;
+  gen sched_setscheduler: pid_t * int * &struct_sched_param -> int;
+  gen sched_yield: void -> int; //[THR]
+// Include file=#include <search.h> //[XSI]
+  gen hcreate: size -> int;
+  proc hdestroy: void;
+  gen hsearch: ENTRY * ACTION -> &ENTRY;
+  proc insque: address * address;
+  gen lfind: address * address * &size * size * (address * address --> int) -> address;
+  gen lsearch: address * address * &size * size * (address * address --> int) -> address;
+  proc remque: address;
+  gen tdelete: address * &address * (address * address --> int) -> address;
+  gen tfind: address * &address * (address * address --> int) -> address;
+  gen tsearch: address * &address * (address * address --> int) -> address;
+  proc twalk: address * (address * VISIT * int --> void);
+// Include file=#include <semaphore.h>
+  gen sem_close: &sem_t -> int;
+  gen sem_destroy: &sem_t -> int;
+  gen sem_getvalue: &sem_t * &int -> int;
+  gen sem_init: &sem_t * int * uint -> int;
+  gen sem_open: ntbs * int * ... -> &sem_t;
+  gen sem_post: &sem_t -> int;
+  gen sem_timedwait: &sem_t * &struct_timespec -> int; //[TMO]
+  gen sem_trywait: &sem_t -> int;
+  gen sem_unlink: ntbs -> int;
+  gen sem_wait: &sem_t -> int;
+// Include file=#include <setjmp.h>
+  proc longjmp: jmp_buf * int;
+  proc siglongjmp: sigjmp_buf * int; //[CX]
+  proc _longjmp: jmp_buf * int; //[XSI]
+  gen setjmp: jmp_buf -> int;
+  gen sigsetjmp: sigjmp_buf * int -> int; //[CX]
+  gen _setjmp: jmp_buf -> int; //[XSI]
+// Include file=#include <signal.h> //[]
+//void (*bsd_signal(int, void (*)(int)))(int);
+
+  gen kill: pid_t * int -> int; //[CX]
+  gen killpg: pid_t * int -> int; //[XSI]
+  gen pthread_kill: pthread_t * int -> int; //[THR]
+  gen pthread_sigmask: int * &sigset_t * &sigset_t -> int; //[THR]
+  gen raise: int -> int;
+  gen sigaction: int * &struct_sigaction * &struct_sigaction -> int; //[CX]
+  gen sigaddset: &sigset_t * int -> int; //[CX]
+  gen sigaltstack: &stack_t * &stack_t -> int; //[XSI]
+  gen sigdelset: &sigset_t * int -> int; //[CX]
+  gen sigemptyset: &sigset_t -> int; //[CX]
+  gen sigfillset: &sigset_t -> int; //[CX]
+  gen sighold: int -> int; //[XSI]
+  gen sigignore: int -> int; //[XSI]
+  gen siginterrupt: int * int -> int; //[XSI]
+  gen sigismember: &sigset_t * int -> int; //[CX]
+//void (*signal(int, void (*)(int)))(int);
+
+  gen sigpause: int -> int; //[XSI]
+  gen sigpending: &sigset_t -> int; //[CX]
+  gen sigprocmask: int * &sigset_t * &sigset_t -> int; //[CX]
+  gen sigqueue: pid_t * int * union sigval -> int; //[RTS]
+  gen sigrelse: int -> int; //[XSI]
+//void (*sigset(int, void (*)(int)))(int);
+
+  gen sigsuspend: &sigset_t -> int; //[CX]
+  gen sigtimedwait: &sigset_t * &siginfo_t * &struct_timespec -> int; //[RTS]
+  gen sigwait: &sigset_t * &int -> int; //[CX]
+  gen sigwaitinfo: &sigset_t * &siginfo_t -> int; //[RTS]
+// Include file=#include <spawn.h> //[SPN]
+  gen posix_spawn: &pid_t * ntbs * &posix_spawn_file_actions_t * &posix_spawnattr_t * &ntbs * &ntbs -> int;
+  gen posix_spawn_file_actions_addclose: &posix_spawn_file_actions_t * int -> int;
+  gen posix_spawn_file_actions_adddup2: &posix_spawn_file_actions_t * int * int -> int;
+  gen posix_spawn_file_actions_addopen: &posix_spawn_file_actions_t * int * ntbs * int * mode_t -> int;
+  gen posix_spawn_file_actions_destroy: &posix_spawn_file_actions_t -> int;
+  gen posix_spawn_file_actions_init: &posix_spawn_file_actions_t -> int;
+  gen posix_spawnattr_destroy: &posix_spawnattr_t -> int;
+  gen posix_spawnattr_getsigdefault: &posix_spawnattr_t * &sigset_t -> int;
+  gen posix_spawnattr_getflags: &posix_spawnattr_t * &short -> int;
+  gen posix_spawnattr_getpgroup: &posix_spawnattr_t * &pid_t -> int;
+  gen posix_spawnattr_getschedparam: &posix_spawnattr_t * &struct_sched_param -> int; //[PS]
+  gen posix_spawnattr_getschedpolicy: &posix_spawnattr_t * &int -> int; //[PS]
+  gen posix_spawnattr_getsigmask: &posix_spawnattr_t * &sigset_t -> int;
+  gen posix_spawnattr_init: &posix_spawnattr_t -> int;
+  gen posix_spawnattr_setsigdefault: &posix_spawnattr_t * &sigset_t -> int;
+  gen posix_spawnattr_setflags: &posix_spawnattr_t * short -> int;
+  gen posix_spawnattr_setpgroup: &posix_spawnattr_t * pid_t -> int;
+  gen posix_spawnattr_setschedparam: &posix_spawnattr_t * &struct_sched_param -> int; //[PS]
+  gen posix_spawnattr_setschedpolicy: &posix_spawnattr_t * int -> int; //[PS]
+  gen posix_spawnattr_setsigmask: &posix_spawnattr_t * &sigset_t -> int;
+  gen posix_spawnp: &pid_t * ntbs * &posix_spawn_file_actions_t * &posix_spawnattr_t * &ntbs * &ntbs -> int;
+// Include file=#include <stdarg.h>
+// Include file=#include <stdbool.h>
+// Include file=#include <stddef.h>
+// Include file=#include <stdint.h>
+// Include file=#include <stdio.h>
+  proc clearerr: stream_file;
+  gen ctermid: ntbs -> ntbs; //[CX]
+  gen fclose: stream_file -> int;
+  gen fdopen: int * ntbs -> stream_file; //[CX]
+  gen feof: stream_file -> int;
+  gen ferror: stream_file -> int;
+  gen fflush: stream_file -> int;
+  gen fgetc: stream_file -> int;
+  gen fgetpos: stream_file * &fpos_t -> int;
+  gen fgets: ntbs * int * stream_file -> ntbs;
+  gen fileno: stream_file -> int; //[CX]
+  proc flockfile: stream_file; //[TSF]
+  gen fopen: ntbs * ntbs -> stream_file;
+  gen fprintf: stream_file * ntbs * ... -> int;
+  gen fputc: int * stream_file -> int;
+  gen fputs: ntbs * stream_file -> int;
+  gen fread: address * size * size * stream_file -> size;
+  gen freopen: ntbs * ntbs * stream_file -> stream_file;
+  gen fscanf: stream_file * ntbs * ... -> int;
+  gen fseek: stream_file * long * int -> int;
+  gen fseeko: stream_file * off_t * int -> int; //[CX]
+  gen fsetpos: stream_file * &fpos_t -> int;
+  gen ftell: stream_file -> long;
+  gen ftello: stream_file -> off_t; //[CX]
+  gen ftrylockfile: stream_file -> int; //[TSF]
+  proc funlockfile: stream_file; //[TSF]
+  gen fwrite: address * size * size * stream_file -> size;
+  gen getc: stream_file -> int;
+  gen getchar: void -> int;
+  gen getc_unlocked: stream_file -> int; //[TSF]
+  gen getchar_unlocked: void -> int; //[TSF]
+  gen gets: ntbs -> ntbs;
+  gen pclose: stream_file -> int; //[CX]
+  proc perror: ntbs;
+  gen popen: ntbs * ntbs -> stream_file; //[CX]
+  gen printf: ntbs * ... -> int;
+  gen putc: int * stream_file -> int;
+  gen putchar: int -> int;
+  gen putc_unlocked: int * stream_file -> int; //[TSF]
+  gen putchar_unlocked: int -> int; //[TSF]
+  gen puts: ntbs -> int;
+  gen remove: ntbs -> int;
+  gen rename: ntbs * ntbs -> int;
+  proc rewind: stream_file;
+  gen scanf: ntbs * ... -> int;
+  proc setbuf: stream_file * ntbs;
+  gen setvbuf: stream_file * ntbs * int * size -> int;
+  gen snprintf: ntbs * size * ntbs * ... -> int;
+  gen sprintf: ntbs * ntbs * ... -> int;
+  gen sscanf: ntbs * ntbs * int ... -> int;
+  gen tempnam: ntbs * ntbs -> ntbs; //[XSI]
+  gen tmpfile: void -> stream_file;
+  gen tmpnam: ntbs -> ntbs;
+  gen ungetc: int * stream_file -> int;
+  gen vfprintf: stream_file * ntbs * va_list -> int;
+  gen vfscanf: stream_file * ntbs * va_list -> int;
+  gen vprintf: ntbs * va_list -> int;
+  gen vscanf: ntbs * va_list -> int;
+  gen vsnprintf: ntbs * size * ntbs * va_list -> int;
+  gen vsprintf: ntbs * ntbs * va_list -> int;
+  gen vsscanf: ntbs * ntbs * va_list arg -> int;
+// Include file=#include <stdlib.h>
+  proc _Exit: int;
+  gen a64l: ntbs -> long; //[XSI]
+  proc abort: void;
+  gen abs: int -> int;
+  gen atexit: (unit --> void) -> int;
+  gen atof: ntbs -> double;
+  gen atoi: ntbs -> int;
+  gen atol: ntbs -> long;
+  gen atoll: ntbs -> vlong;
+  gen bsearch: address * address * size * size * (address * address --> int) -> address;
+  gen calloc: size * size -> address;
+  gen div: int * int -> div_t;
+  gen drand48: void -> double; //[XSI]
+  gen ecvt: double * int * &int * &int -> ntbs; //[XSI] (LEGACY)
+  gen erand48: &ushort -> double; //[XSI]
+  proc exit: int;
+  gen fcvt: double * int * &int * &int -> ntbs; //[XSI] (LEGACY)
+  proc free: address;
+  gen gcvt: double * int * ntbs -> ntbs; //[XSI] (LEGACY)
+  gen getenv: ntbs -> ntbs;
+  gen getsubopt: &ntbs * &ntbs * &ntbs -> int; //[XSI]
+  gen grantpt: int -> int; //[XSI]
+  gen initstate: uint * ntbs * size -> ntbs; //[XSI]
+  gen jrand48: &ushort -> long; //[XSI]
+  gen l64a: long -> ntbs; //[XSI]
+  gen labs: long -> long;
+  proc lcong48: &ushort; //[XSI]
+  gen ldiv: long * long -> ldiv_t;
+  gen llabs: vlong -> vlong;
+  gen lldiv: vlong * vlong -> lldiv_t;
+  gen lrand48: void -> long; //[XSI]
+  gen malloc: size -> address;
+  gen mblen: ntbs * size -> int;
+  gen mbstowcs: &wchar * ntbs * size -> size;
+  gen mbtowc: &wchar * ntbs * size -> int;
+  gen mktemp: ntbs -> ntbs; //[XSI] (LEGACY)
+  gen mkstemp: ntbs -> int; //[XSI]
+  gen mrand48: void -> long; //[XSI]
+  gen nrand48: &ushort -> long; //[XSI]
+  gen posix_memalign: &address * size * size -> int; //[ADV]
+  gen posix_openpt: int -> int; //[XSI]
+  gen ptsname: int -> ntbs; //[XSI]
+  gen putenv: ntbs -> int; //[XSI]
+  proc qsort: address * size * size * (address * address --> int);
+  gen rand: void -> int;
+  gen rand_r: &uint -> int; //[TSF]
+  gen random: void -> long; //[XSI]
+  gen realloc: address * size -> address;
+  gen realpath: ntbs * ntbs -> ntbs; //[XSI]
+  gen seed48: &ushort -> ushort; //[XSI]
+  gen setenv: ntbs * ntbs * int -> int; //[CX]
+  proc setkey: ntbs; //[XSI]
+  gen setstate: ntbs -> ntbs; //[XSI]
+  proc srand: uint;
+  proc srand48: long; //[XSI]
+  proc srandom: uint; //[XSI]
+  gen strtod: ntbs * &ntbs -> double;
+  gen strtof: ntbs * &ntbs -> float;
+  gen strtol: ntbs * &ntbs * int -> long;
+  gen strtold: ntbs * &ntbs -> ldouble;
+  gen strtoll: ntbs * &ntbs * int -> vlong;
+  gen strtoul: ntbs * &ntbs * int -> ulong;
+  gen strtoull: ntbs * &ntbs * int -> uvlong;
+  gen system: ntbs -> int;
+  gen unlockpt: int -> int; //[XSI]
+  gen unsetenv: ntbs -> int; //[CX]
+  gen wcstombs: ntbs * &wchar * size -> size;
+  gen wctomb: ntbs * wchar -> int;
+// Include file=#include <string.h>
+  gen memccpy: address * address * int * size -> address; //[XSI]
+  gen memchr: address * int * size -> address;
+  gen memcmp: address * address * size -> int;
+  gen memcpy: address * address * size -> address;
+  gen memmove: address * address * size -> address;
+  gen memset: address * int * size -> address;
+  gen strcat: ntbs * ntbs -> ntbs;
+  gen strchr: ntbs * int -> ntbs;
+  gen strcmp: ntbs * ntbs -> int;
+  gen strcoll: ntbs * ntbs -> int;
+  gen strcpy: ntbs * ntbs -> ntbs;
+  gen strcspn: ntbs * ntbs -> size;
+  gen strdup: ntbs -> ntbs; //[XSI]
+  gen strerror: int -> ntbs;
+  gen strerror_r: int * ntbs * size -> &int; //[TSF]
+  gen strlen: ntbs -> size;
+  gen strncat: ntbs * ntbs * size -> ntbs;
+  gen strncmp: ntbs * ntbs * size -> int;
+  gen strncpy: ntbs * ntbs * size -> ntbs;
+  gen strpbrk: ntbs * ntbs -> ntbs;
+  gen strrchr: ntbs * int -> ntbs;
+  gen strspn: ntbs * ntbs -> size;
+  gen strstr: ntbs * ntbs -> ntbs;
+  gen strtok: ntbs * ntbs -> ntbs;
+  gen strtok_r: ntbs * ntbs * &ntbs -> ntbs; //[TSF]
+  gen strxfrm: ntbs * ntbs * size -> size;
+// Include file=#include <strings.h>
+  gen bcmp: address * address * size -> int; // (LEGACY)
+  proc bcopy: address * address * size; // (LEGACY)
+  proc bzero: address * size; //  (LEGACY)
+  gen ffs: int -> int;
+  gen index: ntbs * int -> ntbs; // (LEGACY)
+  gen rindex: ntbs * int -> ntbs; // (LEGACY)
+  gen strcasecmp: ntbs * ntbs -> int;
+  gen strncasecmp: ntbs * ntbs * size -> int;
+// Include file=#include <stropts.h>
+  gen isastream: int -> int;
+  gen getmsg: int * &struct_strbuf * &struct_strbuf * &int -> int;
+  gen getpmsg: int * &struct_strbuf * &struct_strbuf * &int * &int -> int;
+  gen ioctl: int * int * ... -> int;
+  gen putmsg: int * &struct_strbuf * &struct_strbuf * int -> int;
+  gen putpmsg: int * &struct_strbuf * &struct_strbuf * int * int -> int;
+  gen fattach: int * ntbs -> int;
+  gen fdetach: ntbs -> int;
+// Include file=#include <sys/ipc.h>
+  gen ftok: ntbs * int -> key_t;
+// Include file=#include <sys/mman.h>
+  gen mlock: address * size -> int; //[MLR]
+  gen mlockall: int -> int; //[ML]
+  gen mmap: address * size * int * int * int * off_t -> address; //[MC3]
+  gen mprotect: address * size * int -> int; //[MPR]
+  gen msync: address * size * int -> int; //[MF|SIO]
+  gen munlock: address * size -> int; //[MLR]
+  gen munlockall: void -> int; //[ML]
+  gen munmap: address * size -> int; //[MC3]
+  gen posix_madvise: address * size * int -> int; //[ADV]
+  gen posix_mem_offset: address * size * &off_t * &size * &int -> int; //[TYM]
+  gen posix_typed_mem_get_info: int * &struct_posix_typed_mem_info -> int; //[TYM]
+  gen posix_typed_mem_open: ntbs * int * int -> int; //[TYM]
+  gen shm_open: ntbs * int * mode_t -> int; //[SHM]
+  gen shm_unlink: ntbs -> int; //[SHM]
+// Include file=#include <sys/msg.h> //[XSI]
+  gen msgctl: int * int * &struct_msqid_ds -> int;
+  gen msgget: key_t * int -> int;
+  gen msgrcv: int * address * size * long * int -> ssize;
+  gen msgsnd: int * address * size * int -> int;
+// Include file=#include <sys/resource.h>
+  gen getpriority: int * id_t -> int;
+  gen getrlimit: int * &struct_rlimit -> int;
+  gen getrusage: int * &struct_rusage -> int;
+  gen setpriority: int * id_t * int -> int;
+  gen setrlimit: int * &struct_rlimit -> int;
+// Include file=#include <sys/select.h>
+  gen pselect: int * &fd_set * &fd_set * &fd_set * &struct_timespec * &sigset_t -> int;
+  gen select: int * &fd_set * &fd_set * &fd_set * &struct_timeval -> int;
+// Include file=#include <sys/sem.h>
+  gen semctl: int * int * int * ... -> int;
+  gen semget: key_t * int * int -> int;
+  gen semop: int * &struct_sembuf * size -> int;
+// Include file=#include <sys/shm.h>
+  gen shmat: int * address * int -> address;
+  gen shmctl: int * int * &struct_shmid_ds -> int;
+  gen shmdt: address -> int;
+  gen shmget: key_t * size * int -> int;
+// Include file=#include <sys/socket.h>
+  gen accept: int * &struct_sockaddr * &socklen_t -> int;
+  gen bind: int * &struct_sockaddr * socklen_t -> int;
+  gen connect: int * &struct_sockaddr * socklen_t -> int;
+  gen getpeername: int * &struct_sockaddr * &socklen_t -> int;
+  gen getsockname: int * &struct_sockaddr * &socklen_t -> int;
+  gen getsockopt: int * int * int * address * &socklen_t -> int;
+  gen listen: int * int -> int;
+  gen recv: int * address * size * int -> ssize;
+  gen recvfrom: int * address * size * int * &struct_sockaddr * &socklen_t -> ssize;
+  gen recvmsg: int * &struct_msghdr * int -> ssize;
+  gen send: int * address * size * int -> ssize;
+  gen sendmsg: int * &struct_msghdr * int -> ssize;
+  gen sendto: int * address * size * int * &struct_sockaddr * socklen_t -> ssize;
+  gen setsockopt: int * int * int * address * socklen_t -> int;
+  gen shutdown: int * int -> int;
+  gen socket: int * int * int -> int;
+  gen sockatmark: int -> int;
+  gen socketpair: int * int * int * &int -> int;
+// Include file=#include <sys/stat.h>
+  gen chmod: ntbs * mode_t -> int;
+  gen fchmod: int * mode_t -> int;
+  gen fstat: int * &struct_stat -> int;
+  gen lstat: ntbs * &struct_stat -> int;
+  gen mkdir: ntbs * mode_t -> int;
+  gen mkfifo: ntbs * mode_t -> int;
+  gen mknod: ntbs * mode_t * dev_t -> int; //[XSI]
+  gen stat: ntbs * &struct_stat -> int;
+  gen umask: mode_t -> mode_t;
+// Include file=#include <sys/statvfs.h>
+  gen statvfs: ntbs * &struct_vfs -> int;
+  gen fstatvfs: int * &struct_vfs -> int;
+// Include file=#include <sys/timeb.h>
+  gen ftime: &struct_timeb -> int; // (LEGACY)
+// Include file=#include <sys/time.h>
+  gen getitimer: int * &struct_itimerval -> int;
+  gen gettimeofday: &struct_timeval * address -> int;
+  gen select: int * &fd_set * &fd_set * &fd_set * &struct_timeval -> int;
+  gen setitimer: int * &struct_itimerval * &struct_itimerval -> int;
+  gen utimes: ntbs * struct_timeval * -> int; // (LEGACY)
+// Include file=#include <sys/times.h>
+  gen times: &struct_tms -> clock_t;
+// Include file=#include <sys/types.h>
+// Include file=#include <sys/uio.h>
+  gen readv: int * &struct_iovec * int -> ssize;
+  gen writev: int * &struct_iovec * int -> ssize;
+// Include file=#include <sys/un.h>
+// Include file=#include <sys/utsname.h>
+  gen uname: &struct_utsname -> int;
+// Include file=#include <sys/wait.h>
+  gen wait: &int -> pid_t;
+  gen waitid: idtype_t * id_t * &siginfo_t * int -> int; //[XSI]
+  gen waitpid: pid_t * &int * int -> pid_t;
+// Include file=#include <tar.h>
+// Include file=#include <termios.h>
+  gen cfgetispeed: &struct_termios -> speed_t;
+  gen cfgetospeed: &struct_termios -> speed_t;
+  gen cfsetispeed: &struct_termios * speed_t -> int;
+  gen cfsetospeed: &struct_termios * speed_t -> int;
+  gen tcdrain: int -> int;
+  gen tcflow: int * int -> int;
+  gen tcflush: int * int -> int;
+  gen tcgetattr: int * &struct_termios -> int;
+  gen tcgetsid: int -> pid_t; //[XSI]
+  gen tcsendbreak: int * int -> int;
+  gen tcsetattr: int * int * &struct_termios -> int;
+// Include file=#include <tgmath.h>
+// Include file=#include <time.h>
+  gen asctime: &struct_tm -> ntbs;
+  gen asctime_r: &struct_tm * ntbs -> ntbs; //[TSF]
+  gen clock: void -> clock_t;
+  gen clock_getcpuclockid: pid_t * &clockid_t -> int; //[CPT]
+  gen clock_getres: clockid_t * &struct_timespec -> int; //[TMR]
+  gen clock_gettime: clockid_t * &struct_timespec -> int; //[TMR]
+  gen clock_nanosleep: clockid_t * int * &struct_timespec * &struct_timespec -> int; //[CS]
+  gen clock_settime: clockid_t * &struct_timespec -> int; //[TMR]
+  gen ctime: &time_t -> ntbs;
+  gen ctime_r: &time_t * ntbs -> ntbs; //[TSF]
+  gen difftime: time_t * time_t -> double;
+  gen getdate: ntbs -> &struct_tm; //[XSI]
+  gen gmtime: &time_t -> &struct_tm;
+  gen gmtime_r: &time_t * &struct_tm -> &struct_tm; //[TSF]
+  gen localtime: &time_t -> &struct_tm;
+  gen localtime_r: &time_t * &struct_tm -> &struct_tm; //[TSF]
+  gen mktime: &struct_tm -> time_t;
+  gen nanosleep: &struct_timespec * &struct_timespec -> int; //[TMR]
+  gen strftime: ntbs * size * ntbs * &struct_tm -> size;
+  gen strptime: ntbs * ntbs * &struct_tm -> ntbs; //[XSI]
+  gen time: &time_t -> time_t;
+  gen timer_create: clockid_t * &struct_sigevent * &timer_t -> int; //[TMR]
+  gen timer_delete: timer_t -> int; //[TMR]
+  gen timer_gettime: timer_t * &struct_itimerspec -> int; //[TMR]
+  gen timer_getoverrun: timer_t -> int; //[TMR]
+  gen timer_settime: timer_t * int * &struct_itimerspec * &struct_itimerspec -> int; //[TMR]
+  proc tzset: void; //[CX]
+// Include file=#include <trace.h> //[TRC]
+  gen posix_trace_attr_destroy: &trace_attr_t -> int;
+  gen posix_trace_attr_getclockres: &trace_attr_t * &struct_timespec -> int;
+  gen posix_trace_attr_getcreatetime: &trace_attr_t * &struct_timespec -> int;
+  gen posix_trace_attr_getgenversion: &trace_attr_t * ntbs -> int;
+  gen posix_trace_attr_getinherited: &trace_attr_t * &int -> int; //[TRI]
+  gen posix_trace_attr_getlogfullpolicy: &trace_attr_t * &int -> int; //[TRL]
+  gen posix_trace_attr_getlogsize: &trace_attr_t * &size -> int; //[TRL]
+  gen posix_trace_attr_getmaxdatasize: &trace_attr_t * &size -> int;
+  gen posix_trace_attr_getmaxsystemeventsize: &trace_attr_t * &size -> int;
+  gen posix_trace_attr_getmaxusereventsize: &trace_attr_t * size * &size -> int;
+  gen posix_trace_attr_getname: &trace_attr_t * ntbs -> int;
+  gen posix_trace_attr_getstreamfullpolicy: &trace_attr_t * &int -> int;
+  gen posix_trace_attr_getstreamsize: &trace_attr_t * &size -> int;
+  gen posix_trace_attr_init: &trace_attr_t -> int;
+  gen posix_trace_attr_setinherited: &trace_attr_t * int -> int; //[TRI]
+  gen posix_trace_attr_setlogfullpolicy: &trace_attr_t * int -> int; //[TRL]
+  gen posix_trace_attr_setlogsize: &trace_attr_t * size -> int; //[TRL]
+  gen posix_trace_attr_setmaxdatasize: &trace_attr_t * size -> int;
+  gen posix_trace_attr_setname: &trace_attr_t * ntbs -> int;
+  gen posix_trace_attr_setstreamsize: &trace_attr_t * size -> int;
+  gen posix_trace_attr_setstreamfullpolicy: &trace_attr_t * int -> int;
+  gen posix_trace_clear: trace_id_t -> int;
+  gen posix_trace_close: trace_id_t -> int; //[TRL]
+  gen posix_trace_create: pid_t * &trace_attr_t * &trace_id_t -> int;
+  gen posix_trace_create_withlog: pid_t * &trace_attr_t * int * &trace_id_t -> int; //[TRL]
+  proc posix_trace_event: trace_event_id_t * address * size;
+  gen posix_trace_eventid_equal: trace_id_t * trace_event_id_t * trace_event_id_t -> int;
+  gen posix_trace_eventid_get_name: trace_id_t * trace_event_id_t * ntbs -> int;
+  gen posix_trace_eventid_open: ntbs * &trace_event_id_t -> int;
+  gen posix_trace_eventset_add: trace_event_id_t * &trace_event_set_t -> int; //[TEF]
+  gen posix_trace_eventset_del: trace_event_id_t * &trace_event_set_t -> int; //[TEF]
+  gen posix_trace_eventset_empty: &trace_event_set_t -> int; //[TEF]
+  gen posix_trace_eventset_fill: &trace_event_set_t * int -> int; //[TEF]
+  gen posix_trace_eventset_ismember: trace_event_id_t * &trace_event_set_t * &int -> int; //[TEF]
+  gen posix_trace_eventtypelist_getnext_id: trace_id_t * &trace_event_id_t * &int -> int;
+  gen posix_trace_eventtypelist_rewind: trace_id_t -> int;
+  gen posix_trace_flush: trace_id_t -> int; //[TRL]
+  gen posix_trace_get_attr: trace_id_t * &trace_attr_t -> int;
+  gen posix_trace_get_filter: trace_id_t * &trace_event_set_t -> int; //[TEF]
+  gen posix_trace_get_status: trace_id_t * &struct_posix_status_info -> int;
+  gen posix_trace_getnext_event: trace_id_t * &struct_posix_event_info  * address * size * &size * &int -> int;
+  gen posix_trace_open: int * &trace_id_t -> int; //[TRL]
+  gen posix_trace_rewind: trace_id_t -> int; //[TRL]
+  gen posix_trace_set_filter: trace_id_t * &trace_event_set_t * int -> int; //[TEF]
+  gen posix_trace_shutdown: trace_id_t -> int;
+  gen posix_trace_start: trace_id_t -> int;
+  gen posix_trace_stop: trace_id_t -> int;
+  gen posix_trace_timedgetnext_event: trace_id_t * &struct_posix_event_info * address * size * &size * &int * &struct_timespec -> int; //[TMO]
+  gen posix_trace_trid_eventid_open: trace_id_t * ntbs * &trace_event_id_t -> int; //[TEF]
+  gen posix_trace_trygetnext_event: trace_id_t * &struct_posix_event_info * address * size * &size * &int -> int;
+// Include file=#include <ucontext.h>
+  gen getcontext: &ucontext_t -> int; //[OB]
+  proc makecontext: &ucontext_t * (unit --> void) * int * ...; //[OB]
+  gen setcontext: &ucontext_t -> int; //[OB]
+  gen swapcontext: &ucontext_t * &ucontext_t -> int; //[OB]
+// Include file=#include <ulimit.h> //[XSI]
+  gen ulimit: int * ... -> long;
+// Include file=#include <unistd.h>
+  gen access: ntbs * int -> int;
+  gen alarm: uint -> uint;
+  gen chdir: ntbs -> int;
+  gen chown: ntbs * uid_t * gid_t -> int;
+  gen close: int -> int;
+  gen confstr: int * ntbs * size -> size;
+  gen crypt: ntbs * ntbs -> ntbs; //[XSI]
+  gen ctermid: ntbs -> ntbs; //[XSI]
+  gen dup: int -> int;
+  gen dup2: int * int -> int;
+  proc encrypt: &char * int; //[XSI]
+  gen execl: ntbs * ntbs * ... -> int;
+  gen execle: ntbs * ntbs * ... -> int;
+  gen execlp: ntbs * ntbs * ... -> int;
+  gen execv: ntbs * &ntbs -> int;
+  gen execve: ntbs * &ntbs * &ntbs -> int;
+  gen execvp: ntbs * &ntbs -> int;
+  proc _exit: int;
+  gen fchown: int * uid_t * gid_t -> int;
+  gen fchdir: int -> int; //[XSI]
+  gen fdatasync: int -> int; //[SIO]
+  gen fork: void -> pid_t;
+  gen fpathconf: int * int -> long;
+  gen fsync: int -> int; //[FSC]
+  gen ftruncate: int * off_t -> int;
+  gen getcwd: ntbs * size -> ntbs;
+  gen getegid: void -> gid_t;
+  gen geteuid: void -> uid_t;
+  gen getgid: void -> gid_t;
+  gen getgroups: int * gid_t* -> int;
+  gen gethostid: void -> long; //[XSI]
+  gen gethostname: ntbs * size -> int;
+  gen getlogin: void -> ntbs;
+  gen getlogin_r: ntbs * size -> int;
+  gen getopt: int * &ntbs * ntbs -> int;
+  gen getpgid: pid_t -> pid_t; //[XSI]
+  gen getpgrp: void -> pid_t;
+  gen getpid: void -> pid_t;
+  gen getppid: void -> pid_t;
+  gen getsid: pid_t -> pid_t; //[XSI]
+  gen getuid: void -> uid_t;
+  gen getwd: ntbs -> ntbs; //[XSI] (LEGACY)
+  gen isatty: int -> int;
+  gen lchown: ntbs * uid_t * gid_t -> int; //[XSI]
+  gen link: ntbs * ntbs -> int;
+  gen lockf: int * int * off_t -> int; //[XSI]
+  gen lseek: int * off_t * int -> off_t;
+  gen nice: int -> int; //[XSI]
+  gen pathconf: ntbs * int -> long;
+  gen pause: void -> int;
+  gen pipe: int * -> int;
+  gen pread: int * address * size * off_t -> ssize; //[XSI]
+  gen pwrite: int * address * size * off_t -> ssize; //[XSI]
+  gen read: int * address * size -> ssize;
+  gen readlink: ntbs * ntbs * size -> ssize;
+  gen rmdir: ntbs -> int;
+  gen setegid: gid_t -> int;
+  gen seteuid: uid_t -> int;
+  gen setgid: gid_t -> int;
+  gen setpgid: pid_t * pid_t -> int;
+  gen setpgrp: void -> pid_t; //[XSI]
+  gen setregid: gid_t * gid_t -> int; //[XSI]
+  gen setreuid: uid_t * uid_t -> int; //[XSI]
+  gen setsid: void -> pid_t;
+  gen setuid: uid_t -> int;
+  gen sleep: uint -> uint;
+  proc swab: address * address * ssize; //[XSI]
+  gen symlink: ntbs * ntbs -> int;
+  proc sync: void; //[XSI]
+  gen sysconf: int -> long;
+  gen tcgetpgrp: int -> pid_t;
+  gen tcsetpgrp: int * pid_t -> int;
+  gen truncate: ntbs * off_t -> int; //[XSI]
+  gen ttyname: int -> ntbs;
+  gen ttyname_r: int * ntbs * size -> int;
+  gen ualarm: useconds_t * useconds_t -> useconds_t; //[XSI]
+  gen unlink: ntbs -> int;
+  gen usleep: useconds_t -> int; //[XSI]
+  gen vfork: void -> pid_t; //[XSI]
+  gen write: int * address * size -> ssize;
+// Include file=#include <utime.h>
+  gen utime: ntbs * &struct_utimbuf -> int;
+// Include file=#include <utmpx.h>
+  proc endutxent: void;
+  gen getutxent: void -> &struct_utmpx;
+  gen getutxid: &struct_utmpx -> &struct_utmpx;
+  gen getutxline: &struct_utmpx -> &struct_utmpx;
+  gen pututxline: &struct_utmpx -> &struct_utmpx;
+  proc setutxent: void;
+// Include file=#include <wchar.h>
+  gen btowc: int -> wint_t;
+  gen fgetwc: stream_file -> wint_t;
+  gen fgetws: &wchar * int * stream_file -> &wchar;
+  gen fputwc: wchar * stream_file -> wint_t;
+  gen fputws: &wchar * stream_file -> int;
+  gen fwide: stream_file * int -> int;
+  gen fwprintf: stream_file * &wchar * ... -> int;
+  gen fwscanf: stream_file * &wchar * ... -> int;
+  gen getwc: stream_file -> wint_t;
+  gen getwchar: void -> wint_t;
+  gen iswalnum: wint_t -> int; //[XSI]
+  gen iswalpha: wint_t -> int; //[XSI]
+  gen iswcntrl: wint_t -> int; //[XSI]
+  gen iswctype: wint_t * wctype_t -> int; //[XSI]
+  gen iswdigit: wint_t -> int; //[XSI]
+  gen iswgraph: wint_t -> int; //[XSI]
+  gen iswlower: wint_t -> int; //[XSI]
+  gen iswprint: wint_t -> int; //[XSI]
+  gen iswpunct: wint_t -> int; //[XSI]
+  gen iswspace: wint_t -> int; //[XSI]
+  gen iswupper: wint_t -> int; //[XSI]
+  gen iswxdigit: wint_t -> int; //[XSI]
+  gen mbrlen: ntbs * size * &mbstate_t -> size;
+  gen mbrtowc: &wchar * ntbs * size * &mbstate_t -> size;
+  gen mbsinit: &mbstate_t -> int;
+  gen mbsrtowcs: &wchar * &ntbs * size * &mbstate_t -> size;
+  gen putwc: wchar * stream_file -> wint_t;
+  gen putwchar: wchar -> wint_t;
+  gen swprintf: &wchar * size * &wchar * ... -> int;
+  gen swscanf: &wchar * &wchar * ... -> int;
+  gen towlower: wint_t -> wint_t; //[XSI]
+  gen towupper: wint_t -> wint_t; //[XSI]
+  gen ungetwc: wint_t * stream_file -> wint_t;
+  gen vfwprintf: stream_file * &wchar * va_list -> int;
+  gen vfwscanf: stream_file * &wchar * va_list -> int;
+  gen vwprintf: &wchar * va_list -> int;
+  gen vswprintf: &wchar * size * &wchar * va_list -> int;
+  gen vswscanf: &wchar * &wchar * va_list -> int;
+  gen vwscanf: &wchar * va_list -> int;
+  gen wcrtomb: ntbs * wchar * &mbstate_t -> size;
+  gen wcscat: &wchar * &wchar -> &wchar;
+  gen wcschr: &wchar * wchar -> &wchar;
+  gen wcscmp: &wchar * &wchar -> int;
+  gen wcscoll: &wchar * &wchar -> int;
+  gen wcscpy: &wchar * &wchar -> &wchar;
+  gen wcscspn: &wchar * &wchar -> size;
+  gen wcsftime: &wchar * size * &wchar * &struct_tm -> size;
+  gen wcslen: &wchar -> size;
+  gen wcsncat: &wchar * &wchar * size -> &wchar;
+  gen wcsncmp: &wchar * &wchar * size -> int;
+  gen wcsncpy: &wchar * &wchar * size -> &wchar;
+  gen wcspbrk: &wchar * &wchar -> &wchar;
+  gen wcsrchr: &wchar * wchar -> &wchar;
+  gen wcsrtombs: ntbs * &&wchar * size * &mbstate_t -> size;
+  gen wcsspn: &wchar * &wchar -> size;
+  gen wcsstr: &wchar * &wchar -> &wchar;
+  gen wcstod: &wchar * &&wchar -> double;
+  gen wcstof: &wchar * &&wchar -> float;
+  gen wcstok: &wchar * &wchar * &&wchar -> &wchar;
+  gen wcstol: &wchar * &&wchar * int -> long;
+  gen wcstold: &wchar * &&wchar -> ldouble;
+  gen wcstoll: &wchar * &&wchar * int -> vlong;
+  gen wcstoul: &wchar * &&wchar * int -> ulong;
+  gen wcstoull: &wchar * &&wchar * int -> uvlong;
+  gen wcswcs: &wchar * &wchar -> &wchar; //[XSI]
+  gen wcswidth: &wchar * size -> int; //[XSI]
+  gen wcsxfrm: &wchar * &wchar * size -> size;
+  gen wctob: wint_t -> int;
+  gen wctype: ntbs -> wctype_t; //[XSI]
+  gen wcwidth: wchar -> int; //[XSI]
+  gen wmemchr: &wchar * wchar * size -> &wchar;
+  gen wmemcmp: &wchar * &wchar * size -> int;
+  gen wmemcpy: &wchar * &wchar * size -> &wchar;
+  gen wmemmove: &wchar * &wchar * size -> &wchar;
+  gen wmemset: &wchar * wchar * size -> &wchar;
+  gen wprintf: &wchar * ... -> int;
+  gen wscanf: &wchar * ... -> int;
+// Include file=#include <wctype.h>
+  gen iswalnum: wint_t -> int;
+  gen iswalpha: wint_t -> int;
+  gen iswblank: wint_t -> int;
+  gen iswcntrl: wint_t -> int;
+  gen iswdigit: wint_t -> int;
+  gen iswgraph: wint_t -> int;
+  gen iswlower: wint_t -> int;
+  gen iswprint: wint_t -> int;
+  gen iswpunct: wint_t -> int;
+  gen iswspace: wint_t -> int;
+  gen iswupper: wint_t -> int;
+  gen iswxdigit: wint_t -> int;
+  gen iswctype: wint_t * wctype_t -> int;
+  gen towctrans: wint_t * wctrans_t -> wint_t;
+  gen towlower: wint_t -> wint_t;
+  gen towupper: wint_t -> wint_t;
+  gen wctrans: ntbs -> wctrans_t;
+  gen wctype: ntbs -> wctype_t;
+// Include file=#include <wordexp.h>
+  gen wordexp: ntbs * &wordexp_t * int -> int;
+  proc wordfree: &wordexp_t;
+////////////////////
+'(address * VISIT * int --> void)'
+'(address * address --> int)'
+'(address --> address)'
+'(address --> void)'
+'(ntbs * &struct_stat * int * &struct_FTW --> int)'
+'(ntbs * &struct_stat * int --> int)'
+'(unit --> void)'
+'ACTION'
+'DIR_t'
+'ENTRY'
+'address'
+'clock_t'
+'clockid_t'
+'complex'
+'const ntbs'
+'datum'
+'dbm'
+'dev_t'
+'div_t'
+'fd_set'
+'fenv_t'
+'fexcept_t'
+'float value'
+'fpos_t'
+'gid_t'
+'gid_t*'
+'iconv_t'
+'id_t'
+'idtype_t'
+'in_addr_t'
+'int *'
+'int ...'
+'jmp_buf'
+'key_t'
+'ldiv_t'
+'ldouble value'
+'lldiv_t'
+'mbstate_t'
+'mode_t'
+'mqd_t'
+'nfds_t'
+'nl_catd'
+'nl_item'
+'off_t'
+'pid_t'
+'posix_spawn_file_actions_t'
+'posix_spawnattr_t'
+'pthread_attr_t'
+'pthread_barrier_t'
+'pthread_barrierattr_t'
+'pthread_cond_t'
+'pthread_condattr_t'
+'pthread_key_t'
+'pthread_mutex_t'
+'pthread_mutexattr_t'
+'pthread_once_t'
+'pthread_rwlock_t'
+'pthread_rwlockattr_t'
+'pthread_spinlock_t'
+'pthread_t'
+'real_floating x'
+'real_floating y'
+'regex_t'
+'rematch_t'
+'sem_t'
+'siginfo_t'
+'sigjmp_buf'
+'sigset_t'
+'socklen_t'
+'speed_t'
+'stack_t'
+'stream_file'
+'struct_addrinfo'
+'struct_dirent'
+'struct_group'
+'struct_hostent'
+'struct_if_nameindex'
+'struct_in_addr'
+'struct_iovec'
+'struct_itimerspec'
+'struct_itimerval'
+'struct_mq_attr'
+'struct_msghdr'
+'struct_msqid_ds'
+'struct_netent'
+'struct_passwd'
+'struct_pollfd*'
+'struct_posix_event_info'
+'struct_posix_status_info'
+'struct_posix_typed_mem_info'
+'struct_protoent'
+'struct_rlimit'
+'struct_rusage'
+'struct_sched_param'
+'struct_sembuf'
+'struct_servent'
+'struct_shmid_ds'
+'struct_sigaction'
+'struct_sigevent'
+'struct_sockaddr'
+'struct_stat'
+'struct_strbuf'
+'struct_termios'
+'struct_timeb'
+'struct_timespec'
+'struct_timeval'
+'struct_timeval *'
+'struct_tm'
+'struct_tms'
+'struct_utimbuf'
+'struct_utmpx'
+'struct_utsname'
+'struct_vfs'
+'time_t'
+'timer_t'
+'trace_attr_t'
+'trace_event_id_t'
+'trace_event_set_t'
+'trace_id_t'
+'ucontext_t'
+'uid_t'
+'union sigval'
+'useconds_t'
+'va_list arg'
+'wctrans_t'
+'wctype_t'
+'wint_t'
+'wordexp_t'
+Finished
