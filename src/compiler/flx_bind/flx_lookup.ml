@@ -3133,6 +3133,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   ;
   let rs = { rs with expr_fixlist=(e,rs.depth)::rs.expr_fixlist } in
   let be e' = bind_expression' state bsym_table env { rs with depth=rs.depth+1} e' [] in
+  let bea e' = bind_expression' state bsym_table env { rs with depth=rs.depth+1} e' args in
   let mkenv i = build_env state bsym_table (Some i) in
   let bt sr t =
     (* we're really wanting to call bind type and propagate depth ? *)
@@ -4160,7 +4161,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
   | EXPR_dot (sr,(e, EXPR_literal (_, L.Int (_,s)) )) ->
     be (EXPR_get_n (sr,(int_of_string s,e)))
 
-  | EXPR_dot (sr,(e,e2)) -> Flx_dot.handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply bind_type' sr e e2
+  | EXPR_dot (sr,(e,e2)) -> Flx_dot.handle_dot state bsym_table build_env env rs bea bt koenig_lookup cal_apply bind_type' sr e e2
 
   | EXPR_match_case (sr,(v,e)) ->
      bexpr_match_case flx_bbool (v,be e)
