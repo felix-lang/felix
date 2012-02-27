@@ -1,0 +1,19 @@
+class WebUtil {
+
+    fun split_first (x:string, d:string): opt[string*string] =>
+      match find_first_of (x, d) with
+      | None => None[string*string]
+      | Some ?n => Some (x.[to n],substring(x,n+1,(len x)))
+      endmatch
+    ;
+
+
+  fun parse_attribute_list(lst:list[string]):list[string^2] =>
+    map (fun (s:string) => match split_first(s,"=") with
+                             |Some (?i,?j) => (strip i),(strip j)
+                             |_       => "",""
+                           endmatch ) lst;
+
+
+  
+}
