@@ -2,10 +2,10 @@
 //include "web/base64";
 include "web/json";                    
 //include "web/xml2";
-include "web/mime_type";
+/* include "web/mime_type"; */ /* depends on web_util */
 
 // http protocol handlers
-include "web/web_util";
+/* include "web/web_util"; */ /* MISSING */
 //include "web/http_handler";            
 //include "web/http_connection";         
 //include "web/http_request";            
