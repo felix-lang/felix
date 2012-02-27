@@ -1,4 +1,4 @@
-include "web/sqlite3_pool";
+include "db/sqlite3/sqlite3_pool";
 
 class WikiModel {
   open Sqlite3;

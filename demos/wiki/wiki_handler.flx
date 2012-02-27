@@ -17,7 +17,8 @@ class WikiHandler {
       Cons (http_handler(web_route,web),
       Cons (http_handler(lib_route,lib),
       Cons (http_handler(inc_route,inc),
-      Empty[http_handler]))))))));
+      Cons (http_handler(pull_route,pull),
+      Empty[http_handler])))))))));
  
   fun auth_source(uname:string,passwd:string):bool => 
     db_get_auth_fdoc(uname,passwd);
@@ -29,8 +30,7 @@ class WikiHandler {
 
   proc wiki (conn:http_connection, request:http_request ) {
     var fname= let ?f = ((get_fname(request)).or_else "") in if f == "" then "main.fdoc" else f endif;
-   println(request.uri);
-   var txt:string;
+    var txt:string;
     if db_has_fdoc(fname) do
        txt = match db_get_fdoc(fname) with
                | Some ?s => s.content
@@ -127,18 +127,26 @@ fname+"""' >
 
 
   proc save_edit (conn:http_connection, request:http_request ) {
+    conn.config.log(DEBUG,"In save_edit");
+    eprintln((get_post_param(request,"content")).or_else "");
     var txt = strip_ctrl_m((get_post_param(request,"content")).or_else "");    
+    conn.config.log(DEBUG,"strip_ctrl_m");
     var fname= (get_fname(request)).or_else "main.fdoc";
+    conn.config.log(DEBUG,"get_fname");
     if ((get_post_param(request,"delete0")).or_else "") == "Delete" do
       delete(conn,request);
     else
+      conn.config.log(DEBUG,"Before has_fdoc");
+      
       if (if db_has_fdoc(fname) then
          db_update_fdoc(entry(fname,txt))
         else
           db_insert_fdoc(entry(fname,txt))
         endif) do
+        conn.config.log(DEBUG,"UPDATE:Update OK");
         write(conn,make_see_other("/wiki/"+fname));
       else
+        conn.config.log(DEBUG,"UPDATE:Update NOT OK");
         wiki(conn,request);
       done
     done
@@ -239,6 +247,26 @@ fname+"""' >
         | _ => { handle_not_found(conn,request); }
     endmatch;
   }
+
+  fun pull_route(config:server_config,request:http_request) ={
+    return request.path == "/wiki/pull/";
+  }
+
+  proc pull (conn:http_connection, request:http_request ) {
+    var fname= let ?f = ((get_fname(request)).or_else "") in if f == "" then "main.fdoc" else f endif;
+    var txt:string;
+    if db_has_fdoc(fname) do
+      txt = match db_get_fdoc(fname) with
+               | Some ?s => s.content
+               | _ => ""
+             endmatch;
+      write(conn,make_html(txt));
+    else 
+        handle_not_found(conn,request);
+        return;
+    done
+  }
+
 
 
 fun get_ref_file (fname:string, path:list[string]) = {

@@ -17,7 +17,8 @@ open SimpleConfig;
 WikiTool::which_tool();
 
 var config = basic_server_config( WikiHandler::app_handlers() + default_handlers());
-
+config.log  = logger(simple_logger(Logger::log("./log","info.log",size(1000000),2ui),INFO)
++simple_logger(Logger::log("./log","debug.log",size(1000000),2ui),DEBUG));
 val db_pool = Sqlite3Pool::create_sqlite3_pool(match (get_param_list(config.params,"DB")) with
                                                  | Cons(?s,_) => s
                                                  | _ => "db/wiki.db"

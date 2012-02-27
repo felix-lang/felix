@@ -39,10 +39,10 @@ class WikiTool {
     if tool == "" do 
       return;   //Not a tool start the server
     elif tool == "pull" do
-      flatten(url,doc_root); 
+      pull(url,doc_root,user,doc); 
     elif tool == "push" do 
       var doc = System::argv (System::argc - 1);
-      post(url,doc_root,user,doc); 
+      push(url,doc_root,user,doc); 
     else
       println("Invalid tool:"+tool);
       help(); 
@@ -50,14 +50,22 @@ class WikiTool {
     System::exit(0);
   }
 
-  proc flatten(url:string,doc_root:string) {
-    println("Sorry flatten is not implemented at this time");
- 
+  proc pull(url:string,doc_root:string,user:string,doc:string) {
+    println("flatten "+doc+" from "+url);
+    open Input_text_file;
+    var fn:string = FileSystem::tmp_filename();
+    val cmd = "curl  --data @"+fn+" --anyauth --user "+user+" "+
+          "-o "+doc+" "+url+"/wiki/pull/"+doc;
+    println(cmd);
+    if System::system(cmd) == 0 do
+      println("Pull successful");
+    else
+      println("Pull failed");
+    done   
   }
 
-  proc post(url:string,doc_root:string,user:string,doc:string) {
+  proc push(url:string,doc_root:string,user:string,doc:string) {
     open Output_text_file;
-    open XML2;
     println("Posting:"+doc+" to "+url);
     var data = load(doc);
     var enc:string = "content="+URICodec::uri_encode(data);
