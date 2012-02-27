@@ -1,7 +1,8 @@
-include "web/low_res_time";
+include "data_structures/low_res_time";
 
 class Cookie {
   open LowResTime;
+  open WebUtil;
 
   struct cookie {
     name:string;
@@ -16,12 +17,6 @@ class Cookie {
   fun _ctor_cookie (n:string,v:string) = {
     var c:cookie;c.name=n;c.value=v;return c;}
 
-  fun split_first (x:string, d:string): opt[string*string] =>
-      match find_first_of (x, d) with
-      | None => None[string*string]
-      | Some ?n => Some (x.[to n],substring(x,n+1,(len x)))
-      endmatch
-    ;
 
 
   instance Str[cookie] {

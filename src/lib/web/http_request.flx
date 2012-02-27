@@ -16,6 +16,7 @@ class HTTPRequest {
    open Stream;
    open Socket;
    open TerminalIOByteStream[socket_t];
+   open WebUtil;
  
    union http_method = 
      | GET
@@ -71,6 +72,21 @@ class HTTPRequest {
                      ) params;
   }
 
+  noinline proc get_headers(conn:http_connection,headers:&list[string^2])  {
+    var line:string = "";
+    get_line(conn.sock, &line);  // shouldg be the GET line.
+    while line != "" and line != "\r" do
+      get_line(conn.sock, &line); 
+      match split(line,':') with
+        | Cons(?key,?value) =>
+              *headers = Cons((xml_uri_unescape_string(strip(key)),   
+	      xml_uri_unescape_string(strip(fold_left (fun(x:string) (y:string):string => x + y) "" value))),
+              *headers);
+         | ?x => println("WARNING:Possible malformed request headerline:"+x); 
+      endmatch;
+    done
+  }
+
   publish """ Main entry point for extracting HTTP request from stream """
   noinline proc get_request(conn:http_connection,request:&http_request) = {
     var k = conn.sock;
@@ -93,28 +109,21 @@ class HTTPRequest {
         | _ =>  http_request(BAD,"","",Empty[string*string],Empty[string*string],
                              Empty[string*string])
     endmatch;  
-    var headers = Empty[string*string];
-    while line != "" and line != "\r" do
-      get_line(k, &line); 
-      match split(line,':') with
-        | Cons(?key,?value) =>
-              headers = Cons((xml_uri_unescape_string(strip(key)),   
-	      xml_uri_unescape_string(strip(fold_left (fun(x:string) (y:string):string => x + y) "" value))),
-              headers);
-         | ?x => println("WARNING:Possible malformed request headerline:"+x); 
-      endmatch;
-    done
+    var headers = Empty[string^2];
+    get_headers(conn,&headers);
     got.headers = headers;
-    conn.config.log(DEBUG,str(got));
     copy_request(&got,request); 
     *request.headers=headers;
   }
+
+
+  
 
   publish """
   Populates entity_params in request. Entity params are URI encoded key value pairs in
   request body that are supplied when a POST request is made by the browser.
   """
-  proc get_entity_params(conn:http_connection,request:&http_request) = {
+  proc get_entity_params(conn:http_connection,request:&http_request,attribs:list[string^2]) = {
     val olen = match get_header(*request,"Content-Length") with |Some ?s=> int(s) |_ => 0 endmatch;
     var len = olen;
     var eof=false;
@@ -126,9 +135,41 @@ class HTTPRequest {
       iter (proc (line:string) {params = params + get_params(line);})  (split(str(buf),"\n"));
       C_hack::free(buf_a);
     done
-    conn.config.log(DEBUG,"POST PARAMS:"+str(params));
     *request.entity_params = params;
-    return ;
+    return ; 
+  }
+
+fun read_bytes(conn:http_connection,olen:int) = {
+    var len = olen;
+    var eof=false;
+    
+    var ret:string = "";
+    if olen > 0 do
+      var buf = C_hack::cast[&char] (C_hack::malloc(len+1));
+      var buf_a = address(buf);
+      read(conn.sock,&len,buf_a,&eof);
+      ret= str(buf);
+      C_hack::free(buf_a);
+     done
+     return ret; 
+  }
+
+
+  proc get_multipart_params(conn:http_connection,request:&http_request,attribs:list[string^2]) {
+    var line:string = "";
+    val llen = match get_header(*request,"Content-Length") with |Some ?s=> int(s) |_ => 0 endmatch;
+    var rest = read_bytes(conn,llen);
+    write(conn,HTTPResponse::make_continue());
+    *conn.dirty=false;
+
+    match (find (fun (s:string) => s == "boundary") attribs) with
+      |Some ?b => { get_line(conn.sock, &line); 
+        var headers = Empty[string^2];
+        get_headers(conn,&headers);
+      }
+     |_ => {conn.config.log(DEBUG,"No Boundry"); }
+    endmatch;
+     *request.entity_params=Empty[string*string];
   }
 
   fun get_fname(request:http_request) ={

@@ -19,11 +19,13 @@ class HTTPStatusCodes {
           SC_INTERNAL_SERVER_ERROR,
           SC_NOT_IMPLEMENTED,
           SC_SERVICE_UNAVAILABLE,
-          SC_SEE_OTHER
+          SC_SEE_OTHER,
+          SC_CONTINUE
   }
           
   instance Str[status_code] {          
     fun str: status_code -> string =
+        |  SC_CONTINUE => "100 Continue"
         |  SC_OK => "200 OK"
         |  SC_CREATED => "201 Created"
         |  SC_NO_CONTENT => "204 No Content"

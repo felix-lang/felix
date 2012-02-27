@@ -8,7 +8,7 @@ include "std/posix/faio_posix";  // aio_ropen
 include "std/posix/signal";
 include "std/posix/filesystem";
 include "std/posix/filestat";
-include "web/xml2";
+
 Posix_Signal::ignore_signal(Posix_Signal::SIGPIPE);
 //done
 
@@ -24,6 +24,7 @@ open TerminalIOByteStream[socket_t];
 
 
 include "std/io/textio";
+include "web/web_util";
 include "web/server_config";
 include "web/http_request";
 include "web/http_connection";
@@ -33,13 +34,13 @@ include "web/mime_type";
 include "web/http_status_code";
 include "web/low_res_time";
 include "web/cookie";
-include "web/logger";
-include "web/simple_config";
-include "web/xml2";
+include "io/logger";
+include "io/simple_config";
+include "xml/xml2";
 include "web/decorators";
 include "web/templates";
-include "web/dom";
-include "web/base64";
+include "xml/dom";
+include "codec/base64";
 include "web/http_auth";
 
 // this is a hack to make close work on a listenter
@@ -96,26 +97,30 @@ class WebServer {
       var request:http_request;
       open HTTPRequest;
       open  Eq[http_method];
+      open MIMEType;
       HTTPRequest::get_request(conn,&request);
        Faio::sleep(clock,config.delay);
       /*Get entity form parameters if method is post and 
         content type is application/x-www-form-urlencoded */
-      if str(request.method) == str(POST) do
-        match get_header(request,"Content-Type") with
-          | Some ?c => {match MIMEType::from_str(c) with
-              |Some ?z =>{if str(z) == str(application x_DASH_www_DASH_form_DASH_urlencoded) do
-                          HTTPRequest::get_entity_params(conn,&request);
-                        done }
-              |_ => {}
-            endmatch;}
-          |_ => {}
-        endmatch;
-      done
+      //if str(request.method) == str(POST) do
+      match get_header(request,"Content-Type") with
+        | Some ?c => { 
+          match parse_media_type(c) with
+            | Some (?m,?a) => {
+              if str(m) == str(application x_DASH_www_DASH_form_DASH_urlencoded) do
+                HTTPRequest::get_entity_params(conn,&request,a);
+              elif str(m) == str(form-data) do
+                HTTPRequest::get_multipart_params(conn,&request,a);
+              else 
+                request.entity_params=Empty[string*string];
+              done
+              }
+            |_ =>  { request.entity_params=Empty[string*string]; }
+          endmatch; }
+        |_ => { request.entity_params=Empty[string*string]; }
+      endmatch;
       serve(conn,request);
-      fprint$ cerr,"fthread socket "+str k+" close delay ..\n";
       Faio::sleep(clock,config.delay); // give OS time to empty its buffers
-      fprint$ cerr,"fthread socket "+str k+" shutdown now\n";
-
       // try this:
       // Advised by: koettermarkus@gmx.de, MANY THANKS!
 
@@ -149,7 +154,7 @@ class WebServer {
       force_close:> 
       Socket::shutdown(k,2); 
       ioclose(k);
-      fprint$ cerr,"fthread "+str k+" terminating!\n";
+      
     };
 
     noinline proc stuff {

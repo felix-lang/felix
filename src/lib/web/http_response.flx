@@ -64,7 +64,10 @@ Content-Length: """ + str (len response.content) + """\r
 				  "") in
     	http_header(response) +"\nUnauthorized"; 
 
-  
+  fun make_continue () =>
+    let ?response = http_response(SC_CONTINUE,localtime(time_t()),text html,no_headers(),
+				  "") in
+    	http_header(response) +"\r";   
 
   fun make_raw (content:string) => make_raw(content,no_headers());
   fun make_raw (content:string,headers:assoc_list[string,string]) =>

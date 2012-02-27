@@ -8,11 +8,13 @@ Example:
   println from_str("application/atom+xml");
   println (application zip);
 """
+
 class MIMEType {
 /*
 TODO: implement more MIME types.
 */  
 
+  open WebUtil;
   union application_mime_subtype =
     | atom_PLUS_xml //: Atom feeds
     | ecmascript // ECMAScript/JavaScript; Defined in RFC 4329
@@ -74,11 +76,23 @@ TODO: implement more MIME types.
     | x_DASH_ocaml
     | x_DASH_python
   ;
+ 
+  union multipart_mime_subtype =
+    | mixed
+    | alternative
+    | related
+    | form-data
+    | signed
+    | encrypted;
+
   union mime_type =
     | application of application_mime_subtype
     | audio of audio_mime_subtype
     | image of image_mime_subtype
-    | text of text_mime_subtype;
+    | text of text_mime_subtype
+    | multipart of multipart_mime_subtype;
+
+  typedef media_type =  mime_type * list[string^2];
 
   instance Str[application_mime_subtype] {
     fun str : application_mime_subtype ->string =
@@ -147,12 +161,23 @@ TODO: implement more MIME types.
       | x_DASH_python => "text/x-python";
   }
   
+  instance Str[multipart_mime_subtype] {
+    fun str : multipart_mime_subtype ->string =
+      | mixed => "multipart/mixed"
+      | alternative => "multipart/alternative"
+      | related => "multipart/related"
+      | form-data => "multipart/form-data"
+      | signed => "multipart/signed"
+      | encrypted => "multipart/encrypted";
+  }
+
   instance Str[mime_type] {
     fun str : mime_type ->string =
       | application  ?a => str a
       | audio  ?a => str a
       | image  ?a => str a
-      | text  ?a => str a;
+      | text  ?a => str a
+      | multipart  ?a => str a;
   }
 
   fun application_type_from_str : string -> opt[application_mime_subtype] =
@@ -218,6 +243,14 @@ TODO: implement more MIME types.
     | "text/x-python" => Some x_DASH_python
     | _ => None[text_mime_subtype];
 
+  fun multipart_type_from_str : string -> opt[multipart_mime_subtype] =
+    | "multipart/mixed" => Some mixed
+    | "multipart/alternative" => Some alternative
+    | "multipart/related" => Some related
+    | "multipart/form-data" => Some form-data
+    | "multipart/signed" => Some signed
+    | "multipart/encrypted" => Some encrypted;
+
   fun from_str (s:string):opt[mime_type] => 
     match application_type_from_str s with
       | Some ?t => Some (application t)
@@ -227,7 +260,10 @@ TODO: implement more MIME types.
            | Some ?t => Some (image t)
            | None[image_mime_subtype] => match text_type_from_str s with
              | Some ?t => Some (text t)
-             | None[text_mime_subtype] => None[mime_type]
+             | None[text_mime_subtype] => match multipart_type_from_str s with
+               | Some ?t => Some (multipart t)
+               | None[multipart_mime_subtype] => None[mime_type]
+             endmatch
            endmatch
          endmatch
        endmatch
@@ -304,6 +340,17 @@ TODO: implement more MIME types.
 instance Eq[mime_type]  {
   fun == : mime_type * mime_type -> bool = "$1==$2";
 }
+
+
+  fun parse_media_type (s:string):opt[media_type] =>
+    match split( s, ";") with
+      |Cons(?h,?t) => match from_str(h) with
+                       |Some ?m => Some (m,parse_attribute_list(t))
+                       |_       => None[media_type]
+                      endmatch 
+      |_            => None[media_type]
+    endmatch;
+
 //instance Tord[test_mime_subtype] {
 //    fun eq: t * t -> bool = "$1==$2";
 //}
@@ -326,13 +373,6 @@ model/x3d+binary: X3D ISO standard for representing 3D computer graphics, X3DB b
 model/x3d+vrml: X3D ISO standard for representing 3D computer graphics, X3DV VRML files
 model/x3d+xml: X3D ISO standard for representing 3D computer graphics, X3D XML files
 Type multipart
-For archives and other objects made of more than one part.
-multipart/mixed: MIME Email; Defined in RFC 2045 and RFC 2046
-multipart/alternative: MIME Email; Defined in RFC 2045 and RFC 2046
-multipart/related: MIME Email; Defined in RFC 2387 and used by MHTML (HTML mail)
-multipart/form-data: MIME Webform; Defined in RFC 2388
-multipart/signed: Defined in RFC 1847
-multipart/encrypted: Defined in RFC 1847
 Type video
 For video.
 video/mpeg: MPEG-1 video with multiplexed audio; Defined in RFC 2045 and RFC 2046
