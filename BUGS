@@ -1,5 +1,6 @@
 * Operator . doesn't work right applying curried function:
    x.(f 1)
+   FIXED 29/02/2012
 
 * Operator . doesn't work right for procedures. Eg x.println doesn't work.
   FIXED 11/12/2011
