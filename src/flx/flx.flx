@@ -297,7 +297,6 @@ proc backup() {
      "web/.*\\.(fdoc|html|gif|png|jpg)",
      "index.html",
      "index2.html",
-     "automaton.syntax",
      "VERSION"
     );
     iter cp srcs; 
@@ -502,7 +501,7 @@ var INCLUDE_DIRS="";
 var INCLUDE_FILES="";
 var NOSTDLIB=0;
 var STDOUT="";
-var STDSYNTAX="--syntax=@grammar/grammar.files";
+var STDGRAMMAR="@grammar/grammar.files";
 var STDIMPORT="--import=plat/flx.flxh";
 var IMPORTS="";
 var CLEAR_CACHE=0;
@@ -545,7 +544,7 @@ proc print_options() {
     println$ "DEBUG              = "+str DEBUG;
     println$ "DEBUG_COMPILER     = "+str DEBUG_COMPILER;
     println$ "STDIMPORT          = "+str STDIMPORT;
-    println$ "STDSYNTAX          = "+str STDSYNTAX;
+    println$ "STDGRAMMAR         = "+str STDGRAMMAR;
     println$ "IMPORTS            = "+str IMPORTS;
     println$ "RECOMPILE          = "+str RECOMPILE;
     println$ "cpps               = "+str cpps;
@@ -768,15 +767,77 @@ done
 Directory::mkdirs(CACHE_DIR);
 
 var flxg_time = FileStat::filetime(FLXG);
+debugln$ "Flxg_time=" + str flxg_time;
+
 var flxg_stamp = Filename::join CACHE_DIR "flxg_time.stamp";
-var cache_time = FileStat::filetime(flxg_stamp); 
+var cache_time = FileStat::filetime(flxg_stamp);
+debugln$ "cache_time=" + str cache_time;
+
+var flxg_stamp_data = load flxg_stamp;
+//println$ "Flxg_stamp_data=" + flxg_stamp_data; 
+
+var flxg_stamp_time = flxg_stamp_data.atoll.uvlong;
+debugln$ "Flxg_stamp_data as int: " + str flxg_stamp_time;
+
+fun gramtime(path:string, s:string) : uvlong = {
+  //println$ "Path=" + path + " file = " + s;
+  fun maxtime (x:uvlong) (s:string) => max (x, gramtime (path, s));
+  if s.[0]=="@".char do
+    var file = Filename::join$ path, s.[1 to].strip;
+    var filetime = FileStat::filetime(file);
+    if filetime == 0uv do
+      println$ "Grammar include file " + file " doesn't exist, exiting";
+      System::exit 1;
+    done
+    debugln$ "Grammar include file " + file + " time=" + str filetime;
+    var filetext = load file;
+    var files = split (filetext, "\n");
+    //println$ "Files=" + files;
+    return fold_left maxtime filetime files;
+  else
+    file = Filename::join$ path, s;
+    filetime = FileStat::filetime(file);
+    if filetime == 0uv do
+      println$ "Grammar file " + file " doesn't exist, exiting";
+      System::exit 1;
+    done
+    debugln$ "Grammar file " + file + " time=" + str filetime;
+    return filetime;
+  done
+}
+
+var grammar_time = gramtime(Filename::join (FLX_INSTALL_DIR,"lib"), STDGRAMMAR);
+debugln$ "Grammar text time=" + str grammar_time;
+var automaton_name = 
+  Filename::join( CACHE_DIR, 
+  Directory::mk_absolute_filename (Filename::join (list( 
+    FLX_INSTALL_DIR,
+    "lib",
+    "grammar",
+    "syntax.automaton"
+  ))))
+;
+
+var automaton_time = FileStat::filetime automaton_name;
+debugln$ "Automaton " + automaton_name + " time=" + str automaton_time;
 
 // Still if this fails,  the compiler is new and 
 // the cache should be deleted.
-if cache_time != 0uv and flxg_time > cache_time do
+if cache_time != 0uv and flxg_stamp_time != flxg_time do
   println$ "Cache may be out of date due to compiler upgrade!";
   println$ "Flxg compiler time stamp=" + str flxg_time;
-  println$ "Cache time stamp is " + str cache_time;
+  println$ "Cache time stamp        =" + str cache_time;
+  if not (
+    (OUTPUT_DIR == "/" or OUTPUT_DIR == "" or OUTPUT_DIR == ".") or
+    (CACHE_DIR == "/" or CACHE_DIR == "" or CACHE_DIR == ".")
+  )
+  do 
+    CLEAR_CACHE = 1;
+  done
+elif automaton_time != 0uv and grammar_time > automaton_time do
+  println$ "Cache may be out of date due to grammar upgrade!";
+  println$ "Grammar time stamp          =" + str grammar_time;
+  println$ "Automaton.syntax time stamp =" + str automaton_time;
   if not (
     (OUTPUT_DIR == "/" or OUTPUT_DIR == "" or OUTPUT_DIR == ".") or
     (CACHE_DIR == "/" or CACHE_DIR == "" or CACHE_DIR == ".")
@@ -1063,7 +1124,7 @@ if FELIX == 1 do
   FCMD=List::cat ' ' (List::list (
     FLXG,
     VERBOSE, FLXFLAGS, FLXLIB,
-    INCLUDE_DIRS, STDSYNTAX, STDIMPORT, IMPORTS)) + 
+    INCLUDE_DIRS, "--syntax="+STDGRAMMAR, STDIMPORT, IMPORTS)) + 
     ' ' + stdlibs + 
     ' ' + filebase
   ;
