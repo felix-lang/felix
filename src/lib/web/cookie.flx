@@ -1,4 +1,4 @@
-include "data_structures/low_res_time";
+include "web/low_res_time";
 
 class Cookie {
   open LowResTime;
