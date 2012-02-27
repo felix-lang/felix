@@ -1,4 +1,4 @@
-include "web/base64";
+include "codec/base64";
 open Base64; 
 println("----Test 1 Plain--------------------------------------------------");
 val tst1_plain = "Man";

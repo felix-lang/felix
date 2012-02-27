@@ -1,4 +1,4 @@
-include "web/xml2";
+include "xml/xml2";
 
 open XML2;
 
