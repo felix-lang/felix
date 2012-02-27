@@ -1,5 +1,5 @@
-include "web/sqlite3_ext";
-include "web/pool";
+include "db/sqlite3/sqlite3_ext";
+include "collection/pool";
 
 class Sqlite3Pool {
   open Sqlite3;

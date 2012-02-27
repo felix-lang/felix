@@ -1,0 +1,2 @@
+include "xml/xml2";
+include "xml/dom";

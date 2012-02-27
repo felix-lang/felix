@@ -1,5 +1,5 @@
 
-include "web/xml2";
+include "xml/xml2";
 class DOM {
   open XML2;
 
