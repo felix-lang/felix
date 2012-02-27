@@ -2,57 +2,8 @@ include "std/posix/filesystem";
 include "std/posix/directory";
 open Judy;
 
-fun dbg(s:string):string={ println s; return s; }
+  fun dbg(s:string):string={ println s; return s; }
 
-fun subst(s:string, v:varray[StringPiece]): string =
-{
-//println$ "Subst " + s +" with " + str v;
-   enum mode_t {cp, ins};
-   var b = "";
-   var mode=cp;
-   var j = 0;
-   var count = 0;
-   for var i in 0 upto s.len.int - 1 do
-     match mode with
-     | cp => 
-       if s.[i] == char "\\" do 
-         mode = ins; 
-         j=0; count = 0; 
-       else 
-        b += s.[i]; 
-       done
-     | ins =>
-       if s.[i] in "0123456789" do
-         j = j * 10 + ord(s.[i]) - ord (char "0");
-         ++count;
-       else
-         if count == 0 do
-           b += "\\";
-         elif j < v.len.int do
-           b+= str v.[j];
-         done
-         // adjacent insertion?
-         if s.[i] == char "\\" do
-           j=0; count=0;
-         else
-           mode = cp;
-           b += s.[i]; 
-         done
-       done
-     endmatch;
-   done
-   // run off end
-   match mode with
-   | cp => ;
-   | ins =>
-     if count == 0 do
-       b += "\\";
-     elif j < v.len.int do
-       b+= str v.[j];
-     done
-   endmatch;
-   return b;
-}
   proc copyfiles(dname:string, re:RE2, tpat:string, live:bool, verbose:bool) 
   {
     var ds = JSLArray ();
