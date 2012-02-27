@@ -327,6 +327,74 @@ open class String
   }
   fun search_and_replace (x:string, s:string, r:string) : string => search_and_replace (x,0uz,s,r);
 
+  // Replace \0 \1 \2 etc in s with text from v
+  fun subst(s:string, v:varray[StringPiece]): string =
+  {
+  //println$ "Subst " + s +" with " + str v;
+     enum mode_t {cp, ins};
+     var b = "";
+     var mode=cp;
+     var j = 0;
+     var count = 0;
+     for var i in 0 upto s.len.int - 1 do
+       match mode with
+       | cp => 
+         if s.[i] == char "\\" do 
+           mode = ins; 
+           j=0; count = 0; 
+         else 
+          b += s.[i]; 
+         done
+       | ins =>
+         if s.[i] in "0123456789" do
+           j = j * 10 + ord(s.[i]) - ord (char "0");
+           ++count;
+         else
+           if count == 0 do
+             b += "\\";
+           elif j < v.len.int do
+             b+= str v.[j];
+           done
+           // adjacent insertion?
+           if s.[i] == char "\\" do
+             j=0; count=0;
+           else
+             mode = cp;
+             b += s.[i]; 
+           done
+         done
+       endmatch;
+     done
+     // run off end
+     match mode with
+     | cp => ;
+     | ins =>
+       if count == 0 do
+         b += "\\";
+       elif j < v.len.int do
+         b+= str v.[j];
+       done
+     endmatch;
+     return b;
+  }
+
+  // Search for regex, replace by r with \0 \1 \2 etc replace by match groups.
+  fun search_and_replace (x:string, var spos: size, re:Re2::RE2, r:string) : string =
+  {
+    var ngroups = re.NumberOfCapturingGroups + 1;
+    var v = varray[StringPiece]$ (ngroups+1).size, StringPiece "";
+    var o = x.[to spos];             // initial substring
+    var sp = StringPiece(x);
+    var base : &char = sp.data;      // base pointer of char array
+    while Re2::Match(re, sp, spos.int, UNANCHORED, v.stl_begin, v.len.int) do
+      var mpos = size(v.[0].data - base);  // start of match
+      o+= x.[spos to mpos];          // copy upto start of match
+      o+= subst(r,v);                // copy replacement
+      spos = mpos + v.[0].len;       // advance over match
+    done
+    o+=x.[spos to];                  // rest of string
+    return o;
+  }
 
   fun atoi: string -> int = "::std::atoi($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
   fun atol: string -> long = "::std::atol($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
