@@ -39,10 +39,9 @@ class WikiTool {
     if tool == "" do 
       return;   //Not a tool start the server
     elif tool == "pull" do
-      pull(url,doc_root,user,doc); 
+      pull(url,doc_root,user,System::argv (System::argc - 1)); 
     elif tool == "push" do 
-      var doc = System::argv (System::argc - 1);
-      push(url,doc_root,user,doc); 
+      push(url,doc_root,user,System::argv (System::argc - 1)); 
     else
       println("Invalid tool:"+tool);
       help(); 
@@ -82,6 +81,8 @@ class WikiTool {
       println(cmd);
       if System::system(cmd) == 0 do
         println("Post successful");
+        val clock = Faio::mk_alarm_clock();
+        Faio::sleep(clock,0.1);
       else
         println("Post failed");
         System::exit(-1);

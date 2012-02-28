@@ -9,23 +9,25 @@ class WikiHandler {
   open WikiModel;
 
   fun app_handlers() =>
+      Cons (http_handler((fun (c:server_config,r:http_request) => true),
+            (proc (c:http_connection, r:http_request ) {c.config.log(INFO,r.path);})),
       Cons (http_handler(save_edit_route,requires_auth(auth_source,"Felix Wiki",save_edit)),
       Cons (http_handler(edit_route,requires_auth(auth_source,"Felix Wiki",edit)),
       Cons (http_handler(delete_route,requires_auth(auth_source,"Felix Wiki",delete)),
       Cons (http_handler(search_route,search),
+      Cons (http_handler(pull_route,pull),
       Cons (http_handler(wiki_route,wiki),
       Cons (http_handler(web_route,web),
       Cons (http_handler(lib_route,lib),
       Cons (http_handler(inc_route,inc),
-      Cons (http_handler(pull_route,pull),
-      Empty[http_handler])))))))));
+      Empty[http_handler]))))))))));
  
   fun auth_source(uname:string,passwd:string):bool => 
     db_get_auth_fdoc(uname,passwd);
 
   fun wiki_route(config:server_config,request:http_request) ={
-    return startswith request.path  "/wiki" or request.path =="/" or 
-           request.path == "";
+    return startswith request.path  "/wiki" or  
+           request.path =="/" or request.path == "";
   }
 
   proc wiki (conn:http_connection, request:http_request ) {
@@ -127,26 +129,18 @@ fname+"""' >
 
 
   proc save_edit (conn:http_connection, request:http_request ) {
-    conn.config.log(DEBUG,"In save_edit");
-    eprintln((get_post_param(request,"content")).or_else "");
     var txt = strip_ctrl_m((get_post_param(request,"content")).or_else "");    
-    conn.config.log(DEBUG,"strip_ctrl_m");
     var fname= (get_fname(request)).or_else "main.fdoc";
-    conn.config.log(DEBUG,"get_fname");
     if ((get_post_param(request,"delete0")).or_else "") == "Delete" do
       delete(conn,request);
     else
-      conn.config.log(DEBUG,"Before has_fdoc");
-      
       if (if db_has_fdoc(fname) then
          db_update_fdoc(entry(fname,txt))
         else
           db_insert_fdoc(entry(fname,txt))
         endif) do
-        conn.config.log(DEBUG,"UPDATE:Update OK");
         write(conn,make_see_other("/wiki/"+fname));
       else
-        conn.config.log(DEBUG,"UPDATE:Update NOT OK");
         wiki(conn,request);
       done
     done
@@ -249,7 +243,7 @@ fname+"""' >
   }
 
   fun pull_route(config:server_config,request:http_request) ={
-    return request.path == "/wiki/pull/";
+    return startswith request.path  "/wiki/pull/";
   }
 
   proc pull (conn:http_connection, request:http_request ) {
