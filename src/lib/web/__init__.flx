@@ -1,28 +1,17 @@
 // codecs
-//include "web/base64";
 include "web/json";                    
-//include "web/xml2";
-/* include "web/mime_type"; */ /* depends on web_util */
+include "web/mime_type";
 
 // http protocol handlers
-/* include "web/web_util"; */ /* MISSING */
-//include "web/http_handler";            
-//include "web/http_connection";         
-//include "web/http_request";            
-//include "web/http_status_code";        
-//include "web/http_response";           
-//include "web/http_auth";               
-//include "web/cookie";                  
-
-
-// web server
-//include "web/server_config";
-//include "web/templates";
-
-//include "web/decorators";              
-
-
-// misc
-//include "web/low_res_time";
+include "web/web_util"; 
+include "web/http_handler";            
+include "web/http_connection";         
+include "web/http_request";            
+include "web/http_status_code";        
+include "web/http_response";           
+include "web/http_auth";               
+include "web/cookie";                  
+include "web/low_res_time";
+include "web/server_config";
 
 

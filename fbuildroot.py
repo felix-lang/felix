@@ -461,10 +461,16 @@ def build(ctx):
         pattern='*.{flx,flxh,files,html,db,sql,css,js,py}')
     
     # copy extra files for web
-    buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/web', 'src/lib/web/html',
-        pattern='*')
-    buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/web', 'src/lib/web/examples',
-        pattern='*')
+    #buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/web', 'src/lib/web',
+    #    pattern='*')
+    #buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/db', 'src/lib/db',
+    #    pattern='*')
+    #buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/codec', 'src/lib/codec',
+    #    pattern='*')
+    #buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/web', 'src/lib/io',
+    #    pattern='*')
+    #buildsystem.copy_dir_to(ctx, ctx.buildroot+'/lib/web', 'src/lib/collection',
+    #    pattern='*')
 
     # copy tools
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/tools',
