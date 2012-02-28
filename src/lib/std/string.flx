@@ -307,6 +307,14 @@ open class String
     return aux$ x, List::Empty[string];
   }
 
+  fun split_first (x:string, d:string): opt[string*string] =>
+    match find_first_of (x, d) with
+    | None => None[string*string]
+    | Some ?n => Some (x.[to n],substring(x,n+1,(len x)))
+    endmatch
+  ;
+
+
   // Note: pos, length!
   proc erase: string * int * int = "$1.erase($2,$3);";
   proc insert: string * int * string = "$1.insert($2,$3);";

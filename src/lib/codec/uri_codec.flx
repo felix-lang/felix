@@ -1,5 +1,5 @@
 publish """
-Encoder Decoders for URIs, Translates characaters not allowed in URIs
+Encoder Decoders for URIs, Translates characters not allowed in URIs
 to %HEX equivalants
 
 Usage example:

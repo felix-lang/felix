@@ -25,7 +25,7 @@ Example:
 /*
 TODO: Add date/time utility functions (date time delta calulations, etc.) 
 */
-include "std/posix/posix_headers";
+//include "std/posix/posix_headers";
 class LowResTime
 {
   open C_hack;
@@ -36,7 +36,7 @@ class LowResTime
 
   proc time: &time_t = "time($1);";
 
-  ctor time_t  () = {
+  ctor time_t () = {
     var time_v:time_t;
     time(&time_v);
     return time_v;
@@ -100,7 +100,7 @@ returns pointer to tm structure if successful or NULL if unsucessful """
 returns pointer to tm structure wrapped in opt."""
 
   fun strptime (s:string,fmt:string):opt[&tm]  => let ?r = raw_strptime(s,fmt) in 
-      if isNULL(r) then None[&tm] else Some(r) endif; endl;
+      if isNULL(r) then None[&tm] else Some(r) endif;
 
  fun rfc1123_date (dt:&tm) => strftime("%a, %d %b %Y %H:%M:%S %Z",dt);
 
@@ -113,13 +113,11 @@ returns pointer to tm structure wrapped in opt."""
  fun hour() => 3600;
 
  fun day() => 86400;
-
  fun expires_seconds_from_now(seconds:int) ={ 
    var time_epoch_seconds = time_t() +seconds;
    return rfc1123_date (gmtime(time_epoch_seconds));
  }
+
 }
 
  
-  
-
