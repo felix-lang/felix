@@ -160,6 +160,8 @@ next:while true do
       ("long long", "vlong"),
       ("uint32_t", "uint32"),
       ("unsigned", "uint"),
+      ("size_t", "size"),
+      ("ssize_t", "ssize"),
 
       // get rid of all spaces now
       (" ",""),
@@ -208,10 +210,14 @@ next:while true do
     args= args.pack;
     ret = ret.pack;
     var arg_list = split (args, ",");
-    args = cat " *" arg_list;
+    args = cat " * " arg_list;
     arg_list = Cons (ret, arg_list);
     if ret == "void" do
       println$ "  proc " + name + ": " + args +";" + trail;
+    elif ret in ("float","double","ldouble","fcomplex","dcomplex","lcomplex") 
+    or name.[0 to 2] == "is"  
+    do
+      println$ "  fun " + name + ": " + args + " -> " + ret ";" + trail;
     else
       println$ "  gen " + name + ": " + args + " -> " + ret ";" + trail;
     done
