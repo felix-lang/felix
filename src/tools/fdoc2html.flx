@@ -191,12 +191,12 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
     while hstack > n do 
       write_string("</div>"); 
       --hstack;
-      set (&hnums,hstack,1);
+      set (hnums,hstack,1);
      done
      if hstack == n do
        --hstack;
        write_string("</div>"); 
-       set(&hnums,hstack,hnums.[hstack]+1); 
+       set(hnums,hstack,hnums.[hstack]+1); 
      done
   }
   fun hnum() = {
