@@ -108,8 +108,8 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
     val v = digits.int;
     val vnext = v + 1;
     val vprev = v - 1;
-    val snext = (f"%010d" vnext).[10-n to];
-    val sprev= (f"%010d" vprev).[10-n to];
+    var snext = (f"%010d" vnext).[10-n to];
+    var sprev= (f"%010d" vprev).[10-n to];
 
     snext = relfile.[to fpos] + snext + relfile.[lpos to];
     sprev = relfile.[to fpos] + sprev + relfile.[lpos to];
@@ -191,12 +191,12 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
     while hstack > n do 
       write_string("</div>"); 
       --hstack;
-      hnums.[hstack]=1;
+      set (&hnums,hstack,1);
      done
      if hstack == n do
        --hstack;
        write_string("</div>"); 
-       hnums.[hstack]=hnums.[hstack]+1; 
+       set(&hnums,hstack,hnums.[hstack]+1); 
      done
   }
   fun hnum() = {

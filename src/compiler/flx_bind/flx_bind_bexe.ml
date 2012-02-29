@@ -557,6 +557,7 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
       end
 
   | EXE_assign (l,r) ->
+      (* trick to generate diagnostic if l isn't an lvalue *)
       let _,lhst as lx = be l in
       let _,rhst as rx = be r in
       let lhst = minimise state.counter lhst in

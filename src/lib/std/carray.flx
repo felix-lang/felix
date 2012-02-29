@@ -12,8 +12,8 @@ open class Carray
   fun array_alloc[T]: !ints -> &T = '(?1*)::std::malloc(sizeof(?1)*$1)';
   fun array_calloc[T]: !ints -> &T = '(?1*)::std::calloc(sizeof(?1),$1)';
   proc free[T]: &T = "::std::free($1);";
-  fun subscript[T]: &T * !ints -> T = '$1[$2]';
-  fun deref[T]: &T -> T = '*$1';
+  lvalue fun subscript[T]: &T * !ints -> T = '$1[$2]';
+  lvalue fun deref[T]: &T -> T = '*$1';
 
   fun + [T]: &T * !ints -> &T= '$1+$2';
   fun - [T]: &T * !ints -> &T = '$1-$2';

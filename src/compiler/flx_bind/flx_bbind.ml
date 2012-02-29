@@ -630,9 +630,11 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
       Hashtbl.add state.ticache symbol_index t
     end;
 
-    if state.print_flag then begin
+    if state.print_flag then 
+    begin
+      let lvalue = if List.mem `Lvalue props then "lvalue " else "" in
       let atyp = btyp_tuple ts in
-      print_endline ("//bound fun " ^ sym.Flx_sym.id ^ "<" ^
+      print_endline ("//bound "^lvalue^"fun " ^ sym.Flx_sym.id ^ "<" ^
         string_of_bid symbol_index ^ ">" ^
         print_bvs bvs ^ ":" ^ sbt bsym_table (btyp_function (atyp, bret)))
     end;

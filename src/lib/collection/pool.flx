@@ -1,6 +1,3 @@
-
-/* clunky typedef needs to be in Pool[s] put struct pool is depenant 
-   but struct cant be in class for some reason*/
 class Pool[s] {
 
   typedef member_t = (free:bool,member:s);

@@ -137,7 +137,15 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
 (* model binary operator as procedure call *)
 let assign sr op l r =
   match op with
-  | "_set" -> STMT_cassign (sr,l,r)
+  | "_set" -> 
+    (* Note: I don't think this special case gets triggered,
+       because deref is usually handled by a library function
+    *)
+    let nul = match l with 
+    | EXPR_deref _ -> l 
+    | _ -> EXPR_deref (sr, (EXPR_ref (sr,l))) 
+    in 
+    STMT_cassign (sr,nul,r)
   | "_pset" -> STMT_cassign (sr,EXPR_deref (sr,l),r)
   | _ ->
   STMT_call

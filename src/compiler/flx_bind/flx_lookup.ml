@@ -3853,12 +3853,14 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
         with
         | Some bsym ->
             begin match Flx_bsym.bbdcl bsym with
-            | BBDCL_fun (properties,_,_,_,_) ->
+            | BBDCL_fun (properties,_,_,_,_) 
+            | BBDCL_external_fun (properties,_,_,_,_,_,_) ->
                 List.mem property properties
             | _ -> false
             end
         | None ->
             begin match (get_data state.sym_table bid).Flx_sym.symdef with
+            | SYMDEF_function (_,_,properties,_) -> List.mem property properties
             | SYMDEF_fun (properties,_,_,_,_,_) -> List.mem property properties
             | _ -> false
             end
@@ -3934,12 +3936,28 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
       | BEXPR_apply ((BEXPR_closure (i,ts),_),a),_ when has_property i `Lvalue ->
           bexpr_address e
 
+      | BEXPR_apply ((BEXPR_closure (i,ts),_),a),_  ->
+          let bsym = Flx_bsym_table.find bsym_table i in
+          let name = Flx_bsym.id bsym in
+          let sr2 = Flx_bsym.sr bsym in
+          clierr srr ("[bind_expression] [4]Address application of non-lvalue function " ^
+            name ^ " in " ^ sbe bsym_table e ^ 
+            "\ndefined here:\n" ^
+            Flx_srcref.long_string_of_src sr2
+          )
+
       | _ ->
-          clierr srr ("[bind_expression] [4]Address non variable " ^
+          clierr srr ("[bind_expression] [5]Address non variable " ^
             sbe bsym_table e)
       end
 
-  | EXPR_deref (_,EXPR_ref (sr,e)) ->
+  | EXPR_deref (_,(EXPR_ref (sr,e) as x)) ->
+    begin 
+      try ignore (be x) 
+      with err -> 
+      print_endline ("WARNING: binding address of expression " ^ string_of_expr x ^ 
+      " gave error: \n" ^ Printexc.to_string err  ^ "\n" ^ Flx_srcref.long_string_of_src sr )
+    end;
     be e
 
   | EXPR_deref (sr,e) ->

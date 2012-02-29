@@ -324,7 +324,7 @@ open class String
   {
     val m = s.len;
     var o = x.[to spos];
-    val n = (x,s,spos.int).stl_find.size;
+    var n = (x,s,spos.int).stl_find.size;
     while n != stl_npos do
       o+=x.[spos to n]+r;
       spos = n+m;

@@ -62,7 +62,7 @@ class ServerConfig {
     return config;
   }
 
-  fun enhance_with_config_file(config:server_config):server_config = {
+  fun enhance_with_config_file(var config:server_config):server_config = {
     var params = read_config(config.server_root+"/config/server_config.cfg");
     config.params = params;
     match find (fun (a:string,b:string) => eq(a,b)) params "port" with 
@@ -84,7 +84,7 @@ class ServerConfig {
     return config;
   }
 
-  fun prefix(arg:string,key:string)=>
+  fun prefix(var arg:string,key:string)=>
     arg.[to len key]==key
   ;
 

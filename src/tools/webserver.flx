@@ -239,7 +239,7 @@ Content-Length: """ + str contents.len.int + """\r
 """ + contents;
 
 
-fun get_file (fname:string, path:list[string]) = {
+fun get_file (var fname:string, path:list[string]) = {
   if fname.[0] == char "$" do fname = fname.[1 to]; done
   if FileStat::fileexists fname do return Some fname;
   else
