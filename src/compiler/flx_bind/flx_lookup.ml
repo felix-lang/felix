@@ -3839,6 +3839,10 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
   | EXPR_not (sr,e) -> bexpr_not (be e)
 
   | EXPR_ref (_,(EXPR_deref (_,e))) -> be e
+
+  (* define &(a.b) = ((&a).b) *)
+  | EXPR_ref (sr1,EXPR_dot (sr2,(l,r))) -> be (EXPR_dot (sr2, (EXPR_ref (sr1,l),r)))
+
   | EXPR_ref (srr,e) ->
       (* Helper function to look up a property in a symbol. *)
       let has_property bid property =
@@ -4158,8 +4162,10 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 
 
   (* x.0 or x.(0) where rhs arg is int literal: tuple projection *)
+(*
   | EXPR_dot (sr,(e, EXPR_literal (_, L.Int (_,s)) )) ->
     be (EXPR_get_n (sr,(int_of_string s,e)))
+*)
 
   | EXPR_dot (sr,(e,e2)) -> Flx_dot.handle_dot state bsym_table build_env env rs bea bt koenig_lookup cal_apply bind_type' sr e e2
 

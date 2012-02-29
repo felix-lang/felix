@@ -4,13 +4,6 @@ include "std/io/faio"; //mutual recursion? Really!
 include "std/io/demux";
 include "std/posix/__init__";
 
-// HACKERY -- system job queue: have to move out of class since type classes
-// can't contain variables .. I wonder why? We should remove this restriction.
-val qbound = 20;
-val nthreads = 4;
-val sys_job_queue = Pthread::mk_job_queue(qbound,nthreads);
-
-
 class Faio_posix  {
 header faio_posixio_hpp = '#include "faio_posixio.hpp"';
 requires package "demux";
@@ -22,6 +15,11 @@ open Demux;
 
 header sockety_h = '#include "demux_sockety.hpp"';  // my socket utils
 header = '#include "faio_posixio.hpp"';
+
+fun sys_job_queue_qbound() => 20;
+fun sys_job_queue_nthreads() =>  4;
+val sys_job_queue = Pthread::mk_job_queue(#sys_job_queue_qbound,#sys_job_queue_nthreads);
+
 
 
 instance Str[FileSystem::posix_file] {

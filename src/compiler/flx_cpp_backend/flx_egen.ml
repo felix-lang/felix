@@ -298,6 +298,7 @@ let rec gen_expr'
 
   | BEXPR_get_n (n,(e',t as e)) ->
     begin match rt t with
+    | BTYP_tuple _  -> ce_dot (ge' e) ("mem_" ^ si n)
     | BTYP_array (_,BTYP_unitsum _) ->
       begin match e with
       | BEXPR_tuple _,_ -> print_endline "Failed to slice a tuple!"
@@ -348,7 +349,13 @@ let rec gen_expr'
       | _ -> failwith "[flx_egen] Instance expected to be (c)struct"
       end
 
-    | _ -> ce_dot (ge' e) ("mem_" ^ si n)
+    | BTYP_pointer (BTYP_array _) ->
+      ce_prefix "&" (ce_arrow (ge' e) ("data["^si n^"]"))
+
+    | BTYP_pointer (BTYP_tuple _) ->
+      ce_prefix "&" (ce_arrow (ge' e) ("mem_" ^ si n))
+
+    | _ -> assert false (* ce_dot (ge' e) ("mem_" ^ si n) *)
     end
 
   | BEXPR_match_case (n,((e',t') as e)) ->

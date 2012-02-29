@@ -255,17 +255,6 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
       (* print_endline "AST_dot, RHS simple name, is done"; *)
       bound
 
-    (* LHS TUPLE TYPE *)
-    | BTYP_tuple _ ->
-      begin try be (EXPR_apply (sr,(e2,e)))
-      with exn ->
-      clierr sr (
-      "AST_dot, arg "^ string_of_expr e2^
-      " is simple name, and attempt to apply it failed with " ^
-      Printexc.to_string exn
-      )
-      end
-
     (* LHS OTHER ALGEBRAIC TYPE *)
     | _ ->
       begin try be (EXPR_apply (sr,(e2,e)))
@@ -277,6 +266,55 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
       )
       end
     end
+
+  (* RHS is an integer literal , LHS must be tuple or array *)
+  | EXPR_literal (_, Flx_literal.Int (_,s)) ->
+    let n = int_of_string s in
+    begin match ttt with
+    | BTYP_tuple ls ->
+      let m = List.length ls in
+      if n < 0 || n >= m then
+        clierr sr ("AST_dot, tuple index "^ string_of_int n ^ 
+        " out of range 0 to " ^ string_of_int (m-1) ^
+        " for type " ^ sbt bsym_table ttt
+        )
+      else
+       bexpr_get_n (List.nth ls n) (n,te)
+ 
+    | BTYP_array (t,BTYP_unitsum m) ->
+      if n < 0 || n >= m then
+        clierr sr ("AST_dot, constant array index "^ string_of_int n ^ 
+        " out of range 0 to " ^ string_of_int (m-1) ^
+        " for type " ^ sbt bsym_table ttt
+        )
+      else
+       bexpr_get_n t (n,te)
+  
+    | BTYP_pointer (BTYP_tuple ls) ->
+      let m = List.length ls in
+      if n < 0 || n >= m then
+        clierr sr ("AST_dot, tuple index "^ string_of_int n ^ 
+        " out of range 0 to " ^ string_of_int (m-1) ^
+        " for type " ^ sbt bsym_table ttt
+        )
+      else
+       bexpr_get_n (btyp_pointer (List.nth ls n)) (n,te)
+ 
+    | BTYP_pointer (BTYP_array (t,BTYP_unitsum m)) -> 
+      if n < 0 || n >= m then
+        clierr sr ("AST_dot, constant array index "^ string_of_int n ^ 
+        " out of range 0 to " ^ string_of_int (m-1) ^
+        " for type " ^ sbt bsym_table ttt
+        )
+      else
+       bexpr_get_n (btyp_pointer t) (n,te)
+ 
+    | _ -> clierr sr (
+    "AST_dot, RHS " ^ string_of_expr e2 ^ 
+    " is integer literal, expected LHS t be tuple type, got " ^
+    sbt bsym_table ttt
+    )
+    end 
 
   (* RHS NOT A SIMPLE NAME: reverse application OR composition?? *)
   | _ ->
