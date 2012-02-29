@@ -21,7 +21,7 @@ class ServerConfig {
   fun basic_server_config(handlers:list[http_handler]):server_config => 
     enhance_with_config_file( enhance_with_command_line_arguments(server_config(handlers)));
 
-  fun enhance_with_command_line_arguments(config:server_config):server_config = {
+  fun enhance_with_command_line_arguments(var config:server_config):server_config = {
     var arg = "";
     var argno = 1;
     while argno<System::argc do
