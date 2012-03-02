@@ -31,10 +31,10 @@ endmatch;
 config.log  = logger(info_logger+debug_logger);
 
 
-val db_pool = Sqlite3Pool::create_sqlite3_pool(match (get_param_list(config.params,"DB")) with
+val db_pool:Pool::pool[Sqlite3::sqlite3_db_t] = Sqlite3Pool::sqlite3_pool(match (get_param_list(config.params,"DB")) with
                                                  | Cons(?s,_) => s
                                                  | _ => "db/wiki.db"
-                                               endmatch,1);
+                                               endmatch);
 
 config.log(INFO,"Starting wiki server");
 
