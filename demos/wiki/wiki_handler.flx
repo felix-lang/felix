@@ -168,11 +168,12 @@ fname+"""' >
   fun web_route(config:server_config,request:http_request) => startswith request.path "/web/";
 
   proc web(conn:http_connection,request:http_request) {
-    conn.config.document_root = #Config::config.FLX_INSTALL_DIR;
+    var re_conn = conn;
+    re_conn.config.document_root = #Config::config.FLX_INSTALL_DIR;
     iter (proc (handler:http_handler) { 
-      if not *conn.dirty  do
-        if handler.handles(conn.config,request) do
-          handler.handler_fn(conn,request);
+      if not *re_conn.dirty  do
+        if handler.handles(re_conn.config,request) do
+          handler.handler_fn(re_conn,request);
         done
       else
         goto finished; 
@@ -185,9 +186,10 @@ fname+"""' >
   fun lib_route(config:server_config,request:http_request) => startswith request.path "/lib/";
 
   proc lib(conn:http_connection,request:http_request) {
-    request.path ="/"+request.path;
-    request.params = Cons((get_suffix(request.path),""),Empty[string^2]);
-    inc(conn,request); 
+    var re_request = request;
+    re_request.path ="/"+request.path;
+    re_request.params = Cons((get_suffix(request.path),""),Empty[string^2]);
+    inc(conn,re_request); 
   }
 
   fun inc_route(config:server_config,request:http_request) => startswith request.path "/$/";
@@ -263,7 +265,8 @@ fname+"""' >
 
 
 
-fun get_ref_file (fname:string, path:list[string]) = {
+fun get_ref_file (fn:string, path:list[string]) = {
+  var fname = fn;
   if fname.[0] == char "$" do fname = fname.[1 to]; done
     val inpath:bool = match find (fun (x:string) => startswith  fname x) path with |Some _ => true |_ => false endmatch;
   if FileStat::fileexists fname do return Some fname;
@@ -275,7 +278,8 @@ fun get_ref_file (fname:string, path:list[string]) = {
   done
 }
 
-  fun get_suffix(fname:string) = {
+  fun get_suffix(fn:string) = {
+    var fname = fn;
     var suffix = "";
     match rfind (fname, "?") with
       | Some ?pos => { suffix = fname.[pos + 1 to]; fname=fname.[0 to pos]; }
