@@ -10,7 +10,7 @@ and get_http_request which extracts request from stream
 class HTTPRequest {
    open HTTPConnection;
    open Assoc_list;   
-   open XML2;
+   open URICodec;
    open Logger;
    open Cookie;
    open Stream;
@@ -68,7 +68,7 @@ class HTTPRequest {
   fun get_params(p:string):list[string*string] ={
      var params = split(p,'&');
      return   map  (fun(x:string):string*string =>let Cons(?hd,?tl) = split(x,'=') in
-                     (xml_uri_unescape_string(hd),xml_uri_unescape_string((fold_left (fun(x:string) (y:string):string => x + y) "" tl)))
+                     (uri_decode(hd),uri_decode((fold_left (fun(x:string) (y:string):string => x + y) "" tl)))
                      ) params;
   }
 
@@ -79,8 +79,8 @@ class HTTPRequest {
       get_line(conn.sock, &line); 
       match split(line,':') with
         | Cons(?key,?value) =>
-              *headers = Cons((xml_uri_unescape_string(strip(key)),   
-	      xml_uri_unescape_string(strip(fold_left (fun(x:string) (y:string):string => x + y) "" value))),
+              *headers = Cons((uri_decode(strip(key)),   
+	      uri_decode(strip(fold_left (fun(x:string) (y:string):string => x + y) "" value))),
               *headers);
          | ?x => println("WARNING:Possible malformed request headerline:"+x); 
       endmatch;

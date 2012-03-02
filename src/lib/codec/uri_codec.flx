@@ -70,7 +70,9 @@ class URICodec {
     for var i in 0 upto (int(len(encoded)) - 1) do
       match state with
         | SEARCH  => { if encoded.[i] != char('%') do
-                         decoded = decoded +encoded.[i];
+                         
+                         decoded = decoded +
+                           if encoded.[i] == char('+') then char(' ') else encoded.[i] endif;
                        else
                          state = CONVERT;
                        done

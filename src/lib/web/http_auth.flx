@@ -1,4 +1,5 @@
-
+publish """ Implements Basic HTTP Authentication
+"""
 class HTTPBasicAuth {
   open HTTPConnection;
   open HTTPRequest;
@@ -49,6 +50,9 @@ class HTTPBasicAuth {
     return ;
   }
 
+publish """Authentication wrapper for a http_handler function, prcesses HTTP Authentication
+and passes control to handler if Authentication succedes otherwise returns Unauthorized response 
+to the browser"""
   proc requires_auth (auth_source:(string*string->bool),realm:string,
                      handler_fn:(http_connection*http_request) -> void)
                     (conn:http_connection, request:http_request ) = {
@@ -58,5 +62,5 @@ class HTTPBasicAuth {
     done
   }
  
-
+ 
 }
