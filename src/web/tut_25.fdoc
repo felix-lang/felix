@@ -1,72 +1,73 @@
-@h1 How to Browse library code
-The best way to learn Felix and its library .. is to browse
-the library code. Read the code, try to figure what it is doing,
-and try to use it.
+@h1 Networking
+Felix provides builtin support for asynchronous socket I/O. This is supported
+by platform dependent event notification services, using the best of
+{select}, {poll}, {epoll}, {kqueue}, Solaris I/O completion ports and
+Windows I/O completion ports. A single pre-emptive thread monitors
+the events and does all data transfers on behalf of the client
+fibres. The client fibres block, but the thread running them does not.
+The subsystem performing the event management is called {demux}
+and that performing the data transfers and fibre scheduling
+is called {faio}.
 
-Have good look at all the files and get some idea what is in the
-library.
+@felix
 
-Usually, files {include} other files they need, and modules
-will often {open} modules they need.
+// Get library resources
 
-However with the standard library, for simplicity and brevity,
-a special file {lib/std/__init__.flx} is used to load all the
-other files, and, most of the modules define are opened
-already. 
+include "std/io/stream";
+include "std/io/socket";
+open Stream;
+open Socket;
+open Stream::TerminalIOByteStream[Socket::socket_t];
 
-Without this code would look a bit like C++: {#include} everything,
-and if it bothered to be modular {using namespace} on each space.
-This is generally the right way because it makes coupling explicit.
+// announce the program
+print "flx tcp stream test\n";
 
-For the standard library we encourage you instead to click:
+// make a listening socket for our server
+var listener: socket_t;
+var port = 0;  // you choose
+mk_listener(&listener, &port, 1);
+println$ "Got port: "; print port; endl;
+println$ "listeneing on socket " + str listener;
 
-@felix /lib/std/__init__.flx
+print "spawning client\n";
+spawn_fthread
+{
+  {
+    var eof = false;
+    var c: socket_t;
+    connect(&c, c"127.0.0.1", port); // connect to localhost
+    println$ "fthread's socket is " + str c;
+    var st: string;
 
-and for the Posix subsystem
+    get_line(c, &st);
+    print "connector got "; print st; endl;
+    write_string(c, "thanks\n", &eof);         // newline important
 
-@felix /lib/std/posix/__init__.flx
+    ioclose(c);  // finished with this
+    //println$ "fthread closed " + str c;
+  };
+};
 
-@h2 The Felix webserver
-The web server you're using right now is written in Felix and is
-part of the Felix package. It should be installed in {/usr/local/bin}
-right now. If you simply type {webserver} it will run in the console
-foreground and provide web services on port 1234.
+// make the server
+proc server()
+{
+  var s: socket_t;
+  accept(listener, &s);
+  println$ "Mainline accepted connection on socket " + str s;
+  ioclose(listener);  // not needed anymore
 
-The default Felix root is the {/usr/local/lib/felix/felix-version}
-where {felix-version} is the version of Felix the webserver was built
-with.
+  var eof = false;
+  print "got connection\n";
+  write_string(s, "server says hi\n", &eof);     // newline important here
 
-The webserver can browse Felix documentation files of form {*.fdoc},
-Felix code {*.flx} and {*.flxh}, Felix {flx_pkgconfig} configuration
-database files {*.fpc} and C and C++ files {*.h}, {*.hpp}, {*.c},
-{*.cpp}, {*.cxx}, all with colourisation and
-hyperlinking of inclusions .. so it's good for browsing C and C++
-code too.
+  var st: string;
+  get_line(s, &st);
 
-Of course it also browses {*.txt}, {*.html}, {*.htm},
-{*.jpg}, {*.png} and few other file kinds too, but these are
-processed in the usual way.
+  print "server got "; print st; endl;
+  ioclose(s);
+  //println$ "mainline closed socket " + str s;
+}
 
-To escape from extreme confusion in the W3C standard regarding
-filename formation, Felix uses a {$} in the URL to separate the
-hostname from the filename. For example
-@pre
-http://locahost:1234/$/usr/include/stddef.h
+server; // run the server from the main thread
 @
-refers to file {/usr/include/stddef.h}. This is an absolute
-pathname. Felix webserver can browse your whole machine,
-it isn't restricted to the default root.
-
-If you leave out the {$} separator, the webserver makes a search
-of some paths (currently builtin: a bug to be fixed!) dependent
-on the extension.
-
-So you can use the webserver, especially with bookmarks, to easily
-browse and code you're writing in C, C++ or Felix, with an easy way
-to examine dependencies (one click .. could it be easier?).
-
-Of course, your IDE or favourite text editor can probably do all
-this too, but it is hard for the Felix system to provide documentation
-in a format suitable for all these systems, so it comes with its 
-own webserver!
 

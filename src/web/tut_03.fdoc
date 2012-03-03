@@ -101,110 +101,53 @@ in the current version of Felix.
 @
 
 @h2 C functions
-The function and procedures:
+The function and procedure:
 @felix
-cfun f(x:int)=>int;
+cfun f(x:int) => x;
 cproc p(x:int) { println x; }
 @
-has type 
+have types
 @felix
    int --> int
    int --> void
 @
-which is the type of classic C funcions:
+respectively, which are the types of classic C funcions:
 @felix
   int (*)(int)
   void (*)(int)
 @
 You can use this kind of function to force generation of
-a classic C style function for performance, so you know
+a classic C style function for performance, so you that know
 the type exactly, and so you can pass it as an argument
-to a C library. In particular such function should not reference
-Felix globals (requires passing thread frame pointer), no
+to a C library. In particular such a function or procedure should not reference
+Felix globals (because this requires passing the thread frame pointer), nor
 do anything directly or indirectly requiring garbage collection
-(also requires thread frame pointer).
+(which also requires thread frame pointer since that in turn contains a pointer
+to the garbage collector).
 
 C functions can be used wherever a Felix function is required,
 a wrapper is generated automatically.
 
-Note: C functions of this kind are still defined with 
+C functions of this kind are still defined with 
 Felix code: they're Felix functions with an enforced
 C interface. In fact many ordinary Felix functions will
 be reduced to C functions by the optimiser, but this
 form enforces the use of C interface.
 
-@h2 Callbacks
-A typical use of a C function is for callbacks.
-Unfortunately, C callbacks are universally ill-typed.
-This can't be tolerated in Felix, and in this case
-there's no way to "cast away" the problem.
+@note
+It seems unfortunate that <em>whilst</em> a {cfun} or {cproc} has a C interface it
+is defined in Felix, <em>whereas</em> a {cstruct} is a Felix interface to a
+struct defined in C, and {cenum} and {cflag} provide Felix models of enumerations
+or sets of integer constants defined in C.  The role reversal here seems confusing, 
+especially as Felix functions and types can be defined in C using {fun}, {proc} and {type}
+keywords and C code given as a string, and {ctypes} provides a shorthand form for
+multiple instances of {type} eliding the strings. In turn {cenum} may be considered
+a shorthand for a {type} binding and a list of {const} definitions. Also, a shorthand
+for lifting C functions from libraries using a {fun} or {proc} without a 
+defining string can be used. The situation is further complicated by the
+{callback} feature.
 
-Here's how callbacks work. A callback is a function
-like this:
-@felix
-  void f(int x, void *client_data);
-@
-It is registered by a function like this:
-@felix
-  void register_callback(e:event, void (*f_t)(int, void*), void *client_data);
-@
-Now, what we want to do here is use a felix function for the callback:
-@felix
-proc f(x:int){ println$ "Called back with " + str x; }
-@
-To do this we generate a C function:
-@felix
-  void wrap_f(int x, void *client_data)
-  {
-    f_t p = (f_t)client_data;
-    p->call(x);
-  }
-@
-This casts the {client_data} to a pointer to the C++ class
-of the Felix function, then calls it with the proper arguments.
-Now, to register it, something like this:
-@felix
-register_callback(event, wrap_f, (void*)(new f));
-@
-To generate the wrapper all you need to do is label
-a function or procedure a callback:
-@felix
-callback f(x:int, f){ println$ "callback " + str x; }
-@
-Here's a complete example
-@felix
-callback fun f: int * f -> int;
 
-fun g(x:int)=> x + x + 1;
-
-print$ f(2, g); endl;
-
-callback proc p: int * p;
-
-proc q(x:int){ print x; endl; }
-
-p(31,q);
-
-typedef cf = int --> int;
-
-proc h(y:cf, x:int) {
-  print$ y x; endl;
-}
-
-body """
-  int yyy(int x) { return x + 3; }
-""";
-
-const yyy: int --> int;
-
-h(yyy,2);@
-
-@h2 Adjectives
-Here are some adjectives you can apply to functions:
-@felix
-inline fun f(x:int)=>x + 1;
-noinline fun g(x:int)=>x + 1;
-@
 
 @h1 Higher Order Functions
 In Felix, functions can be nested:

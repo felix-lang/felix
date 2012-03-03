@@ -1,133 +1,198 @@
-@h1 An example data structure
-In this chapter we will try to implement a lazy set data structure. First, let us 
-observe that we have several data types which provide a set membership function:
+@h1 Special Things
+This section contains miscellaneous things that should be documented but haven't
+yet been put in an appropriate place, or, for which there is no appropriate
+place, at least yet.
+
+@h2 Apply function
+Normally, you can only expect:
+@felix
+f x
+@
+to work when f is a function. However if you write a function:
+@felix
+fun apply (x:string, y:string) => x + y;
+@
+then you can write:
+@felix
+h := "Hello";
+sp := " ";
+world := "World";
+println$ h sp world;
+@
+Applying a string to another string is now defined by the {apply} function.
+We have turned {string} into an <em>applicative type</em>.
+
+
+@h2 Printf style formatting
+You can use a special notation:
+@felix
+println$ f"Loaded text file %S, len=%d" (fname, txt.len.int);
+@
+to get {printf} style formatting. The {f".."} string here
+is actually a function. Felix supports a substantial set of
+the usual printf codes. Underneath it uses {vsprintf} to do the
+formatting. However it is fully typesafe. Only literal strings
+can be used.
+
+Here is a complete list of supported format type codes:
 @pre
-varray
-darray
-list
-s_expr
-re2
+  Code       Arg type
+  ------------------------
+  hhd        tiny
+  hhi        tiny
+  hho        utiny
+  hhx        utiny
+  hhX        utiny
+
+  hd         short
+  hi         short
+  hu         ushort
+  ho         ushort
+  hx         ushort
+  hX         ushort
+
+  d          int
+  i          int
+  u          uint
+  o          uint
+  x          uint
+  X          uint
+
+  ld         long
+  li         long
+  lu         ulong
+  lo         ulong
+  lx         ulong
+  lX         ulong
+
+  lld        vlong
+  lli        vlong
+  llu        uvlong
+  llo        uvlong
+  llx        uvlong
+  llX        uvlong
+
+  zd         ssize
+  zi         ssize
+  zu         size
+  zo         size
+  zx         size
+  zX         size
+
+  jd         intmax
+  ji         intmax
+  ju         uintmax
+  jo         uintmax
+  jx         uintmax
+  jX         uintmax
+
+
+  td         ptrdiff
+  ti         ptrdiff
+  tu         uptrdiff
+  to         uptrdiff
+  tx         uptrdiff
+  tX         uptrdiff
+
+  e          double
+  E          double
+  f          double
+  F          double
+  g          double
+  G          double
+  a          double
+  A          double
+
+  Le         ldouble
+  LE         ldouble
+  Lf         ldouble
+  LF         ldouble
+  Lg         ldouble
+  LG         ldouble
+  La         ldouble
+  LA         ldouble
+
+  c          int
+
+  S          string
+  s          &char
+  p          address
+  P          address
+
 @
-[Note: array is not included. Why?]
-
-Now, suppose we want to make a set which is a union of all these sets.
-In a dumb object oriented language (Java, C++ for example), 
-if we were lucky enough to have derived these types from a set abstraction, 
-or in a smart language like Ocaml, where interfaces can be applied post-class
-definition, we could just make a list of references to these objects, and 
-use the abstract membership function on each in turn.
-
-But Felix is not an OO language, so we can't do that. Lets look at two
-alternatives.
-
-@h2 Using a union
-Given a heterogenous data type we can create a unified type with a union:
+@h2 Identifiers
+Felix allows single quote marks in identifiers, this is primarily to allow mathematics style
+trailing primes:
 @felix
-open class Example1
-{
-  union SetKind = 
-    | Varray of varray[string]
-    | Darray of darray[string]
-    | List of list[string]
-    | Sexpr of S_expr::sexpr[string]
-    | Reg of RE2 
-  ;
+id, id', i'dent = 1,2,3
 @
-and now we just use a switch to define membership of the union type:
+The first character may not be a prime. Care is required comprehending the lexicology
+because the single quote also introduces strings. In particular special Python
+style strings with prefix letters like {r'hello'} have precedence over primes.
+
+Felix also allows identifier which start with a slosh and continue with upper or lower
+case letters, where letter means ASCII A-Za-z, and not unicode. This is to support
+TeX, LaTeX, AMSTeX symbols. Digits and other characters aren't included.
+The Felix webserver will typeset these symbols
+using MathJax.
 @felix
-  fun \in (elt:string, container:SetKind):bool  => match container with
-    | Varray ?a => elt \in a
-    | Darray ?a => elt \in a
-    | List   ?a => elt \in a
-    | Sexpr  ?a => elt \in a
-    | Reg    ?a => elt \in a
-    endmatch
-  ;
+val \delta = 1;
 @
-The repetition if rather boring, but this is actually an advantage of
-overloading. It's now a simple matter to make a lazy set:
+Although Felix accepts all such symbols as identifiers, MathJax only typesets 
+a subset of standard TeX symbols. The subset is rather large though. If you use
+an unsupported name, the display will not come out right: it will probably be
+shown in a box.
+
+
+@h2 def
+Felix has a special constuction to allow multiple assignments from a tuple:
 @felix
-  typedef LazySet = list[SetKind];
-  fun \in (elt:string, ss: LazySet) =>
-    fold_left 
-    (fun (acc:bool) (container:SetKind) => acc or elt \in container) 
-    false 
-    ss
-  ;
-}
+var i: int;
+def i, var j, val k = 1,2,3;
 @
-and of course a test case:
+Here {def} is used to specify that {i} is an existing variable to be
+assigned to, {j} is a new variable, and {k} is a value name.
+
+@h2 Control Structures
+Should go elsewhere ..
+
+@h2 goto
+Jumps .. 
+
+@h2 if
+
+Conditional
+
+@h2 Match
+
+Procedural match
+
+@h2 Loops
+Labels, break, conditinue, redo
+
+@h2 while
+While loop
+
+@h2 for
+
+Basic for loop
+
+@h2 Call, return
+
+Yep.
+
+@h2 Yield
+
+Fun stuff
+
+@h2
+Exceptions
+
+@h2 Comments
+Felix has both C and C++ style comments:
 @felix
-val a1 = list(Example1::Varray (varray("1","2")), Example1::List (list("3","4")));
-println$ "1" \in a1, "3" \in a1;
+// Comments containing \( \delta \) stuff
+/* Another \({\Bbb R}\Big(\sigma^{n}_{i=1}\sin\ x\) comment /* C comments */ can be nested */
+comment """ and you can have string $${\Bbb R}\Big(\sigma^{n}_{i=1}\sin\ x$$ comments too""";
+
 @
-
-@h2 Using HOFs to emulate OO
-There is another way to build our LazySet: to provide the required abstraction
-and type unification using functions. This technique is, in effect, an advanced
-kind of OO. 
-
-Its advanced because it is a better technique! Because it can do a lot more.
-Yet strangely, it is close to what you'd do with function pointers in C.
-
-We first provide a function for each data type that hides the data type
-by forming a closure over it, in other words, abstracting the representation away:
-@felix
-open class Example2 
-{
-  fun has (c:varray[string]) (elt:string) : bool => elt \in c;
-  fun has (c:darray[string]) (elt:string) : bool => elt \in c;
-  fun has (c:list[string]) (elt:string) : bool => elt \in c;
-  fun has (c:S_expr::sexpr[string]) (elt:string) : bool => elt \in c;
-  fun has (c:RE2) (elt:string) : bool => elt \in c;
-@
-You can see that after applying these functions to the data type we're left
-with functions of the same type:
-@felix
-  typedef LazySet = string -> bool;
-  typedef SetKind = list[LazySet]; 
-@
-Now, we define our membership function:
-@felix
-  fun \in (elt:string, ss: LazySet) =>
-    fold_left 
-    (fun (acc:bool) (container:SetKind) => acc or container elt) 
-    false 
-    ss
-  ;
-}
-@
-And now to use it:
-@felix
-val a2 = list(has(varray("1","2")), has(list("3","4")));
-println$ "1" \in a2, "3" \in a2;
-@
-You see, we've made a list of functions which accept strings and
-return if the string is in the encapsulated data type. The data type
-is hidden by the {has} application, leaving only the membership test. 
-Clearly, the result is an object method!
-
-@h2 Choices
-Well, given these two techniques, which is best? The unification technique
-does not admit extension in the sense that you have to add new cases to
-the union type, then code the corresponding match handlers. 
-
-It also leaves the underlying representation exposed.
-We could, in fact, use abstraction to hide the representation, however having
-access to it could be an advantage. It's not clear how fast this code is.
-However this technique has a major advantage: it could be made polymorphic.
-Throw out {RE2} which only works with strings, and it all works with 
-any element type.
-
-The functional abstraction technique, on the other hand, allows completely
-independent addition of new data structures to the LazySet: all we need to
-do is write a {has} function. This technique not only supports polymorphism
-of the element type, it supports it over the data type, that is, it is
-polyadic, not merely polymorphic. However, function closures are expensive.
-
-@h2 Convolution
-So you still don't know which to use? We'll add both kinds to both kinds,
-using recursion, and then it doesn't matter:
-
-@felix test/regress/rt/set-emulation-01.flx
-

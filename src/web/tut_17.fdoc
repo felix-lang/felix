@@ -1,304 +1,317 @@
-@h1 Integers
-Integers are not builtin types, but are in fact
-defined in the standard library by binding to
-their C equivalents.
+@h1 Fibres and Channels
+Felix supports a powerful new programming paradigm which allows
+millions of lightweight, cooperative threads to exist concurrently
+and represent actors, monsters in a game, or other active processes.
 
-@h2 Integer types and literal suffix
-In the following table, the Felix names of the basic integer
-types are given, along with the corresponding C names.
-
-The table also lists the lower case versions of the type suffices allowed
-for literals of that type. Either or both the unsigned designator 'u'
-or the other part may be upper case instead (however lL is not permitted
-for long long, both letters must be either lower or upper case).
-@pre
-  Felix name  C name              Suffix
-  -------------------------------------------------
-  tiny        signed char         t
-  utiny       unsigned char       ut, tu
-  short       signed short int    s
-  ushort      unsigned short int  us, su
-  int         signed int          i (none) 
-  uint        unsigned int        u
-  long        signed long int     l
-  ulong       unsigned long int   lu, ul
-  vlong       signed long long    ll, v
-  uvlong      unsigned long long  ull, llu, uv, vu
-@
-
-The following aliases for exact integers are also provided:
-
-<pre>
-  Felix name  C name     Suffix
-  -----------------------------
-  int8        int8_t     i8
-  uint8       uint8_t    u8
-  int16       int16_t    i16
-  uint16      uint16_t   u16
-  int32       int32_t    i32
-  uint32      uint32_t   u32
-  int64       int64_t    i64
-  uint64      uint64_t   u64
-</pre>
-
-The following special aliases are also provided
-to use in low level code related to address calculations:
-
-<pre>
-  Felix name    C name      Suffix
-  --------------------------------
-  size          size_t          uz
-  ssize         ssize_t          z
-  ptrdiff       ptrdiff_t        d
-  uptrdiff      ptrdiff_t       ud
-  intptr        intptr_t         p 
-  uintptr       uintptr_t       up
-  intmax        intmax_t         j
-  uintmax       uintmax_t       uj
-</pre>
+<em>Active programming</em> is the opposite of re-active programming. Active and
+re-active components can be combined. Reactive programming is good for
+small simple objects, meaning, objects with simple state.
 
 
-Felix guarantees all the addressing and exact integer aliases exist,
-even if the C89, C++ or C99 counterparts do not. When the C/C++ counterparts
-do exist, Felix binds to the same integer type, otherwise it binds to
-the largest appropriate integer type (for example, if both long
-and long long exist and are the same size as a pointer, and
-intptr_t is not defined by C or C++, then Felix choses long long
-as the alias).
+Active programming is better when objects have complex state because
+the stack can be used to encode part or all of the state.
 
-Note that there are no suffices for the special address calculating
-integer aliases. It is best to use a literal with a long enough type
-and cast it as required.
+Active programming uses two constructions: fibres (also called felix threads
+or just f-threads), and synchronous channels, also called s-channels.
+F-threads exchange control by transfer of the control token along an s-channel,
+possibly along with some data.
 
-Note also that unlike modern C and C++ very long integers without
-a suffix are still type {int}. This is because Felix has no idea
-of the limits of integer types.
+Best to show an example of course!
 
-@h2 Integer literal radix
-An integer literal consists of a prefix, numeric form and suffix.
-The suffix is noted in the tables above.
-Either the size indicator or signedness indicator 'u' or 'i'
-can be wholly capitalised (but note that lL is not allowed).
-
-The prefix denotes the radix as in the table below:
-<pre>
-  Prefix      Radix    name         Allowed digits
-  --------------------------------------------------------
-  0b 0B       2        binary       01
-  0o 0O       8        octal        01234567
-  0d 0D none  10       decimal      0123456789
-  0x 0X       16       hexadecimal  0123456789ABCDEFabcdef
-</pre>
-
-Hexadecimal digits which are letters may also be capitalised.
-Please note that unlike C {077} is decimal 77, it is not octal,
-you must use {0o77} to get octal!
-
-@h2 Underscore separators
-The numeric form consists of digits from the table above,
-with optional underscores inserted for layout purposes.
-Two underscores in a row are not permitted, one is allowed
-between digits, or a digit and the prefix or suffix.
-
-@h2 Exact rule for literals
 @felix
-let bindigit = ['0'-'1']
-let octdigit = ['0'-'7']
-let digit = ['0'-'9']
-let hexdigit = digit | ['A'-'F'] | ['a'-'f']
-let underscore = '_'
+open Text_file;
 
-let bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +
-let oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +
-let dec_lit  = ('0' ('d' | 'D'| "d_" | "D_"))? digit (underscore? digit) *
-let hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +
-let fastint_type_suffix = 't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"
-let exactint_type_suffix =
-    "i8" | "i16" | "i32" | "i64"
-  | "u8" | "u16" | "u32" | "u64"
-  | "I8" | "I16" | "I32" | "I64"
-  | "U8" | "U16" | "U32" | "U64"
+proc client(x:ischannel[string]) {
+  while true do
+    line := read x;
+    print line;
+  done
+}
 
-let signind = 'u' | 'U'
+proc server(x:oschannel[string]) {
+  f := fopen_input "xyz.flx";
+  var line = readln f;
+  while line != "" do
+    write$ x,line;
+    line = readln f;
+  done;
+  fclose f;
+}
 
-let suffix =
-    '_'? exactint_type_suffix
-  | ('_'? fastint_type_suffix)? ('_'? signind)?
-  | ('_'? signind)? ('_'? fastint_type_suffix)?
+proc launch() {
+  inp,out:= mk_ioschannel_pair[string]();
+  spawn_fthread { client(inp); };
+  spawn_fthread { server (out); };
+}
 
-let int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix
+launch;
+println$ "Launched!";
 @
 
-@h2 Example literals
+In this example we implement a simple client/server application.
+Of course this could easily be rewritten in an ordinary coding style,
+but the active programming style offers a major advantage: the client
+and server code are entirely decoupled statically: they're linked only
+by a dynamically passed synchronous channel. 
+
+The client and server are ordinary procedures. The library function
+{spawn_fthread} launches its argument as a new fibre, 
+which must be a procedure accepting no arguments: that's the 
+bit in the braces (which in turn calls the server or client).
+
+The client and server run <em>alternately</em> and <em>not concurrently</em>.
+Control is <em>exchanged</em> between the client and server by reading or
+writing to an {schannel}.
+
+The way this works is: both the client and server are added to a list of
+fibres waiting to be resumed at their entry point. When the mainline
+fibre exits one of these is popped off the wait list and execution
+begins. It continues until the fibre reads or write to an schannel
+or terminates.
+
+Lets assume the server runs first. When the server does a write on
+the schannel, the system discovers there's no corresponding read,
+so it simply resumes the fibre on top of the wait list, which will
+be the client. The writer is attached to the schannel as a pending
+fibre.
+
+When the client does a read, it finds there is a writer waiting
+on the channel, so the writer is moved off the channel and put
+back on the wait list.
+
+The actual data transfer is always implemented by passing a pointer
+from the writer to the reader: this is usually a pointer to a heap
+copy of the data being written (rather than a pointer to the stack
+of the writer, since that may be modified or invalidated when the
+writer resumes).
+
+If the client runs first, the same kind of control exchange is
+performed. It makes no difference which one runs first: the first
+fibre to access the thread is suspended and the one first doing
+the corresponding input/output operation captures the data, if any,
+then moves the suspended fibre off the channel onto the wait list.
+
+It is possible for multiple fibres to write to or read from a channel
+before a corresponding read or write is executed. When that happens,
+one of the multiple waiting fibres is selected at random and its
+data captured and it is then put back on the wait list.
+
+It is also indeterminate which of the reader/write pair will be
+resumed first after the data transfer.
+
+You should note carefully that the transfer of data along the channel
+is not important: the key thing is that the transfer acts as a 
+synchronisation point.
+
+There is one further very important issue: what happens if a 
+read is performed and there's no writer around? Or similarly,
+if a write is performed and there's no reader?
+
+The answer is: nothing. Literally nothing. Fibres <em>cannot deadlock</em>
+in the sense that if one is stalled because the owners of the other end
+of the channel have completed, then the stalled procedure is no longer
+reachable and will be reaped by the garbage collector.
+
+It is therefore vital <em>not</em> to store the channels in, say,
+global variables, because that would make waiting fibres reachable.
+In other words, if a running or waiting fibre can access a channel,
+it could in theory complete the pending I/O operation .. even if it
+never does. In that case, the suspended fibre will wait until the
+last channel owner terminates.
+
+You should also note that control transfer by this mechanism
+is synchronous, that is, under program control. There is no possibility
+of pre-emption, so low level locks are not required. Of course high
+level interlocking of fibres is required by carefully desiging the
+system.
+
+A collection of fibres and channels is, in fact, a network,
+and acts very much like a collection of integrated circuits 
+connected with wires.
+
+It is this fact that is the key to the power of active programming:
+the "chips" can be designed and programmed independently and
+connected together dynamically to make a circuit.
+
+In passing we mention that function subroutines are just a special case 
+of this where argument is passed in using an channel and the return
+value is passed out using a channel too:
+
 @felix
-// radix
+proc subroutine(argument: ischannel[int], result: oschannel[string)
 {
-  val i1 = 999;      // decimal
-  val i2 = 0b1111;   // binary
-  val i3 = 0o7777;   // octal
-  val i4 = 0d9999;   // decimal
-  val i5 = 0xF1_F2;  // hex
-};
+  v := read argument;
+  s = str v;
+  write$ result, s;
+}
 
-// underscores
 {
-  val i1 = 123_456;
-  val i2 = 0x_FF_FFu;
-};
-
-// normal signed integers
-{
-  val i1 : tiny = 1t;
-  val i2 : short = 1s;
-  val i3 : int = 1; // default
-  val i4 : int = 1i;
-  val i5 : long = 1l;
-  val i6 : vlong = 1ll;
-};
-
-// normal unsigned integers
-{
-  val i1 : utiny = 1tu;
-  val i2 : utiny = 1ut; // u may be first or last
-  val i3 : ushort = 1su;
-  val i4 : uint = 1u; // default
-  val i5 : uint = 1iu;
-  val i6 : ulong = 1lu;
-  val i7 : uvlong = 1vu;
-  val i8 : uvlong = 1llu; // alternate
-};
-
-// exact signed integers
-{
-  val i1 : int8 = 1i8;
-  val i2 : int16 = 1i16;
-  val i3 : int32 = 1i32;
-  val i4 : int64 = 1i64;
-};
-
-// exact unsigned integers
-{
-  val i1 : uint8 = 1u8; // 1iu8 not allowed
-  val i2 : uint16 = 1u16;
-  val i3 : uint32 = 1u32;
-  val i4 : uint64 = 1u64;
+  iarg,oarg := mk_ioschannel_pair[int];
+  ires,ores := mk_ioschannel_pair[string];
+  spawn_fthread { subroutine (iarg, ores); }
+  write$ oarg, 42;
+  s := read ires;
+  println$ "42 as a string is " + s;
 };
 @
 
-@h2 Functions 
-Arithmetic types support the same operations as ISO C99,
-except that Felix does not support bitwise operations on
-signed integers (shifts are supported, they're multiplications
-by powers of two).
+In other words, the fibres and channels model subsumes then function
+and procedure call and return model. Note clearly that with subroutines
+we also pass data in and out along with control.
 
-Note also, Felix does not provide automatic conversions.
-All standard integer operations of two arguments require
-both argument to be the same type, all operations return
-a value of that type. 
+Of course the fibre and channel model is more complex because it
+is vastly more flexible! In particular, communicating fibres are
+<em>control neutral</em> with respect to each other, unlike the
+asymmtric master/slave relation of the subroutine model. This is
+why fibres are a much better programming paradigm. Simply
+put .. <em>no more callbacks!</em> Callbacks are bad because they have
+to preserve where control resumes without the benefit of the usual
+control stack. Preserving control state as data this way is difficult
+and error prone. Many people use pre-emptibe threads to solve this problem.
+When doing that one is using the <em>control inversion</em> property
+of threads, but not the facet which is their real purpose: concurrency.
 
-Overflow of operations on signed types is undefined
-behaviour. Operations on unsigned types cannot overflow
-because they are defined as the modular residual of the
-underlying mathematical operation on integers.
+Using threads also has much higher cost in terms of OS resources,
+and context switching time, not to mention the need to use locks
+or some construct built around them. [Note: Felix also provides
+pre-emptive threads or p-threads with p-channels for communication,
+the model is syntactically similar to f-thread and s-channels
+but the semantics are utterly different: pthreads can deadlock
+and they can exchange control at arbitrary points of time,
+or even run concurrently: locks must be used to access shared
+memory. Using Felix pchannels makes it easier to synchronise
+data exchange.
 
-Thus, operations on exact unsigned integral types are fully
-deterministic, and operations on signed integral types
-are also deterministic when they do not overflow.
+As noted in the introduction: you can run millions of fibres
+at once without a problem. The context switches are extremely
+fast, and the data structures representing fibres and schannels
+extremely lightweight.
 
-In the table below the most tightly binding operation
-groups are given first (with one exception, power).
-Please note that all operator expressions are transformed
-by the parser into function calls.
-<pre>
-  operator parsing function     meaning
-  ------------------------------------------------------------------
-                   abs i        absolute value         (signed only)
-                   sgn i        sign       (returns int -1, 0 or +1)
-                                                       (signed only)
-                   succ i       successor
-                   pred i       predecessor
-                   max(i,j)     maximum
-                   min(i,j)     minimum
-                   gcd(i,j)     greatest common divisor
-                   lcm(i,j)     lowest common multiple
-  ------------------------------------------------------------------
-  +i       special plus i       identity
-  -i       special neg i        negation
-  ~i       special bnot i       bitwise compliment   (unsigned only)
-  i**j     special pow (i,j)    power
-  ------------------------------------------------------------------
-  i/j      left    div (i,j)    integer division
-  i%j      left    mod (i,j)    modular remainder
-  ------------------------------------------------------------------
-  i*j      unassoc mul (i,j)    multiplication
-  ------------------------------------------------------------------
-  i-j      left    sub (i,j)    subtraction
-  ------------------------------------------------------------------
-  i+j      unassoc add (i,j)    addition
-  ------------------------------------------------------------------
-  i&lt;&lt;j     left    shl (i,j)    multiply by power of 2
-  i&gt;&gt;j     left    shr (i,j)    divide by power of 2
-  -----------------------------------------------------------------
-  i\&amp;j     left    band (i,j)   bitwise and          (unsigned only)
-  ------------------------------------------------------------------
-  i\^j     left    bxor (i,j)   bitwise exclusive or (unsigned only)
-  ------------------------------------------------------------------
-  i\|j     left    bor (i,j)    bitwise or           (unsigned only)
-  ------------------------------------------------------------------
-  i&lt;j              lt (i,j)     less than             (returns bool)
-  i&lt;=j             le (i,j)     less than or equal    (returns bool)
-  i&gt;=j             ge (i,j)     greater than or equal (returns bool)
-  i&gt;j              gt (i,j)     greater than          (returns bool)
-  i==j             eq (i,j)     equal                 (returns bool)
-  i!=j             neq (i,j)    not equal             (returns bool)
-</pre>
-There two very important and unusual things to note.
-The first is the weird special grammar of the power operator.
-Whilst {- a**b} means {-(a**b)}, weirdly {a**-b} means 
-{a^(-b)}. This special grammar supports common mathematical
-usage.
+By comparison pthreads are expensive in resources, slow to switch
+context, and most OS cannot support very many of them. Pthreads
+should <em>only</em> be used in two circumstances: first, to manage
+asynchonous data sources, and secondly to share the workload of
+real-time processes between multiple CPUs. If you merely want
+to obtain contol inversion, use fibres instead.
 
-The second thing to note is that division has a higher precedence
-than multiplication, and subtraction has a higher precedence than addition.
-This has no effect on non-overflowing signed integer operations,
-but it does make a difference for unsigned integer operations and
-also floating point (which isn't associative).
+A sophisticated example of use of fibres is to be found
+in the Felix webserver (in the tools directory). This launches
+a fibre for each connection. A single pthread is used in the
+system to monitor all socket I/O. The serves does not require
+a pthread for each connection: only one http request can be
+serviced at once so there's no reason for concurrency unless
+you want to shared the load between several CPUs.
 
-The reason for this quirk is that Felix uses the same grammar for
-types as run time expressions, and we require tuple types {a * b * c}
-to be distinct from {a * (b * c)} and {(a * b) * c} and similarly for {a + b + c}.
-Because of this operator {*} is not left or right associative, and in particular
-can't associate with operator {/} so they have to have different precedences.
+As noted before, consider what would happen if we wrote by mistake:
+@felix
+  s := read ires;
+  write$ oarg, 42;
+@
 
-For a complete and precise understanding of the grammar you must
-consult the grammar file {lib/grammar/expressions.flxh}.
+It's simple. The read suspends the calling procedure (in braces),
+but the subroutine also suspends doing a read. So we have two
+reads an no writes. Deadlocked? No. We have two suspended procedures
+hanging on a channel owned by one of them so no active procedure
+can communicate with either of these suspended procedures,
+in other words they're unreachable and so they're reaped by
+the garbage collector.
 
-For a precise understanding of the standard operations on integers you
-must consult the typeclass specifications in {lib/std/algebraic.flx}.
+You can do this deliberately as a way to terminate a fibre!
+In that case it is known as <em>suicide</em>. Accidental suicide
+will cause code you expected to execute to simply evaporate.
+In the same circumstances pre-emptive threads deadlock (because
+the communication media are owned by the operating system
+not the user program, and the OS has no concept of reachability).
 
-@h3 Mixed mode integer operations
-Felix by default only supports arithmetic on integers
-of exactly the same type. To enable mixed mode arithmetic
-open the MixedInt module.
+@h2 A broadcast service
+As noted, if you have multiple readers and one writer, only
+one of the readers is sent the data. That seems like a restriction,
+and suggests an extension. 
 
-@h2 Procedures
-Felix supports the following procedures on integers:
-<pre>
-  operator     procedure
-  -----------------------------
-  ++i;         pre_incr (&amp;i)
-  i++;         post_incr (&amp;i)
-  --i;         pre_decr (&amp;i)
-  i--;         post_decr (&amp;i)
-  i+=j;        plus_eq  (&amp;i,j)
-  i-=j;        minus_eq (&amp;i,j)
-  i*=j;        mul_eq (&amp;i,j)
-  i/=j;        div_eq (&amp;i,j)
-  i%=j;        mod_eq (&amp;i,j)
-  i|=j;        bor_eq (&amp;i,j)
-  i^=j;        bxor_eq (&amp;i,j)
-  i&amp;=j;        band_eq (&amp;i,j)
-</pre>
-Note that the first argument of the procedure is a pointer to the store to
-be modified.
+But no! The existing model is enough:
+
+@felix
+gen broadcaster() : 
+  oschannel[oschannel[string]] * // subscription channel
+  oschannel[string]              // news reporting channel
+=
+{
+  // -------------------------------------------------------------
+  // SUBSCRIPTIONS
+  // -------------------------------------------------------------
+
+  // subscriber list
+  var clients = darray[oschannel[string]] ();
+
+  // subscription channel
+  iregistry, oregistry := mk_ioschannel_pair[oschannel[string]]();
+
+  // accept registrations
+  spawn_fthread {
+    while true do
+      push_back (clients, read iregistry);
+      println "Got a subscriber";
+    done
+  };
+ 
+  // -------------------------------------------------------------
+  // RELAY THE NEWS
+  // -------------------------------------------------------------
+
+  // news reading channel
+  inews, onews := mk_ioschannel_pair[string]();
+
+  // send news to all clients
+  spawn_fthread {
+    while true do
+      news_line := read inews;
+      if len clients > 0uz do
+        for var i in 0uz upto len clients - 1uz do
+          write$ clients.[i], news_line;
+        done
+      done
+    done
+  };
+
+  // return the channel for subscribing to news reports,
+  // and the channel for making news reports
+  return oregistry, onews;
+}
+
+// Create the broadcast station
+subscribe, news := broadcaster();
+
+// create a template for bored train commuters who want to read the news
+proc commuter (i:int) {
+  ichan, ochan := mk_ioschannel_pair[string]();
+  write$ subscribe, ochan; //subscribe to news
+  while true do 
+   line := read ichan;
+   print$ "Commuter " + str i + ": " + line;
+  done
+}
+
+// create two commuters
+spawn_fthread { commuter 1; };
+spawn_fthread { commuter 2; };
+
+// yield so that the commuters get a chance to subscribe
+// to the new before the broadcast begins
+// (this is a hack just to make the demo work)
+svc$ svc_yield;
+
+// create a reporter that just sends a file as news
+spawn_fthread {
+  f := Text_file::fopen_input "br.flx";
+  var line = Text_file::readln f;
+  while line != "" do
+    print$ "Reporting : " + line;
+    write$ news, line;
+    line = Text_file::readln f;
+  done
+  Text_file::fclose f;
+};
+
+println$ "Demo started";
+@
 

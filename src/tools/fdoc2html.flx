@@ -332,6 +332,7 @@ nextc:>
         elif b=="caveat" do ep; pstate=true; write_string("<p class='caveat'> <em>Caveat: </em> "); s=doc;
         elif b=="impl" do ep; pstate=true; write_string("<p class='implementation_detail'> <em>Implementation Detail: </em>"); s=doc;
         elif b=="future" do ep; pstate=true; write_string("<p class='future'> <em>In future: </em>"); s=doc;
+        elif b=="note" do ep; pstate=true; write_string("<p class='bug'> <em>Note: </em>"); s=doc;
         elif b=="bug" do ep; pstate=true; write_string("<p class='bug'> <em>Bug: </em>"); s=doc;
         elif b=="fixed" do ep; pstate=true; write_string("<p class='fixed'> <em>Fixed: </em>"); s=doc;
         elif b=="done" do ep; pstate=true; write_string("<p class='done'> <em>Done: </em>"); s=doc;
