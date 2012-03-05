@@ -39,8 +39,12 @@ syntax type_decls {
          (vals (filter_first 'Pval _5))
          (funs (filter_first 'Pfun _5))
          (struct-name (first _2))
-         (struct-polyvars (second _2))
-         (struct `(ast_struct ,_sr ,struct-name ,struct-polyvars ,vals))
+         (struct-polyspec (second _2))
+         (struct-polyvars (first struct-polyspec))
+         (struct-pvids (map first struct-polyvars))
+         (struct-pvs (map nos struct-pvids))
+         (struct-polyaux (second struct-polyspec))
+         (struct `(ast_struct ,_sr ,struct-name ,struct-polyspec ,vals))
          (mfuns (map (lambda (x) 
            (let* 
              (
@@ -48,19 +52,22 @@ syntax type_decls {
                (t0 (list-ref lst 0)) ; ast_curry
                (t1 (list-ref lst 1)) ; sr
                (t2 (list-ref lst 2)) ; name
-               (t3 (list-ref lst 3)) ; polyvars
+               (polyspec (list-ref lst 3)) ; polyvars
                (t4 (list-ref lst 4)) ; args
                (t5 (list-ref lst 5)) ; return type
                (t6 (list-ref lst 6)) ; fun kind
                (t7 (list-ref lst 7)) ; body
+               (polyvars (first polyspec))
+               (polyaux (second polyspec))
+               (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
                (kind (if (equal? (first (first t5)) 'ast_void) 'PRef 'PVal))
                (self-name 'self)
-               (self-type (nos (first _2)))
+               (self-type `(ast_name ,_sr ,struct-name ,struct-pvs))
                (self-arg `(,kind ,self-name ,self-type none)) 
                (self-args `((,self-arg) none))
                (args (cons self-args t4))
              ) 
-             `(,t0 ,t1 ,t2 ,t3, args, t5 ,t6 ,t7)
+             `(,t0 ,t1 ,t2 ,outpolyvars ,args, t5 ,t6 ,t7)
            )) funs)
          )
          (sts (cons struct mfuns))
