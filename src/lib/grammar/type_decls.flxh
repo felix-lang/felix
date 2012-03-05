@@ -92,20 +92,25 @@ syntax type_decls {
                (t0 (list-ref lst 0)) ; ast_curry
                (t1 (list-ref lst 1)) ; sr
                (t2 (list-ref lst 2)) ; name
-               (t3 (list-ref lst 3)) ; polyvars
+               (polyspec (list-ref lst 3)) ; polyvars
                (t4 (list-ref lst 4)) ; args
                (t5 (list-ref lst 5)) ; return type
                (t6 (list-ref lst 6)) ; fun kind
                (t7 (list-ref lst 7)) ; body
+               (polyvars (first polyspec))
+               (polyaux (second polyspec))
+               (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
+               (kind (if (equal? (first (first t5)) 'ast_void) 'PRef 'PVal))
                (self-name 'self)
-               (self-type (nos (first _2)))
-               (self-arg `(PVal ,self-name ,self-type none)) 
+               (self-type `(ast_name ,_sr ,struct-name ,struct-pvs))
+               (self-arg `(,kind ,self-name ,self-type none)) 
                (self-args `((,self-arg) none))
                (args (cons self-args t4))
              ) 
-             `(,t0 ,t1 ,t2 ,t3, args, t5 ,t6 ,t7)
+             `(,t0 ,t1 ,t2 ,outpolyvars ,args, t5 ,t6 ,t7)
            )) funs)
-         ) 
+         )
+         
          (sts (cons struct mfuns))
        )
        `(ast_seq ,_sr ,sts)
