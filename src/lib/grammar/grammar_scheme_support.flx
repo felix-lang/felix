@@ -116,7 +116,7 @@ SCHEME """
       (ct2
         (cond
           ((eq? 'NoConstraint c) ct )
-          ((eq? 'Eq (first c)) ;; type constraint
+          ((eq? 'Eq (first c)) ;; type  valconstraint
             `(ast_intersect
               ((ast_type_match ,_sr ((ast_name ,_sr ,v ()) ((,(second c) ()))))
               ,ct)
@@ -210,7 +210,17 @@ SCHEME """
   (define (Infix) `(ast_apply ,_sr (,(nos _2) (,_1 ,_3))))
 """;
 
-
+SCHEME """
+  (define (filter_first sym lst) 
+    (reverse 
+      (fold_left 
+        (lambda (acc val) (if (equal? (first val) sym) (cons (tail val) acc) acc))
+        ()
+        lst
+      )
+    )
+  )
+""";
 
 
 
