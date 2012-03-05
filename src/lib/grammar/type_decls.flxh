@@ -38,7 +38,9 @@ syntax type_decls {
        (
          (vals (filter_first 'Pval _5))
          (funs (filter_first 'Pfun _5))
-         (struct `(ast_struct ,_sr ,(first _2) ,(second _2) ,vals))
+         (struct-name (first _2))
+         (struct-polyvars (second _2))
+         (struct `(ast_struct ,_sr ,struct-name ,struct-polyvars ,vals))
          (mfuns (map (lambda (x) 
            (let* 
              (
@@ -51,9 +53,10 @@ syntax type_decls {
                (t5 (list-ref lst 5)) ; return type
                (t6 (list-ref lst 6)) ; fun kind
                (t7 (list-ref lst 7)) ; body
+               (kind (if (equal? (first (first t5)) 'ast_void) 'PRef 'PVal))
                (self-name 'self)
                (self-type (nos (first _2)))
-               (self-arg `(PVal ,self-name ,self-type none)) 
+               (self-arg `(,kind ,self-name ,self-type none)) 
                (self-args `((,self-arg) none))
                (args (cons self-args t4))
              ) 

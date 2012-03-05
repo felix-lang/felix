@@ -117,7 +117,7 @@ syntax functions {
   sctor_inits := ":" sctor_init ("," sctor_init)* =># "(cons _2 _3)";
   sctor_inits := sepsilon =># "()";
 
-  tstatement := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound =>#
+  sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound =>#
     """
     (let*
       (
@@ -131,7 +131,7 @@ syntax functions {
       `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
     """;
 
-  tstatement := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";" =>#
+  sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";" =>#
     """
     (let*
       (
