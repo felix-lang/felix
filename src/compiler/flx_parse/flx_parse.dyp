@@ -296,6 +296,8 @@ let load_scheme_defs env scm =
 /* Note: BACKWARDS list */
 %start <local_data_t> compilation_unit
 %start <local_data_t> syntax_unit
+%relation ralt_prix<rseq_prix<rpostfix_prix<ratom_prix 
+
 
 %lexer
 
@@ -906,6 +908,38 @@ dyprod:
        `Priorities $2
      }
 
+   | "regdef" NAME "=" ssre ";" { `Regex ($2,$4) }
+
+   | opt_private "literal" NAME "=>#" STRING ";" 
+     {
+       let priv = $1 in
+       let name = $3 in
+       let prio = `Default in
+       let scm = $5 in
+       let action = `Scheme scm in
+       let anote = "" in
+       let prod = [`Atom (REGEX (RE_Name name))] in
+       print_endline ("Defining literal " ^ name ^ " as " ^ scm);
+       let dyalts = [prod,getsr dyp,action,anote] in
+       `Scheme_rule (priv,name,prio,`Sval,dyalts) 
+     }
+
+  ssre :  ssre(>=ralt_prix) ["|" ssre(>ralt_prix)]+ { RE_Alt ($1::$2) } ralt_prix 
+  ssre :  ssre(>=rseq_prix) [ssre(>rseq_prix)]+ { RE_Seq ($1::$2)  } rseq_prix 
+  ssre :  ssre(>=rpostfix_prix) "*" { RE_Star $1 } rpostfix_prix
+  ssre :  ssre(>=rpostfix_prix) "+" { RE_Plus $1 } rpostfix_prix
+  ssre :  ssre(>=rpostfix_prix) "?" { RE_Option $1 } rpostfix_prix
+  ssre :  "(" ssre(>=ralt_prix) ")" {$2 } ratom_prix
+
+  ssre :  "charset" STRING {
+    let lst = ref [] in
+    String.iter (fun ch -> lst := (ch,ch)::(!lst)) $2;
+    RE_Char_set (!lst)
+  } ratom_prix
+ 
+  ssre :  STRING { RE_String $1 } ratom_prix
+  ssre :  NAME {RE_Name $1 } ratom_prix /* probably won't work! */
+ 
 action:
    | STRING { `Scheme $1 }
 
@@ -1231,6 +1265,7 @@ basic_name_comma_list:
   | basic_name { [$1] }
 
 epsilon: | { () }
+
 
 %%
 
