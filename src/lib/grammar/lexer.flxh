@@ -1,0 +1,138 @@
+syntax lexer {
+  /* ====================== REGULAR DEFINITIONS ============================ */
+  /* special characters */
+  regdef quote = '\'';
+  regdef dquote = '"';
+  regdef slosh = '\\';
+  regdef hash = '#';
+  regdef linefeed = '\n';
+  regdef tab = '\t';
+  regdef space = ' ';
+  regdef formfeed = 12;
+  regdef vtab = 11;
+  regdef carriage_return = 13;
+  regdef underscore = '_';
+
+  /* character sets */
+  regdef bindigit = ['01'];
+  regdef octdigit = ['01234567'];
+  regdef digit = ['0123456789'];
+  regdef hexdigit = ["0123456789ABCDEFabcdef"];
+  regdef lower = ['abcdefghijklmnopqrstuvwxyz'];
+  regdef upper = ['ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
+  regdef regdefter = lower | upper;
+  regdef hichar = [128-255];
+  regdef white = space | tab;
+
+  /* nasty: form control characters */
+  regdef form_control = linefeed | carriage_return | vtab | formfeed;
+  regdef newline_prefix = linefeed | carriage_return;
+  regdef newline = formfeed | linefeed  | carriage_return linefeed;
+  regdef hash = '#';
+
+  regdef ordinary = regdefter | digit | hichar |
+    '!' | '$' | '%' | '&' | '(' | ')' | '*' |
+    '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
+    '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_' |
+    '`' | '{' | '|' | '}' | '~';
+
+  regdef printable = ordinary | quote | dquote | slosh | hash;
+
+  /* identifiers */
+  regdef ucn =
+      "\\u" hexdigit hexdigit hexdigit hexdigit
+    | "\\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit;
+
+  regdef prime = '\'';
+  regdef dash = '-';
+  regdef idregdefter = regdefter | underscore | hichar | ucn;
+  regdef alphnum = idregdefter | digit;
+  regdef innerglyph = idregdefter | digit | dash;
+  regdef identifier = idregdefter (innerglyph? (alphnum | prime) +)* prime*;
+
+  /* integers */
+  regdef bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +;
+  regdef oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +;
+  regdef dec_lit  = ('0' ('d' | 'D'| "d_" | "D_"))? digit (underscore? digit) *;
+  regdef hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +;
+  regdef fastint_type_suffix = 
+    't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"|"z"|"Z"|"j"|"J"|"p"|"P"|"d"|"D";
+  regdef exactint_type_suffix =
+      "i8" | "i16" | "i32" | "i64"
+    | "u8" | "u16" | "u32" | "u64"
+    | "I8" | "I16" | "I32" | "I64"
+    | "U8" | "U16" | "U32" | "U64";
+
+  regdef signind = 'u' | 'U';
+
+  regdef suffix =
+      '_'? exactint_type_suffix
+    | ('_'? fastint_type_suffix)? ('_'? signind)?
+    | ('_'? signind)? ('_'? fastint_type_suffix)?;
+
+  regdef int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix;
+
+  /* floats: Follows ISO C89, except that we allow underscores;
+     AND we require both leading and trailing digits so ;
+     x.0 works for tuple projections and 0.f is a function;
+     application;
+  */
+  regdef decimal_string = digit (underscore? digit) *;
+  regdef hexadecimal_string = hexdigit (underscore? hexdigit) *;
+
+  regdef decimal_fractional_constant =
+    decimal_string '.' decimal_string;
+
+  regdef hexadecimal_fractional_constant =
+    ("0x" |"0X")
+    hexadecimal_string '.' hexadecimal_string;
+
+  regdef decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string;
+  regdef binary_exponent = ('P'|'p') ('+'|'-')? decimal_string;
+
+  regdef floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd';
+  regdef floating_literal =
+    (
+      decimal_fractional_constant decimal_exponent? |
+      hexadecimal_fractional_constant binary_exponent?
+    )
+    floating_suffix?;
+
+  /* Python strings */
+  regdef qqq = quote quote quote;
+  regdef ddd = dquote dquote dquote;
+
+  regdef escape = slosh _;
+
+  regdef dddnormal = ordinary | hash | quote | escape | white | newline;
+  regdef dddspecial = dddnormal | dquote dddnormal | dquote dquote dddnormal;
+
+  regdef qqqnormal = ordinary | hash | dquote | escape | white | newline;
+  regdef qqqspecial = qqqnormal | quote qqqnormal | quote quote qqqnormal;
+
+  regdef raw_dddnormal = ordinary | hash | quote | slosh | white | newline;
+  regdef raw_dddspecial = raw_dddnormal | dquote raw_dddnormal | dquote dquote raw_dddnormal;
+
+  regdef raw_qqqnormal = ordinary | hash | dquote | slosh | space | newline;
+  regdef raw_qqqspecial = raw_qqqnormal | quote raw_qqqnormal | quote quote raw_qqqnormal;
+
+  regdef qstring = (ordinary | hash | dquote | escape | white) * quote;
+  regdef dstring = (ordinary | hash | quote | escape | white) * dquote;
+  regdef qqqstring = qqqspecial * qqq;
+  regdef dddstring = dddspecial * ddd;
+
+  regdef raw = 'r' | 'R';
+  regdef see = 'c' | 'C';
+  regdef rqc = raw see | see raw;
+
+  regdef raw_qstring = (ordinary | hash | dquote | escape | white) * quote;
+  regdef raw_dstring =  (ordinary | hash | quote | escape | white) * dquote;
+
+  regdef raw_qqqstring = raw_qqqspecial * qqq;
+  regdef raw_dddstring = raw_dddspecial * ddd;
+
+  regdef not_hash_or_newline = ordinary | quote | dquote | white | slosh;
+  regdef not_newline = not_hash_or_newline | hash;
+  regdef quoted_filename = dquote (ordinary | hash | quote | white | slosh)+ dquote;
+
+}

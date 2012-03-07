@@ -930,8 +930,22 @@ dyprod:
   ssre :  ssre(>=rpostfix_prix) "+" { RE_Plus $1 } rpostfix_prix
   ssre :  ssre(>=rpostfix_prix) "?" { RE_Option $1 } rpostfix_prix
   ssre :  "(" ssre(>=ralt_prix) ")" {$2 } ratom_prix
+  ssre :  INTEGER { RE_Char (Char.chr (int_of_string (snd $1)) ) } ratom_prix
+  ssre :  "_" { RE_Char_set [Char.chr 0, Char.chr 255] } ratom_prix
+  ssre :  "." { RE_Char_set [Char.chr 32, Char.chr 255] } ratom_prix
+  ssre :  "[" INTEGER "-" INTEGER "]" { 
+    RE_Char_set [
+      Char.chr (int_of_string (snd $2)), 
+      Char.chr (int_of_string (snd $4))
+    ] } ratom_prix
 
   ssre :  "charset" STRING {
+    let lst = ref [] in
+    String.iter (fun ch -> lst := (ch,ch)::(!lst)) $2;
+    RE_Char_set (!lst)
+  } ratom_prix
+
+  ssre :  "[" STRING "]" {
     let lst = ref [] in
     String.iter (fun ch -> lst := (ch,ch)::(!lst)) $2;
     RE_Char_set (!lst)
