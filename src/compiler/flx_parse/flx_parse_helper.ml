@@ -15,6 +15,24 @@ open Flx_string
 open Flx_token
 open Flx_parse_ebnf
 
+let re_expand names re = 
+  let map = List.map in
+  let rec aux re =
+    match re with
+    | RE_Name s -> 
+      begin try
+        let re = List.assoc s names in
+        aux re
+      with Not_found -> RE_Name s
+      end
+    | RE_Alt ls -> RE_Alt (map aux ls)
+    | RE_Seq ls -> RE_Seq (map aux ls)
+    | RE_Option s -> RE_Option (aux s)
+    | RE_Plus s -> RE_Plus (aux s)
+    | RE_Star s -> RE_Star (aux s)
+    | x -> x
+  in aux re
+
 let strip_us s =
   let n = String.length s in
   let x = Buffer.create n in
@@ -76,6 +94,7 @@ let decode_raw_dddstring s = let n = String.length s in String.sub s 0 (n-3)
 let silly_strtoken k = Flx_prelex.string_of_token k
 
 let fresh_dssl = {
+  regexps = [];
   prios = [];
   rules = [];
   deps = [];
@@ -197,6 +216,12 @@ print_endline ("define_scheme " ^ name);
       | STRING s ->  (* Handle strings like "fun" in productions *)
         Dyp.Regexp (Dyp.RE_String s)
 
+      | REGEX re -> 
+        print_endline "Translating some kind of regexp";
+        let names = dssl_record.regexps in
+        let re = re_expand names re in
+        Dyp.Regexp re
+
       | NONTERMINAL (s,p) -> (* handle identifiers like sexpr in productions *)
         let nt = mapnt s in
         let ntpri = cal_priority_relation p in
@@ -265,6 +290,8 @@ print_endline ("define_scheme " ^ name);
             Sstring s1
 
           | STRING _, `Lexeme_matched s -> (* print_endline ("Matched regexp to " ^ s); *) Sstring s
+
+          | REGEX _, `Lexeme_matched s -> print_endline ("Matched regexp to " ^ s); Sstring s
 
           | k , _ ->
           print_endline ("Woops, unhandled token=" ^ Flx_prelex.string_of_token k);
@@ -402,6 +429,12 @@ let add_rule global_data local_data dssl rule =
 
   | `Priorities p ->
     let d = { d with prios = p::d.prios } in
+    let m = { m with drules = Drules.add dssl d m.drules } in
+    global_data, m
+
+  | `Regex (name, re) -> (* do nothing at the moment *)
+print_endline ("Regex name=" ^ name);
+    let d = { d with regexps = (name,re)::d.regexps } in
     let m = { m with drules = Drules.add dssl d m.drules } in
     global_data, m
 

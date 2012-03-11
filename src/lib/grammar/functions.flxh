@@ -58,14 +58,16 @@ syntax functions {
   sfun_kind := "gen" =># "'Generator";
   sfun_kind := "fun" =># "'Function";
 
-  tstatement := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";" =>#
+  tstatement := sfunction =># "_1";
+
+  sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=>" sexpr ";" =>#
     """
       (let ((body `((ast_fun_return ,_sr ,_7))))
       `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,body)
       )
     """;
 
-  tstatement := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound =>#
+  sfunction := sadjectives sfun_kind sdeclname sfun_arg* fun_return_type "=" scompound =>#
     """
       `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
     """;
@@ -73,7 +75,7 @@ syntax functions {
   sopt_cstring := "=" scode_spec =># "`(some ,_2)";
   sopt_cstring := sepsilon =># "'none";
 
-  tstatement := sadjectives sfun_kind sdeclname fun_return_type "=" smatching+ ";" =>#
+  sfunction := sadjectives sfun_kind sdeclname fun_return_type "=" smatching+ ";" =>#
     """
      (let
        (
@@ -115,7 +117,7 @@ syntax functions {
   sctor_inits := ":" sctor_init ("," sctor_init)* =># "(cons _2 _3)";
   sctor_inits := sepsilon =># "()";
 
-  tstatement := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound =>#
+  sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint_eq scompound =>#
     """
     (let*
       (
@@ -129,7 +131,7 @@ syntax functions {
       `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
     """;
 
-  tstatement := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";" =>#
+  sfunction := "ctor" stvarlist squalified_name sfun_arg+ sopt_traint "=>" sexpr ";" =>#
     """
     (let*
       (
@@ -143,12 +145,12 @@ syntax functions {
       `(ast_curry ,_sr ,name ,vs ,args (,ret ,traint) Function ,body))
     """;
 
-  tstatement := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound =>#
+  sfunction := sadjectives sproc_kind sdeclname sfun_arg* sopt_traint_eq scompound =>#
     """
       `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) ,_5) ,(cal_funkind _1 _2) ,_6)
     """;
 
-  tstatement := sadjectives sproc_kind sdeclname sfun_arg* "=>" tstatement =>#
+  sfunction := sadjectives sproc_kind sdeclname sfun_arg* "=>" tstatement =>#
     """
       `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ((ast_void ,_sr) none) ,(cal_funkind _1 _2) (,_6))
     """;

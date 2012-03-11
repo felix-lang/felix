@@ -34,13 +34,87 @@ syntax type_decls {
 
   tstatement := "struct" sdeclname "=" ? "{" sstruct_mem_decl * "}" =>#
     """
-    `(ast_struct ,_sr ,(first _2) ,(second _2) ,_5)
+     (let* 
+       (
+         (vals (filter_first 'Pval _5))
+         (funs (filter_first 'Pfun _5))
+         (struct-name (first _2))
+         (struct-polyspec (second _2))
+         (struct-polyvars (first struct-polyspec))
+         (struct-pvids (map first struct-polyvars))
+         (struct-pvs (map nos struct-pvids))
+         (struct-polyaux (second struct-polyspec))
+         (struct `(ast_struct ,_sr ,struct-name ,struct-polyspec ,vals))
+         (mfuns (map (lambda (x) 
+           (let* 
+             (
+               (lst (first x))
+               (t0 (list-ref lst 0)) ; ast_curry
+               (t1 (list-ref lst 1)) ; sr
+               (t2 (list-ref lst 2)) ; name
+               (polyspec (list-ref lst 3)) ; polyvars
+               (t4 (list-ref lst 4)) ; args
+               (t5 (list-ref lst 5)) ; return type
+               (t6 (list-ref lst 6)) ; fun kind
+               (t7 (list-ref lst 7)) ; body
+               (polyvars (first polyspec))
+               (polyaux (second polyspec))
+               (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
+               (kind (if (equal? (first (first t5)) 'ast_void) 'PRef 'PVal))
+               (self-name 'self)
+               (self-type `(ast_name ,_sr ,struct-name ,struct-pvs))
+               (self-arg `(,kind ,self-name ,self-type none)) 
+               (self-args `((,self-arg) none))
+               (args (cons self-args t4))
+             ) 
+             `(,t0 ,t1 ,t2 ,outpolyvars ,args, t5 ,t6 ,t7)
+           )) funs)
+         )
+         (sts (cons struct mfuns))
+       )
+       `(ast_seq ,_sr ,sts)
+     )
      """;
-    sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(,_1 ,_3)";
+    sstruct_mem_decl := sname ":" stypeexpr ";" =># "`(Pval ,_1 ,_3)";
+    sstruct_mem_decl := sfunction  =># "`(Pfun ,_1)";
 
   tstatement := "cstruct" sdeclname "=" ? "{" sstruct_mem_decl * "}" srequires_clause ";" =>#
     """
-    `(ast_cstruct ,_sr ,(first _2) ,(second _2) ,_5 ,_7)
+    (let* 
+       (
+         (vals (filter_first 'Pval _5))
+         (funs (filter_first 'Pfun _5))
+         (struct `(ast_cstruct ,_sr ,(first _2) ,(second _2) ,vals ,_7))
+         (mfuns (map (lambda (x) 
+           (let* 
+             (
+               (lst (first x))
+               (t0 (list-ref lst 0)) ; ast_curry
+               (t1 (list-ref lst 1)) ; sr
+               (t2 (list-ref lst 2)) ; name
+               (polyspec (list-ref lst 3)) ; polyvars
+               (t4 (list-ref lst 4)) ; args
+               (t5 (list-ref lst 5)) ; return type
+               (t6 (list-ref lst 6)) ; fun kind
+               (t7 (list-ref lst 7)) ; body
+               (polyvars (first polyspec))
+               (polyaux (second polyspec))
+               (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
+               (kind (if (equal? (first (first t5)) 'ast_void) 'PRef 'PVal))
+               (self-name 'self)
+               (self-type `(ast_name ,_sr ,struct-name ,struct-pvs))
+               (self-arg `(,kind ,self-name ,self-type none)) 
+               (self-args `((,self-arg) none))
+               (args (cons self-args t4))
+             ) 
+             `(,t0 ,t1 ,t2 ,outpolyvars ,args, t5 ,t6 ,t7)
+           )) funs)
+         )
+         
+         (sts (cons struct mfuns))
+       )
+       `(ast_seq ,_sr ,sts)
+     )
      """;
 
   sopt_name := sname =># "_1";

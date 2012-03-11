@@ -21,6 +21,7 @@ type token =
   | NAME of string
   | NONTERMINAL of (string * ntprio_t)
   | STRING of string
+  | REGEX of Dyp.regexp
   | DUMMY
   | QUEST
   | LPAR
@@ -47,6 +48,7 @@ and prio_t = [`Default | `Priority of string]
 and rule_t = string * prio_t * token list * string * anote_t * Flx_srcref.t
 
 and dssl_t = {
+  regexps : (string * Dyp.regexp) list;
   prios : string list list;
   rules : rule_t list;
   deps : string list;

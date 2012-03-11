@@ -15,6 +15,7 @@ let string_of_token = function
   | NAME s -> s
   | NONTERMINAL (s,p) -> s ^ sp p
   | STRING s -> Flx_string.c_quote_of_string s
+  | REGEX r  -> "(some regex here ..)"
   | QUEST _ -> "?"
   | LPAR _ -> "("
   | RPAR _ -> ")"
@@ -44,6 +45,7 @@ let name_of_token = function
   | NAME _ -> "NAME"
   | NONTERMINAL _ -> "NONTERMINAL"
   | STRING _ -> "STRING"
+  | REGEX _ -> "REGEX"
   | QUEST _ -> "QUEST"
   | LPAR -> "LPAR"
   | RPAR -> "RPAR"
