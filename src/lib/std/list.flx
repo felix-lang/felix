@@ -423,7 +423,7 @@ instance[T with Show[T]] Str[List::list[T]] {
 }
 
 // take the first k elements from a list
-fun take[T] (k:int) (lst:list[T]) =>
+fun take[T] (k:int) (lst:list[T]) : list[T] =>
  if k <= 0 then
   list[T] ()
  else
