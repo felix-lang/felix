@@ -422,6 +422,29 @@ instance[T with Show[T]] Str[List::list[T]] {
   ;
 }
 
+// take the first k elements from a list
+fun take[T] (k:int) (lst:list[T]) =>
+ if k <= 0 then
+  list[T] ()
+ else
+   match lst with
+     | Empty => list[T] ()
+     | Cons(?x, ?xs) => join (list[T] x) (take[T] (k - 1) xs)
+   endmatch
+endif
+;
+
+// drop the first k elements from a list
+fun drop[T] (k:int) (lst:list[T]) : list[T] =>
+  if k <= 0 then
+    lst
+  else
+    match lst with
+     | Empty => list[T] ()
+     | Cons(?x, ?xs) => drop (k - 1) xs
+  endif
+  ;
+
 publish "Association Lists (lists of pairs)"
 class Assoc_list
 {
