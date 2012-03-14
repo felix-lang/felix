@@ -110,45 +110,49 @@ syntax lexer {
   regdef qqqnormal = ordinary | hash | dquote | escape | white | newline;
   regdef qqqspecial = qqqnormal | quote qqqnormal | quote quote qqqnormal;
 
-  regdef raw_dddnormal = ordinary | hash | quote | slosh | white | newline;
-  regdef raw_dddspecial = raw_dddnormal | dquote raw_dddnormal | dquote dquote raw_dddnormal;
-
-  regdef raw_qqqnormal = ordinary | hash | dquote | slosh | space | newline;
-  regdef raw_qqqspecial = raw_qqqnormal | quote raw_qqqnormal | quote quote raw_qqqnormal;
-
   regdef qstring_tail = (ordinary | hash | dquote | escape | white) * quote;
   regdef dstring_tail = (ordinary | hash | quote | escape | white) * dquote;
   regdef qqqstring_tail = qqqspecial * qqq;
   regdef dddstring_tail = dddspecial * ddd;
-
-  regdef raw = 'r' | 'R';
-  regdef see = 'c' | 'C';
-  regdef rqc = raw see | see raw;
-
-  regdef raw_qstring_tail = (ordinary | hash | dquote | escape | white) * quote;
-  regdef raw_dstring_tail =  (ordinary | hash | quote | escape | white) * dquote;
-
-  regdef raw_qqqstring_tail = raw_qqqspecial * qqq;
-  regdef raw_dddstring_tail = raw_dddspecial * ddd;
 
   regdef qstring = quote qstring_tail;
   regdef dstring = dquote dstring_tail;
   regdef qqqstring = qqq qqqstring_tail;
   regdef dddstring = ddd dddstring_tail;
 
-  regdef raw_qstring = raw quote qstring_tail;
+
+  regdef raw_dddnormal = ordinary | hash | quote | slosh | white | newline;
+  regdef raw_dddspecial = raw_dddnormal | dquote raw_dddnormal | dquote dquote raw_dddnormal;
+
+  regdef raw_qqqnormal = ordinary | hash | dquote | slosh | space | newline;
+  regdef raw_qqqspecial = raw_qqqnormal | quote raw_qqqnormal | quote quote raw_qqqnormal;
+
+  regdef raw = 'r' | 'R';
+
+  regdef raw_dstring_tail =  (ordinary | hash | quote | escape | white) * dquote;
+  regdef raw_qqqstring_tail = raw_qqqspecial * qqq;
+  regdef raw_dddstring_tail = raw_dddspecial * ddd;
+
   regdef raw_dstring = raw dquote dstring_tail;
   regdef raw_qqqstring = raw qqq qqqstring_tail;
   regdef raw_dddstring = raw ddd dddstring_tail;
 
-  regdef string_literal = qstring | dstring | qqqstring | dddstring |
-    raw_qstring | raw_dstring | raw_qqqstring | raw_dddstring
-  ;
+  regdef plain_string_literal = dstring | qqqstring | dddstring;
+  regdef raw_string_literal = raw_dstring | raw_qqqstring | raw_dddstring;
 
+  regdef string_literal = plain_string_literal | qstring | raw_string_literal;
+
+  regdef wstring_literal = ('w' | 'W') plain_string_literal; 
+  regdef ustring_literal = ('u' | 'U') plain_string_literal; 
+  regdef cstring_literal = ('c' | 'C') plain_string_literal; 
+  regdef qstring_literal = ('q' | 'Q') plain_string_literal; 
+  regdef fstring_literal = ('f' | 'F') plain_string_literal; 
+
+/*
   regdef not_hash_or_newline = ordinary | quote | dquote | white | slosh;
   regdef not_newline = not_hash_or_newline | hash;
   regdef quoted_filename = dquote (ordinary | hash | quote | white | slosh)+ dquote;
-
+*/
 
   regdef Integer = int_lit;
   literal Integer =># """
@@ -179,5 +183,25 @@ syntax lexer {
   regdef String = string_literal;
   literal String =># "`(String ,_sr ,_1)";
   sliteral := String =># "_1";
+
+  regdef Wstring = wstring_literal;
+  literal Wstring =># "`(Wstring ,_sr ,_1)";
+  sliteral := Wstring =># "_1";
+
+  regdef Ustring = ustring_literal;
+  literal Ustring =># "`(Ustring ,_sr ,_1)";
+  sliteral := Ustring =># "_1";
+
+  regdef Cstring = cstring_literal;
+  literal Cstring =># "`(Cstring ,_sr ,_1)";
+  sliteral := Cstring =># "_1";
+
+  regdef Qstring = qstring_literal;
+  literal Qstring =># "`(ast_interpolate ,_sr ,_1)";
+  sliteral := Qstring =># "_1";
+
+  regdef Fstring = fstring_literal;
+  literal Fstring =># "`(ast_vsprintf ,_sr ,_1)";
+  sliteral := Fstring =># "_1";
 
 }

@@ -1179,8 +1179,8 @@ scstring:
   | CSTRING { 0, getsr dyp, Sstring $1 }
 
 
-sliteral:
 /*
+sliteral:
   | INTEGER
     {
       let t, v = $1 in
@@ -1219,7 +1219,6 @@ sliteral:
       let x = Ocs_misc.make_slist Snull (List.rev x) in
       0, sr, x
    }
-*/
 
   | WSTRING
     {
@@ -1277,6 +1276,7 @@ sliteral:
       let x = Ocs_misc.make_slist Snull (List.rev x) in
       0, getsr dyp, x
     }
+*/
 
 basic_name:
   | NAME { getsr dyp, $1 }
