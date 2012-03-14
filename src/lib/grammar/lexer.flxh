@@ -148,4 +148,17 @@ syntax lexer {
   )
   """; 
   sliteral := Integer =># "_1";
+
+  regdef Float = floating_literal;
+  literal Float =># """
+  (let* 
+    (
+      (chrs (string->list _1))
+      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
+      (val (list->string chrs))
+    )
+    `(Float ,_sr ,val)
+  )
+  """; 
+  sliteral := Float =># "_1";
 }

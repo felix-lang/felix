@@ -68,6 +68,14 @@ let xlat_int_lit s =
   let v = (converter d) in
   (t, Big_int.string_of_big_int v)
 
+let xlat_float_lit str = 
+    let n = String.length str in
+    let last_char = str.[n-1] in
+    match last_char with
+    | 'l'|'L' -> "ldouble",  (String.sub str 0 (n-1))
+    | 'f'|'F' -> "float", (String.sub str 0 (n-1))
+    | _       -> "double", str
+
 (*
 open Flx_types
 open Flx_typing
@@ -209,6 +217,11 @@ and xexpr_t sr x =
   | Lst [Id "Integer"; sr; Str v] -> 
    let t,v = xlat_int_lit v in
    let lit = Flx_literal.Int (xint_kind t, v) in
+   EXPR_literal (xsr sr, lit)
+
+  | Lst [Id "Float"; sr; Str v] -> 
+   let t,v = xlat_float_lit v in
+   let lit = Flx_literal.Float (xfloat_kind t, v) in
    EXPR_literal (xsr sr, lit)
 
   | Lst [Id "ast_case_tag";  sr; Int i] -> EXPR_case_tag (xsr sr,ii i)
