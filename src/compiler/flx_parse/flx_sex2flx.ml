@@ -2,6 +2,72 @@ open Flx_ast
 open Sex_types
 open Flx_typing2
 
+let xlat_int_lit s =
+  let n = String.length s in
+  let converter, first =
+    if n>1 && s.[0]='0'
+    then
+      match s.[1] with
+      | 'b' | 'B' -> Flx_string.binbig_int_of_string,2
+      | 'o' | 'O' -> Flx_string.octbig_int_of_string,2
+      | 'd' | 'D' -> Flx_string.decbig_int_of_string,2
+      | 'x' | 'X' -> Flx_string.hexbig_int_of_string,2
+      | _         -> Flx_string.decbig_int_of_string,0
+    else Flx_string.decbig_int_of_string,0
+  in
+  let k = ref (n-1) in
+  let t =
+    if n >= 2 && s.[n-2]='i' && s.[n-1]='8'
+    then (k:=n-2; "int8")
+    else if n >= 2 && s.[n-2]='u' && s.[n-1]='8'
+    then (k:=n-2; "uint8")
+    else if n >= 3 && s.[n-3]='i' && s.[n-2]='1' && s.[n-1]='6'
+    then (k:=n-3; "int16")
+    else if n >= 3 && s.[n-3]='u' && s.[n-2]='1' && s.[n-1]='6'
+    then (k:=n-3; "uint16")
+
+    else if n >= 3 && s.[n-3]='i' && s.[n-2]='3' && s.[n-1]='2'
+    then (k:=n-3; "int32")
+    else if n >= 3 && s.[n-3]='u' && s.[n-2]='3' && s.[n-1]='2'
+    then (k:=n-3; "uint32")
+
+    else if n >= 3 && s.[n-3]='i' && s.[n-2]='6' && s.[n-1]='4'
+    then (k:=n-3; "int64")
+    else if n >= 3 && s.[n-3]='u' && s.[n-2]='6' && s.[n-1]='4'
+    then (k:=n-3; "uint64")
+
+    else begin
+      let sign = ref "" in
+      let typ = ref "int" in
+      begin try while !k>first do
+        (match s.[!k] with
+        | 'u' | 'U' -> sign := "u"
+        | 't' | 'T' -> typ := "tiny" (* stolen code for ptrdiff .. hmm *)
+        | 's' | 'S' -> typ := "short"
+        | 'i' | 'I' -> typ := "int"
+        | 'z' | 'Z' -> typ := "size"
+        | 'j' | 'J' -> typ := "intmax"
+        | 'p' | 'P' -> typ := "intptr"
+        | 'd' | 'D' -> typ := "ptrdiff" (* note 'd' instead of the 't' used in C *)
+        | 'l' | 'L' ->
+          typ :=
+            if !typ = "long" then "vlong" else "long"
+        | 'v' | 'V' -> typ := "vlong"
+        | _ -> raise Not_found
+        );
+        decr k
+      done with _ -> () end;
+      incr k;
+      if !typ = "size" then 
+        if !sign = "u" then "size" else "ssize" 
+      else
+        !sign ^ !typ
+    end
+  in
+  let d = String.sub s first (!k-first) in
+  let v = (converter d) in
+  (t, Big_int.string_of_big_int v)
+
 (*
 open Flx_types
 open Flx_typing
@@ -139,6 +205,11 @@ and xexpr_t sr x =
   (* can't occur in user code
   | Lst [Id "ast_index";  Str s ; Int i] -> EXPR_index (sr,s,ii i)
   *)
+
+  | Lst [Id "Integer"; sr; Str v] -> 
+   let t,v = xlat_int_lit v in
+   let lit = Flx_literal.Int (xint_kind t, v) in
+   EXPR_literal (xsr sr, lit)
 
   | Lst [Id "ast_case_tag";  sr; Int i] -> EXPR_case_tag (xsr sr,ii i)
   | Lst [Id "ast_typed_case";  Int i; t] -> EXPR_typed_case (sr,ii i,ti t)

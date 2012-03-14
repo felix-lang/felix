@@ -23,7 +23,7 @@ let re_expand names re =
       begin try
         let re = List.assoc s names in
         aux re
-      with Not_found -> RE_Name s
+      with Not_found -> print_endline ("Can't find regexp name " ^ s); RE_Name s
       end
     | RE_Alt ls -> RE_Alt (map aux ls)
     | RE_Seq ls -> RE_Seq (map aux ls)
@@ -217,9 +217,10 @@ print_endline ("define_scheme " ^ name);
         Dyp.Regexp (Dyp.RE_String s)
 
       | REGEX re -> 
+(*
         print_endline "Translating some kind of regexp";
-        let names = dssl_record.regexps in
-        let re = re_expand names re in
+*)
+        let re = re_expand dssl_record.regexps re in
         Dyp.Regexp re
 
       | NONTERMINAL (s,p) -> (* handle identifiers like sexpr in productions *)
@@ -291,7 +292,7 @@ print_endline ("define_scheme " ^ name);
 
           | STRING _, `Lexeme_matched s -> (* print_endline ("Matched regexp to " ^ s); *) Sstring s
 
-          | REGEX _, `Lexeme_matched s -> print_endline ("Matched regexp to " ^ s); Sstring s
+          | REGEX _, `Lexeme_matched s -> (* print_endline ("Matched regexp to " ^ s); *) Sstring s
 
           | k , _ ->
           print_endline ("Woops, unhandled token=" ^ Flx_prelex.string_of_token k);
@@ -433,7 +434,9 @@ let add_rule global_data local_data dssl rule =
     global_data, m
 
   | `Regex (name, re) -> (* do nothing at the moment *)
+(*
 print_endline ("Regex name=" ^ name);
+*)
     let d = { d with regexps = (name,re)::d.regexps } in
     let m = { m with drules = Drules.add dssl d m.drules } in
     global_data, m

@@ -919,7 +919,9 @@ dyprod:
        let action = `Scheme scm in
        let anote = "" in
        let prod = [`Atom (REGEX (RE_Name name))] in
+(*
        print_endline ("Defining literal " ^ name ^ " as " ^ scm);
+*)
        let dyalts = [prod,getsr dyp,action,anote] in
        `Scheme_rule (priv,name,prio,`Sval,dyalts) 
      }
@@ -1096,8 +1098,11 @@ tstatement:
       let to_install = tran_cls_dssls m.drules m.installed_dssls dssls in
       let rules, prios = extract_syntax to_install m.drules in
       let add_rules, bindings = bind_grammar_rules dyp rules in
-
-      let local_data = { m with installed_dssls = to_install @ m.installed_dssls } in
+      let local_data = 
+      { 
+        m with installed_dssls = to_install @ m.installed_dssls
+      } 
+      in
       (0, sr, Snull),
       bindings @ [Add_rules add_rules; Local_data local_data; Relation prios]
     }
@@ -1175,6 +1180,7 @@ scstring:
 
 
 sliteral:
+/*
   | INTEGER
     {
       let t, v = $1 in
@@ -1187,7 +1193,7 @@ sliteral:
       let x = Ocs_misc.make_slist Snull (List.rev x) in
       0, sr, x
     }
-
+*/
   | FLOAT
     {
       let t, v = $1 in

@@ -135,4 +135,17 @@ syntax lexer {
   regdef not_newline = not_hash_or_newline | hash;
   regdef quoted_filename = dquote (ordinary | hash | quote | white | slosh)+ dquote;
 
+
+  regdef Integer = int_lit;
+  literal Integer =># """
+  (let* 
+    (
+      (chrs (string->list _1))
+      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
+      (val (list->string chrs))
+    )
+    `(Integer ,_sr ,val)
+  )
+  """; 
+  sliteral := Integer =># "_1";
 }

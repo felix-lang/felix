@@ -211,6 +211,19 @@ SCHEME """
 """;
 
 SCHEME """
+  (define (filter pred lst) 
+    (reverse 
+      (fold_left 
+        (lambda (acc val) (if (pred val) (cons val acc) acc))
+        ()
+        lst
+      )
+    )
+  )
+""";
+
+
+SCHEME """
   (define (filter_first sym lst) 
     (reverse 
       (fold_left 
