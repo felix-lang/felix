@@ -76,10 +76,26 @@ let xlat_float_lit str =
     | 'f'|'F' -> "float", (String.sub str 0 (n-1))
     | _       -> "double", str
 
-(*
-open Flx_types
-open Flx_typing
-*)
+let prefix p s =
+  let n = String.length p in
+  n <= String.length s && p = String.sub s 0 n
+   
+let xlat_string_lit s = 
+  (* print_endline ("String literal: " ^ s); *)
+  let r = 
+  if prefix "'''" s || prefix "\"\"\"" s 
+  then Flx_string.unescape (String.sub s 3 (String.length s - 6))
+  else if prefix "'" s || prefix "\"" s 
+  then Flx_string.unescape (String.sub s 1 (String.length s - 2))
+  else if prefix "r'''" s || prefix "r\"\"\"" s || prefix "R'''" s || prefix "R\"\"\"" s 
+  then (String.sub s 4 (String.length s - 7))
+  else if prefix "r'" s || prefix "r\"" s || prefix "R'" s || prefix "R\"" s 
+  then (String.sub s 2 (String.length s - 3))
+  else failwith "Expected String literal!" 
+  in
+  (* print_endline ("Result: " ^ r); *)
+  r
+
 open List
 
 exception Sex2FlxTypeError of string * sexp_t
@@ -222,6 +238,11 @@ and xexpr_t sr x =
   | Lst [Id "Float"; sr; Str v] -> 
    let t,v = xlat_float_lit v in
    let lit = Flx_literal.Float (xfloat_kind t, v) in
+   EXPR_literal (xsr sr, lit)
+
+  | Lst [Id "String"; sr; Str v] -> 
+   let v = xlat_string_lit v in
+   let lit = Flx_literal.String v in
    EXPR_literal (xsr sr, lit)
 
   | Lst [Id "ast_case_tag";  sr; Int i] -> EXPR_case_tag (xsr sr,ii i)

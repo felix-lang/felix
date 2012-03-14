@@ -1206,7 +1206,6 @@ sliteral:
       let x = Ocs_misc.make_slist Snull (List.rev x) in
       0, sr, x
     }
-*/
 
   | STRING
     {
@@ -1220,6 +1219,7 @@ sliteral:
       let x = Ocs_misc.make_slist Snull (List.rev x) in
       0, sr, x
    }
+*/
 
   | WSTRING
     {
