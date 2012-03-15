@@ -55,6 +55,8 @@ syntax lexer {
   regdef oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +;
   regdef dec_lit  = ('0' ('d' | 'D'| "d_" | "D_"))? digit (underscore? digit) *;
   regdef hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +;
+  regdef int_prefix = bin_lit | oct_lit | dec_lit | hex_lit;
+
   regdef fastint_type_suffix = 
     't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"|"z"|"Z"|"j"|"J"|"p"|"P"|"d"|"D";
   regdef exactint_type_suffix =
@@ -65,12 +67,12 @@ syntax lexer {
 
   regdef signind = 'u' | 'U';
 
-  regdef suffix =
+  regdef int_type_suffix =
       '_'? exactint_type_suffix
     | ('_'? fastint_type_suffix)? ('_'? signind)?
     | ('_'? signind)? ('_'? fastint_type_suffix)?;
 
-  regdef int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix;
+  regdef int_lit = int_prefix int_type_suffix;
 
   /* floats: Follows ISO C89, except that we allow underscores;
      AND we require both leading and trailing digits so ;
@@ -154,6 +156,13 @@ syntax lexer {
   regdef quoted_filename = dquote (ordinary | hash | quote | white | slosh)+ dquote;
 */
 
+  // Note: we could easily support underscores with striping code used for
+  // other integer literals. We could also easily support different radicies
+  // using string->number with a radix argument
+  regdef SimpleInteger = digit+;
+  literal SimpleInteger =># "(string->number _1)";
+  sinteger := SimpleInteger =># "_1";
+
   regdef Integer = int_lit;
   literal Integer =># """
   (let* 
@@ -166,6 +175,7 @@ syntax lexer {
   )
   """; 
   sliteral := Integer =># "_1";
+
 
   regdef Float = floating_literal;
   literal Float =># """

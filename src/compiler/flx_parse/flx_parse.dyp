@@ -1120,12 +1120,14 @@ production at the moment
 sepsilon: | { 0, Flx_srcref.dummy_sr, Snull }
 strepsilon: | { 0, Flx_srcref.dummy_sr, Sstring "" }
 
+/*
 sinteger:
   | INTEGER
     {
       let t, v = $1 in
       0, getsr dyp, Sbigint (Big_int.big_int_of_string v)
     }
+*/
 
 strint:
   | INTEGER
