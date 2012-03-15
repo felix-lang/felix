@@ -1074,7 +1074,7 @@ if RECOMPILE == 0 and RUNIT == 1 and CLEAR_CACHE == 0 do
   debugln$ "Binary time = " + str (dfiletime(filebase+EXT_SHLIB,past_time));
   if STATIC == 0 do
     var xtime = dfiletime(filebase+EXT_SHLIB,past_time);
-    if xtime > cal_dep_time (filebase) and xtime > cache_time.long do
+    if xtime > cal_dep_time (filebase) and xtime < cache_time.long do
       debugln$ "Running dynamically linked binary";
       calpackages();
       cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ filebase+EXT_SHLIB+" "+args;
@@ -1085,7 +1085,7 @@ if RECOMPILE == 0 and RUNIT == 1 and CLEAR_CACHE == 0 do
     done
   else
     xtime = dfiletime(filebase+EXT_EXE,past_time);
-    if xtime > cal_dep_time(filebase)  and xtime > cache_time.long do
+    if xtime > cal_dep_time(filebase)  and xtime < cache_time.long do
       debugln$ "Running statically linked binary";
       cmd=STATIC_ENV+" "+filebase+" "+args;
       debugln$ "Uptodate executable: Running command " + cmd;
