@@ -257,8 +257,8 @@ and xexpr_t sr x =
   | Lst [] -> EXPR_tuple (sr,[])
   | Lst [x] -> ex x
   (* this term comes from the hard coded parser! *)
-  | Lst [Id "ast_vsprintf";  sr; Str s] -> EXPR_vsprintf (xsr sr,s)
-  | Lst [Id "ast_interpolate";  sr; Str s] -> EXPR_interpolate (xsr sr,s)
+  | Lst [Id "ast_vsprintf";  sr; Str s] -> EXPR_vsprintf (xsr sr, xlat_string_lit s)
+  | Lst [Id "ast_interpolate";  sr; Str s] -> EXPR_interpolate (xsr sr, xlat_string_lit s)
   | Lst [Id "ast_noexpand"; sr; e] -> EXPR_noexpand (xsr sr,ex e)
   | Lst [Id "ast_name"; sr; id; Lst ts] -> EXPR_name (xsr sr, xid id, map ti ts)
   (* can't occur in user code

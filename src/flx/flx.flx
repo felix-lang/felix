@@ -1068,12 +1068,13 @@ if SHOWCODE == 1 do {
   print prg;
 }; done
 
-if RECOMPILE == 0 and RUNIT == 1 do
+if RECOMPILE == 0 and RUNIT == 1 and CLEAR_CACHE == 0 do
   // not (--force or -c)
   debugln "Checking to see if the binary is uptodate";
   debugln$ "Binary time = " + str (dfiletime(filebase+EXT_SHLIB,past_time));
   if STATIC == 0 do
-    if (dfiletime(filebase+EXT_SHLIB,past_time) > cal_dep_time (filebase)) do
+    var xtime = dfiletime(filebase+EXT_SHLIB,past_time);
+    if xtime > cal_dep_time (filebase) and xtime > cache_time.long do
       debugln$ "Running dynamically linked binary";
       calpackages();
       cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ filebase+EXT_SHLIB+" "+args;
@@ -1083,7 +1084,8 @@ if RECOMPILE == 0 and RUNIT == 1 do
       debugln$ "Dynamically linked binary out of date or non-existant";
     done
   else
-    if (dfiletime(filebase+EXT_EXE,past_time) > cal_dep_time(filebase)) do
+    xtime = dfiletime(filebase+EXT_EXE,past_time);
+    if xtime > cal_dep_time(filebase)  and xtime > cache_time.long do
       debugln$ "Running statically linked binary";
       cmd=STATIC_ENV+" "+filebase+" "+args;
       debugln$ "Uptodate executable: Running command " + cmd;
