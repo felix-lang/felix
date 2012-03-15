@@ -82,7 +82,7 @@ class FileSystem
   {
     //eprintln$ "Copy " + src + " -> " + dst;
 
-    val now = (Time::time()).uvlong/1000ull; // milliseconds
+    val now = Time::time(); // seconds
     var stat_buf: FileStat::stat_t;
     if not FileStat::stat (src, &stat_buf) do
       eprintln$ "Can't stat source file " + src;

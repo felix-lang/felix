@@ -375,29 +375,29 @@ long posix_ftime(::std::string s) {
 """ requires header "#include <sys/stat.h>";
 
 
-fun macosx_ftime: string -> long = "macosx_ftime($1)";
-fun posix_ftime: string -> long = "posix_ftime($1)";
+fun macosx_ftime: string -> double = "(double)macosx_ftime($1)";
+fun posix_ftime: string -> double = "(double)posix_ftime($1)";
 
-val past_time = -1l;
-val future_time = long(ulong(-1)/2ul); // a hacky way to get a big number
+val past_time = -1.0;
+val future_time = double(ulong(-1)); // a hacky way to get a big number
 
 fun filetime(f:string)=>if MACOSX then macosx_ftime(f) else posix_ftime(f) endif;
-fun dfiletime(f:string, dflt:long )=
+fun dfiletime(f:string, dflt:double)=
 {
   val x = filetime (f);
-  dbug??println$ "Time of file " + f + " is " + str x;
-  return if x == 0l then dflt else x endif;
+  dbug??println$ "Time of file " + f + " is " + fmt(x,fixed(0,3));
+  return if x == 0.0 then dflt else x endif;
 }
 
-fun maxf (x: long) (f:string) => max (x, if f == "" then x else dfiletime (f+".flx",future_time) endif);
-fun cal_files_time (fs: list[string])=> fold_left maxf 0L fs;
-fun cal_time_from_dep (df: string):long=
+fun maxf (x: double) (f:string) => max (x, if f == "" then x else dfiletime (f+".flx",future_time) endif);
+fun cal_files_time (fs: list[string])=> fold_left maxf 0.0 fs;
+fun cal_time_from_dep (df: string):double=
 {
   val deptext = load df;
   val lines = split (deptext, "\n"); 
   debugln$ "Deps=" + str(lines);
   val deptime = cal_files_time lines;
-  debugln$ "Deptime=" + str(deptime);
+  debugln$ "Deptime=" + fmt(deptime,fixed(0,3));
   return deptime;
 }
 
@@ -766,48 +766,48 @@ done
 
 Directory::mkdirs(CACHE_DIR);
 
-var flxg_time = FileStat::filetime(FLXG);
-debugln$ "Flxg_time=" + str flxg_time;
+var flxg_time = dfiletime(FLXG, future_time);
+debugln$ "Flxg_time=" + fmt(flxg_time,fixed(0,3));
 
 var flxg_stamp = Filename::join CACHE_DIR "flxg_time.stamp";
-var cache_time = FileStat::filetime(flxg_stamp);
-debugln$ "cache_time=" + str cache_time;
+var cache_time = dfiletime(flxg_stamp,future_time);
+debugln$ "cache_time=" + fmt (cache_time,fixed(0,3));
 
 var flxg_stamp_data = load flxg_stamp;
 //println$ "Flxg_stamp_data=" + flxg_stamp_data; 
 
-var flxg_stamp_time = flxg_stamp_data.atoll.uvlong;
-debugln$ "Flxg_stamp_data as int: " + str flxg_stamp_time;
+var flxg_stamp_time = flxg_stamp_data.atof;
+debugln$ "Flxg_stamp_data : " + fmt(flxg_stamp_time,fixed(0,3));
 
-fun gramtime(path:string, s:string) : uvlong = {
+fun gramtime(path:string, s:string) : double = {
   //println$ "Path=" + path + " file = " + s;
-  fun maxtime (x:uvlong) (s:string) => max (x, gramtime (path, s));
+  fun maxtime (x:double) (s:string) => max (x, gramtime (path, s));
   if s.[0]=="@".char do
     var file = Filename::join$ path, s.[1 to].strip;
-    var filetime = FileStat::filetime(file);
-    if filetime == 0uv do
+    var filetime = dfiletime(file,0.0);
+    if filetime == 0.0 do
       println$ "Grammar include file " + file " doesn't exist, exiting";
       System::exit 1;
     done
-    debugln$ "Grammar include file " + file + " time=" + str filetime;
+    debugln$ "Grammar include file " + file + " time=" + fmt(filetime,fixed(0,3));
     var filetext = load file;
     var files = split (filetext, "\n");
     //println$ "Files=" + files;
     return fold_left maxtime filetime files;
   else
     file = Filename::join$ path, s;
-    filetime = FileStat::filetime(file);
-    if filetime == 0uv do
+    filetime = dfiletime(file,0.0);
+    if filetime == 0.0 do
       println$ "Grammar file " + file " doesn't exist, exiting";
       System::exit 1;
     done
-    debugln$ "Grammar file " + file + " time=" + str filetime;
+    debugln$ "Grammar file " + file + " time=" + fmt (filetime, fixed(0,3));
     return filetime;
   done
 }
 
 var grammar_time = gramtime(Filename::join (FLX_INSTALL_DIR,"lib"), STDGRAMMAR);
-debugln$ "Grammar text time=" + str grammar_time;
+debugln$ "Grammar text time=" + fmt (grammar_time,fixed(0,3));
 var automaton_name = 
   Filename::join( CACHE_DIR, 
   Directory::mk_absolute_filename (Filename::join (list( 
@@ -818,15 +818,15 @@ var automaton_name =
   ))))
 ;
 
-var automaton_time = FileStat::filetime automaton_name;
-debugln$ "Automaton " + automaton_name + " time=" + str automaton_time;
+var automaton_time = dfiletime(automaton_name,future_time);
+debugln$ "Automaton " + automaton_name + " time=" + fmt(automaton_time, fixed(0,3));
 
 // Still if this fails,  the compiler is new and 
 // the cache should be deleted.
-if cache_time != 0uv and flxg_stamp_time != flxg_time do
+if cache_time != future_time and flxg_stamp_time != flxg_time do
   println$ "Cache may be out of date due to compiler upgrade!";
-  println$ "Flxg compiler time stamp=" + str flxg_time;
-  println$ "Cache time stamp        =" + str cache_time;
+  println$ "Flxg compiler time stamp=" + fmt(flxg_time,fixed(0,3));
+  println$ "Cache time stamp        =" + fmt(cache_time,fixed(0,3));
   if not (
     (OUTPUT_DIR == "/" or OUTPUT_DIR == "" or OUTPUT_DIR == ".") or
     (CACHE_DIR == "/" or CACHE_DIR == "" or CACHE_DIR == ".")
@@ -834,10 +834,10 @@ if cache_time != 0uv and flxg_stamp_time != flxg_time do
   do 
     CLEAR_CACHE = 1;
   done
-elif automaton_time != 0uv and grammar_time > automaton_time do
+elif automaton_time != future_time and grammar_time > automaton_time do
   println$ "Cache may be out of date due to grammar upgrade!";
-  println$ "Grammar time stamp          =" + str grammar_time;
-  println$ "Automaton.syntax time stamp =" + str automaton_time;
+  println$ "Grammar time stamp          =" + fmt(grammar_time, fixed(0,3));
+  println$ "Automaton.syntax time stamp =" + fmt(automaton_time, fixed(0,3));
   if not (
     (OUTPUT_DIR == "/" or OUTPUT_DIR == "" or OUTPUT_DIR == ".") or
     (CACHE_DIR == "/" or CACHE_DIR == "" or CACHE_DIR == ".")
@@ -882,7 +882,7 @@ if CLEAR_CACHE != 0 do
     C_hack::ignore$ xqt("rm -rf " + CACHE_DIR);
     Directory::mkdirs(CACHE_DIR);
     var f = fopen_output flxg_stamp;
-    write(f, str flxg_time);
+    write(f, fmt(flxg_time, fixed (0,3)));
     f.fclose;
   else
     // otherwise exit with an error
@@ -1071,10 +1071,11 @@ if SHOWCODE == 1 do {
 if RECOMPILE == 0 and RUNIT == 1 and CLEAR_CACHE == 0 do
   // not (--force or -c)
   debugln "Checking to see if the binary is uptodate";
-  debugln$ "Binary time = " + str (dfiletime(filebase+EXT_SHLIB,past_time));
+  debugln$ "Binary time = " + fmt (dfiletime(filebase+EXT_SHLIB,past_time),fixed(0,3));
   if STATIC == 0 do
     var xtime = dfiletime(filebase+EXT_SHLIB,past_time);
-    if xtime > cal_dep_time (filebase) and xtime > cache_time.long do
+//println$ "xtime=" + fmt(xtime,fixed(0,3)) + ", cache time =" + fmt(cache_time, fixed(0,3));
+    if xtime > cal_dep_time (filebase) and xtime > cache_time do
       debugln$ "Running dynamically linked binary";
       calpackages();
       cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ filebase+EXT_SHLIB+" "+args;
@@ -1085,7 +1086,7 @@ if RECOMPILE == 0 and RUNIT == 1 and CLEAR_CACHE == 0 do
     done
   else
     xtime = dfiletime(filebase+EXT_EXE,past_time);
-    if xtime > cal_dep_time(filebase)  and xtime > cache_time.long do
+    if xtime > cal_dep_time(filebase)  and xtime > cache_time do
       debugln$ "Running statically linked binary";
       cmd=STATIC_ENV+" "+filebase+" "+args;
       debugln$ "Uptodate executable: Running command " + cmd;
