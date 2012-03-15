@@ -53,9 +53,10 @@ syntax lexer {
   /* integers */
   regdef bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +;
   regdef oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +;
-  regdef dec_lit  = ('0' ('d' | 'D'| "d_" | "D_"))? digit (underscore? digit) *;
+  regdef dec_lit  = '0' ('d' | 'D') (underscore? digit) +;
+  regdef dflt_dec_lit  =  digit (underscore? digit) *;
   regdef hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +;
-  regdef int_prefix = bin_lit | oct_lit | dec_lit | hex_lit;
+  regdef int_prefix = bin_lit | oct_lit | dec_lit | dflt_dec_lit | hex_lit;
 
   regdef fastint_type_suffix = 
     't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"|"z"|"Z"|"j"|"J"|"p"|"P"|"d"|"D";
@@ -156,13 +157,73 @@ syntax lexer {
   regdef quoted_filename = dquote (ordinary | hash | quote | white | slosh)+ dquote;
 */
 
-  // Note: we could easily support underscores with striping code used for
-  // other integer literals. We could also easily support different radicies
-  // using string->number with a radix argument
-  regdef SimpleInteger = digit+;
-  literal SimpleInteger =># "(string->number _1)";
-  sinteger := SimpleInteger =># "_1";
+  // Untyped integer literals.
+  literal bin_lit =># """
+  (let* 
+    (
+      (chrs (string->list _1))
+      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
+      (val (list->string chrs))
+      (val (substring val 2 (string-length val)))
+    )
+    (string->number val 2)
+  )
+  """;
+  sinteger := bin_lit =># "_1";
 
+  literal oct_lit =># """
+  (let* 
+    (
+      (chrs (string->list _1))
+      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
+      (val (list->string chrs))
+      (val (substring val 2 (string-length val)))
+    )
+    (string->number val 8)
+  )
+  """;
+  sinteger := oct_lit =># "_1";
+
+  literal dec_lit =># """
+  (let* 
+    (
+      (chrs (string->list _1))
+      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
+      (val (list->string chrs))
+      (val (substring val 2 (string-length val)))
+    )
+    (string->number val 10)
+  )
+  """;
+  sinteger := dec_lit =># "_1";
+
+  literal hex_lit =># """
+  (let* 
+    (
+      (chrs (string->list _1))
+      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
+      (val (list->string chrs))
+      (val (substring val 2 (string-length val)))
+    )
+    (string->number val 16)
+  )
+  """;
+  sinteger := hex_lit =># "_1";
+
+  literal dflt_dec_lit =># """
+  (let* 
+    (
+      (chrs (string->list _1))
+      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
+      (val (list->string chrs))
+    )
+    (string->number val 10)
+  )
+  """;
+  sinteger := dflt_dec_lit =># "_1";
+
+
+  // Typed integer literal.
   regdef Integer = int_lit;
   literal Integer =># """
   (let* 
@@ -177,6 +238,7 @@ syntax lexer {
   sliteral := Integer =># "_1";
 
 
+  // Floating literal.
   regdef Float = floating_literal;
   literal Float =># """
   (let* 
@@ -190,6 +252,7 @@ syntax lexer {
   """; 
   sliteral := Float =># "_1";
 
+  // String like literals.
   regdef String = string_literal;
   literal String =># "`(String ,_sr ,_1)";
   sliteral := String =># "_1";
