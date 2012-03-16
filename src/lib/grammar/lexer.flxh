@@ -69,6 +69,7 @@ SCHEME """
 
           ((suffix? "ui" s)`(,(substring s 0 (- n 2)) "uint"))
           ((suffix? "iu" s)`(,(substring s 0 (- n 2)) "uint"))
+          ((suffix? "i" s)`(,(substring s 0 (- n 1)) "int"))
 
           ((suffix? "uz" s)`(,(substring s 0 (- n 2)) "size"))
           ((suffix? "zu" s)`(,(substring s 0 (- n 2)) "size"))
@@ -91,14 +92,22 @@ SCHEME """
           ((suffix? "vlu" s)`(,(substring s 0 (- n 3)) "uvlong"))
           ((suffix? "ulv" s)`(,(substring s 0 (- n 3)) "uvlong"))
           ((suffix? "lvu" s)`(,(substring s 0 (- n 3)) "uvlong"))
+          ((suffix? "llu" s)`(,(substring s 0 (- n 3)) "uvlong"))
+          ((suffix? "ull" s)`(,(substring s 0 (- n 3)) "uvlong"))
+
+          ((suffix? "uv" s)`(,(substring s 0 (- n 2)) "uvlong"))
+          ((suffix? "vu" s)`(,(substring s 0 (- n 2)) "uvlong"))
+
           ((suffix? "lv" s)`(,(substring s 0 (- n 2)) "vlong"))
           ((suffix? "vl" s)`(,(substring s 0 (- n 2)) "vlong"))
+          ((suffix? "ll" s)`(,(substring s 0 (- n 2)) "vlong"))
     
           ;; comes next
           ((suffix? "ul" s)`(,(substring s 0 (- n 2)) "ulong"))
           ((suffix? "lu" s)`(,(substring s 0 (- n 2)) "ulong"))
 
           ;; last
+          ((suffix? "v" s)`(,(substring s 0 (- n 1)) "vlong"))
           ((suffix? "u" s)`(,(substring s 0 (- n 1)) "uint"))
           ((suffix? "l" s)`(,(substring s 0 (- n 1)) "long"))
 
@@ -132,7 +141,21 @@ SCHEME """
       (digits (first x))
       (value (string->number digits radix))
     )
-   `(,type ,value)
+    (if (equal? value #f)
+       (begin 
+         (newline)
+         (display "Invalid integer literal ") (display s) 
+         (newline)
+         (display "Radix ")(display radix)
+         (newline)
+         (display "Type ")(display type)
+         (newline)
+         (display "Digits ")(display digits)
+         (newline)
+         error
+       )
+       `(,type ,value)
+    ) 
   )
 )
 """;
@@ -297,60 +320,18 @@ syntax lexer {
 */
 
   // Untyped integer literals.
-  literal bin_lit =># """
+  literal int_prefix =># """
   (let* 
     (
       (val (stripus _1))
-      (val (substring val 2 (string-length val)))
+      (x (parse-int val))
+      (type (first x))
+      (value (second x))
     )
-    (string->number val 2)
+    value
   )
-  """;
-  sinteger := bin_lit =># "_1";
-
-  literal oct_lit =># """
-  (let* 
-    (
-      (val (stripus _1))
-      (val (substring val 2 (string-length val)))
-    )
-    (string->number val 8)
-  )
-  """;
-  sinteger := oct_lit =># "_1";
-
-  literal dec_lit =># """
-  (let* 
-    (
-      (val (stripus _1))
-      (val (substring val 2 (string-length val)))
-    )
-    (string->number val 10)
-  )
-  """;
-  sinteger := dec_lit =># "_1";
-
-  literal hex_lit =># """
-  (let* 
-    (
-      (val (stripus _1))
-      (val (substring val 2 (string-length val)))
-    )
-    (string->number val 16)
-  )
-  """;
-  sinteger := hex_lit =># "_1";
-
-  literal dflt_dec_lit =># """
-  (let* 
-    (
-      (val (stripus _1))
-    )
-    (string->number val 10)
-  )
-  """;
-  sinteger := dflt_dec_lit =># "_1";
-
+  """; 
+  sinteger := int_prefix =># "_1";
 
   // Typed integer literal.
   regdef Integer = int_lit;
