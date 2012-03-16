@@ -235,8 +235,29 @@ SCHEME """
   )
 """;
 
+SCHEME """
+  (define (prefix? p s) 
+    (let
+      (
+        (pl (string-length p))
+        (sl (string-length s))
+      )
+      (if (< pl sl) (equal? p (substring s 0 pl)) #f)
+    )
+  )
+""";
 
-
+SCHEME """
+  (define (suffix? p s) 
+    (let
+      (
+        (pl (string-length p))
+        (sl (string-length s))
+      )
+      (if (< pl sl) (equal? p (substring s (- sl pl) sl)) #f)
+    )
+  )
+""";
 
 
 

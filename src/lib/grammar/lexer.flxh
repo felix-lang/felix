@@ -1,3 +1,142 @@
+SCHEME """
+(define (stripus s) ; strip underscores 
+  (let*
+    ( 
+      (chrs (string->list s))
+      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
+    )
+    (list->string chrs)
+  )
+)
+""";
+
+SCHEME """
+(define (tolower-char c) ; convert one character to lower case
+  (let* 
+    (
+      (i (char->integer c))
+      (i (if (and (>= i 65) (<= i 90)) (+ i 32) i))
+    ) 
+    (integer->char i)
+  )
+)
+""";
+SCHEME """
+(define (tolower-string s) ; convert a whole string to lower case
+  (let*
+    (
+      (chrs (string->list s))
+      (chrs (map tolower-char chrs))
+    )
+    (list->string chrs)
+  )
+)
+""";
+
+SCHEME """
+(define (findradix s)  ; find the radix of integer lexeme
+  (let* 
+    (
+      (n (string-length s))
+      (result 
+        (cond 
+          ((prefix? "0b" s)`(,(substring s 2 n) 2)) 
+          ((prefix? "0o" s)`(,(substring s 2 n) 8)) 
+          ((prefix? "0d" s)`(,(substring s 2 n) 10)) 
+          ((prefix? "0x" s)`(,(substring s 2 n) 16)) 
+          (else `(,s 10))
+        )
+      )
+    )
+    result
+  )
+)
+""";
+SCHEME """
+(define (findtype s) ;; find type of integer lexeme
+  (let*
+    (
+      (n (string-length s))
+      (result
+        (cond
+          ((suffix? "ut" s)`(,(substring s 0 (- n 2)) "utiny"))
+          ((suffix? "tu" s)`(,(substring s 0 (- n 2)) "utiny"))
+          ((suffix? "t" s)`(,(substring s 0 (- n 1)) "tiny"))
+
+          ((suffix? "us" s)`(,(substring s 0 (- n 2)) "ushort"))
+          ((suffix? "su" s)`(,(substring s 0 (- n 2)) "ushort"))
+          ((suffix? "s" s)`(,(substring s 0 (- n 1)) "short"))
+
+          ((suffix? "ui" s)`(,(substring s 0 (- n 2)) "uint"))
+          ((suffix? "iu" s)`(,(substring s 0 (- n 2)) "uint"))
+
+          ((suffix? "uz" s)`(,(substring s 0 (- n 2)) "size"))
+          ((suffix? "zu" s)`(,(substring s 0 (- n 2)) "size"))
+          ((suffix? "z" s)`(,(substring s 0 (- n 1)) "ssize"))
+
+          ((suffix? "uj" s)`(,(substring s 0 (- n 2)) "uintmax"))
+          ((suffix? "ju" s)`(,(substring s 0 (- n 2)) "uintmax"))
+          ((suffix? "j" s)`(,(substring s 0 (- n 1)) "intmax"))
+
+          ((suffix? "up" s)`(,(substring s 0 (- n 2)) "uintptr"))
+          ((suffix? "pu" s)`(,(substring s 0 (- n 2)) "uintptr"))
+          ((suffix? "p" s)`(,(substring s 0 (- n 1)) "intptr"))
+
+          ((suffix? "ud" s)`(,(substring s 0 (- n 2)) "uptrdiff"))
+          ((suffix? "du" s)`(,(substring s 0 (- n 2)) "uptrdiff"))
+          ((suffix? "d" s)`(,(substring s 0 (- n 1)) "ptrdiff"))
+
+          ;; must come first!
+          ((suffix? "uvl" s)`(,(substring s 0 (- n 3)) "uvlong"))
+          ((suffix? "vlu" s)`(,(substring s 0 (- n 3)) "uvlong"))
+          ((suffix? "ulv" s)`(,(substring s 0 (- n 3)) "uvlong"))
+          ((suffix? "lvu" s)`(,(substring s 0 (- n 3)) "uvlong"))
+          ((suffix? "lv" s)`(,(substring s 0 (- n 2)) "vlong"))
+          ((suffix? "vl" s)`(,(substring s 0 (- n 2)) "vlong"))
+    
+          ;; comes next
+          ((suffix? "ul" s)`(,(substring s 0 (- n 2)) "ulong"))
+          ((suffix? "lu" s)`(,(substring s 0 (- n 2)) "ulong"))
+
+          ;; last
+          ((suffix? "u" s)`(,(substring s 0 (- n 1)) "uint"))
+          ((suffix? "l" s)`(,(substring s 0 (- n 1)) "long"))
+
+          ;; exact
+          ((suffix? "u8" s)`(,(substring s 0 (- n 2)) "uint8"))
+          ((suffix? "u16" s)`(,(substring s 0 (- n 3)) "uint16"))
+          ((suffix? "u32" s)`(,(substring s 0 (- n 3)) "uint32"))
+          ((suffix? "u64" s)`(,(substring s 0 (- n 3)) "uint64"))
+          ((suffix? "i8" s)`(,(substring s 0 (- n 2)) "int8"))
+          ((suffix? "i16" s)`(,(substring s 0 (- n 3)) "int16"))
+          ((suffix? "i32" s)`(,(substring s 0 (- n 3)) "int32"))
+          ((suffix? "i64" s)`(,(substring s 0 (- n 3)) "int64"))
+          (else `(,s "int"))
+        )
+      )
+    )
+    result
+  )
+)
+""";
+SCHEME """
+(define (parse-int s) 
+  (let*
+    (
+      (s (tolower-string s))
+      (x (findradix s))
+      (radix (second x))
+      (x (first x))
+      (x (findtype x))
+      (type (second x))
+      (digits (first x))
+      (value (string->number digits radix))
+    )
+   `(,type ,value)
+  )
+)
+""";
+
 syntax lexer {
   /* ====================== REGULAR DEFINITIONS ============================ */
   /* special characters */
@@ -161,9 +300,7 @@ syntax lexer {
   literal bin_lit =># """
   (let* 
     (
-      (chrs (string->list _1))
-      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
-      (val (list->string chrs))
+      (val (stripus _1))
       (val (substring val 2 (string-length val)))
     )
     (string->number val 2)
@@ -174,9 +311,7 @@ syntax lexer {
   literal oct_lit =># """
   (let* 
     (
-      (chrs (string->list _1))
-      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
-      (val (list->string chrs))
+      (val (stripus _1))
       (val (substring val 2 (string-length val)))
     )
     (string->number val 8)
@@ -187,9 +322,7 @@ syntax lexer {
   literal dec_lit =># """
   (let* 
     (
-      (chrs (string->list _1))
-      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
-      (val (list->string chrs))
+      (val (stripus _1))
       (val (substring val 2 (string-length val)))
     )
     (string->number val 10)
@@ -200,9 +333,7 @@ syntax lexer {
   literal hex_lit =># """
   (let* 
     (
-      (chrs (string->list _1))
-      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
-      (val (list->string chrs))
+      (val (stripus _1))
       (val (substring val 2 (string-length val)))
     )
     (string->number val 16)
@@ -213,9 +344,7 @@ syntax lexer {
   literal dflt_dec_lit =># """
   (let* 
     (
-      (chrs (string->list _1))
-      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
-      (val (list->string chrs))
+      (val (stripus _1))
     )
     (string->number val 10)
   )
@@ -228,11 +357,12 @@ syntax lexer {
   literal Integer =># """
   (let* 
     (
-      (chrs (string->list _1))
-      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
-      (val (list->string chrs))
+      (val (stripus _1))
+      (x (parse-int val))
+      (type (first x))
+      (value (second x))
     )
-    `(Integer ,_sr ,val)
+    `(ast_literal ,_sr (ast_int ,type ,value))
   )
   """; 
   sliteral := Integer =># "_1";
@@ -243,9 +373,7 @@ syntax lexer {
   literal Float =># """
   (let* 
     (
-      (chrs (string->list _1))
-      (chrs (filter (lambda (x) (not (char=? x (integer->char 95)))) chrs)) ; strip underscores
-      (val (list->string chrs))
+      (val (stripus _1))
     )
     `(Float ,_sr ,val)
   )
