@@ -12,51 +12,6 @@ let prefix p s =
    whereas r''' or u''' will not. 
 *)
 
-let xlat_string_lit s = 
-  (* print_endline ("String literal: " ^ s); *)
-  let r = 
-  (* triple quoted strings *)
-  if prefix "'''" s || prefix "\"\"\"" s 
-  then Flx_string.unescape (String.sub s 3 (String.length s - 6))
-
-  (* plain quoted strings *)
-  else if prefix "'" s || prefix "\"" s 
-  then Flx_string.unescape (String.sub s 1 (String.length s - 2))
-
-  (* raw triple quoted strings *)
-  else if 
-    prefix "r'''" s || prefix "r\"\"\"" s || prefix "R'''" s || prefix "R\"\"\"" s
-  then (String.sub s 4 (String.length s - 7))
-
-  (* other prefixed triple quoted strings *)
-  else if
-    prefix "c'''" s || prefix "c\"\"\"" s || prefix "C'''" s || prefix "C\"\"\"" s ||
-    prefix "w'''" s || prefix "w\"\"\"" s || prefix "W'''" s || prefix "W\"\"\"" s ||
-    prefix "u'''" s || prefix "u\"\"\"" s || prefix "U'''" s || prefix "U\"\"\"" s ||
-    prefix "q'''" s || prefix "q\"\"\"" s || prefix "Q'''" s || prefix "Q\"\"\"" s ||
-    prefix "f'''" s || prefix "f\"\"\"" s || prefix "F'''" s || prefix "F\"\"\"" s
-  then Flx_string.unescape (String.sub s 4 (String.length s - 7))
-
-  (* raw quoted strings *)
-  else if 
-   prefix "r'" s || prefix "r\"" s || prefix "R'" s || prefix "R\"" s
-  then (String.sub s 2 (String.length s - 3))
-
-  (* other prefixed strings *)
-  else if
-   prefix "c'" s || prefix "c\"" s || prefix "C'" s || prefix "C\"" s ||
-   prefix "w'" s || prefix "w\"" s || prefix "W'" s || prefix "W\"" s ||
-   prefix "u'" s || prefix "u\"" s || prefix "U'" s || prefix "U\"" s ||
-   prefix "q'" s || prefix "q\"" s || prefix "Q'" s || prefix "Q\"" s ||
-   prefix "f'" s || prefix "f\"" s || prefix "F'" s || prefix "F\"" s 
-  then Flx_string.unescape (String.sub s 2 (String.length s - 3))
-
-  (* unrecognized *)
-  else failwith ("Expected String literal! got "^s) 
-  in
-  (* print_endline ("Result: " ^ r);  *)
-  r
-
 open List
 
 exception Sex2FlxTypeError of string * sexp_t
@@ -183,35 +138,15 @@ and xexpr_t sr x =
   | Lst [] -> EXPR_tuple (sr,[])
   | Lst [x] -> ex x
   (* this term comes from the hard coded parser! *)
-  | Lst [Id "ast_vsprintf";  sr; Str s] -> EXPR_vsprintf (xsr sr, xlat_string_lit s)
-  | Lst [Id "ast_interpolate";  sr; Str s] -> EXPR_interpolate (xsr sr, xlat_string_lit s)
+  | Lst [Id "ast_vsprintf";  sr; Str s] -> EXPR_vsprintf (xsr sr, s)
+  | Lst [Id "ast_interpolate";  sr; Str s] -> EXPR_interpolate (xsr sr, s)
   | Lst [Id "ast_noexpand"; sr; e] -> EXPR_noexpand (xsr sr,ex e)
   | Lst [Id "ast_name"; sr; id; Lst ts] -> EXPR_name (xsr sr, xid id, map ti ts)
   (* can't occur in user code
   | Lst [Id "ast_index";  Str s ; Int i] -> EXPR_index (sr,s,ii i)
   *)
 
-  | Lst [Id "String"; sr; Str v] -> 
-   let v = xlat_string_lit v in
-   let lit = Flx_literal.String v in
-   EXPR_literal (xsr sr, lit)
-
-  | Lst [Id "Wstring"; sr; Str v] -> 
-   let v = xlat_string_lit v in
-   let lit = Flx_literal.Wstring v in
-   EXPR_literal (xsr sr, lit)
-
-  | Lst [Id "Ustring"; sr; Str v] -> 
-   let v = xlat_string_lit v in
-   let lit = Flx_literal.Ustring v in
-   EXPR_literal (xsr sr, lit)
-
-  | Lst [Id "Cstring"; sr; Str v] -> 
-   let v = xlat_string_lit v in
-   let lit = Flx_literal.Cstring v in
-   EXPR_literal (xsr sr, lit)
-
-  | Lst [Id "ast_case_tag";  sr; Int i] -> EXPR_case_tag (xsr sr,ii i)
+ | Lst [Id "ast_case_tag";  sr; Int i] -> EXPR_case_tag (xsr sr,ii i)
   | Lst [Id "ast_typed_case";  Int i; t] -> EXPR_typed_case (sr,ii i,ti t)
   | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> EXPR_lookup (sr,(ex e, s,map ti ts))
   | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> EXPR_apply(xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))

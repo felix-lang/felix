@@ -173,6 +173,82 @@ SCHEME """
 )
 """;
 
+SCHEME """
+(define (decode-string s) 
+  (let* 
+    (
+      (n (string-length s))
+      (result 
+        (cond
+          ((prefix? "w'''" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "W'''" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "c'''" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "C'''" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "u'''" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "U'''" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "f'''" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "F'''" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "q'''" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "Q'''" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "r'''" s)(substring s 4 (- n 3)))
+          ((prefix? "R'''" s)(substring s 4 (- n 3)))
+          ((prefix? "'''" s)(unescape (substring s 3 (- n 3))))
+
+          ((prefix? "w\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "W\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "c\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "C\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "u\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "U\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "f\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "F\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "q\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "Q\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "r\\"\\"\\"" s)(substring s 4 (- n 3)))
+          ((prefix? "R\\"\\"\\"" s)(substring s 4 (- n 3)))
+          ((prefix? "\\"\\"\\"" s)(unescape (substring s 3 (- n 3))))
+
+          ((prefix? "w'" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "W'" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "c'" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "C'" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "u'" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "U'" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "f'" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "F'" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "q'" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "Q'" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "r'" s)(substring s 2 (- n 1)))
+          ((prefix? "R'" s)(substring s 2 (- n 1)))
+          ((prefix? "'" s)(unescape (substring s 1 (- n 1))))
+
+          ((prefix? "w\\"" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "W\\"" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "c\\"" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "C\\"" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "u\\"" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "U\\"" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "f\\"" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "F\\"" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "q\\"" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "Q\\"" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "r\\"" s)(substring s 2 (- n 1)))
+          ((prefix? "R\\"" s)(substring s 2 (- n 1)))
+          ((prefix? "\\"" s)(unescape (substring s 1 (- n 1))))
+
+          (else error) 
+        )
+      )
+    )
+    ;;(begin 
+    ;;   (newline)(display "string=")(display s)
+    ;;   (newline)(display "text=")(display result)
+       result
+    ;;)
+  )
+)
+""";
+
 syntax lexer {
   /* ====================== REGULAR DEFINITIONS ============================ */
   /* special characters */
@@ -403,27 +479,27 @@ syntax lexer {
 
   // String like literals.
   regdef String = string_literal;
-  literal String =># "`(String ,_sr ,_1)";
+  literal String =># "`(ast_literal ,_sr (ast_string ,(decode-string  _1)))";
   sliteral := String =># "_1";
 
   regdef Wstring = wstring_literal;
-  literal Wstring =># "`(Wstring ,_sr ,_1)";
+  literal Wstring =># "`(ast_literal ,_sr (ast_wstring ,(decode-string  _1)))";
   sliteral := Wstring =># "_1";
 
   regdef Ustring = ustring_literal;
-  literal Ustring =># "`(Ustring ,_sr ,_1)";
+  literal Ustring =># "`(ast_literal ,_sr (ast_ustring ,(decode-string  _1)))";
   sliteral := Ustring =># "_1";
 
   regdef Cstring = cstring_literal;
-  literal Cstring =># "`(Cstring ,_sr ,_1)";
+  literal Cstring =># "`(ast_literal ,_sr (ast_cstring ,(decode-string  _1)))";
   sliteral := Cstring =># "_1";
 
   regdef Qstring = qstring_literal;
-  literal Qstring =># "`(ast_interpolate ,_sr ,_1)";
+  literal Qstring =># "`(ast_interpolate ,_sr ,(decode-string _1))";
   sliteral := Qstring =># "_1";
 
   regdef Fstring = fstring_literal;
-  literal Fstring =># "`(ast_vsprintf ,_sr ,_1)";
+  literal Fstring =># "`(ast_vsprintf ,_sr ,(decode-string _1))";
   sliteral := Fstring =># "_1";
 
 }

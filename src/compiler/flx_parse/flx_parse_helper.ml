@@ -105,10 +105,16 @@ exception Scheme_error of sval
 
 let giveup () = raise Giveup; Sunspec
 let sraise s  = raise (Scheme_error s); Sunspec
+let sunescape s =
+  match s with
+  | Sstring s -> Sstring (Flx_string.unescape s)
+  | _ -> raise (Ocs_error.Error ("sunescape: not a string"))
 
+ 
 let flx_ocs_init env =
   Ocs_env.set_pf0 env giveup "giveup";
-  Ocs_env.set_pf1 env sraise "raise"
+  Ocs_env.set_pf1 env sraise "raise";
+  Ocs_env.set_pf1 env sunescape "unescape"
 
 let init_env () =
   let env = Ocs_top.make_env () in

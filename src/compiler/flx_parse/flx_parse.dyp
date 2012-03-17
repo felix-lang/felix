@@ -206,10 +206,6 @@ let load_scheme_defs env scm =
 %token <int> INTEGER
 %token <string> STRING
 %token <string> CSTRING
-%token <string> FSTRING
-%token <string> QSTRING
-%token <string> WSTRING
-%token <string> USTRING
 %token <'obj Dyp.dyplexbuf> HASH_LINE
 %token <'obj Dyp.dyplexbuf> HASH_INCLUDE
 %token DUMMY
@@ -502,26 +498,6 @@ main lexer =
  rqc qqq    -> CSTRING { parse_raw_qqqstring lexbuf }
  rqc dquote -> CSTRING { parse_raw_dstring lexbuf }
  rqc ddd    -> CSTRING { parse_raw_dddstring lexbuf }
-
-/* Format strings */
- ('f'|'F') qqq    -> FSTRING { parse_qqqstring lexbuf }
- ('f'|'F') dquote -> FSTRING { parse_dstring lexbuf }
- ('f'|'F') ddd    -> FSTRING { parse_dddstring lexbuf }
-
-/* Interpolation strings */
- ('q'|'Q') qqq    -> QSTRING { parse_qqqstring lexbuf }
- ('q'|'Q') dquote -> QSTRING { parse_dstring lexbuf }
- ('q'|'Q') ddd    -> QSTRING { parse_dddstring lexbuf }
-
-/* wide strings */
- ('w' | 'W') qqq    -> WSTRING { parse_qqqstring lexbuf }
- ('w' | 'W') dquote -> WSTRING { parse_dstring lexbuf }
- ('w' | 'W') ddd    -> WSTRING { parse_dddstring lexbuf }
-
-/* UTF32 strings */
- ('u' | 'U') qqq    -> USTRING { parse_qqqstring lexbuf }
- ('u' | 'U') dquote -> USTRING { parse_dstring lexbuf }
- ('u' | 'U') ddd    -> USTRING { parse_dddstring lexbuf }
 
 /* name strings */
  ('n' | 'N') qqq    -> NAME { parse_qqqstring lexbuf }
