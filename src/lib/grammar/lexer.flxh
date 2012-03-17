@@ -373,6 +373,8 @@ syntax lexer {
   )
   """;
 
+  strint := sintegral =># "(second _1)";
+
   // Floating constant.
   regdef sfloat = floating_literal;
   literal sfloat =># """
@@ -393,6 +395,8 @@ syntax lexer {
      result 
    ) 
    """; 
+
+  strfloat := sfloat =># "(second _1)";
 
   // Floating literal.
   sliteral := sfloat =># "`(ast_literal ,_sr (ast_float ,@_1))";

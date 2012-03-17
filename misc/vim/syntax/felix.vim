@@ -127,6 +127,7 @@ syn keyword felixStatement requires
 syn keyword felixStatement return
 syn keyword felixStatement SCHEME
 syn keyword felixStatement syntax
+syn keyword felixStatement literal
 syn keyword felixStatement spawn_fthread
 syn keyword felixStatement spawn_pthread
 syn keyword felixStatement static

@@ -203,8 +203,7 @@ let load_scheme_defs env scm =
 /* literals */
 %token <string> NAME
 %token <(string * prio_t)> NONTERMINAL
-%token <(string * string)> INTEGER
-%token <(string * string )> FLOAT
+%token <int> INTEGER
 %token <string> STRING
 %token <string> CSTRING
 %token <string> FSTRING
@@ -280,11 +279,8 @@ let load_scheme_defs env scm =
 %constructor Obj_sexpr %for sname sliteral
 
 /* literals */
-%constructor Obj_sexpr %for sinteger sfloat sstring scstring
-%constructor Obj_sexpr %for strint strfloat strstring
-
-/* patterns */
-%constructor Obj_sexpr %for sintegral
+%constructor Obj_sexpr %for sstring scstring
+%constructor Obj_sexpr %for strstring
 
 /* tokens replacements for special symbols used in productions */
 %constructor Obj_sexpr %for sident
@@ -351,53 +347,6 @@ let idletter = letter | underscore | hichar | ucn
 let alphnum = idletter | digit
 let innerglyph = idletter | digit | dash
 let identifier = idletter (innerglyph? (alphnum | prime) +)* prime*
-
-/* integers */
-let bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +
-let oct_lit  = '0' ('o' | 'O') (underscore? octdigit) +
-let dec_lit  = ('0' ('d' | 'D'| "d_" | "D_"))? digit (underscore? digit) *
-let hex_lit  = '0' ('x' | 'X') (underscore? hexdigit)  +
-let fastint_type_suffix = 't'|'T'|'s'|'S'|'i'|'I'|'l'|'L'|'v'|'V'|"ll"|"LL"|"z"|"Z"|"j"|"J"|"p"|"P"|"d"|"D"
-let exactint_type_suffix =
-    "i8" | "i16" | "i32" | "i64"
-  | "u8" | "u16" | "u32" | "u64"
-  | "I8" | "I16" | "I32" | "I64"
-  | "U8" | "U16" | "U32" | "U64"
-
-let signind = 'u' | 'U'
-
-let suffix =
-    '_'? exactint_type_suffix
-  | ('_'? fastint_type_suffix)? ('_'? signind)?
-  | ('_'? signind)? ('_'? fastint_type_suffix)?
-
-let int_lit = (bin_lit | oct_lit | dec_lit | hex_lit) suffix
-
-/* floats: Follows ISO C89, except that we allow underscores
-   AND we require both leading and trailing digits so 
-   x.0 works for tuple projections and 0.f is a function
-   application
-*/
-let decimal_string = digit (underscore? digit) *
-let hexadecimal_string = hexdigit (underscore? hexdigit) *
-
-let decimal_fractional_constant =
-  decimal_string '.' decimal_string
-
-let hexadecimal_fractional_constant =
-  ("0x" |"0X")
-  hexadecimal_string '.' hexadecimal_string
-
-let decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string
-let binary_exponent = ('P'|'p') ('+'|'-')? decimal_string
-
-let floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd'
-let floating_literal =
-  (
-    decimal_fractional_constant decimal_exponent? |
-    hexadecimal_fractional_constant binary_exponent?
-  )
-  floating_suffix?
 
 /* Python strings */
 let qqq = quote quote quote
@@ -528,82 +477,9 @@ main lexer =
 
  "/*" -> { parse_C_comment 1 lexbuf }
 
- int_lit -> INTEGER {
+ digit+ -> INTEGER {
       let s = lexeme lexbuf in
-      let n = String.length s in
-      let converter, first =
-        if n>1 && s.[0]='0'
-        then
-          match s.[1] with
-          | 'b' | 'B' -> binbig_int_of_string,2
-          | 'o' | 'O' -> octbig_int_of_string,2
-          | 'd' | 'D' -> decbig_int_of_string,2
-          | 'x' | 'X' -> hexbig_int_of_string,2
-          | _         -> decbig_int_of_string,0
-        else decbig_int_of_string,0
-      in
-      let k = ref (n-1) in
-      let t =
-        if n >= 2 && s.[n-2]='i' && s.[n-1]='8'
-        then (k:=n-2; "int8")
-        else if n >= 2 && s.[n-2]='u' && s.[n-1]='8'
-        then (k:=n-2; "uint8")
-        else if n >= 3 && s.[n-3]='i' && s.[n-2]='1' && s.[n-1]='6'
-        then (k:=n-3; "int16")
-        else if n >= 3 && s.[n-3]='u' && s.[n-2]='1' && s.[n-1]='6'
-        then (k:=n-3; "uint16")
-
-        else if n >= 3 && s.[n-3]='i' && s.[n-2]='3' && s.[n-1]='2'
-        then (k:=n-3; "int32")
-        else if n >= 3 && s.[n-3]='u' && s.[n-2]='3' && s.[n-1]='2'
-        then (k:=n-3; "uint32")
-
-        else if n >= 3 && s.[n-3]='i' && s.[n-2]='6' && s.[n-1]='4'
-        then (k:=n-3; "int64")
-        else if n >= 3 && s.[n-3]='u' && s.[n-2]='6' && s.[n-1]='4'
-        then (k:=n-3; "uint64")
-
-        else begin
-          let sign = ref "" in
-          let typ = ref "int" in
-          begin try while !k>first do
-            (match s.[!k] with
-            | 'u' | 'U' -> sign := "u"
-            | 't' | 'T' -> typ := "tiny" (* stolen code for ptrdiff .. hmm *)
-            | 's' | 'S' -> typ := "short"
-            | 'i' | 'I' -> typ := "int"
-            | 'z' | 'Z' -> typ := "size"
-            | 'j' | 'J' -> typ := "intmax"
-            | 'p' | 'P' -> typ := "intptr"
-            | 'd' | 'D' -> typ := "ptrdiff" (* note 'd' instead of the 't' used in C *)
-            | 'l' | 'L' ->
-              typ :=
-                if !typ = "long" then "vlong" else "long"
-            | 'v' | 'V' -> typ := "vlong"
-            | _ -> raise Not_found
-            );
-            decr k
-          done with _ -> () end;
-          incr k;
-          if !typ = "size" then 
-            if !sign = "u" then "size" else "ssize" 
-          else
-            !sign ^ !typ
-        end
-      in
-      let d = String.sub s first (!k-first) in
-      let v = (converter d) in
-      (t, Big_int.string_of_big_int v)
-  }
-
- floating_literal -> FLOAT {
-    let str = lexeme lexbuf in
-    let n = String.length str in
-    let last_char = str.[n-1] in
-    match last_char with
-    | 'l'|'L' -> "ldouble", strip_us (String.sub str 0 (n-1))
-    | 'f'|'F' -> "float", strip_us (String.sub str 0 (n-1))
-    | _       -> "double", strip_us str
+      int_of_string s
   }
 
 /* Python strings */
@@ -782,7 +658,7 @@ tstatement:
    {
      let sr = getsr dyp in
      let lexbuf = $1 in
-     let n = int_of_string (snd $2)in
+     let n = $2 in
      set_lineno lexbuf n;
      Dyp.set_fname lexbuf $3;
      0,sr,Snull
@@ -792,7 +668,7 @@ tstatement:
    {
      let sr = getsr dyp in
      let lexbuf = $1 in
-     let n = int_of_string (snd $2)in
+     let n = $2 in
      set_lineno lexbuf n;
      0,sr,Snull
    }
@@ -932,13 +808,13 @@ dyprod:
   ssre :  ssre(>=rpostfix_prix) "+" { RE_Plus $1 } rpostfix_prix
   ssre :  ssre(>=rpostfix_prix) "?" { RE_Option $1 } rpostfix_prix
   ssre :  "(" ssre(>=ralt_prix) ")" {$2 } ratom_prix
-  ssre :  INTEGER { RE_Char (Char.chr (int_of_string (snd $1)) ) } ratom_prix
+  ssre :  INTEGER { RE_Char (Char.chr $1) } ratom_prix
   ssre :  "_" { RE_Char_set [Char.chr 0, Char.chr 255] } ratom_prix
   ssre :  "." { RE_Char_set [Char.chr 32, Char.chr 255] } ratom_prix
   ssre :  "[" INTEGER "-" INTEGER "]" { 
     RE_Char_set [
-      Char.chr (int_of_string (snd $2)), 
-      Char.chr (int_of_string (snd $4))
+      Char.chr $2, 
+      Char.chr $4
     ] } ratom_prix
 
   ssre :  "charset" STRING {
@@ -1120,61 +996,6 @@ production at the moment
 sepsilon: | { 0, Flx_srcref.dummy_sr, Snull }
 strepsilon: | { 0, Flx_srcref.dummy_sr, Sstring "" }
 
-/*
-sinteger:
-  | INTEGER
-    {
-      let t, v = $1 in
-      0, getsr dyp, Sbigint (Big_int.big_int_of_string v)
-    }
-*/
-
-strint:
-  | INTEGER
-    {
-      let t, v = $1 in
-      let s =  v in
-      0, getsr dyp, Sstring s
-    }
-
-/*
-sfloat:
-  | FLOAT
-    {
-      let t, v = $1 in
-      let x = Sstring t::Sstring v::[] in
-      let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0, getsr dyp, x
-    }
-*/
-
-strfloat:
-  | FLOAT
-    {
-      let t, v = $1 in
-      0, getsr dyp, Sstring v
-    }
-
-
-/*
-sintegral:
-  | INTEGER
-    {
-      let t, v = $1 in
-      let i = Sstring t :: Sbigint (Big_int.big_int_of_string v) :: [] in
-      let x = Ocs_misc.make_slist Snull (List.rev i) in
-      0, getsr dyp, x
-    }
-  | "-" INTEGER
-    {
-      let t, v = $2 in
-      let v = Big_int.minus_big_int (Big_int.big_int_of_string v) in
-      let i = Sstring t :: Sbigint v :: [] in
-      let x = Ocs_misc.make_slist Snull (List.rev i) in
-      0, getsr dyp, x
-    }
-*/
-
 sstring:
   | STRING { 0, getsr dyp, Sstring $1 }
 
@@ -1183,106 +1004,6 @@ strstring:
 
 scstring:
   | CSTRING { 0, getsr dyp, Sstring $1 }
-
-
-/*
-sliteral:
-  | INTEGER
-    {
-      let t, v = $1 in
-      let sr = getsr dyp in
-      let alit = Ocs_sym.get_symbol "ast_literal" in
-      let aint = Ocs_sym.get_symbol "ast_int" in
-      let i = aint :: Sstring t :: Sstring v :: [] in
-      let i = Ocs_misc.make_slist Snull (List.rev i) in
-      let x = alit :: xsr sr :: i :: [] in
-      let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0, sr, x
-    }
-
-  | FLOAT
-    {
-      let t, v = $1 in
-      let sr = getsr dyp in
-      let alit = Ocs_sym.get_symbol "ast_literal" in
-      let afloat = Ocs_sym.get_symbol "ast_float" in
-      let i = afloat :: Sstring t :: Sstring v :: [] in
-      let i = Ocs_misc.make_slist Snull (List.rev i) in
-      let x = alit :: xsr sr :: i :: [] in
-      let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0, sr, x
-    }
-
-  | STRING
-    {
-      let s = $1 in
-      let sr = getsr dyp in
-      let alit = Ocs_sym.get_symbol "ast_literal" in
-      let astring = Ocs_sym.get_symbol "ast_string" in
-      let i = astring :: Sstring s :: [] in
-      let i = Ocs_misc.make_slist Snull (List.rev i) in
-      let x = alit :: xsr sr :: i :: [] in
-      let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0, sr, x
-   }
-
-  | WSTRING
-    {
-      let s = $1 in
-      let sr = getsr dyp in
-      let alit = Ocs_sym.get_symbol "ast_literal" in
-      let astring = Ocs_sym.get_symbol "ast_wstring" in
-      let i = astring :: Sstring s :: [] in
-      let i = Ocs_misc.make_slist Snull (List.rev i) in
-      let x = alit :: xsr sr :: i :: [] in
-      let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0, sr, x
-    }
-
-  | USTRING
-    {
-      let s = $1 in
-      let sr = getsr dyp in
-      let alit = Ocs_sym.get_symbol "ast_literal" in
-      let astring = Ocs_sym.get_symbol "ast_ustring" in
-      let i = astring :: Sstring s :: [] in
-      let i = Ocs_misc.make_slist Snull (List.rev i) in
-      let x = alit :: xsr sr :: i :: [] in
-      let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0, sr, x
-    }
-
-  | CSTRING
-    {
-      let s = $1 in
-      let sr = getsr dyp in
-      let alit = Ocs_sym.get_symbol "ast_literal" in
-      let astring = Ocs_sym.get_symbol "ast_cstring" in
-      let i = astring :: Sstring s :: [] in
-      let i = Ocs_misc.make_slist Snull (List.rev i) in
-      let x = alit :: xsr sr :: i :: [] in
-      let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0, sr, x
-    }
-
-  | QSTRING
-    {
-      let s = $1 in
-      let qstring = Ocs_sym.get_symbol "ast_interpolate" in
-      let x = qstring :: Sstring s :: [] in
-      let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0, getsr dyp, x
-    }
-
-  | FSTRING
-    {
-      let s = $1 in
-      let fstring = Ocs_sym.get_symbol "ast_vsprintf" in
-      let x = fstring :: Sstring s :: [] in
-      let x = Ocs_misc.make_slist Snull (List.rev x) in
-      0, getsr dyp, x
-    }
-*/
 
 basic_name:
   | NAME { getsr dyp, $1 }
