@@ -198,11 +198,6 @@ and xexpr_t sr x =
   | Lst [Id "ast_index";  Str s ; Int i] -> EXPR_index (sr,s,ii i)
   *)
 
-  | Lst [Id "Float"; sr; Str v] -> 
-   let t,v = xlat_float_lit v in
-   let lit = Flx_literal.Float (xfloat_kind t, v) in
-   EXPR_literal (xsr sr, lit)
-
   | Lst [Id "String"; sr; Str v] -> 
    let v = xlat_string_lit v in
    let lit = Flx_literal.String v in

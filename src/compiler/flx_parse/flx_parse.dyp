@@ -1137,6 +1137,7 @@ strint:
       0, getsr dyp, Sstring s
     }
 
+/*
 sfloat:
   | FLOAT
     {
@@ -1145,6 +1146,7 @@ sfloat:
       let x = Ocs_misc.make_slist Snull (List.rev x) in
       0, getsr dyp, x
     }
+*/
 
 strfloat:
   | FLOAT
@@ -1154,6 +1156,7 @@ strfloat:
     }
 
 
+/*
 sintegral:
   | INTEGER
     {
@@ -1170,6 +1173,7 @@ sintegral:
       let x = Ocs_misc.make_slist Snull (List.rev i) in
       0, getsr dyp, x
     }
+*/
 
 sstring:
   | STRING { 0, getsr dyp, Sstring $1 }

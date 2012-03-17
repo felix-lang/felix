@@ -159,6 +159,19 @@ SCHEME """
   )
 )
 """;
+SCHEME """
+(define (splitsign s)
+  (let* 
+    (
+      (n (string-length s))
+      (ch (substring s 0 1))
+    )
+    (if (equal? "+" ch) `( 1 ,(substring s 1 n))
+      (if(equal? "-" ch) `( -1 ,(substring s 1 n)) `(1 ,s))
+    )
+  )
+)
+""";
 
 syntax lexer {
   /* ====================== REGULAR DEFINITIONS ============================ */
@@ -334,8 +347,7 @@ syntax lexer {
   sinteger := int_prefix =># "_1";
 
   // Typed integer literal.
-  regdef Integer = int_lit;
-  literal Integer =># """
+  literal int_lit =># """
   (let* 
     (
       (val (stripus _1))
@@ -343,23 +355,47 @@ syntax lexer {
       (type (first x))
       (value (second x))
     )
-    `(ast_literal ,_sr (ast_int ,type ,value))
+    `(,type ,value)
   )
   """; 
-  sliteral := Integer =># "_1";
+  sliteral := int_lit =># "`(ast_literal ,_sr (ast_int ,@_1))";
 
-
-  // Floating literal.
-  regdef Float = floating_literal;
-  literal Float =># """
+  // Typed signed integer constant.
+  sintegral := int_lit =># "_1";
+  sintegral := "-" int_lit =># """
   (let* 
     (
-      (val (stripus _1))
+      (type (first _2))
+      (val (second _2))
+      (val (* -1 val))
     )
-    `(Float ,_sr ,val)
+    `(,type ,val)
   )
-  """; 
-  sliteral := Float =># "_1";
+  """;
+
+  // Floating constant.
+  regdef sfloat = floating_literal;
+  literal sfloat =># """
+  (let* 
+     (
+       (val (stripus _1))
+       (val (tolower-string val))
+       (n (string-length val))
+       (n-1 (- n 1))
+       (ch (substring val n-1 n))
+       (rest (substring val 0 n-1))
+       (result 
+         (if (equal? ch "l") `("ldouble" ,rest)
+           (if (equal? ch "f") `("float" ,rest) `("double" ,val))
+         )
+       )
+     )
+     result 
+   ) 
+   """; 
+
+  // Floating literal.
+  sliteral := sfloat =># "`(ast_literal ,_sr (ast_float ,@_1))";
 
   // String like literals.
   regdef String = string_literal;
