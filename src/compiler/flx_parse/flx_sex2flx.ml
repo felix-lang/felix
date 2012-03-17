@@ -1,13 +1,6 @@
 open Flx_ast
 open Sex_types
 open Flx_typing2
-let xlat_float_lit str = 
-    let n = String.length str in
-    let last_char = str.[n-1] in
-    match last_char with
-    | 'l'|'L' -> "ldouble",  (String.sub str 0 (n-1))
-    | 'f'|'F' -> "float", (String.sub str 0 (n-1))
-    | _       -> "double", str
 
 let prefix p s =
   let n = String.length p in
