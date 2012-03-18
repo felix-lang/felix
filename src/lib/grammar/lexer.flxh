@@ -477,6 +477,18 @@ syntax lexer {
   // Floating literal.
   sliteral := sfloat =># "`(ast_literal ,_sr (ast_float ,@_1))";
 
+  // String for pattern or code template.
+  regdef sstring = string_literal;
+  literal sstring =># "(decode-string _1)";
+
+  // Cstring for code.
+  regdef scstring = cstring_literal;
+  literal scstring =># "(decode-string _1)";
+
+  // String for string parser.
+  regdef strstring = string_literal;
+  literal strstring =># "(c-quote-string (decode-string _1))";
+
   // String like literals.
   regdef String = string_literal;
   literal String =># "`(ast_literal ,_sr (ast_string ,(decode-string  _1)))";

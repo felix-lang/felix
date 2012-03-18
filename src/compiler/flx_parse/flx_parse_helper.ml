@@ -110,11 +110,17 @@ let sunescape s =
   | Sstring s -> Sstring (Flx_string.unescape s)
   | _ -> raise (Ocs_error.Error ("sunescape: not a string"))
 
+let cquote s =
+  match s with
+  | Sstring s -> Sstring (Flx_string.c_quote_of_string s)
+  | _ -> raise (Ocs_error.Error ("c-quote-string: not a string"))
+
  
 let flx_ocs_init env =
   Ocs_env.set_pf0 env giveup "giveup";
   Ocs_env.set_pf1 env sraise "raise";
-  Ocs_env.set_pf1 env sunescape "unescape"
+  Ocs_env.set_pf1 env sunescape "unescape";
+  Ocs_env.set_pf1 env cquote "c-quote-string"
 
 let init_env () =
   let env = Ocs_top.make_env () in

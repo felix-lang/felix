@@ -972,14 +972,18 @@ production at the moment
 sepsilon: | { 0, Flx_srcref.dummy_sr, Snull }
 strepsilon: | { 0, Flx_srcref.dummy_sr, Sstring "" }
 
+/*
 sstring:
   | STRING { 0, getsr dyp, Sstring $1 }
-
+*/
+/*
 strstring:
   | STRING { 0, getsr dyp, Sstring (Flx_string.c_quote_of_string $1) }
-
+*/
+/*
 scstring:
   | CSTRING { 0, getsr dyp, Sstring $1 }
+*/
 
 basic_name:
   | NAME { getsr dyp, $1 }

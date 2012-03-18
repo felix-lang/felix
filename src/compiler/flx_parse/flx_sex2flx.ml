@@ -146,7 +146,7 @@ and xexpr_t sr x =
   | Lst [Id "ast_index";  Str s ; Int i] -> EXPR_index (sr,s,ii i)
   *)
 
- | Lst [Id "ast_case_tag";  sr; Int i] -> EXPR_case_tag (xsr sr,ii i)
+  | Lst [Id "ast_case_tag";  sr; Int i] -> EXPR_case_tag (xsr sr,ii i)
   | Lst [Id "ast_typed_case";  Int i; t] -> EXPR_typed_case (sr,ii i,ti t)
   | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> EXPR_lookup (sr,(ex e, s,map ti ts))
   | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> EXPR_apply(xsr sr,(xexpr_t (xsr sr) e1, xexpr_t (xsr sr) e2))
