@@ -490,14 +490,17 @@ main lexer =
  ('r'|'R') ddd    -> STRING { parse_raw_dddstring lexbuf }
 
 /* C strings: type char*  */
+/*
  ('c'|'C') qqq    -> CSTRING { parse_qqqstring lexbuf }
  ('c'|'C') dquote -> CSTRING { parse_dstring lexbuf }
  ('c'|'C') ddd    -> CSTRING { parse_dddstring lexbuf }
-
+*/
 /* raw C strings: type char*  */
+/*
  rqc qqq    -> CSTRING { parse_raw_qqqstring lexbuf }
  rqc dquote -> CSTRING { parse_raw_dstring lexbuf }
  rqc ddd    -> CSTRING { parse_raw_dddstring lexbuf }
+*/
 
 /* name strings */
  ('n' | 'N') qqq    -> NAME { parse_qqqstring lexbuf }
@@ -510,6 +513,7 @@ main lexer =
   but x'x' is an identifier .. yucky ..
 */
  identifier -> NAME { Flx_utf.utf8_to_ucn (lexeme lexbuf) }
+/*
  slosh letter+ -> NAME { lexeme lexbuf }
  "+" -> NAME { lexeme lexbuf }
  "-" -> NAME { lexeme lexbuf }
@@ -541,6 +545,7 @@ main lexer =
  ">=" -> NAME { lexeme lexbuf }
  "<<" -> NAME { lexeme lexbuf }
  ">>" -> NAME { lexeme lexbuf }
+*/
 
 /* whitespace */
  white+ -> { () }
@@ -962,7 +967,9 @@ tstatement:
 sexpr: | DUMMY { 0, Flx_srcref.dummy_sr, Snull }
 
 /* identifiers which aren't keywords */
+/*
 sname: NAME { 0, getsr dyp, Sstring $1 }
+*/
 
 /*
 a definite non-terminal for a sequence of no tokens,

@@ -190,6 +190,8 @@ SCHEME """
           ((prefix? "F'''" s)(unescape (substring s 4 (- n 3))))
           ((prefix? "q'''" s)(unescape (substring s 4 (- n 3))))
           ((prefix? "Q'''" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "n'''" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "N'''" s)(unescape (substring s 4 (- n 3))))
           ((prefix? "r'''" s)(substring s 4 (- n 3)))
           ((prefix? "R'''" s)(substring s 4 (- n 3)))
           ((prefix? "'''" s)(unescape (substring s 3 (- n 3))))
@@ -204,6 +206,8 @@ SCHEME """
           ((prefix? "F\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
           ((prefix? "q\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
           ((prefix? "Q\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "n\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
+          ((prefix? "N\\"\\"\\"" s)(unescape (substring s 4 (- n 3))))
           ((prefix? "r\\"\\"\\"" s)(substring s 4 (- n 3)))
           ((prefix? "R\\"\\"\\"" s)(substring s 4 (- n 3)))
           ((prefix? "\\"\\"\\"" s)(unescape (substring s 3 (- n 3))))
@@ -218,6 +222,8 @@ SCHEME """
           ((prefix? "F'" s)(unescape (substring s 2 (- n 1))))
           ((prefix? "q'" s)(unescape (substring s 2 (- n 1))))
           ((prefix? "Q'" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "n'" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "N'" s)(unescape (substring s 2 (- n 1))))
           ((prefix? "r'" s)(substring s 2 (- n 1)))
           ((prefix? "R'" s)(substring s 2 (- n 1)))
           ((prefix? "'" s)(unescape (substring s 1 (- n 1))))
@@ -232,6 +238,8 @@ SCHEME """
           ((prefix? "F\\"" s)(unescape (substring s 2 (- n 1))))
           ((prefix? "q\\"" s)(unescape (substring s 2 (- n 1))))
           ((prefix? "Q\\"" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "n\\"" s)(unescape (substring s 2 (- n 1))))
+          ((prefix? "N\\"" s)(unescape (substring s 2 (- n 1))))
           ((prefix? "r\\"" s)(substring s 2 (- n 1)))
           ((prefix? "R\\"" s)(substring s 2 (- n 1)))
           ((prefix? "\\"" s)(unescape (substring s 1 (- n 1))))
@@ -271,7 +279,7 @@ syntax lexer {
   regdef hexdigit = ["0123456789ABCDEFabcdef"];
   regdef lower = ['abcdefghijklmnopqrstuvwxyz'];
   regdef upper = ['ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
-  regdef regdefter = lower | upper;
+  regdef letter = lower | upper;
   regdef hichar = [128-255];
   regdef white = space | tab;
 
@@ -281,7 +289,7 @@ syntax lexer {
   regdef newline = formfeed | linefeed  | carriage_return linefeed;
   regdef hash = '#';
 
-  regdef ordinary = regdefter | digit | hichar |
+  regdef ordinary = letter | digit | hichar |
     '!' | '$' | '%' | '&' | '(' | ')' | '*' |
     '+' | ',' | '-' | '.' | '/' | ':' | ';' | '<' |
     '=' | '>' | '?' | '@' | '[' | ']' | '^' | '_' |
@@ -296,10 +304,26 @@ syntax lexer {
 
   regdef prime = '\'';
   regdef dash = '-';
-  regdef idregdefter = regdefter | underscore | hichar | ucn;
-  regdef alphnum = idregdefter | digit;
-  regdef innerglyph = idregdefter | digit | dash;
-  regdef identifier = idregdefter (innerglyph? (alphnum | prime) +)* prime*;
+  regdef idletter = letter | underscore | hichar | ucn;
+  regdef alphnum = idletter | digit;
+  regdef innerglyph = idletter | digit | dash;
+  regdef flx_ident = idletter (innerglyph? (alphnum | prime) +)* prime*;
+  regdef tex_ident = slosh letter+;
+  regdef sym_ident =
+    "+" | "-" | "*" | "/" | "%" | "^" | "~" | 
+    "\\&" | "\\|" | "\\^" |
+    /* mutator */
+    "&=" | "|=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" | "<<=" | ">>=" |
+    /* comparison */
+    "<" | ">" | "==" | "!=" | "<=" | ">=" | "<<" | ">>" 
+  ;
+
+  /* NOTE: upgrade to support n"wird + name" strings */
+  literal flx_ident =># "(utf8->ucn _1)";
+  literal tex_ident =># "_1";
+  literal sym_ident =># "_1";
+
+  sname := flx_ident =># "_1" | tex_ident =># "_1" | sym_ident =># "_1";
 
   /* integers */
   regdef bin_lit  = '0' ('b' | 'B') (underscore? bindigit) +;
@@ -401,6 +425,7 @@ syntax lexer {
   regdef cstring_literal = ('c' | 'C') plain_string_literal; 
   regdef qstring_literal = ('q' | 'Q') plain_string_literal; 
   regdef fstring_literal = ('f' | 'F') plain_string_literal; 
+  regdef nstring_literal = ('n' | 'N') plain_string_literal; 
 
 /*
   regdef not_hash_or_newline = ordinary | quote | dquote | white | slosh;
@@ -476,6 +501,10 @@ syntax lexer {
 
   // Floating literal.
   sliteral := sfloat =># "`(ast_literal ,_sr (ast_float ,@_1))";
+
+  // String as name.
+  literal nstring_literal =># "(decode-string _1)";
+  sname := nstring_literal =># "_1";
 
   // String for pattern or code template.
   regdef sstring = string_literal;
