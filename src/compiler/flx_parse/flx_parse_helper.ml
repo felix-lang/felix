@@ -23,7 +23,9 @@ let re_expand names re =
       begin try
         let re = List.assoc s names in
         aux re
-      with Not_found -> print_endline ("Can't find regexp name " ^ s); RE_Name s
+      with Not_found -> 
+        print_endline ("Can't find regexp name " ^ s);
+        failwith ("Can't find regexp name " ^ s)
       end
     | RE_Alt ls -> RE_Alt (map aux ls)
     | RE_Seq ls -> RE_Seq (map aux ls)

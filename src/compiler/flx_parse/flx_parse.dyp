@@ -205,7 +205,6 @@ let load_scheme_defs env scm =
 %token <(string * prio_t)> NONTERMINAL
 %token <int> INTEGER
 %token <string> STRING
-%token <string> CSTRING
 %token <'obj Dyp.dyplexbuf> HASH_LINE
 %token <'obj Dyp.dyplexbuf> HASH_INCLUDE
 %token DUMMY
@@ -368,8 +367,6 @@ let qqqstring = qqqspecial * qqq
 let dddstring = dddspecial * ddd
 
 let raw = 'r' | 'R'
-let see = 'c' | 'C'
-let rqc = raw see | see raw
 
 let raw_qstring = (ordinary | hash | dquote | escape | white) * quote
 let raw_dstring =  (ordinary | hash | quote | escape | white) * dquote
@@ -489,63 +486,11 @@ main lexer =
  ('r'|'R') dquote -> STRING { parse_raw_dstring lexbuf }
  ('r'|'R') ddd    -> STRING { parse_raw_dddstring lexbuf }
 
-/* C strings: type char*  */
-/*
- ('c'|'C') qqq    -> CSTRING { parse_qqqstring lexbuf }
- ('c'|'C') dquote -> CSTRING { parse_dstring lexbuf }
- ('c'|'C') ddd    -> CSTRING { parse_dddstring lexbuf }
-*/
-/* raw C strings: type char*  */
-/*
- rqc qqq    -> CSTRING { parse_raw_qqqstring lexbuf }
- rqc dquote -> CSTRING { parse_raw_dstring lexbuf }
- rqc ddd    -> CSTRING { parse_raw_dddstring lexbuf }
-*/
-
-/* name strings */
- ('n' | 'N') qqq    -> NAME { parse_qqqstring lexbuf }
- ('n' | 'N') dquote -> NAME { parse_dstring lexbuf }
- ('n' | 'N') ddd    -> NAME { parse_dddstring lexbuf }
-
-
 /* this MUST be after strings, so raw strings take precedence
   over identifiers, eg r'x' is a string, not an identifier,
   but x'x' is an identifier .. yucky ..
 */
  identifier -> NAME { Flx_utf.utf8_to_ucn (lexeme lexbuf) }
-/*
- slosh letter+ -> NAME { lexeme lexbuf }
- "+" -> NAME { lexeme lexbuf }
- "-" -> NAME { lexeme lexbuf }
- "*" -> NAME { lexeme lexbuf }
- "/" -> NAME { lexeme lexbuf }
- "%" -> NAME { lexeme lexbuf }
- "^" -> NAME { lexeme lexbuf }
- "~" -> NAME { lexeme lexbuf }
- "\\&" -> NAME { lexeme lexbuf }
- "\\|" -> NAME { lexeme lexbuf }
- "\\^" -> NAME { lexeme lexbuf }
-/* mutator */
- "&=" -> NAME { lexeme lexbuf }
- "|=" -> NAME { lexeme lexbuf }
- "+=" -> NAME { lexeme lexbuf }
- "-=" -> NAME { lexeme lexbuf }
- "*=" -> NAME { lexeme lexbuf }
- "/=" -> NAME { lexeme lexbuf }
- "%=" -> NAME { lexeme lexbuf }
- "^=" -> NAME { lexeme lexbuf }
- "<<=" -> NAME { lexeme lexbuf }
- ">>=" -> NAME { lexeme lexbuf }
-/* comparison */
- "<" -> NAME { lexeme lexbuf }
- ">" -> NAME { lexeme lexbuf }
- "==" -> NAME { lexeme lexbuf }
- "!=" -> NAME { lexeme lexbuf }
- "<=" -> NAME { lexeme lexbuf }
- ">=" -> NAME { lexeme lexbuf }
- "<<" -> NAME { lexeme lexbuf }
- ">>" -> NAME { lexeme lexbuf }
-*/
 
 /* whitespace */
  white+ -> { () }
@@ -966,11 +911,6 @@ tstatement:
 
 sexpr: | DUMMY { 0, Flx_srcref.dummy_sr, Snull }
 
-/* identifiers which aren't keywords */
-/*
-sname: NAME { 0, getsr dyp, Sstring $1 }
-*/
-
 /*
 a definite non-terminal for a sequence of no tokens,
 since the production syntax cannot parse an empty
@@ -978,19 +918,6 @@ production at the moment
 */
 sepsilon: | { 0, Flx_srcref.dummy_sr, Snull }
 strepsilon: | { 0, Flx_srcref.dummy_sr, Sstring "" }
-
-/*
-sstring:
-  | STRING { 0, getsr dyp, Sstring $1 }
-*/
-/*
-strstring:
-  | STRING { 0, getsr dyp, Sstring (Flx_string.c_quote_of_string $1) }
-*/
-/*
-scstring:
-  | CSTRING { 0, getsr dyp, Sstring $1 }
-*/
 
 basic_name:
   | NAME { getsr dyp, $1 }
