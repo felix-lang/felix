@@ -291,7 +291,7 @@ and lookup_qn_in_env2'
 
   | `AST_name (sr,name,ts) ->
     (*
-    print_endline ("Found simple name " ^ name);
+    print_endline ("lookup_qn_in_env2': looking up simple name " ^ name);
     *)
     inner_lookup_name_in_env state bsym_table env rs sr name, ts
 
@@ -3606,7 +3606,11 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
        be x
     else
     let ts = List.map (bt sr) ts in
-    begin match inner_lookup_name_in_env state bsym_table env rs sr name with
+    let lookup_result = 
+      try inner_lookup_name_in_env state bsym_table env rs sr name 
+      with exn -> print_endline "lookup FAILED"; raise exn
+    in
+    begin match lookup_result with
     | NonFunctionEntry { base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts } ->
       (*
       let index = sye index in

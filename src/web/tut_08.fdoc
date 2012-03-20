@@ -1,95 +1,107 @@
-@h1 Arrays
-@h2 Array Values
-When you write a tuple like this:
+@h1 Basic Overloading
+As in C++, Felix allows functions and procedures to be
+overloaded. However there's a difference: in Felix the arguments
+to a function must match exactly: there are no automatic conversions
+in Felix as there are in C and C++.
 @felix
-  val x = 1,2,3,4,5;
+fun f(x:int)=> x * x; 
+fun f(x:double)=> x * x;
+fun f(x:int, y:double) => x.double * y;
+println$ f 1;       // calls f of (int)
+println$ f 1.0;     // calls f of (double)
+println$ f (1,1.0); // calls f of (int * double)
 @
-where all the components have the same type, it is called an 
-array. A special notation may be used for this array type:
+In the comments the name of the called function is 
+indicated: this notation can be used in programs to
+identify a particular function from an overload set.
+
+The lack of automatic conversions is a good thing and was
+deliberate: it means you have more of an idea reading
+code what types function argument have, and hence
+which overload is called.
+
+However there is support for constrained polymorphism
+and type sets which alleviates the need to continually
+convert value to the right type: functions can be
+designed to accept a set of types. One can also use
+typeclasses to obtain a similar effect in a more
+systematic and structured way.
+
+@h2 Hiding
+Note that unlike C++, when you use nested scopes, 
+the identifier name of a function defined in the
+inner scope does not hide functions with the same
+identifier in the outer scope. Only functions with the
+same name and signature (type of the domain of the function)
+in the outer scope are hidden:
 @felix
-  int^5
-@
-that is, int multipled by itself 5 times: this type is exactly
-the same (not equivalent or isomorphic but exactly the same) as:
-@felix
-  int * int * int * int * int
-@
-There is also an alias in the library which can be used:
-@felix
-  array[int,5]
-@
-You should note that {int^1} is exactly the same as {int}:
-it is technically not a tuple.
-
-This kind of array is a first class value, it is <em>not an object</em>.
-
-Read the library code for <a href='/lib/std/array.flx'> array</a>.
-
-@h2 Carray
-A {carray} is your traditional C array: it has a bounded length,
-but the bound is unknown to the system: the client programmer must
-keep track of the bound manually.
-
-The type {carray[T]} is just an alias for {&amp;T}, a pointer to {T}.
-Generally {carray} is unsafe and should be avoided but it is
-essential for C interfacing so we had to put it in.
-
-Read the library code for <a href='/lib/std/carray.flx'>carray</a>.
-
-@h2 Varray and Darray
-Felix provides two variable length array objects called {varray} and {darray}
-in the library. A {varray} is a bounded variable length array, they're 
-good for buffers, but otherwise not use much because of the bound.
-{darray} is unbounded and typically just as efficient; it is implemented
-with {varray}, which is the main reason {varray} exists.
-
-@h3 Varray
-A {varray} is typically constructed from an {array}, you can use get and
-set functions to store a value at a particular index or retrieve it:
-@felix
-val a = varray (1,2,3,4,5);
-set (a, 2, 99);     // store 99 in slot index 2 (the third slot)
-println$ a;         // array(1,2,99,3,4,5)
-println$ get(a,2);  // 99
+fun f(x:int)=>x;
+fun f(x:double)=>x;
+{
+  fun f(x:int)=> x + 1;
+  println$ f 4.2; // 4.2 : calls outer f of (double)
+  println$ f 42;  // 43  : calls inner f of (int)
+};
 @
 
-A {varray} can also be constructed with a fixed bound and completely filled
-with a single value:
+This is also a deliberate departure from C++ where
+messy arrangements for forwarding functions from
+outer to inner scopes is required.
+
+@h2 Named arguments
+It is possible to call functions with named arguments:
 @felix
-val a = varray(5.ul,0); // 5 elements all 0
+fun f(x:int, y:int) => x + 2 * y;
+println$ f(y=2, x=1);
 @
-Note that {varray(5ul,3ul)} is ambiguous! It could be either a two element
-array constructed from the tuple {5ul,3ul} or a 5 element array initialised
-to {3ul,3ul,3ul,3ul,3ul}.
+If you do this <em>all</em> the arguments must be named,
+and the order of the arguments is immaterial.
 
-Pointers into a varray can only be invalidated by reducing the 
-number of elements in the array below the pointer location.
+Named arguments can also help resolve overloads of functions
+with the same type:
+@felix
+fun f(x:int) => x;
+fun f(y:int) => y + y;
+println$ f (y=1);  // 2: calls second f
+@
+You may notice this looks like {f} is called with a
+record argument. Congratulations! Consider this:
+@felix
+fun f(a:(x:int;))=>"Record " + str a.x;
+fun f(x:int)=>"Value " + str x;
+//println$ (x=1); // AMBIGUOUS
+@
+Although records are tuples are isomorphic type, they're
+distinct types. Nevertheless in this special case Felix
+actually does apply an automatic conversion based on
+the isomorphism, and the two applications can never be
+distinguished. Just don't!
 
-Read the library code for <a href='/lib/std/varray.flx'>varray</a>.
-@h3 Darray
-An unbounded variable length array implement using {varray}.
-If the {varray} gets full a new bigger one is allocated,
-and the elements copied from the old array to the new one.
-Pointers into the array can therefore be invalidated.
+@h2 Default values
+It is also possible to provide default values for function (and procedure) parameters.
+If you do this, you can still call the function with a full tuple
+argument, ignoring the default. However if you wish to use
+the defaults you <em>must</em> call the function with a record argument,
+that is, using named parameters, leaving one or more of the defaults out.
+Default values can only be supplied for trailing parameters.
+@felix
+fun f(x:int, y:int=2, z:int=3) => x + 2 * y + z * 3;
+println$ f (10,20,30);        // 140 : using a tuple of 3 components
+println$ f (x=10,y=20,z=30);  // 140 : using a record of 3 components
+println$ f (x=1);             //  14 : using both defaults
+println$ f (x=10,y=20);       //  59 : using one default
+println$ f (x=10,z=30);       // 104 : using the other default
+@
 
-{darray} is roughly equivalent in fuctionality to C++ {vector}.
+@h2 Overloading with higher order functions
+Felix can overload on however many "arguments" of a higher
+order function are used:
+@felix
+fun f(x:int) (y:int) => x + y;
+fun f(x:int) (y:double) => x.double + y;
 
-Read the library code for <a href='/lib/std/darray.flx'>darray</a>.
-
-@h3 Sarray
-An {sarray} is an ultra-high performance sparse array.
-It is can accept elements at any non-negative integral position
-for integers up to the size of type {size}.
-
-{Sarray} is implemented using JudyL arrays.
-
-Read the library code for <a href='/lib/std/sarray.flx'>sarray</a>.
-
-@h3 Bsarray
-An {bsarray} is an ultra-high performance bounded sparse array.
-
-{Bsarray} is implemented using JudyL {sarray} plus a simple bound check,
-it supports iteration, folds, etc which sarray does not.
-
-Read the library code for <a href='/lib/std/bsarray.flx'>bsarray</a>.
+println$ f 1 1;
+println$ f 1 2.0;
+@
+A partial evaluation of either {f} here would be ambiguous.
 

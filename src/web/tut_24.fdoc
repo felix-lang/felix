@@ -1,107 +1,141 @@
-@h1 Regular Expressions
-Felix current provides two regular expression libraries: TRE and RE2 from Google.
+@h1 String Literals
+Felix provides 2 kinds of strings: {string}, and {ustring}.
+The most commonly used string is {string}, it is an 8 bit clean string
+implement by the C++ {::std::basic_string&lt;char&gt;}.
 
-@h2 RE2
-Module <a href='/lib/std/re2.flx'>Re2</a> is binding 
-for <a href='http://code.google.com/p/re2/'>Googles regex library</a>.
-Please consult Google for details.
+The {ustring} type is based on ISO10646/Unicode character set with
+code points represented by type {uint32}. As this type currently
+has limited functionality we will focus on the {string} type.
 
-The core functionality is easy to use:
+@h2 String literals
+Felix provides string literals modelled on Python's system.
+
+@h3 Basic quotation
+Strings can use either single {'} quotes or double {"} quotes,
+such strings must not span lines (i.e. they may not contain
+literal newline characters). Single quoted string can contain
+double quotes and double quoted strings can contain single quotes:
 @felix
-val s = System::argv 1;
-val re = RE2("x(\\d*)");
-var groups : array[StringPiece,2];
-var nmatch = 2;
-val res = Match(re,StringPiece(s),0,ANCHOR_BOTH,carray (&groups),nmatch);
-if res do
-  println$ "Matched " + s + ", n="+ str groups.[1];
-else
-  println$ "No match " + s;
-done
+println "Hello";
+println 'Hello';
+println "'ello world";
+println 'Say "Hello World"';
 @
-but a bit longwinded. {StringPiece} is a view of part of a {string}. 
-A quick way to just check for a match:
+@h3 Extended quotation: Preformatted text
+To span many lines you can use triple quotes:
 @felix
-println$ s in re;
+println 
+"""
+  This is a preformatted text,
+  It allows another line to be next,
+  Leading spaces are kept,
+  "Confusing", he wept
+  Programming languages must be hex'd.
+""";
+
+println '''Tripled single quotes are 
+allowed too";
 @
-{RE2} uses Perl regexp without back references. To avoid
-having to write {\\} all the time you can use Python style
-raw strings:
+With preformatted text the initial newline is kept too.
+
+@h3 Character Escapes
+Strings using basic or extended quotation can have
+certain special characters embedded in them using
+slosh (backslash) escapes. The standard escapes
+are shown below. The encoding is from the old ASCII
+character set. The so-called "control characters" were
+used in the old days to control an electric typewritter.
+@pre
+  Escape            Replacement   Old meaning
+  --------------------------------------------------
+  \a                char 7        bell
+  \b                char 8        BS: backspace 
+  \t                char 9        HT: horizontal tab
+  \n                char 10       LF: linefeed (newline)
+  \v                char 11       VT: vertical tab
+  \f                char 12       FF: form feed
+  \r                char 13       CR: carriage return
+@
+The following escapes are used to control quoting:
+@pre
+  Escape            Replacement   
+  -----------------------------
+  \'                '            
+  \"                "           
+  \\                \          
+@
+In addition, slosh space normally emits a space.
+However slosh followed by 0 or more spaces followed
+by a newline causes all the spaces and the newline
+to be elided, effectively concatenating two lines of text.
+For example
 @felix
-r"x(\d)" == "x(\\d)"
+println """\
+Hello \ 
+World\
+""";
 @
+prints the hello world message on a single line. This is similar
+to the usual C and Unix end of line processing <em>except</em>
+extra spaces are allowed before the newline. The reason is that
+it is hard, if not impossible, to actually see if the character
+following the slosh is a newline or some spaces followed by a newline.
+The unix and C rules are two fragile for safe use.
 
-@h2 Reliable construction of regular expressions
-Complicated regular expressions are very hard to get right. 
-Languages copying Perl regexps without Perl's interpolation
-and quoting arrangements are unsuitable for regular matching
-jobs.
-
-Felix provides two level of fix for this problem,
-functional <a href="/lib/std/regdef.flx">combinators</a>
-and syntactic sugar for them as 
-<a href="/lib/grammar/regexps.flxh">regular definitions</a>.
-
-@h3 Functional combinators
-This method allows you to build a tree using the type and function:
+@String folding
+There's another way to get nice formatted text: string folding:
 @felix
+println$
+  "This is a preformatted text,\n"
+  "It allows another line to be next,\n"
+  "Leading spaces are kept,\n"
+  '"Confusing", he wept\n'
+  "Programming languages must be hex'd.\n"
+;
+@ 
+Here we manually inserted the line ends. Incidentally such folding
+is not just a pre-processing step. When one string expression is
+applied to another the result is the concatenation of the strings.
+However if literals are used, the concatenation is done by the parser
+instead of at run time.
 
-  union regex =
-  | Alts of list[regex]
-  | Seqs of list[regex]
-  | Rpt of regex * int * int
-  | Charset of string
-  | String of string
-  | Group of regex
-  | Perl of string
-  ;
-  fun render: regex -> string;
+@h3 Numeric Escapes
+There is another form of escaping where one or more characters are
+inserted into a string based on a numeric code. These are:
+@pre
+  Escape            Scan  Chars      Name
+  --------------------------------------------------
+  \oOOO             0-3     Octal    Octal Escape
+  \dDDD             0-3     Decimal  Decimal Escape
+  \xHH              0-2     Hex      Hex Escape
+  \uHHHH            0-4     Hex      Short unicode escape 
+  \UHHHHHHH         0-8     Hex      Long unicode escape
 @
-Here's an example:
+The rules are a bit tricky. All these escapes scan for between
+0 and N characters, as indicated in the scan column. The scan
+never exceeds the maximum number of characters. It is also stopped
+when a character is not in the indicated character set, for example
+{\xx} will emit a code {0} or {nul} character followed by an {x}.
+
+The unicode escapes emit a stream of characters, namely the
+decoded code point encoded by {utf-8}. Thus, if you consider
+your 8 bit clean strings as containing {utf-8} encoded unicode
+you can use these escapes. Note that {\xFF} is quite distinct
+from {\uFF} since the latter emits a single character with 
+code point 255, whereas the former emits two characters
+being the {utf-8} representation of code point 255.
+
+@h3 Other escapes
+All other escapes are left intact, that is, including the
+slosh, for example {\c} translates to {\c} and not just {c}.
+
+@h2 Raw strings: escaping escapes
+It's sometimes annoying to have to quote or escape escapes.
+This is particularly true with regular expression strings
+which already contain a lot of sloshes.
+
+So, following Python you can have raw strings by using an {r} or {R} prefix:
 @felix
-open Regdef;
-{
-  var digit = Charset "9";
-  val digits = Rpt (digit, 1, -1);
-  var letter = Charset "x";
-  var us = Regdef::String "_";
-  var id = Seqs (list (
-     Alts (list(us,letter)), 
-     Rpt( 
-       Alts(list(letter,digit,us)),0,-1)));
-  println$ render id;
-};
+  r'\(.*\)' // easier than '\\(.*\\)'
 @
-Note the {Regdef::String} is used because {String} is also the name
-of a library module.
 
-@h3 Regular Definitions
-Regular definitions make it even easier:
-@felix
-var digit = regexp( charset "0123456789" );
-regdef digits = digit+;
-var letter = regexp ( perl "[A-Za-z]" );
-var us = regexp "_";
-regdef id = (us|letter)(letter|digit|us)*;
-regdef pid = regexp (perl("[a-zA-Z][a-zA-Z_0-9]*"));
-var r = RE2 (render id);
-@
-All the symbols here have type {regex} except the 
-final {r}.
-
-The {regdef} statement announces the assignment of a {regexp}
-variable using the usual syntax for regexp formation without
-requiring ugly quotation stuff. Of course you can also do calculations
-using any Felix functional operations. 
-
-The operator {perl} and function {render}
-are basically opposites: {perl} converts a string with Perl style
-regex code into a {regex} whereas {render} converts a {regex} into
-a Perl string.
-
-The {regexp} symbol is a <em>keyword</em> of ordinary Felix grammar,
-which can be used in any ordinary Felix expression to switch 
-syntax from Felix normal syntax into regular expression syntax. 
-
-The {regex} symbol does the opposite: it is used in any regex grammar
-expression to switch to Felix syntax.

@@ -649,6 +649,9 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
       `Code ct))
 
   | SYMDEF_callback (props,ts_orig,ret,reqs) ->
+(*
+print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid symbol_index);
+*)
     let bret = bt ret in
 
     (* The type of the raw C function's arguments,

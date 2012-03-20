@@ -1,72 +1,85 @@
-@h1 Type classes
-The {typeclass} and {instance} is the primary organisation tool for Felix
-libraries that allow easy use and extension. The notion is taken
-from Haskell, generalised to support multiple type variables as in GHC.
-
-Here is a simple typeclass and instance:
+@h1 Type Constraints
+Felix provides a simple system of type constraints.
+The need for type constraints arose when binding C:
 @felix
-typeclass X[T] {
-  virtual fun f: T -> T;
-  fun g(x:T)=> f (f x);
-}
+type int = "int";
+type long = "long";
+fun add: int * int -> int = "$1+$2";
+fun add: long * long -> long = "$1+$2";
+@
+C has a lot of integer types and writing out all the operators
+for all the types is boring, error prone, and slows down compilation.
+If you also wanted to allow mixed operators you'd need to add:
+@felix
+fun add: int * long -> long = "$1+$2";
+fun add: long * int -> long = "$1+$2";
+@
+and you can see we would rapidly get into an untenable combinatorial
+explosion.
 
-instance X[int] {
-  fun f(x:int)=> x + 1;
-}
+To solve the problem we use type constraints.
 
-open X[int];
+First we introduce a construction to make a set of types:
+@felix
+typedef integers = typesetof(int, long);
+@
+Now we write polymorphic functions with type constraints:
+@felix
+fun add[I in integers]: I * I -> I = "$1+$2";
+@
+Here the type variable {I} may only be {int} or {long}.
+If you wanted to support mixed addition:
+@felix
+fun add[I in Integers, J in Integers]: I * J -> arithmax (I,J) = "$1+$2";
+@
+Note carefully the difference between these two functions:
+in the first function {I} is set to either {int} or {long}
+and so only two {int}s or two {long}s can be added.
 
-println$ g x;
+In the second case, {I} and {J} are set independently
+to either {int} or {long} which allows any combination 
+to be added.
+
+There is a shorthand for the second formulation:
+@felix
+fun add: !integers * !integers -> int = "(int)($1+$2)";
 @
 
-In this code {virtual} functions are ones which may be overridden in 
-instances. {virtual} functions may have definitions, which are used
-in any instance which does not define an override. Non-virtual
-functions cannot be overriden: instead they're dependent on the
-virtual functions only.
-
-We define an instance of {X} for type {int} and then call the
-non-virtual function {g} for specialisation {T -> int}, which 
-in turn calls {f} for that specialisation too.
-
-Finally we open the typeclass for the specialisation {T -> int}.
-In effect this just makes {f of (int)} and {g of (int)} available.
-
-@h2 Orders
-We will cite one of the most important typeclasses in Felix:
-
-@felix /lib/std/order.flx
-
-This library file defines the concept of equality, total ordering,
-and the core operations of integral kinds: increment and decrement.
-
-The code shows clearly the use of axioms to express semantics,
-for example we see equality must be an equivalence relation
-(reflexive, symmetric and transitive).
-
-Also we note that the total order concept is derived from equality
-concept. When you open a {Tord} you get the methods of {Eq} as well.
-
-@h2 Relation to C++
-Type classes actually exist in much the same form in C++.
-If you define a template class with all static functions,
-then those functions without definitions are Felix virtuals,
-those with definitions are either non-virtuals or virtuals
-with defaults (C++ doesn't distinguish these two cases).
-
-In C++, an instance is just a partical or full specialisation
-of the class, which in turn may include some or all of the
-functions. It's acceptable in both C++ and Felix to leave out
-definitions for functions you do not use.
-
-The principal difference between Felix and C++ is that the C++
-type system cannot support type recursion and hence is effectively
-useless: you cannot make a combinatorial definition of a polymorphic
-linked list in C++, in Felix it is a one liner:
+but note the downside: lacking names for the type variables we must
+return a fixed type. This notation, however, if exceptionally useful
+when binding external C libraries:
 @felix
-union list[T] = | Empty | Cons of T * list[T];
+header "int f(int, int);";
+fun f: !ints * !ints -> int" = "f($1, $2)";
 @
-using Felix's built in tuple and union constructors.
-The equivalent templates are easy to define in C++:
-the problem is the {list[T]} at the end of the definition.
+
+The reason this is <em>so</em> useful is that if we just lifted the
+signature of {f} from C, we'd be ignoring the fact that the C programmer
+has automatic conversions and can call {f(42L, 23u)}, which would
+fail in Felix because it has no automatic conversions. The user
+would have to cast every argument to exactly the right type which is
+not practical. By using constrained polymorphism, we can make
+all the calls that work in C work in Felix, and by using the shorthand
+notation the overhead specifying the function is minimal.
+
+When Felix performs overload resolution, initially candidates are found
+without considering type constraints; that is, as if the type variables
+were able to bind to any type.
+
+Then, the type constraints are checked and candidates failing to meet 
+the constraints are rejected. For example:
+@felix
+fun f[T in ints]: T -> T = "$1+1";
+fun f[T in floats]: T -> T = "$1+2";
+println$ (f 1.2), f 1;
+@
+Type sets also support the set union operator:
+@felix
+typedef sints = fast_sints || exact_sints;
+@
+Note that the typesets {ints} and {floats}, along with some other
+basic type sets, are defined in the standard library: 
+
+@felix ../lib/std/ctypesets.flx
+
 

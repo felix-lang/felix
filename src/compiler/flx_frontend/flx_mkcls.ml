@@ -182,6 +182,9 @@ let gen_closure state bsym_table bid t =
   (* Make a bid for our closure wrapper function. *)
   let closure_bid = fresh_bid state.syms.counter in
 
+(*
+print_endline ("Generating closure "^ string_of_int closure_bid ^ " for " ^ string_of_int bid);
+*)
   (* Add the closure wrapper to symbol table. We'll replace it later with the
    * real values. *)
   Flx_bsym_table.add bsym_table closure_bid bsym_parent (Flx_bsym.create
@@ -255,6 +258,22 @@ let mkcls state bsym_table all_closures i ts t =
 
 let check_prim state bsym_table all_closures i ts t =
   match Flx_bsym_table.find_bbdcl bsym_table i with
+  | BBDCL_external_fun (_,_,_,_,_,_,`Callback _) ->
+(*
+print_endline ("mlcls: WARNING: NOT replacing use of callback function "^string_of_int i^" with wrapper ");
+*)
+   bexpr_closure t (i,ts)
+(*
+    let cls = mkcls state bsym_table all_closures i ts t in
+    begin match cls with
+    | BEXPR_closure (j,ts2),_ ->
+print_endline ("mlcls: WARNING: NOT replacing use of callback function "^string_of_int i^" with wrapper " ^ string_of_int j);
+    | _ -> assert false
+    end
+    ;
+    cls
+*)
+
   | BBDCL_external_fun _
   | BBDCL_struct _
   | BBDCL_cstruct _

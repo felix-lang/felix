@@ -1,238 +1,50 @@
-@h1 Functions and Procedures
-@h2 Felix functions
-When you see code like this:
+@h1 Application and call operators
+
+@h2 Operator whitespace 
+You may have noticed that you can write:
 @felix
-println$ "Square of " + str 1 + " is " + str (1 * 1);
-println$ "Square of " + str 2 + " is " + str (2 * 2);
-println$ "Sguare of " + str 3 + " is " + str (3 * 1);
+fflush stdout;
 @
-You know you need a function (notice the typos on the last line?)
-Basic Felix functions are easy:
+which is equivalent to
 @felix
-fun square(x:int)=>x * x;  // define a function
-println$ "Square of " + str 1 + " is " + str (square 1);
-println$ "Square of " + str 2 + " is " + str 2.square;
-println$ "Sguare of " + str 3 + " is " + str$ square 3;
+fflush (stdout);
 @
-We fixed the bug in the calculation of the square of 3, and 
-we're also showing the three ways to apply a function: 
-high precedence application using operator whitespace
-which needs surrounding parentheses for correct grouping,
-reverse application using operator dot, which is even higher
-precedence than whitespace, and so does not, and finally we're
-applying the {str} function to a whitespace application
-using operator dollar, which has lower precedence than whitespace.
+Parentheses are not required for function application or procedure
+calls, just for grouping. 
+It's fun to call juxtaposition "operator whitspace".
 
-There's a longer way to write a function:
+@h2 Operator dot
+Those with an OO background may find this more pleasing:
 @felix
-fun square(x:int):int = {
-  val s = x * x;
-  return x;
-}
+val name = stdin.readln.strip;
 @
-This way allows complicated expressions to be broken up
-into arbitrary code. 
+It means exactly the same as before, the operator {.} is nothing
+more than reverse application.
 
-Functions are not allowed to have side effects.
-
-@h2 Felix Procedures
-Still, there must be a way to repeat the print: there is,
-by using a procedure.
+@h2 Operator dollar
+And those with a Haskell background will readily understand that in
 @felix
-fun square(x:int)=>x * x;  // define a function
-proc ps(x:int) {
-  println$ "Square of " + str x + " is " + str x.square;
-}
-ps 1; ps 2; ps 3;
+val name = strip $ readln $ stdin;
 @
-A procedure is like a function, except it returns no value,
-and it may and indeed should have side effects.
+the {$} is just a low precedence forward application, so 
+it is also the same as before.
 
-@h2 Multiple arguments
-A function (or procedure) always has exactly one argument.
-However you can simulate multiple arguments with a tuple:
+@h2 Operator hash 
+Finally if a function takes only a unit argument:
+you can use the high precedence prefix {#} operator to call it:
 @felix
-fun addup (x:int, y:int) => x + y;
-println$ addup (1,2); // 3
-val pair = 1,2;
-println$ addup pair; // 3
+fun pi() = 22.0/7.0;
+println$ "Pi=" + str #pi;
 @
-The last line shows clearly that {addup} takes a single argument
-which is a pair (tuple with two components).
 
-@h2 Function types
-A function value has a type:
+[See next chapter for explanation of {unit} type]
+
+@h2 Implied procedure call 
+And there's a special case for procedures with no arguments:
 @felix
-  int -> int       // type of square
-  int -> void      // type of ps
-  int * int -> int // type of addup
+proc doit() { println "Done"; }
+doit;
 @
+allowing you to omit the unit argument.
 
-@h2 Generators
-There is a special kind of procedure that looks like
-a function and may have side-effects, it is called
-a generator:
-@felix
-var x =0;
-gen incx():int = { val tmp = x; ++x; return tmp; }
-println$ incx(), incx();
-@
-When an expression contains one or more generator application, the applications
-are lifted out and evaluated in pre-order: this is basically left to right
-order of writing for terms at the same level, except that if a generator has
-an argument that is, or contains a generator application, that will have to
-be evaluated first. The serialisation of generator application is deterministic
-and based on the structure of the expression being evaluated <em>after</em>
-syntactic sugar is removed. For example
-@felix
-  var r = (g1 1).(g2 2)
-@
-will be evaluated as:
-@felix
-  val a2 = g2 2;
-  val a1 = g1 1;
-  val r = a2 a1;
-@
-because reverse application is just sugar for a swapped forward application.
-
-@caveat
-Generators have the same type as a function. This is a design fault
-in the current version of Felix.
-@
-
-@h2 C functions
-The function and procedure:
-@felix
-cfun f(x:int) => x;
-cproc p(x:int) { println x; }
-@
-have types
-@felix
-   int --> int
-   int --> void
-@
-respectively, which are the types of classic C funcions:
-@felix
-  int (*)(int)
-  void (*)(int)
-@
-You can use this kind of function to force generation of
-a classic C style function for performance, so you that know
-the type exactly, and so you can pass it as an argument
-to a C library. In particular such a function or procedure should not reference
-Felix globals (because this requires passing the thread frame pointer), nor
-do anything directly or indirectly requiring garbage collection
-(which also requires thread frame pointer since that in turn contains a pointer
-to the garbage collector).
-
-C functions can be used wherever a Felix function is required,
-a wrapper is generated automatically.
-
-C functions of this kind are still defined with 
-Felix code: they're Felix functions with an enforced
-C interface. In fact many ordinary Felix functions will
-be reduced to C functions by the optimiser, but this
-form enforces the use of C interface.
-
-@note
-It seems unfortunate that <em>whilst</em> a {cfun} or {cproc} has a C interface it
-is defined in Felix, <em>whereas</em> a {cstruct} is a Felix interface to a
-struct defined in C, and {cenum} and {cflag} provide Felix models of enumerations
-or sets of integer constants defined in C.  The role reversal here seems confusing, 
-especially as Felix functions and types can be defined in C using {fun}, {proc} and {type}
-keywords and C code given as a string, and {ctypes} provides a shorthand form for
-multiple instances of {type} eliding the strings. In turn {cenum} may be considered
-a shorthand for a {type} binding and a list of {const} definitions. Also, a shorthand
-for lifting C functions from libraries using a {fun} or {proc} without a 
-defining string can be used. The situation is further complicated by the
-{callback} feature.
-
-
-
-@h1 Higher Order Functions
-In Felix, functions can be nested:
-@felix
-fun f(x:int) = {
-  fun g(y:long)=> x.long + y;
-   return g;
-}
-@
-The function {f} here has type {int -> (long -> long)}. This type is 
-the same as {int -> long -> long} since the arrow operator is right
-associative. There's a simpler way to write the function {f}:
-@felix
-fun f(x:int) (y:long) => x.long + y;
-@
-Here one says {f} has arity 2. Note it still has only
-one argument, namely {x} of type {int}. A function with arity
-2 or greater is called a <em>higher order function</em>
-or Hof for short.
-
-Note that in:
-@felix
-proc h(x:int) (y:long) { println$ x.long + y; }
-@
-{h} is a function, not a procedure: it has type
-@felix
-int -> (long -> void)
-@
-so that rather, {h} is a function returning a procedure.
-
-It is possible to partially apply a higher order function.
-@felix
-fun f(x:int) (y:long) => x.long + y;
-val g = f 1;
-println$ g 2l;
-@
-Here {g} is just the value returned by {f} when applied
-to 1, which is a function accepting a {long} and returning
-a {long}.
-
-@h2 A style issue
-Many functions of "two" arguments can be written either accepting
-a tuple of two components or as a higher order function of arity 2.
-Without optimisation, higher order functions are extremely inefficient:
-tuples are faster, but they cannot be partially applied.
-However, the higher order form does not permit the "arguments" 
-to be "compressed" into a single value which the tuple form does.
-
-However, Felix is pretty good at optimisation and both version of {f}
-given above will likely reduce to a simple addition after inlining.
-
-Therefore the question really is: are you most likely to aggregate
-the arguments, or the function with the first argument?
-Use a tuple in the first case and a higher order function in the second.
-
-Of course, you should chose the form of a function which itself has
-the type required for it to be an argument of a higher order function
-such as an iteration, map or fold of some data structure.
-
-The library module {categ} defines a way to convert between these styles
-for 2 or 3 "arguments". The function {curry} takes a function accepting
-a tuple of 2 or 3 components and makes it into a higher order function
-with arity 2 or 3. The functions {uncurry2} and {uncurry3} reverse
-this transformation and convert a higher order function of arity 2 or 3,
-into a function accepting a tuple of 2 or 3 components, respectively.
-
-@h2 Anonymous function values
-You can write a function without a name in an expression:
-@felix
-val three = (fun (x:int)=> x + 1) 2;
-@
-There is a special short hand for procedures of unit argument:
-@felix
-{ println "Hello"; }
-@
-This is an expression equivalent to
-@felix
-proc () { println "Hello"; }
-@
-
-There's a similar shorthand for function or unit argument:
-@felix
-val y = 1;
-{ val x = y + 1; return x; }
-@
-distinguished from the procedure case by ending with
-a return statement.
 

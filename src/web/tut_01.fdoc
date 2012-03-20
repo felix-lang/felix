@@ -21,9 +21,11 @@ It's a pretty boring program, so lets try an improvement:
 @felix
 println$ "Hello " + Env::getenv "USER";
 @
-The {getenv} function can't fail, it will just return an empty string
-of the environment variable is not set. The infix operator {+} you
-see is string concatenation.
+<ul><li>The {getenv} function can't fail, it will just return an empty string
+of the environment variable is not set.</li>
+<li> The infix operator {+} you
+see is string concatenation.</li>
+</ul>
 
 @h2 Command line arguments
 Ok, so here's another way:
@@ -36,6 +38,13 @@ program name, for example if you type:
 flx hello Joachim
 </pre>
 then Joachim will be welcomed.
+<ul>
+<li>The function {System::argv} applied to an integer <em>n</em>
+returns the <em>n'th</em> command line argument if it exists,
+or an empty string otherwise.</li> 
+<li>Arguments are 0-origin and start with
+the executable name: this does not include the {flx} driver.</li>
+</ul>
 
 @h2 Reading and writing standard streams
 Well then, here's another way to get some data in:
@@ -44,6 +53,17 @@ write$ stdout,"Enter your name: "; fflush stdout;
 val name = readln$ stdin;
 writeln$ stdout, "Hello " + name;
 @
+Here,
+<ul>
+<li>{stdout} is the usual standard output text stream</li>
+<li>{write} is a command to write a string to a nominated output text stream</li>
+<li>{fflush} is a command to flush any buffered output to the physical device
+associated with a text stream</li>
+<li>{stdin} is the usual standard input text stream</li>
+<li>{readln} reads a string from a nominated input text stream, including the terminating newline if present</li>
+<li>{val} names a value, in this case that returned by the {readln} function</li>
+<li>{writeln} writes a string to a nominated output stream and ends a line</li>
+</ul>
 
 @h2 Stripping leading and trailing spaces from a string
 Unfortunately there's a bug in this program: {readln} reads
@@ -56,79 +76,4 @@ writeln$ stdout, "Hello " + name + "!";
 @
 This uses the function {strip} from the  String module
 to remove leading and trailing whitespace, including newlines.
-
-@h2 Application and call operators
-
-@h3 Operator whitespace 
-You may have noticed that you can write:
-@felix
-fflush stdout;
-@
-which is equivalent to
-@felix
-fflush (stdout);
-@
-Parentheses are not required for function application or procedure
-calls, just for grouping. 
-It's fun to call juxtaposition "operator whitspace".
-
-@h3 Operator dot
-Those with an OO background may find this more pleasing:
-@felix
-val name = stdin.readln.strip;
-@
-It means exactly the same as before, the operator {.} is nothing
-more than reverse application.
-
-@h3 Operator dollar
-And those with a Haskell background will readily understand that in
-@felix
-val name = strip $ readln $ stdin;
-@
-the {$} is just a low precedence forward application, so 
-it is also the same as before.
-
-@h3 Operator hash 
-Finally if a function takes only a unit argument:
-you can use the high precedence prefix {#} operator to call it:
-@felix
-fun pi() = 22.0/7.0;
-println$ "Pi=" + str #pi;
-@
-
-[See next chapter for explanation of {unit} type]
-
-@h3 Implied procedure call 
-And there's a special case for procedures with no arguments:
-@felix
-proc doit() { println "Done"; }
-doit;
-@
-allowing you to omit the unit argument.
-
-@h2 Summary
-We have learned 
-<ul>
-<li>how to run a simple Felix program with the {flx} tool,</li> 
-<li>how to print stuff to standard output with {println},</li> 
-<li>how to concatenate strings with operator {+},</li> 
-<li>how to get values from the environment with {getenv},</li>
-<li> how to get values from command line arguments with {argv},</li>
-<li>and how to read and write values from streams such as {stdin} and {stdout}
-using {readln}, {write}, {writeln} and {fflush}.</li>
-</ul>
-
-We've also learned that in Felix there are at least three ways to apply
-a function or procedure to a value:
-<ul>
-<li>using operator whitespace (juxtaposition), </li>
-<li>using operator {.} (dot), and</li>
-<li>using operator {$} (dollar).</li>
-<li>using operator {#} (hash).</li>
-<li>special call for procedure of unit</li>
-</ul>
-
-and we also learned how to name a value with {val}.
-
-That's a lot but if you're ready, we can go to the next chapter:
 

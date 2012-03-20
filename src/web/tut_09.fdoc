@@ -1,164 +1,109 @@
-@h1 Unions and Matches
-The dual concept to structures is unions. A structure has "each of" logic whereas
-a union has "one of logic". Each-of logic demands treating each of the components
-in sequence whereas one-of logic demand selecting one of the components.
+@h1 Variables and Pointers
+In Felix, there are two kinds of entities: <em>values</em>
+and <em>objects</em>. 
 
-Unions therefore represent alternatives. We use pattern matching with
-the {match} construction to discover which alternative is encoded
-and handle it in a typesafe manner. A {match} is an advanced form
-of a {switch}: {union}s are an advanced form of an {enum}eration.
+Literals are values, all computations yield values, and all parameter
+passing is notionally passing of a value.
 
+In Felix all value types are first class, meaning they can be 
+default initialised, copy constructed, copy assigned, and destroyed.
+Values are generally immutable.
+
+Although everything is a value, Felix also has objects.
+Objects are not first class and need not be default initialisable,
+copyable or assignable, although they must be destructible.
+
+Objects types in Felix are always constructed on the heap and represented
+thereafter by a pointer. Pointers are first class values in themselves,
+even though what they represent may not be. If {T} is a type then
+{&amp;T} is the type of a pointer to that type.
+
+We have seen you can name values like this:
 @felix
-union boolean = 
-  | True
-  | False
-;
+val x = 1;
+val y = 2;
+val z = y + y;
+@
 
-var b:boolean = True;
-
-proc f(b:boolean)  {
-  match b with
-  | True => println "True";
-  | False => println "False";
-  endmatch;
+All values can be used as objects. There are two ways to do this.
+The first way is to copy the value onto the heap using {new}
+and retrieve the value by dereferencing the returned pointer:
+with operator {*}:
+@felix
+val px = new 1;
+val py = new 2;
+val z = *px + *py;
+@
+The second way is to create a <em>variable slot</em> on the
+stack or global store with a {var} definition and find a
+pointer to the variable using the addressing operators {&amp;}:
+@felix
+var x = 1;
+val px = &x;
+val z = *px + *px;
+@
+Note that unlike C and C++ it is safe, although definitely not
+recommended, to take the address of a variable in a function
+and return it:
+@felix
+fun f(x:int) : &int = {
+   var a = x;
+   return &a; // safe!
 }
-
-println$ match b with | True => "True" | False => "False" endmatch;
 @
+if you do this, Felix will allocate the function's stack from on the heap,
+and the garbage collector will not reap that object until it is unreachable.
+Whilst the pointer to the variable {a} is itself stored in a reachable location,
+the stack frame will remain allocated.
 
-This code demonstrates a simple union of two cases: {True} and {False}
-and shows a procedural {match} whose case handlers are {println}
-statements, and a function {match} whose handlers are expressions.
+Storing function frames on the heap is inefficient compared to using the stack
+so it is better to avoid this practice.
 
-A more sophisticated example:
-
+@h2 Assignment
+Once you have a pointer to an object, you may be able to modify it.
+If the object type is first class, or otherwise assignable,
+you can put a new value into the object:
 @felix
-union Z = 
-  | Cart of double * double // cartesian complex x+iy
-  | Polar of double * double // polar complex re^(i\theta)
-;
-
-fun str (z:Z) => match z with
-  | Cart (?x,?y) => str x + "+"+str y+"i"
-  | Polar (?r,?theta) => str r + "e^"+str theta+"i"
-  endmatch
-;
+var x: int = 0;       // make an object 
+val px = &x;          // find its address
+px <- 1;              // store new value at pointer
+println$ x;           // 1 : the object has been set to a new value
 @
-
-The identifiers {Cart} and {Polar} here are called <em>type constructors</em>
-or just plain constructors, note here the arguments of the constructors
-are both the same: a pair of {double}. 
-
-The question mark {?} here is used to introduce a parameter to
-represent the argument.
-
-Unions are the way to unify heterogenous data types. If you're
-from an OO background you may think subclassing should be used
-for this. Unlearn this error. It is <em>utterly</em> wrong.
-
-Subclassing is a way to represent a subtype, that is, a type
-with a subset of values of another type: for example the set of
-triangular matrices is a subtype of all matrices.
-
-Similarly, composition using tuple or structs is the way to add
-more data to a type. Not inheritance. Unlearn that mistake too!
-
-The match construction is very powerful. It can be used to match
-tuples and records too:
-
+Using the heap:
 @felix
-fun fst (a:int * long) => 
-  match a with 
-  | ?x,_ => x
-  endmatch
-;
-
-fun xaxis (a:(x:double; y:double;))=> 
-  match a with
-  | (x=?xval) => xval
-  endmatch
-;
-
-println$ fst (41,99l);
-println$ xaxis (x=1.2,y=2.2);
+val px = new 0;
+px <- 1;
+println$ x;
 @
-Here the {_} is a wildcard that matches anything.
 
-You can also match against literals and ranges of
-integers floats and strings:
+The store operator {&lt;-} has the type:
 @felix
-fun (x:int) => match x with
-  | 1 => "one"
-  | 2..10 => "two to ten"
-  | _ => "other"
-  endmatch
-;
+  &T * T -> void
 @
-
-Of course, matches are general patterns and can be combined, we've already
-seen that in the first example which combines are match against constructors
-and tuples.
-
-@h2 Enumerations
-Felix has C++ style {enum}s.
-@h3 Linear enumeration
+Felix also provides the more traditional assignment operator {=}:
 @felix
-enum colour {red, green, blue};
-
-fun str: colour = 
-  | red => "red"
-  | blue => "blue"
-  | green => "green"
-;
-
-println$ red;
+var x = 1; 
+x = 2;       // syntactic sugar for &amp;x &lt;- 2
+println$ x;  // 2
 @
-This is a shorthand for a union, where the enumeration
-tags are type constuctors. 
-
-Note also in the above example the shorthand version of a function
-which consists solely of a match.
-
-@h3 Flags 
-Here's an example with 
-user specified constructor indicies:
+but as you can see it is just syntactic sugar. All mutators work this
+way for example:
 @felix
-enum flags {b1=1,b2=2,b3=4};
-println$ caseno b3;
-
-// Use C to model flag like operations
-type flagset = "int";
-ctor flagset: flags = "$1";
-fun \vee :flags * flags -> flagset = "$1|$2";
-fun \vee :flags * flagset -> flagset = "$1|$2";
-fun \vee :flagset * flags -> flagset = "$1|$2";
-fun \cup :flagset * flagset -> flagset = "$1|$2";
-fun \in : flags * flagset -> bool = "($1&$2)!=0";
-
-fun eq: flagset * flagset -> bool = "$1==$2";
-fun ne: flagset * flagset -> bool = "$1!=$2";
-fun \subseteq : flagset * flagset -> bool = "($1&~$2)==0";
-fun \subset (x:flagset,y:flagset)=> x \subset y and not x == y;
-fun \supset (x:flagset,y:flagset)=> not x \subseteq y;
-fun \supseteq (x:flagset,y:flagset)=> not x \subset y;
-
-
-var x = b1 \vee b2;         // infix operator \| is function bor!
-println$ b1 \in x;         // true: infix operator in is function mem!
-println$ b2 \in x;         // true
-println$ b3 \in x;         // false
-println$ b1.flagset \subset x;  // true
-println$ x \subset b1.flagset;  // false
-
+  var x = 1;
+  x++;    // syntactic sugar for post_dec (&amp;x)
+  x+=1;   // syntactic sugar for plus_eq (&amp;x,1)
 @
-You can find the index
-of any constructor as an {int} with the {caseno} operator. 
-In the example note that although the constructor with index
-0 and 3 is not named, it is still a value of the type.
+In particular all operators and functions except {&amp;}
+accept values: there are no reference types. There are no
+operations which modify values directly.
 
-You cannot directly perform mathematical or bitwise operations
-on constructors, not even enumeration constants. Note that that includes
-comparison for equality! Use the {caseno} operator to get around this,
-or bind into C as shown in the example.
+Some values, when encoded in object store, can be modified
+partially via a pointer to that store. Clearly scalar values
+cannot be partially modified, most aggregates can be.
 
+For Felix types, whether or not this is possible is determined solely by functions
+that manipulate pointers to objects storing those values.
 
+For types defined in C++ and lifted into Felix, the programmer may
+provide mutators.
+ 

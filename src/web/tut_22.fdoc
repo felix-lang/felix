@@ -1,141 +1,83 @@
-@h1 String Literals
-Felix provides 2 kinds of strings: {string}, and {ustring}.
-The most commonly used string is {string}, it is an 8 bit clean string
-implement by the C++ {::std::basic_string&lt;char&gt;}.
-
-The {ustring} type is based on ISO10646/Unicode character set with
-code points represented by type {uint32}. As this type currently
-has limited functionality we will focus on the {string} type.
-
-@h2 String literals
-Felix provides string literals modelled on Python's system.
-
-@h3 Basic quotation
-Strings can use either single {'} quotes or double {"} quotes,
-such strings must not span lines (i.e. they may not contain
-literal newline characters). Single quoted string can contain
-double quotes and double quoted strings can contain single quotes:
-@felix
-println "Hello";
-println 'Hello';
-println "'ello world";
-println 'Say "Hello World"';
-@
-@h3 Extended quotation: Preformatted text
-To span many lines you can use triple quotes:
-@felix
-println 
-"""
-  This is a preformatted text,
-  It allows another line to be next,
-  Leading spaces are kept,
-  "Confusing", he wept
-  Programming languages must be hex'd.
-""";
-
-println '''Tripled single quotes are 
-allowed too";
-@
-With preformatted text the initial newline is kept too.
-
-@h3 Character Escapes
-Strings using basic or extended quotation can have
-certain special characters embedded in them using
-slosh (backslash) escapes. The standard escapes
-are shown below. The encoding is from the old ASCII
-character set. The so-called "control characters" were
-used in the old days to control an electric typewritter.
+@h1 Floating Point Reals 
+There are 3 floating point real types: {float}, {double}, and {long double}
+real and complex numbers.  All support these base functions:
+Felix provides 3 floating point types.
 @pre
-  Escape            Replacement   Old meaning
-  --------------------------------------------------
-  \a                char 7        bell
-  \b                char 8        BS: backspace 
-  \t                char 9        HT: horizontal tab
-  \n                char 10       LF: linefeed (newline)
-  \v                char 11       VT: vertical tab
-  \f                char 12       FF: form feed
-  \r                char 13       CR: carriage return
+  Felix name     C name       Suffix
+  ----------------------------------
+  float         float         f
+  double        double        d (default)
+  ldouble       long double   l
 @
-The following escapes are used to control quoting:
+Floating literals roughly follow ISO C99, except underscores are allowed between digits.
+The mantissa radix can either be decimal (default) or hexadecimal with a {0x} or {0X} prefix.
+The exponent is always decimal radix but can either be a power of 10 with an {E} or {e} separator
+or binary, with a {P} or {p} separator.
+
+There is also an additional constraint: decimal radix floating literals
+which include a decimal point, must include at least one digit
+before and after the decimal point.
+ 
+@h3 Exact rule for literals
+@felix
+  let decimal_string = digit (underscore? digit) *
+  let hexadecimal_string = hexdigit (underscore? hexdigit) *
+
+  let decimal_fractional_constant =
+    decimal_string '.' decimal_string?
+
+  let hexadecimal_fractional_constant =
+    ("0x" |"0X")
+    (hexadecimal_string '.' hexadecimal_string?
+    | '.' hexadecimal_string) /* leading . allowed here because of prefix */
+
+  let decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string
+  let binary_exponent = ('P'|'p') ('+'|'-')? decimal_string
+
+  let floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd'
+  let floating_literal =
+    (
+      decimal_fractional_constant decimal_exponent? |
+      hexadecimal_fractional_constant binary_exponent?
+    )
+    floating_suffix?
+@
+
+@h2 Real Functions
+Felix provides these base functions:
 @pre
-  Escape            Replacement   
-  -----------------------------
-  \'                '            
-  \"                "           
-  \\                \          
+  neg: t -> t;
+  add: t * t -> t;
+  sub: t * t -> t;
+  mul: t * t -> t;
+  div: t * t -> t;
 @
-In addition, slosh space normally emits a space.
-However slosh followed by 0 or more spaces followed
-by a newline causes all the spaces and the newline
-to be elided, effectively concatenating two lines of text.
-For example
-@felix
-println """\
-Hello \ 
-World\
-""";
-@
-prints the hello world message on a single line. This is similar
-to the usual C and Unix end of line processing <em>except</em>
-extra spaces are allowed before the newline. The reason is that
-it is hard, if not impossible, to actually see if the character
-following the slosh is a newline or some spaces followed by a newline.
-The unix and C rules are two fragile for safe use.
-
-@String folding
-There's another way to get nice formatted text: string folding:
-@felix
-println$
-  "This is a preformatted text,\n"
-  "It allows another line to be next,\n"
-  "Leading spaces are kept,\n"
-  '"Confusing", he wept\n'
-  "Programming languages must be hex'd.\n"
-;
-@ 
-Here we manually inserted the line ends. Incidentally such folding
-is not just a pre-processing step. When one string expression is
-applied to another the result is the concatenation of the strings.
-However if literals are used, the concatenation is done by the parser
-instead of at run time.
-
-@h3 Numeric Escapes
-There is another form of escaping where one or more characters are
-inserted into a string based on a numeric code. These are:
+and these trigonometric functions:
 @pre
-  Escape            Scan  Chars      Name
-  --------------------------------------------------
-  \oOOO             0-3     Octal    Octal Escape
-  \dDDD             0-3     Decimal  Decimal Escape
-  \xHH              0-2     Hex      Hex Escape
-  \uHHHH            0-4     Hex      Short unicode escape 
-  \UHHHHHHH         0-8     Hex      Long unicode escape
+  sin: t -> t;
+  cos: t -> t;
+  tan: t -> t;
+  asin: t -> t;
+  acos: t -> t;
+  atan: t -> t;
+  sinh: t -> t;
+  cosh: t -> t;
+  tanh: t -> t;
+  asinh: t -> t;
+  acosh: t -> t;
+  atanh: t -> t;
+  exp: t -> t;
+  log: t -> t;
+  pow: t * t -> t;
 @
-The rules are a bit tricky. All these escapes scan for between
-0 and N characters, as indicated in the scan column. The scan
-never exceeds the maximum number of characters. It is also stopped
-when a character is not in the indicated character set, for example
-{\xx} will emit a code {0} or {nul} character followed by an {x}.
 
-The unicode escapes emit a stream of characters, namely the
-decoded code point encoded by {utf-8}. Thus, if you consider
-your 8 bit clean strings as containing {utf-8} encoded unicode
-you can use these escapes. Note that {\xFF} is quite distinct
-from {\uFF} since the latter emits a single character with 
-code point 255, whereas the former emits two characters
-being the {utf-8} representation of code point 255.
-
-@h3 Other escapes
-All other escapes are left intact, that is, including the
-slosh, for example {\c} translates to {\c} and not just {c}.
-
-@h2 Raw strings: escaping escapes
-It's sometimes annoying to have to quote or escape escapes.
-This is particularly true with regular expression strings
-which already contain a lot of sloshes.
-
-So, following Python you can have raw strings by using an {r} or {R} prefix:
-@felix
-  r'\(.*\)' // easier than '\\(.*\\)'
+In addition to the trigonometric functions, reals support these functions:
+@pre
+  log10: t -> t;
+  abs: t -> t;
+  sqrt: t -> t;
+  ceil: t -> t;
+  floor: t -> t;
+  trunc: t -> t;
 @
 

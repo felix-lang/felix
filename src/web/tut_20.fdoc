@@ -1,83 +1,143 @@
-@h1 Floating Point Reals 
-There are 3 floating point real types: {float}, {double}, and {long double}
-real and complex numbers.  All support these base functions:
-Felix provides 3 floating point types.
-@pre
-  Felix name     C name       Suffix
-  ----------------------------------
-  float         float         f
-  double        double        d (default)
-  ldouble       long double   l
-@
-Floating literals roughly follow ISO C99, except underscores are allowed between digits.
-The mantissa radix can either be decimal (default) or hexadecimal with a {0x} or {0X} prefix.
-The exponent is always decimal radix but can either be a power of 10 with an {E} or {e} separator
-or binary, with a {P} or {p} separator.
+@h1 Pthreads and Channels 
+Felix also supports pre-emptive threads with channels.
+The syntax is similar to that used for fibres and channels:
 
-There is also an additional constraint: decimal radix floating literals
-which include a decimal point, must include at least one digit
-before and after the decimal point.
- 
-@h3 Exact rule for literals
 @felix
-  let decimal_string = digit (underscore? digit) *
-  let hexadecimal_string = hexdigit (underscore? hexdigit) *
+open Text_file;
 
-  let decimal_fractional_constant =
-    decimal_string '.' decimal_string?
+proc client(x:ipchannel[opt[string]]) {
+  var finished = false;
+  while not finished do
+    match read x with
+    | Some ?line => print line;
+    | None => finished = true;
+    endmatch;
+  done
+}
 
-  let hexadecimal_fractional_constant =
-    ("0x" |"0X")
-    (hexadecimal_string '.' hexadecimal_string?
-    | '.' hexadecimal_string) /* leading . allowed here because of prefix */
+proc server(x:opchannel[string]) {
+  f := fopen_input "xyz.flx";
+  var line = readln f;
+  while line != "" do
+    write$ x,line;
+    line = readln f;
+  done;
+  fclose f;
+  write$ x, None[string];
+}
 
-  let decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string
-  let binary_exponent = ('P'|'p') ('+'|'-')? decimal_string
+proc launch() {
+  inp,out:= mk_iopchannel_pair[string]();
+  spawn_pthread { client(inp); };
+  spawn_pthread { server (out); };
+}
 
-  let floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd'
-  let floating_literal =
-    (
-      decimal_fractional_constant decimal_exponent? |
-      hexadecimal_fractional_constant binary_exponent?
-    )
-    floating_suffix?
+launch;
+println$ "Launched!";
 @
 
-@h2 Real Functions
-Felix provides these base functions:
-@pre
-  neg: t -> t;
-  add: t * t -> t;
-  sub: t * t -> t;
-  mul: t * t -> t;
-  div: t * t -> t;
-@
-and these trigonometric functions:
-@pre
-  sin: t -> t;
-  cos: t -> t;
-  tan: t -> t;
-  asin: t -> t;
-  acos: t -> t;
-  atan: t -> t;
-  sinh: t -> t;
-  cosh: t -> t;
-  tanh: t -> t;
-  asinh: t -> t;
-  acosh: t -> t;
-  atanh: t -> t;
-  exp: t -> t;
-  log: t -> t;
-  pow: t * t -> t;
+@h2 Broadcast example
+Here is the broadcast code using pthreads:
+
+@felix
+gen broadcaster() : 
+  opchannel[opt[opchannel[string]]] * // subscription channel
+  opchannel[string]                   // news reporting channel
+=
+{
+  // -------------------------------------------------------------
+  // SUBSCRIPTIONS
+  // -------------------------------------------------------------
+
+  // subscriber list
+  var clients = darray[opchannel[string]] ();
+
+  // subscription channel
+  iregistry, oregistry := mk_iopchannel_pair[opt[opchannel[string]]]();
+
+  // accept registrations until end of broadcast
+  // a subscription of None signals end of broadcast
+  spawn_pthread {
+    var end_of_news = false;
+    while not end_of_news do
+      match read iregistry with
+      | None => end_of_news = true;
+      | Some ?chan => 
+        push_back (clients, chan);
+        println "Got a subscriber";
+      endmatch;
+    done
+    println "Finished accepting subscribers";
+  };
+ 
+  // -------------------------------------------------------------
+  // RELAY THE NEWS
+  // -------------------------------------------------------------
+
+  // news reading channel
+  inews, onews := mk_iopchannel_pair[string]();
+
+  // send news to all clients
+  spawn_pthread {
+    var news_line = read inews;
+    while true do 
+      if len clients > 0uz do
+        for var i in 0uz upto len clients - 1uz do
+          write$ clients.[i], news_line;
+        done
+      done
+      if news_line == "END OF NEWS\n" do 
+        println "Finished news relay"; 
+        return; 
+      done
+      news_line = read inews;
+    done
+  };
+
+  // return the channel for subscribing to news reports,
+  // and the channel for making news reports
+  return oregistry, onews;
+}
+
+// Create the broadcast station
+subscribe, news := broadcaster();
+
+// create a template for bored train commuters who want to read the news
+proc commuter (i:int) {
+  ichan, ochan := mk_iopchannel_pair[string]();
+  write$ subscribe, Some ochan; //subscribe to news
+  var line = read ichan;
+  while line != "END OF NEWS\n" do 
+    print$ "Commuter " + str i + ": " + line;
+    line = read ichan;
+  done
+  print$ "Commuter " + str i + ": " + line;
+}
+
+// create two commuters
+spawn_pthread { commuter 1; };
+spawn_pthread { commuter 2; };
+
+// create a reporter that just sends a file as news
+spawn_pthread {
+  f := Text_file::fopen_input "br.flx";
+  var line = Text_file::readln f;
+  while line != "" do
+    print$ "Reporting : " + line;
+    write$ news, line;
+    line = Text_file::readln f;
+  done
+  write$ news, "END OF NEWS\n";
+  Text_file::fclose f;
+  write$ subscribe, None[opchannel[string]];
+  println "Done reporting news";
+};
+
+println$ "Demo started";
 @
 
-In addition to the trigonometric functions, reals support these functions:
-@pre
-  log10: t -> t;
-  abs: t -> t;
-  sqrt: t -> t;
-  ceil: t -> t;
-  floor: t -> t;
-  trunc: t -> t;
-@
+You should note that there's no assurance the subscribers get all the news!
+In fact this code can deadlock, because the news can be over before one
+of the subscribers gets to subscribe. In that case the write to the
+subscription channel will hang forever since the reader is gone.
 

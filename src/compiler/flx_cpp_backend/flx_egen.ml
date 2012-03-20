@@ -616,9 +616,9 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
     end
 
   | BEXPR_closure (index,ts') ->
-    (*
+(*
     print_endline ("Generating closure of " ^ si index);
-    *)
+*)
     let bsym =
       try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_expr(name)] Can't find index " ^ string_of_bid index)
@@ -648,7 +648,9 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
         )
 
     | BBDCL_external_fun (_,_,_,_,_,_,`Callback _) ->
+(*
       print_endline "Mapping closure of callback to C function pointer";
+*)
       ce_atom (Flx_bsym.id bsym)
 
     | BBDCL_cstruct _

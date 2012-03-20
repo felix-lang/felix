@@ -1,143 +1,72 @@
-@h1 Pthreads and Channels 
-Felix also supports pre-emptive threads with channels.
-The syntax is similar to that used for fibres and channels:
+@h1 Type classes
+The {typeclass} and {instance} is the primary organisation tool for Felix
+libraries that allow easy use and extension. The notion is taken
+from Haskell, generalised to support multiple type variables as in GHC.
 
+Here is a simple typeclass and instance:
 @felix
-open Text_file;
-
-proc client(x:ipchannel[opt[string]]) {
-  var finished = false;
-  while not finished do
-    match read x with
-    | Some ?line => print line;
-    | None => finished = true;
-    endmatch;
-  done
+typeclass X[T] {
+  virtual fun f: T -> T;
+  fun g(x:T)=> f (f x);
 }
 
-proc server(x:opchannel[string]) {
-  f := fopen_input "xyz.flx";
-  var line = readln f;
-  while line != "" do
-    write$ x,line;
-    line = readln f;
-  done;
-  fclose f;
-  write$ x, None[string];
+instance X[int] {
+  fun f(x:int)=> x + 1;
 }
 
-proc launch() {
-  inp,out:= mk_iopchannel_pair[string]();
-  spawn_pthread { client(inp); };
-  spawn_pthread { server (out); };
-}
+open X[int];
 
-launch;
-println$ "Launched!";
+println$ g x;
 @
 
-@h2 Broadcast example
-Here is the broadcast code using pthreads:
+In this code {virtual} functions are ones which may be overridden in 
+instances. {virtual} functions may have definitions, which are used
+in any instance which does not define an override. Non-virtual
+functions cannot be overriden: instead they're dependent on the
+virtual functions only.
 
+We define an instance of {X} for type {int} and then call the
+non-virtual function {g} for specialisation {T -> int}, which 
+in turn calls {f} for that specialisation too.
+
+Finally we open the typeclass for the specialisation {T -> int}.
+In effect this just makes {f of (int)} and {g of (int)} available.
+
+@h2 Orders
+We will cite one of the most important typeclasses in Felix:
+
+@felix /lib/std/order.flx
+
+This library file defines the concept of equality, total ordering,
+and the core operations of integral kinds: increment and decrement.
+
+The code shows clearly the use of axioms to express semantics,
+for example we see equality must be an equivalence relation
+(reflexive, symmetric and transitive).
+
+Also we note that the total order concept is derived from equality
+concept. When you open a {Tord} you get the methods of {Eq} as well.
+
+@h2 Relation to C++
+Type classes actually exist in much the same form in C++.
+If you define a template class with all static functions,
+then those functions without definitions are Felix virtuals,
+those with definitions are either non-virtuals or virtuals
+with defaults (C++ doesn't distinguish these two cases).
+
+In C++, an instance is just a partical or full specialisation
+of the class, which in turn may include some or all of the
+functions. It's acceptable in both C++ and Felix to leave out
+definitions for functions you do not use.
+
+The principal difference between Felix and C++ is that the C++
+type system cannot support type recursion and hence is effectively
+useless: you cannot make a combinatorial definition of a polymorphic
+linked list in C++, in Felix it is a one liner:
 @felix
-gen broadcaster() : 
-  opchannel[opt[opchannel[string]]] * // subscription channel
-  opchannel[string]                   // news reporting channel
-=
-{
-  // -------------------------------------------------------------
-  // SUBSCRIPTIONS
-  // -------------------------------------------------------------
-
-  // subscriber list
-  var clients = darray[opchannel[string]] ();
-
-  // subscription channel
-  iregistry, oregistry := mk_iopchannel_pair[opt[opchannel[string]]]();
-
-  // accept registrations until end of broadcast
-  // a subscription of None signals end of broadcast
-  spawn_pthread {
-    var end_of_news = false;
-    while not end_of_news do
-      match read iregistry with
-      | None => end_of_news = true;
-      | Some ?chan => 
-        push_back (clients, chan);
-        println "Got a subscriber";
-      endmatch;
-    done
-    println "Finished accepting subscribers";
-  };
- 
-  // -------------------------------------------------------------
-  // RELAY THE NEWS
-  // -------------------------------------------------------------
-
-  // news reading channel
-  inews, onews := mk_iopchannel_pair[string]();
-
-  // send news to all clients
-  spawn_pthread {
-    var news_line = read inews;
-    while true do 
-      if len clients > 0uz do
-        for var i in 0uz upto len clients - 1uz do
-          write$ clients.[i], news_line;
-        done
-      done
-      if news_line == "END OF NEWS\n" do 
-        println "Finished news relay"; 
-        return; 
-      done
-      news_line = read inews;
-    done
-  };
-
-  // return the channel for subscribing to news reports,
-  // and the channel for making news reports
-  return oregistry, onews;
-}
-
-// Create the broadcast station
-subscribe, news := broadcaster();
-
-// create a template for bored train commuters who want to read the news
-proc commuter (i:int) {
-  ichan, ochan := mk_iopchannel_pair[string]();
-  write$ subscribe, Some ochan; //subscribe to news
-  var line = read ichan;
-  while line != "END OF NEWS\n" do 
-    print$ "Commuter " + str i + ": " + line;
-    line = read ichan;
-  done
-  print$ "Commuter " + str i + ": " + line;
-}
-
-// create two commuters
-spawn_pthread { commuter 1; };
-spawn_pthread { commuter 2; };
-
-// create a reporter that just sends a file as news
-spawn_pthread {
-  f := Text_file::fopen_input "br.flx";
-  var line = Text_file::readln f;
-  while line != "" do
-    print$ "Reporting : " + line;
-    write$ news, line;
-    line = Text_file::readln f;
-  done
-  write$ news, "END OF NEWS\n";
-  Text_file::fclose f;
-  write$ subscribe, None[opchannel[string]];
-  println "Done reporting news";
-};
-
-println$ "Demo started";
+union list[T] = | Empty | Cons of T * list[T];
 @
-
-You should note that there's no assurance the subscribers get all the news!
-In fact this code can deadlock, because the news can be over before one
-of the subscribers gets to subscribe. In that case the write to the
-subscription channel will hang forever since the reader is gone.
+using Felix's built in tuple and union constructors.
+The equivalent templates are easy to define in C++:
+the problem is the {list[T]} at the end of the definition.
 
