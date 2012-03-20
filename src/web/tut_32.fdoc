@@ -1,0 +1,29 @@
+@h1 Debugging
+Felix has a number of special features to help with debugging.
+Of course you can debug the generated C++ code in the usual way.
+Don't forget you can say:
+@pre
+flx --nofelix prog
+@
+to skip translation of Felix programs to C++, which allows you to edit
+the C++ code, say, adding debugging prints.
+
+@h2 Debug module
+...
+
+@h2 Trace
+Felix has a special trace command:
+@felix
+var name = "FELIX";
+trace name "string";
+@
+To use this you must compile with the FLX_ENABLE_TRACE macro defined:
+@pre
+flx -DFLX_ENABLE_TRACE abc
+@
+which prints something like:
+@pre
+1 : TRACE: hello
+Felix location: ./abc.flx 2[1]-2[16]
+C++ location  : ./abc.cpp 76
+@
