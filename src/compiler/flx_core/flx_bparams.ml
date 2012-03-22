@@ -8,8 +8,4 @@ let get_btype ps = match get_btypes ps with
   | [x] -> x
   | xs -> Flx_btype.btyp_tuple xs
 
-(** Prints a bparams to a formatter. *)
-let print f (bparameters, tbexpr) =
-  Flx_format.print_tuple2 f
-    (Flx_list.print Flx_bparameter.print) bparameters
-    (Flx_format.print_opt Flx_bexpr.print) tbexpr
+

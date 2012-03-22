@@ -22,10 +22,4 @@ let get_btypes ps =
     | _ -> p.ptyp
   end ps
 
-(** Prints a bparameter to a formatter. *)
-let print f p =
-  Flx_format.print_record4 f
-    "pkind" Flx_ast.print_param_kind p.pkind
-    "pid" Flx_format.print_string p.pid
-    "pindex" Flx_types.print_bid p.pindex
-    "ptyp" Flx_btype.print p.ptyp
+

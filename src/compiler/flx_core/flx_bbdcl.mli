@@ -130,7 +130,4 @@ val map :
 (** Calls the function over every bid inside the bound declaration. *)
 val iter_uses : (Flx_types.bid_t -> unit) -> t -> unit
 
-(* -------------------------------------------------------------------------- *)
 
-(** Prints a bbdcl to a formatter. *)
-val print : Format.formatter -> t -> unit

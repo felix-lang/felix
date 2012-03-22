@@ -424,6 +424,7 @@ and xproperty_t sr x : property_t =
   | Id "Stack_closure" -> `Stack_closure       (* a stacked closure is formed *)
   | Id "Unstackable" -> `Unstackable         (* closure cannot be created on stack *)
   | Id "Pure" -> `Pure                (* closure not required by self *)
+  | Id "Total" -> `Total                (* closure not required by self *)
   | Id "Uses_global_var" -> `Uses_global_var     (* a global variable is explicitly used *)
   | Id "Ctor" -> `Ctor                (* Class constructor procedure *)
   | Id "Generator" -> `Generator           (* Generator: fun with internal state *)

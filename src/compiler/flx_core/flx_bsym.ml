@@ -70,10 +70,4 @@ let get_bvs bsym =
 (** Calls the function over every bid inside the bound symbol. *)
 let iter_uses f bsym = Flx_bbdcl.iter_uses f bsym.bbdcl
 
-(** Prints a bound symbol to a formatter. *)
-let print f bsym =
-  Flx_format.print_record4 f
-    "id" Flx_id.print bsym.id
-    "sr" Flx_srcref.print bsym.sr
-    "vs" Format.pp_print_string "..."
-    "bbdcl" Flx_bbdcl.print bsym.bbdcl
+

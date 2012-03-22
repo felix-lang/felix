@@ -26,6 +26,8 @@ syntax functions {
   sadjective := "extern" =># "'NoInlineFunction";
   sadjective := "virtual" =># "'Virtual";
   sadjective := "lvalue" =># "'Lvalue";
+  sadjective := "pure" =># "'Pure";
+  sadjective := "total" =># "'Total";
   sadjectives := sadjective* =># "_1";
 
   slambda_fun_arg := "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";

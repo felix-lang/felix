@@ -280,6 +280,7 @@ and property_t = [
   | `Stack_closure       (* a stacked closure is formed *)
   | `Unstackable         (* closure cannot be created on stack *)
   | `Pure                (* closure not required by self *)
+  | `Total 
   | `Uses_global_var     (* a global variable is explicitly used *)
   | `Ctor                (* Class constructor procedure *)
   | `Generator           (* Generator: fun with internal state *)
@@ -605,23 +606,4 @@ val dfltvs_aux : vs_aux_t
 (** Define a default vs_list_t. *)
 val dfltvs : 'a list * vs_aux_t
 
-(** Prints out a base_type_qual_t to a formatter. *)
-val print_base_type_qual : Format.formatter -> base_type_qual_t -> unit
 
-(** Prints out a property_t to a formatter. *)
-val print_property : Format.formatter -> property_t -> unit
-
-(** Prints out a property list to a formatter. *)
-val print_properties : Format.formatter -> property_t list -> unit
-
-(** Prints out a param_kind_t to a formatter. *)
-val print_param_kind : Format.formatter -> param_kind_t -> unit
-
-(** Prints out a statement to a formatter. *)
-val print_type : Format.formatter -> typecode_t -> unit
-
-(** Prints out a statement to a formatter. *)
-val print_expr : Format.formatter -> expr_t -> unit
-
-(** Prints out a statement to a formatter. *)
-val print_statement : Format.formatter -> statement_t -> unit

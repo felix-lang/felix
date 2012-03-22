@@ -995,6 +995,7 @@ and string_of_property = function
 | `Heap_closure -> "heap_closure"
 | `Stack_closure -> "stack_closure"
 | `Pure -> "pure"
+| `Total -> "total"
 | `Uses_global_var-> "uses_global_var"
 | `Requires_ptf -> "requires_thread_frame"
 | `Not_requires_ptf -> "does_not_require_thread_frame"

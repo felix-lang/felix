@@ -46,6 +46,3 @@ val get_bvs: t -> Flx_types.bvs_t
 
 (** Calls the function over every bid inside the bound symbol. *)
 val iter_uses : (Flx_types.bid_t -> unit) -> t -> unit
-
-(** Prints a bound symbol to a formatter. *)
-val print : Format.formatter -> t -> unit

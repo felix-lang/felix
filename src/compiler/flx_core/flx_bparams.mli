@@ -6,5 +6,4 @@ val get_btypes : t -> Flx_btype.t list
 (** Returns the bound type from a list of bparameters. *)
 val get_btype : t -> Flx_btype.t
 
-(** Prints a bparams to a formatter. *)
-val print : Format.formatter -> t -> unit
+

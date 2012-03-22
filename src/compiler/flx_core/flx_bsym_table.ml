@@ -89,9 +89,7 @@ let remove_bid_from_parent bsym_table parent bid =
 (** Adds the bound symbol with the index to the symbol table. *)
 let add bsym_table bid parent bsym =
   if mem bsym_table bid then begin
-    print_endline ("Woops, index " ^ string_of_int bid ^ " already in table");
-    let { bsym=bsym }  = Hashtbl.find bsym_table.table bid in
-     Format.printf "Value %a" Flx_bsym.print bsym
+    print_endline ("Woops, index " ^ string_of_int bid ^ " already in table " ^ Flx_bsym.id bsym )
   end
   ;
   assert (not (mem bsym_table bid));
