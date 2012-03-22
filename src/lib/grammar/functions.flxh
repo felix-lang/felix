@@ -22,12 +22,14 @@ syntax functions {
 
   sadjective := "inline" =># "'InlineFunction";
   sadjective := "noinline" =># "'NoInlineFunction";
-  sadjective := "static" =># "'InlineFunction";
+  //sadjective := "static" =># "'Static";
   sadjective := "extern" =># "'NoInlineFunction";
   sadjective := "virtual" =># "'Virtual";
   sadjective := "lvalue" =># "'Lvalue";
   sadjective := "pure" =># "'Pure";
+  sadjective := "impure" =># "'ImPure";
   sadjective := "total" =># "'Total";
+  sadjective := "partial" =># "'Partal";
   sadjectives := sadjective* =># "_1";
 
   slambda_fun_arg := "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";

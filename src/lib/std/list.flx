@@ -111,7 +111,7 @@ open class List
 
 
   // number of elements in a list
-  fun len[T] (x:list[T]) = {
+  pure fun len[T] (x:list[T]) = {
     fun aux (acc:size) (x:list[T]) =>
       match x with
       | Empty => acc
@@ -122,7 +122,7 @@ open class List
   }
 
   // true if list is empty
-  fun is_empty[T] : list[T] -> 2 =
+  pure fun is_empty[T] : list[T] -> 2 =
     | Empty => true
     | _ => false
   ;
@@ -147,7 +147,7 @@ open class List
   }
 
   // reverse a list (tail rec)
-  fun rev[T] (x:list[T]):list[T]= {
+  pure fun rev[T] (x:list[T]):list[T]= {
     fun aux (x:list[T]) (y:list[T]) : list[T] =
     {
       return
@@ -245,10 +245,10 @@ open class List
   }
 
   // concatenate two lists
-  fun + [T] (x:list[T], y: list[T]):list[T] => join x y;
+  pure fun + [T] (x:list[T], y: list[T]):list[T] => join x y;
 
   // prepend element to head of list
-  fun + [T] (x:T, y:list[T]):list[T] => Cons (x, y);
+  pure fun + [T] (x:T, y:list[T]):list[T] => Cons (x, y);
 
   // append element to tail of list
   // very slow, adding to end ..
@@ -269,7 +269,7 @@ open class List
    }
 
   // concatenate all the strings in a list with given separator
-  fun cat (sep:string) (x:list[string]):string =
+  pure fun cat (sep:string) (x:list[string]):string =
   {
     return
       match x with

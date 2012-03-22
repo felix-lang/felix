@@ -280,8 +280,10 @@ and property_t = [
   | `Stackable           (* closure can be created on stack *)
   | `Stack_closure       (* a stacked closure is formed *)
   | `Unstackable         (* closure cannot be created on stack *)
-  | `Pure                (* closure not required by self *)
+  | `Pure
+  | `ImPure
   | `Total 
+  | `Partial
   | `Uses_global_var     (* a global variable is explicitly used *)
   | `Ctor                (* Class constructor procedure *)
   | `Generator           (* Generator: fun with internal state *)

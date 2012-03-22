@@ -87,13 +87,17 @@ let rec is_pure syms bsym_table i =
     true
 
   (* not sure if this is the right place for this check .. *)
-  | BBDCL_external_fun (_,_,_,_,_,_,kind) ->
+  | BBDCL_external_fun (props,_,_,_,_,_,kind) ->
       begin match kind with
       | `Code CS.Virtual -> false
-      | _ -> true
+      | _ -> 
+        if mem `Pure props then true else 
+        if mem `ImPure props then false else true
       end
 
-  | BBDCL_fun (_,_,_,_,exes) ->
+  | BBDCL_fun (props,_,_,_,exes) ->
+    if mem `Pure props then true else 
+    if mem `ImPure props then false else 
     let bsym_parent = Flx_bsym_table.find_parent bsym_table i in
     match bsym_parent with
     | Some _ ->
@@ -637,7 +641,10 @@ let mark_stackable syms bsym_table fn_cache ptr_cache label_map label_usage =
           props := `Stackable :: !props;
           if is_pure syms bsym_table i then
           begin
-            props := `Pure :: !props;
+            if mem `ImPure !props then
+              failwith "flx_stack_calls: Function marked ImPure about to be labelled Pure, why?"
+            else
+              props := `Pure :: !props;
           end
         end;
         let props = !props in
