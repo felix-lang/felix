@@ -364,6 +364,30 @@ open class List
     return aux (x,Empty[T]);
   }
 
+  // take the first k elements from a list
+  fun take[T] (k:int) (lst:list[T]) : list[T] =>
+    if k <= 0 then
+      list[T] ()
+    else
+      match lst with
+        | Empty => list[T] ()
+        | Cons(?x, ?xs) => join (list[T] x) (take[T] (k - 1) xs)
+      endmatch
+    endif
+  ;
+
+  // drop the first k elements from a list
+  fun drop[T] (k:int) (lst:list[T]) : list[T] =>
+    if k <= 0 then
+      lst
+    else
+      match lst with
+        | Empty => list[T] ()
+        | Cons(?x, ?xs) => drop (k - 1) xs
+    endif
+  ;
+
+
   // sort a list with given less than operator, which must be
   // total order. Uses varray sort (which uses STL sort)
   fun sort[T] (lt:T*T->bool) (x:list[T])=
@@ -405,6 +429,8 @@ open class List
   }
 
 }
+open [T with Str[T]] Str[list[T]];
+open [T with Eq[T]] Set[list[T],T];
 
 // display list as string given element type with str operator
 // elements are separated by a comma and one space
@@ -421,29 +447,6 @@ instance[T with Show[T]] Str[List::list[T]] {
     + ')'
   ;
 }
-
-// take the first k elements from a list
-fun take[T] (k:int) (lst:list[T]) : list[T] =>
- if k <= 0 then
-  list[T] ()
- else
-   match lst with
-     | Empty => list[T] ()
-     | Cons(?x, ?xs) => join (list[T] x) (take[T] (k - 1) xs)
-   endmatch
-endif
-;
-
-// drop the first k elements from a list
-fun drop[T] (k:int) (lst:list[T]) : list[T] =>
-  if k <= 0 then
-    lst
-  else
-    match lst with
-     | Empty => list[T] ()
-     | Cons(?x, ?xs) => drop (k - 1) xs
-  endif
-  ;
 
 publish "Association Lists (lists of pairs)"
 class Assoc_list
@@ -476,6 +479,7 @@ class Assoc_list
   fun find[A,B,T] (eq:A * T -> bool) (xs:assoc_list[A,B]) (e:T) : opt[B] =>
     find (fun (a:A) => eq (a, e)) xs;
   ;
+
 }
 
 class S_expr 
@@ -512,11 +516,9 @@ class S_expr
       | Tree ?b => str b 
     ;
   }
+
 }
 
-open[T with Str[T]] Str[List::list[T]];
 open[T with Str[T]] Str[S_expr::sexpr[T]];
-open[T with Eq[T]] Set[List::list[T],T];
 open[T with Eq[T]] Set[S_expr::sexpr[T],T];
-
 

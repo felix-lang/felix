@@ -287,3 +287,4 @@ open Unsigned_integer[uintptr];
 // special overrides so s.len - 1 works
 fun - : size * int -> size = "$1-$2";
 fun + : size * int -> size = "$1+$2";
+

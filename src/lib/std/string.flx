@@ -10,14 +10,14 @@ instance[t in strings] Tord[t] {
   fun < : t * t -> bool = "$1<$2";
 }
 
-open Eq[string];
-open Eq[ustring];
-
-open Tord[string];
-open Tord[ustring];
-
 open class String
 {
+  inherit Eq[string];
+  inherit Eq[ustring];
+
+  inherit Tord[string];
+  inherit Tord[ustring];
+
   proc  += : &string * string = "$1->append($2:assign);";
   proc  += : &string * &char = "$1->append($2:assign);";
   proc  += : &string * char = "*$1 += $2;";

@@ -4782,7 +4782,7 @@ and split_dirs open_excludes dirs :
 *)
 
 and get_includes state bsym_table rs xs =
-  let rec get_includes' includes ((invs,i, ts) as index) =
+  let rec get_includes' includes (((invs: ivs_list_t),i, ts) as index) =
     if not (List.mem index !includes) then
     begin
       (*
@@ -4791,27 +4791,48 @@ and get_includes state bsym_table rs xs =
       ;
       *)
       includes := index :: !includes;
+(*
+print_endline "Make bare env";
+*)
       let env = mk_bare_env state bsym_table i in (* should have ts in .. *)
+(*
+print_endline "bare env made";
+*)
       let qns,sr,vs =
         match hfind "lookup" state.sym_table i with
         { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs } ->
-        (*
+(*
+print_endline "---------------------";
+print_endline ("Includes, id = " ^ id);
+*)
+(*
+        if List.length (fst invs) > 0 then begin
+        print_endline (id ^", Ints=" ^ catmap "," (sbt bsym_table) ts);
         print_endline (id ^", Raw vs = " ^ catmap "," (fun (n,k,_) -> n ^ "<" ^ si k ^ ">") (fst vs));
-        *)
+        print_endline (id ^", In vs = " ^ catmap "," (fun (n,k,_) -> n ^ "<" ^ si k ^ ">") (fst invs));
+        end;
+*)
         let _,incl_qns,_ = split_dirs [] dirs in
         let vs = List.map (fun (n,i,_) -> n,i) (fst vs) in
         incl_qns,sr,vs
       in
-      List.iter (fun (_,qn) ->
+      List.iter (fun (invs2,qn) ->
+(*
+        print_endline ("INCLUDES " ^ string_of_qualified_name qn ^ ", In vs = " ^ catmap "," (fun (n,k,_) -> n ^ "<" ^ si k ^ ">") (fst invs2));
+*)
+          let rs2 = {rs with open_excludes = (invs,qn)::rs.open_excludes } in
           let {base_sym=j; spec_vs=vs'; sub_ts=ts'},ts'' =
-            try lookup_qn_in_env' state bsym_table env rsground qn
+            try lookup_qn_in_env' state bsym_table env rs qn
             with Not_found -> failwith "QN NOT FOUND"
           in
-            (*
+(*
+            print_endline ("spec_vs=" ^ catmap "," (fun (n,k) -> n ^ "<" ^ si k ^ ">") vs'); 
+            print_endline ("sub_ts=" ^ catmap "," (fun t -> sbt bsym_table t) ts'); 
             print_endline ("BIND types " ^ catmap "," string_of_typecode ts'');
-            *)
+*)
             let mkenv i = mk_bare_env state bsym_table i in
-            let bt t = bind_type' state bsym_table env rs sr t [] mkenv in
+            let args = List.map (fun (n,k,_) -> n,btyp_type_var (k,btyp_type 0)) (fst invs2) in
+            let bt t = bind_type' state bsym_table env rs sr t args mkenv in
             let ts'' = List.map bt ts'' in
             (*
             print_endline ("BOUND types " ^ catmap "," (sbt bsym_table) ts'');
@@ -4835,9 +4856,16 @@ and get_includes state bsym_table rs xs =
       qns
     end
   in
+(*
+print_endline "====================================";
+print_endline "Top level get_includes for some list";
+*)
   let includes = ref [] in
   List.iter (get_includes' includes) xs;
-
+(*
+print_endline "Top level get_includes for some list DONE";
+print_endline "++++++++++++++++++++++++++++++++++++";
+*)
   (* list is unique due to check during construction *)
   !includes
 
@@ -4847,9 +4875,9 @@ and bind_dir
   env rs
   (vs,qn)
 =
-  (*
+(*
   print_endline ("Try to bind dir " ^ string_of_qualified_name qn);
-  *)
+*)
   let nullmap=Hashtbl.create 3 in
   (* cheating stuff to add the type variables to the environment *)
   let cheat_table = Hashtbl.create 7 in
@@ -4872,10 +4900,10 @@ and bind_dir
   (fst vs)
   ;
   let cheat_env = (dummy_bid,"cheat",cheat_table,[],TYP_tuple []) in
+  let rs2 = {rs with open_excludes = (vs,qn)::rs.open_excludes } in
   let {base_sym=i; spec_vs=spec_vs; sub_ts=ts}, ts' =
     try
-      lookup_qn_in_env' state bsym_table env
-      {rs with open_excludes = (vs,qn)::rs.open_excludes }
+      lookup_qn_in_env' state bsym_table env rs
       qn
     with Not_found -> failwith "QN NOT FOUND"
   in
@@ -4892,15 +4920,15 @@ and bind_dir
   assert (List.length ts = 0);
   *)
   let mkenv i = mk_bare_env state bsym_table i in
-  (*
+(*
   print_endline ("Binding ts=" ^ catmap "," string_of_typecode ts');
-  *)
+*)
   let ts' = List.map (fun t ->
     beta_reduce
       state.counter
       bsym_table
       dummy_sr
-      (bind_type' state bsym_table (cheat_env::env) rsground dummy_sr t [] mkenv)
+      (bind_type' state bsym_table (cheat_env::env) rs2 dummy_sr t [] mkenv)
     ) ts' in
   (*
   print_endline ("Ts bound = " ^ catmap "," (sbt bsym_table) ts');
@@ -5020,10 +5048,25 @@ and pub_table_dir state bsym_table env (invs,i,ts) : name_map_t =
 
 
 and get_pub_tables state bsym_table env rs dirs =
+(*
+print_endline "get_pub_tables";
+*)
   let _,includes,_ = split_dirs rs.open_excludes dirs in
+(*
+print_endline "Got includes from dirs, now binding them ..";
+*)
   let xs = uniq_list (List.map (bind_dir state bsym_table env rs) includes) in
+(*
+print_endline "bound the include classes with bind_dir, now getting closure with get_includes";
+*)
   let includes = get_includes state bsym_table rs xs in
+(*
+print_endline "calling pub_table_dir";
+*)
   let tables = List.map (pub_table_dir state bsym_table env ) includes in
+(*
+print_endline "get_pub_tables DONE";
+*)
   tables
 
 and mk_bare_env state bsym_table index =
@@ -5052,17 +5095,17 @@ and merge_directives state bsym_table rs env dirs typeclasses =
       print_endline ("ADD vs=" ^ catmap "," (fun (s,i,_)->s^ "<"^si i^">") (fst vs) ^ " qn=" ^ string_of_qualified_name qn);
       *)
       let u = [bind_dir state bsym_table !env rs (vs,qn)] in
-      (*
+(*
       print_endline "dir bound!";
-      *)
+*)
       let u = get_includes state bsym_table rs u in
-      (*
+(*
       print_endline "includes got, doing pub_table_dir";
-      *)
+*)
       let tables = List.map (pub_table_dir state bsym_table !env ) u in
-      (*
+(*
       print_endline "pub table dir done!";
-      *)
+*)
       List.iter add tables
     end
   in
@@ -5105,9 +5148,7 @@ and merge_directives state bsym_table rs env dirs typeclasses =
  !env
 
 and merge_opens state bsym_table env rs (typeclasses,opens,includes,uses) =
-  (*
   print_endline ("MERGE OPENS ");
-  *)
   let use_map = Hashtbl.create 97 in
   List.iter
   (fun (n,qn) ->
@@ -5132,14 +5173,19 @@ and merge_opens state bsym_table env rs (typeclasses,opens,includes,uses) =
   )
   uses
   ;
+print_endline "Got use_map";
 
   (* convert qualified names to i,ts format *)
   let btypeclasses = List.map (bind_dir state bsym_table env rs) typeclasses in
+print_endline "Bound type classes";
+
   let bopens = List.map (bind_dir state bsym_table env rs) opens in
+print_endline "Bound opens";
 
   (* HERE! *)
 
   let bincludes = List.map (bind_dir state bsym_table env rs) includes in
+print_endline "Bound includes";
 
   (*
   (* HACK to check open typeclass *)
@@ -5156,6 +5202,7 @@ and merge_opens state bsym_table env rs (typeclasses,opens,includes,uses) =
 
   (* add on any inherited modules *)
   let u = get_includes state bsym_table rs u in
+print_endline "Bound includes";
 
   (* convert the i,ts list to a list of lookup tables *)
   let tables = List.map (pub_table_dir state bsym_table env ) u in
@@ -5196,13 +5243,13 @@ and build_env'' state bsym_table rs index : env_t =
   *)
   let typeclasses = List.map (fun qn -> dfltvs,qn) typeclasses in
 
-  (*
-  print_endline ("MERGE DIRECTIVES for " ^ id);
-  *)
+(*
+  print_endline ("MERGE DIRECTIVES for " ^  sym.Flx_sym.id);
+*)
   let env = merge_directives state bsym_table rs env sym.Flx_sym.dirs typeclasses in
-  (*
-  print_endline "Build_env'' complete";
-  *)
+(*
+  print_endline "Build_env'' complete, DIRECTIVES MERGED";
+*)
   env
 
 and inner_build_env state bsym_table rs parent : env_t =

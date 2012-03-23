@@ -18,7 +18,7 @@ SCHEME """
     (let ((r (assoc elt alst)))
     (if r (second r) `(MISMATCHED_BRACKET ,elt ,alst))))
 
-
+  (define (list-mem? item lst) (fold_left (lambda (acc elt)(or acc (eq? elt item))) #f lst))
   ;; name term constructor
   (define (nos x)`(ast_name ,_sr ,x ()))
   (define (noi x)`(ast_name ,_sr ,(symbol->string x) ()))
@@ -99,9 +99,12 @@ SCHEME """
 (define (cal_funkind adjs fk)
   (if (eq? fk 'CFunction)'CFunction
   (if (eq? fk 'Generator)'Generator
-  ;; fk is Function
-  (if (pair? adjs)(first adjs)'Function
-))))
+  (if (list-mem? 'NoInlineFunction adjs)'NoInlineFunction
+  (if (list-mem? 'InlineFunction adjs)'InlineFunction
+  (if (list-mem? 'Ctor adjs)'Ctor
+  (if (list-mem? 'Virtual adjs)'Virtual
+  'Function
+)))))))
 """;
 SCHEME """
 (define (tvfixup_folder vsct vtc)
