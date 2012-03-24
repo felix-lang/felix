@@ -513,6 +513,11 @@ and qualified_name_of_index_with_vs sym_table index =
        * to print its name as a prefix *)
       ""
 
+and string_of_dir_t d = match d with
+| DIR_open (ivs,qn) -> "DIR_open " ^ string_of_qualified_name qn
+| DIR_inject_module (ivs,qn) -> "DIR_inject_module " ^ string_of_qualified_name qn
+| DIR_use (name, qn) -> "DIR_use " ^ name ^"<-"  ^ string_of_qualified_name qn
+
 and qualified_name_of_index' sym_table index =
   let parent, sym = Flx_sym_table.find_with_parent sym_table index in
   begin match parent with
@@ -2360,7 +2365,7 @@ let full_string_of_entry_kind sym_table bsym_table {base_sym=i; spec_vs=vs; sub_
   in
   string_of_symdef sym.Flx_sym.symdef sym.Flx_sym.id sym.Flx_sym.vs ^
   "\n  defined at " ^ Flx_srcref.short_string_of_src sym.Flx_sym.sr ^ "\n  with view" ^
-  " vs=" ^ catmap "," (fun (s,_)->s) vs ^
+  " vs=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") vs ^
   " ts=" ^ catmap "," (sbt bsym_table) ts
 
 
@@ -2418,6 +2423,26 @@ let print_env e =
   in
 
   List.iter print_level e
+
+let print_env_long sym_table bsym_table e =
+  let print_entry k v =
+    print_endline ("EntrySet for " ^ k ^ ":"); print_endline (full_string_of_entry_set sym_table bsym_table v)
+  in
+  let print_table htab =
+    print_endline "--";
+    Hashtbl.iter print_entry htab
+  in
+  let print_level (index,id,htab,htabs,con) =
+    Printf.printf "%s<%s>\n" id (string_of_bid index);
+    print_table htab;
+    print_endline "OPENS:";
+    List.iter print_table htabs;
+    print_endline "ENDOFOPENS";
+    print_endline ("CONSTRAINT: " ^ string_of_typecode con)
+  in
+
+  List.iter print_level e
+
 
 let print_env_short e =
   let print_level (index,id,htab,htabs,con) =

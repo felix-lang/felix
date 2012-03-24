@@ -427,10 +427,12 @@ open class List
       endmatch;
     done
   }
+inherit [T with Str[T]] Str[list[T]];
+inherit [T with Eq[T]] Set[list[T],T];
 
 }
-open [T with Str[T]] Str[list[T]];
-open [T with Eq[T]] Set[list[T],T];
+//open [T with Str[T]] Str[list[T]];
+//open [T with Eq[T]] Set[list[T],T];
 
 // display list as string given element type with str operator
 // elements are separated by a comma and one space
