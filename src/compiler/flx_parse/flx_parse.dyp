@@ -1,6 +1,6 @@
 %mltop {
 open Flx_token
-open Flx_mtypes2
+open Flx_drules
 }
 {
 
@@ -8,13 +8,8 @@ open Flx_mtypes2
 exception EndOfInput
 open Flx_ast
 open Flx_set
-open Flx_typing
-open Flx_typing2
 open Flx_print
-open Flx_charset
 open Flx_exceptions
-open Flx_util
-open Flx_list
 open Ocs_types
 open Sex_types
 open Dyp

@@ -1,19 +1,21 @@
-open Flx_mtypes2
-open Flx_ast
-open Flx_set
-open Flx_typing
-open Flx_typing2
-open Flx_print
-open Flx_exceptions
-open Flx_util
-open Flx_list
+open Lexing
+open Flx_drules
+(* open Flx_print *)
+(* open Flx_exceptions *)
+(* open Flx_util *)
+(* open Flx_list *)
 open Ocs_types
 open Sex_types
 open Dyp
-open Lexing
 open Flx_string
 open Flx_token
 open Flx_parse_ebnf
+
+let catmap sep fn ls = String.concat sep (List.map fn ls)
+
+let uniq_add elt lst =
+  if List.mem elt lst then lst else (elt::lst)
+
 
 let re_expand names re = 
   let map = List.map in
@@ -35,22 +37,11 @@ let re_expand names re =
     | x -> x
   in aux re
 
-let strip_us s =
-  let n = String.length s in
-  let x = Buffer.create n in
-  for i=0 to n - 1 do
-    match s.[i] with
-    | '_' -> ()
-    | c -> Buffer.add_char x c
-  done;
-  Buffer.contents x
-
-
 type action_t = [`Scheme of string | `None]
 type symbol_t = [`Atom of token | `Group of dyalt_t list]
 and dyalt_t = symbol_t list * Flx_srcref.t * action_t * anote_t
 
-let lexeme x = Lexing.lexeme (Dyp.std_lexbuf x)
+let lexeme x = Dyp.lexeme x
 
 let getsr dyp =
   let s = dyp.symbol_start_pos() and e = dyp.symbol_end_pos() in
@@ -62,12 +53,11 @@ let getsr dyp =
     e.pos_cnum - e.pos_bol)
 
 let incr_lineno lexbuf n = 
-  let lexbuf = Dyp.std_lexbuf lexbuf in
   let n = ref n in
-  while !n <> 0 do Lexing.new_line lexbuf; decr n done
+  while !n <> 0 do Dyp.set_newline lexbuf; decr n done
 
 let set_lineno lexbuf n =
-  let lexbuf = Dyp.std_lexbuf lexbuf in
+  let lexbuf = (Dyp.std_lexbuf lexbuf) in 
   let lcp = lexbuf.lex_curr_p in
   lexbuf.lex_curr_p <- { lcp with
     pos_lnum = n;

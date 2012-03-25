@@ -72,4 +72,3 @@ val iter_bids:
   Flx_types.bid_t ->
   unit
 
-module Drules : Map.S with type key = string
