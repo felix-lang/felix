@@ -580,6 +580,7 @@ grabbing_args: while grab == 1 and argno<System::argc do
      LINKER_OUTPUT_FILENAME = arg;
      debugln$ "Set linker output file=" + LINKER_OUTPUT_FILENAME;
      SET_LINKER_OUTPUT = false;
+     ++argno;
      continue grabbing_args;
   done
 
@@ -1064,6 +1065,7 @@ if LINKER_OUTPUT_FILENAME == "" do
     LINKER_OUTPUT_FILENAME = filebase+EXT_EXE;
   done
 done
+LINKER_OUTPUT_FILENAME =  Directory::mk_absolute_filename LINKER_OUTPUT_FILENAME; 
 
 val args = USER_ARGS;
 debugln$ "Target program args = "+args;
@@ -1103,6 +1105,7 @@ if RECOMPILE == 0 and RUNIT == 1 and CLEAR_CACHE == 0 do
       debugln$ "Running dynamically linked binary";
       calpackages();
       cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ LINKER_OUTPUT_FILENAME+" "+args;
+      if STDOUT != "" do cmd=cmd + " > "+STDOUT; done
       debugln$ "Uptodate shared lib: Running command " + cmd;
       pexit(system(cmd));
     else
