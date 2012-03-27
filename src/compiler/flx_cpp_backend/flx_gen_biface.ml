@@ -27,12 +27,7 @@ open Flx_unify
 open Flx_util
 open Flx_gen_helper
 
-
-let gen_biface_header syms bsym_table biface = match biface with
-  | BIFACE_export_python_fun (sr,index, export_name) ->
-     "// PYTHON FUNCTION " ^ export_name ^ " header to go here??\n"
-
-  | BIFACE_export_fun (sr,index, export_name) ->
+let gen_fun_header syms bsym_table kind index export_name =
     let bsym =
       try Flx_bsym_table.find bsym_table index with Not_found ->
         failwith ("[gen_biface_header] Can't find index " ^ string_of_bid index)
@@ -41,7 +36,7 @@ let gen_biface_header syms bsym_table biface = match biface with
     | BBDCL_fun (props,vs,(ps,traint),ret,_) ->
       let display = get_display_list bsym_table index in
       if length display <> 0
-      then clierr sr "Can't export nested function";
+      then clierr (Flx_bsym.sr bsym) ("Can't export nested function " ^ export_name);
 
       let arglist =
         List.map
@@ -49,9 +44,12 @@ let gen_biface_header syms bsym_table biface = match biface with
         ps
       in
       let arglist = "  " ^
-        (if length ps = 0 then "FLX_FPAR_DECL_ONLY"
-        else "FLX_FPAR_DECL\n" ^ cat ",\n  " arglist
-        )
+        match kind with 
+        | `Fun ->
+           (if length ps = 0 then "FLX_FPAR_DECL_ONLY"
+           else "FLX_FPAR_DECL\n" ^ cat ",\n  " arglist
+           )
+        | `Cfun -> cat ",\n  " arglist
       in
       let name, rettypename =
         match ret with
@@ -67,24 +65,33 @@ let gen_biface_header syms bsym_table biface = match biface with
     | _ -> failwith "Not implemented: export non-function/procedure"
     end
 
+
+let gen_biface_header syms bsym_table biface = match biface with
+  | BIFACE_export_python_fun (sr,index, export_name) ->
+     "// PYTHON FUNCTION " ^ export_name ^ " header to go here??\n"
+
+  | BIFACE_export_fun (sr,index, export_name) ->
+    gen_fun_header syms bsym_table `Fun index export_name
+
+  | BIFACE_export_cfun (sr,index, export_name) ->
+    gen_fun_header syms bsym_table `Cfun index export_name
+
   | BIFACE_export_type (sr, typ, export_name) ->
     "//EXPORT type " ^ sbt bsym_table typ ^ " as " ^ export_name  ^ "\n" ^
     "typedef " ^ cpp_type_classname syms bsym_table typ ^ " " ^ export_name ^ "_class;\n" ^
     "typedef " ^ cpp_typename syms bsym_table typ ^ " " ^ export_name ^ ";\n"
 
-let gen_biface_body syms bsym_table biface = match biface with
-  | BIFACE_export_python_fun (sr,index, export_name) ->
-     "// PYTHON FUNCTION " ^ export_name ^ " body to go here??\n"
 
-  | BIFACE_export_fun (sr,index, export_name) ->
+let gen_fun_body syms bsym_table kind index export_name =
     let bsym =
       try Flx_bsym_table.find bsym_table index with Not_found ->
         failwith ("[gen_biface_body] Can't find index " ^ string_of_bid index)
     in
+    let sr = Flx_bsym.sr bsym in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,(ps,traint),BTYP_void,_) ->
       if length vs <> 0
-      then clierr (Flx_bsym.sr bsym) ("Can't export generic procedure " ^ Flx_bsym.id bsym)
+      then clierr sr ("Can't export generic procedure " ^ Flx_bsym.id bsym)
       ;
       let display = get_display_list bsym_table index in
       if length display <> 0
@@ -106,9 +113,12 @@ let gen_biface_body syms bsym_table biface = match biface with
         ps
       in
       let strparams = "  " ^
-        (if length params = 0 then "FLX_FPAR_DECL_ONLY"
-        else "FLX_FPAR_DECL\n  " ^ cat ",\n  " params
-        )
+        match kind with
+        | `Fun ->
+          (if length params = 0 then "FLX_FPAR_DECL_ONLY"
+          else "FLX_FPAR_DECL\n  " ^ cat ",\n  " params
+          )
+        | `Cfun -> cat ",\n " params
       in
       let class_name = cpp_instance_name syms bsym_table index [] in
       let strargs =
@@ -143,9 +153,14 @@ let gen_biface_body syms bsym_table biface = match biface with
             "  " ^ class_name ^"(" ^
             (
               if mem `Requires_ptf props then
-                if length args = 0
-                then "FLX_APAR_PASS_ONLY "
-                else "FLX_APAR_PASS "
+                begin match kind with
+                | `Fun ->
+                  if length args = 0
+                  then "FLX_APAR_PASS_ONLY "
+                  else "FLX_APAR_PASS "
+                | `Cfun -> 
+                   clierr (Flx_bsym.sr bsym) ("Attempt to export procedure requiring thread frame with C interface: "^ Flx_bsym.id bsym)
+                end
               else ""
             )
             ^
@@ -180,9 +195,12 @@ let gen_biface_body syms bsym_table biface = match biface with
         ps
       in
       let arglist = "  " ^
-        (if length ps = 0 then "FLX_FPAR_DECL_ONLY"
-        else "FLX_FPAR_DECL\n  " ^ cat ",\n  " arglist
-        )
+        match kind with
+        | `Fun ->
+          (if length ps = 0 then "FLX_FPAR_DECL_ONLY"
+          else "FLX_FPAR_DECL\n  " ^ cat ",\n  " arglist
+          )
+        | `Cfun ->  cat ",\n " arglist
       in
       (*
       if mem `Stackable props then print_endline ("Stackable " ^ export_name);
@@ -214,6 +232,16 @@ let gen_biface_body syms bsym_table biface = match biface with
 
     | _ -> failwith "Not implemented: export non-function/procedure"
     end
+
+let gen_biface_body syms bsym_table biface = match biface with
+  | BIFACE_export_python_fun (sr,index, export_name) ->
+     "// PYTHON FUNCTION " ^ export_name ^ " body to go here??\n"
+
+  | BIFACE_export_fun (sr,index, export_name) ->
+    gen_fun_body syms bsym_table `Fun index export_name
+
+  | BIFACE_export_cfun (sr,index, export_name) ->
+    gen_fun_body syms bsym_table `Cfun index export_name
 
   | BIFACE_export_type _ -> ""
 

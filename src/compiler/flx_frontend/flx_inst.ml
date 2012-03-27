@@ -543,6 +543,7 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
   iter
   (function
     | BIFACE_export_python_fun (_,x,_)
+    | BIFACE_export_cfun (_,x,_)
     | BIFACE_export_fun (_,x,_) ->
       let bsym = Flx_bsym_table.find bsym_table x in
       begin match Flx_bsym.bbdcl bsym with

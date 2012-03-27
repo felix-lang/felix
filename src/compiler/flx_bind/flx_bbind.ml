@@ -881,6 +881,22 @@ let bind_interface (state:bbind_state_t) bsym_table = function
         string_of_suffixed_name sn
       )
 
+  | sr, IFACE_export_cfun (sn, cpp_name), parent ->
+      let env = Flx_lookup.build_env state.lookup_state bsym_table parent in
+      let index,ts = Flx_lookup.lookup_sn_in_env
+        state.lookup_state
+        bsym_table
+        env
+        sn
+      in
+      if ts = [] then
+        BIFACE_export_cfun (sr,index, cpp_name)
+      else clierr sr
+      (
+        "Can't export generic entity " ^
+        string_of_suffixed_name sn
+      )
+
   | sr, IFACE_export_python_fun (sn, cpp_name), parent ->
       let env = Flx_lookup.build_env state.lookup_state bsym_table parent in
       let index,ts =

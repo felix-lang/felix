@@ -792,6 +792,13 @@ and xstatement_t sr x : statement_t =
     in
     STMT_export_fun  (xsr sr, xsn sn, s)
 
+  | Lst [Id "ast_export_cfun"; sr; sn; Str s] ->
+    let xsn x = match suffixed_name_of_expr (ex x) with
+    | Some x -> x
+    | None -> err x "suffixed_name_t"
+    in
+    STMT_export_cfun  (xsr sr, xsn sn, s)
+
   | Lst [Id "ast_export_python_fun"; sr; sn; Str s] ->
     let xsn x = match suffixed_name_of_expr (ex x) with
     | Some x -> x

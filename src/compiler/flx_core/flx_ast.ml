@@ -558,6 +558,7 @@ and statement_t =
   | STMT_noreturn_code of Flx_srcref.t * Flx_code_spec.t
 
   | STMT_export_fun of Flx_srcref.t * suffixed_name_t * string
+  | STMT_export_cfun of Flx_srcref.t * suffixed_name_t * string
   | STMT_export_python_fun of Flx_srcref.t * suffixed_name_t * string
   | STMT_export_type of Flx_srcref.t * typecode_t * string
 
@@ -763,6 +764,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_instance (s,_,_,_)
   | STMT_untyped_module (s,_,_,_)
   | STMT_export_fun (s,_,_)
+  | STMT_export_cfun (s,_,_)
   | STMT_export_python_fun (s,_,_)
   | STMT_export_type (s,_,_)
   | STMT_open (s,_,_)

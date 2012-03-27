@@ -106,6 +106,7 @@ let find_roots syms bsym_table root bifaces =
   List.iter begin function
   | BIFACE_export_python_fun (_,x,_)
   | BIFACE_export_fun (_,x,_) -> roots := BidSet.add x !roots
+  | BIFACE_export_cfun (_,x,_) -> roots := BidSet.add x !roots
   | BIFACE_export_type (_,t,_) -> uses_btype roots bsym_table true t
   end bifaces;
 

@@ -22,6 +22,9 @@ let remap_biface offset biface =
   | BIFACE_export_fun (sr, bid, name) ->
       BIFACE_export_fun (sr, remap_bid offset bid, name)
 
+  | BIFACE_export_cfun (sr, bid, name) ->
+      BIFACE_export_cfun (sr, remap_bid offset bid, name)
+
   | BIFACE_export_python_fun (sr, bid, name) ->
       BIFACE_export_python_fun (sr, remap_bid offset bid, name)
 

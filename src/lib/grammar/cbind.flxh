@@ -3,6 +3,8 @@ syntax cbind {
 
   tstatement := "export" "fun" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
+  tstatement := "export" "cfun" ssuffixed_name "as" sstring ";" =>#
+    "`(ast_export_cfun ,_sr ,_3 ,_5)";
   tstatement := "export" "proc" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
   tstatement := "export" "type" "(" sexpr ")" "as" sstring ";" =>#

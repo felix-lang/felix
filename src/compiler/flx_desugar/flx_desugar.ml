@@ -918,6 +918,9 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   | STMT_export_fun (sr,name,cpp_name) ->
     [Iface (sr, IFACE_export_fun (name, cpp_name))]
 
+  | STMT_export_cfun (sr,name,cpp_name) ->
+    [Iface (sr, IFACE_export_cfun (name, cpp_name))]
+
   | STMT_export_type (sr,typ,cpp_name) ->
     [Iface (sr, IFACE_export_type (typ, cpp_name))]
 

@@ -580,7 +580,6 @@ grabbing_args: while grab == 1 and argno<System::argc do
      LINKER_OUTPUT_FILENAME = arg;
      debugln$ "Set linker output file=" + LINKER_OUTPUT_FILENAME;
      SET_LINKER_OUTPUT = false;
-     ++argno;
      continue grabbing_args;
   done
 

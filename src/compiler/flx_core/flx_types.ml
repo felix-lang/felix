@@ -102,6 +102,7 @@ and sdcl_t = Flx_srcref.t * Flx_id.t * bid_t option * access_t * vs_list_t * dcl
 
 and iface_t =
   | IFACE_export_fun of suffixed_name_t * string
+  | IFACE_export_cfun of suffixed_name_t * string
   | IFACE_export_python_fun of suffixed_name_t * string
   | IFACE_export_type of typecode_t * string
 

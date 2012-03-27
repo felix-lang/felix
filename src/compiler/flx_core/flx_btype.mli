@@ -60,6 +60,7 @@ type name_map_t = (string, entry_set_t) Hashtbl.t
 
 type biface_t =
   | BIFACE_export_fun of Flx_srcref.t * bid_t * string
+  | BIFACE_export_cfun of Flx_srcref.t * bid_t * string
   | BIFACE_export_python_fun of Flx_srcref.t * bid_t * string
   | BIFACE_export_type of Flx_srcref.t * t * string
 
