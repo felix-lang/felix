@@ -1,72 +1,61 @@
-@h1 Type classes
-The {typeclass} and {instance} is the primary organisation tool for Felix
-libraries that allow easy use and extension. The notion is taken
-from Haskell, generalised to support multiple type variables as in GHC.
+@h1 Machine Addresses
+Felix provides some types which are used to manipulate
+machine addresses and memory at a low level.
 
-Here is a simple typeclass and instance:
-@felix
-typeclass X[T] {
-  virtual fun f: T -> T;
-  fun g(x:T)=> f (f x);
-}
+The type {address} is basically a C {void*}.
+However, you can add or subtract an integer from an address,
+as if it were actually a C {unsigned char*}, and of course
+you can also just increment or decrement an addess.
 
-instance X[int] {
-  fun f(x:int)=> x + 1;
-}
+Addition of an integer to an address is modular, that is,
+the addition may cause wrap around like an unsigned integer type.
 
-open X[int];
-
-println$ g x;
+Addresses are totally ordered and support the usual comparisons
+however addition is not confluent with comparisons:
+@pre
+x > y does not imply x + 1 > y + 1
 @
 
-In this code {virtual} functions are ones which may be overridden in 
-instances. {virtual} functions may have definitions, which are used
-in any instance which does not define an override. Non-virtual
-functions cannot be overriden: instead they're dependent on the
-virtual functions only.
+You can also subtract two addresses, the result is of type {ptrdiff}.
+This is a signed integer type with the same number of values as
+there are addresses. If the addresses are close and the first address
+is larger than the second the result is positive, negative if they're
+ordered the other way. If the addresses are a long way apart, in particular
+more than half the total number of addres value distant, then the difference
+goes through the maximum value to the zero value and the sign is the
+opposite of what is expected. In particular the absolute value
+of the difference is the shortest distance between the addresses
+around the address circle.
 
-We define an instance of {X} for type {int} and then call the
-non-virtual function {g} for specialisation {T -> int}, which 
-in turn calls {f} for that specialisation too.
-
-Finally we open the typeclass for the specialisation {T -> int}.
-In effect this just makes {f of (int)} and {g of (int)} available.
-
-@h2 Orders
-We will cite one of the most important typeclasses in Felix:
-
-@felix /lib/std/order.flx
-
-This library file defines the concept of equality, total ordering,
-and the core operations of integral kinds: increment and decrement.
-
-The code shows clearly the use of axioms to express semantics,
-for example we see equality must be an equivalence relation
-(reflexive, symmetric and transitive).
-
-Also we note that the total order concept is derived from equality
-concept. When you open a {Tord} you get the methods of {Eq} as well.
-
-@h2 Relation to C++
-Type classes actually exist in much the same form in C++.
-If you define a template class with all static functions,
-then those functions without definitions are Felix virtuals,
-those with definitions are either non-virtuals or virtuals
-with defaults (C++ doesn't distinguish these two cases).
-
-In C++, an instance is just a partical or full specialisation
-of the class, which in turn may include some or all of the
-functions. It's acceptable in both C++ and Felix to leave out
-definitions for functions you do not use.
-
-The principal difference between Felix and C++ is that the C++
-type system cannot support type recursion and hence is effectively
-useless: you cannot make a combinatorial definition of a polymorphic
-linked list in C++, in Felix it is a one liner:
-@felix
-union list[T] = | Empty | Cons of T * list[T];
+Therefore, the difference operation is also not confluent with
+comparisons, that is, 
+@pre
+x &lt; y does not imply y - x &gt; 0
 @
-using Felix's built in tuple and union constructors.
-The equivalent templates are easy to define in C++:
-the problem is the {list[T]} at the end of the definition.
+In particular if {x} is very small, and {y} is very big then 
+whilst mathematically {y-x &gt; 0}, the {ptrdiff} will instead be a
+small negative value.
 
+To solve this problem Felix also provides two more types: 
+{intptr} and {uintptr} which support the same number of values
+as an address: {intptr} is identical to {ptrdiff} whereas
+{uintptr} is unsigned.
+
+Casting a pointer difference to {uintptr} is confluent with comparisons.
+If {y &gt; x} then {(y-x).uintptr} is precisely the mathematical value
+of the difference. If the pointers are reversed the value is the mathematical
+result (which is negative) added to the number of values (one more than the
+maximum).
+
+Addresses cannot be dereferenced.
+
+An address can be obtained from any pointer or integer.
+You can also cast an address to any pointer type, the onus is on
+you, the programmer, to ensure the address actually pointers to
+store containing a value of that type.
+
+The type
+@felix
+  &byte
+@
+supports the same operations as an address except it can be dereferenced.

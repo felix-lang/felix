@@ -1,67 +1,28 @@
-@h1 Callbacks
-A typical use of a C function is for callbacks.
-Unfortunately, C callbacks are universally ill-typed.
-This can't be tolerated in Felix, and in this case
-there's no way to "cast away" the problem.
-
-Here's how callbacks work. A callback is a function
-like this:
+@h1 Tuples
+We can combine several values in a comma separated list to form tuple.
 @felix
-  void f(int x, void *client_data);
+  1,2.9,"Hello"
 @
-It is registered by a function like this:
+The type of this value is:
 @felix
-  void register_callback(event e, void (*f_t)(int, void*), void *client_data);
+  int * double * string
 @
-Now, what we want to do here is use a felix function for the callback:
+You can retrive a value from a tuple with a integral literal:
 @felix
-proc f(x:int){ println$ "Called back with " + str x; }
+  val x = 1,2.9,"Hello";
+  println x.0; // 1
+  println x.1; // 2.9
+  println x.2; // "Hello"
 @
-To do this we generate a C function:
+Note the field numbers are zero origin in keeping with C conventions.
+There are no tuples with one component. 
+
+@h2 Unit
+However, there is a tuple with no components with a single unique value:
 @felix
-  void wrap_f(int x, void *client_data)
-  {
-    f_t p = (f_t)client_data;
-    p->call(x);
-  }
+  ()
 @
-This casts the {client_data} to a pointer to the C++ class
-of the Felix function, then calls it with the proper arguments.
-Now, to register it, something like this:
-@felix
-register_callback(event, wrap_f, (void*)(new f));
-@
-To generate the wrapper all you need to do is label
-a function or procedure a callback:
-@felix
-callback f(x:int, f){ println$ "callback " + str x; }
-@
-Here's a complete example
-@felix
-callback fun f: int * f -> int;
+the type of which is called {unit} type and can also
+be designated by {1}.
 
-fun g(x:int)=> x + x + 1;
-
-print$ f(2, g); endl;
-
-callback proc p: int * p;
-
-proc q(x:int){ print x; endl; }
-
-p(31,q);
-
-typedef cf = int --> int;
-
-proc h(y:cf, x:int) {
-  print$ y x; endl;
-}
-
-body """
-  int yyy(int x) { return x + 3; }
-""";
-
-const yyy: int --> int;
-
-h(yyy,2);
-@
 

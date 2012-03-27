@@ -1,141 +1,72 @@
-@h1 String Literals
-Felix provides 2 kinds of strings: {string}, and {ustring}.
-The most commonly used string is {string}, it is an 8 bit clean string
-implement by the C++ {::std::basic_string&lt;char&gt;}.
+@h1 Type classes
+The {typeclass} and {instance} is the primary organisation tool for Felix
+libraries that allow easy use and extension. The notion is taken
+from Haskell, generalised to support multiple type variables as in GHC.
 
-The {ustring} type is based on ISO10646/Unicode character set with
-code points represented by type {uint32}. As this type currently
-has limited functionality we will focus on the {string} type.
-
-@h2 String literals
-Felix provides string literals modelled on Python's system.
-
-@h3 Basic quotation
-Strings can use either single {'} quotes or double {"} quotes,
-such strings must not span lines (i.e. they may not contain
-literal newline characters). Single quoted string can contain
-double quotes and double quoted strings can contain single quotes:
+Here is a simple typeclass and instance:
 @felix
-println "Hello";
-println 'Hello';
-println "'ello world";
-println 'Say "Hello World"';
+typeclass X[T] {
+  virtual fun f: T -> T;
+  fun g(x:T)=> f (f x);
+}
+
+instance X[int] {
+  fun f(x:int)=> x + 1;
+}
+
+open X[int];
+
+println$ g x;
 @
-@h3 Extended quotation: Preformatted text
-To span many lines you can use triple quotes:
+
+In this code {virtual} functions are ones which may be overridden in 
+instances. {virtual} functions may have definitions, which are used
+in any instance which does not define an override. Non-virtual
+functions cannot be overriden: instead they're dependent on the
+virtual functions only.
+
+We define an instance of {X} for type {int} and then call the
+non-virtual function {g} for specialisation {T -> int}, which 
+in turn calls {f} for that specialisation too.
+
+Finally we open the typeclass for the specialisation {T -> int}.
+In effect this just makes {f of (int)} and {g of (int)} available.
+
+@h2 Orders
+We will cite one of the most important typeclasses in Felix:
+
+@@felix /lib/std/order.flx
+
+This library file defines the concept of equality, total ordering,
+and the core operations of integral kinds: increment and decrement.
+
+The code shows clearly the use of axioms to express semantics,
+for example we see equality must be an equivalence relation
+(reflexive, symmetric and transitive).
+
+Also we note that the total order concept is derived from equality
+concept. When you open a {Tord} you get the methods of {Eq} as well.
+
+@h2 Relation to C++
+Type classes actually exist in much the same form in C++.
+If you define a template class with all static functions,
+then those functions without definitions are Felix virtuals,
+those with definitions are either non-virtuals or virtuals
+with defaults (C++ doesn't distinguish these two cases).
+
+In C++, an instance is just a partical or full specialisation
+of the class, which in turn may include some or all of the
+functions. It's acceptable in both C++ and Felix to leave out
+definitions for functions you do not use.
+
+The principal difference between Felix and C++ is that the C++
+type system cannot support type recursion and hence is effectively
+useless: you cannot make a combinatorial definition of a polymorphic
+linked list in C++, in Felix it is a one liner:
 @felix
-println 
-"""
-  This is a preformatted text,
-  It allows another line to be next,
-  Leading spaces are kept,
-  "Confusing", he wept
-  Programming languages must be hex'd.
-""";
-
-println '''Tripled single quotes are 
-allowed too";
+union list[T] = | Empty | Cons of T * list[T];
 @
-With preformatted text the initial newline is kept too.
-
-@h3 Character Escapes
-Strings using basic or extended quotation can have
-certain special characters embedded in them using
-slosh (backslash) escapes. The standard escapes
-are shown below. The encoding is from the old ASCII
-character set. The so-called "control characters" were
-used in the old days to control an electric typewritter.
-@pre
-  Escape            Replacement   Old meaning
-  --------------------------------------------------
-  \a                char 7        bell
-  \b                char 8        BS: backspace 
-  \t                char 9        HT: horizontal tab
-  \n                char 10       LF: linefeed (newline)
-  \v                char 11       VT: vertical tab
-  \f                char 12       FF: form feed
-  \r                char 13       CR: carriage return
-@
-The following escapes are used to control quoting:
-@pre
-  Escape            Replacement   
-  -----------------------------
-  \'                '            
-  \"                "           
-  \\                \          
-@
-In addition, slosh space normally emits a space.
-However slosh followed by 0 or more spaces followed
-by a newline causes all the spaces and the newline
-to be elided, effectively concatenating two lines of text.
-For example
-@felix
-println """\
-Hello \ 
-World\
-""";
-@
-prints the hello world message on a single line. This is similar
-to the usual C and Unix end of line processing <em>except</em>
-extra spaces are allowed before the newline. The reason is that
-it is hard, if not impossible, to actually see if the character
-following the slosh is a newline or some spaces followed by a newline.
-The unix and C rules are two fragile for safe use.
-
-@String folding
-There's another way to get nice formatted text: string folding:
-@felix
-println$
-  "This is a preformatted text,\n"
-  "It allows another line to be next,\n"
-  "Leading spaces are kept,\n"
-  '"Confusing", he wept\n'
-  "Programming languages must be hex'd.\n"
-;
-@ 
-Here we manually inserted the line ends. Incidentally such folding
-is not just a pre-processing step. When one string expression is
-applied to another the result is the concatenation of the strings.
-However if literals are used, the concatenation is done by the parser
-instead of at run time.
-
-@h3 Numeric Escapes
-There is another form of escaping where one or more characters are
-inserted into a string based on a numeric code. These are:
-@pre
-  Escape            Scan  Chars      Name
-  --------------------------------------------------
-  \oOOO             0-3     Octal    Octal Escape
-  \dDDD             0-3     Decimal  Decimal Escape
-  \xHH              0-2     Hex      Hex Escape
-  \uHHHH            0-4     Hex      Short unicode escape 
-  \UHHHHHHH         0-8     Hex      Long unicode escape
-@
-The rules are a bit tricky. All these escapes scan for between
-0 and N characters, as indicated in the scan column. The scan
-never exceeds the maximum number of characters. It is also stopped
-when a character is not in the indicated character set, for example
-{\xx} will emit a code {0} or {nul} character followed by an {x}.
-
-The unicode escapes emit a stream of characters, namely the
-decoded code point encoded by {utf-8}. Thus, if you consider
-your 8 bit clean strings as containing {utf-8} encoded unicode
-you can use these escapes. Note that {\xFF} is quite distinct
-from {\uFF} since the latter emits a single character with 
-code point 255, whereas the former emits two characters
-being the {utf-8} representation of code point 255.
-
-@h3 Other escapes
-All other escapes are left intact, that is, including the
-slosh, for example {\c} translates to {\c} and not just {c}.
-
-@h2 Raw strings: escaping escapes
-It's sometimes annoying to have to quote or escape escapes.
-This is particularly true with regular expression strings
-which already contain a lot of sloshes.
-
-So, following Python you can have raw strings by using an {r} or {R} prefix:
-@felix
-  r'\(.*\)' // easier than '\\(.*\\)'
-@
+using Felix's built in tuple and union constructors.
+The equivalent templates are easy to define in C++:
+the problem is the {list[T]} at the end of the definition.
 

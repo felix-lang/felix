@@ -7,7 +7,6 @@ open Flx_drules
 (* parser header *)
 exception EndOfInput
 open Flx_ast
-open Flx_set
 open Flx_print
 open Flx_exceptions
 open Ocs_types
@@ -17,6 +16,14 @@ open Lexing
 open Flx_string
 open Flx_parse_helper
 
+module DStringSet = Set.Make (
+  struct
+    type t = string
+    let compare = compare
+  end)
+
+let string_set_of_list ls =
+  List.fold_left (fun set elt -> DStringSet.add elt set) DStringSet.empty ls
 (*
 let dypgen_choose_token = `all
 *)
@@ -101,8 +108,8 @@ let tran_cls_dssls drules installed_dssls dssls =
   (* Calculate the transitive closure of DSSL's required. *)
   let rec cal_install (visited, to_install) dssl =
     (* Ignore dssls we've already visited. *)
-    if StringSet.mem dssl visited then (visited, to_install) else
-    let visited = StringSet.add dssl visited in
+    if DStringSet.mem dssl visited then (visited, to_install) else
+    let visited = DStringSet.add dssl visited in
 
     let drule =
       try Drules.find dssl drules
@@ -123,7 +130,7 @@ let tran_cls_dssls drules installed_dssls dssls =
    * installed dssls as already visited. *)
   let _, to_install = List.fold_left
     cal_install
-    (StringSet.of_list installed_dssls, [])
+    (string_set_of_list installed_dssls, [])
     dssls
   in
 

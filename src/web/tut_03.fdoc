@@ -1,50 +1,23 @@
-@h1 Application and call operators
-
-@h2 Operator whitespace 
-You may have noticed that you can write:
+@h1 Simple procedure definitions
+It is also possible to defined new commands,
+these are called procedures. Procedures do not return
+a value, and may and generally should have side-effects.
+Here is a simple example:
 @felix
-fflush stdout;
+proc prompt (x:string) {
+  write$ stdout, x; 
+  fflush stdout;
+}
+prompt "Input number :";
+println$ readln$ stdin;
 @
-which is equivalent to
-@felix
-fflush (stdout);
-@
-Parentheses are not required for function application or procedure
-calls, just for grouping. 
-It's fun to call juxtaposition "operator whitspace".
-
-@h2 Operator dot
-Those with an OO background may find this more pleasing:
-@felix
-val name = stdin.readln.strip;
-@
-It means exactly the same as before, the operator {.} is nothing
-more than reverse application.
-
-@h2 Operator dollar
-And those with a Haskell background will readily understand that in
-@felix
-val name = strip $ readln $ stdin;
-@
-the {$} is just a low precedence forward application, so 
-it is also the same as before.
-
-@h2 Operator hash 
-Finally if a function takes only a unit argument:
-you can use the high precedence prefix {#} operator to call it:
-@felix
-fun pi() = 22.0/7.0;
-println$ "Pi=" + str #pi;
-@
-
-[See next chapter for explanation of {unit} type]
-
-@h2 Implied procedure call 
-And there's a special case for procedures with no arguments:
-@felix
-proc doit() { println "Done"; }
-doit;
-@
-allowing you to omit the unit argument.
+Here:
+<ul>
+<li> The {proc} binder introduces a procedure.</li>
+<li> The procedure {prompt} issues a prompt on {stdout} with
+a {fflush} to force the output to the device.</li>
+<li> Procedures have side effects, here it is I/O.</li>
+<li> Procedures cannot return values </li>
+</ul>
 
 

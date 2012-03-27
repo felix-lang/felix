@@ -1,83 +1,85 @@
-@h1 Floating Point Reals 
-There are 3 floating point real types: {float}, {double}, and {long double}
-real and complex numbers.  All support these base functions:
-Felix provides 3 floating point types.
-@pre
-  Felix name     C name       Suffix
-  ----------------------------------
-  float         float         f
-  double        double        d (default)
-  ldouble       long double   l
-@
-Floating literals roughly follow ISO C99, except underscores are allowed between digits.
-The mantissa radix can either be decimal (default) or hexadecimal with a {0x} or {0X} prefix.
-The exponent is always decimal radix but can either be a power of 10 with an {E} or {e} separator
-or binary, with a {P} or {p} separator.
-
-There is also an additional constraint: decimal radix floating literals
-which include a decimal point, must include at least one digit
-before and after the decimal point.
- 
-@h3 Exact rule for literals
+@h1 Type Constraints
+Felix provides a simple system of type constraints.
+The need for type constraints arose when binding C:
 @felix
-  let decimal_string = digit (underscore? digit) *
-  let hexadecimal_string = hexdigit (underscore? hexdigit) *
+type int = "int";
+type long = "long";
+fun add: int * int -> int = "$1+$2";
+fun add: long * long -> long = "$1+$2";
+@
+C has a lot of integer types and writing out all the operators
+for all the types is boring, error prone, and slows down compilation.
+If you also wanted to allow mixed operators you'd need to add:
+@felix
+fun add: int * long -> long = "$1+$2";
+fun add: long * int -> long = "$1+$2";
+@
+and you can see we would rapidly get into an untenable combinatorial
+explosion.
 
-  let decimal_fractional_constant =
-    decimal_string '.' decimal_string?
+To solve the problem we use type constraints.
 
-  let hexadecimal_fractional_constant =
-    ("0x" |"0X")
-    (hexadecimal_string '.' hexadecimal_string?
-    | '.' hexadecimal_string) /* leading . allowed here because of prefix */
+First we introduce a construction to make a set of types:
+@felix
+typedef integers = typesetof(int, long);
+@
+Now we write polymorphic functions with type constraints:
+@felix
+fun add[I in integers]: I * I -> I = "$1+$2";
+@
+Here the type variable {I} may only be {int} or {long}.
+If you wanted to support mixed addition:
+@felix
+fun add[I in Integers, J in Integers]: I * J -> arithmax (I,J) = "$1+$2";
+@
+Note carefully the difference between these two functions:
+in the first function {I} is set to either {int} or {long}
+and so only two {int}s or two {long}s can be added.
 
-  let decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string
-  let binary_exponent = ('P'|'p') ('+'|'-')? decimal_string
+In the second case, {I} and {J} are set independently
+to either {int} or {long} which allows any combination 
+to be added.
 
-  let floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd'
-  let floating_literal =
-    (
-      decimal_fractional_constant decimal_exponent? |
-      hexadecimal_fractional_constant binary_exponent?
-    )
-    floating_suffix?
+There is a shorthand for the second formulation:
+@felix
+fun add: !integers * !integers -> int = "(int)($1+$2)";
 @
 
-@h2 Real Functions
-Felix provides these base functions:
-@pre
-  neg: t -> t;
-  add: t * t -> t;
-  sub: t * t -> t;
-  mul: t * t -> t;
-  div: t * t -> t;
-@
-and these trigonometric functions:
-@pre
-  sin: t -> t;
-  cos: t -> t;
-  tan: t -> t;
-  asin: t -> t;
-  acos: t -> t;
-  atan: t -> t;
-  sinh: t -> t;
-  cosh: t -> t;
-  tanh: t -> t;
-  asinh: t -> t;
-  acosh: t -> t;
-  atanh: t -> t;
-  exp: t -> t;
-  log: t -> t;
-  pow: t * t -> t;
+but note the downside: lacking names for the type variables we must
+return a fixed type. This notation, however, if exceptionally useful
+when binding external C libraries:
+@felix
+header "int f(int, int);";
+fun f: !ints * !ints -> int" = "f($1, $2)";
 @
 
-In addition to the trigonometric functions, reals support these functions:
-@pre
-  log10: t -> t;
-  abs: t -> t;
-  sqrt: t -> t;
-  ceil: t -> t;
-  floor: t -> t;
-  trunc: t -> t;
+The reason this is <em>so</em> useful is that if we just lifted the
+signature of {f} from C, we'd be ignoring the fact that the C programmer
+has automatic conversions and can call {f(42L, 23u)}, which would
+fail in Felix because it has no automatic conversions. The user
+would have to cast every argument to exactly the right type which is
+not practical. By using constrained polymorphism, we can make
+all the calls that work in C work in Felix, and by using the shorthand
+notation the overhead specifying the function is minimal.
+
+When Felix performs overload resolution, initially candidates are found
+without considering type constraints; that is, as if the type variables
+were able to bind to any type.
+
+Then, the type constraints are checked and candidates failing to meet 
+the constraints are rejected. For example:
+@felix
+fun f[T in ints]: T -> T = "$1+1";
+fun f[T in floats]: T -> T = "$1+2";
+println$ (f 1.2), f 1;
 @
+Type sets also support the set union operator:
+@felix
+typedef sints = fast_sints || exact_sints;
+@
+Note that the typesets {ints} and {floats}, along with some other
+basic type sets, are defined in the standard library: 
+
+@felix ../lib/std/ctypesets.flx
+
 

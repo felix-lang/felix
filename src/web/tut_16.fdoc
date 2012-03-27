@@ -1,85 +1,95 @@
-@h1 Type Constraints
-Felix provides a simple system of type constraints.
-The need for type constraints arose when binding C:
+@h1 Arrays
+@h2 Array Values
+When you write a tuple like this:
 @felix
-type int = "int";
-type long = "long";
-fun add: int * int -> int = "$1+$2";
-fun add: long * long -> long = "$1+$2";
+  val x = 1,2,3,4,5;
 @
-C has a lot of integer types and writing out all the operators
-for all the types is boring, error prone, and slows down compilation.
-If you also wanted to allow mixed operators you'd need to add:
+where all the components have the same type, it is called an 
+array. A special notation may be used for this array type:
 @felix
-fun add: int * long -> long = "$1+$2";
-fun add: long * int -> long = "$1+$2";
+  int^5
 @
-and you can see we would rapidly get into an untenable combinatorial
-explosion.
-
-To solve the problem we use type constraints.
-
-First we introduce a construction to make a set of types:
+that is, int multipled by itself 5 times: this type is exactly
+the same (not equivalent or isomorphic but exactly the same) as:
 @felix
-typedef integers = typesetof(int, long);
+  int * int * int * int * int
 @
-Now we write polymorphic functions with type constraints:
+There is also an alias in the library which can be used:
 @felix
-fun add[I in integers]: I * I -> I = "$1+$2";
+  array[int,5]
 @
-Here the type variable {I} may only be {int} or {long}.
-If you wanted to support mixed addition:
+You should note that {int^1} is exactly the same as {int}:
+it is technically not a tuple.
+
+This kind of array is a first class value, it is <em>not an object</em>.
+
+Read the library code for <a href='/lib/std/array.flx'> array</a>.
+
+@h2 Carray
+A {carray} is your traditional C array: it has a bounded length,
+but the bound is unknown to the system: the client programmer must
+keep track of the bound manually.
+
+The type {carray[T]} is just an alias for {&amp;T}, a pointer to {T}.
+Generally {carray} is unsafe and should be avoided but it is
+essential for C interfacing so we had to put it in.
+
+Read the library code for <a href='/lib/std/carray.flx'>carray</a>.
+
+@h2 Varray and Darray
+Felix provides two variable length array objects called {varray} and {darray}
+in the library. A {varray} is a bounded variable length array, they're 
+good for buffers, but otherwise not use much because of the bound.
+{darray} is unbounded and typically just as efficient; it is implemented
+with {varray}, which is the main reason {varray} exists.
+
+@h3 Varray
+A {varray} is typically constructed from an {array}, you can use get and
+set functions to store a value at a particular index or retrieve it:
 @felix
-fun add[I in Integers, J in Integers]: I * J -> arithmax (I,J) = "$1+$2";
+val a = varray (1,2,3,4,5);
+set (a, 2, 99);     // store 99 in slot index 2 (the third slot)
+println$ a;         // array(1,2,99,3,4,5)
+println$ get(a,2);  // 99
 @
-Note carefully the difference between these two functions:
-in the first function {I} is set to either {int} or {long}
-and so only two {int}s or two {long}s can be added.
 
-In the second case, {I} and {J} are set independently
-to either {int} or {long} which allows any combination 
-to be added.
-
-There is a shorthand for the second formulation:
+A {varray} can also be constructed with a fixed bound and completely filled
+with a single value:
 @felix
-fun add: !integers * !integers -> int = "(int)($1+$2)";
+val a = varray(5.ul,0); // 5 elements all 0
 @
+Note that {varray(5ul,3ul)} is ambiguous! It could be either a two element
+array constructed from the tuple {5ul,3ul} or a 5 element array initialised
+to {3ul,3ul,3ul,3ul,3ul}.
 
-but note the downside: lacking names for the type variables we must
-return a fixed type. This notation, however, if exceptionally useful
-when binding external C libraries:
-@felix
-header "int f(int, int);";
-fun f: !ints * !ints -> int" = "f($1, $2)";
-@
+Pointers into a varray can only be invalidated by reducing the 
+number of elements in the array below the pointer location.
 
-The reason this is <em>so</em> useful is that if we just lifted the
-signature of {f} from C, we'd be ignoring the fact that the C programmer
-has automatic conversions and can call {f(42L, 23u)}, which would
-fail in Felix because it has no automatic conversions. The user
-would have to cast every argument to exactly the right type which is
-not practical. By using constrained polymorphism, we can make
-all the calls that work in C work in Felix, and by using the shorthand
-notation the overhead specifying the function is minimal.
+Read the library code for <a href='/lib/std/varray.flx'>varray</a>.
+@h3 Darray
+An unbounded variable length array implement using {varray}.
+If the {varray} gets full a new bigger one is allocated,
+and the elements copied from the old array to the new one.
+Pointers into the array can therefore be invalidated.
 
-When Felix performs overload resolution, initially candidates are found
-without considering type constraints; that is, as if the type variables
-were able to bind to any type.
+{darray} is roughly equivalent in fuctionality to C++ {vector}.
 
-Then, the type constraints are checked and candidates failing to meet 
-the constraints are rejected. For example:
-@felix
-fun f[T in ints]: T -> T = "$1+1";
-fun f[T in floats]: T -> T = "$1+2";
-println$ (f 1.2), f 1;
-@
-Type sets also support the set union operator:
-@felix
-typedef sints = fast_sints || exact_sints;
-@
-Note that the typesets {ints} and {floats}, along with some other
-basic type sets, are defined in the standard library: 
+Read the library code for <a href='/lib/std/darray.flx'>darray</a>.
 
-@felix ../lib/std/ctypesets.flx
+@h3 Sarray
+An {sarray} is an ultra-high performance sparse array.
+It is can accept elements at any non-negative integral position
+for integers up to the size of type {size}.
 
+{Sarray} is implemented using JudyL arrays.
+
+Read the library code for <a href='/lib/std/sarray.flx'>sarray</a>.
+
+@h3 Bsarray
+An {bsarray} is an ultra-high performance bounded sparse array.
+
+{Bsarray} is implemented using JudyL {sarray} plus a simple bound check,
+it supports iteration, folds, etc which sarray does not.
+
+Read the library code for <a href='/lib/std/bsarray.flx'>bsarray</a>.
 

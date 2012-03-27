@@ -1,0 +1,86 @@
+@h1 Modules (MOVE)
+Felix modules are similar to C++ namespaces except they're
+not extensible. The module name can be used as a qualifier to
+select a symbol from a module.
+@felix
+module X 
+{
+  fun f(x:int)=>x + 1;
+}
+println$ X::f 1;
+@
+
+Modules can have associated type variables, however the module
+is not polymorphic. Instead, all the symbol defined in the module
+inherit the type variables:
+
+@felix
+module X[T] 
+{
+  fun diag(x:T)=>x,x;
+}
+
+println$ diag::f 1;
+println$ diag::f 1.0;
+@
+
+Modules can be opened:
+@felix
+module X 
+{
+  fun f(x:int)=>x + 1;
+}
+
+open X;
+
+println$ f 1;
+println$ X::f 1;
+@
+
+This may allow symbols to be used with qualifiers.
+By default almost all the standard library modules
+are open.
+
+The open directive also allows specialisation:
+
+@felix
+module X[T] 
+{
+  fun diag(x:T)=>x,x;
+}
+
+open X[int];
+println$ f 1;
+println$ diag::f 1.0;
+@
+
+When a module is opened, its symbols sit at a half-integral nexting level.
+Symbols in the space opening a module alway have priority over ones
+exposed by opening. Put another way you can hide a symbol exposed by
+opening its containing module with a locally defined symbol:
+it's never a duplicate definition.
+
+@felix
+module X 
+{
+  fun f(x:int)=>x + 1;
+}
+
+open X;
+
+fun f(x:int)=>x + 2;
+println$ f 1;          // calls local f
+println$ X::f 1;       // the one in the module X
+@
+
+For your convenience, modules can be opened at the point of 
+definition:
+
+@felix
+open module X
+{
+  fun f(x:int)=>x + 1;
+}
+println$ f 1;
+@
+

@@ -1,407 +1,67 @@
-@h1 C Bindings.
-Felix is particularly good at allowing you to reuse your favourite
-C and C++ libraries. Mapping C types and functions into Felix is
-called <em>binding</em>. 
+@h1 Callbacks
+A typical use of a C function is for callbacks.
+Unfortunately, C callbacks are universally ill-typed.
+This can't be tolerated in Felix, and in this case
+there's no way to "cast away" the problem.
 
-@h2 Binding types and functions
-Here's a simple example:
-
+Here's how callbacks work. A callback is a function
+like this:
 @felix
-type Metres = "double";                    // bind the type to C
-ctor Metres: double = "$1";                // constructors
-ctor double: Metres = "$1";
-fun str(x:Metres)=> str (double x) + "m";  // format as string
-
-type SquareMetres = "double";              // bind the type to C
-ctor SquareMetres: double = "$1";          // constructors
-ctor double: SquareMetres = "$1";
-fun str(x:SquareMetres)=> str (double x)+"m^2"; // format as string
-
-fun add: Metres * Metres -> Metres = "$1+$2";
-fun mul: Metres * double -> Metres = "$1*$2";
-fun mul: double * Metres -> Metres = "$1*$2";
-fun mul: Metres * Metres-> SquareMetres = "$1*$2";
-
-val a = 1.2;
-val x = Metres 42.0;
-val y = 3.0.Metres;
-
-println$ str x + "*" + str y + " = " + str (x * y);
-println$ str a + "*" + str x + " = " + str (a * x);
+  void f(int x, void *client_data);
 @
-In the C encoding {$1}, {$2} represent the first and second
-components of the argument tuple, respectively.
-
-There are some shortcuts for special cases where the names agree:
+It is registered by a function like this:
 @felix
-ctypes int, long, double;
-fun f: int -> int;
+  void register_callback(event e, void (*f_t)(int, void*), void *client_data);
 @
-This is equivalent to:
+Now, what we want to do here is use a felix function for the callback:
 @felix
-type int="int";
-type long="long";
-type double="double";
-fun f: int * int -> int = "f($1,$2)";
+proc f(x:int){ println$ "Called back with " + str x; }
 @
-
-@h2 Binding constants
-You can also bind constants and expressions:
+To do this we generate a C function:
 @felix
-const metre : Metre = "1.0";
-const pi2 : double = "PI*PI";
+  void wrap_f(int x, void *client_data)
+  {
+    f_t p = (f_t)client_data;
+    p->call(x);
+  }
 @
-
-@h2 Binding structs
-There is a simple shorthand for binding C structs:
+This casts the {client_data} to a pointer to the C++ class
+of the Felix function, then calls it with the proper arguments.
+Now, to register it, something like this:
 @felix
-header "struct X {int a; int b; };";
-cstruct X {a:int; b:int; };
-val x = X(1,2);
-println$ x.b;
+register_callback(event, wrap_f, (void*)(new f));
 @
-Note that a definition of the {cstruct X} is not emitted,
-instead it is used to model an existing C {struct}, 
-in this case we created it in the {header} literally,
-usually you will be modelling structures used in C libraries.
-
-Your model does need to be complete because Felix synthesises
-a constuctor for the structure from a tuple. The names of the
-structure members must match.
-
-@h2 Special Magic
-Whilst Felix is generally able to tell a lot about Felix code that you
-write, it does not understand the C code to which you bind types
-and functions. Therefore, some annotations are required so it can
-handle your C code correctly. Of course, we already know you have
-to specify the type. Here is some more magic:
-
-@h3 Plain Old Datatype
-If you define a type which is roughly an ordinary old C datatype,
-you should add an annotation:
+To generate the wrapper all you need to do is label
+a function or procedure a callback:
 @felix
-pod type Int = "int";
+callback f(x:int, f){ println$ "callback " + str x; }
 @
-This actually tells Felix that the data type does not have a
-useful C++ destructor, and so Felix does not have to schedule
-execution of a finaliser for the data type when the garbage collector
-reaps an object of that type. This effect propagates, for example
-a tuple of {pod}s is also a {pod}. Felix does not know if a C++
-destructor is trivial or not, so it will always ensure garbage collected
-values are finalised unless told otherwise.
-
-It is always safe to leave out the {pod} annotation as it is only 
-an optimisation. It is <em>not</em> safe to specify it if it isn't
-correct, as this may lead to the failure to invoke destructors,
-typically leading memory leaks.
-
-@h3 Incomplete type
-You can define a type which is cannot be constructed. This is useful
-when you only want to deal with pointer to that type. For example:
+Here's a complete example
 @felix
-incomplete type Void = "void";
-incomplete type mutex_rep = "mutex_t";
-typedef mutex = &mutex_rep;
+callback fun f: int * f -> int;
+
+fun g(x:int)=> x + x + 1;
+
+print$ f(2, g); endl;
+
+callback proc p: int * p;
+
+proc q(x:int){ print x; endl; }
+
+p(31,q);
+
+typedef cf = int --> int;
+
+proc h(y:cf, x:int) {
+  print$ y x; endl;
+}
+
+body """
+  int yyy(int x) { return x + 3; }
+""";
+
+const yyy: int --> int;
+
+h(yyy,2);
 @
-If you bind the actual type of an immobile object, that is,
-one which cannot be copied, you should specify that it is incomplete.
-Of course it is immobile, not incomplete, but the effect is the same:
-you cannot instantiate it. Felix requires all types to be copyable.
-
-If you leave off this annotation where it is required and then
-accidentally try to do the wrong thing with it, such as copy a
-value of that type, Felix will not complain: but the C++ compiler
-will.
-
-@h3 _gc_pointer, _gc_type
-The annotation shown here:
-@felix
-_gc_pointer type fred = "fred*";
-@
-tells Felix that the type is a pointer which the garbage
-collector should trace. Make sure the type really is a pointer!
-Values of the pointed to type should be allocated by the Felix allocator
-on the Felix heap. 
-
-This annotation is rarely useful by itself, unless you're
-binding a system type. Here is how we bind Google's RE2 type,
-which is an immobile object:
-@felix
-private type RE2_ = "::re2::RE2";
-_gc_pointer _gc_type RE2_ type RE2 = "::re2::RE2*";
-ctor RE2 : string -> RE2 = "new (*PTF gcp, @0, false) RE2($1)";
-@
-The first line binds the actual type used by Google.
-The second line says that in Felix we'll actually be working
-with pointers to a heap allocated object of that type.
-The third line shows how to write a constructor.
-
-The _gc_type annotation tells Felix it must generate an RTTI 
-(shape) record for the type {RE2_} but also it tricks the compiler
-into using that type in the code where {@0} is written,
-instead of the type {RE2}. The {@0} annotation usually
-generates the shape of the function return type {RE2}: however in
-this case it is fooled into generate shape information for
-{RE2_} instead, which in C is {::re2::RE2}.
-
-The shape is required for the Felix allocation function underlying
-the special overload of C++ {operator new} used by Felix above,
-which ensure the garbage collector knows about the allocation.
-
-@h2 Fixed Insertions
-It is possible to insert C code directly into your Felix program:
-@felix
-code '::std::cout << "hello world" << ::std::endl;';
-println$ (code[string] '::std::string("Hello ")') + "world";
-@
-
-If you write a plain {code} as in the first line, it is parsed as a
-statement and the given string emitted as written. If you write
-{code[T]} instead, it is considered an expression of type {T}.
-
-You can also write {nonreturn code} instead of {code} 
-if your code does not return. This may be necessary
-to tell the Felix compiler to complain about subsequent code being
-unreachable, and, not to complain if a function or procedure appears
-to drop through when actually the exist is managed by the inserted
-C code. For example:
-@felix
-nonreturn code "exit(99);";
-@
-
-@h2 Floating Insertions
-It is also possible to emit bulk code into either the generated
-header file or generated body file:
-@felix
-header "void f(int);";
-body "void f(int x) { return x + 1; }";
-@
-
-Header and body insertions are said to be floating because they're not emitted
-where they're written, instead they float up to a fixed place at the top
-of the generated file.
-
-Floating insertions can be named:
-@felix
-body mystuff = '#include "mystuff.c"';
-type mytype = "mytype" requires mystuff;
-ctor mytype : int = "make($1)";
-ctor int : mytype = "toint($1)";
-println$ int (mytype 42);
-@
-If a floating insertion is given a tag name like this,
-it is not emitted unless it is required. The {println} command here
-must be executed, and that requires the constructor for
-{mytype} which in turn requires the type {mytype} which in turn
-requires the header {mustuff} due to the {requires} clause.
-Therefore the body of the generated Felix program will contain
-{#include "mystuff.h"} which presumably defines the functions 
-{make} and {toint}.
-
-Requires clauses can be added to C bindings (including header and
-body statements).
-
-Felix will only every add a (monmorphic) floating insertion once. The string
-value of the insertion is checked to ensure this.
-
-@h1 Resource Management
-The simple {header} and {body} statements and {requires} clause 
-of the previous section hint at the existence of a unique and very
-powerful dependency management system which is part of Felix.
-This system includes the mentioned code generation control, but
-it also extends to a much more sophisticated package management
-system that is also responsible for linking any libraries that
-your program needs.
-
-Gone are the days when you must specify include files in your code,
-header file paths in your compiler command line, or library paths,
-and libraries when linking. Felix does all of that automatically.
-
-The key to this system is a database maintained in the {config}
-directory of your Felix installation. A quick list of some of the
-files shows something like this:
-@felix
-~/felix>ls build/release/config
-__init__.py             flx_executil.fpc        glu.fpc                 sdl.fpc
-__init__.pyc            flx_gc.fpc              glut.fpc                sqlite3.fpc
-build                   flx_glob.fpc            gmpxx.fpc               target
-demux.fpc               flx_i18n.fpc            gsl.fpc                 tre.fpc
-faio.fpc                flx_ioutil.fpc          host                    unistd.fpc
-flx.fpc                 flx_pthread.fpc         judy.fpc                unix
-flx_arun.fpc            flx_run.fpc             macosx                  win32
-flx_async.fpc           flx_strutil.fpc         mmap.fpc
-flx_dynlink.fpc         gl.fpc                  plat_linux.fpc
-flx_exceptions.fpc      glext.fpc               re2.fpc
-@
-
-All those {*.fpc} files are entries in the configuration database which specify
-a package. {fpc} stands for Felix Package Config. The associated processor
-is written in Felix and is called {flx_pkgconfig}. Here's one of them:
-@felix
-~/felix>less build/release/config/flx_gc.fpc
-Name: flx_gc
-Platform: Unix 
-Description: Felix default garbage collector (Unix)
-provides_dlib: -lflx_gc_dynamic
-provides_slib: -lflx_gc_static
-includes: '"flx_gc.hpp"'
-Requires: judy
-@
-
-This file provides some descriptive information, it tells what the associated 
-header file is, and it tells how to link the shared or static library associated
-with the package. It also specifies that this package depends on another,
-namely {judy}.
-
-Here's an {fpc} file for the C++ binding of GNU's Multiple Precision Arithmetic
-library:
-@felix
-requires_slibs: -L/usr/local/lib -lgmp
-requires_dlibs: -L/usr/local/lib -lgmp
-provides_dlib: -L/usr/local/lib -lgmpxx
-provides_slib: -L/usr/local/lib -lgmpxx
-cflags: -I/usr/local/include
-@
-
-These database files contain platform dependent information.
-It is put there so you do <em>not</em> need to do so in your 
-program! Instead you just write:
-
-@felix
-requires package "flx_gc", package "gmpxx";
-@
-
-wherever a requires clause is allowed, and Felix will find the
-header files and libraries you need automatically.
-
-@h2 The requires clause
-The requires clause has a number of options. Any number of requirements
-can be specified in a comma separated list.
-@felix
-requires header "stuff";
-requires body "stuff";
-@
-These are just literal floating insertions.
-@felix
-requires tagname;
-@
-These are floating insertions identified by name.
-@felix
-requires package "name";
-@
-The requirements are to be found in the file {config/name.fpc}.
-This not only specifies floating insertion of header files,
-but also linking of libraries and dependencies.
-@felix
-type mytype = "mytype*" requires finaliser "fred";
-@
-This specifies that the C function {fred} is to be called
-on a value by the garbage collector for finalisation.
-instead of the default call which is 
-@felix
-pointer->mytype::~mytype()
-@
-that is, a call to the destructor.
-@felix
-requires scanner "myscanner";
-@
-This annotation specifies a scanner for the object.
-It accepts a pointer to the object and reports any 
-internal pointers to the collector. This allows
-you take data types like C++ {vector&lt;T*&gt;}
-and scan through all the elements of the vector using
-standard C++ iterators. (Note that at this time these
-scanners cannot be polymorphic! This is essential and should
-be implemented in a later version. The existing code is sufficient,
-though not efficient, in handling Judy arrays.)
-
-At this time, the function must be declared like:
-@felix
-void *myscanner(
-  collector_t *collector, 
-  gc_shape_t *shape, 
-  void *pp, 
-  unsigned long dyncount, 
-  int reclimit
-)
-@
-
-@felix
-requires property "fred";
-@
-This annotation adds a string property to a symbol.
-These are primarily for internal use.
-These properties are currently recognized:
-@felix
-    "needs_gc"   // a function needs the garbage collector
-    "needs_ptf"  // a function needs a pointer to the thread frame
-    "pure"       // a function is pure and does not access global variables
-    "generator"  // a function is a generator and has side effects
-    "virtual"    // the function is a virtual member of a typeclass
-@
-The property {needs_gc} implies the property {needs_ptf} since the
-pointer to the garbage collector is stored in the thread frame.
-The thread frame is the "global store" of your program (but we use
-a class object and not C static storage!) However {needs_ptf} is a property
-of a function whereas {needs_gc} is a property of a type, which propagates
-to a function if the function uses any of those types. The annotations
-are required because Felix can't see into your C code.
-
-An example of use from the library:
-@felix
- private body mkjudy =
-    """
-      void **_mkjudy(FLX_APAR_DECL ::flx::gc::generic::gc_shape_t *jptr_map){
-        typedef void *voidp; // syntax
-        void **m = new (*PTF gcp, *jptr_map, false) voidp; 
-        *m=0;
-        return m;
-      }
-    """
-  ;
-
-  private body j1free =
-    """
-      void _j1free(::flx::gc::generic::collector_t*,void *p) {
-        //printf("Free J1Array %p\\n",p);
-        JError_t je;
-        Judy1FreeArray((void**)p, &je); 
-      }
-    """
-  ;
-  private type J1Array_ = "void*"
-    requires 
-      scanner "::flx::gc::generic::Judy1_scanner",
-      header '#include "flx_judy_scanner.hpp"',
-      finaliser '_j1free',
-      j1free
-  ;
-  _gc_pointer _gc_type J1Array_ type J1Array = "void**" requires property "needs_gc"; 
-
-  gen _ctor_J1Array: 1 -> J1Array = "_mkjudy(FLX_POINTER_TO_THREAD_FRAME, &@0)" 
-    requires 
-      mkjudy,
-      property "needs_gc"
-  ;
-@
-
-The property {needs_ptf} tells Felix a function must accept an extra argument
-which is a pointer to the thread frame (and to pass it when the function
-is called). Passing this pointer around is expensive. Many simple C like
-functions do not require any data from the thread frame. By default therefore,
-functions created by binding to C are considered not to require the thread frame
-pointer. In turn, functions, including Felix functions, using them, may not
-need the thread frame pointer. The requirement is forced on the function
-if any of the functions it calls require it (since it has to have a copy
-of the pointer to pass it to them).
-
-A function with the {pure} property is one which does not access
-any variables outside itself. Accessing constants (that is, actually
-unchanging values) is OK. Code which calls pure functions can safely be
-moved about within the scope for which their arguments are invariant,
-since the returned value is invariant in that scope since the function
-only depends on its arguments. The {pure} property may also be passed
-on to the C++ compiler (gcc at least has such an annotation, although it
-is not known if it is effectively used). Purity is primarily intended to
-enable code motion optimisations.
 

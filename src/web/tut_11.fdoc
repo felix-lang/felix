@@ -1,164 +1,238 @@
-@h1 Unions and Matches
-The dual concept to structures is unions. A structure has "each of" logic whereas
-a union has "one of logic". Each-of logic demands treating each of the components
-in sequence whereas one-of logic demand selecting one of the components.
-
-Unions therefore represent alternatives. We use pattern matching with
-the {match} construction to discover which alternative is encoded
-and handle it in a typesafe manner. A {match} is an advanced form
-of a {switch}: {union}s are an advanced form of an {enum}eration.
-
+@h1 Functions and Procedures
+@h2 Felix functions
+When you see code like this:
 @felix
-union boolean = 
-  | True
-  | False
-;
+println$ "Square of " + str 1 + " is " + str (1 * 1);
+println$ "Square of " + str 2 + " is " + str (2 * 2);
+println$ "Sguare of " + str 3 + " is " + str (3 * 1);
+@
+You know you need a function (notice the typos on the last line?)
+Basic Felix functions are easy:
+@felix
+fun square(x:int)=>x * x;  // define a function
+println$ "Square of " + str 1 + " is " + str (square 1);
+println$ "Square of " + str 2 + " is " + str 2.square;
+println$ "Sguare of " + str 3 + " is " + str$ square 3;
+@
+We fixed the bug in the calculation of the square of 3, and 
+we're also showing the three ways to apply a function: 
+high precedence application using operator whitespace
+which needs surrounding parentheses for correct grouping,
+reverse application using operator dot, which is even higher
+precedence than whitespace, and so does not, and finally we're
+applying the {str} function to a whitespace application
+using operator dollar, which has lower precedence than whitespace.
 
-var b:boolean = True;
-
-proc f(b:boolean)  {
-  match b with
-  | True => println "True";
-  | False => println "False";
-  endmatch;
+There's a longer way to write a function:
+@felix
+fun square(x:int):int = {
+  val s = x * x;
+  return x;
 }
-
-println$ match b with | True => "True" | False => "False" endmatch;
 @
+This way allows complicated expressions to be broken up
+into arbitrary code. 
 
-This code demonstrates a simple union of two cases: {True} and {False}
-and shows a procedural {match} whose case handlers are {println}
-statements, and a function {match} whose handlers are expressions.
+Functions are not allowed to have side effects.
 
-A more sophisticated example:
-
+@h2 Felix Procedures
+Still, there must be a way to repeat the print: there is,
+by using a procedure.
 @felix
-union Z = 
-  | Cart of double * double // cartesian complex x+iy
-  | Polar of double * double // polar complex re^(i\theta)
-;
-
-fun str (z:Z) => match z with
-  | Cart (?x,?y) => str x + "+"+str y+"i"
-  | Polar (?r,?theta) => str r + "e^"+str theta+"i"
-  endmatch
-;
+fun square(x:int)=>x * x;  // define a function
+proc ps(x:int) {
+  println$ "Square of " + str x + " is " + str x.square;
+}
+ps 1; ps 2; ps 3;
 @
+A procedure is like a function, except it returns no value,
+and it may and indeed should have side effects.
 
-The identifiers {Cart} and {Polar} here are called <em>type constructors</em>
-or just plain constructors, note here the arguments of the constructors
-are both the same: a pair of {double}. 
-
-The question mark {?} here is used to introduce a parameter to
-represent the argument.
-
-Unions are the way to unify heterogenous data types. If you're
-from an OO background you may think subclassing should be used
-for this. Unlearn this error. It is <em>utterly</em> wrong.
-
-Subclassing is a way to represent a subtype, that is, a type
-with a subset of values of another type: for example the set of
-triangular matrices is a subtype of all matrices.
-
-Similarly, composition using tuple or structs is the way to add
-more data to a type. Not inheritance. Unlearn that mistake too!
-
-The match construction is very powerful. It can be used to match
-tuples and records too:
-
+@h2 Multiple arguments
+A function (or procedure) always has exactly one argument.
+However you can simulate multiple arguments with a tuple:
 @felix
-fun fst (a:int * long) => 
-  match a with 
-  | ?x,_ => x
-  endmatch
-;
-
-fun xaxis (a:(x:double; y:double;))=> 
-  match a with
-  | (x=?xval) => xval
-  endmatch
-;
-
-println$ fst (41,99l);
-println$ xaxis (x=1.2,y=2.2);
+fun addup (x:int, y:int) => x + y;
+println$ addup (1,2); // 3
+val pair = 1,2;
+println$ addup pair; // 3
 @
-Here the {_} is a wildcard that matches anything.
+The last line shows clearly that {addup} takes a single argument
+which is a pair (tuple with two components).
 
-You can also match against literals and ranges of
-integers floats and strings:
+@h2 Function types
+A function value has a type:
 @felix
-fun (x:int) => match x with
-  | 1 => "one"
-  | 2..10 => "two to ten"
-  | _ => "other"
-  endmatch
-;
+  int -> int       // type of square
+  int -> void      // type of ps
+  int * int -> int // type of addup
 @
 
-Of course, matches are general patterns and can be combined, we've already
-seen that in the first example which combines are match against constructors
-and tuples.
-
-@h2 Enumerations
-Felix has C++ style {enum}s.
-@h3 Linear enumeration
+@h2 Generators
+There is a special kind of procedure that looks like
+a function and may have side-effects, it is called
+a generator:
 @felix
-enum colour {red, green, blue};
-
-fun str: colour = 
-  | red => "red"
-  | blue => "blue"
-  | green => "green"
-;
-
-println$ red;
+var x =0;
+gen incx():int = { val tmp = x; ++x; return tmp; }
+println$ incx(), incx();
 @
-This is a shorthand for a union, where the enumeration
-tags are type constuctors. 
-
-Note also in the above example the shorthand version of a function
-which consists solely of a match.
-
-@h3 Flags 
-Here's an example with 
-user specified constructor indicies:
+When an expression contains one or more generator application, the applications
+are lifted out and evaluated in pre-order: this is basically left to right
+order of writing for terms at the same level, except that if a generator has
+an argument that is, or contains a generator application, that will have to
+be evaluated first. The serialisation of generator application is deterministic
+and based on the structure of the expression being evaluated <em>after</em>
+syntactic sugar is removed. For example
 @felix
-enum flags {b1=1,b2=2,b3=4};
-println$ caseno b3;
-
-// Use C to model flag like operations
-type flagset = "int";
-ctor flagset: flags = "$1";
-fun \vee :flags * flags -> flagset = "$1|$2";
-fun \vee :flags * flagset -> flagset = "$1|$2";
-fun \vee :flagset * flags -> flagset = "$1|$2";
-fun \cup :flagset * flagset -> flagset = "$1|$2";
-fun \in : flags * flagset -> bool = "($1&$2)!=0";
-
-fun eq: flagset * flagset -> bool = "$1==$2";
-fun ne: flagset * flagset -> bool = "$1!=$2";
-fun \subseteq : flagset * flagset -> bool = "($1&~$2)==0";
-fun \subset (x:flagset,y:flagset)=> x \subset y and not x == y;
-fun \supset (x:flagset,y:flagset)=> not x \subseteq y;
-fun \supseteq (x:flagset,y:flagset)=> not x \subset y;
-
-
-var x = b1 \vee b2;         // infix operator \| is function bor!
-println$ b1 \in x;         // true: infix operator in is function mem!
-println$ b2 \in x;         // true
-println$ b3 \in x;         // false
-println$ b1.flagset \subset x;  // true
-println$ x \subset b1.flagset;  // false
-
+  var r = (g1 1).(g2 2)
 @
-You can find the index
-of any constructor as an {int} with the {caseno} operator. 
-In the example note that although the constructor with index
-0 and 3 is not named, it is still a value of the type.
+will be evaluated as:
+@felix
+  val a2 = g2 2;
+  val a1 = g1 1;
+  val r = a2 a1;
+@
+because reverse application is just sugar for a swapped forward application.
 
-You cannot directly perform mathematical or bitwise operations
-on constructors, not even enumeration constants. Note that that includes
-comparison for equality! Use the {caseno} operator to get around this,
-or bind into C as shown in the example.
+@caveat
+Generators have the same type as a function. This is a design fault
+in the current version of Felix.
+@
 
+@h2 C functions
+The function and procedure:
+@felix
+cfun f(x:int) => x;
+cproc p(x:int) { println x; }
+@
+have types
+@felix
+   int --> int
+   int --> void
+@
+respectively, which are the types of classic C funcions:
+@felix
+  int (*)(int)
+  void (*)(int)
+@
+You can use this kind of function to force generation of
+a classic C style function for performance, so you that know
+the type exactly, and so you can pass it as an argument
+to a C library. In particular such a function or procedure should not reference
+Felix globals (because this requires passing the thread frame pointer), nor
+do anything directly or indirectly requiring garbage collection
+(which also requires thread frame pointer since that in turn contains a pointer
+to the garbage collector).
+
+C functions can be used wherever a Felix function is required,
+a wrapper is generated automatically.
+
+C functions of this kind are still defined with 
+Felix code: they're Felix functions with an enforced
+C interface. In fact many ordinary Felix functions will
+be reduced to C functions by the optimiser, but this
+form enforces the use of C interface.
+
+@note
+It seems unfortunate that <em>whilst</em> a {cfun} or {cproc} has a C interface it
+is defined in Felix, <em>whereas</em> a {cstruct} is a Felix interface to a
+struct defined in C, and {cenum} and {cflag} provide Felix models of enumerations
+or sets of integer constants defined in C.  The role reversal here seems confusing, 
+especially as Felix functions and types can be defined in C using {fun}, {proc} and {type}
+keywords and C code given as a string, and {ctypes} provides a shorthand form for
+multiple instances of {type} eliding the strings. In turn {cenum} may be considered
+a shorthand for a {type} binding and a list of {const} definitions. Also, a shorthand
+for lifting C functions from libraries using a {fun} or {proc} without a 
+defining string can be used. The situation is further complicated by the
+{callback} feature.
+
+
+
+@h1 Higher Order Functions
+In Felix, functions can be nested:
+@felix
+fun f(x:int) = {
+  fun g(y:long)=> x.long + y;
+   return g;
+}
+@
+The function {f} here has type {int -> (long -> long)}. This type is 
+the same as {int -> long -> long} since the arrow operator is right
+associative. There's a simpler way to write the function {f}:
+@felix
+fun f(x:int) (y:long) => x.long + y;
+@
+Here one says {f} has arity 2. Note it still has only
+one argument, namely {x} of type {int}. A function with arity
+2 or greater is called a <em>higher order function</em>
+or Hof for short.
+
+Note that in:
+@felix
+proc h(x:int) (y:long) { println$ x.long + y; }
+@
+{h} is a function, not a procedure: it has type
+@felix
+int -> (long -> void)
+@
+so that rather, {h} is a function returning a procedure.
+
+It is possible to partially apply a higher order function.
+@felix
+fun f(x:int) (y:long) => x.long + y;
+val g = f 1;
+println$ g 2l;
+@
+Here {g} is just the value returned by {f} when applied
+to 1, which is a function accepting a {long} and returning
+a {long}.
+
+@h2 A style issue
+Many functions of "two" arguments can be written either accepting
+a tuple of two components or as a higher order function of arity 2.
+Without optimisation, higher order functions are extremely inefficient:
+tuples are faster, but they cannot be partially applied.
+However, the higher order form does not permit the "arguments" 
+to be "compressed" into a single value which the tuple form does.
+
+However, Felix is pretty good at optimisation and both version of {f}
+given above will likely reduce to a simple addition after inlining.
+
+Therefore the question really is: are you most likely to aggregate
+the arguments, or the function with the first argument?
+Use a tuple in the first case and a higher order function in the second.
+
+Of course, you should chose the form of a function which itself has
+the type required for it to be an argument of a higher order function
+such as an iteration, map or fold of some data structure.
+
+The library module {categ} defines a way to convert between these styles
+for 2 or 3 "arguments". The function {curry} takes a function accepting
+a tuple of 2 or 3 components and makes it into a higher order function
+with arity 2 or 3. The functions {uncurry2} and {uncurry3} reverse
+this transformation and convert a higher order function of arity 2 or 3,
+into a function accepting a tuple of 2 or 3 components, respectively.
+
+@h2 Anonymous function values
+You can write a function without a name in an expression:
+@felix
+val three = (fun (x:int)=> x + 1) 2;
+@
+There is a special short hand for procedures of unit argument:
+@felix
+{ println "Hello"; }
+@
+This is an expression equivalent to
+@felix
+proc () { println "Hello"; }
+@
+
+There's a similar shorthand for function or unit argument:
+@felix
+val y = 1;
+{ val x = y + 1; return x; }
+@
+distinguished from the procedure case by ending with
+a return statement.
 

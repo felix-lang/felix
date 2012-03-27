@@ -1,143 +1,67 @@
-@h1 Pthreads and Channels 
-Felix also supports pre-emptive threads with channels.
-The syntax is similar to that used for fibres and channels:
+@h1 Abstract Types in Felix
+Felix supports type abstraction with the special operator {_repr_}
+and constructor {_make_*} where {*} is the type name.
 
 @felix
-open Text_file;
+open module X {
+  type pair = new int * int;                                 //public type
+  ctor pair(x:int, y:int)=>_make_pair (x,y);                // constructor
+  fun first(xy:pair)=>(_repr_ xy).0;                        // projections
+  fun second(xy:pair)=>(_repr_ xy).1;
 
-proc client(x:ipchannel[opt[string]]) {
-  var finished = false;
-  while not finished do
-    match read x with
-    | Some ?line => print line;
-    | None => finished = true;
-    endmatch;
-  done
+  // as string
+  fun str(xy:pair)=> 
+     "[" + str ((_repr_ xy).0) + "," + str ((_repr_ xy).1)+"]"
+  ; 
 }
 
-proc server(x:opchannel[string]) {
-  f := fopen_input "xyz.flx";
-  var line = readln f;
-  while line != "" do
-    write$ x,line;
-    line = readln f;
-  done;
-  fclose f;
-  write$ x, None[string];
-}
-
-proc launch() {
-  inp,out:= mk_iopchannel_pair[string]();
-  spawn_pthread { client(inp); };
-  spawn_pthread { server (out); };
-}
-
-launch;
-println$ "Launched!";
+var xy = pair (1,2);
+println$ str xy, first xy, second xy;
 @
 
-@h2 Broadcast example
-Here is the broadcast code using pthreads:
+It is more conventional to use a private {struct} for the representation:
 
 @felix
-gen broadcaster() : 
-  opchannel[opt[opchannel[string]]] * // subscription channel
-  opchannel[string]                   // news reporting channel
-=
-{
-  // -------------------------------------------------------------
-  // SUBSCRIPTIONS
-  // -------------------------------------------------------------
+open module X {
+  private struct pair_rep { a: int; b: int; };              // private representation
+  type pair = new pair_rep;                                 // public type
+  ctor pair(x:int, y:int)=>_make_pair (pair_rep (x,y));     // constructor
+  fun first(xy:pair)=>(_repr_ xy).a;                        // projections
+  fun second(xy:pair)=>(_repr_ xy).b;
 
-  // subscriber list
-  var clients = darray[opchannel[string]] ();
-
-  // subscription channel
-  iregistry, oregistry := mk_iopchannel_pair[opt[opchannel[string]]]();
-
-  // accept registrations until end of broadcast
-  // a subscription of None signals end of broadcast
-  spawn_pthread {
-    var end_of_news = false;
-    while not end_of_news do
-      match read iregistry with
-      | None => end_of_news = true;
-      | Some ?chan => 
-        push_back (clients, chan);
-        println "Got a subscriber";
-      endmatch;
-    done
-    println "Finished accepting subscribers";
-  };
- 
-  // -------------------------------------------------------------
-  // RELAY THE NEWS
-  // -------------------------------------------------------------
-
-  // news reading channel
-  inews, onews := mk_iopchannel_pair[string]();
-
-  // send news to all clients
-  spawn_pthread {
-    var news_line = read inews;
-    while true do 
-      if len clients > 0uz do
-        for var i in 0uz upto len clients - 1uz do
-          write$ clients.[i], news_line;
-        done
-      done
-      if news_line == "END OF NEWS\n" do 
-        println "Finished news relay"; 
-        return; 
-      done
-      news_line = read inews;
-    done
-  };
-
-  // return the channel for subscribing to news reports,
-  // and the channel for making news reports
-  return oregistry, onews;
+  // as string
+  fun str(xy:pair)=> 
+     "[" + str ((_repr_ xy).a) + "," + str ((_repr_ xy).b)+"]"
+  ; 
 }
 
-// Create the broadcast station
-subscribe, news := broadcaster();
-
-// create a template for bored train commuters who want to read the news
-proc commuter (i:int) {
-  ichan, ochan := mk_iopchannel_pair[string]();
-  write$ subscribe, Some ochan; //subscribe to news
-  var line = read ichan;
-  while line != "END OF NEWS\n" do 
-    print$ "Commuter " + str i + ": " + line;
-    line = read ichan;
-  done
-  print$ "Commuter " + str i + ": " + line;
-}
-
-// create two commuters
-spawn_pthread { commuter 1; };
-spawn_pthread { commuter 2; };
-
-// create a reporter that just sends a file as news
-spawn_pthread {
-  f := Text_file::fopen_input "br.flx";
-  var line = Text_file::readln f;
-  while line != "" do
-    print$ "Reporting : " + line;
-    write$ news, line;
-    line = Text_file::readln f;
-  done
-  write$ news, "END OF NEWS\n";
-  Text_file::fclose f;
-  write$ subscribe, None[opchannel[string]];
-  println "Done reporting news";
-};
-
-println$ "Demo started";
+var xy = pair (1,2);
+println$ str xy, first xy, second xy;
 @
 
-You should note that there's no assurance the subscribers get all the news!
-In fact this code can deadlock, because the news can be over before one
-of the subscribers gets to subscribe. In that case the write to the
-subscription channel will hang forever since the reader is gone.
+@felix
+@
+The formula for making abstract types is always the same.
 
+The type {pair_rep} is declared private so it is not
+visible outside the module {X}. 
+
+Then the public type {pair}
+is defined to have that representation using the {type = new}
+construction.
+
+Now we can define the public functions on the abstract type.
+
+We use {_make_pair} operator to convert the representation {pair_rep}
+to the abstract type {pair}.
+
+We use the {_repr_} operator to convert the abstract type to its 
+representation {pair_rep}.
+
+The two operators converting between the abstraction and its representation
+can only be used in the module in which the representation is defined.
+Outside the module only the public functions accessing the abstraction
+can be used.
+
+Note that even if the representation is a public type, the conversions
+still can't be done.
