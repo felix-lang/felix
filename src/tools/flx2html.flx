@@ -245,10 +245,10 @@ println$ "Package file basename is " + n;
     | sq => { ws; }
     | sq3 => { ws; }
     | dq3 => { ws; }
-    | ccomment _ => { write_string('<span class="comment">'+b+"</span>"); }
-    | cppcomment=> { write_string('<span class="comment">'+b+"</span>"); }
+    | ccomment _ => { write_string('<span class="comment">'+txt2html b+"</span>"); }
+    | cppcomment=> { write_string('<span class="comment">'+txt2html b+"</span>"); }
     | texid => { write_string (
-        '<span class="tex_symbol" title="'+b+'">\\(' + b + '\\)</span>'
+        '<span class="tex_symbol" title="'+b+'">\\(' + txt2html b + '\\)</span>'
         ); 
         needs_mathjax = true; 
       }  // format with MathJax

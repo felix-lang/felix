@@ -26,8 +26,9 @@ class Dynlink
     }
     """;
 
-  private fun get_init: flx_instance -> cont = "$1->start_proc";
-  private fun get_library: flx_instance -> flx_library = "$1->lib";
+  fun get_init: flx_instance -> cont = "$1->start_proc";
+  fun get_library: flx_instance -> flx_library = "$1->lib";
+  fun get_thread_frame: flx_instance -> address = "(void*)$1->thread_frame";
   proc destroy: flx_instance = "$1->destroy();";
 
   fun create_library_handle: unit->flx_library=

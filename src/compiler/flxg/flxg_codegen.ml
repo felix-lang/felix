@@ -216,7 +216,7 @@ let codegen_bsyms
   "  );";
   ]
   ;
-  plh (Flx_gen.format_vars state.syms bsym_table topvars []);
+  plh (Flx_gen_helper.format_vars state.syms bsym_table topvars []);
   plh "};";
   plh "";
   plh "FLX_DCL_THREAD_FRAME";
@@ -276,7 +276,7 @@ let codegen_bsyms
 
   let sr = Flx_srcref.make_dummy "Thread Frame" in
   let topfuns = List.filter
-    (fun (_,t) -> Flx_gen.is_gc_pointer state.syms bsym_table sr t)
+    (fun (_,t) -> Flx_gen_helper.is_gc_pointer state.syms bsym_table sr t)
     topvars_with_type
   in
   let topfuns = List.map fst topfuns in
@@ -380,18 +380,18 @@ let codegen_bsyms
 
   if List.length state.syms.bifaces > 0 then begin
     plh "//DECLARE USER EXPORTS";
-    plh (Flx_gen.gen_biface_headers
+    plh (Flx_gen_biface.gen_biface_headers
       state.syms
       bsym_table
       state.syms.bifaces);
 
     plb "//DEFINE EXPORTS";
-    plb (Flx_gen.gen_biface_bodies
+    plb (Flx_gen_biface.gen_biface_bodies
       state.syms
       bsym_table
       state.syms.bifaces);
 
-    plb (Flx_gen.gen_python_module
+    plb (Flx_gen_python.gen_python_module
       state.module_name
       state.syms
       bsym_table
