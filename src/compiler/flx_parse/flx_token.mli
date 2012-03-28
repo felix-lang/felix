@@ -56,6 +56,7 @@ and dssl_t = {
 }
 
 and local_data_t = {
+  global_regexps : (string * Dyp.regexp) list;
   drules : dssl_t Flx_drules.Drules.t;
   installed_dssls : string list;
   scm : (Flx_srcref.t * string) list;

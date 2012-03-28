@@ -17,13 +17,23 @@ let uniq_add elt lst =
   if List.mem elt lst then lst else (elt::lst)
 
 
-let re_expand names re = 
+let re_expand global_names local_names re = 
   let map = List.map in
   let rec aux re =
     match re with
     | RE_Name s -> 
       begin try
-        let re = List.assoc s names in
+        let re = List.assoc s local_names in
+(*
+print_endline ("Found " ^ s ^ " as local name");
+*)
+        aux re
+      with Not_found ->
+      try
+        let re = List.assoc s global_names in
+(*
+print_endline ("Found " ^ s ^ " as global name");
+*)
         aux re
       with Not_found -> 
         print_endline ("Can't find regexp name " ^ s);
@@ -149,6 +159,7 @@ let global_data = {
 }
 
 let local_data = {
+  global_regexps = [];
   Flx_token.drules = Drules.empty;
   Flx_token.installed_dssls = [];
   Flx_token.scm = [];
@@ -197,7 +208,7 @@ let cal_priority_relation p =
   | `Greatereq_prio p -> Greatereq_priority p
 
 (* Add a production to a dssl *)
-let define_scheme sr dyp dssl_record dssl name prio rhs (scm:string) =
+let define_scheme sr dyp global_regexps dssl_record dssl name prio rhs (scm:string) =
 (*
 print_endline ("define_scheme " ^ name);
 *)
@@ -230,7 +241,7 @@ print_endline ("define_scheme " ^ name);
 (*
         print_endline "Translating some kind of regexp";
 *)
-        let re = re_expand dssl_record.regexps re in
+        let re = re_expand global_regexps dssl_record.regexps re in
         Dyp.Regexp re
 
       | NONTERMINAL (s,p) -> (* handle identifiers like sexpr in productions *)
@@ -346,7 +357,8 @@ print_endline ("sr of reduction is " ^ Flx_srcref.short_string_of_src sr);
 let extend_grammar dyp (dssl,(name,prio,prod,action,anote,sr)) =
   let m = dyp.local_data in
   let dssl_record = Drules.find dssl m.drules in
-  define_scheme sr dyp dssl_record dssl name prio prod action
+  let global_regexps = m.global_regexps in
+  define_scheme sr dyp global_regexps dssl_record dssl name prio prod action
 
 (* ------------------------------------------------------ *)
 let dflt_action kind prod =
@@ -445,10 +457,18 @@ let add_rule global_data local_data dssl rule =
 
   | `Regex (name, re) -> (* do nothing at the moment *)
 (*
-print_endline ("Regex name=" ^ name);
+print_endline ("Add Regex name=" ^ name);
 *)
     let d = { d with regexps = (name,re)::d.regexps } in
-    let m = { m with drules = Drules.add dssl d m.drules } in
+    let m = { m with 
+      drules = Drules.add dssl d m.drules;
+(* This is WRONG but it suffices for testing .. later use something like
+   syntax regdef fred = ... ; 
+   for global regexps
+*)
+      global_regexps = (name,re)::m.global_regexps
+    } 
+    in
     global_data, m
 
 let ocs2flx sr r =
