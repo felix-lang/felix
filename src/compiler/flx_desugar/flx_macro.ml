@@ -730,6 +730,7 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   (* IDENTIFIER RENAMING NOT SUPPORTED IN EXPORT *)
   | STMT_export_python_fun (sr, sn, s) ->  tack st
   | STMT_export_fun (sr, sn, s) ->  tack st
+  | STMT_export_cfun (sr, sn, s) ->  tack st
   | STMT_export_type (sr, sn, s) ->  tack st
 
   | STMT_label (sr, id) ->
@@ -1023,7 +1024,13 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_yield (sr, e)  ->
     ctack (STMT_yield (sr, me e))
 
+  | STMT_scheme_string _
+  | STMT_call _
+  | STMT_macro_forall _
+  | STMT_macro_val _  -> assert false
+  (*
   | st -> failwith ("[subst_or_expand] Unhandled case " ^ string_of_statement 0 st)
+  *)
   end
   ;
   List.rev !result
