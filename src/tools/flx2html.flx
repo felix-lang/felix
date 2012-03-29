@@ -33,6 +33,8 @@ private val big_keywords =
   ("inherit","Inherit symbols into a module or typeclass"),
   ("SCHEME","Define Scheme symbols"),
   ("syntax","define domain specific sublanguage module"),
+  ("regdef","define named regular expression"),
+  ("literal","define literal"),
   ("priority","Define order of syntactic priority symbols"),
   ("requires","specify requirements")
 ;
