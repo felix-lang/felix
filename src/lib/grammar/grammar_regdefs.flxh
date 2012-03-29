@@ -1,4 +1,4 @@
-syntax regdefs {
+syntax global_regdefs {
   /* ====================== REGULAR DEFINITIONS ============================ */
   /* special characters */
   regdef quote = '\'';

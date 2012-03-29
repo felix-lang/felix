@@ -1,5 +1,9 @@
 grammar/grammar_scheme_support.flx
 grammar/grammar_regdefs.flxh
+grammar/grammar_ident_lexer.flxh
+grammar/grammar_int_lexer.flxh
+grammar/grammar_float_lexer.flxh
+grammar/grammar_string_lexer.flxh
 grammar/grammar_lexer.flxh
 grammar/expressions.flxh
 grammar/texsyms.flxh
