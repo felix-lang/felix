@@ -53,15 +53,70 @@ var FDOC_PATH=Empty[string];
 
 var C_PATH=list(
   "/usr/local/include",
-  "/usr/include",
-  "/usr/include/c++/4.2.1", // a hack until cmd line option or env can extend/set the path
-  "/usr/include/c++/4.2.1/x86_64-apple-darwin10", // oh yeah, a worse hack!
-  "/usr/include/c++/4.4.3", // a hack until cmd line option or env can extend/set the path
-  "/usr/include/c++/4.4.3/x86_64-linux-gnu", // a hack until cmd line option or env can extend/set the path
-  "/usr/lib/gcc/x86_64-linux-gnu/4.4.3/include"
+  "/usr/include"
+);
+
+var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
+
+var default_config = list (
+  "C_PATH += /usr/include/c++/4.2.1", 
+  "C_PATH += /usr/include/c++/4.2.1/x86_64-apple-darwin10", 
+  "C_PATH += /usr/include/c++/4.4.3", 
+  "C_PATH += /usr/include/c++/4.4.3/x86_64-linux-gnu", 
+  "C_PATH += /usr/lib/gcc/x86_64-linux-gnu/4.4.3/include"
 );
 
 var FLX_PKGCONFIG_PATH=Empty[string];
+
+var HOME: string = Env::getenv "HOME";
+println$ "Home=" + HOME;
+var FLX_HOME : string= Filename::join (HOME, ".felix");
+println$ "FlxHome=" + FLX_HOME;
+var FLX_CONFIG : string= Filename::join (FLX_HOME,"webserver.config");
+println$ "Flxconfig=" + FLX_CONFIG;
+var config_data = load(FLX_CONFIG);
+println$ "webserver config data = " + config_data;
+var config_lines = split(config_data, "\n");
+if len config_lines == 0.size do
+  config_lines = default_config;
+done
+
+config_lines = map (strip of (string)) config_lines; 
+var pathext = RE2("(.*)\\+=(.*)");
+var varset = RE2("(.*)=(.*)");
+var result = varray[StringPiece] (3.size,StringPiece(""));
+for line in config_lines do
+  println$ "Line = " + line;
+  var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+  if match_result do
+    var lhs = result.[1].str.strip;
+    var rhs = result.[2].str.strip;
+    println$ "match "+lhs+ " += " + rhs;
+    match lhs with
+    | "C_PATH" => C_PATH += rhs;
+    | "FLX_PATH" => FLX_PATH += rhs; 
+    | "FLX_PKGCONFIG_PATH" => FLX_PKGCONFIG_PATH += rhs;
+    | "FLX_WEBSERVER_PLUGIN_PATH" => FLX_WEBSERVER_PLUGIN_PATH += rhs;
+    | "FDOC_PATH" => FDOC_PATH += rhs;
+    | _ => println$ "Unknown variable '" + lhs +"'";
+    endmatch;
+  else
+    println$ "No match";
+  done
+  match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+  if match_result do
+    var lhs = result.[1].str.strip;
+    var rhs = result.[2].str.strip;
+    println$ "match "+lhs+ " += " + rhs;
+    match lhs with
+    | "PORT" => port = atoi rhs;
+    | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
+    | _ => println$ "Unknown variable '" + lhs +"'";
+    endmatch;
+  else
+    println$ "No match";
+  done
+done
 
 while argno<System::argc do
   arg = System::argv argno;
@@ -74,6 +129,8 @@ while argno<System::argc do
     PORT=atoi arg.[7 to];
   elif prefix(arg,"--cpath=") do
     C_PATH+=arg.[8 to];
+  elif prefix(arg,"--plugin-path=") do
+    FLX_WEBSERVER_PLUGIN_PATH+=arg.[14 to];
   done
   ++argno;
 done
@@ -82,11 +139,12 @@ C_PATH+= INSTALL_ROOT+"/lib/rtl";
 FLX_PATH+=INSTALL_ROOT+"/lib";
 FDOC_PATH+=INSTALL_ROOT+"/doc";
 FLX_PKGCONFIG_PATH+=INSTALL_ROOT+"/config";
+FLX_WEBSERVER_PLUGIN_PATH+=INSTALL_ROOT+"/tools";
 
 println$ "INSTALL_ROOT="+INSTALL_ROOT;
-println$ "FLX_PATH="+FLX_PATH;
-println$ "C_PATH="+C_PATH;
-println$ "FDOC_PATH="+FDOC_PATH;
+println$ "FLX_PATH="+str FLX_PATH;
+println$ "C_PATH="+str C_PATH;
+println$ "FDOC_PATH="+str FDOC_PATH;
 println$ "DELAY="+str DELAY;
 println$ "PORT="+str PORT;
 
