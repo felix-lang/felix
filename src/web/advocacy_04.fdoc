@@ -1,0 +1,5 @@
+@h1 Simple binding to C and C++
+  <strong>Reuse C and C++ libraries:</strong> Felix provides a simple way to bind almost seamlessly to C and C++ code,
+  so you can continue to use all your favourite libraries: compatibility is assured
+  because Felix uses the C/C++ object model.
+

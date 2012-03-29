@@ -1,0 +1,82 @@
+@h1 Safety 
+  <strong>Program correctness</strong> is supported by a wide range of features including <em>garbage
+  collection</em> for automatic storage management, strict high power <em>static typing</em> including
+  <em>overloading</em>, <em>parametric polymorphism</em>, Haskell style <em>type classes</em>, 
+  and <em>type constraints</em>. 
+
+@h2 Contract Programming
+  <strong>Contract programming:</strong>
+  Felix provides the best contract programming system of any production language.
+  It has the usual assertions, pre-conditions, and post-conditions for
+  functions, but also provides reductions, axioms, lemmas and theorems.
+  Abstract typing is supported by modules, and contol over visibility.
+
+@h2 Static typing
+  <strong>Type system:</strong>
+  The type system is formally an enhanced version of the typed lambda calculus plus
+  pattern matching.  A wide range
+  of functional programming constructions including first class nested
+  functions with closures are provided. Felix also provides a range of type constructors
+  including tuples, records, and stucts, cases and variants.
+
+@h2 No NULL pointer dereferences
+Felix has two kinds of pointers: those that can be NULL and those
+that can't. The ones that can't be NULL can be safely dereferenced,
+those that can must be converted to those that can't with
+a checked conversion.
+
+@h2 Hybrid Automatic Memory Management
+Felix supports multiple memory management techniques.
+
+@h3 Stack Protocol
+Felix functions use the machine stack if the compiler
+decides it is safe to do so. Generally, if you write a
+C like function, it will use the machine stack for local
+variables, indeed, it will probably be emitted as an
+actual C function.
+ 
+@h3 Malloc
+You can use {malloc} and {free} if you really want to.
+
+@h3 Constructors and Destructors
+Felix objects are C++ objects, so members are destroyed by
+destructors. Thus for C++ string objects used in Felix the
+underlying {char} array is not tracked by the garbage collector:
+Felix relies on the usual destructor to deallocate the memory.
+
+Constructors and destructors are the best technique for
+data structures which encapulate memory acquisitions,
+that is, memory objects are kept hidden from the client.
+
+@h3 Reference Counting
+Felix allows objects to be reference counted. An object with
+a non-zero reference count will not be deleted by the garbage
+collector even if it appears unreachable. This is useful when
+you need to pass a Felix allocated object to a C library
+which saves it somewhere invisible to Felix.
+
+@h3 Garbage Collection
+Felix has a standard thread safe world stop naive semi-exact 
+garbage collector. The collector is required for certain
+data types including complex union types and closures.
+
+The collector is shared between all threads. Collection
+requires all threads to cooperatively suspend.
+
+The collector uses the standard mark-sweep algorithm.
+This is not a high performance technique, however it has the
+desirable property that objects are not moved, which is necessary
+for interfacing easily with C.
+
+The collector uses RTTI objects generator by the compiler to
+locate pointers in objects. The collector has a specified 
+root set, however the machine stack of each thread is also
+scanned conservatively for additional roots.
+
+The collector uses {malloc} and {free} for acquisition and
+release of memory partly because it is believed these are
+efficient, and partly to ensure objects can be freely
+exchanged between Felix and C.
+
+
+

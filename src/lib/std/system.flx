@@ -5,6 +5,8 @@ class System
   const _argv:&&char= "PTF argv";
 
   fun argv:int -> string = '::std::string($1<0||$1>=PTF argc??"":PTF argv[$1])';
+  fun argv_dflt (x:int) (y:string) => match argv x with | "" => y | ?a => a;
+
   fun args () => List::map (argv) (List::range argc);
   fun system: string -> int = "::std::system($1.c_str())"
     requires Cxx_headers::cstdlib;

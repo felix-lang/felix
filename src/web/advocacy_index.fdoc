@@ -1,0 +1,10 @@
+@h1 Advocacy Index
+<ul>
+<li><a href="advocacy_01.fdoc">Easy to Deploy</a></li>
+<li><a href="advocacy_02.fdoc">Easy to program</a></li>
+<li><a href="advocacy_03.fdoc">High Performance</a></li>
+<li><a href="advocacy_04.fdoc">Simple binding to C and C++</a></li>
+<li><a href="advocacy_05.fdoc">Safety</a></li>
+<li><a href="advocacy_06.fdoc">Special Language Features</a></li>
+<li><a href="advocacy_07.fdoc">Domain Specific Sublanguages</a></li>
+</ul>

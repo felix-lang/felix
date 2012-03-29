@@ -1,10 +1,12 @@
 include "std/posix/filesystem";
+var prefix = System::argv_dflt 1 "tut";
+var title = System::argv_dflt 2 "Tutorial";
 
-re := RE2("tut_\\d*\\.fdoc");
+re := RE2(prefix+"_\\d*\\.fdoc");
 docs := FileSystem::regfilesin("src/web/", re);
 iter println of (string) docs;
-f := fopen_output("src/web/tut_index.fdoc");
-writeln$ f,"@h1 Tutorial Index";
+f := fopen_output("src/web/"+prefix+"_index.fdoc");
+writeln$ f,"@h1 "+title+" Index";
 writeln$ f,"<ul>";
 iter (proc (x:string) { writeln$ f, mkentry x; }) docs;
 writeln$ f,"</ul>";
@@ -19,3 +21,4 @@ fun mkentry(x:string):string =
   html := '<li><a href="' + x + '">' + title + '</a></li>';
   return html;
 }
+

@@ -1,0 +1,6 @@
+@h1 High Performance
+High performance is delivered by advanced data structures,
+  whole program analysis with heavy inlining, and other high level optimisations. Felix then
+  generates C++ which is then optimised at the low level by your favourite ISO C++ compiler 
+  to generate machine binaries instead of bytecode. The result is sometimes faster than hand written C
+  and can you can always embed C directly in your Felix code if required.
