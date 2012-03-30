@@ -8,6 +8,36 @@
 using namespace std;
 
 // define dynamic library loader stuff, even for static linkage
+// SPECS:
+//
+// FLX_DLSYM(lib,sym) accepts a library handle and an identifier.
+//   It works for both static and dynamic linkage.
+//   For dynamic linkage it converts the symbol to a string
+//     and calls dlsym
+//   For static linkage it just returns the provided symbol,
+//     which should have been linked by the linker.
+//     This will work for both static linkage AND for
+//     load time dynamic linkage (but not run time linkage).
+//
+// FLX_SDLSYM(lib,string) accepts a library handle
+//   and a string. It should work run time linkage only.
+//
+// DLSYM(lib,sym) is just FLX_DLSYM, it requires a symbol.
+//
+// SDLSYM(lib,string) uses FLX_SDLSYM if dynamic linkage is selected 
+//   and throws an exception if static linkage is chosen.
+//
+// Therefore: 
+//   * the "S" version of these macros uses a string name,
+//     the non-"S" version uses an identifier.
+//
+//   * FLX_SDLSYM uses a string name and always does
+//     run time lookup.
+//
+//   * DLSYM uses a symbol and uses a linker bound
+//     address if FLX_STATIC_LINK is selected
+//     Otherwise it uses run time lookup.
+//
 #if FLX_WIN32
   #include <windows.h>
   typedef HMODULE LIBHANDLE;
