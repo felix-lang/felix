@@ -74,9 +74,14 @@ class Dynlink
     delete_library_handle dl;
   }
 
+  // This function now ALWAYS does a dlsym
+  // (or Windows equivalent)
+  // even for static linkage: after all 
+  // statically linked executables can still
+  // load DLLs at run time
   publish "dlsym wrapper, returns any symbol"
   fun dlsym:flx_library * string->address =
-      "SDLSYM($1->library,$2.c_str())";
+      "FLX_SDLSYM($1->library,$2.c_str())";
 
   publish """
     execute an address representing a top
