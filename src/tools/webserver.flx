@@ -105,11 +105,11 @@ for line in config_lines do
   done
   match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
   if match_result do
-    var lhs = result.[1].str.strip;
-    var rhs = result.[2].str.strip;
+    lhs = result.[1].str.strip;
+    rhs = result.[2].str.strip;
     println$ "match "+lhs+ " += " + rhs;
     match lhs with
-    | "PORT" => port = atoi rhs;
+    | "PORT" => PORT = atoi rhs;
     | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
     | _ => println$ "Unknown variable '" + lhs +"'";
     endmatch;

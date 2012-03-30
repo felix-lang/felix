@@ -54,7 +54,7 @@ using namespace std;
 #ifndef FLX_STATIC_LINK
   #define SDLSYM(x,y) FLX_SDLSYM(x,y)
 #else
-  #define SDLSYM(x,y) (throw ::flx::rtl::link_failure_t("<static link>",y,"dlsym with static link requires name not string")
+  #define SDLSYM(x,y) (throw ::flx::rtl::flx_link_failure_t("<static link>",y,"dlsym with static link requires name not string")
 #endif
 
 // Utilities to make dynamic linkage and
