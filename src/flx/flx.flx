@@ -316,9 +316,13 @@ failure:>
 
 proc install_bin ()
 {
-  debugln "Install executables";
+  // NOTE: these installs use the immediate build directory,
+  // NOT the final build target, eg tools/webserver not bin/webserver
+  // This may be wrong!
+  debugln "Install executables and plugins";
   println$ "FROM: " + FLX_INSTALL_DIR;
-  println$ "TO  : /usr/local/bin (fixed, can't be changed: privilege required)";
+  println$ "TO   : /usr/local/bin (fixed, can't be changed: privilege required)";
+  println$ "AND  : /usr/local/lib (fixed, can't be changed: privilege required)";
 
   result=system("cp -f "+FLX_INSTALL_DIR+"/bin/flx /usr/local/bin");
   if result !=0 goto install_bin_failed;
@@ -336,6 +340,24 @@ proc install_bin ()
   if result !=0 goto install_bin_failed;
 
   result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx_cp /usr/local/bin");
+  if result !=0 goto install_bin_failed;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/ocaml2html"+EXT_SHLIB+" /usr/local/lib");
+  if result !=0 goto install_bin_failed;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/py2html"+EXT_SHLIB+" /usr/local/lib");
+  if result !=0 goto install_bin_failed;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/fpc2html"+EXT_SHLIB+" /usr/local/lib");
+  if result !=0 goto install_bin_failed;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/flx2html"+EXT_SHLIB+" /usr/local/lib");
+  if result !=0 goto install_bin_failed;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/fdoc2html"+EXT_SHLIB+" /usr/local/lib");
+  if result !=0 goto install_bin_failed;
+
+  result= system("cp -f "+FLX_INSTALL_DIR+"/tools/cpp2html"+EXT_SHLIB+" /usr/local/lib");
   if result !=0 goto install_bin_failed;
 
   println "Install succeeded";
