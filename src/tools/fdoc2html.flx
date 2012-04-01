@@ -8,6 +8,10 @@ fun prefix(arg:string,key:string)=>
 
 var INSTALL_ROOT="";
 var FLX_PATH = Empty[string];
+var FDOC_PATH = Empty[string];
+var FLX_PKGCONFIG_PATH = Empty[string];
+var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
+var PLUGIN_MAP = Empty[string^3];
 
 fun get_file (var fname:string, path:list[string]) = {
   if fname.[0] == char "$" do fname = fname.[1 to]; done
@@ -49,9 +53,14 @@ fun txt2html (x:string) =
 }
 
 
-typedef xlat_t = string * string --> bool * string;
-var xlat_felix: xlat_t;
-var xlat_cpp: xlat_t;
+typedef raw_xlat_t = address * string * string --> bool * string;
+
+var xlat_felix: raw_xlat_t;
+var xlat_cpp: raw_xlat_t;
+
+var tf_xlat_felix: address;
+var tf_xlat_cpp: address;
+
 
 module Fdoc2Html {
 
@@ -305,7 +314,7 @@ nextc:>
       if sol and char "@" == ch do 
         if b != "" do 
           write_string("<pre class='cppbg'>"); 
-          write_string((xlat_cpp (b,"")).1); // no parent!
+          write_string((xlat_cpp (tf_xlat_cpp,b,"")).1); // no parent!
           write_string("</pre>"); 
           b= ""; 
         done
@@ -320,7 +329,7 @@ nextc:>
       if sol and char "@" == ch do 
         if b != "" do 
           write_string("<pre class='flxbg'>"); 
-          needs_mathjax', txt := xlat_felix (b,"");
+          needs_mathjax', txt := xlat_felix (tf_xlat_felix,b,"");
           needs_mathjax |= needs_mathjax';
           write_string(txt); // no parent!
           write_string("</pre>"); 
@@ -341,7 +350,7 @@ nextc:>
           {
             fname := strip(b.[6 to]);
             var flx = get_flx(fname);
-            needs_mathjax', html := xlat_felix (flx,"");
+            needs_mathjax', html := xlat_felix (tf_xlat_felix,flx,"");
             needs_mathjax |= needs_mathjax';
             write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
             write_string("<pre class='flxbg'>"); 
@@ -353,7 +362,7 @@ nextc:>
           {
             fname := strip(b.[15 to]);
             var flx = get_flx(fname+".flx");
-            needs_mathjax', html := xlat_felix (flx,"");
+            needs_mathjax', html := xlat_felix (tf_xlat_felix,flx,"");
             needs_mathjax |= needs_mathjax';
             write_string("<pre class='inclusion'>"+fname+".flx</pre>\n");
             write_string("<pre class='flxbg'>"); 
@@ -375,7 +384,7 @@ nextc:>
             var flx = get_flx(fname);
             write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
             write_string("<pre class='cppbg'>"); 
-            write_string((xlat_cpp (flx,"")).1);
+            write_string((xlat_cpp (tf_xlat_cpp,flx,"")).1);
             write_string("</pre>"); 
           };
           s=doc;
@@ -428,8 +437,85 @@ fin:>
 
 println$ "fdoc2html initialisation";
 
-fun setup(x:string) = {
-  println$ "fdoc2html config: " + x;
+fun setup(config_data:string) = {
+  var config_lines = split(config_data, "\n");
+  config_lines = map (strip of (string)) config_lines; 
+  var pathext = RE2("(.*)\\+=(.*)");
+  var varset = RE2("(.*)=(.*)");
+  var plugin_spec = RE2 " *extension (.*)->(.*)::(.*)";
+
+  var result = varray[StringPiece] (4.size,StringPiece(""));
+  for line in config_lines do
+    var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+    if match_result do
+      var lhs = result.[1].str.strip;
+      var rhs = result.[2].str.strip;
+      match lhs with
+      | "FLX_PATH" => FLX_PATH += rhs; 
+      | "FDOC_PATH" => FDOC_PATH += rhs; 
+      | "FLX_PKGCONFIG_PATH" => FLX_PKGCONFIG_PATH += rhs;
+      | "FLX_WEBSERVER_PLUGIN_PATH" => FLX_WEBSERVER_PLUGIN_PATH += rhs;
+      | _ => ;
+      endmatch;
+    else
+    match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+    if match_result do
+      lhs = result.[1].str.strip;
+      rhs = result.[2].str.strip;
+      match lhs with
+      | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
+      | _ => ;
+      endmatch;
+    else
+    match_result = Match(plugin_spec, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,4);
+    if match_result do
+      var extn = result.[1].str.strip;
+      var lib = result.[2].str.strip;
+      var entry = result.[3].str.strip;
+      PLUGIN_MAP = Cons ((extn, lib, entry), PLUGIN_MAP);
+    done done done
+  done
+println$ "INSTALL_ROOT=" + INSTALL_ROOT;
+println$ "FDOC_PATH=" + str FDOC_PATH;
+println$ "FLX_PATH=" + str FLX_PATH;
+println$ "FLX_PKGCONFIG_PATH=" + str FLX_PKGCONFIG_PATH;
+println$ "FLX_WEBSERVER_PLUGIN_PATH=" + str FLX_WEBSERVER_PLUGIN_PATH;
+println$ "PLUGIN_MAP=" + str PLUGIN_MAP;
+
+  // Load Plugins.
+  typedef libmap_entry = string * Dynlink::flx_instance;
+  var libs = Empty[libmap_entry];
+  fun have_lib (k:string) => Assoc_list::mem (== of (string * string)) libs k;
+  var dll_extn = #Config::config.EXT_SHLIB;
+
+  for d in PLUGIN_MAP do 
+    match d with 
+    | ?ext,?lib,?entry =>
+      if not (have_lib lib) do
+        if lib in list("flx2html", "cpp2html") do
+    println$ "Adding lib " + lib;
+          var linst = Dynlink::init_lib(lib + dll_extn);
+          var library = Dynlink::get_library linst;
+          var tf = Dynlink::get_thread_frame linst;
+          var raw_setup = Dynlink::dlsym$ library, "setup";
+          println$ "Got setup address " + str raw_setup;
+          var setup = C_hack::cast[address * string --> int] raw_setup;
+          var sresult = setup(tf,config_data);
+    println$ "Library set up " + str sresult;
+          libs = Cons ((lib, linst),libs); 
+          match lib with
+          | "flx2html" => 
+            xlat_felix = C_hack::cast[raw_xlat_t]$ Dynlink::dlsym (library,entry);
+            tf_xlat_felix = tf;
+          | "cpp2html" => 
+            xlat_cpp= C_hack::cast[raw_xlat_t]$ Dynlink::dlsym (library,entry);
+            tf_xlat_cpp = tf;
+          endmatch;
+        done
+      done 
+    endmatch;
+  done
+
   return 0;
 }
 

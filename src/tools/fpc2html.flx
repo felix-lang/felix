@@ -3,6 +3,7 @@ include "./charclass";
 var FLX_PKGCONFIG_PATH = Empty[string];
 var INSTALL_ROOT = "";
 var C_PATH = Empty[string];
+var FLX_PATH = Empty[string];
 
 fun get_file (var fname:string, path:list[string]) = {
   if fname.[0] == char "$" do fname = fname.[1 to]; done
@@ -65,10 +66,43 @@ fun xlat_fpc(t:string, dir:string) : bool * string =
 
 println$ "Fpc2html initialisation";
 
-fun setup(x:string) = {
-  println$ "Fpc2html config: " + x;
+fun setup(config_data:string) = {
+  var config_lines = split(config_data, "\n");
+  config_lines = map (strip of (string)) config_lines; 
+  var pathext = RE2("(.*)\\+=(.*)");
+  var varset = RE2("(.*)=(.*)");
+  var plugin_spec = RE2 " *extension (.*)->(.*)::(.*)";
+
+  var result = varray[StringPiece] (4.size,StringPiece(""));
+  for line in config_lines do
+    var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+    if match_result do
+      var lhs = result.[1].str.strip;
+      var rhs = result.[2].str.strip;
+      match lhs with
+      | "FLX_PATH" => FLX_PATH += rhs; 
+      | "C_PATH" => C_PATH += rhs; 
+      | "FLX_PKGCONFIG_PATH" => FLX_PKGCONFIG_PATH += rhs;
+      | _ => ;
+      endmatch;
+    else
+    match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
+    if match_result do
+      lhs = result.[1].str.strip;
+      rhs = result.[2].str.strip;
+      match lhs with
+      | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
+      | _ => ;
+      endmatch;
+    done done
+  done
+println$ "INSTALL_ROOT=" + INSTALL_ROOT;
+println$ "FLX_PATH=" + str FLX_PATH;
+println$ "C_PATH=" + str C_PATH;
+println$ "FLX_PKGCONFIG_PATH=" + str FLX_PKGCONFIG_PATH;
   return 0;
 }
+
 
 export fun setup of (string) as "setup";
 export fun Fpc2Html::xlat_fpc of (string * string) as "xlat_fpc";

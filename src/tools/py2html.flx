@@ -207,7 +207,7 @@ fin:>
 println$ "Py2html initialisation";
 
 fun setup(x:string) = {
-  println$ "Py2html config: " + x;
+  C_hack::ignore(x); // which means, don't ignore it .. :)
   return 0;
 }
 

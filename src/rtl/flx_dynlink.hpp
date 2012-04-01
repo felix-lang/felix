@@ -111,8 +111,6 @@ using namespace std;
 // defined in the base]
 
 // must be at global scope, because the users' is
-struct thread_frame_t;
-
 namespace flx { namespace rtl {
 
 struct RTL_EXTERN flx_link_failure_t;
@@ -137,7 +135,7 @@ flx_load_module(const std::string& filename);
 
 /// frame creators.
 
-typedef thread_frame_t *(*thread_frame_creator_t)
+typedef void *(*thread_frame_creator_t)
 (
   ::flx::gc::generic::gc_profile_t*
 );
@@ -146,7 +144,7 @@ typedef thread_frame_t *(*thread_frame_creator_t)
 
 typedef con_t *(*start_t)
 (
-  thread_frame_t*,
+  void*,
   int,
   char **,
   FILE*,
@@ -155,7 +153,7 @@ typedef con_t *(*start_t)
 
 );
 
-typedef con_t *(*main_t)(thread_frame_t*);
+typedef con_t *(*main_t)(void*);
 
 /// dynamic object loader.
 
@@ -196,7 +194,7 @@ private:
 
 struct RTL_EXTERN flx_libinit_t
 {
-  thread_frame_t *thread_frame;
+  void *thread_frame;
   con_t *start_proc;
   con_t *main_proc;
   flx_dynlink_t *lib;
