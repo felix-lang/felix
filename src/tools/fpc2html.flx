@@ -1,11 +1,30 @@
+include "./charclass";
+
+var FLX_PKGCONFIG_PATH = Empty[string];
+var INSTALL_ROOT = "";
+var C_PATH = Empty[string];
+
+fun get_file (var fname:string, path:list[string]) = {
+  if fname.[0] == char "$" do fname = fname.[1 to]; done
+  if FileStat::fileexists fname do return Some fname;
+  else
+    var f = Filename::join(INSTALL_ROOT,fname);
+    if FileStat::fileexists f do return Some f;
+    else return FileSystem::find_in_path (fname, path);
+    done
+  done
+}
+
+
+
 module Fpc2Html 
 {
-fun xlat_fpc(t:string, dir:string)=
+fun xlat_fpc(t:string, dir:string) : bool * string =
 {
   var out = "";
   val lines = split(t,"\n");
   iter handle_line lines;
-  return out;
+  return false, out;
 
   proc handle_line(s:string) {
     match split(s,":") with
@@ -43,4 +62,14 @@ fun xlat_fpc(t:string, dir:string)=
   }
 }
 }
+
+println$ "Fpc2html initialisation";
+
+fun setup(x:string) = {
+  println$ "Fpc2html config: " + x;
+  return 0;
+}
+
+export fun setup of (string) as "setup";
+export fun Fpc2Html::xlat_fpc of (string * string) as "xlat_fpc";
 

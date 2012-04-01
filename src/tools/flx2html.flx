@@ -1,3 +1,27 @@
+include "./charclass";
+
+
+typedef xlat_t = string * string --> bool * string;
+var xlat_cpp: xlat_t;
+
+// fixup text by replacing < > and & characters
+fun txt2html (x:string) =
+{
+  var out2 = "";
+  for var i in 0 upto x.len.int - 1 do
+    var ch = x.[i];
+    if ch == char "<" do out2+="&lt;";
+    elif ch == char ">" do out2+="&gt;";
+    elif ch == char "&" do out2+="&amp;";
+    else out2+=ch;
+    done
+  done
+
+  return out2;
+}
+
+var FLX_PKGCONFIG_PATH = Empty[string];
+
 // Felix
 module Flx2Html {
 private val big_keywords = 
@@ -143,6 +167,41 @@ fun valof[N](x:array[string * string,N],key:string) =>
   endmatch
 ;
 
+fun get_file (var fname:string, INSTALL_ROOT:string, path:list[string]) = {
+  if fname.[0] == char "$" do fname = fname.[1 to]; done
+  if FileStat::fileexists fname do return Some fname;
+  else
+    var f = Filename::join(INSTALL_ROOT,fname);
+    if FileStat::fileexists f do return Some f;
+    else return FileSystem::find_in_path (fname, path);
+    done
+  done
+}
+
+fun get_file (var fname:string, path:list[string]) = {
+  if fname.[0] == char "$" do fname = fname.[1 to]; done
+  if FileStat::fileexists fname do return Some fname;
+  else
+    var f = Filename::join(INSTALL_ROOT,fname);
+    if FileStat::fileexists f do return Some f;
+    else return FileSystem::find_in_path (fname, path);
+    done
+  done
+}
+
+
+fun prefix(arg:string,key:string)=>
+  arg.[to len key]==key
+;
+
+var INSTALL_ROOT = "";
+var FLX_PATH = Empty[string];
+var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
+
+proc setup_felix (x:string)
+{
+}
+
 fun xlat_felix(t:string, dir:string): bool * string =
 {
   var needs_mathjax = false;
@@ -204,7 +263,7 @@ fun xlat_felix(t:string, dir:string): bool * string =
       while n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
       while n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
       if n.[-4 to] != ".flx" do n+= ".flx"; done // hack, fixme
-      match get_file(n,FLX_PATH) with
+      match get_file(n,INSTALL_ROOT,FLX_PATH) with
       | Some ?f => { write_string('<a href="/$'+f+'" >' + b + '</a>') ; }
       | None => {  write_string('<span class="fstring">'+txt2html b+"</span>"); }
       endmatch;
@@ -220,7 +279,7 @@ fun xlat_felix(t:string, dir:string): bool * string =
       if prefix(b,quote) do n = b.[1 to -1]; goto unstring; done
       // shouldn't happen ..
 unstring:>
-      val c = Cpp2Html::xlat_cpp (n,dir);
+      val c = (xlat_cpp (n,dir)).1;
       write_string(quote+'<span class="embedded_c">' + c + '</span>'+quote); 
     elif last_key == "package" do
        println$ "Package: " + b;
@@ -401,3 +460,15 @@ fin:>
    return needs_mathjax, out;
 }
 }
+
+
+println$ "flx2html initialisation";
+
+fun setup(x:string) = {
+  println$ "Flx2html config: " + x;
+  return 0;
+}
+
+export fun setup of (string) as "setup";
+export fun Flx2Html::xlat_felix of (string * string) as "xlat_felix";
+

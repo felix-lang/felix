@@ -1,3 +1,5 @@
+include "./charclass";
+
 // Ocaml
 module Ocaml2Html {
 private val big_keywords = 
@@ -25,7 +27,7 @@ private val qualifiers =
 private val hack = "C_hack","C_hack"; // to make it an array we need 2 components
 
 
-fun xlat_ocaml(t:string)=
+fun xlat_ocaml(t:string, dir:string) : bool * string =
 {
   var out = "";
   proc write_string(t:string) 
@@ -163,6 +165,18 @@ thisch:> // same char, reconsider it
 fin:>
    println "outof data";
    w(); // whatever is left over gets written
-   return out;
+   return false, out;
 }
 }
+
+
+println$ "ocaml2html initialisation";
+
+fun setup(x:string) = {
+  println$ "Ocaml2html config: " + x;
+  return 0;
+}
+
+export fun setup of (string) as "setup";
+export fun Ocaml2Html::xlat_ocaml of (string * string) as "xlat_ocaml";
+

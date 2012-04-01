@@ -82,8 +82,12 @@ let gen_all_fun_shapes scan s syms bsym_table last_ptr_map =
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,ps,ret,exes) ->
         scan exes;
-        if mem `Cfun props then () else
-        if mem `Heap_closure props then
+(*
+print_string ("Checking to see if we need RTTI for function " ^ Flx_bsym.id bsym);
+*)
+        if mem `Cfun props then begin (* print_endline " No, cfun"; *) () end else
+        if mem `Heap_closure props then begin
+          (* print_endline " Yes"; *)
           gen_fun_offsets
             s
             syms
@@ -96,7 +100,13 @@ let gen_all_fun_shapes scan s syms bsym_table last_ptr_map =
             instance
             props
             last_ptr_map
-    | _ -> ()
+        end
+        else
+(*
+print_endline " No, not Heaped";
+*)
+       ()
+    | _ ->  ()
   end syms.instances;
 
 

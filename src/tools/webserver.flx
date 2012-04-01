@@ -17,12 +17,14 @@ open TerminalIOByteStream[socket_t];
 
 proc dbg(x:string) { fprint (cerr,x); };
 
+/*
 include "./cpp2html";
 include "./flx2html";
 include "./fdoc2html";
 include "./fpc2html";
 include "./py2html";
 include "./ocaml2html";
+*/
 include "./charclass";
 include "./css4html";
 
@@ -56,17 +58,35 @@ var C_PATH=list(
   "/usr/include"
 );
 
+var FLX_PKGCONFIG_PATH=Empty[string];
+
 var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
+var PLUGIN_MAP = Empty[string^3];
 
 var default_config = list (
   "C_PATH += /usr/include/c++/4.2.1", 
   "C_PATH += /usr/include/c++/4.2.1/x86_64-apple-darwin10", 
   "C_PATH += /usr/include/c++/4.4.3", 
   "C_PATH += /usr/include/c++/4.4.3/x86_64-linux-gnu", 
-  "C_PATH += /usr/lib/gcc/x86_64-linux-gnu/4.4.3/include"
-);
+  "C_PATH += /usr/lib/gcc/x86_64-linux-gnu/4.4.3/include",
 
-var FLX_PKGCONFIG_PATH=Empty[string];
+   "extension flx -> flx2html::xlat_felix",
+   "extension flxh -> flx2html::xlat_felix",
+
+   "extension c     -> cpp2html::xlat_cpp",
+   "extension cpp   -> cpp2html::xlat_cpp",
+   "extension cxx   -> cpp2html::xlat_cpp",
+   "extension h     -> cpp2html::xlat_cpp",
+   "extension hpp   -> cpp2html::xlat_cpp",
+
+   "extension fpc  -> fdoc2html::xlat_fpc",
+   "extension fdoc  -> fdoc2html::xlat_fdoc",
+   "extension ml    -> ocaml2html::xlat_ocaml",
+   "extension mli   -> ocaml2html::xlat_ocaml",
+
+   "extension py    -> py2html::xlat_py",
+   ""
+);
 
 var HOME: string = Env::getenv "HOME";
 println$ "Home=" + HOME;
@@ -84,7 +104,9 @@ done
 config_lines = map (strip of (string)) config_lines; 
 var pathext = RE2("(.*)\\+=(.*)");
 var varset = RE2("(.*)=(.*)");
-var result = varray[StringPiece] (3.size,StringPiece(""));
+var plugin_spec = RE2 " *extension (.*)->(.*)::(.*)";
+
+var result = varray[StringPiece] (4.size,StringPiece(""));
 for line in config_lines do
   println$ "Line = " + line;
   var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
@@ -101,8 +123,6 @@ for line in config_lines do
     | _ => println$ "Unknown variable '" + lhs +"'";
     endmatch;
   else
-    println$ "No match";
-  done
   match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
   if match_result do
     lhs = result.[1].str.strip;
@@ -114,8 +134,16 @@ for line in config_lines do
     | _ => println$ "Unknown variable '" + lhs +"'";
     endmatch;
   else
+  match_result = Match(plugin_spec, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,4);
+  if match_result do
+    var extn = result.[1].str.strip;
+    var lib = result.[2].str.strip;
+    var entry = result.[3].str.strip;
+    println$ "match "+extn+ " " + lib + " " + entry;
+    PLUGIN_MAP = Cons ((extn, lib, entry), PLUGIN_MAP);
+  else
     println$ "No match";
-  done
+  done done done
 done
 
 while argno<System::argc do
@@ -144,9 +172,74 @@ FLX_WEBSERVER_PLUGIN_PATH+=INSTALL_ROOT+"/tools";
 println$ "INSTALL_ROOT="+INSTALL_ROOT;
 println$ "FLX_PATH="+str FLX_PATH;
 println$ "C_PATH="+str C_PATH;
+println$ "FLX_PKGCONFIG_PATH="+str FLX_PKGCONFIG_PATH;
+println$ "FLX_WEBSERVER_PLUGIN_PATH="+str FLX_WEBSERVER_PLUGIN_PATH;
 println$ "FDOC_PATH="+str FDOC_PATH;
 println$ "DELAY="+str DELAY;
 println$ "PORT="+str PORT;
+
+val newline="\n";
+
+var config = "INSTALL_ROOT = " + INSTALL_ROOT + newline;
+for d in FLX_PATH do
+  config += "FLX_PATH += " + d + newline;
+done
+
+for d in C_PATH do
+  config += "C_PATH += " + d + newline;
+done
+
+for d in FLX_PKGCONFIG_PATH do
+  config += "FLX_PKGCONFIG_PATH += " + d + newline;
+done
+
+for d in FLX_WEBSERVER_PLUGIN_PATH do
+  config += "FLX_PKGCONFIG_PATH += " + d + newline;
+done
+
+for d in FDOC_PATH do
+  config += "FDOC_PATH += " + d + newline;
+done
+
+typedef libmap_entry = string * Dynlink::flx_instance;
+var libs = Empty[libmap_entry];
+fun have_lib (k:string) => Assoc_list::mem (== of (string * string)) libs k;
+var dll_extn = #Config::config.EXT_SHLIB;
+
+typedef xlat_t = string * string --> bool * string;
+
+var xlat_felix: xlat_t;
+var xlat_fdoc: xlat_t;
+var xlat_fpc: xlat_t;
+var xlat_ocaml: xlat_t;
+var xlat_py:  xlat_t;
+var xlat_cpp: xlat_t;
+
+for d in PLUGIN_MAP do 
+  match d with 
+  | ?ext,?lib,?entry =>
+    if not (have_lib lib) do
+println$ "Adding lib " + lib;
+      var linst = Dynlink::init_lib(lib + dll_extn);
+      var library = Dynlink::get_library linst;
+      var tf = Dynlink::get_thread_frame linst;
+      var raw_setup = Dynlink::dlsym$ library, "setup";
+      println$ "Got setup address " + str raw_setup;
+      var setup = C_hack::cast[address * string --> int] raw_setup;
+      var sresult = setup(tf,"");
+println$ "Library set up " + str sresult;
+      libs = Cons ((lib, linst),libs); 
+      match lib with
+      | "flx2html" => xlat_felix = C_hack::cast[xlat_t]$ Dynlink::dlsym (library,entry);
+      | "fdoc2html" => xlat_fdoc = C_hack::cast[xlat_t]$ Dynlink::dlsym (library,entry);
+      | "fpc2html" => xlat_fpc = C_hack::cast[xlat_t]$ Dynlink::dlsym (library,entry);
+      | "py2html" => xlat_py = C_hack::cast[xlat_t]$ Dynlink::dlsym (library,entry);
+      | "ocaml2html" => xlat_ocaml = C_hack::cast[xlat_t]$ Dynlink::dlsym (library,entry);
+      | "cpp2html" => xlat_cpp= C_hack::cast[xlat_t]$ Dynlink::dlsym (library,entry);
+      endmatch;
+    done 
+  endmatch;
+done
 
 fun getline_to_url (get:string) =>
   if not startswith get "GET " then
@@ -352,7 +445,7 @@ proc serve_felix (k:socket_t, fname:string) {
     {
       val text = load path;
       val dirname = Filename::dirname path;
-      def val needs_mathjax, val html = Flx2Html::xlat_felix(text,dirname);
+      def val needs_mathjax, val html = xlat_felix(text,dirname);
       val data = make_html$
         "<html><head>"+Css4Html::flx_head+
          if needs_mathjax then mathjax else "" endif +
@@ -379,7 +472,7 @@ proc serve_fpc (k:socket_t, fname:string) {
       val dirname = Filename::dirname path;
       val data = make_html$
         "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+
-        (Fpc2Html::xlat_fpc (text, dirname))
+        (xlat_fpc (text, dirname)).1
         +"</pre></body></html>\n\r"
       ;
       write_string(k,data,&eof_flag);
@@ -408,7 +501,7 @@ proc serve_py (k:socket_t, fname:string) {
   var flx = get_flx fname;
   val data = make_html$
     "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+ 
-    (Py2Html::xlat_py flx) +"</pre></body></html>\n\r"
+    (xlat_py (flx,"")).1 +"</pre></body></html>\n\r"
   ;
   write_string (k, data, &eof_flag);
 }
@@ -430,7 +523,7 @@ proc serve_ocaml (k:socket_t, fname:string) {
   var flx = get_flx fname;
   val data = make_html$
     "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
-    (Ocaml2Html::xlat_ocaml flx)
+    (xlat_ocaml (flx,"")).1
     +"</pre></body></html>\n\r"
   ;
   write_string (k, data, &eof_flag);
@@ -447,7 +540,7 @@ proc serve_cpp (k:socket_t, fname:string) {
       val dirname = Filename::dirname path;
       val data = make_html$
         "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
-        (Cpp2Html::xlat_cpp (text, dirname))
+        (xlat_cpp (text, dirname)).1
         +"</pre></body></html>\n\r"
       ;
       write_string (k, data, &eof_flag);
@@ -513,7 +606,7 @@ proc serve_fdoc (k:socket_t, fname:string) {
   var eof_flag = false;
   var txt = get_fdoc(fname);
   //println$ "Contents=" + flx;
-  needs_mathjax, html := Fdoc2Html::xlat_fdoc (txt,fname);
+  needs_mathjax, html := xlat_fdoc (txt,fname);
   val data = make_html(
     "<html><head>"+Css4Html::flx_head+
     if needs_mathjax then mathjax else "" endif +
@@ -528,7 +621,7 @@ proc serve_xfdoc (k:socket_t, fname:string) {
   var eof_flag = false;
   var txt = get_fdoc(fname);
   //println$ "Contents=" + flx;
-  needs_mathjax, html := Fdoc2Html::xlat_fdoc (txt,fname);
+  needs_mathjax, html := xlat_fdoc (txt,fname);
   val data = make_xhtml(
 '''<?xml version="1.0" encoding="UTF-8"?>  
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN"  

@@ -202,32 +202,66 @@ let gen_fun_body syms bsym_table kind index export_name =
           )
         | `Cfun ->  cat ",\n " arglist
       in
-      (*
+(*
+print_endline ("Export " ^ export_name);
       if mem `Stackable props then print_endline ("Stackable " ^ export_name);
       if mem `Stack_closure props then print_endline ("Stack_closure" ^ export_name);
-      *)
-      let is_C_fun = mem `Pure props && not (mem `Heap_closure props) in
+      if mem `Heap_closure props then print_endline ("Heap_closure" ^ export_name);
+*)
+      let call_method = 
+         if mem `Pure props && mem `Stackable props then `C_call
+         else if mem `Stackable props then `Stack_call
+         else if mem `Heap_closure props then `Heap_call
+         else 
+           let bug = 
+             "Function exported as " ^ export_name ^ " is neither stackable " ^
+             " nor has a heap closure -- no way to call it" 
+           in clierr sr bug
+      in
       let requires_ptf = mem `Requires_ptf props in
 
       let rettypename = cpp_typename syms bsym_table ret in
       let class_name = cpp_instance_name syms bsym_table index [] in
+      let ge = gen_expr syms bsym_table index [] [] in
+      let args = match ps with
+      | [] -> ""
+      | [{pid=name}] -> name
+      | _ ->
+          let a =
+            let counter = ref 0 in
+            bexpr_tuple
+              (btyp_tuple (Flx_bparameter.get_btypes ps))
+              (
+                List.map
+                (fun {ptyp=t; pid=name; pindex=idx} ->
+                  bexpr_expr (name,t)
+                )
+                ps
+              )
+          in
+          ge sr a
+      in
+
 
       "//EXPORT FUNCTION " ^ class_name ^
       " as " ^ export_name ^ "\n" ^
       rettypename ^" " ^ export_name ^ "(\n" ^ arglist ^ "\n){\n" ^
-      (if is_C_fun then
-      "  return " ^ class_name ^ "(" ^
-      (
-        if requires_ptf
-        then "_PTFV" ^ (if length ps > 0 then "," else "")
-        else ""
-      )
-      ^cat ", " (Flx_bparameter.get_names ps) ^ ");\n"
-      else
-      "  return (new(*_PTF gcp,"^class_name^"_ptr_map,true)\n" ^
-      "    " ^ class_name ^ "(_PTFV)\n" ^
-      "    ->apply(" ^ cat ", " (Flx_bparameter.get_names ps) ^ ");\n"
-      )^
+      begin match call_method with
+      | `C_call -> 
+        "  return " ^ class_name ^ "("^
+        (if requires_ptf then "_PTFV"^(if List.length ps > 0 then ", " else "") else "") ^
+        cat ", " (Flx_bparameter.get_names ps) ^ ");\n"
+
+      | `Stack_call ->
+        "  return " ^ class_name ^ "("^
+          (if requires_ptf then "_PTFV" else "") ^").apply(" ^
+          args^ ");\n"
+      | `Heap_call ->
+        "  return (new(*_PTF gcp,"^class_name^"_ptr_map,true)\n" ^
+        "    " ^ class_name ^ "(_PTFV)\n" ^
+        "    ->apply(" ^ args ^ ");\n"
+      end 
+      ^
       "}\n"
 
     | _ -> failwith "Not implemented: export non-function/procedure"

@@ -1,3 +1,20 @@
+include "./charclass";
+
+var C_PATH = Empty[string];
+var INSTALL_ROOT = "";
+
+fun get_file (var fname:string, path:list[string]) = {
+  if fname.[0] == char "$" do fname = fname.[1 to]; done
+  if FileStat::fileexists fname do return Some fname;
+  else
+    var f = Filename::join(INSTALL_ROOT,fname);
+    if FileStat::fileexists f do return Some f;
+    else return FileSystem::find_in_path (fname, path);
+    done
+  done
+}
+
+
 module Cpp2Html { 
 // C++ and C
 val cpp_big_keywords = 
@@ -24,7 +41,7 @@ val cpp_preproc =
   "define","if","endif","else","include","ifdef","ifndef"
 ;
 
-fun xlat_cpp(t:string, dir:string)=
+fun xlat_cpp(t:string, dir:string) : bool * string=
 {
   var out = "";
   proc write_string(t:string) 
@@ -220,7 +237,17 @@ thisch:> // same char, reconsider it
 
 fin:>
    w(); // whatever is left over gets written
-   return out;
+   return false, out;
 }
 }
+println$ "cpp2html initialisation";
+
+fun setup(x:string) = {
+  println$ "Cpp2html config: " + x;
+  return 0;
+}
+
+export fun setup of (string) as "setup";
+export fun Cpp2Html::xlat_cpp of (string * string) as "xlat_cpp";
+
 

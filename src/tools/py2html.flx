@@ -1,3 +1,5 @@
+include "./charclass";
+
 // Python 
 module Py2Html {
 private val big_keywords = 
@@ -15,7 +17,7 @@ private val qualifiers =
 ;
 
 
-fun xlat_py(t:string)=
+fun xlat_py(t:string, dir:string) : bool * string =
 {
   var out = "";
   proc write_string(t:string) 
@@ -198,6 +200,18 @@ thisch:> // same char, reconsider it
 fin:>
    println "outof data";
    w(); // whatever is left over gets written
-   return out;
+   return false, out;
 }
 }
+
+println$ "Py2html initialisation";
+
+fun setup(x:string) = {
+  println$ "Py2html config: " + x;
+  return 0;
+}
+
+export fun setup of (string) as "setup";
+export fun Py2Html::xlat_py of (string * string) as "xlat_py";
+
+
