@@ -210,6 +210,7 @@ let load_scheme_defs env scm =
 %token <'obj Dyp.dyplexbuf> HASH_LINE
 %token <'obj Dyp.dyplexbuf> HASH_INCLUDE
 %token DUMMY
+%token <'obj Dyp.dyplexbuf> EMPTY
 
 /* This stuff is only needed to specify the type of the RHS elements of
    an extensible grammar production, i.e. for parsing the Felix grammar.
@@ -520,7 +521,7 @@ syntax_unit:
     *)
     dyp.last_local_data }
 
-syntax_init:
+syntax_init: 
    {
     let file = Flx_srcref.file (getsr dyp) in
     print_endline ("syninit: Parsing " ^ file)
@@ -537,7 +538,6 @@ compilation_unit:
     dyp.last_local_data }
 
 grammar_init: @{
-    let file = Flx_srcref.file (getsr dyp) in
     (* print_endline ("grammar_init: Parsing " ^ file); *)
     let m = dyp.local_data in
 
@@ -935,6 +935,14 @@ epsilon: | { () }
 
 {
 let parse_lexbuf old_local_data lexbuf =
+  let env = global_data.env in
+  let adjust_line s =
+    match s with
+    | Sstring s -> incr_lineno lexbuf (lfcount s); Sunspec
+    | _ -> raise (Ocs_error.Error ("adjust-linecount: not a string"))
+    in
+  Ocs_env.set_pf1 env adjust_line "adjust-linecount";
+
   let show_error () =
     let b = (Dyp.std_lexbuf lexbuf) in
     let file = b.lex_start_p.pos_fname in
