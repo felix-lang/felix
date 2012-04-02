@@ -337,8 +337,8 @@ def check_flx(ctx, felix,
             ctx.logger.log(e.stderr.decode('utf-8','ignore').strip(), verbose=1)
         return False
 
-#    with open(dst, 'wb') as f:
-#        f.write(stdout)
+    with open(dst, 'wb') as f:
+        f.write(stdout)
 
     if expect is None:
         ctx.logger.log('no .expect', color='cyan')
