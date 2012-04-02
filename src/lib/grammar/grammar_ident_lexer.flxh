@@ -1,10 +1,10 @@
 syntax felix_ident_lexer {
   /* identifiers */
   regdef ucn =
-      "\\u" hexdigit hexdigit hexdigit hexdigit
-    | "\\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit;
+      "\u" hexdigit hexdigit hexdigit hexdigit
+    | "\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit;
 
-  regdef prime = '\'';
+  regdef prime = "'";
   regdef dash = '-';
   regdef idletter = letter | underscore | hichar | ucn;
   regdef alphnum = idletter | digit;
@@ -13,7 +13,7 @@ syntax felix_ident_lexer {
   regdef tex_ident = slosh letter+;
   regdef sym_ident =
     "+" | "-" | "*" | "/" | "%" | "^" | "~" | 
-    "\\&" | "\\|" | "\\^" |
+    "\&" | "\|" | "\^" |
     /* mutator */
     "&=" | "|=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=" | "<<=" | ">>=" |
     /* comparison */

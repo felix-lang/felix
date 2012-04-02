@@ -70,8 +70,8 @@ syntax expressions {
   x[scomparison_pri]:= x[>scomparison_pri] ">" x[>scomparison_pri] =># "(Infix)";
 
   // F knows why we need to use BOTH raw strings and double up the \ in these names ..
-  x[scomparison_pri]:= x[>scomparison_pri] "in" x[>scomparison_pri] =># r'''`(ast_apply ,_sr (,(nos "\\in" ) (,_1 ,_3)))''';
-  x[scomparison_pri]:= x[>scomparison_pri] "\\in" x[>scomparison_pri] =># r'''`(ast_apply ,_sr (,(nos "\\in" ) (,_1 ,_3)))'''; 
+  x[scomparison_pri]:= x[>scomparison_pri] "in" x[>scomparison_pri] =># '''`(ast_apply ,_sr (,(nos "\\in" ) (,_1 ,_3)))''';
+  x[scomparison_pri]:= x[>scomparison_pri] "\in" x[>scomparison_pri] =># '''`(ast_apply ,_sr (,(nos "\\in" ) (,_1 ,_3)))'''; 
 
   // named temporary
   x[sas_expr_pri] := x[sas_expr_pri] "as" sname =># "`(ast_as ,_sr (,_1 ,_3))";
@@ -86,9 +86,9 @@ syntax expressions {
   x[scase_literal_pri] := "case" sname "of" x[ssum_pri] =># "`(ast_variant (,_2 ,_4))";
 
   // bitwise operators
-  x[sbor_pri] := x[sbor_pri] "\\|" x[>sbor_pri] =># "(Infix)";
-  x[sbxor_pri] := x[sbxor_pri] "\\^" x[>sbxor_pri] =># "(Infix)";
-  x[sband_pri] := x[sband_pri] "\\&" x[>sband_pri] =># "(Infix)";
+  x[sbor_pri] := x[sbor_pri] "\|" x[>sbor_pri] =># "(Infix)";
+  x[sbxor_pri] := x[sbxor_pri] "\^" x[>sbxor_pri] =># "(Infix)";
+  x[sband_pri] := x[sband_pri] "\&" x[>sband_pri] =># "(Infix)";
   x[sshift_pri] := x[sshift_pri] "<<" x[>sshift_pri] =># "(Infix)";
   x[sshift_pri] := x[sshift_pri] ">>" x[>sshift_pri] =># "(Infix)";
 

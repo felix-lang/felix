@@ -210,7 +210,6 @@ let load_scheme_defs env scm =
 %token <'obj Dyp.dyplexbuf> HASH_LINE
 %token <'obj Dyp.dyplexbuf> HASH_INCLUDE
 %token DUMMY
-%token <'obj Dyp.dyplexbuf> EMPTY
 
 /* This stuff is only needed to specify the type of the RHS elements of
    an extensible grammar production, i.e. for parsing the Felix grammar.
@@ -260,28 +259,12 @@ let load_scheme_defs env scm =
 %token UNDERSCORE
 %constructor Obj_keyword %for UNDERSCORE
 
-/* 
-%token FUN
-%constructor Obj_keyword %for FUN
-
-*/
-
 /* top level entry */
 %constructor Obj_sexpr %for sterm
 
 /* predefined major non-terminals */
 %constructor Obj_sexpr %for sexpr
 %constructor Obj_sexpr %for sstatements tstatement utstatement
-
-/* low level non terminals */
-%constructor Obj_sexpr %for sname sliteral
-
-/* literals */
-%constructor Obj_sexpr %for sstring scstring
-%constructor Obj_sexpr %for strstring
-
-/* tokens replacements for special symbols used in productions */
-%constructor Obj_sexpr %for sident
 
 /* nothing*/
 %constructor Obj_sexpr %for sepsilon
@@ -371,8 +354,8 @@ let dddstring = dddspecial * ddd
 
 let raw = 'r' | 'R'
 
-let raw_qstring = (ordinary | hash | dquote | escape | white) * quote
-let raw_dstring =  (ordinary | hash | quote | escape | white) * dquote
+let raw_qstring = (ordinary | hash | dquote | escape | white | slosh) * quote
+let raw_dstring =  (ordinary | hash | quote | escape | white | slosh) * dquote
 
 let raw_qqqstring = raw_qqqspecial * qqq
 let raw_dddstring = raw_dddspecial * ddd
@@ -382,40 +365,7 @@ let not_newline = not_hash_or_newline | hash
 let quoted_filename = dquote (ordinary | hash | quote | white | slosh)+ dquote
 
 
-rule parse_qstring = parse
-| qstring {
-    let s = lexeme lexbuf in
-    let n = lfcount s in
-    incr_lineno lexbuf n;
-    decode_qstring s
-  }
-
-and parse_dstring = parse
-| dstring {
-    let s = lexeme lexbuf in
-    let n = lfcount s in
-    incr_lineno lexbuf n;
-    decode_dstring s
-  }
-
-and parse_qqqstring = parse
-| qqqstring {
-    let s = lexeme lexbuf in
-    let n = lfcount s in
-    incr_lineno lexbuf n;
-    decode_qqqstring s
-  }
-
-and parse_dddstring = parse
-| dddstring {
-    let s = lexeme lexbuf in
-    let n = lfcount s in
-    incr_lineno lexbuf n;
-    decode_dddstring s
-  }
-
-/* ----------- RAW STRING -----------------------------------*/
-and parse_raw_qstring = parse
+rule parse_raw_qstring = parse
 | raw_qstring {
     let s = lexeme lexbuf in
     let n = lfcount s in
@@ -479,15 +429,10 @@ main lexer =
   }
 
 /* Python strings */
- quote  -> STRING { parse_qstring lexbuf }
- qqq    -> STRING { parse_qqqstring lexbuf }
- dquote -> STRING { parse_dstring lexbuf }
- ddd    -> STRING { parse_dddstring lexbuf }
-
-/* Python raw strings */
- ('r'|'R') qqq    -> STRING { parse_raw_qqqstring lexbuf }
- ('r'|'R') dquote -> STRING { parse_raw_dstring lexbuf }
- ('r'|'R') ddd    -> STRING { parse_raw_dddstring lexbuf }
+ quote  -> STRING { parse_raw_qstring lexbuf }
+ qqq    -> STRING { parse_raw_qqqstring lexbuf }
+ dquote -> STRING { parse_raw_dstring lexbuf }
+ ddd    -> STRING { parse_raw_dddstring lexbuf }
 
 /* this MUST be after strings, so raw strings take precedence
   over identifiers, eg r'x' is a string, not an identifier,
