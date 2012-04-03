@@ -10,6 +10,7 @@ open Dyp
 open Flx_string
 open Flx_token
 open Flx_parse_ebnf
+open Flx_drules
 
 let catmap sep fn ls = String.concat sep (List.map fn ls)
 
@@ -80,18 +81,6 @@ let lfcount s =
     if s.[i] = '\n' then incr n
   done;
   !n
-
-(* string parsers *)
-let decode_qstring s = let n = String.length s in unescape (String.sub s 0 (n-1))
-let decode_dstring s = let n = String.length s in unescape (String.sub s 0 (n-1))
-let decode_qqqstring s = let n = String.length s in unescape (String.sub s 0 (n-3))
-let decode_dddstring s = let n = String.length s in unescape (String.sub s 0 (n-3))
-
-let decode_raw_qstring s = let n = String.length s in String.sub s 0 (n-1)
-let decode_raw_dstring s = let n = String.length s in String.sub s 0 (n-1)
-let decode_raw_qqqstring s = let n = String.length s in String.sub s 0 (n-3)
-let decode_raw_dddstring s = let n = String.length s in String.sub s 0 (n-3)
-
 
 let silly_strtoken k = Flx_prelex.string_of_token k
 
