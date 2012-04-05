@@ -8,7 +8,7 @@ type bexpr_t =
   | BEXPR_address of t
   | BEXPR_new of t
   | BEXPR_class_new of Flx_btype.t * t
-  | BEXPR_literal of Flx_literal.t
+  | BEXPR_literal of Flx_literal.literal_t
   | BEXPR_apply of t * t
   | BEXPR_apply_prim of Flx_types.bid_t * Flx_btype.t list * t
   | BEXPR_apply_direct of Flx_types.bid_t * Flx_btype.t list * t
@@ -144,7 +144,7 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_likely e1,_
   | BEXPR_unlikely e1,_ -> cmp e1 xb
 
-  | BEXPR_literal a,BEXPR_literal a' -> Flx_literal.eq a a'
+  | BEXPR_literal a,BEXPR_literal a' -> a == a'
 
   | BEXPR_apply (a,b),BEXPR_apply (a',b') -> cmp a a' && cmp b b'
 
@@ -324,7 +324,7 @@ let rec reduce e =
   in f_bexpr e
 
 (* -------------------------------------------------------------------------- *)
-
+(*
 and print_bexpr f = function
   | BEXPR_not e ->
       Flx_format.print_variant1 f "BEXPR_not" print e
@@ -427,3 +427,5 @@ and print f (e, t) =
   Flx_format.print_tuple2 f
     print_bexpr e
     Flx_btype.print t
+
+*)

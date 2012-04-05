@@ -156,19 +156,59 @@ syntax felix_string_lexer {
 
   // String like literals.
   regdef String = string_literal;
-  literal String =># "`(ast_literal ,_sr (ast_string ,(decode-string  _1)))";
+  literal String =># """
+    (let*
+      (
+        (ftype "string")
+        (iv (decode-string _1))
+        (cv (c-quote-string iv))
+        (cv (string-append "::std::string(" cv ")"))
+      )
+      `(ast_literal ,_sr ,ftype ,iv ,cv)
+    )
+  """;
   sliteral := String =># "_1";
 
   regdef Wstring = wstring_literal;
-  literal Wstring =># "`(ast_literal ,_sr (ast_wstring ,(decode-string  _1)))";
+  literal Wstring =># """
+    (let*
+      (
+        (ftype "wstring")
+        (iv (decode-string _1))
+        (cv (c-quote-string iv))
+        (cv (string-append "wstring(" cv ")"))
+      )
+      `(ast_literal ,_sr ,ftype ,iv ,cv)
+    )
+  """;
   sliteral := Wstring =># "_1";
 
   regdef Ustring = ustring_literal;
-  literal Ustring =># "`(ast_literal ,_sr (ast_ustring ,(decode-string  _1)))";
+  literal Ustring =># """
+    (let*
+      (
+        (ftype "ustring")
+        (iv (decode-string _1))
+        (cv (c-quote-string iv))
+        (cv (string-append "ustring(" cv ")"))
+      )
+      `(ast_literal ,_sr ,ftype ,iv ,cv)
+    )
+  """;
   sliteral := Ustring =># "_1";
 
   regdef Cstring = cstring_literal;
-  literal Cstring =># "`(ast_literal ,_sr (ast_cstring ,(decode-string  _1)))";
+  literal Cstring =>#
+  """
+    (let*
+      (
+        (ftype "cstring")
+        (iv (decode-string _1))
+        (cv (c-quote-string iv))
+      )
+      `(ast_literal ,_sr ,ftype ,iv ,cv)
+    )
+  """; 
   sliteral := Cstring =># "_1";
 
   regdef Qstring = qstring_literal;

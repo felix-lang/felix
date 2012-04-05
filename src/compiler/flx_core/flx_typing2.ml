@@ -128,13 +128,13 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | EXPR_typeof (_,e) -> TYP_typeof e
   | EXPR_as (sr,(t,x)) -> TYP_as (te t,x)
 
-  | EXPR_literal (sr, Flx_literal.Int (enc,v)) ->
-    if enc <> Flx_literal.Int_kind.Int
+  | EXPR_literal (sr, ({Flx_literal.felix_type=t; internal_value=v} as l) ) ->
+    if t <> "int"
     then
       clierr sr
       (
-        "Only plain integer can be used as a type, code= '" ^
-        (Flx_literal.Int_kind.to_string enc) ^
+        "Only plain integer can be used as a type, got '" ^
+       string_of_literal l ^
         "'"
       )
     else

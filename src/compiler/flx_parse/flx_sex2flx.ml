@@ -1,18 +1,11 @@
 open Flx_ast
 open Sex_types
 open Flx_typing2
+open List
 
 let prefix p s =
   let n = String.length p in
   n <= String.length s && p = String.sub s 0 n
-   
-(* Note: the lexer will not lex r'string' because of confusion
-   with primed identifiers. However r'''string''' is accepted.
-   Therefore, triple primes are suspect. x''' will work,
-   whereas r''' or u''' will not. 
-*)
-
-open List
 
 exception Sex2FlxTypeError of string * sexp_t
 
@@ -35,70 +28,21 @@ let lst s (f:sexp_t->'a) x : 'a list = match x with
   | Lst ls -> map f ls
   | x -> err x (s^ " list")
 
-let xsr x : Flx_srcref.t =
+let rec xsr x : Flx_srcref.t =
   let ii i = int_of_string i in
   match x with
   | Lst [Str fn; Int fl; Int fc; Int ll; Int lc] ->
       Flx_srcref.make (fn,ii fl,ii fc,ii ll,ii lc)
   | x -> err x "Invalid source reference"
 
-let xint_kind x = match x with
-  | "tiny" -> Flx_literal.Int_kind.Tiny
-  | "short" -> Flx_literal.Int_kind.Short
-  | "int" -> Flx_literal.Int_kind.Int
-  | "long" -> Flx_literal.Int_kind.Long
-  | "vlong" -> Flx_literal.Int_kind.Vlong
-  | "utiny" -> Flx_literal.Int_kind.Utiny
-  | "ushort" -> Flx_literal.Int_kind.Ushort
-  | "uint" -> Flx_literal.Int_kind.Uint
-  | "ulong" -> Flx_literal.Int_kind.Ulong
-  | "uvlong" -> Flx_literal.Int_kind.Uvlong
-
-  | "int8" -> Flx_literal.Int_kind.Int8
-  | "int16" -> Flx_literal.Int_kind.Int16
-  | "int32" -> Flx_literal.Int_kind.Int32
-  | "int64" -> Flx_literal.Int_kind.Int64
-  | "uint8" -> Flx_literal.Int_kind.Uint8
-  | "uint16" -> Flx_literal.Int_kind.Uint16
-  | "uint32" -> Flx_literal.Int_kind.Uint32
-  | "uint64" -> Flx_literal.Int_kind.Uint64
-
-  | "intmax" -> Flx_literal.Int_kind.Intmax
-  | "uintmax" -> Flx_literal.Int_kind.Uintmax
-  | "intptr" -> Flx_literal.Int_kind.Intptr
-  | "uintptr" -> Flx_literal.Int_kind.Uintptr
-  | "ptrdiff" -> Flx_literal.Int_kind.Ptrdiff
-  | "uptrdiff" -> Flx_literal.Int_kind.Uptrdiff
-  | "ssize" -> Flx_literal.Int_kind.Ssize
-  | "size" -> Flx_literal.Int_kind.Size
-  | x -> err (Str x) "invalid literal integer kind"
-
-let xfloat_kind x = match x with
-  | "float" -> Flx_literal.Float_kind.Float
-  | "double" -> Flx_literal.Float_kind.Double
-  | "ldouble" -> Flx_literal.Float_kind.Ldouble
-  | x -> err (Str x) "invalid integer kind"
-
-let rec xliteral_t sr x =
-  match x with
-  | Lst [Id "ast_int"; Str s; Int i] -> Flx_literal.Int (xint_kind s, i)
-  | Lst [Id "ast_int"; Str s; Str i] -> Flx_literal.Int (xint_kind s, i)
-  | Lst [Id "ast_float"; Str k; Str f] -> Flx_literal.Float (xfloat_kind k, f)
-  | Lst [Id "ast_string"; Str s] -> Flx_literal.String s
-  | Lst [Id "ast_cstring"; Str s] -> Flx_literal.Cstring s
-  | Lst [Id "ast_wstring"; Str s] -> Flx_literal.Wstring s
-  | Lst [Id "ast_ustring"; Str s] -> Flx_literal.Ustring s
-  | x -> err x "invalid literal"
-
-
 and type_of_sex sr w =
-  (*
-  print_endline ("Converting sexp " ^ Sex_print.string_of_sex w ^ " to a type");
-  *)
+(*
+  print_endline ("[type_of_sex] Converting sexp " ^ Sex_print.string_of_sex w ^ " to a type");
+*)
   let x = xexpr_t sr w in
-  (*
-  print_endline ("Felix expression is " ^ Flx_print.string_of_expr x);
-  *)
+(*
+  print_endline ("[type_of_sex] Felix expression is " ^ Flx_print.string_of_expr x);
+*)
   let y =
     match x with
     | EXPR_tuple (_,[]) -> TYP_tuple []
@@ -107,17 +51,17 @@ and type_of_sex sr w =
     | x ->
       try typecode_of_expr x
       with xn ->
-        print_endline ("Converting sexp " ^ Sex_print.string_of_sex w ^ " to a type");
-        print_endline ("Felix expression is " ^ Flx_print.string_of_expr x);
-        print_endline ("Got error: " ^ Printexc.to_string xn);
+        print_endline ("[type_of_sex] Converting sexp " ^ Sex_print.string_of_sex w ^ " to a type");
+        print_endline ("[type_of_sex] Felix expression is " ^ Flx_print.string_of_expr x);
+        print_endline ("[type_of_sex] Got error: " ^ Printexc.to_string xn);
         raise xn
   in
-  (*
+(*
   print_endline ("Felix type is " ^ Flx_print.string_of_typecode y);
-  *)
+*)
   y
 
-and xid = function
+and xid x = match x with
   | Str id | Id id -> Flx_id.of_string id
   | x -> err x "identifier"
 
@@ -134,7 +78,8 @@ and xexpr_t sr x =
   match x with
   | Str s ->
       print_endline ("Deprecated Scheme string " ^ s ^ "' as Felix string");
-      EXPR_literal (sr, (Flx_literal.String s))
+      EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=s; c_value=Flx_string.c_quote_of_string s})
+
   | Lst [] -> EXPR_tuple (sr,[])
   | Lst [x] -> ex x
   (* this term comes from the hard coded parser! *)
@@ -200,7 +145,15 @@ and xexpr_t sr x =
  | Lst [Id "ast_arrow";  Lst [e1; e2]] -> EXPR_arrow (sr,(ex e1, ex e2))
  | Lst [Id "ast_longarrow";  Lst [e1; e2]] -> EXPR_longarrow (sr,(ex e1, ex e2))
  | Lst [Id "ast_superscript";  Lst [e1; e2]] -> EXPR_superscript (sr,(ex e1, ex e2))
- | Lst [Id "ast_literal";  sr; lit] -> EXPR_literal (xsr sr, xliteral_t sr lit)
+ | Lst [Id "ast_literal";  sr; Str felix_type; Str internal_value; Str c_value ] ->
+   EXPR_literal (xsr sr, 
+     {
+       Flx_literal.felix_type=felix_type; 
+       internal_value=internal_value; 
+       c_value=c_value
+     } 
+   )
+
  | Lst [Id "ast_deref"; sr; e] -> EXPR_deref (xsr sr,ex e)
  | Lst [Id "ast_ref"; sr; e] -> EXPR_ref (xsr sr,ex e)
  | Lst [Id "ast_new"; sr; e] -> EXPR_new (xsr sr,ex e)
@@ -257,18 +210,21 @@ and xexpr_t sr x =
       *)
       EXPR_name (sr, Flx_id.of_string id, [])
   | Int i ->
-    EXPR_literal (sr, Flx_literal.Int (Flx_literal.Int_kind.Int, i))
+    EXPR_literal (sr, {Flx_literal.felix_type="int"; internal_value=i; c_value=i})
 
   | x ->
     err x "expression"
 
-and xfloat_pat x =
+and xlit x =
   match x with
-  | Lst [Id "Float_plus"; Str k; Str f] -> Float_plus (xfloat_kind k, f)
-  | Lst [Id "Float_minus"; Str k; Str f] -> Float_minus (xfloat_kind k, f)
-  | Id "Float_inf" -> Float_inf
-  | Id "Float_minus_inf" -> Float_minus_inf
-  | x -> err x "Float_pat syntax error"
+  | Lst [Id "ast_literal";  sr; Str felix_type; Str internal_value; Str c_value ] ->
+     {
+       Flx_literal.felix_type=felix_type; 
+       internal_value=internal_value; 
+       c_value=c_value
+     } 
+  | x -> err x "literal"
+
 
 and xpattern_t x =
   let xp x = xpattern_t x in
@@ -276,22 +232,14 @@ and xpattern_t x =
   let xq sr m qn = qne (xexpr_t (xsr sr)) m qn in
   match x with
   | Lst [Id "pat_expr"; sr; e] -> PAT_expr (xsr sr, xexpr_t (xsr sr) e)
-  | Lst [Id "pat_nan"; sr] -> PAT_nan (xsr sr)
   | Lst [Id "pat_none"; sr] -> PAT_none (xsr sr)
 
   (* constants *)
-  | Lst [Id "pat_int"; sr; Str k; Int i] -> PAT_int (xsr sr, xint_kind k, i)
-  | Lst [Id "pat_string"; sr; Str s] -> PAT_string (xsr sr,s)
+  | Lst [Id "pat_literal"; sr; lit] -> 
+    PAT_literal (xsr sr, xlit lit) 
 
-  (* ranges *)
-  | Lst [Id "pat_int_range"; sr; Str k1; Int i1; Str k2; Int i2] ->
-      PAT_int_range (xsr sr, xint_kind k1, i1, xint_kind k2, i2)
-
-  | Lst [Id "pat_string_range"; sr; Str s1; Str s2] ->
-      PAT_string_range (xsr sr,s1, s2)
-
-  | Lst [Id "pat_float_range"; sr; p1; p2] ->
-      PAT_float_range (xsr sr, xfloat_pat p1, xfloat_pat p2)
+  | Lst [Id "pat_range"; sr; lit1; lit2] -> 
+    PAT_range (xsr sr, xlit lit1, xlit lit2) 
 
   (* other *)
   | Lst [Id "pat_coercion"; sr; p; t] ->

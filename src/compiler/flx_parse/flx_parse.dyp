@@ -103,7 +103,6 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 
 /* whitespace and comments */
 %token NEWLINE
-%token SLOSH
 
 /* literals */
 %token <string> NAME
@@ -320,8 +319,6 @@ dddstring -> STRING {
 
 /* whitespace */
  white+ -> { () }
-
- slosh -> SLOSH
 
 /* end of line */
  newline -> { incr_lineno lexbuf 1 }

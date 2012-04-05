@@ -89,14 +89,6 @@ def build_flx_bind(phase):
             build_flx_desugar(phase)],
         external_libs=['nums'])
 
-def build_flx_why(phase):
-    path = Path('src/compiler/flx_why')
-    return phase.ocaml.build_lib(path / 'flx_why',
-        srcs=Path.glob(path / '*.ml{,i}'),
-        libs=[
-            build_flx_misc(phase),
-            build_flx_core(phase)])
-
 def build_flx_frontend(phase):
     path = Path('src/compiler/flx_frontend')
     return phase.ocaml.build_lib(path / 'flx_frontend',
@@ -166,7 +158,6 @@ def build_flx_drivers(ctx, phase):
         build_flx_parse(phase),
         build_flx_desugar(phase),
         build_flx_bind(phase),
-        build_flx_why(phase),
         build_flx_frontend(phase),
         build_flx_opt(phase),
         build_flx_lower(phase),

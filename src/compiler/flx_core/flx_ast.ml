@@ -2,7 +2,6 @@ open Format
 open Flx_format
 
 module CS = Flx_code_spec
-module L = Flx_literal
 
 (** {6 Source Reference}
  *
@@ -158,7 +157,7 @@ and expr_t =
   | EXPR_arrow of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_longarrow of Flx_srcref.t * (expr_t * expr_t)
   | EXPR_superscript of Flx_srcref.t * (expr_t * expr_t)
-  | EXPR_literal of Flx_srcref.t * L.t
+  | EXPR_literal of Flx_srcref.t * Flx_literal.literal_t
   | EXPR_deref of Flx_srcref.t * expr_t
   | EXPR_ref of Flx_srcref.t * expr_t
   | EXPR_likely of Flx_srcref.t * expr_t
@@ -206,27 +205,14 @@ and expr_t =
 (** {7 Patterns}
  *
  * Patterns; used for matching variants in match statements. *)
-and float_pat =
-  | Float_plus of L.Float_kind.t * string
-  | Float_minus of L.Float_kind.t * string
-  | Float_inf  (** infinity *)
-  | Float_minus_inf (** negative infinity *)
-
 and pattern_t =
-  | PAT_nan of Flx_srcref.t
   | PAT_none of Flx_srcref.t
 
   (* constants *)
-  | PAT_int of Flx_srcref.t * L.Int_kind.t * string
-  | PAT_string of Flx_srcref.t * string
+  | PAT_literal of Flx_srcref.t * Flx_literal.literal_t
 
   (* ranges *)
-  | PAT_int_range of
-      Flx_srcref.t *
-      L.Int_kind.t * string *
-      L.Int_kind.t * string
-  | PAT_string_range of Flx_srcref.t * string * string
-  | PAT_float_range of Flx_srcref.t * float_pat * float_pat
+  | PAT_range of Flx_srcref.t * Flx_literal.literal_t * Flx_literal.literal_t
 
   (* other *)
   | PAT_coercion of Flx_srcref.t * pattern_t * typecode_t
@@ -779,13 +765,9 @@ let src_of_stmt (e : statement_t) = match e with
 
 let src_of_pat (e : pattern_t) = match e with
   | PAT_coercion (s,_,_)
-  | PAT_nan s
   | PAT_none s
-  | PAT_int (s,_,_)
-  | PAT_string (s,_)
-  | PAT_int_range (s,_,_,_,_)
-  | PAT_string_range (s,_,_)
-  | PAT_float_range (s,_,_)
+  | PAT_literal (s,_)
+  | PAT_range (s,_,_)
   | PAT_name (s,_)
   | PAT_tuple (s,_)
   | PAT_any s

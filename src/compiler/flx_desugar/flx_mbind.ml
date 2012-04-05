@@ -195,10 +195,7 @@ let rec get_pattern_vars
   | _ -> ()
 
 let rec gen_match_check pat (arg:expr_t) =
-  let lint sr t i = EXPR_literal (sr, Flx_literal.Int (t,i))
-  and lstr sr s = EXPR_literal (sr, Flx_literal.String s)
-  and lfloat sr t x = EXPR_literal (sr, Flx_literal.Float (t,x))
-  and apl sr f x =
+  let apl sr f x =
     EXPR_apply
     (
       sr,
@@ -222,74 +219,18 @@ let rec gen_match_check pat (arg:expr_t) =
     )
   and truth sr = EXPR_typed_case (sr,1,flx_bool)
   and ssrc x = Flx_srcref.short_string_of_src x
+  and mklit sr e = EXPR_literal (sr,e)
   in
   match pat with
   | PAT_expr _ -> assert false
-  | PAT_int (sr,t,i) -> apl2 sr "eq" (lint sr t i) arg
-  | PAT_string (sr,s) -> apl2 sr "eq" (lstr sr s) arg
-  | PAT_nan sr -> apl sr "isnan" arg
+  | PAT_literal (sr,s) -> apl2 sr "eq" (mklit sr s) arg
   | PAT_none sr -> clierr sr "Empty pattern not allowed"
 
   (* ranges *)
-  | PAT_int_range (sr,t1,i1,t2,i2) ->
-    let b1 = apl2 sr "<=" (lint sr t1 i1) arg
-    and b2 = apl2 sr "<=" arg (lint sr t2 i2)
+  | PAT_range (sr,l1,l2) ->
+    let b1 = apl2 sr "<=" (mklit sr l1) arg
+    and b2 = apl2 sr "<=" arg (mklit sr l2)
     in apl2 sr "land" b1 b2
-
-  | PAT_string_range (sr,s1,s2) ->
-    let b1 = apl2 sr "<=" (lstr sr s1) arg
-    and b2 = apl2 sr "<=" arg (lstr sr s2)
-    in apl2 sr "land" b1 b2
-
-  | PAT_float_range (sr,x1,x2) ->
-    begin match x1,x2 with
-    | (Float_plus (t1,v1), Float_plus (t2,v2)) ->
-      if t1 <> t2 then
-        failwith ("Inconsistent endpoint types in " ^ ssrc sr)
-      else
-        let b1 = apl2 sr "<=" (lfloat sr t1 v1) arg
-        and b2 = apl2 sr "<=" arg (lfloat sr t2 v2)
-        in apl2 sr "land" b1 b2
-
-    | (Float_minus(t1,v1), Float_minus (t2,v2)) ->
-      if t1 <> t2 then
-        failwith ("Inconsistent endpoint types in " ^ ssrc sr)
-      else
-        let b1 = apl2 sr "<=" (lfloat sr t1 ("-"^ v1)) arg
-        and b2 = apl2 sr "<=" arg (lfloat sr t2 ("-"^v2))
-        in apl2 sr "land" b1 b2
-
-
-    | (Float_minus (t1,v1), Float_plus (t2,v2)) ->
-      if t1 <> t2 then
-        failwith ("Inconsistent endpoint types in " ^ ssrc sr)
-      else
-        let b1 = apl2 sr "<=" (lfloat sr t1 ("-"^ v1)) arg
-        and b2 = apl2 sr "<=" arg (lfloat sr t2 v2)
-        in apl2 sr "land" b1 b2
-
-
-    | (Float_minus (t1,v1), Float_inf) ->
-        apl2 sr "<=" (lfloat sr t1 ("-"^ v1)) arg
-
-    | (Float_plus (t1,v1), Float_inf) ->
-        apl2 sr "<=" (lfloat sr t1 v1) arg
-
-    | (Float_minus_inf, Float_minus (t2,v2)) ->
-        apl2 sr "<=" arg (lfloat sr t2 ("-"^v2))
-
-    | (Float_minus_inf, Float_plus (t2,v2)) ->
-        apl2 sr "<=" arg (lfloat sr t2 v2)
-
-    | (Float_minus_inf , Float_inf ) ->
-       apl sr "not" (apl sr "isnan" arg)
-
-
-    | (Float_plus _, Float_minus _)
-    | (Float_inf, _)
-    | (_ , Float_minus_inf) ->
-      failwith ("Empty float range at " ^ ssrc sr)
-    end
 
   (* other *)
   | PAT_name (sr,_) -> truth sr

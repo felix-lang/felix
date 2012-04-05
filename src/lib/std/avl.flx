@@ -67,7 +67,7 @@ class Avl
 
   private fun balance[T](tree : avl[T]) =>
     match slope(tree) with
-      |-2 => shift_l(tree)
+      | ?x when x == -2 => shift_l(tree)
       | 2 => shift_r(tree)
       | _ => tree
     endmatch

@@ -19,40 +19,6 @@ let string_of_char c =
   then "\\x" ^ Flx_string.hex2 c
   else String.make 1 (Char.chr c)
 
-let suffix_of_int_kind = function
-  | L.Int_kind.Tiny -> "t"
-  | L.Int_kind.Short -> "s"
-  | L.Int_kind.Int -> ""
-  | L.Int_kind.Long -> "l"
-  | L.Int_kind.Vlong -> "v"
-  | L.Int_kind.Utiny -> "tu"
-  | L.Int_kind.Ushort -> "su"
-  | L.Int_kind.Uint -> ""
-  | L.Int_kind.Ulong -> "lu"
-  | L.Int_kind.Uvlong -> "vu"
-  | L.Int_kind.Int8 -> "i8"
-  | L.Int_kind.Int16 -> "i16"
-  | L.Int_kind.Int32 -> "i32"
-  | L.Int_kind.Int64 -> "i64"
-  | L.Int_kind.Uint8 -> "u8"
-  | L.Int_kind.Uint16 -> "u16"
-  | L.Int_kind.Uint32 -> "u32"
-  | L.Int_kind.Uint64 -> "u64"
-
-  | L.Int_kind.Intptr -> "ip"
-  | L.Int_kind.Uintptr -> "up"
-  | L.Int_kind.Intmax -> "j"
-  | L.Int_kind.Uintmax -> "uj"
-  | L.Int_kind.Ptrdiff-> "d"
-  | L.Int_kind.Uptrdiff -> "ud"
-  | L.Int_kind.Size -> "uz"
-  | L.Int_kind.Ssize-> "z"
-
-let suffix_of_float_kind = function
-  | L.Float_kind.Float -> "f"
-  | L.Float_kind.Double -> ""
-  | L.Float_kind.Ldouble -> "l"
-
 let string_of_id id = Flx_id.to_string id
 
 let string_of_bid bid =
@@ -63,13 +29,8 @@ let string_of_bidset bidset =
   Printf.sprintf "{%s}"
     (String.concat ";" (List.map string_of_bid bidlist))
 
-let string_of_literal = function
-  | L.Int (kind,i) -> i ^ suffix_of_int_kind kind
-  | L.Float (kind,v) -> v ^ suffix_of_float_kind kind
-  | L.String s -> string_of_string s
-  | L.Cstring s -> "c" ^ string_of_string s
-  | L.Wstring s -> "w" ^ string_of_string s
-  | L.Ustring s -> "u" ^ string_of_string s
+let string_of_literal {Flx_literal.felix_type=t; internal_value=v; c_value=c} = 
+  "literal["^t^"]("^v^")"
 
 let rec string_of_qualified_name (n:qualified_name_t) =
   let se e = string_of_expr e in
@@ -796,12 +757,6 @@ and string_of_arguments ass =
 and string_of_component level (name, typ) =
    spaces level ^ name ^ ": " ^ (string_of_typecode typ)
 
-and string_of_float_pat = function
-  | Float_plus (kind, f) -> f ^ suffix_of_float_kind kind
-  | Float_minus (kind, f) -> "-" ^ f ^ suffix_of_float_kind kind
-  | Float_inf -> "inf"
-  | Float_minus_inf -> "-inf"
-
 and string_of_tpattern p =
   let sp p = string_of_tpattern p in
   match p with
@@ -829,18 +784,9 @@ and string_of_pattern p =
   match p with
   | PAT_coercion (_,p,t) -> "(" ^ string_of_pattern p ^ ":" ^ string_of_typecode t ^ ")"
   | PAT_none _ -> "<none>"
-  | PAT_nan _ -> "NaN"
-  | PAT_int (_,kind,i) -> i ^ suffix_of_int_kind kind
-  | PAT_int_range (_,k1,i1,k2,i2) ->
-    i1 ^ suffix_of_int_kind k1 ^
-    " .. " ^
-    i2 ^ suffix_of_int_kind k2
+  | PAT_literal (sr,l) -> string_of_literal l
 
-  | PAT_string (_,s) -> string_of_string s
-  | PAT_string_range (_,s1, s2) ->
-    string_of_string s1 ^ " .. " ^ string_of_string s2
-  | PAT_float_range (_,x1, x2) ->
-    string_of_float_pat x1 ^ " .. " ^ string_of_float_pat x2
+  | PAT_range (sr,l1,l2) -> string_of_literal l1 ^ ".." ^ string_of_literal l2
   | PAT_name (_,s) -> string_of_id s
   | PAT_tuple (_,ps) -> "(" ^ catmap ", "  string_of_pattern ps ^ ")"
   | PAT_any _ -> "any"

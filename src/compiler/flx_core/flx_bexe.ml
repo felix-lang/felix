@@ -206,6 +206,7 @@ let reduce exe =
   | x -> x
 
 (* -------------------------------------------------------------------------- *)
+(*
 
 (** Prints a bexe to a formatter. *)
 let print f = function
@@ -330,3 +331,5 @@ let print f = function
       print_variant2 f "BEXE_axiom_check"
         Flx_srcref.print sr
         Flx_bexpr.print e
+
+*)

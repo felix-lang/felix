@@ -97,4 +97,6 @@ val reduce : t -> t
 (* -------------------------------------------------------------------------- *)
 
 (** Prints a bexe to a formatter. *)
+(*
 val print : Format.formatter -> t -> unit
+*)

@@ -12,12 +12,12 @@ open Flx_exceptions
   type binding isn't done yet.
 *)
 
-let rec check_match_int pats =
+let rec check_match_literal pats =
   let rec check pat =
     match pat with
     | PAT_any _
-    | PAT_int _
-    | PAT_int_range _
+    | PAT_literal _
+    | PAT_range _
     | PAT_name _ -> ()
 
     | PAT_coercion (_,pat,_)
@@ -26,16 +26,16 @@ let rec check_match_int pats =
 
     | _ ->
         let sr = src_of_pat pat in
-        clierr sr "Integer pattern expected"
+        clierr sr "Literal pattern expected"
   in
   List.iter check pats
 
-and check_match_string pats =
+let rec check_match_range pats =
   let rec check pat =
     match pat with
     | PAT_any _
-    | PAT_string _
-    | PAT_string_range _
+    | PAT_literal _
+    | PAT_range _
     | PAT_name _ -> ()
 
     | PAT_coercion (_,pat,_)
@@ -44,29 +44,10 @@ and check_match_string pats =
 
     | _ ->
         let sr = src_of_pat pat in
-        clierr sr "String pattern expected"
+        clierr sr "Literal range pattern expected"
   in
   List.iter check pats
 
-and check_match_float pats =
-  let rec check pat =
-    match pat with
-    | PAT_none _ -> assert false
-
-    | PAT_nan _
-    | PAT_any _
-    | PAT_float_range _
-    | PAT_name _ -> ()
-
-    | PAT_coercion (_,pat,_)
-    | PAT_as (_,pat,_)
-    | PAT_when (_,pat,_) -> check pat
-
-    | _ ->
-        let sr = src_of_pat pat in
-        clierr sr "Float pattern expected"
-  in
-  List.iter check pats
 
 and check_match_record pats =
   let rec check pat =
@@ -169,14 +150,10 @@ and renaming pats = ()
 and find_match_type pat =
   match pat with
   | PAT_none _ -> assert false
-  | PAT_nan _ -> check_match_float
-  | PAT_int _ -> check_match_int
-  | PAT_string _ -> check_match_string
+  | PAT_literal _ -> check_match_literal
 
   (* ranges *)
-  | PAT_int_range _ -> check_match_int
-  | PAT_string_range _ -> check_match_string
-  | PAT_float_range _ -> check_match_float
+  | PAT_range _ -> check_match_range
 
   (* other *)
   | PAT_name _ -> renaming
@@ -198,8 +175,7 @@ and find_match_type pat =
 let rec is_universal pat =
   match pat with
   | PAT_any _
-  | PAT_name (_,_)
-  | PAT_float_range (_, Float_minus_inf, Float_inf) -> true
+  | PAT_name (_,_) -> true
 
   | PAT_as (_,pat,_) -> is_universal pat
   | PAT_coercion (_,pat,_) -> is_universal pat
@@ -223,13 +199,6 @@ let rec check_terminal pat =
         Flx_srcref.short_string_of_src sr
       )
 
-  | PAT_float_range (sr, Float_minus_inf, Float_inf) ->
-      failwith
-      (
-        "Whole floating range must be last in match in " ^
-        Flx_srcref.short_string_of_src sr
-      )
-
   | PAT_as (_,pat,_) -> check_terminal pat
   | PAT_coercion (_,pat,_) -> check_terminal pat
   | _ -> ()
@@ -246,11 +215,5 @@ let validate_patterns pats =
   List.iter begin fun x ->
     match x with
     | PAT_none sr -> assert false
-    | PAT_nan sr ->
-        failwith
-        (
-          "NaN test must be first in match in " ^
-          Flx_srcref.short_string_of_src sr
-        )
     | _ -> ()
   end (List.tl pats)

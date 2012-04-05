@@ -17,7 +17,6 @@ type token =
   | ERRORTOKEN of string
   | ENDMARKER
   | NEWLINE
-  | SLOSH
   | NAME of string
   | NONTERMINAL of (string * ntprio_t)
   | STRING of string

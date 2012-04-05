@@ -26,62 +26,6 @@ module L = Flx_literal
 
 let string_of_string = Flx_string.c_quote_of_string
 
-(* HACKERY: this assumes library dependent things:
-  but we can't add literals in the library code :-(
-*)
-let csuffix_of_int_kind = function
-  | L.Int_kind.Tiny -> ""
-  | L.Int_kind.Short -> ""
-  | L.Int_kind.Int -> ""
-  | L.Int_kind.Long -> "l"
-  | L.Int_kind.Vlong -> "ll"
-  | L.Int_kind.Utiny -> "u"
-  | L.Int_kind.Ushort -> "u"
-  | L.Int_kind.Uint -> "u"
-  | L.Int_kind.Ulong -> "ul"
-  | L.Int_kind.Uvlong -> "ull"
-  | L.Int_kind.Int8 -> ""
-  | L.Int_kind.Int16 -> ""
-  | L.Int_kind.Int32 -> "l"
-  | L.Int_kind.Int64 -> "ll"
-  | L.Int_kind.Uint8 -> "u"
-  | L.Int_kind.Uint16 -> "u"
-  | L.Int_kind.Uint32 -> "ul"
-  | L.Int_kind.Uint64 -> "ull"
-
-  | L.Int_kind.Intmax   -> "ll"
-  | L.Int_kind.Uintmax  -> "ull"
-  | L.Int_kind.Intptr   -> "ll"
-  | L.Int_kind.Uintptr  -> "ull"
-  | L.Int_kind.Ptrdiff  -> "ll"
-  | L.Int_kind.Uptrdiff -> "ull"
-  | L.Int_kind.Ssize    -> "ll"
-  | L.Int_kind.Size     -> "ull"
-
-
-let csuffix_of_float_kind = function
-  | L.Float_kind.Float -> "f"
-  | L.Float_kind.Double -> ""
-  | L.Float_kind.Ldouble -> "l"
-
-let cstring_of_literal e = match e with
-  | L.Int (k, i) -> i ^ csuffix_of_int_kind k
-  | L.Float (k, f) -> f ^ csuffix_of_float_kind k
-  | L.String s -> string_of_string s
-  | L.Cstring s -> string_of_string s
-  | L.Wstring s -> "L" ^ string_of_string s
-  | L.Ustring s -> "L" ^ string_of_string s
-
-(* a native literal is one not needing a cast to get the type right *)
-let is_native_literal e = match e with
-  | L.Int (L.Int_kind.Int,_)
-  | L.Int (L.Int_kind.Long,_)
-  | L.Int (L.Int_kind.Uint,_)
-  | L.Int (L.Int_kind.Ulong,_)
-  | L.Int (L.Int_kind.Vlong,_)
-  | L.Int (L.Int_kind.Uvlong,_)
-  | L.Float (L.Float_kind.Double,_) -> true
-  | _ -> false
 
 let get_var_frame syms bsym_table this index ts : string =
   let bsym_parent, bsym =
@@ -446,12 +390,12 @@ print_endline ("Generating class new for t=" ^ ref_type);
     in
     ce_new [ce_atom "*PTF gcp";ce_atom (ref_type^"_ptr_map"); ce_atom "true"] ref_type args
 
-  | BEXPR_literal v ->
-    if is_native_literal v
-    then ce_atom (cstring_of_literal v)
-    else
+  | BEXPR_literal {Flx_literal.c_value=v} ->
+    ce_atom v
+    (*
     let t = tn t in
     ce_cast t  (ce_atom (cstring_of_literal v))
+    *)
 
   (* A case tag: this is a variant value for any variant case
    * which has no (or unit) argument: can't be used for a case

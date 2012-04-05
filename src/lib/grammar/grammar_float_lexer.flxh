@@ -37,8 +37,8 @@ syntax felix_float_lexer {
        (ch (substring val n-1 n))
        (rest (substring val 0 n-1))
        (result 
-         (if (equal? ch "l") `("ldouble" ,rest)
-           (if (equal? ch "f") `("float" ,rest) `("double" ,val))
+         (if (equal? ch "l") `("ldouble" ,val ,val)
+           (if (equal? ch "f") `("float" ,val ,val) `("double" ,val ,val))
          )
        )
      )
@@ -49,7 +49,7 @@ syntax felix_float_lexer {
   strfloat := sfloat =># "(second _1)";
 
   // Floating literal.
-  sliteral := sfloat =># "`(ast_literal ,_sr (ast_float ,@_1))";
+  sliteral := sfloat =># "`(ast_literal ,_sr ,@_1)";
 
 }
 

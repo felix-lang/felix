@@ -268,7 +268,7 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
     end
 
   (* RHS is an integer literal , LHS must be tuple or array *)
-  | EXPR_literal (_, Flx_literal.Int (_,s)) ->
+  | EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=s}) ->
     let n = int_of_string s in
     begin match ttt with
     | BTYP_tuple ls ->

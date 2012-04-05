@@ -38,7 +38,6 @@ let string_of_token = function
   | NEWLINE -> "<NEWLINE>"
   | ENDMARKER -> "<<EOF>>"
   | ERRORTOKEN s -> "<<ERROR '"^ s ^"'>>"
-  | SLOSH -> "\\"
 
 let name_of_token = function
   | DUMMY -> "DUMMY"
@@ -68,5 +67,4 @@ let name_of_token = function
   | NEWLINE -> "NEWLINE"
   | ENDMARKER -> "ENDMARKER"
   | ERRORTOKEN _ -> "ERRORTOKEN"
-  | SLOSH -> "SLOSH"
 

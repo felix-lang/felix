@@ -192,11 +192,13 @@ syntax felix_int_lexer {
       (x (parse-int val))
       (type (first x))
       (value (second x))
+      (fvalue (number->string value))
+      (cvalue fvalue)       ;; FIXME!!
     )
-    `(,type ,value)
+    `(,type ,fvalue ,cvalue)
   )
   """; 
-  sliteral := int_lit =># "`(ast_literal ,_sr (ast_int ,@_1))";
+  sliteral := int_lit =># "`(ast_literal ,_sr ,@_1)";
 
   // Typed signed integer constant.
   sintegral := int_lit =># "_1";
