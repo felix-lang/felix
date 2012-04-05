@@ -348,8 +348,43 @@ nextc:>
         if b == "felix" do s = felix;
         elif prefix (b,"felix ") do 
           {
-            fname := strip(b.[6 to]);
+            var rest = strip(b.[6 to]);
+            var re1 = RE2('(.*) "(.*)" "(.*)"');
+            var re2 = RE2('(.*) "(.*)"');
+            var v1 = varray(4uz, StringPiece "");
+            var v2 = varray(4uz, StringPiece "");
+            var v3 = varray(4uz, StringPiece "");
+            var matched1 = Match(re1, StringPiece(rest),0,ANCHOR_BOTH,v1.stl_begin, v1.len.int);
+            var matched2 = Match(re2, StringPiece(rest),0,ANCHOR_BOTH,v2.stl_begin, v2.len.int);
+            if matched1 do
+              var fname = v1.[1].string.strip;
+            elif matched2 do
+              fname = v2.[1].string.strip;
+            else
+              fname = rest;
+            done
             var flx = get_flx(fname);
+            if matched1 do
+               println$ "Matched from " + v1.[2].string " to " v1.[3].string;
+               var p1 = match find(flx,v1.[2].string) with
+               | Some ?i => i
+               | None => 0
+               endmatch;
+               flx = flx.[p1 to];
+               var p2 = match find(flx,v1.[3].string) with
+               | Some ?i => i
+               | None => flx.len.int - 1
+               endmatch;
+               flx = flx.[to p2];
+            elif matched2 do
+              println$ "Matched regexp " + v2.[2].string;
+              var re3 = RE2(v2.[2].string);
+              var matched3 = Match(re3,StringPiece(flx),0,UNANCHORED,v3.stl_begin, v3.len.int);
+              if matched3 do
+println$ "MATCHED!";
+                flx = v3.[1].string;
+              done
+            done
             needs_mathjax', html := xlat_felix (tf_xlat_felix,flx,"");
             needs_mathjax |= needs_mathjax';
             write_string("<pre class='inclusion'>\n"+fname+"</pre>\n");
