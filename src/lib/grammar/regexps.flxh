@@ -32,17 +32,18 @@ syntax regexps {
   sregexp[ratom_pri] := "group" "(" sregexp[ralt_pri] ")" =># 
     "`(ast_apply ,_sr ( ,(noi 'Group) ,_3))"
   ;
-  sregexp[ratom_pri] := "charset" sstring =># 
+  sregexp[ratom_pri] := "charset" String =># 
     """`(ast_apply ,_sr ( 
        ,( noi 'Charset)
-       (ast_literal ,_sr (ast_string ,_2))))
+        ,_2
+       ))
     """
   ;
 
-  sregexp[ratom_pri] := sstring =># 
+  sregexp[ratom_pri] := String =># 
     """`(ast_apply ,_sr ( 
        ( ast_lookup ( ,(noi 'Regdef) "String" () )  ) 
-       (ast_literal ,_sr (ast_string ,_1)))
+       ,_1)
     ) """
   ;
 
