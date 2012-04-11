@@ -257,15 +257,15 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
      if hstack == n do
        --hstack;
        write_string("</div>"); 
-       set(hnums,hstack,hnums.[hstack]+1); 
+       set(hnums,hstack,hnums.hstack+1); 
      done
   }
   fun hnum() = {
     var s = ""; var i:int;
     for i in 0 upto hstack - 2 do
-      s+=str(hnums.[i]) + ".";
+      s+=str(hnums.i) + ".";
     done
-    return s + str(hnums.[hstack - 1]);
+    return s + str(hnums.(hstack - 1));
   } 
   proc h(n:int, txt:string) { 
     ep; 
@@ -357,32 +357,29 @@ nextc:>
             var matched1 = Match(re1, StringPiece(rest),0,ANCHOR_BOTH,v1.stl_begin, v1.len.int);
             var matched2 = Match(re2, StringPiece(rest),0,ANCHOR_BOTH,v2.stl_begin, v2.len.int);
             if matched1 do
-              var fname = v1.[1].string.strip;
+              var fname = v1.1.string.strip;
             elif matched2 do
-              fname = v2.[1].string.strip;
+              fname = v2.1.string.strip;
             else
               fname = rest;
             done
             var flx = get_flx(fname);
             if matched1 do
-               println$ "Matched from " + v1.[2].string " to " v1.[3].string;
-               var p1 = match find(flx,v1.[2].string) with
+               var p1 = match find(flx,v1.2.string) with
                | Some ?i => i
                | None => 0
                endmatch;
                flx = flx.[p1 to];
-               var p2 = match find(flx,v1.[3].string) with
+               var p2 = match find(flx,v1.3.string) with
                | Some ?i => i
                | None => flx.len.int - 1
                endmatch;
                flx = flx.[to p2];
             elif matched2 do
-              println$ "Matched regexp " + v2.[2].string;
-              var re3 = RE2(v2.[2].string);
+              var re3 = RE2(v2.2.string);
               var matched3 = Match(re3,StringPiece(flx),0,UNANCHORED,v3.stl_begin, v3.len.int);
               if matched3 do
-println$ "MATCHED!";
-                flx = v3.[1].string;
+                flx = v3.1.string;
               done
             done
             needs_mathjax', html := xlat_felix (tf_xlat_felix,flx,"");
@@ -483,8 +480,8 @@ fun setup(config_data:string) = {
   for line in config_lines do
     var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
     if match_result do
-      var lhs = result.[1].str.strip;
-      var rhs = result.[2].str.strip;
+      var lhs = result.1.str.strip;
+      var rhs = result.2.str.strip;
       match lhs with
       | "FLX_PATH" => FLX_PATH += rhs; 
       | "FDOC_PATH" => FDOC_PATH += rhs; 
@@ -495,8 +492,8 @@ fun setup(config_data:string) = {
     else
     match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
     if match_result do
-      lhs = result.[1].str.strip;
-      rhs = result.[2].str.strip;
+      lhs = result.1.str.strip;
+      rhs = result.2.str.strip;
       match lhs with
       | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
       | _ => ;
@@ -504,9 +501,9 @@ fun setup(config_data:string) = {
     else
     match_result = Match(plugin_spec, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,4);
     if match_result do
-      var extn = result.[1].str.strip;
-      var lib = result.[2].str.strip;
-      var entry = result.[3].str.strip;
+      var extn = result.1.str.strip;
+      var lib = result.2.str.strip;
+      var entry = result.3.str.strip;
       PLUGIN_MAP = Cons ((extn, lib, entry), PLUGIN_MAP);
     done done done
   done

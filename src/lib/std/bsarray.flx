@@ -20,7 +20,7 @@ open class Bsarray
    fun \in (x:T, a:bsarray[T]) : bool = {
      if len a > 0uz do
        for var i in 0uz upto len a - 1uz do
-         if a.[i] == x do return true; done
+         if a.i == x do return true; done
        done
      done
      return false;
@@ -32,10 +32,10 @@ open class Bsarray
       var o = 'bsarray(';
 
       if len xs > 0uz do
-        o += repr xs.[0];
+        o += repr xs.0;
 
         for var i in 1uz upto len xs - 1uz do
-          o += ', ' + repr xs.[i];
+          o += ', ' + repr xs.i;
         done
       done
 

@@ -362,7 +362,7 @@ open class String
            if count == 0 do
              b += "\\";
            elif j < v.len.int do
-             b+= str v.[j];
+             b+= str v.j;
            done
            // adjacent insertion?
            if s.[i] == char "\\" do
@@ -381,7 +381,7 @@ open class String
        if count == 0 do
          b += "\\";
        elif j < v.len.int do
-         b+= str v.[j];
+         b+= str v.j;
        done
      endmatch;
      return b;
@@ -396,10 +396,10 @@ open class String
     var sp = StringPiece(x);
     var base : &char = sp.data;      // base pointer of char array
     while Re2::Match(re, sp, spos.int, UNANCHORED, v.stl_begin, v.len.int) do
-      var mpos = size(v.[0].data - base);  // start of match
+      var mpos = size(v.0.data - base);  // start of match
       o+= x.[spos to mpos];          // copy upto start of match
       o+= subst(r,v);                // copy replacement
-      spos = mpos + v.[0].len;       // advance over match
+      spos = mpos + v.0.len;       // advance over match
     done
     o+=x.[spos to];                  // rest of string
     return o;

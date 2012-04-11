@@ -28,7 +28,7 @@ open class Darray
   proc do_resize[T] (pd: darray[T], new_size: size)
   {
     var old = (_repr_ pd)*.a;
-    (_repr_ pd)*.a = varray[T] (new_size, (len old), (fun(i:size)=>old.[i]));
+    (_repr_ pd)*.a = varray[T] (new_size, (len old), (fun(i:size)=>old.i));
   }
 
   // make an empty darray, give it 20 slots for no particular reason
@@ -46,7 +46,7 @@ open class Darray
   // basic array stuff, same interface as array
   instance[v] ArrayValue[darray[v],v] {
     fun len (a:darray[v])=> len (_repr_ a)*.a;
-    fun unsafe_get (a:darray[v], i:size) => (_repr_ a)*.a.[i];
+    fun unsafe_get (a:darray[v], i:size) => (_repr_ a)*.a.i;
   }
 
   instance[v] ArrayObject[darray[v],v] {
@@ -86,7 +86,7 @@ open class Darray
 instance[T with Eq[T]] Set[darray[T],T] {
  fun \in (x:T, a:darray[T]) : bool = {
    for var i in 0uz upto len a -1uz do
-     if a.[i] == x do return true; done
+     if a.i == x do return true; done
    done
    return false;
  } 

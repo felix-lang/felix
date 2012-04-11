@@ -27,12 +27,12 @@ iter
     res := Match(re, StringPiece f,0,ANCHOR_BOTH,C_hack::cast[&StringPiece] (&groups),2);
     if res do
       //println$ "Group 1 = " + str (groups.[1]);
-      n := size (str (groups.[1]));
+      n := size (str (groups.1));
       if n >= first do
         m := n + moveto - first;
         s := f"%02d" m.int;
         //println$ str n " -> " + s;
-        soffset := groups.[1].data - f.cstr;
+        soffset := groups.1.data - f.cstr;
         var newf = f;
         replace(newf,soffset.int,2,s);
         res2 := FileSystem::rename_file("src/web/"+f,"src/web/"+newf); 

@@ -10,7 +10,7 @@ open class Sarray
      var pk: &word;
      var e: JError_t;
      JudyLGet ( (_repr_ a)*.j, i.word, &e, &pk);
-     var r = if C_hack::isNULL pk then (_repr_ a)*.dflt else (_repr_ a)*.a.[size(*pk)];
+     var r = if C_hack::isNULL pk then (_repr_ a)*.dflt else (_repr_ a)*.a.(size(*pk));
      return r;
   }
     
@@ -63,7 +63,7 @@ open class Sarray
     var slot : &word;
     JudyLFirst(r*.j, &index, &e, &slot);
     while not isNULL slot do
-      push_back (x, r*.a.[(*slot).size]);
+      push_back (x, r*.a.((*slot).size));
       slot <- i.word; ++i;
       JudyLNext(r*.j, &index, &e, &slot);
     done

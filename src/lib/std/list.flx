@@ -101,7 +101,7 @@ open class List
   ctor[T,N] list[T] (x:array[T, N]) = {
     var o = Empty[T];
     for var i in x.len.int - 1 downto 0 do
-      o = Cons (x.[i],o);
+      o = Cons (x.i,o);
     done;
     return o;
   }
@@ -398,7 +398,7 @@ open class List
     Varray::sort lt a;
     var r = Empty[T];
     if n > 0uz do
-      for var i in n - 1uz downto 0uz do r = Cons(a.[i], r); done
+      for var i in n - 1uz downto 0uz do r = Cons(a.i, r); done
     done
     return r;
   }

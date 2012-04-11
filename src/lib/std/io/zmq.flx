@@ -453,10 +453,10 @@ class Checked_ZeroMQ[T] {
   proc send_strings (s:zmq_socket) (ss:varray[string]) {
     var n = ss.len.int;
     for var i in 0 upto n - 2 do
-      send_string_part s ss.[i];
+      send_string_part s ss.i;
     done
     if n>0 do
-      send_string s ss.[n - 1];
+      send_string s ss.(n - 1);
     done
   }
 

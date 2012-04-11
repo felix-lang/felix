@@ -37,17 +37,17 @@ open class Varray
   publish "Construct a full varray from an array"
   // funny, the N isn't explicitly used.
   ctor[t,N] varray[t] (x:array[t,N]) => 
-     varray[t] (len x, len x, (fun (i:size)=>x.[i]))
+     varray[t] (len x, len x, (fun (i:size)=>x.i))
   ;
 
   publish "Construct a partially full varray from a varray"
   ctor[t] varray[t] (x:varray[t], maxlen:size) =>
-    varray[t] (maxlen, min(maxlen,len x), (fun (i:size)=> x.[i]))
+    varray[t] (maxlen, min(maxlen,len x), (fun (i:size)=> x.i))
   ;
 
   publish "Construct a full varray from a varray (copy constructor)"
   ctor[t] varray[t] (x:varray[t]) =>
-    varray[t] (len x, len x, (fun (i:size)=> x.[i]))
+    varray[t] (len x, len x, (fun (i:size)=> x.i))
   ;
 
   // construct a varray from a list
@@ -112,7 +112,7 @@ open class Varray
     var o = varray[U]$ len(x);
 
     if len x > 0uz do for var i in 0uz upto len(x) - 1uz do
-      push_back (o, _f x.[i]);
+      push_back (o, _f x.i);
     done done
     return o;
   }
@@ -158,10 +158,10 @@ instance[T with Show[T]] Str[Varray::varray[T]] {
     var o = 'varray(';
 
     if len xs > 0uz do
-      o += repr xs.[0];
+      o += repr xs.0;
 
       for var i in 1uz upto len xs - 1uz do
-        o += ', ' + repr xs.[i];
+        o += ', ' + repr xs.i;
       done
     done
 
@@ -173,7 +173,7 @@ instance[T with Eq[T]] Set[varray[T],T] {
  fun \in (x:T, a:varray[T]) : bool = {
    if len a > 0uz do
      for var i in 0uz upto len a - 1uz do
-       if a.[i] == x do return true; done
+       if a.i == x do return true; done
      done
    done
    return false;

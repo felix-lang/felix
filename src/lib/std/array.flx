@@ -34,7 +34,7 @@ open class Farray
     val n = x.len;
     if n > 0uz do
       for var i: size in 0uz upto n - 1uz do
-        set (&o,i, _f x.[i]);
+        set (&o,i, _f x.i);
       done
     done
     return o;
@@ -75,7 +75,7 @@ open class Farray
     var n = len x;
     if n > 0uz do
       for var i:size in 0uz upto n - 1uz do
-        set(&o,n - 1uz - i, x.[i]);
+        set(&o,n - 1uz - i, x.i);
       done
     done
     return o;
@@ -87,10 +87,10 @@ open class Farray
       var o = '(';
       val n = xs.len;
       if n  > 0uz do
-        o += repr xs.[0];
+        o += repr xs.0;
 
         for var i:size in 1uz upto n - 1uz do
-          o += ', ' + repr xs.[i];
+          o += ', ' + repr xs.i;
         done
       done
       return o + ')';
@@ -106,7 +106,7 @@ open class Farray
         return true;
       else
         for var i:size in 0uz upto n - 1uz do
-          if not (xs.[i] == ys.[i]) do return false; done
+          if not (xs.i == ys.i) do return false; done
         done
       done
       return true;
@@ -121,10 +121,10 @@ open class Farray
       // assert n == ys.len;
       var i:size;
       ph1:for i in 0uz upto n - 1uz do
-        if not (xs.[i] < ys.[i]) do break ph1; done
+        if not (xs.i < ys.i) do break ph1; done
       done
       for i in i upto n - 1uz do
-        if not (xs.[i] <= ys.[i]) do return false; done
+        if not (xs.i <= ys.i) do return false; done
       done
       return true;
     }

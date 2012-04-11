@@ -3,7 +3,7 @@ class ArrayValue[t,v]
   virtual fun len: t -> size;
   virtual fun unsafe_get: t * size -> v;
 
-  fun subscript[I in ints] (x:t, i:I) => get (x,i.size);
+  //fun subscript[I in ints] (x:t, i:I) => get (x,i.size);
   fun apply [I in ints] (i:I, x:t) => get (x,i.size);
 
   fun get[I in ints] (x:t, i:I) = { 

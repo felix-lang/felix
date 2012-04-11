@@ -110,8 +110,8 @@ var result = varray[StringPiece] (4.size,StringPiece(""));
 for line in config_lines do
   var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
   if match_result do
-    var lhs = result.[1].str.strip;
-    var rhs = result.[2].str.strip;
+    var lhs = result.1.str.strip;
+    var rhs = result.2.str.strip;
     match lhs with
     | "C_PATH" => C_PATH += rhs;
     | "FLX_PATH" => FLX_PATH += rhs; 
@@ -123,8 +123,8 @@ for line in config_lines do
   else
   match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
   if match_result do
-    lhs = result.[1].str.strip;
-    rhs = result.[2].str.strip;
+    lhs = result.1.str.strip;
+    rhs = result.2.str.strip;
     match lhs with
     | "PORT" => PORT = atoi rhs;
     | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
@@ -133,9 +133,9 @@ for line in config_lines do
   else
   match_result = Match(plugin_spec, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,4);
   if match_result do
-    var extn = result.[1].str.strip;
-    var lib = result.[2].str.strip;
-    var entry = result.[3].str.strip;
+    var extn = result.1.str.strip;
+    var lib = result.2.str.strip;
+    var entry = result.3.str.strip;
     PLUGIN_MAP = Cons ((extn, lib, entry), PLUGIN_MAP);
   done done done
 done

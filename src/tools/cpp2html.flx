@@ -262,8 +262,8 @@ fun setup(config_data:string) = {
 //    println$ "Line = " + line;
     var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
     if match_result do
-      var lhs = result.[1].str.strip;
-      var rhs = result.[2].str.strip;
+      var lhs = result.1.str.strip;
+      var rhs = result.2.str.strip;
 //      println$ "match "+lhs+ " += " + rhs;
       match lhs with
       | "C_PATH" => C_PATH += rhs;
@@ -272,8 +272,8 @@ fun setup(config_data:string) = {
     else
     match_result = Match(varset, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
     if match_result do
-      lhs = result.[1].str.strip;
-      rhs = result.[2].str.strip;
+      lhs = result.1.str.strip;
+      rhs = result.2.str.strip;
 //      println$ "match "+lhs+ " += " + rhs;
       match lhs with
       | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
