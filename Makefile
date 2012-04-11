@@ -88,6 +88,7 @@ install:
 	echo 'println ("installed "+ Version::felix_version);' > install-done.flx
 	flx install-done
 	rm install-done.*
+	sudo chown $(USER) $(HOME)/.felix
 #
 # Install binaries on felix-lang.org
 #
