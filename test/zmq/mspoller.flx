@@ -24,11 +24,11 @@ var items = varray(
 //  Process messages from both sockets
 while true do 
    C_hack::ignore$ poll (items, -1.0);
-   if (items.[0].revents \& ZMQ_POLLIN).short != 0s do
+   if (items.0.revents \& ZMQ_POLLIN).short != 0s do
      var s = receiver.recv_string;
      //  Process task
    done
-   if (items.[1].revents \& ZMQ_POLLIN).short != 0s do
+   if (items.1.revents \& ZMQ_POLLIN).short != 0s do
      s = subscriber.recv_string;
    done
 done

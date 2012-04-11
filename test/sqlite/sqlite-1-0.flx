@@ -30,7 +30,7 @@ proc run(db:sqlite3_db_t) {
   var errm: &char =  c"";
 
   var i = 0;
-  var p = sql.[i];
+  var p = sql.i;
   while p != "" do
     println p;
     val cb : sqlite3_exec_callback_t = eh;
@@ -40,7 +40,7 @@ proc run(db:sqlite3_db_t) {
       return;
     done;
     ++i;
-    p = sql.[i];
+    p = sql.i;
   done;
 }
 

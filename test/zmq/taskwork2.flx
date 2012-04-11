@@ -29,7 +29,7 @@ var items = varray (
 //  Process messages from both sockets
 var run = true; while run do
    C_hack::ignore$ poll (items, -1.0);
-   if (items.[0].revents \& ZMQ_POLLIN).short != 0s do
+   if (items.0.revents \& ZMQ_POLLIN).short != 0s do
      tim := receiver.recv_string;
 
      //  Do the work
@@ -43,7 +43,7 @@ var run = true; while run do
    done
 
    //  Any waiting controller command acts as 'KILL'
-   if (items.[1].revents \& ZMQ_POLLIN).short != 0s do
+   if (items.1.revents \& ZMQ_POLLIN).short != 0s do
       run =false; //  Exit loop
    done
 done

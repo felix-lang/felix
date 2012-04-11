@@ -41,10 +41,10 @@ var pollitems = varray (
   zmq_poll_item (workers,ZMQ_POLLIN));
 while true do
   C_hack::ignore$ poll(pollitems, -1.0);
-  if (pollitems.[0].revents \& ZMQ_POLLIN).short != 0s do
+  if (pollitems.0.revents \& ZMQ_POLLIN).short != 0s do
     send_strings workers clients.recv_strings;
   done
-  if (pollitems.[0].revents \& ZMQ_POLLIN).short != 0s do
+  if (pollitems.0.revents \& ZMQ_POLLIN).short != 0s do
     send_strings clients workers.recv_strings;
   done
 done

@@ -18,7 +18,7 @@ var items = varray(
 //  Switch messages between sockets
 while true do
   C_hack::ignore$ zmq_poll (items, -1.0);
-  if (items.[0].revents \& ZMQ_POLLIN).short != 0s do
+  if (items.0.revents \& ZMQ_POLLIN).short != 0s do
     part:while true do 
       //  Process all parts of the message
       var s = frontend.recv_string;
@@ -33,7 +33,7 @@ while true do
       endmatch;
     done
   done
-  if (items.[1].revents \& ZMQ_POLLIN).short != 0s do
+  if (items.1.revents \& ZMQ_POLLIN).short != 0s do
     part2:while true do 
       //  Process all parts of the message
       s = frontend.recv_string;

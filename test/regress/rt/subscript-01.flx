@@ -1,28 +1,42 @@
-// check string match
 
-var s = "h";
-var e = "j";
-var cand = "hello";
+var x = (1,2,3,4);
+var px = &x;
 
-//start
-match cand with
-| "h" .. "j" => println$ "Yes";
-| _ => println$ "No";
-endmatch;
-//end
+proc vtst[V,T with ArrayValue[T,V]] (x:T, s:string)
+{
+  println$ s;
+  println$ 2 x;
+  println$ x . 2;
+  var i = 1;
 
-match 1 with
-| 0 .. 10 => println$ "Yes";
-| _ => println$ "No";
-endmatch;
+  println$ i x;
+  println$ x . i;
+  println "";
+}
 
-match 1.0 with
-| 0.0 .. 10.0 => println$ "Yes";
-| _ => println$ "No";
-endmatch;
+vtst[int]$ x,"array";
+vtst[int]$ px,"&array";
+vtst[int]$ varray(1,2,3,4),"varray";
+vtst[int]$ darray(1,2,3,4),"darray";
 
-match 0.0 with
-| $(-1.0) => println$ "Yes";
-| _ => println$ "No";
-endmatch;
+println$ "-------";
+
+instance Str[&(int^4)] { 
+  fun str (x:&(int^4)) => "(" + str x*.0 + "," + str x*.1 + "," + str x*.2  +","+str x*.3+")"; 
+}
+var i = 2;
+proc otst[V,T with ContiguousArrayObject[T,V], Str[T]] (x:T, v1:V, v2:V, s:string)
+{
+  println$ s;
+  x + i <- v1;
+  println$ x . i;
+  x + (i - 1) <- v2;
+  println x;
+  println "";
+}
+
+otst[int]$ px,42, 53, "array";
+otst[int]$ varray(1,2,3,4),42, 53, "varray";
+otst[int]$ darray(1,2,3,4),42, 53, "darray";
+
 
