@@ -22,7 +22,52 @@ You should note that {int^1} is exactly the same as {int}:
 it is technically not a tuple.
 
 This kind of array is a first class value, it is <em>not an object</em>.
+@h2 Array element
+You can get an element from an array by its position:
+@felix
+println$ a.[1];
+@
+Note the position, or index, is zero origin in accordance with C 
+conventions. The index can be an expression of any core 
+integral type.
 
-Read the library code for <a href='/lib/std/array.flx'> array</a>.
+@h2 Array length
+The length of an array can be found by the {len} function.
+The type of the result is {size}, an integral type used 
+to determine the sizes of things.
+@felix
+println$ a.len;
+@
+@h2 Array member
+You can test if a value is in an array easily:
+@felix
+println$ 2 \in a;
+@
 
+@h2 Array iterators
 
+Perhaps the most interesting thing you can do with an array 
+is iterate through its elements:
+@felix
+val a = 1,2,3,4;
+
+for var i in 0 upto 3 do
+  println$ "a.["^str i^"]="+str a.[i];
+done
+@
+This is an indexed based loop specialised for arrays.
+Here's another iterator:
+@felix
+for v in a do
+  println$ "element=" + v;
+done
+@
+This form of iterator can be used with any sequence.
+It has the advantage it isn't possible to get an out of
+bounds index. The disadvantage is that you can't access the
+index at all.
+
+There's yet another way to do this:
+@felix
+iter (proc (v:int) {println$ "element=" + str v; }) a;
+@

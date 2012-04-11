@@ -3,6 +3,10 @@ You can define simple calculations easily. We'll
 use a classic example:
 @felix
 fun square (x:int) => x * x;
+@
+The function {square} just multiplies its argument {x} by itself.
+We can use it now:
+@felix
 write$ stdout, "Input number: "; fflush stdout;
 val result = readln$ stdin;
 val cleaned_result = strip result;

@@ -69,10 +69,6 @@ open class Farray
   }
 */
 
-  instance[T,N with Eq[T]] Set[array[T,N],T] {
-    fun \in (x:T, a:array[T,N]) => mem[T,N,T] eq of (T * T) a x;
-  }
-
   // reverse
   fun rev[T, N] (x:array[T, N]): array[T, N] = {
     var o : array[T, N];

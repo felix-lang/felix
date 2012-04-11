@@ -1,3 +1,73 @@
-@h1 Game Development with SDL
-Stuff.
+@h1 Networking
+Felix provides builtin support for asynchronous socket I/O. This is supported
+by platform dependent event notification services, using the best of
+{select}, {poll}, {epoll}, {kqueue}, Solaris I/O completion ports and
+Windows I/O completion ports. A single pre-emptive thread monitors
+the events and does all data transfers on behalf of the client
+fibres. The client fibres block, but the thread running them does not.
+The subsystem performing the event management is called {demux}
+and that performing the data transfers and fibre scheduling
+is called {faio}.
+
+@felix
+
+// Get library resources
+
+include "std/io/stream";
+include "std/io/socket";
+open Stream;
+open Socket;
+open Stream::TerminalIOByteStream[Socket::socket_t];
+
+// announce the program
+print "flx tcp stream test\n";
+
+// make a listening socket for our server
+var listener: socket_t;
+var port = 0;  // you choose
+mk_listener(&listener, &port, 1);
+println$ "Got port: "; print port; endl;
+println$ "listeneing on socket " + str listener;
+
+print "spawning client\n";
+spawn_fthread
+{
+  {
+    var eof = false;
+    var c: socket_t;
+    connect(&c, c"127.0.0.1", port); // connect to localhost
+    println$ "fthread's socket is " + str c;
+    var st: string;
+
+    get_line(c, &st);
+    print "connector got "; print st; endl;
+    write_string(c, "thanks\n", &eof);         // newline important
+
+    ioclose(c);  // finished with this
+    //println$ "fthread closed " + str c;
+  };
+};
+
+// make the server
+proc server()
+{
+  var s: socket_t;
+  accept(listener, &s);
+  println$ "Mainline accepted connection on socket " + str s;
+  ioclose(listener);  // not needed anymore
+
+  var eof = false;
+  print "got connection\n";
+  write_string(s, "server says hi\n", &eof);     // newline important here
+
+  var st: string;
+  get_line(s, &st);
+
+  print "server got "; print st; endl;
+  ioclose(s);
+  //println$ "mainline closed socket " + str s;
+}
+
+server; // run the server from the main thread
+@
 

@@ -1,0 +1,28 @@
+// check string match
+
+var s = "h";
+var e = "j";
+var cand = "hello";
+
+//start
+match cand with
+| "h" .. "j" => println$ "Yes";
+| _ => println$ "No";
+endmatch;
+//end
+
+match 1 with
+| 0 .. 10 => println$ "Yes";
+| _ => println$ "No";
+endmatch;
+
+match 1.0 with
+| 0.0 .. 10.0 => println$ "Yes";
+| _ => println$ "No";
+endmatch;
+
+match 0.0 with
+| $(-1.0) => println$ "Yes";
+| _ => println$ "No";
+endmatch;
+

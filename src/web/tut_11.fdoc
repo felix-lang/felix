@@ -1,238 +1,114 @@
-@h1 Functions and Procedures
-@h2 Felix functions
-When you see code like this:
-@felix
-println$ "Square of " + str 1 + " is " + str (1 * 1);
-println$ "Square of " + str 2 + " is " + str (2 * 2);
-println$ "Sguare of " + str 3 + " is " + str (3 * 1);
-@
-You know you need a function (notice the typos on the last line?)
-Basic Felix functions are easy:
-@felix
-fun square(x:int)=>x * x;  // define a function
-println$ "Square of " + str 1 + " is " + str (square 1);
-println$ "Square of " + str 2 + " is " + str 2.square;
-println$ "Sguare of " + str 3 + " is " + str$ square 3;
-@
-We fixed the bug in the calculation of the square of 3, and 
-we're also showing the three ways to apply a function: 
-high precedence application using operator whitespace
-which needs surrounding parentheses for correct grouping,
-reverse application using operator dot, which is even higher
-precedence than whitespace, and so does not, and finally we're
-applying the {str} function to a whitespace application
-using operator dollar, which has lower precedence than whitespace.
+@h1 Variables and Pointers
+In Felix, there are two kinds of entities: <em>values</em>
+and <em>objects</em>. 
 
-There's a longer way to write a function:
-@felix
-fun square(x:int):int = {
-  val s = x * x;
-  return x;
-}
-@
-This way allows complicated expressions to be broken up
-into arbitrary code. 
-
-Functions are not allowed to have side effects.
-
-@h2 Felix Procedures
-Still, there must be a way to repeat the print: there is,
-by using a procedure.
-@felix
-fun square(x:int)=>x * x;  // define a function
-proc ps(x:int) {
-  println$ "Square of " + str x + " is " + str x.square;
-}
-ps 1; ps 2; ps 3;
-@
-A procedure is like a function, except it returns no value,
-and it may and indeed should have side effects.
-
-@h2 Multiple arguments
-A function (or procedure) always has exactly one argument.
-However you can simulate multiple arguments with a tuple:
-@felix
-fun addup (x:int, y:int) => x + y;
-println$ addup (1,2); // 3
-val pair = 1,2;
-println$ addup pair; // 3
-@
-The last line shows clearly that {addup} takes a single argument
-which is a pair (tuple with two components).
-
-@h2 Function types
-A function value has a type:
-@felix
-  int -> int       // type of square
-  int -> void      // type of ps
-  int * int -> int // type of addup
-@
-
-@h2 Generators
-There is a special kind of procedure that looks like
-a function and may have side-effects, it is called
-a generator:
-@felix
-var x =0;
-gen incx():int = { val tmp = x; ++x; return tmp; }
-println$ incx(), incx();
-@
-When an expression contains one or more generator application, the applications
-are lifted out and evaluated in pre-order: this is basically left to right
-order of writing for terms at the same level, except that if a generator has
-an argument that is, or contains a generator application, that will have to
-be evaluated first. The serialisation of generator application is deterministic
-and based on the structure of the expression being evaluated <em>after</em>
-syntactic sugar is removed. For example
-@felix
-  var r = (g1 1).(g2 2)
-@
-will be evaluated as:
-@felix
-  val a2 = g2 2;
-  val a1 = g1 1;
-  val r = a2 a1;
-@
-because reverse application is just sugar for a swapped forward application.
+Most literals are values, all computations yield values, and all parameter
+passing is notionally passing of a value.
 
 @caveat
-Generators have the same type as a function. This is a design fault
-in the current version of Felix.
+Strings are technically mutable objects although they're usually 
+used as values.
 @
 
-@h2 C functions
-The function and procedure:
+In Felix all value types are first class, meaning they can be 
+default initialised, copy constructed, copy assigned, and destroyed.
+Values are generally immutable.
+
+Although everything is a value, Felix also has objects.
+Objects are not first class and need not be default initialisable,
+copyable or assignable, although they must be destructible.
+
+Objects types in Felix are always constructed on the heap and represented
+thereafter by a pointer. Pointers are first class values in themselves,
+even though what they represent may not be. If {T} is a type then
+{&amp;T} is the type of a pointer to that type.
+
+We have seen you can name values like this:
 @felix
-cfun f(x:int) => x;
-cproc p(x:int) { println x; }
+val x = 1;
+val y = 2;
+val z = y + y;
 @
-have types
+
+All values can be used as objects. There are two ways to do this.
+The first way is to copy the value onto the heap using {new}
+and retrieve the value by dereferencing the returned pointer:
+with operator {*}:
 @felix
-   int --> int
-   int --> void
+val px = new 1;
+val py = new 2;
+val z = *px + *py;
 @
-respectively, which are the types of classic C funcions:
+The second way is to create a <em>variable slot</em> on the
+stack or global store with a {var} definition and find a
+pointer to the variable using the addressing operators {&amp;}:
 @felix
-  int (*)(int)
-  void (*)(int)
+var x = 1;
+val px = &x;
+val z = *px + *px;
 @
-You can use this kind of function to force generation of
-a classic C style function for performance, so you that know
-the type exactly, and so you can pass it as an argument
-to a C library. In particular such a function or procedure should not reference
-Felix globals (because this requires passing the thread frame pointer), nor
-do anything directly or indirectly requiring garbage collection
-(which also requires thread frame pointer since that in turn contains a pointer
-to the garbage collector).
-
-C functions can be used wherever a Felix function is required,
-a wrapper is generated automatically.
-
-C functions of this kind are still defined with 
-Felix code: they're Felix functions with an enforced
-C interface. In fact many ordinary Felix functions will
-be reduced to C functions by the optimiser, but this
-form enforces the use of C interface.
-
-@note
-It seems unfortunate that <em>whilst</em> a {cfun} or {cproc} has a C interface it
-is defined in Felix, <em>whereas</em> a {cstruct} is a Felix interface to a
-struct defined in C, and {cenum} and {cflag} provide Felix models of enumerations
-or sets of integer constants defined in C.  The role reversal here seems confusing, 
-especially as Felix functions and types can be defined in C using {fun}, {proc} and {type}
-keywords and C code given as a string, and {ctypes} provides a shorthand form for
-multiple instances of {type} eliding the strings. In turn {cenum} may be considered
-a shorthand for a {type} binding and a list of {const} definitions. Also, a shorthand
-for lifting C functions from libraries using a {fun} or {proc} without a 
-defining string can be used. The situation is further complicated by the
-{callback} feature.
-
-
-
-@h1 Higher Order Functions
-In Felix, functions can be nested:
+Note that unlike C and C++ it is safe, although definitely not
+recommended, to take the address of a variable in a function
+and return it:
 @felix
-fun f(x:int) = {
-  fun g(y:long)=> x.long + y;
-   return g;
+fun f(x:int) : &int = {
+   var a = x;
+   return &a; // safe!
 }
 @
-The function {f} here has type {int -> (long -> long)}. This type is 
-the same as {int -> long -> long} since the arrow operator is right
-associative. There's a simpler way to write the function {f}:
+if you do this, Felix will allocate the function's stack from on the heap,
+and the garbage collector will not reap that object until it is unreachable.
+Whilst the pointer to the variable {a} is itself stored in a reachable location,
+the stack frame will remain allocated.
+
+Storing function frames on the heap is inefficient compared to using the stack
+so it is better to avoid this practice.
+
+@h2 Assignment
+Once you have a pointer to an object, you may be able to modify it.
+If the object type is first class, or otherwise assignable,
+you can put a new value into the object:
 @felix
-fun f(x:int) (y:long) => x.long + y;
+var x: int = 0;       // make an object 
+val px = &x;          // find its address
+px <- 1;              // store new value at pointer
+println$ x;           // 1 : the object has been set to a new value
 @
-Here one says {f} has arity 2. Note it still has only
-one argument, namely {x} of type {int}. A function with arity
-2 or greater is called a <em>higher order function</em>
-or Hof for short.
-
-Note that in:
+Using the heap:
 @felix
-proc h(x:int) (y:long) { println$ x.long + y; }
-@
-{h} is a function, not a procedure: it has type
-@felix
-int -> (long -> void)
-@
-so that rather, {h} is a function returning a procedure.
-
-It is possible to partially apply a higher order function.
-@felix
-fun f(x:int) (y:long) => x.long + y;
-val g = f 1;
-println$ g 2l;
-@
-Here {g} is just the value returned by {f} when applied
-to 1, which is a function accepting a {long} and returning
-a {long}.
-
-@h2 A style issue
-Many functions of "two" arguments can be written either accepting
-a tuple of two components or as a higher order function of arity 2.
-Without optimisation, higher order functions are extremely inefficient:
-tuples are faster, but they cannot be partially applied.
-However, the higher order form does not permit the "arguments" 
-to be "compressed" into a single value which the tuple form does.
-
-However, Felix is pretty good at optimisation and both version of {f}
-given above will likely reduce to a simple addition after inlining.
-
-Therefore the question really is: are you most likely to aggregate
-the arguments, or the function with the first argument?
-Use a tuple in the first case and a higher order function in the second.
-
-Of course, you should chose the form of a function which itself has
-the type required for it to be an argument of a higher order function
-such as an iteration, map or fold of some data structure.
-
-The library module {categ} defines a way to convert between these styles
-for 2 or 3 "arguments". The function {curry} takes a function accepting
-a tuple of 2 or 3 components and makes it into a higher order function
-with arity 2 or 3. The functions {uncurry2} and {uncurry3} reverse
-this transformation and convert a higher order function of arity 2 or 3,
-into a function accepting a tuple of 2 or 3 components, respectively.
-
-@h2 Anonymous function values
-You can write a function without a name in an expression:
-@felix
-val three = (fun (x:int)=> x + 1) 2;
-@
-There is a special short hand for procedures of unit argument:
-@felix
-{ println "Hello"; }
-@
-This is an expression equivalent to
-@felix
-proc () { println "Hello"; }
+val px = new 0;
+px <- 1;
+println$ x;
 @
 
-There's a similar shorthand for function or unit argument:
+The store operator {&lt;-} has the type:
 @felix
-val y = 1;
-{ val x = y + 1; return x; }
+  &T * T -> void
 @
-distinguished from the procedure case by ending with
-a return statement.
+Felix also provides the more traditional assignment operator {=}:
+@felix
+var x = 1; 
+x = 2;       // syntactic sugar for &amp;x &lt;- 2
+println$ x;  // 2
+@
+but as you can see it is just syntactic sugar. All mutators work this
+way for example:
+@felix
+  var x = 1;
+  x++;    // syntactic sugar for post_dec (&amp;x)
+  x+=1;   // syntactic sugar for plus_eq (&amp;x,1)
+@
+In particular all operators and functions except {&amp;}
+accept values: there are no reference types. There are no
+operations which modify values directly.
 
+Some values, when encoded in object store, can be modified
+partially via a pointer to that store. Clearly scalar values
+cannot be partially modified, most aggregates can be.
+
+For Felix types, whether or not this is possible is determined solely by functions
+that manipulate pointers to objects storing those values.
+
+For types defined in C++ and lifted into Felix, the programmer may
+provide mutators.
+ 

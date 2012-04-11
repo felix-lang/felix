@@ -4,6 +4,7 @@ class ArrayValue[t,v]
   virtual fun unsafe_get: t * size -> v;
 
   fun subscript[I in ints] (x:t, i:I) => get (x,i.size);
+  fun apply [I in ints] (i:I, x:t) => get (x,i.size);
 
   fun get[I in ints] (x:t, i:I) = { 
     assert i.size < x.len;
@@ -79,6 +80,9 @@ class ArrayValue[t,v]
   fun mem[u] (rel:v*u->bool) (x:t) (e:u): bool =>
     mem (fun (i:v) => rel(i, e)) x
   ;
+  instance[with Eq[v]] Set[t,v] {
+    fun \in (elt:v, a:t) => mem eq of (v * v) a elt;
+  }
 
   fun find (rel:v*v->bool) (x:t) (e:v): opt[v] = {
     val n = x.len;
@@ -111,7 +115,9 @@ class ArrayObject[t,v]
 {
   inherit ArrayValue[t,v];
   virtual proc unsafe_set: t * size * v;
-  proc set[I in ints] (x:t, i:I, a:v) { assert i.size < x.len; unsafe_set (x,i.size,a); } 
+  proc set[I in ints] (x:t, i:I, a:v) { 
+    assert i.size < x.len; unsafe_set (x,i.size,a); 
+  } 
 }
 
 class ContiguousArrayObject[t,v]
@@ -119,5 +125,10 @@ class ContiguousArrayObject[t,v]
   inherit ArrayObject[t,v];
   virtual fun stl_begin: t -> &v;
   virtual fun stl_end: t -> &v;
+
+  fun + [I in ints] (pa:t, i:I) : &v = { 
+     assert i.size < pa.len; 
+     return pa.stl_begin + i.size; 
+  }
 }
 

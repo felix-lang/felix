@@ -18,7 +18,7 @@ of a record type, without declaring the type.
 
 For a {struct} however, you must first declare the type and give it a name:
 they're said to be <em>nominally typed</em>. This means two {struct}s with the
-components but declared with distinct names are distinct types.
+same components but declared with distinct names are distinct types.
 
 @h2 Accessor Methods
 You can also define {fun}ctions in a {struct} like this:

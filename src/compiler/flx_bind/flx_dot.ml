@@ -309,11 +309,16 @@ let handle_dot state bsym_table build_env env rs be bt koenig_lookup cal_apply b
       else
        bexpr_get_n (btyp_pointer t) (n,te)
  
-    | _ -> clierr sr (
-    "AST_dot, RHS " ^ string_of_expr e2 ^ 
-    " is integer literal, expected LHS t be tuple type, got " ^
-    sbt bsym_table ttt
-    )
+    | _ -> 
+      begin try be (EXPR_apply (sr,(e2,e)))
+      with exn -> 
+        clierr sr (
+          "AST_dot, RHS " ^ string_of_expr e2 ^ 
+          " is integer literal, expected LHS t be tuple type, got " ^
+          sbt bsym_table ttt ^
+          "\nReverse application also failed"
+         )
+      end
     end 
 
   (* RHS NOT A SIMPLE NAME: reverse application OR composition?? *)
