@@ -95,9 +95,10 @@ println$ "FlxHome=" + FLX_HOME;
 var FLX_CONFIG : string= Filename::join (FLX_HOME,"webserver.config");
 println$ "Flxconfig=" + FLX_CONFIG;
 var config_data = load(FLX_CONFIG);
-println$ "webserver config data = " + config_data;
+println$ "loaded webserver config data = " + config_data;
 var config_lines = split(config_data, "\n");
-if len config_lines == 0.size do
+if len config_data == 0.size do
+  println "Using default config";
   config_lines = default_config;
 done
 
