@@ -322,6 +322,7 @@ def check_flx(ctx, felix,
         stdout, stderr = felix.run(exe,
             env=dict(env, TEST_DATA_DIR=Path('test/test-data')),
             static=static,
+            stdout=dst,
             timeout=60,
             quieter=1)
     except fbuild.ExecutionError as e:
@@ -337,25 +338,23 @@ def check_flx(ctx, felix,
             ctx.logger.log(e.stderr.decode('utf-8','ignore').strip(), verbose=1)
         return False
 
-    with open(dst, 'wb') as f:
-        f.write(stdout)
-
     if expect is None:
         ctx.logger.log('no .expect', color='cyan')
         return True
     else:
-        stdout = stdout.replace(b'\r\n', b'\n').replace(b'\r', b'\n')
+        with open(dst, 'rb') as f:
+            out = f.read().replace(b'\r\n', b'\n').replace(b'\r', b'\n')
 
         with open(expect, 'rb') as f:
             s = f.read().replace(b'\r\n', b'\n').replace(b'\r', b'\n')
 
-        if stdout == s:
+        if out == s:
             ctx.logger.passed()
             return True
         else:
             ctx.logger.failed('failed: output does not match')
             for line in difflib.ndiff(
-                    stdout.decode('utf-8','ignore').split('\n'),
+                    out.decode('utf-8','ignore').split('\n'),
                     s.decode('utf-8','ignore').split('\n')):
                 ctx.logger.log(line)
             dst.remove()
