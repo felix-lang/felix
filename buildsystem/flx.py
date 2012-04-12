@@ -342,8 +342,13 @@ def check_flx(ctx, felix,
         ctx.logger.log('no .expect', color='cyan')
         return True
     else:
-        with open(dst, 'rb') as f:
+        try:
+          with open(dst, 'rb') as f:
             out = f.read().replace(b'\r\n', b'\n').replace(b'\r', b'\n')
+        except:
+            print("Unexpectedly can't open " + dst)
+            ctx.logger.failed('failed: cant find output file '+dst)
+            return False
 
         with open(expect, 'rb') as f:
             s = f.read().replace(b'\r\n', b'\n').replace(b'\r', b'\n')

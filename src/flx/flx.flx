@@ -1138,6 +1138,7 @@ if RECOMPILE == 0 and RUNIT == 1 and CLEAR_CACHE == 0 do
     if xtime > cal_dep_time(filebase)  and xtime > cache_time do
       debugln$ "Running statically linked binary";
       cmd=STATIC_ENV+" "+LINKER_OUTPUT_FILENAME+" "+args;
+      if STDOUT != "" do cmd=cmd + " > "+STDOUT; done
       debugln$ "Uptodate executable: Running command " + cmd;
       pexit(system(cmd));
     else
