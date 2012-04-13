@@ -1,4 +1,4 @@
-include "std/time";
+include "std/posix/time";
 
 val runs = 1;
 val max_iterations = 99888;
@@ -24,9 +24,9 @@ proc mandelbrot (n:int) {
   var a = array_alloc[char] 78;
   val ast  = char "*";
   val space = char " ";
-  var y:int; forall y in -39 upto 38 do
+  var y:int; for y in -39 upto 38 do
     if n == 1 do endl; done
-    var x:int; forall x in -39 upto 38 do
+    var x:int; for x in -39 upto 38 do
       val i = iterate (double x / 40.0, double y / 40.0 - 0.5);
       if n == 1 do
         a.[x+39] =  (if 0 == i then ast else space endif);
@@ -37,7 +37,7 @@ proc mandelbrot (n:int) {
 }
 
 val start_time = Time::time ();
-var iter:int; forall iter in 1 upto runs do
+var iter:int; for iter in 1 upto runs do
   mandelbrot iter;
 done;
 endl;

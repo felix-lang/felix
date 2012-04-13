@@ -1,8 +1,8 @@
-include "std/time";
+include "std/posix/time";
 
 fun Tak (x:float, y:float, z:float): float =>
   if (y >= x) then z
-  else Tak(Tak(x-1.0f,y,z), Tak(y-1.0f,z,x), Tak(z-1.0f,x,y))
+  else Tak(Tak(x - 1.0f,y,z), Tak(y - 1.0f,z,x), Tak(z - 1.0f,x,y))
   endif
 ;
 
