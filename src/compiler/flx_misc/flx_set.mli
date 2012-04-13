@@ -6,16 +6,14 @@ module type S =
     val union_list : elt list -> t -> t
     val of_list : elt list -> t
     val to_list : t -> elt list
-    val print : Format.formatter -> t -> unit
   end;;
 
-module type OrderedTypePrintable =
+module type OrderedType=
   sig
     include Set.OrderedType
-    val print : Format.formatter -> t -> unit
   end;;
 
-module Make (M:OrderedTypePrintable) : S with type elt = M.t
+module Make (M:OrderedType) : S with type elt = M.t
 
 module StringSet : S with type elt = string
 

@@ -1,7 +1,5 @@
-open Format
 open Flx_ast
 open Flx_types
-open Flx_format
 
 module CS = Flx_code_spec
 
@@ -383,7 +381,5 @@ let iter_uses f bbdcl =
 
   | _ ->
       iter ~f_bid:f ~f_btype ~f_bexpr ~f_bexe bbdcl
-
-(* -------------------------------------------------------------------------- *)
 
 

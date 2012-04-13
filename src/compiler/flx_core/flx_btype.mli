@@ -183,10 +183,4 @@ val map :
   t ->
   t
 
-(* -------------------------------------------------------------------------- *)
 
-(** Prints a btype to a formatter. *)
-val print : Format.formatter -> t -> unit
-
-(** Prints a name_map_t to a formatter. *)
-val print_name_map : Format.formatter -> name_map_t -> unit

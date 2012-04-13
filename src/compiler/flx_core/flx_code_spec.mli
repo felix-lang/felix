@@ -5,5 +5,7 @@ type t =
   | Virtual
   | Identity
 
+(*
 (** Prints out a code specification to a formatter. *)
 val print : Format.formatter -> t -> unit
+*)

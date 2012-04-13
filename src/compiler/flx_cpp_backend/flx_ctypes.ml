@@ -43,46 +43,4 @@ type cdecl_type_t =
   | `Cdt_cvref of ctype_t
 ]
 
-let rec print_cexpr ppf cexpr =
-  match cexpr with
-  | `Ce_atom s ->
-      Flx_format.print_variant1 ppf "`Ce_atom" Flx_format.print_string s
-  | `Ce_postfix (s,e) ->
-      Flx_format.print_variant2 ppf "`Ce_postfix"
-        Flx_format.print_string s
-        print_cexpr e
-  | `Ce_prefix (s,e) ->
-      Flx_format.print_variant2 ppf "`Ce_prefix"
-        Flx_format.print_string s
-        print_cexpr e
-  | `Ce_infix (s,e1,e2) ->
-      Flx_format.print_variant3 ppf "`Ce_infix"
-        Flx_format.print_string s
-        print_cexpr e1
-        print_cexpr e2
-  | `Ce_call (f,es) ->
-      Flx_format.print_variant2 ppf "`Ce_call"
-        print_cexpr f
-        (Flx_list.print print_cexpr) es
-  | `Ce_array (f,e) ->
-      Flx_format.print_variant2 ppf "`Ce_array"
-        print_cexpr f
-        print_cexpr e
-  | `Ce_new (ps,cls,args) ->
-      Flx_format.print_variant3 ppf "`Ce_new"
-        (Flx_list.print print_cexpr) ps
-        Flx_format.print_string cls
-        (Flx_list.print print_cexpr) args
-  | `Ce_cast (cast,e) ->
-      Flx_format.print_variant2 ppf "`Ce_cast"
-        Flx_format.print_string cast
-        print_cexpr e
-  | `Ce_cond (e,e1,e2) ->
-      Flx_format.print_variant3 ppf "`Ce_cond"
-        print_cexpr e
-        print_cexpr e1
-        print_cexpr e2
-  | `Ce_expr (p, s) ->
-      Flx_format.print_variant2 ppf "`Ce_expr"
-        Flx_format.print_string p
-        Flx_format.print_string s
+

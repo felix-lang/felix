@@ -94,9 +94,4 @@ val map :
 (** Simplify the bound exe. *)
 val reduce : t -> t
 
-(* -------------------------------------------------------------------------- *)
 
-(** Prints a bexe to a formatter. *)
-(*
-val print : Format.formatter -> t -> unit
-*)

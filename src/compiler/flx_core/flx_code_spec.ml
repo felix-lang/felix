@@ -1,4 +1,6 @@
+(*
 open Flx_format
+*)
 
 type t =
   | Str_template of string
@@ -6,6 +8,7 @@ type t =
   | Virtual
   | Identity
 
+(*
 (** Prints out a code specification to a formatter. *)
 let print ppf = function
   | Str_template s ->
@@ -16,3 +19,4 @@ let print ppf = function
       print_variant0 ppf "Virtual"
   | Identity ->
       print_variant0 ppf "Identity"
+*)

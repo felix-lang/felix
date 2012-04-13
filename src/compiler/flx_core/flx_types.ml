@@ -1,5 +1,3 @@
-open Format
-open Flx_format
 
 (** Types
  *
@@ -28,7 +26,6 @@ module BidSet = Flx_set.Make (
   struct
     type t = bid_t
     let compare = compare
-    let print = pp_print_int
   end
 )
 
@@ -151,6 +148,7 @@ type symbol_definition_t =
 
 (* -------------------------------------------------------------------------- *)
 
+(*
 let print_bid = pp_print_int
 
 (** Prints out a bvs_t to a formatter. *)
@@ -160,3 +158,4 @@ let print_bvs f xs =
       Flx_format.print_string name
       print_bid bid
   end f xs
+*)

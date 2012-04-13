@@ -160,9 +160,3 @@ val map :
 (** Simplify the bound expression. *)
 val reduce : t -> t
 
-(* -------------------------------------------------------------------------- *)
-
-(** Prints a bexpr to a formatter. *)
-(*
-val print : Format.formatter -> t -> unit
-*)

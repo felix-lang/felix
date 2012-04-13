@@ -1,6 +1,3 @@
-open Format
-open Flx_format
-
 module CS = Flx_code_spec
 
 (** {6 Source Reference}

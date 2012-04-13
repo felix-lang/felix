@@ -11,5 +11,7 @@ val of_string : string -> t
 (** Convert an identifier to a string. *)
 val to_string : t -> string
 
+(*
 (** Prints out an to a formatter. *)
 val print : Format.formatter -> t -> unit
+*)
