@@ -78,7 +78,7 @@ Content-Length: """ + str (len response.content) + """\r
   fun make_html (content:string,headers:assoc_list[string,string]) =>
     http_header(http_response(SC_OK,localtime(time_t()),text html,
                               headers,content)) + content; 
-  fun make_xhtml (content:string) => make_raw(content,no_headers());
+  fun make_xhtml (content:string) => make_xhtml(content,no_headers());
   fun make_xhtml (content:string,headers:assoc_list[string,string]) =>
     http_header(http_response(SC_OK,localtime(time_t()),application xhtml_PLUS_xml,
                               headers,content)) + content; 

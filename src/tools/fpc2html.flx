@@ -96,10 +96,6 @@ fun setup(config_data:string) = {
       endmatch;
     done done
   done
-println$ "INSTALL_ROOT=" + INSTALL_ROOT;
-println$ "FLX_PATH=" + str FLX_PATH;
-println$ "C_PATH=" + str C_PATH;
-println$ "FLX_PKGCONFIG_PATH=" + str FLX_PKGCONFIG_PATH;
   return 0;
 }
 

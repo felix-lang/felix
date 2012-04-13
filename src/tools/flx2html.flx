@@ -1,4 +1,5 @@
 include "./charclass";
+include "./plugin_common";
 
 // fixup text by replacing < > and & characters
 fun txt2html (x:string) =
@@ -173,22 +174,6 @@ fun valof[N](x:array[string * string,N],key:string) =>
   endmatch
 ;
 
-fun get_file (var fname:string, path:list[string]) = {
-  if fname.[0] == char "$" do fname = fname.[1 to]; done
-  if FileStat::fileexists fname do return Some fname;
-  else
-    var f = Filename::join(INSTALL_ROOT,fname);
-    if FileStat::fileexists f do return Some f;
-    else return FileSystem::find_in_path (fname, path);
-    done
-  done
-}
-
-
-fun prefix(arg:string,key:string)=>
-  arg.[to len key]==key
-;
-
 fun xlat_felix(t:string, dir:string): bool * string =
 {
   var needs_mathjax = false;
@@ -250,7 +235,7 @@ fun xlat_felix(t:string, dir:string): bool * string =
       while n.[0] == char "'" or n.[0] == char '"' do n = n.[1 to]; done
       while n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
       if n.[-4 to] != ".flx" do n+= ".flx"; done // hack, fixme
-      match get_file(n,FLX_PATH) with
+      match get_file(n,INSTALL_ROOT,FLX_PATH) with
       | Some ?f => { write_string('<a href="/$'+f+'" >' + b + '</a>') ; }
       | None => {  write_string('<span class="fstring">'+txt2html b+"</span>"); }
       endmatch;
@@ -275,7 +260,7 @@ unstring:>
       while n.[-1] == char "'" or n.[-1] == char '"' do n = n.[to -1]; done
       n+=".fpc";
 println$ "Package file basename is " + n;
-      match get_file(n,FLX_PKGCONFIG_PATH) with
+      match get_file(n,INSTALL_ROOT,FLX_PKGCONFIG_PATH) with
       | Some ?f => { write_string('<a href="/$'+f+'" >' + txt2html b + '</a>') ; }
       | None => { 
           println$ "Can't find "+n+" in path " + str FLX_PKGCONFIG_PATH;   
@@ -488,12 +473,6 @@ fun setup(config_data:string) = {
       PLUGIN_MAP = Cons ((extn, lib, entry), PLUGIN_MAP);
     done done done
   done
-println$ "INSTALL_ROOT=" + INSTALL_ROOT;
-println$ "FLX_PATH=" + str FLX_PATH;
-println$ "FLX_PKGCONFIG_PATH=" + str FLX_PKGCONFIG_PATH;
-println$ "FLX_WEBSERVER_PLUGIN_PATH=" + str FLX_WEBSERVER_PLUGIN_PATH;
-println$ "PLUGIN_MAP=" + str PLUGIN_MAP;  
-
   // Load Plugins.
   typedef libmap_entry = string * Dynlink::flx_instance;
   var libs = Empty[libmap_entry];
@@ -505,15 +484,12 @@ println$ "PLUGIN_MAP=" + str PLUGIN_MAP;
     | ?ext,?lib,?entry =>
       if not (have_lib lib) do
         if lib in list("cpp2html") do
-    println$ "Adding lib " + lib;
           var linst = Dynlink::init_lib(lib + dll_extn);
           var library = Dynlink::get_library linst;
           var tf = Dynlink::get_thread_frame linst;
           var raw_setup = Dynlink::dlsym$ library, "setup";
-          println$ "Got setup address " + str raw_setup;
           var setup = C_hack::cast[address * string --> int] raw_setup;
           var sresult = setup(tf,config_data);
-    println$ "Library set up " + str sresult;
           libs = Cons ((lib, linst),libs); 
           match lib with
           | "cpp2html" => 

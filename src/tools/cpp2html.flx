@@ -1,18 +1,8 @@
 include "./charclass";
+include "./plugin_common";
 
 var C_PATH = Empty[string];
 var INSTALL_ROOT = "";
-
-fun get_file (var fname:string, path:list[string]) = {
-  if fname.[0] == char "$" do fname = fname.[1 to]; done
-  if FileStat::fileexists fname do return Some fname;
-  else
-    var f = Filename::join(INSTALL_ROOT,fname);
-    if FileStat::fileexists f do return Some f;
-    else return FileSystem::find_in_path (fname, path);
-    done
-  done
-}
 
 
 module Cpp2Html { 
@@ -87,7 +77,7 @@ fun xlat_cpp(t:string, dir:string) : bool * string=
       var x = b;
       if x.[0] == char "<" do x = "&lt;" + x.[1 to]; done
       if x.[-1] == char ">" do x = x.[to -1] + "&gt;"; done
-      match get_file(n,Cons(dir,C_PATH)) with
+      match get_file(n,INSTALL_ROOT,Cons(dir,C_PATH)) with
       | Some ?f => 
         {  
           // the $ is so we know we have resolved the filename
@@ -243,15 +233,7 @@ fin:>
 println$ "cpp2html initialisation";
 
 fun setup(config_data:string) = {
-/*
-  println$ "Cpp2html config: " + config_data;
-*/
   var config_lines = split(config_data, "\n");
-/*
-  if len config_lines == 0.size do
-    config_lines = default_config;
-  done
-*/
   config_lines = map (strip of (string)) config_lines; 
   var pathext = RE2("(.*)\\+=(.*)");
   var varset = RE2("(.*)=(.*)");
@@ -259,12 +241,10 @@ fun setup(config_data:string) = {
 
   var result = varray[StringPiece] (4.size,StringPiece(""));
   for line in config_lines do
-//    println$ "Line = " + line;
     var match_result = Match(pathext, StringPiece(line),0,ANCHOR_BOTH, result.stl_begin,3);
     if match_result do
       var lhs = result.1.str.strip;
       var rhs = result.2.str.strip;
-//      println$ "match "+lhs+ " += " + rhs;
       match lhs with
       | "C_PATH" => C_PATH += rhs;
       | _ => ;
@@ -274,16 +254,12 @@ fun setup(config_data:string) = {
     if match_result do
       lhs = result.1.str.strip;
       rhs = result.2.str.strip;
-//      println$ "match "+lhs+ " += " + rhs;
       match lhs with
       | "INSTALL_ROOT" => INSTALL_ROOT = rhs;
       | _ => ;
       endmatch;
     done done
   done
-
-println$ "cpp2html set INSTALL_ROOT=" + INSTALL_ROOT;
-println$ "cpp2html set C_PATH=" + str C_PATH;
 
   return 0;
 }

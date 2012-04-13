@@ -162,43 +162,22 @@ open class String
   fun find_last_not_of (s:string, e:char) : opt[int] => match stl_find_last_not_of (s, e) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
   fun find_last_not_of (s:string, e:char, i:int) : opt[int] => match stl_find_last_not_of (s, e, i) with | ?i when i.size == stl_npos => None[int] | ?i => Some i endmatch;
 
-  fun startswith (x:string) (e:string) : bool =
-  {
-    if len x < len e do
-      return false;
-    done
+  fun prefix(arg:string,key:string)=>
+    arg.[to len key]==key
+  ;
 
-    if len e > 0uz do
-      for var i in 0uz upto (len e) - 1uz do
-        if e.[i] != x.[i] do
-          return false;
-        done
-      done
-    done
-    return true;
-  }
+  fun suffix (arg:string,key:string)=>
+    arg.[-key.len to]==key
+  ;
 
-  fun endswith (x:string) (e:string) : bool =
-  {
-    val len_x = len x;
-    val len_e = len e;
 
-    if len_x < len_e do
-      return false;
-    done;
+  fun startswith (x:string) (e:string) : bool => prefix (x,e);
 
-    if len_e > 0uz do
-      for var i in 0uz upto (len_e) - 1uz do
-        if e.[len_e - i - 1uz] != x.[len_x - i - 1uz] do
-          return false;
-        done
-      done
-    done
-    return true;
-  }
+  // as above: slices are faster
+  fun endswith (x:string) (e:string) : bool => suffix (x,e);
 
   fun startswith (x:string) (e:char) : bool => x.[0] == e;
-  fun endswith (x:string) (e:char) : bool => x.[len x - 1uz] == e;
+  fun endswith (x:string) (e:char) : bool => x.[-1] == e;
 
   fun ltrim (x:string) (e:string) : string =>
     if startswith x e then

@@ -15,25 +15,22 @@ open Stream;
 open TerminalIByteStream[fd_t];
 open TerminalIOByteStream[socket_t];
 
-proc dbg(x:string) { fprint (cerr,x); };
-
-/*
-include "./cpp2html";
-include "./flx2html";
-include "./fdoc2html";
-include "./fpc2html";
-include "./py2html";
-include "./ocaml2html";
-*/
-include "./charclass";
-include "./css4html";
-
 // this is a hack to make close work on a listener
 // RF got this right the first time:
 // in the abstract a listener is NOT a socket
 // In fact, it is a socket server, with accept() a way to
 // read new sockets off it ..
 open TerminalIByteStream[socket_t];
+
+include "web/http_response";
+open HTTPResponse;
+include "web/mime_type";
+
+include "./charclass";
+include "./css4html";
+include "./plugin_common";
+
+proc dbg(x:string) { fprint (cerr,x); };
 
 requires header '#include <stdlib.h>';
 fun strtod: string -> double = "strtod($1.data(),0)";
@@ -42,9 +39,6 @@ fun atoi: string -> int = "atoi($1.data())";
 // command line argument processing
 var arg = "";
 var argno = 1;
-fun prefix(arg:string,key:string)=>
-  arg.[to len key]==key
-;
 var INSTALL_ROOT = #Config::config.FLX_INSTALL_DIR;
  
 var DELAY = 0.1;
@@ -335,8 +329,10 @@ mathjax := '''
 
 
 // functions to make responses
-fun make_image (suffix:string, contents:string) =>
-let ?kind = if suffix == "jpg" then "jpeg" else suffix endif in
+fun make_image_from_suffix (suffix:string, contents:string) =>
+  make_image(MIMEType::mime_type_from_extension suffix,contents)
+;
+/*
 """HTTP/1.0 200 OK\r
 Date: Sun, 30 Apr 2006 07:14:50 GMT\r
 Server: felix web server\r
@@ -415,19 +411,7 @@ Content-Type: application/xhtml+xml\r
 Content-Length: """ + str contents.len.int + """\r
 \r
 """ + contents;
-
-
-fun get_file (var fname:string, path:list[string]) = {
-  if fname.[0] == char "$" do fname = fname.[1 to]; done
-  if FileStat::fileexists fname do return Some fname;
-  else
-    var f = Filename::join(INSTALL_ROOT,fname);
-    if FileStat::fileexists f do return Some f;
-    else return FileSystem::find_in_path (fname, path);
-    done
-  done
-}
-
+*/
 
 proc serve_not_found (k:socket_t, fname:string) {
    var eof_flag = false;
@@ -443,7 +427,7 @@ proc serve_forbidden (k:socket_t, fname:string) {
 
 fun get_flx (fname:string) = {
   var flx =
-    match get_file(fname,FLX_PATH) with
+    match get_file(fname,INSTALL_ROOT,FLX_PATH) with
     | Some ?name => load(name)
     | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
     endmatch
@@ -454,7 +438,7 @@ fun get_flx (fname:string) = {
 
 fun get_cpp (fname:string) = {
   var flx =
-    match get_file(fname,C_PATH) with
+    match get_file(fname,INSTALL_ROOT,C_PATH) with
     | Some ?name => load(name)
     | None => "NO FILE "+fname+" FOUND IN " + str C_PATH
     endmatch
@@ -467,7 +451,7 @@ fun get_cpp (fname:string) = {
 proc serve_felix (k:socket_t, fname:string) {
   var eof_flag = false;
 
-  match get_file(fname,C_PATH) with
+  match get_file(fname,INSTALL_ROOT,C_PATH) with
   | Some ?path =>
     {
       val text = load path;
@@ -492,7 +476,7 @@ proc serve_felix (k:socket_t, fname:string) {
 proc serve_fpc (k:socket_t, fname:string) {
   var eof_flag = false;
 
-  match get_file (fname, FLX_PKGCONFIG_PATH) with
+  match get_file (fname, INSTALL_ROOT,FLX_PKGCONFIG_PATH) with
   | Some ?path =>
     {
       val text=load path;
@@ -514,7 +498,7 @@ proc serve_fpc (k:socket_t, fname:string) {
 
 fun get_py (fname:string) = {
   var flx =
-    match get_file(fname,FLX_PATH) with
+    match get_file(fname,INSTALL_ROOT,FLX_PATH) with
     | Some ?name => load(name)
     | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
     endmatch;
@@ -535,7 +519,7 @@ proc serve_py (k:socket_t, fname:string) {
 
 fun get_ocaml (fname:string) = {
   var flx =
-    match get_file (fname, FLX_PATH) with
+    match get_file (fname, INSTALL_ROOT,FLX_PATH) with
     | Some ?name => load name
     | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
     endmatch
@@ -560,7 +544,7 @@ proc serve_cpp (k:socket_t, fname:string) {
   var eof_flag = false;
   var text: string;
 
-  match get_file(fname,C_PATH) with
+  match get_file(fname,INSTALL_ROOT,C_PATH) with
   | Some ?path =>
     {
       val text=load path;
@@ -610,7 +594,7 @@ proc serve_html (k:socket_t, fname:string) {
 proc serve_xhtml (k:socket_t, fname:string) {
   var eof_flag = false;
   var txt = load fname;
-  println$ f"Loaded html file %S, len=%d" (fname, txt.len.int);
+  println$ f"Loaded xhtml file %S, len=%d" (fname, txt.len.int);
   val data = make_xhtml txt;
 
   write_string (k, data, &eof_flag);
@@ -619,7 +603,7 @@ proc serve_xhtml (k:socket_t, fname:string) {
 
 fun get_fdoc (fname:string):string = {
   var flx =
-    match get_file(fname,FDOC_PATH) with
+    match get_file(fname,INSTALL_ROOT,FDOC_PATH) with
     | Some ?name => load(name)
     | None => f"NO FILE %S FOUND IN %S" (fname, str FDOC_PATH)
     endmatch
@@ -647,6 +631,7 @@ proc serve_fdoc (k:socket_t, fname:string) {
 proc serve_xfdoc (k:socket_t, fname:string) {
   var eof_flag = false;
   var txt = get_fdoc(fname);
+println$ "Serve fdoc "+fname+" as xhtml";
   //println$ "Contents=" + flx;
   needs_mathjax, html := xlat_fdoc (tf_xlat_fdoc,txt,fname);
   val data = make_xhtml(
@@ -678,7 +663,7 @@ proc serve_image (k:socket_t, fname:string, suffix:string) {
   var txt = load fname;
   println$ f"Loaded image file %S, len=%d" (fname, txt.len.int);
   //println$ "Contents=" + flx;
-  val data = make_image (suffix,txt);
+  val data = make_image_from_suffix (suffix,txt);
   write_string (k, data, &eof_flag);
 }
 
@@ -865,7 +850,7 @@ proc serve_file(s: socket_t, infname: string)
     fname = if fname.[0] == char "/" then fname else INSTALL_ROOT+"/"+fname endif;
     serve_css(s,fname,suffix);
   else
-    match get_file(fname, Empty[string]) with
+    match get_file(fname, INSTALL_ROOT,Empty[string]) with
     | None => { serve_not_found(s,fname); }
     | Some ?f =>
       {

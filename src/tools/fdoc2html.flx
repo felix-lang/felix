@@ -1,11 +1,8 @@
 include "./charclass";
+include "./plugin_common";
 
 // felix document
 include "std/posix/process";
-fun prefix(arg:string,key:string)=>
-  arg.[to len key]==key
-;
-
 var INSTALL_ROOT="";
 var FLX_PATH = Empty[string];
 var FDOC_PATH = Empty[string];
@@ -13,21 +10,10 @@ var FLX_PKGCONFIG_PATH = Empty[string];
 var FLX_WEBSERVER_PLUGIN_PATH = Empty[string];
 var PLUGIN_MAP = Empty[string^3];
 
-fun get_file (var fname:string, path:list[string]) = {
-  if fname.[0] == char "$" do fname = fname.[1 to]; done
-  if FileStat::fileexists fname do return Some fname;
-  else
-    var f = Filename::join(INSTALL_ROOT,fname);
-    if FileStat::fileexists f do return Some f;
-    else return FileSystem::find_in_path (fname, path);
-    done
-  done
-}
-
 
 fun get_flx (fname:string) = {
   var flx =
-    match get_file(fname,FLX_PATH) with
+    match get_file(fname,INSTALL_ROOT,FLX_PATH) with
     | Some ?name => load(name)
     | None => f"NO FILE %S FOUND IN %S" (fname, str FLX_PATH)
     endmatch
@@ -507,12 +493,6 @@ fun setup(config_data:string) = {
       PLUGIN_MAP = Cons ((extn, lib, entry), PLUGIN_MAP);
     done done done
   done
-println$ "INSTALL_ROOT=" + INSTALL_ROOT;
-println$ "FDOC_PATH=" + str FDOC_PATH;
-println$ "FLX_PATH=" + str FLX_PATH;
-println$ "FLX_PKGCONFIG_PATH=" + str FLX_PKGCONFIG_PATH;
-println$ "FLX_WEBSERVER_PLUGIN_PATH=" + str FLX_WEBSERVER_PLUGIN_PATH;
-println$ "PLUGIN_MAP=" + str PLUGIN_MAP;
 
   // Load Plugins.
   typedef libmap_entry = string * Dynlink::flx_instance;
@@ -525,15 +505,12 @@ println$ "PLUGIN_MAP=" + str PLUGIN_MAP;
     | ?ext,?lib,?entry =>
       if not (have_lib lib) do
         if lib in list("flx2html", "cpp2html") do
-    println$ "Adding lib " + lib;
           var linst = Dynlink::init_lib(lib + dll_extn);
           var library = Dynlink::get_library linst;
           var tf = Dynlink::get_thread_frame linst;
           var raw_setup = Dynlink::dlsym$ library, "setup";
-          println$ "Got setup address " + str raw_setup;
           var setup = C_hack::cast[address * string --> int] raw_setup;
           var sresult = setup(tf,config_data);
-    println$ "Library set up " + str sresult;
           libs = Cons ((lib, linst),libs); 
           match lib with
           | "flx2html" => 
