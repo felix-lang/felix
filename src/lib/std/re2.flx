@@ -134,6 +134,30 @@ open class Re2 {
     fun \in (s:string, r:RE2)=>
       Match(r,StringPiece s,0,ANCHOR_START, C_hack::null[StringPiece], 0);
   }
+
+  gen iterator (re2:string, var target:string) () : opt[varray[string]] = {
+    var l = len target;
+    var s = StringPiece target;
+    var p1 = s.data;  
+    var p = 0;
+    var r=RE2(re2);
+    var n = NumberOfCapturingGroups(r)+1;
+    var v1 = varray[StringPiece] (n.size,StringPiece "");
+    var v2 = varray[string] (n.size,"");
+    var start = 0;
+  again:>
+    var result = Match(r, s, p, UNANCHORED,v1.stl_begin, n);
+    if not result goto endoff;
+    for var i in 0 upto n - 1 do set(v2, i.size, string(v1.i)); done
+    var p2 = v1.0.data;
+    assert(v1.0.len.int > 0); // prevent infinite loop
+    p = (p2 - p1).int+v1.0.len.int;
+    yield Some v2;
+    goto again;
+  endoff:>
+    return None[varray[string]];
+  }
+
 }
 
 open Set[RE2, string];
