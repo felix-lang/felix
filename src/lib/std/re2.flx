@@ -144,7 +144,6 @@ open class Re2 {
     var n = NumberOfCapturingGroups(r)+1;
     var v1 = varray[StringPiece] (n.size,StringPiece "");
     var v2 = varray[string] (n.size,"");
-    var start = 0;
   again:>
     var result = Match(r, s, p, UNANCHORED,v1.stl_begin, n);
     if not result goto endoff;
