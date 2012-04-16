@@ -1,5 +1,4 @@
 open List
-
 open Flx_ast
 open Flx_bbdcl
 open Flx_bexe
@@ -782,6 +781,12 @@ let virtual_check syms bsym_table sr i ts =
       *)
       false,i,ts @ fts
     end
+
+  | BBDCL_fun (_,_,_,_,exes) ->
+    let chk_yield acc exe = match exe with BEXE_yield _ -> false | _ -> acc in
+    let can_inline = fold_left chk_yield true exes in
+    can_inline,i,ts
+    
 
   | _ -> (* print_endline (id ^ " -- Not virtual") *) true,i,ts
 
