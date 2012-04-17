@@ -194,6 +194,8 @@ let stack_calls syms bsym_table =
 let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
   print_debug syms "//OPTIMISING";
 
+  Flx_reachability.check_reachability syms bsym_table;
+
   (* Find the root and exported functions and types. *)
   Flx_use.find_roots syms bsym_table root_proc syms.Flx_mtypes2.bifaces;
 
@@ -238,21 +240,3 @@ let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
 let optimize_bsym_table syms bsym_table root_proc =
   optimize_bsym_table' syms bsym_table root_proc true
 
-
-let optimize syms bsym_table root_proc bids bexes =
-  (* Check the typeclasses. *)
-  let bids = Flx_typeclass.typeclass_instance_check_symbols
-    syms
-    bsym_table
-    bids
-  in
-
-  (* Optimize the symbols. *)
-  let bsym_table = optimize_bsym_table'
-    syms
-    bsym_table
-    root_proc
-    false
-  in
-
-  bsym_table, bids, bexes
