@@ -1,0 +1,108 @@
+open Flx_label
+open Flx_bexe
+
+exception Found_label of int
+
+type rrec = { index:int; mutable reachable:bool; instr: Flx_bexe.t; } 
+
+let next_reachable exe = match exe with
+  | BEXE_proc_return  _
+  | BEXE_fun_return  _
+  | BEXE_jump _
+  | BEXE_jump_direct _
+  | BEXE_halt _
+  | BEXE_nonreturn_code _
+    -> false
+  | _ -> true
+
+let check_reachability_exes syms bsym_table label_map label_usage idx sr name rt exes =
+  (* remove unused labels to avoid confusing algorithm *)
+  let exes = List.filter 
+    (fun exe -> match exe with 
+      | BEXE_label (_,s) -> 
+        (match get_label_kind label_map label_usage idx s with 
+        | `Far | `Near -> true 
+        | `Unused -> print_endline ("Removing unused label " ^ s); false 
+        )
+      | _ -> true
+    )
+    exes
+  in
+
+  let n = List.length exes in
+  let a = 
+    let tmp_exes = ref exes in
+    Array.init n (fun i -> 
+     let exe = List.hd (!tmp_exes) in tmp_exes := List.tl (!tmp_exes);
+     {index=i; reachable=false; instr=exe }
+    )
+  in
+  let find_label s = 
+    try Array.iter 
+      (fun {index=i; instr=instr;} -> 
+        match instr with BEXE_label (_,s') when  s' = s -> 
+        raise (Found_label i)
+        | _ -> ()
+      ) 
+      a
+      ; 
+      raise Not_found 
+    with 
+    | Found_label i -> Some i 
+    | Not_found -> None
+  in
+  let drops_thru_end = ref false in
+  let unprocessed_targets = ref (Flx_set.IntSet.singleton 0) in
+  let processed_targets = ref Flx_set.IntSet.empty in
+  while not (Flx_set.IntSet.is_empty (!unprocessed_targets)) do
+    let target = Flx_set.IntSet.choose (!unprocessed_targets) in
+    unprocessed_targets := Flx_set.IntSet.remove target (!unprocessed_targets);
+    processed_targets := Flx_set.IntSet.add target (!processed_targets);
+    try 
+      for i = target to n - 1 do
+        (* mark this instruction reachable *)
+        a.(target).reachable <- true;
+        (* if this instruction is a goto, 
+         * going to a label we haven't processed, 
+         * then add it to the set of unprocessed labels
+         *)
+        begin match a.(target).instr with
+        | BEXE_goto (_,s) 
+        | BEXE_ifgoto (_,_,s) -> 
+           begin match find_label s with
+           | None -> ()
+           | Some i -> 
+             if not (Flx_set.IntSet.mem i (!processed_targets)) then 
+               unprocessed_targets := Flx_set.IntSet.add i (!unprocessed_targets) 
+           end
+        | _ -> ()
+        end
+        ;
+        (* if the next instruction isn't reachable, escape loop *)
+        if not (next_reachable a.(target).instr) then raise Not_found;
+      done
+      ;
+      (* if we dropped through the loop,
+       * then flag that the function drops off its end 
+       *)
+      drops_thru_end := true
+    with Not_found -> ()
+  done
+  ;
+  let is_proc rt = match rt with | Flx_btype.BTYP_void -> true | _ -> false in
+  if !drops_thru_end && not (is_proc rt) then
+    print_endline ("Function " ^ name ^ " drops thru end")
+  
+let check_reachability state bsym_table =
+  let label_map = Flx_label.create_label_map bsym_table state.Flx_mtypes2.counter in 
+  let label_usage = Flx_label.create_label_usage state bsym_table label_map in
+
+  Flx_bsym_table.iter
+  (fun idx parent bsym -> match Flx_bsym.bbdcl bsym with
+  | Flx_bbdcl.BBDCL_fun (_,_,_,rt,exes) ->
+    let name = Flx_bsym.id bsym in
+    let sr = Flx_bsym.sr bsym in 
+    check_reachability_exes state bsym_table label_map label_usage idx sr name rt exes
+  | _ -> ()
+  )
+  bsym_table
