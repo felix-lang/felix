@@ -346,6 +346,7 @@ let rec gen_type syms bsym_table (index,typ) =
   (* PROCEDURE *)
   | BTYP_cfunction _ -> ""
 
+  | BTYP_function (a,BTYP_fix 0)
   | BTYP_function (a,BTYP_void) ->
     descr ^
     let name = cn typ

@@ -480,7 +480,7 @@ class Checked_ZeroMQ[T] {
 type zmq_ehandler_t = ""; // phantom
 instance Check[zmq_ehandler_t]
 {
-  proc ehandler() {
+  fun ehandler():any = {
     err := errno;
     println$  "Exit due to ZMQ error "  + str err + ": " + ZeroMQ::zmq_strerror err;
     System::exit err.int;

@@ -47,18 +47,18 @@ open class Errno
     proc int_to_proc (var x:int) { if x == -1 do ehandler; done }
     fun int_to_int (var x:int) = { if x == -1 do ehandler; done return x; }
     fun pointer_to_pointer[U] (var p:&U) = { if C_hack::isNULL p do #ehandler; done return p; }
-    virtual proc ehandler: unit;
+    virtual fun ehandler: unit -> any;
   }
 
   type check_ignore = "";
   instance Check[check_ignore] 
   {
-    proc ehandler () {}
+    fun ehandler ():any = {}
   }
   type check_throw = "";
   instance Check[check_throw] 
   {
-    proc ehandler () { fail #strerror; }
+    fun ehandler ():any = { fail #strerror; }
   }
 }
 

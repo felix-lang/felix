@@ -180,7 +180,7 @@ let stack_calls syms bsym_table =
     bsym_table
     syms.Flx_mtypes2.counter
   in
-  let label_usage = Flx_label.create_label_usage syms bsym_table label_map in
+  let label_usage = Flx_label.create_label_usage bsym_table label_map in
   Flx_stack_calls.make_stack_calls
     syms
     bsym_table
@@ -194,7 +194,7 @@ let stack_calls syms bsym_table =
 let optimize_bsym_table' syms bsym_table root_proc clean_bsym_table =
   print_debug syms "//OPTIMISING";
 
-  Flx_reachability.check_reachability syms bsym_table;
+  Flx_reachability.check_reachability bsym_table;
 
   (* Find the root and exported functions and types. *)
   Flx_use.find_roots syms bsym_table root_proc syms.Flx_mtypes2.bifaces;

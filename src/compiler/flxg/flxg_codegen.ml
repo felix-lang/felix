@@ -17,7 +17,7 @@ let instantiate state bsym_table root_proc =
   fprintf state.ppf "//INSTANTIATING\n";
 
   let label_map = Flx_label.create_label_map bsym_table state.syms.counter in
-  let label_usage = Flx_label.create_label_usage state.syms bsym_table label_map in
+  let label_usage = Flx_label.create_label_usage bsym_table label_map in
   let label_info = label_map, label_usage in
 
   (* Make sure we can find the _init_ instance *)

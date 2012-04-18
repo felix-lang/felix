@@ -59,6 +59,7 @@ let exe_uses_gc bsym_table exe =
   | BEXE_call_prim (sr,i,ts,a) ->
       let bsym = Flx_bsym_table.find bsym_table i in
       begin match Flx_bsym.bbdcl bsym with
+      | BBDCL_external_fun (props,vs,ps,BTYP_fix 0,_,_,_)
       | BBDCL_external_fun (props,vs,ps,BTYP_void,_,_,_) ->
           if List.mem `Uses_gc props then begin
             (* Flagged as using gc *)

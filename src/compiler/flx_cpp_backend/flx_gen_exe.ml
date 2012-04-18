@@ -78,6 +78,7 @@ let gen_exe filename
   in
   let our_display = get_display_list bsym_table this in
   let kind = match Flx_bsym.bbdcl bsym with
+    | BBDCL_fun (_,_,_,BTYP_fix 0,_) -> Procedure
     | BBDCL_fun (_,_,_,BTYP_void,_) -> Procedure
     | BBDCL_fun (_,_,_,_,_) -> Function
     | _ -> failwith "Expected executable code to be in function or procedure"
@@ -110,51 +111,8 @@ let gen_exe filename
       try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_exe(call)] Can't find index " ^ string_of_bid index)
     in
-    begin
-    match Flx_bsym.bbdcl bsym with
-    | BBDCL_external_fun (_,vs,_,BTYP_void,_,_,`Code code) ->
-      assert (not is_jump);
-
-      if length vs <> length ts then
-      clierr sr "[gen_prim_call] Wrong number of type arguments"
-      ;
-
-      let ws s =
-        let s = sc "expr" s in
-        (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
-        sub_start ^
-        "      " ^ s ^ "\n" ^
-        sub_end
-      in
-      begin match code with
-      | CS.Identity -> syserr sr "Identity proc is nonsense"
-      | CS.Virtual ->
-          clierr2 (Flx_bexe.get_srcref exe) (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
-      | CS.Str s -> ws (ce_expr "expr" s)
-      | CS.Str_template s ->
-        let ss = gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"  in
-        ws ss
-      end
-
-    | BBDCL_external_fun (_,vs,ps_cf,ret,_,_,`Callback _) ->
-      assert (not is_jump);
-      assert (ret = btyp_void ());
-
-      if length vs <> length ts then
-      clierr sr "[gen_prim_call] Wrong number of type arguments"
-      ;
-      let s = Flx_bsym.id bsym ^ "($a);" in
-      let s =
-        gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"
-      in
-      let s = sc "expr" s in
-      (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
-      sub_start ^
-      "      " ^ s ^ "\n" ^
-      sub_end
-
-
-    | BBDCL_fun (props,vs,ps,BTYP_void,bexes) ->
+    let handle_call props vs ps ret bexes =
+      let is_ehandler = match ret with BTYP_fix 0 -> true | _ -> false in
       if bexes = []
       then
       "      //call to empty procedure " ^ Flx_bsym.id bsym ^ " elided\n"
@@ -177,9 +135,9 @@ let gen_exe filename
         *)
         let this = match kind with
           | Function ->
-            if is_jump
+            if is_jump && not is_ehandler
             then
-              clierr sr "can't jump inside function"
+              clierr sr "[gen_exe] can't jump inside function"
             else if stack_call then ""
             else "0"
 
@@ -266,7 +224,86 @@ let gen_exe filename
             )
         end
       end
+    in
+    begin
+    match Flx_bsym.bbdcl bsym with
+    | BBDCL_external_fun (_,vs,_,BTYP_fix 0,_,_,`Code code) ->
+      assert (is_jump); (* Should be a jump since doesn't return *)
 
+      if length vs <> length ts then
+      clierr sr "[gen_prim_call] Wrong number of type arguments"
+      ;
+
+      let ws s =
+        let s = sc "expr" s in
+        (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
+        sub_start ^
+        "      " ^ s ^ ";\n" ^ (* NOTE added semi-colon .. hack .. *)
+        sub_end
+      in
+      begin match code with
+      | CS.Identity -> syserr sr "Identity proc is nonsense"
+      | CS.Virtual ->
+          clierr2 (Flx_bexe.get_srcref exe) (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
+      | CS.Str s -> ws (ce_expr "expr" s)
+      | CS.Str_template s ->
+        let ss = gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"  in
+        ws ss
+      end
+
+    | BBDCL_external_fun (_,vs,_,BTYP_void,_,_,`Code code) ->
+      assert (not is_jump);
+
+      if length vs <> length ts then
+      clierr sr "[gen_prim_call] Wrong number of type arguments"
+      ;
+
+      let ws s =
+        let s = sc "expr" s in
+        (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
+        sub_start ^
+        "      " ^ s ^ "\n" ^
+        sub_end
+      in
+      begin match code with
+      | CS.Identity -> syserr sr "Identity proc is nonsense"
+      | CS.Virtual ->
+          clierr2 (Flx_bexe.get_srcref exe) (Flx_bsym.sr bsym) ("Instantiate virtual procedure(1) " ^ Flx_bsym.id bsym) ;
+      | CS.Str s -> ws (ce_expr "expr" s)
+      | CS.Str_template s ->
+        let ss = gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"  in
+        ws ss
+      end
+
+    | BBDCL_external_fun (_,vs,ps_cf,ret,_,_,`Callback _) ->
+      assert (not is_jump);
+      assert (ret = btyp_void ());
+
+      if length vs <> length ts then
+      clierr sr "[gen_prim_call] Wrong number of type arguments"
+      ;
+      let s = Flx_bsym.id bsym ^ "($a);" in
+      let s =
+        gen_prim_call syms bsym_table tsub ge' s ts a (Flx_btype.btyp_none()) sr (Flx_bsym.sr bsym) "atom"
+      in
+      let s = sc "expr" s in
+      (if with_comments then "      // " ^ src_str ^ "\n" else "") ^
+      sub_start ^
+      "      " ^ s ^ "\n" ^
+      sub_end
+
+
+    | BBDCL_fun (props,vs,ps,ret,bexes) ->
+      begin match ret with
+      | BTYP_void 
+      | BTYP_fix 0 -> handle_call props vs ps ret bexes
+      | _ ->
+        failwith
+        (
+          "[gen_exe] Expected '" ^ Flx_bsym.id bsym ^ "' to be procedure constant, got function " ^
+          string_of_bbdcl bsym_table (Flx_bsym.bbdcl bsym) index
+        )
+      end
     | _ ->
       failwith
       (
@@ -417,6 +454,7 @@ let gen_exe filename
         | _ -> assert false
       in
       begin match Flx_bsym.bbdcl bsym with
+      | BBDCL_fun (props,vs,(ps,traint),BTYP_fix 0,_)
       | BBDCL_fun (props,vs,(ps,traint),BTYP_void,_) ->
         assert (mem `Stack_closure props);
         let a = match a with (a,t) -> a, tsub t in
@@ -640,7 +678,11 @@ let gen_exe filename
       (if with_comments then
       "      //" ^ src_str ^ ": type "^tn t^"\n"
       else "") ^
-      "      return "^ge sr e^";\n"
+      (* HACK WARNING! *)
+      begin match t with
+      | BTYP_fix 0 -> "      "^ge sr e^"; // non-returning\n"
+      | _ ->          "      return "^ge sr e^";\n"
+      end
 
     | BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
 
@@ -661,7 +703,7 @@ let gen_exe filename
       | _ ->
         let bsym =
           try Flx_bsym_table.find bsym_table v with Not_found ->
-            failwith ("[gen_expr(init) can't find index " ^ string_of_bid v)
+            failwith ("[gen_exe] can't find index " ^ string_of_bid v)
         in
         begin match Flx_bsym.bbdcl bsym with
         | BBDCL_val (_,_,kind) ->

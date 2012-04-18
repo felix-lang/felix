@@ -382,6 +382,7 @@ let rec can_stack_proc
   print_endline ("Stackability Checking procedure " ^ id);
   *)
   match Flx_bsym.bbdcl bsym with
+  | BBDCL_fun (_,_,_,BTYP_fix 0,exes) 
   | BBDCL_fun (_,_,_,BTYP_void,exes) ->
     (* if a procedure has procedural children they can do anything naughty
      * a recursive check would be more aggressive
@@ -561,6 +562,7 @@ and check_stackable_proc
         (* not sure if this is right .. *)
         false
     end
+  | BBDCL_fun (props,vs,p,BTYP_fix 0,exes)
   | BBDCL_fun (props,vs,p,BTYP_void,exes) ->
     if mem `Stackable props then true
     else if mem `Unstackable props then false
@@ -622,6 +624,7 @@ let rec enstack_applies syms bsym_table fn_cache ptr_cache x =
 let mark_stackable syms bsym_table fn_cache ptr_cache label_map label_usage =
   Flx_bsym_table.iter begin fun i _ bsym ->
     match Flx_bsym.bbdcl bsym with
+    | BBDCL_fun (props,vs,p,BTYP_fix 0,exes)
     | BBDCL_fun (props,vs,p,BTYP_void,exes) ->
         if mem `Stackable props or mem `Unstackable props then () else
         ignore(check_stackable_proc
@@ -663,6 +666,7 @@ let enstack_calls syms bsym_table fn_cache ptr_cache self exes =
     | BEXE_call_direct (sr,i,ts,a) ->
         let bsym = Flx_bsym_table.find bsym_table i in
         begin match Flx_bsym.bbdcl bsym with
+        | BBDCL_fun (props,vs,p,BTYP_fix 0,exes)
         | BBDCL_fun (props,vs,p,BTYP_void,exes) ->
             if mem `Stackable props then begin
               if not (mem `Stack_closure props) then begin
@@ -679,6 +683,7 @@ let enstack_calls syms bsym_table fn_cache ptr_cache self exes =
         | BBDCL_external_fun (_,_,_,_,_,_,`Callback _) ->
             bexe_call_direct (Flx_bsym.sr bsym,i,ts,a)
 
+        | BBDCL_external_fun (_,_,_,Flx_btype.BTYP_fix 0,_,_,_)
         | BBDCL_external_fun (_,_,_,Flx_btype.BTYP_void,_,_,_) ->
             bexe_call_prim (Flx_bsym.sr bsym,i,ts,a)
 

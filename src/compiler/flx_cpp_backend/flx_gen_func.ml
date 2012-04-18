@@ -61,7 +61,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
   if length ts <> length vs then
   failwith
   (
-    "[gen_function} wrong number of args, expected vs = " ^
+    "[gen_function] wrong number of args, expected vs = " ^
     si (length vs) ^
     ", got ts=" ^
     si (length ts)
@@ -135,6 +135,7 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
   in
   let members = find_members syms bsym_table index ts in
   match ret with
+  | BTYP_fix 0
   | BTYP_void ->
     let name = cpp_instance_name syms bsym_table index ts in
     let ctor = ctor_dcl name in

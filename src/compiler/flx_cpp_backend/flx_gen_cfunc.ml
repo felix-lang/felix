@@ -265,6 +265,7 @@ let gen_C_procedure_body filename syms bsym_table
     )
   );
   match Flx_bsym.bbdcl bsym with
+  | BBDCL_fun (props,vs,(bps,traint),BTYP_fix 0,exes) 
   | BBDCL_fun (props,vs,(bps,traint),BTYP_void,exes) ->
     let requires_ptf = mem `Requires_ptf props in
     if length ts <> length vs then

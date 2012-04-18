@@ -27,9 +27,17 @@ let dyphack (ls : ( 'a * string) list) : 'a =
 
 exception Macro_return
 
-let truthof x = match x with
+let rec truthof x = match x with
   | EXPR_typed_case (_,0,TYP_unitsum 2) -> Some false
   | EXPR_typed_case (_,1,TYP_unitsum 2) -> Some true
+  | EXPR_likely (_,x) -> truthof x
+  | EXPR_unlikely (_,x) -> truthof x
+  | EXPR_not (_,x) -> 
+    begin match truthof x with
+    | Some true -> Some false
+    | Some false -> Some true
+    | None -> None
+    end
   | _ -> None
 
 (*
@@ -923,14 +931,13 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_ifgoto (sr, e , id) ->
     let e = me e in
     let e = cf e in
-    begin match e with
-    | EXPR_typed_case (_,c,TYP_unitsum 2) ->
-      if c = 1 then
-      (
-        ctack (STMT_goto (sr,mi sr id));
-        reachable := false
-      )
-    | _ ->
+    begin match truthof e with
+    | Some true ->
+      ctack (STMT_goto (sr,mi sr id));
+      reachable := false
+
+    | Some false -> ()
+    | None ->
       ctack (STMT_ifgoto (sr, e, mi sr id))
     end
 
@@ -939,30 +946,21 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | STMT_assert (sr,e) ->
     let e = me e in
-    begin match e with
-    | EXPR_typed_case (_,c,TYP_unitsum 2) ->
-      if c = 1 (* assertion proven true *)
-      then ()
-      else (* assertion proven false *)
-        begin
-          reachable := false;
-          ctack (STMT_assert (sr,e))
-        end
-
-    | _ -> (* check at run time *)
-        ctack (STMT_assert (sr,e))
+    begin match truthof e with
+    | Some true -> () 
+    (* check at run time: even if always fails, assert triggers only if control flows thru *)
+    | _ -> 
+      ctack (STMT_assert (sr,e))
     end
 
   | STMT_ifreturn (sr, e) ->
     let e = me e in
-    begin match e with
-    | EXPR_typed_case (_,c,TYP_unitsum 2) ->
-      if c = 1 then
-      (
-        ctack (STMT_proc_return sr);
-        reachable := false
-      )
-    | _ ->
+    begin match truthof e with
+    | Some true ->
+      ctack (STMT_proc_return sr);
+      reachable := false
+    | Some false -> ()
+    | None ->
       let n = !seq in incr seq;
       let lab = "_ifret_" ^ string_of_int n in
       ctack (STMT_ifgoto (sr, EXPR_not (sr,e) , lab));
@@ -973,14 +971,12 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_ifdo (sr, e, sts1, sts2) ->
     let e = me e in
     let e = cf e in
-    begin match e with
-    | EXPR_typed_case (_,c,TYP_unitsum 2) ->
-      if c = 1 then
-        List.iter ctack (ms sts1)
-      else
-        List.iter ctack (ms sts2)
-
-    | _ ->
+    begin match truthof e with
+    | Some true ->
+      List.iter ctack (ms sts1)
+    | Some false ->
+      List.iter ctack (ms sts2)
+    | None ->
       let n1 = !seq in incr seq;
       let n2 = !seq in incr seq;
       let lab1 = "_ifdoend_" ^ string_of_int n1 in
@@ -996,8 +992,16 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
          So we must tack, not ctack, the code of the inner
          compound statements, they're NOT blocks.
+
+         BUT NOTE EXCEPTION IF THE EXPRESSION IS CONSTANT!
       *)
-      ctack (STMT_ifgoto (sr, EXPR_not (sr,e), lab1));
+      begin match e with
+      | EXPR_not (_,e') ->
+        ctack (STMT_ifgoto (sr, e', lab1))
+      | _ ->
+        ctack (STMT_ifgoto (sr, EXPR_not (sr,e), lab1))
+      end
+      ;
       let r1 = ref !reachable in
       List.iter tack (ms' r1 sts1);
       if !r1 then tack (STMT_goto (sr,lab2));

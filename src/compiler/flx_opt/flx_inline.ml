@@ -406,7 +406,10 @@ let expand_exe syms bsym_table u exe =
       let e2,xs2 = u sr e2 in
       bexe_call (sr,e1,e2) :: xs2 @ xs1
 
-    | BEXE_jump (sr,e1,e2) -> assert false
+    | BEXE_jump (sr,e1,e2) -> 
+      let e1,xs1 = u sr e1 in
+      let e2,xs2 = u sr e2 in
+      bexe_jump (sr,e1,e2) :: xs2 @ xs1
 
     | BEXE_ifgoto (sr,e,lab) ->
       let e,xs = u sr e in

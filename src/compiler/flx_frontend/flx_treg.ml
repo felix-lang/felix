@@ -77,6 +77,7 @@ let rec register_type_r ui syms bsym_table exclude sr t =
   *)
   match t' with
   | BTYP_void -> ()
+  | BTYP_fix 0 -> ()
   | BTYP_fix i -> clierr sr ("[register_type_r] Fixpoint "^si i^" encountered")
   (*
   | BTYP_type_var (i,mt) -> clierr sr ("Attempt to register type variable " ^ si i ^":"^sbt sym_table mt)

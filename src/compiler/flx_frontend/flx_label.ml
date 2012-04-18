@@ -53,13 +53,39 @@ let create_label_map bsym_table counter =
   end bsym_table;
   label_map
 
+(* Previously this test tried to stop jumps through functions.
+  Unfortantely a jump which goes through a function *statically*
+  is not the same thing as a jump through a function dynamically.
+  For example if the function contains a procedure doing a jump to 
+  the functions parent, it's fine if the procedure is returned by
+  the function as a closure then executed. Although that procedure
+  *is* executed in the scope of the function's dead stack frame, 
+  the jump does not cross the function call control boundary: 
+  the function has returned.
+
+  The check was inadequate anyhow, because said closure can
+  be passed out of the procedure containing the variable,
+  and executed after the procedure has died .. which is an error,
+  since eventually the procedure will try to return a second time.
+
+  This is a bug in the type system really. It should prevent
+  re-entering dead procedures by preventing closures containing
+  jumps into the procedure from getting outside the scope of the
+  procedure.
+
+  Unfortunately the GC only tracks data pointers, not 
+  control pointers (a goto is basically a control pointer).
+*)
 let rec find_label bsym_table label_map caller label =
   let labels = Hashtbl.find label_map caller in
   try `Local (Hashtbl.find labels label)
   with Not_found ->
   let bsym_parent, bsym = Flx_bsym_table.find_with_parent bsym_table caller in
   match Flx_bsym.bbdcl bsym with
+(*
   | BBDCL_fun (_,_,_,Flx_btype.BTYP_void,_) ->
+*)
+  | BBDCL_fun (_,_,_,_,_) -> 
       begin match bsym_parent with
       | None -> `Unreachable
       | Some parent ->
@@ -68,7 +94,9 @@ let rec find_label bsym_table label_map caller label =
           | x -> x
           end
       end
+(*
   | BBDCL_fun (_,_,_,_,_) -> `Unreachable
+*)
   | _ -> assert false
 
 let get_label_kind_from_index usage lix =
@@ -80,7 +108,7 @@ let get_label_kind label_map usage_map proc label =
   get_label_kind_from_index usage_map lix
 
 
-let cal_usage syms bsym_table label_map caller exes usage =
+let cal_usage bsym_table label_map caller exes usage =
   iter
   (function
     | BEXE_goto (sr,label)
@@ -105,17 +133,17 @@ let cal_usage syms bsym_table label_map caller exes usage =
   )
   exes
 
-let update_label_usage syms bsym_table label_map usage index bsym =
+let update_label_usage bsym_table label_map usage index bsym =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (_,_,_,_,exes) ->
-      cal_usage syms bsym_table label_map index exes usage
+      cal_usage bsym_table label_map index exes usage
   | _ -> ()
 
-let create_label_usage syms bsym_table label_map =
+let create_label_usage bsym_table label_map =
   let usage = Hashtbl.create 97 in
 
   Flx_bsym_table.iter begin fun bid _ bsym ->
-    update_label_usage syms bsym_table label_map usage bid bsym
+    update_label_usage bsym_table label_map usage bid bsym
   end bsym_table;
 
   usage

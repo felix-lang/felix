@@ -30,7 +30,7 @@ open class Control
   }
 
   publish 'abnormal termination with message'
-  proc fail:string = 'throw ::std::runtime_error($1);' requires Cxx_headers::stdexcept;
+  fun fail:string -> any = 'throw ::std::runtime_error($1);' requires Cxx_headers::stdexcept;
 
   publish "WILL BE DEPRECATED, these don't work right"
   fun fail_fun[t]:1->t = 'throw ::std::runtime_error(""),*(?1*)0' requires Cxx_headers::stdexcept;

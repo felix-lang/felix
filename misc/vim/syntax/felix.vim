@@ -249,6 +249,7 @@ syn keyword felixRepeat while
 syn keyword felixType unit
 syn keyword felixType void
 syn keyword felixType bool
+syn keyword felixType any
 
 syn keyword felixType byte
 syn keyword felixType address

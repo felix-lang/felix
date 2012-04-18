@@ -84,9 +84,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
       (build_env state.lookup_state bsym_table (Some i))
       e
   in
-  match unfold t1 with
-  | BTYP_cfunction (t, BTYP_void)
-  | BTYP_function (t, BTYP_void) ->
+  let genargs t =
     if type_match state.counter t t2
     then
       (
@@ -106,7 +104,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
           end
         | _ ->
         *)
-          bexe_call (sr,tbe1,tbe2)
+          (sr,tbe1,tbe2)
       )
     else
     begin
@@ -170,8 +168,21 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
             "\nwhich doesn't agree with parameter type\n" ^
             sbt bsym_table t
           )
-      in bexe_call (sr,tbe1,x2)
+      in (sr,tbe1,x2)
     end
+  in
+  match unfold t1 with
+  | BTYP_cfunction (t, BTYP_fix 0)
+  | BTYP_function (t, BTYP_fix 0) 
+    ->
+    let a = genargs t in
+    bexe_jump a
+
+  | BTYP_cfunction (t, BTYP_void)
+  | BTYP_function (t, BTYP_void) 
+    ->
+    let a = genargs t in
+    bexe_call a
 
   | _ ->
     clierr sr ("[cal_call] call non procedure, "^
@@ -614,13 +625,16 @@ let bind_exes state bsym_table sr exes =
   *)
   if state.return_count = 0 then
   begin
-    if do_unify state bsym_table state.ret_type (btyp_void ())
+    if 
+      do_unify state bsym_table state.ret_type (btyp_void ()) || 
+      (* hack, probably unify should unify it .. *)
+      (match state.ret_type with BTYP_fix 0 -> true | _ -> false) 
     then
       state.ret_type <- varmap_subst (get_varmap state.lookup_state) state.ret_type
     else
       clierr sr
       (
-        "procedure " ^ state.id ^ " has non-void return type"
+        "procedure " ^ state.id ^ " has non-void return type " ^ sbt bsym_table state.ret_type
       )
   end
   ;
