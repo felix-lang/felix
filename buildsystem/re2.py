@@ -44,7 +44,7 @@ def build_runtime(phase):
         #path / 'util/benchmark.cc',
         path / 'util/hash.cc',
         #path / 'util/pcre.cc',
-        path / 'util/random.cc',
+        #path / 'util/random.cc',
         path / 'util/rune.cc',
         path / 'util/stringpiece.cc',
         path / 'util/stringprintf.cc',
