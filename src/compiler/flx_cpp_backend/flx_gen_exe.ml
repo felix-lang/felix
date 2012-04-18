@@ -77,6 +77,7 @@ let gen_exe filename
       failwith ("[gen_exe] Can't find this " ^ string_of_bid this)
   in
   let our_display = get_display_list bsym_table this in
+  let caller_name = Flx_bsym.id bsym in
   let kind = match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (_,_,_,BTYP_fix 0,_) -> Procedure
     | BBDCL_fun (_,_,_,BTYP_void,_) -> Procedure
@@ -111,6 +112,7 @@ let gen_exe filename
       try Flx_bsym_table.find bsym_table index with _ ->
         failwith ("[gen_exe(call)] Can't find index " ^ string_of_bid index)
     in
+    let called_name = Flx_bsym.id bsym in
     let handle_call props vs ps ret bexes =
       let is_ehandler = match ret with BTYP_fix 0 -> true | _ -> false in
       if bexes = []
@@ -137,7 +139,8 @@ let gen_exe filename
           | Function ->
             if is_jump && not is_ehandler
             then
-              clierr sr "[gen_exe] can't jump inside function"
+              clierr sr ("[gen_exe] can't jump inside function " ^ caller_name ^" to " ^ called_name ^ 
+               ", return type " ^ sbt bsym_table ret)
             else if stack_call then ""
             else "0"
 

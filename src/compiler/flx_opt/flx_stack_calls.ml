@@ -566,32 +566,33 @@ and check_stackable_proc
         (* not sure if this is right .. *)
         false
     end
-  | BBDCL_fun (props,vs,p,BTYP_fix 0,exes)
-  | BBDCL_fun (props,vs,p,BTYP_void,exes) ->
-    if mem `Stackable props then true
-    else if mem `Unstackable props then false
-    else if can_stack_proc syms bsym_table fn_cache ptr_cache label_map label_usage i recstop
-    then begin
-      (*
-      print_endline ("MARKING PROCEDURE " ^ id ^ " stackable!");
-      *)
-      let props = `Stackable :: props in
-      let props =
-        if is_pure syms bsym_table i then `Pure :: props else props
-      in
-      let bbdcl = bbdcl_fun (props,vs,p,btyp_void (),exes) in
-      Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
-      true
+  | BBDCL_fun (props,vs,p,ret,exes) ->
+    begin match ret with
+    | BTYP_void
+    | BTYP_fix 0 ->
+      if mem `Stackable props then true
+      else if mem `Unstackable props then false
+      else if can_stack_proc syms bsym_table fn_cache ptr_cache label_map label_usage i recstop
+      then begin
+        (*
+        print_endline ("MARKING PROCEDURE " ^ id ^ " stackable!");
+        *)
+        let props = `Stackable :: props in
+        let props =
+          if is_pure syms bsym_table i then `Pure :: props else props
+        in
+        let bbdcl = bbdcl_fun (props,vs,p,ret,exes) in
+        Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
+        true
+      end
+      else begin
+        let bbdcl = bbdcl_fun (`Unstackable :: props,vs,p,ret,exes) in
+        Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
+        false
+      end
+    | _ -> failwith ("[check_stackable_proc] Unexpected function " ^ Flx_bsym.id bsym)
     end
-    else begin
-      let bbdcl = bbdcl_fun (`Unstackable :: props,vs,p,btyp_void (),exes) in
-      Flx_bsym_table.update_bbdcl bsym_table i bbdcl;
-      false
-    end
-  | _ -> failwith ("Unexpected non-procedure " ^ Flx_bsym.id bsym)
-    (*
-    assert false
-    *)
+    | _ -> failwith ("[check_stackable_proc] Unexpected non-procedure " ^ Flx_bsym.id bsym)
 
 let ident x = x
 let tident t = t
@@ -670,19 +671,24 @@ let enstack_calls syms bsym_table fn_cache ptr_cache self exes =
     | BEXE_call_direct (sr,i,ts,a) ->
         let bsym = Flx_bsym_table.find bsym_table i in
         begin match Flx_bsym.bbdcl bsym with
-        | BBDCL_fun (props,vs,p,BTYP_fix 0,exes)
-        | BBDCL_fun (props,vs,p,BTYP_void,exes) ->
+        | BBDCL_fun (props,vs,p,ret,exes) ->
+          begin match ret with
+          | BTYP_void
+          | BTYP_fix 0 ->
             if mem `Stackable props then begin
               if not (mem `Stack_closure props) then begin
                 let props = `Stack_closure :: props in
-                let bbdcl = bbdcl_fun (props,vs,p,btyp_void (),exes) in
+                let bbdcl = bbdcl_fun (props,vs,p,ret,exes) in
                 Flx_bsym_table.update_bbdcl bsym_table i bbdcl
               end;
 
               bexe_call_stack (Flx_bsym.sr bsym,i,ts,a)
             end else
               bexe_call_direct (Flx_bsym.sr bsym,i,ts,a)
-
+          | _ ->
+            syserr sr ("[enstack calls] Call to function " ^ Flx_bsym.id bsym ^ "<" ^
+              string_of_bid i ^ ">")
+          end
         (* seems to work at the moment *)
         | BBDCL_external_fun (_,_,_,_,_,_,`Callback _) ->
             bexe_call_direct (Flx_bsym.sr bsym,i,ts,a)
@@ -694,7 +700,7 @@ let enstack_calls syms bsym_table fn_cache ptr_cache self exes =
         | _ ->
             syserr sr ("Call to non-procedure " ^ Flx_bsym.id bsym ^ "<" ^
               string_of_bid i ^ ">")
-      end
+        end
 
     | x -> x
     in
