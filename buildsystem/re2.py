@@ -41,15 +41,15 @@ def build_runtime(phase):
         path / 're2/unicode_casefold.cc',
         path / 're2/unicode_groups.cc',
         path / 'util/arena.cc',
-        path / 'util/benchmark.cc',
+        #path / 'util/benchmark.cc',
         path / 'util/hash.cc',
-        path / 'util/pcre.cc',
+        #path / 'util/pcre.cc',
         path / 'util/random.cc',
         path / 'util/rune.cc',
         path / 'util/stringpiece.cc',
         path / 'util/stringprintf.cc',
         path / 'util/strutil.cc',
-        path / 'util/thread.cc',
+        #path / 'util/thread.cc',
         path / 'util/valgrind.cc',
      ]
     includes = [
