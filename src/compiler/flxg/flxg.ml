@@ -130,6 +130,8 @@ let handle_bind state main_prog module_name =
   Flx_axiom.axiom_check state.syms bsym_table
     state.syms.compiler_options.generate_axiom_checks;
 
+  Flx_reachability.check_reachability bsym_table;
+
   bsym_table, root_proc
 
 

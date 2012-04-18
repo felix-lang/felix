@@ -381,9 +381,13 @@ let rec can_stack_proc
   (*
   print_endline ("Stackability Checking procedure " ^ id);
   *)
-  match Flx_bsym.bbdcl bsym with
+  let bbdcl = Flx_bsym.bbdcl bsym in
+  match bbdcl with
   | BBDCL_fun (_,_,_,BTYP_fix 0,exes) 
   | BBDCL_fun (_,_,_,BTYP_void,exes) ->
+    let is_nonreturn = match bbdcl with 
+    | BBDCL_fun (_,_,_,BTYP_fix 0,_) -> true | _ -> false 
+    in
     (* if a procedure has procedural children they can do anything naughty
      * a recursive check would be more aggressive
     *)
@@ -506,7 +510,7 @@ let rec can_stack_proc
       end
 
     | BEXE_yield _
-    | BEXE_fun_return _ -> assert false
+    | BEXE_fun_return _ -> assert is_nonreturn 
 
     (* Assume these are safe .. ? *)
     | BEXE_code _

@@ -10,12 +10,6 @@ val make_bind_state:
   Flx_sym_table.t ->          (** input symbol table *)
   bind_state_t
 
-(** Constructs the bind state needed for an interactive toplevel compiler. *)
-val make_toplevel_bind_state:
-  Flx_mtypes2.sym_state_t ->  (** The symbol state *)
-  bind_state_t *
-  Flx_bsym_table.t
-
 (** Bind an individual assembly into a series of symbols. *)
 val bind_asm:
   bind_state_t ->           (** The state needed for binding. *)
@@ -37,3 +31,4 @@ val bind_asms:
 val find_root_module_init_function:
   bind_state_t ->     (** The state needed for binding. *)
   Flx_types.bid_t     (** The root module index function. *)
+
