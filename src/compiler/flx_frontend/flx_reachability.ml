@@ -101,8 +101,9 @@ let check_reachability_exes bsym_table label_map label_usage idx sr name rt exes
   ;
   let is_proc rt = match rt with | Flx_btype.BTYP_void |Flx_btype.BTYP_fix 0 -> true | _ -> false in
   if !drops_thru_end && not (is_proc rt) then begin
-    print_endline ("Function " ^ name ^ " drops thru end");
-    List.iter (fun exe -> print_endline (Flx_print.string_of_bexe bsym_table 2 exe)) exes
+    print_endline ("check_reachability] Function " ^ name ^ " drops thru end, code:");
+    List.iter (fun exe -> print_endline (Flx_print.string_of_bexe bsym_table 2 exe)) exes;
+    Flx_exceptions.clierr sr ("[check_reachability] Function " ^ name ^ " drops thru end")
   end
   ;
   let new_exes = ref [] in
