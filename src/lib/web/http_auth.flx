@@ -62,5 +62,14 @@ to the browser"""
     done
   }
  
- 
+  gen authorized_user (conn:http_connection, request:http_request) =>
+     match (find (fun(x:string)=>x=="Authorization") request.headers) with
+      |Some ?a => match split(decode(basic(a)),":") with
+                      |Cons(?n,Cons(?p,Empty[string])) => Some n
+                      |_ => None[string]
+                    endmatch
+       |_       => None[string]
+      endmatch ;
+
+
 }

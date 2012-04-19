@@ -91,7 +91,7 @@ fun get_fs_path (config:server_config,request:http_request) =>
   gen handle_js(conn:http_connection, request:http_request) = {
     match get_fs_path(conn.config,request) with
       | Some(?file) => {
-                       val txt = load (file);println(txt);
+                       val txt = load (file);
       		       write(conn,(make_js txt));
                        }
       | _ => {do_handle_not_found(conn,request);}

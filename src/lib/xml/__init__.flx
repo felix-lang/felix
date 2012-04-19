@@ -1,2 +1,4 @@
 include "xml/xml2";
 include "xml/dom";
+include "web/decorators";
+include "web/templates";

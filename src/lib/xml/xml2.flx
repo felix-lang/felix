@@ -13,6 +13,10 @@ class XML2 {
 
   fun xml_parse_string:string -> xml_doc_ptr = "xmlParseMemory($1.c_str(),$1.length())";
 
+  fun html_parse_file:string->xml_doc_ptr = "htmlParseFile($1.c_str())";
+
+  fun html_parse_string:string -> xml_doc_ptr = "htmlParseDoc((xmlChar *)$1.c_str(),NULL)";
+
   private fun equals (s1:string) (s2:string) => s1 == s2;
 cenum xmlParserOption = 
     XML_PARSE_RECOVER,// = 1,  : recover on errors
@@ -333,6 +337,22 @@ std::string  xmlURIUnescapeStringHelper(std::string str) {
 """;
 fun xml_uri_escape_string:string*string->string = "xmlURIEscapeStringHelper($1,$2)";
 fun xml_uri_unescape_string:string->string = "xmlURIUnescapeStringHelper($1)";
+
+
+/*Function: xmlCopyNode
+Do a copy of the node.
+node:	the node
+extended:	if 1 do a recursive copy (properties, namespaces and children when applicable) if 2 copy properties and namespaces (when applicable)
+Returns:	a new #xmlNodePtr, or NULL in case of error.
+*/
+fun xml_copy_node: xml_node_ptr*int->xml_node_ptr = "xmlCopyNode($1,$2)"; 
+
+/*
+Function: xmlCopyNodeList
+*/
+fun xml_copy_node_list: xml_node_ptr->xml_node_ptr ="xmlCopyNodeList($1)";
+
+
 }
 
 
