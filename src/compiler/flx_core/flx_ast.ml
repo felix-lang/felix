@@ -280,6 +280,7 @@ and property_t = [
 
   | `Uses_gc             (* requires gc locally *)
   | `Virtual             (* interface in a typeclass *)
+  | `Tag of string       (* whatever *)
 ]
 
 and type_qual_t = [

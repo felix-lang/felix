@@ -115,18 +115,28 @@ let check_reachability_exes bsym_table label_map label_usage idx sr name rt exes
   a
   ;
   List.rev (!new_exes)
-  
+ 
+(* `Tag "reachability-done" to avoid reprocessing library functions
+ * every compile.
+ *)
+let tagged s ps =
+  let rec aux ps = match ps with
+  | `Tag s':: _ when s = s' -> true
+  | h::t -> aux t
+  | [] -> false
+  in aux ps
+
 let check_reachability bsym_table =
   let counter = ref 0 in
   let label_map = Flx_label.create_label_map bsym_table counter in 
   let label_usage = Flx_label.create_label_usage bsym_table label_map in
   Flx_bsym_table.iter
   (fun idx parent bsym -> match Flx_bsym.bbdcl bsym with
-  | Flx_bbdcl.BBDCL_fun (ps,bvs,bpar,rt,exes) ->
+  | Flx_bbdcl.BBDCL_fun (ps,bvs,bpar,rt,exes) when not (tagged "reachability-done" ps) ->
     let name = Flx_bsym.id bsym in
     let sr = Flx_bsym.sr bsym in 
     let newexes = check_reachability_exes bsym_table label_map label_usage idx sr name rt exes in
-    let newbbdcl = Flx_bbdcl.bbdcl_fun (ps, bvs, bpar, rt, newexes) in
+    let newbbdcl = Flx_bbdcl.bbdcl_fun (`Tag "reachability-done"::ps, bvs, bpar, rt, newexes) in
     Flx_bsym_table.update_bbdcl bsym_table idx newbbdcl
   | _ -> ()
   )

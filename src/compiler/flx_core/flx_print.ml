@@ -959,6 +959,7 @@ and string_of_property = function
 | `Virtual -> "virtual"
 | `Cfun -> "cfun"
 | `Lvalue -> "lvalue"
+| `Tag s -> "Tag " ^ s
 
 and string_of_properties ps =
   match ps with
