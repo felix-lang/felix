@@ -84,10 +84,6 @@ class ServerConfig {
     return config;
   }
 
-  fun prefix(var arg:string,key:string)=>
-    arg.[to len key]==key
-  ;
-
   fun strtod: string -> double = "strtod($1.data(),0)";
 
 }
