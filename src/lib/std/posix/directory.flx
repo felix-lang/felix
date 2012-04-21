@@ -5,8 +5,8 @@ class Directory
   //------------------------------------------------------------
   // create directory
   //------------------------------------------------------------
-  gen mkdir: string * FileStat::mode_t -> int = "mkdir($1.c_str(), $2)";
-  gen mkdir: string  -> int = "mkdir($1.c_str(), 0777)";
+  gen mkdir: string * FileStat::mode_t -> int = "mkdir($1.c_str(), $2)" requires Posix_headers::sys_stat_h;
+  gen mkdir: string  -> int = "mkdir($1.c_str(), 0777)" requires Posix_headers::sys_stat_h;
   proc mkdirs (s:string)
   {
     if s == "" or s == "." or s == ".." or s == "/" do 
