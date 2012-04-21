@@ -49,6 +49,9 @@ def _build_objs(host_phase, target_phase, builder, dstname):
     else:
         macros.append('JU_32BIT')
 
+    if 'windows' in target_phase.platform:
+        macros.append('BUILD_JUDY') #Apply this to all source files.
+
     kwargs = {}
     if 'iphone' in target_phase.platform:
         kwargs['machine_flags'] = ['32']
@@ -76,7 +79,9 @@ def _build_objs(host_phase, target_phase, builder, dstname):
             src=path / 'JudyCommon/JudyTables.c',
             dst=path / dstname / dstname + 'TablesGen.c')],
         includes=includes,
-        macros=macros,
+        #If Windows, extend macros with 'JU_WIN' for this one file,
+        #else pass through macros unmodified.
+        macros=(macros, macros + ['JU_WIN'])['windows' in target_phase.platform],
         ckwargs=kwargs,
         lkwargs=kwargs)
 
@@ -146,6 +151,9 @@ def build_runtime(host_phase, target_phase):
         macros = ['JU_64BIT']
     else:
         macros = ['JU_32BIT']
+
+    if 'windows' in target_phase.platform:
+        macros.append('BUILD_JUDY') #Apply this to all source files.
 
     srcs = [
         path / 'JudyCommon/JudyMalloc.c',
