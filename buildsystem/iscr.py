@@ -132,6 +132,8 @@ def _print_config(ctx, f, build, host, target):
         supported_platforms |= platforms
     supported_platforms = sorted(supported_platforms)
 
+    
+
     windows_h = config_call('fbuild.config.c.win32.windows_h',
         target.platform, target.c.static)
 
@@ -359,6 +361,7 @@ def _print_posix_support(platform, lang, p):
     # print out information about the posix libraries
     dlfcn_h = config_call('fbuild.config.c.posix.dlfcn_h',
         platform, lang.static, lang.shared)
+
     if dlfcn_h.dlopen:
         p('HAVE_DLOPEN', True)
         p('SUPPORT_DYNAMIC_LOADING', True)
@@ -413,7 +416,8 @@ def _print_posix_support(platform, lang, p):
         platform, lang.static)
     p('HAVE_EVTPORTS', bool(port_h.port_create))
 
-def _print_windows_support(lang, platform, p):
+def _print_windows_support(platform, lang, p):
+
     if 'windows' not in platform:
         return
 
