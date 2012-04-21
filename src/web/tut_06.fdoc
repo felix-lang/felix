@@ -19,5 +19,16 @@ In Felix you can introduce an alias for a type:
 typedef myint = int;
 typedef int_pair = int * int;
 @
-
+@h1 Basic functions
+Some simple functions that are fairly general and quite useful:
+@h2 str and repr
+The {str} function converts many data types into a pleasant
+human readable string.
+which could be used in a program. Thus:
+@felix
+val x="Hello";
+println$ str x; // Hello
+println$ repr x; // "Hello"
+@
+The concept is stolen from Python.
 

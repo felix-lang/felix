@@ -5,7 +5,7 @@ When you write a tuple like this:
   val x = 1,2,3,4,5;
 @
 where all the components have the same type, it is called an 
-array. A special notation may be used for this array type:
+<em>array</em> value. A special notation may be used for this array type:
 @felix
   int^5
 @
@@ -25,11 +25,13 @@ This kind of array is a first class value, it is <em>not an object</em>.
 @h2 Array element
 You can get an element from an array by its position:
 @felix
-println$ a.[1];
+println$ a.1;
+println$ 1 a;
 @
 Note the position, or index, is zero origin in accordance with C 
 conventions. The index can be an expression of any core 
-integral type.
+integral type. The function {1} used here is called an
+<em>array projection function</em>.
 
 @h2 Array length
 The length of an array can be found by the {len} function.
@@ -43,6 +45,12 @@ You can test if a value is in an array easily:
 @felix
 println$ 2 \in a;
 @
+Note the beautiful infix set membership operator is spelled:
+@felix
+"2 \in a"
+@
+This is one of the standard TeX operators that the webserver
+displays using MathJax.
 
 @h2 Array iterators
 
@@ -52,7 +60,7 @@ is iterate through its elements:
 val a = 1,2,3,4;
 
 for var i in 0 upto 3 do
-  println$ "a.["^str i^"]="+str a.[i];
+  println$ "a."+str i+"="+str a.i;
 done
 @
 This is an indexed based loop specialised for arrays.

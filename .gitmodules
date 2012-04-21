@@ -10,6 +10,4 @@
 [submodule "src/tre/tre"]
 	path = src/tre/tre
 	url = git://github.com/felix-lang/tre.git
-[submodule "src/judy"]
-	path = src/judy
-	url = git://github.com/felix-lang/judy.git
+

@@ -250,7 +250,7 @@ println$ "Library set up " + str sresult;
         tf_xlat_fpc = tf;
       | "py2html" => 
         xlat_py = C_hack::cast[raw_xlat_t]$ Dynlink::dlsym (library,entry);
-        tf_xlat_felix = tf;
+        tf_xlat_py = tf;
       | "ocaml2html" => 
         xlat_ocaml = C_hack::cast[raw_xlat_t]$ Dynlink::dlsym (library,entry);
         tf_xlat_ocaml = tf;

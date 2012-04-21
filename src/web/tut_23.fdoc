@@ -1,85 +1,130 @@
-@h1 Type Constraints
-Felix provides a simple system of type constraints.
-The need for type constraints arose when binding C:
-@felix
-type int = "int";
-type long = "long";
-fun add: int * int -> int = "$1+$2";
-fun add: long * long -> long = "$1+$2";
-@
-C has a lot of integer types and writing out all the operators
-for all the types is boring, error prone, and slows down compilation.
-If you also wanted to allow mixed operators you'd need to add:
-@felix
-fun add: int * long -> long = "$1+$2";
-fun add: long * int -> long = "$1+$2";
-@
-and you can see we would rapidly get into an untenable combinatorial
-explosion.
+@h1 Polymorphism
+Almost everything (except variables) in Felix can be polymorphic, that is,
+parametrised by a list of types. Here is a simple example:
 
-To solve the problem we use type constraints.
-
-First we introduce a construction to make a set of types:
 @felix
-typedef integers = typesetof(int, long);
-@
-Now we write polymorphic functions with type constraints:
-@felix
-fun add[I in integers]: I * I -> I = "$1+$2";
-@
-Here the type variable {I} may only be {int} or {long}.
-If you wanted to support mixed addition:
-@felix
-fun add[I in Integers, J in Integers]: I * J -> arithmax (I,J) = "$1+$2";
-@
-Note carefully the difference between these two functions:
-in the first function {I} is set to either {int} or {long}
-and so only two {int}s or two {long}s can be added.
-
-In the second case, {I} and {J} are set independently
-to either {int} or {long} which allows any combination 
-to be added.
-
-There is a shorthand for the second formulation:
-@felix
-fun add: !integers * !integers -> int = "(int)($1+$2)";
+fun diag[T,U] (x:T, y:U)=> y,x;
+a := 1,"Hi";
+println$ a, diag a, diag (diag a);
 @
 
-but note the downside: lacking names for the type variables we must
-return a fixed type. This notation, however, if exceptionally useful
-when binding external C libraries:
+C bindings can be polymorphic too:
 @felix
-header "int f(int, int);";
-fun f: !ints * !ints -> int" = "f($1, $2)";
+type vector[T] = "::std::vector<?1>";
+fun push_back[T]: vector[T] * T = "$1.push_back($2)";
+@
+In the C code {?1}, {?2} represent the
+first and second type variables.
+
+@h2 Overloading
+Polymorphic functions and non-polymorphic function can be overloaded.
+Overload resolution proceeds by a similar algorithm to C++.
+
+Felix first finds all the candidates. It then proceeds to compare
+each signature with each other signature. If one is a proper 
+specialisation of another, the more general case is thrown out.
+An ambiguity exists if this process leaves more than one candidate.
+@felix
+fun f[T,V] (x:T, y:V)=>y,x;               //1
+fun f[T] (x:T, y:T)=>y,x;                 //2
+fun f[A,B,C] (x: A * B, y : B *C) => y,x; //3
+@
+Here, 2 and 3 are more specialisaed than 1, however
+neither is more specialised than the other.
+
+If the call is to a higher order function and the call applies
+to several arguments in turn, all the available arguments are
+used in an attempt to remove an ambiguity.
+
+@h1 Advanced Type Calculus
+Felix type system has several advanced features.
+
+@h2 Type functions
+In Felix you can specify a function which accepts and returns types:
+@felix
+typedef fun diag1 (x:TYPE) => x * x;
+var a: diag1 int = 1,2; // OK
 @
 
-The reason this is <em>so</em> useful is that if we just lifted the
-signature of {f} from C, we'd be ignoring the fact that the C programmer
-has automatic conversions and can call {f(42L, 23u)}, which would
-fail in Felix because it has no automatic conversions. The user
-would have to cast every argument to exactly the right type which is
-not practical. By using constrained polymorphism, we can make
-all the calls that work in C work in Felix, and by using the shorthand
-notation the overhead specifying the function is minimal.
+Here the name {TYPE} is a meta-type or kind representing all types.
 
-When Felix performs overload resolution, initially candidates are found
-without considering type constraints; that is, as if the type variables
-were able to bind to any type.
-
-Then, the type constraints are checked and candidates failing to meet 
-the constraints are rejected. For example:
+A type function is similar to a type index, however functions
+cannot be overloaded based on calculated types, unless the 
+applications are resolved before overloading is performed.
 @felix
-fun f[T in ints]: T -> T = "$1+1";
-fun f[T in floats]: T -> T = "$1+2";
-println$ (f 1.2), f 1;
+typedef diag2[T] = T * T;
 @
-Type sets also support the set union operator:
-@felix
-typedef sints = fast_sints || exact_sints;
-@
-Note that the typesets {ints} and {floats}, along with some other
-basic type sets, are defined in the standard library: 
+is similar to the type function {diag1}, but {diag2} is a polymorphic
+type, which is not quite the same. Polymorphic type allow overloading,
+and more generally unification, to deduce the index type. This cannot
+be done for type functions. But type functions are more general because
+they can be named "unapplied" and later applied. And, they can be
+anonymous too: type lambdas.
 
-@felix ../lib/std/ctypesets.flx
+The syntax for type functions is the same as for ordinary functions.
+Type functions can also be overloaded against each other.
+
+@h2 Type matches
+Similar to ordinary matches, Felix has type matches:
+@felix
+typedef T = int;
+val x : 
+  typematch T with 
+  | int => int * int  
+  | _ => long 
+  endmatch 
+  = 1
+;
+@
+
+A contrived example, but see the next section for a real use!
+
+@h2 Type Calculus: examples
+Consider the C integral promotion rules. How would we represent
+this in Felix? 
+
+With a type function and match of course! This is from library file
+<a href="/lib/std/int.flx">int.flx</a>:
+
+@felix
+typedef fun integral_promotion: TYPE -> TYPE =
+  | tiny => int
+  | utiny => int
+  | short => int
+  | ushort => int
+  | int => int
+  | uint => uint
+  | long => long
+  | ulong => ulong
+  | vlong => vlong
+  | uvlong => uvlong
+;
+@
+
+Note here the same short hand as for function is used, the functional
+form is equivalent to a function containing a match on its only argument.
+
+The type function {integral_promotion} defines how each C type is promoted
+according to ISO C rules.
+
+Now why would we want that? Well consider, we would like to write this code:
+@felix
+fun add[T in ints, U in ints] T * U -> arithmax (T,U) = "$1+$2";
+@
+which can add up any Felix integers the same way as C does,
+arithmetic promotions and all .. but what is the return type?
+It is the largest of the two argument types. But how can 
+we calculate that?
+
+Here's the answer:
+<a href="/lib/plat/arithmax.flx">arithmax.flx</a>
+
+This file is generated by the configure script for Felix because the rule is
+actually platform dependent!
+
+You can see here, we have used the previously discussed {integral_promotion}
+function to reduce the number of cases in the {typematch} by removing
+the smaller types {tiny, utiny, short, ushort} .. although the main reason
+is that this is how ISO C specifies the calculation be done.
 
 

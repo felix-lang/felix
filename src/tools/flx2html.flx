@@ -104,6 +104,7 @@ private val small_keywords =
 ;
 
 private val qualifiers = 
+  ("pure", "A function depending only on its parameters"),
   ("virtual", "Type of a function to be provided in type class instances"),
   ("inline", "Function or procedure which should be inlined if possible"),
   ("noinline", "Function or procedure which must not be inlined"),
@@ -119,6 +120,7 @@ private val qualifiers =
 ;
 
 private val library = 
+  ("any", "Type a non-returning function returns"),
   ("void", "Type with no values, returning void indicates a procedure"),
   ("unit", "Type with one values (), the empty tuple"),
   ("tiny", "binding of C signed char type"),
@@ -150,6 +152,7 @@ private val library =
   ("float", "binding of C float type"),
   ("double", "binding of C double float type"),
   ("ldouble", "binding of C long double type"),
+  ("string", "binding of C++ string type"),
 
   ("opt", "option type: Some x or None"),
   ("list", "functional, singly linked list"),
@@ -161,7 +164,10 @@ private val library =
 
   ("str", "Convert a value to a string"),
   ("print", "Print a string to standard output"),
-  ("println", "Print a string to standard output with newline appended")
+  ("println", "Print a string to standard output with newline appended"),
+  ("write", "Print a string to a stream"),
+  ("write", "Print a string to a stream with newline appended"),
+  ("readln", "Read a string from a stream including trailing newline")
 ;
 
 private val hack = "C_hack","C_hack"; // to make it an array we need 2 components

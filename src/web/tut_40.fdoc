@@ -1,133 +1,29 @@
-@h1 An example data structure
-In this chapter we will try to implement a lazy set data structure. First, let us 
-observe that we have several data types which provide a set membership function:
+@h1 Debugging
+Felix has a number of special features to help with debugging.
+Of course you can debug the generated C++ code in the usual way.
+Don't forget you can say:
 @pre
-varray
-darray
-list
-s_expr
-re2
+flx --nofelix prog
 @
-[Note: array is not included. Why?]
+to skip translation of Felix programs to C++, which allows you to edit
+the C++ code, say, adding debugging prints.
 
-Now, suppose we want to make a set which is a union of all these sets.
-In a dumb object oriented language (Java, C++ for example), 
-if we were lucky enough to have derived these types from a set abstraction, 
-or in a smart language like Ocaml, where interfaces can be applied post-class
-definition, we could just make a list of references to these objects, and 
-use the abstract membership function on each in turn.
+@h2 Debug module
+...
 
-But Felix is not an OO language, so we can't do that. Lets look at two
-alternatives.
-
-@h2 Using a union
-Given a heterogenous data type we can create a unified type with a union:
+@h2 Trace
+Felix has a special trace command:
 @felix
-open class Example1
-{
-  union SetKind = 
-    | Varray of varray[string]
-    | Darray of darray[string]
-    | List of list[string]
-    | Sexpr of S_expr::sexpr[string]
-    | Reg of RE2 
-  ;
+var name = "FELIX";
+trace name "string";
 @
-and now we just use a switch to define membership of the union type:
-@felix
-  fun \in (elt:string, container:SetKind):bool  => match container with
-    | Varray ?a => elt \in a
-    | Darray ?a => elt \in a
-    | List   ?a => elt \in a
-    | Sexpr  ?a => elt \in a
-    | Reg    ?a => elt \in a
-    endmatch
-  ;
+To use this you must compile with the FLX_ENABLE_TRACE macro defined:
+@pre
+flx -DFLX_ENABLE_TRACE abc
 @
-The repetition if rather boring, but this is actually an advantage of
-overloading. It's now a simple matter to make a lazy set:
-@felix
-  typedef LazySet = list[SetKind];
-  fun \in (elt:string, ss: LazySet) =>
-    fold_left 
-    (fun (acc:bool) (container:SetKind) => acc or elt \in container) 
-    false 
-    ss
-  ;
-}
+which prints something like:
+@pre
+1 : TRACE: hello
+Felix location: ./abc.flx 2[1]-2[16]
+C++ location  : ./abc.cpp 76
 @
-and of course a test case:
-@felix
-val a1 = list(Example1::Varray (varray("1","2")), Example1::List (list("3","4")));
-println$ "1" \in a1, "3" \in a1;
-@
-
-@h2 Using HOFs to emulate OO
-There is another way to build our LazySet: to provide the required abstraction
-and type unification using functions. This technique is, in effect, an advanced
-kind of OO. 
-
-Its advanced because it is a better technique! Because it can do a lot more.
-Yet strangely, it is close to what you'd do with function pointers in C.
-
-We first provide a function for each data type that hides the data type
-by forming a closure over it, in other words, abstracting the representation away:
-@felix
-open class Example2 
-{
-  fun has (c:varray[string]) (elt:string) : bool => elt \in c;
-  fun has (c:darray[string]) (elt:string) : bool => elt \in c;
-  fun has (c:list[string]) (elt:string) : bool => elt \in c;
-  fun has (c:S_expr::sexpr[string]) (elt:string) : bool => elt \in c;
-  fun has (c:RE2) (elt:string) : bool => elt \in c;
-@
-You can see that after applying these functions to the data type we're left
-with functions of the same type:
-@felix
-  typedef LazySet = string -> bool;
-  typedef SetKind = list[LazySet]; 
-@
-Now, we define our membership function:
-@felix
-  fun \in (elt:string, ss: LazySet) =>
-    fold_left 
-    (fun (acc:bool) (container:SetKind) => acc or container elt) 
-    false 
-    ss
-  ;
-}
-@
-And now to use it:
-@felix
-val a2 = list(has(varray("1","2")), has(list("3","4")));
-println$ "1" \in a2, "3" \in a2;
-@
-You see, we've made a list of functions which accept strings and
-return if the string is in the encapsulated data type. The data type
-is hidden by the {has} application, leaving only the membership test. 
-Clearly, the result is an object method!
-
-@h2 Choices
-Well, given these two techniques, which is best? The unification technique
-does not admit extension in the sense that you have to add new cases to
-the union type, then code the corresponding match handlers. 
-
-It also leaves the underlying representation exposed.
-We could, in fact, use abstraction to hide the representation, however having
-access to it could be an advantage. It's not clear how fast this code is.
-However this technique has a major advantage: it could be made polymorphic.
-Throw out {RE2} which only works with strings, and it all works with 
-any element type.
-
-The functional abstraction technique, on the other hand, allows completely
-independent addition of new data structures to the LazySet: all we need to
-do is write a {has} function. This technique not only supports polymorphism
-of the element type, it supports it over the data type, that is, it is
-polyadic, not merely polymorphic. However, function closures are expensive.
-
-@h2 Convolution
-So you still don't know which to use? We'll add both kinds to both kinds,
-using recursion, and then it doesn't matter:
-
-@felix test/regress/rt/set-emulation-01.flx
-
