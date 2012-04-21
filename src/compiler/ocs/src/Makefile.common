@@ -1,0 +1,21 @@
+#
+# General OCaml build settings
+#
+
+OCAMLOPT = ocamlopt
+OCAMLC = ocamlc
+OCAMLDEP = ocamldep
+
+OCAMLFLAGS =
+
+.SUFFIXES: .o .c .h .cc .cpp .y .l .a .ml .mli .cmx .cmi .cmo
+
+.mli.cmi:
+	$(OCAMLC) $(OCAMLFLAGS) -c $<
+
+.ml.cmx:
+	$(OCAMLOPT) $(OCAMLFLAGS) -c $<
+
+.ml.cmo:
+	$(OCAMLC) $(OCAMLFLAGS) -c $<
+

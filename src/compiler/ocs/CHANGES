@@ -1,0 +1,76 @@
+1.0.3
+
+    - The various let forms now create new frames.  This fixes
+    behavior for situations where the initializers for the bound
+    variables return multiple times due to captured continuations.
+
+    - Change define-syntax to return the unspecified value.
+
+    - Fix (lambda <var> ...) forms where <var> is env-tagged by
+    macro expansion.
+
+1.0.2
+
+    - Try to find a smaller invariant precision when converting from
+    floating point values to strings.
+
+    - Add missing function vector-fill!.
+
+    - Add an unspecified value that isn't printed by the repl.
+
+    - Add a value and functor that can be used to safely wrap arbitrary
+    OCaml values in Scheme values.
+
+    - Fix internal definitions inside (begin ...) forms.
+
+    - Consider literals in the literal list of syntax-rules locally
+    bound while parsing (but not while matching) patterns.  R5RS is not
+    clear on this, but it is necessary to avoid breaking hygiene when
+    some expansions of an outer macro could change the interpretation of
+    pattern variables to literals within the patterns of inner macros.
+    This seems consistent with the behavior of other implementations.
+
+    - Fix namespace lookup for syntax-rules literals to allow changes
+    in global bindings.
+
+    - Fix namespace handling for nested macros.
+
+    - Fix copy-paste error in log.
+
+    - Fix the behavior of eval and arguments.
+
+    - Fix inexact->exact for negative numbers that don't fit into an
+    integer.
+
+    - The reader now also accepts square brackets [ and ] as list
+    delimiters.
+
+    - Fix remainder to handle differing signs correctly.
+
+1.0.1
+
+    - Fix sorting of byte code objects in Makefile.
+
+    - Add missing functions numerator and denominator.
+
+    - Keep rationals normalized.
+
+1.0 (changes from pre-releases)
+
+    - Rearrange build to generate bytecode and native libraries and a
+    native interpreter usable from the command line.
+
+    - Remove CVS Id's (the project is now being stored in a GNU Arch
+    repository) from all files.
+
+    - Fix Ocs_port.string_input_port to actually initialize the
+    port with the string length.
+
+    - Fix internal definitions of the form (define (fun args ...) ...).
+    Previously the first item of the body would be skipped.
+
+    - Fix the order of arguments to atan when called with two arguments.
+
+    - When invoking continuations with multiple arguments, the
+    arguments are now wrapped with Svalues as if (values ...) were used.
+

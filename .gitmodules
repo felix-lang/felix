@@ -1,13 +1,4 @@
 [submodule "fbuild"]
 	path = fbuild
 	url = git://github.com/felix-lang/fbuild.git
-[submodule "src/compiler/ocs"]
-	path = src/compiler/ocs
-	url = git://github.com/felix-lang/ocs.git
-[submodule "re2"]
-	path = src/re2/re2
-	url = git://github.com/felix-lang/re2.git
-[submodule "src/tre/tre"]
-	path = src/tre/tre
-	url = git://github.com/felix-lang/tre.git
 
