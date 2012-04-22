@@ -7,7 +7,7 @@
 #include <WinSock2.h>
 #include <MSWSock.h>        // AcceptEx, TF_REUSE_SOCKET, etc
 
-#include "faio_asyncio.hpp" // flx driver requests
+#include "flx_async.hpp"
 #include "demux_overlapped.hpp"   // nicely wrapped async windows calls
 
 namespace flx { namespace faio {
@@ -18,7 +18,7 @@ namespace flx { namespace faio {
 
 // a flx driver request to the add socket s to the drivers iocp
 // this is currently the only windows driver request that uses the demuxer.
-class FAIO_EXTERN iocp_associator : public flx_driver_request_base {
+    class FAIO_EXTERN iocp_associator : public ::flx::async::flx_driver_request_base {
   SOCKET  s;
 public:
   demux::iocp_demuxer *iod;
@@ -33,9 +33,9 @@ public:
 // flx <-> c++ stuff for async io (well, it was)
 
 // transition to new windows async control block
-class FAIO_EXTERN waio_base : public flx_driver_request_base {
+class FAIO_EXTERN waio_base : public ::flx::async::flx_driver_request_base {
 protected:
-  finote_t *fn_a;
+  ::flx::async::finote_t *fn_a;
 public:
   demux::iocp_demuxer *iod;
   bool  success;          // eh?

@@ -22,7 +22,7 @@ def build(host_phase, target_phase):
         target_phase.ctx.buildroot / 'lib/rtl',
         'src/demux',
         'src/faio',
-    ]
+    ] + ([], ['src/demux/win'])['win32' in target_phase.platform]
 
     flx_run_lib = target_phase.cxx.static.compile(
         dst='lib/rtl/flx_run',
