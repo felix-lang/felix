@@ -670,6 +670,7 @@ utstatement:
       let sr = getsr dyp in
       let s = Marshal.to_string (function_free_pdev dyp.parser_pilot.pp_dev) [] in
       dyp.global_data.parsing_device := Some s;
+      print_endline "Automaton set";
       (0,sr,Snull)
     }
 
