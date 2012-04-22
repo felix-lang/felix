@@ -216,7 +216,7 @@ let marshal_in (kind:string) (filename:string) ?(min_time=big_bang) : 'a option 
 
 let rec mkdirs d =
   let p = Filename.dirname d in
-  if p = "/" or p = "." or p = "" then () else mkdirs p;
+  if p = d then () else mkdirs p;
   try Unix.mkdir d 0o777 with _ -> ()
 
 let mkabs d =
