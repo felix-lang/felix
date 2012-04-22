@@ -26,6 +26,7 @@ def build_runtime(host_phase, target_phase):
 
         return Record(
           static=buildsystem.build_cxx_static_lib(target_phase, dst, srcs,
+              includes=includes,
               macros=macros,
               libs=[lib.static for lib in libs]),
           shared=buildsystem.build_cxx_shared_lib(target_phase, dst, srcs,
