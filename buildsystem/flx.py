@@ -6,6 +6,17 @@ import fbuild.db
 from fbuild.functools import call
 from fbuild.path import Path
 import os
+import os.path
+import platform
+
+# ------------------------------------------------------------------------------
+
+def _getcwd():
+  here = os.getcwd()
+  if platform.system().lower() == 'windows':
+      here = os.path.basename(here)
+
+  return here
 
 # ------------------------------------------------------------------------------
 
@@ -40,10 +51,10 @@ class Builder(fbuild.db.PersistentObject):
         src_buildroot = src.addroot(buildroot)
 
         if preparse:
-            dst = buildroot + "/cache/binary/"+os.getcwd()+"/"+buildroot+"/"+src
+            dst = buildroot + "/cache/binary/"+_getcwd()+"/"+buildroot+"/"+src
             dst = dst.replaceext('.par')
         else:
-            dst = buildroot + "/cache/text/"+os.getcwd()+"/"+buildroot+"/"+src
+            dst = buildroot + "/cache/text/"+ _getcwd()+"/"+buildroot+"/"+src
             dst = dst.replaceext('.cpp')
 
         #print("flg dst=" + dst)
