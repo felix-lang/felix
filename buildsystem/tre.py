@@ -141,6 +141,12 @@ def build_runtime(phase):
     ]
     macros = ['HAVE_CONFIG_H']
 
+    #Workaround link error : unresolved external symbol _snprintf
+    #referenced in function _tre_version.
+
+    if 'win32' in phase.platform:
+        macros.append('snprintf=_snprintf')
+
     return Record(
         static=buildsystem.build_c_static_lib(phase, dst, srcs,
             includes=includes,

@@ -55,8 +55,8 @@ def build_runtime(phase):
     includes = [
       phase.ctx.buildroot / 'config/target',
       path ]
-    macros = ['BUILD_RE2']
-    cflags = ['-Wno-sign-compare']
+    macros = ['BUILD_RE2'] + (['WIN32', 'NOMINMAX'],[])[not 'win32' in phase.platform]
+    cflags = ([], ['-Wno-sign-compare'])[not 'win32' in phase.platform]
     lflags = []
     libs = []
     external_libs = []

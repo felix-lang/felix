@@ -12,8 +12,10 @@
 
 namespace re2 {
 
-#define HAVE_PTHREAD 1
-#define HAVE_RWLOCK 1
+#if !defined(WIN32)
+#  define HAVE_PTHREAD 1
+#  define HAVE_RWLOCK 1
+#endif //!defined(WIN32)
 
 #if defined(NO_THREADS)
   typedef int MutexType;      // to keep a lock-count

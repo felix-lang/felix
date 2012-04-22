@@ -11,7 +11,13 @@
 
 #include <stdio.h>
 #include <string>
+#if defined(WIN32)
+#define strtoll _strtoi64
+#define strtoull _strtoui64
+#define strtof strtod
+#else
 #include <pthread.h>
+#endif//defined(WIN32)
 #include <errno.h>
 #include "util/util.h"
 #include "util/flags.h"
@@ -30,8 +36,6 @@ const VariadicFunction2<bool, const StringPiece&, const RE2&, RE2::Arg, RE2::Ful
 const VariadicFunction2<bool, const StringPiece&, const RE2&, RE2::Arg, RE2::PartialMatchN> RE2::PartialMatch;
 const VariadicFunction2<bool, StringPiece*, const RE2&, RE2::Arg, RE2::ConsumeN> RE2::Consume;
 const VariadicFunction2<bool, StringPiece*, const RE2&, RE2::Arg, RE2::FindAndConsumeN> RE2::FindAndConsume;
-
-const int RE2::Options::kDefaultMaxMem;  // initialized in re2.h
 
 // Commonly-used option sets; arguments to constructor are:
 //   utf8 input

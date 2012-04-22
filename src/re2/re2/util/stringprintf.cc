@@ -4,6 +4,10 @@
 
 #include "util/util.h"
 
+#ifndef va_copy
+#define va_copy(d,s) ((d) = (s)) //KLUGE: for MS compilers
+#endif
+
 namespace re2 { 
 
 static void StringAppendV(string* dst, const char* format, va_list ap) {
