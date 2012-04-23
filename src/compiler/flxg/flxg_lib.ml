@@ -32,6 +32,7 @@ let process_lib
   let lib_time = Flx_filesys.virtual_filetime Flx_filesys.big_crunch lib_name in
   let libtab_name = Flx_filesys.join lib_filedir lib_filename ^ ".libtab" in
   let libtab_name = (Flx_filesys.join outdir libtab_name) in
+print_endline ("Libtab name = " ^ libtab_name);
 
   (* Look up the time the file was cached. *)
   let lib_cache_time = Flx_filesys.virtual_filetime
