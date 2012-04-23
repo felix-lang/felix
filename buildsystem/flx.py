@@ -166,7 +166,7 @@ class Builder(fbuild.db.PersistentObject):
         command line harness but we're probably building it here.
         """
 
-        flx_pkgconfig = self.ctx.buildroot / 'bin/flx_pkgconfig'
+        flx_pkgconfig = os.path.abspath(self.ctx.buildroot / 'bin/flx_pkgconfig')
         resh = src.replaceext('.resh')
         includes = src.replaceext('.includes')
 
