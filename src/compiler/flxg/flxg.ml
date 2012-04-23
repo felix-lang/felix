@@ -28,7 +28,11 @@ let generate_dep_file state =
  * otherwise the including file had to be changed to stop this, and its
  * time stamp will be bigger.
  *)
+
+(* shouldn't need this, should be absolute already 
   let dep_file_name = Flx_filesys.mkabs (state.dep_file_name) in
+*)
+  let dep_file_name = state.dep_file_name in
   Flx_filesys.mkdirs (Filename.dirname dep_file_name); 
   let chan = open_out state.dep_file_name in
   output_string chan (String.concat "\n" (!(state.syms.include_files)) ^ "\n");
