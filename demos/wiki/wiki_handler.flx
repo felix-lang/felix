@@ -94,16 +94,19 @@ if fname == "" then "" else
     else 
       txt = "";
     done
-    val data = make_html(doc_head(false,"")+page_controls("")+"""
-  <h4>Editing """+fname+"""</h4><div id='edit_wiki'>
-  <form name='edit_wiki' id='edit_wiki' method='POST'>
-    <textarea id='content' name='content' rows='20' cols='80'>"""+txt+"""
-    </textarea><br/>
-    <div style='float:left;'><input style='float:left;padding-right:10px;' type='submit' id='submit0' name='submit0' value='Save'/><input style='float:left;padding-right:10px;' type='button' id='cancel' name='cancel0' value='Cancel' onclick='history.go(-1)'/>
-   </form></div>
-   <div style='float:left;padding-right:10px;'> <form name='delete_wiki' id='delete_wiki' method='POST' action='/wiki/delete/"""+
-fname+"""' >
-     <input style='float:left;padding-right:10px;' type='submit' id='delete0' name='delete0' value='Delete'/></form>"""+doc_tail());    
+    val data = make_html(doc_head(false,"")+page_controls("")+
+    q"""<h4>Editing $(fname)</h4><div id='edit_wiki'>
+      <form name='edit_wiki' id='edit_wiki' method='POST'>
+        <textarea id='content' name='content' rows='20' cols='80'>$(txt)</textarea><br/>
+        <div style='float:left;'>
+          <input style='float:left;padding-right:10px;' type='submit' id='submit0' name='submit0' value='Save'/>
+          <input style='float:left;padding-right:10px;' type='button' id='cancel' name='cancel0' value='Cancel' onclick='history.go(-1)'/>
+        </div>
+      </form>
+      <div style='float:left;padding-right:10px;'>
+      <form name='delete_wiki' id='delete_wiki' method='POST' action='/wiki/delete/$(fname)' >
+        <input style='float:left;padding-right:10px;' type='submit' id='delete0' name='delete0' value='Delete'/>
+      </form>"""+doc_tail());    
     write(conn,data);
   }
 
