@@ -7,7 +7,7 @@ requires header '#include <sys/types.h>';
 open Filename;
 open Directory;
 open FileSystem;
-val name = System::argv 0;
+var name = System::argv 0;
 if endswith name ".so" do name = name.[ to (len(name)-size(3))]; done
 var sample_decorator = false;
 var base = ".";
@@ -46,8 +46,6 @@ done
 if generate == true do
   var with_errors=false;
   println("Creating directory structure");
-  if (mkdir(join(list(base,"build")))) > 0 do 
-    println("Error creating build directory");with_errors = true; done
   if (mkdir(join(list(base,"log")))) > 0 do 
     println("Error creating log directory");with_errors = true; done
   if (mkdir(join(list(base,"config")))) > 0 do 
@@ -61,25 +59,6 @@ if generate == true do
   if (mkdir(join(list(base,"html","images")))) > 0 do 
     println("Error creating html/images directory");with_errors = true; done
   
-  val makefile_txt = """
-
-all:
-	""";
-val makefile_txt1 = """lx --output_dir=build --static webapp.flx
-clean:
-\trm -f webapp build/*
-""";
-
-  println("Creating Makefile");
-  val makefile = fopen_output (join(list(base,"Makefile")));
-  if makefile.valid do
-    write(makefile,makefile_txt);write(makefile,"f");write(makefile,makefile_txt1);
-    makefile.fclose;
-  else
-    println("Error creating Makefile");
-    with_errors = true;
-  done
-
   val webapp_flx_txt = """
 include "web/web_server";
 include "hello";
@@ -186,7 +165,7 @@ class Hello {
     request.path == "/hello";
 
   proc hello(conn:http_connection, request:http_request) {
-       write(conn,make_html("<div>Hello World</div>"));
+       write(conn,make_html("<html><body><h2>Hello World!</h2></body></html>"));
   }
 }
 """;
