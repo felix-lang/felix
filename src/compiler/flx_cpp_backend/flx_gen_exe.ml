@@ -584,8 +584,32 @@ let gen_exe filename
         | _ -> this ^ ", " ^ ge sr a
       in
       begin let _,t = p in match t with
-      | BTYP_cfunction _ ->
-        "    "^ge sr p ^ "("^ge sr a^");\n"
+      | BTYP_cfunction (d,_) ->
+        begin match d with
+        | BTYP_tuple ts ->
+          begin match a with
+          | BEXPR_tuple xs,_ ->
+            let s = String.concat ", " (List.map (fun x -> ge sr x) xs) in
+            (ge sr p) ^"(" ^ s ^ ");\n"
+          | _ ->
+           failwith "[flx_gen_exe][tuple] can't split up arg to C function yet"
+          end
+        | BTYP_array (t,BTYP_unitsum n) ->
+          let ts = 
+           let rec aux ts n = if n = 0 then ts else aux (t::ts) (n-1) in
+           aux [] n
+          in
+          begin match a with
+          | BEXPR_tuple xs,_ ->
+            let s = String.concat ", " (List.map (fun x -> ge sr x) xs) in
+            (ge sr p) ^"(" ^ s ^ ");\n"
+          | _ ->
+            failwith "[flx_gen_exe][array] can't split up arg to C function yet"
+          end
+
+        | _ ->
+          (ge sr p) ^"(" ^ ge sr a ^ ");\n"
+        end
       | _ ->
       match kind with
       | Function ->

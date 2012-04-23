@@ -236,6 +236,7 @@ println$ "Adding lib " + lib;
 //println$ lib+ " Got setup address " + str raw_setup;
       var setup = C_hack::cast[address * string --> int] raw_setup;
       var sresult = setup(tf,config);
+      C_hack::ignore(sresult);
 println$ lib+ " Library set up " + str sresult;
       libs = Cons ((lib, linst),libs); 
       match lib with

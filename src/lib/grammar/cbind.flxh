@@ -7,6 +7,8 @@ syntax cbind {
     "`(ast_export_cfun ,_sr ,_3 ,_5)";
   tstatement := "export" "proc" ssuffixed_name "as" sstring ";" =>#
     "`(ast_export_fun ,_sr ,_3 ,_5)";
+  tstatement := "export" "cproc" ssuffixed_name "as" sstring ";" =>#
+    "`(ast_export_cfun ,_sr ,_3 ,_5)";
   tstatement := "export" "type" "(" sexpr ")" "as" sstring ";" =>#
     "`(ast_export_type ,_sr ,_4 ,_7)";
 
