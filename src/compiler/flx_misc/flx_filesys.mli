@@ -47,6 +47,18 @@ val join :
   string ->                    (** filename *)
   string                       (** full pathname *)
 
+(** Given the name of a cache in native format and 
+  a filename in native format, join them to make
+  a full pathname to be used in the cache.
+
+  This routine allows the RHS argument to start with C:
+  which is translated to C/ to form the cache name. 
+*)
+val mk_cache_name: 
+  string ->                    (** native directory name *)
+  string ->                    (** native filename *)
+  string                       (** full pathname *)
+
 (** Look in the filesystem for the path. Raises Missing_path if not found or is
  * not a file. *)
 val find_file:

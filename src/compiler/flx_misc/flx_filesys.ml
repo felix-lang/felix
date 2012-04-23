@@ -99,11 +99,23 @@ let strip_drive f =
   | "Win32" ->
     let n = String.length f in
     if n >2 then
-     if f.[1] = ':' then (* hack: replace ":" with separator *)
-      String.sub f 0 1 ^ dir_sep ^ String.sub f 2 (n-2)
-     else f
-    else f
+      if f.[1] = ':' then (* hack: replace ":" with separator *)
+        if n>3 then 
+          if f.[2] = '\\' then (* unless C:\ is seen, then just elide the ":" *)
+            String.sub f 0 1 ^ String.sub f 2 (n-2) 
+          else
+            String.sub f 0 1 ^ "\\" ^ String.sub f 2 (n-2)
+        else
+          String.sub f 0 1 ^ "\\" ^ String.sub f 2 (n-2)
+      else 
+        f
+    else 
+      f
   | _ -> f
+
+let mk_cache_name cache_name file_name =
+  let file_name = strip_drive file_name in
+  native_join cache_name file_name
 
 (** Workaround bug in Ocaml Filename.concat *)
 let join dir file =

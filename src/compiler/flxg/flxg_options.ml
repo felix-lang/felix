@@ -111,8 +111,8 @@ let get_options raw_options =
           with Flx_filesys.Missing_path _ -> 
           try 
             let d = Flx_filesys.find_dir ~include_dirs "grammar" in
-            Flx_filesys.join options.cache_dir (Flx_filesys.join d "syntax.automaton")
-          with Flx_filesys.Missing_path _ -> Flx_filesys.join options.cache_dir "syntax.automaton" 
+            Flx_filesys.mk_cache_name options.cache_dir (Flx_filesys.join d "syntax.automaton")
+          with Flx_filesys.Missing_path _ -> Flx_filesys.mk_cache_name options.cache_dir "syntax.automaton" 
         end
       end
     ;
