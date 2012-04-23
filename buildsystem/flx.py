@@ -50,6 +50,7 @@ class Builder(fbuild.db.PersistentObject):
         src = Path(src)
         src_buildroot = src.addroot(buildroot)
 
+        print("Src to flxg=" + src)
         if preparse:
             dst = buildroot + "/cache/binary/"+_getcwd()+"/"+buildroot+"/"+src
             dst = dst.replaceext('.par')
@@ -57,7 +58,7 @@ class Builder(fbuild.db.PersistentObject):
             dst = buildroot + "/cache/text/"+ _getcwd()+"/"+buildroot+"/"+src
             dst = dst.replaceext('.cpp')
 
-        #print("flg dst=" + dst)
+        print("flg dst=" + dst)
         if src != src_buildroot:
             src_buildroot.parent.makedirs()
             src.copy(src_buildroot)
@@ -166,7 +167,7 @@ class Builder(fbuild.db.PersistentObject):
         command line harness but we're probably building it here.
         """
 
-        flx_pkgconfig = os.path.abspath(self.ctx.buildroot / 'bin/flx_pkgconfig')
+        flx_pkgconfig = self.ctx.buildroot / 'bin/flx_pkgconfig'
         resh = src.replaceext('.resh')
         includes = src.replaceext('.includes')
 
@@ -217,7 +218,7 @@ class Builder(fbuild.db.PersistentObject):
             cxx_cflags=[],
             cxx_libs=[],
             cxx_lflags=[]):
-        #print("_build_flx_pkgconfig_link:src="+src)
+        print("_build_flx_pkgconfig_link:src="+src)
         obj = self.compile(src, includes=includes, flags=flags)
 
         return function(obj, dst,

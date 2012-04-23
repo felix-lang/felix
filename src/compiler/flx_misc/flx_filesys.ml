@@ -209,7 +209,7 @@ the compiler has been upgraded since the last write.
 let marshal_out (kind:string) (filename:string) (data:'a) =
   let this_version = !Flx_version.version_data in
   let time_now = Unix.time () in
-print_endline ("Marshal out filename = " ^ filename);
+(* print_endline ("Marshal out filename = " ^ filename); *)
   mkdirs (Filename.dirname filename);
   let file = open_out_bin filename in
   Marshal.to_channel file this_version [];
@@ -227,7 +227,7 @@ touching games or problems with time-stamps when copying files.
 
 let marshal_in (kind:string) (filename:string) ?(min_time=big_bang) : 'a option =
   let this_version= !Flx_version.version_data in
-print_endline ("Marhsal in filename " ^ filename);
+(* print_endline ("Marhsal in filename " ^ filename); *)
   let file = open_in_bin filename in
 (* print_endline "Opened cache"; *)
   let result = 
