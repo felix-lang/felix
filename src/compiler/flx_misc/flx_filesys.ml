@@ -94,10 +94,21 @@ let is_abs =
       s.[0] = '/'
     )
 
+let strip_drive f = 
+  match  Sys.os_type with 
+  | "Win32" ->
+    let n = String.length f in
+    if n >2 then
+     if f.[1] = ':' then (* hack: replace ":" with separator *)
+      String.sub f 0 1 ^ dir_sep ^ String.sub f 2 (n-2)
+     else f
+    else f
+  | _ -> f
 
 (** Workaround bug in Ocaml Filename.concat *)
 let join dir file =
   let file = unix2native file in
+  let file = strip_drive file in
   native_join dir file
 
 

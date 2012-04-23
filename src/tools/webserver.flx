@@ -233,10 +233,10 @@ println$ "Adding lib " + lib;
       var library = Dynlink::get_library linst;
       var tf = Dynlink::get_thread_frame linst;
       var raw_setup = Dynlink::dlsym$ library, "setup";
-      println$ "Got setup address " + str raw_setup;
+println$ "Got setup address " + str raw_setup;
       var setup = C_hack::cast[address * string --> int] raw_setup;
       var sresult = setup(tf,config);
-println$ "Library set up " + str sresult;
+println$ lib+ " Library set up " + str sresult;
       libs = Cons ((lib, linst),libs); 
       match lib with
       | "flx2html" => 

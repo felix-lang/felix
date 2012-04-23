@@ -489,13 +489,16 @@ fun setup(config_data:string) = {
     match d with 
     | ?ext,?lib,?entry =>
       if not (have_lib lib) do
+println$ "Adding lib " + lib;
         if lib in list("cpp2html") do
           var linst = Dynlink::init_lib(lib + dll_extn);
           var library = Dynlink::get_library linst;
           var tf = Dynlink::get_thread_frame linst;
           var raw_setup = Dynlink::dlsym$ library, "setup";
+println$ lib+" Got setup address " + str raw_setup;
           var setup = C_hack::cast[address * string --> int] raw_setup;
           var sresult = setup(tf,config_data);
+println$ lib+" Library set up " + str sresult;
           libs = Cons ((lib, linst),libs); 
           match lib with
           | "cpp2html" => 

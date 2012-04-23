@@ -48,10 +48,9 @@ print_endline ("Trying to store automaton " ^ filename);
     Marshal.to_channel oc parser_state [];
     Marshal.to_channel oc parsing_device [];
     close_out oc;
-    fprintf state.ppf "Saved automaton to disk@.";
+    print_endline "Saved automaton to disk.";
   | None ->
-print_endline ("Can't store automaton to disk file " ^ filename);
-    fprintf state.ppf "Failed to save automaton to disk@.";
+    print_endline ("Can't store automaton to disk file " ^ filename);
   end
   ;
   parser_state
