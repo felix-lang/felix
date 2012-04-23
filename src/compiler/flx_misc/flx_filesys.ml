@@ -94,10 +94,14 @@ let is_abs =
       s.[0] = '/'
     )
 
+(* This code removes leading / (on unix) or C:\ (on Windows
+  so the result can be added to the end of another pathname
+  to form a cache name
+*)
 let strip_drive f = 
+  let n = String.length f in
   match  Sys.os_type with 
   | "Win32" ->
-    let n = String.length f in
     if n >2 then
       if f.[1] = ':' then (* hack: replace ":" with separator *)
         if n>3 then 
@@ -111,7 +115,11 @@ let strip_drive f =
         f
     else 
       f
-  | _ -> f
+  | _ -> 
+    if n>1 then
+      if f.[0]='/' then String.sub f 1 (n-1)
+      else f
+    else f
 
 let mk_cache_name cache_name file_name =
   let file_name = strip_drive file_name in
@@ -120,7 +128,6 @@ let mk_cache_name cache_name file_name =
 (** Workaround bug in Ocaml Filename.concat *)
 let join dir file =
   let file = unix2native file in
-  let file = strip_drive file in
   native_join dir file
 
 
@@ -187,6 +194,11 @@ let with_file_out path f =
   let file = open_out path in
   Flx_util.finally (fun () -> close_out file) f file
 
+let rec mkdirs d =
+  let p = Filename.dirname d in
+  if p = d then () else mkdirs p;
+  try Unix.mkdir d 0o777 with _ -> ()
+
 (** Throws an I/O of some kind if the output can't be written
 The kind string identifies the type of data being written, and is used
 for lightweight type checking. This function writes out compiler
@@ -198,6 +210,7 @@ let marshal_out (kind:string) (filename:string) (data:'a) =
   let this_version = !Flx_version.version_data in
   let time_now = Unix.time () in
 print_endline ("Marshal out filename = " ^ filename);
+  mkdirs (Filename.dirname filename);
   let file = open_out filename in
   Marshal.to_channel file this_version [];
   Marshal.to_channel file kind [];
@@ -238,11 +251,6 @@ print_endline ("Marhsal in filename " ^ filename);
   perform the computation and store the result.
   Throws whatever the computation throws if it is invoked.
 *)
-
-let rec mkdirs d =
-  let p = Filename.dirname d in
-  if p = d then () else mkdirs p;
-  try Unix.mkdir d 0o777 with _ -> ()
 
 let mkabs d =
   if not (Filename.is_relative d) then d else
