@@ -194,15 +194,15 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
      if hstack == n do
        --hstack;
        write_string("</div>"); 
-       set (hnums,hstack,hnums.[hstack]+1); 
+       set (hnums,hstack,hnums.(hstack)+1); 
      done
   }
   fun hnum() = {
     var s = ""; var i:int;
     for i in 0 upto hstack - 2 do
-      s+=str(hnums.[i]) + ".";
+      s+=str(hnums.(i)) + ".";
     done
-    return s + str(hnums.[hstack - 1]);
+    return s + str(hnums.(hstack - 1));
   } 
   proc h(n:int, txt:string) { 
     ep; 
