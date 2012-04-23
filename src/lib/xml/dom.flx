@@ -113,5 +113,5 @@ class DOM {
 
   fun / (x:xml_node_ptr, y: xml_node_ptr):xml_node_ptr => x.add_child(y);
 
-  fun copy_nodes () 
+  
 }
