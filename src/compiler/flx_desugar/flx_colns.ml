@@ -97,7 +97,7 @@ let include_file syms curpath inspec =
   let cbt = this_version.build_time_float in
   let saveit sts =
       let pf =
-        (Filename.concat syms.compiler_options.cache_dir
+        (Flx_filesys.mk_cache_name syms.compiler_options.cache_dir
           (try Filename.chop_extension basename with _ -> basename)
         ) ^ ".par"
       in
