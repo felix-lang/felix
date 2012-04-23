@@ -6,7 +6,16 @@ namespace flx { namespace pthread {
 
 flx_native_thread_t get_current_native_thread() { return GetCurrentThread(); }
 
+#if defined(_MSC_VER)
+#  pragma warning(push)
+#  pragma warning(disable:4172)
+#endif //defined(_MSC_VER)
+
 static void *get_stack_pointer() { unsigned long x; return &x; }
+
+#if defined(_MSC_VER)
+#  pragma warning(pop)
+#endif //defined(_MSC_VER)
 
 DWORD WINAPI flx_pthread_start_wrapper(LPVOID e)
 {
