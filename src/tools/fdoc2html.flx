@@ -505,12 +505,12 @@ fun setup(config_data:string) = {
     | ?ext,?lib,?entry =>
       if not (have_lib lib) do
         if lib in list("flx2html", "cpp2html") do
-println$ "Adding lib " + lib;
+//println$ "Adding lib " + lib;
           var linst = Dynlink::init_lib(lib + dll_extn);
           var library = Dynlink::get_library linst;
           var tf = Dynlink::get_thread_frame linst;
           var raw_setup = Dynlink::dlsym$ library, "setup";
-println$ lib+ " Got setup address " + str raw_setup;
+//println$ lib+ " Got setup address " + str raw_setup;
           var setup = C_hack::cast[address * string --> int] raw_setup;
           var sresult = setup(tf,config_data);
 println$ lib+ " Library set up " + str sresult;
