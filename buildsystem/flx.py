@@ -48,23 +48,23 @@ class Builder(fbuild.db.PersistentObject):
         buildroot = buildroot or self.ctx.buildroot
 
         src = Path(src)
-        src_buildroot = src.addroot(buildroot)
+        #src_buildroot = src.addroot(buildroot)
 
-        print("Src to flxg=" + src)
+        print("Src to flxg= " + src)
         if preparse:
-            dst = buildroot + "/cache/binary/"+_getcwd()+"/"+buildroot+"/"+src
+            dst = buildroot + "/cache/binary/"+_getcwd()+"/"+src
             dst = dst.replaceext('.par')
         else:
-            dst = buildroot + "/cache/text/"+ _getcwd()+"/"+buildroot+"/"+src
+            dst = buildroot + "/cache/text/"+ _getcwd()+"/"+src
             dst = dst.replaceext('.cpp')
 
-        print("flg dst=" + dst)
-        if src != src_buildroot:
-            src_buildroot.parent.makedirs()
-            src.copy(src_buildroot)
-            src = src_buildroot
+        print("Expected flg dst= " + dst)
+        #if src != src_buildroot:
+        #    src_buildroot.parent.makedirs()
+        #    src.copy(src_buildroot)
+        #    src = src_buildroot
 
-        dst.parent.makedirs()
+        #dst.parent.makedirs()
 
         cmd = [self.flxg]
 
@@ -117,7 +117,7 @@ class Builder(fbuild.db.PersistentObject):
             buildroot=None):
         buildroot = buildroot or self.ctx.buildroot
 
-        #print("_link: C++ compile src = " + src)
+        print("_link: C++ compile src = " + src)
 
         if dst is None:
             dst = src.replaceext('')
@@ -218,7 +218,8 @@ class Builder(fbuild.db.PersistentObject):
             cxx_cflags=[],
             cxx_libs=[],
             cxx_lflags=[]):
-        print("_build_flx_pkgconfig_link:src="+src)
+        print("_build_flx_pkgconfig_link: src="+src)
+        print("_build_flx_pkgconfig_link: dst="+dst)
         obj = self.compile(src, includes=includes, flags=flags)
 
         return function(obj, dst,
