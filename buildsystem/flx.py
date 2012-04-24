@@ -211,7 +211,7 @@ class Builder(fbuild.db.PersistentObject):
         )
 
     def _build_flx_pkgconfig_link(self, function, src, dst=None, *,
-            async=True,
+            async=False,
             includes=[],
             flags=[],
             cxx_includes=[],
