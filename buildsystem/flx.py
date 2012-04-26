@@ -12,11 +12,7 @@ import platform
 # ------------------------------------------------------------------------------
 
 def _getcwd():
-  here = os.getcwd()
-  if platform.system().lower() == 'windows':
-      here = os.path.basename(here)
-
-  return here
+  return os.getcwd().replace(":", "\\")
 
 # ------------------------------------------------------------------------------
 
