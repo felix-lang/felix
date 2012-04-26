@@ -1,5 +1,5 @@
 
-class FileStat[OS,stat_t, mode_t]
+class FileStat_class[OS,stat_t, mode_t]
 {
   // get information about a file
   virtual proc stat: string * &stat_t * &int;
@@ -74,9 +74,11 @@ class FileStat[OS,stat_t, mode_t]
 include "std/posix/filestat";
 include "std/win32/filestat";
 
-if WIN32 do
-  open WinFileStat;
+class FileStat {
+if PLAT_WIN32 do
+  inherit WinFileStat;
 else
-  open PosixFileStat;
+  inherit PosixFileStat;
 done
+}
 

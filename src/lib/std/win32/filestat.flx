@@ -3,7 +3,7 @@ include "std/posix/errno";
 include "std/posix/posix_headers";
 include "std/win32/win32_headers";
 
-type Win32 = ""; // phantom .. move this somewhere else!
+struct Win32 = {}; // phantom .. move this somewhere else!
 
 class WinFileStat
 {
@@ -32,9 +32,9 @@ class WinFileStat
   ctor uint: mode_t = "(unsigned int)$1";
  
 
-  inherit FileStat[Win32, stat_t, mode_t];
+  inherit FileStat_class[Win32, stat_t, mode_t];
 
-  instance FileStat[Win32, stat_t, mode_t] 
+  instance FileStat_class[Win32, stat_t, mode_t] 
   {
     proc stat: string * &stat_t * &int = "*$3=_stat64($1.c_str(),$2);";
     // set access and modification time of a file

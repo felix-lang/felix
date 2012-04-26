@@ -1,7 +1,7 @@
 include "std/posix/errno";
 include "std/posix/posix_headers";
 
-type Posix = ""; // phantom .. move this somewhere else!
+struct Posix {}; // phantom .. move this somewhere else!
 
 class PosixFileStat
 {
@@ -56,8 +56,8 @@ class PosixFileStat
 
 
 
-  inherit FileStat[Posix, stat_t, mode_t];
-  instance FileStat[Posix, stat_t, mode_t]
+  inherit FileStat_class[Posix, stat_t, mode_t];
+  instance FileStat_class[Posix, stat_t, mode_t]
   {
     proc stat: string * &stat_t * &int = "*$3=stat($1.c_str(),$2);";
 

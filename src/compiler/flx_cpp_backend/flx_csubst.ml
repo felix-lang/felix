@@ -97,6 +97,7 @@ let islower = function | 'a' .. 'z' -> true | _ -> false
 let csubst sr sr2 ct 
   ~arg ~(args:cexpr_t list) ~typs ~argtyp ~retyp ~gargs ~prec ~argshape ~argshapes ~display ~gargshapes
 =
+  if ct = "" then clierr2 sr sr2 "Blank C data";
   (*
   print_endline ("INPUT ct,prec=" ^ ct ^ " is " ^ prec);
   *)
