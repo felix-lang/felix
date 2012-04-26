@@ -1,64 +1,21 @@
 include "std/posix/errno";
+include "std/posix/posix_headers";
 
-class FileStat
+type Posix = ""; // phantom .. move this somewhere else!
+
+class PosixFileStat
 {
-  //------------------------------------------------------------
-  // stat
-  //------------------------------------------------------------
   pod type stat_t = "struct stat" requires Posix_headers::sys_stat_h;
-  proc stat: string * &stat_t * &int = "*$3=stat($1.c_str(),$2);";
-  gen stat(file: string, statbuf:&stat_t) = { 
-    var res: int; 
-    stat(file, statbuf, &res); 
-    return res == 0;
-  }
 
-  //------------------------------------------------------------
-  // access and modification times
-  //------------------------------------------------------------
-  body _mktim_fun = """
-    unsigned long _mktim(struct timespec x){ 
-     return x.tv_sec + x.tv_nsec /1000000.0; // seconds
-    }
-  """;
-  pod type time_t = "time_t";
-  fun mtime: &stat_t -> double = "(double)($1->st_mtime)";
-  fun ctime: &stat_t -> double = "(double)($1->st_ctime)";
-
-  // get modification time of a file
-  fun filetime(f:string):double = // milliseconds
-  {
-    var b: stat_t;
-    var err:int;
-    stat(f,&b,&err);
-    return if err == 0 then mtime (&b) else 0.0 endif;
-  }
-
-  // set access and modification time of a file
-  proc utime: string * double * double * &int = 
-  """
-    {
-    utimbuf u; 
-    u.actime=(time_t)$2;
-    u.modtime=(time_t)$3;
-    *$4 = utime($1.c_str(),&u); 
-    }
-  """
-  requires Posix_headers::utime_h;
-
-  gen utime(f:string, a:double, m:double): bool = {
-    var r:int;
-    utime(f,a,m,&r);
-    return r == 0;
-  }
-  gen utime(f:string, t:double) => utime(f,t,t);
-
-  fun fileexists(f:string):bool=> filetime f != 0.0;
+  pod type mode_t = "mode_t" requires Posix_headers::sys_types_h;
+  instance Bits[mode_t] {} // defaults to C operators
+  instance Eq[mode_t] { fun == : mode_t * mode_t -> bool = "$1==$2"; }
+  open Eq[mode_t]; 
+  open Bits[mode_t];
 
   //------------------------------------------------------------
   // file mode: type and permissions
   //------------------------------------------------------------
-  ctypes mode_t requires Posix_headers::sys_types_h;
   // file types
   const S_IFMT  : mode_t; // file type mask
   const S_IFIFO : mode_t;
@@ -88,15 +45,8 @@ class FileStat
   const S_ISUID : mode_t; // set user id on execute
   const S_ISGID : mode_t; // set group id on execute
   const S_ISVXT : mode_t; // sticky bit
-
-  instance Bits[mode_t] {} // defaults to C operators
-  instance Eq[mode_t] { fun == : mode_t * mode_t -> bool = "$1==$2"; }
-  open Eq[mode_t]; 
-  open Bits[mode_t];
-
   val access_mask = S_IXOTH \| S_IXGRP \| S_IXUSR;
 
-  gen chmod: string * mode_t -> int = "chmod($1.c_str(),$2)" requires Posix_headers::sys_stat_h;
 
   fun raw_mode: &stat_t -> mode_t = "$1->st_mode";
   fun file_type(m:mode_t)=>m \& S_IFMT;
@@ -104,47 +54,41 @@ class FileStat
 
   ctor uint: mode_t = "(unsigned int)$1";
 
-  union file_type_t = 
-    | PIPE 
-    | STREAM 
-    | DIRECTORY 
-    | BLOCK 
-    | REGULAR 
-    | SYMLINK 
-    | SOCKET 
-    | INDETERMINATE
-    | NONEXISTANT
-    | NOPERMISSION
-  ;
 
-  fun file_type (s:&stat_t): file_type_t =>
-    let ?m = file_type$ raw_mode s in
-    if m == S_IFIFO then PIPE
-    elif m == S_IFCHR then STREAM
-    elif m == S_IFDIR then DIRECTORY
-    elif m == S_IFBLK then BLOCK
-    elif m == S_IFREG then REGULAR
-    elif m == S_IFLNK then SYMLINK
-    elif m == S_IFSOCK then SOCKET
-    else INDETERMINATE
-    endif
-  ;
 
-  gen umask: mode_t -> mode_t = "umask($1)";
-
-  fun filetype(f:string):file_type_t = 
+  inherit FileStat[Posix, stat_t, mode_t];
+  instance FileStat[Posix, stat_t, mode_t]
   {
-    var b:stat_t;
-    var err:int;
-    stat(f,&b,&err);
-    return 
-      if err == 0 then file_type (&b)
-      elif errno == EACCES then NOPERMISSION
-      elif errno == ENOENT then NONEXISTANT  
+    proc stat: string * &stat_t * &int = "*$3=stat($1.c_str(),$2);";
+
+    proc utime: string * double * double * &int = 
+    """
+      {
+      utimbuf u; 
+      u.actime=(time_t)$2;
+      u.modtime=(time_t)$3;
+      *$4 = utime($1.c_str(),&u); 
+      }
+    """
+
+    requires Posix_headers::utime_h;
+ 
+    gen chmod: string * mode_t -> int = "chmod($1.c_str(),$2)" requires Posix_headers::sys_stat_h;
+    gen umask: mode_t -> mode_t = "umask($1)";
+
+    fun file_type (s:&stat_t): file_type_t =>
+      let ?m = file_type$ raw_mode s in
+      if m == S_IFIFO then PIPE
+      elif m == S_IFCHR then STREAM
+      elif m == S_IFDIR then DIRECTORY
+      elif m == S_IFBLK then BLOCK
+      elif m == S_IFREG then REGULAR
+      elif m == S_IFLNK then SYMLINK
+      elif m == S_IFSOCK then SOCKET
       else INDETERMINATE
       endif
     ;
-  }
 
+  } // instance
 }
 

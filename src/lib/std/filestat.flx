@@ -1,0 +1,82 @@
+
+class FileStat[OS,stat_t, mode_t]
+{
+  // get information about a file
+  virtual proc stat: string * &stat_t * &int;
+
+  // set access and modification time of a file
+  virtual proc utime: string * double * double * &int;
+
+  // change read,write permissions for group, owner etc.
+  virtual gen chmod: string * mode_t -> int;
+
+  // set mask for subsequent permissions
+  virtual gen umask: mode_t -> mode_t;
+
+  union file_type_t = 
+    | PIPE 
+    | STREAM 
+    | DIRECTORY 
+    | BLOCK 
+    | REGULAR 
+    | SYMLINK 
+    | SOCKET 
+    | INDETERMINATE
+    | NONEXISTANT
+    | NOPERMISSION
+  ;
+
+  virtual fun file_type: &stat_t -> file_type_t;
+
+  gen stat(file: string, statbuf:&stat_t) = { 
+    var res: int; 
+    stat(file, statbuf, &res); 
+    return res == 0;
+  }
+
+  fun mtime: &stat_t -> double = "(double)($1->st_mtime)";
+  fun ctime: &stat_t -> double = "(double)($1->st_ctime)";
+
+  // get modification time of a file
+  fun filetime(f:string):double = // milliseconds
+  {
+    var b: stat_t;
+    var err:int;
+    stat(f,&b,&err);
+    return if err == 0 then mtime (&b) else 0.0 endif;
+  }
+
+  gen utime(f:string, a:double, m:double): bool = {
+    var r:int;
+    utime(f,a,m,&r);
+    return r == 0;
+  }
+  gen utime(f:string, t:double) => utime(f,t,t);
+
+  fun fileexists(f:string):bool=> filetime f != 0.0;
+
+  fun filetype(f:string):file_type_t = 
+  {
+    var b:stat_t;
+    var err:int;
+    stat(f,&b,&err);
+    return 
+      if err == 0 then file_type (&b)
+      elif errno == EACCES then NOPERMISSION
+      elif errno == ENOENT then NONEXISTANT  
+      else INDETERMINATE
+      endif
+    ;
+  }
+
+}
+
+include "std/posix/filestat";
+include "std/win32/filestat";
+
+if WIN32 do
+  open WinFileStat;
+else
+  open PosixFileStat;
+done
+

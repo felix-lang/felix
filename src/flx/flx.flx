@@ -1,5 +1,7 @@
 include "plat/config";
-include "std/posix/__init__";
+include "std/posix/process";
+include "std/posix/directory";
+
 open Process;
 
 proc pexit(e:int)
