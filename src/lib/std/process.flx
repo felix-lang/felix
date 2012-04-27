@@ -9,7 +9,7 @@ include "std/win32/process";
 
 class Process {
 if PLAT_WIN32 do
-  inherit Win32Proces;
+  inherit Win32Process;
 else
   inherit PosixProcess;
 done
