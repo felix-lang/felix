@@ -1,7 +1,8 @@
 include "std/posix/posix_headers";
-class Time
+include "std/time";
+
+class PosixTime
 {
-  open C_hack;
   requires Posix_headers::sys_time_h;
 
   private type time_t = "time_t";
@@ -17,10 +18,13 @@ class Time
 
   private proc gettimeofday: &timeval = "gettimeofday($1, NULL);";
 
-  // time in seconds since Epoch (midnight Jan 1 1970) as a float double
-  gen time () : double = {
-    var tv:timeval;
-    gettimeofday(&tv);
-    return tv.tv_sec.double + tv.tv_usec.double / 1.0e6;
+  inherit Time_class[Posix];
+
+  instance Time_class[Posix] {
+    gen time () : double = {
+      var tv:timeval;
+      gettimeofday(&tv);
+      return tv.tv_sec.double + tv.tv_usec.double / 1.0e6;
+    }
   }
 }

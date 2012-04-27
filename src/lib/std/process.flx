@@ -4,8 +4,8 @@ class Process_class[os]
 {
 }
 
-include "std/posix/filestat";
-include "std/win32/filestat";
+include "std/posix/process";
+include "std/win32/process";
 
 class Process {
 if PLAT_WIN32 do
