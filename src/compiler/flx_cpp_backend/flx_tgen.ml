@@ -411,6 +411,12 @@ let rec gen_type syms bsym_table (index,typ) =
     let name = tn typ in
     let v = tn t in
     let n = int_of_unitsum i in
+    let requires_tuple_ctor = 
+      try 
+        Hashtbl.mem syms.array_as_tuple_registry 
+        (Hashtbl.find syms.registry typ)
+      with Not_found -> false 
+    in
     if n < 2 then failwith "[flx_tgen] unexpected array length < 2";
     descr ^
     "struct " ^ name ^ " {\n" ^
@@ -418,6 +424,7 @@ let rec gen_type syms bsym_table (index,typ) =
     "  typedef " ^ v ^ " element_type;\n" ^
     "  " ^ v ^ " data[" ^ si n ^ "];\n" ^
     "  " ^ name ^ "() {}\n" ^ (* default constructor *)
+    (if requires_tuple_ctor then
     "  " ^ name ^ "(" ^
     List.fold_left begin fun s i ->
       if t = btyp_tuple [] then s else
@@ -430,7 +437,9 @@ let rec gen_type syms bsym_table (index,typ) =
       if t = btyp_tuple [] then s else
       s ^ "    data[" ^ string_of_int i ^ "] = a" ^ string_of_int i ^ ";\n"
     end "" (nlist n) ^
-    "  }\n" ^ 
+    "  }\n" 
+    else ""
+    ) ^ 
     "};\n"
 
 

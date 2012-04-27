@@ -33,29 +33,28 @@ let register_type_nr syms bsym_table t =
       Hashtbl.add syms.registry t n
     end
 
+
 let register_tuple syms bsym_table t =
   let t = fold syms.counter t in
+  let record_tuple t =
+    register_type_nr syms bsym_table t;
+    try Hashtbl.replace syms.array_as_tuple_registry (Hashtbl.find syms.registry t) ()
+    with Not_found -> ()
+  in
   match t with
   | BTYP_tuple [] -> ()
   | BTYP_tuple [_] -> assert false
 
-  | BTYP_tuple ts ->
-    register_type_nr syms bsym_table t
+  | BTYP_tuple ts -> record_tuple t
 
   | BTYP_array (t',BTYP_unitsum n) ->
     let ts = rev_map (fun _ -> t') (nlist n) in
-    register_type_nr syms bsym_table (btyp_tuple ts)
+    record_tuple (btyp_tuple ts)
 
   | BTYP_record (n,ts) ->
     begin match t with
     | BTYP_tuple [] -> ()
-    | _ -> register_type_nr syms bsym_table t
-    end
-
-  | BTYP_variant ts ->
-    begin match t with
-    | BTYP_void -> ()
-    | _ -> register_type_nr syms bsym_table t
+    | _ -> record_tuple t
     end
 
   | _ -> assert false
