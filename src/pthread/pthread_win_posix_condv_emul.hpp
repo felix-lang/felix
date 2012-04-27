@@ -34,7 +34,9 @@ struct pthread_cond_t
 };
 
 // THIS IS SICK but there ain't no other way in C
+#ifndef ETIMEDOUT
 #define ETIMEDOUT WAIT_TIMEOUT
+#endif
 // looks like EAGAIN is available in minggw, but not in vs sdk.
 #ifndef EAGAIN
 #define EAGAIN WAIT_TIMEOUT
