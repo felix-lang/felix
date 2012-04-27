@@ -3,7 +3,7 @@ include "std/posix/faio_posix";  // aio_ropen
 //open Faio_posix;
 include "std/posix/signal";
 include "std/posix/filesystem";
-Posix_Signal::ignore_signal(Posix_Signal::SIGPIPE);
+PosixSignal::ignore_signal(PosixSignal::SIGPIPE);
 done
 
 include "std/io/socket";

@@ -1,5 +1,5 @@
 class Time_class [os] {
-  virtual gen time: 1 -> double; // time in seconds since Jan 1 1970 UTC
+  virtual gen time: 1 -> double; // time in seconds since Jan 1 1970 UTC, seconds
 }
 
 include "std/posix/time";

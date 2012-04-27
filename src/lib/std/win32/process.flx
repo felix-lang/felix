@@ -2,13 +2,13 @@
 // Posix process stuff
 include "std/posix/posix_headers";
 include "std/posix/errno";
-include "std/posix/signal";
+include "std/win32/signal";
 
 class Win32Process {
-  open Posix_Signal;
+  open Win32Signal;
 
-  gen popen_in: string -> Cstdio::ifile = 'popen($1.c_str(), "r")';
-  gen pclose: Cstdio::ifile -> process_status_t = "pclose($1)";
+  gen popen_in: string -> Cstdio::ifile = '_popen($1.c_str(), "r")' requires C89_headers::stdio_h;
+  gen pclose: Cstdio::ifile -> process_status_t = "_pclose($1)" requires C89_headers::stdio_h;
 
   type process_status_t = "int";
   ctor int:process_status_t = "$1";
@@ -45,9 +45,9 @@ class Win32Process {
   const bad_exec: exec_result_t = "-1";
   fun == : exec_result_t * exec_result_t -> bool= "$1==$2";
 
-  gen execv:&char *  &&char -> exec_result_t = "execv($1, $2)" requires Posix_headers::unistd_h;
-  gen execvp:&char *  &&char -> exec_result_t = "execvp($1, $2)" requires Posix_headers::unistd_h;
-  gen execve:&char *  &&char * &&char -> exec_result_t = "execve($1, $2, $3)" requires Posix_headers::unistd_h;
+  gen execv:&char *  &&char -> exec_result_t = "_execv($1, $2)" requires Posix_headers::unistd_h;
+  gen execvp:&char *  &&char -> exec_result_t = "_execvp($1, $2)" requires Posix_headers::unistd_h;
+  gen execve:&char *  &&char * &&char -> exec_result_t = "_execve($1, $2, $3)" requires Posix_headers::unistd_h;
 
   // do NOT try to fork Felix programs, it doesn't work
   // because of threads already running. We use fork only

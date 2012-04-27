@@ -1,7 +1,9 @@
 include "std/c_hack";
+include "std/c_headers";
+include "std/signal";
 
-class Posix_Signal {
-  requires header '#include <signal.h>';
+class PosixSignal {
+  requires C89_headers::signal_h; 
   type signal_t = "int";
   ctor signal_t: int = "$1";
   ctor int: signal_t = "$1";
@@ -61,10 +63,7 @@ class Posix_Signal {
 
   // http://pubs.opengroup.org/onlinepubs/007904975/functions/sigaction.html
   body ctrl_c_handling = """
-    static bool ctrl_c_flag = false;
-    bool get_ctrl_c_flag() { return ctrl_c_flag; }
-    void set_ctrl_c_flag(int) { ctrl_c_flag = true; }
-
+    void set_ctrl_c_flag(int);
     void trap_ctrl_c () {
       struct sigaction sa;
       sa.sa_handler = set_ctrl_c_flag;
@@ -72,9 +71,11 @@ class Posix_Signal {
       sa.sa_flags = SA_RESTART;
       sigaction(SIGINT, &sa, NULL);
    }
-  """;
-  proc trap_ctrl_c: unit requires ctrl_c_handling;
-  gen get_ctrl_c_flag: 1 -> bool requires ctrl_c_handling;
-  proc set_ctrl_c_flag: 1 requires ctrl_c_handling;
+  """ requires ctrl_c_flag;
 
+  inherit Signal_class[Posix];
+
+  instance Signal_class[Posix] {
+    proc trap_ctrl_c: unit requires ctrl_c_handling;
+  }
 }

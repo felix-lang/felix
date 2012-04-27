@@ -159,10 +159,10 @@ noinline proc launch_managed_process (
       match status with
       | Running => 
         if Time::time() - start_time > timelimit do
-           C_hack::ignore$ Process::kill(pid, Posix_Signal::SIGKILL);
+           C_hack::ignore$ Process::kill(pid, PosixSignal::SIGKILL);
            eprintln$  "[" + name + "] "+"KILL: Process "+pid.int.str +" for " + pn + " exceeded time limit " + str timelimit;
-        elif #Posix_Signal::get_ctrl_c_flag do
-           C_hack::ignore$ Process::kill(pid, Posix_Signal::SIGKILL);
+        elif #PosixSignal::get_ctrl_c_flag do
+           C_hack::ignore$ Process::kill(pid, PosixSignal::SIGKILL);
            eprintln$  "[" + name + "] "+"KILL: Process "+pid.int.str +" for " + pn + " due to Ctrl-C";
         else
           //eprintln$ "[" + name + "] "+"Running "+ pid.int.str;
@@ -205,7 +205,7 @@ noinline proc launch_managed_processes (var inp: string * list[string * list[str
 
 //launch_managed_process ("p1proc", list("./p1"),10.0);
 
-Posix_Signal::trap_ctrl_c;
+PosixSignal::trap_ctrl_c;
 
 // Create a thread to capture all stderr output, from
 // both this application and its threads, and also
@@ -258,7 +258,7 @@ run:for group in (group1, group2, group3, group4, group5, group6,
   group7, group8, group9)
 do
   launch_managed_processes (group, 20.0);
-  if #Posix_Signal::get_ctrl_c_flag do break run; done
+  if #PosixSignal::get_ctrl_c_flag do break run; done
 done
 
 eprintln "Mainline waiting for pthreads";

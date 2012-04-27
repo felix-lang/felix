@@ -4,7 +4,7 @@ include "std/posix/errno";
 include "std/posix/signal";
 
 class PosixProcess {
-  open Posix_Signal;
+  open PosixSignal;
 
   gen popen_in: string -> Cstdio::ifile = 'popen($1.c_str(), "r")';
   gen pclose: Cstdio::ifile -> process_status_t = "pclose($1)";
