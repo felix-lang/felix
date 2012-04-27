@@ -132,11 +132,6 @@ class Builder(fbuild.db.PersistentObject):
 
     def link_exe(self, *args, async=True, macros=[], objects=[], **kwargs):
         macros = macros + ['FLX_STATIC_LINK']
-
-        if platform.system().lower() == 'windows':
-          print("appending /DFLX_WIN32 to macros (this might be uneccessary)")
-          macros = macros + ['FLX_WIN32']
-
         objs = objects + [self.flx_arun_lib if async else self.flx_run_lib]
 
         return self._link(self.cxx.link_exe, *args,
