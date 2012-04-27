@@ -1,3 +1,4 @@
+struct Posix {};
 // name of all the headers
 include "std/posix/posix_headers";
 

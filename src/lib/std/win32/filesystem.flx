@@ -1,6 +1,7 @@
+
 include "std/posix/__init__";
 
-class PosixFileSystem 
+class Win32FileSystem 
 {
   //------------------------------------------------------------
   // File access and create modes

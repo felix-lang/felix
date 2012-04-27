@@ -76,7 +76,7 @@ include "std/win32/filestat";
 
 class FileStat {
 if PLAT_WIN32 do
-  inherit WinFileStat;
+  inherit Win32FileStat;
 else
   inherit PosixFileStat;
 done

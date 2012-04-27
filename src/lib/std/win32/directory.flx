@@ -1,35 +1,39 @@
-include "std/posix/__init__";
+
+include "std/win32/__init__";
 include "std/directory";
 
-class PosixDirectory
+class Win32Directory
 {
-  // Posix specific stuff.
-  type dirent_t = "struct dirent*" requires Posix_headers::dirent_h;
-  type DIR_t = "DIR*" requires Posix_headers::dirent_h;
-  proc opendir: string * &DIR_t = "*$2=opendir($1.c_str());";
+
+  // Win32 specific stuff
+  type dirent_t = "struct dirent*" requires Win32_headers::direct_h;
+  type DIR_t = "intptr_t" requires Win32_headers::io_h;
+
+  proc opendir: string * &DIR_t = "*$2=_findfirst($1.c_str());";
   fun isNULL: DIR_t -> bool = "$1==0";
   fun isNULL: dirent_t -> bool = "$1==0";
   proc readdir: DIR_t * dirent_t * &dirent_t * &int = "*$4=readdir_r($1, $2, $3);";
   proc closedir: DIR_t = "closedir($1);";
   fun filename: dirent_t -> string = "std::string($1->d_name)";
-  private fun getcwd: &char * size -> &char = "getcwd($1,$2)" requires Posix_headers::unistd_h;
+  private fun getcwd: &char * size -> &char = "_getcwd($1,(int)$2)" requires Win32_headers::direct_h;
 
-  // inherit generic stuff
-  inherit Directory_class[Posix, PosixFileStat::mode_t];
+  // generic stuff
+  inherit Directory_class[Win32, Win32FileStat::mode_t];
 
-  // instantiate generic stuff
-  instance Directory_class[Posix, PosixFileStat::mode_t] {
-    gen mkdir: string * PosixFileStat::mode_t -> int = "mkdir($1.c_str(), $2)" requires Posix_headers::sys_stat_h;
+  // instantiate generics
+  instance Directory_class[Win32, Win32FileStat::mode_t] {
+    gen mkdir: string * Win32FileStat::mode_t -> int = "mkdir($1.c_str(), $2)" requires Posix_headers::sys_stat_h;
     gen mkdir: string  -> int = "mkdir($1.c_str(), 0777)" requires Posix_headers::sys_stat_h;
     proc mkdirs (s:string)
     {
-      if s == "" or s == "." or s == ".." or s == "/" do 
+      if s == "" or s == "." or s == ".." or s.[-1] == char "\\" do 
          return;
       done
       mkdirs$ Filename::dirname s;
       C_hack::ignore$ mkdir s;
     }
 
+    // current directory
     fun getcwd():string = {
       var b: array[char,1024]; 
       var p = getcwd(C_hack::cast[&char] (&b),size 1024);
@@ -38,8 +42,9 @@ class PosixDirectory
     fun is_absolute_filename (s:string) => s.[0]=="/".char;
     fun mk_absolute_filename(s:string) => 
        if is_absolute_filename s then s else
-       #getcwd + "/" + s
+       #getcwd + "\\" + s
     ;
+
     fun filesin(dname:string): opt[List::list[string]] = {
       //println$ "filesin " + dname;
       var d:DIR_t;

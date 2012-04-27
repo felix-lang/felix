@@ -1,7 +1,4 @@
-include "std/posix/errno";
-include "std/posix/posix_headers";
-
-struct Posix {}; // phantom .. move this somewhere else!
+include "std/posix/__init__";
 
 class PosixFileStat
 {

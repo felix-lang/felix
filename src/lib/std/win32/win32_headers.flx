@@ -1,4 +1,5 @@
 class Win32_headers {
   header windows_h = "#include <windows.h>";
   header io_h = "#include <io.h>";
+  header direct_h = "#include <direct.h>";
 }

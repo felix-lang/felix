@@ -3,9 +3,7 @@ include "std/posix/errno";
 include "std/posix/posix_headers";
 include "std/win32/win32_headers";
 
-struct Win32 = {}; // phantom .. move this somewhere else!
-
-class WinFileStat
+class Win32FileStat
 {
   pod type stat_t = "struct __stat64" requires Posix_headers::sys_stat_h;
   pod type mode_t = "mode_t" requires Posix_headers::sys_types_h;

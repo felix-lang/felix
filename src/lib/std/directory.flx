@@ -1,0 +1,20 @@
+class Directory_class[os,mode_t]
+{
+  virtual gen mkdir: string * mode_t -> int;
+  virtual gen mkdir: string -> int;
+  virtual proc mkdirs: string;
+  virtual fun filesin:string -> opt[List::list[string]];
+  virtual fun getcwd: 1 -> string; 
+  virtual fun mk_absolute_filename: string -> string; 
+}
+
+include "std/posix/directory";
+include "std/win32/directory";
+
+class Directory {
+if PLAT_WIN32 do
+  inherit Win32Directory;
+else
+  inherit PosixDirectory;
+done
+}

@@ -1,0 +1,17 @@
+
+
+class Process_class[os]
+{
+}
+
+include "std/posix/filestat";
+include "std/win32/filestat";
+
+class Process {
+if PLAT_WIN32 do
+  inherit Win32Proces;
+else
+  inherit PosixProcess;
+done
+}
+

@@ -1,6 +1,4 @@
 include "plat/config";
-include "std/posix/process";
-include "std/posix/directory";
 
 open Process;
 
@@ -381,35 +379,13 @@ var MACOSX=config.MACOSX;
 // File time stamp processing
 // --------------------------------------------------
 
-body """
-long macosx_ftime(::std::string s) {
-  struct stat sb;
-  int e = stat(s.c_str(),&sb);
-  if(e != 0) return 0l;
-  return sb.st_mtime;
-}
-""" requires header "#include <sys/stat.h>";
-
-body """
-long posix_ftime(::std::string s) {
-  struct stat sb;
-  int e = stat(s.c_str(),&sb);
-  if(e != 0) return 0l;
-  return sb.st_mtime;
-}
-""" requires header "#include <sys/stat.h>";
-
-
-fun macosx_ftime: string -> double = "(double)macosx_ftime($1)";
-fun posix_ftime: string -> double = "(double)posix_ftime($1)";
 
 val past_time = -1.0;
 val future_time = double(ulong(-1)); // a hacky way to get a big number
 
-fun filetime(f:string)=>if MACOSX then macosx_ftime(f) else posix_ftime(f) endif;
 fun dfiletime(f:string, dflt:double)=
 {
-  val x = filetime (f);
+  val x = FileStat::filetime (f);
   dbug??println$ "Time of file " + f + " is " + fmt(x,fixed(0,3));
   return if x == 0.0 then dflt else x endif;
 }
@@ -427,7 +403,7 @@ fun cal_time_from_dep (df: string):double=
 }
 
 fun cal_dep_time(f:string)=> max(
-  filetime(f+".flx"),
+  FileStat::filetime(f+".flx"),
   cal_time_from_dep(f+".dep"));
 
 

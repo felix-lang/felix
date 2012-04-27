@@ -68,6 +68,9 @@ include "std/io/textio";
 include "std/io/zmq";
 include "std/filename";
 include "std/filestat";
+include "std/directory";
+include "std/filesystem";
+include "std/process";
 
 // base data types
 include "std/tuple";

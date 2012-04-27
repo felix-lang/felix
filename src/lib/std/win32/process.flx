@@ -1,9 +1,10 @@
+
 // Posix process stuff
 include "std/posix/posix_headers";
 include "std/posix/errno";
 include "std/posix/signal";
 
-class PosixProcess {
+class Win32Process {
   open Posix_Signal;
 
   gen popen_in: string -> Cstdio::ifile = 'popen($1.c_str(), "r")';
