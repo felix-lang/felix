@@ -371,9 +371,9 @@ install_bin_failed:>
 // OS kind
 // --------------------------------------------------
 
-var CYGWIN=config.CYGWIN;
-var WIN32=config.WIN32;
-var MACOSX=config.MACOSX;
+var HAVE_CYGWIN=config.HAVE_CYGWIN;
+var HAVE_WIN32=config.HAVE_WIN32;
+var HAVE_MACOSX=config.HAVE_MACOSX;
 
 // --------------------------------------------------
 // File time stamp processing
@@ -441,9 +441,9 @@ proc print_config() {
   println$ "INSTALL_ROOT       = "+INSTALL_ROOT;
   println$ "FLX_INSTALL_DIR    = "+FLX_INSTALL_DIR;
   println$ "";
-  println$ "CYGWIN             = "+str CYGWIN;
-  println$ "WIN32              = "+str WIN32;
-  println$ "MACOSX             = "+str MACOSX;
+  println$ "HAVE_CYGWIN             = "+str HAVE_CYGWIN;
+  println$ "HAVE_WIN32              = "+str HAVE_WIN32;
+  println$ "HAVE_MACOSX             = "+str HAVE_MACOSX;
 
   println$ "";
   println$ "HAVE_GNU           = "+str HAVE_GNU;
@@ -768,13 +768,13 @@ grabbing_args: while grab == 1 and argno<System::argc do
   argno = argno + 1;
 done
 
-if WIN32 do
+if HAVE_WIN32 do
   FLXG=Filename::join(FLX_INSTALL_DIR, 'bin', 'flxg');
   FLXRUN='';
 else
   FLXG=FLX_INSTALL_DIR+"/bin/flxg";
   // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
-  if MACOSX do
+  if HAVE_MACOSX do
     FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH ";
   else
     FLXRUN="env LD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$LD_LIBRARY_PATH ";
