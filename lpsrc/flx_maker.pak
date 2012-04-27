@@ -15,9 +15,9 @@ fun config() =>
 @tv("INSTALL_ROOT_TOPDIR=INSTALL_ROOT_TOPDIR")
 @tv("INSTALL_ROOT=INSTALL_ROOT")
     FLX_INSTALL_DIR = Env::getenv("FLX_INSTALL_DIR", INSTALL_ROOT),
-@tv("CYGWIN="+b(config.CYGWIN))
-@tv("WIN32="+b(config.WIN32))
-@tv("MACOSX="+b(config.MACOSX))
+@tv("HAVE_CYGWIN="+b(config.CYGWIN))
+@tv("HAVE_WIN32="+b(config.WIN32))
+@tv("HAVE_MACOSX="+b(config.MACOSX))
 @tv("HAVE_GNU="+b(config.HAVE_GNU))
 @tv("HAVE_MSVC="+b(config.HAVE_MSVC))
 @if config.TARGET_CXX.options.HAVE_PIC:
