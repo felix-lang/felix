@@ -6,14 +6,10 @@ if PLAT_WIN32 do
 proc pexit(e:int)
 {
   if e != 0 do
-    if WIFEXITED e.process_status_t do
-      err :=  WEXITSTATUS e.process_status_t;
+    if e == -1 do
+      err :=  errno;
       eprintln$ "Error "+err.str+" in flx: " + strerror err.errno_t;
       System::exit err;
-    elif WIFSIGNALED e.process_status_t do
-      sig := WTERMSIG e.process_status_t;
-      eprintln$ "Shell terminated by signal " + str sig;
-      System::exit 2;
     else
       eprintln$ "Unknown error in shell " + str e;
       System::exit 3;
