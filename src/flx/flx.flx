@@ -8,7 +8,7 @@ proc pexit(e:int)
   if e != 0 do
     if e == -1 do
       err :=  errno;
-      eprintln$ "Error "+err.str+" in flx: " + strerror err.errno_t;
+      eprintln$ "Error "+err.str+" in flx: " + strerror err;
       System::exit err;
     else
       eprintln$ "Unknown error in shell " + str e;
