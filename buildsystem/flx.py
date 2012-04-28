@@ -260,6 +260,7 @@ def build_flx_pkgconfig(host_phase, target_phase, flx_builder):
 
 def build_flx(host_phase, target_phase, flx_builder):
     return flx_builder.build_exe(
+        async=False,
         dst='bin/flx',
         src='src/flx/flx.flx',
         includes=[target_phase.ctx.buildroot / 'lib'],
