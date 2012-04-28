@@ -23,9 +23,15 @@ open class Errno
 
   // Unfortunately we get the crappy GNU version of strerror_r 
   // even if we don't define _GNU_SOURCE
+if PLAT_WIN32 do
   proc strerror_r: errno_t * &char * size  = "(void)strerror_r($1, $2, $3);" 
     requires C89_headers::string_h /* on Linux.. on OSX it's in stdio.h */
   ;
+else
+  proc strerror_r: errno_t * &char * size  = "(void)strerror_s($1, $2, $3);" 
+    requires C89_headers::string_h 
+  ;
+done
   fun strerror(e:errno_t) : string = {
     if e.int == 0 do 
       return "OK"; 
