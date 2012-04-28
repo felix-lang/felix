@@ -67,7 +67,7 @@ class Win32Process {
   | BadSetup of int
   ;
 
-  gen spanwv:&char *  &&char -> exec_result_t = "_spawn(_P_NOWAIT,$1, $2)" requires Win32_headers::process_h;
+  gen spawnv:&char *  &&char -> exec_result_t = "_spawn(_P_NOWAIT,$1, $2)" requires Win32_headers::process_h;
   gen spawnvp:&char *  &&char -> exec_result_t = "_spawnvp(_P_NOWAIT,$1, $2)" requires Win32_headers::process_h; 
   gen spawnve:&char *  &&char * &&char -> exec_result_t = "_spawnve(_P_NOWAIT,$1, $2, $3)" requires Win32_headers::process_h; 
 
