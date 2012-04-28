@@ -2,6 +2,7 @@ include "plat/config";
 
 open Process;
 
+if PLAT_WIN32 do
 proc pexit(e:int)
 {
   if e != 0 do
@@ -20,6 +21,26 @@ proc pexit(e:int)
   done
   System::exit e;
 }
+else
+proc pexit(e:int)
+{
+  if e != 0 do
+    if WIFEXITED e.process_status_t do
+      err :=  WEXITSTATUS e.process_status_t;
+      eprintln$ "Error "+err.str+" in flx: " + strerror err.errno_t;
+      System::exit err;
+    elif WIFSIGNALED e.process_status_t do
+      sig := WTERMSIG e.process_status_t;
+      eprintln$ "Shell terminated by signal " + str sig;
+      System::exit 2;
+    else
+      eprintln$ "Unknown error in shell " + str e;
+      System::exit 3;
+    done
+  done
+  System::exit e;
+}
+done
 
 // Felix version of THIS program (NOT the one being installed
 // if you're using flx to install Felix)
@@ -138,7 +159,11 @@ gen get_stdout(x:string) = {
     if valid fout do
       var output = load fout;
       var result = Process::pclose fout; 
+if PLAT_WIN32 do
+      return result.int, output;
+else
       return (Process::WEXITSTATUS result), output;
+done
     else
       println$ "Unable to run command '" + x "'";
       return -1,"";
