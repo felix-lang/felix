@@ -830,6 +830,8 @@ fun gramtime(path:string, s:string) : double = {
     debugln$ "Grammar include file " + file + " time=" + fmt(filetime,fixed(0,3));
     var filetext = load file;
     var files = split (filetext, "\n");
+    files = map strip of (string) files;
+    files = map (fun (s:string) => Filename::join (split(s,"/"))) files;
     //println$ "Files=" + files;
     return fold_left maxtime filetime files;
   else
