@@ -72,7 +72,7 @@ class Win32Process {
   gen spawnve:&char *  &&char * &&char -> exec_result_t = "_spawnve(_P_NOWAIT,$1, $2, $3)" requires Win32_headers::process_h; 
 
   gen spawnv(file: string, argv:&&char, setup:1->int) : spawn_result_t = {
-    var x = _spawnv(file.cstr, argv); 
+    var x = spawnv(file.cstr, argv); 
     if x == bad_process do // PARENT 
       return BadFork errno;
     else 
@@ -81,7 +81,7 @@ class Win32Process {
   }
 
   gen spawnvp(file: string, argv:&&char, setup:1->int) : spawn_result_t = { 
-    var x = _spawnvp(file.cstr, argv); 
+    var x = spawnvp(file.cstr, argv); 
     if x == bad_process do  // PARENT
       return BadFork errno;
     else 
@@ -90,7 +90,7 @@ class Win32Process {
   }
 
   gen spawnve(file: string, argv:&&char, env: &&char, setup:1->int) : spawn_result_t = {
-    var x = _spawnve(file.cstr, argv, env); 
+    var x = spawnve(file.cstr, argv, env); 
     if x == bad_process do // PARENT
       return BadFork errno;
     else 
