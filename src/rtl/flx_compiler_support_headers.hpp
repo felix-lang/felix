@@ -46,4 +46,27 @@
   #define FLX_PC_DECL int pc;
 #endif
 
+#define t typename
+#define t2 t,t
+#define t3 t,t,t
+#define t4 t,t,t,t
+#define p template <
+#define s > struct
+template <typename, int> struct _fix; // fixpoint
+template <t,t> struct _ft;            // function
+template <t,t> struct _cft;           // cfunction
+template <t,int> struct _at;          // array
+template <t> struct _pt;              // procedure
+  p t2 s _tt2;                        // tuples
+  p t3 s _tt3;
+  p t4 s _tt4;
+  p t,t4 s _tt5;
+  p t2,t4 s _tt6;
+  p t3,t4 s _tt7;
+#undef t
+#undef t2
+#undef t3
+#undef t4
+#undef p
+#undef s
 #endif

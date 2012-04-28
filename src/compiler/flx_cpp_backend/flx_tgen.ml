@@ -139,8 +139,10 @@ let rec gen_type_name syms bsym_table (index,typ) =
   *)
   let cn t = cpp_type_classname syms bsym_table t in
   let tn t = cpp_typename syms bsym_table t in
+  let sn t = cpp_structure_name syms bsym_table t in
   let descr =
-    "\n//TYPE " ^ string_of_bid index ^ ": " ^ sbt bsym_table typ ^ "\n"
+    "\n//TYPE " ^ string_of_bid index ^ ": " ^ sbt bsym_table typ ^ "\n" ^
+    "// typedef " ^ sn  typ ^ " " ^ cn typ ^ ";\n"
   in
   let t = unfold typ in
   match t with

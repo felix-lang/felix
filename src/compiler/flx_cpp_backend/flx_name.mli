@@ -19,6 +19,12 @@ val cpp_type_classname :
   Flx_btype.t ->
   string
 
+val cpp_structure_name:
+  sym_state_t ->
+  Flx_bsym_table.t ->
+  Flx_btype.t ->
+  string
+
 val cpp_typename :
   sym_state_t ->
   Flx_bsym_table.t ->

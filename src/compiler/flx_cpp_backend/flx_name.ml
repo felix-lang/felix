@@ -169,6 +169,7 @@ let tix syms bsym_table t =
     failwith ("Cannot find type " ^sbt bsym_table t ^" in registry")
 
 let rec cpp_type_classname syms bsym_table t =
+  let tn t = cpp_typename syms bsym_table t in
   let tix t = tix syms bsym_table t in
   let t = fold syms.counter t in
   try match unfold t with
@@ -187,7 +188,8 @@ let rec cpp_type_classname syms bsym_table t =
   | BTYP_cfunction _ -> "_cft" ^ cid_of_bid (tix t)
   | BTYP_array _ -> "_at" ^ cid_of_bid (tix t)
   | BTYP_tuple _ -> "_tt" ^ cid_of_bid (tix t)
-  | BTYP_record _ -> "_art" ^ cid_of_bid (tix t)
+(*  | BTYP_tuple ts -> "_tt"^string_of_int (List.length ts)^"<" ^ catmap "," tn ts ^ ">"  *)
+  | BTYP_record _  -> "_art" ^ cid_of_bid (tix t)
 (*
   | BTYP_variant _ -> "_avt" ^ cid_of_bid (tix t)
   | BTYP_sum _ -> "_st" ^ cid_of_bid (tix t)
@@ -310,7 +312,101 @@ let rec cpp_type_classname syms bsym_table t =
       " to be in registry"
     )
 
-let rec cpp_typename syms bsym_table t =
+and cpp_structure_name syms bsym_table t =
+  let tn t = cpp_typename syms bsym_table t in
+  let tix t = tix syms bsym_table t in
+  let t = fold syms.counter t in
+  try match unfold t with
+  | BTYP_type_var (i,mt) ->
+      failwith ("[cpp_type_classname] Can't name type variable " ^
+        string_of_bid i ^ ":"^ sbt bsym_table mt)
+  | BTYP_fix i -> "_fix<"^string_of_int (-i)^">" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
+  | BTYP_none -> "none" (* hack needed for null case in pgen *)
+  | BTYP_void -> "void" (* failwith "void doesn't have a classname" *)
+  | BTYP_tuple [] -> "::flx::rtl::unit"
+
+  | BTYP_pointer t' -> cpp_type_classname syms bsym_table t' ^ "*"
+ 
+  | BTYP_function (d,BTYP_void) -> "_pt<" ^tn d ^ ">"
+  | BTYP_function (d,c) -> "_ft<" ^ tn d ^ "," ^ tn c ^ ">" 
+  | BTYP_cfunction (d,c) -> "_cft<" ^  tn d ^ "," ^ tn c ^">"
+  | BTYP_array (e,BTYP_unitsum i) -> "_at<" ^ tn e ^ "," ^ string_of_int i ^ ">" 
+  | BTYP_array (e,i) -> failwith ("Generalisd arrays not supported") (*  "_gat<" ^ tn e ^ "," ^ tn i ^ ">"  *)
+  | BTYP_tuple ts -> "_tt"^string_of_int (List.length ts)^"<" ^ catmap "," tn ts ^ ">" 
+  | BTYP_record _  -> "_art" ^ cid_of_bid (tix t)
+(*
+  | BTYP_variant _ -> "_avt" ^ cid_of_bid (tix t)
+  | BTYP_sum _ -> "_st" ^ cid_of_bid (tix t)
+*)
+  | BTYP_variant _
+  | BTYP_sum _ ->
+    begin match Flx_vrep.cal_variant_rep bsym_table t with
+    | Flx_vrep.VR_self -> assert false
+    | Flx_vrep.VR_int -> "int"
+    | Flx_vrep.VR_nullptr -> "void*"
+    | Flx_vrep.VR_packed -> "void*"
+    | Flx_vrep.VR_uctor -> "::flx::rtl::_uctor_"
+    end
+
+  | BTYP_unitsum k -> "_us" ^ string_of_int k
+
+  | BTYP_inst (i,ts) ->
+    let bsym = Flx_bsym_table.find bsym_table i in
+    let fname = Flx_bsym.id bsym in
+    let bbdcl = Flx_bsym.bbdcl bsym in
+    let cal_prefix = function
+      | BBDCL_struct _  -> "_s"
+(*
+      | BBDCL_union _   -> "_u"
+*)
+      | BBDCL_union _   -> ""
+      | BBDCL_external_type _  -> "_a"
+      | BBDCL_newtype _ -> "_abstr_"
+      | _ -> "_unk_"
+    in
+    begin match bbdcl with 
+    | BBDCL_union (vs, [id,n,t']) -> 
+      let t'' = tsubst vs ts t' in
+      cpp_type_classname syms bsym_table t''
+
+    | BBDCL_union _ ->
+      begin match Flx_vrep.cal_variant_rep bsym_table t with
+      | Flx_vrep.VR_self -> assert false
+      | Flx_vrep.VR_int -> "int"
+      | Flx_vrep.VR_nullptr -> "void*"
+      | Flx_vrep.VR_packed -> "void*"
+      | Flx_vrep.VR_uctor -> "::flx::rtl::_uctor_"
+      end
+    | _ ->
+    if ts = [] then
+      match bbdcl with
+      | BBDCL_cstruct _ -> fname
+      | BBDCL_external_type (_,_,CS.Str cname,_)
+      | BBDCL_external_type (_,_,CS.Str_template cname,_)
+         when cname = fname -> cname
+
+      | bbdcl ->
+          let prefix = cal_prefix bbdcl in
+          prefix ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
+    else
+      "_poly_" ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
+  end
+  | _ ->
+    failwith
+    (
+      "[cpp_type_classname] Unexpected " ^
+      sbt bsym_table t
+    )
+  with Not_found ->
+    failwith
+    (
+      "[cpp_type_classname] Expected type "^
+      sbt bsym_table t ^
+      " to be in registry"
+    )
+
+
+and cpp_typename syms bsym_table t =
   match unfold t with
   | BTYP_function _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_cfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
