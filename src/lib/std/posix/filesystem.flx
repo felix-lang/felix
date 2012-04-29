@@ -25,7 +25,7 @@ class PosixFileSystem
   //------------------------------------------------------------
   // File I/O functions
   //------------------------------------------------------------
-  pod type posix_file = "int";
+  pod type posix_file = "int" requires Posix_headers::unistd_h;
   fun valid: posix_file -> bool = "$1 != -1";
   ctor int : posix_file = "$1";
   const fd0 : posix_file = "0";
