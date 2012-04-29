@@ -832,7 +832,7 @@ class Plat_Filename
    # Felix then reduces it to \\           !!!
    # and finally C reduces it to plain \   !!!
    # don't remove the !!! because \ at eol is continuation .. argg
-   tangle('  fun sep()  => "\\\\\\\\";')
+   tangle('  fun sep()  => "\\\\";')
  else:
    tangle('  fun sep() => "'+os.sep+'";')
 @#

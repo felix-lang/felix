@@ -334,7 +334,9 @@ def check_flx(ctx, felix,
             static=static,
             stdout=dst,
             timeout=60,
-            quieter=1)
+            quieter=1,
+            flags=['--debug-flx'],
+            )
     except fbuild.ExecutionError as e:
         if isinstance(e, fbuild.ExecutionTimedOut):
             ctx.logger.failed('failed: timed out')
