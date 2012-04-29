@@ -790,7 +790,7 @@ grabbing_args: while grab == 1 and argno<System::argc do
 done
 
 if HAVE_WIN32 do
-  FLXG=Filename::join(FLX_INSTALL_DIR, 'bin', 'flxg');
+  FLXG=Filename::join(FLX_INSTALL_DIR, 'bin', 'flxg.exe');
   FLXRUN='';
 else
   FLXG=FLX_INSTALL_DIR+"/bin/flxg";
