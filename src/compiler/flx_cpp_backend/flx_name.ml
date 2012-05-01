@@ -237,24 +237,7 @@ let rec cpp_type_classname syms bsym_table t =
     if ts = [] then
       match bbdcl with
       | BBDCL_cstruct _ -> fname
-      (*
-      | BBDCL_external_type (_,_,CS.Str "char",_) -> "char" (* hack .. *)
-      | BBDCL_external_type (_,_,CS.Str "int",_) -> "int" (* hack .. *)
-      | BBDCL_external_type (_,_,CS.Str "short",_) -> "short" (* hack .. *)
-      | BBDCL_external_type (_,_,CS.Str "long",_) -> "long" (* hack .. *)
-
-      | BBDCL_external_type (_,_,CS.Str "float",_) -> "float" (* hack .. *)
-      | BBDCL_external_type (_,_,CS.Str "double",_) -> "double" (* hack .. *)
-
-      | BBDCL_external_type (_,_,CS.Str_template "char",_) -> "char" (* hack .. *)
-      | BBDCL_external_type (_,_,CS.Str_template "int",_) -> "int" (* hack .. *)
-      | BBDCL_external_type (_,_,CS.Str_template "short",_) -> "short" (* hack .. *)
-      | BBDCL_external_type (_,_,CS.Str_template "long",_) -> "long" (* hack .. *)
-      | BBDCL_external_type (_,_,CS.Str_template "float",_) -> "float" (* hack .. *)
-      | BBDCL_external_type (_,_,CS.Str_template "double",_) -> "double" (* hack .. *)
-      *)
-
-      (* this is more general than the above: if the felix name and the C name
+      (* if the felix name and the C name
        * are the same, just use the cname, don't synthesise a special name.
        * In this case the type generator will emit a commented out typedef
        * of the name to itself. There is an implied invariant here: the

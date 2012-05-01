@@ -1,6 +1,11 @@
 include "plat/config";
 
 open Process;
+if PLAT_WIN32 do
+fun quote(s:string)=>'"' + s + '"'; // windows filename quoting
+else
+fun quote(s:string)=>"'" + s + "'"; // unix prefers ' to stop expansion
+done
 
 if PLAT_WIN32 do
 proc pexit(e:int)
@@ -790,10 +795,10 @@ grabbing_args: while grab == 1 and argno<System::argc do
 done
 
 if HAVE_WIN32 do
-  FLXG=Filename::join(FLX_INSTALL_DIR, 'bin', 'flxg.exe');
+  FLXG=quote(Filename::join(FLX_INSTALL_DIR, 'bin', 'flxg.exe'));
   FLXRUN='';
 else
-  FLXG=FLX_INSTALL_DIR+"/bin/flxg";
+  FLXG=quote(FLX_INSTALL_DIR+"/bin/flxg");
   // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
   if HAVE_MACOSX do
     FLXRUN="env DYLD_LIBRARY_PATH="+FLX_INSTALL_DIR+"/lib/rtl:$DYLD_LIBRARY_PATH ";
@@ -918,9 +923,9 @@ if CLEAR_CACHE != 0 do
   if answer == "Y\n" or answer == "y\n" do
     // delete the caches loudly
     println$ "Delete cache " + OUTPUT_DIR;
-    C_hack::ignore$ xqt("rm -rf " + OUTPUT_DIR);
+    C_hack::ignore$ xqt("rm -rf " + quote(OUTPUT_DIR));
     println$ "Delete cache " + CACHE_DIR;
-    C_hack::ignore$ xqt("rm -rf " + CACHE_DIR);
+    C_hack::ignore$ xqt("rm -rf " + quote(CACHE_DIR));
     Directory::mkdirs(CACHE_DIR);
     var f = fopen_output flxg_stamp;
     write(f, fmt(flxg_time, fixed (0,3)));
@@ -955,7 +960,7 @@ done
 
 var USER_ARGS = ""; 
 while argno < System::argc do 
-  USER_ARGS+=" " + Bash::quote (System::argv argno); ++argno; 
+  USER_ARGS+=" " + quote (System::argv argno); ++argno; 
 done
 debugln$ "USER_ARGS=" + USER_ARGS;
 
@@ -966,7 +971,7 @@ else
   debugln "What, no optimisation?";
 done
 
-var PKGCONFIG=Filename::join$ List::list(FLX_INSTALL_DIR,"bin","flx_pkgconfig");
+var PKGCONFIG=quote(Filename::join$ List::list(FLX_INSTALL_DIR,"bin","flx_pkgconfig"));
 debugln$ "Felix package manager program is "+PKGCONFIG;
 
 if ECHO == 1 do
@@ -1033,15 +1038,15 @@ proc calpackages () {
 
 
   // find all include directories
-  var x = xqt(PKGCONFIG_CFLAGS+ " @"+cpp_filebase+".resh");
+  var x = xqt(PKGCONFIG_CFLAGS+ " " + quote("@"+cpp_filebase+".resh"));
   INCLUDE_DIRS=INCLUDE_DIRS +" " + x;
 
   // find all include files
-  x = xqt(PKGCONFIG_INCLUDES+ " @"+cpp_filebase+".resh");
+  x = xqt(PKGCONFIG_INCLUDES+ " "+quote("@"+cpp_filebase+".resh"));
   INCLUDE_FILES=INCLUDE_FILES +" " + x;
 
   // find the driver package
-  DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" @"+cpp_filebase+".resh");
+  DRIVER_PKG=xqt(PKGCONFIG_DRIVER+" "+ quote("@"+cpp_filebase+".resh"));
   DRIVER_PKG == "" ??  DRIVER_PKG="flx_run";
 
   // find the driver entity
@@ -1056,11 +1061,11 @@ proc calpackages () {
   if STATIC == 0 do
     // dynamic linkage: all the libraries required by the application
     LINK_STRING=DLINK_STRING+LINKER_SWITCHES+" "+xqt(
-      PKGCONFIG_DLIBS+" @"+cpp_filebase+".resh");
+      PKGCONFIG_DLIBS+" "+quote("@"+cpp_filebase+".resh"));
   else
     // static linkage: all the libraries required by the application and driver
     LINK_STRING=SLINK_STRING+LINKER_SWITCHES+" "+xqt(
-      PKGCONFIG_SLIBS+" "+DRIVER_PKG+" @"+cpp_filebase+".resh");
+      PKGCONFIG_SLIBS+" "+DRIVER_PKG+" "+quote("@"+cpp_filebase+".resh"));
   done
 
   if ECHO == 1 do
@@ -1094,10 +1099,10 @@ LINKER_OUTPUT_FILENAME =  Directory::mk_absolute_filename LINKER_OUTPUT_FILENAME
 val args = USER_ARGS;
 debugln$ "Target program args = "+args;
 
-var INCLUDE_DIR="-I"+Filename::join(FLX_INSTALL_DIR,"lib","rtl") + " -I"+Filename::join(FLX_INSTALL_DIR,"config","target");
+var INCLUDE_DIR=quote("-I"+Filename::join(FLX_INSTALL_DIR,"lib","rtl")) + " "+quote("-I"+Filename::join(FLX_INSTALL_DIR,"config","target"));
 debugln$ "C++ Include directory for Felix library " + INCLUDE_DIR;
 
-var FLXLIB="-I"+Filename::join(FLX_INSTALL_DIR,"lib");
+var FLXLIB=quote("-I"+Filename::join(FLX_INSTALL_DIR,"lib"));
 var STDLIB=list("std","posix","web");
 if NOSTDLIB == 1 do
   FLXLIB="";
@@ -1128,7 +1133,7 @@ if RECOMPILE == 0 and RUNIT == 1 and CLEAR_CACHE == 0 do
     if xtime > cal_dep_time (filebase) and xtime > cache_time do
       debugln$ "Running dynamically linked binary";
       calpackages();
-      cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ LINKER_OUTPUT_FILENAME+" "+args;
+      cmd=FLXRUN+DRIVER+DEBUGSWITCH+" "+ quote(LINKER_OUTPUT_FILENAME)+" "+args;
       if STDOUT != "" do cmd=cmd + " > "+STDOUT; done
       debugln$ "Uptodate shared lib: Running command " + cmd;
       pexit(system(cmd));
@@ -1139,7 +1144,7 @@ if RECOMPILE == 0 and RUNIT == 1 and CLEAR_CACHE == 0 do
     xtime = dfiletime(LINKER_OUTPUT_FILENAME,past_time);
     if xtime > cal_dep_time(filebase)  and xtime > cache_time do
       debugln$ "Running statically linked binary";
-      cmd=STATIC_ENV+" "+LINKER_OUTPUT_FILENAME+" "+args;
+      cmd=STATIC_ENV+" "+quote(LINKER_OUTPUT_FILENAME)+" "+args;
       if STDOUT != "" do cmd=cmd + " > "+STDOUT; done
       debugln$ "Uptodate executable: Running command " + cmd;
       pexit(system(cmd));
@@ -1166,8 +1171,8 @@ if DEBUG==1 do
 done
 
 var FLXFLAGS="--inline="+str(INLINE);
-if OUTPUT_DIR != "" do FLXFLAGS += ' --output_dir=' + str(OUTPUT_DIR); done;
-if CACHE_DIR != "" do FLXFLAGS += " --cache_dir=" + CACHE_DIR; done
+if OUTPUT_DIR != "" do FLXFLAGS += ' '+quote('--output_dir=' + str(OUTPUT_DIR)); done;
+if CACHE_DIR != "" do FLXFLAGS += " "+quote("--cache_dir=" + CACHE_DIR); done
 if COMPILER_PHASE != "" do FLXFLAGS += ' --compiler-phase=' + COMPILER_PHASE; done;
 
 var FCMD="";
@@ -1181,7 +1186,7 @@ if FELIX == 1 do
     VERBOSE, FLXFLAGS, FLXLIB,
     INCLUDE_DIRS, "--syntax="+STDGRAMMAR, STDIMPORT, IMPORTS)) + 
     ' ' + stdlibs + 
-    ' ' + filebase
+    ' ' + quote(filebase)
   ;
   debugln$ "Felix command="+FCMD;
   result=system(FCMD);
@@ -1202,12 +1207,12 @@ if STATIC == 0 do
   CCMD=List::cat ' ' (List::list (
     CCOBJ_DLLIB, CCFLAGS, "-DTARGET_BUILD",
     INCLUDE_DIR, INCLUDE_DIRS, MACROS,
-    cpps, cpp_filebase+".cpp",
-    SPEC_OBJ_FILENAME+cpp_filebase+EXT_OBJ));
+    cpps, quote(cpp_filebase+".cpp"),
+    SPEC_OBJ_FILENAME+quote(cpp_filebase+EXT_OBJ)));
   LCMD=List::cat ' ' (List::list (
     CCLINK_DLLIB, CCFLAGS,
-    cppos, cpp_filebase+EXT_OBJ,
-    SPEC_EXE_FILENAME+LINKER_OUTPUT_FILENAME,
+    cppos, quote(cpp_filebase+EXT_OBJ),
+    SPEC_EXE_FILENAME+quote(LINKER_OUTPUT_FILENAME),
     LINK_STRING));
   debugln$ "C++ command="+CCMD;
   result = system(CCMD);
@@ -1220,13 +1225,13 @@ if STATIC == 0 do
           cmd=List::cat ' ' (List::list (
             TIMECMD,
             FLXRUN+DRIVER+DEBUGSWITCH,
-            LINKER_OUTPUT_FILENAME, args));
+            quote(LINKER_OUTPUT_FILENAME), args));
         else
           cmd=List::cat ' ' (List::list (
             FLXRUN+DRIVER+DEBUGSWITCH,
-            LINKER_OUTPUT_FILENAME, args));
+            quote(LINKER_OUTPUT_FILENAME), args));
         done
-        if STDOUT != "" do cmd=cmd+" > " +STDOUT; done
+        if STDOUT != "" do cmd=cmd+" > " +quote(STDOUT); done
         debugln$ "Run command="+cmd;
         pexit(system(cmd));
       else
@@ -1244,11 +1249,11 @@ else
     CCOBJ_STATIC_LIB,
     CCFLAGS, "-DTARGET_BUILD",
     "-DFLX_STATIC_LINK", INCLUDE_DIR, INCLUDE_DIRS,
-    MACROS, cpps, cpp_filebase+".cpp",
-    SPEC_OBJ_FILENAME+cpp_filebase+EXT_OBJ));
+    MACROS, cpps, quote(cpp_filebase+".cpp"),
+    SPEC_OBJ_FILENAME+quote(cpp_filebase+EXT_OBJ)));
   LCMD=List::cat ' ' (List::list (
-    CCLINK_STATIC, SPEC_EXE_FILENAME+LINKER_OUTPUT_FILENAME,
-    cpp_filebase+EXT_OBJ, DRIVER, cppos, LINK_STRING));
+    CCLINK_STATIC, SPEC_EXE_FILENAME+quote(LINKER_OUTPUT_FILENAME),
+    quote(cpp_filebase+EXT_OBJ), DRIVER, cppos, LINK_STRING));
   debugln$ "C++ command="+CCMD;
   result=system(CCMD);
   if result == 0 do
@@ -1259,10 +1264,10 @@ else
       if RUNIT == 1 do
         if TIME == 1 do
           cmd= List::cat ' ' (List::list (
-            TIMECMD, STATIC_ENV, LINKER_OUTPUT_FILENAME, args));
+            TIMECMD, STATIC_ENV, quote(LINKER_OUTPUT_FILENAME), args));
         else
           cmd=List::cat ' ' (List::list (
-            STATIC_ENV, LINKER_OUTPUT_FILENAME,args));
+            STATIC_ENV, quote(LINKER_OUTPUT_FILENAME),args));
         done
         if STDOUT != "" do cmd=cmd + " > "+STDOUT; done
         debugln$ "Run command="+cmd;
