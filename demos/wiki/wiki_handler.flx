@@ -7,6 +7,8 @@ class WikiHandler {
   open HTTPResponse;
   open HTTPBasicAuth;
   open WikiModel;
+  open WikiFileModel;
+  open MIMEType;
 
   fun app_handlers() =>
       Cons (http_handler((fun (c:server_config,r:http_request) => true),
@@ -14,99 +16,181 @@ class WikiHandler {
       Cons (http_handler(save_edit_route,requires_auth(auth_source,"Felix Wiki",save_edit)),
       Cons (http_handler(edit_route,requires_auth(auth_source,"Felix Wiki",edit)),
       Cons (http_handler(delete_route,requires_auth(auth_source,"Felix Wiki",delete)),
-      Cons (http_handler(search_route,search),
+      Cons (http_handler(preview_route,requires_auth(auth_source,"Felix Wiki",preview)),
+      Cons (http_handler(login_route,requires_auth(auth_source,"Felix Wiki",login)),
+      Cons (http_handler(users_edit_route,requires_auth(admin_auth_source,"Felix Wiki",users_edit)),
+      Cons (http_handler(users_reset_route,requires_auth(admin_auth_source,"Felix Wiki",users_reset)),
+      Cons (http_handler(users_delete_route,requires_auth(admin_auth_source,"Felix Wiki",users_delete)),
+      Cons (http_handler(users_table_route,requires_auth(admin_auth_source,"Felix Wiki",users_table)),
+      Cons (http_handler(users_route,requires_auth(admin_auth_source,"Felix Wiki",users)),
+      Cons (http_handler(user_profile_route,requires_auth(auth_source,"Felix Wiki",user_profile)),
+      Cons (http_handler(user_reset_route,requires_auth(auth_source,"Felix Wiki",user_reset)),
+      Cons (http_handler(path_edit_route,requires_auth(admin_auth_source,"Felix Wiki",path_edit)),
+      Cons (http_handler(path_delete_route,requires_auth(admin_auth_source,"Felix Wiki",path_delete)),
+      Cons (http_handler(path_table_route,requires_auth(admin_auth_source,"Felix Wiki",path_table)),
+      Cons (http_handler(path_route,requires_auth(admin_auth_source,"Felix Wiki",path)),
+//      Cons (http_handler(search_route,search),
+      Cons (http_handler(dir_route,dir),
       Cons (http_handler(pull_route,pull),
       Cons (http_handler(wiki_route,wiki),
       Cons (http_handler(web_route,web),
       Cons (http_handler(lib_route,lib),
       Cons (http_handler(inc_route,inc),
-      Empty[http_handler]))))))))));
- 
+      Empty[http_handler])))))))))))))))))))))));
+
   fun auth_source(uname:string,passwd:string):bool => 
     db_get_auth_fdoc(uname,passwd);
 
+  fun admin_auth_source(uname:string,passwd:string):bool => 
+    db_get_auth_fdoc(uname,passwd) and db_user_is_admin(uname);
+
   fun wiki_route(config:server_config,request:http_request) ={
-    return startswith request.path  "/wiki" or  
-           request.path =="/" or request.path == "";
+    return startswith request.path  "/wiki/";// or  
+           //request.path =="/" or request.path == "";
   }
 
+  fun apply_to_template(templ:string,params:list[string^2]):string = {
+    var template = load(Filename::join(TEMPLATE_ROOT,templ));
+    iter (proc (kv:string^2) {template = let ?k,?v = kv in search_and_replace(template,k,v);})
+      params;
+    return template;
+  }
+
+  fun load_template(templ:string):string =>
+    load(Filename::join(TEMPLATE_ROOT,templ));
+
+  fun qip_make_json (content:string,headers:list[string^2]) =>
+    http_header(http_response(HTTPStatusCodes::SC_OK,LowResTime::localtime(LowResTime::time_t()),application json, headers,content))+
+    content;
+
+ //fun wiki_make_html (content:string]) =>
+ //   http_header(http_response(HTTPStatusCodes::SC_OK,LowResTime::localtime(LowResTime::time_t()),text html, Cons(("Expires","0"),Empty[string^2]),content))+
+//    content;
+// write(conn,(qip_make_json("\r\n\r\n"+str(rlst),Cons(("Expires","0"),Empty[string^2])));
+//Jdictionary (map (fun (a:string^2):Vnalue^2 => (Jstring a.(0),(Jstring a.(1)))) (Cons ("Z","V"),Empty)
+//
+  fun login_route(config:server_config,request:http_request) =>
+    startswith request.path  "/login";
+  
+  proc login (conn:http_connection, request:http_request ) {
+    conn.config.log(INFO,str(request));  
+    write(conn,make_see_other("/wiki/"));
+  }
+
+
+  fun set-ctrls(conn:http_connection,request:http_request) = {
+    val user = match authorized_user(conn,request) with
+      |Some ?u => q"<div class='inline'><span class='ui-icon ui-icon-person' style='float:left;'></span><a href='/user/profile/'>$(u)</a></div>"
+      |None => """<a href='/login'>Login</a>"""
+    endmatch;
+    return user;
+  
+  }
+
+  fun set-search ():string = {
+    var search = """<div class='inline search'>  
+      <form action='/wiki/search/'>
+      <label>Search</label> <input name='for' type='text' /></form></div>""";
+    return search; 
+  }
+
+  fun admin-menu(conn:http_connection,request:http_request):string =>
+    match authorized_user(conn,request) with
+      |Some ?u => if db_user_is_admin(u) then load_template("admin-menu.html") else "" endif
+      |None => ""
+    endmatch;
+
+
+  
+  fun format_doc (content:string,path:string):bool*bool*string =>
+    match get_suffix(path) with
+                          | "cpp" => true,false,"<pre>"+(Cpp2Html::xlat_cpp (content, path))+"</pre>"
+                          | "flx" => let ?ok,?html = (Flx2Html::xlat_felix (content, path)) in
+                                       ok,true,"<pre>"+html+"</pre>"
+                                       
+                          | "fdoc" => let ?needs_mathjax, ?html = Fdoc2Html::xlat_fdoc (content,path) in
+                                        true,needs_mathjax,html
+                          | ?b    =>  let ?ok,?html = (Flx2Html::xlat_felix (content, path)) in
+                                       ok,true,"<pre>"+html+"</pre>"
+    endmatch;
+  
+  fun get_title(conn:http_connection,request:http_request):string = {
+      var title = (get_fname(request)).or_else "wiki_main.fdoc";
+      return match authorized_user(conn,request) with
+      |Some ?u => title+if startswith request.path "/wiki/" and 
+                     not startswith request.path "/wiki/edit/" 
+                  then """[<a href='/wiki/edit/"""+request.path.[6 to]+"'>Edit</a>]"
+                  else ""
+                  endif
+      |None => title
+    endmatch;
+  }
+
+
   proc wiki (conn:http_connection, request:http_request ) {
-    var fname= let ?f = ((get_fname(request)).or_else "") in if f == "" then "main.fdoc" else f endif;
-    var txt:string;
-    if db_has_fdoc(fname) do
-       txt = match db_get_fdoc(fname) with
-               | Some ?s => s.content
-               | _ => ""
-             endmatch;
-    elif has_fdoc(fname) do
-       txt = get_fdoc(fname);
-    else 
-       write(conn,make_see_other("/wiki/edit/"+fname));
-       return;
+    var path = request.path.[6 to];
+    if path =="" or path == "/" do
+       write(conn,make_see_other("/wiki/doc/wiki/wiki_main.fdoc"));
+      return;
     done
-    needs_mathjax, html := Fdoc2Html::xlat_fdoc (txt,fname);
-    val data = make_html(doc_head(needs_mathjax,"")+page_controls(fname)+html+doc_tail());
+    var fname = get_title(conn,request);//(get_fname(request)).or_else "wiki_main.fdoc";
+    val dirname = Filename::dirname path;
+    var content:string = "";
+    var html:string = "";
+    var needs_mathjax=false;
+    var ok=false;
+    if has_doc(path) do
+      content = match get_doc(path) with |Some ?e => e.content |_ => "" endmatch;
+    else 
+      write(conn,make_see_other("/wiki/edit/"+path));
+      return;
+    done
+    if not path_exists(path) do
+      handle_not_found(conn,request);
+      return;
+    done
+    ok,needs_mathjax,html = format_doc(content,path);
+    val data = make_html(
+        apply_to_template("page-template.html",
+         Cons(("___CENTER_CONTENT___",html),
+         Cons(("___FNAME___",fname),
+         Cons(("___CTRLS___",set-ctrls(conn,request)),
+         Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
+         Empty[string^2]))))));
     write(conn,data);
   }
 
-  fun doc_head(needs_mathjax:bool,head:string) => "<html><head>"+Css4Html::flx_head+
-    """<link rel="stylesheet" type="text/css" href="/css/wiki.css" />"""+
-    if needs_mathjax then Fdoc2Html::mathjax else "" endif +head+"</head><body>"+"""
-<div id="menu">
-<ul>
-<li><a href="/wiki/" class="external">Home</a></li>
-<li><a href="/wiki/Download.fdoc" class="external">Download</a></li>
-<li><a href="/wiki/tut_index.fdoc" class="external">Tutorial</a></li>
-<li><a href="/wiki/Libraries.fdoc" class="external">Libraries</a></li>
-<li><a href="/wiki/Documentation.fdoc" class="external">Documentation</a></li>
-</ul></div>
-""";
 
-  fun doc_tail() => "</div></body></html>"; 
-
-  fun page_controls (fname:string) =>  """
-<div id='search'><form action='/wiki/search'><div>
-       <label>Search</label><input name='for' type='text'/><input type='submit' name='search' value='Search'/>
-     </div></form>
-</div>
-<ul id="page-specific-links">"""+
-if fname == "" then "" else
-"<li><a href='/wiki/edit/"+fname+"'>Edit</a>" endif+"""</li>
-<li><a href='#' onclick="expand_all()">Expand</a></li>'
-<li><a href='#' onclick="collapse_all()">Collapse</a></li>
-</ul>
-<div id='content'>
-""";
 
   fun edit_route(config:server_config,request:http_request) =>
     startswith request.path  "/wiki/edit/";
 
   proc edit (conn:http_connection, request:http_request ) {
-    var fname = (get_fname(request)).or_else "main.fdoc";
     var txt:string = "";
-    if db_has_fdoc(fname) do
-       txt = match db_get_fdoc(fname) with
-               | Some ?s => s.content
-               | _ => ""
-             endmatch;
-    elif has_fdoc(fname) do
-       txt = get_fdoc(fname);
-    else 
-      txt = "";
+    var path = request.path.[11 to];
+    if not path_exists(path) do
+      handle_not_found(conn,request);
+      return;
     done
-    val data = make_html(doc_head(false,"")+page_controls("")+
-    q"""<h4>Editing $(fname)</h4><div id='edit_wiki'>
-      <form name='edit_wiki' id='edit_wiki' method='POST'>
-        <textarea id='content' name='content' rows='20' cols='80'>$(txt)</textarea><br/>
-        <div style='float:left;'>
-          <input style='float:left;padding-right:10px;' type='submit' id='submit0' name='submit0' value='Save'/>
-          <input style='float:left;padding-right:10px;' type='button' id='cancel' name='cancel0' value='Cancel' onclick='history.go(-1)'/>
-        </div>
-      </form>
-      <div style='float:left;padding-right:10px;'>
-      <form name='delete_wiki' id='delete_wiki' method='POST' action='/wiki/delete/$(fname)' >
-        <input style='float:left;padding-right:10px;' type='submit' id='delete0' name='delete0' value='Delete'/>
-      </form>"""+doc_tail());    
+    if has_doc(path) do
+      txt = match get_doc(path) with |Some ?e => e.content |_ => "" endmatch;
+    done
+    var fname = (get_fname(request)).or_else "";
+    val html = apply_to_template("edit-body.html",
+         Cons(("___TEXT_TO_EDIT___",txt),
+         Cons(("___FNAME___",fname),
+         Cons(("___PATH___",path),
+         Empty[string^2]))));
+    val data = make_html(
+        apply_to_template("page-template.html",
+         Cons(("___CENTER_CONTENT___",html),
+         Cons(("___FNAME___",fname),
+         Cons(("___CTRLS___",set-ctrls(conn,request)),
+         Cons(("<!--___CUSTOM_HEADER___-->",apply_to_template(
+          "edit-head.html",Cons(("___PATH___",path),
+                           Empty[string^2]))),
+         Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
+         Empty[string^2])))))));
     write(conn,data);
   }
 
@@ -114,15 +198,21 @@ if fname == "" then "" else
     startswith request.path  "/wiki/delete/";
 
   proc delete (conn:http_connection, request:http_request ) {
-    var fname= (get_fname(request)).or_else "main.fdoc";
-    if db_has_fdoc(fname) do
-      if db_delete_fdoc(fname) do
-        write(conn,make_see_other("/wiki/edit/"+fname));
+    var path = request.path.[13 to];
+    if not path_exists(path) do
+      handle_not_found(conn,request);
+      return;
+    done
+    var fname= (get_fname(request)).or_else "";
+    if has_doc(path) do
+      if delete_doc(path) do
+        //write(conn,make_see_other("/wiki/edit/"+path));
+        write(conn,make_html(q"<p>$(fname) deleted</p>"));
       else
-        write(conn,make_see_other("/wiki/edit/"+fname));
+         write(conn,make_html(q"<p>Error deleting $(fname)</p>"));
       done
     else
-      write(conn,make_see_other("/wiki/edit/"+fname));
+         write(conn,make_html(q"<p>Error deleting $(fname)</p>"));
     done
   }
 
@@ -132,40 +222,41 @@ if fname == "" then "" else
 
 
   proc save_edit (conn:http_connection, request:http_request ) {
+    var path = request.path.[11 to];
+    if not path_exists(path) do
+      handle_not_found(conn,request);
+      return;
+    done
     var txt = strip_ctrl_m((get_post_param(request,"content")).or_else "");    
-    var fname= (get_fname(request)).or_else "main.fdoc";
-    if ((get_post_param(request,"delete0")).or_else "") == "Delete" do
-      delete(conn,request);
-    else
-      if (if db_has_fdoc(fname) then
-         db_update_fdoc(entry(fname,txt))
+      if (if has_doc(path) then
+         update_doc(entry(path,txt))
         else
-          db_insert_fdoc(entry(fname,txt))
+          insert_doc(entry(path,txt))
         endif) do
-        write(conn,make_see_other("/wiki/"+fname));
+        write(conn,make_html("<p>"+path+" saved!</p>"));
       else
         wiki(conn,request);
       done
-    done
   }
 
-  fun search_route(config:server_config,request:http_request) =>
-    request.path == "/wiki/search";
+    fun preview_route(config:server_config,request:http_request) ={
+      return startswith request.path  "/wiki/preview/" and str(request.method) == str(POST);
+    }
 
-  proc search (conn:http_connection, request:http_request ) {
-    var key = (get_param(request,"for")).or_else("");
-    var rows = "";
-    iter (proc (x:string^2) {
-        var mj,c = Fdoc2Html::xlat_fdoc(x.(1).[to 255],"");
-        rows = rows + "<tr><td><div class='doclink'><a href='/wiki/"+x.(0)+"'>"+x.(0)+"</a>"+
-          "<br/>"+
-          "</div><div class='docdesc'>"+c+
-          "</div></td></tr><tr><td><hr/></td></tr>"; })  (db_search(key)); 
-    val data = make_html(doc_head(false,"")+page_controls("")+
-       """<table class='searchresults'><caption>Search Results</caption>"""+ 
-       rows+"</table>"+doc_tail());
-    write(conn,data);
+  proc preview (conn:http_connection, request:http_request ) {
+    conn.config.log(INFO,"preview");
+    var path = request.path.[15 to];
+    var fname= let ?f = ((get_fname(request)).or_else "") in if f == "" then "main.fdoc" else f endif;
+    conn.config.log(INFO,"preview:"+fname);
+    var content = strip_ctrl_m((get_post_param(request,"content")).or_else "");
+    var ok:bool;
+    var needs_mathjax:bool;
+    var html:string;
+    ok,needs_mathjax,html = format_doc(content,path);
+    write(conn,make_html(html));
   }
+
+
 
 
   fun web_route(config:server_config,request:http_request) => startswith request.path "/web/";
@@ -198,54 +289,84 @@ if fname == "" then "" else
   fun inc_route(config:server_config,request:http_request) => startswith request.path "/$/";
 
   proc inc(conn:http_connection,request:http_request) {
+    var path = request.path.[1 to];
+    if path =="" or path == "/" do
+       write(conn,make_see_other("/wiki/doc/wiki/wiki_main.fdoc"));
+      return;
+    done
+    var fname = (get_fname(request)).or_else "wiki_main.fdoc";
+    val dirname = Filename::dirname path;
     var content:string = "";
-    match request.params with
-        | Cons(?a,_) => {
-                        
-                        match a with
-                          | ("cpp",_) => {  
-                                           match get_ref_file(request.path.[1 to],C_PATH) with
-                                            | Some ?path => {
-                                              val text=load path;
-                                              val dirname = Filename::dirname path;
-                                              content = (Cpp2Html::xlat_cpp (text, dirname));
-                                             } 
-                                            | None => {content = "NOTHING";}
-                                          endmatch;
-                                          }  
-                          | ("flx",_) => {  
-                                           match get_ref_file(request.path.[1 to],C_PATH) with
-                                            | Some ?path => {
-                                              val text=load path;
-                                              val dirname = Filename::dirname path;
-                                              var ok = false;
-                                              ok,content = (Flx2Html::xlat_felix (text, dirname));
-                                             } 
-                                            | None => {content = "NOTHING";}
-                                          endmatch;
-                                          }         
-                          | (?b,_)    =>  {
-                                          match get_ref_file(request.path.[1 to],C_PATH) with
-                                            | Some ?path => {
-                                              val text=load path;
-                                              val dirname = Filename::dirname path;
-                                              var ok = false;
-                                              ok,content = (Flx2Html::xlat_felix (text, dirname));
-                                             } 
-                                            | None => {content = "NOTHING";}
-                                          endmatch;
-                                          }
+    var html:string = "";
+    var needs_mathjax=false;
+    var ok=false;
+    ok,needs_mathjax,html =  match get_ref_file(path,C_PATH) with 
+      |Some ?e => format_doc(load(e),path) |_ => false,false,"Not Found" 
+    endmatch;
+    
+    val data = make_html(
+        apply_to_template("page-template.html",
+         Cons(("___CENTER_CONTENT___",html),
+         Cons(("___FNAME___",fname),
+         Cons(("___CTRLS___",set-ctrls(conn,request)),
+         Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
+         Empty[string^2]))))));
+    write(conn,data);
 
-                        endmatch;
-                        write(conn,make_html(
-                              "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
-                              content+
-                              "</pre></body></html>"));
-                        return;
-                      }
-        | _ => { handle_not_found(conn,request); }
+  }
+
+  fun dir_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/dir/";
+  }
+
+  proc dir (conn:http_connection, request:http_request) {
+    var rpath = if endswith  request.path "/" then request.path.[0 to (len(request.path)-1)] 
+                                              else request.path endif;
+    var path = if endswith  rpath "/" then rpath.[5 to (len(rpath)-1)] else rpath.[5 to] endif;
+    var fspath = Filename::join(WIKI_ROOT,path);
+    var dir_list = "<ul>";
+    var href = "";
+    var icon = "";
+    match FileStat::filetype fspath with
+    | DIRECTORY => {
+      match Directory::filesin fspath with
+      | Some ?files => { iter (proc (y:string) {
+        if y != "." do
+      	  if y == ".." do
+            if rpath != "/dir" do 
+              href,icon = double_dot(rpath),"ui-icon ui-icon-folder-collapsed";
+              dir_list = dir_list+ q"<li><span ><span class='$(icon)' style='float:left;'></span> <span ><a href='$(href)'>$(y)</a></span> </span></li>";
+             
+            done
+      	  else      
+	    href,icon = match FileStat::filetype (Filename::join(fspath,y)) with
+                | DIRECTORY => q"$(rpath)/$(y)","ui-icon ui-icon-folder-collapsed"
+                | REGULAR => q"/wiki/$(path)/$(y)","ui-icon ui-icon-document"
+                | _ => "#",""                
+            endmatch;
+            val link = q"<li><span ><span class='$(icon)' style='float:left;'></span> <span ><a href='$(href)'>$(y)</a></span> </span></li>";
+            dir_list = dir_list+link;
+      	  done
+      done
+      }) files;
+    }
+    | None => {  }
     endmatch;
   }
+  | REGULAR => {write(conn,make_see_other(q"/wiki/$(path)"));}
+  |_ => {write(conn,make_see_other(q"/error/dir/$(path)"));}
+  endmatch;
+  dir_list = q"$(dir_list)</ul>";
+  val data = make_html(
+    apply_to_template("page-template.html",
+    Cons(("___CENTER_CONTENT___",dir_list),
+    Cons(("___FNAME___",path),
+    Cons(("___CTRLS___",set-ctrls(conn,request)),
+    Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
+    Empty[string^2]))))));
+    write(conn,data);
+}
+
 
   fun pull_route(config:server_config,request:http_request) ={
     return startswith request.path  "/wiki/pull/";
@@ -254,8 +375,8 @@ if fname == "" then "" else
   proc pull (conn:http_connection, request:http_request ) {
     var fname= let ?f = ((get_fname(request)).or_else "") in if f == "" then "main.fdoc" else f endif;
     var txt:string;
-    if db_has_fdoc(fname) do
-      txt = match db_get_fdoc(fname) with
+    if has_doc(fname) do
+      txt = match get_doc(fname) with
                | Some ?s => s.content
                | _ => ""
              endmatch;
@@ -267,19 +388,6 @@ if fname == "" then "" else
   }
 
 
-
-fun get_ref_file (fn:string, path:list[string]) = {
-  var fname = fn;
-  if fname.[0] == char "$" do fname = fname.[1 to]; done
-    val inpath:bool = match find (fun (x:string) => startswith  fname x) path with |Some _ => true |_ => false endmatch;
-  if FileStat::fileexists fname do return Some fname;
-  else
-    var f = Filename::join(INSTALL_ROOT,fname);
-    if FileStat::fileexists f do return Some f;
-    else return FileSystem::find_in_path (fname, path);
-    done
-  done
-}
 
   fun get_suffix(fn:string) = {
     var fname = fn;
@@ -296,4 +404,258 @@ fun get_ref_file (fn:string, path:list[string]) = {
     endmatch;
     return suffix;
   }
+
+  fun double_dot (path:string):string ={
+    var p = match rev(split(path,'/')) with
+      | Cons(?hd,?tl) => 
+            fold_left (fun(x:string) (y:string):string => x +"/"+ y) "" (rev(tl))
+      | ?f => path
+    endmatch;
+    return if len(p) > size(1) then p.[ 1 to ] else p endif+"/"; 
+  }
+
+  fun users_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/admin/users/";
+  }
+
+  proc users (conn:http_connection, request:http_request ) {
+    val groups = "<select name='group' id='group'>"+
+      (fold_left (fun(x:string) (y:string):string => x +""+ y)  ""
+       (map (fun (a:string^2) => "<option value='"+a.(0)+"'>"+a.(1)+"</option>") 
+         (db_get_groups())))+"</select>";
+    val users = 
+      (fold_left (fun(x:string) (y:string):string => x +""+ y)  ""
+       (map (fun (a:string^5) => "<tr><td><a onclick=\"sel_user('"+a.(0)+"','"+ 
+           a.(1)+"','"+ a.(2)+"','"+a.(4)+"')\"'>select</a></td><td>"+a.(0)+"</td><td>"+a.(1)+"</td><td>"+a.(3)+"</td><td>"+a.(4)+"</td></tr>") 
+         (db_get_users())));
+
+
+    val data = make_html(
+        apply_to_template("page-template.html",
+         Cons(("___CENTER_CONTENT___",
+           apply_to_template("users-form.html",
+             
+             Cons(("___GROUP_SELECT___",groups),
+             Cons(("___USERS___",users),
+             Empty[string^2])))),
+         Cons(("<!--___CUSTOM_HEADER___-->",load_template("users-head.html")),
+         Cons(("___FNAME___","User Administration"),
+         Cons(("___CTRLS___",set-ctrls(conn,request)),
+         
+         Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
+         Empty[string^2])))))));
+  ;
+     write(conn,data);
+  }
+
+  fun users_table_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/admin/users/table/";
+  }
+
+ proc users_table (conn:http_connection, request:http_request ) {
+    val users = 
+      (fold_left (fun(x:string) (y:string):string => x +""+ y)  ""
+       (map (fun (a:string^5) => "<tr><td><a onclick=\"sel_user('"+a.(0)+"','"+ 
+           a.(1)+"','"+ a.(2)+"','"+a.(4)+"')\"'>select</a></td><td>"+a.(0)+"</td><td>"+a.(1)+"</td><td>"+a.(3)+"</td><td>"+a.(4)+"</td></tr>") 
+         (db_get_users())));
+    val data = make_html(apply_to_template("users-table.html",
+             Cons(("___USERS___",users),
+         Empty[string^2])));
+     write(conn,data);
+  }
+
+
+  fun users_edit_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/admin/users/edit/";
+  }
+
+  proc users_edit (conn:http_connection, request:http_request ) {
+    var user= (get_fname(request)).or_else "";
+    var grp = (get_post_param(request,"grp")).or_else "";
+    var name = (get_post_param(request,"name")).or_else "";
+    var email = (get_post_param(request,"email")).or_else "";
+    val message = if (if db_has_user(user) then
+          db_update_user(user,name,grp,email)
+        else
+          db_add_user(user,"",name,grp,email)
+        endif) then
+      "User update successful"
+    else
+      "User update failed"
+    endif;
+    write(conn,make_html("<p>"+message+"</p>"));
+  }
+
+
+  fun users_reset_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/admin/users/reset/";
+  }
+
+  proc users_reset (conn:http_connection, request:http_request ) {
+    var user= (get_fname(request)).or_else "";
+    var passwd = strip_ctrl_m((get_post_param(request,"password")).or_else "");
+
+    val message = if db_reset_password(user,passwd) 
+      then "<p>"+user+" reset!</p>"
+      else "<p>"+user+" reset failed!</p>"
+    endif; 
+    write(conn,make_html(message));
+  }
+
+
+  fun users_delete_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/admin/users/delete/";
+  }
+
+  proc users_delete (conn:http_connection, request:http_request ) {
+    var user= (get_fname(request)).or_else "";
+    val message = if db_delete_user(user) 
+      then "<p>"+user+" deleted!</p>"
+      else "<p>"+user+" deletion failed!</p>"
+    endif; 
+    write(conn,make_html(message));
+  }
+
+  fun user_profile_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/user/profile/";
+  }
+
+
+   proc user_profile (conn:http_connection, request:http_request ) {
+     var data = "";  
+     match authorized_user(conn,request) with
+       |Some ?u => { 
+          val user = let Some ?v = db_get_user(u) in v;
+          val profile = "<table><tr><td>User:</td><td>"+user.(0)+"</td></tr>"+
+            "<tr><td>Name:</td><td>"+user.(1)+"</td><tr>"+
+            "<tr><td>Group:</td><td>"+user.(3)+"</td></tr>"+
+            "<tr><td>Email</td><td>"+user.(4)+"</td></tr></table><br/>";
+          
+          data = make_html(
+            apply_to_template("page-template.html",
+              Cons(("___CENTER_CONTENT___",profile + load_template("user-reset-password.html")),
+              Cons(("<!--___CUSTOM_HEADER___-->",load_template("user-head.html")),
+              Cons(("___FNAME___","User Profile"),
+              Cons(("___CTRLS___",set-ctrls(conn,request)),
+              Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
+             Empty[string^2])))))));
+      }
+      |_ => { handle_not_found(conn,request);
+              return;}
+    endmatch;
+     write(conn,data);
+  }
+
+  fun user_reset_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/user/reset/";
+  }
+
+
+  proc user_reset (conn:http_connection, request:http_request ) {
+    match authorized_user(conn,request) with
+    |Some ?u => { 
+      var passwd = strip_ctrl_m((get_post_param(request,"password")).or_else "");
+      val message = if db_reset_password(u,passwd) 
+        then "<p>"+u+" reset!</p>"
+        else "<p>"+u+" reset failed!</p>"
+        endif; 
+      write(conn,make_html(message));}
+    |_ => { handle_not_found(conn,request);
+              return;}
+    endmatch;
+  }
+
+
+  fun path_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/admin/path/";
+  }
+
+
+  proc path (conn:http_connection, request:http_request ) {
+    val groups = "<select name='group' id='group'>"+
+      (fold_left (fun(x:string) (y:string):string => x +""+ y)  ""
+       (map (fun (a:string^2) => "<option value='"+a.(0)+"'>"+a.(1)+"</option>") 
+         (db_get_groups())))+"</select>";
+     val lvls = "<select name='lvl' id='lvl'><option value='ro'>ro</option>"+
+                "<option value='rw'>rw</option></select>";
+    val paths = 
+      (fold_left (fun(x:string) (y:string):string => x + "" + y)  ""
+       (map (fun (a:string^4) => "<tr><td><a onclick=\"sel_path('" + a.(0) + "','"+ 
+           a.(2) + "','" + a.(3) + "')\"'>select</a></td><td>"+a.(1)+"</td><td>" + a.(2) + "</td><td>" + a.(3) + "</td></tr>") 
+         (db_get_paths())));
+
+
+    val data = make_html(
+        apply_to_template("page-template.html",
+         Cons(("___CENTER_CONTENT___",
+           apply_to_template("path-form.html",
+             Cons(("___LVL_SELECT___",lvls),
+             Cons(("___GROUP_SELECT___",groups),
+             Cons(("___PATHS___",paths),
+             Empty[string^2]))))),
+         Cons(("<!--___CUSTOM_HEADER___-->",load_template("path-head.html")),
+         Cons(("___FNAME___","Wiki Access"),
+         Cons(("___CTRLS___",set-ctrls(conn,request)),
+         
+         Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
+         Empty[string^2])))))));
+  ;
+     write(conn,data);
+  }
+
+  fun path_table_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/admin/path/table/";
+  }
+
+ proc path_table (conn:http_connection, request:http_request ) {
+   val paths = 
+      (fold_left (fun(x:string) (y:string):string => x + "" + y)  ""
+       (map (fun (a:string^4) => "<tr><td><a onclick=\"sel_path('" + a.(0) + "','"+ 
+           a.(2) + "','" + a.(3) + "')\"'>select</a></td><td>"+a.(1)+"</td><td>" + a.(2) + "</td><td>" + a.(3) + "</td></tr>") 
+         (db_get_paths())));
+
+    val data = make_html(apply_to_template("paths-table.html",
+             Cons(("___PATHS___",paths),
+         Empty[string^2])));
+     write(conn,data);
+  }
+
+
+  fun path_edit_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/admin/path/edit/";
+  }
+
+  proc path_edit (conn:http_connection, request:http_request ) {
+    var grp = (get_post_param(request,"grp")).or_else "";
+    var path = (get_post_param(request,"path")).or_else "";
+    var lvl = (get_post_param(request,"lvl")).or_else "";
+    println$ q"path_edit $(grp),$(path),$(lvl)";
+    val message = if (if db_has_path(path,grp) then
+          db_update_path(path,grp,lvl)
+        else
+          db_add_path(path,grp,lvl)
+        endif) then
+      "Path update successful"
+    else
+      "Path update failed"
+    endif;
+    write(conn,make_html("<p>"+message+"</p>"));
+  }
+
+  fun path_delete_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/admin/path/delete/";
+  }
+
+  proc path_delete (conn:http_connection, request:http_request ) {
+    var grp = (get_post_param(request,"grp")).or_else "";
+    var path = (get_post_param(request,"path")).or_else "";
+    val message = if db_delete_path(path,grp) 
+      then "<p>Path deleted!</p>"
+      else "<p>Path deletion failed!</p>"
+    endif; 
+    write(conn,make_html(message));
+  }
+
+
+
 }

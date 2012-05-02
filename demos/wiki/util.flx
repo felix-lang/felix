@@ -55,3 +55,5 @@ fun has_fdoc (fname:string):bool =>
 fun strip_ctrl_m(s:string) =>
   (fold_left (fun(x:string) (y:string):string => x + y) "" 
    (split(s,(char(13)))));
+//fun strip_ctrl_m(s:string) =>
+//  search_and_replace(s,str((char(13))),"");

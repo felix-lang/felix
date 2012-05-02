@@ -1,0 +1,99 @@
+include "db/sqlite3/sqlite3_pool";
+
+class WikiFileModel {
+  
+  struct entry {
+    name:string;
+    content:string;
+    modified_on:string;
+    modified_by:string;
+  };
+
+  fun _ctor_entry(name:string,content:string) => entry(name,content,"","");
+
+  fun path_exists(path:string):bool =>
+    match rev(split(path,'/')) with
+      | Cons(?hd,?tl) => FileStat::fileexists( Filename::join(WIKI_ROOT,
+            (fold_left (fun(x:string) (y:string):string => x +"/"+ y) "" (rev(tl)))))
+      | _ => false
+    endmatch;
+  
+
+
+  fun get_doc (fname:string):opt[entry] =>
+    let ?full_path = Filename::join(WIKI_ROOT,fname) in
+      if (FileStat::fileexists full_path) then
+        Some (entry(fname,(load(full_path))))
+      else
+         None[entry]
+      endif;
+
+  fun get_ref_file (fn:string, path:list[string]):opt[string] = {
+    var fname = fn;
+    if fname.[0] == char "$" do fname = fname.[1 to]; done
+println$ ("get_ref_file:"+fname);
+    val inpath:bool = match find (fun (x:string) => startswith  fname x) path with |Some _ => true |_ => false endmatch;
+    if FileStat::fileexists fname do return Some fname;
+    else
+      var f = Filename::join(INSTALL_ROOT,fname);
+      if FileStat::fileexists f do return Some f;
+      else return FileSystem::find_in_path (fname, path);
+      done
+    done
+  }
+
+
+  fun has_doc (fname:string):bool =>
+   FileStat::fileexists (Filename::join(WIKI_ROOT,fname)); 
+
+
+  gen write_doc(e:entry) = {
+    open Output_text_file;
+    val full_path = Filename::join(WIKI_ROOT,e.name);
+    val handle = fopen_output (full_path);
+    println$ ("write_doc"+full_path);
+    if not valid handle do
+      println$ "Write not valid";
+      return false;
+    else
+      write(handle,e.content);
+      fclose(handle);
+      return true;
+    done
+  }
+
+ 
+  gen insert_doc(e:entry):bool = {
+    //val new_file =  (FileStat::fileexists file);
+    if write_doc(e) do
+         // add doc
+      return true;
+    else
+      return false;
+    done
+  }
+
+  gen update_doc(e:entry):bool = {
+    //val new_file =  (FileStat::fileexists file);
+    if write_doc(e) do
+         // add doc
+      return true;
+    else
+      return false;
+    done
+  }
+
+  gen delete_doc(fname:string):bool =>
+    let ?full_path = Filename::join(WIKI_ROOT,fname) in
+      if (FileStat::fileexists full_path) then
+        if (FileSystem::unlink_file(full_path)) == 0 then
+          true
+        else 
+          false
+        endif
+      else
+        false
+      endif;
+
+
+}
