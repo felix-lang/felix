@@ -75,12 +75,12 @@ proc Connect(s: &SOCKET, addr: &char, port: int)
 }
 
 // listens on all interfaces, I guess
-proc cmk_listener: &SOCKET*lvalue[int]*int
-    = '*$1 = flx::demux::create_listener_socket(&$2, $3);';
+proc cmk_listener: &SOCKET*&int*int
+    = '*$1 = flx::demux::create_listener_socket($2, $3);';
 
 proc mk_listener(listener: &SOCKET, port: &int, backlog: int)
 {
-    cmk_listener(listener,*port, backlog);
+    cmk_listener(listener,port, backlog);
     associate_with_iocp(*listener);
 }
 
@@ -109,13 +109,13 @@ fun eq : WFILE*WFILE -> bool = '($1 == $2)';
 // Geez, FILE_ATTRIBUTE_NORMAL? not hidden, not temp, etc.
 // final NULL is for template file. not sure what it does, but I don't want it.
 // notice that it's opened for SHARED reading
-proc OpenFile: lvalue[WFILE]*string =
-  '$1 = CreateFile($2.c_str(), FILE_READ_DATA, FILE_SHARE_READ, NULL,\
+proc OpenFile: &WFILE*string =
+  '*$1 = CreateFile($2.c_str(), FILE_READ_DATA, FILE_SHARE_READ, NULL,\
     OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);';
 
 // basically for windows named pipes
-proc OpenFileDuplex: lvalue[WFILE]*string =
-  '$1 = CreateFile($2.c_str(), FILE_READ_DATA | FILE_WRITE_DATA,\
+proc OpenFileDuplex: &WFILE*string =
+  '*$1 = CreateFile($2.c_str(), FILE_READ_DATA | FILE_WRITE_DATA,\
      FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,\
      FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);';
 
