@@ -141,7 +141,11 @@ proc debugln[T with Str[T]] (x:T) {
 var ECHO=0;
 gen system(cmd:string):int= {
   if ECHO==1 do fprintln$ cerr, cmd; done
+if PLAT_WIN32 do
+  var result = System::system('"'+cmd);
+else
   var result = System::system(cmd);
+done
   if ECHO==1 do fprintln$ cerr, "Result code " + str(result); done
   return result;
 }
@@ -156,7 +160,11 @@ gen get_stdout(x:string) = {
   else:
 */
     //var fout = Process::popen_in(x+" 2>&1 "); // this screws up flx_pkgconfig!
+if PLAT_WIN32 do
+    var fout = Process::popen_in('"'+x+" ");
+else
     var fout = Process::popen_in(x+" ");
+done
     if valid fout do
       var output = load fout;
       var result = Process::pclose fout; 
