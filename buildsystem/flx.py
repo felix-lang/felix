@@ -12,7 +12,11 @@ import platform
 # ------------------------------------------------------------------------------
 
 def _getcwd():
-  return os.getcwd().replace(":", "\\")
+  cwd = os.getcwd().replace(":", "\\")
+  if cwd[0] != os.sep: cwd = os.sep + cwd 
+  return cwd
+  # absolute filename in Unix
+  # \C\blah on Windows
 
 # ------------------------------------------------------------------------------
 
@@ -46,15 +50,16 @@ class Builder(fbuild.db.PersistentObject):
         src = Path(src)
         #src_buildroot = src.addroot(buildroot)
 
-        print("Src to flxg= " + src)
+        print("Buildroot        = " + buildroot)
+        print("Src to flxg      = " + src)
         if preparse:
-            dst = buildroot + "/cache/binary/"+_getcwd()+"/"+src
+            dst = buildroot /"cache"/"binary"+_getcwd()/src
             dst = dst.replaceext('.par')
         else:
-            dst = buildroot + "/cache/text/"+ _getcwd()+"/"+src
+            dst =buildroot /"cache"/"text"+_getcwd()/src
             dst = dst.replaceext('.cpp')
 
-        print("Expected flg dst= " + dst)
+        print("Expected flg dst = " + dst)
         #if src != src_buildroot:
         #    src_buildroot.parent.makedirs()
         #    src.copy(src_buildroot)
@@ -74,8 +79,8 @@ class Builder(fbuild.db.PersistentObject):
         imports = list(imports)
         syntaxes = list(syntaxes)
         if include_std:
-            imports.insert(0, 'plat/flx.flxh')
-            syntaxes.insert(0, '@grammar/grammar.files')
+            imports.insert(0, 'plat/flx.flxh')               # Unix filename correct here
+            syntaxes.insert(0, '@grammar/grammar.files')     # Unix filename correct here
 
         cmd.extend('-I' + i for i in sorted(includes) if Path.exists(i))
         cmd.extend('--syntax=' + i for i in syntaxes)
@@ -163,7 +168,7 @@ class Builder(fbuild.db.PersistentObject):
         command line harness but we're probably building it here.
         """
 
-        flx_pkgconfig = self.ctx.buildroot / 'bin/flx_pkgconfig'
+        flx_pkgconfig = self.ctx.buildroot / 'bin'/'flx_pkgconfig'
         resh = src.replaceext('.resh')
         includes = src.replaceext('.includes')
 
@@ -250,10 +255,10 @@ def build(ctx, flxg, cxx, drivers):
 
 def build_flx_pkgconfig(host_phase, target_phase, flx_builder):
     return flx_builder.build_flx_pkgconfig_exe(
-        dst='bin/flx_pkgconfig',
-        src='src/flx_pkgconfig/flx_pkgconfig.flx',
+        dst=Path('bin')/'flx_pkgconfig',
+        src=Path('src')/'flx_pkgconfig'/'flx_pkgconfig.flx',
         includes=[target_phase.ctx.buildroot / 'lib'],
-        cxx_includes=['src/flx_pkgconfig', target_phase.ctx.buildroot / 'lib/rtl'],
+        cxx_includes=[Path('src')/'flx_pkgconfig', target_phase.ctx.buildroot / 'lib'/'rtl'],
         cxx_libs=[call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).static],
     )
 
@@ -261,10 +266,10 @@ def build_flx_pkgconfig(host_phase, target_phase, flx_builder):
 def build_flx(host_phase, target_phase, flx_builder):
     return flx_builder.build_exe(
         async=False,
-        dst='bin/flx',
-        src='src/flx/flx.flx',
+        dst=Path('bin')/'flx',
+        src=Path('src')/'flx'/'flx.flx',
         includes=[target_phase.ctx.buildroot / 'lib'],
-        cxx_includes=['src/flx', target_phase.ctx.buildroot / 'lib/rtl'],
+        cxx_includes=[Path('src')/'flx', target_phase.ctx.buildroot / 'lib'/'rtl'],
         cxx_libs=[call('buildsystem.flx_rtl.build_runtime', host_phase, target_phase).static],
     )
 
@@ -335,7 +340,6 @@ def check_flx(ctx, felix,
             stdout=dst,
             timeout=60,
             quieter=1,
-            flags=['--debug-flx'],
             )
     except fbuild.ExecutionError as e:
         if isinstance(e, fbuild.ExecutionTimedOut):
