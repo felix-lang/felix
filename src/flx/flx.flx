@@ -1015,9 +1015,20 @@ dir =
   endif
 ;
 
+fun cache_join (c:string, var f:string) = 
+{
+if PLAT_WIN32 do
+  if f.[1] == char ":" do f.[1] = char "\\"; done
+  if f.[0] == char "\\" do f = f.[1 to]; done
+else
+  if f.[0] == char "/" do f = f.[1 to]; done
+done
+  return Filename::join(c,f);
+}
+
 var filebase = Directory::mk_absolute_filename$ Filename::join(dir,base);
 debugln$ "User program base is " + filebase;
-var cpp_filebase = if OUTPUT_DIR=="" then filebase else Filename::join(OUTPUT_DIR,filebase) endif;
+var cpp_filebase = if OUTPUT_DIR=="" then filebase else cache_join(OUTPUT_DIR,filebase) endif;
 debugln$ "C++ file base is " + cpp_filebase;
 
 // Find absolute pathname
