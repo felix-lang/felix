@@ -9,7 +9,7 @@ include "std/posix/signal";
 include "std/posix/filesystem";
 include "std/posix/filestat";
 
-Posix_Signal::ignore_signal(Posix_Signal::SIGPIPE);
+PosixSignal::ignore_signal(PosixSignal::SIGPIPE);
 //done
 
 include "std/io/socket";
