@@ -8,7 +8,7 @@ class Config {
 @def b(x): return str(x).lower()
 
 fun config() => 
-@tangle("  let ?INSTALL_ROOT_TOPDIR=Filename::join(%r, 'lib/felix') in" % (config.PREFIX))
+@tangle("  let ?INSTALL_ROOT_TOPDIR=Filename::join(%r, Filename::join('lib','felix')) in" % (config.PREFIX))
 @tangle("  let ?INSTALL_ROOT=Filename::join(INSTALL_ROOT_TOPDIR, 'felix-%s') in " % (config.flx_version))
   (
 @tv("PREFIX='"+config.PREFIX+"'")

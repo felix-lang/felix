@@ -330,7 +330,7 @@ def check_flx(ctx, felix,
     ctx.logger.check('checking ' + exe)
     try:
         stdout, stderr = felix.run(exe,
-            env=dict(env, TEST_DATA_DIR=Path('test/test-data')),
+            env=dict(env, TEST_DATA_DIR=Path('test')/'test-data'),
             static=static,
             stdout=dst,
             timeout=60,
