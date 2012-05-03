@@ -132,7 +132,9 @@ class HTTPRequest {
       var buf = C_hack::cast[&char] (C_hack::malloc(len+1));
       var buf_a = address(buf);
       read(conn.sock,&len,buf_a,&eof);
-      iter (proc (line:string) {params = params + get_params(line);})  (split(str(buf),"\n"));
+      if len > 0 do
+        params = get_params(string(buf,len));
+      done
       C_hack::free(buf_a);
     done
     *request.entity_params = params;
