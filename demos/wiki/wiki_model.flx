@@ -279,7 +279,8 @@ println$ q"DELETE QRY$(qry)";
     return None[entry];
   }
 
-  gen db_paths_for_user(user:string):string^2 = {
+  gen db_paths_for_user(user:string):list[string^2] = {
+    val db = let Some ?d = db_pool.get_next() in d;
     val qry = q"""SELECT path,lvl FROM paths 
                  INNER JOIN users on users.grp = paths.grp
                  WHERE user = '$(user)'
@@ -292,9 +293,9 @@ println$ q"DELETE QRY$(qry)";
         while (get_next(it,&row)) do
           result = result+Cons( (let row ?r = row in  
             ((get_text_val(get(r,0))),(get_text_val(get(r,1))))),
-            Empty[string^3]);
+            Empty[string^2]);
         done
-      |qry_fail (?a,?b) => result = Empty[string^3];
+      |qry_fail (?a,?b) => result = Empty[string^2];
      endmatch;
     return result;
   }
