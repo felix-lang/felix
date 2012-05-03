@@ -190,14 +190,14 @@ proc ReadFile(f: WFILE, len: &int, buf: address, eof: &bool)
     var io = mk_winfile_io(sys_demux, f, buf, *len, true); // reading
     faio_req$ &io;
 // we do have a success flag
-    calc_eof(io.pb, len, eof);
+    calc_eof(io.get_pb, len, eof);
 }
 
 proc WriteFile(f: WFILE, len: &int, buf: address, eof: &bool)
 {
     var io = mk_winfile_io(sys_demux, f, buf, *len, false);    // writing
     faio_req$ &io;
-    calc_eof(io.pb, len, eof);
+    calc_eof(io.get_pb, len, eof);
 }
 
 
