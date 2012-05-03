@@ -1,0 +1,5 @@
+const char* foo = @foo@;
+
+#undef HAVE_FOO
+#undef HAVE_BAR
+#undef HAVE_BAZ

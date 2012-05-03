@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+
+fbuild_dirname = os.path.dirname(sys.argv[0])
+
+sys.path.insert(0, os.path.join(fbuild_dirname, 'lib'))
+
+fbuild_exename = os.path.join(fbuild_dirname, 'bin', 'fbuild')
+f = open(fbuild_exename)
+try:
+    exec(compile(f.read(), fbuild_exename, 'exec'))
+finally:
+    f.close()
