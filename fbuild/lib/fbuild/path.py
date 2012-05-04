@@ -386,7 +386,10 @@ class Path(str):
         return os.rmdir(self)
 
     def rmtree(self):
-        return shutil.rmtree(self)
+        try:
+          return shutil.rmtree(self)
+        except:
+          pass #Oh well. This is known to fail on Windows.
 
     def split(self):
         """Split a pathname.  Returns tuple "(head, tail)" where "tail" is

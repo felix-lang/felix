@@ -76,6 +76,7 @@ def guess_platform(ctx, arch=None):
                 arch = platform.system().lower()
             else:
                 arch = stdout.decode('utf-8').strip().lower()
+                if arch == 'windowsnt' : arch = 'windows'
 
     try:
         architecture = archmap[arch]
