@@ -226,4 +226,8 @@ table.admin td {
 
 table.admin th {
   background-color: #111111;
+  color: #e9e9ff;
+  padding-left:3px;
+  padding-right:3px;
+  font-weight:bold;
 }
