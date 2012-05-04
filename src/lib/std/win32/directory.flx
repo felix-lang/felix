@@ -40,7 +40,13 @@ class Win32Directory
       var p = getcwd(C_hack::cast[&char] (&b),size 1024);
       return if C_hack::isNULL p then "" else string p endif; 
     }
+
     fun is_absolute_filename (s:string) => s.[0]=="\\".char or s.[1]==":".char and s.[2]=="\\".char;
+    // this is wrong, because D:filename will have the
+    // current directory prepended instead of the 
+    // current directory for drive D, so it could end up
+    // referring to drive C instead .. 
+    // also none of this works with network names
     fun mk_absolute_filename(s:string) => 
        if is_absolute_filename s then s else
        #getcwd + "\\" + s
