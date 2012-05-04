@@ -19,8 +19,8 @@ open class String
   inherit Tord[string];
   inherit Tord[ustring];
 
-  fun == (s:string, c:char) => len s == 1 and s.[0] == c;
-  fun == (c:char, s:string) => len s == 1 and s.[0] == c;
+  fun == (s:string, c:char) => len s == 1uz and s.[0] == c;
+  fun == (c:char, s:string) => len s == 1uz and s.[0] == c;
 
   proc  += : &string * string = "$1->append($2:assign);";
   proc  += : &string * &char = "$1->append($2:assign);";
