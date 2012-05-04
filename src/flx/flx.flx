@@ -1029,7 +1029,9 @@ done
   return k;
 }
 
-var filebase = Directory::mk_absolute_filename$ Filename::join(dir,base);
+var rel_filebase = Filename::join(dir,base);
+debugln$ "Rel_filebase= " + rel_filebase;
+var filebase = Directory::mk_absolute_filename$ rel_filebase;
 debugln$ "User program base is " + filebase;
 var cpp_filebase = if OUTPUT_DIR=="" then filebase else cache_join(OUTPUT_DIR,filebase) endif;
 debugln$ "C++ file base is " + cpp_filebase;

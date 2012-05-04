@@ -40,7 +40,7 @@ class Win32Directory
       var p = getcwd(C_hack::cast[&char] (&b),size 1024);
       return if C_hack::isNULL p then "" else string p endif; 
     }
-    fun is_absolute_filename (s:string) => s.[0]=="/".char;
+    fun is_absolute_filename (s:string) => s.[0]=="\\".char or s.[1]==":" and s.[2]=="\\";
     fun mk_absolute_filename(s:string) => 
        if is_absolute_filename s then s else
        #getcwd + "\\" + s
