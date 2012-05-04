@@ -130,7 +130,7 @@ class WikiHandler {
   proc wiki (conn:http_connection, request:http_request ) {
     var path = request.path.[6 to];
     if path =="" or path == "/" do
-       write(conn,make_see_other("/wiki/doc/wiki/wiki_main.fdoc"));
+       write(conn,make_see_other("/wiki/wiki/wiki_main.fdoc"));
       return;
     done
     var fname = get_title(conn,request);//(get_fname(request)).or_else "wiki_main.fdoc";
@@ -291,7 +291,7 @@ class WikiHandler {
   proc inc(conn:http_connection,request:http_request) {
     var path = request.path.[1 to];
     if path =="" or path == "/" do
-       write(conn,make_see_other("/wiki/doc/wiki/wiki_main.fdoc"));
+       write(conn,make_see_other("/wiki/wiki/wiki_main.fdoc"));
       return;
     done
     var fname = (get_fname(request)).or_else "wiki_main.fdoc";
