@@ -167,6 +167,8 @@ else
 done
     if valid fout do
       var output = load fout;
+debugln$ "[popen command returns data:] " + output;
+
       var result = Process::pclose fout; 
 if PLAT_WIN32 do
       return result.int, output;
