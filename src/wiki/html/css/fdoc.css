@@ -9,6 +9,7 @@ span.hack {color:#66DD00; }
 span.preproc {color:#005500; }
 span.embedded_c{background-color:#DDDDDD; }
 span.fpc_fieldname {color:#DD0000; }
+p {padding-bottom:2px; }
 pre.flxbg {background-color:#90EF90; }
 pre.cppbg {background-color:#80FF80; }
 pre.expected {background-color:#E0FF80; }
