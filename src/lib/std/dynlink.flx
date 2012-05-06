@@ -83,6 +83,44 @@ class Dynlink
   fun dlsym:flx_library * string->address =
       "FLX_SDLSYM($1->library,$2.c_str())";
 
+  fun flx_dlsym[T] (linst: flx_instance, sym:string) = {
+    var library = Dynlink::get_library linst;
+    var tf = Dynlink::get_thread_frame linst;
+    var raw_sym = Dynlink::dlsym$ library, sym;
+    var typed_sym = C_hack::cast[T] raw_sym;
+    return typed_sym, tf;
+  }
+
+  fun func0[R] (linst: flx_instance, sym:string) = {
+    var s,tf= flx_dlsym[address --> R] (linst, sym);
+    return fun () => s tf;
+  }
+
+  fun func1[R,A0] (linst: flx_instance, sym:string) = {
+    var s,tf= flx_dlsym[address * A0 --> R] (linst, sym);
+    return fun (a0:A0) => s (tf, a0);
+  }
+
+  fun func2[R,A0,A1] (linst: flx_instance, sym:string) = {
+    var s,tf= flx_dlsym[address * A0 * A1 --> R] (linst, sym);
+    return fun (a0:A0,a1:A1) => s (tf, a0, a1);
+  }
+
+  fun proc0 (linst: flx_instance, sym:string) = {
+    var s,tf= flx_dlsym[address --> void] (linst, sym);
+    return proc () { s tf; };
+  }
+
+  fun proc1[A0] (linst: flx_instance, sym:string) = {
+    var s,tf= flx_dlsym[address * A0 --> void] (linst, sym);
+    return proc (a0:A0) { s (tf, a0); };
+  }
+
+  fun proc2[A0,A1] (linst: flx_instance, sym:string) = {
+    var s,tf= flx_dlsym[address * A0 * A1 --> void] (linst, sym);
+    return proc (a0:A0,a1:A1) { s (tf, a0, a1); };
+  }
+
   publish """
     execute an address representing a top
     level exported felix procedure's C wrapper,
@@ -109,6 +147,7 @@ class Dynlink
     var f = bind_proc(linstance, sym, data);
     run f;
   }
+
 
 }
 

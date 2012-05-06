@@ -235,7 +235,9 @@ println$ "Adding lib " + lib;
       var raw_setup = Dynlink::dlsym$ library, "setup";
 //println$ lib+ " Got setup address " + str raw_setup;
       var setup = C_hack::cast[address * string --> int] raw_setup;
-      var sresult = setup(tf,config);
+      // TEST THIS OUT
+      var sresult = Dynlink::func1[int,string] (linst, "setup") (config);
+//      var sresult = setup(tf,config);
       C_hack::ignore(sresult);
 println$ lib+ " Library set up " + str sresult;
       libs = Cons ((lib, linst),libs); 
