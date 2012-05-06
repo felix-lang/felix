@@ -1,2 +1,0 @@
-   tangle("provides_dlib: -lplat_linux_dynamic")
-   tangle("provides_slib: -lplat_linux_static")
