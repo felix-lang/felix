@@ -2,6 +2,7 @@
 #include <cstring>
 #include <string>
 #include <iostream>
+#include <cassert>
 
 #include "flx_ioutil.hpp"
 namespace flx { namespace rtl { namespace ioutil {
@@ -12,8 +13,10 @@ namespace flx { namespace rtl { namespace ioutil {
 
   string load_file (string f)
   {
-    char const *fname = f.data();
+    char const *fname = f.c_str();
+
     FILE *fi = fopen(fname,"rb"); // note: binary mode!
+
     if (fi)
     {
       string x = "";
