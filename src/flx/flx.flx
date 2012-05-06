@@ -421,8 +421,8 @@ val future_time = double(ulong(-1)); // a hacky way to get a big number
 
 fun dfiletime(f:string, dflt:double)=
 {
-  val x = FileStat::filetime (f);
-  dbug??println$ "Time of file " + f + " is " + fmt(x,fixed(0,3));
+  var x = FileStat::filetime (f);
+  debugln$ "Time of file " + f + " is " + fmt(x,fixed(0,3));
   return if x == 0.0 then dflt else x endif;
 }
 
