@@ -230,8 +230,9 @@ proc install_old() {
       if PLAT_WIN32 do
         result=system("rd /S /Q "+INSTALL_ROOT);
       else
-        result=system("mkdir -pv "+INSTALL_ROOT);
+        result=system("rm -rf "+INSTALL_ROOT);
       done
+      result=system("mkdir -pv "+INSTALL_ROOT);
       result=system("cp -Rpv "+FLX_INSTALL_DIR+"/* "+INSTALL_ROOT);
       if result == 0 do println "Install succeeded";
       else eprintln$ "Install failed, code = " + str(result);
@@ -257,7 +258,7 @@ proc install() {
     if PLAT_WIN32 do
       result=system("rd /S /Q "+INSTALL_ROOT);
     else
-      result=system("mkdir -pv "+INSTALL_ROOT);
+      result=system("rm -rf "+INSTALL_ROOT);
     done
     result=system("mkdir -pv "+INSTALL_ROOT);
     println "Target directory cleaned";
