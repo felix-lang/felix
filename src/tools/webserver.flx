@@ -73,7 +73,7 @@ var default_config = list (
    "extension h     -> cpp2html::xlat_cpp",
    "extension hpp   -> cpp2html::xlat_cpp",
 
-   "extension fpc  -> fdoc2html::xlat_fpc",
+   "extension fpc  -> fpc2html::xlat_fpc",
    "extension fdoc  -> fdoc2html::xlat_fdoc",
    "extension ml    -> ocaml2html::xlat_ocaml",
    "extension mli   -> ocaml2html::xlat_ocaml",
@@ -207,59 +207,24 @@ var libs = Empty[libmap_entry];
 fun have_lib (k:string) => Assoc_list::mem (== of (string * string)) libs k;
 var dll_extn = #Config::config.EXT_SHLIB;
 
-typedef raw_xlat_t = address * string * string --> bool * string;
-
-var xlat_felix: raw_xlat_t;
-var xlat_fdoc: raw_xlat_t;
-var xlat_fpc: raw_xlat_t;
-var xlat_ocaml: raw_xlat_t;
-var xlat_py:  raw_xlat_t;
-var xlat_cpp: raw_xlat_t;
-
-var tf_xlat_felix: address;
-var tf_xlat_fdoc: address;
-var tf_xlat_fpc: address;
-var tf_xlat_ocaml: address;
-var tf_xlat_py:  address;
-var tf_xlat_cpp: address;
-
-
 for d in PLUGIN_MAP do 
   match d with 
   | ?ext,?lib,?entry =>
     if not (have_lib lib) do
 println$ "Adding lib " + lib;
       var linst = Dynlink::init_lib(lib + dll_extn);
-      var library = Dynlink::get_library linst;
-      var tf = Dynlink::get_thread_frame linst;
-      var raw_setup = Dynlink::dlsym$ library, "setup";
-//println$ lib+ " Got setup address " + str raw_setup;
-      var setup = C_hack::cast[address * string --> int] raw_setup;
-      // TEST THIS OUT
       var sresult = Dynlink::func1[int,string] (linst, "setup") (config);
-//      var sresult = setup(tf,config);
       C_hack::ignore(sresult);
 println$ lib+ " Library set up " + str sresult;
       libs = Cons ((lib, linst),libs); 
+      var x = Dynlink::func2[bool*string, string, string] (linst,entry);
       match lib with
-      | "flx2html" => 
-        xlat_felix = C_hack::cast[raw_xlat_t]$ Dynlink::dlsym (library,entry);
-        tf_xlat_felix = tf;
-      | "fdoc2html" => 
-        xlat_fdoc = C_hack::cast[raw_xlat_t]$ Dynlink::dlsym (library,entry);
-        tf_xlat_fdoc = tf;
-      | "fpc2html" => 
-        xlat_fpc = C_hack::cast[raw_xlat_t]$ Dynlink::dlsym (library,entry);
-        tf_xlat_fpc = tf;
-      | "py2html" => 
-        xlat_py = C_hack::cast[raw_xlat_t]$ Dynlink::dlsym (library,entry);
-        tf_xlat_py = tf;
-      | "ocaml2html" => 
-        xlat_ocaml = C_hack::cast[raw_xlat_t]$ Dynlink::dlsym (library,entry);
-        tf_xlat_ocaml = tf;
-      | "cpp2html" => 
-        xlat_cpp= C_hack::cast[raw_xlat_t]$ Dynlink::dlsym (library,entry);
-        tf_xlat_cpp = tf;
+      | "flx2html" => var xlat_felix = x;
+      | "fdoc2html" => var xlat_fdoc = x;
+      | "fpc2html" => var xlat_fpc = x;
+      | "py2html" => var xlat_py = x;
+      | "ocaml2html" => var xlat_ocaml = x;
+      | "cpp2html" => var xlat_cpp = x; 
       endmatch;
     done 
   endmatch;
@@ -458,8 +423,9 @@ proc serve_felix (k:socket_t, fname:string) {
   | Some ?path =>
     {
       val text = load path;
+      println$ "Loaded felix file " + fname+", len="+str (text.len.int);
       val dirname = Filename::dirname path;
-      def val needs_mathjax, val html = xlat_felix(tf_xlat_felix,text,dirname);
+      def val needs_mathjax, val html = xlat_felix(text,dirname);
       val data = make_html$
         "<html><head>"+Css4Html::flx_head+
          if needs_mathjax then mathjax else "" endif +
@@ -483,10 +449,11 @@ proc serve_fpc (k:socket_t, fname:string) {
   | Some ?path =>
     {
       val text=load path;
+      println$ "Loaded fpc file " + fname+", len="+str (text.len.int);
       val dirname = Filename::dirname path;
       val data = make_html$
         "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+
-        (xlat_fpc (tf_xlat_fpc,text, dirname)).1
+        (xlat_fpc (text, dirname)).1
         +"</pre></body></html>\n\r"
       ;
       write_string(k,data,&eof_flag);
@@ -512,10 +479,10 @@ fun get_py (fname:string) = {
 
 proc serve_py (k:socket_t, fname:string) {
   var eof_flag = false;
-  var flx = get_flx fname;
+  var flx = get_py fname;
   val data = make_html$
     "<html><head>"+Css4Html::flx_head+"</head><body><pre>"+ 
-    (xlat_py (tf_xlat_py,flx,"")).1 +"</pre></body></html>\n\r"
+    (xlat_py (flx,"")).1 +"</pre></body></html>\n\r"
   ;
   write_string (k, data, &eof_flag);
 }
@@ -534,10 +501,11 @@ fun get_ocaml (fname:string) = {
 
 proc serve_ocaml (k:socket_t, fname:string) {
   var eof_flag = false;
-  var flx = get_flx fname;
+  var flx = get_ocaml fname;
+  println$ f"Loaded Ocaml file %S, len=%d" (fname, flx.len.int);
   val data = make_html$
     "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
-    (xlat_ocaml (tf_xlat_ocaml,flx,"")).1
+    (xlat_ocaml (flx,"")).1
     +"</pre></body></html>\n\r"
   ;
   write_string (k, data, &eof_flag);
@@ -551,10 +519,11 @@ proc serve_cpp (k:socket_t, fname:string) {
   | Some ?path =>
     {
       val text=load path;
+  println$ f"Loaded C++ file %S, len=%d" (fname, text.len.int);
       val dirname = Filename::dirname path;
       val data = make_html$
         "<html><head>"+ Css4Html::flx_head +"</head><body><pre>"+
-        (xlat_cpp (tf_xlat_cpp,text, dirname)).1
+        (xlat_cpp (text, dirname)).1
         +"</pre></body></html>\n\r"
       ;
       write_string (k, data, &eof_flag);
@@ -620,7 +589,7 @@ proc serve_fdoc (k:socket_t, fname:string) {
   var eof_flag = false;
   var txt = get_fdoc(fname);
   //println$ "Contents=" + flx;
-  needs_mathjax, html := xlat_fdoc (tf_xlat_fdoc,txt,fname);
+  needs_mathjax, html := xlat_fdoc (txt,fname);
   val data = make_html(
     "<html><head>"+Css4Html::flx_head+
     if needs_mathjax then mathjax else "" endif +
@@ -636,7 +605,7 @@ proc serve_xfdoc (k:socket_t, fname:string) {
   var txt = get_fdoc(fname);
 println$ "Serve fdoc "+fname+" as xhtml";
   //println$ "Contents=" + flx;
-  needs_mathjax, html := xlat_fdoc (tf_xlat_fdoc,txt,fname);
+  needs_mathjax, html := xlat_fdoc (txt,fname);
   val data = make_xhtml(
 '''<?xml version="1.0" encoding="UTF-8"?>  
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1 plus MathML 2.0//EN"  
