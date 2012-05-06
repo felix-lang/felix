@@ -1021,7 +1021,8 @@ fun cache_join (c:string, var f:string) =
 {
 debugln$ "[cache_join] " + c + " with  " + f;
 if PLAT_WIN32 do
-  if f.[1] == char ":" do f = f.[0 to 1]+"\\"+f.[2 to]; done
+  if f.[1 to 2] == ":\\" do f = f.[0 to 1]+f.[2 to]; 
+  elif f.[1] == char ":" do f = f.[0 to 1]+"\\"+f.[2 to]; done
   if f.[0] == char "\\" do f = f.[1 to]; done
 else
   if f.[0] == char "/" do f = f.[1 to]; done
