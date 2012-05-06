@@ -22,6 +22,7 @@ module Fpc2Html
 {
 fun xlat_fpc(t:string, dir:string) : bool * string =
 {
+println$ "formatting fpc data";
   var out = "";
   val lines = split(t,"\n");
   iter handle_line lines;
