@@ -4419,6 +4419,13 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
       string_of_expr e
     )
 
+  | EXPR_try (sr,_,_) ->
+    clierr sr
+    (
+      "[bind_expression] " ^
+      "Unexpected try/catch when binding expression (not implemented yet)"
+    )
+
   | EXPR_match (sr,_) ->
     clierr sr
     (

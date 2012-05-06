@@ -396,12 +396,16 @@ def configure(ctx):
     # this is a hack: assume we're running on Unix.
     # later when Erick figures out how to fix this
     # we'd copy the win32 subdirectory entries instead
-    buildsystem.copy_to(ctx,
-        ctx.buildroot / 'config', Path('src/config/unix/*.fpc').glob())
+    if "posix" in target.platform:
+      print("COPYING POSIX RESOURCE DATABASE")
+      buildsystem.copy_to(ctx,
+          ctx.buildroot / 'config', Path('src/config/unix/*.fpc').glob())
 
     # enable this on win32 **instead** of the above to copy fpc files 
-    #buildsystem.copy_to(ctx,
-    #    ctx.buildroot / 'config', Path('src/config/win32/*.fpc').glob())
+    if "windows" in target.platform:
+      print("COPYING WIN32 RESOURCE DATABASE")
+      buildsystem.copy_to(ctx,
+          ctx.buildroot / 'config', Path('src/config/win32/*.fpc').glob())
 
     # enable this on solaris to clobber any fpc files 
     # where the generic unix ones are inadequate

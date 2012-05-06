@@ -186,6 +186,23 @@ and xexpr_t sr x =
    in
    EXPR_match (xsr sr, (ex e,pes))
 
+ | Lst [Id "ast_try";  sr; e; Lst catches] ->
+   let catches = map (function
+   | Lst [typ; Lst pes] ->
+     let pes = map (function
+       | Lst [p;e] -> xp p, ex e
+       | x -> err x "ast_try: match syntax"
+       )
+       pes
+     in
+     ti typ,pes
+   | x -> err x "ast_try: catch syntax"
+   )
+   catches
+   in
+   EXPR_try (xsr sr, ex e, catches)
+
+
  (* handled in flx_typing2 now 
  | Lst [Id "ast_typeof";  e] -> EXPR_typeof (sr, ex e)
  *)

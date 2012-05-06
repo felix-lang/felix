@@ -252,5 +252,11 @@ syntax expressions {
                 `(ast_cond ,_sr (,cond ,thn ,result))))))
             (fold_left f _3 _1))
           """;
+
+  // try/catch expression
+  satom := "try" sexpr catches "endtry" =># "`(ast_try ,_sr ,_2 ,_3)";
+  catch := "catch" sexpr "with" smatching+ =># "`(,_2 ,_4)" ;
+  catches := catch+ =># "_1";
+
 }
 

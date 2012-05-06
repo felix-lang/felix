@@ -143,6 +143,9 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_match (sr,(a,pes)) ->
     EXPR_match (sr, (f a, List.map (fun (pat,x) -> pat, f x) pes))
 
+  | EXPR_try (sr, a, catches) ->
+    EXPR_try (sr, f a, List.map (fun (t,pes) -> t,List.map (fun (pat,x) -> pat, f x) pes) catches)
+
   | EXPR_typeof (sr,x) -> EXPR_typeof (sr,f x)
   | EXPR_cond (sr,(a,b,c)) -> EXPR_cond (sr, (f a, f b, f c))
 
@@ -218,6 +221,11 @@ let iter_expr f (e:expr_t) =
 
   | EXPR_match (sr,(a,pes)) ->
     f a; List.iter (fun (pat,x) -> f x) pes
+  | EXPR_try (sr,a,catches) ->
+    f a;
+    List.iter
+    (fun (t,pes) -> List.iter (fun (pat,x) -> f x) pes)
+    catches
 
   | EXPR_cond (sr,(a,b,c)) -> f a; f b; f c
   | EXPR_range_check (sr,a,b,c) -> f a; f b; f c

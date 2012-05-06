@@ -263,6 +263,22 @@ and string_of_expr (e:expr_t) =
     ^
     " endmatch"
 
+  | EXPR_try (_, e, catches) ->
+    "try " ^ se e ^ "\n" ^
+    catmap "\n  catch " (fun (t,ps) -> string_of_typecode t ^ " with\n" ^
+      catmap "\n"
+      (fun (p,e')->
+        " | " ^
+        string_of_pattern p ^
+        " => " ^
+        string_of_expr e'
+      )
+      ps
+    ) catches
+    ^
+    " endtry"
+
+
 (*
   | EXPR_type_match (_,(e, ps)) ->
     "typematch " ^ string_of_typecode e ^ " with " ^
