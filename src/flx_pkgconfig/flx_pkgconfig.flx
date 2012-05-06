@@ -11,6 +11,12 @@ Maybe the tarball should even include the C++ sources,
 so it can be built early enough.
 */
 
+// println$ "Flx_pkgconfig is running";
+
+// for i in (List::range System::argc) do
+//   println$ "Arg " + str i + " => " + System::argv i;
+// done
+
 proc kludge : 1 = "PTF gcp->allow_collection_anywhere=false;";
 kludge();
 

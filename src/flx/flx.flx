@@ -227,8 +227,11 @@ proc install_old() {
         eprintln$ "Cannot create directory " + INSTALL_ROOT_TOPDIR;
         System::exit 1;
       done
-      result=system("rm -rf "+INSTALL_ROOT);
-      result=system("mkdir -pv "+INSTALL_ROOT);
+      if PLAT_WIN32 do
+        result=system("rd /S /Q "+INSTALL_ROOT);
+      else
+        result=system("mkdir -pv "+INSTALL_ROOT);
+      done
       result=system("cp -Rpv "+FLX_INSTALL_DIR+"/* "+INSTALL_ROOT);
       if result == 0 do println "Install succeeded";
       else eprintln$ "Install failed, code = " + str(result);
@@ -250,7 +253,12 @@ proc install() {
     var result = 0;
 
     // remove old install
-    result=system("rm -rf "+INSTALL_ROOT);
+
+    if PLAT_WIN32 do
+      result=system("rd /S /Q "+INSTALL_ROOT);
+    else
+      result=system("mkdir -pv "+INSTALL_ROOT);
+    done
     result=system("mkdir -pv "+INSTALL_ROOT);
     println "Target directory cleaned";
  
@@ -933,9 +941,19 @@ if CLEAR_CACHE != 0 do
   if answer == "Y\n" or answer == "y\n" do
     // delete the caches loudly
     println$ "Delete cache " + OUTPUT_DIR;
-    C_hack::ignore$ xqt("rm -rf " + quote(OUTPUT_DIR));
+    if PLAT_WIN32 do
+        C_hack::ignore$ xqt("rd /Q /S " + quote(OUTPUT_DIR));
+    else
+        C_hack::ignore$ xqt("rm -rf " + quote(OUTPUT_DIR));
+    done
     println$ "Delete cache " + CACHE_DIR;
-    C_hack::ignore$ xqt("rm -rf " + quote(CACHE_DIR));
+
+    if PLAT_WIN32 do
+        C_hack::ignore$ xqt("rd /Q /S " + quote(CACHE_DIR));
+    else
+        C_hack::ignore$ xqt("rm -rf " + quote(CACHE_DIR));
+    done
+
     Directory::mkdirs(CACHE_DIR);
     var f = fopen_output flxg_stamp;
     write(f, fmt(flxg_time, fixed (0,3)));
