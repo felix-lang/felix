@@ -49,7 +49,7 @@ fun link_strings(FLX_INSTALL_DIR:string): string * string =
 {
 @if config.HAVE_MSVC:
   tangle('  DLINK_STRING:="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl ";')
-  tangle('  SLINK_STRING:="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl ";')
+  tangle('  SLINK_STRING:="/link /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl ";')
  elif config.CYGWIN or config.WIN32:
   tangle('  DLINK_STRING:="-L"+{FLX_INSTALL_DIR+"/bin "')
   tangle('  SLINK_STRING:="-L"+FLX_INSTALL_DIR+"/lib/rtl ";')
