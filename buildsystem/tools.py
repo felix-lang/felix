@@ -4,18 +4,29 @@ import os
 # ------------------------------------------------------------------------------
 
 def build(phase, felix):
-    exe = felix.compile(phase.ctx.buildroot/'tools/flx_ls.flx', static=True)
-    fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+    try:
+        exe = felix.compile(phase.ctx.buildroot/'tools/flx_ls.flx', static=True)
+        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+    except:
+        print("Warning : flx_ls not built. Continuing..." )
 
-    exe = felix.compile(phase.ctx.buildroot/'tools/flx_cp.flx', static=True)
-    fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+    try:
+        exe = felix.compile(phase.ctx.buildroot/'tools/flx_cp.flx', static=True)
+        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+    except:
+        print("Warning : flx_cp not built. Continuing..." )
 
-    exe = felix.compile(phase.ctx.buildroot/'tools/webserver.flx', static=True)
-    fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+    try:
+        exe = felix.compile(phase.ctx.buildroot/'tools/webserver.flx', static=True)
+        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+    except:
+        print("Warning : webserver not built. Continuing..." )
 
-    exe = felix.compile(phase.ctx.buildroot/'wiki/wiki.flx', static=True)
-    fbuild.builders.file.copy(phase.ctx, exe, 'bin')
-
+    try:
+        exe = felix.compile(phase.ctx.buildroot/'wiki/wiki.flx', static=True)
+        fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+    except:
+        print("Warning : wiki not built. Continuing..." )
 
     try:
       os.mkdir(phase.ctx.buildroot/'shlib')
