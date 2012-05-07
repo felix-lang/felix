@@ -518,8 +518,9 @@ def build(ctx):
     # 
     # C tools
     #
-    mk_daemon = call('buildsystem.mk_daemon.build', phases.target)
-    timeout = call('buildsystem.timeout.build', phases.target)
+    if 'windows' in phases.target.platform:
+      mk_daemon = call('buildsystem.mk_daemon.build', phases.target)
+      timeout = call('buildsystem.timeout.build', phases.target)
 
     # --------------------------------------------------------------------------
     # build support tools

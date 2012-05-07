@@ -13,6 +13,10 @@ def build(phase, felix):
     exe = felix.compile(phase.ctx.buildroot/'tools/webserver.flx', static=True)
     fbuild.builders.file.copy(phase.ctx, exe, 'bin')
 
+    exe = felix.compile(phase.ctx.buildroot/'wiki/wiki.flx', static=True)
+    fbuild.builders.file.copy(phase.ctx, exe, 'bin')
+
+
     try:
       os.mkdir(phase.ctx.buildroot/'shlib')
     except:
