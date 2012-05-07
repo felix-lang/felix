@@ -142,7 +142,7 @@ var ECHO=0;
 gen system(cmd:string):int= {
   if ECHO==1 do fprintln$ cerr, cmd; done
 if PLAT_WIN32 do
-  var result = System::system('"'+cmd);
+  var result = System::system('"'+cmd+'"');
 else
   var result = System::system(cmd);
 done
@@ -161,7 +161,7 @@ gen get_stdout(x:string) = {
 */
     //var fout = Process::popen_in(x+" 2>&1 "); // this screws up flx_pkgconfig!
 if PLAT_WIN32 do
-    var fout = Process::popen_in('"'+x+" ");
+   var fout = Process::popen_in('"'+x+'"');
 else
     var fout = Process::popen_in(x+" ");
 done
@@ -228,7 +228,8 @@ proc install_old() {
         System::exit 1;
       done
       if PLAT_WIN32 do
-        result=system("rd /S /Q "+INSTALL_ROOT);
+          println$ "Cleaning INSTALL_ROOT(2) = " + INSTALL_ROOT;
+	  result=system("rd /S /Q "+INSTALL_ROOT);
       else
         result=system("rm -rf "+INSTALL_ROOT);
       done
@@ -256,6 +257,7 @@ proc install() {
     // remove old install
 
     if PLAT_WIN32 do
+      println$ "Cleaning INSTALL_ROOT = " + INSTALL_ROOT;
       result=system("rd /S /Q "+INSTALL_ROOT);
     else
       result=system("rm -rf "+INSTALL_ROOT);
