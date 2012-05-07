@@ -267,7 +267,11 @@ proc install() {
  
     // copy using flx_cp from build
     proc cp(s:string) {
-      cmd=FLX_INSTALL_DIR+"/bin/flx_cp '"+FLX_INSTALL_DIR+"' '"+s+"' '"+INSTALL_ROOT+"/\\0'";
+      if PLAT_WIN32 do
+        cmd=quote(FLX_INSTALL_DIR+"\\bin\\flx_cp")+" "+quote(FLX_INSTALL_DIR)+' ' + quote(s)+' '+quote(INSTALL_ROOT+"\\\\0");
+      else
+        cmd=FLX_INSTALL_DIR+"/bin/flx_cp '"+FLX_INSTALL_DIR+"' '"+s+"' '"+INSTALL_ROOT+"/\\0'";
+      done
       //println$ "shell cmd = " + cmd;
       result=system(cmd);
       if result != 0 do  
@@ -374,11 +378,13 @@ proc install_bin ()
   result=system("cp -f "+FLX_INSTALL_DIR+"/bin/flx /usr/local/bin");
   if result !=0 goto install_bin_failed;
 
-  result= system("cp -f "+FLX_INSTALL_DIR+"/bin/mk_daemon /usr/local/bin");
-  if result !=0 goto install_bin_failed;
+  if not PLAT_WIN32 do
+    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/mk_daemon /usr/local/bin");
+    if result !=0 goto install_bin_failed;
 
-  result= system("cp -f "+FLX_INSTALL_DIR+"/bin/timeout /usr/local/bin");
-  if result !=0 goto install_bin_failed;
+    result= system("cp -f "+FLX_INSTALL_DIR+"/bin/timeout /usr/local/bin");
+    if result !=0 goto install_bin_failed;
+  done
 
   result= system("cp -f "+FLX_INSTALL_DIR+"/tools/webserver /usr/local/bin");
   if result !=0 goto install_bin_failed;

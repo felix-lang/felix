@@ -480,6 +480,9 @@ def build(ctx):
     buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/tools',
         pattern='*.flx{,h}')
 
+    buildsystem.copy_dir_to(ctx, ctx.buildroot, 'src/wiki',
+        pattern='*.*')
+
     for module in (
             'sqlite3',
             'flx_stdlib',
