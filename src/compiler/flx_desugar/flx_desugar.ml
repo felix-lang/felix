@@ -517,8 +517,6 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
      match x with | A x | B x => x endmatch
   *)
 
-  | EXPR_try _ -> failwith "try/catch not implemented"
-
   | EXPR_match (sr,(e,pss)) ->
     Flx_match.gen_match rex seq name sr e pss
 

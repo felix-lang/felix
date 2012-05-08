@@ -191,7 +191,6 @@ and expr_t =
   | EXPR_get_named_variable of Flx_srcref.t * (Flx_id.t * expr_t)
   | EXPR_as of Flx_srcref.t * (expr_t * Flx_id.t)
   | EXPR_match of Flx_srcref.t * (expr_t * (pattern_t * expr_t) list)
-  | EXPR_try of Flx_srcref.t * expr_t * (typecode_t * (pattern_t * expr_t) list) list
 
   | EXPR_typeof of Flx_srcref.t * expr_t
   | EXPR_cond of Flx_srcref.t * (expr_t * expr_t * expr_t)
@@ -682,7 +681,6 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_coercion (s,_)
   | EXPR_as (s,_)
   | EXPR_match (s, _)
-  | EXPR_try (s, _, _)
   | EXPR_type_match (s, _)
   | EXPR_cond (s,_)
   | EXPR_expr (s,_,_)

@@ -569,27 +569,6 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     in
     EXPR_match (sr,(me e1, pes))
 
-  | EXPR_try (sr, e1, catches) ->
-    let catches = 
-      List.map (fun (t,pes) ->
-        let pes =
-          List.map
-          (fun (pat,e) ->
-            let pat = fix_pattern seq pat in
-            pat,
-            let pvs = get_pattern_vars pat in
-            let pr = protect sr pvs in
-            expand_expr recursion_limit local_prefix seq (pr @ macros) e
-          )
-          pes
-        in
-        mt sr t,pes
-      )
-    catches
-    in
-    EXPR_try (sr,me e1, catches)
-
-
   | EXPR_type_match (sr, (e,ps)) ->
     let ps = List.map (fun (pat,e) -> pat, mt sr e) ps in
     EXPR_type_match (sr,(mt sr e,ps))
