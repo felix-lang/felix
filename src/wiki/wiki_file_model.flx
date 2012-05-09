@@ -51,7 +51,6 @@ println$ ("get_ref_file:"+fname);
     open Output_text_file;
     val full_path = Filename::join(WIKI_ROOT,e.name);
     val handle = fopen_output (full_path);
-    println$ ("write_doc"+full_path);
     if not valid handle do
       println$ "Write not valid";
       return false;
