@@ -3,7 +3,6 @@ include "./wiki_file_model";
 include "web/web_server";
 include "./wiki_handler";
 include "./util";
-include "./wiki_tool";
 include "codec/uri_codec";
 include "./document_plugins";
 
@@ -15,8 +14,6 @@ open Csv;
 open Assoc_list;
 open ServerConfig;	
 open SimpleConfig;
-
-WikiTool::which_tool();
 
 var config = basic_server_config( WikiHandler::app_handlers() + default_handlers());
 val info_logger = match SimpleConfig::get_param(config.params,"info_log") with 
