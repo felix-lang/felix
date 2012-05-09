@@ -5,6 +5,7 @@ include "./wiki_handler";
 include "./util";
 include "./wiki_tool";
 include "codec/uri_codec";
+include "./document_plugins";
 
 open HTTPRequest;
 open HTTPHandler;
@@ -58,13 +59,5 @@ val C_PATH = apply_param_vars_to(config.params,
                                     get_param_list(config.params,"C_PATH"));
 val FLX_PKGCONFIG_PATH = apply_param_vars_to(config.params,
                                              get_param_list(config.params,"FLX_PKGCONFIG"));
-include "./cpp2html";
-include "./flx2html";
-include "./fdoc2html";
-include "./fpc2html";
-include "./py2html";
-include "./ocaml2html";
-include "./charclass";
-include "./css4html";
-
+load_plugins(config.server_root+"/config/server_config.cfg");
 start_webserver(config);

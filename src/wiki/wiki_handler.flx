@@ -100,18 +100,50 @@ class WikiHandler {
       |None => ""
     endmatch;
 
+mathjax := '''
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+        skipTags: ["script","noscript","style","textarea"]
+    }
+  });
+</script> 
+<script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+''';
 
   
-  fun format_doc (content:string,path:string):bool*bool*string =>
+  fun format_doc (content:string,path:string):bool*bool*string*string =>
     match get_suffix(path) with
-                          | "cpp" => true,false,"<pre>"+(Cpp2Html::xlat_cpp (content, path))+"</pre>"
-                          | "flx" => let ?ok,?html = (Flx2Html::xlat_felix (content, path)) in
-                                       ok,true,"<pre>"+html+"</pre>"
-                                       
-                          | "fdoc" => let ?needs_mathjax, ?html = Fdoc2Html::xlat_fdoc (content,path) in
-                                        true,needs_mathjax,html
-                          | ?b    =>  let ?ok,?html = (Flx2Html::xlat_felix (content, path)) in
-                                       ok,true,"<pre>"+html+"</pre>"
+                          | "cpp" => let ?ok,?html = (DocumentPlugins::xlat_cpp (content, path)) in
+                            ok,false,"","<pre>"+html+"</pre>"
+                          | "c" => let ?ok,?html = (DocumentPlugins::xlat_cpp (content, path)) in
+                            ok,false,"","<pre>"+html+"</pre>"
+                          | "cpp" => let ?ok,?html = (DocumentPlugins::xlat_cpp (content, path)) in
+                            ok,false,"","<pre>"+html+"</pre>"
+                          | "c" => let ?ok,?html = (DocumentPlugins::xlat_cpp (content, path)) in
+                            ok,false,"","<pre>"+html+"</pre>"
+                          | "h" => let ?ok,?html = (DocumentPlugins::xlat_cpp (content, path)) in
+                            ok,false,"","<pre>"+html+"</pre>"
+                          | "hpp" => let ?ok,?html = (DocumentPlugins::xlat_cpp (content, path)) in
+                            ok,false,"","<pre>"+html+"</pre>"
+                          | "flx" => let ?needs_mathjax,?html = (DocumentPlugins::xlat_felix (content, path)) in
+                            true,true,if needs_mathjax then mathjax else "" endif,"<pre>"+html+"</pre>"
+                          | "flxh" => let ?needs_mathjax,?html = (DocumentPlugins::xlat_felix (content, path)) in
+                            true,true,if needs_mathjax then mathjax else "" endif,"<pre>"+html+"</pre>"
+                          | "fpc" => let ?ok,?html =(DocumentPlugins::xlat_fpc (content, path)) in
+                            ok,false,"","<pre>"+html+"</pre>"
+                          | "fdoc" => let ?needs_mathjax, ?html = DocumentPlugins::xlat_fdoc (content,path) in
+                            true,true,if needs_mathjax then mathjax else "" endif,"<pre>"+html+"</pre>"
+                          | "ml" => let ?ok,?html = (DocumentPlugins::xlat_ocaml (content, path)) in
+                            ok,false,"","<pre>"+html+"</pre>"
+                          | "mli" => let ?ok,?html = (DocumentPlugins::xlat_ocaml (content, path)) in
+                            ok,false,"","<pre>"+html+"</pre>"
+                          | "py" => let ?ok,?html = DocumentPlugins::xlat_py (content, path) in
+                            ok,false,"","<pre>"+html+"</pre>"
+                          | ?b    =>  let ?ok,?html = (DocumentPlugins::xlat_felix (content, path)) in
+                            ok,true,"","<pre>"+content+"</pre>"
     endmatch;
   
   fun get_title(conn:http_connection,request:http_request):string = {
@@ -137,6 +169,7 @@ class WikiHandler {
     val dirname = Filename::dirname path;
     var content:string = "";
     var html:string = "";
+    var hd:string = "";
     var needs_mathjax=false;
     var ok=false;
     if has_doc(path) do
@@ -149,14 +182,15 @@ class WikiHandler {
       handle_not_found(conn,request);
       return;
     done
-    ok,needs_mathjax,html = format_doc(content,path);
+    ok,needs_mathjax,hd,html = format_doc(content,path);
     val data = make_html(
         apply_to_template("page-template.html",
+         Cons(("<!--___CUSTOM_HEADER___-->",hd),
          Cons(("___CENTER_CONTENT___",html),
          Cons(("___FNAME___",fname),
          Cons(("___CTRLS___",set-ctrls(conn,request)),
          Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
-         Empty[string^2]))))));
+         Empty[string^2])))))));
     write(conn,data);
   }
 
@@ -249,10 +283,7 @@ class WikiHandler {
     var fname= let ?f = ((get_fname(request)).or_else "") in if f == "" then "main.fdoc" else f endif;
     conn.config.log(INFO,"preview:"+fname);
     var content = strip_ctrl_m((get_post_param(request,"content")).or_else "");
-    var ok:bool;
-    var needs_mathjax:bool;
-    var html:string;
-    ok,needs_mathjax,html = format_doc(content,path);
+    def val ok,val needs_mathjax,val hd,val html = format_doc(content,path);
     write(conn,make_html(html));
   }
 
@@ -296,21 +327,18 @@ class WikiHandler {
     done
     var fname = (get_fname(request)).or_else "wiki_main.fdoc";
     val dirname = Filename::dirname path;
-    var content:string = "";
-    var html:string = "";
-    var needs_mathjax=false;
-    var ok=false;
-    ok,needs_mathjax,html =  match get_ref_file(path,C_PATH) with 
-      |Some ?e => format_doc(load(e),path) |_ => false,false,"Not Found" 
+    def val ok,val needs_mathjax, val hd, val html =  match get_ref_file(path,C_PATH) with 
+      |Some ?e => format_doc(load(e),path) |_ => false,false,"","Not Found" 
     endmatch;
     
     val data = make_html(
         apply_to_template("page-template.html",
+         Cons(("<!--___CUSTOM_HEADER___-->",hd),
          Cons(("___CENTER_CONTENT___",html),
          Cons(("___FNAME___",fname),
          Cons(("___CTRLS___",set-ctrls(conn,request)),
          Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
-         Empty[string^2]))))));
+         Empty[string^2])))))));
     write(conn,data);
 
   }
