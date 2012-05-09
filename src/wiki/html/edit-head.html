@@ -118,7 +118,7 @@ $(function() {
   $( "#previewB1" ).button({text: true})
                .click(preview_fn);
   var close_fn = function() {
-    history.go(-1)
+   location.href = "/wiki/"+path; 
   };
   $( "#closeB" ).button({text: true})
                .click(close_fn);
