@@ -472,6 +472,9 @@ let expand_exe syms bsym_table u exe =
     | BEXE_trace _
     | BEXE_begin
     | BEXE_end
+    | BEXE_try _
+    | BEXE_catch _
+    | BEXE_endtry _
       -> [exe]
   in
     let xs = rev xs in

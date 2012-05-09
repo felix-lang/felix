@@ -653,6 +653,9 @@ and xstatement_t sr x : statement_t =
     STMT_instance(xsr sr, xvs vs, xq "ast_instance" qn, xsts' sr sts)
 
   | Lst [Id "ast_label"; sr; id] -> STMT_label (xsr sr, xid id)
+  | Lst [Id "ast_try"; sr] -> STMT_try (xsr sr)
+  | Lst [Id "ast_endtry"; sr] -> STMT_endtry (xsr sr)
+  | Lst [Id "ast_catch"; sr; t] -> STMT_catch (xsr sr, ti t)
 
   | Lst [Id "ast_goto"; sr; id] -> STMT_goto (xsr sr, xid id)
   | Lst [Id "ast_ifgoto"; sr; e; id] -> STMT_ifgoto (xsr sr,ex' sr e, xid id)

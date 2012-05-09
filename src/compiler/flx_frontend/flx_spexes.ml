@@ -270,6 +270,9 @@ let gen_body syms uses bsym_table id
   | BEXE_label (sr,lab) -> [bexe_label (sr, relab lab)]
   | BEXE_begin as x -> [x]
   | BEXE_end as x -> [x]
+  | BEXE_catch _ as x -> [x]
+  | BEXE_try _ as x -> [x]
+  | BEXE_endtry _ as x -> [x]
   in
     let kind = match inline_method with
       | `Lazy -> "Lazy "

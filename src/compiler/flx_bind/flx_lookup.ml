@@ -1975,8 +1975,8 @@ and lookup_qn_with_sig'
       | SYMDEF_ref t
       | SYMDEF_parameter (_,t)
         ->
-        print_endline (id ^ ": lookup_qn_with_sig: val/var");
         (*
+        print_endline (id ^ ": lookup_qn_with_sig: val/var");
         let ts = adjust_ts state.sym_table sr index ts in
         *)
         let t = bt sr t in

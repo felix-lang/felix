@@ -272,6 +272,9 @@ let fold_vars syms bsym_table uses i ps exes =
           | BEXE_comment _
           | BEXE_halt _
           | BEXE_trace _
+          | BEXE_try _
+          | BEXE_endtry _
+          | BEXE_catch _
              -> exe
 
           (* conditional, check if y depends on init (tail rec) *)

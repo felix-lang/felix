@@ -58,5 +58,15 @@ syntax statements {
 
   sname_suffix:= "," sname sname_suffix =># "(cons _2 _3)";
   sname_suffix:= "," sname =># "`(,_2)";
+
+  tstatement := "try" tstatement+ catches "endtry" =>#
+    "`(ast_seq ,_sr ,(append `((ast_try ,_sr)) _2 _3 `((ast_endtry ,_sr))))";
+
+  catch := "catch" sexpr ":>" tstatement+ =>#
+    "`(ast_seq ,_sr ,(cons `(ast_catch ,_sr ,_2) _4))";
+
+  catches := catch+ =># "_1";
+
+
 }
 

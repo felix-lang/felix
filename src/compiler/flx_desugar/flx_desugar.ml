@@ -682,6 +682,10 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
     bindings defined in this entity
   *)
   match st with
+  | STMT_try sr -> [Exe (sr,EXE_try)]
+  | STMT_endtry sr -> [Exe (sr,EXE_endtry)]
+  | STMT_catch (sr,t) -> [Exe (sr,EXE_catch t)]
+
   | STMT_seq _ -> assert false
   | STMT_private (sr,st) -> rst state name `Private parent_vs st
   | STMT_include (sr,inspec) ->

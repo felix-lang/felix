@@ -372,6 +372,9 @@ let process_exe ue state bsym_table all_closures exe =
 
   | BEXE_svc (sr,i) -> exe
 
+  | BEXE_catch _ 
+  | BEXE_try _
+  | BEXE_endtry  _
   | BEXE_label _
   | BEXE_halt _
   | BEXE_trace _

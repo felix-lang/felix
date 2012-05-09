@@ -30,6 +30,11 @@ type t = private
   | BEXE_axiom_check of Flx_srcref.t * Flx_bexpr.t
   | BEXE_axiom_check2 of Flx_srcref.t * Flx_srcref.t * Flx_bexpr.t option * Flx_bexpr.t
 
+  | BEXE_try of Flx_srcref.t
+  | BEXE_endtry of Flx_srcref.t
+  | BEXE_catch of Flx_srcref.t * Flx_btype.t
+
+
 (* -------------------------------------------------------------------------- *)
 
 val bexe_label : Flx_srcref.t * string -> t
@@ -59,6 +64,9 @@ val bexe_assert : Flx_srcref.t * Flx_bexpr.t -> t
 val bexe_assert2 : Flx_srcref.t * Flx_srcref.t * Flx_bexpr.t option * Flx_bexpr.t -> t
 val bexe_axiom_check2 : Flx_srcref.t * Flx_srcref.t * Flx_bexpr.t option * Flx_bexpr.t -> t
 val bexe_axiom_check : Flx_srcref.t * Flx_bexpr.t -> t
+val bexe_try : Flx_srcref.t -> t
+val bexe_endtry : Flx_srcref.t -> t
+val bexe_catch : Flx_srcref.t -> Flx_btype.t -> t
 
 (* -------------------------------------------------------------------------- *)
 

@@ -528,6 +528,9 @@ let rec can_stack_proc
     | BEXE_end
     | BEXE_nop _
     | BEXE_proc_return _
+    | BEXE_try _
+    | BEXE_catch _
+    | BEXE_endtry _
       -> ()
     )
     exes;
