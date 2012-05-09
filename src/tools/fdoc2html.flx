@@ -194,6 +194,13 @@ fun xlat_fdoc(t:string, filename:string): bool * string =
     | Some ?v,_,_,_ => str v + "."
   ; 
 
+  private fun split_first (x:string, c:string):string*string =>
+    match find_first_of (x, c) with
+      | Some ?n => (strip(x.[to n]),strip(x.[n+1 to]))
+      | _ => (x,"")
+    endmatch
+    ;
+
   shownav();
 
   union state_t = 
@@ -419,6 +426,16 @@ nextc:>
         elif prefix(b,"h2") do h(2,b.[3 to]); 
         elif prefix(b,"h3") do h(3,b.[3 to]);
         elif prefix(b,"h4") do h(4,b.[3 to]);
+        elif prefix(b,"link") do 
+          var e = split_first(b.[5 to],"|");
+          var f = if e.(1) == ""then e else split_first(e.(1),"|") endif;
+          write_string("<a href='"+strip(e.(0))+"'"+
+              (if f.(1) == "" then "" else "style='"+f.(1)+"'" endif)+">"+
+              (if endswith f.(0) ".fdoc" then f.(0).[to (f.(0).len - size(5)) ]
+               else f.(0) endif)+"</a>");
+        elif prefix(b,"image") do 
+          var img = split_first(b.[6 to],"|");
+          write_string("<img src='"+img.(0)+"' style='"+img.(1)+"'></img>");
         elif prefix(b,"sh") do 
           var cmd = b.[3 to];
           var fout = safer_popen(cmd);
