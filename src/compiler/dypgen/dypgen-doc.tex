@@ -1581,6 +1581,18 @@ exception Undefined_ter of string
 \end{verbatim}
 The string is the name of the undefined token. If you want to extend the lexer then use dypgen as the lexer generator and use regular expressions in the right hand-side of the new rules that need the lexer to be extended.\\
 
+It is not possible to define new named regexp at runtime but it is possible to use the ones defined statically to build new rules using the constructor \verb|RE_Name|. If this constructor is used with a string that does not correspond to an existing named regexp then the exception \verb|Not_found| is raised. Therefore it is useful to check whether the string is the name of a named regexp. To do so it is possible to use the following function.
+\begin{verbatim}
+val is_re_name : ('t,'o,'gd,'ld,'l) parser_pilot -> string -> bool
+\end{verbatim}
+For instance, the code
+\begin{verbatim}
+if is_re_name dyp.parser_pilot s
+then Regexp (RE_Name s)
+else failwith "regexp name undefined"
+\end{verbatim}
+fails when trying to use a string \verb|s| that does not correspond to an existing named regexp.\\
+
 Note that you can also include non terminals in the initial grammar without being part of any rule. To do this use the keyword \verb|%non_terminal| followed by the names of the non terminals you want to include, like:
 \begin{verbatim}
 %non_terminal nt1 nt2 nt3
@@ -2153,6 +2165,22 @@ val lexparse :
   ?choose_token:[`first|`all] ->
   'obj dyplexbuf ->
   (('obj * string) list)
+
+val log_channel : out_channel ref
+
+val function_free_pdev :
+  ('t,'o,'gd,'ld,'lb) parsing_device -> ('t,'o,'gd,'ld,'lb) parsing_device
+
+val import_functions :
+  ('t,'o,'gd,'ld,'l) parsing_device ->
+  ('t,'o,'gd,'ld,'l) parser_pilot ->
+  (rule * (('t,'o,'gd,'ld,'l) dypgen_toolbox ->
+      'o list -> 'o * ('t,'o,'gd,'ld,'l) dyp_action list)) list ->
+  ('t,'o,'gd,'ld,'l) parsing_device
+
+val is_re_name : ('t,'o,'gd,'ld,'l) parser_pilot -> string -> bool
+
+val version : string
 \end{verbatim}
 
 \section{Other features}
