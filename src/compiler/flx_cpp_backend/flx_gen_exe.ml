@@ -353,7 +353,7 @@ let gen_exe filename
     match exe with
     | BEXE_try _ -> "  try {\n";
     | BEXE_endtry _ -> "  }\n";
-    | BEXE_catch (sr, t) -> "\n}\n  catch (" ^tn t^ " &_exn) {\n";
+    | BEXE_catch (sr, s, t) -> "\n}\n  catch (" ^tn t^ " &" ^s^") {\n";
 
     | BEXE_axiom_check _ -> assert false
     | BEXE_code (sr,s) -> forget_template sr s

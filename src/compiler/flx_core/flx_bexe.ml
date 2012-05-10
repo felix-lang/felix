@@ -32,7 +32,7 @@ type t =
 
   | BEXE_try of Flx_srcref.t
   | BEXE_endtry of Flx_srcref.t
-  | BEXE_catch of Flx_srcref.t * Flx_btype.t 
+  | BEXE_catch of Flx_srcref.t * string * Flx_btype.t 
 
 (* -------------------------------------------------------------------------- *)
 
@@ -66,7 +66,7 @@ let bexe_axiom_check2 (sr1,sr2,e1,e2) = BEXE_axiom_check2 (sr1,sr2,e1,e2)
 
 let bexe_try sr = BEXE_try sr
 let bexe_endtry sr = BEXE_endtry sr
-let bexe_catch sr t  = BEXE_catch (sr,t)
+let bexe_catch sr s t  = BEXE_catch (sr,s, t)
 
 (* -------------------------------------------------------------------------- *)
 
@@ -101,7 +101,7 @@ let get_srcref = function
   | BEXE_end -> Flx_srcref.dummy_sr
 
   | BEXE_try sr -> sr
-  | BEXE_catch (sr,_) -> sr
+  | BEXE_catch (sr,_,_) -> sr
   | BEXE_endtry sr -> sr
 
 (* -------------------------------------------------------------------------- *)
@@ -150,7 +150,7 @@ let iter
   | BEXE_assert (_,e) -> f_bexpr e
   | BEXE_init (sr,i,e) -> f_bid i; f_bexpr e
   | BEXE_svc (sr,i) -> f_bid i
-  | BEXE_catch (_, t) -> f_btype t
+  | BEXE_catch (_, s, t) -> f_btype t
 
   | BEXE_try _
   | BEXE_endtry _
@@ -199,7 +199,7 @@ let map
   | BEXE_axiom_check (sr,e) -> BEXE_axiom_check (sr,f_bexpr e)
   | BEXE_init (sr,i,e) -> BEXE_init (sr,f_bid i,f_bexpr e)
   | BEXE_svc (sr,i) -> BEXE_svc (sr,f_bid i)
-  | BEXE_catch (sr,t) -> BEXE_catch (sr, f_btype t)
+  | BEXE_catch (sr,s,t) -> BEXE_catch (sr, s, f_btype t)
 
   | BEXE_halt _
   | BEXE_trace _

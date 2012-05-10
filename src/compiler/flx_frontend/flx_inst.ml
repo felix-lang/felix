@@ -269,7 +269,7 @@ and process_exe syms bsym_table ref_insts1 ts hvarmap exe =
     let ts = map (varmap_subst hvarmap) ts in
     uis i ts
 
-  | BEXE_catch (sr, t) -> 
+  | BEXE_catch (sr, s, t) -> 
     let ut t = register_type_r uis syms bsym_table [] sr t in
     ut t
   | BEXE_label _

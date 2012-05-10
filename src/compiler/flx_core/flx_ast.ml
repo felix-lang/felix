@@ -333,7 +333,7 @@ and ast_term_t =
 and statement_t =
   | STMT_try of Flx_srcref.t 
   | STMT_endtry of Flx_srcref.t 
-  | STMT_catch of Flx_srcref.t  * typecode_t
+  | STMT_catch of Flx_srcref.t  * Flx_id.t * typecode_t
   | STMT_include of Flx_srcref.t * string
   | STMT_open of Flx_srcref.t * vs_list_t * qualified_name_t
 
@@ -574,7 +574,7 @@ type exe_t =
   | EXE_assert of expr_t
   | EXE_try 
   | EXE_endtry
-  | EXE_catch of typecode_t
+  | EXE_catch of Flx_id.t * typecode_t
 
 type sexe_t = Flx_srcref.t * exe_t
 
@@ -702,7 +702,7 @@ let src_of_stmt (e : statement_t) = match e with
   *)
   | STMT_try s
   | STMT_endtry s
-  | STMT_catch (s,_)
+  | STMT_catch (s,_,_)
   | STMT_private (s,_)
   | STMT_label (s,_)
   | STMT_goto (s,_)

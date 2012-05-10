@@ -62,8 +62,8 @@ syntax statements {
   tstatement := "try" tstatement+ catches "endtry" =>#
     "`(ast_seq ,_sr ,(append `((ast_try ,_sr)) _2 _3 `((ast_endtry ,_sr))))";
 
-  catch := "catch" sexpr ":>" tstatement+ =>#
-    "`(ast_seq ,_sr ,(cons `(ast_catch ,_sr ,_2) _4))";
+  catch := "catch" sname ":" sexpr  "=>" tstatement+ =>#
+    "`(ast_seq ,_sr ,(cons `(ast_catch ,_sr ,_2 ,_4) _6))";
 
   catches := catch+ =># "_1";
 

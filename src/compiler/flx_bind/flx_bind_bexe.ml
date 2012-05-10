@@ -587,9 +587,9 @@ let rec bind_exe state bsym_table handle_bexe (sr, exe) init =
 
    | EXE_try -> handle_bexe (bexe_try sr) init
    | EXE_endtry -> handle_bexe (bexe_endtry sr) init
-   | EXE_catch (t) -> 
+   | EXE_catch (s,t) -> 
      let t = bind_type state.lookup_state bsym_table state.env sr t in
-     handle_bexe (bexe_catch sr t) init
+     handle_bexe (bexe_catch sr s t) init
 
 let bind_exes state bsym_table sr exes =
   (*

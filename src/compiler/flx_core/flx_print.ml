@@ -1080,7 +1080,7 @@ and string_of_statement level s =
   match s with
   | STMT_try _ -> spaces level ^ "try"
   | STMT_endtry _ -> spaces level ^ "endtry"
-  | STMT_catch (_,t) -> spaces level ^ "catch "^string_of_typecode t^":>"
+  | STMT_catch (_,id,t) -> spaces level ^ "catch "^id ^ " : " ^ string_of_typecode t^" => "
 
   | STMT_seq (_,sts) -> catmap "" (string_of_statement level) sts
   (*
@@ -1678,7 +1678,7 @@ and string_of_exe level s =
   match s with
 
   | EXE_try  -> "try"
-  | EXE_catch (typ)  -> "catch (" ^ string_of_typecode typ ^ ")"
+  | EXE_catch (id,typ)  -> "catch " ^ id ^ " : " ^ string_of_typecode typ ^ " => "
   | EXE_endtry -> "endtry"
 
   | EXE_goto s -> spc ^ "goto " ^ s ^ ";"
@@ -1953,7 +1953,7 @@ and string_of_bexe bsym_table level s =
   | BEXE_end -> "}//end"
   | BEXE_try _ -> "try {"
   | BEXE_endtry _ -> "}"
-  | BEXE_catch (_,t) -> "catch ("^ sbt bsym_table t ^" &exn)"
+  | BEXE_catch (_,id,t) -> "} catch ("^ sbt bsym_table t ^" &"^id^") {"
 
 and string_of_dcl level name seq vs (s:dcl_t) =
   let se e = string_of_expr e in
