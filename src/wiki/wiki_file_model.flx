@@ -57,6 +57,7 @@ println$ ("get_ref_file:"+fname);
     else
       write(handle,e.content);
       fclose(handle);
+      C_hack::ignore(add-commit(e));
       return true;
     done
   }
@@ -82,17 +83,84 @@ println$ ("get_ref_file:"+fname);
     done
   }
 
-  gen delete_doc(fname:string):bool =>
-    let ?full_path = Filename::join(WIKI_ROOT,fname) in
-      if (FileStat::fileexists full_path) then
-        if (FileSystem::unlink_file(full_path)) == 0 then
-          true
-        else 
-          false
-        endif
+  private      gen safer_popen(cmd:string)=>
+       Process::popen_in(timeout+" -t 15 " + cmd + " 2>&1");
+
+  val timeout = Filename::join (#Config::config.FLX_INSTALL_DIR, "bin", "timeout"+#Config::config.EXT_EXE);
+
+  gen delete_doc(fname:string):bool = {
+    var git = match get_param(config.params,"git") with
+      |Some ?o => o
+      |_  => ""
+    endmatch;
+    val full_path = Filename::join(WIKI_ROOT,fname);
+    if (FileStat::fileexists full_path) do
+      if git == "local" or git == "remote" do
+        val rm_cmd = q"$(SERVER_ROOT)/scripts/git-rm.sh $(WIKI_ROOT) $(fname)";
+        println$ "RM CMD:"+rm_cmd;
+        var rhandle = safer_popen(rm_cmd);
+        var rresults = load(rhandle);
+        fclose(rhandle);
+        println$ "RM Results:"+rresults;
+        val commit_cmd = q"$(SERVER_ROOT)/scripts/git-commit.sh $(WIKI_ROOT) ./" + fname;
+        println$ "COMMIT CMD:"+commit_cmd;
+        var handle = safer_popen(commit_cmd);
+        var results = load(handle);
+        fclose(handle);
+        println$ "COMMIT Results:"+results;
+        if git == "remote" do
+          val push_cmd = q"$(SERVER_ROOT)/scripts/git-push.sh $(WIKI_ROOT)";
+          println$ "PUSH CMD:"+push_cmd;
+          handle = safer_popen(push_cmd);
+          results = load(handle);
+          fclose(handle);
+          println$ "PUSH Results:"+results;
+          return true;
+        else
+          return true;
+        done
       else
-        false
-      endif;
+        if (FileSystem::unlink_file(full_path)) == 0 do
+          return true;
+        else 
+          return false;
+        done
+      done
 
+    else
+      return false;
+    done;
+  }
 
+  gen add-commit(e:entry):bool = {
+    open SimpleConfig;
+    var git = match get_param(config.params,"git") with
+      |Some ?o => o
+      |_  => ""
+    endmatch;
+    val full_path = Filename::join(WIKI_ROOT,e.name);
+    if git == "local" or git == "remote" do
+     val add_cmd = q"$(SERVER_ROOT)/scripts/git-add.sh $(WIKI_ROOT) ./" + e.name;
+     println$ "ADD CMD:"+add_cmd;
+     var handle = safer_popen(add_cmd);
+     var results = load(handle);
+     fclose(handle);
+     println$ "ADD Results:"+results;
+     val commit_cmd = q"$(SERVER_ROOT)/scripts/git-commit.sh $(WIKI_ROOT) ./" + e.name;
+     println$ "COMMIT CMD:"+commit_cmd;
+     handle = safer_popen(commit_cmd);
+     results = load(handle);
+     fclose(handle);
+      println$ "COMMIT Results:"+results;
+     if git == "remote" do
+        val push_cmd = q"$(SERVER_ROOT)/scripts/git-push.sh $(WIKI_ROOT)";
+        println$ "PUSH CMD:"+push_cmd;
+        handle = safer_popen(push_cmd);
+        results = load(handle);
+        fclose(handle);
+        println$ "PUSH Results:"+results;
+      done
+    done
+    return true;
+  } 
 }
