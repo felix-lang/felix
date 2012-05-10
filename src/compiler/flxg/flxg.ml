@@ -1,7 +1,5 @@
 (* code generation driver *)
 
-open Format
-
 open Flx_options
 open Flx_mtypes2
 open Flx_types
@@ -46,8 +44,7 @@ let save_profile () =
   (* failure to save stats isn't fatal *)
   try
     let f = open_out fname in
-    let ppf = formatter_of_out_channel f in
-    Flx_profile.print ppf;
+    Flx_profile.print f;
     close_out f
   with _ -> ()
 
@@ -198,8 +195,8 @@ let handle_codegen state main_prog module_name =
 (* -------------------------------------------------------------------------- *)
 
 let main () =
-  let ppf, compiler_options = Flxg_options.parse_args () in
-  let state = Flxg_state.make_state ppf compiler_options in
+  let compiler_options = Flxg_options.parse_args () in
+  let state = Flxg_state.make_state compiler_options in
 
   (* The first file specified is the main program. *)
   let main_prog = List.hd compiler_options.files in

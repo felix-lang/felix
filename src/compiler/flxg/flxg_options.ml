@@ -1,5 +1,3 @@
-open Format
-
 open Flx_getopt
 open Flx_mtypes2
 open Flx_options
@@ -169,7 +167,7 @@ let parse_args () =
   end;
 
   if check_key raw_options "version" then begin
-    Printf.printf "Felix version %s\n" !version_data.version_string;
+    print_endline ("Felix version " ^ !version_data.version_string);
     exit 0
   end;
 
@@ -182,16 +180,9 @@ let parse_args () =
     exit 1
   end;
 
-  (* Create a formatter for logging if debugging's enabled. Otherwise, create a
-   * null formatter. *)
-  let ppf =
-    if compiler_options.print_flag
-    then err_formatter
-    else make_formatter (fun _ _ _ -> ()) (fun () -> ())
-  in
-
-  fprintf ppf "// Include directories = %s\n"
-    (String.concat " " compiler_options.include_dirs);
+  if compiler_options.print_flag then
+  print_endline ("// Include directories = " ^
+    String.concat " " compiler_options.include_dirs);
 
   (* Make sure the current directory is in the search path. *)
   let include_dirs =
@@ -201,4 +192,5 @@ let parse_args () =
     include_dirs = include_dirs }
   in
 
-  ppf, compiler_options
+  compiler_options
+

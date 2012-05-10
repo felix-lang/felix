@@ -1,2 +1,2 @@
 (** Parse the arguments. *)
-val parse_args : unit -> Format.formatter * Flx_options.t
+val parse_args : unit -> Flx_options.t

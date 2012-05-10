@@ -1,5 +1,3 @@
-open Format
-
 open Flx_types
 open Flx_mtypes2
 open Flxg_state
@@ -21,12 +19,14 @@ let make_module module_name asms =
 
 (** Bind the assemblies *)
 let bind_asms state sym_table bsym_table start_counter asms =
-  fprintf state.ppf "//BINDING\n";
+  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  print_endline "//BINDING";
 
   let bind_state = Flx_bind.make_bind_state state.syms sym_table in
   Flx_bind.bind_asms bind_state bsym_table start_counter asms;
 
-  fprintf state.ppf "//BINDING OK\n"
+  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  print_endline "//BINDING OK"
 
 
 (** Bind the root module. *)

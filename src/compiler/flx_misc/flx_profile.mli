@@ -9,4 +9,4 @@ val call :
   'b
 
 (** Print out our gathered statistics. *)
-val print : Format.formatter -> unit
+val print : out_channel -> unit

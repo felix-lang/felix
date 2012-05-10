@@ -86,15 +86,5 @@ let long_string_of_src (f,l1,c1,l2,c2) =
   let c2 = if l1 = l2 && c2 < c1 then c1 else c2 in
   get_lines f 1 l1 l2 c1 c2
 
-(*
-let print ppf (f,l1,c1,l2,c2) =
-  Flx_format.print_tuple5 ppf
-    Flx_format.print_string f
-    Format.pp_print_int l1
-    Format.pp_print_int c1
-    Format.pp_print_int l2
-    Format.pp_print_int c2
-*)
-
 let file (f,_,_,_,_) = f
 

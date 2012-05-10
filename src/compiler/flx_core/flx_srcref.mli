@@ -24,6 +24,3 @@ val long_string_of_src: t -> string
 
 val dummy_sr: t
 val file : t -> string
-(*
-val print : Format.formatter -> t -> unit
-*)

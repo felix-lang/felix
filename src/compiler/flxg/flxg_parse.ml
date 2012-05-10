@@ -1,5 +1,3 @@
-open Format
-
 open Flx_options
 open Flx_mtypes2
 open Flxg_state
@@ -34,7 +32,8 @@ let parse_syntax state =
   let parsing_device =
     !(Flx_parse_helper.global_data.Flx_token.parsing_device)
   in
-  fprintf state.ppf "PARSED SYNTAX/IMPORT FILES@.";
+  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  print_endline "PARSED SYNTAX/IMPORT FILES.";
 
     let filename =state.syms.compiler_options.automaton_filename  in
     Flx_filesys.mkdirs (Filename.dirname filename);
@@ -81,7 +80,8 @@ let parse_file state parser_state file =
   in
   let local_prefix = Filename.chop_suffix (Filename.basename file_name) ".flx" in
   let include_dirs = state.syms.compiler_options.include_dirs in
-  fprintf state.ppf "//Parsing Implementation %s\n" file_name;
+  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  print_endline  ("//Parsing Implementation " ^ file_name);
   if state.syms.compiler_options.print_flag then print_endline ("Parsing " ^ file_name);
   let parser_state = Flx_parse.parse_file ~include_dirs parser_state file_name in
   let stmts = List.rev (Flx_parse.parser_data parser_state) in

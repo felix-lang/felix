@@ -1,12 +1,9 @@
-open Format
-
 open Flx_options
 open Flx_mtypes2
 
 
 (** The state needed for flxg compilation. *)
 type t = {
-  ppf: formatter;
   compile_start_gm_string: string;
   compile_start_local_string: string;
   syms: Flx_mtypes2.sym_state_t;
@@ -31,7 +28,7 @@ let make_module_name inbase =
 
 
 (** Make the state needed for flxg compilation. *)
-let make_state ppf compiler_options =
+let make_state compiler_options : t =
   let format_time tm =
     string_of_int (tm.Unix.tm_year + 1900) ^ "/" ^
     string_of_int (tm.Unix.tm_mon + 1) ^ "/" ^
@@ -60,7 +57,6 @@ let make_state ppf compiler_options =
 print_endline ("File outbase = " ^ outbase);
 *)
   {
-    ppf = ppf;
     compile_start_gm_string = compile_start_gm_string;
     compile_start_local_string = compile_start_local_string;
     syms = make_syms compiler_options;
@@ -75,3 +71,5 @@ print_endline ("File outbase = " ^ outbase);
     why_file = Flxg_file.make (outbase ^ ".why");
     dep_file_name = (outbase ^ ".dep");
   }
+
+

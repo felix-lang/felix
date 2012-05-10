@@ -117,8 +117,8 @@ let lower state bsym_table root_proc bids bexes =
 
   (* Remove unused symbols. *)
   (* FIXME: This is disabled because it deletes all the symbols.
-  let bsym_table = Flx_use.copy_used state.syms bsym_table in
   *)
+  let bsym_table = Flx_use.copy_used state.syms bsym_table in
 
   (* Mark all the global functions and values. *)
   let symbols = Flx_global.set_globals_for_symbols

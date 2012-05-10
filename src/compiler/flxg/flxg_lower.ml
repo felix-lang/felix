@@ -1,11 +1,10 @@
-open Format
-
 open Flxg_state
 
 
 (** Lower the high level constructs into simpler ones. *)
 let lower state bsym_table root_proc =
-  fprintf state.ppf "//LOWERING\n";
+  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  print_endline "//LOWERING";
 
   let bsym_table = Flx_lower.lower_bsym_table
     (Flx_lower.make_lower_state state.syms)
@@ -13,6 +12,7 @@ let lower state bsym_table root_proc =
     root_proc
   in
 
-  fprintf state.ppf "//LOWERING OK\n";
+  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  print_endline "//LOWERING OK";
 
   bsym_table
