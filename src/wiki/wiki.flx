@@ -47,6 +47,11 @@ val WIKI_ROOT = match apply_param_vars_to(config.params,
                 |Cons(?p,_) => p
                 |_ => "."
                 endmatch;
+val SERVER_ROOT = match apply_param_vars_to(config.params, 
+                                    get_param_list(config.params,"server_root")) with
+                |Cons(?p,_) => p
+                |_ => "."
+                endmatch;
 val TEMPLATE_ROOT = match apply_param_vars_to(config.params, 
                                     get_param_list(config.params,"TEMPLATE_ROOT")) with
                 |Cons(?p,_) => p
