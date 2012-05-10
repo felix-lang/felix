@@ -45,8 +45,7 @@ class WikiHandler {
     db_get_auth_fdoc(uname,passwd) and db_user_is_admin(uname);
 
   fun wiki_route(config:server_config,request:http_request) ={
-    return startswith request.path  "/wiki/";// or  
-           //request.path =="/" or request.path == "";
+    return startswith request.path  "/wiki/"or request.path =="/" or request.path == "";
   }
 
   fun apply_to_template(templ:string,params:list[string^2]):string = {
@@ -59,29 +58,19 @@ class WikiHandler {
   fun load_template(templ:string):string =>
     load(Filename::join(TEMPLATE_ROOT,templ));
 
-  fun qip_make_json (content:string,headers:list[string^2]) =>
-    http_header(http_response(HTTPStatusCodes::SC_OK,LowResTime::localtime(LowResTime::time_t()),application json, headers,content))+
-    content;
-
- //fun wiki_make_html (content:string]) =>
- //   http_header(http_response(HTTPStatusCodes::SC_OK,LowResTime::localtime(LowResTime::time_t()),text html, Cons(("Expires","0"),Empty[string^2]),content))+
-//    content;
-// write(conn,(qip_make_json("\r\n\r\n"+str(rlst),Cons(("Expires","0"),Empty[string^2])));
-//Jdictionary (map (fun (a:string^2):Vnalue^2 => (Jstring a.(0),(Jstring a.(1)))) (Cons ("Z","V"),Empty)
-//
   fun login_route(config:server_config,request:http_request) =>
     startswith request.path  "/login";
   
-  proc login (conn:http_connection, request:http_request ) {
-    conn.config.log(INFO,str(request));  
-    write(conn,make_see_other("/wiki/"));
+   proc login (conn:http_connection, request:http_request ) {
+    var path = (get_param(request,"return_to")).or_else("/wiki/");
+    write(conn,make_see_other(path));
   }
 
 
   fun set-ctrls(conn:http_connection,request:http_request) = {
     val user = match authorized_user(conn,request) with
       |Some ?u => q"<div class='inline'><span class='ui-icon ui-icon-person' style='float:left;'></span><a href='/user/profile/'>$(u)</a></div>"
-      |None => """<a href='/login'>Login</a>"""
+      |None => "<a href='/login?return_to=" + request.path "'>Login</a>"""
     endmatch;
     return user;
   
