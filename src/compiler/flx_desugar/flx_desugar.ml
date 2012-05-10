@@ -684,7 +684,10 @@ and rst state name access (parent_vs:vs_list_t) (st:statement_t) : asm_t list =
   match st with
   | STMT_try sr -> [Exe (sr,EXE_try)]
   | STMT_endtry sr -> [Exe (sr,EXE_endtry)]
-  | STMT_catch (sr,s,t) -> [Exe (sr,EXE_catch (s,t))]
+  | STMT_catch (sr,s,t) -> [
+     Dcl (sr,s,None, `Private,dfltvs, DCL_const ([],t,Flx_code_spec.Str s, NREQ_true));
+     Exe (sr,EXE_catch (s,t))
+   ]
 
   | STMT_seq _ -> assert false
   | STMT_private (sr,st) -> rst state name `Private parent_vs st
