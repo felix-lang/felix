@@ -13,28 +13,44 @@ class ServerConfig {
         handlers: list[http_handler];
         log:log_message->void;
         params:list[string*string];
+        file_name:string;
+        application:string;
   };
 
-  fun _ctor_server_config(handlers:list[http_handler]) => server_config(0.05,8080,".","./html",handlers,
-    logger(console_logger(INFO)+console_logger(ERROR)),Empty[string*string]);
+  
+
+  fun _ctor_server_config(handlers:list[http_handler]):server_config => server_config(0.05,8080,".","./html",handlers,
+    logger(console_logger(INFO)+console_logger(ERROR)),Empty[string*string],"","");
+
+  fun _ctor_server_config(handlers:list[http_handler],app:string):server_config => server_config(0.05,8080,".","./html",handlers,
+    logger(console_logger(INFO)+console_logger(ERROR)),Empty[string*string],"",app);
+
 
   fun basic_server_config(handlers:list[http_handler]):server_config => 
     enhance_with_config_file( enhance_with_command_line_arguments(server_config(handlers)));
+  
+  fun basic_server_config(handlers:list[http_handler],application:string):server_config => 
+    enhance_with_config_file( enhance_with_command_line_arguments(server_config(handlers,application)));
+
 
   fun enhance_with_command_line_arguments(var config:server_config):server_config = {
+    var cfg:server_config = config;
     var arg = "";
     var argno = 1;
     while argno<System::argc do
       arg = System::argv argno;
       println$ "ARG=" + arg;
       if prefix(arg,"--document_root=") do
-        config.document_root = arg.[16 to];
+        cfg.document_root = arg.[16 to];
       elif prefix(arg,"--server_root=") do
-        config.server_root = arg.[14 to];
+        cfg.server_root = arg.[14 to];
       elif prefix(arg,"--port=") do
-        config.port = atoi arg.[7 to];
+        cfg.port = atoi arg.[7 to];
       elif prefix(arg,"--config=") do
-        config.port = atoi arg.[9 to];
+        cfg.file_name = arg.[9 to];
+        if( not (FileStat::fileexists(cfg.file_name))) do
+          fail("unable to open config file:"+cfg.file_name); 
+        done
       elif prefix(arg,"--debug") do
         var dbg_log:list[log_handler];
         if prefix(arg,"--debug=") do
@@ -43,7 +59,7 @@ class ServerConfig {
         else
           dbg_log = console_logger(DEBUG);
         done;
-        config.log = logger(console_logger(INFO)+console_logger(ERROR)+dbg_log);
+        cfg.log = logger(console_logger(INFO)+console_logger(ERROR)+dbg_log);
       elif prefix(arg,"--help") do
         println("Usage: "+(System::argv 0)+""" [OPTION]
   --document-root=PATH    Path to document root directory defaults to ./html
@@ -51,37 +67,75 @@ class ServerConfig {
   --port=PORT             Port to listen on
   --debug                 Logs DEBUG messages to STDOUT
   --debug=FILE            Logs DEBUG to log/FILE
-  --config=CONFIG_FILE    Path to config file defaults to ./config/server_config.cfg
-""");  
+""");
         System::exit(0);      
       done
       ++argno;
     done
-
-    
-    return config;
+    return (cfg);
   }
 
-  fun enhance_with_config_file(var config:server_config):server_config = {
-    var params = read_config(config.server_root+"/config/server_config.cfg");
-    config.params = params;
+  private fun tolower: char->char = "(char)std::tolower($1)";
+  private fun toupper: char->char = "(char)std::toupper($1)";
+
+
+  fun enhance_with_config_file(config:server_config):server_config = {
+    var cfg = config;
+    val config_file_default = Filename::join("config","server_config.cfg");
+    val enviro_config = Env::getenv((map toupper cfg.application)+"_CFG","");
+    if cfg.file_name == "" do
+        if enviro_config  == "" do
+            var cwd_config = Filename::join(".",config_file_default);
+            if FileStat::fileexists(cwd_config) do 
+                cfg.file_name = cwd_config;
+            else
+                var home = Env::getenv("HOME","");
+                if home == "" do
+                    fail "Unable to open configuration file.";
+                else
+                    var home_config = Filename::join(home,
+                    Filename::join(".felix",Filename::join(cfg.application,config_file_default)));
+                    if FileStat::fileexists(home_config) do
+                        cfg.file_name = home_config;
+                    else
+                        fail ("Unable to open configurationfile:" + home_config);
+                        return cfg;
+                    done
+                done
+            done
+        else 
+            if FileStat::fileexists(enviro_config) do
+                cfg.file_name = enviro_config;
+            else
+                fail ("Unable to open configurationfile:" + enviro_config);
+            done
+        done
+    else
+        if not(FileStat::fileexists(cfg.file_name)) do
+            fail ("Unable to open configurationfile:" + cfg.file_name);
+            return cfg;
+        done
+    done
+
+    var params = read_config(cfg.file_name);
+    cfg.params = params;
     match find (fun (a:string,b:string) => eq(a,b)) params "port" with 
-      |Some ?s => config.port = int(s);
+      |Some ?s => cfg.port = int(s);
       |_ => {}();
     endmatch;
     match find (fun (a:string,b:string) => eq(a,b)) params "server_root" with 
-      |Some ?s => config.server_root = s;
+      |Some ?s => cfg.server_root = s;
       |_ => {}();
     endmatch;
     match find (fun (a:string,b:string) => eq(a,b)) params "document_root" with 
-      |Some ?s => config.document_root = s;
+      |Some ?s => cfg.document_root = s;
       |_ => {}();
     endmatch;
     match find (fun (a:string,b:string) => eq(a,b)) params "delay" with 
-      |Some ?s => config.delay = double(s);
+      |Some ?s => cfg.delay = double(s);
       |_ => {}();
     endmatch;
-    return config;
+    return cfg;
   }
 
   fun strtod: string -> double = "strtod($1.data(),0)";

@@ -15,7 +15,7 @@ open Assoc_list;
 open ServerConfig;	
 open SimpleConfig;
 
-var config = basic_server_config( WikiHandler::app_handlers() + default_handlers());
+var config = basic_server_config( WikiHandler::app_handlers() + default_handlers(),"wiki");
 val info_logger = match SimpleConfig::get_param(config.params,"info_log") with 
   |Some ?s => simple_logger(Logger::log(config.server_root+"/log",s,size(1000000),2ui),
                                         INFO)
@@ -61,5 +61,5 @@ val C_PATH = apply_param_vars_to(config.params,
                                     get_param_list(config.params,"C_PATH"));
 val FLX_PKGCONFIG_PATH = apply_param_vars_to(config.params,
                                              get_param_list(config.params,"FLX_PKGCONFIG"));
-load_plugins(config.server_root+"/config/server_config.cfg");
+load_plugins(config.file_name);
 start_webserver(config);
