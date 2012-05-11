@@ -277,7 +277,7 @@ nextc:>
   | doc =>
     { 
       if sol and char "@" == ch do 
-        if b != "" do sp; write_string(markdown b); ep; done
+        if b != "" do sp; write_string(markdown b); done
         s = cmd; b="";
       elif char "\n" == ch and char "\n" == ahead(1) do 
         sp; write_string(markdown b); ep;
@@ -306,9 +306,11 @@ nextc:>
     { 
       if sol and char "@" == ch do 
         if b != "" do 
+          sp;
           write_string("<pre class='cppbg'>"); 
           write_string((xlat_cpp (tf_xlat_cpp,b,"")).1); // no parent!
-          write_string("</pre>"); 
+          write_string("</pre>");
+          ep; 
           b= ""; 
         done
         s = cmd;
@@ -321,11 +323,13 @@ nextc:>
     { 
       if sol and char "@" == ch do 
         if b != "" do 
+          sp;
           write_string("<pre class='flxbg'>"); 
           needs_mathjax', txt := xlat_felix (tf_xlat_felix,b,"");
           needs_mathjax |= needs_mathjax';
           write_string(txt); // no parent!
-          write_string("</pre>"); 
+          write_string("</pre>");
+          ep; 
           b= ""; 
         done
         s = cmd;
@@ -432,7 +436,8 @@ nextc:>
           write_string("<a href='"+strip(e.(0))+"'"+
               (if f.(1) == "" then "" else "style='"+f.(1)+"'" endif)+">"+
               (if endswith f.(0) ".fdoc" then f.(0).[to (f.(0).len - size(5)) ]
-               else f.(0) endif)+"</a>");
+               else f.(0) endif)+"</a> ");
+          s = doc;
         elif prefix(b,"image") do 
           var img = split_first(b.[6 to],"|");
           write_string("<img src='"+img.(0)+"' style='"+img.(1)+"'></img>");
