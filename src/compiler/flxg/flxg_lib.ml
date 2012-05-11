@@ -57,7 +57,7 @@ print_endline ("Libtab name = " ^ libtab_name);
     saved_counter,
     varmap,
     ticache,
-    typeclass_to_instance,
+    virtual_to_instances,
     instances_of_typeclass,
     axioms,
     reductions,
@@ -104,7 +104,7 @@ print_endline ("Libtab name = " ^ libtab_name);
         !(state.syms.counter),
         state.syms.varmap,
         state.syms.ticache,
-        state.syms.typeclass_to_instance,
+        state.syms.virtual_to_instances,
         state.syms.instances_of_typeclass,
         !(state.syms.axioms),
         !(state.syms.reductions),
@@ -116,7 +116,7 @@ print_endline ("Libtab name = " ^ libtab_name);
   state.syms.counter := max !(state.syms.counter) saved_counter;
   state.syms.varmap <- varmap;
   state.syms.ticache <- ticache;
-  state.syms.typeclass_to_instance <- typeclass_to_instance;
+  state.syms.virtual_to_instances <- virtual_to_instances;
   state.syms.instances_of_typeclass <- instances_of_typeclass;
   state.syms.axioms := axioms;
   state.syms.reductions := reductions;

@@ -29,7 +29,7 @@ let make_bind_state syms sym_table =
    ~lookup_state: lookup_state
    ~ticache: syms.Flx_mtypes2.ticache  
    ~varmap: syms.Flx_mtypes2.varmap
-   ~typeclass_to_instance: syms.Flx_mtypes2.typeclass_to_instance
+   ~virtual_to_instances: syms.Flx_mtypes2.virtual_to_instances
    ~instances_of_typeclass: syms.Flx_mtypes2.instances_of_typeclass
    ~axioms: syms.Flx_mtypes2.axioms
    ~reductions: syms.Flx_mtypes2.reductions

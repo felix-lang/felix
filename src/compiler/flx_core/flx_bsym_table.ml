@@ -21,7 +21,13 @@ let length bsym_table = Hashtbl.length bsym_table.table
 let mem bsym_table = Hashtbl.mem bsym_table.table
 
 (** Helper function to find an elt in the table. *)
-let find_elt bsym_table = Hashtbl.find bsym_table.table
+let find_elt bsym_table bid = 
+  try Hashtbl.find bsym_table.table bid
+  with Not_found -> 
+    (*
+    print_endline ("[Flx_bsym_table:find_elt] Symbol " ^string_of_int bid^ " not found in (bound) bsym_table");
+    *)
+    raise Not_found
 
 (** Searches the bound symbol table for the given symbol. *)
 let find bsym_table bid = (find_elt bsym_table bid).bsym
@@ -223,3 +229,5 @@ let validate bsym_table =
     let f_bexe = Flx_bexe.iter ~f_bid ~f_btype ~f_bexpr in
     Flx_bbdcl.iter ~f_bid ~f_btype ~f_bexpr ~f_bexe bbdcl
   end bsym_table
+
+

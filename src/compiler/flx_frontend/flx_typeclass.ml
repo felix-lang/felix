@@ -216,14 +216,14 @@ let check_instance
         ;
         *)
         let old =
-          try Hashtbl.find syms.typeclass_to_instance tck
+          try Hashtbl.find syms.virtual_to_instances tck
           with Not_found -> []
         in
         let entry = inst_vs, inst_constraint, inst_ts, i in
         if mem entry old then
           clierr sr "Instance already registered??"
         else
-          Hashtbl.replace syms.typeclass_to_instance tck (entry :: old);
+          Hashtbl.replace syms.virtual_to_instances tck (entry :: old);
 
         (*
         print_endline ("Register mapping " ^ si tck ^ " vs=" ^
@@ -468,7 +468,7 @@ let tcinst_chk syms bsym_table allow_fail i ts sr (inst_vs, inst_constraint, ins
 let fixup_typeclass_instance' syms bsym_table allow_fail i ts =
   let id = Flx_bsym.id (Flx_bsym_table.find bsym_table i) in
   let entries =
-    try Hashtbl.find syms.typeclass_to_instance i
+    try Hashtbl.find syms.virtual_to_instances i
     with Not_found -> (* print_endline ("Symbol " ^ si i ^ " Not instantiated?"); *) []
   in
 (*

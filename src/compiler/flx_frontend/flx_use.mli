@@ -10,13 +10,6 @@ val find_roots:
   unit
 
 (* counts initialisation as use *)
-val full_use_closure_for_symbols:
-  Flx_mtypes2.sym_state_t ->
-  Flx_bsym_table.t ->
-  Flx_types.bid_t list -> (* The list of symbols to count usage for. *)
-  Flx_types.BidSet.t
-
-(* counts initialisation as use *)
 val full_use_closure:
   Flx_mtypes2.sym_state_t ->
   Flx_bsym_table.t ->

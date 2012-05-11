@@ -11,7 +11,7 @@ val make_bbind_state:
   print_flag:bool ->
   ticache : (bid_t, Flx_btype.t) Hashtbl.t ->
   varmap : Flx_mtypes2.typevarmap_t ->
-  typeclass_to_instance: (bid_t, (bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t ->
+  virtual_to_instances: (bid_t, (bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t ->
   instances_of_typeclass: (bid_t, (bid_t * (bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t ->
   sym_table:Flx_sym_table.t ->
   axioms: Flx_mtypes2.axiom_t list ref ->

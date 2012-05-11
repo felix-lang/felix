@@ -105,37 +105,3 @@ let lower_bsym_table state bsym_table root_proc =
   bsym_table
 
 
-(* Prep the bexes and symbols for the backend by lowering and simplifying
- * symbols. *)
-let lower state bsym_table root_proc bids bexes =
-  (* Wrap closures. *)
-  print_debug state "//Generating primitive wrapper closures";
-  let bids = Flx_mkcls.make_closure state.closure_state bsym_table bids in
-
-  (* Mark which functions are using global state. *)
-  print_debug state "//Finding which functions use globals";
-
-  (* Remove unused symbols. *)
-  (* FIXME: This is disabled because it deletes all the symbols.
-  *)
-  let bsym_table = Flx_use.copy_used state.syms bsym_table in
-
-  (* Mark all the global functions and values. *)
-  let symbols = Flx_global.set_globals_for_symbols
-    bsym_table
-    state.use
-    bids
-  in
-
-  (* Instantiate type classes. *)
-  print_debug state "//instantiating";
-
-  Flx_intpoly.cal_polyvars state.syms bsym_table;
-  Flx_inst.instantiate
-    state.syms
-    bsym_table
-    false
-    root_proc
-    state.syms.Flx_mtypes2.bifaces;
-
-  bsym_table, bids, bexes

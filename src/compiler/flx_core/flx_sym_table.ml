@@ -41,7 +41,13 @@ let add sym_table bid parent sym =
 let mem = Hashtbl.mem
 
 (** Helper function to find an elt in the table. *)
-let find_elt sym_table = Hashtbl.find sym_table
+let find_elt sym_table bid = 
+  try Hashtbl.find sym_table bid 
+  with Not_found -> 
+    (*
+    print_endline ("[Flx_sym_table:find_elt] Symbol " ^string_of_int bid^ " not found in (unbound) sym_table");
+    *)
+    raise Not_found
 
 (** Searches the symbol table for the given index. *)
 let find sym_table bid = (find_elt sym_table bid).sym

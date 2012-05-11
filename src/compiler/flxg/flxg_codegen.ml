@@ -464,3 +464,4 @@ let codegen state bsym_table root_proc =
     "Flxg_codegen.codegen_bsyms"
     (codegen_bsyms state bsym_table label_map label_usage label_info top_class)
     topclass_props
+

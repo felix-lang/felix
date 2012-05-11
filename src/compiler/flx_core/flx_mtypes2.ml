@@ -60,7 +60,7 @@ type sym_state_t =
   reductions : reduction_t list ref;
   axioms: axiom_t list ref;
   variant_map: (Flx_btype.t * Flx_btype.t, bid_t) Hashtbl.t;
-  mutable typeclass_to_instance: (bid_t, (bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
+  mutable virtual_to_instances: (bid_t, (bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
   mutable instances_of_typeclass: (bid_t, (bid_t * (bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
   transient_specialisation_cache: (bid_t * Flx_btype.t list, bid_t * Flx_btype.t list) Hashtbl.t;
 } 
@@ -82,7 +82,7 @@ let make_syms options =
     reductions = ref [];
     axioms = ref [];
     variant_map = Hashtbl.create 97;
-    typeclass_to_instance = Hashtbl.create 97;
+    virtual_to_instances = Hashtbl.create 97;
     instances_of_typeclass = Hashtbl.create 97;
     transient_specialisation_cache = Hashtbl.create 97;
   }

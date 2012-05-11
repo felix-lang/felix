@@ -59,7 +59,7 @@ type sym_state_t =
   reductions : reduction_t list ref;
   axioms : axiom_t list ref;
   variant_map: (Flx_btype.t * Flx_btype.t, Flx_types.bid_t) Hashtbl.t;
-  mutable typeclass_to_instance: (Flx_types.bid_t, (Flx_types.bvs_t * Flx_btype.t * Flx_btype.t list * Flx_types.bid_t) list) Hashtbl.t;
+  mutable virtual_to_instances: (Flx_types.bid_t, (Flx_types.bvs_t * Flx_btype.t * Flx_btype.t list * Flx_types.bid_t) list) Hashtbl.t;
   mutable instances_of_typeclass: (Flx_types.bid_t, (Flx_types.bid_t * (Flx_types.bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
   transient_specialisation_cache: (Flx_types.bid_t * Flx_btype.t list, Flx_types.bid_t * Flx_btype.t list) Hashtbl.t;
 }

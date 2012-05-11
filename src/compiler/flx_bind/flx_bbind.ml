@@ -21,7 +21,7 @@ type bbind_state_t = {
   sym_table: Flx_sym_table.t;
   ticache : (bid_t, Flx_btype.t) Hashtbl.t;
   varmap : typevarmap_t;
-  typeclass_to_instance: (bid_t, (bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
+  virtual_to_instances: (bid_t, (bvs_t * Flx_btype.t * Flx_btype.t list * bid_t) list) Hashtbl.t;
   instances_of_typeclass: (bid_t, (bid_t * (bvs_t * Flx_btype.t * Flx_btype.t list)) list) Hashtbl.t;
   reductions: reduction_t list ref;
   axioms: axiom_t list ref;
@@ -37,7 +37,7 @@ let make_bbind_state
   ~print_flag 
   ~ticache 
   ~varmap 
-  ~typeclass_to_instance 
+  ~virtual_to_instances 
   ~instances_of_typeclass 
   ~sym_table 
   ~axioms 
@@ -50,7 +50,7 @@ let make_bbind_state
     sym_table = sym_table;
     ticache=ticache;
     varmap=varmap;
-    typeclass_to_instance=typeclass_to_instance;
+    virtual_to_instances=virtual_to_instances;
     instances_of_typeclass=instances_of_typeclass;
     axioms = axioms;
     reductions = reductions;

@@ -1076,7 +1076,7 @@ and gen_apply_prim
 
           if index = index' then begin
             let entries =
-              try Hashtbl.find syms.typeclass_to_instance index
+              try Hashtbl.find syms.virtual_to_instances index
               with Not_found -> []
             in
 

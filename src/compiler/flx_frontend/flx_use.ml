@@ -14,6 +14,17 @@ open Flx_unify
 open Flx_maps
 open Flx_exceptions
 
+let rec is_proj (e,t) =
+  match e with
+  | BEXPR_name _-> true
+  | BEXPR_get_n (_,e) -> is_proj e
+  | _ -> false
+
+let rec get_var (e,t) =
+  match e with
+  | BEXPR_name (i,ts) -> i
+  | BEXPR_get_n (j,e) -> get_var e 
+  | _ -> assert false
 
 (* These routines find the absolute use closure of a symbol,
 in particular they include variables which are initialised
@@ -35,66 +46,58 @@ changing the data structures.
 
 *)
 
-let rec uses_btype used bsym_table count_inits t =
-  let f_btype t = uses_btype used bsym_table count_inits t in
+let rec uses_btype add bsym_table count_inits t =
+  let f_btype t = uses_btype add bsym_table count_inits t in
  
   (* We only care about inits. *)
   match t with
   | BTYP_inst (i,ts) ->
-      uses used bsym_table count_inits i;
+      add i;
       List.iter f_btype ts
 
   | _ -> Flx_btype.flat_iter ~f_btype t
 
-and uses_bexe used bsym_table count_inits exe =
-  let f_bexpr e = uses_bexpr used bsym_table count_inits e in
+and uses_bexe add bsym_table count_inits exe =
+  let f_bexpr e = uses_bexpr add bsym_table count_inits e in
 
   match exe,count_inits with
   | BEXE_init (_,i,e),false -> f_bexpr e
   | BEXE_assign (_,lhs,rhs),_ ->
       (* check is a term is a tuple projection of a variable *)
-      let rec is_proj e =
-        match e with
-        | BEXPR_name _,_ -> true
-        | BEXPR_get_n (_,e),_ -> is_proj e
-        | _ -> false
-      in
       if count_inits or not (is_proj lhs)
       then f_bexpr lhs;
       f_bexpr rhs
   | _ ->
+
       Flx_bexe.iter
-        ~f_bid:(uses used bsym_table count_inits)
-        ~f_btype:(uses_btype used bsym_table count_inits)
+        ~f_bid:(add)
+        ~f_btype:(uses_btype add bsym_table count_inits)
         ~f_bexpr
         exe
 
-and uses_bexpr used bsym_table count_inits ((e,t) as x) =
+and uses_bexpr add bsym_table count_inits ((e,t) as x) =
   Flx_bexpr.iter
-    ~f_bid:(uses used bsym_table count_inits)
-    ~f_btype:(uses_btype used bsym_table count_inits)
+    ~f_bid:(add)
+    ~f_btype:(uses_btype add bsym_table count_inits)
     x
 
-and uses used bsym_table count_inits i =
-  if not (BidSet.mem i !used) then begin
+and uses add bsym_table count_inits i =
     let bbdcl =
       try Some (Flx_bsym_table.find_bbdcl bsym_table i)
       with Not_found -> None
     in
     match bbdcl with
     | Some bbdcl ->
-        used := BidSet.add i !used;
         Flx_bbdcl.iter
-          ~f_bid:(uses used bsym_table count_inits)
-          ~f_btype:(uses_btype used bsym_table count_inits)
-          ~f_bexpr:(uses_bexpr used bsym_table count_inits)
-          ~f_bexe:(uses_bexe used bsym_table count_inits)
+          ~f_bid:(add)
+          ~f_btype:(uses_btype add bsym_table count_inits)
+          ~f_bexpr:(uses_bexpr add bsym_table count_inits)
+          ~f_bexe:(uses_bexe add bsym_table count_inits)
           bbdcl
       
     | None ->
         failwith ("[Flx_use.uses] Cannot find bound defn for <" ^
           string_of_bid i ^ ">")
-  end
 
 let find_roots syms bsym_table root bifaces =
   (* make a list of the root and all exported functions,
@@ -102,59 +105,56 @@ let find_roots syms bsym_table root bifaces =
   set now too
   *)
   let roots = ref (BidSet.singleton root) in
+  let add i = roots := BidSet.add i (!roots) in
 
   List.iter begin function
   | BIFACE_export_python_fun (_,x,_)
-  | BIFACE_export_fun (_,x,_) -> roots := BidSet.add x !roots
-  | BIFACE_export_cfun (_,x,_) -> roots := BidSet.add x !roots
-  | BIFACE_export_type (_,t,_) -> uses_btype roots bsym_table true t
+  | BIFACE_export_fun (_,x,_) 
+  | BIFACE_export_cfun (_,x,_) -> add x;
+  | BIFACE_export_type (_,t,_) -> uses_btype add bsym_table true t
   end bifaces;
 
   syms.roots := !roots
 
-let cal_use_closure_for_symbols syms bsym_table bids count_inits =
-  let u = ref BidSet.empty in
-  let v : BidSet.t = !(syms.roots) in
-  let v = ref v in
-
-  let add j =
-    if not (BidSet.mem j !u) then begin
-      u := BidSet.add j !u;
-      uses v bsym_table count_inits j
-    end
-  in
-  let ut t = uses_btype u bsym_table count_inits t in
-
-  List.iter begin fun bid ->
-    match Flx_hashtbl.find_opt syms.typeclass_to_instance bid with
-    | Some instances ->
-        List.iter begin fun (vs, con, st, j) ->
-          add bid;
-          add j;
-          ut con
-        end instances
-    | None -> ()
-  end bids;
-
-  !u
-
-let full_use_closure_for_symbols syms bsym_table bids =
-  cal_use_closure_for_symbols syms bsym_table bids true
-
 let cal_use_closure syms bsym_table (count_inits:bool) =
-  let u = ref BidSet.empty in
-  let v : BidSet.t = !(syms.roots) in
-  let v = ref v in
+  let traced = ref BidSet.empty in (* final set of used symbols *)
+  let v : BidSet.t = !(syms.roots) in (* used but not traced yet *)
+  let untraced = ref v in
 
-  let add bid =
-    if not (BidSet.mem bid !u) then begin
-      u:= BidSet.add bid !u;
-      uses v bsym_table count_inits bid
+(*
+  print_endline "Roots";
+  BidSet.iter (fun i ->
+    print_endline ("Root " ^ string_of_int i)
+  )
+  (!untraced)
+  ;
+*)
+
+  let add' bid =
+    if not (BidSet.mem bid !traced) && not (BidSet.mem bid !untraced) then begin
+(*
+      print_endline ("Keeping " ^ string_of_int bid);
+*)
+      untraced := BidSet.add bid !untraced;
     end
   in
-  let ut t = uses_btype u bsym_table count_inits t in
+  let ut t = uses_btype add' bsym_table count_inits t in
+  let add bid =
+    add' bid;
+    try 
+      let entries = Hashtbl.find syms.virtual_to_instances bid in
+      List.iter begin fun (vs,con,ts,j) ->
+        add' j;
+        ut con;
+        List.iter ut ts
+      end entries
+    with Not_found -> ()
+  in
 
   (* Register use of the typeclass instances. *)
+(*
+  print_endline "Instance of typeclass";
+*)
   Hashtbl.iter begin fun i entries ->
     add i;
     List.iter begin fun (j, (vs, con, ts)) ->
@@ -163,8 +163,9 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
       List.iter ut ts
     end entries
   end syms.instances_of_typeclass;
-
+(*
   (* Register use for the typeclass instance functions. *)
+  print_endline "typeclass to instance";
   Hashtbl.iter begin fun i entries ->
     add i;
     List.iter begin fun (vs,con,ts,j) ->
@@ -172,26 +173,54 @@ let cal_use_closure syms bsym_table (count_inits:bool) =
       ut con;
       List.iter ut ts
     end entries
-  end syms.typeclass_to_instance;
-
-  while not (BidSet.is_empty !v) do
-    let bid = BidSet.choose !v in
-    v := BidSet.remove bid !v;
-    add bid
+  end syms.virtual_to_instances;
+*)
+(*
+  print_endline "Tracing untraced";
+*)
+  while not (BidSet.is_empty !untraced) do
+    let bid = BidSet.choose !untraced in
+(*
+    print_endline ("Tracing " ^ string_of_int bid);
+*)
+    untraced := BidSet.remove bid !untraced;
+    traced := BidSet.add bid !traced;
+    uses add bsym_table count_inits bid
   done;
 
-  !u
+  !traced
 
 let full_use_closure syms bsym_table =
   cal_use_closure syms bsym_table true
 
 
-let copy_used syms bsym_table =
+let strip_inits bidset exes =
+  let rec aux exes_in exes_out =
+    match exes_in with
+    | [] -> List.rev exes_out
+    | exe::tail ->
+      match exe with
+      | BEXE_init (sr,i,e) when not (Flx_types.BidSet.mem i bidset) ->
+        (*
+        print_endline ("Stripping init of variable " ^ string_of_int i);
+        *)
+        aux tail exes_out 
+      | BEXE_assign (sr,lhs,rhs) when is_proj lhs && not (Flx_types.BidSet.mem (get_var lhs) bidset) ->
+        (*
+        let i = get_var lhs in
+        print_endline ("Stripping assign of variable " ^ string_of_int i);
+        *)
+        aux tail exes_out 
+      | _ -> aux tail (exe::exes_out) 
+  in
+  aux exes [] 
+
+let copy_used1 syms bsym_table =
   if syms.compiler_options.Flx_options.print_flag then
     print_endline "COPY USED";
 
   (* Calculate the used symbols. *)
-  let bidset = full_use_closure syms bsym_table in
+  let bidset = cal_use_closure syms bsym_table false in
 
   (* Return a new bsym_table that has only the used symbols. *)
   let new_bsym_table = Flx_bsym_table.create () in
@@ -207,7 +236,7 @@ let copy_used syms bsym_table =
         | None -> None
         | Some parent ->
             (* Only add the parent if we're in the use list. Otherwiser, just
-             * turn the symbol into a root. *)
+             * turn the symbol into a top level symbol. *)
             if Flx_types.BidSet.mem parent bidset then begin
               aux parent;
               Some parent
@@ -239,6 +268,18 @@ let copy_used syms bsym_table =
       in
 
       let bsym = Flx_bsym_table.find bsym_table bid in
+      let bsym =
+        match bsym.Flx_bsym.bbdcl with 
+        | BBDCL_fun  (prop, bvs, ps, res, exes) ->  
+          let exes = strip_inits bidset exes in
+          let bbdcl = Flx_bbdcl.bbdcl_fun  (prop, bvs, ps, res, exes) in
+          Flx_bsym.create 
+            ~sr:(bsym.Flx_bsym.sr) 
+            ~vs:(bsym.Flx_bsym.vs) 
+            bsym.Flx_bsym.id  
+            bbdcl
+        | _ -> bsym
+      in 
 
       (* Finally, add the symbol to the root. *)
       Flx_bsym_table.add new_bsym_table bid parent bsym
@@ -250,4 +291,14 @@ let copy_used syms bsym_table =
 
   (* Return the new symbol bsym_table. *)
   new_bsym_table
+
+let copy_used syms bsym_table =
+  let rec aux bsym_table old =
+    let bsym_table = copy_used1 syms bsym_table in
+    let nu = Flx_bsym_table.length bsym_table in
+    assert (nu <= old);
+    if nu = old then bsym_table else
+    aux bsym_table nu
+  in
+  aux bsym_table (Flx_bsym_table.length bsym_table)
 

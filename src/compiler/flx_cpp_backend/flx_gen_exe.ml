@@ -724,7 +724,7 @@ let gen_exe filename
       | _ ->
       (if with_comments then "      //"^src_str^"\n" else "") ^
       "      "^ ge sr e1 ^ " = " ^ ge sr e2 ^
-      ";\n"
+      "; //assign\n"
       end
 
     | BEXE_init (sr,v,((_,t) as e)) ->
@@ -748,7 +748,7 @@ let gen_exe filename
             " " ^
             " = " ^
             ge sr e ^
-            ";\n"
+            "; //init\n"
           | _ -> assert false
         end
       end

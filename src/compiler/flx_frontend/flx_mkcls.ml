@@ -413,15 +413,6 @@ let process_entry ue state bsym_table all_closures i =
 
 let set_closure bsym_table i = add_prop bsym_table `Heap_closure i
 
-let make_closure state bsym_table bsyms =
-  let ue = adj_cls in
-  let all_closures = ref BidSet.empty in
-  let used = full_use_closure_for_symbols state.syms bsym_table bsyms in
-  BidSet.iter (process_entry ue state bsym_table all_closures) used;
-  BidSet.iter (set_closure bsym_table) !all_closures;
-
-  bsyms
-
 let make_closures state bsym_table =
   let ue = adj_cls in
   let all_closures = ref BidSet.empty in
