@@ -33,7 +33,8 @@ user text,
 ts timestamp);
 
 create table paths (
-path text primary key,
+path text ,
 grp txt,
-lvl text);
+lvl text,
+primary key(path,grp));
 

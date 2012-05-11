@@ -32,7 +32,7 @@ function callback0() {
 function sel_path(group,path,lvl) {
   $('#group').val(group);
   $('#path').val(path);
-  $('#lvl').val(lvl);
+//  $('#lvl').val(lvl);
 }
 
 $(function() {
@@ -45,7 +45,7 @@ $(function() {
      var url = "/admin/path/edit/";
  
      $.post(url,
-      { path: $('#path').val(),grp:$('#group').val(),lvl:$('#lvl').val(), },
+      { path: $('#path').val(),grp:$('#group').val(),/*lvl:$('#lvl').val(),*/ },
       function(data){
         notification( "#notification",data,callback0);
       $.get("/admin/path/table/",

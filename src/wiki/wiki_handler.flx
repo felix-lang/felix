@@ -10,13 +10,18 @@ class WikiHandler {
   open WikiFileModel;
   open MIMEType;
 
+
   fun app_handlers() =>
       Cons (http_handler((fun (c:server_config,r:http_request) => true),
             (proc (c:http_connection, r:http_request ) {c.config.log(INFO,r.path);})),
-      Cons (http_handler(save_edit_route,requires_auth(auth_source,"Felix Wiki",save_edit)),
-      Cons (http_handler(edit_route,requires_auth(auth_source,"Felix Wiki",edit)),
-      Cons (http_handler(delete_route,requires_auth(auth_source,"Felix Wiki",delete)),
-      Cons (http_handler(preview_route,requires_auth(auth_source,"Felix Wiki",preview)),
+      Cons (http_handler(save_edit_route,requires_auth(auth_source,"Felix Wiki",
+            requires_group_auth(save_edit))),
+      Cons (http_handler(edit_route,requires_auth(auth_source,"Felix Wiki",
+            requires_group_auth(edit))),
+      Cons (http_handler(delete_route,requires_auth(auth_source,"Felix Wiki",
+            requires_group_auth(delete))),
+      Cons (http_handler(preview_route,requires_auth(auth_source,"Felix Wiki",
+            requires_group_auth(preview))),
       Cons (http_handler(login_route,requires_auth(auth_source,"Felix Wiki",login)),
       Cons (http_handler(users_edit_route,requires_auth(admin_auth_source,"Felix Wiki",users_edit)),
       Cons (http_handler(users_reset_route,requires_auth(admin_auth_source,"Felix Wiki",users_reset)),
@@ -30,12 +35,12 @@ class WikiHandler {
       Cons (http_handler(path_table_route,requires_auth(admin_auth_source,"Felix Wiki",path_table)),
       Cons (http_handler(path_route,requires_auth(admin_auth_source,"Felix Wiki",path)),
 //      Cons (http_handler(search_route,search),
-      Cons (http_handler(dir_route,dir),
-      Cons (http_handler(pull_route,pull),
-      Cons (http_handler(wiki_route,wiki),
-      Cons (http_handler(web_route,web),
-      Cons (http_handler(lib_route,lib),
-      Cons (http_handler(inc_route,inc),
+      Cons (http_handler(dir_route,requires_group_auth(dir)),
+      Cons (http_handler(pull_route,requires_group_auth(pull)),
+      Cons (http_handler(wiki_route,requires_group_auth(wiki)),
+      Cons (http_handler(web_route,requires_group_auth(web)),
+      Cons (http_handler(lib_route,requires_group_auth(lib)),
+      Cons (http_handler(inc_route,requires_group_auth(inc)),
       Empty[http_handler])))))))))))))))))))))));
 
   fun auth_source(uname:string,passwd:string):bool => 
@@ -44,11 +49,38 @@ class WikiHandler {
   fun admin_auth_source(uname:string,passwd:string):bool => 
     db_get_auth_fdoc(uname,passwd) and db_user_is_admin(uname);
 
-  fun wiki_route(config:server_config,request:http_request) ={
-    return startswith request.path  "/wiki/";// or  
-           //request.path =="/" or request.path == "";
+  fun is_authorized_for(conn:http_connection,request:http_request/*,lvl:string*/):bool =>
+    mem (fun(path:string^4):bool => if \in(request.path,RE2(path.(2))) then
+      (match authorized_user(conn,request) with
+      |Some ?user => (match db_get_user(user) with
+        |Some (?u,?name,?grp,?email) => path.(0) == grp
+        |_ =>  path.(0) == "public"
+        endmatch)
+      |_ => path.(0) == "public"
+      endmatch)
+      else
+        false
+      endif // and path.(3) == lvl
+    ) (db_get_paths());
+ 
+  proc requires_group_auth (/*lvl:string,*/
+                     handler_fn:(http_connection*http_request) -> void)
+                    (conn:http_connection, request:http_request ) = {
+    
+    if is_authorized_for(conn,request/*,lvl*/) do
+      handler_fn(conn,request);
+    else
+      write(conn, make_forbidden(
+        apply_to_template("page-template.html",
+          Cons(("<!--___CUSTOM_HEADER___-->",""),
+          Cons(("___CENTER_CONTENT___",load_template("access-denied-body.html")),
+          Cons(("___FNAME___","Access Denied"),
+          Cons(("___CTRLS___",set-ctrls(conn,request)),
+          Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
+          Empty[string^2]))))))));
+    done
   }
-
+ 
   fun apply_to_template(templ:string,params:list[string^2]):string = {
     var template = load(Filename::join(TEMPLATE_ROOT,templ));
     iter (proc (kv:string^2) {template = let ?k,?v = kv in search_and_replace(template,k,v);})
@@ -59,29 +91,19 @@ class WikiHandler {
   fun load_template(templ:string):string =>
     load(Filename::join(TEMPLATE_ROOT,templ));
 
-  fun qip_make_json (content:string,headers:list[string^2]) =>
-    http_header(http_response(HTTPStatusCodes::SC_OK,LowResTime::localtime(LowResTime::time_t()),application json, headers,content))+
-    content;
-
- //fun wiki_make_html (content:string]) =>
- //   http_header(http_response(HTTPStatusCodes::SC_OK,LowResTime::localtime(LowResTime::time_t()),text html, Cons(("Expires","0"),Empty[string^2]),content))+
-//    content;
-// write(conn,(qip_make_json("\r\n\r\n"+str(rlst),Cons(("Expires","0"),Empty[string^2])));
-//Jdictionary (map (fun (a:string^2):Vnalue^2 => (Jstring a.(0),(Jstring a.(1)))) (Cons ("Z","V"),Empty)
-//
   fun login_route(config:server_config,request:http_request) =>
     startswith request.path  "/login";
   
-  proc login (conn:http_connection, request:http_request ) {
-    conn.config.log(INFO,str(request));  
-    write(conn,make_see_other("/wiki/"));
+   proc login (conn:http_connection, request:http_request ) {
+    var path = (get_param(request,"return_to")).or_else("/wiki/");
+    write(conn,make_see_other(path));
   }
 
 
   fun set-ctrls(conn:http_connection,request:http_request) = {
     val user = match authorized_user(conn,request) with
       |Some ?u => q"<div class='inline'><span class='ui-icon ui-icon-person' style='float:left;'></span><a href='/user/profile/'>$(u)</a></div>"
-      |None => """<a href='/login'>Login</a>"""
+      |None => "<a href='/login?return_to=" + request.path "'>Login</a>"""
     endmatch;
     return user;
   
@@ -157,7 +179,9 @@ mathjax := '''
       |None => title
     endmatch;
   }
-
+ fun wiki_route(config:server_config,request:http_request) ={
+    return startswith request.path  "/wiki/"or request.path =="/" or request.path == "";
+  }
 
   proc wiki (conn:http_connection, request:http_request ) {
     var path = request.path.[6 to];
@@ -376,7 +400,7 @@ mathjax := '''
             dir_list = dir_list+link;
       	  done
       done
-      }) files;
+      }) (sort(files));
     }
     | None => {  }
     endmatch;
@@ -604,12 +628,12 @@ mathjax := '''
       (fold_left (fun(x:string) (y:string):string => x +""+ y)  ""
        (map (fun (a:string^2) => "<option value='"+a.(0)+"'>"+a.(1)+"</option>") 
          (db_get_groups())))+"</select>";
-     val lvls = "<select name='lvl' id='lvl'><option value='ro'>ro</option>"+
-                "<option value='rw'>rw</option></select>";
+     /*val lvls = "<select name='lvl' id='lvl'><option value='ro'>ro</option>"+
+                "<option value='rw'>rw</option></select>"; */
     val paths = 
       (fold_left (fun(x:string) (y:string):string => x + "" + y)  ""
        (map (fun (a:string^4) => "<tr><td><a onclick=\"sel_path('" + a.(0) + "','"+ 
-           a.(2) + "','" + a.(3) + "')\"'>select</a></td><td>"+a.(1)+"</td><td>" + a.(2) + "</td><td>" + a.(3) + "</td></tr>") 
+           a.(2) + "','" + a.(3) + "')\"'>select</a></td><td>"+a.(1)+"</td><td>" + a.(2) + "</td><!-- <td>" + a.(3) + "</td>--></tr>") 
          (db_get_paths())));
 
 
@@ -617,10 +641,10 @@ mathjax := '''
         apply_to_template("page-template.html",
          Cons(("___CENTER_CONTENT___",
            apply_to_template("path-form.html",
-             Cons(("___LVL_SELECT___",lvls),
+             //Cons(("___LVL_SELECT___",""  lvls ),
              Cons(("___GROUP_SELECT___",groups),
              Cons(("___PATHS___",paths),
-             Empty[string^2]))))),
+             Empty[string^2])))),//),
          Cons(("<!--___CUSTOM_HEADER___-->",load_template("path-head.html")),
          Cons(("___FNAME___","Wiki Access"),
          Cons(("___CTRLS___",set-ctrls(conn,request)),
@@ -639,7 +663,7 @@ mathjax := '''
    val paths = 
       (fold_left (fun(x:string) (y:string):string => x + "" + y)  ""
        (map (fun (a:string^4) => "<tr><td><a onclick=\"sel_path('" + a.(0) + "','"+ 
-           a.(2) + "','" + a.(3) + "')\"'>select</a></td><td>"+a.(1)+"</td><td>" + a.(2) + "</td><td>" + a.(3) + "</td></tr>") 
+           a.(2) + "','" + a.(3) + "')\"'>select</a></td><td>"+a.(1)+"</td><td>" + a.(2) + "</td>" + /* "<td>" + a.(3) + "</td>"*/ "</tr>") 
          (db_get_paths())));
 
     val data = make_html(apply_to_template("paths-table.html",
