@@ -560,6 +560,7 @@ let instantiate syms bsym_table instps (root:bid_t) (bifaces:biface_t list) =
           let t = btyp_tuple (Flx_bparameter.get_btypes ps) in
           register_type_r ui syms bsym_table [] (Flx_bsym.sr bsym) t;
           register_type_nr syms bsym_table t;
+          register_tuple syms bsym_table t;
         end
       | _ -> assert false
       end;
