@@ -366,7 +366,9 @@ template<typename T> void destroy(T *p){ p->T::~T(); }
 #define _WINSOCKAPI_
 
 // windows.h defines min/max macros, which can cause all sorts of confusion.
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #endif
 
 
