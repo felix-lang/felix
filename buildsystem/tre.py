@@ -135,11 +135,12 @@ def build_runtime(phase):
     dst = 'lib/rtl/tre'
     srcs = Path.glob('src/tre/tre/lib/*.c')
     includes = [
+        phase.ctx.buildroot / 'config/target',
         phase.ctx.buildroot / path,
         phase.ctx.buildroot / path / 'lib',
         path / 'gnulib/lib',
     ]
-    macros = ['HAVE_CONFIG_H']
+    macros = ['HAVE_CONFIG_H', 'BUILD_TRE']
 
     #Workaround link error : unresolved external symbol _snprintf
     #referenced in function _tre_version.
