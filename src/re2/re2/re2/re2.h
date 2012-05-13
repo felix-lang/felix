@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+#include "flx_re2_config.hpp"
+
 #ifndef RE2_RE2_H
 #define RE2_RE2_H
 
@@ -195,7 +197,7 @@ class Regexp;
 // Interface for regular expression matching.  Also corresponds to a
 // pre-compiled regular expression.  An "RE2" object is safe for
 // concurrent use by multiple threads.
-class RE2 {
+class RE2_EXTERN RE2 {
  public:
   // We convert user-passed pointers into special Arg objects
   class Arg;

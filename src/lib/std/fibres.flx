@@ -7,12 +7,49 @@ open class Fibres
 
   gen mk_thread: cont->fthread = "new(*PTF gcp,::flx::rtl::_fthread_ptr_map,false) ::flx::rtl::fthread_t($1)";
 
+  // Spawn a fibre on this fibres scheduler.
+  // uses a supervisor call so can't be used in a function
   proc spawn_fthread(p:1->0)
   {
       var con = start p;              // get continuation of p
       var fthr = mk_thread con;
       svc$ svc_spawn_detached fthr;
   }
+
+
+  // FIBRE SCHEDULER
+  type fibre_scheduler = "::flx::run::sync_state_t*";
+  // NOTE: NOT GARBAGE COLLECTED!
+  ctor fibre_scheduler: 1 = """new ::flx::run::sync_state_t(false, PTF pgc, 
+    new ::std::list<::flx::rtl::fthread_t*>)""";
+  ;
+  proc delete_fibre_scheduler : fibre_scheduler = """
+    $1->gcp->collector->remove_root($1->ft);
+    for(
+     ::std::list<::flx::rtl::fthread_t*>::iterator p = $1.active->begin();
+     p != $1->active->end();
+     p++
+    )
+    $1->gcp->collector->remove_root(p);
+    delete $1->active; delete $1->ft; delete $1;
+  """;
+
+  proc spawn_fibre: fibre_scheduler * fthread = """
+    $1->gcp->collector->add_root($2);
+    $1->active->push_back($2);
+    $1->frun(); 
+  """;
+
+  enum fibre_scheduler_state {
+    terminated, 
+    blocked,    // normal exit: out of fibres to run
+    delegated   // client fibre issued a service request such as svc_general
+                // which the synchronous scheduler cannot satisfy
+  };
+  fun get_state : fibre_scheduler -> fibre_scheduler_state = "$1->fs";
+
+
+  proc spawn_fthread (fs:fibre_scheduler) (p:1->0) => spawn_fibre (fs,p.start.mk_thread);
 
   publish "Resume a continuation until it yields"
   gen step: cont -> cont = "$1->resume()";

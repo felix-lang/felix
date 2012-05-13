@@ -1,3 +1,5 @@
+#include "flx_re2_config.hpp"
+
 // Copyright 2001-2010 The RE2 Authors.  All Rights Reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
@@ -26,7 +28,7 @@
 
 namespace re2 {
 
-class StringPiece {
+class RE2_EXTERN StringPiece {
  private:
   const char*   ptr_;
   int           length_;
