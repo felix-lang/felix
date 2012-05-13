@@ -823,7 +823,8 @@ done
 
 if HAVE_WIN32 do
   FLXG=quote(Filename::join(FLX_INSTALL_DIR, 'bin', 'flxg.exe'));
-  FLXRUN='';
+  FLXRUN="set PATH="+(Directory::mk_absolute_filename FLX_INSTALL_DIR)+"\\bin;"+"%PATH%&&";
+  //println$ "FLXRUN=" + FLXRUN;
 else
   FLXG=quote(FLX_INSTALL_DIR+"/bin/flxg");
   // the mac uses DYLD_LIBRARY_PATH instead of LD_LIBRARY_PATH
