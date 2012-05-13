@@ -12,7 +12,9 @@
 #include <stddef.h>         // For size_t
 #include <assert.h>
 #include <stdarg.h>
-#include <sys/time.h>
+#if !defined(_WIN32)
+#  include <sys/time.h>
+#endif//!defined(_WIN32)
 #include <time.h>
 
 // C++
