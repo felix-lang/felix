@@ -823,7 +823,7 @@ done
 
 if HAVE_WIN32 do
   FLXG=quote(Filename::join(FLX_INSTALL_DIR, 'bin', 'flxg.exe'));
-  FLXRUN="set PATH="+(Directory::mk_absolute_filename FLX_INSTALL_DIR)+"\\bin;"+"%PATH%&&";
+  FLXRUN="set PATH="+(Directory::mk_absolute_filename FLX_INSTALL_DIR)+"\\lib\\rtl;"+"%PATH%&&";
   //println$ "FLXRUN=" + FLXRUN;
 else
   FLXG=quote(FLX_INSTALL_DIR+"/bin/flxg");
