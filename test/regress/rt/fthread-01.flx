@@ -5,7 +5,7 @@ var y = ();
 proc f() { print "Hello"; endl; }
 f y;
 
-var x = mk_schannel[unit]();
+var x = mk_schannel[int]();
 
 proc reader() {
   print "R1"; endl;
@@ -15,7 +15,7 @@ proc reader() {
 
 proc writer() {
   print "W1"; endl;
-  write (x,());
+  write (x,1);
   print "W2"; endl;
 }
 
