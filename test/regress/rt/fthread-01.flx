@@ -9,8 +9,8 @@ var x = mk_schannel[unit]();
 
 proc reader() {
   print "R1"; endl;
-  var u = read x;
-  print "R2"; endl;
+  C_hack::ignore(read x); // prevent read being optimised away
+  print "R2 "; endl;
 }
 
 proc writer() {
