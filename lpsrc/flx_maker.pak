@@ -11,7 +11,7 @@ fun config() =>
 @tangle("  let ?INSTALL_ROOT_TOPDIR=Filename::join(%r, Filename::join('lib','felix')) in" % (config.PREFIX))
 @tangle("  let ?INSTALL_ROOT=Filename::join(INSTALL_ROOT_TOPDIR, 'felix-%s') in " % (config.flx_version))
   (
-@tv("PREFIX='"+config.PREFIX+"'")
+@tv('PREFIX=r"'+config.PREFIX+'"')
 @tv("INSTALL_ROOT_TOPDIR=INSTALL_ROOT_TOPDIR")
 @tv("INSTALL_ROOT=INSTALL_ROOT")
     FLX_INSTALL_DIR = Env::getenv("FLX_INSTALL_DIR", INSTALL_ROOT),
@@ -21,22 +21,22 @@ fun config() =>
 @tv("HAVE_GNU="+b(config.HAVE_GNU))
 @tv("HAVE_MSVC="+b(config.HAVE_MSVC))
 @if config.TARGET_CXX.options.HAVE_PIC:
-  tv('CCOBJ_DLLIB="'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+' '+config.TARGET_CXX.options.PIC+'"')
+  tv('CCOBJ_DLLIB=r"'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+' '+config.TARGET_CXX.options.PIC+'"')
  else:
-  tv('CCOBJ_DLLIB="'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+'"')
-@tv('CCLINK_DLLIB="'+config.TARGET_CXX.options.CCLINK_DYNAMIC_FLX+'"')
-@tv('CCOBJ_STATIC_LIB="'+config.TARGET_CXX.options.CCOBJ_STATIC_FLX+'"')
-@tv('CCLINK_STATIC="'+config.TARGET_CXX.options.CCLINK_STATIC+'"')
+  tv('CCOBJ_DLLIB=r"'+config.TARGET_CXX.options.CCOBJ_DYNAMIC_FLX+'"')
+@tv('CCLINK_DLLIB=r"'+config.TARGET_CXX.options.CCLINK_DYNAMIC_FLX+'"')
+@tv('CCOBJ_STATIC_LIB=r"'+config.TARGET_CXX.options.CCOBJ_STATIC_FLX+'"')
+@tv('CCLINK_STATIC=r"'+config.TARGET_CXX.options.CCLINK_STATIC+'"')
 @tv('VERSION="'+config.flx_version+'"')
-@tv('EXT_LIB="'+config.TARGET_CXX.options.EXT_LIB+'"')
-@tv('EXT_STATIC_OBJ="'+config.TARGET_CXX.options.EXT_STATIC_OBJ+'"')
-@tv('EXT_SHARED_OBJ="'+config.TARGET_CXX.options.EXT_SHARED_OBJ+'"')
-@tv('EXT_EXE="'+config.TARGET_CXX.options.EXT_EXE+'"')
-@tv('EXT_SHLIB="'+config.TARGET_CXX.options.EXT_SHLIB+'"')
-@tv('SPEC_OBJ_FILENAME="'+config.TARGET_CXX.options.SPEC_OBJ_FILENAME+'"')
-@tv('SPEC_EXE_FILENAME="'+config.TARGET_CXX.options.SPEC_EXE_FILENAME+'"')
-@tv('OPTIMISE="'+config.TARGET_CXX.options.OPTIMISE+' "')
-@tv('DEBUG_FLAGS="'+config.TARGET_CXX.options.DEBUG_FLAGS+' "')
+@tv('EXT_LIB=r"'+config.TARGET_CXX.options.EXT_LIB+'"')
+@tv('EXT_STATIC_OBJ=r"'+config.TARGET_CXX.options.EXT_STATIC_OBJ+'"')
+@tv('EXT_SHARED_OBJ=r"'+config.TARGET_CXX.options.EXT_SHARED_OBJ+'"')
+@tv('EXT_EXE=r"'+config.TARGET_CXX.options.EXT_EXE+'"')
+@tv('EXT_SHLIB=r"'+config.TARGET_CXX.options.EXT_SHLIB+'"')
+@tv('SPEC_OBJ_FILENAME=r"'+config.TARGET_CXX.options.SPEC_OBJ_FILENAME+'"')
+@tv('SPEC_EXE_FILENAME=r"'+config.TARGET_CXX.options.SPEC_EXE_FILENAME+'"')
+@tv('OPTIMISE=r"'+config.TARGET_CXX.options.OPTIMISE+' "')
+@tv('DEBUG_FLAGS=r"'+config.TARGET_CXX.options.DEBUG_FLAGS+' "')
 @if config.DEFAULT_LINK_MODEL=="dynamic":
   tangle("    DEFAULT_LINK_STATIC=0")
  else:
@@ -48,10 +48,10 @@ fun config() =>
 fun link_strings(FLX_INSTALL_DIR:string): string * string =
 {
 @if config.HAVE_MSVC:
-  tangle('  DLINK_STRING:="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl ";')
-  tangle('  SLINK_STRING:="/link /LIBPATH:"+FLX_INSTALL_DIR+"\\\\lib\\\\rtl ";')
+  tangle('  DLINK_STRING:="/link /DLL /LIBPATH:"+FLX_INSTALL_DIR+r"\\lib\\rtl ";')
+  tangle('  SLINK_STRING:="/link /LIBPATH:"+FLX_INSTALL_DIR+r"\\lib\\rtl ";')
  elif config.CYGWIN or config.WIN32:
-  tangle('  DLINK_STRING:="-L"+{FLX_INSTALL_DIR+"/bin "')
+  tangle('  DLINK_STRING:="-L"+FLX_INSTALL_DIR+"/bin "')
   tangle('  SLINK_STRING:="-L"+FLX_INSTALL_DIR+"/lib/rtl ";')
  else:
   tangle('  DLINK_STRING:="-L"+FLX_INSTALL_DIR+"/lib/rtl ";')

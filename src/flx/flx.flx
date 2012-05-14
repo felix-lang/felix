@@ -64,6 +64,10 @@ proc print_help() {
   println "--show               : print the felix program to stdout";
   println "-c                   : compile only, do not run";
   println "-o                   : linker output filename";
+  println "--usage=prototype    : fast compilation at the expense of slower executables";
+  println "--usage=debugging    : enable debugging aids";
+  println "--usage=production   : optimised code with run time safety checks retained";
+  println "--usage=hyperlight   : optimised code without run time safety checks";
   println "--static             : make standalone statically linked executable";
   println "--nofelix            : do not run felix translator, leave C++ outputs alone";
   println "--options            : show option set";
@@ -558,6 +562,7 @@ var STDOUT="";
 var STDGRAMMAR="@grammar/grammar.files";
 var STDIMPORT="--import=plat/flx.flxh";
 var IMPORTS="";
+var USAGE = "production";
 var CLEAR_CACHE=0;
 
 var DEFAULT_CACHE_DIR = 
@@ -613,6 +618,7 @@ proc print_options() {
     println$ "LINKER_OUTPUT_FILENAME = "+str LINKER_OUTPUT_FILENAME;
     println$ "MACROS             = "+str MACROS;
     println$ "SHOWCODE           = "+str SHOWCODE;
+    println$ "USAGE              = "+USAGE;
 }
 
 var compile_exts = List::list ('cpp','cxx','c','cc');
@@ -770,6 +776,25 @@ grabbing_args: while grab == 1 and argno<System::argc do
   elif prefix(arg,"--cache_dir=") do
     debugln "Set the directory for compiler generated *.par files";
     CACHE_DIR=arg.[12 to];
+
+  elif arg == "--usage=prototype" do
+    debugln "Set usage prototyping";
+    USAGE = "prototype";
+    NOOPTIMISE=1;
+
+  elif arg == "--usage=debugging" do
+    debugln "Set usage debugging";
+    USAGE = "debugging";
+    NOOPTIMISE=1;
+    DEBUG = 1;
+
+  elif arg == "--usage=production" do
+    debugln "Set usage production";
+    USAGE = "production";
+
+  elif arg == "--usage=hyperlight" do
+    debugln "Set usage hyperlight";
+    USAGE = "hyperlight";
 
   elif arg == "--man" do
     debugln "Display top level manual page using 'man' program";
