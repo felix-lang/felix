@@ -18,7 +18,7 @@ namespace flx { namespace faio {
 
 // a flx driver request to the add socket s to the drivers iocp
 // this is currently the only windows driver request that uses the demuxer.
-    class FAIO_EXTERN iocp_associator : public ::flx::async::flx_driver_request_base {
+class FAIO_EXTERN iocp_associator : public ::flx::async::flx_driver_request_base {
   SOCKET  s;
 public:
   demux::iocp_demuxer *iod;

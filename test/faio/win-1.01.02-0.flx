@@ -13,14 +13,14 @@ var pname = r"\\.\pipe\flx_pipe";
 // default security attributes
 // associating with the iocp doesn't work, the pipe must be created with
 // FILE_FLAG_OVERLAPPED set in dwOpenMode. Otherwise OVERLAPPED calls block.
-proc CreateNamedPipe: lvalue[WFILE]*string =
- '$1 = CreateNamedPipe($2.c_str(), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,\
-     PIPE_TYPE_BYTE, 1, 256, 256, 0, NULL);';
+gen CreateNamedPipe: string -> WFILE =
+ '''CreateNamedPipe($2.c_str(), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
+     PIPE_TYPE_BYTE, 1, 256, 256, 0, NULL);''';
 
 // OpenFile in faio_win32 should work fine here
 
 print "Creating named pipe "; print pname; endl;
-var pipe: WFILE <- CreateNamedPipe(pname);
+var pipe: WFILE = CreateNamedPipe(pname);
 
 // how to connect with this stuff? can I open it non blockingly?
 if pipe == INVALID_HANDLE_VALUE then
@@ -141,7 +141,7 @@ spawn_fthread {
   // print "Gudday, client thread, trying to open PIPE\n";
   // var p: WFILE <- OpenFile(pname);
   // having trouble getting io...
-  var p: WFILE <- OpenFileDuplex(pname);
+  var p: WFILE = OpenFileDuplex(pname);
 
   // print "Client thread returned from OpenFile\n";
 
@@ -173,3 +173,4 @@ var c: char;
 getbyte(pipe, &c);
 print "server got "; print c; endl;
 CloseFile(pipe);
+
