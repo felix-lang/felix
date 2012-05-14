@@ -3,7 +3,7 @@ include "stl/stl_vector";
 include "std/glob";
 
 // THIS IS A HACK!
-var files = glob::glob((Env::getenv "TEST_DATA_DIR") + "/*.flx");
+var files = glob::glob(Filename::join ((Env::getenv "TEST_DATA_DIR"), "*.flx"));
 open Reversible_Sequence[
   Stl_Vector::stl_vector[string],
   Stl_Vector::stl_vector_iterator[string],
@@ -12,6 +12,7 @@ open Reversible_Sequence[
 ];
 
 var p = begin files; while p != end files do
-  println$ *p;
+  var s = search_and_replace (*p, "\\","/"); // fixup expected results for windows
+  println$ s;
   ++p;
 done;
