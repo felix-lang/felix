@@ -14,6 +14,9 @@ async_hooker::~async_hooker(){
 
 namespace flx { namespace async {
 
+finote_t::~finote_t(){}
+wakeup_fthread_t::wakeup_fthread_t(::flx::pthread::bound_queue_t *q_a, ::flx::rtl::fthread_t *f_a) : f(f_a), q(q_a) {}
+
 class async_hooker_impl : public async_hooker {
 public:
   void handle_request(void *data,fthread_t *ss);
@@ -60,6 +63,9 @@ public:
     return (fthread_t*)async_ready.dequeue();
   }
 };
+
+flx_driver_request_base::flx_driver_request_base() : fn(0) {}
+flx_driver_request_base::~flx_driver_request_base() {}       // so destructors work
 
 void flx_driver_request_base:: start_async_op(finote_t *fn_a)
 {
