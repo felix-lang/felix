@@ -120,7 +120,7 @@ proc getbyte(f: WFILE, outc: &char)
   var len = 1;
   var eof: bool;
 
-  ReadFile(f, &len, ac, &eof);
+  ReadFile(f, &len, ac.address &eof);
   *outc = c;
 }
 
@@ -131,7 +131,7 @@ proc putbyte(f: WFILE, c: char)
   var len = 1;
   var eof: bool;
 
-  WriteFile(f, &len, ac, &eof);
+  WriteFile(f, &len, ac.address &eof);
 }
 
 // spawn a connect fthread after having created the named pipe
