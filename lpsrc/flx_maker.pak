@@ -11,7 +11,7 @@ fun config() =>
 @tangle("  let ?INSTALL_ROOT_TOPDIR=Filename::join(%r, Filename::join('lib','felix')) in" % (config.PREFIX))
 @tangle("  let ?INSTALL_ROOT=Filename::join(INSTALL_ROOT_TOPDIR, 'felix-%s') in " % (config.flx_version))
   (
-@tv('PREFIX=r"""'+config.PREFIX+'"')
+@tv('PREFIX=r"""'+config.PREFIX+'"""')
 @tv("INSTALL_ROOT_TOPDIR=INSTALL_ROOT_TOPDIR")
 @tv("INSTALL_ROOT=INSTALL_ROOT")
     FLX_INSTALL_DIR = Env::getenv("FLX_INSTALL_DIR", INSTALL_ROOT),
