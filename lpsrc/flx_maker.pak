@@ -513,7 +513,27 @@ includes: '"flx_demux.hpp"'
 
 
 @python("//")
-rmap = {}
+creq = {
+  "wchar_t":"c89_headers::wchar_h",
+  "ptrdiff_t":"c89_headers::stddef_h",
+  "size_t":"<stddef.h>",
+  "ssize_t":"<stddef.h>",
+  "intptr_t":"c99_headers::stdint_h",
+  "uintptr_t":"c99_headers::stdint_h",
+  "intmax_t":"c99_headers::stdint_h",
+  "uintmax_t":"c99_headers::stdint_h",
+  "int8_t":"c99_headers::stdint_h",
+  "int16_t":"c99_headers::stdint_h",
+  "int32_t":"c99_headers::stdint_h",
+  "int64_t":"c99_headers::stdint_h",
+  "uint8_t":"c99_headers::stdint_h",
+  "uint16_t":"c99_headers::stdint_h",
+  "uint32_t":"c99_headers::stdint_h",
+  "uint64_t":"c99_headers::stdint_h",
+  "::std::complex<float>":"Cxx_headers::complex",
+  "::std::complex<double>":"Cxx_headers::complex",
+  "::std::complex<long double>":"Cxx_headers::complex",
+  }
 
 tmap = {
   # addressing
@@ -548,10 +568,6 @@ tmap = {
 tmap["fcomplex" ]="::std::complex<float>"
 tmap["dcomplex"]="::std::complex<double>"
 
-rmap["fcomplex" ]="Cxx_headers::complex"
-rmap["dcomplex"]="Cxx_headers::complex"
-rmap["lcomplex"]="Cxx_headers::complex"
-
 if config.TARGET_CXX.options.HAVE_LONGDOUBLE:
   tmap["ldouble"]="long double"
   tmap["lcomplex"]="::std::complex<long double>"
@@ -580,19 +596,6 @@ if config.TARGET_CXX.options.HAVE_STDINT:
   tmap["intmax"]="intmax_t"
   tmap["uintmax"]="uintmax_t"
 
-  # requirements
-  rmap["int8"]="C99_headers::stdint_h"
-  rmap["uint8"]="C99_headers::stdint_h"
-  rmap["int16"]="C99_headers::stdint_h"
-  rmap["uint16"]="C99_headers::stdint_h"
-  rmap["int32"]="C99_headers::stdint_h"
-  rmap["uint32"]="C99_headers::stdint_h"
-  rmap["int64"]="C99_headers::stdint_h"
-  rmap["uint64"]="C99_headers::stdint_h"
-  rmap["intptr"]="C99_headers::stdint_h"
-  rmap["uintptr"]="C99_headers::stdint_h"
-  rmap["intmax"]="C99_headers::stdint_h"
-  rmap["uintmax"]="C99_headers::stdint_h"
 else:
   tmap["int8"]="signed char"
   tmap["uint8"]="unsigned char"
@@ -703,9 +706,10 @@ tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
   ] + chars + fast_ints + floats + complex
 
 @def gen_type(t):
-  d = rmap.get(t,None)
-  if d:
-    tangle('pod type '+t+' = "'+tmap[t]+'" requires '+d+';')
+  equiv = tmap[t]
+  print("Equiv " + t + " -> " + equiv)
+  if creq.__contains__(equiv):
+    tangle('pod type '+t+' = "'+equiv+'" requires '+creq[equiv]+';')
   else:
     tangle('pod type '+t+' = "'+tmap[t]+'";')
 
@@ -749,6 +753,19 @@ tmap["uchar"]=tmap["int32"] # Unicode/ISO10646, note: SIGNED!
 
 @select(tangler("lib/plat/ctypedefs.flx",'data'))
 // GENERATED DURING CONFIGURATION
+@equiv_uchar = fint2cint[cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_int32_t')]]
+@print("Alias uchar -> " + equiv_uchar)
+@tmap['uchar']=equiv_uchar
+@
+@equiv_ptrdiff = fint2cint[cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_ptrdiff_t')]]
+@print("Alias ptrdiff -> " + equiv_ptrdiff)
+@tmap['offset']=equiv_ptrdiff
+@
+@equiv_wchar = fint2cint[cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_wchar_t')]]
+@print("Alias wchar -> " + equiv_wchar)
+@tmap['wchar']=equiv_wchar
+@
+@
 @for t in all:
   gen_type(t)
 
@@ -760,15 +777,20 @@ _gc_pointer type gcptr[t]= "?1*";
 
 @# mandatory in C
 @for t in ['ptrdiff','size','ssize','intmax','uintmax','intptr','uintptr']:
-  equiv = cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]
-  #tangle('typedef ' + t + ' = ' + equiv + ';')
-  tangle('pod type ' + t + ' = "' + fint2cint[equiv] + '";')
+  equiv = fint2cint[cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]]
+  if creq.__contains__(equiv):
+    tangle('pod type ' + t + ' = "' + equiv + '" requires '+creq[equiv]+';')
+  else:
+    tangle('pod type ' + t + ' = "' + equiv + '";')
 
 @# optional in C
 @for t in exact_ints:
-  equiv = cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]
-  #tangle('typedef ' + t + ' = ' + equiv + ';')
-  tangle('pod type ' + t + ' = "' + fint2cint[equiv] + '";')
+  equiv = fint2cint[cint2fint[getattr(config.TARGET_CXX.options, 'ALIAS_'+t+'_t')]]
+  if creq.__contains__(equiv):
+    tangle('pod type ' + t + ' = "' + equiv + '" requires '+creq[equiv]+';')
+  else:
+    tangle('pod type ' + t + ' = "' + equiv + '";')
+
 
 @select(tangler('lib/plat/arithmax.flx','data'))
 // GENERATED DURING CONFIGURATION
