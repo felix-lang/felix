@@ -42,3 +42,17 @@ font-size:8pt;
 }
 hr {margin:0px;margin-top:5px;}
 #editor { }
+pre.flxbg {
+background-color: #EEE;
+padding: 0.75em 1.5em;
+font-size: 12px;
+border: 1px solid #DDD;
+margin: 7px 8px 7px 7px;
+}
+
+p.caveat {
+background-color: #FF8080;
+padding: 0.75em 1.5em;
+border: 1px solid #DDD;
+margin: 7px 8px 7px 7px;
+}
