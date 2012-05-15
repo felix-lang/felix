@@ -1142,7 +1142,7 @@ proc calpackages () {
   if STATIC == 0 do
     // dynamic linkage: all the libraries required by the application
     LINK_STRING=DLINK_STRING+LINKER_SWITCHES+" "+xqt(
-      PKGCONFIG_DLIBS+" "+quote("@"+cpp_filebase+".resh"));
+      PKGCONFIG_DLIBS+" "+DRIVER_PKG+" "+quote("@"+cpp_filebase+".resh"));
   else
     // static linkage: all the libraries required by the application and driver
     LINK_STRING=SLINK_STRING+LINKER_SWITCHES+" "+xqt(
