@@ -116,7 +116,7 @@ public:
 proc getbyte(f: WFILE, outc: &char)
 {
   var c: char;
-  val ac = C_hack::address_of(c);
+  val ac = &c;
   var len = 1;
   var eof: bool;
 
@@ -127,7 +127,7 @@ proc getbyte(f: WFILE, outc: &char)
 proc putbyte(f: WFILE, c: char)
 {
   var copyc = c;
-  val ac = C_hack::address_of(copyc);
+  val ac = &copyc;
   var len = 1;
   var eof: bool;
 
