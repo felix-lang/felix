@@ -583,6 +583,7 @@ def test(ctx):
 
     failed_srcs = []
     failed_srcs2 = []
+    failed_plat_srcs = []
 
     def test(src):
         try:
@@ -601,6 +602,7 @@ def test(ctx):
         return src, passed
 
     # Run the dynamic loading tests first
+    ctx.logger.log("\nRunning dynamic loading tests\n", color='red')
     try:
         lib1 = felix.compile('test/regress/drt/lib1.flx', static=False)
         lib2 = felix.compile('test/regress/drt/lib2.flx', static=False)
@@ -638,12 +640,14 @@ def test(ctx):
     else:
       print("zmq support unavailable")
 
+    plat_srcs = []
     if 'posix' in phases.target.platform:
-        srcs.extend(Path.glob('test/faio/posix-*.flx'))
+        plat_srcs.extend(Path.glob('test/faio/posix-*.flx'))
 
     if 'windows' in phases.target.platform:
-        srcs.extend(Path.glob('test/faio/win-*.flx'))
+        plat_srcs.extend(Path.glob('test/faio/win-*.flx'))
 
+    #--------------------------------
     ctx.logger.log("\nRunning mandatory component tests\n", color='red')
     for src, passed in phases.target.ctx.scheduler.map(
             test,
@@ -653,11 +657,32 @@ def test(ctx):
 
     ctx.logger.log("\nMandatory components tests completed\n", color='red')
     if failed_srcs:
+        ctx.logger.log('\nOf '+str (len (srcs))+' tests')
         ctx.logger.log('\nThe following tests failed:')
         for src in failed_srcs:
             ctx.logger.log('  %s' % src, color='yellow')
+    else:
+        ctx.logger.log('All ' + str (len (srcs))+' tests passed')
+
+    #--------------------------------
+    ctx.logger.log("\nRunning platform specific component tests\n", color='red')
+    for src, passed in phases.target.ctx.scheduler.map(
+            test,
+            sorted(plat_srcs, reverse=True)):
+        if not passed:
+            failed_plat_srcs.append(src)
+
+    ctx.logger.log("\nPlatform specific components tests completed\n", color='red')
+    if failed_plat_srcs:
+        ctx.logger.log('\nOf '+str (len (plat_srcs))+' tests')
+        ctx.logger.log('\nThe following tests failed:')
+        for src in failed_srcs:
+            ctx.logger.log('  %s' % src, color='yellow')
+    else:
+        ctx.logger.log('All ' + str (len (plat_srcs))+' tests passed')
 
 
+    #--------------------------------
     ctx.logger.log("\nRunning optional component tests\n", color='red')
     for src, passed in phases.target.ctx.scheduler.map(
             test_compile,
@@ -665,9 +690,19 @@ def test(ctx):
         if not passed:
             failed_srcs2.append(src)
 
-    if failed_srcs:
+    if failed_srcs2:
+        ctx.logger.log('\nOf '+str (len (srcs2))+' tests')
         ctx.logger.log('\nThe following optional component tests failed:')
         for src in failed_srcs2:
+            ctx.logger.log('  %s' % src, color='yellow')
+    else:
+        ctx.logger.log('All ' + str (len (srcs2))+' tests passed')
+
+    failed = failed_srcs + failed_plat_srcs + failed_srcs2
+    if failed:
+        ctx.logger.log('\n======================================')
+        ctx.logger.log('\nThe following tests failed:')
+        for src in failed:
             ctx.logger.log('  %s' % src, color='yellow')
 
 # ------------------------------------------------------------------------------
