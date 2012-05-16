@@ -635,7 +635,7 @@ def test(ctx):
 #        'demos/sdl/*.flx', # too lazy to fix these at the moment
         )
     else:
-      print("zmq support available")
+      print("zmq support unavailable")
 
     if 'posix' in phases.target.platform:
         srcs.extend(Path.glob('test/faio/posix-*.flx'))
