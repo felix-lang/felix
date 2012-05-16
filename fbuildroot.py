@@ -8,6 +8,7 @@ from fbuild.path import Path
 from fbuild.record import Record
 
 import buildsystem
+from buildsystem.config import config_call
 
 # ------------------------------------------------------------------------------
 
@@ -626,10 +627,15 @@ def test(ctx):
             'test/zmq/*.flx',
         ])
 
-    srcs2 = Path.globall(
+    zmq_h = config_call('fbuild.config.c.zmq.zmq_h', phases.target.platform,phases.target.c.static)
+    if zmq_h:
+      print("zmq support available")
+      srcs2 = Path.globall(
         'test/zmq/*.flx',
 #        'demos/sdl/*.flx', # too lazy to fix these at the moment
         )
+    else:
+      print("zmq support available")
 
     if 'posix' in phases.target.platform:
         srcs.extend(Path.glob('test/faio/posix-*.flx'))
