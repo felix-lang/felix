@@ -581,9 +581,7 @@ def test(ctx):
 
     from buildsystem.flx import test_flx, compile_flx
 
-    failed_srcs = []
-    failed_srcs2 = []
-    failed_plat_srcs = []
+    failed = []
 
     def test(src):
         try:
@@ -615,90 +613,113 @@ def test(ctx):
                 env={'lib1': lib1, 'lib2': lib2}):
             failed_srcs.append('test/regress/drt/main1.flx')
 
-    srcs = Path.globall(
-        'test/*/*.flx',
-        'test/*/*/*.flx',
-        'tut/*/*.flx',
-        exclude=[
-            'test/drivers/*.flx',
-            'test/faio/posix-*.flx',
-            'test/faio/win-*.flx',
-            'test/regress/drt/*.flx',
-            'test/regress/bt/*.flx',
-            'test/regress/kf/*.flx',
-            'test/test-data/*.flx',
-            'test/zmq/*.flx',
-        ])
+    srcs = [
+      # CORE
+      ('regress_rt' , Path.globall('test/regress/rt/*.flx')),
+      ('regress_nd' , Path.globall('test/regress/nd/*.flx')),
+      ('regress_stl' , Path.globall('test/regress/stl/*.flx')),
 
+      ('tut_embedding' , Path.globall('tut/embedding/*.flx')),
+      ('tut_migration', Path.globall('tut/migration/*.flx')),
+      ('tut_tutorial', Path.globall('tut/tutorial/*.flx')),
+
+      ('collection' , Path.globall('test/collection/*.flx')),
+      #('drivers' , Path.globall('test/drivers/*.flx')),
+      ('glob' , Path.globall('test/glob/*.flx')),
+      ('judy' , Path.globall('test/judy/*.flx')),
+      ('pthread' , Path.globall('test/pthread/*.flx')),
+      ('stdlib' , Path.globall('test/stdlib/*.flx')),
+      ('tre' , Path.globall('test/tre/*.flx')),
+      ('web' , Path.globall('test/web/*.flx',exclude=['test/web/xml2-*.flx'])),
+
+      # ASYNC I/O
+      ('faio',Path.globall('test/faio/*.flx',exclude=['test/faio/posix-*.flx','test/faio/win-*.flx'])),
+      ]
+
+    gmp_h = config_call('fbuild.config.c.gmp.gmp_h', phases.target.platform,phases.target.c.static)
+    mman_h = config_call('fbuild.config.c.posix04.sys_mman_h', phases.target.platform,phases.target.c.static)
+    libxml2_libxml_parser_h = config_call('fbuild.config.c.xml2.libxml2_libxml_parser_h', phases.target.platform,phases.target.c.static)
     zmq_h = config_call('fbuild.config.c.zmq.zmq_h', phases.target.platform,phases.target.c.static)
-    if zmq_h:
-      print("zmq support available")
-      srcs2 = Path.globall(
-        'test/zmq/*.flx',
-#        'demos/sdl/*.flx', # too lazy to fix these at the moment
-        )
-    else:
-      print("zmq support unavailable")
+    sqlite3_h = config_call('fbuild.config.c.sqlite3.sqlite3_h', phases.target.platform,phases.target.c.static)
 
-    plat_srcs = []
-    if 'posix' in phases.target.platform:
-        plat_srcs.extend(Path.glob('test/faio/posix-*.flx'))
+    osrcs = [
+      # EXTERNAL LIBS
+      ('windows' in phases.target.platform,'faio_win', Path.globall('test/faio/win-*.flx')),
+      ('posix' in phases.target.platform, 'faio_posix', Path.globall('test/faio/posix-*.flx')),
+      (gmp_h,'gmp', Path.globall('test/gmp/*.flx')),
+      (mman_h,'mmap', Path.globall('test/mmap/*.flx')),
+      (sqlite3_h,'sqlite', Path.globall('test/sqlite/*.flx')),
+      (libxml2_libxml_parser_h,'xml2', Path.globall('test/web/xml2-*flx')),
+      ]
 
-    if 'windows' in phases.target.platform:
-        plat_srcs.extend(Path.glob('test/faio/win-*.flx'))
-
+    osrcs_compileonly = [
+      (zmq_h,'zmq', Path.globall('test/zmq/*.flx')),
+    ]
     #--------------------------------
-    ctx.logger.log("\nRunning mandatory component tests\n", color='red')
-    for src, passed in phases.target.ctx.scheduler.map(
-            test,
-            sorted(srcs, reverse=True)):
+    ctx.logger.log("\nRunning core tests\n", color='cyan')
+    for name,paths in srcs:
+      failed_srcs = []
+      ctx.logger.log("Running test "+name, color='cyan')
+      for src, passed in phases.target.ctx.scheduler.map(
+          test,
+          sorted(paths, reverse=True)):
         if not passed:
+          failed_srcs.append(src)
+          failed.append(src)
+
+      if failed_srcs:
+        ctx.logger.log('\nOf '+str (len (paths))+' tests')
+        ctx.logger.log('\nThe following tests failed:')
+        for src in failed_srcs:
+          ctx.logger.log('  %s' % src, color='yellow')
+      else:
+        ctx.logger.log('All ' + str (len (paths))+' tests passed', color='cyan')
+
+    ctx.logger.log("\nRunning optional tests\n", color='cyan')
+    for flag,name,paths in osrcs:
+      if flag:
+        failed_srcs = []
+        ctx.logger.log("Running test "+name, color='red')
+        for src, passed in phases.target.ctx.scheduler.map(
+            test,
+            sorted(paths, reverse=True)):
+          if not passed:
             failed_srcs.append(src)
+            failed.append(src)
 
-    ctx.logger.log("\nMandatory components tests completed\n", color='red')
-    if failed_srcs:
-        ctx.logger.log('\nOf '+str (len (srcs))+' tests')
-        ctx.logger.log('\nThe following tests failed:')
-        for src in failed_srcs:
+        if failed_srcs:
+          ctx.logger.log('\nOf '+str (len (paths))+' tests')
+          ctx.logger.log('\nThe following tests failed:')
+          for src in failed_srcs:
             ctx.logger.log('  %s' % src, color='yellow')
-    else:
-        ctx.logger.log('All ' + str (len (srcs))+' tests passed')
+        else:
+          ctx.logger.log('All ' + str (len (paths))+' tests passed', color='cyan')
+      else:
+        ctx.logger.log("SKIPPING test "+name+" resource not availabe", color='red')
 
-    #--------------------------------
-    ctx.logger.log("\nRunning platform specific component tests\n", color='red')
-    for src, passed in phases.target.ctx.scheduler.map(
-            test,
-            sorted(plat_srcs, reverse=True)):
-        if not passed:
-            failed_plat_srcs.append(src)
-
-    ctx.logger.log("\nPlatform specific components tests completed\n", color='red')
-    if failed_plat_srcs:
-        ctx.logger.log('\nOf '+str (len (plat_srcs))+' tests')
-        ctx.logger.log('\nThe following tests failed:')
-        for src in failed_srcs:
-            ctx.logger.log('  %s' % src, color='yellow')
-    else:
-        ctx.logger.log('All ' + str (len (plat_srcs))+' tests passed')
-
-
-    #--------------------------------
-    ctx.logger.log("\nRunning optional component tests\n", color='red')
-    for src, passed in phases.target.ctx.scheduler.map(
+    ctx.logger.log("\nRunning optional compiler only tests\n", color='cyan')
+    for flag,name,paths in osrcs_compileonly:
+      if flag:
+        failed_srcs = []
+        ctx.logger.log("Compiling test "+name, color='cyan')
+        for src, passed in phases.target.ctx.scheduler.map(
             test_compile,
-            sorted(srcs2, reverse=True)):
-        if not passed:
-            failed_srcs2.append(src)
+            sorted(paths, reverse=True)):
+          if not passed:
+            failed_srcs.append(src)
+            failed.append(src)
 
-    if failed_srcs2:
-        ctx.logger.log('\nOf '+str (len (srcs2))+' tests')
-        ctx.logger.log('\nThe following optional component tests failed:')
-        for src in failed_srcs2:
+        if failed_srcs:
+          ctx.logger.log('\nOf '+str (len (paths))+' tests')
+          ctx.logger.log('\nThe following tests failed:')
+          for src in failed_srcs:
             ctx.logger.log('  %s' % src, color='yellow')
-    else:
-        ctx.logger.log('All ' + str (len (srcs2))+' tests passed')
+        else:
+          ctx.logger.log('All ' + str (len (paths))+' tests passed', color='cyan')
+      else:
+        ctx.logger.log("SKIPPING test "+name+" resource not availabe", color='red')
 
-    failed = failed_srcs + failed_plat_srcs + failed_srcs2
+
     if failed:
         ctx.logger.log('\n======================================')
         ctx.logger.log('\nThe following tests failed:')
