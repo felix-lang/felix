@@ -582,6 +582,7 @@ def test(ctx):
     from buildsystem.flx import test_flx, compile_flx
 
     failed_srcs = []
+    failed_srcs2 = []
 
     def test(src):
         try:
@@ -643,21 +644,30 @@ def test(ctx):
     if 'windows' in phases.target.platform:
         srcs.extend(Path.glob('test/faio/win-*.flx'))
 
+    ctx.logger.log("\nRunning mandatory component tests\n", color='red')
     for src, passed in phases.target.ctx.scheduler.map(
             test,
             sorted(srcs, reverse=True)):
         if not passed:
             failed_srcs.append(src)
 
+    ctx.logger.log("\nMandatory components tests completed\n", color='red')
+    if failed_srcs:
+        ctx.logger.log('\nThe following tests failed:')
+        for src in failed_srcs:
+            ctx.logger.log('  %s' % src, color='yellow')
+
+
+    ctx.logger.log("\nRunning optional component tests\n", color='red')
     for src, passed in phases.target.ctx.scheduler.map(
             test_compile,
             sorted(srcs2, reverse=True)):
         if not passed:
-            failed_srcs.append(src)
+            failed_srcs2.append(src)
 
     if failed_srcs:
-        ctx.logger.log('\nThe following tests failed:')
-        for src in failed_srcs:
+        ctx.logger.log('\nThe following optional component tests failed:')
+        for src in failed_srcs2:
             ctx.logger.log('  %s' % src, color='yellow')
 
 # ------------------------------------------------------------------------------
