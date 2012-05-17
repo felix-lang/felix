@@ -611,7 +611,7 @@ def test(ctx):
     else:
         if not test_flx(phases.target, felix, 'test/regress/drt/main1.flx',
                 env={'lib1': lib1, 'lib2': lib2}):
-            failed_srcs.append('test/regress/drt/main1.flx')
+            failed.append('test/regress/drt/main1.flx')
 
     srcs = [
       # CORE
@@ -679,7 +679,7 @@ def test(ctx):
     for flag,name,paths in osrcs:
       if flag:
         failed_srcs = []
-        ctx.logger.log("Running test "+name, color='red')
+        ctx.logger.log("Running test "+name, color='cyan')
         for src, passed in phases.target.ctx.scheduler.map(
             test,
             sorted(paths, reverse=True)):
