@@ -213,39 +213,6 @@ var INSTALL_ROOT_TOPDIR=config.INSTALL_ROOT_TOPDIR;
 var INSTALL_ROOT=config.INSTALL_ROOT;
 var FLX_INSTALL_DIR=config.FLX_INSTALL_DIR;
 
-proc install_old() {
-    debugln "Install Felix";
-    println "Install Felix: ONLY ON UNIX (you may need to be superuser)";
-    println "Always installs the --test directory to the configured install target";
-    println "Because that is hard coded into this program";
-    println "Note: does NOT install this program 'flx' into your PATH!";
-    println "  Use --install-bin for that!";
-    println$ "FROM: " + FLX_INSTALL_DIR;
-    println$ "TO  : " + INSTALL_ROOT;
-    if FLX_INSTALL_DIR == INSTALL_ROOT do
-      eprintln "Can't install, src and dst are the same";
-      System::exit(1);
-    else
-      result=system("mkdir -pv "+INSTALL_ROOT_TOPDIR);
-      if result != 0 do
-        eprintln$ "Cannot create directory " + INSTALL_ROOT_TOPDIR;
-        System::exit 1;
-      done
-      if PLAT_WIN32 do
-          println$ "Cleaning INSTALL_ROOT(2) = " + INSTALL_ROOT;
-	  result=system("rd /S /Q "+INSTALL_ROOT);
-      else
-        result=system("rm -rf "+INSTALL_ROOT);
-      done
-      result=system("mkdir -pv "+INSTALL_ROOT);
-      result=system("cp -Rpv "+FLX_INSTALL_DIR+"/* "+INSTALL_ROOT);
-      if result == 0 do println "Install succeeded";
-      else eprintln$ "Install failed, code = " + str(result);
-      done
-      pexit(result);
-    done
-}
-
 proc install() {
     debugln "Install Felix build";
     println$ "FROM: " + FLX_INSTALL_DIR;
