@@ -640,35 +640,35 @@ def test(ctx):
         'fbuild.config.c.gmp.gmp_h', 
         phases.target.platform,
         phases.target.c.static).header
-    if gmp_h: print("gmp supported")
-    else: print("gmp NOT supported")
+    if gmp_h: ctx.logger.log("gmp supported",color='green')
+    else: ctx.logger.log("gmp NOT supported",color='red')
 
     mman_h = config_call(
         'fbuild.config.c.posix04.sys_mman_h', 
         phases.target.platform,
         phases.target.c.static).header
-    if mman_h: print("mmap supported")
-    else: print("mmap NOT supported")
+    if mman_h: ctx.logger.log("mmap supported",color='green')
+    else: ctx.logger.log("mmap NOT supported",color='red')
 
     libxml2_libxml_xmlexports_h = config_call(
         'fbuild.config.c.xml2.libxml2_libxml_xmlexports_h', 
         phases.target.platform,
         phases.target.c.static).header
-    if libxml2_libxml_parser_h: print("libxml2 supported")
-    else: print("libxml2 NOT supported")
+    if libxml2_libxml_xmlexports_h: ctx.logger.log("libxml2 supported",color='green')
+    else: ctx.logger.log("libxml2 NOT supported",color='red')
 
     zmq_h = config_call(
         'fbuild.config.c.zmq.zmq_h', 
         phases.target.platform,
         phases.target.c.static).header
-    if zmq_h: print("zmq supported")
-    else: print("zmq NOT supported")
+    if zmq_h: ctx.logger.log("zmq supported",color='green')
+    else: ctx.logger.log("zmq NOT supported",color='red')
 
     sqlite3_h = config_call(
         'fbuild.config.c.sqlite3.sqlite3_h', 
         phases.target.platform,phases.target.c.static).header
-    if sqlite3_h: print("sqlite3 supported")
-    else: print("sqlite3 NOT supported")
+    if sqlite3_h: ctx.logger.log("sqlite3 supported",color='green')
+    else: ctx.logger.log("sqlite3 NOT supported",color='red')
 
 
     osrcs = [
@@ -678,7 +678,7 @@ def test(ctx):
       (gmp_h,'gmp', Path.globall('test/gmp/*.flx')),
       (mman_h,'mmap', Path.globall('test/mmap/*.flx')),
       (sqlite3_h,'sqlite', Path.globall('test/sqlite/*.flx')),
-      (libxml2_libxml_parser_h,'xml2', Path.globall('test/web/xml2-*flx')),
+      (libxml2_libxml_xmlexports_h,'xml2', Path.globall('test/web/xml2-*flx')),
       ]
 
     osrcs_compileonly = [
