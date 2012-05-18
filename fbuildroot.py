@@ -636,11 +636,40 @@ def test(ctx):
       ('faio',Path.globall('test/faio/*.flx',exclude=['test/faio/posix-*.flx','test/faio/win-*.flx'])),
       ]
 
-    gmp_h = config_call('fbuild.config.c.gmp.gmp_h', phases.target.platform,phases.target.c.static)
-    mman_h = config_call('fbuild.config.c.posix04.sys_mman_h', phases.target.platform,phases.target.c.static)
-    libxml2_libxml_parser_h = config_call('fbuild.config.c.xml2.libxml2_libxml_parser_h', phases.target.platform,phases.target.c.static)
-    zmq_h = config_call('fbuild.config.c.zmq.zmq_h', phases.target.platform,phases.target.c.static)
-    sqlite3_h = config_call('fbuild.config.c.sqlite3.sqlite3_h', phases.target.platform,phases.target.c.static)
+    gmp_h = config_call(
+        'fbuild.config.c.gmp.gmp_h', 
+        phases.target.platform,
+        phases.target.c.static).header
+    if gmp_h: print("gmp supported")
+    else: print("gmp NOT supported")
+
+    mman_h = config_call(
+        'fbuild.config.c.posix04.sys_mman_h', 
+        phases.target.platform,
+        phases.target.c.static).header
+    if mman_h: print("mmap supported")
+    else: print("mmap NOT supported")
+
+    libxml2_libxml_xmlexports_h = config_call(
+        'fbuild.config.c.xml2.libxml2_libxml_xmlexports_h', 
+        phases.target.platform,
+        phases.target.c.static).header
+    if libxml2_libxml_parser_h: print("libxml2 supported")
+    else: print("libxml2 NOT supported")
+
+    zmq_h = config_call(
+        'fbuild.config.c.zmq.zmq_h', 
+        phases.target.platform,
+        phases.target.c.static).header
+    if zmq_h: print("zmq supported")
+    else: print("zmq NOT supported")
+
+    sqlite3_h = config_call(
+        'fbuild.config.c.sqlite3.sqlite3_h', 
+        phases.target.platform,phases.target.c.static).header
+    if sqlite3_h: print("sqlite3 supported")
+    else: print("sqlite3 NOT supported")
+
 
     osrcs = [
       # EXTERNAL LIBS
