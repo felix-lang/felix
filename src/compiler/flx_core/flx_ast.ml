@@ -93,6 +93,7 @@ and typecode_t =
   | TYP_type_tuple of typecode_t list          (** meta type product *)
 
   | TYP_type_match of typecode_t * (typecode_t * typecode_t) list
+  | TYP_type_extension of Flx_srcref.t * typecode_t list * typecode_t
 
 and tpattern_t =
   | TPAT_function of tpattern_t * tpattern_t
@@ -199,6 +200,8 @@ and expr_t =
 
   | EXPR_type_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
 
+  | EXPR_type_extension of Flx_srcref.t * typecode_t list * typecode_t
+
 (** {7 Patterns}
  *
  * Patterns; used for matching variants in match statements. *)
@@ -249,6 +252,8 @@ and funkind_t = [
   | `Virtual
   | `Ctor
   | `Generator
+  | `Method
+  | `Object
 ]
 
 and property_t = [
@@ -608,6 +613,7 @@ let src_of_typecode = function
   | TYP_suffix (s,_)
   | TYP_patvar (s,_)
   | TYP_patany s
+  | TYP_type_extension (s,_,_)
   -> s
 
   | TYP_tuple _
@@ -694,6 +700,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_typeof (s,_)
   | EXPR_range_check (s,_,_,_)
   | EXPR_not (s,_)
+  | EXPR_type_extension (s, _, _)
   -> s
 
 let src_of_stmt (e : statement_t) = match e with

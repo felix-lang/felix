@@ -101,10 +101,11 @@ SCHEME """
   (if (eq? fk 'Generator)'Generator
   (if (list-mem? 'NoInlineFunction adjs)'NoInlineFunction
   (if (list-mem? 'InlineFunction adjs)'InlineFunction
+  (if (list-mem? 'Method adjs)'Method
   (if (list-mem? 'Ctor adjs)'Ctor
   (if (list-mem? 'Virtual adjs)'Virtual
   'Function
-)))))))
+))))))))
 """;
 SCHEME """
 (define (tvfixup_folder vsct vtc)

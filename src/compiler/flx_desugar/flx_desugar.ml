@@ -80,6 +80,7 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
     | _ -> List.fold_right mkret args return_type
   in
 
+  let isobject = kind = `Object in
   let rec aux (args:params_t list) (vs:vs_list_t) props =
     let n = List.length args in
     let name n =
@@ -107,6 +108,30 @@ let mkcurry seq sr name (vs:vs_list_t) (args:params_t list) return_type (kind:fu
         end
 
     | h :: [] -> (* bottom level *)
+      if isobject then begin
+        (*
+        print_endline "Found an object, scanning for methods and bogus returns";
+        *)
+        let methods = ref [] in
+        List.iter (fun st ->
+          (*
+          print_endline ("Statement " ^ Flx_print.string_of_statement 2 st);
+          *)
+          match st with
+          | STMT_fun_return _ -> clierr sr "FOUND function RETURN in Object";
+          | STMT_proc_return _ -> clierr sr "FOUND procedure RETURN in Object";
+          | STMT_curry (_,name, vs, pss, (res,traint) , kind, ss) when kind = `Method ->
+               methods := name :: !methods;
+          | _ -> ()
+        )
+        body
+        ;
+        let mkfield s = s,EXPR_name (sr,s,[]) in
+        let record = EXPR_record (sr, List.map mkfield (!methods)) in
+        let retstatement = STMT_fun_return (sr, record) in
+        let object_body = List.rev (retstatement :: List.rev body) in
+        STMT_function (sr, name n, vs, h, (return_type,postcondition), props, object_body)
+      end else
         STMT_function (sr, name n, vs, h, (return_type,postcondition), props, body)
     | h :: t ->
       let argt =
@@ -455,6 +480,7 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
     let lss,xs = List.split (List.map rex es) in
     List.concat lss,EXPR_record (sr, List.combine ss xs)
 
+  | EXPR_type_extension _ -> assert false
   | EXPR_record_type _ -> assert false
 
   | EXPR_variant (sr,(s,e)) ->

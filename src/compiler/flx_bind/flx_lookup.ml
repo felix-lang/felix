@@ -694,6 +694,42 @@ and bind_type'
   | TYP_intersect ts -> btyp_intersect (List.map bt ts)
   | TYP_record ts -> btyp_record "" (List.map (fun (s,t) -> s,bt t) ts)
   | TYP_variant ts -> btyp_variant (List.map (fun (s,t) -> s,bt t) ts)
+  | TYP_type_extension (sr, ts, t') ->
+(*
+    print_endline "Binding type extension";
+*)
+    let ts = List.map bt ts in
+    let t' = bt t' in
+(*
+    print_endline "Bases = ";
+    List.iter (fun t ->
+     print_endline (sbt bsym_table t)
+    )
+    ts
+    ;
+    print_endline ("Extension = " ^ sbt bsym_table t');
+*)
+    begin match t' with
+    | BTYP_record ("",fields) ->
+      let new_fields = ref [] in
+      List.iter (fun t ->
+        match t with
+        (* reverse the fields so the second one with a given name takes precedence *)
+        | BTYP_record ("",fields) -> new_fields := List.rev fields @ (!new_fields)
+        | _ -> clierr sr ("Record extension requires bases be records too, got " ^ sbt bsym_table t)
+      )
+      ts
+      ;
+      new_fields := fields @ !new_fields;
+      let unique_fields = ref [] in
+      List.iter (fun (s,t) ->
+        if not (List.mem_assoc s (!unique_fields)) then
+        unique_fields := (s,t) :: (!unique_fields)
+      )
+      (!new_fields);
+      btyp_record "" (!unique_fields)
+    | _ -> clierr sr ("Only records can be extended at the moment, got extension " ^ sbt bsym_table t')
+    end
 
   (* We first attempt to perform the match at binding time as an optimisation,
    * if that fails, we generate a delayed matching construction. The latter
@@ -4111,6 +4147,7 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     end else if n = 1 then List.hd bets
     else syserr sr "Empty array?"
 
+  | EXPR_type_extension _ -> assert false
   | EXPR_record_type _ -> assert false
   | EXPR_variant_type _ -> assert false
 

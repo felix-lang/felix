@@ -62,6 +62,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | TYP_apply (a,b) -> TYP_apply (f a, f b)
   | TYP_typefun (ps, a, b) -> TYP_typefun (ps, f a, f b)
   | TYP_type_tuple ts -> TYP_type_tuple (List.map f ts)
+  | TYP_type_extension (sr,ts,t) -> TYP_type_extension (sr,List.map f ts, f t)
 
 
   (* invariant ..?? *)
@@ -150,7 +151,9 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_type_match _ -> e
   | EXPR_range_check (sr,mi,v,mx) -> EXPR_range_check (sr, f mi, f v, f mx)
   | EXPR_not (sr,e) -> EXPR_not (sr, f e)
-  
+  | EXPR_type_extension _ -> e
+ 
+ 
 let iter_expr f (e:expr_t) =
   f e;
   match e with
@@ -221,6 +224,7 @@ let iter_expr f (e:expr_t) =
 
   | EXPR_cond (sr,(a,b,c)) -> f a; f b; f c
   | EXPR_range_check (sr,a,b,c) -> f a; f b; f c
+  | EXPR_type_extension _ -> ()
 
 let scan_expr e =
   let ls = ref [] in
