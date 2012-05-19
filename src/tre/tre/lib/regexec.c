@@ -330,7 +330,7 @@ tre_regawexec(const regex_t *preg, const wchar_t *str,
 
 #endif /* TRE_WCHAR */
 
-TRE_EXTERN int
+TRE_EXTERN
 void
 tre_regaparams_default(regaparams_t *params)
 {
