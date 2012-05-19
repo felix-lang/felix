@@ -83,6 +83,12 @@ syntax functions {
       `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,_5 Object ,_7)
     """;
 
+  sfunction := "object" sdeclname sfun_arg*  "=" scompound =>#
+    """
+      `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 none Object ,_5)
+    """;
+
+
 
   sopt_cstring := "=" scode_spec =># "`(some ,_2)";
   sopt_cstring := sepsilon =># "'none";

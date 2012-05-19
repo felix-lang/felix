@@ -48,6 +48,13 @@ static void *sp = 0;
   flx::demux::winsock_initer wsinit;
 #endif
 
+// Actually on Cygwin it might be cygflx_async_dynamic .. not sure
+#if FLX_HAVE_MSVC
+   #define FLX_ASYNC_DLL_NAME "flx_async_dynamic"
+#else
+   #define FLX_ASYNC_DLL_NAME "libflx_async_dynamic"
+#endif
+
 #ifdef FLX_STATIC_LINK
 extern "C" void *create_thread_frame;
 extern "C" void *flx_start;
@@ -182,20 +189,20 @@ void doflx(void *data) {
                 // Try to dynamically load the felix asynchronous library
                 
                 if(debug_driver)
-                  fprintf(stderr,"doflx: dymamic_link: trying to load libflx_async_dynamic\n");
+                  fprintf(stderr,"doflx: dymamic_link: trying to load flx_async_dynamic\n");
 
-                LIBHANDLE async_lib = flx_load_module("libflx_async_dynamic");
+                LIBHANDLE async_lib = flx_load_module(FLX_ASYNC_DLL_NAME);
 
                 // Error out if we couldn't load the library.
                 if (async_lib == NULL) {
                   fprintf(stderr,
-                    "doflx: Unable to find module 'libflx_async_dynamic'\n");
+                    "doflx: Unable to find module 'flx_async_dynamic'\n");
                   exit(1);
                 }
                 // debug only ..
                 else {
                   if (debug_driver)
-                    fprintf(stderr, "module 'libflx_async_dynamic' loaded!\n");
+                    fprintf(stderr, "module 'flx_async_dynamic' loaded!\n");
                 }
 
                 // Get the hooker function
@@ -207,7 +214,7 @@ void doflx(void *data) {
                 if (ptr_create_async_hooker == NULL) {
                   fprintf(stderr,
                     "doflx: Unable to find symbol 'create_async_hooker' in module "
-                    "'libflx_async_dynamic'\n");
+                    "'flx_async_dynamic'\n");
                   exit(1);
                 }
                 // debug only
@@ -217,7 +224,7 @@ void doflx(void *data) {
                 }
 #  endif
                 if(debug_driver)
-                  fprintf(stderr,"doflx: static_link: libflx_async_static SHOULD BE LINKED IN\n");
+                  fprintf(stderr,"doflx: static_link: flx_async_static SHOULD BE LINKED IN\n");
 #endif
               }
               // Error out if we don't have the hooker function.
