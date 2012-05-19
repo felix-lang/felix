@@ -122,14 +122,14 @@ tre_fill_pmatch(size_t nmatch, regmatch_t pmatch[], int cflags,
   Wrapper functions for POSIX compatible regexp matching.
 */
 
-int
+TRE_EXTERN int
 tre_have_backrefs(const regex_t *preg)
 {
   tre_tnfa_t *tnfa = (void *)preg->TRE_REGEX_T_FIELD;
   return tnfa->have_backrefs;
 }
 
-int
+TRE_EXTERN int
 tre_have_approx(const regex_t *preg)
 {
   tre_tnfa_t *tnfa = (void *)preg->TRE_REGEX_T_FIELD;
@@ -209,7 +209,7 @@ tre_regnexec(const regex_t *preg, const char *str, size_t len,
   return tre_match(tnfa, str, len, type, nmatch, pmatch, eflags);
 }
 
-int
+TRE_EXTERN int
 tre_regexec(const regex_t *preg, const char *str,
 	size_t nmatch, regmatch_t pmatch[], int eflags)
 {
@@ -219,6 +219,7 @@ tre_regexec(const regex_t *preg, const char *str,
 
 #ifdef TRE_WCHAR
 
+TRE_EXTERN
 int
 tre_regwnexec(const regex_t *preg, const wchar_t *str, size_t len,
 	  size_t nmatch, regmatch_t pmatch[], int eflags)
@@ -227,7 +228,7 @@ tre_regwnexec(const regex_t *preg, const wchar_t *str, size_t len,
   return tre_match(tnfa, str, len, STR_WIDE, nmatch, pmatch, eflags);
 }
 
-int
+TRE_EXTERN int
 tre_regwexec(const regex_t *preg, const wchar_t *str,
 	 size_t nmatch, regmatch_t pmatch[], int eflags)
 {
@@ -236,7 +237,7 @@ tre_regwexec(const regex_t *preg, const wchar_t *str,
 
 #endif /* TRE_WCHAR */
 
-int
+TRE_EXTERN int
 tre_reguexec(const regex_t *preg, const tre_str_source *str,
 	 size_t nmatch, regmatch_t pmatch[], int eflags)
 {
@@ -292,7 +293,7 @@ tre_match_approx(const tre_tnfa_t *tnfa, const void *string, size_t len,
   return status;
 }
 
-int
+TRE_EXTERN int
 tre_reganexec(const regex_t *preg, const char *str, size_t len,
 	  regamatch_t *match, regaparams_t params, int eflags)
 {
@@ -320,7 +321,7 @@ tre_regawnexec(const regex_t *preg, const wchar_t *str, size_t len,
 			  match, params, eflags);
 }
 
-int
+TRE_EXTERN int
 tre_regawexec(const regex_t *preg, const wchar_t *str,
 	  regamatch_t *match, regaparams_t params, int eflags)
 {
@@ -329,6 +330,7 @@ tre_regawexec(const regex_t *preg, const wchar_t *str,
 
 #endif /* TRE_WCHAR */
 
+TRE_EXTERN int
 void
 tre_regaparams_default(regaparams_t *params)
 {

@@ -50,7 +50,7 @@ static const char *tre_error_messages[] =
     gettext_noop("Invalid use of repetition operators")	 /* REG_BADRPT */
   };
 
-size_t
+TRE_EXTERN size_t
 tre_regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
 {
   const char *err;

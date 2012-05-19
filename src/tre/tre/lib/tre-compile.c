@@ -2230,7 +2230,7 @@ tre_free(regex_t *preg)
   xfree(tnfa);
 }
 
-char *
+TRE_EXTERN char *
 tre_version(void)
 {
   static char str[256];
@@ -2244,7 +2244,8 @@ tre_version(void)
   return str;
 }
 
-int
+
+TRE_EXTERN int
 tre_config(int query, void *result)
 {
   int *int_result = result;

@@ -18,7 +18,7 @@
 #include "tre-internal.h"
 #include "xmalloc.h"
 
-int
+TRE_EXTERN int
 tre_regncomp(regex_t *preg, const char *regex, size_t n, int cflags)
 {
   int ret;
@@ -99,7 +99,7 @@ tre_regncomp(regex_t *preg, const char *regex, size_t n, int cflags)
   return ret;
 }
 
-int
+TRE_EXTERN int
 tre_regcomp(regex_t *preg, const char *regex, int cflags)
 {
   return tre_regncomp(preg, regex, regex ? strlen(regex) : 0, cflags);
@@ -107,20 +107,21 @@ tre_regcomp(regex_t *preg, const char *regex, int cflags)
 
 
 #ifdef TRE_WCHAR
-int
+
+TRE_EXTERN int
 tre_regwncomp(regex_t *preg, const wchar_t *regex, size_t n, int cflags)
 {
   return tre_compile(preg, regex, n, cflags);
 }
 
-int
+TRE_EXTERN int
 tre_regwcomp(regex_t *preg, const wchar_t *regex, int cflags)
 {
   return tre_compile(preg, regex, regex ? wcslen(regex) : 0, cflags);
 }
 #endif /* TRE_WCHAR */
 
-void
+TRE_EXTERN void
 tre_regfree(regex_t *preg)
 {
   tre_free(preg);
