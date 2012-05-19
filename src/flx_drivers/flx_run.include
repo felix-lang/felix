@@ -189,20 +189,20 @@ void doflx(void *data) {
                 // Try to dynamically load the felix asynchronous library
                 
                 if(debug_driver)
-                  fprintf(stderr,"doflx: dymamic_link: trying to load flx_async_dynamic\n");
+                  fprintf(stderr,"doflx: dymamic_link: trying to load %s\n",FLX_ASYNC_DLL_NAME);
 
                 LIBHANDLE async_lib = flx_load_module(FLX_ASYNC_DLL_NAME);
 
                 // Error out if we couldn't load the library.
                 if (async_lib == NULL) {
                   fprintf(stderr,
-                    "doflx: Unable to find module 'flx_async_dynamic'\n");
+                    "doflx: Unable to find module '%s'\n",FLX_ASYNC_DLL_NAME);
                   exit(1);
                 }
                 // debug only ..
                 else {
                   if (debug_driver)
-                    fprintf(stderr, "module 'flx_async_dynamic' loaded!\n");
+                    fprintf(stderr, "module '%s' loaded!\n",FLX_ASYNC_DLL_NAME);
                 }
 
                 // Get the hooker function
@@ -214,7 +214,7 @@ void doflx(void *data) {
                 if (ptr_create_async_hooker == NULL) {
                   fprintf(stderr,
                     "doflx: Unable to find symbol 'create_async_hooker' in module "
-                    "'flx_async_dynamic'\n");
+                    "'%s'\n",FLX_ASYNC_DLL_NAME);
                   exit(1);
                 }
                 // debug only
