@@ -511,9 +511,11 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_variant (sr, (s,e)) ->
     EXPR_variant (sr, ( s, me e))
 
-  | EXPR_record_type (sr,ts)
-  | EXPR_variant_type (sr,ts) ->
-     clierr sr "Anonymous struct or record type cannot be used as an expression"
+  | EXPR_extension (sr, es,e) -> EXPR_extension (sr, List.map me es, me e)
+
+  | EXPR_record_type (sr,_)
+  | EXPR_variant_type (sr,_) ->
+     clierr sr "Record, variant, or extension type cannot be used as an expression"
 
   | EXPR_arrayof (sr, es) -> EXPR_arrayof (sr, List.map me es)
   | EXPR_coercion (sr, (e1, t)) -> EXPR_coercion (sr, (me e1,mt sr t))

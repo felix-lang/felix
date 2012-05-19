@@ -225,6 +225,9 @@ let rec typecode_of_expr (e:expr_t) :typecode_t =
   | EXPR_patvar (sr,s) -> TYP_patvar (sr,s)
   | EXPR_patany sr -> TYP_patany sr
 
+  | EXPR_extension (sr, bases, extension) ->
+    TYP_type_extension (sr,List.map te bases, te extension)
+
   | _ ->
     let sr = src_of_expr e in
     clierr sr ("Type expression expected, got " ^ string_of_expr e)

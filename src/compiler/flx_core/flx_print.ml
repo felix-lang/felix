@@ -293,6 +293,10 @@ and string_of_expr (e:expr_t) =
 
   | EXPR_range_check (_,mi,v,mx) ->
     "range_check " ^ se mi ^ " <= " ^ se v ^ " < " ^ se mx
+
+  | EXPR_extension (sr, bases, extension) ->
+    "extend " ^ catmap "," se bases ^ " with " ^ se extension
+
  
 (* precedences for type operators ..
    0 -- atomic
@@ -454,6 +458,9 @@ and st prec tc : string =
          ) ^
          "): " ^ st 0 ret ^ "=" ^ st 10 body
        )
+    | TYP_type_extension (sr,ts,t) ->
+      0,"extend {" ^ cat ", " (map (st 0) ts) ^ " with " ^ st 0 t ^ "}"
+
   in
     if iprec >= prec
     then "(" ^ txt ^ ")"
@@ -1303,6 +1310,8 @@ and string_of_statement level s =
     | `Virtual -> "virtual fun "
     | `Ctor -> "ctor "
     | `Generator -> "generator "
+    | `Method-> "method "
+    | `Object -> "object "
     )
     ^
     string_of_id name ^ string_of_vs vs ^

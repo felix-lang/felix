@@ -202,6 +202,10 @@ and xexpr_t sr x =
      ts
    in EXPR_type_match (xsr sr,(ti t, ts))
 
+  | Lst [Id "ast_extension"; sr; Lst bases; extension] ->
+    let bases = List.map ex bases in
+    EXPR_extension (xsr sr, bases, ex extension)
+
   | Lst ls -> (* print_endline ("Unexpected literal tuple"); *) EXPR_tuple (sr, map ex ls)
 
   | Id id ->
@@ -357,39 +361,6 @@ and xret_t sr x : typecode_t * expr_t option =
   | Lst [t; e] -> ti t, opt "return" ex e
   | x -> err x "return encoding"
 
-and xproperty_t sr x : property_t =
-  match x with
-  | Id "Recursive" -> `Recursive
-  | Id "Inline" -> `Inline
-  | Id "NoInline" -> `NoInline
-  | Id "Inlining_started" -> `Inlining_started
-  | Id "Inlining_complete" -> `Inlining_complete
-  | Lst [Id "Generated"; Str s] -> `Generated (s)
-
-  | Id "Heap_closure" -> `Heap_closure           (* a heaped closure is formed *)
-  | Id "Explicit_closure" -> `Explicit_closure   (* explicit closure expression *)
-  | Id "Stackable" -> `Stackable                 (* closure can be created on stack *)
-  | Id "Stack_closure" -> `Stack_closure         (* a stacked closure is formed *)
-  | Id "Unstackable" -> `Unstackable             (* closure cannot be created on stack *)
-  | Id "Pure" -> `Pure                           (* depends only on immutable parameters *)
-  | Id "ImPure" -> `ImPure                       (* depends on a variable or mutable state *)
-  | Id "Total" -> `Total                         (* closure not required by self *)
-  | Id "Partial" -> `Partial                     (* has unstated pre-condition *)
-  | Id "Uses_global_var" -> `Uses_global_var     (* a global variable is explicitly used *)
-  | Id "Ctor" -> `Ctor                           (* Class constructor procedure *)
-  | Id "Generator" -> `Generator                 (* Generator: fun with internal state *)
-  | Id "Yields" -> `Yields                       (* Yielding generator *)
-  | Id "Cfun" -> `Cfun                           (* C function *)
-  | Id "Lvalue" -> `Lvalue                       (* primitive returning lvalue *)
-
-  (* one of the below must be set before code generation *)
-  | Id "Requires_ptf" -> `Requires_ptf        (* a pointer to thread frame is needed *)
-  | Id "Not_requires_ptf" -> `Not_requires_ptf    (* no pointer to thread frame is needed *)
-
-  | Id "Uses_gc" -> `Uses_gc             (* requires gc locally *)
-  | Id "Virtual" -> `Virtual             (* interface in a typeclass *)
-  | x -> err x "property_t"
-
 and xfunkind_t sr x : funkind_t =
   match x with
   | Id "Function" -> `Function
@@ -399,6 +370,8 @@ and xfunkind_t sr x : funkind_t =
   | Id "Virtual" -> `Virtual
   | Id "Ctor" -> `Ctor
   | Id "Generator" -> `Generator
+  | Id "Method" -> `Method
+  | Id "Object" -> `Object
   | x -> err x "funkind_t"
 
 and xcode_spec_t sr x : Flx_code_spec.t =
@@ -493,7 +466,6 @@ and xstatement_t sr x : statement_t =
   let xret x =  xret_t sr x in
   let xsts x =  lst "statement" xs x in
   let xsts' sr x =  lst "statement" (xstatement_t (xsr sr)) x in
-  let xprops x =  lst "property" (xproperty_t sr) x in
   let xfk x = xfunkind_t sr x in
   let ti x = type_of_sex sr x in
   let ii i = int_of_string i in
@@ -540,16 +512,6 @@ and xstatement_t sr x : statement_t =
       xvs vs,
       xps ps,
       xam axm)
-
-  | Lst [Id "ast_function"; id; vs; ps; ret; props; sts] ->
-    STMT_function(
-      sr,
-      xid id,
-      xvs vs,
-      xps ps,
-      xret ret,
-      xprops props,
-      xsts sts)
 
   | Lst [Id "ast_curry"; sr; id; vs; Lst pss; ret; fk; sts] ->
     STMT_curry(

@@ -232,6 +232,8 @@ syntax expressions {
   // empty tuple
   satom := "(" ")" =># "'()";
 
+  satom := "extend" stypelist "with" sexpr "end" =># "`(ast_extension ,_sr ,_2 ,_4)";
+
   // conditional expression
   satom := sconditional "endif" =># "_1";
 

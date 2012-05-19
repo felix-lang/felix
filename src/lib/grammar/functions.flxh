@@ -30,6 +30,7 @@ syntax functions {
   sadjective := "impure" =># "'ImPure";
   sadjective := "total" =># "'Total";
   sadjective := "partial" =># "'Partal";
+  sadjective := "omethod" =># "'Method";
   sadjectives := sadjective* =># "_1";
 
   slambda_fun_arg := "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";
@@ -40,6 +41,7 @@ syntax functions {
   fun_return_type := ":" stypeexpr =># "`(,_2 none)";
   fun_return_type := "expect" sexpr =># "`(,(noi 'typ_none) (some ,_2))";
   fun_return_type := sepsilon =># "`(,(noi 'typ_none) none)";
+  object_return_type := stypeexpr =># "`(,_1 none)";
 
   sparameter := sparam_qual sname ":" x[sarrow_pri] "=" x[sor_condition_pri] =># "`(,_1 ,_2 ,_4 (some ,_6))";
   sparameter := sparam_qual sname ":" x[sarrow_pri] =># "`(,_1 ,_2 ,_4 none)";
@@ -75,6 +77,12 @@ syntax functions {
     """
       `(ast_curry ,_sr ,(first _3) ,(second _3) ,_4 ,_5 ,(cal_funkind _1 _2) ,_7)
     """;
+
+  sfunction := "object" sdeclname sfun_arg* "implements" object_return_type "=" scompound =>#
+    """
+      `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,_5 Object ,_7)
+    """;
+
 
   sopt_cstring := "=" scode_spec =># "`(some ,_2)";
   sopt_cstring := sepsilon =># "'none";
