@@ -201,9 +201,10 @@ and xexpr_t sr x =
      )
      ts
    in EXPR_type_match (xsr sr,(ti t, ts))
-  | Lst [Id "ast_type_extension"; sr; Lst bases; extension] ->
-    let bases = List.map ti bases in
-    EXPR_type_extension (xsr sr, bases, ti extension)
+
+  | Lst [Id "ast_extension"; sr; Lst bases; extension] ->
+    let bases = List.map ex bases in
+    EXPR_extension (xsr sr, bases, ex extension)
 
   | Lst ls -> (* print_endline ("Unexpected literal tuple"); *) EXPR_tuple (sr, map ex ls)
 

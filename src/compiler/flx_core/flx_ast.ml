@@ -200,7 +200,7 @@ and expr_t =
 
   | EXPR_type_match of Flx_srcref.t * (typecode_t * (typecode_t * typecode_t) list)
 
-  | EXPR_type_extension of Flx_srcref.t * typecode_t list * typecode_t
+  | EXPR_extension of Flx_srcref.t * expr_t list * expr_t
 
 (** {7 Patterns}
  *
@@ -700,7 +700,7 @@ let src_of_expr (e : expr_t) = match e with
   | EXPR_typeof (s,_)
   | EXPR_range_check (s,_,_,_)
   | EXPR_not (s,_)
-  | EXPR_type_extension (s, _, _)
+  | EXPR_extension (s, _, _)
   -> s
 
 let src_of_stmt (e : statement_t) = match e with

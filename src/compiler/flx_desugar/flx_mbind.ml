@@ -79,7 +79,7 @@ let rec subst vars (e:expr_t) mv : expr_t =
   | EXPR_callback _
   | EXPR_record_type _
   | EXPR_variant_type _
-  | EXPR_type_extension _
+  | EXPR_extension _
   | EXPR_not _
     ->
       let sr = src_of_expr e in

@@ -294,8 +294,8 @@ and string_of_expr (e:expr_t) =
   | EXPR_range_check (_,mi,v,mx) ->
     "range_check " ^ se mi ^ " <= " ^ se v ^ " < " ^ se mx
 
-  | EXPR_type_extension (sr, bases, extension) ->
-    "type_extend " ^ catmap "," string_of_typecode bases ^ " with " ^ string_of_typecode extension
+  | EXPR_extension (sr, bases, extension) ->
+    "extend " ^ catmap "," se bases ^ " with " ^ se extension
 
  
 (* precedences for type operators ..

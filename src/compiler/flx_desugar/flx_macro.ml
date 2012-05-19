@@ -511,7 +511,8 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | EXPR_variant (sr, (s,e)) ->
     EXPR_variant (sr, ( s, me e))
 
-  | EXPR_type_extension (sr, _,_)
+  | EXPR_extension (sr, es,e) -> EXPR_extension (sr, List.map me es, me e)
+
   | EXPR_record_type (sr,_)
   | EXPR_variant_type (sr,_) ->
      clierr sr "Record, variant, or extension type cannot be used as an expression"

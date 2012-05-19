@@ -151,7 +151,7 @@ let map_expr f (e:expr_t):expr_t = match e with
   | EXPR_type_match _ -> e
   | EXPR_range_check (sr,mi,v,mx) -> EXPR_range_check (sr, f mi, f v, f mx)
   | EXPR_not (sr,e) -> EXPR_not (sr, f e)
-  | EXPR_type_extension _ -> e
+  | EXPR_extension (sr,es,e) -> EXPR_extension (sr, List.map f es, f e)
  
  
 let iter_expr f (e:expr_t) =
@@ -224,7 +224,7 @@ let iter_expr f (e:expr_t) =
 
   | EXPR_cond (sr,(a,b,c)) -> f a; f b; f c
   | EXPR_range_check (sr,a,b,c) -> f a; f b; f c
-  | EXPR_type_extension _ -> ()
+  | EXPR_extension (sr,es,e) -> List.iter f es; f e
 
 let scan_expr e =
   let ls = ref [] in

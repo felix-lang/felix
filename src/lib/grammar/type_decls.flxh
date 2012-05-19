@@ -151,7 +151,7 @@ syntax type_decls {
 
   tstatement := "interface" sdeclname stype_extension "{" srecord_type "}" =>#
     """
-    `(ast_type_alias ,_sr ,(first _2) ,(second _2) (ast_type_extension ,_sr ,_3 ,_5))
+    `(ast_type_alias ,_sr ,(first _2) ,(second _2) (ast_extension ,_sr ,_3 ,_5))
     """;
     srecord_type := srecord_mem_decl (";" srecord_mem_decl)* ";" =># 
      "`(ast_record_type ,(cons _1 (map second _2)))";

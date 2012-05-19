@@ -480,7 +480,11 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
     let lss,xs = List.split (List.map rex es) in
     List.concat lss,EXPR_record (sr, List.combine ss xs)
 
-  | EXPR_type_extension _ -> assert false
+  | EXPR_extension (sr,es,e) -> 
+    let lss,xs = List.split (List.map rex es) in
+    let l,x = rex e in
+    l @ List.concat lss,EXPR_extension (sr, xs, x)
+
   | EXPR_record_type _ -> assert false
 
   | EXPR_variant (sr,(s,e)) ->
