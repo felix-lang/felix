@@ -1,0 +1,3 @@
+provides_dlib: /DEFAULTLIB:tre_dynamic
+provides_slib: /DEFAULTLIB:tre_static
+includes: "tre/lib/tre.h"
