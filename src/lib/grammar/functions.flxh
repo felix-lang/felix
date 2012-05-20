@@ -94,6 +94,40 @@ syntax functions {
       `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 none Object ,_5)
     """;
 
+  sfunction := 
+    "object" sdeclname sfun_arg* "extends" stypeexpr_comma_list 
+    "implements" object_return_type "=" scompound 
+  =>#
+    """
+   (let*  
+     (
+       (noretype `(,(noi 'typ_none) none))
+       (d `(ast_object ,_sr (,dfltvs ((() none)) none ,_9)))  ;; extension function
+       (a `(ast_apply ,_sr (,d ()))) ;; applied to unit
+       (x `(ast_extension ,_sr ,_5 ,a)) ;; actual extension expression
+       (retst `(ast_fun_return ,_sr ,x))
+       (body `(,retst))
+     )
+     `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,_7 Function ,body)
+    )
+    """;
+
+  sfunction := "object" sdeclname sfun_arg*  "extends" stypeexpr_comma_list "=" scompound =>#
+    """
+   (let*  
+     (
+       (noretype `(,(noi 'typ_none) none))
+       (d `(ast_object ,_sr (,dfltvs ((() none)) none ,_7)))  ;; extension function
+       (a `(ast_apply ,_sr (,d ()))) ;; applied to unit
+       (x `(ast_extension ,_sr ,_5 ,a)) ;; actual extension expression
+       (retst `(ast_fun_return ,_sr ,x))
+       (body `(,retst))
+     )
+     `(ast_curry ,_sr ,(first _2) ,(second _2) ,_3 ,noretype Function ,body)
+    )
+    """;
+
+    stypeexpr_comma_list := stypeexpr ("," stypeexpr)* =># "(cons _1 (map second _2))";
 
 
   sopt_cstring := "=" scode_spec =># "`(some ,_2)";
