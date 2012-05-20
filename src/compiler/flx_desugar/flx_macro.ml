@@ -492,6 +492,17 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
     in
     EXPR_lambda (sr, (vs,pss, t, sts))
 
+  | EXPR_object (sr, (vs,pss, t, sts)) ->
+    let pr = List.concat (
+      List.map (List.map (fun(x,y,z,d)->y)) (List.map fst pss))
+    in
+    let pr = protect sr pr in
+    let sts =
+      expand_statements recursion_limit local_prefix seq (ref true)
+      (pr @ macros) sts
+    in
+    EXPR_object (sr, (vs,pss, t, sts))
+
   (* the name here is just for diagnostics *)
   | EXPR_index (sr, n, i) -> EXPR_index (sr,n,i)
   | EXPR_intersect (sr, es) -> EXPR_intersect (sr, List.map me es)

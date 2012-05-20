@@ -20,6 +20,12 @@ syntax functions {
     `(ast_lambda ,_sr (,_3 ((() none)) (ast_void ,_sr) ,_4))
     """;
 
+  x[slambda_pri] := sadjectives "object" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
+    """
+    `(ast_object ,_sr (,_3 ,_4 ,(first _5) ,_7))
+    """;
+
+
   sadjective := "inline" =># "'InlineFunction";
   sadjective := "noinline" =># "'NoInlineFunction";
   //sadjective := "static" =># "'Static";

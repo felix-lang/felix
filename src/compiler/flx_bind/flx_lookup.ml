@@ -1640,6 +1640,8 @@ and inner_type_of_index state bsym_table rs index =
   | SYMDEF_var t -> bt sym.Flx_sym.sr t
   | SYMDEF_ref t -> btyp_pointer (bt sym.Flx_sym.sr t)
 
+  | SYMDEF_lazy (t,x) -> bt sym.Flx_sym.sr t
+
   | SYMDEF_parameter (`PVal,t)
   | SYMDEF_parameter (`PFun,t)
   | SYMDEF_parameter (`PVar,t) -> bt sym.Flx_sym.sr t
@@ -4481,11 +4483,12 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
     | _ -> clierr sr "Expected variant constructor name in union dtor"
     end
 
+  | EXPR_object (sr,_) 
   | EXPR_lambda (sr,_) ->
     syserr sr
     (
       "[bind_expression] " ^
-      "Unexpected lambda when binding expression (should have been lifted out)" ^
+      "Unexpected lambda or object when binding expression (should have been lifted out)" ^
       string_of_expr e
     )
 

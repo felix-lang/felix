@@ -497,6 +497,31 @@ let rec rex mkreqs map_reqs state name (e:expr_t) : asm_t list * expr_t =
     let lss,xs = List.split (List.map rex t) in
     List.concat lss,EXPR_arrayof(sr,xs)
 
+  | EXPR_object (sr,(vs,pps,ret,sts)) ->
+    let kind = `Object in
+    let n = seq() in
+    let name' = "_lam_" ^ string_of_bid n in
+    let access = `Private in
+    let sts = rst
+      state
+      name
+      access
+      dfltvs
+      (mkcurry seq sr name' vs pps (ret,None) kind sts [`Generated "lambda"])
+    in
+    if List.length pps = 0 then syserr sr "[rex] Lambda with no arguments?" else
+    let t = type_of_argtypes (List.map (fun(x,y,z,d)->z) (fst (List.hd pps))) in
+    let e =
+      EXPR_suffix
+      (
+        sr,
+        (
+          `AST_name (sr,name',[]), t
+        )
+      )
+    in
+    sts,e
+
   | EXPR_lambda (sr,(vs,pps,ret,sts)) ->
     let kind = `InlineFunction in
     let n = seq() in

@@ -231,6 +231,17 @@ and string_of_expr (e:expr_t) =
     " = " ^
     string_of_compound 0 sts ^ ")"
 
+  | EXPR_object (_,(vs,paramss,ret, sts)) ->
+    "(object " ^ string_of_vs vs ^
+    catmap " "
+    (fun ps -> "(" ^ string_of_parameters ps ^ ")") paramss
+    ^
+    (match ret with
+    | TYP_none -> ""
+    | _ -> ": " ^string_of_typecode ret) ^
+    " = " ^
+    string_of_compound 0 sts ^ ")"
+
   | EXPR_ctor_arg (_,(cn,e)) ->
     "ctor_arg " ^ sqn cn ^ "(" ^
     se e ^ ")"
