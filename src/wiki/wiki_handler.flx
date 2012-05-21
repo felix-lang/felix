@@ -276,7 +276,7 @@ mathjax := '''
 
 
  fun save_edit_route(config:server_config,request:http_request) =>
-    (startswith request.path  "/wiki/edit/") and str(request.method) == str(POST);
+    (startswith request.path  "/wiki/edit/") and str(request.hmethod) == str(POST);
 
 
   proc save_edit (conn:http_connection, request:http_request ) {
@@ -298,7 +298,7 @@ mathjax := '''
   }
 
     fun preview_route(config:server_config,request:http_request) ={
-      return startswith request.path  "/wiki/preview/" and str(request.method) == str(POST);
+      return startswith request.path  "/wiki/preview/" and str(request.hmethod) == str(POST);
     }
 
   proc preview (conn:http_connection, request:http_request ) {

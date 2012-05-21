@@ -50,6 +50,7 @@ syn match felixComment "^#!.*"
 "syn keyword felixError continue
 "syn keyword felixError repeat
 
+syn keyword felixStatement end
 syn keyword felixStatement catch 
 syn keyword felixStatement try
 syn keyword felixStatement endtry
@@ -200,7 +201,7 @@ syn keyword felixStatement def
 syn keyword felixStatement endattempt except exceptions export
 syn keyword felixStatement finally fork functor fun cfun
 syn keyword felixStatement goto
-syn keyword felixStatement interface inf
+syn keyword felixStatement interface inf method object extends implements extend
 syn keyword felixStatement jump
 syn keyword felixStatement lambda loop
 syn keyword felixStatement namespace module

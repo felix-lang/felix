@@ -36,7 +36,7 @@ syntax functions {
   sadjective := "impure" =># "'ImPure";
   sadjective := "total" =># "'Total";
   sadjective := "partial" =># "'Partal";
-  sadjective := "omethod" =># "'Method";
+  sadjective := "method" =># "'Method";
   sadjectives := sadjective* =># "_1";
 
   slambda_fun_arg := "(" sparameter_comma_list "when" sexpr ")" =># "`(,_2 (some ,_4))";

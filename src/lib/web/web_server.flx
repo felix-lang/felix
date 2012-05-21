@@ -81,7 +81,7 @@ class WebServer {
        Faio::sleep(clock,config.delay);
       /*Get entity form parameters if method is post and 
         content type is application/x-www-form-urlencoded */
-      //if str(request.method) == str(POST) do
+      //if str(request.hmethod) == str(POST) do
       match get_header(request,"Content-Type") with
         | Some ?c => { 
           match parse_media_type(c) with

@@ -37,7 +37,7 @@ class HTTPRequest {
   
 
    struct http_request {
-    method: http_method;
+    hmethod: http_method;
     uri: string;
     path:string;
     params:assoc_list[string,string];
@@ -48,7 +48,7 @@ class HTTPRequest {
   instance Str[http_request] {
     fun str (request: http_request) => 
       "HTTP Request\n"+
-      "\tMethod:"+str(request.method)+"\n"+
+      "\tMethod:"+str(request.hmethod)+"\n"+
       //"\tURI:"""+request.uri+"\n"+
       "\tPath:"""+request.path+"\n"+
       "\tParams:"""+str(request.params)+"\n"+
@@ -56,7 +56,7 @@ class HTTPRequest {
   } 
       
   private proc copy_request(orig:&http_request,cpy:&http_request) = {
-    *cpy.method = *orig.method;
+    *cpy.hmethod = *orig.hmethod;
     *cpy.uri = *orig.uri;
     *cpy.path = *orig.path;
     *cpy.params = *orig.params;
@@ -93,7 +93,7 @@ class HTTPRequest {
     var line: string = "";
     get_line(k, &line);  // shouldg be the GET line.
     var got = match split(line,' ') with
-      | Cons (?method,Cons(?uri,Cons(?prot,_))) => match (method,uri,prot) with
+      | Cons (?hmethod,Cons(?uri,Cons(?prot,_))) => match (hmethod,uri,prot) with
         | ("GET",?uri,?prot)  => match (GET,uri,split(uri,'?'),prot) with
           | (GET,?uri,Cons(?path,?rest),?prot) => 
                http_request(GET,uri,path,
