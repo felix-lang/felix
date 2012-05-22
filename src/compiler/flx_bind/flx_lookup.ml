@@ -728,7 +728,40 @@ and bind_type'
       )
       (!new_fields);
       btyp_record "" (!unique_fields)
-    | _ -> clierr sr ("Only records can be extended at the moment, got extension " ^ sbt bsym_table t')
+    | _ -> 
+      let ntimes t n = 
+        let rec aux n ts = if n=0 then ts else aux (n-1) (t::ts) in
+        aux n []
+      in 
+      let rec check t n ts = 
+        match ts with
+        | [] -> Some (t,n)
+        | BTYP_array (t',BTYP_unitsum m)::ts when t = t' -> check t (n+m) ts
+        | t'::ts when t = t'  -> check t (n+1) ts
+        | _ -> None
+      in
+      let compatible_arrays ts = 
+        match ts with 
+        | [] -> clierr sr "empty extension"
+        | BTYP_array (t,BTYP_unitsum n) :: ts -> check t n ts
+        | t::ts -> check t 1 ts
+      in
+      match compatible_arrays (ts @ [t']) with
+      | Some (t,n) -> btyp_array (t, btyp_unitsum n)
+      | None ->
+        (* if it isn't a record extension, treat it as a tuple extension *)
+        let fields = ref [] in
+        List.iter (fun t -> 
+          match t with
+          | BTYP_tuple ts -> fields := !fields @ ts
+          | BTYP_array (t, BTYP_unitsum n) ->
+            if n < 20 then clierr sr "Array to big for tuple extension"
+            else fields := !fields @ ntimes t n
+          | _ -> fields := !fields @ [t]
+        )
+        (ts @[t'])
+        ;
+        btyp_tuple (!fields)
     end
 
   (* We first attempt to perform the match at binding time as an optimisation,
