@@ -755,7 +755,7 @@ and bind_type'
           match t with
           | BTYP_tuple ts -> fields := !fields @ ts
           | BTYP_array (t, BTYP_unitsum n) ->
-            if n < 20 then clierr sr "Array to big for tuple extension"
+            if n > 20 then clierr sr "Array type too big (>20) for tuple type extension"
             else fields := !fields @ ntimes t n
           | _ -> fields := !fields @ [t]
         )
@@ -4184,8 +4184,9 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 
   (* the code for this is pretty messy and inefficient but it should work *)
   | EXPR_extension (sr, es, e') ->  
-    let _,t' = be e' in
-
+    let e'',t' = be e' in
+    let es' = List.map be es in
+    let ts = List.map snd es' in
     begin match t' with
     | BTYP_record ("",fields) ->
       let new_fields = ref [] in
@@ -4213,7 +4214,59 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
       (!new_fields);
       be (EXPR_record (sr,!unique_fields))
 
-    | _ -> clierr sr ("Only records can be extended at the moment, got extension " ^ sbt bsym_table t')
+    | _ -> 
+      let ntimes t n = 
+        let rec aux n ts = if n=0 then ts else aux (n-1) (t::ts) in
+        aux n []
+      in 
+      let rec check t n ts = 
+        match ts with
+        | [] -> Some (t,n)
+        | BTYP_array (t',BTYP_unitsum m)::ts when t = t' -> check t (n+m) ts
+        | t'::ts when t = t'  -> check t (n+1) ts
+        | _ -> None
+      in
+      let compatible_arrays ts = 
+        match ts with 
+        | [] -> clierr sr "empty extension"
+        | BTYP_array (t,BTYP_unitsum n) :: ts -> check t n ts
+        | t::ts -> check t 1 ts
+      in
+      match compatible_arrays (ts @ [t']) with
+      | Some  _ ->
+        clierr sr "Can't extend arrays yet"
+      | None ->
+        (* if it isn't a record extension, treat it as a tuple extension *)
+        let values = ref [] in
+        let types = ref [] in
+        List.iter (fun  xpr -> 
+          match xpr with
+          | BEXPR_tuple flds,BTYP_tuple ts -> 
+            values := !values @ flds; 
+            types := !types @ ts
+          | e,BTYP_tuple ts -> 
+            let n = ref (-1) in
+            values := !values @ List.map (fun w -> incr n; bexpr_get_n w (!n,xpr)) ts; 
+            types := !types @ ts
+          | BEXPR_tuple flds, BTYP_array (t, BTYP_unitsum n) ->
+            values := !values @ flds; 
+            types := !types @ ntimes t n;
+          | e, BTYP_array (t, BTYP_unitsum n) ->
+            if n > 20 then clierr sr "Array too big (>20) for tuple extension"
+            else (
+              let k = ref (-1) in
+              values := !values @ List.map (fun w -> incr k; bexpr_get_n w (!k,xpr)) (ntimes t n); 
+              types := !types @ ntimes t n;
+            )
+          | _ -> 
+            values := !values @ [xpr];
+            types := !types @ [snd xpr]
+        )
+        (es' @[e'',t'])
+        ;
+        let tt = btyp_tuple (!types) in
+        let ee = bexpr_tuple tt (!values) in
+        ee
     end
 
   | EXPR_record_type _ -> assert false

@@ -240,22 +240,22 @@ let rec gen_expr'
      in
      ce_call (ce_atom "flx::rtl::range_check") args
 
-  | BEXPR_get_n (n,(e',t as e)) ->
-    begin match rt t with
-    | BTYP_tuple _  -> ce_dot (ge' e) ("mem_" ^ si n)
+  | BEXPR_get_n (n,(e',t' as e2)) ->
+    begin match rt t' with
+    | BTYP_tuple _  -> ce_dot (ge' e2) ("mem_" ^ si n)
     | BTYP_array (_,BTYP_unitsum _) ->
-      begin match e with
+      begin match e2 with
       | BEXPR_tuple _,_ -> print_endline "Failed to slice a tuple!"
       | _ -> ()
       end;
-      ce_dot (ge' e) ("data["^si n^"]")
+      ce_dot (ge' e2) ("data["^si n^"]")
     | BTYP_record (name,es) ->
       let field_name,_ =
         try nth es n
         with Not_found ->
           failwith "[flx_egen] Woops, index of non-existent struct field"
       in
-      ce_dot (ge' e) field_name
+      ce_dot (ge' e2) field_name
 
     | BTYP_inst (i,_) ->
       begin match Flx_bsym_table.find_bbdcl bsym_table i with
@@ -266,9 +266,11 @@ let rec gen_expr'
           with _ ->
             failwith "Woops, index of non-existent struct field"
         in
-        ce_dot (ge' e) name
+        ce_dot (ge' e2) name
 
-      | _ -> failwith "[flx_egen] Instance expected to be (c)struct"
+      | _ -> failwith ("[flx_egen] Expr "^sbe bsym_table (e,t)^ " type " ^ sbt bsym_table t ^
+        " object " ^ sbe bsym_table e2 ^ " type " ^ sbt bsym_table t' ^ 
+        " Instance of " ^string_of_int i^ " expected to be (c)struct")
       end
 
     | BTYP_pointer (BTYP_record (name,es)) ->
@@ -277,7 +279,7 @@ let rec gen_expr'
         with Not_found ->
           failwith "[flx_egen] Woops, index of non-existent struct field"
       in
-      ce_prefix "&" (ce_arrow (ge' e) field_name)
+      ce_prefix "&" (ce_arrow (ge' e2) field_name)
 
     | BTYP_pointer (BTYP_inst (i,_)) ->
       begin match Flx_bsym_table.find_bbdcl bsym_table i with
@@ -288,16 +290,16 @@ let rec gen_expr'
           with _ ->
             failwith "Woops, index of non-existent struct field"
         in
-        ce_prefix "&" (ce_arrow (ge' e) name)
+        ce_prefix "&" (ce_arrow (ge' e2) name)
 
       | _ -> failwith "[flx_egen] Instance expected to be (c)struct"
       end
 
     | BTYP_pointer (BTYP_array _) ->
-      ce_prefix "&" (ce_arrow (ge' e) ("data["^si n^"]"))
+      ce_prefix "&" (ce_arrow (ge' e2) ("data["^si n^"]"))
 
     | BTYP_pointer (BTYP_tuple _) ->
-      ce_prefix "&" (ce_arrow (ge' e) ("mem_" ^ si n))
+      ce_prefix "&" (ce_arrow (ge' e2) ("mem_" ^ si n))
 
     | _ -> assert false (* ce_dot (ge' e) ("mem_" ^ si n) *)
     end
