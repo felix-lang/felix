@@ -61,23 +61,24 @@ $(function() {
         value: "function myScript(){return 100;}\n",
         lineNumbers: true,
         lineWrapping: true,
+        smartIndent: false,
       });
 
    $( "#dialog-delete" ).dialog({
 			resizable: false,
 			height:140,
 			modal: true,
-                        autoOpen: false,
+      autoOpen: false,
 			buttons: {
 				"Confirm": function() {
-                                            var url = "/wiki/delete/"+path;
-                                            $.get(url,
-                                            { content: $('textarea#editor').val(), },
-                                              function(data){
-                                                notification(data);
-                                               });
+          var url = "/wiki/delete/"+path;
+          $.get(url,
+          { content: $('textarea#editor').val(), },
+            function(data){
+            notification(data);
+          });
 					$( this ).dialog( "close" );
-                                       working();
+          working();
 				},
 				Cancel: function() {
 					$( this ).dialog( "close" );
