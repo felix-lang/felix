@@ -1,5 +1,3 @@
-include "db/sqlite3/sqlite3_pool";
-
 class WikiFileModel {
   
   struct entry {
@@ -28,10 +26,23 @@ class WikiFileModel {
          None[entry]
       endif;
 
+  fun get_doc_for_edit (config:server_config,fname:string):opt[entry] = {
+    var git = match get_param(config.params,"git") with
+      |Some ?o => o
+      |_  => ""
+    endmatch;
+    if git == "remote" and ( startswith fname GIT_ROOT ) do
+      val pull_cmd = q"$(SERVER_ROOT)/scripts/git-pull.sh $(WIKI_ROOT)/$(GIT_ROOT)";
+      var handle = safer_popen(pull_cmd);
+      var results = load(handle);
+      fclose(handle);
+    done
+    return get_doc(fname);
+  }
+  
   fun get_ref_file (fn:string, path:list[string]):opt[string] = {
     var fname = fn;
     if fname.[0] == char "$" do fname = fname.[1 to]; done
-println$ ("get_ref_file:"+fname);
     val inpath:bool = match find (fun (x:string) => startswith  fname x) path with |Some _ => true |_ => false endmatch;
     if FileStat::fileexists fname do return Some fname;
     else
@@ -47,120 +58,113 @@ println$ ("get_ref_file:"+fname);
    FileStat::fileexists (Filename::join(WIKI_ROOT,fname)); 
 
 
-  gen write_doc(e:entry) = {
+  gen write_doc(e:entry):bool*string = {
     open Output_text_file;
     val full_path = Filename::join(WIKI_ROOT,e.name);
     val handle = fopen_output (full_path);
     if not valid handle do
-      println$ "Write not valid";
-      return false;
+      return false,"Error saving";
     else
       write(handle,e.content);
       fclose(handle);
-      C_hack::ignore(add-commit(e));
-      return true;
+      return add-commit(e);
     done
   }
 
  
-  gen insert_doc(e:entry):bool = {
-    //val new_file =  (FileStat::fileexists file);
-    if write_doc(e) do
-         // add doc
-      return true;
-    else
-      return false;
-    done
-  }
+  gen insert_doc(e:entry):bool*string =>
+    write_doc(e);
 
-  gen update_doc(e:entry):bool = {
-    //val new_file =  (FileStat::fileexists file);
-    if write_doc(e) do
-         // add doc
-      return true;
-    else
-      return false;
-    done
-  }
+
+  gen update_doc(e:entry):bool*string =>
+    write_doc(e);
 
   private      gen safer_popen(cmd:string)=>
        Process::popen_in(timeout+" -t 15 " + cmd + " 2>&1");
 
   val timeout = Filename::join (#Config::config.FLX_INSTALL_DIR, "bin", "timeout"+#Config::config.EXT_EXE);
 
-  gen delete_doc(fname:string):bool = {
+  gen delete_doc(fname:string):bool*string = {
     var git = match get_param(config.params,"git") with
       |Some ?o => o
       |_  => ""
     endmatch;
     val full_path = Filename::join(WIKI_ROOT,fname);
     if (FileStat::fileexists full_path) do
-      if git == "local" or git == "remote" do
-        val rm_cmd = q"$(SERVER_ROOT)/scripts/git-rm.sh $(WIKI_ROOT) $(fname)";
-        println$ "RM CMD:"+rm_cmd;
+      if ( git == "local" or git == "remote" )  and  startswith fname GIT_ROOT do
+        val rfname = fname.[len(GIT_ROOT) to];
+        val rm_cmd = q"$(SERVER_ROOT)/scripts/git-rm.sh $(WIKI_ROOT)/$(GIT_ROOT) $(rfname)";
         var rhandle = safer_popen(rm_cmd);
-        var rresults = load(rhandle);
+        var git_rm = load(rhandle);
         fclose(rhandle);
-        println$ "RM Results:"+rresults;
-        val commit_cmd = q"$(SERVER_ROOT)/scripts/git-commit.sh $(WIKI_ROOT) ./" + fname;
-        println$ "COMMIT CMD:"+commit_cmd;
-        var handle = safer_popen(commit_cmd);
-        var results = load(handle);
-        fclose(handle);
-        println$ "COMMIT Results:"+results;
-        if git == "remote" do
-          val push_cmd = q"$(SERVER_ROOT)/scripts/git-push.sh $(WIKI_ROOT)";
-          println$ "PUSH CMD:"+push_cmd;
-          handle = safer_popen(push_cmd);
-          results = load(handle);
+        val rm_ok =  not(startswith git_push "error" or startswith git_push "fatal");
+        if rm_ok do
+          val commit_cmd = q"$(SERVER_ROOT)/scripts/git-commit.sh $(WIKI_ROOT)/$(GIT_ROOT) ./" + rfname;
+          var handle = safer_popen(commit_cmd);
+          var git_commit = load(handle);
           fclose(handle);
-          println$ "PUSH Results:"+results;
-          return true;
+          var commit_ok = not(startswith git_commit "error" or startswith git_commit "fatal");
+          if git == "remote" and commit_ok do
+            val push_cmd = q"$(SERVER_ROOT)/scripts/git-push.sh $(WIKI_ROOT)/$(GIT_ROOT)";
+            handle = safer_popen(push_cmd);
+            var git_push = load(handle);
+            fclose(handle);
+            return  not(startswith git_push "error" or startswith git_push "fatal") , git_rm+git_commit+git+git_push;
+          else
+            return commit_ok,git_rm+git_commit;
+          done
         else
-          return true;
+          return  rm_ok, git_rm;
         done
       else
         if (FileSystem::unlink_file(full_path)) == 0 do
-          return true;
+          return true,"";
         else 
-          return false;
+          return false,"Error removing file";
         done
       done
-
     else
-      return false;
+      return false,"File does not exist";
     done;
   }
 
-  gen add-commit(e:entry):bool = {
+  gen add-commit(e:entry):bool*string = {
     open SimpleConfig;
     var git = match get_param(config.params,"git") with
       |Some ?o => o
       |_  => ""
     endmatch;
+    var message = "";
     val full_path = Filename::join(WIKI_ROOT,e.name);
-    if git == "local" or git == "remote" do
-     val add_cmd = q"$(SERVER_ROOT)/scripts/git-add.sh $(WIKI_ROOT) ./" + e.name;
-     println$ "ADD CMD:"+add_cmd;
-     var handle = safer_popen(add_cmd);
-     var results = load(handle);
-     fclose(handle);
-     println$ "ADD Results:"+results;
-     val commit_cmd = q"$(SERVER_ROOT)/scripts/git-commit.sh $(WIKI_ROOT) ./" + e.name;
-     println$ "COMMIT CMD:"+commit_cmd;
-     handle = safer_popen(commit_cmd);
-     results = load(handle);
-     fclose(handle);
-      println$ "COMMIT Results:"+results;
-     if git == "remote" do
-        val push_cmd = q"$(SERVER_ROOT)/scripts/git-push.sh $(WIKI_ROOT)";
-        println$ "PUSH CMD:"+push_cmd;
-        handle = safer_popen(push_cmd);
-        results = load(handle);
+    if ( git == "local" or git == "remote" )  and startswith e.name GIT_ROOT do
+      val rfname = e.name.[len(GIT_ROOT) to];
+      val add_cmd = q"$(SERVER_ROOT)/scripts/git-add.sh $(WIKI_ROOT)/$(GIT_ROOT) ./" + rfname;
+      var handle = safer_popen(add_cmd);
+      var git_add = load(handle);
+      fclose(handle);
+      val add_ok =  not(startswith git_push "error" or startswith git_add "fatal");
+      if add_ok do
+        val commit_cmd = q"$(SERVER_ROOT)/scripts/git-commit.sh $(WIKI_ROOT)/$(GIT_ROOT) ./" + rfname;
+        handle = safer_popen(commit_cmd);
+        val git_commit = load(handle);
         fclose(handle);
-        println$ "PUSH Results:"+results;
+        val commit_ok =  not(startswith git_push "error" or startswith git_commit "fatal");
+        if commit_ok do
+          if git == "remote" do
+            val push_cmd = q"$(SERVER_ROOT)/scripts/git-push.sh $(WIKI_ROOT)/$(GIT_ROOT)";
+            handle = safer_popen(push_cmd);
+            val git_push = load(handle);
+            fclose(handle);
+            val push_ok =  not(startswith git_push "error" or startswith git_push "fatal");
+            return push_ok, git_push;
+          done
+        else
+          return commit_ok,git_commit;
+        done
+      else
+        return add_ok, git_add;
       done
     done
-    return true;
+    return true,"";
   } 
 }

@@ -154,8 +154,9 @@ mathjax := '''
       true,true,if needs_mathjax then mathjax else "" endif,"<pre>"+html+"</pre>"
     | "flxh" => let ?needs_mathjax,?html = (DocumentPlugins::xlat_felix (content, path)) in
       true,true,if needs_mathjax then mathjax else "" endif,"<pre>"+html+"</pre>"
-    | "fpc" => let ?ok,?html =(DocumentPlugins::xlat_fpc (content, path)) in
-      ok,false,"","<pre>"+html+"</pre>"
+//    Currently SIGEVS when calling xlat_fpc 
+//    | "fpc" => let ?ok,?html =(DocumentPlugins::xlat_fpc (content, path)) in
+//      ok,false,"","<pre>"+html+"</pre>"
     | "fdoc" => let ?needs_mathjax, ?html = DocumentPlugins::xlat_fdoc (content,path) in
       true,true,if needs_mathjax then mathjax else "" endif,"<pre>"+html+"</pre>"
     | "ml" => let ?ok,?html = (DocumentPlugins::xlat_ocaml (content, path)) in
@@ -231,7 +232,7 @@ mathjax := '''
       return;
     done
     if has_doc(path) do
-      txt = match get_doc(path) with |Some ?e => e.content |_ => "" endmatch;
+      txt = match get_doc_for_edit(conn.config,path) with |Some ?e => e.content |_ => "" endmatch;
     done
     var fname = (get_fname(request)).or_else "";
     val html = apply_to_template("edit-body.html",
@@ -263,14 +264,15 @@ mathjax := '''
     done
     var fname= (get_fname(request)).or_else "";
     if has_doc(path) do
-      if delete_doc(path) do
-        //write(conn,make_see_other("/wiki/edit/"+path));
-        write(conn,make_html(q"<p>$(fname) deleted</p>"));
-      else
-         write(conn,make_html(q"<p>Error deleting $(fname)</p>"));
-      done
+      var retval,msg = delete_doc(path) ;
+        if retval do
+          write(conn,make_html(q"<p>$(fname) deleted\n$(msg)</p>"));
+        else
+          write(conn,make_html(q"<p>Error deleting $(fname)\n$(msg)</p>"));
+        done
+
     else
-         write(conn,make_html(q"<p>Error deleting $(fname)</p>"));
+         write(conn,make_html(q"<p>Error deleting $(fname)\n$(msg)</p>"));
     done
   }
 
@@ -286,14 +288,16 @@ mathjax := '''
       return;
     done
     var txt = strip_ctrl_m((get_post_param(request,"content")).or_else "");    
-      if (if has_doc(path) then
+      var ok,msg = if has_doc(path) then
          update_doc(entry(path,txt))
         else
           insert_doc(entry(path,txt))
-        endif) do
-        write(conn,make_html("<p>"+path+" saved!</p>"));
+        endif;
+      if ok do
+        write(conn,make_html(q"<p>$(path) saved!\n$(msg)</p>"));
       else
-        wiki(conn,request);
+        write(conn,make_html(q"<p>$(msg)</p>"));
+        //wiki(conn,request);
       done
   }
 
