@@ -37,7 +37,7 @@ function notification(content) {
   $( "#notification" ).html(content);
   var selectedEffect = "slide";
   var options = {};
-  $( "#notification" ).show( selectedEffect, options, 500, callback );
+  $( "#notification" ).show( selectedEffect, options, 5000, callback );
 }
 
 function working() {
@@ -66,7 +66,7 @@ $(function() {
 
    $( "#dialog-delete" ).dialog({
 			resizable: false,
-			height:140,
+			height:140, 
 			modal: true,
       autoOpen: false,
 			buttons: {
