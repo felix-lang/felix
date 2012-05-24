@@ -437,7 +437,7 @@ open class Ustring
   fun len: ustring -> size = "$1.size()";
   fun + : ustring * ustring -> ustring = "$1+$2";
   fun * : ustring * int -> ustring = "::flx::lib::mul($1,$2)";
-  fun * : char * int -> ustring = "ustring($2,$1)";
+  fun * : uchar * int -> ustring = "ustring($2,$1)";
 
   fun apply (x:ustring, y:ustring):ustring => x + y;
 

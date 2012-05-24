@@ -24,6 +24,31 @@ open Lexer;
 open Env;
 open System;
 
+proc print_help {
+  println$ "flx_pkgconfig [options] pkg pkg ...";
+  println$ "  returns code 1 if any packages are missing unless --noerror is specified";
+  println$ "  prints package or field list to standard output on one line";
+  println$ "options: (follows GNU conventions)";
+  println$ "  --path=dirname        set database directory name";
+  println$ "  --path+=dirname       append database directory name";
+  println$ "  -h";
+  println$ "  --hide                only process first package in path with a given name";
+  println$ "                          default, process all occurences";
+  println$ "  --list                list available packages from specified set";
+  println$ "  --missing             list missing packages from specified set";
+  println$ "  --noerror             do not return 1 because of missing packages";
+  println$ "  -r";
+  println$ "  --rec                 form transitive closure of specified set based on Requires field";
+  println$ "  --rec=field           form transitive closure of specified set based on specified field";
+  println$ "  -b";
+  println$ "  --backwards           process specified packages in reverse order";
+  println$ "  --field=field         collate values of field in package set";
+  println$ "  --keepleftmost        remove duplicate values in output keeping only leftmost occurrence";
+  println$ "  --keeprightmost       remove duplicate values in output keeping only rightmost occurrence";
+  println$ "  --keepall             keep duplicate values in output";
+  println$ "  @filename             Replace with arguments from filename, one line per argument";
+}
+
 proc pre_incr:&lex_iterator = "++*$1;";
 
 fun lexit(ini:lex_iterator, finish:lex_iterator): lex_iterator * string =
@@ -174,6 +199,9 @@ proc parse_args(args:list[string])
       elif "--path" == arg.[0 to 6] do
         path= arg.[7 to];
 
+      elif "--help" == arg do
+        print_help;
+        System::exit(0);
 
       elif "@" == arg.[0 to 1] do
         val data = load$ strip arg.[1 to];

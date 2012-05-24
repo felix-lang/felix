@@ -36,6 +36,7 @@ proc load_plugins(config_file:string)  {
         if not (have_lib lib) do
 //println$ "Adding lib " + lib;
           var linst = Dynlink::init_lib(lib + dll_extn);
+//println$ "Config text=" + config_txt;
           var sresult = (Dynlink::func1[int,string] (linst, "setup")) (config_txt);
           C_hack::ignore(sresult);
 //println$ lib+ " Library set up " + str sresult;

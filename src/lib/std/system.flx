@@ -8,10 +8,10 @@ class System
   fun argv_dflt (x:int) (y:string) => match argv x with | "" => y | ?a => a;
 
   fun args () => List::map (argv) (List::range argc);
-  fun system: string -> int = "::std::system($1.c_str())"
+  gen system: string -> int = "::std::system($1.c_str())"
     requires Cxx_headers::cstdlib;
-  fun exit: int -> any = '::std::exit($1)' requires Cxx_headers::cstdlib;
-  fun abort: 1 -> any = "::std::abort($1)" requires Cxx_headers::cstdlib;
+  gen exit: int -> any = '::std::exit($1)' requires Cxx_headers::cstdlib;
+  gen abort: 1 -> any = "::std::abort($1)" requires Cxx_headers::cstdlib;
   type ptf_t = "thread_frame_t*";
   const ptf:ptf_t = "FLX_POINTER_TO_THEAD_FRAME";
 }
