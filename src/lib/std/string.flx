@@ -318,6 +318,14 @@ open class String
   }
   fun search_and_replace (x:string, s:string, r:string) : string => search_and_replace (x,0uz,s,r);
 
+  fun search_and_replace (vs:list[string * string]) (var v:string) = {
+    match ?k,?b in vs do
+      v = search_and_replace (v,k,b);
+    done
+    return v;
+  }
+
+
   // Replace \0 \1 \2 etc in s with text from v
   fun subst(s:string, v:varray[StringPiece]): string =
   {

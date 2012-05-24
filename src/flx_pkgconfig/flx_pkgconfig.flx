@@ -31,6 +31,8 @@ proc print_help {
   println$ "options: (follows GNU conventions)";
   println$ "  --path=dirname        set database directory name";
   println$ "  --path+=dirname       append database directory name";
+  println$ "  --extension=fpc       set resource descriptor extensions,";
+  println$ "                          default 'fpc' use 'pc' for pkgconfig databases";
   println$ "  -h";
   println$ "  --hide                only process first package in path with a given name";
   println$ "                          default, process all occurences";
@@ -135,6 +137,7 @@ var return_code = 0;
 var backwards = false;
 enum keep_t {keepall, keepleftmost, keeprightmost};
 var keep= keepleftmost;
+var extension = "fpc";
 
 var i = 1;
 var arg = argv i;
@@ -170,6 +173,9 @@ proc parse_args(args:list[string])
 
       elif "--field" == arg.[0 to 7] do
         fields = fields + arg.[8 to];
+
+      elif "--extension" == arg.[0 to 11] do
+        extension = arg.[12 to];
 
       elif "-" == arg.[0 to 1] and "-" != arg.[1 to 2] do
         flags := arg.[1 to];
@@ -247,6 +253,16 @@ fun get_field(line:string):string * string =>
     endmatch
   ;
 
+
+fun get_variable(line:string):string * string =>
+    match find (line,char '=') with
+    | None => "",""
+    | Some ?n =>
+        strip line.[to n],
+        strip line.[n+1 to]
+    endmatch
+  ;
+
 proc add_val(v:string){
  result = insert_unique streq result v;
 //  result = rev$ Cons(v, rev result);
@@ -262,11 +278,13 @@ proc keep_val (v:string){
 }
 
 proc handle_pkg (pkg:string, trace:list[string]){
+   var variables = Empty[string * string];
+
    if mem streq trace pkg return;
    var found = false;
    iter(proc (dir:string){
      val filename =
-       if dir=="" then "." else dir endif + #Filename::sep + pkg + ".fpc"
+       if dir=="" then "." else dir endif + #Filename::sep + pkg + "."+extension
      ;
      //print filename; endl;
 
@@ -277,33 +295,42 @@ proc handle_pkg (pkg:string, trace:list[string]){
        var lines = Empty[string];
        var line = readln file;
        while line != "" do
-         lines = Cons(line,lines);
+         line = line.strip;
+         if line != "" and line.[0] != char "#" do
+           lines = Cons(line,lines);
+         done
          line = readln file;
-       done;
+       done
        if not backwards do lines = rev lines; done;
 
        iter (proc (line:string)
        {
          //print line;
-         def var key, var value = get_field(line);
-         if listkeys call add_val key;
-         var values = lexstr(value);
+         def var variable, var vval = get_variable(line);
+         if variable != "" do
+           var bdy = search_and_replace variables vval;
+           variables = Cons ( ("${"+variable+"}",bdy), variables);
+         else
+           def var key, var value = get_field(line);
+           if listkeys call add_val key;
+           var values = lexstr(value);
+           values = map (search_and_replace variables) values;
+           if mem streq fields key do
+             match keep with
+             | keepleftmost => { iter add_val values; }
+             | keeprightmost => { iter tail_val values; }
+             | keepall => { iter keep_val values; }
+             endmatch;
+           done;
 
-         if mem streq fields key do
-           match keep with
-           | keepleftmost => { iter add_val values; }
-           | keeprightmost => { iter tail_val values; }
-           | keepall => { iter keep_val values; }
-           endmatch;
-         done;
-
-         // chase dependent packages
-         if mem streq recfields key do
-           iter (proc (s:string){
-             handle_pkg$ s,Cons(pkg,trace);
-           })
-           values;
-         done;
+           // chase dependent packages
+           if mem streq recfields key do
+             iter (proc (s:string){
+               handle_pkg$ s,Cons(pkg,trace);
+             })
+             values;
+           done
+         done
        })
        lines
        ;
