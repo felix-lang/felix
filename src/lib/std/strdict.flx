@@ -1,0 +1,174 @@
+class StrDict[T] {
+   open Judy;
+   type strdict = new JSLArray;
+   ctor strdict() => _make_strdict$ JSLArray ();
+
+   proc add (x:strdict) (key:string) (value: T) { 
+     var err: JError_t;
+     var slot : && T; 
+     JudySLIns (_repr_ x, key.cstr, &err, C_hack::cast[&&word] (&slot));
+     slot <- new value;
+   }
+
+   ctor strdict ( kv: list[string * T] ) = {
+     var x = strdict ();
+     match ?k,?v in kv do add x k v; done
+     return x;
+   }
+
+   fun get (x:strdict) (key: string) = {
+     var err: JError_t;
+     var slot : && T; 
+     JudySLGet (_repr_ x, key.cstr, &err, C_hack::cast[&&word] (&slot));
+     return if C_hack::isNULL slot then None[T] else Some (**slot);
+   }
+
+   gen del (x:strdict) (key: string) = {
+     var err: JError_t;
+     var found : int;
+     JudySLDel (_repr_ x, key.cstr, &err, &found);
+     return found == 1; 
+   }
+
+   // with supplied buffer (unsafe!)
+   gen charp_get_ge (x:strdict) (var key: &char)= {
+     var err: JError_t;
+     var slot : && T; 
+     JudySLFirst (_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
+     if C_hack::isNULL slot do 
+       return None[T];
+     else
+       return Some (**slot);
+     done
+   }
+
+   // with strings: safer but slow
+   fun get_ge (x:strdict) (var key: string)= {
+     var err: JError_t;
+     var slot : && T; 
+     var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
+     strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+     var result = charp_get_ge x k;
+     match result with
+     | Some ?v =>
+       key = k.string;
+       free k; 
+       return Some (key,v);
+     | None=>
+       free k;
+       return None[string * T];
+     endmatch ;
+   }
+
+   // with supplied buffer (unsafe!)
+   gen charp_get_gt (x:strdict) (var key: &char)= {
+     var err: JError_t;
+     var slot : && T; 
+     JudySLNext(_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
+     if C_hack::isNULL slot do 
+       return None[T];
+     else
+       return Some (**slot);
+     done
+   }
+
+   // with strings: safer but slow
+   fun get_gt (x:strdict) (var key: string)= {
+     var err: JError_t;
+     var slot : && T; 
+     var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
+     strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+     var result = charp_get_gt x k;
+     match result with
+     | Some ?v =>
+       key = k.string;
+       free k; 
+       return Some (key,v);
+     | None=>
+       free k;
+       return None[string * T];
+     endmatch ;
+   }
+
+   // with supplied buffer (unsafe!)
+   gen charp_get_le (x:strdict) (var key: &char)= {
+     var err: JError_t;
+     var slot : && T; 
+     JudySLLast(_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
+     if C_hack::isNULL slot do 
+       return None[T];
+     else
+       return Some (**slot);
+     done
+   }
+
+   // with strings: safer but slow
+   fun get_le (x:strdict) (var key: string)= {
+     var err: JError_t;
+     var slot : && T; 
+     var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
+     strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+     var result = charp_get_le x k;
+     match result with
+     | Some ?v =>
+       key = k.string;
+       free k; 
+       return Some (key,v);
+     | None=>
+       free k;
+       return None[string * T];
+     endmatch ;
+   }
+
+   // with supplied buffer (unsafe!)
+   gen charp_get_lt (x:strdict) (var key: &char)= {
+     var err: JError_t;
+     var slot : && T; 
+     JudySLPrev (_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
+     if C_hack::isNULL slot do 
+       return None[T];
+     else
+       return Some (**slot);
+     done
+   }
+
+   // with strings: safer but slow
+   fun get_lt (x:strdict) (var key: string)= {
+     var err: JError_t;
+     var slot : && T; 
+     var k = array_alloc[char]$ JUDY_SL_MAXLEN+1; 
+     strncpy (k,key.cstr, JUDY_SL_MAXLEN);
+     var result = charp_get_lt x k;
+     match result with
+     | Some ?v =>
+       key = k.string;
+       free k; 
+       return Some (key,v);
+     | None=>
+       free k;
+       return None[string * T];
+     endmatch ;
+   }
+
+   gen charp_first (x:strdict) (buffer:&char) = {
+     buffer.[0] = char "";
+     return x.charp_get_ge buffer;
+   }
+   fun first (x:strdict) : opt[string * T] => x.get_ge("");
+
+   gen iterator (x:strdict) () : opt[string * T]  = {
+     var buffer : &char = array_alloc[char](JUDY_SL_MAXLEN+1);
+     var v = charp_first x buffer;
+     while true do
+       match v with 
+       | Some ?vv => yield Some (string buffer, vv);
+       | None => free buffer; return None[string * T];
+       endmatch;
+       v = charp_get_gt x buffer;
+     done
+   }
+}
+
+open[T] StrDict[T];
+
+

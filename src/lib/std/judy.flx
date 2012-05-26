@@ -221,6 +221,8 @@ class Judy
 
   proc free: JSLArray = "_jSLfree(NULL,$1);" requires jSLfree;
 
+  const JUDY_SL_MAXLEN : int = "JUDY_SL_MAXLEN";
+
   proc JudySLIns: JSLArray * &char * &JError_t * &&word =
     """
       if (::std::strlen($2) >= JUDY_SL_MAXLEN) throw "JudySLIns strlen>10000";

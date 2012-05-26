@@ -89,6 +89,9 @@ include "std/sarray";
 include "std/bsarray";
 include "std/judy";
 
+// dictionaries
+include "std/strdict";
+
 // tree
 include "std/avl";
 
