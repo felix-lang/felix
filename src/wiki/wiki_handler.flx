@@ -139,34 +139,34 @@ mathjax := '''
   fun format_doc (content:string,path:string):bool*bool*string*string =>
     match get_suffix(path) with
     | "cpp" => let ?ok,?html = (DocumentPlugins::xlat_cpp (content, path)) in
-      ok,false,"","<pre>"+html+"</pre>"
+      ok,false,"",html
     | "c" => let ?ok,?html = (DocumentPlugins::xlat_cpp (content, path)) in
-      ok,false,"","<pre>"+html+"</pre>"
+      ok,false,"",html
     | "cpp" => let ?ok,?html = (DocumentPlugins::xlat_cpp (content, path)) in
-      ok,false,"","<pre>"+html+"</pre>"
+      ok,false,"",html
     | "c" => let ?ok,?html = (DocumentPlugins::xlat_cpp (content, path)) in
-      ok,false,"","<pre>"+html+"</pre>"
+      ok,false,"",html
     | "h" => let ?ok,?html = (DocumentPlugins::xlat_cpp (content, path)) in
-      ok,false,"","<pre>"+html+"</pre>"
+      ok,false,"",html
     | "hpp" => let ?ok,?html = (DocumentPlugins::xlat_cpp (content, path)) in
-      ok,false,"","<pre>"+html+"</pre>"
+      ok,false,"",html
     | "flx" => let ?needs_mathjax,?html = (DocumentPlugins::xlat_felix (content, path)) in
-      true,true,if needs_mathjax then mathjax else "" endif,"<pre>"+html+"</pre>"
+      true,true,if needs_mathjax then mathjax else "" endif,html
     | "flxh" => let ?needs_mathjax,?html = (DocumentPlugins::xlat_felix (content, path)) in
-      true,true,if needs_mathjax then mathjax else "" endif,"<pre>"+html+"</pre>"
+      true,true,if needs_mathjax then mathjax else "" endif,html
 //    Currently SIGEVS when calling xlat_fpc 
 //    | "fpc" => let ?ok,?html =(DocumentPlugins::xlat_fpc (content, path)) in
-//      ok,false,"","<pre>"+html+"</pre>"
+//      ok,false,"",html
     | "fdoc" => let ?needs_mathjax, ?html = DocumentPlugins::xlat_fdoc (content,path) in
-      true,true,if needs_mathjax then mathjax else "" endif,"<pre>"+html+"</pre>"
+      true,true,if needs_mathjax then mathjax else "" endif,html
     | "ml" => let ?ok,?html = (DocumentPlugins::xlat_ocaml (content, path)) in
-      ok,false,"","<pre>"+html+"</pre>"
+      ok,false,"",html
     | "mli" => let ?ok,?html = (DocumentPlugins::xlat_ocaml (content, path)) in
-      ok,false,"","<pre>"+html+"</pre>"
+      ok,false,"",html
     | "py" => let ?ok,?html = DocumentPlugins::xlat_py (content, path) in
-      ok,false,"","<pre>"+html+"</pre>"
+      ok,false,"",html
     | ?b    =>  let ?ok,?html = (DocumentPlugins::xlat_felix (content, path)) in
-      ok,true,"","<pre>"+content+"</pre>"
+      ok,true,"",content
     endmatch;
   
   fun get_title(conn:http_connection,request:http_request):string = {
