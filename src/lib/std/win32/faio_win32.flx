@@ -110,12 +110,12 @@ fun == : WFILE*WFILE -> bool = '($1 == $2)';
 // final NULL is for template file. not sure what it does, but I don't want it.
 // notice that it's opened for SHARED reading
 gen OpenFile: string -> WFILE =
-  '''CreateFile($2.c_str(), FILE_READ_DATA, FILE_SHARE_READ, NULL,
+  '''CreateFile($1.c_str(), FILE_READ_DATA, FILE_SHARE_READ, NULL,
     OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL)''';
 
 // basically for windows named pipes
 gen OpenFileDuplex: string -> WFILE =
-  '''CreateFile($2.c_str(), FILE_READ_DATA | FILE_WRITE_DATA,
+  '''CreateFile($1.c_str(), FILE_READ_DATA | FILE_WRITE_DATA,
      FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
      FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL)''';
 

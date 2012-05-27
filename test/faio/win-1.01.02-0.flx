@@ -14,7 +14,7 @@ var pname = r"\\.\pipe\flx_pipe";
 // associating with the iocp doesn't work, the pipe must be created with
 // FILE_FLAG_OVERLAPPED set in dwOpenMode. Otherwise OVERLAPPED calls block.
 gen CreateNamedPipe: string -> WFILE =
- '''CreateNamedPipe($2.c_str(), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
+ '''CreateNamedPipe($1.c_str(), PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
      PIPE_TYPE_BYTE, 1, 256, 256, 0, NULL);''';
 
 // OpenFile in faio_win32 should work fine here
@@ -120,7 +120,7 @@ proc getbyte(f: WFILE, outc: &char)
   var len = 1;
   var eof: bool;
 
-  ReadFile(f, &len, ac.address &eof);
+  ReadFile(f, &len, ac.address, &eof);
   *outc = c;
 }
 
@@ -131,7 +131,7 @@ proc putbyte(f: WFILE, c: char)
   var len = 1;
   var eof: bool;
 
-  WriteFile(f, &len, ac.address &eof);
+  WriteFile(f, &len, ac.address, &eof);
 }
 
 // spawn a connect fthread after having created the named pipe
