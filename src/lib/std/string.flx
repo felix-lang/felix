@@ -33,7 +33,8 @@ open class String
   fun + : string * &char -> string = "$1+$2";
   fun + : string * char -> string = "$1+$2";
   fun + : char * string -> string = "$1+$2";
-  fun + : string * int -> string = "$1+::flx::rtl::i18n::utf8($2:assign)" is add requires package "flx_i18n";
+  //fun + : string * int -> string = "$1+::flx::rtl::i18n::utf8($2:assign)" is add requires package "flx_i18n";
+  fun + ( x:string,  y: int) => x + str y;
   fun * : string * int -> string = "::flx::rtl::strutil::mul($1:assign,$2:assign)" requires package "flx_strutil";
   fun * : char * int -> string = "::std::string($2:assign,$1:assign)";
 
@@ -44,6 +45,7 @@ open class String
   ctor string (c:char) => ""+c;
   ctor string: &char = "::std::string($1:assign)";
   ctor string: &char  * !ints = "::std::string($1:assign,$2:assign)";
+  fun utf8: int -> string = "::flx::rtl::i18n::utf8($1)" requires package "flx_i18n";
 
   fun subscript: string * !ints -> char =
     "::flx::rtl::strutil::subscript($1:assign,$2:assign)" requires package "flx_strutil";
