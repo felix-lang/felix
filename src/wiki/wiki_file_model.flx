@@ -26,6 +26,17 @@ class WikiFileModel {
          None[entry]
       endif;
 
+  fun get_html_doc (fname:string):opt[entry] = {
+    val full_path = Filename::join(TEMPLATE_ROOT,fname);
+    if (FileStat::fileexists full_path)  do
+        return Some (entry(fname,(load(full_path))));
+      else
+         return None[entry];
+      done;
+  }
+   fun has_html_doc (fname:string):bool =>
+     FileStat::fileexists (Filename::join(TEMPLATE_ROOT,fname)); 
+
   fun get_doc_for_edit (config:server_config,fname:string):opt[entry] = {
     var git = match get_param(config.params,"git") with
       |Some ?o => o

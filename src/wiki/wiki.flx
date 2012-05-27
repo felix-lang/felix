@@ -40,9 +40,9 @@ C_PATH += /usr/local/lib/felix/felix-1.1.7dev/lib/rtl
 FLX_PATH += /usr/local/lib/felix/felix-1.1.7dev/lib
 FLX_PKGCONFIG_PATH += /usr/local/lib/felix/felix-1.1.7dev/config
 DB = $server_root/db/wiki.db
-WIKI_ROOT=$server_root/content
+WIKI_ROOT=$INSTALL_ROOT/wiki/content
 GIT_ROOT=wiki
-TEMPLATE_ROOT=$server_root/html
+TEMPLATE_ROOT=$INSTALL_ROOT/wiki/html
 info_log=wiki.log
 #Enable git backing of wiki content by uncommenting below
 # Requires WIKI_ROOT reference a git repository
@@ -99,10 +99,32 @@ val TEMPLATE_ROOT = match apply_param_vars_to(config.params,
                 |Cons(?p,_) => p
                 |_ => "."
                 endmatch;
+if not TEMPLATE_ROOT.FileStat::fileexists do
+  fail(q"Template root directory $(TEMPLATE_ROOT) does Not exist"); 
+done
 val C_PATH = apply_param_vars_to(config.params,
                                     get_param_list(config.params,"C_PATH"));
 val FLX_PKGCONFIG_PATH = apply_param_vars_to(config.params,
                                              get_param_list(config.params,"FLX_PKGCONFIG"));
+val config_dir = Filename::join(config.server_root,"config");
+if not config_dir.FileStat::fileexists do
+  println$ "Configuration directory does not exist creating:"+config_dir;
+  if (config_dir.PosixDirectory::mkdir != 0) do
+    fail("Unable to create config directory " + config_dir);
+  done
+done
+val config_file = Filename::join(config_dir,"server_config.cfg");
+if not config_file.FileStat::fileexists do
+  println$ "Creating:"+config_file;
+  val handle = fopen_output (config_file);
+  if not valid handle do
+    fail("Unable to create config file " + config_file);
+  else
+    write(handle,default_config_txt);
+    fclose(handle);
+    config.file_name = config_file;
+  done
+done
 
 val log_dir = Filename::join(config.server_root,"log");
 if not log_dir.FileStat::fileexists do

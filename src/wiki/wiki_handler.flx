@@ -37,11 +37,12 @@ class WikiHandler {
 //      Cons (http_handler(search_route,search),
       Cons (http_handler(dir_route,requires_group_auth(dir)),
       Cons (http_handler(pull_route,requires_group_auth(pull)),
+      Cons (http_handler(html_route,requires_group_auth(html)),
       Cons (http_handler(wiki_route,requires_group_auth(wiki)),
       Cons (http_handler(web_route,requires_group_auth(web)),
       Cons (http_handler(lib_route,requires_group_auth(lib)),
       Cons (http_handler(inc_route,requires_group_auth(inc)),
-      Empty[http_handler])))))))))))))))))))))));
+      Empty[http_handler]))))))))))))))))))))))));
 
   fun auth_source(uname:string,passwd:string):bool => 
     db_get_auth_fdoc(uname,passwd);
@@ -219,6 +220,28 @@ mathjax := '''
          Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
          Empty[string^2])))))));
     write(conn,data);
+  }
+
+ fun html_route(config:server_config,request:http_request) ={
+   return startswith request.path  "/js/" or startswith request.path  "/css/" or
+     startswith request.path  "/images/" or startswith request.path  "/CodeMirror/";
+
+  }
+
+
+  proc html (conn:http_connection, request:http_request ) {
+    if  has_html_doc(request.path) do
+      match get_html_doc(request.path) with
+        | Some ?s => {write(conn,make_html(s.content));}
+        | _ => { handle_not_found(conn,request); }
+      endmatch;
+    elif (handle_css_route(conn.config,request)) do handle_css(conn,request);  
+    elif (handle_js_route(conn.config,request)) do handle_js(conn,request);
+    elif (handle_image_route(conn.config,request)) do handle_image(conn,request);
+    else
+        handle_not_found(conn,request);
+    done
+    return;
   }
 
 
@@ -687,7 +710,6 @@ mathjax := '''
     var grp = (get_post_param(request,"grp")).or_else "";
     var path = (get_post_param(request,"path")).or_else "";
     var lvl = (get_post_param(request,"lvl")).or_else "";
-    println$ q"path_edit $(grp),$(path),$(lvl)";
     val message = if (if db_has_path(path,grp) then
           db_update_path(path,grp,lvl)
         else
