@@ -1,4 +1,4 @@
-let version = "20120419"
+let version = "20120528"
 
 let list_map f l = List.rev (List.rev_map f l)
 
@@ -3016,7 +3016,7 @@ type ('token,'obj,'data,'local_data,'lexbuf) vertex = {
   token read before creating this stack node.
   Second bit = 1 if layout char are allowed to be read before the
   next token. *)
-  lexer_pos : Lexing.position;
+  lexer_pos : Lexing.position; (* this is the position just after the token *)
   mutable succ_edges : (('token,'obj,'data,'local_data,'lexbuf) edge) list;
   mutable prev_nodes_eps : ('token,'obj,'data,'local_data,'lexbuf) vertex list;
   (* stack nodes that point to this node and that have the same last_token,
@@ -3042,7 +3042,8 @@ and ('token,'obj,'data,'local_data,'lexbuf) edge = {
   mutable edge_label : 'obj list;
   mutable edge_id : int;
   mutable dest : ('token,'obj,'data,'local_data,'lexbuf) vertex;
-  mutable parse_tree : string
+  mutable parse_tree : string;
+  e_lexer_pos : Lexing.position; (* this is the position just before the token, after layout chars *)
   (*mutable edge_reduced : bool;*)
   (* tells whether the edge has been used for a reduction *)
   (*mutable reduction_list :
@@ -3071,10 +3072,11 @@ and ('token,'obj,'data,'local_data,'lexbuf) edge = {
   in
   List.iter (aux (fun _ -> ())) topmost*)
 
-let create_e v1 label id v2 f topmost pt =
+let create_e v1 label id v2 f topmost pt e_lexer_pos =
   let new_edge = {
     edge_label = label; edge_id = id; dest = v2;
-    parse_tree = pt
+    parse_tree = pt;
+    e_lexer_pos = e_lexer_pos
     (*edge_reduced = false;*) (*reduction_list = None*) }
   in
   v1.succ_edges <- new_edge::(v1.succ_edges);
@@ -3695,7 +3697,7 @@ let merge_in_edge ppar counters edge_nb (sn, link, cons_index, objdata_list) (to
       in
       let new_edge = create_e rightSib
         obj_list counters.counted link.dest
-        (check_last_token link.dest.last_token) topmost link.parse_tree in
+        (check_last_token link.dest.last_token) topmost link.parse_tree link.e_lexer_pos in
       if !dypgen_verbose>2 then
         (print_sn rightSib;
         Printf.fprintf !log_channel
@@ -3786,7 +3788,7 @@ let position_map p start_node =
     | [] -> res
     | e::t ->
         let pos = e.dest.lexer_pos in
-        aux ((e.dest.lexer_pos, lpos)::res) pos t
+        aux ((e.e_lexer_pos, lpos)::res) pos t
   in
   aux [] start_node.lexer_pos (List.rev p)
 
@@ -3962,7 +3964,7 @@ v_rightSib new_obj nt lexer_pos prio counters ppar merge_map cons_index layout_f
         ppar.local_data_equal rightSib.local_data local_data_rS then ()
         else raise Find_rightSib_failed;
       let link = create_e rightSib [new_obj] counters.counted leftSib
-        (check_last_token leftSib.last_token) topmost pt in
+        (check_last_token leftSib.last_token) topmost pt (fst symbol_pos) in
       if !dypgen_verbose>2 then
         Printf.fprintf !log_channel
         "complete_reduction creates a new edge:\n[%d]-%d-[%d]\n"
@@ -3988,7 +3990,8 @@ v_rightSib new_obj nt lexer_pos prio counters ppar merge_map cons_index layout_f
       counters.count_token (snd symbol_pos) layout_flags (leftSib.det_depth+1) nt new_vs
     in
     let _ = create_e rightSib [new_obj] counters.counted leftSib
-      (check_last_token leftSib.last_token) topmost pt in
+      (check_last_token leftSib.last_token) topmost pt (fst symbol_pos)
+    in
     if !dypgen_verbose>2 then
       (print_sn rightSib;
       Printf.fprintf !log_channel
@@ -4514,7 +4517,9 @@ let do_shifts_for_each tok_name tok_value prevTops lexbuf counters ppar layout l
         (fun sn -> sn.pdev.state_is_mergeable.(sn.state_nb)) (*(-1) (-1)*)
       in
       let _ = create_e rightSib [tok_value] counters.counted sn
-        (check_last_token sn.last_token) topmost pt in
+        (check_last_token sn.last_token) topmost pt
+        (fst (ppar.lexbuf_position_fun lexbuf))
+      in
       if (!dypgen_verbose>2) then
         Printf.fprintf !log_channel
         "do_shifts creates a new edge:\n  [%d]-%d-[%d]\n"
@@ -4522,13 +4527,14 @@ let do_shifts_for_each tok_name tok_value prevTops lexbuf counters ppar layout l
       counters.counted <- counters.counted + 1;
       topmost
     with Find_rightSib_failed ->
+      let fst_pos, snd_pos = ppar.lexbuf_position_fun lexbuf in
       let rightSib =
         create_v next_state parsing_device sn.global_data sn.local_data counters.countsn
-        counters.count_token (snd (ppar.lexbuf_position_fun lexbuf))
+        counters.count_token snd_pos
         layout_flags (sn.det_depth+1) 0 Intc_map.empty
       in
       let _ = create_e rightSib [tok_value] counters.counted sn
-        (check_last_token sn.last_token) topmost pt in
+        (check_last_token sn.last_token) topmost pt fst_pos in
       if !dypgen_verbose>2 then
         (print_sn rightSib;
         Printf.fprintf !log_channel
