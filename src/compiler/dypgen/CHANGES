@@ -1,3 +1,9 @@
+2012/05/28
+
+Fixed a bug that made the parser return wrong beginning positions for the
+matched symbols (layout characters were not skipped).
+
+__________________________________________________________________________
 2012/04/19
 
 Fixed a bug that made the parser return wrong positions for the matched
