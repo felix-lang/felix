@@ -40,6 +40,8 @@ class SimpleConfig {
       val handle = fopen_input config_file;
       if valid handle do
         val config_text = load(handle);
+        println$ "Loaded config file " + config_file;
+        print$ "[Config Data]\n" + config_text+"[End Config Data]\n";
         iter (proc (line:string) {config = config + parse(line);})  
              (split(str(config_text),"\n"));
         fclose(handle);
