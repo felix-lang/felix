@@ -15,6 +15,7 @@ open class Errno
   const EAGAIN: errno_t;
   const ENOMEM: errno_t;
   const EEXIST: errno_t;
+  const EINVAL: errno_t;
   const EINTR: errno_t; // call interrupted by a signal
 
   proc maybe_exit(var n:int) { if n != 0 do System::exit(errno.int); done }
