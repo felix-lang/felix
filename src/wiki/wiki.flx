@@ -89,5 +89,4 @@ config.log(INFO,"Starting wiki server");
 config.log(CUSTOM1,"Starting reop server");
 
 load_plugins(config.file_name);
-println$  (str(config));
 start_webserver(config);

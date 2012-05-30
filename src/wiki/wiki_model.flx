@@ -310,8 +310,6 @@ FROM users WHERE user='"""+name+"' AND password='"+Base64::encode(passwd)+"'";
   done
 } */
 
-
-
   gen db_create_db(wiki_db_file_name:string):bool*string = {
     // Autocreate wiki db
     var wiki_db_create_sql = """
