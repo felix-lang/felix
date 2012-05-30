@@ -11,6 +11,12 @@ module Sqlite3 {
     "sqlite3_exec($1,$2.c_str(),$3,$4,$5)"
   ;
 
+  gen sqlite3_exec :
+    sqlite3_db_t * string * &&char -> int =
+    "sqlite3_exec($1,$2.c_str(),0,0,$3)"
+  ;
+
+
   gen sqlite3_errmsg : sqlite3_db_t -> &char=
     "(char*)sqlite3_errmsg($1)"
   ;
