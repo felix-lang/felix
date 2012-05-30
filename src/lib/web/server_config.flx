@@ -140,5 +140,13 @@ class ServerConfig {
 
   fun strtod: string -> double = "strtod($1.data(),0)";
 
+
+  instance Str[server_config] {
+    fun str (cfg : server_config):string =>
+       "Config file:" + cfg.file_name "\n" +
+       (fold_left (fun(i:string) (c:string^2):string => 
+         (i + c.(0) + " = " + c.(1) + "\n") ) "" (cfg.params));
+  }
+
 }
 

@@ -13,50 +13,12 @@ open WebServer;
 open Csv;
 open Assoc_list;
 open ServerConfig;	
+open Str[server_config];
 open SimpleConfig;
 
-var wiki_db_init_sql = """
-create table fdocs (
-  name text primary key,
-  content text,
-  modified_on timestamp,
-  modified_by text );
-
-create table users (
-  user text primary key,
-  password text,
-  grp text,
-  name text,  
-  email text
-);
-
-create table fdocs_archive (
-  name text primary key,
-  content text,
-  modified_on timestamp,
-  modified_by text );
-
-create table authorized_paths (
-  path text,
-  grp text);
-
-create table grp (
-  grp text,
-  description);
- 
-create table locks (
-path text primary key,
-user text,
-ts timestamp);
-
-create table paths (
-path text ,
-grp txt,
-lvl text,
-primary key(path,grp));
-""";
 
 var config = basic_server_config( WikiHandler::app_handlers() + default_handlers(),"wiki");
+
 val info_logger = match SimpleConfig::get_param(config.params,"info_log") with 
   |Some ?s => simple_logger(Logger::log(config.server_root+"/log",s,size(1000000),2ui),
                                         INFO)
@@ -78,23 +40,13 @@ var wiki_db_file_name =
   endmatch
 ;
 println$ "wiki db name = " wiki_db_file_name;
-
-// Autocreate wiki db
 if not wiki_db_file_name.FileStat::fileexists do
   println$ "Wiki db doesn't exist, creating it";
-  var db : Sqlite3::sqlite3_db_t;
-  var err = Sqlite3::sqlite3_open(wiki_db_file_name, &db);
-  if err != 0 do
-    fail ("sqlite3 cannot open database file " + wiki_db_file_name + ", aborting");
-  done
-  var errmsg : &char;
-  err = Sqlite3::sqlite3_exec (db,wiki_db_init_sql, &errmsg);
-  if err != 0 do
-    println$ "Sqlite3 return error creating database: " + string(errmsg);
-  done
-  Sqlite3::sqlite3_close(db);
+  match (WikiModel::db_create_db(wiki_db_file_name)) with
+  | false,?m => fail(m);
+  | true,?m => println$ m;
+  endmatch;
 done
-
 val db_pool: Pool::pool[Sqlite3::sqlite3_db_t] = 
   Sqlite3Pool::sqlite3_pool(wiki_db_file_name)
 ;
@@ -131,5 +83,11 @@ val C_PATH = apply_param_vars_to(config.params,
                                     get_param_list(config.params,"C_PATH"));
 val FLX_PKGCONFIG_PATH = apply_param_vars_to(config.params,
                                              get_param_list(config.params,"FLX_PKGCONFIG"));
+
+
+config.log(INFO,"Starting wiki server");
+config.log(CUSTOM1,"Starting reop server");
+
 load_plugins(config.file_name);
+println$  (str(config));
 start_webserver(config);

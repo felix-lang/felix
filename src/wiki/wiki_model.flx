@@ -225,7 +225,6 @@ FROM users WHERE user='"""+name+"' AND password='"+Base64::encode(passwd)+"'";
     val db = let Some ?d = db_pool.get_next() in d;
     val qry = q"""INSERT INTO paths (path,grp,lvl)
                   VALUES ('$(path)','$(grp)','$(lvl)')""";
-println$ q"Add QRY$(qry)";
     match sqlite3_prepare_stmt(db,qry) with
       | qry_ok ?s  => return sqlite3_execute(s); 
       | qry_fail (?c,?m) =>return false;
@@ -238,7 +237,6 @@ println$ q"Add QRY$(qry)";
     
     val qry = q"""UPDATE paths SET path='$(path)',grp='$(grp)',lvl='$(lvl)'
                   WHERE path='$(path)' AND grp='$(grp)'""";
-println$ q"Update QRY$(qry)";
     match sqlite3_prepare_stmt(db,qry) with
       | qry_ok ?s  => return sqlite3_execute(s); 
       | qry_fail (?c,?m) =>return false;
@@ -250,7 +248,6 @@ println$ q"Update QRY$(qry)";
   gen db_delete_path(path:string,grp:string):bool = {
     val db = let Some ?d = db_pool.get_next() in d;
     val qry = q"DELETE FROM paths WHERE path='$(path)' AND grp='$(grp)'";
-println$ q"DELETE QRY$(qry)";
     match sqlite3_prepare_stmt(db,qry) with
       | qry_ok ?s  => return sqlite3_execute(s); 
       | qry_fail (?c,?m) =>return false;
@@ -312,5 +309,74 @@ println$ q"DELETE QRY$(qry)";
     println$ "No match " + s;
   done
 } */
+
+
+
+  gen db_create_db(wiki_db_file_name:string):bool*string = {
+    // Autocreate wiki db
+    var wiki_db_create_sql = """
+BEGIN IMMEDIATE TRANSACTION;
+create table fdocs (
+  name text primary key,
+  content text,
+  modified_on timestamp,
+  modified_by text );
+
+create table users (
+  user text primary key,
+  password text,
+  grp text,
+  name text,  
+  email text
+);
+
+create table fdocs_archive (
+  name text primary key,
+  content text,
+  modified_on timestamp,
+  modified_by text );
+
+create table authorized_paths (
+  path text,
+  grp text);
+
+create table grp (
+  grp text,
+  description);
+ 
+create table locks (
+path text primary key,
+user text,
+ts timestamp);
+
+create table paths (
+path text ,
+grp txt,
+lvl text,
+primary key(path,grp));
+INSERT INTO users (user,password,grp,name,email) VALUES('felix','ZmVsaXg=','admin','Wiki Administrator','');
+INSERT INTO grp (grp,description) VALUES('admin','Wiki Administrators');
+INSERT INTO grp (grp,description) VALUES('public','Public');
+INSERT INTO paths (path,grp,lvl) values ('.*','public','');
+INSERT INTO paths (path,grp,lvl) values ('.*','admin','');
+
+COMMIT TRANSACTION;
+""";
+    var errmsg: &char;
+    var db : Sqlite3::sqlite3_db_t;
+    var err = Sqlite3::sqlite3_open(wiki_db_file_name, &db);
+    if err != 0 do
+      return false,("sqlite3 cannot open database file " + wiki_db_file_name + ", aborting");
+    done
+    
+    val ret = if sqlite3_exec(db,wiki_db_create_sql,&errmsg) == 0 then 
+                true,("wiki database created successfully") 
+              else 
+                false,("Sqlite3 return error creating database: "+str(errmsg))
+    endif; 
+    Sqlite3::sqlite3_close(db);
+    return ret;
+  }
+
 
 }
