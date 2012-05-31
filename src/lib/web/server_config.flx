@@ -26,12 +26,26 @@ class ServerConfig {
     logger(console_logger(INFO)+console_logger(ERROR)),Empty[string*string],"",app);
 
 
-  fun basic_server_config(handlers:list[http_handler]):server_config => 
-    enhance_with_config_file( enhance_with_command_line_arguments(server_config(handlers)));
+  fun basic_server_config(handlers:list[http_handler]):server_config = { 
+    var cfg = server_config(handlers);
+    match enhance_with_config_file( 
+     enhance_with_command_line_arguments(cfg)) with
+    |Some(?cfg),_ => return cfg;
+    |None,?m => return cfg;
+    endmatch;
+    
+  }
   
-  fun basic_server_config(handlers:list[http_handler],application:string):server_config => 
-    enhance_with_config_file( enhance_with_command_line_arguments(server_config(handlers,application)));
+  fun basic_server_config(handlers:list[http_handler],application:string,default_config:string):server_config = {
+    var config = server_config(handlers,application);
+    match enhance_with_config_file( 
+      enhance_with_command_line_arguments(config)) with
+    |Some(?cfg),_ => return cfg;
+    |None,?m =>  set_params(&config,read_config_text(default_config));
+                 return config;
+    endmatch;
 
+ }
 
   fun enhance_with_command_line_arguments(var config:server_config):server_config = {
     var cfg:server_config = config;
@@ -79,7 +93,7 @@ class ServerConfig {
   private fun toupper: char->char = "(char)std::toupper($1)";
 
 
-  fun enhance_with_config_file(config:server_config):server_config = {
+  fun enhance_with_config_file(config:server_config):opt[server_config]*string = {
     var cfg = config;
     val config_file_default = Filename::join("config","server_config.cfg");
     val enviro_config = Env::getenv((map toupper cfg.application)+"_CFG","");
@@ -91,15 +105,14 @@ class ServerConfig {
             else
                 var home = Env::getenv("HOME","");
                 if home == "" do
-                    fail "Unable to open configuration file.";
+                   return None[server_config],"Unable to open configuration file HOME environment variable undefined.";
                 else
                     var home_config = Filename::join(home,
                     Filename::join(".felix",Filename::join(cfg.application,config_file_default)));
                     if FileStat::fileexists(home_config) do
                         cfg.file_name = home_config;
                     else
-                        fail ("Unable to open configurationfile:" + home_config);
-                        return cfg;
+                        return None[server_config],("Unable to open configurationfile:" + home_config);
                     done
                 done
             done
@@ -107,35 +120,37 @@ class ServerConfig {
             if FileStat::fileexists(enviro_config) do
                 cfg.file_name = enviro_config;
             else
-                fail ("Unable to open configurationfile:" + enviro_config);
+                return None[server_config],("Unable to open configurationfile:" + enviro_config);
             done
         done
     else
         if not(FileStat::fileexists(cfg.file_name)) do
-            fail ("Unable to open configurationfile:" + cfg.file_name);
-            return cfg;
+            return None[server_config], ("Unable to open configurationfile:" + cfg.file_name);
         done
     done
+    set_params(&cfg,read_config(cfg.file_name));
+    return Some(cfg),("Configuration file " + cfg.file_name + " read.");
+  }
 
-    var params = read_config(cfg.file_name);
-    cfg.params = params;
+  proc set_params(cfg:&server_config,params:list[string^2]) {
+    *cfg.params = params;
     match find (fun (a:string,b:string) => eq(a,b)) params "port" with 
-      |Some ?s => cfg.port = int(s);
+      |Some ?s => *cfg.port = int(s);
       |_ => {}();
     endmatch;
     match find (fun (a:string,b:string) => eq(a,b)) params "server_root" with 
-      |Some ?s => cfg.server_root = s;
+      |Some ?s => *cfg.server_root = s;
       |_ => {}();
     endmatch;
     match find (fun (a:string,b:string) => eq(a,b)) params "document_root" with 
-      |Some ?s => cfg.document_root = s;
+      |Some ?s => *cfg.document_root = s;
       |_ => {}();
     endmatch;
     match find (fun (a:string,b:string) => eq(a,b)) params "delay" with 
-      |Some ?s => cfg.delay = double(s);
+      |Some ?s => *cfg.delay = double(s);
       |_ => {}();
     endmatch;
-    return cfg;
+
   }
 
   fun strtod: string -> double = "strtod($1.data(),0)";
