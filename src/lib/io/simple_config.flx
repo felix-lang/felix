@@ -34,22 +34,29 @@ class SimpleConfig {
   """
   fun read_config(config_file:string):configuration = {
     val fsz =  fsize(config_file);
-    var config = Cons(('INSTALL_ROOT',#Config::config.FLX_INSTALL_DIR),
-                      Empty[string*string]);
+    var config = Empty[string^2];
     if fsz > size(0) and fsz < size(65535) do 
       val handle = fopen_input config_file;
       if valid handle do
         val config_text = load(handle);
-        println$ "Loaded config file " + config_file;
-        print$ "[Config Data]\n" + config_text+"[End Config Data]\n";
-        iter (proc (line:string) {config = config + parse(line);})  
-             (split(str(config_text),"\n"));
         fclose(handle);
+        println$ "Loaded config file " + config_file;
+        config = config + read_config_text(config_text);
       done
     done
-    return apply_param_vars(config);
+    return config;
   }
   
+  fun read_config_text(config_text:string):configuration ={
+    print$ "[Config Data]\n" + config_text+"[End Config Data]\n";
+    var config = Cons(('INSTALL_ROOT',#Config::config.FLX_INSTALL_DIR),
+                      Empty[string^2]);
+    iter (proc (line:string) {config = config + parse(line);})  
+             (split(str(config_text),"\n"));
+    return apply_param_vars(config);
+  }    
+
+
   publish """
     returns opt param value for given key
   """
