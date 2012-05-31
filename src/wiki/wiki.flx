@@ -16,43 +16,58 @@ open ServerConfig;
 open Str[server_config];
 open SimpleConfig;
 
+var home = Env::getenv("HOME","");
+var SERVER_ROOT = if home == "" then
+  "."
+else
+  Filename::join(home,Filename::join(".felix","wiki"))
+endif;
 
-var config = basic_server_config( WikiHandler::app_handlers() + default_handlers(),"wiki");
+var default_config_txt = "server_root=" + SERVER_ROOT + """
+delay=0.05
+port=8080
+document_root=$server_root/html
+C_PATH += /usr/include/c++/4.2.1
+C_PATH += /usr/include/c++/4.2.1/x86_64-apple-darwin10
+C_PATH += /usr/include/c++/4.4.3
+C_PATH += /usr/include/c++/4.4.3/x86_64-linux-gnu
+C_PATH += /usr/include/c++/4.6.2
+C_PATH += /usr/include/c++/4.6.2/x86_64-linux-gnu
+C_PATH +=/usr/local/include
+C_PATH +=/usr/include
+C_PATH += /usr/lib/gcc/x86_64-linux-gnu/4.4.3/include
+C_PATH += /usr/local/lib/felix/felix-1.1.7dev/lib/rtl
+FLX_PATH += /usr/local/lib/felix/felix-1.1.7dev/lib
+FLX_PKGCONFIG_PATH += /usr/local/lib/felix/felix-1.1.7dev/config
+DB = $server_root/db/wiki.db
+WIKI_ROOT=$server_root/content
+GIT_ROOT=wiki
+TEMPLATE_ROOT=$server_root/html
+info_log=wiki.log
+#Enable git backing of wiki content by uncommenting below
+# Requires WIKI_ROOT reference a git repository
+# If repository is remote requires either unsigned ssh key
+# or ssh_agent
+# for remote repository set git = remote
+# for local repository set git = local
+#git=local
+#git=remote
+extension flx   -> flx2html::xlat_felix
+extension flxh  -> flx2html::xlat_felix
+extension c     -> cpp2html::xlat_cpp
+extension cpp   -> cpp2html::xlat_cpp
+extension cxx   -> cpp2html::xlat_cpp
+extension h     -> cpp2html::xlat_cpp
+extension hpp   -> cpp2html::xlat_cpp
+extension fpc   -> fpc2html::xlat_fpc
+extension fdoc  -> fdoc2html::xlat_fdoc
+extension ml    -> ocaml2html::xlat_ocaml
+extension mli   -> ocaml2html::xlat_ocaml
+extension py    -> py2html::xlat_py
+""";
 
-val info_logger = match SimpleConfig::get_param(config.params,"info_log") with 
-  |Some ?s => simple_logger(Logger::log(config.server_root+"/log",s,size(1000000),2ui),
-                                        INFO)
-  |_ => Empty[log_handler]
-endmatch;
-val debug_logger = match SimpleConfig::get_param(config.params,"debug_log") with 
-  |Some ?s => simple_logger(Logger::log(config.server_root+"/log",s,size(1000000),2ui),
-                                        DEBUG)
-  |_ => Empty[log_handler]
-endmatch;
+var config = basic_server_config( WikiHandler::app_handlers() + default_handlers(),"wiki",default_config_txt);
 
-config.log  = logger(debug_logger +info_logger  );
-
-
-var wiki_db_file_name = 
-  match (get_param_list(config.params,"DB")) with
-    | Cons(?s,_) => s
-    | _ => "db/wiki.db"
-  endmatch
-;
-println$ "wiki db name = " wiki_db_file_name;
-if not wiki_db_file_name.FileStat::fileexists do
-  println$ "Wiki db doesn't exist, creating it";
-  match (WikiModel::db_create_db(wiki_db_file_name)) with
-  | false,?m => fail(m);
-  | true,?m => println$ m;
-  endmatch;
-done
-val db_pool: Pool::pool[Sqlite3::sqlite3_db_t] = 
-  Sqlite3Pool::sqlite3_pool(wiki_db_file_name)
-;
-
-config.log(INFO,"Starting wiki server");
-config.log(CUSTOM1,"Starting reop server");
 
 val INSTALL_ROOT = #Config::config.FLX_INSTALL_DIR;
 val FLX_PATH = apply_param_vars_to(config.params,
@@ -69,11 +84,16 @@ val GIT_ROOT = match apply_param_vars_to(config.params,
                 |Cons(?p,_) => p
                 |_ => "!"
                 endmatch;
-val SERVER_ROOT = match apply_param_vars_to(config.params, 
+    SERVER_ROOT = match apply_param_vars_to(config.params, 
                                     get_param_list(config.params,"server_root")) with
                 |Cons(?p,_) => p
                 |_ => "."
                 endmatch;
+if not SERVER_ROOT.FileStat::fileexists do
+  if (SERVER_ROOT.PosixDirectory::mkdir != 0) do
+    fail(q"server_root $(SERVER_ROOT) does not exist and was unable to be created");
+  done
+done
 val TEMPLATE_ROOT = match apply_param_vars_to(config.params, 
                                     get_param_list(config.params,"TEMPLATE_ROOT")) with
                 |Cons(?p,_) => p
@@ -84,9 +104,55 @@ val C_PATH = apply_param_vars_to(config.params,
 val FLX_PKGCONFIG_PATH = apply_param_vars_to(config.params,
                                              get_param_list(config.params,"FLX_PKGCONFIG"));
 
+val log_dir = Filename::join(config.server_root,"log");
+if not log_dir.FileStat::fileexists do
+  if (log_dir.PosixDirectory::mkdir != 0) do
+    fail("Unable to create log directory " + log_dir);
+  done
+ done
+
+
+val info_logger = match SimpleConfig::get_param(config.params,"info_log") with 
+  |Some ?s => simple_logger(Logger::log(log_dir,s,size(1000000),2ui),
+                                        INFO)
+  |_ => Empty[log_handler]
+endmatch;
+val debug_logger = match SimpleConfig::get_param(config.params,"debug_log") with 
+  |Some ?s => simple_logger(Logger::log(log_dir,s,size(1000000),2ui),
+                                        DEBUG)
+  |_ => Empty[log_handler]
+endmatch;
+
+config.log  = logger(debug_logger +info_logger  );
 
 config.log(INFO,"Starting wiki server");
 config.log(CUSTOM1,"Starting reop server");
+var wiki_db_file_name = 
+  match (get_param_list(config.params,"DB")) with
+    | Cons(?s,_) => s
+    | _ => "db/wiki.db"
+  endmatch
+;
+println$ "wiki db name = " wiki_db_file_name;
+if not wiki_db_file_name.FileStat::fileexists do
+  println$ "Wiki db doesn't exist, creating it";
+  match split_path_and_fname(wiki_db_file_name) with
+  | Some(?p,?f) =>{ if not p.FileStat::fileexists do
+      if (p.PosixDirectory::mkdir != 0) do
+        fail("Unable to create database directory " + p);
+      done
+    done}
+  | _ => {}
+  endmatch;
+  match (WikiModel::db_create_db(wiki_db_file_name)) with
+  | false,?m => fail(m);
+  | true,?m => println$ m;
+  endmatch;
+done 
+
+val db_pool: Pool::pool[Sqlite3::sqlite3_db_t] = 
+  Sqlite3Pool::sqlite3_pool(wiki_db_file_name)
+;
 
 load_plugins(config.file_name);
 start_webserver(config);
