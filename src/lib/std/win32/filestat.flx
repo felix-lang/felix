@@ -6,8 +6,20 @@ include "std/filestat";
 
 class Win32FileStat
 {
+  //2 things:
+  //
+  // (1) AFAICT, Windows doesn't define mode_t and uses unsigned int.
+  // (2) We still pull in sys/types.h because sys/stat.h uses it (and
+  //     it must come first).
+  //
+  //(source http://msdn.microsoft.com/en-US/library/14h5k7ff(v=vs.80)).
+
+  //pod type mode_t = "mode_t" requires Posix_headers::sys_types_h;
+
+  pod type mode_t = "unsigned int"  requires Posix_headers::sys_types_h;
+
   pod type stat_t = "struct __stat64" requires Posix_headers::sys_stat_h;
-  pod type mode_t = "mode_t" requires Posix_headers::sys_types_h;
+
   instance Bits[mode_t] {} // defaults to C operators
   instance Eq[mode_t] { fun == : mode_t * mode_t -> bool = "$1==$2"; }
   open Eq[mode_t]; 
