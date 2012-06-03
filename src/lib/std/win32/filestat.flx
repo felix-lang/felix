@@ -16,8 +16,7 @@ class Win32FileStat
 
   //pod type mode_t = "mode_t" requires Posix_headers::sys_types_h;
 
-  pod type mode_t = "unsigned int"  requires Posix_headers::sys_types_h;
-
+  pod type mode_t = "int";
   pod type stat_t = "struct __stat64" requires Posix_headers::sys_stat_h;
 
   instance Bits[mode_t] {} // defaults to C operators

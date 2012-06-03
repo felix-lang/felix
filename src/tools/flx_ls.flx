@@ -1,5 +1,5 @@
-include "std/posix/directory";
-include "std/posix/filesystem";
+include "std/directory";
+include "std/filesystem";
 
 fun dbg(s:string):string={ println s; return s; }
 //println$ System::args ();
