@@ -199,7 +199,7 @@ gen xqt(cmd:string) = {
     ECHO==1 or dbug ?? fprintln (cerr, "output='"+output+"'");
   else
     debugln "COMMAND FAILED";
-    fprint$ cerr, ("Error "+repr(result)+" executing command " + cmd + "/n");
+    fprint$ cerr, ("Error "+repr(result)+" executing command " + cmd + "\n");
     pexit result;
   done
   return output;
