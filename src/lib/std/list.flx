@@ -193,6 +193,18 @@ open class List
     return aux x init;
   }
 
+  // Note, zips to length of shortest list
+  fun zip2[T1,T2] (l1: list[T1]) (l2: list[T2]) : list[T1 * T2] = 
+  {
+    fun aux (l1: list[T1]) (l2: list[T2]) (acc: list[T1 * T2]) =>
+      match l1, l2 with
+      | Cons(?h1,?t1), Cons (?h2,?t2) => aux t1 t2 (Cons ((h1, h2) , acc))
+      | _ => rev acc
+      endmatch 
+    ;
+    return aux l1 l2 Empty[T1 * T2];
+  }
+
   // ordered list of ints between low and high with given step
   // low included, high not included
   fun range (low:int, high:int, step:int) =
@@ -280,6 +292,19 @@ open class List
     ;
   }
 
+  fun catmap[T] (sep:string) (f:T -> string) (ls: list[T]) =>
+    cat sep (map f ls)
+  ;
+
+  fun strcat[T with Str[T]]  (sep: string) (ls: list[T]) =>
+    catmap sep (str of (T)) ls
+  ;
+
+  fun strcat[T with Str[T]]  (ls: list[T]) =>
+    catmap ", " (str of (T)) ls
+  ;
+
+ 
   // return true if one value in a list satisfies the predicate
   fun mem[T] (eq:T -> bool) (xs:list[T]) : bool =>
     match xs with

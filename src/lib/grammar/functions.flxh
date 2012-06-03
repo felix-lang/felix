@@ -1,6 +1,6 @@
 syntax functions {
   requires expressions;
-  x[slambda_pri] := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
+  satom := sadjectives "fun" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
     """
     `(ast_lambda ,_sr (,_3 ,_4 ,(first _5) ,_7))
     """;
@@ -10,17 +10,17 @@ syntax functions {
     `(ast_lambda ,_sr (,_3 ,_4 ,(first _5) ((ast_fun_return ,_sr ,_7))))
     """;
 
-  x[slambda_pri] := sadjectives "proc" stvarlist slambda_fun_args scompound =>#
+  satom := sadjectives "proc" stvarlist slambda_fun_args scompound =>#
     """
     `(ast_lambda ,_sr (,_3 ,_4 (ast_void ,_sr) ,_5))
     """;
 
-  x[slambda_pri] := sadjectives "proc" stvarlist scompound =>#
+  satom  := sadjectives "proc" stvarlist scompound =>#
     """
     `(ast_lambda ,_sr (,_3 ((() none)) (ast_void ,_sr) ,_4))
     """;
 
-  x[slambda_pri] := sadjectives "object" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
+  satom := sadjectives "object" stvarlist slambda_fun_args fun_return_type "=" scompound =>#
     """
     `(ast_object ,_sr (,_3 ,_4 ,(first _5) ,_7))
     """;

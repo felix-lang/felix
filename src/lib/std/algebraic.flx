@@ -142,9 +142,15 @@ class Trig[t] {
   virtual fun pow: t * t -> t;
 }
 
+class Special[t] {
+  virtual fun erf: t -> t;
+  virtual fun erfc: t -> t;
+}
+
 class Real[t] {
   inherit Tord[t];
   inherit Trig[t];
+  inherit Special[t];
   inherit FloatDring[t];
   virtual fun log10: t -> t;
   virtual fun abs: t -> t;
@@ -157,6 +163,7 @@ class Real[t] {
 class Complex[t,r] {
   inherit Eq[t];
   inherit FloatRing[t];
+  inherit Special[t];
   inherit Trig[t];
   virtual fun real: t -> r;
   virtual fun imag: t -> r;

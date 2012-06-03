@@ -23,7 +23,14 @@ class StrDict[T] {
      return if C_hack::isNULL slot then None[T] else Some (**slot);
    }
 
-   gen del (x:strdict) (key: string) = {
+  fun get_dflt (x:strdict) (key:string, dflt:T) => 
+    match get x key with
+    | Some ?v => v
+    | None => dflt
+    endmatch
+  ;
+
+  gen del (x:strdict) (key: string) = {
      var err: JError_t;
      var found : int;
      JudySLDel (_repr_ x, key.cstr, &err, &found);
