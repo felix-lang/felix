@@ -84,13 +84,13 @@ class Win32FileSystem
     //eprintln$ "Copy " + src + " -> " + dst;
 
     val now = Time::time(); // seconds
-    var stat_buf: PosixFileStat::stat_t;
-    if not PosixFileStat::stat (src, &stat_buf) do
+    var stat_buf: Win32FileStat::stat_t;
+    if not Win32FileStat::stat (src, &stat_buf) do
       eprintln$ "Can't stat source file " + src;
       return false;
     done;
-    val permissions = PosixFileStat::file_perm$ PosixFileStat::raw_mode (&stat_buf);
-    val last_modification = PosixFileStat::filetime(src);
+    val permissions = Win32FileStat::file_perm$ Win32FileStat::raw_mode (&stat_buf);
+    val last_modification = Win32FileStat::filetime(src);
     var fsrc = open (src,O_RDONLY );
     if not valid fsrc do
       eprintln$ " Bad src file in Filesystem::filecopy " + src;
@@ -130,7 +130,7 @@ class Win32FileSystem
     if res != 0 do
       eprintln$ "In filesystem::filecopy close on dst " + dst + " failed: " + str errno + "=" + #strerror;
     done
-    C_hack::ignore(PosixFileStat::utime(dst,now,last_modification));
+    C_hack::ignore(Win32FileStat::utime(dst,now,last_modification));
     C_hack::free(C_hack::cast[address] buffer);
     return true;
   }
@@ -141,7 +141,7 @@ class Win32FileSystem
     | Empty[string] => None[string]
     | Cons (?d,?t) => 
       let ?p =  Filename::join(d,x) in
-      match PosixFileStat::fileexists p with
+      match Win32FileStat::fileexists p with
       | true => Some p
       | false => find_in_path (x,t)
       endmatch
@@ -164,7 +164,7 @@ class Win32FileSystem
         List::fold_left 
           (fun (acc:list[string]) (f:string) => if f == "." or f == ".." then Empty[string] else
             let ?d = Filename::join (dname2,f) in
-            let ?t = PosixFileStat::filetype (Filename::join (dname,d)) in
+            let ?t = Win32FileStat::filetype (Filename::join (dname,d)) in
             match t with
               | REGULAR => 
                 /*
