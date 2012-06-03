@@ -1,27 +1,32 @@
-
-include "std/win32/__init__";
-include "std/directory";
+include "std/win32/__init__" ;
+include "std/directory" ;
 
 class Win32Directory
 {
+  //Win32 specific stuff.
 
-  // Win32 specific stuff
-  type dirent_t = "struct dirent*" requires Win32_headers::direct_h;
-  type DIR_t = "intptr_t" requires Win32_headers::io_h;
+  type DIR_t = "intptr_t" requires Win32_headers::io_h ;
+  type FINDDATA_t = "struct _finddata_t" requires Win32_headers::io_h ;
 
-  proc opendir: string * &DIR_t = "*$2=_findfirst($1.c_str());";
-  fun isNULL: DIR_t -> bool = "$1==0";
-  fun isNULL: dirent_t -> bool = "$1==0";
-  proc readdir: DIR_t * dirent_t * &dirent_t * &int = "*$4=readdir_r($1, $2, $3);";
-  proc closedir: DIR_t = "closedir($1);";
-  fun filename: dirent_t -> string = "std::string($1->d_name)";
+  proc findfirst: string * &FINDDATA_t * &DIR_t = "*$3=_findfirst($1.c_str(), $2);" ;
+  proc findnext: DIR_t * &FINDDATA_t * &int = "*$3=_findnext($1, $2);" ;
+  proc findclose : DIR_t = "_findclose($1);" ;
+
+  fun findfailed : DIR_t -> bool = "int($1) == -1" ;
+  fun filename : FINDDATA_t -> string = "std::string($1.name)" ;
+
   private fun getcwd: &char * size -> &char = "_getcwd($1,(int)$2)" requires Win32_headers::direct_h;
 
-  // generic stuff
+  // Generic stuff.
+
   inherit Directory_class[Win32, Win32FileStat::mode_t];
 
-  // instantiate generics
-  instance Directory_class[Win32, Win32FileStat::mode_t] {
+  // Instantiate generics.
+
+  instance Directory_class[Win32, Win32FileStat::mode_t] 
+  {
+    //Make a directory.
+
     // warning: ignores the mode!
     gen mkdir: string * Win32FileStat::mode_t -> int = "_mkdir($1.c_str())" requires Win32_headers::direct_h;
     gen mkdir: string  -> int = "_mkdir($1.c_str())" requires Win32_headers::direct_h;
@@ -34,12 +39,16 @@ class Win32Directory
       C_hack::ignore$ mkdir s;
     }
 
-    // current directory
-    fun getcwd():string = {
+    //Get the current working directory.
+
+    fun getcwd():string = 
+    {
       var b: array[char,1024]; 
       var p = getcwd(C_hack::cast[&char] (&b),size 1024);
       return if C_hack::isNULL p then "" else string p endif; 
     }
+
+    //Is the given path absolute?
 
     fun is_absolute_filename (s:string) => s.[0]=="\\".char or s.[1]==":".char and s.[2]=="\\".char;
     // this is wrong, because D:filename will have the
@@ -52,41 +61,143 @@ class Win32Directory
        #getcwd + "\\" + s
     ;
 
-    fun filesin(dname:string): opt[List::list[string]] = {
-      //println$ "filesin " + dname;
-      var d:DIR_t;
-      var e: dirent_t = C_hack::cast[dirent_t]$ C_hack::malloc 5000;
-      var eret = e;
-      var err:int = 0;
-      var files = List::Empty[string];
-      opendir(dname,&d);
-      if isNULL d do 
-        println "Error opening dir"; 
-        C_hack::free$ C_hack::cast[address] e; 
-        return None[List::list[string]];
-      else
-      //println$ "Opened dir " + dname;
-  next:>
-        readdir(d,e,&eret, &err);
-        if err != 0 do 
-          println "Error reading dir"; fflush;
-          closedir d; 
-          C_hack::free$ C_hack::cast[address] e; 
-          return None[List::list[string]];
-        elif isNULL eret do 
-          //println "End of dir"; 
-          closedir d; 
-          C_hack::free$ C_hack::cast[address] e; 
-          return Some files;
-        else 
-          //println "Think we got a file?";
-          assert err == 0;
-          //println$ "Found a file " + filename e; 
-          files += filename e; 
-          goto next;
+    //List the files in a directory.
+  
+    fun filesin(dname:string): opt[List::list[string]] = 
+    {
+      var d : DIR_t ;
+      var fileinfo : FINDDATA_t ;
+      var files : List::list[string] ;
+    
+      findfirst(dname, &fileinfo, &d) ;
+      if(findfailed d) do
+        if((errno == ENOENT) or (errno == EINVAL)) do
+          return None[List::list[string]] ;
         done
+        assert false ;
       done
+    
+      var stat : int ;
+    
+    harvestnext:>
+    
+      var f : string  = filename fileinfo ;
+      if((f != "..") and (f != ".")) do
+        files += (filename fileinfo) ;
+      done
+      findnext(d, &fileinfo, &stat) ;
+      if stat == 0 do
+        goto harvestnext ;
+      elif stat == -1 do
+          if(errno == ENOENT) do
+            goto harvestexit ;
+          done
+          assert false ;
+      else
+        println "Error reading dir"; fflush;
+        findclose(d) ;
+        return None[List::list[string]] ;
+      done
+    
+    harvestexit:>
+    
+      findclose(d) ;
+      return Some files ;
     }
   }
 }
+
+
+// // ----
+
+// include "std/win32/__init__";
+// include "std/directory";
+
+// class Win32Directory
+// {
+
+//   // Win32 specific stuff
+//   type dirent_t = "struct dirent*" requires Win32_headers::direct_h;
+//   type DIR_t = "intptr_t" requires Win32_headers::io_h;
+
+//   proc opendir: string * &DIR_t = "*$2=_findfirst($1.c_str());";
+//   fun isNULL: DIR_t -> bool = "$1==0";
+//   fun isNULL: dirent_t -> bool = "$1==0";
+//   proc readdir: DIR_t * dirent_t * &dirent_t * &int = "*$4=readdir_r($1, $2, $3);";
+//   proc closedir: DIR_t = "closedir($1);";
+//   fun filename: dirent_t -> string = "std::string($1->d_name)";
+//   private fun getcwd: &char * size -> &char = "_getcwd($1,(int)$2)" requires Win32_headers::direct_h;
+
+//   // generic stuff
+//   inherit Directory_class[Win32, Win32FileStat::mode_t];
+
+//   // instantiate generics
+//   instance Directory_class[Win32, Win32FileStat::mode_t] {
+//     // warning: ignores the mode!
+//     gen mkdir: string * Win32FileStat::mode_t -> int = "_mkdir($1.c_str())" requires Win32_headers::direct_h;
+//     gen mkdir: string  -> int = "_mkdir($1.c_str())" requires Win32_headers::direct_h;
+//     proc mkdirs (s:string)
+//     {
+//       if s == "" or s == "." or s == ".." or s.[-1] == char "\\" do 
+//          return;
+//       done
+//       mkdirs$ Filename::dirname s;
+//       C_hack::ignore$ mkdir s;
+//     }
+
+//     // current directory
+//     fun getcwd():string = {
+//       var b: array[char,1024]; 
+//       var p = getcwd(C_hack::cast[&char] (&b),size 1024);
+//       return if C_hack::isNULL p then "" else string p endif; 
+//     }
+
+//     fun is_absolute_filename (s:string) => s.[0]=="\\".char or s.[1]==":".char and s.[2]=="\\".char;
+//     // this is wrong, because D:filename will have the
+//     // current directory prepended instead of the 
+//     // current directory for drive D, so it could end up
+//     // referring to drive C instead .. 
+//     // also none of this works with network names
+//     fun mk_absolute_filename(s:string) => 
+//        if is_absolute_filename s then s else
+//        #getcwd + "\\" + s
+//     ;
+
+//     fun filesin(dname:string): opt[List::list[string]] = {
+//       //println$ "filesin " + dname;
+//       var d:DIR_t;
+//       var e: dirent_t = C_hack::cast[dirent_t]$ C_hack::malloc 5000;
+//       var eret = e;
+//       var err:int = 0;
+//       var files = List::Empty[string];
+//       opendir(dname,&d);
+//       if isNULL d do 
+//         println "Error opening dir"; 
+//         C_hack::free$ C_hack::cast[address] e; 
+//         return None[List::list[string]];
+//       else
+//       //println$ "Opened dir " + dname;
+//   next:>
+//         readdir(d,e,&eret, &err);
+//         if err != 0 do 
+//           println "Error reading dir"; fflush;
+//           closedir d; 
+//           C_hack::free$ C_hack::cast[address] e; 
+//           return None[List::list[string]];
+//         elif isNULL eret do 
+//           //println "End of dir"; 
+//           closedir d; 
+//           C_hack::free$ C_hack::cast[address] e; 
+//           return Some files;
+//         else 
+//           //println "Think we got a file?";
+//           assert err == 0;
+//           //println$ "Found a file " + filename e; 
+//           files += filename e; 
+//           goto next;
+//         done
+//       done
+//     }
+//   }
+// }
 
