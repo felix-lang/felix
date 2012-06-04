@@ -69,18 +69,18 @@ class Win32Directory
 
       var d : DIR_t ;
       var fileinfo : FINDDATA_t ;
-      var files = Empty[string]; //list[string] ;
+      var files = Empty[string]; 
     
       //eprintln$ "calling findfirst with expression = " + dname+"*";
-      findfirst(dname+"\\*", &fileinfo, &d) ;
+      findfirst (dname+"\\*", &fileinfo, &d) ;
       //eprintln$ "returned from findfirst" ;
 
-      if(findfailed d) do
-        if((errno == ENOENT) or (errno == EINVAL)) do
+      if findfailed d  do
+        if errno == ENOENT or errno == EINVAL do
           //eprintln$ "findfirst() failed with ENOENT or EINVAL" ;
           return None[list[string]] ;
         done
-          println$ "findfirst() failed unexpectedly" ;
+        eprintln$ "findfirst() failed unexpectedly" ;
         assert false ;
       done
     
@@ -89,19 +89,20 @@ class Win32Directory
     harvestnext:>
     
       var f : string  = filename fileinfo ;
-      if((f != "..") and (f != ".")) do
+      if f != ".." and f != "." do
         //println$ "Adding file" + (filename fileinfo) ;
-        files += (filename fileinfo) ;
+        files += filename fileinfo ;
       done
+
       findnext(d, &fileinfo, &stat) ;
-      if stat == 0 do
-        goto harvestnext ;
-      elif stat == -1 do
-          if errno == ENOENT goto harvestexit ;
-          assert false ;
+      if stat == 0 goto harvestnext ;
+
+      if stat == -1 do
+        if errno == ENOENT goto harvestexit ;
+        assert false ;
       else
         println "Error reading dir"; fflush;
-        findclose(d) ;
+        findclose d ;
         return None[list[string]] ;
       done
     
@@ -109,7 +110,7 @@ class Win32Directory
     
       //eprintln$ "Leaving normally with some files" ;
 
-      findclose(d) ;
+      findclose d ;
       return Some files ;
     }
   }
