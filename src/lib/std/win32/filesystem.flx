@@ -153,43 +153,41 @@ class Win32FileSystem
   private gen dbg (s:string) : int = { eprintln s; return 0; }
 
   fun regfilesin(dname:string, re:RE2): list[string] = {
-    fun rfi(dname2: string) =>   
-      if dname2 == "." or dname2 == ".." then Empty[string] else
-      match Directory::filesin(Filename::join (dname,dname2)) with
-      | None  => Empty[string]
+    eprintln$ "regfilesin " + dname+ " with some kind of regexp .. ";
+    var foundfiles = Empty[string];
+    proc rfi(dname2: string) {
+      if dname2 == "." or dname2 == ".." return;
+      var newpath = if dname2 == "" then dname else Filename::join (dname,dname2);
+      var newfiles = Directory::filesin(newpath);
+      match newfiles with
+      | None  => return;
       | Some ?files =>
-        {
-        //eprintln$ "got files in " + dname2;
-        return
-        List::fold_left 
-          (fun (acc:list[string]) (f:string) => if f == "." or f == ".." then Empty[string] else
-            let ?d = Filename::join (dname2,f) in
-            let ?t = Win32FileStat::filetype (Filename::join (dname,d)) in
+        eprintln$ "got files in " + newpath;
+        for f in files do
+          if f == "." or f == ".." do ;
+          else
+            eprintln$ "Processing file " + f;
+            var d = Filename::join (dname2,f);
+            eprintln$ "Relpath " + d;
+            var fullpath = Filename::join (dname,d);
+            eprintln$ "fullpath " + fullpath;
+            var t = Win32FileStat::filetype fullpath;
             match t with
               | REGULAR => 
-                /*
-                let ?xx = dbg ("found file " + d) in
-                if xx == 0 and Re2::Match(re, Re2::StringPiece d, 0, Re2::ANCHOR_BOTH, C_hack::null[Re2::StringPiece], 0) 
-                then field[1](dbg("matched "+d),acc + d) 
-                else field[1](dbg("no match "+d),acc)
-                endif
-                */
-                if Re2::Match(re, Re2::StringPiece d, 0, Re2::ANCHOR_BOTH, C_hack::null[Re2::StringPiece], 0) 
-                then acc + d 
-                else acc
-                endif
-              | DIRECTORY => acc + rfi (d)
-              | _ => acc
-            endmatch
-            endif
-          )
-          Empty[string]
-          files;
-        }()
-      endmatch
-      endif
-    ;
-    return rfi ("");
+                eprintln ("Regular file " + d);
+                var result = Re2::Match(re, Re2::StringPiece d, 0, Re2::ANCHOR_BOTH, C_hack::null[Re2::StringPiece], 0);
+                if result do eprintln$ d + " Matches"; foundfiles = Cons (d, foundfiles); done
+              | DIRECTORY => 
+                eprintln ("found directory " + d);
+                rfi (d);
+              | _ => ;
+            endmatch;
+          done
+        done
+      endmatch;
+    }
+    rfi ("");
+    return rev foundfiles;
   }
  
   
