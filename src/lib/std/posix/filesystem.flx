@@ -147,51 +147,6 @@ class PosixFileSystem
     endmatch
   ;
 
-  fun regfilesin(dname:string, re:string): list[string] => regfilesin(dname, Re2::RE2 re);
-
-  private gen dbg (s:string) : int = { eprintln s; return 0; }
-
-  fun regfilesin(dname:string, re:RE2): list[string] = {
-    fun rfi(dname2: string) =>   
-      if dname2 == "." or dname2 == ".." then Empty[string] else
-      match Directory::filesin(Filename::join (dname,dname2)) with
-      | None  => Empty[string]
-      | Some ?files =>
-        {
-        //eprintln$ "got files in " + dname2;
-        return
-        List::fold_left 
-          (fun (acc:list[string]) (f:string) => if f == "." or f == ".." then Empty[string] else
-            let ?d = Filename::join (dname2,f) in
-            let ?t = PosixFileStat::filetype (Filename::join (dname,d)) in
-            match t with
-              | REGULAR => 
-                /*
-                let ?xx = dbg ("found file " + d) in
-                if xx == 0 and Re2::Match(re, Re2::StringPiece d, 0, Re2::ANCHOR_BOTH, C_hack::null[Re2::StringPiece], 0) 
-                then field[1](dbg("matched "+d),acc + d) 
-                else field[1](dbg("no match "+d),acc)
-                endif
-                */
-                if Re2::Match(re, Re2::StringPiece d, 0, Re2::ANCHOR_BOTH, C_hack::null[Re2::StringPiece], 0) 
-                then acc + d 
-                else acc
-                endif
-              | DIRECTORY => acc + rfi (d)
-              | _ => acc
-            endmatch
-            endif
-          )
-          Empty[string]
-          files;
-        }()
-      endmatch
-      endif
-    ;
-    return rfi ("");
-  }
- 
-  
   //------------------------------------------------------------
   // generate temporary file name
   //------------------------------------------------------------

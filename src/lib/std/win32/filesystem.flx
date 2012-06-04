@@ -147,49 +147,6 @@ class Win32FileSystem
       endmatch
     endmatch
   ;
-
-  fun regfilesin(dname:string, re:string): list[string] => regfilesin(dname, Re2::RE2 re);
-
-  private gen dbg (s:string) : int = { eprintln s; return 0; }
-
-  fun regfilesin(dname:string, re:RE2): list[string] = {
-    eprintln$ "regfilesin " + dname+ " with some kind of regexp .. ";
-    var foundfiles = Empty[string];
-    proc rfi(dname2: string) {
-      if dname2 == "." or dname2 == ".." return;
-      var newpath = if dname2 == "" then dname else Filename::join (dname,dname2);
-      var newfiles = Directory::filesin(newpath);
-      match newfiles with
-      | None  => return;
-      | Some ?files =>
-        eprintln$ "got files in " + newpath;
-        for f in files do
-          if f == "." or f == ".." do ;
-          else
-            eprintln$ "Processing file " + f;
-            var d = Filename::join (dname2,f);
-            eprintln$ "Relpath " + d;
-            var fullpath = Filename::join (dname,d);
-            eprintln$ "fullpath " + fullpath;
-            var t = Win32FileStat::filetype fullpath;
-            match t with
-              | REGULAR => 
-                eprintln ("Regular file " + d);
-                var result = Re2::Match(re, Re2::StringPiece d, 0, Re2::ANCHOR_BOTH, C_hack::null[Re2::StringPiece], 0);
-                if result do eprintln$ d + " Matches"; foundfiles = Cons (d, foundfiles); done
-              | DIRECTORY => 
-                eprintln ("found directory " + d);
-                rfi (d);
-              | _ => ;
-            endmatch;
-          done
-        done
-      endmatch;
-    }
-    rfi ("");
-    return rev foundfiles;
-  }
- 
   
   //------------------------------------------------------------
   // generate temporary file name
