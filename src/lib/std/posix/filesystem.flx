@@ -133,19 +133,6 @@ class PosixFileSystem
     C_hack::free(C_hack::cast[address] buffer);
     return true;
   }
-  
-  // find in path
-  fun find_in_path(x:string, path:list[string]):opt[string]=>
-    match path with
-    | Empty[string] => None[string]
-    | Cons (?d,?t) => 
-      let ?p =  Filename::join(d,x) in
-      match PosixFileStat::fileexists p with
-      | true => Some p
-      | false => find_in_path (x,t)
-      endmatch
-    endmatch
-  ;
 
   //------------------------------------------------------------
   // generate temporary file name

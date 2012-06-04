@@ -12,6 +12,19 @@ else
   inherit PosixFileSystem;
 done
 
+  // find in path
+  fun find_in_path(x:string, path:list[string]):opt[string]=>
+    match path with
+    | Empty[string] => None[string]
+    | Cons (?d,?t) => 
+      let ?p =  Filename::join(d,x) in
+      match FileStat::fileexists p with
+      | true => Some p
+      | false => find_in_path (x,t)
+      endmatch
+    endmatch
+  ;
+
   fun regfilesin(dname:string, re:string): list[string] => regfilesin(dname, Re2::RE2 re);
 
   fun regfilesin(dname:string, re:RE2): list[string] = {
