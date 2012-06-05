@@ -167,7 +167,6 @@ syntax expressions {
 
   // these are weirdos
   sbasic_name_comma_list:= sname ("," sname)* =># "(cons _1 (map second _2))";
-  squalified_name_comma_list:= squalified_name ("," squalified_name)* =># "(cons _1 (map second _2))";
 
   sthe_name :=
     | "#" sthe_name =># "`(ast_apply ,_sr (,_2 (ast_tuple ,_sr ())))"

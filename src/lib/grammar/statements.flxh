@@ -17,12 +17,21 @@ syntax statements {
     `(ast_newtype ,_sr ,(first _3) ,(second _3) ,_6)
     """;
 
-  stype_constraint := "with" squalified_name_comma_list "where" sexpr =>#
+  stypeclass_constraint_list := stypeclass_constraint ("," stypeclass_constraint )* =># 
+    "(cons _1 (map second _2))";
+
+  stypeclass_constraint := squalified_name =># "_1";
+
+  // allow T is Real to mean Real[T] .. experimental!
+  // probably should generalise to use ast_lookup 
+  stypeclass_constraint := stypeexpr "is" sname =># "`(ast_name ,_sr ,_3 (,_1))";
+
+  stype_constraint := "with" stypeclass_constraint_list "where" sexpr =>#
     "`(,_4 ,_2)";
-  stype_constraint := "where" sexpr "with" squalified_name_comma_list =>#
+  stype_constraint := "where" sexpr "with" stypeclass_constraint_list =>#
     "`(,_2 ,_4)";
   stype_constraint := "where" sexpr =># "`(,_2 ())";
-  stype_constraint := "with" squalified_name_comma_list =># "`((ast_tuple,_sr()) ,_2)";
+  stype_constraint := "with" stypeclass_constraint_list =># "`((ast_tuple,_sr()) ,_2)";
   stype_constraint := sepsilon =># "`((ast_tuple,_sr())())";
 
   seqorin:= "=" stypeexpr =># "`(Eq ,_2)";

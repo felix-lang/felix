@@ -152,6 +152,8 @@ class Real[t] {
   inherit Trig[t];
   inherit Special[t];
   inherit FloatDring[t];
+  virtual fun embed: int -> t;
+
   virtual fun log10: t -> t;
   virtual fun abs: t -> t;
   virtual fun sqrt: t -> t;

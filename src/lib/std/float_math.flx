@@ -124,6 +124,7 @@ instance[t in floats] Real[t] {
   fun ceil: t -> t = "::std::ceil($1)";
   fun floor: t -> t = "::std::floor($1)";
   fun trunc: t -> t = "::std::trunc($1)";
+  fun embed: int -> t = "(?1)($1)";
 }
 
 class CartComplex[r] {
