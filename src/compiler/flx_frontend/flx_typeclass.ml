@@ -141,6 +141,12 @@ let check_instance
           clierr2 sr inst_sr ("Cannot find typeclass " ^ inst_id ^ " virtual " ^
             id ^ " in instance [" ^ catmap "," (sbt bsym_table) inst_ts ^
             "]")
+(*
+          else
+          print_endline ("WARNING: Cannot find typeclass " ^ inst_id ^ " virtual " ^
+            id ^ " in instance [" ^ catmap "," (sbt bsym_table) inst_ts ^
+            "]")
+*)
 
       | [_,(i,(inst_funbvs,t))] ->
         (*
@@ -242,7 +248,8 @@ let check_instance
       match Flx_bsym.bbdcl tck_bsym with
       | BBDCL_external_fun (_,bvs,params,ret,_,_,`Code Flx_code_spec.Virtual) ->
         let ft = btyp_function (btyp_tuple params,ret) in
-        check_binding true tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
+        (* check_binding true tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft *)
+        check_binding false tck (Flx_bsym.sr tck_bsym) (Flx_bsym.id tck_bsym) bvs ft
 
       | BBDCL_fun (props,bvs,bps,ret,_) when mem `Virtual props ->
         let argt = btyp_tuple (Flx_bparams.get_btypes bps) in
