@@ -326,13 +326,13 @@ let mk_listwise_ctor syms i name typ cts ctss =
 
 (* This routine generates complete types when needed *)
 let rec gen_type syms bsym_table (index,typ) =
-  (*
+(*
   print_endline (
     "GENERATING TYPE " ^
     string_of_bid index ^ ": " ^
     sbt bsym_table typ
   );
-  *)
+*)
   let tn t = cpp_typename syms bsym_table t in
   let cn t = cpp_type_classname syms bsym_table t in
   let descr =
@@ -412,7 +412,11 @@ let rec gen_type syms bsym_table (index,typ) =
   | BTYP_array (t,i) ->
     let name = tn typ in
     let v = tn t in
-    let n = int_of_unitsum i in
+    let n = 
+      try int_of_unitsum i 
+      with Invalid_int_of_unitsum ->
+        failwith ("Invalid type for int of unit sum: " ^ sbt bsym_table t)
+    in
     let requires_tuple_ctor = 
       try 
         Hashtbl.mem syms.array_as_tuple_registry 

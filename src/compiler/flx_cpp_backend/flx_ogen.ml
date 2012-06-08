@@ -88,7 +88,7 @@ let rec gen_type_shape s syms bsym_table last_ptr_map primitive_shapes btyp inde
     | BTYP_array (t,i) ->
       let k =
         try int_of_unitsum i
-        with Not_found -> failwith "Array index must be unitsum"
+        with Invalid_int_of_unitsum -> failwith "Array index must be unitsum"
       in
       let name = cpp_typename syms bsym_table btyp in
       let tname = cpp_typename syms bsym_table t in

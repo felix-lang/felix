@@ -1,6 +1,8 @@
 open Flx_ast
 open Flx_types
 
+exception Invalid_int_of_unitsum
+
 type btpattern_t = {
   pattern: t;
 
@@ -200,16 +202,15 @@ let is_unitsum t = match t with
   | _ -> false
 
 (** Returns the integer value of the unit sum type. *)
-let int_of_unitsum t = match t with
+let rec int_of_unitsum t = match t with
   | BTYP_void -> 0
   | BTYP_tuple [] -> 1
   | BTYP_unitsum k -> k
   | BTYP_sum [] ->  0
   | BTYP_sum ts ->
-    if all_units ts then List.length ts
-    else raise Not_found
+    List.fold_left (fun i t -> i + int_of_unitsum t) 0 ts
 
-  | _ -> raise Not_found
+  | _ -> raise (Invalid_int_of_unitsum)
 
 (* -------------------------------------------------------------------------- *)
 

@@ -3631,9 +3631,7 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
     end
 
   | EXPR_name (sr,name,ts) ->
-    (*
-    print_endline ("BINDING NAME " ^ name);
-    *)
+    (* print_endline ("BINDING NAME " ^ name); *)
     if name = "_felix_type_name" then
        let sname = catmap "," string_of_typecode ts in
        let x = EXPR_literal (sr, {Flx_literal.felix_type="string"; internal_value=sname; c_value=Flx_string.c_quote_of_string sname}) in
@@ -3720,7 +3718,8 @@ and bind_expression' state bsym_table env (rs:recstop) e args =
               in
               bexpr_deref t' (bexpr_name t (index, ts))
 
-          | _ -> bexpr_name t (index,ts)
+          | _ -> 
+            bexpr_name t (index,ts)
           end
       end
 

@@ -201,7 +201,7 @@ and beta_reduce' counter bsym_table sr termlist t =
 
   | BTYP_inst (i,ts) -> btyp_inst (i, List.map br ts)
   | BTYP_tuple ls -> btyp_tuple (List.map br ls)
-  | BTYP_array (i,t) -> btyp_array (i, br t)
+  | BTYP_array (i,t) -> btyp_array (br i, br t)
   | BTYP_sum ls -> btyp_sum (List.map br ls)
   | BTYP_record (n,ts) ->
      let ss,ls = List.split ts in

@@ -506,7 +506,7 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
           | [BTYP_void] -> ce_atom "0"
           | [BTYP_unitsum n]
           | [BTYP_array (_,BTYP_unitsum n)] -> ce_atom (si n)
-          | [BTYP_sum ls]
+          | [BTYP_sum ls] 
           | [BTYP_tuple ls] -> let n = length ls in ce_atom (si n)
           | [BTYP_inst (i,_)] ->
             begin match Flx_bsym_table.find_bbdcl bsym_table i with
@@ -523,6 +523,20 @@ print_endline ("make const ctor, union type = " ^ sbt bsym_table t' ^
             clierr sr (
               "#memcount function requires type with members to count, got : " ^
               sbt bsym_table (hd ts)
+            )
+          end
+        | CS.Str_template c when c = "#arrayindexcount" ->
+          (* we do hacked up processing of sums of unitsums here, to allow for
+             the implicit flattening of array indices. 
+             Also we allow a list in preparation for rank K arrays.
+          *)
+          begin try
+            let n = fold_left (fun acc elt -> acc * int_of_unitsum elt) 1 ts in
+            ce_atom (si n)
+          with Invalid_int_of_unitsum ->
+            clierr sr (
+              "#arrayindexcountfunction requires type which can be used as array index, got: " ^
+              catmap "," (sbt bsym_table) ts
             )
           end
         | CS.Str c -> ce_expr "expr" c

@@ -1,6 +1,8 @@
 open Flx_ast
 open Flx_types
 
+exception Invalid_int_of_unitsum
+
 type btpattern_t = {
   pattern: t;
 

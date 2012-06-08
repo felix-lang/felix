@@ -105,7 +105,8 @@ let rec register_type_r ui syms bsym_table exclude sr t =
     | BTYP_unitsum 1 | BTYP_tuple [] -> syserr sr "Unexpected array length 1"
     | BTYP_unitsum _ ->
       rr ps; rr ret; rnr t
-    | _ -> syserr sr "Array bound must be unitsum"
+    | _ -> rr ps; rr ret; rnr t
+    (* | _ -> syserr sr ("Array index type must be unitsum, got " ^ sbt bsym_table ret) *)
     end
 
   | BTYP_tuple ps -> iter rr ps; rnr t

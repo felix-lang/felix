@@ -109,9 +109,16 @@ and metatype' sym_table bsym_table sr term =
             sbt bsym_table term)
       end
 
-  (* no idea why at the moment, just to shut up the diagnostic *)
+  (* Ordinary type expressions *)
+  | BTYP_cfunction _
+  | BTYP_function _
+  | BTYP_pointer _
+  | BTYP_variant _
+  | BTYP_record _
+  | BTYP_sum _
+  | BTYP_array _
+  | BTYP_tuple _
   | BTYP_void
-  | BTYP_tuple []
   | BTYP_unitsum _ -> btyp_type 0
 
   | _ ->

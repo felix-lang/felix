@@ -10,13 +10,13 @@ open class Farray
 
   // array as value
   instance[t,n] ArrayValue[array[t,n], t] {
-    fun len (x:array[t, n]): size => Typing::memcount[n];
+    fun len (x:array[t, n]): size => Typing::arrayindexcount[n];
     fun unsafe_get: array[t, n] * size -> t = "$1.data[$2]";
   }
 
   // array as object
   instance[t,n] ArrayValue[&array[t,n], t] {
-    fun len (x:&array[t, n]): size => Typing::memcount[n];
+    fun len (x:&array[t, n]): size => Typing::arrayindexcount[n];
     fun unsafe_get: &array[t, n] * size -> t = "$1->data[$2]";
   }
 
@@ -46,28 +46,23 @@ open class Farray
   // iterating from 0 to N-1. Subtraction N-1 fails for n == 0
   // so we need a special test. 
 
-/*
-  fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, _flatten(N + M)] = {
-    var o = array[T, _flatten(N + M)];
-    val i : int;
+  fun join[T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M] = {
+    var o : array[T, N + M];
 
     if x.len > 0uz do
-      for i in 0uz upto len(x) - 1uz do
-        o.[i] = x.[i];
+      for var i in 0uz upto len(x) - 1uz do
+        set (&o, i,x.i);
       done
     done
-
-    val j : int;
-
+    i = x.len;
     if y.len > 0uz do
-      for k in 0uz upto len(y) - 1uz do
-        o.[i + j] = y.[i];
+      for var k in 0uz upto len(y) - 1uz do
+        set(&o,i + k, y.k);
       done
     done
 
     return o;
   }
-*/
 
   // reverse
   fun rev[T, N] (x:array[T, N]): array[T, N] = {

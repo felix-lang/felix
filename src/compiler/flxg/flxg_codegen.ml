@@ -189,22 +189,30 @@ let codegen_bsyms
   plh "\n//-----------------------------------------";
   plh "//NAME THE TYPES";
   plh  (Flx_tgen.gen_type_names state.syms bsym_table types);
+  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  print_endline "//DONE: NAME THE TYPES";
 
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//GENERATING C++: type class definitions";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE THE TYPES";
   plh  (Flx_tgen.gen_types state.syms bsym_table types);
+  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  print_endline "//DONE C++: type class definitions";
 
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//GENERATING C++: function and procedure classes";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASS NAMES";
   plh  (Flx_gen.gen_function_names state.syms bsym_table);
+  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  print_endline "//DONE GENERATING C++: function and procedure class names";
 
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASSES";
   plh  (Flx_gen.gen_functions state.syms bsym_table);
+  if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
+  print_endline "//DONE DEFINE FUNCTION CLASSES";
 
   let topvars_with_type = Flx_findvars.find_thread_vars_with_type bsym_table in
   let topvars = List.map fst topvars_with_type in

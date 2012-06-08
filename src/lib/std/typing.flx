@@ -55,6 +55,7 @@ open class Typing
 
 
   const memcount[t] : size = "#memcount";
+  const arrayindexcount[t] : size = "#arrayindexcount";
 }
 
 

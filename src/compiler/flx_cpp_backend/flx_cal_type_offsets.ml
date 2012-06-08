@@ -13,6 +13,10 @@ open Flx_print
 open Flx_exceptions
 open Flx_maps
 
+let unitsum t = 
+  try int_of_unitsum t 
+  with Invalid_int_of_unitsum -> -1
+
 (* this code handles pointers in types 
  * it returns a list of strings which are C expressions for the
  * offsets of each pointer in the type.
@@ -85,8 +89,9 @@ let rec get_offsets' syms bsym_table typ : string list =
     | _ -> []
     end
 
-  | BTYP_array (t,BTYP_void) ->  []
-  | BTYP_array (t,BTYP_unitsum k) ->
+  | BTYP_array (t,u) when unitsum u = 0 -> []
+  | BTYP_array (t,u) when unitsum u > 0 -> 
+    let k = unitsum u in
     let toffsets = get_offsets' syms bsym_table t in
     if toffsets = [] then [] else
     if k> 100 then

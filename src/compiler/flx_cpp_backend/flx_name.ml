@@ -314,7 +314,10 @@ and cpp_structure_name syms bsym_table t =
   | BTYP_function (d,c) -> "_ft<" ^ tn d ^ "," ^ tn c ^ ">" 
   | BTYP_cfunction (d,c) -> "_cft<" ^  tn d ^ "," ^ tn c ^">"
   | BTYP_array (e,BTYP_unitsum i) -> "_at<" ^ tn e ^ "," ^ string_of_int i ^ ">" 
-  | BTYP_array (e,i) -> failwith ("Generalisd arrays not supported") (*  "_gat<" ^ tn e ^ "," ^ tn i ^ ">"  *)
+  | BTYP_array (e,i) -> 
+     (*failwith ("Generalisd arrays not supported") *)
+      "_gat<" ^ tn e ^ "," ^ tn i ^ ">" 
+
   | BTYP_tuple ts -> "_tt"^string_of_int (List.length ts)^"<" ^ catmap "," tn ts ^ ">" 
   | BTYP_record _  -> "_art" ^ cid_of_bid (tix t)
 (*
