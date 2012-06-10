@@ -31,7 +31,7 @@ print "nmatches = "; print n; endl;
 var i : int;
 for_each { i=0; } { i<n } { ++i; }
   {
-    if int(a.[i].rm_so) == -1 do
+    if int(a.i.rm_so) == -1 do
       print i; print " -> nomatch\n";
     else
       print i; print "-> match '";
