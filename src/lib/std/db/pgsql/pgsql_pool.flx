@@ -1,0 +1,32 @@
+include "web/pgsql";
+include "web/pool";
+
+class PgsqlPool {
+  open Pgsql;
+  inherit Pool[pgconn_ptr];
+  
+  publish """
+  Creates a pool of db handles of sz size to a sqlite3 database db
+  """ 
+  fun create_pgsql_pool(connect_string:string,sz:int) =>
+    pool((fun () ={
+      var db = pq_connectdb(connect_string);
+      if isNull[pgconn_ptr](db) do
+      	 fail "open DB error[abort] ";
+      else
+        match pq_status(db) with
+          |$(CONNECTION_OK)  => return db;
+          |$(CONNECTION_BAD) => fail "open DB error[CONNECTION_BAD] ";
+          |_                 => fail "open DB error[UNKNOWN] ";
+         endmatch;
+      done
+    done
+    }),sz,INF);
+
+
+  instance Pool[pgconn_ptr] {
+    proc destroy_member (m:member_t) =   {
+      pq_finish(m.member);
+    }
+  }
+}
