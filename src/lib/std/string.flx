@@ -360,7 +360,7 @@ open class String
            if count == 0 do
              b += "\\";
            elif j < v.len.int do
-             b+= str v.j;
+             b+= str v.stl_begin.j;
            done
            // adjacent insertion?
            if s.[i] == char "\\" do
