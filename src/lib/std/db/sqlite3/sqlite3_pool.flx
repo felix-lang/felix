@@ -1,4 +1,3 @@
-include "db/sqlite3/sqlite3_ext";
 include "collection/pool";
 
 class Sqlite3Pool {

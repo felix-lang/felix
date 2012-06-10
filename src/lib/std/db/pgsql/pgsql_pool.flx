@@ -1,12 +1,12 @@
-include "web/pgsql";
-include "web/pool";
+/*
+include "collection/pool";
 
 class PgsqlPool {
   open Pgsql;
   inherit Pool[pgconn_ptr];
   
   publish """
-  Creates a pool of db handles of sz size to a sqlite3 database db
+  Creates a pool of db handles of sz size to a postgress database db
   """ 
   fun create_pgsql_pool(connect_string:string,sz:int) =>
     pool((fun () ={
@@ -20,7 +20,6 @@ class PgsqlPool {
           |_                 => fail "open DB error[UNKNOWN] ";
          endmatch;
       done
-    done
     }),sz,INF);
 
 
@@ -30,3 +29,4 @@ class PgsqlPool {
     }
   }
 }
+*/

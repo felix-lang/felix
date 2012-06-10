@@ -1,5 +1,4 @@
 include "web/__init__";
 include "xml/__init__";
 include "codec/__init__";
-include "db/__init__";
 include "io/__init__";
