@@ -24,7 +24,7 @@ open class Re2 {
     ctor StringPiece: unit = "::re2::StringPiece()";
     ctor string: StringPiece = "$1.as_string()";
     fun len: StringPiece -> size = "(size_t)$1.length()";
-    fun data: StringPiece -> &char = "(char*)$1.data()"; // cast away const
+    fun data: StringPiece -> +char = "(char*)$1.data()"; // cast away const
  
  
     instance Container[StringPiece,char] {
@@ -124,15 +124,19 @@ open class Re2 {
   fun NamedCapturingGroups: RE2 -> Stl_Map::stl_map[string, int] = "$1->NamedCapturingGroups()";
 
   // this function is fully general, just needs an anchor
-  gen Match: RE2 * StringPiece * int * Anchor * &StringPiece * int -> bool = 
+  gen Match: RE2 * StringPiece * int * Anchor * +StringPiece * int -> bool = 
     "$1->Match($2, $3, $2.length(),$4, $5, $6)"
    ;
+
+  // simple match
+  gen Match: RE2 * string -> bool = 
+    "$1->Match(::re2::StringPiece($2),0, ::re2::StringPiece($2).length(),::re2::RE2::ANCHOR_BOTH, (::re2::StringPiece*)0, 0)"
+  ;
 
   fun CheckRewriteString: RE2 * StringPiece * &string -> bool = "$1->CheckRewriteString($2, $3)";
 
   instance Set[RE2, string] {
-    fun \in (s:string, r:RE2)=>
-      Match(r,StringPiece s,0,ANCHOR_START, C_hack::null[StringPiece], 0);
+    fun \in (x:string, r:RE2) => Match (r, x);
   }
 
   gen iterator (re2:string, var target:string) () : opt[varray[string]] = {

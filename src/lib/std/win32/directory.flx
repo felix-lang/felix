@@ -15,7 +15,7 @@ class Win32Directory
   fun findfailed : DIR_t -> bool = "int($1) == -1" ;
   fun filename : FINDDATA_t -> string = "std::string($1.name)" ;
 
-  private fun getcwd: &char * size -> &char = "_getcwd($1,(int)$2)" requires Win32_headers::direct_h;
+  private fun getcwd: +char * size -> +char = "_getcwd($1,(int)$2)" requires Win32_headers::direct_h;
 
   // Generic stuff.
 
@@ -44,7 +44,7 @@ class Win32Directory
     fun getcwd():string = 
     {
       var b: array[char,1024]; 
-      var p = getcwd(C_hack::cast[&char] (&b),size 1024);
+      var p = getcwd((&b).stl_begin,size 1024);
       return if C_hack::isNULL p then "" else string p endif; 
     }
 

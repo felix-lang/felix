@@ -104,6 +104,15 @@ and metatype' sym_table bsym_table sr term =
           btyp_function (btyp_type 0,btyp_type 0)
       | SYMDEF_const_ctor (_,t,_,_) -> btyp_type 0
       | SYMDEF_abs _ -> btyp_type 0
+      | SYMDEF_newtype _ -> btyp_type 0 
+(*
+          clierr sr ("Unexpected argument to metatype, newtype : " ^
+            sbt bsym_table term)
+*)
+      | SYMDEF_type_alias _ -> 
+          clierr sr ("Unexpected argument to metatype, type alias: " ^
+            sbt bsym_table term)
+
       | _ ->
           clierr sr ("Unexpected argument to metatype: " ^
             sbt bsym_table term)

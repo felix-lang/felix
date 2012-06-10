@@ -129,7 +129,7 @@ class HTTPRequest {
     var eof=false;
     var params:assoc_list[string,string] = Empty[string*string];
     if olen > 0 do
-      var buf = C_hack::cast[&char] (C_hack::malloc(len+1));
+      var buf = C_hack::cast[+char] (C_hack::malloc(len+1));
       var buf_a = address(buf);
       read(conn.sock,&len,buf_a,&eof);
       if len > 0 do
@@ -147,7 +147,7 @@ fun read_bytes(conn:http_connection,olen:int) = {
     
     var ret:string = "";
     if olen > 0 do
-      var buf = C_hack::cast[&char] (C_hack::malloc(len+1));
+      var buf = C_hack::cast[+char] (C_hack::malloc(len+1));
       var buf_a = address(buf);
       read(conn.sock,&len,buf_a,&eof);
       ret= str(buf);

@@ -85,12 +85,12 @@ type flxfileio_request = "::flx::faio::flxfileio_request";
 // connect!
 type async_connect = '::flx::faio::connect_request';
 
-fun mk_async_connect: demuxer * &char *int-> async_connect = '::flx::faio::connect_request($a)';
+fun mk_async_connect: demuxer * +char *int-> async_connect = '::flx::faio::connect_request($a)';
 fun get_socket: async_connect -> socket_t = '$1.s';
 fun get_err: async_connect -> int = '$1.socket_err';
 
 // could do multi connects for capable drivers
-proc connect(s: &socket_t, addr: &char, port: int)
+proc connect(s: &socket_t, addr: +char, port: int)
 {
     var ac = mk_async_connect(sys_demux,addr, port);
     faio_req$ &ac;

@@ -38,7 +38,7 @@ class StrDict[T] {
    }
 
    // with supplied buffer (unsafe!)
-   gen charp_get_ge (x:strdict) (var key: &char)= {
+   gen charp_get_ge (x:strdict) (var key: +char)= {
      var err: JError_t;
      var slot : && T; 
      JudySLFirst (_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
@@ -68,7 +68,7 @@ class StrDict[T] {
    }
 
    // with supplied buffer (unsafe!)
-   gen charp_get_gt (x:strdict) (var key: &char)= {
+   gen charp_get_gt (x:strdict) (var key: +char)= {
      var err: JError_t;
      var slot : && T; 
      JudySLNext(_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
@@ -98,7 +98,7 @@ class StrDict[T] {
    }
 
    // with supplied buffer (unsafe!)
-   gen charp_get_le (x:strdict) (var key: &char)= {
+   gen charp_get_le (x:strdict) (var key: +char)= {
      var err: JError_t;
      var slot : && T; 
      JudySLLast(_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
@@ -128,7 +128,7 @@ class StrDict[T] {
    }
 
    // with supplied buffer (unsafe!)
-   gen charp_get_lt (x:strdict) (var key: &char)= {
+   gen charp_get_lt (x:strdict) (var key: +char)= {
      var err: JError_t;
      var slot : && T; 
      JudySLPrev (_repr_ x, key, &err, C_hack::cast[&&word] (&slot));
@@ -157,14 +157,14 @@ class StrDict[T] {
      endmatch ;
    }
 
-   gen charp_first (x:strdict) (buffer:&char) = {
+   gen charp_first (x:strdict) (buffer:+char) = {
      buffer.[0] = char "";
      return x.charp_get_ge buffer;
    }
    fun first (x:strdict) : opt[string * T] => x.get_ge("");
 
    gen iterator (x:strdict) () : opt[string * T]  = {
-     var buffer : &char = array_alloc[char](JUDY_SL_MAXLEN+1);
+     var buffer : +char = array_alloc[char](JUDY_SL_MAXLEN+1);
      var v = charp_first x buffer;
      while true do
        match v with 

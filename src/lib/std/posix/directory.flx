@@ -12,7 +12,7 @@ class PosixDirectory
   proc readdir: DIR_t * dirent_t * &dirent_t * &int = "*$4=readdir_r($1, $2, $3);";
   proc closedir: DIR_t = "closedir($1);";
   fun filename: dirent_t -> string = "std::string($1->d_name)";
-  private fun getcwd: &char * size -> &char = "getcwd($1,$2)" requires Posix_headers::unistd_h;
+  private fun getcwd: +char * size -> +char = "getcwd($1,$2)" requires Posix_headers::unistd_h;
 
   // inherit generic stuff
   inherit Directory_class[Posix, PosixFileStat::mode_t];
@@ -32,7 +32,7 @@ class PosixDirectory
 
     fun getcwd():string = {
       var b: array[char,1024]; 
-      var p = getcwd(C_hack::cast[&char] (&b),size 1024);
+      var p = getcwd((&b).stl_begin,size 1024);
       return if C_hack::isNULL p then "" else string p endif; 
     }
     fun is_absolute_filename (s:string) => s.[0]=="/".char;

@@ -1,9 +1,8 @@
-include "sqlite3/sqlite3";
 open Sqlite3;
 
-fun subscript: & &char * int -> &char = "$1[$2]";
+fun subscript: + +char * int -> +char = "$1[$2]";
 
-cfun eh(data:address, ncols:int, values: &&char, names: &&char):int =
+cfun eh(data:address, ncols:int, values: + +char, names: + +char):int =
 {
   var ii:int = 0;
   while ii<ncols do
@@ -27,7 +26,7 @@ proc run(db:sqlite3_db_t) {
     ""
   ;
   var usr: address =  address c"user pointer";
-  var errm: &char =  c"";
+  var errm: +char =  c"";
 
   var i = 0;
   var p = sql.i;

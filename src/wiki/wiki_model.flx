@@ -360,7 +360,7 @@ INSERT INTO paths (path,grp,lvl) values ('.*','admin','');
 
 COMMIT TRANSACTION;
 """;
-    var errmsg: &char;
+    var errmsg: +char;
     var db : Sqlite3::sqlite3_db_t;
     var err = Sqlite3::sqlite3_open(wiki_db_file_name, &db);
     if err != 0 do

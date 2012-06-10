@@ -25,8 +25,8 @@ open class Farray
   }
 
   instance[t,n] ContiguousArrayObject[&array[t,n], t] {
-    fun stl_begin: &array[t,n] -> &t = "$1->data";
-    fun stl_end ( x:&array[t,n] ) : &t => stl_begin x + len x;
+    fun stl_begin: &array[t,n] -> +t = "$1->data";
+    fun stl_end ( x:&array[t,n] ) : +t => stl_begin x + len x;
   }
 
   fun map[V,N,U] (_f:V->U) (x:array[V,N]):array[U,N] = {
@@ -61,6 +61,51 @@ open class Farray
       done
     done
 
+    return o;
+  }
+
+  fun join[T, N] (x:array[T, N]) (y:T):array[T, N + 1] = {
+    var o : array[T, N + 1];
+
+    if x.len > 0uz do
+      for var i in 0uz upto len(x) - 1uz do
+        set (&o, i,x.i);
+      done
+    done
+    set(&o,x.len, y);
+    return o;
+  }
+
+  fun join[T, M] (x:T) (y:array[T, M]):array[T, 1 + M] = {
+    var o : array[T, 1 + M];
+
+    set (&o, 0, x);
+    if y.len > 0uz do
+      for var k in 0uz upto len(y) - 1uz do
+        set(&o,1uz + k, y.k);
+      done
+    done
+
+    return o;
+  }
+
+
+  // will probably clash with tuple joining functions if we implement them
+  fun + [T, N, M] (x:array[T, N]) (y:array[T, M]):array[T, N + M] => join x y;
+
+  // subsumes zip
+  fun transpose[T,N,M] (y:array[array[T,M],N]) : array[array[T,N],M] = {
+    var o : array[array[T,N],M];
+    var n = len y;
+    var m = len y.0;
+    for var i in 0uz upto n - 1uz do
+      for var j in 0uz upto m - 1uz do
+        val pfirst : +array[T,N] = &o.stl_begin;
+        val psub: +array[T,N] = pfirst + j;
+        val pelt : +T = psub.stl_begin;
+        set(pelt,i, y.i.j);
+      done
+    done
     return o;
   }
 

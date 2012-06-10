@@ -121,8 +121,8 @@ size:	OUT: the memory length
 """
   proc xml_doc_dump_memory: xml_doc_ptr*&xml_char_ptr*&int = 
     "xmlDocDumpMemory($1,$2,$3);";
-  fun char_ptr_of_xml_char_ptr: xml_char_ptr -> &char = "(char *)$1:cast" is cast;
-  fun xml_char_ptr_of_char_ptr: &char -> xml_char_ptr = "(xmlChar *)$1:cast" is cast;
+  fun char_ptr_of_xml_char_ptr: xml_char_ptr -> +char = "(char *)$1:cast" is cast;
+  fun xml_char_ptr_of_char_ptr: +char -> xml_char_ptr = "(xmlChar *)$1:cast" is cast;
   fun xml_node_ptr_of_xml_dtd_ptr: xml_dtd_ptr -> xml_node_ptr = "(xmlNodePtr)$1:cast" is cast;
   fun xml_node_ptr_of_xml_doc_ptr: xml_doc_ptr -> xml_node_ptr = "(xmlNodePtr)$1:cast" is cast;
   publish "Helper for xml_doc_dump_memory"

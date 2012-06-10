@@ -61,7 +61,7 @@ done
             match t with
               | REGULAR => 
                 //eprintln ("Regular file " + d);
-                var result = Re2::Match(re, Re2::StringPiece d, 0, Re2::ANCHOR_BOTH, C_hack::null[Re2::StringPiece], 0);
+                var result = d in re;
                 if result do 
 		  //eprintln$ d + " Matches"; 
 		  foundfiles = Cons (d, foundfiles); done

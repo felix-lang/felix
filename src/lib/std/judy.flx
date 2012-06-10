@@ -223,28 +223,28 @@ class Judy
 
   const JUDY_SL_MAXLEN : int = "JUDY_SL_MAXLEN";
 
-  proc JudySLIns: JSLArray * &char * &JError_t * &&word =
+  proc JudySLIns: JSLArray * +char * &JError_t * &&word =
     """
       if (::std::strlen($2) >= JUDY_SL_MAXLEN) throw "JudySLIns strlen>10000";
       *(Word_t**)$4=(Word_t*)JudySLIns($1,(unsigned char*)$2,$3);
     """;
 
-  proc JudySLDel: JSLArray * &char * &JError_t * &int =
+  proc JudySLDel: JSLArray * +char * &JError_t * &int =
     "*$4=JudySLDel($1,(unsigned char*)$2,$3);";
 
-  proc JudySLGet: JSLArray * &char * &JError_t * &&word =
+  proc JudySLGet: JSLArray * +char * &JError_t * &&word =
     "*$4=(Word_t*)JudySLGet(*$1,(unsigned char*)$2,$3);";
 
-  proc JudySLFirst: JSLArray * &char * &JError_t * &&word =
+  proc JudySLFirst: JSLArray * +char * &JError_t * &&word =
     "*(Word_t**)$4=(Word_t*)JudySLFirst(*$1,(unsigned char*)$2,$3);";
 
-  proc JudySLNext: JSLArray * &char * &JError_t * &&word =
+  proc JudySLNext: JSLArray * +char * &JError_t * &&word =
     "*(Word_t**)$4=(Word_t*)JudySLNext(*$1,(unsigned char*)$2,$3);";
 
-  proc JudySLLast: JSLArray * &char * &JError_t * &&word =
+  proc JudySLLast: JSLArray * +char * &JError_t * &&word =
     "*$4=JudySLLast(*$1,(unsigned char*)$2,$3);";
 
-  proc JudySLPrev: JSLArray * &char * &JError_t * &&word =
+  proc JudySLPrev: JSLArray * +char * &JError_t * &&word =
     "*$4=JudySLPrev(*$1,(unsigned char*)$2,$3);";
 
 ///////////////////////////////////////

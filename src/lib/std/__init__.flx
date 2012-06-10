@@ -102,6 +102,9 @@ include "std/lexer";
 include "std/re2";
 include "std/regdef";
 
+// database
+include "std/db/__init__";
+
 // Version
 include "std/version";
 

@@ -131,6 +131,10 @@ open class Size
 {
   ctor size: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
   ctor[T in reals] size: T = "static_cast<#0>($1)";
+
+  // special overrides so s.len - 1 works
+  fun - : size * int -> size = "$1-$2";
+  fun + : size * int -> size = "$1+$2";
 }
 
 open class Offset 
@@ -283,8 +287,4 @@ open Unsigned_integer[uint64];
 open Unsigned_integer[size];
 open Unsigned_integer[uintmax];
 open Unsigned_integer[uintptr];
-
-// special overrides so s.len - 1 works
-fun - : size * int -> size = "$1-$2";
-fun + : size * int -> size = "$1+$2";
 

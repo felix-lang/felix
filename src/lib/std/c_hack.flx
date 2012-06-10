@@ -46,6 +46,7 @@ class C_hack
   lvalue fun deref[t]: gcptr[t] -> t = "*$1";
 
   fun isNULL[t]: &t -> bool = "(0==$1)";
+  fun isNULL[t]: +t -> bool = "(0==$1)";
   fun isNULL[t]: gcptr[t] -> bool = "(0==$1)";
 
   publish """

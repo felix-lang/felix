@@ -123,10 +123,10 @@ class ArrayObject[t,v]
 class ContiguousArrayObject[t,v]
 {
   inherit ArrayObject[t,v];
-  virtual fun stl_begin: t -> &v;
-  virtual fun stl_end: t -> &v;
+  virtual fun stl_begin: t -> +v;
+  virtual fun stl_end: t -> +v;
 
-  fun + [I in ints] (pa:t, i:I) : &v = { 
+  fun + [I in ints] (pa:t, i:I) : carray [v] = { 
      assert i.size < pa.len; 
      return pa.stl_begin + i.size; 
   }

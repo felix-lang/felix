@@ -229,12 +229,13 @@ class ZeroMQ {
     ;
   }
 
-  private typedef blobkind = typesetof (uint64,int64,int,char,size,bool,
+  private typedef blobkind = typesetof (uint64,int64,int,char^256,size,bool,
     //file,
     zmq_pollitem_flag_t, zmq_socket_type_t);
-  private typedef blobkind_ptr = typesetof (&uint64,&int64,&int,&char,&size);
+  private typedef blobkind_ptr = typesetof (&uint64,&int64,&int,+char,&size);
 
   private gen zmq_setsockopt : zmq_socket * zmq_sockopts_tag * !blobkind_ptr * size -> int;
+
   private gen zset(s:zmq_socket, o:zmq_sockopts_tag, var x:uint64 ) => 
     zmq_setsockopt (s, o, &x, C_hack::sizeof[uint64]);
   private gen zset(s:zmq_socket, o:zmq_sockopts_tag, var x:int64 )  => 
@@ -294,7 +295,7 @@ class ZeroMQ {
   private gen get_socket_type(s:zmq_socket, o: zmq_sockopts_tag) = { 
     var x:zmq_socket_type_t; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
   private gen get_string(s:zmq_socket, o: zmq_sockopts_tag) : string = { 
-    var x:array[char,256]; var n = 256uz; get_sockopt(s,o,carray &x,&n); return string(carray &x,n); }
+    var x:array[char,256]; var n = 256uz; get_sockopt[char^256](s,o,&x,&n); return string(carray &x,n); }
   private gen get_pollitem(s:zmq_socket, o: zmq_sockopts_tag) = { 
     var x:zmq_pollitem_flag_t; var n = C_hack::sizeof[typeof(x)]; get_sockopt(s,o,&x,&n); return x; }
 
@@ -365,7 +366,7 @@ class ZeroMQ {
   ctor zmq_poll_item: zmq_socket * zmq_pollitem_flag_t = "mk_zmq_pollitem($1,$2)";
   fun revents: zmq_poll_item -> zmq_pollitem_flag_t = "$1.revents";
 
-  gen zmq_poll: &zmq_poll_item * int * long -> int;
+  gen zmq_poll: carray[zmq_poll_item] * int * long -> int;
 
   gen zmq_poll(pits : varray[zmq_poll_item], t:double) => // Felix time is in seconds
     zmq_poll (carray pits, pits.len.int, if t >= 0.0 then long (t/1000000.0) else -1L endif);

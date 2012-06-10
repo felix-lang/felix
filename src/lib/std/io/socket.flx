@@ -50,7 +50,7 @@ class Socket {
   done;
   }
 
-  proc connect(s: &socket_t, addr: &char, port: int)
+  proc connect(s: &socket_t, addr: +char, port: int)
   {
   if PLAT_POSIX do
       Faio_posix::connect(s, addr, port);

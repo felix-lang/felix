@@ -24,7 +24,7 @@ var groups : array[StringPiece,2];
 iter 
   (proc(f:string){
     println f;
-    res := Match(re, StringPiece f,0,ANCHOR_BOTH,C_hack::cast[&StringPiece] (&groups),2);
+    res := Match(re, StringPiece f,0,ANCHOR_BOTH,C_hack::cast[+StringPiece] (&groups),2);
     if res do
       //println$ "Group 1 = " + str (groups.[1]);
       n := size (str (groups.1));

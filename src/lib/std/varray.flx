@@ -76,8 +76,8 @@ open class Varray
   }
 
   instance[v] ContiguousArrayObject[varray[v],v] {
-    fun stl_begin: varray[v] -> &v = "$1";
-    fun stl_end: varray[v] -> &v = "($1+PTF gcp->collector->get_used($1))";
+    fun stl_begin: varray[v] -> +v = "$1";
+    fun stl_end: varray[v] -> +v = "($1+PTF gcp->collector->get_used($1))";
   }
 
   fun maxlen[t]: varray[t] -> size =
@@ -139,7 +139,7 @@ open class Varray
   private fun make_comparator[T](cmp:T * T -> bool) => _make_comparator[T, T*T, T*T->bool] (cmp);
 
   // invoke stl sort
-  private proc _sort[T]: comparator[T] * &T * &T = "::std::sort($2, $3, $1);" 
+  private proc _sort[T]: comparator[T] * +T * +T = "::std::sort($2, $3, $1);" 
     requires Cxx_headers::algorithm;
 
 

@@ -86,7 +86,7 @@ open class List
   // copy a list, and return last element as a list 
   // (empty if original list was empty)
   proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T]) {
-    *out = rev inp;
+    out <- rev inp;
     rev_last (out, last);
   }
 

@@ -1,6 +1,8 @@
 open class Cptr 
 {
   typedef ptr[T] = &T;
+  lvalue fun deref[T]: &T -> T = "*$1";
+
   union cptr[T] = | nullptr | Ptr of &T;
 
   ctor[T] cptr[T]: &T -> cptr[T] = "$1"; // safe

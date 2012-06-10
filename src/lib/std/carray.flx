@@ -3,43 +3,51 @@ open class Carray
   requires Cxx_headers::cstdlib;
   open C_hack;
 
-  publish "Carray type is just a pointer"
-
   publish "Convert Felix array to C array"
-  typedef carray[T] = &T;
-  ctor[T,N] carray[T]: &array[T,N] = "($t)->data";
+  type carray[T] = new &T;
 
-  fun array_alloc[T]: !ints -> &T = '(?1*)::std::malloc(sizeof(?1)*$1)';
-  fun array_calloc[T]: !ints -> &T = '(?1*)::std::calloc(sizeof(?1),$1)';
-  proc free[T]: &T = "::std::free($1);";
-  lvalue fun subscript[T]: &T * !ints -> T = '$1[$2]';
-  lvalue fun deref[T]: &T -> T = '*$1';
+  typedef fun +(T:TYPE) : TYPE => carray[T]; 
+  fun +[T]:&T -> carray[T] = "$1"; // unsafe
+  fun -[T]: carray[T] -> &T = "$1"; // safe (unless we allow +T to be NULL later ..)
 
-  fun + [T]: &T * !ints -> &T= '$1+$2';
-  fun - [T]: &T * !ints -> &T = '$1-$2';
-  fun - [T]: &T * &T-> ptrdiff = '$1-$2';
+  ctor[T] carray[T] : &T = "$1";
 
-  proc pre_incr[T]: &&T = '++*$1;';
-  proc post_incr[T]: &&T = '(*$1)++;';
-  proc pre_decr[T]: &&T = '--*$1;';
-  proc post_decr[T]: &&T = '(*$1)--;';
-  proc += [T]: &&T * !ints = '*$1+=$2;';
-  proc -= [T]: &&T * !ints = '*$1-=$2;';
+  ctor[T,N] carray[T]: &array[T,N] = "($1)->data";
+
+  fun array_alloc[T]: !ints -> carray[T] = '(?1*)::std::malloc(sizeof(?1)*$1)';
+  fun array_calloc[T]: !ints -> carray[T] = '(?1*)::std::calloc(sizeof(?1),$1)';
+  proc free[T]: carray[T] = "::std::free($1);";
+  lvalue fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
+  lvalue fun deref[T]: carray[T] -> T = '*$1';
+
+  proc set[T] : carray[T] * !ints * T = "$1[$2]=$3;";
+  fun stl_begin[T,N]: carray[array[T,N]] -> carray[T] = "(?1*)&($1->data)";
+
+  fun + [T]: carray[T] * !ints -> carray[T]= '$1+$2';
+  fun - [T]: carray[T] * !ints -> carray[T] = '$1-$2';
+  fun - [T]: carray[T] * carray[T]-> ptrdiff = '$1-$2';
+
+  proc pre_incr[T]: &carray[T] = '++*$1;';
+  proc post_incr[T]: &carray[T] = '(*$1)++;';
+  proc pre_decr[T]: &carray[T] = '--*$1;';
+  proc post_decr[T]: &carray[T] = '(*$1)--;';
+  proc += [T]: &carray[T] * !ints = '*$1+=$2;';
+  proc -= [T]: &carray[T] * !ints = '*$1-=$2;';
 
   /* carray is alias for a pointer .. */
-  instance[T] Eq[&T] {
-    fun == : &T * &T -> bool = '$1==$2';
-    fun != : &T * &T -> bool = '$1!=$2';
+  instance[T] Eq[carray[T]] {
+    fun == : carray[T] * carray[T] -> bool = '$1==$2';
+    fun != : carray[T] * carray[T] -> bool = '$1!=$2';
   }
-  instance[T] Tord[&T] {
-    fun < : &T * &T -> bool = '$1<$2';
-    fun <= : &T * &T -> bool = '$1<=$2';
-    fun > : &T * &T -> bool = '$1>$2';
-    fun >= : &T * &T -> bool = '$1>=$2';
+  instance[T] Tord[carray[T]] {
+    fun < : carray[T] * carray[T] -> bool = '$1<$2';
+    fun <= : carray[T] * carray[T] -> bool = '$1<=$2';
+    fun > : carray[T] * carray[T] -> bool = '$1>$2';
+    fun >= : carray[T] * carray[T] -> bool = '$1>=$2';
   }
 
   publish "Convert C array to Felix array"
-  fun array_of[T,N]: &T -> &array[T,N] = "*(#0*)(void*)$1";
+  fun array_of[T,N]: carray[T] -> &array[T,N] = "*(#0*)(void*)$1";
 
   proc memcpy: address * address * size =
     "{if($1 && $2 && $3)::std::memcpy($1,$2,$3);}"
@@ -51,10 +59,10 @@ open class Carray
 
   // unsafe C string functions
   // move to where they should be (if it isn't here .. :)
-  proc strcpy: &char * &char = "(void)::std::strcpy($1,$2);" requires Cxx_headers::cstring;
-  proc strncpy: &char * &char * !ints = "(void)::std::strncpy($1,$2,$3);" requires Cxx_headers::cstring;
-  fun strlen: &char ->size = "::std::strlen($1)" requires Cxx_headers::cstring;
-  gen strdup(s:&char) = {
+  proc strcpy: carray[char] * carray[char] = "(void)::std::strcpy($1,$2);" requires Cxx_headers::cstring;
+  proc strncpy: carray[char] * carray[char] * !ints = "(void)::std::strncpy($1,$2,$3);" requires Cxx_headers::cstring;
+  fun strlen: carray[char] ->size = "::std::strlen($1)" requires Cxx_headers::cstring;
+  gen strdup(s:carray[char]) = {
     val n = strlen s;
     var out=array_alloc[char] (n+1uz);
     strcpy(out,s);
@@ -62,5 +70,6 @@ open class Carray
   }
 }
 
-open[T] Eq[&T];
-open[T] Tord[&T];
+open[T] Eq[carray[T]];
+open[T] Tord[carray[T]];
+
