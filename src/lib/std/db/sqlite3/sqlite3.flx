@@ -1,22 +1,44 @@
 module Sqlite3 {
   requires package "sqlite3";
+
+  // type of a database handle
   type sqlite3_db_t = "sqlite3*";
+
+  // database open and close
   gen sqlite3_open : string * &sqlite3_db_t -> int =
     "sqlite3_open($1.c_str(), $2)"
   ;
   proc sqlite3_close : sqlite3_db_t = "sqlite3_close($1);";
-  typedef sqlite3_exec_callback_t = address * int * + +char * &(+char) --> int;
-  gen sqlite3_exec :
-    sqlite3_db_t * string * sqlite3_exec_callback_t * address * &(+char) -> int =
+
+  typedef sqlite3_exec_callback_t = 
+    address      // client data pointer established by call to sqlite3_exec 
+    * int        // number of result columns
+    * +(+char)   // column value as text
+    * +(+char)   // column name
+    --> int
+  ;
+
+  // quick sql execution
+  gen sqlite3_exec : // with callback
+    sqlite3_db_t                            // db
+    * string                                // sql
+    * sqlite3_exec_callback_t * address     // callback with client data pointer
+    *  &(+char)                             // pointer to error message epointer
+    -> int =
     "sqlite3_exec($1,$2.c_str(),$3,$4,$5)"
   ;
 
-  gen sqlite3_exec :
-    sqlite3_db_t * string * &(+char) -> int =
+  // quick sql execution with data handler callback
+  gen sqlite3_exec : // without callback
+    sqlite3_db_t // db
+    * string     // sql
+    * &(+char)   // ptr to errmsg pointer
+    -> int =
     "sqlite3_exec($1,$2.c_str(),0,0,$3)"
   ;
 
 
+  // error message extractor
   gen sqlite3_errmsg : sqlite3_db_t -> +char=
     "(char*)sqlite3_errmsg($1)"
   ;

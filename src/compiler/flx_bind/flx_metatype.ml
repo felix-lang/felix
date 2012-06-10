@@ -109,6 +109,12 @@ and metatype' sym_table bsym_table sr term =
           clierr sr ("Unexpected argument to metatype, newtype : " ^
             sbt bsym_table term)
 *)
+      | SYMDEF_struct _ 
+      | SYMDEF_cstruct _ -> btyp_type 0
+(*
+          clierr sr ("Unexpected argument to metatype, struct or cstruct : " ^
+            sbt bsym_table term)
+*)
       | SYMDEF_type_alias _ -> 
           clierr sr ("Unexpected argument to metatype, type alias: " ^
             sbt bsym_table term)

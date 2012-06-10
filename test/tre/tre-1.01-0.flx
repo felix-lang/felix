@@ -1,5 +1,3 @@
-include "tre";
-
 open Tre;
 open C_hack;
 open Carray;
@@ -37,8 +35,8 @@ for_each { i=0; } { i<n } { ++i; }
       print i; print " -> nomatch\n";
     else
       print i; print "-> match '";
-      start := int(a.[i].rm_so);
-      finish := int(a.[i].rm_eo);
+      start := int(a.i.rm_so);
+      finish := int(a.i.rm_eo);
       print s.[start to finish];
       print "'"; endl;
     done;

@@ -28,9 +28,9 @@ var i = 2;
 proc otst[V,T with ContiguousArrayObject[T,V], Str[T]] (x:T, v1:V, v2:V, s:string)
 {
   println$ s;
-  x + i <- v1;
+  x.stl_begin + i <- v1;
   println$ x . i;
-  x + (i - 1) <- v2;
+  x.stl_begin + (i - 1) <- v2;
   println x;
   println "";
 }
