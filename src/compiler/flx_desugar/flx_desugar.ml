@@ -171,7 +171,11 @@ let assign sr op l r =
     | _ -> EXPR_deref (sr, (EXPR_ref (sr,l))) 
     in 
     STMT_cassign (sr,nul,r)
-  | "_pset" -> STMT_cassign (sr,EXPR_deref (sr,l),r)
+  | "_pset" -> 
+    let deref = EXPR_name (sr, "deref", []) in
+    let deref_l = EXPR_apply (sr, (deref, l)) in
+    STMT_cassign (sr,deref_l,r)
+    (* STMT_cassign (sr,EXPR_deref (sr,l),r) *)
   | _ ->
   STMT_call
   (
