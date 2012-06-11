@@ -53,29 +53,13 @@
 #endif
 
 
-// PLATFORM-SPECIFIC
-
-#ifdef JU_WIN /* =============================================== */
-
-typedef __int8           int8_t;
-typedef __int16          int16_t;
-typedef __int32          int32_t;
-typedef __int64          int64_t;
-
-typedef unsigned __int8  uint8_t;
-typedef unsigned __int16 uint16_t;
-typedef unsigned __int32 uint32_t;
-typedef unsigned __int64 uint64_t;
-
-#else /* ================ ! JU_WIN ============================= */
 
 // ISO C99: 7.8 Format conversion of integer types <inttypes.h>
-#include <inttypes.h>  /* if this FAILS, try #include <stdint.h> */ 
+//#include <inttypes.h>  /* if this FAILS, try #include <stdint.h> */ 
 
 // ISO C99: 7.18 Integer types uint*_t 
-//#include <stdint.h>  
+#include <stdint.h>  
 
-#endif /* ================ ! JU_WIN ============================= */
 
 // ISO C99 Standard: 7.20 General utilities
 #include <stdlib.h>  
