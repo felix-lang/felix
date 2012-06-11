@@ -34,7 +34,11 @@ proc copyfiles(dname:string, re:RE2, tpat:string, live:bool, verbose:bool)
                if Re2::Match(re, StringPiece d, 0, ANCHOR_BOTH, v.stl_begin, v.len.int) 
                do 
                  var src = Filename::join (dname,d);
-                 dst := subst(tpat,v);
+                 var replacements = Empty[string * string];
+                 for var k in 0 upto n do
+                   replacements = Cons (("${"+str k + "}",v.k.string), replacements);
+                 done
+                 dst := search_and_replace replacements tpat;
                  JudySLIns(sd,cstr src,&je,&pv);
                  assert not isNULL(pv);
                  pv <- C_hack::cast[word] (new dst);

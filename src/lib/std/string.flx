@@ -333,6 +333,7 @@ open class String
     return v;
   }
 
+/*
 
   // Replace \0 \1 \2 etc in s with text from v
   fun subst(s:string, v:varray[StringPiece]): string =
@@ -384,7 +385,6 @@ open class String
      endmatch;
      return b;
   }
-
   // Search for regex, replace by r with \0 \1 \2 etc replace by match groups.
   fun search_and_replace (x:string, var spos: size, re:Re2::RE2, r:string) : string =
   {
@@ -402,6 +402,7 @@ open class String
     o+=x.[spos to];                  // rest of string
     return o;
   }
+*/
 
   fun atoi: string -> int = "::std::atoi($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
   fun atol: string -> long = "::std::atol($1:postfix.c_str())"  requires Cxx_headers::cstdlib;
