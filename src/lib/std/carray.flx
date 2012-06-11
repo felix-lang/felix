@@ -19,7 +19,7 @@ open class Carray
   proc free[T]: carray[T] = "::std::free($1);";
   lvalue fun subscript[T]: carray[T] * !ints -> T = '$1[$2]';
   lvalue fun deref[T]: carray[T] -> T = '*$1';
-  fun get[T]: carray[T] * !ints -> T = '$1[2]';
+  fun get[T]: carray[T] * !ints -> T = '$1[$2]';
   fun apply [T,I in ints] (i:I, x:carray[T]) => get (x,i.size);
 
   proc set[T] : carray[T] * !ints * T = "$1[$2]=$3;";
