@@ -54,7 +54,7 @@ class Win32FileStat
       __utimbuf64 u; 
       u.actime=(time_t)$2;
       u.modtime=(time_t)$3;
-      *$4 = utime($1.c_str(),&u); 
+      *$4 = _utime64($1.c_str(),&u); 
       }
     """
 
