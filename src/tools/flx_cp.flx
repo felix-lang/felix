@@ -1,139 +1,139 @@
-include "std/posix/filesystem";
-include "std/posix/directory";
+include "std/filesystem";
+include "std/directory";
+
 open Judy;
 
-  fun dbg(s:string):string={ println s; return s; }
+fun dbg(s:string):string={ println s; return s; }
 
-  proc copyfiles(dname:string, re:RE2, tpat:string, live:bool, verbose:bool) 
-  {
-    var ds = JSLArray ();
-    var sd = JSLArray ();
-    var je: JError_t;
-    var pv : &word;
-    var pv2 : &word;
-    var buffer: +char = C_hack::cast[+char] (C_hack::malloc(1000));
-    var buffer2: +char = C_hack::cast[+char] (C_hack::malloc(1000));
-    var dirs = JSLArray();
-    var n = re.NumberOfCapturingGroups;
-    var v = varray[StringPiece]$ (n+1).size, StringPiece "";
-    proc rfi(dname2: string) 
-    {   
-      if dname2 != "." and dname2 != ".." do
-      match Directory::filesin(Filename::join (dname,dname2)) with
-      | None  => ;
-      | Some ?files =>
-        List::iter
-          (proc (f:string) 
-          { if f != "." and f != ".." do 
-            var d = Filename::join (dname2,f);
-            val t = FileStat::filetype (Filename::join (dname,d));
-            match t with
-              | REGULAR => 
-                // println$ "d="+d;
-                if Re2::Match(re, StringPiece d, 0, ANCHOR_BOTH, v.stl_begin, v.len.int) 
-                do 
-                  var src = Filename::join (dname,d);
-                  dst := subst(tpat,v);
-                  JudySLIns(sd,cstr src,&je,&pv);
-                  assert not isNULL(pv);
-                  pv <- C_hack::cast[word] (new dst);
-                  JudySLIns(ds,cstr dst,&je,&pv);
-                  assert not isNULL(pv);
-                  // check for duplicate targets
-                  if not isNULL (*pv) do
-                    println$ "Duplicate target " + dst;
-                    System::exit(1);
-                  done
-                  pv <- C_hack::cast[word] (new src);
-                  //println$ "Copy " + src + " -> " + dst;
-                  iter 
-                    (proc (x:string) { JudySLIns(dirs, cstr x, &je,&pv); }) 
-                    (Filename::directories dst)
-                  ;
-                done 
-              | DIRECTORY => rfi (d);
-              | _ => ;
-            endmatch;
-            done
-          }
-          )
-          files
-        ;
-      endmatch;
-      done
-    }
-    rfi ("");
+proc copyfiles(dname:string, re:RE2, tpat:string, live:bool, verbose:bool) 
+{
+   var ds = JSLArray ();
+   var sd = JSLArray ();
+   var je: JError_t;
+   var pv : &word;
+   var pv2 : &word;
+   var buffer: +char = C_hack::cast[+char] (C_hack::malloc(1000));
+   var buffer2: +char = C_hack::cast[+char] (C_hack::malloc(1000));
+   var dirs = JSLArray();
+   var n = re.NumberOfCapturingGroups;
+   var v = varray[StringPiece]$ (n+1).size, StringPiece "";
+   proc rfi(dname2: string) 
+   {   
+     if dname2 != "." and dname2 != ".." do
+     match Directory::filesin(Filename::join (dname,dname2)) with
+     | None  => ;
+     | Some ?files =>
+       List::iter
+         (proc (f:string) 
+         { if f != "." and f != ".." do 
+           var d = Filename::join (dname2,f);
+           val t = FileStat::filetype (Filename::join (dname,d));
+           match t with
+             | REGULAR => 
+               // println$ "d="+d;
+               if Re2::Match(re, StringPiece d, 0, ANCHOR_BOTH, v.stl_begin, v.len.int) 
+               do 
+                 var src = Filename::join (dname,d);
+                 dst := subst(tpat,v);
+                 JudySLIns(sd,cstr src,&je,&pv);
+                 assert not isNULL(pv);
+                 pv <- C_hack::cast[word] (new dst);
+                 JudySLIns(ds,cstr dst,&je,&pv);
+                 assert not isNULL(pv);
+                 // check for duplicate targets
+                 if not isNULL (*pv) do
+                   println$ "Duplicate target " + dst;
+                   System::exit(1);
+                 done
+                 pv <- C_hack::cast[word] (new src);
+                 //println$ "Copy " + src + " -> " + dst;
+                 iter 
+                   (proc (x:string) { JudySLIns(dirs, cstr x, &je,&pv); }) 
+                   (Filename::directories dst)
+                 ;
+               done 
+             | DIRECTORY => rfi (d);
+             | _ => ;
+           endmatch;
+           done
+         }
+         )
+         files
+       ;
+     endmatch;
+     done
+   }
+   rfi ("");
 
-    // check record for dst clobbering src
-    *buffer=char 0;
-    JudySLFirst(sd,buffer,&je,&pv);
-    while not isNULL pv do
-      var cp = C_hack::cast[&string] (*pv);
-      //println$ "Recorded copy " + string buffer + " -> " + *cp;
+   // check record for dst clobbering src
+   *buffer=char 0;
+   JudySLFirst(sd,buffer,&je,&pv);
+   while not isNULL pv do
+     var cp = C_hack::cast[&string] (*pv);
+     //println$ "Recorded copy " + string buffer + " -> " + *cp;
 
-      Carray::strcpy(buffer2,buffer);
-      JudySLGet(ds,buffer2,&je,&pv2);
-      if not isNULL pv2 do
-        println$ "Target clobbers src: " + buffer;
-        System::exit(1);
-      done
-      JudySLGet(ds,buffer2,&je,&pv2);
-      JudySLNext(sd,buffer,&je,&pv);
-    done
+     Carray::strcpy(buffer2,buffer);
+     JudySLGet(ds,buffer2,&je,&pv2);
+     if not isNULL pv2 do
+       println$ "Target clobbers src: " + buffer;
+       System::exit(1);
+     done
+     JudySLGet(ds,buffer2,&je,&pv2);
+     JudySLNext(sd,buffer,&je,&pv);
+   done
 
 
-    // list in order of target (not for any particular reason)
-    /*
-    *buffer=char 0;
-    JudySLFirst(ds,buffer,&je,&pv);
-    while not isNULL pv do
-      cp = C_hack::cast[&string] (*pv);
-      println$ "Recorded copy " + string buffer + " <- " + *cp;
-      JudySLNext(ds,buffer,&je,&pv);
-    done
-    */
+   // list in order of target (not for any particular reason)
+   /*
+   *buffer=char 0;
+   JudySLFirst(ds,buffer,&je,&pv);
+   while not isNULL pv do
+     cp = C_hack::cast[&string] (*pv);
+     println$ "Recorded copy " + string buffer + " <- " + *cp;
+     JudySLNext(ds,buffer,&je,&pv);
+   done
+   */
 
-    // list all target directories
-    //println$ "Creating target directories";
+   // list all target directories
+   //println$ "Creating target directories";
 
-    *buffer = char 0;
-    JudySLFirst(dirs,buffer,&je,&pv);
-    while not isNULL pv do
-      dir := string buffer;
-      //println$ "Directory " + dir;
-      if live do
-        err:=Directory::mkdir(dir);
-        if err !=0 do 
-          if errno != EEXIST do 
-            println$ "Mkdir, err=" + strerror() + " .. ignoring";
-          done
-        done
-      done
-      JudySLNext(dirs,buffer,&je,&pv);
-    done
+   *buffer = char 0;
+   JudySLFirst(dirs,buffer,&je,&pv);
+   while not isNULL pv do
+     dir := string buffer;
+     //println$ "Directory " + dir;
+     if live do
+       err:=Directory::mkdir(dir);
+       if err !=0 do 
+         if errno != EEXIST do 
+           println$ "Mkdir, err=" + strerror() + " .. ignoring";
+         done
+       done
+     done
+     JudySLNext(dirs,buffer,&je,&pv);
+   done
 
-      *buffer=char 0;
-      JudySLFirst(sd,buffer,&je,&pv);
-      while not isNULL pv do
-        cp = C_hack::cast[&string] (*pv);
-        if verbose do print$ "cp " + string buffer + "  " + *cp; done
-        if live do
-          if FileSystem::filecopy(string buffer, *cp) do
-            if verbose do println " #done"; done 
-          else
-            println "COPY FAILED";
-            System::exit 1;
-          done
-        else 
-          if verbose do println$ "  #proposed"; done
-        done
-        JudySLNext(sd,buffer,&je,&pv);
-      done
+     *buffer=char 0;
+     JudySLFirst(sd,buffer,&je,&pv);
+     while not isNULL pv do
+       cp = C_hack::cast[&string] (*pv);
+       if verbose do print$ "cp " + string buffer + "  " + *cp; done
+       if live do
+         if FileSystem::filecopy(string buffer, *cp) do
+           if verbose do println " #done"; done 
+         else
+           println "COPY FAILED";
+           System::exit 1;
+         done
+       else 
+         if verbose do println$ "  #proposed"; done
+       done
+       JudySLNext(sd,buffer,&je,&pv);
+     done
 
-    C_hack::free(address buffer);
-    C_hack::free(address buffer2);
-  }
- 
+   C_hack::free(address buffer);
+   C_hack::free(address buffer2);
+}
 
 //println$ System::args ();
 //println$ "argc=" + str System::argc;

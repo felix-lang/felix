@@ -57,7 +57,8 @@ class Win32FileStat
       *$4 = utime($1.c_str(),&u); 
       }
     """
-    requires Posix_headers::utime_h;
+
+    requires Win32_headers::sys_utime_h;
 
     gen chmod: string * mode_t -> int = "_chmod($1.c_str(),$2)" requires Win32_headers::io_h;
     gen umask: mode_t -> mode_t = "_umask($1)";
