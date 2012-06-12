@@ -239,9 +239,9 @@ proc install() {
     // copy using flx_cp from build
     proc cp(s:string) {
       if PLAT_WIN32 do
-        cmd=quote(FLX_INSTALL_DIR+"\\bin\\flx_cp")+" "+quote(FLX_INSTALL_DIR)+' ' + quote(s)+' '+quote(INSTALL_ROOT+"\\\\0");
+        cmd=quote(FLX_INSTALL_DIR+"\\bin\\flx_cp")+" "+quote(FLX_INSTALL_DIR)+' ' + quote(s)+' '+quote(INSTALL_ROOT+"${0}");
       else
-        cmd=FLX_INSTALL_DIR+"/bin/flx_cp '"+FLX_INSTALL_DIR+"' '"+s+"' '"+INSTALL_ROOT+"/\\0'";
+        cmd=FLX_INSTALL_DIR+"/bin/flx_cp '"+FLX_INSTALL_DIR+"' '"+s+"' '"+INSTALL_ROOT+"/${0}'";
       done
       //println$ "shell cmd = " + cmd;
       result=system(cmd);
@@ -304,7 +304,7 @@ proc backup() {
     var result = 0;
     
     proc cp(s:string) {
-      cmd=FLX_INSTALL_DIR+"/bin/flx_cp '"+FLX_INSTALL_DIR+"' '"+s+"' 'backup/\\0'";
+      cmd=FLX_INSTALL_DIR+"/bin/flx_cp '"+FLX_INSTALL_DIR+"' '"+s+"' 'backup/${0}'";
       println$ cmd;
       result=system(cmd);
       if result != 0 do println$ "ERROR " + str result; goto failure; done

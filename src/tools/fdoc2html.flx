@@ -417,6 +417,7 @@ nextc:>
             write_string("</pre>"); 
           };
           s=doc;
+        elif b=="p" do bp; s=doc;
         elif b=="pre" do s = pre; 
         elif b=="obsolete" do ep; pstate=true; write_string("<p class='obsolete'> <em>Obsolete</em> "); s=doc;
         elif b=="caveat" do ep; pstate=true; write_string("<p class='caveat'> <em>Caveat: </em> "); s=doc;

@@ -1,7 +1,7 @@
-@h1 Literal Index
+@h1 Literals Index
 <ul>
 <li><a href="literals_01.fdoc">Integers</a></li>
-<li><a href="literals_02.fdoc">Floats</a></li>
-<li><a href="literals_03.fdoc">Strings</a></li>
-<li><a href="literals_04.fdoc">Identifiers</a></li>
+<li><a href="literals_02.fdoc">Floating Point Reals</a></li>
+<li><a href="literals_03.fdoc">Floating Point Complex</a></li>
+<li><a href="literals_04.fdoc">String Literals</a></li>
 </ul>

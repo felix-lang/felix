@@ -1,3 +1,83 @@
-@h1 Floats 
-@felix grammar/grammar_float_lexer.flxh
+@h1 Floating Point Reals 
+There are 3 floating point real types: {float}, {double}, and {long double}
+real and complex numbers.  All support these base functions:
+Felix provides 3 floating point types.
+@pre
+  Felix name     C name       Suffix
+  ----------------------------------
+  float         float         f
+  double        double        d (default)
+  ldouble       long double   l
+@
+Floating literals roughly follow ISO C99, except underscores are allowed between digits.
+The mantissa radix can either be decimal (default) or hexadecimal with a {0x} or {0X} prefix.
+The exponent is always decimal radix but can either be a power of 10 with an {E} or {e} separator
+or binary, with a {P} or {p} separator.
+
+There is also an additional constraint: decimal radix floating literals
+which include a decimal point, must include at least one digit
+before and after the decimal point.
+ 
+@h3 Exact rule for literals
+@felix
+  let decimal_string = digit (underscore? digit) *
+  let hexadecimal_string = hexdigit (underscore? hexdigit) *
+
+  let decimal_fractional_constant =
+    decimal_string '.' decimal_string?
+
+  let hexadecimal_fractional_constant =
+    ("0x" |"0X")
+    (hexadecimal_string '.' hexadecimal_string?
+    | '.' hexadecimal_string) /* leading . allowed here because of prefix */
+
+  let decimal_exponent = ('E'|'e') ('+'|'-')? decimal_string
+  let binary_exponent = ('P'|'p') ('+'|'-')? decimal_string
+
+  let floating_suffix = 'L' | 'l' | 'F' | 'f' | 'D' | 'd'
+  let floating_literal =
+    (
+      decimal_fractional_constant decimal_exponent? |
+      hexadecimal_fractional_constant binary_exponent?
+    )
+    floating_suffix?
+@
+
+@h2 Real Functions
+Felix provides these base functions:
+@pre
+  neg: t -> t;
+  add: t * t -> t;
+  sub: t * t -> t;
+  mul: t * t -> t;
+  div: t * t -> t;
+@
+and these trigonometric functions:
+@pre
+  sin: t -> t;
+  cos: t -> t;
+  tan: t -> t;
+  asin: t -> t;
+  acos: t -> t;
+  atan: t -> t;
+  sinh: t -> t;
+  cosh: t -> t;
+  tanh: t -> t;
+  asinh: t -> t;
+  acosh: t -> t;
+  atanh: t -> t;
+  exp: t -> t;
+  log: t -> t;
+  pow: t * t -> t;
+@
+
+In addition to the trigonometric functions, reals support these functions:
+@pre
+  log10: t -> t;
+  abs: t -> t;
+  sqrt: t -> t;
+  ceil: t -> t;
+  floor: t -> t;
+  trunc: t -> t;
+@
 
