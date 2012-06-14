@@ -5,5 +5,15 @@ Basic introduction:
 @p
 Literals
 @link literals_index.fdoc | Literals
+@p
+Polymorphism:
+@link polymorphism_index.fdoc | Polymorphism
 
+@p
+Objects
+@link objects_index.fdoc | Objects
+
+@p
+C Embedding:
+@link cbind_index.fdoc | Binding C
 

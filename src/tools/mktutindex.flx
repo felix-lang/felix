@@ -1,11 +1,18 @@
 include "std/posix/filesystem";
 var prefix = System::argv_dflt 1 "tut";
 var title = System::argv_dflt 2 "Tutorial";
+var master = System::argv_dflt 3 "";
 
 re := RE2(prefix+"_\\d*\\.fdoc");
 docs := FileSystem::regfilesin("src/web/", re);
 iter println of (string) docs;
 f := fopen_output("src/web/"+prefix+"_index.fdoc");
+if master != "" do
+  writeln$ f,
+   "<p><a href='"+master+"'>Up</a></p>"
+  ; 
+done
+
 writeln$ f,"@h1 "+title+" Index";
 writeln$ f,"<ul>";
 iter (proc (x:string) { writeln$ f, mkentry x; }) docs;

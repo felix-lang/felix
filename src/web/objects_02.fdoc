@@ -1,0 +1,28 @@
+@h1 Interfaces
+Objects have types which are called interfaces.
+You can define an interface like this:
+@felix
+interface Person {
+  get_name : 1 -> string;
+  get_age : 1 -> int;
+  set_age : int -> 0;
+}
+@
+@p
+<em>An interface is nothing more than alias for a record type.</em>
+@p
+Now, we can define a person with the interface:
+@felix
+var person = object (name:string, var age: int) implements Person = {
+  method fun get_name () => name; 
+  method fun get_age () => age; 
+  method proc set_age (x:int) { age = x; }
+};
+@
+Of course interfaces can be extended:
+@felix
+interface WorkingPerson extends Person { 
+  get_occupation: 1 -> string; 
+}
+@
+

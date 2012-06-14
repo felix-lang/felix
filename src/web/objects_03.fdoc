@@ -1,0 +1,13 @@
+@h1 Object Coercions
+Suppose we have
+@felix
+interface employment {
+  get_name: 1 -> string;
+  get_occupation: 1 -> string;
+}
+@
+then of course we can write a function:
+@felix
+proc print_occupation (p: employment) {
+println$ p.get_name() + " is a " + p.get_occupation();
+}

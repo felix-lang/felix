@@ -1,39 +1,50 @@
-@h1 Simple function definitions
-You can define simple calculations easily. We'll
-use a classic example:
+@h1 Variables
+Felix provides three kinds of variables, {var}, {fun} and {val}.
 @felix
-fun square (x:int) => x * x;
+var a = 1;
+fun f => a;
+val l = a;
+++a;
+
+println$ a,l,f;
 @
-The function {square} just multiplies its argument {x} by itself.
-We can use it now:
+A {var} is a storage location, or <em>object</em> 
+containing a value. A {var} is addressable and mutable, its value is stored 
+when control passes through its initialiser, or assignment. We say the 
+assignment does <em>eager</em> evaluation.
+@p
+A {fun} is a function with no arguments which returns the current
+value of its initialiser on every use. If the initialiser depends
+on a {var}, the value will change as the {var} changes. This is 
+called <em>lazy</em> evaluation. Usually, the initialiser
+simply replaces the variable name. This is called <em>substitution</em>
+or <em>inlining</em>.
+@p
+A {val} is a named expression, it is neither addressable nor mutable,
+and must be initialised. Its value is that of its initialiser at
+the time of evaluation. Vals can be evaluated eagerly like a {var},
+but they may also be evaluated lazily, at the time of use
+like a {fun}.
+@p
+The value represented by a {val} which has an initialiser depending
+on a variable, directly by name or indirectly by some other means,
+is not precisely specified, and we call this <em>indeterminate</em>
+evaluation.
+@p
+The primary motivation for using {val}s is to support superior
+optimisation. The compiler can choose either eager or lazy evaluation
+depending on what seems to be most efficient. If the number of uses
+of the {val} is low, lazy evaluation is usally faster.
+@p
+Felix provides one more kind of variable the {ref}. This is just a magical
+pointer that is dereferenced automatically on every use, saving 
+typing at least one {*} and possibly some parentheses. The initialiser
+for a {ref} must be a variable.
 @felix
-write$ stdout, "Input number: "; fflush stdout;
-val result = readln$ stdin;
-val cleaned_result = strip result;
-val v = int cleaned_result;
-val v2 = square v;
-println$ "Square of " + str v + " is " + str v2;
+var a = 1;
+ref r <- a;
+val pa = &a;
+++a;
+println$ a,r,*pa;
 @
-Here:
-<ul>
-<li> The {fun} binder introduces the function {square}.</li>
-<li> {square} accepts a single argument of type {int}.</li>
-<li> The operator {*} is used for multiplication.</li>
-<li> {square} returns the product of its argument with itself.</li>
-<li> The type of value returned by {square} is deduced by the compiler, 
-that type will be {int} because multiplying an {int} by another {int}
-yields an {int}. </li>
-<li> The type {int} can also be used as a function to convert a {string} 
-containing only digits to an {int}.</li>
-<li>The function {str} can be used to convert an {int} to a string.</li>
-</ul>
-
-There is a rule for functions: 
-<blockquote><em>
-A function introduced by
-a {fun} binder is not allowed to have any side effects.
-</em></blockquote>
-
-The compiler does not enforce this rule, but it does take
-advantage of it when optimising your code. 
-
+The primary use for {ref} is for function parameters.

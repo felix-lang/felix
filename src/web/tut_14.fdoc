@@ -1,95 +1,72 @@
-@h1 Arrays
-@h2 Array Values
-When you write a tuple like this:
-@felix
-  val x = 1,2,3,4,5;
+@h1 How to Browse library code
+The best way to learn Felix and its library .. is to browse
+the library code. Read the code, try to figure what it is doing,
+and try to use it.
+
+Have good look at all the files and get some idea what is in the
+library.
+
+Usually, files {include} other files they need, and modules
+will often {open} modules they need.
+
+However with the standard library, for simplicity and brevity,
+a special file {lib/std/__init__.flx} is used to load all the
+other files, and, most of the modules define are opened
+already. 
+
+Without this code would look a bit like C++: {#include} everything,
+and if it bothered to be modular {using namespace} on each space.
+This is generally the right way because it makes coupling explicit.
+
+For the standard library we encourage you instead to click:
+
+@felix /lib/std/__init__.flx
+
+and for the Posix subsystem
+
+@felix /lib/std/posix/__init__.flx
+
+@h2 The Felix webserver
+The web server you're using right now is written in Felix and is
+part of the Felix package. It should be installed in {/usr/local/bin}
+right now. If you simply type {webserver} it will run in the console
+foreground and provide web services on port 1234.
+
+The default Felix root is the {/usr/local/lib/felix/felix-version}
+where {felix-version} is the version of Felix the webserver was built
+with.
+
+The webserver can browse Felix documentation files of form {*.fdoc},
+Felix code {*.flx} and {*.flxh}, Felix {flx_pkgconfig} configuration
+database files {*.fpc} and C and C++ files {*.h}, {*.hpp}, {*.c},
+{*.cpp}, {*.cxx}, all with colourisation and
+hyperlinking of inclusions .. so it's good for browsing C and C++
+code too.
+
+Of course it also browses {*.txt}, {*.html}, {*.htm},
+{*.jpg}, {*.png} and few other file kinds too, but these are
+processed in the usual way.
+
+To escape from extreme confusion in the W3C standard regarding
+filename formation, Felix uses a {$} in the URL to separate the
+hostname from the filename. For example
+@pre
+http://locahost:1234/$/usr/include/stddef.h
 @
-where all the components have the same type, it is called an 
-array. A special notation may be used for this array type:
-@felix
-  int^5
-@
-that is, int multipled by itself 5 times: this type is exactly
-the same (not equivalent or isomorphic but exactly the same) as:
-@felix
-  int * int * int * int * int
-@
-There is also an alias in the library which can be used:
-@felix
-  array[int,5]
-@
-You should note that {int^1} is exactly the same as {int}:
-it is technically not a tuple.
+refers to file {/usr/include/stddef.h}. This is an absolute
+pathname. Felix webserver can browse your whole machine,
+it isn't restricted to the default root.
 
-This kind of array is a first class value, it is <em>not an object</em>.
+If you leave out the {$} separator, the webserver makes a search
+of some paths (currently builtin: a bug to be fixed!) dependent
+on the extension.
 
-Read the library code for <a href='/lib/std/array.flx'> array</a>.
+So you can use the webserver, especially with bookmarks, to easily
+browse and code you're writing in C, C++ or Felix, with an easy way
+to examine dependencies (one click .. could it be easier?).
 
-@h2 Carray
-A {carray} is your traditional C array: it has a bounded length,
-but the bound is unknown to the system: the client programmer must
-keep track of the bound manually.
-
-The type {carray[T]} is just an alias for {&amp;T}, a pointer to {T}.
-Generally {carray} is unsafe and should be avoided but it is
-essential for C interfacing so we had to put it in.
-
-Read the library code for <a href='/lib/std/carray.flx'>carray</a>.
-
-@h2 Varray and Darray
-Felix provides two variable length array objects called {varray} and {darray}
-in the library. A {varray} is a bounded variable length array, they're 
-good for buffers, but otherwise not use much because of the bound.
-{darray} is unbounded and typically just as efficient; it is implemented
-with {varray}, which is the main reason {varray} exists.
-
-@h3 Varray
-A {varray} is typically constructed from an {array}, you can use get and
-set functions to store a value at a particular index or retrieve it:
-@felix
-val a = varray (1,2,3,4,5);
-set (a, 2, 99);     // store 99 in slot index 2 (the third slot)
-println$ a;         // array(1,2,99,3,4,5)
-println$ get(a,2);  // 99
-@
-
-A {varray} can also be constructed with a fixed bound and completely filled
-with a single value:
-@felix
-val a = varray(5.ul,0); // 5 elements all 0
-@
-Note that {varray(5ul,3ul)} is ambiguous! It could be either a two element
-array constructed from the tuple {5ul,3ul} or a 5 element array initialised
-to {3ul,3ul,3ul,3ul,3ul}.
-
-Pointers into a varray can only be invalidated by reducing the 
-number of elements in the array below the pointer location.
-
-Read the library code for <a href='/lib/std/varray.flx'>varray</a>.
-@h3 Darray
-An unbounded variable length array implement using {varray}.
-If the {varray} gets full a new bigger one is allocated,
-and the elements copied from the old array to the new one.
-Pointers into the array can therefore be invalidated.
-
-{darray} is roughly equivalent in fuctionality to C++ {vector}.
-
-Read the library code for <a href='/lib/std/darray.flx'>darray</a>.
-
-@h3 Sarray
-An {sarray} is an ultra-high performance sparse array.
-It is can accept elements at any non-negative integral position
-for integers up to the size of type {size}.
-
-{Sarray} is implemented using JudyL arrays.
-
-Read the library code for <a href='/lib/std/sarray.flx'>sarray</a>.
-
-@h3 Bsarray
-An {bsarray} is an ultra-high performance bounded sparse array.
-
-{Bsarray} is implemented using JudyL {sarray} plus a simple bound check,
-it supports iteration, folds, etc which sarray does not.
-
-Read the library code for <a href='/lib/std/bsarray.flx'>bsarray</a>.
+Of course, your IDE or favourite text editor can probably do all
+this too, but it is hard for the Felix system to provide documentation
+in a format suitable for all these systems, so it comes with its 
+own webserver!
 

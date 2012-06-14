@@ -67,7 +67,9 @@ private val big_keywords =
   ("regdef","define named regular expression"),
   ("literal","define literal"),
   ("priority","Define order of syntactic priority symbols"),
-  ("requires","specify requirements")
+  ("requires","specify requirements"),
+  ("object","define an object factory"),
+  ("interface","define an object interface")
 ;
 
 private val small_keywords =
@@ -78,6 +80,8 @@ private val small_keywords =
   ("endif","conditional"), 
   ("do","imperative code begins"), 
   ("done","end of body"),
+  ("extend","define an object interface"),
+  ("end","end of extension"),
   ("in", "membership operator, function mem"),
   ("for", "for loop"),
   ("while","while loop"),
@@ -100,10 +104,13 @@ private val small_keywords =
   ("ident","identifier macro"),
   ("noexpand","inhibit macro expansion"),
   ("typesetof","a set of types"),
-  ("code","literal C code insertion")
+  ("code","literal C code insertion"),
+  ("extends","extend an object or interface with extra methods"),
+  ("implements","specify what interfaces an object implements")
 ;
 
 private val qualifiers = 
+  ("method", "A function depending only on its parameters"),
   ("pure", "A function depending only on its parameters"),
   ("virtual", "Type of a function to be provided in type class instances"),
   ("inline", "Function or procedure which should be inlined if possible"),

@@ -1,0 +1,79 @@
+@h1 Objects
+Felix provides a highly dynamic but statically typed object protocol.
+You can make an object like this:
+@felix
+var person = object (name:string, var age: int) = {
+  method fun get_name () => name; 
+  method fun get_age () => age; 
+  method proc set_age (x:int) { age = x; }
+};
+
+var john = person ("john", 42);
+
+println$ john.get_name () + ","+ john.get_age ()+".";
+john.set_age (43);
+println$ john.get_name () + ","+ john.get_age ()+".";
+@p
+Clearly, {john} is an object, so what is {person}?
+The answer is that {person} is an <em>object factory</em>
+which can be called upon to make objects such as {john}.
+This plays a similar role to a class in Python
+or a constructor in C++, however in Felix, object
+constructors are alive.
+@p
+<em>An object factory is in fact nothing more than an ordinary
+function with some specialised syntax, which returns
+a record of closures of the functions and procedures
+marked as {method}s.</em>
+@p
+You will of course note that, as will all functions,
+the local variables, including parameters, are not
+accessible outside the function: thus Felix leverages
+functional (lambda) abstraction to hide the private
+representation of an object.
+
+@h1 Extending Objects
+It is easy to make an extended object. Lets suppose we want to
+give {john} an {occupation} then we first do this:
+@felix
+var occupation  = object (title:string) = {
+  method fun get_job()=>title; 
+};
+@
+Now we can make an {occupation}:
+@felix
+var programmer = occupation ("programmer");
+@
+Now, we can make a new composite object:
+@felix
+var working_john = extend john with programmer end;
+println$ working_john.get_name () + " job is " + working_john.get_job();
+@
+@h2 Object Aspects
+When we extend an object we create a new aspect of the object
+consisting of the union of the sets of methods. This is a new
+method record, however the representation is not copied.
+To see this consider this example: first, we give job a second
+job.
+@felix
+var moonlighting_john = extend john with occupation "barista" end;
+println$ moonlighting_john.get_name () + " job is " + moonlighting_john.get_job();
+@
+Now observe:
+@felix
+moonlighting_john.set_age (44);
+println$ john.get_name () + ","+ john.get_age ()+".";
+@
+will tell that john is 44: {john}, {working_john}
+and  {moonlighting_john} all have the same age.
+@p
+In many languages you derive new classes from old ones
+by inheritance. In Felix you can derive new objects
+from old ones on a per-object basis. You merge attributes
+dynamically of any objects to form a new object. Each derived
+object can be thought of as a <em>view</em> or <em>aspect</em>
+of a complex entity.
+@p
+Both object factories and the objects they create
+are first class values.
+
