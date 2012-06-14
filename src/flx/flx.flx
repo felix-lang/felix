@@ -279,7 +279,7 @@ proc install() {
      (" * Documentation", 
        list (
         "doc/.*\\.(fdoc|html)",
-        "web/.*\\.(fdoc|html|gif|png|jpg)",
+        "web/.*\\.(fdoc|html|gif|png|jpg|css|js)",
         "index.html",
         "index2.html",
         "VERSION"

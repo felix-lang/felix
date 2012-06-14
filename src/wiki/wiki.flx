@@ -26,7 +26,9 @@ endif;
 var default_config_txt = "server_root=" + SERVER_ROOT + """
 delay=0.05
 port=8080
-document_root=$server_root/html
+TEMPLATE_ROOT=$INSTALL_ROOT/web/templates
+document_root=$INSTALL_ROOT/web
+WIKI_ROOT=$server_root/content
 C_PATH += /usr/include/c++/4.2.1
 C_PATH += /usr/include/c++/4.2.1/x86_64-apple-darwin10
 C_PATH += /usr/include/c++/4.4.3
@@ -40,9 +42,7 @@ C_PATH += /usr/local/lib/felix/felix-1.1.7dev/lib/rtl
 FLX_PATH += /usr/local/lib/felix/felix-1.1.7dev/lib
 FLX_PKGCONFIG_PATH += /usr/local/lib/felix/felix-1.1.7dev/config
 DB = $server_root/db/wiki.db
-WIKI_ROOT=$INSTALL_ROOT/wiki/content
 GIT_ROOT=wiki
-TEMPLATE_ROOT=$INSTALL_ROOT/wiki/html
 info_log=wiki.log
 #Enable git backing of wiki content by uncommenting below
 # Requires WIKI_ROOT reference a git repository
@@ -96,6 +96,11 @@ if not SERVER_ROOT.FileStat::fileexists do
 done
 val TEMPLATE_ROOT = match apply_param_vars_to(config.params, 
                                     get_param_list(config.params,"TEMPLATE_ROOT")) with
+                |Cons(?p,_) => p
+                |_ => "."
+                endmatch;
+val DOCUMENT_ROOT = match apply_param_vars_to(config.params, 
+                                    get_param_list(config.params,"document_root")) with
                 |Cons(?p,_) => p
                 |_ => "."
                 endmatch;

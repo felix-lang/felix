@@ -18,22 +18,18 @@ class WikiFileModel {
   
 
 
-  fun get_doc (fname:string):opt[entry] =>
-    let ?full_path = Filename::join(WIKI_ROOT,fname) in
+  fun get_doc (fname:string):opt[entry] => get_document(WIKI_ROOT,fname);
+
+  fun get_html_doc (fname:string):opt[entry] => get_document(TEMPLATE_ROOT,fname);
+
+  fun get_document (rt:string,fname:string):opt[entry] =>
+    let ?full_path = Filename::join(rt,fname) in
       if (FileStat::fileexists full_path) then
         Some (entry(fname,(load(full_path))))
       else
          None[entry]
       endif;
 
-  fun get_html_doc (fname:string):opt[entry] = {
-    val full_path = Filename::join(TEMPLATE_ROOT,fname);
-    if (FileStat::fileexists full_path)  do
-        return Some (entry(fname,(load(full_path))));
-      else
-         return None[entry];
-      done;
-  }
    fun has_html_doc (fname:string):bool =>
      FileStat::fileexists (Filename::join(TEMPLATE_ROOT,fname)); 
 
@@ -67,7 +63,9 @@ class WikiFileModel {
 
   fun has_doc (fname:string):bool =>
    FileStat::fileexists (Filename::join(WIKI_ROOT,fname)); 
-
+  
+  fun has_document (rt:string,fname:string):bool =>
+   FileStat::fileexists (Filename::join(rt,fname)); 
 
   gen write_doc(e:entry):bool*string = {
     open Output_text_file;
@@ -178,4 +176,22 @@ class WikiFileModel {
     done
     return true,"";
   } 
+
+  gen clone(fname:string):bool*string = {
+    var git = match get_param(config.params,"git") with
+      |Some ?o => o
+      |_  => ""
+    endmatch;
+    if git == "remote" do
+      val clone_cmd = q"$(SERVER_ROOT)/scripts/git-clone.sh $(WIKI_ROOT)/$(GIT_ROOT)";
+      val handle = safer_popen(clone_cmd);
+      var git_clone = load(handle);
+      fclose(handle);
+      return  not(startswith git_clone "error" or startswith git_clone "fatal") , git_clone;
+    else
+      return false,"Git remote mode not specified";
+    done;
+  }
+
+
 }

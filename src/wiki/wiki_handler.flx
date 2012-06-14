@@ -190,7 +190,7 @@ mathjax := '''
   proc wiki (conn:http_connection, request:http_request ) {
     var path = request.path.[6 to];
     if path =="" or path == "/" do
-       write(conn,make_see_other("/wiki/wiki/wiki_main.fdoc"));
+       write(conn,make_see_other("/wiki/wiki_main.fdoc"));
       return;
     done
     var fname = get_title(conn,request);//(get_fname(request)).or_else "wiki_main.fdoc";
@@ -204,10 +204,6 @@ mathjax := '''
       content = match get_doc(path) with |Some ?e => e.content |_ => "" endmatch;
     else 
       write(conn,make_see_other("/wiki/edit/"+path));
-      return;
-    done
-    if not path_exists(path) do
-      handle_not_found(conn,request);
       return;
     done
     ok,needs_mathjax,hd,html = format_doc(content,path);
@@ -347,19 +343,46 @@ mathjax := '''
 
   proc web(conn:http_connection,request:http_request) {
     var re_conn = conn;
-    re_conn.config.document_root = #Config::config.FLX_INSTALL_DIR;
-    iter (proc (handler:http_handler) { 
-      if not *re_conn.dirty  do
-        if handler.handles(re_conn.config,request) do
-          handler.handler_fn(re_conn,request);
-        done
-      else
-        goto finished; 
-      done
-      }) (default_handlers());
-    finished:> 
+    var fname = get_title(conn,request);
+    if get_suffix(request.path) == "fdoc" do
+    var path = request.path.[5 to];
+    var content:string = "";
+    var html:string = "";
+    var hd:string = "";
+    var needs_mathjax=false;
+    var ok=false;
+println$ path;
+    if has_document(DOCUMENT_ROOT,path) do
+      content = match get_document(DOCUMENT_ROOT,path) with |Some ?e => e.content |_ => "" endmatch;
+    else 
+      write(conn,make_see_other("/wiki/edit/"+path));
       return;
-  }
+    done
+    ok,needs_mathjax,hd,html = format_doc(content,path);
+    val data = make_html(
+        apply_to_template("page-template.html",
+         Cons(("<!--___CUSTOM_HEADER___-->",hd),
+         Cons(("___CENTER_CONTENT___",html),
+         Cons(("___FNAME___",fname),
+         Cons(("___CTRLS___",set-ctrls(conn,request)),
+         Cons(("<!--___MENU___-->",load_template("main-menu.html") + admin-menu(conn,request)),
+         Empty[string^2])))))));
+    write(conn,data);
+    else
+      re_conn.config.document_root = #Config::config.FLX_INSTALL_DIR;
+      iter (proc (handler:http_handler) { 
+        if not *re_conn.dirty  do
+          if handler.handles(re_conn.config,request) do
+            handler.handler_fn(re_conn,request);
+          done
+        else
+          goto finished; 
+        done
+        }) (default_handlers());
+      finished:> 
+        return;
+    done
+    }
 
   fun lib_route(config:server_config,request:http_request) => startswith request.path "/lib/";
 
