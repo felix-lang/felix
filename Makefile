@@ -123,6 +123,14 @@ syntax:
 	cp src/lib/grammar/* build/release/lib/grammar
 	rm *.par2
 
+tutindex:
+	build/release/bin/mktutindex tut Tutorial tutorial.fdoc
+	build/release/bin/mktutindex objects Objects tutorial.fdoc
+	build/release/bin/mktutindex polymorphism Polymorphism tutorial.fdoc
+	build/release/bin/mktutindex pattern Patterns tutorial.fdoc
+	build/release/bin/mktutindex literals Literals tutorial.fdoc
+	build/release/bin/mktutindex cbind "C Binding" tutorial.fdoc
+
 .PHONY : build32 build64 build test32 test64 test 
 .PHONY : build32-debug build64-debug build-debug test32-debug test64-debug test-debug 
 .PHONY : doc install websites-linux  release install-bin 

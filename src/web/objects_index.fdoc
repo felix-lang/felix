@@ -1,4 +1,5 @@
-@h1 Tutorial Index
+<p><a href='tutorial.fdoc'>Up</a></p>
+@h1 Objects Index
 <ul>
 <li><a href="objects_01.fdoc">Objects</a></li>
 <li><a href="objects_02.fdoc">Interfaces</a></li>

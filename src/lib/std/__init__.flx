@@ -30,7 +30,7 @@ include "std/char";
 include "std/mixedint";
 include "std/float_format";
 include "std/float_math";
-include "std/arith_casts";
+include "std/quaternion";
 
 
 // utility

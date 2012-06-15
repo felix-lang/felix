@@ -2,12 +2,18 @@
 
 Basic introduction:
 @link tut_index.fdoc | Getting Started
-@p
-Literals
-@link literals_index.fdoc | Literals
+
 @p
 Polymorphism:
 @link polymorphism_index.fdoc | Polymorphism
+
+@p
+Literals
+@link literals_index.fdoc | Literals
+
+@p
+Data types.
+@link data_types.fdoc | Data Types.
 
 @p
 Objects

@@ -1,4 +1,6 @@
 //noinline is needed to stop gcc dropping dead
+fun int_of[T]: T -> int = "int($1)";
+
 noinline proc tst_240 () {
   assert(int_of(2 + 40)==42);
   assert(int_of(2t + 40t)==42);

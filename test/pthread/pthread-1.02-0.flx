@@ -1,5 +1,4 @@
 include "std/io/faio";
-open String;
 
 print "Garbage collector world stop test"; endl;
 
@@ -10,7 +9,7 @@ proc randprint(n:int)
   var i = 5;
   print$ "Start Thread number "+str(n); endl;
   while i > 0 do
-    var d = double_of$ Cstdlib::rand()%10;
+    var d = double$ Cstdlib::rand()%10;
     if d == 0.0 do
       print "ZERO FOUND -- collecting!"; endl;
       collect;
